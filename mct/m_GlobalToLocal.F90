@@ -320,7 +320,7 @@
 !
       use m_mpif90
       use m_die,          only : MP_perr_die, die, warn
-      use m_GlobalMap, only : GlobalMap
+      use m_GlobalMap,    only : GlobalMap
 
       implicit none
 
@@ -351,8 +351,8 @@
 
   found = .false.
 
-  lower_bound = GMap%displs(myID)
-  upper_bound = GMap%displs(myID) + GMap%counts(myID) - 1
+  lower_bound = GMap%displs(myID) + 1
+  upper_bound = GMap%displs(myID) + GMap%counts(myID) 
 
   if((lower_bound <= i_g) .and. (i_g <= upper_bound)) then
      found = .true.
