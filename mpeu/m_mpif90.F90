@@ -39,6 +39,7 @@
       use m_mpif, only : MP_MAX_ERROR_STRING	&
 					=> MPI_MAX_ERROR_STRING
       use m_mpif, only : MP_STATUS_SIZE => MPI_STATUS_SIZE
+      use m_mpif, only : MP_ANY_SOURCE	=> MPI_ANY_SOURCE
 
       implicit none
       private
@@ -61,6 +62,8 @@
       public :: MP_PROD
       public :: MP_MIN
       public :: MP_MAX
+
+      public :: MP_ANY_SOURCE
 
       public :: MP_MAX_ERROR_STRING
 

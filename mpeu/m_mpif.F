@@ -48,6 +48,7 @@
 
 	  public :: MPI_MAX_ERROR_STRING
 	  public :: MPI_STATUS_SIZE
+	  public :: MPI_ANY_SOURCE
 
 #ifdef MPICH_
 	  public :: MPIPRIV	! the common block name
