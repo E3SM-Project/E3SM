@@ -216,33 +216,33 @@
     if(numi .ge. 1) then
        do proc=1,Rout%nprocs
 	  deallocate(ip1(proc)%pi,stat=ier)
-	  if(ier/=0) call MP_perr_die(myname_,'deallocate(ip1%pi)',0)
+	  if(ier/=0) call MP_perr_die(myname_,'deallocate(ip1%pi)',ier)
        enddo
 
        deallocate(ip1,stat=ier)
-       if(ier/=0) call MP_perr_die(myname_,'deallocate(ip1)',0)
+       if(ier/=0) call MP_perr_die(myname_,'deallocate(ip1)',ier)
        
        deallocate(ireqs,stat=ier)
-       if(ier/=0) call MP_perr_die(myname_,'deallocate(ireqs)',0)
+       if(ier/=0) call MP_perr_die(myname_,'deallocate(ireqs)',ier)
 
        deallocate(istatus,stat=ier)
-       if(ier/=0) call MP_perr_die(myname_,'deallocate(istatus)',0)
+       if(ier/=0) call MP_perr_die(myname_,'deallocate(istatus)',ier)
     endif
 
     if(numr .ge. 1) then
        do proc=1,Rout%nprocs
 	  deallocate(rp1(proc)%pr,stat=ier)
-	  if(ier/=0) call MP_perr_die(myname_,'deallocate(rp1%pi)',0)
+	  if(ier/=0) call MP_perr_die(myname_,'deallocate(rp1%pi)',ier)
        enddo
 
        deallocate(rp1,stat=ier)
-       if(ier/=0) call MP_perr_die(myname_,'deallocate(rp1)',0)
+       if(ier/=0) call MP_perr_die(myname_,'deallocate(rp1)',ier)
 
        deallocate(rreqs,stat=ier)
-       if(ier/=0) call MP_perr_die(myname_,'deallocate(rreqs)',0)
+       if(ier/=0) call MP_perr_die(myname_,'deallocate(rreqs)',ier)
 
        deallocate(rstatus,stat=ier)
-       if(ier/=0) call MP_perr_die(myname_,'deallocate(rstatus)',0)
+       if(ier/=0) call MP_perr_die(myname_,'deallocate(rstatus)',ier)
     endif
 
 end subroutine
