@@ -80,6 +80,15 @@
      on IBM:
     > ./configure F90=xlf90. 
 
+  INSTALLATION INSTRUCTIONS:
+  "make install" will copy the .mod files to the /usr/include directory
+  and the *lib.a files to /usr/lib.   To overide these choices, use
+  "-prefix" when running configure:
+       > ./configure -prefix=/home/$USER
+
+  Then "make install" will place .mod's in /home/$USER/include and *lib.a's
+    in /home/$USER/lib
+
 ######################################################################
   RUNNING THE EXAMPLES
 
