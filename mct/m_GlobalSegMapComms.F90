@@ -52,7 +52,7 @@
 ! !DESCRIPTION:
 ! This routine performs a blocking send of a {\tt GlobalSegMap} (the 
 ! input argument {\tt outgoingGSMap}) to the root processor on component
-! {\tt comp_id}. The input {\tt INTEGER} argument {\tt TagBase} 
+! {\tt comp\_id}. The input {\tt INTEGER} argument {\tt TagBase} 
 ! is used to generate tags for the messages associated with this operation; 
 ! there are six messages involved, so the user should avoid using tag 
 ! values {\tt TagBase} and {\tt TagBase + 6}.  All six messages are blocking.
@@ -162,7 +162,7 @@
 ! !DESCRIPTION:
 ! This routine performs a non-blocking send of a {\tt GlobalSegMap} (the 
 ! input argument {\tt outgoingGSMap}) to the root processor on component
-! {\tt comp_id}  The input {\tt INTEGER} argument {\tt TagBase} 
+! {\tt comp\_id}  The input {\tt INTEGER} argument {\tt TagBase} 
 ! is used to generate tags for the messages associated with this operation; 
 ! there are six messages involved, so the user should avoid using tag 
 ! values {\tt TagBase} and {\tt TagBase + 6}.  All six messages are non-
@@ -284,7 +284,7 @@
 ! !DESCRIPTION:
 ! This routine performs a blocking receive of a {\tt GlobalSegMap} (the 
 ! input argument {\tt outgoingGSMap}) from the root processor on component
-! {\tt comp_id}. The input {\tt INTEGER} argument {\tt TagBase} 
+! {\tt comp\_id}. The input {\tt INTEGER} argument {\tt TagBase} 
 ! is used to generate tags for the messages associated with this operation; 
 ! there are six messages involved, so the user should avoid using tag 
 ! values {\tt TagBase} and {\tt TagBase + 6}. The success (failure) of this
