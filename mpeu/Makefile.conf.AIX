@@ -76,8 +76,8 @@ TAR		= /usr/bin/tar
 LD		= mpxlf90
 LDFLAGS		= $(FFLAGS)
 
-#AR		= ar cqs
-#RM		= rm -f
+AR		= ar cqs
+RM		= rm -f
 MV		= /usr/bin/mv
 
 LIBprof		= 
