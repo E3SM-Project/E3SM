@@ -56,7 +56,7 @@
 !-------------------------------------------------------------------------
 !BOP
 !
-! !IROUTINE:  ByColumnGSMap_()--Generate Row-based GlobalSegMap for SparseMatrix
+! !IROUTINE:  ByColumnGSMap_ - Generate Row-based GlobalSegMap for SparseMatrix
 ! 
 ! !INTERFACE:
 
@@ -332,7 +332,7 @@
 !-------------------------------------------------------------------------
 !BOP
 !
-! !IROUTINE:  ByRowGSMap_()--Generate Row-based GlobalSegMap for SparseMatrix
+! !IROUTINE:  ByRowGSMap_ - Generate Row-based GlobalSegMap for SparseMatrix
 ! 
 ! !INTERFACE:
 
@@ -611,7 +611,7 @@
 !-------------------------------------------------------------------------
 !BOP
 !
-! !IROUTINE:  ComputeSegments_()--Create segments from list data.
+! !IROUTINE:  ComputeSegments_ - Create segments from list data.
 ! 
 ! !INTERFACE:
 
