@@ -55,44 +55,12 @@
 !
 ! !PUBLIC MEMBER FUNCTIONS:
 !
-      public :: MapHandshake
-      public :: LoadMapPars
       public :: ExchangeMap
 
-    interface LoadMapPars ; module procedure   &
-	 LoadGlobalMapPars_, &
-	 LoadGlobalSegMapPars_
-    end interface
-
-    interface MapHandshake ; module procedure   &
-	 MapHandshake_
-    end interface
-
-    interface ExchangeMap ; module procedure   &
-        ExGSMapGSMap_, &  ! GlobalSegMap for GlobalSegMap
-        ExGMapGSMap_
-    end interface
-
-! !PUBLIC DATA MEMBERS:
-                                ! Map handshaking is implemented as
-                                ! the exchange of an INTEGER array of
-                                ! flags / values.  These are defined
-                                ! below:
-
-    public :: NumHandshakePars  ! Number of handshake parameters; i.e.
-                                ! size of exhcanged parameters array
-    public :: ComponentIDIndex  ! location of component ID number
-    public :: MapTypeIndex      ! storage location of map type flag
-    public :: NumMapTypes       ! number of defined map types
-    public :: GlobalMapFlag     ! value of map type flag signifying
-                                ! GlobalMap
-    public :: GlobalSegMapFlag  ! value of map type flag signifying
-                                ! GlobalSegMap
-    public :: GsizeIndex        ! storage location of gsize for map
-    public :: NumSegIndex       ! storage location of the number of
-                                ! segments in the map:  Number of 
-                                ! processes for a GlobalMap; Number of
-                                ! segments for GlobalSegMap
+      interface ExchangeMap ; module procedure   &
+           ExGSMapGSMap_, &  ! GlobalSegMap for GlobalSegMap
+           ExGMapGSMap_
+      end interface
 
 ! !SEE ALSO:
 ! The MCT module m_ConvertMaps for more information regarding the 
@@ -111,9 +79,9 @@
 !EOP ___________________________________________________________________
 !
 ! Map Handshaking Parameters:  Map handshaking occurs via 
-! exchange of an array of INTEGER flags.
+! exchange of an array of INTEGER flags. 
 
-  ! Number of Handshaking Parameters
+  ! Number of Handshaking Parameters; i.e.size of exhcanged parameters array
 
   integer, parameter :: NumHandshakePars = 4
 
