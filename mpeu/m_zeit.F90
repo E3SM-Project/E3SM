@@ -856,7 +856,7 @@ end subroutine sp_balances_
     endif
   endif
 
-!  call luflush(lu)
+   call luflush(lu)
 end subroutine allflush_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -933,10 +933,10 @@ end subroutine allflush_
   integer :: x_s,i_s,r_s
 
   write(num,'(i4)') nPE
-  write(lu,'(3a,t15,a,t45,a)')	&
+  write(lu,'(3a,t18,a,t58,a)')	&
     HEADER(itm),'x',adjustl(num),	&
-    'NET avg     max imx x% r% i%',	&
-    'SCP avg     max imx x% r% i%'
+    'NET avg        max    imx x% r% i%',	&
+    'SCP avg        max    imx x% r% i%'
 
 !23.|....1....|....2....|....3....|....4....|....5....|....6....|....7..
 
@@ -944,7 +944,7 @@ end subroutine allflush_
 !-----------------------------------------------------------------------
 !zeit.       333333.3 33333.3 333 33 33 33 333333.3 33333.3 333 33 33 33
 
-write(lu,'(80a)') ('-',i=1,72)
+write(lu,'(91a)') ('-',i=1,91)
 do l=0,min(MXN,nname)
 
 	! sum() of all processes
@@ -991,13 +991,13 @@ do l=0,min(MXN,nname)
   r_s=nint(100.* ztr_s       /max(zts_s,res))
   i_s=nint(100.*(ztm_s-zta_s)/max(ztm_s,res))
 
-  write(lu,'(a,2(1x,2f8.4,1x,z3.3,3i3))')		&
+  write(lu,'(a,2(3x,f10.6,3x,f10.6,1x,z3.3,3i3,1x))')           &
 	name(1:ln),				&
 	zta_o,ztm_o,ix_o,x_o,r_o,i_o,		&
 	zta_s,ztm_s,ix_s,x_s,r_s,i_s
 
 end do
-write(lu,'(80a)') ('-',i=1,72)
+write(lu,'(91a)') ('-',i=1,91)
 end subroutine mp_balances_
 
 !=======================================================================
