@@ -581,7 +581,7 @@
   character(len=*),parameter :: myname_=myname//'::clean_'
 
   integer :: myStatus
-  type(String) :: SMatP_Strategy_copy
+  character(len=5) :: myStrategy
 
        ! If status was supplied, set it to zero (success)
 
@@ -594,14 +594,16 @@
        ! with the error message:
        ! Error: Signal Segmentation fault in phase IR->WHIRL Conversion
 
-  call String_init(SMatP_Strategy_copy,SMatP%Strategy)
+
+  myStrategy = String_ToChar(SMatP%Strategy)
 
        ! Use SMatP%Strategy to determine which Rearranger(s) need
        ! to be destroyed.  The CHARACTER parameters Xonly, Yonly, 
        ! and XandY are inherited from the declaration section of 
        ! this module.
 
-  select case(String_ToChar(SMatP_Strategy_copy))
+
+  select case(myStrategy)
   case(Xonly) ! destroy X-rearranger only
 
      call Rearranger_clean(SMatP%XToXprime, myStatus)
@@ -685,7 +687,6 @@
        ! Destroy the String SMatP%Strategy and its copy
 
   call String_clean(SMatP%Strategy)
-  call String_clean(SMatP_Strategy_copy)
 
  end subroutine clean_
 
