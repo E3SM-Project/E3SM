@@ -1008,7 +1008,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: exportIListToChar_ - return AttrVect%iList as CHARACTER
+! !IROUTINE: exportIListToChar_ - return AttrVecti\%iList as CHARACTER
 !
 ! !DESCRIPTION:
 ! This routine extracts from the input {\tt AttrVect} argument {\tt aV} 
@@ -1074,7 +1074,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: exportRListToChar_ - Return AttrVect%rList as CHARACTER
+! !IROUTINE: exportRListToChar_ - Return AttrVect\%rList as CHARACTER
 !
 ! !DESCRIPTION:
 ! This routine extracts from the input {\tt AttrVect} argument {\tt aV} 
