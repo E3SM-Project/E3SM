@@ -1412,17 +1412,11 @@
       use m_die
 
       use m_List, only : List
-      use m_List, only : List_nitem => nitem
       use m_List, only : List_copy => copy
       use m_List, only : List_allocated => allocated
-
-      use m_GlobalSegMap, only : GlobalSegMap
-      use m_GlobalSegMap, only : GlobalSegMap_lsize => lsize
-      use m_GlobalSegMap, only : GlobalSegMap_gsize => gsize
+      use m_List, only : List_nullify => nullify
 
       use m_GeneralGrid, only : GeneralGrid
-      use m_GeneralGrid, only : GeneralGrid_init => init
-      use m_GeneralGrid, only : GeneralGrid_lsize => lsize
 
       implicit none
 
@@ -1451,26 +1445,37 @@
 
   if(List_allocated(iGGrid%coordinate_list)) then
      call List_copy(oGGrid%coordinate_list,iGGrid%coordinate_list)
+  else
+     call List_nullify(oGGrid%coordinate_list)
   endif
 
   if(List_allocated(iGGrid%coordinate_sort_order)) then
      call List_copy(oGGrid%coordinate_sort_order,iGGrid%coordinate_sort_order)
+  else
+     call List_nullify(oGGrid%coordinate_sort_order)
   endif
 
   if(List_allocated(iGGrid%weight_list)) then
      call List_copy(oGGrid%weight_list,iGGrid%weight_list)
+  else
+     call List_nullify(oGGrid%weight_list)
   endif
 
   if(List_allocated(iGGrid%other_list)) then
      call List_copy(oGGrid%other_list,iGGrid%other_list)
+  else
+     call List_nullify(oGGrid%other_list)
   endif
 
   if(List_allocated(iGGrid%index_list)) then
      call List_copy(oGGrid%index_list,iGGrid%index_list)
+  else
+     call List_nullify(oGGrid%index_list)
   endif
 
   DescendAssoc = associated(iGGrid%descend) 
   if(DescendAssoc) then
+
      DescendSize = size(iGGrid%descend)
      allocate(oGGrid%descend(DescendSize), stat=ierr)
      if(ierr /= 0) then 
@@ -1481,6 +1486,11 @@
      do i=1,DescendSize
 	oGGrid%descend(i) = iGGrid%descend(i)
      end do
+
+  else
+     
+     nullify(oGGrid%descend)
+
   endif
 
        ! The GeneralGrid header copy is now complete.
