@@ -3394,19 +3394,18 @@ if test "$MACHDEFS" = "-WF,-DSYSAIX"; then
 else
    MACHDEFS="-DCPRXLF $MACHDEFS"
 fi
-if test -z "$F90FLAGS"; then
-   F90FLAGS="-qarch=auto"
-fi
 if test -z "$OPT"; then
    OPT="-O2"
 fi
 if test -z "$F90FLAGS"; then
   if test "$ac_cv_f90_fpp_compiler" = "yes"; then
-     F90FLAGS="-qsuffix=f=F90:cpp=F90"
+     F90FLAGS="-qarch=auto -qsuffix=f=F90:cpp=F90"
   fi
   if test "$ac_cv_f90_fpp_compiler" = "no"; then
      if test "$ac_cv_f90_fpp_external" = "yes"; then
-	F90FLAGS="-qsuffix=f=f90"
+	F90FLAGS="-qarch=auto -qsuffix=f=f90"
+     else
+        echo "ERROR:: NO SUITABLE C PREPROCESSOR FOUND. F90FLAGS NOT SET."
      fi
   fi
 fi;;
