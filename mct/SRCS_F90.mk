@@ -24,6 +24,7 @@ m_Router.F90		\
 m_Rearranger.F90        \
 m_NBSend.F90		\
 MCT_Send.F90		\
-MCT_Recv.F90
+MCT_Recv.F90		\
+MCT_Recvsum.F90
 
 
