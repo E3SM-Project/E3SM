@@ -40,6 +40,10 @@ Kept the difference for reference.
 #  define FORTRAN_CAPS_
 #endif
 
+#ifdef ABSOFT
+#  define FORTRAN_CAPS_
+#endif
+
 #ifdef FORTRAN_CAPS_
 #  define	get_zeits_		GET_ZEITS
 #  define	get_ztick_		GET_ZTICK
