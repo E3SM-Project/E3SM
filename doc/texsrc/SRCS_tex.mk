@@ -10,6 +10,7 @@ m_GeneralGrid.tex	\
 m_GeneralGridComms.tex	\
 m_GlobalMap.tex         \
 m_GlobalSegMap.tex      \
+m_GlobalSegMapComms.tex \
 m_GlobalToLocal.tex	\
 m_MCTWorld.tex		\
 m_MatAttrVectMul.tex    \
@@ -22,6 +23,7 @@ m_SparseMatrix.tex      \
 m_SparseMatrixComms.tex \
 m_SparseMatrixDecomp.tex \
 m_SparseMatrixToMaps.tex \
+m_SparseMatrixPlus.tex \
 m_SpatialIntegral.tex \
 m_String.tex \
 m_Transfer.tex \
