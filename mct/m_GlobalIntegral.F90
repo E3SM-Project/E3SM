@@ -2,13 +2,13 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !MODULE: m_GlobalIntegrals - Spatial Integrals and Averaging.
+! !MODULE: m_GlobalIntegral - Spatial Integrals and Averaging.
 !
 ! !DESCRIPTION:
 !
 ! !INTERFACE:
 
- module m_GlobalIntegrals
+ module m_GlobalIntegral
 
       implicit none
 
@@ -41,7 +41,8 @@
 	   MaskedGlobalIntegralRAttrGG_
       end interface
       interface MaskedGlobalAverage ; module procedure &
-	   MaskedGlobalAverageRAttrV_
+	   MaskedGlobalAverageRAttrV_, &
+	   MaskedGlobalAverageRAttrGG_
       end interface
       interface PairedGlobalIntegrals ; module procedure &
 	    PairedGlobalIntegralRAttrGG_, &
@@ -362,6 +363,7 @@
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
+      use m_AttrVect, only : AttrVect_clean => clean
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
       use m_AttrVect, only : AttrVect_indexRA => indexRA
       use m_AttrVect, only : AttrVect_exportRListToChar => exportRListToChar
@@ -596,6 +598,7 @@
       use m_GeneralGrid, only : GeneralGrid
       use m_GeneralGrid, only : GeneralGrid_lsize => lsize
       use m_GeneralGrid, only : GeneralGrid_indexRA => indexRA
+      use m_GeneralGrid, only : GeneralGrid_exportIAttr => exportIAttr
       use m_GeneralGrid, only : GeneralGrid_exportRAttr => exportRAttr
 
       use m_AttrVectReduce, only : AttrVect_GlobalWeightedSumRAttr => &
@@ -1371,7 +1374,6 @@
       use m_GeneralGrid, only : GeneralGrid
       use m_GeneralGrid, only : GeneralGrid_lsize => lsize
       use m_GeneralGrid, only : GeneralGrid_indexRA => indexRA
-      use m_GeneralGrid, only : GeneralGrid_exportRAttr => exportRAttr
 
       implicit none
 
@@ -1794,6 +1796,7 @@
       use m_mpif90
 
       use m_AttrVect, only : AttrVect
+      use m_AttrVect, only : AttrVect_init => init
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
 
@@ -2127,6 +2130,7 @@
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
+      use m_AttrVect, only : AttrVect_clean => clean
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
       use m_AttrVect, only : AttrVect_indexRA => indexRA
@@ -2159,6 +2163,8 @@
 
 ! !REVISION HISTORY:
 ! 	09May02 - J.W. Larson <larson@mcs.anl.gov> - Initial version.
+! 	14Jun02 - J.W. Larson <larson@mcs.anl.gov> - Bug fix to reflect
+!                 new interface to PairedGlobalIntegralRAttrGG_().
 !
 !EOP ___________________________________________________________________
 
@@ -2169,8 +2175,8 @@
 
        ! Compute the global integral:
 
-     call GlobalPairedIntegralRAttrGG_(inAv1, integratedAv1, GGrid1, WeightTag1, &
-	                               .TRUE., inAv2, integratedAv2, GGrid2,     &
+     call PairedGlobalIntegralRAttrGG_(inAv1, integratedAv1, GGrid1, WeightTag1, &
+	                               inAv2, integratedAv2, GGrid2,     &
 				       WeightTag2, .TRUE., comm)
 
 
@@ -2256,6 +2262,7 @@
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
+      use m_AttrVect, only : AttrVect_clean => clean
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
       use m_AttrVect, only : AttrVect_indexRA => indexRA
@@ -2295,7 +2302,7 @@
 
        ! Compute the paired global integral, including spatial weights:
 
-  call GlobalPairedIntegralRAttrV_(inAv1, integratedAv1, Weights1, WeightName1, &
+  call PairedGlobalIntegralRAttrV_(inAv1, integratedAv1, Weights1, WeightName1, &
                                    inAv2, integratedAv2, Weights2, WeightName2, &
                                    .TRUE., comm)
 
@@ -2340,5 +2347,5 @@
 
  end subroutine PairedGlobalAverageRAttrV_
 
- end module m_GlobalIntegrals
+ end module m_GlobalIntegral
 

@@ -462,31 +462,31 @@
 
   call AttrVect_init(outAV, inAV, lsize=AttrVect_lsize(inAV))
 
-  if(associated(inAV%rAttr)) then ! invoke MPI_ReduceAll() for the real
+  if(associated(inAV%rAttr)) then ! invoke MPI_AllReduce() for the real
                                   ! attribute data.
      BufferSize = AttrVect_lsize(inAV) * AttrVect_nRAttr(inAV)
-     call MPI_ReduceAll(inAV%rAttr, outAV%rAttr, BufferSize, &
+     call MPI_AllReduce(inAV%rAttr, outAV%rAttr, BufferSize, &
 	                MP_Type(inAV%rAttr(1,1)), ReductionOp, &
 			comm, ierr)
 
      if(ierr /= 0) then
 	write(stderr,*) myname_, &
-	     ':: Fatal Error in MPI_ReduceAll(), myID = ',myID
-	call MP_perr_die(myname_, 'MPI_ReduceAll() failed.', ierr)
+	     ':: Fatal Error in MPI_AllReduce(), myID = ',myID
+	call MP_perr_die(myname_, 'MPI_AllReduce() failed.', ierr)
      endif
   endif ! if(associated(inAV%rAttr)...
 
-  if(associated(inAV%iAttr)) then ! invoke MPI_ReduceAll() for the 
+  if(associated(inAV%iAttr)) then ! invoke MPI_AllReduce() for the 
                                   ! integer attribute data.
      BufferSize = AttrVect_lsize(inAV) * AttrVect_nIAttr(inAV)
-     call MPI_ReduceAll(inAV%iAttr, outAV%iAttr, BufferSize, &
+     call MPI_AllReduce(inAV%iAttr, outAV%iAttr, BufferSize, &
 	                MP_Type(inAV%iAttr(1,1)), ReductionOp, &
 			comm, ierr)
 
      if(ierr /= 0) then
 	write(stderr,*) myname_, &
-	     ':: Fatal Error in MPI_ReduceAll(), myID = ',myID
-	call MP_perr_die(myname_, 'MPI_ReduceAll() failed.', ierr)
+	     ':: Fatal Error in MPI_AllReduce(), myID = ',myID
+	call MP_perr_die(myname_, 'MPI_AllReduce() failed.', ierr)
      endif
   endif ! if(associated(inAV%rAttr)...
 
@@ -530,7 +530,10 @@
       use m_stdio ,        only : stderr
 
       use m_List,          only : List
+      use m_List,          only : List_init => init
+      use m_List,          only : List_clean => clean
       use m_List,          only : List_exportToChar => exportToChar
+      use m_List,          only : List_concatenate => concatenate
 
       use m_AttrVect,      only : AttrVect
       use m_AttrVect,      only : AttrVect_init => init
@@ -552,12 +555,16 @@
 
 ! !REVISION HISTORY:
 !        8May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!       14Jun02 - J.W. Larson <larson@mcs.anl.gov> - bug fix regarding
+!                 accumulation of weights when invoked with argument
+!                 weightSumAttr.  Now works in MCT unit tester.
 !
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::LocalWeightedSumRAttr_'
 
   integer :: i,j
+  type(List) dummyList1, dummyList2
 
         ! Check for consistencey between inAV and the weights array
 
@@ -574,8 +581,12 @@
         ! First Step:  create outAV from inAV (but with one element)
 
   if(present(WeightSumAttr)) then
-     call AttrVect_init(outAV, rList=List_exportToChar(inAV%rList)//WeightSumAttr, &
+     call List_init(dummyList1,WeightSumAttr)
+     call List_concatenate(inAV%rList, dummyList1, dummyList2)
+     call AttrVect_init(outAV, rList=List_exportToChar(dummyList2), &
 	                lsize=1)
+     call List_clean(dummyList1)
+     call List_clean(dummyList2)
   else
      call AttrVect_init(outAV, rList=List_exportToChar(inAV%rList), lsize=1)
   endif
