@@ -59,7 +59,7 @@
 ! !USES:
 !
       use m_stdio, only : stderr
-      use m_die,   only : MP_perr_die
+      use m_die,   only : MP_perr_die, die, warn
 
       use m_List, only : List_identical => identical
       use m_List, only : List_nitem => nitem
@@ -196,9 +196,7 @@
      end do ! n=1,num_elements
 
      deallocate(xaVindices, yaVindices, stat=ierr)
-     if(ierr /= 0) then
-	call MP_perr_die(myname_,'first deallocate(xaVindices...',ierr)
-     endif
+     if(ierr /= 0) call die(myname_,'first deallocate(xaVindices...',ierr)
 
   endif ! if(List_identical(xaV%rAttr, yaV%rAttr))...
 
@@ -257,10 +255,7 @@
 	   end do ! n=1,num_elements
 
 	   deallocate(xaVindices, yaVindices, stat=ierr)
-	   if(ierr /= 0) then
-	      call MP_perr_die(myname_,'second deallocate(xaVindices...', &
-		               ierr)
-	   endif
+	   if(ierr /= 0) call die(myname_,'second deallocate(xaVindices...',ierr)
 
 	endif ! if(List_identical(xaV%iList, yaV%iList))...
 

@@ -64,7 +64,7 @@
 ! !USES:
 !
       use m_stdio
-      use m_die,      only : MP_perr_die
+      use m_die,      only : MP_perr_die, die, warn
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_lsize => lsize
@@ -106,7 +106,7 @@
      write(stderr,'(4a)') myname_,":: value of argument attrib=",attrib, &
 	  " not recognized.  Allowed values: REAL, real, INTEGER, integer"
      ierr = 1
-     call MP_perr_die(myname_, 'invalid value for attrib', ierr)
+     call die(myname_, 'invalid value for attrib', ierr)
   end select
 
  end subroutine aVaVSharedAttrIndexList_
@@ -138,7 +138,7 @@
 ! !USES:
 !
       use m_stdio
-      use m_die,         only : MP_perr_die
+      use m_die,         only : MP_perr_die, die, warn
 
       use m_Accumulator, only : Accumulator
       use m_Accumulator, only : Accumulator_lsize => lsize
@@ -180,7 +180,7 @@
      write(stderr,'(4a)') myname_,":: value of argument attrib=",attrib, &
 	  " not recognized.  Allowed values: REAL, real, INTEGER, integer"
      ierr = 1
-     call MP_perr_die(myname_, 'invalid value for attrib', ierr)
+     call die(myname_, 'invalid value for attrib', ierr)
   end select
 
  end subroutine aCaCSharedAttrIndexList_
@@ -212,7 +212,7 @@
 ! !USES:
 !
       use m_stdio
-      use m_die,         only : MP_perr_die
+      use m_die,         only : MP_perr_die, die, warn
 
       use m_AttrVect,    only : AttrVect
       use m_AttrVect,    only : AttrVect_lsize => lsize
@@ -256,7 +256,7 @@
      write(stderr,'(4a)') myname_,":: value of argument attrib=",attrib, &
 	  " not recognized.  Allowed values: REAL, real, INTEGER, integer"
      ierr = 1
-     call MP_perr_die(myname_, 'invalid value for attrib', ierr)
+     call die(myname_, 'invalid value for attrib', ierr)
   end select
 
  end subroutine aVaCSharedAttrIndexList_
@@ -285,7 +285,7 @@
 !
 ! !USES:
 !
-      use m_die,  only : MP_perr_die
+      use m_die,  only : MP_perr_die, die, warn
 
       use m_String, only : String
       use m_String, only : String_clean => clean
