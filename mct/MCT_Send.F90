@@ -63,38 +63,11 @@
 
 !--------------------------------------------------------
 
-!  I am a sender.  See if router was inialized so that I am
-! the sender
-  if(ThisMCTWorld%myid == Rout%comp1id) then
-    mycomp=Rout%comp1id
-    othercomp=Rout%comp2id
-
-! if not then it must be a 2way router
-  elseif(ThisMCTWorld%myid == Rout%comp2id) then
-     if(Rout%type /= '2way') then
-      write(stderr,'(2a)') myname_, &
-       'MCTERROR:  Wrong direction with one-way Router',  &
-       '  Router is one way from ',Rout%comp1id,' to ',Rout%comp2id
-      call MP_perr_die(myname_,'Wrong Way Router',ier)
-    endif
-    mycomp=Rout%comp2id
-    othercomp=Rout%comp1id
-
-! if neither than bad Router
-  else
-     write(stderr,'(2a)') myname_, &
-     'MCTERROR:  Wrong Router passed to MCT_Send.',  &
-     '  My compid = ',ThisMCTWorld%myid,             &
-     '  Router is between ',Rout%comp1id,' and ',Rout%comp2id
-     call MP_perr_die(myname_,'Bad Router',ier)
-  endif
-
 
 !  find total number of real and integer vectors
 ! for now, assume we are sending all of them
   numi = nIAttr(aV)
   numr = nRAttr(aV)
-! if(ThisMCTWorld%mylrank==0)write(*,*)'Send',numi,numr
 
 
 !!!!!!!!!!!!!! IF SENDING INTEGER DATA
@@ -141,11 +114,11 @@
    enddo
 
   endif
-  if(ThisMCTWorld%mylrank==0) then
-  do proc=1,Rout%nprocs
+! if(myproc==0) then
+! do proc=1,Rout%nprocs
 !  write(*,*)'Send',size(rp1(proc)%pr),Rout%pe_list(proc),ThisMCTWorld%mygrank
-  enddo
-  endif
+! enddo
+! endif
 
 
 
