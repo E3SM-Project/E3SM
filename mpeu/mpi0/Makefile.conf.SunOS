@@ -60,8 +60,8 @@ _IMPI		=
 _M		= -M.
 
 SHELL		= /bin/sh
-F77		= /home/eong/mpich-1.2.4/bin/mpif77
-F90		= /home/eong/mpich-1.2.4/bin/mpif90
+F77		= mpif77
+F90		= mpif90
 FC		= $(F90)
 
 FOPT_normal	= -O4
