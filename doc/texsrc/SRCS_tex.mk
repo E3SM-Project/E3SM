@@ -1,5 +1,6 @@
 TEXFILES= 		\
 MCT_Recv.tex		\
+MCT_Recvsum.tex		\
 MCT_Send.tex		\
 accumulate.tex		\
 m_Accumulator.tex       \
