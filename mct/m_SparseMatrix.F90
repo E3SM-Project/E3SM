@@ -1919,17 +1919,17 @@
        ! Extract number of nonzero elements and compute its logarithm
 
   num_elements = lsize_(sMat)
-  Lnum_elements = log(float(num_elements))
+  Lnum_elements = log(REAL(num_elements,FP))
 
        ! Extract number of rows and compute its logarithm
 
   num_rows = nRows_(sMat)
-  Lnum_rows = log(float(num_rows))
+  Lnum_rows = log(REAL(num_rows,FP))
 
        ! Extract number of columns and compute its logarithm
 
   num_cols = nCols_(sMat)
-  Lnum_cols = log(float(num_cols))  
+  Lnum_cols = log(REAL(num_cols,FP))  
 
        ! Compute logarithm of the (local) sparsity
 
@@ -2013,17 +2013,17 @@
        ! Extract number of nonzero elements and compute its logarithm
 
   num_elements = lsize_(sMat)
-  Lnum_elements = log(float(num_elements))
+  Lnum_elements = log(REAL(num_elements,FP))
 
        ! Extract number of rows and compute its logarithm
 
   num_rows = nRows_(sMat)
-  Lnum_rows = log(float(num_rows))
+  Lnum_rows = log(REAL(num_rows,FP))
 
        ! Extract number of columns and compute its logarithm
 
   num_cols = nCols_(sMat)
-  Lnum_cols = log(float(num_cols))  
+  Lnum_cols = log(REAL(num_cols,FP))  
 
        ! Compute logarithm of the (local) sparsity
 

@@ -1994,7 +1994,7 @@
 
   if(aC%steps_done == num_steps) then
 
-     step_weight = 1 / float(num_steps)
+     step_weight = 1.0_FP / REAL(num_steps,FP)
      do n=1,nRAttr_(aC)
         if( aC%rAction(n) == MCT_AVG ) then
            do l=1,lsize_(aC)
