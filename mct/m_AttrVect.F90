@@ -2151,16 +2151,35 @@
 
   integer, dimension(:), allocatable :: rIndex, iIndex 
 
+        ! copy of descend argument
+
+  logical, dimension(:), allocatable :: descend_copy
+
         ! count the sorting keys:
 
   nkeys = List_nitem(key_list)
+
+        ! Check the descend argument. Note: the unnecessary copy
+        ! circumvents an optimization bug in the compaq compiler
+
+  if(present(descend)) then
+     if(size(descend)/=nkeys) then
+        call die(myname_,"Size of descend argument is not equal &
+                  &to the number of keys")
+     endif
+     allocate(descend_copy(nkeys),stat=ierr)
+     if(ierr/=0) call die(myname_,"allocate(descend_copy)",ierr)
+     descend_copy=descend
+  endif
+     
 
         ! allocate and initialize rIndex and iIndex to
         ! zero (the null return values from the functions
         ! indexRA_() and indexIA_() ).
 
   allocate(rIndex(nkeys), iIndex(nkeys), stat=ierr)
-     
+  if(ierr/=0) call die(myname_,"allocate(rindex,iIndex)",ierr)
+
   rIndex = 0
   iIndex = 0
 
@@ -2250,6 +2269,7 @@
   length = lsize_(aV)
 
   allocate(perm(length), stat=ierr)
+  if(ierr/=0) call die(myname_,"allocate(perm)",ierr)
 
         ! Initialize perm(i)=i, for i=1,length
 
@@ -2266,7 +2286,7 @@
      if(iIndex(n) > 0) then
 	if(present(descend)) then
 	   call IndexSort(length, perm, aV%iAttr(iIndex(n),:), &
-		          descend(n))
+		          descend_copy(n))
 	else
    	   call IndexSort(length, perm, aV%iAttr(iIndex(n),:), &
                		  descend=.false.)
@@ -2275,7 +2295,7 @@
 	if(rIndex(n) > 0) then
 	   if(present(descend)) then
 	      call IndexSort(length, perm, aV%rAttr(rIndex(n),:), &
-		             descend(n))
+		             descend_copy(n))
 	   else
 	      call IndexSort(length, perm, aV%rAttr(rIndex(n),:), &
                		     descend=.false.)
@@ -2288,6 +2308,10 @@
         ! finished.
 
   deallocate(iIndex, rIndex, stat=ierr)  ! clean up allocated arrays.
+  if(ierr/=0) call die(myname_,"deallocate(iIndex,rIndex)",ierr)
+
+  if(present(descend)) deallocate(descend_copy,stat=ierr)
+  if(ierr/=0) call die(myname_,"deallocate(descend_copy)",ierr)
 
  end subroutine Sort_
 
