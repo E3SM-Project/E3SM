@@ -24,6 +24,7 @@
       use m_MCTWorld, only : ThisMCTWorld
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : nIAttr,nRAttr
+      use m_AttrVect, only : lsize
       use m_Router,   only : Router
       use m_List,     only : List
 
@@ -52,6 +53,7 @@
 !                memory leaks
 !      15Feb02 - R. Jacob <jacob@mcs.anl.gov> - Use MCT_comm
 !      26Mar02 - E. Ong <eong@mcs.anl.gov> - Apply faster copy order.
+!      26Sep02 - R. Jacob <jacob@mcs.anl.gov> - Check Av against Router lAvsize
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_='MCT_Recv'
@@ -78,6 +80,15 @@
   type(iptr),dimension(:),allocatable :: ip2
 
 !--------------------------------------------------------
+
+!check Av size against Router
+!
+  if(lsize(aV) /= Rout%lAvsize) then
+    write(stderr,'(2a)') myname_, &
+    ' MCTERROR:  AV size not appropriate for this Router...exiting'
+    call die(myname_)
+  endif
+
 
   mycomp=Rout%comp1id
   othercomp=Rout%comp2id
