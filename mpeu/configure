@@ -19,6 +19,7 @@
 #                       i686 and alpha type.
 #  15jul02   J. Larson  Added detection of Fujitsu vector platforms.
 #            Also made script slightly more verbose.
+#  26feb03   R. Jacob   Add distinction for linux ia64
 #
 #.....................................................................
 
@@ -54,6 +55,9 @@ if [ ! -r ${makeconf} ]; then
     fi
     if [ "${Mach}" = alpha ]; then
       makeconf="Makefile.conf.Linux-alpha"
+    fi
+    if [ "${Mach}" = ia64 ]; then
+      makeconf="Makefile.conf.Linux-ia64"
     fi
   fi
 fi #closes if [ ! -r ${makeconf} ]...Block for Linux clusters
