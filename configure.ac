@@ -7,7 +7,7 @@ AC_INIT(MCT, 1.0)
 AC_CONFIG_FILES(Makefile.conf)
 
 # Check for the install command
-AC_PROG_INSTALL([install-sh])
+AC_PROG_INSTALL
 
 # Check for the C compiler
 AC_PROG_CC([cc escc])

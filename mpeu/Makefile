@@ -74,8 +74,11 @@ clean:
 
 install: all
 	$(MKINSTALLDIRS) $(libdir) $(includedir)
-	$(INSTALL) lib$(MODULE).a -m 644 $(libdir)/
-	$(INSTALL) *.mod -m 644 $(includedir)/
+	$(INSTALL) lib$(MODULE).a -m 644 $(libdir)
+	@for modfile in $(wildcard *.mod); do             \
+	  echo $(INSTALL) $$modfile -m 644 $(includedir); \
+	  $(INSTALL) $$modfile -m 644 $(includedir);      \
+	done
 
 # COMPATIBILITY WITH OLD MAKE SYSTEM
 
