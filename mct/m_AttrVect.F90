@@ -222,7 +222,6 @@
       use m_List, only : List
       use m_List, only : List_init => init
       use m_List, only : List_nitem => nitem
-      use m_List, only : assignment(=)
       use m_List, only : List_copy => copy
       use m_List, only : List_get => get
 
@@ -240,6 +239,8 @@
 
 ! !REVISION HISTORY:
 ! 	09May98 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!       08Aug01 - E.T. Ong <eong@mcs.anl.gov> - change list assignment(=)
+!                 to list copy to avoid compiler errors with pgf90.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::initl_'
@@ -247,8 +248,8 @@
 
        ! Assign iList to aV%iList and rList to aV%rList
 
-    aV%iList = iList
-    aV%rList = rList
+    call List_copy(aV%iList,iList)
+    call List_copy(aV%rList,rList)
 
   nIA = List_nitem(aV%iList)		! nitem.List()
   nRA = List_nitem(aV%rList)		! nitem.List()
