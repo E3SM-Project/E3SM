@@ -72,7 +72,7 @@
 	 integer :: ncols
 	 type(AttrVect) :: data
          ! additional data for the vectorized sMat
-         logical :: vecinit = .FALSE.
+         logical :: vecinit
          integer,dimension(:),pointer :: row_s, row_e
          integer, dimension(:,:), pointer :: tcol
          real   , dimension(:,:), pointer :: twgt
@@ -313,6 +313,9 @@
 
   call AttrVect_init(sMat%data, SparseMatrix_iList, &
                      SparseMatrix_rList, n)
+
+  ! vecinit is off by default
+  sMat%vecinit = .FALSE.
 
  end subroutine init_
 
