@@ -1502,12 +1502,12 @@
 ! !DESCRIPTION:
 ! This routine copies from input argment {\tt aVin} into the output 
 ! {\tt AttrVect} argument {\tt aVout} the real and integer attributes specified in 
-! input {\tt CHARACTER} argument {\tt iList} and {\tt rList}. If
-! neither {\tt iList} nor {\tt rList} are provided, all attributes from
-! {\tt aVin} will be copied.
+! input {\tt CHARACTER} argument {\tt iList} and {\tt rList}. The attributes can
+! be listed in any order.  If neither {\tt iList} nor {\tt rList} are provided, 
+! all attributes shared between {\tt aVin} and {\tt aVout} will be copied.
 !
 ! {\bf N.B.:}  This routine will fail if the {\tt aVout} is not initialized or
-! if any of the attributes are not present in {\tt aVout}.
+! if any of the attributes are not present in either {\tt aVout} or {\tt aVin}.
 !
 ! !INTERFACE:
 
@@ -1540,6 +1540,8 @@
 
 ! !REVISION HISTORY:
 ! 	12Jun02 - R.L. Jacob <jacob@mcs.anl.gov> - initial version.
+! 	13Jun02 - R.L. Jacob <jacob@mcs.anl.gov> - copy shared attributes
+!                 if no attribute lists are specified.
 !
 !EOP ___________________________________________________________________
 
@@ -1548,8 +1550,14 @@
   type(List)   :: rcpList	!  The list of real attributes to copy
   type(List)   :: icpList	!  The list of integer attributes to copy
   type(String) :: attr          !  an individual attribute
-  integer      :: i,j,ier
+  integer      :: i,j,ier,ierr
   integer      :: inx,outx
+  integer      :: num_indices   ! Overlapping attribute index number
+
+  ! Overlapping attribute index storage arrays:
+  integer, dimension(:), pointer :: aVinindices, aVoutindices
+
+  character*7 :: data_flag	! character variable used as data type flag
 
   call List_nullify(rcpList)
   call List_nullify(icpList)
@@ -1562,43 +1570,64 @@
 
   if( present(rList) .and. (len_trim(rList)>0) ) then
     call init(rcpList,rList)	! init.List()
+
+    if(nitem(rcpList) .ge. 1) then
+     do i=1,lsize_(aVin)
+      do j=1,nitem(rcpList)
+       call List_get(attr,j,rcpList)
+       inx=indexRA_(aVin,String_toChar(attr),dieWith=myname_//'real aVin')
+       outx=indexRA_(aVout,String_toChar(attr),dieWith=myname_//'real aVout')
+       aVout%rAttr(outx,i)=aVin%rAttr(inx,i)
+      enddo
+     enddo
+    endif
+
   endif
 
   if( present(iList) .and. (len_trim(iList)>0) ) then
     call init(icpList,iList)	! init.List()
+
+    if(nitem(icpList) .ge. 1) then
+     do i=1,lsize_(aVin)
+      do j=1,nitem(icpList)
+       call List_get(attr,j,icpList)
+       inx=indexIA_(aVin,String_toChar(attr),dieWith=myname_//'int aVin')
+       outx=indexIA_(aVout,String_toChar(attr),dieWith=myname_//'int aVout')
+       aVout%iAttr(outx,i)=aVin%iAttr(inx,i)
+      enddo
+     enddo
+    endif
   endif
 
-! if neither rList nor iList is present, copy all attibutes
+! if neither rList nor iList is present, copy shared attibutes
 ! from in to out.
 
   if( .not.present(rList) .and. .not.present(iList)) then
-     call exportRList_(aVin, rcpList)
-     call exportIList_(aVin, icpList)
-  endif
+    data_flag = 'REAL'
+    call aVaVSharedAttrIndexList_(aVin, aVout, data_flag, num_indices, &
+				aVinindices, aVoutindices)
+    if(num_indices .gt. 0) then
+     do i=1,lsize_(aVin)
+       do j=1,num_indices
+	 aVout%rAttr(aVoutindices(j),i)=aVin%rAttr(aVinindices(j),i)
+       enddo
+     enddo
+    endif
+    deallocate(aVinindices, aVoutindices,stat=ierr)
+    if(ierr /= 0) call die(myname_,'deallocate real(Vinindices...',ierr)
 
-  if(nitem(rcpList) .ge. 1) then
-
-    do i=1,lsize_(aVin)
-      do j=1,nitem(rcpList)
-       call List_get(attr,j,rcpList)
-       inx=indexRA_(aVin,String_toChar(attr),dieWith=myname_//' aVin')
-       outx=indexRA_(aVout,String_toChar(attr),dieWith=myname_//' aVout')
-       aVout%rAttr(outx,i)=aVin%rAttr(inx,i)
-      enddo
-    enddo
-
-  endif
-
-  if(nitem(icpList) .ge. 1) then
-
-    do i=1,lsize_(aVin)
-      do j=1,nitem(icpList)
-       call List_get(attr,j,icpList)
-       inx=indexIA_(aVin,String_toChar(attr),dieWith=myname_//' aVin')
-       outx=indexIA_(aVout,String_toChar(attr),dieWith=myname_//' aVout')
-       aVout%iAttr(outx,i)=aVin%iAttr(inx,i)
-      enddo
-    enddo
+    data_flag = 'INTEGER'
+    call aVaVSharedAttrIndexList_(aVin, aVout, data_flag, num_indices, &
+				aVinindices, aVoutindices)
+    if(num_indices .gt. 0) then
+     do i=1,lsize_(aVin)
+       do j=1,num_indices
+	 aVout%iAttr(aVoutindices(j),i)=aVin%iAttr(aVinindices(j),i)
+       enddo
+     enddo
+    endif
+    deallocate(aVinindices, aVoutindices,stat=ierr)
+    if(ierr /= 0) call die(myname_,'deallocate int(Vinindices...',ierr)
 
   endif
 
