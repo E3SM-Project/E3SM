@@ -386,9 +386,10 @@
 !
 ! !USES:
 !
-      use m_String, only : String
-      use m_String, only : String_char => char
-      use m_List,   only : List_get => get
+      use m_List,   only : List
+      use m_List,   only : ListExportToChar => exportToChar
+      use m_List,   only : List_copy        => copy
+      use m_List,   only : List_allocated   => allocated
       use m_die
 
       implicit none
@@ -416,7 +417,7 @@
 
   character(len=*),parameter :: myname_=myname//'::initv_'
 
-  type(String) :: iLStr,rLStr
+  type(List) :: temp_iList, temp_rList
   integer :: myNumSteps, myStepsDone 
   integer :: aC_lsize
   integer :: niActions, nrActions
@@ -457,13 +458,20 @@
 
 	! Convert the two Lists to two Strings
 
-  call List_get(iLStr,bC%av%iList)
-  call List_get(rLStr,bC%av%rList)
+  niActions = 0
+  nrActions = 0
+
+  if(List_allocated(bC%av%iList)) then
+     call List_copy(temp_iList,bC%av%iList)
+     niActions = nIAttr_(bC)
+  endif
+
+  if(List_allocated(bC%av%rList)) then
+     call List_copy(temp_rList,bC%av%rList)
+     nrActions = nRAttr_(bC)
+  endif
 
         ! Convert the pointers to arrays
-
-  niActions = nIAttr_(bC)
-  nrActions = nRAttr_(bC)
 
   allocate(iActionArray(niActions),rActionArray(nrActions),stat=ier)
   if(ier /= 0) call die(myname_,"iActionArray/rActionArray allocate",ier)
@@ -484,32 +492,32 @@
 
   if( (niActions>0) .and. (nrActions>0) ) then 
 
-     call init_(aC, iList=String_char(iLStr), &
-                iAction=iActionArray,         &
-	        rList=String_char(rLStr),     &
-		rAction=rActionArray,         &
-                lsize=aC_lsize,               &    
-                num_steps=myNumSteps,         &
+     call init_(aC, iList=ListExportToChar(temp_iList), &
+                iAction=iActionArray,                   &
+	        rList=ListExportToChar(temp_rList),     &
+		rAction=rActionArray,                   &
+                lsize=aC_lsize,                         &    
+                num_steps=myNumSteps,                   &
                 steps_done=myStepsDone)
 
   else 
 
      if( niActions>0 ) then
 
-	call init_(aC, iList=String_char(iLStr), &
-	           iAction=iActionArray,         &
-                   lsize=aC_lsize,               &
-		   num_steps=myNumSteps,         &
+	call init_(aC, iList=ListExportToChar(temp_iList), &
+	           iAction=iActionArray,                   &
+                   lsize=aC_lsize,                         &
+		   num_steps=myNumSteps,                   &
                    steps_done=myStepsDone)
 
      endif
 
      if( nrActions>0 ) then
 
-	call init_(aC, rList=String_char(rLStr), &
-	           rAction=rActionArray,         &
-		   lsize=aC_lsize,               &
-		   num_steps=myNumSteps,         &
+	call init_(aC, rList=ListExportToChar(temp_rList), &
+	           rAction=rActionArray,                   &
+		   lsize=aC_lsize,                         &
+		   num_steps=myNumSteps,                   &
                    steps_done=myStepsDone)
      endif
 
