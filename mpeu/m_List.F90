@@ -21,6 +21,7 @@
       public :: get
       public :: identical
       public :: assignment(=)
+      public :: allocated
       public :: copy
       public :: concatenate
       public :: bcast
@@ -39,6 +40,8 @@
 !                 corrected version of bcast_().
 ! 	15Oct01 - J. Larson <larson@mcs.anl.gov> - Added the LOGICAL 
 !                 function identical_().
+! 	14Dec01 - J. Larson <larson@mcs.anl.gov> - Added the LOGICAL 
+!                 function allocated_().
 !EOP ___________________________________________________________________
 
   interface init ; module procedure	&
@@ -62,7 +65,7 @@
   interface assignment(=)
     module procedure copy_
   end interface
-
+  interface allocated ; module procedure allocated_;  end interface
   interface copy ; module procedure copy_;  end interface
 
   interface concatenate ; module procedure concatenate_ ; end interface
@@ -460,6 +463,51 @@ contains
   enddo
 
  end function indexStr_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: allocated_ - Check a list to see if it is allocated.
+!
+! !DESCRIPTION:
+! This function checks the input {\tt List} argument {\tt inList} to 
+! determine whether or not it has been allocated.  It does this by 
+! invoking the Fortran90 intrinsic function {\tt associated()} on the 
+! pointers {\tt inList\%bf} and {\tt inList\%lc}.  If both of these 
+! pointers are associated, the return value is {\tt .TRUE.}.
+!
+! {\bf N.B.:}  In Fortran90, pointers have three different states of 
+! existence:  {\tt ASSOCIATED}, {\tt UNASSOCIATED}, and {\tt UNDEFINED}.
+!  If a pointer is {\tt UNDEFINED}, this function may return either 
+! {\tt .TRUE.} or {\tt .FALSE.} values, depending on the Fortran90 
+! compiler.  To avoid such problems, we advise that users invoke the 
+! {\tt List} method {\tt nullify()} to nullify any {\tt List} pointers
+! for {\tt List} variables that are not initialized.
+!
+! !INTERFACE:
+
+ logical function allocated_(inList)
+
+! !USES:
+
+      use m_die,only : die
+
+      implicit none
+
+! !INPUT PARAMETERS:
+
+      type(List), intent(in) :: inList
+
+! !REVISION HISTORY:
+! 	14Dec01 - J. Larson <larson@mcs.anl.gov> - inital version
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::allocated_'
+
+  allocated_ = associated(inList%bf) .and. associated(inList%lc)
+
+ end function allocated_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
