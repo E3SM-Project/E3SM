@@ -2105,7 +2105,7 @@
 
   if(AttrVect_lsize(inAv1) /= size(Weights1)) then
      ierr = AttrVect_lsize(inAv1) - size(Weights1)
-     write(stderr,'(2a,i8,a,i8)') myname_, &
+     write(stderr,'(3a,i8,a,i8)') myname_, &
 	  ':: inAv1 / Weights1 length mismatch:  ', &
 	  ' AttrVect_lsize(inAv1) = ',AttrVect_lsize(inAv1), &
 	  ' size(Weights1) = ',size(Weights1)
@@ -2114,7 +2114,7 @@
 
   if(AttrVect_lsize(inAv2) /= size(Weights2)) then
      ierr = AttrVect_lsize(inAv2) - size(Weights2)
-     write(stderr,'(2a,i8,a,i8)') myname_, &
+     write(stderr,'(3a,i8,a,i8)') myname_, &
 	  ':: inAv2 / Weights2 length mismatch:  ', &
 	  ' AttrVect_lsize(inAv2) = ',AttrVect_lsize(inAv2), &
 	  ' size(Weights2) = ',size(Weights2)
