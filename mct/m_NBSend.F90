@@ -109,6 +109,9 @@
   numi = nIAttr(aV)
   numr = nRAttr(aV)
 
+! Nullify the pointers
+  nullify(Reqs%ireqs)
+  nullify(Reqs%rreqs)
 
 !!!!!!!!!!!!!! IF SENDING INTEGER DATA
   if(numi .ge. 1) then
