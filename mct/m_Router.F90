@@ -40,7 +40,7 @@
 !\begin{verbatim}
 !  
     type Router
-      integer :: comp1id	       ! id of first component
+      integer :: comp1id	       ! myid
       integer :: comp2id	       ! id of second component
       character*4 :: type	       ! '1way' or '2way'
       integer :: nprocs	       ! number of procs to talk to
@@ -84,7 +84,7 @@
 !
 ! !INTERFACE:
 
- subroutine init_(comp1,comp2,GSMap,mycomm,Rout )
+ subroutine init_(othercomp,GSMap,mycomm,Rout )
 !
 ! !USES:
 !
@@ -100,8 +100,7 @@
       implicit none
 
       type(Router), intent(out)        :: Rout
-      integer, intent(in)	       :: comp1
-      integer, intent(in)	       :: comp2
+      integer, intent(in)	       :: othercomp
       integer, intent(in)	       :: mycomm
       type(GlobalSegMap),intent(in)    :: GSMap  ! of the calling comp
 
@@ -114,6 +113,8 @@
 !       08Feb01 - R. Jacob <jacob@mcs.anl.gov> - use GlobaltoLocalIndex
 !                 to load local index values into Router. Init locsize
 !                 and maxsize.  add deallocate statements.
+!	22Mar01 - R. Jacob <jacob@mcs.anl.gov> - only use other components
+!                 id when initializing
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::init_'
@@ -168,16 +169,9 @@
 
   
 
-  if(ThisMCTWorld%myid == comp1) then
-    mycomp=comp1
-    othercomp=comp2
-  else
-    mycomp=comp2
-    othercomp=comp1
-  endif
-
-  Rout%comp1id = comp1
-  Rout%comp2id = comp2
+  mycomp = ThisMCTWorld%myid
+  Rout%comp1id = ThisMCTWorld%myid
+  Rout%comp2id = othercomp
   Rout%type = "2way"
   recvsize=ThisMCTWorld%nprocspid(othercomp)
 
@@ -258,10 +252,10 @@
   if(ier /= 0) call MP_perr_die(myname_,'MPI_BCAST(sizes)',ier)
 
 
-  if(ThisMCTWorld%myid == comp1) then
-!   write(*,*)"comp1 says",myPid,rngseg
+  if(ThisMCTWorld%myid == mycomp) then
+!   write(*,*)"mycomp says",myPid,rngseg
   else
-!   write(*,*)"comp2 says",myPid,rngseg
+!   write(*,*)"othercomp says",myPid,rngseg
   endif
 
 
@@ -309,7 +303,7 @@
         enddo
       enddo
 
-    if((myPid==0) .and. (ThisMCTWorld%myid == comp1)) then
+    if((myPid==0) .and. (ThisMCTWorld%myid == mycomp)) then
 ! 	write(*,*)"ROUTER",i,hitparade,rlsizes(i),rvector(1),rvector(rlsizes(i))
       endif
 
@@ -350,7 +344,7 @@
         endif
       enddo
  
-      if((myPid==0) .and. (ThisMCTWorld%myid == comp1)) then
+      if((myPid==0) .and. (ThisMCTWorld%myid == mycomp)) then
         do pr=1,m
 ! 	 write(*,*)"ROUTERD",i,pr,tmpsegcount(i,pr),tmpsegstart(i,pr)
         enddo
@@ -365,7 +359,7 @@
     Rout%nprocs = count
 
     maxsegcount=mmax
-!   if((myPid==0) .and. (ThisMCTWorld%myid == comp1))  write(*,*)"COUNT",count,maxsegcount
+!   if((myPid==0) .and. (ThisMCTWorld%myid == mycomp))  write(*,*)"COUNT",count,maxsegcount
 
     allocate(Rout%pe_list(count),Rout%num_segs(count), &
     Rout%seg_starts(count,maxsegcount), &
@@ -404,7 +398,7 @@
 
     Rout%maxsize=lmaxsize
 
-    if((myPid==0) .and. (ThisMCTWorld%myid == comp1)) then
+    if((myPid==0) .and. (ThisMCTWorld%myid == mycomp)) then
      do i=1,Rout%nprocs
 !      write(*,*)"ROUTERE",i,Rout%pe_list(i),Rout%num_segs(i),Rout%locsize(i),Rout%maxsize
       do j=1,Rout%num_segs(i)
