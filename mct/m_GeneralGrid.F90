@@ -1031,7 +1031,7 @@
 ! must be allocated prior to calling this routine.  If the user wishes
 ! that the routine {\em create} the output argument array {\tt outVect},
 ! then the user must ensure this pointer is not allocated (i.e. the user
-! must nullify this pointer) at the time this routine is invoked.
+! must nullify this pointer) before this routine is invoked.
 !
 ! {\bf N.B.:}  If the user has relied on this routine to allocate memory
 ! associated with the pointer {\tt outVect}, then the user is responsible 
@@ -1095,7 +1095,7 @@
 ! must be allocated prior to calling this routine.  If the user wishes
 ! that the routine {\em create} the output argument array {\tt outVect},
 ! then the user must ensure this pointer is not allocated (i.e. the user
-! must nullify this pointer) at the time this routine is invoked.
+! must nullify this pointer) before this routine is invoked.
 !
 ! {\bf N.B.:}  If the user has relied on this routine to allocate memory
 ! associated with the pointer {\tt outVect}, then the user is responsible 

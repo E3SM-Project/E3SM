@@ -5,8 +5,30 @@
 !
 ! !MODULE: m_AttrVectReduce - Local/Distributed AttrVect Reduction Ops.
 !
-! !DESCRIPTION:
-!
+! !DESCRIPTION:  This module provides routines to perform reductions on 
+! the {\tt AttrVect} datatype.  These reductions can either be the types
+! of operations supported by MPI (currently, summation, minimum and 
+! maximum are available) that are applied either to all the attributes 
+! (both integer and real), or specific reductions applicable only to the
+! real attributes of an {\tt AttrVect}.  This module provides services 
+! for both local (i.e., one address space) and global (distributed) 
+! reductions.  The type of reduction is defined through use of one of 
+! the public data members of this module:
+!\begin{table}[htbp]
+!\begin{center}
+!\begin{tabular}{|c|c|}
+!\hline
+!{\bf Value} & {\bf Action} \\
+!\hline
+!{\tt AttrVectSUM} & Sum \\
+!\hline
+!{\tt AttrVectMIN} & Minimum \\
+!\hline
+!{\tt AttrVectMAX} & Maximum \\
+!\hline
+!\end{tabular}
+!\end{center}
+!\end{table}
 !
 ! !INTERFACE:
 
@@ -70,7 +92,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: LocalReduce_ - Reduction over local elements
+! !IROUTINE: LocalReduce_ - Local Reduction of INTEGER and REAL Attributes
 !
 ! !DESCRIPTION:
 !
@@ -240,7 +262,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: LocalReduceRAttr_ - Reduction of REAL attributes
+! !IROUTINE: LocalReduceRAttr_ - Local Reduction of REAL Attributes
 !
 ! !DESCRIPTION:
 !
@@ -390,7 +412,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: AllReduce_ - Reduction of REAL attributes
+! !IROUTINE: AllReduce_ - Reduction of INTEGER and REAL Attributes
 !
 ! !DESCRIPTION:
 !
@@ -401,7 +423,22 @@
 ! reduced values to all processes in the {\tt AttrVect} argument 
 ! {\tt outAV} (which is created by this routine).  The reduction 
 ! operation is specified by the user, and must have one of the values 
-! listed in the table XXXXX.
+! listed in the table below:
+!\begin{table}[htbp]
+!\begin{center}
+!\begin{tabular}{|c|c|}
+!\hline
+!{\bf Value} & {\bf Action} \\
+!\hline
+!{\tt AttrVectSUM} & Sum \\
+!\hline
+!{\tt AttrVectMIN} & Minimum \\
+!\hline
+!{\tt AttrVectMAX} & Maximum \\
+!\hline
+!\end{tabular}
+!\end{center}
+!\end{table}
 !
 ! {\bf N.B.}:  The output {\tt AttrVect} argument {\tt outAV} is
 ! allocated memory, and must be destroyed by invoking the routine 
@@ -496,7 +533,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: LocalWeightedSumRAttr_ - Reduction of REAL attributes
+! !IROUTINE: LocalWeightedSumRAttr_ - Local Weighted Sum of REAL Attributes
 !
 ! !DESCRIPTION:
 !
@@ -506,7 +543,7 @@
 ! {\tt AttrVect} argument {\tt outAV} (which is created by this routine
 ! and  will contain {\em no} integer attributes).  The weights used 
 ! for the summation are provided by the user in the input argument 
-! {\tt weights(:)}.  If the sum of the weights is desired, this can be 
+! {\tt Weights(:)}.  If the sum of the weights is desired, this can be 
 ! returned as an attribute in {\tt outAV} if the optional {\tt CHARACTER} 
 ! argument {\tt WeightSumAttr} is provided (which will be concatenated 
 ! onto the list of real attributes in {\tt inAV}).
@@ -627,7 +664,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: GlobalWeightedSumRAttr_ - Reduction of REAL attributes
+! !IROUTINE: GlobalWeightedSumRAttr_ - Global Weighted Sum of REAL Attributes
 !
 ! !DESCRIPTION:
 !

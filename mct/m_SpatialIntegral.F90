@@ -2,9 +2,58 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !MODULE: m_SpatialIntegral - Spatial Integrals and Averaging.
+! !MODULE: m_SpatialIntegral - Spatial Integrals and Averages
 !
-! !DESCRIPTION:
+! !DESCRIPTION:  This module provides spatial integration and averaging 
+! services for the MCT.  For a field $\Phi$ sampled at a point ${\bf x}$ 
+! in some multidimensional domain $\Omega$, the integral $I$ of 
+! $\Phi({\bf x})$ is
+! $$ I = \int_{\Omega} \Phi ({\bf x}) d\Omega .$$ 
+! The spatial average $A$ of $\Phi({\bf x})$ over $\Omega$ is
+! $$ A = {{ \int_{\Omega} \Phi ({\bf x}) d\Omega} \over 
+! { \int_{\Omega} d\Omega} }. $$
+! Since the {\tt AttrVect} represents a discretized field, the integrals 
+! above are implemented as:
+! $$ I = \sum_{i=1}^N \Phi_i \Delta \Omega_i $$
+! and 
+! $$ A = {{\sum_{i=1}^N \Phi_i \Delta \Omega_i } \over 
+!{\sum_{i=1}^N \Delta \Omega_i } }, $$
+! where $N$ is the number of physical locations, $\Phi_i$ is the value 
+! of the field $\Phi$ at location $i$, and $\Delta \Omega_i$ is the spatial 
+! weight (lenghth element, cross-sectional area element, volume element, 
+! {\em et cetera}) at location $i$.
+!
+! MCT extends the concept of integrals and area/volume averages to include 
+! {\em masked} integrals and averages.  MCT recognizes both {\em integer}
+! and {\em real} masks.  An integer mask $M$ is a vector of integers (one
+! corresponding to each physical location) with each element having value 
+! either zero or one.  Integer masks are used to include/exclude data from
+! averages or integrals.  For example, if one were to compute globally 
+! averaged cloud amount over land (but not ocean nor sea-ice), one would 
+! assign a $1$ to each location on the land and a $0$ to each non-land 
+! location.  A {\em real} mask $F$ is a vector of real numbers (one corresponding 
+! to each physical location) with each element having value within the 
+! closed interval $[0,1]$.  .Real masks are used to represent fractional 
+! area/volume coverage at a location by a given component model.  For 
+! example, if one wishes to compute area averages over sea-ice, one must 
+! include the ice fraction present at each point.  Masked Integrals and 
+! averages are represented in the MCT by:
+! $$ I = \sum_{i=1}^N {\prod_{j=1}^J M_i} {\prod_{k=1}^K F_i} 
+! \Phi_i \Delta \Omega_i $$
+! and 
+! $$ A = {{\sum_{i=1}^N \bigg({\prod_{j=1}^J M_i}\bigg) \bigg( {\prod_{k=1}^K F_i}
+! \bigg) \Phi_i 
+! \Delta \Omega_i } \over 
+!{\sum_{i=1}^N \bigg({\prod_{j=1}^J M_i}\bigg) \bigg( {\prod_{k=1}^K F_i} \bigg) 
+!  \Delta \Omega_i } }, $$
+! where $J$ is the number of integer masks and $K$ is the number of real masks.
+!
+! All of the routines in this module assume field data is stored in an 
+! attribute vector ({\tt AttrVect}), and the integration/averaging is performed 
+! only on the {\tt REAL} attributes.  Physical coordinate grid and mask 
+! information is assumed to be stored as attributes in either a 
+! {\tt GeneralGrid}, or pre-combined into a single integer mask and a single 
+! real mask.  
 !
 ! !INTERFACE:
 
@@ -53,10 +102,10 @@
 	    PairedSpatialAverageRAttrV_
       end interface
       interface PairedMaskedSpatialIntegrals ; module procedure &
-	    PairedMaskedSpatialIntegralRAttrGG_
+	    PairedMaskedIntegralRAttrGG_
       end interface
       interface PairedMaskedSpatialAverages ; module procedure &
-	    PairedMaskedSpatialAverageRAttrGG_
+	    PairedMaskedAverageRAttrGG_
       end interface
 
 ! !REVISION HISTORY:
@@ -561,20 +610,41 @@
 !
 ! !IROUTINE: MaskedSpatialIntegralRAttrGG_ - Masked spatial integral.
 !
-! !DESCRIPTION: [NEEDS **LOTS** of work...]
+! !DESCRIPTION: 
 ! This routine computes masked spatial integrals of the {\tt REAL} 
-! attributes of the input {\tt AttrVect} argument {\tt inAv}.  
-!
+! attributes of the input {\tt AttrVect} argument {\tt inAv}, returning 
+! the masked integrals in the output {\tt AttrVect} {\tt outAv}.  All of 
+! the masking data are assumed stored in the input {\tt GeneralGrid} 
+! argument {\tt GGrid}.  If integer masks are to be used, their integer 
+! attribute names in {\tt GGrid} are named as a colon-delimited list 
+! in the optional {\tt CHARACTER} input argument {\tt iMaskTags}.  Real 
+! masks (if desired) are referenced by their real attribute names in 
+! {\tt GGrid} are named as a colon-delimited list in the optional 
+! {\tt CHARACTER} input argument {\tt rMaskTags}.  The user specifies 
+! a choice of mask combination method with the input {\tt LOGICAL} argument
+! {\tt UseFastMethod}.  If ${\tt UseFastMethod} = {\tt .FALSE.}$ this 
+! routine checks each mask entry to ensure that the integer masks contain
+! only ones and zeroes, and that entries in the real masks are all in
+! the closed interval $[0,1]$.  If ${\tt UseFastMethod} = {\tt .TRUE.}$,
+! this routine performs direct products of the masks, assuming that the
+! user has validated them in advance.  The optional {\tt LOGICAL} input 
+! argument {\tt SumWeights} determines whether the masked sum of the spatial
+! weights is computed and returned in {\tt outAv} with the real attribute 
+! name supplied in the optional {\tt CHARACTER} input argument 
+! {\tt WeightSumTag}.  This integral can either be a local (i.e. a global 
+! memory space operation), or a global distributed integral.  The latter 
+! is the case if the optional input {\tt INTEGER} argument {\tt comm} is
+! supplied (which corresponds to a Fortran MPI communicatior handle).
 !
 ! {\bf N.B.:  } The local lengths of the {\tt AttrVect} argument {\tt inAv} 
-! and the input array {\tt Weights} must be equal.  That is, there must be 
-! a one-to-one correspondence between the field point values stored 
-! in {\tt inAv} and the point weights stored in {\tt Weights}.
+! and the input {\tt GeneralGrid} {\tt GGrid} must be equal.  That is, there 
+! must be a one-to-one correspondence between the field point values stored 
+! in {\tt inAv} and the point weights stored in {\tt GGrid}.
 !
 ! {\bf N.B.:  }  If {\tt SpatialIntegralRAttrV\_()} is invoked with the 
 ! optional {\tt LOGICAL} input argument {\tt SumWeights} set as {\tt .TRUE.}. 
 ! In this case, the none of {\tt REAL} attribute tags in {\tt inAv} may be 
-! named the same as the string contained in {\tt WeightTag}, which is an 
+! named the same as the string contained in {\tt WeightSumTag}, which is an 
 ! attribute name reserved for the sum of the weights in the output {\tt AttrVect} 
 ! {\tt outAv}.
 !
@@ -587,7 +657,7 @@
 
  subroutine MaskedSpatialIntegralRAttrGG_(inAv, outAv, GGrid, SpatialWeightTag, &
                                          iMaskTags, rMaskTags, UseFastMethod,  &
-					 SumWeights, WeightSumTag, comm)
+                                         SumWeights, WeightSumTag, comm)
 
 ! ! USES:
 
@@ -1067,32 +1137,35 @@
 !
 ! !IROUTINE: MaskedSpatialIntegralRAttrV_ - Masked spatial integral.
 !
-! !DESCRIPTION: [NEEDS **LOTS** of work...]
+! !DESCRIPTION: 
 ! This routine computes masked spatial integrals of the {\tt REAL} 
-! attributes of the input {\tt AttrVect} argument {\tt inAv}.  
-!
-! {\tt AttrVect} argument {\tt inAv} and computes the spatial 
-! integral using weights stored in the input {\tt REAL} array argument 
-! {\tt Weights}.  The integral of each {\tt REAL} attribute is returned 
-! in the output {\tt AttrVect} argument {\tt outAv}. If 
-! {\tt SpatialIntegralRAttrV\_()} is invoked with the optional {\tt LOGICAL} 
-! input argument {\tt SumWeights} set as {\tt .TRUE.}, then the weights 
-! are also summed and stored in {\tt outAv} (and can be referenced with 
-! the attribute name {\tt WeightTag}.  If {\tt SpatialIntegralRAttrV\_()} is 
-! invoked with the optional {\tt INTEGER} argument {\tt comm} (a Fortran 
-! MPI communicator handle), the summation operations for the integral are 
-! completed on the local process, then reduced across the communicator, 
-! with all processes receiving the result.
+! attributes of the input {\tt AttrVect} argument {\tt inAv}, returning 
+! the masked integrals in the output {\tt AttrVect} argument {\tt outAv}.  
+! The masked integral is computed using weights stored in the input 
+! {\tt REAL} array argument {\tt SpatialWeights}.  Integer masking (if 
+! desired) is provided in the optional input {\tt INTEGER} array {\tt iMask},
+! and real masking (if desired) is provided in the optional input {\tt REAL} 
+! array {\tt rMask}.  If {\tt SpatialIntegralRAttrV\_()} is invoked with the 
+! optional {\tt LOGICAL} input argument {\tt SumWeights} set as {\tt .TRUE.}, 
+! then the weights are also summed and stored in {\tt outAv} (and can be 
+! referenced with the attribute name defined by the optional input 
+! {\tt CHARACTER} argument {\tt WeightSumTag}.  If 
+! {\tt SpatialIntegralRAttrV\_()} is invoked with the optional {\tt INTEGER} 
+! argument {\tt comm} (a Fortran MPI communicator handle), the summation 
+! operations for the integral are completed on the local process, then 
+! reduced across the communicator, with all processes receiving the result.  
+! Otherwise, the integral is assumed to be local (or equivalent to a global 
+! address space).
 !
 ! {\bf N.B.:  } The local lengths of the {\tt AttrVect} argument {\tt inAv} 
 ! and the input array {\tt Weights} must be equal.  That is, there must be 
 ! a one-to-one correspondence between the field point values stored 
-! in {\tt inAv} and the point weights stored in {\tt Weights}.
+! in {\tt inAv} and the point weights stored in {\tt SpatialWeights}.
 !
 ! {\bf N.B.:  }  If {\tt SpatialIntegralRAttrV\_()} is invoked with the 
 ! optional {\tt LOGICAL} input argument {\tt SumWeights} set as {\tt .TRUE.}. 
 ! In this case, the none of {\tt REAL} attribute tags in {\tt inAv} may be 
-! named the same as the string contained in {\tt WeightTag}, which is an 
+! named the same as the string contained in {\tt WeightSumTag}, which is an 
 ! attribute name reserved for the sum of the weights in the output {\tt AttrVect} 
 ! {\tt outAv}.
 !
@@ -1341,22 +1414,33 @@
 !
 ! !IROUTINE: MaskedSpatialAverageRAttrGG_ - Masked spatial average.
 !
-! !DESCRIPTION: [NEEDS **LOTS** of work...]
+! !DESCRIPTION: 
 ! This routine computes masked spatial averages of the {\tt REAL} 
-! attributes of the input {\tt AttrVect} argument {\tt inAv}.  
-!
+! attributes of the input {\tt AttrVect} argument {\tt inAv}, returning 
+! the masked averages in the output {\tt AttrVect} {\tt outAv}.  All of 
+! the masking data are assumed stored in the input {\tt GeneralGrid} 
+! argument {\tt GGrid}.  If integer masks are to be used, their integer 
+! attribute names in {\tt GGrid} are named as a colon-delimited list 
+! in the optional {\tt CHARACTER} input argument {\tt iMaskTags}.  Real 
+! masks (if desired) are referenced by their real attribute names in 
+! {\tt GGrid} are named as a colon-delimited list in the optional 
+! {\tt CHARACTER} input argument {\tt rMaskTags}.  The user specifies 
+! a choice of mask combination method with the input {\tt LOGICAL} argument
+! {\tt UseFastMethod}.  If ${\tt UseFastMethod} = {\tt .FALSE.}$ this 
+! routine checks each mask entry to ensure that the integer masks contain
+! only ones and zeroes, and that entries in the real masks are all in
+! the closed interval $[0,1]$.  If ${\tt UseFastMethod} = {\tt .TRUE.}$,
+! this routine performs direct products of the masks, assuming that the
+! user has validated them in advance.  This averaging can either be a 
+! local (equivalent to a global memory space operation), or a global 
+! distributed integral.  The latter is the case if the optional input 
+! {\tt INTEGER} argument {\tt comm} is supplied (which corresponds to a 
+! Fortran MPI communicatior handle).
 !
 ! {\bf N.B.:  } The local lengths of the {\tt AttrVect} argument {\tt inAv} 
-! and the input array {\tt Weights} must be equal.  That is, there must be 
-! a one-to-one correspondence between the field point values stored 
-! in {\tt inAv} and the point weights stored in {\tt Weights}.
-!
-! {\bf N.B.:  }  If {\tt SpatialAverageRAttrV\_()} is invoked with the 
-! optional {\tt LOGICAL} input argument {\tt SumWeights} set as {\tt .TRUE.}. 
-! In this case, the none of {\tt REAL} attribute tags in {\tt inAv} may be 
-! named the same as the string contained in {\tt WeightTag}, which is an 
-! attribute name reserved for the sum of the weights in the output {\tt AttrVect} 
-! {\tt outAv}.
+! and the input {\tt GeneralGrid} {\tt GGrid} must be equal.  That is, 
+! there must be a one-to-one correspondence between the field point values 
+! stored in {\tt inAv} and the point weights stored in {\tt GGrid}.
 !
 ! {\bf N.B.:  } The output {\tt AttrVect} argument {\tt outAv} is an 
 ! allocated data structure.  The user must deallocate it using the routine 
@@ -1764,21 +1848,25 @@
 !
 ! !DESCRIPTION:
 ! This routine computes spatial integrals of the {\tt REAL} attributes
-! of the {\tt REAL} attributes of the input {\tt AttrVect} argument 
-! {\tt inAv}.  {\tt SpatialIntegralRAttrGG\_()} takes the input 
-! {\tt AttrVect} argument {\tt inAv} and computes the spatial 
-! integral using weights stored in the {\tt GeneralGrid} argument 
-! {\tt GGrid} and identified by the {\tt CHARACTER} tag {\tt WeightTag}.  
-! The integral of each {\tt REAL} attribute is returned in the output 
-! {\tt AttrVect} argument {\tt outAv}. If {\tt SpatialIntegralRAttrGG\_()} 
-! is invoked with the optional {\tt LOGICAL} input argument 
+! of the {\tt REAL} attributes of the input {\tt AttrVect} arguments 
+! {\tt inAv1} and {\tt inAv2}, returning the integrals in the output 
+! {\tt AttrVect} arguments {\tt outAv1} and {\tt outAv2}, respectively .  
+! The integrals of {\tt inAv1} and {\tt inAv2} are computed using 
+! spatial weights stored in the input {\tt GeneralGrid} arguments  
+! {\tt GGrid1} and {\tt GGrid2}, respectively.  The spatial weights in 
+! in {\tt GGrid1} and {\tt GGrid2} are identified by the input {\tt CHARACTER} 
+! arguments {\tt WeightTag1} and {\tt WeightTag2}, respectively.  
+! If {\tt SpatialIntegralRAttrGG\_()} is invoked with the optional 
+! {\tt LOGICAL} input argument 
 ! {\tt SumWeights} set as {\tt .TRUE.}, then the weights are also summed 
-! and stored in {\tt outAv} (and can be referenced with the attribute 
-! tag defined by the argument {\tt WeightTag}.  If 
-! {\tt SpatialIntegralRAttrGG\_()} is invoked with the optional {\tt INTEGER} 
-! argument {\tt comm} (a Fortran MPI communicator handle), the summation
-! operations for the integral are completed on the local process, then 
-! reduced across the communicator, with all processes receiving the result.
+! and stored in {\tt outAv1} and {\tt outAv2}, and can be referenced with 
+! the attribute tags defined by the arguments {\tt WeightTag1} and 
+! {\tt WeightTag2}, respectively.  This paired integral is implicitly a 
+! distributed operation (the whole motivation for pairing the integrals is 
+! to reduce communication latency costs), and the Fortran MPI communicator
+! handle is defined by the input {\tt INTEGER} argument {\tt comm}.  The 
+! summation is an AllReduce operation, with all processes receiving the 
+! global sum.
 !
 ! {\bf N.B.:  } The local lengths of the {\tt AttrVect} argument {\tt inAv1} 
 ! and the {\tt GeneralGrid} {\tt GGrid1} must be equal.  That is, there 
@@ -1916,29 +2004,31 @@
 !
 ! !IROUTINE: PairedSpatialIntegralRAttrV_ - Two spatial integrals.
 !
-! !DESCRIPTION: [NEEDS MASSIVE REWRITE]
+! !DESCRIPTION: 
 ! This routine computes spatial integrals of the {\tt REAL} attributes
-! of the {\tt REAL} attributes of the input {\tt AttrVect} argument 
-! {\tt inAv}.  {\tt SpatialIntegralRAttrV\_()} takes the input 
-! {\tt AttrVect} argument {\tt inAv} and computes the spatial 
-! integral using weights stored in the {\tt GeneralGrid} argument 
-! {\tt GGrid} and identified by the {\tt CHARACTER} tag {\tt WeightName}.  
-! The integral of each {\tt REAL} attribute is returned in the output 
-! {\tt AttrVect} argument {\tt outAv}. If {\tt SpatialIntegralRAttrGG\_()} 
-! is invoked with the optional {\tt LOGICAL} input argument 
+! of the {\tt REAL} attributes of the input {\tt AttrVect} arguments 
+! {\tt inAv1} and {\tt inAv2}, returning the integrals in the output 
+! {\tt AttrVect} arguments {\tt outAv1} and {\tt outAv2}, respectively .  
+! The integrals of {\tt inAv1} and {\tt inAv2} are computed using 
+! spatial weights stored in the input {\tt REAL} array arguments  
+! {\tt Weights1} and {\tt Weights2}, respectively.  
+! If {\tt SpatialIntegralRAttrGG\_()} is invoked with the optional 
+! {\tt LOGICAL} input argument 
 ! {\tt SumWeights} set as {\tt .TRUE.}, then the weights are also summed 
-! and stored in {\tt outAv} (and can be referenced with the attribute 
-! tag defined by the argument {\tt WeightName}.  If 
-! {\tt SpatialIntegralRAttrGG\_()} is invoked with the optional {\tt INTEGER} 
-! argument {\tt comm} (a Fortran MPI communicator handle), the summation
-! operations for the integral are completed on the local process, then 
-! reduced across the communicator, with all processes receiving the result.
+! and stored in {\tt outAv1} and {\tt outAv2}, and can be referenced with 
+! the attribute tags defined by the arguments {\tt WeightName1} and 
+! {\tt WeightName2}, respectively.  This paired integral is implicitly a 
+! distributed operation (the whole motivation for pairing the integrals is 
+! to reduce communication latency costs), and the Fortran MPI communicator
+! handle is defined by the input {\tt INTEGER} argument {\tt comm}.  The 
+! summation is an AllReduce operation, with all processes receiving the 
+! global sum.
 !
 ! {\bf N.B.:  } The local lengths of the {\tt AttrVect} argument {\tt inAv1} 
-! and the {\tt GeneralGrid} {\tt GGrid1} must be equal.  That is, there 
+! and the input {\tt REAL} array {\tt Weights1} must be equal.  That is, there 
 ! must be a one-to-one correspondence between the field point values stored 
-! in {\tt inAv1} and the point weights stored in {\tt GGrid1}.  The same
-! relationship must apply between {\tt inAv2} and {\tt GGrid2}.
+! in {\tt inAv1} and the point weights stored in {\tt Weights}.  The same
+! relationship must apply between {\tt inAv2} and {\tt Weights2}.
 !
 ! {\bf N.B.:  }  If {\tt SpatialIntegralRAttrGG\_()} is invoked with the 
 ! optional {\tt LOGICAL} input argument {\tt SumWeights} set as {\tt .TRUE.}, 
@@ -2093,37 +2183,31 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: PairedSpatialAverageRAttrGG_ - Two spatial averages.
+! !IROUTINE: PairedSpatialAverageRAttrGG_ - Paired spatial averages on 
+! {\tt GeneralGrids}
 !
 ! !DESCRIPTION:
-! This routine computes spatial integrals of the {\tt REAL} attributes
-! of the {\tt REAL} attributes of the input {\tt AttrVect} argument 
-! {\tt inAv}.  {\tt SpatialIntegralRAttrGG\_()} takes the input 
-! {\tt AttrVect} argument {\tt inAv} and computes the spatial 
-! integral using weights stored in the {\tt GeneralGrid} argument 
-! {\tt GGrid} and identified by the {\tt CHARACTER} tag {\tt WeightTag}.  
-! The integral of each {\tt REAL} attribute is returned in the output 
-! {\tt AttrVect} argument {\tt outAv}. If {\tt SpatialIntegralRAttrGG\_()} 
-! is invoked with the optional {\tt LOGICAL} input argument 
-! {\tt SumWeights} set as {\tt .TRUE.}, then the weights are also summed 
-! and stored in {\tt outAv} (and can be referenced with the attribute 
-! tag defined by the argument {\tt WeightTag}.  If 
-! {\tt SpatialIntegralRAttrGG\_()} is invoked with the optional {\tt INTEGER} 
-! argument {\tt comm} (a Fortran MPI communicator handle), the summation
-! operations for the integral are completed on the local process, then 
-! reduced across the communicator, with all processes receiving the result.
+! This routine computes spatial averages of the {\tt REAL} attributes
+! of the {\tt REAL} attributes of the input {\tt AttrVect} arguments 
+! {\tt inAv1} and {\tt inAv2}, returning the integrals in the output 
+! {\tt AttrVect} arguments {\tt outAv1} and {\tt outAv2}, respectively .  
+! The integrals of {\tt inAv1} and {\tt inAv2} are computed using 
+! spatial weights stored in the input {\tt GeneralGrid} arguments  
+! {\tt GGrid1} and {\tt GGrid2}, respectively.  The spatial weights in 
+! in {\tt GGrid1} and {\tt GGrid2} are identified by the input {\tt CHARACTER} 
+! arguments {\tt WeightTag1} and {\tt WeightTag2}, respectively.  
+! This paired average is implicitly a 
+! distributed operation (the whole motivation for pairing the averages is 
+! to reduce communication latency costs), and the Fortran MPI communicator
+! handle is defined by the input {\tt INTEGER} argument {\tt comm}.  The 
+! summation is an AllReduce operation, with all processes receiving the 
+! global sum.
 !
 ! {\bf N.B.:  } The local lengths of the {\tt AttrVect} argument {\tt inAv1} 
 ! and the {\tt GeneralGrid} {\tt GGrid1} must be equal.  That is, there 
 ! must be a one-to-one correspondence between the field point values stored 
 ! in {\tt inAv1} and the point weights stored in {\tt GGrid1}.  The same
 ! relationship must apply between {\tt inAv2} and {\tt GGrid2}.
-!
-! {\bf N.B.:  }  If {\tt SpatialIntegralRAttrGG\_()} is invoked with the 
-! optional {\tt LOGICAL} input argument {\tt SumWeights} set as {\tt .TRUE.}, 
-! then the value of {\tt WeightTag1} must not conflict with any of the 
-! {\tt REAL} attribute tags in {\tt inAv1} and the value of {\tt WeightTag2} 
-! must not conflict with any of the {\tt REAL} attribute tags in {\tt inAv2}.
 !
 ! {\bf N.B.:  } The output {\tt AttrVect} arguments {\tt outAv1} and 
 ! {\tt outAv2} are allocated data structures.  The user must deallocate them
@@ -2133,8 +2217,8 @@
 ! !INTERFACE:
 
  subroutine PairedSpatialAverageRAttrGG_(inAv1, outAv1, GGrid1, WeightTag1, &
-                                        inAv2, outAv2, GGrid2, WeightTag2, &
-                                        comm)
+                                         inAv2, outAv2, GGrid2, WeightTag2, &
+                                         comm)
 ! ! USES:
 
       use m_stdio
@@ -2241,17 +2325,19 @@
 ! !IROUTINE: PairedSpatialAverageRAttrV_ - Two spatial averages.
 !
 ! !DESCRIPTION:
-! This routine computes spatial integrals of the {\tt REAL} attributes
-! of the {\tt REAL} attributes of the input {\tt AttrVect} argument 
-! {\tt inAv}.  {\tt SpatialIntegralRAttrGG\_()} takes the input 
-! {\tt AttrVect} argument {\tt inAv} and computes the spatial 
-! integral using weights stored in the {\tt REAL} array argument 
-! {\tt Weights}.  The spatial average of each {\tt REAL} attribute is 
-! returned in the output {\tt AttrVect} argument {\tt outAv}. The 
-! input {\tt INTEGER} argument {\tt comm} is a Fortran MPI communicator 
-! handle, and the summation operations for the spatial average are completed 
-! on the local process, then reduced across the communicator, with all 
-! processes receiving the result.
+! This routine computes spatial averages of the {\tt REAL} attributes
+! of the {\tt REAL} attributes of the input {\tt AttrVect} arguments 
+! {\tt inAv1} and {\tt inAv2}, returning the integrals in the output 
+! {\tt AttrVect} arguments {\tt outAv1} and {\tt outAv2}, respectively .  
+! The averages of {\tt inAv1} and {\tt inAv2} are computed using 
+! spatial weights stored in the input {\tt REAL} array arguments  
+! {\tt Weights1} and {\tt Weights2}, respectively.  This paired average 
+! is implicitly a 
+! distributed operation (the whole motivation for pairing the integrals is 
+! to reduce communication latency costs), and the Fortran MPI communicator
+! handle is defined by the input {\tt INTEGER} argument {\tt comm}.  The 
+! summation is an AllReduce operation, with all processes receiving the 
+! global sum.
 !
 ! {\bf N.B.:  } The local lengths of the {\tt AttrVect} argument {\tt inAv1} 
 ! and the array {\tt Weights} must be equal.  That is, there must be a 
@@ -2364,25 +2450,39 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: PairedMaskedSpatialIntegralRAttrGG_ - Paired masked integrals.
+! !IROUTINE: PairedMaskedIntegralRAttrGG_ - Paired masked integrals.
 !
 ! !DESCRIPTION:
-! [** NEEDS TO BE REWRITTEN **].
-! of the {\tt REAL} attributes of the input {\tt AttrVect} argument 
-! {\tt inAv}.  {\tt SpatialIntegralRAttrGG\_()} takes the input 
-! {\tt AttrVect} argument {\tt inAv} and computes the spatial 
-! integral using weights stored in the {\tt GeneralGrid} argument 
-! {\tt GGrid} and identified by the {\tt CHARACTER} tag {\tt WeightTag}.  
-! The integral of each {\tt REAL} attribute is returned in the output 
-! {\tt AttrVect} argument {\tt outAv}. If {\tt SpatialIntegralRAttrGG\_()} 
-! is invoked with the optional {\tt LOGICAL} input argument 
-! {\tt SumWeights} set as {\tt .TRUE.}, then the weights are also summed 
-! and stored in {\tt outAv} (and can be referenced with the attribute 
-! tag defined by the argument {\tt WeightTag}.  If 
-! {\tt SpatialIntegralRAttrGG\_()} is invoked with the optional {\tt INTEGER} 
-! argument {\tt comm} (a Fortran MPI communicator handle), the summation
-! operations for the integral are completed on the local process, then 
-! reduced across the communicator, with all processes receiving the result.
+! This routine computes a pair of masked spatial integrals of the {\tt REAL} 
+! attributes of the input {\tt AttrVect} arguments {\tt inAv} and 
+! {\tt inAv2}, returning the masked integrals in the output {\tt AttrVect} 
+! {\tt outAv1} and {\tt outAv2}, respectively.  All of the spatial weighting
+! and masking data for each set of integrals are assumed stored in the input 
+! {\tt GeneralGrid} arguments {\tt GGrid} and {\tt GGrid2}.  If integer 
+! masks are to be used, their integer  attribute names in {\tt GGrid1} 
+! and {\tt GGrid2} are named as a colon-delimited lists in the optional 
+! {\tt CHARACTER} input arguments {\tt iMaskTags1} and {\tt iMaskTags2}, 
+! respectively.  Real masks (if desired) are referenced by their real 
+! attribute names in {\tt GGrid1} and {\tt GGrid2} are named as 
+! colon-delimited lists in the optional {\tt CHARACTER} input arguments 
+! {\tt rMaskTags1} and {\tt rMaskTags2}, respectively.  The user specifies 
+! a choice of mask combination method with the input {\tt LOGICAL} argument
+! {\tt UseFastMethod}.  If ${\tt UseFastMethod} = {\tt .FALSE.}$ this 
+! routine checks each mask entry to ensure that the integer masks contain
+! only ones and zeroes, and that entries in the real masks are all in
+! the closed interval $[0,1]$.  If ${\tt UseFastMethod} = {\tt .TRUE.}$,
+! this routine performs direct products of the masks, assuming that the
+! user has validated them in advance.  The optional {\tt LOGICAL} input 
+! argument {\tt SumWeights} determines whether the masked sum of the spatial
+! weights is computed and returned in {\tt outAv1} and {\tt outAv2} with the 
+! real attribute names supplied in the {\tt CHARACTER} input arguments
+! {\tt SpatialWeightTag1}, and {\tt SpatialWeightTag2}, respectively.  
+! This paired integral is implicitly a distributed operation (the whole 
+! motivation for pairing the averages is to reduce communication latency 
+! costs), and the Fortran MPI communicator handle is defined by the input 
+! {\tt INTEGER} argument {\tt comm}.  The 
+! summation is an AllReduce operation, with all processes receiving the 
+! global sum.
 !
 ! {\bf N.B.:  } The local lengths of the {\tt AttrVect} argument {\tt inAv1} 
 ! and the {\tt GeneralGrid} {\tt GGrid1} must be equal.  That is, there 
@@ -2390,11 +2490,12 @@
 ! in {\tt inAv1} and the point weights stored in {\tt GGrid1}.  The same
 ! relationship must apply between {\tt inAv2} and {\tt GGrid2}.
 !
-! {\bf N.B.:  }  If {\tt SpatialIntegralRAttrGG\_()} is invoked with the 
+! {\bf N.B.:  }  If {\tt PairedMaskedIntegralRAttrGG\_()} is invoked with the 
 ! optional {\tt LOGICAL} input argument {\tt SumWeights} set as {\tt .TRUE.}, 
-! then the value of {\tt WeightTag1} must not conflict with any of the 
-! {\tt REAL} attribute tags in {\tt inAv1} and the value of {\tt WeightTag2} 
-! must not conflict with any of the {\tt REAL} attribute tags in {\tt inAv2}.
+! then the value of {\tt SpatialWeightTag1} must not conflict with any of the 
+! {\tt REAL} attribute tags in {\tt inAv1} and the value of 
+! {\tt SpatialWeightTag2} must not conflict with any of the {\tt REAL} 
+! attribute tags in {\tt inAv2}.
 !
 ! {\bf N.B.:  } The output {\tt AttrVect} arguments {\tt outAv1} and 
 ! {\tt outAv2} are allocated data structures.  The user must deallocate them
@@ -2403,12 +2504,12 @@
 !
 ! !INTERFACE:
 
- subroutine PairedMaskedSpatialIntegralRAttrGG_(inAv1, outAv1, GGrid1, &
-                                               SpatialWeightTag1, rMaskTags1, &
-                                               iMaskTags1, inAv2, outAv2, GGrid2, &
-                                               SpatialWeightTag2, rMaskTags2, &
-					       iMaskTags2, UseFastMethod, &
-					       SumWeights, comm)
+ subroutine PairedMaskedIntegralRAttrGG_(inAv1, outAv1, GGrid1, &
+                                         SpatialWeightTag1, rMaskTags1, &
+                                         iMaskTags1, inAv2, outAv2, GGrid2, &
+                                         SpatialWeightTag2, rMaskTags2, &
+                                         iMaskTags2, UseFastMethod, &
+                                         SumWeights, comm)
 ! ! USES:
 
       use m_stdio
@@ -2453,11 +2554,13 @@
 
 ! !REVISION HISTORY:
 ! 	17Jun02 - J.W. Larson <larson@mcs.anl.gov> - Initial version.
+! 	19Jun02 - J.W. Larson <larson@mcs.anl.gov> - Shortened the name
+!                 for compatibility with the Portland Group f90 compiler
 !
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_ = &
-                            myname//'::PairedMaskedSpatialIntegralRAttrGG_'
+                            myname//'::PairedMaskedIntegralRAttrGG_'
 
   logical :: mySumWeights
   real, dimension(:), pointer :: PairedBuffer, OutPairedBuffer
@@ -2613,43 +2716,46 @@
      call die(myname_)
   endif
 
- end subroutine PairedMaskedSpatialIntegralRAttrGG_
+ end subroutine PairedMaskedIntegralRAttrGG_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: PairedMaskedSpatialAverageRAttrGG_ - Paired masked averages.
+! !IROUTINE: PairedMaskedAverageRAttrGG_ - Paired masked averages.
 !
 ! !DESCRIPTION:
-! [** NEEDS TO BE REWRITTEN **].
-! of the {\tt REAL} attributes of the input {\tt AttrVect} argument 
-! {\tt inAv}.  {\tt SpatialIntegralRAttrGG\_()} takes the input 
-! {\tt AttrVect} argument {\tt inAv} and computes the spatial 
-! integral using weights stored in the {\tt GeneralGrid} argument 
-! {\tt GGrid} and identified by the {\tt CHARACTER} tag {\tt WeightTag}.  
-! The integral of each {\tt REAL} attribute is returned in the output 
-! {\tt AttrVect} argument {\tt outAv}. If {\tt SpatialIntegralRAttrGG\_()} 
-! is invoked with the optional {\tt LOGICAL} input argument 
-! {\tt SumWeights} set as {\tt .TRUE.}, then the weights are also summed 
-! and stored in {\tt outAv} (and can be referenced with the attribute 
-! tag defined by the argument {\tt WeightTag}.  If 
-! {\tt SpatialIntegralRAttrGG\_()} is invoked with the optional {\tt INTEGER} 
-! argument {\tt comm} (a Fortran MPI communicator handle), the summation
-! operations for the integral are completed on the local process, then 
-! reduced across the communicator, with all processes receiving the result.
+! This routine computes a pair of masked spatial averages of the {\tt REAL} 
+! attributes of the input {\tt AttrVect} arguments {\tt inAv} and 
+! {\tt inAv2}, returning the masked averagess in the output {\tt AttrVect} 
+! {\tt outAv1} and {\tt outAv2}, respectively.  All of the spatial weighting
+! and masking data for each set of averages are assumed stored in the input 
+! {\tt GeneralGrid} arguments {\tt GGrid} and {\tt GGrid2}.  If integer 
+! masks are to be used, their integer  attribute names in {\tt GGrid1} 
+! and {\tt GGrid2} are named as a colon-delimited lists in the optional 
+! {\tt CHARACTER} input arguments {\tt iMaskTags1} and {\tt iMaskTags2}, 
+! respectively.  Real masks (if desired) are referenced by their real 
+! attribute names in {\tt GGrid1} and {\tt GGrid2} are named as 
+! colon-delimited lists in the optional {\tt CHARACTER} input arguments 
+! {\tt rMaskTags1} and {\tt rMaskTags2}, respectively.  The user specifies 
+! a choice of mask combination method with the input {\tt LOGICAL} argument
+! {\tt UseFastMethod}.  If ${\tt UseFastMethod} = {\tt .FALSE.}$ this 
+! routine checks each mask entry to ensure that the integer masks contain
+! only ones and zeroes, and that entries in the real masks are all in
+! the closed interval $[0,1]$.  If ${\tt UseFastMethod} = {\tt .TRUE.}$,
+! this routine performs direct products of the masks, assuming that the
+! user has validated them in advance.  This paired average is implicitly 
+! a distributed operation (the whole motivation for pairing the averages 
+! is to reduce communication latency costs), and the Fortran MPI communicator 
+! handle is defined by the input {\tt INTEGER} argument {\tt comm}.  The 
+! summation is an AllReduce operation, with all processes receiving the 
+! global sum.
 !
 ! {\bf N.B.:  } The local lengths of the {\tt AttrVect} argument {\tt inAv1} 
 ! and the {\tt GeneralGrid} {\tt GGrid1} must be equal.  That is, there 
 ! must be a one-to-one correspondence between the field point values stored 
 ! in {\tt inAv1} and the point weights stored in {\tt GGrid1}.  The same
 ! relationship must apply between {\tt inAv2} and {\tt GGrid2}.
-!
-! {\bf N.B.:  }  If {\tt SpatialIntegralRAttrGG\_()} is invoked with the 
-! optional {\tt LOGICAL} input argument {\tt SumWeights} set as {\tt .TRUE.}, 
-! then the value of {\tt WeightTag1} must not conflict with any of the 
-! {\tt REAL} attribute tags in {\tt inAv1} and the value of {\tt WeightTag2} 
-! must not conflict with any of the {\tt REAL} attribute tags in {\tt inAv2}.
 !
 ! {\bf N.B.:  } The output {\tt AttrVect} arguments {\tt outAv1} and 
 ! {\tt outAv2} are allocated data structures.  The user must deallocate them
@@ -2658,12 +2764,12 @@
 !
 ! !INTERFACE:
 
- subroutine PairedMaskedSpatialAverageRAttrGG_(inAv1, outAv1, GGrid1, &
-                                              SpatialWeightTag1, rMaskTags1, &
-                                              iMaskTags1, inAv2, outAv2, GGrid2, &
-                                              SpatialWeightTag2, rMaskTags2, &
-					      iMaskTags2, UseFastMethod, &
-					      comm)
+ subroutine PairedMaskedAverageRAttrGG_(inAv1, outAv1, GGrid1, &
+                                        SpatialWeightTag1, rMaskTags1, &
+                                        iMaskTags1, inAv2, outAv2, GGrid2, &
+                                        SpatialWeightTag2, rMaskTags2, &
+                                        iMaskTags2, UseFastMethod, &
+                                        comm)
 ! ! USES:
 
       use m_stdio
@@ -2709,11 +2815,13 @@
 
 ! !REVISION HISTORY:
 ! 	17Jun02 - J.W. Larson <larson@mcs.anl.gov> - Initial version.
+! 	19Jun02 - J.W. Larson <larson@mcs.anl.gov> - Shortened the name
+!                 for compatibility with the Portland Group f90 compiler
 !
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_ = &
-                            myname//'::PairedMaskedSpatialAverageRAttrGG_'
+                            myname//'::PairedMaskedAverageRAttrGG_'
 
   type(AttrVect) :: LocalIntegral1, LocalIntegral2
   real, dimension(:), pointer :: PairedBuffer, OutPairedBuffer
@@ -2873,7 +2981,7 @@
      call die(myname_)
   endif
 
- end subroutine PairedMaskedSpatialAverageRAttrGG_
+ end subroutine PairedMaskedAverageRAttrGG_
 
  end module m_SpatialIntegral
 

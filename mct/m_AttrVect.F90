@@ -1029,7 +1029,8 @@
 !
 ! !DESCRIPTION:
 ! This routine extracts from the input {\tt AttrVect} argument {\tt aV} 
-! the integer attribute list, and returns it as a {\tt CHARACTER}.
+! the integer attribute list, and returns it as a {\tt CHARACTER} 
+! suitable for printing.
 !
 ! !INTERFACE:
 
@@ -1095,7 +1096,8 @@
 !
 ! !DESCRIPTION:
 ! This routine extracts from the input {\tt AttrVect} argument {\tt aV} 
-! the real attribute list, and returns it as a {\tt CHARACTER}.
+! the real attribute list, and returns it as a {\tt CHARACTER} suitable 
+! for printing.
 !
 ! !INTERFACE:
 
@@ -1176,7 +1178,7 @@
 ! must be allocated prior to calling this routine.  If the user wishes
 ! that the routine {\em create} the output argument array {\tt outVect},
 ! then the user must ensure this pointer is not allocated (i.e. the user
-! must nullify this pointer) at the time this routine is invoked.
+! must nullify this pointer) before this routine is invoked.
 !
 ! {\bf N.B.:}  If the user has relied on this routine to allocate memory
 ! associated with the pointer {\tt outVect}, then the user is responsible 
@@ -1271,7 +1273,7 @@
 ! must be allocated prior to calling this routine.  If the user wishes
 ! that the routine {\em create} the output argument array {\tt outVect},
 ! then the user must ensure this pointer is not allocated (i.e. the user
-! must nullify this pointer) at the time this routine is invoked.
+! must nullify this pointer) before this routine is invoked.
 !
 ! {\bf N.B.:}  If the user has relied on this routine to allocate memory
 ! associated with the pointer {\tt outVect}, then the user is responsible 
@@ -1351,8 +1353,9 @@
 ! This routine imports into the input/output {\tt AttrVect} argument 
 ! {\tt aV} the integer attribute corresponding to the tag defined in the 
 ! input {\tt CHARACTER} argument {\tt AttrTag}.  The data to be imported
-! is provided in the {\tt INTEGER} input array {\tt inVect}, and its 
-! length in the optional input {\tt INTEGER} argument {\tt lsize}.
+! is provided in the {\tt INTEGER} input array {\tt inVect}, and the 
+! number of entries to be imported in the optional input {\tt INTEGER} 
+! argument {\tt lsize}.
 !
 ! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
 ! the {\tt AttrVect} {\tt List} component {\tt aV\%iList}.
@@ -1400,11 +1403,19 @@
 
   if(present(lsize)) then
      if(aVsize < lsize) then
-	call die(myname_, 'aVsize < lsize.')
+	write(stderr,'(3a,i8,a,i8)') myname_, &
+	               ':: ERROR--attempt to import too many entries ', &
+                       'into AttrVect aV.  AttrVect_lsize(aV)=',aVsize, &
+                       ', number of entries to be imported=',lsize
+	call die(myname_)
      endif
   else
      if(aVsize < size(inVect)) then
-	call die(myname_, 'aVsize < size(inVect).')
+	write(stderr,'(3a,i8,a,i8)') myname_, &
+	               ':: ERROR--attempt to import too many entries ', &
+                       'into AttrVect aV.  AttrVect_lsize(aV)=',aVsize, &
+                       ' , number of entries to be imported=',size(inVect)
+	call die(myname_)
      endif
   endif
 
@@ -1477,11 +1488,19 @@
 
   if(present(lsize)) then
      if(aVsize < lsize) then
-	call die(myname_, 'aVsize < lsize.')
+	write(stderr,'(3a,i8,a,i8)') myname_, &
+	               ':: ERROR--attempt to import too many entries ', &
+                       'into AttrVect aV.  AttrVect_lsize(aV)=',aVsize, &
+                       ', number of entries to be imported=',lsize
+	call die(myname_)
      endif
   else
      if(aVsize < size(inVect)) then
-	call die(myname_, 'aVsize < size(inVect).')
+	write(stderr,'(3a,i8,a,i8)') myname_, &
+	               ':: ERROR--attempt to import too many entries ', &
+                       'into AttrVect aV.  AttrVect_lsize(aV)=',aVsize, &
+                       ' , number of entries to be imported=',size(inVect)
+	call die(myname_)
      endif
   endif
 
