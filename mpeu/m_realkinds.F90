@@ -23,9 +23,9 @@
       public :: DP		! default DOUBLE_PRECISION
       public :: FP		! general floating point precision
 
-      real*4,parameter :: R4=1.
-      real*8,parameter :: R8=1.
-      real,  parameter :: R =1.
+      real*4,parameter :: mpeuR4=1.
+      real*8,parameter :: mpeuR8=1.
+      real,  parameter :: mpeuR =1.
 
 #ifdef SELECTEDREALKIND
       integer,parameter :: SP = selected_real_kind( 6)  ! 32-bit real, on most platforms
@@ -38,9 +38,9 @@
 !     Set the current default floating point precision 
       integer,parameter :: FP = DP
 
-      integer,parameter :: kind_r4=kind(R4)
-      integer,parameter :: kind_r8=kind(R8)
-      integer,parameter :: kind_r =kind(R )
+      integer,parameter :: kind_r4=kind(mpeuR4)
+      integer,parameter :: kind_r8=kind(mpeuR8)
+      integer,parameter :: kind_r =kind(mpeuR )
 
 ! !REVISION HISTORY:
 ! 	19Feb98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
