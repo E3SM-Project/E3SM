@@ -164,6 +164,11 @@
 !       19Mar01 - Jay Larson <larson@mcs.anl.gov> - added OtherChars
 !       25Apr01 - Jay Larson <larson@mcs.anl.gov> - added GlobGridNum
 !                 as a mandatory integer attribute.
+!       13Jun01 - Jay Larson <larson@mcs.anl.gov> - No longer define 
+!                 blank List attributes of the GeneralGrid.  Previous
+!                 versions of this routine had this feature, and this
+!                 caused problems with the GeneralGrid Send and Receive
+!                 operations on the AIX platform.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::init_'
@@ -227,16 +232,12 @@
 
   if(present(WeightChars)) then
      call List_init(GGrid%weight_list, WeightChars)
-  else
-     call List_init(GGrid%weight_list, '')
   endif
 
         ! If Initialize GGrid%other_list
 
   if(present(OtherChars)) then
      call List_init(GGrid%other_list, OtherChars)
-  else
-     call List_init(GGrid%other_list, '')
   endif
 
         ! If Initialize GGrid%coordinate_sort_order.  Check 
@@ -481,6 +482,9 @@
 
 ! !REVISION HISTORY:
 !       02May01 - Jay Larson <larson@mcs.anl.gov> - Initial version.
+!       13Jun01 - Jay Larson <larson@mcs.anl.gov> - Now, undefined List
+!                 components of the GeneralGrid iGGrid are no longer 
+!                 copied to oGGrid.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::initgg_'
@@ -522,12 +526,28 @@
 
   endif
 
-       ! Copy list data from iGGrid to oGGrid:
+       ! Copy list data from iGGrid to oGGrid.  We know from
+       ! interface and GeneralGrid type definition that 
+       ! iGGrid%coordinate_list, iGGrid%coordinate_sort_order, 
+       ! and iGGrid%index_list _should_ be defined.  Test all the
+       ! list attributes before copying them.
 
-  oGGrid%coordinate_list = iGGrid%coordinate_list
-  oGGrid%coordinate_sort_order = iGGrid%coordinate_sort_order
-  oGGrid%weight_list = iGGrid%weight_list
-  oGGrid%other_list = iGGrid%other_list
+  if(associated(oGGrid%coordinate_list%bf)) then
+     oGGrid%coordinate_list = iGGrid%coordinate_list
+  endif
+
+  if(associated(oGGrid%coordinate_sort_order%bf)) then
+     oGGrid%coordinate_sort_order = iGGrid%coordinate_sort_order
+  endif
+
+  if(associated(oGGrid%weight_list%bf)) then
+     oGGrid%weight_list = iGGrid%weight_list
+  endif
+
+  if(associated(oGGrid%other_list%bf)) then
+     oGGrid%other_list = iGGrid%other_list
+  endif
+
   oGGrid%index_list = iGGrid%index_list
 
        ! Now, initialize oGGrid%data from iGGrid%data, but 
