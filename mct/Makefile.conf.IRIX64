@@ -95,6 +95,7 @@ LIBsys	 	= -lcomplib.sgimath
 
 _F		= -Wf,-I.
 
+CPP             = cpp
 CPPFLAGS	= -DLANGUAGE_FORTRAN
 FPPFLAGS	= $(_F)
 
