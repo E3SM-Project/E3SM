@@ -322,11 +322,11 @@
      nRA = 0
   endif
 
-  if(lsize <= 0) then 
-     write(stdout,*) myname_,":: Warning:  length argument lsize nonpositive."
+  if(lsize < 0) then 
+     write(stderr,*) myname_,":: Warning:  length argument lsize negative."
   endif
 
-  if(lsize > 0) then
+  if(lsize >= 0) then
 
      if(associated(aV%iList%bf) .and. associated(aV%rList%bf)) then
 	allocate( aV%iAttr(nIA,lsize), aV%rAttr(nRA,lsize), stat=ier)
