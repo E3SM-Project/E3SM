@@ -27,21 +27,19 @@
       public :: send
       public :: recv
       public :: isend
-      public :: irecv
       public :: bcast
 
       interface bcast ; module procedure bcast_ ; end interface
       interface send ; module procedure send_ ; end interface
       interface recv ; module procedure recv_ ; end interface
       interface isend ; module procedure isend_ ; end interface
-      interface irecv ; module procedure irecv_ ; end interface
 
 ! !REVISION HISTORY:
 ! 11Aug03 - J.W. Larson <larson@mcs.anl.gov> - initial version
 !
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_GlobalSegMapComms'
+  character(len=*),parameter :: myname='MCT::m_GlobalSegMapComms'
 
  contains
 
@@ -49,28 +47,27 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: send_ - Point-to-point Blocking Send of a GlobalSegMap
+! !IROUTINE: send_ - Point-to-point blocking Send of a GlobalSegMap
 !
 ! !DESCRIPTION:
 ! This routine performs a blocking send of a {\tt GlobalSegMap} (the 
-! input argument {\tt outgoingGSMap}) to the processor whose rank is 
-! {\tt destID} on the MPI communicator associated with the integer 
-! handle {\tt comm}.  The input {\tt INTEGER} argument {\tt TagBase} 
+! input argument {\tt outgoingGSMap}) to the root processor on component
+! {\tt comp_id}. The input {\tt INTEGER} argument {\tt TagBase} 
 ! is used to generate tags for the messages associated with this operation; 
-! there are two messages involved, so the user should avoid using tag 
-! values {\tt TagBase} and {\tt TagBase + 1}.  The success (failure) of 
-! this operation is reported in the zero (non-zero) value of the optional 
-! {\tt INTEGER} output variable {\tt status}.
+! there are four messages involved, so the user should avoid using tag 
+! values {\tt TagBase} and {\tt TagBase + 3}.  All four messages are blocking.
+! The success (failure) of this operation is reported in the zero 
+! (non-zero) value of the optional {\tt INTEGER} output variable {\tt status}.
 !
 ! !INTERFACE:
 
- subroutine send_(outgoingGSMap, destID, TagBase, comm, status)
+ subroutine send_(outgoingGSMap, comp_id, TagBase, status)
 
 !
 ! !USES:
 !
       use m_mpif90
-      use m_die, only : MP_perr_die, die
+      use m_die, only : MP_perr_die,die
       use m_stdio
 
       use m_GlobalSegMap, only : GlobalSegMap
@@ -78,223 +75,76 @@
       use m_GlobalSegMap, only : GlobalSegMap_comp_id => comp_ID
       use m_GlobalSegMap, only : GlobalSegMap_gsize => gsize
 
+      use m_MCTWorld, only : ComponentToWorldRank
+      use m_MCTWorld, only : ThisMCTWorld
+
       implicit none
 
 ! !INPUT PARAMETERS:
 
-  type(GlobalSegMap), intent(IN)  :: outgoingGSMap
-  integer,            intent(IN)  :: destID
-  integer,            intent(IN)  :: TagBase
-  integer,            intent(IN)  :: comm
+  type(GlobalSegMap),    intent(IN)  :: outgoingGSMap
+  integer,               intent(IN)  :: comp_id
+  integer,               intent(IN)  :: TagBase
 
 ! !OUTPUT PARAMETERS: 
 
-  integer, optional,  intent(OUT) :: status
+  integer, optional,     intent(OUT) :: status
 
 ! !REVISION HISTORY:
 ! 13Aug03 - J.W. Larson <larson@mcs.anl.gov> - API and initial version.
-!
+! 26Aug03 - R. Jacob <jacob@mcs.anl.gov> - use same method as isend_
 !EOP ___________________________________________________________________
-
   character(len=*),parameter :: myname_=myname//'::send_'
 
-  integer :: BufferSize, nSegs, gSize, compID, ierr
-  integer :: i, Offset
-  integer, dimension(:), pointer :: SendBuffer
+  integer :: ierr
+  integer :: destID
+  integer :: SendBuffer(3)
 
   if(present(status)) status = 0 ! the success value
 
-       ! First order of business--determine buffer size
+  destID = ComponentToWorldRank(0, comp_id, ThisMCTWorld)
 
-  nSegs = GlobalSegMap_ngseg(outgoingGSMap)
+       ! First order of business--query outgoingGSMap for
+       ! number of segments, component ID number, and grid
+       ! size, packing them in SendBuffer(:).
 
-  BufferSize = 3 * nSegs + 3 ! add in %comp_id, %ngseg, and %gsize
+  SendBuffer(1) = GlobalSegMap_comp_id(outgoingGSMap)
+  SendBuffer(2) = GlobalSegMap_ngseg(outgoingGSMap)
+  SendBuffer(3) = GlobalSegMap_gsize(outgoingGSMap)
 
        ! Next, send the buffer size to destID so it can prepare a
-       ! receive buffer of the correct size
+       ! receive buffer of the correct size.
 
-  call MPI_SEND(BufferSize, 1, MP_Type(BufferSize), destID, TagBase, &
-                comm, ierr)
+  call MPI_SEND(SendBuffer, 3, MP_Type(SendBuffer(1)), destID, TagBase, &
+                ThisMCTWorld%MCT_comm, ierr)
   if(ierr /= 0) then
      call MP_perr_die(myname_, 'Send buffer size failed',ierr)
   endif
 
-       ! Query outgoingGSMap for component ID number and gsize
+       ! Send segment information data (3 messages)
 
-  compID = GlobalSegMap_comp_id(outgoingGSMap)
-  gSize = GlobalSegMap_gsize(outgoingGSMap)
-
-       ! Allocate send buffer
-
-  allocate(SendBuffer(BufferSize), stat=ierr)
+  call MPI_SEND(outgoingGSMap%start, SendBuffer(2), &
+                MP_Type(outgoingGSMap%start(1)), &
+                destID, TagBase+1, ThisMCTWorld%MCT_comm, ierr)
   if(ierr /= 0) then
-     write(stderr,'(2a,i8)') myname_, &
-	  ':: FATAL--allocation of send buffer failed with ierr=',ierr
-     call die(myname_)
+     call MP_perr_die(myname_, 'Send outgoingGSMap%start failed',ierr)
   endif
 
-       ! Pack send buffer
-
-  SendBuffer(1) = compID
-  SendBuffer(2) = nSegs
-  SendBuffer(3) = gsize
-
-  Offset = 3
-
-  do i=1,nSegs
-     SendBuffer(i+Offset) = outGoingGSMap%start(i)
-  end do
-
-  Offset = nSegs + 3
-
-  do i=1,nSegs
-     SendBuffer(i+Offset) = outGoingGSMap%length(i)
-  end do
-
-  Offset = 2*nSegs + 3
-
-  do i=1,nSegs
-     SendBuffer(i+Offset) = outGoingGSMap%pe_loc(i)
-  end do
-
-       ! Send the buffer.  And, we should be finished!
-
-  call MPI_SEND(SendBuffer, BufferSize, MP_Type(SendBuffer(1)), &
-                destID, TagBase+1, comm, ierr)
+  call MPI_SEND(outgoingGSMap%length, SendBuffer(2), &
+                MP_Type(outgoingGSMap%length(1)), &
+                destID, TagBase+2, ThisMCTWorld%MCT_comm, ierr)
   if(ierr /= 0) then
-     call MP_perr_die(myname_, 'Send segment information buffer failed',ierr)
+     call MP_perr_die(myname_, 'Send outgoingGSMap%length failed',ierr)
   endif
 
-       ! Clean up.
-
-  deallocate(SendBuffer, stat=ierr)
+  call MPI_SEND(outgoingGSMap%pe_loc, SendBuffer(2), &
+                MP_Type(outgoingGSMap%pe_loc(1)), &
+                destID, TagBase+3, ThisMCTWorld%MCT_comm, ierr)
   if(ierr /= 0) then
-     write(stderr,'(2a,i8)') myname_, &
-	  ':: FATAL--deallocation of send buffer failed with ierr=',ierr
-     if(present(status)) then
-	status = ierr
-	return
-     else
-	call die(myname_)
-     endif
+     call MP_perr_die(myname_, 'Send outgoingGSMap%pe_loc failed',ierr)
   endif
 
  end subroutine send_
-
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!    Math and Computer Science Division, Argonne National Laboratory   !
-!BOP -------------------------------------------------------------------
-!
-! !IROUTINE: recv_ - Point-to-point Blocking Receive of a GlobalSegMap
-!
-! !DESCRIPTION:
-! This routine performs a blocking receive of a {\tt GlobalSegMap} (the 
-! input argument {\tt incomingGSMap}) from the processor whose rank is 
-! {\tt sourceID} on the MPI communicator associated with the integer 
-! handle {\tt comm}.  The input {\tt INTEGER} argument {\tt TagBase} 
-! is used to generate tags for the messages associated with this operation; 
-! there are two messages involved, so the user should avoid using tag 
-! values {\tt TagBase} and {\tt TagBase + 1}.  The success (failure) of 
-! this operation is reported in the zero (non-zero) value of the optional 
-! {\tt INTEGER} output variable {\tt status}.
-!
-! !INTERFACE:
-
- subroutine recv_(incomingGSMap, sourceID, TagBase, comm, status)
-
-!
-! !USES:
-!
-      use m_mpif90
-      use m_die, only : MP_perr_die, die
-      use m_stdio
-
-      use m_GlobalSegMap, only : GlobalSegMap
-      use m_GlobalSegMap, only : GlobalSegMap_init => init
-
-      implicit none
-
-! !INPUT PARAMETERS:
-
-  integer,            intent(IN)  :: sourceID
-  integer,            intent(IN)  :: TagBase
-  integer,            intent(IN)  :: comm
-
-! !OUTPUT PARAMETERS: 
-
-  type(GlobalSegMap), intent(OUT) :: incomingGSMap
-  integer, optional,  intent(OUT) :: status
-
-! !REVISION HISTORY:
-! 13Aug03 - J.W. Larson <larson@mcs.anl.gov> - API and initial version.
-
-!EOP ___________________________________________________________________
-
-  character(len=*),parameter :: myname_=myname//'::recv_'
-
-  integer :: BufferSize, nSegs, gSize, compID, ierr
-  integer :: MPstatus(MP_STATUS_SIZE)
-  integer, dimension(:), pointer :: RecvBuffer
-
-  if(present(status)) status = 0 ! the success value
-
-       ! Receive buffer size
-
-  call MPI_RECV(BufferSize, 1, MP_Type(BufferSize), sourceID, TagBase, &
-                comm, MPstatus, ierr)
-  if(ierr /= 0) then
-     call MP_perr_die(myname_, 'Receive buffer size failed',ierr)
-  endif
-
-       ! Allocate receive buffer
-
-  allocate(RecvBuffer(BufferSize), stat=ierr)
-  if(ierr /= 0) then
-     write(stderr,'(2a,i8)') myname_, &
-	  ':: FATAL--allocation of receive buffer failed with ierr=',ierr
-     call die(myname_)
-  endif
-
-       ! Receive the buffer...
-
-  call MPI_RECV(RecvBuffer, BufferSize, MP_Type(RecvBuffer(1)), sourceID, &
-                TagBase+1, comm, MPstatus, ierr)
-  if(ierr /= 0) then
-     call MP_perr_die(myname_, 'Receive of buffer failed',ierr)
-  endif
-
-       ! Check buffer size for compatibility with a GlobalSegMap; i.e., 
-       ! is BufferSize-3 a whole number multiple of 3?  If not, something
-       ! is wrong and the process should be aborted.
-
-  if(mod(BufferSize-3,3) /= 0) then
-     write(stderr,*) myname_, &
-	  ':: FATAL BufferSize-3 must be a whole number multiple of 3.',&
-	  '  BufferSize=',BufferSize
-     if(present(status)) then
-	status = -2
-     else
-	call die(myname_)
-     endif
-  endif
-
-       ! Create the outgoing GlobalSegMap
-
-  call GlobalSegMap_init(incomingGSMap, RecvBuffer(1), &
-                         RecvBuffer(2), &
-                         RecvBuffer(3), &
-			 RecvBuffer(4:BufferSize))
-
-       ! Clean Up.
-
-  deallocate(RecvBuffer, stat=ierr)
-  if(ierr /= 0) then
-     write(stderr,'(2a,i8)') myname_, &
-	  ':: FATAL--allocation of receive buffer failed with ierr=',ierr
-     call die(myname_)
-  endif
-
- end subroutine recv_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
@@ -304,9 +154,8 @@
 !
 ! !DESCRIPTION:
 ! This routine performs a non-blocking send of a {\tt GlobalSegMap} (the 
-! input argument {\tt outgoingGSMap}) to the processor whose rank is 
-! {\tt destID} on the MPI communicator associated with the integer 
-! handle {\tt comm}.  The input {\tt INTEGER} argument {\tt TagBase} 
+! input argument {\tt outgoingGSMap}) to the root processor on component
+! {\tt comp_id}  The input {\tt INTEGER} argument {\tt TagBase} 
 ! is used to generate tags for the messages associated with this operation; 
 ! there are four messages involved, so the user should avoid using tag 
 ! values {\tt TagBase} and {\tt TagBase + 3}.  All four messages are non-
@@ -322,7 +171,7 @@
 !
 ! !INTERFACE:
 
- subroutine isend_(outgoingGSMap, destID, TagBase, comm, reqHandle, status)
+ subroutine isend_(outgoingGSMap, comp_id, TagBase, reqHandle, status)
 
 !
 ! !USES:
@@ -336,14 +185,16 @@
       use m_GlobalSegMap, only : GlobalSegMap_comp_id => comp_ID
       use m_GlobalSegMap, only : GlobalSegMap_gsize => gsize
 
+      use m_MCTWorld, only : ComponentToWorldRank
+      use m_MCTWorld, only : ThisMCTWorld
+
       implicit none
 
 ! !INPUT PARAMETERS:
 
   type(GlobalSegMap),    intent(IN)  :: outgoingGSMap
-  integer,               intent(IN)  :: destID
+  integer,               intent(IN)  :: comp_id
   integer,               intent(IN)  :: TagBase
-  integer,               intent(IN)  :: comm
 
 ! !OUTPUT PARAMETERS: 
 
@@ -357,10 +208,12 @@
 
   character(len=*),parameter :: myname_=myname//'::isend_'
 
-  integer :: ierr
+  integer :: ierr,destID
   integer :: SendBuffer(3)
 
   if(present(status)) status = 0 ! the success value
+
+  destID = ComponentToWorldRank(0, comp_id, ThisMCTWorld)
 
   allocate(reqHandle(4), stat=ierr)
   if(ierr /= 0) then
@@ -381,7 +234,7 @@
        ! receive buffer of the correct size.
 
   call MPI_ISEND(SendBuffer, 3, MP_Type(SendBuffer(1)), destID, TagBase, &
-                comm, reqHandle(1), ierr)
+                ThisMCTWorld%MCT_comm, reqHandle(1), ierr)
   if(ierr /= 0) then
      call MP_perr_die(myname_, 'Send buffer size failed',ierr)
   endif
@@ -390,21 +243,21 @@
 
   call MPI_ISEND(outgoingGSMap%start, SendBuffer(2), &
                 MP_Type(outgoingGSMap%start(1)), &
-                destID, TagBase+1, comm, reqHandle(2), ierr)
+                destID, TagBase+1, ThisMCTWorld%MCT_comm, reqHandle(2), ierr)
   if(ierr /= 0) then
      call MP_perr_die(myname_, 'Send outgoingGSMap%start failed',ierr)
   endif
 
   call MPI_ISEND(outgoingGSMap%length, SendBuffer(2), &
                 MP_Type(outgoingGSMap%length(1)), &
-                destID, TagBase+2, comm, reqHandle(3), ierr)
+                destID, TagBase+2, ThisMCTWorld%MCT_comm, reqHandle(3), ierr)
   if(ierr /= 0) then
      call MP_perr_die(myname_, 'Send outgoingGSMap%length failed',ierr)
   endif
 
   call MPI_ISEND(outgoingGSMap%pe_loc, SendBuffer(2), &
                 MP_Type(outgoingGSMap%pe_loc(1)), &
-                destID, TagBase+3, comm, reqHandle(4), ierr)
+                destID, TagBase+3, ThisMCTWorld%MCT_comm, reqHandle(4), ierr)
   if(ierr /= 0) then
      call MP_perr_die(myname_, 'Send outgoingGSMap%pe_loc failed',ierr)
   endif
@@ -415,30 +268,21 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: irecv_ - Point-to-point Non-blocking Receive of a GlobalSegMap
+! !IROUTINE: recv_ - Point-to-point blocking Receive of a GlobalSegMap
 !
 ! !DESCRIPTION:
-! This routine performs a non-blocking receive of a {\tt GlobalSegMap} (the 
-! input argument {\tt outgoingGSMap}) from the processor whose rank is 
-! {\tt sourceID} on the MPI communicator associated with the integer 
-! handle {\tt comm}.  The input {\tt INTEGER} argument {\tt TagBase} 
+! This routine performs a blocking receive of a {\tt GlobalSegMap} (the 
+! input argument {\tt outgoingGSMap}) from the root processor on component
+! {\tt comp_id}. The input {\tt INTEGER} argument {\tt TagBase} 
 ! is used to generate tags for the messages associated with this operation; 
 ! there are four messages involved, so the user should avoid using tag 
-! values {\tt TagBase} and {\tt TagBase + 3}.  Three of the four messages 
-! are non-blocking (the first message defines receive buffer sizes and thus
-! must block), and the request handles for them are returned in the output
-! {\tt INTEGER} array {\tt reqHandle}, which can be checked for completion 
-! using any of MPI's wait functions.  The success (failure) of this operation 
-! is reported in the zero (non-zero) value of the optional {\tt INTEGER} 
+! values {\tt TagBase} and {\tt TagBase + 3}. The success (failure) of this
+! operation is reported in the zero (non-zero) value of the optional {\tt INTEGER} 
 ! output variable {\tt status}.
-!
-! {\bf N.B.}:  The array {\tt reqHandle} represents allocated memory that 
-! must be deallocated when it is no longer needed.  Failure to do so will 
-! create a memory leak.
 !
 ! !INTERFACE:
 
- subroutine irecv_(incomingGSMap, sourceID, TagBase, comm, reqHandle, status)
+ subroutine recv_(incomingGSMap, comp_id, TagBase, status)
 
 !
 ! !USES:
@@ -450,32 +294,35 @@
       use m_GlobalSegMap, only : GlobalSegMap
       use m_GlobalSegMap, only : GlobalSegMap_init => init
 
+      use m_MCTWorld, only : ComponentToWorldRank
+      use m_MCTWorld, only : ThisMCTWorld
+
       implicit none
 
 ! !INPUT PARAMETERS:
 
-  integer,               intent(IN)  :: sourceID
+  integer,               intent(IN)  :: comp_id
   integer,               intent(IN)  :: TagBase
-  integer,               intent(IN)  :: comm
 
 ! !OUTPUT PARAMETERS: 
 
   type(GlobalSegMap),    intent(OUT) :: incomingGSMap
-  integer, dimension(:), pointer     :: reqHandle
   integer, optional,     intent(OUT) :: status
 
 ! !REVISION HISTORY:
 ! 13Aug03 - J.W. Larson <larson@mcs.anl.gov> - API and initial version.
-
+! 25Aug03 - R.Jacob <larson@mcs.anl.gov> - rename to recv_.
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname_=myname//'::irecv_'
+  character(len=*),parameter :: myname_=myname//'::recv_'
 
-  integer :: ierr
+  integer :: ierr,sourceID
   integer :: MPstatus(MP_STATUS_SIZE)
   integer :: RecvBuffer(3)
 
   if(present(status)) status = 0 ! the success value
+
+  sourceID = ComponentToWorldRank(0, comp_id, ThisMCTWorld)
 
        ! Receive the GlobalSegMap's basic constants:  component id,
        ! grid size, and number of segments.  The number of segments
@@ -483,7 +330,7 @@
        ! information will be received.  Thus, this receive blocks.
 
   call MPI_RECV(RecvBuffer, 3, MP_Type(RecvBuffer(1)), sourceID, &
-                TagBase, comm, MPstatus, ierr)
+                TagBase, ThisMCTWorld%MCT_comm, MPstatus, ierr)
   if(ierr /= 0) then
      call MP_perr_die(myname_, 'Receive of RecvBuffer failed',ierr)
   endif
@@ -494,39 +341,30 @@
   call GlobalSegMap_init(incomingGSMap, RecvBuffer(1), RecvBuffer(2), &
                          RecvBuffer(3))
 
-       ! Set up request handle array
-
-  allocate(reqHandle(3), stat=ierr)
-  if(ierr /= 0) then
-     write(stderr,'(2a,i8)') myname_, &
-	  'FATAL--allocation of reqHandle(:) failed with ierr=',ierr
-     call die(myname_)
-  endif
-
        ! Receive segment information data (3 messages)
 
-  call MPI_IRECV(incomingGSMap%start, RecvBuffer(2), &
+  call MPI_RECV(incomingGSMap%start, RecvBuffer(2), &
                 MP_Type(incomingGSMap%start(1)), &
-                sourceID, TagBase+1, comm, reqHandle(1), ierr)
+                sourceID, TagBase+1, ThisMCTWorld%MCT_comm, MPstatus, ierr)
   if(ierr /= 0) then
      call MP_perr_die(myname_, 'Send incomingGSMap%start failed',ierr)
   endif
 
-  call MPI_IRECV(incomingGSMap%length, RecvBuffer(2), &
+  call MPI_RECV(incomingGSMap%length, RecvBuffer(2), &
                 MP_Type(incomingGSMap%length(1)), &
-                sourceID, TagBase+2, comm, reqHandle(2), ierr)
+                sourceID, TagBase+2, ThisMCTWorld%MCT_comm, MPstatus, ierr)
   if(ierr /= 0) then
      call MP_perr_die(myname_, 'Send incomingGSMap%length failed',ierr)
   endif
 
-  call MPI_IRECV(incomingGSMap%pe_loc, RecvBuffer(2), &
+  call MPI_RECV(incomingGSMap%pe_loc, RecvBuffer(2), &
                 MP_Type(incomingGSMap%pe_loc(1)), &
-                sourceID, TagBase+3, comm, reqHandle(3), ierr)
+                sourceID, TagBase+3, ThisMCTWorld%MCT_comm, MPstatus, ierr)
   if(ierr /= 0) then
      call MP_perr_die(myname_, 'Send incomingGSMap%pe_loc failed',ierr)
   endif
 
- end subroutine irecv_
+ end subroutine recv_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
