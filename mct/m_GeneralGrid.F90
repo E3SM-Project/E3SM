@@ -1248,63 +1248,12 @@
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
-!BOP -------------------------------------------------------------------
+! ----------------------------------------------------------------------
 !
 ! !IROUTINE: initCartesianDP_ - Initialize a Cartesian GeneralGrid
 !
 ! !DESCRIPTION:
-! The routine {\tt initCartesian\_()} creates the storage space for grid point
-! coordinates, area and volume weights, and other coordinate data ({\em e.g.}, 
-! cell area and volume weights).  The names of the Cartesian axes are supplied
-! by the user as a colon-delimitted string in the input {\tt CHARACTER}
-! argument {\tt CoordChars}.  For example, a Cartesian grid for Euclidian
-! 3-space would have ${\tt CoordChars} = {\tt 'x:y:z'}$.  The user can 
-! define named real attributes for spatial weighting data in the input 
-! {\tt CHARACTER} argument {\tt WeightChars}.  For example, one could 
-! define attributes for Euclidean 3-space length elements by setting 
-! ${\tt WeightChars} = {\tt 'dx:dy:dz'}$.  The input {\tt CHARCTER} 
-! argument {\tt OtherChars} provides space for defining other real 
-! attributes (again as a colon-delimited string of attribute names).
-! One can define integer attributes by supplying a colon-delimitted 
-! string of names in the input {\tt CHARACTER} argument 
-! {\tt IndexChars}.  For example, on could set aside storage space 
-! for the {\tt x}-, {\tt y}-, and {\tt z}-indices by setting 
-! ${\tt IndexChars} = {\tt 'xIndex:yIndex:zIndex'}$.
-!
-! Once the storage space in {\tt GGrid} is initialized, The gridpoint 
-! coordinates are evaluated using the input arguments {\tt Dims} (the 
-! number of points on each coordinate axis) and {\tt AxisData} (the 
-! coordinate values on all of the points of all of the axes).  The user 
-! presents the axes with each axis stored in a column of {\tt AxisData},
-! and the axes are laid out in the same order as the ordering of the 
-! axis names in {\tt CoordChars}.  The number of points on each axis 
-! is defined by the entries of the input {\tt INTEGER} array 
-! {\tt Dims(:)}.  Continuing with the Euclidean 3-space example given 
-! above, setting ${\tt Dims(1:3)} = {\tt (256, 256, 128)}$ will result 
-! in a Cartesian grid with 256 points in the {\tt x}- and {\tt y}-directions,
-! and 128 points in the {\tt z}-direction.  Thus the appropriate dimensions 
-! of {\tt AxisData} are 256 rows (the maximum number of axis points among
-! all the axes) by 3 columns (the number of physical dimensions).  The 
-! {\tt x}-axis points are stored in {\tt AxisData(1:256,1)}, the 
-! {\tt y}-axis points are stored in {\tt AxisData(1:256,2)}, and the 
-! {\tt z}-axis points are stored in {\tt AxisData(1:128,3)}.
-!
-! The sorting order of the gridpoints can be either user-defined, or 
-! set automatically by MCT.  If the latter is desired, the user must 
-! supply the argument {\tt CoordSortOrder}, which defines the 
-! lexicographic ordering (by coordinate).  The entries optional input 
-! {\tt LOGICAL} array {\tt descend(:)} stipulates whether the ordering 
-! with respect to the corresponding key in {\tt CoordChars} is to be
-! {\em descending}.  If {\tt CoordChars} is supplied, but {\tt descend(:)} 
-! is not, the gridpoint information is placed in {\em ascending} order 
-! for each key.  Returning to our Euclidian 3-space example, a choice of  
-! ${\tt CoordSortOrder} = {\tt y:x:z}$ and ${\tt descend(1:3)} = 
-! ({\tt .TRUE.}, {\tt .FALSE.}, {\tt .FALSE.})$ will result in the entries of 
-! {\tt GGrid} being orderd lexicographically by {\tt y} (in descending 
-! order), {\tt x} (in ascending order), and {\tt z} (in ascending order).
-! Regardless of the gridpoint sorting strategy, MCT will number each of 
-! the gridpoints in {\tt GGrid}, storing this information in the integer 
-! attribute named {\tt 'GlobGridNum'}.
+! Double Precision version of initCartesianSP_
 !
 ! !INTERFACE:
 
@@ -1354,7 +1303,7 @@
 ! !REVISION HISTORY:
 !  7Jun01 - Jay Larson <larson@mcs.anl.gov> - API Specification.
 ! 12Aug02 - Jay Larson <larson@mcs.anl.gov> - Implementation.
-!EOP ___________________________________________________________________
+! ______________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::initCartesianDP_'
 
@@ -1950,66 +1899,12 @@
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
-!BOP -------------------------------------------------------------------
+! ----------------------------------------------------------------------
 !
 ! !IROUTINE: initUnstructuredDP_ - Initialize an Unstructured GeneralGrid
 !
 ! !DESCRIPTION:
-! This routine creates the storage space for grid point
-! coordinates, area/volume weights, and other coordinate data ({\em e.g.}, 
-! local cell dimensions), and fills in user-supplied values for the grid 
-! point coordinates.  These data are referenced by {\tt List}
-! components that are also created by this routine (see the documentation 
-! of the declaration section of this module for more details about setting 
-! list information).  Each of the input {\tt CHARACTER} arguments is a 
-! colon-delimited string of attribute names, each corrsponding to a 
-! {\tt List} element of the output {\tt GeneralGrid} argument {\tt GGrid},
-! and are summarized in the table below:
-!
-!\begin{table}[htbp]
-!\begin{center}
-!\begin{tabular}{|l|l|l|l|}
-!\hline
-!{\bf Argument} & {\bf Component of {\tt GGrid}} & {\bf Significance} & {\bf Required?} \\
-!\hline
-!{\tt CoordChars} & {\tt GGrid\%coordinate\_list} & Dimension Names & Yes \\
-!\hline
-!{\tt CoordSortOrder} & {\tt GGrid\%coordinate\_sort\_order} & Grid Point & No \\
-! & & Sorting Keys & \\
-!\hline
-!{\tt WeightChars} & {\tt GGrid\%weight\_list} & Grid Cell & No \\
-! & & Length, Area, and & \\
-! & & Volume Weights & \\
-!\hline
-!{\tt OtherChars} & {\tt GGrid\%other\_list} & All Other & No \\
-! & & Real Attributes & \\
-!\hline
-!{\tt IndexChars} & {\tt GGrid\%index\_list} & All Other & No \\
-! & & Integer Attributes & \\
-!\hline
-!\end{tabular}
-!\end{center}
-!\end{table}
-!
-! The number of physical dimensions of the grid is set by the user in 
-! the input {\tt INTEGER} argument {\tt nDims}, and the number of grid 
-! points stored in {\tt GGrid} is set using the input {\tt INTEGER} 
-! argument {\tt nPoints}.  The grid point coordinates are input via the 
-! {\tt REAL} array {\tt PointData(:)}.  The number of entries in 
-! {\tt PointData} must equal the product of {\tt nDims} and {\tt nPoints}.
-! The grid points are grouped in {\tt nPoints} consecutive groups of 
-! {\tt nDims} entries, with the coordinate values for each point set in 
-! the same order as the dimensions are named in the list {\tt CoordChars}.
-!
-! If a set of sorting keys is supplied in the argument {\tt CoordSortOrder}, 
-! the user can control whether the sorting by each key is in descending or 
-! ascending order by supplying the input {\tt LOGICAL} array {\tt descend(:)}.  
-! By default, all sorting is in {\em ascending} order for each key if the 
-! argument {\tt descend} is not provided.
-!
-! {\bf N.B.}:  The output {\tt GeneralGrid} {\tt GGrid} is dynamically
-! allocated memory.  When one no longer needs {\tt GGrid}, one should
-! release this space by invoking {\tt clean()} for the {\tt GeneralGrid}.
+! Double precision version of initUnstructuredSP_
 !
 ! !INTERFACE:
 
@@ -2056,7 +1951,7 @@
 ! !REVISION HISTORY:
 !  7Jun01 - Jay Larson <larson@mcs.anl.gov> - API specification.
 ! 22Aug02 - J. Larson <larson@mcs.anl.gov> - Implementation.
-!EOP ___________________________________________________________________
+! ______________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::initUnstructuredDP_'
 
@@ -2668,6 +2563,8 @@
 
  end function lsize_
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: exportIAttr_ - Return GeneralGrid INTEGER Attribute as a Vector
@@ -2731,9 +2628,11 @@
 
  end subroutine exportIAttr_
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: exportRAttrSP_, exportRAttrDP_ - Return GeneralGrid REAL Attribute as a Vector
+! !IROUTINE: exportRAttrSP_ - Return GeneralGrid REAL Attribute as a Vector
 !
 ! !DESCRIPTION:
 ! This routine extracts from the input {\tt GeneralGrid} argument 
@@ -2797,33 +2696,14 @@
 
  end subroutine exportRAttrSP_
 
-!-----------------------------------------------------------------------
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+! ---------------------------------------------------------------------
 !
-! !IROUTINE: exportRAttrSP_, exportRAttrDP_ - Return GeneralGrid REAL Attribute as a Vector
+! !IROUTINE: exportRAttrDP_ - Return GeneralGrid REAL Attribute as a Vector
 !
 ! !DESCRIPTION:
-! This routine extracts from the input {\tt GeneralGrid} argument 
-! {\tt GGrid} the real attribute corresponding to the tag defined in 
-! the input {\tt CHARACTER} argument {\tt AttrTag}, and returns it in 
-! the {\tt REAL} output array {\tt outVect}, and its length in the 
-! output {\tt INTEGER} argument {\tt lsize}.
-!
-! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
-! the {\tt GeneralGrid} {\tt List} component {\tt GGrid\%data\%rList}.
-!
-! {\bf N.B.:}  The flexibility of this routine regarding the pointer 
-! association status of the output argument {\tt outVect} means the
-! user must invoke this routine with care.  If the user wishes this
-! routine to fill a pre-allocated array, then obviously this array
-! must be allocated prior to calling this routine.  If the user wishes
-! that the routine {\em create} the output argument array {\tt outVect},
-! then the user must ensure this pointer is not allocated (i.e. the user
-! must nullify this pointer) before this routine is invoked.
-!
-! {\bf N.B.:}  If the user has relied on this routine to allocate memory
-! associated with the pointer {\tt outVect}, then the user is responsible 
-! for deallocating this array once it is no longer needed.  Failure to 
-! do so will result in a memory leak.
+! double precision version of exportRAttrSP_
 !
 ! !INTERFACE:
 
@@ -2863,6 +2743,8 @@
 
  end subroutine exportRAttrDP_
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: importIAttr_ - Import GeneralGrid INTEGER Attribute
@@ -2922,9 +2804,11 @@
 
  end subroutine importIAttr_
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: importRAttrSP_,importRAttrDP_ - Import GeneralGrid REAL Attribute
+! !IROUTINE: importRAttrSP_ - Import GeneralGrid REAL Attribute
 !
 ! !DESCRIPTION:
 ! This routine imports data provided in the input {\tt REAL} vector 
@@ -2984,20 +2868,14 @@
 
  end subroutine importRAttrSP_
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 !
-! !IROUTINE: importRAttrSP_,importRAttrDP_ - Import GeneralGrid REAL Attribute
+! !IROUTINE: importRAttrDP_ - Import GeneralGrid REAL Attribute
 !
 ! !DESCRIPTION:
-! This routine imports data provided in the input {\tt REAL} vector 
-! {\tt inVect} into the {\tt GeneralGrid} argument {\tt GGrid}, storing 
-! it as the real attribute corresponding to the tag defined in 
-! the input {\tt CHARACTER} argument {\tt AttrTag}.  The input 
-! {\tt INTEGER} argument {\tt lsize} is used to ensure there is 
-! sufficient space in the {\tt GeneralGrid} to store the data.
-!
-! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
-! the {\tt GeneralGrid} {\tt List} component {\tt GGrid\%data\%rList}.
+! Double precision version of importRAttrSP_
 !
 ! !INTERFACE:
 

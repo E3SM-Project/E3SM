@@ -1163,24 +1163,7 @@
 ! !IROUTINE: exportMatrixElementsDP_ - Return Matrix Elements as Array
 !
 ! !DESCRIPTION:
-! This routine extracts the matrix elements from the input {\tt SparseMatrix} 
-! argument {\tt sMat}, and returns them in the {\tt REAL} output array 
-! {\tt MatrixElements}, and its length in the output {\tt INTEGER} 
-! argument {\tt length}.
-!
-! {\bf N.B.:}  The flexibility of this routine regarding the pointer 
-! association status of the output argument {\tt MatrixElements} means the
-! user must invoke this routine with care.  If the user wishes this
-! routine to fill a pre-allocated array, then obviously this array
-! must be allocated prior to calling this routine.  If the user wishes
-! that the routine {\em create} the output argument array {\tt MatrixElements},
-! then the user must ensure this pointer is not allocated (i.e. the user
-! must nullify this pointer) at the time this routine is invoked.
-!
-! {\bf N.B.:}  If the user has relied on this routine to allocate memory
-! associated with the pointer {\tt MatrixElements}, then the user is responsible 
-! for deallocating this array once it is no longer needed.  Failure to 
-! do so will result in a memory leak.
+! Double precision version of exportMatrixElementsSP_
 !
 ! !INTERFACE:
 
@@ -1514,12 +1497,7 @@
 ! !IROUTINE: importMatrixElementsDP_ - Import Non-zero Matrix Elements
 !
 ! !DESCRIPTION:
-! This routine imports matrix elements index data into the 
-! {\tt SparseMatrix} argument {\tt sMat}.  The user provides the index 
-! data in the input {\tt REAL} vector {\tt inVect}.  The input 
-! {\tt INTEGER} argument {\tt lsize} is used as a consistencey check 
-! to ensure the user is sufficient space in the {\tt SparseMatrix} 
-! to store the data.
+! Double precision version of importMatrixElementsSP_
 !
 ! !INTERFACE:
 
@@ -1970,22 +1948,12 @@
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
-!BOP -------------------------------------------------------------------
+! ----------------------------------------------------------------------
 !
 ! !IROUTINE: ComputeSparsityDP_ - Compute Matrix Sparsity
 !
-! !DESCRIPTION:  This routine computes the sparsity of a consolidated
-! (all on one process) or distributed {\tt SparseMatrix}.  The input 
-! {\tt SparseMatrix} argument {\tt sMat} is examined to determine the
-! number of nonzero elements it holds, and this value is divided by the
-! product of the number of rows and columns in {\tt sMat}.  If the 
-! optional input argument {\tt comm} is given, then the distributed 
-! elements are counted and the sparsity computed accordingly, and the 
-! resulting value of {\tt sparsity} is returned {\em to all processes}.
-!
-! Given the inherent problems with multiplying and dividing large integers,
-! the work in this routine is performed using floating point arithmetic on
-! the logarithms of the number of rows, columns, and nonzero elements.
+! !DESCRIPTION:
+! Double precision version of ComputeSparsitySP_
 !
 ! !INTERFACE:
 
@@ -2014,7 +1982,7 @@
 ! !REVISION HISTORY:
 ! 23Apr01 - Jay Larson <larson@mcs.anl.gov> - New routine.
 !
-!EOP ___________________________________________________________________
+! ______________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::ComputeSparsityDP_'
 
@@ -2274,17 +2242,12 @@
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
-!BOP -------------------------------------------------------------------
+! ----------------------------------------------------------------------
 !
 ! !IROUTINE: row_sumDP_ - Sum Elements in Each Row
 !
 ! !DESCRIPTION:
-! Given an input {\tt SparseMatrix} argument {\tt sMat}, {\tt row\_sum\_()}
-! returns the number of the rows {\tt num\_rows} in the sparse matrix and
-! the sum of the elements in each row in the array {\tt sums}.  The input
-! argument {\tt comm} is the Fortran 90 MPI communicator handle used to
-! determine the number of rows and perform the sums.  The output arguments
-! {\tt num\_rows} and {\tt sums} are valid on all processes.
+! Double precision version of row_sumSP_
 !
 ! {\bf N.B.:  } This routine allocates an array {\tt sums}.  The user is
 ! responsible for deallocating this array when it is no longer needed.  
@@ -2327,7 +2290,7 @@
 !           changes to the SparseMatrix type.
 ! 18May01 - R. Jacob <jacob@mcs.anl.gov> - Use MP_TYPE function
 !           to set type in the mpi_allreduce
-!EOP ___________________________________________________________________
+! ______________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::row_sumDP_'
 
@@ -2395,7 +2358,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: row_sum_checkSP - Check Row Sums vs. Valid Values
+! !IROUTINE: row_sum_checkSP_ - Check Row Sums vs. Valid Values
 !
 ! !DESCRIPTION:  The routine {\tt row\_sum\_check()} sums the rows of 
 ! the input distributed (across the communicator identified by {\tt comm}) 
@@ -2484,18 +2447,12 @@
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
-!BOP -------------------------------------------------------------------
+! ----------------------------------------------------------------------
 !
-! !IROUTINE: row_sum_checkDP - Check Row Sums vs. Valid Values
+! !IROUTINE: row_sum_checkDP_ - Check Row Sums vs. Valid Values
 !
-! !DESCRIPTION:  The routine {\tt row\_sum\_check()} sums the rows of 
-! the input distributed (across the communicator identified by {\tt comm}) 
-! {\tt SparseMatrix} variable {\tt sMat}.  It then compares these sums 
-! with the {\tt num\_valid} input "valid" values stored in the array 
-! {\tt valid\_sums}.  If all of the sums are within the absolute tolerence
-! specified by the input argument {\tt abs\_tol} of any of the valid values,
-! the output {\tt LOGICAL} flag {\tt valid} is set to {\tt .TRUE}.  
-! Otherwise, this flag is returned with value {\tt .FALSE}.
+! !DESCRIPTION:
+! Double precision version of row_sum_checkSP
 !
 ! !INTERFACE:
 
@@ -2525,7 +2482,7 @@
 ! 15Jan01 - Jay Larson <larson@mcs.anl.gov> - API specification.
 ! 25Feb01 - Jay Larson <larson@mcs.anl.gov> - Prototype code.
 ! 06Jan03 - R. Jacob <jacob@mcs.anl.gov> - create DP and SP versions
-!EOP ___________________________________________________________________
+! ______________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::row_sum_checkDP_'
 

@@ -376,7 +376,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: initv_-Initialize One Accumulator using Another
+! !IROUTINE: initv_ - Initialize One Accumulator using Another
 !
 ! !DESCRIPTION:
 ! This routine takes the integer and real attribute information (including
@@ -1260,6 +1260,8 @@
 
  end function indexRA_
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: exportIAttr_ - Export INTEGER Attribute to a Vector
@@ -1325,6 +1327,8 @@
 
  end subroutine exportIAttr_
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: exportRAttrSP_ - Export REAL Attribute to a Vector
@@ -1389,33 +1393,14 @@
 
  end subroutine exportRAttrSP_
 
-!BOP -------------------------------------------------------------------
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+! ----------------------------------------------------------------------
 !
 ! !IROUTINE: exportRAttrDP_ - Export REAL Attribute to a Vector
 !
 ! !DESCRIPTION:
-! This routine extracts from the input {\tt Accumulator} argument 
-! {\tt aC} the real attribute corresponding to the tag defined in 
-! the input {\tt CHARACTER} argument {\tt AttrTag}, and returns it in 
-! the {\tt REAL} output array {\tt outVect}, and its length in the 
-! output {\tt INTEGER} argument {\tt lsize}.
-!
-! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
-! the {\tt Accumulator} {\tt List} component {\tt aC\%data\%iList}.
-!
-! {\bf N.B.:}  The flexibility of this routine regarding the pointer 
-! association status of the output argument {\tt outVect} means the
-! user must invoke this routine with care.  If the user wishes this
-! routine to fill a pre-allocated array, then obviously this array
-! must be allocated prior to calling this routine.  If the user wishes
-! that the routine {\em create} the output argument array {\tt outVect},
-! then the user must ensure this pointer is not allocated (i.e. the user
-! must nullify this pointer) at the time this routine is invoked.
-!
-! {\bf N.B.:}  If the user has relied on this routine to allocate memory
-! associated with the pointer {\tt outVect}, then the user is responsible 
-! for deallocating this array once it is no longer needed.  Failure to 
-! do so will result in a memory leak.
+! Double precision version of exportRAttrSP_
 !
 ! !INTERFACE:
 
@@ -1443,7 +1428,7 @@
 ! !REVISION HISTORY:
 !  6May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
 !
-!EOP ___________________________________________________________________
+! ______________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::exportRAttrDP_'
 
@@ -1453,6 +1438,8 @@
 
  end subroutine exportRAttrDP_
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: importIAttr_ - Import INTEGER Attribute from a Vector
@@ -1511,6 +1498,8 @@
 
  end subroutine importIAttr_
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: importRAttrSP_ - Import REAL Attribute from a Vector
@@ -1569,20 +1558,14 @@
 
  end subroutine importRAttrSP_
 
-!BOP -------------------------------------------------------------------
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+! ----------------------------------------------------------------------
 !
 ! !IROUTINE: importRAttrDP_ - Import REAL Attribute from a Vector
 !
 ! !DESCRIPTION:
-! This routine imports data provided in the input {\tt REAL} vector 
-! {\tt inVect} into the {\tt Accumulator} argument {\tt aC}, storing 
-! it as the real attribute corresponding to the tag defined in 
-! the input {\tt CHARACTER} argument {\tt AttrTag}.  The input 
-! {\tt INTEGER} argument {\tt lsize} is used to ensure there is 
-! sufficient space in the {\tt Accumulator} to store the data.
-!
-! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
-! the {\tt Accumulator} {\tt List} component {\tt aC\%data\%rList}.
+! Double precision version of importRAttrSP_
 !
 ! !INTERFACE:
 
@@ -1609,7 +1592,7 @@
 
 ! !REVISION HISTORY:
 !  6May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
-!EOP ___________________________________________________________________
+! ______________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::importRAttrDP_'
 

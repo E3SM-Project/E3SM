@@ -807,30 +807,12 @@
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
-!BOP -------------------------------------------------------------------
+! ----------------------------------------------------------------------
 !
 ! !IROUTINE: LocalWeightedSumRAttrDP_ - Local Weighted Sum of REAL Attributes
 !
 ! !DESCRIPTION:
-!
-! The subroutine {\tt LocalWeightedSumRAttr\_()} takes the input 
-! {\tt AttrVect} argument {\tt inAV}, and performs a weighted sum
-! of  each of its {\tt REAL} attributes, returning them in the output 
-! {\tt AttrVect} argument {\tt outAV} (which is created by this routine
-! and  will contain {\em no} integer attributes).  The weights used 
-! for the summation are provided by the user in the input argument 
-! {\tt Weights(:)}.  If the sum of the weights is desired, this can be 
-! returned as an attribute in {\tt outAV} if the optional {\tt CHARACTER} 
-! argument {\tt WeightSumAttr} is provided (which will be concatenated 
-! onto the list of real attributes in {\tt inAV}).
-!
-! {\bf N.B.}:  The argument {\tt WeightSumAttr} must not be identical
-! to any of the real attribute names in {\tt inAV}.  
-!
-! {\bf N.B.}:  The output {\tt AttrVect} argument {\tt outAV} is
-! allocated memory, and must be destroyed by invoking the routine 
-! {\tt AttrVect\_clean()} when it is no longer needed.  Failure to 
-! do so will result in a memory leak.
+! Double precision version of LocalWeightedSumRAttrSP_
 !
 ! !INTERFACE:
 !
@@ -872,7 +854,7 @@
 ! 14Jun02 - J.W. Larson <larson@mcs.anl.gov> - bug fix regarding
 !           accumulation of weights when invoked with argument
 !           weightSumAttr.  Now works in MCT unit tester.
-!EOP ___________________________________________________________________
+! ______________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::LocalWeightedSumRAttrDP_'
 
@@ -1046,33 +1028,12 @@
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
-!BOP -------------------------------------------------------------------
+! ----------------------------------------------------------------------
 !
 ! !IROUTINE: GlobalWeightedSumRAttrDP_ - Global Weighted Sum of REAL Attributes
 !
 ! !DESCRIPTION:
-!
-! The subroutine {\tt GlobalWeightedSumRAttr\_()} takes the 
-! distributed input {\tt AttrVect} argument {\tt inAV}, and performs 
-! a weighted global sum across the MPI communicator associated with 
-! the Fortran90 {\tt INTEGER} handle {\tt comm} of each of its 
-! {\tt REAL} attributes, returning the sums to each process in the
-! {\tt AttrVect} argument {\tt outAV} (which is created by this routine
-! and will contain {\em no} integer attributes).  The weights used for 
-! the summation are provided by the user in the input argument 
-! {\tt weights(:)}.  If the sum of the weights is desired, this can be 
-! returned as an attribute in {\tt outAV} if the optional {\tt CHARACTER} 
-! argument {\tt WeightSumAttr} is provided (which will be concatenated 
-! onto the list of real attributes in {\tt inAV} to form the list of 
-! real attributes for {\tt outAV}).
-!
-! {\bf N.B.}:  The argument {\tt WeightSumAttr} must not be identical
-! to any of the real attribute names in {\tt inAV}.  
-!
-! {\bf N.B.}:  The output {\tt AttrVect} argument {\tt outAV} is
-! allocated memory, and must be destroyed by invoking the routine 
-! {\tt AttrVect\_clean()} when it is no longer needed.  Failure to 
-! do so will result in a memory leak.
+! Double precision version of GlobalWeightedSumRAttrSP_
 !
 ! !INTERFACE:
 !
@@ -1110,7 +1071,7 @@
 
 ! !REVISION HISTORY:
 !  8May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
-!EOP ___________________________________________________________________
+! ______________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GlobalWeightedSumRAttrDP_'
 

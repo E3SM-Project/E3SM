@@ -94,7 +94,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: MergeTwoGGSP\_, MergeTwoGGDP\_ - Merge Data from Two Sources
+! !IROUTINE: MergeTwoGGSP_ - Merge Data from Two Sources
 !
 ! !DESCRIPTION:  This routine merges {\tt REAL} attribute data from 
 ! two input {\tt AttrVect} arguments {\tt inAv1} and {\tt inAv2} to 
@@ -406,83 +406,8 @@
 !
 ! !IROUTINE: MergeTwoGGDP_ - merge data from two components.
 !
-! !DESCRIPTION:  This routine merges {\tt REAL} attribute data from 
-! two input {\tt AttrVect} arguments {\tt inAv1} and {\tt inAv2} to 
-! a third {\tt AttrVect} {\tt outAv}.  The attributes to be merged are 
-! determined entirely by the real attributes of {\tt outAv}.  If 
-! {\tt outAv} shares one or more attributes with either of the inputs 
-! {\tt inAv1} or {\tt inAv2}, a merge is performed on the individual 
-! {\em intersections} of attributes between the pairs $({\tt outAv},
-! {\tt inAv1})$ and $({\tt outAv},{\tt inAv1})$.  Currently, it is assumed
-! that these pairwise intersections are all equal.  This assumption is of 
-! critical importance to the user.  If the user violates this 
-! assumption, incorrect merges of attributes that are present in some 
-! (but not all) of the inputs will result.
-!
-! The merge operatrion is a masked 
-! weighted element-by-element sum, as outlined in the following example.  
-! Let the vectors ${\bf a}$ and ${\bf b}$ be data from Components $A$ 
-! and $B$ that have been interpolated onto the physical grid of another 
-! component $C$.  We wish to combine the data from $A$ and $B$ to get 
-! a vector ${\bf c}$, which represents the merged data on the grid of 
-! component $C$.  The merge relation to obtain the $i$th element of 
-! {\bf c} is 
-! $$ c_i = {1 \over {W_i}} \bigg\{ {{\prod_{j=1}^J} \kappa_{i}^j} 
-! {{\prod_{k=1}^K} \alpha_{i}^k} {a_i} + {{\prod_{l=1}^L} \lambda_{i}^l} 
-! {{\prod_{m=1}^M} \beta_{i}^m} {b_i} \bigg\} , $$
-! where
-! $$ {W_i} = {{\prod_{j=1}^J} \kappa_{i}^j} {{\prod_{k=1}^K} \alpha_{i}^k} + 
-! {{\prod_{l=1}^L} \lambda_{i}^l} {{\prod_{m=1}^M} \beta_{i}^m}. $$
-! The quantities ${\kappa_{i}^j}$ and ${\lambda_{i}^l}$ are {\em integer
-! masks} (which have value either $0$ or $1$), and ${\alpha_{i}^k}$ and 
-! ${\beta_{i}^m}$ are {\em real masks} (which are in the closed interval 
-! $[0,1]$).
-!
-! The integer and real masks are stored as attributes to the same input 
-! {\tt GeneralGrid} argument {\tt GGrid}.  The mask attribute names are 
-! stored as substrings to the colon-separated strings contained in the 
-! input {\tt CHARACTER} arguments {\tt iMaskTags1}, {\tt iMaskTags2}, 
-! {\tt rMaskTags1}, and {\tt rMaskTags2}.  The {\tt LOGICAL} input 
-! argument {\tt CheckMasks} governs how the masks are applied.  If 
-! ${\tt CheckMasks} = {\tt .TRUE.}$, the entries are checked to ensure 
-! they meet the definitions of real and integer masks.  If 
-! ${\tt CheckMasks} = {\tt .TRUE.}$ then the masks are multiplied 
-! together on an element-by-element basis with no validation of their 
-! entries (this option results in slightly higher performance).
-!
-! This routine returns the sume of the masked weights as a diagnostic.
-! This quantity is returned in the output {\tt REAL} array {\tt WeightSum}.
-!
-! The correspondence between the quantities in the above merge relation 
-! and the arguments to this routine are summarized in the table.
-! \begin{center}
-! \begin{tabular}{|l|l|l|}\hline
-! {\bf Quantity} & {\bf Stored in} & {\bf Referenced by}  \\
-!  & {\bf Argument}    & {\bf Argument} \\
-! \hline
-! \hline 
-! $ {a_i} $ & {\tt inAv1} & \\
-! \hline
-! $ {b_i} $ & {\tt inAv2} & \\
-! \hline
-! $ {c_i} $ & {\tt outAv} & \\
-! \hline
-! $ {\kappa_i^j}, j=1,\ldots,J $ & {\tt GGrid} & {\tt iMaskTags1}\\
-! & & ($J$ items) \\
-! \hline
-! $ {\alpha_i^k}, k=1,\ldots,K $ & {\tt GGrid} & {\tt rMaskTags1}\\
-! & & ($K$ items) \\
-! \hline
-! $ {\lambda_i^l}, l=1,\ldots,L $ & {\tt GGrid} & {\tt iMaskTags2}\\
-! & & ($L$ items) \\
-! \hline
-! $ {\beta_i^m}, m=1,\ldots,M $ & {\tt GGrid} & {\tt rMaskTags2}\\
-! & & ($M$ items) \\
-! \hline
-! $ {W_i} $ & {\tt WeightSum} & \\
-! \hline
-! \end{tabular}
-! \end{center}
+! !DESCRIPTION:
+! Double precision version of MergeTwoGGSP_
 !
 ! !INTERFACE:
 
@@ -714,7 +639,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: MergeThreeGGSP\_, MergeThreeGGDP\_ - Merge Data from Three Sources
+! !IROUTINE: MergeThreeGGSP_ - Merge Data from Three Sources
 !
 ! !DESCRIPTION:  This routine merges {\tt REAL} attribute data from 
 ! three input {\tt AttrVect} arguments {\tt inAv1} , {\tt inAv2}, and 
@@ -1084,94 +1009,8 @@
 !
 ! !IROUTINE: MergeThreeGGDP_ - merge data from three components.
 !
-! !DESCRIPTION:  This routine merges {\tt REAL} attribute data from 
-! three input {\tt AttrVect} arguments {\tt inAv1} , {\tt inAv2}, and 
-! {\tt inAv3} to a fourth {\tt AttrVect} {\tt outAv}.  The attributes to 
-! be merged are determined entirely by the real attributes of {\tt outAv}.
-!   If {\tt outAv} shares one or more attributes with any of the inputs 
-! {\tt inAv1}, {\tt inAv2}, or {\tt inAv3}, a merge is performed on the 
-! individual {\em intersections} of attributes between the pairs 
-! $({\tt outAv},{\tt inAv1})$,  $({\tt outAv},{\tt inAv2})$, 
-! and $({\tt outAv},{\tt inAv3})$.  Currently, it is assumed that these 
-! pairwise intersections are all equal.  This assumption is of 
-! critical importance to the user.  If the user violates this 
-! assumption, incorrect merges of any attributes present only in some 
-! (but not all) inputs will result.
-!
-! The merge operatrion is a masked 
-! weighted element-by-element sum, as outlined in the following example.  
-! Let the vectors ${\bf a}$,${\bf b}$, and ${\bf c}$ be data from 
-! Components $A$, $B$, and $C$ that have been interpolated onto the 
-! physical grid of another component $D$.  We wish to combine the data 
-! from $A$, $B$ and $C$ to get a vector ${\bf d}$, which represents the 
-! merged data on the grid of component $D$.  The merge relation to obtain 
-! the $i$th element of ${\bf d}$ is 
-! $$ d_i = {1 \over {W_i}} \bigg\{ {{\prod_{j=1}^J} \kappa_{i}^j} 
-! {{\prod_{k=1}^K} \alpha_{i}^k} {a_i} + {{\prod_{l=1}^L} \lambda_{i}^l} 
-! {{\prod_{m=1}^M} \beta_{i}^m} {b_i} + {{\prod_{p=1}^P} \mu_{i}^p} 
-! {{\prod_{q=1}^Q} \gamma_{i}^q} {c_i} \bigg\} , $$
-! where
-! $$ {W_i} = {{\prod_{j=1}^J} \kappa_{i}^j} {{\prod_{k=1}^K} \alpha_{i}^k} + 
-! {{\prod_{l=1}^L} \lambda_{i}^l} {{\prod_{m=1}^M} \beta_{i}^m} + 
-! {{\prod_{p=1}^P} \mu_{i}^p} {{\prod_{q=1}^Q} \gamma_{i}^q}. $$
-! The quantities ${\kappa_{i}^j}$, ${\lambda_{i}^p}$, and ${\mu_{i}^p}$ are 
-! {\em integer masks} (which have value either $0$ or $1$), and 
-! ${\alpha_{i}^k}$, ${\beta_{i}^m}$, and ${\gamma_{i}^q}$ are {\em real 
-! masks} (which are in the closed interval $[0,1]$).
-!
-! The integer and real masks are stored as attributes to the same input 
-! {\tt GeneralGrid} argument {\tt GGrid}.  The mask attribute names are 
-! stored as substrings to the colon-separated strings contained in the 
-! input {\tt CHARACTER} arguments {\tt iMaskTags1}, {\tt iMaskTags2}, 
-! {\tt iMaskTags3}, {\tt rMaskTags1}, {\tt rMaskTags2}, and 
-! {\tt rMaskTags3}.  The {\tt LOGICAL} input argument {\tt CheckMasks} 
-! governs how the masks are applied.  If ${\tt CheckMasks} = {\tt .TRUE.}$, 
-! the entries are checked to ensure they meet the definitions of real 
-! and integer masks.  If ${\tt CheckMasks} = {\tt .FALSE.}$ then the masks 
-! are multiplied together on an element-by-element basis with no validation 
-! of their entries (this option results in slightly higher performance).  
-!
-! This routine returns the sum of the masked weights as a diagnostic.
-! This quantity is returned in the output {\tt REAL} array {\tt WeightSum}.
-!
-! The correspondence between the quantities in the above merge relation 
-! and the arguments to this routine are summarized in the table.
-! \begin{center}
-! \begin{tabular}{|l|l|l|}\hline
-! {\bf Quantity} & {\bf Stored in} & {\bf Referenced by}  \\
-!  & {\bf Argument}    & {\bf Argument} \\
-! \hline
-! \hline 
-! $ {a_i} $ & {\tt inAv1} & \\
-! \hline
-! $ {b_i} $ & {\tt inAv2} & \\
-! \hline
-! $ {c_i} $ & {\tt inAv3} & \\
-! \hline
-! $ {d_i} $ & {\tt outAv} & \\
-! \hline
-! $ {\kappa_i^j}, j=1,\ldots,J $ & {\tt GGrid} & {\tt iMaskTags1}\\
-! & & ($J$ items) \\
-! \hline
-! $ {\alpha_i^k}, k=1,\ldots,K $ & {\tt GGrid} & {\tt rMaskTags1}\\
-! & & ($K$ items) \\
-! \hline
-! $ {\lambda_i^l}, l=1,\ldots,L $ & {\tt GGrid} & {\tt iMaskTags2}\\
-! & & ($L$ items) \\
-! \hline
-! $ {\beta_i^m}, m=1,\ldots,M $ & {\tt GGrid} & {\tt rMaskTags2}\\
-! & & ($M$ items) \\
-! \hline
-! $ {\mu_i^p}, p=1,\ldots,P $ & {\tt GGrid} & {\tt iMaskTags3}\\
-! & & ($L$ items) \\
-! \hline
-! $ {\gamma_i^q}, q=1,\ldots,Q $ & {\tt GGrid} & {\tt rMaskTags3}\\
-! & & ($M$ items) \\
-! \hline
-! $ {W_i} $ & {\tt WeightSum} & \\
-! \hline
-! \end{tabular}
-! \end{center}
+! !DESCRIPTION:
+! Double precision version of MergeThreeGGSP_
 !
 ! !INTERFACE:
 
@@ -1450,7 +1289,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: MergeFourGGSP\_, MergeFourGGDP\_ - Merge Data from Four Sources
+! !IROUTINE: MergeFourGGSP_ - Merge Data from Four Sources
 !
 ! !DESCRIPTION:  This routine merges {\tt REAL} attribute data from 
 ! four input {\tt AttrVect} arguments {\tt inAv1} , {\tt inAv2}, 
@@ -1880,105 +1719,8 @@
 !
 ! !IROUTINE: MergeFourGGDP_ - merge data from four components.
 !
-! !DESCRIPTION:  This routine merges {\tt REAL} attribute data from 
-! four input {\tt AttrVect} arguments {\tt inAv1} , {\tt inAv2}, 
-! {\tt inAv3}, and {\tt inAv4} to a fifth {\tt AttrVect} {\tt outAv}.  The 
-! attributes to be merged are determined entirely by the real attributes 
-! of {\tt outAv}.  If {\tt outAv} shares one or more attributes with any of 
-! the inputs {\tt inAv1}, {\tt inAv2}, {\tt inAv3}, or {\tt inAv4}, a merge 
-! is performed on the individual {\em intersections} of attributes between 
-! the pairs $({\tt outAv},{\tt inAv1})$,  $({\tt outAv},{\tt inAv2})$, 
-! $({\tt outAv},{\tt inAv3})$, and $({\tt outAv},{\tt inAv3})$.  Currently, 
-! it is assumed that these pairwise intersections are all equal.  This 
-! assumption is of critical importance to the user.  If the user violates 
-! this assumption, incorrect merges of any attributes present only in some
-! (but not all) the inputs will result.
-!
-! The merge operatrion is a masked 
-! weighted element-by-element sum, as outlined in the following example.  
-! Let the vectors ${\bf a}$,${\bf b}$, ${\bf c}$ and ${\bf d}$ be data from 
-! Components $A$, $B$, $C$, and $D$ that have been interpolated onto the 
-! physical grid of another component $E$.  We wish to combine the data 
-! from $A$, $B$, $C$, and $D$ to get a vector ${\bf e}$, which represents the 
-! merged data on the grid of component $E$.  The merge relation to obtain 
-! the $i$th element of {\bf e} is 
-! $$ e_i = {1 \over {W_i}} \bigg\{ {{\prod_{j=1}^J} \kappa_{i}^j} 
-! {{\prod_{k=1}^K} \alpha_{i}^k} {a_i} + {{\prod_{l=1}^L} \lambda_{i}^l} 
-! {{\prod_{m=1}^M} \beta_{i}^m} {b_i} + {{\prod_{p=1}^P} \mu_{i}^p} 
-! {{\prod_{q=1}^Q} \gamma_{i}^q} {c_i} +  
-! {{\prod_{r=1}^R} \nu_{i}^r} {{\prod_{s=1}^S} \delta_{i}^s} {d_i} \bigg\} , $$
-! where
-! $$ {W_i} = {{\prod_{j=1}^J} \kappa_{i}^j} {{\prod_{k=1}^K} \alpha_{i}^k} + 
-! {{\prod_{l=1}^L} \lambda_{i}^l} {{\prod_{m=1}^M} \beta_{i}^m} + 
-! {{\prod_{p=1}^P} \mu_{i}^p} {{\prod_{q=1}^Q} \gamma_{i}^q} + 
-! {{\prod_{r=1}^R} \nu_{i}^r} {{\prod_{s=1}^S} \delta_{i}^s}. $$
-! The quantities ${\kappa_{i}^j}$, ${\lambda_{i}^p}$, ${\mu_{i}^p}$, and 
-! ${\nu_{i}^r}$ are {\em integer masks} (which have value either $0$ or $1$), 
-! and ${\alpha_{i}^k}$, ${\beta_{i}^m}$, ${\gamma_{i}^q}$, and ${\delta_{i}^s}$ 
-! are {\em real masks} (which are in the closed interval $[0,1]$).
-!
-! The integer and real masks are stored as attributes to the same input 
-! {\tt GeneralGrid} argument {\tt GGrid}.  The mask attribute names are 
-! stored as substrings to the colon-separated strings contained in the 
-! input {\tt CHARACTER} arguments {\tt iMaskTags1}, {\tt iMaskTags2}, 
-! {\tt iMaskTags3}, {\tt iMaskTags4}, {\tt rMaskTags1}, and {\tt rMaskTags2},
-! {\tt rMaskTags3}, and {\tt rMaskTags4}, .  The {\tt LOGICAL} input 
-! argument {\tt CheckMasks} governs how the masks are applied.    If 
-! ${\tt CheckMasks} = {\tt .TRUE.}$, the entries are checked to ensure 
-! they meet the definitions of real and integer masks.  If ${\tt CheckMasks} 
-! = {\tt .FALSE.}$ then the masks are multiplied together on an 
-! element-by-element basis with no validation of their entries (this option
-! results in slightly higher performance).
-!
-! This routine returns the sume of the masked weights as a diagnostic.
-! This quantity is returned in the output {\tt REAL} array {\tt WeightSum}.
-!
-! The correspondence between the quantities in the above merge relation 
-! and the arguments to this routine are summarized in the table.
-! \begin{center}
-! \begin{tabular}{|l|l|l|}\hline
-! {\bf Quantity} & {\bf Stored in} & {\bf Referenced by}  \\
-!  & {\bf Argument}    & {\bf Argument} \\
-! \hline
-! \hline 
-! $ {a_i} $ & {\tt inAv1} & \\
-! \hline
-! $ {b_i} $ & {\tt inAv2} & \\
-! \hline
-! $ {c_i} $ & {\tt inAv3} & \\
-! \hline
-! $ {d_i} $ & {\tt inAv4} & \\
-! \hline
-! $ {e_i} $ & {\tt outAv} & \\
-! \hline
-! $ {\kappa_i^j}, j=1,\ldots,J $ & {\tt GGrid} & {\tt iMaskTags1}\\
-! & & ($J$ items) \\
-! \hline
-! $ {\alpha_i^k}, k=1,\ldots,K $ & {\tt GGrid} & {\tt rMaskTags1}\\
-! & & ($K$ items) \\
-! \hline
-! $ {\lambda_i^l}, l=1,\ldots,L $ & {\tt GGrid} & {\tt iMaskTags2}\\
-! & & ($L$ items) \\
-! \hline
-! $ {\beta_i^m}, m=1,\ldots,M $ & {\tt GGrid} & {\tt rMaskTags2}\\
-! & & ($M$ items) \\
-! \hline
-! $ {\mu_i^p}, p=1,\ldots,P $ & {\tt GGrid} & {\tt iMaskTags3}\\
-! & & ($L$ items) \\
-! \hline
-! $ {\gamma_i^q}, q=1,\ldots,Q $ & {\tt GGrid} & {\tt rMaskTags3}\\
-! & & ($M$ items) \\
-! \hline
-! $ {\nu_i^r}, r=1,\ldots,R $ & {\tt GGrid} & {\tt iMaskTags4}\\
-! & & ($L$ items) \\
-! \hline
-! $ {\delta_i^s}, s=1,\ldots,S $ & {\tt GGrid} & {\tt rMaskTags4}\\
-! & & ($M$ items) \\
-! \hline
-! $ {W_i} $ & {\tt WeightSum} & \\
-! \hline
-! \end{tabular}
-! \end{center}
+! !DESCRIPTION:
+! Double precision versions of MergeFourGGSP_
 !
 ! !INTERFACE:
 
@@ -2306,7 +2048,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: MergeInDataGGSP\_, MergeInDataGGDP\_ - Add Data into a Merge
+! !IROUTINE: MergeInDataGGSP_ - Add Data into a Merge
 !
 ! !DESCRIPTION:  This routine takes input field data from the input 
 ! {\tt AttrVect} argument {\tt inAv}, and merges the real attributes it 
@@ -2759,43 +2501,8 @@
 !
 ! !IROUTINE: MergeInDataGGDP_ - merge in data from a component.
 !
-! !DESCRIPTION:  This routine takes input field data from the input 
-! {\tt AttrVect} argument {\tt inAv}, and merges the real attributes it 
-! shares with the input/output {\tt AttrVect} argument {\tt outAv}.  
-! The merge is a masked merge of the form 
-! $$ c_i = c_i + {{\prod_{j=1}^J} M_{i}^j} {{\prod_{k=1}^K} F_{i}^k} 
-! a_i , $$
-! where ${c_i}$ represents one element of one of the real attributes of 
-! {\tt outAv}, and ${a_i}$ represents one element of one of the real 
-! attributes of {\tt inAv}.  The ${M_{i}^j}$ are {\em integer masks} which 
-! have value either $0$ or $1$, and are integer attributes of the input 
-! {\tt GeneralGrid} argument {\tt GGrid}.  The ${F_{i}^k}$ are {\em real 
-! masks} whose values are in the closed interval $[0,1]$, and are real 
-! attributes of the input {\tt GeneralGrid} argument {\tt GGrid}.  The 
-! input {\tt CHARACTER} argument {\tt iMaskTags} is a string of colon-
-! delimited strings that name the integer attributes in {\tt GGrid} 
-! that are used as the masks ${M_{i}^j}$.  The input {\tt CHARACTER} 
-! argument {\tt rMaskTags} is a string of colon-delimited strings 
-! that name the real attributes in {\tt GGrid} that are used as the 
-! masks ${F_{i}^k}$.  The output {\tt REAL} array {\tt WeightSum} is 
-! used to store a running sum of the product of the masks.  The 
-! {\tt LOGICAL} input argument {\tt CheckMasks} governs how the masks 
-! are applied.  If ${\tt CheckMasks} = {\tt .TRUE.}$, the entries are 
-! checked to ensure they meet the definitions of real and integer masks.  
-! If ${\tt CheckMasks} = {\tt .FALSE.}$ then the masks are multiplied 
-! together on an element-by-element basis with no validation of their 
-! entries (this option results in slightly higher performance).
-!
-! {\tt N.B.:}  The lengths of the {\tt AttrVect} arguments {\tt inAv} 
-! and {\tt outAv} must be equal, and this length must also equal the 
-! lengths of {\tt GGrid} and {\tt WeightSum}.
-!
-! {\tt N.B.:}  This algorithm assumes the {\tt AttrVect} argument 
-! {\tt outAv} has been created, and its real attributes have been
-! initialized.
-!
-! {\tt N.B.:}  This algorithm assumes that the array {\tt WeightSum} 
-! has been created and initialized.
+! !DESCRIPTION:
+! Double precision version of MergeInDataGGSP_
 !
 ! !INTERFACE:
 
@@ -3205,7 +2912,3 @@
  end subroutine MergeInDataGGDP_
 
  end module m_Merge
-
-
-
-
