@@ -28,6 +28,7 @@
 
       public :: init		! create a local vector
       public :: clean		! clean the local vector
+      public :: zero		! zero the local vector
       public :: lsize		! size of the local vector
       public :: nIAttr		! number of integer attributes on local
       public :: nRAttr		! number of real attributes on local
@@ -52,6 +53,7 @@
 	initl_
     end interface
     interface clean  ; module procedure clean_  ; end interface
+    interface zero  ; module procedure zero_  ; end interface
     interface lsize  ; module procedure lsize_  ; end interface
     interface nIAttr ; module procedure nIAttr_ ; end interface
     interface nRAttr ; module procedure nRAttr_ ; end interface
@@ -345,6 +347,52 @@
 
  end function lsize_
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!        Math and Computer Science Division, Argonne National Laboratory
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: zero_ - zero the local vector
+!
+! !DESCRIPTION:
+!
+! !INTERFACE:
+
+ subroutine zero_(aV)
+     use m_die,only	: perr_die
+     use m_stdio,only	: stderr
+ 
+     implicit none
+
+     type(AttrVect), intent(inout) :: aV
+
+! !REVISION HISTORY:
+! 	17May01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype/code
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::zero_'
+  integer :: i,j,size
+
+  if(.not.associated(aV%iAttr) .and. .not.associated(aV%rAttr)) then
+    write(stderr,'(2a)')myname_, &
+      'MCTERROR:  Trying to zero an uninitialized AttrVect'
+      call perr_die(myname_,'undefined input argument',0)
+  endif
+
+  size = lsize_(aV)
+  do i=1,nIAttr_(aV)
+   do j=1,size
+    aV%iAttr(i,j)=0
+   enddo
+  enddo
+
+  do i=1,nRAttr_(aV)
+   do j=1,size
+    aV%rAttr(i,j)=0.
+   enddo
+  enddo
+
+
+ end subroutine zero_
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
