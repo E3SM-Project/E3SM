@@ -177,7 +177,7 @@
    use m_SparseMatrix, only : SparseMatrix_nRows => nRows
    use m_SparseMatrix, only : SparseMatrix_nCols => nCols
 
-   use m_SparseMatrixDecomp, only : SparseMatrixDecompByColumn => ByColumn
+   use m_SparseMatrixDecomp, only : SparseMatrixDecompByRow => ByRow
 
    use m_AttrVectComms, only : AttrVect_Scatter => scatter
 
@@ -210,6 +210,8 @@
 ! !REVISION HISTORY: 
 !
 !       13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial API spec.
+!       26Apr01 - R.L. Jacob  <jacob@mcs.anl.gov> - fix use statement
+!                 from SMDecomp so it points to ByRow
 
 !EOP
 !-------------------------------------------------------------------------
