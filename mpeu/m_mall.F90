@@ -107,7 +107,7 @@
   ! integer, dimension(1) :: mall
 					! names of the accouting bins
 
-  logical,save :: mall_on=.true.	! mall activity switch
+  logical,save :: mall_on=.false.	! mall activity switch
 
   integer,save :: mci
   integer,dimension(MXL),save :: mci_	! maximum ci_() calls
