@@ -5,16 +5,16 @@
 ! CVS $Name$ 
 !BOP -------------------------------------------------------------------
 !
-! !MODULE: m_NBSend -- Module for non-blocking version of MCT\_Send
+! !MODULE: m_NBSend -- Module for non-blocking version of MCT_Send
 !
 ! !DESCRIPTION:
 ! This module provides functions and data types to support a non-blocking
-! version of MCT\_Send.
+! version of {\tt MCT\_Send}.
 !
 ! {\bf N.B.:} This module may be deleted in future versions.
 !
 ! !SEE ALSO:
-! MCT\_Send, MCT\_Recv
+! MCT_Send, MCT_Recv
 !
 ! !INTERFACE:
  module m_NBSend
@@ -30,13 +30,13 @@
       public :: MCTReqs     ! the reqs datatype
 
       type MCTReqs
-	integer,dimension(:),pointer :: ireqs   ! the integer sends
-	integer,dimension(:),pointer :: rreqs   ! the real sends
+        integer,dimension(:),pointer :: ireqs   ! the integer sends
+        integer,dimension(:),pointer :: rreqs   ! the real sends
       end type MCTReqs
 
 ! !PUBLIC MEMBER FUNCTIONS:
 
-      public :: MCT_ISend   ! the non blocking MCT_Send
+      public :: MCT_ISend   ! the non blocking MCT\_Send
 
       public :: MCT_Wait    ! Wait for the nonblocking send to finish
 
@@ -44,9 +44,9 @@
       interface MCT_Wait ; module procedure MCT_Wait_ ; end interface
 
 ! !REVISION HISTORY:
-!      07Jun01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
-!      14Feb02 - R. Jacob <jacob@mcs.anl.gov> - Use MCT_comm instead
-!		 of MP_COMM_WORLD
+! 07Jun01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
+! 14Feb02 - R. Jacob <jacob@mcs.anl.gov> - Use MCT_comm instead
+!           of MP_COMM_WORLD
 !EOP ___________________________________________________________________
 
       ! declare a pointer structure for the real data
@@ -79,7 +79,8 @@
 ! result if the size of the attribute vector does not match the size
 ! parameter stored in the {\tt Router}.
 !
-! Returns immediately after posting the send with a MCT\_Req data type.
+! Returns immediately after posting the send with a {\tt MCT\_Req} data type
+! {\tt Reqs}
 !
 ! Requires a corresponding {\tt MCT\_Recv} to be called on the other component.
 !
@@ -122,11 +123,11 @@
       Type(MCTReqs),intent(inout) ::	Reqs   ! the returned list of MPI requests
 
 ! !REVISION HISTORY:
-!      07Jun01 - R. Jacob <jacob@mcs.anl.gov> - first prototype
-!      28Mar01 - E. Ong <eong@mcs.anl.gov> - changed copy order to correspond
-!                to MCT_Recv
-!      06Nov02 - R. Jacob <jacob@mcs.anl.gov> - Remove iList and rList arguments.
-!                Add check with Router lsize.
+! 07Jun01 - R. Jacob <jacob@mcs.anl.gov> - first prototype
+! 28Mar01 - E. Ong <eong@mcs.anl.gov> - changed copy order to correspond
+!           to MCT_Recv
+! 06Nov02 - R. Jacob <jacob@mcs.anl.gov> - Remove iList and rList arguments.
+!           Add check with Router lsize.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'MCT_ISend_'
@@ -258,7 +259,7 @@ end subroutine MCT_ISend_
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: MCT_Wait_  Wait for an MCT\ISend to complete.
+! !IROUTINE: MCT_Wait_  Wait for an MCT_ISend to complete.
 !
 ! !DESCRIPTION:
 ! Wait for the {\tt MCT\_ISend} on the {\tt Router} {\tt Rout} and handled by
@@ -289,7 +290,7 @@ end subroutine MCT_ISend_
       Type(MCTReqs),intent(inout) ::	Reqs
 
 ! !REVISION HISTORY:
-!      07Jun01 - R. Jacob <jacob@mcs.anl.gov> - first prototype
+! 07Jun01 - R. Jacob <jacob@mcs.anl.gov> - first prototype
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'MCT_Wait_'
