@@ -14,6 +14,9 @@ AC_HELP_STRING([--enable-selectedrealkind],
 [define single precision and double precision numbers using the selected_real_kind function. Default uses the kind inquiry function.]),
 [SRKDEF="SELECTEDREALKIND"]
 )
+AC_ARG_ENABLE(babel,
+AC_HELP_STRING([--enable-babel],[Modify MCT types to make them contiguous in memory. necessary to get Babel bindings to work.]),
+[SRKDEF="SEQUENCE"],)
 
 # DECLARE THE FOLLOWING PRECIOUS VARIABLES
 
@@ -32,6 +35,14 @@ AC_ARG_VAR(ENDIAN,Fortran compiler flag for converting big-endian to little-endi
 AC_ARG_VAR(INCLUDEFLAG,Fortran compiler flag for specifying module search path)
 AC_ARG_VAR(INCLUDEPATH,Additional library and module paths with INCLUDEFLAG)
 AC_ARG_VAR(AR,Archive command)
+AC_ARG_VAR(BABELROOT,Root directory of your Babel installation. i.e.: $BABELROOT/bin/babel $BABELROOT/lib/libsidl.so)
+AC_ARG_VAR(COMPILER_ROOT,Root directory of your (F90) compiler)
+
+# INCLUDE BABELROOT and COMPILER_ROOT in Makefile.conf(autoconf output)
+AC_SUBST(BABELROOT)
+AC_SUBST(COMPILER_ROOT)
+AC_SUBST(PYTHON)
+AC_SUBST(PYTHONOPTS)
 
 # SET TEMPORARY VARIABLES
 
@@ -592,7 +603,8 @@ echo Output Variables: {CC=$CC} {ALLCFLAGS=$ALLCFLAGS} \
 {BIT64=$BIT64} {ENDIAN=$ENDIAN} {MPIF90=$MPIF90} \
 {MPILIBS=$MPILIBS} {MPIHEADER=$MPIHEADER}  \
 {INCLUDEFLAG=$INCLUDEFLAG} {INCLUDEPATH=$INCLUDEPATH} \
-{AR=$AR} {prefix=$prefix}
+{AR=$AR} {BABELROOT=$BABELROOT} {COMPILER_ROOT=$COMPILER_ROOT} \
+{PYTHON=$PYTHON} {PYTHONOPTS=$PYTHONOPTS} {prefix=$prefix}
 echo
 
 AC_OUTPUT
