@@ -230,9 +230,7 @@
   if(present(iAction)) then
 
       allocate(aC%iAction(1:size(iAction)),stat=ier)
-      if(ier /= 0) then
-           call MP_perr_die(myname_,"iAction allocate",ier)
-      endif
+      if(ier /= 0) call die(myname_,"iAction allocate",ier)
       
       do i=1,size(iAction)
 
@@ -242,7 +240,7 @@
 	 case(MCT_AVG)
 	    aC%niAction(MCT_AVG) = aC%niAction(MCT_AVG) + 1
 	 case default
-	    call MP_perr_die(myname_,"illegal iAction assignment",ier)
+	    call die(myname_,"illegal iAction assignment")
 	 end select
 
 	 ! Safe? pointer copy
@@ -255,7 +253,7 @@
   if(present(rAction)) then
 
       allocate(aC%rAction(1:size(rAction)),stat=ier)
-      if(ier /= 0) call MP_perr_die(myname_,"iAction allocate",ier)
+      if(ier /= 0) call die(myname_,"iAction allocate",ier)
 
       do i=1,size(rAction)
 
@@ -265,7 +263,7 @@
 	 case(MCT_AVG)
 	    aC%nrAction(MCT_AVG) = aC%nrAction(MCT_AVG) + 1
 	 case default
-	    call MP_perr_die(myname_,"illegal rAction assignment",ier)
+	    call die(myname_,"illegal rAction assignment")
 	 end select
 
 	 ! Safe? pointer copy
@@ -355,7 +353,7 @@
         ! Convert the pointers to arrays
 
   allocate(iActionArray(bC_iActions),rActionArray(bC_rActions),stat=ier)
-  if(ier /= 0) call MP_perr_die(myname_,"iActionArray/rActionArray allocate",ier)
+  if(ier /= 0) call die(myname_,"iActionArray/rActionArray allocate",ier)
 
 
         ! Call init with present arguments
@@ -402,7 +400,7 @@
   endif
 
   deallocate(iActionArray,rActionArray,stat=ier)
-  if(ier /= 0) call MP_perr_die(myname_,"iActionArray/rActionArray deallocate",ier)
+  if(ier /= 0) call die(myname_,"iActionArray/rActionArray deallocate",ier)
 
  end subroutine initv_
 
@@ -546,7 +544,7 @@
       aC_associated = .false.
       if(uninit_kill) then
 	 if(present(source_name)) call perr(source_name,"Accumulator Initialization Error")
-	 call MP_perr_die(myname_,"aC pointers are unassociated",ier)
+	 call die(myname_,"aC pointers are unassociated")
       endif
 
    endif
@@ -559,7 +557,7 @@
 	 initialized_ = .false.
 	 if(uninit_kill) then
 	    if(present(source_name)) call perr(source_name,"Accumulator Initialization Error")
-	    call MP_perr_die(myname_,"No attributes found in aC%av",ier)
+	    call die(myname_,"No attributes found in aC%av")
 	 endif
       endif
 
@@ -568,8 +566,7 @@
 	    initialized_ = .false.
 	    if(uninit_kill) then
 	       if(present(source_name)) call perr(source_name,"Accumulator Initialization Error")
-	       call MP_perr_die(myname_, &
-                                "size(aC%iAction) /= nIAttr(aC%av)",ier)
+	       call die(myname_,"size(aC%iAction) /= nIAttr(aC%av)")
 	    endif
 	 endif
 
@@ -579,7 +576,7 @@
 	       initialized_ = .false.
 	       if(uninit_kill) then
 		  if(present(source_name)) call perr(source_name,"Accumulator Initialization Error")
-		  call MP_perr_die(myname_,"Invalid aC%iAction",ier)
+		  call die(myname_,"Invalid aC%iAction")
 	       endif
 	    endif
 	 enddo
@@ -592,7 +589,7 @@
 	    initialized_ = .false.
 	    if(uninit_kill) then
 	      if(present(source_name)) call perr(source_name,"Accumulator Initialization Error")
-	      call MP_perr_die(myname_,"size(aC%rAction) /= nRAttr(aC%av)",ier)
+	      call die(myname_,"size(aC%rAction) /= nRAttr(aC%av)")
 	    endif
 	 endif
 
@@ -602,7 +599,7 @@
 	       initialized_ = .false.
 	       if(uninit_kill) then
 		  if(present(source_name)) call perr(source_name,"Accumulator Initialization Error")
-		  call MP_perr_die(myname_,"Invalid aC%rAction",ier)
+		  call die(myname_,"Invalid aC%rAction")
 	       endif
 	    endif
 	 enddo
@@ -614,7 +611,7 @@
    if(init_kill) then
       if(initialized_ .eqv. .true.) then
 	 if(present(source_name)) call perr(source_name,"Accumulator Initialization Error")
-	 call MP_perr_die(myname_,"aC has been previously initialized",ier)
+	 call die(myname_,"aC has been previously initialized")
       endif
    endif
 

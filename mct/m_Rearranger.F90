@@ -150,8 +150,7 @@
 
    if( SendingToMyself.or.ReceivingFromMyself ) then
       if( .not. (SendingToMyself.and.ReceivingFromMyself) ) then
-	 call MP_perr_die(myname_, &
-                          "SendRouter is not compatible with RecvRouter",ier)
+	 call die(myname_,"SendRouter is not compatible with RecvRouter")
       endif
    endif
 
@@ -165,7 +164,7 @@
       allocate(OutRearranger%SrcStart(0), &
 	       OutRearranger%TrgStart(0), &
                OutRearranger%Length(0),stat=ier)
-      if(ier/=0) call MP_perr_die(myname_,'allocate(-default-...)',ier)
+      if(ier/=0) call die(myname_,'allocate(-default-...)',ier)
       OutRearranger%Numsegs=0
    endif
 
@@ -188,7 +187,7 @@
    nullify(OutRearranger%SrcStart,OutRearranger%Length)
    allocate(OutRearranger%SrcStart(maxsegcount), &
             OutRearranger%Length(maxsegcount),stat=ier)
-   if(ier/=0) call MP_perr_die(myname_,'allocate(SrcStart,Length...)',ier)
+   if(ier/=0) call die(myname_,'allocate(SrcStart,Length...)',ier)
 
 
    ! Allocate temporary Router structures to be used for modifying SendRouter 
@@ -199,7 +198,7 @@
 	    temp_pe_list(temp_nprocs), &
             temp_numsegs(temp_nprocs), &
             temp_locsize(temp_nprocs), stat=ier)
-   if(ier/=0) call MP_perr_die(myname_,'allocate(temp_seg_starts...)',ier)
+   if(ier/=0) call die(myname_,'allocate(temp_seg_starts...)',ier)
 
    temp_maxsize=0
    procindex=1
@@ -243,7 +242,7 @@
 	      OutRearranger%SendRouter%pe_list, &
               OutRearranger%SendRouter%num_segs, &
               OutRearranger%SendRouter%locsize,stat=ier)
-   if(ier/=0) call MP_perr_die(myname_, &
+   if(ier/=0) call die(myname_, &
                   'deallocate(OutRearranger%SendRouter%seg_starts...)',ier)
 
    ! Re-allocate SendRouter components
@@ -252,7 +251,7 @@
 	    OutRearranger%SendRouter%pe_list(temp_nprocs), &
 	    OutRearranger%SendRouter%num_segs(temp_nprocs), &
             OutRearranger%SendRouter%locsize(temp_nprocs),stat=ier)
-   if(ier/=0) call MP_perr_die(myname_, &
+   if(ier/=0) call die(myname_, &
                    'allocate(OutRearranger%SendRouter%seg_starts...)',ier)      
 
    ! Copy back in the spliced router information
@@ -271,7 +270,7 @@
 
    deallocate(temp_seg_starts,temp_seg_lengths,temp_pe_list, &
               temp_numsegs,temp_locsize,stat=ier)
-   if(ier/=0) call MP_perr_die(myname_,'deallocate(temp_seg_starts...)',ier)      
+   if(ier/=0) call die(myname_,'deallocate(temp_seg_starts...)',ier)      
 
    ! Operate on RecvRouter and create local copy structures.
 
@@ -281,7 +280,7 @@
    ! Allocate Rearranger copy structures
    nullify(OutRearranger%TrgStart)
    allocate(OutRearranger%TrgStart(maxsegcount),stat=ier)
-   if(ier/=0) call MP_perr_die(myname_,'allocate(TrgStart)',ier)
+   if(ier/=0) call die(myname_,'allocate(TrgStart)',ier)
 
   ! Allocate temporary Router structures to be used for modifying RecvRouter
    nullify(temp_seg_starts,temp_seg_lengths,temp_pe_list, &
@@ -290,7 +289,7 @@
             temp_seg_lengths(temp_nprocs,maxsegcount), &
 	    temp_pe_list(temp_nprocs),temp_numsegs(temp_nprocs), &
             temp_locsize(temp_nprocs),stat=ier)
-   if(ier/=0) call MP_perr_die(myname_,'allocate(temp_seg_starts...)',ier)
+   if(ier/=0) call die(myname_,'allocate(temp_seg_starts...)',ier)
 
    temp_maxsize=0
    procindex = 1
@@ -307,8 +306,8 @@
 
 	 ! Senity Check for Router%num_segs
 	 if(OutRearranger%Numsegs /= OutRearranger%RecvRouter%num_segs(i)) then
-	    call MP_perr_die(myname_, &
-                  'Router Error: Local RecvRouter /= Local SendRouter',ier)
+	    call die(myname_, &
+                     'Router Error: Local RecvRouter /= Local SendRouter')
 	 endif
 
       else
@@ -337,7 +336,7 @@
 	      OutRearranger%RecvRouter%pe_list, &
               OutRearranger%RecvRouter%num_segs, &
               OutRearranger%RecvRouter%locsize,stat=ier)
-   if(ier/=0) call MP_perr_die(myname_, &
+   if(ier/=0) call die(myname_, &
                    'deallocate(OutRearranger%RecvRouter%seg_starts...)',ier)
 
    ! Re-allocate RecvRouter components
@@ -346,7 +345,7 @@
 	    OutRearranger%RecvRouter%pe_list(temp_nprocs), &
 	    OutRearranger%RecvRouter%num_segs(temp_nprocs), &
             OutRearranger%RecvRouter%locsize(temp_nprocs),stat=ier)
-   if(ier/=0) call MP_perr_die(myname_, &
+   if(ier/=0) call die(myname_, &
                    'allocate(OutRearranger%RecvRouter%seg_starts...)',ier)      
 
     ! Copy back in the spliced router information
@@ -365,7 +364,7 @@
 
    deallocate(temp_seg_starts,temp_seg_lengths,temp_pe_list, &
               temp_numsegs,temp_locsize,stat=ier)
-   if(ier/=0) call MP_perr_die(myname_,'deallocate(temp_seg_starts...)',ier)
+   if(ier/=0) call die(myname_,'deallocate(temp_seg_starts...)',ier)
    
    endif
 
@@ -536,32 +535,32 @@
 
    ! Check the size of the Source AttrVect
    if(InRearranger%SrcAVsize /= AttrVect_lsize(SourceAV)) then
-      call warn(myname_,"InRearranger%SrcAVsize",InRearranger%SrcAVsize, &
+      call warn(myname_,"SourceAV argument is incorrect")
+      call die(myname_,"InRearranger%SrcAVsize",InRearranger%SrcAVsize, &
 	        "AttrVect_lsize(SourceAV)", AttrVect_lsize(SourceAV))
-      call MP_perr_die(myname_,"SourceAV argument is incorrect",ier)
    endif
 
    ! Check the size of the Target AttrVect
    if(InRearranger%TrgAVsize /= AttrVect_lsize(TargetAV)) then
-      call warn(myname_,"InRearranger%TrgAVsize",InRearranger%TrgAVsize, &
+      call warn(myname_,"TargetAV argument is incorrect")
+      call die(myname_,"InRearranger%TrgAVsize",InRearranger%TrgAVsize, &
 	        "AttrVect_lsize(TargetAV)", AttrVect_lsize(TargetAV))
-      call MP_perr_die(myname_,"TargetAV argument is incorrect",ier)
    endif
 
    ! Check the number of integer attributes 
    if(nIAttr(SourceAV) /= nIAttr(TargetAV)) then
-      call warn(myname_,"nIAttr(SourceAV)", nIAttr(SourceAV), &
+      call warn(myname_, &
+                "Number of attributes in SourceAV and TargetAV do not match")
+      call die(myname_,"nIAttr(SourceAV)", nIAttr(SourceAV), &
                         "nIAttr(TargetAV)", nIAttr(TargetAV))
-      call MP_perr_die(myname_, &
-      "Number of attributes in SourceAV and TargetAV do not match",ier)
    endif
 
    ! Check the number of real attributes
    if(nRAttr(SourceAV) /= nRAttr(TargetAV)) then
-      call warn(myname_,"nRAttr(SourceAV)", nRAttr(SourceAV), &
+      call warn(myname_, &
+      "Number of attributes in SourceAV and TargetAV do not match")
+      call die(myname_,"nRAttr(SourceAV)", nRAttr(SourceAV), &
                         "nRAttr(TargetAV)", nRAttr(TargetAV))
-      call MP_perr_die(myname_, &
-      "Number of attributes in SourceAV and TargetAV do not match",ier)
    endif
 
    ! ASSIGN VARIABLES
@@ -587,21 +586,21 @@
 
 	! allocate the number of pointers needed to send
 	allocate(ip1(SendRout%nprocs),stat=ier)
-	if(ier/=0) call MP_perr_die(myname_,'allocate(ip1)',ier)
+	if(ier/=0) call die(myname_,'allocate(ip1)',ier)
 
 	! allocate buffers to hold all outgoing data
 	do proc=1,SendRout%nprocs
 	   allocate(ip1(proc)%pi(SendRout%locsize(proc)*numi),stat=ier)
-	   if(ier/=0) call MP_perr_die(myname_,'allocate(ip1%pi)',ier)
+	   if(ier/=0) call die(myname_,'allocate(ip1%pi)',ier)
 	enddo
 
 	! allocate MPI send request array
 	allocate(send_ireqs(SendRout%nprocs),stat=ier)
-	if(ier/=0) call MP_perr_die(myname_,'allocate(send_ireqs)',ier)
+	if(ier/=0) call die(myname_,'allocate(send_ireqs)',ier)
 
 	! allocatAe MPI status array
 	allocate(send_istatus(MP_STATUS_SIZE,SendRout%nprocs),stat=ier)
-	if(ier/=0) call MP_perr_die(myname_,'allocate(istatus)',ier)
+	if(ier/=0) call die(myname_,'allocate(istatus)',ier)
 
      endif
 
@@ -610,21 +609,21 @@
 
 	! allocate the number of pointers needed to send
 	allocate(rp1(SendRout%nprocs),stat=ier)
-	if(ier/=0) call MP_perr_die(myname_,'allocate(rp1)',ier)
+	if(ier/=0) call die(myname_,'allocate(rp1)',ier)
 
 	! allocate buffers to hold all outgoing data
 	do proc=1,SendRout%nprocs
 	   allocate(rp1(proc)%pr(SendRout%locsize(proc)*numr),stat=ier)
-	   if(ier/=0) call MP_perr_die(myname_,'allocate(rp1%pr)',ier)
+	   if(ier/=0) call die(myname_,'allocate(rp1%pr)',ier)
 	enddo
 	
 	! allocate MPI send request array
 	allocate(send_rreqs(SendRout%nprocs),stat=ier)
-	if(ier/=0) call MP_perr_die(myname_,'allocate(send_rreqs)',ier)
+	if(ier/=0) call die(myname_,'allocate(send_rreqs)',ier)
 
 	! allocate MPI status array
 	allocate(send_rstatus(MP_STATUS_SIZE,SendRout%nprocs),stat=ier)
-	if(ier/=0) call MP_perr_die(myname_,'allocate(rstatus)',ier)
+	if(ier/=0) call die(myname_,'allocate(rstatus)',ier)
 
 	mp_Type_rp=MP_Type(rp1(1)%pr(1))
 
@@ -640,21 +639,21 @@
 
 	! allocate the number of pointers needed to receive
 	allocate(ip2(RecvRout%nprocs),stat=ier)
-	if(ier/=0) call MP_perr_die(myname_,'allocate(ip2)',ier)
+	if(ier/=0) call die(myname_,'allocate(ip2)',ier)
 
 	! allocate buffers to hold all incoming data
 	do proc=1,RecvRout%nprocs
 	   allocate(ip2(proc)%pi(RecvRout%locsize(proc)*numi),stat=ier)
-	   if(ier/=0) call MP_perr_die(myname_,'allocate(ip2%pi)',ier)
+	   if(ier/=0) call die(myname_,'allocate(ip2%pi)',ier)
 	enddo
      
 	! allocate MPI send request array
 	allocate(recv_ireqs(RecvRout%nprocs),stat=ier)
-	if(ier/=0) call MP_perr_die(myname_,'allocate(recv_ireqs)',ier)
+	if(ier/=0) call die(myname_,'allocate(recv_ireqs)',ier)
 
 	! allocate MPI integer status array
 	allocate(recv_istatus(MP_STATUS_SIZE),stat=ier)
-	if(ier/=0) call MP_perr_die(myname_,'allocate(istatus)',ier)
+	if(ier/=0) call die(myname_,'allocate(istatus)',ier)
 
      endif
 
@@ -663,21 +662,21 @@
 
 	! allocate the number of pointers needed to receive
 	allocate(rp2(RecvRout%nprocs),stat=ier)
-	if(ier/=0) call MP_perr_die(myname_,'allocate(rp2)',ier)
+	if(ier/=0) call die(myname_,'allocate(rp2)',ier)
 
 	! allocate buffers to hold all incoming data
 	do proc=1,RecvRout%nprocs
 	   allocate(rp2(proc)%pr(RecvRout%locsize(proc)*numr),stat=ier)
-	   if(ier/=0) call MP_perr_die(myname_,'allocate(rp2%pr)',ier)
+	   if(ier/=0) call die(myname_,'allocate(rp2%pr)',ier)
 	enddo
      
 	! allocate MPI receive request array
 	allocate(recv_rreqs(RecvRout%nprocs),stat=ier)
-	if(ier/=0) call MP_perr_die(myname_,'allocate(recv_rreqs)',ier)
+	if(ier/=0) call die(myname_,'allocate(recv_rreqs)',ier)
 
 	! allocate MPI real status array
 	allocate(recv_rstatus(MP_STATUS_SIZE),stat=ier)
-	if(ier/=0) call MP_perr_die(myname_,'allocate(rstatus)',ier)
+	if(ier/=0) call die(myname_,'allocate(rstatus)',ier)
 
 	mp_Type_rp=MP_Type(rp2(2)%pr(1))
 
@@ -807,20 +806,20 @@
 
 	! deallocatAe MPI status array
 	deallocate(send_istatus,stat=ier)
-	if(ier/=0) call MP_perr_die(myname_,'deallocate(istatus)',ier)
+	if(ier/=0) call die(myname_,'deallocate(istatus)',ier)
 
 	! done waiting, free up ireqs
 	deallocate(send_ireqs,stat=ier)
-	if(ier /= 0) call MP_perr_die(myname_,'deallocate(Reqs%ireqs)',ier)
+	if(ier /= 0) call die(myname_,'deallocate(Reqs%ireqs)',ier)
 
 	! Deallocate the send buffers
 	do proc=1,SendRout%nprocs
 	   deallocate(ip1(proc)%pi,stat=ier)
-	   if(ier/=0) call MP_perr_die(myname_,'deallocate(ip1%pr)',ier)
+	   if(ier/=0) call die(myname_,'deallocate(ip1%pr)',ier)
 	enddo
 
 	deallocate(ip1,stat=ier)
-	if(ier/=0) call MP_perr_die(myname_,'deallocate(ip1)',ier)
+	if(ier/=0) call die(myname_,'deallocate(ip1)',ier)
 
      endif
 
@@ -831,20 +830,20 @@
 
 	! deallocate MPI status array
 	deallocate(send_rstatus,stat=ier)
-	if(ier/=0) call MP_perr_die(myname_,'deallocate(rstatus)',ier)
+	if(ier/=0) call die(myname_,'deallocate(rstatus)',ier)
 
 	! done waiting, free up Reqs%rreqs
 	deallocate(send_rreqs,stat=ier)
-	if(ier /= 0) call MP_perr_die(myname_,'deallocate(Reqs%rreqs)',ier)
+	if(ier /= 0) call die(myname_,'deallocate(Reqs%rreqs)',ier)
 
 	! Deallocate the send buffers
 	do proc=1,SendRout%nprocs
 	   deallocate(rp1(proc)%pr,stat=ier)
-	   if(ier/=0) call MP_perr_die(myname_,'deallocate(rp1%pr)',ier)
+	   if(ier/=0) call die(myname_,'deallocate(rp1%pr)',ier)
 	enddo
 
 	deallocate(rp1,stat=ier)
-	if(ier/=0) call MP_perr_die(myname_,'deallocate(rp1)',ier)
+	if(ier/=0) call die(myname_,'deallocate(rp1)',ier)
 
      endif
 
@@ -948,20 +947,20 @@
 
 	! deallocatAe MPI status array
 	deallocate(recv_istatus,stat=ier)
-	if(ier/=0) call MP_perr_die(myname_,'deallocate(istatus)',ier)
+	if(ier/=0) call die(myname_,'deallocate(istatus)',ier)
 
 	! done waiting, free up ireqs
 	deallocate(recv_ireqs,stat=ier)
-	if(ier /= 0) call MP_perr_die(myname_,'deallocate(Reqs%ireqs)',ier)
+	if(ier /= 0) call die(myname_,'deallocate(Reqs%ireqs)',ier)
 
 	! Deallocate the send buffers
 	do proc=1,RecvRout%nprocs
 	   deallocate(ip2(proc)%pi,stat=ier)
-	   if(ier/=0) call MP_perr_die(myname_,'deallocate(ip1%pr)',ier)
+	   if(ier/=0) call die(myname_,'deallocate(ip1%pr)',ier)
 	enddo
 
 	deallocate(ip2,stat=ier)
-	if(ier/=0) call MP_perr_die(myname_,'deallocate(ip1)',ier)
+	if(ier/=0) call die(myname_,'deallocate(ip1)',ier)
 
      endif
 
@@ -969,20 +968,20 @@
 
 	! deallocate MPI status array
 	deallocate(recv_rstatus,stat=ier)
-	if(ier/=0) call MP_perr_die(myname_,'deallocate(rstatus)',ier)
+	if(ier/=0) call die(myname_,'deallocate(rstatus)',ier)
 
 	! done waiting, free up Reqs%rreqs
 	deallocate(recv_rreqs,stat=ier)
-	if(ier /= 0) call MP_perr_die(myname_,'deallocate(Reqs%rreqs)',ier)
+	if(ier /= 0) call die(myname_,'deallocate(Reqs%rreqs)',ier)
 
 	! Deallocate the send buffers
 	do proc=1,RecvRout%nprocs
 	   deallocate(rp2(proc)%pr,stat=ier)
-	   if(ier/=0) call MP_perr_die(myname_,'deallocate(rp1%pr)',ier)
+	   if(ier/=0) call die(myname_,'deallocate(rp1%pr)',ier)
 	enddo
 
 	deallocate(rp2,stat=ier)
-	if(ier/=0) call MP_perr_die(myname_,'deallocate(rp1)',ier)
+	if(ier/=0) call die(myname_,'deallocate(rp1)',ier)
 
      endif
 

@@ -129,12 +129,7 @@
   if(present(stat)) stat=0
 
   call MP_comm_rank(comm, myID, ier)
-  if(ier /= 0) then
-    call MP_perr(myname_,'MP_comm_rank()',ier)
-    if(.not.present(stat)) call die(myname_)
-    stat=ier
-    return
-  endif
+  if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
 
         ! Argument check of iC and oC
 
@@ -160,7 +155,7 @@
   call AttrVect_gather(iC%av, oC%av, GMap, root, comm, ier)
 
   if(ier /= 0) then
-    call MP_perr(myname_,'AttrVect_gather(iC%av, oC%av...',ier)
+    call perr(myname_,'AttrVect_gather(iC%av, oC%av...',ier)
     if(.not.present(stat)) call die(myname_)
     stat=ier
     return
@@ -236,12 +231,7 @@
   if(present(stat)) stat=0
 
   call MP_comm_rank(comm, myID, ier)
-  if(ier /= 0) then
-    call MP_perr(myname_,'MP_comm_rank()',ier)
-    if(.not.present(stat)) call die(myname_)
-    stat=ier
-    return
-  endif
+  if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
 
         ! Argument check of iC and oC
 
@@ -265,7 +255,7 @@
   call AttrVect_gather(iC%av, oC%av, GSMap, root, comm, ier)
   
   if(ier /= 0) then
-    call MP_perr(myname_,'AttrVect_gather(iC%av, oC%av...',ier)
+    call perr(myname_,'AttrVect_gather(iC%av, oC%av...',ier)
     if(.not.present(stat)) call die(myname_)
     stat=ier
     return
@@ -347,12 +337,7 @@
   if(present(stat)) stat=0
 
   call MP_comm_rank(comm, myID, ier)
-  if(ier /= 0) then
-    call MP_perr(myname_,'MP_comm_rank()',ier)
-    if(.not.present(stat)) call die(myname_)
-    stat=ier
-    return
-  endif
+  if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
 
         ! Argument check of iC and oC
 
@@ -380,7 +365,7 @@
   call AttrVect_scatter(iC%av, oC%av, GMap, root, comm, ier)
 
   if(ier /= 0) then
-    call MP_perr(myname_,'AttrVect_scatter(iC%av, oC%av...',ier)
+    call perr(myname_,'AttrVect_scatter(iC%av, oC%av...',ier)
     if(.not.present(stat)) call die(myname_)
     stat=ier
     return
@@ -455,12 +440,7 @@
   if(present(stat)) stat=0
 
   call MP_comm_rank(comm, myID, ier)
-  if(ier /= 0) then
-    call MP_perr(myname_,'MP_comm_rank()',ier)
-    if(.not.present(stat)) call die(myname_)
-    stat=ier
-    return
-  endif
+  if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
 
         ! Argument check of iC and oC
 
@@ -488,7 +468,7 @@
   call AttrVect_scatter(iC%av, oC%av, GSMap, root, comm, ier)
 
   if(ier /= 0) then
-    call MP_perr(myname_,'AttrVect_scatter(iC%av, oC%av...',ier)
+    call perr(myname_,'AttrVect_scatter(iC%av, oC%av...',ier)
     if(.not.present(stat)) call die(myname_)
     stat=ier
     return
@@ -560,12 +540,7 @@
   if(present(stat)) stat=0
 
   call MP_comm_rank(comm,myID,ier)
-  if(ier /= 0) then
-    call MP_perr(myname_,'MP_comm_rank()',ier)
-    if(.not.present(stat)) call die(myname_)
-    stat=ier
-    return
-  endif
+  if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
 
         ! Argument check : Kill if the root aC is not initialized,
         ! or if the non-root aC is initialized
@@ -584,7 +559,7 @@
   call AttrVect_bcast(aC%av, root, comm, ier)
 
   if(ier /= 0) then
-    call MP_perr(myname_,'AttrVect_bcast(aC%av)',ier)
+    call perr(myname_,'AttrVect_bcast(aC%av)',ier)
     if(.not.present(stat)) call die(myname_)
     stat=ier
     return
@@ -657,12 +632,7 @@
   if(present(stat)) stat=0
 
   call MP_comm_rank(comm,myID,ier)
-  if(ier /= 0) then
-    call MP_perr(myname_,'MP_comm_rank()',ier)
-    if(.not.present(stat)) call die(myname_)
-    stat=ier
-    return
-  endif
+  if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
 
         ! STEP 1: Pack broadcast buffer.
 
@@ -681,12 +651,7 @@
 
   call MPI_BCAST(AccBuffSize, 1, MP_INTEGER, root, comm, ier)
 
-  if(ier /= 0) then
-    call MP_perr(myname_,'AttrVect_bcast(AccBuffSize)',ier)
-    if(.not.present(stat)) call die(myname_)
-    stat=ier
-    return
-  endif
+  if(ier /= 0) call MP_perr_die(myname_,'AttrVect_bcast(AccBuffSize)',ier)
 
   allocate(AccBuff(AccBuffSize),stat=ier)
   if(ier /= 0) call MP_perr_die(myname_,"AccBuff allocate",ier)
@@ -722,12 +687,8 @@
 
   call MPI_BCAST(AccBuff, AccBuffSize, MP_INTEGER, root, comm, ier)
 
-  if(ier /= 0) then
-     call MP_perr(myname_,'MPI_bcast(AccBuff...',ier)
-     if(.not.present(stat)) call die(myname_)
-     stat=ier
-     return
-  endif
+  if(ier /= 0) call MP_perr_die(myname_,'MPI_bcast(AccBuff...',ier)
+
 
         ! STEP 3: Unpack broadcast buffer.
 
@@ -743,7 +704,7 @@
 
   if(aC_nIAttr > 0) then
      allocate(aC_iAction(aC_nIAttr),stat=ier)
-     if(ier /= 0) call MP_perr_die(myname_,"allocate aC_iAction",ier)
+     if(ier /= 0) call die(myname_,"allocate aC_iAction",ier)
      
      FirstiActionIndex = 5
      LastiActionIndex = 4+aC_nIAttr       
@@ -753,7 +714,7 @@
 
   if(aC_nRAttr > 0) then
      allocate(aC_rAction(aC_nRAttr),stat=ier)
-     if(ier /= 0) call MP_perr_die(myname_,"allocate aC_rAction",ier)
+     if(ier /= 0) call die(myname_,"allocate aC_rAction",ier)
 
      FirstrActionIndex = 5+aC_nIAttr
      LastrActionIndex = 4+aC_nIAttr+aC_nRAttr
@@ -796,7 +757,7 @@
 
 
   deallocate(aC_iAction,aC_rAction,stat=ier)
-  if(ier /= 0) call MP_perr_die(myname_,"deallocate aC_iAction...",ier)
+  if(ier /= 0) call die(myname_,"deallocate aC_iAction...",ier)
 
 
  end subroutine bcastp_

@@ -70,7 +70,7 @@
 ! !USES:
 !
       use m_stdio, only : stderr
-      use m_die,   only : MP_perr_die
+      use m_die,   only : MP_perr_die, die, warn
 
       use m_GlobalMap,    only : GlobalMap
 
@@ -99,17 +99,15 @@
 
   NumProcs = MCTWorld_ComponentNumProcs(ThisMCTWorld, GMap%comp_id)
   if(NumProcs /= size(GMap%displs)) then
-     write(stderr,'(a,)') myname_,":: Size mismatch-NumProcs = ", &
-	  NumProcs,"size(GMap%displs) = ",size(GMap%displs)
-     call MP_perr_die(myname_,"component/GlobalMap size mismatch",NumProcs)
+     call warn(myname_,"component/GlobalMap size mismatch")
+     call die(myname_,":: Size mismatch-NumProcs = ", &
+	  NumProcs,"size(GMap%displs) = ",size(GMap%displs))
   endif
 
        ! Allocate space for process location
 
   allocate(start(NumProcs), length(NumProcs), pe_loc(NumProcs), stat=ierr)
-  if(ierr /= 0) then
-     call MP_perr_die(myname_,"allocate(start(NumProcs...",ierr)
-  endif
+  if(ierr /= 0) call die(myname_,"allocate(start(NumProcs...",ierr)
 
        ! Load the arrays:
 
@@ -125,9 +123,7 @@
        ! Clean up...
 
   deallocate(start, length, pe_loc, stat=ierr)
-  if(ierr /= 0) then
-     call MP_perr_die(myname_,"deallocate(start,...",ierr)
-  endif
+  if(ierr /= 0) call die(myname_,"deallocate(start,...",ierr)
 
  end subroutine GlobalMapToGlobalSegMap_
 
@@ -158,7 +154,7 @@
 ! !USES:
 !
       use m_stdio, only : stderr
-      use m_die,   only : MP_perr_die
+      use m_die,   only : MP_perr_die, die
 
       use m_GlobalSegMap, only : GlobalSegMap
       use m_GlobalSegMap, only : GlobalSegMap_nlseg => nlseg
@@ -189,9 +185,7 @@
   if(present(NumPes)) then
 
      allocate(NumSegs(0:NumPes-1), stat=ierr)
-     if(ierr /= 0) then
-	call MP_perr_die(myname_,'allocate(NumSegs(1:NumPes-1))=',ierr)
-     endif
+     if(ierr /= 0) call die(myname_,'allocate(NumSegs(1:NumPes-1))=',ierr)
 
      do n=0,NumPes-1
 
@@ -199,14 +193,15 @@
 
 	NumSegs(n) = GlobalSegMap_nlseg(GSMap, n)
 	if(NumSegs(n) > 1) then
-	   call MP_perr_die(myname_,'To many segments, nlseg=',nlseg)
+	   call die(myname_, "To many segments, NumSegs(n) = ", &
+                    NumSegs(n), "n = ", n)
         endif
 
        ! Are there any segment start indices out of order?
        ! If so, die.
 
 	if(GSMap%start(n+1) <= GSMap%start(n)) then
-	   call MP_perr_die(myname_,'segment start indices out of order',n)
+	   call die(myname_,'segment start indices out of order',n)
 	endif
 
      end do
@@ -226,9 +221,7 @@
      end do
 
      allocate(NumSegs(0:NumActive-1), stat=ierr)
-     if(ierr /= 0) then
-	call MP_perr_die(myname_,'allocate(NumSegs(1:NumActive-1))=',ierr)
-     endif
+     if(ierr /= 0) call die(myname_,'allocate(NumSegs(1:NumActive-1))=',ierr)
 
      do n=0,NumActive-1
 
@@ -236,14 +229,15 @@
 
 	NumSegs(n) = GlobalSegMap_nlseg(GSMap, n)
 	if(NumSegs(n) > 1) then
-	   call MP_perr_die(myname_,'To many segments, nlseg=',nlseg)
+	   call die(myname_,'To many segments, NumSegs(n)=', NumSegs(n), &
+                    "n = ", n)
         endif
 
        ! Are there any segment start indices out of order?
        ! If so, die.
 
 	if(GSMap%start(n+1) <= GSMap%start(n)) then
-	   call MP_perr_die(myname_,'segment start indices out of order',n)
+	   call die(myname_,'segment start indices out of order',n)
 	endif
 
      end do
@@ -253,3 +247,8 @@
  end subroutine GlobalSegMapToGlobalMap_
 
  end module m_ConvertMaps
+
+
+
+
+

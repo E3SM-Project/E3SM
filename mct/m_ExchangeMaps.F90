@@ -168,9 +168,7 @@
   integer,dimension(MP_STATUS_SIZE) :: status
 
   call MP_COMM_RANK(LocalComm, myID, ierr)
-  if(ierr /= 0) then
-     call MP_perr_die(myname_,'call MP_COMM_RANK()',ierr)
-  endif
+  if(ierr /= 0) call MP_perr_die(myname_,'call MP_COMM_RANK()',ierr)
 
   RemoteRootID = ComponentRootRank(RemoteCompID, ThisMCTWorld, check=.true.)
 
@@ -185,17 +183,13 @@
 
      call MPI_SEND(LocalMapPars, NumHandshakePars, MP_INTEGER, &
 	           RemoteRootID, SendTag, ThisMCTWorld%MCT_comm, ierr)
-     if(ierr /= 0) then
-	call MP_perr_die(myname_,'call MPI_SEND()',ierr)
-     endif
+     if(ierr /= 0) call MP_perr_die(myname_,'call MPI_SEND()',ierr)
 
       ! Post receive from RemoteRootID:
 
      call MPI_RECV(RemoteMapPars, NumHandshakePars, MP_INTEGER, &
 	           RemoteRootID, RecvTag, ThisMCTWorld%MCT_comm, status, ierr)
-     if(ierr /= 0) then
-	call MP_perr_die(myname_,'call MPI_RECV()',ierr)
-     endif
+     if(ierr /= 0) call MP_perr_die(myname_,'call MPI_RECV()',ierr)
 
   endif ! if(myID == 0)
 
@@ -427,34 +421,30 @@
 
      if(LocalMapPars(MapTypeIndex) /= RemoteMapPars(MapTypeIndex)) then
 	ierr = 2
-	call MP_perr_die(myname_,'Map Type mismatch',ierr)
+	call die(myname_,'Map Type mismatch',ierr)
      endif
 
      if(LocalMapPars(GsizeIndex) /= RemoteMapPars(GsizeIndex)) then
 	ierr = 3
-	call MP_perr_die(myname_,'Map Grid Size mismatch',ierr)
+	call die(myname_,'Map Grid Size mismatch',ierr)
      endif
 
      if(RemoteCompID /= RemoteMapPars(ComponentIDIndex)) then
 	ierr = 4
-	call MP_perr_die(myname_,'Component ID mismatch',ierr)
+	call die(myname_,'Component ID mismatch',ierr)
      endif
 
       ! SendBuf will hold the arrays LocalGSMap%start, LocalGSMap%length,
       ! and LocalGSMap%pe_loc in that order.
 
      allocate(SendBuf(3*LocalMapPars(NumSegIndex)), stat=ierr)
-     if(ierr /= 0) then
-	call MP_perr_die(myname_,'allocate(SendBuf...)',ierr)
-     endif
+     if(ierr /= 0) call die(myname_,'allocate(SendBuf...)',ierr)
 
       ! RecvBuf will hold the arrays RemoteGSMap%start, RemoteGSMap%length,
       ! and RemoteGSMap%pe_loc in that order.
 
      allocate(RecvBuf(3*RemoteMapPars(NumSegIndex)), stat=ierr)
-     if(ierr /= 0) then
-	call MP_perr_die(myname_,'allocate(RecvBuf...)',ierr)
-     endif
+     if(ierr /= 0) call die(myname_,'allocate(RecvBuf...)',ierr)
 
       ! Load SendBuf in the order described above:
      local_ngseg = LocalMapPars(NumSegIndex)
@@ -477,32 +467,23 @@
 
      call MPI_ISEND(SendBuf(1), 3*LocalMapPars(NumSegIndex), MP_INTEGER, &
 	           remote_root, SendTag, ThisMCTWorld%MCT_comm, req, ierr)
-     if(ierr /= 0) then
-	call MP_perr_die(myname_,'MPI_SEND(SendBuf...',ierr)
-     endif
+     if(ierr /= 0) call MP_perr_die(myname_,'MPI_SEND(SendBuf...',ierr)
 
       ! Receive RecvBuf from the remote component root:
 
      call MPI_RECV(RecvBuf, 3*RemoteMapPars(NumSegIndex), MP_INTEGER, &
 	           remote_root, RecvTag, ThisMCTWorld%MCT_comm, status, ierr)
-     if(ierr /= 0) then
-	call MP_perr_die(myname_,'MPI_Recv(RecvBuf...',ierr)
-     endif
+     if(ierr /= 0) call MP_perr_die(myname_,'MPI_Recv(RecvBuf...',ierr)
 
      call MPI_WAIT(req,wstatus,ierr)
-     if(ierr /= 0) then
-	call MP_perr_die(myname_,'MPI_WAIT(SendBuf..',ierr)
-     endif
+     if(ierr /= 0) call MP_perr_die(myname_,'MPI_WAIT(SendBuf..',ierr)
 
       ! Allocate arrays start(:), length(:), and pe_loc(:)
 
      allocate(start(RemoteMapPars(NumSegIndex)),  &
 	      length(RemoteMapPars(NumSegIndex)), &
 	      pe_loc(RemoteMapPars(NumSegIndex)), stat=ierr)
-
-     if(ierr /= 0) then
-	call MP_perr_die(myname_,'allocate(start...',ierr)
-     endif
+     if(ierr /= 0) call die(myname_,'allocate(start...',ierr)
 
       ! Unpack RecvBuf into arrays start(:), length(:), and pe_loc(:)
      remote_ngseg = RemoteMapPars(NumSegIndex)
@@ -525,9 +506,7 @@
   if(myID /= root) then
      
       allocate(start(1), length(1), pe_loc(1), stat=ierr)
-      if(ierr /= 0) then
-	 call MP_perr_die(myname_,'non-root allocate(start...',ierr)
-      endif
+      if(ierr /= 0) call die(myname_,'non-root allocate(start...',ierr)
 
   endif
   
@@ -543,7 +522,7 @@
 
   deallocate(start, length, pe_loc, stat=ierr)
   if(ierr /= 0) then
-     call MP_perr_die(myname_,'deallocate(start...',ierr)
+     call die(myname_,'deallocate(start...',ierr)
   endif
 
       ! Deallocate allocated arrays on the root:
@@ -552,7 +531,7 @@
      
      deallocate(SendBuf, RecvBuf, stat=ierr)
      if(ierr /= 0) then
-	call MP_perr_die(myname_,'deallocate(SendBuf...',ierr)
+	call die(myname_,'deallocate(SendBuf...',ierr)
      endif
 
   endif ! if(myID == root)
