@@ -65,21 +65,32 @@
 ! !USES:
 !
    use m_die,  only: MP_perr_die,die
+
    use m_List, only: List
    use m_List, only: List_init => init
    use m_List, only: List_clean => clean
+
+   use m_AttrVect, only: AttrVect
+   use m_AttrVect, only: AttrVect_init => init
+   use m_AttrVect, only: AttrVect_lsize => lsize
+   use m_AttrVect, only: AttrVect_indexIA => indexIA
+   use m_AttrVect, only: AttrVect_copy => copy
+   use m_AttrVect, only: AttrVect_clean => clean
+   
+   use m_AttrVectComms, only: AttrVect_scatter => scatter
+   use m_AttrVectComms, only: AttrVect_gather => gather
+
+   use m_GlobalMap, only : GlobalMap
+   use m_GlobalMap, only : GlobalMap_init => init
+   use m_GlobalMap, only : GlobalMap_clean => clean
 
    use m_GlobalSegMap, only: GlobalSegMap
    use m_GlobalSegMap, only: GlobalSegMap_init => init
    use m_GlobalSegMap, only: GlobalSegMap_peLocs => peLocs
    use m_GlobalSegMap, only: GlobalSegMap_comp_id => comp_id
-   use m_GlobalSegMap, only: GlobalSegMap_gsize => gsize
-   use m_GlobalSegMap, only: GlobalSegMap_ngseg => ngseg
 
    use m_SparseMatrix, only: SparseMatrix
-
    use m_SparseMatrix, only: SparseMatrix_lsize => lsize
-   use m_SparseMatrix, only: SparseMatrix_indexIA => indexIA
    use m_SparseMatrix, only: SparseMatrix_SortPermute => SortPermute
 
    implicit none
@@ -125,19 +136,30 @@
 ! 26Apr01 - J.W. Larson <larson@mcs.anl.gov> - fixed major logic bug
 !           that had all processes executing some operations that 
 !           should only occur on the root.
+! 09Jul03 - E.T. Ong <eong@mcs.anl.gov> - call pe_locs in parallel. 
+!           reduce the serial sort from gcol:grow to just gcol.
 !EOP
 !-------------------------------------------------------------------------
 
   character(len=*),parameter :: myname_=myname//'ByColumnGSMap_'
 ! Process ID number
-  integer :: myID
+  integer :: myID, mySIZE
 ! Attributes for the output GlobalSegMap
   integer :: gsize, comp_id, ngseg
 ! Temporary array for identifying each matrix element column and 
 ! process ID destination
-  integer, dimension(:), allocatable :: gCol, element_pe_locs 
-! Index to identify the gcol attribute in sMat:
-  integer :: igCol
+  type(AttrVect) :: gcol
+  type(AttrVect) :: dist_gcol
+  type(AttrVect) :: element_pe_locs 
+  type(AttrVect) :: dist_element_pe_locs
+! Index variables for the AttrVects
+  integer :: dist_gsize
+  integer :: gcol_index
+  integer :: element_pe_locs_index
+! Temporary array for initializing GlobalMap Decomposition
+  integer,dimension(:), allocatable :: counts
+! GlobalMap for setting up decomposition to call pe_locs
+  type(GlobalMap) :: dist_GMap
 ! Temporary arrays for matrix GlobalSegMap attributes
   integer, dimension(:), pointer :: starts, lengths, pe_locs
 ! List storage for sorting keys
@@ -154,64 +176,118 @@
      call MP_perr_die(myname_,'call MPI_COMM_RANK(...',ierr)
   endif
 
+      ! Determine the number of processors in communicator
+
+  call MPI_COMM_SIZE(comm, mySIZE, ierr)
+  if(ierr /= 0) then
+     call MP_perr_die(myname_,'call MPI_COMM_SIZE(...',ierr)
+  endif
+
+       ! Allocate space for GlobalMap length information
+
+  allocate(counts(0:mySIZE-1),stat=ierr)
+  if(ierr/=0) call die(myname_,"allocate(counts)",ierr)
+
        ! First step:  a lot of prep work on the root only:
 
   if(myID == root) then
+
+       ! Sort the matrix entries in sMat by column.  
+       ! First, create the key list...
+
+     call List_init(sort_keys,'gcol')
+
+       ! Now perform the sort/permute...
+
+     call SparseMatrix_SortPermute(sMat, sort_keys)
+
+     call List_clean(sort_keys)
 
        ! The global size of matrix GlobalSegMap is the number nonzero
        ! elements in sMat.  
 
      gsize = SparseMatrix_lsize(sMat)
 
-       ! The matrix GlobalSegMap inherits the component ID from xGSMap:
-
-     comp_id = GlobalSegMap_comp_id(xGSMap)
-   
-       ! Sort the matrix entries in sMat by column, then row.  First,
-       ! create the key list...
-
-     call List_init(sort_keys,'gcol:grow')
-
-       ! Now perform the sort/permute...
-
-     call SparseMatrix_SortPermute(sMat, sort_keys)
-
        ! Allocate storage space for matrix element column indices and
        ! process ID destinations
 
-     allocate(gCol(gsize), element_pe_locs(gsize), stat=ierr)
-
-     if(ierr /= 0) then
-	call die(myname_,'allocate(gCol...',ierr)
-     endif
+     call AttrVect_init(aV=gcol, iList="gcol", lsize=gsize)
 
        ! Extract global column information and place in array gCol
 
-     igCol = SparseMatrix_indexIA(sMat, 'gcol', dieWith=myname_)
+     call AttrVect_copy(aVin=sMat%data, aVout=gcol, iList="gcol")
 
-     do i=1, gsize
-	gCol(i) = sMat%data%iAttr(igCol,i)
-     end do
+       ! Setup GlobalMap decomposition lengths:
 
+     do i=0,mySIZE-1
+        counts(i) = gsize/mySIZE
+     enddo
+     counts(mySIZE-1) = counts(mySIZE-1) + mod(gsize,mySIZE)
+
+  endif
+
+       ! Initialize GlobalMap so that we can scatter the global row
+       ! information. The GlobalMap will inherit the component ID
+       ! from xGSMap
+
+  comp_id = GlobalSegMap_comp_id(xGSMap)
+
+  call GlobalMap_init(GMap=dist_GMap, comp_id=comp_id, lns=counts, &
+                      root=root, comm=comm)
+
+  call AttrVect_scatter(iV=gcol, oV=dist_gcol, GMap=dist_GMap, &
+                        root=root, comm=comm)
+
+       ! Similarly, we want to scatter the element_pe_locs using the 
+       ! same decomposition
+  
+  dist_gsize = AttrVect_lsize(dist_gcol)
+
+  call AttrVect_init(aV=dist_element_pe_locs, iList="element_pe_locs", &
+                     lsize=dist_gsize)
+     
        ! Compute process ID destination for each matrix element,
-       ! and store in the array element_pe_locs
+       ! and store in the AttrVect element_pe_locs
 
-     call GlobalSegMap_peLocs(xGSMap, gsize, gCol, element_pe_locs)
+  gcol_index = AttrVect_indexIA(dist_gcol,"gcol", dieWith=myname_)
+  element_pe_locs_index = AttrVect_indexIA(dist_element_pe_locs, &
+                            "element_pe_locs", dieWith=myname_)
 
+  call GlobalSegMap_peLocs(xGSMap, dist_gsize,      &
+          dist_gcol%iAttr(gcol_index,1:dist_gsize), &
+          dist_element_pe_locs%iAttr(element_pe_locs_index,1:dist_gsize))
+
+  call AttrVect_gather(iV=dist_element_pe_locs, oV=element_pe_locs, &
+                       GMap=dist_GMap, root=root, comm=comm)
+
+       ! Back to the root operations
+
+  if(myID == root) then
+
+       ! Sanity check: Is the globalsize of sMat the same as the 
+       ! gathered size of element_pe_locs?
+                  
+     if(gsize /= AttrVect_lsize(element_pe_locs)) then
+        call die(myname_,"gsize /= AttrVect_lsize(element_pe_locs) &
+                 & on root process")
+     endif
+       
        ! Using the entries of gCol and element_pe_locs, build the
        ! output GlobalSegMap attribute arrays starts(:), lengths(:),
        ! and pe_locs(:)
 
-     call ComputeSegments_(element_pe_locs, gCol, gsize, ngseg, starts, &
-                           lengths, pe_locs)
+     gcol_index = AttrVect_indexIA(gcol,"gcol", dieWith=myname_)
+     element_pe_locs_index = AttrVect_indexIA(element_pe_locs, &
+                                "element_pe_locs", dieWith=myname_)
 
-       ! Clean up arrays allocated on the root
+     call ComputeSegments_(element_pe_locs%iAttr(element_pe_locs_index, &
+                                                              1:gsize), &
+                           gcol%iAttr(gcol_index,1:gsize), &
+                           gsize, ngseg, starts, lengths, pe_locs)
+       ! Clean up on the root
 
-     deallocate(gCol, element_pe_locs, stat=ierr)
-
-     if(ierr /= 0) then
-	call die(myname_,'deallocate(gCol,element_pe_locs)',ierr)
-     endif
+     call AttrVect_clean(gcol)
+     call AttrVect_clean(element_pe_locs)
 
   endif ! if(myID == root)
 
@@ -239,7 +315,11 @@
 
        ! Clean up 
 
-  deallocate(starts, lengths, pe_locs, stat=ierr)
+  call GlobalMap_clean(dist_GMap)
+  call AttrVect_clean(dist_gcol)
+  call AttrVect_clean(dist_element_pe_locs)
+
+  deallocate(starts, lengths, pe_locs, counts, stat=ierr)
   if(ierr /= 0) then
      call die(myname_,'deallocate(starts...',ierr)
   endif
@@ -267,17 +347,27 @@
    use m_List, only: List_init => init
    use m_List, only: List_clean => clean
 
+   use m_AttrVect, only: AttrVect
+   use m_AttrVect, only: AttrVect_init => init
+   use m_AttrVect, only: AttrVect_lsize => lsize
+   use m_AttrVect, only: AttrVect_indexIA => indexIA
+   use m_AttrVect, only: AttrVect_copy => copy
+   use m_AttrVect, only: AttrVect_clean => clean
+   
+   use m_AttrVectComms, only: AttrVect_scatter => scatter
+   use m_AttrVectComms, only: AttrVect_gather => gather
+
+   use m_GlobalMap, only : GlobalMap
+   use m_GlobalMap, only : GlobalMap_init => init
+   use m_GlobalMap, only : GlobalMap_clean => clean
+
    use m_GlobalSegMap, only: GlobalSegMap
    use m_GlobalSegMap, only: GlobalSegMap_init => init
    use m_GlobalSegMap, only: GlobalSegMap_peLocs => peLocs
    use m_GlobalSegMap, only: GlobalSegMap_comp_id => comp_id
-   use m_GlobalSegMap, only: GlobalSegMap_gsize => gsize
-   use m_GlobalSegMap, only: GlobalSegMap_ngseg => ngseg
 
    use m_SparseMatrix, only: SparseMatrix
-
    use m_SparseMatrix, only: SparseMatrix_lsize => lsize
-   use m_SparseMatrix, only: SparseMatrix_indexIA => indexIA
    use m_SparseMatrix, only: SparseMatrix_SortPermute => SortPermute
 
    implicit none
@@ -322,19 +412,30 @@
 ! 26Apr01 - J.W. Larson <larson@mcs.anl.gov> - fixed major logic bug
 !           that had all processes executing some operations that 
 !           should only occur on the root.
+! 09Jun03 - E.T. Ong <eong@mcs.anl.gov> - call peLocs in parallel.
+!           reduce the serial sort from grow:gcol to just grow.
 !EOP
 !-------------------------------------------------------------------------
 
   character(len=*),parameter :: myname_=myname//'ByRowGSMap_'
-! Process ID number
-  integer :: myID
+! Process ID number and communicator size
+  integer :: myID, mySIZE
 ! Attributes for the output GlobalSegMap
   integer :: gsize, comp_id, ngseg
 ! Temporary array for identifying each matrix element row and 
 ! process ID destination
-  integer, dimension(:), allocatable :: gRow, element_pe_locs 
-! Index to identify the grow attribute in sMat:
-  integer :: igRow
+  type(AttrVect) :: grow
+  type(AttrVect) :: dist_grow
+  type(AttrVect) :: element_pe_locs 
+  type(AttrVect) :: dist_element_pe_locs
+! Index variables for AttrVects
+  integer :: dist_gsize
+  integer :: grow_index
+  integer :: element_pe_locs_index
+! Temporary array for initializing GlobalMap Decomposition
+  integer,dimension(:), allocatable :: counts
+! GlobalMap for setting up decomposition to call pe_locs
+  type(GlobalMap) :: dist_GMap
 ! Temporary arrays for matrix GlobalSegMap attributes
   integer, dimension(:), pointer :: starts, lengths, pe_locs
 ! List storage for sorting keys
@@ -351,63 +452,120 @@
      call MP_perr_die(myname_,'call MPI_COMM_RANK(...',ierr)
   endif
 
+       ! Determine the number of processors in communicator
+
+  call MPI_COMM_SIZE(comm, mySIZE, ierr)
+  if(ierr /= 0) then
+     call MP_perr_die(myname_,'call MPI_COMM_SIZE(...',ierr)
+  endif
+
+       ! Allocate space for GlobalMap length information
+
+  allocate(counts(0:mySIZE-1),stat=ierr)
+  if(ierr/=0) call die(myname_,"allocate(counts)",ierr)
+
        ! First step:  a lot of prep work on the root only:
 
   if(myID == root) then
 
-       ! The global size of matrix GlobalSegMap is the number of rows.  
+       ! Sort the matrix entries in sMat by row. 
+       ! First, create the key list...
 
-     gsize = SparseMatrix_lsize(sMat)
-
-       ! The matrix GlobalSegMap inherits the component ID from yGSMap:
-
-     comp_id = GlobalSegMap_comp_id(yGSMap)
-   
-       ! Sort the matrix entries in sMat by row, then column.  First,
-       ! create the key list...
-
-     call List_init(sort_keys,'grow:gcol')
+     call List_init(sort_keys,'grow')
 
        ! Now perform the sort/permute...
 
      call SparseMatrix_SortPermute(sMat, sort_keys)
 
+     call List_clean(sort_keys)
+
+       ! The global size of matrix GlobalSegMap is the number of rows.  
+
+     gsize = SparseMatrix_lsize(sMat)
+
        ! Allocate storage space for matrix element row indices and
        ! process ID destinations
 
-     allocate(gRow(gsize), element_pe_locs(gsize), stat=ierr)
+     call AttrVect_init(aV=grow, iList="grow", lsize=gsize)
 
-     if(ierr /= 0) then
-	call die(myname_,'allocate(gRow...',ierr)
+       ! Extract global row information and place in AttrVect grow
+
+     call AttrVect_copy(aVin=sMat%data, aVout=grow, iList="grow")
+
+       ! Setup GlobalMap decomposition lengths: 
+       ! Give any extra points to the last process
+
+     do i=0,mySIZE-1
+        counts(i) = gsize/mySIZE
+     enddo
+     counts(mySIZE-1) = counts(mySIZE-1) + mod(gsize,mySIZE)
+
+  endif
+  
+       ! Initialize GlobalMap and scatter the global row information.
+       ! The GlobalMap will inherit the component ID from yGSMap
+
+  comp_id = GlobalSegMap_comp_id(yGSMap)
+     
+  call GlobalMap_init(GMap=dist_GMap, comp_id=comp_id, lns=counts, &
+                      root=root, comm=comm)
+
+  call AttrVect_scatter(iV=grow, oV=dist_grow, GMap=dist_GMap, &
+                        root=root, comm=comm)
+
+       ! Similarly, we want to scatter the element_pe_locs using the 
+       ! same decomposition
+  
+  dist_gsize = AttrVect_lsize(dist_grow)
+
+  call AttrVect_init(aV=dist_element_pe_locs, iList="element_pe_locs", &
+                     lsize=dist_gsize)
+     
+       ! Compute process ID destination for each matrix element,
+       ! and store in the AttrVect element_pe_locs
+
+  grow_index = AttrVect_indexIA(dist_grow,"grow", dieWith=myname_)
+  element_pe_locs_index = AttrVect_indexIA(dist_element_pe_locs, &
+                            "element_pe_locs", dieWith=myname_)
+
+  call GlobalSegMap_peLocs(yGSMap, dist_gsize,      &
+          dist_grow%iAttr(grow_index,1:dist_gsize), &
+          dist_element_pe_locs%iAttr(element_pe_locs_index,1:dist_gsize))
+
+       ! Gather element_pe_locs on root so that we can call compute_segments
+
+  call AttrVect_gather(iV=dist_element_pe_locs, oV=element_pe_locs, &
+                       GMap=dist_GMap, root=root, comm=comm)
+
+       ! Back to the root operations
+
+  if(myID == root) then
+
+       ! Sanity check: Is the globalsize of sMat the same as the 
+       ! gathered size of element_pe_locs?
+                  
+     if(gsize /= AttrVect_lsize(element_pe_locs)) then
+        call die(myname_,"gsize /= AttrVect_lsize(element_pe_locs) &
+                 & on root process")
      endif
 
-       ! Extract global row information and place in array gRow
-
-     igRow = SparseMatrix_indexIA(sMat, 'grow', dieWith=myname_)
-
-     do i=1, gsize
-	gRow(i) = sMat%data%iAttr(igRow,i)
-     end do
-
-       ! Compute process ID destination for each matrix element,
-       ! and store in the array element_pe_locs
-
-     call GlobalSegMap_peLocs(yGSMap, gsize, gRow, element_pe_locs)
-
-       ! Using the entries of gRow and element_pe_locs, build the
+       ! Using the entries of grow and element_pe_locs, build the
        ! output GlobalSegMap attribute arrays starts(:), lengths(:),
        ! and pe_locs(:)
 
-     call ComputeSegments_(element_pe_locs, gRow, gsize, ngseg, starts, &
-                           lengths, pe_locs)
+     grow_index = AttrVect_indexIA(grow,"grow", dieWith=myname_)
+     element_pe_locs_index = AttrVect_indexIA(element_pe_locs, &
+                                "element_pe_locs", dieWith=myname_)
 
-       ! Clean up arrays allocated on the root
+     call ComputeSegments_(element_pe_locs%iAttr(element_pe_locs_index, &
+                                                              1:gsize), &
+                           grow%iAttr(grow_index,1:gsize), &
+                           gsize, ngseg, starts, lengths, pe_locs)
 
-     deallocate(gRow, element_pe_locs, stat=ierr)
+       ! Clean up on the root
 
-     if(ierr /= 0) then
-	call die(myname_,'deallocate(gRow,element_pe_locs)',ierr)
-     endif
+     call AttrVect_clean(grow)
+     call AttrVect_clean(element_pe_locs)
 
   endif ! if(myID == root)
 
@@ -428,14 +586,19 @@
 
        ! Using this local data on the root, create the SparseMatrix 
        ! GlobalSegMap sMGSMap (which will be valid on all processes
-       ! on the communicator:
+       ! on the communicator. The GlobalSegMap will inherit the 
+       ! component ID from yGSMap
 
   call GlobalSegMap_init(sMGSMap, ngseg, starts, lengths, pe_locs, &
                          root, comm, comp_id, gsize)
 
        ! Clean up:
 
-  deallocate(starts, lengths, pe_locs, stat=ierr)
+  call GlobalMap_clean(dist_GMap)
+  call AttrVect_clean(dist_grow)
+  call AttrVect_clean(dist_element_pe_locs)
+
+  deallocate(starts, lengths, pe_locs, counts, stat=ierr)
   if(ierr /= 0) then
      call die(myname_,'deallocate(starts...',ierr)
   endif
