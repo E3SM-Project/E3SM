@@ -5,8 +5,7 @@
 ! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: MCT_Recvsum - Distributed receive of an Attribute Vector with
-!                          summation
+! !IROUTINE: MCT_Recvsum - Distributed receive of an Attribute Vector with summation
 !
 ! !DESCRIPTION:
 ! Recieve into the {\tt AttrVect} {\tt aV} the data coming from the component
