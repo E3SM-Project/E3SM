@@ -401,6 +401,8 @@
 ! 	15Jan01 - J.W. Larson <larson@mcs.anl.gov> - renamed  GM_scatter_
 ! 	08Feb01 - J.W. Larson <larson@mcs.anl.gov> - add logic to prevent
 !                 empty calls (i.e. no data in buffer) to MPI_SCATTERV()
+!       27Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - small bug fix to
+!                 integer attribute scatter
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GM_scatter_'
@@ -441,7 +443,7 @@
   if(nIA > 0) then
      call MPI_scatterv(iV%iAttr(1,1),GMap%counts*nIA,	&
 	  GMap%displs*nIA,MP_INTEGER,			&
-	  oV%iAttr(1,1),noV*nRA,MP_INTEGER,root,comm,ier )
+	  oV%iAttr(1,1),noV*nIA,MP_INTEGER,root,comm,ier )
      if(ier /= 0) then
 	call MP_perr(myname_,'MPI_scatterv(iAttr)',ier)
 	if(.not.present(stat)) call die(myname_)
