@@ -56,7 +56,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: GlobalMapToGlobalSegMap_() -- Convert GlobalMap to GlobalSegMap
+! !IROUTINE: GlobalMapToGlobalSegMap_ - Convert GlobalMap to GlobalSegMap
 !
 ! !DESCRIPTION:
 ! This routine takes an input {\tt GlobalMap} argument {\tt GMap}, and
@@ -151,7 +151,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: GlobalSegMapToGlobalMap_() -- Convert GlobalSegMap to GlobalMap
+! !IROUTINE: GlobalSegMapToGlobalMap_ - Convert GlobalSegMap to GlobalMap
 !
 ! !DESCRIPTION:
 ! This routine takes an input {\tt GlobalSegMap} argument {\tt GSMap}, 
