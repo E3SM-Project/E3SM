@@ -5,46 +5,69 @@
 ! CVS $Name$ 
 !BOP -------------------------------------------------------------------
 !
-! !MODULE: m_GlobalToLocal - a set of Global to Local index Mappings.
+! !MODULE: m_GlobalToLocal - Global to Local Index Translation
 !
 ! !DESCRIPTION:
+! This module contains routines for translating global array indices 
+! into their local counterparts (that is, the indices into the local 
+! data structure holding a given process' chunk of a distributed array).
+! The MCT domain decomposition descriptors {\tt GlobalMap} and 
+! {\tt GlobalSegMap} are both supported.   Indices can be translated 
+! one-at-a-time using the {\tt GlobalToLocalIndex} routine or many 
+! at once using the {\tt GlobalToLocalIndices} routine.
+!
+! This module also provides facilities for setting the local row and 
+! column indices for a {\tt SparseMatrix} through the 
+! {\tt GlobalToLocalMatrix} routines.
 !
 ! !INTERFACE:
 
  module m_GlobalToLocal
 
+! !USES:
+! No external modules are used in the declaration section of this module.
+
       implicit none
 
       private   ! except
+
+! !PUBLIC MEMBER FUNCTIONS:
+
+      public :: GlobalToLocalIndex   ! Translate Global to Local index
+                                     ! (i.e. recover local index for a
+                                     ! point from its global index). 
 
       public :: GlobalToLocalIndices ! Translate Global to Local indices
                                      ! (i.e. recover local starts/lengths 
                                      ! of distributed data segments).
                                      
-      public :: GlobalToLocalIndex   ! Translate Global to Local index
-                                     ! (i.e. recover local index for a
-                                     ! point from its global index). 
-
       public :: GlobalToLocalMatrix  ! Re-indexing of row or column
                                      ! indices for a SparseMatrix
 
     interface GlobalToLocalIndices ; module procedure   &
-        GlobalSegMapToIndices_,  &   ! local arrays of starts/lengths
-        GlobalSegMapToNavigator_     ! return local indices as Navigator
+       GlobalSegMapToIndices_,  &   ! local arrays of starts/lengths
+       GlobalSegMapToNavigator_     ! return local indices as Navigator
     end interface
 
     interface GlobalToLocalIndex ; module procedure &
-	GlobalSegMapToIndex_, &
-	GlobalMapToIndex_
+       GlobalSegMapToIndex_, &
+       GlobalMapToIndex_
     end interface
 
     interface GlobalToLocalMatrix ; module procedure &
-	GlobalSegMapToLocalMatrix_
+       GlobalSegMapToLocalMatrix_
     end interface
 
-
+! !SEE ALSO:
+!
+! The MCT modules {\tt m\_GlobalMap} and {m\_GlobalSegMap} for more 
+! information regarding MCT's domain decomposition descriptors.
+!
+! The MCT module {\tt m\_SparseMatrix} for more information regarding 
+! the {\tt SparseMatrix} datatype.
+!
 ! !REVISION HISTORY:
-!       02Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+!  2Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
 
   character(len=len('m_GlobalToLocal')),parameter :: myname='m_GlobalToLocal'
@@ -58,10 +81,11 @@
 ! !IROUTINE: GlobalSegMapToIndices_ - Return _local_ indices in arrays.
 !
 ! !DESCRIPTION:  {\tt GlobalSegMapToIndices\_()} takes a user-supplied
-! {\tt GlobalSegMap} data type {\tt GSMap}, and input communicator 
-! {\tt comm} to translate the global directory of segment locations into
-! local indices for referencing the on-pe storage of the mapped distributed
-! data.
+! {\tt GlobalSegMap} data type {\tt GSMap}, which desribes a decomposition 
+! on the input MPI communicator corresponding to the Fortran {\tt INTEGER} 
+! handle {\tt comm} to translate the global directory of segment locations 
+! into local indices for referencing the on-pe storage of the mapped 
+! distributed data.
 !
 ! {\bf N.B.:}  This routine returns two allocated arrays---{\tt start(:)} 
 ! and {\tt length(:)}---which must be deallocated once the user no longer
@@ -82,14 +106,18 @@
 
       implicit none
 
-      type(GlobalSegMap),intent(in) :: GSMap   ! Output GlobalSegMap
-      integer,           intent(in) :: comm    ! communicator handle
+! !INPUT PARAMETERS:
+
+      type(GlobalSegMap),   intent(in) :: GSMap ! Output GlobalSegMap
+      integer,              intent(in) :: comm  ! communicator handle
+
+! !OUTPUT PARAMETERS:
 
       integer,dimension(:), pointer :: start  ! local segment start indices
       integer,dimension(:), pointer :: length ! local segment sizes
 
 ! !REVISION HISTORY:
-!       02Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
+!  2Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GlobalSegMapToIndices_'
@@ -155,13 +183,15 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: GlobalSegMapToIndex_ - translate global to local index.
+! !IROUTINE: GlobalSegMapToIndex_ - Global to Local Index Translation
 !
-! !DESCRIPTION:  {\tt GlobalSegMapToIndex\_()} takes a user-supplied
-! {\tt GlobalSegMap} data type {\tt GSMap}, input global index value 
-! {\tt i\_g}, and input communicator {\tt comm} and returns a positive 
-! local index value if the datum {\tt i\_g} is on the local communicator.
-! If the datum {\tt i\_g} is not local, a value of {\tt -1} is returned.
+! !DESCRIPTION:  This {\tt INTEGER} query function takes a user-supplied
+! {\tt GlobalSegMap} data type {\tt GSMap}, which desribes a decomposition 
+! on the input MPI communicator corresponding to the Fortran {\tt INTEGER} 
+! handle {\tt comm}, and the input global index value {\tt i\_g}, and 
+! returns a positive local index value if the datum {\tt i\_g}.   If 
+! the datum {\tt i\_g} is not stored on the local process ID, a value 
+! of {\tt -1} is returned.
 !
 ! !INTERFACE:
 
@@ -178,12 +208,14 @@
 
       implicit none
 
-      type(GlobalSegMap),intent(in)  :: GSMap ! Output GlobalSegMap
-      integer,           intent(in)  :: i_g   ! global index
-      integer,           intent(in)  :: comm  ! communicator handle
+! !INPUT PARAMETERS:
+
+      type(GlobalSegMap), intent(in)  :: GSMap ! Output GlobalSegMap
+      integer,            intent(in)  :: i_g   ! global index
+      integer,            intent(in)  :: comm  ! communicator handle
 
 ! !REVISION HISTORY:
-!       02Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
+!  2Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GlobalSegMapToIndex_'
@@ -268,13 +300,16 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: GlobalMapToIndex_ - translate global to local index.
+! !IROUTINE: GlobalMapToIndex_ - Global to Local Index Translation
 !
-! !DESCRIPTION:  {\tt GlobalMapToIndex\_()} takes a user-supplied
-! {\tt GlobalMap} data type {\tt GMap}, input global index value 
-! {\tt i\_g}, and input communicator {\tt comm} and returns a positive 
-! local index value if the datum {\tt i\_g} is on the local communicator.
-! If the datum {\tt i\_g} is not local, a value of {\tt -1} is returned.
+! !DESCRIPTION:  
+! This {\tt INTEGER} query function takes as its input a user-supplied
+! {\tt GlobalMap} data type {\tt GMap}, which desribes a decomposition 
+! on the input MPI communicator corresponding to the Fortran {\tt INTEGER} 
+! handle {\tt comm}, and the input global index value {\tt i\_g}, and 
+! returns a positive local index value if the datum {\tt i\_g}.   If 
+! the datum {\tt i\_g} is not stored on the local process ID, a value 
+! of {\tt -1} is returned.
 !
 ! !INTERFACE:
 
@@ -289,12 +324,14 @@
 
       implicit none
 
-      type(GlobalMap),intent(in)  :: GMap     ! Input GlobalMap
-      integer,           intent(in)  :: i_g   ! global index
-      integer,           intent(in)  :: comm  ! communicator handle
+! !INPUT PARAMETERS:
+
+      type(GlobalMap), intent(in)  :: GMap  ! Input GlobalMap
+      integer,         intent(in)  :: i_g   ! global index
+      integer,         intent(in)  :: comm  ! communicator handle
 
 ! !REVISION HISTORY:
-!       02Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
+!  2Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GlobalMapToIndex_'
@@ -334,14 +371,16 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: GlobalSegMapToNavigator_ - Return _local_ Navigator.
+! !IROUTINE: GlobalSegMapToNavigator_ - Return Navigator to Local Segments
 !
-! !DESCRIPTION:  {\tt GlobalSegMapToNavigator\_()} takes a user-supplied
-! {\tt GlobalSegMap} data type {\tt GSMap}, and input communicator 
-! {\tt comm} to translate the global directory of segment locations into
-! local indices for referencing the on-pe storage of the mapped distributed
-! data.  These data are returned in the form of a {\tt Navigator} data 
-! type {Nav}.
+! !DESCRIPTION:  
+! This routine takes as its input takes a user-supplied
+! {\tt GlobalSegMap} data type {\tt GSMap}, which desribes a decomposition 
+! on the input MPI communicator corresponding to the Fortran {\tt INTEGER} 
+! handle {\tt comm}, and returns the local segment start index and length 
+! information for referencing the on-pe storage of the mapped distributed
+! data.  These data are returned in the form of the output {\tt Navigator} 
+! argument {Nav}.
 !
 ! {\bf N.B.:}  This routine returns a {\tt Navigator} variable {\tt Nav},
 ! which must be deallocated once the user no longer needs it.  Failure to 
@@ -364,13 +403,17 @@
 
       implicit none
 
-      type(GlobalSegMap),intent(in) :: GSMap   ! Input GlobalSegMap
-      integer,           intent(in) :: comm    ! communicator handle
+! !INPUT PARAMETERS:
 
-      type(Navigator),  intent(out) :: oNav    ! Output Navigator
+      type(GlobalSegMap), intent(in)  :: GSMap ! Input GlobalSegMap
+      integer,            intent(in)  :: comm  ! communicator handle
+
+! !OUTPUT PARAMETERS:
+
+      type(Navigator),    intent(out) :: oNav   ! Output Navigator
 
 ! !REVISION HISTORY:
-!       02Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
+!  2Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GlobalSegMapToNavigator_'
@@ -403,18 +446,21 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: GlobalSegMapToLocalMatrix_ - Set _local_ SparseMatrix indices.
+! !IROUTINE: GlobalSegMapToLocalMatrix_ - Set Local SparseMatrix Indices
 !
-! !DESCRIPTION:  {\tt GlobalSegMapToLocalMatrix\_()} takes a user-supplied
-! {\tt GlobalSegMap} data type {\tt GSMap}, and input communicator 
-! {\tt comm} to translate the global row or column indices of the input
-! {\tt SparseMatrix} argument {\tt sMat} into their local counterparts.
-!
-! One sets the input {\tt CHARACTER} argument {\tt RCFlag} to the value 
-! {\tt ROW} or {\tt row} to specify row re-indexing (which are stored in
+! !DESCRIPTION:  
+! This routine takes as its input a user-supplied {\tt GlobalSegMap} 
+! domain decomposition {\tt GSMap}, which describes the decomposition of 
+! either the rows or columns of the input/output {\tt SparseMatrix} 
+! argument {\tt sMat} on the communicator associated with the {\tt INTEGER}
+! handle {\tt comm}, and to translate the global row or column indices 
+! of {\tt sMat} into their local counterparts.  The choice of either row
+! or column is governed by the value of the input {\tt CHARACTER} 
+! argument {\tt RCFlag}.  One sets this variable to either {\tt 'ROW'} or 
+! {\tt 'row'} to specify row re-indexing (which are stored in
 ! {\tt sMat} and retrieved by indexing the attribute {\tt lrow}), and 
-! {\tt COLUMN} or {\tt column} to specify column re-indexing (which are 
-! stored in {\tt sMat} and retrieved by indexing the {\tt SparseMatrix} 
+! {\tt 'COLUMN'} or {\tt 'column'} to specify column re-indexing (which 
+! are stored in {\tt sMat} and retrieved by indexing the {\tt SparseMatrix} 
 ! attribute {\tt lcol}).
 !
 ! !INTERFACE:
@@ -435,17 +481,25 @@
 
       implicit none
 
+! !INPUT PARAMETERS:
+
+      type(GlobalSegMap), intent(in)    :: GSMap  ! Input GlobalSegMap
+      character(len=*),   intent(in)    :: RCFlag ! 'row' or 'column'
+      integer,            intent(in)    :: comm   ! communicator handle
+
+! !INPUT/OUTPUT PARAMETERS:
+
       type(SparseMatrix), intent(inout) :: sMat
 
-      type(GlobalSegMap),intent(in) :: GSMap   ! Input GlobalSegMap
-      character(len=*),  intent(in) :: RCFlag  ! Input GlobalSegMap
-      integer,           intent(in) :: comm    ! communicator handle
-
-
+! !SEE ALSO:
+! The MCT module m_SparseMatrix for more information about the 
+! SparseMatrix type and its storage of global and local row-and
+! column indices.
+!
 ! !REVISION HISTORY:
-!       03May01 - J.W. Larson <larson@mcs.anl.gov> - initial version, which
-!                 is _extremely_ slow, but safe.  This must be re-examined
-!                 later.
+!  3May01 - J.W. Larson <larson@mcs.anl.gov> - initial version, which
+!           is _extremely_ slow, but safe.  This must be re-examined
+!           later.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GlobalSegMapToLocalMatrix_'
