@@ -29,7 +29,7 @@
 #EOP
 #-----------------------------------------------------------------------
 
-_Dsys		= -DsysSUPER_UX -UES
+_Dsys		= -DsysSUPER_UX
 _Dnod		= 
 
 # Environments
@@ -64,12 +64,12 @@ FC		= $(F90)
 #_Ftrace                = -Wf,"-vampir" -vampir
 
 #FFLAGS         = -C vsafe -Wf"-pvctl fullmsg -L fmtlist transform map" $(_Ftrace)
-FFLAGS          = -C vopt -Wf"-pvctl fullmsg -L fmtlist transform map" $(_Ftrace
+FFLAGS          = -C vopt -Wf"-pvctl fullmsg -L fmtlist transform map"
 
 CFLAGS		= -O $(_Dsys)
 
 ZIP		= /usr/bin/compress
-ZCAT		= /usr/local/bin/zcat
+ZCAT		= /usr/bin/zcat
 TAR		= /usr/bin/tar
 
 LD		= esmpif90
@@ -83,7 +83,7 @@ LIBprof		=
 LIBsys	 	= 
 
 
-CPPFLAGS	= 
+CPPFLAGS	= $(_Dsys)
 FPPFLAGS	= -EP $(CPPFLAGS)
 
 .F.o:
