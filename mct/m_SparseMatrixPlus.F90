@@ -114,7 +114,6 @@
       public :: SparseMatrixPlus
 
       Type SparseMatrixPlus
-        logical :: Initialized
         type(String) :: Strategy
         integer :: XPrimeLength
         type(Rearranger) :: XToXPrime
@@ -268,12 +267,6 @@
   SMatPlus%Tag = DefaultTag
   if(present(Tag)) SMatPlus%Tag = Tag
 
-       ! Set initialization flag sMatPlus%Initialized to .FALSE.
-       ! therefore, any return from a failure in creation will 
-       ! be visible.
-
-  SMatPlus%Initialized = .FALSE.
-
        ! Get local process ID number
 
   call MPI_COMM_RANK(comm, myID, ierr)
@@ -369,11 +362,6 @@
      call GlobalSegMap_clean(yPrimeGSMap)
   case default ! do nothing
   end select
-
-       ! Since we've succeeded, set the SparseMatrixPlus initialization
-       ! flag sMatPlus%Initialized to .TRUE.
-
-  SMatPlus%Initialized = .TRUE.
 
  end subroutine initFromRoot_
 
@@ -473,12 +461,6 @@
   SMatPlus%Tag = DefaultTag
   if(present(Tag)) SMatPlus%Tag = Tag
 
-       ! Set initialization flag sMatPlus%Initialized to .FALSE.
-       ! therefore, any return from a failure in creation will 
-       ! be visible.
-
-  SMatPlus%Initialized = .FALSE.
-
        ! Get local process ID number
 
   call MPI_COMM_RANK(comm, myID, ierr)
@@ -540,11 +522,6 @@
   call GlobalToLocalMatrix(sMatPlus%Matrix, yPrimeGSMap, 'row', comm)
        ! Destroy intermediate GlobalSegMap for y'
   call GlobalSegMap_clean(yPrimeGSMap)
-
-       ! Since we've succeeded, set the SparseMatrixPlus initialization
-       ! flag sMatPlus%Initialized to .TRUE.
-
-  SMatPlus%Initialized = .TRUE.
 
  end subroutine initDistributed_
 
@@ -708,10 +685,6 @@
   call String_clean(SMatP%Strategy)
   call String_clean(SMatP_Strategy_copy)
 
-       ! Set initialization flag SMatP%Initialized to .FALSE.
-
-  SMatP%Initialized = .FALSE.
-
  end subroutine clean_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -735,6 +708,13 @@
 !
 ! No external modules are used by this function.
       
+      use m_String, only : String_len
+      use m_List,   only : List
+      use m_List,   only : List_init => init
+      use m_List,   only : List_identical => identical
+      use m_List,   only : List_clean => clean
+
+      use m_die
 
       implicit none
 
@@ -748,7 +728,35 @@
 !
  character(len=*),parameter :: myname_=myname//'::initialized_'
 
-  initialized_ = sMatPlus%initialized
+ integer :: XonlyLen, YonlyLen, XandYLen
+ type(List) :: XonlyList, YonlyList, XandYList, stratList
+
+  initialized_ = .FALSE.
+  
+  XonlyLen = len(trim(Xonly))
+  YonlyLen = len(trim(Yonly))
+  XandYLen = len(trim(XandY))
+  
+  if( (XonlyLen /= YonlyLen) .or. (XonlyLen /= XandYLen) ) then
+     call die(myname_,"The length of the strategies are unequal. &
+          &This routine needs to be rewritten.")
+  endif
+
+  if(associated(sMatPlus%strategy%c)) then
+     if(String_len(sMatPlus%strategy) == XonlyLen) then
+        call List_init(XonlyList,Xonly)
+        call List_init(YonlyList,Yonly)
+        call List_init(XandYList,XandY)
+        call List_init(stratList,sMatPlus%strategy)
+        if(List_identical(stratList,XonlyList)) initialized_ = .TRUE.
+        if(List_identical(stratList,YonlyList)) initialized_ = .TRUE.
+        if(List_identical(stratList,XandYList)) initialized_ = .TRUE.
+        call List_clean(XonlyList)
+        call List_clean(YonlyList)
+        call List_clean(XandYList)
+        call List_clean(stratList)
+     endif
+  endif
 
  end function initialized_
 
