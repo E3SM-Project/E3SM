@@ -433,7 +433,7 @@ end function luavail
 #elif IA64
 ! no flush on Linux IA64 with Intel compiler
 #else
-# if sysLinux || sysOSF1 || sysSunOS || sysUNICOS || sysT3E || sysFujitsu
+# if sysLinux || sysOSF1 || sysSunOS || sysUNICOS || sysT3E || sysFujitsu || sysSUPER_UX
    call flush(lu)
 # endif
 #endif
