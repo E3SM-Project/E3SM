@@ -5,19 +5,29 @@
 ! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: MCT_Recvsum
+! !IROUTINE: MCT_Recvsum - Distributed receive of an Attribute Vector with
+!                          summation
 !
 ! !DESCRIPTION:
-! Recieve into the AttrVect the data coming from the component
-! specified in the Router.  Sum data for the same physical point
-! arriving from more than one processor. An Error will result if the
-! attribute list of the incoming data doesnt match any of
-! the attributes in the argument AttrVect.
+! Recieve into the {\tt AttrVect} {\tt aV} the data coming from the component
+! specified in the {\tt Router} {\tt Rout}.  Sum data for the same physical point
+! arriving from more than one processor. An error will result if the
+! size of the attribute vector does not match the size
+! rameter stored in the {\tt Router}.
+!
 ! Requires a corresponding MCT\_Send to be called on the other component.
+!
+! {\bf N.B.:} The {\tt AttrVect} argument in the corresponding
+! {\tt MCT\_Send} call is assumed to have exactly the same attributes
+! in exactly the same order as {\tt aV}.
+!
+! {\bf N.B.:} This subroutine will accumulate onto the current values of
+! {\tt aV}.  Be sure to initialize {\tt aV} to a known value.
 !
 ! !INTERFACE:
 
- subroutine MCT_Recvsum(aV, Rout, iList, rList)
+ subroutine MCT_Recvsum(aV, Rout)
+
 !
 ! !USES:
 !
@@ -25,6 +35,7 @@
       use m_MCTWorld, only : ThisMCTWorld
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : nIAttr,nRAttr
+      use m_AttrVect, only : lsize
       use m_Router,   only : Router
       use m_List,     only : List
 
@@ -34,25 +45,28 @@
 
       implicit none
 
+! !INPUT PARAMETERS:
+!
+
       Type(AttrVect),       intent(inout) :: aV
       Type(Router),         intent(in)    :: Rout
-      Type(List), optional, intent(in)    :: iList
-      Type(List), optional, intent(in)    :: rList
 
 ! !REVISION HISTORY:
-!      07Feb01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
-!      08Feb01 - R. Jacob <jacob@mcs.anl.gov> - first working code
-!      18May01 - R. Jacob <jacob@mcs.anl.gov> - use MP_Type to
-!                determine type in mpi_recv
-!      07Jun01 - R. Jacob <jacob@mcs.anl.gov> - remove logic to
-!                check "direction" of Router.  remove references
-!                to ThisMCTWorld%mylrank
-!      03Aug01 - E.T. Ong <eong@mcs.anl.gov> - explicity specify starting
-!                address in MPI_RECV
-!      27Nov01 - E.T. Ong <eong@mcs.anl.gov> - deallocated to prevent
-!                memory leaks
-!      15Feb02 - R. Jacob <jacob@mcs.anl.gov> - Use MCT_comm
-!      26Mar02 - E. Ong <eong@mcs.anl.gov> - Apply faster copy order.
+! 07Feb01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
+! 08Feb01 - R. Jacob <jacob@mcs.anl.gov> - first working code
+! 18May01 - R. Jacob <jacob@mcs.anl.gov> - use MP_Type to
+!           determine type in mpi_recv
+! 07Jun01 - R. Jacob <jacob@mcs.anl.gov> - remove logic to
+!           check "direction" of Router.  remove references
+!           to ThisMCTWorld%mylrank
+! 03Aug01 - E.T. Ong <eong@mcs.anl.gov> - explicity specify starting
+!           address in MPI_RECV
+! 27Nov01 - E.T. Ong <eong@mcs.anl.gov> - deallocated to prevent
+!           memory leaks
+! 15Feb02 - R. Jacob <jacob@mcs.anl.gov> - Use MCT_comm
+! 26Mar02 - E. Ong <eong@mcs.anl.gov> - Apply faster copy order.
+! 06Nov02 - R. Jacob <jacob@mcs.anl.gov> - Check aV lsize against Router.
+!           Remove iList, rList arguments.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_='MCT_Recvsum'
@@ -79,6 +93,15 @@
   type(iptr),dimension(:),allocatable :: ip2
 
 !--------------------------------------------------------
+
+!check Av size against Router
+!
+  if(lsize(aV) /= Rout%lAvsize) then
+    write(stderr,'(2a)') myname_, &
+    ' MCTERROR:  AV size not appropriate for this Router...exiting'
+    call die(myname_)
+  endif
+
 
   mycomp=Rout%comp1id
   othercomp=Rout%comp2id
@@ -184,7 +207,7 @@
 
   endif
 
-  ! Load data which came from each processor
+  ! Accumulate data which came from each processor
   do proc=1,Rout%nprocs
 
      j=1
