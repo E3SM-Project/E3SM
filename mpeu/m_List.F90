@@ -742,11 +742,17 @@ contains
 ! 	16May01 - J.W. Larson - new, simpler String-based algorigthm
 !                 (see m_String for details), which works properly on
 !                 the SGI platform.
+!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize status
+!                 (if present).
 !EOP ___________________________________________________________________
 
  character(len=*),parameter :: myname_=myname//'::bcast_'
  integer :: myID, ierr
  type(String) :: DummStr
+
+      ! Initialize status (if present)
+
+  if(present(status)) status = 0
 
        ! Which process am I?
 
@@ -770,6 +776,15 @@ contains
        ! Broadcast DummStr
 
   call String_bcast(DummStr, root, comm, ierr)
+  if(ierr /= 0) then
+   if(present(status)) then
+     status = ierr
+     write(stderr,'(2a,i4)') myname_,":: call String_bcast(), ierr=",ierr
+     return
+   else
+     call MP_perr_die(myname_,"String_bcast() failed, stat=",ierr)
+   endif
+  endif
 
        ! Initialize ioList off the root using DummStr
 
@@ -833,12 +848,18 @@ contains
 
 ! !REVISION HISTORY:
 ! 	06Jun01 - J.W. Larson - initial version.
+!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize status
+!                 (if present).
 !EOP ___________________________________________________________________
 
  character(len=*),parameter :: myname_=myname//'::send_'
 
  type(String) :: DummStr
  integer :: ierr, length
+
+       ! Set status flag to zero (success) if present:
+
+ if(present(status)) status = 0
 
        ! Step 1.  Extract CHARACTER buffer from inList and store it
        ! in String variable DummStr, determine its length.
@@ -849,12 +870,32 @@ contains
        ! Step 2.  Send Length of String DummStr to process dest.
 
  call MPI_SEND(length, 1, MP_type(length), dest, TagBase, comm, ierr)
+  if(ierr /= 0) then
+     if(present(status)) then
+        write(stderr,*) myname_,':: MPI_SEND(length...) failed.  ierror=',&
+	     ierr
+        status = ierr
+        return
+     else
+        call MP_perr_die(myname_,':: MPI_SEND(length...) failed',ierr)
+     endif
+  endif
 
        ! Step 3.  Send CHARACTER portion of String DummStr 
        ! to process dest.
 
  call MPI_SEND(DummStr%c, length, MP_CHARACTER, dest, TagBase+1, &
                comm, ierr)
+  if(ierr /= 0) then
+     if(present(status)) then
+        write(stderr,*) myname_,':: MPI_SEND(DummStr%c...) failed.  ierror=',&
+	     ierr
+        status = ierr
+        return
+     else
+        call MP_perr_die(myname_,':: MPI_SEND(DummStr%c...) failed',ierr)
+     endif
+  endif
 
  end subroutine send_
 
@@ -909,6 +950,8 @@ contains
 ! !REVISION HISTORY:
 ! 	06Jun01 - J.W. Larson - initial version.
 ! 	11Jun01 - R. Jacob - small bug fix; status in MPI_RECV
+!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize status
+!                 (if present).
 !EOP ___________________________________________________________________
 
  character(len=*),parameter :: myname_=myname//'::recv_'
@@ -917,10 +960,24 @@ contains
  integer :: MPstatus(MP_STATUS_SIZE)
  type(String) :: DummStr
 
+       ! Initialize status to zero (success), if present.
+
+  if(present(status)) status = 0
+
        ! Step 1.  Receive Length of String DummStr from process source.
 
  call MPI_RECV(length, 1, MP_type(length), source, TagBase, comm, &
                MPstatus, ierr)
+  if(ierr /= 0) then
+     if(present(status)) then
+        write(stderr,*) myname_,':: MPI_RECV(length...) failed.  ierror=',&
+	     ierr
+        status = ierr
+        return
+     else
+        call MP_perr_die(myname_,':: MPI_RECV(length...) failed',ierr)
+     endif
+  endif
 
  allocate(DummStr%c(length), stat=ierr)
 
@@ -929,6 +986,16 @@ contains
 
  call MPI_RECV(DummStr%c, length, MP_CHARACTER, source, TagBase+1, &
                comm, MPstatus, ierr)
+  if(ierr /= 0) then
+     if(present(status)) then
+        write(stderr,*) myname_,':: MPI_RECV(DummStr%c...) failed.  ierror=',&
+	     ierr
+        status = ierr
+        return
+     else
+        call MP_perr_die(myname_,':: MPI_RECV(DummStr%c...) failed',ierr)
+     endif
+  endif
 
        ! Step 3.  Initialize outList.
 
