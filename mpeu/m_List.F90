@@ -23,6 +23,8 @@
       public :: assignment(=)
       public :: allocated
       public :: copy
+      public :: exportToChar
+      public :: CharBufferSize
       public :: concatenate
       public :: bcast
       public :: send
@@ -42,6 +44,8 @@
 !                 function identical_().
 ! 	14Dec01 - J. Larson <larson@mcs.anl.gov> - Added the LOGICAL 
 !                 function allocated_().
+! 	13Feb02 - J. Larson <larson@mcs.anl.gov> - Added the List query 
+!                 functions exportToChar() and CharBufferLength().
 !EOP ___________________________________________________________________
 
   interface init ; module procedure	&
@@ -67,7 +71,10 @@
   end interface
   interface allocated ; module procedure allocated_;  end interface
   interface copy ; module procedure copy_;  end interface
-
+  interface exportToChar ; module procedure exportToChar_; end interface
+  interface CharBufferSize 
+     module procedure CharBufferSize_
+  end interface
   interface concatenate ; module procedure concatenate_ ; end interface
   interface bcast; module procedure bcast_; end interface
   interface send; module procedure send_; end interface
@@ -550,6 +557,102 @@ contains
   call String_clean(DummStr)
 
  end subroutine copy_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: exportToChar_ - Export List to a CHARACTER.
+!
+! !DESCRIPTION:  This function returns the character buffer portion of
+! the input {\tt List} argument {\tt inList}---that is, the contents of
+! {\tt inList%bf}---as a {\tt CHARACTER} (suitable for printing).  An
+! example of the use of this function is:
+! \begin{verbatim}
+!           write(*,*) exportToChar(inList) 
+! \begin{verbatim}
+!
+! !INTERFACE:
+
+ function exportToChar_(inList)
+
+      use m_die,    only : die
+      use m_stdio,  only : stderr
+      use m_String, only : String
+      use m_String, only : String_ToChar => toChar
+      use m_String, only : String_clean
+
+      implicit none
+
+! ! INPUT PARAMETERS:
+
+      type(List),         intent(in) :: inList
+
+! ! OUTPUT PARAMETERS:
+
+      character(len=size(inList%bf)) :: exportToChar_
+
+! !REVISION HISTORY:
+! 	13Feb02 - J. Larson <larson@mcs.anl.gov> - initial version.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::exportToChar_'
+  type(String) DummStr
+
+       ! Download input List info from inList to String DummStr
+  if(allocated_(inList)) then
+     call getall_(DummStr,inList)
+     exportToChar_ = String_ToChar(DummStr)
+     call String_clean(DummStr)
+  else
+     write(stderr,*) myname_,":: Argument inList not allocated."
+     call die(myname_)
+  endif
+
+ end function exportToChar_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: CharBufferSize_ - Export List to a CHARACTER.
+!
+! !DESCRIPTION:  This function returns the length of the character 
+! buffer portion of the input {\tt List} argument {\tt inList} (that 
+! is, the number of characters stored in \tt inList%bf}) as an
+! {\tt INTEGER}.  A usage example is presented below:
+! \begin{verbatim}
+!           integer :: BufferLength
+!           BufferLength = CharBufferSize(inList) 
+! \begin{verbatim}
+!
+! !INTERFACE:
+
+ integer function CharBufferSize_(inList)
+
+      use m_die,    only : die
+      use m_stdio,  only : stderr
+
+      implicit none
+
+! ! INPUT PARAMETERS:
+
+      type(List),         intent(in) :: inList
+
+! !REVISION HISTORY:
+! 	13Feb02 - J. Larson <larson@mcs.anl.gov> - initial version.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::CharBufferSize_'
+
+  if(allocated_(inList)) then
+     CharBufferSize_ = size(inList%bf)
+  else
+     write(stderr,*) myname_,":: Argument inList not allocated."
+     call die(myname_)
+  endif
+
+ end function CharBufferSize_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
