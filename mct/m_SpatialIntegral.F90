@@ -2828,7 +2828,7 @@
   type(AttrVect) :: LocalIntegral1, LocalIntegral2
   real, dimension(:), pointer :: PairedBuffer, OutPairedBuffer
   integer :: i, ierr, nRA1, nRA2, PairedBufferLength
-  real :: WeightSum
+  real :: WeightSumInv
 
         ! Basic Argument Validity Checks:
 
@@ -2971,22 +2971,38 @@
 
        ! First outAv1:
 
-  WeightSum = OutPairedBuffer(nRA1+1) ! Sum of weights on grid1
-                                      ! is the nRA1+1th element in
-                                      ! the paired buffer.
+  if(OutPairedBuffer(nRA1+1) /= 0.) then
+     WeightSumInv = 1. / OutPairedBuffer(nRA1+1) ! Sum of weights on grid1
+                                                 ! is the nRA1+1th element in
+                                                 ! the paired buffer.
+  else
+     write(stderr,'(2a)') myname_, &
+	  ':: FATAL ERROR--Sum of the Weights for integral #1 is zero!  Terminating...'
+     call die(myname_)
+  endif
+
+       ! Rescale global integral to get global average:
 
   do i=1,nRA1
-     outAv1%rAttr(i,1) = WeightSum * OutPairedBuffer(i)
+     outAv1%rAttr(i,1) = WeightSumInv * OutPairedBuffer(i)
   end do
 
        ! And then outAv2:
 
-  WeightSum = OutPairedBuffer(PairedBufferLength) ! Sum of weights on grid2
-                                                  ! is the last element in
-                                                  ! the paired buffer.
+  if(OutPairedBuffer(PairedBufferLength) /= 0.) then
+     WeightSumInv = 1. / OutPairedBuffer(PairedBufferLength) ! Sum of weights on grid2
+                                                             ! is the last element in
+                                                             ! the paired buffer.
+  else
+     write(stderr,'(2a)') myname_, &
+	  ':: FATAL ERROR--Sum of the Weights for integral #2 is zero!  Terminating...'
+     call die(myname_)
+  endif
+
+       ! Rescale global integral to get global average:
 
   do i=1,nRA2
-     outAv2%rAttr(i,1) = WeightSum * OutPairedBuffer(i+nRA1+1)
+     outAv2%rAttr(i,1) = WeightSumInv * OutPairedBuffer(i+nRA1+1)
   end do
 
        ! Clean up allocated structures
