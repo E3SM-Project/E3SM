@@ -3122,6 +3122,10 @@ if echo $f90_version | grep -i compaq >/dev/null 2>&1; then
    MACHDEFS="-DCPRCOMPAQ $MACHDEFS"
    MPILIBS="$MPILIBS -lelan"
 fi
+if echo $f90_version | grep -i sx >/dev/null 2>&1; then
+   MACHDEFS="-DCPRSX $MACHDEFS"
+   FFLAGS="-EP -Chopt -Wf'-pvctl noassoc'"
+fi
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
