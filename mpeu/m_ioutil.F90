@@ -423,15 +423,19 @@ end function luavail
 #ifdef sysIRIX64
   call flush(lu,ier)
 #endif
+
 #ifdef sysAIX
   call flush_(lu)      ! Function defined in xlf reference document.
 #endif
+
 #ifdef NAG
   call flush(lu,ier)
+#elif IA64
+! no flush on Linux IA64 with Intel compiler
 #else
-#if sysLinux || sysOSF1 || sysSunOS || sysUNICOS || sysT3E || sysFujitsu
-  call flush(lu)
-#endif
+# if sysLinux || sysOSF1 || sysSunOS || sysUNICOS || sysT3E || sysFujitsu
+   call flush(lu)
+# endif
 #endif
 
 end subroutine luflush
