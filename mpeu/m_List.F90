@@ -15,6 +15,7 @@
       public :: List		! The class data structure
       public :: init
       public :: clean
+      public :: nullify
       public :: index
       public :: nitem
       public :: get
@@ -43,6 +44,7 @@
 	initstr1_
   end interface
   interface clean; module procedure clean_; end interface
+  interface nullify; module procedure nullify_; end interface
   interface index; module procedure	&
 	index_,		&
 	indexStr_
@@ -296,6 +298,46 @@ contains
   if(ier /= 0) call die(myname_,'deallocate()',ier)
 
  end subroutine clean_
+
+!BOP -------------------------------------------------------------------
+!     Math + Computer Science Division / Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: nullify_ - nullify a List variable
+!
+! !DESCRIPTION:  In Fortran 90, pointers may have three states of being:
+! 1) {\tt ASSOCIATED}, that is the pointer is pointing at a target,2) 
+! 2) {\tt UNASSOCIATED}, and 3) {\tt UNINITIALIZED}.  On some platforms, 
+! the Fortran intrinsic function {\tt associated()} 
+! will view uninitialized pointers as {\tt UNASSOCIATED} by default.
+! This is not always the case.  It is good programming practice to 
+! nullify pointers if they are not to be used.  This routine nullifies
+! the pointers present in the {\tt List} datatype.
+!
+! !INTERFACE:
+
+ subroutine nullify_(aList)
+
+! !USES:
+!
+      use m_die,only : die
+
+      implicit none
+
+! !INPUT/OUTPUT PARAMETERS: 
+!
+      type(List),intent(inout) :: aList
+
+! !REVISION HISTORY:
+! 	18Jun01 - J.W. Larson - <larson@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::nullify_'
+
+  nullify(aList%bf)
+  nullify(aList%lc)
+
+ end subroutine nullify_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
