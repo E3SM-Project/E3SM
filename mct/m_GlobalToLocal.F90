@@ -14,12 +14,17 @@
 
       private   ! except
 
-      public :: GlobalSegMapToLocal ! Translate Global indices from 
-                                    ! the GlobalSegMap to local indices.
-      public :: GlobalToLocalIndex  ! Translate Global indices from 
+      public :: GlobalToLocalIndices ! Translate Global to Local indices
+                                     ! (i.e. recover local starts/lengths 
+                                     ! of distributed data segments).
+                                     
+      public :: GlobalToLocalIndex   ! Translate Global to Local index
+                                     ! (i.e. recover local index for a
+                                     ! point from its global index). 
 
-    interface GlobalSegMapToLocal ; module procedure   &
-        GlobalSegMapToIndices_      ! local arrays of starts/lengths
+    interface GlobalToLocalIndices ; module procedure   &
+        GlobalSegMapToIndices_,  &   ! local arrays of starts/lengths
+        GlobalSegMapToNavigator_     ! return local indices as Navigator
     end interface
 
     interface GlobalToLocalIndex ; module procedure &
@@ -161,8 +166,8 @@
       implicit none
 
       type(GlobalSegMap),intent(in)  :: GSMap ! Output GlobalSegMap
-      integer,           intent(in)  :: comm  ! global index
-      integer,           intent(in)  :: i_g   ! communicator handle
+      integer,           intent(in)  :: i_g   ! global index
+      integer,           intent(in)  :: comm  ! communicator handle
 
 ! !REVISION HISTORY:
 !       02Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
@@ -202,7 +207,12 @@
 
   found = .false.
 
-  SEARCH_LOOP: do n=1, ngseg
+  n = 0
+
+  SEARCH_LOOP: do 
+     
+     n = n+1
+     if (n > ngseg) EXIT
 
      if(GSMap%pe_loc(n) == myID) then
 
@@ -218,7 +228,8 @@
 
         lower_bound = GSMap%start(n)
         upper_bound = GSMap%start(n) + GSMap%length(n) - 1
-        if((lower_bound <= i_g) .or. (i_g <= upper_bound)) then
+
+        if((lower_bound <= i_g) .and. (i_g <= upper_bound)) then
 	   local_index = local_start + (i_g - GSMap%start(n))
 	   found = .true.
 	   EXIT
@@ -238,5 +249,73 @@
   endif
 
  end function GlobalSegMapToIndex_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: GlobalSegMapToNavigator_ - Return _local_ Navigator.
+!
+! !DESCRIPTION:  {\tt GlobalSegMapToNavigator\_()} takes a user-supplied
+! {\tt GlobalSegMap} data type {\tt GSMap}, and input communicator 
+! {\tt comm} to translate the global directory of segment locations into
+! local indices for referencing the on-pe storage of the mapped distributed
+! data.  These data are returned in the form of a {\tt Navigator} data 
+! type {Nav}.
+!
+! {\bf N.B.:}  This routine returns a {\tt Navigator} variable {\tt Nav},
+! which must be deallocated once the user no longer needs it.  Failure to 
+! do this will create a memory leak.
+!
+! !INTERFACE:
+
+ subroutine GlobalSegMapToNavigator_(GSMap, comm, oNav)
+
+!
+! !USES:
+!
+      use m_mpif90
+      use m_die,          only : MP_perr_die
+      use m_GlobalSegMap, only : GlobalSegMap
+      use m_GlobalSegMap, only : GlobalSegMap_ngseg => ngseg
+      use m_GlobalSegMap, only : GlobalSegMap_nlseg => nlseg
+      use m_Navigator, only    : Navigator
+      use m_Navigator, only    : Navigator_init => init
+
+      implicit none
+
+      type(GlobalSegMap),intent(in) :: GSMap   ! Input GlobalSegMap
+      integer,           intent(in) :: comm    ! communicator handle
+
+      type(Navigator),  intent(out) :: oNav    ! Output Navigator
+
+! !REVISION HISTORY:
+!       02Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
+
+  character(len=*),parameter :: myname_=myname//'::GlobalSegMapToNavigator_'
+
+  integer :: myID, ierr, ngseg, nlseg, n, count
+ 
+          ! determine local process id myID
+
+  call MP_COMM_RANK(comm, myID, ierr)
+  if(ierr /= 0) call MP_perr_die(myname_,'MP_COMM_RANK',ierr)
+
+          ! determine number of global segments ngseg:
+
+  ngseg = GlobalSegMap_ngseg(GSMap)
+
+          ! determine number of local segments on process myID nlseg:
+
+  nlseg = GlobalSegMap_nlseg(GSMap, myID)
+
+          ! Allocate space for the Navigator oNav:
+
+  call Navigator_init(oNav, nlseg, ierr)
+  if(ierr /= 0) call MP_perr_die(myname_,'Navigator_init',ierr)
+
+  call GlobalSegMapToIndices_(GSMap, comm, oNav%displs, oNav%counts)
+
+ end subroutine GlobalSegMapToNavigator_
 
  end module m_GlobalToLocal
