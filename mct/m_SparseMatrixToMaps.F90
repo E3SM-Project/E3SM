@@ -61,7 +61,7 @@
 !
 ! !INTERFACE:
 
- subroutine SparseMatrixToXGlobalSegMap_(sMat, xGSMap, root, comm)
+ subroutine SparseMatrixToXGlobalSegMap_(sMat, xGSMap, root, comm, comp_id)
 !
 ! !USES:
 !
@@ -81,7 +81,6 @@
 
       use m_GlobalSegMap, only : GlobalSegMap
       use m_GlobalSegMap, only : GlobalSegMap_init => init
-      use m_GlobalSegMap, only : GlobalSegMap_comp_id => comp_id
 
       implicit none
 
@@ -89,6 +88,7 @@
 !
       integer,            intent(in)    :: root    ! communicator root
       integer,            intent(in)    :: comm    ! communicator handle
+      integer,            intent(in)    :: comp_id ! component id
 
 ! !INPUT/OUTPUT PARAMETERS: 
 !
@@ -105,6 +105,8 @@
 !                 argument sMat changed from (IN) to (INOUT)
 !       27Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - bug fix-- add use 
 !                statement for SortPermute
+!       01May01 - R.L. Jacob <jacob@mcs.anl.gov> - make comp_id an
+!                 input argument
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::SparseMatrixToXGlobalSegMap_'
@@ -112,7 +114,7 @@
 ! SparseMatrix attributes:
   integer :: lsize
 ! GlobalSegMap input attributes:
-  integer :: gsize, comp_id, ngseg
+  integer :: gsize, ngseg
   integer, dimension(:), pointer :: starts, lengths
 ! Temporary array for identifying each matrix element column and 
 ! process ID destination
@@ -131,10 +133,6 @@
        ! The value of gsize is taken from the number of columns in sMat:
 
   gsize = SparseMatrix_nCols(sMat)
-
-       ! The matrix GlobalSegMap inherits the component ID from xGSMap:
-
-  comp_id = GlobalSegMap_comp_id(xGSMap)
 
        ! Sort SparseMatrix entries by global column index gcol, then
        ! global row index.
@@ -207,7 +205,7 @@
 !
 ! !INTERFACE:
 
- subroutine SparseMatrixToYGlobalSegMap_(sMat, root, comm, yGSMap)
+ subroutine SparseMatrixToYGlobalSegMap_(sMat, root, comm, comp_id, yGSMap)
 !
 ! !USES:
 !
@@ -226,7 +224,6 @@
 
       use m_GlobalSegMap, only : GlobalSegMap
       use m_GlobalSegMap, only : GlobalSegMap_init => init
-      use m_GlobalSegMap, only : GlobalSegMap_comp_id => comp_id
 
       implicit none
 
@@ -234,6 +231,7 @@
 !
       integer,            intent(in)    :: root    ! communicator root
       integer,            intent(in)    :: comm    ! communicator handle
+      integer,            intent(in)    :: comp_id ! component id
 
 ! !INPUT/OUTPUT PARAMETERS: 
 !
@@ -250,6 +248,8 @@
 !                 argument sMat changed from (IN) to (INOUT)
 !       27Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - bug fix-- add use 
 !                statement for SortPermute
+!       01May01 - R.L. Jacob <jacob@mcs.anl.gov> - make comp_id an
+!                 input argument
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::SparseMatrixToYGlobalSegMap_'
@@ -257,7 +257,7 @@
 ! SparseMatrix attributes:
   integer :: lsize
 ! GlobalSegMap input attributes:
-  integer :: gsize, comp_id, ngseg
+  integer :: gsize, ngseg
   integer, dimension(:), pointer :: starts, lengths
 ! Temporary array for identifying each matrix element column and 
 ! process ID destination
@@ -276,10 +276,6 @@
        ! The value of gsize is taken from the number of columns in sMat:
 
   gsize = SparseMatrix_nRows(sMat)
-
-       ! The matrix GlobalSegMap inherits the component ID from yGSMap:
-
-  comp_id = GlobalSegMap_comp_id(yGSMap)
 
        ! Sort SparseMatrix entries by global column index grow, then
        ! global row index.
