@@ -66,7 +66,10 @@
       type(AttrVect), pointer        :: data
     end type GeneralGrid
 
-    interface init  ; module procedure init_ ; end interface
+    interface init  ; module procedure &
+	 init_, &
+	 initgg_
+    end interface
     interface clean ; module procedure clean_ ; end interface
     interface dims ; module procedure dims_ ; end interface
     interface indexIA ; module procedure indexIA_ ; end interface
@@ -89,6 +92,7 @@
 !                 components to the GeneralGrid type.
 !       21Mar01 - J.W. Larson - deleted the initv_ API (more study
 !                 needed before implementation.
+!       02May01 - J.W. Larson - added initgg_ API (replaces old initv_).
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_GeneralGrid'
@@ -129,14 +133,19 @@
 
       implicit none
 
-      type(GeneralGrid), intent(out)   :: GGrid
-      character(len=*),  intent(in)    :: CoordList
-      character(len=*), optional, intent(in) :: CoordSortOrder
-      character(len=*), optional, intent(in) :: WeightList
+! !INPUT PARAMETERS:
+!
+      character(len=*),             intent(in) :: CoordList
+      character(len=*), optional,   intent(in) :: CoordSortOrder
+      character(len=*), optional,   intent(in) :: WeightList
       logical, dimension(:), optional, pointer :: descend
-      character(len=*), optional, intent(in) :: OtherList
-      character(len=*), optional, intent(in) :: IndexList
-      integer,    optional,intent(in)  :: lsize
+      character(len=*), optional,   intent(in) :: OtherList
+      character(len=*), optional,   intent(in) :: IndexList
+      integer,          optional,   intent(in) :: lsize
+
+! !OUTPUT PARAMETERS:
+!
+      type(GeneralGrid), intent(out)   :: GGrid
 
 ! !REVISION HISTORY:
 !       25Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
@@ -268,6 +277,109 @@
   endif
 
  end subroutine init_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: initgg_ - initialize GeneralGrid from another GeneralGrid.
+!
+! !DESCRIPTION:
+! The routine {\tt initgg\_()} creates the storage space for grid point
+! coordinates, area/volume weights, and other coordinate data ({\em e.g.}, 
+! nearest-neighbor coordinates).  These data are all copied from the 
+! already initialized input {\tt GeneralGrid} argument {\tt iGGrid}.  This 
+! routine initializes the output {\tt GeneralGrid} argument {\tt oGGrid} 
+! with the same {\tt List} data as {\tt iGGrid}, but with storage space
+! for {\tt lsize} gridpoints.
+!
+! {\bf N.B.}:  It is assumed that {\tt iGGrid} has been initialized.
+!
+! {\bf N.B.}:  The output {\tt GeneralGrid} {\tt oGGrid} is dynamically
+! allocated memory.  When one no longer needs {\tt oGGrid}, one should
+! release this space by invoking {\tt GeneralGrid\_clean()}.
+!
+! !INTERFACE:
+
+ subroutine initgg_(oGGrid, iGGrid, lsize)
+!
+! !USES:
+!
+      use m_die,  only : MP_perr_die
+
+      use m_List, only : List
+      use m_List, only : assignment(=)
+
+      use m_AttrVect, only:  AttrVect_init => init
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+!
+      type(GeneralGrid), intent(in)  :: iGGrid
+      integer, optional, intent(in)  :: lsize
+
+! !OUTPUT PARAMETERS:
+!
+      type(GeneralGrid), intent(out) :: oGGrid
+
+! !REVISION HISTORY:
+!       02May01 - Jay Larson <larson@mcs.anl.gov> - Initial version.
+!EOP ___________________________________________________________________
+!
+  character(len=*),parameter :: myname_=myname//'::initgg_'
+! Number of grid points, number of grid dimensions
+  integer :: n, ncoord
+! Loop index and Error Flag
+  integer :: i, ierr
+
+        ! if lsize is present, use it to set n; if not, set n=0
+
+  n = 0
+  if(present(lsize)) n=lsize
+
+        ! Dimensionality of the GeneralGrid
+
+  ncoord = dims_(iGGrid)
+
+        ! Argument check:
+
+  if(associated(iGGrid%descend)) then
+     if(size(iGGrid%descend) /= ncoord) then ! size mismatch
+	call MP_perr_die(myname,"iGGrid dims/size of descend mismatch", &
+	                 ncoord-size(iGGrid%descend))
+     endif
+  endif
+
+        ! If iGGrid%descend has been allocated, copy its contents
+
+  if(associated(iGGrid%descend)) then ! allocate and fill oGGrid%descend
+
+     allocate(oGGrid%descend(ncoord), stat=ierr)
+     if(ierr /= 0) then
+	call MP_perr_die(myname,"allocate(oGGrid%descend...", ierr)
+     endif
+
+     do i=1,ncoord
+	oGGrid%descend(i) = iGGrid%descend(i)
+     end do
+
+  endif
+
+       ! Copy list data from iGGrid to oGGrid:
+
+  oGGrid%coordinate_list = iGGrid%coordinate_list
+  oGGrid%coordinate_sort_order = iGGrid%coordinate_sort_order
+  oGGrid%weight_list = iGGrid%weight_list
+  oGGrid%other_list = iGGrid%other_list
+  oGGrid%index_list = iGGrid%index_list
+
+       ! Now, initialize oGGrid%data from iGGrid%data, but 
+       ! with length n.
+
+  call AttrVect_init(oGGrid%data, iGGrid%data, n)
+
+ end subroutine initgg_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !

@@ -22,6 +22,9 @@
                                      ! (i.e. recover local index for a
                                      ! point from its global index). 
 
+      public :: GlobalToLocalMatrix  ! Re-indexing of row or column
+                                     ! indices for a SparseMatrix
+
     interface GlobalToLocalIndices ; module procedure   &
         GlobalSegMapToIndices_,  &   ! local arrays of starts/lengths
         GlobalSegMapToNavigator_     ! return local indices as Navigator
@@ -31,6 +34,11 @@
 	GlobalSegMapToIndex_, &
 	GlobalMapToIndex_
     end interface
+
+    interface GlobalToLocalMatrix ; module procedure &
+	GlobalSegMapToLocalMatrix_
+    end interface
+
 
 ! !REVISION HISTORY:
 !       02Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
@@ -387,5 +395,85 @@
   call GlobalSegMapToIndices_(GSMap, comm, oNav%displs, oNav%counts)
 
  end subroutine GlobalSegMapToNavigator_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: GlobalSegMapToLocalMatrix_ - Set _local_ SparseMatrix indices.
+!
+! !DESCRIPTION:  {\tt GlobalSegMapToLocalMatrix\_()} takes a user-supplied
+! {\tt GlobalSegMap} data type {\tt GSMap}, and input communicator 
+! {\tt comm} to translate the global row or column indices of the input
+! {\tt SparseMatrix} argument {\tt sMat} into their local counterparts.
+!
+! One sets the input {\tt CHARACTER} argument {\tt RCFlag} to the value 
+! {\tt ROW} or {\tt row} to specify row re-indexing (which are stored in
+! {\tt sMat} and retrieved by indexing the attribute {\tt lrow}), and 
+! {\tt COLUMN} or {\tt column} to specify column re-indexing (which are 
+! stored in {\tt sMat} and retrieved by indexing the {\tt SparseMatrix} 
+! attribute {\tt lcol}).
+!
+! !INTERFACE:
+
+ subroutine GlobalSegMapToLocalMatrix_(sMat, GSMap, RCFlag, comm)
+
+!
+! !USES:
+!
+      use m_stdio
+      use m_die,          only : die
+
+      use m_SparseMatrix, only : SparseMatrix
+      use m_SparseMatrix, only : SparseMatrix_indexIA => indexIA
+      use m_SparseMatrix, only : SparseMatrix_lsize => lsize
+
+      use m_GlobalSegMap, only : GlobalSegMap
+
+      implicit none
+
+      type(SparseMatrix), intent(inout) :: sMat
+
+      type(GlobalSegMap),intent(in) :: GSMap   ! Input GlobalSegMap
+      character(len=*),  intent(in) :: RCFlag  ! Input GlobalSegMap
+      integer,           intent(in) :: comm    ! communicator handle
+
+
+! !REVISION HISTORY:
+!       03May01 - J.W. Larson <larson@mcs.anl.gov> - initial version, which
+!                 is _extremely_ slow, but safe.  This must be re-examined
+!                 later.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::GlobalSegMapToLocalMatrix_'
+
+  integer :: i, GlobalIndex, gindex, lindex, lsize
+
+       ! What are we re-indexing, rows or columns?
+
+  select case(RCFlag)
+  case('ROW','row')
+     gindex = SparseMatrix_indexIA(sMat,'grow')
+     lindex = SparseMatrix_indexIA(sMat,'lrow')
+  case('COLUMN','column')
+     gindex = SparseMatrix_indexIA(sMat,'gcol')
+     lindex = SparseMatrix_indexIA(sMat,'lcol')
+  case default
+     write(stderr,'(3a)') myname_,":: unrecognized value of RCFLag ",RCFlag
+     call die(myname)
+  end select
+
+       ! How many matrix elements are there?
+
+  lsize = SparseMatrix_lsize(sMat)
+
+       ! Re-index, one element at a time (this is the slow part)
+
+  do i=1,lsize
+     GlobalIndex = sMat%data%iAttr(gindex,i)
+     sMat%data%iAttr(lindex,i) = GlobalSegMapToIndex_(GSMap, GlobalIndex, comm)
+  end do
+
+ end subroutine	GlobalSegMapToLocalMatrix_
 
  end module m_GlobalToLocal
