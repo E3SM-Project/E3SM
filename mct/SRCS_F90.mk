@@ -21,6 +21,7 @@ m_SparseMatrixDecomp.F90	\
 m_SparseMatrixToMaps.F90	\
 m_SparseMatrixComms.F90 \
 m_Router.F90		\
+m_Rearranger.F90        \
 m_NBSend.F90		\
 MCT_Send.F90		\
 MCT_Recv.F90
