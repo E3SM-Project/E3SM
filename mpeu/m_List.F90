@@ -22,6 +22,8 @@
       public :: copy
       public :: concatenate
       public :: bcast
+      public :: send
+      public :: recv
 
     type List
       character(len=1),dimension(:),pointer :: bf
@@ -59,6 +61,8 @@
 
   interface concatenate ; module procedure concatenate_ ; end interface
   interface bcast; module procedure bcast_; end interface
+  interface send; module procedure send_; end interface
+  interface recv; module procedure recv_; end interface
 
   character(len=*),parameter :: myname='m_List'
 
@@ -175,6 +179,7 @@ contains
   endif
 
  end subroutine init_
+
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
@@ -571,7 +576,7 @@ contains
  end subroutine set_indices_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: concatenate_ - Concatenates two Lists into a third List.
@@ -599,6 +604,11 @@ contains
 
       use m_mpif90
 
+      use m_String, only:  String
+      use m_String, only:  String_toChar => toChar
+      use m_String, only:  String_len
+      use m_String, only:  String_clean => clean
+
       implicit none
 
 ! !INPUT PARAMETERS: 
@@ -610,8 +620,15 @@ contains
 !
       type(List),         intent(out) :: oList
 
+! !BUGS:  For now, the List concatenate algorithm relies on fixed-length
+! CHARACTER variables as intermediate storage.  The lengths of these
+! scratch variables is hard-wired to 10000, which should be large enough
+! for most applications.  This undesirable feature should be corrected 
+! ASAP.
+!
 ! !REVISION HISTORY:
 ! 	08May01 - J.W. Larson - initial version.
+! 	17May01 - J.W. Larson - Re-worked and tested successfully.
 !EOP ___________________________________________________________________
 
  character(len=*),parameter :: myname_=myname//'::concatenate_'
@@ -620,56 +637,62 @@ contains
  integer :: InNitems1, InNitems2, OutNitems
  integer :: ierr, n
 
-       ! Determine the number of items in iList1 and iList2
+ type(String) :: iStr1, iStr2
+ character(10000) :: iChr1, iChr2, oChr
 
-  InNitems1 = nitem_(iList1)
-  InNitems2 = nitem_(iList2)
+       ! First, handle the case of either iList1 and/or iList2 being
+       ! null
 
-       ! The number of items in oList is the sum of the number
-       ! of items in iList1 and iList2
+  if((nitem_(iList1) == 0) .or. (nitem_(iList2) == 0)) then
 
-  OutNitems = InNitems1 + InNitems2
-
-       ! Determine the CHARACTER buffer lengths for iList1 and iList2
-
-  ilen1 = len(iList1%bf)
-  ilen2 = len(iList2%bf)
-
-       ! The CHARACTER buffer lengths for oList is the sum of the
-       ! CHARACTER buffer lengths of iList1 and iList2
-
-  olen = ilen1 + ilen2
-
-       ! Allocate the components of oList
-
-  allocate(oList%lc(0:1,OutNitems), oList%bf(olen), stat=ierr)
-  if(ierr /= 0) call die(myname_,'allocate(oList%lc(...',ierr)
-
-       ! Fill in the entries of oList%bf
-
-  oList%bf(1:ilen1) = iList1%bf(1:ilen1)
-  oList%bf(ilen1+1:olen) = iList2%bf(1:ilen2)
-
-       ! Fill in the entries of oList%lc, adjusting the
-       ! entries from iList2%lc to reflect their starting
-       ! position in oList
-
-  do n=1,OutNitems
-     if(n <= InNitems1) then
-	oList%lc(0,n) = iList1%lc(0,n)
-	oList%lc(1,n) = iList1%lc(1,n)
-     else
-	oList%lc(0,n) = iList2%lc(0,n-InNitems1) + ilen1
-	oList%lc(1,n) = iList2%lc(1,n-InNitems1) + ilen1
+     if((nitem_(iList1) == 0) .and. (nitem_(iList2) == 0)) then
+	call init_(oList,'')
      endif
-  end do
 
-       ! The concatenation is complete.
+     if(nitem_(iList1) == 0) then
+	call copy_(oList, iList2)
+     endif
+
+     if(nitem_(iList2) == 0) then
+	call copy_(oList,iList1)
+     endif
+
+  else ! both lists are non-null
+
+       ! Step one:  convert Lists to Strings
+
+     call getall_(iStr1, iList1)
+     call getall_(iStr2, iList2)
+
+       ! Step two:  convert Strings to CHARACTER variables
+
+     iChr1 = String_toChar(iStr1)
+     iChr2 = String_toChar(iStr2)
+
+     ilen1 = String_len(iStr1)
+     ilen2 = String_len(iStr2)
+
+       ! Step three:  concatenate CHARACTERs with the colon separator
+
+     olen = ilen1 + ilen2 + 1
+
+     oChr = trim(iChr1) // ':' // trim(iChr2)
+
+       ! Step four:  initialize oList from a CHARACTER
+
+     call init_(oList, trim(oChr))
+
+       ! The concatenation is complete.  Now, clean up
+
+     call String_clean(iStr1)
+     call String_clean(iStr2)
+
+  endif
 
  end subroutine concatenate_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: bcast_ - Broadcast a List variable...
@@ -758,5 +781,168 @@ contains
 
  end subroutine bcast_
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: send_ - Point-to-point send of a List variable...
+!
+! !DESCRIPTION:  This routine takes an input {\tt List} argument 
+! {\tt inList} and sends it to processor {\tt dest} on the communicator 
+! associated with the fortran 90 {\tt INTEGER} handle {\tt comm}.  The 
+! message is tagged by the input {\tt INTEGER} argument {\tt TagBase}.  
+! The success (failure) of this operation is reported in the zero 
+! (nonzero) optional output argument {\tt status}.
+!
+! {\bf N.B.}:  One must avoid assigning elsewhere the MPI tag values 
+! {\tt TagBase} and {\tt TagBase+1}.  This is because {\tt send\_()} 
+! performs the send of the {\tt List} as a pair of operations.  The 
+! first send is the number of characters in {\tt inList\%bf}, and is 
+! given MPI tag value {\tt TagBase}.  The second send is the 
+! {\tt CHARACTER} data present in {\tt inList\%bf}, and is given MPI 
+! tag value {\tt TagBase+1}.
+!
+! !INTERFACE:
+
+    subroutine send_(inList, dest, TagBase, comm, status)
+!
+! !USES:
+!
+      use m_stdio
+      use m_die, only : MP_perr_die
+
+      use m_mpif90
+
+      use m_String, only:  String
+      use m_String, only:  String_toChar => toChar
+      use m_String, only:  String_len
+      use m_String, only:  String_clean => clean
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+!
+      type(List),         intent(in)  :: inList  
+      integer,            intent(in)  :: dest
+      integer,            intent(in)  :: TagBase
+      integer,            intent(in)  :: comm
+
+! !OUTPUT PARAMETERS: 
+!
+      integer, optional,  intent(out) :: status
+
+! !REVISION HISTORY:
+! 	06Jun01 - J.W. Larson - initial version.
+!EOP ___________________________________________________________________
+
+ character(len=*),parameter :: myname_=myname//'::send_'
+
+ type(String) :: DummStr
+ integer :: ierr, length
+
+       ! Step 1.  Extract CHARACTER buffer from inList and store it
+       ! in String variable DummStr, determine its length.
+
+ call getall_(DummStr, inList)
+ length = String_len(DummStr)
+
+       ! Step 2.  Send Length of String DummStr to process dest.
+
+ call MPI_SEND(length, 1, MP_type(length), dest, TagBase, comm, ierr)
+
+       ! Step 3.  Send CHARACTER portion of String DummStr 
+       ! to process dest.
+
+ call MPI_SEND(DummStr%c, length, MP_CHARACTER, dest, TagBase+1, &
+               comm, ierr)
+
+ end subroutine send_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: recv_ - Point-to-point receive of a List variable...
+!
+! !DESCRIPTION:  This routine receives the output {\tt List} argument 
+! {\tt outList} from processor {\tt source} on the communicator associated
+! with the fortran 90 {\tt INTEGER} handle {\tt comm}.  The message is
+! tagged by the input {\tt INTEGER} argument {\tt TagBase}.  The success
+! (failure) of this operation is reported in the zero (nonzero) optional
+! output argument {\tt status}.
+!
+! {\bf N.B.}:  One must avoid assigning elsewhere the MPI tag values 
+! {\tt TagBase} and {\tt TagBase+1}.  This is because {\tt recv\_()} 
+! performs the receive of the {\tt List} as a pair of operations.  The 
+! first receive is the number of characters in {\tt outList\%bf}, and 
+! is given MPI tag value {\tt TagBase}.  The second receive is the 
+! {\tt CHARACTER} data present in {\tt outList\%bf}, and is given MPI 
+! tag value {\tt TagBase+1}.
+!
+! !INTERFACE:
+
+    subroutine recv_(outList, source, TagBase, comm, status)
+!
+! !USES:
+!
+
+      use m_stdio
+      use m_die, only : MP_perr_die
+
+      use m_mpif90
+
+      use m_String, only : String
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+!
+      integer,            intent(in)  :: source
+      integer,            intent(in)  :: TagBase
+      integer,            intent(in)  :: comm
+
+! !OUTPUT PARAMETERS: 
+!
+      type(List),         intent(out) :: outList  
+      integer, optional,  intent(out) :: status
+
+! !REVISION HISTORY:
+! 	06Jun01 - J.W. Larson - initial version.
+!EOP ___________________________________________________________________
+
+ character(len=*),parameter :: myname_=myname//'::recv_'
+
+ integer :: ierr, length
+ integer :: MPstatus(MP_STATUS_SIZE)
+ type(String) :: DummStr
+
+       ! Step 1.  Receive Length of String DummStr from process source.
+
+ call MPI_RECV(length, 1, MP_type(length), source, TagBase, comm, &
+               status, ierr)
+
+ allocate(DummStr%c(length), stat=ierr)
+
+       ! Step 2.  Send CHARACTER portion of String DummStr 
+       ! to process dest.
+
+ call MPI_RECV(DummStr%c, length, MP_CHARACTER, source, TagBase+1, &
+               comm, MPstatus, ierr)
+
+       ! Step 3.  Initialize outList.
+
+ call initStr_(outList, DummStr)
+
+ end subroutine recv_
+
  end module m_List
 !.
+
+
+
+
+
+
+
+
+
