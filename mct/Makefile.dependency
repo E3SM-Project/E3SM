@@ -9,4 +9,5 @@ m_SparseMatrix.o: m_AttrVect.o m_GlobalMap.o m_AttrVectComms.o
 m_GeneralGrid.o: m_AttrVect.o
 m_MatAttrVectMul.o: m_AttrVect.o m_SparseMatrix.o m_GlobalMap.o m_GlobalSegMap.o
 m_Router.o: m_Navigator.o
+m_GlobalToLocal.o: m_GlobalSegMap.o
 
