@@ -106,7 +106,7 @@
 !           method comp_id_()
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_GlobalMap'
+  character(len=*),parameter :: myname='MCT::m_GlobalMap'
 
  contains
 

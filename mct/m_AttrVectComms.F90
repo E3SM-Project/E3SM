@@ -80,7 +80,7 @@
 !           m_die routines throughout this module.
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_AttrVectComms'
+  character(len=*),parameter :: myname='MCT::m_AttrVectComms'
 
  contains
 

@@ -89,7 +89,7 @@
 !           VectorLength component.
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_Navigator'
+  character(len=*),parameter :: myname='MCT::m_Navigator'
 
  contains
 

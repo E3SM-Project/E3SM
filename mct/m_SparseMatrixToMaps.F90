@@ -46,7 +46,7 @@
 !           and API specifications.
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_SparseMatrixToMaps'
+  character(len=*),parameter :: myname='MCT::m_SparseMatrixToMaps'
 
  contains
 

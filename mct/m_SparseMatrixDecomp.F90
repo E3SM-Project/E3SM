@@ -47,7 +47,7 @@
 !           comments in ByRowGSMap/ByColumnGSMap.
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_SparseMatrixDecomp'
+  character(len=*),parameter :: myname='MCT::m_SparseMatrixDecomp'
 
  contains
 

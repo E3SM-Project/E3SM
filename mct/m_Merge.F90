@@ -86,7 +86,7 @@
 !       19Jun02 - J.W. Larson <larson@mcs.anl.gov> - Initial version.
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_Merge'
+  character(len=*),parameter :: myname='MCT::m_Merge'
 
  contains
 

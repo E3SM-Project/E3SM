@@ -100,7 +100,7 @@
 !           globalcomm
 !EOP __________________________________________________________________
 
-  character(len=*),parameter :: myname='m_MCTWorld'
+  character(len=*),parameter :: myname='MCT::m_MCTWorld'
 
  contains
 

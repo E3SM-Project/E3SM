@@ -176,7 +176,7 @@
 !           to allow user-defined grid numbering schemes.
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_GeneralGrid'
+  character(len=*),parameter :: myname='MCT::m_GeneralGrid'
 
  contains
 

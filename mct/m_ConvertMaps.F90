@@ -48,7 +48,7 @@
 !
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_ConvertMap'
+  character(len=*),parameter :: myname='MCT::m_ConvertMap'
 
  contains
 

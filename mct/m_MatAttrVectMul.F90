@@ -55,7 +55,7 @@
 !
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_MatAttrVectMul'
+  character(len=*),parameter :: myname='MCT::m_MatAttrVectMul'
 
  contains
 

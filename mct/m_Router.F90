@@ -93,7 +93,7 @@
 !           for send/recv to the Router datatype.
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_Router'
+  character(len=*),parameter :: myname='MCT::m_Router'
 
  contains
 

@@ -74,7 +74,7 @@
 !           and use Router%lAvsize instead for sanity check.
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_Rearranger'
+  character(len=*),parameter :: myname='MCT::m_Rearranger'
 
  contains
 

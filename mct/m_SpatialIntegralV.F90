@@ -69,7 +69,7 @@
 !                 from m_SpatialIntegral to this file.
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_SpatialIntegralV'
+  character(len=*),parameter :: myname='MCT::m_SpatialIntegralV'
 
  contains
 

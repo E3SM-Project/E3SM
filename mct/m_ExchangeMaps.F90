@@ -78,6 +78,8 @@
 !           MP_COMM_WORLD
 !EOP ___________________________________________________________________
 !
+  character(len=*),parameter :: myname='MCT::m_ExchangeMaps'
+
 ! Map Handshaking Parameters:  Map handshaking occurs via 
 ! exchange of an array of INTEGER flags. 
 
@@ -114,8 +116,6 @@
   ! For a GlobalSegMap, this is the number of global segments (ngseg).
 
   integer, parameter :: NumSegIndex = 4
-
-  character(len=*),parameter :: myname='m_ExchangeMaps'
 
  contains
 

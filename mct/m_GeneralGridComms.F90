@@ -52,7 +52,7 @@
 !                 error checks to avoid making bad MPI calls
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_GeneralGridComms'
+  character(len=*),parameter :: myname='MCT::m_GeneralGridComms'
 
  contains
 

@@ -143,7 +143,7 @@
 !            no added routines
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_Accumulator'
+  character(len=*),parameter :: myname='MCT::m_Accumulator'
 
  contains
 

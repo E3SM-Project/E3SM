@@ -91,7 +91,7 @@
 !           using routines originally prototyped in m_AttrVect.
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_AttrVectReduce'
+  character(len=*),parameter :: myname='MCT::m_AttrVectReduce'
 
  contains
 

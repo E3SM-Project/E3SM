@@ -126,7 +126,7 @@
 !
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_SpatialIntegral'
+  character(len=*),parameter :: myname='MCT::m_SpatialIntegral'
 
  contains
 
