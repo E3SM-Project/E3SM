@@ -43,6 +43,9 @@ _R		=
 
 MUPDATE         = @MUPDATE@
 
+.c.o:
+	$(CC) -c -O $*.c
+
 @FRULE@:
 	$(FC) -c $(_I) $(DEFS) $(FFLAGS) $*.F
 
