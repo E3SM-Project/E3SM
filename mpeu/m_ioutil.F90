@@ -428,7 +428,7 @@ end function luavail
   call flush_(lu)      ! Function defined in xlf reference document.
 #endif
 
-#ifdef NAG
+#if NAG || sysUNICOS
   call flush(lu,ier)
 #elif IA64
 ! no flush on Linux IA64 with Intel compiler
