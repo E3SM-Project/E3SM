@@ -35,11 +35,21 @@ _Dnod		=
 # Environments
 # ============
 
-# If using pgf90 compiler, add the following flags: 
+# Regarding Compilers:
+#
+# If using NAG95 compiler, add the following options to the  
+# FFLAGS and FPPFLAGS macros: 
+# FFLAGS = -dusty -kind=byte
+# FPPFLAGS = -DNAG 
+#
+# If using the pgf90 compiler, add the following options to the  
+# FFLAGS and FPPFLAGS macros: 
 # FFLAGS = -tp p6 -pc 32 -Mnoframe -byteswapio 
-# -pc speciefies 32-bit or 64-bit 
+# -pc speciefies 32-bit or 64-bit  
 
-# If using Absoft compiler, add the following flags: 
+# If using the Absoft compiler, add the following options to the  
+# FFLAGS, FPPFLAGS and CFLAGS macros.  Also, set the MUPDATE 
+# macro as shown below:
 # FFLAGS = -Mnoframe
 # CFLAGS = -DABSOFT
 # MUPDATE         = sh UCupdate.sh
@@ -70,6 +80,7 @@ FC		= $(F90)
 FFLAGS		= -O2 -tp p6 -pc 32 -Mnoframe -byteswapio $(_R)
 CFLAGS		= -O
 
+FPPFLAGS	= -DLANGUAGE_FORTRAN -traditional
 
 LD		= mpif90
 LDFLAGS		= $(FFLAGS)
@@ -77,8 +88,6 @@ LDFLAGS		= $(FFLAGS)
 LIBprof		= #-lprof
 LIBsys	 	= 
 
-
-FPPFLAGS	= -DLANGUAGE_FORTRAN -traditional
 
 .F.o:
 	$(FPP) $(FPPFLAGS) $(_I) $(_DF) $*.F $*.f
