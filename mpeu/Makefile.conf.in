@@ -29,7 +29,7 @@
 
 SHELL           = @SHELL@
 
-_I              = @MPILIBS@ @INCLUDEPATH@
+_I              = @INCLUDEPATH@
 
 DEFS            = @MACHDEFS@
 

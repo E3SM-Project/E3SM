@@ -3308,9 +3308,13 @@ echo "$as_me:$LINENO: result: $ac_cv_f90_mangling" >&5
 echo "${ECHO_T}$ac_cv_f90_mangling" >&6
 
 case $ac_cv_f90_mangling in
-  upper*) name_mangling="FORTRAN_CAPS_" ;;
-  lower*) name_mangling="FORTRAN_SAME" ;;
-  *)      name_mangling="UNKNOWN" ;;
+  "lower case, underscore, no extra underscore")
+	 name_mangling="FORTRAN_UNDERSCORE_" ;;
+  "lower case, no underscore, no extra underscore")
+	 name_mangling="FORTRAN_SAME" ;;
+  "upper case, no underscore, no extra underscore")
+	 name_mangling="FORTRAN_CAPS_" ;;
+  *) name_mangling="UNKNOWN" ;;
 esac
 
 # Set FPP and FPPFLAGS
@@ -3731,12 +3735,14 @@ if echo $f90_version | grep -i sx >/dev/null 2>&1; then
    fi
 fi
 
-if test "$name_mangling" = "FORTRAN_CAPS_"; then
-   CCFLAGS="-DFORTRAN_CAPS_ -O $CCFLAGS"
-fi
-if test -z "$CCFLAGS"; then
-   CCFLAGS="-O"
-fi
+case $name_mangling in
+  FORTRAN_CAPS_) CCFLAGS="-DFORTRAN_CAPS_ -O $CCFLAGS";;
+  FORTRAN_SAME)  CCFLAGS="-DFORTRAN_SAME -O $CCFLAGS";;
+  FORTRAN_UNDERSCORE_) CCFLAGS="-O $CCFLAGS";;
+  *) { echo "$as_me:$LINENO: WARNING: unusual Fortran 90 name-mangling scheme; CCFLAGS left undefined" >&5
+echo "$as_me: WARNING: unusual Fortran 90 name-mangling scheme; CCFLAGS left undefined" >&2;};;
+esac
+
 if test -z "$INCLUDEFLAG"; then
    INCLUDEFLAG="-I"
 fi

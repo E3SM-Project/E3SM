@@ -31,7 +31,7 @@
 
 SHELL           = @SHELL@
 
-_I              = @INCLUDEFLAG@../mpeu @MPILIBS@ @INCLUDEPATH@
+_I              = @INCLUDEFLAG@../mpeu @INCLUDEPATH@
 
 DEFS            = @MACHDEFS@
 
