@@ -8,7 +8,7 @@
 !
 ! !INTERFACE:
 
-    module m_GlobalMap
+ module m_GlobalMap
       implicit none
       private	! except
 
@@ -19,12 +19,13 @@
       public :: init_remote
       public :: clean
       public :: rank
-      public :: local_range
+      public :: bounds
+      public :: comp_id
 
     type GlobalMap
+      integer :: comp_id                        ! Component ID number
       integer :: gsize				! the Global size
       integer :: lsize				! my local size
-      integer :: lleft				! my left index
       integer,dimension(:),pointer :: counts	! all local sizes
       integer,dimension(:),pointer :: displs	! PE ordered locations
     end type GlobalMap
@@ -38,18 +39,22 @@
     interface init_remote; module procedure init_remote_; end interface
     interface clean; module procedure clean_; end interface
     interface rank ; module procedure rank_ ; end interface
-    interface local_range; module procedure range_; end interface
+    interface bounds; module procedure bounds_; end interface
+    interface comp_id ; module procedure comp_id_ ; end interface
 
 ! !REVISION HISTORY:
 ! 	21Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
 ! 	09Nov00 - J.W. Larson <larson@mcs.anl.gov> - added init_remote
 !                 interface.
+!       26Jan01 - J.W. Larson <larson@mcs.anl.gov> - added storage for
+!                 component ID number GlobalMap%comp_id, and associated
+!                 method comp_id_()
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_GlobalMap'
 
+ contains
 
-contains
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
@@ -60,13 +65,14 @@ contains
 !
 ! !INTERFACE:
 
-    subroutine initd_(GMap,ln,comm)
+    subroutine initd_(GMap, comp_id, ln, comm)
       use m_mpif90
       use m_die
       implicit none
       type(GlobalMap),intent(out) :: GMap
-      integer,intent(in) :: ln	! the local size
-      integer,intent(in) :: comm
+      integer,intent(in) :: comp_id ! Component
+      integer,intent(in) :: ln	    ! the local size
+      integer,intent(in) :: comm    ! f90 MPI communicator handle 
 
 ! !REVISION HISTORY:
 ! 	21Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
@@ -99,8 +105,8 @@ contains
   end do
 
   GMap%lsize=GMap%counts(myID)	! the local size
-  GMap%lleft=GMap%displs(myID)
   GMap%gsize=l	! the global size
+  GMap%comp_id = comp_id ! the component ID number
 
  end subroutine initd_
 
@@ -114,12 +120,13 @@ contains
 !
 ! !INTERFACE:
 
-    subroutine initr_(GMap,lns,root,comm)
+    subroutine initr_(GMap, comp_id, lns, root, comm)
       use m_mpif90
       use m_die
       use m_stdio
       implicit none
       type(GlobalMap),intent(out) :: GMap
+      integer            :: comp_id             ! component ID number
       integer,dimension(:),intent(in) :: lns	! the distributed sizes
       integer,intent(in) :: root
       integer,intent(in) :: comm
@@ -160,6 +167,8 @@ contains
   call MPI_bcast(GMap%counts,nPEs,MP_INTEGER,root,comm,ier)
   if(ier/=0) call MP_perr_die(myname_,'MPI_bcast()',ier)
 
+  ! on each process, use GMap%counts(:) to compute GMap%displs(:)
+
   l=0
   do i=0,nPEs-1
     GMap%displs(i)=l
@@ -167,8 +176,14 @@ contains
   end do
 
   GMap%lsize=GMap%counts(myID)	! the local size
-  GMap%lleft=GMap%displs(myID)
   GMap%gsize=l	! the global size
+
+  ! finally, set and broadcast the component ID number GMap%comp_id
+
+  if(myID == root) GMap%comp_id = comp_id
+
+  call MPI_bcast(GMap%comp_id,1,MP_INTEGER,root,comm,ier)
+  if(ier/=0) call MP_perr_die(myname_,'MPI_bcast()',ier)
 
  end subroutine initr_
 
@@ -184,7 +199,7 @@ contains
 ! !INTERFACE:
 
  subroutine init_remote_(GMap, remote_lns, remote_npes, my_root, &
-	                    my_comm, remote_comm)
+	                    my_comm, remote_comp_id)
       use m_mpif90
       use m_die
       use m_stdio
@@ -196,10 +211,13 @@ contains
                                               ! on remote communicator
       integer,intent(in) :: my_root           ! my root
       integer,intent(in) :: my_comm           ! my communicator
-      integer,intent(in) :: remote_comm       ! remote communicator
+      integer,intent(in) :: remote_comp_id    ! remote component ID nubmer
 
 ! !REVISION HISTORY:
 ! 	08Nov00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+! 	26Jan01 - J.W. Larson <larson@mcs.anl.gov> - slight change--remote
+!                 communicator is replaced by remote component ID number
+!                 in argument remote_comp_id.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::init_remote_'
@@ -254,9 +272,9 @@ contains
     l=l+GMap%counts(i)
   end do
 
-  GMap%lsize=GMap%counts(myID)	! the local size
-  GMap%lleft=GMap%displs(myID)
-  GMap%gsize=l	! the global size
+  GMap%lsize = GMap%counts(myID) ! the local size
+  GMap%gsize = l      	         ! the global size
+  GMap%comp_id = remote_comp_id  ! the remote component id
 
  end subroutine init_remote_
 
@@ -270,13 +288,14 @@ contains
 !
 ! !INTERFACE:
 
-    subroutine clean_(GMap)
+  subroutine clean_(GMap)
       use m_die
       implicit none
       type(GlobalMap),intent(inout) :: GMap
 
 ! !REVISION HISTORY:
 ! 	21Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 	26Jan01 - J. Larson <larson@mcs.anl.gov> incorporated comp_id.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::clean_'
@@ -294,11 +313,12 @@ contains
   deallocate(GMap%counts,GMap%displs,stat=ier)
   if(ier /= 0) call perr_die(myname_,'deallocate()',ier)
 
-  GMap%lsize=0
-  GMap%lleft=0
-  GMap%gsize=0
+  GMap%lsize = 0
+  GMap%gsize = 0
+  GMap%comp_id = 0
 
-end subroutine clean_
+ end subroutine clean_
+
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
@@ -309,7 +329,7 @@ end subroutine clean_
 !
 ! !INTERFACE:
 
-    function lsize_(GMap)
+ function lsize_(GMap)
       implicit none
       type(GlobalMap),intent(in) :: GMap
       integer :: lsize_
@@ -322,7 +342,7 @@ end subroutine clean_
 
   lsize_=GMap%lsize
 
-end function lsize_
+ end function lsize_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
@@ -334,7 +354,7 @@ end function lsize_
 !
 ! !INTERFACE:
 
-    function gsize_(GMap)
+ function gsize_(GMap)
       implicit none
       type(GlobalMap),intent(in) :: GMap
       integer :: gsize_
@@ -347,7 +367,7 @@ end function lsize_
 
   gsize_=GMap%gsize
 
-end function gsize_
+ end function gsize_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
@@ -359,7 +379,7 @@ end function gsize_
 !
 ! !INTERFACE:
 
-    subroutine rank_(GMap,i_g,rank)
+ subroutine rank_(GMap,i_g,rank)
       implicit none
       type(GlobalMap),intent(in) :: GMap
       integer, intent(in)  :: i_g	! a global index
@@ -385,33 +405,58 @@ end function gsize_
     endif
   end do
 
-end subroutine rank_
+ end subroutine rank_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: range_ - the range of the local indices
+! !IROUTINE: bounds_ - upper/lower indices for a given process id.
 !
 ! !DESCRIPTION:
 !
 ! !INTERFACE:
 
-    subroutine range_(GMap,lbnd,ubnd)
+ subroutine bounds_(GMap, pe_no, lbnd, ubnd)
       implicit none
       type(GlobalMap),intent(in) :: GMap
+      integer,intent(in)  :: pe_no
       integer,intent(out) :: lbnd
       integer,intent(out) :: ubnd
 
 ! !REVISION HISTORY:
-! 	05May98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 	30Jan01 - J. Larson <larson@mcs.anl.gov> - initial code
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname_=myname//'::range_'
+  character(len=*),parameter :: myname_=myname//'::bounds_'
 
-  lbnd=GMap%lleft+1
-  ubnd=GMap%lleft+GMap%lsize
+  lbnd = GMap%displs(pe_no) + 1
+  ubnd = lbnd + GMap%counts(pe_no) - 1
 
-end subroutine range_
+ end subroutine bounds_
 
-end module m_GlobalMap
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: comp_id_ - the component id number in the GlobalMap.
+!
+! !DESCRIPTION:
+!
+! !INTERFACE:
+
+    integer function comp_id_(GMap)
+      implicit none
+      type(GlobalMap),intent(in) :: GMap
+
+! !REVISION HISTORY:
+! 	25Jan02 - J. Larson <larson@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::comp_id_'
+
+  comp_id_ = GMap%comp_id
+
+ end function comp_id_
+
+ end module m_GlobalMap

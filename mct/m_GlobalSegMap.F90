@@ -33,14 +33,14 @@
       public :: GlobalSegMap	! The class data structure
       public :: init            ! Create
       public :: clean           ! Destroy
-      public :: comm            ! Return communication
+      public :: comp_id         ! Return component ID number
       public :: gsize           ! Return global vector size (excl. halos)
       public :: lsize           ! Return local storage size (incl. halos)
       public :: ngseg           ! Return global number of segments
       public :: nlseg           ! Return local number of segments
 
     type GlobalSegMap
-      integer :: comm				! Communicator handle
+      integer :: comp_id			! Component ID number
       integer :: ngseg				! No. of Global segments
       integer :: gsize				! No. of Global elements
       integer :: lsize				! No. of Local elements
@@ -54,7 +54,7 @@
 	initr_		! initialize from the root
     end interface
     interface clean ; module procedure clean_ ; end interface
-    interface comm  ; module procedure comm_  ; end interface
+    interface comp_id  ; module procedure comp_id_  ; end interface
     interface gsize ; module procedure gsize_ ; end interface
     interface lsize ; module procedure lsize_ ; end interface
     interface ngseg ; module procedure ngseg_ ; end interface
@@ -66,6 +66,8 @@
 
 ! !REVISION HISTORY:
 ! 	28Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+! 	26Jan01 - J.W. Larson <larson@mcs.anl.gov> - replaced the component
+!                 GlobalSegMap%comm with GlobalSegMap%comp_id.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_GlobalSegMap'
@@ -83,9 +85,8 @@
 ! !INTERFACE:
 
  subroutine initd_(GSMap, start, length, root, my_comm, &
-                   gsm_comm, pe_loc, gsize)
+                   comp_id, pe_loc, gsize)
 
-!initd_(GSMap, comm, gsize,)
 !
 ! !USES:
 !
@@ -101,8 +102,7 @@
       integer,dimension(:),intent(in) :: length  ! the distributed sizes
       integer,intent(in)              :: root    ! root on my_com
       integer,intent(in)              :: my_comm ! local communicatior
-      integer,intent(in), optional    :: gsm_comm ! communicator for the
-                                                  ! output GlobalSegMap
+      integer,intent(in)              :: comp_id ! component model ID
       integer,dimension(:), pointer, optional :: pe_loc ! process location
       integer,intent(in), optional    :: gsize   ! global vector size
                                                  ! (optional).  It can
@@ -118,6 +118,8 @@
 !                 was the new pointer variable my_pe_loc); a mistake in 
 !                 the tag arguments to MPI_IRECV; a bug in the declaration
 !                 of the array status used by MPI_WAITALL.
+! 	26Jan01 - J.W. Larson <larson@mcs.anl.gov> - replaced optional 
+!                 argument gsm_comm with required argument comp_id.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::initd_'
@@ -138,27 +140,6 @@
 
   if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
 
-        ! Check of consistency of optional arguments
-
-  if(present(gsm_comm) .and. (.not. present(pe_loc))) then
-     if(myID == root) then
-	write(stderr,'(4a)') myname_,	&
-	     ':: arguement error--presence of ', &
-	     'optional arguement gsm_comm requires ', &
-	     'presence of optional argument pe_loc.'
-     endif
-     call die(myname_)
-  endif
-
-  if(present(pe_loc) .and. (.not. present(gsm_comm))) then
-     if(myID == root) then
-	write(stderr,'(4a)') myname_,	&
-	     ':: arguement error--presence of ', &
-	     'optional arguement pe_loc requires ', &
-	     'presence of optional argument gsm_comm.'
-     endif
-     call die(myname_)
-  endif
 
         ! Check consistency of sizes of input arrays:
 
@@ -336,23 +317,14 @@
 
         ! Now, we have everything on the root needed to call initr_().
 
-  if(present(gsm_comm)) then
-     if(present(gsize)) then
-        call initr_(GSMap, ngseg, root_start, root_length, &
-	            root_pe_loc, root, my_comm, gsm_comm, gsize)
-     else
-        call initr_(GSMap, ngseg, root_start, root_length, &
-	            root_pe_loc, root, my_comm, gsm_comm)
-     endif
+  if(present(gsize)) then
+     call initr_(GSMap, ngseg, root_start, root_length, &
+                 root_pe_loc, root, my_comm, comp_id, gsize)
   else
-     if(present(gsize)) then
-        call initr_(GSMap, ngseg, root_start, root_length, &
-	            root_pe_loc, root, my_comm, gsize=gsize)
-     else
-        call initr_(GSMap, ngseg, root_start, root_length, &
-	            root_pe_loc, root, my_comm)
-     endif
+     call initr_(GSMap, ngseg, root_start, root_length, &
+                 root_pe_loc, root, my_comm, comp_id)
   endif
+
 
         ! Clean up the array pe_loc(:) if it was allocated
 
@@ -394,7 +366,7 @@
 ! !INTERFACE:
 
  subroutine initr_(GSMap, ngseg, start, length, pe_loc, root,  &
-                   my_comm, gsm_comm, gsize)
+                   my_comm, comp_id, gsize)
 !
 ! !Uses:
 !
@@ -411,8 +383,7 @@
       integer,dimension(:),intent(in) :: pe_loc  ! process location
       integer,intent(in)              :: root    ! root on my_com
       integer,intent(in)              :: my_comm ! local communicatior
-      integer,intent(in), optional    :: gsm_comm ! communicator for the
-                                                  ! output GlobalSegMap
+      integer,intent(in)              :: comp_id ! component id number
       integer,intent(in), optional    :: gsize   ! global vector size
                                                  ! (optional).  It can
                                                  ! be computed by this 
@@ -426,6 +397,8 @@
 !                                                    disparities in ngseg on
 !                                                    the root and other 
 !                                                    processes
+! 	26Jan01 - J.W. Larson <larson@mcs.anl.gov> - replaced optional 
+!                 argument gsm_comm with required argument comp_id.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::initr_'
@@ -465,16 +438,22 @@
     endif
   endif
 
-        ! Initialize GSMap%ngseg on the root process
+        ! Initialize GSMap%ngseg and GSMap%comp_id on the root:
 
   if(myID == root) then
      GSMap%ngseg = ngseg
+     GSMap%comp_id = comp_id
   endif
 
-        ! Broadcast the value of ngseg
+        ! Broadcast the value of GSMap%ngseg
 
   call MPI_BCAST(GSMap%ngseg, 1, MP_INTEGER, root, my_comm, ier)
   if(ier/=0) call MP_perr_die(myname_,'MPI_BCAST(GSmap%ngseg)',ier)
+
+        ! Broadcast the value of GSMap%comp_id
+
+  call MPI_BCAST(GSMap%comp_id, 1, MP_INTEGER, root, my_comm, ier)
+  if(ier/=0) call MP_perr_die(myname_,'MPI_BCAST(GSmap%comp_id)',ier)
 
         ! Allocate the components GSMap%start(:), GSMap%length(:),
         ! and GSMap%pe_loc(:)
@@ -510,24 +489,6 @@
 
   call MPI_BCAST(GSMap%pe_loc, GSMap%ngseg, MP_INTEGER, root, my_comm, ier)
   if(ier/=0) call MP_perr_die(myname_,'MPI_BCAST(GSMap%pe_loc)',ier)
-
-        ! The communicator handle (f90 integer) associated with 
-        ! the output GlobalSegMap will be stored in comm.  If the
-        ! argument gsm_comm is not present, the value of my_comm
-        ! will be used
-
-  if(myID == root) then
-     if( present(gsm_comm)) then
-	GSMap%comm = gsm_comm
-     else
-	GSMap%comm = my_comm
-     endif
-  endif
-
-        ! Broadcast the root process (integer) value of GSMap%comm
-
-  call MPI_BCAST(GSMap%comm, 1, MP_INTEGER, root, my_comm, ier)
-  if(ier/=0) call MP_perr_die(myname_, 'MPI_BCAST(GSMap%comm)', ier)
 
         ! If the argument gsize is present, use the root value to
         ! set GSMap%gsize and broadcast it.  If it is not present,
@@ -575,7 +536,7 @@
 ! This routine deallocates the array components of the {\tt GlobalSegMap}
 ! argument {\tt GSMap}: {\tt GSMap\%start}, {\tt GSMap\%length}, and
 ! {\tt GSMap\%pe\_loc}.  It also zeroes out the values of the integer
-! components {\tt GSMap\%ngseg}, {\tt GSMap\%comm}, {\tt GSMap\%gsize},
+! components {\tt GSMap\%ngseg}, {\tt GSMap\%comp_id}, {\tt GSMap\%gsize},
 ! and {\tt GSMap\%lsize}.
 !
 ! !INTERFACE:
@@ -612,7 +573,7 @@
   if(ier /= 0) call perr_die(myname_,'deallocate(GSMap%start,...)',ier)
 
   GSMap%ngseg = 0
-  GSMap%comm  = 0
+  GSMap%comp_id  = 0
   GSMap%gsize = 0
   GSMap%lsize = 0
 
@@ -700,32 +661,32 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: comm_ - Return the communicator from the GlobalSegMap.
+! !IROUTINE: comp_id_ - Return the commponent ID from the GlobalSegMap.
 !
 ! !DESCRIPTION:
-! The function {\tt comm\_()} returns the fortran 90 integer handle
-! corresponding to the communicator in the input {\tt GlobalSegMap}
-! argument {\tt GSMap}.  This amounts to returning the value of 
-! {\tt GSMap\%comm}.
+! The function {\tt comp\_id\_()} returns component ID number stored in
+! {\tt GSMap\%comp\_id}.
 !
 ! !INTERFACE:
 
- function comm_(GSMap)
+ function comp_id_(GSMap)
 
       implicit none
 
       type(GlobalSegMap),intent(in) :: GSMap
-      integer :: comm_
+      integer :: comp_id_
 
 ! !REVISION HISTORY:
 ! 	29Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+! 	26Jan01 - J.W. Larson <larson@mcs.anl.gov> - renamed comp_id_
+!                 to fit within MCT_World component ID context.
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname_=myname//'::comm_'
+  character(len=*),parameter :: myname_=myname//'::comp_id_'
 
-  comm_=GSMap%comm
+  comp_id_ = GSMap%comp_id
 
- end function comm_
+ end function comp_id_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
