@@ -308,21 +308,17 @@ contains
   character(len=*),parameter :: myname_=myname//'::clean_'
   integer :: ier
 
+  if(mall_ison()) then
+     if(associated(aList%bf)) call mall_mco(aList%bf,myname_)
+     if(associated(aList%lc)) call mall_mco(aList%lc,myname_)
+  endif
+
   deallocate(aList%bf,aList%lc,stat=ier)
 
   if(present(stat)) then
      stat=ier
   else
      if(ier /= 0) call warn(myname_,'deallocate(aList%...)',ier)
-  endif
-
-  if(ier == 0) then
-
-     if(mall_ison()) then
-	call mall_mco(aList%bf,myname)
-	call mall_mco(aList%lc,myname)
-     endif
-     
   endif
 
  end subroutine clean_
