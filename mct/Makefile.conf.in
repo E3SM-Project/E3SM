@@ -47,21 +47,17 @@ _R		= @REAL8@
 MUPDATE         = @MUPDATE@
 
 @FRULE@:
-
 	$(FC) -c $(_I) $(DEFS) $(FFLAGS) $*.F
 
 @F90RULE@:
-
 	$(FC) -c $(_I) $(DEFS) $(FFLAGS) $(F90FLAGS) $*.F90
 
 @FRULECPP@:
-
 	$(FPP) $(FPPFLAGS) $(_I) $(DEFS) $*.F $*.f
 	$(FC) -c $(FFLAGS) $(_I) $*.f
 	$(RM) $*.f
 
 @F90RULECPP@:
-
 	$(FPP) $(FPPFLAGS) $(_I) $(DEFS) $*.F90 $*.f90
 	$(FC) -c $(FFLAGS) $(F90FLAGS) $(_I) $*.f90
 	$(RM) $*.f90
