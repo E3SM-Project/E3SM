@@ -40,8 +40,10 @@
 !      07Jun01 - R. Jacob <jacob@mcs.anl.gov> - remove logic to
 !                check "direction" of Router.  remove references
 !                to ThisMCTWorld%mylrank
-!      03Aug01 - E. Ong <eong@mcs.anl.gov> - explicity specify starting
+!      03Aug01 - E.T. Ong <eong@mcs.anl.gov> - explicity specify starting
 !                address in MPI_RECV
+!      27Nov01 - E.T. Ong <eong@mcs.anl.gov> - deallocated to prevent
+!                memory leaks
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_='MCT_Recv'
@@ -142,7 +144,7 @@
 
 ! receive the real data
   if(numr .ge. 1) then
-    mp_Type_rp1=MP_Type(rp1(1)%pr)
+    mp_Type_rp1=MP_Type(rp1(1)%pr(1))
     do proc=1,Rout%nprocs
 
 ! corresponding tag logic must be in MCT_Send
@@ -209,6 +211,38 @@
     endif
   enddo
 
+    ! Deallocate memory to prevent leaks!
 
+    if(numi .ge. 1) then
+       do proc=1,Rout%nprocs
+	  deallocate(ip1(proc)%pi,stat=ier)
+	  if(ier/=0) call MP_perr_die(myname_,'deallocate(ip1%pi)',0)
+       enddo
+
+       deallocate(ip1,stat=ier)
+       if(ier/=0) call MP_perr_die(myname_,'deallocate(ip1)',0)
+       
+       deallocate(ireqs,stat=ier)
+       if(ier/=0) call MP_perr_die(myname_,'deallocate(ireqs)',0)
+
+       deallocate(istatus,stat=ier)
+       if(ier/=0) call MP_perr_die(myname_,'deallocate(istatus)',0)
+    endif
+
+    if(numr .ge. 1) then
+       do proc=1,Rout%nprocs
+	  deallocate(rp1(proc)%pr,stat=ier)
+	  if(ier/=0) call MP_perr_die(myname_,'deallocate(rp1%pi)',0)
+       enddo
+
+       deallocate(rp1,stat=ier)
+       if(ier/=0) call MP_perr_die(myname_,'deallocate(rp1)',0)
+
+       deallocate(rreqs,stat=ier)
+       if(ier/=0) call MP_perr_die(myname_,'deallocate(rreqs)',0)
+
+       deallocate(rstatus,stat=ier)
+       if(ier/=0) call MP_perr_die(myname_,'deallocate(rstatus)',0)
+    endif
 
 end subroutine
