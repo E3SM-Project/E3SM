@@ -1,6 +1,6 @@
 
                        The Model Coupling Toolkit
-				version 1.0
+				version 1.8
 
                                 ---------
 
@@ -24,13 +24,9 @@ are met:
   1) This entire notice appears in all copies of the software, derivative works and
      supporting documentation.  
 
-  2) The user agrees to credit "MCT", specifying the version number above,
-     in any publications or presentations that result from the use of this software 
-     or in any software package that includes this software.
-
-  3) If you modify the software and give a copy or copies of those modifications
+  2) If you modify the software and give a copy or copies of those modifications
      to others, either in source code or binary form, the software must carry
-     prominent notices stating that you changed specified portions of the Software.
+     notices stating that you changed specified portions of the Software.
 
      
                               GOVERNMENT LICENSE
