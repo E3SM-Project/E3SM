@@ -52,7 +52,7 @@ status=0
 for o in $@; do
   case $o in
   *.o)
-    F=`basename $o .o | tr "A-Z" "a-z"`.$M
+    F=`basename $o .o | tr "ABCDEFGHIJKLMNOPQRSTUVWXYZ" "abcdefghijklmnopqrstuvwxyz"`.$M
     ;;
   *)
     F="$o"
