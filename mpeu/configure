@@ -76,6 +76,15 @@ if [ ! -r ${makeconf} ]; then
   fi # closes if [ "${OpSys}" = UNIX_System_V ]; then...
 fi # closes if [ ! -r ${makeconf} ]...Block to test for Fujitsu
 
+# OS/chip specific configuration for NEC machines
+# ---------------------------------------------------
+#
+if [ ! -r ${makeconf} ]; then
+  if [ "${OpSys}" = ESOS ]; then # The Earth Simulator?
+      makeconf="Makefile.conf.ES"
+  fi # closes if [ "${OpSys}" = ESOS ]; then...
+fi # closes if [ ! -r ${makeconf} ]...Block to test for the ES
+
 # OS specific configuration
 # ---------------------------------------
 if [ ! -r ${makeconf} ]; then
