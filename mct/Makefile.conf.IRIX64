@@ -29,7 +29,7 @@
 #-----------------------------------------------------------------------
 
 _Dsys		= -DSYSIRIX64
-_Dnod		= -DCACHE_TABLE_OPT1 -DLOOP_BLOCKING -D_DLAPACK_ -D_R8_
+_Dnod		= -D_R8_
 _DF             = $(_Dsys) $(_Dnod)
 
 # Environments

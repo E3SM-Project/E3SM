@@ -1,5 +1,5 @@
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id$
 ! CVS $Name$ 
@@ -49,6 +49,7 @@
       public :: LocalReduce            ! Local reduction of all attributes
       public :: LocalReduceRAttr       ! Local reduction of REAL attributes
       public :: AllReduce              ! AllReduce for distributed AttrVect
+      public :: GlobalReduce           ! Local Reduce followed by AllReduce
       public :: LocalWeightedSumRAttr  ! Local weighted sum of 
                                        ! REAL attributes
       public :: GlobalWeightedSumRAttr ! Global weighted sum of REAL 
@@ -61,6 +62,9 @@
     end interface
     interface AllReduce
        module procedure AllReduce_ 
+    end interface
+    interface GlobalReduce
+       module procedure GlobalReduce_ 
     end interface
     interface LocalWeightedSumRAttr
        module procedure LocalWeightedSumRAttr_
@@ -81,9 +85,8 @@
 
 ! !REVISION HISTORY:
 !
-!        7May02 - J.W. Larson <larson@mcs.anl.gov> - Created module 
-!                 using routines originally prototyped in m_AttrVect.
-!
+!  7May02 - J.W. Larson <larson@mcs.anl.gov> - Created module 
+!           using routines originally prototyped in m_AttrVect.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_AttrVectReduce'
@@ -153,7 +156,7 @@
       type(AttrVect),  intent(OUT) :: outAV
 
 ! !REVISION HISTORY:
-!       16Apr02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+! 16Apr02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::LocalReduce_'
@@ -329,15 +332,15 @@
       type(AttrVect),               intent(OUT) :: outAV
 
 ! !REVISION HISTORY:
-!       16Apr02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
-!        6May02 - J.W. Larson <larson@mcs.anl.gov> - added optional
-!                 argument weights(:)
-!        8May02 - J.W. Larson <larson@mcs.anl.gov> - modified interface
-!                 to return it to being a pure reduction operation.
-!        9May02 - J.W. Larson <larson@mcs.anl.gov> - renamed from 
-!                 LocalReduceReals_() to LocalReduceRAttr_() to make
-!                 the name more consistent with other module procedure
-!                 names in this module.
+! 16Apr02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+!  6May02 - J.W. Larson <larson@mcs.anl.gov> - added optional
+!           argument weights(:)
+!  8May02 - J.W. Larson <larson@mcs.anl.gov> - modified interface
+!           to return it to being a pure reduction operation.
+!  9May02 - J.W. Larson <larson@mcs.anl.gov> - renamed from 
+!           LocalReduceReals_() to LocalReduceRAttr_() to make
+!           the name more consistent with other module procedure
+!           names in this module.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::LocalReduceRAttr_'
@@ -487,25 +490,24 @@
       integer,        optional,     intent(OUT) :: ierr
 
 ! !REVISION HISTORY:
-!        8May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
-!        9Jul02 - J.W. Larson <larson@mcs.anl.gov> - slight modification;
-!                 use List_allocated() to determine if there is attribute
-!                 data to be reduced (this patch is to support the Sun
-!                 F90 compiler).
-!
+!  8May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!  9Jul02 - J.W. Larson <larson@mcs.anl.gov> - slight modification;
+!           use List_allocated() to determine if there is attribute
+!           data to be reduced (this patch is to support the Sun
+!           F90 compiler).
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::AllReduce_'
 
-  integer :: BufferSize, myID
+  integer :: BufferSize, myID, ier
 
        ! Initialize ierr (if present) to "success" value
   if(present(ierr)) ierr = 0
 
-  call MPI_COMM_RANK(comm, myID, ierr)
-  if(ierr /= 0) then
+  call MPI_COMM_RANK(comm, myID, ier)
+  if(ier /= 0) then
      write(stderr,'(2a)') myname_,':: MPI_COMM_RANK() failed.'
-     call MP_perr_die(myname_, 'MPI_COMM_RANK() failed.', ierr)
+     call MP_perr_die(myname_, 'MPI_COMM_RANK() failed.', ier)
   endif
 
   call AttrVect_init(outAV, inAV, lsize=AttrVect_lsize(inAV))
@@ -518,15 +520,47 @@
      case(AttrVectSUM)
 	call MPI_AllReduce(inAV%rAttr, outAV%rAttr, BufferSize, &
 	                   MP_Type(inAV%rAttr(1,1)), MP_SUM, &
-	                   comm, ierr)
+	                   comm, ier)
      case(AttrVectMIN)
 	call MPI_AllReduce(inAV%rAttr, outAV%rAttr, BufferSize, &
                            MP_Type(inAV%rAttr(1,1)), MP_MIN, &
-                           comm, ierr)
+                           comm, ier)
      case(AttrVectMAX)
 	call MPI_AllReduce(inAV%rAttr, outAV%rAttr, BufferSize, &
                            MP_Type(inAV%rAttr(1,1)), MP_MAX, &
-                           comm, ierr)
+                           comm, ier)
+     case default
+	write(stderr,'(2a,i8,a)') myname_, &
+                                  '::FATAL ERROR--value of RedctionOp=', &
+                                  ReductionOp,' not supported.'
+     end select
+
+     if(ier /= 0) then
+	write(stderr,*) myname_, &
+	     ':: Fatal Error in MPI_AllReduce(), myID = ',myID
+	call MP_perr_die(myname_, 'MPI_AllReduce() failed.', ier)
+     endif
+
+  endif ! if(List_allocated(inAV%rList))...
+
+  if(List_allocated(inAV%iList)) then ! invoke MPI_AllReduce() for the 
+                                      ! integer attribute data.
+
+     BufferSize = AttrVect_lsize(inAV) * AttrVect_nIAttr(inAV)
+
+     select case(ReductionOp)
+     case(AttrVectSUM)
+	call MPI_AllReduce(inAV%iAttr, outAV%iAttr, BufferSize, &
+	                   MP_Type(inAV%iAttr(1,1)), MP_SUM, &
+	                   comm, ier)
+     case(AttrVectMIN)
+	call MPI_AllReduce(inAV%iAttr, outAV%iAttr, BufferSize, &
+                           MP_Type(inAV%iAttr(1,1)), MP_MIN, &
+                           comm, ier)
+     case(AttrVectMAX)
+	call MPI_AllReduce(inAV%iAttr, outAV%iAttr, BufferSize, &
+                           MP_Type(inAV%iAttr(1,1)), MP_MAX, &
+                           comm, ier)
      case default
 	write(stderr,'(2a,i8,a)') myname_, &
                                   '::FATAL ERROR--value of RedctionOp=', &
@@ -536,26 +570,104 @@
      if(ierr /= 0) then
 	write(stderr,*) myname_, &
 	     ':: Fatal Error in MPI_AllReduce(), myID = ',myID
-	call MP_perr_die(myname_, 'MPI_AllReduce() failed.', ierr)
-     endif
-
-  endif ! if(List_allocated(inAV%rList))...
-
-  if(List_allocated(inAV%iList)) then ! invoke MPI_AllReduce() for the 
-                                      ! integer attribute data.
-     BufferSize = AttrVect_lsize(inAV) * AttrVect_nIAttr(inAV)
-     call MPI_AllReduce(inAV%iAttr, outAV%iAttr, BufferSize, &
-	                MP_Type(inAV%iAttr(1,1)), ReductionOp, &
-			comm, ierr)
-
-     if(ierr /= 0) then
-	write(stderr,*) myname_, &
-	     ':: Fatal Error in MPI_AllReduce(), myID = ',myID
-	call MP_perr_die(myname_, 'MPI_AllReduce() failed.', ierr)
+	call MP_perr_die(myname_, 'MPI_AllReduce() failed.', ier)
      endif
   endif ! if(List_allocated(inAV%iList))...
 
+  if(present(ierr)) ierr = ier
+
  end subroutine AllReduce_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: GlobalReduce_ - Reduction of INTEGER and REAL Attributes
+!
+! !DESCRIPTION:
+!
+! The subroutine {\tt GlobalReduce\_()} takes the distributed input 
+! {\tt AttrVect} argument {\tt inAV}, and performs a local reduction of 
+! all its integer and real attributes, followed by a an {\tt AllReduce}
+! of all the result of the local reduction across the MPI communicator 
+! associated with the Fortran90 {\tt INTEGER} handle {\tt comm}, and 
+! returns these reduced values to all processes in the {\tt AttrVect} 
+! argument {\tt outAV} (which is created by this routine).  The reduction 
+! operation is specified by the user, and must have one of the values 
+! listed in the table below:
+!\begin{table}[htbp]
+!\begin{center}
+!\begin{tabular}{|c|c|}
+!\hline
+!{\bf Value} & {\bf Action} \\
+!\hline
+!{\tt AttrVectSUM} & Sum \\
+!\hline
+!{\tt AttrVectMIN} & Minimum \\
+!\hline
+!{\tt AttrVectMAX} & Maximum \\
+!\hline
+!\end{tabular}
+!\end{center}
+!\end{table}
+!
+! {\bf N.B.}:  The output {\tt AttrVect} argument {\tt outAV} is
+! allocated memory, and must be destroyed by invoking the routine 
+! {\tt AttrVect\_clean()} when it is no longer needed.  Failure to 
+! do so will result in a memory leak.
+!
+! !INTERFACE:
+!
+
+ subroutine GlobalReduce_(inAV, outAV, ReductionOp, comm, ierr)
+
+!
+! !USES:
+!
+      use m_die
+      use m_stdio ,        only : stderr
+      use m_mpif90
+
+      use m_AttrVect,      only : AttrVect
+      use m_AttrVect,      only : AttrVect_clean => clean
+
+      implicit none
+
+! !INPUT PARAMETERS:
+!
+      type(AttrVect),               intent(IN)  :: inAV
+      integer,                      intent(IN)  :: ReductionOp
+      integer,                      intent(IN)  :: comm
+
+! !OUTPUT PARAMETERS:
+!
+      type(AttrVect),               intent(OUT) :: outAV
+      integer,        optional,     intent(OUT) :: ierr
+
+! !REVISION HISTORY:
+!  6May03 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::GlobalReduce_'
+  type(AttrVect) :: LocalResult
+
+  ! Step One:  On-PE reduction
+
+  call LocalReduce_(inAV, LocalResult, ReductionOp)
+
+  ! Step Two:  An AllReduce on the distributed local reduction results
+
+  if(present(ierr)) then
+     call AllReduce_(LocalResult, outAV, ReductionOp, comm, ierr)
+  else
+     call AllReduce_(LocalResult, outAV, ReductionOp, comm)
+  endif
+
+  ! Step Three:  Clean up and return.
+
+  call AttrVect_clean(LocalResult)
+
+ end subroutine GlobalReduce_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
@@ -619,11 +731,10 @@
       type(AttrVect),               intent(OUT) :: outAV
 
 ! !REVISION HISTORY:
-!        8May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
-!       14Jun02 - J.W. Larson <larson@mcs.anl.gov> - bug fix regarding
-!                 accumulation of weights when invoked with argument
-!                 weightSumAttr.  Now works in MCT unit tester.
-!
+!  8May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+! 14Jun02 - J.W. Larson <larson@mcs.anl.gov> - bug fix regarding
+!           accumulation of weights when invoked with argument
+!           weightSumAttr.  Now works in MCT unit tester.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::LocalWeightedSumRAttr_'
@@ -752,8 +863,7 @@
       type(AttrVect),               intent(OUT) :: outAV
 
 ! !REVISION HISTORY:
-!        8May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
-!
+!  8May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GlobalWeightedSumRAttr_'
@@ -790,7 +900,7 @@
 
   call AllReduce_(LocallySummedAV, outAV, AttrVectSUM, comm, ierr)
 
-       ! Clean up intermediat local sums
+       ! Clean up intermediate local sums
 
   call AttrVect_clean(LocallySummedAV)
 

@@ -731,11 +731,15 @@
 ! !DESCRIPTION:
 ! This routine sets all of the point values of the integer and real 
 ! attributes of an the input/output {\tt AttrVect} argument {\tt aV}
-! to zero.
+! to zero.  The default action is to set the values of all the real and 
+! integer attributes to zero.  The user may prevent the zeroing of the 
+! real (integer) attributes invoking {\tt zero\_()} with the optional 
+! {\tt LOGICAL} argument {\tt zeroReals} ({\tt zeroInts}) set with value 
+! {\tt .FALSE.}
 !
 ! !INTERFACE:
 
- subroutine zero_(aV)
+ subroutine zero_(aV, zeroReals, zeroInts)
 
 ! !USES:
 
@@ -747,9 +751,14 @@
  
      implicit none
 
+! !INPUT PARAMETERS: 
+
+     logical, optional, intent(IN)    :: zeroReals
+     logical, optional, intent(IN)    :: zeroInts
+
 ! !INPUT/OUTPUT PARAMETERS: 
 !
-     type(AttrVect), intent(inout) :: aV
+     type(AttrVect),    intent(INOUT) :: aV
 
 ! !REVISION HISTORY:
 ! 17May01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype/code
@@ -762,18 +771,36 @@
 
   character(len=*),parameter :: myname_=myname//'::zero_'
 
+  logical myZeroReals, myZeroInts
+
+  if(present(zeroReals)) then
+     myZeroReals = zeroReals
+  else
+     myZeroReals = .TRUE.
+  endif
+
+  if(present(zeroInts)) then
+     myZeroInts = zeroInts
+  else
+     myZeroInts = .TRUE.
+  endif
+
   if((.not. List_allocated(aV%iList)) .and. (.not. List_allocated(aV%rList))) then
     write(stderr,'(2a)')myname_, &
       'MCTERROR:  Trying to zero an uninitialized AttrVect'
       call die(myname_)
   endif
 
-  if(List_allocated(aV%iList)) then
-     if(associated(aV%iAttr).and. (nIAttr_(aV)>0)) aV%iAttr=0
+  if(myZeroInts) then ! zero out INTEGER attributes
+     if(List_allocated(aV%iList)) then
+        if(associated(aV%iAttr).and. (nIAttr_(aV)>0)) aV%iAttr=0
+     endif
   endif
 
-  if(List_allocated(aV%rList)) then
-     if(associated(aV%rAttr) .and. (nRAttr_(aV)>0)) aV%rAttr=0.
+  if(myZeroReals) then ! zero out REAL attributes
+     if(List_allocated(aV%rList)) then
+        if(associated(aV%rAttr) .and. (nRAttr_(aV)>0)) aV%rAttr=0.
+     endif
   endif
 
  end subroutine zero_

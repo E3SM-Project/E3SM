@@ -173,7 +173,7 @@
 
        ! zero the output AttributeVector
 
-  call AttrVect_zero(yAV)
+  call AttrVect_zero(yAV, zeroInts=.FALSE.)
 
        ! Multiplication sMat by REAL attributes in xAV:
 
