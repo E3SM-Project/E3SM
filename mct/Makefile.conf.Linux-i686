@@ -52,10 +52,9 @@ _Dnod		=
 # -pc specifies 32-bit or 64-bit 
 #
 # If using Absoft compiler, add the following options to the 
-# FFLAGS macro.  Also, use the MUPDATE macro defined below: 
+# FFLAGS macro.
 # FFLAGS = -Mnoframe
 # Add $(_p) to the compilation lines for *.f and *.f90
-# MUPDATE         = sh UCupdate.sh
 
 # Assume MPICH is being used for Linux-i686
 #  use mpif90 and mpif77 to compile and link.
@@ -113,4 +112,3 @@ FPPFLAGS	= -DLANGUAGE_FORTRAN -traditional
 
 #.----------------------------------------------------------------------
 
-MUPDATE         = sh LCupdate.sh
