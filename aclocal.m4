@@ -68,12 +68,12 @@ fi],
 		AC_MSG_RESULT(no)])
 fi],
 [Fortran 77], [if test x != x"$MPILIBS"; then
-	AC_MSG_CHECKING([for mpi.h])
+	AC_MSG_CHECKING([for mpif.h])
 	AC_TRY_COMPILE([include "mpif.h"],[],[AC_MSG_RESULT(yes)], [MPILIBS=""
 		AC_MSG_RESULT(no)])
 fi],
 [Fortran 90], [if test x != x"$MPILIBS"; then
-	AC_MSG_CHECKING([for mpi.h])
+	AC_MSG_CHECKING([for mpif.h])
 	AC_TRY_COMPILE([include "mpif.h"],[],[AC_MSG_RESULT(yes)], [MPILIBS=""
 		AC_MSG_RESULT(no)])
 fi])
