@@ -91,7 +91,10 @@
       use m_GlobalSegMap, only :GlobalSegMap
       use m_GlobalSegMap, only :nlseg
       use m_GlobalSegMap, only :lsize
+      use m_GlobalSegMap, only :OrderedPoints
+      use m_GlobalSegMap, only :ProcessStorage
       use m_GlobalToLocal, only :GlobalToLocalIndex
+      use m_ExchangeMaps,only: MCT_ExGSMap => ExchangeMap
       use m_MCTWorld,only :MCTWorld
       use m_MCTWorld,only :ThisMCTWorld
       use m_mpif90
@@ -115,154 +118,45 @@
 !                 and maxsize.  add deallocate statements.
 !	22Mar01 - R. Jacob <jacob@mcs.anl.gov> - only use other components
 !                 id when initializing
+!	25Apr01 - R. Jacob <jacob@mcs.anl.gov> - Eliminate early 
+!                 custom code to exchange GSMap components and instead
+!                 the more general purpose routine in m_ExchangeMaps.
+!                 Use new subroutine OrderedPoints in m_GlobalSegMap
+!                 to construct the vector of local and remote GSMaps.
+!                 Clean-up code a little.
+!
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::init_'
-  integer			:: myPid,ier,nlsegs,i,j,k,m
-  integer			:: mysize,recvsize,rngseg,tag,pr
-  integer			:: sendsize,count,prsize
-  integer			:: lmaxsize,totallength
-  integer 	:: status(MP_STATUS_SIZE)
-  integer,dimension(:),allocatable :: rstarts,rlengths
-  integer,dimension(:),allocatable :: rpe_locs,rlsizes,rvector
-  integer,dimension(:),allocatable :: mystarts,mylengths
-  integer,dimension(:),allocatable :: myvector,lsizes
+  integer			:: myPid,ier,i,j,k,m
+  integer			:: mysize
+  integer			:: count
+  integer			:: lmaxsize,totallength,rlsize
+  integer,dimension(:),pointer	   :: myvector,rvector
   logical,dimension(:),allocatable :: hitparade,tmppe_list
-
   integer,dimension(:,:),pointer :: tmpsegcount,tmpsegstart
   logical :: firstpoint
-  integer :: maxsegcount,mmax,othercomp,mycomp
+  integer :: maxsegcount,mmax,othercomp
+
+  type(GlobalSegMap)    :: RGSMap  !  the other GSMap
+!--------------------------begin code-----------------------
 
   call MP_comm_rank(mycomm,myPid,ier)
-  call MP_comm_size(mycomm,prsize,ier)
-  firstpoint = .TRUE.
 
-  nlsegs = nlseg(GSMap,myPid)
-  mysize = lsize(GSMap,mycomm)
+!!!!!!!!!!!!!!!!!Exchange of global map data 
 
-! build a mystart and mylength array on all processors
-  allocate(mystarts(nlsegs),mylengths(nlsegs), &
-   myvector(mysize), stat=ier)
-  if(ier/=0) call MP_perr_die(myname_,'allocate(mystarts,..)',ier)
+  call MCT_ExGSMap(GSMap,mycomm,RGSMap,othercomp,ier)
+  if(ier /= 0) call MP_perr_die(myname_,'ExGSMap',ier)
 
-
-  j=1
-  do i=1,GSMap%ngseg
-    if(GSMap%pe_loc(i)==myPid) then
-      mystarts(j)=GSMap%start(i)
-      mylengths(j)=GSMap%length(i)
-      j=j+1
-    endif
-  enddo
-
-! form one long vector which is all local GSMap points
-  i=1
-  do j=1,nlsegs
-    do k=1,mylengths(j)
-    myvector(i)=mystarts(j)+k-1
-    i=i+1
-    enddo
-  enddo
-
-  deallocate(mystarts,mylengths, stat=ier)
-  if(ier/=0) call MP_perr_die(myname_,'deallocate(mystarts,..)',ier)
-
-  
-
-  mycomp = ThisMCTWorld%myid
-  Rout%comp1id = ThisMCTWorld%myid
-  Rout%comp2id = othercomp
-  Rout%type = "2way"
-  recvsize=ThisMCTWorld%nprocspid(othercomp)
-
-!!!!!!!!!!!!!!!!!Begin exchange of global map data 
-
-! learn number of global segments on othercomp
-  if(myPid ==0) then
-     call MPI_SENDRECV(GSMap%ngseg,1,MP_INTEGER, &
-      ThisMCTWorld%idGprocid(othercomp,0),3010, &
-      rngseg,1,MP_INTEGER,ThisMCTWorld%idGprocid(othercomp,0), &
-      3010,MP_COMM_WORLD,status,ier)
-     if(ier /= 0) call MP_perr_die(myname_,'MPI_SENDRECV(ngseg)',ier)
-  endif
-
-  call MPI_BCAST(rngseg,1,MP_INTEGER,0,mycomm,ier)
-  if(ier /= 0) call MP_perr_die(myname_,'MPI_BCAST(rngseg)',ier)
-
-! use rngseg to allocate memory for other arrays.
-  allocate(rstarts(rngseg),rlengths(rngseg), &
-  rlsizes(ThisMCTWorld%nprocspid(othercomp)),rpe_locs(rngseg),stat=ier)
-  if(ier/=0) call MP_perr_die(myname_,'allocate(rngseg)',ier)
-
-! get starts of receivers GSMap
-  if(myPid ==0) then
-     call MPI_SENDRECV(GSMap%start,GSMap%ngseg,MP_INTEGER, &
-      ThisMCTWorld%idGprocid(othercomp,0),3020, &
-      rstarts,rngseg,MP_INTEGER,ThisMCTWorld%idGprocid(othercomp,0), &
-      3020,MP_COMM_WORLD,status,ier)
-     if(ier /= 0) call MP_perr_die(myname_,'MPI_SENDRECV(starts)',ier)
-  endif
-
-  call MPI_BCAST(rstarts,rngseg,MP_INTEGER,0,mycomm,ier)
-  if(ier /= 0) call MP_perr_die(myname_,'MPI_BCAST(rstarts)',ier)
-  
-! get lengths of receivers GSMap
-  if(myPid ==0) then
-     call MPI_SENDRECV(GSMap%length,GSMap%ngseg,MP_INTEGER, &
-      ThisMCTWorld%idGprocid(othercomp,0),3030, &
-      rlengths,rngseg,MP_INTEGER,ThisMCTWorld%idGprocid(othercomp,0), &
-      3030,MP_COMM_WORLD,status,ier)
-     if(ier /= 0) call MP_perr_die(myname_,'MPI_SENDRECV(lengths)',ier)
-  endif
-
-  call MPI_BCAST(rlengths,rngseg,MP_INTEGER,0,mycomm,ier)
-  if(ier /= 0) call MP_perr_die(myname_,'MPI_BCAST(rlengths)',ier)
-
-
-! get pe_locs of receivers GSMap
-  if(myPid ==0) then
-     call MPI_SENDRECV(GSMap%pe_loc,GSMap%ngseg,MP_INTEGER, &
-      ThisMCTWorld%idGprocid(othercomp,0),3040, &
-      rpe_locs,rngseg,MP_INTEGER,ThisMCTWorld%idGprocid(othercomp,0), &
-      3040,MP_COMM_WORLD,status,ier)
-     if(ier /= 0) call MP_perr_die(myname_,'MPI_SENDRECV(pe_locs)',ier)
-  endif
-
-  call MPI_BCAST(rpe_locs,rngseg,MP_INTEGER,0,mycomm,ier)
-  if(ier /= 0) call MP_perr_die(myname_,'MPI_BCAST(rpe_locs)',ier)
-
-
-! gather the local GSMap size on each processor
-  allocate(lsizes(ThisMCTWorld%nprocspid(mycomp)),stat=ier)
-  if(ier/=0) call MP_perr_die(myname_,'allocate(lsizes,..)',ier)
-    
-  call MPI_GATHER(mysize,1,MP_INTEGER,lsizes,1,MP_INTEGER,0,mycomm,ier)
-  if(ier/=0) call MP_perr_die(myname_,'MPI_GATHER(lsizes)',ier)
-
-! get sizes of receivers GSMap
-  if(myPid ==0) then
-     call MPI_SENDRECV(lsizes,ThisMCTWorld%nprocspid(mycomp),MP_INTEGER, &
-      ThisMCTWorld%idGprocid(othercomp,0),3050,rlsizes, &
-      ThisMCTWorld%nprocspid(othercomp),MP_INTEGER, &
-      ThisMCTWorld%idGprocid(othercomp,0),3050,MP_COMM_WORLD,status,ier)
-     if(ier /= 0) call MP_perr_die(myname_,'MPI_SENDRECV(sizes)',ier)
-  endif
-
-  call MPI_BCAST(rlsizes,ThisMCTWorld%nprocspid(othercomp),MP_INTEGER,0,mycomm,ier)
-  if(ier /= 0) call MP_perr_die(myname_,'MPI_BCAST(sizes)',ier)
-
-
-  if(ThisMCTWorld%myid == mycomp) then
-!   write(*,*)"mycomp says",myPid,rngseg
-  else
-!   write(*,*)"othercomp says",myPid,rngseg
-  endif
-
-
-! write(*,*)"ROUTER",myPid,rlsizes
+!!!!!!!!!!!!!!!!!Begin comparison of globalsegmaps
 
   count =0
   mmax=0
+  firstpoint = .TRUE.
+
+  mysize = ProcessStorage(GSMap,myPid)
+
+! allocate space for searching
   allocate(hitparade(mysize),stat=ier)
   if(ier/=0) call MP_perr_die(myname_,'allocate(hitparade,..)',ier)
 
@@ -274,38 +168,31 @@
   tmpsegcount=0
   tmpsegstart=0
 
-!  check each processor to see what I have in common
-    do i=1,ThisMCTWorld%nprocspid(othercomp)
+! form the vector of points this processor owns.
+  call OrderedPoints(GSMap,myPid,myvector) 
+
+!  check each processor of remote map to see what I have in common
+  do i=1,ThisMCTWorld%nprocspid(othercomp)
 
       hitparade=.FALSE.
 
 ! build the vector of GSMap points handled on remote proc i-1
-      allocate(rvector(rlsizes(i)),stat=ier)
-      if(ier/=0) call MP_perr_die(myname_,'allocate(mysize,..)',ier)
 
-      m=1
-
-      do j=1,rngseg
-        if(rpe_locs(j)== (i-1)) then
-          do k=1,rlengths(j)
-            rvector(m)=rstarts(j)+k-1
-           m=m+1
-          enddo
-        endif
-      enddo
+      call OrderedPoints(RGSMap,i-1,rvector) 
+      rlsize=ProcessStorage(RGSMap,i-1)
 
 
 ! check every point in my local vector against every point of
 ! the remote procs vector.  Record hits.
       do j=1,mysize
-	do k=1,rlsizes(i)
+	do k=1,rlsize
 	  if(myvector(j)==rvector(k)) hitparade(j)=.TRUE.
         enddo
       enddo
 
-    if((myPid==0) .and. (ThisMCTWorld%myid == mycomp)) then
-! 	write(*,*)"ROUTER",i,hitparade,rlsizes(i),rvector(1),rvector(rlsizes(i))
-      endif
+!     if(myPid==0) then
+! 	write(*,*)"ROUTER",i,hitparade,rvector(1),rvector(rlsize)
+!     endif
 
 ! if no hits found, go look at the next processor.
       if(.NOT.ANY(hitparade)) then
@@ -343,23 +230,30 @@
           endif
         endif
       enddo
+!----end of search through my vector again
  
-      if((myPid==0) .and. (ThisMCTWorld%myid == mycomp)) then
-        do pr=1,m
-! 	 write(*,*)"ROUTERD",i,pr,tmpsegcount(i,pr),tmpsegstart(i,pr)
-        enddo
-      endif
+!     if(myPid==0) then
+!       do k=1,m
+! 	 write(*,*)"ROUTERD",i,k,tmpsegcount(i,k),tmpsegstart(i,k)
+!       enddo
+!     endif
 
       mmax=MAX(m,mmax)
       deallocate(rvector,stat=ier)
       if(ier/=0) call MP_perr_die(myname_,'deallocate()',ier)
-    enddo
+  enddo
+
+!!!!!!!!!!!!!!!!!!!!end of search through remote GSMap
 
 ! start loading up the Router with data
-    Rout%nprocs = count
+
+  Rout%comp1id = ThisMCTWorld%myid
+  Rout%comp2id = othercomp
+  Rout%type = "2way"
+  Rout%nprocs = count
 
     maxsegcount=mmax
-!   if((myPid==0) .and. (ThisMCTWorld%myid == mycomp))  write(*,*)"COUNT",count,maxsegcount
+!   if(myPid==0)  write(*,*)"COUNT",count,maxsegcount
 
     allocate(Rout%pe_list(count),Rout%num_segs(count), &
     Rout%seg_starts(count,maxsegcount), &
@@ -398,7 +292,7 @@
 
     Rout%maxsize=lmaxsize
 
-    if((myPid==0) .and. (ThisMCTWorld%myid == mycomp)) then
+    if(myPid==0) then
      do i=1,Rout%nprocs
 !      write(*,*)"ROUTERE",i,Rout%pe_list(i),Rout%num_segs(i),Rout%locsize(i),Rout%maxsize
       do j=1,Rout%num_segs(i)
@@ -409,10 +303,8 @@
        
       
   deallocate(tmpsegstart,tmpsegcount,tmppe_list, &
-    myvector,rstarts,rlengths,rlsizes,lsizes,hitparade,&
-    stat=ier)
+    myvector,hitparade,stat=ier)
   if(ier/=0) call MP_perr_die(myname_,'deallocate()',ier)
-!endif
 
  end subroutine init_
 
