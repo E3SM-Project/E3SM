@@ -222,13 +222,13 @@
 
   if(size(length) /= size(start)) then
      ier = -1
-     call MP_perr_die(myname_,'length/start array size mismatch',ier)
+     call die(myname_,'length/start array size mismatch',ier)
   endif
 
   if(present(pe_loc)) then
      if(size(pe_loc) /= size(start)) then
 	ier = -1
-	call MP_perr_die(myname_,'pe_loc/start array size mismatch',ier)
+	call die(myname_,'pe_loc/start array size mismatch',ier)
      endif
   endif
 
@@ -247,7 +247,7 @@
      my_pe_loc => pe_loc
   else
      allocate(my_pe_loc(ngseg), stat=ier)
-     if(ier /= 0) call MP_perr_die(myname_,'allocate(my_pe_loc)',ier)
+     if(ier /= 0) call die(myname_,'allocate(my_pe_loc)',ier)
      my_pe_loc = myID
   endif
 
@@ -261,7 +261,7 @@
      allocate(counts(0:npes-1), displs(0:npes-1), reqs(0:npes-1), &
 	      status(MP_STATUS_SIZE,0:npes-1), stat=ier)
      if (ier /= 0) then  
-	call MP_perr_die(myname_, 'allocate(counts,...',ier)
+	call die(myname_, 'allocate(counts,...',ier)
      endif
   endif
 
@@ -321,7 +321,7 @@
      allocate(root_start(ngseg), root_length(ngseg), &
 	      root_pe_loc(ngseg), stat=ier)
      if (ier /= 0) then
-	call MP_perr_die(myname_, 'allocate(root_start...',ier)
+	call die(myname_, 'allocate(root_start...',ier)
      endif
 
   else
@@ -329,7 +329,7 @@
      allocate(root_start(1), root_length(1), &
 	      root_pe_loc(1), stat=ier)
      if (ier /= 0) then
-	call MP_perr_die(myname_, 'allocate((non)root_start...',ier)
+	call die(myname_, 'allocate((non)root_start...',ier)
      endif
 
   endif
@@ -420,14 +420,14 @@
 
   if(.not. present(pe_loc)) then
      deallocate(my_pe_loc, stat=ier)
-     if(ier /= 0) call MP_perr_die(myname_, 'deallocate(my_pe_loc)', ier)
+     if(ier /= 0) call die(myname_, 'deallocate(my_pe_loc)', ier)
   endif
 
         ! Clean up the arrays root_start(:), et cetera...
 
   deallocate(root_start, root_length, root_pe_loc, stat=ier)
   if(ier /= 0) then
-     call MP_perr_die(myname_, 'deallocate(root_start,...)', ier)
+     call die(myname_, 'deallocate(root_start,...)', ier)
   endif
 
         ! Clean up arrays allocated on the root process:
@@ -438,7 +438,7 @@
 
      deallocate(counts, displs, reqs, status, stat=ier)
      if(ier /= 0) then
-	call MP_perr_die(myname_, 'deallocate(counts,...)', ier)
+	call die(myname_, 'deallocate(counts,...)', ier)
      endif
 
   endif
@@ -565,7 +565,7 @@
 
   allocate(GSMap%start(GSMap%ngseg), GSMap%length(GSMap%ngseg), &
            GSMap%pe_loc(GSMap%ngseg), stat = ier)
-  if(ier/=0) call MP_perr_die(myname_,'allocate(GSmap%start(:),...',ier)
+  if(ier/=0) call die(myname_,'allocate(GSmap%start(:),...',ier)
 
 #ifdef MALL_ON
 	call mall_ci(size(transfer(GSMap%start,(/1/))),myname_)
@@ -641,7 +641,7 @@
 ! !USES:
 !
       use m_mpif90
-      use m_die, only : MP_perr_die
+      use m_die, only : die
       use m_stdio
 
       implicit none
@@ -669,33 +669,33 @@
        ! Argument Checks -- Is comp_id positive?
 
   if(comp_id <= 0) then
-     call MP_perr_die(myname_,'non-positive value of comp_id',comp_id)
+     call die(myname_,'non-positive value of comp_id',comp_id)
   endif
 
        ! Is gsize positive?
 
   if(gsize <= 0) then
-     call MP_perr_die(myname_,'non-positive value of gsize',gsize)
+     call die(myname_,'non-positive value of gsize',gsize)
   endif
 
 
        ! Is ngseg positive?
 
   if(ngseg <= 0) then
-     call MP_perr_die(myname_,'non-positive value of ngseg',ngseg)
+     call die(myname_,'non-positive value of ngseg',ngseg)
   endif
 
        ! Are the arrays start(:), length(:), and pe_loc(:) the 
        !correct size?
 
   if(size(start) /= ngseg) then
-     call MP_perr_die(myname_,'start(:)/ngseg size mismatch',ngseg)
+     call die(myname_,'start(:)/ngseg size mismatch',ngseg)
   endif
   if (size(length) /= ngseg) then
-     call MP_perr_die(myname_,'length(:)/ngseg size mismatch',ngseg)
+     call die(myname_,'length(:)/ngseg size mismatch',ngseg)
   endif
   if (size(pe_loc) /= ngseg) then
-     call MP_perr_die(myname_,'pe_loc(:)/ngseg size mismatch',ngseg)
+     call die(myname_,'pe_loc(:)/ngseg size mismatch',ngseg)
   endif
 
        ! Allocate index and location arrays for GSMap:
@@ -703,7 +703,7 @@
   allocate(GSMap%start(ngseg), GSMap%length(ngseg), GSMap%pe_loc(ngseg), &
            stat = ierr)
   if (ierr /= 0) then
-     call MP_perr_die(myname_,'allocate(GSMap%start...',ngseg)
+     call die(myname_,'allocate(GSMap%start...',ngseg)
   endif
        
        ! Assign the components of GSMap:
@@ -747,7 +747,7 @@
 ! !USES:
 !
       use m_mpif90
-      use m_die, only : MP_perr_die
+      use m_die, only : die
       use m_stdio
 
       implicit none
@@ -776,26 +776,26 @@
        ! Argument Checks -- Is comp_id positive?
 
   if(comp_id <= 0) then
-     call MP_perr_die(myname_,'non-positive value of comp_id',comp_id)
+     call die(myname_,'non-positive value of comp_id',comp_id)
   endif
 
        ! Is gsize positive?
 
   if(gsize <= 0) then
-     call MP_perr_die(myname_,'non-positive value of gsize',gsize)
+     call die(myname_,'non-positive value of gsize',gsize)
   endif
 
 
        ! Is ngseg positive?
 
   if(ngseg <= 0) then
-     call MP_perr_die(myname_,'non-positive value of ngseg',ngseg)
+     call die(myname_,'non-positive value of ngseg',ngseg)
   endif
 
        ! Is the array all_arrays(:) the right length?
 
   if(size(all_arrays) /= 3*ngseg) then
-     call MP_perr_die(myname_,'all_arrays(:)/3*ngseg size mismatch',ngseg)
+     call die(myname_,'all_arrays(:)/3*ngseg size mismatch',ngseg)
   endif
 
        ! Allocate index and location arrays for GSMap:
@@ -803,7 +803,7 @@
   allocate(GSMap%start(ngseg), GSMap%length(ngseg), GSMap%pe_loc(ngseg), &
            stat = ierr)
   if (ierr /= 0) then
-     call MP_perr_die(myname_,'allocate(GSMap%start...',ngseg)
+     call die(myname_,'allocate(GSMap%start...',ngseg)
   endif
        
        ! Assign the components of GSMap:
@@ -1166,7 +1166,7 @@
 !
 ! !USES:
 !
-      use m_die
+      use m_die,only: die
 
       implicit none
 
@@ -1189,7 +1189,7 @@
 
   allocate(mystarts(nlsegs),mylengths(nlsegs), &
       Points(mysize),stat=ier)
-  if(ier/=0) call MP_perr_die(myname_,'allocate(mystarts,..)',ier)
+  if(ier/=0) call die(myname_,'allocate(mystarts,..)',ier)
 
 ! pull out the starts and lengths that PEno owns in the order
 ! they appear in the GSMap.
@@ -1214,7 +1214,7 @@
   enddo
 
   deallocate(mystarts,mylengths, stat=ier)
-  if(ier/=0) call MP_perr_die(myname_,'deallocate(mystarts,..)',ier)
+  if(ier/=0) call die(myname_,'deallocate(mystarts,..)',ier)
 
  end subroutine OrderedPoints_
 
@@ -1457,7 +1457,7 @@
 !
 ! !USES:
 !
-      use m_die ,          only : MP_perr_die
+      use m_die ,          only : die
       use m_SortingTools , only : IndexSet
       use m_SortingTools , only : IndexSort
       use m_SortingTools , only : Permute
@@ -1491,7 +1491,7 @@
         ! allocate workspace to tally process id list:
 
   allocate(temp_list(ngseg), stat=ierr)
-  if(ierr /= 0) call MP_perr_die(myname_,'allocate(temp_list...',ierr)
+  if(ierr /= 0) call die(myname_,'allocate(temp_list...',ierr)
  
         ! initialize temp_list to -1 (which can never be a process id)
 
@@ -1528,7 +1528,7 @@
 
      else  ! a negative entry in GSMap%pe_loc(n)
 	ierr = 2
-	call MP_perr_die(myname_,'negative value of GSMap%pe_loc',ierr)
+	call die(myname_,'negative value of GSMap%pe_loc',ierr)
      endif
   end do
 
@@ -1541,7 +1541,7 @@
 
      allocate(pe_list(count), perm(count), stat=ierr)
      if (ierr /= 0) then
-	call MP_perr_die(myname_,'allocate(pe_list...',ierr)
+	call die(myname_,'allocate(pe_list...',ierr)
      endif
 
      do n=1,count
@@ -1558,7 +1558,7 @@
 
      deallocate(perm, stat=ierr)
      if (ierr /= 0) then
-	call MP_perr_die(myname_,'deallocate(perm)',ierr)
+	call die(myname_,'deallocate(perm)',ierr)
      endif
 
   endif ! if(present(pe_list))...
@@ -1567,7 +1567,7 @@
 
   deallocate(temp_list, stat=ierr)
   if (ierr /= 0) then
-     call MP_perr_die(myname_,'deallocate(temp_list)',ierr)
+     call die(myname_,'deallocate(temp_list)',ierr)
   endif
 
         ! finally, store the active process count in output variable
@@ -1603,7 +1603,7 @@
 !
 ! !USES:
 !
-      use m_die ,          only : MP_perr_die
+      use m_die ,          only : die
 
       implicit none
 
@@ -1630,17 +1630,17 @@
 
   if(size(points) < npoints) then
      ierr = size(points)
-     call MP_perr_die(myname_,'input points list array too small',ierr)
+     call die(myname_,'input points list array too small',ierr)
   endif
 
   if(size(pe_locs) < npoints) then
      ierr = size(pe_locs)
-     call MP_perr_die(myname_,'output pe_locs array too small',ierr)
+     call die(myname_,'output pe_locs array too small',ierr)
   endif
 
   if(haloed_(pointGSMap)) then
      ierr = 1
-     call MP_perr_die(myname_,'input pointGSMap haloed--not valid',ierr)
+     call die(myname_,'input pointGSMap haloed--not valid',ierr)
   endif
 
 ! Brute-force indexing...no assumptions regarding sorting of points(:) 
@@ -1705,7 +1705,7 @@
 !
 ! !USES:
 !
-      use m_die ,          only : MP_perr_die
+      use m_die ,          only : die
       use m_SortingTools , only : IndexSet
       use m_SortingTools , only : IndexSort
       use m_SortingTools , only : Permute
@@ -1748,7 +1748,7 @@
 
   allocate(start(ngseg), length(ngseg), perm(ngseg), stat=ierr)
   if (ierr /= 0) then
-     call MP_perr_die(myname_,'allocate(start...',ierr)
+     call die(myname_,'allocate(start...',ierr)
   endif
 
        ! Fill the temporary arrays start(:) and length(:)
@@ -1799,7 +1799,7 @@
 
   deallocate(start, length, perm, stat=ierr)
   if (ierr /= 0) then
-     call MP_perr_die(myname_,'deallocate(start...',ierr)
+     call die(myname_,'deallocate(start...',ierr)
   endif
 
        ! Assign function return value:
@@ -1830,7 +1830,7 @@
 !
 ! !USES:
 !
-      use m_die ,          only : MP_perr_die
+      use m_die ,          only : die
       use m_SortingTools , only : IndexSet
       use m_SortingTools , only : IndexSort
 
@@ -1864,24 +1864,24 @@
 
   if(size(key1) /= length) then
      ierr = 1
-     call MP_perr_die(myname_,'key1 GSMap size mismatch',ierr)
+     call die(myname_,'key1 GSMap size mismatch',ierr)
   endif
 
   if(present(key2)) then
      if(size(key2) /= length) then
         ierr = 2
-	call MP_perr_die(myname_,'key2 GSMap size mismatch',ierr)
+	call die(myname_,'key2 GSMap size mismatch',ierr)
      endif
      if(size(key1) /= size(key2)) then
         ierr = 3
-	call MP_perr_die(myname_,'key1 key2 size mismatch',ierr)
+	call die(myname_,'key1 key2 size mismatch',ierr)
      endif
   endif
 
         ! allocate space for permutation array perm(:)
 
   allocate(perm(length), stat=ierr)
-  if(ierr /= 0) call MP_perr_die(myname_,'allocate(perm)',ierr)
+  if(ierr /= 0) call die(myname_,'allocate(perm)',ierr)
 
         ! Initialize perm(i)=i, for i=1,length
 
@@ -1919,7 +1919,7 @@
 !
 ! !USES:
 !
-      use m_die ,          only : MP_perr_die
+      use m_die ,          only : die
       use m_SortingTools , only : Permute
 
       implicit none
@@ -1950,7 +1950,7 @@
 
   if(size(perm) /= length) then
      ierr = 1
-     call MP_perr_die(myname_,'perm GSMap size mismatch',ierr)
+     call die(myname_,'perm GSMap size mismatch',ierr)
   endif
 
         ! In-place index permutation using perm(:) :
@@ -1982,7 +1982,7 @@
 !
 ! !USES:
 !
-      use m_die ,          only : MP_perr_die
+      use m_die ,          only : die
 
       implicit none
 
@@ -2012,17 +2012,17 @@
   ierr = 0
   if(size(key1) /= length) then
      ierr = 1
-     call MP_perr_die(myname_,'key1 GSMap size mismatch',ierr)
+     call die(myname_,'key1 GSMap size mismatch',ierr)
   endif
 
   if(present(key2)) then
      if(size(key2) /= length) then
         ierr = 2
-	call MP_perr_die(myname_,'key2 GSMap size mismatch',ierr)
+	call die(myname_,'key2 GSMap size mismatch',ierr)
      endif
      if(size(key1) /= size(key2)) then
         ierr = 3
-	call MP_perr_die(myname_,'key1 key2 size mismatch',ierr)
+	call die(myname_,'key1 key2 size mismatch',ierr)
      endif
   endif
 
@@ -2042,7 +2042,7 @@
         ! Deallocate the index permutation array perm(:)
 
   deallocate(perm, stat=ierr)
-  if(ierr /= 0) call MP_perr_die(myname_,'deallocate(perm...)',ierr)
+  if(ierr /= 0) call die(myname_,'deallocate(perm...)',ierr)
 
  end subroutine SortPermuteInPlace_
 
@@ -2069,7 +2069,7 @@
 ! !USES:
 !
       use m_mpif90
-      use m_die, only : MP_perr_die
+      use m_die, only : MP_perr_die,die
       use m_stdio
 
       implicit none
@@ -2099,15 +2099,7 @@
        ! Step One:  which process am I?
 
   call MP_COMM_RANK(comm, myID, ierr)
-  if(ierr /= 0) then
-    if(.not. present(status)) then
-       call MP_perr_die(myname_,'MP_comm_rank()',ierr)
-    else
-       write(stderr,*) myname_,':: error encountered in MP_comm_rank()'
-       status = 1
-       return
-    endif
-  endif
+  if(ierr /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ierr)
 
        ! Step Two:  Broadcast the scalar bits of the GlobalSegMap from
        ! the root.
@@ -2115,7 +2107,7 @@
   allocate(IntBuffer(3), stat=ierr) ! allocate buffer space (all PEs)
   if(ierr /= 0) then
     if(.not. present(status)) then
-       call MP_perr_die(myname_,'allocate(IntBuffer)',ierr)
+       call die(myname_,'allocate(IntBuffer)',ierr)
     else
        write(stderr,*) myname_,':: error during allocate(IntBuffer)'
        status = 2
@@ -2130,15 +2122,7 @@
   endif
 
   call MPI_BCAST(IntBuffer, 3, MP_type(IntBuffer(1)), root, comm, ierr)
-  if(ierr /= 0) then
-    if(.not. present(status)) then
-       call MP_perr_die(myname_,'MPI_BCAST(IntBuffer)',ierr)
-    else
-       write(stderr,*) myname_,':: error during MPI_BCAST(IntBuffer)'
-       status = 3
-       return
-    endif
-  endif
+  if(ierr /= 0) call MP_perr_die(myname_,'MPI_BCAST(IntBuffer)',ierr)
 
   if(myID /= root) then ! unpack from buffer to GSMap
      GSMap%comp_id = IntBuffer(1)
@@ -2149,7 +2133,7 @@
   deallocate(IntBuffer, stat=ierr) ! deallocate buffer space
   if(ierr /= 0) then
     if(.not. present(status)) then
-       call MP_perr_die(myname_,'deallocate(IntBuffer)',ierr)
+       call die(myname_,'deallocate(IntBuffer)',ierr)
     else
        write(stderr,*) myname_,':: error during deallocate(IntBuffer)'
        status = 4
@@ -2164,7 +2148,7 @@
   allocate(IntBuffer(3*GSMap%ngseg), stat=ierr) ! allocate buffer space (all PEs)
   if(ierr /= 0) then
     if(.not. present(status)) then
-       call MP_perr_die(myname_,'second allocate(IntBuffer)',ierr)
+       call die(myname_,'second allocate(IntBuffer)',ierr)
     else
        write(stderr,*) myname_,':: error during second allocate(IntBuffer)'
        status = 5
@@ -2181,15 +2165,7 @@
   endif
 
   call MPI_BCAST(IntBuffer, 3*GSMap%ngseg, MP_Type(IntBuffer(1)), root, comm, ierr)
-  if(ierr /= 0) then
-    if(.not. present(status)) then
-       call MP_perr_die(myname_,'Error in second MPI_BCAST(IntBuffer)',ierr)
-    else
-       write(stderr,*) myname_,':: error during second MPI_BCAST(IntBuffer)'
-       status = 6
-       return
-    endif
-  endif
+  if(ierr /= 0) call MP_perr_die(myname_,'Error in second MPI_BCAST(IntBuffer)',ierr)
 
   if(myID /= root) then ! Allocate GSMap%start, GSMap%length,...and fill them
 
@@ -2197,7 +2173,7 @@
 	      GSMap%pe_loc(GSMap%ngseg), stat=ierr)
      if(ierr /= 0) then
 	if(.not. present(status)) then
-	   call MP_perr_die(myname_,'off-root allocate(GSMap%start...)',ierr)
+	   call die(myname_,'off-root allocate(GSMap%start...)',ierr)
 	else
 	   write(stderr,*) myname_,':: error during off-root allocate(GSMap%start...)'
 	   status = 7
@@ -2218,7 +2194,7 @@
   deallocate(IntBuffer, stat=ierr) 
   if(ierr /= 0) then
     if(.not. present(status)) then
-       call MP_perr_die(myname_,'second deallocate(IntBuffer)',ierr)
+       call die(myname_,'second deallocate(IntBuffer)',ierr)
     else
        write(stderr,*) myname_,':: error during second deallocate(IntBuffer)'
        status = 8
