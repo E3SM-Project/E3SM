@@ -1832,7 +1832,7 @@ end subroutine i90_fullRelease
       
 !...................................................................
 
-      character function chrget ( default )
+      character(len=1) function chrget ( default )
 
       implicit NONE
 
