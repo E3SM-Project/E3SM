@@ -680,7 +680,10 @@
 
   if(MAXVAL(GSMap%pe_loc) > (NumProcs-1)) then
      stat=2
-     call MP_perr(myname_, &
+     write(stderr,*) myname_, &
+       ":: Procs in GSMap%pe_loc do not match procs in communicator ", &
+       NumProcs-1, MAXVAL(GSMap%pe_loc)
+     call MP_perr_die(myname_, &
 	  "Procs in GSMap%pe_loc do not match procs in communicator",stat)
   endif
 
@@ -1168,9 +1171,11 @@
   if(present(stat)) then
      if(MAXVAL(GSMap%pe_loc) > (NumProcs-1)) then
 	stat=1
-	call MP_perr(myname_, &
-        "Procs in GSMap%pe_loc do not match procs in communicator",stat)
-        write(*,*) NumProcs-1, MAXVAL(GSMap%pe_loc) 
+	write(stderr,*) myname_, &
+          ":: Procs in GSMap%pe_loc do not match procs in communicator ", &
+          NumProcs-1, MAXVAL(GSMap%pe_loc)
+	call MP_perr_die(myname_, &
+          "Procs in GSMap%pe_loc do not match procs in communicator",stat)
      endif
   endif
 
