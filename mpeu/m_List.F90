@@ -709,6 +709,7 @@
 ! !USES:
 !
       use m_die,only : die
+      use m_stdio
       use m_String ,only : String
       use m_String ,only : String_clean
       use m_mall,only : mall_mci,mall_ison
@@ -725,23 +726,36 @@
 
 
 ! !REVISION HISTORY:
-! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
-! 	16May01 - J. Larson <larson@mcs.anl.gov> - simpler, working 
-!                 version that exploits the String datatype (see m_String)
+! 22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 16May01 - J. Larson <larson@mcs.anl.gov> - simpler, working 
+!           version that exploits the String datatype (see m_String)
+!  1Aug02 - Larson/Ong - Added logic for correct copying of blank 
+!           Lists.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::copy_'
   type(String) DummStr
 
+  if(size(xL%lc,2) > 0) then
+
        ! Download input List info from xL to String DummStr
 
-  call getall_(DummStr,xL)
+     call getall_(DummStr,xL)
 
        ! Initialize yL from DummStr
 
-  call initStr_(yL,DummStr)
+     call initStr_(yL,DummStr)
 
-  call String_clean(DummStr)
+     call String_clean(DummStr)
+
+  else
+     if(size(xL%lc,2) < 0) then ! serious error...
+	write(stderr,'(2a,i8)'), myname_, &
+	     ':: FATAL size(xL%lc,2) = ',size(xL%lc,2)
+     endif
+       ! Initialize yL as a blank list
+     call init_(yL, ' ')
+  endif
 
  end subroutine copy_
 
