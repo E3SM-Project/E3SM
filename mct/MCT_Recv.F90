@@ -35,11 +35,14 @@
 ! !REVISION HISTORY:
 !      07Feb01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
 !      08Feb01 - R. Jacob <jacob@mcs.anl.gov> - first working code
+!      18May01 - R. Jacob <jacob@mcs.anl.gov> - use MP_Type to
+!                determine type in mpi_recv
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_='MCT_Recv'
   integer ::    numi,numr,i,proc,buffsize,j,k
   integer ::    ier,nseg,mycomp,othercomp,tag
+  integer :: mp_Type_rp1
   integer,dimension(:),pointer  :: ireqs,rreqs
   integer,dimension(:,:),allocatable    :: istatus,rstatus
 
@@ -159,13 +162,14 @@
 
 ! receive the real data
   if(numr .ge. 1) then
+    mp_Type_rp1=MP_Type(rp1(1)%pr)
     do proc=1,Rout%nprocs
 
 ! corresponding tag logic must be in MCT_Send
       tag = 100000*othercomp + 1000*Rout%pe_list(proc) + &
             700 + ThisMCTWorld%mygrank
 !     write(*,*)"RECVR",ThisMCTWorld%mygrank,Rout%pe_list(proc),tag
-      call MPI_IRECV(rp1(proc)%pr,Rout%locsize(proc)*numr,MP_REAL,&
+      call MPI_IRECV(rp1(proc)%pr,Rout%locsize(proc)*numr,mp_Type_rp1,&
          Rout%pe_list(proc),tag,MP_COMM_WORLD,rreqs(proc),ier)
       if(ier /= 0) call MP_perr_die(myname_,'MPI_IRECV(reals)',ier)
     enddo

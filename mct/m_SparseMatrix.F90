@@ -941,12 +941,15 @@
 !       25Jan01 - Jay Larson <larson@mcs.anl.gov> - Prototype code.
 !       23Apr01 - Jay Larson <larson@mcs.anl.gov> - Modified to accomodate
 !                 changes to the SparseMatrix type.
+!       18May01 - R. Jacob <jacob@mcs.anl.gov> - Use MP_TYPE function
+!                 to set type in the mpi_allreduce
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::row_sum_'
 
   integer :: i, igrow, ierr, iwgt, lsize, myID
   integer :: start_row, end_row
+  integer :: mp_Type_lsums
   real, dimension(:), allocatable :: lsums
 
        ! Determine local rank
@@ -989,7 +992,8 @@
        ! Compute the global sum of the entries of lsums so that all
        ! processes own the global sums.
 
-  call MPI_ALLREDUCE(lsums, sums, num_rows, MP_REAL, MP_SUM, comm, ierr)
+  mp_Type_lsums=MP_Type(lsums)
+  call MPI_ALLREDUCE(lsums, sums, num_rows, mp_Type_lsums, MP_SUM, comm, ierr)
   if(ierr /= 0) then
      call MP_perr_die(myname_,"MPI_ALLREDUCE(lsums...",ierr)
   endif

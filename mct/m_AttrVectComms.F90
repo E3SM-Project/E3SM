@@ -95,11 +95,15 @@
 !                 m_AttrVect
 !       15Jan01 - J.W. Larson <larson@mcs.anl.gov> - renamed GM_gather_
 ! 	09May01 - J.W. Larson <larson@mcs.anl.gov> - tidied up prologue
+!       18May01 - R.L. Jacob <jacob@mcs.anl.gov> - use MP_Type function
+!                 to determine type for mpi_gatherv
+
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GM_gather_'
   integer :: nIA,nRA,niV,noV,ier
   integer :: myID
+  integer :: mp_Type_iV,mp_Type_oV
 
   if(present(stat)) stat=0
 
@@ -143,9 +147,10 @@
     stat=ier
     return
   endif
-
-  call MPI_gatherv(iV%rAttr,niV*nRA,MP_REAL,		&
-	oV%rAttr,GMap%counts*nRA,GMap%displs*nRA,MP_REAL,	&
+  mp_Type_iV=MP_Type(iV%rAttr)
+  mp_Type_oV=MP_Type(oV%rAttr)
+  call MPI_gatherv(iV%rAttr,niV*nRA,mp_Type_iV,	&
+	oV%rAttr,GMap%counts*nRA,GMap%displs*nRA,mp_Type_oV,&
 	root,comm,ier)
   if(ier /= 0) then
     call MP_perr(myname_,'MPI_gatherv(rAttr)',ier)
@@ -443,11 +448,15 @@
 ! 	09May01 - J.W. Larson <larson@mcs.anl.gov> - Re-vamped comms model
 !                 to reflect MPI comms model for the scatter.  Tidied up
 !                 the prologue, too.
+!       18May01 - R.L. Jacob <jacob@mcs.anl.gov> - use MP_Type function
+!                 to determine type for mpi_scatterv
+
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GM_scatter_'
   integer :: nIA,nRA,niV,noV,ier
   integer :: myID
+  integer :: mp_Type_iV,mp_Type_oV
   type(List) :: iList, rList
 
   if(present(stat)) stat=0
@@ -512,9 +521,11 @@
   endif
 
   if(nRA > 0) then
+     mp_Type_iV=MP_Type(iV%rAttr(1,1))
+     mp_Type_oV=MP_Type(oV%rAttr(1,1))
      call MPI_scatterv(iV%rAttr(1,1),GMap%counts*nRA,	&
-	  GMap%displs*nRA,MP_REAL,				&
-	  oV%rAttr(1,1),noV*nRA,MP_REAL,root,comm,ier )
+	  GMap%displs*nRA,mp_Type_iV,				&
+	  oV%rAttr(1,1),noV*nRA,mp_Type_oV,root,comm,ier )
      if(ier /= 0) then
 	call MP_perr(myname_,'MPI_scatterv(rAttr)',ier)
 	if(.not.present(stat)) call die(myname_)
@@ -832,6 +843,8 @@
 ! 	27Oct00 - J.W. Larson <larson@mcs.anl.gov> - relocated from
 !                 m_AttrVect
 ! 	09May01 - J.W. Larson <larson@mcs.anl.gov> - tidied up prologue
+!       18May01 - R.L. Jacob <jacob@mcs.anl.gov> - use MP_Type function
+!                 to determine type for bcast
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::bcast_'
@@ -839,6 +852,7 @@
   integer :: nIA, nRA, lsize
   integer :: myID
   integer :: ier
+  integer :: mp_Type_aV
 
   if(present(stat)) stat=0
 
@@ -900,7 +914,8 @@
     return
   endif
 
-  call MPI_bcast(aV%rAttr,nRA*lsize,MP_REAL,   root,comm,ier)
+  mp_Type_aV=MP_Type(av%rAttr)
+  call MPI_bcast(aV%rAttr,nRA*lsize,mp_Type_av,   root,comm,ier)
   if(ier /= 0) then
     call MP_perr(myname_,'MPI_bcast(rAttr)',ier)
     if(.not.present(stat)) call die(myname_)
