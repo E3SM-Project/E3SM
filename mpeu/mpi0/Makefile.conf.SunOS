@@ -64,7 +64,7 @@ F77		= mpif77
 F90		= mpif90
 FC		= $(F90)
 
-FOPT_normal	= -O4
+FOPT_normal	= -O2
 FOPT_indxck	= -g 
 
 FFLAGS		= $(FOPT_normal)
