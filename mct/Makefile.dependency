@@ -2,6 +2,7 @@ m_AttrVect.o:
 m_Accumulator.o: m_AttrVect.o
 m_GlobalMap.o:
 m_GlobalSegMap.o:
+m_GlobalSegMapComms.o: m_GlobalSegMap.o
 m_Navigator.o:
 m_AttrVectComms.o: m_AttrVect.o m_GlobalMap.o
 m_AttrVectReduce.o: m_AttrVect.o

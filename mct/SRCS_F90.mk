@@ -3,6 +3,7 @@ m_MCTWorld.F90		\
 m_AttrVect.F90		\
 m_GlobalMap.F90	        \
 m_GlobalSegMap.F90	\
+m_GlobalSegMapComms.F90	\
 m_Accumulator.F90	\
 m_SparseMatrix.F90      \
 m_Navigator.F90		\

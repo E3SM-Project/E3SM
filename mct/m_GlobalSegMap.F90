@@ -65,8 +65,6 @@
                                 ! re-order the GlobalSegMap components
                                 ! GlobalSegMap%start, GlobalSegMap%length,
                                 ! and GlobalSegMap%pe_loc
-      public :: bcast           ! Broadcast a GlobalSegMap object from the
-                                ! root process to its communicator.
 
 ! !PUBLIC TYPES:
 
@@ -83,7 +81,8 @@
         initd_,	&	! initialize from all PEs
         initr_, &	! initialize from the root
         initp_,	&	! initialize in parallel from replicated arrays
-        initp1_ 	! initialize in parallel from 1 replicated array
+        initp1_, &      ! initialize in parallel from 1 replicated array
+        initp0_         ! null constructor using replicated data
     end interface
     interface clean ; module procedure clean_ ; end interface
     interface comp_id  ; module procedure comp_id_  ; end interface
@@ -114,7 +113,6 @@
     interface SortPermute ; module procedure &
 	SortPermuteInPlace_ 
     end interface
-    interface bcast; module procedure bcast_ ; end interface
 
 ! !REVISION HISTORY:
 ! 	28Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
@@ -834,6 +832,71 @@
   end do
 
   end subroutine initp1_     
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: initp0_ - Null Constructor Using Replicated Data
+!
+! !DESCRIPTION:
+!
+! The routine {\tt initp0\_()} takes the input {\em replicated} arguments
+! {\tt comp\_id}, {\tt ngseg}, {\tt gsize}, and uses them perform null 
+! construction of the output {\tt GlobalSegMap} {\tt GSMap}.  This is a 
+! null constructor in the sense that we are not filling in the segment 
+! information arrays.  This routine operates on the assumption that these 
+! data are replicated across the communicator on which the 
+! {\tt GlobalSegMap} is being created.
+!
+! !INTERFACE:
+
+ subroutine initp0_(GSMap, comp_id, ngseg, gsize)
+
+!
+! !USES:
+!
+      use m_die, only : die
+      use m_stdio
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      integer,intent(in)              :: comp_id ! component model ID
+      integer,intent(in)              :: ngseg   ! global number of segments
+      integer,intent(in)              :: gsize   ! global vector size
+
+! !OUTPUT PARAMETERS:
+
+      type(GlobalSegMap),intent(out)  :: GSMap   ! Output GlobalSegMap
+
+! !REVISION HISTORY:
+! 13Aug03 - J.W. Larson <larson@mcs.anl.gov> - Initial version.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::initp0_'
+
+  integer :: ierr
+
+  nullify(GSMap%start)
+  nullify(GSMap%length)
+  nullify(GSMap%pe_loc)
+
+  GSMap%comp_id = comp_id
+  GSMap%ngseg = ngseg
+  GSMap%gsize = gsize
+
+  allocate(GSMap%start(ngseg), GSMap%length(ngseg), GSMap%pe_loc(ngseg), &
+           stat=ierr)
+  if(ierr /= 0) then
+     write(stderr,'(3a,i8)') myname_, &
+	  ':: FATAL--allocate of segment information storage space failed.', &
+	  '  ierr = ',ierr
+     call die(myname_)
+  endif
+
+ end subroutine initp0_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
@@ -2060,164 +2123,6 @@
   if(ierr /= 0) call die(myname_,'deallocate(perm...)',ierr)
 
  end subroutine SortPermuteInPlace_
-
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!    Math and Computer Science Division, Argonne National Laboratory   !
-!BOP -------------------------------------------------------------------
-!
-! !IROUTINE: bcast_ - broadcast a GlobalSegMap object
-!
-! !DESCRIPTION:
-!
-! The routine {\tt bcast\_()} takes the input/output {\em GlobalSegMap} 
-! argument {\tt GSMap} (on input valid only on the {\tt root} process,
-! on output valid on all processes) and broadcasts it to all processes
-! on the communicator associated with the F90 handle {\tt comm}.  The
-! success (failure) of this operation is returned as a zero (non-zero) 
-! value of the optional output {\tt INTEGER} argument {\tt status}.
-!
-! !INTERFACE:
-
- subroutine bcast_(GSMap, root, comm, status)
-
-!
-! !USES:
-!
-      use m_mpif90
-      use m_die, only : MP_perr_die,die
-      use m_stdio
-
-      implicit none
-
-! !INPUT PARAMETERS:
-
-      integer,            intent(in)     :: root
-      integer,            intent(in)     :: comm
-
-! !INPUT/OUTPUT PARAMETERS: 
-
-      type(GlobalSegMap), intent(inout)  :: GSMap  ! Output GlobalSegMap
-
-! !OUTPUT PARAMETERS: 
-
-      integer, optional,  intent(out)    :: status ! global vector size
-
-! !REVISION HISTORY:
-! 	17Oct01 - J.W. Larson <larson@mcs.anl.gov> - Initial version.
-!EOP ___________________________________________________________________
-
-  character(len=*),parameter :: myname_=myname//'::bcast_'
-
-  integer :: myID, ierr, n
-  integer, dimension(:), allocatable :: IntBuffer
-
-       ! Step One:  which process am I?
-
-  call MP_COMM_RANK(comm, myID, ierr)
-  if(ierr /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ierr)
-
-       ! Step Two:  Broadcast the scalar bits of the GlobalSegMap from
-       ! the root.
-
-  allocate(IntBuffer(3), stat=ierr) ! allocate buffer space (all PEs)
-  if(ierr /= 0) then
-    if(.not. present(status)) then
-       call die(myname_,'allocate(IntBuffer)',ierr)
-    else
-       write(stderr,*) myname_,':: error during allocate(IntBuffer)'
-       status = 2
-       return
-    endif
-  endif
-
-  if(myID == root) then ! pack the buffer
-     IntBuffer(1) = GSMap%comp_id
-     IntBuffer(2) = GSMap%ngseg
-     IntBuffer(3) = GSMap%gsize
-  endif
-
-  call MPI_BCAST(IntBuffer, 3, MP_type(IntBuffer(1)), root, comm, ierr)
-  if(ierr /= 0) call MP_perr_die(myname_,'MPI_BCAST(IntBuffer)',ierr)
-
-  if(myID /= root) then ! unpack from buffer to GSMap
-     GSMap%comp_id = IntBuffer(1)
-     GSMap%ngseg = IntBuffer(2)
-     GSMap%gsize = IntBuffer(3)
-  endif
-
-  deallocate(IntBuffer, stat=ierr) ! deallocate buffer space
-  if(ierr /= 0) then
-    if(.not. present(status)) then
-       call die(myname_,'deallocate(IntBuffer)',ierr)
-    else
-       write(stderr,*) myname_,':: error during deallocate(IntBuffer)'
-       status = 4
-       return
-    endif
-  endif
-
-       ! Step Three:  Broadcast the vector bits of GSMap from the root.
-       ! Pack them into one big array to save latency costs associated
-       ! with multiple broadcasts.
-
-  allocate(IntBuffer(3*GSMap%ngseg), stat=ierr) ! allocate buffer space (all PEs)
-  if(ierr /= 0) then
-    if(.not. present(status)) then
-       call die(myname_,'second allocate(IntBuffer)',ierr)
-    else
-       write(stderr,*) myname_,':: error during second allocate(IntBuffer)'
-       status = 5
-       return
-    endif
-  endif 
-
-  if(myID == root) then ! pack outgoing broadcast buffer
-     do n=1,GSMap%ngseg
-	IntBuffer(n) = GSMap%start(n)
-	IntBuffer(GSMap%ngseg+n) = GSMap%length(n)
-	IntBuffer(2*GSMap%ngseg+n) = GSMap%pe_loc(n)
-     end do
-  endif
-
-  call MPI_BCAST(IntBuffer, 3*GSMap%ngseg, MP_Type(IntBuffer(1)), root, comm, ierr)
-  if(ierr /= 0) call MP_perr_die(myname_,'Error in second MPI_BCAST(IntBuffer)',ierr)
-
-  if(myID /= root) then ! Allocate GSMap%start, GSMap%length,...and fill them
-
-     allocate(GSMap%start(GSMap%ngseg), GSMap%length(GSMap%ngseg), &
-	      GSMap%pe_loc(GSMap%ngseg), stat=ierr)
-     if(ierr /= 0) then
-	if(.not. present(status)) then
-	   call die(myname_,'off-root allocate(GSMap%start...)',ierr)
-	else
-	   write(stderr,*) myname_,':: error during off-root allocate(GSMap%start...)'
-	   status = 7
-	   return
-	endif
-     endif
-
-     do n=1,GSMap%ngseg ! unpack the buffer into the GlobalSegMap
-	GSMap%start(n) = IntBuffer(n)
-	GSMap%length(n) = IntBuffer(GSMap%ngseg+n)
-	GSMap%pe_loc(n) = IntBuffer(2*GSMap%ngseg+n)
-     end do
-
-  endif
-
-       ! Clean up buffer space:
-
-  deallocate(IntBuffer, stat=ierr) 
-  if(ierr /= 0) then
-    if(.not. present(status)) then
-       call die(myname_,'second deallocate(IntBuffer)',ierr)
-    else
-       write(stderr,*) myname_,':: error during second deallocate(IntBuffer)'
-       status = 8
-       return
-    endif
-  endif 
-
- end subroutine bcast_
 
  end module m_GlobalSegMap
 
