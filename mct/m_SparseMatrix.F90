@@ -2196,6 +2196,7 @@
   integer :: start_row, end_row
   integer :: mp_Type_lsums
   real(FP), dimension(:), allocatable :: lsums
+  real(FP), dimension(:), allocatable :: gsums
 
        ! Determine local rank
 
@@ -2216,7 +2217,7 @@
 
        ! Allocate storage for the sums on each process.
 
-  allocate(lsums(num_rows), sums(num_rows), stat=ierr)
+  allocate(lsums(num_rows), gsums(num_rows), sums(num_rows), stat=ierr)
 
   if(ierr /= 0) then
      call die(myname_,"allocate(lsums(...",ierr)
@@ -2238,14 +2239,20 @@
        ! processes own the global sums.
 
   mp_Type_lsums=MP_Type(lsums)
-  call MPI_ALLREDUCE(lsums, sums, num_rows, mp_Type_lsums, MP_SUM, comm, ierr)
+  call MPI_ALLREDUCE(lsums, gsums, num_rows, mp_Type_lsums, MP_SUM, comm, ierr)
   if(ierr /= 0) then
      call MP_perr_die(myname_,"MPI_ALLREDUCE(lsums...",ierr)
   endif
 
+       ! Copy our temporary array gsums into the output pointer sums
+       ! This was done so that lsums and gsums have the same precision (FP)
+       ! Precision conversion occurs here from FP to (SP or DP)
+
+  sums = gsums
+
        ! Clean up...
 
-  deallocate(lsums, stat=ierr)
+  deallocate(lsums, gsums, stat=ierr)
   if(ierr /= 0) then
      call die(myname_,"deallocate(lsums...",ierr)
   endif
@@ -2310,6 +2317,7 @@
   integer :: start_row, end_row
   integer :: mp_Type_lsums
   real(FP), dimension(:), allocatable :: lsums
+  real(FP), dimension(:), allocatable :: gsums
 
        ! Determine local rank
 
@@ -2330,7 +2338,7 @@
 
        ! Allocate storage for the sums on each process.
 
-  allocate(lsums(num_rows), sums(num_rows), stat=ierr)
+  allocate(lsums(num_rows), gsums(num_rows), sums(num_rows), stat=ierr)
 
   if(ierr /= 0) then
      call die(myname_,"allocate(lsums(...",ierr)
@@ -2352,14 +2360,20 @@
        ! processes own the global sums.
 
   mp_Type_lsums=MP_Type(lsums)
-  call MPI_ALLREDUCE(lsums, sums, num_rows, mp_Type_lsums, MP_SUM, comm, ierr)
+  call MPI_ALLREDUCE(lsums, gsums, num_rows, mp_Type_lsums, MP_SUM, comm, ierr)
   if(ierr /= 0) then
      call MP_perr_die(myname_,"MPI_ALLREDUCE(lsums...",ierr)
   endif
 
+       ! Copy our temporary array gsums into the output pointer sums
+       ! This was done so that lsums and gsums have the same precision (FP)
+       ! Precision conversion occurs here from FP to (SP or DP)
+
+  sums = gsums
+
        ! Clean up...
 
-  deallocate(lsums, stat=ierr)
+  deallocate(lsums, gsums, stat=ierr)
   if(ierr /= 0) then
      call die(myname_,"deallocate(lsums...",ierr)
   endif
