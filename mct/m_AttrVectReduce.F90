@@ -318,6 +318,7 @@
       use m_List,          only : List
       use m_List,          only : List_copy => copy
       use m_List,          only : List_exportToChar => exportToChar
+      use m_List,          only : List_clean => clean
 
       use m_AttrVect,      only : AttrVect
       use m_AttrVect,      only : AttrVect_init => init
@@ -359,6 +360,7 @@
         ! Superflous list copy circumvents SGI compiler bug
   call List_copy(rList_copy,inAV%rList)
   call AttrVect_init(outAV, rList=List_exportToChar(rList_copy), lsize=1)
+  call List_clean(rList_copy)
 
   select case(action)
   case(AttrVectSUM) ! sum up each attribute...
