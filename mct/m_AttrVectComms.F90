@@ -56,6 +56,9 @@
 !                 with copy for list type to avoid compiler bugs in pgf90.
 !                 Added more error checking in gsm scatter. Fixed minor bugs 
 !                 in gsm and gm gather.
+!       13Dec01 - E.T. Ong <eong@mcs.anl.gov> - GSM_scatter, allow users
+!                 to scatter with a haloed GSMap. Fixed some bugs in 
+!                 GM_scatter.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_AttrVectComms'
@@ -507,29 +510,33 @@
   nIA=AttrVect_nIAttr(oV)	! number of INTEGER attributes
   nRA=AttrVect_nRAttr(oV)	! number of REAL attributes
 
-  call MPI_gatherv(iV%iAttr,niV*nIA,MP_INTEGER,			&
-	oV%iAttr,GMap%counts*nIA,GMap%displs*nIA,MP_INTEGER,	&
-	root,comm,ier)
+  if(nIA > 0) then
+     call MPI_gatherv(iV%iAttr(1,1),niV*nIA,MP_INTEGER,			&
+	  oV%iAttr,GMap%counts*nIA,GMap%displs*nIA,MP_INTEGER,	&
+	  root,comm,ier)
 
-  if(ier /= 0) then
-    call MP_perr(myname_,'MPI_gatherv(iAttr)',ier)
-    if(.not.present(stat)) call die(myname_)
-    stat=ier
-    return
+     if(ier /= 0) then
+	call MP_perr(myname_,'MPI_gatherv(iAttr)',ier)
+	if(.not.present(stat)) call die(myname_)
+	stat=ier
+	return
+     endif
   endif
 
-  mp_Type_iV=MP_Type(iV%rAttr)
-  mp_Type_oV=MP_Type(oV%rAttr)
+  if(nRA > 0) then
+     mp_Type_iV=MP_Type(iV%rAttr)
+     mp_Type_oV=MP_Type(oV%rAttr)
 
-  call MPI_gatherv(iV%rAttr,niV*nRA,mp_Type_iV,	&
-	oV%rAttr,GMap%counts*nRA,GMap%displs*nRA,mp_Type_oV,&
-	root,comm,ier)
+     call MPI_gatherv(iV%rAttr(1,1),niV*nRA,mp_Type_iV,	&
+	  oV%rAttr,GMap%counts*nRA,GMap%displs*nRA,mp_Type_oV,&
+	  root,comm,ier)
 
-  if(ier /= 0) then
-    call MP_perr(myname_,'MPI_gatherv(rAttr)',ier)
-    if(present(stat)) stat=ier
-    if(.not.present(stat)) call die(myname_)
-    return
+     if(ier /= 0) then
+	call MP_perr(myname_,'MPI_gatherv(rAttr)',ier)
+	if(present(stat)) stat=ier
+	if(.not.present(stat)) call die(myname_)
+	return
+     endif
   endif
 
  end subroutine GM_gather_
@@ -839,6 +846,8 @@
       use m_List, only : List_copy => copy
       use m_List, only : List_bcast => bcast
       use m_List, only : List_clean => clean
+      use m_List, only : List_nullify => nullify
+      use m_List, only : List_nitem => nitem
 
       use m_GlobalMap, only : GlobalMap
       use m_GlobalMap, only : GlobalMap_lsize => lsize
@@ -880,12 +889,16 @@
 !                 to determine type for mpi_scatterv
 !       08Aug01 - E.T. Ong <eong@mcs.anl.gov> - replace list assignment(=)
 !                 with list copy to avoid compiler errors in pgf90.
+!       13Dec01 - E.T. Ong <eong@mcs.anl.gov> - allow scatter with an
+!                 AttrVect containing only an iList or rList.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GM_scatter_'
   integer :: nIA,nRA,niV,noV,ier
   integer :: myID
   integer :: mp_Type_iV,mp_Type_oV
+  integer :: iitems,ritems
+  logical :: iflag,rflag
   type(List) :: iList, rList
 
   if(present(stat)) stat=0
@@ -922,21 +935,48 @@
         ! On the root, read the integer and real attribute 
         ! lists off of iV.
 
+  call List_nullify(iList)
+  call List_nullify(rList)
+
+  iflag=.false.
+  rflag=.false.
+
   if(myID == root) then
-     call List_copy(iList,iV%iList)
-     call List_copy(rList,iV%rList)
+
+     iitems=List_nitem(iV%iList)
+     ritems=List_nitem(iV%rList)
+
+     if(iitems > 0) then
+	call List_copy(iList,iV%iList)
+	iflag=.true.
+     endif
+
+     if(ritems > 0) then
+	call List_copy(rList,iV%rList)
+	rflag=.true.
+     endif
+
   endif
   
         ! From the root, broadcast iList and rList
 
-  call List_bcast(iList, root, comm)
-  call List_bcast(rList, root, comm)
+  call MPI_BCAST(iflag,1,MP_LOGICAL,root,comm,ier)
+  if(ier /= 0) call MP_perr(myname_,'MPI_BCAST(iflag)',ier)
+
+  call MPI_BCAST(rflag,1,MP_LOGICAL,root,comm,ier)
+  if(ier /= 0) call MP_perr(myname_,'MPI_BCAST(rflag)',ier)
+
+  if(iflag) call List_bcast(iList, root, comm)
+
+  if(rflag) call List_bcast(rList, root, comm)
+
 
         ! On all processes, use List data and noV to initialize oV
 
   call AttrVect_init(oV, iList, rList, noV)
 
-        ! Count the number of real and integer attributes
+
+  ! Count the number of real and integer attributes
 
   nIA = AttrVect_nIAttr(oV)	! number of INTEGER attributes
   nRA = AttrVect_nRAttr(oV)	! number of REAL attributes
@@ -969,8 +1009,8 @@
 
         ! Clean up
 
-  call List_clean(iList)
-  call List_clean(rList)
+  if(iflag) call List_clean(iList)
+  if(rflag) call List_clean(rList)
 
  end subroutine GM_scatter_
 
@@ -1081,6 +1121,9 @@
 !                 all the pointers in workV for non-root processes.
 !       20Aug01 - E.T. Ong <eong@mcs.anl.gov> - Added argument check
 !                 for matching processors in gsmap and comm.
+!       13Dec01 - E.T. Ong <eong@mcs.anl.gov> - got rid of restriction 
+!                 GlobalStorage(GSMap)==AttrVect_lsize(AV) to allow for
+!                 GSMap to be haloed.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GSM_scatter_'
@@ -1120,30 +1163,28 @@
   endif
 
   if(myID == root) then
-
-       ! Determine the _total_ storage space for all the 
-       ! segments of GSMap laid end-to-end:
-
-     global_storage = GlobalSegMap_GlobalStorage(GSMap)
      
-     if(global_storage /= AttrVect_lsize(iV)) then
+     if(GSMap%gsize > AttrVect_lsize(iV)) then
 	write(stderr,'(2a,i5,a,i8,a,i8)') myname_,	&
-	     ': myID = ',myID,'.  Invalid input,globalstorage(GSMap) =',&
-	     global_storage, ', lsize(iV) =',AttrVect_lsize(iV)
+	     ': myID = ',myID,'.  Invalid input, GSMap%gsize =',&
+	     GSMap%gsize, ', lsize(iV) =',AttrVect_lsize(iV)
 	if(present(stat)) stat=-1
 	if(.not.present(stat)) call die(myname_)
 	return
      endif
 
-  endif
+  endif     
 
-       ! On the root, nitialize a work AttrVect type of the 
+       ! On the root, initialize a work AttrVect type of the 
        ! above length, and with the same attribute lists as iV.
        ! on other processes, initialize workV only with the 
        ! attribute information, but no storage.
 
   if(myID == root) then
+
+     global_storage = GlobalSegMap_GlobalStorage(GSMap)
      call AttrVect_init(workV, iV, global_storage)
+
   else
        ! nullify workV just to be safe
  
@@ -1151,6 +1192,7 @@
      call List_nullify(workV%rList)
      nullify(workV%iAttr)
      nullify(workV%rAttr)
+
   endif
 
        ! Return to processing on the root to load workV:
