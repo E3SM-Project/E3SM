@@ -2698,6 +2698,7 @@
 !
       use m_String,        only : String
       use m_String,        only : String_tochar => tochar
+      use m_String,        only : String_clean => clean
       use m_List ,         only : List_allocated => allocated
       use m_List ,         only : List_index => index
       use m_List ,         only : List_nitem => nitem
@@ -2853,6 +2854,10 @@
 
      if (iIndex(n) > 0) rIndex(n) = 0
      if (rIndex(n) > 0) iIndex(n) = 0
+
+        ! Clean up temporary string -key-
+
+     call String_clean(key)
 
   enddo ! do n=1,nkeys
 

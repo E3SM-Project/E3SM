@@ -2693,6 +2693,7 @@
 
   character(len=*),parameter :: myname_=myname//'::SortPermute_'
 
+  integer :: ier
   integer, dimension(:), pointer :: perm
 
        ! Create index permutation perm(:)
@@ -2706,6 +2707,11 @@
        ! Apply index permutation perm(:) to re-order sMat:
 
   call Permute_(sMat, perm)
+
+       ! Clean up
+
+  deallocate(perm, stat=ier)
+  if(ier/=0) call die(myname_, "deallocate(perm)", ier)
 
  end subroutine SortPermute_
 
