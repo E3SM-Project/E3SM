@@ -212,7 +212,7 @@
 
 ! send the real data
   if(numr .ge. 1) then
-    mp_Type_rp1=MP_Type(rp1(1)%pr)
+    mp_Type_rp1=MP_Type(rp1(1)%pr(1))
     do proc=1,Rout%nprocs
 ! corresponding tag logic must be in MCT_Recv
       tag = 100000*mycomp + 1000*ThisMCTWorld%mygrank + &
@@ -272,6 +272,10 @@ end subroutine MCT_ISend_
      call MPI_WAITALL(Rout%nprocs,Reqs%ireqs,istatus,ier)
      if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL(ints)',ier)
 
+     ! deallocatAe MPI status array
+     deallocate(istatus,stat=ier)
+     if(ier/=0) call MP_perr_die(myname_,'deallocate(istatus)',ier)
+
      ! done waiting, free up ireqs
      deallocate(Reqs%ireqs,stat=ier)
      if(ier /= 0) call MP_perr_die(myname_,'deallocate(Reqs%ireqs)',ier)
@@ -295,6 +299,10 @@ end subroutine MCT_ISend_
 
      call MPI_WAITALL(Rout%nprocs,Reqs%rreqs,rstatus,ier)
      if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL(reals)',ier)
+
+     ! deallocate MPI status array
+     deallocate(rstatus,stat=ier)
+     if(ier/=0) call MP_perr_die(myname_,'deallocate(rstatus)',ier)
 
      ! done waiting, free up Reqs%rreqs
      deallocate(Reqs%rreqs,stat=ier)
