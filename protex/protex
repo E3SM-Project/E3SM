@@ -1,0 +1,528 @@
+#!/bin/perl
+#BOP
+#
+# !ROUTINE: ProTeX v. 1.01 - Translates DAO Prologues to LaTeX
+#
+# !INTERFACE:
+#         protex [-b] [-n] [-l] [src_file(s)]  
+#
+# !DESCRIPTION:
+#         Perl filter to produce a LaTeX compatible document 
+#         from a DAO Fortran source code with standard ProTeX 
+#         prologues. If source files are not specified it
+#         reads from stdin; output is always to stdout.
+#         
+# {\bf Command Line Switches:}
+#   -b    Bare mode, meaning no preamble, etc.
+#   -n    New Page at \subsections (wastes paper)
+#   -l    Listing mode, default is prologues only
+#
+# !SEE ALSO:
+#         For a more detailed description of ProTeX functionality,
+#         DAO Prologue and other conventions, consult:
+#
+#  Sawyer, W., and A. da Silva, 1997: <title>
+#         DAO Office Note 97-??.
+#         
+#
+# !REVISION HISTORY:
+#
+#  20Dec95  da Silva  First experimental version
+#  10Nov96  da Silva  First internal release (v1.01)
+#  28Jul97  da Silva  Modified so that !DESCRIPTION can appear after
+#           !INTERFACE, and !INPUT PARAMETERS etc. changed to italics.
+#                  
+#EOP
+#----------------------------------------------------------------------------
+
+# Process command line switches
+# -----------------------------
+  require "getopts.pl";
+  do Getopts('bnl');
+
+# Keep this if you don't know what it does...
+# -------------------------------------------
+  $[ = 1;		# set array base to 1
+  $, = ' ';		# set output field separator
+  $\ = "\n";		# set output record separator
+
+
+# Optional Prologue Keywords
+# --------------------------
+  @keys = ( "!INTERFACE:",
+            "!USES:",
+            "!PUBLIC TYPES:",
+            "!PUBLIC MEMBER FUNCTIONS:",
+            "!PUBLIC DATA MEMBERS:",
+            "!DEFINED PARAMETERS:",
+            "!INPUT PARAMETERS:",
+            "!INPUT/OUTPUT PARAMETERS:",
+            "!OUTPUT PARAMETERS:",
+            "!REVISION HISTORY:",
+            "!BUGS:",
+            "!SEE ALSO:",
+            "!SYSTEM ROUTINES:",
+            "!FILES USED:",
+            "!REMARKS:",
+            "!TO DO:",
+            "!CALLING SEQUENCE:",
+            "!AUTHOR:",
+            "!CALLED FROM:",
+            "!LOCAL VARIABLES:" );
+
+
+# Initialize these for clarity
+# ----------------------------
+  $intro = 0;             # doing introduction?
+  $prologue = 0;          # doing prologue?
+  $first = 1;             # first prologue?
+  $source = 0;            # source code mode?
+  $verb = 0;              # verbatim mode?
+  $tpage = 0;             # title page?
+  $begdoc = 0;            # has \begin{document} been written?
+
+
+
+# Initial LaTeX stuff
+# -------------------
+  &print_notice();
+  &print_preamble();        # \documentclass, text dimensions, etc.
+  &print_macros();          # short-hand LaTeX macros
+
+
+# Main loop
+# ---------
+  LINE: while (<>) {
+
+    chop;	                      # strip record separator
+    @Fld = split(' ', $_, 9999);
+
+#   Straight quote
+#   --------------
+    if ($Fld[1] eq '!QUOTE:') {
+	for ($i = 2; $i <= $#Fld; $i++) {
+	    printf '%s ', $Fld[$i];
+	}
+	print " ";
+        next LINE;
+    }
+
+
+#   Handle optional Title Page and Introduction
+#   -------------------------------------------
+    if ($Fld[1] eq '!BOI') {
+	print ' ';
+        $intro = 1;
+        next LINE;
+    }
+
+    if ($Fld[2] eq '!TITLE:') {
+      if ( $intro ) {
+        shift @Fld;
+        shift @Fld;
+        @title = @Fld;
+        $tpage = 1;
+        next LINE;
+      }
+    }
+
+    if ($Fld[2] eq '!AUTHORS:') {
+      if ( $intro ) {
+        shift @Fld;
+        shift @Fld;
+        @author = @Fld;
+        $tpage = 1;
+        next LINE;
+      }
+    }
+
+    if ($Fld[2] eq '!AFFILIATION:') {
+      if ( $intro ) {
+        shift @Fld;
+        shift @Fld;
+        @affiliation = @Fld;
+        $tpage = 1;
+        next LINE;
+      }
+    }
+
+    if ($Fld[2] eq '!DATE:') {
+      if ( $intro ) {
+        shift @Fld;
+        shift @Fld;
+        @date = @Fld;
+        $tpage = 1;
+        next LINE;
+      }
+    }
+
+    if ($Fld[2] eq '!INTRODUCTION:') {
+      if ( $intro ) {
+        &do_beg();
+	print ' ';
+	print '%..............................................';
+        shift @Fld;
+        shift @Fld;
+	print "\\section{@Fld}";
+        next LINE;
+      }
+    }
+
+
+#   End of introduction
+#   -------------------
+    if ($Fld[1] eq '!EOI') {
+	print ' ';
+	print '%/////////////////////////////////////////////////////////////';
+        print "\\newpage";
+	$intro = 0;
+        next LINE;
+    }
+
+
+#   Beginning of prologue
+#   ---------------------
+    if ($Fld[1] eq '!BOP') {
+        if ( $source ) { &do_eoc(); }     
+	print ' ';
+	print '%/////////////////////////////////////////////////////////////';
+        &do_beg();
+	if ($first == 0) {
+	    ### print "\\newpage";
+            print " ";
+	    print "\\mbox{}\\hrulefill\\ ";
+            print " ";
+	} else {
+	    unless($opt_b){print "\\section{Routine/Function Prologues}";}
+        }
+	$first = 0;
+	$prologue = 1;
+	$verb = 0;
+	$source = 0;
+        &set_missing();   # no required keyword yet
+        next LINE;
+    }
+
+
+#   A new subroutine/function
+#   -------------------------
+    if ($Fld[2] eq '!ROUTINE:' ) { 
+	if ($prologue) {
+            shift @Fld;
+            shift @Fld;
+            $_ = join(' ', @Fld);
+            $name_is = $_;
+            s/_/\\_/g;                         # Replace "_" with "\_"
+            if ( $opt_n && $not_first ) { printf "\\newpage\n"; }
+	    printf "\\subsection{%s}\n\n", $_;
+            $have_name = 1;
+            $not_first = 1;
+            next LINE;
+	}
+    }
+
+#   A new Module
+#   ------------
+    if ($Fld[2] eq '!MODULE:' ) { 
+	if ($prologue) {
+            shift @Fld;
+            shift @Fld;
+            $_ = join(' ', @Fld);
+            $name_is = $_;
+            s/_/\\_/g;                         # Replace "_" with "\_"
+            if ( $opt_n && $not_first ) { printf "\\newpage\n"; }
+	    printf "\\subsection{Module %s}\n\n", $_;
+            $have_name = 1;
+            $have_intf = 1;  # fake it, it does not need one.
+            $not_first = 1;
+            next LINE;
+	}
+    }
+
+#   A new include file
+#   ------------------
+    if ($Fld[2] eq '!INCLUDE:' ) { 
+	if ($prologue) {
+            shift @Fld;
+            shift @Fld;
+            $_ = join(' ', @Fld);
+            $name_is = $_;
+            s/_/\\_/g;                         # Replace "_" with "\_"
+            if ( $opt_n && $not_first ) { printf "\\newpage\n"; }
+	    printf "\\subsection{Include file %s}\n\n", $_;
+            $have_name = 1;
+            $have_intf = 1;  # fake it, it does not need one.
+            $not_first = 1;
+            next LINE;
+	}
+    }
+
+#   A new INTERNAL subroutine/function
+#   ----------------------------------
+    if ($Fld[2] eq '!IROUTINE:') {            # Internal routine
+	if ($prologue) {
+            shift @Fld;
+            shift @Fld;
+            $_ = join(' ', @Fld);
+            $name_is = $_;
+            s/_/\\_/g;                        # Replace "_" with "\_"
+	    printf "\\subsubsection{%s}\n\n", $_;
+            $have_name = 1;
+            next LINE;
+	}
+    }
+
+#   Description: what follows will be regular LaTeX (no verbatim)
+#   -------------------------------------------------------------
+    if (/!DESCRIPTION:/) {
+	if ($prologue) {
+	    if ($verb) {
+		printf "\\end{verbatim}";
+    	        printf "\n{\\sf DESCRIPTION:\\\\ }\n\n";
+		$verb = 0;
+	    } 
+	    for ($i = 3; $i <= $#Fld; $i++) {
+		printf '%s ', $Fld[$i];
+	    }
+            ### print " ";
+            $have_desc = 1;
+            next LINE;
+	}
+    }
+
+
+#   Handle optional keywords (these will appear as verbatim)
+#   --------------------------------------------------------
+    if ($prologue) {
+    KEY: foreach $key ( @keys ) {
+         if ( /$key/ ) {
+	    if ($verb) {
+		printf "\\end{verbatim}";
+		$verb = 0;
+	    } else {
+		printf "\n\\bigskip"; }
+	    $k = sprintf('%s', $key);
+	    $ln = length($k);
+	    ###printf "\\subsubsection*{%s}\n", substr($k, 2, $ln - 1);
+	    ###printf "{\\Large \\em %s}\n", ucfirst lc substr($k, 2, $ln - 1);
+            $_ = $key;
+            if( /USES/ || /INPUT/ || /OUTPUT/ ) {
+  	        printf "{\\em %s}\n", substr($k, 2, $ln - 1); # italics
+	    } else {
+  	        printf "{\\sf %s}\n", substr($k, 2, $ln - 1); # san serif
+	    }
+	    printf "\\begin{verbatim} ";
+	    $verb = 1;
+            $first_verb = 1;
+            if ( $key eq "!INTERFACE:" )        { $have_intf = 1; }
+            if ( $key eq "!CALLING SEQUENCE:" ) { $have_intf = 1; }
+            if ( $key eq "!REVISION HISTORY:" ) { $have_hist = 1; }
+            next LINE;
+	 }
+      }
+     }
+
+
+#   End of prologue
+#   ---------------
+    if ($Fld[1] eq '!EOP') {
+	if ($verb) {
+	    print "\\end{verbatim}";
+	    $verb = 0;
+	}
+	$prologue = 0;
+        &check_if_all_there(); # check if all required keyword are there.
+        if ( $opt_l ) {
+             $Fld[1] = "!BOC";
+	 } else { next LINE; }
+    }
+
+
+#   Beginning of source code section
+#   --------------------------------
+    if ($Fld[1] eq '!BOC') {
+	print ' ';
+	print '%/////////////////////////////////////////////////////////////';
+	$first = 0;
+	$prologue = 0;
+	$source = 1;
+	### printf "\\subsubsection*{CONTENTS:}\n\n", $Fld[3];
+	printf "{\\sf CONTENTS:}";
+	printf "\n \\begin{verbatim}\n";
+	$verb = 1;
+        next LINE;
+    }
+
+#   End of source code
+#   ------------------
+    if ($Fld[1] eq '!EOC') {
+        &do_eoc();
+	$prologue = 0;
+        next LINE;
+    }
+
+
+#   Prologue or Introduction, print regular line (except for !)
+#   -----------------------------------------------------------
+    if ($prologue||$intro) {
+        if ( $verb && $#Fld == 1 && $Fld[1] eq "!" ) {
+	    next LINE;               # to eliminate excessive blanks 
+	}
+	if ( $Fld[2] eq "\\ev" ) {   # special handling
+	    $_ = "! \\end{verbatim}";
+	}
+	s/!/ /;                      # replace ! with blank
+	$line = sprintf('%s', $_);
+	$ln = length($line);
+	unless ( $first_verb ) { printf "\n "; }
+	printf '%s', substr($line, 2, $ln - 1);
+        $first_verb = 0;
+        next LINE;
+    }
+
+#   Source code: print the full line
+#   --------------------------------
+    if ($source) {
+	print $_;
+        next LINE;
+    }
+
+}
+print $_;
+if ( $source ) { &do_eoc(); }     
+print '%...............................................................';
+unless ( $opt_b ) {
+    print "\\end{document}";
+}
+
+#----------------------------------------------------------------------
+
+sub print_notice {
+
+    print "%                **** IMPORTANT NOTICE *****";
+    print "% This LaTeX file has been automatically produced by ProTeX v. 1.0";
+    print "% Any changes made to this file will likely be lost next time";
+    print "% this file is regenerated from its Fortran source.";
+    print "% Send questions to Arlindo da Silva, dasilva\@gsfc.nasa.gov";
+    print " ";
+
+}
+
+sub print_preamble {
+
+  unless ( $opt_b ) {
+    print "%------------------------ PREAMBLE --------------------------";
+    print "\\documentclass[11pt]{article}";
+    print "\\textheight     9in";
+    print "\\topmargin      0pt";
+    print "\\headsep        0pt";
+    print "\\headheight     0pt";
+    print "\\textwidth      6in";
+    print "\\oddsidemargin  0in";
+    print "\\evensidemargin 0in";
+    print "\\marginparpush  0pt";
+    print "%-------------------------------------------------------------";
+  }
+
+    print "\\parskip        0pt";
+    print "\\parindent      0pt";
+    print "\\baselineskip  11pt";
+
+}
+
+sub print_macros {
+
+    print " ";
+    print "%--------------------- SHORT-HAND MACROS ----------------------";
+    print "\\def\\bv{\\begin{verbatim}}";
+    print "\\def\\ev\{\\end\{verbatim}}";
+    print "\\def\\be{\\begin{equation}}";
+    print "\\def\\ee{\\end{equation}}";
+    print "\\def\\bea{\\begin{eqnarray}}";
+    print "\\def\\eea{\\end{eqnarray}}";
+    print "\\def\\bi{\\begin{itemize}}";
+    print "\\def\\ei{\\end{itemize}}";
+    print "\\def\\bn{\\begin{enumerate}}";
+    print "\\def\\en{\\end{enumerate}}";
+    print "\\def\\bd{\\begin{description}}";
+    print "\\def\\ed{\\end{description}}";
+    print "\\def\\({\\left (}";
+    print "\\def\\){\\right )}";
+    print "\\def\\[{\\left [}";
+    print "\\def\\]{\\right ]}";
+    print "\\def\\<{\\left  \\langle}";
+    print "\\def\\>{\\right \\rangle}";
+    print "\\def\\cI{{\\cal I}}";
+    print "\\def\\diag{\\mathop{\\rm diag}}";
+    print "\\def\\tr{\\mathop{\\rm tr}}";
+    print "%-------------------------------------------------------------";
+
+}
+
+
+
+sub do_beg {
+    unless ( $opt_b ) {
+    if ( $begdoc == 0 ) {
+	if ( $tpage ) {
+	    print "\\title{@title}";
+	    print "\\author{{\\sc @author}\\\\ {\\em @affiliation}}";
+	    print "\\date{@date}";
+	}
+        print "\\begin{document}";
+	if ( $tpage ) {
+	    print "\\maketitle";
+	}
+        print "\\tableofcontents";
+        print "\\newpage";
+        $begdoc = 1;
+     }
+  }
+}
+
+sub do_eoc {
+	print ' ';
+	if ($verb) {
+	    print "\\end{verbatim}";
+	    $verb = 0;
+	}
+	$source = 0;
+    }
+
+sub set_missing {
+
+  $have_name = 0;      # have routine name?
+  $have_desc = 0;      # have description?
+  $have_intf = 0;      # have interface?
+  $have_hist = 0;      # have revision history?
+  $name_is = "UNKNOWN";
+
+}
+
+    
+sub check_if_all_there {
+
+$have_name || 
+die "ProTeX: invalid prologue, missing !ROUTINE: or !IROUTINE: in <$name_is>";
+
+$have_desc || 
+die "ProTeX: invalid prologue, missing !DESCRIPTION: in <$name_is>";
+
+$have_intf || 
+die "ProTeX: invalid prologue, missing !INTERFACE: in <$name_is>";
+
+$have_hist || 
+die "ProTeX: invalid prologue, missing !REVISION HISTORY: in <$name_is>";
+
+}
+
+
+
+
+
+
+
+
+
+
+
