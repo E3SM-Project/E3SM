@@ -13,18 +13,21 @@ by terms in the file MCT/COPYRIGHT.
 MCT distribution contents:
 MCT/
 MCT/COPYRIGHT
-MCT/doc
-MCT/mct
-MCT/mpeu   <- You are here
-MCT/protex
-MCT/ut-mct
+MCT/doc/
+MCT/examples/
+MCT/mct/
+MCT/mpeu/   <- You are here
+MCT/protex/
 
 A complete distribution of MCT can be obtained from http://www.mcs.anl.gov/mct.
 
 ---------------------------------------------------
 Build instructions:
-1) ./configure
-2) make all
+
+In top level directory, type "./configure", then "make".
+
+If "./configure" has already been run, you can also type "make"
+in this directory.
 
 ---------------------------------------------------
 NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS 
