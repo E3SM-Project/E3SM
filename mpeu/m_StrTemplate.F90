@@ -108,15 +108,20 @@ contains
 ! !REVISION HISTORY:
 ! 	03Jun99	- Jing Guo <guo@dao.gsfc.nasa.gov>
 !		- initial prototype/prolog/code
+!       08Jan03 - R. Jacob <jacob@mcs.anl.gov>  Small change to get
+!          around IBM compiler bug.  Cant have character valued functions
+!          in case statements.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::strTemplate_'
   character(len=16) :: tmpl_class
+  character(len=16) :: tmp_upper
 
   tmpl_class="GX"
   if(present(class)) tmpl_class=class
 
-  select case(uppercase(tmpl_class))
+  tmp_upper = uppercase(tmpl_class)
+  select case(tmp_upper)
 
   case("GX","GRADS")
     call GX_(str,tmpl,xid,nymd,nhms,stat)
