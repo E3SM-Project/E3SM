@@ -84,20 +84,20 @@
 
 ! allocate the number of pointers needed
   allocate(ip1(Rout%nprocs),stat=ier)
-  if(ier/=0) call MP_perr_die(myname_,'allocate(ip1)',ier)
+  if(ier/=0) call die(myname_,'allocate(ip1)',ier)
 
 ! allocate MPI request array
   allocate(ireqs(Rout%nprocs),stat=ier)
-  if(ier/=0) call MP_perr_die(myname_,'allocate(ireqs)',ier)
+  if(ier/=0) call die(myname_,'allocate(ireqs)',ier)
 
 ! allocate MPI status array
   allocate(istatus(MP_STATUS_SIZE,Rout%nprocs),stat=ier)
-  if(ier/=0) call MP_perr_die(myname_,'allocate(istatus)',ier)
+  if(ier/=0) call die(myname_,'allocate(istatus)',ier)
 
 ! allocate buffers to hold all incoming data
    do proc=1,Rout%nprocs
     allocate(ip1(proc)%pi(Rout%locsize(proc)*numi),stat=ier)
-    if(ier/=0) call MP_perr_die(myname_,'allocate(ip1%pi)',ier)
+    if(ier/=0) call die(myname_,'allocate(ip1%pi)',ier)
    enddo
   endif
 
@@ -106,20 +106,20 @@
 
 ! allocate the number of pointers needed
   allocate(rp1(Rout%nprocs),stat=ier)
-  if(ier/=0) call MP_perr_die(myname_,'allocate(rp1)',ier)
+  if(ier/=0) call die(myname_,'allocate(rp1)',ier)
 
 ! allocate MPI request array
   allocate(rreqs(Rout%nprocs),stat=ier)
-  if(ier/=0) call MP_perr_die(myname_,'allocate(rreqs)',ier)
+  if(ier/=0) call die(myname_,'allocate(rreqs)',ier)
 
 ! allocate MPI status array
   allocate(rstatus(MP_STATUS_SIZE,Rout%nprocs),stat=ier)
-  if(ier/=0) call MP_perr_die(myname_,'allocate(rstatus)',ier)
+  if(ier/=0) call die(myname_,'allocate(rstatus)',ier)
 
 ! allocate buffers to hold all incoming data
    do proc=1,Rout%nprocs
     allocate(rp1(proc)%pr(Rout%locsize(proc)*numr),stat=ier)
-    if(ier/=0) call MP_perr_die(myname_,'allocate(rp1%pr)',ier)
+    if(ier/=0) call die(myname_,'allocate(rp1%pr)',ier)
    enddo
 
   endif
@@ -217,33 +217,33 @@
     if(numi .ge. 1) then
        do proc=1,Rout%nprocs
 	  deallocate(ip1(proc)%pi,stat=ier)
-	  if(ier/=0) call MP_perr_die(myname_,'deallocate(ip1%pi)',ier)
+	  if(ier/=0) call die(myname_,'deallocate(ip1%pi)',ier)
        enddo
 
        deallocate(ip1,stat=ier)
-       if(ier/=0) call MP_perr_die(myname_,'deallocate(ip1)',ier)
+       if(ier/=0) call die(myname_,'deallocate(ip1)',ier)
        
        deallocate(ireqs,stat=ier)
-       if(ier/=0) call MP_perr_die(myname_,'deallocate(ireqs)',ier)
+       if(ier/=0) call die(myname_,'deallocate(ireqs)',ier)
 
        deallocate(istatus,stat=ier)
-       if(ier/=0) call MP_perr_die(myname_,'deallocate(istatus)',ier)
+       if(ier/=0) call die(myname_,'deallocate(istatus)',ier)
     endif
 
     if(numr .ge. 1) then
        do proc=1,Rout%nprocs
 	  deallocate(rp1(proc)%pr,stat=ier)
-	  if(ier/=0) call MP_perr_die(myname_,'deallocate(rp1%pi)',ier)
+	  if(ier/=0) call die(myname_,'deallocate(rp1%pi)',ier)
        enddo
 
        deallocate(rp1,stat=ier)
-       if(ier/=0) call MP_perr_die(myname_,'deallocate(rp1)',ier)
+       if(ier/=0) call die(myname_,'deallocate(rp1)',ier)
 
        deallocate(rreqs,stat=ier)
-       if(ier/=0) call MP_perr_die(myname_,'deallocate(rreqs)',ier)
+       if(ier/=0) call die(myname_,'deallocate(rreqs)',ier)
 
        deallocate(rstatus,stat=ier)
-       if(ier/=0) call MP_perr_die(myname_,'deallocate(rstatus)',ier)
+       if(ier/=0) call die(myname_,'deallocate(rstatus)',ier)
     endif
 
 end subroutine

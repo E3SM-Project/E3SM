@@ -199,7 +199,7 @@
      reqs(ncomps),status(MP_STATUS_SIZE,ncomps),&
      root_nprocs(ncomps),stat=ier)
      if (ier /= 0) then
-        call MP_perr_die(myname_, 'allocate(nprocs,...)',ier)
+        call die(myname_, 'allocate(nprocs,...)',ier)
      endif
   endif
 
@@ -249,17 +249,17 @@
 ! allocate space on local root to hold global ids
   if(myLid == 0) then
     allocate(Gprocids(mysize),stat=ier)
-    if(ier/=0) call MP_perr_die(myname_,'allocate(Gprocids)',ier)
+    if(ier/=0) call die(myname_,'allocate(Gprocids)',ier)
   endif
 
 ! gather over the LOCAL comm
   call MPI_GATHER(myGid,1,MP_INTEGER,Gprocids,1,MP_INTEGER,0,mycomm,ier)
-  if(ier/=0) call MP_perr_die(myname_,'MPI_GATHER Gprocids',ier)
+  if(ier/=0) call die(myname_,'MPI_GATHER Gprocids',ier)
 
 ! allocate a tmp array for the receive on root.
   if(myGid == 0) then
     allocate(tmparray(0:Gsize-1,ncomps),stat=ier)
-    if(ier/=0) call MP_perr_die(myname_,'allocate(tmparray)',ier)
+    if(ier/=0) call die(myname_,'allocate(tmparray)',ier)
 
 ! fill tmparray with a bad rank value for later error checking
     tmparray = -1
@@ -302,14 +302,14 @@
 
   if(myGid == 0) then
     allocate(root_idGprocid(ncomps,0:Gsize-1),stat=ier)
-    if(ier/=0) call MP_perr_die(myname_,'allocate(root_idGprocid)',ier)
+    if(ier/=0) call die(myname_,'allocate(root_idGprocid)',ier)
 
     root_idGprocid = transpose(tmparray)
   endif
 
   if(myGid /= 0) then
      allocate(root_nprocs(1),root_idGprocid(1,1),stat=ier)
-     if(ier/=0) call MP_perr_die(myname_,'non-root allocate(root_idGprocid)',ier)
+     if(ier/=0) call die(myname_,'non-root allocate(root_idGprocid)',ier)
   endif
 
 !!!!!!!!!!!!!!!!!!
@@ -329,14 +329,14 @@
 
 ! deallocate temporary arrays
  deallocate(root_nprocs,root_idGprocid,stat=ier)
- if(ier/=0) call MP_perr_die(myname_,'deallocate(root_nprocs,..)',ier)
+ if(ier/=0) call die(myname_,'deallocate(root_nprocs,..)',ier)
  if(myGid == 0) then
   deallocate(compids,reqs,status,nprocs,tmparray,stat=ier)
-  if(ier/=0) call MP_perr_die(myname_,'deallocate(compids,..)',ier)
+  if(ier/=0) call die(myname_,'deallocate(compids,..)',ier)
  endif
  if(myLid == 0) then
   deallocate(Gprocids,stat=ier)
-  if(ier/=0) call MP_perr_die(myname_,'deallocate(Gprocids)',ier)
+  if(ier/=0) call die(myname_,'deallocate(Gprocids)',ier)
  endif
 
  end subroutine initd_
@@ -390,9 +390,9 @@
   if(ier /= 0) call MP_perr_die(myname_,'MP_comm_dup()',ier)
 
   allocate(ThisMCTWorld%nprocspid(ncomps),stat=ier)
-  if(ier/=0) call MP_perr_die(myname_,'allocate(MCTWorld%nprocspid(:),...',ier)
+  if(ier/=0) call die(myname_,'allocate(MCTWorld%nprocspid(:),...',ier)
   allocate(ThisMCTWorld%idGprocid(ncomps,0:Gsize-1),stat=ier)
-  if(ier/=0) call MP_perr_die(myname_,'allocate(MCTWorld%nprocspid(:),...',ier)
+  if(ier/=0) call die(myname_,'allocate(MCTWorld%nprocspid(:),...',ier)
 
 !  set the MCTWorld
   ThisMCTWorld%ncomps = ncomps
@@ -456,7 +456,7 @@
   integer :: ier
 
   deallocate(ThisMCTWorld%nprocspid,ThisMCTWorld%idGprocid,stat=ier)
-  if(ier /= 0) call perr_die(myname_,'deallocate(MCTW,...)',ier)
+  if(ier /= 0) call die(myname_,'deallocate(MCTW,...)',ier)
 
   ThisMCTWorld%ncomps = 0
   ThisMCTWorld%mygrank = 0
@@ -499,7 +499,7 @@
 
   if(ncomps <= 0) then
      write(stderr,'(2a,1i3)') myname,":: invalid no. of components = ",ncomps
-     call MP_perr_die(myname_,'ncomps = ',ncomps)
+     call die(myname_,'ncomps = ',ncomps)
   endif
 
   NumComponents_ = ncomps
@@ -545,7 +545,7 @@
 
   if(mynprocs <= 0) then
      write(stderr,'(2a,1i6)') myname,":: invalid no. of processes = ",mynprocs
-     call MP_perr_die(myname_,'Number of processes = ',mynprocs)
+     call die(myname_,'Number of processes = ',mynprocs)
   endif
 
   ComponentNumProcs_ = mynprocs
@@ -620,7 +620,7 @@
 	if(.not. valid) then
 	   write(stderr,'(2a,1i7)') myname,":: invalid component id no. = ",&
 		comp_id
-	   call MP_perr_die(myname_,'invalid comp_id = ',comp_id)
+	   call die(myname_,'invalid comp_id = ',comp_id)
 	endif
 
       ! Check argument comp_rank for validity on the communicator associated
@@ -637,7 +637,7 @@
 	   write(stderr,'(2a,1i5,1a,1i2)') myname, &
 		":: invalid process ID. = ", &
 		comp_rank, "on component ",comp_id
-	   call MP_perr_die(myname_,'invalid comp_rank = ',comp_rank)
+	   call die(myname_,'invalid comp_rank = ',comp_rank)
 	endif
 
      endif ! if(check)
@@ -651,7 +651,7 @@
 
   if(world_rank < 0) then
      write(stderr,'(2a,1i6)') myname,":: negative world rank = ",world_rank
-     call MP_perr_die(myname_,'negative world rank = ',world_rank)
+     call die(myname_,'negative world rank = ',world_rank)
   endif    
 
   ComponentToWorldRank_ = world_rank
@@ -709,7 +709,7 @@
   if(world_comp_root < 0) then
      write(stderr,'(2a,1i6)') myname,":: negative world rank = ",& 
 	  world_comp_root
-     call MP_perr_die(myname_,'invalid root id = ',world_comp_root)
+     call die(myname_,'invalid root id = ',world_comp_root)
   endif    
 
   ComponentRootRank_ = world_comp_root

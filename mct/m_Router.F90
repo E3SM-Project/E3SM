@@ -139,7 +139,7 @@
 !!!!!!!!!!!!!!!!!Exchange of global map data 
 
   call MCT_ExGSMap(GSMap,mycomm,RGSMap,othercomp,ier)
-  if(ier /= 0) call MP_perr_die(myname_,'ExGSMap',ier)
+  if(ier /= 0) call die(myname_,'ExGSMap',ier)
 
 !!!!!!!!!!!!!!!!!Begin comparison of globalsegmaps
 
@@ -220,7 +220,7 @@
   allocate(tmpsegcount(ThisMCTWorld%nprocspid(othercomp),mysize),&
            tmpsegstart(ThisMCTWorld%nprocspid(othercomp),mysize),&
  	   tmppe_list(ThisMCTWorld%nprocspid(othercomp)),stat=ier)
-  if(ier/=0) call MP_perr_die(myname_,'allocate(tmpsegcount,..)',ier)
+  if(ier/=0) call die(myname_,'allocate(tmpsegcount,..)',ier)
 
   tmpsegcount=0
   tmpsegstart=0
@@ -276,7 +276,7 @@
     Rout%seg_starts(count,maxsegcount), &
     Rout%seg_lengths(count,maxsegcount), &
     Rout%locsize(count),stat=ier)
-    if(ier/=0) call MP_perr_die(myname_,'allocate(Rout..)',ier)
+    if(ier/=0) call die(myname_,'allocate(Rout..)',ier)
     
     m=0
     do i=1,ThisMCTWorld%nprocspid(othercomp)
@@ -320,7 +320,7 @@
        
       
   deallocate(tmpsegstart,tmpsegcount,tmppe_list,stat=ier)
-  if(ier/=0) call MP_perr_die(myname_,'deallocate()',ier)
+  if(ier/=0) call die(myname_,'deallocate()',ier)
 
  end subroutine initp_
 
