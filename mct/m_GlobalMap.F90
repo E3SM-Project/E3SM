@@ -398,7 +398,7 @@
     l=l+GMap%counts(i)
   end do
 
-  GMap%lsize = GMap%counts(myID) ! the local size
+  GMap%lsize = -1                ! In this case, the local size is invalid!!!
   GMap%gsize = l      	         ! the global size
 
         ! Finally, set GMap's component ID (recall only the value on
