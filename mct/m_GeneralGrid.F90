@@ -677,9 +677,10 @@
 
   call List_init(IAList,GlobGridNum)
 
-  if(present(IndexList)) call List_append(IAList, IndexList)
-
-  call List_copy(GGrid%index_list,IAList)
+  if(present(IndexList)) then
+     call List_copy(GGrid%index_list,IndexList)
+     call List_append(IAList, IndexList)
+  endif
 
        ! Initialize GGrid%data using IAList, RAList, and lsize (if
        ! present).
