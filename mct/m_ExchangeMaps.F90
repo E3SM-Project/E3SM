@@ -473,7 +473,7 @@
 
       ! Send off SendBuf to the remote component root:
 
-     call MPI_ISEND(SendBuf, 3*LocalMapPars(NumSegIndex), MP_INTEGER, &
+     call MPI_ISEND(SendBuf(1), 3*LocalMapPars(NumSegIndex), MP_INTEGER, &
 	           remote_root, SendTag, MP_COMM_WORLD, req, ierr)
      if(ierr /= 0) then
 	call MP_perr_die(myname_,'MPI_SEND(SendBuf...',ierr)
