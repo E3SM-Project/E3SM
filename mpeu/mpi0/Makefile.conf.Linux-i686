@@ -24,6 +24,7 @@
 #	28Sep98 - Jing Guo (guo@dao.gsfc.nasa.gov)
 #		- Cleaned _Dnod for this library
 #	18Jan01 - J. Larson <larson@mcs.anl.gov> - adapted for Linux
+#       09Jul02 - E. Ong <eong@mcs.anl.gov> - added support for ABSOFT compiler
 #
 #EOP
 #-----------------------------------------------------------------------
@@ -33,6 +34,15 @@ _Dnod		=
 
 # Environments
 # ============
+
+# If using pgf90 compiler, add the following flags: 
+# FFLAGS = -tp p6 -pc 32 -Mnoframe -byteswapio 
+# -pc speciefies 32-bit or 64-bit 
+
+# If using Absoft compiler, add the following flags: 
+# FFLAGS = -Mnoframe
+# FPPFLAGS = -DABSOFT
+# MUPDATE         = sh UCupdate.sh
 
 # Assume MPICH for Linux
 # then use mpif90,mpif77 to compile and link
