@@ -61,6 +61,9 @@
       public :: List		! The class data structure
 
       Type List
+#ifdef SEQUENCE
+     sequence
+#endif
 	 character(len=1),dimension(:),pointer :: bf
 	 integer,       dimension(:,:),pointer :: lc
       End Type List

@@ -28,6 +28,9 @@
       public :: String		! The class data structure
 
     Type String
+#ifdef SEQUENCE
+      sequence
+#endif
       character(len=1),dimension(:),pointer :: c
     End Type String
 

@@ -114,6 +114,9 @@
       public :: SparseMatrixPlus
 
       Type SparseMatrixPlus
+#ifdef SEQUENCE
+        sequence
+#endif
         type(String) :: Strategy
         integer :: XPrimeLength
         type(Rearranger) :: XToXPrime

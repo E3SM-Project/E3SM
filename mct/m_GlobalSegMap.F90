@@ -69,6 +69,9 @@
 ! !PUBLIC TYPES:
 
     type GlobalSegMap
+#ifdef SEQUENCE
+      sequence
+#endif
       integer :: comp_id			! Component ID number
       integer :: ngseg				! No. of Global segments
       integer :: gsize				! No. of Global elements

@@ -52,6 +52,9 @@
       public :: Accumulator ! The class data structure
 
     Type Accumulator
+#ifdef SEQUENCE
+      sequence
+#endif
       integer :: num_steps      ! total number of accumulation steps
       integer :: steps_done     ! number of accumulation steps performed
       integer, pointer, dimension(:) :: iAction ! index of integer actions

@@ -78,6 +78,9 @@
       public :: AttrVect        ! The class data structure
 
     type AttrVect
+#ifdef SEQUENCE
+      sequence
+#endif
       type(List) :: iList
       type(List) :: rList
       integer,dimension(:,:),pointer :: iAttr

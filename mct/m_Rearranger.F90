@@ -42,6 +42,9 @@
       public :: Rearranger  ! The class data structure
 
       type :: Rearranger
+#ifdef SEQUENCE
+         sequence
+#endif
          private
          type(Router) :: SendRouter
          type(Router) :: RecvRouter

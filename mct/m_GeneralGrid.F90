@@ -80,6 +80,9 @@
       public :: GeneralGrid      ! The class data structure
 
     Type GeneralGrid
+#ifdef SEQUENCE
+      sequence
+#endif
       type(List)                     :: coordinate_list
       type(List)                     :: coordinate_sort_order
       logical, dimension(:), pointer :: descend
