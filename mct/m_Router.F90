@@ -57,7 +57,11 @@
     end type Router
 
 
-    interface init  ; module procedure init_  ; end interface
+    interface init  ; module procedure  &
+	initd_, &	! initialize a Router between two seperate components
+	initp_ 		! initialize a Router locally with two GSMaps
+    end interface
+
     interface clean ; module procedure clean_ ; end interface
 
 ! !REVISION HISTORY:
@@ -78,25 +82,21 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: init_ - initialize a Router
+! !IROUTINE: initd_ - initialize a Router between two seperate components
 !
 ! !DESCRIPTION:
+! The routine {\tt initd\_()} exchanges the {\tt GSMap} with the
+! component identified by {\tt othercomp} and then calls {\tt initp\_()}
+! to build a Router between them.
 !
 ! !INTERFACE:
 
- subroutine init_(othercomp,GSMap,mycomm,Rout )
+ subroutine initd_(othercomp,GSMap,mycomm,Rout )
 !
 ! !USES:
 !
       use m_GlobalSegMap, only :GlobalSegMap
-      use m_GlobalSegMap, only :nlseg
-      use m_GlobalSegMap, only :lsize
-      use m_GlobalSegMap, only :OrderedPoints
-      use m_GlobalSegMap, only :ProcessStorage
-      use m_GlobalToLocal, only :GlobalToLocalIndex
       use m_ExchangeMaps,only: MCT_ExGSMap => ExchangeMap
-      use m_MCTWorld,only :MCTWorld
-      use m_MCTWorld,only :ThisMCTWorld
       use m_mpif90
       use m_die
 
@@ -124,24 +124,17 @@
 !                 Use new subroutine OrderedPoints in m_GlobalSegMap
 !                 to construct the vector of local and remote GSMaps.
 !                 Clean-up code a little.
+!       03May01 - R. Jacob <jacob@mcs.anl.gov> - rename to initd and
+!                 move most of code to new initp routine
 !
 !EOP ___________________________________________________________________
 !
-  character(len=*),parameter :: myname_=myname//'::init_'
-  integer			:: myPid,ier,i,j,k,m
-  integer			:: mysize
-  integer			:: count
-  integer			:: lmaxsize,totallength,rlsize
-  integer,dimension(:),pointer	   :: myvector,rvector
-  logical,dimension(:),allocatable :: hitparade,tmppe_list
-  integer,dimension(:,:),pointer :: tmpsegcount,tmpsegstart
-  logical :: firstpoint
-  integer :: maxsegcount,mmax,othercomp
+  character(len=*),parameter :: myname_=myname//'::initd_'
 
   type(GlobalSegMap)    :: RGSMap  !  the other GSMap
-!--------------------------begin code-----------------------
+  integer ::		   ier
 
-  call MP_comm_rank(mycomm,myPid,ier)
+!--------------------------begin code-----------------------
 
 !!!!!!!!!!!!!!!!!Exchange of global map data 
 
@@ -150,11 +143,69 @@
 
 !!!!!!!!!!!!!!!!!Begin comparison of globalsegmaps
 
+  call initp_(GSMap,RGSMap, mycomm, Rout)
+
+ end subroutine initd_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: initp_ - initialize a Router from two GlobalSegMaps
+!
+! !DESCRIPTION:
+!
+! Given two GlobalSegmentMaps {\tt GSMap} and {\tt RGSMap}, intialize a
+! Router between them.
+!
+! !INTERFACE:
+
+ subroutine initp_(GSMap,RGSMap,mycomm,Rout )
+!
+! !USES:
+!
+      use m_GlobalSegMap, only :GlobalSegMap
+      use m_GlobalSegMap, only :OrderedPoints
+      use m_GlobalSegMap, only :ProcessStorage
+      use m_GlobalSegMap, only : GSMap_comp_id => comp_id
+      use m_GlobalToLocal, only :GlobalToLocalIndex
+      use m_MCTWorld,only :MCTWorld
+      use m_MCTWorld,only :ThisMCTWorld
+      use m_mpif90
+      use m_die
+
+      implicit none
+      type(GlobalSegMap), intent(in)	:: GSMap
+      type(GlobalSegMap), intent(in)	:: RGSMap
+      integer	     , intent(in)	:: mycomm
+      type(Router), intent(out)		:: Rout
+
+! !REVISION HISTORY:
+!       03May01 - R.L. Jacob <jacob@mcs.anl.gov> - Initial code brought
+!                 in from old init routine.
+!
+!EOP -------------------------------------------------------------------
+
+  character(len=*),parameter :: myname_=myname//'::ExGMapGMap_'
+  integer			:: ier,i,j,k,m
+  integer			:: mysize,myPid
+  integer			:: count
+  integer			:: lmaxsize,totallength,rlsize
+  integer,dimension(:),pointer	   :: myvector,rvector
+  logical,dimension(:),allocatable :: hitparade,tmppe_list
+  integer,dimension(:,:),pointer :: tmpsegcount,tmpsegstart
+  logical :: firstpoint
+  integer :: maxsegcount,mmax,othercomp
+
+  call MP_comm_rank(mycomm,myPid,ier)
+  if(ier/=0) call MP_perr_die(myname_,'MP_comm_rank',ier)
+
   count =0
   mmax=0
   firstpoint = .TRUE.
 
   mysize = ProcessStorage(GSMap,myPid)
+  othercomp = GSMap_comp_id(RGSMap)
 
 ! allocate space for searching
   allocate(hitparade(mysize),stat=ier)
@@ -247,7 +298,7 @@
 
 ! start loading up the Router with data
 
-  Rout%comp1id = ThisMCTWorld%myid
+  Rout%comp1id = GSMap_comp_id(GSMap)
   Rout%comp2id = othercomp
   Rout%type = "2way"
   Rout%nprocs = count
@@ -306,7 +357,7 @@
     myvector,hitparade,stat=ier)
   if(ier/=0) call MP_perr_die(myname_,'deallocate()',ier)
 
- end subroutine init_
+ end subroutine initp_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
