@@ -29,7 +29,7 @@
 
 # This module requires ../mpeu module
 
-_I              = -I../mpeu @MPILIBS@
+_I              = @INCLUDE@../mpeu @MPILIBS@
 
 DEFS            = @MACHDEFS@
 
