@@ -45,18 +45,15 @@
     type Router
       integer :: comp1id	       ! myid
       integer :: comp2id	       ! id of second component
-      character*4 :: type	       ! '1way' or '2way'
       integer :: nprocs	       ! number of procs to talk to
       integer :: maxsize		! maximum amount of data going to a processor
+      integer :: lAvsize		! The local size of AttrVect which can be used with
+                                        ! this Router in MCT_Send/MCT_Recv
       integer,dimension(:),pointer :: pe_list ! processor ranks of send/receive in MCT_comm
       integer,dimension(:),pointer :: num_segs ! number of segments to send/receive
       integer,dimension(:),pointer :: locsize ! total of seg_lengths for a proc
       integer,dimension(:,:),pointer :: seg_starts ! starting index
       integer,dimension(:,:),pointer :: seg_lengths ! total length
-
-!     real,dimension(:,:),pointer :: Rbuffer
-!     integer,dimension(:,:),pointer :: Ibuffer
-!     Type(Navigator) ::  buffer_nav
     end type Router
 
 
@@ -75,6 +72,7 @@
 !                interface declarations.
 !      08Feb01 - R. Jacob <jacob@mcs.anl.gov> add locsize and maxsize 
 !                to Router type
+!      25Sep02 - R. Jacob <jacob@mcs.anl.gov> Remove type string.  Add lAvsize
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_Router'
@@ -278,7 +276,6 @@
 
   Rout%comp1id = GSMap_comp_id(GSMap)
   Rout%comp2id = othercomp
-  Rout%type = "2way"
   Rout%nprocs = count
 
     allocate(Rout%pe_list(count),Rout%num_segs(count), &
@@ -312,6 +309,7 @@
     enddo
 
     Rout%maxsize=lmaxsize
+    Rout%lAvsize=mysize
 
       
   deallocate(tmpsegstart,tmpsegcount,tmppe_list,stat=ier)
@@ -363,9 +361,9 @@
 
   Rout%comp1id = 0
   Rout%comp2id = 0
-  Rout%type = ""
   Rout%nprocs = 0
   Rout%maxsize = 0
+  Rout%lAvsize = 0
 
 
  end subroutine clean_
