@@ -48,15 +48,24 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: send_ - Point-to-point send for the GeneralGrid.
+! !IROUTINE: send_ - Point-to-point blocking send for the GeneralGrid.
 !
 ! !DESCRIPTION:  The point-to-point send routine {\tt send\_()} sends 
 ! the input {\tt GeneralGrid} argument {\tt iGGrid} to process {\tt dest} 
 ! on the communicator associated with the F90 integer handle {\tt comm}.
 ! The message is identified by the tag defined by the {\tt INTEGER} 
-! argument {\tt TagBase}.  The success (failure) of this operation 
-! corresponds to a zero (nonzero) value for the output {\tt INTEGER} 
-! flag {\tt status}. 
+! argument {\tt TagBase}.  The value of {\tt TagBase} must match the 
+! value used in the call to {\tt recv_()} on process {\tt dest}.  The 
+! success (failure) of this operation corresponds to a zero (nonzero) 
+! value for the output {\tt INTEGER} flag {\tt status}. 
+!
+! {\bf N.B.}:  One must avoid assigning elsewhere the MPI tag values 
+! between {\tt TagBase} and {\tt TagBase+20}, inclusive.  This is 
+! because {\tt send\_()} performs one send operation set up the header
+! transfer, up to five {\tt List\_send} operations (two {\tt MPI\_SEND} 
+! calls in each), two send operations to transfer {\tt iGGrid\%descend(:)},
+! and finally the send of the {\tt AttrVect} component {\tt iGGrid\%data} 
+! (which comprises eight {\tt MPI\_SEND} operations).
 !
 ! !INTERFACE:
 
@@ -97,7 +106,7 @@
 
       ! Step 1. Check elements of the GeneralGrid header to see 
       ! which components of it are allocated.  Load the results
-      ! into HeaderAssoc(:).
+      ! into HeaderAssoc(:), and send it to process dest.
 
   HeaderAssoc(1) = associated(iGGrid%coordinate_list%bf)
   HeaderAssoc(2) = associated(iGGrid%coordinate_sort_order%bf)
@@ -117,6 +126,8 @@
      endif
   endif
 
+       ! Step 2.  If iGGrid%coordinate_list is defined, send it.
+
   if(HeaderAssoc(1)) then
     call List_send(iGGrid%coordinate_list, dest, TagBase+1, comm, ierr)
     if(ierr /= 0) then
@@ -128,7 +139,19 @@
           call MP_perr_die(myname_,':: call List_send(iGGrid%coordinate_list...',ierr)
        endif
     endif
+  else  ! This constitutes an error, as a GeneralGrid must have coordinates
+
+     if(present(status)) then
+	write(stderr,*) myname_,':: Error.  GeneralGrid%coordinate_list undefined.'
+	status = -1
+	return
+     else
+	call MP_perr_die(myname_,'::  Error.  GeneralGrid%coordinate_list undefined.',-1)
+     endif
+
   endif
+
+       ! Step 3.  If iGGrid%coordinate_sort_order is defined, send it.
 
   if(HeaderAssoc(2)) then
     call List_send(iGGrid%coordinate_sort_order, dest, TagBase+3, comm, ierr)
@@ -142,22 +165,114 @@
        endif
     endif
   endif
+
+       ! Step 4.  If iGGrid%descend is allocated, determine its size,
+       ! send this size, and then send the elements of iGGrid%descend.
      
   if(HeaderAssoc(3)) then
 
-       ! 
+     call MPI_SEND(size(iGGrid%descend), 1, MP_type(size(iGGrid%descend)), &
+                   dest, TagBase+5, comm, ierr)
+     if(ierr /= 0) then
+	if(present(status)) then
+	   write(stderr,*) myname_,':: call MPI_SEND(size(iGGrid%descend)...'
+	   status = ierr
+	   return
+	else
+	   call MP_perr_die(myname_,':: call MPI_SEND(size(iGGrid%descend)...',ierr)
+	endif
+     endif
 
-    call List_send(iGGrid%coordinate_sort_order, dest, TagBase+3, comm, ierr)
+     call MPI_SEND(iGGrid%descend, size(iGGrid%descend), MP_type(iGGrid%descend(1)), &
+                   dest, TagBase+6, comm, ierr)
+     if(ierr /= 0) then
+	if(present(status)) then
+	   write(stderr,*) myname_,':: call MPI_SEND(iGGrid%descend...'
+	   status = ierr
+	   return
+	else
+	   call MP_perr_die(myname_,':: call MPI_SEND(iGGrid%descend...',ierr)
+	endif
+     endif
+
+  endif
+
+       ! Step 5.  If iGGrid%weight_list is defined, send it.
+
+  if(HeaderAssoc(4)) then
+
+    call List_send(iGGrid%weight_list, dest, TagBase+7, comm, ierr)
     if(ierr /= 0) then
        if(present(status)) then
-          write(stderr,*) myname_,':: call List_send(iGGrid%coordinate_sort_order...'
+          write(stderr,*) myname_,':: call List_send(iGGrid%weight_list...'
           status = ierr
           return
        else
-          call MP_perr_die(myname_,':: call List_send(iGGrid%coordinate_sort_order...',ierr)
+          call MP_perr_die(myname_,':: call List_send(iGGrid%weight_list...',ierr)
        endif
     endif
+
   endif
+
+       ! Step 6.  If iGGrid%other_list is defined, send it.
+
+  if(HeaderAssoc(5)) then
+
+    call List_send(iGGrid%other_list, dest, TagBase+9, comm, ierr)
+    if(ierr /= 0) then
+       if(present(status)) then
+          write(stderr,*) myname_,':: call List_send(iGGrid%other_list...'
+          status = ierr
+          return
+       else
+          call MP_perr_die(myname_,':: call List_send(iGGrid%other_list...',ierr)
+       endif
+    endif
+
+  endif
+
+       ! Step 7.  If iGGrid%index_list is defined, send it.
+
+  if(HeaderAssoc(6)) then
+
+    call List_send(iGGrid%index_list, dest, TagBase+11, comm, ierr)
+    if(ierr /= 0) then
+       if(present(status)) then
+          write(stderr,*) myname_,':: call List_send(iGGrid%index_list...'
+          status = ierr
+          return
+       else
+          call MP_perr_die(myname_,':: call List_send(iGGrid%index_list...',ierr)
+       endif
+    endif
+
+  else  ! This constitutes an error, as a GeneralGrid must at a minimum
+        ! contain the index GlobGridNum
+
+     if(present(status)) then
+	write(stderr,*) myname_,':: Error.  GeneralGrid%index_list undefined.'
+	status = -2
+	return
+     else
+	call MP_perr_die(myname_,'::  Error.  GeneralGrid%index_list undefined.',-2)
+     endif
+
+  endif
+
+       ! Step 8.  Finally, send the AttrVect iGGrid%data.
+
+  call AttrVect_send(iGGrid%data, dest, TagBase+13, comm, ierr)
+  if(ierr /= 0) then
+     if(present(status)) then
+	write(stderr,*) myname_,':: call AttrVect_send(iGGrid%data...'
+	status = ierr
+	return
+     else
+	call MP_perr_die(myname_,':: call AttrVect_send(iGGrid%data...',ierr)
+     endif
+  endif
+
+       ! The GeneralGrid send is now complete.
 
  end subroutine send_
 
@@ -165,25 +280,37 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: recv_ - Point-to-point recv for the GeneralGrid.
+! !IROUTINE: recv_ - Point-to-point blocking recv for the GeneralGrid.
 !
 ! !DESCRIPTION:  The point-to-point receive routine {\tt recv\_()} 
 ! receives the output {\tt GeneralGrid} argument {\tt oGGrid} from process 
 ! {\tt source} on the communicator associated with the F90 integer handle 
 ! {\tt comm}.  The message is identified by the tag defined by the 
-! {\tt INTEGER} argument {\tt tag}.  The success (failure) of this operation 
-! corresponds to a zero (nonzero) value for the output {\tt INTEGER} flag 
-! {\tt status}. 
+! {\tt INTEGER} argument {\tt TagBase}.  The value of {\tt TagBase} must 
+! match the value used in the call to {\tt send_()} on process {\tt source}.
+! The success (failure) of this operation corresponds to a zero (nonzero) 
+! value for the output {\tt INTEGER} flag {\tt status}. 
 !
 ! {\bf N.B.}:  This routine assumes that the {\tt GeneralGrid} argument
 ! {\tt oGGrid} is uninitialized on input; that is, all the {\tt List} 
 ! components are blank, the {\tt LOGICAL} array {\tt oGGrid\%descend} is
 ! unallocated, and the {\tt AttrVect} component {\tt oGGrid\%data} is
-! uninitialized.
+! uninitialized.  The {\tt GeneralGrid} {\tt oGGrid} represents allocated
+! memory.  When the user no longer needs {\tt oGGrid}, it should be 
+! deallocated by invoking {\tt GeneralGrid\_clean()} (see 
+! {\tt m_GeneralGrid} for further details).
+!
+! {\bf N.B.}:  One must avoid assigning elsewhere the MPI tag values 
+! between {\tt TagBase} and {\tt TagBase+20}, inclusive.  This is 
+! because {\tt recv\_()} performs one receive operation set up the header
+! transfer, up to five {\tt List\_recv} operations (two {\tt MPI\_RECV} 
+! calls in each), two receive operations to transfer {\tt iGGrid\%descend(:)},
+! and finally the receive of the {\tt AttrVect} component {\tt iGGrid\%data} 
+! (which comprises eight {\tt MPI\_RECV} operations).
 !
 ! !INTERFACE:
 
- subroutine recv_(oGGrid, source, tag_base, comm, status)
+ subroutine recv_(oGGrid, source, TagBase, comm, status)
 
 !
 ! !USES:
@@ -201,7 +328,7 @@
 ! !INPUT PARAMETERS: 
 !
       integer,           intent(in) :: source
-      integer,           intent(in) :: tag_base
+      integer,           intent(in) :: TagBase
       integer,           intent(in) :: comm
 
 ! !OUTPUT PARAMETERS: 
@@ -214,6 +341,185 @@
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::recv_'
+
+  integer :: ierr
+  integer :: MPstatus(MP_STATUS_SIZE)
+  logical :: HeaderAssoc(6)
+
+      ! Step 1. Receive the elements of the LOGICAL flag array
+      ! HeaderAssoc.  TRUE entries in this array correspond to
+      ! Check elements of the GeneralGrid header that are not
+      ! blank, and are being sent by process source.
+      !      
+      ! The significance of the entries of HeaderAssoc has been
+      ! defined in send_().  Here are the definitions of these
+      ! values:
+      !
+      !  HeaderAssoc(1) = associated(oGGrid%coordinate_list%bf)
+      !  HeaderAssoc(2) = associated(oGGrid%coordinate_sort_order%bf)
+      !  HeaderAssoc(3) = associated(oGGrid%descend)
+      !  HeaderAssoc(4) = associated(oGGrid%weight_list%bf)
+      !  HeaderAssoc(5) = associated(oGGrid%other_list%bf)
+      !  HeaderAssoc(6) = associated(oGGrid%index_list%bf)
+
+  call MPI_RECV(HeaderAssoc, 6, MP_LOGICAL, source, TagBase, comm, MPstatus, ierr)
+  if(ierr /= 0) then
+     if(present(status)) then
+        write(stderr,*) myname_,':: MPI_RECV(HeaderAssoc...'
+        status = ierr
+        return
+     else
+        call MP_perr_die(myname_,':: MPI_RECV(HeaderAssoc...',ierr)
+     endif
+  endif
+
+       ! Step 2.  If oGGrid%coordinate_list is defined, receive it.
+
+  if(HeaderAssoc(1)) then
+    call List_recv(oGGrid%coordinate_list, source, TagBase+1, comm, ierr)
+    if(ierr /= 0) then
+       if(present(status)) then
+          write(stderr,*) myname_,':: call List_recv(oGGrid%coordinate_list...'
+          status = ierr
+          return
+       else
+          call MP_perr_die(myname_,':: call List_recv(oGGrid%coordinate_list...',ierr)
+       endif
+    endif
+  else  ! This constitutes an error, as a GeneralGrid must have coordinates
+
+     if(present(status)) then
+	write(stderr,*) myname_,':: Error.  GeneralGrid%coordinate_list undefined.'
+	status = -1
+	return
+     else
+	call MP_perr_die(myname_,'::  Error.  GeneralGrid%coordinate_list undefined.',-1)
+     endif
+
+  endif
+
+       ! Step 3.  If oGGrid%coordinate_sort_order is defined, receive it.
+
+  if(HeaderAssoc(2)) then
+    call List_recv(oGGrid%coordinate_sort_order, source, TagBase+3, comm, ierr)
+    if(ierr /= 0) then
+       if(present(status)) then
+          write(stderr,*) myname_,':: call List_recv(oGGrid%coordinate_sort_order...'
+          status = ierr
+          return
+       else
+          call MP_perr_die(myname_,':: call List_recv(oGGrid%coordinate_sort_order...',ierr)
+       endif
+    endif
+  endif
+
+       ! Step 4.  If oGGrid%descend is allocated, determine its size,
+       ! receive this size, and then receive the elements of oGGrid%descend.
+     
+  if(HeaderAssoc(3)) then
+
+     call MPI_RECV(size(oGGrid%descend), 1, MP_type(size(oGGrid%descend)), &
+                   source, TagBase+5, comm, MPstatus, ierr)
+     if(ierr /= 0) then
+	if(present(status)) then
+	   write(stderr,*) myname_,':: call MPI_RECV(size(oGGrid%descend)...'
+	   status = ierr
+	   return
+	else
+	   call MP_perr_die(myname_,':: call MPI_RECV(size(oGGrid%descend)...',ierr)
+	endif
+     endif
+
+     call MPI_RECV(oGGrid%descend, size(oGGrid%descend), MP_type(oGGrid%descend(1)), &
+                   source, TagBase+6, comm, MPstatus, ierr)
+     if(ierr /= 0) then
+	if(present(status)) then
+	   write(stderr,*) myname_,':: call MPI_RECV(oGGrid%descend...'
+	   status = ierr
+	   return
+	else
+	   call MP_perr_die(myname_,':: call MPI_RECV(oGGrid%descend...',ierr)
+	endif
+     endif
+
+  endif
+
+       ! Step 5.  If oGGrid%weight_list is defined, receive it.
+
+  if(HeaderAssoc(4)) then
+
+    call List_recv(oGGrid%weight_list, source, TagBase+7, comm, ierr)
+    if(ierr /= 0) then
+       if(present(status)) then
+          write(stderr,*) myname_,':: call List_recv(oGGrid%weight_list...'
+          status = ierr
+          return
+       else
+          call MP_perr_die(myname_,':: call List_recv(oGGrid%weight_list...',ierr)
+       endif
+    endif
+
+  endif
+
+       ! Step 6.  If oGGrid%other_list is defined, receive it.
+
+  if(HeaderAssoc(5)) then
+
+    call List_recv(oGGrid%other_list, source, TagBase+9, comm, ierr)
+    if(ierr /= 0) then
+       if(present(status)) then
+          write(stderr,*) myname_,':: call List_recv(oGGrid%other_list...'
+          status = ierr
+          return
+       else
+          call MP_perr_die(myname_,':: call List_recv(oGGrid%other_list...',ierr)
+       endif
+    endif
+
+  endif
+
+       ! Step 7.  If oGGrid%index_list is defined, receive it.
+
+  if(HeaderAssoc(6)) then
+
+    call List_recv(oGGrid%index_list, source, TagBase+11, comm, ierr)
+    if(ierr /= 0) then
+       if(present(status)) then
+          write(stderr,*) myname_,':: call List_recv(oGGrid%index_list...'
+          status = ierr
+          return
+       else
+          call MP_perr_die(myname_,':: call List_recv(oGGrid%index_list...',ierr)
+       endif
+    endif
+
+  else  ! This constitutes an error, as a GeneralGrid must at a minimum
+        ! contain the index GlobGridNum
+
+     if(present(status)) then
+	write(stderr,*) myname_,':: Error.  GeneralGrid%index_list undefined.'
+	status = -2
+	return
+     else
+	call MP_perr_die(myname_,'::  Error.  GeneralGrid%index_list undefined.',-2)
+     endif
+
+  endif
+
+       ! Step 8.  Finally, receive the AttrVect oGGrid%data.
+
+  call AttrVect_recv(oGGrid%data, source, TagBase+13, comm, ierr)
+  if(ierr /= 0) then
+     if(present(status)) then
+	write(stderr,*) myname_,':: call AttrVect_recv(oGGrid%data...'
+	status = ierr
+	return
+     else
+	call MP_perr_die(myname_,':: call AttrVect_recv(oGGrid%data...',ierr)
+     endif
+  endif
+
+       ! The GeneralGrid receive is now complete.
 
  end subroutine recv_
 
