@@ -416,7 +416,7 @@
 !
 ! !INTERFACE:
 
- subroutine clean_(aC)
+ subroutine clean_(aC,stat)
 !
 ! !USES:
 !
@@ -427,27 +427,53 @@
 
       implicit none
 
-      type(Accumulator),intent(inout) :: aC
+      type(Accumulator), intent(inout) :: aC
+      integer, optional, intent(out)   :: stat
 
 ! !REVISION HISTORY:
 ! 	11Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
 !       27JUL01 - E.T. Ong <eong@mcs.anl.gov> - deallocate pointers iAction
 !                 and rAction.
+!       01Mar02 - E.T. Ong <eong@mcs.anl.gov> removed the die to prevent
+!                 crashes and added stat argument.       
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::clean_'
   integer :: ier
 
-  call AttrVect_clean(aC%av)
-  
+  if(present(stat)) then
+     stat=0
+     call AttrVect_clean(aC%av,stat)
+  else
+     call AttrVect_clean(aC%av)
+  endif
+
   if( associated(aC%iAction) )  then
+
       deallocate(aC%iAction,stat=ier)
-      if(ier /= 0) call MP_perr_die(myname_,"iAction deallocate",ier)
+
+      if(ier /= 0) then
+	 if(present(stat)) then
+	    stat=ier
+	 else
+	    call warn(myname_,'deallocate(aC%iAction)',ier)
+	 endif
+      endif
+
    endif
 
   if( associated(aC%rAction) ) then
+
      deallocate(aC%rAction,stat=ier)
-     if(ier /= 0) call MP_perr_die(myname_,"rAction deallocate",ier)
+
+      if(ier /= 0) then
+	 if(present(stat)) then
+	    stat=ier
+	 else
+	    call warn(myname_,'deallocate(aC%rAction)',ier)
+	 endif
+      endif
+
   endif
 
  end subroutine clean_
