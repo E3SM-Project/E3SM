@@ -2119,6 +2119,9 @@
 ! be identical to the {\tt rList} or {\tt iList} but with the correct {\tt aVout}
 ! name subsititued at the appropriate place.
 !
+! If the optional argument {\tt Vector} is present and true, the vector 
+! architecture-friendly portions of this routine will be invoked.
+!
 ! {\bf N.B.:}  This routine will fail if the {\tt aVout} is not initialized or
 ! if any of the specified attributes are not present in either {\tt aVout} or {\tt aVin}.
 !

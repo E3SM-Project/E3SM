@@ -167,7 +167,7 @@
       character(len=*), parameter :: Yonly = 'Yonly'
       character(len=*), parameter :: XandY = 'XandY'
 
-      character(len=*), parameter :: myname = 'm_SparseMatrixPlus'
+      character(len=*), parameter :: myname = 'MCT::m_SparseMatrixPlus'
 
  contains
 

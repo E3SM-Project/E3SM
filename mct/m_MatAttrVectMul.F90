@@ -81,6 +81,11 @@
 ! The multiplication occurs for each of the common {\tt REAL} attributes 
 ! shared by {\tt xAV} and {\tt yAV}.  This routine is capable of 
 ! cross-indexing the attributes and performing the necessary multiplications.
+! 
+! If the optional argument {\tt Vector} is present and true, the vector
+! architecture-friendly portions of this routine will be invoked.  It
+! will also cause the vector parts of {\\ sMat} to be initialized if they
+! have not been already.
 !
 ! !INTERFACE:
 

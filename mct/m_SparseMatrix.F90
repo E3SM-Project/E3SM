@@ -52,6 +52,10 @@
 ! (i.e. the sum of each row is either zero or unity), and methods for 
 ! sorting and permuting matrix entries.
 !
+! For better performance of the Matrix-Vector multiply on vector
+! architectures, the {\tt SparseMatrix} object also contains arrays
+! for holding the sparse matrix data in a more vector-friendly form.
+!
 !
 ! !INTERFACE:
 
@@ -71,8 +75,8 @@
 	 integer :: nrows
 	 integer :: ncols
 	 type(AttrVect) :: data
-         ! additional data for the vectorized sMat
-         logical :: vecinit
+
+         logical :: vecinit       ! additional data for the vectorized sMat
          integer,dimension(:),pointer :: row_s, row_e
          integer, dimension(:,:), pointer :: tcol
          real   , dimension(:,:), pointer :: twgt
@@ -325,10 +329,10 @@
 !
 ! !IROUTINE: vecinit_ - Initialize vector parts of a SparseMatrix
 !
-! !DESCRIPTION:  This routine creates the storage space for the
+! !DESCRIPTION:  This routine creates the storage space for 
 ! and intializes the vector parts of a {\tt SparseMatrix}.
 !
-! {\bf N.B.}:  This routine assumes the non-vector parts of a
+! {\bf N.B.}:  This routine assumes the basic parts of a
 ! {\tt SparseMatrix} have already been initialized and loaded with data.
 !
 ! !INTERFACE:
