@@ -2,61 +2,65 @@
 
  -- Mathematics + Computer Science Div. / Argonne National Laboratory
 
-    Model Coupling Toolkit (mct)
-    Points of contact: Jay Larson <larson@mcs.anl.gov>
-                       630 252 7806
-		       Robert Jacob <jacob@mcs.anl.gov>
-		       630 252 2983
+    Model Coupling Toolkit (MCT)
+
+    Jay Larson
+    Robert Jacob
+    Everest Ong
+	
+    For more information, see http://www.mcs.anl.gov/mct
+
+    See MCT/COPYRIGHT for license.
 
 ######################################################################
 
-  This is version 1.8 of the Model Coupling Toolkit (mct).
+  This is version 2.0.0 of the Model Coupling Toolkit (mct).
 
   Our purpose in creating this toolkit is to support the construction
   of highly portable and extensible high-performance couplers 
   for distributed memory parallel coupled models.
-
-  For more information, see http://www.mcs.anl.gov/mct
 
 ######################################################################
 
 
   Current Contents of the directory MCT:
 
-  README -- this file
+  README   -- this file
 
-  mpeu   -- Source code for the message-passing environment utilities
-            library (mpeu), which provides support for mct 
+  COPYRIGHT - copyright statement and license.
 
-  mct    -- Source code for the model coupling toolkit, which is built
-            on top of mpeu.
+  mct/     -- Source code for the Model Coupling Toolkit.
 
-  ut-mct -- Source code for a unit tester which demonstrates the
-	    use of MCT in a simple parallel ocean-atmosphere "model".
+  mpeu/    -- Source code for the message-passing environment utilities
+              library (mpeu), which provides support for mct 
 
-  doc    -- documentation for MCT
+  examples/-- Source code for examples which demonstrate the use of MCT.
 
-  protex -- tool for constructing documentation from source code
+  doc/     -- documentation for MCT
+
+  protex/  -- tool for constructing documentation from source code
 
 ######################################################################
   REQUIREMENTS:
 
   Building MCT requires a Fortran90 compiler and the MPI library.
-  Makefiles are provided and have been tested with the following
-  system/compiler combinations:
 
-  IBM (AIX) xlf 8.1
-  SGI (IRIX64) f90 MIPSpro 7.30
-  SUN (Solaris) f90 WorkShop 5.0
-  Compaq  Compaq Fortran Compiler X5.5-2801-48CAG
+  The MCT library builds and the examples run on the following:
+
+  IBM (AIX) xlf
+  SGI (IRIX64) f90 MIPSpro 
+  SUN (Solaris) f90 WorkShop
+  Compaq  Compaq Fortran Compiler (X5.5-2801-48CAG or later)
+  SGI Altix
+  Cray X1
   Linux pgf90
   Linux NAG
+  Linux ifc/efc/ifort
   NEC
   Fujitsu
 
-  Running the unit tester requires a parallel platform 
-  (the default is for 16 processors).  Memory requirements 
-  are reasonable.
+  Running the examples requires a parallel platform.
+  Memory requirements are reasonable.
 
 ######################################################################
   BUILD INSTRUCTIONS:
@@ -67,12 +71,23 @@
 
   "make examples" will build the example programs.
 
+  BUILD HELP:
+  Try "./configure -help"  for a list of options.
+
+  The Fortran90 compiler must be in your current path.
+
+  Example: If configure has trouble finding the correct F90 compiler
+     on IBM:
+    > ./configure F90=xlf90. 
+
 ######################################################################
   RUNNING THE EXAMPLES
 
-There should also be a MCT/data directory which contains interpolation
-weights needed for the test case.   This data is available at the
-website.
+  The programs in MCT/examples/simple require no input.
+
+  The program in MCT/examples/climate_concur1 requires some input data
+   in a directory called MCT/data.  The dataset is available in a tar
+   file at the website.
 
 ######################################################################
 
@@ -109,6 +124,7 @@ website.
   12 Sep, 2003 -- version 1.0.14
   21 Jan, 2004 -- version 1.4.0
   05 Feb, 2004 -- version 1.6.0
+  23 Apr, 2004 -- version 2.0.0
 
 
 
