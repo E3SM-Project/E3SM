@@ -68,7 +68,7 @@ FFLAGS		= -64 -I. -Wf,-I. -col120 -O3 -OPT:roundoff=0
 FFLAGS		= -64 -I. -Wf,-I. -col120 -O2
 FFLAGS		= -64 -I. -Wf,-I. -col120 -O1
 
-FFLAGS		= -64 $(_R) $(_I) -g
+FFLAGS		= -64 $(_R) $(_I) -O3
 FFLAGS_O1	= -64 $(_R) $(_I) -O1
 FFLAGS_O2	= -64 $(_R) $(_I) -O2
 CFLAGS		= -64 -O
