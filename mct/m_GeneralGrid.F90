@@ -118,6 +118,8 @@
 !       13Dec01 - J.W. Larson - added import and export methods.
 !       27Mar02 - J.W. Larson <larson@mcs.anl.gov> - Corrected usage of
 !                 m_die routines throughout this module.
+!       05Aug02 - E. Ong <eong@mcs.anl.gov> - Modified GeneralGrid usage 
+!                 to allow user-defined grid numbering schemes.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_GeneralGrid'
@@ -151,14 +153,22 @@
 
       use m_List,     only : List
       use m_List,     only : List_init => init
+      use m_List,     only : List_nitem => nitem
+      use m_List,     only : List_shared => GetSharedListIndices
+      use m_List,     only : List_concatenate => concatenate
+      use m_List,     only : List_copy => copy
+      use m_List,     only : List_nullify => nullify
       use m_List,     only : List_clean => clean
-      
+
+      use m_AttrVect, only : AttrVect
+      use m_AttrVect, only : AttrVect_init => init
+
       implicit none
 
 ! !INPUT PARAMETERS:
 !
       character(len=*),                intent(in) :: CoordChars
-      character(len=*),                intent(in) :: CoordSortOrder
+      character(len=*),      optional, intent(in) :: CoordSortOrder
       character(len=*),      optional, intent(in) :: WeightChars
       logical, dimension(:), optional, pointer    :: descend
       character(len=*),      optional, intent(in) :: OtherChars
@@ -188,63 +198,142 @@
 !                 optional).
 !       18Jul02 - E. Ong <eong@mcs.anl.gov> - replaced this version of 
 !                 init with one that calls initl_. 
+!       05Aug02 - E. Ong <eong@mcs.anl.gov> - made the input argument
+!                 CoordSortOrder optional to allow user-defined grid
+!                 numbering schemes.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::init_'
 
-  type(List) :: CoordCharsList, CoordSortOrderList
-  type(List) :: WeightCharsList, OtherCharsList, IndexCharsList
-  integer :: n, ierr
+  ! List to store real and integer attributes
+  type(List) :: RAList, IAList
 
-        ! Convert the Character arguments to Lists
+  ! Overlapping index storage arrays:
+  integer, dimension(:), pointer :: &
+       CoordListIndices, CoordSortOrderIndices
 
-  call List_init(CoordCharsList,trim(CoordChars))
+  ! Temporary vars
+  integer :: NumShared, i, m, n, ierr
 
-  call List_init(CoordSortOrderList,trim(CoordSortOrder))
+       ! Let's begin by nullifying everything:
+
+  call List_nullify(GGrid%coordinate_list)
+  call List_nullify(GGrid%coordinate_sort_order)
+  call List_nullify(GGrid%weight_list)
+  call List_nullify(GGrid%other_list)
+  call List_nullify(GGrid%index_list)
+  nullify(GGrid%descend)
+
+        ! Convert the Character arguments to the appropriate
+        ! GeneralGrid components. 
+
+        ! Set up the integer and real attribute lists.
+
+  call List_init(GGrid%coordinate_list,trim(CoordChars))
+  call List_copy(RAList,GGrid%coordinate_list)
+
+  if(present(CoordSortOrder)) then
+     call List_init(GGrid%coordinate_sort_order,trim(CoordSortOrder))
+  endif
 
   if(present(WeightChars)) then
-     call List_init(WeightCharsList,trim(WeightChars))
-  else
-     call List_init(WeightCharsList,'')
+     call List_init(GGrid%weight_list,trim(WeightChars))
+     call List_concatenate(RAList,GGrid%weight_list,RAList)
   endif
 
   if(present(OtherChars)) then
-     call List_init(OtherCharsList,trim(OtherChars))
-  else
-     call List_init(OtherCharsList,'')
+     call List_init(GGrid%other_list,trim(OtherChars))
+     call List_concatenate(RAList,GGrid%other_list,RAList)
   endif
+
+  call List_init(IAList,'GlobGridNum')
 
   if(present(IndexChars)) then
-     call List_init(IndexCharsList,trim(IndexChars))
-  else
-     call List_init(IndexCharsList,'')
+     call List_init(GGrid%index_list,trim(IndexChars))
+     call List_concatenate(IAList,GGrid%index_list,IAList)
   endif
 
-        ! if lsize is present, use it to set n; if not, set n=0
+        ! Check the lists that we've initialized :
+
+  n = List_nitem(GGrid%coordinate_list)
+  m = 0
+  if(present(CoordSortOrder)) m = List_nitem(GGrid%coordinate_sort_order)
+
+        ! Check the number of coordinates
+
+  if(n <= 0) then
+     write(stderr,*) myname_, &
+	  ':: ERROR CoordList is empty!'
+     call die(myname_,'List_nitem(CoordList) <= 0',n)
+  endif
+
+        ! Check the items in the coordinate list and the 
+        ! coordinate grid sort keys...they should contain
+        ! the same items.
+
+  if(present(CoordSortOrder)) then
+
+     call List_shared(GGrid%coordinate_list,GGrid%coordinate_sort_order, &
+	              NumShared,CoordListIndices,CoordSortOrderIndices)
+
+     deallocate(CoordListIndices,CoordSortOrderIndices,stat=ierr)
+     if(ierr/=0) call die(myname_,'deallocate(CoordListIndices..)',ierr)
+     
+     if(NumShared /= n) then
+	call die(myname_,'CoordSortOrder must have the same items &
+	         & as CoordList',abs(n-NumShared))
+     endif
+
+  endif
+
+        ! If the LOGICAL argument descend is present, check the
+        ! number of entries to ensure they match the grid dimensionality.
+        ! If descend is not present, assume all coordinate grid point
+        ! sortings will be in ascending order.
+
+  if(present(descend)) then
+
+     if( ( (.not.associated(descend)) .or. &
+	   (.not.present(CoordSortOrder)) ) .or. &
+	   (size(descend) /= m) ) then
+	
+	write(stderr,*) myname_, &
+	     ':: ERROR using descend argument, &
+	     &associated(descend) = ', associated(descend), &
+	     ' present(CoordSortOrder) = ', present(CoordSortOrder), &
+	     ' size(descend) = ', size(descend), &
+	     ' List_nitem(CoordSortOrder) = ', m
+	call die(myname_, 'ERROR using -descend- argument',m)
+     endif
+
+  endif
+
+       ! Finally, Initialize GGrid%descend from descend(:).
+
+  if(present(descend)) then
+
+     allocate(GGrid%descend(m), stat=ierr)
+     if(ierr /= 0) call die(myname_,"allocate GGrid%descend...",ierr)
+
+     do i=1,m
+	GGrid%descend(i) = descend(i)
+     enddo
+
+  endif
+  
+       ! Initialize GGrid%data using IAList, RAList, and lsize (if
+       ! present).
 
   n = 0
   if(present(lsize)) n=lsize
 
-        ! Call initl_ to initialize the General Grid
+  call AttrVect_init(GGrid%data, IAList, RAList, n)
 
-  if(present(descend)) then
-     call initl_(GGrid, CoordCharsList, CoordSortOrderList, descend, &
-                 WeightCharsList, OtherCharsList, IndexCharsList, n)
-  else
-     call initl_(GGrid=GGrid,                           &
-                 CoordList=CoordCharsList,              &
-	         CoordSortOrder=CoordSortOrderList,     &
-                 WeightList=WeightCharsList,            &
-		 OtherList=OtherCharsList,              &
-		 IndexList=IndexCharsList,              &
-		 lsize=n)
-  endif
 
-  call List_clean(CoordCharsList)
-  call List_clean(CoordSortOrderList)
-  call List_clean(WeightCharsList)
-  call List_clean(OtherCharsList)
-  call List_clean(IndexCharsList)
+       ! Deallocate the temporary variables
+
+  call List_clean(IAList)
+  call List_clean(RAList)
   
 
  end subroutine init_
@@ -277,9 +366,12 @@
 
       use m_List,     only : List
       use m_List,     only : List_init => init
+      use m_List,     only : List_allocated => allocated
       use m_List,     only : List_nitem => nitem
+      use m_List,     only : List_shared => GetSharedListIndices
       use m_List,     only : List_concatenate => concatenate
       use m_List,     only : List_copy => copy
+      use m_List,     only : List_nullify => nullify
       use m_List,     only : List_clean => clean
 
       use m_AttrVect, only : AttrVect
@@ -290,7 +382,7 @@
 ! !INPUT PARAMETERS:
 !
       Type(List),                      intent(in)  :: CoordList
-      Type(List),                      intent(in)  :: CoordSortOrder
+      Type(List),            optional, intent(in)  :: CoordSortOrder
       Type(List),            optional, intent(in)  :: WeightList
       logical, dimension(:), optional, pointer     :: descend
       Type(List),            optional, intent(in)  :: OtherList
@@ -307,36 +399,63 @@
 !                 to list copy to avoid compiler bugs with pgf90
 !       17Jul02 - E. Ong <eong@mcs.anl.gov> - general revision; 
 !                 added error checks
+!       05Aug02 - E. Ong <eong@mcs.anl.gov> - made input argument
+!                 CoordSortOrder optional to allow for user-defined
+!                 grid numbering schemes
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::initl_'
 
+  ! List to store real and integer attributes
   type(List) :: RAList, IAList
-  integer :: i, l, m, n, ierr
+
+  ! Overlapping attribute index storage arrays:
+  integer, dimension(:), pointer :: &
+       CoordListIndices, CoordSortOrderIndices
+
+  ! Temporary vars
+  integer :: NumShared, i, l, m, n, ierr
+
+       ! Let's begin by nullifying everything:
+
+  call List_nullify(GGrid%coordinate_list)
+  call List_nullify(GGrid%coordinate_sort_order)
+  call List_nullify(GGrid%weight_list)
+  call List_nullify(GGrid%other_list)
+  call List_nullify(GGrid%index_list)
+  nullify(GGrid%descend)
 
         ! Check the arguments:
 
   n = List_nitem(CoordList)
-  m = List_nitem(CoordSortOrder)
+  m = 0
+  if(present(CoordSortOrder)) m = List_nitem(CoordSortOrder)
 
         ! Check the number of coordinates
 
   if(n <= 0) then
      write(stderr,*) myname_, &
-	  ':: ERROR CoordList and/or CoordSortOrder are empty!'
+	  ':: ERROR CoordList is empty!'
      call die(myname_,'List_nitem(CoordList) <= 0',n)
   endif
 
-        ! Check the number of coordinates versus the number of
-        ! coordinate grid sort keys...they should be equal.
+        ! Check the items in the coordinate list and the 
+        ! coordinate grid sort keys...they should contain
+        ! the same items.
 
-  if(n /= m) then
-     write(stderr,*) myname_, &
-	  ':: ERROR Arguments CoordList and CoordSortOrder &
-	  &must have equal lengths.', &
-	  ' List_nitem(CoordList) = ', n, &
-          ' List_nitem(CoordSortOrder) = ', m
-     call die(myname_,'ncoord-nsort /=0',n-m)
+  if(present(CoordSortOrder)) then
+
+     call List_shared(CoordList,CoordSortOrder,NumShared, &
+	              CoordListIndices,CoordSortOrderIndices)
+
+     deallocate(CoordListIndices,CoordSortOrderIndices,stat=ierr)
+     if(ierr/=0) call die(myname_,'deallocate(CoordListIndices..)',ierr)
+     
+     if(NumShared /= n) then
+	call die(myname_,'CoordSortOrder must have the same items &
+	         & as CoordList',abs(n-NumShared))
+     endif
+
   endif
 
         ! If the LOGICAL argument descend is present, check the
@@ -345,58 +464,69 @@
         ! sortings will be in ascending order.
 
   if(present(descend)) then
-     if(size(descend) /= m) then
+
+     if( ( (.not.associated(descend)) .or. &
+	   (.not.present(CoordSortOrder)) ) .or. &
+	   (size(descend) /= m) ) then
+	
 	write(stderr,*) myname_, &
-	     ':: Number of elements in descend(:) must &
-	     &equal List_nitem(CoordSortOrder).',&
+	     ':: ERROR using descend argument, &
+	     &associated(descend) = ', associated(descend), &
+	     ' present(CoordSortOrder) = ', present(CoordSortOrder), &
 	     ' size(descend) = ', size(descend), &
 	     ' List_nitem(CoordSortOrder) = ', m
-	call die(myname_, 'size(descend)-m /=0', size(descend)-m)
+	call die(myname_, 'ERROR using -descend- argument')
      endif
+
   endif
-
-       ! Initialize GGrid%descend-- first, allocate GGrid%descend
-
-  allocate(GGrid%descend(n), stat=ierr)
-  if(ierr /= 0) call die(myname_,"allocate GGrid%descend...",ierr)
 
        ! Initialize GGrid%descend from descend(:), if present.  If
-       ! the argument descend(:) was not passed, set all the entries
-       ! of GGrid%descend(:) to FALSE.
+       ! the argument descend(:) was not passed, nullify GGrid%descend
 
   if(present(descend)) then
-     do i=1,n
+
+     allocate(GGrid%descend(m), stat=ierr)
+     if(ierr /= 0) call die(myname_,"allocate GGrid%descend...",ierr)
+
+     do i=1,m
 	GGrid%descend(i) = descend(i)
      enddo
-  else
-     do i=1,n
-	GGrid%descend(i) = .FALSE.
-     enddo
-  endif
 
+  endif
+  
        ! Process input lists and create the appropriate GeneralGrid
        ! List components
 
   call List_copy(GGrid%coordinate_list,CoordList)
-  call List_copy(GGrid%coordinate_sort_order,CoordSortOrder)
-
   call List_copy(RAList,CoordList)
+
+  if(present(CoordSortOrder)) then
+     if(List_allocated(CoordSortOrder)) then
+	call List_copy(GGrid%coordinate_sort_order,CoordSortOrder)
+     else
+	call die(myname_,"Argument CoortSortOrder not allocated")
+     endif
+  endif
 
        ! Concatenate present input Lists to create RAList, and
        ! at the same time assign the List components of GGrid
 
   if(present(WeightList)) then
-     call List_copy(GGrid%weight_list,WeightList)
-     call List_concatenate(RAList, WeightList, RAList)
-  else
-     call List_init(GGrid%weight_list,'')
+     if(List_allocated(WeightList)) then
+	call List_copy(GGrid%weight_list,WeightList)
+	call List_concatenate(RAList, WeightList, RAList)
+     else
+	call die(myname_,"Argument WeightList not allocated")
+     endif
   endif
 
   if(present(OtherList)) then
-     call List_copy(GGrid%other_list,OtherList)
-     call List_concatenate(RAList, OtherList, RAList)
-  else
-     call List_init(GGrid%other_list,'')
+     if(List_allocated(OtherList)) then
+	call List_copy(GGrid%other_list,OtherList)
+	call List_concatenate(RAList, OtherList, RAList)
+     else
+	call die(myname_,"Argument OtherList not allocated")
+     endif
   endif
 
        ! Concatenate present input Lists to create IAList
@@ -455,7 +585,10 @@
       use m_List, only : List
       use m_List, only : List_allocated => allocated
       use m_List, only : List_copy => copy
+      use m_List, only : List_nitems => nitem
+      use m_List, only : List_nullify => nullify
 
+      use m_AttrVect, only:  AttrVect
       use m_AttrVect, only:  AttrVect_init => init
 
       implicit none
@@ -478,31 +611,31 @@
 !                 to list copy to avoid compiler bugs with pgf90
 !       24Jul02 - E.T. Ong <eong@mcs.anl.gov> - updated this init version
 !                 to correspond with initl_
+!       05Aug02 - E. Ong <eong@mcs.anl.gov> - made input argument
+!                 CoordSortOrder optional to allow for user-defined
+!                 grid numbering schemes
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::initgg_'
 ! Number of grid points, number of grid dimensions
-  integer :: n, ncoord
+  integer :: n, ncoord, norder
 ! Loop index and Error Flag
   integer :: i, ierr
 
-        ! if lsize is present, use it to set n; if not, set n=0
+       ! Start by nullifying everything:
 
-  n = 0
-  if(present(lsize)) n=lsize
+  call List_nullify(oGGrid%coordinate_list)
+  call List_nullify(oGGrid%coordinate_sort_order)
+  call List_nullify(oGGrid%weight_list)
+  call List_nullify(oGGrid%other_list)
+  call List_nullify(oGGrid%index_list)
+  nullify(oGGrid%descend)
 
-        ! Dimensionality of the GeneralGrid
-
-  ncoord = dims_(iGGrid)
-
-        ! (Comprehensive) Argument check:
-
+        ! Brief argument check:
+        
+  ncoord = dims_(iGGrid)    ! dimensionality of the GeneralGrid
+  
   if(associated(iGGrid%descend)) then
-
-     if(.not.allocated(iGGrid%descend)) then
-	call die(myname_,"iGGrid%descend should have &
-	     & been allocated by initl_",n)
-     endif
 
      if(size(iGGrid%descend) /= ncoord) then ! size mismatch
 	call die(myname_,"size(iGGrid%descend) must equal ncoord, &
@@ -510,52 +643,44 @@
                  "ncoord = ", ncoord )
      endif
 
-  else
-
-     call die(myname_,"iGGrid%descend is unassociated",n)
-
-  endif
-
-  if(.not.List_allocated(iGGrid%coordinate_list)) then
-     call die(myname_,"oGGrid%coordinate_list was not allocated",n)
-  endif
-
-  if(.not.List_allocated(iGGrid%coordinate_sort_order)) then
-     call die(myname_,"oGGrid%coordinate_sort_order was not allocated",n)
-  endif
-
-  if(.not.List_allocated(iGGrid%weight_list)) then
-     call die(myname_,"oGGrid%weight_list was not allocated",n)
-  endif
-
-  if(.not.List_allocated(iGGrid%other_list)) then
-     call die(myname_,"oGGrid%other_list was not allocated",n)
-  endif
-
-  if(.not.List_allocated(iGGrid%index_list)) then
-     call die(myname_,"oGGrid%index_list was not allocated",n)
   endif
 
         ! If iGGrid%descend has been allocated, copy its contents;
         ! allocate and fill oGGrid%descend
 
-  allocate(oGGrid%descend(ncoord), stat=ierr)
-  if(ierr /= 0) then
-     call die(myname_,"allocate(oGGrid%descend...", ierr)
+  if(associated(iGGrid%descend)) then
+
+     allocate(oGGrid%descend(ncoord), stat=ierr)
+     if(ierr /= 0) then
+	call die(myname_,"allocate(oGGrid%descend...", ierr)
+     endif
+
+     do i=1,ncoord
+	oGGrid%descend(i) = iGGrid%descend(i)
+     end do
+
   endif
-
-  do i=1,ncoord
-     oGGrid%descend(i) = iGGrid%descend(i)
-  end do
-
 
        ! Copy list data from iGGrid to oGGrid. 
 
   call List_copy(oGGrid%coordinate_list,iGGrid%coordinate_list)
-  call List_copy(oGGrid%coordinate_sort_order,iGGrid%coordinate_sort_order)
-  call List_copy(oGGrid%weight_list,iGGrid%weight_list)
-  call List_copy(oGGrid%other_list,iGGrid%other_list)
-  call List_copy(oGGrid%index_list,iGGrid%index_list)
+  if(List_allocated(iGGrid%coordinate_sort_order)) then
+     call List_copy(oGGrid%coordinate_sort_order,iGGrid%coordinate_sort_order)
+  endif
+  if(List_allocated(iGGrid%weight_list)) then
+     call List_copy(oGGrid%weight_list,iGGrid%weight_list)
+  endif
+  if(List_allocated(iGGrid%other_list)) then
+     call List_copy(oGGrid%other_list,iGGrid%other_list)
+  endif
+  if(List_allocated(iGGrid%index_list)) then
+     call List_copy(oGGrid%index_list,iGGrid%index_list)
+  endif
+
+        ! if lsize is present, use it to set n; if not, set n=0
+
+  n = 0
+  if(present(lsize)) n=lsize
 
        ! Now, initialize oGGrid%data from iGGrid%data, but 
        ! with length n.
@@ -708,8 +833,9 @@
       use m_stdio
       use m_die
 
-      use m_List,only : List_clean => clean
-      use m_AttrVect,only : AttrVect_clean => clean
+      use m_List,     only : List_clean => clean
+      use m_List,     only : List_allocated => allocated
+      use m_AttrVect, only : AttrVect_clean => clean
 
       implicit none
 
@@ -724,6 +850,7 @@
 !       01Mar01 - E.T. Ong <eong@mcs.anl.gov> - removed dies to prevent
 !                 crashes when cleaning uninitialized attrvects. Added
 !                 optional stat argument.
+!       05Aug02 - E. Ong <eong@mcs.anl.gov> - a more rigorous revision
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::clean_'
@@ -737,35 +864,59 @@
 
      call List_clean(GGrid%coordinate_list,ierr)
      if(ierr/=0) stat=ierr
-     call List_clean(GGrid%coordinate_sort_order,ierr)
-     if(ierr/=0) stat=ierr
-     call List_clean(GGrid%weight_list,ierr)
-     if(ierr/=0) stat=ierr
-     call List_clean(GGrid%other_list,ierr)
-     if(ierr/=0) stat=ierr
-     call List_clean(GGrid%index_list,ierr)
-     if(ierr/=0) stat=ierr
+
+     if(List_allocated(GGrid%coordinate_sort_order)) then
+	call List_clean(GGrid%coordinate_sort_order,ierr)
+	if(ierr/=0) stat=ierr
+     endif
+
+     if(List_allocated(GGrid%weight_list)) then
+	call List_clean(GGrid%weight_list,ierr)
+	if(ierr/=0) stat=ierr
+     endif
+
+     if(List_allocated(GGrid%other_list)) then 
+	call List_clean(GGrid%other_list,ierr)
+	if(ierr/=0) stat=ierr
+     endif
+
+     if(List_allocated(GGrid%index_list)) then 
+	call List_clean(GGrid%index_list,ierr)
+	if(ierr/=0) stat=ierr
+     endif
+
+     if(associated(GGrid%descend)) then
+	deallocate(GGrid%descend, stat=ierr)
+	if(ierr/=0) stat=ierr
+     endif
 
   else
 
      call AttrVect_clean(GGrid%data)
 
      call List_clean(GGrid%coordinate_list)
-     call List_clean(GGrid%coordinate_sort_order)
-     call List_clean(GGrid%weight_list)
-     call List_clean(GGrid%other_list)
-     call List_clean(GGrid%index_list)
 
-  endif
-
-  deallocate(GGrid%descend, stat=ierr)
-
-  if(ierr /= 0) then
-     if(present(stat)) then
-	stat=ierr
-     else
-	call die(myname_,'deallocate(GGrid%descend...',ierr)
+     if(List_allocated(GGrid%coordinate_sort_order)) then
+	call List_clean(GGrid%coordinate_sort_order)
      endif
+
+     if(List_allocated(GGrid%weight_list)) then
+	call List_clean(GGrid%weight_list)
+     endif
+
+     if(List_allocated(GGrid%other_list)) then 
+	call List_clean(GGrid%other_list)
+     endif
+
+     if(List_allocated(GGrid%index_list)) then 
+	call List_clean(GGrid%index_list)
+     endif
+
+     if(associated(GGrid%descend)) then
+	deallocate(GGrid%descend, stat=ierr)
+	if(ierr/=0) call die(myname_,'deallocate(GGrid%descend)',ierr) 
+     endif
+
   endif
 
  end subroutine clean_
@@ -804,7 +955,7 @@
 
  dims_ = List_nitem(GGrid%coordinate_list)
 
- if(dims_==0) then
+ if(dims_<=0) then
     call die(myname_,"GGrid has zero dimensions",dims_)
  endif
 
@@ -948,8 +1099,9 @@
 !
       use m_List,     only : List
       use m_List,     only : List_allocated => allocated
-
-      use m_AttrVect,     only : AttrVect_lsize => lsize
+      use m_AttrVect, only : AttrVect_lsize => lsize
+      use m_die,      only : die    
+      
 
       implicit none
 
@@ -963,27 +1115,19 @@
 !       27Mar02 - Jay Larson <larson@mcs.anl.gov> - Bug fix and use of
 !                 List_allocated() function to check for existence of 
 !                 attributes.
+!       05Aug02 - E. Ong <eong@mcs.anl.gov> - more rigorous revision
 !EOP ___________________________________________________________________
 !
  character(len=*),parameter :: myname_=myname//'::lsize_'
 
- integer :: lsizeI, lsizeR
+ if(List_allocated(GGrid%data%rList) .and. &
+      List_allocated(GGrid%data%iList)) then
 
- lsizeI = 0
- lsizeR = 0
+    lsize_ = AttrVect_lsize( GGrid%data )
 
- lsize_ = 0
+ else
 
- if(List_allocated(GGrid%data%rList) .or. List_allocated(GGrid%data%iList)) then
-
-    if(List_allocated(GGrid%data%iList)) then
-       lsizeI = AttrVect_lsize( GGrid%data )
-    endif
-    if(List_allocated(GGrid%data%rList)) then
-       lsizeR = AttrVect_lsize( GGrid%data )
-    endif
-
-    lsize_ = max(lsizeI,lsizeR)
+    call die(myname_,"Argument GGrid%data is not associated!")
 
  endif
 
@@ -1346,6 +1490,9 @@
 !
 ! !USES:
 !
+      use m_List, only : List_allocated => allocated
+      use m_die,  only : die
+   
       implicit none
 
 ! !INPUT PARAMETERS: 
@@ -1358,14 +1505,23 @@
 
 ! !REVISION HISTORY:
 !       22Mar01 - Jay Larson <larson@mcs.anl.gov> - Initial version.
+!       05Aug02 - E. Ong <eong@mcs.anl.gov> - revise with more error checking.
 !EOP ___________________________________________________________________
 !
  character(len=*),parameter :: myname_=myname//'::Sortg_'
 
-        ! This is a straightforward call to the GGrid method Sort_():
+     if(.not.List_allocated(GGrid%coordinate_sort_order)) then
+	call die(myname_, "GGrid%coordinate_aort_order must be &
+	         &allocated for use in any sort function")
+     endif
 
-     call Sort_(GGrid, GGrid%coordinate_sort_order, &
-                             perm, GGrid%descend)
+     if(associated(GGrid%descend)) then
+	call Sort_(GGrid, GGrid%coordinate_sort_order, &
+	               perm, GGrid%descend)
+     else
+	call Sort_(GGrid=GGrid, key_list=GGrid%coordinate_sort_order, &
+	               perm=perm)
+     endif
 
  end subroutine Sortg_
 
