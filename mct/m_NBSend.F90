@@ -236,7 +236,7 @@ end subroutine MCT_ISend_
 
       implicit none
       Type(Router),intent(in) ::        Rout
-      Type(MCTReqs),intent(in) ::	Reqs
+      Type(MCTReqs),intent(inout) ::	Reqs
 !      integer,dimension(:),pointer   :: rreqs
 
 ! !REVISION HISTORY:
