@@ -429,10 +429,10 @@
        ! Determine across the communicator the _maximum_ value of
        ! end_row, which will be assigned to num_rows on each process:
 
-  call MP_ALLREDUCE(end_row, num_rows, 1, MP_INTEGER, MP_MAX, &
+  call MPI_ALLREDUCE(end_row, num_rows, 1, MP_INTEGER, MP_MAX, &
                     comm, ierr)
   if(ierr /= 0) then
-     call MP_perr_die(myname_,"MP_ALLREDUCE(end_row...",ierr)
+     call MP_perr_die(myname_,"MPI_ALLREDUCE(end_row...",ierr)
   endif
 
        ! Allocate storage for the sums on each process.
@@ -458,9 +458,9 @@
        ! Compute the global sum of the entries of lsums so that all
        ! processes own the global sums.
 
-  call MP_ALLREDUCE(lsums, sums, num_rows, MP_REAL, MP_SUM, comm, ierr)
+  call MPI_ALLREDUCE(lsums, sums, num_rows, MP_REAL, MP_SUM, comm, ierr)
   if(ierr /= 0) then
-     call MP_perr_die(myname_,"MP_ALLREDUCE(lsums...",ierr)
+     call MP_perr_die(myname_,"MPI_ALLREDUCE(lsums...",ierr)
   endif
 
        ! Clean up...
