@@ -1516,7 +1516,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: Copy_ - copy attributes from one Av to another
+! !IROUTINE: Copy_ - copy specific data from one Av to another
 !
 ! !DESCRIPTION:
 ! This routine copies from input argment {\tt aVin} into the output 
@@ -1525,12 +1525,18 @@
 ! be listed in any order.  If neither {\tt iList} nor {\tt rList} are provided, 
 ! all attributes shared between {\tt aVin} and {\tt aVout} will be copied.
 !
+! If any attributes in {\tt aVout} have different names but represent the
+! the same quantity and should still be copied, you must provide a translation
+! argument {\tt TrList} and/or {\tt TiList}.  The translation arguments should
+! be identical to the {\tt rList} or {\tt iList} but with the correct {\tt aVout}
+! name subsititued at the appropriate place.
+!
 ! {\bf N.B.:}  This routine will fail if the {\tt aVout} is not initialized or
-! if any of the attributes are not present in either {\tt aVout} or {\tt aVin}.
+! if any of the specified attributes are not present in either {\tt aVout} or {\tt aVin}.
 !
 ! !INTERFACE:
 
- subroutine Copy_(aVin, rList, iList, aVout)
+ subroutine Copy_(aVin, rList, TrList, iList, TiList, aVout)
 
 !
 ! !USES:
@@ -1540,6 +1546,7 @@
       use m_List ,         only : List
       use m_String ,       only : String_toChar => toChar
       use m_String , 	   only : String
+      use m_String , 	   only : String_init
       use m_List,          only : List_get => get
       use m_List,          only : List_nullify => nullify
       use m_List,          only : init,nitem
@@ -1551,6 +1558,8 @@
       type(AttrVect),     intent(in)       :: aVin
       character(len=*),optional,intent(in) :: iList
       character(len=*),optional,intent(in) :: rList
+      character(len=*),optional,intent(in) :: TiList
+      character(len=*),optional,intent(in) :: TrList
 
 ! !OUTPUT PARAMETERS: 
 
@@ -1568,7 +1577,10 @@
 
   type(List)   :: rcpList	!  The list of real attributes to copy
   type(List)   :: icpList	!  The list of integer attributes to copy
+  type(List)   :: TrcpList	!  Names of output attributes corresponding to input
+  type(List)   :: TicpList	!  Names of output attributes corresponding to input
   type(String) :: attr          !  an individual attribute
+  type(String) :: attr2         !  an individual attribute
   integer      :: i,j,ier,ierr
   integer      :: inx,outx
   integer      :: num_indices   ! Overlapping attribute index number
@@ -1580,6 +1592,8 @@
 
   call List_nullify(rcpList)
   call List_nullify(icpList)
+  call List_nullify(TrcpList)
+  call List_nullify(TicpList)
 
   if(lsize_(aVin) .ne. lsize_(aVout)) then
      write(stderr,'(2a)')myname_, &
@@ -1587,15 +1601,33 @@
      call die(myname_,'lsize check',ier)
   endif
 
+!  Copy the listed real attributes
   if( present(rList) .and. (len_trim(rList)>0) ) then
+
     call init(rcpList,rList)	! init.List()
+
+! check translation list
+    if( present(TrList) .and. (len_trim(TrList)>0) ) then
+      call init(TrcpList,TrList)
+      if( nitem(rcpList) .ne. nitem(TrcpList)) then
+        write(stderr,'(2a)')myname_, &
+         'MCTERROR:  Input rList and TrList do not have the same size'
+        call die(myname_,'nitem TrList check',ier)
+      endif
+    endif
+
 
     if(nitem(rcpList) .ge. 1) then
      do i=1,lsize_(aVin)
       do j=1,nitem(rcpList)
        call List_get(attr,j,rcpList)
+       if(present(TrList)) then
+         call List_get(attr2,j,TrcpList)
+       else
+	 call String_init(attr2,attr)
+       endif
        inx=indexRA_(aVin,String_toChar(attr),dieWith=myname_//'real aVin')
-       outx=indexRA_(aVout,String_toChar(attr),dieWith=myname_//'real aVout')
+       outx=indexRA_(aVout,String_toChar(attr2),dieWith=myname_//'real aVout')
        aVout%rAttr(outx,i)=aVin%rAttr(inx,i)
       enddo
      enddo
@@ -1603,15 +1635,32 @@
 
   endif
 
+!  Copy the listed integer attributes
   if( present(iList) .and. (len_trim(iList)>0) ) then
+
     call init(icpList,iList)	! init.List()
+    
+! check translation list
+    if( present(TiList) .and. (len_trim(TiList)>0) ) then
+      call init(TicpList,TiList)
+      if( nitem(icpList) .ne. nitem(TicpList)) then
+        write(stderr,'(2a)')myname_, &
+         'MCTERROR:  Input iList and TiList do not have the same size'
+        call die(myname_,'nitem TiList check',ier)
+      endif
+    endif
 
     if(nitem(icpList) .ge. 1) then
      do i=1,lsize_(aVin)
       do j=1,nitem(icpList)
        call List_get(attr,j,icpList)
+       if(present(TiList)) then
+         call List_get(attr2,j,TicpList)
+       else
+	 call String_init(attr2,attr)
+       endif
        inx=indexIA_(aVin,String_toChar(attr),dieWith=myname_//'int aVin')
-       outx=indexIA_(aVout,String_toChar(attr),dieWith=myname_//'int aVout')
+       outx=indexIA_(aVout,String_toChar(attr2),dieWith=myname_//'int aVout')
        aVout%iAttr(outx,i)=aVin%iAttr(inx,i)
       enddo
      enddo
