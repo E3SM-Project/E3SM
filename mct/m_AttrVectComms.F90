@@ -61,6 +61,8 @@
 !                 GM_scatter.
 !       19Dec01 - E.T. Ong <eong@mcs.anl.gov> - allow bcast of an AttrVect
 !                 with only an integer or real attribute.
+!       27Mar02 - J.W. Larson <larson@mcs.anl.gov> - Corrected usage of
+!                 m_die routines throughout this module.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_AttrVectComms'
@@ -93,7 +95,7 @@
 !
       use m_stdio
       use m_mpif90
-      use m_die, only : MP_perr_die
+      use m_die
 
       use m_List, only : List
       use m_List, only : List_nitem => nitem
@@ -140,13 +142,7 @@
 
   call MPI_SEND(ListAssoc, 2, MP_LOGICAL, dest, TagBase, comm, ierr)
   if(ierr /= 0) then
-     if(present(status)) then
-	write(stderr,*) myname_,':: MPI_SEND(ListAssoc...'
-	status = ierr
-	return
-     else
-	call MP_perr_die(myname_,':: MPI_SEND(ListAssoc...',ierr)
-     endif
+     call MP_perr_die(myname_,':: MPI_SEND(ListAssoc...',ierr)
   endif
 
 
@@ -160,7 +156,7 @@
 	  status = ierr
 	  return
        else
-	  call MP_perr_die(myname_,':: call List_send(inAV%iList...',ierr)
+	  call die(myname_,':: call List_send(inAV%iList...',ierr)
        endif
     endif
   endif
@@ -173,7 +169,7 @@
 	  status = ierr
 	  return
        else
-	  call MP_perr_die(myname_,':: call List_send(inAV%rList...',ierr)
+	  call die(myname_,':: call List_send(inAV%rList...',ierr)
        endif
     endif
   endif
@@ -186,13 +182,7 @@
   call MPI_SEND(AVlength, 1, MP_type(AVlength), dest, TagBase+5, &
                 comm, ierr)
   if(ierr /= 0) then
-     if(present(status)) then
-	write(stderr,*) myname_,':: call MPI_SEND(AVlength...'
-	status = ierr
-	return
-     else
-	call MP_perr_die(myname_,':: call MPI_SEND(AVlength...',ierr)
-     endif
+     call MP_perr_die(myname_,':: call MPI_SEND(AVlength...',ierr)
   endif
 
        ! Step 4. If AVlength > 0, we may have INTEGER and REAL 
@@ -208,13 +198,7 @@
                       MP_type(inAV%iAttr(1,1)), dest, TagBase+6,   &
                       comm, ierr)
 	if(ierr /= 0) then
-	   if(present(status)) then
-	      write(stderr,*) myname_,':: call MPI_SEND(inAV%iAttr...'
-	      status = ierr
-	      return
-	   else
-	      call MP_perr_die(myname_,':: call MPI_SEND(inAV%iAttr...',ierr)
-	   endif
+	   call MP_perr_die(myname_,':: call MPI_SEND(inAV%iAttr...',ierr)
 	endif
 
      endif ! if(associated(inAV%rList))
@@ -227,13 +211,7 @@
                       MP_type(inAV%rAttr(1,1)), dest, TagBase+7,   &
                       comm, ierr)
 	if(ierr /= 0) then
-	   if(present(status)) then
-	      write(stderr,*) myname_,':: call MPI_SEND(inAV%rAttr...'
-	      status = ierr
-	      return
-	   else
-	      call MP_perr_die(myname_,':: call MPI_SEND(inAV%rAttr...',ierr)
-	   endif
+	   call MP_perr_die(myname_,':: call MPI_SEND(inAV%rAttr...',ierr)
 	endif
 
      endif ! if(associated(inAV%rList))
@@ -268,7 +246,7 @@
 !
       use m_stdio
       use m_mpif90
-      use m_die, only : MP_perr_die
+      use m_die
 
       use m_List, only : List
       use m_List, only : List_nitem => nitem
@@ -317,13 +295,7 @@
   call MPI_RECV(ListAssoc, 2, MP_LOGICAL, dest, TagBase, comm, &
                 MPstatus, ierr)
   if(ierr /= 0) then
-     if(present(status)) then
-	write(stderr,*) myname_,':: MPI_RECV(ListAssoc...'
-	status = ierr
-	return
-     else
-	call MP_perr_die(myname_,':: MPI_RECV(ListAssoc...',ierr)
-     endif
+     call MP_perr_die(myname_,':: MPI_RECV(ListAssoc...',ierr)
   endif
 
 
@@ -337,7 +309,7 @@
 	  status = ierr
 	  return
        else
-	  call MP_perr_die(myname_,':: call List_recv(outAV%iList...',ierr)
+	  call die(myname_,':: call List_recv(outAV%iList...',ierr)
        endif
     endif
   endif
@@ -350,7 +322,7 @@
 	  status = ierr
 	  return
        else
-	  call MP_perr_die(myname_,':: call List_recv(outAV%rList...',ierr)
+	  call die(myname_,':: call List_recv(outAV%rList...',ierr)
        endif
     endif
   endif
@@ -360,13 +332,7 @@
   call MPI_RECV(AVlength, 1, MP_type(AVlength), dest, TagBase+5, &
                 comm, MPstatus, ierr)
   if(ierr /= 0) then
-     if(present(status)) then
-	write(stderr,*) myname_,':: call MPI_RECV(AVlength...'
-	status = ierr
-	return
-     else
-	call MP_perr_die(myname_,':: call MPI_RECV(AVlength...',ierr)
-     endif
+     call MP_perr_die(myname_,':: call MPI_RECV(AVlength...',ierr)
   endif
 
        ! Step 4. If AVlength > 0, we may have to receive INTEGER 
@@ -386,13 +352,7 @@
                       MP_type(outAV%iAttr(1,1)), dest, TagBase+6,   &
                       comm, MPstatus, ierr)
 	if(ierr /= 0) then
-	   if(present(status)) then
-	      write(stderr,*) myname_,':: call MPI_RECV(outAV%iAttr...'
-	      status = ierr
-	      return
-	   else
-	      call MP_perr_die(myname_,':: call MPI_RECV(outAV%iAttr...',ierr)
-	   endif
+	   call MP_perr_die(myname_,':: call MPI_RECV(outAV%iAttr...',ierr)
 	endif
 
      endif ! if(associated(outAV%rList))
@@ -409,13 +369,7 @@
                       MP_type(outAV%rAttr(1,1)), dest, TagBase+7,   &
                       comm, MPstatus, ierr)
 	if(ierr /= 0) then
-	   if(present(status)) then
-	      write(stderr,*) myname_,':: call MPI_RECV(outAV%rAttr...'
-	      status = ierr
-	      return
-	   else
-	      call MP_perr_die(myname_,':: call MPI_RECV(outAV%rAttr...',ierr)
-	   endif
+	   call MP_perr_die(myname_,':: call MPI_RECV(outAV%rAttr...',ierr)
 	endif
 
      endif ! if(associated(outAV%rList))
@@ -481,12 +435,9 @@
 
   if(present(stat)) stat=0
 
-  call MP_comm_rank(comm,myID,ier)
+  call MP_comm_rank(comm, myID, ier)
   if(ier /= 0) then
-    call MP_perr(myname_,'MP_comm_rank()',ier)
-    if(present(stat)) stat=ier
-    if(.not.present(stat)) call die(myname_)
-    return
+     call MP_perr_die(myname_,':: call MP_COMM_RANK()',ier)
   endif
 
 	! Verify the input: a _scatterd_ vector
@@ -518,10 +469,7 @@
 	  root,comm,ier)
 
      if(ier /= 0) then
-	call MP_perr(myname_,'MPI_gatherv(iAttr)',ier)
-	if(.not.present(stat)) call die(myname_)
-	stat=ier
-	return
+	call MP_perr_die(myname_,':: call MPI_gatherv(iV%iAttr,...)',ier)
      endif
   endif
 
@@ -534,10 +482,7 @@
 	  root,comm,ier)
 
      if(ier /= 0) then
-	call MP_perr(myname_,'MPI_gatherv(rAttr)',ier)
-	if(present(stat)) stat=ier
-	if(.not.present(stat)) call die(myname_)
-	return
+	call MP_perr_die(myname_,':: call MPI_gatherv(iV%rAttr,...)',ier)
      endif
   endif
 
@@ -661,7 +606,7 @@
        
   if(GlobalSegMap_haloed(GSMap)) then
      ierr = 1
-     call MP_perr(myname_,"Input GlobalSegMap haloed--not allowed",ierr)
+     call die(myname_,"Input GlobalSegMap haloed--not allowed",ierr)
   endif
 
        ! Which process am I?
@@ -669,20 +614,14 @@
   call MPI_COMM_RANK(comm, myID, ierr)
 
   if(ierr /= 0) then
-    call MP_perr(myname_,'MPI_COMM_RANK',ierr)
-    if(present(stat)) stat=ierr
-    if(.not.present(stat)) call die(myname_)
-    return
+	call MP_perr_die(myname_,':: call MPI_COMM_RANK()',ierr)
   endif
        ! How many processes are there on this communicator?
 
   call MPI_COMM_SIZE(comm, NumProcs, ierr)
 
   if(ierr /= 0) then
-    call MP_perr(myname_,'MPI_COMM_SIZE',ierr)
-    if(present(stat)) stat=ierr
-    if(.not.present(stat)) call die(myname_)
-    return
+     call MP_perr_die(myname_,':: call MPI_COMM_SIZE()',ierr)
   endif
 
        ! Processor Check: Do the processors on GSMap match those in comm?
@@ -692,7 +631,7 @@
      write(stderr,*) myname_, &
        ":: Procs in GSMap%pe_loc do not match procs in communicator ", &
        NumProcs-1, MAXVAL(GSMap%pe_loc)
-     call MP_perr_die(myname_, &
+     call die(myname_, &
 	  "Procs in GSMap%pe_loc do not match procs in communicator",stat)
   endif
 
@@ -742,10 +681,13 @@
      allocate(current_pos(0:NumProcs-1), stat=ierr)
 
      if(ierr /= 0) then
-	call MP_perr(myname_,'MPI_COMM_SIZE',ierr)
-	if(present(stat)) stat=ierr
-	if(.not.present(stat)) call die(myname_)
-	return
+	write(stderr,*) myname_,':: allocate(current_pos(..) failed,', &
+	     'stat = ',ierr
+	if(present(stat)) then
+	   stat=ierr
+	else
+	   call die(myname_,'allocate(current_pos(..) failed.' )
+	endif
      endif
 
        ! Initialize current_pos(:) using GMap%displs(:)
@@ -794,7 +736,14 @@
        ! Clean up current_pos, which was only allocated on the root
 
      deallocate(current_pos, stat=ierr)
-
+     if(ierr /= 0) then
+	write(stderr,*) myname_,'error in deallocate(current_pos), stat=',ierr
+	if(present(stat)) then
+	   stat=ierr
+	else
+	   call die(myname_)
+	endif
+     endif
   endif ! if(myID == root)
 
        ! At this point, we are finished.  The data have been gathered
@@ -804,13 +753,16 @@
 
   call AttrVect_clean(workV)
   call GlobalMap_clean(workGMap)
+
   deallocate(lns, stat=ierr)
 
   if(ierr /= 0) then
-    call MP_perr(myname_,'deallocate',ierr)
-    if(present(stat)) stat=ierr
-    if(.not.present(stat)) call die(myname_)
-    return
+    write(stderr,*) myname_,'error in deallocate(lns), stat=',ierr
+    if(present(stat)) then
+       stat=ierr
+    else
+       call die(myname_)
+    endif
   endif
 
  end subroutine GSM_gather_
@@ -905,10 +857,7 @@
 
   call MP_comm_rank(comm,myID,ier)
   if(ier /= 0) then
-    call MP_perr(myname_,'MP_comm_rank()',ier)
-    if(.not.present(stat)) call die(myname_)
-    stat=ier
-    return
+    call MP_perr_die(myname_,'MP_comm_rank()',ier)
   endif
 
 	! Verify the input: a _gathered_ vector
@@ -925,9 +874,11 @@
     write(stderr,'(2a,i5,a,i8,a,i8)') myname_,	&
 	': myID = ',myID,'.  Invalid input, gsize(GMap) =',niV,	&
 	', lsize(iV) =',noV
-    if(present(stat)) stat=-1
-    if(.not.present(stat)) call die(myname_)
-    return
+    if(present(stat)) then
+       stat=-1
+    else
+       call die(myname_)
+    endif
   endif
 
   noV = GlobalMap_lsize(GMap) ! the _scatterd_ local size
@@ -979,10 +930,7 @@
 	  GMap%displs*nIA,MP_INTEGER,			&
 	  oV%iAttr(1,1),noV*nIA,MP_INTEGER,root,comm,ier )
      if(ier /= 0) then
-	call MP_perr(myname_,'MPI_scatterv(iAttr)',ier)
-	if(.not.present(stat)) call die(myname_)
-	stat=ier
-	return
+	call MP_perr_die(myname_,'MPI_scatterv(iAttr)',ier)
      endif
 
      call List_clean(iList)
@@ -997,10 +945,7 @@
 	  GMap%displs*nRA,mp_Type_iV,				&
 	  oV%rAttr(1,1),noV*nRA,mp_Type_oV,root,comm,ier )
      if(ier /= 0) then
-	call MP_perr(myname_,'MPI_scatterv(rAttr)',ier)
-	if(.not.present(stat)) call die(myname_)
-	stat=ier
-	return
+	call MP_perr_die(myname_,'MPI_scatterv(rAttr)',ier)
      endif
 
      call List_clean(rList)
@@ -1054,6 +999,7 @@
 ! !USES:
 !
 ! Environment utilities from mpeu:
+
       use m_stdio
       use m_die
       use m_mpif90
@@ -1152,10 +1098,7 @@
   call MPI_COMM_RANK(comm, myID, ierr)
 
   if(ierr /= 0) then
-     call MP_perr(myname_,'MPI_COMM_RANK',ierr)
-     if(present(stat)) stat=ierr
-     if(.not.present(stat)) call die(myname_)
-     return
+     call MP_perr_die(myname_,'MPI_COMM_RANK',ierr)
   endif
 
   if(myID == root) then
@@ -1164,9 +1107,11 @@
 	write(stderr,'(2a,i5,a,i8,a,i8)') myname_,	&
 	     ': myID = ',myID,'.  Invalid input, GSMap%gsize =',&
 	     GSMap%gsize, ', lsize(iV) =',AttrVect_lsize(iV)
-	if(present(stat)) stat=-1
-	if(.not.present(stat)) call die(myname_)
-	return
+	if(present(stat)) then
+	   stat=-1
+	else
+	   call die(myname_)
+	endif
      endif
 
   endif     
@@ -1198,22 +1143,20 @@
   call MPI_COMM_SIZE(comm, NumProcs, ierr)
 
   if(ierr /= 0) then
-     call MP_perr(myname_,'MPI_COMM_SIZE',ierr)
-     if(present(stat)) stat=ierr
-     if(.not.present(stat)) call die(myname_)
-     return
+     call MP_perr_die(myname_,'MPI_COMM_SIZE',ierr)
   endif
 
        ! Processor Check: Do the processors on GSMap match those in comm?
 
-  if(present(stat)) then
-     if(MAXVAL(GSMap%pe_loc) > (NumProcs-1)) then
-	stat=1
-	write(stderr,*) myname_, &
+  if(MAXVAL(GSMap%pe_loc) > (NumProcs-1)) then
+     write(stderr,*) myname_, &
           ":: Procs in GSMap%pe_loc do not match procs in communicator ", &
           NumProcs-1, MAXVAL(GSMap%pe_loc)
-	call MP_perr_die(myname_, &
-          "Procs in GSMap%pe_loc do not match procs in communicator",stat)
+     if(present(stat)) then
+	stat=1
+	return
+     else
+	call die(myname_)
      endif
   endif
 
@@ -1223,11 +1166,14 @@
 
      allocate(lns(0:NumProcs-1), stat=ierr)
      if(ierr /= 0) then
-	call MP_perr(myname_,'allocate(lns)',ierr)
-	if(present(stat)) stat=ierr
-	if(.not.present(stat)) call die(myname_)
-	return
+	write(stderr,*) myname_,':: allocate(lns...) failed, stat=',ierr
+	if(present(stat)) then
+	   stat=ierr
+	else
+	   call die(myname_,'allocate(lns)',ierr)
+	endif
      endif
+
        ! And Load it...
 
      do n=0,NumProcs-1
@@ -1247,12 +1193,16 @@
 
      allocate(lns(1),stat=ierr)
      if(ierr /= 0) then
-	call MP_perr(myname_,'allocate(lns(1))',ierr)
-	if(present(stat)) stat=ierr
-	if(.not.present(stat)) call die(myname_)
-	return
+	write(stderr,*) myname_,':: allocate(lns...) failed, stat=',ierr
+	if(present(stat)) then
+	   stat=ierr
+	   return
+	else
+	   call die(myname_,'allocate(lns(1))',ierr)
+	endif
      endif
-  endif
+
+  endif ! if(myID /= root)...
 
        ! Create a GlobalMap describing the 1-D decomposition 
        ! of workV:
@@ -1270,10 +1220,14 @@
 
      allocate(current_pos(0:NumProcs-1), stat=ierr)
      if(ierr /= 0) then
-	call MP_perr(myname_,'allocate(current_pos)',ierr)
-	if(present(stat)) stat=ierr
-	if(.not.present(stat)) call die(myname_)
-	return
+	write(stderr,*) myname_,':: allocate(current_pos..) failed, stat=', &
+	     ierr
+	if(present(stat)) then
+	   stat=ierr
+	   return
+	else
+	   call die(myname_,'allocate(current_pos)',ierr)
+	endif
      endif
 
        ! Initialize current_pos(:) using GMap%displs(:)
@@ -1323,10 +1277,14 @@
 
      deallocate(current_pos, stat=ierr)
      if(ierr /= 0) then
-	call MP_perr(myname_,'deallocate(current_pos)',ierr)
-	if(present(stat)) stat=ierr
-	if(.not.present(stat)) call die(myname_)
-	return
+	write(stderr,*) myname_,':: deallocate(current_pos) failed.  ', &
+	     'stat = ',ierr
+	if(present(stat)) then
+	   stat=ierr
+	   return
+	else
+	   call die(myname_,'deallocate(current_pos)',ierr)
+	endif
      endif
 
   endif ! if(myID == root)
@@ -1338,7 +1296,17 @@
        ! which process.  Thus, we can us GM_scatter_() to achieve 
        ! our goal.
 
-  call GM_scatter_(workV, oV, GMap, root, comm, stat)
+  call GM_scatter_(workV, oV, GMap, root, comm, ierr)
+  if(ierr /= 0) then
+     write(stderr,*) myname,':: ERROR in return from GM_scatter_(), ierr=',&
+	  ierr
+     if(present(stat)) then
+	stat = ierr
+	return
+     else
+	call die(myname_,'ERROR returning from GM_scatter_()',ierr)
+     endif
+  endif
 
        ! Finally, clean up allocated structures:
   
@@ -1347,12 +1315,16 @@
   endif
 
   call GlobalMap_clean(GMap)
+
   deallocate(lns, stat=ierr)
   if(ierr /= 0) then
-     call MP_perr(myname_,'deallocate(lns)',ierr)
-     if(present(stat)) stat=ierr
-     if(.not.present(stat)) call die(myname_)
-     return
+     write(stderr,*) myname_,':: ERROR in deallocate(lns), ierr=',ierr
+     if(present(stat)) then
+	stat=ierr
+	return
+     else
+	call die(myname_,'deallocate(lns)',ierr)
+     endif
   endif
 
  end subroutine GSM_scatter_
@@ -1380,7 +1352,8 @@
 !
 ! !USES:
 !
-      use m_die, only : die, perr
+      use m_stdio
+      use m_die
       use m_mpif90
       use m_String, only : String,bcast,char,String_clean
       use m_String, only : String_bcast => bcast
@@ -1429,10 +1402,7 @@
 
   call MP_comm_rank(comm,myID,ier)
   if(ier /= 0) then
-    call MP_perr(myname_,'MP_comm_rank()',ier)
-    if(.not.present(stat)) call die(myname_)
-    stat=ier
-    return
+    call MP_perr_die(myname_,'MP_comm_rank()',ier)
   endif
 
        ! Broadcaast to all PEs
@@ -1444,30 +1414,18 @@
   endif
 
   call MPI_bcast(nIA,1,MP_INTEGER,root,comm,ier)
-
   if(ier /= 0) then
-    call MP_perr(myname_,'MPI_bcast(nIA)',ier)
-    if(.not.present(stat)) call die(myname_)
-    stat=ier
-    return
+    call MP_perr_die(myname_,'MPI_bcast(nIA)',ier)
   endif
 
   call MPI_bcast(nRA,1,MP_INTEGER,root,comm,ier)
-
   if(ier /= 0) then
-    call MP_perr(myname_,'MPI_bcast(nRA)',ier)
-    if(.not.present(stat)) call die(myname_)
-    stat=ier
-    return
+    call MP_perr_die(myname_,'MPI_bcast(nRA)',ier)
   endif
 
   call MPI_bcast(lsize,1,MP_INTEGER,root,comm,ier)
-
   if(ier /= 0) then
-    call MP_perr(myname_,'MPI_bcast(lsize)',ier)
-    if(.not.present(stat)) call die(myname_)
-    stat=ier
-    return
+    call MP_perr_die(myname_,'MPI_bcast(lsize)',ier)
   endif
 
 	! Convert the two Lists to two Strings 
@@ -1479,13 +1437,16 @@
      call String_bcast(iLStr,root,comm,stat=ier)	! bcast.String()
 
      if(ier /= 0) then
-	call perr(myname_,'bcast.String(iLstr)',ier)
-	if(.not.present(stat)) call die(myname_)
-	stat=ier
-	return
-     endif
+	write(stderr,*) myname_,'bcast.String(iLstr), ier=',ier
+	if(present(stat)) then
+	   stat=ier
+	   return
+	else
+	   call die(myname_,'String_bcast(iLStr) failed',ier)
+	endif
+     endif ! if(ier /= 0)...
 
-  endif
+  endif ! if(nIA > 0)...
 
 
   if(nRA>0) then
@@ -1493,15 +1454,17 @@
      if(myID == root) call List_get(rLStr,aV%rList)
 
      call String_bcast(rLStr,root,comm,stat=ier)	! bcast.String()
-
      if(ier /= 0) then
-	call perr(myname_,'bcast.String(rLstr)',ier)
-	if(.not.present(stat)) call die(myname_)
-	stat=ier
-	return
-     endif
+	write(stderr,*) myname_,'bcast.String(iLstr), ier=',ier
+	if(present(stat)) then
+	   stat=ier
+	   return
+	else
+	   call die(myname_,'String_bcast(iLStr) failed',ier)
+	endif
+     endif ! if(ier /= 0)...
 
-  endif
+  endif ! if(nRA > 0)...
 
   if(myID /= root) then
      
@@ -1519,21 +1482,24 @@
      endif
 
      if( (nIA<=0) .and. (nRA<=0) ) then
-	call MP_perr(myname_,'AV has not been initialized',0)
-	if(.not.present(stat)) call die(myname_)
-	return
-     endif
+	write(stderr,*) myname_,':: Nonpositive numbers of both ',&
+	     'real AND integer attributes.  nIA =',nIA,' nRA=',nRA
+	if(present(stat)) then
+	   stat = -1
+	   return
+	else
+	   call die(myname_,'AV has not been initialized',-1)
+	endif
+     endif ! if((nIA<= 0) .and. (nRA<=0))...
 
-  endif
+  endif ! if(myID /= root)...
 
   if(nIA > 0) then
 
-     call MPI_bcast(aV%iAttr,nIA*lsize,MP_INTEGER,root,comm,ier)
+     mp_Type_aV=MP_Type(av%iAttr)
+     call MPI_bcast(aV%iAttr,nIA*lsize,mp_Type_aV,root,comm,ier)
      if(ier /= 0) then
-	call MP_perr(myname_,'MPI_bcast(iAttr)',ier)
-	if(.not.present(stat)) call die(myname_)
-	stat=ier
-	return
+	call MP_perr_die(myname_,'MPI_bcast(iAttr) failed.',ier)
      endif
 
      call String_clean(iLStr)
@@ -1543,12 +1509,9 @@
   if(nRA > 0) then
 
      mp_Type_aV=MP_Type(av%rAttr)
-     call MPI_bcast(aV%rAttr,nRA*lsize,mp_Type_av,root,comm,ier)
+     call MPI_bcast(aV%rAttr,nRA*lsize,mp_Type_aV,root,comm,ier)
      if(ier /= 0) then
-	call MP_perr(myname_,'MPI_bcast(rAttr)',ier)
-	if(.not.present(stat)) call die(myname_)
-	stat=ier
-	return
+	call MP_perr_die(myname_,'MPI_bcast(rAttr) failed.',ier)
      endif
 
      call String_clean(rLStr)

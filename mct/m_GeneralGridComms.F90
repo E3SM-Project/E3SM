@@ -2,7 +2,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !MODULE: m_GeneralGridComms - Communications methods for the GeneralGrid
+! !MODULE: m_GeneralGridComms - Communications for the GeneralGrid type.
 !
 ! !DESCRIPTION:
 !
@@ -43,7 +43,8 @@
 ! !REVISION HISTORY:
 !       27Apr01 - J.W. Larson <larson@mcs.anl.gov> - Initial module/APIs
 !       07Jun01 - J.W. Larson <larson@mcs.anl.gov> - Added point-to-point
-!                 send/receive routines.
+!       27Mar02 - J.W. Larson <larson@mcs.anl.gov> - Overhaul of error
+!                 handling calls throughout this module.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_GeneralGridComms'
@@ -144,13 +145,7 @@
 
   call MPI_SEND(HeaderAssoc, 6, MP_LOGICAL, dest, TagBase, comm, ierr)
   if(ierr /= 0) then
-     if(present(status)) then
-        write(stderr,*) myname_,':: MPI_SEND(HeaderAssoc...'
-        status = ierr
-        return
-     else
-        call MP_perr_die(myname_,':: MPI_SEND(HeaderAssoc...',ierr)
-     endif
+     call MP_perr_die(myname_,':: MPI_SEND(HeaderAssoc...',ierr)
   endif
 
        ! Step 2.  If iGGrid%coordinate_list is defined, send it.
@@ -158,12 +153,13 @@
   if(HeaderAssoc(1)) then
     call List_send(iGGrid%coordinate_list, dest, TagBase+1, comm, ierr)
     if(ierr /= 0) then
+       write(stderr,*) myname_,':: call List_send(iGGrid%coordinate_list...', &
+	    'Error flag ierr = ',ierr
        if(present(status)) then
-          write(stderr,*) myname_,':: call List_send(iGGrid%coordinate_list...'
           status = ierr
           return
        else
-          call MP_perr_die(myname_,':: call List_send(iGGrid%coordinate_list...',ierr)
+          call die(myname_,':: call List_send(iGGrid%coordinate_list...',ierr)
        endif
     endif
   else  ! This constitutes an error, as a GeneralGrid must have coordinates
@@ -173,10 +169,10 @@
 	status = -1
 	return
      else
-	call MP_perr_die(myname_,'::  Error.  GeneralGrid%coordinate_list undefined.',-1)
+	call die(myname_,'::  Error.  GeneralGrid%coordinate_list undefined.',-1)
      endif
 
-  endif
+  endif ! if(HeaderAssoc(1))...
 
        ! Step 3.  If iGGrid%coordinate_sort_order is defined, send it.
 
@@ -188,10 +184,11 @@
           status = ierr
           return
        else
-          call MP_perr_die(myname_,':: call List_send(iGGrid%coordinate_sort_order...',ierr)
+          call die(myname_,':: call List_send(iGGrid%coordinate_sort_order...',ierr)
        endif
     endif
-  endif
+
+  endif ! if(HeaderAssoc(2))...
 
        ! Step 4.  If iGGrid%descend is allocated, determine its size,
        ! send this size, and then send the elements of iGGrid%descend.
@@ -201,28 +198,16 @@
      call MPI_SEND(size(iGGrid%descend), 1, MP_type(size(iGGrid%descend)), &
                    dest, TagBase+5, comm, ierr)
      if(ierr /= 0) then
-	if(present(status)) then
-	   write(stderr,*) myname_,':: call MPI_SEND(size(iGGrid%descend)...'
-	   status = ierr
-	   return
-	else
-	   call MP_perr_die(myname_,':: call MPI_SEND(size(iGGrid%descend)...',ierr)
-	endif
+	call MP_perr_die(myname_,':: call MPI_SEND(size(iGGrid%descend)...',ierr)
      endif
 
      call MPI_SEND(iGGrid%descend, size(iGGrid%descend), MP_type(iGGrid%descend(1)), &
                    dest, TagBase+6, comm, ierr)
      if(ierr /= 0) then
-	if(present(status)) then
-	   write(stderr,*) myname_,':: call MPI_SEND(iGGrid%descend...'
-	   status = ierr
-	   return
-	else
-	   call MP_perr_die(myname_,':: call MPI_SEND(iGGrid%descend...',ierr)
-	endif
+	call MP_perr_die(myname_,':: call MPI_SEND(iGGrid%descend...',ierr)
      endif
 
-  endif
+  endif ! if(HeaderAssoc(3))...
 
        ! Step 5.  If iGGrid%weight_list is defined, send it.
 
@@ -235,11 +220,11 @@
           status = ierr
           return
        else
-          call MP_perr_die(myname_,':: call List_send(iGGrid%weight_list...',ierr)
+          call die(myname_,':: call List_send(iGGrid%weight_list...',ierr)
        endif
     endif
 
-  endif
+  endif ! if(HeaderAssoc(4))...
 
        ! Step 6.  If iGGrid%other_list is defined, send it.
 
@@ -252,11 +237,11 @@
           status = ierr
           return
        else
-          call MP_perr_die(myname_,':: call List_send(iGGrid%other_list...',ierr)
+          call die(myname_,':: call List_send(iGGrid%other_list...',ierr)
        endif
     endif
 
-  endif
+  endif ! if(HeaderAssoc(5))...
 
        ! Step 7.  If iGGrid%index_list is defined, send it.
 
@@ -269,7 +254,7 @@
           status = ierr
           return
        else
-          call MP_perr_die(myname_,':: call List_send(iGGrid%index_list...',ierr)
+          call die(myname_,':: call List_send(iGGrid%index_list...',ierr)
        endif
     endif
 
@@ -281,10 +266,10 @@
 	status = -2
 	return
      else
-	call MP_perr_die(myname_,'::  Error.  GeneralGrid%index_list undefined.',-2)
+	call die(myname_,'::  Error.  GeneralGrid%index_list undefined.',-2)
      endif
 
-  endif
+  endif ! if(HeaderAssoc(6))...
 
        ! Step 8.  Finally, send the AttrVect iGGrid%data.
 
@@ -295,7 +280,7 @@
 	status = ierr
 	return
      else
-	call MP_perr_die(myname_,':: call AttrVect_send(iGGrid%data...',ierr)
+	call die(myname_,':: call AttrVect_send(iGGrid%data...',ierr)
      endif
   endif
 
@@ -406,21 +391,18 @@
       !  HeaderAssoc(5) = associated(oGGrid%other_list%bf)
       !  HeaderAssoc(6) = associated(oGGrid%index_list%bf)
 
-  HeaderAssoc = .FALSE.
-
       ! Initialize status (if present)
 
   if(present(status)) status = 0
 
+      ! Step 1.  Set HeaderAssoc(:) to .FALSE., then receive incoming 
+      ! HeaderAssoc(:) data
+
+  HeaderAssoc = .FALSE.
+
   call MPI_RECV(HeaderAssoc, 6, MP_LOGICAL, source, TagBase, comm, MPstatus, ierr)
   if(ierr /= 0) then
-     if(present(status)) then
-        write(stderr,*) myname_,':: MPI_RECV(HeaderAssoc...'
-        status = ierr
-        return
-     else
-        call MP_perr_die(myname_,':: MPI_RECV(HeaderAssoc...',ierr)
-     endif
+     call MP_perr_die(myname_,':: MPI_RECV(HeaderAssoc...',ierr)
   endif
 
        ! Step 2.  If oGGrid%coordinate_list is defined, receive it.
@@ -433,7 +415,7 @@
           status = ierr
           return
        else
-          call MP_perr_die(myname_,':: call List_recv(oGGrid%coordinate_list...',ierr)
+          call die(myname_,':: call List_recv(oGGrid%coordinate_list...',ierr)
        endif
     endif
   else  ! This constitutes an error, as a GeneralGrid must have coordinates
@@ -443,10 +425,10 @@
 	status = -1
 	return
      else
-	call MP_perr_die(myname_,'::  Error.  GeneralGrid%coordinate_list undefined.',-1)
+	call die(myname_,'::  Error.  GeneralGrid%coordinate_list undefined.',-1)
      endif
 
-  endif
+  endif ! if(HeaderAssoc(1))...
 
        ! Step 3.  If oGGrid%coordinate_sort_order is defined, receive it.
 
@@ -454,14 +436,16 @@
     call List_recv(oGGrid%coordinate_sort_order, source, TagBase+3, comm, ierr)
     if(ierr /= 0) then
        if(present(status)) then
-          write(stderr,*) myname_,':: call List_recv(oGGrid%coordinate_sort_order...'
+          write(stderr,*) myname_,':: Error calling ',&
+	  'List_recv(oGGrid%coordinate_sort_order...'
           status = ierr
           return
        else
-          call MP_perr_die(myname_,':: call List_recv(oGGrid%coordinate_sort_order...',ierr)
+          call die(myname_,':: call List_recv(oGGrid%coordinate_sort_order...', &
+	       ierr)
        endif
     endif
-  endif
+  endif ! if(HeaderAssoc(2))...
 
        ! Step 4.  If oGGrid%descend is allocated, determine its size,
        ! receive this size, allocate oGGrid%descend, and then receive 
@@ -472,13 +456,7 @@
      call MPI_RECV(DescendSize, 1, MP_type(DescendSize), &
                    source, TagBase+5, comm, MPstatus, ierr)
      if(ierr /= 0) then
-	if(present(status)) then
-	   write(stderr,*) myname_,':: call MPI_RECV(size(oGGrid%descend)...'
-	   status = ierr
-	   return
-	else
 	   call MP_perr_die(myname_,':: call MPI_RECV(size(oGGrid%descend)...',ierr)
-	endif
      endif
 
   allocate(oGGrid%descend(DescendSize), stat=ierr)
@@ -488,23 +466,17 @@
 	status = ierr
 	return
      else
-	call MP_perr_die(myname_,':: allocate(oGGrid%descend...',ierr)
+	call die(myname_,':: allocate(oGGrid%descend... failed.',ierr)
      endif
   endif
 
      call MPI_RECV(oGGrid%descend, DescendSize, MP_type(oGGrid%descend(1)), &
                    source, TagBase+6, comm, MPstatus, ierr)
      if(ierr /= 0) then
-	if(present(status)) then
-	   write(stderr,*) myname_,':: call MPI_RECV(oGGrid%descend...'
-	   status = ierr
-	   return
-	else
 	   call MP_perr_die(myname_,':: call MPI_RECV(oGGrid%descend...',ierr)
-	endif
      endif
 
-  endif
+  endif ! if(HeaderAssoc(3))...
 
        ! Step 5.  If oGGrid%weight_list is defined, receive it.
 
@@ -517,11 +489,11 @@
           status = ierr
           return
        else
-          call MP_perr_die(myname_,':: call List_recv(oGGrid%weight_list...',ierr)
+          call die(myname_,':: call List_recv(oGGrid%weight_list...',ierr)
        endif
     endif
 
-  endif
+  endif ! if(HeaderAssoc(4))...
 
        ! Step 6.  If oGGrid%other_list is defined, receive it.
 
@@ -534,11 +506,11 @@
           status = ierr
           return
        else
-          call MP_perr_die(myname_,':: call List_recv(oGGrid%other_list...',ierr)
+          call die(myname_,':: call List_recv(oGGrid%other_list...',ierr)
        endif
     endif
 
-  endif
+  endif ! if(HeaderAssoc(5))...
 
        ! Step 7.  If oGGrid%index_list is defined, receive it.
 
@@ -551,7 +523,7 @@
           status = ierr
           return
        else
-          call MP_perr_die(myname_,':: call List_recv(oGGrid%index_list...',ierr)
+          call die(myname_,':: call List_recv(oGGrid%index_list...',ierr)
        endif
     endif
 
@@ -563,10 +535,10 @@
 	status = -2
 	return
      else
-	call MP_perr_die(myname_,'::  Error.  GeneralGrid%index_list undefined.',-2)
+	call die(myname_,'::  Error.  GeneralGrid%index_list undefined.',-2)
      endif
 
-  endif
+  endif ! if(HeaderAssoc(6))...
 
        ! Step 8.  Finally, receive the AttrVect oGGrid%data.
 
@@ -577,7 +549,7 @@
 	status = ierr
 	return
      else
-	call MP_perr_die(myname_,':: call AttrVect_recv(oGGrid%data...',ierr)
+	call die(myname_,':: call AttrVect_recv(oGGrid%data...',ierr)
      endif
   endif
 
@@ -669,12 +641,8 @@
        ! Which process am I?
 
   call MPI_COMM_RANK(comm, myID, ierr)
-
   if(ierr /= 0) then
-    call MP_perr(myname_,'MPI_COMM_RANK()',ierr)
-    if(.not.present(stat)) call die(myname_)
-    stat=ierr
-    return
+    call MP_perr_die(myname_,'call MPI_COMM_RANK()',ierr)
   endif
 
   if(myID == root) then ! prepare oG:
@@ -695,12 +663,14 @@
   call AttrVect_Gather(iG%data, oG%data, GMap, root, comm, ierr)
 
   if(ierr /= 0) then
-    call MP_perr(myname_,'MPI_COMM_RANK()',ierr)
-    if(.not.present(stat)) call die(myname_)
-    stat=ierr
-    return
-  else
-    if(present(stat)) stat=ierr
+     write(stderr,*) myname_,':: Error--call AttrVect_Gather() failed.', &
+	  ' ierr = ',ierr
+     if(present(stat)) then
+	stat=ierr
+	return
+     else
+	call die(myname_,'call AttrVect_Gather(ig%data...',ierr)
+     endif
   endif
 
  end subroutine GM_gather_
@@ -792,12 +762,8 @@
        ! Which process am I?
 
   call MPI_COMM_RANK(comm, myID, ierr)
-
   if(ierr /= 0) then
-    call MP_perr(myname_,'MPI_COMM_RANK()',ierr)
-    if(.not.present(stat)) call die(myname_)
-    stat=ierr
-    return
+    call MP_perr_die(myname_,'MPI_COMM_RANK()',ierr)
   endif
 
   if(myID == root) then ! prepare oG:
@@ -816,14 +782,15 @@
        ! Gather gridpoint data in iG%data to oG%data
 
   call AttrVect_Gather(iG%data, oG%data, GSMap, root, comm, ierr)
-
   if(ierr /= 0) then
-    call MP_perr(myname_,'MPI_COMM_RANK()',ierr)
-    if(.not.present(stat)) call die(myname_)
-    stat=ierr
-    return
-  else
-    if(present(stat)) stat=ierr
+     write(stderr,*) myname_,':: ERROR--call AttrVect_Gather() failed.', &
+	  ' ierr = ',ierr
+    if(present(stat)) then
+       stat=ierr
+       return
+    else
+       call die(myname_)
+    endif
   endif
 
  end subroutine GSM_gather_
@@ -904,13 +871,7 @@
 
   call MPI_COMM_RANK(comm, myID, ierr)
   if(ierr /= 0) then
-     if(present(stat)) then
-	write(stderr,*) myname_,':: Error calling MPI_COMM_RANK(comm...'
-	stat = ierr
-	return
-     else
-	call MP_perr_die(myname_,'MPI_COMM_RANK(comm...',ierr)
-     endif
+     call MP_perr_die(myname_,'MPI_COMM_RANK(comm...',ierr)
   endif
 
        ! Step 2.  On the root, initialize the List and LOGICAL 
@@ -918,15 +879,6 @@
 
   if(myID == root) then
      call copyGeneralGridHeader_(iG, oG)
-     if(ierr /= 0) then
-	if(present(stat)) then
-	   write(stderr,*) myname_,':: Error calling copyGeneralGridHeader_(...'
-	   stat = ierr
-	   return
-	else
-	   call MP_perr_die(myname_,'copyGeneralGridHeader_(comm...',ierr)
-	endif
-     endif
   endif
 
        ! Step 3.  Broadcast from the root the List and LOGICAL 
@@ -934,12 +886,13 @@
 
   call bcastGeneralGridHeader_(oG, root, comm, ierr)
   if(ierr /= 0) then
+     write(stderr,*) myname_,':: Error calling bcastGeneralGridHeader_().',&
+	  ' ierr = ',ierr
      if(present(stat)) then
-	write(stderr,*) myname_,':: Error calling bcastGeneralGridHeader_(...'
 	stat = ierr
 	return
      else
-	call MP_perr_die(myname_,'bcastGeneralGridHeader_(oG...',ierr)
+	call die(myname_,'call bcastGeneralGridHeader_(oG...',ierr)
      endif
   endif
 
@@ -949,12 +902,13 @@
 
   call AttrVect_scatter(iG%data, oG%data, GMap, root, comm, ierr)
   if(ierr /= 0) then
+     write(stderr,*) myname_,':: Error calling AttrVect_scatter(iG%data...',&
+	  ' ierr = ',ierr
      if(present(stat)) then
-	write(stderr,*) myname_,':: Error calling AttrVect_scatter(iG%data...'
 	stat = ierr
 	return
      else
-	call MP_perr_die(myname_,'call AttrVect_scatter(iG%data...',ierr)
+	call die(myname_,'call AttrVect_scatter(iG%data...',ierr)
      endif
   endif
 
@@ -1035,13 +989,7 @@
 
   call MPI_COMM_RANK(comm, myID, ierr)
   if(ierr /= 0) then
-     if(present(stat)) then
-	write(stderr,*) myname_,':: Error calling MPI_COMM_RANK(comm...'
-	stat = ierr
-	return
-     else
-	call MP_perr_die(myname_,'MPI_COMM_RANK(comm...',ierr)
-     endif
+     call MP_perr_die(myname_,'MPI_COMM_RANK(comm...',ierr)
   endif
 
        ! Step 2.  On the root, initialize the List and LOGICAL 
@@ -1049,15 +997,6 @@
 
   if(myID == root) then
      call copyGeneralGridHeader_(iG, oG)
-     if(ierr /= 0) then
-	if(present(stat)) then
-	   write(stderr,*) myname_,':: Error calling copyGeneralGridHeader_(...'
-	   stat = ierr
-	   return
-	else
-	   call MP_perr_die(myname_,'copyGeneralGridHeader_(comm...',ierr)
-	endif
-     endif
   endif
 
        ! Step 3.  Broadcast from the root the List and LOGICAL 
@@ -1065,12 +1004,13 @@
 
   call bcastGeneralGridHeader_(oG, root, comm, ierr)
   if(ierr /= 0) then
+     write(stderr,*) myname_,':: Error calling bcastGeneralGridHeader_(...',&
+	  ' ierr = ',ierr
      if(present(stat)) then
-	write(stderr,*) myname_,':: Error calling bcastGeneralGridHeader_(...'
 	stat = ierr
 	return
      else
-	call MP_perr_die(myname_,'bcastGeneralGridHeader_(oG...',ierr)
+	call die(myname_,'bcastGeneralGridHeader_(oG...',ierr)
      endif
   endif
 
@@ -1079,12 +1019,13 @@
 
   call AttrVect_scatter(iG%data, oG%data, GSMap, root, comm, ierr)
   if(ierr /= 0) then
+     write(stderr,*) myname_,':: Error calling AttrVect_scatter(iG%data...',&
+	  ' ierr = ',ierr
      if(present(stat)) then
-	write(stderr,*) myname_,':: Error calling AttrVect_scatter(iG%data...'
 	stat = ierr
 	return
      else
-	call MP_perr_die(myname_,'call AttrVect_scatter(iG%data...',ierr)
+	call die(myname_,'call AttrVect_scatter(iG%data...',ierr)
      endif
   endif
 
@@ -1164,13 +1105,7 @@
 
   call MPI_COMM_RANK(comm, myID, ierr)
   if(ierr /= 0) then
-     if(present(stat)) then
-	write(stderr,*) myname_,':: Error calling MPI_COMM_RANK(comm...'
-	stat = ierr
-	return
-     else
-	call MP_perr_die(myname_,'MPI_COMM_RANK(comm...',ierr)
-     endif
+     call MP_perr_die(myname_,'MPI_COMM_RANK(comm...',ierr)
   endif
 
        ! Step 2.  Broadcast from the root the List and LOGICAL 
@@ -1178,12 +1113,13 @@
 
   call bcastGeneralGridHeader_(ioG, root, comm, ierr)
   if(ierr /= 0) then
+     write(stderr,*) myname_,':: Error calling bcastGeneralGridHeader_(...',&
+	  ' ierr = ',ierr
      if(present(stat)) then
-	write(stderr,*) myname_,':: Error calling bcastGeneralGridHeader_(...'
 	stat = ierr
 	return
      else
-	call MP_perr_die(myname_,'bcastGeneralGridHeader_(oG...',ierr)
+	call die(myname_)
      endif
   endif
 
@@ -1191,12 +1127,13 @@
 
   call AttrVect_bcast(ioG%data, root, comm, ierr)
   if(ierr /= 0) then
+     write(stderr,*) myname_,':: Error calling AttrVect_scatter(iG%data...',&
+	  ' ierr = ',ierr
      if(present(stat)) then
-	write(stderr,*) myname_,':: Error calling AttrVect_scatter(iG%data...'
 	stat = ierr
 	return
      else
-	call MP_perr_die(myname_,'call AttrVect_scatter(iG%data...',ierr)
+	call die(myname_)
      endif
   endif
 
@@ -1299,28 +1236,62 @@
 
   call List_bcast(ioGGrid%coordinate_list, root, comm, ierr)
   if(ierr /= 0) then
-     call MP_perr_die(myname_,'List_bcast(ioGGrid%coordinate_list...',ierr)
+     write(stderr,*) myname_,'List_bcast(ioGGrid%coordinate_list... failed.',&
+	  ' ierr = ',ierr
+     if(present(stat)) then
+	stat = ierr
+	return
+     else
+	call die(myname_)
+     endif
   endif
 
   call List_bcast(ioGGrid%coordinate_sort_order, root, comm, ierr)
   if(ierr /= 0) then
-     call MP_perr_die(myname_,'List_bcast(ioGGrid%coordinate_sort_order...', &
-	              ierr)
+     write(stderr,*) myname_,'List_bcast(ioGGrid%coordinate_sort_order... failed', &
+	  ' ierr = ',ierr
+     if(present(stat)) then
+	stat = ierr
+	return
+     else
+	call die(myname_)
+     endif
   endif
 
   call List_bcast(ioGGrid%weight_list, root, comm, ierr)
   if(ierr /= 0) then
-     call MP_perr_die(myname_,'List_bcast(ioGGrid%weight_list...',ierr)
+     write(stderr,*) myname_,'List_bcast(ioGGrid%weight_list... failed',&
+	  ' ierr = ',ierr
+     if(present(stat)) then
+	stat = ierr
+	return
+     else
+	call die(myname_)
+     endif
   endif
 
   call List_bcast(ioGGrid%other_list, root, comm, ierr)
   if(ierr /= 0) then
-     call MP_perr_die(myname_,'List_bcast(ioGGrid%other_list...',ierr)
+     write(stderr,*) myname_,'List_bcast(ioGGrid%other_list... failed',&
+	  ' ierr = ',ierr
+     if(present(stat)) then
+	stat = ierr
+	return
+     else
+	call die(myname_)
+     endif
   endif
 
   call List_bcast(ioGGrid%index_list, root, comm, ierr)
   if(ierr /= 0) then
-     call MP_perr_die(myname_,'List_bcast(ioGGrid%index_list...',ierr)
+     write(stderr,*) myname_,'List_bcast(ioGGrid%index_list... failed',&
+	  ' ierr = ',ierr
+     if(present(stat)) then
+	stat = ierr
+	return
+     else
+	call die(myname_)
+     endif
   endif
 
        ! Step 2. If applicable Broadcast ioGGrid%descend from the root.
@@ -1357,7 +1328,9 @@
      if(myID /= root) then
 	allocate(ioGGrid%descend(DescendSize), stat=ierr)
 	if(ierr /= 0) then
-	   call MP_perr_die(myname_,'allocate(ioGGrid%descend(...',ierr)
+	   write(stderr,*) myname_,':: ERROR in allocate(ioGGrid%descend...',&
+		' ierr = ',ierr
+	   call die(myname_)
 	endif
      endif
 
@@ -1462,12 +1435,11 @@
   if(DescendAssoc) then
      DescendSize = size(iGGrid%descend)
      if((DescendSize) /= List_nitem(iGGrid%coordinate_list)) then
-	write(stderr,*) myname,':: size(iGGrid%descend)/coordinate count mismatch'
+	write(stderr,*) myname,':: ERROR size(iGGrid%descend)/coordinate count mismatch'
 	write(stderr,*) myname_,':: size(iGGrid%descend) = ',size(iGGrid%descend)
 	write(stderr,*) myname_,':: List_nitem(iGGrid%coordinate_list = ', &
 	     List_nitem(iGGrid%coordinate_list)
-	call MP_perr_die(myname_,'size(iGGrid%descend)/coordinate count mismatch', &
-	     size(iGGrid%descend)-List_nitem(iGGrid%coordinate_list))
+	call die(myname_)
      endif
   endif
 
@@ -1477,7 +1449,9 @@
   if(DescendAssoc) then
      allocate(oGGrid%descend(DescendSize), stat=ierr)
      if(ierr /= 0) then 
-        call MP_perr_die(myname_,'allocate(iGGrid%descend(...',ierr)
+	write(stderr,*) myname_,':: ERROR--allocate(iGGrid%descend(... failed.',&
+	     ' ierr = ',ierr
+        call die(myname_)
      endif
      do i=1,DescendSize
 	oGGrid%descend(i) = iGGrid%descend(i)

@@ -116,6 +116,8 @@
 !                 needed before implementation.
 !       02May01 - J.W. Larson - added initgg_ API (replaces old initv_).
 !       13Dec01 - J.W. Larson - added import and export methods.
+!       27Mar02 - J.W. Larson <larson@mcs.anl.gov> - Corrected usage of
+!                 m_die routines throughout this module.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_GeneralGrid'
@@ -144,6 +146,7 @@
 !
 ! !USES:
 !
+      use m_stdio
       use m_die
 
       use m_String,   only : String, char
@@ -275,7 +278,9 @@
      nsort = List_nitem(GGrid%coordinate_sort_order)
 
   if(ncoord /= nsort) then
-     call perr_die(myname_,'ncoord-nsort /=0',ncoord-nsort)
+     write(stderr,*) myname_,':: ERROR Arguments ncoord and nsort must be equal.',&
+	  ' ncoord = ',ncoord,' nsort = ',nsort
+     call die(myname_,'ncoord-nsort /=0',ncoord-nsort)
   endif
 
         ! If the LOGICAL argument descend is present, check the
@@ -285,14 +290,16 @@
 
   if(present(descend)) then
      if(size(descend) /= nsort) then
-	call perr_die(myname_,'size(descend)-nsort /=0',&
-	              size(descend)-nsort)
+     write(stderr,*) myname_, &
+     ':: ERROR Number of elements in descend(:) must equal nsort.',&
+	  ' size(descend) = ',size(descend),' nsort = ',nsort
+	call die(myname_, 'size(descend)-nsort /=0', size(descend)-nsort)
      endif
   endif
 
   allocate(GGrid%descend(nsort), stat=ierr)
   if(ierr /= 0) then
-     call MP_perr_die(myname_,"allocate(GGrid%descend...",ierr)
+     call die(myname_,"allocate(GGrid%descend) failed.",ierr)
   endif
 
   if(present(descend)) then
@@ -329,6 +336,8 @@
 !
 ! !USES:
 !
+
+      use m_stdio
       use m_die
 
       use m_List,     only : List
@@ -375,7 +384,7 @@
 
   allocate(GGrid%descend(n), stat=ierr)
   if(ierr /= 0) then
-     call MP_perr_die(myname_,"allocate GGrid%descend...",ierr)
+     call die(myname_,"allocate GGrid%descend...",ierr)
   endif
 
   if(present(descend)) then
@@ -487,7 +496,8 @@
 !
 ! !USES:
 !
-      use m_die,  only : MP_perr_die
+      use m_stdio
+      use m_die
 
       use m_List, only : List
       use m_List, only : List_copy => copy
@@ -533,7 +543,9 @@
 
   if(associated(iGGrid%descend)) then
      if(size(iGGrid%descend) /= ncoord) then ! size mismatch
-	call MP_perr_die(myname,"iGGrid dims/size of descend mismatch", &
+	write(stderr,*) myname_,':: ERROR size(iGGrid%descend) must equal ncoord,',&
+	     ' size(iGGrid%descend)=',size(iGGrid%descend),' ncoord=',ncoord
+	call die(myname,"iGGrid dims/size of descend mismatch", &
 	                 ncoord-size(iGGrid%descend))
      endif
   endif
@@ -544,7 +556,7 @@
 
      allocate(oGGrid%descend(ncoord), stat=ierr)
      if(ierr /= 0) then
-	call MP_perr_die(myname,"allocate(oGGrid%descend...", ierr)
+	call die(myname,"allocate(oGGrid%descend...", ierr)
      endif
 
      do i=1,ncoord
@@ -611,6 +623,7 @@
 !
 ! !USES:
 !
+      use m_stdio
       use m_die
 
       use m_String,   only : String, char
@@ -674,6 +687,7 @@
 !
 ! !USES:
 !
+      use m_stdio
       use m_die
 
       use m_String,   only : String, char
@@ -723,6 +737,7 @@
 !
 ! !USES:
 !
+      use m_stdio
       use m_die
 
       use m_List,only : List_clean => clean
@@ -801,8 +816,10 @@
 !
 ! !USES:
 !
-      use m_List,     only : List_nitem => nitem
+      use m_stdio
       use m_die
+
+      use m_List,     only : List_nitem => nitem
 
       implicit none
 
@@ -815,6 +832,7 @@
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::dims_'
+
 
  dims_ = List_nitem(GGrid%coordinate_list)
 
@@ -834,9 +852,10 @@
 !
 ! !USES:
 !
-      use m_AttrVect,     only : AttrVect_indexIA => indexIA
       use m_die
-      use m_stdio,        only : stderr
+      use m_stdio
+
+      use m_AttrVect,     only : AttrVect_indexIA => indexIA
 
       implicit none
 
@@ -849,6 +868,8 @@
 
 ! !REVISION HISTORY:
 !       15Jan01 - Jay Larson <larson@mcs.anl.gov> - Initial version.
+!       27Mar02 - Jay Larson <larson@mcs.anl.gov> - Cleaned up error
+!                 handling logic.
 !EOP ___________________________________________________________________
 !
  character(len=*),parameter :: myname_=myname//'::indexIA_'
@@ -856,16 +877,25 @@
  
  indexIA_ = AttrVect_indexIA(GGrid%data, item)
 
-  if(indexIA_==0) then
-     if(.not.present(dieWith)) then
-        if(present(perrWith)) write(stderr,'(4a)') perrWith, &
-          '" indexIA_() error, not found "',trim(item),'"'
+  if(indexIA_<=0) then
+
+     if((.not. present(perrWith)) .and. (.not. present(dieWith))) then
+	write(stderr,'(4a)') myname,       &
+		'" :: indexIA_() error, not found "',trim(item),'"'
+	call die(myname_)
      else
-        write(stderr,'(4a)') dieWith,       &
-         '" indexIA_() error, not found "',trim(item),'"'
-        call die(dieWith)
-     endif
-  endif
+	if(present(perrWith)) then
+	   write(stderr,'(4a)') perrWith, &
+		'" indexIA_() error, not found "',trim(item),'"'
+	endif
+	if(present(dieWith)) then
+	   write(stderr,'(4a)') dieWith,       &
+		'" indexIA_() error, not found "',trim(item),'"'
+	   call die(dieWith)
+	endif
+     endif ! if((.not. present(perrWith)) .and. ...
+
+  endif ! if(indexIA_ <= 0)
 
  end function indexIA_
 
@@ -883,9 +913,10 @@
 !
 ! !USES:
 !
-      use m_AttrVect,     only : AttrVect_indexRA => indexRA
+      use m_stdio
       use m_die
-      use m_stdio,        only : stderr
+
+      use m_AttrVect,     only : AttrVect_indexRA => indexRA
 
       implicit none
 
@@ -898,6 +929,8 @@
 
 ! !REVISION HISTORY:
 !       15Jan01 - Jay Larson <larson@mcs.anl.gov> - Initial version.
+!       27Mar02 - Jay Larson <larson@mcs.anl.gov> - Cleaned up error
+!                 handling logic.
 !EOP ___________________________________________________________________
 !
  character(len=*),parameter :: myname_=myname//'::indexRA_'
@@ -905,16 +938,25 @@
  
  indexRA_ = AttrVect_indexRA(GGrid%data, item)
 
-  if(indexRA_==0) then
-     if(.not.present(dieWith)) then
-        if(present(perrWith)) write(stderr,'(4a)') perrWith, &
-          '" indexRA_() error, not found "',trim(item),'"'
+  if(indexRA_<=0) then
+
+     if((.not. present(perrWith)) .and. (.not. present(dieWith))) then
+	write(stderr,'(4a)') myname,       &
+		'" :: indexRA_() error, not found "',trim(item),'"'
+	call die(myname_)
      else
-        write(stderr,'(4a)') dieWith,       &
-         '" indexRA_() error, not found "',trim(item),'"'
-        call die(dieWith)
-     endif
-  endif
+	if(present(perrWith)) then
+	   write(stderr,'(4a)') perrWith, &
+		'" indexRA_() error, not found "',trim(item),'"'
+	endif
+	if(present(dieWith)) then
+	   write(stderr,'(4a)') dieWith,       &
+		'" indexRA_() error, not found "',trim(item),'"'
+	   call die(dieWith)
+	endif
+     endif ! if((.not. present(perrWith)) .and. ...
+
+  endif ! if(indexRA_ <= 0)
 
  end function indexRA_
 
@@ -932,6 +974,7 @@
 !
 ! !USES:
 !
+
       use m_AttrVect,     only : AttrVect_lsize => lsize
 
       implicit none
@@ -942,14 +985,29 @@
 
 ! !REVISION HISTORY:
 !       15Jan01 - Jay Larson <larson@mcs.anl.gov> - Initial version.
+!       27Mar02 - Jay Larson <larson@mcs.anl.gov> - slight logic change.
 !EOP ___________________________________________________________________
 !
  character(len=*),parameter :: myname_=myname//'::lsize_'
 
+ integer :: lsizeI, lsizeR
+
+ lsizeI = 0
+ lsizeR = 0
+
  lsize_ = 0
 
- if(associated(GGrid%data%rAttr)) then
-    lsize_ = AttrVect_lsize( GGrid%data )
+ if(associated(GGrid%data%rAttr) .or. associated(GGrid%data%iAttr)) then
+
+    if(associated(GGrid%data%rAttr)) then
+       lsizeR = AttrVect_lsize( GGrid%data )
+    endif
+    if(associated(GGrid%data%rAttr)) then
+       lsizeR = AttrVect_lsize( GGrid%data )
+    endif
+
+    lsize_ = max(lsizeI,lsizeR)
+
  endif
 
  end function lsize_
@@ -978,8 +1036,8 @@
 !
 ! !USES:
 !
-      use m_die ,          only : die
-      use m_stdio ,        only : stderr
+      use m_die 
+      use m_stdio
 
       use m_AttrVect,      only : AttrVect_exportIAttr => exportIAttr
 
@@ -1032,8 +1090,8 @@
 !
 ! !USES:
 !
-      use m_die ,          only : die
-      use m_stdio ,        only : stderr
+      use m_die
+      use m_stdio
 
       use m_AttrVect,      only : AttrVect_exportRAttr => exportRAttr
 
@@ -1083,9 +1141,8 @@
 !
 ! !USES:
 !
-      use m_die ,          only : die
-      use m_die ,          only : MP_perr_die
-      use m_stdio ,        only : stderr
+      use m_die
+      use m_stdio
 
       use m_AttrVect,      only : AttrVect_importIAttr => importIAttr
 
@@ -1103,17 +1160,18 @@
 
 ! !REVISION HISTORY:
 !       13Dec01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+!       27Mar02 - Jay Larson <larson@mcs.anl.gov> - improved error handling.
 !
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::importIAttr_'
-  integer :: ierr
 
        ! Argument Check:
 
   if(lsize > lsize_(GGrid)) then
-     ierr = lsize - lsize_(GGrid)
-     call MP_perr_die(myname_, "lsize / GGrid length mismatch", ierr)
+     write(stderr,*) myname_,':: ERROR, lsize > lsize_(GGrid).', &
+	  'lsize = ',lsize,'lsize_(GGrid) = ',lsize_(GGrid)
+     call die(myname_)
   endif
 
        ! Import the data (inheritance from AttrVect)
@@ -1163,17 +1221,17 @@
 
 ! !REVISION HISTORY:
 !       13Dec01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
-!
+!       27Mar02 - Jay Larson <larson@mcs.anl.gov> - improved error handling.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::importRAttr_'
-  integer :: ierr
 
        ! Argument Check:
 
   if(lsize > lsize_(GGrid)) then
-     ierr = lsize - lsize_(GGrid)
-     call MP_perr_die(myname_, "lsize / GGrid length mismatch", ierr)
+     write(stderr,*) myname_,':: ERROR, lsize > lsize_(GGrid).', &
+	  'lsize = ',lsize,'lsize_(GGrid) = ',lsize_(GGrid)
+     call die(myname_)
   endif
 
        ! Import the data (inheritance from AttrVect)
@@ -1208,6 +1266,7 @@
 !
 ! !USES:
 !
+      use m_stdio
       use m_die
 
       use m_AttrVect,     only : AttrVect_Sort => Sort
@@ -1241,7 +1300,7 @@
   n = List_nitem(key_list)
   allocate(descending(n), stat=ierr)
   if(ierr /= 0) then
-     call MP_perr_die(myname_,"allocate(descending...",ierr)
+     call die(myname_,"allocate(descending...",ierr)
   endif
 
   if(present(descend)) then
@@ -1257,9 +1316,8 @@
         ! Clean up...
 
   deallocate(descending, stat=ierr)
-
   if(ierr /= 0) then
-     call MP_perr_die(myname_,"deallocate(descending...",ierr)
+     call die(myname_,"deallocate(descending...",ierr)
   endif
 
  end subroutine Sort_
@@ -1334,8 +1392,8 @@
 ! !USES:
 !
 
-      use m_die ,          only : die
-      use m_stdio ,        only : stderr
+      use m_stdio
+      use m_die
 
       use m_AttrVect,     only : AttrVect
       use m_AttrVect, only : AttrVect_Permute => Permute
@@ -1387,9 +1445,8 @@
 !
 ! !USES:
 !
-
-      use m_die ,          only : die
-      use m_stdio ,        only : stderr
+      use m_stdio
+      use m_die
 
       implicit none
 
@@ -1418,6 +1475,9 @@
 ! Clean up--deallocate temporary permutation array:
 
   deallocate(perm, stat=ierr)
+  if(ierr /= 0) then
+     call die(myname_,"deallocate(perm)",ierr)
+  endif
 
  end subroutine SortPermute_
 

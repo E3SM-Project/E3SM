@@ -107,6 +107,8 @@
 !                 and exportRList().
 !       14Feb02 - J.W. Larson <larson@mcs.anl.gov> - added CHARCTER
 !                 functions exportIListToChar() and exportRListToChar()
+!       26Feb02 - J.W. Larson <larson@mcs.anl.gov> - corrected of usage
+!                 of m_die routines throughout this module.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_AttrVect'
@@ -175,7 +177,7 @@
   if(present(lsize)) n=lsize
 
   allocate( aV%iAttr(nIA,n),aV%rAttr(nRA,n),	stat=ier)
-  if(ier /= 0) call perr_die(myname_,'allocate()',ier)
+  if(ier /= 0) call die(myname_,'allocate()',ier)
 
 #ifdef MALL_ON
 	call mall_ci(size(transfer(aV%iAttr,(/1/)),myname_)
@@ -245,7 +247,7 @@
        .not.associated(bv%rList%bf)) then
      write(stderr,'(2a)')myname_, &
       'MCTERROR:  Trying to initialize a new AttrVect off an undefined AttrVect'
-      call perr_die(myname_,'undefined input argument',0)
+      call die(myname_,'undefined input argument',0)
   endif
 
   if(associated(bv%iList%bf)) then
@@ -376,7 +378,7 @@
 
      if(associated(aV%iList%bf) .and. associated(aV%rList%bf)) then
 	allocate( aV%iAttr(nIA,lsize), aV%rAttr(nRA,lsize), stat=ier)
-	if(ier /= 0) call perr_die(myname_,'allocate(aV%iAttr,aV%rAttr)',ier)
+	if(ier /= 0) call die(myname_,'allocate(aV%iAttr,aV%rAttr)',ier)
 #ifdef MALL_ON
 	call mall_ci(size(transfer(aV%iAttr,(/1/)),myname_)
 	call mall_ci(size(transfer(aV%rAttr,(/1/)),myname_)
@@ -385,7 +387,7 @@
 
      if(associated(aV%iList%bf) .and. .not.associated(aV%rList%bf)) then
 	allocate( aV%iAttr(nIA,lsize), stat=ier)
-	if(ier /= 0) call perr_die(myname_,'allocate(aV%iAttr)',ier)
+	if(ier /= 0) call die(myname_,'allocate(aV%iAttr)',ier)
 #ifdef MALL_ON
 	call mall_ci(size(transfer(aV%iAttr,(/1/)),myname_)
 #endif
@@ -393,7 +395,7 @@
 
      if(.not.associated(aV%iList%bf) .and. associated(aV%rList%bf)) then
 	allocate( aV%rAttr(nRA,lsize), stat=ier)
-	if(ier /= 0) call perr_die(myname_,'allocate(aV%rAttr)',ier)
+	if(ier /= 0) call die(myname_,'allocate(aV%rAttr)',ier)
 #ifdef MALL_ON
 	call mall_ci(size(transfer(aV%rAttr,(/1/)),myname_)
 #endif
@@ -568,7 +570,7 @@
   if(iLength /= rLength) then
 
      if((rLength > 0) .and. (iLength > 0)) then
-	call perr_die(myname_,'attribute array length mismatch', &
+	call die(myname_,'attribute array length mismatch', &
 	     iLength-rLength)
      endif
 
@@ -600,7 +602,7 @@
 
 ! !USES:
 
-     use m_die,only	: perr_die
+     use m_die,only	: die
      use m_stdio,only	: stderr
  
      implicit none
@@ -621,7 +623,7 @@
   if(.not.associated(aV%iAttr) .and. .not.associated(aV%rAttr)) then
     write(stderr,'(2a)')myname_, &
       'MCTERROR:  Trying to zero an uninitialized AttrVect'
-      call perr_die(myname_,'undefined input argument',0)
+      call die(myname_,'undefined input argument',0)
   endif
 
   if(nIAttr_(aV)>0) aV%iAttr=0
