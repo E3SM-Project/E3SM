@@ -78,15 +78,15 @@
     end type GlobalSegMap
 
     interface init ; module procedure	&
-        initd_,	&	! initialize from all PEs
-        initr_, &	! initialize from the root
-        initp_,	&	! initialize in parallel from replicated arrays
+        initd_,	&       ! initialize from all PEs
+        initr_, &       ! initialize from the root
+        initp_,	&       ! initialize in parallel from replicated arrays
         initp1_, &      ! initialize in parallel from 1 replicated array
         initp0_         ! null constructor using replicated data
     end interface
-    interface clean ; module procedure clean_ ; end interface
-    interface comp_id  ; module procedure comp_id_  ; end interface
-    interface gsize ; module procedure gsize_ ; end interface
+    interface clean   ; module procedure clean_   ; end interface
+    interface comp_id ; module procedure comp_id_ ; end interface
+    interface gsize   ; module procedure gsize_   ; end interface
     interface GlobalStorage ; module procedure &
        GlobalStorage_
     end interface
@@ -103,7 +103,7 @@
     interface peLocs ; module procedure peLocs_ ; end interface
     interface haloed ; module procedure haloed_ ; end interface
     interface rank  ; module procedure &
-	rank1_ , &	! single rank case
+	rank1_ , &      ! single rank case
 	rankm_	        ! degenerate (multiple) ranks for halo case
     end interface
     interface Sort ; module procedure Sort_ ; end interface
@@ -737,7 +737,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: initp1_ - define the map from replicated data.
+! !IROUTINE: initp1_ - define the map from replicated data using 1 array.
 !
 ! !DESCRIPTION:
 !
