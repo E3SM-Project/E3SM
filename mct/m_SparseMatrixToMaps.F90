@@ -67,6 +67,7 @@
 !
       use m_stdio, only : stderr
       use m_die,   only : MP_perr_die
+      use m_mpif90
 
       use m_List, only : List
       use m_List, only : List_init => init
@@ -376,6 +377,9 @@
 
 ! !REVISION HISTORY:
 !       19Apr01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
+!       25Apr01 - J.W. Larson <larson@mcs.anl.gov> - Initial code.
+!       27Apr01 - J.W. Larson <larson@mcs.anl.gov> - Bug fix--error in
+!                 computation of segment starts/lengths.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::ComputeSegments_'
@@ -410,6 +414,36 @@
 
        ! Second pass:  compute segment start/length info
 
+  do i=1,num_indices
+
+     select case(i)
+     case(1)  ! bootstrap segment counting process
+	nsegs = 1
+	starts(nsegs) = indices(i)
+
+     case default
+
+	if(i == num_indices) then ! last point
+	   if(indices(i) > indices(i-1) + 1) then ! new segment with 1 pt.
+       ! first, close the books on the penultimate segment:
+	      lengths(nsegs) = indices(i-1) - starts(nsegs) + 1 
+	      nsegs = nsegs + 1
+	      starts(nsegs) = indices(i)
+	      lengths(nsegs) = 1  ! (just one point)
+	   else
+	      lengths(nsegs) = indices(i) - starts(nsegs) + 1
+	   endif
+	else
+	   if(indices(i) > indices(i-1) + 1) then ! new segment
+	      lengths(nsegs) = indices(i-1) - starts(nsegs) + 1
+	      nsegs = nsegs + 1
+	      starts(nsegs) = indices(i)
+	   endif
+	endif
+
+     end select ! select case(i)
+
+  end do ! do i=1, num_indices
 
  end subroutine ComputeSegments_
 
