@@ -1116,7 +1116,7 @@
 !
       use m_die 
       use m_stdio
-      use m_realkinds
+      use m_realkinds, only : SP
 
       use m_AttrVect,      only : AttrVect_exportRAttr => exportRAttr
 
@@ -1180,7 +1180,7 @@
 !
       use m_die 
       use m_stdio
-      use m_realkinds
+      use m_realkinds, only : DP
 
       use m_AttrVect,      only : AttrVect_exportRAttr => exportRAttr
 
@@ -1459,7 +1459,7 @@
 !
       use m_die
       use m_stdio
-      use m_realkinds
+      use m_realkinds, only : SP
 
       use m_AttrVect,      only : AttrVect_importRAttr => importRAttr
 
@@ -1519,7 +1519,7 @@
 !
       use m_die
       use m_stdio
-      use m_realkinds
+      use m_realkinds, only : DP
 
       use m_AttrVect,      only : AttrVect_importRAttr => importRAttr
 
@@ -1889,7 +1889,7 @@
 !
       use m_die
       use m_mpif90
-      use m_realkinds
+      use m_realkinds, only : SP, FP
 
       use m_AttrVect, only : AttrVect_lsize => lsize
 
@@ -1911,10 +1911,10 @@
 !
   character(len=*),parameter :: myname_=myname//'::ComputeSparsitySP_'
 
-  integer :: num_elements, num_rows, num_cols
-  real    :: Lnum_elements, Lnum_rows, Lnum_cols, LMySparsity
-  real    :: MySparsity
-  integer :: ierr
+  integer  :: num_elements, num_rows, num_cols
+  real(FP) :: Lnum_elements, Lnum_rows, Lnum_cols, LMySparsity
+  real(FP) :: MySparsity
+  integer  :: ierr
 
        ! Extract number of nonzero elements and compute its logarithm
 
@@ -1983,7 +1983,7 @@
 !
       use m_die
       use m_mpif90
-      use m_realkinds
+      use m_realkinds, only : DP, FP
 
       use m_AttrVect, only : AttrVect_lsize => lsize
 
@@ -2005,10 +2005,10 @@
 !
   character(len=*),parameter :: myname_=myname//'::ComputeSparsityDP_'
 
-  integer :: num_elements, num_rows, num_cols
-  real    :: Lnum_elements, Lnum_rows, Lnum_cols, LMySparsity
-  real    :: MySparsity
-  integer :: ierr
+  integer  :: num_elements, num_rows, num_cols
+  real(FP) :: Lnum_elements, Lnum_rows, Lnum_cols, LMySparsity
+  real(FP) :: MySparsity
+  integer  :: ierr
 
        ! Extract number of nonzero elements and compute its logarithm
 
@@ -2168,7 +2168,7 @@
 !
       use m_die
       use m_mpif90
-      use m_realkinds
+      use m_realkinds, only : SP, FP
 
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_indexIA => indexIA
@@ -2202,7 +2202,7 @@
   integer :: i, igrow, ierr, iwgt, lsize, myID
   integer :: start_row, end_row
   integer :: mp_Type_lsums
-  real, dimension(:), allocatable :: lsums
+  real(FP), dimension(:), allocatable :: lsums
 
        ! Determine local rank
 
@@ -2286,7 +2286,8 @@
 !
       use m_die
       use m_mpif90
-      use m_realkinds
+
+      use m_realkinds, only : DP, FP
 
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_indexIA => indexIA
@@ -2320,7 +2321,7 @@
   integer :: i, igrow, ierr, iwgt, lsize, myID
   integer :: start_row, end_row
   integer :: mp_Type_lsums
-  real, dimension(:), allocatable :: lsums
+  real(FP), dimension(:), allocatable :: lsums
 
        ! Determine local rank
 
@@ -2400,7 +2401,7 @@
 ! !USES:
 !
       use m_die
-      use m_realkinds
+      use m_realkinds, only : SP, FP
 
       implicit none
 
@@ -2425,7 +2426,7 @@
   character(len=*),parameter :: myname_=myname//'::row_sum_checkSP_'
 
   integer :: i, j, num_invalid, num_rows
-  real, dimension(:), pointer :: sums
+  real(FP), dimension(:), pointer :: sums
 
        ! Compute row sums:
 
@@ -2491,7 +2492,7 @@
 ! !USES:
 !
       use m_die
-      use m_realkinds
+      use m_realkinds, only : DP, FP
 
       implicit none
 
@@ -2516,7 +2517,7 @@
   character(len=*),parameter :: myname_=myname//'::row_sum_checkDP_'
 
   integer :: i, j, num_invalid, num_rows
-  real, dimension(:), pointer :: sums
+  real(FP), dimension(:), pointer :: sums
 
        ! Compute row sums:
 

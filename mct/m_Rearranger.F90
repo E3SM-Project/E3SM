@@ -523,6 +523,7 @@
    use m_AttrVect,  only : AttrVect_zero => zero
    use m_AttrVect,  only : nIAttr,nRAttr
    use m_Router,    only : Router     
+   use m_realkinds, only : FP
    use m_mpif90
    use m_die
    use m_stdio
@@ -563,7 +564,7 @@
 
    ! declare a pointer structure for the real data
    type :: rptr
-      real,dimension(:),pointer :: pr
+      real(FP),dimension(:),pointer :: pr
    end type rptr
 
    ! declare a pointer structure for the integer data

@@ -163,7 +163,7 @@
       use m_stdio
       use m_die
       use m_mpif90
-      use m_realkinds
+      use m_realkinds, only : SP
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_lsize => lsize
@@ -261,7 +261,7 @@
       use m_stdio
       use m_die
       use m_mpif90
-      use m_realkinds
+      use m_realkinds, only : DP
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_lsize => lsize
@@ -379,7 +379,7 @@
       use m_stdio
       use m_die
       use m_mpif90
-      use m_realkinds
+      use m_realkinds, only : SP
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
@@ -467,7 +467,7 @@
       use m_stdio
       use m_die
       use m_mpif90
-      use m_realkinds
+      use m_realkinds, only : DP
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
@@ -591,7 +591,7 @@
       use m_stdio
       use m_die
       use m_mpif90
-      use m_realkinds
+      use m_realkinds, only : SP, FP
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_lsize => lsize
@@ -626,7 +626,7 @@
 
   integer :: i, ierr, length
   logical :: mySumWeights
-  real, dimension(:), pointer :: Weights
+  real(FP), dimension(:), pointer :: Weights
 
        ! Argument Validity Checks
 
@@ -835,7 +835,7 @@
       use m_stdio
       use m_die
       use m_mpif90
-      use m_realkinds
+      use m_realkinds, only : DP, FP
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_lsize => lsize
@@ -869,7 +869,7 @@
 
   integer :: i, ierr, length
   logical :: mySumWeights
-  real, dimension(:), pointer :: Weights
+  real(FP), dimension(:), pointer :: Weights
 
        ! Argument Validity Checks
 
@@ -1109,7 +1109,7 @@
       use m_stdio
       use m_die
       use m_mpif90
-      use m_realkinds
+      use m_realkinds, only : SP
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
@@ -1302,7 +1302,7 @@
       use m_stdio
       use m_die
       use m_mpif90
-      use m_realkinds
+      use m_realkinds, only : DP
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
@@ -1529,7 +1529,7 @@
       use m_stdio
       use m_die
       use m_mpif90
-      use m_realkinds
+      use m_realkinds, only : SP, FP
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_lsize => lsize
@@ -1568,7 +1568,7 @@
   integer :: ierr, length1, length2, PairedBufferLength
   integer :: nRA1, nRA2
   logical :: mySumWeights
-  real, dimension(:), pointer :: PairedBuffer, OutPairedBuffer
+  real(FP), dimension(:), pointer :: PairedBuffer, OutPairedBuffer
 
        ! Argument Validity Checks
 
@@ -1672,7 +1672,7 @@
       use m_stdio
       use m_die
       use m_mpif90
-      use m_realkinds
+      use m_realkinds, only : DP, FP
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_lsize => lsize
@@ -1711,7 +1711,7 @@
   integer :: ierr, length1, length2, PairedBufferLength
   integer :: nRA1, nRA2
   logical :: mySumWeights
-  real, dimension(:), pointer :: PairedBuffer, OutPairedBuffer
+  real(FP), dimension(:), pointer :: PairedBuffer, OutPairedBuffer
 
        ! Argument Validity Checks
 
@@ -1836,7 +1836,7 @@
       use m_stdio
       use m_die
       use m_mpif90
-      use m_realkinds
+      use m_realkinds, only : SP
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
@@ -1969,7 +1969,7 @@
       use m_stdio
       use m_die
       use m_mpif90
-      use m_realkinds
+      use m_realkinds, only : DP
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init

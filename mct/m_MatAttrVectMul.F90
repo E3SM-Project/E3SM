@@ -93,8 +93,9 @@
 !
 ! !USES:
 !
-      use m_stdio, only : stderr
-      use m_die,   only : MP_perr_die, die, warn
+      use m_realkinds, only : FP 
+      use m_stdio,     only : stderr
+      use m_die,       only : MP_perr_die, die, warn
 
       use m_List, only : List_identical => identical
       use m_List, only : List_nitem => nitem
@@ -163,7 +164,7 @@
 
 ! Temporary variables for multiply do-loop
   integer :: row, col
-  real :: wgt
+  real(FP) :: wgt
 
 ! Error flag and loop indices
   integer :: ierr, i, m, n, l

@@ -179,6 +179,8 @@
       use m_die
       use m_mpif90
 
+      use m_realkinds, only : FP
+
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_lsize => lsize
 
@@ -215,7 +217,7 @@
 
   integer :: ierr, length
   logical :: mySumWeights
-  real, dimension(:), pointer :: gridWeights
+  real(FP), dimension(:), pointer :: gridWeights
 
        ! Argument Validity Checks
 
@@ -441,6 +443,8 @@
       use m_die
       use m_mpif90
 
+      use m_realkinds, only : FP
+
       use m_String, only : String
       use m_String, only : String_toChar => toChar
       use m_String, only : String_clean => clean
@@ -499,10 +503,10 @@
   type(String) :: DummStr
 
   integer, dimension(:), pointer :: iMask, iMaskTemp
-  real, dimension(:), pointer :: rMask, rMaskTemp
+  real(FP), dimension(:), pointer :: rMask, rMaskTemp
   integer :: TempMaskLength
 
-  real, dimension(:), pointer :: SpatialWeights
+  real(FP), dimension(:), pointer :: SpatialWeights
 
   integer :: niM, nrM ! Number of iMasks and rMasks, respectively
 
@@ -1178,6 +1182,8 @@
       use m_die
       use m_mpif90
 
+      use m_realkinds, only : FP
+
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
       use m_AttrVect, only : AttrVect_lsize => lsize
@@ -1224,7 +1230,7 @@
 
   integer :: ierr, length1, length2
   logical :: mySumWeights
-  real, dimension(:), pointer :: gridWeights1, gridWeights2
+  real(FP), dimension(:), pointer :: gridWeights1, gridWeights2
 
        ! Argument Validity Checks
 
@@ -1497,6 +1503,8 @@
       use m_die
       use m_mpif90
 
+      use m_realkinds, only : FP
+
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
       use m_AttrVect, only : AttrVect_lsize => lsize
@@ -1544,7 +1552,7 @@
                             myname//'::PairedMaskedIntegralRAttrGG_'
 
   logical :: mySumWeights
-  real, dimension(:), pointer :: PairedBuffer, OutPairedBuffer
+  real(FP), dimension(:), pointer :: PairedBuffer, OutPairedBuffer
   integer :: ierr, nRA1, nRA2, PairedBufferLength
 
         ! Basic Argument Validity Checks:
@@ -1757,6 +1765,8 @@
       use m_die
       use m_mpif90
 
+      use m_realkinds, only : FP
+
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
       use m_AttrVect, only : AttrVect_clean => clean
@@ -1810,9 +1820,9 @@
 
   type(AttrVect) :: LocalIntegral1, LocalIntegral2
   type(List) :: nullIList
-  real, dimension(:), pointer :: PairedBuffer, OutPairedBuffer
+  real(FP), dimension(:), pointer :: PairedBuffer, OutPairedBuffer
   integer :: i, ierr, nRA1, nRA2, PairedBufferLength
-  real :: WeightSumInv
+  real(FP) :: WeightSumInv
 
         ! Basic Argument Validity Checks:
 

@@ -17,6 +17,8 @@
 
  module m_Router
 
+      use m_realkinds, only : FP
+
       implicit none
 
       private   ! except
@@ -25,7 +27,7 @@
   public :: rptr,iptr
   type :: rptr
     sequence
-    real,dimension(:),pointer :: pr
+    real(FP),dimension(:),pointer :: pr
   end type
 
 ! declare a private pointer structure for the integer data

@@ -185,7 +185,7 @@
       use m_stdio
       use m_die
 
-      use m_realkinds, only : SP
+      use m_realkinds, only : SP, FP
 
       use m_List, only : List
       use m_List, only : List_allocated => allocated
@@ -225,7 +225,7 @@
   character(len=*),parameter :: myname_=myname//'::MergeTwoGGSP_'
 
   integer :: i, j
-  real :: invWeightSum
+  real(FP) :: invWeightSum
 
        ! Begin argument sanity checks...
 
@@ -495,7 +495,7 @@
       use m_stdio
       use m_die
 
-      use m_realkinds, only : DP
+      use m_realkinds, only : DP, FP
 
       use m_List, only : List
       use m_List, only : List_allocated => allocated
@@ -535,7 +535,7 @@
   character(len=*),parameter :: myname_=myname//'::MergeTwoGGDP_'
 
   integer :: i, j
-  real :: invWeightSum
+  real(FP) :: invWeightSum
 
        ! Begin argument sanity checks...
 
@@ -817,7 +817,7 @@
       use m_stdio
       use m_die
 
-      use m_realkinds, only : SP
+      use m_realkinds, only : SP, FP
 
       use m_List, only : List
       use m_List, only : List_allocated => allocated
@@ -860,7 +860,7 @@
   character(len=*),parameter :: myname_=myname//'::MergeThreeGGSP_'
 
   integer :: i, j
-  real :: invWeightSum
+  real(FP) :: invWeightSum
 
        ! Begin argument sanity checks...
 
@@ -1185,7 +1185,7 @@
       use m_stdio
       use m_die
 
-      use m_realkinds, only : DP
+      use m_realkinds, only : DP, FP
 
       use m_List, only : List
       use m_List, only : List_allocated => allocated
@@ -1228,7 +1228,7 @@
   character(len=*),parameter :: myname_=myname//'::MergeThreeGGDP_'
 
   integer :: i, j
-  real :: invWeightSum
+  real(FP) :: invWeightSum
 
        ! Begin argument sanity checks...
 
@@ -1565,7 +1565,7 @@
       use m_stdio
       use m_die
 
-      use m_realkinds, only : SP
+      use m_realkinds, only : SP, FP
 
       use m_List, only : List
       use m_List, only : List_allocated => allocated
@@ -1611,7 +1611,7 @@
   character(len=*),parameter :: myname_=myname//'::MergeFourGGSP_'
 
   integer :: i, j
-  real :: invWeightSum
+  real(FP) :: invWeightSum
 
        ! Begin argument sanity checks...
 
@@ -1993,7 +1993,7 @@
       use m_stdio
       use m_die
 
-      use m_realkinds, only : DP
+      use m_realkinds, only : DP, FP
 
       use m_List, only : List
       use m_List, only : List_allocated => allocated
@@ -2039,7 +2039,7 @@
   character(len=*),parameter :: myname_=myname//'::MergeFourGGDP_'
 
   integer :: i, j
-  real :: invWeightSum
+  real(FP) :: invWeightSum
 
        ! Begin argument sanity checks...
 
@@ -2356,7 +2356,7 @@
       use m_stdio
       use m_die
 
-      use m_realkinds, only : SP
+      use m_realkinds, only : SP, FP
 
       use m_String, only : String
       use m_String, only : String_clean => clean
@@ -2407,8 +2407,8 @@
   integer :: i, ierr, j, length
   type(String) :: DummStr
   type(List) :: iMaskList, rMaskList
-  integer, dimension(:), pointer :: iMask,iDummy ! INTEGER mask workspace
-  real,    dimension(:), pointer :: rMask,rDummy ! REAL mask workspace
+  integer,  dimension(:), pointer :: iMask,iDummy ! INTEGER mask workspace
+  real(FP), dimension(:), pointer :: rMask,rDummy ! REAL mask workspace
 
   logical :: RAttrIdentical ! flag to identify identical REAL attribute
                             ! lists in inAv and outAv
@@ -2807,7 +2807,7 @@
       use m_stdio
       use m_die
 
-      use m_realkinds, only : DP
+      use m_realkinds, only : DP, FP
 
       use m_String, only : String
       use m_String, only : String_clean => clean
@@ -2858,8 +2858,8 @@
   integer :: i, ierr, j, length
   type(String) :: DummStr
   type(List) :: iMaskList, rMaskList
-  integer, dimension(:), pointer :: iMask,iDummy ! INTEGER mask workspace
-  real,    dimension(:), pointer :: rMask,rDummy ! REAL mask workspace
+  integer,  dimension(:), pointer :: iMask,iDummy ! INTEGER mask workspace
+  real(FP), dimension(:), pointer :: rMask,rDummy ! REAL mask workspace
 
   logical :: RAttrIdentical ! flag to identify identical REAL attribute
                             ! lists in inAv and outAv
