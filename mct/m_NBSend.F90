@@ -27,6 +27,20 @@
 	integer,dimension(:),pointer :: rreqs   ! the real sends
       end type MCTReqs
 
+      ! declare a pointer structure for the real data
+      type :: rptr
+	 real,dimension(:),pointer :: pr
+      end type rptr
+
+      ! declare a pointer structure for the integer data
+      type :: iptr
+	 integer,dimension(:),pointer :: pi
+      end type iptr
+
+      ! declare arrays of pointers to hold data to be sent
+      type(rptr),dimension(:),allocatable :: rp1
+      type(iptr),dimension(:),allocatable :: ip1
+
       interface MCT_ISend ; module procedure MCT_ISend_ ; end interface
       interface MCT_Wait ; module procedure MCT_Wait_ ; end interface
 
@@ -80,24 +94,9 @@
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'MCT_ISend_'
-  integer ::	numi,numr,i,proc,buffsize,j,k
+  integer ::	numi,numr,i,proc,j,k
   integer ::	ier,nseg,mycomp,othercomp,tag,myproc
   integer ::    mp_Type_rp1
-  integer,dimension(:,:),allocatable	:: istatus,rstatus
-
-! declare a pointer structure for the real data
-  type :: rptr
-    real,dimension(:),pointer :: pr
-  end type
-
-! declare a pointer structure for the integer data
-  type :: iptr
-    integer,dimension(:),pointer :: pi
-  end type
-
-! declare arrays of pointers to hold data to be sent
-  type(rptr),dimension(:),allocatable :: rp1
-  type(iptr),dimension(:),allocatable :: ip1
 
 !--------------------------------------------------------
 
@@ -123,10 +122,6 @@
   if(ier/=0) call MP_perr_die(myname_,'allocate(Reqs%ireqs)',ier)
 ! write(*,*)"Isend",Rout%nprocs,size(Reqs%ireqs)
 
-! allocate MPI status array
-  allocate(istatus(MP_STATUS_SIZE,Rout%nprocs),stat=ier)
-  if(ier/=0) call MP_perr_die(myname_,'allocate(istatus)',ier)
-
 ! allocate buffers to hold all outgoing data
    do proc=1,Rout%nprocs
     allocate(ip1(proc)%pi(Rout%locsize(proc)*numi),stat=ier)
@@ -144,10 +139,6 @@
 ! allocate MPI request array
   allocate(Reqs%rreqs(Rout%nprocs),stat=ier)
   if(ier/=0) call MP_perr_die(myname_,'allocate(Reqs%rreqs)',ier)
-
-! allocate MPI status array
-  allocate(rstatus(MP_STATUS_SIZE,Rout%nprocs),stat=ier)
-  if(ier/=0) call MP_perr_die(myname_,'allocate(rstatus)',ier)
 
 ! allocate buffers to hold all outgoing data
    do proc=1,Rout%nprocs
@@ -266,35 +257,57 @@ end subroutine MCT_ISend_
 
   character(len=*),parameter :: myname_=myname//'MCT_Wait_'
   integer ::	ier
+  integer :: proc
   integer,dimension(:,:),allocatable	:: istatus,rstatus
 
 !--------------------------------------------------------
 
   if(associated(Reqs%ireqs)) then
-! allocate MPI status array
-  allocate(istatus(MP_STATUS_SIZE,Rout%nprocs),stat=ier)
-  if(ier/=0) call MP_perr_die(myname_,'allocate(istatus)',ier)
-!  write(*,*)"wait",Rout%nprocs,size(Reqs%ireqs)
-   call MPI_WAITALL(Rout%nprocs,Reqs%ireqs,istatus,ier)
-   if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL(ints)',ier)
 
-! done waiting, free up ireqs
-! deallocate(Reqs%ireqs,stat=ier)
-! if(ier /= 0) call MP_perr_die(myname_,'deallocate(Reqs%ireqs)',ier)
-  
+     ! allocatAe MPI status array
+     allocate(istatus(MP_STATUS_SIZE,Rout%nprocs),stat=ier)
+     if(ier/=0) call MP_perr_die(myname_,'allocate(istatus)',ier)
+
+     !  write(*,*)"wait",Rout%nprocs,size(Reqs%ireqs)
+     call MPI_WAITALL(Rout%nprocs,Reqs%ireqs,istatus,ier)
+     if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL(ints)',ier)
+
+     ! done waiting, free up ireqs
+     deallocate(Reqs%ireqs,stat=ier)
+     if(ier /= 0) call MP_perr_die(myname_,'deallocate(Reqs%ireqs)',ier)
+
+    ! Deallocate the send buffers
+     do proc=1,Rout%nprocs
+	deallocate(ip1(proc)%pi,stat=ier)
+	if(ier/=0) call MP_perr_die(myname_,'deallocate(ip1%pr)',ier)
+     enddo
+
+     deallocate(ip1,stat=ier)
+     if(ier/=0) call MP_perr_die(myname_,'deallocate(ip1)',ier)
+
   endif
 
-  if(associated(Reqs%rreqs))   then
-! allocate MPI status array
-  allocate(rstatus(MP_STATUS_SIZE,Rout%nprocs),stat=ier)
-  if(ier/=0) call MP_perr_die(myname_,'allocate(rstatus)',ier)
+  if(associated(Reqs%rreqs)) then
 
-   call MPI_WAITALL(Rout%nprocs,Reqs%rreqs,rstatus,ier)
-   if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL(reals)',ier)
+     ! allocate MPI status array
+     allocate(rstatus(MP_STATUS_SIZE,Rout%nprocs),stat=ier)
+     if(ier/=0) call MP_perr_die(myname_,'allocate(rstatus)',ier)
 
-! done waiting, free up Reqs%rreqs
-! call deallocate(Reqs%rreqs,stat=ier)
-! if(ier /= 0) call MP_perr_die(myname_,'deallocate(Reqs%rreqs)',ier)
+     call MPI_WAITALL(Rout%nprocs,Reqs%rreqs,rstatus,ier)
+     if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL(reals)',ier)
+
+     ! done waiting, free up Reqs%rreqs
+     deallocate(Reqs%rreqs,stat=ier)
+     if(ier /= 0) call MP_perr_die(myname_,'deallocate(Reqs%rreqs)',ier)
+
+    ! Deallocate the send buffers
+     do proc=1,Rout%nprocs
+	deallocate(rp1(proc)%pr,stat=ier)
+	if(ier/=0) call MP_perr_die(myname_,'deallocate(rp1%pr)',ier)
+     enddo
+
+     deallocate(rp1,stat=ier)
+     if(ier/=0) call MP_perr_die(myname_,'deallocate(rp1)',ier)
 
   endif
 
