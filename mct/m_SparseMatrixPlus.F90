@@ -121,6 +121,7 @@
         integer :: YPrimeLength
         type(Rearranger) :: YPrimeToY
         type(SparseMatrix) :: Matrix
+	integer :: Tag
       End Type SparseMatrixPlus
 
 ! !PUBLIC MEMBER FUNCTIONS:
@@ -143,6 +144,11 @@
       public :: Yonly ! Matrix decomposed only by ROW (i.e., based 
                       ! on the decomposition of y)
       public :: XandY ! Matrix has complex ROW/COLUMN decomposed
+
+! !DEFINED PARAMETERS:
+
+      integer,parameter                    :: DefaultTag = 700
+
 
 ! !SEE ALSO:
 ! The MCT module m_SparseMatrix for more information about Sparse Matrices.
@@ -194,7 +200,7 @@
 ! !INTERFACE:
 
  subroutine initFromRoot_(sMatPlus, sMat, xGSMap, yGSMap, strategy, &
-                          root, comm, ComponentID)
+                          root, comm, ComponentID, Tag)
 
 ! !USES:
 
@@ -237,6 +243,7 @@
       integer,                intent(in)    :: root
       integer,                intent(in)    :: comm
       integer,                intent(in)    :: ComponentID
+      integer,optional,       intent(in)    :: Tag
 
 ! !INPUT/OUTPUT PARAMETERS:
       
@@ -255,6 +262,11 @@
   type(GlobalSegMap) :: xPrimeGSMap, yPrimeGSMap
 
   integer :: myID, ierr
+
+       ! Set tag used in Rearranger call
+
+  SMatPlus%Tag = DefaultTag
+  if(present(Tag)) SMatPlus%Tag = Tag
 
        ! Set initialization flag sMatPlus%Initialized to .FALSE.
        ! therefore, any return from a failure in creation will 
@@ -393,7 +405,7 @@
 ! !INTERFACE:
 
  subroutine initDistributed_(sMatPlus, sMat, xGSMap, yGSMap, root, comm, &
-                             ComponentID)
+                             ComponentID, Tag)
 
 ! !USES:
 
@@ -436,6 +448,7 @@
       integer,                intent(in)    :: root
       integer,                intent(in)    :: comm
       integer,                intent(in)    :: ComponentID
+      integer,optional,       intent(in)    :: Tag
 
 ! !INPUT/OUTPUT PARAMETERS:
       
@@ -454,6 +467,11 @@
   type(GlobalSegMap) :: xPrimeGSMap, yPrimeGSMap
 
   integer :: myID, ierr
+
+       ! Set tag used in Rearranger call
+
+  SMatPlus%Tag = DefaultTag
+  if(present(Tag)) SMatPlus%Tag = Tag
 
        ! Set initialization flag sMatPlus%Initialized to .FALSE.
        ! therefore, any return from a failure in creation will 
