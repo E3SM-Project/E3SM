@@ -135,11 +135,6 @@
 
   num_elements = SparseMatrix_lsize(sMat)
 
-  if(num_elements == 0) then
-     write(stderr,'(2a)') myname_, &
-          ":: Warning: Zero elements in SparseMatrix sMat."
-  endif
-
        ! Indexing the sparse matrix sMat:
 
   irow = SparseMatrix_indexIA(sMat,'lrow')    ! local row index
