@@ -9,8 +9,19 @@
 !
 ! !DESCRIPTION:
 !
-! This module contains implementations of numerous parallel Sparse Matrix
-! Attribute Vector multiplication routines.
+! This module contains routines supporting the sparse matrix-vector 
+! multiplication
+! $${\bf y} = {\bf M} {\bf x},$$
+! where the vectors {\bf x} and {\bf y} are stored using the MCT 
+! {\tt AttrVect} datatype, and {\bf M} is stored using either the MCT 
+! {\tt SparseMatrix} or {\tt SparseMatrixPlus} type.  The {\tt SparseMatrix} 
+! type is used to represent {\bf M} if the multiplication process is 
+! purely data-local (e.g., in a global address space, or if the process
+! has been rendered embarrasingly parallel by earlier or subsequent 
+! vector data redistributions).  If the multiplication process is to 
+! be explicitly distributed-memory parallel, then the {\tt SparseMatrixPlus}
+! type is used to store the elements of {\bf M} and all information needed
+! to coordinate data redistribution and reduction of partial sums.
 !
 ! !INTERFACE:
 
@@ -23,16 +34,20 @@
 
     interface sMatAvMult   ; module procedure &
         sMatAvMult_xlyl_,  &
-        sMatAvMult_gm_xdyl_,  &
-        sMatAvMult_gsm_xdyl_,  &
-        sMatAvMult_gm_xlyd_,  &
-        sMatAvMult_gsm_xlyd_,  &
-        sMatAvMult_gm_xdyd_,  &
-        sMatAvMult_gsm_xdyd_ 
+        sMatAvMult_sMPlus_
     end interface
 
+! !SEE ALSO:
+! The MCT module m_AttrVect for more information about the AttrVect type.
+! The MCT module m_SparseMatrix for more information about the SparseMatrix 
+! type.
+! The MCT module m_SparseMatrixPlus for more details about the master class 
+! for parallel sparse matrix-vector multiplication, the SparseMatrixPlus.
+
 ! !REVISION HISTORY:
-!       12Jan01 - J.W. Larson <larson@mcs.anl.gov> - initial module
+! 12Jan01 - J.W. Larson <larson@mcs.anl.gov> - initial module.
+! 26Sep02 - J.W. Larson <larson@mcs.anl.gov> - added high-level, distributed
+!           matrix-vector multiply routine using the SparseMatrixPlus class.
 !
 !EOP ___________________________________________________________________
 
@@ -83,30 +98,34 @@
 
       implicit none
 
+! !INPUT PARAMETERS:
+
       type(AttrVect),     intent(in)    :: xaV
       type(SparseMatrix), intent(in)    :: sMat
       logical, optional,  intent(in)    :: InterpInts
 
+! !INPUT/OUTPUT PARAMETERS:
+
       type(AttrVect),     intent(inout) :: yaV
 
 ! !REVISION HISTORY:
-!       15Jan01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
-!       10Feb01 - J.W. Larson <larson@mcs.anl.gov> - Prototype code.
-!       24Apr01 - J.W. Larson <larson@mcs.anl.gov> - Modified to accomodate
-!                 changes to the SparseMatrix datatype.
-!       25Apr01 - J.W. Larson <larson@mcs.anl.gov> - Reversed loop order
-!                 for cache-friendliness
-!       17May01 - R. Jacob <jacob@mcs.anl.gov> - Zero the output
-!                 attribute vector
-!       10Oct01 - J. Larson <larson@mcs.anl.gov> - Added optional LOGICAL
-!                 input argument InterpInts to make application of the
-!                 multiply to INTEGER attributes optional
-!       15Oct01 - J. Larson <larson@mcs.anl.gov> - Added feature to 
-!                 detect when attribute lists are identical, and cross-
-!                 indexing of attributes is not needed.
-!       29Nov01 - E.T. Ong <eong@mcs.anl.gov> - Removed MP_PERR_DIE if
-!                 there are zero elements in sMat. This allows for
-!                 decompositions where a process may own zero points.
+! 15Jan01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
+! 10Feb01 - J.W. Larson <larson@mcs.anl.gov> - Prototype code.
+! 24Apr01 - J.W. Larson <larson@mcs.anl.gov> - Modified to accomodate
+!           changes to the SparseMatrix datatype.
+! 25Apr01 - J.W. Larson <larson@mcs.anl.gov> - Reversed loop order
+!           for cache-friendliness
+! 17May01 - R. Jacob <jacob@mcs.anl.gov> - Zero the output
+!           attribute vector
+! 10Oct01 - J. Larson <larson@mcs.anl.gov> - Added optional LOGICAL
+!           input argument InterpInts to make application of the
+!           multiply to INTEGER attributes optional
+! 15Oct01 - J. Larson <larson@mcs.anl.gov> - Added feature to 
+!           detect when attribute lists are identical, and cross-
+!           indexing of attributes is not needed.
+! 29Nov01 - E.T. Ong <eong@mcs.anl.gov> - Removed MP_PERR_DIE if
+!           there are zero elements in sMat. This allows for
+!           decompositions where a process may own zero points.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::sMatAvMult_xlyl_'
@@ -271,223 +290,120 @@
 !     Math + Computer Science Division / Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: sMatAvMult_gm_xdyl_() -- Multiply, x GlobalMap distributed.
+! !IROUTINE: sMatAvMult_SMPlus_ - Parallel Multiply Using SparseMatrixPlus
 !
 ! !DESCRIPTION:
+! This routine performs distributed parallel sparse matrix-vector 
+! multiplication ${\bf y} = {\bf M} {\bf x}$, where {\bf y} and
+! {\bf x} are represented by the {\tt AttrVect} arguments {\tt yAV} and
+! {\tt xAV}, respectively.  The matrix {\bf M} is stored in the input 
+! {\tt SparseMatrixPlus} argument {\tt sMatPlus}, which also contains 
+! all the information needed to coordinate the communications required to 
+! gather intermediate vectors used in the multiplication process, and to 
+! reduce partial sums as needed.
+!
+! The reader should note that the vectors in this multiplication process
+! are of the MCT {\tt AttrVect} type, which means that both {\tt xAV} 
+! and {\tt yAV} may contain many different vectors of the same length, 
+! all bundled together.  Each of these data vectors is known as an 
+! {\em attribute}, and is indexible by matching the character string tag 
+! for its name.  This routine is capable of cross indexing the attributes 
+! in {\tt xAV} and {\tt yAV}, and will perform the matrix-vector multiply 
+! on all of the attributes they share.
 !
 ! !INTERFACE:
 
- subroutine sMatAvMult_gm_xdyl_(xaV, xGMap, sMat, yaV)
+ subroutine sMatAvMult_SMPlus_(xAV, sMatPlus, yAV)
 !
 ! !USES:
 !
       use m_stdio
       use m_die
       use m_mpif90
-      use m_GlobalMap, only : GlobalMap
+
+      use m_String, only : String
+      use m_String, only : String_ToChar => ToChar
+
       use m_AttrVect, only : AttrVect
-      use m_SparseMatrix, only : SparseMatrix
+      use m_AttrVect, only : AttrVect_init => init
+      use m_AttrVect, only : AttrVect_clean => clean
+
+      use m_Rearranger, only : Rearranger
+      use m_Rearranger, only : Rearrange
+
+      use m_SparseMatrixPlus, only : SparseMatrixPlus
+      use m_SparseMatrixPlus, only : Xonly
+      use m_SparseMatrixPlus, only : Yonly
+      use m_SparseMatrixPlus, only : XandY
 
       implicit none
 
-      type(AttrVect),     intent(in)    :: xaV
-      type(GlobalMap),    intent(in)    :: xGMap
-      type(SparseMatrix), intent(in)    :: sMat
-      type(AttrVect),     intent(inout) :: yaV
+! !INPUT PARAMETERS:
 
+      type(AttrVect),         intent(in)    :: xAV
+      type(SparseMatrixPlus), intent(in)    :: sMatPlus
 
+! !INPUT/OUTPUT PARAMETERS:
+
+      type(AttrVect),         intent(inout) :: yAV
+
+! !SEE ALSO:
+! The MCT module m_AttrVect for more information about the AttrVect type.
+! The MCT module m_SparseMatrixPlus for more information about the 
+! SparseMatrixPlus type.
 ! !REVISION HISTORY:
-!       15Jan01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
+! 26Sep02 - J.W. Larson <larson@mcs.anl.gov> - API specification and
+!           implementation.
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname_=myname//'::sMatAvMult_gm_xdyl_'
+  character(len=*),parameter :: myname_=myname//'::sMatAvMult_SMPlus_'
+  type(AttrVect) :: xPrimeAV, yPrimeAV
+  integer :: ierr
 
- end subroutine sMatAvMult_gm_xdyl_
+  select case(String_ToChar(sMatPlus%Strategy))
+  case(Xonly)
+       ! Create intermediate AttrVect for x'
+     call AttrVect_init(xPrimeAV, xAV, sMatPlus%XPrimeLength)
+       ! Rearrange data from x to get x'
+     call Rearrange(xAV, xPrimeAV, sMatPlus%XToXPrime)
+       ! Perform perfectly data-local multiply y = Mx'
+     call sMatAvMult_xlyl_(xPrimeAV, sMatPlus%Matrix, yaV)
+       ! Clean up space occupied by x'
+     call AttrVect_clean(xPrimeAV, ierr)
+  case(Yonly)
+       ! Create intermediate AttrVect for y'
+     call AttrVect_init(yPrimeAV, yAV, sMatPlus%YPrimeLength)
+       ! Perform perfectly data-local multiply y' = Mx
+     call sMatAvMult_xlyl_(xAV, sMatPlus%Matrix, yPrimeAV)
+       ! Rearrange/reduce partial sums in y' to get y
+     call Rearrange(yPrimeAV, yAV, sMatPlus%YPrimeToY, .TRUE.)
+       ! Clean up space occupied by y'
+     call AttrVect_clean(yPrimeAV, ierr)
+  case(XandY)
+       ! Create intermediate AttrVect for x'
+     call AttrVect_init(xPrimeAV, xAV, sMatPlus%XPrimeLength)
+       ! Create intermediate AttrVect for y'
+     call AttrVect_init(yPrimeAV, yAV, sMatPlus%YPrimeLength)
+       ! Rearrange data from x to get x'
+     call Rearrange(xAV, xPrimeAV, sMatPlus%XToXPrime)
+       ! Perform perfectly data-local multiply y' = Mx'
+     call sMatAvMult_xlyl_(xPrimeAV, sMatPlus%Matrix, yPrimeAV)
+       ! Rearrange/reduce partial sums in y' to get y
+     call Rearrange(yPrimeAV, yAV, sMatPlus%YPrimeToY, .TRUE.)
+       ! Clean up space occupied by x'
+     call AttrVect_clean(xPrimeAV, ierr)
+       ! Clean up space occupied by y'
+     call AttrVect_clean(yPrimeAV, ierr)
+  case default
+     write(stderr,'(4a)') myname_, &
+	  ':: ERROR--parallelization strategy name ',&
+	  String_ToChar(sMatPlus%Strategy),' not supported.'
+  end select
 
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!     Math + Computer Science Division / Argonne National Laboratory   !
-!BOP -------------------------------------------------------------------
-!
-! !IROUTINE: sMatAvMult_gsm_xdyl_() -- Multiply, x GlobalSegMap distributed.
-!
-! !DESCRIPTION:
-!
-! !INTERFACE:
-
- subroutine sMatAvMult_gsm_xdyl_(xaV, xGSMap, sMat, yaV)
-!
-! !USES:
-!
-      use m_stdio
-      use m_die
-      use m_mpif90
-      use m_GlobalSegMap, only : GlobalSegMap
-      use m_AttrVect, only : AttrVect
-      use m_SparseMatrix, only : SparseMatrix
-
-      implicit none
-
-      type(AttrVect)   ,  intent(in)    :: xaV
-      type(GlobalSegMap), intent(in)    :: xGSMap
-      type(SparseMatrix), intent(in)    :: sMat
-      type(AttrVect),     intent(inout) :: yaV
-
-! !REVISION HISTORY:
-!       15Jan01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
-!EOP ___________________________________________________________________
-
-  character(len=*),parameter :: myname_=myname//'::sMatAvMult_gsm_xdyl_'
-
- end subroutine sMatAvMult_gsm_xdyl_
-
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!     Math + Computer Science Division / Argonne National Laboratory   !
-!BOP -------------------------------------------------------------------
-!
-! !IROUTINE: sMatAvMult_gm_xlyd_() -- Multiply, y GlobalMap distributed.
-!
-! !DESCRIPTION:
-!
-! !INTERFACE:
-
- subroutine sMatAvMult_gm_xlyd_(xaV, sMat, yaV, yGMap)
-!
-! !USES:
-!
-      use m_stdio
-      use m_die
-      use m_mpif90
-      use m_GlobalMap, only : GlobalMap
-      use m_AttrVect, only : AttrVect
-      use m_SparseMatrix, only : SparseMatrix
-
-      implicit none
-
-      type(AttrVect),     intent(in)    :: xaV
-      type(SparseMatrix), intent(in)    :: sMat
-      type(AttrVect),     intent(inout) :: yaV
-      type(GlobalMap),    intent(in)    :: yGMap
-
-
-! !REVISION HISTORY:
-!       15Jan01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
-!EOP ___________________________________________________________________
-
-  character(len=*),parameter :: myname_=myname//'::sMatAvMult_gm_xlyd_'
-
- end subroutine sMatAvMult_gm_xlyd_
-
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!     Math + Computer Science Division / Argonne National Laboratory   !
-!BOP -------------------------------------------------------------------
-!
-! !IROUTINE: sMatAvMult_gsm_xlyd_() -- Multiply, x GlobalSegMap distributed.
-!
-! !DESCRIPTION:
-!
-! !INTERFACE:
-
- subroutine sMatAvMult_gsm_xlyd_(xaV, sMat, yaV, yGSMap)
-!
-! !USES:
-!
-      use m_stdio
-      use m_die
-      use m_mpif90
-      use m_GlobalSegMap, only : GlobalSegMap
-      use m_AttrVect, only : AttrVect
-      use m_SparseMatrix, only : SparseMatrix
-
-      implicit none
-
-      type(AttrVect)   ,  intent(in)    :: xaV
-      type(SparseMatrix), intent(in)    :: sMat
-      type(AttrVect),     intent(inout) :: yaV
-      type(GlobalSegMap), intent(in)    :: yGSMap
-
-
-! !REVISION HISTORY:
-!       15Jan01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
-!EOP ___________________________________________________________________
-
-  character(len=*),parameter :: myname_=myname//'::sMatAvMult_gsm_xlyd_'
-
- end subroutine sMatAvMult_gsm_xlyd_
-
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!     Math + Computer Science Division / Argonne National Laboratory   !
-!BOP -------------------------------------------------------------------
-!
-! !IROUTINE: sMatAvMult_gm_xdyd_() -- Multiply, x, y GlobalMap distributed.
-!
-! !DESCRIPTION:
-!
-! !INTERFACE:
-
- subroutine sMatAvMult_gm_xdyd_(xaV, xGMap, sMat, yaV, yGMap)
-!
-! !USES:
-!
-      use m_stdio
-      use m_die
-      use m_mpif90
-      use m_GlobalMap, only : GlobalMap
-      use m_AttrVect, only : AttrVect
-      use m_SparseMatrix, only : SparseMatrix
-
-      implicit none
-
-      type(AttrVect),     intent(in)    :: xaV
-      type(GlobalMap),    intent(in)    :: xGMap
-      type(SparseMatrix), intent(in)    :: sMat
-      type(AttrVect),     intent(inout) :: yaV
-      type(GlobalMap),    intent(in)    :: yGMap
-
-
-! !REVISION HISTORY:
-!       15Jan01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
-!EOP ___________________________________________________________________
-
-  character(len=*),parameter :: myname_=myname//'::sMatAvMult_gm_xdyd_'
-
- end subroutine sMatAvMult_gm_xdyd_
-
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!     Math + Computer Science Division / Argonne National Laboratory   !
-!BOP -------------------------------------------------------------------
-!
-! !IROUTINE: sMatAvMult_gsm_xdyd_() -- Mult., x,y GlobalSegMap distributed.
-!
-! !DESCRIPTION:
-!
-! !INTERFACE:
-
- subroutine sMatAvMult_gsm_xdyd_(xaV, xGSMap, sMat, yaV, yGSMap)
-!
-! !USES:
-!
-      use m_stdio
-      use m_die
-      use m_mpif90
-      use m_GlobalSegMap, only : GlobalSegMap
-      use m_AttrVect, only : AttrVect
-      use m_SparseMatrix, only : SparseMatrix
-
-      implicit none
-
-      type(AttrVect)   ,  intent(in)    :: xaV
-      type(GlobalSegMap), intent(in)    :: xGSMap
-      type(SparseMatrix), intent(in)    :: sMat
-      type(AttrVect),     intent(inout) :: yaV
-      type(GlobalSegMap), intent(in)    :: yGSMap
-
-
-! !REVISION HISTORY:
-!       15Jan01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
-!EOP ___________________________________________________________________
-
-  character(len=*),parameter :: myname_=myname//'::sMatAvMult_gsm_xdyd_'
-
- end subroutine sMatAvMult_gsm_xdyd_
+ end subroutine sMatAvMult_SMPlus_
 
  end module m_MatAttrVectMul
+
+
+
+
