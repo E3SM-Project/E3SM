@@ -24,11 +24,12 @@
 #
 # !REVISION HISTORY: (`cvs log <>' for more)
 #       25MAY02 - R. L. Jacob - initial version
+#       23Oct03 - R. Jacob - incorporate mods from Yoshi.
 #
 #EOP
 #-----------------------------------------------------------------------
 
-_Dsys		= -DsysSUPER_UX
+_Dsys		= -DsysSUPER_UX -UES
 _Dnod		= 
 
 # Environments
@@ -54,27 +55,27 @@ SHELL		= /usr/bin/sh
 
 CPP		= /usr/lib/cpp
 
-F77		= mpif90
-F90		= mpif90
+F77		= esmpif90
+F90		= esmpif90
 FC		= $(F90)
 
 #_Ftrace                = -ftrace
+#_Ftrace                =  -vampir 
 #_Ftrace                = -Wf,"-vampir" -vampir
 
-# orignal
-#FFLAGS		= -C hopt -Wf"-pvctl noassoc"
-FFLAGS		= -C vopt -Wf"-pvctl fullmsg -L fmtlist transform map" $(_Ftrace)
+#FFLAGS         = -C vsafe -Wf"-pvctl fullmsg -L fmtlist transform map" $(_Ftrace)
+FFLAGS          = -C vopt -Wf"-pvctl fullmsg -L fmtlist transform map" $(_Ftrace
 
 CFLAGS		= -O $(_Dsys)
 
 ZIP		= /usr/bin/compress
-ZCAT		= /usr/bin/zcat
+ZCAT		= /usr/local/bin/zcat
 TAR		= /usr/bin/tar
 
-LD		= mpif90
+LD		= esmpif90
 LDFLAGS		= $(FFLAGS)
 
-#AR		= ar cqs
+AR		= esar cqs
 #RM		= rm -f
 MV		= /usr/bin/mv
 
