@@ -27,8 +27,13 @@
       real*8,parameter :: R8=1.
       real,  parameter :: R =1.
 
+#ifdef SELECTEDREALKIND
+      integer,parameter :: SP = selected_real_kind( 6)  ! 32-bit real, on most platforms
+      integer,parameter :: DP = selected_real_kind(12)  ! 64-bit real, on most platforms
+#else
       integer,parameter :: SP = kind(1.  )
       integer,parameter :: DP = kind(1.D0)
+#endif
 
 !     Set the current default floating point precision 
       integer,parameter :: FP = DP
