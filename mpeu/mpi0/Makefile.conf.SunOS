@@ -94,7 +94,7 @@ FPPFLAGS	= $(F90PPFLAGS)
 .F.o:
 	$(RM) $*.f
 	$(FPP) $(FPPFLAGS) $(_DF) $(_I) $*.F $*.f
-	$(FC) -c $(FCFLAGS) $(_I) $(_M) $*.f;		\
+	$(FC) -c $(FFLAGS) $(_I) $(_M) $*.f;		\
 	  if [ $$? -ne 0 ]; then $(RM) $*.o; fi
 	$(RM) $*.f
 
@@ -102,7 +102,7 @@ FPPFLAGS	= $(F90PPFLAGS)
 .F90.o:
 	$(RM) $*.f90
 	$(FPP) $(FPPFLAGS) $(_DF) $(_I) $*.F90 $*.f90
-	$(FC) -c $(FCFLAGS) $(_I) $(_M) $*.f90;	\
+	$(FC) -c $(FFLAGS) $(_I) $(_M) $*.f90;	\
 	  if [ $$? -ne 0 ]; then $(RM) $*.o; fi
 	$(RM) $*.f90
 
