@@ -117,7 +117,7 @@ if test "$F90" = "frt"; then # -Am flag needed for frt to gerate mod files
    F90FLAGS="-Am"
 fi
 if test "$F90" = "ftn"; then # -em flag needed for ftn to gerate mod files
-   F90FLAGS="-Am"
+   F90FLAGS="-em"
 fi
 AC_F90_MOD_UPPERCASE
 F90FLAGS="$OLDF90FLAGS"
