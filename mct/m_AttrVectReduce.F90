@@ -707,6 +707,7 @@
 !
       use m_die ,          only : die
       use m_stdio ,        only : stderr
+      use m_realkinds,     only : SP
 
       use m_List,          only : List
       use m_List,          only : List_init => init
@@ -725,7 +726,7 @@
 ! !INPUT PARAMETERS:
 !
       type(AttrVect),               intent(IN)  :: inAV
-      real, dimension(:),           pointer     :: Weights
+      real(SP), dimension(:),       pointer     :: Weights
       character(len=*),   optional, intent(IN)  :: WeightSumAttr
 
 ! !OUTPUT PARAMETERS:
@@ -837,6 +838,7 @@
 !
       use m_die ,          only : die
       use m_stdio ,        only : stderr
+      use m_realkinds,     only : DP
 
       use m_List,          only : List
       use m_List,          only : List_init => init
@@ -855,7 +857,7 @@
 ! !INPUT PARAMETERS:
 !
       type(AttrVect),               intent(IN)  :: inAV
-      real, dimension(:),           pointer     :: Weights
+      real(DP), dimension(:),       pointer     :: Weights
       character(len=*),   optional, intent(IN)  :: WeightSumAttr
 
 ! !OUTPUT PARAMETERS:
@@ -972,6 +974,7 @@
       use m_die
       use m_stdio ,        only : stderr
       use m_mpif90
+      use m_realkinds,     only : SP
 
       use m_List,          only : List
       use m_List,          only : List_exportToChar => exportToChar
@@ -986,7 +989,7 @@
 ! !INPUT PARAMETERS:
 !
       type(AttrVect),               intent(IN)  :: inAV
-      real, dimension(:),           pointer     :: Weights
+      real(SP), dimension(:),       pointer     :: Weights
       integer,                      intent(IN)  :: comm
       character(len=*),   optional, intent(IN)  :: WeightSumAttr
 
@@ -1079,6 +1082,7 @@
       use m_die
       use m_stdio ,        only : stderr
       use m_mpif90
+      use m_realkinds,     only : DP
 
       use m_List,          only : List
       use m_List,          only : List_exportToChar => exportToChar
@@ -1093,7 +1097,7 @@
 ! !INPUT PARAMETERS:
 !
       type(AttrVect),               intent(IN)  :: inAV
-      real, dimension(:),           pointer     :: Weights
+      real(DP), dimension(:),       pointer     :: Weights
       integer,                      intent(IN)  :: comm
       character(len=*),   optional, intent(IN)  :: WeightSumAttr
 
