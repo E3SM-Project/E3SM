@@ -19,8 +19,12 @@
 #ifdef sysSUPER_UX
 #define Const_MPItype_
 #else
+#ifdef sysFujitsu
+#define Const_MPItype_
+#else
 #ifdef Const_MPItype_
 #undef Const_MPItype_
+#endif
 #endif
 #endif
 #endif
