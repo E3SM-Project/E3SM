@@ -54,6 +54,7 @@
       public :: peLocs          ! Given an input list of point indices,
                                 ! return its (unique) process ID.
       public :: haloed          ! Is the input GlobalSegMap haloed?
+      public :: rank            ! Rank which process owns a datum
       public :: Sort            ! compute index permutation to re-order
                                 ! GlobalSegMap%start, GlobalSegMap%length,
                                 ! and GlobalSegMap%pe_loc
