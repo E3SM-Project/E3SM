@@ -56,6 +56,11 @@
   Linux pgf90
   Linux NAG
   Linux ifc/efc/ifort
+     NOTE:  The following Intel Fortran Compiler versions are needed
+            to compile/run MCT: 8.0: Build 20040212 or later;
+	    7.1: Builds 20030519,20030605,20030617Z,20030814,20031106 or later;
+	    7.0: Builds 20021028Z, 20021212Z or later
+	    See the MCT homepage for updated information.
   NEC
   Fujitsu
 
