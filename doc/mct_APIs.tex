@@ -1,6 +1,9 @@
 %mct API Specification
 % J.W. Larson / MCS, Argonne National Laboratory
+% R.L. Jacob
 % First Version Begun 8/28/00
+%
+%
 \documentclass{article}
 \usepackage{epsfig}
 \usepackage{graphicx}
@@ -51,7 +54,7 @@ The Model Coupling Toolkit (mct) API Definition Document
 \vspace{.3in}
              J.~W.~Larson\\
              R.~L.~Jacob\\
-             A.~N.~D.~Others\\
+             E.~Ong\\
 \vspace{.2in} {\em Mathematics and Computer Science Division,
 Argonne National Laboratory\\}
 
@@ -94,8 +97,14 @@ Climate Prediction Initiative (ACPI) Avant Garde Project.}
 \begin{tabular}{|l|l|l|l|}\hline
 {\bf Version} & {\bf Version} & {\bf Pages Affected/}   & {\bf Aproval}\\
 {\bf Number}  & {\bf Date}    & {\bf Extent of Changes} & {\bf Authority}\\
-\hline\hline Version 1$\beta$ & December 13, 2000      & First
-draft (before review) &\\\hline
+\hline
+\hline 
+Version 1$\beta$ & December 13, 2000      & First draft (before review) &
+\\\hline
+Version 1$\beta2$ & February 16, 2001      & Add more routines &
+\\\hline
+Version 1$\beta3$ & June 6, 2001      & Convert to pure API's doc &
+\\\hline
 \end{tabular}
 \end{center}
 
@@ -110,16 +119,8 @@ draft (before review) &\\\hline
 \vspace*{\fill}
 
 \begin{abstract}
-In this document we state the Application Program Interfaces (APIs)
- for the model coupling toolkit (mct), which has been proposed as
-a set of components to implement the Next-Generation
-Coupler (NGC) for the Community Climate System Model (CCSM).
-Analysis of the Coupler's requirements lead us to a layered
-design capable of supporting the coupler's high-level
-command/control functions and its relatively low-level grid
-transformation and physics calculation functions.  This design
-and the concept of a Model Coupling Toolkit (MCT) were introduced 
-in the NGC proposed design document.
+In this document we provide the Application Program Interfaces (APIs)
+for the Model Coupling Toolkit (MCT).
 \end{abstract}
 
 \vspace*{\fill}
@@ -132,99 +133,61 @@ in the NGC proposed design document.
 
 \pagenumbering{arabic}
 
-\part{What is the Model Coupling Toolkit?}
-
-\section{Introduction}
-
-The goal of the Accelerated Climate Prediction Initiative (ACPI)
-Avant Garde Project is to construct a performance-portable
-version of the Community Climate System Model (CCSM).  This new
-model is to be built using solid software design and engineering
-practices.  The CCSM marks the merger of the National Center for
-Atmospheric Research (NCAR) Climate System Model (CSM) with the
-Parallel Climate Model (PCM).   One of the chief design
-challenges for the CCSM is the flux coupler, which has been
-nicknamed {\em the Next-Generation Coupler} (NGC).
-
-The NGC is expected to increase dramatically the flexibility of
-the CCSM, and expand correspondingly the variety of research
-possible using this model.  The NGC will be constructed using 
-components in the mct.
-
-In the design document, we outlined a layered design for the 
-NGC (Figure \ref{fig:coupler-layers}).  Here we state in detail 
-the API's for layers three and four of this design, which comprise 
-the mct.
-
-\begin{figure}
-\epsfxsize=6.0in
-\centerline{\epsfbox{coupler-layers.eps} }
-\caption{Software layers for the coupler.}
-\label{fig:coupler-layers}
-\end{figure}
-
-\section{Level 3 Classes and Methods}
-The lowest level of the toolkit is the definition of the internal 
-data representation of the coupler (the {\tt AttrVect}), two simple 
-schemes for one-and-two dimensional data decompositions (the 
-{\tt GlobalMap} and {\tt GlobalSegMap} respectively), and indexing 
-of local data ({\tt the Navigator}).  In addition to these basic 
-classes, some simple, collective communications methods are defined
-for the {\tt AttrVect} component.
-
-\section{Level Classes and Methods 4}
-This layer of the toolkit contains classes and methods built upon 
-level 3  classes.  These include:  a time averaging component (the 
-{\tt Accumulator}) and some simple collective communications 
-methods associated with it; representation of sparse matrices 
-(the {\tt SparseMatrix}) and matrix-{\tt AttrVect} operations;
-a general definition of coordinate grids (the {\tt GeneralGrid});
-a general representation of collective data transfer---whether it be 
-a transpose or a parallel transfer between pools of processors that 
-can be either on the same set of processors or differing sets of 
-processors (the {\tt Router}) and communications methods that employ
-it; a facility for merging flux and state data from multiple component 
-models (design still under discussion); a highest-level, all-encompassing
- class that describes the exchange of data between two component 
-models---the {\tt Contract} (design still in progress).
-
-
-\part{Level 3 API's}
-\section{Documentation of the AttrVect Module}
-\input{texsrc/m_AttrVect}
-\section{Documentation of the Navigator Module}
-\input{texsrc/m_Navigator}
-\section{Documentation of the GlobalMap Module}
-\input{texsrc/m_GlobalMap}
-\section{Documentation of the GlobalSegMap Module}
-\input{texsrc/m_GlobalSegMap}
-\section{Documentation of the AttrVectComms Module}
-\input{texsrc/m_AttrVectComms}
-\part{Level 4 API's}
-\section{Documentation of the Accumulator Module}
-\input{texsrc/m_Accumulator}
-\section{Documentation of the AccumulatorComms Module}
-\input{texsrc/m_AccumulatorComms}
-\section{Documentation of the SparseMatrix Module}
-\input{texsrc/m_SparseMatrix}
-\section{Documentation of the MCTWorld Module}
+\part{Basic API's and associated communication routines}
+%
+\section{MCTWorld}
 \input{texsrc/m_MCTWorld}
-\section{Documentation of the GeneralGrid Module}
-\input{texsrc/m_GeneralGrid}
-\section{Documentation of the MatAttrVectMul Module}
-\input{texsrc/m_MatAttrVectMul}
-\section{Documentation of the Router Module}
+%
+\section{The Attribute Vector}
+\input{texsrc/m_AttrVect}
+\input{texsrc/m_AttrVectComms}
+%
+\section{Global Segment Map}
+\input{texsrc/m_GlobalSegMap}
+%
+\section{The Router}
 \input{texsrc/m_Router}
-\section{Documentation of the SharedAttrIndices Module}
-\input{texsrc/m_SharedAttrIndices}
-\section{Documentation of the GlobalToLocal Module}
-\input{texsrc/m_GlobalToLocal}
-\section{Documentation of the MCT\_Recv Routine}
-\input{texsrc/MCT_Recv}
-\section{Documentation of the MCT\_Send Routine}
-\input{texsrc/MCT_Send}
-\section{Documentation of the accumulate Routine}
+%
+\section{The General Grid}
+\input{texsrc/m_GeneralGrid}
+\input{texsrc/m_GeneralGridComms}
+%
+\section{The Navigator}
+\input{texsrc/m_Navigator}
+%
+\section{The Global Map}
+\input{texsrc/m_GlobalMap}
+%
+%
+\part{High Level API's}
+\section{The Accumulator}
+\input{texsrc/m_Accumulator}
 \input{texsrc/accumulate}
+\input{texsrc/m_AccumulatorComms}
+\section{Sparse Matrix Support}
+\input{texsrc/m_SparseMatrix}
+\input{texsrc/m_SparseMatrixComms}
+\input{texsrc/m_SparseMatrixDecomp}
+\input{texsrc/m_SparseMatrixToMaps}
+%
+\section{Matrix Vector Multiplication}
+\input{texsrc/m_MatAttrVectMul}
+%
+\section{Shared Attribute Indices}
+\input{texsrc/m_SharedAttrIndices}
+%
+\section{Global To Local}
+\input{texsrc/m_GlobalToLocal}
+%
+\section{Sending and Receiving Attribute Vectors}
+\input{texsrc/MCT_Recv}
+\input{texsrc/MCT_Send}
+%
+\section{Non-blocking Sending and Receiving of Attribute Vectors}
+\input{texsrc/m_NBSend}
+%
+\section{Convert From Global Map To Global Segment Map}
+\input{texsrc/m_ConvertMaps}
 
 %\addcontentsline{toc}{part}{References}
 
