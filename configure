@@ -1351,6 +1351,7 @@ if test "$ES" = "YES"; then
    if test -z "$OPT"; then
       OPT="-C vopt"
    fi
+   MACHDEFS="-DESVEC $MACHDEFS"
 fi
 
 # Check if we are on NCSA IA-64 cluster titan
@@ -2212,7 +2213,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:2215:" \
+echo "$as_me:2216:" \
      "checking for Fortran 90 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -2587,7 +2588,7 @@ _ACEOF
 # 1 to this macro) to the Fortran 90 compiler in order to get "version" output
 ac_save_F90FLAGS=$F90FLAGS
 F90FLAGS="$F90FLAGS $ac_version"
-(eval echo $as_me:2590: \"$ac_link\") >&5
+(eval echo $as_me:2591: \"$ac_link\") >&5
 ac_f90_version_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 echo "$ac_f90_version_output" >&5
 F90FLAGS=$ac_save_F90FLAGS

@@ -41,6 +41,7 @@ if test "$ES" = "YES"; then
    if test -z "$OPT"; then
       OPT="-C vopt"
    fi      
+   MACHDEFS="-DESVEC $MACHDEFS"
 fi
 
 # Check if we are on NCSA IA-64 cluster titan
