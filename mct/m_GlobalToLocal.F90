@@ -70,7 +70,7 @@
 !  2Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
 
-  character(len=len('m_GlobalToLocal')),parameter :: myname='m_GlobalToLocal'
+  character(len=*),parameter :: myname='MCT::m_GlobalToLocal'
 
  contains
 
