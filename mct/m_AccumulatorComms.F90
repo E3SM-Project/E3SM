@@ -35,14 +35,23 @@
 ! Definition of interfaces for the communication methods for 
 ! the Accumulator:
 
-    interface gather ; module procedure gather_ ; end interface
-    interface scatter; module procedure scatter_; end interface
+    interface gather ; module procedure &
+              GM_gather_, &
+              GSM_gather_ 
+    end interface
+    interface scatter ; module procedure &
+              GM_scatter_, &
+              GSM_scatter_ 
+    end interface
     interface bcast  ; module procedure bcast_  ; end interface
 
 ! !REVISION HISTORY:
 ! 	31Oct00 - Jay Larson <larson@mcs.anl.gov> - initial prototype--
 !                 These routines were separated from the module 
 !                 {\tt m\_Accumulator}
+!       15Jan01 - Jay Larson <larson@mcs.anl.gov> - Specification of 
+!                 APIs for the routines {\tt GSM_gather_()} and 
+!                 {\tt GSM_scatter_()}.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_AccumulatorComms'
@@ -53,13 +62,13 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: gather_ - gather a vector according to a given GlobalMap
+! !IROUTINE: GM_gather_ - gather a vector using input GlobalMap.
 !
 ! !DESCRIPTION:
 !
 ! !INTERFACE:
 
- subroutine gather_(iC,oC,Mp,root,comm,stat)
+ subroutine GM_gather_(iC, oC, GMap, root, comm, stat)
 !
 ! !USES:
 !
@@ -69,14 +78,14 @@
       use m_GlobalMap, only : GlobalMap_lsize => lsize
       use m_GlobalMap, only : GlobalMap_gsize => gsize
       use m_AttrVect,  only : AttrVect_lsize => lsize
-      use m_Accumulator,  only : Accumulator_lsize => lsize
-      use m_AttrVectComms,  only : AttrVect_gather => gather
+      use m_Accumulator,   only : Accumulator_lsize => lsize
+      use m_AttrVectComms, only : AttrVect_gather => gather
       use m_mpif90
 
       implicit none
       type(Accumulator),intent(in)  :: iC
       type(Accumulator),intent(out) :: oC
-      type(GlobalMap) ,intent(in)   :: Mp
+      type(GlobalMap) ,intent(in)   :: GMap
       integer, intent(in) :: root
       integer, intent(in) :: comm
       integer, optional,intent(out) :: stat
@@ -85,9 +94,10 @@
 ! 	13Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
 ! 	31Oct00 - Jay Larson <larson@mcs.anl.gov> - relocated to the
 !                 module m_AccumulatorComms
+! 	15Jan01 - Jay Larson <larson@mcs.anl.gov> - renamed GM_gather_
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname_=myname//'::gather_'
+  character(len=*),parameter :: myname_=myname//'::GM_gather_'
 
   integer :: nIA,nRA,niC,noC,ier
   integer :: myID
@@ -108,11 +118,11 @@
         ! size listed for iC is the same as the local size
         ! of iC
 
-  niC = GlobalMap_lsize(Mp)
+  niC = GlobalMap_lsize(GMap)
   noC = Accumulator_lsize(iC)
   if(niC /= noC) then
     write(stderr,'(2a,i4,a,i4)') myname_,	&
-	': invalid input, lsize(Mp) =',niC,	&
+	': invalid input, lsize(GMap) =',niC,	&
 	', lsize(iV) =',noC
     if(.not.present(stat)) call die(myname_)
     stat = -1
@@ -121,7 +131,7 @@
 
         ! the gathered local size, for the output
 
-  noC = GlobalMap_gsize(Mp)
+  noC = GlobalMap_gsize(GMap)
 
         ! Check to be sure that all the accumulators have performed
         ! same number of time steps in the accumulation process:
@@ -154,7 +164,7 @@
         ! gathered is its data, which are stored in its AttrVect
         ! component
 
-  call AttrVect_gather(iC%av,oC%av,Mp,root,comm,ier)
+  call AttrVect_gather(iC%av,oC%av,GMap,root,comm,ier)
 
   if(ier /= 0) then
     call MP_perr(myname_,'AttrVect_gather',ier)
@@ -163,24 +173,65 @@
     return
   endif
 
- end subroutine gather_
+ end subroutine GM_gather_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: scatter_ - scatter an Accumulator using a GlobalMap.
+! !IROUTINE: GSM_gather_ - gather a vector using input GlobalSegMap.
 !
 ! !DESCRIPTION:
 !
 ! !INTERFACE:
 
- subroutine scatter_(iC,oC,Mp,root,comm,stat)
+ subroutine GSM_gather_(iC, oC, GSMap, root, comm, stat)
 !
 ! !USES:
 !
       use m_stdio
       use m_die
+      use m_GlobalSegMap, only : GlobalSegMap
+      use m_GlobalSegMap, only : GlobalSegMap_lsize => lsize
+      use m_GlobalSegMap, only : GlobalSegMap_gsize => gsize
+      use m_AttrVect,  only : AttrVect_lsize => lsize
+      use m_Accumulator,   only : Accumulator_lsize => lsize
+      use m_AttrVectComms, only : AttrVect_gather => gather
+      use m_mpif90
+
+      implicit none
+      type(Accumulator),intent(in)  :: iC
+      type(Accumulator),intent(out) :: oC
+      type(GlobalSegMap) ,intent(in)   :: GSMap
+      integer, intent(in) :: root
+      integer, intent(in) :: comm
+      integer, optional,intent(out) :: stat
+
+! !REVISION HISTORY:
+! 	15Jan01 - Jay Larson <larson@mcs.anl.gov> - API specification.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::GSM_gather_'
+
+ end subroutine GSM_gather_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: GM_scatter_ - scatter an Accumulator using input GlobalMap.
+!
+! !DESCRIPTION:
+!
+! !INTERFACE:
+
+ subroutine GM_scatter_(iC, oC, GMap, root, comm, stat)
+!
+! !USES:
+!
+      use m_stdio
+      use m_die
+      use m_GlobalMap, only : GlobalMap
       use m_GlobalMap, only : GlobalMap_lsize => lsize
       use m_GlobalMap, only : GlobalMap_gsize => gsize
       use m_Accumulator, only : Accumulator_lsize => lsize
@@ -190,7 +241,7 @@
       implicit none
       type(Accumulator),intent(in)  :: iC
       type(Accumulator),intent(out) :: oC
-      type(GlobalMap) ,intent(in)  :: Mp
+      type(GlobalMap) ,intent(in)  :: GMap
       integer, intent(in) :: root
       integer, intent(in) :: comm
       integer, optional,intent(out) :: stat
@@ -199,9 +250,10 @@
 ! 	14Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
 ! 	31Oct00 - Jay Larson <larson@mcs.anl.gov> - moved from the module
 !                 m_Accumulator to m_AccumulatorComms
+! 	15Jan01 - Jay Larson <larson@mcs.anl.gov> - renamed GM_scatter_.
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname_=myname//'::scatter_'
+  character(len=*),parameter :: myname_=myname//'::GM_scatter_'
 
   integer :: niC,noC,ier
   integer :: num_steps, steps_done
@@ -219,20 +271,20 @@
 
 	! Verify the input: a _gathered_ Accumulator.
 
-  niC = GlobalMap_gsize(Mp)	! the _gathered_ local size
+  niC = GlobalMap_gsize(GMap)	! the _gathered_ local size
   if(myID /= root) niC=0
 
   noC = Accumulator_lsize(iC)
   if(niC /= noC) then
     write(stderr,'(2a,i4,a,i4)') myname_,	&
-	': invalid input, rsize(Mp) =',niC,	&
+	': invalid input, rsize(GMap) =',niC,	&
 	', lsize(iC) =',noC
     if(.not.present(stat)) call die(myname_)
     stat=-1
     return
   endif
 
-  noC = GlobalMap_lsize(Mp)	! the _scatterd_ local size
+  noC = GlobalMap_lsize(GMap)	! the _scatterd_ local size
 
  
 	! Broadcast the root value of num_steps
@@ -262,13 +314,51 @@
 
   call initv_(oC,iC,noC,num_steps,steps_done)
 
-	! Scatter the AttrVect component av using the GlobalMap Mp:
+	! Scatter the AttrVect component av using the GlobalMap GMap:
 
-  call AttrVect_scatter(iC%av, oC%av, Mp, root, comm, ier)
+  call AttrVect_scatter(iC%av, oC%av, GMap, root, comm, ier)
 
- end subroutine scatter_
+ end subroutine GM_scatter_
 
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: GSM_scatter_ - scatter Accumulator using input GlobalSegMap.
+!
+! !DESCRIPTION:
+!
+! !INTERFACE:
+
+ subroutine GSM_scatter_(iC, oC, GSMap, root, comm, stat)
+!
+! !USES:
+!
+      use m_stdio
+      use m_die
+      use m_GlobalSegMap, only : GlobalSegMap
+      use m_GlobalSegMap, only : GlobalSegMap_lsize => lsize
+      use m_GlobalSegMap, only : GlobalSegMap_gsize => gsize
+      use m_Accumulator,  only : Accumulator_lsize => lsize
+      use m_mpif90
+      use m_AttrVectComms, only : AttrVect_scatter => scatter
+
+      implicit none
+      type(Accumulator),intent(in)  :: iC
+      type(Accumulator),intent(out) :: oC
+      type(GlobalSegMap) ,intent(in)  :: GSMap
+      integer, intent(in) :: root
+      integer, intent(in) :: comm
+      integer, optional,intent(out) :: stat
+
+! !REVISION HISTORY:
+! 	15Jan01 - Jay Larson <larson@mcs.anl.gov> - API specification.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::GSM_scatter_'
+
+ end subroutine GSM_scatter_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
@@ -350,5 +440,5 @@
   endif
 
  end subroutine bcast_
-
+ 
  end module m_AccumulatorComms

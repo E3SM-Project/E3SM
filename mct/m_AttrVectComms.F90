@@ -7,8 +7,8 @@
 ! !DESCRIPTION:
 !
 ! In this module, we define communications methods specific to the 
-! {\tt AttrVect} class (see m_AttrVect for more information about this
-! class and its methods).
+! {\tt AttrVect} class (see the module {\tt m\_AttrVect} for more 
+! information about this class and its methods).
 !
 ! !INTERFACE:
  module m_AttrVectComms
@@ -26,13 +26,21 @@
       public :: scatter		! scatter from the root to all PEs
       public :: bcast		! bcast from root to all PEs
 
-    interface gather ; module procedure gather_ ; end interface
-    interface scatter; module procedure scatter_; end interface
+    interface gather ; module procedure &
+	      GM_gather_, &
+	      GSM_gather_ 
+    end interface
+    interface scatter ; module procedure &
+	      GM_scatter_, &
+	      GSM_scatter_ 
+    end interface
     interface bcast  ; module procedure bcast_  ; end interface
 
 ! !REVISION HISTORY:
 ! 	27Oct00 - J.W. Larson <larson@mcs.anl.gov> - relocated routines
 !                 from m_AttrVect to create this module.
+!       15Jan01 - J.W. Larson <larson@mcs.anl.gov> - Added APIs for 
+!                 GSM_gather_() and GSM_scatter_().
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_AttrVectComms'
@@ -43,13 +51,13 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: gather_ - gather a vector according to a given _map_
+! !IROUTINE: GM_gather_ - gather a vector using input GlobalMap.
 !
 ! !DESCRIPTION:
 !
 ! !INTERFACE:
 
- subroutine gather_(iV,oV,Mp,root,comm,stat)
+ subroutine GM_gather_(iV,oV,GMap,root,comm,stat)
 !
 ! !USES:
 !
@@ -61,7 +69,7 @@
       use m_GlobalMap, only : GlobalMap_gsize => gsize
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
-      use m_AttrVect,  only : AttrVect_lsize => lsize
+      use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nIAttr => nIAttr
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
 
@@ -69,7 +77,7 @@
 
       type(AttrVect),intent(in)  :: iV
       type(AttrVect),intent(out) :: oV
-      type(GlobalMap) ,intent(in)  :: Mp
+      type(GlobalMap) ,intent(in)  :: GMap
       integer, intent(in) :: root
       integer, intent(in) :: comm
       integer, optional,intent(out) :: stat
@@ -78,9 +86,10 @@
 ! 	15Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
 ! 	27Oct00 - J.W. Larson <larson@mcs.anl.gov> - relocated from
 !                 m_AttrVect
+!       15Jan01 - J.W. Larson <larson@mcs.anl.gov> - renamed GM_gather_
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname_=myname//'::gather_'
+  character(len=*),parameter :: myname_=myname//'::GM_gather_'
   integer :: nIA,nRA,niV,noV,ier
   integer :: myID
 
@@ -96,29 +105,29 @@
 
 	! Verify the input: a _scatterd_ vector
 
-  niV=GlobalMap_lsize(Mp)
+  niV=GlobalMap_lsize(GMap)
   noV=AttrVect_lsize(iV)
 
   if(niV /= noV) then
     write(stderr,'(2a,i4,a,i4)') myname_,	&
-	': invalid input, lsize(Mp) =',niV,	&
+	': invalid input, lsize(GMap) =',niV,	&
 	', lsize(iV) =',noV
     if(.not.present(stat)) call die(myname_)
     stat=-1
     return
   endif
 
-  noV=GlobalMap_gsize(Mp) ! the gathered local size, as for the output
+  noV=GlobalMap_gsize(GMap) ! the gathered local size, as for the output
   if(myID /= root) nov=0
   call AttrVect_init(oV,iV,noV)
 
-  niV=GlobalMap_lsize(Mp) ! the scattered local size, as for the input
+  niV=GlobalMap_lsize(GMap) ! the scattered local size, as for the input
 
   nIA=AttrVect_nIAttr(oV)	! number of INTEGER attributes
   nRA=AttrVect_nRAttr(oV)	! number of REAL attributes
 
   call MPI_gatherv(iV%iAttr,niV*nIA,MP_INTEGER,			&
-	oV%iAttr,Mp%counts*nIA,Mp%displs*nIA,MP_INTEGER,	&
+	oV%iAttr,GMap%counts*nIA,GMap%displs*nIA,MP_INTEGER,	&
 	root,comm,ier)
   if(ier /= 0) then
     call MP_perr(myname_,'MPI_gatherv(iAttr)',ier)
@@ -128,7 +137,7 @@
   endif
 
   call MPI_gatherv(iV%rAttr,niV*nRA,MP_REAL,		&
-	oV%rAttr,Mp%counts*nRA,Mp%displs*nRA,MP_REAL,	&
+	oV%rAttr,GMap%counts*nRA,GMap%displs*nRA,MP_REAL,	&
 	root,comm,ier)
   if(ier /= 0) then
     call MP_perr(myname_,'MPI_gatherv(rAttr)',ier)
@@ -137,19 +146,62 @@
     return
   endif
 
- end subroutine gather_
+ end subroutine GM_gather_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: scatter_ - scatter a vecter according to a given _map_
+! !IROUTINE: GSM_gather_ - gather a vector using input GlobalSegMap.
 !
 ! !DESCRIPTION:
 !
 ! !INTERFACE:
 
- subroutine scatter_(iV,oV,Mp,root,comm,stat)
+ subroutine GSM_gather_(iV, oV, GSMap, root, comm, stat)
+!
+! !USES:
+!
+      use m_stdio
+      use m_die
+      use m_mpif90
+      use m_GlobalSegMap, only : GlobalSegMap
+      use m_GlobalSegMap, only : GlobalSegMap_lsize => lsize
+      use m_GlobalSegMap, only : GlobalSegMap_gsize => gsize
+      use m_AttrVect, only : AttrVect
+      use m_AttrVect, only : AttrVect_init => init
+      use m_AttrVect, only : AttrVect_lsize => lsize
+      use m_AttrVect, only : AttrVect_nIAttr => nIAttr
+      use m_AttrVect, only : AttrVect_nRAttr => nRAttr
+
+      implicit none
+
+      type(AttrVect),intent(in)  :: iV
+      type(AttrVect),intent(out) :: oV
+      type(GlobalSegMap) ,intent(in)  :: GSMap
+      integer, intent(in) :: root
+      integer, intent(in) :: comm
+      integer, optional,intent(out) :: stat
+
+! !REVISION HISTORY:
+! 	15Jan00 - J.W. Larson <larson@mcs.anl.gov> - API specification.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::GSM_gather_'
+
+ end subroutine GSM_gather_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: GM_scatter_ - scatter a vecter using input GlobalMap.
+!
+! !DESCRIPTION:
+!
+! !INTERFACE:
+
+ subroutine GM_scatter_(iV, oV, GMap, root, comm, stat)
 !
 ! !USES:
 !
@@ -169,7 +221,7 @@
 
       type(AttrVect),intent(in)  :: iV
       type(AttrVect),intent(out) :: oV
-      type(GlobalMap) ,intent(in)  :: Mp
+      type(GlobalMap) ,intent(in)  :: GMap
       integer, intent(in) :: root
       integer, intent(in) :: comm
       integer, optional,intent(out) :: stat
@@ -178,9 +230,10 @@
 ! 	21Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
 ! 	27Oct00 - J.W. Larson <larson@mcs.anl.gov> - relocated from
 !                 m_AttrVect
+! 	15Jan01 - J.W. Larson <larson@mcs.anl.gov> - renamed  GM_scatter_
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname_=myname//'::scatter_'
+  character(len=*),parameter :: myname_=myname//'::GM_scatter_'
   integer :: nIA,nRA,niV,noV,ier
   integer :: myID
 
@@ -196,27 +249,27 @@
 
 	! Verify the input: a _gathered_ vector
 
-  niV = GlobalMap_gsize(Mp)  ! the _gathered_ local size
+  niV = GlobalMap_gsize(GMap)  ! the _gathered_ local size
   if(myID /= root) niV=0
 
   noV = AttrVect_lsize(iV)
   if(niV /= noV) then
     write(stderr,'(2a,i4,a,i4)') myname_,	&
-	': invalid input, rsize(Mp) =',niV,	&
+	': invalid input, rsize(GMap) =',niV,	&
 	', lsize(iV) =',noV
     if(.not.present(stat)) call die(myname_)
     stat=-1
     return
   endif
 
-  noV = GlobalMap_lsize(Mp) ! the _scatterd_ local size
+  noV = GlobalMap_lsize(GMap) ! the _scatterd_ local size
   call AttrVect_initv(oV,iV,noV)
 
   nIA = AttrVect_nIAttr(iV)	! number of INTEGER attributes
   nRA = AttrVect_nRAttr(iV)	! number of REAL attributes
 
-  call MPI_scatterv(iV%iAttr(1,1),Mp%counts*nIA,	&
-	Mp%displs*nIA,MP_INTEGER,			&
+  call MPI_scatterv(iV%iAttr(1,1),GMap%counts*nIA,	&
+	GMap%displs*nIA,MP_INTEGER,			&
 	oV%iAttr(1,1),noV*nRA,MP_INTEGER,root,comm,ier )
   if(ier /= 0) then
     call MP_perr(myname_,'MPI_scatterv(iAttr)',ier)
@@ -225,8 +278,8 @@
     return
   endif
 
-  call MPI_scatterv(iV%rAttr(1,1),Mp%counts*nRA,	&
-	Mp%displs*nRA,MP_REAL,				&
+  call MPI_scatterv(iV%rAttr(1,1),GMap%counts*nRA,	&
+	GMap%displs*nRA,MP_REAL,				&
 	oV%rAttr(1,1),noV*nRA,MP_REAL,root,comm,ier )
   if(ier /= 0) then
     call MP_perr(myname_,'MPI_scatterv(rAttr)',ier)
@@ -235,7 +288,50 @@
     return
   endif
 
- end subroutine scatter_
+ end subroutine GM_scatter_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: GSM_scatter_ - scatter a vecter using input GlobalSegMap.
+!
+! !DESCRIPTION:
+!
+! !INTERFACE:
+
+ subroutine GSM_scatter_(iV, oV, GSMap, root, comm, stat)
+!
+! !USES:
+!
+      use m_stdio
+      use m_die
+      use m_mpif90
+      use m_GlobalSegMap, only : GlobalSegMap
+      use m_GlobalSegMap, only : GlobalSegMap_lsize => lsize
+      use m_GlobalSegMap, only : GlobalSegMap_gsize => gsize
+      use m_AttrVect, only : AttrVect
+      use m_AttrVect, only : AttrVect_init => init
+      use m_AttrVect,  only : AttrVect_lsize => lsize
+      use m_AttrVect, only : AttrVect_nIAttr => nIAttr
+      use m_AttrVect, only : AttrVect_nRAttr => nRAttr
+
+      implicit none
+
+      type(AttrVect),intent(in)  :: iV
+      type(AttrVect),intent(out) :: oV
+      type(GlobalSegMap) ,intent(in)  :: GSMap
+      integer, intent(in) :: root
+      integer, intent(in) :: comm
+      integer, optional,intent(out) :: stat
+
+! !REVISION HISTORY:
+! 	15Jan01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::GSM_scatter_'
+
+ end subroutine GSM_scatter_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
