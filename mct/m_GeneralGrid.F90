@@ -365,9 +365,13 @@
        ! of GGrid%descend(:) to FALSE.
 
   if(present(descend)) then
-     GGrid%descend(1:n) = descend(1:n)
+     do i=1,n
+	GGrid%descend(i) = descend(i)
+     enddo
   else
-     GGrid%descend(1:n) = .FALSE.
+     do i=1,n
+	GGrid%descend(i) = .FALSE.
+     enddo
   endif
 
        ! Process input lists and create the appropriate GeneralGrid
@@ -472,6 +476,8 @@
 !                 copied to oGGrid.
 !       08Aug01 - E.T. Ong <eong@mcs.anl.gov> - changed list assignment(=)
 !                 to list copy to avoid compiler bugs with pgf90
+!       24Jul02 - E.T. Ong <eong@mcs.anl.gov> - updated this init version
+!                 to correspond with initl_
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::initgg_'
@@ -489,54 +495,66 @@
 
   ncoord = dims_(iGGrid)
 
-        ! Argument check:
+        ! (Comprehensive) Argument check:
 
   if(associated(iGGrid%descend)) then
+
+     if(.not.allocated(iGGrid%descend)) then
+	call die(myname_,"iGGrid%descend should have &
+	     & been allocated by initl_",n)
+     endif
+
      if(size(iGGrid%descend) /= ncoord) then ! size mismatch
-	write(stderr,*) myname_,':: ERROR size(iGGrid%descend) must equal ncoord,',&
-	     ' size(iGGrid%descend)=',size(iGGrid%descend),' ncoord=',ncoord
-	call die(myname,"iGGrid dims/size of descend mismatch", &
-	                 ncoord-size(iGGrid%descend))
-     endif
-  endif
-
-        ! If iGGrid%descend has been allocated, copy its contents
-
-  if(associated(iGGrid%descend)) then ! allocate and fill oGGrid%descend
-
-     allocate(oGGrid%descend(ncoord), stat=ierr)
-     if(ierr /= 0) then
-	call die(myname,"allocate(oGGrid%descend...", ierr)
+	call die(myname_,"size(iGGrid%descend) must equal ncoord, &
+	         & size(iGGrid%descend) = ", size(iGGrid%descend), &
+                 "ncoord = ", ncoord )
      endif
 
-     do i=1,ncoord
-	oGGrid%descend(i) = iGGrid%descend(i)
-     end do
+  else
+
+     call die(myname_,"iGGrid%descend is unassociated",n)
 
   endif
 
-       ! Copy list data from iGGrid to oGGrid.  We know from
-       ! interface and GeneralGrid type definition that 
-       ! iGGrid%coordinate_list, iGGrid%coordinate_sort_order, 
-       ! and iGGrid%index_list _should_ be defined.  Test all the
-       ! list attributes before copying them.
-
-  if(List_allocated(oGGrid%coordinate_list)) then
-     call List_copy(oGGrid%coordinate_list,iGGrid%coordinate_list)
+  if(.not.List_allocated(iGGrid%coordinate_list)) then
+     call die(myname_,"oGGrid%coordinate_list was not allocated",n)
   endif
 
-  if(List_allocated(oGGrid%coordinate_sort_order)) then
-     call List_copy(oGGrid%coordinate_sort_order,iGGrid%coordinate_sort_order)
+  if(.not.List_allocated(iGGrid%coordinate_sort_order)) then
+     call die(myname_,"oGGrid%coordinate_sort_order was not allocated",n)
   endif
 
-  if(List_allocated(oGGrid%weight_list)) then
-     call List_copy(oGGrid%weight_list,iGGrid%weight_list)
+  if(.not.List_allocated(iGGrid%weight_list)) then
+     call die(myname_,"oGGrid%weight_list was not allocated",n)
   endif
 
-  if(List_allocated(oGGrid%other_list)) then
-     call List_copy(oGGrid%other_list,iGGrid%other_list)
+  if(.not.List_allocated(iGGrid%other_list)) then
+     call die(myname_,"oGGrid%other_list was not allocated",n)
   endif
 
+  if(.not.List_allocated(iGGrid%index_list)) then
+     call die(myname_,"oGGrid%index_list was not allocated",n)
+  endif
+
+        ! If iGGrid%descend has been allocated, copy its contents;
+        ! allocate and fill oGGrid%descend
+
+  allocate(oGGrid%descend(ncoord), stat=ierr)
+  if(ierr /= 0) then
+     call die(myname_,"allocate(oGGrid%descend...", ierr)
+  endif
+
+  do i=1,ncoord
+     oGGrid%descend(i) = iGGrid%descend(i)
+  end do
+
+
+       ! Copy list data from iGGrid to oGGrid. 
+
+  call List_copy(oGGrid%coordinate_list,iGGrid%coordinate_list)
+  call List_copy(oGGrid%coordinate_sort_order,iGGrid%coordinate_sort_order)
+  call List_copy(oGGrid%weight_list,iGGrid%weight_list)
+  call List_copy(oGGrid%other_list,iGGrid%other_list)
   call List_copy(oGGrid%index_list,iGGrid%index_list)
 
        ! Now, initialize oGGrid%data from iGGrid%data, but 
@@ -746,7 +764,7 @@
      if(present(stat)) then
 	stat=ierr
      else
-	call warn(myname_,'deallocate(GGrid%descend...',ierr)
+	call die(myname_,'deallocate(GGrid%descend...',ierr)
      endif
   endif
 
@@ -785,6 +803,10 @@
 
 
  dims_ = List_nitem(GGrid%coordinate_list)
+
+ if(dims_==0) then
+    call die(myname_,"GGrid has zero dimensions",dims_)
+ endif
 
  end function dims_
 
