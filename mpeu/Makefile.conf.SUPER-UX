@@ -28,7 +28,7 @@
 #EOP
 #-----------------------------------------------------------------------
 
-_Dsys		= -DsysSUPER_UX -USX
+_Dsys		= -DsysSUPER_UX
 _Dnod		= 
 
 # Environments
