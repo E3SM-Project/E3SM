@@ -38,6 +38,12 @@
 
 ! !REVISION HISTORY:
 !
+! 	22Jan01 - Jay Larson <larson@mcs.anl.gov> - Minor correction in
+!                 write statements in the routines sp_balances_() and
+!                 mp_balances_():  replaced x (single-space) descriptor
+!                 with 1x.  This is apparently strict adherance to the
+!                 f90 standard (though the first of many, many compilers
+!                 where it has arisen).  This was for the SunOS platform.
 ! 	05Mar98 - Jing Guo <guo@thunder>	-
 !		. rewritten for possible MPI applications, with
 !		  additional functionalities and new performance
@@ -602,6 +608,11 @@ end subroutine flush_
 
 ! !REVISION HISTORY:
 ! 	06Mar98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 	22Jan01 - Jay Larson <larson@mcs.anl.gov> - Minor correction in
+!                 A write statement:  replaced x (single-space) descriptor
+!                 with 1x.  This is apparently strict adherance to the
+!                 f90 standard (though the first of many, many compilers
+!                 where it has arisen).  This was for the SunOS platform.
 !EOP
 !_______________________________________________________________________
   character(len=*),parameter :: myname_=myname//'::sp_balances_'
@@ -670,7 +681,7 @@ end subroutine flush_
     select case(l)
       case(0)
 	write(num,'(i4)') mxdep
-	write(lu,'(2(a,i3),2a,t26,2(x,f7.1,x,i4.2,a,i2.2,x,f5.1,a))')&
+	write(lu,'(2(a,i3),2a,t26,2(1x,f7.1,1x,i4.2,a,i2.2,1x,f5.1,a))')&
 	  name(1:ln),nreset,'s',ndep,'/',num,		&
 	  zt,zt_min,':',zt_sec,zt_percent,tag,		&
 	  sz,sz_min,':',sz_sec,sz_percent,tag
@@ -680,13 +691,13 @@ end subroutine flush_
 
       case default
         if(len_trim(name) < lnmax)then
-          write(lu,'(a,x,i5,x,f6.1,2(x,f7.1,x,i4.2,a,i2.2,x,f5.1,a))') &
+          write(lu,'(a,1x,i5,1x,f6.1,2(1x,f7.1,1x,i4.2,a,i2.2,1x,f5.1,a))') &
 	  name(1:ln),knt_l(l),zt_percall,	&
 	  zt,zt_min,':',zt_sec,zt_percent,tag,	&
 	  sz,sz_min,':',sz_sec,sz_percent,tag
         else
           write(lu,'(a)')name(1:ln)
-          write(lu,'(13x,i5,x,f6.1,2(x,f7.1,x,i4.2,a,i2.2,x,f5.1,a))') &
+          write(lu,'(13x,i5,1x,f6.1,2(1x,f7.1,1x,i4.2,a,i2.2,1x,f5.1,a))') &
           knt_l(l),zt_percall,       &
 	  zt,zt_min,':',zt_sec,zt_percent,tag,	&
 	  sz,sz_min,':',sz_sec,sz_percent,tag
@@ -887,6 +898,11 @@ end subroutine allflush_
 
 ! !REVISION HISTORY:
 ! 	10Mar98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 	22Jan01 - Jay Larson <larson@mcs.anl.gov> - Minor correction in
+!                 A write statement:  replaced x (single-space) descriptor
+!                 with 1x.  This is apparently strict adherance to the
+!                 f90 standard (though the first of many, many compilers
+!                 where it has arisen).  This was for the SunOS platform.
 !EOP
 !_______________________________________________________________________
   character(len=*),parameter :: myname_=myname//'::mp_balances_'
@@ -968,7 +984,7 @@ do l=0,min(MXN,nname)
   r_s=nint(100.* ztr_s       /max(zts_s,res))
   i_s=nint(100.*(ztm_s-zta_s)/max(ztm_s,res))
 
-  write(lu,'(a,2(x,2f8.1,x,z3.3,3i3))')		&
+  write(lu,'(a,2(1x,2f8.1,1x,z3.3,3i3))')		&
 	name(1:ln),				&
 	zta_o,ztm_o,ix_o,x_o,r_o,i_o,		&
 	zta_s,ztm_s,ix_s,x_s,r_s,i_s
