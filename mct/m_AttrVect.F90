@@ -24,7 +24,18 @@
 
       private	! except
 
+! !PUBLIC TYPES:
+
       public :: AttrVect        ! The class data structure
+
+    type AttrVect
+      type(List) :: iList
+      type(List) :: rList
+      integer,dimension(:,:),pointer :: iAttr
+      real   ,dimension(:,:),pointer :: rAttr
+    end type AttrVect
+
+! !PUBLIC MEMBER FUNCTIONS:
 
       public :: init		! create a local vector
       public :: clean		! clean the local vector
@@ -36,16 +47,15 @@
       public :: indexRA		! index the real attributes
       public :: getIList        ! return list of integer attributes
       public :: getRList        ! return list of real attributes
+      public :: exportIList     ! export INTEGER attibute List
+      public :: exportRList     ! export REAL attibute List
+      public :: exportIAttr     ! export INTEGER attribute to vector
+      public :: exportRAttr     ! export REAL attribute to vector
+      public :: importIAttr     ! import INTEGER attribute from vector
+      public :: importRAttr     ! import REAL attribute from vector
       public :: Sort            ! sort entries, and return permutation
       public :: Permute         ! permute entries
       public :: SortPermute     ! sort and permute entries
-
-    type AttrVect
-      type(List) :: iList
-      type(List) :: rList
-      integer,dimension(:,:),pointer :: iAttr
-      real   ,dimension(:,:),pointer :: rAttr
-    end type AttrVect
 
     interface init   ; module procedure	&
 	init_,	&
@@ -61,6 +71,12 @@
     interface indexRA; module procedure indexRA_; end interface
     interface getIList; module procedure getIList_; end interface
     interface getRList; module procedure getRList_; end interface
+    interface exportIList; module procedure exportIList_; end interface
+    interface exportRList; module procedure exportRList_; end interface
+    interface exportIAttr; module procedure exportIAttr_; end interface
+    interface exportRAttr; module procedure exportRAttr_; end interface
+    interface importIAttr; module procedure importIAttr_; end interface
+    interface importRAttr; module procedure importRAttr_; end interface
     interface Sort    ; module procedure Sort_    ; end interface
     interface Permute ; module procedure Permute_ ; end interface
     interface SortPermute ; module procedure SortPermute_ ; end interface
@@ -73,6 +89,14 @@
 !       20Oct00 - J.W. Larson <larson@mcs.anl.gov> - added Sort, 
 !                 Permute, and SortPermute functions.
 !       09May01 - J.W. Larson <larson@mcs.anl.gov> - added initl_().
+!       19Oct01 - J.W. Larson <larson@mcs.anl.gov> - added routines 
+!                 exportIattr(), exportRAttr(), importIAttr(), 
+!                 and importRAttr().  Also cleaned up module and 
+!                 routine prologues.
+!       13Dec01 - J.W. Larson <larson@mcs.anl.gov> - made importIAttr()
+!                 and importRAttr() public (bug fix).
+!       14Dec01 - J.W. Larson <larson@mcs.anl.gov> - added exportIList()
+!                 and exportRList().
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_AttrVect'
@@ -99,6 +123,7 @@
       use m_mall
       use m_die
       implicit none
+
       type(AttrVect),intent(out) :: aV
       character(len=*),optional,intent(in) :: iList
       character(len=*),optional,intent(in) :: rList
@@ -153,9 +178,12 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: initv_ - initialize on the vectors
+! !IROUTINE: initv_ - initialize one AttrVect from another.
 !
-! !DESCRIPTION:
+! !DESCRIPTION:  This routine takes an input {\tt AttrVect} argument 
+! {\tt bV}, and uses its attribute list information to create an output
+! {\tt AttrVect} variable {\tt aV}.  The length of {\tt aV} is defined 
+! by the input {\tt INTEGER} argument {\tt lsize}.
 !
 ! !INTERFACE:
 
@@ -171,9 +199,14 @@
 
       implicit none
 
-      type(AttrVect),intent(out) :: aV
+! !INPUT PARAMETERS: 
+!
       type(AttrVect),intent(in)  :: bV
       integer,       intent(in)  :: lsize
+
+! !OUTPUT PARAMETERS: 
+!
+      type(AttrVect),intent(out) :: aV
 
 ! !REVISION HISTORY:
 ! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
@@ -271,9 +304,9 @@
 
 ! !INPUT PARAMETERS: 
 !
-      type(List), intent(in)  :: iList
-      type(List), intent(in)  :: rList
-      integer,    intent(in)  :: lsize
+      type(List),  intent(in)  :: iList
+      type(List),  intent(in)  :: rList
+      integer,     intent(in)  :: lsize
 
 ! !OUTPUT PARAMETERS:
 !
@@ -772,6 +805,435 @@
 	endif
 
  end function indexRA_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: exportIList_ - return AttrVect INTEGER attribute List
+!
+! !DESCRIPTION:
+! This routine extracts from the input {\tt AttrVect} argument {\tt aV} 
+! the integer attribute list, and returns it as the {\tt List} output 
+! argument {\tt outIList}.  The success (failure) of this operation is
+! signified by a zero (nonzero) value for the optional {\tt INTEGER} 
+! output argument {\tt status}.
+!
+! {\bf N.B.:}  This routine returns an allocated {\tt List} data 
+! structure ({\tt outIList}).  The user is responsible for deallocating 
+! this structure by invoking {\tt List\_clean()} (see the module 
+! {\tt m\_List} for details) once it is no longer needed.  Failure to 
+! do so will result in a memory leak.
+!
+! !INTERFACE:
+
+ subroutine exportIList_(aV, outIList, status)
+
+!
+! !USES:
+!
+      use m_die ,  only : die
+      use m_stdio, only : stderr
+
+      use m_List,  only : List
+      use m_List,  only : List_allocated => allocated
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      type(AttrVect),           intent(in)  :: aV
+
+! !OUTPUT PARAMETERS: 
+
+      type(List),               intent(out) :: outIList
+      integer,        optional, intent(out) :: status
+
+! !REVISION HISTORY:
+! 	14Dec01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::exportIList_'
+
+       ! Initialize status flag (if present) to success value of zero.
+
+  if(present(status)) status = 0
+
+  if(List_allocated(aV%iList)) then
+     call List_copy(aV%iList, outIList)
+  else
+     if(present(status)) then
+	status = 1
+     else
+	call die(myname_)
+     endif
+  endif
+
+ end subroutine exportIList_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: exportRList_ - return AttrVect REAL attribute List
+!
+! !DESCRIPTION:
+! This routine extracts from the input {\tt AttrVect} argument {\tt aV} 
+! the real attribute list, and returns it as the {\tt List} output 
+! argument {\tt outRList}.  The success (failure) of this operation is
+! signified by a zero (nonzero) value for the optional {\tt INTEGER} 
+! output argument {\tt status}.
+!
+! {\bf N.B.:}  This routine returns an allocated {\tt List} data 
+! structure ({\tt outRList}).  The user is responsible for deallocating 
+! this structure by invoking {\tt List\_clean()} (see the module 
+! {\tt m\_List} for details) once it is no longer needed.  Failure to 
+! do so will result in a memory leak.
+!
+! !INTERFACE:
+
+ subroutine exportRList_(aV, outRList, status)
+
+!
+! !USES:
+!
+      use m_die ,  only : die
+      use m_stdio, only : stderr
+
+      use m_List,  only : List
+      use m_List,  only : List_allocated => allocated
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      type(AttrVect),           intent(in)  :: aV
+
+! !OUTPUT PARAMETERS: 
+
+      type(List),               intent(out) :: outRList
+      integer,        optional, intent(out) :: status
+
+! !REVISION HISTORY:
+! 	14Dec01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::exportRList_'
+
+       ! Initialize status flag (if present) to success value of zero.
+
+  if(present(status)) status = 0
+
+  if(List_allocated(aV%rList)) then
+     call List_copy(aV%rList, outRList)
+  else
+     if(present(status)) then
+	status = 1
+     else
+	call die(myname_)
+     endif
+  endif
+
+ end subroutine exportRList_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: exportIAttr_ - return AttrVect INTEGER attribute as a vector
+!
+! !DESCRIPTION:
+! This routine extracts from the input {\tt AttrVect} argument {\tt aV} 
+! the integer attribute corresponding to the tag defined in the input 
+! {\tt CHARACTER} argument {\tt AttrTag}, and returns it in the 
+! {\tt INTEGER} output array {\tt outVect}, and its length in the output
+! {\tt INTEGER} argument {\tt lsize}.
+!
+! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
+! the {\tt AttrVect} {\tt List} component {\tt aV\%iList}.
+!
+! {\bf N.B.:}  This routine returns an allocated array {\tt outVect}.
+! The user is responsible for deallocating this array once it is no 
+! longer needed.  Failure to do so will result in a memory leak.
+!
+! !INTERFACE:
+
+ subroutine exportIAttr_(aV, AttrTag, outVect, lsize)
+
+!
+! !USES:
+!
+      use m_die ,          only : die
+      use m_stdio ,        only : stderr
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      type(AttrVect),         intent(in)  :: aV
+      character(len=*),       intent(in)  :: AttrTag
+
+! !OUTPUT PARAMETERS: 
+
+      integer,  dimension(:), pointer     :: outVect
+      integer,                intent(out) :: lsize
+
+! !REVISION HISTORY:
+! 	19Oct01 - J.W. Larson <larson@mcs.anl.gov> - initial (slow) 
+!                 prototype.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::exportIAttr_'
+
+  integer :: index, ierr, n
+
+       ! Index the attribute we wish to extract:
+
+  index = indexIA_(aV, attrTag)
+
+       ! Determine the number of data points:
+
+  lsize = lsize_(aV)
+
+       ! Allocate space for outVect:
+
+  allocate(outVect(lsize), stat=ierr)
+  if(ierr /= 0) call die(myname_, 'allocate(outVect) failed.', ierr)
+
+       ! Copy the attribute data into outVect
+
+  do n=1,lsize
+     outVect(n) = aV%iAttr(index,n)
+  end do
+
+ end subroutine exportIAttr_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: exportRAttr_ - return AttrVect REAL attribute as a vector
+!
+! !DESCRIPTION:
+! This routine extracts from the input {\tt AttrVect} argument {\tt aV} 
+! the attribute corresponding to the tag defined in the input 
+! {\tt CHARACTER} argument {\tt AttrTag}, and returns it in the 
+! {\tt REAL} output array {\tt outVect}, and its length in the output
+! {\tt INTEGER} argument {\tt lsize}.
+!
+! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
+! the {\tt AttrVect} {\tt List} component {\tt aV\%rList}.
+!
+! {\bf N.B.:}  This routine returns an allocated array {\tt outVect}.
+! The user is responsible for deallocating this array once it is no 
+! longer needed.  Failure to do so will result in a memory leak.
+!
+! !INTERFACE:
+
+ subroutine exportRAttr_(aV, AttrTag, outVect, lsize)
+!
+! !USES:
+!
+      use m_die ,          only : die
+      use m_stdio ,        only : stderr
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      type(AttrVect),     intent(in)  :: aV
+      character(len=*),   intent(in)  :: AttrTag
+
+! !OUTPUT PARAMETERS: 
+
+      real, dimension(:), pointer     :: outVect
+      integer,            intent(out) :: lsize
+
+
+! !REVISION HISTORY:
+! 	19Oct01 - J.W. Larson <larson@mcs.anl.gov> - initial (slow) 
+!                 prototype.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::exportRAttr_'
+
+  integer :: index, ierr, n
+
+       ! Index the attribute we wish to extract:
+
+  index = indexRA_(aV, attrTag)
+
+       ! Determine the number of data points:
+
+  lsize = lsize_(aV)
+
+       ! Allocate space for outVect:
+
+  allocate(outVect(lsize), stat=ierr)
+  if(ierr /= 0) call die(myname_, 'allocate(outVect) failed.', ierr)
+
+       ! Copy the attribute data into outVect
+
+  do n=1,lsize
+     outVect(n) = aV%rAttr(index,n)
+  end do
+
+ end subroutine exportRAttr_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: importRAttr_ - import INTEGER vector to AttrVect 
+!
+! !DESCRIPTION:
+! This routine imports into the input/output {\tt AttrVect} argument 
+! {\tt aV} the integer attribute corresponding to the tag defined in the 
+! input {\tt CHARACTER} argument {\tt AttrTag}.  The data to be imported
+! is provided in the {\tt INTEGER} input array {\tt inVect}, and its 
+! length in the optional input {\tt INTEGER} argument {\tt lsize}.
+!
+! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
+! the {\tt AttrVect} {\tt List} component {\tt aV\%iList}.
+!
+! !INTERFACE:
+
+ subroutine importIAttr_(aV, AttrTag, inVect, lsize)
+!
+! !USES:
+!
+      use m_die ,          only : die
+      use m_stdio ,        only : stderr
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      character(len=*),       intent(in)    :: AttrTag
+      integer,  dimension(:), pointer       :: inVect
+      integer, optional,      intent(in)    :: lsize
+
+! !INPUT/OUTPUT PARAMETERS: 
+
+      type(AttrVect),         intent(inout) :: aV
+
+! !REVISION HISTORY:
+! 	19Oct01 - J.W. Larson <larson@mcs.anl.gov> - initial (slow) 
+!                 prototype.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::importIAttr_'
+
+  integer :: index, aVsize, ierr, n
+
+       ! Index the attribute we wish to extract:
+
+  index = indexIA_(aV, attrTag)
+
+       ! Determine the number of data points:
+
+  aVsize = lsize_(aV)
+
+       ! Check input array size vs. lsize_(aV):
+
+  if(present(lsize)) then
+     if(aVsize < lsize) then
+	call die(myname_, 'aVsize < lsize.')
+     endif
+  else
+     if(aVsize < size(inVect)) then
+	call die(myname_, 'aVsize < size(inVect).')
+     endif
+  endif
+
+       ! Copy the data from inVect to its attribute slot:
+
+  do n=1,lsize
+     aV%iAttr(index,n) = inVect(n)
+  end do
+
+ end subroutine importIAttr_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: importRAttr_ - import REAL vector to AttrVect 
+!
+! This routine imports into the input/output {\tt AttrVect} argument 
+! {\tt aV} the real attribute corresponding to the tag defined in the 
+! input {\tt CHARACTER} argument {\tt AttrTag}.  The data to be imported
+! is provided in the {\tt REAL} input array {\tt inVect}, and its 
+! length in the optional input {\tt INTEGER} argument {\tt lsize}.
+!
+! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
+! the {\tt AttrVect} {\tt List} component {\tt aV\%rList}.
+!
+! !INTERFACE:
+
+ subroutine importRAttr_(aV, AttrTag, inVect, lsize)
+!
+! !USES:
+!
+      use m_die ,          only : die
+      use m_stdio ,        only : stderr
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      character(len=*),   intent(in)    :: AttrTag
+      real, dimension(:), pointer       :: inVect
+      integer, optional,  intent(in)    :: lsize
+
+! !INPUT/OUTPUT PARAMETERS: 
+
+      type(AttrVect),     intent(inout) :: aV
+
+
+
+! !REVISION HISTORY:
+! 	19Oct01 - J.W. Larson <larson@mcs.anl.gov> - initial (slow) 
+!                 prototype.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::importRAttr_'
+
+  integer :: index, aVsize, ierr, n
+
+       ! Index the attribute we wish to extract:
+
+  index = indexRA_(aV, attrTag)
+
+       ! Determine the number of data points:
+
+  aVsize = lsize_(aV)
+
+       ! Check input array size vs. lsize_(aV):
+
+  if(present(lsize)) then
+     if(aVsize < lsize) then
+	call die(myname_, 'aVsize < lsize.')
+     endif
+  else
+     if(aVsize < size(inVect)) then
+	call die(myname_, 'aVsize < size(inVect).')
+     endif
+  endif
+
+       ! Copy the attribute data into outVect
+
+  do n=1,lsize
+     aV%rAttr(index,n) = inVect(n)
+  end do
+
+ end subroutine importRAttr_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !

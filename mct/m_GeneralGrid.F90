@@ -41,6 +41,20 @@
 
       private   ! except
 
+! !PUBLIC TYPES:
+
+    type GeneralGrid
+      type(List)                     :: coordinate_list
+      type(List)                     :: coordinate_sort_order
+      logical, dimension(:), pointer :: descend
+      type(List)                     :: weight_list
+      type(List)                     :: other_list
+      type(List)                     :: index_list
+      type(AttrVect)                 :: data
+    end type GeneralGrid
+
+! !PUBLIC MEMBER FUNCTIONS:
+
       public :: GeneralGrid      ! The class data structure
 
       public :: init             ! Create a GeneralGrid
@@ -53,21 +67,15 @@
       public :: indexIA      ! Index integer attribute (indices)
       public :: indexRA      ! Index integer attribute (coords/weights)
       public :: lsize        ! Return local number of points
+      public :: exportIAttr  ! Return INTEGER attribute as a vector
+      public :: exportRAttr  ! Return REAL attribute as a vector
 
                              ! Manipulation--------------------
+      public :: importIAttr  ! Insert INTEGER vector as attribute
+      public :: importRAttr  ! Insert REAL vector as attribute
       public :: Sort         ! Sort point data by coordinates -> permutation
       public :: Permute      ! Rearrange point data using input permutation
       public :: SortPermute  ! Sort and Permute point data
-
-    type GeneralGrid
-      type(List)                     :: coordinate_list
-      type(List)                     :: coordinate_sort_order
-      logical, dimension(:), pointer :: descend
-      type(List)                     :: weight_list
-      type(List)                     :: other_list
-      type(List)                     :: index_list
-      type(AttrVect)                 :: data
-    end type GeneralGrid
 
     interface init  ; module procedure &
 	 init_, &
@@ -85,6 +93,10 @@
     interface indexIA ; module procedure indexIA_ ; end interface
     interface indexRA ; module procedure indexRA_ ; end interface
     interface lsize   ; module procedure lsize_   ; end interface
+    interface exportIAttr ; module procedure exportIAttr_ ; end interface
+    interface exportRAttr ; module procedure exportRAttr_ ; end interface
+    interface importIAttr ; module procedure importIAttr_ ; end interface
+    interface importRAttr ; module procedure importRAttr_ ; end interface
     interface Sort    ; module procedure Sort_    ; end interface
     interface Permute ; module procedure Permute_ ; end interface
     interface SortPermute ; module procedure SortPermute_ ; end interface
@@ -103,6 +115,7 @@
 !       21Mar01 - J.W. Larson - deleted the initv_ API (more study
 !                 needed before implementation.
 !       02May01 - J.W. Larson - added initgg_ API (replaces old initv_).
+!       13Dec01 - J.W. Larson - added import and export methods.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_GeneralGrid'
@@ -910,6 +923,232 @@
  endif
 
  end function lsize_
+
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: exportIAttr_ - return AttrVect INTEGER attribute as a vector
+!
+! !DESCRIPTION:
+! This routine extracts from the input {\tt GeneralGrid} argument 
+! {\tt GGrid} the integer attribute corresponding to the tag defined in 
+! the input {\tt CHARACTER} argument {\tt AttrTag}, and returns it in 
+! the {\tt INTEGER} output array {\tt outVect}, and its length in the 
+! output {\tt INTEGER} argument {\tt lsize}.
+!
+! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
+! the {\tt GeneralGrid} {\tt List} component {\tt GGrid\%data\%iList}.
+!
+! {\bf N.B.:}  This routine returns an allocated array {\tt outVect}.
+! The user is responsible for deallocating this array once it is no 
+! longer needed.  Failure to do so will result in a memory leak.
+!
+! !INTERFACE:
+
+ subroutine exportIAttr_(GGrid, AttrTag, outVect, lsize)
+!
+! !USES:
+!
+      use m_die ,          only : die
+      use m_stdio ,        only : stderr
+
+      use m_AttrVect,      only : AttrVect_exportIAttr => exportIAttr
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      type(GeneralGrid),      intent(in)  :: GGrid
+      character(len=*),       intent(in)  :: AttrTag
+
+! !OUTPUT PARAMETERS: 
+
+      integer,  dimension(:), pointer     :: outVect
+      integer,                intent(out) :: lsize
+
+! !REVISION HISTORY:
+!       13Dec01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::exportIAttr_'
+
+       ! Export the data (inheritance from AttrVect)
+
+  call AttrVect_exportIAttr(GGrid%data, AttrTag, outVect, lsize)
+
+ end subroutine exportIAttr_
+
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: exportRAttr_ - return AttrVect REAL attribute as a vector
+!
+! !DESCRIPTION:
+! This routine extracts from the input {\tt GeneralGrid} argument 
+! {\tt GGrid} the real attribute corresponding to the tag defined in 
+! the input {\tt CHARACTER} argument {\tt AttrTag}, and returns it in 
+! the {\tt REAL} output array {\tt outVect}, and its length in the 
+! output {\tt INTEGER} argument {\tt lsize}.
+!
+! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
+! the {\tt GeneralGrid} {\tt List} component {\tt GGrid\%data\%rList}.
+!
+! {\bf N.B.:}  This routine returns an allocated array {\tt outVect}.
+! The user is responsible for deallocating this array once it is no 
+! longer needed.  Failure to do so will result in a memory leak.
+!
+! !INTERFACE:
+
+ subroutine exportRAttr_(GGrid, AttrTag, outVect, lsize)
+!
+! !USES:
+!
+      use m_die ,          only : die
+      use m_stdio ,        only : stderr
+
+      use m_AttrVect,      only : AttrVect_exportRAttr => exportRAttr
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      type(GeneralGrid),      intent(in)  :: GGrid
+      character(len=*),       intent(in)  :: AttrTag
+
+! !OUTPUT PARAMETERS: 
+
+      real,  dimension(:),    pointer     :: outVect
+      integer,                intent(out) :: lsize
+
+! !REVISION HISTORY:
+!       13Dec01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::exportRAttr_'
+
+       ! Export the data (inheritance from AttrVect)
+
+  call AttrVect_exportRAttr(GGrid%data, AttrTag, outVect, lsize)
+
+ end subroutine exportRAttr_
+
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: importIAttr_ - import GeneralGrid INTEGER attribute
+!
+! !DESCRIPTION:
+! This routine imports data provided in the input {\tt INTEGER} vector 
+! {\tt inVect} into the {\tt GeneralGrid} argument {\tt GGrid}, storing 
+! it as the integer attribute corresponding to the tag defined in 
+! the input {\tt CHARACTER} argument {\tt AttrTag}.  The input 
+! {\tt INTEGER} argument {\tt lsize} is used to ensure there is 
+! sufficient space in the {\tt GeneralGrid} to store the data.
+!
+! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
+! the {\tt GeneralGrid} {\tt List} component {\tt GGrid\%data\%iList}.
+!
+! !INTERFACE:
+
+ subroutine importIAttr_(GGrid, AttrTag, inVect, lsize)
+!
+! !USES:
+!
+      use m_die ,          only : die
+      use m_stdio ,        only : stderr
+
+      use m_AttrVect,      only : AttrVect_importIAttr => importIAttr
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      character(len=*),       intent(in)    :: AttrTag
+      integer,  dimension(:), pointer       :: inVect
+      integer,                intent(in)    :: lsize
+
+! !INPUT/OUTPUT PARAMETERS: 
+
+      type(GeneralGrid),      intent(inout) :: GGrid
+
+! !REVISION HISTORY:
+!       13Dec01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::importIAttr_'
+  integer :: ierr
+
+       ! Argument Check:
+
+  if(lsize > lsize_(GGrid)) then
+     ierr = lsize - lsize_(GGrid)
+     call MP_perr_die(myname_, "lsize / GGrid length mismatch", ierr)
+  endif
+
+       ! Import the data (inheritance from AttrVect)
+
+  call AttrVect_importIAttr(GGrid%data, AttrTag, inVect, lsize)
+
+ end subroutine importIAttr_
+
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: importRAttr_ - import GeneralGrid REAL attribute
+!
+! !DESCRIPTION:
+! This routine imports data provided in the input {\tt REAL} vector 
+! {\tt inVect} into the {\tt GeneralGrid} argument {\tt GGrid}, storing 
+! it as the real attribute corresponding to the tag defined in 
+! the input {\tt CHARACTER} argument {\tt AttrTag}.  The input 
+! {\tt INTEGER} argument {\tt lsize} is used to ensure there is 
+! sufficient space in the {\tt GeneralGrid} to store the data.
+!
+! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
+! the {\tt GeneralGrid} {\tt List} component {\tt GGrid\%data\%rList}.
+!
+! !INTERFACE:
+
+ subroutine importRAttr_(GGrid, AttrTag, inVect, lsize)
+!
+! !USES:
+!
+      use m_die ,          only : die
+      use m_stdio ,        only : stderr
+
+      use m_AttrVect,      only : AttrVect_importRAttr => importRAttr
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      character(len=*),       intent(in)    :: AttrTag
+      real, dimension(:),     pointer       :: inVect
+      integer,                intent(in)    :: lsize
+
+! !INPUT/OUTPUT PARAMETERS: 
+
+      type(GeneralGrid),      intent(inout) :: GGrid
+
+! !REVISION HISTORY:
+!       13Dec01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::importRAttr_'
+  integer :: ierr
+
+       ! Argument Check:
+
+  if(lsize > lsize_(GGrid)) then
+     ierr = lsize - lsize_(GGrid)
+     call MP_perr_die(myname_, "lsize / GGrid length mismatch", ierr)
+  endif
+
+       ! Import the data (inheritance from AttrVect)
+
+  call AttrVect_importRAttr(GGrid%data, AttrTag, inVect, lsize)
+
+ end subroutine importRAttr_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !

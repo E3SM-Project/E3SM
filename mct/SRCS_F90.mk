@@ -12,6 +12,7 @@ m_AccumulatorComms.F90  \
 m_SharedAttrIndices.F90 \
 m_GeneralGrid.F90	\
 m_GeneralGridComms.F90	\
+m_GlobalIntegral.F90	\
 m_MatAttrVectMul.F90    \
 m_GlobalToLocal.F90	\
 m_ExchangeMaps.F90	\
@@ -23,4 +24,5 @@ m_Router.F90		\
 m_NBSend.F90		\
 MCT_Send.F90		\
 MCT_Recv.F90
+
 
