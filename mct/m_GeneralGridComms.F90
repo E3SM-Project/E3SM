@@ -352,12 +352,14 @@
 
 ! !REVISION HISTORY:
 !       04Jun01 - J.W. Larson <larson@mcs.anl.gov> - API Specification.
+!       07Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initial version.
+!       10Jun01 - J.W. Larson <larson@mcs.anl.gov> - Bug fixes--now works.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::recv_'
 
   integer :: ierr
-  integer :: MPstatus(MP_STATUS_SIZE)
+  integer :: MPstatus(MP_STATUS_SIZE), DescendSize
   logical :: HeaderAssoc(6)
 
       ! Step 1. Receive the elements of the LOGICAL flag array
@@ -375,6 +377,8 @@
       !  HeaderAssoc(4) = associated(oGGrid%weight_list%bf)
       !  HeaderAssoc(5) = associated(oGGrid%other_list%bf)
       !  HeaderAssoc(6) = associated(oGGrid%index_list%bf)
+
+  HeaderAssoc = .FALSE.
 
   call MPI_RECV(HeaderAssoc, 6, MP_LOGICAL, source, TagBase, comm, MPstatus, ierr)
   if(ierr /= 0) then
@@ -428,11 +432,12 @@
   endif
 
        ! Step 4.  If oGGrid%descend is allocated, determine its size,
-       ! receive this size, and then receive the elements of oGGrid%descend.
+       ! receive this size, allocate oGGrid%descend, and then receive 
+       ! the elements of oGGrid%descend.
      
   if(HeaderAssoc(3)) then
 
-     call MPI_RECV(size(oGGrid%descend), 1, MP_type(size(oGGrid%descend)), &
+     call MPI_RECV(DescendSize, 1, MP_type(DescendSize), &
                    source, TagBase+5, comm, MPstatus, ierr)
      if(ierr /= 0) then
 	if(present(status)) then
@@ -444,7 +449,18 @@
 	endif
      endif
 
-     call MPI_RECV(oGGrid%descend, size(oGGrid%descend), MP_type(oGGrid%descend(1)), &
+  allocate(oGGrid%descend(DescendSize), stat=ierr)
+  if(ierr /= 0) then
+     if(present(status)) then
+	write(stderr,*) myname_,':: allocate(oGGrid%descend...'
+	status = ierr
+	return
+     else
+	call MP_perr_die(myname_,':: allocate(oGGrid%descend...',ierr)
+     endif
+  endif
+
+     call MPI_RECV(oGGrid%descend, DescendSize, MP_type(oGGrid%descend(1)), &
                    source, TagBase+6, comm, MPstatus, ierr)
      if(ierr /= 0) then
 	if(present(status)) then

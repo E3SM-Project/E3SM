@@ -375,7 +375,7 @@
 
        ! Allocate outAV%rAttr(:,:)
 
-        allocate(outAV%rAttr(List_nitem(outAV%iList),AVlength), stat=ierr)
+        allocate(outAV%rAttr(List_nitem(outAV%rList),AVlength), stat=ierr)
 
        ! Receive the REAL data to outAV%rAttr(:,:)
 
