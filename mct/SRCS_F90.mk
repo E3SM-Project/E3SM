@@ -14,4 +14,6 @@ m_MatAttrVectMul.F90    \
 m_GlobalToLocal.F90	\
 m_ExchangeMaps.F90	\
 m_Router.F90		\
-m_MCTWorld.F90
+m_MCTWorld.F90		\
+MCT_Send.F90		\
+MCT_Recv.F90
