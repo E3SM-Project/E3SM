@@ -6,7 +6,7 @@
 !
 ! !DESCRIPTION:
 ! The Router data type contains all the information needed
-! to send an AttrVect from a component on M MPI-processes to a component
+! to send an AttrVect between a component on M MPI-processes and a component
 ! on N MPI-processes.  
 !
 ! !INTERFACE:
@@ -28,30 +28,28 @@
       public :: init            ! Create a Router
       public :: clean           ! Destroy a Router
 
-!% if I m the sending model, then on return pe_list is the
-!% processor ranks in the remote model to send to, num_segs
-!% is how many segments of my GlobalSegMap to send to each, seg_starts
-!% is the starting place for each segment and each destination processor
-!% and seg_lengths is the total length of each segment, for each processor
-!
-!% if I m the receiving model, the on return pe_list is the
-!% processor ranks in the remote model to receive from, num_segs
-!% is how many segments to receive, seg_starts is the starting place
-!% for each segment and each sending processor
+!% On return, pe_list is the processor ranks of the other
+!% component to receive from/send to.  num_segs is the
+!% number of segments out of my local AttrVect which must
+!% be sent/received.  (In general, these won't coincide exactly
+!% with the segments used to define the GlobalMap)
+!% seg_start is the start *in the local AttrVect* of each segment
+!%  (start goes from 1 to lsize(GSMap))
+!% and seg_lengths is the length.
 !  
     type Router
-      integer :: sendid	       ! id of sending component
-      integer :: recvid	       ! id of receiving component
-      character*4 :: type	       ! 'send' or 'recv'
+      integer :: comp1id	       ! id of first component
+      integer :: comp2id	       ! id of second component
+      character*4 :: type	       ! '1way' or '2way'
       integer :: nprocs	       ! number of procs to talk to
       integer,dimension(:),pointer :: pe_list ! processor ranks of send/receive
       integer,dimension(:),pointer :: num_segs ! number of segments to send/receive
       integer,dimension(:,:),pointer :: seg_starts ! starting index
       integer,dimension(:,:),pointer :: seg_lengths ! total length
 
-      real,dimension(:,:),pointer :: Rbuffer
-      integer,dimension(:,:),pointer :: Ibuffer
-      Type(Navigator) ::  buffer_nav
+!     real,dimension(:,:),pointer :: Rbuffer
+!     integer,dimension(:,:),pointer :: Ibuffer
+!     Type(Navigator) ::  buffer_nav
     end type Router
 
 
@@ -104,15 +102,16 @@
 !       15Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
 !       01Feb01 - R. Jacob <jacob@mcs.anl.gov> - initialize some parts
 !       02Feb01 - R. Jacob <jacob@mcs.anl.gov> - initialize the send
+!       06Feb01 - R. Jacob <jacob@mcs.anl.gov> - Finish initialization
+!			of the Router.  Router now works both ways.
+!
 !		portion
-!       06Feb01 - J. Larson <larson@mcs.anl.gov> - added communicator
-!                 argument now required by GlobalSegMap%lsize().
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::init_'
   integer			:: myPid,ier,nlsegs,i,j,k,m
   integer			:: mysize,recvsize,rngseg,tag,pr
-  integer			:: sendsize,mysize,count
+  integer			:: sendsize,mysize,count,prsize
   integer 	:: status(MP_STATUS_SIZE)
   integer,dimension(:),allocatable :: reqs,rstarts,rlengths
   integer,dimension(:),allocatable :: rpe_locs,rlsizes
@@ -125,14 +124,14 @@
   integer,dimension(:),pointer :: precvstarts
   integer,dimension(:),pointer :: beginseg,targproc,numpoints
   logical :: firstpoint
-  integer :: maxsegcount,mmax
+  integer :: maxsegcount,mmax,othercomp,mycomp
 
   call MP_comm_rank(mycomm,myPid,ier)
-  call MP_comm_size(mycomm,mysize,ier)
+  call MP_comm_size(mycomm,prsize,ier)
   firstpoint = .TRUE.
 
   nlsegs = nlseg(GSMap,myPid)
-  mysize = lsize(GSMap, mycomm)
+  mysize = lsize(GSMap,mycomm)
 
 ! build a mystart and mylength array on all processors
   allocate(mystarts(nlsegs),mylengths(nlsegs), &
@@ -158,91 +157,120 @@
     enddo
    enddo
 
-
-!NOTE  at this point the init routine follows two different
-! paths.  The sending component will first learn about the
-! receiving components global seg map and figure out what
-! portion of its own map it must send.  It will then tell
-! the receiving component what its going to send.
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! comp1 is the sender
   if(ThisMCTWorld%myid == comp1) then
+    mycomp=comp1
+    othercomp=comp2
+  else
+    mycomp=comp2
+    othercomp=comp1
+  endif
 
-    Rout%sendid = comp1
-    Rout%recvid = comp2
-    Rout%type = "send"
-    recvsize=ThisMCTWorld%nprocspid(comp2)
+  Rout%comp1id = comp1
+  Rout%comp2id = comp2
+  Rout%type = "2way"
+  recvsize=ThisMCTWorld%nprocspid(othercomp)
 
-! local roots on sender and reciver talk to each other
-    if(myPid ==0) then
+!!!!!!!!!!!!!!!!!Begin exchange of global map data 
 
-! learn number of global segments on receiver
-       call MPI_RECV(rngseg,1,MP_INTEGER,ThisMCTWorld%idGprocid(comp2,0), &
-	3010,MP_COMM_WORLD,status,ier)
-       if(ier /= 0) call MP_perr_die(myname_,'MPI_RECV(rngseg)',ier)
-    endif
-    call MPI_BCAST(rngseg,1,MP_INTEGER,0,mycomm,ier)
-    if(ier /= 0) call MP_perr_die(myname_,'MPI_BCAST(rngseg)',ier)
+! learn number of global segments on othercomp
+  if(myPid ==0) then
+     call MPI_SENDRECV(GSMap%ngseg,1,MP_INTEGER, &
+      ThisMCTWorld%idGprocid(othercomp,0),3010, &
+      rngseg,1,MP_INTEGER,ThisMCTWorld%idGprocid(othercomp,0), &
+      3010,MP_COMM_WORLD,status,ier)
+     if(ier /= 0) call MP_perr_die(myname_,'MPI_SENDRECV(ngseg)',ier)
+  endif
 
-    allocate(rstarts(rngseg),rlengths(rngseg), &
-    rlsizes(ThisMCTWorld%nprocspid(comp2)),rpe_locs(rngseg),stat=ier)
-    if(ier/=0) call MP_perr_die(myname_,'allocate(rngseg)',ier)
+  call MPI_BCAST(rngseg,1,MP_INTEGER,0,mycomm,ier)
+  if(ier /= 0) call MP_perr_die(myname_,'MPI_BCAST(rngseg)',ier)
+
+! use rngseg to allocate memory for other arrays.
+  allocate(rstarts(rngseg),rlengths(rngseg), &
+  rlsizes(ThisMCTWorld%nprocspid(othercomp)),rpe_locs(rngseg),stat=ier)
+  if(ier/=0) call MP_perr_die(myname_,'allocate(rngseg)',ier)
 
 ! get starts of receivers GSMap
-    if(myPid ==0) then
+  if(myPid ==0) then
+     call MPI_SENDRECV(GSMap%start,GSMap%ngseg,MP_INTEGER, &
+      ThisMCTWorld%idGprocid(othercomp,0),3020, &
+      rstarts,rngseg,MP_INTEGER,ThisMCTWorld%idGprocid(othercomp,0), &
+      3020,MP_COMM_WORLD,status,ier)
+     if(ier /= 0) call MP_perr_die(myname_,'MPI_SENDRECV(starts)',ier)
+  endif
 
-       call MPI_RECV(rstarts,rngseg,MP_INTEGER,ThisMCTWorld%idGprocid(comp2,0), &
-	3020,MP_COMM_WORLD,status,ier)
-       if(ier /= 0) call MP_perr_die(myname_,'MPI_RECV(rstarts)',ier)
-    endif
-    call MPI_BCAST(rstarts,rngseg,MP_INTEGER,0,mycomm,ier)
-    if(ier /= 0) call MP_perr_die(myname_,'MPI_BCAST(rstarts)',ier)
-
+  call MPI_BCAST(rstarts,rngseg,MP_INTEGER,0,mycomm,ier)
+  if(ier /= 0) call MP_perr_die(myname_,'MPI_BCAST(rstarts)',ier)
+  
 ! get lengths of receivers GSMap
-    if(myPid ==0) then
+  if(myPid ==0) then
+     call MPI_SENDRECV(GSMap%length,GSMap%ngseg,MP_INTEGER, &
+      ThisMCTWorld%idGprocid(othercomp,0),3030, &
+      rlengths,rngseg,MP_INTEGER,ThisMCTWorld%idGprocid(othercomp,0), &
+      3030,MP_COMM_WORLD,status,ier)
+     if(ier /= 0) call MP_perr_die(myname_,'MPI_SENDRECV(lengths)',ier)
+  endif
 
-       call MPI_RECV(rlengths,rngseg,MP_INTEGER,ThisMCTWorld%idGprocid(comp2,0), &
-	3030,MP_COMM_WORLD,status,ier)
-       if(ier /= 0) call MP_perr_die(myname_,'MPI_RECV(rlengths)',ier)
-    endif
-    call MPI_BCAST(rlengths,rngseg,MP_INTEGER,0,mycomm,ier)
-    if(ier /= 0) call MP_perr_die(myname_,'MPI_BCAST(rlengths)',ier)
+  call MPI_BCAST(rlengths,rngseg,MP_INTEGER,0,mycomm,ier)
+  if(ier /= 0) call MP_perr_die(myname_,'MPI_BCAST(rlengths)',ier)
+
 
 ! get pe_locs of receivers GSMap
-    if(myPid ==0) then
+  if(myPid ==0) then
+     call MPI_SENDRECV(GSMap%pe_loc,GSMap%ngseg,MP_INTEGER, &
+      ThisMCTWorld%idGprocid(othercomp,0),3040, &
+      rpe_locs,rngseg,MP_INTEGER,ThisMCTWorld%idGprocid(othercomp,0), &
+      3040,MP_COMM_WORLD,status,ier)
+     if(ier /= 0) call MP_perr_die(myname_,'MPI_SENDRECV(pe_locs)',ier)
+  endif
 
-       call MPI_RECV(rpe_locs,rngseg,MP_INTEGER,ThisMCTWorld%idGprocid(comp2,0), &
-	3040,MP_COMM_WORLD,status,ier)
-       if(ier /= 0) call MP_perr_die(myname_,'MPI_RECV(rpe_locs)',ier)
-    endif
-    call MPI_BCAST(rpe_locs,rngseg,MP_INTEGER,0,mycomm,ier)
-    if(ier /= 0) call MP_perr_die(myname_,'MPI_BCAST(rpe_locs)',ier)
+  call MPI_BCAST(rpe_locs,rngseg,MP_INTEGER,0,mycomm,ier)
+  if(ier /= 0) call MP_perr_die(myname_,'MPI_BCAST(rpe_locs)',ier)
+
+
+! gather the local GSMap size on each processor
+  allocate(lsizes(ThisMCTWorld%nprocspid(mycomp)),stat=ier)
+  if(ier/=0) call MP_perr_die(myname_,'allocate(lsizes,..)',ier)
+    
+  call MPI_GATHER(mysize,1,MP_INTEGER,lsizes,1,MP_INTEGER,0,mycomm,ier)
+  if(ier/=0) call MP_perr_die(myname_,'MPI_GATHER(lsizes)',ier)
 
 ! get sizes of receivers GSMap
-    if(myPid ==0) then
+  if(myPid ==0) then
+     call MPI_SENDRECV(lsizes,ThisMCTWorld%nprocspid(mycomp),MP_INTEGER, &
+      ThisMCTWorld%idGprocid(othercomp,0),3050,rlsizes, &
+      ThisMCTWorld%nprocspid(othercomp),MP_INTEGER, &
+      ThisMCTWorld%idGprocid(othercomp,0),3050,MP_COMM_WORLD,status,ier)
+     if(ier /= 0) call MP_perr_die(myname_,'MPI_SENDRECV(sizes)',ier)
+  endif
 
-       call MPI_RECV(rlsizes,ThisMCTWorld%nprocspid(comp2),MP_INTEGER,&
-       ThisMCTWorld%idGprocid(comp2,0),3050,MP_COMM_WORLD,status,ier)
-       if(ier /= 0) call MP_perr_die(myname_,'MPI_RECV(sizes)',ier)
-    endif
-    call MPI_BCAST(rlsizes,ThisMCTWorld%nprocspid(comp2),MP_INTEGER,0,mycomm,ier)
-    if(ier /= 0) call MP_perr_die(myname_,'MPI_BCAST(sizes)',ier)
-!    write(*,*)"ROUTER",myPid,rlsizes
+  call MPI_BCAST(rlsizes,ThisMCTWorld%nprocspid(othercomp),MP_INTEGER,0,mycomm,ier)
+  if(ier /= 0) call MP_perr_die(myname_,'MPI_BCAST(sizes)',ier)
 
-    count =0
-    mmax=0
-    allocate(hitparade(mysize),stat=ier)
-    if(ier/=0) call MP_perr_die(myname_,'allocate(hitparade,..)',ier)
-    allocate(tmpsegcount(ThisMCTWorld%nprocspid(comp2),mysize),&
-             tmpsegstart(ThisMCTWorld%nprocspid(comp2),mysize),&
-    		tmppe_list(ThisMCTWorld%nprocspid(comp2)),stat=ier)
-    if(ier/=0) call MP_perr_die(myname_,'allocate(tmpsegcount,..)',ier)
-    tmpsegcount=0
-    tmpsegstart=0
 
-!  check each processor to see what I need to send
-    do i=1,ThisMCTWorld%nprocspid(comp2)
+  if(ThisMCTWorld%myid == comp1) then
+!   write(*,*)"comp1 says",myPid,rngseg
+  else
+!   write(*,*)"comp2 says",myPid,rngseg
+  endif
+
+
+! write(*,*)"ROUTER",myPid,rlsizes
+
+  count =0
+  mmax=0
+  allocate(hitparade(mysize),stat=ier)
+  if(ier/=0) call MP_perr_die(myname_,'allocate(hitparade,..)',ier)
+
+  allocate(tmpsegcount(ThisMCTWorld%nprocspid(othercomp),mysize),&
+           tmpsegstart(ThisMCTWorld%nprocspid(othercomp),mysize),&
+ 	   tmppe_list(ThisMCTWorld%nprocspid(othercomp)),stat=ier)
+  if(ier/=0) call MP_perr_die(myname_,'allocate(tmpsegcount,..)',ier)
+
+  tmpsegcount=0
+  tmpsegstart=0
+
+!  check each processor to see what I have in common
+    do i=1,ThisMCTWorld%nprocspid(othercomp)
 
       hitparade=.FALSE.
 
@@ -269,7 +297,7 @@
         enddo
       enddo
 
-      if(myPid==0)then
+    if((myPid==0) .and. (ThisMCTWorld%myid == comp1)) then
 ! 	write(*,*)"ROUTER",i,hitparade,rlsizes(i),rvector(1),rvector(rlsizes(i))
       endif
 
@@ -308,13 +336,12 @@
           endif
         endif
       enddo
-
-      if(myPid==0)then
-	 do pr=1,m
-! 	write(*,*)"ROUTERD",i,pr,tmpsegcount(i,pr),tmpsegstart(i,pr)
-	enddo
+ 
+      if((myPid==0) .and. (ThisMCTWorld%myid == comp1)) then
+        do pr=1,m
+! 	 write(*,*)"ROUTERD",i,pr,tmpsegcount(i,pr),tmpsegstart(i,pr)
+        enddo
       endif
-
 
       mmax=MAX(m,mmax)
       deallocate(rvector,stat=ier)
@@ -324,7 +351,7 @@
     Rout%nprocs = count
 
     maxsegcount=mmax
-!   if(myPid==0) write(*,*)"COUNT",count,maxsegcount
+!   if((myPid==0) .and. (ThisMCTWorld%myid == comp1))  write(*,*)"COUNT",count,maxsegcount
 
     allocate(Rout%pe_list(count),Rout%num_segs(count), &
     Rout%seg_starts(count,maxsegcount), &
@@ -332,11 +359,11 @@
     if(ier/=0) call MP_perr_die(myname_,'allocate(Rout..)',ier)
     
     m=0
-    do i=1,ThisMCTWorld%nprocspid(comp2)
+    do i=1,ThisMCTWorld%nprocspid(othercomp)
       if(tmppe_list(i))then 
       m=m+1
 ! load processor rank in MPI_COMM_WORLD
-      Rout%pe_list(m)=ThisMCTWorld%idGprocid(comp2,i-1)
+      Rout%pe_list(m)=ThisMCTWorld%idGprocid(othercomp,i-1)
       endif
     enddo
 
@@ -353,7 +380,7 @@
       Rout%num_segs(i)=k
     enddo
 
-    if(myPid==0) then
+    if((myPid==0) .and. (ThisMCTWorld%myid == comp1)) then
      do i=1,Rout%nprocs
 !      write(*,*)"ROUTERE",i,Rout%pe_list(i),Rout%num_segs(i)
       do j=1,Rout%num_segs(i)
@@ -364,59 +391,7 @@
        
       
     deallocate(tmpsegstart,tmpsegcount,tmppe_list,stat=ier)
-
-
-
-
-  
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! comp2 is the receiver
-  else if(ThisMCTWorld%myid == comp2) then
-  Rout%sendid = comp1
-  Rout%recvid = comp2
-  Rout%type = "recv"
-
-    allocate(lsizes(ThisMCTWorld%nprocspid(comp2)),stat=ier)
-    if(ier/=0) call MP_perr_die(myname_,'allocate(lsizes,..)',ier)
-   
-    mysize=lsize(GSMap, mycomm)
-    call MPI_GATHER(mysize,1,MP_INTEGER,lsizes,1,MP_INTEGER,0,mycomm,ier)
-    if(ier /= 0) call MP_perr_die(myname_,'MPI_GATHER(lsize)',ier)
-
-! local roots on sender and receiver talk to each other
-    if(myPid ==0) then
-
-! send ngseg to sending component
-     call MPI_SEND(GSMap%ngseg,1,MP_INTEGER, &
-     ThisMCTWorld%idGprocid(comp1,0),3010,MP_COMM_WORLD,status,ier)
-     if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND(ngseg)',ier)
-
-! send starts
-     call MPI_SEND(GSMap%start,GSMap%ngseg,MP_INTEGER, &
-     ThisMCTWorld%idGprocid(comp1,0),3020,MP_COMM_WORLD,status,ier)
-     if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND(start)',ier)
-
-! send lengths
-     call MPI_SEND(GSMap%length,GSMap%ngseg,MP_INTEGER, &
-     ThisMCTWorld%idGprocid(comp1,0),3030,MP_COMM_WORLD,status,ier)
-     if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND(length)',ier)
-
-! send pe_locs
-     call MPI_SEND(GSMap%pe_loc,GSMap%ngseg,MP_INTEGER, &
-     ThisMCTWorld%idGprocid(comp1,0),3040,MP_COMM_WORLD,status,ier)
-     if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND(pe_loc)',ier)
-
-! send sizes
-     call MPI_SEND(lsizes,ThisMCTWorld%nprocspid(comp2),MP_INTEGER, &
-     ThisMCTWorld%idGprocid(comp1,0),3050,MP_COMM_WORLD,status,ier)
-     if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND(sizes)',ier)
-
-
-    endif
-
-
-  endif
-
+!endif
 
  end subroutine init_
 
@@ -451,8 +426,8 @@
   deallocate(Rout%pe_list,Rout%num_segs,Rout%seg_starts, stat=ier)
   if(ier /= 0) call perr_die(myname_,'deallocate(Rout,...)',ier)
 
-  Rout%sendid = 0
-  Rout%recvid = 0
+  Rout%comp1id = 0
+  Rout%comp2id = 0
   Rout%type = ""
 
 
