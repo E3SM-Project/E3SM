@@ -204,9 +204,11 @@ contains
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::initStr_'
+
   call init_(aList,toChar(pstr))
 
  end subroutine initStr_
+
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
@@ -357,11 +359,27 @@ contains
 
 ! !REVISION HISTORY:
 ! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 	10Oct01 - J.W. Larson <larson@mcs.anl.gov> - modified routine to
+!                 check pointers aList%bf and aList%lc using  the f90 
+!                 intrinsic ASSOCIATED before proceeding with the item
+!                 count.  If these pointers are UNASSOCIATED, an item
+!                 count of zero is returned.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::nitem_'
+  integer :: NumItems
 
-  nitem_=size(aList%lc,2)
+       ! Initialize item count to zero
+
+  NumItems = 0
+
+       ! If the List pointers are ASSOCIATED, perform item count:
+
+  if(ASSOCIATED(aList%bf) .and. ASSOCIATED(aList%lc)) then
+     NumItems = size(aList%lc,2)
+  endif
+
+  nitem_ = NumItems
 
  end function nitem_
 

@@ -95,6 +95,7 @@
 !
       use m_List, only : List
       use m_List, only : init,nitem
+      use m_List, only : List_nullify => nullify
       use m_mall
       use m_die
       implicit none
@@ -105,21 +106,28 @@
 
 ! !REVISION HISTORY:
 ! 	09Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 	09Oct01 - J.W. Larson <larson@mcs.anl.gov> - added feature to
+!                 nullify all pointers before usage.  This was done to
+!                 accomodate behavior of the f90 ASSOCIATED intrinsic 
+!                 function on the AIX platform.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::init_'
   integer :: nIA,nRA,n,ier
 
+       ! Initially, nullify all pointers in the AttrVect aV:
+
+  nullify(aV%iAttr)
+  nullify(aV%rAttr)
+  call List_nullify(aV%iList)
+  call List_nullify(aV%rList)
+
   if(present(rList)) then
     call init(aV%rList,rList)	! init.List()
-  else
-    call init(aV%rList,' ')	! init.List()
   endif
 
   if(present(iList)) then
     call init(aV%iList,iList)	! init.List()
-  else
-    call init(aV%iList,'')	! init.List()
   endif
 
   nIA=nitem(aV%iList)		! nitem.List()
@@ -168,22 +176,51 @@
 !       17May01 - R. Jacob <jacob@mcs.anl.gov> - add a check to see if
 !                 input argument has been defined.  SGI will dump
 !                 core if its not.
+!       10Oct01 - J. Larson <larson@mcs.anl.gov> - Nullify all pointers
+!                 in ouput AttrVect aV before initializing aV.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::initv_'
   type(String) :: iLStr,rLStr
 
+	! Step One:  Nullify all pointers in aV.  We will set
+        ! only the pointers we really need for aV based on those
+        ! currently ASSOCIATED in bV.
+
+  call List_nullify(aV%iList)
+  call List_nullify(aV%rList)
+  nullify(aV%iAttr)
+  nullify(aV%rAttr)
+
 	! Convert the two Lists to two Strings
 
-  if(.not.associated(bv%iAttr) .and. .not.associated(bv%rAttr)) then
-    write(stderr,'(2a)')myname_, &
+  if(.not.associated(bv%iList%bf) .and. & 
+       .not.associated(bv%rList%bf)) then
+     write(stderr,'(2a)')myname_, &
       'MCTERROR:  Trying to initialize a new AttrVect off an undefined AttrVect'
       call perr_die(myname_,'undefined input argument',0)
   endif
-  call get(iLStr,bv%iList)
-  call get(rLStr,bv%rList)
 
-  call init_(aV,iList=char(iLStr),rList=char(rLStr),lsize=lsize)
+  if(associated(bv%iList%bf)) then
+     call get(iLStr,bv%iList)
+  endif
+
+  if(associated(bv%rList%bf)) then
+     call get(rLStr,bv%rList)
+  endif
+
+       ! Initialize the AttrVect aV depending on which parts of
+       ! the input bV are valid:
+
+  if(associated(bv%iList%bf) .and. associated(bv%rList%bf)) then
+     call init_(aV,iList=char(iLStr),rList=char(rLStr),lsize=lsize)
+  endif
+  if(.not.associated(bv%iList%bf) .and. associated(bv%rList%bf)) then
+     call init_(aV,rList=char(rLStr),lsize=lsize)
+  endif
+  if(associated(bv%iList%bf) .and. .not.associated(bv%rList%bf)) then
+     call init_(aV,iList=char(iLStr),lsize=lsize)
+  endif
 
  end subroutine initv_
 
@@ -229,9 +266,9 @@
 
 ! !INPUT PARAMETERS: 
 !
-      type(List),     intent(in)  :: iList
-      type(List),     intent(in)  :: rList
-      integer,        intent(in)  :: lsize
+      type(List), intent(in)  :: iList
+      type(List), intent(in)  :: rList
+      integer,    intent(in)  :: lsize
 
 ! !OUTPUT PARAMETERS:
 !
@@ -241,30 +278,80 @@
 ! 	09May98 - J.W. Larson <larson@mcs.anl.gov> - initial version.
 !       08Aug01 - E.T. Ong <eong@mcs.anl.gov> - change list assignment(=)
 !                 to list copy to avoid compiler errors with pgf90.
+!       10Oct01 - J. Larson <larson@mcs.anl.gov> - Nullify all pointers
+!                 in ouput AttrVect aV before initializing aV.  Also, 
+!                 greater caution taken regarding validity of input 
+!                 arguments iList and rList.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::initl_'
   integer :: nIA, nRA, ier
 
+	! Step One:  Nullify all pointers in aV.  We will set
+        ! only the pointers we really need for aV based on those
+        ! currently ASSOCIATED in bV.
+
+  call List_nullify(aV%iList)
+  call List_nullify(aV%rList)
+  nullify(aV%iAttr)
+  nullify(aV%rAttr)
+
        ! Assign iList to aV%iList and rList to aV%rList
 
-    call List_copy(aV%iList,iList)
-    call List_copy(aV%rList,rList)
-
-  nIA = List_nitem(aV%iList)		! nitem.List()
-  nRA = List_nitem(aV%rList)		! nitem.List()
-
-  if(lsize == 0) then 
-     write(stdout,*) myname_,":: Warning:  length argument lsize set to zero."
+  if(associated(iList%bf)) then
+     call List_copy(aV%iList,iList)
   endif
 
-  allocate( aV%iAttr(nIA,lsize), aV%rAttr(nRA,lsize), stat=ier)
-  if(ier /= 0) call perr_die(myname_,'allocate()',ier)
+  if(associated(rList%bf)) then
+     call List_copy(aV%rList,rList)
+  endif
 
+       ! Count items in aV%iList and aV%rList: 
+
+  if(associated(aV%iList%bf)) then
+     nIA = List_nitem(aV%iList)
+  else
+     nIA = 0
+  endif
+
+  if(associated(aV%rList%bf)) then
+     nRA = List_nitem(aV%rList)
+  else
+     nRA = 0
+  endif
+
+  if(lsize <= 0) then 
+     write(stdout,*) myname_,":: Warning:  length argument lsize nonpositive."
+  endif
+
+  if(lsize > 0) then
+
+     if(associated(aV%iList%bf) .and. associated(aV%rList%bf)) then
+	allocate( aV%iAttr(nIA,lsize), aV%rAttr(nRA,lsize), stat=ier)
+	if(ier /= 0) call perr_die(myname_,'allocate(aV%iAttr,aV%rAttr)',ier)
 #ifdef MALL_ON
 	call mall_ci(size(transfer(aV%iAttr,(/1/)),myname_)
 	call mall_ci(size(transfer(aV%rAttr,(/1/)),myname_)
 #endif
+     endif
+
+     if(associated(aV%iList%bf) .and. .not.associated(aV%rList%bf)) then
+	allocate( aV%iAttr(nIA,lsize), stat=ier)
+	if(ier /= 0) call perr_die(myname_,'allocate(aV%iAttr)',ier)
+#ifdef MALL_ON
+	call mall_ci(size(transfer(aV%iAttr,(/1/)),myname_)
+#endif
+     endif
+
+     if(.not.associated(aV%iList%bf) .and. associated(aV%rList%bf)) then
+	allocate( aV%rAttr(nRA,lsize), stat=ier)
+	if(ier /= 0) call perr_die(myname_,'allocate(aV%rAttr)',ier)
+#ifdef MALL_ON
+	call mall_ci(size(transfer(aV%rAttr,(/1/)),myname_)
+#endif
+     endif
+
+  endif ! if(lsize > 0)... block
 
  end subroutine initl_
 
@@ -285,7 +372,7 @@
       use m_mall
       use m_stdio
       use m_die
-      use m_List, only : clean
+      use m_List, only : List_clean => clean
 
       implicit none
 
@@ -293,32 +380,42 @@
 
 ! !REVISION HISTORY:
 ! 	09Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 	10Oct01 - J. Larson <larson@mcs.anl.gov> - various fixes to 
+!                 prevent deallocation of UNASSOCIATED pointers.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::clean_'
   integer :: ier
 
-#ifdef MALL_ON
 	! Note that an undefined pointer may either crash the process
 	! or return either .true. or .false. to the associated() test.
 	! One should therefore avoid using the function on an 
 	! undefined pointer.
 
-  if( .not.associated(aV%iAttr) .or. .not.associated(aV%rAttr) ) then
-	write(stderr,'(2a)') myname_,	&
-	  ': attempting to measure uninitialized memories'
-	call die(myname_)
-  endif
+        ! Clean up attribute lists:
 
-	call mall_co(size(transfer(aV%iAttr,(/1/)),myname_)
-	call mall_co(size(transfer(aV%rAttr,(/1/)),myname_)
+  if(associated(aV%iList%bf)) call List_clean(aV%iList)
+  if(associated(aV%rList%bf)) call List_clean(aV%rList)
+
+        ! Clean up INTEGER attributes:
+
+  if(associated(aV%iAttr)) then
+     deallocate(aV%iAttr, stat=ier)
+     if(ier /= 0) call perr_die(myname_,'deallocte(aV%iAttr)',ier)
+#ifdef MALL_ON
+     call mall_co(size(transfer(aV%iAttr,(/1/)),myname_)
 #endif
+  endif ! if(associated(aV%iAttr))...
 
-  deallocate(aV%iAttr,aV%rAttr,stat=ier)
-  if(ier /= 0) call perr_die(myname_,'deallocte()',ier)
+        ! Clean up REAL attributes:
 
-  call clean(aV%iList)
-  call clean(aV%rList)
+  if(associated(aV%rAttr)) then
+     deallocate(aV%rAttr, stat=ier)
+     if(ier /= 0) call perr_die(myname_,'deallocte(aV%rAttr)',ier)
+#ifdef MALL_ON
+     call mall_co(size(transfer(aV%rAttr,(/1/)),myname_)
+#endif
+  endif ! if(associated(aV%rAttr))...
 
  end subroutine clean_
 
@@ -332,18 +429,26 @@
 !
 ! !INTERFACE:
 
- function lsize_(aV)
+ integer function lsize_(aV)
+
+! !USES:
+
+     use m_stdio, only : stderr
+     use m_die
  
      implicit none
 
       type(AttrVect), intent(in) :: aV
-      integer :: lsize_
 
 ! !REVISION HISTORY:
 ! 	09Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 	10Oct01 - J. Larson <larson@mcs.anl.gov> - made code more robust
+!                 to handle cases where the length of either aV%iAttr or
+!                 aV%rAttr is zero, but the other is positive.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::lsize_'
+  integer :: iLength, rLength
 
 	! One should try to avoid using this function on an undefined
 	! or disassocated pointer.  However, it is understandable 
@@ -351,7 +456,37 @@
 	! the associated() test sucesses.
 
   lsize_=0
-  if(associated(aV%iAttr)) lsize_=size(aV%iAttr,2)
+
+  if(associated(aV%iAttr)) then
+     iLength = size(aV%iAttr,2)
+  else
+     iLength = 0
+  endif
+
+  if(associated(aV%rAttr)) then
+     rLength = size(aV%rAttr,2)
+  else
+     rLength = 0
+  endif
+
+  if(iLength /= rLength) then
+
+     if((rLength > 0) .and. (iLength > 0)) then
+	call perr_die(myname_,'attribute array length mismatch', &
+	     iLength-rLength)
+     endif
+
+     if((rLength > 0) .and. (iLength == 0)) then
+	lsize_ = rLength
+     endif
+
+     if((iLength > 0) .and. (rLength == 0)) then
+	lsize_ = iLength
+     endif
+
+  endif
+
+  if(iLength == rLength) lsize_ = iLength
 
  end function lsize_
 
@@ -366,6 +501,9 @@
 ! !INTERFACE:
 
  subroutine zero_(aV)
+
+! !USES:
+
      use m_die,only	: perr_die
      use m_stdio,only	: stderr
  
@@ -399,8 +537,8 @@
    enddo
   enddo
 
-
  end subroutine zero_
+
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
@@ -423,10 +561,17 @@
 
 ! !REVISION HISTORY:
 ! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 	10Oct01 - J. Larson <larson@mcs.anl.gov> - made code more robust
+!                 by checking status of pointers in aV%iList
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::nIAttr_'
-  nIAttr_=nitem(aV%iList)
+
+  if(associated(aV%iList%bf)) then
+     nIAttr_ = nitem(aV%iList)
+  else
+     nIAttr_ = 0
+  endif
 
  end function nIAttr_
 
@@ -453,12 +598,20 @@
 
 ! !REVISION HISTORY:
 ! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 	10Oct01 - J. Larson <larson@mcs.anl.gov> - made code more robust
+!                 by checking status of pointers in aV%iList
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::nRAttr_'
-  nRAttr_=nitem(aV%rList)
+
+  if(associated(aV%rList%bf)) then
+     nRAttr_ = nitem(aV%rList)
+  else
+     nRAttr_ = 0
+  endif
 
  end function nRAttr_
+
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
