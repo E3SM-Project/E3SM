@@ -66,7 +66,7 @@
 ! !USES:
 !
       use m_stdio, only : stderr
-      use m_die,   only : MP_perr_die
+      use m_die,   only : die
       use m_mpif90
 
       use m_List, only : List
@@ -156,7 +156,7 @@
   allocate(gCol(lsize), stat=ierr)
 
   if(ierr /= 0) then
-     call MP_perr_die(myname_,'allocate(gCol...',ierr)
+     call die(myname_,'allocate(gCol...',ierr)
   endif
 
        ! Extract global column information and place in array gCol
@@ -186,7 +186,7 @@
   deallocate(gCol, starts, lengths, stat=ierr)
 
   if(ierr /= 0) then
-     call MP_perr_die(myname_,'deallocate(gCol...',ierr)
+     call die(myname_,'deallocate(gCol...',ierr)
   endif
 
  end subroutine SparseMatrixToXGlobalSegMap_
@@ -210,7 +210,7 @@
 ! !USES:
 !
       use m_stdio, only : stderr
-      use m_die,   only : MP_perr_die
+      use m_die,   only : die
 
       use m_List, only : List
       use m_List, only : List_init => init
@@ -299,7 +299,7 @@
   allocate(gRow(lsize), stat=ierr)
 
   if(ierr /= 0) then
-     call MP_perr_die(myname_,'allocate(gRow...',ierr)
+     call die(myname_,'allocate(gRow...',ierr)
   endif
 
        ! Extract global column information and place in array gRow
@@ -329,7 +329,7 @@
   deallocate(gRow, starts, lengths, stat=ierr)
 
   if(ierr /= 0) then
-     call MP_perr_die(myname_,'deallocate(gRow...',ierr)
+     call die(myname_,'deallocate(gRow...',ierr)
   endif
 
  end subroutine SparseMatrixToYGlobalSegMap_
@@ -354,7 +354,7 @@
 ! !USES:
 !
       use m_stdio, only : stderr
-      use m_die,   only : MP_perr_die
+      use m_die,   only : die
 
       implicit none
 !
@@ -409,7 +409,7 @@
   allocate(starts(nsegs), lengths(nsegs), stat=ierr)
 
   if(ierr /= 0) then
-     call MP_perr_die(myname_,'allocate(starts...',ierr)
+     call die(myname_,'allocate(starts...',ierr)
   endif
 
        ! Second pass:  compute segment start/length info
