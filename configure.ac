@@ -40,8 +40,8 @@ if test "$ES" = "YES"; then
    if test -z "FPP"; then
       FPPFLAGS=" "
    fi
-   if test -z "$FCFLAGS"; then
-      FCFLAGS="-EP -Wf'-pvctl fullmsg -L fmtlist transform map'"
+   if test -z "$F90FLAGS"; then
+      F90FLAGS="-EP -Wf'-pvctl fullmsg -L fmtlist transform map'"
    fi
    if test -z "$OPT"; then
       OPT="-C vopt"
@@ -63,19 +63,7 @@ fi
 # Check for the C compiler
 AC_PROG_CC([cc])
 
-# Preset FCFLAGS and F90FLAGS
-if test -n "$F90FLAGS"; then
-   F90TEMPFLAGS="$F90FLAGS"
-   F90FLAGS=""
-if test -n "$FCFLAGS"; then
-   F90FLAGS="$FCFLAGS"
-fi
-else
-if test -n "$FCFLAGS"; then
-   F90TEMPFLAGS=""
-   F90FLAGS="$FCFLAGS"
-fi
-fi
+# Save F90FLAGS
 OLDF90FLAGS="$F90FLAGS"
 
 # Check for the Fortran compiler. 
@@ -325,8 +313,8 @@ if test "$MACHDEFS" = "-WF,-DSYSAIX"; then
 else
    MACHDEFS="-DCPRXLF $MACHDEFS"
 fi
-if test -z "$FCFLAGS"; then
-   FCFLAGS="-qarch=auto"
+if test -z "$F90FLAGS"; then
+   F90FLAGS="-qarch=auto"
 fi
 if test -z "$OPT"; then
    OPT="-O2"
@@ -359,8 +347,8 @@ fi;;
 ftn) 
 echo "Fortran Compiler is Cray"
 MACHDEFS="-DCPRCRAY $MACHDEFS"
-if test -z "$FCFLAGS"; then 
-   FCFLAGS="-em -dy -m0 -M1068,1132,399"
+if test -z "$F90FLAGS"; then 
+   F90FLAGS="-em -dy -m0 -M1068,1132,399"
 fi
 if test -z "$INCLUDEFLAG"; then
    INCLUDEFLAG="-p"
@@ -378,8 +366,8 @@ if test "$MACHDEFS" = "-Wp,-DSYSUNIXSYSTEMV"; then
 else
    MACHDEFS="-DSYSFUJITSU $MACHDEFS"
 fi
-if test -z "$FCFLAGS"; then
-   FCFLAGS="-Am -X9"
+if test -z "$F90FLAGS"; then
+   F90FLAGS="-Am -X9"
 fi
 if test -z "$BIT64"; then
    BIT64="-KA64"
@@ -400,8 +388,8 @@ MACHDEFS="-DCPRINTEL $MACHDEFS"
 if test -z "$REAL8"; then
    REAL8="-r8"
 fi
-if test -z "$FCFLAGS"; then
-   FCFLAGS="-w"
+if test -z "$F90FLAGS"; then
+   F90FLAGS="-w"
 fi
 if test -z "$OPT"; then
    OPT="-O2"
@@ -415,8 +403,8 @@ esac
 if echo $f90_version | grep -i nag >/dev/null 2>&1; then
    echo "Fortran Compiler is NAG"
    MACHDEFS="-DCPRNAG $MACHDEFS"
-   if test -z "$FCFLAGS"; then
-      FCFLAGS="-dusty -kind=byte"
+   if test -z "$F90FLAGS"; then
+      F90FLAGS="-dusty -kind=byte"
    fi
    if test -z "$OPT"; then
       OPT="-O2"
@@ -491,8 +479,8 @@ fi
 if echo $f90_version | grep -i sx >/dev/null 2>&1; then
    echo "Fortran Compiler is SX"
    MACHDEFS="-DCPRSX $MACHDEFS"
-   if test -z "$FCFLAGS"; then
-      FCFLAGS="-EP -Wf'-pvctl noassoc'"
+   if test -z "$F90FLAGS"; then
+      F90FLAGS="-EP -Wf'-pvctl noassoc'"
    fi
    if test -z "$OPT"; then
       OPT="-Chopt"
