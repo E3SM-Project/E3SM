@@ -39,14 +39,18 @@
 
   public  :: isend
   public  :: send
-  public  :: wait
+  public  :: waitsend
+  public  :: irecv
   public  :: recv
+  public  :: waitrecv
 
 
   interface isend  ; module procedure isend_  ; end interface
   interface send  ; module procedure send_  ; end interface
-  interface wait  ; module procedure waitsend_  ; end interface
+  interface waitsend  ; module procedure waitsend_  ; end interface
+  interface irecv  ; module procedure irecv_  ; end interface
   interface recv  ; module procedure recv_  ; end interface
+  interface waitrecv  ; module procedure waitrecv_  ; end interface
 
 ! !DEFINED PARAMETERS:
 
@@ -79,11 +83,11 @@
 ! result if the size of the attribute vector does not match the size
 ! parameter stored in the {\tt Router}.
 !
-! Requires a corresponding {\tt recv\_} to be called on the other component.
+! Requires a corresponding {\tt recv\_} or {\tt irecv\_} to be called on the other component.
 !
 ! The optional argument {\tt Tag} can be used to set the tag value used in
 ! the data transfer.  DefaultTag will be used otherwise. {\tt Tag} must be
-! the same in the matching {\tt recv\_}
+! the same in the matching {\tt recv\_} or {\tt irecv\_}.
 !
 ! {\bf N.B.:} The {\tt AttrVect} argument in the corresponding
 ! {\tt recv\_} call is assumed to have exactly the same attributes
@@ -118,6 +122,7 @@
 ! 05Nov02 - R. Jacob <jacob@mcs.anl.gov> - Remove iList, rList arguments.
 ! 08Nov02 - R. Jacob <jacob@mcs.anl.gov> - MCT_Send is now send_ in m_Transfer
 ! 11Nov02 - R. Jacob <jacob@mcs.anl.gov> - Use DefaultTag and add optional Tag argument
+! 25Jul03 - R. Jacob <jacob@mcs.anl.gov> - Split into isend_ and waitsend_
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::isend_'
@@ -277,7 +282,8 @@ end subroutine isend_
       Type(Router),         intent(inout) :: Rout
 
 ! !REVISION HISTORY:
-! 24Jul03 - R. Jacob <jacob@mcs.anl.gov> - First working version
+! 24Jul03 - R. Jacob <jacob@mcs.anl.gov> - First working version is
+!           the wait part of original send_
 !EOP ___________________________________________________________________
   character(len=*),parameter :: myname_=myname//'::waitsend_'
   integer ::   proc,ier
@@ -323,14 +329,15 @@ end subroutine waitsend_
 ! result if the size of the attribute vector does not match the size
 ! parameter stored in the {\tt Router}.
 !
-! Requires a corresponding {\tt recv\_} to be called on the other component.
+! Requires a corresponding {\tt recv\_} or {\tt irecv\_} to be called on the other
+! component.
 !
 ! The optional argument {\tt Tag} can be used to set the tag value used in
 ! the data transfer.  DefaultTag will be used otherwise. {\tt Tag} must be
-! the same in the matching {\tt recv\_}
+! the same in the matching {\tt recv\_} or {\tt irecv\_}.
 !
 ! {\bf N.B.:} The {\tt AttrVect} argument in the corresponding
-! {\tt recv\_} call is assumed to have exactly the same attributes
+! {\tt recv} call is assumed to have exactly the same attributes
 ! in exactly the same order as {\tt aV}.
 !
 ! !INTERFACE:
@@ -352,10 +359,7 @@ end subroutine waitsend_
 ! !REVISION HISTORY:
 ! 24Jul03 - R. Jacob <jacob@mcs.anl.gov> - New version uses isend and waitsend
 !EOP ___________________________________________________________________
-
   character(len=*),parameter :: myname_=myname//'::send_'
-  integer ::	numi,numr,i,j,k,ier
-  integer ::    mycomp,othercomp
 
   call isend_(aV,Rout,Tag)
 
@@ -367,7 +371,7 @@ end subroutine send_
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: recv_ - Distributed receive of an Attribute Vector
+! !IROUTINE: irecv_ - Distributed receive of an Attribute Vector
 !
 ! !DESCRIPTION:
 ! Recieve into the {\tt AttrVect} {\tt aV} the data coming from the 
@@ -379,7 +383,7 @@ end subroutine send_
 !
 ! The optional argument {\tt Tag} can be used to set the tag value used in
 ! the data transfer.  DefaultTag will be used otherwise. {\tt Tag} must be
-! the same in the matching {\tt send\_}
+! the same in the matching {\tt send\_} or {\tt isend\_}.
 !
 ! If data for a grid point is coming from more than one process, {\tt recv\_}
 ! will overwrite the duplicate values leaving the last received value
@@ -392,7 +396,7 @@ end subroutine send_
 !
 ! !INTERFACE:
 
- subroutine recv_(aV, Rout, Tag, Sum)
+ subroutine irecv_(aV, Rout, Tag, Sum)
 !
 ! !USES:
 !
@@ -410,9 +414,6 @@ end subroutine send_
 
 ! !REVISION HISTORY:
 ! 07Feb01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
-! 08Feb01 - R. Jacob <jacob@mcs.anl.gov> - first working code
-! 18May01 - R. Jacob <jacob@mcs.anl.gov> - use MP_Type to
-!           determine type in mpi_recv
 ! 07Jun01 - R. Jacob <jacob@mcs.anl.gov> - remove logic to
 !           check "direction" of Router.  remove references
 !           to ThisMCTWorld%mylrank
@@ -423,18 +424,18 @@ end subroutine send_
 ! 15Feb02 - R. Jacob <jacob@mcs.anl.gov> - Use MCT_comm
 ! 26Mar02 - E. Ong <eong@mcs.anl.gov> - Apply faster copy order.
 ! 26Sep02 - R. Jacob <jacob@mcs.anl.gov> - Check Av against Router lAvsize
-! 06Nov02 - R. Jacob <jacob@mcs.anl.gov> - remove iList, rList
 ! 08Nov02 - R. Jacob <jacob@mcs.anl.gov> - MCT_Recv is now recv_ in m_Transfer
 ! 11Nov02 - R. Jacob <jacob@mcs.anl.gov> - Add optional Sum argument to
 !           tell recv_ to sum data for the same point received from multiple
 !           processors.  Replaces recvsum_ which had replaced MCT_Recvsum.
 !           Use DefaultTag and add optional Tag argument
+! 25Jul03 - R. Jacob <jacob@mcs.anl.gov> - break into irecv_ and waitrecv_
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname_=myname//'::recv_'
+  character(len=*),parameter :: myname_=myname//'::irecv_'
   integer ::	numi,numr,i,j,k,ier
   integer ::    mycomp,othercomp
-  integer ::    AttrIndex,VectIndex,seg_start,seg_end
+  integer ::    seg_start,seg_end
   integer ::    proc,numprocs,nseg,mytag
   integer ::    mp_Type_rp1
   logical ::    DoSum
@@ -542,15 +543,66 @@ end subroutine send_
 
   enddo
 
+end subroutine irecv_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: waitrecv_ - Wait for a distributed non-blocking recv to complete
+!
+! !DESCRIPTION:
+! Wait for the data being received with the {\tt Router} {\tt Rout} to complete.
+! When done, copy the data into the {\tt AttrVect} {\tt aV}.
+!
+! !INTERFACE:
+
+ subroutine waitrecv_(aV, Rout, Sum)
+
+!
+! !USES:
+!
+      implicit none
+
+! !INPUT/OUTPUT PARAMETERS:
+!
+      Type(AttrVect),       intent(inout) :: aV
+      Type(Router),         intent(inout) :: Rout
+
+! !INPUT PARAMETERS:
+!
+      logical,optional,     intent(in)    :: Sum
+
+
+! !REVISION HISTORY:
+! 25Jul03 - R. Jacob <jacob@mcs.anl.gov> - First working version is the wait
+!           and copy parts from old recv_.
+!EOP ___________________________________________________________________
+  character(len=*),parameter :: myname_=myname//'::waitrecv_'
+  integer ::   proc,ier,j,k,nseg
+  integer ::   AttrIndex,VectIndex,seg_start,seg_end
+  logical ::   DoSum
+
+!check Av size against Router
+!
+  if(lsize(aV) /= Rout%lAvsize) then
+    write(stderr,'(2a)') myname_, &
+    ' MCTERROR:  AV size not appropriate for this Router...exiting'
+    call die(myname_)
+  endif
+
+  DoSum = .false.
+  if(present(Sum)) DoSum=Sum
+
   ! wait for all recieves to complete
-  if(numi .ge. 1)  then
+  if(Rout%numiatt .ge. 1)  then
 
     call MPI_WAITALL(Rout%nprocs,Rout%ireqs,Rout%istatus,ier)
     if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL(ints)',ier)
 
   endif
 
-  if(numr .ge. 1) then
+  if(Rout%numratt .ge. 1) then
 
     call MPI_WAITALL(Rout%nprocs,Rout%rreqs,Rout%rstatus,ier)
     if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL(reals)',ier)
@@ -571,12 +623,12 @@ end subroutine send_
 	   seg_start = Rout%seg_starts(proc,nseg)
 	   seg_end = seg_start + Rout%seg_lengths(proc,nseg)-1
 	   do VectIndex = seg_start,seg_end
-	      do AttrIndex = 1,numi
+	      do AttrIndex = 1,Rout%numiatt
 		 aV%iAttr(AttrIndex,VectIndex)= &
 		 aV%iAttr(AttrIndex,VectIndex)+Rout%ip1(proc)%pi(j)
 		 j=j+1
 	      enddo
-	      do AttrIndex = 1,numr
+	      do AttrIndex = 1,Rout%numratt
 		 aV%rAttr(AttrIndex,VectIndex)= &
 		 aV%rAttr(AttrIndex,VectIndex)+Rout%rp1(proc)%pr(k)
 		 k=k+1
@@ -589,11 +641,11 @@ end subroutine send_
 	   seg_start = Rout%seg_starts(proc,nseg)
 	   seg_end = seg_start + Rout%seg_lengths(proc,nseg)-1
 	   do VectIndex = seg_start,seg_end
-	      do AttrIndex = 1,numi
+	      do AttrIndex = 1,Rout%numiatt
 		 aV%iAttr(AttrIndex,VectIndex)=Rout%ip1(proc)%pi(j)
 		 j=j+1
 	      enddo
-	      do AttrIndex = 1,numr
+	      do AttrIndex = 1,Rout%numratt
 		 aV%rAttr(AttrIndex,VectIndex)=Rout%rp1(proc)%pr(k)
 		 k=k+1
 	      enddo
@@ -611,7 +663,7 @@ end subroutine send_
 !  ! Load data which came from each processor
 !  do numprocs = 1,Rout%nprocs
 !     ! Load the integer data
-!     if(numi .ge. 1) then
+!     if(Rout%numiatt .ge. 1) then
 !	call MPI_WAITANY(Rout%nprocs,Rout%ireqs,proc,Rout%istatus,ier)
 !	if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITANY(ints)',ier)
 !	j=1
@@ -620,7 +672,7 @@ end subroutine send_
 !	   seg_start = Rout%seg_starts(proc,nseg)
 !	   seg_end = seg_start + Rout%seg_lengths(proc,nseg)-1
 !	   do VectIndex = seg_start,seg_end
-!	      do AttrIndex = 1,numi
+!	      do AttrIndex = 1,Rout%numiatt
 !		 aV%iAttr(AttrIndex,VectIndex)=Rout%ip1(proc)%pi(j)
 !		 j=j+1
 !	      enddo
@@ -648,7 +700,7 @@ end subroutine send_
 !........................................................................
 
   ! Deallocate all structures
-  if(numi .ge. 1) then
+  if(Rout%numiatt .ge. 1) then
 
      ! Deallocate the receive buffers
      do proc=1,Rout%nprocs
@@ -658,7 +710,7 @@ end subroutine send_
 
   endif
 
-  if(numr .ge. 1) then
+  if(Rout%numratt .ge. 1) then
 
      ! Deallocate the receive buffers
      do proc=1,Rout%nprocs
@@ -669,6 +721,63 @@ end subroutine send_
   endif
 
 
+end subroutine waitrecv_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: recv_ - Distributed receive of an Attribute Vector
+!
+! !DESCRIPTION:
+! Recieve into the {\tt AttrVect} {\tt aV} the data coming from the 
+! component specified in the {\tt Router} {\tt Rout}.  An error will 
+! result if the size of the attribute vector does not match the size
+! parameter stored in the {\tt Router}.
+!
+! Requires a corresponding {\tt send\_} to be called on the other component.
+!
+! The optional argument {\tt Tag} can be used to set the tag value used in
+! the data transfer.  DefaultTag will be used otherwise. {\tt Tag} must be
+! the same in the matching {\tt send\_}
+!
+! If data for a grid point is coming from more than one process, {\tt recv\_}
+! will overwrite the duplicate values leaving the last received value
+! in the output aV.  If the optional argument {\tt Sum} is invoked, the output
+! will contain the sum of any duplicate values received for the same grid point.
+!
+! {\bf N.B.:} The {\tt AttrVect} argument in the corresponding
+! {\tt send\_} call is assumed to have exactly the same attributes
+! in exactly the same order as {\tt aV}.
+!
+! !INTERFACE:
+
+ subroutine recv_(aV, Rout, Tag, Sum)
+!
+! !USES:
+!
+      implicit none
+
+! !INPUT/OUTPUT PARAMETERS:
+!
+      Type(AttrVect),       intent(inout) :: aV
+
+! !INPUT PARAMETERS:
+!
+      Type(Router),         intent(inout)    :: Rout
+      integer,optional,     intent(in)    :: Tag
+      logical,optional,     intent(in)    :: Sum
+
+! !REVISION HISTORY:
+! 25Jul03 - R. Jacob <jacob@mcs.anl.gov> - Rewrite using irecv and waitrecv
+!EOP ___________________________________________________________________
+  character(len=*),parameter :: myname_=myname//'::recv_'
+
+  call irecv_(aV,Rout,Tag,Sum)
+
+  call waitrecv_(aV,Rout,Sum)
+
 end subroutine recv_
+
 
 end module m_Transfer
