@@ -102,6 +102,9 @@
 !       15Oct01 - J. Larson <larson@mcs.anl.gov> - Added feature to 
 !                 detect when attribute lists are identical, and cross-
 !                 indexing of attributes is not needed.
+!       29Nov01 - E.T. Ong <eong@mcs.anl.gov> - Removed MP_PERR_DIE if
+!                 there are zero elements in sMat. This allows for
+!                 decompositions where a process may own zero points.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::sMatAvMult_xlyl_'
@@ -134,9 +137,7 @@
 
   if(num_elements == 0) then
      write(stderr,'(2a)') myname_, &
-          ":: Zero elements in SparseMatrix sMat."
-     ierr = 1
-     call MP_perr_die(myname_,'Zero steps in sMat.',ierr)
+          ":: Warning: Zero elements in SparseMatrix sMat."
   endif
 
        ! Indexing the sparse matrix sMat:
