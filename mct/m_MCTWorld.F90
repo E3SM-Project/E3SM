@@ -110,6 +110,8 @@
 
 ! !REVISION HISTORY:
 !       19Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
+!       07Feb01 - R. Jacob <jacob@mcs.anl.gov> - non fatal error
+!	if init is called a second time.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::init_'
@@ -126,8 +128,8 @@
 ! make sure this has not been called already
   if(associated(ThisMCTWorld%allids) ) then
      write(stderr,'(2a)') myname_, &
-      'Trying to initialize MCTWorld twice'
-      call die(myname_)
+      'MCTERROR:  MCTWorld has already been initialized...Continuing'
+       RETURN
   endif
 
 ! determine size on local communicator
