@@ -341,8 +341,17 @@
 ! !DESCRIPTION:  This routine creates the storage space for 
 ! and intializes the vector parts of a {\tt SparseMatrix}.
 !
-! {\bf N.B.}:  This routine assumes the basic parts of a
-! {\tt SparseMatrix} have already been initialized and loaded with data.
+! {\bf N.B.}:  This routine assumes the locally indexed parts of a
+! {\tt SparseMatrix} have been initialized.  This is
+! accomplished by either importing the values directly with
+! {\tt importLocalRowIndices} and {\tt importLocalColIndices} or by
+! importing the Global Row and Col Indices and making two calls to 
+! {\tt GlobalToLocalMatrix}.
+!
+! {\bf N.B.}:   The vector portion can use a large amount of
+! memory so it is highly recommended that this routine only
+! be called on a {\tt SparseMatrix} that has been scattered
+! or otherwise sized locally.
 !
 ! !INTERFACE:
 
@@ -361,7 +370,7 @@
 
 ! !REVISION HISTORY:
 ! 27Oct03 - R. Jacob <jacob@mcs.anl.gov> - initial version
-!           using code provided by Fujitsu.
+!           using code provided by Yoshi et. al.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::vecinit_'
@@ -379,9 +388,9 @@
   endif
 
   write(6,*) myname_,'Initializing vecMat'
-  irow = indexIA_(sMat,'lrow')
-  icol = indexIA_(sMat,'lcol')
-  iwgt = indexRA_(sMat,'weight')
+  irow = indexIA_(sMat,'lrow',dieWith=myname_)
+  icol = indexIA_(sMat,'lcol',dieWith=myname_)
+  iwgt = indexRA_(sMat,'weight',dieWith=myname_)
 
   num_elements = lsize_(sMat)
 
@@ -1609,7 +1618,7 @@
   sMatCopy%nrows = sMat%nrows
   sMatCopy%ncols = sMat%ncols
 
-  sMatCopy%vecinit = sMat%vecinit
+  sMatCopy%vecinit = .FALSE.
 
        ! Step two:  Initialize the AttrVect sMatCopy%data off of sMat:
 
@@ -1618,6 +1627,8 @@
        ! Step three:  Copy sMat%data to sMatCopy%data:
 
   call AttrVect_Copy(sMat%data, aVout=sMatCopy%data)
+
+  if(sMat%vecinit) call vecinit_(sMatCopy)
 
  end subroutine Copy_
 
