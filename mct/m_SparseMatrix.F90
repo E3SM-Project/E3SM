@@ -1135,7 +1135,7 @@
 
        ! Import the data (inheritance from AttrVect)
 
-  call AttrVect_importIAttr(sMat%data, 'grow', inVect, lsize)
+  call AttrVect_importIAttr(sMat%data, 'lrow', inVect, lsize)
 
  end subroutine importLocalRowIndices_
 
@@ -1190,7 +1190,7 @@
 
        ! Import the data (inheritance from AttrVect)
 
-  call AttrVect_importIAttr(sMat%data, 'gcol', inVect, lsize)
+  call AttrVect_importIAttr(sMat%data, 'lcol', inVect, lsize)
 
  end subroutine importLocalColumnIndices_
 
