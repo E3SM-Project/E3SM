@@ -1288,7 +1288,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 # Process the following makefiles
-                                                  ac_config_files="$ac_config_files mpeu/mpi0/Makefile.conf mpeu/Makefile.conf mct/Makefile.conf examples/simple/Makefile.conf examples/climate_concur1/Makefile.conf"
+                              ac_config_files="$ac_config_files mpeu/mpi0/Makefile.conf mpeu/Makefile.conf mct/Makefile.conf"
 
 
 # Check for the C compiler
@@ -1944,7 +1944,7 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
-# Check for the Fortran compiler.
+# Set FFLAGS and F90FLAGS
 if test -n "$F90FLAGS"; then
    F90TEMPFLAGS="$F90FLAGS"
    F90FLAGS=""
@@ -1958,6 +1958,7 @@ if test -n "$FFLAGS"; then
 fi
 fi
 
+# Check for the Fortran compiler.
 ac_ext=$ac_save_ext
 ac_compile='$F90 -c $F90FLAGS conftest.$ac_ext >&5'
 ac_link='$F90 -o conftest$ac_exeext $F90FLAGS $LD90FLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
@@ -2137,7 +2138,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:2140:" \
+echo "$as_me:2141:" \
      "checking for Fortran 90 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -2208,7 +2209,6 @@ ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
-
 
 
 # Check for MPI libraries.
@@ -2450,8 +2450,8 @@ _ACEOF
 fi
 
 
-# If MPIF90 exists, check if it is built from F90
-# If MPIF90 exists, set F90=MPIF90
+# Check how to get the compiler version.
+# This test does not work for xlf compilers.
 if test "$F90" != "xlf90"; then
    echo "$as_me:$LINENO: checking how to get the version output from $F90" >&5
 echo $ECHO_N "checking how to get the version output from $F90... $ECHO_C" >&6
@@ -2540,25 +2540,13 @@ echo "${ECHO_T}$ac_cv_prog_f90_version" >&6
 fi
 f90_version="$ac_f90_version_output"
 
+# Set FC to MPIF90 if it exists, otherwise to F90.
 
 if test "$F90" != "$MPIF90";  then
    FC=$MPIF90
 else
    FC=$F90
 fi
-
-#if test "$F90" != "$MPIF90";  then
-#   F90_old="$F90"
-#   F90="$MPIF90"
-#   _AC_PROG_F90_VERSION_OUTPUT([$ac_cv_prog_f90_version])
-#   mpif90_version="$ac_f90_version_output"
-
-#   if test "$f90_version" != "$mpif90_version"; then
-#      AC_MSG_WARN([F90 version does not match MPIF90 version!])
-#   fi
-
-#   f90_version="$mpif90_version"
-#fi
 
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -2778,7 +2766,6 @@ esac
 
 # Check if fortran compiler creates modules files
 # in uppercase or lowercase
-# Set Makefile variable MUPDATE
 echo "$as_me:$LINENO: checking whether fortran .mod file is uppercase" >&5
 echo $ECHO_N "checking whether fortran .mod file is uppercase... $ECHO_C" >&6
 if test "${ac_cv_f90_mod_uppercase+set}" = set; then
@@ -2841,22 +2828,8 @@ _ACEOF
 echo "$as_me: WARNING: Bizarre compiler result. Please check compiler manual for module file behavior." >&2;} ;;
 esac
 
-#AC_ARG_VAR(MUPDATE,[Find and copy F90 modules to a directory])
-#AC_CACHE_VAL([MUPDATE],
-#[
-#case $ac_cv_f90_mod_uppercase in
-#  yes) MUPDATE="sh UCupdate.sh";;
-#   no) MUPDATE="sh LCupdate.sh";;
-#    *) AC_MSG_WARN([MUPDATE must be defined for Makefiles!]);;
-#esac
-#])
 
-# Check that the c-preprocessor can correctly process these directives
-# If the Fortran compiler can process directives,
-# then use it as the c-preprocessor.
-# Otherwise, define CPP and CPPFLAGS.
-# Set the Makefiles to use the appropriate rules.
-
+# Set FPP and FPPFLAGS
 
 
 
@@ -2906,6 +2879,9 @@ fi
 if test -z "$FPPFLAGS"; then
    FPPFLAGS="-P -C -N -traditional"
 fi
+
+# Check that the Fortran compiler can correctly process these directives
+# If not, use the C preprocessor.
 
 if test "$F90" = "xlf90"; then
    defineflag="-WF,-Daardvark"
@@ -3081,6 +3057,8 @@ echo "hostname=$ac_hostname"
 echo "machinename=$machinename"
 echo "osname=$osname"
 
+# Set F90FLAGS and MACHDEFS
+
 F90FLAGS="$F90TEMPFLAGS"
 
 
@@ -3127,6 +3105,7 @@ if echo $osname | grep -i unicos >/dev/null 2>&1; then
    MACHDEFS="-DSYSUNICOS $MACHDEFS"
 fi
 
+# Set the following variables by checking the compiler name
 
 
 
@@ -3145,10 +3124,12 @@ if test -z "$FFLAGS"; then
    FFLAGS="-qarch=auto -O2"
 fi
 if test -z "$F90FLAGS"; then
-  if test -z "$FPP"; then
+  if "$ac_cv_f90_fpp_compiler" = "yes"; then
      F90FLAGS="-qsuffix=f=F90:cpp=F90"
   else
+  if "$ac_cv_f90_fpp_external" = "yes"; then
      F90FLAGS="-qsuffix=f=f90"
+  fi
   fi
 fi;;
 pgf90)
@@ -3204,6 +3185,9 @@ if echo $f90_version | grep -i workshop >/dev/null 2>&1; then
 fi
 if echo $f90_version | grep -i mipspro >/dev/null 2>&1; then
    MACHDEFS="-DCPRMIPSPRO $MACHDEFS"
+   if test -z "CCFLAGS"; then
+      CCFLAGS="-64 -O $DEFS"
+   fi
    if test -z "$REAL8"; then
       REAL8="-r8"
    fi
@@ -3222,6 +3206,9 @@ if echo $f90_version | grep -i sx >/dev/null 2>&1; then
    fi
 fi
 
+if test -z "$CCFLAGS"; then
+   CCFLAGS="-O $MACHDEFS"
+fi
 if test -z "$INCLUDEFLAG"; then
    INCLUDEFLAG="-I"
 fi
@@ -3778,8 +3765,6 @@ do
   "mpeu/mpi0/Makefile.conf" ) CONFIG_FILES="$CONFIG_FILES mpeu/mpi0/Makefile.conf" ;;
   "mpeu/Makefile.conf" ) CONFIG_FILES="$CONFIG_FILES mpeu/Makefile.conf" ;;
   "mct/Makefile.conf" ) CONFIG_FILES="$CONFIG_FILES mct/Makefile.conf" ;;
-  "examples/simple/Makefile.conf" ) CONFIG_FILES="$CONFIG_FILES examples/simple/Makefile.conf" ;;
-  "examples/climate_concur1/Makefile.conf" ) CONFIG_FILES="$CONFIG_FILES examples/climate_concur1/Makefile.conf" ;;
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
    { (exit 1); exit 1; }; };;
@@ -4125,6 +4110,7 @@ fi
 echo
 echo "### Output Variables: Make Sure These Are Correct! ###"
 echo "CC=$CC"
+echo "CCFLAGS=$CCFLAGS"
 echo "FPP=$FPP"
 echo "FPPFLAGS=$FPPFLAGS"
 echo "FC=$FC"
