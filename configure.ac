@@ -6,8 +6,56 @@ AC_INIT(MCT, 1.0)
 # Process the following makefiles
 AC_CONFIG_FILES(Makefile.conf)
 
+# Hardcode values for specific hostnames
+
+# Check if we are on the Earth Simulator
+ES="NO"
+if echo $osname | grep -i esos >/dev/null 2>&1; then
+   ES="YES"
+fi
+if echo $osname | grep -i hp-ux >/dev/null 2>&1; then   
+   if test "$ac_hostname" = "moon"; then 
+      ES="YES"
+   fi
+fi
+if test "$ES" = "YES"; then   
+   echo "Using preset configuration values for the Earth Simulator"
+   if test -z "$CC"; then
+      CC="escc"
+   fi
+   if test -z "$F90"; then
+      F90="esf90"
+   fi
+   if test -z "$MPIF90"; then
+      MPIF90="esmpif90"
+   fi
+   if test -z "$AR"; then
+      AR="esar cqs"
+   fi
+   if test -z "FPP"; then
+      FPPFLAGS=" "
+   fi
+   if test -z "$FCFLAGS"; then
+      FCFLAGS="-EP -Wf'-pvctl fullmsg -L fmtlist transform map'"
+   fi
+   if test -z "$OPT"; then
+      OPT="-C vopt"
+   fi      
+fi
+
+# Check if we are on NCSA IA-64 cluster titan
+if test "$ac_hostname" = "user02"; then
+   if test -z "$MPILIBS"; then
+   if test -z "$MPIHEADER"; then
+      echo "Using preset MPI configuration for titan"
+      MPILIBS="-L/usr/local/vmi/mpich/lib/intel -lmpich -lvmi -ldl -lpthread"
+      MPIHEADER="/usr/local/vmi/mpich/include"
+   fi
+   fi
+fi
+
 # Check for the C compiler
-AC_PROG_CC([cc escc])
+AC_PROG_CC([cc])
 
 # Preset FCFLAGS and F90FLAGS
 if test -n "$F90FLAGS"; then
@@ -170,18 +218,6 @@ echo "OS=$osname"
 F90FLAGS="$F90TEMPFLAGS"
 AC_ARG_VAR(MACHDEFS,MCT compiler and OS flags)
 
-# Hardcode values for specific hostnames
-
-if test "$ac_hostname" = "user02"; then
-   if test -z "$MPILIBS"; then
-   if test -z "$MPIHEADER"; then
-      echo "MPI path for Titan is being manually set"
-      MPILIBS="-L/usr/local/vmi/mpich/lib/intel -lmpich -lvmi -ldl -lpthread"
-      MPIHEADER="/usr/local/vmi/mpich/include"
-   fi
-   fi
-fi
-
 # Check OS name
 
 if echo $osname | grep -i aix >/dev/null 2>&1; then
@@ -253,7 +289,9 @@ AC_ARG_VAR(INCLUDEPATH,Additional library and module paths)
 AC_ARG_VAR(AR,Archive command)
 
 # Set AR 
-AR="ar cq"
+if test -z "$AR"; then
+   AR="ar cq"
+fi
 
 # Check compiler name
 case $F90 in
@@ -393,24 +431,6 @@ if echo $f90_version | grep -i compaq >/dev/null 2>&1; then
 fi
 if echo $f90_version | grep -i sx >/dev/null 2>&1; then
    MACHDEFS="-DCPRSX $MACHDEFS"
-   ES="NO"
-   if echo $osname | grep -i esos >/dev/null 2>&1; then
-      ES="YES"
-   fi
-   if echo $osname | grep -i hp-ux >/dev/null 2>&1; then   
-      if test "$ac_hostname" = "moon"; then 
-         ES="YES"
-      fi
-   fi
-   if test "$ES" = "YES"; then   
-      AR="esar cqs"
-      if test -z "$FCFLAGS"; then
-         FCFLAGS="-EP -Wf'-pvctl fullmsg -L fmtlist transform map'"
-      fi
-      if test -z "$OPT"; then
-         OPT="-Cvopt"
-      fi      
-   fi
    if test -z "$FCFLAGS"; then
       FCFLAGS="-EP -Wf'-pvctl noassoc'"
    fi

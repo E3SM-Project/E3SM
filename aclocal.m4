@@ -1283,7 +1283,7 @@ AC_DEFUN([_AC_PROG_F90_VERSION],
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM()],
 [ac_cv_prog_f90_version=
 # Try some options frequently used verbose output
-for ac_version in -V -version --version; do
+for ac_version in -V -version --version +version; do
   _AC_PROG_F90_VERSION_OUTPUT($ac_version)
   # look for "copyright" constructs in the output
   for ac_arg in $ac_f90_version_output; do
