@@ -2484,7 +2484,7 @@
 !
       type(AttrVect),        intent(in)  :: aV1   
       type(AttrVect),        intent(in)  :: aV2
-      character*7,           intent(in)  :: attrib
+      character(len=*),      intent(in)  :: attrib
 
 ! !OUTPUT PARAMETERS:   
 !
