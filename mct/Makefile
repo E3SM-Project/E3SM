@@ -67,7 +67,7 @@ $(F90RULECPP):
 clean:
 	${RM} *.o *.mod lib$(MODULE).a
 
-install:
+install: all
 	$(MKINSTALLDIRS) $(libdir) $(includedir)
 	$(INSTALL) lib$(MODULE).a -m 644 $(libdir)
 	$(INSTALL) *.mod -m 644 $(includedir)

@@ -66,6 +66,7 @@ INSTALL         = @INSTALL@
 MKINSTALLDIRS   = @abs_top_builddir@/mkinstalldirs
 
 # INSTALLATION DIRECTORIES
+abs_top_builddir= @abs_top_builddir@
 MCTPATH         = @abs_top_builddir@/mct
 MPEUPATH        = @abs_top_builddir@/mpeu
 EXAMPLEPATH     = @abs_top_builddir@/ut-mct
