@@ -1,5 +1,4 @@
 TEXFILES= 		\
-accumulate.tex		\
 m_Accumulator.tex       \
 m_AccumulatorComms.tex  \
 m_AttrVect.tex          \
