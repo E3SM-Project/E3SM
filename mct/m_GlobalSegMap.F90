@@ -1,5 +1,8 @@
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
+!-----------------------------------------------------------------------
+! CVS $Id$
+! CVS $Name$ 
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_GlobalSegMap - a nontrivial 1-D decomposition of an array.

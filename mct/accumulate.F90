@@ -1,5 +1,8 @@
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
+!-----------------------------------------------------------------------
+! CVS $Id$
+! CVS $Name$ 
 !BOP -------------------------------------------------------------------
 !
 ! !ROUTINE: accumulate--Acumulate from an AttrVect to an Accumulator.
