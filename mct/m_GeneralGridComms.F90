@@ -25,6 +25,8 @@
       public :: gather          ! gather all local vectors to the root
       public :: scatter         ! scatter from the root to all PEs
       public :: bcast           ! bcast from root to all PEs
+      public :: send            ! Blocking SEND
+      public :: recv            ! Blocking RECEIVE
 
     interface gather ; module procedure &
               GM_gather_, &
@@ -35,9 +37,13 @@
               GSM_scatter_ 
     end interface
     interface bcast  ; module procedure bcast_  ; end interface
+    interface send  ; module procedure send_  ; end interface
+    interface recv  ; module procedure recv_  ; end interface
 
 ! !REVISION HISTORY:
 !       27Apr01 - J.W. Larson <larson@mcs.anl.gov> - Initial module/APIs
+!       07Jun01 - J.W. Larson <larson@mcs.anl.gov> - Added point-to-point
+!                 send/receive routines.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_GeneralGridComms'
