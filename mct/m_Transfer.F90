@@ -11,7 +11,7 @@
 ! This module provides routines for doing MxN transfer of data in an
 ! Attribute Vector between two components on separate sets of MPI processes.
 ! Uses the Router datatype.
-
+!
 ! !SEE ALSO:
 ! m_Rearranger
 
@@ -19,15 +19,33 @@
 
  module m_Transfer
 
- implicit none
+! !USES:
+  use m_MCTWorld, only : MCTWorld
+  use m_MCTWorld, only : ThisMCTWorld
+  use m_AttrVect, only : AttrVect
+  use m_AttrVect, only : nIAttr,nRAttr
+  use m_AttrVect, only : lsize
+  use m_Router,   only : Router
 
- private ! except
+  use m_mpif90
+  use m_die
+  use m_stdio
 
- public  :: send
- public  :: recv
+  implicit none
 
- interface send  ; module procedure send_  ; end interface
- interface recv  ; module procedure recv_  ; end interface
+  private ! except
+
+! !PUBLIC MEMBER FUNCTIONS:
+
+  public  :: send
+  public  :: recv
+
+  interface send  ; module procedure send_  ; end interface
+  interface recv  ; module procedure recv_  ; end interface
+
+! !DEFINED PARAMETERS:
+
+  integer,parameter		       :: DefaultTag = 600
 
 ! !REVISION HISTORY:
 ! 08Nov02 - R. Jacob <jacob@mcs.anl.gov> - make new module by combining
@@ -54,29 +72,21 @@
 !
 ! Requires a corresponding {\tt recv\_} to be called on the other component.
 !
+! The optional argument {\tt Tag} can be used to set the tag value used in
+! the data transfer.  DefaultTag will be used otherwise. {\tt Tag} must be
+! the same in the matching {\tt recv\_}
+!
 ! {\bf N.B.:} The {\tt AttrVect} argument in the corresponding
 ! {\tt recv\_} call is assumed to have exactly the same attributes
 ! in exactly the same order as {\tt aV}.
 !
 ! !INTERFACE:
 
- subroutine send_(aV, Rout)
+ subroutine send_(aV, Rout, Tag)
 
 !
 ! !USES:
 !
-      use m_MCTWorld, only : MCTWorld
-      use m_MCTWorld, only : ThisMCTWorld
-      use m_AttrVect, only : AttrVect
-      use m_AttrVect, only : nIAttr,nRAttr
-      use m_AttrVect, only : lsize
-      use m_Router,   only : Router
-      use m_List,     only : List
-
-      use m_mpif90
-      use m_die
-      use m_stdio
-
       implicit none
 
 ! !INPUT PARAMETERS:
@@ -84,29 +94,28 @@
 
       Type(AttrVect),       intent(in) :: aV	
       Type(Router),         intent(in) :: Rout
+      integer,optional,     intent(in) :: Tag
 
 ! !REVISION HISTORY:
 ! 07Feb01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
 ! 08Feb01 - R. Jacob <jacob@mcs.anl.gov> - First working code
-! 18May01 - R. Jacob <jacob@mcs.anl.gov> - use MP_Type to
-!           determine type in mpi_send
-! 07Jun01 - R. Jacob <jacob@mcs.anl.gov> - remove logic to
-!           check "direction" of Router.  remove references
-!           to ThisMCTWorld%mylrank
-! 03Aug01 - E. Ong <eong@mcs.anl.gov> - Explicitly specify the starting
-!           address in mpi_send.  
+! 18May01 - R. Jacob <jacob@mcs.anl.gov> - use MP_Type to determine type in mpi_send
+! 07Jun01 - R. Jacob <jacob@mcs.anl.gov> - remove logic to check "direction" of Router.  
+!           remove references to ThisMCTWorld%mylrank
+! 03Aug01 - E. Ong <eong@mcs.anl.gov> - Explicitly specify the starting address in mpi_send.  
 ! 15Feb02 - R. Jacob <jacob@mcs.anl.gov> - Use MCT_comm
 ! 26Mar02 - E. Ong <eong@mcs.anl.gov> - Apply faster copy order
 ! 26Sep02 - R. Jacob <jacob@mcs.anl.gov> - Check Av against Router lAvsize
 ! 05Nov02 - R. Jacob <jacob@mcs.anl.gov> - Remove iList, rList arguments.
 ! 08Nov02 - R. Jacob <jacob@mcs.anl.gov> - MCT_Send is now send_ in m_Transfer
+! 11Nov02 - R. Jacob <jacob@mcs.anl.gov> - Use DefaultTag and add optional Tag argument
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::send_'
   integer ::	numi,numr,i,j,k,ier
   integer ::    mycomp,othercomp
   integer ::    AttrIndex,VectIndex,seg_start,seg_end
-  integer ::    proc,nseg,tag
+  integer ::    proc,nseg,mytag
   integer ::    mp_Type_rp1
   integer, dimension(:), pointer	     :: ireqs,rreqs
   integer, dimension(:,:), allocatable       :: istatus,rstatus
@@ -219,24 +228,25 @@
 
      endif
 
+
      ! Send the integer data
      if(numi .ge. 1) then
 
-	! corresponding tag logic must be in send_
-	tag = 100000*mycomp + 1000*ThisMCTWorld%mygrank + &
-	      500 + Rout%pe_list(proc)
+        ! set tag
+        mytag = DefaultTag
+        if(present(Tag)) mytag=Tag
 
 	if( Rout%num_segs(proc) > 1 ) then
 
 	   call MPI_ISEND(ip1(proc)%pi(1), &
 		Rout%locsize(proc)*numi,MP_INTEGER,Rout%pe_list(proc), &
-		tag,ThisMCTWorld%MCT_comm,ireqs(proc),ier)
+		mytag,ThisMCTWorld%MCT_comm,ireqs(proc),ier)
 	   
 	else
 
 	   call MPI_ISEND(aV%iAttr(1,Rout%seg_starts(proc,1)), & 
 		Rout%locsize(proc)*numi,MP_INTEGER,Rout%pe_list(proc), &
-		tag,ThisMCTWorld%MCT_comm,ireqs(proc),ier)
+		mytag,ThisMCTWorld%MCT_comm,ireqs(proc),ier)
 
 	endif
 
@@ -247,21 +257,21 @@
      ! Send the real data
      if(numr .ge. 1) then
 
-       ! corresponding tag logic must be in send_
-       tag = 100000*mycomp + 1000*ThisMCTWorld%mygrank + &
-	     700 + Rout%pe_list(proc)
+       ! set tag
+       mytag = DefaultTag + 1 
+       if(present(Tag)) mytag=Tag +1
 
        if( Rout%num_segs(proc) > 1 ) then
 
 	  call MPI_ISEND(rp1(proc)%pr(1), &
 	       Rout%locsize(proc)*numr,mp_Type_rp1,Rout%pe_list(proc), &
-	       tag,ThisMCTWorld%MCT_comm,rreqs(proc),ier)
+	       mytag,ThisMCTWorld%MCT_comm,rreqs(proc),ier)
 
        else
 
 	  call MPI_ISEND(aV%rAttr(1,Rout%seg_starts(proc,1)), &
 	       Rout%locsize(proc)*numr,mp_Type_rp1,Rout%pe_list(proc), &
-	       tag,ThisMCTWorld%MCT_comm,rreqs(proc),ier)
+	       mytag,ThisMCTWorld%MCT_comm,rreqs(proc),ier)
 
        endif
 
@@ -333,6 +343,10 @@ end subroutine send_
 !
 ! Requires a corresponding {\tt send\_} to be called on the other component.
 !
+! The optional argument {\tt Tag} can be used to set the tag value used in
+! the data transfer.  DefaultTag will be used otherwise. {\tt Tag} must be
+! the same in the matching {\tt send\_}
+!
 ! If data for a point is coming from more than one process, {\tt recv\_}
 ! will overwrite the duplicate values leaving the last received value
 ! in the output.  If the optional argument {\tt Sum} is invoked, the output
@@ -344,29 +358,21 @@ end subroutine send_
 !
 ! !INTERFACE:
 
- subroutine recv_(aV, Rout, Sum)
+ subroutine recv_(aV, Rout, Tag, Sum)
 !
 ! !USES:
 !
-      use m_MCTWorld, only : MCTWorld
-      use m_MCTWorld, only : ThisMCTWorld
-      use m_AttrVect, only : AttrVect
-      use m_AttrVect, only : nIAttr,nRAttr
-      use m_AttrVect, only : lsize
-      use m_Router,   only : Router
-      use m_List,     only : List
-
-      use m_mpif90
-      use m_die
-      use m_stdio
-
       implicit none
+
+! !INPUT/OUTPUT PARAMETERS:
+!
+      Type(AttrVect),       intent(inout) :: aV
 
 ! !INPUT PARAMETERS:
 !
-      Type(AttrVect),       intent(inout) :: aV
       Type(Router),         intent(in)    :: Rout
-      logical,intent(in),optional         :: Sum
+      integer,optional,     intent(in)    :: Tag
+      logical,optional,     intent(in)    :: Sum
 
 ! !REVISION HISTORY:
 ! 07Feb01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
@@ -388,13 +394,14 @@ end subroutine send_
 ! 11Nov02 - R. Jacob <jacob@mcs.anl.gov> - Add optional Sum argument to
 !           tell recv_ to sum data for the same point received from multiple
 !           processors.  Replaces recvsum_ which had replaced MCT_Recvsum.
+!           Use DefaultTag and add optional Tag argument
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::recv_'
   integer ::	numi,numr,i,j,k,ier
   integer ::    mycomp,othercomp
   integer ::    AttrIndex,VectIndex,seg_start,seg_end
-  integer ::    proc,numprocs,nseg,tag
+  integer ::    proc,numprocs,nseg,mytag
   integer ::    mp_Type_rp2
   integer, dimension(:), pointer        :: ireqs,rreqs
   integer, dimension(:,:), allocatable  :: istatus,rstatus
@@ -490,21 +497,21 @@ end subroutine send_
      ! receive the integer data
      if(numi .ge. 1) then
 
-	! corresponding tag logic must be in send_
-	tag = 100000*othercomp + 1000*Rout%pe_list(proc) + &
-              500 + ThisMCTWorld%mygrank
+        ! set tag
+        mytag = DefaultTag
+        if(present(Tag)) mytag=Tag
 
 	if( Rout%num_segs(proc) > 1 .or. DoSum ) then
 
 	   call MPI_IRECV(ip2(proc)%pi(1), &
 		Rout%locsize(proc)*numi,MP_INTEGER,Rout%pe_list(proc), &
-		tag,ThisMCTWorld%MCT_comm,ireqs(proc),ier)
+		mytag,ThisMCTWorld%MCT_comm,ireqs(proc),ier)
 
 	else
 
 	   call MPI_IRECV(aV%iAttr(1,Rout%seg_starts(proc,1)), &
 		Rout%locsize(proc)*numi,MP_INTEGER,Rout%pe_list(proc), &
-		tag,ThisMCTWorld%MCT_comm,ireqs(proc),ier)
+		mytag,ThisMCTWorld%MCT_comm,ireqs(proc),ier)
 
 	endif
 
@@ -516,20 +523,20 @@ end subroutine send_
      if(numr .ge. 1) then
 
 	! corresponding tag logic must be in send_
-	tag = 100000*othercomp + 1000*Rout%pe_list(proc) + &
-              700 + ThisMCTWorld%mygrank
+        mytag = DefaultTag + 1
+        if(present(Tag)) mytag=Tag +1
 
 	if( Rout%num_segs(proc) > 1 .or. DoSum ) then
 
 	   call MPI_IRECV(rp2(proc)%pr(1), &
 		Rout%locsize(proc)*numr,mp_Type_rp2,Rout%pe_list(proc), &
-		tag,ThisMCTWorld%MCT_comm,rreqs(proc),ier)
+		mytag,ThisMCTWorld%MCT_comm,rreqs(proc),ier)
 
 	else
 
 	   call MPI_IRECV(aV%rAttr(1,Rout%seg_starts(proc,1)), &
 		Rout%locsize(proc)*numr,mp_Type_rp2,Rout%pe_list(proc), &
-		tag,ThisMCTWorld%MCT_comm,rreqs(proc),ier)
+		mytag,ThisMCTWorld%MCT_comm,rreqs(proc),ier)
 
 	endif
 
