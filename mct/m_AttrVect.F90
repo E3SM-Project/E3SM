@@ -1363,6 +1363,7 @@
 !
 ! !IROUTINE: importRAttr_ - import REAL vector to AttrVect 
 !
+! !DESCRIPTION:
 ! This routine imports into the input/output {\tt AttrVect} argument 
 ! {\tt aV} the real attribute corresponding to the tag defined in the 
 ! input {\tt CHARACTER} argument {\tt AttrTag}.  The data to be imported
