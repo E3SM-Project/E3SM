@@ -8,7 +8,7 @@
 !
 ! !INTERFACE:
 
- subroutine accumulate(aV, aC, action)
+ subroutine accumulate(aV, aC)
 
 !
 ! !USES:
@@ -24,6 +24,8 @@
       use m_AttrVect, only : AttrVect_indexIA => indexIA
 
       use m_Accumulator, only : Accumulator
+      use m_Accumulator, only : MCT_SUM
+      use m_Accumulator, only : MCT_AVG
       use m_Accumulator, only : Accumulator_lsize => lsize
       use m_Accumulator, only : Accumulator_nIAttr => nIAttr
       use m_Accumulator, only : Accumulator_nRAttr => nRAttr
@@ -36,14 +38,14 @@
 
       type(AttrVect),     intent(in)    :: aV      ! Input AttrVect
       type(Accumulator),  intent(inout) :: aC      ! Output Accumulator
-      character(len=*),   intent(in)    :: action  ! action to be taken.
 
 ! !REVISION HISTORY:
 !       18Sep00 - J.W. Larson <larson@mcs.anl.gov> -- initial version.
 !       07Feb01 - J.W. Larson <larson@mcs.anl.gov> -- General version.
 !       10Jun01 - E.T. Ong -- fixed divide-by-zero problem in integer
 !                 attribute accumulation.
-!
+!       27Jul01 - E.T. Ong <eong@mcs.anl.gov> -- removed action argument.
+!                 Make compatible with new Accumulator type.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='accumulate'
@@ -89,22 +91,27 @@
 
         ! Accumulation of REAL attribute data:
 
-  if(Accumulator_nRAttr(aC) /= 0) then ! Accumulate only if fields 
-                                       ! are present
+  if( aC%nrAction(MCT_SUM)+aC%nrAction(MCT_AVG) > 0 ) then 
+        
+        ! Accumulate only if fields are present 
 
      data_flag = 'REAL'
      call SharedAttrIndexList(aV, aC, data_flag, num_indices, &
 	                      aVindices, aCindices)
 
-     if(num_indices /= 0) then
-
+     if(num_indices > 0) then
 	do n=1,num_indices
 	   aVindex = aVindices(n)
 	   aCindex = aCindices(n)
-	   do l=1,AttrVect_lsize(aV)
-	      aC%av%rAttr(aCindex,l) = aC%av%rAttr(aCindex,l) + &
+
+	   ! Accumulate if the action is MCT_SUM or MCT_AVG
+	   if( (aC%rAction(aCindex) == MCT_SUM).or. &
+               (aC%rAction(aCindex) == MCT_AVG) ) then
+              do l=1,AttrVect_lsize(aV)
+		 aC%av%rAttr(aCindex,l) = aC%av%rAttr(aCindex,l) + &
 		      aV%rAttr(aVindex,l)
-	   end do
+	      end do
+	   endif
 	end do
 
 	deallocate(aVindices, aCindices, stat=ierr)
@@ -112,28 +119,35 @@
 	   call MP_perr_die(myname,'first deallocate(aVindices...',ierr)
 	endif
 
-     endif ! if(num_indices /= 0)
+     endif ! if(num_indices > 0)
 
-  endif ! if(Accumulator_nRAttr(aC) /= 0)
+  endif ! if(aC%nrAction(MCT_SUM)+aC%nrAction(MCT_AVG) > 0)
 
 
         ! Accumulation of INTEGER attribute data:
 
-  if(Accumulator_nIAttr(aC) /= 0) then ! Accumulate only if fields 
-                                       ! are present
+  if( aC%niAction(MCT_SUM)+aC%niAction(MCT_AVG) > 0 ) then 
+
+        ! Accumulate only if fields are present
+
      data_flag = 'INTEGER'
      call SharedAttrIndexList(aV, aC, data_flag, num_indices, &
 	                      aVindices, aCindices)
 
-     if(num_indices /= 0) then
+     if(num_indices > 0) then
 
 	do n=1,num_indices
 	   aVindex = aVindices(n)
 	   aCindex = aCindices(n)
-	   do l=1,AttrVect_lsize(aV)
-	      aC%av%iAttr(aCindex,l) = aC%av%iAttr(aCindex,l) + &
+
+	   ! Accumulate if the action is MCT_SUM or MCT_AVG
+	   if( (aC%iAction(aCindex) == MCT_SUM) .or. &
+               (aC%iAction(aCindex) == MCT_AVG) ) then
+	      do l=1,AttrVect_lsize(aV)
+		 aC%av%iAttr(aCindex,l) = aC%av%iAttr(aCindex,l) + &
 		      aV%iAttr(aVindex,l)
-	   end do
+	      end do
+	   endif
 	end do
 
 	deallocate(aVindices, aCindices, stat=ierr)
@@ -141,9 +155,9 @@
 	   call MP_perr_die(myname,'second deallocate(aVindices...',ierr)
 	endif
 
-     endif ! if(num_indices /= 0)
+     endif ! if(num_indices > 0)
 
-  endif ! if(Accumulator_nIAttr(aC) /= 0)
+  endif ! if(aC%niAction(MCT_SUM)+aC%niAction(MCT_AVG) > 0 )
 
         ! Increment aC%steps_done:
 
@@ -153,21 +167,28 @@
         ! average (if desired).
 
   if(aC%steps_done == num_steps) then
-     select case(action)
-     case('average','AVERAGE')
+
+     if( aC%nrAction(MCT_AVG) > 0 ) then
 	step_weight = 1 / float(num_steps)
 	do n=1,Accumulator_nRAttr(aC)
-	   do l=1,Accumulator_lsize(aC)
-	      aC%av%rAttr(n,l) = step_weight * aC%av%rAttr(n,l)
-	   enddo
+           if( aC%rAction(n) == MCT_AVG ) then
+              do l=1,Accumulator_lsize(aC)
+                 aC%av%rAttr(n,l) = step_weight * aC%av%rAttr(n,l)
+              enddo
+           endif
 	enddo
+     endif
+     
+     if( aC%niAction(MCT_AVG) > 0 ) then
 	do n=1,Accumulator_nIAttr(aC)
-	   do l=1,Accumulator_lsize(aC)
-	      aC%av%iAttr(n,l) = aC%av%iAttr(n,l) / num_steps
-	   enddo
+           if( aC%iAction(n) == MCT_AVG ) then
+              do l=1,Accumulator_lsize(aC)
+                 aC%av%iAttr(n,l) = aC%av%iAttr(n,l) / num_steps
+              enddo
+           endif
 	enddo
-     case default
-     end select
+     endif
+
   endif
 
  end subroutine accumulate

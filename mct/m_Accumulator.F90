@@ -28,6 +28,12 @@
 
       public :: Accumulator     
 
+! Defined constants
+
+      public :: MCT_SUM
+      public :: MCT_AVG
+
+
 ! List of Methods for the Accumulator class
 
       public :: init		! creation method
@@ -47,8 +53,18 @@
     type Accumulator
       integer :: num_steps      ! total number of accumulation steps
       integer :: steps_done     ! number of accumulation steps performed
-      type(AttrVect) :: av      ! accumulated field storage
+      integer :: niAction(1:2)  ! number of integer actions
+      integer :: nrAction(1:2)  ! number of real actions
+      integer, pointer, dimension(:) :: iAction ! index of integer actions
+      integer, pointer, dimension(:) :: rAction ! index of real actions
+      type(AttrVect) :: av      ! accumulated sum field storage
+      
     end type Accumulator
+
+! Assignment of constants
+
+    integer, parameter :: MCT_SUM = 1
+    integer, parameter :: MCT_AVG = 2
 
 ! Definition of interfaces for the methods for the Accumulator:
 
@@ -86,31 +102,54 @@
 !
 ! !INTERFACE:
 
- subroutine init_(aC,iList,rList,lsize,num_steps,steps_done)
+ subroutine init_(aC,iList,iAction,rList,rAction,lsize,num_steps,steps_done)
 !
 ! !USES:
 !
       use m_List, only : List_init=>init
       use m_List, only : List_nitem=>nitem
       use m_AttrVect, only : AttrVect_init => init
+      use m_AttrVect, only : AttrVect_nIAttr => nIAttr
+      use m_AttrVect, only : AttrVect_nRAttr => nRAttr
       use m_die
 
       implicit none
 
       type(Accumulator),intent(out)        :: aC
       character(len=*),optional,intent(in) :: iList
+      integer,dimension(:),optional,intent(in) :: iaction
       character(len=*),optional,intent(in) :: rList
-      integer,         optional,intent(in) :: lsize
+      integer,dimension(:),optional,intent(in) :: raction
+      integer,         intent(in) :: lsize
       integer,         intent(in)          :: num_steps
       integer,         optional,intent(in) :: steps_done
 
 ! !REVISION HISTORY:
 ! 	11Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+!       27JUL01 - E.T. Ong <eong@mcs.anl.gov> - added iAction, rAction,
+!                 niAction, and nrAction to accumulator type. Also defined
+!                 MCT_SUM and MCT_AVG for accumulator module.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::init_'
-  integer :: n,ier
+  integer :: n,i,ier
   integer :: steps_completed
+  integer :: action(2)
+
+  action(1) = MCT_SUM
+  action(2) = MCT_AVG
+
+        ! Argument dummy check
+  
+  ! Bug note: On denali, this portion will kill before MP_perr_die can execute
+  if(.not.( (present(iList).and.present(iAction)) .or. &
+            (present(rList).and.present(rAction)) ) ) then
+     call MP_perr_die(myname_,"List and Action arguments must be paired",ier)
+  endif
+
+  if(lsize .le. 0) then
+     call MP_perr_die(myname_,"lsize argument must be > 0",ier) 
+  endif
 
         ! if the argument steps_done is not present, assume
         ! the accumulator is starting at step zero, that is,
@@ -119,35 +158,85 @@
   steps_completed = 0
   if(present(steps_done)) steps_completed = steps_done
 
-        ! if iList is present, use it; if not, set it as null
-
-  if(present(iList)) then
-    call List_init(aC%av%iList,iList)	! init.List()
-  else
-    call List_init(aC%av%iList,'')	! init.List()
-  endif
-
-        ! if rList is present, use it; if not, set it as null
-
-  if(present(rList)) then
-    call List_init(aC%av%rList,rList)	! init.List()
-  else
-    call List_init(aC%av%rList,'')	! init.List()
-  endif
-
-        ! if lsize is present, use it to set n; if not, set n=0
-
-  n=0
-  if(present(lsize)) n=lsize
-
         ! Set the stepping info:
 
   aC%num_steps = num_steps
   aC%steps_done = steps_completed
 
+
         ! Initialize the AttrVect component aC%av:
 
+
   call AttrVect_init(aC%av,iList,rList,lsize)
+
+
+
+        ! Set indexing info
+
+  aC%niAction = 0
+  aC%nrAction = 0
+
+  nullify(aC%iAction,aC%rAction)
+
+  if(present(iAction)) then
+
+      ! More argument checking
+
+      if( size(iAction) /=  AttrVect_nIAttr(aC%av) ) then
+	 call MP_perr_die(myname_,"size(iaction) /= size(iList)",ier)
+      endif
+
+      allocate(aC%iAction(1:AttrVect_nIAttr(aC%av)),stat=ier)
+      if(ier /= 0) then
+           call MP_perr_die(myname_,"iAction allocate",ier)
+      endif
+      
+      do i=1,AttrVect_nIAttr(aC%av)
+
+	 select case (iAction(i))
+	 case (MCT_SUM)
+	    aC%niAction(MCT_SUM) = aC%niAction(MCT_SUM) + 1
+	 case(MCT_AVG)
+	    aC%niAction(MCT_AVG) = aC%niAction(MCT_AVG) + 1
+	 case default
+	    call MP_perr_die(myname_,"illegal iAction assignment",ier)
+	 end select
+
+	 ! Safe? pointer copy
+	 aC%iAction(i) = iAction(i)
+
+      enddo
+
+   endif
+
+  if(present(rAction)) then
+
+      ! More argument checking
+
+      if( size(rAction) .ne.  AttrVect_nRAttr(aC%av) ) then
+	 call MP_perr_die(myname_,"size(raction) /= size(rList)",ier)
+      endif
+
+      allocate(aC%rAction(1:AttrVect_nRAttr(aC%av)),stat=ier)
+      if(ier /= 0) call MP_perr_die(myname_,"iAction allocate",ier)
+
+      do i=1,AttrVect_nRAttr(aC%av)
+
+	 select case (rAction(i))
+	 case (MCT_SUM)
+	    aC%nrAction(MCT_SUM) = aC%nrAction(MCT_SUM) + 1
+	 case(MCT_AVG)
+	    aC%nrAction(MCT_AVG) = aC%nrAction(MCT_AVG) + 1
+	 case default
+	    call MP_perr_die(myname_,"illegal rAction assignment",ier)
+	 end select
+
+	 ! Safe? pointer copy
+	 aC%rAction(i) = rAction(i)
+
+      enddo
+	 
+   endif
 
  end subroutine init_
 
@@ -168,6 +257,7 @@
       use m_String, only : String
       use m_String, only : String_char => char
       use m_List,   only : List_get => get
+      use m_die
 
       implicit none
 
@@ -181,12 +271,17 @@
 ! 	11Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
 ! 	17May01 - R. Jacob <jacob@mcs.anl.gov> - change string_get to
 !                 list_get
+!       27JUL01 - E.T. Ong <eong@mcs.anl.gov> - added iaction,raction 
+!                 compatibility
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::initv_'
 
   type(String) :: iLStr,rLStr
   integer :: steps_completed
+  integer :: bC_iActions, bC_rActions 
+  integer, dimension(:), allocatable :: iActionArray, rActionArray
+  integer :: ier
 
         ! If the argument steps_done is present, set steps_completed
         ! to this value; otherwise, set it to zero
@@ -199,8 +294,39 @@
   call List_get(iLStr,bC%av%iList)
   call List_get(rLStr,bC%av%rList)
 
-  call init_(aC, iList=String_char(iLStr), rList=String_char(rLStr), &
-             lsize=lsize, num_steps=num_steps, steps_done=steps_completed)
+  bC_iActions = size(bC%iAction)
+  bC_rActions = size(bC%rAction)
+
+        ! Convert the pointers to arrays
+
+  allocate(iActionArray(bC_iActions),rActionArray(bC_rActions),stat=ier)
+  if(ier /= 0) call MP_perr_die(myname_,"iActionArray/rActionArray allocate",ier)
+
+
+        ! Call init with present arguments
+
+  if( (bC_iActions > 0) .and. (bC_rActions > 0) ) then
+
+     call init_(aC, iList=String_char(iLStr), iAction=bC%iAction, &
+                rList=String_char(rLStr), rAction=bC%rAction, &
+                lsize=lsize, num_steps=num_steps, steps_done=steps_completed)
+
+  else 
+
+     if( bC_iActions > 0 ) then
+	call init_(aC, iList=String_char(iLStr), iAction=bC%iAction, &
+                  lsize=lsize, num_steps=num_steps, steps_done=steps_completed)
+     endif
+
+     if( bC_rActions > 0 ) then
+	call init_(aC, rList=String_char(rLStr), rAction=bC%rAction, &
+                  lsize=lsize, num_steps=num_steps, steps_done=steps_completed)
+     endif
+
+  endif
+
+  deallocate(iActionArray,rActionArray,stat=ier)
+  if(ier /= 0) call MP_perr_die(myname_,"iActionArray/rActionArray deallocate",ier)
 
  end subroutine initv_
 
@@ -229,12 +355,24 @@
 
 ! !REVISION HISTORY:
 ! 	11Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+!       27JUL01 - E.T. Ong <eong@mcs.anl.gov> - deallocate pointers iAction
+!                 and rAction.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::clean_'
   integer :: ier
 
   call AttrVect_clean(aC%av)
+  
+  if( associated(aC%iAction) )  deallocate(aC%iAction,stat=ier)
+  if(ier /= 0) then
+     call MP_perr_die(myname_,"iAction deallocate",ier)
+  endif
+
+  if( associated(aC%rAction) ) deallocate(aC%rAction,stat=ier)
+  if(ier /= 0) then
+     call MP_perr_die(myname_,"rAction deallocate",ier)
+  endif
 
  end subroutine clean_
 
