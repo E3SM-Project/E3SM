@@ -155,13 +155,15 @@
 ! {\tt GSMap}.  The input {\tt INTEGER} arguments {\tt comp\_id}, 
 ! {\tt gsize} provide the {\tt GlobalSegMap} component ID number and 
 ! global grid size, respectively.  The input argument {\tt my\_comm} is 
-! the F90 {\tt INTEGER} handle for the MPI communicator.
+! the F90 {\tt INTEGER} handle for the MPI communicator.  If the input
+! arrays are overdimensioned, optional argument {\em numel} can be
+! used to specify how many elements should be used.
 ! 
 !
 ! !INTERFACE:
 
  subroutine initd_(GSMap, start, length, root, my_comm, &
-                   comp_id, pe_loc, gsize )
+                   comp_id, pe_loc, gsize, numel)
 
 !
 ! !USES:
@@ -186,6 +188,8 @@
                                                         ! be computed by this 
                                                         ! routine if no haloing
                                                         ! is assumed.
+      integer,intent(in), optional    :: numel          ! specify number of elements
+							! to use in start, length
 
 ! !OUTPUT PARAMETERS:
 
@@ -201,6 +205,8 @@
 !                 of the array status used by MPI_WAITALL.
 ! 	26Jan01 - J.W. Larson <larson@mcs.anl.gov> - replaced optional 
 !                 argument gsm_comm with required argument comp_id.
+!       23Sep02 - Add optional argument numel to allow start, length
+!                 arrays to be overdimensioned.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::initd_'
@@ -239,7 +245,11 @@
         ! Store in the variable ngseg the local size 
         ! array start(:)
 
-  ngseg = size(start)
+  if(present(numel)) then
+    ngseg=numel
+  else
+    ngseg = size(start)
+  endif
 
         ! If the argument pe_loc is not present, then we are
         ! initializing the GlobalSegMap on the communicator 
