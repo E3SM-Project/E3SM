@@ -142,8 +142,19 @@
 	tag = 100000*othercomp + 1000*Rout%pe_list(proc) + &
               500 + ThisMCTWorld%mygrank
 
-	call MPI_IRECV(ip2(proc)%pi(1),Rout%locsize(proc)*numi,MP_INTEGER,&
-                 Rout%pe_list(proc),tag,ThisMCTWorld%MCT_comm,ireqs(proc),ier)
+	if( Rout%num_segs(proc) > 1 ) then
+
+	   call MPI_IRECV(ip2(proc)%pi(1), &
+		Rout%locsize(proc)*numi,MP_INTEGER,Rout%pe_list(proc), &
+		tag,ThisMCTWorld%MCT_comm,ireqs(proc),ier)
+
+	else
+
+	   call MPI_IRECV(aV%iAttr(1,Rout%seg_starts(proc,1)), &
+		Rout%locsize(proc)*numi,MP_INTEGER,Rout%pe_list(proc), &
+		tag,ThisMCTWorld%MCT_comm,ireqs(proc),ier)
+
+	endif
 
 	if(ier /= 0) call MP_perr_die(myname_,'MPI_IRECV(ints)',ier)
 
@@ -156,8 +167,19 @@
 	tag = 100000*othercomp + 1000*Rout%pe_list(proc) + &
               700 + ThisMCTWorld%mygrank
 
-	call MPI_IRECV(rp2(proc)%pr(1),Rout%locsize(proc)*numr,mp_Type_rp2,&
-                 Rout%pe_list(proc),tag,ThisMCTWorld%MCT_comm,rreqs(proc),ier)
+	if( Rout%num_segs(proc) > 1 ) then
+
+	   call MPI_IRECV(rp2(proc)%pr(1), &
+		Rout%locsize(proc)*numr,mp_Type_rp2,Rout%pe_list(proc), &
+		tag,ThisMCTWorld%MCT_comm,rreqs(proc),ier)
+
+	else
+
+	   call MPI_IRECV(aV%rAttr(1,Rout%seg_starts(proc,1)), &
+		Rout%locsize(proc)*numr,mp_Type_rp2,Rout%pe_list(proc), &
+		tag,ThisMCTWorld%MCT_comm,rreqs(proc),ier)
+
+	endif
 
 	if(ier /= 0) call MP_perr_die(myname_,'MPI_IRECV(reals)',ier)
 
@@ -183,25 +205,29 @@
   ! Load data which came from each processor
   do proc=1,Rout%nprocs
 
-     j=1
-     k=1
+     if( Rout%num_segs(proc) > 1 ) then
 
-     ! load the correct pieces of the integer and real vectors
-     do nseg = 1,Rout%num_segs(proc)
-	seg_start = Rout%seg_starts(proc,nseg)
-	seg_end = seg_start + Rout%seg_lengths(proc,nseg)-1
-	do VectIndex = seg_start,seg_end
-	   do AttrIndex = 1,numi
-	      aV%iAttr(AttrIndex,VectIndex)=ip2(proc)%pi(j)
-	      j=j+1
-	   enddo
-	   do AttrIndex = 1,numr
-	      aV%rAttr(AttrIndex,VectIndex)=rp2(proc)%pr(k)
-	      k=k+1
+	j=1
+	k=1
+
+	! load the correct pieces of the integer and real vectors
+	do nseg = 1,Rout%num_segs(proc)
+	   seg_start = Rout%seg_starts(proc,nseg)
+	   seg_end = seg_start + Rout%seg_lengths(proc,nseg)-1
+	   do VectIndex = seg_start,seg_end
+	      do AttrIndex = 1,numi
+		 aV%iAttr(AttrIndex,VectIndex)=ip2(proc)%pi(j)
+		 j=j+1
+	      enddo
+	      do AttrIndex = 1,numr
+		 aV%rAttr(AttrIndex,VectIndex)=rp2(proc)%pr(k)
+		 k=k+1
+	      enddo
 	   enddo
 	enddo
-     enddo
-     
+	
+     endif
+
   enddo
 
 !........................WAITANY METHOD................................
