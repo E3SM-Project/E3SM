@@ -334,7 +334,7 @@
 !
 ! !INTERFACE:
 
-    subroutine clean_(Rout)
+    subroutine clean_(Rout,stat)
 !
 ! !USES:
 !
@@ -342,13 +342,16 @@
 
       implicit none
 
-      type(Router), intent(inout) :: Rout
+      type(Router),      intent(inout) :: Rout
+      integer, optional, intent(out)   :: stat
 
 ! !REVISION HISTORY:
 !       15Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
 !       31Jan01 - R. Jacob <jacob@mcs.anl.gov> - actual code
 !       08Feb01 - R. Jacob <jacob@mcs.anl.gov> - add code to clean
 !                 the maxsize and locsize
+!       01Mar02 - E.T. Ong <eong@mcs.anl.gov> removed the die to prevent
+!                 crashes and added stat argument.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::clean_'
@@ -356,7 +359,12 @@
 
   deallocate(Rout%pe_list,Rout%num_segs,Rout%seg_starts, &
   Rout%locsize,Rout%seg_lengths,stat=ier)
-  if(ier /= 0) call perr_die(myname_,'deallocate(Rout,...)',ier)
+
+  if(present(stat)) then
+     stat=ier
+  else
+     if(ier /= 0) call warn(myname_,'deallocate(Rout%...)',ier)
+  endif
 
   Rout%comp1id = 0
   Rout%comp2id = 0
