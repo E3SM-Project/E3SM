@@ -82,6 +82,8 @@
 !                and mylrank from MCTWorld datatype because they
 !                are not clearly defined in PCM mode.
 !                Add MCT_comm for future use.
+!      03Aug01 - E. Ong <eong@mcs.anl.gov> - explicity specify starting
+!                address in mpi_irecv
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_MCTWorld'
@@ -239,7 +241,7 @@
   if(myGid == 0) then
     do i=1,ncomps
        apoint => tmparray(0:Gsize-1,i)
-       call MPI_IRECV(apoint, root_nprocs(i),MP_INTEGER, &
+       call MPI_IRECV(apoint(1), root_nprocs(i),MP_INTEGER, &
        MP_ANY_SOURCE,i,MP_COMM_WORLD, reqs(i), ier)
        if(ier /= 0) call MP_perr_die(myname_,'MPI_IRECV()',ier)
     enddo
@@ -266,6 +268,19 @@
     root_idGprocid = transpose(tmparray)
   endif
 
+        ! Non-root processes call initr_ with root_nprocs 
+        ! and root_idGprocid, although these arguments are not used in the 
+        ! subroutine. Since these correspond to dummy shaped array arguments
+        ! in initr_, the Fortran 90 standard dictates that the actual 
+        ! arguments must contain complete shape information. Therefore, 
+        ! these array arguments must be allocated on all processes.
+
+  if(myGid /= 0) then
+     allocate(root_nprocs(1),root_idGprocid(1,1),stat=ier)
+     if(ier/=0) call MP_perr_die(myname_,'non-root allocate(root_idGprocid)',ier)
+  endif
+
+
 !!!!!!!!!!!!!!!!!!
 ! end of Gprocids
 !!!!!!!!!!!!!!!!!!
@@ -282,9 +297,11 @@
 ! endif
 
 ! deallocate temporary arrays
+
+ deallocate(root_nprocs,root_idGprocid,stat=ier)
+ if(ier/=0) call MP_perr_die(myname_,'deallocate(root_nprocs,..)',ier)
  if(myGid == 0) then
-  deallocate(compids,reqs,status,nprocs,tmparray,root_idGprocid,&
-  root_nprocs,stat=ier)
+  deallocate(compids,reqs,status,nprocs,tmparray,stat=ier)
   if(ier/=0) call MP_perr_die(myname_,'deallocate(compids,..)',ier)
  endif
  if(myLid == 0) then
