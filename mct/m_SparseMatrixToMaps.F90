@@ -85,18 +85,22 @@
 
 ! !INPUT PARAMETERS: 
 !
-      type(SparseMatrix), intent(in)  :: sMat    ! input SparseMatrix
-      integer,            intent(in)  :: root    ! communicator root
-      integer,            intent(in)  :: comm    ! communicator handle
+      integer,            intent(in)    :: root    ! communicator root
+      integer,            intent(in)    :: comm    ! communicator handle
+
+! !INPUT/OUTPUT PARAMETERS: 
+!
+      type(SparseMatrix), intent(inout) :: sMat    ! input SparseMatrix
 
 ! !OUTPUT PARAMETERS: 
 !
-      type(GlobalSegMap), intent(out) :: xGSMap  ! segmented decomposition
-                                                 ! for x 
-
-
+      type(GlobalSegMap), intent(out)   :: xGSMap  ! segmented decomposition
+                                                   ! for x
 ! !REVISION HISTORY:
 !       13Apr01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
+!       25Apr01 - J.W. Larson <larson@mcs.anl.gov> - First version.
+!       27Apr01 - J.W. Larson <larson@mcs.anl.gov> - Bug fix--intent of
+!                 argument sMat changed from (IN) to (INOUT)
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::SparseMatrixToXGlobalSegMap_'
@@ -223,17 +227,22 @@
 
 ! !INPUT PARAMETERS: 
 !
-      type(SparseMatrix), intent(in)  :: sMat    ! input SparseMatrix
-      integer,            intent(in)  :: root    ! communicator root
-      integer,            intent(in)  :: comm    ! communicator handle
+      integer,            intent(in)    :: root    ! communicator root
+      integer,            intent(in)    :: comm    ! communicator handle
+
+! !INPUT/OUTPUT PARAMETERS: 
+!
+      type(SparseMatrix), intent(inout) :: sMat    ! input SparseMatrix
 
 ! !OUTPUT PARAMETERS: 
 !
-      type(GlobalSegMap), intent(out) :: yGSMap  ! segmented decomposition
-                                                 ! for y
+      type(GlobalSegMap), intent(out)   :: yGSMap  ! segmented decomposition
+                                                   ! for y
 ! !REVISION HISTORY:
 !       13Apr01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
 !       25Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial code.
+!       27Apr01 - J.W. Larson <larson@mcs.anl.gov> - Bug fix--intent of
+!                 argument sMat changed from (IN) to (INOUT)
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::SparseMatrixToYGlobalSegMap_'
