@@ -1740,10 +1740,6 @@
      endif
   endif
 
-       ! Nullify all the pointers present in the AttrVect integratedAv:
-
-  call AttrVect_clean(integratedAv)
-
        ! Compute the masked weighted sum, including the sum of the 
        ! masked weights.
 
