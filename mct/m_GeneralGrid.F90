@@ -296,7 +296,7 @@
        CoordListIndices, CoordSortOrderIndices
 
   ! Temporary vars
-  integer :: NumShared, i, m, n, ierr
+  integer :: NumShared, nitems, i, l, ierr
 
        ! Let's begin by nullifying everything:
 
@@ -338,16 +338,14 @@
 
         ! Check the lists that we've initialized :
 
-  n = List_nitem(GGrid%coordinate_list)
-  m = 0
-  if(present(CoordSortOrder)) m = List_nitem(GGrid%coordinate_sort_order)
+  nitems = List_nitem(GGrid%coordinate_list)
 
         ! Check the number of coordinates
 
-  if(n <= 0) then
+  if(nitems <= 0) then
      write(stderr,*) myname_, &
 	  ':: ERROR CoordList is empty!'
-     call die(myname_,'List_nitem(CoordList) <= 0',n)
+     call die(myname_,'List_nitem(CoordList) <= 0',nitems)
   endif
 
         ! Check the items in the coordinate list and the 
@@ -362,9 +360,9 @@
      deallocate(CoordListIndices,CoordSortOrderIndices,stat=ierr)
      if(ierr/=0) call die(myname_,'deallocate(CoordListIndices..)',ierr)
      
-     if(NumShared /= n) then
+     if(NumShared /= nitems) then
 	call die(myname_,'CoordSortOrder must have the same items &
-	         & as CoordList',abs(n-NumShared))
+	         & as CoordList',abs(nitems-NumShared))
      endif
 
   endif
@@ -378,39 +376,52 @@
 
      if( ( (.not.associated(descend)) .or. &
 	   (.not.present(CoordSortOrder)) ) .or. &
-	   (size(descend) /= m) ) then
+	   (size(descend) /= nitems) ) then
 	
 	write(stderr,*) myname_, &
 	     ':: ERROR using descend argument, &
 	     &associated(descend) = ', associated(descend), &
 	     ' present(CoordSortOrder) = ', present(CoordSortOrder), &
 	     ' size(descend) = ', size(descend), &
-	     ' List_nitem(CoordSortOrder) = ', m
-	call die(myname_, 'ERROR using -descend- argument',m)
+	     ' List_nitem(CoordSortOrder) = ', &
+             List_nitem(GGrid%coordinate_sort_order)
+	call die(myname_, 'ERROR using -descend- argument; &
+             & see stderr file for details')
      endif
 
   endif
 
        ! Finally, Initialize GGrid%descend from descend(:).
+       ! If descend argument is not present, set it to the default .false.
 
-  if(present(descend)) then
+  if(present(CoordSortOrder)) then
 
-     allocate(GGrid%descend(m), stat=ierr)
+     allocate(GGrid%descend(nitems), stat=ierr)
      if(ierr /= 0) call die(myname_,"allocate GGrid%descend...",ierr)
 
-     do i=1,m
-	GGrid%descend(i) = descend(i)
-     enddo
+     if(present(descend)) then
 
+        do i=1,nitems
+           GGrid%descend(i) = descend(i)
+        enddo
+
+     else
+
+        do i=1,nitems
+           GGrid%descend(i) = .FALSE.
+        enddo
+
+     endif
+        
   endif
   
        ! Initialize GGrid%data using IAList, RAList, and lsize (if
        ! present).
 
-  n = 0
-  if(present(lsize)) n=lsize
+  l = 0
+  if(present(lsize)) l=lsize
 
-  call AttrVect_init(GGrid%data, IAList, RAList, n)
+  call AttrVect_init(GGrid%data, IAList, RAList, l)
 
 
        ! Deallocate the temporary variables
@@ -536,7 +547,7 @@
        CoordListIndices, CoordSortOrderIndices
 
   ! Temporary vars
-  integer :: NumShared, i, l, m, n, ierr
+  integer :: NumShared, nitems, i, l, ierr
 
        ! Let's begin by nullifying everything:
 
@@ -549,16 +560,14 @@
 
         ! Check the arguments:
 
-  n = List_nitem(CoordList)
-  m = 0
-  if(present(CoordSortOrder)) m = List_nitem(CoordSortOrder)
+  nitems = List_nitem(CoordList)
 
         ! Check the number of coordinates
 
-  if(n <= 0) then
+  if(nitems <= 0) then
      write(stderr,*) myname_, &
           ':: ERROR CoordList is empty!'
-     call die(myname_,'List_nitem(CoordList) <= 0',n)
+     call die(myname_,'List_nitem(CoordList) <= 0',nitems)
   endif
 
         ! Check the items in the coordinate list and the 
@@ -573,9 +582,9 @@
      deallocate(CoordListIndices,CoordSortOrderIndices,stat=ierr)
      if(ierr/=0) call die(myname_,'deallocate(CoordListIndices..)',ierr)
      
-     if(NumShared /= n) then
+     if(NumShared /= nitems) then
         call die(myname_,'CoordSortOrder must have the same items &
-                 & as CoordList',abs(n-NumShared))
+                 & as CoordList',abs(nitems-NumShared))
      endif
 
   endif
@@ -589,30 +598,43 @@
 
      if( ( (.not.associated(descend)) .or. &
            (.not.present(CoordSortOrder)) ) .or. &
-           (size(descend) /= m) ) then
+           (size(descend) /= nitems) ) then
         
         write(stderr,*) myname_, &
              ':: ERROR using descend argument, &
              &associated(descend) = ', associated(descend), &
              ' present(CoordSortOrder) = ', present(CoordSortOrder), &
              ' size(descend) = ', size(descend), &
-             ' List_nitem(CoordSortOrder) = ', m
-        call die(myname_, 'ERROR using -descend- argument')
+             ' List_nitem(CoordSortOrder) = ', &
+             List_nitem(CoordSortOrder)
+        call die(myname_, 'ERROR using -descend- argument; &
+             &stderr file for details')
      endif
 
   endif
 
        ! Initialize GGrid%descend from descend(:), if present.  If
-       ! the argument descend(:) was not passed, nullify GGrid%descend
+       ! the argument descend(:) was not passed, set GGrid%descend
+       ! to the default .false.
 
-  if(present(descend)) then
+  if(present(CoordSortOrder)) then
 
-     allocate(GGrid%descend(m), stat=ierr)
+     allocate(GGrid%descend(nitems), stat=ierr)
      if(ierr /= 0) call die(myname_,"allocate GGrid%descend...",ierr)
 
-     do i=1,m
-        GGrid%descend(i) = descend(i)
-     enddo
+     if(present(descend)) then
+
+        do i=1,nitems
+           GGrid%descend(i) = descend(i)
+        enddo
+
+     else
+
+        do i=1,nitems
+           GGrid%descend(i) = .FALSE.
+        enddo
+
+     endif
 
   endif
   
