@@ -52,7 +52,10 @@
 
     type(MCTWorld) :: ThisMCTWorld	! declare an MCTWorld
 
-    interface init  ; module procedure initd_  ; end interface
+    interface init ; module procedure &
+      initd_, &
+      initr_
+    end interface
     interface clean ; module procedure clean_ ; end interface
     interface NumComponents ; module procedure &
 	 NumComponents_ 
@@ -84,6 +87,8 @@
 !                Add MCT_comm for future use.
 !      03Aug01 - E. Ong <eong@mcs.anl.gov> - explicity specify starting
 !                address in mpi_irecv
+!      27Nov01 - E. Ong <eong@mcs.anl.gov> - added Rob's version of initd_
+!                to support PCM mode. 
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_MCTWorld'
@@ -104,7 +109,7 @@
 !
 ! !INTERFACE:
 
- subroutine initd_(ncomps,myid,mycomm)
+ subroutine initd_(ncomps,mycomm,myid,myids)
 !
 ! !USES:
 !
@@ -115,7 +120,8 @@
       implicit none
 
       integer, intent(in)	       :: ncomps  ! number of components
-      integer, intent(in)	       :: myid    ! my component id
+      integer, intent(in),optional     :: myid    ! my component id
+      integer, dimension(:),pointer,optional  :: myids    ! component ids
       integer, intent(in)	       :: mycomm  ! my communicator
 
 ! !REVISION HISTORY:
@@ -142,6 +148,19 @@
   integer, dimension(:,:),pointer :: tmparray
   integer,dimension(:),pointer :: apoint
 ! ------------------------------------------------------------------
+
+! only one of myid and myids should be present
+  if(present(myid) .and. present(myids)) then
+    write(stderr,'(2a)') myname_, &
+      'MCTERROR:  Must define myid or myids in MCTWord init'
+      call die(myname_)
+  endif
+
+  if(.not.present(myid) .and. .not.present(myids)) then
+    write(stderr,'(2a)') myname_, &
+      'MCTERROR:  Must define one of myid or myids in MCTWord init'
+      call die(myname_)
+  endif
 
 ! make sure this has not been called already
   if(associated(ThisMCTWorld%nprocspid) ) then
@@ -188,14 +207,21 @@
     do i=1,ncomps
        call MPI_IRECV(root_nprocs(i), 1, MP_INTEGER, MP_ANY_SOURCE,i, &
 	 MP_COMM_WORLD, reqs(i), ier)
-       if(ier /= 0) call MP_perr_die(myname_,'MPI_IRECV()',ier)
+       if(ier /= 0) call MP_perr_die(myname_,'MPI_IRECV(root_nprocs)',ier)
     enddo
   endif
 
 !  The local root on each component sends
   if(myLid == 0) then
-    call MPI_SEND(mysize,1,MP_INTEGER,0,myid,MP_COMM_WORLD,ier)
-    if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL()',ier)
+    if(present(myids)) then
+      do i=1,size(myids)
+        call MPI_SEND(mysize,1,MP_INTEGER,0,myids(i),MP_COMM_WORLD,ier)
+        if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND(mysize)',ier)
+      enddo
+    else
+        call MPI_SEND(mysize,1,MP_INTEGER,0,myid,MP_COMM_WORLD,ier)
+        if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND(mysize)',ier)
+    endif
   endif
 
 !  Global root waits for all sends
@@ -249,8 +275,15 @@
 
 !  The root on each component sends
   if(myLid == 0) then
-    call MPI_SEND(Gprocids,mysize,MP_INTEGER,0,myid,MP_COMM_WORLD,ier)
-    if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND(Gprocids)',ier)
+    if(present(myids)) then
+      do i=1,size(myids)
+        call MPI_SEND(Gprocids,mysize,MP_INTEGER,0,myids(i),MP_COMM_WORLD,ier)
+        if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND(Gprocids)',ier)
+      enddo
+    else
+        call MPI_SEND(Gprocids,mysize,MP_INTEGER,0,myid,MP_COMM_WORLD,ier)
+        if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND(Gprocids)',ier)
+    endif
   endif
 
 !  Global root waits for all sends
@@ -268,18 +301,10 @@
     root_idGprocid = transpose(tmparray)
   endif
 
-        ! Non-root processes call initr_ with root_nprocs 
-        ! and root_idGprocid, although these arguments are not used in the 
-        ! subroutine. Since these correspond to dummy shaped array arguments
-        ! in initr_, the Fortran 90 standard dictates that the actual 
-        ! arguments must contain complete shape information. Therefore, 
-        ! these array arguments must be allocated on all processes.
-
   if(myGid /= 0) then
      allocate(root_nprocs(1),root_idGprocid(1,1),stat=ier)
      if(ier/=0) call MP_perr_die(myname_,'non-root allocate(root_idGprocid)',ier)
   endif
-
 
 !!!!!!!!!!!!!!!!!!
 ! end of Gprocids
@@ -297,7 +322,6 @@
 ! endif
 
 ! deallocate temporary arrays
-
  deallocate(root_nprocs,root_idGprocid,stat=ier)
  if(ier/=0) call MP_perr_die(myname_,'deallocate(root_nprocs,..)',ier)
  if(myGid == 0) then
@@ -319,7 +343,7 @@
 !
 ! !DESCRIPTION:
 ! Initialize MCTWorld using information valid on the global root.
-! This is called by initd\_ but should also be called by the user
+! This is called by initd_ but should also be called by the user
 ! for very complex model--processor geometries
 !
 ! !INTERFACE:
@@ -558,8 +582,6 @@
 
 ! !REVISION HISTORY:
 !       05Feb01 - J. Larson <larson@mcs.anl.gov> - initial version
-!       02Jul01 - J. Larson <larson@mcs.anl.gov> - minor change to
-!                 error statements.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::ComponentToWorldRank_'
@@ -589,7 +611,7 @@
 	endif
 
 	if(.not. valid) then
-	   write(stderr,'(2a,1i7)') myname_,":: invalid component id no. = ",&
+	   write(stderr,'(2a,1i7)') myname,":: invalid component id no. = ",&
 		comp_id
 	   call MP_perr_die(myname_,'invalid comp_id = ',comp_id)
 	endif
@@ -605,7 +627,7 @@
 	endif
 
 	if(.not. valid) then
-	   write(stderr,'(2a,1i5,1a,1i2)') myname_, &
+	   write(stderr,'(2a,1i5,1a,1i2)') myname, &
 		":: invalid process ID. = ", &
 		comp_rank, "on component ",comp_id
 	   call MP_perr_die(myname_,'invalid comp_rank = ',comp_rank)
@@ -621,7 +643,7 @@
   world_rank = World%idGprocid(comp_id, comp_rank)
 
   if(world_rank < 0) then
-     write(stderr,'(2a,1i6)') myname_,":: negative world rank = ",world_rank
+     write(stderr,'(2a,1i6)') myname,":: negative world rank = ",world_rank
      call MP_perr_die(myname_,'negative world rank = ',world_rank)
   endif    
 
