@@ -23,22 +23,22 @@
 
       private   ! except
 
-! declare a private pointer structure for the real data
-  public :: rptr,iptr
-  type :: rptr
-    sequence
-    real(FP),dimension(:),pointer :: pr
-  end type
+! !declare a private pointer structure for the real data
+      type :: rptr
+        sequence
+        real(FP),dimension(:),pointer :: pr
+      end type
 
-! declare a private pointer structure for the integer data
-  type :: iptr
-    sequence
-    integer,dimension(:),pointer :: pi
-  end type
-
+! !declare a private pointer structure for the integer data
+      type :: iptr
+        sequence
+        integer,dimension(:),pointer :: pi
+      end type
 
 ! !PUBLIC TYPES:
       public :: Router	        ! The class data structure
+
+      public :: rptr,iptr       ! pointer types used in Router
 !\end{verbatim}
 !% On return, pe_list is the processor ranks of the other
 !% component to receive from/send to.  num_segs is the
