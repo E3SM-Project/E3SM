@@ -48,11 +48,9 @@ _Dnod		=
 # -pc speciefies 32-bit or 64-bit  
 
 # If using the Absoft compiler, add the following options to the  
-# FFLAGS, FPPFLAGS and CFLAGS macros.  Also, set the MUPDATE 
-# macro as shown below:
+# FFLAGS, FPPFLAGS and CFLAGS macros.  
 # FFLAGS = -Mnoframe
 # CFLAGS = -DABSOFT
-# MUPDATE         = sh UCupdate.sh
 
 # Assume MPICH for Linux
 # then use mpif90,mpif77 to compile and link
@@ -100,5 +98,4 @@ LIBsys	 	=
 	$(RM) $*.f90
 
 #.----------------------------------------------------------------------
-MUPDATE         = sh LCupdate.sh
 

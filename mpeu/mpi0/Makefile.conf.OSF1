@@ -114,6 +114,3 @@ FPPFLAGS	= $(F90PPFLAGS)
 
 #.----------------------------------------------------------------------
 
-MUPDATE		= sh LCupdate.sh
-M		= mod
-MODS_OBJ	=

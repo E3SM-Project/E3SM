@@ -81,4 +81,3 @@ FPPFLAGS	= -DLANGUAGE_FORTRAN
 
 #.----------------------------------------------------------------------
 
-MUPDATE         = sh LCupdate.sh
