@@ -65,7 +65,7 @@
 ! !USES:
 !
 
-   use m_die, only : MP_perr_die
+   use m_die, only : MP_perr_die,die
    use m_stdio
 
    use m_mpif90
@@ -138,13 +138,7 @@
   call MPI_COMM_RANK(comm, myID, ierr)
 
   if(ierr /= 0) then
-     if(present(stat)) then
-	write(stderr,*) myname_,":: MPI_COMM_RANK() failed with ierr = ",ierr
-	stat = ierr
-	return
-     else
 	call MP_perr_die(myname_,"MPI_COMM_RANK() failed",ierr)
-     endif
   endif
 
        ! Create from columnGSMap the corresponding GlobalSegMap
@@ -165,7 +159,7 @@
 	stat = ierr
 	return
      else
-	call MP_perr_die(myname_,"call AttrVect_Scatter(GsMat%data,..",ierr)
+	call die(myname_,"call AttrVect_Scatter(GsMat%data,..",ierr)
      endif
   endif
 
@@ -180,14 +174,7 @@
   call MPI_Bcast(NumRowsColumns, 2, MP_INTEGER, root, comm, ierr)
 
   if(ierr /= 0) then
-     if(present(stat)) then
-	write(stderr,*) myname_,"::  MPI_Bcast(NumRowsColumns...failed--ierr", &
-	     ierr
-	stat = ierr
-	return
-     else
 	call MP_perr_die(myname_,"MPI_Bcast(NumRowsColumns...",ierr)
-     endif
   endif
 
        ! Unpack NumRowsColumns
@@ -210,7 +197,7 @@
 !
 ! !USES:
 !
-   use m_die, only : MP_perr_die
+   use m_die, only : MP_perr_die,die
    use m_stdio
    use m_mpif90
 
@@ -282,13 +269,7 @@
 
   call MPI_COMM_RANK(comm, myID, ierr)
   if(ierr /= 0) then
-     if(present(stat)) then
-        write(stderr,*) myname_,":: MPI_COMM_RANK() failed with ierr = ",ierr
-        stat = ierr
-        return
-     else
-        call MP_perr_die(myname_,"MPI_COMM_RANK() failed",ierr)
-     endif
+     call MP_perr_die(myname_,"MPI_COMM_RANK() failed",ierr)
   endif
 
        ! Create from rowGSMap the corresponding GlobalSegMap
@@ -306,7 +287,7 @@
         stat = ierr
         return
      else
-        call MP_perr_die(myname_,"call AttrVect_Scatter(GsMat%data,..",ierr)
+        call die(myname_,"call AttrVect_Scatter(GsMat%data,..",ierr)
      endif
   endif
 
@@ -320,14 +301,7 @@
 
   call MPI_Bcast(NumRowsColumns, 2, MP_INTEGER, root, comm, ierr)
   if(ierr /= 0) then
-     if(present(stat)) then
-        write(stderr,*) myname_,"::  MPI_Bcast(NumRowsColumns...failed--ierr", &
-             ierr
-        stat = ierr
-        return
-     else
-        call MP_perr_die(myname_,"MPI_Bcast(NumRowsColumns...",ierr)
-     endif
+     call MP_perr_die(myname_,"MPI_Bcast(NumRowsColumns...",ierr)
   endif
 
        ! Unpack NumRowsColumns
@@ -351,7 +325,7 @@
 ! !USES:
 !
    use m_stdio
-   use m_die, only : MP_perr_die
+   use m_die, only : die
 
    use m_GlobalMap, only: GlobalMap
 
@@ -411,7 +385,7 @@
         stat = ierr
         return
      else
-        call MP_perr_die(myname_,"call AttrVect_Scatter(LsMat%data...) failed",ierr)
+        call die(myname_,"call AttrVect_Scatter(LsMat%data...) failed",ierr)
      endif
   endif
 
@@ -438,7 +412,7 @@
 ! !USES:
 !
    use m_stdio
-   use m_die, only : MP_perr_die
+   use m_die, only : die
 
    use m_GlobalSegMap, only: GlobalSegMap
 
@@ -498,7 +472,7 @@
         stat = ierr
         return
      else
-        call MP_perr_die(myname_,"call AttrVect_Gather(LsMat%data...)",ierr)
+        call die(myname_,"call AttrVect_Gather(LsMat%data...)",ierr)
      endif
   endif
 
@@ -526,7 +500,7 @@
 ! !USES:
 !
 
-   use m_die, only : MP_perr_die
+   use m_die, only : MP_perr_die,die
    use m_stdio
    use m_mpif90
 
@@ -593,7 +567,7 @@
         stat = ierr
         return
      else
-        call MP_perr_die(myname_,"call AttrVect_bcast(sMat%data...) failed",ierr)
+        call die(myname_,"call AttrVect_bcast(sMat%data...) failed",ierr)
      endif
   endif
 
@@ -604,14 +578,7 @@
 
   call MPI_Bcast(NumRowsColumns, 2, MP_INTEGER, root, comm, ierr)
   if(ierr /= 0) then
-     if(present(stat)) then
-        write(stderr,*) myname_,"::  MPI_Bcast(NumRowsColumns...failed--ierr", &
-             ierr
-        stat = ierr
-        return
-     else
-        call MP_perr_die(myname_,"MPI_Bcast(NumRowsColumns...",ierr)
-     endif
+     call MP_perr_die(myname_,"MPI_Bcast(NumRowsColumns...",ierr)
   endif
 
        ! Unpack NumRowsColumns on broadcast destination processes
