@@ -1889,7 +1889,7 @@
 !
 ! !INTERFACE:
 
- subroutine Copy_(aVin, rList, TrList, iList, TiList, aVout)
+ subroutine Copy_(aVout, aVin, iList, TiList, rList, TrList)
 
 !
 ! !USES:
@@ -1974,7 +1974,6 @@
 
 
     if(List_nitem(rcpList) .ge. 1) then
-     do i=1,lsize_(aVin)
       do j=1,List_nitem(rcpList)
        call List_get(attr,j,rcpList)
        if(present(TrList)) then
@@ -1984,11 +1983,12 @@
        endif
        inx=indexRA_(aVin,String_toChar(attr),dieWith=myname_//'real aVin')
        outx=indexRA_(aVout,String_toChar(attr2),dieWith=myname_//'real aVout')
-       aVout%rAttr(outx,i)=aVin%rAttr(inx,i)
+       do i=1,lsize_(aVin)
+        aVout%rAttr(outx,i)=aVin%rAttr(inx,i)
+       enddo
        call String_clean(attr)
        call String_clean(attr2)
       enddo
-     enddo
     endif
 
     call List_clean(rcpList)
@@ -2012,7 +2012,6 @@
     endif
 
     if(List_nitem(icpList) .ge. 1) then
-     do i=1,lsize_(aVin)
       do j=1,List_nitem(icpList)
        call List_get(attr,j,icpList)
        if(present(TiList)) then
@@ -2022,11 +2021,12 @@
        endif
        inx=indexIA_(aVin,String_toChar(attr),dieWith=myname_//'int aVin')
        outx=indexIA_(aVout,String_toChar(attr2),dieWith=myname_//'int aVout')
-       aVout%iAttr(outx,i)=aVin%iAttr(inx,i)
+       do i=1,lsize_(aVin)
+        aVout%iAttr(outx,i)=aVin%iAttr(inx,i)
+       enddo
        call String_clean(attr)
        call String_clean(attr2)
       enddo
-     enddo
     endif
 
     call List_clean(icpList)
