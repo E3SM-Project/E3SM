@@ -8,9 +8,39 @@
 ! !MODULE: m_ExchangeMaps - Exchange of Global Mapping Objects.
 !
 ! !DESCRIPTION:
-! This module contains tools for exchanging between two communicators 
-! {\tt comm\_A} and {\tt comm\_B} the global mapping index objects on 
-! the two communicators.
+! This module contains routines that support the exchange of domain 
+! decomposition descriptors (DDDs) between two MCT components.  There is 
+! support for {\em handshaking} between the two components to determine 
+! the types of domain decomposition descriptors they employ, {\em loading} 
+! of data contained within domain decomposition descriptors, and {\em 
+! map exchange}, resulting in the creation of a remote component's domain
+! decomposition descriptor for use by a local component.  These routines 
+! are largely used by MCT's {\tt Router} to create intercomponent 
+! communications scheduler, and normally should not be used by an MCT 
+! user.
+!
+! Currently, the types of map exchange supported by the public routine 
+! {\tt ExchangeMap()} are summarized in the table below.  The first column
+! lists the type of DDD used locally on the component invoking 
+! {\tt ExchangeMap()} (i.e., the input DDD).  The second comlumn lists 
+! the DDD type used on the remote component (i.e., the output DDD).
+!\begin{table}[htbp]
+!\begin{center}
+!\begin{tabular}{|c|c|}
+!\hline
+!{\bf Local DDD Type} & {\bf Remote DDD Type} \\
+!\hline
+!{\tt GlobalMap} & {\tt GlobalSegMap} \\
+!\hline
+!{\tt GlobalSegMap} & {\tt GlobalSegMap} \\
+!\hline
+!\end{tabular}
+!\end{center}
+!\end{table}
+!
+! Currently, we do not support intercomponent map exchange where a 
+! {\tt GlobalMap} is output.  The rationale for this is that any {\tt GlobalMap}
+! may always be expressed as a {\tt GlobalSegMap}.
 !
 ! !INTERFACE:
 
@@ -39,12 +69,9 @@
     end interface
 
     interface ExchangeMap ; module procedure   &
-        ExGMapGMap_,   &  ! GlobalMap for GlobalMap
         ExGSMapGSMap_, &  ! GlobalSegMap for GlobalSegMap
-        ExGMapGSMap_,  &  ! GlobalMap for GlobalSegMap
-        ExGSMapGMap_      ! GlobalSegMap for GlobalMap
+        ExGMapGSMap_
     end interface
-
 
 ! !PUBLIC DATA MEMBERS:
                                 ! Map handshaking is implemented as
@@ -67,6 +94,22 @@
                                 ! processes for a GlobalMap; Number of
                                 ! segments for GlobalSegMap
 
+! !SEE ALSO:
+! The MCT module m_ConvertMaps for more information regarding the 
+! relationship between the GlobalMap and GlobalSegMap types.
+! The MCT module m_Router to see where these services are used to 
+! create intercomponent communications schedulers.
+!
+! !REVISION HISTORY:
+!  3Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial module
+!  3Aug01 - E.T. Ong <eong@mcs.anl.gov> - in ExGSMapGSMap,
+!           call GlobalSegMap_init with actual shaped arrays
+!           for non-root processes to satisfy Fortran 90 standard.
+!           See comments in subroutine.
+! 15Feb02 - R. Jacob <jacob@mcs.anl.gov> - use MCT_comm instead of
+!           MP_COMM_WORLD
+!EOP ___________________________________________________________________
+!
 ! Map Handshaking Parameters:  Map handshaking occurs via 
 ! exchange of an array of INTEGER flags.
 
@@ -103,16 +146,6 @@
   ! For a GlobalSegMap, this is the number of global segments (ngseg).
 
   integer, parameter :: NumSegIndex = 4
-
-! !REVISION HISTORY:
-!  3Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial module
-!  3Aug01 - E.T. Ong <eong@mcs.anl.gov> - in ExGSMapGSMap,
-!           call GlobalSegMap_init with actual shaped arrays
-!           for non-root processes to satisfy Fortran 90 standard.
-!           See comments in subroutine.
-! 15Feb02 - R. Jacob <jacob@mcs.anl.gov> - use MCT_comm instead of
-!           MP_COMM_WORLD
-!EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_ExchangeMaps'
 
@@ -306,56 +339,16 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: ExGMapGMap_ - Trade of GlobalMap structures
-!
-! !DESCRIPTION:
-!
-! !INTERFACE:
-
- subroutine ExGMapGMap_(LocalGMap, LocalComm, RemoteGMap, &
-                        Remote_comp_id, ierr) 
-
-!
-! !USES:
-!
-      use m_mpif90
-      use m_die
-      use m_stdio
-      use m_GlobalMap, only : GlobalMap
-      use m_GlobalMap, only : GlobalMap_init => init
-
-      implicit none
-
-! !INPUT PARAMETERS: 
-
-      type(GlobalMap), intent(in)  :: LocalGMap      ! Local GlobalMap
-      integer,         intent(in)  :: LocalComm      ! Local Communicator
-      integer        , intent(in)  :: Remote_comp_id ! Remote component id
-
-! !OUTPUT PARAMETERS: 
-
-      type(GlobalMap), intent(out) :: RemoteGMap     ! Remote GlobalMap
-      integer        , intent(out) :: ierr           ! Error Flag
-
-! !REVISION HISTORY:
-!  3Feb01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
-! 20Apr01 - R.L. Jacob  <larson@mcs.anl.gov> - bug fix.  Use
-!           NumSegIndex instead of GsizeIndex for start,length,
-!           pe_loc arrays.
-!EOP ___________________________________________________________________
-
-  character(len=*),parameter :: myname_=myname//'::ExGMapGMap_'
-
- end subroutine ExGMapGMap_
-
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!    Math and Computer Science Division, Argonne National Laboratory   !
-!BOP -------------------------------------------------------------------
-!
 ! !IROUTINE: ExGSMapGSMap_ - Trade of GlobalSegMap structures.
 !
 ! !DESCRIPTION:
-!
+! This routine effects the exchange between two components of their 
+! data decomposition descriptors, each of which is a {\tt GlobalSegMap}.
+! The component invoking this routine provides its domain decomposition 
+! in the form of the input {\tt GlobalSegMap} argument {\tt LocalGSMap}.
+! The component with which map exchange takes place is specified by the 
+! MCT integer component identification number defined by the input 
+! {\tt INTEGER} argument {\tt RemoteCompID}.  The 
 ! !INTERFACE:
 
  subroutine ExGSMapGSMap_(LocalGSMap, LocalComm, RemoteGSMap, &
@@ -561,11 +554,24 @@
 ! !IROUTINE: ExGMapGSMap_ - Trade of GlobalMap for GlobalSegMap.
 !
 ! !DESCRIPTION:
+! This routine allows a component to report its domain decomposition 
+! using a {\tt GlobalMap} (the input argument {\tt LocalGMap}), and 
+! receive the domain decomposition of a remote component in the form 
+! of a {\tt GlobalSegMap} (the output argument {\tt RemoteGSMap}.  The 
+! component with which map exchange occurs is defined by its component 
+! ID number (the input {\tt INTEGER} argument {\tt RemoteCompID}). 
+! Currently, this operation is implemented as an exchange of maps between
+! the root nodes of each component's communicator, and then propagated 
+! across the local component's communicator.  This requires the user to
+! provide the local communicator (the input {\tt INTEGER} argument 
+! {\tt LocalComm}).  The success (failure) of this operation is reported
+! in the zero (nonzero) value of the output {\tt INTEGER} argument 
+! {\tt ierr}.
 !
 ! !INTERFACE:
 
  subroutine ExGMapGSMap_(LocalGMap, LocalComm, RemoteGSMap, &
-                         Remote_comp_id, ierr) 
+                         RemoteCompID, ierr) 
 
 !
 ! !USES:
@@ -575,17 +581,20 @@
       use m_stdio
 
       use m_GlobalMap, only : GlobalMap
-      use m_GlobalMap, only : GlobalMap_init => init
+
       use m_GlobalSegMap, only : GlobalSegMap
       use m_GlobalSegMap, only : GlobalSegMap_init => init
+      use m_GlobalSegMap, only : GlobalSegMap_clean => clean
+
+      use m_ConvertMaps, only : GlobalMapToGlobalSegMap
 
       implicit none
 
 ! !INPUT PARAMETERS: 
 
-      type(GlobalMap),    intent(in)  :: LocalGMap      ! Local GlobalMap
-      integer,            intent(in)  :: LocalComm      ! Local Communicator
-      integer,            intent(in)  :: Remote_comp_id ! Remote component id
+      type(GlobalMap),    intent(in)  :: LocalGMap    ! Local GlobalMap
+      integer,            intent(in)  :: LocalComm    ! Local Communicator
+      integer,            intent(in)  :: RemoteCompID ! Remote component id
 
 
 ! !OUTPUT PARAMETERS: 
@@ -595,57 +604,27 @@
 
 ! !REVISION HISTORY:
 !  3Feb01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
+! 26Sep02 - J.W. Larson <larson@mcs.anl.gov> - Implementation.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::ExGMapGSMap_'
+  type(GlobalSegMap) :: LocalGSMap
+
+       ! Convert LocalGMap to a GlobalSegMap
+
+  call GlobalMapToGlobalSegMap(LocalGMap, LocalGSMap)
+
+       ! Exchange local decomposition in GlobalSegMap form with
+       ! the remote component:
+
+  call ExGSMapGSMap_(LocalGSMap, LocalComm, RemoteGSMap, &
+                     RemoteCompID, ierr) 
+
+       ! Destroy LocalGSMap
+
+  call GlobalSegMap_clean(LocalGSMap)
 
  end subroutine ExGMapGSMap_
-
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!    Math and Computer Science Division, Argonne National Laboratory   !
-!BOP -------------------------------------------------------------------
-!
-! !IROUTINE: ExGSMapGMap_ - Trade of GlobalSegMap structures.
-!
-! !DESCRIPTION:
-!
-! !INTERFACE:
-
- subroutine ExGSMapGMap_(LocalGSMap, LocalComm, RemoteGMap, &
-                         Remote_comp_id, ierr) 
-
-!
-! !USES:
-!
-      use m_mpif90
-      use m_die
-      use m_stdio
-
-      use m_GlobalSegMap, only : GlobalSegMap
-      use m_GlobalSegMap, only : GlobalSegMap_init => init
-      use m_GlobalMap, only : GlobalMap
-      use m_GlobalMap, only : GlobalMap_init => init
-
-      implicit none
-
-! !INPUT PARAMETERS: 
-
-      type(GlobalSegMap), intent(in)  :: LocalGSMap  ! Local GlobalSegMap
-      integer,            intent(in)  :: LocalComm   ! Local Communicator
-      integer,            intent(in)  :: Remote_comp_id ! Remote component id
-
-! !OUTPUT PARAMETERS: 
-
-      type(GlobalMap),    intent(out) :: RemoteGMap  ! Remote GlobalMap
-      integer,            intent(out) :: ierr        ! Error Flag
-
-! !REVISION HISTORY:
-!  3Feb01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
-!EOP ___________________________________________________________________
-
-  character(len=*),parameter :: myname_=myname//'::ExGSMapGMap_'
-
- end subroutine ExGSMapGMap_
 
  end module m_ExchangeMaps
 
