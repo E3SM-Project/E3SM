@@ -36,9 +36,7 @@
       use m_IndexBin_char	!only : IndexBin
       use m_IndexBin_logical	!only : IndexBin
       use m_rankMerge		!only : RankSet,RankMerge,IndexedRankMerge
-      use m_Permuter, only : Permute => permute
-      use m_Permuter, only : Unpermute => unpermute
-
+      use m_Permuter		!only : Permute, Unpermute
 
       implicit none
 
