@@ -10,27 +10,19 @@
 ! !DESCRIPTION:
 ! The Router data type contains all the information needed
 ! to send an AttrVect between a component on M MPI-processes and a component
-! on N MPI-processes.  
+! on N MPI-processes.   This module defines the Router datatype and provides
+! methods to create and destroy one.
 !
 ! !INTERFACE:
 
  module m_Router
-!
-! !USES:
-!
-      use m_Navigator, only : Navigator
-      use m_Navigator, only : Navigator_init => init
-      use m_Navigator, only : Navigator_clean => clean
-!     use MPH_module
 
       implicit none
 
       private   ! except
 
+! !PUBLIC TYPES:
       public :: Router	        ! The class data structure
-      public :: init            ! Create a Router
-      public :: clean           ! Destroy a Router
-
 !\end{verbatim}
 !% On return, pe_list is the processor ranks of the other
 !% component to receive from/send to.  num_segs is the
@@ -41,38 +33,41 @@
 !%  (start goes from 1 to lsize(GSMap))
 !% and seg_lengths is the length.
 !\begin{verbatim}
-!  
+
     type Router
-      integer :: comp1id	       ! myid
-      integer :: comp2id	       ! id of second component
-      integer :: nprocs	       ! number of procs to talk to
-      integer :: maxsize		! maximum amount of data going to a processor
-      integer :: lAvsize		! The local size of AttrVect which can be used with
-                                        ! this Router in MCT_Send/MCT_Recv
-      integer,dimension(:),pointer :: pe_list ! processor ranks of send/receive in MCT_comm
-      integer,dimension(:),pointer :: num_segs ! number of segments to send/receive
-      integer,dimension(:),pointer :: locsize ! total of seg_lengths for a proc
+      integer :: comp1id                           ! myid
+      integer :: comp2id                           ! id of second component
+      integer :: nprocs	                           ! number of procs to talk to
+      integer :: maxsize                           ! maximum amount of data going to a processor
+      integer :: lAvsize                           ! The local size of AttrVect which can be 
+                                                   ! used with this Router in MCT_Send/MCT_Recv
+      integer,dimension(:),pointer   :: pe_list    ! processor ranks of send/receive in MCT_comm
+      integer,dimension(:),pointer   :: num_segs   ! number of segments to send/receive
+      integer,dimension(:),pointer   :: locsize    ! total of seg_lengths for a proc
       integer,dimension(:,:),pointer :: seg_starts ! starting index
-      integer,dimension(:,:),pointer :: seg_lengths ! total length
+      integer,dimension(:,:),pointer :: seg_lengths! total length
     end type Router
+
+! !PUBLIC MEMBER FUNCTIONS:
+      public :: init            ! Create a Router
+      public :: clean           ! Destroy a Router
 
 
     interface init  ; module procedure  &
-	initd_, &	! initialize a Router between two seperate components
-	initp_ 		! initialize a Router locally with two GSMaps
+        initd_, &       ! initialize a Router between two seperate components
+        initp_ 	        ! initialize a Router locally with two GSMaps
     end interface
-
     interface clean ; module procedure clean_ ; end interface
 
 ! !REVISION HISTORY:
-!      15Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
-!      22Jan01 - J. Larson <larson@mcs.anl.gov> - minor modification
-!                for port to SunOS platform:  made more explicit the
-!                use blocks for m_Navigator to alleviate confusion in
-!                interface declarations.
-!      08Feb01 - R. Jacob <jacob@mcs.anl.gov> add locsize and maxsize 
-!                to Router type
-!      25Sep02 - R. Jacob <jacob@mcs.anl.gov> Remove type string.  Add lAvsize
+! 15Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
+! 22Jan01 - J. Larson <larson@mcs.anl.gov> - minor modification
+!           for port to SunOS platform:  made more explicit the
+!           use blocks for m_Navigator to alleviate confusion in
+!           interface declarations.
+! 08Feb01 - R. Jacob <jacob@mcs.anl.gov> add locsize and maxsize 
+!           to Router type
+! 25Sep02 - R. Jacob <jacob@mcs.anl.gov> Remove type string.  Add lAvsize
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_Router'
@@ -88,7 +83,7 @@
 ! !DESCRIPTION:
 ! The routine {\tt initd\_()} exchanges the {\tt GSMap} with the
 ! component identified by {\tt othercomp} and then calls {\tt initp\_()}
-! to build a Router between them.
+! to build a Router {\tt Rout} between them.
 !
 ! !INTERFACE:
 
@@ -103,30 +98,35 @@
 
       implicit none
 
-      type(Router), intent(out)        :: Rout
+! !INPUT PARAMETERS:
+!
       integer, intent(in)	       :: othercomp
       integer, intent(in)	       :: mycomm
-      type(GlobalSegMap),intent(in)    :: GSMap  ! of the calling comp
+      type(GlobalSegMap),intent(in)    :: GSMap     ! of the calling comp
+
+! !OUTPUT PARAMETERS:
+!
+      type(Router), intent(out)        :: Rout
 
 ! !REVISION HISTORY:
-!       15Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
-!       01Feb01 - R. Jacob <jacob@mcs.anl.gov> - initialize some parts
-!       02Feb01 - R. Jacob <jacob@mcs.anl.gov> - initialize the send
-!       06Feb01 - R. Jacob <jacob@mcs.anl.gov> - Finish initialization
-!                 of the Router.  Router now works both ways.
-!       08Feb01 - R. Jacob <jacob@mcs.anl.gov> - use GlobaltoLocalIndex
-!                 to load local index values into Router. Init locsize
-!                 and maxsize.  add deallocate statements.
-!	22Mar01 - R. Jacob <jacob@mcs.anl.gov> - only use other components
-!                 id when initializing
-!	25Apr01 - R. Jacob <jacob@mcs.anl.gov> - Eliminate early 
-!                 custom code to exchange GSMap components and instead
-!                 the more general purpose routine in m_ExchangeMaps.
-!                 Use new subroutine OrderedPoints in m_GlobalSegMap
-!                 to construct the vector of local and remote GSMaps.
-!                 Clean-up code a little.
-!       03May01 - R. Jacob <jacob@mcs.anl.gov> - rename to initd and
-!                 move most of code to new initp routine
+! 15Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
+! 01Feb01 - R. Jacob <jacob@mcs.anl.gov> - initialize some parts
+! 02Feb01 - R. Jacob <jacob@mcs.anl.gov> - initialize the send
+! 06Feb01 - R. Jacob <jacob@mcs.anl.gov> - Finish initialization
+!           of the Router.  Router now works both ways.
+! 08Feb01 - R. Jacob <jacob@mcs.anl.gov> - use GlobaltoLocalIndex
+!           to load local index values into Router. Init locsize
+!           and maxsize.  add deallocate statements.
+! 22Mar01 - R. Jacob <jacob@mcs.anl.gov> - only use other components
+!           id when initializing
+! 25Apr01 - R. Jacob <jacob@mcs.anl.gov> - Eliminate early 
+!           custom code to exchange GSMap components and instead
+!           the more general purpose routine in m_ExchangeMaps.
+!           Use new subroutine OrderedPoints in m_GlobalSegMap
+!           to construct the vector of local and remote GSMaps.
+!           Clean-up code a little.
+! 03May01 - R. Jacob <jacob@mcs.anl.gov> - rename to initd and
+!           move most of code to new initp routine
 !
 !EOP ___________________________________________________________________
 !
@@ -157,7 +157,7 @@
 ! !DESCRIPTION:
 !
 ! Given two GlobalSegmentMaps {\tt GSMap} and {\tt RGSMap}, intialize a
-! Router between them.
+! Router {\tt Rout} between them.  Use local communicator {\tt mycomm}.
 !
 ! !INTERFACE:
 
@@ -165,28 +165,33 @@
 !
 ! !USES:
 !
-      use m_GlobalSegMap, only :GlobalSegMap
-      use m_GlobalSegMap, only :OrderedPoints
-      use m_GlobalSegMap, only :ProcessStorage
-      use m_GlobalSegMap, only : GSMap_comp_id => comp_id
+      use m_GlobalSegMap,  only :GlobalSegMap
+      use m_GlobalSegMap,  only :OrderedPoints
+      use m_GlobalSegMap,  only :ProcessStorage
+      use m_GlobalSegMap,  only : GSMap_comp_id => comp_id
       use m_GlobalToLocal, only :GlobalToLocalIndex
-      use m_MCTWorld,only :MCTWorld
-      use m_MCTWorld,only :ThisMCTWorld
+      use m_MCTWorld,      only :MCTWorld
+      use m_MCTWorld,      only :ThisMCTWorld
       use m_mpif90
       use m_die
 
       implicit none
+
+! !INPUT PARAMETERS:
+!
       type(GlobalSegMap), intent(in)	:: GSMap
       type(GlobalSegMap), intent(in)	:: RGSMap
-      integer	     , intent(in)	:: mycomm
-      type(Router), intent(out)		:: Rout
+      integer	     ,    intent(in)	:: mycomm
+
+! !OUTPUT PARAMETERS:
+!
+      type(Router),      intent(out)	:: Rout
 
 ! !REVISION HISTORY:
-!       03May01 - R.L. Jacob <jacob@mcs.anl.gov> - Initial code brought
-!                 in from old init routine.
-!
-!       31Jul01 - Jace A Mogill <mogill@cray.com>
-!                 Rewrote to reduce number of loops and temp storage
+! 03May01 - R.L. Jacob <jacob@mcs.anl.gov> - Initial code brought
+!           in from old init routine.
+! 31Jul01 - Jace A Mogill <mogill@cray.com>
+!           Rewrote to reduce number of loops and temp storage
 !EOP -------------------------------------------------------------------
 
   character(len=*),parameter :: myname_=myname//'::ExGMapGMap_'
@@ -324,6 +329,7 @@
 ! !IROUTINE: clean_ - Destroy a Router
 !
 ! !DESCRIPTION:
+! Deallocate Router internal data structures and set integer parts to zero.
 !
 ! !INTERFACE:
 
@@ -335,16 +341,19 @@
 
       implicit none
 
+!INPUT/OUTPUT PARAMETERS:
       type(Router),      intent(inout) :: Rout
+
+!OUTPUT PARAMETERS:
       integer, optional, intent(out)   :: stat
 
 ! !REVISION HISTORY:
-!       15Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
-!       31Jan01 - R. Jacob <jacob@mcs.anl.gov> - actual code
-!       08Feb01 - R. Jacob <jacob@mcs.anl.gov> - add code to clean
-!                 the maxsize and locsize
-!       01Mar02 - E.T. Ong <eong@mcs.anl.gov> removed the die to prevent
-!                 crashes and added stat argument.
+! 15Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
+! 31Jan01 - R. Jacob <jacob@mcs.anl.gov> - actual code
+! 08Feb01 - R. Jacob <jacob@mcs.anl.gov> - add code to clean
+!           the maxsize and locsize
+! 01Mar02 - E.T. Ong <eong@mcs.anl.gov> removed the die to prevent
+!           crashes and added stat argument.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::clean_'
