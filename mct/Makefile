@@ -30,6 +30,7 @@ SRCS_F90	= m_MCTWorld.F90		\
 		  m_GeneralGrid.F90		\
 		  m_GeneralGridComms.F90	\
 		  m_SpatialIntegral.F90		\
+		  m_SpatialIntegralV.F90	\
 		  m_MatAttrVectMul.F90    	\
 		  m_Merge.F90			\
 		  m_GlobalToLocal.F90		\
@@ -108,7 +109,8 @@ m_SparseMatrixDecomp.o: m_SparseMatrix.o m_GlobalSegMap.o
 m_SparseMatrixToMaps.o: m_SparseMatrix.o m_GlobalSegMap.o
 m_SparseMatrixComms.o:	m_SparseMatrix.o m_SparseMatrixDecomp.o m_GlobalSegMap.o m_AttrVectComms.o
 accumulate.o: m_AttrVect.o m_Accumulator.o
-m_SpatialIntegral.o: m_GeneralGrid.o m_AttrVect.o m_AttrVectReduce.o
+m_SpatialIntegral.o: m_SpatialIntegralV.o m_GeneralGrid.o m_AttrVect.o m_AttrVectReduce.o
+m_SpatialIntegralV.o: m_AttrVect.o m_AttrVectReduce.o
 m_Transfer.o: m_AttrVect.o m_Router.o m_MCTWorld.o
 m_SparseMatrixPlus.o: m_GlobalSegMap.o m_Rearranger.o m_SparseMatrix.o m_SparseMatrixComms.o m_SparseMatrixToMaps.o m_GlobalToLocal.o
 

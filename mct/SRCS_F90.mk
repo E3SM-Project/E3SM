@@ -12,6 +12,7 @@ m_AttrVectReduce.F90	\
 m_AccumulatorComms.F90  \
 m_GeneralGrid.F90	\
 m_GeneralGridComms.F90	\
+m_SpatialIntegralV.F90	\
 m_SpatialIntegral.F90	\
 m_MatAttrVectMul.F90    \
 m_Merge.F90		\
