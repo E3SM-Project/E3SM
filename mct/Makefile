@@ -4,7 +4,6 @@ MODULE		= mct
 
 SRCS_mks	= Makefile			\
 		  Makefile.conf.in		\
-	          Makefile.dependency		\
 		  Makefile.rules		\
 		  configure			\
 		  README			
@@ -84,14 +83,33 @@ lib$(MODULE).a:	$(OBJS_ALL)
 
 doc:	$(TEXFILES)
 
-do-it-anyway:
+# dependencies:
 
-#________________________________________
-# Regular targets
-
-#________________________________________
-# Just dependencies
-
-include Makefile.dependency
+m_AttrVect.o: 
+m_Accumulator.o: m_AttrVect.o
+m_GlobalMap.o:
+m_GlobalSegMap.o:
+m_GlobalSegMapComms.o: m_GlobalSegMap.o
+m_Navigator.o:
+m_AttrVectComms.o: m_AttrVect.o m_GlobalMap.o
+m_AttrVectReduce.o: m_AttrVect.o
+m_AccumulatorComms.o: m_AttrVect.o m_GlobalMap.o m_AttrVectComms.o
+m_SparseMatrix.o: m_AttrVect.o m_GlobalMap.o m_AttrVectComms.o
+m_GeneralGrid.o: m_AttrVect.o
+m_GeneralGridComms.o: m_AttrVect.o m_GeneralGrid.o m_AttrVectComms.o m_GlobalMap.o m_GlobalSegMap.o
+m_MatAttrVectMul.o: m_AttrVect.o m_SparseMatrix.o m_GlobalMap.o m_GlobalSegMap.o m_SparseMatrixPlus.o m_Rearranger.o
+m_Merge.o: m_AttrVect.o m_GeneralGrid.o
+m_Router.o: m_GlobalToLocal.o m_MCTWorld.o m_GlobalSegMap.o m_ExchangeMaps.o
+m_Rearranger.o: m_Router.o m_MCTWorld.o m_GlobalSegMap.o m_AttrVect.o
+m_GlobalToLocal.o: m_GlobalSegMap.o
+m_ExchangeMaps.o: m_GlobalMap.o m_GlobalSegMap.o m_MCTWorld.o m_ConvertMaps.o
+m_ConvertMaps.o: m_GlobalMap.o m_GlobalSegMap.o m_MCTWorld.o
+m_SparseMatrixDecomp.o: m_SparseMatrix.o m_GlobalSegMap.o
+m_SparseMatrixToMaps.o: m_SparseMatrix.o m_GlobalSegMap.o
+m_SparseMatrixComms.o:	m_SparseMatrix.o m_SparseMatrixDecomp.o m_GlobalSegMap.o m_AttrVectComms.o
+accumulate.o: m_AttrVect.o m_Accumulator.o
+m_SpatialIntegral.o: m_GeneralGrid.o m_AttrVect.o m_AttrVectReduce.o
+m_Transfer.o: m_AttrVect.o m_Router.o m_MCTWorld.o
+m_SparseMatrixPlus.o: m_GlobalSegMap.o m_Rearranger.o m_SparseMatrix.o m_SparseMatrixComms.o m_SparseMatrixToMaps.o m_GlobalToLocal.o
 
 #.
