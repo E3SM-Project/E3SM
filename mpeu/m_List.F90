@@ -710,6 +710,7 @@ contains
 
 ! !REVISION HISTORY:
 ! 	07May01 - J.W. Larson - initial version.
+! 	14May01 - R.L. Jacob - fix error checking
 !EOP ___________________________________________________________________
 
  character(len=*),parameter :: myname_=myname//'::bcast_'
@@ -719,12 +720,14 @@ contains
        ! Which process am I?
 
   call MPI_COMM_RANK(comm, myID, ierr)
-  if(present(status)) then
+  if(ierr /= 0) then
+   if(present(status)) then
      status = ierr
      write(stderr,'(2a,i4)') myname_,":: MPI_COMM_RANK(), ierr=",ierr
      return
-  else
+   else
      call MP_perr_die(myname_,"MPI_COMM_RANK()",ierr)
+   endif
   endif
 
         ! On the root, load up List dimensions for broadcast
@@ -737,12 +740,14 @@ contains
        ! Broadcast List dimensions
 
   call MPI_BCAST(ListDims, 2, MP_INTEGER, root, comm, ierr)
-  if(present(status)) then
+  if(ierr /= 0) then
+   if(present(status)) then
      status = ierr
      write(stderr,'(2a,i4)') myname_,":: MPI_BCAST(ioList%bf...), ierr=",ierr
      return
-  else
+   else
      call MP_perr_die(myname_,"MPI_BCAST(ioList%bf...",ierr)
+   endif
   endif
 
        ! allocate recipient List attributes on non-root processes
@@ -750,34 +755,40 @@ contains
   if(myID /= root) then 
      allocate(ioList%lc(0:1,ListDims(2)), ioList%bf(ListDims(1)), stat=ierr)
   endif
-  if(present(status)) then
+  if(ierr /= 0) then
+   if(present(status)) then
      status = ierr
      write(stderr,'(2a,i4)') myname_,":: allocate(ioList%lc...), stat=",ierr
      return
-  else
+   else
      call MP_perr_die(myname_,"MPI_BCAST(ioList%bf...",ierr)
+   endif
   endif
 
        ! Broadcast ioList%bf
 
   call MPI_BCAST(ioList%bf, ListDims(1), MP_CHARACTER, root, comm, ierr)
-  if(present(status)) then
+  if(ierr /= 0) then
+   if(present(status)) then
      status = ierr
      write(stderr,'(2a,i4)') myname_,":: MPI_BCAST(ioList%bf...), ierr=",ierr
      return
-  else
+   else
      call MP_perr_die(myname_,"MPI_BCAST(ioList%bf...",ierr)
+   endif
   endif
 
        ! Broadcast ioList%lc
 
   call MPI_BCAST(ioList%lc(0,1), 2*ListDims(2), MP_INTEGER, root, comm, ierr)
-  if(present(status)) then
+  if(ierr /= 0) then
+   if(present(status)) then
      status = ierr
      write(stderr,'(2a,i4)') myname_,":: MPI_BCAST(ioList%lc...), ierr=",ierr
      return
-  else
+   else
      call MP_perr_die(myname_,"MPI_BCAST(ioList%lc...",ierr)
+   endif
   endif
 
        ! And now, the List broadcast is complete.
