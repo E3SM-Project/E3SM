@@ -11,8 +11,9 @@ PROTEX          = perl $(PROTEXLOC) -b # bare mode--no TOC
 # Documentation
 all:
 	cp ../../mct/*.F90 .
+	cp ../../mpeu/m_String.F90 .
+	cp ../../mpeu/m_List.F90 .
 	make doc
-	
 
 doc: $(TEXFILES)
 
