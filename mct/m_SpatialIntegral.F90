@@ -573,10 +573,6 @@
   type(AttrVect) :: integratedAv
   integer :: i, ierr, iweight
 
-       ! Nullify all the pointers present in the AttrVect integratedAv:
-
-  call AttrVect_clean(integratedAv)
-
        ! Compute the spatial integral:
 
   if(present(comm)) then
