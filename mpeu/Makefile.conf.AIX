@@ -63,9 +63,9 @@ F77		= mpxlf
 F90		= mpxlf90
 FC		= $(F90)
 
-FFLAGS		= $(_R) -qfree -O3 -qarch=pwr3
-FFLAGS_O1	= $(_R) -qfree -O  -qarch=pwr3 
-FFLAGS_O2	= $(_R) -qfree -O2 -qarch=pwr3 
+FFLAGS		= $(_R) -qfree -O3 -qarch=auto
+FFLAGS_O1	= $(_R) -qfree -O  -qarch=auto
+FFLAGS_O2	= $(_R) -qfree -O2 -qarch=auto
 CFLAGS		= -O $(_Dsys)
 
 ZIP		= /usr/bin/compress
