@@ -11,6 +11,7 @@
 ! !INTERFACE:
 
  module m_Rearranger
+
 !
 ! !USES:
 
@@ -38,10 +39,8 @@
          private
 	 type(Router) :: SendRouter
 	 type(Router) :: RecvRouter
-	 integer,dimension(:),pointer :: SrcStart
-	 integer,dimension(:),pointer :: TrgStart
-	 integer,dimension(:),pointer :: Length
-	 integer :: Numsegs
+	 integer,dimension(:,:),pointer :: LocalPack
+	 integer :: LocalSize
 	 integer :: SrcAVsize
 	 integer :: TrgAVsize
       end type Rearranger
@@ -54,7 +53,9 @@
       interface clean     ; module procedure clean_     ; end interface
 
 ! !REVISION HISTORY:
-!      31Jan01 - E.T. Ong <eong@mcs.anl.gov> - initial prototype
+!      31Jan02 - E.T. Ong <eong@mcs.anl.gov> - initial prototype
+!      04Jun02 - E.T. Ong <eong@mcs.anl.gov> - changed local copy structure to
+!                LocalSize. Made myPid a global process in MCTWorld.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_Rearranger'
@@ -76,19 +77,21 @@
 !
 ! !USES:
 !
-   use m_GlobalSegMap,only : GlobalSegMap
-   use m_GlobalSegMap,only : GSMap_lsize => lsize
-   use m_Router,only : Router     
-   use m_Router,only : Router_init => init
+
+   use m_MCTWorld,     only : ThisMCTWorld
+   use m_GlobalSegMap, only : GlobalSegMap
+   use m_GlobalSegMap, only : GSMap_lsize => lsize
+   use m_Router,       only : Router     
+   use m_Router,       only : Router_init => init
    use m_mpif90
    use m_die
    use m_stdio
 
    implicit none
   
-   type(GlobalSegMap),  intent(in)            :: SourceGSMap, TargetGSMap
-   integer,             intent(in)            :: myComm
-   type(Rearranger),    intent(out)           :: OutRearranger
+   type(GlobalSegMap), intent(in)            :: SourceGSMap, TargetGSMap
+   integer,            intent(in)            :: myComm
+   type(Rearranger),   intent(out)           :: OutRearranger
 
 ! !REVISION HISTORY:
 !EOP ___________________________________________________________________
@@ -96,8 +99,9 @@
    integer,dimension(:,:),pointer :: temp_seg_starts,temp_seg_lengths
    integer,dimension(:),pointer :: temp_pe_list,temp_numsegs,temp_locsize
    integer :: temp_maxsize,temp_nprocs,maxsegcount
-   integer :: procindex,nprocs,myPid
-   integer :: i,j,k,ier
+   integer :: procindex,nprocs,nseg,len,myPid
+   integer :: src_seg_start,src_seg_length,trg_seg_start,trg_seg_length
+   integer :: i,j,k,l,m,n,ier
    logical :: SendingToMyself,ReceivingFromMyself
 
    ! Initialize Router component of Rearranger
@@ -112,7 +116,7 @@
    ! by definition, RecvRouter is also receiving from self. If this is not 
    ! true, then write to stderr and die. 
 
-   call MP_comm_rank(myComm,myPid,ier)
+   call MP_comm_rank(ThisMCTWorld%MCT_comm,myPid,ier)
    if(ier/=0) call MP_perr_die(myname_,'MP_comm_rank',ier)
 
    SendingToMyself = .false.
@@ -136,26 +140,22 @@
       endif
    endif
 
+
    ! If not sending to nor receiving from own processor then initialize 
    ! the rearranger so that no local copy can be made. Then end the routine. 
 
    if( .not. (SendingToMyself.or.ReceivingFromMyself) ) then
-      nullify(OutRearranger%SrcStart, &
-              OutRearranger%TrgStart, &
-              OutRearranger%Length)
-      allocate(OutRearranger%SrcStart(0), &
-	       OutRearranger%TrgStart(0), &
-               OutRearranger%Length(0),stat=ier)
-      if(ier/=0) call die(myname_,'allocate(-default-...)',ier)
-      OutRearranger%Numsegs=0
+      nullify(OutRearranger%LocalPack)
+      allocate(OutRearranger%LocalPack(0,0),stat=ier)
+      if(ier/=0) call die(myname_,'allocate(OutRearranger%LocalPack(0,0))',ier)
+      OutRearranger%LocalSize=0
    endif
 
 
    ! Start the process of Router modification: Router information for 
    ! the local processor is extracted out and put into the local copy 
-   ! structures- Rearranger%SrcStart,Rearranger%TrgStart, 
-   ! Rearranger%Length, and Rearranger%Numsegs. Router structures are
-   ! then reassigned to exclude the local copy information.
+   ! structure- Rearranger%LocalPack. Router structures are then reassigned 
+   ! to exclude the local copy information.
 
 
    ! Operate on SendRouter and create local copy structures.
@@ -164,13 +164,6 @@
 
    temp_nprocs = OutRearranger%SendRouter%nprocs-1
    maxsegcount = SIZE(OutRearranger%SendRouter%seg_starts,2)
-
-   ! Allocate Rearranger copy structures
-   nullify(OutRearranger%SrcStart,OutRearranger%Length)
-   allocate(OutRearranger%SrcStart(maxsegcount), &
-            OutRearranger%Length(maxsegcount),stat=ier)
-   if(ier/=0) call die(myname_,'allocate(SrcStart,Length...)',ier)
-
 
    ! Allocate temporary Router structures to be used for modifying SendRouter 
    nullify(temp_seg_starts,temp_seg_lengths,temp_pe_list, &
@@ -183,7 +176,8 @@
    if(ier/=0) call die(myname_,'allocate(temp_seg_starts...)',ier)
 
    temp_maxsize=0
-   procindex=1
+   procindex=0
+   nullify(OutRearranger%LocalPack)
 
    ! Start assigning Rearranger copy structures and  
    ! non-local Router components
@@ -192,15 +186,26 @@
       ! Gather local copy information 
       if(OutRearranger%SendRouter%pe_list(i) == myPid) then
 
-	 OutRearranger%SrcStart(1:maxsegcount) = &
-            OutRearranger%SendRouter%seg_starts(i,1:maxsegcount)
-	 OutRearranger%Length(1:maxsegcount) = &
-            OutRearranger%SendRouter%seg_lengths(i,1:maxsegcount)
-	 OutRearranger%Numsegs = OutRearranger%SendRouter%num_segs(i)
+	 ! Allocate Rearranger copy structure
+	 allocate(OutRearranger%LocalPack(2, &
+                  OutRearranger%SendRouter%locsize(i)),stat=ier)
+	 if(ier/=0) call die(myname_,'allocate(OutRearranger%LocalPack)',ier)
+	 OutRearranger%LocalPack = 0
+
+	 m=0
+	 do nseg = 1,OutRearranger%SendRouter%num_segs(i)
+	    src_seg_start = OutRearranger%SendRouter%seg_starts(i,nseg)
+	    src_seg_length = OutRearranger%SendRouter%seg_lengths(i,nseg)-1
+	    do len=0,src_seg_length
+	       m=m+1
+	       OutRearranger%LocalPack(2,m) = src_seg_start+len
+	    enddo
+	 enddo
 
       else
 
 	 ! Gather non-local Router information
+	 procindex = procindex+1
 	 temp_seg_starts(procindex,1:maxsegcount) = &
             OutRearranger%SendRouter%seg_starts(i,1:maxsegcount)
 	 temp_seg_lengths(procindex,1:maxsegcount) = &
@@ -209,8 +214,6 @@
 	 temp_numsegs(procindex) = OutRearranger%SendRouter%num_segs(i)
 	 temp_locsize(procindex) = OutRearranger%SendRouter%locsize(i)
 	 temp_maxsize = max(temp_locsize(procindex),temp_maxsize)
-
-	 procindex = procindex+1
 
       endif
 
@@ -254,15 +257,14 @@
               temp_numsegs,temp_locsize,stat=ier)
    if(ier/=0) call die(myname_,'deallocate(temp_seg_starts...)',ier)      
 
+
+   ! :::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+
    ! Operate on RecvRouter and create local copy structures.
 
    temp_nprocs = OutRearranger%RecvRouter%nprocs-1
    maxsegcount = SIZE(OutRearranger%RecvRouter%seg_starts,2)
-
-   ! Allocate Rearranger copy structures
-   nullify(OutRearranger%TrgStart)
-   allocate(OutRearranger%TrgStart(maxsegcount),stat=ier)
-   if(ier/=0) call die(myname_,'allocate(TrgStart)',ier)
 
   ! Allocate temporary Router structures to be used for modifying RecvRouter
    nullify(temp_seg_starts,temp_seg_lengths,temp_pe_list, &
@@ -274,7 +276,7 @@
    if(ier/=0) call die(myname_,'allocate(temp_seg_starts...)',ier)
 
    temp_maxsize=0
-   procindex = 1
+   procindex = 0
 
    ! Start assigning Rearranger copy structures and  
    ! non-local Router components
@@ -283,18 +285,30 @@
       ! Gather local copy information 
       if(OutRearranger%RecvRouter%pe_list(i) == myPid) then
 
-	 OutRearranger%TrgStart(1:maxsegcount) = &
-            OutRearranger%RecvRouter%seg_starts(i,1:maxsegcount)
-
-	 ! Senity Check for Router%num_segs
-	 if(OutRearranger%Numsegs /= OutRearranger%RecvRouter%num_segs(i)) then
+	 ! Senity Check for Router%locsize
+	 if( (SIZE(OutRearranger%LocalPack,2) /= &
+              OutRearranger%RecvRouter%locsize(i)) ) then
 	    call die(myname_, &
-                     'Router Error: Local RecvRouter /= Local SendRouter')
+                     'Router Error: Local RecvRouter%locsize(myPid) /=  &
+                     & Local SendRouter%locsize(myPid)')
 	 endif
 
+	 OutRearranger%LocalSize = OutRearranger%RecvRouter%locsize(i)
+
+	 m=0
+	 do nseg = 1,OutRearranger%RecvRouter%num_segs(i)
+	    trg_seg_start = OutRearranger%RecvRouter%seg_starts(i,nseg)
+	    trg_seg_length = OutRearranger%RecvRouter%seg_lengths(i,nseg)-1
+	    do len=0,trg_seg_length
+	       m=m+1
+	       OutRearranger%LocalPack(1,m) = trg_seg_start+len
+	    enddo
+	 enddo
+	 
       else
 
 	 ! Gather non-local Router information
+	 procindex = procindex+1
 	 temp_seg_starts(procindex,1:maxsegcount) = &
 	    OutRearranger%RecvRouter%seg_starts(i,1:maxsegcount)
 	 temp_seg_lengths(procindex,1:maxsegcount) = &
@@ -303,8 +317,6 @@
 	 temp_numsegs(procindex) = OutRearranger%RecvRouter%num_segs(i)
 	 temp_locsize(procindex) = OutRearranger%RecvRouter%locsize(i)
 	 temp_maxsize = max(temp_locsize(procindex),temp_maxsize)
-
-	 procindex = procindex+1
 
       endif
 
@@ -393,31 +405,12 @@
       call Router_clean(CleanRearranger%RecvRouter)
    endif
 
-   deallocate(CleanRearranger%SrcStart,stat=ier)
+   deallocate(CleanRearranger%LocalPack,stat=ier)
    if(ier /= 0) then
       if(present(stat)) then
 	 stat=ier
       else
-	 call warn(myname_,'deallocate(CleanRearranger%SrcStart)',ier)
-      endif
-   endif
-
-
-   deallocate(CleanRearranger%TrgStart,stat=ier)
-   if(ier /= 0) then
-      if(present(stat)) then
-	 stat=ier
-      else
-	 call warn(myname_,'deallocate(CleanRearranger%TrgStart)',ier)
-      endif
-   endif   
-
-   deallocate(CleanRearranger%Length,stat=ier)
-   if(ier /= 0) then
-      if(present(stat)) then
-	 stat=ier
-      else
-	 call warn(myname_,'deallocate(CleanRearranger%Length)',ier)
+	 call warn(myname_,'deallocate(CleanRearranger%TrgIndex)',ier)
       endif
    endif
 
@@ -468,9 +461,9 @@
 
   character(len=*),parameter :: myname_=myname//'Rearrange_'
   integer ::	numi,numr,i,j,k,ier
-  integer ::    AttrIndex,VectIndex,seg_length,seg_start,seg_end
-  integer ::    srcVectIndex,trgVectIndex,src_seg_start,trg_seg_start
-  integer ::    proc,numprocs,nseg,length
+  integer ::    VectIndex,AttrIndex,seg_start,seg_end
+  integer ::    localindex,SrcVectIndex,TrgVectIndex,IAttrIndex,RAttrIndex
+  integer ::    proc,numprocs,nseg
   integer ::    mp_Type_rp
 !-----------------------------------------------------------------------
 
@@ -676,9 +669,21 @@
      ! receive the integer data
      if(numi .ge. 1) then
 
-	call MPI_IRECV(ip2(proc)%pi(1),RecvRout%locsize(proc)*numi, &
-                       MP_INTEGER,RecvRout%pe_list(proc),500,       &
-                       ThisMCTWorld%MCT_comm,recv_ireqs(proc),ier)
+	if( (RecvRout%num_segs(proc) > 1) .or. present(Sum) ) then
+
+	   call MPI_IRECV(ip2(proc)%pi(1),                        &
+		          RecvRout%locsize(proc)*numi,MP_INTEGER, &
+			  RecvRout%pe_list(proc),500,             &
+			  ThisMCTWorld%MCT_comm,recv_ireqs(proc),ier)
+
+	else
+
+	   call MPI_IRECV(TargetAV%iAttr(1,RecvRout%seg_starts(proc,1)), &
+		          RecvRout%locsize(proc)*numi,MP_INTEGER,        &
+                          RecvRout%pe_list(proc),500,                    &
+                          ThisMCTWorld%MCT_comm,recv_ireqs(proc),ier)
+
+	endif
 
 	if(ier /= 0) call MP_perr_die(myname_,'MPI_IRECV(ints)',ier)
 
@@ -687,9 +692,21 @@
      ! receive the real data
      if(numr .ge. 1) then
 
-	call MPI_IRECV(rp2(proc)%pr(1),RecvRout%locsize(proc)*numr, &
-                       mp_Type_rp,RecvRout%pe_list(proc),700,       &
-                       ThisMCTWorld%MCT_comm,recv_rreqs(proc),ier)
+	if( (RecvRout%num_segs(proc) > 1) .or. present(Sum) ) then
+
+	   call MPI_IRECV(rp2(proc)%pr(1),                        &
+		          RecvRout%locsize(proc)*numr,mp_Type_rp, &
+			  RecvRout%pe_list(proc),700,             &
+			  ThisMCTWorld%MCT_comm,recv_rreqs(proc),ier)
+
+	else
+
+	   call MPI_IRECV(TargetAV%rAttr(1,RecvRout%seg_starts(proc,1)), &
+		          RecvRout%locsize(proc)*numr,mp_Type_rp,        &
+			  RecvRout%pe_list(proc),700,                    &
+			  ThisMCTWorld%MCT_comm,recv_rreqs(proc),ier)
+
+	endif
 
 	if(ier /= 0) call MP_perr_die(myname_,'MPI_IRECV(reals)',ier)
 
@@ -704,31 +721,47 @@
   ! Load data going to each processor
   do proc = 1,SendRout%nprocs
     
-     j=1
-     k=1
+     if( SendRout%num_segs(proc) > 1 ) then
 
-     ! load the correct pieces of the integer and real vectors
-     do nseg = 1,SendRout%num_segs(proc)
-	seg_start = SendRout%seg_starts(proc,nseg)
-	seg_end = seg_start + SendRout%seg_lengths(proc,nseg)-1
-	do VectIndex = seg_start,seg_end
-	   do AttrIndex = 1,numi
-	      ip1(proc)%pi(j) = SourceAV%iAttr(AttrIndex,VectIndex)
-	      j=j+1
-	   enddo
-	   do AttrIndex = 1,numr
-	      rp1(proc)%pr(k) = SourceAV%rAttr(AttrIndex,VectIndex)
-	      k=k+1
+	j=1
+	k=1
+
+	! load the correct pieces of the integer and real vectors
+	do nseg = 1,SendRout%num_segs(proc)
+	   seg_start = SendRout%seg_starts(proc,nseg)
+	   seg_end = seg_start + SendRout%seg_lengths(proc,nseg)-1
+	   do VectIndex = seg_start,seg_end
+	      do AttrIndex = 1,numi
+		 ip1(proc)%pi(j) = SourceAV%iAttr(AttrIndex,VectIndex)
+		 j=j+1
+	      enddo
+	      do AttrIndex = 1,numr
+		 rp1(proc)%pr(k) = SourceAV%rAttr(AttrIndex,VectIndex)
+		 k=k+1
+	      enddo
 	   enddo
 	enddo
-     enddo
+
+     endif
 
      ! send the integer data
      if(numi .ge. 1) then
 
-	call MPI_ISEND(ip1(proc)%pi(1),SendRout%locsize(proc)*numi, &
-                       MP_INTEGER,SendRout%pe_list(proc),500,       &
-                       ThisMCTWorld%MCT_comm,send_ireqs(proc),ier)
+	if( SendRout%num_segs(proc) > 1 ) then
+
+	   call MPI_ISEND(ip1(proc)%pi(1),                        &
+		          SendRout%locsize(proc)*numi,MP_INTEGER, &
+			  SendRout%pe_list(proc),500,             &
+			  ThisMCTWorld%MCT_comm,send_ireqs(proc),ier)
+
+	else
+
+	   call MPI_ISEND(SourceAV%iAttr(1,SendRout%seg_starts(proc,1)), &
+		          SendRout%locsize(proc)*numi,MP_INTEGER,        &
+                          SendRout%pe_list(proc),500,                    &
+                          ThisMCTWorld%MCT_comm,send_ireqs(proc),ier)
+
+	endif
 
 	if(ier /= 0) call MP_perr_die(myname_,'MPI_ISEND(ints)',ier)
 
@@ -737,9 +770,21 @@
      ! send the real data
      if(numr .ge. 1) then
 
-	call MPI_ISEND(rp1(proc)%pr(1),SendRout%locsize(proc)*numr, &
-                       mp_Type_rp,SendRout%pe_list(proc),700,       &
-                       ThisMCTWorld%MCT_comm,send_rreqs(proc),ier)
+	if( SendRout%num_segs(proc) > 1 ) then
+
+	   call MPI_ISEND(rp1(proc)%pr(1),                        &
+		          SendRout%locsize(proc)*numr,mp_Type_rp, &
+			  SendRout%pe_list(proc),700,             &
+			  ThisMCTWorld%MCT_comm,send_rreqs(proc),ier)
+
+	else
+
+	   call MPI_ISEND(SourceAV%rAttr(1,SendRout%seg_starts(proc,1)), &
+		          SendRout%locsize(proc)*numr,mp_Type_rp,        &
+			  SendRout%pe_list(proc),700,                    &
+			  ThisMCTWorld%MCT_comm,send_rreqs(proc),ier)
+
+	endif
 
 	if(ier /= 0) call MP_perr_die(myname_,'MPI_ISEND(reals)',ier)
 
@@ -757,21 +802,16 @@
 
   ! LOAD THE LOCAL PIECES OF THE INTEGER AND REAL VECTOR
 
-  do nseg = 1,InRearranger%Numsegs
-     src_seg_start = InRearranger%SrcStart(nseg)
-     trg_seg_start = InRearranger%TrgStart(nseg)
-     seg_length = InRearranger%Length(nseg)-1
-     do length=0,seg_length
-	trgVectIndex=trg_seg_start+length
-	srcVectIndex=src_seg_start+length
-	do AttrIndex = 1,numi
-	   TargetAV%iAttr(AttrIndex,trgVectIndex) = &
-	   SourceAV%iAttr(AttrIndex,srcVectIndex)
-	enddo
-	do AttrIndex = 1,numr
-	   TargetAV%rAttr(AttrIndex,trgVectIndex) = &
-	   SourceAV%rAttr(AttrIndex,srcVectIndex)
-	enddo
+  do localindex=1,InRearranger%LocalSize
+     TrgVectIndex = InRearranger%LocalPack(1,localindex)
+     SrcVectIndex = InRearranger%LocalPack(2,localindex)
+     do IAttrIndex=1,numi
+	TargetAV%iAttr(IAttrIndex,TrgVectIndex) = &
+	     SourceAV%iAttr(IAttrIndex,SrcVectIndex)
+     enddo
+     do RAttrIndex=1,numr
+	TargetAV%rAttr(RAttrIndex,TrgVectIndex) = &
+	     SourceAV%rAttr(RAttrIndex,SrcVectIndex)
      enddo
   enddo
 
@@ -842,7 +882,6 @@
 	call MPI_WAITANY(RecvRout%nprocs,recv_ireqs,proc,recv_istatus,ier)
 
 	j=1
-	k=1
 
 	if(present(Sum)) then
 
@@ -861,18 +900,22 @@
 	   
 	else
 
-	   ! load the correct pieces of the integer vectors
-	   do nseg = 1,RecvRout%num_segs(proc)
-	      seg_start = RecvRout%seg_starts(proc,nseg)
-	      seg_end = seg_start + RecvRout%seg_lengths(proc,nseg)-1
-	      do VectIndex = seg_start,seg_end
-		 do AttrIndex = 1,numi
-		    TargetAV%iAttr(AttrIndex,VectIndex)=ip2(proc)%pi(j)
-		    j=j+1
+	   if( RecvRout%num_segs(proc) > 1 ) then
+
+	      ! load the correct pieces of the integer vectors
+	      do nseg = 1,RecvRout%num_segs(proc)
+		 seg_start = RecvRout%seg_starts(proc,nseg)
+		 seg_end = seg_start + RecvRout%seg_lengths(proc,nseg)-1
+		 do VectIndex = seg_start,seg_end
+		    do AttrIndex = 1,numi
+		       TargetAV%iAttr(AttrIndex,VectIndex)=ip2(proc)%pi(j)
+		       j=j+1
+		    enddo
 		 enddo
 	      enddo
-	   enddo
 	
+	   endif
+
 	endif
 
      endif
@@ -881,7 +924,6 @@
 
 	call MPI_WAITANY(RecvRout%nprocs,recv_rreqs,proc,recv_rstatus,ier)
 
-	j=1
 	k=1
 
 	if(present(Sum)) then
@@ -901,18 +943,22 @@
 	   
 	else
 
-	   ! load the correct pieces of the integer vectors
-	   do nseg = 1,RecvRout%num_segs(proc)
-	      seg_start = RecvRout%seg_starts(proc,nseg)
-	      seg_end = seg_start + RecvRout%seg_lengths(proc,nseg)-1
-	      do VectIndex = seg_start,seg_end
-		 do AttrIndex = 1,numr
-		    TargetAV%rAttr(AttrIndex,VectIndex)=rp2(proc)%pr(k)
-		    k=k+1
+	   if( RecvRout%num_segs(proc) > 1 ) then
+
+	      ! load the correct pieces of the integer vectors
+	      do nseg = 1,RecvRout%num_segs(proc)
+		 seg_start = RecvRout%seg_starts(proc,nseg)
+		 seg_end = seg_start + RecvRout%seg_lengths(proc,nseg)-1
+		 do VectIndex = seg_start,seg_end
+		    do AttrIndex = 1,numr
+		       TargetAV%rAttr(AttrIndex,VectIndex)=rp2(proc)%pr(k)
+		       k=k+1
+		    enddo
 		 enddo
 	      enddo
-	   enddo
 	   
+	   endif
+
 	endif
 
      endif
