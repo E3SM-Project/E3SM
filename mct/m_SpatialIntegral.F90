@@ -2817,6 +2817,8 @@
 ! 	17Jun02 - J.W. Larson <larson@mcs.anl.gov> - Initial version.
 ! 	19Jun02 - J.W. Larson <larson@mcs.anl.gov> - Shortened the name
 !                 for compatibility with the Portland Group f90 compiler
+! 	25Jul02 - J.W. Larson E.T. Ong - Bug fix.  This routine was 
+!                 previously doing integrals rather than area averages.
 !
 !EOP ___________________________________________________________________
 
@@ -2825,7 +2827,8 @@
 
   type(AttrVect) :: LocalIntegral1, LocalIntegral2
   real, dimension(:), pointer :: PairedBuffer, OutPairedBuffer
-  integer :: ierr, nRA1, nRA2, PairedBufferLength
+  integer :: i, ierr, nRA1, nRA2, PairedBufferLength
+  real :: WeightSum
 
         ! Basic Argument Validity Checks:
 
@@ -2961,13 +2964,30 @@
   call AttrVect_init(outAv1, rList=AttrVect_exportRListToChar(inAv1), lsize=1)
   call AttrVect_init(outAv2, rList=AttrVect_exportRListToChar(inAv2), lsize=1)
 
-       ! Unload OutPairedBuffer into outAv1 and outAv2:
+       ! Unload/rescale OutPairedBuffer into outAv1 and outAv2:
 
   nRA1 = AttrVect_nRAttr(outAv1)
   nRA2 = AttrVect_nRAttr(outAv2)
 
-  outAv1%rAttr(1:nRA1,1) = OutPairedBuffer(1:nRA1)
-  outAv2%rAttr(1:nRA2,1) = OutPairedBuffer(nRA1+2:PairedBufferLength)
+       ! First outAv1:
+
+  WeightSum = OutPairedBuffer(nRA1+1) ! Sum of weights on grid1
+                                      ! is the nRA1+1th element in
+                                      ! the paired buffer.
+
+  do i=1,nRA1
+     outAv1%rAttr(i,1) = WeightSum * OutPairedBuffer(i)
+  end do
+
+       ! And then outAv2:
+
+  WeightSum = OutPairedBuffer(PairedBufferLength) ! Sum of weights on grid2
+                                                  ! is the last element in
+                                                  ! the paired buffer.
+
+  do i=1,nRA2
+     outAv2%rAttr(i,1) = WeightSum * OutPairedBuffer(i+nRA1+1)
+  end do
 
        ! Clean up allocated structures
 
