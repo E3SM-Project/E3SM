@@ -38,6 +38,16 @@
       public :: lsize           ! Return local storage size (incl. halos)
       public :: ngseg           ! Return global number of segments
       public :: nlseg           ! Return local number of segments
+      public :: Sort            ! compute index permutation to re-order
+                                ! GlobalSegMap%start, GlobalSegMap%length,
+                                ! and GlobalSegMap%pe_loc
+      public :: Permute         ! apply index permutation to re-order 
+                                ! GlobalSegMap%start, GlobalSegMap%length,
+                                ! and GlobalSegMap%pe_loc
+      public :: SortPermute     ! compute index permutation and apply it to
+                                ! re-order the GlobalSegMap components
+                                ! GlobalSegMap%start, GlobalSegMap%length,
+                                ! and GlobalSegMap%pe_loc
 
     type GlobalSegMap
       integer :: comp_id			! Component ID number
@@ -63,6 +73,14 @@
 	rank1_ , &	! single rank case
 	rankm_	        ! degenerate (multiple) ranks for halo case
     end interface
+    interface Sort ; module procedure Sort_ ; end interface
+    interface Permute ; module procedure &
+	PermuteInPlace_ 
+    end interface
+    interface SortPermute ; module procedure &
+	PermuteInPlace_ 
+    end interface
+
 
 ! !REVISION HISTORY:
 ! 	28Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
@@ -880,6 +898,228 @@
   endif
 
  end subroutine rankm_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: Sort_ - generate index permutation for GlobalSegMap.
+!
+! !DESCRIPTION:
+! {\tt Sort\_()} uses the supplied keys {\tt key1} and {\tt key2} to 
+! generate a permutation {\tt perm} that will put the entries of the 
+! components {\tt GlobalSegMap\%start}, {\tt GlobalSegMap\%length} and
+! {\tt GlobalSegMap\%pe\_loc} in {\em ascending} lexicographic order.
+!
+! {\bf N.B.:} {\tt Sort\_()} returns an allocated array {\tt perm(:)}.  It
+! the user must deallocate this array once it is no longer needed.  Failure
+! to do so could create a memory leak.
+!
+! !INTERFACE:
+
+    subroutine Sort_(GSMap, key1, key2, perm)
+!
+! !USES:
+!
+      use m_die ,          only : die
+      use m_SortingTools , only : IndexSet
+      use m_SortingTools , only : IndexSort
+
+      implicit none
+
+      type(GlobalSegMap), intent(in) :: GSMap   ! input GlobalSegMap
+      integer, dimension(:), intent(in)           :: key1 ! first sort key
+      integer, dimension(:), intent(in), optional :: key2 ! second sort key
+      integer, dimension(:), pointer :: perm    ! output index permutation
+! !REVISION HISTORY:
+! 	02Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::Sort_'
+
+  integer :: ierr, length
+
+  length = ngseg_(GSMap)
+
+        ! Argument checking.  are key1 and key2 (if supplied) the
+        ! same length as the components of GSMap?  If not, stop with
+        ! an error.
+
+  ierr = 0
+
+  if(size(key1) /= length) then
+     ierr = 1
+     call MP_perr_die(myname_,'key1 GSMap size mismatch',ierr)
+  endif
+
+  if(present(key2)) then
+     if(size(key2) /= length) then
+        ierr = 2
+	call MP_perr_die(myname_,'key2 GSMap size mismatch',ierr)
+     endif
+     if(size(key1) /= size(key2)) then
+        ierr = 3
+	call MP_perr_die(myname_,'key1 key2 size mismatch',ierr)
+     endif
+  endif
+
+        ! allocate space for permutation array perm(:)
+
+  allocate(perm(length), stat=ierr)
+  if(ierr /= 0) call MP_perr_die(myname_,'allocate(perm)',ierr)
+
+        ! Initialize perm(i)=i, for i=1,length
+
+  call IndexSet(perm)
+ 
+        ! Index permutation is achieved by successive calls to IndexSort(),
+        ! with the keys supplied one at a time in the order reversed from
+        ! the desired sort order.
+
+  if(present(key2)) then
+     call IndexSort(length, perm, key2, descend=.false.)
+  endif
+
+  call IndexSort(length, perm, key1, descend=.false.)
+
+        ! Yes, it is that simple.  The desired index permutation is now
+        ! stored in perm(:)
+
+ end subroutine Sort_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: PermuteInPlace_ - apply index permutation to GlobalSegMap.
+!
+! !DESCRIPTION:
+! {\tt PermuteInPlace\_()} uses a supplied index permutation {\tt perm} 
+! to re-order {\tt GlobalSegMap\%start}, {\tt GlobalSegMap\%length} and
+! {\tt GlobalSegMap\%pe\_loc}.
+!
+! !INTERFACE:
+
+    subroutine PermuteInPlace_(GSMap, perm)
+!
+! !USES:
+!
+      use m_die ,          only : die
+      use m_SortingTools , only : IndexSet
+      use m_SortingTools , only : Permute
+
+      implicit none
+
+      type(GlobalSegMap), intent(inout) :: GSMap
+      integer, dimension(:), intent(in) :: perm
+
+! !REVISION HISTORY:
+!       02Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::PermuteInPlace_'
+
+  integer :: length, ierr
+
+  length = ngseg_(GSMap)
+
+        ! Argument checking.  Do the components of GSMap
+        ! (e.g. GSMap%start) have the same length as the
+        ! permutation array perm?  If not, stop with an error.
+
+  ierr = 0
+
+  if(size(perm) /= length) then
+     ierr = 1
+     call MP_perr_die(myname_,'perm GSMap size mismatch',ierr)
+  endif
+
+        ! In-place index permutation using perm(:) :
+
+  call Permute(GSMap%start,perm,length)
+  call Permute(GSMap%length,perm,length)
+  call Permute(GSMap%pe_loc,perm,length)
+
+        ! Now, the components of GSMap are ordered according to
+        ! perm(:).
+
+ end subroutine PermuteInPlace_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: SortPermuteInPlace_ - Sort in-place GlobalSegMap components.
+!
+! !DESCRIPTION:
+! {\tt SortPermuteInPlace\_()} uses a the supplied key(s) to generate 
+! and apply an index permutation that will place the {\tt GlobalSegMap}
+! components {\tt GlobalSegMap\%start}, {\tt GlobalSegMap\%length} and
+! {\tt GlobalSegMap\%pe\_loc} in lexicographic order.
+!
+! !INTERFACE:
+
+    subroutine SortPermuteInPlace_(GSMap, key1, key2)
+!
+! !USES:
+!
+      use m_die ,          only : die
+
+      implicit none
+
+      type(GlobalSegMap), intent(inout) :: GSMap
+      integer, dimension(:), intent(in)           :: key1
+      integer, dimension(:), intent(in), optional :: key2
+! !REVISION HISTORY:
+!       02Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::SortPermuteInPlace_'
+
+  integer :: length, ierr
+  integer, dimension(:), pointer :: perm
+
+   length = ngseg_(GSMap)
+
+        ! Argument checking.  are key1 and key2 (if supplied) the
+        ! same length as the components of GSMap?  If not, stop with
+        ! an error.
+  ierr = 0
+  if(size(key1) /= length) then
+     ierr = 1
+     call MP_perr_die(myname_,'key1 GSMap size mismatch',ierr)
+  endif
+
+  if(present(key2)) then
+     if(size(key2) /= length) then
+        ierr = 2
+	call MP_perr_die(myname_,'key2 GSMap size mismatch',ierr)
+     endif
+     if(size(key1) /= size(key2)) then
+        ierr = 3
+	call MP_perr_die(myname_,'key1 key2 size mismatch',ierr)
+     endif
+  endif
+
+        ! Generate desired index permutation:      
+
+  if(present(key2)) then
+     call Sort_(GSMap, key1, key2, perm)
+  else
+     call Sort_(GSMap, key1=key1, perm=perm)
+  endif
+
+        ! Apply index permutation:      
+
+  call PermuteInPlace_(GSMap, perm)
+
+        ! Now the components of GSMap have been re-ordered.
+        ! Deallocate the index permutation array perm(:)
+
+  deallocate(perm, stat=ierr)
+  if(ierr /= 0) call MP_perr_die(myname_,'deallocate(perm...)',ierr)
+
+ end subroutine SortPermuteInPlace_
 
  end module m_GlobalSegMap
 
