@@ -41,6 +41,8 @@
 !      07Jun01 - R. Jacob <jacob@mcs.anl.gov> - remove logic to
 !                check "direction" of Router.  remove references
 !                to ThisMCTWorld%mylrank
+!      03Aug01 - E. Ong <eong@mcs.anl.gov> - Explicitly specify the starting
+!                address in mpi_send.  
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_='MCT_Send'
@@ -176,7 +178,7 @@
 ! corresponding tag logic must be in MCT_Recv
       tag = 100000*mycomp + 1000*ThisMCTWorld%mygrank + &
 	    500 + Rout%pe_list(proc)
-      call MPI_ISEND(ip1(proc)%pi,Rout%locsize(proc)*numi,MP_INTEGER,&
+      call MPI_ISEND(ip1(proc)%pi(1),Rout%locsize(proc)*numi,MP_INTEGER,&
 	 Rout%pe_list(proc),tag,MP_COMM_WORLD,ireqs(proc),ier)
       if(ier /= 0) call MP_perr_die(myname_,'MPI_ISEND(ints)',ier)
     enddo
@@ -190,7 +192,7 @@
       tag = 100000*mycomp + 1000*ThisMCTWorld%mygrank + &
 	    700 + Rout%pe_list(proc)
 !     write(*,*)"SENDR",ThisMCTWorld%mygrank,Rout%pe_list(proc),tag
-      call MPI_ISEND(rp1(proc)%pr,Rout%locsize(proc)*numr,mp_Type_rp1, &
+      call MPI_ISEND(rp1(proc)%pr(1),Rout%locsize(proc)*numr,mp_Type_rp1, &
 	 Rout%pe_list(proc),tag,MP_COMM_WORLD,rreqs(proc),ier)
       if(ier /= 0) call MP_perr_die(myname_,'MPI_ISEND(reals)',ier)
     enddo
@@ -208,3 +210,5 @@
   endif
 
 end subroutine
+
+
