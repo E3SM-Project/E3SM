@@ -83,14 +83,19 @@
 
    use m_die, only : MP_perr_die,die
    use m_stdio
-
    use m_mpif90
 
+   use m_List, only: List
+   use m_List, only: List_init => init
+   use m_List, only: List_clean => clean
+
    use m_GlobalSegMap, only : GlobalSegMap
+   use m_GlobalSegMap, only : GlobalSegMap_clean => clean
 
    use m_SparseMatrix, only : SparseMatrix
    use m_SparseMatrix, only : SparseMatrix_nRows => nRows
    use m_SparseMatrix, only : SparseMatrix_nCols => nCols
+   use m_SparseMatrix, only : SparseMatrix_SortPermute => SortPermute
 
    use m_SparseMatrixDecomp, only : SparseMatrixDecompByColumn => ByColumn
 
@@ -119,6 +124,8 @@
 ! 10May01 - J.W. Larson <larson@mcs.anl.gov> - cleaned up prologue.
 ! 13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Made status flag stat
 !           optional, and ititilaze it to zero if it is present.
+! 09Jul03 - E.T. Ong <eong@mcs.anl.gov> - added sorting to distributed
+!           matrix elements
 !EOP
 !-------------------------------------------------------------------------
 
@@ -127,6 +134,8 @@
   type(GlobalSegMap) :: MatGSMap
 ! Storage for the number of rows and columns in the SparseMatrix
   integer :: NumRowsColumns(2)
+! List storage for sorting keys
+  type(List) :: sort_keys
 ! Process ID
   integer :: myID
 ! Error flag
@@ -185,6 +194,21 @@
   LsMat%nrows = NumRowsColumns(1)
   LsMat%ncols = NumRowsColumns(2)
 
+       ! Finally, lets sort the distributed local matrix elements
+
+       ! Sort the matrix entries in sMat by column, then row.  
+       ! First, create the key list...
+
+  call List_init(sort_keys,'gcol:grow')
+
+       ! Now perform the sort/permute...
+  call SparseMatrix_SortPermute(LsMat, sort_keys)
+
+       ! Cleanup
+
+  call List_clean(sort_keys) 
+  call GlobalSegMap_clean(MatGSMap)
+
  end subroutine ScatterByColumnGSMap_
 
 !-------------------------------------------------------------------------
@@ -217,11 +241,17 @@
    use m_stdio
    use m_mpif90
 
+   use m_List, only: List
+   use m_List, only: List_init => init
+   use m_List, only: List_clean => clean
+
    use m_GlobalSegMap, only : GlobalSegMap
+   use m_GlobalSegMap, only : GlobalSegMap_clean => clean
 
    use m_SparseMatrix, only : SparseMatrix
    use m_SparseMatrix, only : SparseMatrix_nRows => nRows
    use m_SparseMatrix, only : SparseMatrix_nCols => nCols
+   use m_SparseMatrix, only : SparseMatrix_SortPermute => SortPermute
 
    use m_SparseMatrixDecomp, only : SparseMatrixDecompByRow => ByRow
 
@@ -250,7 +280,9 @@
 ! 26Apr01 - R.L. Jacob  <jacob@mcs.anl.gov> - fix use statement
 !           from SMDecomp so it points to ByRow
 ! 13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Made status flag stat
-!           optional, and ititilaze it to zero if it is present.
+!           optional, and initialize it to zero if it is present.
+! 09Jul03 - E.T. Ong <eong@mcs.anl.gov> - Added sorting to distributed
+!           matrix elements. 
 !EOP
 !-------------------------------------------------------------------------
 
@@ -259,6 +291,8 @@
   type(GlobalSegMap) :: MatGSMap
 ! Storage for the number of rows and columns in the SparseMatrix
   integer :: NumRowsColumns(2)
+! List storage for sorting keys
+  type(List) :: sort_keys
 ! Process ID
   integer :: myID
 ! Error flag
@@ -311,6 +345,19 @@
 
   LsMat%nrows = NumRowsColumns(1)
   LsMat%ncols = NumRowsColumns(2)
+
+       ! Sort the matrix entries in sMat by row, then column.  
+       ! First, create the key list...
+
+  call List_init(sort_keys,'grow:gcol')
+
+       ! Now perform the sort/permute...
+  call SparseMatrix_SortPermute(LsMat, sort_keys)
+
+       ! Cleanup
+
+  call List_clean(sort_keys) 
+  call GlobalSegMap_clean(MatGSMap)
 
  end subroutine ScatterByRowGSMap_
 
