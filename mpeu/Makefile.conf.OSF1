@@ -68,7 +68,7 @@ FC		= $(F90)
 #             sequence, -assume bigarrays, and -assume nozsize.  The default
 #             is -nofast.
 
-FOPT_normal	= -fast -convert big_endian -automatic
+FOPT_normal	= -fast -convert big_endian
 FOPT_indxck	= -g -convert big_endian -check bounds -automatic
 FOPT_syntax	= -syntax_only
 
