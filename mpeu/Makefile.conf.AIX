@@ -83,6 +83,12 @@ LIBsys	 	=
 CPPFLAGS	= -P -C
 FPPFLAGS	= $(CPPFLAGS)
 
+.f90.o:
+	$(FPP) $(FPPFLAGS) $(_I) $(_DF) $*.f90 $*_scratch.f
+	$(FC) -c $(FFLAGS) $(_I) $*_scratch.f
+	$(MV) $*_scratch.o $*.o
+	$(RM) $*_scratch.f
+
 .F.o:
 	$(FPP) $(FPPFLAGS) $(_I) $(_DF) $*.F $*.f
 	$(FC) -c $(FFLAGS) $(_I) $*.f
