@@ -27,6 +27,7 @@
 # 	22Jan01 - J. Larson <larson@mcs.anl.gov> - initial version
 # 	22Jan01 - J. Larson <larson@mcs.anl.gov> - minor update to
 #                 add _M macro (this is how Sun's f90 finds modules)
+#       09Jul02 - E. Ong <eong@mcs.anl.gov> - update for nag95 compiler
 #
 #EOP
 #-----------------------------------------------------------------------
@@ -36,6 +37,12 @@ _Dnod		=
 
 # Environments
 # ============
+
+# Assume MPICH: Use mpif90,mpif77 to compile and link
+
+# If using NAG95 compiler, add the following flags:
+# FFLAGS = -dusty -kind=byte
+# FPPFLAGS = -DNAG
 
 # If use Sun implementation (not tested)
 
@@ -47,32 +54,19 @@ _IMPI		=
 _IMPI		= 
 
 
-# If use the MPICH implementation (tested)
-
-_LMPI		= -L/soft/apps/packages/mpich-1.1.1/lib/solaris/ch_p4
-_lMPI		= -lmpi
-_lMPIlog        = -lfmpi -llmpi -lpmpi
-_lMPItrace      = -lfmpi -ltmpi -lpmpi
-_lMPIanime      = -lfmpi -lampi -lpmpi -lmpe -lX11 -lm
-
-_IMPI		= -I/soft/apps/packages/mpich-1.1.1/include
-
-_Iconf		= $(_IMPI)
-
 # Under SunOS, the f90 compiler looks for modules in the paths
 # specified by the -M (rather than -I) flag:
 
 _M		= -M.
 
 SHELL		= /bin/sh
-F77		= f90
-F90		= f90
+F77		= /home/eong/mpich-1.2.4/bin/mpif77
+F90		= /home/eong/mpich-1.2.4/bin/mpif90
 FC		= $(F90)
 
 FOPT_normal	= -O4
 FOPT_indxck	= -g 
 
-FFLAGS		= $(FOPT_indxck)
 FFLAGS		= $(FOPT_normal)
 
 ZIP		= /usr/bin/compress
