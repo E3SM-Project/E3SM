@@ -1398,7 +1398,7 @@
 ! !USES:
 !
       use m_stdio,  only : stderr
-      use m_die, only : MP_perr_die
+      use m_die, only : MP_perr_die, die
 
       use m_String, only:  String
       use m_String, only:  String_bcast => bcast
@@ -1456,6 +1456,10 @@
        ! on the root, convert ioList into the String variable DummStr
 
   if(myID == root) then
+     if(CharBufferSize_(ioList) <= 0) then
+	call die(myname_, 'Attempting to broadcast an empty list!',&
+	     CharBufferSize_(ioList))
+     endif
      call getall_(DummStr, ioList)
   endif
 
