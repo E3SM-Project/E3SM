@@ -40,11 +40,9 @@
 
 !  
     type MCTWorld
-      integer :: myid	       ! my unique id 
+      integer :: MCT_comm      !  MCT communicator
       integer :: ncomps	       !  number of components
-      integer :: mynprocs      !  number of procs
-      integer :: mylrank       !  rank in local comm
-      integer :: mygrank       !  rank in mpi_comm_world
+      integer :: mygrank       !  rank of this processor in mpi_comm_world
       integer,dimension(:),pointer :: nprocspid	   ! number of processes 
                                                    ! each component is on
       integer,dimension(:,:),pointer :: idGprocid  ! translate between local 
@@ -80,6 +78,10 @@
 !      20Apr01 - R. Jacob <jacob@mcs.anl.gov> - remove allids from
 !                MCTWorld datatype.  Not needed because component
 !                ids are always from 1 to number-of-components.
+!      07Jun01 - R. Jacob <jacob@mcs.anl.gov> - remove myid, mynprocs
+!                and mylrank from MCTWorld datatype because they
+!                are not clearly defined in PCM mode.
+!                Add MCT_comm for future use.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_MCTWorld'
@@ -126,6 +128,7 @@
 !
   character(len=*),parameter :: myname_=myname//'::init_'
   integer :: ier,myGid,myLid,i,mysize,Gsize,j
+  integer :: MCTcomm
 
 ! arrays allocated on the root to coordinate gathring of data
 ! and non-blocking receives by the root
@@ -142,6 +145,10 @@
        RETURN
   endif
 
+! create the MCT comm world
+  call MP_comm_dup(MP_COMM_WORLD,MCTcomm,ier)
+  if(ier /= 0) call MP_perr_die(myname_,'MP_comm_dup()',ier)
+
 ! determine size on local communicator
   call MP_comm_size(mycomm,mysize,ier)
   if(ier /= 0) call MP_perr_die(myname_,'MP_comm_size()',ier)
@@ -152,20 +159,18 @@
 
 !  set some parts of the MCTWorld
   ThisMCTWorld%ncomps = ncomps
-  ThisMCTWorld%myid = myid
-  ThisMCTWorld%mynprocs = mysize
 
 ! determine my rank in comm_world
   call MP_comm_rank(MP_COMM_WORLD,myGid,ier)
   if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
 
+  ThisMCTWorld%MCT_comm = MCTcomm
   ThisMCTWorld%mygrank = myGid
 
 ! determine my rank in local comm
   call MP_comm_rank(mycomm,myLid,ier)
   if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
 
-  ThisMCTWorld%mylrank = myLid
 
 
 ! allocate space on global root
@@ -328,6 +333,8 @@
 !       20Apr01 - R. Jacob <jacob@mcs.anl.gov> - remove allids from
 !                MCTWorld datatype.  Not needed because component
 !                ids are always from 1 to number-of-components.
+!       07Jun01 - R. Jacob <jacob@mcs.anl.gov> - remove myid,mynprocs
+!                 and mylrank.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::clean_'
@@ -336,11 +343,8 @@
   deallocate(ThisMCTWorld%nprocspid,ThisMCTWorld%idGprocid,stat=ier)
   if(ier /= 0) call perr_die(myname_,'deallocate(MCTW,...)',ier)
 
-  ThisMCTWorld%myid = 0
   ThisMCTWorld%ncomps = 0
-  ThisMCTWorld%mynprocs = 0
   ThisMCTWorld%mygrank = 0
-  ThisMCTWorld%mylrank = 0
 
  end subroutine clean_
 
@@ -414,13 +418,15 @@
 
 ! !REVISION HISTORY:
 !       05Feb01 - J. Larson <larson@mcs.anl.gov> - initial version
+!       07Jun01 - R. Jacob <jacob@mcs.anl.gov> - modify to use
+!                 nprocspid and comp_id instead of World%mynprocs
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::ComponentNumPros_'
 
   integer :: mynprocs
 
-  mynprocs = World%mynprocs
+  mynprocs = World%nprocspid(comp_id)
 
   if(mynprocs <= 0) then
      write(stderr,'(2a,1i6)') myname,":: invalid no. of processes = ",mynprocs
