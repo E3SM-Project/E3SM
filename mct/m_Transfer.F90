@@ -117,8 +117,6 @@
   integer ::    AttrIndex,VectIndex,seg_start,seg_end
   integer ::    proc,nseg,mytag
   integer ::    mp_Type_rp1
-  integer, dimension(:), pointer	     :: ireqs,rreqs
-  integer, dimension(:,:), allocatable       :: istatus,rstatus
 
 ! declare a pointer structure for the real data
   type :: rptr
@@ -166,14 +164,6 @@
      if(ier/=0) call die(myname_,'allocate(ip1%pi)',ier)
   enddo
 
-! allocate MPI request array
-  allocate(ireqs(Rout%nprocs),stat=ier)
-  if(ier/=0) call die(myname_,'allocate(ireqs)',ier)
-
-! allocate MPI status array
-  allocate(istatus(MP_STATUS_SIZE,Rout%nprocs),stat=ier)
-  if(ier/=0) call die(myname_,'allocate(istatus)',ier)
-
   endif
 
 !!!!!!!!!!!!!! IF SENDING REAL DATA
@@ -188,14 +178,6 @@
      allocate(rp1(proc)%pr(Rout%locsize(proc)*numr),stat=ier)
      if(ier/=0) call die(myname_,'allocate(rp1%pr)',ier)
   enddo
-
-! allocate MPI request array
-  allocate(rreqs(Rout%nprocs),stat=ier)
-  if(ier/=0) call die(myname_,'allocate(rreqs)',ier)
-
-! allocate MPI status array
-  allocate(rstatus(MP_STATUS_SIZE,Rout%nprocs),stat=ier)
-  if(ier/=0) call die(myname_,'allocate(rstatus)',ier)
 
   mp_Type_rp1=MP_Type(rp1(1)%pr(1))
 
@@ -240,13 +222,13 @@
 
 	   call MPI_ISEND(ip1(proc)%pi(1), &
 		Rout%locsize(proc)*numi,MP_INTEGER,Rout%pe_list(proc), &
-		mytag,ThisMCTWorld%MCT_comm,ireqs(proc),ier)
+		mytag,ThisMCTWorld%MCT_comm,Rout%ireqs(proc),ier)
 	   
 	else
 
 	   call MPI_ISEND(aV%iAttr(1,Rout%seg_starts(proc,1)), & 
 		Rout%locsize(proc)*numi,MP_INTEGER,Rout%pe_list(proc), &
-		mytag,ThisMCTWorld%MCT_comm,ireqs(proc),ier)
+		mytag,ThisMCTWorld%MCT_comm,Rout%ireqs(proc),ier)
 
 	endif
 
@@ -265,13 +247,13 @@
 
 	  call MPI_ISEND(rp1(proc)%pr(1), &
 	       Rout%locsize(proc)*numr,mp_Type_rp1,Rout%pe_list(proc), &
-	       mytag,ThisMCTWorld%MCT_comm,rreqs(proc),ier)
+	       mytag,ThisMCTWorld%MCT_comm,Rout%rreqs(proc),ier)
 
        else
 
 	  call MPI_ISEND(aV%rAttr(1,Rout%seg_starts(proc,1)), &
 	       Rout%locsize(proc)*numr,mp_Type_rp1,Rout%pe_list(proc), &
-	       mytag,ThisMCTWorld%MCT_comm,rreqs(proc),ier)
+	       mytag,ThisMCTWorld%MCT_comm,Rout%rreqs(proc),ier)
 
        endif
 
@@ -285,7 +267,7 @@
   ! wait for all sends to complete
   if(numi .ge. 1) then
 
-     call MPI_WAITALL(Rout%nprocs,ireqs,istatus,ier)
+     call MPI_WAITALL(Rout%nprocs,Rout%ireqs,Rout%istatus,ier)
      if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL(ints)',ier)
 
      do proc=1,Rout%nprocs
@@ -296,17 +278,11 @@
      deallocate(ip1,stat=ier)
      if(ier/=0) call die(myname_,'deallocate(ip1)',ier)
        
-     deallocate(ireqs,stat=ier)
-     if(ier/=0) call die(myname_,'deallocate(ireqs)',ier)
-
-     deallocate(istatus,stat=ier)
-     if(ier/=0) call die(myname_,'deallocate(istatus)',ier)
-
   endif
 
   if(numr .ge. 1) then
 
-     call MPI_WAITALL(Rout%nprocs,rreqs,rstatus,ier)
+     call MPI_WAITALL(Rout%nprocs,Rout%rreqs,Rout%rstatus,ier)
      if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL(reals)',ier)
 
      do proc=1,Rout%nprocs
@@ -316,12 +292,6 @@
 
      deallocate(rp1,stat=ier)
      if(ier/=0) call die(myname_,'deallocate(rp1)',ier)
-
-     deallocate(rreqs,stat=ier)
-     if(ier/=0) call die(myname_,'deallocate(rreqs)',ier)
-
-     deallocate(rstatus,stat=ier)
-     if(ier/=0) call die(myname_,'deallocate(rstatus)',ier)
 
   endif
 
@@ -403,8 +373,6 @@ end subroutine send_
   integer ::    AttrIndex,VectIndex,seg_start,seg_end
   integer ::    proc,numprocs,nseg,mytag
   integer ::    mp_Type_rp2
-  integer, dimension(:), pointer        :: ireqs,rreqs
-  integer, dimension(:,:), allocatable  :: istatus,rstatus
   logical ::    DoSum
 
 ! declare a pointer structure for the real data
@@ -456,14 +424,6 @@ end subroutine send_
      if(ier/=0) call die(myname_,'allocate(ip2%pi)',ier)
   enddo
 
-! allocate MPI request array
-  allocate(ireqs(Rout%nprocs),stat=ier)
-  if(ier/=0) call die(myname_,'allocate(ireqs)',ier)
-
-! allocate MPI status array
-  allocate(istatus(MP_STATUS_SIZE,Rout%nprocs),stat=ier)
-  if(ier/=0) call die(myname_,'allocate(istatus)',ier)
-
   endif
 
 !!!!!!!!!!!!!! IF RECEIVING REAL DATA
@@ -478,14 +438,6 @@ end subroutine send_
      allocate(rp2(proc)%pr(Rout%locsize(proc)*numr),stat=ier)
      if(ier/=0) call die(myname_,'allocate(rp2%pr)',ier)
   enddo
-
-! allocate MPI request array
-  allocate(rreqs(Rout%nprocs),stat=ier)
-  if(ier/=0) call die(myname_,'allocate(rreqs)',ier)
-
-! allocate MPI status array
-  allocate(rstatus(MP_STATUS_SIZE,Rout%nprocs),stat=ier)
-  if(ier/=0) call die(myname_,'allocate(rstatus)',ier)
 
   mp_Type_rp2=MP_Type(rp2(1)%pr(1))
 
@@ -505,13 +457,13 @@ end subroutine send_
 
 	   call MPI_IRECV(ip2(proc)%pi(1), &
 		Rout%locsize(proc)*numi,MP_INTEGER,Rout%pe_list(proc), &
-		mytag,ThisMCTWorld%MCT_comm,ireqs(proc),ier)
+		mytag,ThisMCTWorld%MCT_comm,Rout%ireqs(proc),ier)
 
 	else
 
 	   call MPI_IRECV(aV%iAttr(1,Rout%seg_starts(proc,1)), &
 		Rout%locsize(proc)*numi,MP_INTEGER,Rout%pe_list(proc), &
-		mytag,ThisMCTWorld%MCT_comm,ireqs(proc),ier)
+		mytag,ThisMCTWorld%MCT_comm,Rout%ireqs(proc),ier)
 
 	endif
 
@@ -530,13 +482,13 @@ end subroutine send_
 
 	   call MPI_IRECV(rp2(proc)%pr(1), &
 		Rout%locsize(proc)*numr,mp_Type_rp2,Rout%pe_list(proc), &
-		mytag,ThisMCTWorld%MCT_comm,rreqs(proc),ier)
+		mytag,ThisMCTWorld%MCT_comm,Rout%rreqs(proc),ier)
 
 	else
 
 	   call MPI_IRECV(aV%rAttr(1,Rout%seg_starts(proc,1)), &
 		Rout%locsize(proc)*numr,mp_Type_rp2,Rout%pe_list(proc), &
-		mytag,ThisMCTWorld%MCT_comm,rreqs(proc),ier)
+		mytag,ThisMCTWorld%MCT_comm,Rout%rreqs(proc),ier)
 
 	endif
 
@@ -549,14 +501,14 @@ end subroutine send_
   ! wait for all recieves to complete
   if(numi .ge. 1)  then
 
-    call MPI_WAITALL(Rout%nprocs,ireqs,istatus,ier)
+    call MPI_WAITALL(Rout%nprocs,Rout%ireqs,Rout%istatus,ier)
     if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL(ints)',ier)
 
   endif
 
   if(numr .ge. 1) then
 
-    call MPI_WAITALL(Rout%nprocs,rreqs,rstatus,ier)
+    call MPI_WAITALL(Rout%nprocs,Rout%rreqs,Rout%rstatus,ier)
     if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL(reals)',ier)
 
   endif
@@ -616,7 +568,7 @@ end subroutine send_
 !  do numprocs = 1,Rout%nprocs
 !     ! Load the integer data
 !     if(numi .ge. 1) then
-!	call MPI_WAITANY(Rout%nprocs,ireqs,proc,istatus,ier)
+!	call MPI_WAITANY(Rout%nprocs,Rout%ireqs,proc,Rout%istatus,ier)
 !	if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITANY(ints)',ier)
 !	j=1
 !	! load the correct pieces of the integer vectors
@@ -633,7 +585,7 @@ end subroutine send_
 !     endif
 !     ! Load the real data
 !     if(numr .ge. 1) then
-!	call MPI_WAITANY(Rout%nprocs,rreqs,proc,rstatus,ier)
+!	call MPI_WAITANY(Rout%nprocs,Rout%rreqs,proc,Rout%rstatus,ier)
 !	if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITANY(reals)',ier)
 !	k=1
 !	! load the correct pieces of the real vectors
@@ -663,14 +615,6 @@ end subroutine send_
      deallocate(ip2,stat=ier)
      if(ier/=0) call die(myname_,'deallocate(ip2)',ier)
 
-     ! deallocate MPI request array
-     deallocate(ireqs,stat=ier)
-     if(ier/=0) call die(myname_,'deallocate(ireqs)',ier)
-
-     ! deallocatAe MPI status array
-     deallocate(istatus,stat=ier)
-     if(ier/=0) call die(myname_,'deallocate(istatus)',ier)
-
   endif
 
   if(numr .ge. 1) then
@@ -683,14 +627,6 @@ end subroutine send_
 
      deallocate(rp2,stat=ier)
      if(ier/=0) call die(myname_,'deallocate(rp2)',ier)
-
-     ! deallocate MPI request array
-     deallocate(rreqs,stat=ier)
-     if(ier/=0) call die(myname_,'deallocate(rreqs)',ier)
-
-     ! deallocatAe MPI status array
-     deallocate(rstatus,stat=ier)
-     if(ier/=0) call die(myname_,'deallocate(rstatus)',ier)
 
   endif
 

@@ -46,6 +46,8 @@
       integer,dimension(:),pointer   :: locsize    ! total of seg_lengths for a proc
       integer,dimension(:,:),pointer :: seg_starts ! starting index
       integer,dimension(:,:),pointer :: seg_lengths! total length
+      integer,dimension(:),pointer   :: ireqs,rreqs
+      integer,dimension(:,:),pointer :: istatus,rstatus
     end type Router
 
 ! !PUBLIC MEMBER FUNCTIONS:
@@ -61,13 +63,11 @@
 
 ! !REVISION HISTORY:
 ! 15Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
-! 22Jan01 - J. Larson <larson@mcs.anl.gov> - minor modification
-!           for port to SunOS platform:  made more explicit the
-!           use blocks for m_Navigator to alleviate confusion in
-!           interface declarations.
 ! 08Feb01 - R. Jacob <jacob@mcs.anl.gov> add locsize and maxsize 
 !           to Router type
 ! 25Sep02 - R. Jacob <jacob@mcs.anl.gov> Remove type string.  Add lAvsize
+! 23Jul03 - R. Jacob <jacob@mcs.anl.gov> Add status and reqs arrays used
+!           in send/recv to the Router datatype.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_Router'
@@ -110,15 +110,8 @@
 
 ! !REVISION HISTORY:
 ! 15Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
-! 01Feb01 - R. Jacob <jacob@mcs.anl.gov> - initialize some parts
-! 02Feb01 - R. Jacob <jacob@mcs.anl.gov> - initialize the send
 ! 06Feb01 - R. Jacob <jacob@mcs.anl.gov> - Finish initialization
 !           of the Router.  Router now works both ways.
-! 08Feb01 - R. Jacob <jacob@mcs.anl.gov> - use GlobaltoLocalIndex
-!           to load local index values into Router. Init locsize
-!           and maxsize.  add deallocate statements.
-! 22Mar01 - R. Jacob <jacob@mcs.anl.gov> - only use other components
-!           id when initializing
 ! 25Apr01 - R. Jacob <jacob@mcs.anl.gov> - Eliminate early 
 !           custom code to exchange GSMap components and instead
 !           the more general purpose routine in m_ExchangeMaps.
@@ -288,6 +281,11 @@
     Rout%seg_lengths(count,maxsegcount), &
     Rout%locsize(count),stat=ier)
     if(ier/=0) call die(myname_,'allocate(Rout..)',ier)
+
+    allocate(Rout%istatus(MP_STATUS_SIZE,count), &
+             Rout%rstatus(MP_STATUS_SIZE,count), &
+	     Rout%rreqs(count),Rout%ireqs(count),stat=ier)
+    if(ier/=0) call die(myname_,'allocate(status,reqs,...)',ier)
     
     m=0
     do i=1,ThisMCTWorld%nprocspid(othercomp)
@@ -349,7 +347,6 @@
 
 ! !REVISION HISTORY:
 ! 15Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
-! 31Jan01 - R. Jacob <jacob@mcs.anl.gov> - actual code
 ! 08Feb01 - R. Jacob <jacob@mcs.anl.gov> - add code to clean
 !           the maxsize and locsize
 ! 01Mar02 - E.T. Ong <eong@mcs.anl.gov> removed the die to prevent
@@ -361,6 +358,8 @@
 
   deallocate(Rout%pe_list,Rout%num_segs,Rout%seg_starts, &
   Rout%locsize,Rout%seg_lengths,stat=ier)
+  deallocate(Rout%rreqs,Rout%ireqs,Rout%rstatus,&
+   Rout%istatus,stat=ier)
 
   if(present(stat)) then
      stat=ier
