@@ -308,6 +308,7 @@
       use m_stdio ,        only : stderr
 
       use m_List,          only : List
+      use m_List,          only : List_copy => copy
       use m_List,          only : List_exportToChar => exportToChar
 
       use m_AttrVect,      only : AttrVect
@@ -342,11 +343,14 @@
   character(len=*),parameter :: myname_=myname//'::LocalReduceRAttr_'
 
   integer :: i,j
+  type(List) :: rList_copy
 
 
         ! First Step:  create outAV from inAV (but with one element)
-
-  call AttrVect_init(outAV, rList=List_exportToChar(inAV%rList), lsize=1)
+ 
+        ! Superflous list copy circumvents SGI compiler bug
+  call List_copy(rList_copy,inAV%rList)
+  call AttrVect_init(outAV, rList=List_exportToChar(rList_copy), lsize=1)
 
   select case(action)
   case(AttrVectSUM) ! sum up each attribute...
