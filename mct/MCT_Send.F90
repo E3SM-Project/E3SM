@@ -133,24 +133,28 @@
   ! Load data going to each processor
   do proc = 1,Rout%nprocs
     
-     j=1
-     k=1
+     if( Rout%num_segs(proc) > 1 ) then
 
-     ! load the correct pieces of the integer and real vectors
-     do nseg = 1,Rout%num_segs(proc)
-	seg_start = Rout%seg_starts(proc,nseg)
-	seg_end = seg_start + Rout%seg_lengths(proc,nseg)-1
-	do VectIndex = seg_start,seg_end
-	   do AttrIndex = 1,numi
-	      ip1(proc)%pi(j) = aV%iAttr(AttrIndex,VectIndex)
-	      j=j+1
-	   enddo
-	   do AttrIndex = 1,numr
-	      rp1(proc)%pr(k) = aV%rAttr(AttrIndex,VectIndex)
-	      k=k+1
+	j=1
+	k=1
+
+	! load the correct pieces of the integer and real vectors
+	do nseg = 1,Rout%num_segs(proc)
+	   seg_start = Rout%seg_starts(proc,nseg)
+	   seg_end = seg_start + Rout%seg_lengths(proc,nseg)-1
+	   do VectIndex = seg_start,seg_end
+	      do AttrIndex = 1,numi
+		 ip1(proc)%pi(j) = aV%iAttr(AttrIndex,VectIndex)
+		 j=j+1
+	      enddo
+	      do AttrIndex = 1,numr
+		 rp1(proc)%pr(k) = aV%rAttr(AttrIndex,VectIndex)
+		 k=k+1
+	      enddo
 	   enddo
 	enddo
-     enddo
+
+     endif
 
      ! Send the integer data
      if(numi .ge. 1) then
@@ -159,8 +163,19 @@
 	tag = 100000*mycomp + 1000*ThisMCTWorld%mygrank + &
 	      500 + Rout%pe_list(proc)
 
-	call MPI_ISEND(ip1(proc)%pi(1),Rout%locsize(proc)*numi,MP_INTEGER,&
-	       Rout%pe_list(proc),tag,ThisMCTWorld%MCT_comm,ireqs(proc),ier)
+	if( Rout%num_segs(proc) > 1 ) then
+
+	   call MPI_ISEND(ip1(proc)%pi(1), &
+		Rout%locsize(proc)*numi,MP_INTEGER,Rout%pe_list(proc), &
+		tag,ThisMCTWorld%MCT_comm,ireqs(proc),ier)
+	   
+	else
+
+	   call MPI_ISEND(aV%iAttr(1,Rout%seg_starts(proc,1)), & 
+		Rout%locsize(proc)*numi,MP_INTEGER,Rout%pe_list(proc), &
+		tag,ThisMCTWorld%MCT_comm,ireqs(proc),ier)
+
+	endif
 
 	if(ier /= 0) call MP_perr_die(myname_,'MPI_ISEND(ints)',ier)
 
@@ -173,8 +188,19 @@
        tag = 100000*mycomp + 1000*ThisMCTWorld%mygrank + &
 	     700 + Rout%pe_list(proc)
 
-       call MPI_ISEND(rp1(proc)%pr(1),Rout%locsize(proc)*numr,mp_Type_rp1,&
-	      Rout%pe_list(proc),tag,ThisMCTWorld%MCT_comm,rreqs(proc),ier)
+       if( Rout%num_segs(proc) > 1 ) then
+
+	  call MPI_ISEND(rp1(proc)%pr(1), &
+	       Rout%locsize(proc)*numr,mp_Type_rp1,Rout%pe_list(proc), &
+	       tag,ThisMCTWorld%MCT_comm,rreqs(proc),ier)
+
+       else
+
+	  call MPI_ISEND(aV%rAttr(1,Rout%seg_starts(proc,1)), &
+	       Rout%locsize(proc)*numr,mp_Type_rp1,Rout%pe_list(proc), &
+	       tag,ThisMCTWorld%MCT_comm,rreqs(proc),ier)
+
+       endif
 
        if(ier /= 0) call MP_perr_die(myname_,'MPI_ISEND(reals)',ier)
 
