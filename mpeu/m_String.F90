@@ -2,25 +2,42 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !MODULE: m_String - string pointers
+! !MODULE: m_String - The String Datatype
 !
 ! !DESCRIPTION:
+! The {\tt String} datatype is an encapsulated pointer to a one-dimensional
+! array of single characters.  This allows one to define variable-length
+! strings, and arrays of variable-length strings.
 !
 ! !INTERFACE:
 
-    module m_String
+ module m_String
+
+! !USES:
+! No external modules are used in the declaration section of this module.
+
       implicit none
+
       private	! except
 
+! !PUBLIC TYPES:
+
       public :: String		! The class data structure
-      public :: toChar		! convert to a CHARACTER(*)
+
+    Type String
+      character(len=1),dimension(:),pointer :: c
+    End Type String
+
+! !PUBLIC MEMBER FUNCTIONS:
+
+      public :: toChar		
       public :: char		! convert to a CHARACTER(*)
 
       public :: String_init
       public :: init		! set a CHARACTER(*) type to a String
 
       public :: String_clean
-      public :: clean		! clean a String
+      public :: clean		! Deallocate memory occupied by  a String
 
       public :: String_len
       public :: len		! length of a String
@@ -28,18 +45,11 @@
       public :: String_bcast
       public :: bcast		! Broadcast a String
 
-      public :: String_mci
+      public :: String_mci      ! Track memory used to store a String
       public :: String_mco
 
-      public :: ptr_chars
-
-    type String
-      character(len=1),dimension(:),pointer :: c
-    end type String
-
-! !REVISION HISTORY:
-! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
-!EOP ___________________________________________________________________
+      public :: ptr_chars       ! Assign a pointer to a String's
+                                ! character buffer
 
   interface char;  module procedure	&
 	str2ch0_,	&
@@ -86,6 +96,10 @@
     ptr_chars_
   end interface
 
+! !REVISION HISTORY:
+! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+!EOP ___________________________________________________________________
+
   character(len=*),parameter :: myname='m_String'
 
 contains
@@ -93,16 +107,30 @@ contains
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: str2ch0_ - convert a String to a variable of characters
+! !IROUTINE: str2ch0_ - Convert a String to a CHARACTER
 !
 ! !DESCRIPTION:
+! This function returns the contents of the character buffer of the 
+! input {\tt String} argument {\tt str} as a {\tt CHARCTER} suitable 
+! for printing.
 !
 ! !INTERFACE:
 
-    function str2ch0_(str)
-      implicit none
-      type(String),intent(in) :: str
-      character(len=size(str%c)) :: str2ch0_
+ function str2ch0_(str)
+
+! !USES:
+!
+! No external modules are used by this function.
+
+     implicit none
+
+! !INPUT PARAMETERS: 
+!
+     type(String),              intent(in) :: str
+
+! !OUTPUT PARAMETERS: 
+!
+     character(len=size(str%c))            :: str2ch0_
 
 ! !REVISION HISTORY:
 ! 	23Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
@@ -114,22 +142,36 @@ contains
   do i=1,size(str%c)
     str2ch0_(i:i)=str%c(i)
   end do
-end function str2ch0_
+
+ end function str2ch0_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: ch12ch0_ - convert a rank-1 char-array to a rank-0 char(*)
+! !IROUTINE: ch12ch0_ - Convert a CHARACTER(:) to a CHARACTER(*)
 !
 ! !DESCRIPTION:
+! This function takes an input one-dimensional array of single characters
+! and returns a single character string.
 !
 ! !INTERFACE:
 
-    function ch12ch0_(ch1)
+ function ch12ch0_(ch1)
+
+! !USES:
+!
+! No external modules are used by this function.
+
       implicit none
-      character(len=1),dimension(:),intent(in) :: ch1
-      character(len=size(ch1)) :: ch12ch0_
+
+! !INPUT PARAMETERS: 
+!
+      character(len=1), dimension(:), intent(in) :: ch1
+
+! !OUTPUT PARAMETERS: 
+!
+      character(len=size(ch1))                   :: ch12ch0_
 
 ! !REVISION HISTORY:
 ! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
@@ -142,24 +184,36 @@ end function str2ch0_
     ch12ch0_(i:i)=ch1(i)
   end do
 
-end function ch12ch0_
+ end function ch12ch0_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: initc_ - convert a character object to a String object
+! !IROUTINE: initc_ - Create a String using a CHARACTER
 !
 ! !DESCRIPTION:
+! This routine takes an input {\tt CHARACTER} argument {\tt chr}, and 
+! uses it to create the output {\tt String} argument {\tt str}.
 !
 ! !INTERFACE:
 
-    subroutine initc_(str,chr)
+ subroutine initc_(str, chr)
+
+! !USES:
+!
       use m_die, only : die,perr
       use m_mall,only : mall_mci,mall_ison
+ 
       implicit none
-      type(String),intent(out) :: str
-      character(len=*),intent(in) :: chr
+
+! !INPUT PARAMETERS: 
+!
+      character(len=*), intent(in)  :: chr
+
+! !OUTPUT PARAMETERS: 
+!
+      type(String),     intent(out) :: str
 
 ! !REVISION HISTORY:
 ! 	23Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
@@ -181,24 +235,37 @@ end function ch12ch0_
     str%c(i)=chr(i:i)
   end do
 
-end subroutine initc_
+ end subroutine initc_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: inits_ - convert a String object to a String
+! !IROUTINE: inits_ - Initialization of a String from another String
 !
 ! !DESCRIPTION:
+! This routine takes an input {\tt String} argument {\tt iStr} and 
+! creates an output {\tt String} argument {\tt oStr}.  In other words,
+! it copies {\tt iStr} to {\tt oStr}.
 !
 ! !INTERFACE:
 
-    subroutine inits_(oStr,iStr)
+ subroutine inits_(oStr, iStr)
+ 
+! !USES:
+!
       use m_die, only : die
       use m_mall,only : mall_mci,mall_ison
+
       implicit none
-      type(String),intent(out) :: oStr
-      type(String),intent(in ) :: iStr
+
+! !INPUT PARAMETERS: 
+!
+      type(String),  intent(in)  :: iStr
+
+! !OUTPUT PARAMETERS: 
+!
+      type(String),  intent(out) :: oStr
 
 ! !REVISION HISTORY:
 ! 	07Feb00	- Jing Guo <guo@dao.gsfc.nasa.gov>
@@ -219,23 +286,33 @@ end subroutine initc_
     oStr%c(i)=iStr%c(i)
   end do
 
-end subroutine inits_
+ end subroutine inits_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: clean_ - clean a defined String object
+! !IROUTINE: clean_ - Deallocate Memory Occupied by a String
 !
 ! !DESCRIPTION:
+! This routine deallocates memory associated with the input/output 
+! {\tt String} argument {\tt str}.  This amounts to deallocating 
+! {\tt str\%c}.
 !
 ! !INTERFACE:
 
-    subroutine clean_(str)
+ subroutine clean_(str)
+
+! !USES:
+!
       use m_die, only : die,perr
       use m_mall,only : mall_mco,mall_ison
+
       implicit none
-      type(String),intent(inout) :: str
+
+! !INPUT/OUTPUT PARAMETERS: 
+!
+      type(String), intent(inout) :: str
 
 ! !REVISION HISTORY:
 ! 	23Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
@@ -252,27 +329,49 @@ end subroutine inits_
     call die(myname_)
   endif
 
-end subroutine clean_
+ end subroutine clean_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: bcast_ - broadcast a rank-0 String
+! !IROUTINE: bcast_ - MPI Broadcast of a rank-0 String
 !
 ! !DESCRIPTION:
+! This routine performs an MPI broadcast of the input/output {\tt String}
+! argument {\tt Str} on a communicator associated with the Fortran integer
+! handle {\tt comm}.  The broadcast originates from the process with rank
+! given by {\tt root} on {\tt comm}.  The {\tt String} argument {\tt Str} 
+! is on entry valid only on the {\tt root} process, and is valid on exit
+! on all processes on the communicator {\tt comm}.  The success (failure) 
+! is signified by a zero (non-zero) value of the optional {\tt INTEGER} 
+! output argument {\tt stat}.
 !
 ! !INTERFACE:
 
-    subroutine bcast_(Str,root,comm,stat)
+ subroutine bcast_(Str, root, comm, stat)
+
+! !USES:
+!
       use m_mpif90
       use m_die, only : perr,die
       use m_mall,only : mall_mci,mall_ison
+
       implicit none
-      type(String) :: Str	! (IN) on the root, (OUT) elsewhere
-      integer,intent(in) :: root
-      integer,intent(in) :: comm
-      integer,optional,intent(out) :: stat
+
+! !INPUT PARAMETERS: 
+!
+      integer,           intent(in)    :: root
+      integer,           intent(in)    :: comm
+
+! !INPUT/OUTPUT PARAMETERS: 
+!
+      type(String),      intent(inout) :: Str ! (IN) on the root, 
+                                              ! (OUT) elsewhere
+
+! !OUTPUT PARAMETERS: 
+!
+      integer, optional, intent(out)   :: stat
 
 ! !REVISION HISTORY:
 ! 	27Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
@@ -321,7 +420,7 @@ end subroutine clean_
     return
   endif
 
-end subroutine bcast_
+ end subroutine bcast_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
@@ -333,11 +432,18 @@ end subroutine bcast_
 !
 ! !INTERFACE:
 
-    subroutine mci0_(marg,thread)
+ subroutine mci0_(marg,thread)
+
+! !USES:
+!
       use m_mall, only : mall_ci
+
       implicit none
-      type(String),    intent(in) :: marg
-      character(len=*),intent(in) :: thread
+
+! !INPUT PARAMETERS: 
+!
+      type(String),     intent(in) :: marg
+      character(len=*), intent(in) :: thread
 
 ! !REVISION HISTORY:
 ! 	07Feb00	- Jing Guo <guo@dao.gsfc.nasa.gov>
@@ -348,7 +454,7 @@ end subroutine bcast_
 
   call mall_ci(1,thread)
 
-end subroutine mci0_
+ end subroutine mci0_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
@@ -360,9 +466,14 @@ end subroutine mci0_
 !
 ! !INTERFACE:
 
-    subroutine mco0_(marg,thread)
+ subroutine mco0_(marg,thread)
+
+! !USES:
+!
       use m_mall, only : mall_co
+
       implicit none
+
       type(String),    intent(in) :: marg
       character(len=*),intent(in) :: thread
 
@@ -375,7 +486,7 @@ end subroutine mci0_
 
   call mall_co(1,thread)
 
-end subroutine mco0_
+ end subroutine mco0_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
@@ -387,11 +498,18 @@ end subroutine mco0_
 !
 ! !INTERFACE:
 
-    subroutine mci1_(marg,thread)
+ subroutine mci1_(marg,thread)
+
+! !USES:
+!
       use m_mall, only : mall_ci
+
       implicit none
-      type(String),dimension(:),intent(in) :: marg
-      character(len=*)         ,intent(in) :: thread
+
+! !INPUT PARAMETERS: 
+!
+      type(String),     dimension(:), intent(in) :: marg
+      character(len=*),               intent(in) :: thread
 
 ! !REVISION HISTORY:
 ! 	07Feb00	- Jing Guo <guo@dao.gsfc.nasa.gov>
@@ -402,7 +520,7 @@ end subroutine mco0_
 
   call mall_ci(size(marg),thread)
 
-end subroutine mci1_
+ end subroutine mci1_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
@@ -414,11 +532,18 @@ end subroutine mci1_
 !
 ! !INTERFACE:
 
-    subroutine mco1_(marg,thread)
+ subroutine mco1_(marg,thread)
+
+! !USES:
+!
       use m_mall, only : mall_co
+
       implicit none
-      type(String),dimension(:),intent(in) :: marg
-      character(len=*)         ,intent(in) :: thread
+
+! !INPUT PARAMETERS: 
+!
+      type(String),     dimension(:), intent(in) :: marg
+      character(len=*),               intent(in) :: thread
 
 ! !REVISION HISTORY:
 ! 	07Feb00	- Jing Guo <guo@dao.gsfc.nasa.gov>
@@ -429,7 +554,7 @@ end subroutine mci1_
 
   call mall_co(size(marg),thread)
 
-end subroutine mco1_
+ end subroutine mco1_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
@@ -441,11 +566,18 @@ end subroutine mco1_
 !
 ! !INTERFACE:
 
-    subroutine mci2_(marg,thread)
+ subroutine mci2_(marg, thread)
+
+! !USES:
+!
       use m_mall, only : mall_ci
+
       implicit none
-      type(String),dimension(:,:),intent(in) :: marg
-      character(len=*)           ,intent(in) :: thread
+
+! !INPUT PARAMETERS: 
+!
+      type(String),     dimension(:,:), intent(in) :: marg
+      character(len=*),                 intent(in) :: thread
 
 ! !REVISION HISTORY:
 ! 	07Feb00	- Jing Guo <guo@dao.gsfc.nasa.gov>
@@ -456,7 +588,7 @@ end subroutine mco1_
 
   call mall_ci(size(marg),thread)
 
-end subroutine mci2_
+ end subroutine mci2_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
@@ -468,11 +600,18 @@ end subroutine mci2_
 !
 ! !INTERFACE:
 
-    subroutine mco2_(marg,thread)
+ subroutine mco2_(marg,thread)
+
+! !USES:
+!
       use m_mall, only : mall_co
+
       implicit none
-      type(String),dimension(:,:),intent(in) :: marg
-      character(len=*)           ,intent(in) :: thread
+
+! !INPUT PARAMETERS: 
+!
+      type(String),     dimension(:,:), intent(in) :: marg
+      character(len=*),                 intent(in) :: thread
 
 ! !REVISION HISTORY:
 ! 	07Feb00	- Jing Guo <guo@dao.gsfc.nasa.gov>
@@ -483,7 +622,7 @@ end subroutine mci2_
 
   call mall_co(size(marg),thread)
 
-end subroutine mco2_
+ end subroutine mco2_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
@@ -495,11 +634,18 @@ end subroutine mco2_
 !
 ! !INTERFACE:
 
-    subroutine mci3_(marg,thread)
+ subroutine mci3_(marg,thread)
+
+! !USES:
+!
       use m_mall, only : mall_ci
+
       implicit none
-      type(String),dimension(:,:,:),intent(in) :: marg
-      character(len=*)             ,intent(in) :: thread
+
+! !INPUT PARAMETERS: 
+!
+      type(String),     dimension(:,:,:), intent(in) :: marg
+      character(len=*),                   intent(in) :: thread
 
 ! !REVISION HISTORY:
 ! 	07Feb00	- Jing Guo <guo@dao.gsfc.nasa.gov>
@@ -510,7 +656,7 @@ end subroutine mco2_
 
   call mall_ci(size(marg),thread)
 
-end subroutine mci3_
+ end subroutine mci3_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
@@ -522,11 +668,18 @@ end subroutine mci3_
 !
 ! !INTERFACE:
 
-    subroutine mco3_(marg,thread)
+ subroutine mco3_(marg,thread)
+
+! !USES:
+!
       use m_mall, only : mall_co
+
       implicit none
-      type(String),dimension(:,:,:),intent(in) :: marg
-      character(len=*)             ,intent(in) :: thread
+
+! !INPUT PARAMETERS: 
+!
+      type(String),     dimension(:,:,:), intent(in) :: marg
+      character(len=*),                   intent(in) :: thread
 
 ! !REVISION HISTORY:
 ! 	07Feb00	- Jing Guo <guo@dao.gsfc.nasa.gov>
@@ -537,7 +690,8 @@ end subroutine mci3_
 
   call mall_co(size(marg),thread)
 
-end subroutine mco3_
+  end subroutine mco3_
+
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
@@ -548,10 +702,17 @@ end subroutine mco3_
 !
 ! !INTERFACE:
 
-    function len_(str)
+ integer function len_(str)
+
+! !USES:
+!
+! No external modules are used by this function.
+
       implicit none
+
+! !INPUT PARAMETERS: 
+!
       type(String),intent(in) :: str
-      integer :: len_
 
 ! !REVISION HISTORY:
 ! 	10Apr00	- Jing Guo <guo@dao.gsfc.nasa.gov>
@@ -562,7 +723,7 @@ end subroutine mco3_
 
   len_=size(str%c)
 
-end function len_
+ end function len_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
@@ -571,13 +732,27 @@ end function len_
 ! !IROUTINE: ptr_chars_ - direct
 !
 ! !DESCRIPTION:
+! This pointer-valued function provides a direct interface to the 
+! character buffer in the input {\tt String} argument {\tt str}.  That 
+! is, {\tt ptr\_chars\_ => str\%c}.
 !
 ! !INTERFACE:
 
-    function ptr_chars_(str)
+ function ptr_chars_(str)
+
+! !USES:
+!
+! No external modules are used by this function.
+
       implicit none
-      type(String),intent(in) :: str
-      character(len=1),pointer,dimension(:) :: ptr_chars_
+
+! !INPUT PARAMETERS: 
+!
+      type(String),                   intent(in) :: str
+
+! !OUTPUT PARAMETERS: 
+!
+      character(len=1), dimension(:), pointer    :: ptr_chars_
 
 ! !REVISION HISTORY:
 ! 	10Apr00	- Jing Guo <guo@dao.gsfc.nasa.gov>
@@ -588,5 +763,6 @@ end function len_
 
   ptr_chars_ => str%c
 
-end function ptr_chars_
-end module m_String
+ end function ptr_chars_
+
+ end module m_String

@@ -2,17 +2,68 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !MODULE: m_List - a list manager
+! !MODULE: m_List - A List Manager
 !
-! !DESCRIPTION:
+! !DESCRIPTION:  A {\em List} is a character buffer comprising 
+! substrings called {\em items} separated by colons, combined with 
+! indexing information describing (1) the starting point in the character 
+! buffer of each substring, and  (2) the length of each substring.  The 
+! only constraints on the valid list items are (1) the value of an 
+! item does not contain the ``\verb":"'' delimitter, and (2) leading 
+! and trailing blanks are stripped from any character string presented 
+! to define a list item (although any imbeded blanks are retained).
+!
+! {\bf Example:}  Suppose we wish to define a List containing the 
+! items {\tt 'latitude'}, {\tt 'longitude'}, and {\tt 'pressure'}.
+! The character buffer of the List containing these items will be the 
+! 27-character string
+! \begin{verbatim}
+! 'latitude:longitude:pressure'
+! \end{verbatim}
+! and the indexing information is summarized in the table below.
+!
+!\begin{table}[htbp]
+!\begin{center}
+!\begin{tabular}{|c|c|c|}
+!\hline
+!{\bf Item} & {\bf Starting Point in Buffer} & {\bf Length} \\
+!\hline
+!{\tt latitude} & 1 & 8 \\
+!\hline
+!{\tt longitude} & 9 & 9 \\
+!\hline
+!{\tt pressure} & 20 & 8\\
+!\hline
+!\end{tabular}
+!\end{center}
+!\end{table}
+!
+! One final note:  All operations for the {\tt List} datatype are 
+! {\bf case sensitive}. 
 !
 ! !INTERFACE:
 
-    module m_List
+ module m_List
+
+! !USES:
+!
+! No other Fortran modules are used.
+
       implicit none
+
       private	! except
 
+! !PUBLIC TYPES:
+
       public :: List		! The class data structure
+
+      Type List
+	 character(len=1),dimension(:),pointer :: bf
+	 integer,       dimension(:,:),pointer :: lc
+      End Type List
+
+! !PUBLIC MEMBER FUNCTIONS:
+
       public :: init
       public :: clean
       public :: nullify
@@ -31,10 +82,44 @@
       public :: recv
       public :: GetSharedListIndices
 
-    type List
-      character(len=1),dimension(:),pointer :: bf
-      integer,       dimension(:,:),pointer :: lc
-    end type List
+  interface init ; module procedure	&
+      init_,		&
+      initStr_,	&
+      initstr1_
+  end interface
+  interface clean; module procedure clean_; end interface
+  interface nullify; module procedure nullify_; end interface
+  interface index; module procedure	&
+      index_,		&
+      indexStr_
+  end interface
+  interface nitem; module procedure nitem_; end interface
+  interface get  ; module procedure	&
+      get_,		&
+      getall_,	&
+      getrange_
+  end interface
+  interface identical; module procedure identical_; end interface
+  interface assignment(=)
+    module procedure copy_
+  end interface
+  interface allocated ; module procedure &
+       allocated_
+  end interface
+  interface copy ; module procedure copy_ ;  end interface
+  interface exportToChar ; module procedure &
+       exportToChar_
+  end interface
+  interface CharBufferSize ; module procedure &
+      CharBufferSize_
+  end interface
+  interface concatenate ; module procedure concatenate_ ; end interface
+  interface bcast; module procedure bcast_; end interface
+  interface send; module procedure send_; end interface
+  interface recv; module procedure recv_; end interface
+  interface GetSharedListIndices; module procedure &
+      GetSharedListIndices_ 
+  end interface
 
 ! !REVISION HISTORY:
 ! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
@@ -47,73 +132,60 @@
 !                 function allocated_().
 ! 	13Feb02 - J. Larson <larson@mcs.anl.gov> - Added the List query 
 !                 functions exportToChar() and CharBufferLength().
-!       13Jun02-  R.L. Jacob <jacob@mcs.anl.gov> - Move GetSharedListIndices
+! 	13Jun02-  R.L. Jacob <jacob@mcs.anl.gov> - Move GetSharedListIndices
 !                 from mct to this module.
 !EOP ___________________________________________________________________
 
-  interface init ; module procedure	&
-	init_,		&
-	initStr_,	&
-	initstr1_
-  end interface
-  interface clean; module procedure clean_; end interface
-  interface nullify; module procedure nullify_; end interface
-  interface index; module procedure	&
-	index_,		&
-	indexStr_
-  end interface
-  interface nitem; module procedure nitem_; end interface
-  interface get  ; module procedure	&
-	get_,		&
-	getall_,	&
-	getrange_
-  end interface
-  interface identical; module procedure identical_; end interface
-  interface assignment(=)
-    module procedure copy_
-  end interface
-  interface allocated ; module procedure allocated_;  end interface
-  interface copy ; module procedure copy_;  end interface
-  interface exportToChar ; module procedure exportToChar_; end interface
-  interface CharBufferSize 
-     module procedure CharBufferSize_
-  end interface
-  interface concatenate ; module procedure concatenate_ ; end interface
-  interface bcast; module procedure bcast_; end interface
-  interface send; module procedure send_; end interface
-  interface recv; module procedure recv_; end interface
-  interface GetSharedListIndices; module procedure GetSharedListIndices_; end interface
-
   character(len=*),parameter :: myname='m_List'
 
-contains
+ contains
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: init_ - initialized a List from a character string
+! !IROUTINE: init_ - Initialize a List from a CHARACTER String
 !
 ! !DESCRIPTION:
 !
-!	A list is a string in the form of ``\verb"cat:tiger:lion"'',
-!   or ``\verb"lat:lon:lev"''.  Through the initialization call, the
-!   items delimited by ``\verb":"'' are stored as an array of sub-
-!   strings of a long string, accessible through an array of substring
-!   indices.  The only constraints now on the valid list entries are,
-!   (1) the value of an entry does not contain ``\verb":"'', and (2)
-!   The leading and the trailing blanks are insignificant, although
-!   any imbeded blanks are.
+! A list is a string in the form of ``\verb"Larry:Moe:Curly"'',
+! or ``\verb"lat:lon:lev"'', combined with substring location and 
+! length information.  Through the initialization call, the
+! items delimited by ``\verb":"'' are stored as an array of sub-
+! strings of a long string, accessible through an array of substring
+! indices.  The only constraints now on the valid list entries are,
+! (1) the value of an entry does not contain ``\verb":"'', and (2)
+! The leading and the trailing blanks are insignificant, although
+! any imbeded blanks are.  For example,
+!
+! \begin{verbatim} 
+! call init_(aList, 'batman  :SUPERMAN:Green Lantern:  Aquaman')
+! \end{verbatim} 
+! will result in {\tt aList} having four items:  'batman', 'SUPERMAN', 
+! 'Green Lantern', and 'Aquaman'.  That is
+! \begin{verbatim} 
+! aList%bf =  'batman:SUPERMAN:Green Lantern:Aquaman'
+! \end{verbatim} 
 !
 ! !INTERFACE:
 
  subroutine init_(aList,Values)
 
+! !USES:
+!
       use m_die,only : die
       use m_mall,only : mall_mci,mall_ison
+ 
       implicit none
-      type(List),intent(out)	  :: aList  ! an indexed string values
+
+! !INPUT PARAMETERS: 
+!
       character(len=*),intent(in) :: Values ! ":" delimited names
+
+! !OUTPUT PARAMETERS:   
+!
+      type(List),intent(out)	  :: aList  ! an indexed string values
+ 
 
 ! !REVISION HISTORY:
 ! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
@@ -204,18 +276,33 @@ contains
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: initStr_ initialize with a String type
+! !IROUTINE: initStr_ - Initialize a List Using the String Type
 !
-! !DESCRIPTION:
+! !DESCRIPTION: This routine initializes a {\tt List} datatype given 
+! an input {\tt String} datatype (see {\tt m\_String} for more 
+! information regarding the {\tt String} type).  The contents of the 
+! input {\tt String} argument {\tt pstr} must adhere to the restrictions
+! stated for character input stated in the prologue of the routine 
+! {\tt init\_()} in this module.
 !
 ! !INTERFACE:
 
- subroutine initStr_(aList,pstr)
+ subroutine initStr_(aList, pstr)
 
+! !USES:
+!
       use m_String, only : String,toChar
+
       implicit none
-      type(List),intent(out)	  :: aList  ! an indexed string values
+
+! !INPUT PARAMETERS: 
+!
       type(String),intent(in)	  :: pstr
+
+! !OUTPUT PARAMETERS:   
+!
+      type(List),intent(out)	  :: aList  ! an indexed string values
+
 
 ! !REVISION HISTORY:
 ! 	23Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
@@ -231,21 +318,45 @@ contains
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: initStr1_ initialize with an array of Strings
+! !IROUTINE: initStr1_ - Initialize a List Using an Array of Strings
 !
-! !DESCRIPTION:
-!
+! !DESCRIPTION: This routine initializes a {\tt List} datatype given 
+! as input array of {\tt String} datatypes (see {\tt m\_String} for more 
+! information regarding the {\tt String} type).  The contents of each 
+! {\tt String} element of the input array {\tt strs} must adhere to the 
+! restrictions stated for character input stated in the prologue of the 
+! routine {\tt init\_()} in this module.  Specifically, no element in 
+! {\tt strs} may contain the colon \verb':' delimiter, and any 
+! leading or trailing blanks will be stripped (though embedded blank
+! spaces will be retained).  For example, consider an invocation of 
+! {\tt initStr1\_()} where the array {\tt strs(:)} contains four entries:
+! {\tt strs(1)='John'}, {\tt strs(2)=' Paul'}, 
+! {\tt strs(3)='George '}, and {\tt strs(4)='  Ringo'}.  The resulting
+! {\tt List} output {\tt aList} will have
+! \begin{verbatim} 
+! aList%bf =  'John:Paul:George:Ringo'
+! \end{verbatim} 
 ! !INTERFACE:
 
- subroutine initStr1_(aList,strs)
+ subroutine initStr1_(aList, strs)
 
+! !USES:
+!
       use m_String, only : String,toChar
       use m_String, only : len
       use m_String, only : ptr_chars
       use m_die,only : die
+
       implicit none
-      type(List),intent(out)	  :: aList  ! an indexed string values
+
+! !INPUT PARAMETERS: 
+!
       type(String),dimension(:),intent(in)	  :: strs
+
+! !OUTPUT PARAMETERS:   
+!
+      type(List),intent(out)	  :: aList  ! an indexed string values
+
 
 ! !REVISION HISTORY:
 ! 	23Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
@@ -289,23 +400,37 @@ contains
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: clean_ - clean a List variable
+! !IROUTINE: clean_ - Deallocate Memory Used by a List
 !
-! !DESCRIPTION:
+! !DESCRIPTION:  This routine deallocates the allocated memory components
+! of the input/output {\tt List} argument {\tt aList}.  Specifically, it
+! deallocates {\tt aList\%bf} and {\tt aList\%lc}.  If the optional 
+! output {\tt INTEGER} arguemnt {\tt stat} is supplied, no warning will
+! be printed if the Fortran intrinsic {\tt deallocate()} returns with an
+! error condition.
 !
 ! !INTERFACE:
 
- subroutine clean_(aList,stat)
+ subroutine clean_(aList, stat)
 
+! !USES:
+!
       use m_die,  only : warn
       use m_mall, only : mall_mco,mall_ison
+
       implicit none
+
+! !INPUT/OUTPUT PARAMETERS: 
+!
       type(List),        intent(inout) :: aList
+
+! !OUTPUT PARAMETERS:   
+!
       integer, optional, intent(out)   :: stat
 
 ! !REVISION HISTORY:
 ! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
-!       01Mar02 - E.T. Ong <eong@mcs.anl.gov> - added stat argument and
+! 	01Mar02 - E.T. Ong <eong@mcs.anl.gov> - added stat argument and
 !                 removed die to prevent crashes.
 !EOP ___________________________________________________________________
 
@@ -317,7 +442,7 @@ contains
      if(associated(aList%lc)) call mall_mco(aList%lc,myname_)
   endif
 
-  deallocate(aList%bf,aList%lc,stat=ier)
+  deallocate(aList%bf, aList%lc, stat=ier)
 
   if(present(stat)) then
      stat=ier
@@ -327,16 +452,16 @@ contains
 
  end subroutine clean_
 
-!BOP -------------------------------------------------------------------
+!--- -------------------------------------------------------------------
 !     Math + Computer Science Division / Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: nullify_ - nullify a List variable
+! !IROUTINE: nullify_ - Nullify Pointers in a List
 !
-! !DESCRIPTION:  In Fortran 90, pointers may have three states of being:
-! 1) {\tt ASSOCIATED}, that is the pointer is pointing at a target,2) 
-! 2) {\tt UNASSOCIATED}, and 3) {\tt UNINITIALIZED}.  On some platforms, 
-! the Fortran intrinsic function {\tt associated()} 
+! !DESCRIPTION:  In Fortran 90, pointers may have three states:  
+! (1) {\tt ASSOCIATED}, that is the pointer is pointing at a target, 
+! (2) {\tt UNASSOCIATED}, and (3) {\tt UNINITIALIZED}.  On some 
+! platforms, the Fortran intrinsic function {\tt associated()} 
 ! will view uninitialized pointers as {\tt UNASSOCIATED} by default.
 ! This is not always the case.  It is good programming practice to 
 ! nullify pointers if they are not to be used.  This routine nullifies
@@ -371,17 +496,28 @@ contains
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: nitem_ - number of items in the list
+! !IROUTINE: nitem_ - Return the Number of Items in a List
 !
-! !DESCRIPTION:
+! !DESCRIPTION:  
+! This function enumerates the number of items in the input {\tt List} 
+! argument {\tt aList}.  For example, suppose 
+! \begin{verbatim}
+!  aList%bf = 'John:Paul:George:Ringo'
+! \end{verbatim}
+!  Then, 
+! $${\tt nitem\_(aList)} = 4 .$$
 !
 ! !INTERFACE:
 
- function nitem_(aList)
+ integer function nitem_(aList)
 
+! !USES:
+!
       implicit none
+
+! !INPUT PARAMETERS: 
+!
       type(List),intent(in) :: aList
-      integer :: nitem_
 
 ! !REVISION HISTORY:
 ! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
@@ -413,19 +549,33 @@ contains
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: index_ - lookup a list for a given item name
+! !IROUTINE: index_ - Return Rank in a List of a Given Item (CHARACTER)
 !
 ! !DESCRIPTION:
+! This function returns the rank of an item (defined by the 
+! {\tt CHARACTER} argument {\tt item}) in the input {\tt List} argument
+! {\tt aList}.  If {\tt item} is not present in {\tt aList}, then zero 
+! is returned.  For example, suppose 
+! \begin{verbatim}
+!  aList%bf = 'Bob:Carol:Ted:Alice'
+! \end{verbatim}
+!  Then, ${\tt index\_(aList, 'Ted')}=3$, ${\tt index\_(aList, 'Carol')}=2$,
+! and ${\tt index\_(aList, 'The Dude')}=0.$
 !
 ! !INTERFACE:
 
- function index_(aList,item)
+ integer function index_(aList, item)
 
+! !USES:
+!
       use m_String, only : toChar
+
       implicit none
+
+! !INPUT PARAMETERS: 
+!
       type(List),      intent(in) :: aList	! a List of names
       character(len=*),intent(in) :: item	! a given item name
-      integer :: index_
 
 ! !REVISION HISTORY:
 ! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
@@ -450,19 +600,33 @@ contains
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: indexStr_ - lookup a list for a given item name
+! !IROUTINE: indexStr_ - Return Rank in a List of a Given Item (String)
 !
 ! !DESCRIPTION:
+! This function performs the same operation as the function 
+! {\tt index\_()}, but the item to be indexed is instead presented in 
+! the form of a {\tt String} datatype (see the module {\tt m\_String} 
+! for more information about the {\tt String} type).  This routine 
+! searches through the input {\tt List} argument {\tt aList} for an 
+! item that matches the item defined by {\tt itemStr}, and if a match 
+! is found, the rank of the item in the list is returned (see also the 
+! prologue for the routine {\tt index\_()} in this module).  If no match 
+! is found, a value of zero is returned.
 !
 ! !INTERFACE:
 
- function indexStr_(aList,itemStr)
+ integer function indexStr_(aList, itemStr)
 
+! !USES:
+!
       use m_String,only : String,toChar
+
       implicit none
+
+! !INPUT PARAMETERS: 
+!
       type(List),      intent(in) :: aList	! a List of names
       type(String),    intent(in) :: itemStr
-      integer :: indexStr_
 
 ! !REVISION HISTORY:
 ! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
@@ -487,7 +651,7 @@ contains
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: allocated_ - Check a list to see if it is allocated.
+! !IROUTINE: allocated_ - Check Pointers in a List for Association Status
 !
 ! !DESCRIPTION:
 ! This function checks the input {\tt List} argument {\tt inList} to 
@@ -496,8 +660,8 @@ contains
 ! pointers {\tt inList\%bf} and {\tt inList\%lc}.  If both of these 
 ! pointers are associated, the return value is {\tt .TRUE.}.
 !
-! {\bf N.B.:}  In Fortran90, pointers have three different states of 
-! existence:  {\tt ASSOCIATED}, {\tt UNASSOCIATED}, and {\tt UNDEFINED}.
+! {\bf N.B.:}  In Fortran90, pointers have three different states:   
+! {\tt ASSOCIATED}, {\tt UNASSOCIATED}, and {\tt UNDEFINED}.
 !  If a pointer is {\tt UNDEFINED}, this function may return either 
 ! {\tt .TRUE.} or {\tt .FALSE.} values, depending on the Fortran90 
 ! compiler.  To avoid such problems, we advise that users invoke the 
@@ -532,22 +696,33 @@ contains
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: copy_ - Copy a List.  Pointers are copied as allocatables
+! !IROUTINE: copy_ - Copy a List
 !
 ! !DESCRIPTION:
+! This routine copies the contents of the input {\tt List} argument 
+! {\tt xL} into the output {\tt List} argument {\tt yL}.
 !
 ! !INTERFACE:
 
  subroutine copy_(yL,xL)	! yL=xL
 
+! !USES:
+!
       use m_die,only : die
       use m_String ,only : String
       use m_String ,only : String_clean
       use m_mall,only : mall_mci,mall_ison
 
       implicit none
-      type(List),intent(out) :: yL
+
+! !INPUT PARAMETERS: 
+!
       type(List),intent(in)  :: xL
+
+! !OUTPUT PARAMETERS:   
+!
+      type(List),intent(out) :: yL
+
 
 ! !REVISION HISTORY:
 ! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
@@ -574,20 +749,24 @@ contains
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: exportToChar_ - Export List to a CHARACTER.
+! !IROUTINE: exportToChar_ - Export List to a CHARACTER
 !
 ! !DESCRIPTION:  This function returns the character buffer portion of
 ! the input {\tt List} argument {\tt inList}---that is, the contents of
-! {\tt inList%bf}---as a {\tt CHARACTER} (suitable for printing).  An
+! {\tt inList\%bf}---as a {\tt CHARACTER} (suitable for printing).  An
 ! example of the use of this function is:
 ! \begin{verbatim}
-!           write(*,*) exportToChar(inList) 
-! \begin{verbatim}
+!           write(stdout,'(1a)') exportToChar(inList) 
+! \end{verbatim}
+! which writes the contents of {\tt inList\%bf} to the Fortran device 
+! {\tt stdout}.
 !
 ! !INTERFACE:
 
  function exportToChar_(inList)
 
+! !USES:
+!
       use m_die,    only : die
       use m_stdio,  only : stderr
       use m_String, only : String
@@ -617,7 +796,7 @@ contains
      exportToChar_ = String_ToChar(DummStr)
      call String_clean(DummStr)
   else
-     write(stderr,*) myname_,":: Argument inList not allocated."
+     write(stderr,'(2a)') myname_,":: Argument inList not allocated."
      call die(myname_)
   endif
 
@@ -627,21 +806,30 @@ contains
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: CharBufferSize_ - Export List to a CHARACTER.
+! !IROUTINE: CharBufferSize_ - Return size of a List's Character Buffer
 !
 ! !DESCRIPTION:  This function returns the length of the character 
 ! buffer portion of the input {\tt List} argument {\tt inList} (that 
-! is, the number of characters stored in \tt inList%bf}) as an
-! {\tt INTEGER}.  A usage example is presented below:
+! is, the number of characters stored in {\tt inList\%bf}) as an
+! {\tt INTEGER}.  Suppose for the sake of argument that {\tt inList} 
+! was created using the following call to {\tt init\_()}:
 ! \begin{verbatim}
-!           integer :: BufferLength
-!           BufferLength = CharBufferSize(inList) 
+!  call init_(inList, 'Groucho:Harpo:Chico:Zeppo')
+! \end{verbatim}
+! Then, using the above example value of {\tt inList}, we can use 
+! {\tt CharBufferSize\_()} as follows:
 ! \begin{verbatim}
+! integer :: BufferLength
+! BufferLength = CharBufferSize(inList) 
+! \end{verbatim}
+! and the resulting value of {\tt BufferLength} will be 25.
 !
 ! !INTERFACE:
 
  integer function CharBufferSize_(inList)
 
+! !USES:
+!
       use m_die,    only : die
       use m_stdio,  only : stderr
 
@@ -660,7 +848,7 @@ contains
   if(allocated_(inList)) then
      CharBufferSize_ = size(inList%bf)
   else
-     write(stderr,*) myname_,":: Argument inList not allocated."
+     write(stderr,'(2a)') myname_,":: Argument inList not allocated."
      call die(myname_)
   endif
 
@@ -670,18 +858,36 @@ contains
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: get_ - return a numbered item from the List
+! !IROUTINE: get_ - Retrieve a Numbered Item from a List as a String
 !
 ! !DESCRIPTION:
+! This routine retrieves a numbered item (defined by the input 
+! {\tt INTEGER} argument {\tt ith}) from the input {\tt List} argument 
+! {\tt aList}, and returns it in the output {\tt String} argument 
+! {\tt itemStr} (see the module {\tt m\_String} for more information 
+! about the {\tt String} type).  If the argument {\tt ith} is nonpositive, 
+! or greater than the number of items in {\tt aList}, a String containing
+! one blank space is returned.
 !
 ! !INTERFACE:
 
- subroutine get_(itemStr,ith,aList)
-      use m_String, only : String,init,toChar
+ subroutine get_(itemStr, ith, aList)
+
+! !USES:
+!
+      use m_String, only : String, init, toChar
+
       implicit none
-      type(String),intent(out) :: itemStr
+
+! !INPUT PARAMETERS: 
+!
       integer,     intent(in)  :: ith
       type(List),  intent(in)  :: aList
+
+! !OUTPUT PARAMETERS:   
+!
+      type(String),intent(out) :: itemStr
+
 
 ! !REVISION HISTORY:
 ! 	23Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
@@ -704,17 +910,33 @@ contains
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: getall_ - return all items from the List
+! !IROUTINE: getall_ - Return all Items from a List as one String
 !
 ! !DESCRIPTION:
+! This routine returns all the items from the input {\tt List} argument
+! {\tt aList} in the output {\tt String} argument {\tt itemStr} (see 
+! the module {\tt m\_String} for more information about the {\tt String} 
+! type).  The contents of the character buffer in {\tt itemStr} will 
+! be the all of the items in {\tt aList}, separated by the colon delimiter.
 !
 ! !INTERFACE:
 
- subroutine getall_(itemStr,aList)
-      use m_String, only : String,init,toChar
+ subroutine getall_(itemStr, aList)
+
+! !USES:
+!
+      use m_String, only : String, init, toChar
+
       implicit none
-      type(String),intent(out) :: itemStr
-      type(List),  intent(in)  :: aList
+
+! !INPUT PARAMETERS: 
+!
+      type(List),   intent(in)  :: aList
+
+! !OUTPUT PARAMETERS:   
+!
+      type(String), intent(out) :: itemStr
+
 
 ! !REVISION HISTORY:
 ! 	23Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
@@ -734,29 +956,83 @@ contains
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: getrange_ - return a range of items from the List
+! !IROUTINE: getrange_ - Return a Range of Items from a List as one String
 !
 ! !DESCRIPTION:
+! This routine returns all the items ranked {\tt i1} through {\tt i2} 
+! from the input {\tt List} argument {\tt aList} in the output 
+! {\tt String} argument {\tt itemStr} (see the module {\tt m\_String} 
+! for more information about the {\tt String} type).  The contents of 
+! the character buffer in {\tt itemStr} will be items in {\tt i1} through 
+! {\tt i2} {\tt aList}, separated by the colon delimiter.
 !
 ! !INTERFACE:
 
- subroutine getrange_(itemStr,i1,i2,aList)
+ subroutine getrange_(itemStr, i1, i2, aList)
 
+! !USES:
+!
+      use m_die,    only : die
+      use m_stdio,  only : stderr
       use m_String, only : String,init,toChar
+
       implicit none
-      type(String),intent(out) :: itemStr
+
+! !INPUT PARAMETERS: 
+!
       integer,     intent(in)  :: i1
       integer,     intent(in)  :: i2
       type(List),  intent(in)  :: aList
 
+! !OUTPUT PARAMETERS:   
+!
+      type(String),intent(out) :: itemStr
+
 ! !REVISION HISTORY:
 ! 	23Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 	26Jul02 - J. Larson - Added argument checks.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::getrange_'
   integer :: lb,le,ni
 
-  ni=size(aList%lc,2)
+       ! Argument Sanity Checks:
+
+  if(.not. allocated_(aList)) then
+     write(stderr,'(2a)'), myname_, &
+	  ':: FATAL--List argument aList is not initialized.'
+     call die(myname_)
+  endif
+
+       ! is i2 >= i1 as we assume?
+
+  if(i1 > i2) then
+     write(stderr,'(2a,2(a,i8))'), myname_, &
+	  ':: FATAL.  Starting/Ending item ranks are out of order; ', &
+	  'i2 must be greater or equal to i1.  i1 =',i1,' i2 = ',i2
+     call die(myname_)
+  endif
+
+  ni=size(aList%lc,2) ! the number of items in aList...
+
+       ! is i1 or i2 too big?
+
+  if(i1 > ni) then
+     write(stderr,'(2a,2(a,i8))'), myname_, &
+	  ':: FATAL--i1 is greater than the number of items in ', &
+	  'The List argument aList: i1 =',i1,' ni = ',ni
+     call die(myname_)
+  endif
+
+  if(i2 > ni) then
+     write(stderr,'(2a,2(a,i8))'), myname_, &
+	  ':: FATAL--i2 is greater than the number of items in ', &
+	  'The List argument aList: i2 =',i2,' ni = ',ni
+     call die(myname_)
+  endif
+
+       ! End of Argument Sanity Checks.
+
   lb=aList%lc(0,max(1,i1))
   le=aList%lc(1,min(ni,i2))
   call init(itemStr,toChar(aList%bf(lb:le)))
@@ -768,20 +1044,29 @@ contains
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: identical_ - Compare two lists to see if they are the same.
+! !IROUTINE: identical_ - Compare Two Lists for Equality
 !
 ! !DESCRIPTION:
+! This function compares the string buffer and indexing information in
+! the two input {\tt List} arguments {\tt yL} and {\tt xL}.  If the 
+! string buffers and index buffers of {\tt yL} and {\tt xL} match, this
+! function returns a value of {\tt .TRUE.}  Otherwise, it returns a 
+! value of {\tt .FALSE.}
 !
 ! !INTERFACE:
 
- logical function identical_(yL,xL)
+ logical function identical_(yL, xL)
 
+! !USES:
+!
       use m_die,only : die
       use m_String ,only : String
       use m_String ,only : String_clean
 
       implicit none
 
+! !INPUT PARAMETERS: 
+!
       type(List),intent(in) :: yL
       type(List),intent(in) :: xL
 
@@ -832,21 +1117,45 @@ contains
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: set_indices_ - set the indices of given items
+! !IROUTINE: set_indices_ - Index Multiple Items in a List
 !
-! !DESCRIPTION:
+! !DESCRIPTION:  This routine takes as input a {\tt List} argument 
+! {\tt aList}, and a {\tt CHARACTER} string {Values}, which is a colon-
+! delimited string of items, and returns an {\tt INTEGER} array 
+! {\tt indices(:)}, which contain the rank of each item in {\tt aList}.
+! For example, suppose {\tt aList} was created from the character string
+! \begin{verbatim}
+! 'happy:sleepy:sneezey:grumpy:dopey::bashful:doc'
+! \end{verbatim}
+! and set\_indices\_() is invoked as follows:
+! \begin{verbatim}
+! call set_indices_(indices, aList, 'sleepy:grumpy:bashful:doc')
+! \end{verbatim}
+! The array {\tt indices(:)} will be returned with 4 entries:  
+! ${\tt indices(1)}=2$, ${\tt indices(2)}=4$, ${\tt indices(3)}=6$, and
+! ${\tt indices(4)}=7$.
 !
 ! !INTERFACE:
 
- subroutine set_indices_(indices,aList,values)
+ subroutine set_indices_(indices, aList, values)
+
+! !USES:
+!
       use m_String, only : String,clean
+
       implicit none
-      integer,dimension(:),intent(out) :: indices
-      type(List),intent(in)	  :: aList  ! an indexed string values
-      character(len=*),intent(in) :: Values ! ":" delimited names
+
+! !INPUT PARAMETERS: 
+!
+      type(List),            intent(in)	 :: aList  ! an indexed string values
+      character(len=*),      intent(in)  :: Values ! ":" delimited names
+
+! !OUTPUT PARAMETERS:   
+!
+      integer, dimension(:), intent(out) :: indices
 
 ! !REVISION HISTORY:
-! 	31May98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+!      31May98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::set_indices_'
@@ -871,7 +1180,7 @@ contains
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: concatenate_ - Concatenates two Lists into a third List.
+! !IROUTINE: concatenate_ - Concatenates two Lists to form a Third List.
 !
 ! !DESCRIPTION:  This routine takes two input {\tt List} arguments
 ! {\tt iList1} and {\tt iList2}, and concatenates them, producing an 
@@ -921,7 +1230,7 @@ contains
 ! !REVISION HISTORY:
 ! 	08May01 - J.W. Larson - initial version.
 ! 	17May01 - J.W. Larson - Re-worked and tested successfully.
-!       17Jul02 - E. Ong - fixed the bug mentioned above
+! 	17Jul02 - E. Ong - fixed the bug mentioned above
 !EOP ___________________________________________________________________
 
  character(len=*),parameter :: myname_=myname//'::concatenate_'
@@ -981,7 +1290,7 @@ contains
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: bcast_ - Broadcast a List variable...
+! !IROUTINE: bcast_ - MPI Broadcast for the List Type
 !
 ! !DESCRIPTION:  This routine takes an input {\tt List} argument 
 ! {\tt iList} (on input, valid on the root only), and broadcasts it.
@@ -997,7 +1306,7 @@ contains
 !
 ! !USES:
 !
-      use m_stdio
+      use m_stdio,  only : stderr
       use m_die, only : MP_perr_die
 
       use m_String, only:  String
@@ -1028,7 +1337,7 @@ contains
 ! 	16May01 - J.W. Larson - new, simpler String-based algorigthm
 !                 (see m_String for details), which works properly on
 !                 the SGI platform.
-!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize status
+! 	13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize status
 !                 (if present).
 !EOP ___________________________________________________________________
 
@@ -1086,7 +1395,7 @@ contains
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: send_ - Point-to-point send of a List variable...
+! !IROUTINE: send_ - MPI Point-to-Point Send for the List Type
 !
 ! !DESCRIPTION:  This routine takes an input {\tt List} argument 
 ! {\tt inList} and sends it to processor {\tt dest} on the communicator 
@@ -1134,7 +1443,7 @@ contains
 
 ! !REVISION HISTORY:
 ! 	06Jun01 - J.W. Larson - initial version.
-!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize status
+! 	13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize status
 !                 (if present).
 !EOP ___________________________________________________________________
 
@@ -1158,8 +1467,8 @@ contains
  call MPI_SEND(length, 1, MP_type(length), dest, TagBase, comm, ierr)
   if(ierr /= 0) then
      if(present(status)) then
-        write(stderr,*) myname_,':: MPI_SEND(length...) failed.  ierror=',&
-	     ierr
+        write(stderr,'(2a,i8)') myname_, &
+	     ':: MPI_SEND(length...) failed.  ierror=', ierr
         status = ierr
         return
      else
@@ -1174,8 +1483,8 @@ contains
                comm, ierr)
   if(ierr /= 0) then
      if(present(status)) then
-        write(stderr,*) myname_,':: MPI_SEND(DummStr%c...) failed.  ierror=',&
-	     ierr
+        write(stderr,'(2a,i8)') myname_, &
+	     ':: MPI_SEND(DummStr%c...) failed.  ierror=', ierr
         status = ierr
         return
      else
@@ -1189,7 +1498,7 @@ contains
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: recv_ - Point-to-point receive of a List variable...
+! !IROUTINE: recv_ - MPI Point-to-Point Receive for the List Type
 !
 ! !DESCRIPTION:  This routine receives the output {\tt List} argument 
 ! {\tt outList} from processor {\tt source} on the communicator associated
@@ -1212,9 +1521,8 @@ contains
 !
 ! !USES:
 !
-
-      use m_stdio
-      use m_die, only : MP_perr_die
+      use m_stdio, only : stderr
+      use m_die,   only : MP_perr_die
 
       use m_mpif90
 
@@ -1236,7 +1544,7 @@ contains
 ! !REVISION HISTORY:
 ! 	06Jun01 - J.W. Larson - initial version.
 ! 	11Jun01 - R. Jacob - small bug fix; status in MPI_RECV
-!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize status
+! 	13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize status
 !                 (if present).
 !EOP ___________________________________________________________________
 
@@ -1256,8 +1564,8 @@ contains
                MPstatus, ierr)
   if(ierr /= 0) then
      if(present(status)) then
-        write(stderr,*) myname_,':: MPI_RECV(length...) failed.  ierror=',&
-	     ierr
+        write(stderr,'(2a,i8)') myname_, &
+	     ':: MPI_RECV(length...) failed.  ierror=', ierr
         status = ierr
         return
      else
@@ -1274,8 +1582,8 @@ contains
                comm, MPstatus, ierr)
   if(ierr /= 0) then
      if(present(status)) then
-        write(stderr,*) myname_,':: MPI_RECV(DummStr%c...) failed.  ierror=',&
-	     ierr
+        write(stderr,'(2a,i8)') myname_, &
+	     ':: MPI_RECV(DummStr%c...) failed.  ierror=', ierr
         status = ierr
         return
      else
@@ -1293,7 +1601,7 @@ contains
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: GetSharedListIndices_
+! !IROUTINE: GetSharedListIndices_ - Index Shared Items for Two Lists
 !
 ! !DESCRIPTION:  {\tt GetSharedListIndices\_()} compares two user-
 ! supplied {\tt List} arguments {\tt List1} and {\tt Lis2} to determine:  
@@ -1301,9 +1609,9 @@ contains
 ! {\tt Indices1} and {\tt Indices2} in {\tt List1} and {\tt List2}, 
 ! respectively.
 !
-! {\bf N.B.:}  This routine returns two allocated arrays---{\tt Indices1(:)} 
-! and {\tt Indices2(:)}---which must be deallocated once the user no longer
-! needs them.  Failure to do this will create a memory leak.
+! {\bf N.B.:}  This routine returns two allocated arrays:  {\tt Indices1(:)} 
+! and {\tt Indices2(:)}.  Both of these arrays must be deallocated once they 
+! are no longer needed.  Failure to do this will create a memory leak.
 !
 ! !INTERFACE:
 
@@ -1333,7 +1641,7 @@ contains
       integer,dimension(:), pointer  :: Indices2
 
 ! !REVISION HISTORY:
-!       07Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
+! 	07Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GetSharedListIndices_'
