@@ -76,6 +76,7 @@
       public :: copy
       public :: exportToChar
       public :: CharBufferSize
+      public :: append
       public :: concatenate
       public :: bcast
       public :: send
@@ -113,6 +114,7 @@
   interface CharBufferSize ; module procedure &
       CharBufferSize_
   end interface
+  interface append ; module procedure append_ ; end interface
   interface concatenate ; module procedure concatenate_ ; end interface
   interface bcast; module procedure bcast_; end interface
   interface send; module procedure send_; end interface
@@ -1194,19 +1196,80 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
+! !IROUTINE: append_ - Append One List Onto the End of Another
+!
+! !DESCRIPTION:  This routine takes two {\tt List} arguments
+! {\tt iList1} and {\tt iList2}, and appends {\tt List2} onto 
+! the end of {\tt List1}.
+!
+! {\bf N.B.}:  There is no check for shared items in the arguments 
+! {\tt List1} and {\tt List2}.  It is the user's responsibility to 
+! ensure {\tt List1} and {\tt List2} share no items.  If this routine
+! is invoked in such a manner that {\tt List1} and {\tt List2} share
+! common items, the resultant value of {\tt List1} will produce 
+! ambiguous results for some of the {\tt List} query functions.
+!
+! {\bf N.B.}:  The outcome of this routine is order dependent.  That is,
+! the entries of {\tt iList2} will follow the {\em input} entries in 
+! {\tt iList1}.
+!
+! !INTERFACE:
+
+    subroutine append_(iList1, iList2)
+!
+! !USES:
+!
+      use m_stdio
+      use m_die, only : die
+
+      use m_mpif90
+
+      use m_String, only:  String
+      use m_String, only:  String_toChar => toChar
+      use m_String, only:  String_len
+      use m_String, only:  String_clean => clean
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+!
+      type(List),         intent(in)    :: iList2 
+
+! !INPUT/OUTPUT PARAMETERS: 
+!
+      type(List),         intent(inout) :: iList1
+
+! !REVISION HISTORY:
+!  6Aug02 - J. Larson - Initial version
+!EOP ___________________________________________________________________
+
+ character(len=*),parameter :: myname_=myname//'::append_'
+
+  type(List) :: DummyList
+
+  call copy_(DummyList, iList1)
+  call clean_(iList1)
+  call concatenate(DummyList, iList2, iList1)
+  call clean_(DummyList)
+
+ end subroutine append_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
 ! !IROUTINE: concatenate_ - Concatenates two Lists to form a Third List.
 !
 ! !DESCRIPTION:  This routine takes two input {\tt List} arguments
 ! {\tt iList1} and {\tt iList2}, and concatenates them, producing an 
 ! output {\tt List} argument {\tt oList}.
 !
+! {\bf N.B.}:  The nature of this routine is such that one must 
+! {\bf never} supply as the actual value of {\tt oList} the same 
+! value supplied for either {\tt iList1} or {\tt iList2}.
+!
 ! {\bf N.B.}:  The outcome of this routine is order dependent.  That is,
 ! the entries of {\tt iList2} will follow {\tt iList1}.
-!
-! {\bf N.B.}:  The outcome of this routine, {\tt oList} on non-root
-! processes, represents allocated memory.  When this {\tt List} is
-! no longer needed, it must be deallocated by invoking the routine 
-! {\tt List\_clean()}.  Failure to do so will cause a memory leak.
 !
 ! !INTERFACE:
 
@@ -1220,8 +1283,7 @@
       use m_mpif90
 
       use m_String, only:  String
-      use m_String, only:  String_toChar => toChar
-      use m_String, only:  String_len
+      use m_String, only:  String_init => init
       use m_String, only:  String_clean => clean
 
       implicit none
@@ -1249,10 +1311,9 @@
 
  character(len=*),parameter :: myname_=myname//'::concatenate_'
 
- type(String) :: iStr1, iStr2
- character( len(iList1%bf) ) :: iChr1
- character( len(iList2%bf) ) :: iChr2
- character( len(iList1%bf) + len(iList2%bf) + 1 ) :: oChr
+ character, dimension(:), allocatable :: CatBuff
+ integer :: CatBuffLength, i, ierr, Length1, Length2
+ type(String) :: CatString
 
        ! First, handle the case of either iList1 and/or iList2 being
        ! null
@@ -1261,40 +1322,56 @@
 
      if((nitem_(iList1) == 0) .and. (nitem_(iList2) == 0)) then
 	call init_(oList,'')
-     endif
-
-     if(nitem_(iList1) == 0) then
-	call copy_(oList, iList2)
-     endif
-
-     if(nitem_(iList2) == 0) then
-	call copy_(oList,iList1)
+     else
+	if((nitem_(iList1) == 0) .and. (nitem_(iList2) > 0)) then
+	   call copy_(oList, iList2)
+	endif
+	if((nitem_(iList1) > 0) .and. (nitem_(iList2) == 0)) then
+	   call copy_(oList,iList1)
+	endif
      endif
 
   else ! both lists are non-null
 
-       ! Step one:  convert Lists to Strings
+       ! Step one:  Get lengths of character buffers of iList1 and iList2:
 
-     call getall_(iStr1, iList1)
-     call getall_(iStr2, iList2)
+     Length1 = CharBufferSize_(iList1)
+     Length2 = CharBufferSize_(iList2)
 
-       ! Step two:  convert Strings to CHARACTER variables
+       ! Step two:  create CatBuff(:) as workspace
 
-     iChr1 = String_toChar(iStr1)
-     iChr2 = String_toChar(iStr2)
+     CatBuffLength =  Length1 + Length2 + 1
+     allocate(CatBuff(CatBuffLength), stat=ierr)
+     if(ierr /= 0) then
+	write(stderr,'(2a,i8)') myname_, &
+	     ':: FATAL--allocate(CatBuff(...) failed.  ierr=',ierr
+	call die(myname_)
+     endif
 
        ! Step three:  concatenate CHARACTERs with the colon separator
+       ! into CatBuff(:)
 
-     oChr = trim(iChr1) // ':' // trim(iChr2)
+     do i=1,Length1
+	CatBuff(i) = iList1%bf(i)
+     end do
 
-       ! Step four:  initialize oList from a CHARACTER
+     CatBuff(Length1 + 1) = ':'
 
-     call init_(oList, trim(oChr))
+     do i=1,Length2
+	CatBuff(Length1 + 1 + i) = iList2%bf(i)
+     end do
+
+       ! Step four:  initialize a String CatString:
+
+     call String_init(CatString, CatBuff)
+
+       ! Step five:  initialize oList:
+
+     call  initStr_(oList, CatString)
 
        ! The concatenation is complete.  Now, clean up
 
-     call String_clean(iStr1)
-     call String_clean(iStr2)
+     call String_clean(CatString)
 
   endif
 

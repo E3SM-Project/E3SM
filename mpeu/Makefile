@@ -46,6 +46,7 @@ SRCS_F90	= m_IndexBin_char.F90		\
 		  m_rankMerge.F90		\
 		  m_realkinds.F90		\
 		  m_stdio.F90			\
+		  m_TraceBack.F90		\
 		  m_zeit.F90			
 
 SRCS_ALL	= $(SRCS_f)		\
@@ -104,6 +105,7 @@ MODS_OBJ        = m_chars.o		\
 		  m_zeit.o              \
                   m_FileResolv.o        \
                   m_MergeSorts.o	\
+                  m_TraceBack.o		\
 		  assert.H
 
 include Makefile.rules
