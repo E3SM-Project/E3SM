@@ -60,6 +60,9 @@
   real :: step_weight
   integer :: num_steps
 
+! Character variable used as a data type flag:
+  character*7 :: data_flag
+
 
         ! Sanity check of arguments:
 
@@ -84,7 +87,8 @@
   if(Accumulator_nRAttr(aC) /= 0) then ! Accumulate only if fields 
                                        ! are present
 
-     call SharedAttrIndexList(aV, aC, 'REAL', num_indices, &
+     data_flag = 'REAL'
+     call SharedAttrIndexList(aV, aC, data_flag, num_indices, &
 	                      aVindices, aCindices)
 
      if(num_indices /= 0) then
@@ -112,8 +116,8 @@
 
   if(Accumulator_nIAttr(aC) /= 0) then ! Accumulate only if fields 
                                        ! are present
-
-     call SharedAttrIndexList(aV, aC, 'INTEGER', num_indices, &
+     data_flag = 'INTEGER'
+     call SharedAttrIndexList(aV, aC, data_flag, num_indices, &
 	                      aVindices, aCindices)
 
      if(num_indices /= 0) then
