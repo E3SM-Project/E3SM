@@ -5,7 +5,7 @@
 ! CVS $Name$ 
 !BOP -------------------------------------------------------------------
 !
-! !MODULE: m_SpatialIntegral - Spatial Integrals and Averages
+! !MODULE: m_SpatialIntegral - Spatial Integrals and Averages using a GeneralGrid
 !
 ! !DESCRIPTION:  This module provides spatial integration and averaging 
 ! services for the MCT.  For a field $\Phi$ sampled at a point ${\bf x}$ 
@@ -1134,7 +1134,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: PairedSpatialIntegralRAttrGG_ - Two spatial integrals.
+! !IROUTINE: PairedSpatialIntegralRAttrGG_ - Do two spatial integrals at once.
 !
 ! !DESCRIPTION:
 ! This routine computes spatial integrals of the {\tt REAL} attributes
@@ -1296,8 +1296,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: PairedSpatialAverageRAttrGG_ - Paired spatial averages on 
-! {\tt GeneralGrids}
+! !IROUTINE: PairedSpatialAverageRAttrGG_ - Do two spatial averages at once.
 !
 ! !DESCRIPTION:
 ! This routine computes spatial averages of the {\tt REAL} attributes
@@ -1443,7 +1442,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: PairedMaskedIntegralRAttrGG_ - Paired masked integrals.
+! !IROUTINE: PairedMaskedIntegralRAttrGG_ - Do two masked integrals at once.
 !
 ! !DESCRIPTION:
 ! This routine computes a pair of masked spatial integrals of the {\tt REAL} 
@@ -1717,7 +1716,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: PairedMaskedAverageRAttrGG_ - Paired masked averages.
+! !IROUTINE: PairedMaskedAverageRAttrGG_ - Do two masked averages at once.
 !
 ! !DESCRIPTION:
 ! This routine computes a pair of masked spatial averages of the {\tt REAL} 
