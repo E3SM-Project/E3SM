@@ -384,7 +384,7 @@
 ! Storage arrays for Remote GlobalSegMap data:
   integer, dimension(:), allocatable :: start, length, pe_loc
 
-  integer :: ierr, myID, ngseg, remote_root
+  integer :: myID, ngseg, remote_root
   integer :: local_gsize, remote_gsize
 
       ! Determine rank on local communicator:
