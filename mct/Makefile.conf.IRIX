@@ -62,9 +62,9 @@ _lMPIlog	= -lfmpi -llmpi -lpmpi
 _lMPItrace	= -lfmpi -ltmpi -lpmpi
 _lMPIanime	= -lfmpi -lampi -lpmpi -lmpe -lX11 -lm
 
-_LMPI		= -L/ford1/local/$(_IRIX)/mpi/lib/$(LABI)/ch_p4
+_LMPI		=
 _lMPI		= -lmpi
-_IMPI		= -I/ford1/local/$(_IRIX)/mpi/include
+_IMPI		=
 
 # This module requires ../mpeu module
 
@@ -91,7 +91,7 @@ _A		= $(_ABI) $(_ISA)
 _O3		= -O3
 _O2		= -O2
 _O1		= -O1
-_Od		= -check_bounds -trapuv
+_Od		= -g -check_bounds -trapuv
 _O		= -O3
 
 # Number representations
