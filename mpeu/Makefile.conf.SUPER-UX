@@ -34,24 +34,13 @@ _Dnod		=
 # Environments
 # ============
 
-# If use the MPICH implementation
-
-_LMPI		= 
-_lMPI		= 
-_lMPIlog	= 
-_lMPItrace	= 
-_lMPIanime	= 
-_IMPI		= 
-
 # If use the vendor implementation
 
 _LMPI		= 
 _lMPI		= 
 _IMPI		= -I/usr/include
 
-
-#_R		= -r4
-#_R		= -r8
+#_R		= -ew
 
 _Iconf		= $(_IMPI)
 _I		= $(_IMPI)
@@ -64,9 +53,7 @@ F77		= f90
 F90		= f90
 FC		= $(F90)
 
-FFLAGS		= $(_R) -C hopt
-FFLAGS_O1	= $(_R) -C hopt
-FFLAGS_O2	= $(_R) -C hopt
+FFLAGS		= $(_R) -C hopt -Wf"-pvctl noassoc"
 CFLAGS		= -O $(_Dsys)
 
 ZIP		= /usr/bin/compress
