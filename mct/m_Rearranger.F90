@@ -46,24 +46,6 @@
 	 integer :: TrgAVsize
       end type Rearranger
 
-      ! declare a pointer structure for the real data
-      type :: rptr
-	 real,dimension(:),pointer :: pr
-      end type rptr
-
-      ! declare a pointer structure for the integer data
-      type :: iptr
-	 integer,dimension(:),pointer :: pi
-      end type iptr
-
-      ! declare arrays of pointers to hold data to be sent
-      type(rptr),dimension(:),allocatable :: rp1
-      type(iptr),dimension(:),allocatable :: ip1
-      
-      ! declare arrays of pointers to hold data to be received
-      type(rptr),dimension(:),allocatable :: rp2
-      type(iptr),dimension(:),allocatable :: ip2
-      !..........................................................!
 
       ! Definition of interfaces for the methods for the RearrangerX:
 
