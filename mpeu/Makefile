@@ -3,12 +3,7 @@
 MODULE		= mpeu
 
 SRCS_mks	= Makefile			\
-		  Makefile.conf.AIX		\
-		  Makefile.conf.IRIX		\
-		  Makefile.conf.IRIX64		\
-		  Makefile.conf.OSF1		\
-		  Makefile.conf.T3E		\
-		  Makefile.conf.UNICOS		\
+		  Makefile.conf.in              \
 		  Makefile.dependency		\
 		  Makefile.rules		\
 		  configure			\
@@ -21,8 +16,6 @@ SRCS_mks	= Makefile			\
 SRCS_C		= get_zeits.c
 
 SRCS_F		= m_mpif.F
-
-SRCS_f90        = m_FileResolv.f90
 
 SRCS_F90	= m_IndexBin_char.F90		\
 		  m_IndexBin_integer.F90	\
@@ -37,6 +30,7 @@ SRCS_F90	= m_IndexBin_char.F90		\
 		  m_chars.F90			\
 		  m_die.F90			\
 		  m_dropdead.F90		\
+                  m_FileResolv.F90		\
 		  m_flow.F90			\
 		  m_inpak90.F90			\
 		  m_ioutil.F90			\
@@ -66,25 +60,6 @@ ALL_TARGETS	= libeu.a lib$(MODULE).a $(MODULE)
 SUBD_TARGETS	= mpi0
 CLEAN_FILES	= mpif.h
 
-#	Try to define _Ddft, _Dsys and _Dnod in proper Makefiles.
-#
-#		1) _D for the make() time macros, as in
-#		make _D="-Dxxx ..."
-#
-#		2) _Ddft for the default global macros defined
-#		in the main Makefile.
-#
-#		3) _Dsys for the OS dependent macros defined
-#		in the main Makefile and can be redefined in
-#		the Makefile.conf file.
-#
-#		4) _Dnod for the OS or the node dependent
-#		macros defined in the Makefile.conf file.
-
-_Ddft	=
-_Dsys	= -Dsys`uname -s`
-
-MUPDATE		= sh UCupdate.sh
 M		= mod
 MODS_OBJ        = m_chars.o		\
 		  m_die.o		\
@@ -111,23 +86,7 @@ MODS_OBJ        = m_chars.o		\
 include Makefile.rules
 include Makefile.conf
 
-_DF	= $(_Ddft) $(_Dsys) $(_Dnod) $(_D)
-_I	= $(_Inull) -I. $(_Iconf)
-
 # targets
-
-# fvPSAS: install library and modules
-export: libeu.a libmpeu.a 
-	$(MKDIR) $(CORELIB) $(COREINC)/mpeu
-	$(CP) libeu.a libmpeu.a     $(CORELIB)
-	$(CP) *.[Mm][Oo][Dd]   $(COREINC)/mpeu
-
-# fvPSAS: distclean brings source tree to pre-configuration state
-distclean:          
-	make clean
-	$(RM) libeu.a libmpeu.a  mpeu/*.[Mm][Oo][Dd]  
-	make unconf
-	./unconfigure
 
 libeu.a: $(OBJS_ALL) mpi0/libmpi0.a
 	$(RM) $@
