@@ -3,12 +3,6 @@
 MODULE		= mpi0
 
 SRCS_mks	= Makefile			\
-		  Makefile.conf.AIX		\
-		  Makefile.conf.IRIX		\
-		  Makefile.conf.IRIX64		\
-		  Makefile.conf.OSF1		\
-		  Makefile.conf.T3E		\
-		  Makefile.conf.UNICOS		\
 		  Makefile.dependency		\
 		  Makefile.rules		\
 		  configure			\
@@ -55,30 +49,8 @@ ARCH_TARGETS	= $(SRCS_mks) $(SRCS_ALL) $(SRCS_H)
 ALL_TARGETS	= lib$(MODULE).a
 CLEAN_FILES	= mpif.h
 
-#	Try to define _Ddft, _Dsys and _Dnod in proper Makefiles.
-#
-#		1) _D for the make() time macros, as in
-#		make _D="-Dxxx ..."
-#
-#		2) _Ddft for the default global macros defined
-#		in the main Makefile.
-#
-#		3) _Dsys for the OS dependent macros defined
-#		in the main Makefile and can be redefined in
-#		the Makefile.conf file.
-#
-#		4) _Dnod for the OS or the node dependent
-#		macros defined in the Makefile.conf file.
-
-_Ddft	=
-_Dsys	= -Dsys`uname -s`
-
 include Makefile.rules
 include Makefile.conf
-
-_DF	= $(_Ddft) $(_Dsys) $(_Dnod) $(_D)
-
-_I	= $(_Inull) -I. $(_Iconf)
 
 # targets
 
