@@ -499,7 +499,7 @@
 
   call AttrVect_init(outAV, inAV, lsize=AttrVect_lsize(inAV))
 
-  if(associated(inAV%rAttr)) then ! invoke MPI_AllReduce() for the real
+  if(associated(inAV%rList%lc)) then ! invoke MPI_AllReduce() for the real
                                   ! attribute data.
      BufferSize = AttrVect_lsize(inAV) * AttrVect_nRAttr(inAV)
      call MPI_AllReduce(inAV%rAttr, outAV%rAttr, BufferSize, &
@@ -513,7 +513,7 @@
      endif
   endif ! if(associated(inAV%rAttr)...
 
-  if(associated(inAV%iAttr)) then ! invoke MPI_AllReduce() for the 
+  if(associated(inAV%iList%lc)) then ! invoke MPI_AllReduce() for the 
                                   ! integer attribute data.
      BufferSize = AttrVect_lsize(inAV) * AttrVect_nIAttr(inAV)
      call MPI_AllReduce(inAV%iAttr, outAV%iAttr, BufferSize, &
