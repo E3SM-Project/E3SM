@@ -17,6 +17,7 @@ m_GlobalSegMap.tex      \
 m_GlobalToLocal.tex	\
 m_MCTWorld.tex		\
 m_MatAttrVectMul.tex    \
+m_Merge.tex		\
 m_NBSend.tex		\
 m_Navigator.tex         \
 m_Rearranger.tex	\
