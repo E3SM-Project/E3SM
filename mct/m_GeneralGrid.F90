@@ -35,7 +35,7 @@
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
-      use m_AttrVect, only : AttrVect_init => clean
+      use m_AttrVect, only : AttrVect_clean => clean
 
       use m_AttrVect, only : AttrVect_Sort => Sort
       use m_AttrVect, only : AttrVect_Permute => Permute
@@ -88,6 +88,8 @@
 !                 dimensions (lengths) and area/volume weights.
 !       15Jan01 - J.W. Larson implemented new GeneralGrid type 
 !                 definition and added numerous API's.
+!       17Jan01 - J.W. Larson fixed minor bug in module header use
+!                 statement.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_GeneralGrid'
