@@ -32,8 +32,9 @@
 #EOP
 #-----------------------------------------------------------------------
 
-_Dsys		= -DsysLinux
+_Dsys		= -DSYSLinux
 _Dnod		=
+_DF             = $(_Dsys) $(_Dnod)
 
 # Environments
 # ============

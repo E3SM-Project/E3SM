@@ -26,8 +26,9 @@
 #		- Cleaned _Dnod for this library
 #-----------------------------------------------------------------------
 
-_Dsys	= -DsysUNICOS
+_Dsys	= -DSYSUNICOS
 _Dnod	=
+_DF             = $(_Dsys) $(_Dnod)
 
 # Environments
 # ============
