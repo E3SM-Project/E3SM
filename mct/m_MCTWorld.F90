@@ -165,6 +165,11 @@
   integer,dimension(:),pointer :: apoint
 ! ------------------------------------------------------------------
 
+! Check that ncomps is a legal value
+  if(ncomps < 1) then
+     call die(myname_, "argument ncomps can't less than one!",ncomps)
+  endif
+
 ! only one of myid and myids should be present
   if(present(myid) .and. present(myids)) then
     write(stderr,'(2a)') myname_, &
@@ -388,6 +393,11 @@
 !
   character(len=*),parameter :: myname_=myname//'::initr_'
   integer :: ier,Gsize,myGid,MCTcomm,i,j
+
+! Check that ncomps is a legal value
+  if(ncomps < 1) then
+     call die(myname_, "argument ncomps can't less than one!",ncomps)
+  endif
 
 ! determine overall size
   call MP_comm_size(globalcomm,Gsize,ier)
