@@ -54,7 +54,7 @@
 !           optional argument in recv_ to do the same thing.
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_Transfer'
+  character(len=*),parameter :: myname='MCT::m_Transfer'
 
   contains
 
@@ -347,10 +347,10 @@ end subroutine send_
 ! the data transfer.  DefaultTag will be used otherwise. {\tt Tag} must be
 ! the same in the matching {\tt send\_}
 !
-! If data for a point is coming from more than one process, {\tt recv\_}
+! If data for a grid point is coming from more than one process, {\tt recv\_}
 ! will overwrite the duplicate values leaving the last received value
-! in the output.  If the optional argument {\tt Sum} is invoked, the output
-! will contain the sum of any duplicate values.
+! in the output aV.  If the optional argument {\tt Sum} is invoked, the output
+! will contain the sum of any duplicate values received for the same grid point.
 !
 ! {\bf N.B.:} The {\tt AttrVect} argument in the corresponding
 ! {\tt send\_} call is assumed to have exactly the same attributes
