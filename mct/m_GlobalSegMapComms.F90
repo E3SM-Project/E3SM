@@ -233,6 +233,7 @@
   character(len=*),parameter :: myname_=myname//'::recv_'
 
   integer :: BufferSize, nSegs, gSize, compID, ierr
+  integer :: MPstatus(MP_STATUS_SIZE)
   integer, dimension(:), pointer :: RecvBuffer
 
   if(present(status)) status = 0 ! the success value
@@ -240,7 +241,7 @@
        ! Receive buffer size
 
   call MPI_RECV(BufferSize, 1, MP_Type(BufferSize), sourceID, TagBase, &
-                comm, ierr)
+                comm, MPstatus, ierr)
   if(ierr /= 0) then
      call MP_perr_die(myname_, 'Receive buffer size failed',ierr)
   endif
@@ -257,7 +258,7 @@
        ! Receive the buffer...
 
   call MPI_RECV(RecvBuffer, BufferSize, MP_Type(RecvBuffer(1)), sourceID, &
-                TagBase+1, comm, ierr)
+                TagBase+1, comm, MPstatus, ierr)
   if(ierr /= 0) then
      call MP_perr_die(myname_, 'Receive of buffer failed',ierr)
   endif
@@ -378,7 +379,7 @@
 
        ! Next, send the buffer size to destID so it can prepare a
        ! receive buffer of the correct size.
-       
+
   call MPI_ISEND(SendBuffer, 3, MP_Type(SendBuffer(1)), destID, TagBase, &
                 comm, reqHandle(1), ierr)
   if(ierr /= 0) then
@@ -471,6 +472,7 @@
   character(len=*),parameter :: myname_=myname//'::irecv_'
 
   integer :: ierr
+  integer :: MPstatus(MP_STATUS_SIZE)
   integer :: RecvBuffer(3)
 
   if(present(status)) status = 0 ! the success value
@@ -481,7 +483,7 @@
        ! information will be received.  Thus, this receive blocks.
 
   call MPI_RECV(RecvBuffer, 3, MP_Type(RecvBuffer(1)), sourceID, &
-                TagBase, comm, ierr)
+                TagBase, comm, MPstatus, ierr)
   if(ierr /= 0) then
      call MP_perr_die(myname_, 'Receive of RecvBuffer failed',ierr)
   endif
@@ -505,25 +507,25 @@
 
   call MPI_IRECV(incomingGSMap%start, RecvBuffer(2), &
                 MP_Type(incomingGSMap%start(1)), &
-                sourceID, TagBase+1, comm, reqHandle(2), ierr)
+                sourceID, TagBase+1, comm, reqHandle(1), ierr)
   if(ierr /= 0) then
      call MP_perr_die(myname_, 'Send incomingGSMap%start failed',ierr)
   endif
 
   call MPI_IRECV(incomingGSMap%length, RecvBuffer(2), &
                 MP_Type(incomingGSMap%length(1)), &
-                sourceID, TagBase+2, comm, reqHandle(3), ierr)
+                sourceID, TagBase+2, comm, reqHandle(2), ierr)
   if(ierr /= 0) then
      call MP_perr_die(myname_, 'Send incomingGSMap%length failed',ierr)
   endif
 
   call MPI_IRECV(incomingGSMap%pe_loc, RecvBuffer(2), &
                 MP_Type(incomingGSMap%pe_loc(1)), &
-                sourceID, TagBase+3, comm, reqHandle(4), ierr)
+                sourceID, TagBase+3, comm, reqHandle(3), ierr)
   if(ierr /= 0) then
      call MP_perr_die(myname_, 'Send incomingGSMap%pe_loc failed',ierr)
   endif
- 
+
  end subroutine irecv_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
