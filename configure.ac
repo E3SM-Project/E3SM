@@ -159,18 +159,14 @@ F90FLAGS="$OLDF90FLAGS"
 AC_F90_C_NAME_MANGLING
 case $ac_cv_f90_mangling in
   "lower case, underscore") 
-	 name_mangling="FORTRAN_UNDERSCORE_"
-         ALLCFLAGS="-O $ALLCFLAGS" ;;
+	 name_mangling="FORTRAN_UNDERSCORE_";;
   "lower case, no underscore")
-	 name_mangling="FORTRAN_SAME"
-	 ALLCFLAGS="-DFORTRAN_SAME -O $ALLCFLAGS";;
+	 name_mangling="FORTRAN_SAME";;
   "upper case, no underscore")  
-	 name_mangling="FORTRAN_CAPS_"
-	 ALLCFLAGS="-DFORTRAN_CAPS_ -O $ALLCFLAGS";;
+	 name_mangling="FORTRAN_CAPS_";;
   *) 
-         name_mangling="UNKNOWN" 
-	 AC_MSG_WARN([unusual Fortran 90 name-mangling scheme])
-	 ALLCFLAGS="-O $ALLCFLAGS";;
+         name_mangling="FORTRAN_MANGLING_UNKNOWN" 
+	 AC_MSG_WARN([unknown Fortran 90 name-mangling scheme]);;
 esac
 
 # FPP AND FPPFLAGS ARE HARDCODED AS A LAST RESORT:
@@ -444,11 +440,9 @@ fi
 if echo $f90_version | grep -i mipspro >/dev/null 2>&1; then
    echo "Fortran Compiler is MIPSPro"
    CPRDEF="MIPSPRO"
+   EXTRACFLAGS="-64"
    if test -z "$OPT"; then
       OPT="-O3"
-   fi
-   if test -z "$ALLCFLAGS"; then
-      ALLCFLAGS="-64"
    fi
    if test -z "$REAL8"; then
       REAL8="-r8"
@@ -506,7 +500,7 @@ if test -z "$MACHDEFS"; then
 
    if test -z "$SYSDEF"; then
       echo "WARNING: OPERATING SYSTEM UNKNOWN"
-      SYSDEF="UNKNOWN"
+      SYSDEF="UNKNOWNOS"
    fi
 
    MACHDEFS="-DSYS$SYSDEF -DCPR$CPRDEF"
@@ -532,6 +526,13 @@ if test -z "$MACHDEFS"; then
       fi
    fi
 
+fi
+
+if test -z "$ALLCFLAGS"; then
+   ALLCFLAGS="-D$name_mangling -O"
+   if test -n "$EXTRACFLAGS"; then
+      ALLCFLAGS="-D$name_mangling -O $EXTRACFLAGS"
+   fi
 fi
 
 # SET HARDCODED VARIABLES AS A LAST RESORT
