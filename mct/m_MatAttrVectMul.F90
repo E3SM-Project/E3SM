@@ -23,6 +23,10 @@
 ! type is used to store the elements of {\bf M} and all information needed
 ! to coordinate data redistribution and reduction of partial sums.
 !
+! {\bf N.B.:} The matrix-vector multiplication routines in this module 
+! process only the {\bf real} attributes of the {\tt AttrVect} arguments
+! corresponding to {\bf x} and {\bf y}.  They ignore the integer attributes.
+!
 ! !INTERFACE:
 
  module m_MatAttrVectMul
@@ -33,7 +37,7 @@
                                   ! Attribute Vector multipy API
 
     interface sMatAvMult   ; module procedure &
-        sMatAvMult_xlyl_,  &
+        sMatAvMult_DataLocal_, &
         sMatAvMult_sMPlus_
     end interface
 
@@ -59,20 +63,28 @@
 !     Math + Computer Science Division / Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: sMatAvMult_xlyl_() -- Purely local matrix-vector multiply
+! !IROUTINE: sMatAvMult_DataLocal -- Purely local matrix-vector multiply
 !
 ! !DESCRIPTION:
 !
-! The sparse matrix-vector multiplication routine {\tt sMatAvMult\_xlyl\_()} 
-! operates on the assumption of total data locality.  That is, the input 
-! {\tt AttrVect} {\tt xaV} contains all the column data required by the 
-! distributed {\tt SparseMatrix} {\tt sMat}, and the row data in {\tt sMat} 
-! corresponds to the local index mapping of the output {\tt AttrVect} 
-! {\tt yaV}.
+! The sparse matrix-vector multiplication routine {\tt sMatAvMult\_DataLocal\_()} 
+! operates on the assumption of total data locality, which is equivalent 
+! to the following two conditions:
+! \begin{enumerate}
+! \item The input {\tt AttrVect} {\tt xAV} contains all the values referenced 
+! by the local column indices stored in the input {\tt SparsMatrix} argument 
+! {\tt sMat}; and
+! \item The output {\tt AttrVect} {\tt yAV} contains all the values referenced 
+! by the local row indices stored in the input {\tt SparsMatrix} argument 
+! {\tt sMat}.
+! \end{enumerate}
+! The multiplication occurs for each of the common {\tt REAL} attributes 
+! shared by {\tt xAV} and {\tt yAV}.  This routine is capable of 
+! cross-indexing the attributes and performing the necessary multiplications.
 !
 ! !INTERFACE:
 
- subroutine sMatAvMult_xlyl_(xaV, sMat, yaV, InterpInts)
+ subroutine sMatAvMult_DataLocal_(xAV, sMat, yAV)
 !
 ! !USES:
 !
@@ -85,10 +97,8 @@
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_zero => zero
-      use m_AttrVect, only : AttrVect_nIAttr => nIAttr
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
       use m_AttrVect, only : AttrVect_indexRA => indexRA
-      use m_AttrVect, only : AttrVect_indexIA => indexIA
       use m_AttrVect, only : SharedAttrIndexList
 
       use m_SparseMatrix, only : SparseMatrix
@@ -100,13 +110,12 @@
 
 ! !INPUT PARAMETERS:
 
-      type(AttrVect),     intent(in)    :: xaV
+      type(AttrVect),     intent(in)    :: xAV
       type(SparseMatrix), intent(in)    :: sMat
-      logical, optional,  intent(in)    :: InterpInts
 
 ! !INPUT/OUTPUT PARAMETERS:
 
-      type(AttrVect),     intent(inout) :: yaV
+      type(AttrVect),     intent(inout) :: yAV
 
 ! !REVISION HISTORY:
 ! 15Jan01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
@@ -128,7 +137,7 @@
 !           decompositions where a process may own zero points.
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname_=myname//'::sMatAvMult_xlyl_'
+  character(len=*),parameter :: myname_=myname//'::sMatAvMult_DataLocal_'
 
 ! Matrix element count:
   integer :: num_elements
@@ -140,7 +149,7 @@
   integer :: num_indices
 
 ! Overlapping attribute index storage arrays:
-  integer, dimension(:), pointer :: xaVindices, yaVindices
+  integer, dimension(:), pointer :: xAVindices, yAVindices
 
 ! Temporary variables for multiply do-loop
   integer :: row, col
@@ -164,13 +173,13 @@
 
        ! zero the output AttributeVector
 
-  call AttrVect_zero(yaV)
+  call AttrVect_zero(yAV)
 
-       ! Regridding Operations:  First the REAL attributes:
+       ! Multiplication sMat by REAL attributes in xAV:
 
-  if(List_identical(xaV%rList, yaV%rList)) then ! no cross-indexing
+  if(List_identical(xAV%rList, yAV%rList)) then ! no cross-indexing
 
-     num_indices = List_nitem(xaV%rList)
+     num_indices = List_nitem(xAV%rList)
   
        ! loop over matrix elements
 
@@ -184,7 +193,7 @@
 
 	do m=1,num_indices
 
-	   yaV%rAttr(m,row) = yaV%rAttr(m,row) + wgt * xaV%rAttr(m,col)
+	   yAV%rAttr(m,row) = yAV%rAttr(m,row) + wgt * xAV%rAttr(m,col)
 
 	end do ! m=1,num_indices
 
@@ -193,8 +202,8 @@
   else
 
      data_flag = 'REAL'
-     call SharedAttrIndexList(xaV, yaV, data_flag, num_indices, &
-	                      xaVindices, yaVindices)
+     call SharedAttrIndexList(xAV, yAV, data_flag, num_indices, &
+	                      xAVindices, yAVindices)
 
        ! loop over matrix elements
 
@@ -208,83 +217,21 @@
 
 	do m=1,num_indices
 
-	   yaV%rAttr(yaVindices(m),row) = &
-		yaV%rAttr(yaVindices(m),row) + &
-		wgt * xaV%rAttr(xaVindices(m),col)
+	   yAV%rAttr(yAVindices(m),row) = &
+		yAV%rAttr(yAVindices(m),row) + &
+		wgt * xAV%rAttr(xAVindices(m),col)
 
 	end do ! m=1,num_indices
 
      end do ! n=1,num_elements
 
-     deallocate(xaVindices, yaVindices, stat=ierr)
-     if(ierr /= 0) call die(myname_,'first deallocate(xaVindices...',ierr)
+     deallocate(xAVindices, yAVindices, stat=ierr)
+     if(ierr /= 0) call die(myname_,'first deallocate(xAVindices...',ierr)
 
-  endif ! if(List_identical(xaV%rAttr, yaV%rAttr))...
+  endif ! if(List_identical(xAV%rAttr, yAV%rAttr))...
+        ! And we are finished!
 
-       ! Regrid the INTEGER Attributes (if desired):
-
-  if(present(InterpInts)) then  ! if this argument is not present, skip...
-
-     if(InterpInts) then
-
-	if(List_identical(xaV%iList, yaV%iList)) then ! no cross-indexing
-
-	   num_indices = List_nitem(xaV%iList)
-  
-       ! loop over matrix elements
-
-	   do n=1,num_elements
-
-	      row = sMat%data%iAttr(irow,n)
-	      col = sMat%data%iAttr(icol,n)
-	      wgt = sMat%data%rAttr(iwgt,n)
-
-	      ! loop over attributes being regridded.
-
-	      do m=1,num_indices
-
-		 yaV%iAttr(m,row) = yaV%iAttr(m,row) + wgt * xaV%iAttr(m,col)
-
-	      end do ! m=1,num_indices
-
-	   end do ! n=1,num_elements
-
-	else ! must do attribute cross-indexing
-
-	   data_flag = 'INTEGER'
-	   call SharedAttrIndexList(xaV, yaV, data_flag, num_indices, &
-		                    xaVindices, yaVindices)
-
-       ! loop over matrix elements
-
-	   do n=1,num_elements
-
-	      row = sMat%data%iAttr(irow,n)
-	      col = sMat%data%iAttr(icol,n)
-	      wgt = sMat%data%rAttr(iwgt,n)
-
-	      ! loop over attributes being regridded.
-
-	      do m=1,num_indices
-
-		 yaV%iAttr(yaVindices(m),row) = &
-		      yaV%iAttr(yaVindices(m),row) + &
-                      wgt * xaV%iAttr(xaVindices(m),col)
-
-	      end do ! m=1,num_indices
-
-	   end do ! n=1,num_elements
-
-	   deallocate(xaVindices, yaVindices, stat=ierr)
-	   if(ierr /= 0) call die(myname_,'second deallocate(xaVindices...',ierr)
-
-	endif ! if(List_identical(xaV%iList, yaV%iList))...
-
-     endif ! if(InterpInts)...
-
-  endif ! if(present(InterpInts))...
-     
- end subroutine sMatAvMult_xlyl_
+ end subroutine sMatAvMult_DataLocal_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !     Math + Computer Science Division / Argonne National Laboratory   !
@@ -367,14 +314,14 @@
        ! Rearrange data from x to get x'
      call Rearrange(xAV, xPrimeAV, sMatPlus%XToXPrime)
        ! Perform perfectly data-local multiply y = Mx'
-     call sMatAvMult_xlyl_(xPrimeAV, sMatPlus%Matrix, yaV)
+     call sMatAvMult_DataLocal_(xPrimeAV, sMatPlus%Matrix, yaV)
        ! Clean up space occupied by x'
      call AttrVect_clean(xPrimeAV, ierr)
   case(Yonly)
        ! Create intermediate AttrVect for y'
      call AttrVect_init(yPrimeAV, yAV, sMatPlus%YPrimeLength)
        ! Perform perfectly data-local multiply y' = Mx
-     call sMatAvMult_xlyl_(xAV, sMatPlus%Matrix, yPrimeAV)
+     call sMatAvMult_DataLocal_(xAV, sMatPlus%Matrix, yPrimeAV)
        ! Rearrange/reduce partial sums in y' to get y
      call Rearrange(yPrimeAV, yAV, sMatPlus%YPrimeToY, .TRUE.)
        ! Clean up space occupied by y'
@@ -387,7 +334,7 @@
        ! Rearrange data from x to get x'
      call Rearrange(xAV, xPrimeAV, sMatPlus%XToXPrime)
        ! Perform perfectly data-local multiply y' = Mx'
-     call sMatAvMult_xlyl_(xPrimeAV, sMatPlus%Matrix, yPrimeAV)
+     call sMatAvMult_DataLocal_(xPrimeAV, sMatPlus%Matrix, yPrimeAV)
        ! Rearrange/reduce partial sums in y' to get y
      call Rearrange(yPrimeAV, yAV, sMatPlus%YPrimeToY, .TRUE.)
        ! Clean up space occupied by x'

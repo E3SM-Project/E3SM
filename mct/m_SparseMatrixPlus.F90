@@ -356,6 +356,183 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
+! !IROUTINE: initDistributed_ - Creation and Initializtion from the Root
+!
+! !DESCRIPTION:  
+! This routine creates an {\tt SparseMatrixPlus} {\tt sMatPlus} using 
+! the following elements:
+! \begin{itemize}
+! \item A {\tt SparseMatrix} (the input argument {\tt sMat}), whose 
+! elements all reside only on the {\tt root} process of the MPI 
+! communicator with an integer handle defined by the input {\tt INTEGER} 
+! argument {\tt comm};
+! \item A {\tt GlobalSegMap} (the input argument {\tt xGSMap}) describing
+! the domain decomposition of the vector {\bf x} on the communicator 
+! {\tt comm};
+! \item A {\tt GlobalSegMap} (the input argument {\tt yGSMap}) describing
+! the domain decomposition of the vector {\bf y} on the communicator 
+! {\tt comm};
+! \item The matrix-vector multiplication parallelization strategy.  This
+! is set by the input {\tt CHARACTER} argument {\tt strategy}, which must 
+! have value corresponding to one of the following public data members 
+! defined in the declaration section of this module.  Acceptable values 
+! for use in this routine are: {\tt Xonly} and {\tt Yonly}.
+! \end{itemize}
+!
+! !INTERFACE:
+
+ subroutine initDistributed_(sMatPlus, sMat, xGSMap, yGSMap, strategy, &
+                          root, comm, ComponentID)
+
+! !USES:
+
+      use m_die
+      use m_stdio
+      use m_mpif90
+
+      use m_GlobalSegMap, only : GlobalSegMap
+      use m_GlobalSegMap, only : GlobalSegMap_gsize => gsize
+      use m_GlobalSegMap, only : GlobalSegMap_lsize => lsize
+      use m_GlobalSegMap, only : GlobalSegMap_clean => clean
+
+      use m_SparseMatrix, only : SparseMatrix
+      use m_SparseMatrix, only : SparseMatrix_init => init
+      use m_SparseMatrix, only : SparseMatrix_nRows => nRows
+      use m_SparseMatrix, only : SparseMatrix_nCols => nCols
+      use m_SparseMatrix, only : SparseMatrix_Copy => Copy
+
+      use m_SparseMatrixComms, only : SparseMatrix_ScatterByRow => ScatterByRow
+      use m_SparseMatrixComms, only : SparseMatrix_ScatterByColumn => &
+                                                                ScatterByColumn
+
+      use m_SparseMatrixToMaps, only : SparseMatrixToXGlobalSegMap
+      use m_SparseMatrixToMaps, only : SparseMatrixToYGlobalSegMap
+
+      use m_GlobalToLocal, only : GlobalToLocalMatrix
+
+      use m_Rearranger, only : Rearranger
+      use m_Rearranger, only : Rearranger_init => init
+
+      implicit none
+
+! !INPUT PARAMETERS:
+
+      type(GlobalSegMap),     intent(in)    :: xGSMap
+      type(GlobalSegMap),     intent(in)    :: yGSMap
+      character(len=*),       intent(in)    :: strategy
+      integer,                intent(in)    :: root
+      integer,                intent(in)    :: comm
+      integer,                intent(in)    :: ComponentID
+
+! !INPUT/OUTPUT PARAMETERS:
+      
+      type(SparseMatrix),     intent(inout) :: sMat
+
+! !OUTPUT PARAMETERS:
+
+      type(SparseMatrixPlus), intent(out)   :: SMatPlus
+
+! !REVISION HISTORY:
+! 30Aug02 - Jay Larson <larson@mcs.anl.gov> - API Specification
+!EOP ___________________________________________________________________
+!
+  character(len=*),parameter :: myname_=myname//'::initDistributed_'
+
+  type(GlobalSegMap) :: xPrimeGSMap, yPrimeGSMap
+
+  integer :: myID, ierr
+
+       ! Set initialization flag sMatPlus%Initialized to .FALSE.
+       ! therefore, any return from a failure in creation will 
+       ! be visible.
+
+  SMatPlus%Initialized = .FALSE.
+
+       ! Get local process ID number
+
+  call MPI_COMM_RANK(myID, comm)
+
+       ! Basic Input Argument Checks:
+
+       ! A portion of sMat (even if there are no nonzero elements in 
+       ! this local chunk) on each PE.  We must check to ensure the 
+       ! number rows and columns match the global lengths ofthe 
+       ! vectors y and x, respectively. 
+
+  if(GlobalSegMap_gsize(yGSMap) /= SparseMatrix_nRows(sMat)) then
+     write(stderr,'(3a,i8,2a,i8)') myname, &
+	  ':: FATAL--length of vector y different from row count of sMat.', &
+	  'Length of y = ',GlobalSegMap_gsize(yGSMap),' Number of rows in ',&
+	  'sMat = ',SparseMatrix_nRows(sMat)
+     call die(myname_)
+  endif
+
+  if(GlobalSegMap_gsize(xGSMap) /= SparseMatrix_nCols(sMat)) then
+     write(stderr,'(3a,i8,2a,i8)') myname, &
+	  ':: FATAL--length of vector x different from column count of sMat.', &
+	  'Length of y = ',GlobalSegMap_gsize(yGSMap),' Number of columns in ',&
+	  'sMat = ',SparseMatrix_nCols(sMat)
+     call die(myname_)
+  endif
+
+       ! Check desired parallelization strategy name for validity.  
+       ! If either of the strategies supported by this routine are
+       ! provided, initialize the appropriate component of sMatPlus.
+
+  select case(strategy)
+  case(Xonly,Yonly) ! Wrong routine
+     write(stderr,'(5a)') myname_, &
+	  ':: FATAL--inappropriate strategy "',strategy,'" for this routine.', &
+	  '  Try the MCT SparseMatrixPlus routine initFromRoot().'
+     call die(myname_)
+  case(XandY) ! This is the strategy this routine supports
+     call String_init(sMatPlus%Strategy, strategy)
+  case default ! strategy name not recognized.
+     write(stderr,'(5a)') myname_, &
+	  ':: ERROR--Invalid parallelization strategy name = ',strategy,' not ', &
+	  'recognized by this module.'
+     call die(myname_)
+  end select
+
+       ! End Argument Sanity Checks.
+
+       ! Based on the XandY parallelization strategy, build SMatPlus
+       ! First, copy Internals of sMat into sMatPlus%Matrix:
+  call SparseMatrix_Copy(sMat, sMatPlus%Matrix)
+       ! Compute GlobalSegMap associated with intermediate vector x'
+  call SparseMatrixToXGlobalSegMap(sMatPlus%Matrix, xPrimeGSMap, &
+                                   root, comm, ComponentID)
+       ! Determine length of x' from xPrimeGSMap:
+  sMatPlus%XPrimeLength = GlobalSegMap_lsize(xPrimeGSMap, comm)
+       ! Create Rearranger to assemble x' from x
+  call Rearranger_init(xGSMap, xPrimeGSMap, comm, sMatPlus%XToXPrime)
+       ! Create local column indices based on xPrimeGSMap
+  call GlobalToLocalMatrix(sMatPlus%Matrix, xPrimeGSMap, 'column', comm)
+       ! Destroy intermediate GlobalSegMap for x'
+  call GlobalSegMap_clean(xPrimeGSMap)
+       ! Compute GlobalSegMap associated with intermediate vector y'
+  call SparseMatrixToYGlobalSegMap(sMatPlus%Matrix, yPrimeGSMap, &
+	                           root, comm, ComponentID)
+       ! Determine length of y' from yPrimeGSMap:
+  sMatPlus%YPrimeLength = GlobalSegMap_lsize(yPrimeGSMap, comm)
+       ! Create Rearranger to assemble y from partial sums in y'
+  call Rearranger_init(yPrimeGSMap, yGSMap, comm, sMatPlus%YPrimeToY)
+       ! Create local row indices based on yPrimeGSMap
+  call GlobalToLocalMatrix(sMatPlus%Matrix, yPrimeGSMap, 'row', comm)
+       ! Destroy intermediate GlobalSegMap for y'
+  call GlobalSegMap_clean(yPrimeGSMap)
+
+       ! Since we've succeeded, set the SparseMatrixPlus initialization
+       ! flag sMatPlus%Initialized to .TRUE.
+
+  SMatPlus%Initialized = .TRUE.
+
+ end subroutine initDistributed_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
 ! !IROUTINE: clean_ - Destruction of a SparseMatrixPlus Object
 !
 ! !DESCRIPTION:  

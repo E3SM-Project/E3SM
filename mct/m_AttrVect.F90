@@ -133,7 +133,9 @@
        module procedure exportRListToChar_
     end interface
     interface exportIAttr; module procedure exportIAttr_; end interface
-    interface exportRAttr; module procedure exportRAttr_; end interface
+    interface exportRAttr; module procedure &
+       exportRAttr_
+    end interface
     interface importIAttr; module procedure importIAttr_; end interface
     interface importRAttr; module procedure importRAttr_; end interface
     interface Copy    ; module procedure Copy_    ; end interface
@@ -1559,7 +1561,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: exportRAttr_ - Return REAL Attribute as a Vector
+! !IROUTINE: exportRAttr_ - Return REAL Attribute as a Pointer to Array
 !
 ! !DESCRIPTION:
 ! This routine extracts from the input {\tt AttrVect} argument {\tt aV} 

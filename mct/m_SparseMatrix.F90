@@ -102,6 +102,7 @@
       public :: importLocalColumnIndices  ! Return local column indices 
                                           ! for matrix elements
       public :: importMatrixElements      ! Return matrix elements
+      public :: Copy                      ! Copy a SparseMatrix
 
       public :: GlobalNumElements ! Total number of nonzero elements
       public :: ComputeSparsity   ! Fraction of matrix that is nonzero
@@ -168,6 +169,8 @@
     interface importMatrixElements ; module procedure &
 	 importMatrixElements_ 
     end interface
+
+    interface Copy ; module procedure Copy_ ; end interface
 
     interface GlobalNumElements ; module procedure &
 	 GlobalNumElements_ 
@@ -676,6 +679,8 @@
 
  end function nCols_
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: exportGlobalRowIndices_ - Return Global Row Indices
@@ -735,6 +740,8 @@
 
  end subroutine exportGlobalRowIndices_
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: exportGlobalColumnIndices_ - Return Global Column Indices
@@ -795,6 +802,8 @@
 
  end subroutine exportGlobalColumnIndices_
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: exportLocalRowIndices_ - Return Local Row Indices
@@ -854,6 +863,8 @@
 
  end subroutine exportLocalRowIndices_
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: exportLocalColumnIndices_ - Return Local Column Indices 
@@ -914,6 +925,8 @@
 
  end subroutine exportLocalColumnIndices_
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: exportMatrixElements_ - Return Matrix Elements as Array
@@ -974,6 +987,8 @@
 
  end subroutine exportMatrixElements_
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: importGlobalRowIndices_ - Set Global Row Indices of Elements
@@ -1029,6 +1044,8 @@
 
  end subroutine importGlobalRowIndices_
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: importGlobalColumnIndices_ - Set Global Column Indices of Elements
@@ -1084,6 +1101,8 @@
 
  end subroutine importGlobalColumnIndices_
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: importLocalRowIndices_ - Set Local Row Indices of Elements
@@ -1139,6 +1158,8 @@
 
  end subroutine importLocalRowIndices_
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: importLocalColumnIndices_ - Set Local Column Indices of Elements
@@ -1194,6 +1215,8 @@
 
  end subroutine importLocalColumnIndices_
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: importMatrixElements_ - Import Non-zero Matrix Elements
@@ -1249,6 +1272,68 @@
   call AttrVect_importRAttr(sMat%data, 'weight', inVect, lsize)
 
  end subroutine importMatrixElements_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: Copy_ - Create a Copy of an Input SparseMatrix
+!
+! !DESCRIPTION:
+! This routine creates a copy of the input {\tt SparseMatrix} argument 
+! {\tt sMat}, returning it as the output {\tt SparseMatrix} argument 
+! {\tt sMatCopy}.
+!
+! {\bf N.B.:}  The output argument {\tt sMatCopy} represents allocated 
+! memory the user must deallocate when it is no longer needed.  The 
+! MCT routine to use for this purpose is {\tt clean()} from this module.
+!
+! !INTERFACE:
+
+ subroutine Copy_(sMat, sMatCopy)
+
+!
+! !USES:
+!
+      use m_die
+      use m_stdio
+
+      use m_AttrVect,      only : AttrVect
+      use m_AttrVect,      only : AttrVect_init => init
+      use m_AttrVect,      only : AttrVect_lsize => lsize
+      use m_AttrVect,      only : AttrVect_Copy => Copy
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      type(SparseMatrix), intent(in) :: sMat
+
+! !OUTPUT PARAMETERS: 
+
+      type(SparseMatrix), intent(out) :: sMatCopy
+
+! !REVISION HISTORY:
+! 27Sep02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::Copy_'
+
+       ! Step one:  copy the integer components of sMat:
+
+  sMatCopy%nrows = sMat%nrows
+  sMatCopy%ncols = sMat%ncols
+
+       ! Step two:  Initialize the AttrVect sMatCopy%data off of sMat:
+
+  call AttrVect_init(sMatCopy%data, sMat%data, AttrVect_lsize(sMat%data))
+
+       ! Step three:  Copy sMat%data to sMatCopy%data:
+
+  call AttrVect_Copy(sMat%data, aVout=sMatCopy%data)
+
+ end subroutine Copy_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
@@ -1883,6 +1968,8 @@
 
  end subroutine row_sum_check_
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: Sort_ - Generate Index Permutation
@@ -1944,6 +2031,8 @@
 
  end Subroutine Sort_
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: Permute_ - Permute Matrix Elements using Supplied Index Permutation
@@ -1988,6 +2077,8 @@
 
  end Subroutine Permute_
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: SortPermute_ - Sort and Permute Matrix Elements
