@@ -69,7 +69,7 @@ F77		= f90
 F90		= f90
 FC		= $(F90)
 
-FOPT_normal	= -04
+FOPT_normal	= -O4
 FOPT_indxck	= -g 
 
 FFLAGS		= $(FOPT_indxck)
