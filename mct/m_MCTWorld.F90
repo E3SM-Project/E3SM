@@ -42,7 +42,7 @@
     type MCTWorld
       integer :: MCT_comm      !  MCT communicator
       integer :: ncomps	       !  number of components
-      integer :: mygrank       !  rank of this processor in mpi_comm_world
+      integer :: mygrank       !  rank of this processor in global communicator
       integer,dimension(:),pointer :: nprocspid	   ! number of processes 
                                                    ! each component is on
       integer,dimension(:,:),pointer :: idGprocid  ! translate between local 
@@ -87,8 +87,11 @@
 !                Add MCT_comm for future use.
 !      03Aug01 - E. Ong <eong@mcs.anl.gov> - explicity specify starting
 !                address in mpi_irecv
-!      27Nov01 - E. Ong <eong@mcs.anl.gov> - added Rob's version of initd_
+!      27Nov01 - E. Ong <eong@mcs.anl.gov> - added R. Jacob's version of initd_
 !                to support PCM mode. 
+!      15Feb02 - R. Jacob - elminate use of MP_COMM_WORLD.  Use
+!		 argument globalcomm instead.  Create MCT_comm from
+!		 globalcomm
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_MCTWorld'
@@ -104,12 +107,14 @@
 ! !DESCRIPTION:
 ! Do a distributed init of MCTWorld using the total number of components and
 ! a unique component id (provided by MPH).  Also need the local 
-! communicator.  This is called once by each component in a no-overlap
+! communicator mycomm and global communicator globalcomm.
+!
+! This routine is called once by each component in a no-overlap
 ! configuration (each component has its own set of processors)
 !
 ! !INTERFACE:
 
- subroutine initd_(ncomps,mycomm,myid,myids)
+ subroutine initd_(ncomps,globalcomm,mycomm,myid,myids)
 !
 ! !USES:
 !
@@ -120,9 +125,10 @@
       implicit none
 
       integer, intent(in)	       :: ncomps  ! number of components
+      integer, intent(in)	       :: globalcomm  ! global communicator
+      integer, intent(in)	       :: mycomm  ! my communicator
       integer, intent(in),optional     :: myid    ! my component id
       integer, dimension(:),pointer,optional  :: myids    ! component ids
-      integer, intent(in)	       :: mycomm  ! my communicator
 
 ! !REVISION HISTORY:
 !       19Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
@@ -174,11 +180,11 @@
   if(ier /= 0) call MP_perr_die(myname_,'MP_comm_size()',ier)
 
 ! determine overall size
-  call MP_comm_size(MP_COMM_WORLD,Gsize,ier)
+  call MP_comm_size(globalcomm,Gsize,ier)
   if(ier /= 0) call MP_perr_die(myname_,'MP_comm_size()',ier)
 
 ! determine my rank in comm_world
-  call MP_comm_rank(MP_COMM_WORLD,myGid,ier)
+  call MP_comm_rank(globalcomm,myGid,ier)
   if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
 
 ! determine my rank in local comm
@@ -206,7 +212,7 @@
   if(myGid == 0) then
     do i=1,ncomps
        call MPI_IRECV(root_nprocs(i), 1, MP_INTEGER, MP_ANY_SOURCE,i, &
-	 MP_COMM_WORLD, reqs(i), ier)
+	 globalcomm, reqs(i), ier)
        if(ier /= 0) call MP_perr_die(myname_,'MPI_IRECV(root_nprocs)',ier)
     enddo
   endif
@@ -215,11 +221,11 @@
   if(myLid == 0) then
     if(present(myids)) then
       do i=1,size(myids)
-        call MPI_SEND(mysize,1,MP_INTEGER,0,myids(i),MP_COMM_WORLD,ier)
+        call MPI_SEND(mysize,1,MP_INTEGER,0,myids(i),globalcomm,ier)
         if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND(mysize)',ier)
       enddo
     else
-        call MPI_SEND(mysize,1,MP_INTEGER,0,myid,MP_COMM_WORLD,ier)
+        call MPI_SEND(mysize,1,MP_INTEGER,0,myid,globalcomm,ier)
         if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND(mysize)',ier)
     endif
   endif
@@ -268,7 +274,7 @@
     do i=1,ncomps
        apoint => tmparray(0:Gsize-1,i)
        call MPI_IRECV(apoint(1), root_nprocs(i),MP_INTEGER, &
-       MP_ANY_SOURCE,i,MP_COMM_WORLD, reqs(i), ier)
+       MP_ANY_SOURCE,i,globalcomm, reqs(i), ier)
        if(ier /= 0) call MP_perr_die(myname_,'MPI_IRECV()',ier)
     enddo
   endif
@@ -277,11 +283,11 @@
   if(myLid == 0) then
     if(present(myids)) then
       do i=1,size(myids)
-        call MPI_SEND(Gprocids,mysize,MP_INTEGER,0,myids(i),MP_COMM_WORLD,ier)
+        call MPI_SEND(Gprocids,mysize,MP_INTEGER,0,myids(i),globalcomm,ier)
         if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND(Gprocids)',ier)
       enddo
     else
-        call MPI_SEND(Gprocids,mysize,MP_INTEGER,0,myid,MP_COMM_WORLD,ier)
+        call MPI_SEND(Gprocids,mysize,MP_INTEGER,0,myid,globalcomm,ier)
         if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND(Gprocids)',ier)
     endif
   endif
@@ -311,7 +317,7 @@
 !!!!!!!!!!!!!!!!!!
 
 ! now call the init from root.
-  call initr_(ncomps,root_nprocs,root_idGprocid)
+  call initr_(ncomps,globalcomm,root_nprocs,root_idGprocid)
 
 ! if(myGid==17) then
 !      do i=1,ThisMCTWorld%ncomps
@@ -348,7 +354,7 @@
 !
 ! !INTERFACE:
 
- subroutine initr_(ncomps,rnprocspid,ridGprocid)
+ subroutine initr_(ncomps,globalcomm,rnprocspid,ridGprocid)
 !
 ! !USES:
 !
@@ -359,6 +365,7 @@
       implicit none
 
       integer, intent(in)	       :: ncomps  ! total number of components
+      integer, intent(in)	       :: globalcomm  ! the global communicator
       integer, dimension(:),intent(in) :: rnprocspid ! number of processors for each component
       integer, dimension(:,:),intent(in) :: ridGprocid ! an array of size (1:ncomps) x (0:Gsize-1) 
 						       ! which maps local ranks to global ranks
@@ -371,15 +378,15 @@
   integer :: ier,Gsize,myGid,MCTcomm,i,j
 
 ! determine overall size
-  call MP_comm_size(MP_COMM_WORLD,Gsize,ier)
+  call MP_comm_size(globalcomm,Gsize,ier)
   if(ier /= 0) call MP_perr_die(myname_,'MP_comm_size()',ier)
 
 ! determine my rank in comm_world
-  call MP_comm_rank(MP_COMM_WORLD,myGid,ier)
+  call MP_comm_rank(globalcomm,myGid,ier)
   if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
 
 ! create the MCT comm world
-  call MP_comm_dup(MP_COMM_WORLD,MCTcomm,ier)
+  call MP_comm_dup(globalcomm,MCTcomm,ier)
   if(ier /= 0) call MP_perr_die(myname_,'MP_comm_dup()',ier)
 
   allocate(ThisMCTWorld%nprocspid(ncomps),stat=ier)
@@ -398,10 +405,10 @@
     ThisMCTWorld%idGprocid = ridGprocid
   endif
 
-  call MPI_BCAST(ThisMCTWorld%nprocspid, ncomps, MP_INTEGER, 0, MP_COMM_WORLD, ier)
+  call MPI_BCAST(ThisMCTWorld%nprocspid, ncomps, MP_INTEGER, 0, MCTcomm, ier)
   if(ier/=0) call MP_perr_die(myname_,'MPI_BCast nprocspid',ier)
 
-  call MPI_BCAST(ThisMCTWorld%idGprocid, ncomps*Gsize,MP_INTEGER, 0, MP_COMM_WORLD, ier)
+  call MPI_BCAST(ThisMCTWorld%idGprocid, ncomps*Gsize,MP_INTEGER, 0,MCTcomm, ier)
   if(ier/=0) call MP_perr_die(myname_,'MPI_BCast Gprocids',ier)
 
 ! if(myGid==17) then
