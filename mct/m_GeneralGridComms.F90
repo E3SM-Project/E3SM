@@ -59,10 +59,7 @@
 !
 ! !DESCRIPTION:  The point-to-point send routine {\tt send\_()} sends 
 ! the input {\tt GeneralGrid} argument {\tt iGGrid} to component 
-! {\tt comp\_id}.  If the optional {\tt INTEGER} argument {\tt comm} 
-! is provided, it is used as the F90 integer handle for the MPI 
-! communicator.  If this argument is not provided, the MCT global 
-! communicator {\tt MCT\_COMM\_WORLD} is usd.  
+! {\tt comp\_id}.  
 ! The message is identified by the tag defined by the {\tt INTEGER} 
 ! argument {\tt TagBase}.  The value of {\tt TagBase} must match the 
 ! value used in the call to {\tt recv\_()} on process {\tt dest}.  The 
@@ -80,7 +77,7 @@
 !
 ! !INTERFACE:
 
- subroutine send_(iGGrid, comp_id, TagBase, comm, status)
+ subroutine send_(iGGrid, comp_id, TagBase, status)
 
 !
 ! !USES:
@@ -107,7 +104,6 @@
       type(GeneralGrid), intent(in) :: iGGrid
       integer,           intent(in) :: comp_id
       integer,           intent(in) :: TagBase
-      integer, optional, intent(in) :: comm
 
 ! !OUTPUT PARAMETERS: 
 !
@@ -123,6 +119,9 @@
 !                 (if present).
 !       15Feb02 - J.W. Larson <larson@mcs.anl.gov> - Made input argument
 !                 comm optional.
+!       13Jun02 - J.W. Larson <larson@mcs.anl.gov> - Removed the argument
+!                 comm.  This routine is now explicitly for intercomponent
+!                 communications only.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::send_'
@@ -148,7 +147,7 @@
   HeaderAssoc(5) = associated(iGGrid%other_list%bf)
   HeaderAssoc(6) = associated(iGGrid%index_list%bf)
 
-  call MPI_SEND(HeaderAssoc, 6, MP_LOGICAL, dest, TagBase, comm, ierr)
+  call MPI_SEND(HeaderAssoc, 6, MP_LOGICAL, dest, TagBase, ThisMCTWorld%MCT_comm, ierr)
   if(ierr /= 0) then
      call MP_perr_die(myname_,':: MPI_SEND(HeaderAssoc...',ierr)
   endif
@@ -156,7 +155,7 @@
        ! Step 2.  If iGGrid%coordinate_list is defined, send it.
 
   if(HeaderAssoc(1)) then
-    call List_send(iGGrid%coordinate_list, dest, TagBase+1, comm, ierr)
+    call List_send(iGGrid%coordinate_list, dest, TagBase+1, ThisMCTWorld%MCT_comm, ierr)
     if(ierr /= 0) then
        write(stderr,*) myname_,':: call List_send(iGGrid%coordinate_list...', &
 	    'Error flag ierr = ',ierr
@@ -182,7 +181,7 @@
        ! Step 3.  If iGGrid%coordinate_sort_order is defined, send it.
 
   if(HeaderAssoc(2)) then
-    call List_send(iGGrid%coordinate_sort_order, dest, TagBase+3, comm, ierr)
+    call List_send(iGGrid%coordinate_sort_order, dest, TagBase+3, ThisMCTWorld%MCT_comm, ierr)
     if(ierr /= 0) then
        if(present(status)) then
           write(stderr,*) myname_,':: call List_send(iGGrid%coordinate_sort_order...'
@@ -201,13 +200,13 @@
   if(HeaderAssoc(3)) then
 
      call MPI_SEND(size(iGGrid%descend), 1, MP_type(size(iGGrid%descend)), &
-                   dest, TagBase+5, comm, ierr)
+                   dest, TagBase+5, ThisMCTWorld%MCT_comm, ierr)
      if(ierr /= 0) then
 	call MP_perr_die(myname_,':: call MPI_SEND(size(iGGrid%descend)...',ierr)
      endif
 
      call MPI_SEND(iGGrid%descend, size(iGGrid%descend), MP_type(iGGrid%descend(1)), &
-                   dest, TagBase+6, comm, ierr)
+                   dest, TagBase+6, ThisMCTWorld%MCT_comm, ierr)
      if(ierr /= 0) then
 	call MP_perr_die(myname_,':: call MPI_SEND(iGGrid%descend...',ierr)
      endif
@@ -218,7 +217,7 @@
 
   if(HeaderAssoc(4)) then
 
-    call List_send(iGGrid%weight_list, dest, TagBase+7, comm, ierr)
+    call List_send(iGGrid%weight_list, dest, TagBase+7, ThisMCTWorld%MCT_comm, ierr)
     if(ierr /= 0) then
        if(present(status)) then
           write(stderr,*) myname_,':: call List_send(iGGrid%weight_list...'
@@ -235,7 +234,7 @@
 
   if(HeaderAssoc(5)) then
 
-    call List_send(iGGrid%other_list, dest, TagBase+9, comm, ierr)
+    call List_send(iGGrid%other_list, dest, TagBase+9, ThisMCTWorld%MCT_comm, ierr)
     if(ierr /= 0) then
        if(present(status)) then
           write(stderr,*) myname_,':: call List_send(iGGrid%other_list...'
@@ -252,7 +251,7 @@
 
   if(HeaderAssoc(6)) then
 
-    call List_send(iGGrid%index_list, dest, TagBase+11, comm, ierr)
+    call List_send(iGGrid%index_list, dest, TagBase+11, ThisMCTWorld%MCT_comm, ierr)
     if(ierr /= 0) then
        if(present(status)) then
           write(stderr,*) myname_,':: call List_send(iGGrid%index_list...'
@@ -278,7 +277,7 @@
 
        ! Step 8.  Finally, send the AttrVect iGGrid%data.
 
-  call AttrVect_send(iGGrid%data, dest, TagBase+13, comm, ierr)
+  call AttrVect_send(iGGrid%data, dest, TagBase+13, ThisMCTWorld%MCT_comm, ierr)
   if(ierr /= 0) then
      if(present(status)) then
 	write(stderr,*) myname_,':: call AttrVect_send(iGGrid%data...'
@@ -301,8 +300,7 @@
 !
 ! !DESCRIPTION:  The point-to-point receive routine {\tt recv\_()} 
 ! receives the output {\tt GeneralGrid} argument {\tt oGGrid} from component
-! {\tt comp\_id} on the communicator associated with the F90 integer handle 
-! {\tt comm}.  The message is identified by the tag defined by the 
+! {\tt comp\_id}.  The message is identified by the tag defined by the 
 ! {\tt INTEGER} argument {\tt TagBase}.  The value of {\tt TagBase} must 
 ! match the value used in the call to {\tt send\_()} on the other component.
 ! The success (failure) of this operation corresponds to a zero (nonzero) 
@@ -327,7 +325,7 @@
 !
 ! !INTERFACE:
 
- subroutine recv_(oGGrid, comp_id, TagBase, comm, status)
+ subroutine recv_(oGGrid, comp_id, TagBase, status)
 
 !
 ! !USES:
@@ -353,7 +351,6 @@
 !
       integer,           intent(in) :: comp_id
       integer,           intent(in) :: TagBase
-      integer,           intent(in) :: comm
 
 ! !OUTPUT PARAMETERS: 
 !
@@ -368,6 +365,9 @@
 !                 argument.
 !       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize status
 !                 (if present).
+!       13Jun02 - J.W. Larson <larson@mcs.anl.gov> - Removed the argument
+!                 comm.  This routine is now explicitly for intercomponent
+!                 communications only.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::recv_'
@@ -405,7 +405,7 @@
 
   HeaderAssoc = .FALSE.
 
-  call MPI_RECV(HeaderAssoc, 6, MP_LOGICAL, source, TagBase, comm, MPstatus, ierr)
+  call MPI_RECV(HeaderAssoc, 6, MP_LOGICAL, source, TagBase, ThisMCTWorld%MCT_comm, MPstatus, ierr)
   if(ierr /= 0) then
      call MP_perr_die(myname_,':: MPI_RECV(HeaderAssoc...',ierr)
   endif
@@ -413,7 +413,7 @@
        ! Step 2.  If oGGrid%coordinate_list is defined, receive it.
 
   if(HeaderAssoc(1)) then
-    call List_recv(oGGrid%coordinate_list, source, TagBase+1, comm, ierr)
+    call List_recv(oGGrid%coordinate_list, source, TagBase+1, ThisMCTWorld%MCT_comm, ierr)
     if(ierr /= 0) then
        if(present(status)) then
           write(stderr,*) myname_,':: call List_recv(oGGrid%coordinate_list...'
@@ -438,7 +438,7 @@
        ! Step 3.  If oGGrid%coordinate_sort_order is defined, receive it.
 
   if(HeaderAssoc(2)) then
-    call List_recv(oGGrid%coordinate_sort_order, source, TagBase+3, comm, ierr)
+    call List_recv(oGGrid%coordinate_sort_order, source, TagBase+3, ThisMCTWorld%MCT_comm, ierr)
     if(ierr /= 0) then
        if(present(status)) then
           write(stderr,*) myname_,':: Error calling ',&
@@ -459,7 +459,7 @@
   if(HeaderAssoc(3)) then
 
      call MPI_RECV(DescendSize, 1, MP_type(DescendSize), &
-                   source, TagBase+5, comm, MPstatus, ierr)
+                   source, TagBase+5, ThisMCTWorld%MCT_comm, MPstatus, ierr)
      if(ierr /= 0) then
 	   call MP_perr_die(myname_,':: call MPI_RECV(size(oGGrid%descend)...',ierr)
      endif
@@ -476,7 +476,7 @@
   endif
 
      call MPI_RECV(oGGrid%descend, DescendSize, MP_type(oGGrid%descend(1)), &
-                   source, TagBase+6, comm, MPstatus, ierr)
+                   source, TagBase+6, ThisMCTWorld%MCT_comm, MPstatus, ierr)
      if(ierr /= 0) then
 	   call MP_perr_die(myname_,':: call MPI_RECV(oGGrid%descend...',ierr)
      endif
@@ -487,7 +487,7 @@
 
   if(HeaderAssoc(4)) then
 
-    call List_recv(oGGrid%weight_list, source, TagBase+7, comm, ierr)
+    call List_recv(oGGrid%weight_list, source, TagBase+7, ThisMCTWorld%MCT_comm, ierr)
     if(ierr /= 0) then
        if(present(status)) then
           write(stderr,*) myname_,':: call List_recv(oGGrid%weight_list...'
@@ -504,7 +504,7 @@
 
   if(HeaderAssoc(5)) then
 
-    call List_recv(oGGrid%other_list, source, TagBase+9, comm, ierr)
+    call List_recv(oGGrid%other_list, source, TagBase+9, ThisMCTWorld%MCT_comm, ierr)
     if(ierr /= 0) then
        if(present(status)) then
           write(stderr,*) myname_,':: call List_recv(oGGrid%other_list...'
@@ -521,7 +521,7 @@
 
   if(HeaderAssoc(6)) then
 
-    call List_recv(oGGrid%index_list, source, TagBase+11, comm, ierr)
+    call List_recv(oGGrid%index_list, source, TagBase+11, ThisMCTWorld%MCT_comm, ierr)
     if(ierr /= 0) then
        if(present(status)) then
           write(stderr,*) myname_,':: call List_recv(oGGrid%index_list...'
@@ -547,7 +547,7 @@
 
        ! Step 8.  Finally, receive the AttrVect oGGrid%data.
 
-  call AttrVect_recv(oGGrid%data, source, TagBase+13, comm, ierr)
+  call AttrVect_recv(oGGrid%data, source, TagBase+13, ThisMCTWorld%MCT_comm, ierr)
   if(ierr /= 0) then
      if(present(status)) then
 	write(stderr,*) myname_,':: call AttrVect_recv(oGGrid%data...'
