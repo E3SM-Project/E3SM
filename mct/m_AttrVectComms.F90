@@ -844,8 +844,8 @@
 
   noV = AttrVect_lsize(iV)
   if(niV /= noV) then
-    write(stderr,'(2a,i4,a,i4)') myname_,	&
-	': invalid input, rsize(GMap) =',niV,	&
+    write(stderr,'(2a,i5,a,i8,a,i8)') myname_,	&
+	': myID = ',myID,'.  Invalid input, rsize(GMap) =',niV,	&
 	', lsize(iV) =',noV
     if(.not.present(stat)) call die(myname_)
     stat=-1

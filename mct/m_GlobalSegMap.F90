@@ -867,6 +867,11 @@
 
 ! !REVISION HISTORY:
 ! 	29Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+! 	14Jun01 - J.W. Larson <larson@mcs.anl.gov> - Bug fix in lower
+!                 limit of loop over elements of GSMap%pe_loc(:).  The
+!                 original code had this lower limit set to 0, which
+!                 was out-of-bounds (but uncaught).  The correct lower
+!                 index is 1.  This bug was discovered by Everest Ong.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::nlseg_'
@@ -878,7 +883,7 @@
 
         ! Compute the number of segments residing on pID, nlocseg
 
-  do i=0,GSMap%ngseg
+  do i=1,GSMap%ngseg
      if(GSMap%pe_loc(i) == pID) then
 	nlocseg = nlocseg + 1
      endif
