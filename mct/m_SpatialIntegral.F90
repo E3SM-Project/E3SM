@@ -125,6 +125,10 @@
 !                 methods.
 !       18Jun02 - J.W. Larson <larson@mcs.anl.gov> - Renamed module from 
 !                 m_GlobalIntegral to m_SpatialIntegral.
+!       15Jan03 - E.T. Ong <eong@mcs.anl.gov> - Initialized real-only 
+!                 AttrVects using nullfied integer lists. This circuitous 
+!                 hack was required because the compaq compiler does not
+!                 compile the function AttrVectExportListToChar. 
 !
 !EOP ___________________________________________________________________
 
@@ -435,9 +439,11 @@
       use m_AttrVect, only : AttrVect_clean => clean
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
       use m_AttrVect, only : AttrVect_indexRA => indexRA
-      use m_AttrVect, only : AttrVect_exportRListToChar => exportRListToChar
 
       use m_GeneralGrid, only : GeneralGrid
+
+      use m_List, only : List
+      use m_List, only : List_nullify => nullify
 
       implicit none
 
@@ -465,6 +471,7 @@
   character(len=*),parameter :: myname_=myname//'::SpatialAverageRAtttrGG_'
 
   type(AttrVect) :: integratedAv
+  type(List) :: nullIList
   integer :: i, ierr, iweight
 
        ! Compute the spatial integral:
@@ -488,7 +495,8 @@
 
        ! Initialize output AttrVect outAv:
 
-  call AttrVect_init(outAv, rList=AttrVect_exportRListToChar(inAv), lsize=1)
+  call List_nullify(nullIList)
+  call AttrVect_init(outAv, iList=nullIList, rList=inAv%rList, lsize=1)
 
        ! Divide by global weight sum to compute spatial averages from 
        ! spatial integrals.
@@ -548,9 +556,11 @@
       use m_AttrVect, only : AttrVect_clean => clean
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
       use m_AttrVect, only : AttrVect_indexRA => indexRA
-      use m_AttrVect, only : AttrVect_exportRListToChar => exportRListToChar
 
       use m_GeneralGrid, only : GeneralGrid
+
+      use m_List, only : List
+      use m_List, only : List_nullify => nullify
 
       implicit none
 
@@ -571,6 +581,7 @@
   character(len=*),parameter :: myname_=myname//'::SpatialAverageRAtttrV_'
 
   type(AttrVect) :: integratedAv
+  type(List) :: nullIList
   integer :: i, ierr, iweight
 
        ! Compute the spatial integral:
@@ -593,7 +604,8 @@
 
        ! Initialize output AttrVect outAv:
 
-  call AttrVect_init(outAv, rList=AttrVect_exportRListToChar(inAv), lsize=1)
+  call List_nullify(nullIList)
+  call AttrVect_init(outAv, iList=nullIList, rList=inAv%rList, lsize=1)
 
        ! Divide by global weight sum to compute spatial averages from 
        ! spatial integrals.
@@ -1470,12 +1482,13 @@
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_indexRA => indexRA
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
-      use m_AttrVect, only : AttrVect_exportRListToChar => &
-	                                                exportRListToChar 
 
       use m_GeneralGrid, only : GeneralGrid
       use m_GeneralGrid, only : GeneralGrid_lsize => lsize
       use m_GeneralGrid, only : GeneralGrid_indexRA => indexRA
+
+      use m_List, only : List
+      use m_List, only : List_nullify => nullify
 
       implicit none
 
@@ -1501,6 +1514,7 @@
   character(len=*),parameter :: myname_=myname//'::MaskedSpatialAverageRAttrGG_'
 
   type(AttrVect) :: integratedAv
+  type(List) :: nullIList
   character*9, parameter :: WeightSumTag = 'WeightSum'
 
   integer :: i, iweight
@@ -1605,8 +1619,8 @@
   endif
 
        ! Initialize output AttrVect outAv:
-
-  call AttrVect_init(outAv, rList=AttrVect_exportRListToChar(inAv), lsize=1)
+  call List_nullify(nullIList)
+  call AttrVect_init(outAv, iList=nullIList, rList=inAv%rList, lsize=1)
 
        ! Divide by global weight sum to compute spatial averages from 
        ! spatial integrals.
@@ -1679,7 +1693,9 @@
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
       use m_AttrVect, only : AttrVect_indexRA => indexRA
-      use m_AttrVect, only : AttrVect_exportRListToChar => exportRListToChar
+
+      use m_List, only : List
+      use m_List, only : List_nullify => nullify
 
       implicit none
 
@@ -1703,6 +1719,7 @@
   character(len=*),parameter :: myname_=myname//'::MaskedSpatialAverageRAttrV_'
 
   type(AttrVect) :: integratedAv
+  type(List) :: nullIList
 
   integer :: i, ierr, length, iweight
   logical :: mySumWeights
@@ -1825,7 +1842,8 @@
 
        ! Initialize output AttrVect outAv:
 
-  call AttrVect_init(outAv, rList=AttrVect_exportRListToChar(inAv), lsize=1)
+  call List_nullify(nullIList)
+  call AttrVect_init(outAv, iList=nullIList, rList=inAv%rList, lsize=1)
 
        ! Divide by global weight sum to compute spatial averages from 
        ! spatial integrals.
@@ -2232,7 +2250,6 @@
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
       use m_AttrVect, only : AttrVect_indexRA => indexRA
-      use m_AttrVect, only : AttrVect_exportRListToChar => exportRListToChar
 
       use m_GeneralGrid, only : GeneralGrid
       use m_GeneralGrid, only : GeneralGrid_lsize => lsize
@@ -2241,6 +2258,9 @@
 
       use m_AttrVectReduce, only : AttrVect_LocalWeightedSumRAttr => &
 	                                         LocalWeightedSumRAttr
+
+      use m_List, only : List
+      use m_List, only : List_nullify => nullify
 
       implicit none
 
@@ -2269,6 +2289,7 @@
   character(len=*),parameter :: myname_=myname//'::PairedSpatialAverageRAttrGG_'
 
   type(AttrVect) :: integratedAv1, integratedAv2
+  type(List) :: nullIList
   integer :: i, ierr, iweight1, iweight2
 
        ! Compute the spatial integral:
@@ -2296,8 +2317,10 @@
 
        ! Initialize output AttrVects outAv1 and outAv2:
 
-  call AttrVect_init(outAv1, rList=AttrVect_exportRListToChar(inAv1), lsize=1)
-  call AttrVect_init(outAv2, rList=AttrVect_exportRListToChar(inAv2), lsize=1)
+  call List_nullify(nullIList)
+
+  call AttrVect_init(outAv1, iList=nullIList, rList=inAv1%rList, lsize=1)
+  call AttrVect_init(outAv2, iList=nullIList, rList=InAv2%rList, lsize=1)
 
        ! Divide by global weight sum to compute spatial averages from 
        ! spatial integrals.
@@ -2366,10 +2389,12 @@
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
       use m_AttrVect, only : AttrVect_indexRA => indexRA
-      use m_AttrVect, only : AttrVect_exportRListToChar => exportRListToChar
 
       use m_AttrVectReduce, only : AttrVect_LocalWeightedSumRAttr => &
 	                                         LocalWeightedSumRAttr
+
+      use m_List, only : List
+      use m_List, only : List_nullify => nullify
 
       implicit none
 
@@ -2394,6 +2419,7 @@
   character(len=*),parameter :: myname_=myname//'::PairedSpatialAverageRAttrV_'
 
   type(AttrVect) :: integratedAv1, integratedAv2
+  type(List) :: nullIList
   integer :: i, ierr, iweight1, iweight2
 
        ! weight tags used to keep track of spatial weight sums
@@ -2424,8 +2450,9 @@
 
        ! Initialize output AttrVects outAv1 and outAv2:
 
-  call AttrVect_init(outAv1, rList=AttrVect_exportRListToChar(inAv1), lsize=1)
-  call AttrVect_init(outAv2, rList=AttrVect_exportRListToChar(inAv2), lsize=1)
+  call List_nullify(nullIList)
+  call AttrVect_init(outAv1, iList=nullIList, rList=inAv1%rList, lsize=1)
+  call AttrVect_init(outAv2, iList=nullIList, rList=inAv2%rList, lsize=1)
 
        ! Divide by global weight sum to compute spatial averages from 
        ! spatial integrals.
@@ -2780,7 +2807,6 @@
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
       use m_AttrVect, only : AttrVect_clean => clean
-      use m_AttrVect, only : AttrVect_exportRListToChar => exportRListToChar
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
 
@@ -2791,6 +2817,9 @@
 
       use m_AttrVectReduce, only : AttrVect_LocalWeightedSumRAttr => &
 	                                         LocalWeightedSumRAttr
+
+      use m_List, only : List
+      use m_List, only : List_nullify => nullify
 
       implicit none
 
@@ -2827,6 +2856,7 @@
                             myname//'::PairedMaskedAverageRAttrGG_'
 
   type(AttrVect) :: LocalIntegral1, LocalIntegral2
+  type(List) :: nullIList
   real, dimension(:), pointer :: PairedBuffer, OutPairedBuffer
   integer :: i, ierr, nRA1, nRA2, PairedBufferLength
   real :: WeightSumInv
@@ -2962,8 +2992,10 @@
 
        ! Create outAv1 and outAv2 from inAv1 and inAv2, respectively:
 
-  call AttrVect_init(outAv1, rList=AttrVect_exportRListToChar(inAv1), lsize=1)
-  call AttrVect_init(outAv2, rList=AttrVect_exportRListToChar(inAv2), lsize=1)
+  call List_nullify(nullIList)
+
+  call AttrVect_init(outAv1, iList=nullIList, rList=inAv1%rList, lsize=1)
+  call AttrVect_init(outAv2, iList=nullIList, rList=inAv2%rList, lsize=1)
 
        ! Unload/rescale OutPairedBuffer into outAv1 and outAv2:
 
