@@ -45,7 +45,7 @@
       character*4 :: type	       ! '1way' or '2way'
       integer :: nprocs	       ! number of procs to talk to
       integer :: maxsize		! maximum amount of data going to a processor
-      integer,dimension(:),pointer :: pe_list ! processor ranks of send/receive in MPI_COMM_WORLD
+      integer,dimension(:),pointer :: pe_list ! processor ranks of send/receive in MCT_comm
       integer,dimension(:),pointer :: num_segs ! number of segments to send/receive
       integer,dimension(:),pointer :: locsize ! total of seg_lengths for a proc
       integer,dimension(:,:),pointer :: seg_starts ! starting index
@@ -282,7 +282,7 @@
     do i=1,ThisMCTWorld%nprocspid(othercomp)
       if(tmppe_list(i))then 
       m=m+1
-! load processor rank in MPI_COMM_WORLD
+! load processor rank in MCT_comm
       Rout%pe_list(m)=ThisMCTWorld%idGprocid(othercomp,i-1)
       endif
     enddo
