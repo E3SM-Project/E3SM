@@ -98,6 +98,8 @@
       public :: exportRList     ! export REAL attibute List
       public :: exportIListToChar ! export INTEGER attibute List as Char
       public :: exportRListToChar ! export REAL attibute List as Char
+      public :: appendIAttr     ! append INTEGER attribute List
+      public :: appendRAttr     ! append REAL attribute List
       public :: exportIAttr     ! export INTEGER attribute to vector
       public :: exportRAttr     ! export REAL attribute to vector
       public :: importIAttr     ! import INTEGER attribute from vector
@@ -132,6 +134,8 @@
     interface exportRListToChar
        module procedure exportRListToChar_
     end interface
+    interface appendIAttr  ; module procedure appendIAttr_  ; end interface
+    interface appendRAttr  ; module procedure appendRAttr_  ; end interface
     interface exportIAttr; module procedure exportIAttr_; end interface
     interface exportRAttr; module procedure &
        exportRAttr_
@@ -178,7 +182,7 @@
 !           to this module from old m_SharedAttrIndicies
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_AttrVect'
+  character(len=*),parameter :: myname='MCT::m_AttrVect'
 
  contains
 
@@ -1135,6 +1139,198 @@
  end function indexRA_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!       DOE/ANL Mathematics and Computer Science Division              !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: appendIAttr_ - Append one or more attributes onto the INTEGER part of an AttrVect.
+!
+! !DESCRIPTION:  This routine takes an input {\tt AttrVect} argument 
+! {\tt aV}, and an input character string {\tt rList} and Appends {\tt rList}
+! to the INTEGER part of {\tt aV}.
+!
+! !INTERFACE:
+
+ subroutine appendIAttr_(aV, iList, status)
+!
+! !USES:
+!
+      use m_List,   only : List_init => init
+      use m_List,   only : List_append => append
+      use m_List,   only : List_clean => clean
+      use m_List,   only : List_nullify => nullify
+      use m_List,   only : List_allocated => allocated
+      use m_List,   only : List_copy => copy
+      use m_List,   only : List
+      use m_die
+      use m_stdio
+
+      implicit none
+
+! !INPUT/OUTPUT PARAMETERS: 
+!
+      type(AttrVect),intent(inout)  :: aV
+
+! !INPUT PARAMETERS: 
+!
+      character(len=*), intent(in)  :: iList
+
+! !OUTPUT PARAMETERS: 
+!
+      integer,optional,intent(out)  :: status
+
+! !REVISION HISTORY:
+! 08Jul03 - R. Jacob <jacob@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::appendIAttr_'
+
+  type(List) :: avRList,avIList        ! placeholders for the aV attributes
+  type(List) :: addIlist               ! for the input string
+  type(AttrVect) :: tempaV             ! placeholder for aV data.
+  integer :: locsize                   ! size of aV
+  integer :: rlstatus,cstatus           ! status flags
+  integer :: ilstatus
+
+  if(present(status)) status = 0
+
+  call List_nullify(avIList)
+  call List_nullify(avRList)
+
+! save the local size and current int and real attributes
+  locsize = lsize_(aV)
+  call exportRList_(aV,avRList,rlstatus)
+  call exportIList_(aV,avIList,ilstatus)
+
+! create and fill a temporary AttrVect to hold any data currently in the aV
+  call initv_(tempaV,aV,lsize=locsize)
+  call Copy_(aV,tempaV)
+
+! create a List with the new attributes
+  call List_init(addIlist,iList)
+
+! append addIlist to current avIList if it has attributes.
+  if(List_allocated(avIList)) then
+    call List_append(avIList,addIlist)
+! copy addIlist to avIList
+  else
+    call List_copy(avIList,addIlist)
+  endif
+
+! now delete the input aV and recreate it
+  call clean_(aV,cstatus)
+  call initl_(aV,avIList,avRList,locsize)
+
+! copy back the data
+  call Copy_(tempaV,aV)
+
+! clean up.
+  call List_clean(avRList,cstatus)
+
+  call clean_(tempaV,cstatus)
+  call List_clean(addIlist,cstatus)
+  call List_clean(avIList,cstatus)
+
+  if(present(status)) status = cstatus
+
+ end subroutine appendIAttr_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!       DOE/ANL Mathematics and Computer Science Division              !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: appendRAttr_ - Append one or more attributes onto the REAL part of an AttrVect.
+!
+! !DESCRIPTION:  This routine takes an input {\tt AttrVect} argument 
+! {\tt aV}, and an input character string {\tt rList} and Appends {\tt rList}
+! to the REAL part of {\tt aV}.
+!
+! !INTERFACE:
+
+ subroutine appendRAttr_(aV, rList, status)
+!
+! !USES:
+!
+      use m_List,   only : List_init => init
+      use m_List,   only : List_append => append
+      use m_List,   only : List_clean => clean
+      use m_List,   only : List_nullify => nullify
+      use m_List,   only : List_allocated => allocated
+      use m_List,   only : List_copy => copy
+      use m_List,   only : List
+      use m_die
+      use m_stdio
+
+      implicit none
+
+! !INPUT/OUTPUT PARAMETERS: 
+!
+      type(AttrVect),intent(inout)  :: aV
+
+! !INPUT PARAMETERS: 
+!
+      character(len=*), intent(in)  :: rList
+
+! !OUTPUT PARAMETERS: 
+!
+      integer,optional,intent(out)  :: status
+
+! !REVISION HISTORY:
+! 04Jun03 - R. Jacob <jacob@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::appendRAttr_'
+
+  type(List) :: avRList,avIList        ! placeholders for the aV attributes
+  type(List) :: addRlist               ! for the input string
+  type(AttrVect) :: tempaV             ! placeholder for aV data.
+  integer :: locsize                   ! size of aV
+  integer :: rlstatus,cstatus           ! status flags
+  integer :: ilstatus
+
+  if(present(status)) status = 0
+
+  call List_nullify(avIList)
+  call List_nullify(avRList)
+
+! save the local size and current int and real attributes
+  locsize = lsize_(aV)
+  call exportRList_(aV,avRList,rlstatus)
+  call exportIList_(aV,avIList,ilstatus)
+
+! create and fill a temporary AttrVect to hold any data currently in the aV
+  call initv_(tempaV,aV,lsize=locsize)
+  call Copy_(aV,tempaV)
+
+! create a List with the new attributes
+  call List_init(addRlist,rList)
+
+! append addRlist to current avRList if it has attributes.
+  if(List_allocated(avRList)) then
+    call List_append(avRList,addRlist)
+! copy addRlist to avRList
+  else
+    call List_copy(avRList,addRlist)
+  endif
+
+! now delete the input aV and recreate it
+  call clean_(aV,cstatus)
+  call initl_(aV,avIList,avRList,locsize)
+
+! copy back the data
+  call Copy_(tempaV,aV)
+
+! clean up.
+  call List_clean(avIList,cstatus)
+
+  call clean_(tempaV,cstatus)
+  call List_clean(addRlist,cstatus)
+  call List_clean(avRList,cstatus)
+
+  if(present(status)) status = cstatus
+
+ end subroutine appendRAttr_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
@@ -1316,6 +1512,8 @@
 
 ! !REVISION HISTORY:
 ! 13Feb02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+! 05Jun03 - R. Jacob <jacob@mcs.anl.gov> - return a blank instead of dying
+!           to avoid I/O errors when this function is used in a write statement.
 !
 !EOP ___________________________________________________________________
 
@@ -1341,7 +1539,7 @@
      call List_copy(iListCopy,aV%iList)
      exportIListToChar_ = List_exportToChar(iListCopy)
   else
-     call die(myname_)
+     exportIListToChar_ = ''
   endif
 
  end function exportIListToChar_
@@ -1390,6 +1588,8 @@
 
 ! !REVISION HISTORY:
 ! 13Feb02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+! 05Jun03 - R. Jacob <jacob@mcs.anl.gov> - return a blank instead of dying
+!           to avoid I/O errors when this function is used in a write statement.
 !
 !EOP ___________________________________________________________________
 
@@ -1415,7 +1615,7 @@
      call List_copy(rListCopy,aV%rList)
      exportRListToChar_ = List_exportToChar(rListCopy)
   else
-     call die(myname_)
+     exportRListToChar_ = ''
   endif
 
  end function exportRListToChar_
