@@ -1,0 +1,112 @@
+#!/bin/make
+#-----------------------------------------------------------------------
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#BOP
+#
+# !ROUTINE: Makefile.conf.OSF1
+# 
+# !DESCRIPTION: 
+#	An included local make configuration.  See file Makefile for
+#   detailed `make' procedure.  This shell has been built to override
+#   the default environments (including commands) defined in file 
+#   Makefile.
+#
+# !CALLING SEQUENCE:
+#
+#	% ln -s Makefile.conf.OSF1 Makefile.conf
+#	% make ...
+#
+# !SEE ALSO: Makefile
+#
+# !REVISION HISTORY: (`cvs log <>' for more)
+#	02Apr96 - J. Guo	- New make procedure
+# 	21Aug95 - J. Guo	- added the prolog
+#	28Sep98 - Jing Guo (guo@dao.gsfc.nasa.gov)
+#		- Cleaned _Dnod for this library
+# 	22Jan01 - J. Larson <larson@mcs.anl.gov> - initial version
+#
+#EOP
+#-----------------------------------------------------------------------
+
+_Dsys		= -DsysSunOS
+_Dnod		=
+
+# Environments
+# ============
+
+# If use Sun implementation (not tested)
+
+_LMPI		= 
+_LMPI		= 
+_lMPI		= 
+_Inull		= 
+_IMPI		= 
+_IMPI		= 
+
+
+# If use the MPICH implementation (tested)
+
+_LMPI		= -L/soft/apps/packages/mpich-1.1.0/lib/solaris/ch_p4
+_lMPI		= -lmpi
+_lMPIlog        = -lfmpi -llmpi -lpmpi
+_lMPItrace      = -lfmpi -ltmpi -lpmpi
+_lMPIanime      = -lfmpi -lampi -lpmpi -lmpe -lX11 -lm
+
+_IMPI		= -I/soft/apps/packages/mpich-1.1.0/include
+
+# This module requires ../mpeu module
+
+_Lmpeu          = -L../mpeu
+_lmpeu          = -lmpeu
+_Impeu          = -I../mpeu 
+_Mmpeu		= -M../mpeu
+
+_I		= -I. $(_Impeu) $(_IMPI)
+_M		= -M. $(_Mmpeu)
+
+SHELL		= /bin/sh
+F77		= f90
+F90		= f90
+FC		= $(F90)
+
+FOPT_normal	= -04
+FOPT_indxck	= -g 
+
+FFLAGS		= $(FOPT_indxck)
+FFLAGS		= $(FOPT_normal)
+
+ZIP		= /usr/bin/compress
+ZCAT		= /usr/bin/zcat
+TAR		= /usr/bin/tar
+
+LD		= $(FC)
+LDFLAGS		= $(FFLAGS
+AR		= ar cqs
+RM		= rm -f
+
+LIBprof		= -lprof
+
+CPPFLAGS	= -C -P
+F77PPFLAGS	= $(CPPFLAGS) -DLANGUAGE_FORTRAN -D__LANGUAGE_FORTRAN__
+F90PPFLAGS	= $(F77PPFLAGS) -DLANGUAGE_FORTRAN_90 -D__LANGUAGE_FORTRAN_90__
+FPPFLAGS	= $(F90PPFLAGS)
+
+.F.o:
+	$(RM) $*.f
+	$(FPP) $(FPPFLAGS) $(_DF) $(_I) $*.F $*.f
+	$(FC) -c $(FCFLAGS) $(_I) $(_M) $*.f;		\
+	  if [ $$? -ne 0 ]; then $(RM) $*.o; fi
+	$(RM) $*.f
+
+
+.F90.o:
+	$(RM) $*.f90
+	$(FPP) $(FPPFLAGS) $(_DF) $(_I) $*.F90 $*.f90
+	$(FC) -c $(FCFLAGS) $(_I) $(_M) $*.f90;	\
+	  if [ $$? -ne 0 ]; then $(RM) $*.o; fi
+	$(RM) $*.f90
+
+#.----------------------------------------------------------------------
+
+MUPDATE		= sh LCupdate.sh

@@ -15,7 +15,9 @@
 !
 ! !USES:
 !
-      use m_Navigator
+      use m_Navigator, only : Navigator
+      use m_Navigator, only : Navigator_init => init
+      use m_Navigator, only : Navigator_clean => clean
 !     use MPH_module
 
       implicit none
@@ -55,6 +57,10 @@
 
 ! !REVISION HISTORY:
 !      15Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
+!      22Jan01 - J. Larson <larson@mcs.anl.gov> - minor modification
+!                for port to SunOS platform:  made more explicit the
+!                use blocks for m_Navigator to alleviate confusion in
+!                interface declarations.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_Router'
