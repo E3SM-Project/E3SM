@@ -690,20 +690,13 @@
 
 ! !REVISION HISTORY:
 ! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 	25Oct02 - R. Jacob <jacob@mcs.anl.gov> - just call index_ above
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::indexStr_'
-  integer :: i,lb,le
 
   indexStr_=0
-  do i=1,size(aList%lc,2)		! == nitem_(aList)
-    lb=aList%lc(0,i)
-    le=aList%lc(1,i)
-    if(toChar(itemStr)==toChar(aList%bf(lb:le))) then
-      indexStr_=i
-      exit
-    endif
-  enddo
+  indexStr_=index_(aList,toChar(itemStr))
 
  end function indexStr_
 
