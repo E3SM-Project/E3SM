@@ -624,6 +624,8 @@
 !                 memory map into workV, and initialization of workV
 !                 on all processes.
 ! 	09May01 - J.W. Larson <larson@mcs.anl.gov> - tidied up prologue
+! 	15May01 - Larson / Jacob <larson@mcs.anl.gov> - stopped initializing
+!                 workV on off-root processes (no longer necessary).
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GSM_scatter_'
@@ -668,8 +670,6 @@
 
   if(myID == root) then
      call AttrVect_init(workV, iV, global_storage)
-  else
-     call AttrVect_init(workV, iV, 0)
   endif
 
        ! Return to processing on the root to load workV:
@@ -768,7 +768,10 @@
 
        ! Finally, clean up allocated structures:
 
-  call AttrVect_clean(workV)
+  if(myID == root) then
+     call AttrVect_clean(workV)
+  endif
+
   call GlobalMap_clean(GMap)
   deallocate(lns, stat=ierr)
 
