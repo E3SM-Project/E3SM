@@ -2515,8 +2515,8 @@ fi
 fi
 
 if test x != x"$MPILIBS"; then
-	echo "$as_me:$LINENO: checking for mpi.h" >&5
-echo $ECHO_N "checking for mpi.h... $ECHO_C" >&6
+	echo "$as_me:$LINENO: checking for mpif.h" >&5
+echo $ECHO_N "checking for mpif.h... $ECHO_C" >&6
 	cat >conftest.$ac_ext <<_ACEOF
 
 program main
