@@ -108,14 +108,19 @@
 
 ! Matrix element count:
   integer :: num_elements
+
 ! Matrix row, column, and weight indices:
   integer :: icol, irow, iwgt
 
 ! Overlapping attribute index number
   integer :: num_indices
+
 ! Overlapping attribute index storage arrays:
   integer, dimension(:), pointer :: xaVindices, yaVindices
-  integer :: xaVindex, yaVindex
+
+! Temporary variables for multiply do-loop
+  integer :: row, col
+  real :: wgt
 
 ! Error flag and loop indices
   integer :: ierr, m, n
@@ -154,14 +159,15 @@
 
      do n=1,num_elements
 
+	row = sMat%data%iAttr(irow,n)
+	col = sMat%data%iAttr(icol,n)
+	wgt = sMat%data%rAttr(iwgt,n)
+
        ! loop over attributes being regridded.
 
 	do m=1,num_indices
 
-	   yaV%rAttr(m,sMat%data%iAttr(irow,n)) = &
-		yaV%rAttr(m,sMat%data%iAttr(irow,n)) + &
-		sMat%data%rAttr(iwgt, n)  * &
-		xaV%rAttr(m,sMat%data%iAttr(icol,n))
+	   yaV%rAttr(m,row) = yaV%rAttr(m,row) + wgt * xaV%rAttr(m,col)
 
 	end do ! m=1,num_indices
 
@@ -177,17 +183,17 @@
 
      do n=1,num_elements
 
+	row = sMat%data%iAttr(irow,n)
+	col = sMat%data%iAttr(icol,n)
+	wgt = sMat%data%rAttr(iwgt,n)
+
        ! loop over attributes being regridded.
 
 	do m=1,num_indices
 
-	   xaVindex = xaVindices(m)
-	   yaVindex = yaVindices(m)
-
-	   yaV%rAttr(yaVindex,sMat%data%iAttr(irow,n)) = &
-		yaV%rAttr(yaVindex,sMat%data%iAttr(irow,n)) + &
-		sMat%data%rAttr(iwgt, n)  * &
-		xaV%rAttr(xaVindex,sMat%data%iAttr(icol,n))
+	   yaV%rAttr(yaVindices(m),row) = &
+		yaV%rAttr(yaVindices(m),row) + &
+		wgt * xaV%rAttr(xaVindices(m),col)
 
 	end do ! m=1,num_indices
 
@@ -214,14 +220,15 @@
 
 	   do n=1,num_elements
 
-       ! loop over attributes being regridded.
+	      row = sMat%data%iAttr(irow,n)
+	      col = sMat%data%iAttr(icol,n)
+	      wgt = sMat%data%rAttr(iwgt,n)
+
+	      ! loop over attributes being regridded.
 
 	      do m=1,num_indices
 
-		 yaV%iAttr(m,sMat%data%iAttr(irow,n)) = &
-		      yaV%iAttr(m,sMat%data%iAttr(irow,n)) + &
-		      sMat%data%rAttr(iwgt, n)  * &
-		      xaV%iAttr(m,sMat%data%iAttr(icol,n))
+		 yaV%iAttr(m,row) = yaV%iAttr(m,row) + wgt * xaV%iAttr(m,col)
 
 	      end do ! m=1,num_indices
 
@@ -237,17 +244,17 @@
 
 	   do n=1,num_elements
 
-       ! loop over attributes being regridded.
+	      row = sMat%data%iAttr(irow,n)
+	      col = sMat%data%iAttr(icol,n)
+	      wgt = sMat%data%rAttr(iwgt,n)
+
+	      ! loop over attributes being regridded.
 
 	      do m=1,num_indices
 
-		 xaVindex = xaVindices(m)
-		 yaVindex = yaVindices(m)
-
-		 yaV%iAttr(yaVindex,sMat%data%iAttr(irow,n)) = &
-		      yaV%iAttr(yaVindex,sMat%data%iAttr(irow,n)) + &
-		      sMat%data%rAttr(iwgt, n) * &
-		      xaV%iAttr(xaVindex,sMat%data%iAttr(icol,n))
+		 yaV%iAttr(yaVindices(m),row) = &
+		      yaV%iAttr(yaVindices(m),row) + &
+                      wgt * xaV%iAttr(xaVindices(m),col)
 
 	      end do ! m=1,num_indices
 
