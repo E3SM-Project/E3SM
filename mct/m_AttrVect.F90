@@ -517,10 +517,12 @@
 ! 	17May01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype/code
 ! 	15Oct01 - J. Larson <larson@mcs.anl.gov> - switched loop order
 !                 for cache optimization.
+!       03Dec01 - E.T. Ong <eong@mcs.anl.gov> - eliminated looping method of
+!                 of zeroing. "Compiler assignment" of attrvect performs faster
+!                 on the IBM SP with mpxlf90 compiler.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::zero_'
-  integer :: i,j,size
 
   if(.not.associated(aV%iAttr) .and. .not.associated(aV%rAttr)) then
     write(stderr,'(2a)')myname_, &
@@ -528,19 +530,9 @@
       call perr_die(myname_,'undefined input argument',0)
   endif
 
-  size = lsize_(aV)
+  if(nIAttr_(aV)>0) aV%iAttr=0
+  if(nRAttr_(aV)>0) aV%rAttr=0.
 
-  do j=1,size
-   do i=1,nIAttr_(aV)
-    aV%iAttr(i,j)=0
-   enddo
-  enddo
-
-  do j=1,size
-   do i=1,nRAttr_(aV)
-    aV%rAttr(i,j)=0.
-   enddo
-  enddo
 
  end subroutine zero_
 
