@@ -129,7 +129,10 @@
       public :: clean
       public :: initialized
 
-      interface init ; module procedure initFromRoot_ ; end interface
+      interface init ; module procedure &
+        initFromRoot_, &
+        initDistributed_
+      end interface
       interface clean ; module procedure clean_ ; end interface
       interface initialized ; module procedure initialized_ ; end interface
 
@@ -373,26 +376,24 @@
 ! the following elements:
 ! \begin{itemize}
 ! \item A {\tt SparseMatrix} (the input argument {\tt sMat}), whose 
-! elements all reside only on the {\tt root} process of the MPI 
-! communicator with an integer handle defined by the input {\tt INTEGER} 
-! argument {\tt comm};
+! elements have previously been destributed across the MPI communicator 
+! with an integer handle defined by the input {\tt INTEGER} argument 
+! {\tt comm};
 ! \item A {\tt GlobalSegMap} (the input argument {\tt xGSMap}) describing
 ! the domain decomposition of the vector {\bf x} on the communicator 
-! {\tt comm};
+! {\tt comm}; and
 ! \item A {\tt GlobalSegMap} (the input argument {\tt yGSMap}) describing
 ! the domain decomposition of the vector {\bf y} on the communicator 
 ! {\tt comm};
-! \item The matrix-vector multiplication parallelization strategy.  This
-! is set by the input {\tt CHARACTER} argument {\tt strategy}, which must 
-! have value corresponding to one of the following public data members 
-! defined in the declaration section of this module.  Acceptable values 
-! for use in this routine are: {\tt Xonly} and {\tt Yonly}.
 ! \end{itemize}
+! The other input arguments required by this routine are the {\tt INTEGER} 
+! arguments {\tt root} and {\tt ComponentID}, which define the communicator 
+! root ID and MCT component ID, respectively.
 !
 ! !INTERFACE:
 
- subroutine initDistributed_(sMatPlus, sMat, xGSMap, yGSMap, strategy, &
-                          root, comm, ComponentID)
+ subroutine initDistributed_(sMatPlus, sMat, xGSMap, yGSMap, root, comm, &
+                             ComponentID)
 
 ! !USES:
 
@@ -432,7 +433,6 @@
 
       type(GlobalSegMap),     intent(in)    :: xGSMap
       type(GlobalSegMap),     intent(in)    :: yGSMap
-      character(len=*),       intent(in)    :: strategy
       integer,                intent(in)    :: root
       integer,                intent(in)    :: comm
       integer,                intent(in)    :: ComponentID
@@ -490,26 +490,12 @@
      call die(myname_)
   endif
 
-       ! Check desired parallelization strategy name for validity.  
-       ! If either of the strategies supported by this routine are
-       ! provided, initialize the appropriate component of sMatPlus.
-
-  select case(strategy)
-  case(Xonly,Yonly) ! Wrong routine
-     write(stderr,'(5a)') myname_, &
-	  ':: FATAL--inappropriate strategy "',strategy,'" for this routine.', &
-	  '  Try the MCT SparseMatrixPlus routine initFromRoot().'
-     call die(myname_)
-  case(XandY) ! This is the strategy this routine supports
-     call String_init(sMatPlus%Strategy, strategy)
-  case default ! strategy name not recognized.
-     write(stderr,'(5a)') myname_, &
-	  ':: ERROR--Invalid parallelization strategy name = ',strategy,' not ', &
-	  'recognized by this module.'
-     call die(myname_)
-  end select
-
        ! End Argument Sanity Checks.
+
+       ! Set parallelization strategy to XandY, since the work distribution 
+       ! was previously determined and in principle can be *anything*
+
+  call String_init(sMatPlus%Strategy, XandY)
 
        ! Based on the XandY parallelization strategy, build SMatPlus
        ! First, copy Internals of sMat into sMatPlus%Matrix:
