@@ -121,6 +121,8 @@
 !                 peLocs().
 ! 	26Apr01 - R. Jacob <jacob@mcs.anl.gov> - Added the routine
 !                 OrderedPoints_().
+!       03Aug01 - E. Ong <eong@mcs.anl.gov> - In initd_, call initr_
+!                 with actual shaped arguments on non-root processes to satisfy!                 F90 standard. See comments in initd.          
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_GlobalSegMap'
@@ -284,6 +286,13 @@
         ! On the root, allocate memory for the arrays root_start,
         ! and root_length.  If the argument pe_loc is present,
         ! allocate root_pe_loc, too.
+
+        ! Non-root processes call initr_ with root_start, root_length, 
+        ! and root_pe_loc, although these arguments are not used in the 
+        ! subroutine. Since these correspond to dummy shaped array arguments
+        ! in initr_, the Fortran 90 standard dictates that the actual 
+        ! arguments must contain complete shape information. Therefore, 
+        ! these array arguments must be allocated on all processes.
   
   if(myID == root) then
 
@@ -291,6 +300,14 @@
 	      root_pe_loc(ngseg), stat=ier)
      if (ier /= 0) then
 	call MP_perr_die(myname_, 'allocate(root_start...',ier)
+     endif
+
+  else
+
+     allocate(root_start(1), root_length(1), &
+	      root_pe_loc(1), stat=ier)
+     if (ier /= 0) then
+	call MP_perr_die(myname_, 'allocate((non)root_start...',ier)
      endif
 
   endif
@@ -386,16 +403,16 @@
      if(ier /= 0) call MP_perr_die(myname_, 'deallocate(my_pe_loc)', ier)
   endif
 
+        ! Clean up the arrays root_start(:), et cetera...
+
+  deallocate(root_start, root_length, root_pe_loc, stat=ier)
+  if(ier /= 0) then
+     call MP_perr_die(myname_, 'deallocate(root_start,...)', ier)
+  endif
+
         ! Clean up arrays allocated on the root process:
 
   if(myID == root) then
-
-        ! Clean up the arrays root_start(:), et cetera...
-
-     deallocate(root_start, root_length, root_pe_loc, stat=ier)
-     if(ier /= 0) then
-	call MP_perr_die(myname_, 'deallocate(root_start,...)', ier)
-     endif
 
         ! Clean up the arrays counts(:) and displs(:)
 
