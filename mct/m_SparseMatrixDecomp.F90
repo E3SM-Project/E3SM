@@ -61,7 +61,7 @@
 !
 ! !USES:
 !
-   use m_die,  only: MP_perr_die
+   use m_die,  only: MP_perr_die,die
    use m_List, only: List
    use m_List, only: List_init => init
    use m_List, only: List_clean => clean
@@ -179,7 +179,7 @@
      allocate(gCol(gsize), element_pe_locs(gsize), stat=ierr)
 
      if(ierr /= 0) then
-	call MP_perr_die(myname_,'allocate(gCol...',ierr)
+	call die(myname_,'allocate(gCol...',ierr)
      endif
 
        ! Extract global column information and place in array gCol
@@ -215,7 +215,7 @@
   if(myID /= root) then
      allocate(starts(1),lengths(1),pe_locs(1),stat=ierr)
      if(ierr /= 0) then
-        call MP_perr_die(myname_,'non-root allocate(starts...',ierr)
+        call die(myname_,'non-root allocate(starts...',ierr)
      endif
   endif
 
@@ -230,7 +230,7 @@
 
   deallocate(starts, lengths, pe_locs, stat=ierr)
   if(ierr /= 0) then
-     call MP_perr_die(myname_,'deallocate(starts...',ierr)
+     call die(myname_,'deallocate(starts...',ierr)
   endif
 
 
@@ -250,7 +250,7 @@
 ! !USES:
 !
 
-   use m_die,  only: MP_perr_die
+   use m_die,  only: MP_perr_die,die
 
    use m_List, only: List
    use m_List, only: List_init => init
@@ -367,7 +367,7 @@
      allocate(gRow(gsize), element_pe_locs(gsize), stat=ierr)
 
      if(ierr /= 0) then
-	call MP_perr_die(myname_,'allocate(gRow...',ierr)
+	call die(myname_,'allocate(gRow...',ierr)
      endif
 
        ! Extract global row information and place in array gRow
@@ -403,7 +403,7 @@
   if(myID /= root) then
      allocate(starts(1),lengths(1),pe_locs(1),stat=ierr)
      if(ierr /= 0) then
-	call MP_perr_die(myname_,'non-root allocate(starts...',ierr)
+	call die(myname_,'non-root allocate(starts...',ierr)
      endif
   endif
 
@@ -418,7 +418,7 @@
 
   deallocate(starts, lengths, pe_locs, stat=ierr)
   if(ierr /= 0) then
-     call MP_perr_die(myname_,'deallocate(starts...',ierr)
+     call die(myname_,'deallocate(starts...',ierr)
   endif
 
 
@@ -439,7 +439,7 @@
 ! !USES:
 !
 
-   use m_die,  only: MP_perr_die
+   use m_die,  only: die
 
    implicit none
 
@@ -480,12 +480,12 @@
        ! Input argument sanity checks:
 
   if(size(element_pe_locs) < num_elements) then
-     call MP_perr_die(myname_,'input argument array element_pe_locs too small', &
+     call die(myname_,'input argument array element_pe_locs too small', &
 	  num_elements-size(element_pe_locs))
   endif
 
   if(size(elements) < num_elements) then
-     call MP_perr_die(myname_,'input argument array elements too small', &
+     call die(myname_,'input argument array elements too small', &
 	  num_elements-size(elements))
   endif
 
@@ -514,7 +514,7 @@
            stat=ierr)
 
   if(ierr /= 0) then
-     call MP_perr_die(myname_,'allocate(seg_starts...',ierr)
+     call die(myname_,'allocate(seg_starts...',ierr)
   endif
 
        ! Second pass:  fill in segment data.
@@ -556,7 +556,7 @@
   end do ! do i=1,num_elements
 
   if(iseg /= nsegs) then
-     call MP_perr_die(myname_,'segment number difference',iseg-nsegs)
+     call die(myname_,'segment number difference',iseg-nsegs)
   endif
 
  end subroutine ComputeSegments_
