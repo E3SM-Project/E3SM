@@ -1934,7 +1934,7 @@
   type(List)   :: TicpList	!  Names of output attributes corresponding to input
   type(String) :: attr          !  an individual attribute
   type(String) :: attr2         !  an individual attribute
-  integer      :: i,j,ier,ierr
+  integer      :: i,j,ier
   integer      :: inx,outx
   integer      :: num_indices   ! Overlapping attribute index number
 
@@ -1951,7 +1951,7 @@
   if(lsize_(aVin) .ne. lsize_(aVout)) then
      write(stderr,'(2a)')myname_, &
       'MCTERROR:  Input aV and output aV do not have the same size'
-     call die(myname_,'lsize check',ier)
+     call die(myname_,'lsize check',2)
   endif
 
 !  Copy the listed real attributes
@@ -1965,7 +1965,7 @@
       if( nitem(rcpList) .ne. nitem(TrcpList)) then
         write(stderr,'(2a)')myname_, &
          'MCTERROR:  Input rList and TrList do not have the same size'
-        call die(myname_,'nitem TrList check',ier)
+        call die(myname_,'nitem TrList check',3)
       endif
     endif
 
@@ -1999,7 +1999,7 @@
       if( nitem(icpList) .ne. nitem(TicpList)) then
         write(stderr,'(2a)')myname_, &
          'MCTERROR:  Input iList and TiList do not have the same size'
-        call die(myname_,'nitem TiList check',ier)
+        call die(myname_,'nitem TiList check',4)
       endif
     endif
 
@@ -2035,8 +2035,8 @@
        enddo
      enddo
     endif
-    deallocate(aVinindices, aVoutindices,stat=ierr)
-    if(ierr /= 0) call die(myname_,'deallocate real(Vinindices...',ierr)
+    deallocate(aVinindices, aVoutindices,stat=ier)
+    if(ier /= 0) call die(myname_,'deallocate real(Vinindices...',ier)
 
     data_flag = 'INTEGER'
     call aVaVSharedAttrIndexList_(aVin, aVout, data_flag, num_indices, &
@@ -2048,8 +2048,8 @@
        enddo
      enddo
     endif
-    deallocate(aVinindices, aVoutindices,stat=ierr)
-    if(ierr /= 0) call die(myname_,'deallocate int(Vinindices...',ierr)
+    deallocate(aVinindices, aVoutindices,stat=ier)
+    if(ier /= 0) call die(myname_,'deallocate int(Vinindices...',ier)
 
   endif
 
