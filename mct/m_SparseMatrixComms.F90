@@ -50,7 +50,7 @@
 !           and cleaned up prologues.
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_SparseMatrixComms'
+  character(len=*),parameter :: myname='MCT::m_SparseMatrixComms'
 
  contains
 
@@ -145,6 +145,14 @@
 
   if(present(stat)) stat = 0
 
+       ! can't scatter vector parts.
+  if(GsMat%vecinit) then
+      write(stderr,*) myname_,&
+      "Cannot scatter SparseMatrix with initialized vector parts."
+      call die(myname_,"Scatter SparseMatrix with vecinit TRUE.",ierr)
+  endif
+
+
        ! Which process am I?
 
   call MPI_COMM_RANK(comm, myID, ierr)
@@ -193,6 +201,9 @@
 
   LsMat%nrows = NumRowsColumns(1)
   LsMat%ncols = NumRowsColumns(2)
+
+       ! Set the value of vecinit
+  LsMat%vecinit = .FALSE.
 
        ! Finally, lets sort the distributed local matrix elements
 
@@ -302,6 +313,13 @@
 
   if(present(stat)) stat = 0
 
+       ! can't scatter vector parts.
+  if(GsMat%vecinit) then
+      write(stderr,*) myname_,&
+      "Cannot scatter SparseMatrix with initialized vector parts."
+      call die(myname_,"Scatter SparseMatrix with vecinit TRUE.",ierr)
+  endif
+
        ! Which process are we?
 
   call MPI_COMM_RANK(comm, myID, ierr)
@@ -345,6 +363,9 @@
 
   LsMat%nrows = NumRowsColumns(1)
   LsMat%ncols = NumRowsColumns(2)
+
+       ! Set the value of vecinit
+  LsMat%vecinit = .FALSE.
 
        ! Sort the matrix entries in sMat by row, then column.  
        ! First, create the key list...
@@ -427,6 +448,12 @@
 
   if(present(stat))  stat = 0
 
+  if(LsMat%vecinit) then
+      write(stderr,*) myname_,&
+      "Cannot gather SparseMatrix with initialized vector parts."
+      call die(myname_,"Gather SparseMatrix with vecinit TRUE.",ierr)
+  endif
+
   call AttrVect_gather(LsMat%data, GsMat%data, GMap, root, comm, ierr)
   if(ierr /= 0) then
      if(present(stat)) then
@@ -445,6 +472,8 @@
 
   GsMat%nrows = SparseMatrix_nRows(LsMat)
   GsMat%ncols = SparseMatrix_nCols(LsMat)
+
+  GsMat%vecinit = .FALSE.
 
  end subroutine GM_gather_
 
@@ -512,6 +541,12 @@
 
   if(present(stat))  stat = 0
 
+  if(LsMat%vecinit) then
+      write(stderr,*) myname_,&
+      "Cannot gather SparseMatrix with initialized vector parts."
+      call die(myname_,"Gather SparseMatrix with vecinit TRUE.",ierr)
+  endif
+
        ! Gather the AttrVect component of LsMat to GsMat...
 
   call AttrVect_gather(LsMat%data, GsMat%data, GSMap, root, comm, ierr)
@@ -532,6 +567,8 @@
 
   GsMat%nrows = SparseMatrix_nRows(LsMat)
   GsMat%ncols = SparseMatrix_nCols(LsMat)
+
+  GsMat%vecinit = .FALSE.
 
  end subroutine GSM_gather_
 
@@ -609,6 +646,12 @@
 
   if(present(stat)) stat = 0
 
+  if(sMat%vecinit) then
+      write(stderr,*) myname_,&
+      "Cannot broadcast SparseMatrix with initialized vector parts."
+      call die(myname_,"Gather SparseMatrix with vecinit TRUE.",ierr)
+  endif
+
        ! Determine local process ID myID:
 
   call MPI_COMM_RANK(comm, myID, ierr)
@@ -647,6 +690,8 @@
      sMat%nrows = NumRowsColumns(1)
      sMat%ncols = NumRowsColumns(2)
   endif
+
+  sMat%vecinit = .FALSE.
 
  end subroutine Bcast_
 
