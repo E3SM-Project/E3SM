@@ -3345,37 +3345,37 @@ echo "OS=$osname"
 
 # CHECK OS NAME
 if echo $osname | grep -i aix >/dev/null 2>&1; then
-   OSDEF="AIX"
+   SYSDEF="AIX"
 fi
 if echo $osname | grep -i darwin >/dev/null 2>&1; then
-   OSDEF="DARWIN"
+   SYSDEF="DARWIN"
 fi
 if echo $osname | grep -i unix_system_v >/dev/null 2>&1; then
-   OSDEF="UNIXSYSTEMV"
+   SYSDEF="UNIXSYSTEMV"
 fi
 if echo $osname | grep -i irix >/dev/null 2>&1; then
-   OSDEF="IRIX"
+   SYSDEF="IRIX"
 fi
 if echo $osname | grep -i irix64 >/dev/null 2>&1; then
-   OSDEF="IRIX64"
+   SYSDEF="IRIX64"
 fi
 if echo $osname | grep -i linux >/dev/null 2>&1; then
-   OSDEF="LINUX"
+   SYSDEF="LINUX"
 fi
 if echo $osname | grep -i osf1 >/dev/null 2>&1; then
-   OSDEF="OSF1"
+   SYSDEF="OSF1"
 fi
 if echo $osname | grep -i super >/dev/null 2>&1; then
-   OSDEF="SUPERUX"
+   SYSDEF="SUPERUX"
 fi
 if echo $osname | grep -i sun >/dev/null 2>&1; then
-   OSDEF="SUNOS"
+   SYSDEF="SUNOS"
 fi
 if echo $osname | grep -i t3e >/dev/null 2>&1; then
-   OSDEF="T3E"
+   SYSDEF="T3E"
 fi
 if echo $osname | grep -i unicos >/dev/null 2>&1; then
-   OSDEF="UNICOS"
+   SYSDEF="UNICOS"
 fi
 
 # CHECK COMPILER NAME
@@ -3593,17 +3593,21 @@ if echo $f90_version | grep -i sx >/dev/null 2>&1; then
 fi
 
 # SET THE PREPROCESSOR DEFINE FLAGS
-
 if test -z "$MACHDEFS"; then
 
-   MACHDEFS="-D$SYSDEF -D$CPRDEF"
+   if test -z "$SYSDEF"; then
+      echo "WARNING: OPERATING SYSTEM UNKNOWN"
+      SYSDEF="UNKNOWN"
+   fi
+
+   MACHDEFS="-DSYS$SYSDEF -DCPR$CPRDEF"
    if test -n "$SRKDEF"; then
       MACHDEFS="$MACHDEFS -D$SRKDEF"
    fi
 
    if test "$F90" = "xlf90"; then
       if test "$ac_cv_f90_fpp_compiler" = "yes"; then
-         MACHDEFS="-WF,-D$SYSDEF,-D$CPRDEF"
+         MACHDEFS="-WF,-DSYS$SYSDEF,-DCPR$CPRDEF"
 	 if test -n "$SRKDEF"; then
             MACHDEFS="$MACHDEFS,-D$SRKDEF"
          fi
@@ -3612,7 +3616,7 @@ if test -z "$MACHDEFS"; then
 
    if test "$F90" = "frt"; then
       if test "$ac_cv_f90_fpp_compiler" = "yes"; then
-         MACHDEFS="-Wp,-D$SYSDEF,-D$CPRDEF"
+         MACHDEFS="-Wp,-DSYS$SYSDEF,-DCPR$CPRDEF"
          if test -n "$SRKDEF"; then
             MACHDEFS="$MACHDEFS,-D$SRKDEF"
          fi
