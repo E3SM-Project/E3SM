@@ -436,6 +436,7 @@
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nIAttr => nIAttr
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
+      use m_AttrVect, only : AttrVect_clean => clean
 
       implicit none
 
@@ -465,6 +466,7 @@
   integer :: nIA,nRA,niV,noV,ier
   integer :: myID
   integer :: mp_Type_iV,mp_Type_oV
+  type(AttrVect) :: nonRootAV
 
   if(present(stat)) stat=0
 
@@ -479,43 +481,92 @@
   noV=AttrVect_lsize(iV)
 
   if(niV /= noV) then
-     write(stderr,'(2a,i4,a,i4)') myname_,	&
+     write(stderr,'(2a,i4,a,i4,a,i4)') myname_,	&
 	  ': invalid input, lsize(GMap) =',niV,	&
-	  ', lsize(iV) =',noV
+	  ', lsize(iV) =',noV, 'myID =', myID
      if(.not.present(stat)) call die(myname_)
      stat=-1
      return
   endif
 
   noV=GlobalMap_gsize(GMap) ! the gathered local size, as for the output
-  if(myID /= root) nov=0
-  call AttrVect_init(oV,iV,noV)
+
+  if(myID == root) then
+     call AttrVect_init(oV,iV,noV)
+  else
+     call AttrVect_init(nonRootAV,iV,1)
+  endif
 
   niV=GlobalMap_lsize(GMap) ! the scattered local size, as for the input
 
-  nIA=AttrVect_nIAttr(oV)	! number of INTEGER attributes
-  nRA=AttrVect_nRAttr(oV)	! number of REAL attributes
+  nIA=AttrVect_nIAttr(iV)	! number of INTEGER attributes
+  nRA=AttrVect_nRAttr(iV)	! number of REAL attributes
 
   if(nIA > 0) then
-     call MPI_gatherv(iV%iAttr(1,1),niV*nIA,MP_INTEGER,			&
-	  oV%iAttr,GMap%counts*nIA,GMap%displs*nIA,MP_INTEGER,	&
-	  root,comm,ier)
+     
+     if(myID == root) then
 
-     if(ier /= 0) then
-	call MP_perr_die(myname_,':: call MPI_gatherv(iV%iAttr,...)',ier)
-     endif
-  endif
+        call MPI_gatherv(iV%iAttr(1,1),niV*nIA,MP_INTEGER,		&
+             oV%iAttr(1,1),GMap%counts*nIA,GMap%displs*nIA,             &
+             MP_INTEGER,root,comm,ier)
+        if(ier /= 0) then
+           call MP_perr_die(myname_,':: MPI_gatherv(iAttr) on root',ier)
+        endif
+
+     else
+        
+        call MPI_gatherv(iV%iAttr(1,1),niV*nIA,MP_INTEGER,		&
+             nonRootAV%iAttr(1,1),GMap%counts*nIA,GMap%displs*nIA,      &
+             MP_INTEGER,root,comm,ier)
+        if(ier /= 0) then
+           call MP_perr_die(myname_,':: MPI_gatherv(iAttr) off root',ier)
+        endif
+
+     endif  ! if(myID == root)
+        
+  endif  ! if(nIA > 0)
 
   if(nRA > 0) then
-     mp_Type_iV=MP_Type(iV%rAttr)
-     mp_Type_oV=MP_Type(oV%rAttr)
 
-     call MPI_gatherv(iV%rAttr(1,1),niV*nRA,mp_Type_iV,	&
-	  oV%rAttr,GMap%counts*nRA,GMap%displs*nRA,mp_Type_oV,&
-	  root,comm,ier)
+     if(myID == root) then
 
+        mp_Type_iV=MP_Type(iV%rAttr(1,1))
+        mp_Type_oV=MP_Type(oV%rAttr(1,1))
+
+        call MPI_gatherv(iV%rAttr(1,1),niV*nRA,mp_Type_iV,	        &
+             oV%rAttr(1,1),GMap%counts*nRA,GMap%displs*nRA,             & 
+             mp_Type_oV,root,comm,ier)
+        if(ier /= 0) then
+           call MP_perr_die(myname_,':: MPI_gatherv(rAttr) on root',ier)
+        endif
+
+     else
+
+        mp_Type_iV=MP_Type(iV%rAttr(1,1))
+        mp_Type_oV=MP_Type(nonRootAV%rAttr(1,1))
+
+        call MPI_gatherv(iV%rAttr(1,1),niV*nRA,mp_Type_iV,	        &
+             nonRootAV%rAttr(1,1),GMap%counts*nRA,GMap%displs*nRA,      &
+             mp_Type_oV,root,comm,ier)
+        if(ier /= 0) then
+           call MP_perr_die(myname_,':: MPI_gatherv(rAttr) off root',ier)
+        endif
+
+
+     endif  ! if(myID == root)
+
+  endif  ! if(nRA > 0)
+
+
+
+  if(myID /= root) then
+     call AttrVect_clean(nonRootAV,ier)
      if(ier /= 0) then
-	call MP_perr_die(myname_,':: call MPI_gatherv(iV%rAttr,...)',ier)
+        write(stderr,'(2a,i4)') myname_,	&
+             ':: AttrVect_clean(nonRootAV) failed for non-root &
+             &process: myID = ', myID
+        call die(myname_,':: AttrVect_clean failed &
+             &for nonRootAV off of root',ier)
      endif
   endif
 
@@ -784,7 +835,7 @@
 
        ! Finally, clean up allocated structures:
 
-  call AttrVect_clean(workV)
+  if(myID == root) call AttrVect_clean(workV)
   call GlobalMap_clean(workGMap)
 
   deallocate(lns, stat=ierr)
@@ -845,6 +896,7 @@
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nIAttr => nIAttr
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
+      use m_AttrVect, only : AttrVect_clean => clean
 
       implicit none
 
@@ -852,8 +904,8 @@
 !
       type(AttrVect),           intent(in)  :: iV
       type(GlobalMap),          intent(in)  :: GMap
-      integer,                  intent(in) :: root
-      integer,                  intent(in) :: comm
+      integer,                  intent(in)  :: root
+      integer,                  intent(in)  :: comm
 
 ! !OUTPUT PARAMETERS:
 !
@@ -885,6 +937,7 @@
   integer :: myID
   integer :: mp_Type_iV,mp_Type_oV
   type(List) :: iList, rList
+  type(AttrVect) :: nonRootAV
 
   if(present(stat)) stat=0
 
@@ -896,25 +949,22 @@
 	! Verify the input: a _gathered_ vector
 
   if(myID == root) then
+
      niV = GlobalMap_gsize(GMap)  ! the _gathered_ local size
-  else 
-     niV=0  ! off the root, there should be no input data
+     noV = AttrVect_lsize(iV)     ! the length of the input AttrVect iV
+
+     if(niV /= noV) then
+        write(stderr,'(2a,i5,a,i8,a,i8)') myname_,	&
+             ': myID = ',myID,'.  Invalid input on root, gsize(GMap) =',&
+             niV,', lsize(iV) =',noV
+        if(present(stat)) then
+           stat=-1
+        else
+           call die(myname_)
+        endif
+     endif
+
   endif
-
-  noV = AttrVect_lsize(iV)  ! the length of the input AttrVect iV
-
-  if(niV /= noV) then
-    write(stderr,'(2a,i5,a,i8,a,i8)') myname_,	&
-	': myID = ',myID,'.  Invalid input, gsize(GMap) =',niV,	&
-	', lsize(iV) =',noV
-    if(present(stat)) then
-       stat=-1
-    else
-       call die(myname_)
-    endif
-  endif
-
-  noV = GlobalMap_lsize(GMap) ! the _scatterd_ local size
 
         ! On the root, read the integer and real attribute 
         ! lists off of iV.
@@ -948,43 +998,86 @@
   if(ier /= 0) call MP_perr(myname_,'MPI_BCAST(nRA)',ier)
 
   if(nIA>0) call List_bcast(iList, root, comm)
-
   if(nRA>0) call List_bcast(rList, root, comm)
 
+  noV = GlobalMap_lsize(GMap) ! the _scatterd_ local size
 
-        ! On all processes, use List data and noV to initialize oV
+        ! On all processes, use List data and noV to initialize oV 
 
   call AttrVect_init(oV, iList, rList, noV)
 
+        ! Initialize a dummy AttrVect for non-root MPI calls
+
+  if(myID/=root) call AttrVect_init(nonRootAV,oV,1)
 
   if(nIA > 0) then
 
-     call MPI_scatterv(iV%iAttr(1,1),GMap%counts*nIA,	&
-	  GMap%displs*nIA,MP_INTEGER,			&
-	  oV%iAttr(1,1),noV*nIA,MP_INTEGER,root,comm,ier )
-     if(ier /= 0) then
-	call MP_perr_die(myname_,'MPI_scatterv(iAttr)',ier)
-     endif
+     if(myID == root) then
+
+        call MPI_scatterv(iV%iAttr(1,1),GMap%counts*nIA,	&
+             GMap%displs*nIA,MP_INTEGER,oV%iAttr(1,1),          &
+             noV*nIA,MP_INTEGER,root,comm,ier )
+        if(ier /= 0) then
+           call MP_perr_die(myname_,'MPI_scatterv(iAttr) on root',ier)
+        endif
+
+     else
+
+        call MPI_scatterv(nonRootAV%iAttr(1,1),GMap%counts*nIA,	&
+             GMap%displs*nIA,MP_INTEGER,oV%iAttr(1,1),          &
+             noV*nIA,MP_INTEGER,root,comm,ier )
+        if(ier /= 0) then
+           call MP_perr_die(myname_,'MPI_scatterv(iAttr) off root',ier)
+        endif
+
+     endif   ! if(myID == root)
 
      call List_clean(iList)
 
-  endif
+  endif   ! if(nIA > 0)
 
   if(nRA > 0) then
 
-     mp_Type_iV=MP_Type(iV%rAttr(1,1))
-     mp_Type_oV=MP_Type(oV%rAttr(1,1))
-     call MPI_scatterv(iV%rAttr(1,1),GMap%counts*nRA,	&
-	  GMap%displs*nRA,mp_Type_iV,				&
-	  oV%rAttr(1,1),noV*nRA,mp_Type_oV,root,comm,ier )
-     if(ier /= 0) then
-	call MP_perr_die(myname_,'MPI_scatterv(rAttr)',ier)
+     if(myID == root) then
+
+        mp_Type_iV=MP_Type(iV%rAttr(1,1))
+        mp_Type_oV=MP_Type(oV%rAttr(1,1))
+
+        call MPI_scatterv(iV%rAttr(1,1),GMap%counts*nRA,	&
+             GMap%displs*nRA,mp_Type_iV,oV%rAttr(1,1),          &
+             noV*nRA,mp_Type_oV,root,comm,ier )
+        if(ier /= 0) then
+           call MP_perr_die(myname_,'MPI_scatterv(rAttr) on root',ier)
+        endif
+
+     else
+
+        mp_Type_iV=MP_Type(nonRootAV%rAttr(1,1))
+        mp_Type_oV=MP_Type(oV%rAttr(1,1))
+
+        call MPI_scatterv(nonRootAV%rAttr(1,1),GMap%counts*nRA,	&
+             GMap%displs*nRA,mp_Type_iV,oV%rAttr(1,1),          &
+             noV*nRA,mp_Type_oV,root,comm,ier )
+        if(ier /= 0) then
+           call MP_perr_die(myname_,'MPI_scatterv(rAttr) off root',ier)
+        endif
+
      endif
 
      call List_clean(rList)
 
   endif
 
+  if(myID /= root) then
+     call AttrVect_clean(nonRootAV,ier)
+     if(ier /= 0) then
+        write(stderr,'(2a,i4)') myname_,	&
+             ':: AttrVect_clean(nonRootAV) failed for non-root &
+             &process: myID = ', myID
+        call die(myname_,':: AttrVect_clean failed &
+             &for nonRootAV off of root',ier)
+     endif
+  endif
 
  end subroutine GM_scatter_
 
