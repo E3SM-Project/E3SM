@@ -56,11 +56,11 @@
 ! The message is identified by the tag defined by the {\tt INTEGER} 
 ! argument {\tt TagBase}.  The success (failure) of this operation 
 ! corresponds to a zero (nonzero) value for the output {\tt INTEGER} 
-! flag {\tt stat}. 
+! flag {\tt status}. 
 !
 ! !INTERFACE:
 
- subroutine send_(iGGrid, dest, TagBase, comm, stat)
+ subroutine send_(iGGrid, dest, TagBase, comm, status)
 
 !
 ! !USES:
@@ -84,7 +84,7 @@
 
 ! !OUTPUT PARAMETERS: 
 !
-      integer, optional, intent(out) :: stat
+      integer, optional, intent(out) :: status
 
 ! !REVISION HISTORY:
 !       04Jun01 - J.W. Larson <larson@mcs.anl.gov> - API Specification.
@@ -92,6 +92,7 @@
 
   character(len=*),parameter :: myname_=myname//'::send_'
 
+  integer :: ierr
   logical :: HeaderAssoc(6)
 
       ! Step 1. Check elements of the GeneralGrid header to see 
@@ -172,7 +173,7 @@
 ! {\tt comm}.  The message is identified by the tag defined by the 
 ! {\tt INTEGER} argument {\tt tag}.  The success (failure) of this operation 
 ! corresponds to a zero (nonzero) value for the output {\tt INTEGER} flag 
-! {\tt stat}. 
+! {\tt status}. 
 !
 ! {\bf N.B.}:  This routine assumes that the {\tt GeneralGrid} argument
 ! {\tt oGGrid} is uninitialized on input; that is, all the {\tt List} 
@@ -182,7 +183,7 @@
 !
 ! !INTERFACE:
 
- subroutine recv_(oGGrid, source, tag_base, comm, stat)
+ subroutine recv_(oGGrid, source, tag_base, comm, status)
 
 !
 ! !USES:
@@ -206,7 +207,7 @@
 ! !OUTPUT PARAMETERS: 
 !
       type(GeneralGrid), intent(out) :: oGGrid
-      integer, optional, intent(out) :: stat
+      integer, optional, intent(out) :: status
 
 ! !REVISION HISTORY:
 !       04Jun01 - J.W. Larson <larson@mcs.anl.gov> - API Specification.

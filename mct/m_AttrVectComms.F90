@@ -255,17 +255,19 @@
       use m_List, only : List_nitem => nitem
       use m_List, only : List_recv => recv
 
+      use m_AttrVect, only : AttrVect
+
       implicit none
 
 ! !INPUT PARAMETERS: 
 !
-      type(AttrVect),     intent(in)  :: outAV
       integer,            intent(in)  :: dest
       integer,            intent(in)  :: TagBase
       integer,            intent(in)  :: comm
 
 ! !OUTPUT PARAMETERS: 
 !
+      type(AttrVect),     intent(out) :: outAV
       integer, optional,  intent(out) :: status
 
 ! !REVISION HISTORY:
