@@ -433,7 +433,7 @@ end function luavail
 #elif CPRINTEL
 ! no flush on Linux IA64 with Intel compiler
 #else
-# if SYSLINUX || SYSOSF1 || SYSSUNOS || SYSUNICOS || SYST3E || SYSFUJITSU || SYSSUPERUX
+# if SYSLINUX || SYSOSF1 || SYSSUNOS || SYSUNICOS || SYST3E || SYSUNIXSYSTEMV || SYSSUPERUX
    call flush(lu)
 # endif
 #endif
