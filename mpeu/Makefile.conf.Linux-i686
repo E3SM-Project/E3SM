@@ -39,8 +39,9 @@
 #EOP
 #-----------------------------------------------------------------------
 
-_Dsys		= -DsysLinux
+_Dsys		= -DSYSLINUX
 _Dnod		=
+_DF             = $(_Dsys) $(_Dnod)
 
 # Environments
 # ============
@@ -64,6 +65,7 @@ _R		=
 _Iconf		= $(_IMPI)
 
 SHELL		= /bin/sh
+FPP             = /lib/cpp
 F77		= mpif77
 F90		= mpif90
 FC		= $(F90)

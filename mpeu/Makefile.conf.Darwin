@@ -27,8 +27,9 @@
 #EOP
 #-----------------------------------------------------------------------
 
-_Dsys		= -DsysDarwin
+_Dsys		= -DSYSDARWIN
 _Dnod		=
+_DF             = $(_Dsys) $(_Dnod)
 
 # Environments
 # ============

@@ -35,8 +35,9 @@
 #EOP
 #-----------------------------------------------------------------------
 
-_Dsys		= -DsysSunOS
+_Dsys		= -DSYSSUNOS
 _Dnod		=
+_DF             = $(_Dsys) $(_Dnod)
 
 # Environments
 # ============
