@@ -70,7 +70,10 @@
         ! Sanity check of arguments:
 
   if(Accumulator_lsize(aC) /= AttrVect_lsize(aV)) then
-     call die(myname, "mismatched Accumulator / AttrVect sizes. AttrVect_lsize(aV) = ", AttrVect_lsize(aV), "Accumulator_lsize(aC) = ", Accumulator_lsize(aC))
+     call die(myname, &
+     "mismatched Accumulator  AttrVect sizes. AttrVect_lsize(aV) = ",&
+     AttrVect_lsize(aV), "Accumulator_lsize(aC) = ", &
+     Accumulator_lsize(aC))
   endif
 
   if(aC%num_steps == 0) then
