@@ -31,8 +31,7 @@
       use m_Accumulator, only : Accumulator_nRAttr => nRAttr
       use m_Accumulator, only : Accumulator_indexRA => indexRA
       use m_Accumulator, only : Accumulator_indexIA => indexIA
-
-      use m_SharedAttrIndices, only : SharedAttrIndexList
+      use m_Accumulator, only : SharedAttrIndexList
 
       implicit none
 
