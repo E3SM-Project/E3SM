@@ -13,6 +13,12 @@
 #	An include file of configurations.  See Makefile for additional
 #   `make' procedures.  This include file is used to overide the default
 #   environments (including commands) defined in file Makefile.
+
+#   IMPORTANT NOTE:  This Linux makefile assumes you are using the Portland Group
+#   compiler pgf90.  You must comment/uncomment the appropriate FFLAGS string below
+#   if you are using a different Linux compiler (NAG, Absoft, Intel).  You'll
+#   need to do this in each Makefile.conf.Linux-i686 in the MCT directory structure.
+#   (There's 3 in the basic mpeu,mct dirs.  1 more in ut-mct.)
 #
 # !INTERFACE:
 #
@@ -38,26 +44,6 @@ _Dnod		=
 
 # Environments
 # ============
-
-# Regarding Compilers...
-#
-# We have tested the Linux-i686 build using the pgf90 and Absoft 
-# f90 compilers.  We have been successful using the NAG F95 compiler 
-# on the SunOS platform, which was achieved by providing the
-# additional options to the # macros FFLAGS and FPPFLAGS shown below:
-#
-# FFLAGS = -dusty -kind=byte
-# FPPFLAGS = -DNAG
-#
-# If using pgf90 compiler, add the following options to the 
-# FFLAGS macro:
-# FFLAGS = -tp p6 -pc 32 -Mnoframe -byteswapio 
-# -pc specifies 32-bit or 64-bit 
-#
-# If using Absoft compiler, add the following options to the 
-# FFLAGS macro.
-# FFLAGS = -Mnoframe
-# Add $(_p) to the compilation lines for *.f and *.f90
 
 # Assume MPICH is being used for Linux-i686
 #  use mpif90 and mpif77 to compile and link.
@@ -90,9 +76,41 @@ F77		= mpif77
 F90		= mpif90
 FC		= $(F90)
 
+######################################################################
+# NOTE:  Choose the appropriate pair of FFLAGS/FPPFLAGS strings
+# for your Linux compiler below by commenting out/uncommenting
+# the appropriate lines
+######################################################################
+
+#############################
+#  Portland Group (pgf90) flags
+#############################
 FFLAGS		= -O2 -tp p6 -pc 32 -Mnoframe -byteswapio $(_R)
+FPPFLAGS	= -DLANGUAGE_FORTRAN -traditional
 CFLAGS		= -O
 
+#############################
+# NAG flags 
+#############################
+#FFLAGS         = -O2 -dusty -kind=byte  $(_R)
+#FPPFLAGS       = -DLANGUAGE_FORTRAN -DNAG -traditional
+#CFLAGS         = -O
+
+#############################
+# Absoft flags 
+#############################
+#FFLAGS         = -O2 -Mnoframe  $(_R)
+#FPPFLAGS       = -DLANGUAGE_FORTRAN -traditional
+#CFLAGS         = -O -DABSOFT
+
+#############################
+# Intel v7 (ifc) flags
+#############################
+#FFLAGS         = -O2 -tpp6 -w95 $(_R)
+#FPPFLAGS       = -DLANGUAGE_FORTRAN -traditional
+#CFLAGS         = -O
+
+#####################################################################
 
 LD		= mpif90
 LDFLAGS		= $(FFLAGS)
@@ -100,8 +118,6 @@ LDFLAGS		= $(FFLAGS)
 LIBprof		= #-lprof
 LIBsys	 	= 
 
-
-FPPFLAGS	= -DLANGUAGE_FORTRAN -traditional
 
 .F.o:
 	$(FPP) $(FPPFLAGS) $(_I) $(_DF) $*.F $*.f
