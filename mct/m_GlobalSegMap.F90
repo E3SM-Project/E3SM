@@ -111,8 +111,13 @@
                                                  ! is assumed.
 
 ! !REVISION HISTORY:
-! 	29Sep98 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+! 	29Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 ! 	14Nov00 - J.W. Larson <larson@mcs.anl.gov> - final working version
+! 	09Jan01 - J.W. Larson <larson@mcs.anl.gov> - repaired:  a subtle 
+!                 bug concerning the usage of the argument pe_loc (result 
+!                 was the new pointer variable my_pe_loc); a mistake in 
+!                 the tag arguments to MPI_IRECV; a bug in the declaration
+!                 of the array status used by MPI_WAITALL.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::initd_'
@@ -122,11 +127,15 @@
   integer, dimension(:), allocatable :: root_start, root_length, root_pe_loc
         ! arrays allocated on the root to coordinate gathering of 
         ! data and non-blocking receives by the root
-  integer, dimension(:), allocatable :: counts, displs, reqs, status
+  integer, dimension(:), allocatable :: counts, displs, reqs
+  integer, dimension(:,:), allocatable :: status
+        ! data and non-blocking receives by the root
+  integer, dimension(:), pointer :: my_pe_loc
 
         ! Determine local process ID:
 
   call MP_COMM_RANK(my_comm, myID, ier)
+
   if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
 
         ! Check of consistency of optional arguments
@@ -176,10 +185,12 @@
         ! with local size given by the input value of ngseg,
         ! and then initialize it with the local process id myID.
 
-  if(.not. present(pe_loc)) then
-     allocate(pe_loc(ngseg), stat=ier)
-     if(ier /= 0) call MP_perr_die(myname_,'allocate(pe_loc)',ier)
-     pe_loc = myID
+  if(present(pe_loc)) then
+     my_pe_loc => pe_loc
+  else
+     allocate(my_pe_loc(ngseg), stat=ier)
+     if(ier /= 0) call MP_perr_die(myname_,'allocate(my_pe_loc)',ier)
+     my_pe_loc = myID
   endif
 
   call MPI_COMM_SIZE(my_comm, npes, ier)
@@ -190,7 +201,7 @@
 
   if(myID == root) then
      allocate(counts(0:npes-1), displs(0:npes-1), reqs(0:npes-1), &
-	      status(0:npes-1), stat=ier)
+	      status(MP_STATUS_SIZE,0:npes-1), stat=ier)
      if (ier /= 0) then  
 	call MP_perr_die(myname_, 'allocate(counts,...',ier)
      endif
@@ -203,7 +214,7 @@
 
   if(myID == root) then
      do i=0,npes-1
-	call MPI_IRECV(counts(i), 1, MP_INTEGER, 1, i, &
+	call MPI_IRECV(counts(i), 1, MP_INTEGER, i, i, &
 	     my_comm, reqs(i), ier)
      end do
   endif
@@ -229,7 +240,7 @@
         if(i == 0) then
 	   displs(i) = 1
 	else
-	   displs(i) = counts(i-1) + 1
+	   displs(i) = displs(i-1) + counts(i-1)
 	endif
      end do
   endif
@@ -251,7 +262,7 @@
   endif
 
         ! Now, each process sends its values of start(:) to fill in 
-        ! the appropriate portion of root_start(:) on the root--post
+        ! the appropriate portion of root_start(:y) on the root--post
         ! non-blocking receives on the root first, then the individual
         ! sends, followed by a call to MPI_WAITALL().
    
@@ -259,7 +270,7 @@
   if(myID == root) then
      do i=0,npes-1
 	call MPI_IRECV(root_start(displs(i)), counts(i), MP_INTEGER, &
-	     1, i, my_comm, reqs(i), ier)
+	     i, i, my_comm, reqs(i), ier)
      end do
   endif
 
@@ -274,7 +285,6 @@
   call MPI_BARRIER(my_comm, ier)
   if(ier /= 0) call MP_perr_die(myname_,'MPI_BARRIER()',ier)
 
-
         ! Next, each process sends its values of length(:) to fill in 
         ! the appropriate portion of root_length(:) on the root--post
         ! non-blocking receives on the root first, then the individual
@@ -284,7 +294,7 @@
   if(myID == root) then
      do i=0,npes-1
 	call MPI_IRECV(root_length(displs(i)), counts(i), MP_INTEGER, &
-	     1, i, my_comm, reqs(i), ier)
+	     i, i, my_comm, reqs(i), ier)
      end do
   endif
 
@@ -298,7 +308,6 @@
 
   call MPI_BARRIER(my_comm, ier)
   if(ier /= 0) call MP_perr_die(myname_,'MPI_BARRIER()',ier)
-
 
         ! Finally, if the argument pe_loc is present, each process sends 
         ! its values of pe_loc(:) to fill in the appropriate portion of 
@@ -309,11 +318,12 @@
   if(myID == root) then
      do i=0,npes-1
 	call MPI_IRECV(root_pe_loc(displs(i)), counts(i), MP_INTEGER, &
-	     1, i, my_comm, reqs(i), ier)
+	     i, i, my_comm, reqs(i), ier)
      end do
   endif
 
-  call MPI_SEND(length, size(length), MP_INTEGER, root, myID, my_comm, ier)
+  call MPI_SEND(my_pe_loc, size(my_pe_loc), MP_INTEGER, root, myID, &
+       my_comm, ier)
   if(ier /= 0) call MP_perr_die(myname_,'MPI_COMM_SIZE()',ier)
 
   if(myID == root) then
@@ -323,7 +333,6 @@
 
   call MPI_BARRIER(my_comm, ier)
   if(ier /= 0) call MP_perr_die(myname_,'MPI_BARRIER()',ier)
-
 
         ! Now, we have everything on the root needed to call initr_().
 
@@ -348,8 +357,8 @@
         ! Clean up the array pe_loc(:) if it was allocated
 
   if(.not. present(pe_loc)) then
-     deallocate(pe_loc, stat=ier)
-     if(ier /= 0) call MP_perr_die(myname_, 'deallocate(pe_loc)', ier)
+     deallocate(my_pe_loc, stat=ier)
+     if(ier /= 0) call MP_perr_die(myname_, 'deallocate(my_pe_loc)', ier)
   endif
 
         ! Clean up arrays allocated on the root process:
