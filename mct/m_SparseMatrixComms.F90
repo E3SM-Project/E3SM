@@ -44,10 +44,10 @@
     interface Bcast ; module procedure Bcast_ ; end interface
 
 ! !REVISION HISTORY:
-!       13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
-!                 and API specifications.
-!       10May01 - J.W. Larson <larson@mcs.anl.gov> - added GM_gather_
-!                 and cleaned up prologues.
+! 13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+!           and API specifications.
+! 10May01 - J.W. Larson <larson@mcs.anl.gov> - added GM_gather_
+!           and cleaned up prologues.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_SparseMatrixComms'
@@ -61,6 +61,19 @@
 !
 ! !ROUTINE:  ScatterByColumnGSMap_()--Column-based scatter for SparseMatrix.
 ! 
+! !DESCRIPTION: This routine scatters the input {\tt SparseMatrix} 
+! argument {\tt GsMat} (valid only on the root) to a distributed 
+! {\tt SparseMatrix} variable {\tt LsMat} across all the processes 
+! present on the communicator associated with the integer handle 
+! {\tt comm}.  The decomposition defining the scatter is supplied by the 
+! input {\tt GlobalSegMap} argument {\tt columnGSMap}.  The optional 
+! output {\tt INTEGER} flag {\tt stat} signifies a successful (failed) 
+! operation if it is returned with value zero (nonzero).
+!
+! {\bf N.B.:}  This routine returns an allocated {\tt SparseMatrix} 
+! variable {\tt LsMat}.  The user must destroy this variable when it
+! is no longer needed by invoking {\tt SparseMatrix\_Clean()}.
+!
 ! !INTERFACE:
 
  subroutine ScatterByColumnGSMap_(columnGSMap, GsMat, LsMat, root, comm, stat)
@@ -100,25 +113,12 @@
    type(SparseMatrix), intent(out) :: LsMat
    integer, optional,  intent(out) :: stat
 
-! !DESCRIPTION: This routine scatters the input {\tt SparseMatrix} 
-! argument {\tt GsMat} (valid only on the root) to a distributed 
-! {\tt SparseMatrix} variable {\tt LsMat} across all the processes 
-! present on the communicator associated with the integer handle 
-! {\tt comm}.  The decomposition defining the scatter is supplied by the 
-! input {\tt GlobalSegMap} argument {\tt columnGSMap}.  The optional 
-! output {\tt INTEGER} flag {\tt stat} signifies a successful (failed) 
-! operation if it is returned with value zero (nonzero).
-!
-! {\bf N.B.:}  This routine returns an allocated {\tt SparseMatrix} 
-! variable {\tt LsMat}.  The user must destroy this variable when it
-! is no longer needed by invoking {\tt SparseMatrix\_Clean()}.
-!
 ! !REVISION HISTORY: 
 !
-!       13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial API spec.
-!       10May01 - J.W. Larson <larson@mcs.anl.gov> - cleaned up prologue.
-!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Made status flag stat
-!                 optional, and ititilaze it to zero if it is present.
+! 13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial API spec.
+! 10May01 - J.W. Larson <larson@mcs.anl.gov> - cleaned up prologue.
+! 13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Made status flag stat
+!           optional, and ititilaze it to zero if it is present.
 !EOP
 !-------------------------------------------------------------------------
 
@@ -194,6 +194,19 @@
 !
 ! !ROUTINE:  ScatterByRowGSMap_()--Row-based scatter for SparseMatrix.
 ! 
+! !DESCRIPTION: This routine scatters the input  {\tt SparseMatrix} 
+! argument {\tt GsMat} (valid only on the root) to a distributed 
+! {\tt SparseMatrix} variable {\tt LsMat} across all the processes 
+! present on the communicator associated with the integer handle 
+! {\tt comm}.  The decomposition defining the scatter is supplied by the 
+! input {\tt GlobalSegMap} argument {\tt rowGSMap}.  The output integer 
+! flag {\tt stat} signifies a successful (failed) operation if it is 
+! returned with value zero (nonzero).
+!
+! {\bf N.B.:}  This routine returns an allocated {\tt SparseMatrix} 
+! variable {\tt LsMat}.  The user must destroy this variable when it
+! is no longer needed by invoking {\tt SparseMatrix\_Clean()}.
+!
 ! !INTERFACE:
 
  subroutine ScatterByRowGSMap_(rowGSMap, GsMat, LsMat, root, comm, stat)
@@ -231,26 +244,13 @@
    type(SparseMatrix), intent(out) :: LsMat
    integer, optional,  intent(out) :: stat
 
-! !DESCRIPTION: This routine scatters the input  {\tt SparseMatrix} 
-! argument {\tt GsMat} (valid only on the root) to a distributed 
-! {\tt SparseMatrix} variable {\tt LsMat} across all the processes 
-! present on the communicator associated with the integer handle 
-! {\tt comm}.  The decomposition defining the scatter is supplied by the 
-! input {\tt GlobalSegMap} argument {\tt rowGSMap}.  The output integer 
-! flag {\tt stat} signifies a successful (failed) operation if it is 
-! returned with value zero (nonzero).
-!
-! {\bf N.B.:}  This routine returns an allocated {\tt SparseMatrix} 
-! variable {\tt LsMat}.  The user must destroy this variable when it
-! is no longer needed by invoking {\tt SparseMatrix\_Clean()}.
-!
 ! !REVISION HISTORY: 
 !
-!       13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial API spec.
-!       26Apr01 - R.L. Jacob  <jacob@mcs.anl.gov> - fix use statement
-!                 from SMDecomp so it points to ByRow
-!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Made status flag stat
-!                 optional, and ititilaze it to zero if it is present.
+! 13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial API spec.
+! 26Apr01 - R.L. Jacob  <jacob@mcs.anl.gov> - fix use statement
+!           from SMDecomp so it points to ByRow
+! 13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Made status flag stat
+!           optional, and ititilaze it to zero if it is present.
 !EOP
 !-------------------------------------------------------------------------
 
@@ -320,6 +320,17 @@
 !BOP
 !
 ! !ROUTINE:  GM_gather_()--Gather a distributed SparseMatrix to the root.
+!
+! !DESCRIPTION: This routine gathers the input distributed 
+! {\tt SparseMatrix} argument {\tt LsMat} to the {\tt SparseMatrix} 
+! variable {\tt GsMat} on the root.  The decomposition defining the gather 
+! is supplied by the input {\tt GlobalMap} argument {\tt GMap}.  The 
+! status flag {\tt stat} has value zero (nonzero) if the operation has 
+! succeeded (failed).
+!
+! {\bf N.B.:}  This routine returns an allocated {\tt SparseMatrix} 
+! variable {\tt GsMat}.  The user must destroy this variable when it
+! is no longer needed by invoking {\tt SparseMatrix\_Clean()}.
 ! 
 ! !INTERFACE:
 
@@ -352,24 +363,13 @@
    type(SparseMatrix), intent(out) :: GsMat
    integer, optional,  intent(out) :: stat
 
-! !DESCRIPTION: This routine gathers the input distributed 
-! {\tt SparseMatrix} argument {\tt LsMat} to the {\tt SparseMatrix} 
-! variable {\tt GsMat} on the root.  The decomposition defining the gather 
-! is supplied by the input {\tt GlobalMap} argument {\tt GMap}.  The 
-! status flag {\tt stat} has value zero (nonzero) if the operation has 
-! succeeded (failed).
-!
-! {\bf N.B.:}  This routine returns an allocated {\tt SparseMatrix} 
-! variable {\tt GsMat}.  The user must destroy this variable when it
-! is no longer needed by invoking {\tt SparseMatrix\_Clean()}.
-!
 ! !REVISION HISTORY: 
 !
-!       13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial API spec.
-!       10May01 - J.W. Larson <larson@mcs.anl.gov> - initial routine and
-!                 prologue
-!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Made status flag stat
-!                 optional, and ititilaze it to zero if it is present.
+! 13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial API spec.
+! 10May01 - J.W. Larson <larson@mcs.anl.gov> - initial routine and
+!           prologue
+! 13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Made status flag stat
+!           optional, and ititilaze it to zero if it is present.
 !EOP
 !-------------------------------------------------------------------------
 
@@ -407,6 +407,17 @@
 !BOP
 !
 ! !ROUTINE:  GSM_gather_()--Gather a distributed SparseMatrix to the root.
+!
+! !DESCRIPTION: This routine gathers the input distributed 
+! {\tt SparseMatrix} argument {\tt LsMat} to the {\tt SparseMatrix} 
+! variable {\tt GsMat} on the root.  The decomposition defining the gather 
+! is supplied by the input {\tt GlobalSegMap} argument {\tt GSMap}.  The 
+! status flag {\tt stat} has value zero (nonzero) if the operation has 
+! succeeded (failed).
+!
+! {\bf N.B.:}  This routine returns an allocated {\tt SparseMatrix} 
+! variable {\tt GsMat}.  The user must destroy this variable when it
+! is no longer needed by invoking {\tt SparseMatrix\_Clean()}.
 ! 
 ! !INTERFACE:
 
@@ -439,22 +450,11 @@
    type(SparseMatrix), intent(out) :: GsMat
    integer, optional,  intent(out) :: stat
 
-! !DESCRIPTION: This routine gathers the input distributed 
-! {\tt SparseMatrix} argument {\tt LsMat} to the {\tt SparseMatrix} 
-! variable {\tt GsMat} on the root.  The decomposition defining the gather 
-! is supplied by the input {\tt GlobalSegMap} argument {\tt GSMap}.  The 
-! status flag {\tt stat} has value zero (nonzero) if the operation has 
-! succeeded (failed).
-!
-! {\bf N.B.:}  This routine returns an allocated {\tt SparseMatrix} 
-! variable {\tt GsMat}.  The user must destroy this variable when it
-! is no longer needed by invoking {\tt SparseMatrix\_Clean()}.
-!
 ! !REVISION HISTORY: 
 !
-!       13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial API spec.
-!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Made status flag stat
-!                 optional, and ititilaze it to zero if it is present.
+! 13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial API spec.
+! 13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Made status flag stat
+!           optional, and ititilaze it to zero if it is present.
 !EOP
 !-------------------------------------------------------------------------
 
@@ -495,6 +495,15 @@
 !
 ! !ROUTINE:  Bcast_()--Broadcast a SparseMatrix.
 ! 
+! !DESCRIPTION: This routine broadcasts the {\tt SparseMatrix} argument 
+! {\tt sMat} from the root to all processes on the communicator associated
+! with the communicator handle {\tt comm}.  The status flag {\tt stat} 
+! has value zero if the operation has succeeded.
+!
+! {\bf N.B.:}  This routine returns an allocated {\tt SparseMatrix} 
+! variable {\tt sMat}.  The user must destroy this variable when it
+! is no longer needed by invoking {\tt SparseMatrix\_Clean()}.
+!
 ! !INTERFACE:
 
  subroutine Bcast_(sMat, root, comm, stat)
@@ -530,22 +539,13 @@
 !
    integer, optional,  intent(out) :: stat
 
-! !DESCRIPTION: This routine broadcasts the {\tt SparseMatrix} argument 
-! {\tt sMat} from the root to all processes on the communicator associated
-! with the communicator handle {\tt comm}.  The status flag {\tt stat} 
-! has value zero if the operation has succeeded.
-!
-! {\bf N.B.:}  This routine returns an allocated {\tt SparseMatrix} 
-! variable {\tt sMat}.  The user must destroy this variable when it
-! is no longer needed by invoking {\tt SparseMatrix\_Clean()}.
-!
 ! !REVISION HISTORY: 
 !
-!       13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial API spec/code
-!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Made status flag stat
-!                 optional, and ititilaze it to zero if it is present.
-!       17Jul02 - J.W. Larson <larson@mcs.anl.gov> - Bug fix--local 
-!                             process ID myID was uninitialized.
+! 13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial API spec/code
+! 13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Made status flag stat
+!           optional, and ititilaze it to zero if it is present.
+! 17Jul02 - J.W. Larson <larson@mcs.anl.gov> - Bug fix--local 
+!           process ID myID was uninitialized.
 !EOP
 !-------------------------------------------------------------------------
 
