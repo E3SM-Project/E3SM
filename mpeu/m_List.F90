@@ -293,8 +293,8 @@ contains
 
  subroutine clean_(aList,stat)
 
-      use m_die,only : die
-      use m_mall,only : mall_mco,mall_ison
+      use m_die,  only : warn
+      use m_mall, only : mall_mco,mall_ison
       implicit none
       type(List),        intent(inout) :: aList
       integer, optional, intent(out)   :: stat
