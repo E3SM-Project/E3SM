@@ -2515,7 +2515,7 @@ ac_compiler_gnu=$ac_cv_f90_compiler_gnu
   # look for "copyright" constructs in the output
   for ac_arg in $ac_f90_version_output; do
      case $ac_arg in
-        COPYRIGHT | copyright | Copyright | '(c)' | '(C)' | Compiler | Version)
+        COPYRIGHT | copyright | Copyright | '(c)' | '(C)' | Compiler | Compilers | Version)
           ac_cv_prog_f90_version=$ac_version
           break 2 ;;
      esac
@@ -3173,6 +3173,9 @@ esac
 
 if echo $f90_version | grep -i nag >/dev/null 2>&1; then
    MACHDEFS="-DCPRNAG $MACHDEFS"
+   if test -z "$FFLAGS"; then
+      FFLAGS="-dusty -kind=byte"
+   fi
 fi
 if echo $f90_version | grep -i absoft >/dev/null 2>&1; then
    MACHDEFS="-DCPRABSOFT $MACHDEFS"
@@ -3183,11 +3186,14 @@ if echo $f90_version | grep -i absoft >/dev/null 2>&1; then
       INCLUDEFLAG="-p"
    fi
 fi
+if echo $f90_version | grep -i workshop >/dev/null 2>&1; then
+   MACHDEFS="-DCPRWORKSHOP $MACHDEFS"
+   if test -z "$INCLUDEFLAG"; then
+      INCLUDEFLAG="-M"
+   fi
+fi
 if echo $f90_version | grep -i mipspro >/dev/null 2>&1; then
    MACHDEFS="-DCPRMIPSPRO $MACHDEFS"
-   if test -z "$FFLAGS"; then
-      FFLAGS="-O3"
-   fi
    if test -z "$REAL8"; then
       REAL8="-r8"
    fi
