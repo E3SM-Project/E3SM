@@ -87,6 +87,10 @@
       use m_GeneralGrid, only : GeneralGrid
       use m_GeneralGrid, only : GeneralGrid_init => init
       use m_GeneralGrid, only : GeneralGrid_lsize => lsize
+      use m_AttrVectComms,only : AttrVect_send => send
+      use m_AttrVectComms,only : AttrVect_scatter => scatter
+
+      use m_List,only : List_send => send
 
       implicit none
 
@@ -328,6 +332,9 @@
       use m_GeneralGrid, only : GeneralGrid
       use m_GeneralGrid, only : GeneralGrid_init => init
       use m_GeneralGrid, only : GeneralGrid_lsize => lsize
+      use m_AttrVectComms,only : AttrVect_recv => recv
+
+      use m_List,only : List_recv => recv
 
       implicit none
 
@@ -574,6 +581,7 @@
 
       use m_GeneralGrid, only : GeneralGrid
       use m_GeneralGrid, only : GeneralGrid_init => init
+!     use m_AttrVectComms,only : AttrVect_Gather => gather
 
       implicit none
 
@@ -688,6 +696,7 @@
       use m_GeneralGrid, only : GeneralGrid
       use m_GeneralGrid, only : GeneralGrid_init => init
       use m_GeneralGrid, only : GeneralGrid_lsize => lsize
+!     use m_AttrVectComms,only : AttrVect_Gather => gather
 
       implicit none
 
@@ -1045,6 +1054,8 @@
       use m_GeneralGrid, only : GeneralGrid_init => init
       use m_GeneralGrid, only : GeneralGrid_lsize => lsize
 
+      use m_AttrVectComms,only : AttrVect_bcast => bcast
+
       implicit none
 
 ! !INPUT PARAMETERS: 
@@ -1157,6 +1168,8 @@
       use m_GeneralGrid, only : GeneralGrid
       use m_GeneralGrid, only : GeneralGrid_init => init
       use m_GeneralGrid, only : GeneralGrid_lsize => lsize
+
+      use m_List, only : List_bcast => bcast
 
       implicit none
 
