@@ -345,8 +345,9 @@
      call AttrVect_clean(yPrimeAV, ierr)
   case default
      write(stderr,'(4a)') myname_, &
-	  ':: ERROR--parallelization strategy name ',&
+	  ':: FATAL ERROR--parallelization strategy name ',&
 	  String_ToChar(sMatPlus%Strategy),' not supported.'
+     call die(myname_)
   end select
 
  end subroutine sMatAvMult_SMPlus_
