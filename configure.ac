@@ -143,8 +143,10 @@ AC_LANG_POP(Fortran 90)
 AC_C_BIGENDIAN
 
 # CHECK IF FORTRAN COMPILER CREATES MODULE FILES IN UPPERCASE OR LOWERCASE
+OLDF90="$F90"
 OLDF90FLAGS="$F90FLAGS"
 
+F90="$FC" # use MPIF90, since differences may exist between MPIF90 and F90 
 if test "$F90" = "frt"; then # -Am flag needed for frt to gerate mod files
    F90FLAGS="$F90FLAGS -Am"
 fi
@@ -154,9 +156,13 @@ fi
 
 AC_F90_MOD_UPPERCASE
 
+F90="$OLDF90"
 F90FLAGS="$OLDF90FLAGS"
 
 # CHECK HOW TO NAME MANGLE C FUNCTIONS SO THAT IT CAN BE CALLED FROM FORTRAN
+OLDF90="$F90"
+F90="$FC" # use MPIF90, since differences may exist between MPIF90 and F90
+
 AC_F90_C_NAME_MANGLING
 case $ac_cv_f90_mangling in
   "lower case, underscore") 
@@ -169,6 +175,8 @@ case $ac_cv_f90_mangling in
          name_mangling="FORTRAN_MANGLING_UNKNOWN" 
 	 AC_MSG_WARN([UNKNOWN FORTRAN 90 NAME-MANGLING SCHEME]);;
 esac
+
+F90="$OLDF90"
 
 # FPP AND FPPFLAGS ARE HARDCODED AS A LAST RESORT:
 # DO NOT USE THE GNU C PREPROCESESSOR- 
@@ -184,6 +192,9 @@ fi
 
 # CHECK THAT THE FORTRAN COMPILER CAN CORRECTLY PROCESS THESE DIRECTIVES
 # IF NOT, USE THE EXTERNAL C PREPROCESSOR
+OLDF90="$F90"
+F90="$FC" # use MPIF90, since differences may exist between MPIF90 and F90
+
 defineflag="-Daardvark"
 if test "$F90" = "xlf90"; then
    defineflag="-WF,-Daardvark"
@@ -221,6 +232,8 @@ AC_CHECK_FPP_EXTERNAL(
 ], [$defineflag])
 
 fi
+
+F90="$OLDF90"
 
 # ACTIVATE F90RULE IF FORTRAN COMPILER SUCCEEDS AT PREPROCESSING
 # ACTIVATE F90RULECPP IF FOTRAN COMPILER FAILS AT PREPROCESSING
