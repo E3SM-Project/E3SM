@@ -107,6 +107,8 @@ Version 1$\beta3$ & June 6, 2001      & Convert to pure API's doc &
 \\\hline
 Version 1$\beta4$ & Apr 24, 2002      & Update with latest source &
 \\\hline
+Version 1.0 & Nov 14, 2002      & 1.0 Version &
+\\\hline
 \end{tabular}
 \end{center}
 
@@ -181,29 +183,34 @@ for the Model Coupling Toolkit (MCT).
 %
 %
 \part{High Level API's}
-\section{The Accumulator}
-\input{texsrc/m_Accumulator}
+%
+\section{Sending and Receiving Attribute Vectors}
+\input{texsrc/m_Transfer}
 \vspace*{\fill}
 \newpage
-\input{texsrc/accumulate}
+%
+\section{Rearranging Attribute Vectors}
+\input{texsrc/m_Rearranger}
 \vspace*{\fill}
 \newpage
-\input{texsrc/m_AccumulatorComms}
-\vspace*{\fill}
-\newpage
-\section{Sparse Matrix Support}
+%
+\section{Sprase Matrix Support}
 \input{texsrc/m_SparseMatrix}
 \vspace*{\fill}
 \newpage
+%
 \input{texsrc/m_SparseMatrixComms}
 \vspace*{\fill}
 \newpage
+%
 \input{texsrc/m_SparseMatrixDecomp}
 \vspace*{\fill}
 \newpage
+%
 \input{texsrc/m_SparseMatrixToMaps}
 \vspace*{\fill}
 \newpage
+%
 %
 \section{Matrix Vector Multiplication}
 \input{texsrc/m_MatAttrVectMul}
@@ -220,18 +227,17 @@ for the Model Coupling Toolkit (MCT).
 \vspace*{\fill}
 \newpage
 %
+\section{Time Averaging}
+\input{texsrc/m_Accumulator}
+\vspace*{\fill}
+\newpage
+%
+\input{texsrc/m_AccumulatorComms}
+\vspace*{\fill}
+\newpage
+%
 \section{Global To Local Index Translation}
 \input{texsrc/m_GlobalToLocal}
-\vspace*{\fill}
-\newpage
-%
-\section{Sending and Receiving Attribute Vectors}
-\input{texsrc/m_Transfer}
-\vspace*{\fill}
-\newpage
-%
-\section{Rearranging Attribute Vectors}
-\input{texsrc/m_Rearranger}
 \vspace*{\fill}
 \newpage
 %
