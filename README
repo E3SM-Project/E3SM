@@ -1,0 +1,71 @@
+######################################################################
+
+ -- Mathematics + Computer Science Div. / Argonne National Laboratory
+
+    Model Coupling Toolkit (mct)
+    Point of contact:  Jay Larson <larson@mcs.anl.gov>
+                       630 252 7806
+
+######################################################################
+
+  This is an early distribution of the Model Coupling Toolkit (mct).
+  Our purpose in creating this toolkit is to support the construction
+  of a highly portable and extensible high-performance flux couplers 
+  for climate system models such as the Community Climate System Model
+  (CCSM) and the Parallel Climate Model (PCM).  
+
+######################################################################
+
+  REVISION HISTORY:
+
+  18 Oct, 2000 -- Initial Release.
+
+
+  Current Contents of the directory MCT:
+
+  README -- this file
+
+  mpeu   -- Source code for the message-passing environment utilities
+            library (mpeu), which provides support for 
+
+  mct    -- Source code for the model coupling toolkit, which is built
+            on top of mpeu.
+
+######################################################################
+
+  BUILD INSTRUCTIONS:
+
+  1) cd mpeu, and in that directory perform the following steps:
+
+	$ ./configure
+	$ make all
+
+  2) go over to the mct directory and perform the following steps:
+
+	$ ./configure
+	$ make all
+
+  3) Usage of mct is then available through use of its modules, and
+     by linking in the libraries mpeu/libmpeu.a and mct/libmct.a
+
+######################################################################
+
+  Both mct and mpeu source code are self-documenting.  All modules 
+  and routines contain prologues that can be extracted processed 
+  into LaTeX source code by the public-domain tool ProTeX.  ProTeX is
+  available by anonymous ftp from:
+
+     Software:
+      ftp://dao.gsfc.nasa.gov/pub/papers/sawyer/protex1.4.tar.Z 
+     Documentation:
+      ftp://dao.gsfc.nasa.gov/pub/office_notes/on911r0.ps.Z 
+
+######################################################################
+
+N.B.:  mpeu is Authored and maintained by Jing Guo of NASA's Data 
+       Assimilation Office at Goddard Space Flight Center.  We have
+       established a branch in their repository to allow us to track
+       future DAO development of mpeu, and to allow us to incorporate
+       our own enhancements into their product.
+
+######################################################################

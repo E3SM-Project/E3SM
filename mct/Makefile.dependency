@@ -1,0 +1,8 @@
+m_AttrVect.o: 
+m_Accumulator.o: m_AttrVect.o
+m_GlobalMap.o:
+m_GlobalSegMap.o:
+m_Navigator.o:
+m_AttrVectComms.o: m_AttrVect.o m_GlobalMap.o
+m_AccumulatorComms.o: m_AttrVect.o m_GlobalMap.o m_AttrVectComms.o
+m_SparseMatrix.o: m_AttrVect.o m_GlobalMap.o m_AttrVectComms.o
