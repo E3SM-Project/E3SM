@@ -5,16 +5,23 @@
 ! CVS $Name$ 
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: MCT_Send
+! !IROUTINE: MCT_Send - Distributed send of an Attribute Vector
 !
 ! !DESCRIPTION:
-! Send the local AttrVect to another component using a Router.
-! Will send entire AttrVect.
-! Requires a corresponding MCT\_Recv to be called on the other component.
+! Send the the data in the {\tt AttrVect} {\tt aV} to the 
+! component specified in the {\tt Router} {\tt Rout}.  An error will 
+! result if the size of the attribute vector does not match the size
+! parameter stored in the {\tt Router}.
+!
+! Requires a corresponding {\tt MCT\_Recv} to be called on the other component.
+!
+! {\bf N.B.:} The {\tt AttrVect} argument in the corresponding
+! {\tt MCT\_Recv} call is assumed to have exactly the same attributes
+! in exactly the same order as {\tt aV}.
 !
 ! !INTERFACE:
 
- subroutine MCT_Send(aV, Rout, iList, rList)
+ subroutine MCT_Send(aV, Rout)
 
 !
 ! !USES:
@@ -33,24 +40,26 @@
 
       implicit none
 
+! !INPUT PARAMETERS:
+!
+
       Type(AttrVect),       intent(in) :: aV	
       Type(Router),         intent(in) :: Rout
-      Type(List), optional, intent(in) :: iList
-      Type(List), optional, intent(in) :: rList
 
 ! !REVISION HISTORY:
-!      07Feb01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
-!      08Feb01 - R. Jacob <jacob@mcs.anl.gov> - First working code
-!      18May01 - R. Jacob <jacob@mcs.anl.gov> - use MP_Type to
-!                determine type in mpi_send
-!      07Jun01 - R. Jacob <jacob@mcs.anl.gov> - remove logic to
-!                check "direction" of Router.  remove references
-!                to ThisMCTWorld%mylrank
-!      03Aug01 - E. Ong <eong@mcs.anl.gov> - Explicitly specify the starting
-!                address in mpi_send.  
-!      15Feb02 - R. Jacob <jacob@mcs.anl.gov> - Use MCT_comm
-!      26Mar02 - E. Ong <eong@mcs.anl.gov> - Apply faster copy order
-!      26Sep02 - R. Jacob <jacob@mcs.anl.gov> - Check Av against Router lAvsize
+! 07Feb01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
+! 08Feb01 - R. Jacob <jacob@mcs.anl.gov> - First working code
+! 18May01 - R. Jacob <jacob@mcs.anl.gov> - use MP_Type to
+!           determine type in mpi_send
+! 07Jun01 - R. Jacob <jacob@mcs.anl.gov> - remove logic to
+!           check "direction" of Router.  remove references
+!           to ThisMCTWorld%mylrank
+! 03Aug01 - E. Ong <eong@mcs.anl.gov> - Explicitly specify the starting
+!           address in mpi_send.  
+! 15Feb02 - R. Jacob <jacob@mcs.anl.gov> - Use MCT_comm
+! 26Mar02 - E. Ong <eong@mcs.anl.gov> - Apply faster copy order
+! 26Sep02 - R. Jacob <jacob@mcs.anl.gov> - Check Av against Router lAvsize
+! 05Nov02 - R. Jacob <jacob@mcs.anl.gov> - Remove iList, rList arguments.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_='MCT_Send'

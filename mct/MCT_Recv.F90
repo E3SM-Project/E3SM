@@ -5,18 +5,23 @@
 ! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: MCT_Recv
+! !IROUTINE: MCT_Recv - Distributed receive of an Attribute Vector
 !
 ! !DESCRIPTION:
-! Recieve into the AttrVect the data coming from the component
-! specified in the Router.  An Error will result if the
-! attribute list of the incoming data doesnt match any of
-! the attributes in the argument AttrVect.
-! Requires a corresponding MCT\_Send to be called on the other component.
+! Recieve into the {\tt AttrVect} {\tt aV} the data coming from the 
+! component specified in the {\tt Router} {\tt Rout}.  An error will 
+! result if the size of the attribute vector does not match the size
+! parameter stored in the {\tt Router}.
+!
+! Requires a corresponding {\tt MCT\_Send} to be called on the other component.
+!
+! {\bf N.B.:} The {\tt AttrVect} argument in the corresponding
+! {\tt MCT\_Send} call is assumed to have exactly the same attributes
+! in exactly the same order as {\tt aV}.
 !
 ! !INTERFACE:
 
- subroutine MCT_Recv(aV, Rout, iList, rList)
+ subroutine MCT_Recv(aV, Rout)
 !
 ! !USES:
 !
@@ -34,26 +39,27 @@
 
       implicit none
 
+! !INPUT PARAMETERS:
+!
       Type(AttrVect),       intent(inout) :: aV
       Type(Router),         intent(in)    :: Rout
-      Type(List), optional, intent(in)    :: iList
-      Type(List), optional, intent(in)    :: rList
 
 ! !REVISION HISTORY:
-!      07Feb01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
-!      08Feb01 - R. Jacob <jacob@mcs.anl.gov> - first working code
-!      18May01 - R. Jacob <jacob@mcs.anl.gov> - use MP_Type to
-!                determine type in mpi_recv
-!      07Jun01 - R. Jacob <jacob@mcs.anl.gov> - remove logic to
-!                check "direction" of Router.  remove references
-!                to ThisMCTWorld%mylrank
-!      03Aug01 - E.T. Ong <eong@mcs.anl.gov> - explicity specify starting
-!                address in MPI_RECV
-!      27Nov01 - E.T. Ong <eong@mcs.anl.gov> - deallocated to prevent
-!                memory leaks
-!      15Feb02 - R. Jacob <jacob@mcs.anl.gov> - Use MCT_comm
-!      26Mar02 - E. Ong <eong@mcs.anl.gov> - Apply faster copy order.
-!      26Sep02 - R. Jacob <jacob@mcs.anl.gov> - Check Av against Router lAvsize
+! 07Feb01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
+! 08Feb01 - R. Jacob <jacob@mcs.anl.gov> - first working code
+! 18May01 - R. Jacob <jacob@mcs.anl.gov> - use MP_Type to
+!           determine type in mpi_recv
+! 07Jun01 - R. Jacob <jacob@mcs.anl.gov> - remove logic to
+!           check "direction" of Router.  remove references
+!           to ThisMCTWorld%mylrank
+! 03Aug01 - E.T. Ong <eong@mcs.anl.gov> - explicity specify starting
+!           address in MPI_RECV
+! 27Nov01 - E.T. Ong <eong@mcs.anl.gov> - deallocated to prevent
+!           memory leaks
+! 15Feb02 - R. Jacob <jacob@mcs.anl.gov> - Use MCT_comm
+! 26Mar02 - E. Ong <eong@mcs.anl.gov> - Apply faster copy order.
+! 26Sep02 - R. Jacob <jacob@mcs.anl.gov> - Check Av against Router lAvsize
+! 06Nov02 - R. Jacob <jacob@mcs.anl.gov> - remove iList, rList
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_='MCT_Recv'
@@ -331,7 +337,4 @@
 
 
 end subroutine MCT_Recv
-
-
-
 
