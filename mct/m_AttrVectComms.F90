@@ -543,6 +543,10 @@
 !                 GlobalSegMap_ProcessStorage().
 ! 	26Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - add use statement for
 !                 AttVect_clean
+! 	26Apr01 - J.W. Larson <larson@mcs.anl.gov> - bug fixes--data 
+!                 misalignment in use of the GlobalMap to compute the
+!                 memory map into workV, and initialization of workV
+!                 on all processes.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GSM_scatter_'
@@ -578,10 +582,22 @@
 
      global_storage = GlobalSegMap_GlobalStorage(GSMap)
 
-       ! Initialize a work AttrVect type of the above 
-       ! length, and with the same attribute lists as iV:
+  endif
 
+       ! On the root, nitialize a work AttrVect type of the 
+       ! above length, and with the same attribute lists as iV.
+       ! on other processes, initialize workV only with the 
+       ! attribute information, but no storage.
+
+  if(myID == root) then
      call AttrVect_init(workV, iV, global_storage)
+  else
+     call AttrVect_init(workV, iV, 0)
+  endif
+
+       ! Return to processing on the root to load workV:
+
+  if(myID == root) then
 
        ! How many processes are there on this communicator?
 
@@ -617,7 +633,7 @@
        ! Initialize current_pos(:) using GMap%displs(:)
 
      do n=0,NumProcs-1
-	current_pos(n) = GMap%displs(n)
+	current_pos(n) = GMap%displs(n) + 1
      end do
 
        ! Load each segment of iV into its appropriate segment
