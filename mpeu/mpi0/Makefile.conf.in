@@ -2,11 +2,7 @@
 #-----------------------------------------------------------------------
 #       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 #-----------------------------------------------------------------------
-<<<<<<< Makefile.conf.in
 # CVS $Id$
-=======
-# CVS $Id$
->>>>>>> 1.7
 # CVS $Name$  
 #-----------------------------------------------------------------------
 #BOP
@@ -41,7 +37,7 @@ FPP		= @FPP@
 FPPFLAGS	= @FPPFLAGS@
 
 CC		= @CC@
-CFLAGS          = @CCFLAGS@
+CFLAGS          = @CCFLAGS@ 
 
 FC		= @FC@
 FCFLAGS		= @FCFLAGS@ @BIT64@
