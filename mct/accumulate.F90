@@ -108,7 +108,7 @@
 
         ! Accumulation of REAL attribute data:
 
-  if( aC%nrAction(MCT_SUM)+aC%nrAction(MCT_AVG) > 0 ) then 
+  if( associated(aC%rAction) ) then   ! if summing or avergaging reals... 
         
         ! Accumulate only if fields are present 
 
@@ -136,12 +136,12 @@
 
      endif ! if(num_indices > 0)
 
-  endif ! if(aC%nrAction(MCT_SUM)+aC%nrAction(MCT_AVG) > 0)
+  endif ! if( associated(aC%rAction) )
 
 
         ! Accumulation of INTEGER attribute data:
 
-  if( aC%niAction(MCT_SUM)+aC%niAction(MCT_AVG) > 0 ) then 
+  if( associated(aC%iAction) ) then    ! if summing or avergaging ints... 
 
         ! Accumulate only if fields are present
 
@@ -170,7 +170,7 @@
 
      endif ! if(num_indices > 0)
 
-  endif ! if(aC%niAction(MCT_SUM)+aC%niAction(MCT_AVG) > 0 )
+  endif ! if( associated(aC%iAction) )
 
         ! Increment aC%steps_done:
 
@@ -181,26 +181,22 @@
 
   if(aC%steps_done == num_steps) then
 
-     if( aC%nrAction(MCT_AVG) > 0 ) then
-	step_weight = 1 / float(num_steps)
-	do n=1,Accumulator_nRAttr(aC)
-           if( aC%rAction(n) == MCT_AVG ) then
-              do l=1,Accumulator_lsize(aC)
-                 aC%av%rAttr(n,l) = step_weight * aC%av%rAttr(n,l)
-              enddo
-           endif
-	enddo
-     endif
+     step_weight = 1 / float(num_steps)
+     do n=1,Accumulator_nRAttr(aC)
+	if( aC%rAction(n) == MCT_AVG ) then
+	   do l=1,Accumulator_lsize(aC)
+	      aC%av%rAttr(n,l) = step_weight * aC%av%rAttr(n,l)
+	   enddo
+	endif
+     enddo
      
-     if( aC%niAction(MCT_AVG) > 0 ) then
-	do n=1,Accumulator_nIAttr(aC)
-           if( aC%iAction(n) == MCT_AVG ) then
-              do l=1,Accumulator_lsize(aC)
-                 aC%av%iAttr(n,l) = aC%av%iAttr(n,l) / num_steps
-              enddo
-           endif
-	enddo
-     endif
+     do n=1,Accumulator_nIAttr(aC)
+	if( aC%iAction(n) == MCT_AVG ) then
+	   do l=1,Accumulator_lsize(aC)
+	      aC%av%iAttr(n,l) = aC%av%iAttr(n,l) / num_steps
+	   enddo
+	endif
+     enddo
 
   endif
 
