@@ -613,6 +613,8 @@ end subroutine flush_
 !                 with 1x.  This is apparently strict adherance to the
 !                 f90 standard (though the first of many, many compilers
 !                 where it has arisen).  This was for the SunOS platform.
+! 	24Feb01 - Jay Larson <larson@mcs.anl.gov> - Extra decimal place in
+!                 timing numbers (some reformatting will be necessary).
 !EOP
 !_______________________________________________________________________
   character(len=*),parameter :: myname_=myname//'::sp_balances_'
@@ -681,7 +683,8 @@ end subroutine flush_
     select case(l)
       case(0)
 	write(num,'(i4)') mxdep
-	write(lu,'(2(a,i3),2a,t26,2(1x,f7.1,1x,i4.2,a,i2.2,1x,f5.1,a))')&
+!	write(lu,'(2(a,i3),2a,t26,2(1x,f7.1,1x,i4.2,a,i2.2,1x,f5.1,a))')&
+	write(lu,'(2(a,i3),2a,t26,2(1x,f8.2,1x,i4.2,a,i2.2,1x,f6.2,a))')&
 	  name(1:ln),nreset,'s',ndep,'/',num,		&
 	  zt,zt_min,':',zt_sec,zt_percent,tag,		&
 	  sz,sz_min,':',sz_sec,sz_percent,tag
@@ -691,13 +694,15 @@ end subroutine flush_
 
       case default
         if(len_trim(name) < lnmax)then
-          write(lu,'(a,1x,i5,1x,f6.1,2(1x,f7.1,1x,i4.2,a,i2.2,1x,f5.1,a))') &
+!          write(lu,'(a,1x,i5,1x,f6.1,2(1x,f7.1,1x,i4.2,a,i2.2,1x,f5.1,a))') &
+          write(lu,'(a,1x,i5,1x,f7.2,2(1x,f8.2,1x,i4.2,a,i2.2,1x,f6.2,a))') &
 	  name(1:ln),knt_l(l),zt_percall,	&
 	  zt,zt_min,':',zt_sec,zt_percent,tag,	&
 	  sz,sz_min,':',sz_sec,sz_percent,tag
         else
           write(lu,'(a)')name(1:ln)
-          write(lu,'(13x,i5,1x,f6.1,2(1x,f7.1,1x,i4.2,a,i2.2,1x,f5.1,a))') &
+!          write(lu,'(13x,i5,1x,f6.1,2(1x,f7.1,1x,i4.2,a,i2.2,1x,f5.1,a))') &
+          write(lu,'(13x,i5,1x,f7.2,2(1x,f8.2,1x,i4.2,a,i2.2,1x,f6.2,a))') &
           knt_l(l),zt_percall,       &
 	  zt,zt_min,':',zt_sec,zt_percent,tag,	&
 	  sz,sz_min,':',sz_sec,sz_percent,tag

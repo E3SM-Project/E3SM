@@ -52,8 +52,8 @@ _R		=
 _Iconf		= $(_IMPI)
 
 SHELL		= /bin/sh
-F77		= fort
-F90		= fort
+F77		= /usr/local/mpich/bin/mpif77
+F90		= /usr/local/mpich/bin/mpif90
 FC		= $(F90)
 
 FFLAGS		= -O5 -fast -tune host -convert big_endian -automatic
