@@ -16,11 +16,17 @@ F90FLAGS        = @F90FLAGS@
 # OF NATIVE REAL TO 8 BIT REAL
 REAL8           = @REAL8@
 
+# FORTRAN COMPILE FLAG FOR CHANGING BYTE ORDERING
+ENDIAN          = @ENDIAN@
+
 # INCLUDE FLAG FOR LOCATING MODULES (-I, -M, or -p)
 INCFLAG         = @INCLUDEFLAG@
 
 # INCLUDE PATHS (PREPEND INCLUDE FLAGS -I, -M or -p)
 INCPATH         = $(addprefix @INCLUDEFLAG@,@INCLUDEPATH@ @MPIHEADER@)
+
+# MPI LIBRARIES (USUALLY -lmpi)
+MPILIBS         = @MPILIBS@
 
 # PREPROCESSOR VARIABLES #
 
@@ -74,6 +80,11 @@ libdir          = @prefix@/lib
 includedir      = @prefix@/include
 
 # OTHER COMMANDS #
+SHELL           = @SHELL@
+AR		= @AR@
 RM		= rm -f
-AR		= ar cq
+
+
+
+
 

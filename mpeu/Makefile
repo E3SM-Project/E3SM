@@ -1,4 +1,8 @@
 
+# MACHINE AND COMPILER FLAGS
+
+include ../Makefile.conf
+
 SHELL           = /bin/sh
 
 # SOURCE FILES
@@ -36,10 +40,6 @@ SRCS_C		= get_zeits.c
 
 OBJS_ALL	= $(SRCS_F90:.F90=.o)	\
 		  $(SRCS_C:.c=.o)
-
-# MACHINE AND COMPILER FLAGS
-
-include ../Makefile.conf
 
 # TARGETS
 
@@ -113,6 +113,14 @@ m_zeit.o: m_SortingTools.o m_die.o m_ioutil.o m_mpif90.o m_stdio.o
 get_zeits.o:
 m_FileResolv.o: m_die.o m_StrTemplate.o
 m_TraceBack.o:	m_die.o m_stdio.o m_String.o
+
+
+
+
+
+
+
+
 
 
 
