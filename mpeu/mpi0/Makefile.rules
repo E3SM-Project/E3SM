@@ -26,72 +26,14 @@
 #EOP
 #_______________________________________________________________________
 
-# Operating system development environment, such as the language
-# libraries and header files, UNIX libraries and header files, math
-# libraries (e.g. BLAS and LAPACK), and MPI, etc.
-
-OS_ROOT		= /usr
-OS_LOCAL	= /usr/local
-OS_IDIR		= -I$(OS_ROOT)/include	-I$(OS_LOCAL)/include
-OS_LDIR		= -L$(OS_ROOT)/lib	-L$(OS_LOCAL)/lib
-OS_lLIB		= -lblas -llapack
-
-# GEOS development environment, in case PSAS is to be developed with
-# ether GCM as well as the GEMS environment.
-
-GEOS_ROOT	= ..
-GEOS_IDIR	= -I$(GEOS_ROOT)/include -I$(GEOS_ROOT)/modules
-GEOS_LDIR	= -L$(GEOS_ROOT)/lib
-
-MY_ROOT		= ../src
-MY_IDIR		= -I$(MY_ROOT)/include	-I$(MY_ROOT)/modules
-MY_LDIR		= -L$(MY_ROOT)/lib
-MY_lLIB		= -lulev
-
 #-----------------------------------------------------------------------
 # Default configuration with common names
-
-SHELL		= sh
-
-MAKE		= make
-MAKEFILE	= Makefile
-#MAKECONF	= Makefile.conf
-#MAKERULE	= Makefile.rules
-#MAKESPEC	= Makefile.include
-
-CPP		= /lib/cpp
-CPPFLAGS	= -P
-
-CC		= cc
-CFLAGS		=
-
-# Fortran compiler and options for regular .F
-
-FC		= f90
-FFLAGS		=
-FPP		= $(CPP)
-FPPFLAGS	= $(CPPFLAGS)
-
-_DSYS	= -Dsys`uname -s`
-
-_IDIR	= $(MY_IDIR) $(GEOS_IDIR) $(OS_IDIR)
-_LDIR	= $(MY_LDIR) $(GEOS_LDIR) $(OS_LDIR)
-_lLIB	= $(MY_lLIB) $(GEOS_lLIB) $(OS_lLIB)
-
-_IDIR	= $(MY_IDIR)
-_LDIR	= $(MY_LDIR)
-_lLIB	= $(MY_lLIB)
-
-_IDIR	=
-_LDIR	=
-_lLIB	=
 
 # The Fortran 90 module file suffix
 M		= mod
 
-
-LD		= mpif77
-LDFLAGS		=
+MAKE		= make
+MAKEFILE	= Makefile
 
 LN		= ln -s
 RM		= rm -f
@@ -108,24 +50,6 @@ default:
 
 .SUFFIXES:
 .SUFFIXES: .H .h .F90 .f90 .F .f .c .o
-
-.c.o:
-	$(CC) -c $(CFLAGS) $(_DC) $(_IC) $*.c
-
-.f.o:
-	$(FC) -c $(FFLAGS) $(_I) $*.f
-
-.F.o:
-	$(FC) -c $(FPPFLAGS) $(_DF) $(FFLAGS) $(_I) $*.F
-
-.f90.o:
-	$(FC) -c $(FFLAGS) $(_I) $*.f90
-
-.F90.o:
-	$(FC) -c $(FPPFLAGS) $(_DF) $(FFLAGS) $(_I) $*.F90
-
-.H.h:
-	$(FPP) $(FPPFLAGS) $(_DF) $*.H $*.h
 
 #-----------------------------------------------------------------------
 # Recursive (conf), top-down
