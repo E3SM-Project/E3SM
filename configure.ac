@@ -7,10 +7,10 @@ AC_INIT(MCT, 1.0)
 AC_CONFIG_FILES(Makefile.conf)
 
 # Check for the install command
-AC_PROG_INSTALL
+AC_PROG_INSTALL([install-sh])
 
 # Check for the C compiler
-AC_PROG_CC([cc])
+AC_PROG_CC([cc escc])
 
 # Preset FCFLAGS and F90FLAGS
 if test -n "$F90FLAGS"; then
@@ -197,6 +197,9 @@ fi
 if echo $osname | grep -i darwin >/dev/null 2>&1; then
    MACHDEFS="-DSYSDARWIN $MACHDEFS"
 fi
+if echo $osname | grep -i esos >/dev/null 2>&1; then
+   AR="esar cqs"
+fi
 if echo $osname | grep -i unix_system_v >/dev/null 2>&1; then
    if test "$ac_cv_f90_fpp_compiler" = "yes"; then
       MACHDEFS="-Wp,-DSYSUNIXSYSTEMV"
@@ -253,6 +256,10 @@ AC_ARG_VAR(BIT64,Fortran compiler flag for generating 64-bit objects)
 AC_ARG_VAR(ENDIAN,Fortran compiler flag for converting big-endian to little-endian)
 AC_ARG_VAR(INCLUDEFLAG,Fortran compiler flag for specifying module search path)
 AC_ARG_VAR(INCLUDEPATH,Additional library and module paths)
+AC_ARG_VAR(AR,Archive command)
+
+# Set AR 
+AR="ar cq"
 
 # Check compiler name
 case $F90 in
@@ -392,6 +399,23 @@ if echo $f90_version | grep -i compaq >/dev/null 2>&1; then
 fi
 if echo $f90_version | grep -i sx >/dev/null 2>&1; then
    MACHDEFS="-DCPRSX $MACHDEFS"
+   ES="NO"
+   if echo $osname | grep -i esos >/dev/null 2>&1; then
+      ES="YES"
+   fi
+   if echo $osname | grep -i hp-ux >/dev/null 2>&1; then   
+      if test "$ac_hostname" = "moon"; then 
+         ES="YES"
+      fi
+   fi
+   if test "$ES" = "YES"; then   
+      if test -z "$FCFLAGS"; then
+         FCFLAGS="-EP -Wf'-pvctl fullmsg -L fmtlist transform map'"
+      fi
+      if test -z "$OPT"; then
+         OPT="-Cvopt"
+      fi      
+   fi
    if test -z "$FCFLAGS"; then
       FCFLAGS="-EP -Wf'-pvctl noassoc'"
    fi
