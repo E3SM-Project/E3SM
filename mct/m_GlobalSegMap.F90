@@ -65,7 +65,7 @@
     end interface
 
 ! !REVISION HISTORY:
-! 	28Sep98 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+! 	28Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_GlobalSegMap'
@@ -419,8 +419,12 @@
                                                  ! routine if no haloing
                                                  ! is assumed.
 ! !REVISION HISTORY:
-! 	29Sep98 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
-! 	09Nov98 - J.W. Larson <larson@mcs.anl.gov> - final working version
+! 	29Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+! 	09Nov00 - J.W. Larson <larson@mcs.anl.gov> - final working version
+! 	10Jan01 - J.W. Larson <larson@mcs.anl.gov> - minor bug fix
+! 	12Jan01 - J.W. Larson <larson@mcs.anl.gov> - minor bug fix regarding
+!                                                    disparities in ngseg on
+!                                                    the root and other pe's
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::initr_'
@@ -489,21 +493,21 @@
         ! length(:) and pe_loc(:), respectively
 
   if(myID == root) then
-     GSMap%start(1:ngseg) = start(1:ngseg)
-     GSMap%length(1:ngseg) = length(1:ngseg)
-     GSMap%pe_loc(1:ngseg) = pe_loc(1:ngseg)
+     GSMap%start(1:GSMap%ngseg) = start(1:GSMap%ngseg)
+     GSMap%length(1:GSMap%ngseg) = length(1:GSMap%ngseg)
+     GSMap%pe_loc(1:GSMap%ngseg) = pe_loc(1:GSMap%ngseg)
   endif
 
         ! Broadcast the root values of GSMap%start(:), GSMap%length(:),
         ! and GSMap%pe_loc(:)
 
-  call MPI_BCAST(GSMap%start, ngseg, MP_INTEGER, root, my_comm, ier)
+  call MPI_BCAST(GSMap%start, GSMap%ngseg, MP_INTEGER, root, my_comm, ier)
   if(ier/=0) call MP_perr_die(myname_,'MPI_BCAST(GSMap%start)',ier)
 
-  call MPI_BCAST(GSMap%length, ngseg, MP_INTEGER, root, my_comm, ier)
+  call MPI_BCAST(GSMap%length, GSMap%ngseg, MP_INTEGER, root, my_comm, ier)
   if(ier/=0) call MP_perr_die(myname_,'MPI_BCAST(GSMap%length)',ier)
 
-  call MPI_BCAST(GSMap%pe_loc, ngseg, MP_INTEGER, root, my_comm, ier)
+  call MPI_BCAST(GSMap%pe_loc, GSMap%ngseg, MP_INTEGER, root, my_comm, ier)
   if(ier/=0) call MP_perr_die(myname_,'MPI_BCAST(GSMap%pe_loc)',ier)
 
         ! The communicator handle (f90 integer) associated with 
@@ -540,7 +544,7 @@
      if(ier/=0) call MP_perr_die(myname_, 'MPI_BCAST(GSMap%gsize)', ier)
   else
      GSMap%gsize = 0
-     do i=1,1,ngseg
+     do i=1,GSMap%ngseg
 	GSMap%gsize = GSMap%gsize + GSMap%length(i)
      end do
   endif
@@ -552,7 +556,7 @@
 
   GSMap%lsize = 0
 
-  do i=1,1,ngseg
+  do i=1,GSMap%ngseg
      if(GSMap%pe_loc(i) == myID) then
 	GSMap%lsize = GSMap%lsize + GSMap%length(i)
      endif
@@ -586,7 +590,7 @@
       type(GlobalSegMap),intent(inout) :: GSMap
 
 ! !REVISION HISTORY:
-! 	29Sep98 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+! 	29Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::clean_'
@@ -634,7 +638,7 @@
       integer :: ngseg_
 
 ! !REVISION HISTORY:
-! 	29Sep98 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+! 	29Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::ngseg_'
@@ -667,7 +671,7 @@
       integer :: nlseg_
 
 ! !REVISION HISTORY:
-! 	29Sep98 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+! 	29Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::nlseg_'
@@ -713,7 +717,7 @@
       integer :: comm_
 
 ! !REVISION HISTORY:
-! 	29Sep98 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+! 	29Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::comm_'
@@ -743,7 +747,7 @@
       integer :: gsize_
 
 ! !REVISION HISTORY:
-! 	29Sep98 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+! 	29Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::gsize_'
@@ -770,7 +774,7 @@
       integer :: lsize_
 
 ! !REVISION HISTORY:
-! 	29Sep98 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+! 	29Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::lsize_'
@@ -803,7 +807,7 @@
       integer,           intent(out) :: rank    ! the pe on which this
                                                 ! element resides
 ! !REVISION HISTORY:
-! 	29Sep98 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+! 	29Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::rank1_'
@@ -854,7 +858,7 @@
       integer, dimension(:), pointer :: rank    ! the process(es) on which 
                                                 ! element i_g resides
 ! !REVISION HISTORY:
-! 	29Sep98 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+! 	29Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::rankm_'
