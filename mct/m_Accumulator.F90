@@ -52,6 +52,10 @@
       public :: exportRAttr  ! Return REAL attribute as a vector
       public :: importIAttr  ! Insert INTEGER vector as attribute
       public :: importRAttr  ! Insert REAL vector as attribute
+      public :: SharedAttrIndexList ! Returns the number of shared
+				    ! attributes, and lists of the
+				    ! respective locations of these
+				    ! shared attributes
 
 
 ! Definition of the Accumulator class:
@@ -92,6 +96,11 @@
     interface exportRAttr ; module procedure exportRAttr_ ; end interface
     interface importIAttr ; module procedure importIAttr_ ; end interface
     interface importRAttr ; module procedure importRAttr_ ; end interface
+    interface SharedAttrIndexList ; module procedure   &
+        aCaCSharedAttrIndexList_,  &   
+        aVaCSharedAttrIndexList_
+    end interface
+
 
 ! !REVISION HISTORY:
 ! 	 7Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
@@ -1138,5 +1147,154 @@
 
  end subroutine importRAttr_
 
- end module m_Accumulator
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: aCaCSharedAttrIndexList_ - AttrVect shared attributes.
+!
+! !DESCRIPTION:  {\tt aCaCSharedAttrIndexList\_()} takes a pair of 
+! user-supplied {\tt Accumulator} variables {\tt aC1} and {\tt aC2}, 
+! and for choice of either {\tt REAL} or {\tt INTEGER} attributes (as
+! specified literally in the input {\tt CHARACTER} argument {\tt attrib})
+! returns the number of shared attributes {\tt NumShared}, and arrays of
+! indices {\tt Indices1} and {\tt Indices2} to their storage locations
+! in {\tt aC1} and {\tt aC2}, respectively.
+!
+! {\bf N.B.:}  This routine returns two allocated arrays---{\tt Indices1(:)} 
+! and {\tt Indices2(:)}---which must be deallocated once the user no longer
+! needs them.  Failure to do this will create a memory leak.
+!
+! !INTERFACE:
+
+ subroutine aCaCSharedAttrIndexList_(aC1, aC2, attrib, NumShared, &
+                                     Indices1, Indices2)
+
+!
+! !USES:
+!
+      use m_stdio
+      use m_die,         only : MP_perr_die, die, warn
+
+      use m_List,     only : GetSharedListIndices
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+!
+      type(Accumulator),    intent(in)  :: aC1   
+      type(Accumulator),    intent(in)  :: aC2
+      character*7,          intent(in)  :: attrib
+
+! !OUTPUT PARAMETERS:   
+!
+      integer,           intent(out) :: NumShared
+
+      integer,dimension(:), pointer  :: Indices1
+      integer,dimension(:), pointer  :: Indices2
+
+! !REVISION HISTORY:
+!       07Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::aCaCSharedAttrIndexList_'
+
+  integer :: ierr
+
+       ! Based on the value of the argument attrib, pass the 
+       ! appropriate pair of Lists for comparison...
+
+  select case(trim(attrib))
+  case('REAL','real')
+     call GetSharedListIndices(aC1%av%rList, aC2%av%rList, NumShared, &
+                                 Indices1, Indices2)
+  case('INTEGER','integer')
+     call GetSharedListIndices(aC1%av%iList, aC2%av%iList, NumShared, &
+                                 Indices1, Indices2)
+  case default
+     write(stderr,'(4a)') myname_,":: value of argument attrib=",attrib, &
+          " not recognized.  Allowed values: REAL, real, INTEGER, integer"
+     ierr = 1
+     call die(myname_, 'invalid value for attrib', ierr)
+  end select
+
+ end subroutine aCaCSharedAttrIndexList_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: aVaCSharedAttrIndexList_ - AttrVect/Accumulator shared attributes.
+!
+! !DESCRIPTION:  {\tt aVaCSharedAttrIndexList\_()} a user-supplied 
+! {\tt AttrVect} variable {\tt aV} and an {\tt Accumulator} variable 
+! {\tt aC}, and for choice of either {\tt REAL} or {\tt INTEGER} 
+! attributes (as ! specified literally in the input {\tt CHARACTER} 
+! argument {\tt attrib}) returns the number of shared attributes 
+! {\tt NumShared}, and arrays of indices {\tt Indices1} and {\tt Indices2} 
+! to their storage locations in {\tt aV} and {\tt aC}, respectively.
+!
+! {\bf N.B.:}  This routine returns two allocated arrays---{\tt Indices1(:)} 
+! and {\tt Indices2(:)}---which must be deallocated once the user no longer
+! needs them.  Failure to do this will create a memory leak.
+!
+! !INTERFACE:
+
+ subroutine aVaCSharedAttrIndexList_(aV, aC, attrib, NumShared, &
+                                     Indices1, Indices2)
+
+!
+! !USES:
+!
+      use m_stdio
+      use m_die,         only : MP_perr_die, die, warn
+
+      use m_AttrVect,    only : AttrVect
+
+      use m_List,     only : GetSharedListIndices
+
+ 
+      implicit none
+
+! !INPUT PARAMETERS: 
+!
+      type(AttrVect),    intent(in)  :: aV   
+      type(Accumulator), intent(in)  :: aC
+      character*7,       intent(in)  :: attrib
+
+! !OUTPUT PARAMETERS:   
+!
+      integer,           intent(out) :: NumShared
+
+      integer,dimension(:), pointer  :: Indices1
+      integer,dimension(:), pointer  :: Indices2
+
+! !REVISION HISTORY:
+!       07Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::aVaCSharedAttrIndexList_'
+
+  integer :: ierr
+
+       ! Based on the value of the argument attrib, pass the 
+       ! appropriate pair of Lists for comparison...
+
+  select case(trim(attrib))
+  case('REAL','real')
+     call GetSharedListIndices(aV%rList, aC%av%rList, NumShared, &
+                                 Indices1, Indices2)
+  case('INTEGER','integer')
+     call GetSharedListIndices(aV%iList, aC%av%iList, NumShared, &
+                                 Indices1, Indices2)
+  case default
+     write(stderr,'(4a)') myname_,":: value of argument attrib=",attrib, &
+          " not recognized.  Allowed values: REAL, real, INTEGER, integer"
+     ierr = 1
+     call die(myname_, 'invalid value for attrib', ierr)
+  end select
+
+ end subroutine aVaCSharedAttrIndexList_
+
+end module m_Accumulator
 
