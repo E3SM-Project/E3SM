@@ -105,6 +105,8 @@
 
 ! !REVISION HISTORY:
 !       07Jun01 - J.W. Larson - initial version.
+!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize status
+!                 (if present).
 !EOP ___________________________________________________________________
 
  character(len=*),parameter :: myname_=myname//'::send_'
@@ -112,6 +114,11 @@
  logical :: ListAssoc(2)
  integer :: ierr
  integer :: AVlength
+
+      ! Initialize status (if present)
+
+  if(present(status)) status = 0
+
 
        ! Step 1. Are inAV%iList and inAV%rList filled?  Store
        ! the answers in the LOGICAL array ListAssoc and send.
@@ -272,6 +279,8 @@
 
 ! !REVISION HISTORY:
 !       07Jun01 - J.W. Larson - initial working version.
+!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize status
+!                 (if present).
 !EOP ___________________________________________________________________
 
  character(len=*),parameter :: myname_=myname//'::recv_'
@@ -280,6 +289,11 @@
  integer :: ierr
  integer :: AVlength
  integer :: MPstatus(MP_STATUS_SIZE)
+
+      ! Initialize status (if present)
+
+  if(present(status)) status = 0
+
 
        ! Step 1. Are outAV%iList and outAV%rList filled?  TRUE
        ! entries in the LOGICAL array ListAssoc(:) correspond
@@ -446,7 +460,6 @@
 ! 	09May01 - J.W. Larson <larson@mcs.anl.gov> - tidied up prologue
 !       18May01 - R.L. Jacob <jacob@mcs.anl.gov> - use MP_Type function
 !                 to determine type for mpi_gatherv
-
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GM_gather_'
@@ -592,6 +605,8 @@
 ! 	26Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - add use statement for
 !                 AttVect_clean
 ! 	09May01 - J.W. Larson <larson@mcs.anl.gov> - tidied up prologue
+!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize stat
+!                 (if present).
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GSM_gather_'
@@ -614,6 +629,10 @@
   integer :: m, n, ilb, iub, olb, oub, pe
 ! workV segment tracking index array:
   integer, dimension(:), allocatable :: current_pos
+
+      ! Initialize stat (if present)
+
+  if(present(stat)) stat = 0
 
        ! Initial Check:  If GSMap contains halo points, die
        
@@ -986,6 +1005,8 @@
 ! 	09May01 - J.W. Larson <larson@mcs.anl.gov> - tidied up prologue
 ! 	15May01 - Larson / Jacob <larson@mcs.anl.gov> - stopped initializing
 !                 workV on off-root processes (no longer necessary).
+!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize stat
+!                 (if present).
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GSM_scatter_'
@@ -1009,6 +1030,9 @@
 ! workV segment tracking index array:
   integer, dimension(:), allocatable :: current_pos
 
+      ! Initialize stat (if present)
+
+  if(present(stat)) stat = 0
 
        ! Which process am I?
 

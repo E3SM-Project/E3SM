@@ -66,6 +66,7 @@
 !
 
    use m_die, only : MP_perr_die
+   use m_stdio
 
    use m_mpif90
 
@@ -94,16 +95,16 @@
 ! !OUTPUT PARAMETERS:
 !
    type(SparseMatrix), intent(out) :: LsMat
-   integer,            intent(out) :: stat
+   integer, optional,  intent(out) :: stat
 
 ! !DESCRIPTION: This routine scatters the input {\tt SparseMatrix} 
 ! argument {\tt GsMat} (valid only on the root) to a distributed 
 ! {\tt SparseMatrix} variable {\tt LsMat} across all the processes 
 ! present on the communicator associated with the integer handle 
 ! {\tt comm}.  The decomposition defining the scatter is supplied by the 
-! input {\tt GlobalSegMap} argument {\tt columnGSMap}.  The output integer 
-! flag {\tt stat} signifies a successful (failed) operation if it is 
-! returned with value zero (nonzero).
+! input {\tt GlobalSegMap} argument {\tt columnGSMap}.  The optional 
+! output {\tt INTEGER} flag {\tt stat} signifies a successful (failed) 
+! operation if it is returned with value zero (nonzero).
 !
 ! {\bf N.B.:}  This routine returns an allocated {\tt SparseMatrix} 
 ! variable {\tt LsMat}.  The user must destroy this variable when it
@@ -113,6 +114,8 @@
 !
 !       13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial API spec.
 !       10May01 - J.W. Larson <larson@mcs.anl.gov> - cleaned up prologue.
+!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Made status flag stat
+!                 optional, and ititilaze it to zero if it is present.
 !EOP
 !-------------------------------------------------------------------------
 
@@ -126,12 +129,22 @@
 ! Error flag
   integer :: ierr
 
+       ! Initialize stat if present
+
+  if(present(stat)) stat = 0
+
        ! Which process am I?
 
   call MPI_COMM_RANK(comm, myID, ierr)
 
   if(ierr /= 0) then
-     call MP_perr_die(myname_,"MPI_COMM_RANK() failed",ierr)
+     if(present(stat)) then
+	write(stderr,*) myname_,":: MPI_COMM_RANK() failed with ierr = ",ierr
+	stat = ierr
+	return
+     else
+	call MP_perr_die(myname_,"MPI_COMM_RANK() failed",ierr)
+     endif
   endif
 
        ! Create from columnGSMap the corresponding GlobalSegMap
@@ -143,7 +156,18 @@
 
        ! Scatter the matrix element data GsMat%data accordingly
 
-  call AttrVect_Scatter(GsMat%data, LsMat%data, MatGSMap, root, comm, stat)
+  call AttrVect_Scatter(GsMat%data, LsMat%data, MatGSMap, root, comm, ierr)
+
+  if(ierr /= 0) then
+     if(present(stat)) then
+	write(stderr,*) myname_,"::  AttrVect_Scatter(GsMat%data) failed--stat=", &
+	     ierr
+	stat = ierr
+	return
+     else
+	call MP_perr_die(myname_,"call AttrVect_Scatter(GsMat%data,..",ierr)
+     endif
+  endif
 
        ! Now, distribute to all the processes the number of Rows and
        ! columns in GsMat (which are valid on the root only at this point)
@@ -156,7 +180,14 @@
   call MPI_Bcast(NumRowsColumns, 2, MP_INTEGER, root, comm, ierr)
 
   if(ierr /= 0) then
-     call MP_perr_die(myname_,"MPI_Bcast(NumRowsColumns...",ierr)
+     if(present(stat)) then
+	write(stderr,*) myname_,"::  MPI_Bcast(NumRowsColumns...failed--ierr", &
+	     ierr
+	stat = ierr
+	return
+     else
+	call MP_perr_die(myname_,"MPI_Bcast(NumRowsColumns...",ierr)
+     endif
   endif
 
        ! Unpack NumRowsColumns
@@ -180,7 +211,7 @@
 ! !USES:
 !
    use m_die, only : MP_perr_die
-
+   use m_stdio
    use m_mpif90
 
    use m_GlobalSegMap, only : GlobalSegMap
@@ -208,7 +239,7 @@
 ! !OUTPUT PARAMETERS:
 !
    type(SparseMatrix), intent(out) :: LsMat
-   integer,            intent(out) :: stat
+   integer, optional,  intent(out) :: stat
 
 ! !DESCRIPTION: This routine scatters the input  {\tt SparseMatrix} 
 ! argument {\tt GsMat} (valid only on the root) to a distributed 
@@ -228,7 +259,8 @@
 !       13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial API spec.
 !       26Apr01 - R.L. Jacob  <jacob@mcs.anl.gov> - fix use statement
 !                 from SMDecomp so it points to ByRow
-
+!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Made status flag stat
+!                 optional, and ititilaze it to zero if it is present.
 !EOP
 !-------------------------------------------------------------------------
 
@@ -242,12 +274,21 @@
 ! Error flag
   integer :: ierr
 
+       ! Initialize stat to zero (if present)
+
+  if(present(stat)) stat = 0
+
        ! Which process are we?
 
   call MPI_COMM_RANK(comm, myID, ierr)
-
   if(ierr /= 0) then
-     call MP_perr_die(myname_,"MPI_COMM_RANK() failed",ierr)
+     if(present(stat)) then
+        write(stderr,*) myname_,":: MPI_COMM_RANK() failed with ierr = ",ierr
+        stat = ierr
+        return
+     else
+        call MP_perr_die(myname_,"MPI_COMM_RANK() failed",ierr)
+     endif
   endif
 
        ! Create from rowGSMap the corresponding GlobalSegMap
@@ -257,7 +298,17 @@
 
        ! Scatter the matrix element data GsMat%data accordingly
 
-  call AttrVect_Scatter(GsMat%data, LsMat%data, MatGSMap, root, comm, stat)
+  call AttrVect_Scatter(GsMat%data, LsMat%data, MatGSMap, root, comm, ierr)
+  if(ierr /= 0) then
+     if(present(stat)) then
+        write(stderr,*) myname_,"::  AttrVect_Scatter(GsMat%data) failed--stat=", &
+             ierr
+        stat = ierr
+        return
+     else
+        call MP_perr_die(myname_,"call AttrVect_Scatter(GsMat%data,..",ierr)
+     endif
+  endif
 
        ! Now, distribute to all the processes the number of rows and
        ! columns in GsMat (which are valid on the root only at this point)
@@ -268,9 +319,15 @@
   endif
 
   call MPI_Bcast(NumRowsColumns, 2, MP_INTEGER, root, comm, ierr)
-
   if(ierr /= 0) then
-     call MP_perr_die(myname_,"MPI_Bcast(NumRowsColumns...",ierr)
+     if(present(stat)) then
+        write(stderr,*) myname_,"::  MPI_Bcast(NumRowsColumns...failed--ierr", &
+             ierr
+        stat = ierr
+        return
+     else
+        call MP_perr_die(myname_,"MPI_Bcast(NumRowsColumns...",ierr)
+     endif
   endif
 
        ! Unpack NumRowsColumns
@@ -293,6 +350,9 @@
 !
 ! !USES:
 !
+   use m_stdio
+   use m_die, only : MP_perr_die
+
    use m_GlobalMap, only: GlobalMap
 
    use m_SparseMatrix, only: SparseMatrix
@@ -313,7 +373,7 @@
 ! !OUTPUT PARAMETERS:
 !
    type(SparseMatrix), intent(out) :: GsMat
-   integer,            intent(out) :: stat
+   integer, optional,  intent(out) :: stat
 
 ! !DESCRIPTION: This routine gathers the input distributed 
 ! {\tt SparseMatrix} argument {\tt LsMat} to the {\tt SparseMatrix} 
@@ -331,12 +391,29 @@
 !       13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial API spec.
 !       10May01 - J.W. Larson <larson@mcs.anl.gov> - initial routine and
 !                 prologue
+!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Made status flag stat
+!                 optional, and ititilaze it to zero if it is present.
 !EOP
 !-------------------------------------------------------------------------
 
   character(len=*),parameter :: myname_=myname//'GM_gather_'
+  integer :: ierr
 
-  call AttrVect_gather(LsMat%data, GsMat%data, GMap, root, comm, stat)
+       ! if stat is present, initialize its value to zero (success)
+
+  if(present(stat))  stat = 0
+
+  call AttrVect_gather(LsMat%data, GsMat%data, GMap, root, comm, ierr)
+  if(ierr /= 0) then
+     if(present(stat)) then
+        write(stderr,*) myname_,"::  AttrVect_Gather(LsMat%data...) failed--stat=", &
+             ierr
+        stat = ierr
+        return
+     else
+        call MP_perr_die(myname_,"call AttrVect_Scatter(LsMat%data...) failed",ierr)
+     endif
+  endif
 
        ! For now, the GsMat inherits the number of rows and columns from
        ! the corresponding values of LsMat on the root (this should be
@@ -360,6 +437,9 @@
 !
 ! !USES:
 !
+   use m_stdio
+   use m_die, only : MP_perr_die
+
    use m_GlobalSegMap, only: GlobalSegMap
 
    use m_SparseMatrix, only: SparseMatrix
@@ -380,7 +460,7 @@
 ! !OUTPUT PARAMETERS:
 !
    type(SparseMatrix), intent(out) :: GsMat
-   integer,            intent(out) :: stat
+   integer, optional,  intent(out) :: stat
 
 ! !DESCRIPTION: This routine gathers the input distributed 
 ! {\tt SparseMatrix} argument {\tt LsMat} to the {\tt SparseMatrix} 
@@ -396,13 +476,31 @@
 ! !REVISION HISTORY: 
 !
 !       13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial API spec.
-
+!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Made status flag stat
+!                 optional, and ititilaze it to zero if it is present.
 !EOP
 !-------------------------------------------------------------------------
 
   character(len=*),parameter :: myname_=myname//'GSM_gather_'
+  integer :: ierr
 
-  call AttrVect_gather(LsMat%data, GsMat%data, GSMap, root, comm, stat)
+       ! if stat is present, initialize its value to zero (success)
+
+  if(present(stat))  stat = 0
+
+       ! Gather the AttrVect component of LsMat to GsMat...
+
+  call AttrVect_gather(LsMat%data, GsMat%data, GSMap, root, comm, ierr)
+  if(ierr /= 0) then
+     if(present(stat)) then
+        write(stderr,*) myname_,"::  AttrVect_Gather(LsMat%data...) failed--stat=", &
+             ierr
+        stat = ierr
+        return
+     else
+        call MP_perr_die(myname_,"call AttrVect_Gather(LsMat%data...)",ierr)
+     endif
+  endif
 
        ! For now, the GsMat inherits the number of rows and columns from
        ! the corresponding values of LsMat on the root (this should be
@@ -429,7 +527,7 @@
 !
 
    use m_die, only : MP_perr_die
-
+   use m_stdio
    use m_mpif90
 
    use m_GlobalSegMap, only: GlobalSegMap
@@ -453,7 +551,7 @@
 
 ! !OUTPUT PARAMETERS:
 !
-   integer,            intent(out) :: stat
+   integer, optional,  intent(out) :: stat
 
 ! !DESCRIPTION: This routine broadcasts the {\tt SparseMatrix} argument 
 ! {\tt sMat} from the root to all processes on the communicator associated
@@ -467,6 +565,8 @@
 ! !REVISION HISTORY: 
 !
 !       13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial API spec/code
+!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Made status flag stat
+!                 optional, and ititilaze it to zero if it is present.
 !EOP
 !-------------------------------------------------------------------------
 
@@ -479,9 +579,23 @@
 ! Error flag
   integer :: ierr
 
+       ! Initialize stat if present
+
+  if(present(stat)) stat = 0
+
        ! Broadcast sMat%data from the root
 
-  call AttrVect_bcast(sMat%data, root, comm, stat)
+  call AttrVect_bcast(sMat%data, root, comm, ierr)
+  if(ierr /= 0) then
+     if(present(stat)) then
+        write(stderr,*) myname_,"::  AttrVect_bcast(sMat%data...failed--stat=", &
+             ierr
+        stat = ierr
+        return
+     else
+        call MP_perr_die(myname_,"call AttrVect_bcast(sMat%data...) failed",ierr)
+     endif
+  endif
 
   if(myID == root) then
      NumRowsColumns(1) = SparseMatrix_nRows(sMat)
@@ -489,9 +603,15 @@
   endif
 
   call MPI_Bcast(NumRowsColumns, 2, MP_INTEGER, root, comm, ierr)
-
   if(ierr /= 0) then
-     call MP_perr_die(myname_,"MPI_Bcast(NumRowsColumns...",ierr)
+     if(present(stat)) then
+        write(stderr,*) myname_,"::  MPI_Bcast(NumRowsColumns...failed--ierr", &
+             ierr
+        stat = ierr
+        return
+     else
+        call MP_perr_die(myname_,"MPI_Bcast(NumRowsColumns...",ierr)
+     endif
   endif
 
        ! Unpack NumRowsColumns on broadcast destination processes

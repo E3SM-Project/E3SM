@@ -115,6 +115,8 @@
 !       10Jun01 - J.W. Larson <larson@mcs.anl.gov> - Bug fixes--now works.
 !       11Jun01 - R. Jacob <jacob@mcs.anl.gov> use component id as input
 !                 argument.
+!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize status
+!                 (if present).
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::send_'
@@ -122,6 +124,10 @@
   integer :: ierr
   integer :: dest
   logical :: HeaderAssoc(6)
+
+      ! Initialize status (if present)
+
+  if(present(status)) status = 0
 
   dest = ComponentToWorldRank(0, comp_id, ThisMCTWorld)
 
@@ -370,6 +376,8 @@
 !       10Jun01 - J.W. Larson <larson@mcs.anl.gov> - Bug fixes--now works.
 !       11Jun01 - R. Jacob <jacob@mcs.anl.gov> use component id as input
 !                 argument.
+!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize status
+!                 (if present).
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::recv_'
@@ -399,6 +407,10 @@
       !  HeaderAssoc(6) = associated(oGGrid%index_list%bf)
 
   HeaderAssoc = .FALSE.
+
+      ! Initialize status (if present)
+
+  if(present(status)) status = 0
 
   call MPI_RECV(HeaderAssoc, 6, MP_LOGICAL, source, TagBase, comm, MPstatus, ierr)
   if(ierr /= 0) then
@@ -638,6 +650,8 @@
 ! !REVISION HISTORY:
 !       27Apr01 - J.W. Larson <larson@mcs.anl.gov> - API Specification.
 !       02May01 - J.W. Larson <larson@mcs.anl.gov> - Initial code.
+!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize stat
+!                 (if present).
 !EOP ___________________________________________________________________
 
  character(len=*),parameter :: myname_=myname//'::GM_gather_'
@@ -647,6 +661,10 @@
  integer :: ierr
 !Number of points on the _Gathered_ grid:
  integer :: length
+
+      ! Initialize stat (if present)
+
+  if(present(stat)) stat = 0
 
        ! Which process am I?
 
@@ -753,6 +771,9 @@
 
 ! !REVISION HISTORY:
 !       27Apr01 - J.W. Larson <larson@mcs.anl.gov> - API Specification.
+!       01May01 - J.W. Larson <larson@mcs.anl.gov> - Working Version.
+!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize stat
+!                 (if present).
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GSM_gather_'
@@ -763,6 +784,10 @@
  integer :: ierr
 !Number of points on the _Gathered_ grid:
  integer :: length
+
+      ! Initialize stat (if present)
+
+  if(present(stat)) stat = 0
 
        ! Which process am I?
 
@@ -864,6 +889,8 @@
 !       27Apr01 - J.W. Larson <larson@mcs.anl.gov> - API Specification.
 !       04Jun01 - J.W. Larson <larson@mcs.anl.gov> - Changed comms model
 !                 to MPI-style (i.e. iG valid on root only).
+!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize stat
+!                 (if present).
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GM_scatter_'
@@ -871,6 +898,10 @@
   logical :: DescendAssoc
   integer :: DescendSize
   integer :: ierr, myID
+
+      ! Initialize status (if present)
+
+  if(present(stat)) stat = 0
 
        ! Step 1.  Determine process ID number myID
 
@@ -994,11 +1025,17 @@
 ! !REVISION HISTORY:
 !       27Apr01 - J.W. Larson <larson@mcs.anl.gov> - API Specification.
 !       04Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initial code.
+!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize stat
+!                 (if present).
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GSM_scatter_'
 
   integer :: ierr, myID
+
+      ! Initialize stat (if present)
+
+  if(present(stat)) stat = 0
 
        ! Step 1.  Determine process ID number myID
 
@@ -1116,11 +1153,18 @@
 
 ! !REVISION HISTORY:
 !       27Apr01 - J.W. Larson <larson@mcs.anl.gov> - API Specification.
+!       02May01 - J.W. Larson <larson@mcs.anl.gov> - Initial version.
+!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize stat
+!                 (if present).
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::bcast_'
 
   integer :: ierr, myID
+
+      ! Initialize status (if present)
+
+  if(present(stat)) stat = 0
 
        ! Step 1.  Determine process ID number myID
 
@@ -1231,6 +1275,8 @@
 
 ! !REVISION HISTORY:
 !       05Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initial code.
+!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize stat
+!                 (if present).
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::bcastGeneralGridHeader_'
@@ -1242,6 +1288,10 @@
   logical :: DescendAssoc
 ! Size of array ioGGrid%descend(:)
   integer :: DescendSize
+
+      ! Initialize stat (if present)
+
+  if(present(stat)) stat = 0
 
        ! Determine process ID number myID
 
