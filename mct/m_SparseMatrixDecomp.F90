@@ -57,11 +57,14 @@
 !
 ! !USES:
 !
+   use m_die,  only: MP_perr_die
    use m_List, only: List
    use m_List, only: List_init => init
    use m_List, only: List_clean => clean
 
    use m_GlobalSegMap, only: GlobalSegMap
+   use m_GlobalSegMap, only: GlobalSegMap_init => init
+   use m_GlobalSegMap, only: GlobalSegMap_peLocs => peLocs
    use m_GlobalSegMap, only: GlobalSegMap_comp_id => comp_id
    use m_GlobalSegMap, only: GlobalSegMap_gsize => gsize
    use m_GlobalSegMap, only: GlobalSegMap_ngseg => ngseg
@@ -96,7 +99,14 @@
 ! !REVISION HISTORY: 
 !
 !       13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial API spec.
-
+!       26Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - add use statements for
+!                 GlobalSegMap_init and GSMap_peLocs.
+!                 Add gsize argument required to GSMap_peLocs.
+!                 Add underscore to ComputeSegments call so it matches
+!                 the subroutine decleration.
+!                 change attribute on starts,lengths, and pe_locs to
+!                 pointer to match GSMap_init.
+!                 add use m_die statement
 !EOP
 !-------------------------------------------------------------------------
 
@@ -109,7 +119,7 @@
 ! Index to identify the gcol attribute in sMat:
   integer :: igCol
 ! Temporary arrays for matrix GlobalSegMap attributes
-  integer, dimension(:), allocatable :: starts, lengths, pe_locs
+  integer, dimension(:), pointer :: starts, lengths, pe_locs
 ! List storage for sorting keys
   type(List) :: sort_keys
 ! Error flag
@@ -155,13 +165,13 @@
        ! Compute process ID destination for each matrix element,
        ! and store in the array element_pe_locs
 
-  call GlobalSegMap_peLocs(xGSMap, gCol, element_pe_locs)
+  call GlobalSegMap_peLocs(xGSMap, gsize, gCol, element_pe_locs)
 
        ! Using the entries of gCol and element_pe_locs, build the
        ! output GlobalSegMap attribute arrays starts(:), lengths(:),
        ! and pe_locs(:)
 
-  call ComputeSegments(element_pe_locs, gCol, gsize, ngseg, starts, &
+  call ComputeSegments_(element_pe_locs, gCol, gsize, ngseg, starts, &
                        lengths, pe_locs)
 
        ! Using this local data, create the SparseMatrix GlobalSegMap sMGSMap:
@@ -200,6 +210,8 @@
    use m_List, only: List_clean => clean
 
    use m_GlobalSegMap, only: GlobalSegMap
+   use m_GlobalSegMap, only: GlobalSegMap_init => init
+   use m_GlobalSegMap, only: GlobalSegMap_peLocs => peLocs
    use m_GlobalSegMap, only: GlobalSegMap_comp_id => comp_id
    use m_GlobalSegMap, only: GlobalSegMap_gsize => gsize
    use m_GlobalSegMap, only: GlobalSegMap_ngseg => ngseg
@@ -234,6 +246,13 @@
 ! !REVISION HISTORY: 
 !
 !       13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial API spec.
+!       26Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - add use statements for
+!                 GlobalSegMap_init and GSMap_peLocs.
+!                 Add gsize argument required to GSMap_peLocs.
+!                 Add underscore to ComputeSegments call so it matches
+!                 the subroutine decleration.
+!                 change attribute on starts,lengths, and pe_locs to
+!                  pointer to match GSMap_init.
 
 !EOP
 !-------------------------------------------------------------------------
@@ -247,7 +266,7 @@
 ! Index to identify the grow attribute in sMat:
   integer :: igRow
 ! Temporary arrays for matrix GlobalSegMap attributes
-  integer, dimension(:), allocatable :: starts, lengths, pe_locs
+  integer, dimension(:), pointer :: starts, lengths, pe_locs
 ! List storage for sorting keys
   type(List) :: sort_keys
 ! Error flag
@@ -292,13 +311,13 @@
        ! Compute process ID destination for each matrix element,
        ! and store in the array element_pe_locs
 
-  call GlobalSegMap_peLocs(yGSMap, gRow, element_pe_locs)
+  call GlobalSegMap_peLocs(yGSMap, gsize, gRow, element_pe_locs)
 
        ! Using the entries of gRow and element_pe_locs, build the
        ! output GlobalSegMap attribute arrays starts(:), lengths(:),
        ! and pe_locs(:)
 
-  call ComputeSegments(element_pe_locs, gRow, gsize, ngseg, starts, &
+  call ComputeSegments_(element_pe_locs, gRow, gsize, ngseg, starts, &
                        lengths, pe_locs)
 
        ! Using this local data, create the SparseMatrix GlobalSegMap sMGSMap:
