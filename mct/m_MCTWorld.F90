@@ -21,27 +21,60 @@
       private   ! except
 
       public :: MCTWorld        ! The class data structure
+
       public :: init            ! Create a MCTWorld
       public :: clean           ! Destroy a MCTWorld
-      public :: ThisMCTWorld 
+
+      public :: NumComponents      ! Number of Components in the MCTWorld
+      public :: ComponentNumProcs  ! Number of processes owned by a given
+                                   ! component
+
+      public :: ComponentToWorldRank ! Given the rank of a process on a 
+                                     ! component, return its rank on the 
+                                     ! world communicator
+      public :: ComponentRootRank    ! Return the rank on the world 
+                                     ! communicator of the root process of 
+                                     ! a component
+
+      public :: ThisMCTWorld   ! Instantiation of the MCTWorld
 
 !  
     type MCTWorld
       integer :: myid	       ! my unique id 
       integer :: ncomps	       !  number of components
       integer :: mynprocs      !  number of procs
-      integer,dimension(:),pointer :: allids	       ! unique id for each component
-      integer,dimension(:),pointer :: nprocspid	       ! number of processes each component is on
-      integer,dimension(:,:),pointer :: idGprocid 	       ! translate between local and global ranks for each component
+      integer,dimension(:),pointer :: allids	   ! unique id for each 
+                                                   ! component
+      integer,dimension(:),pointer :: nprocspid	   ! number of processes 
+                                                   ! each component is on
+      integer,dimension(:,:),pointer :: idGprocid  ! translate between local 
+                                                   ! and global ranks for each 
+                                                   ! component
     end type MCTWorld
 
     type(MCTWorld) :: ThisMCTWorld	! declare an MCTWorld
 
     interface init  ; module procedure init_  ; end interface
     interface clean ; module procedure clean_ ; end interface
+    interface NumComponents ; module procedure &
+	 NumComponents_ 
+    end interface
+    interface ComponentNumProcs ; module procedure &
+       ComponentNumProcs_ 
+    end interface
+    interface ComponentToWorldRank ; module procedure &
+       ComponentToWorldRank_ 
+    end interface
+    interface ComponentRootRank ; module procedure &
+       ComponentRootRank_ 
+    end interface
 
 ! !REVISION HISTORY:
 !      19Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
+!       5Feb01 - J. Larson <larson@mcs.anl.gov> - added query and
+!                local-to-global mapping services NumComponents, 
+!                ComponentNumProcs, ComponentToWorldRank, and 
+!                ComponentRootRank
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_MCTWorld'
@@ -326,6 +359,262 @@
   ThisMCTWorld%mynprocs = 0
 
  end subroutine clean_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: NumComponents_ - Determine number of components in World.
+!
+! !DESCRIPTION:
+! The function {\tt NumComponents\_} takes an input {\tt MCTWorld} 
+! argument {\tt World}, and returns the number of component models 
+! present.
+!
+! !INTERFACE:
+
+ integer function NumComponents_(World)
+!
+! !USES:
+!
+      use m_die
+      use m_stdio
+
+      implicit none
+
+      type(MCTWorld), intent(in)      :: World
+
+! !REVISION HISTORY:
+!       05Feb01 - J. Larson <larson@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
+!
+  character(len=*),parameter :: myname_=myname//'::NumComponents_'
+
+  integer :: ncomps
+
+  ncomps = World%ncomps
+
+  if(ncomps <= 0) then
+     write(stderr,'(2a,1i)') myname,":: invalid no. of components = ",ncomps
+     call MP_perr_die(myname_,'ncomps = ',ncomps)
+  endif
+
+  NumComponents_ = ncomps
+
+ end function NumComponents_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: ComponentNumProcs_ - Number of processes a component owns.
+!
+! !DESCRIPTION:
+! The function {\tt ComponentNumProcs\_} takes an input {\tt MCTWorld} 
+! argument {\tt World}, and a component ID {\tt comp\_id}, and returns 
+! the number of processes owned by that component.
+!
+! !INTERFACE:
+
+ integer function ComponentNumProcs_(World, comp_id)
+!
+! !USES:
+!
+      use m_die
+      use m_stdio
+
+      implicit none
+
+      type(MCTWorld), intent(in)      :: World
+      integer,        intent(in)      :: comp_id
+
+! !REVISION HISTORY:
+!       05Feb01 - J. Larson <larson@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
+!
+  character(len=*),parameter :: myname_=myname//'::ComponentNumPros_'
+
+  integer :: mynprocs
+
+  mynprocs = World%mynprocs
+
+  if(mynprocs <= 0) then
+     write(stderr,'(2a,1i)') myname,":: invalid no. of processes = ",mynprocs
+     call MP_perr_die(myname_,'Number of processes = ',mynprocs)
+  endif
+
+  ComponentNumProcs_ = mynprocs
+
+ end function ComponentNumProcs_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: ComponentToWorldRank_ - Determine rank on COMM_WORLD.
+!
+! !DESCRIPTION:
+! The function {\tt ComponentToWorldRank\_} takes an input component ID 
+! {\tt comp\_id} and input rank on that component communicator 
+! {\tt comp\_rank}, and returns the rank of that process on the world 
+! communicator of {\tt MCTWorld}.  The optional {\tt LOGICAL} argument 
+! {\tt check} is used to control exhaustive argument validity checking 
+! against {\tt World}.  If the argument {\tt check} is not provided, 
+! no checking, which can hamper performance will be done.
+!
+! !INTERFACE:
+
+ integer function ComponentToWorldRank_(comp_rank, comp_id, World, check)
+!
+! !USES:
+!
+      use m_die
+      use m_stdio
+
+      implicit none
+
+      integer, intent(in)	     :: comp_rank ! process rank on
+                                                  ! the communicator
+                                                  ! associated with
+                                                  ! comp_id
+      integer, intent(in)	     :: comp_id   ! component id
+      type(MCTWorld), intent(in)     :: World     ! World
+      logical, intent(in), optional  :: check     ! exhaustive checking
+                                                  ! flag
+
+! !REVISION HISTORY:
+!       05Feb01 - J. Larson <larson@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
+!
+  character(len=*),parameter :: myname_=myname//'::ComponentToWorldRank_'
+
+  logical :: valid
+  integer :: n, world_rank
+
+
+      ! Do we want the potentially time-consuming argument checks?
+      ! The first time we use this function during execution on a
+      ! given set of components and component ranks, we will.  In
+      ! later invocations, these argument checks are probably not
+      ! necessary (unless one alters MCTWorld), and impose a cost
+      ! one may wish to avoid.
+
+  if(present(check)) then
+     if(check) then
+
+      ! Check argument comp_id for validity--assume initially it is not...
+
+	valid = .false.
+	n = 0
+
+	CHECK_COMP_ID_LOOP: do 
+
+	   n = n + 1
+	   if(n > NumComponents_(World)) EXIT
+	   if((comp_id) == World%allids(n)) then
+	      valid = .true.
+	      EXIT
+	   endif
+
+	end do CHECK_COMP_ID_LOOP
+
+	if(.not. valid) then
+	   write(stderr,'(2a,1i)') myname,":: invalid component id no. = ",&
+		comp_id
+	   call MP_perr_die(myname_,'invalid comp_id = ',comp_id)
+	endif
+
+      ! Check argument comp_rank for validity on the communicator associated
+      ! with comp_id.  Assume initialy it is invalid.
+
+	valid = .false.
+
+	if((0 <= comp_rank) .or. &
+	     (comp_rank < ComponentNumProcs_(World, comp_id))) then
+	   valid = .true.
+	endif
+
+	if(.not. valid) then
+	   write(stderr,'(2a,1i,1a,1i)') myname,":: invalid process ID. = ", &
+		comp_rank, "on component ",comp_id
+	   call MP_perr_die(myname_,'invalid comp_rank = ',comp_rank)
+	endif
+
+     endif ! if(check)
+
+  endif ! if((present(check)) .and. check)
+
+      ! If we have reached this point, the input data are valid.
+      ! Return the global rank for comp_rank on component comp_id
+
+  world_rank = World%idGprocid(comp_id, comp_rank)
+
+  if(world_rank < 0) then
+     write(stderr,'(2a,1i)') myname,":: negative world rank = ",world_rank
+     call MP_perr_die(myname_,'negative world rank = ',world_rank)
+  endif    
+
+  ComponentToWorldRank_ = world_rank
+
+ end function ComponentToWorldRank_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: ComponentRootRank_ - Rank of component root on COMM_WORLD.
+!
+! !DESCRIPTION:
+! The function {\tt ComponentRootRank\_} takes an input component ID 
+! {\tt comp\_id} and input {\tt MCTWorld} variable {\tt World}, and
+! returns the global rank of the root of this component.  The optional 
+! {\tt LOGICAL} argument {\tt check} is used to control exhaustive 
+! argument validity checking against {\tt World}.  If the argument 
+! {\tt check} is not provided, no checking, which can hamper performance 
+! is done.
+!
+! !INTERFACE:
+
+ integer function ComponentRootRank_(comp_id, World, check)
+!
+! !USES:
+!
+      use m_die
+      use m_stdio
+
+      implicit none
+
+      integer, intent(in)	     :: comp_id   ! component id
+      type(MCTWorld), intent(in)     :: World     ! World
+      logical, intent(in), optional  :: check     ! exhaustive checking
+                                                  ! flag
+
+! !REVISION HISTORY:
+!       05Feb01 - J. Larson <larson@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
+!
+  character(len=*),parameter :: myname_=myname//'::ComponentRootRank_'
+
+  integer :: world_comp_root
+
+      ! Call ComponentToWorldRank_ assuming the root on a remote component
+      ! has rank zero on the communicator associated with that component.
+
+  if(present(check)) then
+     world_comp_root = ComponentToWorldRank_(0, comp_id, World, check)
+  else
+     world_comp_root = ComponentToWorldRank_(0, comp_id, World)
+  endif
+
+  if(world_comp_root < 0) then
+     write(stderr,'(2a,1i)') myname,":: negative world rank = ",& 
+	  world_comp_root
+     call MP_perr_die(myname_,'invalid root id = ',world_comp_root)
+  endif    
+
+  ComponentRootRank_ = world_comp_root
+
+ end function ComponentRootRank_
 
  end module m_MCTWorld
 
