@@ -29,6 +29,8 @@
 
 # This module requires ../mpeu module
 
+SHELL           = @SHELL@
+
 _I              = @INCLUDEFLAG@../mpeu @MPILIBS@ @INCLUDEPATH@
 
 DEFS            = @MACHDEFS@
@@ -39,25 +41,24 @@ FPPFLAGS	= @FPPFLAGS@
 CC		= @CC@
 
 FC		= @FC@
-FFLAGS          = @FFLAGS@ @BIT64@ @REAL8@
+FCFLAGS         = @FCFLAGS@ @BIT64@ @REAL8@
 F90FLAGS	= @F90FLAGS@
 
-MUPDATE         = @MUPDATE@
 
 @FRULE@:
-	$(FC) -c $(_I) $(DEFS) $(FFLAGS) $*.F
+	$(FC) -c $(_I) $(DEFS) $(FCFLAGS) $*.F
 
 @F90RULE@:
-	$(FC) -c $(_I) $(DEFS) $(FFLAGS) $(F90FLAGS) $*.F90
+	$(FC) -c $(_I) $(DEFS) $(FCFLAGS) $(F90FLAGS) $*.F90
 
 @FRULECPP@:
-	$(FPP) $(FPPFLAGS) $(_I) $(DEFS) $*.F $*.f
-	$(FC) -c $(FFLAGS) $(_I) $*.f
+	$(FPP) $(FPPFLAGS) $(DEFS) $*.F $*.f
+	$(FC) -c $(FCFLAGS) $(_I) $*.f
 	$(RM) $*.f
 
 @F90RULECPP@:
-	$(FPP) $(FPPFLAGS) $(_I) $(DEFS) $*.F90 $*.f90
-	$(FC) -c $(FFLAGS) $(F90FLAGS) $(_I) $*.f90
+	$(FPP) $(FPPFLAGS) $(DEFS) $*.F90 $*.f90
+	$(FC) -c $(FCFLAGS) $(F90FLAGS) $(_I) $*.f90
 	$(RM) $*.f90
 
 .SUFFIXES: .H .h .F90 .f90 .F .f .c .o

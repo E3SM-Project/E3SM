@@ -2,7 +2,11 @@
 #-----------------------------------------------------------------------
 #       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 #-----------------------------------------------------------------------
+<<<<<<< Makefile.conf.in
 # CVS $Id$
+=======
+# CVS $Id$
+>>>>>>> 1.7
 # CVS $Name$  
 #-----------------------------------------------------------------------
 #BOP
@@ -27,6 +31,8 @@
 # supports both REAL and DOUPLE PRECISION kinds for its interfaces
 # through the Fortran 90 generic interface feature. (Jing Guo)
 
+SHELL           = @SHELL@
+
 _I              = @MPILIBS@ @INCLUDEPATH@
 
 DEFS            = @MACHDEFS@
@@ -38,28 +44,26 @@ CC		= @CC@
 CFLAGS          = @CCFLAGS@
 
 FC		= @FC@
-FFLAGS		= @FFLAGS@ @BIT64@
+FCFLAGS		= @FCFLAGS@ @BIT64@
 F90FLAGS        = @F90FLAGS@
-
-MUPDATE         = @MUPDATE@
 
 .c.o:
 	$(CC) -c $(CFLAGS) $*.c
 
 @FRULE@:
-	$(FC) -c $(_I) $(DEFS) $(FFLAGS) $*.F
+	$(FC) -c $(_I) $(DEFS) $(FCFLAGS) $*.F
 
 @F90RULE@:
-	$(FC) -c $(_I) $(DEFS) $(FFLAGS) $(F90FLAGS) $*.F90
+	$(FC) -c $(_I) $(DEFS) $(FCFLAGS) $(F90FLAGS) $*.F90
 
 @FRULECPP@:
-	$(FPP) $(FPPFLAGS) $(_I) $(DEFS) $*.F $*.f
-	$(FC) -c $(FFLAGS) $(_I) $*.f
+	$(FPP) $(FPPFLAGS) $(DEFS) $*.F $*.f
+	$(FC) -c $(FCFLAGS) $(_I) $*.f
 	$(RM) $*.f
 
 @F90RULECPP@:
-	$(FPP) $(FPPFLAGS) $(_I) $(DEFS) $*.F90 $*.f90
-	$(FC) -c $(FFLAGS) $(F90FLAGS) $(_I) $*.f90
+	$(FPP) $(FPPFLAGS) $(DEFS) $*.F90 $*.f90
+	$(FC) -c $(FCFLAGS) $(F90FLAGS) $(_I) $*.f90
 	$(RM) $*.f90
 
 .SUFFIXES: .H .h .F90 .f90 .F .f .c .o
