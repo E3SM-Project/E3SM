@@ -209,7 +209,7 @@
   call MP_COMM_RANK(LocalComm, myID, ierr)
   if(ierr /= 0) call MP_perr_die(myname_,'call MP_COMM_RANK()',ierr)
 
-  RemoteRootID = ComponentRootRank(RemoteCompID, ThisMCTWorld, check=.true.)
+  RemoteRootID = ComponentRootRank(RemoteCompID, ThisMCTWorld)
 
   if(myID == 0) then ! I am the root on LocalComm
 
@@ -476,7 +476,7 @@
       ! Determine the remote component root:
 
      remote_root = ComponentRootRank(RemoteMapPars(ComponentIDIndex), &
-	                             ThisMCTWorld, check = .true.)
+	                             ThisMCTWorld)
 
      SendTag = 10 * LocalMapPars(ComponentIDIndex) + RemoteCompID
      RecvTag = LocalMapPars(ComponentIDIndex) + 10 * RemoteCompID
