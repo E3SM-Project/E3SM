@@ -908,6 +908,8 @@ end subroutine allflush_
 !                 with 1x.  This is apparently strict adherance to the
 !                 f90 standard (though the first of many, many compilers
 !                 where it has arisen).  This was for the SunOS platform.
+!       25Feb01 - R. Jacob <jacob@mcs.anl.gov> change number of 
+!                 decimal places from 1 to 4.
 !EOP
 !_______________________________________________________________________
   character(len=*),parameter :: myname_=myname//'::mp_balances_'
@@ -989,7 +991,7 @@ do l=0,min(MXN,nname)
   r_s=nint(100.* ztr_s       /max(zts_s,res))
   i_s=nint(100.*(ztm_s-zta_s)/max(ztm_s,res))
 
-  write(lu,'(a,2(1x,2f8.1,1x,z3.3,3i3))')		&
+  write(lu,'(a,2(1x,2f8.4,1x,z3.3,3i3))')		&
 	name(1:ln),				&
 	zta_o,ztm_o,ix_o,x_o,r_o,i_o,		&
 	zta_s,ztm_s,ix_s,x_s,r_s,i_s
