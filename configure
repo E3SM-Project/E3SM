@@ -270,7 +270,7 @@ PACKAGE_VERSION='0.01'
 PACKAGE_STRING='MCT 0.01'
 PACKAGE_BUGREPORT=''
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT F90 F90FLAGS ac_ct_F90 MPIF90 MPILIBS FC MUPDATE FPP FPPFLAGS CPP FRULE F90RULE FRULECPP F90RULECPP MACHDEFS FFLAGS REAL8 BIT64 LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT F90 F90FLAGS ac_ct_F90 MPIF90 MPILIBS FC MUPDATE FPP FPPFLAGS CPP FRULE F90RULE FRULECPP F90RULECPP MACHDEFS FFLAGS REAL8 BIT64 INCLUDE LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -771,6 +771,10 @@ ac_env_BIT64_set=${BIT64+set}
 ac_env_BIT64_value=$BIT64
 ac_cv_env_BIT64_set=${BIT64+set}
 ac_cv_env_BIT64_value=$BIT64
+ac_env_INCLUDE_set=${INCLUDE+set}
+ac_env_INCLUDE_value=$INCLUDE
+ac_cv_env_INCLUDE_set=${INCLUDE+set}
+ac_cv_env_INCLUDE_value=$INCLUDE
 
 #
 # Report the --help message.
@@ -859,6 +863,7 @@ Some influential environment variables:
   REAL8       Fortran compiler flag for setting the default REAL size to
               REAL(KIND=8)
   BIT64       Fortran compiler flag for generating 64-bit objects
+  INCLUDE     Fortran compiler flag for specifying module search path
 
 Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -1935,6 +1940,14 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 # Check for the Fortran compiler.
+if test -n "$F90FLAGS"; then
+   F90ONLYFLAGS="$F90FLAGS"
+   F90FLAGS=""
+fi
+if test -n "$FFLAGS"; then
+   F90FLAGS="$FFLAGS"
+fi
+
 ac_ext=$ac_save_ext
 ac_compile='$F90 -c $F90FLAGS conftest.$ac_ext >&5'
 ac_link='$F90 -o conftest$ac_exeext $F90FLAGS $LD90FLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
@@ -2116,7 +2129,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:2119:" \
+echo "$as_me:2132:" \
      "checking for Fortran 90 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -2479,7 +2492,7 @@ _ACEOF
 # 1 to this macro) to the Fortran 90 compiler in order to get "version" output
 ac_save_F90FLAGS=$F90FLAGS
 F90FLAGS="$F90FLAGS $ac_version"
-(eval echo $as_me:2482: \"$ac_link\") >&5
+(eval echo $as_me:2495: \"$ac_link\") >&5
 ac_f90_version_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 echo "$ac_f90_version_output" >&5
 F90FLAGS=$ac_save_F90FLAGS
@@ -3029,6 +3042,10 @@ echo "hostname=$ac_hostname"
 echo "machinename=$machinename"
 echo "osname=$osname"
 
+if test -n "$F90ONLYFLAGS"; then
+   F90FLAGS="$F90ONLYFLAGS"
+fi
+
 
 
 # Check OS name
@@ -3078,6 +3095,7 @@ fi
 
 
 
+
 # Check compiler name
 case $F90 in
 xlf90)
@@ -3096,7 +3114,12 @@ if test -z "$F90FLAGS"; then
   fi
 fi;;
 pgf90) MACHDEFS="-DCPRPGI $MACHDEFS";;
-ftn) MACHDEFS="-DCPRCRAY $MACHDEFS";;
+ftn)
+MACHDEFS="-DCPRCRAY $MACHDEFS"
+FFLAGS="-em $FFLAGS"
+if test -z "$INCLUDE"; then
+   INCLUDE="-p"
+fi;;
 epcf90) MACHDEFS="-DCPREPC $MACHDEFS";;
 lf95) MACHDEFS="-DCPRLAHEY $MACHDEFS";;
 fort) MACHDEFS="-DCPRCOMPAQ $MACHDEFS";;
@@ -3114,9 +3137,15 @@ if echo $f90_version | grep -i intel >/dev/null 2>&1; then
 fi
 if echo $f90_version | grep -i mipspro >/dev/null 2>&1; then
    MACHDEFS="-DCPRMIPSPRO $MACHDEFS"
-   FFLAGS="-O3"
-   REAL8="-r8"
-   BIT64="-64"
+   if test -z "$FFLAGS"; then
+      FFLAGS="-O3"
+   fi
+   if test -z "$REAL8"; then
+      REAL8="-r8"
+   fi
+   if test -z "$BIT64"; then
+      BIT64="-64"
+   fi
 fi
 if echo $f90_version | grep -i compaq >/dev/null 2>&1; then
    MACHDEFS="-DCPRCOMPAQ $MACHDEFS"
@@ -3124,7 +3153,13 @@ if echo $f90_version | grep -i compaq >/dev/null 2>&1; then
 fi
 if echo $f90_version | grep -i sx >/dev/null 2>&1; then
    MACHDEFS="-DCPRSX $MACHDEFS"
-   FFLAGS="-EP -Chopt -Wf'-pvctl noassoc'"
+   if test -z "$FFLAGS"; then
+      FFLAGS="-EP -Chopt -Wf'-pvctl noassoc'"
+   fi
+fi
+
+if test -z "$INCLUDE"; then
+   INCLUDE="-I"
 fi
 
 cat >confcache <<\_ACEOF
@@ -3787,6 +3822,7 @@ s,@MACHDEFS@,$MACHDEFS,;t t
 s,@FFLAGS@,$FFLAGS,;t t
 s,@REAL8@,$REAL8,;t t
 s,@BIT64@,$BIT64,;t t
+s,@INCLUDE@,$INCLUDE,;t t
 s,@LIBOBJS@,$LIBOBJS,;t t
 s,@LTLIBOBJS@,$LTLIBOBJS,;t t
 CEOF
@@ -4035,4 +4071,9 @@ echo "MPIF90=$MPIF90"
 echo "MPILIBS=$MPILIBS"
 echo "MACHDEFS=$MACHDEFS"
 echo "MUPDATE=$MUPDATE"
+echo "INCLUDE=$INCLUDE"
 echo
+
+
+# test -z is true for empty strings
+# test -n is true for non-empty strings
