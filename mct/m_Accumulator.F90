@@ -399,6 +399,7 @@
       use m_List,   only : ListExportToChar => exportToChar
       use m_List,   only : List_copy        => copy
       use m_List,   only : List_allocated   => allocated
+      use m_List,   only : List_clean       => clean
       use m_die
 
       implicit none
@@ -531,6 +532,9 @@
      endif
 
   endif
+
+  if(List_allocated(bC%data%iList)) call List_clean(temp_iList)
+  if(List_allocated(bC%data%rList)) call List_clean(temp_rList)
 
   deallocate(iActionArray,rActionArray,stat=ier)
   if(ier /= 0) call die(myname_,"iActionArray/rActionArray deallocate",ier)
