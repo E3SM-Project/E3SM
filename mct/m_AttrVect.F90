@@ -941,7 +941,27 @@
 ! {\tt aV}.  For example, suppose {\tt aV} has the following attributes
 ! {\tt 'month'}, {\tt 'day'}, and {\tt 'year'}.  The array of integer 
 ! values for the attribute {\tt 'day'}  is stored in 
-! {\tt av\%iAttr(indexIA\_(aV,'day'),:)}
+! \begin{verbatim}
+! {\tt av\%iAttr(indexIA\_(aV,'day'),:)}.
+!! \end{verbatim}
+! If {\tt indexIA\_()} is unable to match {\tt item} to any of the integer
+! attributes in {\tt aV}, the resulting value is zero which is equivalent
+! to an error.  The optional input {\tt CHARACTER} arguments {\tt perrWith} 
+! and {\tt dieWith} control how such errors are handled.  
+! \begin{enumerate}
+! \item if neither {\tt perrWith} nor {\tt dieWith} are present, 
+! {\tt indexIA\_()} terminates execution with an internally generated
+! error message;
+! \item if {\tt perrWith} is present, but {\tt dieWith} is not, an error 
+! message is written to {\tt stderr} incorporating user-supplied traceback
+! information stored in the argument {\tt perrWith};
+! \item if {\tt dieWith} is present, execution terminates with an error 
+! message written to {\tt stderr} that incorporates user-supplied traceback
+! information stored in the argument {\tt dieWith}; and 
+! \item if both {\tt perrWith} and {\tt dieWith} are present, execution 
+! terminates with an error message using {\tt dieWith}, and the argument
+! {\tt perrWith} is ignored.
+! \end{enumerate}
 !
 ! !INTERFACE:
 
@@ -949,9 +969,17 @@
 !
 ! !USES:
 !
-      use m_List, only : index
       use m_die,  only : die
       use m_stdio,only : stderr
+
+      use m_String, only : String
+      use m_String, only : String_init => init
+      use m_String, only : String_clean => clean
+      use m_String, only : String_ToChar => ToChar
+
+      use m_List, only : index
+
+      use m_TraceBack, only : GenTraceBackString
 
       implicit none
 
@@ -964,22 +992,40 @@
 
 ! !REVISION HISTORY:
 ! 27Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+!  2Aug02 - J. Larson - Solidified error handling using perrWith/dieWith
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::indexIA_'
 
+  type(String) :: myTrace
+
+  if(present(dieWith)) then
+     call GenTraceBackString(myTrace, dieWith, myname_)
+  else
+     if(present(perrWith)) then
+	call GenTraceBackString(myTrace, perrWith, myname_)
+     else
+	call GenTraceBackString(myTrace, myname_)
+     endif
+  endif
+
   indexIA_=index(aV%iList,item)
 
-	if(indexIA_==0) then
-	  if(.not.present(dieWith)) then
-	    if(present(perrWith)) write(stderr,'(4a)') perrWith, &
-		'" indexIA_() error, not found "',trim(item),'"'
-	  else
-	    write(stderr,'(4a)') dieWith,	&
-		'" indexIA_() error, not found "',trim(item),'"'
-	    call die(dieWith)
-	  endif
-	endif
+  if(indexIA_==0) then ! The attribute was not found!
+       ! As per the prologue, decide how to handle this error
+     if(present(perrWith) .and. (.not. present(dieWith))) then ! Return
+	write(stderr,'(6a)') myname_, &
+	     '":: ERROR--attribute not found: "',trim(item),'"', &
+	     'Traceback:  ',String_ToChar(myTrace)
+     else ! Shutdown
+	write(stderr,'(6a)') myname_, &
+	     '":: FATAL--attribute not found: "',trim(item),'"', &
+	     'Traceback:  ',String_ToChar(myTrace)
+	call die(myname_)
+     endif
+  endif
+
+  call String_clean(myTrace)
 
  end function indexIA_
 
@@ -995,7 +1041,27 @@
 ! {\tt aV}.  For example, suppose {\tt aV} has the following attributes
 ! {\tt 'latitude'}, {\tt 'longitude'}, and {\tt 'pressure'}.  The array 
 ! of real values for the attribute {\tt 'longitude'}  is stored in 
-! {\tt av\%iAttr(indexRA\_(aV,'longitude'),:)} 
+!! \begin{verbatim}
+! {\tt av\%iAttr(indexRA\_(aV,'longitude'),:)}.
+!! \end{verbatim}
+! If {\tt indexRA\_()} is unable to match {\tt item} to any of the real
+! attributes in {\tt aV}, the resulting value is zero which is equivalent
+! to an error.  The optional input {\tt CHARACTER} arguments {\tt perrWith} 
+! and {\tt dieWith} control how such errors are handled.  
+! \begin{enumerate}
+! \item if neither {\tt perrWith} nor {\tt dieWith} are present, 
+! {\tt indexRA\_()} terminates execution with an internally generated
+! error message;
+! \item if {\tt perrWith} is present, but {\tt dieWith} is not, an error 
+! message is written to {\tt stderr} incorporating user-supplied traceback
+! information stored in the argument {\tt perrWith};
+! \item if {\tt dieWith} is present, execution terminates with an error 
+! message written to {\tt stderr} that incorporates user-supplied traceback
+! information stored in the argument {\tt dieWith}; and 
+! \item if both {\tt perrWith} and {\tt dieWith} are present, execution 
+! terminates with an error message using {\tt dieWith}, and the argument
+! {\tt perrWith} is ignored.
+! \end{enumerate}
 !
 ! !INTERFACE:
 
@@ -1003,9 +1069,17 @@
 !
 ! !USES:
 !
-      use m_List, only : index
       use m_die,  only : die
       use m_stdio,only : stderr
+
+      use m_List, only : index
+
+      use m_String, only : String
+      use m_String, only : String_init => init
+      use m_String, only : String_clean => clean
+      use m_String, only : String_ToChar => ToChar
+
+      use m_TraceBack, only : GenTraceBackString
 
       implicit none
 
@@ -1018,22 +1092,40 @@
 
 ! !REVISION HISTORY:
 ! 27Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+!  2Aug02 - J. Larson - Solidified error handling using perrWith/dieWith
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::indexRA_'
 
+  type(String) :: myTrace
+
+  if(present(dieWith)) then ! Append onto TraceBack
+     call GenTraceBackString(myTrace, dieWith, myname_)
+  else
+     if(present(perrWith)) then ! Append onto TraceBack
+	call GenTraceBackString(myTrace, perrWith, myname_)
+     else ! Start a TraceBackString
+	call GenTraceBackString(myTrace, myname_)
+     endif
+  endif
+
   indexRA_=index(aV%rList,item)
 
-	if(indexRA_==0) then
-	  if(.not.present(dieWith)) then
-	    if(present(perrWith)) write(stderr,'(4a)') perrWith, &
-		'" indexRA_() error, not found "',trim(item),'"'
-	  else
-	    write(stderr,'(4a)') dieWith,	&
-		'" indexRA_() error, not found "',trim(item),'"'
-	    call die(dieWith)
-	  endif
-	endif
+  if(indexRA_==0) then ! The attribute was not found!
+       ! As per the prologue, decide how to handle this error
+     if(present(perrWith) .and. (.not. present(dieWith))) then ! Return
+	write(stderr,'(6a)') myname_, &
+	     '":: ERROR--attribute not found: "',trim(item),'"', &
+	     'Traceback:  ',String_ToChar(myTrace)
+     else ! Shutdown
+	write(stderr,'(6a)') myname_, &
+	     '":: FATAL--attribute not found: "',trim(item),'"', &
+	     'Traceback:  ',String_ToChar(myTrace)
+	call die(myname_)
+     endif
+  endif
+
+  call String_clean(myTrace)
 
  end function indexRA_
 
@@ -1048,7 +1140,7 @@
 ! the integer attribute list, and returns it as the {\tt List} output 
 ! argument {\tt outIList}.  The success (failure) of this operation is
 ! signified by a zero (nonzero) value for the optional {\tt INTEGER} 
-! output argument {\tt status}.
+! output argument {\tt status}.  
 !
 ! {\bf N.B.:}  This routine returns an allocated {\tt List} data 
 ! structure ({\tt outIList}).  The user is responsible for deallocating 
@@ -1075,12 +1167,12 @@
 
 ! !INPUT PARAMETERS: 
 
-      type(AttrVect),           intent(in)  :: aV
+      type(AttrVect),             intent(in)  :: aV
 
 ! !OUTPUT PARAMETERS: 
 
-      type(List),               intent(out) :: outIList
-      integer,        optional, intent(out) :: status
+      type(List),                 intent(out) :: outIList
+      integer,          optional, intent(out) :: status
 
 ! !REVISION HISTORY:
 ! 14Dec01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
@@ -1334,7 +1426,23 @@
 ! the integer attribute corresponding to the tag defined in the input 
 ! {\tt CHARACTER} argument {\tt AttrTag}, and returns it in the 
 ! {\tt INTEGER} output array {\tt outVect}, and its length in the output
-! {\tt INTEGER} argument {\tt lsize}.
+! {\tt INTEGER} argument {\tt lsize}.  The optional input {\tt CHARACTER} 
+! arguments {\tt perrWith} and {\tt dieWith} control how errors are 
+! handled.  
+! \begin{enumerate}
+! \item if neither {\tt perrWith} nor {\tt dieWith} are present, 
+! {\tt exportIAttr\_()} terminates execution with an internally generated
+! error message;
+! \item if {\tt perrWith} is present, but {\tt dieWith} is not, an error 
+! message is written to {\tt stderr} incorporating user-supplied traceback
+! information stored in the argument {\tt perrWith};
+! \item if {\tt dieWith} is present, execution terminates with an error 
+! message written to {\tt stderr} that incorporates user-supplied traceback
+! information stored in the argument {\tt dieWith}; and 
+! \item if both {\tt perrWith} and {\tt dieWith} are present, execution 
+! terminates with an error message using {\tt dieWith}, and the argument
+! {\tt perrWith} is ignored.
+! \end{enumerate}
 !
 ! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
 ! the {\tt AttrVect} {\tt List} component {\tt aV\%iList}.
@@ -1355,7 +1463,7 @@
 !
 ! !INTERFACE:
 
- subroutine exportIAttr_(aV, AttrTag, outVect, lsize)
+ subroutine exportIAttr_(aV, AttrTag, outVect, lsize, perrWith, dieWith)
 
 !
 ! !USES:
@@ -1363,17 +1471,26 @@
       use m_die ,          only : die
       use m_stdio ,        only : stderr
 
+      use m_String, only : String
+      use m_String, only : String_init => init
+      use m_String, only : String_clean => clean
+      use m_String, only : String_ToChar => ToChar
+
+      use m_TraceBack, only : GenTraceBackString
+
       implicit none
 
 ! !INPUT PARAMETERS: 
 
-      type(AttrVect),         intent(in)  :: aV
-      character(len=*),       intent(in)  :: AttrTag
+      type(AttrVect),             intent(in) :: aV
+      character(len=*),           intent(in) :: AttrTag
+      character(len=*), optional, intent(in) :: perrWith
+      character(len=*), optional, intent(in) :: dieWith
 
 ! !OUTPUT PARAMETERS: 
 
-      integer,  dimension(:), pointer     :: outVect
-      integer,                intent(out) :: lsize
+      integer,      dimension(:), pointer     :: outVect
+      integer,                    intent(out) :: lsize
 
 ! !REVISION HISTORY:
 ! 19Oct01 - J.W. Larson <larson@mcs.anl.gov> - initial (slow) 
@@ -1386,10 +1503,21 @@
   character(len=*),parameter :: myname_=myname//'::exportIAttr_'
 
   integer :: index, ierr, n
+  type(String) :: myTrace
+
+  if(present(dieWith)) then ! Append onto TraceBack
+     call GenTraceBackString(myTrace, dieWith, myname_)
+  else
+     if(present(perrWith)) then ! Append onto TraceBack
+	call GenTraceBackString(myTrace, perrWith, myname_)
+     else ! Start a TraceBackString
+	call GenTraceBackString(myTrace, myname_)
+     endif
+  endif
 
        ! Index the attribute we wish to extract:
 
-  index = indexIA_(aV, attrTag)
+  index = indexIA_(aV, attrTag, dieWith=String_ToChar(myTrace))
 
        ! Determine the number of data points:
 
@@ -1403,11 +1531,17 @@
 	    ':: ERROR length of output array outVect ', &
 	    ' less than length of aV.  size(outVect)=',size(outVect), &
 	    ', length of aV=',lsize
+	write(stderr,'(2a)') 'Traceback:  ',String_ToChar(myTrace)
 	call die(myname_)
      endif
   else ! allocate space for outVect
      allocate(outVect(lsize), stat=ierr)
-     if(ierr /= 0) call die(myname_, 'allocate(outVect) failed.', ierr)
+     if(ierr /= 0) then
+	write(stderr,'(2a,i8)') myname_, &
+	     ':: Error - allocate(outVect(...) failed. ierr = ',ierr
+	write(stderr,'(2a)') 'Traceback:  ',String_ToChar(myTrace)	
+	call die(myname_)
+     endif
   endif
 
        ! Copy the attribute data into outVect
@@ -1422,17 +1556,33 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: exportRAttr_ - Return AttrVect REAL Attribute as a Vector
+! !IROUTINE: exportRAttr_ - Return REAL Attribute as a Vector
 !
 ! !DESCRIPTION:
 ! This routine extracts from the input {\tt AttrVect} argument {\tt aV} 
-! the attribute corresponding to the tag defined in the input 
+! the real attribute corresponding to the tag defined in the input 
 ! {\tt CHARACTER} argument {\tt AttrTag}, and returns it in the 
 ! {\tt REAL} output array {\tt outVect}, and its length in the output
-! {\tt INTEGER} argument {\tt lsize}.
+! {\tt INTEGER} argument {\tt lsize}.  The optional input {\tt CHARACTER} 
+! arguments {\tt perrWith} and {\tt dieWith} control how errors are 
+! handled.  
+! \begin{enumerate}
+! \item if neither {\tt perrWith} nor {\tt dieWith} are present, 
+! {\tt exportRAttr\_()} terminates execution with an internally generated
+! error message;
+! \item if {\tt perrWith} is present, but {\tt dieWith} is not, an error 
+! message is written to {\tt stderr} incorporating user-supplied traceback
+! information stored in the argument {\tt perrWith};
+! \item if {\tt dieWith} is present, execution terminates with an error 
+! message written to {\tt stderr} that incorporates user-supplied traceback
+! information stored in the argument {\tt dieWith}; and 
+! \item if both {\tt perrWith} and {\tt dieWith} are present, execution 
+! terminates with an error message using {\tt dieWith}, and the argument
+! {\tt perrWith} is ignored.
+! \end{enumerate}
 !
 ! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
-! the {\tt AttrVect} {\tt List} component {\tt aV\%rList}.
+! the {\tt AttrVect} {\tt List} component {\tt aV\%iList}.
 !
 ! {\bf N.B.:}  The flexibility of this routine regarding the pointer 
 ! association status of the output argument {\tt outVect} means the
@@ -1450,25 +1600,34 @@
 !
 ! !INTERFACE:
 
- subroutine exportRAttr_(aV, AttrTag, outVect, lsize)
+ subroutine exportRAttr_(aV, AttrTag, outVect, lsize, perrWith, dieWith)
+
 !
 ! !USES:
 !
       use m_die ,          only : die
       use m_stdio ,        only : stderr
 
+      use m_String, only : String
+      use m_String, only : String_init => init
+      use m_String, only : String_clean => clean
+      use m_String, only : String_ToChar => ToChar
+
+      use m_TraceBack, only : GenTraceBackString
+
       implicit none
 
 ! !INPUT PARAMETERS: 
 
-      type(AttrVect),     intent(in)  :: aV
-      character(len=*),   intent(in)  :: AttrTag
+      type(AttrVect),             intent(in) :: aV
+      character(len=*),           intent(in) :: AttrTag
+      character(len=*), optional, intent(in) :: perrWith
+      character(len=*), optional, intent(in) :: dieWith
 
 ! !OUTPUT PARAMETERS: 
 
-      real, dimension(:), pointer     :: outVect
-      integer,            intent(out) :: lsize
-
+      real,         dimension(:), pointer     :: outVect
+      integer,                    intent(out) :: lsize
 
 ! !REVISION HISTORY:
 ! 19Oct01 - J.W. Larson <larson@mcs.anl.gov> - initial (slow) 
@@ -1481,26 +1640,45 @@
   character(len=*),parameter :: myname_=myname//'::exportRAttr_'
 
   integer :: index, ierr, n
+  type(String) :: myTrace
+
+  if(present(dieWith)) then ! Append onto TraceBack
+     call GenTraceBackString(myTrace, dieWith, myname_)
+  else
+     if(present(perrWith)) then ! Append onto TraceBack
+	call GenTraceBackString(myTrace, perrWith, myname_)
+     else ! Start a TraceBackString
+	call GenTraceBackString(myTrace, myname_)
+     endif
+  endif
 
        ! Index the attribute we wish to extract:
 
-  index = indexRA_(aV, attrTag)
+  index = indexRA_(aV, attrTag, dieWith=String_ToChar(myTrace))
 
        ! Determine the number of data points:
 
   lsize = lsize_(aV)
 
-  if(associated(outVect)) then
-     if(size(outVect) < lsize) then ! check the size of outVect
+       ! Allocate space for outVect (if it is not already dimensioned)
+
+  if(associated(outVect)) then ! check the size of outVect
+     if(size(outVect) < lsize) then
 	write(stderr,'(2a,i8,a,i8)') myname_, &
 	    ':: ERROR length of output array outVect ', &
 	    ' less than length of aV.  size(outVect)=',size(outVect), &
 	    ', length of aV=',lsize
+	write(stderr,'(2a)') 'Traceback:  ',String_ToChar(myTrace)
 	call die(myname_)
      endif
   else ! allocate space for outVect
      allocate(outVect(lsize), stat=ierr)
-     if(ierr /= 0) call die(myname_, 'allocate(outVect) failed.', ierr)
+     if(ierr /= 0) then
+	write(stderr,'(2a,i8)') myname_, &
+	     ':: Error - allocate(outVect(...) failed. ierr = ',ierr
+	write(stderr,'(2a)') 'Traceback:  ',String_ToChar(myTrace)	
+	call die(myname_)
+     endif
   endif
 
        ! Copy the attribute data into outVect
@@ -1977,8 +2155,10 @@
         ! determine wheter this key refers to an
         ! integer or real attribute:
 
-     rIndex(n) = indexRA_(aV, String_tochar(key))
-     iIndex(n) = indexIA_(aV, String_tochar(key))
+!     rIndex(n) = indexRA_(aV, String_tochar(key), dieWith=myname_)
+!     iIndex(n) = indexIA_(aV, String_tochar(key), dieWith=myname_)
+     rIndex(n) = List_index(aV%rList, String_tochar(key))
+     iIndex(n) = List_index(aV%iList, String_tochar(key))
 
         ! If both rIndex(n) and iIndex(n) are greater than
         ! zero, then we have an integer attribute sharing 

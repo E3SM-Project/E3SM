@@ -155,7 +155,7 @@
       use m_List,     only : List_init => init
       use m_List,     only : List_nitem => nitem
       use m_List,     only : List_shared => GetSharedListIndices
-      use m_List,     only : List_concatenate => concatenate
+      use m_List,     only : List_append => append
       use m_List,     only : List_copy => copy
       use m_List,     only : List_nullify => nullify
       use m_List,     only : List_clean => clean
@@ -238,19 +238,19 @@
 
   if(present(WeightChars)) then
      call List_init(GGrid%weight_list,trim(WeightChars))
-     call List_concatenate(RAList,GGrid%weight_list,RAList)
+     call List_append(RAList, GGrid%weight_list)
   endif
 
   if(present(OtherChars)) then
      call List_init(GGrid%other_list,trim(OtherChars))
-     call List_concatenate(RAList,GGrid%other_list,RAList)
+     call List_append(RAList, GGrid%other_list)
   endif
 
   call List_init(IAList,'GlobGridNum')
 
   if(present(IndexChars)) then
      call List_init(GGrid%index_list,trim(IndexChars))
-     call List_concatenate(IAList,GGrid%index_list,IAList)
+     call List_append(IAList, GGrid%index_list)
   endif
 
         ! Check the lists that we've initialized :
@@ -369,7 +369,7 @@
       use m_List,     only : List_allocated => allocated
       use m_List,     only : List_nitem => nitem
       use m_List,     only : List_shared => GetSharedListIndices
-      use m_List,     only : List_concatenate => concatenate
+      use m_List,     only : List_append => append
       use m_List,     only : List_copy => copy
       use m_List,     only : List_nullify => nullify
       use m_List,     only : List_clean => clean
@@ -514,7 +514,7 @@
   if(present(WeightList)) then
      if(List_allocated(WeightList)) then
 	call List_copy(GGrid%weight_list,WeightList)
-	call List_concatenate(RAList, WeightList, RAList)
+	call List_append(RAList, WeightList)
      else
 	call die(myname_,"Argument WeightList not allocated")
      endif
@@ -523,7 +523,7 @@
   if(present(OtherList)) then
      if(List_allocated(OtherList)) then
 	call List_copy(GGrid%other_list,OtherList)
-	call List_concatenate(RAList, OtherList, RAList)
+	call List_append(RAList, OtherList)
      else
 	call die(myname_,"Argument OtherList not allocated")
      endif
@@ -533,7 +533,7 @@
 
   call List_init(IAList,'GlobGridNum')
 
-  if(present(IndexList)) call List_concatenate(IAList,IndexList,IAList)
+  if(present(IndexList)) call List_append(IAList, IndexList)
 
   call List_copy(GGrid%index_list,IAList)
 
@@ -965,18 +965,55 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: indexIA - return storage index of named member of index_list
+! !IROUTINE: indexIA - Index an Integer Attribute
 !
 ! !DESCRIPTION:
+! This function returns an {\tt INTEGER}, corresponding to the location 
+! of an integer attribute within the input {\tt GeneralGrid} argument 
+! {\tt GGrid}.  For example, every {\tt GGrid} has at least one integer 
+! attribute (namely the global gridpoint index {\tt 'GlobGridNum'}).
+! The array of integer values for the attribute {\tt 'GlobGridNum'} is 
+! stored in 
+! \begin{verbatim}
+! {\tt GGrid%data%iAttr(indexIA_(GGrid,'GlobGridNum'),:)}.
+!! \end{verbatim}
+! If {\tt indexIA\_()} is unable to match {\tt item} to any of the integer
+! attributes present in {\tt GGrid}, the resulting value is zero which is 
+! equivalent to an error.  The optional input {\tt CHARACTER} arguments 
+! {\tt perrWith} and {\tt dieWith} control how such errors are handled.  
+! Below are the rules how error handling is controlled by using 
+! {\tt perrWith} and {\tt dieWith}:
+! \begin{enumerate}
+! \item if neither {\tt perrWith} nor {\tt dieWith} are present, 
+! {\tt indexIA\_()} terminates execution with an internally generated
+! error message;
+! \item if {\tt perrWith} is present, but {\tt dieWith} is not, an error 
+! message is written to {\tt stderr} incorporating user-supplied 
+! traceback information stored in the argument {\tt perrWith};
+! \item if {\tt dieWith} is present, execution terminates with an error 
+! message written to {\tt stderr} that incorporates user-supplied 
+! traceback information stored in the argument {\tt dieWith}; and 
+! \item if both {\tt perrWith} and {\tt dieWith} are present, execution 
+! terminates with an error message using {\tt dieWith}, and the argument
+! {\tt perrWith} is ignored.
+! \end{enumerate}
 !
 ! !INTERFACE:
 
  integer function indexIA_(GGrid, item, perrWith, dieWith)
+
 !
 ! !USES:
 !
       use m_die
       use m_stdio
+
+      use m_String, only : String
+      use m_String, only : String_init => init
+      use m_String, only : String_clean => clean
+      use m_String, only : String_ToChar => ToChar
+
+      use m_TraceBack, only : GenTraceBackString
 
       use m_AttrVect,     only : AttrVect_indexIA => indexIA
 
@@ -984,51 +1021,89 @@
 
 ! !INPUT PARAMETERS: 
 !
-      type(GeneralGrid), intent(in)  :: GGrid
-      character(len=*),  intent(in)  :: item
+      type(GeneralGrid),          intent(in) :: GGrid
+      character(len=*),           intent(in) :: item
       character(len=*), optional, intent(in) :: perrWith
       character(len=*), optional, intent(in) :: dieWith
 
 ! !REVISION HISTORY:
-!       15Jan01 - Jay Larson <larson@mcs.anl.gov> - Initial version.
-!       27Mar02 - Jay Larson <larson@mcs.anl.gov> - Cleaned up error
-!                 handling logic.
+! 15Jan01 - Jay Larson <larson@mcs.anl.gov> - Initial version.
+! 27Mar02 - Jay Larson <larson@mcs.anl.gov> - Cleaned up error
+!           handling logic.
+!  2Aug02 - Jay Larson <larson@mcs.anl.gov> - Further refinement
+!           of error handling.
 !EOP ___________________________________________________________________
 !
- character(len=*),parameter :: myname_=myname//'::indexIA_'
 
- 
- indexIA_ = AttrVect_indexIA(GGrid%data, item)
+ character(len=*), parameter :: myname_=myname//'::indexIA_'
 
-  if(indexIA_<=0) then
+ type(String) :: myTrace
 
-     if((.not. present(perrWith)) .and. (.not. present(dieWith))) then
-	write(stderr,'(4a)') myname,       &
-		'" :: indexIA_() error, not found "',trim(item),'"'
-	call die(myname_)
+       ! Generate a traceback String
+
+  if(present(dieWith)) then
+     call GenTraceBackString(myTrace, dieWith, myname_)
+  else
+     if(present(perrWith)) then
+        call GenTraceBackString(myTrace, perrWith, myname_)
      else
-	if(present(perrWith)) then
-	   write(stderr,'(4a)') perrWith, &
-		'" indexIA_() error, not found "',trim(item),'"'
-	endif
-	if(present(dieWith)) then
-	   write(stderr,'(4a)') dieWith,       &
-		'" indexIA_() error, not found "',trim(item),'"'
-	   call die(dieWith)
-	endif
-     endif ! if((.not. present(perrWith)) .and. ...
+        call GenTraceBackString(myTrace, myname_)
+     endif
+  endif
 
-  endif ! if(indexIA_ <= 0)
+       ! Call AttrVect_indexIA() accordingly:
+
+  if( present(dieWith) .or. &
+     ((.not. present(dieWith)) .and. (.not. present(perrWith))) ) then
+     indexIA_ = AttrVect_indexIA(GGrid%data, item, &
+                                 dieWith=String_ToChar(myTrace))
+  else  ! perrWith but no dieWith case
+     indexIA_ = AttrVect_indexIA(GGrid%data, item, &
+                   perrWith=String_ToChar(myTrace))
+  endif
+
+  call String_clean(myTrace)
 
  end function indexIA_
+
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: indexRA - return storage index of named member of index_list
+! !IROUTINE: indexRA - Index a Real Attribute
 !
 ! !DESCRIPTION:
+
+! This function returns an {\tt INTEGER}, corresponding to the location 
+! of an integer attribute within the input {\tt GeneralGrid} argument 
+! {\tt GGrid}.  For example, every {\tt GGrid} has at least one integer 
+! attribute (namely the global gridpoint index {\tt 'GlobGridNum'}).
+! The array of integer values for the attribute {\tt 'GlobGridNum'} is 
+! stored in 
+! \begin{verbatim}
+! {\tt GGrid%data%iAttr(indexRA_(GGrid,'GlobGridNum'),:)}.
+!! \end{verbatim}
+! If {\tt indexRA\_()} is unable to match {\tt item} to any of the integer
+! attributes present in {\tt GGrid}, the resulting value is zero which is 
+! equivalent to an error.  The optional input {\tt CHARACTER} arguments 
+! {\tt perrWith} and {\tt dieWith} control how such errors are handled.  
+! Below are the rules how error handling is controlled by using 
+! {\tt perrWith} and {\tt dieWith}:
+! \begin{enumerate}
+! \item if neither {\tt perrWith} nor {\tt dieWith} are present, 
+! {\tt indexRA\_()} terminates execution with an internally generated
+! error message;
+! \item if {\tt perrWith} is present, but {\tt dieWith} is not, an error 
+! message is written to {\tt stderr} incorporating user-supplied 
+! traceback information stored in the argument {\tt perrWith};
+! \item if {\tt dieWith} is present, execution terminates with an error 
+! message written to {\tt stderr} that incorporates user-supplied 
+! traceback information stored in the argument {\tt dieWith}; and 
+! \item if both {\tt perrWith} and {\tt dieWith} are present, execution 
+! terminates with an error message using {\tt dieWith}, and the argument
+! {\tt perrWith} is ignored.
+! \end{enumerate}
 !
 ! !INTERFACE:
 
@@ -1038,6 +1113,13 @@
 !
       use m_stdio
       use m_die
+
+      use m_String, only : String
+      use m_String, only : String_init => init
+      use m_String, only : String_clean => clean
+      use m_String, only : String_ToChar => ToChar
+
+      use m_TraceBack, only : GenTraceBackString
 
       use m_AttrVect,     only : AttrVect_indexRA => indexRA
 
@@ -1058,28 +1140,33 @@
 !
  character(len=*),parameter :: myname_=myname//'::indexRA_'
 
- 
- indexRA_ = AttrVect_indexRA(GGrid%data, item)
 
-  if(indexRA_<=0) then
+ type(String) :: myTrace
 
-     if((.not. present(perrWith)) .and. (.not. present(dieWith))) then
-	write(stderr,'(4a)') myname,       &
-		'" :: indexRA_() error, not found "',trim(item),'"'
-	call die(myname_)
-     else
-	if(present(perrWith)) then
-	   write(stderr,'(4a)') perrWith, &
-		'" indexRA_() error, not found "',trim(item),'"'
-	endif
-	if(present(dieWith)) then
-	   write(stderr,'(4a)') dieWith,       &
-		'" indexRA_() error, not found "',trim(item),'"'
-	   call die(dieWith)
-	endif
-     endif ! if((.not. present(perrWith)) .and. ...
+       ! Generate a traceback String
 
-  endif ! if(indexRA_ <= 0)
+  if(present(dieWith)) then ! append myname_ onto dieWith
+     call GenTraceBackString(myTrace, dieWith, myname_)
+  else
+     if(present(perrWith)) then ! append myname_ onto perrwith
+        call GenTraceBackString(myTrace, perrWith, myname_)
+     else ! Start a TraceBack String
+        call GenTraceBackString(myTrace, myname_)
+     endif
+  endif
+
+       ! Call AttrVect_indexRA() accordingly:
+
+  if( present(dieWith) .or. &
+     ((.not. present(dieWith)) .and. (.not. present(perrWith))) ) then
+     indexRA_ = AttrVect_indexRA(GGrid%data, item, &
+                                 dieWith=String_ToChar(myTrace))
+  else  ! perrWith but no dieWith case
+     indexRA_ = AttrVect_indexRA(GGrid%data, item, &
+                   perrWith=String_ToChar(myTrace))
+  endif
+
+  call String_clean(myTrace)
 
  end function indexRA_
 

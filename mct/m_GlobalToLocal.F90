@@ -453,11 +453,11 @@
 
   select case(RCFlag)
   case('ROW','row')
-     gindex = SparseMatrix_indexIA(sMat,'grow')
-     lindex = SparseMatrix_indexIA(sMat,'lrow')
+     gindex = SparseMatrix_indexIA(sMat, 'grow', dieWith=myname_)
+     lindex = SparseMatrix_indexIA(sMat,'lrow', dieWith=myname_)
   case('COLUMN','column')
-     gindex = SparseMatrix_indexIA(sMat,'gcol')
-     lindex = SparseMatrix_indexIA(sMat,'lcol')
+     gindex = SparseMatrix_indexIA(sMat,'gcol', dieWith=myname_)
+     lindex = SparseMatrix_indexIA(sMat,'lcol', dieWith=myname_)
   case default
      write(stderr,'(3a)') myname_,":: unrecognized value of RCFLag ",RCFlag
      call die(myname)

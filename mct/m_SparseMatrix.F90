@@ -431,24 +431,57 @@
 !
 ! !INTERFACE:
 
-    integer function indexIA_(sMat, attribute)
+    integer function indexIA_(sMat, item, perrWith, dieWith)
 !
 ! !USES:
 !
+      use m_String, only : String
+      use m_String, only : String_init => init
+      use m_String, only : String_clean => clean
+      use m_String, only : String_ToChar => ToChar
+
+      use m_TraceBack, only : GenTraceBackString
+
       use m_AttrVect,only : AttrVect_indexIA => indexIA
 
       implicit none
 
       type(SparseMatrix), intent(in) :: sMat
-      character(len=*),   intent(in) :: attribute
+      character(len=*),   intent(in) :: item
+      character(len=*), optional, intent(in) :: perrWith
+      character(len=*), optional, intent(in) :: dieWith
 
 ! !REVISION HISTORY:
 !       23Apr00 - J.W. Larson <larson@mcs.anl.gov> - initial version.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::indexIA_'
+  type(String) :: myTrace
 
-  indexIA_ = AttrVect_indexIA(sMat%data, attribute)
+       ! Generate a traceback String
+
+  if(present(dieWith)) then
+     call GenTraceBackString(myTrace, dieWith, myname_)
+  else
+     if(present(perrWith)) then
+        call GenTraceBackString(myTrace, perrWith, myname_)
+     else
+        call GenTraceBackString(myTrace, myname_)
+     endif
+  endif
+
+       ! Call AttrVect_indexIA() accordingly:
+
+  if( present(dieWith) .or. &
+     ((.not. present(dieWith)) .and. (.not. present(perrWith))) ) then
+     indexIA_ = AttrVect_indexIA(sMat%data, item, &
+                                 dieWith=String_ToChar(myTrace))
+  else  ! perrWith but no dieWith case
+     indexIA_ = AttrVect_indexIA(sMat%data, item, &
+                   perrWith=String_ToChar(myTrace))
+  endif
+
+  call String_clean(myTrace)
 
  end function indexIA_
 
@@ -479,16 +512,25 @@
 !
 ! !INTERFACE:
 
-    integer function indexRA_(sMat, attribute)
+    integer function indexRA_(sMat, item, perrWith, dieWith)
 !
 ! !USES:
 !
+      use m_String, only : String
+      use m_String, only : String_init => init
+      use m_String, only : String_clean => clean
+      use m_String, only : String_ToChar => ToChar
+
+      use m_TraceBack, only : GenTraceBackString
+
       use m_AttrVect,only : AttrVect_indexRA => indexRA
 
       implicit none
 
       type(SparseMatrix), intent(in) :: sMat
-      character(len=*),   intent(in) :: attribute
+      character(len=*),   intent(in) :: item
+      character(len=*), optional, intent(in) :: perrWith
+      character(len=*), optional, intent(in) :: dieWith
 
 ! !REVISION HISTORY:
 !       24Apr00 - J.W. Larson <larson@mcs.anl.gov> - initial version.
@@ -496,7 +538,32 @@
 
   character(len=*),parameter :: myname_=myname//'::indexRA_'
 
-  indexRA_ = AttrVect_indexRA(sMat%data, attribute)
+  type(String) :: myTrace
+
+       ! Generate a traceback String
+
+  if(present(dieWith)) then ! append myname_ onto dieWith
+     call GenTraceBackString(myTrace, dieWith, myname_)
+  else
+     if(present(perrWith)) then ! append myname_ onto perrwith
+        call GenTraceBackString(myTrace, perrWith, myname_)
+     else ! Start a TraceBack String
+        call GenTraceBackString(myTrace, myname_)
+     endif
+  endif
+
+       ! Call AttrVect_indexRA() accordingly:
+
+  if( present(dieWith) .or. &
+     ((.not. present(dieWith)) .and. (.not. present(perrWith))) ) then
+     indexRA_ = AttrVect_indexRA(sMat%data, item, &
+                                 dieWith=String_ToChar(myTrace))
+  else  ! perrWith but no dieWith case
+     indexRA_ = AttrVect_indexRA(sMat%data, item, &
+                   perrWith=String_ToChar(myTrace))
+  endif
+
+  call String_clean(myTrace)
 
  end function indexRA_
 
@@ -1232,7 +1299,7 @@
 
   integer :: i, igrow, lsize
 
-  igrow = AttrVect_indexIA(sMat%data, 'grow')
+  igrow = AttrVect_indexIA(sMat%data, 'grow', dieWith=myname_)
   lsize = AttrVect_lsize(sMat%data)
 
        ! Initialize start_row and end_row:
@@ -1508,8 +1575,8 @@
 
        ! Query sMat to index global row and column storage indices:
 
-  igrow = indexIA_(sMat,'grow')
-  igcol = indexIA_(sMat,'gcol')
+  igrow = indexIA_(sMat=sMat,item='grow',dieWith=myname_)
+  igcol = indexIA_(sMat=sMat,item='gcol',dieWith=myname_)
 
        ! Scan the entries of sMat for row or column elements that
        ! are out-of-bounds.  Here, out-of-bounds means:  1) non-
@@ -1622,8 +1689,8 @@
        ! Compute the local entries to lsum(1:num_rows) for each process:
 
   lsize = AttrVect_lsize(sMat%data)
-  igrow = AttrVect_indexIA(sMat%data,'grow')
-  iwgt = AttrVect_indexRA(sMat%data,'weight')
+  igrow = AttrVect_indexIA(aV=sMat%data,item='grow',dieWith=myname_)
+  iwgt = AttrVect_indexRA(aV=sMat%data,item='weight',dieWith=myname_)
 
   lsums = 0.
   do i=1,lsize

@@ -64,6 +64,9 @@
       public :: clean		! destruction method
       public :: initialized     ! check if initialized
       public :: lsize		! local length of the data arrays
+      public :: NumSteps        ! number of steps in a cycle
+      public :: StepsDone       ! number of steps completed in the 
+                                ! current cycle
       public :: nIAttr		! number of integer fields
       public :: nRAttr		! number of real fields
       public :: indexIA		! index the integer fields
@@ -76,6 +79,7 @@
       public :: exportRAttr  ! Return REAL attribute as a vector
       public :: importIAttr  ! Insert INTEGER vector as attribute
       public :: importRAttr  ! Insert REAL vector as attribute
+      public :: zero         ! Clear an accumulator
       public :: SharedAttrIndexList ! Returns the number of shared
 				    ! attributes, and lists of the
 				    ! respective locations of these
@@ -91,6 +95,8 @@
     interface clean  ; module procedure clean_  ; end interface
     interface initialized; module procedure initialized_ ; end interface
     interface lsize  ; module procedure lsize_  ; end interface
+    interface NumSteps  ; module procedure NumSteps_  ; end interface
+    interface StepsDone  ; module procedure StepsDone_  ; end interface
     interface nIAttr ; module procedure nIAttr_ ; end interface
     interface nRAttr ; module procedure nRAttr_ ; end interface
     interface indexIA; module procedure indexIA_; end interface
@@ -101,6 +107,7 @@
     interface exportRAttr ; module procedure exportRAttr_ ; end interface
     interface importIAttr ; module procedure importIAttr_ ; end interface
     interface importRAttr ; module procedure importRAttr_ ; end interface
+    interface zero ; module procedure zero_ ; end interface
     interface SharedAttrIndexList ; module procedure   &
        aCaCSharedAttrIndexList_,  &   
        aVaCSharedAttrIndexList_
@@ -761,7 +768,6 @@
 
  end function initialized_
 
-
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
@@ -801,6 +807,104 @@
   lsize_=AttrVect_lsize(aC%aV)
 
  end function lsize_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: NumSteps_ - Number of Accumulation Cycle Time Steps
+!
+! !DESCRIPTION:
+! This {\tt INTEGER} query function returns the of time steps in an 
+! accumulation cycle for the input {\tt Accumulator} argument {\tt aC}.
+!
+! !INTERFACE:
+
+ integer function NumSteps_(aC)
+!
+! !USES:
+!
+      use m_die,   only : die
+      use m_stdio, only : stderr
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+!
+      type(Accumulator), intent(in) :: aC
+
+! !REVISION HISTORY:
+!  7Aug02 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::NumSteps_'
+
+  integer :: myNumSteps
+
+
+	! Retrieve the number of cycle steps from aC:
+
+  myNumSteps = aC%num_steps
+
+  if(myNumSteps <= 0) then
+     write(stderr,'(2a,i8)') myname_, &
+	  ':: FATAL--illegal number of steps in an accumulation cycle = ',&
+	  myNumSteps
+     call die(myname_)
+  endif
+
+  NumSteps_ = myNumSteps
+
+ end function NumSteps_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: StepsDone_ - Number of Completed Steps in the Current Cycle
+!
+! !DESCRIPTION:
+! This {\tt INTEGER} query function returns the of time steps that have 
+! been completed in the current accumulation cycle for the input 
+! {\tt Accumulator} argument {\tt aC}.
+!
+! !INTERFACE:
+
+ integer function StepsDone_(aC)
+!
+! !USES:
+!
+      use m_die,   only : die
+      use m_stdio, only : stderr
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+!
+      type(Accumulator), intent(in) :: aC
+
+! !REVISION HISTORY:
+!  7Aug02 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::StepsDone_'
+
+  integer :: myStepsDone
+
+	! Retrieve the number of completed steps from aC:
+
+  myStepsDone = aC%steps_done
+
+  if(myStepsDone < 0) then
+     write(stderr,'(2a,i8)') myname_, &
+	  ':: FATAL--illegal number of completed steps = ',&
+	  myStepsDone
+     call die(myname_)
+  endif
+
+  StepsDone_ = myStepsDone
+
+ end function StepsDone_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
@@ -1349,6 +1453,48 @@
   call AttrVect_importRAttr(aC%av, AttrTag, inVect, lsize)
 
  end subroutine importRAttr_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: zero_ - Number of Completed Steps in the Current Cycle
+!
+! !DESCRIPTION:
+! This subroutine clears the the {\tt Accumulator} argument {\tt aC}.  
+! This is accomplished by setting the number of completed steps in the
+! accumulation cycle to zero, and zeroing out all of the accumlation
+! registers.
+!
+! !INTERFACE:
+
+ subroutine zero_(aC)
+!
+! !USES:
+!
+      use m_AttrVect, only : AttrVect_zero => zero
+
+      implicit none
+
+! !INPUT/OUTPUT PARAMETERS: 
+!
+      type(Accumulator), intent(inout) :: aC
+
+! !REVISION HISTORY:
+!  7Aug02 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::zero_'
+
+	! Set number of completed cycle steps to zero:
+
+  aC%steps_done = 0
+
+	! Zero out the accumulation registers:
+
+  call AttrVect_zero(aC%av)
+
+ end subroutine zero_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !

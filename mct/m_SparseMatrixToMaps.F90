@@ -161,7 +161,7 @@
 
        ! Extract global column information and place in array gCol
 
-  igCol = SparseMatrix_indexIA(sMat,'gcol')
+  igCol = SparseMatrix_indexIA(sMat, 'gcol', dieWith=myname_)
 
   do i=1, lsize
      gCol(i) = sMat%data%iAttr(igCol,i)
@@ -306,7 +306,7 @@
 
        ! Extract global column information and place in array gRow
 
-  igRow = SparseMatrix_indexIA(sMat,'grow')
+  igRow = SparseMatrix_indexIA(sMat,'grow', dieWith=myname_)
 
   do i=1, lsize
      gRow(i) = sMat%data%iAttr(igRow,i)

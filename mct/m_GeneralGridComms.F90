@@ -1223,14 +1223,15 @@
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::bcastGeneralGridHeader_'
+
 ! Process ID
   integer :: myID
 ! Error flag
   integer :: ierr
-! Logical flag--is ioGGrid%descend associated?
-  logical :: DescendAssoc
 ! Size of array ioGGrid%descend(:)
   integer :: DescendSize
+! Header-Assocation array
+  logical :: HeaderAssoc(6)
 
       ! Initialize stat (if present)
 
@@ -1243,131 +1244,138 @@
      call MP_perr_die(myname_,'MPI_COMM_RANK(comm...',ierr)
   endif
 
-       ! Step 1. Broadcast List attributes of the GeneralGrid.
-
-  if(List_allocated(ioGGrid%coordinate_list)) then
-     call List_bcast(ioGGrid%coordinate_list, root, comm, ierr)
-     if(ierr /= 0) then
-	write(stderr,*) myname_,'List_bcast(ioGGrid%coordinate_list... failed.',&
-	     ' ierr = ',ierr
-	if(present(stat)) then
-	   stat = ierr
-	   return
-	else
-	   call die(myname_)
-	endif
-     endif
-  endif
-
-  if(List_allocated(ioGGrid%coordinate_sort_order)) then
-     call List_bcast(ioGGrid%coordinate_sort_order, root, comm, ierr)
-     if(ierr /= 0) then
-	write(stderr,*) myname_,'List_bcast(ioGGrid%coordinate_sort_order... failed', &
-	     ' ierr = ',ierr
-	if(present(stat)) then
-	   stat = ierr
-	   return
-	else
-	   call die(myname_)
-	endif
-     endif
-  endif
-
-  if(List_allocated(ioGGrid%weight_list)) then
-     call List_bcast(ioGGrid%weight_list, root, comm, ierr)
-     if(ierr /= 0) then
-	write(stderr,*) myname_,'List_bcast(ioGGrid%weight_list... failed',&
-	     ' ierr = ',ierr
-	if(present(stat)) then
-	   stat = ierr
-	   return
-	else
-	   call die(myname_)
-	endif
-     endif
-  endif
-
-  if(List_allocated(ioGGrid%other_list)) then
-     call List_bcast(ioGGrid%other_list, root, comm, ierr)
-     if(ierr /= 0) then
-	write(stderr,*) myname_,'List_bcast(ioGGrid%other_list... failed',&
-	     ' ierr = ',ierr
-	if(present(stat)) then
-	   stat = ierr
-	   return
-	else
-	   call die(myname_)
-	endif
-     endif
-  endif
-
-  if(List_allocated(ioGGrid%index_list)) then
-     call List_bcast(ioGGrid%index_list, root, comm, ierr)
-     if(ierr /= 0) then
-	write(stderr,*) myname_,'List_bcast(ioGGrid%index_list... failed',&
-	     ' ierr = ',ierr
-	if(present(stat)) then
-	   stat = ierr
-	   return
-	else
-	   call die(myname_)
-	endif
-     endif
-  endif
-
-       ! Step 2. If applicable Broadcast ioGGrid%descend from the root.
+       ! Step 0.5. Check elements of the GeneralGrid header to see 
+       ! which components of it are allocated.  Load the results
+       ! into HeaderAssoc(:), and broadcast it.
 
   if(myID == root) then
-     DescendAssoc = associated(ioGGrid%descend)
+
+     HeaderAssoc(1) = List_allocated(ioGGrid%coordinate_list)
+     HeaderAssoc(2) = List_allocated(ioGGrid%coordinate_sort_order)
+     HeaderAssoc(3) = List_allocated(ioGGrid%weight_list)
+     HeaderAssoc(4) = List_allocated(ioGGrid%other_list)
+     HeaderAssoc(5) = List_allocated(ioGGrid%index_list)
+     HeaderAssoc(6) = associated(ioGGrid%descend)
+
   endif
 
-  call MPI_BCAST(DescendAssoc, 1, MP_LOGICAL, root, comm, ierr)
-  if(ierr /= 0) then
-     call MP_perr_die(myname_,'MPI_BCAST(DescendAssoc...',ierr)
+  call MPI_BCAST(HeaderAssoc,6,MP_LOGICAL,root,comm,ierr)
+
+       ! Step 1. Broadcast List attributes of the GeneralGrid.
+
+  if(HeaderAssoc(1)) then
+     call List_bcast(ioGGrid%coordinate_list, root, comm, ierr)
+     if(ierr /= 0) then
+        write(stderr,*) myname_,'List_bcast(ioGGrid%coordinate_list... failed.',&
+             ' ierr = ',ierr
+        if(present(stat)) then
+           stat = ierr
+           return
+        else
+           call die(myname_)
+        endif
+     endif
+  endif
+
+  if(HeaderAssoc(2)) then
+     call List_bcast(ioGGrid%coordinate_sort_order, root, comm, ierr)
+     if(ierr /= 0) then
+        write(stderr,*) myname_,'List_bcast(ioGGrid%coordinate_sort_order... failed', &
+             ' ierr = ',ierr
+        if(present(stat)) then
+           stat = ierr
+           return
+        else
+           call die(myname_)
+        endif
+     endif
+  endif
+
+  if(HeaderAssoc(3)) then
+     call List_bcast(ioGGrid%weight_list, root, comm, ierr)
+     if(ierr /= 0) then
+        write(stderr,*) myname_,'List_bcast(ioGGrid%weight_list... failed',&
+             ' ierr = ',ierr
+        if(present(stat)) then
+           stat = ierr
+           return
+        else
+           call die(myname_)
+        endif
+     endif
+  endif
+
+  if(HeaderAssoc(4)) then
+     call List_bcast(ioGGrid%other_list, root, comm, ierr)
+     if(ierr /= 0) then
+        write(stderr,*) myname_,'List_bcast(ioGGrid%other_list... failed',&
+             ' ierr = ',ierr
+        if(present(stat)) then
+           stat = ierr
+           return
+        else
+           call die(myname_)
+        endif
+     endif
+  endif
+
+  if(HeaderAssoc(5)) then
+     call List_bcast(ioGGrid%index_list, root, comm, ierr)
+     if(ierr /= 0) then
+        write(stderr,*) myname_,'List_bcast(ioGGrid%index_list... failed',&
+             ' ierr = ',ierr
+        if(present(stat)) then
+           stat = ierr
+           return
+        else
+           call die(myname_)
+        endif
+     endif
   endif
 
        ! If ioGGrid%descend is associated on the root, prepare and
        ! execute its broadcast
 
-  if(DescendAssoc) then
+  if(HeaderAssoc(6)) then
 
        ! On the root, get the size of ioGGrid%descend(:)
 
      if(myID == root) then
-	DescendSize = size(ioGGrid%descend)
-	if(DescendSize<=0) call die(myname_,'size(ioGGrid%descend)<=0')
+        DescendSize = size(ioGGrid%descend)
+        if(DescendSize<=0) call die(myname_,'size(ioGGrid%descend)<=0')
      endif
 
        ! Broadcast the size of ioGGrid%descend(:) from the root.
 
      call MPI_BCAST(DescendSize, 1, MP_INTEGER, root, comm, ierr)
      if(ierr /= 0) then
-	call MP_perr_die(myname_,'MPI_BCAST(DescendSize...',ierr)
+        call MP_perr_die(myname_,'MPI_BCAST(DescendSize...',ierr)
      endif
 
        ! Off the root, allocate ioGGrid%descend(:)
 
      if(myID /= root) then
-	allocate(ioGGrid%descend(DescendSize), stat=ierr)
-	if(ierr /= 0) then
-	   write(stderr,*) myname_,':: ERROR in allocate(ioGGrid%descend...',&
-		' ierr = ',ierr
-	   call die(myname_)
-	endif
+        allocate(ioGGrid%descend(DescendSize), stat=ierr)
+        if(ierr /= 0) then
+           write(stderr,*) myname_,':: ERROR in allocate(ioGGrid%descend...',&
+                ' ierr = ',ierr
+           call die(myname_)
+        endif
      endif
-
-       ! Finally, broadcast ioGGrid%descend(:) from the root
+ 
+      ! Finally, broadcast ioGGrid%descend(:) from the root
 
      call MPI_BCAST(ioGGrid%descend, DescendSize, MP_LOGICAL, root, &
                     comm, ierr)
      if(ierr /= 0) then
-	call MP_perr_die(myname_,'MPI_BCAST(ioGGrid%descend...',ierr)
+        call MP_perr_die(myname_,'MPI_BCAST(ioGGrid%descend...',ierr)
      endif
 
   endif
 
        ! The broadcast of the GeneralGrid Header from the &
        ! root is complete.
+
 
  end subroutine bcastGeneralGridHeader_
 
