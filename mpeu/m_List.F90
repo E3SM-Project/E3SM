@@ -291,27 +291,39 @@ contains
 !
 ! !INTERFACE:
 
- subroutine clean_(aList)
+ subroutine clean_(aList,stat)
 
       use m_die,only : die
       use m_mall,only : mall_mco,mall_ison
       implicit none
-      type(List),intent(inout) :: aList
+      type(List),        intent(inout) :: aList
+      integer, optional, intent(out)   :: stat
 
 ! !REVISION HISTORY:
 ! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+!       01Mar02 - E.T. Ong <eong@mcs.anl.gov> - added stat argument and
+!                 removed die to prevent crashes.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::clean_'
   integer :: ier
 
-	if(mall_ison()) then
-	  call mall_mco(aList%bf,myname)
-	  call mall_mco(aList%lc,myname)
-	endif
-
   deallocate(aList%bf,aList%lc,stat=ier)
-  if(ier /= 0) call die(myname_,'deallocate()',ier)
+
+  if(present(stat)) then
+     stat=ier
+  else
+     if(ier /= 0) call warn(myname_,'deallocate(aList%...)',ier)
+  endif
+
+  if(ier == 0) then
+
+     if(mall_ison()) then
+	call mall_mco(aList%bf,myname)
+	call mall_mco(aList%lc,myname)
+     endif
+     
+  endif
 
  end subroutine clean_
 
