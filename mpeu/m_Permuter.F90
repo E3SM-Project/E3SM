@@ -225,7 +225,7 @@ end subroutine unpermuteio_
 
     subroutine permuter_(ary,indx,n)
       use m_die
-      use m_realkinds
+      use m_realkinds,only : SP
       implicit none
       real(SP),dimension(:),intent(inout) :: ary
       integer ,dimension(:),intent(in)    :: indx
@@ -266,7 +266,7 @@ end subroutine permuter_
 ! !INTERFACE:
 
     subroutine permutero_(aout,ary,indx,n)
-      use m_realkinds
+      use m_realkinds,only : SP
       implicit none
       real(SP),dimension(:),intent(inout) :: aout
       real(SP),dimension(:),intent(in)  :: ary
@@ -301,7 +301,7 @@ end subroutine permutero_
 
     subroutine unpermuter_(ary,indx,n)
       use m_die
-      use m_realkinds
+      use m_realkinds,only : SP
       implicit none
       real(SP),dimension(:),intent(inout) :: ary
       integer ,dimension(:),intent(in)    :: indx
@@ -342,7 +342,7 @@ end subroutine unpermuter_
 ! !INTERFACE:
 
     subroutine unpermutero_(aout,ary,indx,n)
-      use m_realkinds
+      use m_realkinds,only : SP
       implicit none
       real(SP),dimension(:),intent(inout) :: aout
       real(SP),dimension(:),intent(in)  :: ary
@@ -377,7 +377,7 @@ end subroutine unpermutero_
 
     subroutine permuted_(ary,indx,n)
       use m_die
-      use m_realkinds
+      use m_realkinds,only : DP
       implicit none
       real(DP),dimension(:),intent(inout) :: ary
       integer ,dimension(:),intent(in)    :: indx
@@ -418,7 +418,7 @@ end subroutine permuted_
 ! !INTERFACE:
 
     subroutine permutedo_(aout,ary,indx,n)
-      use m_realkinds
+      use m_realkinds,only : DP
       implicit none
       real(DP),dimension(:),intent(inout) :: aout
       real(DP),dimension(:),intent(in)  :: ary
@@ -453,7 +453,7 @@ end subroutine permutedo_
 
     subroutine unpermuted_(ary,indx,n)
       use m_die
-      use m_realkinds
+      use m_realkinds,only : DP
       implicit none
       real(DP),dimension(:),intent(inout) :: ary
       integer ,dimension(:),intent(in)    :: indx
@@ -494,7 +494,7 @@ end subroutine unpermuted_
 ! !INTERFACE:
 
     subroutine unpermutedo_(aout,ary,indx,n)
-      use m_realkinds
+      use m_realkinds,only : DP
       implicit none
       real(DP),dimension(:),intent(inout) :: aout
       real(DP),dimension(:),intent(in)  :: ary
@@ -829,7 +829,7 @@ end subroutine unpermuteio1_
 
     subroutine permuter1_(ary,indx,n)
       use m_die
-      use m_realkinds
+      use m_realkinds,only : SP
       implicit none
       real(SP),dimension(:,:),intent(inout) :: ary
       integer ,dimension(:),intent(in)    :: indx
@@ -871,7 +871,7 @@ end subroutine permuter1_
 ! !INTERFACE:
 
     subroutine permutero1_(aout,ary,indx,n)
-      use m_realkinds
+      use m_realkinds,only : SP
       implicit none
       real(SP),dimension(:,:),intent(inout) :: aout
       real(SP),dimension(:,:),intent(in)  :: ary
@@ -907,7 +907,7 @@ end subroutine permutero1_
 
     subroutine unpermuter1_(ary,indx,n)
       use m_die
-      use m_realkinds
+      use m_realkinds,only : SP
       implicit none
       real(SP),dimension(:,:),intent(inout) :: ary
       integer ,dimension(:),intent(in)    :: indx
@@ -949,7 +949,7 @@ end subroutine unpermuter1_
 ! !INTERFACE:
 
     subroutine unpermutero1_(aout,ary,indx,n)
-      use m_realkinds
+      use m_realkinds,only : SP
       implicit none
       real(SP),dimension(:,:),intent(inout) :: aout
       real(SP),dimension(:,:),intent(in)  :: ary
@@ -985,7 +985,7 @@ end subroutine unpermutero1_
 
     subroutine permuted1_(ary,indx,n)
       use m_die
-      use m_realkinds
+      use m_realkinds,only : DP
       implicit none
       real(DP),dimension(:,:),intent(inout) :: ary
       integer ,dimension(:),intent(in)    :: indx
@@ -1027,7 +1027,7 @@ end subroutine permuted1_
 ! !INTERFACE:
 
     subroutine permutedo1_(aout,ary,indx,n)
-      use m_realkinds
+      use m_realkinds,only : DP
       implicit none
       real(DP),dimension(:,:),intent(inout) :: aout
       real(DP),dimension(:,:),intent(in)  :: ary
@@ -1063,7 +1063,7 @@ end subroutine permutedo1_
 
     subroutine unpermuted1_(ary,indx,n)
       use m_die
-      use m_realkinds
+      use m_realkinds,only : DP
       implicit none
       real(DP),dimension(:,:),intent(inout) :: ary
       integer ,dimension(:),intent(in)    :: indx
@@ -1105,7 +1105,7 @@ end subroutine unpermuted1_
 ! !INTERFACE:
 
     subroutine unpermutedo1_(aout,ary,indx,n)
-      use m_realkinds
+      use m_realkinds,only : DP
       implicit none
       real(DP),dimension(:,:),intent(inout) :: aout
       real(DP),dimension(:,:),intent(in)  :: ary
