@@ -375,6 +375,8 @@
 !       07Feb01 - J.W. Larson <larson@mcs.anl.gov> - First full version.
 !       20Apr01 - R.L. Jacob  <jacob@mcs.anl.gov> - add status argument
 !                 to MPI_RECV
+!       25Apr01 - R.L. Jacob  <jacob@mcs.anl.gov> - set SendTag and
+!                 RecvTag values
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::ExGSMapGSMap_'
@@ -458,6 +460,9 @@
 
      remote_root = ComponentRootRank(RemoteMapPars(ComponentIDIndex), &
 	                             ThisMCTWorld, check = .true.)
+
+     SendTag = 10 * LocalMapPars(ComponentIDIndex) + RemoteCompID
+     RecvTag = LocalMapPars(ComponentIDIndex) + 10 * RemoteCompID
 
       ! Send off SendBuf to the remote component root:
 
