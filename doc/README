@@ -11,4 +11,15 @@ NOTE:  this build system isn't working perfectly yet.  It will
 build a .dvi file but you will need to run "bibtex" manually to
 build the bibliography.
 
+To build "by hand" using the design doc as an example:
+cd to texsrc, type "make"
+cd back do doc directory then do:
+
+latex ngc_proposed_design
+bibtex ngc_proposed_design
+latex ngc_proposed_design
+latex ngc_proposed_design
+
+Similarily for the APIs document
+
 R. Jacob  16Feb01  MCS/ANL
