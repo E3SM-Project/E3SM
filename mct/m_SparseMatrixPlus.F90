@@ -126,6 +126,7 @@
 ! !PUBLIC MEMBER FUNCTIONS:
 
       public :: init
+      public :: vecinit
       public :: clean
       public :: initialized
 
@@ -133,6 +134,7 @@
         initFromRoot_, &
         initDistributed_
       end interface
+      interface vecinit ; module procedure vecinit_ ; end interface
       interface clean ; module procedure clean_ ; end interface
       interface initialized ; module procedure initialized_ ; end interface
 
@@ -526,6 +528,42 @@
   call GlobalSegMap_clean(yPrimeGSMap)
 
  end subroutine initDistributed_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: vecinit_ - Initialize vector parts of a SparseMatrixPlus
+!
+! !DESCRIPTION:  
+! This routine will initialize the parts of the SparseMatrix in
+! the SparseMatrixPlus object that are used in the vector-friendly
+! version of the sparse matrix multiply.
+!
+! !INTERFACE:
+
+ subroutine vecinit_(SMatP)
+!
+! !USES:
+!
+      use m_die
+      use m_SparseMatrix, only : SparseMatrix_vecinit => vecinit
+
+      implicit none
+
+! !INPUT/OUTPUT PARAMETERS:
+
+      type(SparseMatrixPlus), intent(inout)  :: SMatP
+
+! !REVISION HISTORY:
+! 29Oct03 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
+!EOP ___________________________________________________________________
+!
+  character(len=*),parameter :: myname_=myname//'::vecinit_'
+
+  call SparseMatrix_vecinit(SMatP%Matrix)
+
+ end subroutine vecinit_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
