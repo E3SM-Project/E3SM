@@ -6,6 +6,7 @@ m_Accumulator.tex       \
 m_AccumulatorComms.tex  \
 m_AttrVect.tex          \
 m_AttrVectComms.tex     \
+m_AttrVectReduce.tex    \
 m_ConvertMaps.tex       \
 m_ExchangeMaps.tex	\
 m_GeneralGrid.tex	\
