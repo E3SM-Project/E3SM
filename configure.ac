@@ -166,7 +166,7 @@ case $ac_cv_f90_mangling in
 	 name_mangling="FORTRAN_CAPS_";;
   *) 
          name_mangling="FORTRAN_MANGLING_UNKNOWN" 
-	 AC_MSG_WARN([unknown Fortran 90 name-mangling scheme]);;
+	 AC_MSG_WARN([UNKNOWN FORTRAN 90 NAME-MANGLING SCHEME]);;
 esac
 
 # FPP AND FPPFLAGS ARE HARDCODED AS A LAST RESORT:
@@ -221,7 +221,7 @@ AC_CHECK_FPP_EXTERNAL(
 
 else
 
-AC_MSG_WARN(cpp is not defined in your path)
+AC_MSG_WARN([CPP IS NOT DEFINED IN YOUR PATH])
 
 fi
 
@@ -234,7 +234,7 @@ fi
 
 if test "$ac_cv_f90_fpp_compiler" = "no"; then
 if test "$ac_cv_f90_fpp_external" = "no"; then
-   AC_MSG_WARN(Fortran Source Preprocessing has failed)
+   AC_MSG_WARN([FORTRAN SOURCE PREPROCESSING HAS FAILED])
 fi
 if test "$ac_cv_f90_fpp_external" = "yes"; then
    AC_SUBST(F90RULE,[.F90RULE])
@@ -282,6 +282,10 @@ fi
 if echo $osname | grep -i unicos >/dev/null 2>&1; then
    SYSDEF="UNICOS"
 fi
+if test -z "$SYSDEF"; then
+   AC_MSG_WARN([OPERATING SYSTEM UNKNOWN])
+   SYSDEF="UNKNOWNOS"
+fi
 
 # CHECK COMPILER NAME
 case $F90 in
@@ -307,8 +311,8 @@ xlf90)
    fi;;
 
 pgf90)
-   CPRDEF="PGI"
    echo "Fortran Compiler is Portland Group"
+   CPRDEF="PGI"
    if test -z "$REAL8"; then
       REAL8="-r8"
    fi
@@ -401,6 +405,10 @@ ifort)
 g95)
    echo "Fortran Compiler is GNU"
    CPRDEF="GNU";;
+
+*)
+   AC_MSG_WARN([UNKNOWN FORTRAN 90 COMPILER])
+   CPRDEF="UNKNOWNCPR";;
 
 esac
 
@@ -498,17 +506,12 @@ fi
 # SET THE PREPROCESSOR DEFINE FLAGS
 if test -z "$MACHDEFS"; then
 
-   if test -z "$SYSDEF"; then
-      echo "WARNING: OPERATING SYSTEM UNKNOWN"
-      SYSDEF="UNKNOWNOS"
-   fi
-
-   MACHDEFS="-DSYS$SYSDEF -DCPR$CPRDEF"
+   MACHDEFS="-DSYS$SYSDEF -DCPR$CPRDEF" # DEFAULT FLAGS
    if test -n "$SRKDEF"; then
       MACHDEFS="$MACHDEFS -D$SRKDEF"
    fi
 
-   if test "$F90" = "xlf90"; then
+   if test "$F90" = "xlf90"; then # SPECIAL XLF FLAGS
       if test "$ac_cv_f90_fpp_compiler" = "yes"; then
          MACHDEFS="-WF,-DSYS$SYSDEF,-DCPR$CPRDEF"
 	 if test -n "$SRKDEF"; then
@@ -517,7 +520,7 @@ if test -z "$MACHDEFS"; then
       fi
    fi
 
-   if test "$F90" = "frt"; then
+   if test "$F90" = "frt"; then # SPECIAL FRT FLAGS
       if test "$ac_cv_f90_fpp_compiler" = "yes"; then
          MACHDEFS="-Wp,-DSYS$SYSDEF,-DCPR$CPRDEF"
          if test -n "$SRKDEF"; then
@@ -528,7 +531,7 @@ if test -z "$MACHDEFS"; then
 
 fi
 
-if test -z "$ALLCFLAGS"; then
+if test -z "$ALLCFLAGS"; then # SET C COMPILE FLAGS
    ALLCFLAGS="-D$name_mangling -O"
    if test -n "$EXTRACFLAGS"; then
       ALLCFLAGS="-D$name_mangling -O $EXTRACFLAGS"

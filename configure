@@ -2077,7 +2077,7 @@ ac_compile='$F90 -c $F90FLAGS conftest.$ac_ext >&5'
 ac_link='$F90 -o conftest$ac_exeext $F90FLAGS $LD90FLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_f90_compiler_gnu
 if test -n "$ac_tool_prefix"; then
-  for ac_prog in f90 xlf90 pgf90 ftn frt f95 ifort efc ifc lf95 xlf95 fort g95
+  for ac_prog in xlf90 pgf90 ifort efc ifc f90 ftn frt f95 lf95 xlf95 fort g95
   do
     # Extract the first word of "$ac_tool_prefix$ac_prog", so it can be a program name with args.
 set dummy $ac_tool_prefix$ac_prog; ac_word=$2
@@ -2119,7 +2119,7 @@ fi
 fi
 if test -z "$F90"; then
   ac_ct_F90=$F90
-  for ac_prog in f90 xlf90 pgf90 ftn frt f95 ifort efc ifc lf95 xlf95 fort g95
+  for ac_prog in xlf90 pgf90 ifort efc ifc f90 ftn frt f95 lf95 xlf95 fort g95
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -3091,8 +3091,8 @@ case $ac_cv_f90_mangling in
 	 name_mangling="FORTRAN_CAPS_";;
   *)
          name_mangling="FORTRAN_MANGLING_UNKNOWN"
-	 { echo "$as_me:$LINENO: WARNING: unknown Fortran 90 name-mangling scheme" >&5
-echo "$as_me: WARNING: unknown Fortran 90 name-mangling scheme" >&2;};;
+	 { echo "$as_me:$LINENO: WARNING: UNKNOWN FORTRAN 90 NAME-MANGLING SCHEME" >&5
+echo "$as_me: WARNING: UNKNOWN FORTRAN 90 NAME-MANGLING SCHEME" >&2;};;
 esac
 
 # FPP AND FPPFLAGS ARE HARDCODED AS A LAST RESORT:
@@ -3292,8 +3292,8 @@ ac_ext=$old_ac_ext
 
 else
 
-{ echo "$as_me:$LINENO: WARNING: cpp is not defined in your path" >&5
-echo "$as_me: WARNING: cpp is not defined in your path" >&2;}
+{ echo "$as_me:$LINENO: WARNING: CPP IS NOT DEFINED IN YOUR PATH" >&5
+echo "$as_me: WARNING: CPP IS NOT DEFINED IN YOUR PATH" >&2;}
 
 fi
 
@@ -3308,8 +3308,8 @@ fi
 
 if test "$ac_cv_f90_fpp_compiler" = "no"; then
 if test "$ac_cv_f90_fpp_external" = "no"; then
-   { echo "$as_me:$LINENO: WARNING: Fortran Source Preprocessing has failed" >&5
-echo "$as_me: WARNING: Fortran Source Preprocessing has failed" >&2;}
+   { echo "$as_me:$LINENO: WARNING: FORTRAN SOURCE PREPROCESSING HAS FAILED" >&5
+echo "$as_me: WARNING: FORTRAN SOURCE PREPROCESSING HAS FAILED" >&2;}
 fi
 if test "$ac_cv_f90_fpp_external" = "yes"; then
    F90RULE=.F90RULE
@@ -3359,6 +3359,11 @@ fi
 if echo $osname | grep -i unicos >/dev/null 2>&1; then
    SYSDEF="UNICOS"
 fi
+if test -z "$SYSDEF"; then
+   { echo "$as_me:$LINENO: WARNING: OPERATING SYSTEM UNKNOWN" >&5
+echo "$as_me: WARNING: OPERATING SYSTEM UNKNOWN" >&2;}
+   SYSDEF="UNKNOWNOS"
+fi
 
 # CHECK COMPILER NAME
 case $F90 in
@@ -3384,8 +3389,8 @@ xlf90)
    fi;;
 
 pgf90)
-   CPRDEF="PGI"
    echo "Fortran Compiler is Portland Group"
+   CPRDEF="PGI"
    if test -z "$REAL8"; then
       REAL8="-r8"
    fi
@@ -3478,6 +3483,11 @@ ifort)
 g95)
    echo "Fortran Compiler is GNU"
    CPRDEF="GNU";;
+
+*)
+   { echo "$as_me:$LINENO: WARNING: UNKNOWN FORTRAN 90 COMPILER" >&5
+echo "$as_me: WARNING: UNKNOWN FORTRAN 90 COMPILER" >&2;}
+   CPRDEF="UNKNOWNCPR";;
 
 esac
 
@@ -3575,17 +3585,12 @@ fi
 # SET THE PREPROCESSOR DEFINE FLAGS
 if test -z "$MACHDEFS"; then
 
-   if test -z "$SYSDEF"; then
-      echo "WARNING: OPERATING SYSTEM UNKNOWN"
-      SYSDEF="UNKNOWNOS"
-   fi
-
-   MACHDEFS="-DSYS$SYSDEF -DCPR$CPRDEF"
+   MACHDEFS="-DSYS$SYSDEF -DCPR$CPRDEF" # DEFAULT FLAGS
    if test -n "$SRKDEF"; then
       MACHDEFS="$MACHDEFS -D$SRKDEF"
    fi
 
-   if test "$F90" = "xlf90"; then
+   if test "$F90" = "xlf90"; then # SPECIAL XLF FLAGS
       if test "$ac_cv_f90_fpp_compiler" = "yes"; then
          MACHDEFS="-WF,-DSYS$SYSDEF,-DCPR$CPRDEF"
 	 if test -n "$SRKDEF"; then
@@ -3594,7 +3599,7 @@ if test -z "$MACHDEFS"; then
       fi
    fi
 
-   if test "$F90" = "frt"; then
+   if test "$F90" = "frt"; then # SPECIAL FRT FLAGS
       if test "$ac_cv_f90_fpp_compiler" = "yes"; then
          MACHDEFS="-Wp,-DSYS$SYSDEF,-DCPR$CPRDEF"
          if test -n "$SRKDEF"; then
@@ -3605,7 +3610,7 @@ if test -z "$MACHDEFS"; then
 
 fi
 
-if test -z "$ALLCFLAGS"; then
+if test -z "$ALLCFLAGS"; then # SET C COMPILE FLAGS
    ALLCFLAGS="-D$name_mangling -O"
    if test -n "$EXTRACFLAGS"; then
       ALLCFLAGS="-D$name_mangling -O $EXTRACFLAGS"
