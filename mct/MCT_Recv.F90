@@ -40,6 +40,8 @@
 !      07Jun01 - R. Jacob <jacob@mcs.anl.gov> - remove logic to
 !                check "direction" of Router.  remove references
 !                to ThisMCTWorld%mylrank
+!      03Aug01 - E. Ong <eong@mcs.anl.gov> - explicity specify starting
+!                address in MPI_RECV
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_='MCT_Recv'
@@ -132,7 +134,7 @@
 ! corresponding tag logic must be in MCT_Send
       tag = 100000*othercomp + 1000*Rout%pe_list(proc) + &
             500 + ThisMCTWorld%mygrank
-      call MPI_IRECV(ip1(proc)%pi,Rout%locsize(proc)*numi,MP_INTEGER,&
+      call MPI_IRECV(ip1(proc)%pi(1),Rout%locsize(proc)*numi,MP_INTEGER,&
          Rout%pe_list(proc),tag,MP_COMM_WORLD,ireqs(proc),ier)
       if(ier /= 0) call MP_perr_die(myname_,'MPI_IRECV(ints)',ier)
     enddo
@@ -147,7 +149,7 @@
       tag = 100000*othercomp + 1000*Rout%pe_list(proc) + &
             700 + ThisMCTWorld%mygrank
 !     write(*,*)"RECVR",ThisMCTWorld%mygrank,Rout%pe_list(proc),tag
-      call MPI_IRECV(rp1(proc)%pr,Rout%locsize(proc)*numr,mp_Type_rp1,&
+      call MPI_IRECV(rp1(proc)%pr(1),Rout%locsize(proc)*numr,mp_Type_rp1,&
          Rout%pe_list(proc),tag,MP_COMM_WORLD,rreqs(proc),ier)
       if(ier /= 0) call MP_perr_die(myname_,'MPI_IRECV(reals)',ier)
     enddo
