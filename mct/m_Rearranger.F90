@@ -438,25 +438,23 @@
 
    call Router_clean(ReArr%SendRouter,ier)
    if(ier /= 0) then
-      write(stderr,'(2a,i8)') myname_, &
-	   ':: ERROR--Router_clean(ReArr%SendRouter) failed with ier=',ier
       if(present(status)) then
 	 status = ier
 	 return
       else
-	 call die(myname_)
+         write(stderr,'(2a,i8)') myname_, &
+	   ':: ERROR--Router_clean(ReArr%SendRouter) failed with ier=',ier
       endif
    endif
 
    call Router_clean(ReArr%RecvRouter,ier)
    if(ier /= 0) then
-      write(stderr,'(2a,i8)') myname_, &
-	   ':: ERROR--Router_clean(ReArr%RecvRouter) failed with ier=',ier
       if(present(status)) then
 	 status = ier
 	 return
       else
-	 call die(myname_)
+         write(stderr,'(2a,i8)') myname_, &
+	   ':: ERROR--Router_clean(ReArr%RecvRouter) failed with ier=',ier
       endif
    endif
 
@@ -465,12 +463,11 @@
    if(associated(ReArr%LocalPack)) then
       deallocate(ReArr%LocalPack, stat=ier)
       if(ier /= 0) then
-	 write(stderr,'(2a,i8)') myname_, &
-	      ':: ERROR--deallocate(ReArr%LocalPack) failed with stat=',ier
 	 if(present(status)) then
 	    status=ier
 	 else
-	    call die(myname_)
+	    write(stderr,'(2a,i8)') myname_, &
+	      ':: ERROR--deallocate(ReArr%LocalPack) failed with stat=',ier
 	 endif
       endif
    endif

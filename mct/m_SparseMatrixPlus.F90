@@ -648,14 +648,13 @@
 
      call Rearranger_clean(SMatP%XToXprime, myStatus)
      if(myStatus /= 0) then ! something went wrong
-	write(stderr,'(3a,i8)') myname_, &
-	     ':: ERROR - call to Rearranger_clean(SMatP%XToXprime) failed.', &
-	     ' stat = ',myStatus
 	if(present(status)) then
 	   status = myStatus
 	   return
 	else
-	   call die(myname_)
+	   write(stderr,'(3a,i8)') myname_, &
+	     ':: ERROR - call to Rearranger_clean(SMatP%XToXprime) failed.', &
+	     ' stat = ',myStatus
 	endif
      endif
 
@@ -663,14 +662,13 @@
 
      call Rearranger_clean(SMatP%YprimeToY, myStatus)
      if(myStatus /= 0) then ! something went wrong
-	write(stderr,'(3a,i8)') myname_, &
-	     ':: ERROR - call to Rearranger_clean(SMatP%YPrimeToY) failed.', &
-	     ' stat = ',myStatus
 	if(present(status)) then
 	   status = myStatus
 	   return
 	else
-	   call die(myname_)
+	   write(stderr,'(3a,i8)') myname_, &
+	     ':: ERROR - call to Rearranger_clean(SMatP%YPrimeToY) failed.', &
+	     ' stat = ',myStatus
 	endif
      endif
 
@@ -678,27 +676,25 @@
 
      call Rearranger_clean(SMatP%XToXprime, myStatus)
      if(myStatus /= 0) then ! something went wrong
-	write(stderr,'(3a,i8)') myname_, &
-	     ':: ERROR - call to Rearranger_clean(SMatP%XToXprime) failed.', &
-	     ' stat = ',myStatus
 	if(present(status)) then
 	   status = myStatus
 	   return
 	else
-	   call die(myname_)
+	   write(stderr,'(3a,i8)') myname_, &
+	     ':: ERROR - call to Rearranger_clean(SMatP%XToXprime) failed.', &
+	     ' stat = ',myStatus
 	endif
      endif
 
      call Rearranger_clean(SMatP%YprimeToY, myStatus)
      if(myStatus /= 0) then ! something went wrong
-	write(stderr,'(3a,i8)') myname_, &
-	     ':: ERROR - call to Rearranger_clean(SMatP%YPrimeToY) failed.', &
-	     ' stat = ',myStatus
 	if(present(status)) then
 	   status = myStatus
 	   return
 	else
-	   call die(myname_)
+	   write(stderr,'(3a,i8)') myname_, &
+	     ':: ERROR - call to Rearranger_clean(SMatP%YPrimeToY) failed.', &
+	     ' stat = ',myStatus
 	endif
      endif
 
@@ -714,13 +710,12 @@
 
   call SparseMatrix_clean(SMatP%Matrix, myStatus)
   if(myStatus /= 0) then ! something went wrong
-     write(stderr,'(2a,i8)') myname_, &
-	  ':: ERROR - call to SparseMatrix_clean() failed with stat=',myStatus
      if(present(status)) then
 	status = myStatus
 	return
      else
-	call die(myname_)
+        write(stderr,'(2a,i8)') myname_, &
+	  ':: ERROR - call to SparseMatrix_clean() failed with stat=',myStatus
      endif
   endif
 
