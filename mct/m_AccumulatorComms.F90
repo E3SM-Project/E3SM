@@ -784,6 +784,11 @@
 
   endif
 
+  ! Clean up allocated arrays
+
+  deallocate(AccBuff,stat=ier)
+  if(ier /= 0) call die(myname_,"deallocate(AccBuff)",ier)
+
 
  end subroutine bcastp_
  
