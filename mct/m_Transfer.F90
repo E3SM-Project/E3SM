@@ -8,6 +8,12 @@
 ! !MODULE: m_Transfer - Routines for the MxN transfer of Attribute Vectors
 !
 ! !DESCRIPTION:
+! This module provides routines for doing MxN transfer of data in an
+! Attribute Vector between two components on separate sets of MPI processes.
+! Uses the Router datatype.
+
+! !SEE ALSO:
+! m_Rearranger
 
 ! !INTERFACE:
 
@@ -26,7 +32,7 @@
  interface recvsum  ; module procedure recvsum_  ; end interface
 
 ! !REVISION HISTORY:
-! 06Nov02 - R. Jacob <jacob@mcs.anl.gov> - make new module by combining
+! 08Nov02 - R. Jacob <jacob@mcs.anl.gov> - make new module by combining
 !           MCT_Send, MCT_Recv and MCT_Recvsum
 !EOP ___________________________________________________________________
 
@@ -46,10 +52,10 @@
 ! result if the size of the attribute vector does not match the size
 ! parameter stored in the {\tt Router}.
 !
-! Requires a corresponding {\tt recv_} to be called on the other component.
+! Requires a corresponding {\tt recv\_} to be called on the other component.
 !
 ! {\bf N.B.:} The {\tt AttrVect} argument in the corresponding
-! {\tt recv_} call is assumed to have exactly the same attributes
+! {\tt recv\_} call is assumed to have exactly the same attributes
 ! in exactly the same order as {\tt aV}.
 !
 ! !INTERFACE:
@@ -93,6 +99,7 @@
 ! 26Mar02 - E. Ong <eong@mcs.anl.gov> - Apply faster copy order
 ! 26Sep02 - R. Jacob <jacob@mcs.anl.gov> - Check Av against Router lAvsize
 ! 05Nov02 - R. Jacob <jacob@mcs.anl.gov> - Remove iList, rList arguments.
+! 08Nov02 - R. Jacob <jacob@mcs.anl.gov> - MCT_Send is now send_ in m_Transfer
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::send_'
@@ -324,10 +331,10 @@ end subroutine send_
 ! result if the size of the attribute vector does not match the size
 ! parameter stored in the {\tt Router}.
 !
-! Requires a corresponding {\tt send_} to be called on the other component.
+! Requires a corresponding {\tt send\_} to be called on the other component.
 !
 ! {\bf N.B.:} The {\tt AttrVect} argument in the corresponding
-! {\tt send_} call is assumed to have exactly the same attributes
+! {\tt send\_} call is assumed to have exactly the same attributes
 ! in exactly the same order as {\tt aV}.
 !
 ! !INTERFACE:
@@ -371,6 +378,7 @@ end subroutine send_
 ! 26Mar02 - E. Ong <eong@mcs.anl.gov> - Apply faster copy order.
 ! 26Sep02 - R. Jacob <jacob@mcs.anl.gov> - Check Av against Router lAvsize
 ! 06Nov02 - R. Jacob <jacob@mcs.anl.gov> - remove iList, rList
+! 08Nov02 - R. Jacob <jacob@mcs.anl.gov> - MCT_Recv is now recv_ in m_Transfer
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::recv_'
@@ -662,10 +670,10 @@ end subroutine recv_
 ! size of the attribute vector does not match the size
 ! rameter stored in the {\tt Router}.
 !
-! Requires a corresponding send_ to be called on the other component.
+! Requires a corresponding send\_ to be called on the other component.
 !
 ! {\bf N.B.:} The {\tt AttrVect} argument in the corresponding
-! {\tt send_} call is assumed to have exactly the same attributes
+! {\tt send\_} call is assumed to have exactly the same attributes
 ! in exactly the same order as {\tt aV}.
 !
 ! {\bf N.B.:} This subroutine will accumulate onto the current values of
@@ -714,6 +722,8 @@ end subroutine recv_
 ! 26Mar02 - E. Ong <eong@mcs.anl.gov> - Apply faster copy order.
 ! 06Nov02 - R. Jacob <jacob@mcs.anl.gov> - Check aV lsize against Router.
 !           Remove iList, rList arguments.
+! 08Nov02 - R. Jacob <jacob@mcs.anl.gov> - MCT_Recvsum is now recvsum_ 
+!           in m_Transfer
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::recvsum_'
