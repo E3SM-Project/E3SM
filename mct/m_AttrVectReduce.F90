@@ -36,7 +36,7 @@
 !
 ! !USES:
 !
-      use m_mpif90
+!     No modules are used in the declaration section of this module.
 
       implicit none
 
@@ -73,9 +73,9 @@
     public :: AttrVectMIN
     public :: AttrVectMAX
 
-    integer, parameter :: AttrVectSUM = MP_SUM
-    integer, parameter :: AttrVectMIN = MP_MIN
-    integer, parameter :: AttrVectMAX = MP_MAX
+    integer, parameter :: AttrVectSUM = 1
+    integer, parameter :: AttrVectMIN = 2
+    integer, parameter :: AttrVectMAX = 3
 
 ! !REVISION HISTORY:
 !
@@ -507,15 +507,32 @@
   if(List_allocated(inAV%rList)) then ! invoke MPI_AllReduce() for the real
                                       ! attribute data.
      BufferSize = AttrVect_lsize(inAV) * AttrVect_nRAttr(inAV)
-     call MPI_AllReduce(inAV%rAttr, outAV%rAttr, BufferSize, &
-	                MP_Type(inAV%rAttr(1,1)), ReductionOp, &
-			comm, ierr)
+
+     select case(ReductionOp)
+     case(AttrVectSUM)
+	call MPI_AllReduce(inAV%rAttr, outAV%rAttr, BufferSize, &
+	                   MP_Type(inAV%rAttr(1,1)), MP_SUM, &
+	                   comm, ierr)
+     case(AttrVectMIN)
+	call MPI_AllReduce(inAV%rAttr, outAV%rAttr, BufferSize, &
+                           MP_Type(inAV%rAttr(1,1)), MP_MIN, &
+                           comm, ierr)
+     case(AttrVectMAX)
+	call MPI_AllReduce(inAV%rAttr, outAV%rAttr, BufferSize, &
+                           MP_Type(inAV%rAttr(1,1)), MP_MAX, &
+                           comm, ierr)
+     case default
+	write(stderr,'(2a,i8,a)') myname_, &
+                                  '::FATAL ERROR--value of RedctionOp=', &
+                                  ReductionOp,' not supported.'
+     end select
 
      if(ierr /= 0) then
 	write(stderr,*) myname_, &
 	     ':: Fatal Error in MPI_AllReduce(), myID = ',myID
 	call MP_perr_die(myname_, 'MPI_AllReduce() failed.', ierr)
      endif
+
   endif ! if(List_allocated(inAV%rList))...
 
   if(List_allocated(inAV%iList)) then ! invoke MPI_AllReduce() for the 

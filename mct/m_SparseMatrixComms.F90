@@ -541,6 +541,8 @@
 !       13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial API spec/code
 !       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Made status flag stat
 !                 optional, and ititilaze it to zero if it is present.
+!       17Jul02 - J.W. Larson <larson@mcs.anl.gov> - Bug fix--local 
+!                             process ID myID was uninitialized.
 !EOP
 !-------------------------------------------------------------------------
 
@@ -556,6 +558,14 @@
        ! Initialize stat if present
 
   if(present(stat)) stat = 0
+
+       ! Determine local process ID myID:
+
+  call MPI_COMM_RANK(comm, myID, ierr)
+  if(ierr /= 0) then
+     write(stderr,'(2a,i8)') myname_, &
+                        ':: FATAL--call MPI_COMM_RANK() failed with ierr=',ierr
+  endif
 
        ! Broadcast sMat%data from the root
 
