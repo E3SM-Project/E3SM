@@ -221,12 +221,12 @@ if echo $osname | grep -i unicos >/dev/null 2>&1; then
    MACHDEFS="-DSYSUNICOS $MACHDEFS"
 fi
 
-# Set FC to MPIF90 if it exists, otherwise to F90.
+# Set FC to MPIF90. If MPILIBS is present, set FC to F90.
 AC_ARG_VAR(FC,The Fortran compiler)
-FC=$F90
+FC=$MPIF90
 if test "$F90" != "$MPIF90";  then
    if test -n "$MPILIBS"; then
-      FC=$MPIF90
+      FC=$F90
    fi
 fi
 

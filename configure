@@ -2839,7 +2839,8 @@ case $ac_cv_f90_mod_uppercase in
 cat >>confdefs.h <<\_ACEOF
 #define MODULE_UPPERCASE 1
 _ACEOF
- ;;
+
+          rm -f FOOBAR.mod ;;
   no)
     rm -f foobar.mod ;;
   *)
@@ -3281,12 +3282,12 @@ if echo $osname | grep -i unicos >/dev/null 2>&1; then
    MACHDEFS="-DSYSUNICOS $MACHDEFS"
 fi
 
-# Set FC to MPIF90 if it exists, otherwise to F90.
+# Set FC to MPIF90. If MPILIBS is present, set FC to F90.
 
-FC=$F90
+FC=$MPIF90
 if test "$F90" != "$MPIF90";  then
    if test -n "$MPILIBS"; then
-      FC=$MPIF90
+      FC=$F90
    fi
 fi
 

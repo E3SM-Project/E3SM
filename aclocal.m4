@@ -122,7 +122,7 @@ case $ac_cv_f90_mod_uppercase in
   yes)
     m4_default([$1],
       [AC_DEFINE([MODULE_UPPERCASE], 1,
-        [Define to 1 if your compiler creates module files in uppercase])],
+        [Define to 1 if your compiler creates module files in uppercase])]
           [rm -f FOOBAR.mod]) ;;
   no)
     m4_default([$2],
