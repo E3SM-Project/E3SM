@@ -119,21 +119,17 @@ end subroutine init_
   character(len=*),parameter :: myname_=myname//'::clean_'
   integer :: ier
 
+  if(mall_ison()) then
+     if(associated(nav%displs)) call mall_mco(nav%displs,myname_)
+     if(associated(nav%counts)) call mall_mco(nav%counts,myname_)
+  endif
+
   deallocate(nav%displs,nav%counts,stat=ier)
 
   if(present(stat)) then
      stat=ier
   else
      if(ier /= 0) call warn(myname_,'deallocate(nav%...)',ier)
-  endif
-
-  if(ier == 0) then
-
-     if(mall_ison()) then
-	call mall_mco(nav%displs,myname)
-	call mall_mco(nav%counts,myname)
-     endif
-
   endif
 
   nav%lsize=0
