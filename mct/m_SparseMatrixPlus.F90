@@ -270,8 +270,8 @@
   SMatPlus%Tag = DefaultTag
   if(present(Tag)) SMatPlus%Tag = Tag
 
-       ! copy vector flag
-  SMatPlus%Matrix%vecinit = sMat%vecinit
+       ! set vector flag
+  SMatPlus%Matrix%vecinit = .FALSE.
 
        ! Get local process ID number
 
