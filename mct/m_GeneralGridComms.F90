@@ -858,9 +858,6 @@
       use m_die
       use m_mpif90
 
-      use m_List, only : List_bcast => bcast
-      use m_List, only : assignment(=)
-
       use m_GlobalMap, only : GlobalMap
       use m_GlobalMap, only : GlobalMap_lsize => lsize
       use m_GlobalMap, only : GlobalMap_gsize => gsize
@@ -994,9 +991,6 @@
       use m_stdio
       use m_die
       use m_mpif90
-
-      use m_List, only : List_bcast => bcast
-      use m_List, only : assignment(=)
 
       use m_GlobalSegMap, only : GlobalSegMap
       use m_GlobalSegMap, only : GlobalSegMap_lsize => lsize
@@ -1256,6 +1250,7 @@
       use m_GeneralGrid, only : GeneralGrid_init => init
       use m_GeneralGrid, only : GeneralGrid_lsize => lsize
 
+      use m_List, only : List
       use m_List, only : List_bcast => bcast
 
       implicit none
@@ -1413,7 +1408,9 @@
       use m_stdio
       use m_die
 
+      use m_List, only : List
       use m_List, only : List_nitem => nitem
+      use m_List, only : List_copy => copy
 
       use m_GlobalSegMap, only : GlobalSegMap
       use m_GlobalSegMap, only : GlobalSegMap_lsize => lsize
@@ -1435,6 +1432,8 @@
 
 ! !REVISION HISTORY:
 !       05Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initial code.
+!       08Aug01 - E.T. Ong <eong@mcs.anl.gov> - changed list assignments(=)
+!                 to list copy.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::copyGeneralGridHeader_'
@@ -1445,11 +1444,11 @@
        ! Step 1. Copy GeneralGrid List attributes from iGGrid 
        ! to oGGrid.
 
-  oGGrid%coordinate_list = iGGrid%coordinate_list
-  oGGrid%coordinate_sort_order = iGGrid%coordinate_sort_order
-  oGGrid%weight_list = iGGrid%weight_list
-  oGGrid%other_list = iGGrid%other_list
-  oGGrid%index_list = iGGrid%index_list
+  call List_copy(oGGrid%coordinate_list,iGGrid%coordinate_list)
+  call List_copy(oGGrid%coordinate_sort_order,iGGrid%coordinate_sort_order)
+  call List_copy(oGGrid%weight_list,iGGrid%weight_list)
+  call List_copy(oGGrid%other_list,iGGrid%other_list)
+  call List_copy(oGGrid%index_list,iGGrid%index_list)
 
        ! Step 2. If necessary, copy over the LOGICAL flags in
        ! iGGrid%descend(:).
@@ -1490,6 +1489,22 @@
  end subroutine copyGeneralGridHeader_
 
  end module m_GeneralGridComms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
