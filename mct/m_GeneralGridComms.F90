@@ -87,8 +87,8 @@
       use m_GeneralGrid, only : GeneralGrid
       use m_GeneralGrid, only : GeneralGrid_init => init
       use m_GeneralGrid, only : GeneralGrid_lsize => lsize
+
       use m_AttrVectComms,only : AttrVect_send => send
-      use m_AttrVectComms,only : AttrVect_scatter => scatter
 
       use m_List,only : List_send => send
 
@@ -332,6 +332,7 @@
       use m_GeneralGrid, only : GeneralGrid
       use m_GeneralGrid, only : GeneralGrid_init => init
       use m_GeneralGrid, only : GeneralGrid_lsize => lsize
+
       use m_AttrVectComms,only : AttrVect_recv => recv
 
       use m_List,only : List_recv => recv
@@ -581,7 +582,8 @@
 
       use m_GeneralGrid, only : GeneralGrid
       use m_GeneralGrid, only : GeneralGrid_init => init
-!     use m_AttrVectComms,only : AttrVect_Gather => gather
+
+      use m_AttrVectComms,only : AttrVect_Gather => gather
 
       implicit none
 
@@ -636,7 +638,7 @@
 
        ! Gather gridpoint data in iG%data to oG%data
 
-  call AttrVect_Gather(oG%data, iG%data, GMap, root, comm, ierr)
+  call AttrVect_Gather(iG%data, oG%data, GMap, root, comm, ierr)
 
   if(ierr /= 0) then
     call MP_perr(myname_,'MPI_COMM_RANK()',ierr)
@@ -696,7 +698,8 @@
       use m_GeneralGrid, only : GeneralGrid
       use m_GeneralGrid, only : GeneralGrid_init => init
       use m_GeneralGrid, only : GeneralGrid_lsize => lsize
-!     use m_AttrVectComms,only : AttrVect_Gather => gather
+
+      use m_AttrVectComms,only : AttrVect_Gather => gather
 
       implicit none
 
@@ -751,7 +754,7 @@
 
        ! Gather gridpoint data in iG%data to oG%data
 
-  call AttrVect_Gather(oG%data, iG%data, GSMap, root, comm, ierr)
+  call AttrVect_Gather(iG%data, oG%data, GSMap, root, comm, ierr)
 
   if(ierr /= 0) then
     call MP_perr(myname_,'MPI_COMM_RANK()',ierr)
@@ -800,6 +803,8 @@
       use m_GlobalMap, only : GlobalMap
       use m_GlobalMap, only : GlobalMap_lsize => lsize
       use m_GlobalMap, only : GlobalMap_gsize => gsize
+
+!      use m_AttrVectComms
 
       use m_GeneralGrid, only : GeneralGrid
       use m_GeneralGrid, only : GeneralGrid_init => init

@@ -271,7 +271,7 @@
       integer, optional,  intent(out) :: status
 
 ! !REVISION HISTORY:
-!       07Jun01 - J.W. Larson - initial version.
+!       07Jun01 - J.W. Larson - initial working version.
 !EOP ___________________________________________________________________
 
  character(len=*),parameter :: myname_=myname//'::recv_'
@@ -350,6 +350,10 @@
 
      if(associated(outAV%iList%bf)) then
 
+       ! Allocate outAV%iAttr(:,:)
+
+        allocate(outAV%iAttr(List_nitem(outAV%iList),AVlength), stat=ierr)
+
        ! Receive the INTEGER data to outAV%iAttr(:,:)
 
 	call MPI_RECV(outAV%iAttr, AVlength*List_nitem(outAV%iList), &
@@ -368,6 +372,10 @@
      endif ! if(associated(outAV%rList))
 
      if(associated(outAV%rList%bf)) then
+
+       ! Allocate outAV%rAttr(:,:)
+
+        allocate(outAV%rAttr(List_nitem(outAV%iList),AVlength), stat=ierr)
 
        ! Receive the REAL data to outAV%rAttr(:,:)
 
