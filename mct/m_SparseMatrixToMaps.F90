@@ -76,6 +76,7 @@
       use m_SparseMatrix, only : SparseMatrix_nCols => nCols
       use m_SparseMatrix, only : SparseMatrix_lsize => lsize
       use m_SparseMatrix, only : SparseMatrix_indexIA => indexIA
+      use m_SparseMatrix, only : SparseMatrix_SortPermute => SortPermute
 
       use m_GlobalSegMap, only : GlobalSegMap
       use m_GlobalSegMap, only : GlobalSegMap_init => init
@@ -101,6 +102,8 @@
 !       25Apr01 - J.W. Larson <larson@mcs.anl.gov> - First version.
 !       27Apr01 - J.W. Larson <larson@mcs.anl.gov> - Bug fix--intent of
 !                 argument sMat changed from (IN) to (INOUT)
+!       27Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - bug fix-- add use 
+!                statement for SortPermute
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::SparseMatrixToXGlobalSegMap_'
@@ -218,6 +221,7 @@
       use m_SparseMatrix, only : SparseMatrix_nRows => nRows
       use m_SparseMatrix, only : SparseMatrix_lsize => lsize
       use m_SparseMatrix, only : SparseMatrix_indexIA => indexIA
+      use m_SparseMatrix, only : SparseMatrix_SortPermute => SortPermute
 
       use m_GlobalSegMap, only : GlobalSegMap
       use m_GlobalSegMap, only : GlobalSegMap_init => init
@@ -243,6 +247,8 @@
 !       25Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial code.
 !       27Apr01 - J.W. Larson <larson@mcs.anl.gov> - Bug fix--intent of
 !                 argument sMat changed from (IN) to (INOUT)
+!       27Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - bug fix-- add use 
+!                statement for SortPermute
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::SparseMatrixToYGlobalSegMap_'
