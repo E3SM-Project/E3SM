@@ -3191,7 +3191,7 @@ if echo $f90_version | grep -i workshop >/dev/null 2>&1; then
 fi
 if echo $f90_version | grep -i mipspro >/dev/null 2>&1; then
    MACHDEFS="-DCPRMIPSPRO $MACHDEFS"
-   if test -z "CCFLAGS"; then
+   if test -z "$CCFLAGS"; then
       CCFLAGS="-64"
    fi
    if test -z "$REAL8"; then
