@@ -4,11 +4,15 @@
 !-----------------------------------------------------------------------
 
 This directory contains a version of MPEU distributed as part 
-of the Model Coupling Toolkit (MCT).  MPEU is a product of the NASA Data
-Assimilation Office.
+of the Model Coupling Toolkit (MCT).  MPEU was written by
+Jing Guo of the NASA Data Assimilation Office. 
+
+This copy of MPEU provided by Jing Guo.  Usage is covered
+by terms in the file MCT/COPYRIGHT.
 
 MCT distribution contents:
 MCT/
+MCT/COPYRIGHT
 MCT/doc
 MCT/mct
 MCT/mpeu   <- You are here
