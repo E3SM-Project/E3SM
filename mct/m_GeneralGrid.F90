@@ -23,7 +23,8 @@
 ! (with the coordinates before the weights).  The list of  The list of 
 ! {\tt INTEGER} attributes for {\tt GGrid\%data} (that is, 
 ! {\tt GGrid\%data\%iList}) is defined by {\tt GGrid\%index\_list}, along 
-! with the ever-present {\em global gridpoint number attribute} {\tt GlobGridNum}.
+! with the ever-present {\em global gridpoint number attribute} 
+! {\tt GlobGridNum}.
 !
 ! !INTERFACE:
 
@@ -402,6 +403,8 @@
 
       implicit none
 
+! !INPUT/OUTPUT PARAMETERS: 
+!
       type(GeneralGrid), intent(inout) :: GGrid
 
 ! !REVISION HISTORY:
@@ -446,6 +449,8 @@
 
       implicit none
 
+! !INPUT PARAMETERS: 
+!
       type(GeneralGrid), intent(in)  :: GGrid
 
 ! !REVISION HISTORY:
@@ -478,6 +483,8 @@
 
       implicit none
 
+! !INPUT PARAMETERS: 
+!
       type(GeneralGrid), intent(in)  :: GGrid
       character(len=*),  intent(in)  :: item
       character(len=*), optional, intent(in) :: perrWith
@@ -525,8 +532,10 @@
 
       implicit none
 
-      type(GeneralGrid), intent(in)  :: GGrid
-      character(len=*),  intent(in)  :: item
+! !INPUT PARAMETERS: 
+!
+      type(GeneralGrid),          intent(in)  :: GGrid
+      character(len=*),           intent(in)  :: item
       character(len=*), optional, intent(in) :: perrWith
       character(len=*), optional, intent(in) :: dieWith
 
@@ -566,11 +575,12 @@
 !
 ! !USES:
 !
-
       use m_AttrVect,     only : AttrVect_lsize => lsize
 
       implicit none
 
+! !INPUT PARAMETERS: 
+!
       type(GeneralGrid), intent(in)  :: GGrid
 
 ! !REVISION HISTORY:
@@ -620,10 +630,16 @@
 
       implicit none
 
-      type(GeneralGrid), intent(in)  :: GGrid
-      type(List),        intent(in)  :: key_list
-      integer, dimension(:), pointer              :: perm
+! !INPUT PARAMETERS: 
+!
+      type(GeneralGrid),               intent(in) :: GGrid
+      type(List),                      intent(in) :: key_list
       logical, dimension(:), optional, intent(in) :: descend
+
+! !OUTPUT PARAMETERS: 
+!
+      integer, dimension(:), pointer              :: perm
+
 
 ! !REVISION HISTORY:
 !       15Jan01 - Jay Larson <larson@mcs.anl.gov> - Initial version.
@@ -661,7 +677,6 @@
      call MP_perr_die(myname_,"deallocate(descending...",ierr)
   endif
 
-
  end subroutine Sort_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -693,8 +708,13 @@
 !
       implicit none
 
-      type(GeneralGrid), intent(in)  :: GGrid
-      integer, dimension(:), pointer              :: perm
+! !INPUT PARAMETERS: 
+!
+      type(GeneralGrid),     intent(in) :: GGrid
+
+! !OUTPUT PARAMETERS: 
+!
+      integer, dimension(:), pointer    :: perm
 
 ! !REVISION HISTORY:
 !       22Mar01 - Jay Larson <larson@mcs.anl.gov> - Initial version.
@@ -737,8 +757,14 @@
 
       implicit none
 
-      type(GeneralGrid),     intent(inout)   :: GGrid
-      integer, dimension(:), intent(in)      :: perm
+! !INPUT PARAMETERS: 
+!
+      integer, dimension(:), intent(in)    :: perm
+
+! !INPUT/OUTPUT PARAMETERS: 
+!
+      type(GeneralGrid),     intent(inout) :: GGrid
+
 
 ! !REVISION HISTORY:
 !       15Jan01 - Jay Larson <larson@mcs.anl.gov> - API specification.
@@ -782,6 +808,8 @@
 
       implicit none
 
+! !INPUT/OUTPUT PARAMETERS: 
+!
       type(GeneralGrid),     intent(inout)   :: GGrid
 
 ! !REVISION HISTORY:

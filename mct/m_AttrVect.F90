@@ -48,7 +48,8 @@
 
     interface init   ; module procedure	&
 	init_,	&
-	initv_
+	initv_, &
+	initl_
     end interface
     interface clean  ; module procedure clean_  ; end interface
     interface lsize  ; module procedure lsize_  ; end interface
@@ -69,6 +70,7 @@
 !                 interface definitions
 !       20Oct00 - J.W. Larson <larson@mcs.anl.gov> - added Sort, 
 !                 Permute, and SortPermute functions.
+!       09May01 - J.W. Larson <larson@mcs.anl.gov> - added initl_().
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_AttrVect'
@@ -89,6 +91,7 @@
 !
 ! !USES:
 !
+      use m_List, only : List
       use m_List, only : init,nitem
       use m_mall
       use m_die
@@ -132,6 +135,7 @@
 #endif
 
  end subroutine init_
+
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
@@ -170,6 +174,79 @@
   call init_(aV,iList=char(iLStr),rList=char(rLStr),lsize=lsize)
 
  end subroutine initv_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: initl_ - initialize with Lists iList, rList, and the size
+!
+! !DESCRIPTION:  This routine initializes an {\tt AttrVect} directly 
+! from input {\tt List} data type arguments {\tt iList} and {\tt rList} 
+! (see the module {\tt m\_List} in mpeu for further details), and an
+! input length {\tt lsize}.  The resulting {\tt AttrVect} is returned in
+! the argument {\tt aV}.
+!
+! {\bf N.B.}:  The outcome of this routine, {\tt aV} represents 
+! allocated memory.  When this {\tt AttrVect} is no longer needed, 
+! it must be deallocated by invoking the routine {\tt AttrVect\_clean()}.  
+! Failure to do so will spawn a memory leak.
+!
+! !INTERFACE:
+
+ subroutine initl_(aV, iList, rList, lsize)
+
+!
+! !USES:
+!
+      use m_die
+      use m_stdio
+      use m_mall
+
+      use m_List, only : List
+      use m_List, only : List_nitem => nitem
+      use m_List, only : assignment(=)
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+!
+      type(List),     intent(in)  :: iList
+      type(List),     intent(in)  :: rList
+      integer,        intent(in)  :: lsize
+
+! !OUTPUT PARAMETERS:
+!
+      type(AttrVect), intent(out) :: aV
+
+! !REVISION HISTORY:
+! 	09May98 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!EOP ___________________________________________________________________
+!
+  character(len=*),parameter :: myname_=myname//'::initl_'
+  integer :: nIA, nRA, ier
+
+       ! Assign iList to aV%iList and rList to aV%rList
+
+    aV%iList = iList
+    aV%rList = rList
+
+  nIA = List_nitem(aV%iList)		! nitem.List()
+  nRA = List_nitem(aV%rList)		! nitem.List()
+
+  if(lsize == 0) then 
+     write(stdout,*) myname_,":: Warning:  length argument lsize set to zero."
+  endif
+
+  allocate( aV%iAttr(nIA,lsize), aV%rAttr(nRA,lsize), stat=ier)
+  if(ier /= 0) call perr_die(myname_,'allocate()',ier)
+
+#ifdef MALL_ON
+	call mall_ci(size(transfer(aV%iAttr,(/1/)),myname_)
+	call mall_ci(size(transfer(aV%rAttr,(/1/)),myname_)
+#endif
+
+ end subroutine initl_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !

@@ -17,7 +17,6 @@
 !
       use m_AttrVect ! AttrVect class and its methods
 
-
       implicit none
 
       private	! except
@@ -41,6 +40,9 @@
 !                 from m_AttrVect to create this module.
 !       15Jan01 - J.W. Larson <larson@mcs.anl.gov> - Added APIs for 
 !                 GSM_gather_() and GSM_scatter_().
+! 	09May01 - J.W. Larson <larson@mcs.anl.gov> - Modified GM_scatter_
+!                 so its communication model agrees with MPI_scatter().
+!                 Also tidied up prologues in all module routines.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_AttrVectComms'
@@ -57,7 +59,7 @@
 !
 ! !INTERFACE:
 
- subroutine GM_gather_(iV,oV,GMap,root,comm,stat)
+ subroutine GM_gather_(iV, oV, GMap, root, comm, stat)
 !
 ! !USES:
 !
@@ -75,18 +77,24 @@
 
       implicit none
 
-      type(AttrVect),intent(in)  :: iV
-      type(AttrVect),intent(out) :: oV
-      type(GlobalMap) ,intent(in)  :: GMap
-      integer, intent(in) :: root
-      integer, intent(in) :: comm
-      integer, optional,intent(out) :: stat
+! !INPUT PARAMETERS: 
+!
+      type(AttrVect),    intent(in)  :: iV
+      type(GlobalMap),   intent(in)  :: GMap
+      integer,           intent(in)  :: root
+      integer,           intent(in)  :: comm
+
+! !OUTPUT PARAMETERS:
+!
+      type(AttrVect),    intent(out) :: oV
+      integer, optional, intent(out) :: stat
 
 ! !REVISION HISTORY:
 ! 	15Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
 ! 	27Oct00 - J.W. Larson <larson@mcs.anl.gov> - relocated from
 !                 m_AttrVect
 !       15Jan01 - J.W. Larson <larson@mcs.anl.gov> - renamed GM_gather_
+! 	09May01 - J.W. Larson <larson@mcs.anl.gov> - tidied up prologue
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GM_gather_'
@@ -212,11 +220,16 @@
 
       implicit none
 
+! !INPUT PARAMETERS: 
+!
       type(AttrVect),     intent(in)  :: iV
-      type(AttrVect),     intent(out) :: oV
       type(GlobalSegMap) ,intent(in)  :: GSMap
       integer,            intent(in)  :: root
       integer,            intent(in)  :: comm
+
+! !OUTPUT PARAMETERS:
+!
+      type(AttrVect),     intent(out) :: oV
       integer, optional,  intent(out) :: stat
 
 ! !REVISION HISTORY:
@@ -224,6 +237,7 @@
 ! 	25Feb01 - J.W. Larson <larson@mcs.anl.gov> - Prototype code.
 ! 	26Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - add use statement for
 !                 AttVect_clean
+! 	09May01 - J.W. Larson <larson@mcs.anl.gov> - tidied up prologue
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GSM_gather_'
@@ -363,9 +377,20 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: GM_scatter_ - scatter a vecter using input GlobalMap.
+! !IROUTINE: GM_scatter_ - scatter a vector using input GlobalMap.
 !
 ! !DESCRIPTION:
+! The routine {\tt GM\_scatter\_} takes an input {\tt AttrVect} type
+! {\tt iV} (valid only on the root), and scatters it to a distributed 
+! {\tt AttrVect} {\tt oV}.  The input {\tt GlobalMap} argument 
+! {\tt GMap} dictates how {\tt iV} is scattered to {\tt oV}.  The 
+! success (failure) of this routine is reported in the zero (non-zero)
+! value of the output argument {\tt stat}.
+!
+! {\bf N.B.}:  The output {\tt AttrVect} argument {\tt oV} represents
+! dynamically allocated memory.  When it is no longer needed, it should
+! be deallocated by invoking {\tt AttrVect_clean()} (see the module
+! {\tt m\_AttrVect} for more details).
 !
 ! !INTERFACE:
 
@@ -376,23 +401,35 @@
       use m_stdio
       use m_die
       use m_mpif90
+
+      use m_List, only : List
+      use m_List, only : assignment(=)
+      use m_List, only : List_bcast => bcast
+      use m_List, only : List_clean => clean
+
       use m_GlobalMap, only : GlobalMap
       use m_GlobalMap, only : GlobalMap_lsize => lsize
       use m_GlobalMap, only : GlobalMap_gsize => gsize
+
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
-      use m_AttrVect,  only : AttrVect_lsize => lsize
+      use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nIAttr => nIAttr
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
 
       implicit none
 
-      type(AttrVect),intent(in)  :: iV
-      type(AttrVect),intent(out) :: oV
-      type(GlobalMap) ,intent(in)  :: GMap
-      integer, intent(in) :: root
-      integer, intent(in) :: comm
-      integer, optional,intent(out) :: stat
+! !INPUT PARAMETERS: 
+!
+      type(AttrVect),    intent(in)  :: iV
+      type(GlobalMap),   intent(in)  :: GMap
+      integer,           intent(in) :: root
+      integer,           intent(in) :: comm
+
+! !OUTPUT PARAMETERS:
+!
+      type(AttrVect),    intent(out) :: oV
+      integer, optional, intent(out) :: stat
 
 ! !REVISION HISTORY:
 ! 	21Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
@@ -403,11 +440,15 @@
 !                 empty calls (i.e. no data in buffer) to MPI_SCATTERV()
 !       27Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - small bug fix to
 !                 integer attribute scatter
+! 	09May01 - J.W. Larson <larson@mcs.anl.gov> - Re-vamped comms model
+!                 to reflect MPI comms model for the scatter.  Tidied up
+!                 the prologue, too.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GM_scatter_'
   integer :: nIA,nRA,niV,noV,ier
   integer :: myID
+  type(List) :: iList, rList
 
   if(present(stat)) stat=0
 
@@ -435,10 +476,28 @@
   endif
 
   noV = GlobalMap_lsize(GMap) ! the _scatterd_ local size
-  call AttrVect_init(oV,iV,noV)
 
-  nIA = AttrVect_nIAttr(iV)	! number of INTEGER attributes
-  nRA = AttrVect_nRAttr(iV)	! number of REAL attributes
+        ! On the root, read the integer and real attribute 
+        ! lists off of iV.
+
+  if(myID == root) then
+     iList = iV%iList
+     rList = iV%rList
+  endif
+
+        ! From the root, broadcast iList and rList
+
+  call List_bcast(iList, root, comm)
+  call List_bcast(rList, root, comm)
+
+        ! On all processes, use List data and noV to initialize oV
+
+  call AttrVect_init(oV, iList, rList, noV)
+
+        ! Count the number of real and integer attributes
+
+  nIA = AttrVect_nIAttr(oV)	! number of INTEGER attributes
+  nRA = AttrVect_nRAttr(oV)	! number of REAL attributes
 
   if(nIA > 0) then
      call MPI_scatterv(iV%iAttr(1,1),GMap%counts*nIA,	&
@@ -464,6 +523,11 @@
      endif
   endif
 
+        ! Clean up
+
+  call List_clean(iList)
+  call List_clean(rList)
+
  end subroutine GM_scatter_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -474,7 +538,7 @@
 !
 ! !DESCRIPTION:
 ! The routine {\tt GSM\_scatter\_} takes an input {\tt AttrVect} type
-! {\tt iV} located on the root, and scatters it to a distributed 
+! {\tt iV} (valid only on the root), and scatters it to a distributed 
 ! {\tt AttrVect} {\tt oV}.  The input {\tt GlobalSegMap} argument 
 ! {\tt GSMap} dictates how {\tt iV} is scattered to {\tt oV}.  The 
 ! success (failure) of this routine is reported in the zero (non-zero)
@@ -497,6 +561,11 @@
 !
 ! {\bf N.B.:}  This algorithm  assumes that memory access times are much 
 ! shorter than message-passing transmission times.
+!
+! {\bf N.B.}:  The output {\tt AttrVect} argument {\tt oV} represents
+! dynamically allocated memory.  When it is no longer needed, it should
+! be deallocated by invoking {\tt AttrVect_clean()} (see the module
+! {\tt m\_AttrVect} for more details).
 !
 ! !INTERFACE:
 
@@ -530,12 +599,17 @@
 
       implicit none
 
-      type(AttrVect),intent(in)  :: iV
-      type(AttrVect),intent(out) :: oV
-      type(GlobalSegMap) ,intent(in)  :: GSMap
-      integer, intent(in) :: root
-      integer, intent(in) :: comm
-      integer, optional,intent(out) :: stat
+! !INPUT PARAMETERS: 
+!
+      type(AttrVect),     intent(in)  :: iV
+      type(GlobalSegMap), intent(in)  :: GSMap
+      integer,            intent(in)  :: root
+      integer,            intent(in)  :: comm
+
+! !OUTPUT PARAMETERS:
+!
+      type(AttrVect),     intent(out) :: oV
+      integer, optional,  intent(out) :: stat
 
 ! !REVISION HISTORY:
 ! 	15Jan01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
@@ -549,6 +623,7 @@
 !                 misalignment in use of the GlobalMap to compute the
 !                 memory map into workV, and initialization of workV
 !                 on all processes.
+! 	09May01 - J.W. Larson <larson@mcs.anl.gov> - tidied up prologue
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GSM_scatter_'
@@ -705,11 +780,20 @@
 !
 ! !IROUTINE: bcast_ - broadcast from the root to all PEs
 !
-! !DESCRIPTION:
+! !DESCRIPTION:  This routine takes an {\tt AttrVect} argument {\tt aV}
+! (at input, valid on the root only), and broadcasts it to all the
+! processes associated with the communicator handle {\tt comm}.  The 
+! success (failure) of this routine is reported in the zero (non-zero)
+! value of the output argument {\tt stat}.
+!
+! {\bf N.B.}:  The output (on non-root processes) {\tt AttrVect} argument 
+! {\tt aV} represents dynamically allocated memory.  When it is no longer 
+! needed, it should be deallocated by invoking {\tt AttrVect_clean()} 
+! (see the module {\tt m\_AttrVect} for details).
 !
 ! !INTERFACE:
 
- subroutine bcast_(aV,root,comm,stat)
+ subroutine bcast_(aV, root, comm, stat)
 !
 ! !USES:
 !
@@ -726,15 +810,25 @@
 
       implicit none
 
-      type(AttrVect) :: aV	! (IN) on the root, (OUT) elsewhere
-      integer,intent(in) :: root
-      integer,intent(in) :: comm
-      integer,optional,intent(out) :: stat
+! !INPUT PARAMETERS: 
+!
+      integer,           intent(in)    :: root
+      integer,           intent(in)    :: comm
+
+! !INPUT/OUTPUT PARAMETERS: 
+!
+      type(AttrVect),    intent(inout) :: aV ! (IN) on the root, 
+                                             ! (OUT) elsewhere
+
+! !OUTPUT PARAMETERS:
+!
+      integer, optional, intent(out)   :: stat
 
 ! !REVISION HISTORY:
-! 	27Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 	27Apr98 - Jing Guo <guo@thunder> - initial prototype/prologue/code
 ! 	27Oct00 - J.W. Larson <larson@mcs.anl.gov> - relocated from
 !                 m_AttrVect
+! 	09May01 - J.W. Larson <larson@mcs.anl.gov> - tidied up prologue
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::bcast_'
@@ -755,8 +849,7 @@
 
 	! Convert the two Lists to two Strings
 
-  if(myID == root)	&
-    call List_get(iLStr,aV%iList)
+  if(myID == root) call List_get(iLStr,aV%iList)
 
   call String_bcast(iLStr,root,comm,stat=ier)	! bcast.String()
   if(ier /= 0) then
@@ -766,8 +859,7 @@
     return
   endif
 
-  if(myID == root)	&
-    call List_get(rLStr,aV%rList)
+  if(myID == root) call List_get(rLStr,aV%rList)
 
   call String_bcast(rLStr,root,comm,stat=ier)	! bcast.String()
   if(ier /= 0) then

@@ -52,6 +52,9 @@
 !       15Jan01 - Jay Larson <larson@mcs.anl.gov> - Specification of 
 !                 APIs for the routines {\tt GSM_gather_()} and 
 !                 {\tt GSM_scatter_()}.
+!       10May01 - Jay Larson <larson@mcs.anl.gov> - Changes in the
+!                 comms routine to match the MPI model for collective
+!                 communications, and general clean-up of prologues.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_AccumulatorComms'
@@ -64,7 +67,13 @@
 !
 ! !IROUTINE: GM_gather_ - gather a vector using input GlobalMap.
 !
-! !DESCRIPTION:
+! !DESCRIPTION:  {\tt GM\_gather()} takes a distributed (across the
+! communicator associated with the handle {\tt comm}) input 
+! {\tt Accumulator} argument {\tt iC} and gathers its data to the
+! {\tt Accumulator} {\tt oC} on the {\tt root}.  The decomposition of 
+! {\tt iC} is described by the input {\tt GlobalMap} argument {\tt Gmap}.
+! The success (failure) of this operation is signified by the zero (nonzero) 
+! value of the optional output argument {\tt stat}.
 !
 ! !INTERFACE:
 
@@ -74,102 +83,70 @@
 !
       use m_stdio
       use m_die
+      use m_mpif90
+
       use m_GlobalMap, only : GlobalMap
       use m_GlobalMap, only : GlobalMap_lsize => lsize
       use m_GlobalMap, only : GlobalMap_gsize => gsize
+
       use m_AttrVect,  only : AttrVect_lsize => lsize
+
       use m_Accumulator,   only : Accumulator_lsize => lsize
       use m_AttrVectComms, only : AttrVect_gather => gather
-      use m_mpif90
 
       implicit none
-      type(Accumulator),intent(in)  :: iC
-      type(Accumulator),intent(out) :: oC
-      type(GlobalMap) ,intent(in)   :: GMap
-      integer, intent(in) :: root
-      integer, intent(in) :: comm
-      integer, optional,intent(out) :: stat
+
+! !INPUT PARAMETERS: 
+!
+      type(Accumulator), intent(in)  :: iC
+      type(GlobalMap) ,  intent(in)  :: GMap
+      integer,           intent(in)  :: root
+      integer,           intent(in)  :: comm
+
+! !OUTPUT PARAMETERS: 
+!
+      type(Accumulator), intent(out) :: oC
+      integer, optional,intent(out)  :: stat
 
 ! !REVISION HISTORY:
 ! 	13Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
 ! 	31Oct00 - Jay Larson <larson@mcs.anl.gov> - relocated to the
 !                 module m_AccumulatorComms
 ! 	15Jan01 - Jay Larson <larson@mcs.anl.gov> - renamed GM_gather_
+! 	10May01 - Jay Larson <larson@mcs.anl.gov> - revamped comms 
+!                 model to match MPI comms model, and cleaned up prologue
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname_=myname//'::GM_gather_'
+ character(len=*),parameter :: myname_=myname//'::GM_gather_'
+ integer :: myID, ier
 
-  integer :: nIA,nRA,niC,noC,ier
-  integer :: myID
-  integer :: sd_min, sd_max
+        ! Initialize status flag (if present)
 
   if(present(stat)) stat=0
 
-  call MP_comm_rank(comm,myID,ier)
+  call MP_comm_rank(comm, myID, ier)
   if(ier /= 0) then
     call MP_perr(myname_,'MP_comm_rank()',ier)
     if(.not.present(stat)) call die(myname_)
-    stat = ier
+    stat=ier
     return
   endif
 
-	! Verify the input: a _scatterd_ Accumulator.
-        ! What we are checking here is that the GlobalMap
-        ! size listed for iC is the same as the local size
-        ! of iC
-
-  niC = GlobalMap_lsize(GMap)
-  noC = Accumulator_lsize(iC)
-  if(niC /= noC) then
-    write(stderr,'(2a,i4,a,i4)') myname_,	&
-	': invalid input, lsize(GMap) =',niC,	&
-	', lsize(iV) =',noC
-    if(.not.present(stat)) call die(myname_)
-    stat = -1
-    return
-  endif
-
-        ! the gathered local size, for the output
-
-  noC = GlobalMap_gsize(GMap)
-
-        ! Check to be sure that all the accumulators have performed
-        ! same number of time steps in the accumulation process:
-
-  call MPI_REDUCE(iC%steps_done, sd_min, 1, MP_INTEGER, MP_MIN, &
-                  root, comm, ier)
-
-  call MPI_REDUCE(iC%steps_done, sd_max, 1, MP_INTEGER, MP_MAX, &
-                  root, comm, ier)
+       ! On the root, set oC%num_steps and oC%steps_done
 
   if(myID == root) then
-     if(sd_min /= sd_max) then  ! i.e. timestepping mismatch
-	write(stderr,'(2a,i4,a,i4)') myname_,	&
-	': time accum. step mismatch, sd_min =',sd_min,	&
-	', sd_max =',sd_max
-	if(.not.present(stat)) call die(myname_)
-	stat = -1
-	return
-     endif
+     oC%num_steps = iC%num_steps
+     oC%steps_done = iC%steps_done
   endif
 
-        ! The Accumulator will be gathered onto the root processor,
-        ! so oC will have zero storage space for non-root processors.
+       ! Gather distributed iC%av to oC%av on the root
 
-  if(myID /= root) noC = 0
-  call initv_(oC,iC,noC,iC%num_steps,iC%steps_done) ! Create the output 
-                                                    ! accumulator
-
-        ! The only thing in the accumulator that needs to be
-        ! gathered is its data, which are stored in its AttrVect
-        ! component
-
-  call AttrVect_gather(iC%av,oC%av,GMap,root,comm,ier)
+  call AttrVect_gather(iC%av, oC%av, GMap, root, comm, ier)
 
   if(ier /= 0) then
-    call MP_perr(myname_,'AttrVect_gather',ier)
+    call MP_perr(myname_,'AttrVect_gather(iC%av, oC%av...',ier)
     if(.not.present(stat)) call die(myname_)
-    stat = ier
+    stat=ier
     return
   endif
 
@@ -179,9 +156,15 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: GSM_gather_ - gather a vector using input GlobalSegMap.
+! !IROUTINE: GSM_gather_ - gather an Accumulator using input GlobalSegMap.
 !
-! !DESCRIPTION:
+! !DESCRIPTION:  This routine takes the distrubuted (on the communcator
+! associated with the handle {\tt comm}) input {\tt Accumulator} 
+! argument {\tt iC} gathers it to the the {\tt Accumulator} argument 
+! {\tt oC} (valid only on the {\tt root}).  The decompositon of {\tt iC}
+! is contained in the input {\tt GlobalSegMap} argument {\tt GSMap}.  
+! The success (failure) of this operation is signified by the zero 
+! (nonzero) returned value of the {\tt INTEGER} flag {\tt stat}.
 !
 ! !INTERFACE:
 
@@ -191,27 +174,69 @@
 !
       use m_stdio
       use m_die
+      use m_mpif90
       use m_GlobalSegMap, only : GlobalSegMap
       use m_GlobalSegMap, only : GlobalSegMap_lsize => lsize
       use m_GlobalSegMap, only : GlobalSegMap_gsize => gsize
+
       use m_AttrVect,  only : AttrVect_lsize => lsize
+
       use m_Accumulator,   only : Accumulator_lsize => lsize
+
       use m_AttrVectComms, only : AttrVect_gather => gather
-      use m_mpif90
 
       implicit none
-      type(Accumulator),intent(in)  :: iC
-      type(Accumulator),intent(out) :: oC
-      type(GlobalSegMap) ,intent(in)   :: GSMap
-      integer, intent(in) :: root
-      integer, intent(in) :: comm
-      integer, optional,intent(out) :: stat
+
+! !INPUT PARAMETERS: 
+!
+      type(Accumulator),  intent(in) :: iC
+      type(GlobalSegMap), intent(in) :: GSMap
+      integer,            intent(in) :: root
+      integer,            intent(in) :: comm
+
+! !OUTPUT PARAMETERS: 
+!
+      type(Accumulator), intent(out) :: oC
+      integer, optional, intent(out) :: stat
 
 ! !REVISION HISTORY:
 ! 	15Jan01 - Jay Larson <larson@mcs.anl.gov> - API specification.
+! 	10May01 - Jay Larson <larson@mcs.anl.gov> - Initial code and
+!                 cleaned up prologue.
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname_=myname//'::GSM_gather_'
+ character(len=*),parameter :: myname_=myname//'::GSM_gather_'
+ integer :: myID, ier
+
+        ! Initialize status flag (if present)
+
+  if(present(stat)) stat=0
+
+  call MP_comm_rank(comm, myID, ier)
+  if(ier /= 0) then
+    call MP_perr(myname_,'MP_comm_rank()',ier)
+    if(.not.present(stat)) call die(myname_)
+    stat=ier
+    return
+  endif
+
+       ! On the root, set oC%num_steps and oC%steps_done
+
+  if(myID == root) then
+     oC%num_steps = iC%num_steps
+     oC%steps_done = iC%steps_done
+  endif
+
+       ! Gather distributed iC%av to oC%av on the root
+
+  call AttrVect_gather(iC%av, oC%av, GSMap, root, comm, ier)
+
+  if(ier /= 0) then
+    call MP_perr(myname_,'AttrVect_gather(iC%av, oC%av...',ier)
+    if(.not.present(stat)) call die(myname_)
+    stat=ier
+    return
+  endif
 
  end subroutine GSM_gather_
 
@@ -221,7 +246,14 @@
 !
 ! !IROUTINE: GM_scatter_ - scatter an Accumulator using input GlobalMap.
 !
-! !DESCRIPTION:
+! !DESCRIPTION:  This routine takes the input {\tt Accumulator} argument
+! {\tt iC} (valid only on the {\tt root}), and scatters it to the 
+! distributed {\tt Accumulator} argument {\tt oC} on the processes 
+! associated with the communicator handle {\tt comm}.  The decompositon
+! used to scatter the data is contained in the input {\tt GlobalMap} 
+! argument {\tt GMap}.  The success (failure) of this operation is 
+! signified by the zero (nonzero) returned value of the {\tt INTEGER} 
+! flag {\tt stat}.
 !
 ! !INTERFACE:
 
@@ -231,37 +263,49 @@
 !
       use m_stdio
       use m_die
+      use m_mpif90
+
       use m_GlobalMap, only : GlobalMap
       use m_GlobalMap, only : GlobalMap_lsize => lsize
       use m_GlobalMap, only : GlobalMap_gsize => gsize
+
       use m_Accumulator, only : Accumulator_lsize => lsize
-      use m_mpif90
+
       use m_AttrVectComms, only : AttrVect_scatter => scatter
 
       implicit none
-      type(Accumulator),intent(in)  :: iC
-      type(Accumulator),intent(out) :: oC
-      type(GlobalMap) ,intent(in)  :: GMap
-      integer, intent(in) :: root
-      integer, intent(in) :: comm
-      integer, optional,intent(out) :: stat
+
+! !INPUT PARAMETERS: 
+!
+      type(Accumulator), intent(in)  :: iC
+      type(GlobalMap),   intent(in)  :: GMap
+      integer,           intent(in)  :: root
+      integer,           intent(in)  :: comm
+
+! !OUTPUT PARAMETERS: 
+!
+      type(Accumulator), intent(out) :: oC
+      integer, optional, intent(out) :: stat
 
 ! !REVISION HISTORY:
 ! 	14Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
 ! 	31Oct00 - Jay Larson <larson@mcs.anl.gov> - moved from the module
 !                 m_Accumulator to m_AccumulatorComms
 ! 	15Jan01 - Jay Larson <larson@mcs.anl.gov> - renamed GM_scatter_.
+!       10May01 - Jay Larson <larson@mcs.anl.gov> - revamped code to fit
+!                 MPI-like comms model, and cleaned up prologue.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GM_scatter_'
 
-  integer :: niC,noC,ier
-  integer :: num_steps, steps_done
-  integer :: myID
+  integer :: myID, ier
+  integer :: StepBuff(2)
+
+        ! Initialize status flag (if present)
 
   if(present(stat)) stat=0
 
-  call MP_comm_rank(comm,myID,ier)
+  call MP_comm_rank(comm, myID, ier)
   if(ier /= 0) then
     call MP_perr(myname_,'MP_comm_rank()',ier)
     if(.not.present(stat)) call die(myname_)
@@ -269,57 +313,40 @@
     return
   endif
 
-	! Verify the input: a _gathered_ Accumulator.
+        ! On the root, load up iC%num_steps and iC%steps_done
 
-  niC = GlobalMap_gsize(GMap)	! the _gathered_ local size
-  if(myID /= root) niC=0
+  StepBuff(1) = iC%num_steps
+  StepBuff(2) = iC%steps_done
 
-  noC = Accumulator_lsize(iC)
-  if(niC /= noC) then
-    write(stderr,'(2a,i4,a,i4)') myname_,	&
-	': invalid input, rsize(GMap) =',niC,	&
-	', lsize(iC) =',noC
-    if(.not.present(stat)) call die(myname_)
-    stat=-1
-    return
-  endif
+	! Broadcast the root value of StepBuff
 
-  noC = GlobalMap_lsize(GMap)	! the _scatterd_ local size
-
- 
-	! Broadcast the root value of num_steps
-
-  call MPI_BCAST(num_steps, 1, MP_INTEGER, root, comm, ier)
+  call MPI_BCAST(StepBuff, 2, MP_INTEGER, root, comm, ier)
 
   if(ier /= 0) then
-    call MP_perr(myname_,'MPI_bcast(num_steps)',ier)
+    call MP_perr(myname_,'MPI_bcast(StepBuff...',ier)
     if(.not.present(stat)) call die(myname_)
     stat=ier
     return
   endif
 
-	! Broadcast the root value of steps_done
+        ! On all processes  unload iC%num_steps and 
+        ! iC%steps_done from StepBuff
 
-  call MPI_BCAST(steps_done, 1, MP_INTEGER, root, comm, ier)
+  oC%num_steps  = StepBuff(1)
+  oC%steps_done = StepBuff(1)
 
-  if(ier /= 0) then
-    call MP_perr(myname_,'MPI_bcast(steps_done)',ier)
-    if(.not.present(stat)) call die(myname_)
-    stat=ier
-    return
-  endif
-
-	! Initialize the Accumulator to which data will be
-        ! scattered:
-
-  call initv_(oC,iC,noC,num_steps,steps_done)
-
-	! Scatter the AttrVect component av using the GlobalMap GMap:
+	! Scatter the AttrVect component of aC
 
   call AttrVect_scatter(iC%av, oC%av, GMap, root, comm, ier)
 
- end subroutine GM_scatter_
+  if(ier /= 0) then
+    call MP_perr(myname_,'AttrVect_scatter(iC%av, oC%av...',ier)
+    if(.not.present(stat)) call die(myname_)
+    stat=ier
+    return
+  endif
 
+ end subroutine GM_scatter_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
@@ -327,7 +354,14 @@
 !
 ! !IROUTINE: GSM_scatter_ - scatter Accumulator using input GlobalSegMap.
 !
-! !DESCRIPTION:
+! !DESCRIPTION:  This routine takes the input {\tt Accumulator} argument
+! {\tt iC} (valid only on the {\tt root}), and scatters it to the 
+! distributed {\tt Accumulator} argument {\tt oC} on the processes 
+! associated with the communicator handle {\tt comm}.  The decompositon
+! used to scatter the data is contained in the input {\tt GlobalSegMap} 
+! argument {\tt GSMap}.  The success (failure) of this operation is 
+! signified by the zero (nonzero) returned value of the {\tt INTEGER} 
+! flag {\tt stat}.
 !
 ! !INTERFACE:
 
@@ -337,26 +371,84 @@
 !
       use m_stdio
       use m_die
+      use m_mpif90
+
       use m_GlobalSegMap, only : GlobalSegMap
       use m_GlobalSegMap, only : GlobalSegMap_lsize => lsize
       use m_GlobalSegMap, only : GlobalSegMap_gsize => gsize
+
       use m_Accumulator,  only : Accumulator_lsize => lsize
-      use m_mpif90
+
       use m_AttrVectComms, only : AttrVect_scatter => scatter
 
       implicit none
-      type(Accumulator),intent(in)  :: iC
-      type(Accumulator),intent(out) :: oC
-      type(GlobalSegMap) ,intent(in)  :: GSMap
-      integer, intent(in) :: root
-      integer, intent(in) :: comm
-      integer, optional,intent(out) :: stat
+
+! !INPUT PARAMETERS: 
+!
+      type(Accumulator),  intent(in)  :: iC
+      type(GlobalSegMap), intent(in)  :: GSMap
+      integer,            intent(in)  :: root
+      integer,            intent(in)  :: comm
+
+! !OUTPUT PARAMETERS: 
+!
+      type(Accumulator),  intent(out) :: oC
+      integer, optional,  intent(out) :: stat
 
 ! !REVISION HISTORY:
 ! 	15Jan01 - Jay Larson <larson@mcs.anl.gov> - API specification.
+! 	10May01 - Jay Larson <larson@mcs.anl.gov> - Initial code/prologue
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GSM_scatter_'
+
+  integer :: myID, ier
+  integer :: StepBuff(2)
+
+        ! Initialize status flag (if present)
+
+  if(present(stat)) stat=0
+
+  call MP_comm_rank(comm, myID, ier)
+  if(ier /= 0) then
+    call MP_perr(myname_,'MP_comm_rank()',ier)
+    if(.not.present(stat)) call die(myname_)
+    stat=ier
+    return
+  endif
+
+        ! On the root, load up iC%num_steps and iC%steps_done
+
+  StepBuff(1) = iC%num_steps
+  StepBuff(2) = iC%steps_done
+
+	! Broadcast the root value of StepBuff
+
+  call MPI_BCAST(StepBuff, 2, MP_INTEGER, root, comm, ier)
+
+  if(ier /= 0) then
+    call MP_perr(myname_,'MPI_bcast(StepBuff...',ier)
+    if(.not.present(stat)) call die(myname_)
+    stat=ier
+    return
+  endif
+
+        ! On all processes  unload iC%num_steps and 
+        ! iC%steps_done from StepBuff
+
+  oC%num_steps  = StepBuff(1)
+  oC%steps_done = StepBuff(1)
+
+	! Scatter the AttrVect component of aC
+
+  call AttrVect_scatter(iC%av, oC%av, GSMap, root, comm, ier)
+
+  if(ier /= 0) then
+    call MP_perr(myname_,'AttrVect_scatter(iC%av, oC%av...',ier)
+    if(.not.present(stat)) call die(myname_)
+    stat=ier
+    return
+  endif
 
  end subroutine GSM_scatter_
 
@@ -366,11 +458,16 @@
 !
 ! !IROUTINE: bcast_ - broadcast an Accumulator from the root to all PEs.
 !
-! !DESCRIPTION:
+! !DESCRIPTION:  This routine takes the input {\tt Accumulator} argument
+! {\tt aC} (on input valid only on the {\tt root}), and broadcasts it 
+! to all the processes associated with the communicator handle 
+! {\tt comm}.  The success (failure) of this operation is signified by 
+! the zero (nonzero) returned value of the {\tt INTEGER} flag {\tt stat}.
 !
 ! !INTERFACE:
-
+!
  subroutine bcast_(aC, root, comm, stat)
+
 !
 ! !USES:
 !
@@ -380,15 +477,24 @@
 
       implicit none
 
-      type(Accumulator)  :: aC	! (IN) on the root, (OUT) elsewhere
+! !INPUT PARAMETERS: 
+!
       integer,intent(in) :: root
       integer,intent(in) :: comm
-      integer,optional,intent(out) :: stat
+
+! !INPUT/OUTPUT PARAMETERS: 
+!
+      type(Accumulator), intent(inout) :: aC ! (IN) on root, (OUT) elsewhere
+
+! !OUTPUT PARAMETERS: 
+!
+      integer, optional, intent(out)   :: stat
 
 ! !REVISION HISTORY:
 ! 	14Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
 ! 	31Oct00 - Jay Larson <larson@mcs.anl.gov> - moved from the module
 !                 m_Accumulator to m_AccumulatorComms
+!       09May01 - Jay Larson <larson@mcs.anl.gov> - cleaned up prologue
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::bcast_'
