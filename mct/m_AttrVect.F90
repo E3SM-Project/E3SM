@@ -1567,7 +1567,7 @@
 
 ! !OUTPUT PARAMETERS: 
 
-      type(AttrVect),     intent(out) :: aVout
+      type(AttrVect),     intent(inout) :: aVout
 
 
 ! !REVISION HISTORY:
