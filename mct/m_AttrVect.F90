@@ -1044,6 +1044,7 @@
 
       use m_List,  only : List
       use m_List,  only : List_allocated => allocated
+      use m_List,  only : List_copy => copy
       use m_List,  only : List_exportToChar => exportToChar
 
       implicit none
@@ -1063,9 +1064,10 @@
 
   character(len=*),parameter :: myname_=myname//'::exportIListToChar_'
 
-  ! The following declaration avoids a bug in the SGI MIPSpro Fortran 90
-  ! compiler version 7.30. If this line is removed, the following error 
-  ! will occur during compile time:
+  ! The following extraneous list copy avoids a bug in the 
+  ! SGI MIPSpro Fortran 90 compiler version 7.30. and the
+  ! Sun Fortran 90 Workshop compiler 5.0. If this line is removed, 
+  ! the following error will occur during compile time:
 
   ! Signal: Segmentation fault in IR->WHIRL Conversion phase.
   ! "m_AttrVect.F90": Error: Signal Segmentation fault in phase IR->WHIRL 
@@ -1074,14 +1076,13 @@
   ! f90 ERROR:  core dumped
   ! *** Error code 32 (bu21)
 
-  !::::::::::::::::::::::::::::::::!
-  type(List) :: DoNotRemoveThisLine!
-  !::::::::::::::::::::::::::::::::!
+  type(List) :: iListCopy
 
        ! Extract the INTEGER attribute list to a character:
 
   if(List_allocated(aV%iList)) then
-     exportIListToChar_ = List_exportToChar(aV%iList)
+     call List_copy(iListCopy,aV%iList)
+     exportIListToChar_ = List_exportToChar(iListCopy)
   else
      call die(myname_)
   endif
@@ -1111,6 +1112,7 @@
 
       use m_List,  only : List
       use m_List,  only : List_allocated => allocated
+      use m_List,  only : List_copy => copy
       use m_List,  only : List_exportToChar => exportToChar
 
       implicit none
@@ -1130,9 +1132,10 @@
 
   character(len=*),parameter :: myname_=myname//'::exportRListToChar_'
 
-  ! The following declaration avoids a bug in the SGI MIPSpro Fortran 90
-  ! compiler version 7.30. If this line is removed, the following error 
-  ! will occur during compile time:
+  ! The following extraneous list copy avoids a bug in the 
+  ! SGI MIPSpro Fortran 90 compiler version 7.30. and the
+  ! Sun Fortran 90 Workshop compiler 5.0. If this line is removed, 
+  ! the following error will occur during compile time:
 
   ! Signal: Segmentation fault in IR->WHIRL Conversion phase.
   ! "m_AttrVect.F90": Error: Signal Segmentation fault in phase IR->WHIRL 
@@ -1141,14 +1144,13 @@
   ! f90 ERROR:  core dumped
   ! *** Error code 32 (bu21)
 
-  !::::::::::::::::::::::::::::::::!
-  type(List) :: DoNotRemoveThisLine!
-  !::::::::::::::::::::::::::::::::!
+  type(List) :: rListCopy
 
        ! Extract the REAL attribute list to a character:
 
   if(List_allocated(aV%rList)) then
-     exportRListToChar_ = List_exportToChar(aV%rList)
+     call List_copy(rListCopy,aV%rList)
+     exportRListToChar_ = List_exportToChar(rListCopy)
   else
      call die(myname_)
   endif
