@@ -207,7 +207,7 @@ unar:
 # Documentation
 
 doc: $(TEXFILES)
-	mv *.tex ../doc ; pushd ../doc ; make all ; popd
+	mv *.tex ../doc ; cd ../doc ; make all ; cd ../mct
 
 #-----------------------------------------------------------------------
 # Recursive (all), bottom-up
