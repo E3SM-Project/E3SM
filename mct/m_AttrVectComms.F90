@@ -52,6 +52,10 @@
 !       03Aug01 - E.T. Ong <eong@mcs.anl.gov> - in GSM_scatter, call 
 !                 GlobalMap_init with actual shaped array to satisfy
 !                 Fortran 90 standard. See comment in subroutine.
+!       23Aug01 - E.T. Ong <eong@mcs.anl.gov> - replaced assignment(=)
+!                 with copy for list type to avoid compiler bugs in pgf90.
+!                 Added more error checking in gsm scatter. Fixed minor bugs 
+!                 in gsm and gm gather.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_AttrVectComms'
@@ -475,8 +479,8 @@
   call MP_comm_rank(comm,myID,ier)
   if(ier /= 0) then
     call MP_perr(myname_,'MP_comm_rank()',ier)
+    if(present(stat)) stat=ier
     if(.not.present(stat)) call die(myname_)
-    stat=ier
     return
   endif
 
@@ -486,12 +490,12 @@
   noV=AttrVect_lsize(iV)
 
   if(niV /= noV) then
-    write(stderr,'(2a,i4,a,i4)') myname_,	&
-	': invalid input, lsize(GMap) =',niV,	&
-	', lsize(iV) =',noV
-    if(.not.present(stat)) call die(myname_)
-    stat=-1
-    return
+     write(stderr,'(2a,i4,a,i4)') myname_,	&
+	  ': invalid input, lsize(GMap) =',niV,	&
+	  ', lsize(iV) =',noV
+     if(.not.present(stat)) call die(myname_)
+     stat=-1
+     return
   endif
 
   noV=GlobalMap_gsize(GMap) ! the gathered local size, as for the output
@@ -506,21 +510,25 @@
   call MPI_gatherv(iV%iAttr,niV*nIA,MP_INTEGER,			&
 	oV%iAttr,GMap%counts*nIA,GMap%displs*nIA,MP_INTEGER,	&
 	root,comm,ier)
+
   if(ier /= 0) then
     call MP_perr(myname_,'MPI_gatherv(iAttr)',ier)
     if(.not.present(stat)) call die(myname_)
     stat=ier
     return
   endif
+
   mp_Type_iV=MP_Type(iV%rAttr)
   mp_Type_oV=MP_Type(oV%rAttr)
+
   call MPI_gatherv(iV%rAttr,niV*nRA,mp_Type_iV,	&
 	oV%rAttr,GMap%counts*nRA,GMap%displs*nRA,mp_Type_oV,&
 	root,comm,ier)
+
   if(ier /= 0) then
     call MP_perr(myname_,'MPI_gatherv(rAttr)',ier)
+    if(present(stat)) stat=ier
     if(.not.present(stat)) call die(myname_)
-    stat=ier
     return
   endif
 
@@ -565,7 +573,7 @@
 !
 ! Message-passing environment utilities (mpeu) modules:
       use m_stdio
-      use m_die,          only : MP_perr_die
+      use m_die
       use m_mpif90
 ! GlobalSegMap and associated services:
       use m_GlobalSegMap, only : GlobalSegMap
@@ -610,6 +618,9 @@
 ! 	09May01 - J.W. Larson <larson@mcs.anl.gov> - tidied up prologue
 !       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize stat
 !                 (if present).
+!       20Aug01 - E.T. Ong <eong@mcs.anl.gov> - Added error checking for
+!                 matching processors in gsmap and comm. Corrected
+!                 current_pos assignment.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GSM_gather_'
@@ -641,19 +652,39 @@
        
   if(GlobalSegMap_haloed(GSMap)) then
      ierr = 1
-     call MP_perr_die(myname_,"Input GlobalSegMap haloed--not allowed", &
-	              ierr)
+     call MP_perr(myname_,"Input GlobalSegMap haloed--not allowed",ierr)
   endif
 
        ! Which process am I?
 
   call MPI_COMM_RANK(comm, myID, ierr)
 
-  if(myID == root) then
-
+  if(ierr /= 0) then
+    call MP_perr(myname_,'MPI_COMM_RANK',ierr)
+    if(present(stat)) stat=ierr
+    if(.not.present(stat)) call die(myname_)
+    return
+  endif
        ! How many processes are there on this communicator?
 
-     call MPI_COMM_SIZE(comm, NumProcs, ierr)
+  call MPI_COMM_SIZE(comm, NumProcs, ierr)
+
+  if(ierr /= 0) then
+    call MP_perr(myname_,'MPI_COMM_SIZE',ierr)
+    if(present(stat)) stat=ierr
+    if(.not.present(stat)) call die(myname_)
+    return
+  endif
+
+       ! Processor Check: Do the processors on GSMap match those in comm?
+
+  if(MAXVAL(GSMap%pe_loc) > (NumProcs-1)) then
+     stat=2
+     call MP_perr(myname_, &
+	  "Procs in GSMap%pe_loc do not match procs in communicator",stat)
+  endif
+
+  if(myID == root) then
 
        ! Allocate a precursor to a GlobalMap accordingly...
 
@@ -662,8 +693,12 @@
        ! And Load it...
 
      do n=0,NumProcs-1
-        lns(n) = GlobalSegMap_ProcessStorage(GSMap, comm)
+        lns(n) = GlobalSegMap_ProcessStorage(GSMap, n)
      end do
+
+  else
+
+     allocate(lns(0)) ! This conforms to F90 standard for shaped arguments.
 
   endif ! if(myID == root)
 
@@ -676,6 +711,7 @@
   call GlobalMap_init(workGMap, comp_id, lns, root, comm)
 
        ! Gather the Data process-by-process to workV...
+       ! do not include stat argument; bypass an argument check in gm_gather.
 
   call GM_gather_(iV, workV, workGMap, root, comm, stat)
 
@@ -684,20 +720,31 @@
 
   if(myID == root) then
 
+     global_storage = GlobalSegMap_GlobalStorage(GSMap)
+
+     call AttrVect_init(oV,iV,global_storage)
+
        ! On the root, allocate current position index for
        ! each process chunk:
 
      allocate(current_pos(0:NumProcs-1), stat=ierr)
 
+     if(ierr /= 0) then
+	call MP_perr(myname_,'MPI_COMM_SIZE',ierr)
+	if(present(stat)) stat=ierr
+	if(.not.present(stat)) call die(myname_)
+	return
+     endif
+
        ! Initialize current_pos(:) using GMap%displs(:)
 
      do n=0,NumProcs-1
-	current_pos(n) = workGMap%displs(n)
+	current_pos(n) = workGMap%displs(n) + 1
      end do
 
        ! Load each segment of iV into its appropriate segment
        ! of workV:
-
+     
      ngseg = GlobalSegMap_ngseg(GSMap)
 
      do n=1,ngseg
@@ -722,7 +769,7 @@
 
        ! Now we are equipped to do the copy:
 
-	do m=1,AttrVect_nIAttr(oV)
+	do m=1,AttrVect_nIAttr(iV)
    	   oV%iAttr(m,olb:oub) = workV%iAttr(m,ilb:iub)
 	end do
 
@@ -746,6 +793,13 @@
   call AttrVect_clean(workV)
   call GlobalMap_clean(workGMap)
   deallocate(lns, stat=ierr)
+
+  if(ierr /= 0) then
+    call MP_perr(myname_,'deallocate',ierr)
+    if(present(stat)) stat=ierr
+    if(.not.present(stat)) call die(myname_)
+    return
+  endif
 
  end subroutine GSM_gather_
 
@@ -855,8 +909,8 @@
     write(stderr,'(2a,i5,a,i8,a,i8)') myname_,	&
 	': myID = ',myID,'.  Invalid input, gsize(GMap) =',niV,	&
 	', lsize(iV) =',noV
+    if(present(stat)) stat=-1
     if(.not.present(stat)) call die(myname_)
-    stat=-1
     return
   endif
 
@@ -869,7 +923,7 @@
      call List_copy(iList,iV%iList)
      call List_copy(rList,iV%rList)
   endif
-
+  
         ! From the root, broadcast iList and rList
 
   call List_bcast(iList, root, comm)
@@ -1022,6 +1076,8 @@
 !                 appearing on AIX regarding the fact workV is uninitial-
 !                 ized on non-root processes.  This is fixed by nullifying
 !                 all the pointers in workV for non-root processes.
+!       20Aug01 - E.T. Ong <eong@mcs.anl.gov> - Added argument check
+!                 for matching processors in gsmap and comm.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GSM_scatter_'
@@ -1053,12 +1109,28 @@
 
   call MPI_COMM_RANK(comm, myID, ierr)
 
+  if(ierr /= 0) then
+     call MP_perr(myname_,'MPI_COMM_RANK',ierr)
+     if(present(stat)) stat=ierr
+     if(.not.present(stat)) call die(myname_)
+     return
+  endif
+
   if(myID == root) then
 
        ! Determine the _total_ storage space for all the 
        ! segments of GSMap laid end-to-end:
 
      global_storage = GlobalSegMap_GlobalStorage(GSMap)
+     
+     if(global_storage /= AttrVect_lsize(iV)) then
+	write(stderr,'(2a,i5,a,i8,a,i8)') myname_,	&
+	     ': myID = ',myID,'.  Invalid input,globalstorage(GSMap) =',&
+	     global_storage, ', lsize(iV) =',AttrVect_lsize(iV)
+	if(present(stat)) stat=-1
+	if(.not.present(stat)) call die(myname_)
+	return
+     endif
 
   endif
 
@@ -1070,6 +1142,8 @@
   if(myID == root) then
      call AttrVect_init(workV, iV, global_storage)
   else
+       ! nullify workV just to be safe
+ 
      call List_nullify(workV%iList)
      call List_nullify(workV%rList)
      nullify(workV%iAttr)
@@ -1078,16 +1152,39 @@
 
        ! Return to processing on the root to load workV:
 
-  if(myID == root) then
-
        ! How many processes are there on this communicator?
 
-     call MPI_COMM_SIZE(comm, NumProcs, ierr)
+  call MPI_COMM_SIZE(comm, NumProcs, ierr)
+
+  if(ierr /= 0) then
+     call MP_perr(myname_,'MPI_COMM_SIZE',ierr)
+     if(present(stat)) stat=ierr
+     if(.not.present(stat)) call die(myname_)
+     return
+  endif
+
+       ! Processor Check: Do the processors on GSMap match those in comm?
+
+  if(present(stat)) then
+     if(MAXVAL(GSMap%pe_loc) > (NumProcs-1)) then
+	stat=1
+	call MP_perr(myname_, &
+        "Procs in GSMap%pe_loc do not match procs in communicator",stat)
+        write(*,*) NumProcs-1, MAXVAL(GSMap%pe_loc) 
+     endif
+  endif
+
+  if(myID == root) then
 
        ! Allocate a precursor to a GlobalMap accordingly...
 
      allocate(lns(0:NumProcs-1), stat=ierr)
-
+     if(ierr /= 0) then
+	call MP_perr(myname_,'allocate(lns)',ierr)
+	if(present(stat)) stat=ierr
+	if(.not.present(stat)) call die(myname_)
+	return
+     endif
        ! And Load it...
 
      do n=0,NumProcs-1
@@ -1106,13 +1203,19 @@
   if(myID /= root) then
 
      allocate(lns(1),stat=ierr)
-
+     if(ierr /= 0) then
+	call MP_perr(myname_,'allocate(lns(1))',ierr)
+	if(present(stat)) stat=ierr
+	if(.not.present(stat)) call die(myname_)
+	return
+     endif
   endif
 
        ! Create a GlobalMap describing the 1-D decomposition 
        ! of workV:
 
   comp_id = GlobalSegMap_comp_id(GSMap)
+
   call GlobalMap_init(GMap, comp_id, lns, root, comm)
 
        ! On the root, load workV:
@@ -1123,6 +1226,12 @@
        ! each process chunk:
 
      allocate(current_pos(0:NumProcs-1), stat=ierr)
+     if(ierr /= 0) then
+	call MP_perr(myname_,'allocate(current_pos)',ierr)
+	if(present(stat)) stat=ierr
+	if(.not.present(stat)) call die(myname_)
+	return
+     endif
 
        ! Initialize current_pos(:) using GMap%displs(:)
 
@@ -1170,7 +1279,12 @@
        ! Clean up current_pos, which was only allocated on the root
 
      deallocate(current_pos, stat=ierr)
-
+     if(ierr /= 0) then
+	call MP_perr(myname_,'deallocate(current_pos)',ierr)
+	if(present(stat)) stat=ierr
+	if(.not.present(stat)) call die(myname_)
+	return
+     endif
 
   endif ! if(myID == root)
 
@@ -1184,13 +1298,19 @@
   call GM_scatter_(workV, oV, GMap, root, comm, stat)
 
        ! Finally, clean up allocated structures:
-
+  
   if(myID == root) then
      call AttrVect_clean(workV)
   endif
 
   call GlobalMap_clean(GMap)
   deallocate(lns, stat=ierr)
+  if(ierr /= 0) then
+     call MP_perr(myname_,'deallocate(lns)',ierr)
+     if(present(stat)) stat=ierr
+     if(.not.present(stat)) call die(myname_)
+     return
+  endif
 
  end subroutine GSM_scatter_
 
