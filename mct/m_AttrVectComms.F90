@@ -113,6 +113,7 @@
       use m_die
 
       use m_List, only : List
+      use m_List, only : List_allocated => allocated
       use m_List, only : List_nitem => nitem
       use m_List, only : List_send => send
 
@@ -152,9 +153,13 @@
        ! Step 1. Are inAV%iList and inAV%rList filled?  Store
        ! the answers in the LOGICAL array ListAssoc and send.
 
-  ListAssoc(1) = associated(inAV%iList%bf)
-  ListAssoc(2) = associated(inAV%rList%bf)
+  ListAssoc(1) = List_allocated(inAV%iList) 
+  ListAssoc(2) = List_allocated(inAV%rList) 
 
+  if(.NOT. (ListAssoc(1).or.ListAssoc(2)) ) then
+     call die(myname_,"inAV has not been initialized")
+  endif
+     
   call MPI_SEND(ListAssoc, 2, MP_LOGICAL, dest, TagBase, comm, ierr)
   if(ierr /= 0) then
      call MP_perr_die(myname_,':: MPI_SEND(ListAssoc...',ierr)
@@ -194,6 +199,10 @@
 
   AVlength = AttrVect_lsize(inAV)
 
+  if(AVlength<=0) then
+     call die(myname_,"Size of inAV <= 0",AVLength)
+  endif
+
   call MPI_SEND(AVlength, 1, MP_type(AVlength), dest, TagBase+5, &
                 comm, ierr)
   if(ierr /= 0) then
@@ -205,11 +214,11 @@
 
   if(AVlength > 0) then
 
-     if(associated(inAV%iList%bf)) then
+     if(ListAssoc(1)) then
 
        ! Send the INTEGER data stored in inAV%iAttr(:,:)
 
-	call MPI_SEND(inAV%iAttr, AVlength*List_nitem(inAV%iList), &
+	call MPI_SEND(inAV%iAttr(1,1), AVlength*List_nitem(inAV%iList), &
                       MP_type(inAV%iAttr(1,1)), dest, TagBase+6,   &
                       comm, ierr)
 	if(ierr /= 0) then
@@ -218,11 +227,11 @@
 
      endif ! if(associated(inAV%rList))
 
-     if(associated(inAV%rList%bf)) then
+     if(ListAssoc(2)) then
 
        ! Send the REAL data stored in inAV%rAttr(:,:)
 
-	call MPI_SEND(inAV%rAttr, AVlength*List_nitem(inAV%rList), &
+	call MPI_SEND(inAV%rAttr(1,1), AVlength*List_nitem(inAV%rList), &
                       MP_type(inAV%rAttr(1,1)), dest, TagBase+7,   &
                       comm, ierr)
 	if(ierr /= 0) then
@@ -355,15 +364,16 @@
 
   if(AVlength > 0) then
 
-     if(associated(outAV%iList%bf)) then
+     if(ListAssoc(1)) then
 
        ! Allocate outAV%iAttr(:,:)
 
         allocate(outAV%iAttr(List_nitem(outAV%iList),AVlength), stat=ierr)
+        if(ierr/=0) call die(myname_,"allocate(outAV%iAttr)",ierr)
 
        ! Receive the INTEGER data to outAV%iAttr(:,:)
 
-	call MPI_RECV(outAV%iAttr, AVlength*List_nitem(outAV%iList), &
+	call MPI_RECV(outAV%iAttr(1,1), AVlength*List_nitem(outAV%iList), &
                       MP_type(outAV%iAttr(1,1)), dest, TagBase+6,   &
                       comm, MPstatus, ierr)
 	if(ierr /= 0) then
@@ -372,15 +382,16 @@
 
      endif ! if(associated(outAV%rList))
 
-     if(associated(outAV%rList%bf)) then
+     if(ListAssoc(2)) then
 
        ! Allocate outAV%rAttr(:,:)
 
         allocate(outAV%rAttr(List_nitem(outAV%rList),AVlength), stat=ierr)
+        if(ierr/=0) call die(myname_,"allocate(outAV%rAttr)",ierr)
 
        ! Receive the REAL data to outAV%rAttr(:,:)
 
-	call MPI_RECV(outAV%rAttr, AVlength*List_nitem(outAV%rList), &
+	call MPI_RECV(outAV%rAttr(1,1), AVlength*List_nitem(outAV%rList), &
                       MP_type(outAV%rAttr(1,1)), dest, TagBase+7,   &
                       comm, MPstatus, ierr)
 	if(ierr /= 0) then
