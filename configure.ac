@@ -224,6 +224,17 @@ echo "OS=$osname"
 F90FLAGS="$F90TEMPFLAGS"
 AC_ARG_VAR(MACHDEFS,MCT compiler and OS flags)
 
+# DEFINE MACHDEFS ACCORDING TO OS, COMPILER AND PACKAGE OPTIONS
+
+# DEFINE PACKAGE OPTIONS
+
+AC_ARG_ENABLE(selectedrealkind,
+AC_HELP_STRING([--enable-selectedrealkind],
+[define single precision and double precision numbers using the selected_real_kind function. Default uses the kind inquiry function.]),
+[MACHDEFS="-DSELECTEDREALKIND $MACHDEFS"
+SELECTEDREALKIND="YES"]
+)
+
 # Check OS name
 
 if echo $osname | grep -i aix >/dev/null 2>&1; then
@@ -308,6 +319,9 @@ if test -z "$REAL8"; then
 fi
 if test "$MACHDEFS" = "-WF,-DSYSAIX"; then
    MACHDEFS="$MACHDEFS,-DCPRXLF"
+   if test "$SELECTEDREALKIND" = "YES"; then
+      MACHDEFS="$MACHDEFS,-DSELECTEDREALKIND"
+   fi
 else
    MACHDEFS="-DCPRXLF $MACHDEFS"
 fi
@@ -358,6 +372,9 @@ frt)
 echo "Fortran Compiler is UXP/V"
 if test "$MACHDEFS" = "-Wp,-DSYSUNIXSYSTEMV"; then
    MACHDEFS="$MACHDEFS,-DSYSFUJITSU"
+   if test "$SELECTEDREALKIND" = "YES"; then
+      MACHDEFS="$MACHDEFS,-DSELECTEDREALKIND"
+   fi
 else
    MACHDEFS="-DSYSFUJITSU $MACHDEFS"
 fi
