@@ -511,10 +511,22 @@
     sMat%row_min = 0
     sMat%tbl_end = 0
     deallocate(sMat%row_s,sMat%row_e,stat=ier)
-    if(ier/=0) call die(myname_,'deallocate(row_s,row_e)',ier)
+    if(ier/=0) then
+      if(present(stat)) then
+        stat=ier
+      else
+        call warn(myname_,'deallocate(row_s,row_e)',ier)
+      endif
+    endif
 
     deallocate(sMat%tcol,sMat%twgt,stat=ier)
-    if(ier/=0) call die(myname_,'deallocate(tcol,twgt)',ier)
+    if(ier/=0) then
+      if(present(stat)) then
+        stat=ier
+      else
+        call warn(myname_,'deallocate(tcol,twgt)',ier)
+      endif
+    endif
     sMat%vecinit = .FALSE.
   endif
    
