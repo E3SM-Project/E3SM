@@ -450,21 +450,11 @@
   
   if(associated(aV%iList%bf)) then
 
-     deallocate(aV%iList%bf,aV%iList%lc,stat=ier)
-
-     if(ier /= 0) then
-	if(present(stat)) then
-	   stat=ier
-	else
-	   call warn(myname_,'deallocate(aV%iList)',ier)
-	endif
-     endif
-
-     if(ier == 0) then
-#ifdef MALL_ON
-	call mall_mco(aV%iList%bf,"m_List")
-	call mall_mco(aV%iList%lc,"m_List")
-#endif
+     if(present(stat)) then
+	call List_clean(aV%iList,ier)
+	if(ier/=0) stat=ier
+     else
+	call List_clean(aV%iList)
      endif
 
   endif
@@ -473,21 +463,11 @@
 
   if(associated(aV%rList%bf)) then
 
-     deallocate(aV%rList%bf,aV%rList%lc,stat=ier)
-
-     if(ier /= 0) then
-	if(present(stat)) then
-	   stat=ier
-	else
-	   call warn(myname_,'deallocate(aV%rList)',ier)
-	endif
-     endif
-
-     if(ier == 0) then
-#ifdef MALL_ON
-	call mall_mco(aV%rList%bf,"m_List")
-	call mall_mco(aV%rList%lc,"m_List")
-#endif
+     if(present(stat)) then
+	call List_clean(aV%rList,ier)
+	if(ier/=0) stat=ier
+     else
+	call List_clean(aV%rList)
      endif
 
   endif
@@ -495,7 +475,7 @@
         ! Clean up INTEGER and REAL attributes:
 
   deallocate(aV%iAttr,aV%rAttr,stat=ier)
-
+  
   if(ier /= 0) then
      if(present(stat)) then
 	stat=ier
