@@ -396,6 +396,7 @@ MACHDEFS="-DCPRGNU $MACHDEFS";;
 esac
 
 if echo $f90_version | grep -i nag >/dev/null 2>&1; then
+   echo "Fortran Compiler is NAG"
    MACHDEFS="-DCPRNAG $MACHDEFS"
    if test -z "$FCFLAGS"; then
       FCFLAGS="-dusty -kind=byte"
@@ -405,6 +406,7 @@ if echo $f90_version | grep -i nag >/dev/null 2>&1; then
    fi
 fi
 if echo $f90_version | grep -i absoft >/dev/null 2>&1; then
+   echo "Fortran Compiler is Absoft"
    MACHDEFS="-DCPRABSOFT $MACHDEFS"
    if test -z "$REAL8"; then
       REAL8="-N113"
@@ -417,12 +419,14 @@ if echo $f90_version | grep -i absoft >/dev/null 2>&1; then
    fi
 fi
 if echo $f90_version | grep -i workshop >/dev/null 2>&1; then
+   echo "Fortran Compiler is Workshop"
    MACHDEFS="-DCPRWORKSHOP $MACHDEFS"
    if test -z "$INCLUDEFLAG"; then
       INCLUDEFLAG="-M"
    fi
 fi
 if echo $f90_version | grep -i mipspro >/dev/null 2>&1; then
+   echo "Fortran Compiler is MIPSPro"
    MACHDEFS="-DCPRMIPSPRO $MACHDEFS"
    if test -z "$OPT"; then
       OPT="-O3"
@@ -438,6 +442,7 @@ if echo $f90_version | grep -i mipspro >/dev/null 2>&1; then
    fi
 fi
 if echo $f90_version | grep -i compaq >/dev/null 2>&1; then
+   echo "Fortran Compiler is Compaq"
    MACHDEFS="-DCPRCOMPAQ $MACHDEFS"
    MPILIBS="$MPILIBS -lelan"
    if test -z "$OPT"; then
@@ -453,6 +458,7 @@ fi
 # Compaq Fortran changed its name to HP Fortran.
 # Lets support both versions for now.
 if echo $f90_version | grep HP >/dev/null 2>&1; then
+   echo "Fortran Compiler is HP"
    MACHDEFS="-DCPRCOMPAQ $MACHDEFS"
    MPILIBS="$MPILIBS -lelan"
    if test -z "$OPT"; then
@@ -466,6 +472,7 @@ if echo $f90_version | grep HP >/dev/null 2>&1; then
    fi
 fi
 if echo $f90_version | grep -i sx >/dev/null 2>&1; then
+   echo "Fortran Compiler is SX"
    MACHDEFS="-DCPRSX $MACHDEFS"
    if test -z "$FCFLAGS"; then
       FCFLAGS="-EP -Wf'-pvctl noassoc'"
