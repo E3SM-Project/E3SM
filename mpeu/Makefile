@@ -8,8 +8,6 @@ SRCS_mks	= Makefile			\
 		  Makefile.rules		\
 		  configure			\
 		  unconfigure			\
-		  UCupdate.sh			\
-		  LCupdate.sh			\
 		  externals.mk			\
 		  README
 
@@ -56,9 +54,9 @@ OBJS_ALL	= $(SRCS_f:.f=.o)	\
 		  $(SRCS_C:.c=.o)
 
 ARCH_TARGETS	= $(SRCS_mks) $(SRCS_ALL)
-ALL_TARGETS	= libeu.a lib$(MODULE).a $(MODULE)
-SUBD_TARGETS	= mpi0
-CLEAN_FILES	= mpif.h
+ALL_TARGETS	= lib$(MODULE).a 
+SUBD_TARGETS	= 
+CLEAN_FILES	= 
 
 M		= mod
 MODS_OBJ        = m_chars.o		\
@@ -88,34 +86,39 @@ include Makefile.conf
 
 # targets
 
-libeu.a: $(OBJS_ALL) mpi0/libmpi0.a
-	$(RM) $@
-	cp -p mpi0/libmpi0.a $@
-	@ echo $(AR) $@ $(OBJS_ALL)
-	@ $(AR) $@ $(OBJS_ALL)
-
-mpi0/libmpi0.a:
-	@(cd mpi0; make libmpi0.a)
-
-
 lib$(MODULE).a:	$(OBJS_ALL)
 	$(RM) $@
 	@ echo $(AR) $@ $(OBJS_ALL)
 	@ $(AR) $@ $(OBJS_ALL)
 
-$(MODULE): $(MODS_OBJ)
-	env M=$M $(MUPDATE) $@ $?
-
-#   A special dependency, if there is not MPI on your system, defined
-#
-#	LOCAL_mpif_H=mpif.h
-#
-#   in your Makefile.conf.
-
-m_mpif.o: $(LOCAL_mpif_H)
-
 # dependencies:
 
-include Makefile.dependency
+m_mpif.o:
+m_IndexBin_char.o: m_die.o m_stdio.o
+m_IndexBin_integer.o: m_die.o m_stdio.o
+m_IndexBin_logical.o: m_die.o m_stdio.o
+m_List.o: m_String.o m_die.o m_mall.o
+m_MergeSorts.o: m_die.o m_realkinds.o m_stdio.o
+m_Filename.o:
+m_Permuter.o: m_die.o m_realkinds.o
+m_SortingTools.o: m_IndexBin_char.o m_IndexBin_integer.o m_IndexBin_logical.o m_MergeSorts.o m_Permuter.o m_rankMerge.o
+m_String.o: m_die.o m_mall.o m_mpif90.o
+m_StrTemplate.o: m_chars.o m_die.o m_stdio.o
+m_chars.o:
+m_die.o: m_dropdead.o m_flow.o m_mpif90.o m_mpout.o m_stdio.o
+m_dropdead.o: m_mpif90.o m_stdio.o
+m_flow.o: m_chars.o
+m_inpak90.o: m_die.o m_ioutil.o m_mall.o m_mpif90.o m_realkinds.o m_stdio.o
+m_ioutil.o: m_stdio.o
+m_mall.o: m_chars.o m_die.o m_ioutil.o m_realkinds.o m_stdio.o
+m_mpif90.o: m_mpif.o m_realkinds.o m_stdio.o
+m_mpout.o: m_dropdead.o m_ioutil.o m_mpif90.o m_stdio.o
+m_rankMerge.o:
+m_realkinds.o:
+m_stdio.o:
+m_zeit.o: m_SortingTools.o m_die.o m_ioutil.o m_mpif90.o m_stdio.o
+get_zeits.o:
+m_FileResolv.o: m_die.o m_StrTemplate.o
+m_TraceBack.o:	m_die.o m_stdio.o m_String.o
 
 #.
