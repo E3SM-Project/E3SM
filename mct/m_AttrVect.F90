@@ -1889,7 +1889,7 @@
 !
 ! !INTERFACE:
 
- subroutine Copy_(aVout, aVin, iList, TiList, rList, TrList)
+ subroutine Copy_(aVin, aVout, rList, TrList, iList, TiList)
 
 !
 ! !USES:
@@ -1923,9 +1923,11 @@
 
 
 ! !REVISION HISTORY:
-! 12Jun02 - R.L. Jacob <jacob@mcs.anl.gov> - initial version.
-! 13Jun02 - R.L. Jacob <jacob@mcs.anl.gov> - copy shared attributes
+! 12Jun02 - R. Jacob <jacob@mcs.anl.gov> - initial version.
+! 13Jun02 - R. Jacob <jacob@mcs.anl.gov> - copy shared attributes
 !           if no attribute lists are specified.
+! 30Sep02 - R. Jacob <jacob@mcs.anl.gov> - new argument order with all
+!           optional arguments last
 !
 !EOP ___________________________________________________________________
 
