@@ -59,6 +59,10 @@
       public :: Sort            ! sort entries, and return permutation
       public :: Permute         ! permute entries
       public :: SortPermute     ! sort and permute entries
+      public :: SharedAttrIndexList  ! Returns the number of shared
+				     ! attributes, and lists of the
+				     ! respective locations of these
+				     ! shared attributes
 
     interface init   ; module procedure	&
 	init_,	&
@@ -90,6 +94,7 @@
     interface Sort    ; module procedure Sort_    ; end interface
     interface Permute ; module procedure Permute_ ; end interface
     interface SortPermute ; module procedure SortPermute_ ; end interface
+    interface SharedAttrIndexList ; module procedure aVaVSharedAttrIndexList_ ; end interface
 
 ! !REVISION HISTORY:
 ! 	10Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
@@ -119,6 +124,8 @@
 !                 AttrVectMIN, and AttrVectMAX to a new module named
 !                 m_AttrVectReduce.
 !       12Jun02 - R.L. Jacob <jacob@mcs.anl.gov> - add Copy function
+!       13Jun02 - R.L. Jacob <jacob@mcs.anl.gov> - move aVavSharedAttrIndexList
+!                 to this module from old m_SharedAttrIndicies
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_AttrVect'
@@ -1956,6 +1963,80 @@
 !	aV%iVect(:,ikx),aV%iVect(:,iks)
 !
 !
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: aVaVSharedAttrIndexList_ - AttrVect shared attributes.
+!
+! !DESCRIPTION:  {\tt aVaVSharedAttrIndexList\_()} takes a pair of 
+! user-supplied {\tt AttrVect} variables {\tt aV1} and {\tt aV2}, 
+! and for choice of either {\tt REAL} or {\tt INTEGER} attributes (as
+! specified literally in the input {\tt CHARACTER} argument {\tt attrib})
+! returns the number of shared attributes {\tt NumShared}, and arrays of
+! indices {\tt Indices1} and {\tt Indices2} to their storage locations
+! in {\tt aV1} and {\tt aV2}, respectively.
+!
+! {\bf N.B.:}  This routine returns two allocated arrays---{\tt Indices1(:)} 
+! and {\tt Indices2(:)}---which must be deallocated once the user no longer
+! needs them.  Failure to do this will create a memory leak.
+!
+! !INTERFACE:
+
+ subroutine aVaVSharedAttrIndexList_(aV1, aV2, attrib, NumShared, &
+                                     Indices1, Indices2)
+
+!
+! !USES:
+!
+      use m_stdio
+      use m_die,      only : MP_perr_die, die, warn
+
+      use m_List,     only : GetSharedListIndices
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+!
+      type(AttrVect),    intent(in)  :: aV1   
+      type(AttrVect),    intent(in)  :: aV2
+      character*7,       intent(in)  :: attrib
+
+! !OUTPUT PARAMETERS:   
+!
+      integer,           intent(out) :: NumShared
+
+      integer,dimension(:), pointer  :: Indices1
+      integer,dimension(:), pointer  :: Indices2
+
+! !REVISION HISTORY:
+!       07Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::aVaVSharedAttrIndexList_'
+
+  integer :: ierr
+
+       ! Based on the value of the argument attrib, pass the 
+       ! appropriate pair of Lists for comparison...
+
+  select case(trim(attrib))
+  case('REAL','real')
+     call GetSharedListIndices(aV1%rList, aV2%rList, NumShared, &
+                                 Indices1, Indices2)
+  case('INTEGER','integer')
+     call GetSharedListIndices(aV1%iList, aV2%iList, NumShared, &
+                                 Indices1, Indices2)
+  case default
+     write(stderr,'(4a)') myname_,":: value of argument attrib=",attrib, &
+          " not recognized.  Allowed values: REAL, real, INTEGER, integer"
+     ierr = 1
+     call die(myname_, 'invalid value for attrib', ierr)
+  end select
+
+ end subroutine aVaVSharedAttrIndexList_
+
  end module m_AttrVect
 !.
 
