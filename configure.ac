@@ -38,6 +38,11 @@ fi
 ACX_MPI
 F90FLAGS="$OLDF90FLAGS"
 
+# A hack to fix ACX_MPI to get MPILIBS to be an empty string
+if test "$MPILIBS" = " "; then
+   MPILIBS=""
+fi
+
 # Check how to get the compiler version.
 # This test does not work for xlf compilers.
 if test "$F90" != "xlf90"; then
@@ -223,10 +228,12 @@ fi
 
 # Set FC to MPIF90. If MPILIBS is present, set FC to F90.
 AC_ARG_VAR(FC,The Fortran compiler)
-FC=$MPIF90
-if test "$F90" != "$MPIF90";  then
-   if test -n "$MPILIBS"; then
-      FC=$F90
+if test -z "$FC"; then
+   FC=$MPIF90
+   if test "$F90" != "$MPIF90";  then
+      if test -n "$MPILIBS"; then
+	 FC=$F90
+      fi
    fi
 fi
 
