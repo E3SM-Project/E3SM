@@ -110,6 +110,9 @@
 !                 nullify all pointers before usage.  This was done to
 !                 accomodate behavior of the f90 ASSOCIATED intrinsic 
 !                 function on the AIX platform.
+!       07Dec01 - E.T. Ong <eong@mcs.anl.gov> - added support for 
+!                 intialization with blank character strings for iList
+!                 and rList
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::init_'
@@ -122,11 +125,11 @@
   call List_nullify(aV%iList)
   call List_nullify(aV%rList)
 
-  if(present(rList)) then
+  if( present(rList) .and. (len_trim(rList)>0) ) then
     call init(aV%rList,rList)	! init.List()
   endif
 
-  if(present(iList)) then
+  if( present(iList) .and. (len_trim(iList)>0) ) then
     call init(aV%iList,iList)	! init.List()
   endif
 
