@@ -220,7 +220,6 @@
       use m_GlobalSegMap, only : GlobalSegMap_clean => clean
 
       use m_SparseMatrix, only : SparseMatrix
-      use m_SparseMatrix, only : SparseMatrix_init => init
       use m_SparseMatrix, only : SparseMatrix_nRows => nRows
       use m_SparseMatrix, only : SparseMatrix_nCols => nCols
 
@@ -270,6 +269,9 @@
 
   SMatPlus%Tag = DefaultTag
   if(present(Tag)) SMatPlus%Tag = Tag
+
+       ! copy vector flag
+  SMatPlus%Matrix%vecinit = sMat%vecinit
 
        ! Get local process ID number
 
@@ -414,7 +416,6 @@
       use m_GlobalSegMap, only : GlobalSegMap_clean => clean
 
       use m_SparseMatrix, only : SparseMatrix
-      use m_SparseMatrix, only : SparseMatrix_init => init
       use m_SparseMatrix, only : SparseMatrix_nRows => nRows
       use m_SparseMatrix, only : SparseMatrix_nCols => nCols
       use m_SparseMatrix, only : SparseMatrix_Copy => Copy
