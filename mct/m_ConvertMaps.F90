@@ -132,7 +132,7 @@
        ! Load the arrays:
 
   do n=1,NumProcs
-     start(n) = GMap%displs(n-1)
+     start(n) = GMap%displs(n-1) + 1
      length(n) = GMap%counts(n-1)
      pe_loc(n) = n-1
   end do
