@@ -2851,7 +2851,10 @@ esac
 
 # Check if fortran compiler creates modules files
 # in uppercase or lowercase
-if test "$F90" = "frt"; then # -Am flag needed to gerate mod files
+if test "$F90" = "frt"; then # -Am flag needed for frt to gerate mod files
+   F90FLAGS="-Am"
+fi
+if test "$F90" = "ftn"; then # -em flag needed for ftn to gerate mod files
    F90FLAGS="-Am"
 fi
 echo "$as_me:$LINENO: checking whether fortran .mod file is uppercase" >&5
@@ -3407,15 +3410,21 @@ if test -z "$BIT64"; then
 fi
 if test -z "$ENDIAN"; then
    ENDIAN="-byteswapio"
+fi
+if test -z "$OPT"; then
+   OPT="-O2"
 fi;;
 ftn)
 echo "Fortran Compiler is Cray"
 MACHDEFS="-DCPRCRAY $MACHDEFS"
 if test -z "$FCFLAGS"; then
-   FCFLAGS="-em"
+   FCFLAGS="-em -dy -m0 -M1068,1132,399"
 fi
 if test -z "$INCLUDEFLAG"; then
    INCLUDEFLAG="-p"
+fi
+if test -z "$OPT"; then
+   OPT="-Oscalar3 -Ovector3 -Ostream3"
 fi;;
 frt)
 echo "Fortran Compiler is UXP/V"
@@ -3449,6 +3458,9 @@ fi
 if test -z "$FCFLAGS"; then
    FCFLAGS="-w"
 fi
+if test -z "$OPT"; then
+   OPT="-O2"
+fi
 echo "Intel Compilers must set the environment variable F_UFMTENDIAN=big to do endian conversion";;
 g95)
 echo "Fortran Compiler is GNU"
@@ -3460,6 +3472,9 @@ if echo $f90_version | grep -i nag >/dev/null 2>&1; then
    if test -z "$FCFLAGS"; then
       FCFLAGS="-dusty -kind=byte"
    fi
+   if test -z "$OPT"; then
+      OPT="-O2"
+   fi
 fi
 if echo $f90_version | grep -i absoft >/dev/null 2>&1; then
    MACHDEFS="-DCPRABSOFT $MACHDEFS"
@@ -3468,6 +3483,9 @@ if echo $f90_version | grep -i absoft >/dev/null 2>&1; then
    fi
    if test -z "$INCLUDEFLAG"; then
       INCLUDEFLAG="-p"
+   fi
+   if test -z "$OPT"; then
+      OPT="-O2"
    fi
 fi
 if echo $f90_version | grep -i workshop >/dev/null 2>&1; then
@@ -3492,6 +3510,21 @@ if echo $f90_version | grep -i mipspro >/dev/null 2>&1; then
    fi
 fi
 if echo $f90_version | grep -i compaq >/dev/null 2>&1; then
+   MACHDEFS="-DCPRCOMPAQ $MACHDEFS"
+   MPILIBS="$MPILIBS -lelan"
+   if test -z "$OPT"; then
+      OPT="-fast"
+   fi
+   if test -z "$REAL8"; then
+      REAL8="-real_size 64"
+   fi
+   if test -z "$ENDIAN"; then
+      ENDIAN="-convert big_endian"
+   fi
+fi
+# Compaq Fortran changed its name to HP Fortran.
+# Lets support both versions for now.
+if echo $f90_version | grep HP >/dev/null 2>&1; then
    MACHDEFS="-DCPRCOMPAQ $MACHDEFS"
    MPILIBS="$MPILIBS -lelan"
    if test -z "$OPT"; then
