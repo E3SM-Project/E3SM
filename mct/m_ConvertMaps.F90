@@ -5,7 +5,7 @@
 ! CVS $Name$ 
 !BOP -------------------------------------------------------------------
 !
-! !MODULE: m_ConvertMaps - Conversion between GlobalMap and GlobalSegMap.
+! !MODULE: m_ConvertMaps - Conversion Between MCT Domain Decomposition Descriptors
 !
 ! !DESCRIPTION:
 !
@@ -14,8 +14,8 @@
 ! decomposition with one contiguous segment per process, it is always 
 ! possible to create a {\tt GlobalSegMap} containing the same decomposition
 ! information.  In the unusual case that a {\tt GlobalSegMap} contains 
-! {\em at most} one segment per process, it is possible to create a 
-! {\tt GlobalMap} describing the same decomposition.
+! {\em at most} one segment per process, and no two segments overlap, it 
+! is possible to create a {\tt GlobalMap} describing the same decomposition.
 !
 ! !INTERFACE:
 
@@ -30,6 +30,8 @@
 
       private   ! except
 
+! !PUBLIC MEMBER FUNCTIONS:
+
       public :: GlobalMapToGlobalSegMap
       public :: GlobalSegMapToGlobalMap
 
@@ -42,7 +44,7 @@
     end interface
 
 ! !REVISION HISTORY:
-!       12Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial module
+! 12Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial module
 !
 !EOP ___________________________________________________________________
 
@@ -54,7 +56,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: GlobalMapToGlobalSegMap_() -- GlobalMap -> GlobalSegMap.
+! !IROUTINE: GlobalMapToGlobalSegMap_() -- Convert GlobalMap to GlobalSegMap
 !
 ! !DESCRIPTION:
 ! This routine takes an input {\tt GlobalMap} argument {\tt GMap}, and
@@ -69,6 +71,7 @@
 ! !INTERFACE:
 
  subroutine GlobalMapToGlobalSegMap_(GMap, GSMap)
+
 !
 ! !USES:
 !
@@ -85,12 +88,17 @@
 
       implicit none
 
+! !INPUT PARAMETERS:
+
       type(GlobalMap),    intent(in)  :: GMap
+
+! !OUTPUT PARAMETERS:
+
       type(GlobalSegMap), intent(out) :: GSMap
 
 ! !REVISION HISTORY:
-!       12Feb01 - J.W. Larson <larson@mcs.anl.gov> - Prototype code.
-!       24Feb01 - J.W. Larson <larson@mcs.anl.gov> - Finished code.
+! 12Feb01 - J.W. Larson <larson@mcs.anl.gov> - Prototype code.
+! 24Feb01 - J.W. Larson <larson@mcs.anl.gov> - Finished code.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GlobalMapToGlobalSegMap_'
@@ -134,15 +142,16 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: GlobalSegMapToGlobalMap_() -- GlobalSegMap -> GlobalMap.
+! !IROUTINE: GlobalSegMapToGlobalMap_() -- Convert GlobalSegMap to GlobalMap
 !
 ! !DESCRIPTION:
 ! This routine takes an input {\tt GlobalSegMap} argument {\tt GSMap}, 
 ! and examines it to determine whether or not it may be expressed in 
 ! {\tt GlobalMap} form.  This condition is equivalent to each process in
-! the {\tt GSMap} owning {\em at most} one segment.  If this condition is
+! the {\tt GSMap} owning {\em at most} one segment, and that no two 
+! segments in {\tt GSMap} overlap.  If these conditions are
 ! satisfied, {\tt GlobalSegMapToGlobalMap\_()} creates an output 
-! {\tt GlobalMap} argument {\tt GMap} describing the sam decomposition 
+! {\tt GlobalMap} argument {\tt GMap} describing the same decomposition 
 ! as {\tt GSMap}.
 !
 ! {\bf N.B.:}  This routine creates an allocated structure {\tt GMap}.
@@ -168,14 +177,20 @@
 
       implicit none
 
-      type(GlobalSegMap), intent(in)  :: GSMap
-      type(GlobalMap),    intent(out) :: GMap
-      integer,   intent(in), optional :: NumPes
+! !INPUT PARAMETERS:
+
+      type(GlobalSegMap),           intent(in)  :: GSMap
+      integer,            optional, intent(in) :: NumPes
+
+! !OUTPUT PARAMETERS:
+
+      type(GlobalMap),              intent(out) :: GMap
+
 
 ! !REVISION HISTORY:
-!       12Feb01 - J.W. Larson <larson@mcs.anl.gov> - Prototype code.
-!       24Feb01 - J.W. Larson <larson@mcs.anl.gov> - Further changes,
-!                 but still incomplete--do not call this routine.
+! 12Feb01 - J.W. Larson <larson@mcs.anl.gov> - Prototype code.
+! 24Feb01 - J.W. Larson <larson@mcs.anl.gov> - Further changes,
+!           but still incomplete--do not call this routine.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GlobalSegMapToGlobalMap_'
