@@ -856,7 +856,7 @@ end subroutine sp_balances_
     endif
   endif
 
-  call luflush(lu)
+!  call luflush(lu)
 end subroutine allflush_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
