@@ -6,6 +6,9 @@ AC_INIT(MCT, 1.0)
 # Process the following makefiles
 AC_CONFIG_FILES(Makefile.conf)
 
+# Check for the install command
+AC_PROG_INSTALL
+
 # Check for the C compiler
 AC_PROG_CC([cc])
 

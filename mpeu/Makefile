@@ -74,8 +74,8 @@ clean:
 
 install:
 	$(INSTALL) -d -v $(libdir) $(includedir)
-	$(INSTALL) -c lib$(MODULE).a -m 644 $(libdir)
-	$(INSTALL) -c *.mod -m 644 $(includedir)
+	$(INSTALL) lib$(MODULE).a -m 644 $(libdir)
+	$(INSTALL) *.mod -m 644 $(includedir)
 
 # COMPATIBILITY WITH OLD MAKE SYSTEM
 

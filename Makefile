@@ -8,26 +8,31 @@ EXAMPLEPATH = ./ut-mct
 SUBDIRS = $(MPEUPATH) $(MCTPATH)
 
 # TARGETS
-.PHONY: subdirs $(SUBDIRS) clean
-
 subdirs: $(SUBDIRS)
-
-# RULES
-$(SUBDIRS):
-	$(MAKE) -C $@
-
-ut-mct: $(SUBDIRS)
-	$(MAKE) -C $(EXAMPLEPATH)
-
-clean: 
-	@for dir in $(SUBDIRS); do \
-	  $(MAKE) -C $$dir clean; \
+	@ argv="$(SUBDIRS)" ; \
+	for dir in $$argv; do \
+	  cd $$dir;           \
+	  $(MAKE);            \
+	  cd ..;              \
 	done
 
-install: $(SUBDIRS)
-	@for dir in $(SUBDIRS); do \
-	  $(MAKE) -C $$dir install; \
+clean: $(SUBDIRS) 
+	@ argv="$(SUBDIRS)" ; \
+	for dir in $$argv; do \
+	  cd $$dir;           \
+	  $(MAKE) clean;      \
+	  cd ..;              \
 	done
 
-# DEPENDENCIES
-$(MCTPATH): $(MPEUPATH)
+install: subdirs
+	@ argv="$(SUBDIRS)" ; \
+	for dir in $$argv; do \
+	  cd $$dir;           \
+	  $(MAKE) install;    \
+	  cd ..;              \
+	done
+
+ut-mct: subdirs
+	cd $(EXAMPLEPATH) && $(MAKE)
+
+
