@@ -13,7 +13,7 @@ build the bibliography.
 
 To build "by hand" using the design doc as an example:
 cd to texsrc, type "make"
-cd back do doc directory then do:
+cd back to doc directory then do:
 
 latex ngc_proposed_design
 bibtex ngc_proposed_design
