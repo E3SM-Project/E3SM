@@ -144,7 +144,10 @@
        exportRAttrDP_
     end interface
     interface importIAttr; module procedure importIAttr_; end interface
-    interface importRAttr; module procedure importRAttr_; end interface
+    interface importRAttr; module procedure &
+         importRAttrSP_, &
+         importRAttrDP_
+    end interface
     interface Copy    ; module procedure Copy_    ; end interface
     interface Sort    ; module procedure Sort_    ; end interface
     interface Permute ; module procedure Permute_ ; end interface
@@ -2161,7 +2164,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: importRAttr_ - Import REAL Vector as an Attribute
+! !IROUTINE: importRAttrSP_ - Import REAL Vector as an Attribute
 !
 ! !DESCRIPTION:
 ! This routine imports into the input/output {\tt AttrVect} argument 
@@ -2175,19 +2178,20 @@
 !
 ! !INTERFACE:
 
- subroutine importRAttr_(aV, AttrTag, inVect, lsize)
+ subroutine importRAttrSP_(aV, AttrTag, inVect, lsize)
 !
 ! !USES:
 !
       use m_die ,          only : die
       use m_stdio ,        only : stderr
+      use m_realkinds,     only : SP
 
       implicit none
 
 ! !INPUT PARAMETERS: 
 
       character(len=*),   intent(in)    :: AttrTag
-      real, dimension(:), pointer       :: inVect
+      real(SP), dimension(:), pointer   :: inVect
       integer, optional,  intent(in)    :: lsize
 
 ! !INPUT/OUTPUT PARAMETERS: 
@@ -2202,7 +2206,7 @@
 !
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname_=myname//'::importRAttr_'
+  character(len=*),parameter :: myname_=myname//'::importRAttrSP_'
 
   integer :: index, aVsize, ierr, n, mysize
 
@@ -2242,7 +2246,95 @@
      aV%rAttr(index,n) = inVect(n)
   end do
 
- end subroutine importRAttr_
+ end subroutine importRAttrSP_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: importRAttrDP_ - Import REAL Vector as an Attribute
+!
+! !DESCRIPTION:
+! This routine imports into the input/output {\tt AttrVect} argument 
+! {\tt aV} the real attribute corresponding to the tag defined in the 
+! input {\tt CHARACTER} argument {\tt AttrTag}.  The data to be imported
+! is provided in the {\tt REAL} input array {\tt inVect}, and its 
+! length in the optional input {\tt INTEGER} argument {\tt lsize}.
+!
+! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
+! the {\tt AttrVect} {\tt List} component {\tt aV\%rList}.
+!
+! !INTERFACE:
+
+ subroutine importRAttrDP_(aV, AttrTag, inVect, lsize)
+!
+! !USES:
+!
+      use m_die ,          only : die
+      use m_stdio ,        only : stderr
+      use m_realkinds,     only : DP
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      character(len=*),   intent(in)    :: AttrTag
+      real(DP), dimension(:), pointer   :: inVect
+      integer, optional,  intent(in)    :: lsize
+
+! !INPUT/OUTPUT PARAMETERS: 
+
+      type(AttrVect),     intent(inout) :: aV
+
+
+
+! !REVISION HISTORY:
+! 19Oct01 - J.W. Larson <larson@mcs.anl.gov> - initial (slow) 
+!           prototype.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::importRAttrDP_'
+
+  integer :: index, aVsize, ierr, n, mysize
+
+       ! Index the attribute we wish to extract:
+
+  index = indexRA_(aV, attrTag)
+
+       ! Determine the number of data points:
+
+  aVsize = lsize_(aV)
+
+       ! Check input array size vs. lsize_(aV):
+
+  if(present(lsize)) then
+     if(aVsize < lsize) then
+	write(stderr,'(3a,i8,a,i8)') myname_, &
+	               ':: ERROR--attempt to import too many entries ', &
+                       'into AttrVect aV.  AttrVect_lsize(aV)=',aVsize, &
+                       ', number of entries to be imported=',lsize
+	call die(myname_)
+     endif
+     mysize=lsize
+  else
+     if(aVsize < size(inVect)) then
+	write(stderr,'(3a,i8,a,i8)') myname_, &
+	               ':: ERROR--attempt to import too many entries ', &
+                       'into AttrVect aV.  AttrVect_lsize(aV)=',aVsize, &
+                       ' , number of entries to be imported=',size(inVect)
+	call die(myname_)
+     endif
+     mysize=aVsize
+  endif
+
+       ! Copy the attribute data into outVect
+
+  do n=1,mysize
+     aV%rAttr(index,n) = inVect(n)
+  end do
+
+ end subroutine importRAttrDP_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
