@@ -149,12 +149,35 @@
  end subroutine GM_gather_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: GSM_gather_ - gather a vector using input GlobalSegMap.
 !
 ! !DESCRIPTION:
+! The routine {\tt GSM\_gather\_()} takes a distributed input 
+! {\tt AttrVect} argument {\tt iV}, whose decomposition is described 
+! by the input {\tt GlobalSegMap} argument {\tt GSMap}, and gathers 
+! it to the output {\tt AttrVect} argument {\tt oV}.  The gathered 
+! {\tt AttrVect} {\tt oV} is valid only on the root process specified 
+! by the input argument {\tt root}.  The communicator used to gather
+! the data is specified by the argument {\tt comm}.  The success (failure)
+! is reported in the zero (non-zero) value of the output argument 
+! {\tt stat}.
+!
+! {\tt GSM\_gather\_()} converts the problem of gathering data 
+! according to a {\tt GlobalSegMap} into the simpler problem of 
+! gathering data as specified by a {\tt GlobalMap}.  The {\tt GlobalMap}
+! variable {\tt GMap} is created based on the local storage requirements 
+! for each distributed piece of {\tt iV}.  On the root, a complete 
+! (including halo points) gathered copy of {\tt iV} is collected into 
+! the temporary {\tt AttrVect} variable {\tt workV} (the length of
+! {\tt workV} is {\tt GlobalSegMap\_GlobalStorage(GSMap)}).  The 
+! variable {\tt workV} is segmented by process, and segments are 
+! copied into it by process, but ordered in the same order the segments
+! appear in {\tt GSMap}.  Once {\tt workV} is loaded, the data are 
+! copied segment-by-segment to their appropriate locations in the output 
+! {\tt AttrVect} {\tt oV}.
 !
 ! !INTERFACE:
 
@@ -162,20 +185,29 @@
 !
 ! !USES:
 !
+! Message-passing environment utilities (mpeu) modules:
       use m_stdio
       use m_die,          only : MP_perr_die
       use m_mpif90
-
+! GlobalSegMap and associated services:
       use m_GlobalSegMap, only : GlobalSegMap
+      use m_GlobalSegMap, only : GlobalSegMap_comp_id => comp_id
+      use m_GlobalSegMap, only : GlobalSegMap_ngseg => ngseg
       use m_GlobalSegMap, only : GlobalSegMap_lsize => lsize
       use m_GlobalSegMap, only : GlobalSegMap_gsize => gsize
       use m_GlobalSegMap, only : GlobalSegMap_haloed => haloed
-
+      use m_GlobalSegMap, only : GlobalSegMap_ProcessStorage => ProcessStorage
+      use m_GlobalSegMap, only : GlobalSegMap_GlobalStorage => GlobalStorage
+! AttrVect and associated services:
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nIAttr => nIAttr
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
+! GlobalMap and associated services:
+      use m_GlobalMap, only : GlobalMap
+      use m_GlobalMap, only : GlobalMap_init => init
+      use m_GlobalMap, only : GlobalMap_clean => clean
 
       implicit none
 
@@ -187,13 +219,30 @@
       integer, optional,  intent(out) :: stat
 
 ! !REVISION HISTORY:
-! 	15Jan00 - J.W. Larson <larson@mcs.anl.gov> - API specification.
+! 	15Jan01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
+! 	25Feb01 - J.W. Larson <larson@mcs.anl.gov> - Prototype code.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GSM_gather_'
 
-! Error flag
+! Temporary workspace AttrVect:
+  type(AttrVect) :: workV
+! Component ID and number of segments for GSMap:
+  integer :: comp_id, ngseg
+! Total length of GSMap segments laid end-to-end:
+  integer :: global_storage
+! Error Flag
   integer :: ierr
+! Number of processes on communicator, and local rank:
+  integer :: NumProcs, myID
+! Total local storage on each pe according to GSMap:
+  integer, dimension(:), allocatable :: lns
+! Temporary GlobalMap used to scatter the segmented (by pe) data
+  type(GlobalMap) :: workGMap
+! Loop counters and temporary indices:
+  integer :: m, n, ilb, iub, olb, oub, pe
+! workV segment tracking index array:
+  integer, dimension(:), allocatable :: current_pos
 
        ! Initial Check:  If GSMap contains halo points, die
        
@@ -202,6 +251,108 @@
      call MP_perr_die(myname_,"Input GlobalSegMap haloed--not allowed", &
 	              ierr)
   endif
+
+       ! Which process am I?
+
+  call MPI_COMM_RANK(comm, myID, ierr)
+
+  if(myID == root) then
+
+       ! How many processes are there on this communicator?
+
+     call MPI_COMM_SIZE(comm, NumProcs, ierr)
+
+       ! Allocate a precursor to a GlobalMap accordingly...
+
+     allocate(lns(0:NumProcs-1), stat=ierr)
+
+       ! And Load it...
+
+     do n=0,NumProcs-1
+        lns(n) = GlobalSegMap_ProcessStorage(GSMap, comm)
+     end do
+
+  endif ! if(myID == root)
+
+       ! Determine the component id of GSMap:
+
+  comp_id = GlobalSegMap_comp_id(GSMap)
+
+       ! Create working GlobalMap workGMap (used for the gather):
+
+  call GlobalMap_init(workGMap, comp_id, lns, root, comm)
+
+       ! Gather the Data process-by-process to workV...
+
+  call GM_gather_(iV, workV, workGMap, root, comm, stat)
+
+       ! On the root, initialize oV, and load the contents of
+       !workV into it...
+
+  if(myID == root) then
+
+       ! On the root, allocate current position index for
+       ! each process chunk:
+
+     allocate(current_pos(0:NumProcs-1), stat=ierr)
+
+       ! Initialize current_pos(:) using GMap%displs(:)
+
+     do n=0,NumProcs-1
+	current_pos(n) = workGMap%displs(n)
+     end do
+
+       ! Load each segment of iV into its appropriate segment
+       ! of workV:
+
+     ngseg = GlobalSegMap_ngseg(GSMap)
+
+     do n=1,ngseg
+
+       ! Determine which process owns segment n:
+
+	pe = GSMap%pe_loc(n)
+
+       ! Input map (lower/upper indicess) of segment of iV:
+
+	ilb = current_pos(pe)
+	iub = current_pos(pe) + GSMap%length(n) - 1
+
+       ! Output map of (lower/upper indicess) segment of workV:
+
+	olb = GSMap%start(n)
+	oub = GSMap%start(n) + GSMap%length(n) - 1
+
+       ! Increment current_pos(n) for next time:
+
+	current_pos(pe) = current_pos(pe) + GSMap%length(n)
+
+       ! Now we are equipped to do the copy:
+
+	do m=1,AttrVect_nIAttr(oV)
+   	   oV%iAttr(m,olb:oub) = workV%iAttr(m,ilb:iub)
+	end do
+
+	do m=1,AttrVect_nRAttr(iV)
+   	   oV%rAttr(m,olb:oub) = workV%rAttr(m,ilb:iub)
+	end do
+
+     end do ! do n=1,ngseg
+
+       ! Clean up current_pos, which was only allocated on the root
+
+     deallocate(current_pos, stat=ierr)
+
+  endif ! if(myID == root)
+
+       ! At this point, we are finished.  The data have been gathered
+       ! to oV
+
+       ! Finally, clean up allocated structures:
+
+  call AttrVect_clean(workV)
+  call GlobalMap_clean(workGMap)
+  deallocate(lns, stat=ierr)
 
  end subroutine GSM_gather_
 
@@ -311,7 +462,7 @@
  end subroutine GM_scatter_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: GSM_scatter_ - scatter a vecter using input GlobalSegMap.
@@ -320,7 +471,9 @@
 ! The routine {\tt GSM\_scatter\_} takes an input {\tt AttrVect} type
 ! {\tt iV} located on the root, and scatters it to a distributed 
 ! {\tt AttrVect} {\tt oV}.  The input {\tt GlobalSegMap} argument 
-! {\tt GSMap} dictates how {\tt iV} is scattered to {\tt oV}.
+! {\tt GSMap} dictates how {\tt iV} is scattered to {\tt oV}.  The 
+! success (failure) of this routine is reported in the zero (non-zero)
+! value of the output argument {\tt stat}.
 !
 ! {\tt GSM\_scatter\_()} converts the problem of scattering data 
 ! according to a {\tt GlobalSegMap} into the simpler problem of 
@@ -357,6 +510,7 @@
       use m_GlobalSegMap, only : GlobalSegMap_lsize => lsize
       use m_GlobalSegMap, only : GlobalSegMap_gsize => gsize
       use m_GlobalSegMap, only : GlobalSegMap_GlobalStorage => GlobalStorage
+      use m_GlobalSegMap, only : GlobalSegMap_ProcessStorage => ProcessStorage
 ! AttrVect and associated services:
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
@@ -380,6 +534,9 @@
 ! !REVISION HISTORY:
 ! 	15Jan01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
 ! 	08Feb01 - J.W. Larson <larson@mcs.anl.gov> - Initial code.
+! 	25Feb01 - J.W. Larson <larson@mcs.anl.gov> - Bug fix--replaced
+!                 call to GlobalSegMap_lsize with call to the new fcn.
+!                 GlobalSegMap_ProcessStorage().
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GSM_scatter_'
@@ -431,7 +588,7 @@
        ! And Load it...
 
      do n=0,NumProcs-1
-	lns(n) = GlobalSegMap_lsize(GSMap, comm)
+	lns(n) = GlobalSegMap_ProcessStorage(GSMap, n)
      end do
 
   endif ! if(myID == root)

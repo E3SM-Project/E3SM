@@ -11,6 +11,7 @@ m_MatAttrVectMul.o: m_AttrVect.o m_SparseMatrix.o m_GlobalMap.o m_GlobalSegMap.o
 m_Router.o: m_GlobalToLocal.o m_MCTWorld.o m_GlobalSegMap.o
 m_GlobalToLocal.o: m_GlobalSegMap.o
 m_ExchangeMaps.o: m_GlobalMap.o m_GlobalSegMap.o m_MCTWorld.o
+m_ConvertMaps.o: m_GlobalMap.o m_GlobalSegMap.o m_MCTWorld.o
 m_SharedAttrIndices.o: m_AttrVect.o m_Accumulator.o
 accumulate.o: m_AttrVect.o m_Accumulator.o m_SharedAttrIndices.o
 MCT_Send.o: m_AttrVect.o m_Router.o m_MCTWorld.o

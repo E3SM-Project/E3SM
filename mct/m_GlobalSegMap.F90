@@ -37,7 +37,9 @@
       public :: gsize           ! Return global vector size (excl. halos)
       public :: GlobalStorage   ! Return total number of points in map,
                                 ! including halo points (if present).
-      public :: lsize           ! Return local storage size (incl. halos)
+      public :: ProcessStorage  ! Return local storage on a given process.
+      public :: lsize           ! Return local--that is, on-process--storage 
+                                ! size (incl. halos)
       public :: ngseg           ! Return global number of segments
       public :: nlseg           ! Return local number of segments
       public :: active_pes      ! Return number of pes with at least 1 
@@ -65,13 +67,18 @@
 
     interface init ; module procedure	&
 	initd_,	&	! initialize from all PEs
-	initr_		! initialize from the root
+	initr_, &	! initialize from the root
+	initp_,	&	! initialize in parallel from replicated arrays
+	initp1_		! initialize in parallel from 1 replicated array
     end interface
     interface clean ; module procedure clean_ ; end interface
     interface comp_id  ; module procedure comp_id_  ; end interface
     interface gsize ; module procedure gsize_ ; end interface
     interface GlobalStorage ; module procedure &
        GlobalStorage_
+    end interface
+    interface ProcessStorage ; module procedure &
+       ProcessStorage_
     end interface
     interface lsize ; module procedure lsize_ ; end interface
     interface ngseg ; module procedure ngseg_ ; end interface
@@ -98,6 +105,10 @@
 ! 	06Feb01 - J.W. Larson <larson@mcs.anl.gov> - removed the 
 !                 GlobalSegMap%lsize component.  Also, added the 
 !                 GlobalStorage query function.
+! 	24Feb01 - J.W. Larson <larson@mcs.anl.gov> - Added the replicated
+!                 initialization routines initp_() and initp1(). 
+! 	25Feb01 - J.W. Larson <larson@mcs.anl.gov> - Added the routine
+!                 ProcessStorage_().
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_GlobalSegMap'
@@ -547,6 +558,200 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
+! !IROUTINE: initp_ - define the map from replicated data.
+!
+! !DESCRIPTION:
+!
+! The routine {\tt initp\_()} takes the input {\em replicated} arguments
+! {\tt comp\_id}, {\tt ngseg}, {\tt gsize}, {\tt start(:)}, 
+! {\tt length(:)}, and {\tt pe\_loc(:)}, and uses them to initialize an
+! output {\tt GlobalSegMap} {\tt GSMap}.  This routine operates on the 
+! assumption that these data are replicated across the communicator on
+! which the {\tt GlobalSegMap} is being created.
+!
+! !INTERFACE:
+
+ subroutine initp_(GSMap, comp_id, ngseg, gsize, start, length, pe_loc)
+
+!
+! !USES:
+!
+      use m_mpif90
+      use m_die, only : MP_perr_die
+      use m_stdio
+
+      implicit none
+
+      type(GlobalSegMap),intent(out)  :: GSMap   ! Output GlobalSegMap
+
+      integer,intent(in)              :: comp_id ! component model ID
+      integer,intent(in)              :: ngseg   ! global number of segments
+      integer,intent(in)              :: gsize   ! global vector size
+      integer,dimension(:),intent(in) :: start   ! segment local start index 
+      integer,dimension(:),intent(in) :: length  ! the distributed sizes
+      integer,dimension(:),intent(in) :: pe_loc  ! process location
+
+! !REVISION HISTORY:
+! 	24Feb01 - J.W. Larson <larson@mcs.anl.gov> - Initial version.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::initp_'
+  integer :: ierr, n
+
+       ! Argument Checks -- Is comp_id positive?
+
+  if(comp_id <= 0) then
+     call MP_perr_die(myname_,'non-positive value of comp_id',comp_id)
+  endif
+
+       ! Is gsize positive?
+
+  if(gsize <= 0) then
+     call MP_perr_die(myname_,'non-positive value of gsize',gsize)
+  endif
+
+
+       ! Is ngseg positive?
+
+  if(ngseg <= 0) then
+     call MP_perr_die(myname_,'non-positive value of ngseg',ngseg)
+  endif
+
+       ! Are the arrays start(:), length(:), and pe_loc(:) the 
+       !correct size?
+
+  if(size(start) /= ngseg) then
+     call MP_perr_die(myname_,'start(:)/ngseg size mismatch',ngseg)
+  endif
+  if (size(length) /= ngseg) then
+     call MP_perr_die(myname_,'length(:)/ngseg size mismatch',ngseg)
+  endif
+  if (size(pe_loc) /= ngseg) then
+     call MP_perr_die(myname_,'pe_loc(:)/ngseg size mismatch',ngseg)
+  endif
+
+       ! Allocate index and location arrays for GSMap:
+
+  allocate(GSMap%start(ngseg), GSMap%length(ngseg), GSMap%pe_loc(ngseg), &
+           stat = ierr)
+  if (ierr /= 0) then
+     call MP_perr_die(myname_,'allocate(GSMap%start...',ngseg)
+  endif
+       
+       ! Assign the components of GSMap:
+
+  GSMap%comp_id = comp_id
+  GSMap%ngseg = ngseg
+  GSMap%gsize = gsize
+
+  do n=1,ngseg
+     GSMap%start(n) = start(n)
+     GSMap%length(n) = length(n)
+     GSMap%pe_loc(n) = pe_loc(n)
+  end do
+
+  end subroutine initp_     
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: initp1_ - define the map from replicated data.
+!
+! !DESCRIPTION:
+!
+! The routine {\tt initp1\_()} takes the input {\em replicated} arguments
+! {\tt comp\_id}, {\tt ngseg}, {\tt gsize}, and {\tt all_arrays(:)}, 
+! and uses them to initialize an output {\tt GlobalSegMap} {\tt GSMap}.  
+! This routine operates on the assumption that these data are replicated 
+! across the communicator on which the {\tt GlobalSegMap} is being created.
+! The input array {\tt all\_arrays(:)} should be of length {\tt 2 * ngseg},
+! and is packed so that
+! $$ {\tt all\_arrays(1:ngseg)} = {\tt GSMap\%start(1:ngseg) $$
+! $$ {\tt all\_arrays(ngseg+1:2*ngseg)} = {\tt GSMap\%length(1:ngseg) $$
+! $$ {\tt all\_arrays(2*ngseg+1:3*ngseg)} = {\tt GSMap\%pe\_loc(1:ngseg) .$$
+!
+! !INTERFACE:
+
+ subroutine initp1_(GSMap, comp_id, ngseg, gsize, all_arrays)
+
+!
+! !USES:
+!
+      use m_mpif90
+      use m_die, only : MP_perr_die
+      use m_stdio
+
+      implicit none
+
+      type(GlobalSegMap),intent(out)  :: GSMap      ! Output GlobalSegMap
+
+      integer,intent(in)              :: comp_id    ! component model ID
+      integer,intent(in)              :: ngseg      ! global no. of segments
+      integer,intent(in)              :: gsize      ! global vector size
+      integer,dimension(:),intent(in) :: all_arrays ! packed array of length
+                                                    ! 3*ngseg containing (in
+                                                    ! this order):  start(:),
+                                                    ! length(:), and pe_loc(:)
+
+! !REVISION HISTORY:
+! 	24Feb01 - J.W. Larson <larson@mcs.anl.gov> - Initial version.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::initp1_'
+  integer :: ierr, n
+
+       ! Argument Checks -- Is comp_id positive?
+
+  if(comp_id <= 0) then
+     call MP_perr_die(myname_,'non-positive value of comp_id',comp_id)
+  endif
+
+       ! Is gsize positive?
+
+  if(gsize <= 0) then
+     call MP_perr_die(myname_,'non-positive value of gsize',gsize)
+  endif
+
+
+       ! Is ngseg positive?
+
+  if(ngseg <= 0) then
+     call MP_perr_die(myname_,'non-positive value of ngseg',ngseg)
+  endif
+
+       ! Is the array all_arrays(:) the right length?
+
+  if(size(all_arrays) /= 3*ngseg) then
+     call MP_perr_die(myname_,'all_arrays(:)/3*ngseg size mismatch',ngseg)
+  endif
+
+       ! Allocate index and location arrays for GSMap:
+
+  allocate(GSMap%start(ngseg), GSMap%length(ngseg), GSMap%pe_loc(ngseg), &
+           stat = ierr)
+  if (ierr /= 0) then
+     call MP_perr_die(myname_,'allocate(GSMap%start...',ngseg)
+  endif
+       
+       ! Assign the components of GSMap:
+
+  GSMap%comp_id = comp_id
+  GSMap%ngseg = ngseg
+  GSMap%gsize = gsize
+
+  do n=1,ngseg
+     GSMap%start(n) = all_arrays(n)
+     GSMap%length(n) = all_arrays(ngseg + n)
+     GSMap%pe_loc(n) = all_arrays(2*ngseg + n)
+  end do
+
+  end subroutine initp1_     
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
 ! !IROUTINE: clean_ - clean the map
 !
 ! !DESCRIPTION:
@@ -782,6 +987,56 @@
   GlobalStorage_ = global_storage
 
  end function GlobalStorage_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: ProcessStorage_ - Number of points on a given process.
+!
+! !DESCRIPTION:
+! The function {\tt ProcessStorage\_()} takes the input {\tt GlobalSegMap} 
+! arguement {\tt GSMap} and returns the storage space required by process
+! {\tt PEno} ({\em i.e.}, the vector length) to hold all the data specified 
+! by {\tt GSMap}.
+!
+! !INTERFACE:
+
+ integer function ProcessStorage_(GSMap, PEno)
+
+      implicit none
+
+      type(GlobalSegMap),intent(in) :: GSMap
+      integer,           intent(in) :: PEno
+
+! !REVISION HISTORY:
+! 	06Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::ProcessStorage_'
+
+      integer :: pe_storage, ngseg, n
+
+      ! Return global number of segments:
+
+  ngseg = ngseg_(GSMap)
+
+      ! Initialize pe_storage (the total number of points on process
+      ! PEno in the GlobalSegMap):
+
+  pe_storage = 0
+
+      ! Add up the number of points on process PEno in the GlobalSegMap:
+
+  do n=1,ngseg
+     if(GSMap%pe_loc(n) == PEno) then
+	pe_storage = pe_storage + GSMap%length(n)
+     endif
+  end do
+
+  ProcessStorage_ = pe_storage
+
+ end function ProcessStorage_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
