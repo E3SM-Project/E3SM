@@ -801,7 +801,7 @@ end subroutine sp_balances_
 
   if(myID /= root) then
 
-    call MPI_gather(ztbf(0:5,0:1,indx_(0:mnm)),nbf,mp_Type_ztbf, &
+    call MPI_gather((ztbf(0:5,0:1,indx_(0:mnm))),nbf,mp_Type_ztbf, &
 		    ztbf,nbf,mp_Type_ztbf,root,comm,ier	)
     if(ier /= 0) then
       write(stderr,'(2a,i3)') myname_,	&
@@ -825,7 +825,7 @@ end subroutine sp_balances_
       call die(myname_)
     endif
 
-    call MPI_gather(ztbf(0:5,0:1,indx_(0:mnm)),nbf,mp_Type_ztbf, &
+    call MPI_gather((ztbf(0:5,0:1,indx_(0:mnm))),nbf,mp_Type_ztbf, &
 		    ztmp,nbf,mp_Type_ztbf,root,comm,ier	)
     if(ier /= 0) then
       write(stderr,'(2a,i3)') myname_,	&
