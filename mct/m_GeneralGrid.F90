@@ -719,7 +719,7 @@
 !
 ! !INTERFACE:
 
-    subroutine clean_(GGrid)
+    subroutine clean_(GGrid,stat)
 !
 ! !USES:
 !
@@ -733,28 +733,58 @@
 ! !INPUT/OUTPUT PARAMETERS: 
 !
       type(GeneralGrid), intent(inout) :: GGrid
+      integer, optional, intent(out)   :: stat
 
 ! !REVISION HISTORY:
 !       25Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 !       20Mar01 - J.W. Larson <larson@mcs.anl.gov> - complete version.
+!       01Mar01 - E.T. Ong <eong@mcs.anl.gov> - removed dies to prevent
+!                 crashes when cleaning uninitialized attrvects. Added
+!                 optional stat argument.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::clean_'
   integer :: ierr
 
-  call AttrVect_clean(GGrid%data)
+  if(present(stat)) then
 
-  call List_clean(GGrid%coordinate_list)
-  call List_clean(GGrid%coordinate_sort_order)
-  call List_clean(GGrid%weight_list)
-  call List_clean(GGrid%other_list)
-  call List_clean(GGrid%index_list)
+     stat=0
+     call AttrVect_clean(GGrid%data,ierr)
+     if(ierr/=0) stat=ierr
+
+     call List_clean(GGrid%coordinate_list,ierr)
+     if(ierr/=0) stat=ierr
+     call List_clean(GGrid%coordinate_sort_order,ierr)
+     if(ierr/=0) stat=ierr
+     call List_clean(GGrid%weight_list,ierr)
+     if(ierr/=0) stat=ierr
+     call List_clean(GGrid%other_list,ierr)
+     if(ierr/=0) stat=ierr
+     call List_clean(GGrid%index_list,ierr)
+     if(ierr/=0) stat=ierr
+
+  else
+
+     call AttrVect_clean(GGrid%data)
+
+     call List_clean(GGrid%coordinate_list)
+     call List_clean(GGrid%coordinate_sort_order)
+     call List_clean(GGrid%weight_list)
+     call List_clean(GGrid%other_list)
+     call List_clean(GGrid%index_list)
+
+  endif
 
   deallocate(GGrid%descend, stat=ierr)
+
   if(ierr /= 0) then
-     call MP_perr_die(myname_,"deallocate(GGrid%descend...",ierr)
+     if(present(stat)) then
+	stat=ierr
+     else
+	call warn(myname_,'deallocate(GGrid%descend...',ierr)
+     endif
   endif
-  
+
  end subroutine clean_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
