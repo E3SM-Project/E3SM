@@ -149,25 +149,21 @@
       use m_stdio
       use m_die
 
-      use m_String,   only : String, char
       use m_List,     only : List
       use m_List,     only : List_init => init
-      use m_List,     only : List_nitem => nitem
-
-      use m_AttrVect, only : AttrVect
-      use m_AttrVect, only : AttrVect_init => init
-
+      use m_List,     only : List_clean => clean
+      
       implicit none
 
 ! !INPUT PARAMETERS:
 !
-      character(len=*),             intent(in) :: CoordChars
-      character(len=*),             intent(in) :: CoordSortOrder
-      character(len=*), optional,   intent(in) :: WeightChars
-      logical, dimension(:), optional, pointer :: descend
-      character(len=*), optional,   intent(in) :: OtherChars
-      character(len=*), optional,   intent(in) :: IndexChars
-      integer,          optional,   intent(in) :: lsize
+      character(len=*),                intent(in) :: CoordChars
+      character(len=*),                intent(in) :: CoordSortOrder
+      character(len=*),      optional, intent(in) :: WeightChars
+      logical, dimension(:), optional, pointer    :: descend
+      character(len=*),      optional, intent(in) :: OtherChars
+      character(len=*),      optional, intent(in) :: IndexChars
+      integer,               optional, intent(in) :: lsize
 
 ! !OUTPUT PARAMETERS:
 !
@@ -190,125 +186,66 @@
 !       15Feb02 - Jay Larson <larson@mcs.anl.gov> - made the input 
 !                 argument CoordSortOrder mandatory (rather than
 !                 optional).
+!       18Jul02 - E. Ong <eong@mcs.anl.gov> - replaced this version of 
+!                 init with one that calls initl_. 
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::init_'
 
-  character*128 :: RAList, IAList
-  integer :: n, list_len, ier, RA_len, IA_len
-  integer :: ierr, ncoord, nsort
+  type(List) :: CoordCharsList, CoordSortOrderList
+  type(List) :: WeightCharsList, OtherCharsList, IndexCharsList
+  integer :: n, ierr
+
+        ! Convert the Character arguments to Lists
+
+  call List_init(CoordCharsList,trim(CoordChars))
+
+  call List_init(CoordSortOrderList,trim(CoordSortOrder))
+
+  if(present(WeightChars)) then
+     call List_init(WeightCharsList,trim(WeightChars))
+  else
+     call List_init(WeightCharsList,'')
+  endif
+
+  if(present(OtherChars)) then
+     call List_init(OtherCharsList,trim(OtherChars))
+  else
+     call List_init(OtherCharsList,'')
+  endif
+
+  if(present(IndexChars)) then
+     call List_init(IndexCharsList,trim(IndexChars))
+  else
+     call List_init(IndexCharsList,'')
+  endif
 
         ! if lsize is present, use it to set n; if not, set n=0
 
   n = 0
   if(present(lsize)) n=lsize
 
-        ! Concatenate onto CoordList the values of WeightChars and
-        ! OtherChars (if present)--store the result in RAList
-
-  list_len = len(CoordChars)
-
-  if(present(WeightChars)) then
-     list_len = list_len + 1 + len(WeightChars)
-  endif
-
-  if(present(OtherChars)) then
-     list_len = list_len + 1 + len(OtherChars)
-  endif
-
-  RAList = trim(CoordChars)
-  RA_len = len(CoordChars)
-
-  if(present(WeightChars)) then
-     RAList = RAList(1:RA_len) // ':' // trim(WeightChars)
-     RA_len = RA_len + 1 + len(WeightChars)
-  endif
-
-  if(present(OtherChars)) then
-     RAList = RAList(1:RA_len) // ':' // trim(OtherChars)
-     RA_len = RA_len + 1 + len(OtherChars)
-  endif
-
-        ! Create the integer Attribute list IAList.  At a minimum,
-        ! IAList contains the attribute GlobGridNum
-
-  if(present(IndexChars)) then
-     IAList = trim(IndexChars) // ':GlobGridNum'
-  else
-     IAList = 'GlobGridNum'
-  endif
-
-  call List_init(GGrid%index_list, IAList)
-
-        ! Initialize the AttrVect storage component GGrid%data
-
-  call AttrVect_init(aV=GGrid%data, iList=trim(IAList), &
-	                rList=trim(RAList), lsize=n)
-
-        ! Initialize GGrid%coordinate_list
-
-  call List_init(GGrid%coordinate_list, CoordChars)
-
-        ! If Initialize GGrid%weight_list
-
-  if(present(WeightChars)) then
-     call List_init(GGrid%weight_list, WeightChars)
-  else
-     nullify(GGrid%weight_list%bf)
-  endif
-
-        ! If Initialize GGrid%other_list
-
-  if(present(OtherChars)) then
-     call List_init(GGrid%other_list, OtherChars)
-  else
-     nullify(GGrid%other_list%bf)
-  endif
-
-        ! Initialize GGrid%coordinate_sort_order.
-
-  call List_init(GGrid%coordinate_sort_order, CoordSortOrder)
-
-        ! Check the number of coordinates versus the number of
-        ! coordinate grid sort keys...they should be equal.
-
-     ncoord = List_nitem(GGrid%coordinate_list)
-     nsort =  List_nitem(GGrid%coordinate_sort_order)
-
-  if(ncoord /= nsort) then
-     write(stderr,*) myname_,':: ERROR Arguments ncoord and nsort must be equal.',&
-	  ' ncoord = ',ncoord,' nsort = ',nsort
-     call die(myname_,'ncoord-nsort /=0',ncoord-nsort)
-  endif
-
-        ! If the LOGICAL argument descend is present, check the
-        ! number of entries to ensure they match the grid dimensionality.
-        ! If descend is not present, assume all coordinate grid point
-        ! sortings will be in ascending order.
+        ! Call initl_ to initialize the General Grid
 
   if(present(descend)) then
-     if(size(descend) /= nsort) then
-     write(stderr,*) myname_, &
-     ':: ERROR Number of elements in descend(:) must equal nsort.',&
-	  ' size(descend) = ',size(descend),' nsort = ',nsort
-	call die(myname_, 'size(descend)-nsort /=0', size(descend)-nsort)
-     endif
-  endif
-
-  allocate(GGrid%descend(nsort), stat=ierr)
-  if(ierr /= 0) then
-     call die(myname_,"allocate(GGrid%descend) failed.",ierr)
-  endif
-
-  if(present(descend)) then
-     do n=1,nsort
-	GGrid%descend(n) = descend(n)
-     end do
+     call initl_(GGrid, CoordCharsList, CoordSortOrderList, descend, &
+                 WeightCharsList, OtherCharsList, IndexCharsList, n)
   else
-     do n=1,nsort
-	GGrid%descend(n) = .false.
-     end do
+     call initl_(GGrid=GGrid,                           &
+                 CoordList=CoordCharsList,              &
+	         CoordSortOrder=CoordSortOrderList,     &
+                 WeightList=WeightCharsList,            &
+		 OtherList=OtherCharsList,              &
+		 IndexList=IndexCharsList,              &
+		 lsize=n)
   endif
+
+  call List_clean(CoordCharsList)
+  call List_clean(CoordSortOrderList)
+  call List_clean(WeightCharsList)
+  call List_clean(OtherCharsList)
+  call List_clean(IndexCharsList)
+  
 
  end subroutine init_
 
@@ -368,22 +305,64 @@
 !       10May01 - Jay Larson <larson@mcs.anl.gov> - initial version
 !       08Aug01 - E.T. Ong <eong@mcs.anl.gov> - changed list assignment(=)
 !                 to list copy to avoid compiler bugs with pgf90
+!       17Jul02 - E. Ong <eong@mcs.anl.gov> - general revision; 
+!                 added error checks
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::initl_'
 
-  type(List) :: TempList1, Templist2
   type(List) :: RAList, IAList
-  integer :: i, n, ierr
+  integer :: i, l, m, n, ierr
 
-       ! Copy array descend(:) (if present) to GGrid%descend.
+        ! Check the arguments:
 
   n = List_nitem(CoordList)
+  m = List_nitem(CoordSortOrder)
+
+        ! Check the number of coordinates
+
+  if(n <= 0) then
+     write(stderr,*) myname_, &
+	  ':: ERROR CoordList and/or CoordSortOrder are empty!'
+     call die(myname_,'List_nitem(CoordList) <= 0',n)
+  endif
+
+        ! Check the number of coordinates versus the number of
+        ! coordinate grid sort keys...they should be equal.
+
+  if(n /= m) then
+     write(stderr,*) myname_, &
+	  ':: ERROR Arguments CoordList and CoordSortOrder &
+	  &must have equal lengths.', &
+	  ' List_nitem(CoordList) = ', n, &
+          ' List_nitem(CoordSortOrder) = ', m
+     call die(myname_,'ncoord-nsort /=0',n-m)
+  endif
+
+        ! If the LOGICAL argument descend is present, check the
+        ! number of entries to ensure they match the grid dimensionality.
+        ! If descend is not present, assume all coordinate grid point
+        ! sortings will be in ascending order.
+
+  if(present(descend)) then
+     if(size(descend) /= m) then
+	write(stderr,*) myname_, &
+	     ':: Number of elements in descend(:) must &
+	     &equal List_nitem(CoordSortOrder).',&
+	     ' size(descend) = ', size(descend), &
+	     ' List_nitem(CoordSortOrder) = ', m
+	call die(myname_, 'size(descend)-m /=0', size(descend)-m)
+     endif
+  endif
+
+       ! Initialize GGrid%descend-- first, allocate GGrid%descend
 
   allocate(GGrid%descend(n), stat=ierr)
-  if(ierr /= 0) then
-     call die(myname_,"allocate GGrid%descend...",ierr)
-  endif
+  if(ierr /= 0) call die(myname_,"allocate GGrid%descend...",ierr)
+
+       ! Initialize GGrid%descend from descend(:), if present.  If
+       ! the argument descend(:) was not passed, set all the entries
+       ! of GGrid%descend(:) to FALSE.
 
   if(present(descend)) then
      GGrid%descend(1:n) = descend(1:n)
@@ -397,73 +376,45 @@
   call List_copy(GGrid%coordinate_list,CoordList)
   call List_copy(GGrid%coordinate_sort_order,CoordSortOrder)
 
-  call List_copy(TempList1,CoordList)
+  call List_copy(RAList,CoordList)
 
        ! Concatenate present input Lists to create RAList, and
        ! at the same time assign the List components of GGrid
 
   if(present(WeightList)) then
      call List_copy(GGrid%weight_list,WeightList)
-     call List_concatenate(TempList1, WeightList, TempList2)
-     call List_clean(TempList1)
+     call List_concatenate(RAList, WeightList, RAList)
   else
      call List_init(GGrid%weight_list,'')
-     call List_copy(TempList2,TempList1)
-     call List_clean(TempList1)
   endif
 
   if(present(OtherList)) then
      call List_copy(GGrid%other_list,OtherList)
-     call List_concatenate(TempList2, OtherList, RAList)
-     call List_clean(TempList2)
+     call List_concatenate(RAList, OtherList, RAList)
   else
      call List_init(GGrid%other_list,'')
-     call List_copy(RAList,TempList2)
-     call List_clean(TempList2)
   endif
 
        ! Concatenate present input Lists to create IAList
 
-  call List_init(TempList1,'GlobGridNum')
+  call List_init(IAList,'GlobGridNum')
 
-  if(present(IndexList)) then
-     call List_concatenate(TempList1,IndexList,IAList)
-     call List_clean(TempList1)
-  else
-     call List_copy(IAList,TempList1)
-     call List_clean(TempList1)
-  endif
+  if(present(IndexList)) call List_concatenate(IAList,IndexList,IAList)
 
   call List_copy(GGrid%index_list,IAList)
-
 
        ! Initialize GGrid%data using IAList, RAList, and lsize (if
        ! present).
 
-  n = 0
-  if(present(lsize)) n = lsize
+  l = 0
+  if(present(lsize)) l = lsize
 
-  call AttrVect_init(GGrid%data, IAList, RAList, n)
+  call AttrVect_init(GGrid%data, IAList, RAList, l)
 
-       ! Finally, initialize GGrid%descend--first, count the coordinates:
+       ! Deallocate the temporary variables
 
-  n = List_nitem(GGrid%coordinate_list)
-
-       ! Allocate GGrid%descend
-
-  allocate(GGrid%descend(n), stat=ierr)
-
-       ! Initialize GGrid%descend from descend(:), if present.  If
-       ! the argument descend(:) was not passed, set all the entries
-       ! of GGrid%descend(:) to FALSE.
-
-  if(present(descend)) then
-     do i=1,n
-	GGrid%descend(i) = descend(i)
-     end do
-  else
-     GGrid%descend = .FALSE.
-  endif
+  call List_clean(IAList)
+  call List_clean(RAList)
 
  end subroutine initl_
 
