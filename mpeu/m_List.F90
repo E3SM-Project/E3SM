@@ -856,6 +856,7 @@
 
 ! !REVISION HISTORY:
 ! 13Feb02 - J. Larson <larson@mcs.anl.gov> - initial version.
+! 06Jun03 - R. Jacob <jacob@mcs.anl.gov> - return blank if List is not allocated
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::exportToChar_'
@@ -866,6 +867,8 @@
      call getall_(DummStr,inList)
      exportToChar_ = String_ToChar(DummStr)
      call String_clean(DummStr)
+  else
+     exportToChar_ = ''
   endif
 
  end function exportToChar_
