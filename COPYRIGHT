@@ -1,0 +1,61 @@
+
+                       The Model Coupling Toolkit
+				version 1.0
+
+                                ---------
+
+               ------------ ----- --- ---------- ------
+  ********** | DISTRIBUTION TERMS AND CONDITIONS NOTICE | ************
+               ------------ ----- --- ---------- ------
+
+(c) Copyright Notice
+ + 1995 University of Chicago
+
+The "Software" below refers to the Model Coupling Toolkit (MCT), either
+in source code, in part or in whole, or binary form and any accompanying documentation.
+
+Access and use of this software shall impose the following obligations and
+understandings on the user.  The user is granted the right, without any fee
+or cost, to use, copy, modify, alter, enhance and distribute this software,
+and any derivative works thereof, and its supporting documentation for any
+purpose whatsoever, except commercial sales, provided that the following conditions
+are met: 
+
+  1) This entire notice appears in all copies of the software, derivative works and
+     supporting documentation.  
+
+  2) The user agrees to credit "MCT", specifying the version number above,
+     in any publications or presentations that result from the use of this software 
+     or in any software package that includes this software.
+
+  3) If you modify the software and give a copy or copies of those modifications
+     to others, either in source code or binary form, the software must carry
+     prominent notices stating that you changed specified portions of the Software.
+
+     
+                              GOVERNMENT LICENSE
+
+Portions of this material resulted from work developed under a U.S.
+Government Contract and are subject to the following license: the Government
+is granted for itself and others acting on its behalf a paid-up, non-exclusive,
+irrevocable worldwide license in this computer software to reproduce, prepare
+derivative works, and perform publicly and display publicly.
+
+
+				DISCLAIMER
+
+THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+WARRANTIES, INCLUDING BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+
+IN NO EVENT WILL THE UNITED STATES, THE UNIVERSITY OF CHICAGO OR
+ANY CONTRIBUTORS TO THE SOFTWARE BE LIABLE FOR ANY DAMAGES, INCLUDING DIRECT, 
+INCIDENTAL, SPECIAL, OR CONSEQUENTIAL DAMAGES RESULTING FROM EXERCISE OF 
+THIS LICENSE AGREEMENT OR THE USE OF THE SOFTWARE.
+
+THIS MATERIAL IS MADE AVAILABLE WITH THE UNDERSTANDING THAT
+THE UNIVERSITY OF CHICAGO AND THE UNIVERSITY OF WISCONSIN  ARE NOT OBLIGATED 
+TO PROVIDE (AND WILL NOT PROVIDE) THE USER WITH ANY SUPPORT, CONSULTING, TRAINING, 
+OR ASSISTANCE OF ANY KIND WITH REGARD TO THE USE, OPERATION AND 
+PERFORMANCE OF THIS SOFTWARE, NOR TO PROVIDE THE USER WITH ANY UPDATES, 
+REVISIONS, NEW VERSIONS, OR "BUG FIXES."
