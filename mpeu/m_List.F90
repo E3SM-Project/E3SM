@@ -236,6 +236,10 @@
   end do
   if(ib<=ie) ni=ni+1
 
+  ! COMPILER MAY NOT SIGNAL AN ERROR IF 
+  ! ALIST HAS ALREADY BEEN INITIALIZED.
+  ! PLEASE CHECK FOR PREVIOUS INITIALIZATION
+  
   allocate(aList%bf(le),aList%lc(0:1,ni),stat=ier)
   if(ier /= 0) call die(myname_,'allocate()',ier)
 
@@ -1736,7 +1740,9 @@
 
        ! Initialize ioList off the root using DummStr
 
-  call initStr_(ioList, DummStr)
+  if(myID /= root) then
+     call initStr_(ioList, DummStr)
+  endif
 
        ! And now, the List broadcast is complete.
 
