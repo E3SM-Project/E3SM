@@ -93,11 +93,15 @@
 
 ! !REVISION HISTORY:
 !      07Jun01 - R. Jacob <jacob@mcs.anl.gov> - first prototype
+!      28Mar01 - E. Ong <eong@mcs.anl.gov> - changed copy order to correspond
+!                to MCT_Recv
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'MCT_ISend_'
-  integer ::	numi,numr,i,proc,j,k
-  integer ::	ier,nseg,mycomp,othercomp,tag,myproc
+  integer ::	numi,numr,i,j,k,ier
+  integer ::    mycomp,othercomp
+  integer ::    AttrIndex,VectIndex,seg_start,seg_end
+  integer ::    proc,nseg,tag
   integer ::    mp_Type_rp1
 
 !--------------------------------------------------------
@@ -150,83 +154,63 @@
     if(ier/=0) call die(myname_,'allocate(rp1%pr)',ier)
    enddo
 
+! define the real type
+   mp_Type_rp1=MP_Type(rp1(1)%pr(1))
+
   endif
-! if(myproc==0) then
-! do proc=1,Rout%nprocs
-!  write(*,*)'Send',size(rp1(proc)%pr),Rout%pe_list(proc),ThisMCTWorld%mygrank
-! enddo
-! endif
 
+  ! Load data going to each processor
+  do proc = 1,Rout%nprocs
+    
+     j=1
+     k=1
 
+     ! load the correct pieces of the integer and real vectors
+     do nseg = 1,Rout%num_segs(proc)
+	seg_start = Rout%seg_starts(proc,nseg)
+	seg_end = seg_start + Rout%seg_lengths(proc,nseg)-1
+	do VectIndex = seg_start,seg_end
+	   do AttrIndex = 1,numi
+	      ip1(proc)%pi(j) = aV%iAttr(AttrIndex,VectIndex)
+	      j=j+1
+	   enddo
+	   do AttrIndex = 1,numr
+	      rp1(proc)%pr(k) = aV%rAttr(AttrIndex,VectIndex)
+	      k=k+1
+	   enddo
+	enddo
+     enddo
 
-! Load data going to each processor
-  do proc=1,Rout%nprocs
+     ! Send the integer data
+     if(numi .ge. 1) then
 
+	! corresponding tag logic must be in MCT_Recv
+	tag = 100000*mycomp + 1000*ThisMCTWorld%mygrank + &
+	      500 + Rout%pe_list(proc)
 
-! Load the integer data
-    if(numi .ge. 1) then
+	call MPI_ISEND(ip1(proc)%pi(1),Rout%locsize(proc)*numi,MP_INTEGER,&
+	     Rout%pe_list(proc),tag,ThisMCTWorld%MCT_comm,Reqs%ireqs(proc),ier)
 
-      k=1
-! load all integer vectors to be sent into buffer
-      do j=1,numi
+	if(ier /= 0) call MP_perr_die(myname_,'MPI_ISEND(ints)',ier)
 
-! load the correct pieces of this particular integer vector
-       do nseg=1,Rout%num_segs(proc)
-	 do i=0,Rout%seg_lengths(proc,nseg)-1
-           ip1(proc)%pi(k)=aV%iAttr(j,Rout%seg_starts(proc,nseg)+i)
-	   k=k+1
-	 enddo
-       enddo
+     endif
 
-      enddo
+     ! Send the real data
+     if(numr .ge. 1) then
+
+       ! corresponding tag logic must be in MCT_Recv
+       tag = 100000*mycomp + 1000*ThisMCTWorld%mygrank + &
+	     700 + Rout%pe_list(proc)
+
+       call MPI_ISEND(rp1(proc)%pr(1),Rout%locsize(proc)*numr,mp_Type_rp1,&
+	    Rout%pe_list(proc),tag,ThisMCTWorld%MCT_comm,Reqs%rreqs(proc),ier)
+
+       if(ier /= 0) call MP_perr_die(myname_,'MPI_ISEND(reals)',ier)
+
     endif
 
-
-! Load the real data
-    if(numr .ge. 1) then
-
-      k=1
-! load all real vectors to be sent into buffer
-      do j=1,numr
-
-! load the correct pieces of this particular real vector
-       do nseg=1,Rout%num_segs(proc)
-	 do i=0,Rout%seg_lengths(proc,nseg)-1
-           rp1(proc)%pr(k)=aV%rAttr(j,Rout%seg_starts(proc,nseg)+i)
-	   k=k+1
-	 enddo
-       enddo
-
-      enddo
-    endif
   enddo
 
-! send the integer data
-  if(numi .ge. 1) then
-    do proc=1,Rout%nprocs
-
-! corresponding tag logic must be in MCT_Recv
-      tag = 100000*mycomp + 1000*ThisMCTWorld%mygrank + &
-	    500 + Rout%pe_list(proc)
-      call MPI_ISEND(ip1(proc)%pi(1),Rout%locsize(proc)*numi,MP_INTEGER,&
-	 Rout%pe_list(proc),tag,ThisMCTWorld%MCT_comm,Reqs%ireqs(proc),ier)
-      if(ier /= 0) call MP_perr_die(myname_,'MPI_ISEND(ints)',ier)
-    enddo
-  endif
-
-! send the real data
-  if(numr .ge. 1) then
-    mp_Type_rp1=MP_Type(rp1(1)%pr(1))
-    do proc=1,Rout%nprocs
-! corresponding tag logic must be in MCT_Recv
-      tag = 100000*mycomp + 1000*ThisMCTWorld%mygrank + &
-	    700 + Rout%pe_list(proc)
-!     write(*,*)"SENDR",ThisMCTWorld%mygrank,Rout%pe_list(proc),tag
-      call MPI_ISEND(rp1(proc)%pr(1),Rout%locsize(proc)*numr,mp_Type_rp1, &
-	 Rout%pe_list(proc),tag,ThisMCTWorld%MCT_comm,Reqs%rreqs(proc),ier)
-      if(ier /= 0) call MP_perr_die(myname_,'MPI_ISEND(reals)',ier)
-    enddo
-  endif
 
 end subroutine MCT_ISend_
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
