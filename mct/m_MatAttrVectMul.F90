@@ -63,6 +63,7 @@
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_lsize => lsize
+      use m_AttrVect, only : AttrVect_zero => zero
       use m_AttrVect, only : AttrVect_nIAttr => nIAttr
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
       use m_AttrVect, only : AttrVect_indexRA => indexRA
@@ -88,6 +89,8 @@
 !                 changes to the SparseMatrix datatype.
 !       25Apr01 - J.W. Larson <larson@mcs.anl.gov> - Reversed loop order
 !                 for cache-friendliness
+!       17May01 - R. Jacob <jacob@mcs.anl.gov> - Zero the output
+!                 attribute vector
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::sMatAvMult_xlyl_'
@@ -125,6 +128,10 @@
   irow = SparseMatrix_indexIA(sMat,'lrow')    ! local row index
   icol = SparseMatrix_indexIA(sMat,'lcol')    ! local column index
   iwgt = SparseMatrix_indexRA(sMat,'weight')  ! weight index
+
+       ! zero the output AttributeVector
+
+  call AttrVect_zero(yaV)
 
        ! Regridding Operations:  First the REAL attributes:
 
