@@ -169,6 +169,8 @@
 !                 versions of this routine had this feature, and this
 !                 caused problems with the GeneralGrid Send and Receive
 !                 operations on the AIX platform.
+!       13Jun01 - R. Jacob <jacob@mcs.anl.gov> - nullify any pointers
+!                 for lists not declared.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::init_'
@@ -232,12 +234,16 @@
 
   if(present(WeightChars)) then
      call List_init(GGrid%weight_list, WeightChars)
+  else
+     nullify(GGrid%weight_list%bf)
   endif
 
         ! If Initialize GGrid%other_list
 
   if(present(OtherChars)) then
      call List_init(GGrid%other_list, OtherChars)
+  else
+     nullify(GGrid%other_list%bf)
   endif
 
         ! If Initialize GGrid%coordinate_sort_order.  Check 
@@ -245,6 +251,8 @@
 
   if(present(CoordSortOrder)) then
      call List_init(GGrid%coordinate_sort_order, CoordSortOrder)
+  else
+     nullify(GGrid%coordinate_sort_order%bf)
   endif
 
         ! Check the number of coordinates versus the number of
