@@ -527,6 +527,8 @@
 
 ! !REVISION HISTORY:
 ! 	20Oct00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+!       25Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - add -1 to make a
+!                 backwards loop go backwards
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::Sort_'
@@ -639,7 +641,7 @@
         ! IndexSort(), but in reverse order to the order of the keys
         ! as they appear in sList.
 
-  do n=nkeys, 1
+  do n=nkeys, 1, -1
      if(iIndex(n) > 0) then
 	if(present(descend)) then
 	   call IndexSort(length, perm, aV%iAttr(iIndex(n),:), &
