@@ -48,6 +48,14 @@ _IMPI		=
 
 _Iconf		= $(_IMPI)
 
+# This module requires ../mpeu module
+
+_Lmpeu		= -L../mpeu
+_lmpeu		= -lmpeu
+_Impeu		= -I../mpeu
+
+_I		= -I. $(_Impeu) $(_IMPI)
+
 SHELL		= /usr/bin/sh
 
 CPP		= /usr/ccs/lib/cpp
