@@ -41,7 +41,7 @@ _Dnod		=
 
 # If using Absoft compiler, add the following flags: 
 # FFLAGS = -Mnoframe
-# FPPFLAGS = -DABSOFT
+# CFLAGS = -DABSOFT
 # MUPDATE         = sh UCupdate.sh
 
 # Assume MPICH for Linux
