@@ -1,9 +1,5 @@
 
-# MACHINE AND COMPILER FLAGS
-
-include ../Makefile.conf
-
-SHELL           = $(SHELL)
+SHELL           = /bin/sh
 
 # SOURCE FILES
 
@@ -38,6 +34,10 @@ SRCS_F90	= m_MCTWorld.F90		\
 		  m_Transfer.F90          
 
 OBJS_ALL	= $(SRCS_F90:.F90=.o)
+
+# MACHINE AND COMPILER FLAGS
+
+include ../Makefile.conf
 
 # TARGETS
 

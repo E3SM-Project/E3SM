@@ -1,9 +1,5 @@
 
-# MACHINE AND COMPILER FLAGS
-
-include ../Makefile.conf
-
-SHELL           = $(SHELL)
+SHELL           = /bin/sh
 
 # SOURCE FILES
 
@@ -40,6 +36,10 @@ SRCS_C		= get_zeits.c
 
 OBJS_ALL	= $(SRCS_F90:.F90=.o)	\
 		  $(SRCS_C:.c=.o)
+
+# MACHINE AND COMPILER FLAGS
+
+include ../Makefile.conf
 
 # TARGETS
 

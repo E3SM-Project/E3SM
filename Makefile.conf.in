@@ -80,7 +80,6 @@ libdir          = @prefix@/lib
 includedir      = @prefix@/include
 
 # OTHER COMMANDS #
-SHELL           = @SHELL@
 AR		= @AR@
 RM		= rm -f
 
