@@ -36,7 +36,7 @@
               GM_scatter_, &
               GSM_scatter_ 
     end interface
-    interface bcast  ; module procedure bcast_  ; end interface
+    interface bcast ; module procedure bcast_ ; end interface
     interface send  ; module procedure send_  ; end interface
     interface recv  ; module procedure recv_  ; end interface
 
@@ -58,8 +58,11 @@
 ! !IROUTINE: send_ - Point-to-point blocking send for the GeneralGrid.
 !
 ! !DESCRIPTION:  The point-to-point send routine {\tt send\_()} sends 
-! the input {\tt GeneralGrid} argument {\tt iGGrid} to component {\tt comp\_id} 
-! on the communicator associated with the F90 integer handle {\tt comm}.
+! the input {\tt GeneralGrid} argument {\tt iGGrid} to component 
+! {\tt comp\_id}.  If the optional {\tt INTEGER} argument {\tt comm} 
+! is provided, it is used as the F90 integer handle for the MPI 
+! communicator.  If this argument is not provided, the MCT global 
+! communicator {\tt MCT\_COMM\_WORLD} is usd.  
 ! The message is identified by the tag defined by the {\tt INTEGER} 
 ! argument {\tt TagBase}.  The value of {\tt TagBase} must match the 
 ! value used in the call to {\tt recv\_()} on process {\tt dest}.  The 
@@ -104,7 +107,7 @@
       type(GeneralGrid), intent(in) :: iGGrid
       integer,           intent(in) :: comp_id
       integer,           intent(in) :: TagBase
-      integer,           intent(in) :: comm
+      integer, optional, intent(in) :: comm
 
 ! !OUTPUT PARAMETERS: 
 !
@@ -118,6 +121,8 @@
 !                 argument.
 !       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize status
 !                 (if present).
+!       15Feb02 - J.W. Larson <larson@mcs.anl.gov> - Made input argument
+!                 comm optional.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::send_'

@@ -162,7 +162,7 @@
 ! !INPUT PARAMETERS:
 !
       character(len=*),             intent(in) :: CoordChars
-      character(len=*), optional,   intent(in) :: CoordSortOrder
+      character(len=*),             intent(in) :: CoordSortOrder
       character(len=*), optional,   intent(in) :: WeightChars
       logical, dimension(:), optional, pointer :: descend
       character(len=*), optional,   intent(in) :: OtherChars
@@ -187,6 +187,9 @@
 !                 operations on the AIX platform.
 !       13Jun01 - R. Jacob <jacob@mcs.anl.gov> - nullify any pointers
 !                 for lists not declared.
+!       15Feb02 - Jay Larson <larson@mcs.anl.gov> - made the input 
+!                 argument CoordSortOrder mandatory (rather than
+!                 optional).
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::init_'
@@ -262,20 +265,15 @@
      nullify(GGrid%other_list%bf)
   endif
 
-        ! If Initialize GGrid%coordinate_sort_order.  Check 
-        ! the string CoordSortOrder for validity.
+        ! Initialize GGrid%coordinate_sort_order.
 
-  if(present(CoordSortOrder)) then
-     call List_init(GGrid%coordinate_sort_order, CoordSortOrder)
-  else
-     nullify(GGrid%coordinate_sort_order%bf)
-  endif
+  call List_init(GGrid%coordinate_sort_order, CoordSortOrder)
 
         ! Check the number of coordinates versus the number of
         ! coordinate grid sort keys...they should be equal.
 
      ncoord = List_nitem(GGrid%coordinate_list)
-     nsort = List_nitem(GGrid%coordinate_sort_order)
+     nsort =  List_nitem(GGrid%coordinate_sort_order)
 
   if(ncoord /= nsort) then
      write(stderr,*) myname_,':: ERROR Arguments ncoord and nsort must be equal.',&
@@ -1026,9 +1024,19 @@
 ! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
 ! the {\tt GeneralGrid} {\tt List} component {\tt GGrid\%data\%iList}.
 !
-! {\bf N.B.:}  This routine returns an allocated array {\tt outVect}.
-! The user is responsible for deallocating this array once it is no 
-! longer needed.  Failure to do so will result in a memory leak.
+! {\bf N.B.:}  The flexibility of this routine regarding the pointer 
+! association status of the output argument {\tt outVect} means the
+! user must invoke this routine with care.  If the user wishes this
+! routine to fill a pre-allocated array, then obviously this array
+! must be allocated prior to calling this routine.  If the user wishes
+! that the routine {\em create} the output argument array {\tt outVect},
+! then the user must ensure this pointer is not allocated (i.e. the user
+! must nullify this pointer) at the time this routine is invoked.
+!
+! {\bf N.B.:}  If the user has relied on this routine to allocate memory
+! associated with the pointer {\tt outVect}, then the user is responsible 
+! for deallocating this array once it is no longer needed.  Failure to 
+! do so will result in a memory leak.
 !
 ! !INTERFACE:
 
@@ -1080,9 +1088,19 @@
 ! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
 ! the {\tt GeneralGrid} {\tt List} component {\tt GGrid\%data\%rList}.
 !
-! {\bf N.B.:}  This routine returns an allocated array {\tt outVect}.
-! The user is responsible for deallocating this array once it is no 
-! longer needed.  Failure to do so will result in a memory leak.
+! {\bf N.B.:}  The flexibility of this routine regarding the pointer 
+! association status of the output argument {\tt outVect} means the
+! user must invoke this routine with care.  If the user wishes this
+! routine to fill a pre-allocated array, then obviously this array
+! must be allocated prior to calling this routine.  If the user wishes
+! that the routine {\em create} the output argument array {\tt outVect},
+! then the user must ensure this pointer is not allocated (i.e. the user
+! must nullify this pointer) at the time this routine is invoked.
+!
+! {\bf N.B.:}  If the user has relied on this routine to allocate memory
+! associated with the pointer {\tt outVect}, then the user is responsible 
+! for deallocating this array once it is no longer needed.  Failure to 
+! do so will result in a memory leak.
 !
 ! !INTERFACE:
 

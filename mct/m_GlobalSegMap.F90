@@ -158,7 +158,7 @@
 ! !INTERFACE:
 
  subroutine initd_(GSMap, start, length, root, my_comm, &
-                   comp_id, pe_loc, gsize)
+                   comp_id, pe_loc, gsize )
 
 !
 ! !USES:
@@ -171,17 +171,18 @@
 
 ! !INPUT PARAMETERS:
 
-      integer,dimension(:),intent(in) :: start   ! segment local start index 
-      integer,dimension(:),intent(in) :: length  ! the distributed sizes
-      integer,intent(in)              :: root    ! root on my_com
-      integer,intent(in)              :: my_comm ! local communicatior
-      integer,intent(in)              :: comp_id ! component model ID
+      integer,dimension(:),intent(in) :: start          ! segment local start 
+                                                        ! indices
+      integer,dimension(:),intent(in) :: length         ! segment local lengths
+      integer,intent(in)              :: root           ! root on my_com
+      integer,intent(in)              :: my_comm        ! local communicatior
+      integer,intent(in)              :: comp_id        ! component model ID
       integer,dimension(:), pointer, optional :: pe_loc ! process location
-      integer,intent(in), optional    :: gsize   ! global vector size
-                                                 ! (optional).  It can
-                                                 ! be computed by this 
-                                                 ! routine if no haloing
-                                                 ! is assumed.
+      integer,intent(in), optional    :: gsize          ! global vector size
+                                                        ! (optional).  It can
+                                                        ! be computed by this 
+                                                        ! routine if no haloing
+                                                        ! is assumed.
 
 ! !OUTPUT PARAMETERS:
 

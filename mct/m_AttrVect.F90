@@ -58,6 +58,8 @@
       public :: Sort            ! sort entries, and return permutation
       public :: Permute         ! permute entries
       public :: SortPermute     ! sort and permute entries
+      public :: LocalReduce      ! Local reduction of all attributes
+      public :: LocalReduceReals ! Local reduction of REAL attributes
 
     interface init   ; module procedure	&
 	init_,	&
@@ -88,6 +90,20 @@
     interface Sort    ; module procedure Sort_    ; end interface
     interface Permute ; module procedure Permute_ ; end interface
     interface SortPermute ; module procedure SortPermute_ ; end interface
+    interface LocalReduce ; module procedure LocalReduce_ ; end interface
+    interface LocalReduceReals
+       module procedure LocalReduceReals_ 
+    end interface
+
+! !PUBLIC DATA MEMBERS:
+
+    public :: AttrVectSUM
+    public :: AttrVectMIN
+    public :: AttrVectMAX
+
+    integer, parameter :: AttrVectSUM = 1
+    integer, parameter :: AttrVectMIN = 2
+    integer, parameter :: AttrVectMAX = 3
 
 ! !REVISION HISTORY:
 ! 	10Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
@@ -109,6 +125,9 @@
 !                 functions exportIListToChar() and exportRListToChar()
 !       26Feb02 - J.W. Larson <larson@mcs.anl.gov> - corrected of usage
 !                 of m_die routines throughout this module.
+!       16Apr02 - J.W. Larson <larson@mcs.anl.gov> - added the method
+!                 LocalReduce(), and the public data members AttrVectSUM,
+!                 AttrVectMIN, and AttrVectMAX.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_AttrVect'
@@ -1152,9 +1171,19 @@
 ! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
 ! the {\tt AttrVect} {\tt List} component {\tt aV\%iList}.
 !
-! {\bf N.B.:}  This routine returns an allocated array {\tt outVect}.
-! The user is responsible for deallocating this array once it is no 
-! longer needed.  Failure to do so will result in a memory leak.
+! {\bf N.B.:}  The flexibility of this routine regarding the pointer 
+! association status of the output argument {\tt outVect} means the
+! user must invoke this routine with care.  If the user wishes this
+! routine to fill a pre-allocated array, then obviously this array
+! must be allocated prior to calling this routine.  If the user wishes
+! that the routine {\em create} the output argument array {\tt outVect},
+! then the user must ensure this pointer is not allocated (i.e. the user
+! must nullify this pointer) at the time this routine is invoked.
+!
+! {\bf N.B.:}  If the user has relied on this routine to allocate memory
+! associated with the pointer {\tt outVect}, then the user is responsible 
+! for deallocating this array once it is no longer needed.  Failure to 
+! do so will result in a memory leak.
 !
 ! !INTERFACE:
 
@@ -1181,6 +1210,8 @@
 ! !REVISION HISTORY:
 ! 	19Oct01 - J.W. Larson <larson@mcs.anl.gov> - initial (slow) 
 !                 prototype.
+! 	 6May02 - J.W. Larson <larson@mcs.anl.gov> - added capability 
+!                 to work with pre-allocated outVect.
 !
 !EOP ___________________________________________________________________
 
@@ -1196,10 +1227,20 @@
 
   lsize = lsize_(aV)
 
-       ! Allocate space for outVect:
+       ! Allocate space for outVect (if it is not already dimensioned)
 
-  allocate(outVect(lsize), stat=ierr)
-  if(ierr /= 0) call die(myname_, 'allocate(outVect) failed.', ierr)
+  if(associated(outVect)) then ! check the size of outVect
+     if(size(outVect) < lsize) then
+	write(stderr,'(2a,i8,a,i8)') myname_, &
+	    ':: ERROR length of output array outVect ', &
+	    ' less than length of aV.  size(outVect)=',size(outVect), &
+	    ', length of aV=',lsize
+	call die(myname_)
+     endif
+  else ! allocate space for outVect
+     allocate(outVect(lsize), stat=ierr)
+     if(ierr /= 0) call die(myname_, 'allocate(outVect) failed.', ierr)
+  endif
 
        ! Copy the attribute data into outVect
 
@@ -1225,9 +1266,19 @@
 ! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
 ! the {\tt AttrVect} {\tt List} component {\tt aV\%rList}.
 !
-! {\bf N.B.:}  This routine returns an allocated array {\tt outVect}.
-! The user is responsible for deallocating this array once it is no 
-! longer needed.  Failure to do so will result in a memory leak.
+! {\bf N.B.:}  The flexibility of this routine regarding the pointer 
+! association status of the output argument {\tt outVect} means the
+! user must invoke this routine with care.  If the user wishes this
+! routine to fill a pre-allocated array, then obviously this array
+! must be allocated prior to calling this routine.  If the user wishes
+! that the routine {\em create} the output argument array {\tt outVect},
+! then the user must ensure this pointer is not allocated (i.e. the user
+! must nullify this pointer) at the time this routine is invoked.
+!
+! {\bf N.B.:}  If the user has relied on this routine to allocate memory
+! associated with the pointer {\tt outVect}, then the user is responsible 
+! for deallocating this array once it is no longer needed.  Failure to 
+! do so will result in a memory leak.
 !
 ! !INTERFACE:
 
@@ -1254,6 +1305,8 @@
 ! !REVISION HISTORY:
 ! 	19Oct01 - J.W. Larson <larson@mcs.anl.gov> - initial (slow) 
 !                 prototype.
+! 	 6May02 - J.W. Larson <larson@mcs.anl.gov> - added capability 
+!                 to work with pre-allocated outVect.
 !
 !EOP ___________________________________________________________________
 
@@ -1269,10 +1322,18 @@
 
   lsize = lsize_(aV)
 
-       ! Allocate space for outVect:
-
-  allocate(outVect(lsize), stat=ierr)
-  if(ierr /= 0) call die(myname_, 'allocate(outVect) failed.', ierr)
+  if(associated(outVect)) then
+     if(size(outVect) < lsize) then ! check the size of outVect
+	write(stderr,'(2a,i8,a,i8)') myname_, &
+	    ':: ERROR length of output array outVect ', &
+	    ' less than length of aV.  size(outVect)=',size(outVect), &
+	    ', length of aV=',lsize
+	call die(myname_)
+     endif
+  else ! allocate space for outVect
+     allocate(outVect(lsize), stat=ierr)
+     if(ierr /= 0) call die(myname_, 'allocate(outVect) failed.', ierr)
+  endif
 
        ! Copy the attribute data into outVect
 
@@ -1791,7 +1852,336 @@
 !		aV%iVect(:,:)
 !
 !	aV%iVect(:,ikx),aV%iVect(:,iks)
+!
+!
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: LocalReduce_ - Reduction over local elements
+!
+! !DESCRIPTION:
+!
+! The subroutine {\tt LocalReduce\_()} takes the input {\tt AttrVect} 
+! argument {\tt inAV}, and reduces each of its integer and real 
+! attributes, returning them in the output {\tt AttrVect} argument 
+! {\tt outAV}.  The type of reduction is defined by the input 
+! {\tt INTEGER} argument {\tt action}.  Allowed values for action are
+! defined as public data members to this module (see the declaration
+! section of {\tt m\_AttrVect}, and are summarized below:
+!
+!\begin{table}[htbp]
+!\begin{center}
+!\begin{tabular}{|c|c|}
+!\hline
+!{\bf Value} & {\bf Action} \\
+!\hline
+!{\tt AttrVectSUM} & Sum \\
+!\hline
+!{\tt AttrVectMIN} & Minimum \\
+!\hline
+!{\tt AttrVectMAX} & Maximum \\
+!\hline
+!\end{tabular}
+!\end{center}
+!\end{table}
+!
+! {\bf N.B.}:  The output {\tt AttrVect} argument {\tt outAV} is
+! allocated memory, and must be destroyed by invoking the routine 
+! {\tt AttrVect_clean()} when it is no longer needed.  Failure to 
+! do so will result in a memory leak.
+!
+! !INTERFACE:
+
+ subroutine LocalReduce_(inAV, outAV, action) 
+!
+! !USES:
+!
+      use m_die ,          only : die
+      use m_stdio ,        only : stderr
+
+      implicit none
+
+! !INPUT PARAMETERS:
+!
+      type(AttrVect),  intent(IN)  :: inAV
+      integer,         intent(IN)  :: action
+
+! !OUTPUT PARAMETERS:
+!
+      type(AttrVect),  intent(OUT) :: outAV
+
+! !REVISION HISTORY:
+!       16Apr02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::LocalReduce_'
+
+  integer :: i,j
+
+        ! First Step:  create outAV from inAV (but with one element)
+
+  call initv_(outAV, inAV, lsize=1)
+
+  select case(action)
+  case(AttrVectSUM) ! sum up each attribute...
+
+        ! Initialize INTEGER and REAL attribute sums:
+
+     do i=1,nIAttr_(outAV)
+	outAV%iAttr(i,1) = 0
+     end do
+
+     do i=1,nRAttr_(outAV)
+	outAV%rAttr(i,1) = 0.
+     end do
+
+        ! Compute INTEGER and REAL attribute sums:
+
+     do j=1,lsize_(inAV)
+	do i=1,nIAttr_(outAV)
+	   outAV%iAttr(i,1) = outAV%iAttr(i,1) + inAV%iAttr(i,j)
+	end do
+     end do
+
+     do j=1,lsize_(inAV)
+	do i=1,nRAttr_(outAV)
+	   outAV%rAttr(i,1) = outAV%rAttr(i,1) + inAV%rAttr(i,j)
+	end do
+     end do
+
+  case(AttrVectMIN) ! find the minimum of each attribute...
+
+        ! Initialize INTEGER and REAL attribute minima:
+
+     do i=1,nIAttr_(outAV)
+	outAV%iAttr(i,1) = inAV%iAttr(i,1)
+     end do
+
+     do i=1,nRAttr_(outAV)
+	outAV%rAttr(i,1) = inAV%rAttr(i,1)
+     end do
+
+        ! Compute INTEGER and REAL attribute minima:
+
+     do j=1,lsize_(inAV)
+	do i=1,nIAttr_(outAV)
+	   if(inAV%iAttr(i,j) < outAV%iAttr(i,1)) then
+	      outAV%iAttr(i,1) = inAV%iAttr(i,j)
+	   endif
+	end do
+     end do
+
+     do j=1,lsize_(inAV)
+	do i=1,nRAttr_(outAV)
+	   if(inAV%rAttr(i,j) < outAV%rAttr(i,1)) then
+	      outAV%rAttr(i,1) = inAV%rAttr(i,j)
+	   endif
+	end do
+     end do
+
+  case(AttrVectMAX) ! find the maximum of each attribute...
+
+        ! Initialize INTEGER and REAL attribute maxima:
+
+     do i=1,nIAttr_(outAV)
+	outAV%iAttr(i,1) = inAV%iAttr(i,1)
+     end do
+
+     do i=1,nRAttr_(outAV)
+	outAV%rAttr(i,1) = inAV%rAttr(i,1)
+     end do
+
+        ! Compute INTEGER and REAL attribute maxima:
+
+     do j=1,lsize_(inAV)
+	do i=1,nIAttr_(outAV)
+	   if(inAV%iAttr(i,j) > outAV%iAttr(i,1)) then
+	      outAV%iAttr(i,1) = inAV%iAttr(i,j)
+	   endif
+	end do
+     end do
+
+     do j=1,lsize_(inAV)
+	do i=1,nRAttr_(outAV)
+	   if(inAV%rAttr(i,j) > outAV%rAttr(i,1)) then
+	      outAV%rAttr(i,1) = inAV%rAttr(i,j)
+	   endif
+	end do
+     end do
+
+  case default
+
+     write(stderr,'(2a,i8)') myname_,':: unrecognized action = ',action
+     call die(myname_)
+
+  end select
+
+ end subroutine LocalReduce_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: LocalReduceReals_ - Reduction of REAL attributes
+!
+! !DESCRIPTION:
+!
+! The subroutine {\tt LocalReduceReals\_()} takes the input 
+! {\tt AttrVect} argument {\tt inAV}, and reduces each of its {\tt REAL}
+! attributes, returning them in the output {\tt AttrVect} argument 
+! {\tt outAV}.  The type of reduction is defined by the input 
+! {\tt INTEGER} argument {\tt action}.  Allowed values for action are
+! defined as public data members to this module (see the declaration
+! section of {\tt m\_AttrVect}, and are summarized below:
+!
+!\begin{table}[htbp]
+!\begin{center}
+!\begin{tabular}{|c|c|}
+!\hline
+!{\bf Value} & {\bf Action} \\
+!\hline
+!{\tt AttrVectSUM} & Sum \\
+!\hline
+!{\tt AttrVectMIN} & Minimum \\
+!\hline
+!{\tt AttrVectMAX} & Maximum \\
+!\hline
+!\end{tabular}
+!\end{center}
+!\end{table}
+!
+! {\bf N.B.}:  The output {\tt AttrVect} argument {\tt outAV} is
+! allocated memory, and must be destroyed by invoking the routine 
+! {\tt AttrVect_clean()} when it is no longer needed.  Failure to 
+! do so will result in a memory leak.
+!
+! !INTERFACE:
+
+ subroutine LocalReduceReals_(inAV, outAV, weights, action) 
+!
+! !USES:
+!
+      use m_die ,          only : die
+      use m_stdio ,        only : stderr
+
+      use m_List,          only : List_exportToChar => exportToChar
+
+      implicit none
+
+! !INPUT PARAMETERS:
+!
+      type(AttrVect),               intent(IN)  :: inAV
+      real, dimension(:), optional, pointer     :: weights
+      integer,                      intent(IN)  :: action
+
+! !OUTPUT PARAMETERS:
+!
+      type(AttrVect),               intent(OUT) :: outAV
+
+! !REVISION HISTORY:
+!       16Apr02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+!        6May02 - J.W. Larson <larson@mcs.anl.gov> - added optional
+!                 argument weights(:)
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::LocalReduceReals_'
+
+  integer :: i,j
+
+        ! Check for consistencey between inAV and the weights array
+        ! (if supplied):
+
+  if(present(weights)) then
+     if(size(weights) /= lsize_(inAV)) then
+	write(stderr,'(4a)') myname_,':: ERROR--mismatch in lengths of ', &
+	     'input array array argument weights(:) and input AttrVect ',&
+	     'inAV.'
+	write(stderr,'(2a,i8)') myname_,':: size(weights)=',size(weights)
+	write(stderr,'(2a,i8)') myname_,':: length of inAV=', &
+	     lsize_(inAV)
+	call die(myname_)
+     endif
+  endif
+
+        ! First Step:  create outAV from inAV (but with one element)
+
+  call init_(outAV, rList=List_exportToChar(inAV%rList), lsize=1)
+
+  select case(action)
+  case(AttrVectSUM) ! sum up each attribute...
+
+        ! Initialize REAL attribute sums:
+
+     do i=1,nRAttr_(outAV)
+	outAV%rAttr(i,1) = 0.
+     end do
+
+        ! Compute REAL attribute sums:
+
+     if(present(weights)) then ! compute weighted sum...
+	do j=1,lsize_(inAV)
+	   do i=1,nRAttr_(outAV)
+	      outAV%rAttr(i,1) = outAV%rAttr(i,1) + inAV%rAttr(i,j) &
+		                  * weights(j)
+	   end do
+	end do
+     else ! compute unweighted sum...
+	do j=1,lsize_(inAV)
+	   do i=1,nRAttr_(outAV)
+	      outAV%rAttr(i,1) = outAV%rAttr(i,1) + inAV%rAttr(i,j)
+	   end do
+        end do
+  endif
+
+  case(AttrVectMIN) ! find the minimum of each attribute...
+
+        ! Initialize REAL attribute minima:
+
+     do i=1,nRAttr_(outAV)
+	outAV%rAttr(i,1) = inAV%rAttr(i,1)
+     end do
+
+        ! Compute REAL attribute minima:
+
+     do j=1,lsize_(inAV)
+	do i=1,nRAttr_(outAV)
+	   if(inAV%rAttr(i,j) < outAV%rAttr(i,1)) then
+	      outAV%rAttr(i,1) = inAV%rAttr(i,j)
+	   endif
+	end do
+     end do
+
+  case(AttrVectMAX) ! find the maximum of each attribute...
+
+        ! Initialize REAL attribute maxima:
+
+     do i=1,nRAttr_(outAV)
+	outAV%rAttr(i,1) = inAV%rAttr(i,1)
+     end do
+
+        ! Compute REAL attribute maxima:
+
+     do j=1,lsize_(inAV)
+	do i=1,nRAttr_(outAV)
+	   if(inAV%rAttr(i,j) > outAV%rAttr(i,1)) then
+	      outAV%rAttr(i,1) = inAV%rAttr(i,j)
+	   endif
+	end do
+     end do
+
+  case default
+
+     write(stderr,'(2a,i8)') myname_,':: unrecognized action = ',action
+     call die(myname_)
+
+  end select
+
+ end subroutine LocalReduceReals_
 
  end module m_AttrVect
 !.
+
+
+
 

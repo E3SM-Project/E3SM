@@ -91,7 +91,7 @@
 ! ! USES:
 
       use m_stdio
-      use m_die, only : MP_perr_die
+      use m_die
       use m_mpif90
 
       use m_List, only : List
@@ -142,7 +142,11 @@
 
   if(AttrVect_lsize(inAv) /= GeneralGrid_lsize(GGrid)) then
      ierr = AttrVect_lsize(inAv) - GeneralGrid_lsize(GGrid)
-     call MP_perr_die(myname_, "inAv / GGrid length mismatch", ierr)
+     write(stderr,'(2a,i8,a,i8)') myname_, &
+	  ':: inAv / GGrid length mismatch:  ', &
+	  ' AttrVect_lsize(inAv) = ',AttrVect_lsize(inAv), &
+	  ' GeneralGrid_lsize(GGrid) = ',GeneralGrid_lsize(GGrid)
+     call die(myname_)
   endif
 
   if(present(SumWeights)) then
@@ -166,7 +170,7 @@
   allocate(LocalIntegrals(NumIntegrals), GlobalIntegrals(NumIntegrals), & 
            stat=ierr)
   if(ierr /= 0) then
-     call MP_perr_die(myname_, "allocate(LocalIntegrals...", ierr)
+     call die(myname_, "allocate(LocalIntegrals... failed", ierr)
   endif
 
        ! Compute the desired integrals
@@ -231,7 +235,7 @@
 
   deallocate(LocalIntegrals, GlobalIntegrals, gridWeights, stat=ierr)
   if(ierr /= 0) then
-     call MP_perr_die(myname_, "deallocate(LocalIntegrals...", ierr)
+     call die(myname_, "deallocate(LocalIntegrals...", ierr)
   endif
 
  end subroutine GlobalIntegral_
@@ -272,7 +276,7 @@
 ! ! USES:
 
       use m_stdio
-      use m_die, only : MP_perr_die
+      use m_die
       use m_mpif90
 
       use m_AttrVect, only : AttrVect
@@ -318,9 +322,9 @@
 
   iweight = AttrVect_indexRA(integratedAv, WeightTag)
   if(integratedAv%rAttr(iweight, 1) == 0) then
-     ierr = 1
-     call MP_perr_die(myname_, "::ERROR--Global sum of grid weights is zero.", &
-	              ierr)
+     write(stderr,'(2a)') myname_, &
+	  '::ERROR--Global sum of grid weights is zero.'
+     call die(myname_)
   endif
 
        ! Initialize output AttrVect outAv:
