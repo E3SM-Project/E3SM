@@ -59,7 +59,7 @@
 ! \end{itemize}
 !EOP
 !_______________________________________________________________________
-  character(len=*),parameter :: myname='m_mpout'
+  character(len=*),parameter :: myname='MCT(MPEU)::m_mpout'
 
   character(len=*),parameter :: def_pfix='mpout'
 

@@ -149,7 +149,7 @@
 !           from mct to this module.
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_List'
+  character(len=*),parameter :: myname='MCT(MPEU)::m_List'
 
  contains
 

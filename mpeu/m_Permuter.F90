@@ -61,7 +61,7 @@
 !		- initial prototype/prolog/code
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_Permuter'
+  character(len=*),parameter :: myname='MCT(MPEU)::m_Permuter'
 
 contains
 

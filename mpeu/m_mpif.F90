@@ -63,7 +63,7 @@
 ! 	01Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
 !EOP
 !_______________________________________________________________________
-	character(len=*),parameter :: myname='m_mpif'
+	character(len=*),parameter :: myname='MCT(MPEU)::m_mpif'
 
 	end module m_mpif
 !.

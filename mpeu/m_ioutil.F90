@@ -29,7 +29,7 @@
 ! 	16Jul96 - J. Guo	- (to do)
 ! 	02Apr97 - Jing Guo <guo@eramus> - finished the coding
 !	11Feb97 - Jing Guo <guo@thunder> - added luflush()
-!   2001-11-08  - Jace A Mogill <mogill@cray.com>  FORTRAN only defines 
+!       08Nov01  - Jace A Mogill <mogill@cray.com>  FORTRAN only defines 
 !                 99 units, three units below unit 10 are often used for
 !                 stdin, stdout, and stderr.  Be far more conservative
 !                 and stay within FORTRAN standard.
@@ -37,7 +37,7 @@
 !EOP
 !_______________________________________________________________________
 
-	character(len=*),parameter :: myname="m_ioutil"
+	character(len=*),parameter :: myname="MCT(MPEU)::m_ioutil"
 	integer,parameter :: MX_LU=99
 
 contains

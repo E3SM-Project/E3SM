@@ -57,7 +57,7 @@ contains
 !EOP
 !_______________________________________________________________________
 
-  character(len=*),parameter :: myname_='die.'
+  character(len=*),parameter :: myname_='MCT(MPEU)::die.'
   integer :: myrank,ier
 
 	!-------------------------------------------------

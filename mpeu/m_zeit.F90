@@ -155,7 +155,7 @@
 !
 !EOP
 !_______________________________________________________________________
-  character(len=*),parameter :: myname='m_zeit'
+  character(len=*),parameter :: myname='MCT(MPEU)::m_zeit'
 
   integer,parameter ::  MWTIME =  1
   integer,parameter ::  XWTIME =  2

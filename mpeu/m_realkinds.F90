@@ -47,6 +47,6 @@
 ! 	23Jan03 - R. Jacob <jacob@mcs.anl.gov> - add FP
 !EOP
 !_______________________________________________________________________
-  character(len=*),parameter :: myname='m_realkinds'
+  character(len=*),parameter :: myname='MCT(MPEU)::m_realkinds'
 
 end module m_realkinds

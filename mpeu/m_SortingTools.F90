@@ -91,6 +91,6 @@
 !                 Unpermuter to list of public functions.
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_SortingTools'
+  character(len=*),parameter :: myname='MCT(MPEU)::m_SortingTools'
 
 end module m_SortingTools

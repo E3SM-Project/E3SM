@@ -30,7 +30,7 @@
 ! 	26Feb98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
 !EOP
 !_______________________________________________________________________
-  character(len=*),parameter :: myname='m_flow'
+  character(len=*),parameter :: myname='MCT(MPEU)::m_flow'
 
   integer,parameter :: MX_TNAME= 64
   integer,parameter :: LN_TNAME= 32

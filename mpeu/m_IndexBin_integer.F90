@@ -26,7 +26,7 @@
 ! 	17Feb99 - Jing Guo <guo@thunder> - initial prototype/prolog/code
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_IndexBin_integer'
+  character(len=*),parameter :: myname='MCT(MPEU)::m_IndexBin_integer'
 
 contains
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -93,7 +93,7 @@ CONTAINS
 !EOP
 !--------------------------------------------------------------------------
 
-   character(len=*), parameter	:: myname = 'FileResolv'
+   character(len=*), parameter	:: myname = 'MCT(MPEU)::FileResolv'
 
    integer, external  :: system
    character(len=255) :: path, host, dirn, basen, head, tail, cmd, filen

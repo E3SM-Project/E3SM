@@ -52,7 +52,7 @@
 !                 interpret them (spooky).
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_StrTemplate'
+  character(len=*),parameter :: myname='MCT(MPEU)::m_StrTemplate'
 
   character(len=3),parameter,dimension(12) :: mon_lc =	(/	&
 	'jan','feb','mar','apr','may','jun',	&

@@ -64,7 +64,7 @@
 ! 	26Feb98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
 !EOP
 !_______________________________________________________________________
-  character(len=*),parameter :: myname='m_die'
+  character(len=*),parameter :: myname='MCT(MPEU)::m_die'
 contains
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !

@@ -87,7 +87,7 @@
 ! 	13Feb98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
 !EOP
 !_______________________________________________________________________
-  character(len=*),parameter :: myname='m_mall'
+  character(len=*),parameter :: myname='MCT(MPEU)::m_mall'
 
 #if SYSUNICOS || SYSIRIX64 || _R8_
   integer,parameter :: NBYTE_PER_WORD = 8

@@ -39,7 +39,7 @@
 !		- initial prototype/prolog/code
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_rankMerge'
+  character(len=*),parameter :: myname='MCT(MPEU)::m_rankMerge'
 
 contains
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

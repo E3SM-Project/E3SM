@@ -40,7 +40,7 @@
 ! 	16Jul96 - J. Guo	- (to do)
 !EOP
 !_______________________________________________________________________
-  character(len=*),parameter :: myname='m_chars'
+  character(len=*),parameter :: myname='MCT(MPEU)::m_chars'
 
 contains
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -293,7 +293,7 @@
 
   integer,parameter :: MALLSIZE_=10	! just an estimation
 
-  character(len=*),parameter :: myname='m_inpak90'
+  character(len=*),parameter :: myname='MCT(MPEU)::m_inpak90'
 !-----------------------------------------------------------------------
 
     integer,parameter :: i90_MXDEP = 4
