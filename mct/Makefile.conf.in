@@ -39,10 +39,8 @@ FPPFLAGS	= @FPPFLAGS@
 CC		= @CC@
 
 FC		= @FC@
-FFLAGS          = @FFLAGS@ $(_R)
+FFLAGS          = @FFLAGS@ @BIT64@ @REAL8@
 F90FLAGS	= @F90FLAGS@
-
-_R		= @REAL8@
 
 MUPDATE         = @MUPDATE@
 
