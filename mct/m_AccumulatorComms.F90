@@ -55,6 +55,9 @@
 !       10May01 - Jay Larson <larson@mcs.anl.gov> - Changes in the
 !                 comms routine to match the MPI model for collective
 !                 communications, and general clean-up of prologues.
+!       09Aug01 - E.T. Ong <eong@mcs.anl.gov> - Added private routine
+!                 bcastp_. Used new Accumulator routines initp_ and 
+!                 initialized_ to simplify the routines.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_AccumulatorComms'
@@ -86,12 +89,10 @@
       use m_mpif90
 
       use m_GlobalMap, only : GlobalMap
-      use m_GlobalMap, only : GlobalMap_lsize => lsize
-      use m_GlobalMap, only : GlobalMap_gsize => gsize
-
-      use m_AttrVect,  only : AttrVect_lsize => lsize
-
-      use m_Accumulator,   only : Accumulator_lsize => lsize
+      use m_AttrVect, only : AttrVect_clean => clean
+      use m_Accumulator, only : Accumulator
+      use m_Accumulator,   only : Accumulator_initialized => initialized
+      use m_Accumulator, only : Accumulator_initv => init
       use m_AttrVectComms, only : AttrVect_gather => gather
 
       implicit none
@@ -115,10 +116,13 @@
 ! 	15Jan01 - Jay Larson <larson@mcs.anl.gov> - renamed GM_gather_
 ! 	10May01 - Jay Larson <larson@mcs.anl.gov> - revamped comms 
 !                 model to match MPI comms model, and cleaned up prologue
+!       09Aug01 - E.T. Ong <eong@mcs.anl.gov> - 2nd prototype. Used the 
+!                 intiialized_ and accumulator init routines.
 !EOP ___________________________________________________________________
 
  character(len=*),parameter :: myname_=myname//'::GM_gather_'
- integer :: myID, ier
+ integer :: myID, ier, i
+ logical :: status
 
         ! Initialize status flag (if present)
 
@@ -132,14 +136,26 @@
     return
   endif
 
-       ! On the root, set oC%num_steps and oC%steps_done
+        ! Argument check of iC and oC
 
   if(myID == root) then
-     oC%num_steps = iC%num_steps
-     oC%steps_done = iC%steps_done
+     status = Accumulator_initialized(oC,die_flag=.true.,source_name=myname_)
   endif
 
-       ! Gather distributed iC%av to oC%av on the root
+  status = Accumulator_initialized(iC,die_flag=.false.,source_name=myname_)
+
+
+        ! Initialize oC from iC. Clean oC%av - we don't want this av.
+
+  if(myID == root) then
+     
+     call Accumulator_initv(oC,iC,lsize=1, &
+                            num_steps=iC%num_steps,steps_done=iC%steps_done)
+     call AttrVect_clean(oC%av)
+
+  endif
+
+       ! Initialize oC%av. Gather distributed iC%av to oC%av on the root
 
   call AttrVect_gather(iC%av, oC%av, GMap, root, comm, ier)
 
@@ -148,6 +164,12 @@
     if(.not.present(stat)) call die(myname_)
     stat=ier
     return
+  endif
+
+        ! Check oC if its valid
+  
+  if(myID == root) then
+     status = Accumulator_initialized(oC,die_flag=.false.,source_name=myname_)
   endif
 
  end subroutine GM_gather_
@@ -175,14 +197,12 @@
       use m_stdio
       use m_die
       use m_mpif90
+
       use m_GlobalSegMap, only : GlobalSegMap
-      use m_GlobalSegMap, only : GlobalSegMap_lsize => lsize
-      use m_GlobalSegMap, only : GlobalSegMap_gsize => gsize
-
-      use m_AttrVect,  only : AttrVect_lsize => lsize
-
-      use m_Accumulator,   only : Accumulator_lsize => lsize
-
+      use m_AttrVect, only : AttrVect_clean => clean
+      use m_Accumulator, only : Accumulator
+      use m_Accumulator, only : Accumulator_initv => init
+      use m_Accumulator,   only : Accumulator_initialized => initialized
       use m_AttrVectComms, only : AttrVect_gather => gather
 
       implicit none
@@ -203,10 +223,13 @@
 ! 	15Jan01 - Jay Larson <larson@mcs.anl.gov> - API specification.
 ! 	10May01 - Jay Larson <larson@mcs.anl.gov> - Initial code and
 !                 cleaned up prologue.
+!       09Aug01 - E.T. Ong <eong@mcs.anl.gov> - 2nd prototype. Used the 
+!                 intiialized_ and accumulator init routines.
 !EOP ___________________________________________________________________
 
  character(len=*),parameter :: myname_=myname//'::GSM_gather_'
- integer :: myID, ier
+ integer :: myID, ier, i
+ logical :: status
 
         ! Initialize status flag (if present)
 
@@ -220,23 +243,40 @@
     return
   endif
 
-       ! On the root, set oC%num_steps and oC%steps_done
+        ! Argument check of iC and oC
 
   if(myID == root) then
-     oC%num_steps = iC%num_steps
-     oC%steps_done = iC%steps_done
+     status = Accumulator_initialized(oC,die_flag=.true.,source_name=myname_)
+  endif
+
+  status = Accumulator_initialized(iC,die_flag=.false.,source_name=myname_)
+
+
+        ! Initialize oC from iC. Clean oC%av - we don't want this av.
+
+  if(myID == root) then
+     call Accumulator_initv(oC,iC,lsize=1, &
+                            num_steps=iC%num_steps,steps_done=iC%steps_done)
+     call AttrVect_clean(oC%av)
   endif
 
        ! Gather distributed iC%av to oC%av on the root
 
   call AttrVect_gather(iC%av, oC%av, GSMap, root, comm, ier)
-
+  
   if(ier /= 0) then
     call MP_perr(myname_,'AttrVect_gather(iC%av, oC%av...',ier)
     if(.not.present(stat)) call die(myname_)
     stat=ier
     return
   endif
+
+        ! Check oC if its valid
+
+  if(myID == root) then
+     status = Accumulator_initialized(oC,die_flag=.false.,source_name=myname_)
+  endif
+  
 
  end subroutine GSM_gather_
 
@@ -265,12 +305,11 @@
       use m_die
       use m_mpif90
 
-      use m_GlobalMap, only : GlobalMap
-      use m_GlobalMap, only : GlobalMap_lsize => lsize
-      use m_GlobalMap, only : GlobalMap_gsize => gsize
-
-      use m_Accumulator, only : Accumulator_lsize => lsize
-
+      use m_GlobalSegMap, only : GlobalSegMap
+      use m_Accumulator, only : Accumulator
+      use m_Accumulator, only : Accumulator_initv => init
+      use m_Accumulator, only : Accumulator_initialized => initialized
+      use m_AttrVect, only : AttrVect_clean => clean
       use m_AttrVectComms, only : AttrVect_scatter => scatter
 
       implicit none
@@ -294,12 +333,14 @@
 ! 	15Jan01 - Jay Larson <larson@mcs.anl.gov> - renamed GM_scatter_.
 !       10May01 - Jay Larson <larson@mcs.anl.gov> - revamped code to fit
 !                 MPI-like comms model, and cleaned up prologue.
+!       09Aug01 - E.T. Ong <eong@mcs.anl.gov> - 2nd prototype. Used the  
+!                 initialized_, Accumulator init_, and bcastp_ routines.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GM_scatter_'
 
   integer :: myID, ier
-  integer :: StepBuff(2)
+  logical :: status
 
         ! Initialize status flag (if present)
 
@@ -313,29 +354,28 @@
     return
   endif
 
-        ! On the root, load up iC%num_steps and iC%steps_done
+        ! Argument check of iC and oC
 
-  StepBuff(1) = iC%num_steps
-  StepBuff(2) = iC%steps_done
-
-	! Broadcast the root value of StepBuff
-
-  call MPI_BCAST(StepBuff, 2, MP_INTEGER, root, comm, ier)
-
-  if(ier /= 0) then
-    call MP_perr(myname_,'MPI_bcast(StepBuff...',ier)
-    if(.not.present(stat)) call die(myname_)
-    stat=ier
-    return
+  if(myID==root) then
+     status = Accumulator_initialized(iC,die_flag=.false.,source_name=myname_)
   endif
 
-        ! On all processes  unload iC%num_steps and 
-        ! iC%steps_done from StepBuff
+  status = Accumulator_initialized(oC,die_flag=.true.,source_name=myname_)
 
-  oC%num_steps  = StepBuff(1)
-  oC%steps_done = StepBuff(1)
+        ! Copy accumulator from iC to oC
+        ! Clean up oC%av on root. 
 
-	! Scatter the AttrVect component of aC
+  if(myID == root) then
+     call Accumulator_initv(oC,iC,lsize=1,num_steps=iC%num_steps, &
+                            steps_done=iC%steps_done)
+     call AttrVect_clean(oC%av)
+  endif
+
+        ! Broadcast oC (except for oC%av)
+
+  call bcastp_(oC, root, comm, stat)
+
+	! Scatter the AttrVect component of iC
 
   call AttrVect_scatter(iC%av, oC%av, GMap, root, comm, ier)
 
@@ -345,6 +385,10 @@
     stat=ier
     return
   endif
+
+        ! Check oC if its valid
+
+  status = Accumulator_initialized(oC,die_flag=.false.,source_name=myname_)
 
  end subroutine GM_scatter_
 
@@ -374,11 +418,10 @@
       use m_mpif90
 
       use m_GlobalSegMap, only : GlobalSegMap
-      use m_GlobalSegMap, only : GlobalSegMap_lsize => lsize
-      use m_GlobalSegMap, only : GlobalSegMap_gsize => gsize
-
-      use m_Accumulator,  only : Accumulator_lsize => lsize
-
+      use m_Accumulator, only : Accumulator
+      use m_Accumulator, only : Accumulator_initv => init
+      use m_Accumulator, only : Accumulator_initialized => initialized
+      use m_AttrVect, only : AttrVect_clean => clean
       use m_AttrVectComms, only : AttrVect_scatter => scatter
 
       implicit none
@@ -398,12 +441,14 @@
 ! !REVISION HISTORY:
 ! 	15Jan01 - Jay Larson <larson@mcs.anl.gov> - API specification.
 ! 	10May01 - Jay Larson <larson@mcs.anl.gov> - Initial code/prologue
+!       09Aug01 - E.T. Ong <eong@mcs.anl.gov> 2nd prototype. Used the
+!                 initialized and accumulator init routines.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GSM_scatter_'
 
   integer :: myID, ier
-  integer :: StepBuff(2)
+  logical :: status
 
         ! Initialize status flag (if present)
 
@@ -417,27 +462,26 @@
     return
   endif
 
-        ! On the root, load up iC%num_steps and iC%steps_done
+        ! Argument check of iC and oC
 
-  StepBuff(1) = iC%num_steps
-  StepBuff(2) = iC%steps_done
-
-	! Broadcast the root value of StepBuff
-
-  call MPI_BCAST(StepBuff, 2, MP_INTEGER, root, comm, ier)
-
-  if(ier /= 0) then
-    call MP_perr(myname_,'MPI_bcast(StepBuff...',ier)
-    if(.not.present(stat)) call die(myname_)
-    stat=ier
-    return
+  if(myID == root) then
+     status = Accumulator_initialized(iC,die_flag=.false.,source_name=myname_)
   endif
 
-        ! On all processes  unload iC%num_steps and 
-        ! iC%steps_done from StepBuff
+  status = Accumulator_initialized(oC,die_flag=.true.,source_name=myname_)
+  
+        ! Copy accumulator from iC to oC
+        ! Clean up oC%av on root. 
 
-  oC%num_steps  = StepBuff(1)
-  oC%steps_done = StepBuff(1)
+  if(myID == root) then
+     call Accumulator_initv(oC,iC,lsize=1,num_steps=iC%num_steps, &
+                            steps_done=iC%steps_done)
+     call AttrVect_clean(oC%av)
+  endif
+
+        ! Broadcast oC (except for oC%av)
+
+  call bcastp_(oC, root, comm, stat)
 
 	! Scatter the AttrVect component of aC
 
@@ -449,6 +493,11 @@
     stat=ier
     return
   endif
+
+        ! Check oC if its valid
+
+  status = Accumulator_initialized(oC,die_flag=.false.,source_name=myname_)
+  
 
  end subroutine GSM_scatter_
 
@@ -475,6 +524,9 @@
       use m_mpif90
       use m_AttrVectComms, only : AttrVect_bcast => bcast
 
+      use m_Accumulator, only : Accumulator
+      use m_Accumulator, only : Accumulator_initialized => initialized
+
       implicit none
 
 ! !INPUT PARAMETERS: 
@@ -495,12 +547,15 @@
 ! 	31Oct00 - Jay Larson <larson@mcs.anl.gov> - moved from the module
 !                 m_Accumulator to m_AccumulatorComms
 !       09May01 - Jay Larson <larson@mcs.anl.gov> - cleaned up prologue
+!       09Aug01 - E.T. Ong <eong@mcs.anl.gov> - 2nd prototype. Made use of
+!                 bcastp_ routine. Also more argument checks.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::bcast_'
 
   integer :: myID
   integer :: ier
+  logical :: status
 
   if(present(stat)) stat=0
 
@@ -512,27 +567,17 @@
     return
   endif
 
-	! Broadcast the root value of num_steps
+        ! Argument check : Kill if the root aC is not initialized,
+        ! or if the non-root aC is initialized
 
-  call MPI_BCAST(aC%num_steps, 1, MP_INTEGER, root, comm, ier)
-
-  if(ier /= 0) then
-    call MP_perr(myname_,'MPI_bcast(aC%num_steps)',ier)
-    if(.not.present(stat)) call die(myname_)
-    stat=ier
-    return
+  if(myID == root) then
+     status = Accumulator_initialized(aC,die_flag=.false.,source_name=myname_)
+  else
+     status = Accumulator_initialized(aC,die_flag=.true.,source_name=myname_)
   endif
 
-	! Broadcast the root value of steps_done
+  call bcastp_(aC, root, comm, stat)
 
-  call MPI_BCAST(aC%steps_done, 1, MP_INTEGER, root, comm, ier)
-
-  if(ier /= 0) then
-    call MP_perr(myname_,'MPI_bcast(aC%steps_done)',ier)
-    if(.not.present(stat)) call die(myname_)
-    stat=ier
-    return
-  endif
 
 	! Broadcast the root value of aC%av
 
@@ -545,6 +590,223 @@
     return
   endif
 
+        ! Check that aC on all processes are initialized
+
+  status = Accumulator_initialized(aC,die_flag=.false.,source_name=myname_)
+
+
  end subroutine bcast_
  
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: bcastp_ - broadcast an Accumulator except for av from 
+!                      the root to all PEs.
+!
+! !DESCRIPTION:  This routine broadcasts all components of the accumulator 
+!                aC except for aC%av. This is a private routine, only meant
+!                to be used by accumulator scatter and gather routines.
+!                 
+!
+! !INTERFACE:
+!
+ subroutine bcastp_(aC, root, comm, stat)
+
+!
+! !USES:
+!
+      use m_die
+      use m_mpif90
+      use m_AttrVectComms, only : AttrVect_bcast => bcast
+      use m_Accumulator, only : Accumulator
+      use m_Accumulator, only : Accumulator_initp => init
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+!
+      integer,intent(in) :: root
+      integer,intent(in) :: comm
+
+! !INPUT/OUTPUT PARAMETERS: 
+!
+      type(Accumulator), intent(inout) :: aC ! (IN) on root, (OUT) elsewhere
+
+! !OUTPUT PARAMETERS: 
+!
+      integer, optional, intent(out)   :: stat
+
+! !REVISION HISTORY:
+!       09Aug01 - E.T. Ong <eong@mcs.anl.gov> - initial prototype
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::bcast_'
+
+  integer :: myID
+  integer :: ier, i
+  integer :: aC_num_steps, aC_steps_done, aC_nIAttr, aC_nRAttr
+  integer :: FirstiActionIndex, LastiActionIndex
+  integer :: FirstrActionIndex, LastrActionIndex  
+  integer :: AccBuffSize
+  integer :: nIAttr, nRAttr
+  integer, dimension(:), allocatable :: AccBuff, aC_iAction, aC_rAction
+  logical :: status
+
+  if(present(stat)) stat=0
+
+  call MP_comm_rank(comm,myID,ier)
+  if(ier /= 0) then
+    call MP_perr(myname_,'MP_comm_rank()',ier)
+    if(.not.present(stat)) call die(myname_)
+    stat=ier
+    return
+  endif
+
+        ! STEP 1: Pack broadcast buffer.
+
+        ! On the root, load up the Accumulator Buffer: Buffer Size = 
+        ! num_steps {1} + steps_done {1} + nIAttr {1} + nRAttr {1} + 
+        ! iAction {nIAttr} + rAction {nRAttr}
+
+
+  if(myID == root) then
+     nIAttr = sum(aC%niAction)
+     nRAttr = sum(aC%nrAction)
+     AccBuffSize = 4+nIAttr+nRAttr
+  endif
+
+        ! Use AccBuffSize to initialize AccBuff on all processes
+
+  call MPI_BCAST(AccBuffSize, 1, MP_INTEGER, root, comm, ier)
+
+  if(ier /= 0) then
+    call MP_perr(myname_,'AttrVect_bcast(AccBuffSize)',ier)
+    if(.not.present(stat)) call die(myname_)
+    stat=ier
+    return
+  endif
+
+  allocate(AccBuff(AccBuffSize),stat=ier)
+  if(ier /= 0) call MP_perr_die(myname_,"AccBuff allocate",ier)
+
+  if(myID == root) then
+
+        ! load up iC%num_steps and iC%steps_done
+  
+     AccBuff(1) = aC%num_steps
+     AccBuff(2) = aC%steps_done
+
+        ! Load up nIAttr and nRAttr
+
+     AccBuff(3) = nIAttr
+     AccBuff(4) = nRAttr
+
+        ! Load up aC%iAction (pointer copy)
+
+     do i=1,nIAttr
+	AccBuff(4+i) = aC%iAction(i)
+     enddo
+
+        ! Load up aC%rAction (pointer copy)
+
+     do i=1,nRAttr
+	AccBuff(4+nIAttr+i) = aC%rAction(i)
+     enddo
+  endif
+  
+        ! STEP 2: Broadcast 
+
+	! Broadcast the root value of AccBuff
+
+  call MPI_BCAST(AccBuff, AccBuffSize, MP_INTEGER, root, comm, ier)
+
+  if(ier /= 0) then
+     call MP_perr(myname_,'MPI_bcast(AccBuff...',ier)
+     if(.not.present(stat)) call die(myname_)
+     stat=ier
+     return
+  endif
+
+        ! STEP 3: Unpack broadcast buffer.
+
+        ! On all processes  unload aC_num_steps, aC_steps_done
+        ! aC_nIAttr, and aC_nRAttr from StepBuff
+
+  aC_num_steps  = AccBuff(1)
+  aC_steps_done = AccBuff(2)
+  aC_nIAttr = AccBuff(3)
+  aC_nRAttr = AccBuff(4)
+ 
+        ! Unload iC%iAction and iC%rAction
+
+  if(aC_nIAttr > 0) then
+     allocate(aC_iAction(aC_nIAttr),stat=ier)
+     if(ier /= 0) call MP_perr_die(myname_,"allocate aC_iAction",ier)
+     
+     FirstiActionIndex = 5
+     LastiActionIndex = 4+aC_nIAttr       
+     aC_iAction(1:aC_nIAttr) = AccBuff(FirstiActionIndex:LastiActionIndex)
+
+  endif
+
+  if(aC_nRAttr > 0) then
+     allocate(aC_rAction(aC_nRAttr),stat=ier)
+     if(ier /= 0) call MP_perr_die(myname_,"allocate aC_rAction",ier)
+
+     FirstrActionIndex = 5+aC_nIAttr
+     LastrActionIndex = 4+aC_nIAttr+aC_nRAttr
+     aC_rAction(1:aC_nRAttr) = AccBuff(FirstrActionIndex:LastrActionIndex)
+
+  endif
+
+	! Initialize aC on non-root processes
+
+  if( (aC_nIAttr > 0).and.(aC_nRAttr > 0) ) then
+
+     if(myID /= root) then
+	call Accumulator_initp(aC,iAction=aC_iAction,rAction=aC_rAction, &
+                               num_steps=aC_num_steps, &
+                               steps_done=aC_steps_done, &
+                               warning_flag=.true.)
+     endif 
+
+  else
+
+     if (aC_nIAttr > 0) then
+	if(myID /= root) then
+	   call Accumulator_initp(aC,iAction=aC_iAction, &
+                                  num_steps=aC_num_steps, &
+                                  steps_done=aC_steps_done, &
+                                  warning_flag=.true.)
+	endif
+     endif
+
+     if (aC_nRAttr > 0) then
+	if(myID /= root) then
+	   call Accumulator_initp(aC,rAction=aC_rAction, &
+                                  num_steps=aC_num_steps, &
+                                  steps_done=aC_steps_done, &
+                                  warning_flag=.true.)
+	endif
+     endif
+
+  endif
+
+
+  deallocate(aC_iAction,aC_rAction,stat=ier)
+  if(ier /= 0) call MP_perr_die(myname_,"deallocate aC_iAction...",ier)
+
+
+ end subroutine bcastp_
+ 
+
  end module m_AccumulatorComms
+
+
+
+
+
+
+
