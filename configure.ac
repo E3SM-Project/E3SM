@@ -6,9 +6,6 @@ AC_INIT(MCT, 1.0)
 # Process the following makefiles
 AC_CONFIG_FILES(Makefile.conf)
 
-# Check for the install command
-AC_PROG_INSTALL
-
 # Check for the C compiler
 AC_PROG_CC([cc escc])
 
@@ -442,7 +439,10 @@ echo Output Variables: {CC=$CC} {ALLCFLAGS=$ALLCFLAGS} \
 {FCFLAGS=$FCFLAGS} {F90FLAGS=$F90FLAGS} {OPT=$OPT} \
 {REAL8=$REAL8} {BIT64=$BIT64} {MPIF90=$MPIF90} \
 {MPILIBS=$MPILIBS} {MPIHEADER=$MPIHEADER} {MACHDEFS=$MACHDEFS} \
-{ENDIAN=$ENDIAN} {INCLUDEFLAG=$INCLUDEFLAG} {INCLUDEPATH=$INCLUDEPATH} 
+{ENDIAN=$ENDIAN} {INCLUDEFLAG=$INCLUDEFLAG} \
+{INCLUDEPATH=$INCLUDEPATH} {AR=$AR} \
+{prefix=$prefix}
+
 echo
 echo Please check the Makefile.conf
 echo Have a nice day!
