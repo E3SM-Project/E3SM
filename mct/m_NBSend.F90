@@ -5,10 +5,16 @@
 ! CVS $Name$ 
 !BOP -------------------------------------------------------------------
 !
-! !MODULE: m_NBSend -- Non blocking send module
+! !MODULE: m_NBSend -- Module for non-blocking version of MCT\_Send
 !
 ! !DESCRIPTION:
-! Provide support for a nonblocking version of MCT\_Send.  
+! This module provides functions and data types to support a non-blocking
+! version of MCT\_Send.
+!
+! {\bf N.B.:} This module may be deleted in future versions.
+!
+! !SEE ALSO:
+! MCT\_Send, MCT\_Recv
 !
 ! !INTERFACE:
  module m_NBSend
@@ -19,16 +25,29 @@
 
       private	! except
 
+! !PUBLIC TYPES:
+
       public :: MCTReqs     ! the reqs datatype
-
-      public :: MCT_ISend   ! the non blocking MCT_Send
-
-      public :: MCT_Wait    ! Wait for the nonblocking send to finish
 
       type MCTReqs
 	integer,dimension(:),pointer :: ireqs   ! the integer sends
 	integer,dimension(:),pointer :: rreqs   ! the real sends
       end type MCTReqs
+
+! !PUBLIC MEMBER FUNCTIONS:
+
+      public :: MCT_ISend   ! the non blocking MCT_Send
+
+      public :: MCT_Wait    ! Wait for the nonblocking send to finish
+
+      interface MCT_ISend ; module procedure MCT_ISend_ ; end interface
+      interface MCT_Wait ; module procedure MCT_Wait_ ; end interface
+
+! !REVISION HISTORY:
+!      07Jun01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
+!      14Feb02 - R. Jacob <jacob@mcs.anl.gov> - Use MCT_comm instead
+!		 of MP_COMM_WORLD
+!EOP ___________________________________________________________________
 
       ! declare a pointer structure for the real data
       type :: rptr
@@ -44,15 +63,6 @@
       type(rptr),dimension(:),allocatable :: rp1
       type(iptr),dimension(:),allocatable :: ip1
 
-      interface MCT_ISend ; module procedure MCT_ISend_ ; end interface
-      interface MCT_Wait ; module procedure MCT_Wait_ ; end interface
-
-! !REVISION HISTORY:
-!      07Jun01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
-!      14Feb02 - R. Jacob <jacob@mcs.anl.gov> - Use MCT_comm instead
-!		 of MP_COMM_WORLD
-!EOP ___________________________________________________________________
-
   character(len=*),parameter :: myname='m_NBSend'
 
  contains
@@ -64,23 +74,36 @@
 ! !IROUTINE: MCT_ISend_
 !
 ! !DESCRIPTION:
-! Send the local AttrVect to another component using a Router.
-! Will send entire AttrVect. Requires a corresponding MCT\_Recv 
-! or MCT\_IRecv to be called on the other component.
+! Send the the data in the {\tt AttrVect} {\tt aV} to the 
+! component specified in the {\tt Router} {\tt Rout}.  An error will 
+! result if the size of the attribute vector does not match the size
+! parameter stored in the {\tt Router}.
+!
 ! Returns immediately after posting the send with a MCT\_Req data type.
+!
+! Requires a corresponding {\tt MCT\_Recv} to be called on the other component.
+!
+! {\bf N.B.:} The {\tt AttrVect} argument in the corresponding
+! {\tt MCT\_Recv} call is assumed to have exactly the same attributes
+! in exactly the same order as {\tt aV}.
+!
+! {\bf N.B.:} Currently, only one instance of MCT\_ISend can be outstanding at a time
+! within an application.  This is because the buffers holding the data are currently a
+! private data member in this module.
 !
 ! !INTERFACE:
 
- subroutine MCT_ISend_(aV, Rout,iList,rList,Reqs)
+ subroutine MCT_ISend_(aV, Rout, Reqs)
 
 !
 ! !USES:
 !
-      use m_Router,only  : Router
+      use m_Router,only   : Router
       use m_AttrVect,only : AttrVect
       use m_AttrVect,only : nIAttr,nRAttr
-      use m_MCTWorld,only :MCTWorld
-      use m_MCTWorld,only :ThisMCTWorld
+      use m_AttrVect,only : lsize
+      use m_MCTWorld,only : MCTWorld
+      use m_MCTWorld,only : ThisMCTWorld
       use m_list,only:	List
       use m_list,only:  nitem
       use m_mpif90
@@ -88,16 +111,22 @@
       use m_stdio
 
       implicit none
+
+! !INPUT PARAMETERS:
+
       Type(AttrVect),intent(in) :: 	aV     ! the Attribute vector to send	
       Type(Router),intent(in) ::	Rout   ! the router to use
+
+! !OUTPUT PARAMETERS: 
+
       Type(MCTReqs),intent(inout) ::	Reqs   ! the returned list of MPI requests
-      Type(List),optional,intent(in) ::	iList  ! optional list of integer attributes to send
-      Type(List),optional,intent(in) ::	rList  ! optional list of real attributes to send
 
 ! !REVISION HISTORY:
 !      07Jun01 - R. Jacob <jacob@mcs.anl.gov> - first prototype
 !      28Mar01 - E. Ong <eong@mcs.anl.gov> - changed copy order to correspond
 !                to MCT_Recv
+!      06Nov02 - R. Jacob <jacob@mcs.anl.gov> - Remove iList and rList arguments.
+!                Add check with Router lsize.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'MCT_ISend_'
@@ -108,6 +137,15 @@
   integer ::    mp_Type_rp1
 
 !--------------------------------------------------------
+
+!check Av size against Router
+!
+  if(lsize(aV) /= Rout%lAvsize) then
+    write(stderr,'(2a)') myname_, &
+    ' MCTERROR:  AV size not appropriate for this Router...exiting'
+    call die(myname_)
+  endif
+
 
   mycomp=Rout%comp1id
   othercomp=Rout%comp2id
@@ -220,10 +258,12 @@ end subroutine MCT_ISend_
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: MCT_Wait_
+! !IROUTINE: MCT_Wait_  Wait for an MCT\ISend to complete.
 !
 ! !DESCRIPTION:
-! Wait for an MCT\_ISend to complete
+! Wait for the {\tt MCT\_ISend} on the {\tt Router} {\tt Rout} and handled by
+! {\tt Reqs} to complete.  Deallocate internal memory buffers and memory in {\tt Reqs}
+! when message has been received.
 !
 ! !INTERFACE:
 
@@ -237,10 +277,16 @@ end subroutine MCT_ISend_
       use m_die
       use m_stdio
 
+
       implicit none
+
+! !INPUT PARAMETERS:
+
       Type(Router),intent(in) ::        Rout
+
+! !INPUT/OUTPUT PARAMETERS:
+
       Type(MCTReqs),intent(inout) ::	Reqs
-!      integer,dimension(:),pointer   :: rreqs
 
 ! !REVISION HISTORY:
 !      07Jun01 - R. Jacob <jacob@mcs.anl.gov> - first prototype
