@@ -38,6 +38,9 @@
 !      08Feb01 - R. Jacob <jacob@mcs.anl.gov> - First working code
 !      18May01 - R. Jacob <jacob@mcs.anl.gov> - use MP_Type to
 !                determine type in mpi_send
+!      07Jun01 - R. Jacob <jacob@mcs.anl.gov> - remove logic to
+!                check "direction" of Router.  remove references
+!                to ThisMCTWorld%mylrank
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_='MCT_Send'
@@ -63,6 +66,8 @@
 
 !--------------------------------------------------------
 
+  mycomp=Rout%comp1id
+  othercomp=Rout%comp2id
 
 !  find total number of real and integer vectors
 ! for now, assume we are sending all of them
