@@ -153,15 +153,14 @@
        ! Which process am I?
 
   call MPI_COMM_RANK(comm, myID, ierr)
+  if(ierr /= 0) then
+	call MP_perr_die(myname_,"MPI_COMM_RANK() failed",ierr)
+  endif
 
        ! can't scatter vector parts.
   if((myID.eq.root) .and. GsMat%vecinit) then
       write(stderr,*) myname_,&
       "WARNING: will not scatter vector parts of GsMat"
-  endif
-
-  if(ierr /= 0) then
-	call MP_perr_die(myname_,"MPI_COMM_RANK() failed",ierr)
   endif
 
        ! Create from columnGSMap the corresponding GlobalSegMap
@@ -649,18 +648,17 @@
 
   if(present(stat)) stat = 0
 
-  if(sMat%vecinit) then
-      write(stderr,*) myname_,&
-      "Cannot broadcast SparseMatrix with initialized vector parts."
-      call die(myname_,"Gather SparseMatrix with vecinit TRUE.",ierr)
-  endif
-
        ! Determine local process ID myID:
 
   call MPI_COMM_RANK(comm, myID, ierr)
   if(ierr /= 0) then
-     write(stderr,'(2a,i8)') myname_, &
-                        ':: FATAL--call MPI_COMM_RANK() failed with ierr=',ierr
+     call MP_perr_die(myname_,"MPI_COMM_RANK() failed",ierr)
+  endif
+
+  if((myID.eq.root) .and. sMat%vecinit) then
+      write(stderr,*) myname_,&
+      "Cannot broadcast SparseMatrix with initialized vector parts." 
+      call die(myname_,"Gather SparseMatrix with vecinit TRUE.") 
   endif
 
        ! Broadcast sMat%data from the root
