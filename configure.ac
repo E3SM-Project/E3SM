@@ -22,13 +22,21 @@ if test -n "$FCFLAGS"; then
    F90FLAGS="$FCFLAGS"
 fi
 fi
+OLDF90FLAGS="$F90FLAGS"
 
 # Check for the Fortran compiler. 
 AC_PROG_F90
 
 # Check for MPI libraries. 
 AC_LANG_PUSH(Fortran 90)
+
+AC_ARG_VAR(MPILIBS,[MPI library command line invocation])
+AC_ARG_VAR(MPIHEADER,[MPI header include path])
+if test -n "$MPIHEADER"; then
+   F90FLAGS="$MPIHEADER"
+fi
 ACX_MPI
+F90FLAGS="$OLDF90FLAGS"
 
 # Check how to get the compiler version.
 # This test does not work for xlf compilers.
@@ -50,15 +58,16 @@ if test "$F90" = "frt"; then
    F90FLAGS="-Am"
 fi
 AC_F90_MOD_UPPERCASE
+F90FLAGS="$OLDF90FLAGS"
 
 # Check the fortran name mangling scheme
-_AC_F90_NAME_MANGLING
+AC_F90_C_NAME_MANGLING
 case $ac_cv_f90_mangling in
-  "lower case, underscore, no extra underscore") 
+  "lower case, underscore") 
 	 name_mangling="FORTRAN_UNDERSCORE_" ;;
-  "lower case, no underscore, no extra underscore")
+  "lower case, no underscore")
 	 name_mangling="FORTRAN_SAME" ;;
-  "upper case, no underscore, no extra underscore")  
+  "upper case, no underscore")  
 	 name_mangling="FORTRAN_CAPS_" ;;
   *) name_mangling="UNKNOWN" ;;
 esac
@@ -97,6 +106,8 @@ AC_CHECK_FPP_COMPILER(
           "YES!"
 ], [$defineflag])
 
+if test -n "$FPP"; then
+
 defineflag="-Daardvark"
 
 AC_CHECK_FPP_EXTERNAL(
@@ -110,6 +121,12 @@ AC_CHECK_FPP_EXTERNAL(
           &work? "// &
           "YES!"
 ], [$defineflag])
+
+else
+
+AC_MSG_WARN(cpp is not defined in your path)
+
+fi
 
 if test "$ac_cv_f90_fpp_compiler" = "yes"; then
    AC_SUBST(FRULE,[.F.o])
@@ -143,6 +160,18 @@ echo "osname=$osname"
 
 F90FLAGS="$F90TEMPFLAGS"
 AC_ARG_VAR(MACHDEFS,MCT compiler and OS flags)
+
+# Hardcode values for specific hostnames
+
+if test "$ac_hostname" = "user02"; then
+   if test -z "$MPILIBS"; then
+   if test -z "$MPIHEADER"; then
+      echo "MPI path for Titan is being manually set"
+      MPILIBS="-L/usr/local/vmi/mpich/lib/intel -lmpich -lvmi -ldl -lpthread"
+      MPIHEADER="-I/usr/local/vmi/mpich/include"
+   fi
+   fi
+fi
 
 # Check OS name
 
@@ -331,7 +360,8 @@ case $name_mangling in
   FORTRAN_CAPS_) CCFLAGS="-DFORTRAN_CAPS_ -O $CCFLAGS";;
   FORTRAN_SAME)  CCFLAGS="-DFORTRAN_SAME -O $CCFLAGS";;
   FORTRAN_UNDERSCORE_) CCFLAGS="-O $CCFLAGS";;
-  *) AC_MSG_WARN([unusual Fortran 90 name-mangling scheme; CCFLAGS left undefined]);;
+  *) AC_MSG_WARN([unusual Fortran 90 name-mangling scheme])
+     CCFLAGS="-O $CCFLAGS";;
 esac
 
 if test -z "$INCLUDEFLAG"; then
@@ -354,6 +384,7 @@ echo "REAL8=$REAL8"
 echo "BIT64=$BIT64"
 echo "MPIF90=$MPIF90"
 echo "MPILIBS=$MPILIBS"
+echo "MPIHEADER=$MPIHEADER"
 echo "MACHDEFS=$MACHDEFS"
 echo "ENDIAN=$ENDIAN"
 echo "INCLUDEFLAG=$INCLUDEFLAG"

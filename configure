@@ -2245,7 +2245,7 @@ fi
 
 
 
-	for ac_prog in mpif90 mpifrt mpxlf90 mpxlf95 mpxlf90_r mpf90
+	for ac_prog in mpif90 mpxlf90 mpxlf95 mpxlf90_r mpifrt mpf90
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -3223,9 +3223,13 @@ F90FLAGS="$F90TEMPFLAGS"
 # Hardcode values for specific hostnames
 
 if test "$ac_hostname" = "user02"; then
-   echo "MPI path for Titan is being manually set"
-   MPILIBS="-L/usr/local/vmi/mpich/lib/intel -lmpich -lvmi -ldl -lpthread"
-   MPIHEADER="-I/usr/local/vmi/mpich/include"
+   if test -z "$MPILIBS"; then
+   if test -z "$MPIHEADER"; then
+      echo "MPI path for Titan is being manually set"
+      MPILIBS="-L/usr/local/vmi/mpich/lib/intel -lmpich -lvmi -ldl -lpthread"
+      MPIHEADER="-I/usr/local/vmi/mpich/include"
+   fi
+   fi
 fi
 
 # Check OS name
