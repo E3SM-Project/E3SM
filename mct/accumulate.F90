@@ -41,6 +41,8 @@
 ! !REVISION HISTORY:
 !       18Sep00 - J.W. Larson <larson@mcs.anl.gov> -- initial version.
 !       07Feb01 - J.W. Larson <larson@mcs.anl.gov> -- General version.
+!       10Jun01 - E.T. Ong -- fixed divide-by-zero problem in integer
+!                 attribute accumulation.
 !
 !EOP ___________________________________________________________________
 
@@ -63,7 +65,6 @@
 ! Character variable used as a data type flag:
   character*7 :: data_flag
 
-
         ! Sanity check of arguments:
 
   if(Accumulator_lsize(aC) /= AttrVect_lsize(aV)) then
@@ -81,6 +82,10 @@
      ierr = 2
      call MP_perr_die(myname,'Zero steps in accumulation cycle.',ierr)
   endif
+
+        ! Set num_steps from aC:
+
+  num_steps = aC%num_steps
 
         ! Accumulation of REAL attribute data:
 
@@ -147,10 +152,10 @@
         ! If we are at the end of an averaging period, compute the
         ! average (if desired).
 
-  if(aC%steps_done == aC%num_steps) then
+  if(aC%steps_done == num_steps) then
      select case(action)
      case('average','AVERAGE')
-	step_weight = 1 / float(aC%num_steps)
+	step_weight = 1 / float(num_steps)
 	do n=1,Accumulator_nRAttr(aC)
 	   do l=1,Accumulator_lsize(aC)
 	      aC%av%rAttr(n,l) = step_weight * aC%av%rAttr(n,l)
