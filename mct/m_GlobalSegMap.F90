@@ -42,6 +42,7 @@
       public :: nlseg           ! Return local number of segments
       public :: active_pes      ! Return number of pes with at least 1 
                                 ! datum, and if requested, a list of them.
+      public :: haloed          ! Is the input GlobalSegMap haloed?
       public :: Sort            ! compute index permutation to re-order
                                 ! GlobalSegMap%start, GlobalSegMap%length,
                                 ! and GlobalSegMap%pe_loc
@@ -76,6 +77,7 @@
     interface ngseg ; module procedure ngseg_ ; end interface
     interface nlseg ; module procedure nlseg_ ; end interface
     interface active_pes ; module procedure active_pes_ ; end interface
+    interface haloed ; module procedure haloed_ ; end interface
     interface rank  ; module procedure &
 	rank1_ , &	! single rank case
 	rankm_	        ! degenerate (multiple) ranks for halo case
@@ -1117,6 +1119,137 @@
   n_active = count
 
  end subroutine active_pes_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: haloed_ - test GlobalSegMap for presence of halo points.
+! index.
+!
+! !DESCRIPTION:
+! This {\tt LOGICAL} function tests the input {\tt GlobalSegMap}
+! {\tt GSMap} for the presence of halo points.  Halo points are points 
+! that appear in more than one segment of a {\tt GlobalSegMap}.  If 
+! {\em any} halo point is found, the function {\tt haloed\_()} returns 
+! immediately with value {\tt .TRUE.}  If, after an exhaustive search 
+! of the map has been completed, no halo points are found, the function 
+! {\tt haloed\_()} returns with value {\tt .FALSE.}
+!
+! The search algorithm is:
+!
+! \begin{enumerate}
+! \item Extract the segment start and length information from 
+! {\tt GSMap\%start} and {\tt GSMap\%length} into the temporary
+! arrays {\tt start(:)} and {\tt length(:)}.
+! \item Sort these arrays in {\em ascending order} keyed by {\tt start}.
+! \item Scan the arrays {\tt start} and{\tt length}.  A halo point is 
+! present if for at least one value of the index 
+! $1 \leq {\tt n} \leq {\tt GSMap\%ngseg}$
+! $${\tt start(n)} + {\tt length(n)} - 1 \geq {\tt start(n+1)}$$.
+! \end{enumerate}
+!
+! {\bf N.B.:} Beware that the search for halo points is potentially 
+! expensive.  
+!
+! !INTERFACE:
+
+    logical function haloed_(GSMap)
+!
+! !USES:
+!
+      use m_die ,          only : MP_perr_die
+      use m_SortingTools , only : IndexSet
+      use m_SortingTools , only : IndexSort
+      use m_SortingTools , only : Permute
+
+      implicit none
+
+      type(GlobalSegMap), intent(in)           :: GSMap 
+
+! !REVISION HISTORY:
+! 	08Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::haloed_'
+
+! Error Flag
+
+  integer :: ierr
+
+! Loop index and storage for number of segments in GSMap
+
+  integer :: n, ngseg
+
+! Temporary storage for GSMap%start, GSMap%length, and index 
+! permutation array:
+
+  integer, dimension(:), allocatable :: start, length, perm
+
+! Logical flag indicating segment overlap
+
+  logical :: overlap
+
+       ! How many segments in GSMap?
+
+  ngseg = ngseg_(GSMap)
+
+       ! allocate temporary arrays:
+
+  allocate(start(ngseg), length(ngseg), perm(ngseg), stat=ierr)
+  if (ierr /= 0) then
+     call MP_perr_die(myname_,'allocate(start...',ierr)
+  endif
+
+       ! Initialize the index permutation array:
+
+  call IndexSet(perm)
+
+       ! Create the index permutation that will order the data so the
+       ! entries of start(:) appear in ascending order:
+
+  call IndexSort(ngseg, perm, start, descend=.false.)
+
+       ! Permute the data so the entries of start(:) are now in 
+       ! ascending order:
+
+  call Permute(start,perm,ngseg)
+
+       ! Apply this same permutation to length(:)
+
+  call Permute(length,perm,ngseg)
+
+       ! Set LOGICAL flag indicating segment overlap to .FALSE.
+
+  overlap = .FALSE.
+
+       ! Now, scan the segments, looking for overlapping segments.  Upon
+       ! discovery of the first overlapping pair of segments, set the
+       ! flag overlap to .TRUE. and exit.
+
+  n = 0
+
+  SCAN_LOOP: do
+     n = n + 1
+     if(n == ngseg) EXIT ! we are finished, and there were no halo pts.
+     if((start(n) + length(n) - 1) >= start(n+1)) then ! found overlap
+	overlap = .TRUE.
+	EXIT
+     endif
+  end do SCAN_LOOP
+
+       ! Clean up allocated memory:
+
+  allocate(start(ngseg), length(ngseg), perm(ngseg), stat=ierr)
+  if (ierr /= 0) then
+     call MP_perr_die(myname_,'deallocate(start...',ierr)
+  endif
+
+       ! Assign function return value:
+
+ haloed_ = overlap
+
+ end function haloed_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
