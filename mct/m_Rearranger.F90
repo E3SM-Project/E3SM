@@ -496,6 +496,9 @@
 ! physical point coming from two or more processes will be summed.
 ! Otherwise, data is overwritten.
 !
+! If the optional argument {\tt Vector} is present and true,
+! vector architecture-friendly parts of this routine will be invoked.
+!
 ! The size of the {\tt SourceAv} and {\tt TargetAv}
 ! argument must match those stored in the {\tt InRearranger} or
 ! and error will result.
