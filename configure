@@ -3484,11 +3484,6 @@ g95)
    echo "Fortran Compiler is GNU"
    CPRDEF="GNU";;
 
-*)
-   { echo "$as_me:$LINENO: WARNING: UNKNOWN FORTRAN 90 COMPILER" >&5
-echo "$as_me: WARNING: UNKNOWN FORTRAN 90 COMPILER" >&2;}
-   CPRDEF="UNKNOWNCPR";;
-
 esac
 
 if echo $f90_version | grep -i nag >/dev/null 2>&1; then
@@ -3580,6 +3575,12 @@ if echo $f90_version | grep -i sx >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT="-Chopt"
    fi
+fi
+
+if test -z "$CPRDEF"; then
+   { echo "$as_me:$LINENO: WARNING: UNKNOWN FORTRAN 90 COMPILER" >&5
+echo "$as_me: WARNING: UNKNOWN FORTRAN 90 COMPILER" >&2;}
+   CPRDEF="UNKNOWNCPR"
 fi
 
 # SET THE PREPROCESSOR DEFINE FLAGS
