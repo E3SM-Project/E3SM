@@ -9,4 +9,11 @@ m_AttrVectComms.tex     \
 m_AccumulatorComms.tex  \
 m_GeneralGrid.tex	\
 m_MatAttrVectMul.tex    \
-m_Router.tex
+m_Router.tex		\
+m_SharedAttrIndices.tex	\
+m_GeneralGrid.tex	\
+m_GlobalToLocal.tex	\
+m_MCTWorld.tex		\
+accumulate.tex		\
+MCT_Recv.tex		\
+MCT_Send.tex		
