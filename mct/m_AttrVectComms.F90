@@ -204,6 +204,7 @@
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nIAttr => nIAttr
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
+      use m_AttrVect, only : AttrVect_clean => clean 
 ! GlobalMap and associated services:
       use m_GlobalMap, only : GlobalMap
       use m_GlobalMap, only : GlobalMap_init => init
@@ -221,6 +222,8 @@
 ! !REVISION HISTORY:
 ! 	15Jan01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
 ! 	25Feb01 - J.W. Larson <larson@mcs.anl.gov> - Prototype code.
+! 	26Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - add use statement for
+!                 AttVect_clean
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GSM_gather_'
@@ -430,7 +433,7 @@
   endif
 
   noV = GlobalMap_lsize(GMap) ! the _scatterd_ local size
-  call AttrVect_initv(oV,iV,noV)
+  call AttrVect_init(oV,iV,noV)
 
   nIA = AttrVect_nIAttr(iV)	! number of INTEGER attributes
   nRA = AttrVect_nRAttr(iV)	! number of REAL attributes
@@ -517,6 +520,7 @@
       use m_AttrVect,  only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nIAttr => nIAttr
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
+      use m_AttrVect, only : AttrVect_clean => clean 
 ! GlobalMap and associated services:
       use m_GlobalMap, only : GlobalMap
       use m_GlobalMap, only : GlobalMap_init => init
@@ -537,6 +541,8 @@
 ! 	25Feb01 - J.W. Larson <larson@mcs.anl.gov> - Bug fix--replaced
 !                 call to GlobalSegMap_lsize with call to the new fcn.
 !                 GlobalSegMap_ProcessStorage().
+! 	26Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - add use statement for
+!                 AttVect_clean
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GSM_scatter_'
