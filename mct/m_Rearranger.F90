@@ -451,7 +451,7 @@
 
    implicit none
   
-   type(AttrVect),             intent(inout)      :: SourceAV
+   type(AttrVect),             intent(in)      :: SourceAV
    type(AttrVect),             intent(out)     :: TargetAV
    type(Rearranger), target,   intent(in)      :: InRearranger
    logical,          optional, intent(in)      :: Sum
