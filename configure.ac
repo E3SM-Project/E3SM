@@ -1,12 +1,15 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT(MCT, 1.0)
+AC_INIT(MCT, 1.8)
 
 # Process the following makefiles
 AC_CONFIG_FILES(Makefile.conf)
 
 # Hardcode values for specific hostnames
+
+test "$osname"=NONE && osname=`uname -s`
+test "$machinename"=NONE && machinename=`uname -m`
 
 # Check if we are on the Earth Simulator
 ES="NO"
@@ -206,9 +209,6 @@ fi
 AC_SUBST(CRULE,[.c.o])
 
 # Checks OS, compiler and machine type
-
-test "$osname"=NONE && osname=`uname -s`
-test "$machinename"=NONE && machinename=`uname -m`
 
 echo "Hostname=$ac_hostname"
 echo "Machine=$machinename"
