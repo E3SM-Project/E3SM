@@ -857,6 +857,17 @@
   character(len=*),parameter :: myname_=myname//'::clean_'
   integer :: ier
 
+#ifdef MALL_ON
+  
+  if( (associated(GSMap%start) .and. associated(GSMap%length)) &
+       .and. associated(GSMap%pe_loc) )
+     call mall_co(size(transfer(GSMap%start,(/1/))),myname_)
+     call mall_co(size(transfer(GSMap%length,(/1/))),myname_)
+     call mall_co(size(transfer(GSMap%pe_loc,(/1/))),myname_)
+  endif
+
+#endif
+
   deallocate(GSMap%start, GSMap%length, GSMap%pe_loc, stat=ier)
 
   if(present(stat)) then
@@ -864,14 +875,6 @@
   else
      if(ier /= 0) call warn(myname_,'deallocate(GSMap%start,...)',ier)
   endif
-
-  if(ier == 0) then
-#ifdef MALL_ON
-	call mall_co(size(transfer(GSMap%start,(/1/))),myname_)
-	call mall_co(size(transfer(GSMap%length,(/1/))),myname_)
-	call mall_co(size(transfer(GSMap%pe_loc,(/1/))),myname_)
-#endif
-     endif
 
   GSMap%ngseg = 0
   GSMap%comp_id  = 0
