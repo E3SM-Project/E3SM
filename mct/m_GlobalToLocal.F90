@@ -53,7 +53,7 @@
 ! !USES:
 !
       use m_mpif90
-      use m_die
+      use m_die,          only : MP_perr_die
       use m_GlobalSegMap, only : GlobalSegMap
       use m_GlobalSegMap, only : GlobalSegMap_ngseg => ngseg
       use m_GlobalSegMap, only : GlobalSegMap_nlseg => nlseg

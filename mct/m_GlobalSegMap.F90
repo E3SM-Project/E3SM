@@ -921,7 +921,7 @@
 !
 ! !USES:
 !
-      use m_die ,          only : die
+      use m_die ,          only : MP_perr_die
       use m_SortingTools , only : IndexSet
       use m_SortingTools , only : IndexSort
 
@@ -1004,7 +1004,7 @@
 !
 ! !USES:
 !
-      use m_die ,          only : die
+      use m_die ,          only : MP_perr_die
       use m_SortingTools , only : IndexSet
       use m_SortingTools , only : Permute
 
@@ -1063,7 +1063,7 @@
 !
 ! !USES:
 !
-      use m_die ,          only : die
+      use m_die ,          only : MP_perr_die
 
       implicit none
 
