@@ -7,3 +7,4 @@ m_AttrVectComms.o: m_AttrVect.o m_GlobalMap.o
 m_AccumulatorComms.o: m_AttrVect.o m_GlobalMap.o m_AttrVectComms.o
 m_SparseMatrix.o: m_AttrVect.o m_GlobalMap.o m_AttrVectComms.o
 m_GeneralGrid.o:  m_AttrVect.o
+m_Router.o: m_Navigator.o
