@@ -1347,7 +1347,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: importRAttr_ - import INTEGER vector to AttrVect 
+! !IROUTINE: importIAttr_ - import INTEGER vector to AttrVect 
 !
 ! !DESCRIPTION:
 ! This routine imports into the input/output {\tt AttrVect} argument 
@@ -1389,7 +1389,7 @@
 
   character(len=*),parameter :: myname_=myname//'::importIAttr_'
 
-  integer :: index, aVsize, ierr, n
+  integer :: index, aVsize, ierr, n, mysize
 
        ! Index the attribute we wish to extract:
 
@@ -1409,6 +1409,7 @@
                        ', number of entries to be imported=',lsize
 	call die(myname_)
      endif
+     mysize=lsize
   else
      if(aVsize < size(inVect)) then
 	write(stderr,'(3a,i8,a,i8)') myname_, &
@@ -1417,11 +1418,12 @@
                        ' , number of entries to be imported=',size(inVect)
 	call die(myname_)
      endif
+     mysize = aVsize
   endif
 
        ! Copy the data from inVect to its attribute slot:
 
-  do n=1,lsize
+  do n=1,mysize
      aV%iAttr(index,n) = inVect(n)
   end do
 
@@ -1474,7 +1476,7 @@
 
   character(len=*),parameter :: myname_=myname//'::importRAttr_'
 
-  integer :: index, aVsize, ierr, n
+  integer :: index, aVsize, ierr, n, mysize
 
        ! Index the attribute we wish to extract:
 
@@ -1494,6 +1496,7 @@
                        ', number of entries to be imported=',lsize
 	call die(myname_)
      endif
+     mysize=lsize
   else
      if(aVsize < size(inVect)) then
 	write(stderr,'(3a,i8,a,i8)') myname_, &
@@ -1502,11 +1505,12 @@
                        ' , number of entries to be imported=',size(inVect)
 	call die(myname_)
      endif
+     mysize=aVsize
   endif
 
        ! Copy the attribute data into outVect
 
-  do n=1,lsize
+  do n=1,mysize
      aV%rAttr(index,n) = inVect(n)
   end do
 
@@ -1671,6 +1675,7 @@
 ! from in to out.
 
   if( .not.present(rList) .and. .not.present(iList)) then
+
     data_flag = 'REAL'
     call aVaVSharedAttrIndexList_(aVin, aVout, data_flag, num_indices, &
 				aVinindices, aVoutindices)
