@@ -28,7 +28,8 @@
     end interface
 
     interface GlobalToLocalIndex ; module procedure &
-	GlobalSegMapToIndex_
+	GlobalSegMapToIndex_, &
+	GlobalMapToIndex_
     end interface
 
 ! !REVISION HISTORY:
@@ -249,6 +250,71 @@
   endif
 
  end function GlobalSegMapToIndex_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: GlobalMapToIndex_ - translate global to local index.
+!
+! !DESCRIPTION:  {\tt GlobalMapToIndex\_()} takes a user-supplied
+! {\tt GlobalMap} data type {\tt GMap}, input global index value 
+! {\tt i\_g}, and input communicator {\tt comm} and returns a positive 
+! local index value if the datum {\tt i\_g} is on the local communicator.
+! If the datum {\tt i\_g} is not local, a value of {\tt -1} is returned.
+!
+! !INTERFACE:
+
+ integer function GlobalMapToIndex_(GMap, i_g, comm)
+
+!
+! !USES:
+!
+      use m_mpif90
+      use m_die,          only : MP_perr_die
+      use m_GlobalMap, only : GlobalMap
+
+      implicit none
+
+      type(GlobalMap),intent(in)  :: GMap     ! Input GlobalMap
+      integer,           intent(in)  :: i_g   ! global index
+      integer,           intent(in)  :: comm  ! communicator handle
+
+! !REVISION HISTORY:
+!       02Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
+
+  character(len=*),parameter :: myname_=myname//'::GlobalMapToIndex_'
+
+  integer :: myID
+  integer :: count, ierr, ngseg, nlseg, n
+  integer :: lower_bound, upper_bound
+  integer :: local_start, local_index
+  logical :: found
+
+  ! Determine local process id myID:
+
+  call MP_COMM_RANK(comm, myID, ierr)
+  if(ierr /= 0) call MP_perr_die(myname_,'MP_COMM_RANK()',ierr)
+
+  ! Initialize logical "point located" flag found as false
+
+  found = .false.
+
+  lower_bound = GMap%displs(myID)
+  upper_bound = GMap%displs(myID) + GMap%counts(myID) - 1
+
+  if((lower_bound <= i_g) .and. (i_g <= upper_bound)) then
+     found = .true.
+     local_index = i_g - lower_bound + 1
+  endif
+
+  if(found) then
+     GlobalMapToIndex_ = local_index
+  else
+     GlobalMapToIndex_ = -1
+  endif
+
+ end function GlobalMapToIndex_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !

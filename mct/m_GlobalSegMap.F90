@@ -903,6 +903,147 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
+! !IROUTINE: active_pes - number of processes that own data.
+! index.
+!
+! !DESCRIPTION:
+! This routine scans the pe location list of the input {\tt GlobalSegMap}
+! {\tt GSMap\%pe\_loc(:)}, and counts the number of pe locations that
+! own at least one datum.  This value is returned in the {\tt INTEGER} 
+! argument {\tt n\_active}.  If the optional {\tt INTEGER} array argument
+! {\tt list} is included in the call, a sorted list (in ascending order) of 
+! the active processes will be returned.
+!
+! {\bf N.B.:} If {\tt active\_pes\_()} is invoked with the optional argument
+! {\tt pe_list} included, this routine will alloocate and return this array.
+! The user must deallocate this array once it is no longer needed.  Failure
+! to do so will result in a memory leak.
+!
+! !INTERFACE:
+
+    subroutine active_pes_(GSMap, n_active, pe_list)
+!
+! !USES:
+!
+      use m_die ,          only : MP_perr_die
+      use m_SortingTools , only : IndexSet
+      use m_SortingTools , only : IndexSort
+      use m_SortingTools , only : Permute
+
+      implicit none
+
+      type(GlobalSegMap), intent(in)           :: GSMap 
+      integer,            intent(out)          :: n_active
+      integer, dimension(:), pointer, optional :: pe_list
+
+! !REVISION HISTORY:
+! 	03Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::active_pes_'
+
+  integer :: count, i, n, ngseg, ierr
+  logical :: new
+  integer, dimension(:), allocatable :: temp_list
+  integer, dimension(:), allocatable :: perm
+
+        ! retrieve total number of segments in the map:
+
+  ngseg = ngseg_(GSMap)
+
+        ! allocate workspace to tally process id list:
+
+  allocate(temp_list(ngseg), stat=ierr)
+  if(ierr /= 0) call MP_perr_die(myname_,'allocate(temp_list...',ierr)
+ 
+        ! initialize temp_list to -1 (which can never be a process id)
+
+  temp_list = -1
+
+        ! initialize the distinct active process count:
+
+  count = 0
+
+        ! scan entries of GSMap%pe_loc to count active processes:
+
+  do n=1,ngseg
+     if(GSMap%pe_loc(n) >= 0) then ! a legitimate pe_location
+
+	! assume initially that GSMap%pe_loc(n) is a process id previously
+        ! not encountered
+
+	new = .true.
+
+	! test this proposition against the growing list of distinct
+        ! process ids stored in temp_list(:)
+
+	do i=1, count
+	   if(GSMap%pe_loc(n) == temp_list(i)) new = .false.
+	end do
+
+        ! If GSMap%pe_loc(n) represents a previously unencountered 
+        ! process id, increment the count, and add this id to the list
+
+	if(new) then
+	   count = count + 1
+	   temp_list(count) = GSMap%pe_loc(n)
+	endif
+
+     else  ! a negative entry in GSMap%pe_loc(n)
+	ierr = 2
+	call MP_perr_die(myname_,'negative value of GSMap%pe_loc',ierr)
+     endif
+  end do
+
+        ! If the argument pe_list is present, we must allocate this
+        ! array, fill it, and sort it
+
+  if(present(pe_list)) then
+
+        ! allocate pe_list and permutation array perm
+
+     allocate(pe_list(count), perm(count), stat=ierr)
+     if (ierr /= 0) then
+	call MP_perr_die(myname_,'allocate(pe_list...',ierr)
+     endif
+
+     do n=1,count
+	pe_list(n) = temp_list(n)
+     end do
+
+        ! sorting and permutation...
+
+     call IndexSet(perm)
+     call IndexSort(count, perm, pe_list, descend=.false.)
+     call Permute(pe_list, perm, count)
+
+        ! deallocate permutation array...
+
+     deallocate(perm, stat=ierr)
+     if (ierr /= 0) then
+	call MP_perr_die(myname_,'deallocate(perm)',ierr)
+     endif
+
+  endif ! if(present(pe_list))...
+
+        ! deallocate work array temp_list...
+
+  deallocate(temp_list, stat=ierr)
+  if (ierr /= 0) then
+     call MP_perr_die(myname_,'deallocate(temp_list)',ierr)
+  endif
+
+        ! finally, store the active process count in output variable
+        ! n_active:
+
+  n_active = count
+
+ end subroutine active_pes_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
 ! !IROUTINE: Sort_ - generate index permutation for GlobalSegMap.
 !
 ! !DESCRIPTION:
@@ -1005,7 +1146,6 @@
 ! !USES:
 !
       use m_die ,          only : MP_perr_die
-      use m_SortingTools , only : IndexSet
       use m_SortingTools , only : Permute
 
       implicit none
@@ -1122,4 +1262,5 @@
  end subroutine SortPermuteInPlace_
 
  end module m_GlobalSegMap
+
 
