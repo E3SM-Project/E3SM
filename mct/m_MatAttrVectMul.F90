@@ -71,13 +71,12 @@
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
       use m_AttrVect, only : AttrVect_indexRA => indexRA
       use m_AttrVect, only : AttrVect_indexIA => indexIA
+      use m_AttrVect, only : SharedAttrIndexList
 
       use m_SparseMatrix, only : SparseMatrix
       use m_SparseMatrix, only : SparseMatrix_lsize => lsize
       use m_SparseMatrix, only : SparseMatrix_indexIA => indexIA
       use m_SparseMatrix, only : SparseMatrix_indexRA => indexRA
-
-      use m_SharedAttrIndices, only : SharedAttrIndexList
 
       implicit none
 
