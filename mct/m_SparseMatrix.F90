@@ -74,12 +74,12 @@
       public :: SparseMatrix      ! The class data structure
 
       Type SparseMatrix
-	 integer :: nrows
+#ifdef SEQUENCE
+     sequence
+#endif
+     integer :: nrows
 	 integer :: ncols
 	 type(AttrVect) :: data
-#ifdef SEQUENCE
-         sequence
-#endif
          logical :: vecinit       ! additional data for the vectorized sMat
          integer,dimension(:),pointer :: row_s, row_e
          integer, dimension(:,:), pointer :: tcol
