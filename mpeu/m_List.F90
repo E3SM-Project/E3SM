@@ -1471,6 +1471,14 @@
 
      call String_clean(CatString)
 
+     deallocate(CatBuff,stat=ierr)
+     if(ierr /= 0) then
+	write(stderr,'(2a,i8)') myname_, &
+	     ':: FATAL--deallocate(CatBuff) failed.  ierr=',ierr
+	call die(myname_)
+     endif
+
+
   endif
 
  end subroutine concatenate_
