@@ -45,12 +45,12 @@
   public  :: waitrecv
 
 
-  interface isend  ; module procedure isend_  ; end interface
-  interface send  ; module procedure send_  ; end interface
-  interface waitsend  ; module procedure waitsend_  ; end interface
-  interface irecv  ; module procedure irecv_  ; end interface
-  interface recv  ; module procedure recv_  ; end interface
-  interface waitrecv  ; module procedure waitrecv_  ; end interface
+  interface isend    ; module procedure isend_    ; end interface
+  interface send     ; module procedure send_     ; end interface
+  interface waitsend ; module procedure waitsend_ ; end interface
+  interface irecv    ; module procedure irecv_    ; end interface
+  interface recv     ; module procedure recv_     ; end interface
+  interface waitrecv ; module procedure waitrecv_ ; end interface
 
 ! !DEFINED PARAMETERS:
 
@@ -385,7 +385,8 @@ end subroutine send_
 ! result if the size of the attribute vector does not match the size
 ! parameter stored in the {\tt Router}.
 !
-! Requires a corresponding {\tt send\_} to be called on the other component.
+! Requires a corresponding {\tt send\_} or {\tt isend\_} to be called 
+! on the other component.
 !
 ! The optional argument {\tt Tag} can be used to set the tag value used in
 ! the data transfer.  DefaultTag will be used otherwise. {\tt Tag} must be
@@ -395,6 +396,9 @@ end subroutine send_
 ! will overwrite the duplicate values leaving the last received value
 ! in the output aV.  If the optional argument {\tt Sum} is invoked, the output
 ! will contain the sum of any duplicate values received for the same grid point.
+!
+! Will return as soon as MPI\_IRECV's are posted.  Call {\tt waitrecv\_} to
+! complete the receive operation.
 !
 ! {\bf N.B.:} The {\tt AttrVect} argument in the corresponding
 ! {\tt send\_} call is assumed to have exactly the same attributes
@@ -747,7 +751,8 @@ end subroutine waitrecv_
 ! result if the size of the attribute vector does not match the size
 ! parameter stored in the {\tt Router}.
 !
-! Requires a corresponding {\tt send\_} to be called on the other component.
+! Requires a corresponding {\tt send\_} or {\tt isend\_}to be called 
+! on the other component.
 !
 ! The optional argument {\tt Tag} can be used to set the tag value used in
 ! the data transfer.  DefaultTag will be used otherwise. {\tt Tag} must be
@@ -757,6 +762,8 @@ end subroutine waitrecv_
 ! will overwrite the duplicate values leaving the last received value
 ! in the output aV.  If the optional argument {\tt Sum} is invoked, the output
 ! will contain the sum of any duplicate values received for the same grid point.
+!
+! Will not return until all data has been received.
 !
 ! {\bf N.B.:} The {\tt AttrVect} argument in the corresponding
 ! {\tt send\_} call is assumed to have exactly the same attributes
