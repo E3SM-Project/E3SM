@@ -35,7 +35,7 @@ FPP		= @FPP@
 FPPFLAGS	= @FPPFLAGS@
 
 CC		= @CC@
-CFLAGS          = -O @BIT64@
+CFLAGS          = -O
 
 FC		= @FC@
 FFLAGS		= @FFLAGS@ @BIT64@
