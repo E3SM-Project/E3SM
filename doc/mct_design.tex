@@ -1,5 +1,5 @@
-%NGC Design Document
-% J.W. Larson / MCS, Argonne National Laboratory
+%MCT Design Document
+% J.W. Larson, R. L. Jacob / MCS, Argonne National Laboratory
 % First Version Begun 8/28/00
 \documentclass{article}
 \usepackage{epsfig}
@@ -21,7 +21,7 @@
 % --------
 \pagestyle{plain}  % AFTER redefining \textheight etc.
 
-%  \lhead[]{{\em NGC Design Document}}   % left part of header
+%  \lhead[]{{\em MCT Design Document}}   % left part of header
 %  \chead[]{}                  % center part of header
 %  \rhead[]{\em {\today}}  % right part of header
 
@@ -52,7 +52,6 @@ Next-Generation Coupler
 \vspace{.3in}
              J.~W.~Larson\\
              R.~L.~Jacob\\
-             C.~H.~Q.~Ding\\
              A.~N.~D.~Others\\
 \vspace{.2in} {\em Mathematics and Computer Science Division,
 Argonne National Laboratory\\}
@@ -112,14 +111,15 @@ draft (before review) &\\\hline
 \vspace*{\fill}
 
 \begin{abstract}
-In this document we propose a design of the Next-Generation
-Coupler (NGC) for the Community Climate System Model (CCSM).
-Analysis of the Coupler's requirements lead us to a layered
+In this document we describe the design of the Model Coupling
+Toolkit (MCT).   The MCT was created in response to the requirements
+of the new coupler for the NCAR Community Climate System Model.
+Analysis of the coupler's requirements lead us to a layered
 design capable of supporting the coupler's high-level
 command/control functions and its relatively low-level grid
-transformation and physics calculation functions.  We introduce
-the concept of a Model Coupling Toolkit (MCT), and describe its
-scope within the coupler.  Finally, we describe in detail the
+transformation and physics calculation functions.  The
+Model Coupling Toolkit (MCT) is designed to handle the low-level
+functions.  We describe in detail the
 design of the MCT, and how one might use it to build the NGC.
 \end{abstract}
 
@@ -142,8 +142,9 @@ model is to be built using solid software design and engineering
 practices.  The CCSM marks the merger of the National Center for
 Atmospheric Research (NCAR) Climate System Model (CSM) with the
 Parallel Climate Model (PCM).   One of the chief design
-challenges for the CCSM is the flux coupler, which has been
-nicknamed {\em the Next-Generation Coupler} (NGC).
+challenges for the CCSM is the flux coupler, which was 
+nicknamed {\em the Next-Generation Coupler} (NGC) and will
+eventually be called cpl6.
 
 The NGC is expected to increase dramatically the flexibility of
 the CCSM, and expand correspondingly the variety of research
@@ -153,9 +154,9 @@ possible using this model.
 past, and the pitfalls of each approach]
 
 In section \ref{sec-req} we summarize and analyze the requirements
-for the Next-Generation Coupler.  In section \ref{sec-arch} we
-state the overall design of the coupler and introduce the concept
-of a Model Coupling Toolkit.  In section \ref{sec-mct} we
+for the NGC.  In section \ref{sec-arch} we
+state the overall design of the coupler and the role for
+the Model Coupling Toolkit.  In section \ref{sec-mct} we
 describe the Model Coupling Toolkit.  In section
 \ref{sec-mct-app} we demonstrate how one can build couplers using
 the toolkit.
@@ -348,7 +349,7 @@ communicate with the coupler or between component models.
 
 \section{Interfaces to the Coupler}
 
-\subsection{The Handshake}
+\subsection{Assignment of models to processors}
 
 [Ed. comment--for now, much of what Chris has done can go here]
 
