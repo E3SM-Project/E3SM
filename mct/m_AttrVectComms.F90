@@ -24,6 +24,8 @@
       public :: gather		! gather all local vectors to the root
       public :: scatter		! scatter from the root to all PEs
       public :: bcast		! bcast from root to all PEs
+      public :: send		! send an AttrVect
+      public :: recv		! receive an AttrVect
 
     interface gather ; module procedure &
 	      GM_gather_, &
@@ -34,6 +36,8 @@
 	      GSM_scatter_ 
     end interface
     interface bcast  ; module procedure bcast_  ; end interface
+    interface send  ; module procedure send_  ; end interface
+    interface recv  ; module procedure recv_  ; end interface
 
 ! !REVISION HISTORY:
 ! 	27Oct00 - J.W. Larson <larson@mcs.anl.gov> - relocated routines
@@ -43,11 +47,346 @@
 ! 	09May01 - J.W. Larson <larson@mcs.anl.gov> - Modified GM_scatter_
 !                 so its communication model agrees with MPI_scatter().
 !                 Also tidied up prologues in all module routines.
+! 	07Jun01 - J.W. Larson <larson@mcs.anl.gov> - Added send() 
+!                 and recv().
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_AttrVectComms'
 
  contains
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: send_ - Point-to-point send of an AttrVect variable...
+!
+! !DESCRIPTION:  This routine takes an input {\tt AttrVect} argument 
+! {\tt inAV} and sends it to processor {\tt dest} on the communicator 
+! associated with the fortran 90 {\tt INTEGER} handle {\tt comm}.  The 
+! message is tagged by the input {\tt INTEGER} argument {\tt TagBase}.  
+! The success (failure) of this operation is reported in the zero 
+! (nonzero) optional output argument {\tt status}.
+!
+! {\bf N.B.}:  One must avoid assigning elsewhere the MPI tag values 
+! between {\tt TagBase} and {\tt TagBase+7}, inclusive.  This is 
+! because {\tt send\_()} performs the send of the {\tt AttrVect} as 
+! a series of eight send operations.
+!
+! !INTERFACE:
+
+    subroutine send_(inAV, dest, TagBase, comm, status)
+!
+! !USES:
+!
+      use m_stdio
+      use m_mpif90
+      use m_die, only : MP_perr_die
+
+      use m_List, only : List
+      use m_List, only : List_nitem => nitem
+      use m_List, only : List_send => send
+
+      use m_AttrVect, only : AttrVect
+      use m_AttrVect, only : AttrVect_lsize => lsize
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+!
+      type(AttrVect),     intent(in)  :: inAV
+      integer,            intent(in)  :: dest
+      integer,            intent(in)  :: TagBase
+      integer,            intent(in)  :: comm
+
+! !OUTPUT PARAMETERS: 
+!
+      integer, optional,  intent(out) :: status
+
+! !REVISION HISTORY:
+!       07Jun01 - J.W. Larson - initial version.
+!EOP ___________________________________________________________________
+
+ character(len=*),parameter :: myname_=myname//'::send_'
+
+ logical :: ListAssoc(2)
+ integer :: ierr
+ integer :: AVlength
+
+       ! Step 1. Are inAV%iList and inAV%rList filled?  Store
+       ! the answers in the LOGICAL array ListAssoc and send.
+
+  ListAssoc(1) = associated(inAV%iList%bf)
+  ListAssoc(2) = associated(inAV%rList%bf)
+
+  call MPI_SEND(ListAssoc, 2, MP_LOGICAL, dest, TagBase, comm, ierr)
+  if(ierr /= 0) then
+     if(present(status)) then
+	write(stderr,*) myname_,':: MPI_SEND(ListAssoc...'
+	status = ierr
+	return
+     else
+	call MP_perr_die(myname_,':: MPI_SEND(ListAssoc...',ierr)
+     endif
+  endif
+
+
+       ! Step 2. Send non-blank inAV%iList and inAV%rList.
+
+  if(ListAssoc(1)) then
+    call List_send(inAV%iList, dest, TagBase+1, comm, ierr)
+    if(ierr /= 0) then
+       if(present(status)) then
+	  write(stderr,*) myname_,':: call List_send(inAV%iList...'
+	  status = ierr
+	  return
+       else
+	  call MP_perr_die(myname_,':: call List_send(inAV%iList...',ierr)
+       endif
+    endif
+  endif
+
+  if(ListAssoc(2)) then
+    call List_send(inAV%rList, dest, TagBase+3, comm, ierr)
+    if(ierr /= 0) then
+       if(present(status)) then
+	  write(stderr,*) myname_,':: call List_send(inAV%rList...'
+	  status = ierr
+	  return
+       else
+	  call MP_perr_die(myname_,':: call List_send(inAV%rList...',ierr)
+       endif
+    endif
+  endif
+
+       ! Step 3. Determine and send the lengths of inAV%iAttr(:,:)
+       ! and inAV%rAttr(:,:).
+
+  AVlength = AttrVect_lsize(inAV)
+
+  call MPI_SEND(AVlength, 1, MP_type(AVlength), dest, TagBase+5, &
+                comm, ierr)
+  if(ierr /= 0) then
+     if(present(status)) then
+	write(stderr,*) myname_,':: call MPI_SEND(AVlength...'
+	status = ierr
+	return
+     else
+	call MP_perr_die(myname_,':: call MPI_SEND(AVlength...',ierr)
+     endif
+  endif
+
+       ! Step 4. If AVlength > 0, we may have INTEGER and REAL 
+       ! data to send.  Send as needed.
+
+  if(AVlength > 0) then
+
+     if(associated(inAV%iList%bf)) then
+
+       ! Send the INTEGER data stored in inAV%iAttr(:,:)
+
+	call MPI_SEND(inAV%iAttr, AVlength*List_nitem(inAV%iList), &
+                      MP_type(inAV%iAttr(1,1)), dest, TagBase+6,   &
+                      comm, ierr)
+	if(ierr /= 0) then
+	   if(present(status)) then
+	      write(stderr,*) myname_,':: call MPI_SEND(inAV%iAttr...'
+	      status = ierr
+	      return
+	   else
+	      call MP_perr_die(myname_,':: call MPI_SEND(inAV%iAttr...',ierr)
+	   endif
+	endif
+
+     endif ! if(associated(inAV%rList))
+
+     if(associated(inAV%rList%bf)) then
+
+       ! Send the REAL data stored in inAV%rAttr(:,:)
+
+	call MPI_SEND(inAV%rAttr, AVlength*List_nitem(inAV%rList), &
+                      MP_type(inAV%rAttr(1,1)), dest, TagBase+7,   &
+                      comm, ierr)
+	if(ierr /= 0) then
+	   if(present(status)) then
+	      write(stderr,*) myname_,':: call MPI_SEND(inAV%rAttr...'
+	      status = ierr
+	      return
+	   else
+	      call MP_perr_die(myname_,':: call MPI_SEND(inAV%rAttr...',ierr)
+	   endif
+	endif
+
+     endif ! if(associated(inAV%rList))
+
+  endif ! if (AVlength > 0)
+
+ end subroutine send_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: recv_ - Point-to-point receive of an AttrVect variable...
+!
+! !DESCRIPTION:  This routine receives the output {\tt AttrVect} argument 
+! {\tt outAV} from processor {\tt source} on the communicator associated 
+! with the fortran 90 {\tt INTEGER} handle {\tt comm}.  The message is 
+! tagged by the input {\tt INTEGER} argument {\tt tag}.  The success 
+! (failure) of this operation is reported in the zero (nonzero) optional 
+! output argument {\tt status}.
+!
+! {\bf N.B.}:  One must avoid assigning elsewhere the MPI tag values 
+! between {\tt TagBase} and {\tt TagBase+7}, inclusive.  This is 
+! because {\tt recv\_()} performs the receive of the {\tt AttrVect} as 
+! a series of eight receive operations.
+!
+! !INTERFACE:
+
+    subroutine recv_(outAV, dest, TagBase, comm, status)
+!
+! !USES:
+!
+      use m_stdio
+      use m_mpif90
+      use m_die, only : MP_perr_die
+
+      use m_List, only : List
+      use m_List, only : List_nitem => nitem
+      use m_List, only : List_recv => recv
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+!
+      type(AttrVect),     intent(in)  :: outAV
+      integer,            intent(in)  :: dest
+      integer,            intent(in)  :: TagBase
+      integer,            intent(in)  :: comm
+
+! !OUTPUT PARAMETERS: 
+!
+      integer, optional,  intent(out) :: status
+
+! !REVISION HISTORY:
+!       07Jun01 - J.W. Larson - initial version.
+!EOP ___________________________________________________________________
+
+ character(len=*),parameter :: myname_=myname//'::recv_'
+
+ logical :: ListAssoc(2)
+ integer :: ierr
+ integer :: AVlength
+ integer :: MPstatus(MP_STATUS_SIZE)
+
+       ! Step 1. Are outAV%iList and outAV%rList filled?  TRUE
+       ! entries in the LOGICAL array ListAssoc(:) correspond
+       ! to Non-blank Lists...that is:
+       !
+       ! ListAssoc(1) = .TRUE. <==> associated(outAV%iList%bf)
+       ! ListAssoc(2) = .TRUE. <==> associated(outAV%rList%bf)
+
+  call MPI_RECV(ListAssoc, 2, MP_LOGICAL, dest, TagBase, comm, &
+                MPstatus, ierr)
+  if(ierr /= 0) then
+     if(present(status)) then
+	write(stderr,*) myname_,':: MPI_RECV(ListAssoc...'
+	status = ierr
+	return
+     else
+	call MP_perr_die(myname_,':: MPI_RECV(ListAssoc...',ierr)
+     endif
+  endif
+
+
+       ! Step 2. Receive non-blank outAV%iList and outAV%rList.
+
+  if(ListAssoc(1)) then
+    call List_recv(outAV%iList, dest, TagBase+1, comm, ierr)
+    if(ierr /= 0) then
+       if(present(status)) then
+	  write(stderr,*) myname_,':: call List_recv(outAV%iList...'
+	  status = ierr
+	  return
+       else
+	  call MP_perr_die(myname_,':: call List_recv(outAV%iList...',ierr)
+       endif
+    endif
+  endif
+
+  if(ListAssoc(2)) then
+    call List_recv(outAV%rList, dest, TagBase+3, comm, ierr)
+    if(ierr /= 0) then
+       if(present(status)) then
+	  write(stderr,*) myname_,':: call List_recv(outAV%rList...'
+	  status = ierr
+	  return
+       else
+	  call MP_perr_die(myname_,':: call List_recv(outAV%rList...',ierr)
+       endif
+    endif
+  endif
+
+       ! Step 3. Receive the lengths of outAV%iAttr(:,:) and outAV%rAttr(:,:).
+
+  call MPI_RECV(AVlength, 1, MP_type(AVlength), dest, TagBase+5, &
+                comm, MPstatus, ierr)
+  if(ierr /= 0) then
+     if(present(status)) then
+	write(stderr,*) myname_,':: call MPI_RECV(AVlength...'
+	status = ierr
+	return
+     else
+	call MP_perr_die(myname_,':: call MPI_RECV(AVlength...',ierr)
+     endif
+  endif
+
+       ! Step 4. If AVlength > 0, we may have to receive INTEGER 
+       ! and/or REAL data.  Receive as needed.
+
+  if(AVlength > 0) then
+
+     if(associated(outAV%iList%bf)) then
+
+       ! Receive the INTEGER data to outAV%iAttr(:,:)
+
+	call MPI_RECV(outAV%iAttr, AVlength*List_nitem(outAV%iList), &
+                      MP_type(outAV%iAttr(1,1)), dest, TagBase+6,   &
+                      comm, MPstatus, ierr)
+	if(ierr /= 0) then
+	   if(present(status)) then
+	      write(stderr,*) myname_,':: call MPI_RECV(outAV%iAttr...'
+	      status = ierr
+	      return
+	   else
+	      call MP_perr_die(myname_,':: call MPI_RECV(outAV%iAttr...',ierr)
+	   endif
+	endif
+
+     endif ! if(associated(outAV%rList))
+
+     if(associated(outAV%rList%bf)) then
+
+       ! Receive the REAL data to outAV%rAttr(:,:)
+
+	call MPI_RECV(outAV%rAttr, AVlength*List_nitem(outAV%rList), &
+                      MP_type(outAV%rAttr(1,1)), dest, TagBase+7,   &
+                      comm, MPstatus, ierr)
+	if(ierr /= 0) then
+	   if(present(status)) then
+	      write(stderr,*) myname_,':: call MPI_RECV(outAV%rAttr...'
+	      status = ierr
+	      return
+	   else
+	      call MP_perr_die(myname_,':: call MPI_RECV(outAV%rAttr...',ierr)
+	   endif
+	endif
+
+     endif ! if(associated(outAV%rList))
+
+  endif ! if (AVlength > 0)
+
+ end subroutine recv_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !

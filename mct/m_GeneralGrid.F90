@@ -41,10 +41,12 @@
 
       private   ! except
 
-      public :: GeneralGrid  ! The class data structure
+      public :: GeneralGrid      ! The class data structure
 
-      public :: init         ! Create a GeneralGrid
-      public :: clean        ! Destroy a GeneralGrid
+      public :: init             ! Create a GeneralGrid
+      public :: initCartesian    !
+      public :: initUnstructured !
+      public :: clean            ! Destroy a GeneralGrid
 
                              ! Query functions-----------------
       public :: dims         ! Return dimensionality of the GeneralGrid
@@ -64,12 +66,19 @@
       type(List)                     :: weight_list
       type(List)                     :: other_list
       type(List)                     :: index_list
-      type(AttrVect), pointer        :: data
+      type(AttrVect)                 :: data
     end type GeneralGrid
 
     interface init  ; module procedure &
 	 init_, &
+	 initl_, &
 	 initgg_
+    end interface
+    interface initCartesian ; module procedure &
+	 initCartesian_
+    end interface
+    interface initUnstructured ; module procedure &
+	 initUnstructured_
     end interface
     interface clean ; module procedure clean_ ; end interface
     interface dims ; module procedure dims_ ; end interface
@@ -117,8 +126,8 @@
 !
 ! !INTERFACE:
 
- subroutine init_(GGrid, CoordList, CoordSortOrder, descend, WeightList, &
-                  OtherList, IndexList, lsize )
+ subroutine init_(GGrid, CoordChars, CoordSortOrder, descend, WeightChars, &
+                  OtherChars, IndexChars, lsize )
 !
 ! !USES:
 !
@@ -136,12 +145,12 @@
 
 ! !INPUT PARAMETERS:
 !
-      character(len=*),             intent(in) :: CoordList
+      character(len=*),             intent(in) :: CoordChars
       character(len=*), optional,   intent(in) :: CoordSortOrder
-      character(len=*), optional,   intent(in) :: WeightList
+      character(len=*), optional,   intent(in) :: WeightChars
       logical, dimension(:), optional, pointer :: descend
-      character(len=*), optional,   intent(in) :: OtherList
-      character(len=*), optional,   intent(in) :: IndexList
+      character(len=*), optional,   intent(in) :: OtherChars
+      character(len=*), optional,   intent(in) :: IndexChars
       integer,          optional,   intent(in) :: lsize
 
 ! !OUTPUT PARAMETERS:
@@ -152,7 +161,7 @@
 !       25Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
 !       15Jan01 - Jay Larson <larson@mcs.anl.gov> - modified to fit
 !                 new GeneralGrid definition.  
-!       19Mar01 - Jay Larson <larson@mcs.anl.gov> - added OtherList
+!       19Mar01 - Jay Larson <larson@mcs.anl.gov> - added OtherChars
 !       25Apr01 - Jay Larson <larson@mcs.anl.gov> - added GlobGridNum
 !                 as a mandatory integer attribute.
 !EOP ___________________________________________________________________
@@ -168,69 +177,66 @@
   n = 0
   if(present(lsize)) n=lsize
 
-        ! Concatenate onto CoordList the values of WeightList and
-        ! OtherList (if present)--store the result in RAList
+        ! Concatenate onto CoordList the values of WeightChars and
+        ! OtherChars (if present)--store the result in RAList
 
-  list_len = len(CoordList)
+  list_len = len(CoordChars)
 
-  if(present(WeightList)) then
-     list_len = list_len + 1 + len(WeightList)
+  if(present(WeightChars)) then
+     list_len = list_len + 1 + len(WeightChars)
   endif
 
-  if(present(OtherList)) then
-     list_len = list_len + 1 + len(OtherList)
+  if(present(OtherChars)) then
+     list_len = list_len + 1 + len(OtherChars)
   endif
 
-  RAList = trim(CoordList)
-  RA_len = len(CoordList)
+  RAList = trim(CoordChars)
+  RA_len = len(CoordChars)
 
-  if(present(WeightList)) then
-     RAList = RAList(1:RA_len) // ':' // trim(WeightList)
-     RA_len = RA_len + 1 + len(WeightList)
+  if(present(WeightChars)) then
+     RAList = RAList(1:RA_len) // ':' // trim(WeightChars)
+     RA_len = RA_len + 1 + len(WeightChars)
   endif
 
-  if(present(OtherList)) then
-     RAList = RAList(1:RA_len) // ':' // trim(OtherList)
-     RA_len = RA_len + 1 + len(OtherList)
+  if(present(OtherChars)) then
+     RAList = RAList(1:RA_len) // ':' // trim(OtherChars)
+     RA_len = RA_len + 1 + len(OtherChars)
   endif
 
         ! Create the integer Attribute list IAList.  At a minimum,
         ! IAList contains the attribute GlobGridNum
 
-  if(present(IndexList)) then
-     IAList = trim(IndexList) // ':GlobGridNum'
+  if(present(IndexChars)) then
+     IAList = trim(IndexChars) // ':GlobGridNum'
   else
      IAList = 'GlobGridNum'
   endif
 
+  call List_init(GGrid%index_list, IAList)
+
         ! Initialize the AttrVect storage component GGrid%data
 
-  if(present(IndexList)) then
-     call AttrVect_init(aV=GGrid%data, iList=trim(IAList), &
+  call AttrVect_init(aV=GGrid%data, iList=trim(IAList), &
 	                rList=trim(RAList), lsize=n)
-  else
-     call AttrVect_init(aV=GGrid%data, rList=trim(RAList), &
-	                lsize=n)
-  endif
 
         ! Initialize GGrid%coordinate_list
 
-  call List_init(GGrid%coordinate_list, CoordList)
+  call List_init(GGrid%coordinate_list, CoordChars)
 
         ! If Initialize GGrid%weight_list
 
-  if(present(WeightList)) then
-     call List_init(GGrid%weight_list, WeightList)
+  if(present(WeightChars)) then
+     call List_init(GGrid%weight_list, WeightChars)
   else
-     call List_init(GGrid%weight_list, ' ')
+     call List_init(GGrid%weight_list, '')
   endif
 
         ! If Initialize GGrid%other_list
 
-  if(present(OtherList)) then
-     call List_init(GGrid%other_list, OtherList)
+  if(present(OtherChars)) then
+     call List_init(GGrid%other_list, OtherChars)
   else
-     call List_init(GGrid%other_list, ' ')
+     call List_init(GGrid%other_list, '')
   endif
 
         ! If Initialize GGrid%coordinate_sort_order.  Check 
@@ -278,6 +284,155 @@
   endif
 
  end subroutine init_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: initl_ - initialize an empty GeneralGrid from Lists.
+!
+! !DESCRIPTION:
+! The routine {\tt init\_()} creates the storage space for grid point
+! coordinates, area/volume weights, and other coordinate data ({\em e.g.}, 
+! nearest-neighbor coordinates).  These data are referenced by {\tt List}
+! components that are also created by this routine.  Finally, a {\tt List}
+! defining coordinate sorting order is created, along with a set of flags
+! that dictate whether each sorting is done in ascending or descending 
+! order.
+!
+! !INTERFACE:
+
+ subroutine initl_(GGrid, CoordList, CoordSortOrder, descend, WeightList, &
+                   OtherList, IndexList, lsize )
+!
+! !USES:
+!
+      use m_die
+
+      use m_List,     only : List
+      use m_List,     only : List_init => init
+      use m_List,     only : List_nitem => nitem
+      use m_List,     only : List_concatenate => concatenate
+      use m_List,     only : assignment(=)
+      use m_List,     only : List_clean => clean
+
+      use m_AttrVect, only : AttrVect
+      use m_AttrVect, only : AttrVect_init => init
+
+      implicit none
+
+! !INPUT PARAMETERS:
+!
+      Type(List),                      intent(in)  :: CoordList
+      Type(List),                      intent(in)  :: CoordSortOrder
+      Type(List),            optional, intent(in)  :: WeightList
+      logical, dimension(:), optional, pointer     :: descend
+      Type(List),            optional, intent(in)  :: OtherList
+      Type(List),            optional, intent(in)  :: IndexList
+      integer,               optional, intent(in)  :: lsize
+
+! !OUTPUT PARAMETERS:
+!
+      type(GeneralGrid),               intent(out) :: GGrid
+
+! !REVISION HISTORY:
+!       10May01 - Jay Larson <larson@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
+!
+  character(len=*),parameter :: myname_=myname//'::initl_'
+
+  type(List) :: TempList1, Templist2
+  type(List) :: RAList, IAList
+  integer :: i, n, ierr
+
+       ! Copy array descend(:) (if present) to GGrid%descend.
+
+  n = List_nitem(CoordList)
+
+  allocate(GGrid%descend(n), stat=ierr)
+  if(ierr /= 0) then
+     call MP_perr_die(myname_,"allocate GGrid%descend...",ierr)
+  endif
+
+  if(present(descend)) then
+     GGrid%descend(1:n) = descend(1:n)
+  else
+     GGrid%descend(1:n) = .FALSE.
+  endif
+
+       ! Process input lists and create the appropriate GeneralGrid
+       ! List components
+
+  GGrid%coordinate_list = CoordList
+  GGrid%coordinate_sort_order = CoordSortOrder
+
+  TempList1 = CoordList
+
+       ! Concatenate present input Lists to create RAList, and
+       ! at the same time assign the List components of GGrid
+
+  if(present(WeightList)) then
+     GGrid%weight_list = WeightList
+     call List_concatenate(TempList1, WeightList, TempList2)
+     call List_clean(TempList1)
+  else
+     call List_init(GGrid%weight_list,'')
+     TempList2 = TempList1
+     call List_clean(TempList1)
+  endif
+
+  if(present(OtherList)) then
+     GGrid%other_list = OtherList
+     call List_concatenate(TempList2, OtherList, RAList)
+     call List_clean(TempList2)
+  else
+     call List_init(GGrid%other_list,'')
+     RAList = TempList2
+     call List_clean(TempList2)
+  endif
+
+       ! Concatenate present input Lists to create IAList
+
+  call List_init(TempList1,'GlobGridNum')
+
+  if(present(IndexList)) then
+     call List_concatenate(TempList1,IndexList,IAList)
+     call List_clean(TempList1)
+  else
+     IAList = TempList1
+     call List_clean(TempList1)
+  endif
+  GGrid%index_list = IAList
+
+       ! Initialize GGrid%data using IAList, RAList, and lsize (if
+       ! present).
+
+  n = 0
+  if(present(lsize)) n = lsize
+
+  call AttrVect_init(GGrid%data, IAList, RAList, n)
+
+       ! Finally, initialize GGrid%descend--first, count the coordinates:
+
+  n = List_nitem(GGrid%coordinate_list)
+
+       ! Allocate GGrid%descend
+
+  allocate(GGrid%descend(n), stat=ierr)
+
+       ! Initialize GGrid%descend from descend(:), if present.  If
+       ! the argument descend(:) was not passed, set all the entries
+       ! of GGrid%descend(:) to FALSE.
+
+  if(present(descend)) then
+     do i=1,n
+	GGrid%descend(i) = descend(i)
+     end do
+  else
+     GGrid%descend = .FALSE.
+  endif
+
+ end subroutine initl_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
@@ -381,6 +536,131 @@
   call AttrVect_init(oGGrid%data, iGGrid%data, n)
 
  end subroutine initgg_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: initCartesian_ - initialize a Cartesian GeneralGrid.
+!
+! !DESCRIPTION:
+! The routine {\tt init\_()} creates the storage space for grid point
+! coordinates, area/volume weights, and other coordinate data ({\em e.g.}, 
+! nearest-neighbor coordinates).  These data are referenced by {\tt List}
+! components that are also created by this routine.  Finally, a {\tt List}
+! defining coordinate sorting order is created, along with a set of flags
+! that dictate whether each sorting is done in ascending or descending 
+! order.
+!
+! Once the storage space in {\tt GGrid} is initialized, The gridpoint 
+! coordinates are evaluated using the input arguments {\tt Dims} (the 
+! number of points on each coordinate axis) and {\tt AxisData} (the 
+! coordinate values on all of the points of all of the axes).
+!
+! !INTERFACE:
+
+ subroutine initCartesian_(GGrid, CoordChars, CoordSortOrder, descend, &
+                           WeightChars, OtherChars, IndexChars, Dims, AxisData)
+!
+! !USES:
+!
+      use m_die
+
+      use m_String,   only : String, char
+      use m_List,     only : List
+      use m_List,     only : List_init => init
+      use m_List,     only : List_nitem => nitem
+
+      use m_AttrVect, only : AttrVect
+      use m_AttrVect, only : AttrVect_init => init
+
+      implicit none
+
+! !INPUT PARAMETERS:
+!
+      character(len=*),             intent(in) :: CoordChars
+      character(len=*), optional,   intent(in) :: CoordSortOrder
+      character(len=*), optional,   intent(in) :: WeightChars
+      logical, dimension(:), optional, pointer :: descend
+      character(len=*), optional,   intent(in) :: OtherChars
+      character(len=*), optional,   intent(in) :: IndexChars
+      integer, dimension(:),        pointer    :: Dims
+      real, dimension(:),           pointer    :: AxisData
+
+! !OUTPUT PARAMETERS:
+!
+      type(GeneralGrid), intent(out)   :: GGrid
+
+! !REVISION HISTORY:
+!       07Jun01 - Jay Larson <larson@mcs.anl.gov> - initial version.
+!EOP ___________________________________________________________________
+!
+  character(len=*),parameter :: myname_=myname//'::initCartesian_'
+
+ end subroutine initCartesian_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: initUnstructured_ - initialize an Unstructured GeneralGrid.
+!
+! !DESCRIPTION:
+! The routine {\tt init\_()} creates the storage space for grid point
+! coordinates, area/volume weights, and other coordinate data ({\em e.g.}, 
+! nearest-neighbor coordinates).  These data are referenced by {\tt List}
+! components that are also created by this routine.  Finally, a {\tt List}
+! defining coordinate sorting order is created, along with a set of flags
+! that dictate whether each sorting is done in ascending or descending 
+! order.
+!
+! Once the storage space in {\tt GGrid} is initialized, The gridpoint 
+! coordinates are evaluated using the input arguments {\tt Dims} (the 
+! number of points on each coordinate axis) and {\tt AxisData} (the 
+! coordinate values on all of the points of all of the axes).
+!
+! !INTERFACE:
+
+ subroutine initUnstructured_(GGrid, CoordChars, CoordSortOrder, descend, &
+                           WeightChars, OtherChars, IndexChars, nPoints, &
+                           PointData)
+!
+! !USES:
+!
+      use m_die
+
+      use m_String,   only : String, char
+      use m_List,     only : List
+      use m_List,     only : List_init => init
+      use m_List,     only : List_nitem => nitem
+
+      use m_AttrVect, only : AttrVect
+      use m_AttrVect, only : AttrVect_init => init
+
+      implicit none
+
+! !INPUT PARAMETERS:
+!
+      character(len=*),             intent(in) :: CoordChars
+      character(len=*), optional,   intent(in) :: CoordSortOrder
+      character(len=*), optional,   intent(in) :: WeightChars
+      logical, dimension(:), optional, pointer :: descend
+      character(len=*), optional,   intent(in) :: OtherChars
+      character(len=*), optional,   intent(in) :: IndexChars
+      integer,                      intent(in) :: nPoints
+      real, dimension(:),           pointer    :: PointData
+
+! !OUTPUT PARAMETERS:
+!
+      type(GeneralGrid), intent(out)   :: GGrid
+
+! !REVISION HISTORY:
+!       07Jun01 - Jay Larson <larson@mcs.anl.gov> - initial version.
+!EOP ___________________________________________________________________
+!
+  character(len=*),parameter :: myname_=myname//'::initUnstructured_'
+
+ end subroutine initUnstructured_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !

@@ -110,16 +110,16 @@
   character(len=*),parameter :: myname_=myname//'::init_'
   integer :: nIA,nRA,n,ier
 
-  if(present(iList)) then
-    call init(aV%iList,iList)	! init.List()
-  else
-    call init(aV%iList,'')	! init.List()
-  endif
-
   if(present(rList)) then
     call init(aV%rList,rList)	! init.List()
   else
     call init(aV%rList,' ')	! init.List()
+  endif
+
+  if(present(iList)) then
+    call init(aV%iList,iList)	! init.List()
+  else
+    call init(aV%iList,'')	! init.List()
   endif
 
   nIA=nitem(aV%iList)		! nitem.List()
@@ -215,9 +215,16 @@
       use m_stdio
       use m_mall
 
+      use m_String, only : String
+      use m_String, only : String_clean => clean
+      use m_String, only : String_toChar => toChar
+
       use m_List, only : List
+      use m_List, only : List_init => init
       use m_List, only : List_nitem => nitem
       use m_List, only : assignment(=)
+      use m_List, only : List_copy => copy
+      use m_List, only : List_get => get
 
       implicit none
 
