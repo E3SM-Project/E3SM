@@ -1,0 +1,14 @@
+
+To build the .dvi files for the documentation. type "make".
+
+This will build both the full design document ngc_proposed_design.dvi
+and the API's only portion of that mct_APIs.dvi
+
+To build just the design doc, type "make design"
+To build just the APIs, type "make apis"
+
+NOTE:  this build system isn't working perfectly yet.  It will
+build a .dvi file but you will need to run "bibtex" manually to
+build the bibliography.
+
+R. Jacob  16Feb01  MCS/ANL
