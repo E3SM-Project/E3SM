@@ -205,6 +205,14 @@
      call ComputeSegments_(element_pe_locs, gCol, gsize, ngseg, starts, &
                            lengths, pe_locs)
 
+       ! Clean up arrays allocated on the root
+
+     deallocate(gCol, element_pe_locs, stat=ierr)
+
+     if(ierr /= 0) then
+	call die(myname_,'deallocate(gCol,element_pe_locs)',ierr)
+     endif
+
   endif ! if(myID == root)
 
        ! Non-root processes call GlobalSegMap_init with root_start, 
@@ -216,7 +224,7 @@
        ! allocated on all processes.
 
   if(myID /= root) then
-     allocate(starts(1),lengths(1),pe_locs(1),stat=ierr)
+     allocate(starts(0),lengths(0),pe_locs(0),stat=ierr)
      if(ierr /= 0) then
         call die(myname_,'non-root allocate(starts...',ierr)
      endif
@@ -393,6 +401,14 @@
      call ComputeSegments_(element_pe_locs, gRow, gsize, ngseg, starts, &
                            lengths, pe_locs)
 
+       ! Clean up arrays allocated on the root
+
+     deallocate(gRow, element_pe_locs, stat=ierr)
+
+     if(ierr /= 0) then
+	call die(myname_,'deallocate(gRow,element_pe_locs)',ierr)
+     endif
+
   endif ! if(myID == root)
 
        ! Non-root processes call GlobalSegMap_init with root_start, 
@@ -404,7 +420,7 @@
        ! allocated on all processes.
 
   if(myID /= root) then
-     allocate(starts(1),lengths(1),pe_locs(1),stat=ierr)
+     allocate(starts(0),lengths(0),pe_locs(0),stat=ierr)
      if(ierr /= 0) then
 	call die(myname_,'non-root allocate(starts...',ierr)
      endif
