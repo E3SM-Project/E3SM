@@ -65,6 +65,8 @@
 !
 ! !USES:
 !
+      use m_realkinds           ! Real types definitions
+
       use m_List, only : List   ! Support for rList and iList components.
 
       implicit none
@@ -113,7 +115,7 @@
 
 
     interface init   ; module procedure	&
-       init_,	&
+       init_,  &
        initv_, &
        initl_
     end interface
@@ -138,7 +140,8 @@
     interface appendRAttr  ; module procedure appendRAttr_  ; end interface
     interface exportIAttr; module procedure exportIAttr_; end interface
     interface exportRAttr; module procedure &
-       exportRAttr_
+       exportRAttrSP_, &
+       exportRAttrDP_
     end interface
     interface importIAttr; module procedure importIAttr_; end interface
     interface importRAttr; module procedure importRAttr_; end interface
@@ -1794,7 +1797,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: exportRAttr_ - Return REAL Attribute as a Pointer to Array
+! !IROUTINE: exportRAttrSP_ - Return REAL Attribute as a Pointer to Array
 !
 ! !DESCRIPTION:
 ! This routine extracts from the input {\tt AttrVect} argument {\tt aV} 
@@ -1838,13 +1841,15 @@
 !
 ! !INTERFACE:
 
- subroutine exportRAttr_(aV, AttrTag, outVect, lsize, perrWith, dieWith)
+ subroutine exportRAttrSP_(aV, AttrTag, outVect, lsize, perrWith, dieWith)
 
 !
 ! !USES:
 !
       use m_die ,          only : die
       use m_stdio ,        only : stderr
+
+      use m_realkinds,     only : SP
 
       use m_String, only : String
       use m_String, only : String_init => init
@@ -1864,7 +1869,7 @@
 
 ! !OUTPUT PARAMETERS: 
 
-      real,         dimension(:), pointer     :: outVect
+      real(SP),        dimension(:),  pointer     :: outVect
       integer,                    intent(out) :: lsize
 
 ! !REVISION HISTORY:
@@ -1875,7 +1880,7 @@
 !
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname_=myname//'::exportRAttr_'
+  character(len=*),parameter :: myname_=myname//'::exportRAttrSP_'
 
   integer :: index, ierr, n
   type(String) :: myTrace
@@ -1925,7 +1930,146 @@
      outVect(n) = aV%rAttr(index,n)
   end do
 
- end subroutine exportRAttr_
+ end subroutine exportRAttrSP_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: exportRAttrDP_ - Return REAL Attribute as a Pointer to Array
+!
+! !DESCRIPTION:
+! This routine extracts from the input {\tt AttrVect} argument {\tt aV} 
+! the real attribute corresponding to the tag defined in the input 
+! {\tt CHARACTER} argument {\tt AttrTag}, and returns it in the 
+! {\tt REAL} output array {\tt outVect}, and its length in the output
+! {\tt INTEGER} argument {\tt lsize}.  The optional input {\tt CHARACTER} 
+! arguments {\tt perrWith} and {\tt dieWith} control how errors are 
+! handled.  
+! \begin{enumerate}
+! \item if neither {\tt perrWith} nor {\tt dieWith} are present, 
+! {\tt exportRAttr\_()} terminates execution with an internally generated
+! error message;
+! \item if {\tt perrWith} is present, but {\tt dieWith} is not, an error 
+! message is written to {\tt stderr} incorporating user-supplied traceback
+! information stored in the argument {\tt perrWith};
+! \item if {\tt dieWith} is present, execution terminates with an error 
+! message written to {\tt stderr} that incorporates user-supplied traceback
+! information stored in the argument {\tt dieWith}; and 
+! \item if both {\tt perrWith} and {\tt dieWith} are present, execution 
+! terminates with an error message using {\tt dieWith}, and the argument
+! {\tt perrWith} is ignored.
+! \end{enumerate}
+!
+! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
+! the {\tt AttrVect} {\tt List} component {\tt aV\%iList}.
+!
+! {\bf N.B.:}  The flexibility of this routine regarding the pointer 
+! association status of the output argument {\tt outVect} means the
+! user must invoke this routine with care.  If the user wishes this
+! routine to fill a pre-allocated array, then obviously this array
+! must be allocated prior to calling this routine.  If the user wishes
+! that the routine {\em create} the output argument array {\tt outVect},
+! then the user must ensure this pointer is not allocated (i.e. the user
+! must nullify this pointer) before this routine is invoked.
+!
+! {\bf N.B.:}  If the user has relied on this routine to allocate memory
+! associated with the pointer {\tt outVect}, then the user is responsible 
+! for deallocating this array once it is no longer needed.  Failure to 
+! do so will result in a memory leak.
+!
+! !INTERFACE:
+
+ subroutine exportRAttrDP_(aV, AttrTag, outVect, lsize, perrWith, dieWith)
+
+!
+! !USES:
+!
+      use m_die ,          only : die
+      use m_stdio ,        only : stderr
+
+      use m_realkinds,     only : DP
+
+      use m_String, only : String
+      use m_String, only : String_init => init
+      use m_String, only : String_clean => clean
+      use m_String, only : String_ToChar => ToChar
+
+      use m_TraceBack, only : GenTraceBackString
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      type(AttrVect),             intent(in) :: aV
+      character(len=*),           intent(in) :: AttrTag
+      character(len=*), optional, intent(in) :: perrWith
+      character(len=*), optional, intent(in) :: dieWith
+
+! !OUTPUT PARAMETERS: 
+
+      real(DP),    dimension(:),  pointer     :: outVect
+      integer,                    intent(out) :: lsize
+
+! !REVISION HISTORY:
+! 19Oct01 - J.W. Larson <larson@mcs.anl.gov> - initial (slow) 
+!           prototype.
+!  6May02 - J.W. Larson <larson@mcs.anl.gov> - added capability 
+!           to work with pre-allocated outVect.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::exportRAttrDP_'
+
+  integer :: index, ierr, n
+  type(String) :: myTrace
+
+  if(present(dieWith)) then ! Append onto TraceBack
+     call GenTraceBackString(myTrace, dieWith, myname_)
+  else
+     if(present(perrWith)) then ! Append onto TraceBack
+	call GenTraceBackString(myTrace, perrWith, myname_)
+     else ! Start a TraceBackString
+	call GenTraceBackString(myTrace, myname_)
+     endif
+  endif
+
+       ! Index the attribute we wish to extract:
+
+  index = indexRA_(aV, attrTag, dieWith=String_ToChar(myTrace))
+
+       ! Determine the number of data points:
+
+  lsize = lsize_(aV)
+
+       ! Allocate space for outVect (if it is not already dimensioned)
+
+  if(associated(outVect)) then ! check the size of outVect
+     if(size(outVect) < lsize) then
+	write(stderr,'(3a,i8,a,i8)') myname_, &
+	    ':: ERROR length of output array outVect ', &
+	    ' less than length of aV.  size(outVect)=',size(outVect), &
+	    ', length of aV=',lsize
+	write(stderr,'(2a)') 'Traceback:  ',String_ToChar(myTrace)
+	call die(myname_)
+     endif
+  else ! allocate space for outVect
+     allocate(outVect(lsize), stat=ierr)
+     if(ierr /= 0) then
+	write(stderr,'(2a,i8)') myname_, &
+	     ':: Error - allocate(outVect(...) failed. ierr = ',ierr
+	write(stderr,'(2a)') 'Traceback:  ',String_ToChar(myTrace)	
+	call die(myname_)
+     endif
+  endif
+
+       ! Copy the attribute data into outVect
+
+  do n=1,lsize
+     outVect(n) = aV%rAttr(index,n)
+  end do
+
+ end subroutine exportRAttrDP_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
