@@ -66,11 +66,13 @@
     interface GlobalReduce
        module procedure GlobalReduce_ 
     end interface
-    interface LocalWeightedSumRAttr
-       module procedure LocalWeightedSumRAttr_
+    interface LocalWeightedSumRAttr; module procedure &
+       LocalWeightedSumRAttrSP_, &
+       LocalWeightedSumRAttrDP_
     end interface
-    interface GlobalWeightedSumRAttr
-       module procedure GlobalWeightedSumRAttr_
+    interface GlobalWeightedSumRAttr; module procedure &
+       GlobalWeightedSumRAttrSP_, &
+       GlobalWeightedSumRAttrDP_
     end interface
 
 ! !PUBLIC DATA MEMBERS:
@@ -673,7 +675,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: LocalWeightedSumRAttr_ - Local Weighted Sum of REAL Attributes
+! !IROUTINE: LocalWeightedSumRAttrSP_ - Local Weighted Sum of REAL Attributes
 !
 ! !DESCRIPTION:
 !
@@ -698,7 +700,7 @@
 !
 ! !INTERFACE:
 !
- subroutine LocalWeightedSumRAttr_(inAV, outAV, Weights, WeightSumAttr) 
+ subroutine LocalWeightedSumRAttrSP_(inAV, outAV, Weights, WeightSumAttr) 
 
 !
 ! !USES:
@@ -737,7 +739,7 @@
 !           weightSumAttr.  Now works in MCT unit tester.
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname_=myname//'::LocalWeightedSumRAttr_'
+  character(len=*),parameter :: myname_=myname//'::LocalWeightedSumRAttrSP_'
 
   integer :: i,j
   type(List) dummyList1, dummyList2
@@ -797,13 +799,143 @@
 
   endif ! if(present(WeightSumAttr))...
 
- end subroutine LocalWeightedSumRAttr_
+ end subroutine LocalWeightedSumRAttrSP_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: GlobalWeightedSumRAttr_ - Global Weighted Sum of REAL Attributes
+! !IROUTINE: LocalWeightedSumRAttrDP_ - Local Weighted Sum of REAL Attributes
+!
+! !DESCRIPTION:
+!
+! The subroutine {\tt LocalWeightedSumRAttr\_()} takes the input 
+! {\tt AttrVect} argument {\tt inAV}, and performs a weighted sum
+! of  each of its {\tt REAL} attributes, returning them in the output 
+! {\tt AttrVect} argument {\tt outAV} (which is created by this routine
+! and  will contain {\em no} integer attributes).  The weights used 
+! for the summation are provided by the user in the input argument 
+! {\tt Weights(:)}.  If the sum of the weights is desired, this can be 
+! returned as an attribute in {\tt outAV} if the optional {\tt CHARACTER} 
+! argument {\tt WeightSumAttr} is provided (which will be concatenated 
+! onto the list of real attributes in {\tt inAV}).
+!
+! {\bf N.B.}:  The argument {\tt WeightSumAttr} must not be identical
+! to any of the real attribute names in {\tt inAV}.  
+!
+! {\bf N.B.}:  The output {\tt AttrVect} argument {\tt outAV} is
+! allocated memory, and must be destroyed by invoking the routine 
+! {\tt AttrVect\_clean()} when it is no longer needed.  Failure to 
+! do so will result in a memory leak.
+!
+! !INTERFACE:
+!
+ subroutine LocalWeightedSumRAttrDP_(inAV, outAV, Weights, WeightSumAttr) 
+
+!
+! !USES:
+!
+      use m_die ,          only : die
+      use m_stdio ,        only : stderr
+
+      use m_List,          only : List
+      use m_List,          only : List_init => init
+      use m_List,          only : List_clean => clean
+      use m_List,          only : List_exportToChar => exportToChar
+      use m_List,          only : List_concatenate => concatenate
+
+      use m_AttrVect,      only : AttrVect
+      use m_AttrVect,      only : AttrVect_init => init
+      use m_AttrVect,      only : AttrVect_nIAttr => nIAttr
+      use m_AttrVect,      only : AttrVect_nRAttr => nRAttr
+      use m_AttrVect,      only : AttrVect_lsize => lsize
+
+      implicit none
+
+! !INPUT PARAMETERS:
+!
+      type(AttrVect),               intent(IN)  :: inAV
+      real, dimension(:),           pointer     :: Weights
+      character(len=*),   optional, intent(IN)  :: WeightSumAttr
+
+! !OUTPUT PARAMETERS:
+!
+      type(AttrVect),               intent(OUT) :: outAV
+
+! !REVISION HISTORY:
+!  8May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+! 14Jun02 - J.W. Larson <larson@mcs.anl.gov> - bug fix regarding
+!           accumulation of weights when invoked with argument
+!           weightSumAttr.  Now works in MCT unit tester.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::LocalWeightedSumRAttrDP_'
+
+  integer :: i,j
+  type(List) dummyList1, dummyList2
+
+        ! Check for consistencey between inAV and the weights array
+
+  if(size(weights) /= AttrVect_lsize(inAV)) then
+     write(stderr,'(4a)') myname_,':: ERROR--mismatch in lengths of ', &
+	  'input array array argument weights(:) and input AttrVect ',&
+	  'inAV.'
+     write(stderr,'(2a,i8)') myname_,':: size(weights)=',size(weights)
+     write(stderr,'(2a,i8)') myname_,':: length of inAV=', &
+	  AttrVect_lsize(inAV)
+     call die(myname_)
+  endif
+
+        ! First Step:  create outAV from inAV (but with one element)
+
+  if(present(WeightSumAttr)) then
+     call List_init(dummyList1,WeightSumAttr)
+     call List_concatenate(inAV%rList, dummyList1, dummyList2)
+     call AttrVect_init(outAV, rList=List_exportToChar(dummyList2), &
+	                lsize=1)
+     call List_clean(dummyList1)
+     call List_clean(dummyList2)
+  else
+     call AttrVect_init(outAV, rList=List_exportToChar(inAV%rList), lsize=1)
+  endif
+
+        ! Initialize REAL attribute sums:
+
+  do i=1,AttrVect_nRAttr(outAV)
+     outAV%rAttr(i,1) = 0.
+  end do
+
+        ! Compute REAL attribute sums:
+
+  if(present(WeightSumAttr)) then ! perform weighted sum AND sum weights
+
+     do j=1,AttrVect_lsize(inAV)
+
+	do i=1,AttrVect_nRAttr(inAV)
+	   outAV%rAttr(i,1) = outAV%rAttr(i,1) + inAV%rAttr(i,j) * weights(j)
+	end do
+        ! The final attribute is the sum of the weights
+	outAV%rAttr(AttrVect_nRAttr(outAV),1) = &
+	                   outAV%rAttr(AttrVect_nRAttr(outAV),1) + weights(j)
+     end do
+
+  else ! only perform weighted sum
+
+     do j=1,AttrVect_lsize(inAV)
+	do i=1,AttrVect_nRAttr(inAV)
+	   outAV%rAttr(i,1) = outAV%rAttr(i,1) + inAV%rAttr(i,j) * weights(j)
+	end do
+     end do
+
+  endif ! if(present(WeightSumAttr))...
+
+ end subroutine LocalWeightedSumRAttrDP_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: GlobalWeightedSumRAttrSP_ - Global Weighted Sum of REAL Attributes
 !
 ! !DESCRIPTION:
 !
@@ -831,7 +963,7 @@
 !
 ! !INTERFACE:
 !
- subroutine GlobalWeightedSumRAttr_(inAV, outAV, Weights, comm, &
+ subroutine GlobalWeightedSumRAttrSP_(inAV, outAV, Weights, comm, &
                                     WeightSumAttr) 
 
 !
@@ -866,7 +998,7 @@
 !  8May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname_=myname//'::GlobalWeightedSumRAttr_'
+  character(len=*),parameter :: myname_=myname//'::GlobalWeightedSumRAttrSP_'
 
   type(AttrVect) :: LocallySummedAV
   integer :: myID, ierr
@@ -892,10 +1024,10 @@
   endif
 
   if(present(WeightSumAttr)) then
-     call LocalWeightedSumRAttr_(inAV, LocallySummedAV, Weights, &
+     call LocalWeightedSumRAttrSP_(inAV, LocallySummedAV, Weights, &
 	                         WeightSumAttr)
   else
-     call LocalWeightedSumRAttr_(inAV, LocallySummedAV, Weights)
+     call LocalWeightedSumRAttrSP_(inAV, LocallySummedAV, Weights)
   endif
 
   call AllReduce_(LocallySummedAV, outAV, AttrVectSUM, comm, ierr)
@@ -904,7 +1036,114 @@
 
   call AttrVect_clean(LocallySummedAV)
 
- end subroutine GlobalWeightedSumRAttr_
+ end subroutine GlobalWeightedSumRAttrSP_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: GlobalWeightedSumRAttrDP_ - Global Weighted Sum of REAL Attributes
+!
+! !DESCRIPTION:
+!
+! The subroutine {\tt GlobalWeightedSumRAttr\_()} takes the 
+! distributed input {\tt AttrVect} argument {\tt inAV}, and performs 
+! a weighted global sum across the MPI communicator associated with 
+! the Fortran90 {\tt INTEGER} handle {\tt comm} of each of its 
+! {\tt REAL} attributes, returning the sums to each process in the
+! {\tt AttrVect} argument {\tt outAV} (which is created by this routine
+! and will contain {\em no} integer attributes).  The weights used for 
+! the summation are provided by the user in the input argument 
+! {\tt weights(:)}.  If the sum of the weights is desired, this can be 
+! returned as an attribute in {\tt outAV} if the optional {\tt CHARACTER} 
+! argument {\tt WeightSumAttr} is provided (which will be concatenated 
+! onto the list of real attributes in {\tt inAV} to form the list of 
+! real attributes for {\tt outAV}).
+!
+! {\bf N.B.}:  The argument {\tt WeightSumAttr} must not be identical
+! to any of the real attribute names in {\tt inAV}.  
+!
+! {\bf N.B.}:  The output {\tt AttrVect} argument {\tt outAV} is
+! allocated memory, and must be destroyed by invoking the routine 
+! {\tt AttrVect\_clean()} when it is no longer needed.  Failure to 
+! do so will result in a memory leak.
+!
+! !INTERFACE:
+!
+ subroutine GlobalWeightedSumRAttrDP_(inAV, outAV, Weights, comm, &
+                                    WeightSumAttr) 
+
+!
+! !USES:
+!
+      use m_die
+      use m_stdio ,        only : stderr
+      use m_mpif90
+
+      use m_List,          only : List
+      use m_List,          only : List_exportToChar => exportToChar
+
+      use m_AttrVect,      only : AttrVect
+      use m_AttrVect,      only : AttrVect_init => init
+      use m_AttrVect,      only : AttrVect_clean => clean
+      use m_AttrVect,      only : AttrVect_lsize => lsize
+
+      implicit none
+
+! !INPUT PARAMETERS:
+!
+      type(AttrVect),               intent(IN)  :: inAV
+      real, dimension(:),           pointer     :: Weights
+      integer,                      intent(IN)  :: comm
+      character(len=*),   optional, intent(IN)  :: WeightSumAttr
+
+! !OUTPUT PARAMETERS:
+!
+      type(AttrVect),               intent(OUT) :: outAV
+
+! !REVISION HISTORY:
+!  8May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::GlobalWeightedSumRAttrDP_'
+
+  type(AttrVect) :: LocallySummedAV
+  integer :: myID, ierr
+
+        ! Get local process rank (for potential error reporting purposes)
+
+  call MPI_COMM_RANK(comm, myID, ierr)
+  if(ierr /= 0) then
+     call MP_perr_die(myname_,':: MPI_COMM_RANK() error.',ierr)
+  endif
+
+        ! Check for consistencey between inAV and the weights array
+
+  if(size(weights) /= AttrVect_lsize(inAV)) then
+     write(stderr,'(2a,i8,3a)') myname_,':: myID=',myID, &
+	  'ERROR--mismatch in lengths of ', &
+	  'input array array argument weights(:) and input AttrVect ',&
+	  'inAV.'
+     write(stderr,'(2a,i8)') myname_,':: size(weights)=',size(weights)
+     write(stderr,'(2a,i8)') myname_,':: length of inAV=', &
+	  AttrVect_lsize(inAV)
+     call die(myname_)
+  endif
+
+  if(present(WeightSumAttr)) then
+     call LocalWeightedSumRAttrDP_(inAV, LocallySummedAV, Weights, &
+	                         WeightSumAttr)
+  else
+     call LocalWeightedSumRAttrDP_(inAV, LocallySummedAV, Weights)
+  endif
+
+  call AllReduce_(LocallySummedAV, outAV, AttrVectSUM, comm, ierr)
+
+       ! Clean up intermediate local sums
+
+  call AttrVect_clean(LocallySummedAV)
+
+ end subroutine GlobalWeightedSumRAttrDP_
 
  end module m_AttrVectReduce
 !.
