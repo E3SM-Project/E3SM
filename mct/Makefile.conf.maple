@@ -56,8 +56,8 @@ _I		= -I. $(_Inull) $(_Impeu) $(_IMPI)
 _Ic		= -I. $(_IMPI)
 
 SHELL		= /bin/posix/sh
-F77		= f90
-F90		= f90
+F77		= mpif90
+F90		= mpif90
 FC		= $(F90)
 
 FOPT_normal	= -O5 -fast -tune host -convert big_endian -automatic
