@@ -88,7 +88,7 @@
   if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
 
   allocate(GMap%counts(0:nPEs-1),GMap%displs(0:nPEs-1),stat=ier)
-  if(ier /= 0) call perr_die(myname_,'allocate()',ier)
+  if(ier /= 0) call die(myname_,'allocate()',ier)
 
 #ifdef MALL_ON
 	call mall_ci(size(transfer(GMap%counts,(/1/))),myname_)
@@ -145,7 +145,7 @@
   if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
 
   allocate(GMap%counts(0:nPEs-1),GMap%displs(0:nPEs-1),stat=ier)
-  if(ier /= 0) call perr_die(myname_,'allocate()',ier)
+  if(ier /= 0) call die(myname_,'allocate()',ier)
 
 #ifdef MALL_ON
 	call mall_ci(size(transfer(GMap%counts,(/1/))),myname_)
@@ -237,7 +237,7 @@
   nPEs = remote_npes
 
   allocate(GMap%counts(0:nPEs-1),GMap%displs(0:nPEs-1),stat=ier)
-  if(ier /= 0) call perr_die(myname_,'allocate()',ier)
+  if(ier /= 0) call die(myname_,'allocate()',ier)
 
 #ifdef MALL_ON
 	call mall_ci(size(transfer(GMap%counts,(/1/))),myname_)
