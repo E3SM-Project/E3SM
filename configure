@@ -270,7 +270,7 @@ PACKAGE_VERSION='1.0'
 PACKAGE_STRING='MCT 1.0'
 PACKAGE_BUGREPORT=''
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT F90 F90FLAGS ac_ct_F90 MPILIBS MPIHEADER MPIF90 FPP FPPFLAGS FRULE F90RULE FRULECPP F90RULECPP MACHDEFS FC FCFLAGS CCFLAGS REAL8 BIT64 ENDIAN INCLUDEFLAG INCLUDEPATH LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT F90 F90FLAGS ac_ct_F90 MPILIBS MPIHEADER MPIF90 FPP FPPFLAGS FRULE F90RULE FRULECPP F90RULECPP CRULE MACHDEFS FC FCFLAGS ALLCFLAGS OPT REAL8 BIT64 ENDIAN INCLUDEFLAG INCLUDEPATH LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -767,10 +767,14 @@ ac_env_FCFLAGS_set=${FCFLAGS+set}
 ac_env_FCFLAGS_value=$FCFLAGS
 ac_cv_env_FCFLAGS_set=${FCFLAGS+set}
 ac_cv_env_FCFLAGS_value=$FCFLAGS
-ac_env_CCFLAGS_set=${CCFLAGS+set}
-ac_env_CCFLAGS_value=$CCFLAGS
-ac_cv_env_CCFLAGS_set=${CCFLAGS+set}
-ac_cv_env_CCFLAGS_value=$CCFLAGS
+ac_env_ALLCFLAGS_set=${ALLCFLAGS+set}
+ac_env_ALLCFLAGS_value=$ALLCFLAGS
+ac_cv_env_ALLCFLAGS_set=${ALLCFLAGS+set}
+ac_cv_env_ALLCFLAGS_value=$ALLCFLAGS
+ac_env_OPT_set=${OPT+set}
+ac_env_OPT_value=$OPT
+ac_cv_env_OPT_set=${OPT+set}
+ac_cv_env_OPT_value=$OPT
 ac_env_REAL8_set=${REAL8+set}
 ac_env_REAL8_value=$REAL8
 ac_cv_env_REAL8_set=${REAL8+set}
@@ -877,7 +881,8 @@ Some influential environment variables:
   MACHDEFS    MCT compiler and OS flags
   FC          The Fortran compiler
   FCFLAGS     Fortran compiler flags for all source files
-  CCFLAGS     C source compilation flags
+  ALLCFLAGS   Customized C source compilation flags
+  OPT         Fortran compiler flag for optimization level
   REAL8       Fortran compiler flag for setting the default REAL size to
               REAL(KIND=8)
   BIT64       Fortran compiler flag for generating 64-bit objects
@@ -1303,7 +1308,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 # Process the following makefiles
-                    ac_config_files="$ac_config_files mpeu/Makefile.conf mct/Makefile.conf"
+          ac_config_files="$ac_config_files Makefile.conf"
 
 
 # Check for the C compiler
@@ -2154,7 +2159,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:2157:" \
+echo "$as_me:2162:" \
      "checking for Fortran 90 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -2529,7 +2534,7 @@ _ACEOF
 # 1 to this macro) to the Fortran 90 compiler in order to get "version" output
 ac_save_F90FLAGS=$F90FLAGS
 F90FLAGS="$F90FLAGS $ac_version"
-(eval echo $as_me:2532: \"$ac_link\") >&5
+(eval echo $as_me:2537: \"$ac_link\") >&5
 ac_f90_version_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 echo "$ac_f90_version_output" >&5
 F90FLAGS=$ac_save_F90FLAGS
@@ -2787,7 +2792,7 @@ esac
 
 # Check if fortran compiler creates modules files
 # in uppercase or lowercase
-if test "$F90" = "frt"; then
+if test "$F90" = "frt"; then # -Am flag needed to gerate mod files
    F90FLAGS="-Am"
 fi
 echo "$as_me:$LINENO: checking whether fortran .mod file is uppercase" >&5
@@ -3213,14 +3218,19 @@ if test "$ac_cv_f90_fpp_external" = "yes"; then
 fi
 fi
 
+# Always enable the CRULE
+
+CRULE=.c.o
+
+
 # Checks OS, compiler and machine type
 
 test "$osname"=NONE && osname=`uname -s`
 test "$machinename"=NONE && machinename=`uname -m`
 
-echo "hostname=$ac_hostname"
-echo "machinename=$machinename"
-echo "osname=$osname"
+echo "Hostname=$ac_hostname"
+echo "Machine=$machinename"
+echo "OS=$osname"
 
 # Set F90FLAGS and MACHDEFS
 
@@ -3234,7 +3244,7 @@ if test "$ac_hostname" = "user02"; then
    if test -z "$MPIHEADER"; then
       echo "MPI path for Titan is being manually set"
       MPILIBS="-L/usr/local/vmi/mpich/lib/intel -lmpich -lvmi -ldl -lpthread"
-      MPIHEADER="-I/usr/local/vmi/mpich/include"
+      MPIHEADER="/usr/local/vmi/mpich/include"
    fi
    fi
 fi
@@ -3307,9 +3317,11 @@ fi
 
 
 
+
 # Check compiler name
 case $F90 in
 xlf90)
+echo "Fortran Compiler is XLF"
 if test -z "$REAL8"; then
    REAL8="-qrealsize=8"
 fi
@@ -3320,6 +3332,9 @@ else
 fi
 if test -z "$FCFLAGS"; then
    FCFLAGS="-qarch=auto -O2"
+fi
+if test -z "$OPT"; then
+   OPT="-O2"
 fi
 if test -z "$F90FLAGS"; then
   if test "$ac_cv_f90_fpp_compiler" = "yes"; then
@@ -3332,6 +3347,7 @@ if test -z "$F90FLAGS"; then
   fi
 fi;;
 pgf90)
+echo "Fortran Compiler is Portland Group"
 MACHDEFS="-DCPRPGI $MACHDEFS"
 if test -z "$REAL8"; then
    REAL8="-r8"
@@ -3343,6 +3359,7 @@ if test -z "$ENDIAN"; then
    ENDIAN="-byteswapio"
 fi;;
 ftn)
+echo "Fortran Compiler is Cray"
 MACHDEFS="-DCPRCRAY $MACHDEFS"
 if test -z "$FCFLAGS"; then
    FCFLAGS="-em"
@@ -3351,6 +3368,7 @@ if test -z "$INCLUDEFLAG"; then
    INCLUDEFLAG="-p"
 fi;;
 frt)
+echo "Fortran Compiler is UXP/V"
 if test "$MACHDEFS" = "-Wp,-DSYSUNIXSYSTEMV"; then
    MACHDEFS="$MACHDEFS,-DSYSFUJITSU"
 else
@@ -3366,9 +3384,14 @@ if test -z "$REAL8"; then
    REAL8="-Ad"
 fi
 echo "Suggested additional vectorization flags: -Wv,-s5,-t3,-noalias,-ilfunc,-md";;
-epcf90) MACHDEFS="-DCPREPC $MACHDEFS";;
-lf95) MACHDEFS="-DCPRLAHEY $MACHDEFS";;
+epcf90)
+"Everest has never tested this fortran compiler :("
+MACHDEFS="-DCPREPC $MACHDEFS";;
+lf95)
+echo "Fortran Compiler is Lahey"
+MACHDEFS="-DCPRLAHEY $MACHDEFS";;
 ifc | efc)
+echo "Fortran Compiler is Intel"
 MACHDEFS="-DCPRINTEL $MACHDEFS"
 if test -z "$REAL8"; then
    REAL8="-r8"
@@ -3377,7 +3400,9 @@ if test -z "$FCFLAGS"; then
    FCFLAGS="-w"
 fi
 echo "Intel Compilers must set the environment variable F_UFMTENDIAN=big to do endian conversion";;
-g95) MACHDEFS="-DCPRGNU $MACHDEFS";;
+g95)
+echo "Fortran Compiler is GNU"
+MACHDEFS="-DCPRGNU $MACHDEFS";;
 esac
 
 if echo $f90_version | grep -i nag >/dev/null 2>&1; then
@@ -3403,11 +3428,11 @@ if echo $f90_version | grep -i workshop >/dev/null 2>&1; then
 fi
 if echo $f90_version | grep -i mipspro >/dev/null 2>&1; then
    MACHDEFS="-DCPRMIPSPRO $MACHDEFS"
-   if test -z "$FCFLAGS"; then
-      FCFLAGS="-O3"
+   if test -z "$OPT"; then
+      OPT="-O3"
    fi
-   if test -z "$CCFLAGS"; then
-      CCFLAGS="-64"
+   if test -z "$ALLCFLAGS"; then
+      ALLCFLAGS="-64"
    fi
    if test -z "$REAL8"; then
       REAL8="-r8"
@@ -3419,8 +3444,8 @@ fi
 if echo $f90_version | grep -i compaq >/dev/null 2>&1; then
    MACHDEFS="-DCPRCOMPAQ $MACHDEFS"
    MPILIBS="$MPILIBS -lelan"
-   if test -z "$FCFLAGS"; then
-      FCFLAGS="-fast"
+   if test -z "$OPT"; then
+      OPT="-fast"
    fi
    if test -z "$REAL8"; then
       REAL8="-real_size 64"
@@ -3432,17 +3457,20 @@ fi
 if echo $f90_version | grep -i sx >/dev/null 2>&1; then
    MACHDEFS="-DCPRSX $MACHDEFS"
    if test -z "$FCFLAGS"; then
-      FCFLAGS="-EP -Chopt -Wf'-pvctl noassoc'"
+      FCFLAGS="-EP -Wf'-pvctl noassoc'"
+   fi
+   if test -z "$OPT"; then
+      OPT="-Chopt"
    fi
 fi
 
 case $name_mangling in
-  FORTRAN_CAPS_) CCFLAGS="-DFORTRAN_CAPS_ -O $CCFLAGS";;
-  FORTRAN_SAME)  CCFLAGS="-DFORTRAN_SAME -O $CCFLAGS";;
-  FORTRAN_UNDERSCORE_) CCFLAGS="-O $CCFLAGS";;
+  FORTRAN_CAPS_) ALLCFLAGS="-DFORTRAN_CAPS_ -O $ALLCFLAGS";;
+  FORTRAN_SAME)  ALLCFLAGS="-DFORTRAN_SAME -O $ALLCFLAGS";;
+  FORTRAN_UNDERSCORE_) ALLCFLAGS="-O $ALLCFLAGS";;
   *) { echo "$as_me:$LINENO: WARNING: unusual Fortran 90 name-mangling scheme" >&5
 echo "$as_me: WARNING: unusual Fortran 90 name-mangling scheme" >&2;}
-     CCFLAGS="-O $CCFLAGS";;
+     ALLCFLAGS="-O $ALLCFLAGS";;
 esac
 
 if test -z "$INCLUDEFLAG"; then
@@ -3998,8 +4026,7 @@ for ac_config_target in $ac_config_targets
 do
   case "$ac_config_target" in
   # Handling of arguments.
-  "mpeu/Makefile.conf" ) CONFIG_FILES="$CONFIG_FILES mpeu/Makefile.conf" ;;
-  "mct/Makefile.conf" ) CONFIG_FILES="$CONFIG_FILES mct/Makefile.conf" ;;
+  "Makefile.conf" ) CONFIG_FILES="$CONFIG_FILES Makefile.conf" ;;
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
    { (exit 1); exit 1; }; };;
@@ -4102,10 +4129,12 @@ s,@FRULE@,$FRULE,;t t
 s,@F90RULE@,$F90RULE,;t t
 s,@FRULECPP@,$FRULECPP,;t t
 s,@F90RULECPP@,$F90RULECPP,;t t
+s,@CRULE@,$CRULE,;t t
 s,@MACHDEFS@,$MACHDEFS,;t t
 s,@FC@,$FC,;t t
 s,@FCFLAGS@,$FCFLAGS,;t t
-s,@CCFLAGS@,$CCFLAGS,;t t
+s,@ALLCFLAGS@,$ALLCFLAGS,;t t
+s,@OPT@,$OPT,;t t
 s,@REAL8@,$REAL8,;t t
 s,@BIT64@,$BIT64,;t t
 s,@ENDIAN@,$ENDIAN,;t t
@@ -4345,26 +4374,15 @@ fi
 
 
 echo
-echo "### Output Variables: Make Sure These Are Correct! ###"
-echo "CC=$CC"
-echo "CCFLAGS=$CCFLAGS"
-echo "FPP=$FPP"
-echo "FPPFLAGS=$FPPFLAGS"
-echo "FC=$FC"
-echo "F90=$F90"
-echo "FCFLAGS=$FCFLAGS"
-echo "F90FLAGS=$F90FLAGS"
-echo "REAL8=$REAL8"
-echo "BIT64=$BIT64"
-echo "MPIF90=$MPIF90"
-echo "MPILIBS=$MPILIBS"
-echo "MPIHEADER=$MPIHEADER"
-echo "MACHDEFS=$MACHDEFS"
-echo "ENDIAN=$ENDIAN"
-echo "INCLUDEFLAG=$INCLUDEFLAG"
-echo "INCLUDEPATH=$INCLUDEPATH"
+echo Output Variables: {CC=$CC} {ALLCFLAGS=$ALLCFLAGS} \
+{FPP=$FPP} {FPPFLAGS=$FPPFLAGS} {FC=$FC} {F90=$F90} \
+{FCFLAGS=$FCFLAGS} {F90FLAGS=$F90FLAGS} {OPT=$OPT} \
+{REAL8=$REAL8} {BIT64=$BIT64} {MPIF90=$MPIF90} \
+{MPILIBS=$MPILIBS} {MPIHEADER=$MPIHEADER} {MACHDEFS=$MACHDEFS} \
+{ENDIAN=$ENDIAN} {INCLUDEFLAG=$INCLUDEFLAG} {INCLUDEPATH=$INCLUDEPATH}
 echo
-
+echo Please check the Makefile.conf
+echo Have a nice day!
 
 # test -z is true for empty strings
 # test -n is true for non-empty strings

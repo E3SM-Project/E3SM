@@ -1,20 +1,9 @@
-#!/bin/make
+
+SHELL           = /bin/sh
+
+# SOURCE FILES
 
 MODULE		= mct
-
-SRCS_mks	= Makefile			\
-		  Makefile.conf.in		\
-		  Makefile.rules		\
-		  configure			\
-		  README			
-
-SRCS_C		=
-
-SRCS_f		=
-
-SRCS_F		=
-
-SRCS_f90	=
 
 SRCS_F90	= m_MCTWorld.F90		\
 		  m_AttrVect.F90		\
@@ -44,47 +33,53 @@ SRCS_F90	= m_MCTWorld.F90		\
 		  m_Rearranger.F90        	\
 		  m_Transfer.F90          
 
-TEXFILES	= m_AttrVect.tex		\
-		  m_GlobalMap.tex         	\
-		  m_GlobalSegMap.tex      	\
-		  m_Accumulator.tex       	\
-		  m_SparseMatrix.tex      	\
-		  m_Navigator.tex         	\
-		  m_AttrVectComms.tex     	\
-		  m_AccumulatorComms.tex  	\
-		  m_GeneralGrid.tex		\
-		  m_MatAttrVectMul.tex    	\
-		  m_Merge.tex 			\
-		  m_Router.tex
+OBJS_ALL	= $(SRCS_F90:.F90=.o)
 
-SRCS_ALL	= $(SRCS_f)		\
-		  $(SRCS_F)		\
-		  $(SRCS_f90)		\
-		  $(SRCS_F90)		\
-		  $(SRCS_C)
+# MACHINE AND COMPILER FLAGS
 
-OBJS_ALL	= $(SRCS_f:.f=.o)	\
-		  $(SRCS_F:.F=.o)	\
-		  $(SRCS_f90:.f90=.o)	\
-		  $(SRCS_F90:.F90=.o)	\
-		  $(SRCS_C:.c=.o)
+sinclude ../Makefile.conf
 
-ARCH_TARGETS	= $(SRCS_mks) $(SRCS_ALL)
-ALL_TARGETS	= lib$(MODULE).a
+# TARGETS
 
-include Makefile.rules
-include Makefile.conf
-
-# targets
+all: 	lib$(MODULE).a
 
 lib$(MODULE).a:	$(OBJS_ALL)
 	$(RM) $@
-	@ echo $(AR) $@ $(OBJS_ALL)
-	@ $(AR) $@ $(OBJS_ALL)
+	$(AR) cq $@ $(OBJS_ALL)
 
-doc:	$(TEXFILES)
+# ADDITIONAL DEFINITIONS SPECIFIC FOR MCT COMPILATION
 
-# dependencies:
+MPEUPATH = ../mpeu
+INCPATH += $(INCFLAG)$(MPEUPATH)
+
+# RULES
+
+$(F90RULE):
+	$(FC) -c $(INCPATH) $(DEFS) $(FCFLAGS) $(F90FLAGS) $*.F90
+
+$(F90RULECPP):
+	$(FPP) $(DEFS) $(FPPFLAGS) $*.F90 $*.f90
+	$(FC) -c $(INCPATH) $(FCFLAGS) $(F90FLAGS) $*.f90
+	$(RM) $*.f90
+
+.SUFFIXES:
+.SUFFIXES: .F90 .o
+
+clean:
+	${RM} *.o *.mod lib$(MODULE).a
+
+install:
+	$(INSTALL) -d -v $(libdir) $(includedir)
+	$(INSTALL) -c lib$(MODULE).a -m 644 $(libdir)
+	$(INSTALL) -c *.mod -m 644 $(includedir)
+
+# COMPATIBILITY WITH OLD MAKE SYSTEM
+
+sinclude Makefile.conf
+
+# DEPENDENCIES
+
+$(OBJS_ALL): $(MPEUPATH)/libmpeu.a
 
 m_AttrVect.o: 
 m_Accumulator.o: m_AttrVect.o
@@ -114,4 +109,5 @@ m_SpatialIntegralV.o: m_AttrVect.o m_AttrVectReduce.o
 m_Transfer.o: m_AttrVect.o m_Router.o m_MCTWorld.o
 m_SparseMatrixPlus.o: m_GlobalSegMap.o m_Rearranger.o m_SparseMatrix.o m_SparseMatrixComms.o m_SparseMatrixToMaps.o m_GlobalToLocal.o
 
-#.
+
+
