@@ -17,13 +17,13 @@
 ! for real attributes.  The integer and real attribute tags are defined
 ! below:
 !
-! SparseMatrix\%iList components:
+! SparseMatrix\%data\%iList components:
 !    grow : global row index
 !    gcol : global column index
 !    lrow : local row index
 !    lcol : local column index
 !
-! SparseMatrix\%rList components:
+! SparseMatrix\%data\%rList components:
 !    weight : matrix element
 !
 ! !INTERFACE:
@@ -32,38 +32,102 @@
 !
 ! !USES:
 !
-      use m_AttrVect, only : SparseMatrix => AttrVect
-      use m_AttrVect, only : AttrVect_init => init
-
-      implicit none
+      use m_AttrVect, only : AttrVect
 
       private   ! except
 
-      public :: SparseMatrix     ! The class data structure
-      public :: init             ! Create a SparseMatrix
-      public :: clean            ! Destroy a SparseMatrix
-      public :: local_row_range  ! Local (on-process) row range
-      public :: global_row_range ! Local (on-process) row range
-      public :: local_col_range  ! Local (on-process) column range
-      public :: global_col_range ! Local (on-process) column range
-      public :: row_sum          ! Return SparseMatrix row sums
-      public :: row_sum_check    ! Check SparseMatrix row sums against
-                                 ! input "valid" values
+! !PUBLIC TYPES:
+
+      Type SparseMatrix
+	 integer :: nrows
+	 integer :: ncols
+	 type(AttrVect) :: data
+      End Type SparseMatrix
+
+! !PUBLIC MEMBER FUNCTIONS:
+
+      public :: SparseMatrix      ! The class data structure
+      public :: init              ! Create a SparseMatrix
+      public :: clean             ! Destroy a SparseMatrix
+      public :: lsize             ! Local number of elements
+      public :: indexIA           ! Index integer attribute
+      public :: indexRA           ! Index real attribute
+      public :: nRows             ! Total number of rows
+      public :: nCols             ! Total number of columns
+      public :: GlobalNumElements ! Total number of nonzero elements
+      public :: ComputeSparsity   ! Fraction of matrix that is nonzero
+      public :: local_row_range   ! Local (on-process) row range
+      public :: global_row_range  ! Local (on-process) row range
+      public :: local_col_range   ! Local (on-process) column range
+      public :: global_col_range  ! Local (on-process) column range
+      public :: CheckBounds       ! Check row and column values
+                                  ! for out-of-bounds values
+      public :: row_sum           ! Return SparseMatrix row sums
+      public :: row_sum_check     ! Check SparseMatrix row sums against
+                                  ! input "valid" values
+      public :: Sort              ! Sort matrix entries to generate an
+                                  ! index permutation (to be used by
+                                  ! Permute()
+      public :: Permute           ! Permute matrix entries using index
+                                  ! permutation gernerated by Sort()
+      public :: SortPermute       ! Sort/Permute matrix entries
 
     interface init  ; module procedure init_  ; end interface
     interface clean ; module procedure clean_ ; end interface
-    interface local_row_range ; module procedure local_row_range_ ; end interface
-    interface global_row_range ; module procedure global_row_range_ ; end interface
-    interface local_col_range ; module procedure local_col_range_ ; end interface
-    interface global_col_range ; module procedure global_col_range_ ; end interface
+    interface lsize ; module procedure lsize_ ; end interface
+    interface indexIA ; module procedure indexIA_ ; end interface
+    interface indexRA ; module procedure indexRA_ ; end interface
+    interface nRows ; module procedure nRows_ ; end interface
+    interface nCols ; module procedure nCols_ ; end interface
+
+    interface GlobalNumElements ; module procedure &
+	 GlobalNumElements_ 
+    end interface
+
+    interface ComputeSparsity ; module procedure &
+	 ComputeSparsity_ 
+    end interface
+
+    interface local_row_range ; module procedure &
+	 local_row_range_ 
+    end interface
+
+    interface global_row_range ; module procedure &
+	 global_row_range_ 
+    end interface
+
+    interface local_col_range ; module procedure &
+	 local_col_range_ 
+    end interface
+
+    interface global_col_range ; module procedure &
+	 global_col_range_ 
+    end interface
+
+    interface CheckBounds; module procedure &
+	 CheckBounds_ 
+    end interface
+
     interface row_sum ; module procedure row_sum_ ; end interface
-    interface row_sum_check ; module procedure row_sum_check_ ; end interface
+
+    interface row_sum_check ; module procedure &
+	 row_sum_check_ 
+    end interface
+
+    interface Sort ; module procedure Sort_ ; end interface
+    interface Permute ; module procedure Permute_ ; end interface
+    interface SortPermute ; module procedure SortPermute_ ; end interface
 
 ! !REVISION HISTORY:
 !       19Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 !       15Jan01 - J.W. Larson <larson@mcs.anl.gov> - added numerous APIs
 !       25Feb01 - J.W. Larson <larson@mcs.anl.gov> - changed from row/column
 !                 attributes to global and local row and column attributes
+!       23Apr01 - J.W. Larson <larson@mcs.anl.gov> - added number of rows
+!                 and columns to the SparseMatrix type.  This means the
+!                 SparseMatrix is no longer a straight AttrVect type.  This
+!                 also made necessary the addition of lsize(), indexIA(),
+!                 and indexRA().
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_SparseMatrix'
@@ -87,11 +151,22 @@
 !
 ! !IROUTINE: init_ - initialize a SparseMatrix
 !
-! !DESCRIPTION:
+! !DESCRIPTION:  This routine creates the storage space for the
+! entries of a {\tt SparseMatrix}, and sets the number of rows and
+! columns in it.  The input {\tt INTEGER} arguments {\tt nrows} and 
+! {\tt ncols} specify the number of rows and columns respectively.
+! The optional input argument {\tt lsize} specifies the number of 
+! nonzero entries in the {\tt SparseMatrix}.  The initialized 
+! {\tt SparseMatrix} is returned in the output argument {\tt sMat}.
+!
+! {\bf N.B.}:  This routine is allocating dynamical memory in the form
+! of a {\tt SparseMatrix}.  The user must deallocate this space when
+! the {\tt SparseMatrix} is no longer needed by invoking the routine
+! {\tt clean\_()}.
 !
 ! !INTERFACE:
 
- subroutine init_(sMat, lsize )
+ subroutine init_(sMat, nrows, ncols, lsize)
 !
 ! !USES:
 !
@@ -100,11 +175,16 @@
 
       implicit none
 
-      type(SparseMatrix), intent(out)        :: sMat
-      integer,         optional,intent(in)   :: lsize
+      type(SparseMatrix), intent(out)  :: sMat
+      integer,            intent(in)   :: nrows
+      integer,            intent(in)   :: ncols
+      integer, optional,  intent(in)   :: lsize
 
 ! !REVISION HISTORY:
 !       19Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+!       23Apr01 - Jay Larson <larson@mcs.anl.gov> - added arguments
+!                 nrows and ncols--number of rows and columns in the
+!                 SparseMatrix
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::init_'
@@ -116,10 +196,15 @@
   n = 0
   if(present(lsize)) n=lsize
 
+        ! Initialize number of rows and columns:
 
-        ! Initialize sMat using AttrVect_init
+  sMat%nrows = nrows
+  sMat%ncols = ncols
 
-  call AttrVect_init(sMat, SparseMatrix_iList, SparseMatrix_rList, n)
+        ! Initialize sMat%data using AttrVect_init
+
+  call AttrVect_init(sMat%data, SparseMatrix_iList, &
+                     SparseMatrix_rList, n)
 
  end subroutine init_
 
@@ -129,7 +214,9 @@
 !
 ! !IROUTINE: clean_ - Destroy a SparseMatrix.
 !
-! !DESCRIPTION:
+! !DESCRIPTION:  This routine deallocates dynamical memory held by the
+! input {\tt SparseMatrix} argument {\tt sMat}.  It also sets the number
+! of rows and columns in the {\tt SparseMatrix} to zero.
 !
 ! !INTERFACE:
 
@@ -145,13 +232,267 @@
 
 ! !REVISION HISTORY:
 !       19Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+!       23Apr00 - J.W. Larson <larson@mcs.anl.gov> - added changes to
+!                 accomodate clearing nrows and ncols.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::clean_'
 
-  call AttrVect_clean(sMat)
+       ! Deallocate memory held by sMat:
+
+  call AttrVect_clean(sMat%data)
+
+       ! Set the number of rows and columns in sMat to zero:
+
+  sMat%nrows = 0
+  sMat%ncols = 0
 
  end subroutine clean_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: lsize_ - Local number of elements in a SparseMatrix.
+!
+! !DESCRIPTION:  This {\tt INTEGER} function reports on-processor storage 
+! of the number of nonzero elements in the input {\tt SparseMatrix} 
+! argument {\tt sMat}.  
+!
+! !INTERFACE:
+
+    integer function lsize_(sMat)
+!
+! !USES:
+!
+      use m_AttrVect,only : AttrVect_lsize => lsize
+
+      implicit none
+
+      type(SparseMatrix), intent(in) :: sMat
+
+! !REVISION HISTORY:
+!       23Apr00 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::lsize_'
+
+  lsize_ = AttrVect_lsize(sMat%data)
+
+ end function lsize_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE:  GlobalNumElements_ - Number of nonzero elements.
+!
+! !DESCRIPTION:  This routine computes the number of nonzero elements 
+! in a distributed {\tt SparseMatrix} variable {\tt sMat}.  The input 
+! {\tt SparseMatrix} argument {\tt sMat} is examined on each process 
+! to determine the number of nonzero elements it holds, and this value 
+! is summed across the communicator associated with the input 
+! {\tt INTEGER} handle {\tt comm}, with the total returned {\em on each
+! process on the communicator}.
+!
+! !INTERFACE:
+
+ integer function GlobalNumElements_(sMat, comm)
+
+!
+! !USES:
+!
+      use m_die
+      use m_mpif90
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      type(SparseMatrix), intent(in)  :: sMat
+      integer, optional,  intent(in)  :: comm
+
+! !REVISION HISTORY:
+!       24Apr01 - Jay Larson <larson@mcs.anl.gov> - New routine.
+!
+!EOP ___________________________________________________________________
+!
+  character(len=*),parameter :: myname_=myname//':: GlobalNumElements_'
+
+  integer :: MyNumElements, GNumElements, ierr
+
+       ! Determine the number of locally held nonzero elements:
+
+  MyNumElements = lsize_(sMat)
+
+  call MPI_ALLREDUCE(MyNumElements, GNumElements, 1, MP_INTEGER, &
+                     MP_SUM, comm, ierr)
+  if(ierr /= 0) then
+     call MP_perr_die(myname_,"MPI_ALLREDUCE(MyNumElements...",ierr)
+  endif
+
+ GlobalNumElements_ = GNumElements
+
+ end function GlobalNumElements_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: indexIA_ - Index integer attribute of a SparseMatrix.
+!
+! !DESCRIPTION:  This {\tt INTEGER} function reports the row index 
+! for a given {\tt INTEGER} attribute of the input {\tt SparseMatrix} 
+! argument {\tt sMat}.  The attribute requested is represented by the 
+! input {\tt CHARACTER} variable {\tt attribute}.  The list of integer 
+! attributes one can request is defined in the description block of the 
+! header of this module ({\tt m\_SparseMatrix}).
+!
+! Here is how {\tt indexIA\_} provides access to integer attribute data
+! in a {\tt SparseMatrix} variable {\tt sMat}.  Suppose we wish to access
+! global row information.  This attribute has associated with it the 
+! string tag {\tt grow}.  The corresponding index returned ({\tt igrow}) 
+! is determined by invoking {\tt indexIA\_}:
+! \begin{verbatim}
+! igrow = indexIA_(sMat, 'grow')
+! \end{verbatim}
+!
+! Access to the global row index data in {\tt sMat} is thus obtained by 
+! referencing {\tt sMat\%data\%iAttr(igrow,:)}.
+!
+!
+! !INTERFACE:
+
+    integer function indexIA_(sMat, attribute)
+!
+! !USES:
+!
+      use m_AttrVect,only : AttrVect_indexIA => indexIA
+
+      implicit none
+
+      type(SparseMatrix), intent(in) :: sMat
+      character(len=*),   intent(in) :: attribute
+
+! !REVISION HISTORY:
+!       23Apr00 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::indexIA_'
+
+  indexIA_ = AttrVect_indexIA(sMat%data, attribute)
+
+ end function indexIA_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: indexRA_ - Index real attribute of a SparseMatrix.
+!
+! !DESCRIPTION:  This {\tt INTEGER} function reports the row index 
+! for a given {\tt REAL} attribute of the input {\tt SparseMatrix} 
+! argument {\tt sMat}.  The attribute requested is represented by the 
+! input {\tt CHARACTER} variable {\tt attribute}.  The list of real 
+! attributes one can request is defined in the description block of the 
+! header of this module ({\tt m\_SparseMatrix}).
+!
+! Here is how {\tt indexRA\_} provides access to integer attribute data
+! in a {\tt SparseMatrix} variable {\tt sMat}.  Suppose we wish to access
+! matrix element values.  This attribute has associated with it the 
+! string tag {\tt weight}.  The corresponding index returned ({\tt iweight}) 
+! is determined by invoking {\tt indexRA\_}:
+! \begin{verbatim}
+! iweight = indexRA_(sMat, 'weight')
+! \end{verbatim}
+!
+! Access to the matrix element data in {\tt sMat} is thus obtained by 
+! referencing {\tt sMat\%data\%rAttr(iweight,:)}.
+!
+! !INTERFACE:
+
+    integer function indexRA_(sMat, attribute)
+!
+! !USES:
+!
+      use m_AttrVect,only : AttrVect_indexRA => indexRA
+
+      implicit none
+
+      type(SparseMatrix), intent(in) :: sMat
+      character(len=*),   intent(in) :: attribute
+
+! !REVISION HISTORY:
+!       24Apr00 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::indexRA_'
+
+  indexRA_ = AttrVect_indexRA(sMat%data, attribute)
+
+ end function indexRA_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: nRows_ - Return the number of rows in a SparseMatrix.
+!
+! !DESCRIPTION:  This routine returns the {\em total} number of rows
+! in the input {\tt SparseMatrix} argument {\tt sMat}.  This number of
+! rows is a constant, and not dependent on the decomposition of the 
+! {\tt SparseMatrix}.
+!
+! !INTERFACE:
+
+    integer function nRows_(sMat)
+!
+! !USES:
+!
+      implicit none
+
+      type(SparseMatrix), intent(in) :: sMat
+
+! !REVISION HISTORY:
+!       19Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::nRows_'
+
+  nRows_ = sMat%nrows
+
+ end function nRows_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: nCols_ - Return the number of columns in a SparseMatrix.
+!
+! !DESCRIPTION:  This routine returns the {\em total} number of columns
+! in the input {\tt SparseMatrix} argument {\tt sMat}.  This number of
+! columns is a constant, and not dependent on the decomposition of the 
+! {\tt SparseMatrix}.
+!
+! !INTERFACE:
+
+    integer function nCols_(sMat)
+!
+! !USES:
+!
+      implicit none
+
+      type(SparseMatrix), intent(in) :: sMat
+
+! !REVISION HISTORY:
+!       19Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::nCols_'
+
+  nCols_ = sMat%ncols
+
+ end function nCols_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
@@ -185,23 +526,25 @@
 ! !REVISION HISTORY:
 !       15Jan01 - Jay Larson <larson@mcs.anl.gov> - API specification.
 !       25Feb01 - Jay Larson <larson@mcs.anl.gov> - Initial prototype.
+!       23Apr01 - Jay Larson <larson@mcs.anl.gov> - Modified to accomodate
+!                 changes to the SparseMatrix type.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::local_row_range_'
 
   integer :: i, ilrow, lsize
 
-  ilrow = AttrVect_indexIA(sMat, 'lrow')
-  lsize = AttrVect_lsize(sMat)
+  ilrow = AttrVect_indexIA(sMat%data, 'lrow')
+  lsize = AttrVect_lsize(sMat%data)
 
        ! Initialize start_row and end_row:
 
-  start_row = sMat%iAttr(ilrow,1)
-  end_row = sMat%iAttr(ilrow,1)
+  start_row = sMat%data%iAttr(ilrow,1)
+  end_row = sMat%data%iAttr(ilrow,1)
 
   do i=1,lsize
-     start_row = min(start_row, sMat%iAttr(ilrow,i))
-     end_row = max(end_row, sMat%iAttr(ilrow,i))
+     start_row = min(start_row, sMat%data%iAttr(ilrow,i))
+     end_row = max(end_row, sMat%data%iAttr(ilrow,i))
   end do
 
  end subroutine local_row_range_
@@ -239,23 +582,25 @@
 ! !REVISION HISTORY:
 !       15Jan01 - Jay Larson <larson@mcs.anl.gov> - API specification.
 !       25Feb01 - Jay Larson <larson@mcs.anl.gov> - Initial prototype.
+!       23Apr01 - Jay Larson <larson@mcs.anl.gov> - Modified to accomodate
+!                 changes to the SparseMatrix type.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::global_row_range_'
 
   integer :: i, igrow, lsize
 
-  igrow = AttrVect_indexIA(sMat, 'grow')
-  lsize = AttrVect_lsize(sMat)
+  igrow = AttrVect_indexIA(sMat%data, 'grow')
+  lsize = AttrVect_lsize(sMat%data)
 
        ! Initialize start_row and end_row:
 
-  start_row = sMat%iAttr(igrow,1)
-  end_row = sMat%iAttr(igrow,1)
+  start_row = sMat%data%iAttr(igrow,1)
+  end_row = sMat%data%iAttr(igrow,1)
 
   do i=1,lsize
-     start_row = min(start_row, sMat%iAttr(igrow,i))
-     end_row = max(end_row, sMat%iAttr(igrow,i))
+     start_row = min(start_row, sMat%data%iAttr(igrow,i))
+     end_row = max(end_row, sMat%data%iAttr(igrow,i))
   end do
 
  end subroutine global_row_range_
@@ -292,23 +637,25 @@
 ! !REVISION HISTORY:
 !       15Jan01 - Jay Larson <larson@mcs.anl.gov> - API specification.
 !       25Feb01 - Jay Larson <larson@mcs.anl.gov> - Initial prototype.
+!       23Apr01 - Jay Larson <larson@mcs.anl.gov> - Modified to accomodate
+!                 changes to the SparseMatrix type.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::local_col_range_'
 
   integer :: i, ilcol, lsize
 
-  ilcol = AttrVect_indexIA(sMat, 'lcol')
-  lsize = AttrVect_lsize(sMat)
+  ilcol = AttrVect_indexIA(sMat%data, 'lcol')
+  lsize = AttrVect_lsize(sMat%data)
 
        ! Initialize start_col and end_col:
 
-  start_col = sMat%iAttr(ilcol,1)
-  end_col = sMat%iAttr(ilcol,1)
+  start_col = sMat%data%iAttr(ilcol,1)
+  end_col = sMat%data%iAttr(ilcol,1)
 
   do i=1,lsize
-     start_col = min(start_col, sMat%iAttr(ilcol,i))
-     end_col = max(end_col, sMat%iAttr(ilcol,i))
+     start_col = min(start_col, sMat%data%iAttr(ilcol,i))
+     end_col = max(end_col, sMat%data%iAttr(ilcol,i))
   end do
 
  end subroutine local_col_range_
@@ -346,26 +693,208 @@
 ! !REVISION HISTORY:
 !       15Jan01 - Jay Larson <larson@mcs.anl.gov> - API specification.
 !       25Feb01 - Jay Larson <larson@mcs.anl.gov> - Initial prototype.
+!       23Apr01 - Jay Larson <larson@mcs.anl.gov> - Modified to accomodate
+!                 changes to the SparseMatrix type.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::global_col_range_'
 
   integer :: i, igcol, lsize
 
-  igcol = AttrVect_indexIA(sMat, 'lcol')
-  lsize = AttrVect_lsize(sMat)
+  igcol = AttrVect_indexIA(sMat%data, 'lcol')
+  lsize = AttrVect_lsize(sMat%data)
 
        ! Initialize start_col and end_col:
 
-  start_col = sMat%iAttr(igcol,1)
-  end_col = sMat%iAttr(igcol,1)
+  start_col = sMat%data%iAttr(igcol,1)
+  end_col = sMat%data%iAttr(igcol,1)
 
   do i=1,lsize
-     start_col = min(start_col, sMat%iAttr(igcol,i))
-     end_col = max(end_col, sMat%iAttr(igcol,i))
+     start_col = min(start_col, sMat%data%iAttr(igcol,i))
+     end_col = max(end_col, sMat%data%iAttr(igcol,i))
   end do
 
  end subroutine global_col_range_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: ComputeSparsity_ - sparsity of a SparseMatrix
+!
+! !DESCRIPTION:  This routine computes the sparsity of a consolidated
+! (all on one process) or distributed {\tt SparseMatrix}.  The input 
+! {\tt SparseMatrix} argument {\tt sMat} is examined to determine the
+! number of nonzero elements it holds, and this value is divided by the
+! product of the number of rows and columns in {\tt sMat}.  If the 
+! optional input argument {\tt comm} is given, then the distributed 
+! elements are counted and the sparsity computed accordingly, and the 
+! resulting value of {\tt sparsity} is returned {\em to all processes}.
+!
+! Given the inherent problems with multiplying and dividing large integers,
+! the work in this routine is performed using floating point arithmetic on
+! the logarithms of the number of rows, columns, and nonzero elements.
+!
+! !INTERFACE:
+
+ subroutine ComputeSparsity_(sMat, sparsity, comm)
+
+!
+! !USES:
+!
+      use m_die
+      use m_mpif90
+
+      use m_AttrVect, only : AttrVect_lsize => lsize
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      type(SparseMatrix), intent(in)  :: sMat
+      integer, optional,  intent(in)  :: comm
+
+! !OUTPUT PARAMETERS:
+
+      real,               intent(out) :: sparsity
+
+! !REVISION HISTORY:
+!       23Apr01 - Jay Larson <larson@mcs.anl.gov> - New routine.
+!
+!EOP ___________________________________________________________________
+!
+  character(len=*),parameter :: myname_=myname//'::ComputeSparsity_'
+
+  integer :: num_elements, num_rows, num_cols
+  real    :: Lnum_elements, Lnum_rows, Lnum_cols, LMySparsity
+  real    :: MySparsity
+  integer :: ierr
+
+       ! Extract number of nonzero elements and compute its logarithm
+
+  num_elements = lsize_(sMat)
+  Lnum_elements = log(float(num_elements))
+
+       ! Extract number of rows and compute its logarithm
+
+  num_rows = nRows_(sMat)
+  Lnum_rows = log(float(num_rows))
+
+       ! Extract number of columns and compute its logarithm
+
+  num_cols = nCols_(sMat)
+  Lnum_cols = log(float(num_cols))  
+
+       ! Compute logarithm of the (local) sparsity
+
+  LMySparsity = Lnum_elements - Lnum_rows - Lnum_cols
+
+       ! Compute the (local) sparsity from its logarithm.
+
+  MySparsity = exp(LMySparsity)
+
+       ! If a communicator handle is present, sum up the
+       ! distributed sparsity values to all processes.  If not,
+       ! return the value of MySparsity computed above.
+
+  if(present(comm)) then
+     call MPI_ALLREDUCE(MySparsity, sparsity, 1, MP_INTEGER, &
+                        MP_SUM, comm, ierr)
+     if(ierr /= 0) then
+	call MP_perr_die(myname_,"MPI_ALLREDUCE(MySparsity...",ierr)
+     endif
+  else
+     sparsity = MySparsity
+  endif
+
+ end subroutine ComputeSparsity_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: CheckBounds_ - Check for out-of-bounds row/column values.
+!
+! !DESCRIPTION:  This routine examines the input distributed 
+! {\tt SparseMatrix} variable {\tt sMat}, and examines the global row
+! and column index for each element, comparing them with the known 
+! maximum values for each (as returned by the routines {\tt nRows\_()}
+! and {\tt nCols\_()}, respectively).  If global row or column entries 
+! are non-positive, or greater than the defined maximum values, this
+! routine stops execution with an error message.  If no out-of-bounds
+! values are detected, the output {\tt INTEGER} status {\tt ierror} is 
+! set to zero.
+!
+! !INTERFACE:
+
+ subroutine CheckBounds_(sMat, ierror)
+!
+! !USES:
+!
+      use m_die
+
+      use m_AttrVect, only : AttrVect_lsize => lsize
+      use m_AttrVect, only : AttrVect_indexIA => indexIA
+
+      implicit none
+
+      type(SparseMatrix), intent(in)  :: sMat
+      integer,            intent(out) :: ierror
+
+! !REVISION HISTORY:
+!       24Apr01 - Jay Larson <larson@mcs.anl.gov> - Initial prototype.
+!EOP ___________________________________________________________________
+!
+  character(len=*),parameter :: myname_=myname//'::CheckBounds_'
+
+  integer :: MaxRow, MaxCol, NumElements
+  integer :: igrow, igcol
+  integer :: i
+
+       ! Initially, set ierror to zero (success):
+
+  ierror = 0
+
+       ! Query sMat to find the number of rows and columns:
+
+  MaxRow = nRows_(sMat)
+  MaxCol = nCols_(sMat)
+
+       ! Query sMat for the number of nonzero elements:
+
+  NumElements = lsize_(sMat)
+
+       ! Query sMat to index global row and column storage indices:
+
+  igrow = indexIA_(sMat,'grow')
+  igcol = indexIA_(sMat,'gcol')
+
+       ! Scan the entries of sMat for row or column elements that
+       ! are out-of-bounds.  Here, out-of-bounds means:  1) non-
+       ! positive row or column indices; 2) row or column indices
+       ! exceeding the stated number of rows or columns.
+
+  do i=1,NumElements
+
+       ! Row index out of bounds?
+
+     if((sMat%data%iAttr(igrow,i) > MaxRow) .or. &
+	  (sMat%data%iAttr(igrow,i) <= 0)) then
+	ierror = 1
+	call MP_perr_die(myname_,"Row index out of bounds",ierror)
+     endif
+
+       ! Column index out of bounds?
+
+     if((sMat%data%iAttr(igcol,i) > MaxCol) .or. &
+	  (sMat%data%iAttr(igcol,i) <= 0)) then
+	ierror = 2
+	call MP_perr_die(myname_,"Column index out of bounds",ierror)
+     endif
+
+  end do
+
+ end subroutine CheckBounds_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
@@ -410,6 +939,8 @@
 ! !REVISION HISTORY:
 !       15Jan01 - Jay Larson <larson@mcs.anl.gov> - API specification.
 !       25Jan01 - Jay Larson <larson@mcs.anl.gov> - Prototype code.
+!       23Apr01 - Jay Larson <larson@mcs.anl.gov> - Modified to accomodate
+!                 changes to the SparseMatrix type.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::row_sum_'
@@ -445,14 +976,14 @@
 
        ! Compute the local entries to lsum(1:num_rows) for each process:
 
-  lsize = AttrVect_lsize(sMat)
-  igrow = AttrVect_indexIA(sMat,'grow')
-  iwgt = AttrVect_indexRA(sMat,'weight')
+  lsize = AttrVect_lsize(sMat%data)
+  igrow = AttrVect_indexIA(sMat%data,'grow')
+  iwgt = AttrVect_indexRA(sMat%data,'weight')
 
   lsums = 0.
   do i=1,lsize
-     lsums(sMat%iAttr(igrow,i)) = lsums(sMat%iAttr(igrow,i)) + &
-	                           sMat%rAttr(iwgt,i)
+     lsums(sMat%data%iAttr(igrow,i)) = lsums(sMat%data%iAttr(igrow,i)) + &
+	                           sMat%data%rAttr(iwgt,i)
   end do
 
        ! Compute the global sum of the entries of lsums so that all
@@ -490,6 +1021,7 @@
 ! !INTERFACE:
 
  subroutine row_sum_check_(sMat, comm, num_valid, valid_sums, abs_tol, valid)
+
 !
 ! !USES:
 !
@@ -554,6 +1086,180 @@
   end do SCAN_LOOP
 
  end subroutine row_sum_check_
+
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: Sort_ - return index permutation keyed by a list of
+!            attributes
+!
+! !DESCRIPTION:
+! The subroutine {\tt Sort\_()} uses a list of sorting keys defined by 
+! the input {\tt List} argument {\tt key\_list}, searches for the appropriate 
+! integer or real attributes referenced by the items in {\tt key\_list} 
+! ( that is, it identifies the appropriate entries in {sMat\%data\%iList} 
+! and {\tt sMat\%data\%rList}), and then uses these keys to generate an index 
+! permutation {\tt perm} that will put the nonzero matrix entries of stored
+! in {\tt sMat\%data} in lexicographic order as defined by {\tt key\_ist} 
+! (the ordering in {\tt key\_list} being from left to right.  The optional 
+! {\tt LOGICAL} array input argument {\tt descend} specifies whether or
+! not to sort by each key in {\em descending} order or {\em ascending} 
+! order.  Entries in {\tt descend} that have value {\tt .TRUE.} correspond 
+! to a sort by the corresponding key in descending order.  If the argument
+! {\tt descend} is not present, the sort is performed for all keys in
+! ascending order.
+!
+! !INTERFACE:
+
+ subroutine Sort_(sMat, key_list, perm, descend)
+
+!
+! !USES:
+!
+      use m_die ,          only : die
+      use m_stdio ,        only : stderr
+
+      use m_List ,         only : List
+
+      use m_AttrVect, only: AttrVect_Sort => Sort
+
+      implicit none
+!
+! !INPUT PARAMETERS: 
+
+      type(SparseMatrix),              intent(in) :: sMat
+      type(List),                      intent(in) :: key_list
+      logical, dimension(:), optional, intent(in) :: descend
+!
+! !OUTPUT PARAMETERS: 
+
+      integer, dimension(:), pointer              :: perm
+
+
+! !REVISION HISTORY:
+!       24Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::Sort_'
+
+  if(present(descend)) then
+     call AttrVect_Sort(sMat%data, key_list, perm, descend)
+  else
+     call AttrVect_Sort(sMat%data, key_list, perm)
+  endif
+
+ end Subroutine Sort_
+
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: Permute_ - permute SparseMatrix entries
+!
+! !DESCRIPTION:
+! The subroutine {\tt Permute\_()} uses an input index permutation 
+! {\tt perm} to re-order the entries of the {\tt SparseMatrix} argument 
+! {\tt sMat}.  The index permutation {\tt perm} is generated using the 
+! routine {\tt Sort\_()} (in this module).
+!
+! !INTERFACE:
+
+ subroutine Permute_(sMat, perm)
+
+!
+! !USES:
+!
+      use m_die ,          only : die
+      use m_stdio ,        only : stderr
+
+      use m_AttrVect, only: AttrVect_Permute => Permute
+
+      implicit none
+!
+! !INPUT PARAMETERS: 
+
+
+      integer, dimension(:), pointer               :: perm
+!
+! !INPUT/OUTPUT PARAMETERS: 
+
+      type(SparseMatrix),            intent(inout) :: sMat
+
+
+! !REVISION HISTORY:
+!       24Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::Permute_'
+
+  call AttrVect_Permute(sMat%data, perm)
+
+ end Subroutine Permute_
+
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: SortPermute_ - sort/permute SparseMatrix entries.
+!
+! !DESCRIPTION:
+! The subroutine {\tt SortPermute\_()} uses a list of sorting keys defined 
+! by the input {\tt List} argument {\tt key\_list}, searches for the 
+! appropriate integer or real attributes referenced by the items in 
+! {\tt key\_ist} ( that is, it identifies the appropriate entries in 
+! {sMat\%data\%iList} and {\tt sMat\%data\%rList}), and then uses these 
+! keys to generate an index permutation that will put the nonzero matrix 
+! entries of stored in {\tt sMat\%data} in lexicographic order as defined 
+! by {\tt key\_list} (the ordering in {\tt key\_list} being from left to 
+! right.  The optional {\tt LOGICAL} array input argument {\tt descend} 
+! specifies whether or not to sort by each key in {\em descending} order 
+! or {\em ascending} order.  Entries in {\tt descend} that have value 
+! {\tt .TRUE.} correspond to a sort by the corresponding key in descending 
+! order.  If the argument {\tt descend} is not present, the sort is 
+! performed for all keys in ascending order.
+!
+! Once this index permutation is created, it is applied to re-order the 
+! entries of the {\tt SparseMatrix} argument {\tt sMat} accordingly.
+!
+! !INTERFACE:
+
+ subroutine SortPermute_(sMat, key_list, descend)
+
+!
+! !USES:
+!
+      use m_die ,          only : die
+      use m_stdio ,        only : stderr
+
+      use m_List ,         only : List
+
+      implicit none
+!
+! !INPUT PARAMETERS: 
+
+      type(List),                      intent(in)    :: key_list
+      logical, dimension(:), optional, intent(in)    :: descend
+!
+! !INPUT/OUTPUT PARAMETERS: 
+
+      type(SparseMatrix),              intent(inout) :: sMat
+
+! !REVISION HISTORY:
+!       24Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::SortPermute_'
+
+  integer, dimension(:), pointer :: perm
+
+       ! Create index permutation perm(:)
+
+  if(present(descend)) then
+     call Sort_(sMat, key_list, perm, descend)
+  else
+     call Sort_(sMat, key_list, perm)
+  endif
+
+       ! Apply index permutation perm(:) to re-order sMat:
+
+  call Permute_(sMat, perm)
+
+ end subroutine SortPermute_
 
  end module m_SparseMatrix
 

@@ -1,5 +1,5 @@
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!     Math + Computer Science Division / Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_MatAttrVectMul - Sparse Matrix AttrVect Multipication.
@@ -12,16 +12,6 @@
 ! !INTERFACE:
 
  module m_MatAttrVectMul
-!
-! !USES:
-!
-      use m_AttrVect,     only : AttrVect
-      use m_SparseMatrix, only : SparseMatrix
-
-      use m_GlobalMap,    only : GlobalMap
-      use m_GlobalSegMap, only : GlobalSegMap
-
-      implicit none
 
       private   ! except
 
@@ -48,7 +38,7 @@
  contains
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!     Math + Computer Science Division / Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: sMatAvMult_xlyl_() -- Purely local matrix-vector multiply
@@ -79,6 +69,10 @@
       use m_AttrVect, only : AttrVect_indexIA => indexIA
 
       use m_SparseMatrix, only : SparseMatrix
+      use m_SparseMatrix, only : SparseMatrix_lsize => lsize
+      use m_SparseMatrix, only : SparseMatrix_indexIA => indexIA
+      use m_SparseMatrix, only : SparseMatrix_indexRA => indexRA
+
       use m_SharedAttrIndices, only : SharedAttrIndexList
 
       implicit none
@@ -90,6 +84,10 @@
 ! !REVISION HISTORY:
 !       15Jan01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
 !       10Feb01 - J.W. Larson <larson@mcs.anl.gov> - Prototype code.
+!       24Apr01 - J.W. Larson <larson@mcs.anl.gov> - Modified to accomodate
+!                 changes to the SparseMatrix datatype.
+!       25Apr01 - J.W. Larson <larson@mcs.anl.gov> - Reversed loop order
+!                 for cache-friendliness
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::sMatAvMult_xlyl_'
@@ -113,7 +111,7 @@
 
        ! Retrieve the number of elements in sMat:
 
-  num_elements = AttrVect_lsize(sMat)
+  num_elements = SparseMatrix_lsize(sMat)
 
   if(num_elements == 0) then
      write(stderr,'(2a)') myname_, &
@@ -123,9 +121,10 @@
   endif
 
        ! Indexing the sparse matrix sMat:
-  irow = AttrVect_indexIA(sMat,'row')  ! row index
-  icol = AttrVect_indexIA(sMat,'col')  ! column index
-  iwgt = AttrVect_indexRA(sMat,'col')  ! weight index
+
+  irow = SparseMatrix_indexIA(sMat,'lrow')    ! local row index
+  icol = SparseMatrix_indexIA(sMat,'lcol')    ! local column index
+  iwgt = SparseMatrix_indexRA(sMat,'weight')  ! weight index
 
        ! Regridding Operations:  First the REAL attributes:
 
@@ -133,23 +132,25 @@
   call SharedAttrIndexList(xaV, yaV, data_flag, num_indices, &
                               xaVindices, yaVindices)
 
-       ! loop over attributes being regridded.
-
-  do m=1,num_indices
-
-     xaVindex = xaVindices(m)
-     yaVindex = yaVindices(m)
-
        ! loop over matrix elements
 
-     do n=1,num_elements
+  do n=1,num_elements
 
-	yaV%rAttr(yaVindex,sMat%iAttr(irow,n)) = sMat%rAttr(iwgt, n) &
-	     * xaV%rAttr(xaVindex,sMat%iAttr(icol,n))
+       ! loop over attributes being regridded.
 
-     end do
+     do m=1,num_indices
 
-  end do
+	xaVindex = xaVindices(m)
+	yaVindex = yaVindices(m)
+
+	yaV%rAttr(yaVindex,sMat%data%iAttr(irow,n)) = &
+	     yaV%rAttr(yaVindex,sMat%data%iAttr(irow,n)) + &
+	     sMat%data%rAttr(iwgt, n)  * &
+	     xaV%rAttr(xaVindex,sMat%data%iAttr(icol,n))
+
+     end do ! m=1,num_indices
+
+  end do ! n=1,num_elements
 
   deallocate(xaVindices, yaVindices, stat=ierr)
   if(ierr /= 0) then
@@ -162,34 +163,35 @@
   call SharedAttrIndexList(xaV, yaV, data_flag, num_indices, &
                               xaVindices, yaVindices)
 
-       ! loop over attributes being regridded.
-
-  do m=1,num_indices
-
-     xaVindex = xaVindices(m)
-     yaVindex = yaVindices(m)
-
        ! loop over matrix elements
 
-     do n=1,num_elements
+  do n=1,num_elements
 
-	yaV%iAttr(yaVindex,sMat%iAttr(irow,n)) = sMat%rAttr(iwgt, n) &
-	     * xaV%iAttr(xaVindex,sMat%iAttr(icol,n))
+       ! loop over attributes being regridded.
 
-     end do
+     do m=1,num_indices
 
-  end do
+	xaVindex = xaVindices(m)
+	yaVindex = yaVindices(m)
+
+	yaV%iAttr(yaVindex,sMat%data%iAttr(irow,n)) = &
+	     yaV%iAttr(yaVindex,sMat%data%iAttr(irow,n)) + &
+	     sMat%data%rAttr(iwgt, n) * &
+	     xaV%iAttr(xaVindex,sMat%data%iAttr(icol,n))
+
+     end do ! m=1,num_indices
+
+  end do ! n=1,num_elements
 
   deallocate(xaVindices, yaVindices, stat=ierr)
   if(ierr /= 0) then
      call MP_perr_die(myname_,'second deallocate(xaVindices...',ierr)
   endif
      
-
  end subroutine sMatAvMult_xlyl_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!     Math + Computer Science Division / Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: sMatAvMult_gm_xdyl_() -- Multiply, x GlobalMap distributed.
@@ -226,7 +228,7 @@
  end subroutine sMatAvMult_gm_xdyl_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!     Math + Computer Science Division / Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: sMatAvMult_gsm_xdyl_() -- Multiply, x GlobalSegMap distributed.
@@ -262,7 +264,7 @@
  end subroutine sMatAvMult_gsm_xdyl_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!     Math + Computer Science Division / Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: sMatAvMult_gm_xlyd_() -- Multiply, y GlobalMap distributed.
@@ -299,7 +301,7 @@
  end subroutine sMatAvMult_gm_xlyd_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!     Math + Computer Science Division / Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: sMatAvMult_gsm_xlyd_() -- Multiply, x GlobalSegMap distributed.
@@ -336,7 +338,7 @@
  end subroutine sMatAvMult_gsm_xlyd_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!     Math + Computer Science Division / Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: sMatAvMult_gm_xdyd_() -- Multiply, x, y GlobalMap distributed.
@@ -374,7 +376,7 @@
  end subroutine sMatAvMult_gm_xdyd_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!     Math + Computer Science Division / Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: sMatAvMult_gsm_xdyd_() -- Mult., x,y GlobalSegMap distributed.

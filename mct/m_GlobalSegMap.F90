@@ -46,6 +46,8 @@
       public :: nlseg           ! Return local number of segments
       public :: active_pes      ! Return number of pes with at least 1 
                                 ! datum, and if requested, a list of them.
+      public :: peLocs          ! Given an input list of point indices,
+                                ! return its (unique) process ID.
       public :: haloed          ! Is the input GlobalSegMap haloed?
       public :: Sort            ! compute index permutation to re-order
                                 ! GlobalSegMap%start, GlobalSegMap%length,
@@ -89,6 +91,7 @@
     interface ngseg ; module procedure ngseg_ ; end interface
     interface nlseg ; module procedure nlseg_ ; end interface
     interface active_pes ; module procedure active_pes_ ; end interface
+    interface peLocs ; module procedure peLocs_ ; end interface
     interface haloed ; module procedure haloed_ ; end interface
     interface rank  ; module procedure &
 	rank1_ , &	! single rank case
@@ -114,6 +117,8 @@
 !                 initialization routines initp_() and initp1(). 
 ! 	25Feb01 - J.W. Larson <larson@mcs.anl.gov> - Added the routine
 !                 ProcessStorage_().
+! 	18Apr01 - J.W. Larson <larson@mcs.anl.gov> - Added the routine
+!                 peLocs().
 ! 	26Apr01 - R. Jacob <jacob@mcs.anl.gov> - Added the routine
 !                 OrderedPoints_().
 !EOP ___________________________________________________________________
@@ -1453,6 +1458,91 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
+! !IROUTINE: peLocs_ - process ID locations for distributed points.
+! index.
+!
+! !DESCRIPTION:
+! This routine takes an input {\tt INTEGER} array of point indices 
+! {\tt points(:)}, compares them with an input {\tt GlobalSegMap} 
+! {\tt pointGSMap}, and returns the {\em unique} process ID location 
+! for each point.  Note the emphasize on unique.  The assumption here
+! (which is tested) is that {\tt pointGSMap} is not haloed.  The process
+! ID locations for the points is returned in the array {\tt pe\_locs(:)}.
+!
+! {\bf N.B.:} The test of {\tt pointGSMap} for halo points, and the 
+! subsequent search for the process ID for each point is very slow.  This
+! first version of the routine is serial.  A parallel version of this 
+! routine will need to be developed.
+!
+! !INTERFACE:
+
+    subroutine peLocs_(pointGSMap, npoints, points, pe_locs)
+!
+! !USES:
+!
+      use m_die ,          only : MP_perr_die
+
+      implicit none
+
+      type(GlobalSegMap), intent(in)      :: pointGSMap 
+      integer,               intent(in)   :: npoints
+      integer, dimension(:), intent(in)   :: points
+      integer, dimension(:), intent(out)  :: pe_locs
+
+! !REVISION HISTORY:
+! 	18Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::peLocs_'
+  integer :: ierr
+  integer :: iseg, ngseg, ipoint
+  integer :: lower_index, upper_index
+
+! Input argument checks:
+
+  if(size(points) < npoints) then
+     ierr = size(points)
+     call MP_perr_die(myname_,'input points list array too small',ierr)
+  endif
+
+  if(size(pe_locs) < npoints) then
+     ierr = size(pe_locs)
+     call MP_perr_die(myname_,'output pe_locs array too small',ierr)
+  endif
+
+  if(haloed_(pointGSMap)) then
+     ierr = 1
+     call MP_perr_die(myname_,'input pointGSMap haloed--not valid',ierr)
+  endif
+
+! Brute-force indexing...no assumptions regarding sorting of points(:) 
+! or pointGSMap%start(:)
+
+! Number of segments in pointGSMap:
+
+  ngseg = ngseg_(pointGSMap)
+
+  do ipoint=1,npoints ! loop over points
+
+     do iseg=1,ngseg  ! loop over segments
+
+	lower_index = pointGSMap%start(iseg)
+	upper_index = lower_index + pointGSMap%length(iseg) - 1
+
+	if((points(ipoint) >= lower_index) .and. &
+	     (points(ipoint) <= upper_index)) then
+	   pe_locs(ipoint) = pointGSMap%pe_loc(iseg)
+	endif
+     
+     end do ! do iseg=1, ngseg
+  end do ! do ipoint=1,npoints
+
+ end subroutine peLocs_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
 ! !IROUTINE: haloed_ - test GlobalSegMap for presence of halo points.
 ! index.
 !
@@ -1802,5 +1892,4 @@
  end subroutine SortPermuteInPlace_
 
  end module m_GlobalSegMap
-
 
