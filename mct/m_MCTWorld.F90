@@ -411,7 +411,7 @@
   ncomps = World%ncomps
 
   if(ncomps <= 0) then
-     write(stderr,'(2a,1i)') myname,":: invalid no. of components = ",ncomps
+     write(stderr,'(2a,1i3)') myname,":: invalid no. of components = ",ncomps
      call MP_perr_die(myname_,'ncomps = ',ncomps)
   endif
 
@@ -455,7 +455,7 @@
   mynprocs = World%mynprocs
 
   if(mynprocs <= 0) then
-     write(stderr,'(2a,1i)') myname,":: invalid no. of processes = ",mynprocs
+     write(stderr,'(2a,1i6)') myname,":: invalid no. of processes = ",mynprocs
      call MP_perr_die(myname_,'Number of processes = ',mynprocs)
   endif
 
@@ -535,7 +535,7 @@
 	end do CHECK_COMP_ID_LOOP
 
 	if(.not. valid) then
-	   write(stderr,'(2a,1i)') myname,":: invalid component id no. = ",&
+	   write(stderr,'(2a,1i7)') myname,":: invalid component id no. = ",&
 		comp_id
 	   call MP_perr_die(myname_,'invalid comp_id = ',comp_id)
 	endif
@@ -551,7 +551,8 @@
 	endif
 
 	if(.not. valid) then
-	   write(stderr,'(2a,1i,1a,1i)') myname,":: invalid process ID. = ", &
+	   write(stderr,'(2a,1i5,1a,1i2)') myname, &
+		":: invalid process ID. = ", &
 		comp_rank, "on component ",comp_id
 	   call MP_perr_die(myname_,'invalid comp_rank = ',comp_rank)
 	endif
@@ -566,7 +567,7 @@
   world_rank = World%idGprocid(comp_id, comp_rank)
 
   if(world_rank < 0) then
-     write(stderr,'(2a,1i)') myname,":: negative world rank = ",world_rank
+     write(stderr,'(2a,1i6)') myname,":: negative world rank = ",world_rank
      call MP_perr_die(myname_,'negative world rank = ',world_rank)
   endif    
 
@@ -623,7 +624,7 @@
   endif
 
   if(world_comp_root < 0) then
-     write(stderr,'(2a,1i)') myname,":: negative world rank = ",& 
+     write(stderr,'(2a,1i6)') myname,":: negative world rank = ",& 
 	  world_comp_root
      call MP_perr_die(myname_,'invalid root id = ',world_comp_root)
   endif    
