@@ -1256,6 +1256,7 @@
       use m_List,     only : List_nitem => nitem
       use m_List,     only : List_exportToChar => exportToChar
       use m_List,     only : List_nullify => nullify
+      use m_List,     only : List_copy => copy
       use m_List,     only : List_append => append
 
       use m_AttrVect, only : AttrVect
@@ -1288,6 +1289,7 @@
 
   integer :: i, ierr, index, n, nOffSet
   type(List) :: IAList, RAList
+  type(List) :: temp_coord_list, temp_sort_order
 
        ! Sanity checks on input arguments:
 
@@ -1368,12 +1370,18 @@
      call List_init(GGrid%coordinate_sort_order, CoordSortOrder)
      if(List_nitem(GGrid%coordinate_sort_order) /= &
 	  List_nitem(GGrid%coordinate_list)) then
+
+	! The following unnecessary List_copy has been added to 
+        ! avoid a compiler bug on the SunOS compiler (and possibly SGI) 
+
+	call List_copy(temp_coord_list,GGrid%coordinate_list)
+	call List_copy(temp_sort_order,GGrid%coordinate_sort_order)
 	write(stderr,'(6a)') myname_, &
 	     'FATAL - Number of coordinates does not match the number of ', &
-	     'coordinate sort keys.  GGrid%coordinate_list = ',&
-	     List_exportToChar(GGrid%coordinate_list), &
+	     'coordinate sort keys.  GGrid%coordinate_list = ', &
+	     List_exportToChar(temp_coord_list), &
 	     'GGrid_coordinate_sort_order = ', &
-	     List_exportToChar(GGrid%coordinate_sort_order)
+	     List_exportToChar(temp_sort_order)
 	call die(myname_)
      endif
   endif
