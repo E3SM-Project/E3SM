@@ -41,7 +41,7 @@
 !
       use m_List, only : List
       use m_AttrVect, only : AttrVect
-      use m_realkinds
+      use m_realkinds,only : SP,DP,FP
 
       implicit none
 

@@ -65,7 +65,7 @@
 !
 ! !USES:
 !
-      use m_realkinds           ! Real types definitions
+      use m_realkinds,only : SP,DP,FP          ! Real types definitions
 
       use m_List, only : List   ! Support for rList and iList components.
 
@@ -749,7 +749,6 @@
 
 ! !USES:
 
-     use m_realkinds, only : FP
 
      use m_die,only	: die
      use m_stdio,only	: stderr
