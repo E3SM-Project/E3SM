@@ -44,8 +44,6 @@
 	 type(Router) :: RecvRouter
 	 integer,dimension(:,:),pointer :: LocalPack
 	 integer :: LocalSize
-	 integer :: SrcAVsize
-	 integer :: TrgAVsize
       end type Rearranger
 
 
@@ -59,6 +57,8 @@
 !      31Jan02 - E.T. Ong <eong@mcs.anl.gov> - initial prototype
 !      04Jun02 - E.T. Ong <eong@mcs.anl.gov> - changed local copy structure to
 !                LocalSize. Made myPid a global process in MCTWorld.
+!      27Sep02 - R. Jacob <jacob@mcs.anl.gov> - Remove SrcAVsize and TrgAVsize
+!                and use Router%lAvsize instead for sanity check.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_Rearranger'
@@ -110,10 +110,6 @@
    ! Initialize Router component of Rearranger
    call Router_init(SourceGSMap,TargetGSMap,myComm,OutRearranger%SendRouter)
    call Router_init(TargetGSMap,SourceGSMap,myComm,OutRearranger%RecvRouter)
-
-   ! Set local sizes of Source and Target AttrVects 
-   OutRearranger%SrcAVsize = GSMap_lsize(SourceGSMap,myComm)
-   OutRearranger%TrgAVsize = GSMap_lsize(TargetGSMap,myComm)
 
    ! SANITY CHECK: Make sure that if SendRouter is sending to self, then,
    ! by definition, RecvRouter is also receiving from self. If this is not 
@@ -512,16 +508,16 @@
    ! CHECK ARGUMENTS 
 
    ! Check the size of the Source AttrVect
-   if(InRearranger%SrcAVsize /= AttrVect_lsize(SourceAV)) then
-      call warn(myname_,"SourceAV argument is incorrect")
-      call die(myname_,"InRearranger%SrcAVsize",InRearranger%SrcAVsize, &
+   if(InRearranger%SendRouter%lAvsize /= AttrVect_lsize(SourceAV)) then
+      call warn(myname_,"SourceAV size is not appropriate for this Rearranger")
+      call die(myname_,"InRearranger%SendRouter%lAvsize",InRearranger%SendRouter%lAvsize, &
 	        "AttrVect_lsize(SourceAV)", AttrVect_lsize(SourceAV))
    endif
 
    ! Check the size of the Target AttrVect
-   if(InRearranger%TrgAVsize /= AttrVect_lsize(TargetAV)) then
-      call warn(myname_,"TargetAV argument is incorrect")
-      call die(myname_,"InRearranger%TrgAVsize",InRearranger%TrgAVsize, &
+   if(InRearranger%RecvRouter%lAvsize /= AttrVect_lsize(TargetAV)) then
+      call warn(myname_,"TargetAV size is not appropriate for this Rearranger")
+      call die(myname_,"InRearranger%RecvRouter%lAvsize",InRearranger%RecvRouter%lAvsize, &
 	        "AttrVect_lsize(TargetAV)", AttrVect_lsize(TargetAV))
    endif
 
