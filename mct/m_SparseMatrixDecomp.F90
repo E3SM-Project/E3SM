@@ -522,25 +522,28 @@
 
        ! Second pass:  fill in segment data.
 
-  do i=1,num_elements
+       ! NOTE: Structure of this loop was changed from a for loop
+       ! to avoid a faulty vectorization on the SUPER-UX compiler
+
+  i=1
+  ASSIGN_LOOP: do
 
      if(i == 1) then  ! bootstrap first segment info.
 
-	iseg = 1
-	seg_starts(iseg) = 1
-	seg_lengths(iseg) = 1
-	seg_pe_locs(iseg) = element_pe_locs(iseg)
+        iseg = 1
+        seg_starts(iseg) = 1
+        seg_lengths(iseg) = 1
+        seg_pe_locs(iseg) = element_pe_locs(iseg)
 
      else ! do usual point/segment processing
 
-       ! New segment?  This happens if 1) elements(i) > elements(i-1) + 1, or
-       ! 2) element_pe_locs(i) /= element_pe_locs(i-1).
-
+	! New segment?  This happens if 1) elements(i) > elements(i-1) + 1, or
+	! 2) element_pe_locs(i) /= element_pe_locs(i-1).
+     
 	if((elements(i) > elements(i-1) + 1) .or. &
 	     (element_pe_locs(i) /= element_pe_locs(i-1))) then ! new segment
 
-       ! Initialize new segment
-
+	   ! Initialize new segment
 	   iseg = iseg + 1
 	   seg_starts(iseg) = i
 	   seg_lengths(iseg) = 1
@@ -548,15 +551,18 @@
 
 	else
 
-       ! Increment current segment length
-
+	   ! Increment current segment length
 	   seg_lengths(iseg) = seg_lengths(iseg) + 1
 
 	endif ! If new segment block
 
      endif ! if(i == 1) block
 
-  end do ! do i=1,num_elements
+     ! Prepare index i for the next loop around; 
+     if(i>=num_elements) EXIT
+     i = i + 1
+
+  end do ASSIGN_LOOP 
 
   if(iseg /= nsegs) then
      call die(myname_,'segment number difference',iseg-nsegs)
