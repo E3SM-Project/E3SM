@@ -655,9 +655,21 @@
 
 
   if(myID == root) then
-     nIAttr = Accumulator_nIAttr(aC) 
-     nRAttr = Accumulator_nRAttr(aC)
+
+     if(associated(aC%iAction)) then
+	nIAttr = size(aC%iAction)
+     else
+	nIAttr = 0
+     endif
+
+     if(associated(aC%rAction)) then
+	nRAttr = size(aC%rAction)
+     else
+	nRAttr = 0
+     endif
+
      AccBuffSize = 4+nIAttr+nRAttr
+
   endif
 
         ! Use AccBuffSize to initialize AccBuff on all processes
