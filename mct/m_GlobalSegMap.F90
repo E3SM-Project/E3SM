@@ -38,6 +38,8 @@
       public :: GlobalStorage   ! Return total number of points in map,
                                 ! including halo points (if present).
       public :: ProcessStorage  ! Return local storage on a given process.
+      public :: OrderedPoints  ! Return grid points of a given process in
+				! MCT's assumed order.
       public :: lsize           ! Return local--that is, on-process--storage 
                                 ! size (incl. halos)
       public :: ngseg           ! Return global number of segments
@@ -80,6 +82,9 @@
     interface ProcessStorage ; module procedure &
        ProcessStorage_
     end interface
+    interface OrderedPoints ; module procedure &
+       OrderedPoints_
+    end interface
     interface lsize ; module procedure lsize_ ; end interface
     interface ngseg ; module procedure ngseg_ ; end interface
     interface nlseg ; module procedure nlseg_ ; end interface
@@ -109,6 +114,8 @@
 !                 initialization routines initp_() and initp1(). 
 ! 	25Feb01 - J.W. Larson <larson@mcs.anl.gov> - Added the routine
 !                 ProcessStorage_().
+! 	26Apr01 - R. Jacob <jacob@mcs.anl.gov> - Added the routine
+!                 OrderedPoints_().
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_GlobalSegMap'
@@ -1037,7 +1044,74 @@
   ProcessStorage_ = pe_storage
 
  end function ProcessStorage_
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: OrderedPoints_ - The grid points on a given process
+!				returned in the assumed MCT order.
+!
+! !DESCRIPTION:
+! The function {\tt OrderedPoints\_()} takes the input {\tt GlobalSegMap} 
+! arguement {\tt GSMap} and returns a vector of the points owned by
+! {\tt PEno}.  {\tt Points} is allocated here.  The calling process
+! is responsible for deallocating the space.
+!
+! !INTERFACE:
+    subroutine OrderedPoints_(GSMap, PEno, Points)
 
+!
+! !USES:
+!
+      use m_die
+
+      implicit none
+
+      type(GlobalSegMap), intent(in) :: GSMap   ! input GlobalSegMap
+      integer,            intent(in) :: PEno	! input process number
+      integer,dimension(:),pointer :: Points ! the vector of points
+
+! !REVISION HISTORY:
+! 	25Apr01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::OrderedPoints_'
+  integer :: nlsegs,mysize,ier,i,j,k
+  integer,dimension(:),allocatable :: mystarts,mylengths
+
+  nlsegs = nlseg(GSMap,PEno)
+  mysize=ProcessStorage(GSMap,PEno)
+
+  allocate(mystarts(nlsegs),mylengths(nlsegs), &
+      Points(mysize),stat=ier)
+  if(ier/=0) call MP_perr_die(myname_,'allocate(mystarts,..)',ier)
+
+! pull out the starts and lengths that PEno owns in the order
+! they appear in the GSMap.
+  j=1
+  do i=1,GSMap%ngseg
+    if(GSMap%pe_loc(i)==PEno) then
+      mystarts(j)=GSMap%start(i)
+      mylengths(j)=GSMap%length(i)
+      j=j+1
+    endif
+  enddo
+
+! now recalculate the values of the grid point numbers
+! based on the starts and lengths
+! form one long vector which is all local GSMap points
+  i=1
+  do j=1,nlsegs
+    do k=1,mylengths(j)
+     Points(i)=mystarts(j)+k-1
+     i=i+1
+    enddo
+  enddo
+
+  deallocate(mystarts,mylengths, stat=ier)
+  if(ier/=0) call MP_perr_die(myname_,'deallocate(mystarts,..)',ier)
+
+ end subroutine OrderedPoints_
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
