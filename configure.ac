@@ -18,7 +18,7 @@ AC_HELP_STRING([--enable-selectedrealkind],
 # DECLARE THE FOLLOWING PRECIOUS VARIABLES
 
 AC_ARG_VAR(MPILIBS,[MPI library command line invocation])
-AC_ARG_VAR(MPIHEADER,[MPI header include path])
+AC_ARG_VAR(MPIHEADER,[MPI header include path with INCLUDEFLAG])
 AC_ARG_VAR(FPP,C-preprocessor for Fortran source code)
 AC_ARG_VAR(FPPFLAGS,C-preprocessing flags for Fortran source code)
 AC_ARG_VAR(MACHDEFS,MCT compiler and OS flags)
@@ -30,7 +30,7 @@ AC_ARG_VAR(REAL8,[Fortran compiler flag for setting the default REAL size to REA
 AC_ARG_VAR(BIT64,Fortran compiler flag for generating 64-bit objects)
 AC_ARG_VAR(ENDIAN,Fortran compiler flag for converting big-endian to little-endian)
 AC_ARG_VAR(INCLUDEFLAG,Fortran compiler flag for specifying module search path)
-AC_ARG_VAR(INCLUDEPATH,Additional library and module paths)
+AC_ARG_VAR(INCLUDEPATH,Additional library and module paths with INCLUDEFLAG)
 AC_ARG_VAR(AR,Archive command)
 
 # SET TEMPORARY VARIABLES
@@ -88,7 +88,7 @@ if test "$ac_hostname" = "user02"; then
          if test -z "$MPIHEADER"; then
             echo "Using preset MPI configuration for titan"
 	    MPILIBS="-L/usr/local/vmi/mpich/lib/intel -lmpich -lvmi -ldl -lpthread"
-	    MPIHEADER="/usr/local/vmi/mpich/include"
+	    MPIHEADER="-I/usr/local/vmi/mpich/include"
          fi
       fi
    fi

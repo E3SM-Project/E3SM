@@ -878,7 +878,7 @@ Optional Features:
 
 Some influential environment variables:
   MPILIBS     MPI library command line invocation
-  MPIHEADER   MPI header include path
+  MPIHEADER   MPI header include path with INCLUDEFLAG
   FPP         C-preprocessor for Fortran source code
   FPPFLAGS    C-preprocessing flags for Fortran source code
   MACHDEFS    MCT compiler and OS flags
@@ -891,7 +891,7 @@ Some influential environment variables:
   BIT64       Fortran compiler flag for generating 64-bit objects
   ENDIAN      Fortran compiler flag for converting big-endian to little-endian
   INCLUDEFLAG Fortran compiler flag for specifying module search path
-  INCLUDEPATH Additional library and module paths
+  INCLUDEPATH Additional library and module paths with INCLUDEFLAG
   AR          Archive command
   CC          C compiler command
   CFLAGS      C compiler flags
@@ -1407,7 +1407,7 @@ if test "$ac_hostname" = "user02"; then
          if test -z "$MPIHEADER"; then
             echo "Using preset MPI configuration for titan"
 	    MPILIBS="-L/usr/local/vmi/mpich/lib/intel -lmpich -lvmi -ldl -lpthread"
-	    MPIHEADER="/usr/local/vmi/mpich/include"
+	    MPIHEADER="-I/usr/local/vmi/mpich/include"
          fi
       fi
    fi
