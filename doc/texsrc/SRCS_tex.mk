@@ -1,7 +1,4 @@
 TEXFILES= 		\
-MCT_Recv.tex		\
-MCT_Recvsum.tex		\
-MCT_Send.tex		\
 accumulate.tex		\
 m_Accumulator.tex       \
 m_AccumulatorComms.tex  \
@@ -28,5 +25,6 @@ m_SparseMatrixDecomp.tex \
 m_SparseMatrixToMaps.tex \
 m_SpatialIntegral.tex \
 m_String.tex \
+m_Transfer.tex \
 m_List.tex
 
