@@ -94,7 +94,7 @@
 	PermuteInPlace_ 
     end interface
     interface SortPermute ; module procedure &
-	PermuteInPlace_ 
+	SortPermuteInPlace_ 
     end interface
 
 
