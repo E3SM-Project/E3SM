@@ -38,6 +38,10 @@
 ! !REVISION HISTORY:
 !       13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 !                 and API specifications.
+!       03Aug01 - E. Ong <eong@mcs.anl.gov> - in ByRowGSMap and ByColumnGSMap,
+!                 call GlobalSegMap_init on non-root processes with actual 
+!                 shaped arguments to satisfy Fortran 90 standard. See
+!                 comments in ByRowGSMap/ByColumnGSMap.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_SparseMatrixDecomp'
@@ -200,6 +204,21 @@
 
   endif ! if(myID == root)
 
+       ! Non-root processes call GlobalSegMap_init with root_start, 
+       ! root_length, and root_pe_loc, although these arguments are 
+       ! not used in the subroutine. Since these correspond to dummy 
+       ! shaped array arguments in initr_, the Fortran 90 standard 
+       ! dictates that the actual arguments must contain complete shape 
+       ! information. Therefore, these array arguments must be 
+       ! allocated on all processes.
+
+  if(myID /= root) then
+     allocate(starts(1),lengths(1),pe_locs(1),stat=ierr)
+     if(ierr /= 0) then
+        call MP_perr_die(myname_,'non-root allocate(starts...',ierr)
+     endif
+  endif
+
        ! Using this local data on the root, create the SparseMatrix 
        ! GlobalSegMap sMGSMap (which will be valid on all processes
        ! on the communicator:
@@ -207,14 +226,13 @@
   call GlobalSegMap_init(sMGSMap, ngseg, starts, lengths, pe_locs, &
                          root, comm, comp_id, gsize)
 
-       ! Clean up (on the root)
+       ! Clean up 
 
-  if(myID == root) then
-     deallocate(starts, lengths, pe_locs, stat=ierr)
-     if(ierr /= 0) then
-	call MP_perr_die(myname_,'deallocate(starts...',ierr)
-     endif
+  deallocate(starts, lengths, pe_locs, stat=ierr)
+  if(ierr /= 0) then
+     call MP_perr_die(myname_,'deallocate(starts...',ierr)
   endif
+
 
  end subroutine ByColumnGSMap_
 
@@ -374,6 +392,21 @@
 
   endif ! if(myID == root)
 
+       ! Non-root processes call GlobalSegMap_init with root_start, 
+       ! root_length, and root_pe_loc, although these arguments are 
+       ! not used in the subroutine. Since these correspond to dummy 
+       ! shaped array arguments in initr_, the Fortran 90 standard 
+       ! dictates that the actual arguments must contain complete shape 
+       ! information. Therefore, these array arguments must be 
+       ! allocated on all processes.
+
+  if(myID /= root) then
+     allocate(starts(1),lengths(1),pe_locs(1),stat=ierr)
+     if(ierr /= 0) then
+	call MP_perr_die(myname_,'non-root allocate(starts...',ierr)
+     endif
+  endif
+
        ! Using this local data on the root, create the SparseMatrix 
        ! GlobalSegMap sMGSMap (which will be valid on all processes
        ! on the communicator:
@@ -381,14 +414,13 @@
   call GlobalSegMap_init(sMGSMap, ngseg, starts, lengths, pe_locs, &
                          root, comm, comp_id, gsize)
 
-       ! Clean up on the root:
+       ! Clean up:
 
-  if(myID == root) then
-     deallocate(starts, lengths, pe_locs, stat=ierr)
-     if(ierr /= 0) then
-	call MP_perr_die(myname_,'deallocate(starts...',ierr)
-     endif
+  deallocate(starts, lengths, pe_locs, stat=ierr)
+  if(ierr /= 0) then
+     call MP_perr_die(myname_,'deallocate(starts...',ierr)
   endif
+
 
  end subroutine ByRowGSMap_
 
