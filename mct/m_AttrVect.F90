@@ -1,5 +1,5 @@
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!     Math and Computer Science Division, Argonne National Laboratory  !
 !-----------------------------------------------------------------------
 ! CVS $Id$
 ! CVS $Name$ 
@@ -193,7 +193,7 @@
  contains
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!     Math and Computer Science Division, Argonne National Laboratory  !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: init_ - Initialize an AttrVect Given Attribute Lists and Length
@@ -294,7 +294,7 @@
  end subroutine init_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!     Math and Computer Science Division, Argonne National Laboratory  !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: initv_ - Initialize One AttrVect from Another
@@ -381,7 +381,7 @@
  end subroutine initv_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!     Math and Computer Science Division, Argonne National Laboratory  !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: initl_ - Initialize an AttrVect Using the List Type
@@ -513,7 +513,7 @@
  end subroutine initl_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!     Math and Computer Science Division, Argonne National Laboratory  !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: clean_ - Deallocate Allocated Memory Structures of an AttrVect
@@ -639,7 +639,7 @@
  end subroutine clean_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!     Math and Computer Science Division, Argonne National Laboratory  !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: lsize_ - Length of an AttrVect
@@ -815,7 +815,7 @@
  end subroutine zero_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!     Math and Computer Science Division, Argonne National Laboratory  !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: nIAttr_ - Return the Number of Integer Attributes
@@ -855,7 +855,7 @@
  end function nIAttr_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!     Math and Computer Science Division, Argonne National Laboratory  !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: nRAttr_ - Return the Number of Real Attributes
@@ -895,7 +895,7 @@
  end function nRAttr_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!     Math and Computer Science Division, Argonne National Laboratory  !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: getIList_ - Retrieve the Name of a Numbered Integer Attribute
@@ -937,7 +937,7 @@
  end subroutine getIList_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!     Math and Computer Science Division, Argonne National Laboratory  !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: getRList_ - Retrieve the Name of a Numbered Real Attribute
@@ -979,7 +979,7 @@
  end subroutine getRList_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!     Math and Computer Science Division, Argonne National Laboratory  !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: indexIA_ - Index an Integer Attribute
@@ -1079,7 +1079,7 @@
  end function indexIA_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!     Math and Computer Science Division, Argonne National Laboratory  !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: indexRA_ - Index a Real Attribute
