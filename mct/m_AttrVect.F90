@@ -995,6 +995,21 @@
 
   character(len=*),parameter :: myname_=myname//'::exportIListToChar_'
 
+  ! The following declaration avoids a bug in the SGI MIPSpro Fortran 90
+  ! compiler version 7.30. If this line is removed, the following error 
+  ! will occur during compile time:
+
+  ! Signal: Segmentation fault in IR->WHIRL Conversion phase.
+  ! "m_AttrVect.F90": Error: Signal Segmentation fault in phase IR->WHIRL 
+  ! Conversion -- processing aborted
+  ! f90 ERROR:  /opt/MIPSpro/73/usr/lib32/cmplrs/mfef90 died due to signal 4
+  ! f90 ERROR:  core dumped
+  ! *** Error code 32 (bu21)
+
+  !::::::::::::::::::::::::::::::::!
+  type(List) :: DoNotRemoveThisLine!
+  !::::::::::::::::::::::::::::::::!
+
        ! Extract the INTEGER attribute list to a character:
 
   if(List_allocated(aV%iList)) then
@@ -1045,6 +1060,21 @@
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::exportRListToChar_'
+
+  ! The following declaration avoids a bug in the SGI MIPSpro Fortran 90
+  ! compiler version 7.30. If this line is removed, the following error 
+  ! will occur during compile time:
+
+  ! Signal: Segmentation fault in IR->WHIRL Conversion phase.
+  ! "m_AttrVect.F90": Error: Signal Segmentation fault in phase IR->WHIRL 
+  ! Conversion -- processing aborted
+  ! f90 ERROR:  /opt/MIPSpro/73/usr/lib32/cmplrs/mfef90 died due to signal 4
+  ! f90 ERROR:  core dumped
+  ! *** Error code 32 (bu21)
+
+  !::::::::::::::::::::::::::::::::!
+  type(List) :: DoNotRemoveThisLine!
+  !::::::::::::::::::::::::::::::::!
 
        ! Extract the REAL attribute list to a character:
 
