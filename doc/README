@@ -1,10 +1,10 @@
 
 To build the .dvi files for the documentation. type "make".
 
-This will build both the full design document ngc_proposed_design.dvi
-and the API's only portion of that mct_APIs.dvi
+This will build both the Users Guide
+and the API's only, mct_APIs.dvi
 
-To build just the design doc, type "make design"
+To build just the Users guide, type "make users"
 To build just the APIs, type "make apis"
 
 NOTE:  this build system isn't working perfectly yet.  It will
@@ -15,11 +15,11 @@ To build "by hand" using the design doc as an example:
 cd to texsrc, type "make"
 cd back to doc directory then do:
 
-latex ngc_proposed_design
-bibtex ngc_proposed_design
-latex ngc_proposed_design
-latex ngc_proposed_design
+latex MCTUsersGuide
+bibtex MCTUsersGuide
+latex MCTUsersGuide
+latex MCTUsersGuide
 
 Similarily for the APIs document
 
-R. Jacob  16Feb01  MCS/ANL
+R. Jacob  13Sep01  MCS/ANL
