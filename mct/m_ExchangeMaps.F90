@@ -430,16 +430,25 @@
 
      if(LocalMapPars(MapTypeIndex) /= RemoteMapPars(MapTypeIndex)) then
 	ierr = 2
+	write(stderr,*) myname_,":: MCTERROR, Map Type mismatch ", &
+	"LocalMap Type = ",LocalMapPars(MapTypeIndex)," RemoteMap Type = ", &
+	RemoteMapPars(MapTypeIndex)
 	call die(myname_,'Map Type mismatch',ierr)
      endif
 
      if(LocalMapPars(GsizeIndex) /= RemoteMapPars(GsizeIndex)) then
 	ierr = 3
+	write(stderr,*) myname_,":: MCTERROR, Grid Size mismatch ", &
+	"LocalMap Gsize = ",LocalMapPars(GsizeIndex)," RemoteMap Gsize = ", &
+	RemoteMapPars(GsizeIndex)
 	call die(myname_,'Map Grid Size mismatch',ierr)
      endif
 
      if(RemoteCompID /= RemoteMapPars(ComponentIDIndex)) then
 	ierr = 4
+	write(stderr,*) myname_,":: MCTERROR, Component ID mismatch ", &
+	"RemoteCompID = ",RemoteCompID," RemoteMap CompID = ", &
+	RemoteMapPars(ComponentIDIndex)
 	call die(myname_,'Component ID mismatch',ierr)
      endif
 
