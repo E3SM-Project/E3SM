@@ -309,7 +309,6 @@ if test -z "$FCFLAGS"; then
    FCFLAGS="-w"
 fi
 echo "Intel Compilers must set the environment variable F_UFMTENDIAN=big to do endian conversion";;
-fort) MACHDEFS="-DCPRCOMPAQ $MACHDEFS";;
 g95) MACHDEFS="-DCPRGNU $MACHDEFS";;
 esac
 
@@ -349,6 +348,12 @@ fi
 if echo $f90_version | grep -i compaq >/dev/null 2>&1; then
    MACHDEFS="-DCPRCOMPAQ $MACHDEFS"
    MPILIBS="$MPILIBS -lelan"
+   if test -z "$REAL8"; then
+      REAL8="-real_size 64"
+   fi
+   if test -z "$ENDIAN"; then
+      ENDIAN="-convert big_endian"
+   fi
 fi
 if echo $f90_version | grep -i sx >/dev/null 2>&1; then
    MACHDEFS="-DCPRSX $MACHDEFS"

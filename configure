@@ -2225,6 +2225,7 @@ ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
+rm -f a.out
 
 
 # Check for MPI libraries.
@@ -2523,7 +2524,7 @@ _ACEOF
 # 1 to this macro) to the Fortran 90 compiler in order to get "version" output
 ac_save_F90FLAGS=$F90FLAGS
 F90FLAGS="$F90FLAGS $ac_version"
-(eval echo $as_me:2526: \"$ac_link\") >&5
+(eval echo $as_me:2527: \"$ac_link\") >&5
 ac_f90_version_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 echo "$ac_f90_version_output" >&5
 F90FLAGS=$ac_save_F90FLAGS
@@ -3368,7 +3369,6 @@ if test -z "$FCFLAGS"; then
    FCFLAGS="-w"
 fi
 echo "Intel Compilers must set the environment variable F_UFMTENDIAN=big to do endian conversion";;
-fort) MACHDEFS="-DCPRCOMPAQ $MACHDEFS";;
 g95) MACHDEFS="-DCPRGNU $MACHDEFS";;
 esac
 
@@ -3408,6 +3408,12 @@ fi
 if echo $f90_version | grep -i compaq >/dev/null 2>&1; then
    MACHDEFS="-DCPRCOMPAQ $MACHDEFS"
    MPILIBS="$MPILIBS -lelan"
+   if test -z "$REAL8"; then
+      REAL8="-real_size 64"
+   fi
+   if test -z "$ENDIAN"; then
+      ENDIAN="-convert big_endian"
+   fi
 fi
 if echo $f90_version | grep -i sx >/dev/null 2>&1; then
    MACHDEFS="-DCPRSX $MACHDEFS"

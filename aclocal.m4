@@ -424,6 +424,7 @@ _AC_LANG_COMPILER_GNU
 ac_ext=$ac_save_ext
 G95=`test $ac_compiler_gnu = yes && echo yes`
 AC_LANG_POP(Fortran 90)dnl
+rm -f a.out
 ])# AC_PROG_F90
 
 
