@@ -920,6 +920,7 @@
       use m_List,     only : List_append => append
       use m_List,     only : List_nitem => nitem
       use m_List,     only : List_get => get
+      use m_List,     only : List_shared => GetSharedListIndices
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
@@ -950,9 +951,20 @@
 
   type(List) :: IAList, RAList
   type(String) :: AxisName
-  integer :: DimMax, NumDims, NumGridPoints
+  integer, dimension(:), pointer :: &
+       CoordListIndices, CoordSortOrderIndices
+  integer :: DimMax, NumDims, NumGridPoints, NumShared
   integer :: ierr, iAxis, i, j, k, n, nCycles, nRepeat
   integer :: index
+
+       ! Nullify GeneralGrid components
+
+  call List_nullify(GGrid%coordinate_list)
+  call List_nullify(GGrid%coordinate_sort_order)
+  call List_nullify(GGrid%weight_list)
+  call List_nullify(GGrid%other_list)
+  call List_nullify(GGrid%index_list)
+  nullify(GGrid%descend)
 
        ! Sanity check on axis definition arguments:
 
@@ -993,28 +1005,35 @@
   endif
 
        ! If the LOGICAL descend(:) flags for sorting are present, 
-       ! make sure that (1) CoordSortOrder is also present, and 
-       ! (2) The size of descend(:) matches the size of Dims(:),
+       ! make sure that (1) descend is associated, and 
+       ! (2) CoordSortOrder is also present, and 
+       ! (3) The size of descend(:) matches the size of Dims(:),
        ! both of which correspond to the number of axes on the 
        ! Cartesian Grid.
 
-  if(present(descend) .and. (.not. present(CoordSortOrder))) then
-     write(stderr,'(4a)') myname_, &
-	  ':: FATAL -- Invocation with the argument descend(:) present ', &
-	  'requires the presence of the argument CoordSortOrder, ', &
-	  'which was not provided.'
-     call die(myname_)
-  endif
-
   if(present(descend)) then
+
+     if(.not.associated(descend)) then
+        call die(myname_,'descend argument must be associated')
+     endif
+
+     if(.not. present(CoordSortOrder)) then
+        write(stderr,'(4a)') myname_, &
+             ':: FATAL -- Invocation with the argument descend(:) present ', &
+             'requires the presence of the argument CoordSortOrder, ', &
+             'which was not provided.'
+        call die(myname_, 'Argument CoordSortOrder was not provided')
+     endif
+
      if(size(descend) /= size(Dims)) then
 	write(stderr,'(4a,i8,a,i8)') myname_, &
 	     ':: FATAL-- The sizes of the arrays descend(:) and Dims(:) ', &
 	     'must match (they both must equal the number of dimensions ', &
 	     'of the Cartesian Grid).  size(Dims) = ',size(Dims), &
 	     ' size(descend) = ',size(descend)
-	call die(myname_)
+	call die(myname_,'size of <descend> and <Dims> arguments must match')
      endif
+
   endif
 
        ! Initialize GGrid%coordinate_list and use the number of items 
@@ -1022,8 +1041,16 @@
        ! Grid (NumDims):
 
   call List_init(GGrid%coordinate_list, CoordChars)
-
+  
   NumDims = List_nitem(GGrid%coordinate_list)
+
+       ! Check the number of arguments
+
+  if(NumDims <= 0) then
+     write(stderr,*) myname_, &
+	  ':: ERROR CoordList is empty!'
+     call die(myname_,'List_nitem(CoordList) <= 0',NumDims)
+  endif
 
        ! Do the number of coordinate names specified match the number
        ! of coordinate axes (i.e., the number of columns in AxisData(:,:))?
@@ -1050,17 +1077,25 @@
   call List_init(IAList, GlobGridNum)
   call List_init(RAList, CoordChars)
 
-       ! Next, nullify all the optional GGrid List components (except 
-       ! GGrid%coordinate_list.  Also nullify the descend(:) flags:
-
-  call List_nullify(GGrid%coordinate_sort_order)
-  call List_nullify(GGrid%weight_list)
-  call List_nullify(GGrid%other_list)
-  call List_nullify(GGrid%index_list)
-  nullify(GGrid%descend)
-
   if(present(CoordSortOrder)) then
+
      call List_init(GGrid%coordinate_sort_order, CoordSortOrder)
+
+        ! Check the items in the coordinate list and the 
+        ! coordinate grid sort keys...they should contain
+        ! the same items.
+
+     call List_shared(GGrid%coordinate_list,GGrid%coordinate_sort_order, &
+	              NumShared,CoordListIndices,CoordSortOrderIndices)
+
+     deallocate(CoordListIndices,CoordSortOrderIndices,stat=ierr)
+     if(ierr/=0) call die(myname_,'deallocate(CoordListIndices..)',ierr)
+     
+     if(NumShared /= NumDims) then
+	call die(myname_,'CoordSortOrder must have the same items &
+	         & as CoordList',abs(NumDims-NumShared))
+     endif
+
   endif
 
   if(present(WeightChars)) then
@@ -1078,25 +1113,26 @@
      call List_append(IAList, GGrid%index_list)
   endif
 
-       ! If the argument descend is provided, create and load
-       ! GGrid%descend:
+       ! Finally, Initialize GGrid%descend from descend(:).
+       ! If descend argument is not present, set it to the default .false.
 
-  if(present(descend)) then
+  if(present(CoordSortOrder)) then
 
      allocate(GGrid%descend(NumDims), stat=ierr)
-     if(ierr /= 0) then
-	write(stderr,'(2a,i8)') myname_, &
-	     ':: FATAL--allocate(GGrid%descend...) failed with ierr=', &
-	     ierr
-	call die(myname_)
+     if(ierr /= 0) call die(myname_,"allocate GGrid%descend...",ierr)
+
+     if(present(descend)) then
+        do n=1,NumDims
+           GGrid%descend(n) = descend(n)
+        end do
+     else
+        do n=1,NumDims
+           GGrid%descend(n) = .FALSE.
+        end do
      endif
-
-     do n=1,NumDims
-	GGrid%descend(n) = descend(n)
-     end do
-
-  endif ! if(present(descend))...
-
+        
+  endif ! if(present(CoordSortOrder))...
+  
        ! Compute the total number of grid points in the GeneralGrid.
        ! This is merely the product of the elements of Dims(:)
 
@@ -1277,11 +1313,10 @@
       use m_List,     only : List_init => init
       use m_List,     only : List_clean => clean
       use m_List,     only : List_nitem => nitem
-      use m_List,     only : List_exportToChar => exportToChar
       use m_List,     only : List_nullify => nullify
       use m_List,     only : List_copy => copy
       use m_List,     only : List_append => append
-
+      use m_List,     only : List_shared => GetSharedListIndices
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
 
@@ -1310,41 +1345,62 @@
 !
   character(len=*),parameter :: myname_=myname//'::initUnstructured_'
 
-  integer :: i, ierr, index, n, nOffSet
+  integer :: i, ierr, index, n, nOffSet, NumShared
+  integer, dimension(:), pointer :: &
+       CoordListIndices, CoordSortOrderIndices
   type(List) :: IAList, RAList
-  type(List) :: temp_coord_list, temp_sort_order
+
+       ! Nullify all GeneralGrid components
+
+  call List_nullify(GGrid%coordinate_list)
+  call List_nullify(GGrid%coordinate_sort_order)
+  call List_nullify(GGrid%weight_list)
+  call List_nullify(GGrid%other_list)
+  call List_nullify(GGrid%index_list)
+  nullify(GGrid%descend)
 
        ! Sanity checks on input arguments:
 
        ! If the LOGICAL descend(:) flags for sorting are present, 
-       ! make sure that (1) CoordSortOrder is also present, and 
-       ! (2) The size of descend(:) matches the size of Dims(:),
+       ! make sure that (1) it is associated, 
+       ! (2) CoordSortOrder is also present, and 
+       ! (3) The size of descend(:) matches the size of Dims(:),
        ! both of which correspond to the number of axes on the 
        ! Cartesian Grid.
 
-  if(present(descend) .and. (.not. present(CoordSortOrder))) then
-     write(stderr,'(4a)') myname_, &
-	  ':: FATAL -- Invocation with the argument descend(:) present ', &
-	  'requires the presence of the argument CoordSortOrder, ', &
-	  'which was not provided.'
-     call die(myname_)
-  endif
-
   if(present(descend)) then
-     if(size(descend) /= nDims) then
-	write(stderr,'(4a,i8,a,i8)') myname_, &
-	     ':: FATAL-- The size of the array descend(:) and nDims ', &
-	     'must be equal (they both must equal the number of dimensions ', &
-	     'of the unstructured Grid).  nDims = ',nDims, &
-	     ' size(descend) = ',size(descend)
-	call die(myname_)
+
+     if(.not.associated(descend)) then
+        call die(myname_,'descend argument must be associated')
      endif
+
+     if(.not. present(CoordSortOrder)) then
+        write(stderr,'(4a)') myname_, &
+             ':: FATAL -- Invocation with the argument descend(:) present ', &
+             'requires the presence of the argument CoordSortOrder, ', &
+             'which was not provided.'
+        call die(myname_,'Argument CoordSortOrder was not provided')
+     endif
+
+     if(present(descend)) then
+        if(size(descend) /= nDims) then
+           write(stderr,'(4a,i8,a,i8)') myname_, &
+                ':: FATAL-- The size of the array descend(:) and nDims ', &
+                'must be equal (they both must equal the number of dimensions ', &
+                'of the unstructured Grid).  nDims = ',nDims, &
+	     ' size(descend) = ',size(descend)
+           call die(myname_,'size(descend)/=nDims')
+        endif
+     endif
+
   endif
 
        ! Initialize GGrid%coordinate_list and comparethe number of items 
        ! to the number of dimensions of the unstructured nDims:
 
   call List_init(GGrid%coordinate_list, CoordChars)
+
+       ! Check the coordinate_list
 
   if(nDims /= List_nitem(GGrid%coordinate_list)) then
      write(stderr,'(4a,i8,3a,i8)') myname_, &
@@ -1354,6 +1410,11 @@
 	  ' CoordChars = ',CoordChars, ' number of dimensions in CoordChars = ', &
 	  List_nitem(GGrid%coordinate_list) 
      call die(myname_)
+  endif
+
+  if(nDims <= 0) then
+     write(stderr,*) myname_, ':: ERROR nDims=0!'
+     call die(myname_,'nDims <= 0',nDims)
   endif
 
        ! PointData is a one-dimensional array containing all the gridpoint
@@ -1380,33 +1441,21 @@
   call List_init(IAList, GlobGridNum)
   call List_init(RAList, CoordChars)
 
-       ! Next, nullify all the optional GGrid List components (except 
-       ! GGrid%coordinate_list.  Also nullify the descend(:) flags:
-
-  call List_nullify(GGrid%coordinate_sort_order)
-  call List_nullify(GGrid%weight_list)
-  call List_nullify(GGrid%other_list)
-  call List_nullify(GGrid%index_list)
-  nullify(GGrid%descend)
-
   if(present(CoordSortOrder)) then
+
      call List_init(GGrid%coordinate_sort_order, CoordSortOrder)
-     if(List_nitem(GGrid%coordinate_sort_order) /= &
-	  List_nitem(GGrid%coordinate_list)) then
 
-	! The following unnecessary List_copy has been added to 
-        ! avoid a compiler bug on the SunOS compiler (and possibly SGI) 
+     call List_shared(GGrid%coordinate_list,GGrid%coordinate_sort_order, &
+	              NumShared,CoordListIndices,CoordSortOrderIndices)
 
-	call List_copy(temp_coord_list,GGrid%coordinate_list)
-	call List_copy(temp_sort_order,GGrid%coordinate_sort_order)
-	write(stderr,'(6a)') myname_, &
-	     'FATAL - Number of coordinates does not match the number of ', &
-	     'coordinate sort keys.  GGrid%coordinate_list = ', &
-	     List_exportToChar(temp_coord_list), &
-	     'GGrid_coordinate_sort_order = ', &
-	     List_exportToChar(temp_sort_order)
-	call die(myname_)
+     deallocate(CoordListIndices,CoordSortOrderIndices,stat=ierr)
+     if(ierr/=0) call die(myname_,'deallocate(CoordListIndices..)',ierr)
+     
+     if(NumShared /= nDims) then
+	call die(myname_,'CoordSortOrder must have the same items &
+	         & as CoordList',abs(nDims-NumShared))
      endif
+
   endif
 
   if(present(WeightChars)) then
@@ -1424,25 +1473,26 @@
      call List_append(IAList, GGrid%index_list)
   endif
 
-       ! If the argument descend is provided, create and load
-       ! GGrid%descend:
+       ! Initialize GGrid%descend from descend(:).
+       ! If descend argument is not present, set it to the default .false.
 
-  if(present(descend)) then
+  if(present(CoordSortOrder)) then
 
      allocate(GGrid%descend(nDims), stat=ierr)
-     if(ierr /= 0) then
-	write(stderr,'(2a,i8)') myname_, &
-	     ':: FATAL--allocate(GGrid%descend...) failed with ierr=', &
-	     ierr
-	call die(myname_)
+     if(ierr /= 0) call die(myname_,"allocate GGrid%descend...",ierr)
+
+     if(present(descend)) then
+        do n=1,nDims
+           GGrid%descend(n) = descend(n)
+        end do
+     else
+        do n=1,nDims
+           GGrid%descend(n) = .FALSE.
+        end do
      endif
-
-     do n=1,nDims
-	GGrid%descend(n) = descend(n)
-     end do
-
-  endif ! if(present(descend))...
-
+        
+  endif ! if(present(CoordSortOrder))...
+  
        ! Create Grid attribute data storage AttrVect GGrid%data:
 
   call AttrVect_init(GGrid%data, IAList, RAList, nPoints)
