@@ -414,11 +414,15 @@ end function luavail
 
     subroutine luflush(unit)
       use m_stdio, only : stdout
+#ifdef NAG
+      use F90_UNIX_IO,only : flush
+#endif
       implicit none
       integer,optional,intent(in) :: unit
 
 ! !REVISION HISTORY:
 ! 	13Mar98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+!       08Jul02 - E. Ong <eong@mcs.anl.gov> - added flush support for nag95
 !EOP
 !_______________________________________________________________________
   character(len=*),parameter :: myname_=myname//'::luflush'
