@@ -60,7 +60,7 @@
                                 ! segments in the map:  Number of 
                                 ! processes for a GlobalMap; Number of
                                 ! segments for GlobalSegMap
-
+! !REVISION HISTORY:
 !       03Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial module
 !       03Aug01 - E.T. Ong <eong@mcs.anl.gov> - in ExGSMapGSMap,
 !                 call GlobalSegMap_init with actual shaped arrays
