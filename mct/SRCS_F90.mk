@@ -8,6 +8,7 @@ accumulate.F90		\
 m_SparseMatrix.F90      \
 m_Navigator.F90		\
 m_AttrVectComms.F90	\
+m_AttrVectReduce.F90	\
 m_AccumulatorComms.F90  \
 m_SharedAttrIndices.F90 \
 m_GeneralGrid.F90	\

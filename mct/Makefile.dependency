@@ -4,6 +4,7 @@ m_GlobalMap.o:
 m_GlobalSegMap.o:
 m_Navigator.o:
 m_AttrVectComms.o: m_AttrVect.o m_GlobalMap.o
+m_AttrVectReduce.o: m_AttrVect.o
 m_AccumulatorComms.o: m_AttrVect.o m_GlobalMap.o m_AttrVectComms.o
 m_SparseMatrix.o: m_AttrVect.o m_GlobalMap.o m_AttrVectComms.o
 m_GeneralGrid.o: m_AttrVect.o
@@ -19,7 +20,7 @@ m_SparseMatrixToMaps.o: m_SparseMatrix.o m_GlobalSegMap.o
 m_SparseMatrixComms.o:	m_SparseMatrix.o m_GlobalSegMap.o
 m_SharedAttrIndices.o: m_AttrVect.o m_Accumulator.o
 accumulate.o: m_AttrVect.o m_Accumulator.o m_SharedAttrIndices.o
-m_GlobalIntegral.o: m_GeneralGrid.o m_AttrVect.o
+m_GlobalIntegral.o: m_GeneralGrid.o m_AttrVect.o m_AttrVectReduce.o
 MCT_Send.o: m_AttrVect.o m_Router.o m_MCTWorld.o
 m_NBSend.o: m_AttrVect.o m_Router.o m_MCTWorld.o
 MCT_Recv.o: m_AttrVect.o m_Router.o m_MCTWorld.o
