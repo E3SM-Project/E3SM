@@ -221,7 +221,7 @@
 
   if(AttrVect_lsize(inAv) /= GeneralGrid_lsize(GGrid)) then
      ierr = AttrVect_lsize(inAv) - GeneralGrid_lsize(GGrid)
-     write(stderr,'(2a,i8,a,i8)') myname_, &
+     write(stderr,'(3a,i8,a,i8)') myname_, &
 	  ':: inAv / GGrid length mismatch:  ', &
 	  ' AttrVect_lsize(inAv) = ',AttrVect_lsize(inAv), &
 	  ' GeneralGrid_lsize(GGrid) = ',GeneralGrid_lsize(GGrid)
@@ -349,7 +349,7 @@
 
   if(AttrVect_lsize(inAv) /= size(Weights)) then
      ierr = AttrVect_lsize(inAv) - size(Weights)
-     write(stderr,'(2a,i8,a,i8)') myname_, &
+     write(stderr,'(3a,i8,a,i8)') myname_, &
 	  ':: inAv / Weights array length mismatch:  ', &
 	  ' AttrVect_lsize(inAv) = ',AttrVect_lsize(inAv), &
 	  ' size(Weights) = ',size(Weights)
@@ -359,7 +359,7 @@
   if(present(SumWeights)) then
      mySumWeights = SumWeights
      if(.not. present(WeightTag)) then
-	write(stderr,*) myname_,':: if the input argument SumWeights=.TRUE.,', &
+	write(stderr,'(3a)') myname_,':: FATAL--If the input argument SumWeights=.TRUE.,', &
                         ' then the argument WeightTag must be provided.'
 	call die(myname_)
      endif
@@ -736,7 +736,7 @@
 
   if(AttrVect_lsize(inAv) /= GeneralGrid_lsize(GGrid)) then
      ierr = AttrVect_lsize(inAv) - GeneralGrid_lsize(GGrid)
-     write(stderr,'(2a,i8,a,i8)') myname_, &
+     write(stderr,'(3a,i8,a,i8)') myname_, &
 	  ':: inAv / GGrid length mismatch:  ', &
 	  ' AttrVect_lsize(inAv) = ',AttrVect_lsize(inAv), &
 	  ' GeneralGrid_lsize(GGrid) = ',GeneralGrid_lsize(GGrid)
@@ -746,7 +746,7 @@
   if(present(SumWeights)) then
      mySumWeights = SumWeights
      if(.not. present(WeightSumTag)) then
-	write(stderr,*) myname_,':: if the input argument SumWeights=.TRUE.,', &
+	write(stderr,'(3a)') myname_,':: FATAL--If the input argument SumWeights=.TRUE.,', &
                         ' then the argument WeightSumTag must be provided.'
 	call die(myname_)
      endif
@@ -1230,7 +1230,7 @@
 
   if(AttrVect_lsize(inAv) /= size(SpatialWeights)) then
      ierr = AttrVect_lsize(inAv) - size(SpatialWeights)
-     write(stderr,'(2a,i8,a,i8)') myname_, &
+     write(stderr,'(3a,i8,a,i8)') myname_, &
 	  ':: inAv / SpatialWeights array length mismatch:  ', &
 	  ' AttrVect_lsize(inAv) = ',AttrVect_lsize(inAv), &
 	  ' size(SpatialWeights) = ',size(SpatialWeights)
@@ -1240,7 +1240,7 @@
   if(present(iMask)) then ! make sure it is the right length
      if(AttrVect_lsize(inAv) /= size(iMask)) then
 	ierr = AttrVect_lsize(inAv) - size(iMask)
-	write(stderr,'(2a,i8,a,i8)') myname_, &
+	write(stderr,'(3a,i8,a,i8)') myname_, &
 	     ':: inAv / iMask array length mismatch:  ', &
 	     ' AttrVect_lsize(inAv) = ',AttrVect_lsize(inAv), &
 	     ' size(iMask) = ',size(iMask)
@@ -1251,7 +1251,7 @@
   if(present(rMask)) then ! make sure it is the right length
      if(AttrVect_lsize(inAv) /= size(rMask)) then
 	ierr = AttrVect_lsize(inAv) - size(rMask)
-	write(stderr,'(2a,i8,a,i8)') myname_, &
+	write(stderr,'(3a,i8,a,i8)') myname_, &
 	     ':: inAv / rMask array length mismatch:  ', &
 	     ' AttrVect_lsize(inAv) = ',AttrVect_lsize(inAv), &
 	     ' size(rMask) = ',size(rMask)
@@ -1262,7 +1262,7 @@
   if(present(SumWeights)) then
      mySumWeights = SumWeights
      if(.not. present(WeightSumTag)) then
-	write(stderr,*) myname_,':: if the input argument SumWeights=.TRUE.,', &
+	write(stderr,'(3a)') myname_,':: FATAL--If the input argument SumWeights=.TRUE.,', &
                         ' then the argument WeightSumTag must be provided.'
 	call die(myname_)
      endif
@@ -1347,7 +1347,7 @@
 	      elseif((rMask(i) > 0.) .and. (rMask(i) < 1.)) then
 		 Weights(i) = rMask(i) * SpatialWeights(i)
 	      else ! rMask(i) < 0. or rMask(i) > 1.
-		 write(stderr,'(3a,i8,a,f10.7)') myname_, &
+		 write(stderr,'(3a,i8,a,e10.6)') myname_, &
 		      ':: invalid value for real', &
 		      'mask entry rMask(',i,') = ',rMask(i)
 		 call die(myname_)
@@ -1711,7 +1711,7 @@
 
   if(AttrVect_lsize(inAv) /= size(SpatialWeights)) then
      ierr = AttrVect_lsize(inAv) - size(SpatialWeights)
-     write(stderr,'(2a,i8,a,i8)') myname_, &
+     write(stderr,'(3a,i8,a,i8)') myname_, &
 	  ':: inAv / SpatialWeights array length mismatch:  ', &
 	  ' AttrVect_lsize(inAv) = ',AttrVect_lsize(inAv), &
 	  ' size(SpatialWeights) = ',size(SpatialWeights)
@@ -1721,7 +1721,7 @@
   if(present(iMask)) then ! make sure it is the right length
      if(AttrVect_lsize(inAv) /= size(iMask)) then
 	ierr = AttrVect_lsize(inAv) - size(iMask)
-	write(stderr,'(2a,i8,a,i8)') myname_, &
+	write(stderr,'(3a,i8,a,i8)') myname_, &
 	     ':: inAv / iMask array length mismatch:  ', &
 	     ' AttrVect_lsize(inAv) = ',AttrVect_lsize(inAv), &
 	     ' size(iMask) = ',size(iMask)
@@ -1732,7 +1732,7 @@
   if(present(rMask)) then ! make sure it is the right length
      if(AttrVect_lsize(inAv) /= size(rMask)) then
 	ierr = AttrVect_lsize(inAv) - size(rMask)
-	write(stderr,'(2a,i8,a,i8)') myname_, &
+	write(stderr,'(3a,i8,a,i8)') myname_, &
 	     ':: inAv / rMask array length mismatch:  ', &
 	     ' AttrVect_lsize(inAv) = ',AttrVect_lsize(inAv), &
 	     ' size(rMask) = ',size(rMask)
@@ -1951,7 +1951,7 @@
 
   if(AttrVect_lsize(inAv1) /= GeneralGrid_lsize(GGrid1)) then
      ierr = AttrVect_lsize(inAv1) - GeneralGrid_lsize(GGrid1)
-     write(stderr,'(2a,i8,a,i8)') myname_, &
+     write(stderr,'(3a,i8,a,i8)') myname_, &
 	  ':: inAv1 / GGrid1 length mismatch:  ', &
 	  ' AttrVect_lsize(inAv1) = ',AttrVect_lsize(inAv1), &
 	  ' GeneralGrid_lsize(GGrid1) = ',GeneralGrid_lsize(GGrid1)
@@ -1960,7 +1960,7 @@
 
   if(AttrVect_lsize(inAv2) /= GeneralGrid_lsize(GGrid2)) then
      ierr = AttrVect_lsize(inAv2) - GeneralGrid_lsize(GGrid2)
-     write(stderr,'(2a,i8,a,i8)') myname_, &
+     write(stderr,'(3a,i8,a,i8)') myname_, &
 	  ':: inAv2 / GGrid2 length mismatch:  ', &
 	  ' AttrVect_lsize(inAv2) = ',AttrVect_lsize(inAv2), &
 	  ' GeneralGrid_lsize(GGrid2) = ',GeneralGrid_lsize(GGrid2)
@@ -2575,7 +2575,7 @@
 
   if(AttrVect_lsize(inAv1) /= GeneralGrid_lsize(GGrid1)) then
      ierr = AttrVect_lsize(inAv1) - GeneralGrid_lsize(GGrid1)
-     write(stderr,'(2a,i8,a,i8)') myname_, &
+     write(stderr,'(3a,i8,a,i8)') myname_, &
           ':: inAv1 / GGrid1 length mismatch:  ', &
           ' AttrVect_lsize(inAv1) = ',AttrVect_lsize(inAv1), &
           ' GeneralGrid_lsize(GGrid1) = ',GeneralGrid_lsize(GGrid1)
@@ -2584,7 +2584,7 @@
 
   if(AttrVect_lsize(inAv2) /= GeneralGrid_lsize(GGrid2)) then
      ierr = AttrVect_lsize(inAv2) - GeneralGrid_lsize(GGrid2)
-     write(stderr,'(2a,i8,a,i8)') myname_, &
+     write(stderr,'(3a,i8,a,i8)') myname_, &
           ':: inAv2 / GGrid2 length mismatch:  ', &
           ' AttrVect_lsize(inAv2) = ',AttrVect_lsize(inAv2), &
           ' GeneralGrid_lsize(GGrid2) = ',GeneralGrid_lsize(GGrid2)
@@ -2839,7 +2839,7 @@
 
   if(AttrVect_lsize(inAv1) /= GeneralGrid_lsize(GGrid1)) then
      ierr = AttrVect_lsize(inAv1) - GeneralGrid_lsize(GGrid1)
-     write(stderr,'(2a,i8,a,i8)') myname_, &
+     write(stderr,'(3a,i8,a,i8)') myname_, &
           ':: inAv1 / GGrid1 length mismatch:  ', &
           ' AttrVect_lsize(inAv1) = ',AttrVect_lsize(inAv1), &
           ' GeneralGrid_lsize(GGrid1) = ',GeneralGrid_lsize(GGrid1)
@@ -2848,7 +2848,7 @@
 
   if(AttrVect_lsize(inAv2) /= GeneralGrid_lsize(GGrid2)) then
      ierr = AttrVect_lsize(inAv2) - GeneralGrid_lsize(GGrid2)
-     write(stderr,'(2a,i8,a,i8)') myname_, &
+     write(stderr,'(3a,i8,a,i8)') myname_, &
           ':: inAv2 / GGrid2 length mismatch:  ', &
           ' AttrVect_lsize(inAv2) = ',AttrVect_lsize(inAv2), &
           ' GeneralGrid_lsize(GGrid2) = ',GeneralGrid_lsize(GGrid2)

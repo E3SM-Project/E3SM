@@ -194,7 +194,7 @@
 !           Rewrote to reduce number of loops and temp storage
 !EOP -------------------------------------------------------------------
 
-  character(len=*),parameter :: myname_=myname//'::ExGMapGMap_'
+  character(len=*),parameter :: myname_=myname//'::initp_'
   integer			     :: ier,i,j,k,m
   integer			     :: mysize,myPid,othercomp
   integer			     :: lmaxsize,totallength
