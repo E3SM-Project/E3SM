@@ -288,30 +288,38 @@
 !
 ! !INTERFACE:
 
-  subroutine clean_(GMap)
+  subroutine clean_(GMap,stat)
       use m_die
       implicit none
       type(GlobalMap),intent(inout) :: GMap
+      integer,optional,intent(out)  :: stat
 
 ! !REVISION HISTORY:
 ! 	21Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
 ! 	26Jan01 - J. Larson <larson@mcs.anl.gov> incorporated comp_id.
+!       01Mar02 - E.T. Ong <eong@mcs.anl.gov> removed the die to prevent
+!                 crashes and added stat argument.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::clean_'
   integer :: ier
 
+  deallocate(GMap%counts,GMap%displs,stat=ier)
+
+  if(present(stat)) then
+     stat=ier
+  else
+     if(ier /= 0) call warn(myname_,'deallocate(GMap%...)',ier)
+  endif
+  
+  if(ier == 0) then
+
 #ifdef MALL_ON
-	if( .not.associated(GMap%counts) .or.		&
-	    .not.associated(GMap%displs) )		&
-		write(stderr,'(2a)') myname_,	&
-		  ': trying to clean uninitialized variable'
 	call mall_co(size(transfer(GMap%counts,(/1/))),myname_)
 	call mall_co(size(transfer(GMap%displs,(/1/))),myname_)
 #endif
 
-  deallocate(GMap%counts,GMap%displs,stat=ier)
-  if(ier /= 0) call perr_die(myname_,'deallocate()',ier)
+  endif
 
   GMap%lsize = 0
   GMap%gsize = 0
