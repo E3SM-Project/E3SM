@@ -105,8 +105,8 @@ end subroutine init_
 ! !INTERFACE:
 
     subroutine clean_(nav,stat)
-      use m_mall,only : mall_ison,mall_mco
-      use m_die ,only : die,perr
+      use m_mall, only : mall_ison,mall_mco
+      use m_die,  only : warn
       implicit none
       type(Navigator),intent(inout) :: nav	! the object
       integer,optional,intent(out) :: stat	! status
