@@ -93,7 +93,7 @@ LIBprof		= -lprof
 
 LIBsys	 	= $(LIBdxml)
 
-FPP             = cpp
+FPP             = /usr/lib/cpp
 CPPFLAGS	= -Dunix -D__unix__ -D__alpha -D__osf__
 F77PPFLAGS	= $(CPPFLAGS) -DLANGUAGE_FORTRAN -D__LANGUAGE_FORTRAN__
 F90PPFLAGS	= $(F77PPFLAGS) -DLANGUAGE_FORTRAN_90 -D__LANGUAGE_FORTRAN_90__
