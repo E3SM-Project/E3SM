@@ -306,11 +306,13 @@
   character(len=*),parameter :: myname_=myname//'::sMatAvMult_SMPlus_'
   type(AttrVect) :: xPrimeAV, yPrimeAV
   integer :: ierr
+  character(len=5) :: strat
 
        ! Examine the parallelization strategy, and act accordingly
 
-  select case(String_ToChar(sMatPlus%Strategy))
-  case(Xonly)
+  strat = String_ToChar(sMatPlus%Strategy)
+  select case( strat )
+  case('Xonly')
        ! Create intermediate AttrVect for x'
      call AttrVect_init(xPrimeAV, xAV, sMatPlus%XPrimeLength)
        ! Rearrange data from x to get x'
@@ -319,7 +321,7 @@
      call sMatAvMult_DataLocal_(xPrimeAV, sMatPlus%Matrix, yaV)
        ! Clean up space occupied by x'
      call AttrVect_clean(xPrimeAV, ierr)
-  case(Yonly)
+  case('Yonly')
        ! Create intermediate AttrVect for y'
      call AttrVect_init(yPrimeAV, yAV, sMatPlus%YPrimeLength)
        ! Perform perfectly data-local multiply y' = Mx
@@ -328,7 +330,7 @@
      call Rearrange(yPrimeAV, yAV, sMatPlus%YPrimeToY, .TRUE.)
        ! Clean up space occupied by y'
      call AttrVect_clean(yPrimeAV, ierr)
-  case(XandY)
+  case('XandY')
        ! Create intermediate AttrVect for x'
      call AttrVect_init(xPrimeAV, xAV, sMatPlus%XPrimeLength)
        ! Create intermediate AttrVect for y'
