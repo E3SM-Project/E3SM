@@ -270,7 +270,7 @@ PACKAGE_VERSION='2.0'
 PACKAGE_STRING='MCT 2.0'
 PACKAGE_BUGREPORT=''
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS MPILIBS MPIHEADER FPP FPPFLAGS MACHDEFS FC FCFLAGS ALLCFLAGS OPT REAL8 BIT64 ENDIAN INCLUDEFLAG INCLUDEPATH AR CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT F90 F90FLAGS ac_ct_F90 MPIF90 F90RULE F90RULECPP CRULE LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS MPILIBS MPIHEADER FPP FPPFLAGS MACHDEFS FC FCFLAGS ALLCFLAGS OPT REAL8 BIT64 ENDIAN INCLUDEFLAG INCLUDEPATH AR CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT F90 F90FLAGS F90SUFFIX ac_ct_F90 MPIF90 F90RULE F90RULECPP CRULE LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -795,6 +795,10 @@ ac_env_F90FLAGS_set=${F90FLAGS+set}
 ac_env_F90FLAGS_value=$F90FLAGS
 ac_cv_env_F90FLAGS_set=${F90FLAGS+set}
 ac_cv_env_F90FLAGS_value=$F90FLAGS
+ac_env_F90SUFFIX_set=${F90SUFFIX+set}
+ac_env_F90SUFFIX_value=$F90SUFFIX
+ac_cv_env_F90SUFFIX_set=${F90SUFFIX+set}
+ac_cv_env_F90SUFFIX_value=$F90SUFFIX
 ac_env_MPIF90_set=${MPIF90+set}
 ac_env_MPIF90_value=$MPIF90
 ac_cv_env_MPIF90_set=${MPIF90+set}
@@ -901,6 +905,7 @@ Some influential environment variables:
               headers in a nonstandard directory <include dir>
   F90         Fortran 90 compiler command
   F90FLAGS    Fortran 90 compiler flags
+  F90SUFFIX   Fortran 90 filename extension
   MPIF90      MPI Fortran compiler command
 
 Use these variables to override the choices made by `configure' or to help
@@ -2160,11 +2165,13 @@ done
 fi
 
 
-ac_ext=f90
-echo "$as_me:$LINENO: checking Fortran compiler source file extension" >&5
-echo $ECHO_N "checking Fortran compiler source file extension... $ECHO_C" >&6
-ac_ext=F90
-cat >conftest.$ac_ext <<_ACEOF
+# Check for a valid filname extension in the following order: F90, f90, F, f
+if test -z "$F90SUFFIX"; then
+   echo "$as_me:$LINENO: checking Fortran 90 filename extension" >&5
+echo $ECHO_N "checking Fortran 90 filename extension... $ECHO_C" >&6
+   for suffix in F90 f90 F f; do
+     ac_ext=$suffix
+     cat >conftest.$ac_ext <<_ACEOF
 
 program main
 
@@ -2172,83 +2179,31 @@ program main
 end program main
 
 _ACEOF
-if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
+     if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; then
-  echo "$as_me:$LINENO: result: .F90" >&5
-echo "${ECHO_T}.F90" >&6
-else
-
-ac_ext=f90
-cat >conftest.$ac_ext <<_ACEOF
-
-program main
-
-
-end program main
-
-_ACEOF
-if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
-  (eval $ac_compile) 2>&5
+  (exit $ac_status); } &&
+	{ ac_try='test -s conftest.$ac_objext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; then
-  echo "$as_me:$LINENO: result: .f90" >&5
-echo "${ECHO_T}.f90" >&6
+  (exit $ac_status); }; }; then
+  echo "$as_me:$LINENO: result: .$suffix" >&5
+echo "${ECHO_T}.$suffix" >&6; break 1
+fi
+
+   done
+   F90SUFFIX=$ac_ext
 else
-
-ac_ext=F
-cat >conftest.$ac_ext <<_ACEOF
-
-program main
-
-
-end program main
-
-_ACEOF
-if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
-  (eval $ac_compile) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; then
-  echo "$as_me:$LINENO: result: .F" >&5
-echo "${ECHO_T}.F" >&6
-else
-
-ac_ext=f
-cat >conftest.$ac_ext <<_ACEOF
-
-program main
-
-
-end program main
-
-_ACEOF
-if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
-  (eval $ac_compile) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; then
-  echo "$as_me:$LINENO: result: .f" >&5
-echo "${ECHO_T}.f" >&6
-else
-
-{ echo "$as_me:$LINENO: WARNING: Cannot determine source file extension" >&5
-echo "$as_me: WARNING: Cannot determine source file extension" >&2;}
-
+   { echo "$as_me:$LINENO: FORTRAN 90 FILENAME EXTENSION HAS BEEN SET TO .$F90SUFFIX" >&5
+echo "$as_me: FORTRAN 90 FILENAME EXTENSION HAS BEEN SET TO .$F90SUFFIX" >&6;}
+   ac_ext=$F90SUFFIX
 fi
-
-fi
-
-fi
-
-fi
-
 
 # Provide some information about the compiler.
-echo "$as_me:2251:" \
+echo "$as_me:2206:" \
      "checking for Fortran 90 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -2585,6 +2540,38 @@ if test -z "$FC"; then
    fi
 fi
 
+# FOR SANITY, CHECK THAT FILENAME EXTENSION FOR FC IS CONSISTENT WITH F90
+OLDF90="$F90"
+F90="$FC"
+
+cat >conftest.$ac_ext <<_ACEOF
+subroutine oof(); return; end
+_ACEOF
+rm -f conftest.$ac_objext
+if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
+  (eval $ac_compile) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+         { ac_try='test -s conftest.$ac_objext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  :
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+{ echo "$as_me:$LINENO: WARNING: $FC FAILED TO COMPILE FILENAME EXTENSION $ac_ext" >&5
+echo "$as_me: WARNING: $FC FAILED TO COMPILE FILENAME EXTENSION $ac_ext" >&2;}
+
+fi
+rm -f conftest.$ac_objext conftest.$ac_ext
+
+F90="$OLDF90"
+
 # CHECK HOW TO GET THE COMPILER VERSION.
 # THIS TEST DOES NOT WORK FOR XLF COMPILERS.
 if test "$F90" != "xlf90"; then
@@ -2635,7 +2622,7 @@ _ACEOF
 # 1 to this macro) to the Fortran 90 compiler in order to get "version" output
 ac_save_F90FLAGS=$F90FLAGS
 F90FLAGS="$F90FLAGS $ac_version"
-(eval echo $as_me:2638: \"$ac_link\") >&5
+(eval echo $as_me:2625: \"$ac_link\") >&5
 ac_f90_version_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 echo "$ac_f90_version_output" >&5
 F90FLAGS=$ac_save_F90FLAGS
@@ -3267,7 +3254,8 @@ if test "$old_ac_ext" = "F"; then
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; }
    ac_ext="f"
-else
+fi
+if test "$old_ac_ext" = "F90"; then
    { ac_try='$FPP $defineflag $FPPFLAGS conftest.$ac_ext conftest.f90'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
@@ -4321,6 +4309,7 @@ s,@EXEEXT@,$EXEEXT,;t t
 s,@OBJEXT@,$OBJEXT,;t t
 s,@F90@,$F90,;t t
 s,@F90FLAGS@,$F90FLAGS,;t t
+s,@F90SUFFIX@,$F90SUFFIX,;t t
 s,@ac_ct_F90@,$ac_ct_F90,;t t
 s,@MPIF90@,$MPIF90,;t t
 s,@F90RULE@,$F90RULE,;t t

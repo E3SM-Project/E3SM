@@ -165,7 +165,8 @@ fi
 if test "$old_ac_ext" = "F"; then
    AC_TRY_COMMAND([[$FPP $2 $FPPFLAGS conftest.$ac_ext conftest.f]])
    ac_ext="f"
-else
+fi
+if test "$old_ac_ext" = "F90"; then
    AC_TRY_COMMAND([[$FPP $2 $FPPFLAGS conftest.$ac_ext conftest.f90]])
    ac_ext="f90"
 fi
@@ -380,31 +381,27 @@ AC_DEFUN([AC_PROG_F90],
 [AC_LANG_PUSH(Fortran 90)dnl
 AC_ARG_VAR([F90],      [Fortran 90 compiler command])dnl
 AC_ARG_VAR([F90FLAGS], [Fortran 90 compiler flags])dnl
+AC_ARG_VAR([F90SUFFIX], [Fortran 90 filename extension])dnl
 _AC_ARG_VAR_LDFLAGS()dnl
 AC_CHECK_TOOLS(F90,
       [m4_default([$1],
                   [xlf90 pgf90 ifort efc ifc f90 ftn frt f95 lf95 xlf95 fort g95])])
 
-ac_ext=f90
-AC_MSG_CHECKING([Fortran compiler source file extension])
-ac_ext=F90
-AC_LANG_CONFTEST([AC_LANG_PROGRAM()])
-AS_IF([AC_TRY_EVAL(ac_compile)], [AC_MSG_RESULT([.F90])],
-[
-ac_ext=f90
-AC_LANG_CONFTEST([AC_LANG_PROGRAM()])
-AS_IF([AC_TRY_EVAL(ac_compile)], [AC_MSG_RESULT([.f90])],
-[
-ac_ext=F
-AC_LANG_CONFTEST([AC_LANG_PROGRAM()])
-AS_IF([AC_TRY_EVAL(ac_compile)], [AC_MSG_RESULT([.F])],
-[
-ac_ext=f
-AC_LANG_CONFTEST([AC_LANG_PROGRAM()])
-AS_IF([AC_TRY_EVAL(ac_compile)], [AC_MSG_RESULT([.f])],
-[
-AC_MSG_WARN([Cannot determine source file extension])
-])])])])
+# Check for a valid filname extension in the following order: F90, f90, F, f
+if test -z "$F90SUFFIX"; then
+   AC_MSG_CHECKING([Fortran 90 filename extension])
+   for suffix in F90 f90 F f; do
+     ac_ext=$suffix
+     AC_LANG_CONFTEST([AC_LANG_PROGRAM()])
+     AS_IF([AC_TRY_EVAL(ac_compile) && 
+	AC_TRY_COMMAND([test -s conftest.$ac_objext])], 
+     [AC_MSG_RESULT([.$suffix]); break 1])
+   done
+   F90SUFFIX=$ac_ext
+else
+   AC_MSG_NOTICE([FORTRAN 90 FILENAME EXTENSION HAS BEEN SET TO .$F90SUFFIX])
+   ac_ext=$F90SUFFIX
+fi
 
 # Provide some information about the compiler.
 echo "$as_me:__oline__:" \
