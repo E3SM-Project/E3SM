@@ -44,7 +44,7 @@
 %%%
 %%% Enter your title below (after deleting mine)
 %%%
-The Model Coupling Toolkit (mct) API Definition Document
+The Model Coupling Toolkit API Reference Manual: MCT v. 2.0
 \\ }                     %%% IMPORTANT: Keep this \\ before the }
 \end{sloppypar}
 
@@ -109,6 +109,8 @@ Version 1$\beta4$ & Apr 24, 2002      & Update with latest source &
 \\\hline
 Version 1.0 & Nov 14, 2002      & 1.0 Version &
 \\\hline
+Version 2.0 & Apr 23, 2004      & 2.0 Version &
+\\\hline
 \end{tabular}
 \end{center}
 
@@ -118,14 +120,17 @@ Version 1.0 & Nov 14, 2002      & 1.0 Version &
 %..........................  ABSTRACT ..................................
 \newpage
 \setcounter{page}{3}     %%%% abstract starts at page iii
-\addcontentsline{toc}{part}{Abstract}
+\addcontentsline{toc}{part}{Preface}
 
 \vspace*{\fill}
 
-\begin{abstract}
-In this document we provide the Application Program Interfaces (APIs)
+This document describes the Application Program Interfaces (APIs)
 for the Model Coupling Toolkit (MCT).
-\end{abstract}
+
+For functions that take a Fortran90 real argument, either a scalar or
+a vector, MCT provides both double and single precision versions.  Only
+the single precision version is given here denoted by SP.  The double preicsion versions
+are otherwise identical.
 
 \vspace*{\fill}
 \newpage
@@ -224,6 +229,9 @@ for the Model Coupling Toolkit (MCT).
 \input{texsrc/m_SpatialIntegral}
 \vspace*{\fill}
 \newpage
+\input{texsrc/m_SpatialIntegralV}
+\vspace*{\fill}
+\newpage
 %
 \section{Merging of Flux and State Data from Multiple Sources}
 \input{texsrc/m_Merge}
@@ -241,11 +249,6 @@ for the Model Coupling Toolkit (MCT).
 %
 \section{Global To Local Index Translation}
 \input{texsrc/m_GlobalToLocal}
-\vspace*{\fill}
-\newpage
-%
-\section{Non-blocking Sending and Receiving of Attribute Vectors}
-\input{texsrc/m_NBSend}
 \vspace*{\fill}
 \newpage
 %
