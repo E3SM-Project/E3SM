@@ -5,16 +5,16 @@
 ! CVS $Name$ 
 !BOP -------------------------------------------------------------------
 !
-! !MODULE: m_NBSend -- Module for non-blocking version of MCT_Send
+! !MODULE: m_NBSend -- Module for non-blocking version of send_ in m_Transfer
 !
 ! !DESCRIPTION:
 ! This module provides functions and data types to support a non-blocking
-! version of {\tt MCT\_Send}.
+! version of {\tt send\_}.
 !
 ! {\bf N.B.:} This module may be deleted in future versions.
 !
 ! !SEE ALSO:
-! MCT_Send, MCT_Recv
+! m_Transfer
 !
 ! !INTERFACE:
  module m_NBSend
@@ -36,12 +36,17 @@
 
 ! !PUBLIC MEMBER FUNCTIONS:
 
-      public :: MCT_ISend   ! the non blocking MCT\_Send
+      public :: isend   ! the non blocking send_
 
-      public :: MCT_Wait    ! Wait for the nonblocking send to finish
+      public :: wait    ! Wait for the nonblocking send to finish
 
-      interface MCT_ISend ; module procedure MCT_ISend_ ; end interface
-      interface MCT_Wait ; module procedure MCT_Wait_ ; end interface
+      interface isend ; module procedure isend_ ; end interface
+      interface wait ; module procedure wait_ ; end interface
+
+! !DEFINED PARAMETERS:
+!
+  integer,parameter                    :: DefaultTag = 600
+
 
 ! !REVISION HISTORY:
 ! 07Jun01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
@@ -71,7 +76,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: MCT_ISend_
+! !IROUTINE: isend_
 !
 ! !DESCRIPTION:
 ! Send the the data in the {\tt AttrVect} {\tt aV} to the 
@@ -82,19 +87,24 @@
 ! Returns immediately after posting the send with a {\tt MCT\_Req} data type
 ! {\tt Reqs}
 !
-! Requires a corresponding {\tt MCT\_Recv} to be called on the other component.
+! Requires a corresponding {\tt recv\_} to be called on the other component.
+!
+! The optional argument {\tt Tag} can be used to set the tag value used in
+! the data transfer.  DefaultTag will be used otherwise. {\tt Tag} must be
+! the same in the matching {\tt recv\_}
+!
 !
 ! {\bf N.B.:} The {\tt AttrVect} argument in the corresponding
-! {\tt MCT\_Recv} call is assumed to have exactly the same attributes
+! {\tt recv\_} call is assumed to have exactly the same attributes
 ! in exactly the same order as {\tt aV}.
 !
-! {\bf N.B.:} Currently, only one instance of MCT\_ISend can be outstanding at a time
+! {\bf N.B.:} Currently, only one instance of ISend\_ can be outstanding at a time
 ! within an application.  This is because the buffers holding the data are currently a
 ! private data member in this module.
 !
 ! !INTERFACE:
 
- subroutine MCT_ISend_(aV, Rout, Reqs)
+ subroutine isend_(aV, Rout, Reqs, Tag)
 
 !
 ! !USES:
@@ -105,8 +115,7 @@
       use m_AttrVect,only : lsize
       use m_MCTWorld,only : MCTWorld
       use m_MCTWorld,only : ThisMCTWorld
-      use m_list,only:	List
-      use m_list,only:  nitem
+
       use m_mpif90
       use m_die
       use m_stdio
@@ -115,8 +124,9 @@
 
 ! !INPUT PARAMETERS:
 
-      Type(AttrVect),intent(in) :: 	aV     ! the Attribute vector to send	
-      Type(Router),intent(in) ::	Rout   ! the router to use
+      Type(AttrVect),    intent(in) :: 	aV     ! the Attribute vector to send	
+      Type(Router),      intent(in) ::	Rout   ! the router to use
+      integer,optional,  intent(in) ::	Tag    ! message tag
 
 ! !OUTPUT PARAMETERS: 
 
@@ -128,13 +138,14 @@
 !           to MCT_Recv
 ! 06Nov02 - R. Jacob <jacob@mcs.anl.gov> - Remove iList and rList arguments.
 !           Add check with Router lsize.
+! 11Nov02 - R. Jacob <jacob@mcs.anl.gov> - Add Tag optional argument
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname_=myname//'MCT_ISend_'
+  character(len=*),parameter :: myname_=myname//'isend_'
   integer ::	numi,numr,i,j,k,ier
   integer ::    mycomp,othercomp
   integer ::    AttrIndex,VectIndex,seg_start,seg_end
-  integer ::    proc,nseg,tag
+  integer ::    proc,nseg,mytag
   integer ::    mp_Type_rp1
 
 !--------------------------------------------------------
@@ -226,12 +237,12 @@
      ! Send the integer data
      if(numi .ge. 1) then
 
-	! corresponding tag logic must be in MCT_Recv
-	tag = 100000*mycomp + 1000*ThisMCTWorld%mygrank + &
-	      500 + Rout%pe_list(proc)
+        ! set tag
+        mytag = DefaultTag
+        if(present(Tag)) mytag=Tag
 
 	call MPI_ISEND(ip1(proc)%pi(1),Rout%locsize(proc)*numi,MP_INTEGER,&
-	     Rout%pe_list(proc),tag,ThisMCTWorld%MCT_comm,Reqs%ireqs(proc),ier)
+	     Rout%pe_list(proc),mytag,ThisMCTWorld%MCT_comm,Reqs%ireqs(proc),ier)
 
 	if(ier /= 0) call MP_perr_die(myname_,'MPI_ISEND(ints)',ier)
 
@@ -240,12 +251,12 @@
      ! Send the real data
      if(numr .ge. 1) then
 
-       ! corresponding tag logic must be in MCT_Recv
-       tag = 100000*mycomp + 1000*ThisMCTWorld%mygrank + &
-	     700 + Rout%pe_list(proc)
+       ! set tag
+       mytag = DefaultTag + 1
+       if(present(Tag)) mytag=Tag +1
 
        call MPI_ISEND(rp1(proc)%pr(1),Rout%locsize(proc)*numr,mp_Type_rp1,&
-	    Rout%pe_list(proc),tag,ThisMCTWorld%MCT_comm,Reqs%rreqs(proc),ier)
+	    Rout%pe_list(proc),mytag,ThisMCTWorld%MCT_comm,Reqs%rreqs(proc),ier)
 
        if(ier /= 0) call MP_perr_die(myname_,'MPI_ISEND(reals)',ier)
 
@@ -254,21 +265,21 @@
   enddo
 
 
-end subroutine MCT_ISend_
+end subroutine isend_
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: MCT_Wait_  Wait for an MCT_ISend to complete.
+! !IROUTINE: wait_  Wait for an MCT_ISend to complete.
 !
 ! !DESCRIPTION:
-! Wait for the {\tt MCT\_ISend} on the {\tt Router} {\tt Rout} and handled by
+! Wait for the {\tt isend\_} on the {\tt Router} {\tt Rout} and handled by
 ! {\tt Reqs} to complete.  Deallocate internal memory buffers and memory in {\tt Reqs}
 ! when message has been received.
 !
 ! !INTERFACE:
 
- subroutine MCT_Wait_(Rout,Reqs)
+ subroutine wait_(Rout,Reqs)
 
 !
 ! !USES:
@@ -293,7 +304,7 @@ end subroutine MCT_ISend_
 ! 07Jun01 - R. Jacob <jacob@mcs.anl.gov> - first prototype
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname_=myname//'MCT_Wait_'
+  character(len=*),parameter :: myname_=myname//'wait_'
   integer ::	ier
   integer :: proc
   integer,dimension(:,:),allocatable	:: istatus,rstatus
@@ -358,6 +369,6 @@ end subroutine MCT_ISend_
   endif
 
 
-end subroutine MCT_Wait_
+end subroutine wait_
 
 end module m_NBSend
