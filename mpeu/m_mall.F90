@@ -89,7 +89,7 @@
 !_______________________________________________________________________
   character(len=*),parameter :: myname='m_mall'
 
-#if defined(sysUNICOS) || defined(sysIRIX64) || defined(_R8_)
+#if SYSUNICOS || SYSIRIX64 || _R8_
   integer,parameter :: NBYTE_PER_WORD = 8
 #else
   integer,parameter :: NBYTE_PER_WORD = 4
