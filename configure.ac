@@ -288,9 +288,7 @@ if test -z "$SYSDEF"; then
 fi
 
 # CHECK COMPILER NAME
-case $F90 in
-
-xlf90)
+if echo $F90 | grep xlf90 >/dev/null 2>&1; then
    echo "Fortran Compiler is XLF"
    CPRDEF="XLF"
    if test -z "$REAL8"; then
@@ -308,9 +306,10 @@ xlf90)
 	    F90FLAGS="-qarch=auto -qsuffix=f=f90"
          fi
       fi
-   fi;;
+   fi
+fi
 
-pgf90)
+if echo $F90 | grep pgf90 >/dev/null 2>&1; then
    echo "Fortran Compiler is Portland Group"
    CPRDEF="PGI"
    if test -z "$REAL8"; then
@@ -324,9 +323,10 @@ pgf90)
    fi
    if test -z "$OPT"; then
       OPT="-O2"
-   fi;;
+   fi
+fi
 
-ftn)
+if echo $F90 | grep ftn >/dev/null 2>&1; then
    echo "Fortran Compiler is Cray"
    CPRDEF="CRAY" 
    if test -z "$F90FLAGS"; then 
@@ -337,9 +337,10 @@ ftn)
    fi
    if test -z "$OPT"; then
       OPT="-Oscalar3 -Ovector3 -Ostream3"
-   fi;;
+   fi
+fi
 
-frt)
+if echo $F90 | grep frt >/dev/null 2>&1; then
    echo "Fortran Compiler is UXP/V"
    echo "Suggested additional vectorization flags: -Wv,-s5,-t3,-noalias,-ilfunc,-md"
    CPRDEF="FUJITSU"
@@ -351,17 +352,20 @@ frt)
    fi
    if test -z "$REAL8"; then
       REAL8="-Ad"
-   fi;;
+   fi
+fi
 
-epcf90)
+if echo $F90 | grep epcf90 >/dev/null 2>&1; then
    echo "Everest has never tested the epcf90 compiler :("
-   CPRDEF="EPC";;
+   CPRDEF="EPC"
+fi
 
-lf95)
+if echo $F90 | grep lf95 >/dev/null 2>&1; then
    echo "Fortran Compiler is Lahey"
-   CPRDEF="LAHEY";;
+   CPRDEF="LAHEY"
+fi
 
-ifc)
+if echo $F90 | grep ifc >/dev/null 2>&1; then
    echo "Fortran Compiler is Intel IA-32"
    echo "Intel ifc compiler must set the environment variable F_UFMTENDIAN=big to do endian conversion"
    CPRDEF="INTEL"
@@ -373,12 +377,13 @@ ifc)
    fi
    if test -z "$OPT"; then
       OPT="-O2"
-   fi;;
+   fi
+fi
 
-efc)
+if echo $F90 | grep efc >/dev/null 2>&1; then
    echo "Fortran Compiler is Intel Itanium"
-   CPRDEF="INTEL"
    echo "Intel efc compiler must set the environment variable F_UFMTENDIAN=big to do endian conversion"
+   CPRDEF="INTEL"
    if test -z "$REAL8"; then
       REAL8="-r8"
    fi
@@ -387,9 +392,10 @@ efc)
    fi
    if test -z "$OPT"; then
       OPT="-O2"
-   fi;;
+   fi
+fi
 
-ifort)
+if echo $F90 | grep ifort >/dev/null 2>&1; then
    echo "Fortran Compiler is Intel Itanium"
    CPRDEF="INTEL"
    if test -z "$REAL8"; then
@@ -400,13 +406,13 @@ ifort)
    fi
    if test -z "$OPT"; then
       OPT="-O2"
-   fi;;
+   fi
+fi
 
-g95)
+if echo $F90 | grep g95 >/dev/null 2>&1; then
    echo "Fortran Compiler is GNU"
-   CPRDEF="GNU";;
-
-esac
+   CPRDEF="GNU"
+fi
 
 if echo $f90_version | grep -i nag >/dev/null 2>&1; then
    echo "Fortran Compiler is NAG"
