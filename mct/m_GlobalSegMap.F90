@@ -835,7 +835,7 @@
 !
 ! !INTERFACE:
 
-    subroutine clean_(GSMap)
+    subroutine clean_(GSMap,stat)
 !
 ! !USES:
 !
@@ -845,28 +845,33 @@
  
 ! !INPUT/OUTPUT PARAMETERS: 
 
-      type(GlobalSegMap),intent(inout) :: GSMap
+      type(GlobalSegMap), intent(inout) :: GSMap
+      integer, optional,  intent(out)   :: stat
 
 ! !REVISION HISTORY:
 ! 	29Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+!       01Mar02 - E.T. Ong <eong@mcs.anl.gov> - added stat argument. 
+!                 Removed dies to prevent crashing.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::clean_'
   integer :: ier
 
+  deallocate(GSMap%start, GSMap%length, GSMap%pe_loc, stat=ier)
+
+  if(present(stat)) then
+     stat=ier
+  else
+     if(ier /= 0) call warn(myname_,'deallocate(GSMap%start,...)',ier)
+  endif
+
+  if(ier == 0) then
 #ifdef MALL_ON
-	if( .not.associated(GSMap%start)  .or.		&
-	    .not.associated(GSMap%length) .or.		&
-	    .not.associated(GSMap%pe_loc) )		&
-		write(stderr,'(2a)') myname_,	&
-		  ': trying to clean uninitialized variable'
 	call mall_co(size(transfer(GSMap%start,(/1/))),myname_)
 	call mall_co(size(transfer(GSMap%length,(/1/))),myname_)
 	call mall_co(size(transfer(GSMap%pe_loc,(/1/))),myname_)
 #endif
-
-  deallocate(GSMap%start, GSMap%length, GSMap%pe_loc, stat=ier)
-  if(ier /= 0) call perr_die(myname_,'deallocate(GSMap%start,...)',ier)
+     endif
 
   GSMap%ngseg = 0
   GSMap%comp_id  = 0
