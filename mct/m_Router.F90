@@ -21,6 +21,18 @@
 
       private   ! except
 
+! declare a private pointer structure for the real data
+  public :: rptr,iptr
+  type :: rptr
+    real,dimension(:),pointer :: pr
+  end type
+
+! declare a private pointer structure for the integer data
+  type :: iptr
+    integer,dimension(:),pointer :: pi
+  end type
+
+
 ! !PUBLIC TYPES:
       public :: Router	        ! The class data structure
 !\end{verbatim}
@@ -41,13 +53,17 @@
       integer :: maxsize                           ! maximum amount of data going to a processor
       integer :: lAvsize                           ! The local size of AttrVect which can be 
                                                    ! used with this Router in MCT_Send/MCT_Recv
+      integer :: numiatt                           ! Number of integer attributes currently in use
+      integer :: numratt                           ! Number of real attributes currently in use
       integer,dimension(:),pointer   :: pe_list    ! processor ranks of send/receive in MCT_comm
       integer,dimension(:),pointer   :: num_segs   ! number of segments to send/receive
       integer,dimension(:),pointer   :: locsize    ! total of seg_lengths for a proc
       integer,dimension(:,:),pointer :: seg_starts ! starting index
       integer,dimension(:,:),pointer :: seg_lengths! total length
-      integer,dimension(:),pointer   :: ireqs,rreqs
-      integer,dimension(:,:),pointer :: istatus,rstatus
+      type(rptr),dimension(:),pointer :: rp1       ! buffer to hold real data
+      type(iptr),dimension(:),pointer :: ip1       ! buffer to hold integer data
+      integer,dimension(:),pointer   :: ireqs,rreqs  ! buffer for MPI_Requests
+      integer,dimension(:,:),pointer :: istatus,rstatus  ! buffer for MPI_Status
     end type Router
 
 ! !PUBLIC MEMBER FUNCTIONS:
@@ -68,6 +84,8 @@
 ! 25Sep02 - R. Jacob <jacob@mcs.anl.gov> Remove type string.  Add lAvsize
 ! 23Jul03 - R. Jacob <jacob@mcs.anl.gov> Add status and reqs arrays used
 !           in send/recv to the Router datatype.
+! 24Jul03 - R. Jacob <jacob@mcs.anl.gov> Add real and integer buffers
+!           for send/recv to the Router datatype.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_Router'
@@ -275,20 +293,32 @@
   Rout%comp1id = GSMap_comp_id(GSMap)
   Rout%comp2id = othercomp
   Rout%nprocs = count
+  Rout%numiatt = 0
+  Rout%numratt = 0
 
-    allocate(Rout%pe_list(count),Rout%num_segs(count), &
+  allocate(Rout%pe_list(count),Rout%num_segs(count), &
     Rout%seg_starts(count,maxsegcount), &
     Rout%seg_lengths(count,maxsegcount), &
     Rout%locsize(count),stat=ier)
-    if(ier/=0) call die(myname_,'allocate(Rout..)',ier)
+  if(ier/=0) call die(myname_,'allocate(Rout..)',ier)
 
-    allocate(Rout%istatus(MP_STATUS_SIZE,count), &
+  allocate(Rout%istatus(MP_STATUS_SIZE,count), &
              Rout%rstatus(MP_STATUS_SIZE,count), &
 	     Rout%rreqs(count),Rout%ireqs(count),stat=ier)
-    if(ier/=0) call die(myname_,'allocate(status,reqs,...)',ier)
+  if(ier/=0) call die(myname_,'allocate(status,reqs,...)',ier)
+
+! allocate the number of pointers needed
+  allocate(Rout%ip1(count),stat=ier)
+  if(ier/=0) call die(myname_,'allocate(ip1)',ier)
+
+! allocate the number of pointers needed
+  allocate(Rout%rp1(count),stat=ier)
+  if(ier/=0) call die(myname_,'allocate(rp1)',ier)
+
+
     
-    m=0
-    do i=1,ThisMCTWorld%nprocspid(othercomp)
+  m=0
+  do i=1,ThisMCTWorld%nprocspid(othercomp)
       if(tmppe_list(i))then 
       m=m+1
       ! load processor rank in MCT_comm
@@ -358,8 +388,11 @@
 
   deallocate(Rout%pe_list,Rout%num_segs,Rout%seg_starts, &
   Rout%locsize,Rout%seg_lengths,stat=ier)
+
   deallocate(Rout%rreqs,Rout%ireqs,Rout%rstatus,&
    Rout%istatus,stat=ier)
+
+  deallocate(Rout%ip1,Rout%rp1,stat=ier)
 
   if(present(stat)) then
      stat=ier
@@ -372,6 +405,8 @@
   Rout%nprocs = 0
   Rout%maxsize = 0
   Rout%lAvsize = 0
+  Rout%numiatt = 0
+  Rout%numratt = 0
 
 
  end subroutine clean_
