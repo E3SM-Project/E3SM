@@ -110,7 +110,7 @@ contains
 !		- initial prototype/prolog/code
 !       08Jan03 - R. Jacob <jacob@mcs.anl.gov>  Small change to get
 !          around IBM compiler bug.  Cant have character valued functions
-!          in case statements.
+!          in case statements.  Fix found by Everest Ong.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::strTemplate_'
