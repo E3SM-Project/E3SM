@@ -45,9 +45,9 @@ _IMPI		=
 
 # If use the vendor implementation
 
-_LMPI		= -L/usr/lang/mpi/lib
+_LMPI		= -L/usr/lang/mpi2/lib
 _lMPI		= -lmpi
-_IMPI		= -I/usr/lang/mpi/include
+_IMPI		= -I/usr/lang/mpi2/include
 
 
 #_R		= -r4
