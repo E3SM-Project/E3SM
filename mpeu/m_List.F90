@@ -19,6 +19,7 @@
       public :: nitem
       public :: get
       public :: assignment(=)
+      public :: copy
       public :: concatenate
       public :: bcast
 
@@ -29,6 +30,9 @@
 
 ! !REVISION HISTORY:
 ! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 	16May01 - J. Larson <larson@mcs.anl.gov> - Several changes / fixes:
+!                 public interface for copy_(), corrected version of copy_(),
+!                 corrected version of bcast_().
 !EOP ___________________________________________________________________
 
   interface init ; module procedure	&
@@ -50,6 +54,8 @@
   interface assignment(=)
     module procedure copy_
   end interface
+
+  interface copy ; module procedure copy_;  end interface
 
   interface concatenate ; module procedure concatenate_ ; end interface
   interface bcast; module procedure bcast_; end interface
@@ -399,37 +405,32 @@ contains
  subroutine copy_(yL,xL)	! yL=xL
 
       use m_die,only : die
+      use m_String ,only : String
+      use m_String ,only : String_clean
       use m_mall,only : mall_mci,mall_ison
+
       implicit none
       type(List),intent(out) :: yL
       type(List),intent(in)  :: xL
 
 ! !REVISION HISTORY:
 ! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 	16May01 - J. Larson <larson@mcs.anl.gov> - simpler, working 
+!                 version that exploits the String datatype (see m_String)
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::copy_'
-  integer :: ln,ni,ier
+  type(String) DummStr
 
-  ln=len(xL%bf)
-  ni=size(xL%lc,2)
-  allocate(yL%bf(ln),yL%lc(0:1,ni),stat=ier)
-  if(ier /= 0) call die(myname_,'allocate()',ier)
+       ! Download input List info from xL to String DummStr
 
-	if(mall_ison()) then
-	  call mall_mci(yL%bf,myname)
-	  call mall_mci(yL%lc,myname)
-	endif
+  call getall_(DummStr,xL)
 
-  yL%bf=xL%bf			! string copy
-  yL%lc(0:1,:)=xL%lc(0:1,:)	! the locations are relative
+       ! Initialize yL from DummStr
 
-	! Note that one may not be able to do this copy easily if
-	! a pointer array is used at the place of %lc.  A pointer
-	! to an array segment of %bf hides all location information
-	! from programmers.  Pointer aliasing can only link the new
-	! pointer to the old copy of %bf.  LBOUND() and UBOUND() of
-	! a pointer will return only 1 and its size().
+  call initStr_(yL,DummStr)
+
+  call String_clean(DummStr)
 
  end subroutine copy_
 
@@ -690,6 +691,10 @@ contains
       use m_stdio
       use m_die, only : MP_perr_die
 
+      use m_String, only:  String
+      use m_String, only:  String_bcast => bcast
+      use m_String, only:  String_clean => clean
+
       use m_mpif90
 
       implicit none
@@ -711,11 +716,14 @@ contains
 ! !REVISION HISTORY:
 ! 	07May01 - J.W. Larson - initial version.
 ! 	14May01 - R.L. Jacob - fix error checking
+! 	16May01 - J.W. Larson - new, simpler String-based algorigthm
+!                 (see m_String for details), which works properly on
+!                 the SGI platform.
 !EOP ___________________________________________________________________
 
  character(len=*),parameter :: myname_=myname//'::bcast_'
  integer :: myID, ierr
- integer :: ListDims(2)
+ type(String) :: DummStr
 
        ! Which process am I?
 
@@ -730,68 +738,23 @@ contains
    endif
   endif
 
-        ! On the root, load up List dimensions for broadcast
+       ! on the root, convert ioList into the String variable DummStr
 
-  if(myID == root) then 
-     ListDims(1) = len(ioList%bf)
-     ListDims(2) = nitem_(ioList)
+  if(myID == root) then
+     call getall_(DummStr, ioList)
   endif
 
-       ! Broadcast List dimensions
+       ! Broadcast DummStr
 
-  call MPI_BCAST(ListDims, 2, MP_INTEGER, root, comm, ierr)
-  if(ierr /= 0) then
-   if(present(status)) then
-     status = ierr
-     write(stderr,'(2a,i4)') myname_,":: MPI_BCAST(ioList%bf...), ierr=",ierr
-     return
-   else
-     call MP_perr_die(myname_,"MPI_BCAST(ioList%bf...",ierr)
-   endif
-  endif
+  call String_bcast(DummStr, root, comm, ierr)
 
-       ! allocate recipient List attributes on non-root processes
+       ! Initialize ioList off the root using DummStr
 
-  if(myID /= root) then 
-     allocate(ioList%lc(0:1,ListDims(2)), ioList%bf(ListDims(1)), stat=ierr)
-  endif
-  if(ierr /= 0) then
-   if(present(status)) then
-     status = ierr
-     write(stderr,'(2a,i4)') myname_,":: allocate(ioList%lc...), stat=",ierr
-     return
-   else
-     call MP_perr_die(myname_,"MPI_BCAST(ioList%bf...",ierr)
-   endif
-  endif
-
-       ! Broadcast ioList%bf
-
-  call MPI_BCAST(ioList%bf, ListDims(1), MP_CHARACTER, root, comm, ierr)
-  if(ierr /= 0) then
-   if(present(status)) then
-     status = ierr
-     write(stderr,'(2a,i4)') myname_,":: MPI_BCAST(ioList%bf...), ierr=",ierr
-     return
-   else
-     call MP_perr_die(myname_,"MPI_BCAST(ioList%bf...",ierr)
-   endif
-  endif
-
-       ! Broadcast ioList%lc
-
-  call MPI_BCAST(ioList%lc(0,1), 2*ListDims(2), MP_INTEGER, root, comm, ierr)
-  if(ierr /= 0) then
-   if(present(status)) then
-     status = ierr
-     write(stderr,'(2a,i4)') myname_,":: MPI_BCAST(ioList%lc...), ierr=",ierr
-     return
-   else
-     call MP_perr_die(myname_,"MPI_BCAST(ioList%lc...",ierr)
-   endif
-  endif
+  call initStr_(ioList, DummStr)
 
        ! And now, the List broadcast is complete.
+
+  call String_clean(DummStr)
 
  end subroutine bcast_
 

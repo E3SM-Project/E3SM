@@ -52,6 +52,9 @@ _R		=
 _Iconf		= $(_IMPI)
 
 SHELL		= /bin/sh
+
+CC		= gcc
+
 F77		= /usr/local/mpich/bin/mpif77
 F90		= /usr/local/mpich/bin/mpif90
 FC		= $(F90)
