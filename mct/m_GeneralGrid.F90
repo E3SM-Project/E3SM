@@ -322,7 +322,7 @@
       use m_List,     only : List_init => init
       use m_List,     only : List_nitem => nitem
       use m_List,     only : List_concatenate => concatenate
-      use m_List,     only : assignment(=)
+      use m_List,     only : List_copy => copy
       use m_List,     only : List_clean => clean
 
       use m_AttrVect, only : AttrVect
@@ -346,6 +346,8 @@
 
 ! !REVISION HISTORY:
 !       10May01 - Jay Larson <larson@mcs.anl.gov> - initial version
+!       08Aug01 - E.T. Ong <eong@mcs.anl.gov> - changed list assignment(=)
+!                 to list copy to avoid compiler bugs with pgf90
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::initl_'
@@ -372,31 +374,31 @@
        ! Process input lists and create the appropriate GeneralGrid
        ! List components
 
-  GGrid%coordinate_list = CoordList
-  GGrid%coordinate_sort_order = CoordSortOrder
+  call List_copy(GGrid%coordinate_list,CoordList)
+  call List_copy(GGrid%coordinate_sort_order,CoordSortOrder)
 
-  TempList1 = CoordList
+  call List_copy(TempList1,CoordList)
 
        ! Concatenate present input Lists to create RAList, and
        ! at the same time assign the List components of GGrid
 
   if(present(WeightList)) then
-     GGrid%weight_list = WeightList
+     call List_copy(GGrid%weight_list,WeightList)
      call List_concatenate(TempList1, WeightList, TempList2)
      call List_clean(TempList1)
   else
      call List_init(GGrid%weight_list,'')
-     TempList2 = TempList1
+     call List_copy(TempList2,TempList1)
      call List_clean(TempList1)
   endif
 
   if(present(OtherList)) then
-     GGrid%other_list = OtherList
+     call List_copy(GGrid%other_list,OtherList)
      call List_concatenate(TempList2, OtherList, RAList)
      call List_clean(TempList2)
   else
      call List_init(GGrid%other_list,'')
-     RAList = TempList2
+     call List_copy(RAList,TempList2)
      call List_clean(TempList2)
   endif
 
@@ -408,10 +410,12 @@
      call List_concatenate(TempList1,IndexList,IAList)
      call List_clean(TempList1)
   else
-     IAList = TempList1
+     call List_copy(IAList,TempList1)
      call List_clean(TempList1)
   endif
-  GGrid%index_list = IAList
+
+  call List_copy(GGrid%index_list,IAList)
+
 
        ! Initialize GGrid%data using IAList, RAList, and lsize (if
        ! present).
@@ -473,7 +477,7 @@
       use m_die,  only : MP_perr_die
 
       use m_List, only : List
-      use m_List, only : assignment(=)
+      use m_List, only : List_copy => copy
 
       use m_AttrVect, only:  AttrVect_init => init
 
@@ -493,6 +497,8 @@
 !       13Jun01 - Jay Larson <larson@mcs.anl.gov> - Now, undefined List
 !                 components of the GeneralGrid iGGrid are no longer 
 !                 copied to oGGrid.
+!       08Aug01 - E.T. Ong <eong@mcs.anl.gov> - changed list assignment(=)
+!                 to list copy to avoid compiler bugs with pgf90
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::initgg_'
@@ -541,22 +547,22 @@
        ! list attributes before copying them.
 
   if(associated(oGGrid%coordinate_list%bf)) then
-     oGGrid%coordinate_list = iGGrid%coordinate_list
+     call List_copy(oGGrid%coordinate_list,iGGrid%coordinate_list)
   endif
 
   if(associated(oGGrid%coordinate_sort_order%bf)) then
-     oGGrid%coordinate_sort_order = iGGrid%coordinate_sort_order
+     call List_copy(oGGrid%coordinate_sort_order,iGGrid%coordinate_sort_order)
   endif
 
   if(associated(oGGrid%weight_list%bf)) then
-     oGGrid%weight_list = iGGrid%weight_list
+     call List_copy(oGGrid%weight_list,iGGrid%weight_list)
   endif
 
   if(associated(oGGrid%other_list%bf)) then
-     oGGrid%other_list = iGGrid%other_list
+     call List_copy(oGGrid%other_list,iGGrid%other_list)
   endif
 
-  oGGrid%index_list = iGGrid%index_list
+  call List_copy(oGGrid%index_list,iGGrid%index_list)
 
        ! Now, initialize oGGrid%data from iGGrid%data, but 
        ! with length n.
