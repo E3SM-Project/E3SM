@@ -57,13 +57,14 @@
 ! !IROUTINE: send_ - Point-to-point blocking send for the GeneralGrid.
 !
 ! !DESCRIPTION:  The point-to-point send routine {\tt send\_()} sends 
-! the input {\tt GeneralGrid} argument {\tt iGGrid} to process {\tt dest} 
+! the input {\tt GeneralGrid} argument {\tt iGGrid} to component {\tt comp_id} 
 ! on the communicator associated with the F90 integer handle {\tt comm}.
 ! The message is identified by the tag defined by the {\tt INTEGER} 
 ! argument {\tt TagBase}.  The value of {\tt TagBase} must match the 
 ! value used in the call to {\tt recv_()} on process {\tt dest}.  The 
 ! success (failure) of this operation corresponds to a zero (nonzero) 
 ! value for the output {\tt INTEGER} flag {\tt status}. 
+! The argument will be sent to the local root of the component.
 !
 ! {\bf N.B.}:  One must avoid assigning elsewhere the MPI tag values 
 ! between {\tt TagBase} and {\tt TagBase+20}, inclusive.  This is 
@@ -75,7 +76,7 @@
 !
 ! !INTERFACE:
 
- subroutine send_(iGGrid, dest, TagBase, comm, status)
+ subroutine send_(iGGrid, comp_id, TagBase, comm, status)
 
 !
 ! !USES:
@@ -88,6 +89,9 @@
       use m_GeneralGrid, only : GeneralGrid_init => init
       use m_GeneralGrid, only : GeneralGrid_lsize => lsize
 
+      use m_MCTWorld, only : ComponentToWorldRank
+      use m_MCTWorld, only : ThisMCTWorld
+
       use m_AttrVectComms,only : AttrVect_send => send
 
       use m_List,only : List_send => send
@@ -97,7 +101,7 @@
 ! !INPUT PARAMETERS: 
 !
       type(GeneralGrid), intent(in) :: iGGrid
-      integer,           intent(in) :: dest
+      integer,           intent(in) :: comp_id
       integer,           intent(in) :: TagBase
       integer,           intent(in) :: comm
 
@@ -107,12 +111,19 @@
 
 ! !REVISION HISTORY:
 !       04Jun01 - J.W. Larson <larson@mcs.anl.gov> - API Specification.
+!       07Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initial version.
+!       10Jun01 - J.W. Larson <larson@mcs.anl.gov> - Bug fixes--now works.
+!       11Jun01 - R. Jacob <jacob@mcs.anl.gov> use component id as input
+!                 argument.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::send_'
 
   integer :: ierr
+  integer :: dest
   logical :: HeaderAssoc(6)
+
+  dest = ComponentToWorldRank(0, comp_id, ThisMCTWorld)
 
       ! Step 1. Check elements of the GeneralGrid header to see 
       ! which components of it are allocated.  Load the results
@@ -293,11 +304,11 @@
 ! !IROUTINE: recv_ - Point-to-point blocking recv for the GeneralGrid.
 !
 ! !DESCRIPTION:  The point-to-point receive routine {\tt recv\_()} 
-! receives the output {\tt GeneralGrid} argument {\tt oGGrid} from process 
-! {\tt source} on the communicator associated with the F90 integer handle 
+! receives the output {\tt GeneralGrid} argument {\tt oGGrid} from component
+! {\tt comp_id} on the communicator associated with the F90 integer handle 
 ! {\tt comm}.  The message is identified by the tag defined by the 
 ! {\tt INTEGER} argument {\tt TagBase}.  The value of {\tt TagBase} must 
-! match the value used in the call to {\tt send_()} on process {\tt source}.
+! match the value used in the call to {\tt send_()} on the other component.
 ! The success (failure) of this operation corresponds to a zero (nonzero) 
 ! value for the output {\tt INTEGER} flag {\tt status}. 
 !
@@ -320,7 +331,7 @@
 !
 ! !INTERFACE:
 
- subroutine recv_(oGGrid, source, TagBase, comm, status)
+ subroutine recv_(oGGrid, comp_id, TagBase, comm, status)
 
 !
 ! !USES:
@@ -333,6 +344,9 @@
       use m_GeneralGrid, only : GeneralGrid_init => init
       use m_GeneralGrid, only : GeneralGrid_lsize => lsize
 
+      use m_MCTWorld, only : ComponentToWorldRank
+      use m_MCTWorld, only : ThisMCTWorld
+
       use m_AttrVectComms,only : AttrVect_recv => recv
 
       use m_List,only : List_recv => recv
@@ -341,7 +355,7 @@
 
 ! !INPUT PARAMETERS: 
 !
-      integer,           intent(in) :: source
+      integer,           intent(in) :: comp_id
       integer,           intent(in) :: TagBase
       integer,           intent(in) :: comm
 
@@ -354,13 +368,19 @@
 !       04Jun01 - J.W. Larson <larson@mcs.anl.gov> - API Specification.
 !       07Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initial version.
 !       10Jun01 - J.W. Larson <larson@mcs.anl.gov> - Bug fixes--now works.
+!       11Jun01 - R. Jacob <jacob@mcs.anl.gov> use component id as input
+!                 argument.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::recv_'
 
   integer :: ierr
+  integer :: source
   integer :: MPstatus(MP_STATUS_SIZE), DescendSize
   logical :: HeaderAssoc(6)
+
+! for now, assume the components root is the source.
+  source = ComponentToWorldRank(0, comp_id, ThisMCTWorld)
 
       ! Step 1. Receive the elements of the LOGICAL flag array
       ! HeaderAssoc.  TRUE entries in this array correspond to
