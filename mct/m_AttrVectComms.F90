@@ -839,13 +839,17 @@
 
 	! Verify the input: a _gathered_ vector
 
-  niV = GlobalMap_gsize(GMap)  ! the _gathered_ local size
-  if(myID /= root) niV=0
+  if(myID == root) then
+     niV = GlobalMap_gsize(GMap)  ! the _gathered_ local size
+  else 
+     niV=0  ! off the root, there should be no input data
+  endif
 
-  noV = AttrVect_lsize(iV)
+  noV = AttrVect_lsize(iV)  ! the length of the input AttrVect iV
+
   if(niV /= noV) then
     write(stderr,'(2a,i5,a,i8,a,i8)') myname_,	&
-	': myID = ',myID,'.  Invalid input, rsize(GMap) =',niV,	&
+	': myID = ',myID,'.  Invalid input, gsize(GMap) =',niV,	&
 	', lsize(iV) =',noV
     if(.not.present(stat)) call die(myname_)
     stat=-1
@@ -956,6 +960,9 @@
       use m_stdio
       use m_die
       use m_mpif90
+
+      use m_List, only : List_nullify => nullify
+
 ! GlobalSegMap and associated services:
       use m_GlobalSegMap, only : GlobalSegMap
       use m_GlobalSegMap, only : GlobalSegMap_comp_id => comp_id
@@ -1007,6 +1014,10 @@
 !                 workV on off-root processes (no longer necessary).
 !       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize stat
 !                 (if present).
+!       20Jun01 - J.W. Larson <larson@mcs.anl.gov> - Fixed a subtle bug
+!                 appearing on AIX regarding the fact workV is uninitial-
+!                 ized on non-root processes.  This is fixed by nullifying
+!                 all the pointers in workV for non-root processes.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GSM_scatter_'
@@ -1054,6 +1065,11 @@
 
   if(myID == root) then
      call AttrVect_init(workV, iV, global_storage)
+  else
+     call List_nullify(workV%iList)
+     call List_nullify(workV%rList)
+     nullify(workV%iAttr)
+     nullify(workV%rAttr)
   endif
 
        ! Return to processing on the root to load workV:
