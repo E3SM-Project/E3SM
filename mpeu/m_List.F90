@@ -921,16 +921,15 @@ contains
 ! !REVISION HISTORY:
 ! 	08May01 - J.W. Larson - initial version.
 ! 	17May01 - J.W. Larson - Re-worked and tested successfully.
+!       17Jul02 - E. Ong - fixed the bug mentioned above
 !EOP ___________________________________________________________________
 
  character(len=*),parameter :: myname_=myname//'::concatenate_'
 
- integer :: ilen1, ilen2, olen
- integer :: InNitems1, InNitems2, OutNitems
- integer :: ierr, n
-
  type(String) :: iStr1, iStr2
- character(10000) :: iChr1, iChr2, oChr
+ character( CharBufferSize(iList1) ) :: iChr1
+ character( CharBufferSize(iList2) ) :: iChr2
+ character( CharBufferSize(iList1) + CharBufferSize(iList2) + 1 ) :: oChr
 
        ! First, handle the case of either iList1 and/or iList2 being
        ! null
@@ -961,12 +960,7 @@ contains
      iChr1 = String_toChar(iStr1)
      iChr2 = String_toChar(iStr2)
 
-     ilen1 = String_len(iStr1)
-     ilen2 = String_len(iStr2)
-
        ! Step three:  concatenate CHARACTERs with the colon separator
-
-     olen = ilen1 + ilen2 + 1
 
      oChr = trim(iChr1) // ':' // trim(iChr2)
 
