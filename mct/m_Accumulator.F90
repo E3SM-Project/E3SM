@@ -1642,7 +1642,7 @@
 !
       type(AttrVect),       intent(in)  :: aV   
       type(Accumulator),    intent(in)  :: aC
-      character*7,          intent(in)  :: attrib
+      character(len=*),     intent(in)  :: attrib
 
 ! !OUTPUT PARAMETERS:   
 !
