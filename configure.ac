@@ -283,7 +283,7 @@ if test -z "$FC"; then
 fi
 
 # Set the following variables by checking the compiler name
-AC_ARG_VAR(FCFLAGS,Fortran compiler flags for all source files)
+AC_ARG_VAR(FCFLAGS,User-defined Fortran compiler flags)
 AC_ARG_VAR(ALLCFLAGS,Customized C source compilation flags)
 AC_ARG_VAR(OPT,Fortran compiler flag for optimization level) 
 AC_ARG_VAR(REAL8,[Fortran compiler flag for setting the default REAL size to REAL(KIND=8)])

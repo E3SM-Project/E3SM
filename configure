@@ -892,7 +892,7 @@ Some influential environment variables:
   FPPFLAGS    C-preprocessing flags for Fortran source code
   MACHDEFS    MCT compiler and OS flags
   FC          The Fortran compiler
-  FCFLAGS     Fortran compiler flags for all source files
+  FCFLAGS     User-defined Fortran compiler flags
   ALLCFLAGS   Customized C source compilation flags
   OPT         Fortran compiler flag for optimization level
   REAL8       Fortran compiler flag for setting the default REAL size to
