@@ -71,11 +71,19 @@
 	 integer :: nrows
 	 integer :: ncols
 	 type(AttrVect) :: data
+         ! additional data for the vectorized sMat
+         logical :: vecinit = .FALSE.
+         integer,dimension(:),pointer :: row_s, row_e
+         integer, dimension(:,:), pointer :: tcol
+         real   , dimension(:,:), pointer :: twgt
+         integer :: row_max, row_min
+         integer :: tbl_end
       End Type SparseMatrix
 
 ! !PUBLIC MEMBER FUNCTIONS:
 
       public :: init              ! Create a SparseMatrix
+      public :: vecinit           ! Initialize the vector parts
       public :: clean             ! Destroy a SparseMatrix
       public :: lsize             ! Local number of elements
       public :: indexIA           ! Index integer attribute
@@ -123,6 +131,7 @@
       public :: SortPermute       ! Sort/Permute matrix entries
 
     interface init  ; module procedure init_  ; end interface
+    interface vecinit  ; module procedure vecinit_  ; end interface
     interface clean ; module procedure clean_ ; end interface
     interface lsize ; module procedure lsize_ ; end interface
     interface indexIA ; module procedure indexIA_ ; end interface
@@ -220,9 +229,11 @@
 !           SparseMatrix is no longer a straight AttrVect type.  This
 !           also made necessary the addition of lsize(), indexIA(),
 !           and indexRA().
+! 29Oct03 - R. Jacob <jacob@mcs.anl.gov> - extend the SparseMatrix type
+!           to include mods from Fujitsu for a vector-friendly MatVecMul
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname='m_SparseMatrix'
+  character(len=*),parameter :: myname='MCT::m_SparseMatrix'
 
 ! SparseMatrix_iList components:
   character(len=*),parameter :: SparseMatrix_iList='grow:gcol:lrow:lcol'
@@ -309,6 +320,118 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
+! !IROUTINE: vecinit_ - Initialize vector parts of a SparseMatrix
+!
+! !DESCRIPTION:  This routine creates the storage space for the
+! and intializes the vector parts of a {\tt SparseMatrix}.
+!
+! {\bf N.B.}:  This routine assumes the non-vector parts of a
+! {\tt SparseMatrix} have already been initialized and loaded with data.
+!
+! !INTERFACE:
+
+ subroutine vecinit_(sMat)
+!
+! !USES:
+!
+      use m_die
+      use m_stdio
+
+      implicit none
+
+! !INPUT/OUTPUT PARAMETERS:
+
+      type(SparseMatrix), intent(inout)  :: sMat
+
+! !REVISION HISTORY:
+! 27Oct03 - R. Jacob <jacob@mcs.anl.gov> - initial version
+!           using code provided by Fujitsu.
+!EOP ___________________________________________________________________
+!
+  character(len=*),parameter :: myname_=myname//'::vecinit_'
+
+  integer :: irow,icol,iwgt
+  integer :: num_elements
+  integer :: row,col
+  integer :: ier,l,n
+  integer, dimension(:)  , allocatable :: nr, rn
+
+  if(sMat%vecinit) then
+   write(stderr,'(2a)') myname_, &
+     'MCTERROR:  sMat vector parts have already been initialized...Continuing'
+     RETURN
+  endif
+
+  write(6,*) myname_,'Initializing vecMat'
+  irow = indexIA_(sMat,'lrow')
+  icol = indexIA_(sMat,'lcol')
+  iwgt = indexRA_(sMat,'weight')
+
+  num_elements = lsize_(sMat)
+
+  sMat%row_min = sMat%data%iAttr(irow,1)
+  sMat%row_max = sMat%row_min
+  do n=1,num_elements
+     row = sMat%data%iAttr(irow,n)
+     if ( row > sMat%row_max ) sMat%row_max = row
+     if ( row < sMat%row_min ) sMat%row_min = row
+  enddo
+
+  allocate( nr(sMat%row_max), rn(num_elements), stat=ier)
+  if(ier/=0) call die(myname_,'allocate(nr,rn)',ier)
+
+  sMat%tbl_end = 0
+  nr(:) = 0
+  do n=1,num_elements
+     row = sMat%data%iAttr(irow,n)
+     nr(row) = nr(row)+1
+     rn(n)   = nr(row)
+  enddo
+  sMat%tbl_end = maxval(rn)
+
+  allocate( sMat%tcol(sMat%row_max,sMat%tbl_end),  &
+            sMat%twgt(sMat%row_max,sMat%tbl_end), stat=ier )
+  if(ier/=0) call die(myname_,'allocate(tcol,twgt)',ier)
+
+!CDIR COLLAPSE
+  sMat%tcol(:,:) = -1
+  do n=1,num_elements
+     row = sMat%data%iAttr(irow,n)
+     sMat%tcol(row,rn(n)) = sMat%data%iAttr(icol,n)
+     sMat%twgt(row,rn(n)) = sMat%data%rAttr(iwgt,n)
+  enddo
+
+  allocate( sMat%row_s(sMat%tbl_end) , sMat%row_e(sMat%tbl_end), &
+              stat=ier )
+  if(ier/=0) call die(myname_,'allocate(row_s,row_e',ier)
+  sMat%row_s = sMat%row_min
+  sMat%row_e = sMat%row_max
+  do l=1,sMat%tbl_end
+    do n=sMat%row_min,sMat%row_max
+      if (nr(n) >= l) then
+        sMat%row_s(l) = n
+        exit
+      endif
+    enddo
+    do n = sMat%row_max,sMat%row_min,-1
+      if (nr(n) >= l) then
+        sMat%row_e(l) = n
+        exit
+      endif
+    enddo
+  enddo
+
+  deallocate(nr,rn, stat=ier)
+  if(ier/=0) call die(myname_,'deallocate()',ier)
+
+  sMat%vecinit = .TRUE.
+
+ end subroutine vecinit_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
 ! !IROUTINE: clean_ - Destroy a SparseMatrix.
 !
 ! !DESCRIPTION:  This routine deallocates dynamical memory held by the
@@ -322,6 +445,7 @@
 ! !USES:
 !
       use m_AttrVect,only : AttrVect_clean => clean
+      use m_die
 
       implicit none
 
@@ -338,9 +462,11 @@
 ! 23Apr00 - J.W. Larson <larson@mcs.anl.gov> - added changes to
 !           accomodate clearing nrows and ncols.
 ! 01Mar02 - E.T. Ong <eong@mcs.anl.gov> Added stat argument.
+! 03Oct03 - R. Jacob <jacob@mcs.anl.gov> - clean vector parts
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::clean_'
+  integer :: ier
 
        ! Deallocate memory held by sMat:
 
@@ -354,6 +480,19 @@
 
   sMat%nrows = 0
   sMat%ncols = 0
+
+  if(sMat%vecinit) then
+    sMat%row_max = 0
+    sMat%row_min = 0
+    sMat%tbl_end = 0
+    deallocate(sMat%row_s,sMat%row_e,stat=ier)
+    if(ier/=0) call die(myname_,'deallocate(row_s,row_e)',ier)
+
+    deallocate(sMat%tcol,sMat%twgt,stat=ier)
+    if(ier/=0) call die(myname_,'deallocate(tcol,twgt)',ier)
+    sMat%vecinit = .FALSE.
+  endif
+   
 
  end subroutine clean_
 
