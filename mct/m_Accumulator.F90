@@ -179,6 +179,8 @@
 
 ! !REVISION HISTORY:
 ! 	11Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+! 	17May01 - R. Jacob <jacob@mcs.anl.gov> - change string_get to
+!                 list_get
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::initv_'
@@ -194,8 +196,8 @@
 
 	! Convert the two Lists to two Strings
 
-  call String_get(iLStr,bC%av%iList)
-  call String_get(rLStr,bC%av%rList)
+  call List_get(iLStr,bC%av%iList)
+  call List_get(rLStr,bC%av%rList)
 
   call init_(aC, iList=String_char(iLStr), rList=String_char(rLStr), &
              lsize=lsize, num_steps=num_steps, steps_done=steps_completed)
