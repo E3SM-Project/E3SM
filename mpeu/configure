@@ -1,0 +1,67 @@
+#!/bin/sh
+#
+#  Creates configuration Makefile. Before attempting to make anything
+#  in this directory, enter
+#
+#   ./configure
+#
+#  !REVISION HISTORY
+#
+#  09oct97   da Silva   Initial code.
+#  19oct97   da Silva   Simplified.
+#  22oct97   Jing Guo	Converted to libpsas.a environment
+#			- special configuration for CRAY
+#			- fool-prove configuration
+#			- additional information
+#  23dec99   da Silva   Modified error messages.
+#
+#.....................................................................
+
+c=`basename $0 .sh`
+
+# Node > OS
+# ---------------------------------------
+
+# Node specific configuration
+# ---------------------------------------
+makeconf="Makefile.conf.`uname -n | awk '{print $1}'`"
+
+# Site specific configuration
+# ---------------------------
+if [ ! -r ${makeconf} ]; then
+  echo "$c: not using site specific ${makeconf} in `pwd`" 1>&2
+  makeconf="Makefile.conf.`uname -s | awk '{print $1}'`"
+fi
+
+# if the OS is UNICOS, it does not follow the convention
+# ------------------------------------------------------
+if [ ! -r ${makeconf} ]; then
+  echo "$c: cannot find ${makeconf} in `pwd`" 1>&2
+  mech="`uname -m | awk '{print $1}'`"
+  if [ "${mech}" = CRAY ]; then
+    makeconf="Makefile.conf.UNICOS"
+  fi
+fi
+
+# if all are failed, make a simple one
+# ---------------------------------------
+if [ ! -r ${makeconf} ]; then
+  echo "$c: cannot find ${makeconf} in `pwd` " 1>&2
+
+  makeconf="Makefile.conf.unknown"
+  if [ ! -r ${makeconf} ]; then
+    touch ${makeconf}
+  fi
+fi
+
+rm -f Makefile.conf
+ln -s ${makeconf} Makefile.conf
+
+echo "$c: using ${makeconf} in `pwd`" 1>&2
+
+# Configure subdirectories
+# ------------------------
+  make conf
+
+
+#.

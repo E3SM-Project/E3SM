@@ -1,0 +1,310 @@
+#!/bin/make
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#BOP
+#
+# !ROUTINE: Makefile.rules
+#
+# !DESCRIPTION:
+#
+#	A makefile segment for the PSAS development environment
+#
+# !INTERFACE:
+#
+#	make
+#
+# !BUGS:
+#
+# !SEE ALSO: Makefile.conf Makefile.IRIX Makefile.OSF1 Makefile.UNICOS
+#
+# !REVISION HISTORY:
+# 	06May1997 - J. Guo
+#       05jan2000 - da SIlva Made compatible with fvPSAS build environment
+#EOP
+#_______________________________________________________________________
+
+
+# Operating system development environment, such as the language
+# libraries and header files, UNIX libraries and header files, math
+# libraries (e.g. BLAS and LAPACK), and MPI, etc.
+
+OS_ROOT		= /usr
+OS_LOCAL	= /usr/local
+OS_IDIR		= -I$(OS_ROOT)/include	-I$(OS_LOCAL)/include
+OS_LDIR		= -L$(OS_ROOT)/lib	-L$(OS_LOCAL)/lib
+OS_lLIB		= -lblas -llapack
+
+# GEOS development environment, in case PSAS is to be developed with
+# ether GCM as well as the GEMS environment.
+
+GEOS_ROOT	= ..
+GEOS_IDIR	= -I$(GEOS_ROOT)/include -I$(GEOS_ROOT)/modules
+GEOS_LDIR	= -L$(GEOS_ROOT)/lib
+
+MY_ROOT		= ../src
+MY_IDIR		= -I$(MY_ROOT)/include	-I$(MY_ROOT)/modules
+MY_LDIR		= -L$(MY_ROOT)/lib
+MY_lLIB		= -lulev
+
+# fvPSAS Default configuration
+
+COREROOT = ../../..
+COREBIN  = $(COREROOT)/bin
+CORELIB  = $(COREROOT)/lib
+COREINC  = $(COREROOT)/include
+COREETC  = $(COREROOT)/etc
+
+
+
+#-----------------------------------------------------------------------
+# Default configuration with common names
+
+SHELL		= sh
+
+MAKE		= make
+MAKEFILE	= Makefile
+#MAKECONF	= Makefile.conf
+#MAKERULE	= Makefile.rules
+#MAKESPEC	= Makefile.include
+
+CPP		= /lib/cpp
+CPPFLAGS	= -P
+
+CC		= cc
+CFLAGS		=
+
+# Fortran compiler and options for regular .F
+
+FC		= f90
+FFLAGS		=
+FPP		= $(CPP)
+FPPFLAGS	= $(CPPFLAGS)
+
+_DSYS	= -Dsys`uname -s`
+
+_IDIR	= $(MY_IDIR) $(GEOS_IDIR) $(OS_IDIR)
+_LDIR	= $(MY_LDIR) $(GEOS_LDIR) $(OS_LDIR)
+_lLIB	= $(MY_lLIB) $(GEOS_lLIB) $(OS_lLIB)
+
+_IDIR	= $(MY_IDIR)
+_LDIR	= $(MY_LDIR)
+_lLIB	= $(MY_lLIB)
+
+_IDIR	=
+_LDIR	=
+_lLIB	=
+
+# The Fortran 90 module file suffix
+M		= mod
+
+
+LD		= mpif77
+LDFLAGS		=
+
+LN		= ln -s
+RM		= rm -f
+CP		= cp -p
+MKDIR           = mkdir -p
+
+ZIP		= compress
+Z		= Z
+ZCAT		= zcat
+TAR		= tar
+AR		= ar cq
+
+default:
+	@ echo "$(MAKE): all clean install, etc."
+
+.SUFFIXES:
+.SUFFIXES: .H .h .F90 .f90 .F .f .c .o
+
+.c.o:
+	$(CC) -c $(CFLAGS) $(_DC) $(_IC) $*.c
+
+.f.o:
+	$(FC) -c $(XFLAGS) $(FFLAGS) $(_I) $*.f
+
+.F.o:
+	$(FC) -c $(FPPFLAGS) $(_DF) $(XFLAGS) $(FFLAGS) $(_I) $*.F
+
+.f90.o:
+	$(FC) -c $(XFLAGS) $(FFLAGS) $(_I) $*.f90
+
+.F90.o:
+	$(FC) -c $(FPPFLAGS) $(_DF) $(XFLAGS) $(FFLAGS) $(_I) $*.F90
+
+.H.h:
+	$(FPP) $(FPPFLAGS) $(_DF) $*.H $*.h
+
+#-----------------------------------------------------------------------
+# Recursive (conf), top-down
+
+conf:	$(SUBD_TARGETS)
+	@ argv="$(SUBD_TARGETS)"			;\
+	  for d in $$argv; do			\
+	    ( cd $$d;				\
+	      echo "$@: making `pwd`/";		\
+	      chmod +x configure;		\
+	      ./configure;			\
+	      $(MAKE) -f $(MAKEFILE) $@ )	\
+	  done
+
+unconf:	$(SUBD_TARGETS)
+	@ argv="$(SUBD_TARGETS)"			;\
+	  for d in $$argv; do			\
+	    ( cd $$d;				\
+	      echo "$@: making `pwd`/";		\
+	      $(MAKE) -f $(MAKEFILE) $@;	\
+	      chmod +x unconfigure;		\
+	      ./unconfigure		)	\
+	  done
+
+#-----------------------------------------------------------------------
+# Recursive (list), top-down
+
+list:	$(ARCH_TARGETS) $(SUBD_TARGETS)
+	@ argv="$(ARCH_TARGETS)" ;\
+	  for f in $$argv; do \
+	    echo $$f | sed -e "s:^\./::" ;\
+	  done
+	@ argv="$(SUBD_TARGETS)" ;\
+	  for d in $$argv; do \
+	    (cd $$d; $(MAKE) $@ ) | sed -e "s:^:$$d/:" ;\
+	  done
+
+#-----------------------------------------------------------------------
+arch:
+	@ if [ -z "$(MODULE)" ]; then \
+		echo "$@: undefined, MODULE"; exit 2; fi
+	@ echo "$@: marking the .origin of $(MODULE).tar.$(Z)"
+	@ echo `hostname`:`pwd` >.origin
+	@ echo "$@: making $(MODULE).tar.$(Z) ..."
+	@ $(RM) $(MODULE).tar.$(Z)
+	@ $(TAR) -cvf $(MODULE).tar .origin `$(MAKE) list`
+	@ $(ZIP) -v $(MODULE).tar
+	@ $(RM) .origin
+
+unar:
+	@ if [ -z "$(MODULE)" ]; then \
+	    echo "$@: undefined, MODULE"; exit 2; fi
+	@ if [ ! -r "$(MODULE).tar.$(Z)" ]; then \
+	    echo "$@: can not open, $(MODULE).tar.$(Z)"; exit 2; fi
+	@ echo "$@: checking the .origin of $(MODULE).tar.$(Z) ..."
+	@ $(ZCAT) $(MODULE).tar.$(Z) | $(TAR) -xvf - .origin
+	@ if [ -r .origin ]; then \
+	    origin=`cat .origin` ;\
+	    current=`hostname`:`pwd` ;\
+	    echo "$@: .origin = $${origin}" ;\
+	    $(RM) .origin ;\
+	    if [ "$${origin}" = "$${current}" ]; then \
+	      echo "$@: the origin of $(MODULE).tar.$(Z)" ;\
+	      exit 2; fi ;\
+	  else	\
+	    echo "$@: not marked, $(MODULE).tar.$(Z)" ;\
+	    exit 2 ;\
+	  fi
+	@ echo "$@: untaring $(MODULE).tar.$(Z) ..."
+	@ $(ZCAT) $(MODULE).tar.$(Z) | $(TAR) -xvf -
+
+#-----------------------------------------------------------------------
+# Recursive (all), bottom-up
+
+all: all_subd $(ALL_TARGETS)
+
+#-----------------------------------------------------------------------
+# Recursive (install), bottom-up after (all) has been done
+
+install: install_subd $(INSTALL_TARGETS)
+
+#-----------------------------------------------------------------------
+# Bottom-up targets
+
+all_subd install_subd CLEAN_MAKEFILE_subd: $(SUBD_TARGETS)
+	@ t=`echo $@|sed -e 's/_subd//'`; argv="$(SUBD_TARGETS)" ;\
+	  for d in $$argv; do			 \
+	    ( cd $$d				;\
+	      echo "$$t: making `pwd`/"		;\
+	      $(MAKE) $$t )			 \
+	  done
+
+#-----------------------------------------------------------------------
+# Recursive (utest), top-down after (all) has been done
+
+utest:	$(UTEST_TARGETS) $(SUBD_TARGETS)
+	@ argv="$(SUBD_TARGETS)"		;\
+	  for d in $$argv; do			 \
+	    ( cd $$d				;\
+	      echo "$@: making `pwd`/"		;\
+	      $(MAKE) $@)			 \
+	  done
+
+#-----------------------------------------------------------------------
+# Recursive (clean), the order may be not relevant
+
+clean:	$(CLEAN_TARGETS) $(SUBD_TARGETS)
+	$(RM) *.o *.$(M) *.x $(CLEAN_FILES)
+	@ argv="$(SUBD_TARGETS)"		;\
+	  for d in $$argv; do			 \
+	    ( cd $$d				;\
+	      echo "$@: making `pwd`/"		;\
+	      $(MAKE) $@)			 \
+	  done
+
+#-----------------------------------------------------------------------
+# Recursive (unstall), the order may be not relevant
+
+unstall: $(UNSTALL_TARGETS) $(SUBD_TARGETS)
+	@ argv="$(SUBD_TARGETS)"		;\
+	  for d in $$argv; do			 \
+	    ( cd $$d				;\
+	      echo "$@: making `pwd`/"		;\
+	      $(MAKE) $@)			 \
+	  done
+
+#=======================================================================
+# Special targets that one should make() with care
+
+#-----------------------------------------------------------------------
+# Recursive (REALLY_CLEAN), the order may be not relevant
+
+REALLY_CLEAN:	CLEAN_f90 CLEAN_f CLEAN_h CLEAN_arch
+REALLY_CLEAN:	$(REALLY_CLEAN_TARGETS) $(SUBD_TARGETS)
+	$(RM) *.o *.$(M) *.a *.x
+	@ argv="$(SUBD_TARGETS)"		;\
+	  for d in $$argv; do			 \
+	    ( cd $$d				;\
+	      echo "$@: making `pwd`/"		;\
+	      $(MAKE) $@)			 \
+	  done
+
+CLEAN_f90:
+	@ for F in *.F90; do \
+	    f=`basename $$F .F90`.f90; \
+	    if [ -r $$F ]; then $(RM) $$f; fi; done
+
+CLEAN_f:
+	@ for F in *.F; do \
+	    f=`basename $$F .F`.f; \
+	    if [ -r $$F ]; then $(RM) $$f; fi; done
+
+CLEAN_h:
+	@ for F in *.H; do \
+	    f=`basename $$F .H`.h; \
+	    if [ -r $$F ]; then $(RM) $$f; fi; done
+
+CLEAN_arch:
+	$(RM) $(MODULE).tar.$(Z)
+
+CLEAN_MAKEFILE: CLEAN_MAKEFILE_subd
+	@ for m in $(MAKERULE) $(MAKECONF); do	 \
+	    d=`pwd`; d=`basename $$d`		;\
+	    if [ -h $$m -a $$d != config ]; then \
+	      echo "$(RM) $$m"			;\
+	      $(RM) $$m				;\
+	    fi					;\
+	  done
+
+#-----------------------------------------------------------------------
+DO_IT_ANYWAY:
+#.

@@ -1,0 +1,8 @@
+
+29Sep99	- Jing Guo
+	. The design objective of this module is to create prototype
+	  interfaces for selected MPI calls, to be used when there is
+	  no need to use a true MPI library.
+
+	. Files in this directory should be in a plain FORTRAN 77 type
+	  of "implicit" interfaces.

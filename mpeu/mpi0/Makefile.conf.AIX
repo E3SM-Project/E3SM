@@ -1,0 +1,99 @@
+#!/bin/make
+#-----------------------------------------------------------------------
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#BOP
+#
+# !ROUTINE: Makefile.conf.AIX
+# 
+# !DESCRIPTION: 
+#	An include file of configurations for the IBM AIX platform.
+#   See Makefile for additional `make' procedures.  This include file is 
+#   used to overide the default environments (including commands) defined 
+#   in file Makefile.
+#
+# !INTERFACE:
+#
+#	% ln -s Makefile.conf.AIX Makefile.conf
+#	% make ...
+#
+# !SEE ALSO: Makefile
+#
+# !REVISION HISTORY: (`cvs log <>' for more)
+#	1Jul99 - J.W. Larson	-  initial version.
+#
+#EOP
+#-----------------------------------------------------------------------
+
+_Dsys		= -DsysAIX -DFORTRAN_SAME
+_Dnod		= -DCACHE_TABLE_OPT1 -DLOOP_BLOCKING
+
+# Environments
+# ============
+
+# If use the MPICH implementation
+
+_LMPI		= 
+_lMPI		= 
+_lMPIlog	= 
+_lMPItrace	= 
+_lMPIanime	= 
+_IMPI		= 
+
+# If use the vendor implementation
+
+_LMPI		= 
+_lMPI		= 
+_IMPI		=
+
+
+#_R		= -r4
+#_R		= -r8
+
+_Iconf		= $(_IMPI)
+
+SHELL		= /usr/bin/sh
+
+CPP		= /usr/ccs/lib/cpp
+
+F77		= mpxlf
+F90		= mpxlf90
+FC		= $(F90)
+
+FFLAGS		= $(_R) -qfree -O3 -qarch=pwr3
+FFLAGS_O1	= $(_R) -qfree -O  -qarch=pwr3 
+FFLAGS_O2	= $(_R) -qfree -O2 -qarch=pwr3 
+CFLAGS		= -O $(_Dsys)
+
+ZIP		= /usr/bin/compress
+ZCAT		= /usr/local/bin/zcat
+TAR		= /usr/bin/tar
+
+LD		= mpxlf90
+LDFLAGS		= $(FFLAGS)
+
+#AR		= ar cqs
+#RM		= rm -f
+MV		= /usr/bin/mv
+
+LIBprof		= 
+LIBsys	 	= 
+
+
+CPPFLAGS	= -P -C 
+FPPFLAGS	= $(CPPFLAGS)
+
+.F.o:
+	$(FPP) $(FPPFLAGS) $(_I) $(_DF) $*.F $*.f
+	$(FC) -c $(FFLAGS) $(_I) $*.f
+	$(RM) $*.f
+
+.F90.o:
+	$(FPP) $(FPPFLAGS) $(_I) $(_DF) $*.F90 $*_scratch.f
+	$(FC) -c $(FFLAGS) $(_I) $*_scratch.f
+	$(MV) $*_scratch.o $*.o
+	$(RM) $*_scratch.f
+
+#.----------------------------------------------------------------------
+
+MUPDATE		= sh mupdate.sh
