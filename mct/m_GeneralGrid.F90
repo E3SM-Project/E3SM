@@ -1012,7 +1012,7 @@
 
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: exportIAttr_ - return AttrVect INTEGER attribute as a vector
+! !IROUTINE: exportIAttr_ - return GeneralGrid INTEGER attribute as a vector
 !
 ! !DESCRIPTION:
 ! This routine extracts from the input {\tt GeneralGrid} argument 
@@ -1076,7 +1076,7 @@
 
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: exportRAttr_ - return AttrVect REAL attribute as a vector
+! !IROUTINE: exportRAttr_ - return GeneralGrid REAL attribute as a vector
 !
 ! !DESCRIPTION:
 ! This routine extracts from the input {\tt GeneralGrid} argument 

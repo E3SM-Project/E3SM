@@ -38,6 +38,8 @@
 
 ! !PUBLIC TYPES:
 
+      public :: SparseMatrix      ! The class data structure
+
       Type SparseMatrix
 	 integer :: nrows
 	 integer :: ncols
@@ -46,7 +48,6 @@
 
 ! !PUBLIC MEMBER FUNCTIONS:
 
-      public :: SparseMatrix      ! The class data structure
       public :: init              ! Create a SparseMatrix
       public :: clean             ! Destroy a SparseMatrix
       public :: lsize             ! Local number of elements
@@ -54,6 +55,27 @@
       public :: indexRA           ! Index real attribute
       public :: nRows             ! Total number of rows
       public :: nCols             ! Total number of columns
+
+      public :: exportGlobalRowIndices    ! Return global row indices 
+                                          ! for matrix elements
+      public :: exportGlobalColumnIndices ! Return global column indices 
+                                          ! for matrix elements
+      public :: exportLocalRowIndices     ! Return local row indices 
+                                          ! for matrix elements
+      public :: exportLocalColumnIndices  ! Return local column indices 
+                                          ! for matrix elements
+      public :: exportMatrixElements      ! Return matrix elements
+
+      public :: importGlobalRowIndices    ! Set global row indices 
+                                          ! using 
+      public :: importGlobalColumnIndices ! Return global column indices 
+                                          ! for matrix elements
+      public :: importLocalRowIndices     ! Return local row indices 
+                                          ! for matrix elements
+      public :: importLocalColumnIndices  ! Return local column indices 
+                                          ! for matrix elements
+      public :: importMatrixElements      ! Return matrix elements
+
       public :: GlobalNumElements ! Total number of nonzero elements
       public :: ComputeSparsity   ! Fraction of matrix that is nonzero
       public :: local_row_range   ! Local (on-process) row range
@@ -79,6 +101,46 @@
     interface indexRA ; module procedure indexRA_ ; end interface
     interface nRows ; module procedure nRows_ ; end interface
     interface nCols ; module procedure nCols_ ; end interface
+
+    interface exportGlobalRowIndices ; module procedure &
+	 exportGlobalRowIndices_ 
+    end interface
+
+    interface exportGlobalColumnIndices ; module procedure &
+	 exportGlobalColumnIndices_ 
+    end interface
+
+    interface exportLocalRowIndices ; module procedure &
+	 exportLocalRowIndices_ 
+    end interface
+
+    interface exportLocalColumnIndices ; module procedure &
+	 exportLocalColumnIndices_ 
+    end interface
+
+    interface exportMatrixElements ; module procedure &
+	 exportMatrixElements_ 
+    end interface
+
+    interface importGlobalRowIndices ; module procedure &
+	 importGlobalRowIndices_ 
+    end interface
+
+    interface importGlobalColumnIndices ; module procedure &
+	 importGlobalColumnIndices_ 
+    end interface
+
+    interface importLocalRowIndices ; module procedure &
+	 importLocalRowIndices_ 
+    end interface
+
+    interface importLocalColumnIndices ; module procedure &
+	 importLocalColumnIndices_ 
+    end interface
+
+    interface importMatrixElements ; module procedure &
+	 importMatrixElements_ 
+    end interface
 
     interface GlobalNumElements ; module procedure &
 	 GlobalNumElements_ 
@@ -499,6 +561,580 @@
   nCols_ = sMat%ncols
 
  end function nCols_
+
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: exportGlobalRowIndices_ - return Global Row Indices
+!
+! !DESCRIPTION:
+! This routine extracts from the input {\tt SparseMatrix} argument 
+! {\tt sMat} its global row indices, and returns them in the {\tt INTEGER} 
+! output array {\tt GlobalRows}, and its length in the output {\tt INTEGER} 
+! argument {\tt length}.
+!
+! {\bf N.B.:}  The flexibility of this routine regarding the pointer 
+! association status of the output argument {\tt GlobalRows} means the
+! user must invoke this routine with care.  If the user wishes this
+! routine to fill a pre-allocated array, then obviously this array
+! must be allocated prior to calling this routine.  If the user wishes
+! that the routine {\em create} the output argument array {\tt GlobalRows},
+! then the user must ensure this pointer is not allocated (i.e. the user
+! must nullify this pointer) at the time this routine is invoked.
+!
+! {\bf N.B.:}  If the user has relied on this routine to allocate memory
+! associated with the pointer {\tt GlobalRows}, then the user is responsible 
+! for deallocating this array once it is no longer needed.  Failure to 
+! do so will result in a memory leak.
+!
+! !INTERFACE:
+
+ subroutine exportGlobalRowIndices_(sMat, GlobalRows, length)
+!
+! !USES:
+!
+      use m_die 
+      use m_stdio
+
+      use m_AttrVect,      only : AttrVect_exportIAttr => exportIAttr
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      type(SparseMatrix),     intent(in)  :: sMat
+
+! !OUTPUT PARAMETERS: 
+
+      integer,  dimension(:), pointer     :: GlobalRows
+      integer,                intent(out) :: length
+
+! !REVISION HISTORY:
+!        7May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::exportGlobalRowIndices_'
+
+       ! Export the data (inheritance from AttrVect)
+
+  call AttrVect_exportIAttr(sMat%data, 'grow', GlobalRows, length)
+
+ end subroutine exportGlobalRowIndices_
+
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: exportGlobalColumnIndices_ - return Global Column Indices
+!
+! !DESCRIPTION:
+! This routine extracts from the input {\tt SparseMatrix} argument 
+! {\tt sMat} its global column indices, and returns them in the {\tt INTEGER} 
+! output array {\tt GlobalColumns}, and its length in the output {\tt INTEGER} 
+! argument {\tt length}.
+!
+! {\bf N.B.:}  The flexibility of this routine regarding the pointer 
+! association status of the output argument {\tt GlobalColumns} means the
+! user must invoke this routine with care.  If the user wishes this
+! routine to fill a pre-allocated array, then obviously this array
+! must be allocated prior to calling this routine.  If the user wishes
+! that the routine {\em create} the output argument array {\tt GlobalColumns},
+! then the user must ensure this pointer is not allocated (i.e. the user
+! must nullify this pointer) at the time this routine is invoked.
+!
+! {\bf N.B.:}  If the user has relied on this routine to allocate memory
+! associated with the pointer {\tt GlobalColumns}, then the user is responsible 
+! for deallocating this array once it is no longer needed.  Failure to 
+! do so will result in a memory leak.
+!
+! !INTERFACE:
+
+ subroutine exportGlobalColumnIndices_(sMat, GlobalColumns, length)
+
+!
+! !USES:
+!
+      use m_die 
+      use m_stdio
+
+      use m_AttrVect,      only : AttrVect_exportIAttr => exportIAttr
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      type(SparseMatrix),     intent(in)  :: sMat
+
+! !OUTPUT PARAMETERS: 
+
+      integer,  dimension(:), pointer     :: GlobalColumns
+      integer,                intent(out) :: length
+
+! !REVISION HISTORY:
+!        7May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::exportGlobalColumnIndices_'
+
+       ! Export the data (inheritance from AttrVect)
+
+  call AttrVect_exportIAttr(sMat%data, 'gcol', GlobalColumns, length)
+
+ end subroutine exportGlobalColumnIndices_
+
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: exportLocalRowIndices_ - return Local Row Indices
+!
+! !DESCRIPTION:
+! This routine extracts from the input {\tt SparseMatrix} argument 
+! {\tt sMat} its local row indices, and returns them in the {\tt INTEGER} 
+! output array {\tt LocalRows}, and its length in the output {\tt INTEGER} 
+! argument {\tt length}.
+!
+! {\bf N.B.:}  The flexibility of this routine regarding the pointer 
+! association status of the output argument {\tt LocalRows} means the
+! user must invoke this routine with care.  If the user wishes this
+! routine to fill a pre-allocated array, then obviously this array
+! must be allocated prior to calling this routine.  If the user wishes
+! that the routine {\em create} the output argument array {\tt LocalRows},
+! then the user must ensure this pointer is not allocated (i.e. the user
+! must nullify this pointer) at the time this routine is invoked.
+!
+! {\bf N.B.:}  If the user has relied on this routine to allocate memory
+! associated with the pointer {\tt LocalRows}, then the user is responsible 
+! for deallocating this array once it is no longer needed.  Failure to 
+! do so will result in a memory leak.
+!
+! !INTERFACE:
+
+ subroutine exportLocalRowIndices_(sMat, LocalRows, length)
+!
+! !USES:
+!
+      use m_die 
+      use m_stdio
+
+      use m_AttrVect,      only : AttrVect_exportIAttr => exportIAttr
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      type(SparseMatrix),     intent(in)  :: sMat
+
+! !OUTPUT PARAMETERS: 
+
+      integer,  dimension(:), pointer     :: LocalRows
+      integer,                intent(out) :: length
+
+! !REVISION HISTORY:
+!        7May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::exportLocalRowIndices_'
+
+       ! Export the data (inheritance from AttrVect)
+
+  call AttrVect_exportIAttr(sMat%data, 'lrow', LocalRows, length)
+
+ end subroutine exportLocalRowIndices_
+
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: exportLocalColumnIndices_ - return Local Column Indices
+!
+! !DESCRIPTION:
+! This routine extracts from the input {\tt SparseMatrix} argument 
+! {\tt sMat} its local column indices, and returns them in the {\tt INTEGER} 
+! output array {\tt LocalColumns}, and its length in the output {\tt INTEGER} 
+! argument {\tt length}.
+!
+! {\bf N.B.:}  The flexibility of this routine regarding the pointer 
+! association status of the output argument {\tt LocalColumns} means the
+! user must invoke this routine with care.  If the user wishes this
+! routine to fill a pre-allocated array, then obviously this array
+! must be allocated prior to calling this routine.  If the user wishes
+! that the routine {\em create} the output argument array {\tt LocalColumns},
+! then the user must ensure this pointer is not allocated (i.e. the user
+! must nullify this pointer) at the time this routine is invoked.
+!
+! {\bf N.B.:}  If the user has relied on this routine to allocate memory
+! associated with the pointer {\tt LocalColumns}, then the user is responsible 
+! for deallocating this array once it is no longer needed.  Failure to 
+! do so will result in a memory leak.
+!
+! !INTERFACE:
+
+ subroutine exportLocalColumnIndices_(sMat, LocalColumns, length)
+
+!
+! !USES:
+!
+      use m_die 
+      use m_stdio
+
+      use m_AttrVect,      only : AttrVect_exportIAttr => exportIAttr
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      type(SparseMatrix),     intent(in)  :: sMat
+
+! !OUTPUT PARAMETERS: 
+
+      integer,  dimension(:), pointer     :: LocalColumns
+      integer,                intent(out) :: length
+
+! !REVISION HISTORY:
+!        7May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::exportLocalColumnIndices_'
+
+       ! Export the data (inheritance from AttrVect)
+
+  call AttrVect_exportIAttr(sMat%data, 'lcol', LocalColumns, length)
+
+ end subroutine exportLocalColumnIndices_
+
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: exportMatrixElements_ - return MatrixElements as an array.
+!
+! !DESCRIPTION:
+! This routine extracts the matrix elements from the input {\tt SparseMatrix} 
+! argument {\tt sMat}, and returns them in the {\tt REAL} output array 
+! {\tt MatrixElements}, and its length in the output {\tt INTEGER} 
+! argument {\tt length}.
+!
+! {\bf N.B.:}  The flexibility of this routine regarding the pointer 
+! association status of the output argument {\tt MatrixElements} means the
+! user must invoke this routine with care.  If the user wishes this
+! routine to fill a pre-allocated array, then obviously this array
+! must be allocated prior to calling this routine.  If the user wishes
+! that the routine {\em create} the output argument array {\tt MatrixElements},
+! then the user must ensure this pointer is not allocated (i.e. the user
+! must nullify this pointer) at the time this routine is invoked.
+!
+! {\bf N.B.:}  If the user has relied on this routine to allocate memory
+! associated with the pointer {\tt MatrixElements}, then the user is responsible 
+! for deallocating this array once it is no longer needed.  Failure to 
+! do so will result in a memory leak.
+!
+! !INTERFACE:
+
+ subroutine exportMatrixelements_(sMat, MatrixElements, length)
+
+!
+! !USES:
+!
+      use m_die 
+      use m_stdio
+
+      use m_AttrVect,      only : AttrVect_exportRAttr => exportRAttr
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      type(SparseMatrix),     intent(in)  :: sMat
+
+! !OUTPUT PARAMETERS: 
+
+      real,  dimension(:),    pointer     :: MatrixElements
+      integer,                intent(out) :: length
+
+! !REVISION HISTORY:
+!        7May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::exportMatrixElements_'
+
+       ! Export the data (inheritance from AttrVect)
+
+  call AttrVect_exportRAttr(sMat%data, 'weight', MatrixElements, length)
+
+ end subroutine exportMatrixElements_
+
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: importGlobalRowIndices_ - Import Global Row Indices
+!
+! !DESCRIPTION:
+! This routine imports global row index data into the {\tt SparseMatrix} 
+! argument {\tt sMat}.  The user provides the index data in the input 
+! {\tt INTEGER} vector {\tt inVect}.  The input {\tt INTEGER} argument 
+! {\tt lsize} is used as a consistencey check to ensure the user is
+! sufficient space in the {\tt SparseMatrix} to store the data.
+!
+! !INTERFACE:
+
+ subroutine importGlobalRowIndices_(sMat, inVect, lsize)
+
+!
+! !USES:
+!
+      use m_die
+      use m_stdio
+
+      use m_AttrVect,      only : AttrVect_importIAttr => importIAttr
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      integer,  dimension(:), pointer       :: inVect
+      integer,                intent(in)    :: lsize
+
+! !INPUT/OUTPUT PARAMETERS: 
+
+      type(SparseMatrix),     intent(inout) :: sMat
+
+! !REVISION HISTORY:
+!        7May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::importGlobalRowIndices_'
+
+       ! Argument Check:
+
+  if(lsize > lsize_(sMat)) then
+     write(stderr,*) myname_,':: ERROR, lsize > lsize_(sMat).', &
+          'lsize = ',lsize,'lsize_(sMat) = ',lsize_(sMat)
+     call die(myname_)
+  endif
+
+       ! Import the data (inheritance from AttrVect)
+
+  call AttrVect_importIAttr(sMat%data, 'grow', inVect, lsize)
+
+ end subroutine importGlobalRowIndices_
+
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: importGlobalColumnIndices_ - Import Global Column Indices
+!
+! !DESCRIPTION:
+! This routine imports global column index data into the {\tt SparseMatrix} 
+! argument {\tt sMat}.  The user provides the index data in the input 
+! {\tt INTEGER} vector {\tt inVect}.  The input {\tt INTEGER} argument 
+! {\tt lsize} is used as a consistencey check to ensure the user is
+! sufficient space in the {\tt SparseMatrix} to store the data.
+!
+! !INTERFACE:
+
+ subroutine importGlobalColumnIndices_(sMat, inVect, lsize)
+
+!
+! !USES:
+!
+      use m_die
+      use m_stdio
+
+      use m_AttrVect,      only : AttrVect_importIAttr => importIAttr
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      integer,  dimension(:), pointer       :: inVect
+      integer,                intent(in)    :: lsize
+
+! !INPUT/OUTPUT PARAMETERS: 
+
+      type(SparseMatrix),     intent(inout) :: sMat
+
+! !REVISION HISTORY:
+!        7May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::importGlobalColumnIndices_'
+
+       ! Argument Check:
+
+  if(lsize > lsize_(sMat)) then
+     write(stderr,*) myname_,':: ERROR, lsize > lsize_(sMat).', &
+          'lsize = ',lsize,'lsize_(sMat) = ',lsize_(sMat)
+     call die(myname_)
+  endif
+
+       ! Import the data (inheritance from AttrVect)
+
+  call AttrVect_importIAttr(sMat%data, 'gcol', inVect, lsize)
+
+ end subroutine importGlobalColumnIndices_
+
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: importLocalRowIndices_ - Import Local Row Indices
+!
+! !DESCRIPTION:
+! This routine imports local row index data into the {\tt SparseMatrix} 
+! argument {\tt sMat}.  The user provides the index data in the input 
+! {\tt INTEGER} vector {\tt inVect}.  The input {\tt INTEGER} argument 
+! {\tt lsize} is used as a consistencey check to ensure the user is
+! sufficient space in the {\tt SparseMatrix} to store the data.
+!
+! !INTERFACE:
+
+ subroutine importLocalRowIndices_(sMat, inVect, lsize)
+
+!
+! !USES:
+!
+      use m_die
+      use m_stdio
+
+      use m_AttrVect,      only : AttrVect_importIAttr => importIAttr
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      integer,  dimension(:), pointer       :: inVect
+      integer,                intent(in)    :: lsize
+
+! !INPUT/OUTPUT PARAMETERS: 
+
+      type(SparseMatrix),     intent(inout) :: sMat
+
+! !REVISION HISTORY:
+!        7May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::importLocalRowIndices_'
+
+       ! Argument Check:
+
+  if(lsize > lsize_(sMat)) then
+     write(stderr,*) myname_,':: ERROR, lsize > lsize_(sMat).', &
+          'lsize = ',lsize,'lsize_(sMat) = ',lsize_(sMat)
+     call die(myname_)
+  endif
+
+       ! Import the data (inheritance from AttrVect)
+
+  call AttrVect_importIAttr(sMat%data, 'grow', inVect, lsize)
+
+ end subroutine importLocalRowIndices_
+
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: importLocalColumnIndices_ - Import Local Column Indices
+!
+! !DESCRIPTION:
+! This routine imports local column index data into the {\tt SparseMatrix} 
+! argument {\tt sMat}.  The user provides the index data in the input 
+! {\tt INTEGER} vector {\tt inVect}.  The input {\tt INTEGER} argument 
+! {\tt lsize} is used as a consistencey check to ensure the user is
+! sufficient space in the {\tt SparseMatrix} to store the data.
+!
+! !INTERFACE:
+
+ subroutine importLocalColumnIndices_(sMat, inVect, lsize)
+
+!
+! !USES:
+!
+      use m_die
+      use m_stdio
+
+      use m_AttrVect,      only : AttrVect_importIAttr => importIAttr
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      integer,  dimension(:), pointer       :: inVect
+      integer,                intent(in)    :: lsize
+
+! !INPUT/OUTPUT PARAMETERS: 
+
+      type(SparseMatrix),     intent(inout) :: sMat
+
+! !REVISION HISTORY:
+!        7May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::importLocalColumnIndices_'
+
+       ! Argument Check:
+
+  if(lsize > lsize_(sMat)) then
+     write(stderr,*) myname_,':: ERROR, lsize > lsize_(sMat).', &
+          'lsize = ',lsize,'lsize_(sMat) = ',lsize_(sMat)
+     call die(myname_)
+  endif
+
+       ! Import the data (inheritance from AttrVect)
+
+  call AttrVect_importIAttr(sMat%data, 'gcol', inVect, lsize)
+
+ end subroutine importLocalColumnIndices_
+
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: importMatrixElements_ - Import Local Column Indices
+!
+! !DESCRIPTION:
+! This routine imports matrix elements index data into the 
+! {\tt SparseMatrix} argument {\tt sMat}.  The user provides the index 
+! data in the input {\tt REAL} vector {\tt inVect}.  The input 
+! {\tt INTEGER} argument {\tt lsize} is used as a consistencey check 
+! to ensure the user is sufficient space in the {\tt SparseMatrix} 
+! to store the data.
+!
+! !INTERFACE:
+
+ subroutine importMatrixElements_(sMat, inVect, lsize)
+
+!
+! !USES:
+!
+      use m_die
+      use m_stdio
+
+      use m_AttrVect,      only : AttrVect_importRAttr => importRAttr
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      real,  dimension(:),    pointer       :: inVect
+      integer,                intent(in)    :: lsize
+
+! !INPUT/OUTPUT PARAMETERS: 
+
+      type(SparseMatrix),     intent(inout) :: sMat
+
+! !REVISION HISTORY:
+!        7May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::importMatrixElements_'
+
+       ! Argument Check:
+
+  if(lsize > lsize_(sMat)) then
+     write(stderr,*) myname_,':: ERROR, lsize > lsize_(sMat).', &
+          'lsize = ',lsize,'lsize_(sMat) = ',lsize_(sMat)
+     call die(myname_)
+  endif
+
+       ! Import the data (inheritance from AttrVect)
+
+  call AttrVect_importRAttr(sMat%data, 'weight', inVect, lsize)
+
+ end subroutine importMatrixElements_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
