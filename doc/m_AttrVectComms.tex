@@ -1,0 +1,177 @@
+%                **** IMPORTANT NOTICE *****
+% This LaTeX file has been automatically produced by ProTeX v. 1.0
+% Any changes made to this file will likely be lost next time
+% this file is regenerated from its Fortran source.
+% Send questions to Arlindo da Silva, dasilva@gsfc.nasa.gov
+ 
+\parskip        0pt
+\parindent      0pt
+\baselineskip  11pt
+ 
+%--------------------- SHORT-HAND MACROS ----------------------
+\def\bv{\begin{verbatim}}
+\def\ev{\end{verbatim}}
+\def\be{\begin{equation}}
+\def\ee{\end{equation}}
+\def\bea{\begin{eqnarray}}
+\def\eea{\end{eqnarray}}
+\def\bi{\begin{itemize}}
+\def\ei{\end{itemize}}
+\def\bn{\begin{enumerate}}
+\def\en{\end{enumerate}}
+\def\bd{\begin{description}}
+\def\ed{\end{description}}
+\def\({\left (}
+\def\){\right )}
+\def\[{\left [}
+\def\]{\right ]}
+\def\<{\left  \langle}
+\def\>{\right \rangle}
+\def\cI{{\cal I}}
+\def\diag{\mathop{\rm diag}}
+\def\tr{\mathop{\rm tr}}
+%-------------------------------------------------------------
+ 
+%/////////////////////////////////////////////////////////////
+
+ \subsection{Module m\_AttrVectComms - Communications methods for the AttrVect}
+
+
+ 
+ 
+  In this module, we define communications methods specific to the 
+  {\tt AttrVect} class (see m\_AttrVect for more information about this
+  class and its methods).
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} module m_AttrVectComms\end{verbatim}{\em USES:}
+\begin{verbatim}      use m_AttrVect   AttrVect class and its methods
+ 
+ 
+      implicit none
+ 
+      private	  except
+ 
+      public :: gather		  gather all local vectors to the root
+      public :: scatter		  scatter from the root to all PEs
+      public :: bcast		  bcast from root to all PEs
+ 
+    interface gather ; module procedure gather_ ; end interface
+    interface scatter; module procedure scatter_; end interface
+    interface bcast  ; module procedure bcast_  ; end interface
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	27Oct00 - J.W. Larson <larson@mcs.anl.gov> - relocated routines
+                  from m_AttrVect to create this module.\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{gather\_ - gather a vector according to a given \_map\_}
+
+
+ 
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+ subroutine gather_(iV,oV,Mp,root,comm,stat)\end{verbatim}{\em USES:}
+\begin{verbatim}      use m_stdio
+      use m_die
+      use m_mpif90
+      use m_GlobalMap, only : GlobalMap
+      use m_GlobalMap, only : GlobalMap_lsize => lsize
+      use m_GlobalMap, only : GlobalMap_gsize => gsize
+      use m_AttrVect, only : AttrVect
+      use m_AttrVect, only : AttrVect_init => init
+      use m_AttrVect,  only : AttrVect_lsize => lsize
+      use m_AttrVect, only : AttrVect_nIAttr => nIAttr
+      use m_AttrVect, only : AttrVect_nRAttr => nRAttr
+ 
+      implicit none
+ 
+      type(AttrVect),intent(in)  :: iV
+      type(AttrVect),intent(out) :: oV
+      type(GlobalMap) ,intent(in)  :: Mp
+      integer, intent(in) :: root
+      integer, intent(in) :: comm
+      integer, optional,intent(out) :: stat
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	15Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+  	27Oct00 - J.W. Larson <larson@mcs.anl.gov> - relocated from
+                  m_AttrVect\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{scatter\_ - scatter a vecter according to a given \_map\_}
+
+
+ 
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+ subroutine scatter_(iV,oV,Mp,root,comm,stat)\end{verbatim}{\em USES:}
+\begin{verbatim}      use m_stdio
+      use m_die
+      use m_mpif90
+      use m_GlobalMap, only : GlobalMap
+      use m_GlobalMap, only : GlobalMap_lsize => lsize
+      use m_GlobalMap, only : GlobalMap_gsize => gsize
+      use m_AttrVect, only : AttrVect
+      use m_AttrVect, only : AttrVect_init => init
+      use m_AttrVect,  only : AttrVect_lsize => lsize
+      use m_AttrVect, only : AttrVect_nIAttr => nIAttr
+      use m_AttrVect, only : AttrVect_nRAttr => nRAttr
+ 
+      implicit none
+ 
+      type(AttrVect),intent(in)  :: iV
+      type(AttrVect),intent(out) :: oV
+      type(GlobalMap) ,intent(in)  :: Mp
+      integer, intent(in) :: root
+      integer, intent(in) :: comm
+      integer, optional,intent(out) :: stat
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	21Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+  	27Oct00 - J.W. Larson <larson@mcs.anl.gov> - relocated from
+                  m_AttrVect\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{bcast\_ - broadcast from the root to all PEs}
+
+
+ 
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+ subroutine bcast_(aV,root,comm,stat)\end{verbatim}{\em USES:}
+\begin{verbatim}      use m_die, only : die, perr
+      use m_mpif90
+      use m_String, only : String,bcast,char
+      use m_String, only : String_bcast => bcast
+      use m_List, only : List_get => get
+      use m_AttrVect, only : AttrVect
+      use m_AttrVect, only : AttrVect_init => init
+      use m_AttrVect, only : AttrVect_lsize => lsize
+      use m_AttrVect, only : AttrVect_nIAttr => nIAttr
+      use m_AttrVect, only : AttrVect_nRAttr => nRAttr
+ 
+      implicit none
+ 
+      type(AttrVect) :: aV	  (IN) on the root, (OUT) elsewhere
+      integer,intent(in) :: root
+      integer,intent(in) :: comm
+      integer,optional,intent(out) :: stat
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	27Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+  	27Oct00 - J.W. Larson <larson@mcs.anl.gov> - relocated from
+                  m_AttrVect\end{verbatim}
+
+%...............................................................

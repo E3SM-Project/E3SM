@@ -1,0 +1,493 @@
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !MODULE: m_Accumulator - a distributed accumulator for time-averaging.
+!
+! !DESCRIPTION:
+!
+! An {\em accumulator} is a data class used for computing running sums 
+! and/or time averages of {\tt AttrVect} class data.  The fortran 90 
+! implementation of this concept is the {\tt Accumulator} class, 
+! which---along with its basic methods---is defined in this module.
+!
+! !INTERFACE:
+
+ module m_Accumulator
+!
+! !USES:
+!
+      use m_List, only : List
+      use m_AttrVect, only : AttrVect
+
+      implicit none
+
+      private	! except
+
+! The class data structure
+
+      public :: Accumulator     
+
+! List of Methods for the Accumulator class
+
+      public :: init		! creation method
+      public :: clean		! destruction method
+      public :: lsize		! local length of the data arrays
+      public :: nIAttr		! number of integer fields
+      public :: nRAttr		! number of real fields
+      public :: indexIA		! index the integer fields
+      public :: indexRA		! index the real fields
+
+! Definition of the Accumulator class:
+
+    type Accumulator
+      integer :: num_steps      ! total number of accumulation steps
+      integer :: steps_done     ! number of accumulation steps performed
+      type(AttrVect) :: av      ! accumulated field storage
+    end type Accumulator
+
+! Definition of interfaces for the methods for the Accumulator:
+
+    interface init   ; module procedure	&
+	init_,	&
+	initv_
+    end interface
+    interface clean  ; module procedure clean_  ; end interface
+    interface lsize  ; module procedure lsize_  ; end interface
+    interface nIAttr ; module procedure nIAttr_ ; end interface
+    interface nRAttr ; module procedure nRAttr_ ; end interface
+    interface indexIA; module procedure indexIA_; end interface
+    interface indexRA; module procedure indexRA_; end interface
+
+! !REVISION HISTORY:
+! 	 7Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname='m_Accumulator'
+
+ contains
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: init_ - initialize with given iList, rList, length, 
+! num\_steps, and steps\_done.
+!
+! !DESCRIPTION:
+!
+! !INTERFACE:
+
+ subroutine init_(aC,iList,rList,lsize,num_steps,steps_done)
+!
+! !USES:
+!
+      use m_List, only : List_init=>init
+      use m_List, only : List_nitem=>nitem
+      use m_AttrVect, only : AttrVect_init => init
+      use m_die
+
+      implicit none
+
+      type(Accumulator),intent(out)        :: aC
+      character(len=*),optional,intent(in) :: iList
+      character(len=*),optional,intent(in) :: rList
+      integer,         optional,intent(in) :: lsize
+      integer,         intent(in)          :: num_steps
+      integer,         optional,intent(in) :: steps_done
+
+! !REVISION HISTORY:
+! 	11Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+!EOP ___________________________________________________________________
+!
+  character(len=*),parameter :: myname_=myname//'::init_'
+  integer :: n,ier
+  integer :: steps_completed
+
+        ! if the argument steps_done is not present, assume
+        ! the accumulator is starting at step zero, that is,
+        ! set st_complete to zero
+
+  steps_completed = 0
+  if(present(steps_done)) steps_completed = steps_done
+
+        ! if iList is present, use it; if not, set it as null
+
+  if(present(iList)) then
+    call List_init(aC%av%iList,iList)	! init.List()
+  else
+    call List_init(aC%av%iList,'')	! init.List()
+  endif
+
+        ! if rList is present, use it; if not, set it as null
+
+  if(present(rList)) then
+    call List_init(aC%av%rList,rList)	! init.List()
+  else
+    call List_init(aC%av%rList,'')	! init.List()
+  endif
+
+        ! if lsize is present, use it to set n; if not, set n=0
+
+  n=0
+  if(present(lsize)) n=lsize
+
+        ! Set the stepping info:
+
+  aC%num_steps = num_steps
+  aC%steps_done = steps_completed
+
+        ! Initialize the AttrVect component aC%av:
+
+  call AttrVect_init(aC%av,iList,rList,lsize)
+
+ end subroutine init_
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: initv_-Initialize an accumulator using another Accumulator.
+!
+! !DESCRIPTION:
+!
+! !INTERFACE:
+
+ subroutine initv_(aC,bC,lsize,num_steps,steps_done)
+!
+! !USES:
+!
+      use m_String, only : String
+      use m_String, only : String_char => char
+      use m_List,   only : List_get => get
+
+      implicit none
+
+      type(Accumulator),    intent(out) :: aC
+      type(Accumulator),    intent(in)  :: bC
+      integer,           intent(in)  :: lsize
+      integer,           intent(in)  :: num_steps
+      integer, optional, intent(in)  :: steps_done
+
+! !REVISION HISTORY:
+! 	11Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::initv_'
+
+  type(String) :: iLStr,rLStr
+  integer :: steps_completed
+
+        ! If the argument steps_done is present, set steps_completed
+        ! to this value; otherwise, set it to zero
+
+  steps_completed = 0
+  if(present(steps_done)) steps_completed = steps_done 
+
+	! Convert the two Lists to two Strings
+
+  call String_get(iLStr,bC%av%iList)
+  call String_get(rLStr,bC%av%rList)
+
+  call init_(aC, iList=String_char(iLStr), rList=String_char(rLStr), &
+             lsize=lsize, num_steps=num_steps, steps_done=steps_completed)
+
+ end subroutine initv_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: clean_ - Destruction method for the Accumulator.
+!
+! !DESCRIPTION:
+!
+! !INTERFACE:
+
+ subroutine clean_(aC)
+!
+! !USES:
+!
+      use m_mall
+      use m_stdio
+      use m_die
+      use m_AttrVect, only : AttrVect_clean => clean
+
+      implicit none
+
+      type(Accumulator),intent(inout) :: aC
+
+! !REVISION HISTORY:
+! 	11Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::clean_'
+  integer :: ier
+
+  call AttrVect_clean(aC%av)
+
+ end subroutine clean_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: lsize_ - local size of data storage in the Accumulator.
+!
+! !DESCRIPTION:
+!
+! !INTERFACE:
+
+ function lsize_(aC)
+!
+! !USES:
+!
+      use m_AttrVect, only : AttrVect_lsize => lsize
+
+      implicit none
+
+      type(Accumulator), intent(in) :: aC
+      integer :: lsize_
+
+! !REVISION HISTORY:
+! 	12Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::lsize_'
+
+
+	! The function AttrVect_lsize is called to return
+        ! its local size data
+
+  lsize_=AttrVect_lsize(aC%aV)
+
+ end function lsize_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: nIAttr_ - number of INTEGER fields stored in the Accumulator.
+!
+! !DESCRIPTION:
+!
+! !INTERFACE:
+
+    function nIAttr_(aC)
+!
+! !USES:
+!
+      use m_AttrVect, only : AttrVect_nIAttr => nIAttr
+
+      implicit none
+
+      type(Accumulator),intent(in) :: aC
+      integer :: nIAttr_
+
+! !REVISION HISTORY:
+! 	12Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::nIAttr_'
+
+	! The function AttrVect_nIAttr is called to return the
+        ! number of integer fields
+
+  nIAttr_=AttrVect_nIAttr(aC%av)
+
+ end function nIAttr_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: nRAttr_ - number of REAL fields stored in the Accumulator.
+!
+! !DESCRIPTION:
+!
+! !INTERFACE:
+
+ function nRAttr_(aC)
+!
+! !USES:
+!
+      use m_AttrVect, only : AttrVect_nRAttr => nRAttr
+ 
+      implicit none
+
+      type(Accumulator),intent(in) :: aC
+      integer :: nRAttr_
+
+! !REVISION HISTORY:
+! 	12Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::nRAttr_'
+
+	! The function AttrVect_nRAttr is called to return the
+        ! number of real fields
+
+  nRAttr_=AttrVect_nRAttr(aC%aV)
+
+ end function nRAttr_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: getIList_ - get an item from the integer attribute list 
+! in the accumulator's data storage area (i.e. its AttrVect component).
+!
+! !DESCRIPTION:
+!
+! !INTERFACE:
+
+    subroutine getIList_(item,ith,aC)
+!
+! !USES:
+!
+      use m_AttrVect, only : AttrVect_getIList => getIList
+      use m_String,   only : String
+
+      implicit none
+      type(String),intent(out)     :: item
+      integer,     intent(in)      :: ith
+      type(Accumulator),intent(in) :: aC
+
+! !REVISION HISTORY:
+! 	12Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::getIList_'
+
+  call AttrVect_getIList(item,ith,aC%av)
+
+ end subroutine getIList_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: getRList_ - get an item from real attribute list in the
+! accumulator's data storage space (i.e. its AttrVect component).
+!
+! !DESCRIPTION:
+!
+! !INTERFACE:
+
+    subroutine getRList_(item,ith,aC)
+!
+! !USES:
+!
+      use m_AttrVect, only : AttrVect_getRList => getRList
+      use m_String,   only : String
+
+      implicit none
+      type(String),     intent(out) :: item
+      integer,          intent(in)  :: ith
+      type(Accumulator),intent(in)  :: aC
+
+! !REVISION HISTORY:
+! 	12Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::getRList_'
+
+  call AttrVect_getRList(item,ith,aC%av)
+
+ end subroutine getRList_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: indexIA_ - index the Accumulator's integer attribute List.
+!
+! !DESCRIPTION:
+!
+! !INTERFACE:
+
+ function indexIA_(aC,item,perrWith,dieWith)
+!
+! !USES:
+!
+      use m_AttrVect, only : AttrVect_indexIA => indexIA
+      use m_die,  only : die
+      use m_stdio,only : stderr
+
+      implicit none
+ 
+     type(Accumulator), intent(in) :: aC
+      character(len=*),intent(in) :: item
+      character(len=*),optional,intent(in) :: perrWith
+      character(len=*),optional,intent(in) :: dieWith
+      integer :: indexIA_
+
+! !REVISION HISTORY:
+! 	14Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::indexIA_'
+
+  indexIA_=AttrVect_indexIA(aC%aV,item)
+
+	if(indexIA_==0) then
+	  if(.not.present(dieWith)) then
+	    if(present(perrWith)) write(stderr,'(4a)') perrWith, &
+		'" indexIA_() error, not found "',trim(item),'"'
+	  else
+	    write(stderr,'(4a)') dieWith,	&
+		'" indexIA_() error, not found "',trim(item),'"'
+	    call die(dieWith)
+	  endif
+	endif
+
+ end function indexIA_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: indexRA_ - index the Accumulator's real attribute list.
+!
+! !DESCRIPTION:
+!
+! !INTERFACE:
+
+ function indexRA_(aC,item,perrWith,dieWith)
+!
+! !USES:
+!
+      use m_AttrVect, only : AttrVect_indexRA => indexRA
+      use m_die,  only : die
+      use m_stdio,only : stderr
+
+      implicit none
+
+      type(Accumulator), intent(in) :: aC
+      character(len=*),intent(in) :: item
+      character(len=*),optional,intent(in) :: perrWith
+      character(len=*),optional,intent(in) :: dieWith
+      integer :: indexRA_
+
+! !REVISION HISTORY:
+! 	14Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::indexRA_'
+
+  indexRA_=AttrVect_indexRA(aC%aV,item)
+
+	if(indexRA_==0) then
+	  if(.not.present(dieWith)) then
+	    if(present(perrWith)) write(stderr,'(4a)') perrWith, &
+		'" indexRA_() error, not found "',trim(item),'"'
+	  else
+	    write(stderr,'(4a)') dieWith,	&
+		'" indexRA_() error, not found "',trim(item),'"'
+	    call die(dieWith)
+	  endif
+	endif
+
+ end function indexRA_
+
+ end module m_Accumulator
+

@@ -1,0 +1,385 @@
+%                **** IMPORTANT NOTICE *****
+% This LaTeX file has been automatically produced by ProTeX v. 1.0
+% Any changes made to this file will likely be lost next time
+% this file is regenerated from its Fortran source.
+% Send questions to Arlindo da Silva, dasilva@gsfc.nasa.gov
+ 
+\parskip        0pt
+\parindent      0pt
+\baselineskip  11pt
+ 
+%--------------------- SHORT-HAND MACROS ----------------------
+\def\bv{\begin{verbatim}}
+\def\ev{\end{verbatim}}
+\def\be{\begin{equation}}
+\def\ee{\end{equation}}
+\def\bea{\begin{eqnarray}}
+\def\eea{\end{eqnarray}}
+\def\bi{\begin{itemize}}
+\def\ei{\end{itemize}}
+\def\bn{\begin{enumerate}}
+\def\en{\end{enumerate}}
+\def\bd{\begin{description}}
+\def\ed{\end{description}}
+\def\({\left (}
+\def\){\right )}
+\def\[{\left [}
+\def\]{\right ]}
+\def\<{\left  \langle}
+\def\>{\right \rangle}
+\def\cI{{\cal I}}
+\def\diag{\mathop{\rm diag}}
+\def\tr{\mathop{\rm tr}}
+%-------------------------------------------------------------
+ 
+%/////////////////////////////////////////////////////////////
+
+ \subsection{Module m\_GlobalSegMap - a nontrivial 1-D decomposition of an array.}
+
+
+ 
+  Consider the problem of the 1-dimensional decomposition of an array 
+  across multiple processes.  If each process owns only one contiguous 
+  segment, then the {\tt GlobalMap} (see {\tt m\_GlobalMap} or details) 
+  is sufficient to describe the decomposition.  If, however, each  
+  process owns multiple, non-adjacent segments of the array, a more 
+  sophisticated approach is needed.   The {\tt GlobalSegMap} data type 
+  allows one to describe a one-dimensional decomposition of an array
+  with each process owning multiple, non-adjacent segments of the array.
+ 
+  In the current implementation of the {\tt GlobalSegMap}, there is no
+  santity check to guarantee that 
+ $${\tt GlobalSegMap\%gsize} = \sum_{{\tt i}=1}^{\tt ngseg} 
+  {\tt GlobalSegMap\%length(i)} . $$
+  The reason we have not implemented such a check is to allow the user
+  to use the {\tt GlobalSegMap} type to support decompositions of both 
+  {\em haloed} and {\em masked} data.
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+ module m_GlobalSegMap
+ 
+      implicit none
+ 
+      private	  except
+ 
+      public :: GlobalSegMap	  The class data structure
+      public :: init              Create
+      public :: clean             Destroy
+      public :: comm              Return communication
+      public :: gsize             Return global vector size (excl. halos)
+      public :: lsize             Return local storage size (incl. halos)
+      public :: ngseg             Return global number of segments
+      public :: nlseg             Return local number of segments
+ 
+    type GlobalSegMap
+      integer :: comm				  Communicator handle
+      integer :: ngseg				  No. of Global segments
+      integer :: gsize				  No. of Global elements
+      integer :: lsize				  No. of Local elements
+      integer,dimension(:),pointer :: start	  global seg. start index
+      integer,dimension(:),pointer :: length	  segment lengths
+      integer,dimension(:),pointer :: pe_loc	  PE locations
+    end type GlobalSegMap
+ 
+    interface init ; module procedure	&
+ initd_,	&	  initialize from all PEs
+ initr_		  initialize from the root
+    end interface
+    interface clean ; module procedure clean_ ; end interface
+    interface comm  ; module procedure comm_  ; end interface
+    interface gsize ; module procedure gsize_ ; end interface
+    interface lsize ; module procedure lsize_ ; end interface
+    interface ngseg ; module procedure ngseg_ ; end interface
+    interface nlseg ; module procedure nlseg_ ; end interface
+    interface rank  ; module procedure &
+ rank1_ , &	  single rank case
+ rankm_	          degenerate (multiple) ranks for halo case
+    end interface
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	28Sep98 - J.W. Larson <larson@mcs.anl.gov> - initial prototype\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{initd\_ - define the map from distributed data}
+
+
+ 
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+ subroutine initd_(GSMap, start, length, root, my_comm, &
+                   gsm_comm, pe_loc, gsize)
+ 
+ initd_(GSMap, comm, gsize,)\end{verbatim}{\em USES:}
+\begin{verbatim}      use m_mpif90
+      use m_die
+      use m_stdio
+ 
+      implicit none
+ 
+      type(GlobalSegMap),intent(out)  :: GSMap     Output GlobalSegMap
+ 
+      integer,dimension(:),intent(in) :: start     segment local start index 
+      integer,dimension(:),intent(in) :: length    the distributed sizes
+      integer,intent(in)              :: root      root on my_com
+      integer,intent(in)              :: my_comm   local communicatior
+      integer,intent(in), optional    :: gsm_comm   communicator for the
+                                                    output GlobalSegMap
+      integer,dimension(:), pointer, optional :: pe_loc   process location
+      integer,intent(in), optional    :: gsize     global vector size
+                                                   (optional).  It can
+                                                   be computed by this 
+                                                   routine if no haloing
+                                                   is assumed.
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	29Sep98 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+  	14Nov00 - J.W. Larson <larson@mcs.anl.gov> - final working version\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{initr\_ initialize the map from the root}
+
+
+ 
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+ subroutine initr_(GSMap, ngseg, start, length, pe_loc, root,  &
+                   my_comm, gsm_comm, gsize)
+  !Uses:
+      use m_mpif90
+      use m_die
+      use m_stdio
+ 
+     implicit none
+ 
+      type(GlobalSegMap),intent(out)  :: GSMap     Output GlobalSegMap
+      integer, intent(in)             :: ngseg     no. of global segments
+      integer,dimension(:),intent(in) :: start     segment local start index 
+      integer,dimension(:),intent(in) :: length    the distributed sizes
+      integer,dimension(:),intent(in) :: pe_loc    process location
+      integer,intent(in)              :: root      root on my_com
+      integer,intent(in)              :: my_comm   local communicatior
+      integer,intent(in), optional    :: gsm_comm   communicator for the
+                                                    output GlobalSegMap
+      integer,intent(in), optional    :: gsize     global vector size
+                                                   (optional).  It can
+                                                   be computed by this 
+                                                   routine if no haloing
+                                                   is assumed.\end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	29Sep98 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+  	09Nov98 - J.W. Larson <larson@mcs.anl.gov> - final working version\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{clean\_ - clean the map}
+
+
+ 
+  This routine deallocates the array components of the {\tt GlobalSegMap}
+  argument {\tt GSMap}: {\tt GSMap\%start}, {\tt GSMap\%length}, and
+  {\tt GSMap\%pe\_loc}.  It also zeroes out the values of the integer
+  components {\tt GSMap\%ngseg}, {\tt GSMap\%comm}, {\tt GSMap\%gsize},
+  and {\tt GSMap\%lsize}.
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+    subroutine clean_(GSMap)\end{verbatim}{\em USES:}
+\begin{verbatim}      use m_die
+ 
+      implicit none
+ 
+      type(GlobalSegMap),intent(inout) :: GSMap
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	29Sep98 - J.W. Larson <larson@mcs.anl.gov> - initial prototype\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{ngseg\_ - Return the global number of segments from the map}
+
+
+ 
+  The function {\tt ngseg\_()} returns the global number of vector
+  segments in the {\tt GlobalSegMap} argument {\tt GSMap}.  This is
+  merely the value of {\tt GSMap\%ngseg}.
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+ function ngseg_(GSMap)
+ 
+      implicit none
+ 
+      type(GlobalSegMap),intent(in) :: GSMap
+      integer :: ngseg_
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	29Sep98 - J.W. Larson <larson@mcs.anl.gov> - initial prototype\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{nlseg\_ - Return the global number of segments from the map}
+
+
+ 
+  The function {\tt nlseg\_()} returns the number of vector segments 
+  in the {\tt GlobalSegMap} argument {\tt GSMap} that reside on the 
+  process specified by the input argument {\tt pID}.  This is the 
+  number of entries {\tt GSMap\%pe\_loc} whose value equals {\tt pID}.
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+ function nlseg_(GSMap, pID)
+ 
+      implicit none
+ 
+      type(GlobalSegMap),intent(in) :: GSMap
+      integer,           intent(in) :: pID
+ 
+      integer :: nlseg_
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	29Sep98 - J.W. Larson <larson@mcs.anl.gov> - initial prototype\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{comm\_ - Return the communicator from the GlobalSegMap.}
+
+
+ 
+  The function {\tt comm\_()} returns the fortran 90 integer handle
+  corresponding to the communicator in the input {\tt GlobalSegMap}
+  argument {\tt GSMap}.  This amounts to returning the value of 
+  {\tt GSMap\%comm}.
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+ function comm_(GSMap)
+ 
+      implicit none
+ 
+      type(GlobalSegMap),intent(in) :: GSMap
+      integer :: comm_
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	29Sep98 - J.W. Larson <larson@mcs.anl.gov> - initial prototype\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{gsize\_ - Return the global vector size from the GlobalSegMap.}
+
+
+ 
+  The function {\tt gsize\_()} takes the input {\tt GlobalSegMap} 
+  arguement {\tt GSMap} and returns the global vector length stored
+  in {\tt GlobalSegMap\%gsize}.
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+ function gsize_(GSMap)
+ 
+      implicit none
+ 
+      type(GlobalSegMap),intent(in) :: GSMap
+      integer :: gsize_
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	29Sep98 - J.W. Larson <larson@mcs.anl.gov> - initial prototype\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{lsize\_ - find the local storage size from the map}
+
+
+ 
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+ function lsize_(GSMap)
+ 
+      implicit none
+ 
+      type(GlobalSegMap),intent(in) :: GSMap
+      integer :: lsize_
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	29Sep98 - J.W. Larson <larson@mcs.anl.gov> - initial prototype\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{rank1\_ - rank which process owns a datum with given global }
+
+
+  index.
+ 
+  This routine assumes that there is one process that owns the datum with
+  a given global index.  It should not be used when the input 
+  {\tt GlobalSegMap} argument {\tt GSMap} has been built to incorporate
+  halo points.
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+    subroutine rank1_(GSMap, i_g, rank)
+ 
+      implicit none
+ 
+      type(GlobalSegMap), intent(in) :: GSMap     input GlobalSegMap
+      integer,            intent(in) :: i_g	  a global index
+      integer,           intent(out) :: rank      the pe on which this
+                                                  element resides\end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	29Sep98 - J.W. Larson <larson@mcs.anl.gov> - initial prototype\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{rankm\_ - rank which process owns a datum with given global }
+
+
+  index.
+ 
+  This routine assumes that there is one process that owns the datum with
+  a given global index.  It should not be used when the input 
+  {\tt GlobalSegMap} argument {\tt GSMap} has been built to incorporate
+  halo points.  {\em Nota Bene}:  The output array {\tt rank} is allocated 
+  in this routine and must be deallocated by the routine calling 
+  {\tt rankm\_()}.  Failure to do so could result in a memory leak.
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+    subroutine rankm_(GSMap, i_g, num_loc, rank)
+ 
+      implicit none
+ 
+      type(GlobalSegMap), intent(in) :: GSMap     input GlobalSegMap
+      integer,            intent(in) :: i_g	  a global index
+      integer,           intent(out) :: num_loc   the number of processes
+                                                  which own element i_g
+      integer, dimension(:), pointer :: rank      the process(es) on which 
+                                                  element i_g resides\end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	29Sep98 - J.W. Larson <larson@mcs.anl.gov> - initial prototype\end{verbatim}
+
+%...............................................................

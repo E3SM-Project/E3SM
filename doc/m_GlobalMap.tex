@@ -1,0 +1,253 @@
+%                **** IMPORTANT NOTICE *****
+% This LaTeX file has been automatically produced by ProTeX v. 1.0
+% Any changes made to this file will likely be lost next time
+% this file is regenerated from its Fortran source.
+% Send questions to Arlindo da Silva, dasilva@gsfc.nasa.gov
+ 
+\parskip        0pt
+\parindent      0pt
+\baselineskip  11pt
+ 
+%--------------------- SHORT-HAND MACROS ----------------------
+\def\bv{\begin{verbatim}}
+\def\ev{\end{verbatim}}
+\def\be{\begin{equation}}
+\def\ee{\end{equation}}
+\def\bea{\begin{eqnarray}}
+\def\eea{\end{eqnarray}}
+\def\bi{\begin{itemize}}
+\def\ei{\end{itemize}}
+\def\bn{\begin{enumerate}}
+\def\en{\end{enumerate}}
+\def\bd{\begin{description}}
+\def\ed{\end{description}}
+\def\({\left (}
+\def\){\right )}
+\def\[{\left [}
+\def\]{\right ]}
+\def\<{\left  \langle}
+\def\>{\right \rangle}
+\def\cI{{\cal I}}
+\def\diag{\mathop{\rm diag}}
+\def\tr{\mathop{\rm tr}}
+%-------------------------------------------------------------
+ 
+%/////////////////////////////////////////////////////////////
+
+ \subsection{Module m\_GlobalMap - a size description of a distributed array}
+
+
+ 
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+    module m_GlobalMap
+      implicit none
+      private	  except
+ 
+      public :: GlobalMap		  The class data structure
+      public :: gsize
+      public :: lsize
+      public :: init
+      public :: init_remote
+      public :: clean
+      public :: rank
+      public :: local_range
+ 
+    type GlobalMap
+      integer :: gsize				  the Global size
+      integer :: lsize				  my local size
+      integer :: lleft				  my left index
+      integer,dimension(:),pointer :: counts	  all local sizes
+      integer,dimension(:),pointer :: displs	  PE ordered locations
+    end type GlobalMap
+ 
+    interface gsize; module procedure gsize_; end interface
+    interface lsize; module procedure lsize_; end interface
+    interface init ; module procedure	&
+ initd_,	&	  initialize from all PEs
+ initr_		  initialize from the root
+    end interface
+    interface init_remote; module procedure init_remote_; end interface
+    interface clean; module procedure clean_; end interface
+    interface rank ; module procedure rank_ ; end interface
+    interface local_range; module procedure range_; end interface
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	21Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+  	09Nov00 - J.W. Larson <larson@mcs.anl.gov> - added init_remote
+                  interface.\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{initd\_ - define the map from distributed data}
+
+
+ 
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+    subroutine initd_(GMap,ln,comm)
+      use m_mpif90
+      use m_die
+      implicit none
+      type(GlobalMap),intent(out) :: GMap
+      integer,intent(in) :: ln	  the local size
+      integer,intent(in) :: comm
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	21Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{initr\_ initialize the map from the root}
+
+
+ 
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+    subroutine initr_(GMap,lns,root,comm)
+      use m_mpif90
+      use m_die
+      use m_stdio
+      implicit none
+      type(GlobalMap),intent(out) :: GMap
+      integer,dimension(:),intent(in) :: lns	  the distributed sizes
+      integer,intent(in) :: root
+      integer,intent(in) :: comm
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	29May98 - Jing Guo <guo@thunder> - initial prototype/prolog/code\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{init\_remote\_ initialize remote GlobalMap from the root}
+
+
+ 
+  This method takes data describing a GlobalMap for another communicator
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+ subroutine init_remote_(GMap, remote_lns, remote_npes, my_root, &
+                     my_comm, remote_comm)
+      use m_mpif90
+      use m_die
+      use m_stdio
+      implicit none
+      type(GlobalMap),intent(out) :: GMap
+      integer, dimension(:) :: remote_lns       distributed sizes on 
+                                                the remote communicator
+      integer            :: remote_npes         number of pe's on remote 
+                                                communicator
+      integer,intent(in) :: my_root             my root
+      integer,intent(in) :: my_comm             my communicator
+      integer,intent(in) :: remote_comm         remote communicator
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	08Nov00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{clean\_ - clean the map}
+
+
+ 
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+    subroutine clean_(GMap)
+      use m_die
+      implicit none
+      type(GlobalMap),intent(inout) :: GMap
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	21Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{lsize\_ - find the local size from the map}
+
+
+ 
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+    function lsize_(GMap)
+      implicit none
+      type(GlobalMap),intent(in) :: GMap
+      integer :: lsize_
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	21Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{gsize\_ - find the global size from the map}
+
+
+ 
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+    function gsize_(GMap)
+      implicit none
+      type(GlobalMap),intent(in) :: GMap
+      integer :: gsize_
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	21Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{rank\_ - rank (which PE) of a given global index}
+
+
+ 
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+    subroutine rank_(GMap,i_g,rank)
+      implicit none
+      type(GlobalMap),intent(in) :: GMap
+      integer, intent(in)  :: i_g	  a global index
+      integer, intent(out) :: rank
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	05May98 - Jing Guo <guo@thunder> - initial prototype/prolog/code\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{range\_ - the range of the local indices}
+
+
+ 
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+    subroutine range_(GMap,lbnd,ubnd)
+      implicit none
+      type(GlobalMap),intent(in) :: GMap
+      integer,intent(out) :: lbnd
+      integer,intent(out) :: ubnd
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	05May98 - Jing Guo <guo@thunder> - initial prototype/prolog/code\end{verbatim}
+
+%...............................................................

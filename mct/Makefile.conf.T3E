@@ -1,0 +1,116 @@
+#!/bin/make
+#-----------------------------------------------------------------------
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#BOP
+#
+# !ROUTINE: Makefile.conf.T3E
+# 
+# !DESCRIPTION: 
+#	An include file of configurations for the Cray T3E platform.  
+#   See Makefile for additional `make' procedures.  This include file is 
+#   used to overide the default environments (including commands) defined 
+#   in file Makefile.
+#
+# !INTERFACE:
+#
+#	% ln -s Makefile.conf.T3E Makefile.conf
+#	% make ...
+#
+# !SEE ALSO: Makefile
+#
+# !REVISION HISTORY: (`cvs log <>' for more)
+#	15Jun99 - J.W. Larson	-  initial version.
+#	28Jun99 - J.W. Larson	-  clean-up to current version.
+#
+#EOP
+#-----------------------------------------------------------------------
+
+_Dsys		= -DsysT3E
+_Dnod		= -DCACHE_TABLE_OPT1 -DLOOP_BLOCKING
+
+# Cray CF90 compiler f90() requires a explicit listing module filenames
+
+MOD_OPTN        = -p. -p../mpeu
+
+# Environments
+# ============
+
+# If use the MPICH implementation
+
+_LMPI		= 
+_lMPI		= 
+_lMPIlog	= 
+_lMPItrace	= 
+_lMPIanime	= 
+_IMPI		= 
+
+# If use the vendor implementation
+
+_LMPI		= 
+_lMPI		= 
+_IMPI		=
+
+# This module requires ../mpeu module
+
+_Lmpeu		= -L../mpeu
+_lmpeu		= -lmpeu
+_Impeu		= -I../mpeu
+
+#
+
+#_R		= -r4
+#_R		= -r8
+
+_I		= -I. $(_Impeu) $(_IMPI)
+
+SHELL		= /bin/sh
+
+CPP		= /opt/ctl/bin/cpp
+
+F77		= f77
+F90		= f90
+FC		= $(F90)
+
+FFLAGS		= $(_R) $(_I) -f free -O3,overindex,aggress,unroll2,pipeline3,fusion -e n $(MOD_OPTN)
+FFIXFLAGS	= $(_R) $(_I) -f fixed -O3,overindex,aggress,unroll2,pipeline3,fusion -e n $(MOD_OPTN)
+FFLAGS_O1	= $(_R) $(_I) -f free -O1 -e n $(MOD_OPTN)
+FFIXFLAGS_O1	= $(_R) $(_I) -f fixed -O1 -e n $(MOD_OPTN)
+FFLAGS_O2	= $(_R) $(_I) -f free -O2 -e n $(MOD_OPTN)
+FFIXFLAGS_O2	= $(_R) $(_I) -f fixed -O2 -e n $(MOD_OPTN)
+CFLAGS		= -O
+
+ZIP		= /usr/bin/compress
+ZCAT		= /usr/local/bin/zcat
+TAR		= /bin/tar
+
+LD		= f90
+LDFLAGS		= $(FFLAGS)
+
+#AR		= ar cqs
+#RM		= rm -f
+
+LIBprof		= 
+LIBsys	 	= 
+
+# Preprocessor
+
+_F		= -Wf,-I.
+
+CPPFLAGS	= -DLANGUAGE_FORTRAN -P -C
+FPPFLAGS	= $(_F)
+
+.F.o:
+	$(CPP) $(CPPFLAGS) $(_I) $(_DS) $*.F $*.f
+	$(FC) -c $(FFIXFLAGS) $(_I) $*.f
+	$(RM) $*.f
+
+.F90.o:
+	$(CPP) $(CPPFLAGS) $(_I) $(_DS) $*.F90 $*.f90
+	$(FC) -c $(FFLAGS) $(_I) $*.f90
+	$(RM) $*.f90
+
+.f.o:
+	$(FC) -c $(FFIXFLAGS) $*.f
+
+#.----------------------------------------------------------------------

@@ -1,0 +1,343 @@
+%                **** IMPORTANT NOTICE *****
+% This LaTeX file has been automatically produced by ProTeX v. 1.0
+% Any changes made to this file will likely be lost next time
+% this file is regenerated from its Fortran source.
+% Send questions to Arlindo da Silva, dasilva@gsfc.nasa.gov
+ 
+\parskip        0pt
+\parindent      0pt
+\baselineskip  11pt
+ 
+%--------------------- SHORT-HAND MACROS ----------------------
+\def\bv{\begin{verbatim}}
+\def\ev{\end{verbatim}}
+\def\be{\begin{equation}}
+\def\ee{\end{equation}}
+\def\bea{\begin{eqnarray}}
+\def\eea{\end{eqnarray}}
+\def\bi{\begin{itemize}}
+\def\ei{\end{itemize}}
+\def\bn{\begin{enumerate}}
+\def\en{\end{enumerate}}
+\def\bd{\begin{description}}
+\def\ed{\end{description}}
+\def\({\left (}
+\def\){\right )}
+\def\[{\left [}
+\def\]{\right ]}
+\def\<{\left  \langle}
+\def\>{\right \rangle}
+\def\cI{{\cal I}}
+\def\diag{\mathop{\rm diag}}
+\def\tr{\mathop{\rm tr}}
+%-------------------------------------------------------------
+ 
+%/////////////////////////////////////////////////////////////
+
+ \subsection{Module m\_Accumulator - a distributed accumulator for time-averaging.}
+
+
+ 
+ 
+  An {\em accumulator} is a data class used for computing running sums 
+  and/or time averages of {\tt AttrVect} class data.  The fortran 90 
+  implementation of this concept is the {\tt Accumulator} class, 
+  which---along with its basic methods---is defined in this module.
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+ module m_Accumulator\end{verbatim}{\em USES:}
+\begin{verbatim}      use m_List, only : List
+      use m_AttrVect, only : AttrVect
+ 
+      implicit none
+ 
+      private	  except
+ 
+  The class data structure
+ 
+      public :: Accumulator     
+ 
+  List of Methods for the Accumulator class
+ 
+      public :: init		  creation method
+      public :: clean		  destruction method
+      public :: lsize		  local length of the data arrays
+      public :: nIAttr		  number of integer fields
+      public :: nRAttr		  number of real fields
+      public :: indexIA		  index the integer fields
+      public :: indexRA		  index the real fields
+ 
+  Definition of the Accumulator class:
+ 
+    type Accumulator
+      integer :: num_steps        total number of accumulation steps
+      integer :: steps_done       number of accumulation steps performed
+      type(AttrVect) :: av        accumulated field storage
+    end type Accumulator
+ 
+  Definition of interfaces for the methods for the Accumulator:
+ 
+    interface init   ; module procedure	&
+ init_,	&
+ initv_
+    end interface
+    interface clean  ; module procedure clean_  ; end interface
+    interface lsize  ; module procedure lsize_  ; end interface
+    interface nIAttr ; module procedure nIAttr_ ; end interface
+    interface nRAttr ; module procedure nRAttr_ ; end interface
+    interface indexIA; module procedure indexIA_; end interface
+    interface indexRA; module procedure indexRA_; end interface
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	 7Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{init\_ - initialize with given iList, rList, length, }
+
+
+  num\_steps, and steps\_done.
+ 
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+ subroutine init_(aC,iList,rList,lsize,num_steps,steps_done)\end{verbatim}{\em USES:}
+\begin{verbatim}      use m_List, only : List_init=>init
+      use m_List, only : List_nitem=>nitem
+      use m_AttrVect, only : AttrVect_init => init
+      use m_die
+ 
+      implicit none
+ 
+      type(Accumulator),intent(out)        :: aC
+      character(len=*),optional,intent(in) :: iList
+      character(len=*),optional,intent(in) :: rList
+      integer,         optional,intent(in) :: lsize
+      integer,         intent(in)          :: num_steps
+      integer,         optional,intent(in) :: steps_done
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	11Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{initv\_-Initialize an accumulator using another Accumulator.}
+
+
+ 
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+ subroutine initv_(aC,bC,lsize,num_steps,steps_done)\end{verbatim}{\em USES:}
+\begin{verbatim}      use m_String, only : String
+      use m_String, only : String_char => char
+      use m_List,   only : List_get => get
+ 
+      implicit none
+ 
+      type(Accumulator),    intent(out) :: aC
+      type(Accumulator),    intent(in)  :: bC
+      integer,           intent(in)  :: lsize
+      integer,           intent(in)  :: num_steps
+      integer, optional, intent(in)  :: steps_done
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	11Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{clean\_ - Destruction method for the Accumulator.}
+
+
+ 
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+ subroutine clean_(aC)\end{verbatim}{\em USES:}
+\begin{verbatim}      use m_mall
+      use m_stdio
+      use m_die
+      use m_AttrVect, only : AttrVect_clean => clean
+ 
+      implicit none
+ 
+      type(Accumulator),intent(inout) :: aC
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	11Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{lsize\_ - local size of data storage in the Accumulator.}
+
+
+ 
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+ function lsize_(aC)\end{verbatim}{\em USES:}
+\begin{verbatim}      use m_AttrVect, only : AttrVect_lsize => lsize
+ 
+      implicit none
+ 
+      type(Accumulator), intent(in) :: aC
+      integer :: lsize_
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	12Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{nIAttr\_ - number of INTEGER fields stored in the Accumulator.}
+
+
+ 
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+    function nIAttr_(aC)\end{verbatim}{\em USES:}
+\begin{verbatim}      use m_AttrVect, only : AttrVect_nIAttr => nIAttr
+ 
+      implicit none
+ 
+      type(Accumulator),intent(in) :: aC
+      integer :: nIAttr_
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	12Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{nRAttr\_ - number of REAL fields stored in the Accumulator.}
+
+
+ 
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+ function nRAttr_(aC)\end{verbatim}{\em USES:}
+\begin{verbatim}      use m_AttrVect, only : AttrVect_nRAttr => nRAttr
+ 
+      implicit none
+ 
+      type(Accumulator),intent(in) :: aC
+      integer :: nRAttr_
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	12Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{getIList\_ - get an item from the integer attribute list }
+
+
+  in the accumulator's data storage area (i.e. its AttrVect component).
+ 
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+    subroutine getIList_(item,ith,aC)\end{verbatim}{\em USES:}
+\begin{verbatim}      use m_AttrVect, only : AttrVect_getIList => getIList
+      use m_String,   only : String
+ 
+      implicit none
+      type(String),intent(out)     :: item
+      integer,     intent(in)      :: ith
+      type(Accumulator),intent(in) :: aC
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	12Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{getRList\_ - get an item from real attribute list in the}
+
+
+  accumulator's data storage space (i.e. its AttrVect component).
+ 
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+    subroutine getRList_(item,ith,aC)\end{verbatim}{\em USES:}
+\begin{verbatim}      use m_AttrVect, only : AttrVect_getRList => getRList
+      use m_String,   only : String
+ 
+      implicit none
+      type(String),     intent(out) :: item
+      integer,          intent(in)  :: ith
+      type(Accumulator),intent(in)  :: aC
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	12Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{indexIA\_ - index the Accumulator's integer attribute List.}
+
+
+ 
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+ function indexIA_(aC,item,perrWith,dieWith)\end{verbatim}{\em USES:}
+\begin{verbatim}      use m_AttrVect, only : AttrVect_indexIA => indexIA
+      use m_die,  only : die
+      use m_stdio,only : stderr
+ 
+      implicit none
+ 
+     type(Accumulator), intent(in) :: aC
+      character(len=*),intent(in) :: item
+      character(len=*),optional,intent(in) :: perrWith
+      character(len=*),optional,intent(in) :: dieWith
+      integer :: indexIA_
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	14Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype\end{verbatim}
+ 
+%/////////////////////////////////////////////////////////////
+ 
+\mbox{}\hrulefill\ 
+ 
+
+ \subsubsection{indexRA\_ - index the Accumulator's real attribute list.}
+
+
+ 
+ 
+\bigskip{\sf INTERFACE:}
+\begin{verbatim} 
+ function indexRA_(aC,item,perrWith,dieWith)\end{verbatim}{\em USES:}
+\begin{verbatim}      use m_AttrVect, only : AttrVect_indexRA => indexRA
+      use m_die,  only : die
+      use m_stdio,only : stderr
+ 
+      implicit none
+ 
+      type(Accumulator), intent(in) :: aC
+      character(len=*),intent(in) :: item
+      character(len=*),optional,intent(in) :: perrWith
+      character(len=*),optional,intent(in) :: dieWith
+      integer :: indexRA_
+ \end{verbatim}{\sf REVISION HISTORY:}
+\begin{verbatim}  	14Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype\end{verbatim}
+
+%...............................................................

@@ -1,0 +1,688 @@
+%NGC Design Document
+% J.W. Larson / MCS, Argonne National Laboratory
+% First Version Begun 8/28/00
+\documentclass{article}
+\usepackage{epsfig}
+\usepackage{graphicx}
+%\usepackage{fancyheadings}
+
+% Keep these dimensions
+
+\textheight     9in \topmargin      0pt \headsep        22pt
+\headheight     0pt
+
+\textwidth      6in \oddsidemargin  0in \evensidemargin 0in
+
+\marginparpush  0pt \pagestyle{plain}
+
+\setlength{\hoffset}{0.25in}
+
+% Headings
+% --------
+\pagestyle{plain}  % AFTER redefining \textheight etc.
+
+%  \lhead[]{{\em NGC Design Document}}   % left part of header
+%  \chead[]{}                  % center part of header
+%  \rhead[]{\em {\today}}  % right part of header
+
+ % \cfoot{\roman{page}}
+  %\lfoot[]{}      % left part of footer
+ % \rfoot[]{}      % right part of footer
+ % \headrulewidth 0pt      % if you don't want a rule under the header
+ % \footrulewidth 0pt      % if you don't want a rule above the footer
+
+%......................................................................
+%.............begin document.............
+
+\begin{document}
+
+\begin{sloppypar}
+{\huge\bf
+%%%
+%%% Enter your title below (after deleting mine)
+%%%
+Proposed Design for the Community Climate System Model (CCSM)
+Next-Generation Coupler
+\\ }                     %%% IMPORTANT: Keep this \\ before the }
+\end{sloppypar}
+
+%%%
+%%% Author names and affiliations go below, follow example
+%%%
+\vspace{.3in}
+             J.~W.~Larson\\
+             R.~L.~Jacob\\
+             C.~H.~Q.~Ding\\
+             A.~N.~D.~Others\\
+\vspace{.2in} {\em Mathematics and Computer Science Division,
+Argonne National Laboratory\\}
+
+\vfill
+
+%%%
+%%% These lines are standard - keep them!
+%%% Edit the ``has not been published'' as appropriated.
+{\em This paper has not been published and should  be regarded as
+an Internal Report from MCS. Permission to quote from this
+Technical Note should be  obtained from the MCS Division of
+Argonne National Laboratory.}
+
+\vspace{0.4in}
+
+
+\thispagestyle{empty}
+\newpage
+
+%.......................... END FIRST PAGE ......................
+
+\pagenumbering{roman}
+
+%......................... REVISION HISTORY ..........................
+
+\newpage
+\setcounter{page}{2}     %%%% Revision History starts at page ii
+
+\addcontentsline{toc}{part}{Revision History}
+
+\vspace*{\fill}
+
+\centerline{\huge\bf Revision History}
+
+\bigskip
+\noindent{This Technical Note was produced for the Accelerated
+Climate Prediction Initiative (ACPI) Avant Garde Project.}
+
+\begin{center}
+\begin{tabular}{|l|l|l|l|}\hline
+{\bf Version} & {\bf Version} & {\bf Pages Affected/}   & {\bf Aproval}\\
+{\bf Number}  & {\bf Date}    & {\bf Extent of Changes} & {\bf Authority}\\
+\hline\hline Version 1$\beta$ & September 21, 2000      & First
+draft (before review) &\\\hline
+\end{tabular}
+\end{center}
+
+\vspace*{\fill}
+
+
+%..........................  ABSTRACT ..................................
+\newpage
+\setcounter{page}{3}     %%%% abstract starts at page iii
+\addcontentsline{toc}{part}{Abstract}
+
+\vspace*{\fill}
+
+\begin{abstract}
+In this document we propose a design of the Next-Generation
+Coupler (NGC) for the Community Climate System Model (CCSM).
+Analysis of the Coupler's requirements lead us to a layered
+design capable of supporting the coupler's high-level
+command/control functions and its relatively low-level grid
+transformation and physics calculation functions.  We introduce
+the concept of a Model Coupling Toolkit (MCT), and describe its
+scope within the coupler.  Finally, we describe in detail the
+design of the MCT, and how one might use it to build the NGC.
+\end{abstract}
+
+\vspace*{\fill}
+\newpage
+
+\tableofcontents
+\newpage
+
+% Switch page numbering to arabic numerals
+
+\pagenumbering{arabic}
+
+\section{Introduction}
+
+The goal of the Accelerated Climate Prediction Initiative (ACPI)
+Avant Garde Project is to construct a performance-portable
+version of the Community Climate System Model (CCSM).  This new
+model is to be built using solid software design and engineering
+practices.  The CCSM marks the merger of the National Center for
+Atmospheric Research (NCAR) Climate System Model (CSM) with the
+Parallel Climate Model (PCM).   One of the chief design
+challenges for the CCSM is the flux coupler, which has been
+nicknamed {\em the Next-Generation Coupler} (NGC).
+
+The NGC is expected to increase dramatically the flexibility of
+the CCSM, and expand correspondingly the variety of research
+possible using this model.
+
+[more verbiage here about how the problem has been solved in the
+past, and the pitfalls of each approach]
+
+In section \ref{sec-req} we summarize and analyze the requirements
+for the Next-Generation Coupler.  In section \ref{sec-arch} we
+state the overall design of the coupler and introduce the concept
+of a Model Coupling Toolkit.  In section \ref{sec-mct} we
+describe the Model Coupling Toolkit.  In section
+\ref{sec-mct-app} we demonstrate how one can build couplers using
+the toolkit.
+
+\section{Requirements for the Next-Generation Coupler}\label{sec-req}
+
+\subsection{Review of NGC Requirements}
+
+A full statement of the requirements for the NGC are given at the
+URL
+\begin{verbatim}
+http://www.cgd.ucar.edu/csm/models/cpl-ng/#requirements
+\end{verbatim}
+
+Two types of requirements were identified---{\em scientific
+requirements} and {\em computational functionality requirements}.
+The scientific requirements outline the coupler's role in the
+coupled modeling system, and a list of the core functions the
+coupler must provide.  The computational functionality
+requirements outline the programming language(s) to which the
+coupler must provide interfaces, and portability and performance
+issues.
+
+The scientific requirements are:
+\begin{enumerate}
+\item The coupler must provide overall control of the coupled
+model system;
+\item The coupler must perform an a system-wide coherence check to
+ensure the component models are configured and initialized
+properly;
+\item The coupler must be sufficiently flexible to allow new/improved 
+component models to be substituted for the existing component models in a
+straightforward manner;
+\item The coupler must be extensible, allowing the user to modify
+the fields or amounts of data exchanged via the coupler to be
+changed with ease, and to add new component models;
+\item The coupler must be able to support coupling of models run
+either asynchronously, or as an event loop;
+\item The coupler must support the following computations:
+\begin{enumerate}
+\item calculation of interfacial physics fluxes;
+\item mapping and transformation of data between different
+component model grids;
+\item merging of interfacial fluxes supplied by multiple component
+models for delivery to another component model;
+\item time accumulation and averaging of flux and state
+variables;
+\item diagnostic quantities such as spatial and temporal averages
+of fluxes and state variables exchanged between component models;
+\end{enumerate}
+\item The coupler is must be able to receive, process, and deliver
+data on a variety of grids, including unstructured grids, and the
+coupler must be able to handle masked areas on these grids.
+\end{enumerate}
+
+The computational functionality requirements are:
+
+\begin{enumerate}
+\item The coupler must be portable to a number of platforms, primarily
+clusters of RISC-based multiprocessors and purely
+distributed-memory multiprocessors.
+\item The coupler, and any special-purpose libraries written for
+it must at the minimum provide a fortran 90 API.  All flux physics
+packages for the coupler must be written in f90.
+\item The coupler must support the following parallel paradigms:  
+pure shared-
+memory parallelism; pure message-passing parallelism; hybrid
+parallelism incorporating threading on multiprocessor nodes and
+message passing between multiprocessor nodes.
+\item The coupler must provide the option to achieve bit-for-bit
+reproducibility in the parallel modes described above if run on
+the same platform with fixed system configuration and input data,
+and  with the same number of processors.
+\item The coupler functions must be capable of supporting either
+event-loop or asynchronous coupling of component models.
+\item The coupler must at the minimum meet the performance of the
+flux couplers present in the CSM version 1.2 and PCM version 1.0.
+\item The coupler must accomodate either single or multiple
+executable image architectures of the coupled modeling system.
+\item The coupler's parallel algorithms must be capable of running
+on any number of processors ({\em i.e.}, no power-of-two
+algorithms).
+\item Only communincations between the coupler and the component
+models is permitted.
+\item The regridding operations in the coupler must be capable of
+performing efficiently arbitrary, masked regriddings using
+transformation matrices.
+\item The coupler must be capable of reading and writing both
+history and restart data.
+\item The coupler must provide some error-handling support, and be
+capable of shutting down all of the coupled system's component
+models.
+\end{enumerate}
+
+\subsection{Discussion of the Requirements}
+
+Analysis of the two groups of requirements outlined in the
+previous section yields some broad conclusions:
+\begin{enumerate}
+\item The coupler has both high-level command/control and
+low-level functions.  There are distinct parts of the coupler
+that must know considerable detail about each of the component
+models, and other portions (e.g., the matrix-vector
+multiplication, time-averaging and flux-merging routines) that
+need little knowledge of the individual components.  This
+suggests a layered design strategy.
+\item the requirement that the coupler be capable of supporting
+both event-loop coupling (e.g. the Parallel Climate Model) and
+asynchronous coupling (e.g. the Climate System Model) suggests the
+need to implement the coupler as one or more libraries that
+support the construction either type of coupler.
+\item There is no requirement to support regridding of data on
+three-dimensional grids.  For this initial version of the
+coupler, we shall implement regridding of data on two-dimensional
+grids, but will not take steps to restrict the software to only
+two-dimensional grids.
+\item The grid interpolation will be implemented as a matrix-vector 
+multiply, with the matrix elements generated using the Los Alamos
+Spherical Coordinate Remapping and Interpolation Package (SCRIP) 
+\footnote{Information about SCRIP is available on-line at 
+http://climate.acl.lanl.gov/software/SCRIP} \cite{jones-1999}.  Given
+the fact that SCRIP not parallel software, these weights will be 
+generated off-line.
+\item There is a demand that the coupler and all its utility routines
+provide a Fortran 90 API, and that the flux physics routines be
+written in Fortran 90.  This suggests it might be easiest to
+implement the coupler in Fortran 90.
+\item The requirement for flexibility in the fields passed to the
+coupler, and extensibility to incorporate new component models
+with ease suggest the need for the coupler to have an internal
+data representation such as a Fortran 90 derived type.
+\item The requirement that the coupler be capable of receiving and
+delivering data on numerous grids, including unstructured grids
+suggests the coupler needs its own general scheme for describing
+gridded data.  For now, this scheme
+\item The requirement that all component models communicate via
+the coupler could create a system bottleneck.  For the sake of
+performance, the communications between component models and the
+coupler must be implemented in parallel; i.e. an M to N transfer
+rather than the current gather-send-scatter approach currently
+used in CSM and PCM.
+\end{enumerate}
+
+Based on these conclusions, it is clear that the best design
+strategy a set of tools or libraries that can be used to create a
+wide variety of coupler applications.
+
+
+
+\section{Overall Architecture of the NGC}\label{sec-arch}
+
+The overall coupler architecture is a layered design.  The Layers
+(Figure \ref{fig:coupler-layers}), ranked lowest-level to
+highest-level are:
+\begin{itemize}
+\item {\bf Layer 1:  Vendor Utilities}---these are either standard
+libraries, or vendor-supplied or vendor-supplied utilities.  These
+libraries currently include the Message-Passing Interface (MPI)
+library, vendor-supplied shared-memory primitives ({\em e.g.},
+SHMEM), and the Basic Linear Algebra Subroutines (BLAS) library.
+\item {\bf Layer 2:  Parallel Environment Utilities}---these utilities provide
+module access to MPI, and support for error-handling, diagnostic
+output, and run-time input of resources for the coupler.  This
+layer also supplies some of the classes used to build the basic
+coupler data classes.  Currently, this layer is served by the
+NASA Data Assimilation Office's Message Passing Environment
+Utilities (mpeu) library.
+\item {\bf Layer 3:  Basic Coupler Classes and Methods}---the internal
+data representation and data decomposition for the coupler, and
+will be discussed in more detail in section \ref{sec-mct-base}.
+\item {\bf Layer 4:  Derived Coupler Classes and Methods}---this layer includes
+datatypes and routines to support:  interpolation implemented as
+sparse matrix-vector multiplication; time averaging; computation
+of fluxes from state variables.
+\item {\bf Layer 5:  Coupler Applications}---the layer in which couplers
+are built from lower-layer utilities.  Applications in this layer
+have information regarding the data types and data decompositions
+used by the component models being coupled.  This layer includes
+utilities for packing (unpacking) messages sent to (received from)
+the coupler or between component models, and the utilities that
+communicate with the coupler or between component models.
+\end{itemize}
+
+\begin{figure}
+\epsfxsize=6.0in
+\centerline{\epsfbox{coupler-layers.eps} }
+\caption{Software layers for the coupler.}
+\label{fig:coupler-layers}
+\end{figure}
+
+\section{Interfaces to the Coupler}
+
+\subsection{The Handshake}
+
+[Ed. comment--for now, much of what Chris has done can go here]
+
+\subsection{Contracts}
+
+Coupling between any two component models is described by one or
+more {\tt contracts}.  For example, direct coupling between the
+atmosphere and ocean requires that the atmosphere deliver to the
+ocean at certain times a set of fields, and that atmosphere
+receive from the ocean at certain times a set of fields.  Each of
+these operations can be described using the {\tt Contract}
+datatype:
+
+\begin{verbatim}
+Type Contract
+  logical       :: new
+  type(String)  :: partner
+  type(String)  :: operation
+  integer       :: frequency
+  type(GlobalSegMap) :: remote_map
+  type(LocalSegMap)  :: local_map
+End Type Contract
+\end{verbatim}
+
+The quantity {\tt Contract\%new} is a logical flag, which, if
+true, requires the initialization (or re-initialization) of the
+local and remote data decomposition descriptors {\tt
+Contract\%local\_map} and {\tt Contract\%remote\_map},
+respectively. These data decomposition descriptors are defined is
+section BLAH.  The string variable {\tt partner} indicates which
+component model is being coupled ({\em e.g.}, {\tt "OCEAN", "SEA
+ICE", "ATMOSPHERE", "LAND", "RIVER"}) , and {\tt operation} is
+has value either {\tt "SEND"} or {\tt "RECEIVE"}.
+
+Each component model creates a collection of contracts, and at
+each timestep examines the collection of contracts to see what
+data must be sent (received) to (from) other component models or
+the coupler.  The contracts are also examined to determine which
+partners have changed data decomposition, which requires
+re-initialization of {\tt Contract\%remote\_map}.  If the
+component model's data decomposition changes, this change is
+reflected in a change to {\tt Contract\%local\_map}, and this
+change will be posted to the partner.
+
+\section{The Model Coupling Toolkit}\label{sec-mct}
+
+\subsection{Internal Data Representation}\label{sec-mct-base}
+
+In both PCM and CSM, the flux coupler uses a real vector to
+represent each field, and these vectors are bundled into
+two-dimensional real arrays.  Each time a new field is added to
+the PCM or CSM coupler, the dimensions of these arrays must be
+changed, and any indexing to reference fields must be extended.
+This is at the least an impediment to rapid substitution of
+component models.
+
+To simplify this process, the coupler has its own internal data
+representation that is extremely flexible.  This data structure
+is a bundle of vectors, indexed by a character list, and called an
+{\em Attribute Vector}, or {\tt AttrVect}.  The {\tt AttrVect},
+implemented in Fortran 90 is shown below:
+
+\begin{verbatim}
+Type AttrVect
+  type(List) :: iList
+  type(List) :: rList
+  real, dimension(:,:), pointer :: iAttr
+  real, dimension(:,:), pointer :: rAttr
+End Type AttrVect
+\end{verbatim}
+
+An {\tt AttrVect} has a list of real and integer attributes. The
+syntax of a list is a string delimited by colons.  For an {\tt
+AttrVect} variable {\tt av} list of real and integer attributes
+are contained in the lists {\tt av\%rList} and {\tt av\%iList},
+respectively.  The real and integer data are referenced via the
+pointers {\tt av\%rAttr} and {\tt av\%iAttr}, respectively. For
+example, the latitudes and longitudes of a set of locations could
+be stored in {\tt AttrVect} variable {\tt locations}, with {\tt
+location\%rList = 'latitude:longitude'}.
+
+The {\tt AttrVect} class has many methods, including:  numerous
+versions of a create method; destroy; return the vector length
+with the method {\tt lsize}; return the number of integer and real
+attributes with the methods {\tt nRA} and {\tt nIA} respectively;
+indexing of real (integer) attributes with the methods {\tt
+indexRA} and {\tt indexIA}, respectively.
+
+How data referenced by the pointers {\tt rAttr} and {\tt iAttr}
+are accessed can be understood by returning to our example {\tt
+AttrVect} variable {\tt locations} mentioned above.  Suppose we
+wish to access the latitude and longitude data in {\tt locations}.
+\begin{enumerate}
+\item One determines the index values for latitude and
+longitude---{\tt ilat} and {\tt ilon}, respectively--through the
+method {\tt indexRA}:
+\begin{verbatim}
+ilat = indexRA(locations,'latitude')
+
+ilon = indexRA(locations,'longitude')
+\end{verbatim}
+\item the vector of latitudes is {\tt locations\%rAttr(ilat,:)},
+and the vector of longitudes is {\tt locations\%rAttr(ilon,:)}.
+\end{enumerate}
+
+\subsubsection{Data Decomposition Descriptors}
+
+If we represent two-dimensional grids as vectors of their
+gridpoints' cooridinates, we have must have a some way to
+describe their decompositions.  Two mechanisms are available in
+the MCT:  a {\tt LocalSegMap}, which lists how many segments, and
+which segments of a decomposed global vector reside on the local
+processor; a {\tt GlobalSegMap} which lists how many segments, and
+which segments of a decomposed global vector (with some assumed
+coordinate ordering) resides on each processor in the
+decomposition.
+
+The {\tt LocalSegMap} type is defined as
+\begin{verbatim}
+Type LocalSegMap
+  integer               :: nseg
+  integer, dimension(:) :: llc
+  integer, dimension(:) :: lln
+  integer, dimension(:) :: glc
+End Type LocalSegMap
+\end{verbatim}
+
+The {\tt GlobalSegMap} type is defined as
+\begin{verbatim}
+Type GlobalSegMap
+  type(communicator)    :: comm
+  integer               :: ngseg
+  integer, dimension(:) :: lc
+  integer, dimension(:) :: ln
+  integer, dimension(:) :: pe_loc
+End Type GlobalSegMap
+\end{verbatim}
+
+\subsection{Derived Classes and Methods}
+
+\subsubsection{Grids}
+
+The most general type of grid in two dimensions is a set of points
+with a list of their coordinates.  Recalling our {\tt AttrVect}
+example from the previous section, we can describe a
+two-dimensional grid in a variety of ways, the most general of
+which is to list explicitly all the latitudes and longitudes.  The
+{\tt GeneralGrid} type is defined as
+\begin{verbatim}
+Type GeneralGrid
+  type(List)     :: ordering
+  type(AttrVect) :: points
+End Type GeneralGrid
+\end{verbatim}
+where the list{\tt GeneralGrid\%ordering} signifies the sorting
+order that unravels the multidimensional grid into a vector of
+grid points.  The {\tt AttrVect} component {\tt
+GeneralGrid\%points} is a list of the grid points.  Consider a
+two-dimensional atmosphere latitude-longitude grid {\tt
+atm\_latlon} whose points are sorted in lexicographic order by
+latitude and longitude, and numbered accordingly:
+\begin{verbatim}
+Type (GeneralGrid} :: atm_latlon
+
+atm_latlon%ordering = "latitude:longitude"
+atm_latlon%points%rList = "latitude:longitude"
+atm_latlon%points%iList = "index1d"
+
+\end{verbatim}
+
+When a {\tt GeneralGrid} type is initialized with sets of points,
+and the list of coordinates, the list {\tt GeneralGrid\%ordering}
+can be compared with the list {\tt GeneralGrid\%rAttr} to ensure
+the lists contain the same components, and the {\tt AttrVect}
+sorting methods can be used to sort the grid points in {\tt
+GeneralGrid\%points\%rAttr} in the appropriate lexicographic
+order, and then register their grid point index number in {\tt
+GeneralGrid\%points\%iAttr}.
+
+\subsubsection{Transformations and Sparse Matrices}
+
+The transformation from one grid to another will initially be
+implemented as a sparse matrix-vector multiplication.  The
+parameters of the transformation will be stored in the a datatype
+called the {\tt SparseMatrix}.
+
+The {\tt SparseMatrix} class is a special instantiation of the
+{\tt AttrVect} class.  The sparse matrix is a set of one or more
+weights identified with a list of row and column indices.  That
+is, a sparse matrix will have one or more real attributes and a
+fixed list of two integer attributes.  An example of a {\tt
+SparseMatrix} structure {\tt A2O\_mat} with one real interpolation
+weight is shown below:
+\begin{verbatim}
+(type) SparseMatrix :: A2O_mat
+A2O_mat%iList = 'row:column'
+A2O_mat%rList = 'weight'
+\end{verbatim}
+
+Transformations will be generated using an algorithm such as that
+in SCRIP.  In the early development stages of the coupler, this
+will be done off-line, and the {\tt SparseMatrix} corresponding
+to a given grid transformation will be read from an input file.
+
+In more mature versions of the MCT, this capability will be
+supplied on-line as a call to {\tt GenerateTransform}:
+\begin{verbatim}
+call GenerateTransform(SourceGrid, DestGrid, Transform, status)
+\end{verbatim}
+where the input arguments {\tt SourceGrid} and {\tt DestGrid} are
+the {\tt GeneralGrid} representations of the source and
+destination grids, respectively, the output argument{\tt
+Transform} is a {\tt SparseMatrix} type, and the integer output
+argument {\tt status} is an error flag (zero if the operation was
+successful).
+
+\subsubsection{The Accumulator}
+
+The {\tt Accumulator} is a the data class used to compute running
+sums for time averages required by the coupler.
+
+\begin{verbatim}
+Type Accumulator
+  integer :: num_steps
+  integer :: steps_done
+  type(AttrVect) :: av
+End Type Accumulator
+\end{verbatim}
+
+Consider as an example the {\tt Accumulator} variable {\tt sum}.
+The integer {\tt sum\%num\_steps} is the number of steps in the
+averaging cycle, and {\tt sum\%steps\_done} is the number of steps
+completed in the averaging cycle.  The accumulated data is stored
+in the {\tt AttrVect} structure {\tt sum\%av}.  The {\tt
+Accumulator} class shares some of the create, destroy, size, and
+index methods associated with the {\tt AttrVect} class. Data from
+an {\tt AttrVect} is added to an {\tt Accumulator} using the
+method {\tt Accumulate}, which is implemented in Fortran 90 as a
+subroutine call:
+\begin{verbatim}
+call Accumulate(av, sum, status)
+\end{verbatim}
+The input variable {\tt av} is an {\tt AttrVect} type, the
+input/output variable {\tt sum} is an {\tt Accumulator} type, and
+{\tt status} is an integer error flag (value zero if the call was
+successful).
+
+\subsubsection{Merging of Fluxes}
+
+\subsection{Message-Passing Environment Utilities Library}
+
+The Message Passing Environment Utilities (MPEU) library was
+developed by the NASA Data Assimilaiton Office (DAO) to support
+the development of a message-passing parallel version of their
+Physical-space Statistical Analysis System (PSAS).  The library
+is same-source parallel in the sense that one body of source code
+is used to construct both a parallel and sequential version of
+the utilities.
+
+The mpeu library provides the following services:
+\begin{itemize}
+\item F90 Module-style access to MPI, including a scheme to make
+communication calls independent of the underlying variable type
+representation (e.g. 32 vs. 64 bit reals)
+\item Support for {\tt stdout} and {\tt stderr} devices for multiple processors
+\item Exception handling/soft landing--something to shut down things
+with at least a short comment describing why  (and yes, this will
+allow any component to shut down all the components).
+\item Timing tools that use string tags to identify timers, and also provide
+three measures of load imbalance
+\item Allocatable memory accounting tools
+\item Support for an alternative to namelist files called
+"resource files."  This allows one pe to do file input,
+distribute the contents of the resource file, and all the pe's to
+have random access to its contents.  There's support for loading
+tables under this scheme as well.
+\item Support for some basic data types that are required by the
+AttrVect data type (which is the coupler's internal data
+representation)
+\item Sorting tools
+\item I/O utilities for allocating fortran i/o device numbers from
+a stack.  This way, you don't need to dig around in all the source
+code to worry about what device numbers are already spoken for by
+another subroutine or component model.
+\end{itemize}
+
+The mpeu software is highly portable, and runs on a large number
+of platforms (including linux).  It is also
+"single-source-parallel" in the sense that it can be used to
+create parallel versions of all the tools described above, or
+sequential versions where appropriate.  Also, the library is self-
+documenting, and LaTeX files can be generated from the code using
+ProTeX.
+
+\section{Building Couplers Using the MCT}\label{sec-mct-app}
+
+\section{Conclusion}
+
+\appendix{Appendix A:  Documentation of the AttrVect Module}
+\addcontentsline{toc}{part}{Appendix A:  Documentation of the
+AttrVect Module}
+\input{m_AttrVect}
+\appendix{Appendix B:  Documentation of the Navigator Module}
+\addcontentsline{toc}{part}{Appendix B:  Documentation of the
+Navigator Module}
+\input{m_Navigator}
+\appendix{Appendix C:  Documentation of the GlobalMap Module}
+\addcontentsline{toc}{part}{Appendix C:  Documentation of the
+GlobalMap Module}
+\input{m_GlobalMap}
+\appendix{Appendix D:  Documentation of the GlobalSegMap Module}
+\addcontentsline{toc}{part}{Appendix D:  Documentation of the
+GlobalSegMap Module}
+\input{m_GlobalSegMap}
+\appendix{Appendix E:  Documentation of the AttrVectComms Module}
+\addcontentsline{toc}{part}{Appendix E:  Documentation of the
+AttrVectComms Module}
+\input{m_AttrVectComms}
+\appendix{Appendix F:  Documentation of the Accumulator Module}
+\addcontentsline{toc}{part}{Appendix F:  Documentation of the
+Accumulator Module}
+\input{m_Accumulator}
+\appendix{Appendix G:  Documentation of the AccumulatorComms Module}
+\addcontentsline{toc}{part}{Appendix G:  Documentation of the
+AccumulatorComms Module}
+\input{m_AccumulatorComms}
+\appendix{Appendix H:  Documentaiton of the SparseMatrix Module}
+\addcontentsline{toc}{part}{Appendix H:  Documentaiton of the
+SparseMatrix Module}
+\input{m_SparseMatrix}
+
+\addcontentsline{toc}{part}{References}
+
+\bibliographystyle{apalike}   % for BibTeX - uses [Name, year] method??
+ 
+\bibliography{coupler}
+\end{document}

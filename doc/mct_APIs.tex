@@ -1,0 +1,216 @@
+%mct API Specification
+% J.W. Larson / MCS, Argonne National Laboratory
+% First Version Begun 8/28/00
+\documentclass{article}
+\usepackage{epsfig}
+\usepackage{graphicx}
+%\usepackage{fancyheadings}
+
+% Keep these dimensions
+
+\textheight     9in \topmargin      0pt \headsep        22pt
+\headheight     0pt
+
+\textwidth      6in \oddsidemargin  0in \evensidemargin 0in
+
+\marginparpush  0pt \pagestyle{plain}
+
+\setlength{\hoffset}{0.25in}
+
+% Headings
+% --------
+\pagestyle{plain}  % AFTER redefining \textheight etc.
+
+%  \lhead[]{{\em NGC Design Document}}   % left part of header
+%  \chead[]{}                  % center part of header
+%  \rhead[]{\em {\today}}  % right part of header
+
+ % \cfoot{\roman{page}}
+  %\lfoot[]{}      % left part of footer
+ % \rfoot[]{}      % right part of footer
+ % \headrulewidth 0pt      % if you don't want a rule under the header
+ % \footrulewidth 0pt      % if you don't want a rule above the footer
+
+%......................................................................
+%.............begin document.............
+
+\begin{document}
+
+\begin{sloppypar}
+{\huge\bf
+%%%
+%%% Enter your title below (after deleting mine)
+%%%
+The Model Coupling Toolkit (mct) API Definition Document
+\\ }                     %%% IMPORTANT: Keep this \\ before the }
+\end{sloppypar}
+
+%%%
+%%% Author names and affiliations go below, follow example
+%%%
+\vspace{.3in}
+             J.~W.~Larson\\
+             R.~L.~Jacob\\
+             A.~N.~D.~Others\\
+\vspace{.2in} {\em Mathematics and Computer Science Division,
+Argonne National Laboratory\\}
+
+\vfill
+
+%%%
+%%% These lines are standard - keep them!
+%%% Edit the ``has not been published'' as appropriated.
+{\em This paper has not been published and should  be regarded as
+an Internal Report from MCS. Permission to quote from this
+Technical Note should be  obtained from the MCS Division of
+Argonne National Laboratory.}
+
+\vspace{0.4in}
+
+
+\thispagestyle{empty}
+\newpage
+
+%.......................... END FIRST PAGE ......................
+
+\pagenumbering{roman}
+
+%......................... REVISION HISTORY ..........................
+
+\newpage
+\setcounter{page}{2}     %%%% Revision History starts at page ii
+
+\addcontentsline{toc}{part}{Revision History}
+
+\vspace*{\fill}
+
+\centerline{\huge\bf Revision History}
+
+\bigskip
+\noindent{This Technical Note was produced for the Accelerated
+Climate Prediction Initiative (ACPI) Avant Garde Project.}
+
+\begin{center}
+\begin{tabular}{|l|l|l|l|}\hline
+{\bf Version} & {\bf Version} & {\bf Pages Affected/}   & {\bf Aproval}\\
+{\bf Number}  & {\bf Date}    & {\bf Extent of Changes} & {\bf Authority}\\
+\hline\hline Version 1$\beta$ & December 13, 2000      & First
+draft (before review) &\\\hline
+\end{tabular}
+\end{center}
+
+\vspace*{\fill}
+
+
+%..........................  ABSTRACT ..................................
+\newpage
+\setcounter{page}{3}     %%%% abstract starts at page iii
+\addcontentsline{toc}{part}{Abstract}
+
+\vspace*{\fill}
+
+\begin{abstract}
+In this document we state the Application Program Interfaces (APIs)
+ for the model coupling toolkit (mct), which has been proposed as
+a set of components to implement the Next-Generation
+Coupler (NGC) for the Community Climate System Model (CCSM).
+Analysis of the Coupler's requirements lead us to a layered
+design capable of supporting the coupler's high-level
+command/control functions and its relatively low-level grid
+transformation and physics calculation functions.  This design
+and the concept of a Model Coupling Toolkit (MCT) were introduced 
+in the NGC proposed design document.
+\end{abstract}
+
+\vspace*{\fill}
+\newpage
+
+\tableofcontents
+\newpage
+
+% Switch page numbering to arabic numerals
+
+\pagenumbering{arabic}
+
+\part{What is the Model Coupling Toolkit?}
+
+\section{Introduction}
+
+The goal of the Accelerated Climate Prediction Initiative (ACPI)
+Avant Garde Project is to construct a performance-portable
+version of the Community Climate System Model (CCSM).  This new
+model is to be built using solid software design and engineering
+practices.  The CCSM marks the merger of the National Center for
+Atmospheric Research (NCAR) Climate System Model (CSM) with the
+Parallel Climate Model (PCM).   One of the chief design
+challenges for the CCSM is the flux coupler, which has been
+nicknamed {\em the Next-Generation Coupler} (NGC).
+
+The NGC is expected to increase dramatically the flexibility of
+the CCSM, and expand correspondingly the variety of research
+possible using this model.  The NGC will be constructed using 
+components in the mct.
+
+In the design document, we outlined a layered design for the 
+NGC (Figure \ref{fig:coupler-layers}).  Here we state in detail 
+the API's for layers three and four of this design, which comprise 
+the mct.
+
+\begin{figure}
+\epsfxsize=6.0in
+\centerline{\epsfbox{coupler-layers.eps} }
+\caption{Software layers for the coupler.}
+\label{fig:coupler-layers}
+\end{figure}
+
+\section{Level 3 Classes and Methods}
+The lowest level of the toolkit is the definition of the internal 
+data representation of the coupler (the {\tt AttrVect}), two simple 
+schemes for one-and-two dimensional data decompositions (the 
+{\tt GlobalMap} and {\tt GlobalSegMap} respectively), and indexing 
+of local data ({\tt the Navigator}).  In addition to these basic 
+classes, some simple, collective communications methods are defined
+for the {\tt AttrVect} component.
+
+\section{Level Classes and Methods 4}
+This layer of the toolkit contains classes and methods built upon 
+level 3  classes.  These include:  a time averaging component (the 
+{\tt Accumulator}) and some simple collective communications 
+methods associated with it; representation of sparse matrices 
+(the {\tt SparseMatrix}) and matrix-{\tt AttrVect} operations;
+a general definition of coordinate grids (the {\tt GeneralGrid});
+a general representation of collective data transfer---whether it be 
+a transpose or a parallel transfer between pools of processors that 
+can be either on the same set of processors or differing sets of 
+processors (the {\tt Router}) and communications methods that employ
+it; a facility for merging flux and state data from multiple component 
+models (design still under discussion); a highest-level, all-encompassing
+ class that describes the exchange of data between two component 
+models---the {\tt Contract} (design still in progress).
+
+
+\part{Level 3 API's}
+\section{Documentation of the AttrVect Module}
+\input{m_AttrVect}
+\section{Documentation of the Navigator Module}
+\input{m_Navigator}
+\section{Documentation of the GlobalMap Module}
+\input{m_GlobalMap}
+\section{Documentation of the GlobalSegMap Module}
+\input{m_GlobalSegMap}
+\section{Documentation of the AttrVectComms Module}
+\input{m_AttrVectComms}
+\part{Level 4 API's}
+\section{Documentation of the Accumulator Module}
+\input{m_Accumulator}
+\section{Documentation of the AccumulatorComms Module}
+\input{m_AccumulatorComms}
+\section{Documentaiton of the SparseMatrix Module}
+\input{m_SparseMatrix}
+
+%\addcontentsline{toc}{part}{References}
+
+%\bibliographystyle{apalike}   % for BibTeX - uses [Name, year] method??
+ 
+%\bibliography{coupler}
+\end{document}
