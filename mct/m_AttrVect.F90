@@ -81,7 +81,7 @@
       type(List) :: iList
       type(List) :: rList
       integer,dimension(:,:),pointer :: iAttr
-      real   ,dimension(:,:),pointer :: rAttr
+      real(FP) ,dimension(:,:),pointer :: rAttr
     end type AttrVect
 
 ! !PUBLIC MEMBER FUNCTIONS:
@@ -1852,7 +1852,6 @@
       use m_die ,          only : die
       use m_stdio ,        only : stderr
 
-      use m_realkinds,     only : SP
 
       use m_String, only : String
       use m_String, only : String_init => init
@@ -1991,7 +1990,6 @@
       use m_die ,          only : die
       use m_stdio ,        only : stderr
 
-      use m_realkinds,     only : DP
 
       use m_String, only : String
       use m_String, only : String_init => init
@@ -2184,7 +2182,6 @@
 !
       use m_die ,          only : die
       use m_stdio ,        only : stderr
-      use m_realkinds,     only : SP
 
       implicit none
 
@@ -2272,7 +2269,6 @@
 !
       use m_die ,          only : die
       use m_stdio ,        only : stderr
-      use m_realkinds,     only : DP
 
       implicit none
 
@@ -2997,8 +2993,6 @@
 
 ! local variables
 
-  integer, dimension(:,:), allocatable :: iAtmp
-  real,    dimension(:,:), allocatable :: rAtmp
   integer :: i
 
         ! Check input arguments for compatibility--assure
