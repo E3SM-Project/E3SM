@@ -150,16 +150,15 @@
 
   if(present(stat)) stat = 0
 
-       ! can't scatter vector parts.
-  if(GsMat%vecinit) then
-      write(stderr,*) myname_,&
-      "WARNING: will not scatter vector parts of GsMat"
-  endif
-
-
        ! Which process am I?
 
   call MPI_COMM_RANK(comm, myID, ierr)
+
+       ! can't scatter vector parts.
+  if((myID.eq.root) .and. GsMat%vecinit) then
+      write(stderr,*) myname_,&
+      "WARNING: will not scatter vector parts of GsMat"
+  endif
 
   if(ierr /= 0) then
 	call MP_perr_die(myname_,"MPI_COMM_RANK() failed",ierr)
@@ -317,17 +316,17 @@
 
   if(present(stat)) stat = 0
 
-       ! can't scatter vector parts.
-  if(GsMat%vecinit) then
-      write(stderr,*) myname_,&
-      "WARNING: will not scatter vector parts of GsMat."
-  endif
-
        ! Which process are we?
 
   call MPI_COMM_RANK(comm, myID, ierr)
   if(ierr /= 0) then
      call MP_perr_die(myname_,"MPI_COMM_RANK() failed",ierr)
+  endif
+
+       ! can't scatter vector parts.
+  if((myID.eq.root) .and. GsMat%vecinit) then
+      write(stderr,*) myname_,&
+      "WARNING: will not scatter vector parts of GsMat."
   endif
 
        ! Create from rowGSMap the corresponding GlobalSegMap
