@@ -49,6 +49,9 @@
 !                 Also tidied up prologues in all module routines.
 ! 	07Jun01 - J.W. Larson <larson@mcs.anl.gov> - Added send() 
 !                 and recv().
+!       03Aug01 - E.T. Ong <eong@mcs.anl.gov> - in GSM_scatter, call 
+!                 GlobalMap_init with actual shaped array to satisfy
+!                 Fortran 90 standard. See comment in subroutine.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_AttrVectComms'
@@ -776,7 +779,7 @@
       use m_mpif90
 
       use m_List, only : List
-      use m_List, only : assignment(=)
+      use m_List, only : List_copy => copy
       use m_List, only : List_bcast => bcast
       use m_List, only : List_clean => clean
 
@@ -818,7 +821,8 @@
 !                 the prologue, too.
 !       18May01 - R.L. Jacob <jacob@mcs.anl.gov> - use MP_Type function
 !                 to determine type for mpi_scatterv
-
+!       08Aug01 - E.T. Ong <eong@mcs.anl.gov> - replace list assignment(=)
+!                 with list copy to avoid compiler errors in pgf90.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GM_scatter_'
@@ -862,8 +866,8 @@
         ! lists off of iV.
 
   if(myID == root) then
-     iList = iV%iList
-     rList = iV%rList
+     call List_copy(iList,iV%iList)
+     call List_copy(rList,iV%rList)
   endif
 
         ! From the root, broadcast iList and rList
@@ -1091,6 +1095,19 @@
      end do
 
   endif ! if(myID == root)
+
+        ! Non-root processes call GlobalMap_init with lns,
+        ! although this argument is not used in the 
+        ! subroutine. Since it correspond to a dummy shaped array arguments
+        ! in GlobslMap_init, the Fortran 90 standard dictates that the actual 
+        ! argument must contain complete shape information. Therefore, 
+        ! the array argument must be allocated on all processes.
+
+  if(myID /= root) then
+
+     allocate(lns(1),stat=ierr)
+
+  endif
 
        ! Create a GlobalMap describing the 1-D decomposition 
        ! of workV:
