@@ -14,7 +14,7 @@ apis:
 	cd texsrc; make
 	make apisdvi
 
-designdvi: ngc_proposed_design.dvi
+designdvi: mct_design.dvi
 
 apisdvi: mct_APIs.dvi
 
