@@ -946,9 +946,9 @@
 ! {\tt aV}.  For example, suppose {\tt aV} has the following attributes
 ! {\tt 'month'}, {\tt 'day'}, and {\tt 'year'}.  The array of integer 
 ! values for the attribute {\tt 'day'}  is stored in 
-! \begin{verbatim}
-! {\tt av\%iAttr(indexIA\_(aV,'day'),:)}.
-!! \end{verbatim}
+!% \begin{verbatim}
+! {\tt aV\%iAttr(indexIA\_(aV,'day'),:)}.
+!% \end{verbatim}
 ! If {\tt indexIA\_()} is unable to match {\tt item} to any of the integer
 ! attributes in {\tt aV}, the resulting value is zero which is equivalent
 ! to an error.  The optional input {\tt CHARACTER} arguments {\tt perrWith} 
@@ -1046,9 +1046,9 @@
 ! {\tt aV}.  For example, suppose {\tt aV} has the following attributes
 ! {\tt 'latitude'}, {\tt 'longitude'}, and {\tt 'pressure'}.  The array 
 ! of real values for the attribute {\tt 'longitude'}  is stored in 
-!! \begin{verbatim}
-! {\tt av\%iAttr(indexRA\_(aV,'longitude'),:)}.
-!! \end{verbatim}
+!% \begin{verbatim}
+! {\tt aV\%iAttr(indexRA\_(aV,'longitude'),:)}.
+!% \end{verbatim}
 ! If {\tt indexRA\_()} is unable to match {\tt item} to any of the real
 ! attributes in {\tt aV}, the resulting value is zero which is equivalent
 ! to an error.  The optional input {\tt CHARACTER} arguments {\tt perrWith} 

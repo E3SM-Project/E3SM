@@ -1689,7 +1689,7 @@
 
 !BOP -------------------------------------------------------------------
 !
-! !ROUTINE: accumulate_--Acumulate from an AttrVect to an Accumulator.
+! !IROUTINE: accumulate_--Acumulate from an AttrVect to an Accumulator.
 !
 ! !DESCRIPTION:
 ! This routine performs time {\em accumlation} of data present in an

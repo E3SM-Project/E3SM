@@ -195,6 +195,8 @@
 ! defined in the declaration section of this module.  Acceptable values 
 ! for use in this routine are: {\tt Xonly} and {\tt Yonly}.
 ! \end{itemize}
+! The optional argument {\tt Tag} can be used to set the tag value used in 
+! the call to {\tt Rearranger}.  DefaultTag will be used otherwise.
 !
 ! !INTERFACE:
 

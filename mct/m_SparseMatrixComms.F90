@@ -59,7 +59,7 @@
 !-------------------------------------------------------------------------
 !BOP
 !
-! !ROUTINE:  ScatterByColumnGSMap_()--Column-based scatter for SparseMatrix.
+! !IROUTINE:  ScatterByColumnGSMap_()--Column-based scatter for SparseMatrix.
 ! 
 ! !DESCRIPTION: This routine scatters the input {\tt SparseMatrix} 
 ! argument {\tt GsMat} (valid only on the root) to a distributed 
@@ -192,7 +192,7 @@
 !-------------------------------------------------------------------------
 !BOP
 !
-! !ROUTINE:  ScatterByRowGSMap_()--Row-based scatter for SparseMatrix.
+! !IROUTINE:  ScatterByRowGSMap_()--Row-based scatter for SparseMatrix.
 ! 
 ! !DESCRIPTION: This routine scatters the input  {\tt SparseMatrix} 
 ! argument {\tt GsMat} (valid only on the root) to a distributed 
@@ -319,7 +319,7 @@
 !-------------------------------------------------------------------------
 !BOP
 !
-! !ROUTINE:  GM_gather_()--Gather a distributed SparseMatrix to the root.
+! !IROUTINE:  GM_gather_()--Gather a distributed SparseMatrix to the root.
 !
 ! !DESCRIPTION: This routine gathers the input distributed 
 ! {\tt SparseMatrix} argument {\tt LsMat} to the {\tt SparseMatrix} 
@@ -406,7 +406,7 @@
 !-------------------------------------------------------------------------
 !BOP
 !
-! !ROUTINE:  GSM_gather_()--Gather a distributed SparseMatrix to the root.
+! !IROUTINE:  GSM_gather_()--Gather a distributed SparseMatrix to the root.
 !
 ! !DESCRIPTION: This routine gathers the input distributed 
 ! {\tt SparseMatrix} argument {\tt LsMat} to the {\tt SparseMatrix} 
@@ -493,7 +493,7 @@
 !-------------------------------------------------------------------------
 !BOP
 !
-! !ROUTINE:  Bcast_()--Broadcast a SparseMatrix.
+! !IROUTINE:  Bcast_()--Broadcast a SparseMatrix.
 ! 
 ! !DESCRIPTION: This routine broadcasts the {\tt SparseMatrix} argument 
 ! {\tt sMat} from the root to all processes on the communicator associated

@@ -42,8 +42,8 @@
     end interface
 
 ! !REVISION HISTORY:
-!       13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
-!                 and API specifications.
+! 13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+!           and API specifications.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_SparseMatrixToMaps'
@@ -102,14 +102,14 @@
       type(GlobalSegMap), intent(out)   :: xGSMap  ! segmented decomposition
                                                    ! for x
 ! !REVISION HISTORY:
-!       13Apr01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
-!       25Apr01 - J.W. Larson <larson@mcs.anl.gov> - First version.
-!       27Apr01 - J.W. Larson <larson@mcs.anl.gov> - Bug fix--intent of
-!                 argument sMat changed from (IN) to (INOUT)
-!       27Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - bug fix-- add use 
-!                statement for SortPermute
-!       01May01 - R.L. Jacob <jacob@mcs.anl.gov> - make comp_id an
-!                 input argument
+! 13Apr01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
+! 25Apr01 - J.W. Larson <larson@mcs.anl.gov> - First version.
+! 27Apr01 - J.W. Larson <larson@mcs.anl.gov> - Bug fix--intent of
+!           argument sMat changed from (IN) to (INOUT)
+! 27Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - bug fix-- add use 
+!           statement for SortPermute
+! 01May01 - R.L. Jacob <jacob@mcs.anl.gov> - make comp_id an
+!           input argument
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::SparseMatrixToXGlobalSegMap_'
@@ -245,16 +245,16 @@
       type(GlobalSegMap), intent(out)   :: yGSMap  ! segmented decomposition
                                                    ! for y
 ! !REVISION HISTORY:
-!       13Apr01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
-!       25Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial code.
-!       27Apr01 - J.W. Larson <larson@mcs.anl.gov> - Bug fix--intent of
-!                 argument sMat changed from (IN) to (INOUT)
-!       27Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - bug fix-- add use 
-!                statement for SortPermute
-!       01May01 - R.L. Jacob <jacob@mcs.anl.gov> - make comp_id an
-!                 input argument
-!       07May02 - J.W. Larson <larson@mcs.anl.gov> - Changed interface to
-!                 make it consistent with SparseMatrixToXGlobalSegMap_().
+! 13Apr01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
+! 25Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial code.
+! 27Apr01 - J.W. Larson <larson@mcs.anl.gov> - Bug fix--intent of
+!           argument sMat changed from (IN) to (INOUT)
+! 27Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - bug fix-- add use 
+!           statement for SortPermute
+! 01May01 - R.L. Jacob <jacob@mcs.anl.gov> - make comp_id an
+!           input argument
+! 07May02 - J.W. Larson <larson@mcs.anl.gov> - Changed interface to
+!           make it consistent with SparseMatrixToXGlobalSegMap_().
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::SparseMatrixToYGlobalSegMap_'
@@ -377,12 +377,12 @@
 
 
 ! !REVISION HISTORY:
-!       19Apr01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
-!       25Apr01 - J.W. Larson <larson@mcs.anl.gov> - Initial code.
-!       27Apr01 - J.W. Larson <larson@mcs.anl.gov> - Bug fix--error in
-!                 computation of segment starts/lengths.
-!       27Nov01 - E.T. Ong <eong@mcs.anl.gov> - Bug fix--initialize
-!                 nsegs=0 in case num_indices=0.
+! 19Apr01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
+! 25Apr01 - J.W. Larson <larson@mcs.anl.gov> - Initial code.
+! 27Apr01 - J.W. Larson <larson@mcs.anl.gov> - Bug fix--error in
+!           computation of segment starts/lengths.
+! 27Nov01 - E.T. Ong <eong@mcs.anl.gov> - Bug fix--initialize
+!           nsegs=0 in case num_indices=0.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::ComputeSegments_'

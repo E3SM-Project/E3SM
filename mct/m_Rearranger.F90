@@ -489,6 +489,9 @@
 ! the {\tt TargetAv} Attribute Vector using the Rearrnger
 ! {\tt InRearranger}.
 !
+! The optional argument {\tt Tag} can be used to set the tag value used in 
+! the rearrangement.  DefaultTag will be used otherwise.
+!
 ! If the optional argument {\tt Sum} is present, data for the same
 ! physical point coming from two or more processes will be summed.
 ! Otherwise, data is overwritten.

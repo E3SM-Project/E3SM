@@ -39,12 +39,12 @@
     end interface
 
 ! !REVISION HISTORY:
-!       13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
-!                 and API specifications.
-!       03Aug01 - E. Ong <eong@mcs.anl.gov> - in ByRowGSMap and ByColumnGSMap,
-!                 call GlobalSegMap_init on non-root processes with actual 
-!                 shaped arguments to satisfy Fortran 90 standard. See
-!                 comments in ByRowGSMap/ByColumnGSMap.
+! 13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+!           and API specifications.
+! 03Aug01 - E. Ong <eong@mcs.anl.gov> - in ByRowGSMap and ByColumnGSMap,
+!           call GlobalSegMap_init on non-root processes with actual 
+!           shaped arguments to satisfy Fortran 90 standard. See
+!           comments in ByRowGSMap/ByColumnGSMap.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_SparseMatrixDecomp'
@@ -56,7 +56,7 @@
 !-------------------------------------------------------------------------
 !BOP
 !
-! !ROUTINE:  ByColumnGSMap_()--Generate Row-based GlobalSegMap for SparseMatrix
+! !IROUTINE:  ByColumnGSMap_()--Generate Row-based GlobalSegMap for SparseMatrix
 ! 
 ! !INTERFACE:
 
@@ -113,18 +113,18 @@
 !
 ! !REVISION HISTORY: 
 !
-!       13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial API spec.
-!       26Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - add use statements for
-!                 GlobalSegMap_init and GSMap_peLocs.
-!                 Add gsize argument required to GSMap_peLocs.
-!                 Add underscore to ComputeSegments call so it matches
-!                 the subroutine decleration.
-!                 change attribute on starts,lengths, and pe_locs to
-!                 pointer to match GSMap_init.
-!                 add use m_die statement
-!       26Apr01 - J.W. Larson <larson@mcs.anl.gov> - fixed major logic bug
-!                 that had all processes executing some operations that 
-!                 should only occur on the root.
+! 13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial API spec.
+! 26Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - add use statements for
+!           GlobalSegMap_init and GSMap_peLocs.
+!           Add gsize argument required to GSMap_peLocs.
+!           Add underscore to ComputeSegments call so it matches
+!           the subroutine decleration.
+!           change attribute on starts,lengths, and pe_locs to
+!           pointer to match GSMap_init.
+!           add use m_die statement
+! 26Apr01 - J.W. Larson <larson@mcs.anl.gov> - fixed major logic bug
+!           that had all processes executing some operations that 
+!           should only occur on the root.
 !EOP
 !-------------------------------------------------------------------------
 
@@ -244,7 +244,7 @@
 !-------------------------------------------------------------------------
 !BOP
 !
-! !ROUTINE:  ByRowGSMap_()--Generate Row-based GlobalSegMap for SparseMatrix
+! !IROUTINE:  ByRowGSMap_()--Generate Row-based GlobalSegMap for SparseMatrix
 ! 
 ! !INTERFACE:
 
@@ -303,17 +303,17 @@
 !
 ! !REVISION HISTORY: 
 !
-!       13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial API spec.
-!       26Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - add use statements for
-!                 GlobalSegMap_init and GSMap_peLocs.
-!                 Add gsize argument required to GSMap_peLocs.
-!                 Add underscore to ComputeSegments call so it matches
-!                 the subroutine decleration.
-!                 change attribute on starts,lengths, and pe_locs to
-!                  pointer to match GSMap_init.
-!       26Apr01 - J.W. Larson <larson@mcs.anl.gov> - fixed major logic bug
-!                 that had all processes executing some operations that 
-!                 should only occur on the root.
+! 13Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial API spec.
+! 26Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - add use statements for
+!           GlobalSegMap_init and GSMap_peLocs.
+!           Add gsize argument required to GSMap_peLocs.
+!           Add underscore to ComputeSegments call so it matches
+!           the subroutine decleration.
+!           change attribute on starts,lengths, and pe_locs to
+!            pointer to match GSMap_init.
+! 26Apr01 - J.W. Larson <larson@mcs.anl.gov> - fixed major logic bug
+!           that had all processes executing some operations that 
+!           should only occur on the root.
 !EOP
 !-------------------------------------------------------------------------
 
@@ -432,7 +432,7 @@
 !-------------------------------------------------------------------------
 !BOP
 !
-! !ROUTINE:  ComputeSegments_()--Create segments from list data.
+! !IROUTINE:  ComputeSegments_()--Create segments from list data.
 ! 
 ! !INTERFACE:
 
@@ -470,10 +470,10 @@
 !
 ! !REVISION HISTORY: 
 !
-!       18Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial version.
-!       28Aug01 - M.J. Zavislak <zavislak@mcs.anl.gov>
-!                     Changed first sanity check to get size(element_pe_locs)
-!                     instead of size(elements)
+! 18Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+! 28Aug01 - M.J. Zavislak <zavislak@mcs.anl.gov>
+!               Changed first sanity check to get size(element_pe_locs)
+!               instead of size(elements)
 !EOP
 !-------------------------------------------------------------------------
   character(len=*),parameter :: myname_=myname//'ComputeSegments_'

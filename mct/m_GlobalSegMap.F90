@@ -80,10 +80,10 @@
     end type GlobalSegMap
 
     interface init ; module procedure	&
-	initd_,	&	! initialize from all PEs
-	initr_, &	! initialize from the root
-	initp_,	&	! initialize in parallel from replicated arrays
-	initp1_ 	! initialize in parallel from 1 replicated array
+        initd_,	&	! initialize from all PEs
+        initr_, &	! initialize from the root
+        initp_,	&	! initialize in parallel from replicated arrays
+        initp1_ 	! initialize in parallel from 1 replicated array
     end interface
     interface clean ; module procedure clean_ ; end interface
     interface comp_id  ; module procedure comp_id_  ; end interface
