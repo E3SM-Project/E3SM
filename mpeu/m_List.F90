@@ -71,6 +71,7 @@
       public :: clean
       public :: nullify
       public :: index
+      public :: get_indices
       public :: nitem
       public :: get
       public :: identical
@@ -95,9 +96,10 @@
   interface clean; module procedure clean_; end interface
   interface nullify; module procedure nullify_; end interface
   interface index; module procedure	&
-      index_,		&
+      index_,     &
       indexStr_
   end interface
+  interface get_indices; module procedure get_indices_; end interface
   interface nitem; module procedure nitem_; end interface
   interface get  ; module procedure	&
       get_,		&
@@ -1153,7 +1155,6 @@
 
  end subroutine getrange_
 
-
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
@@ -1231,7 +1232,7 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: set_indices_ - Index Multiple Items in a List
+! !IROUTINE: get_indices_ - Index Multiple Items in a List
 !
 ! !DESCRIPTION:  This routine takes as input a {\tt List} argument 
 ! {\tt aList}, and a {\tt CHARACTER} string {Values}, which is a colon-
@@ -1241,54 +1242,91 @@
 ! \begin{verbatim}
 ! 'happy:sleepy:sneezey:grumpy:dopey::bashful:doc'
 ! \end{verbatim}
-! and set\_indices\_() is invoked as follows:
+! and get\_indices\_() is invoked as follows:
 ! \begin{verbatim}
-! call set_indices_(indices, aList, 'sleepy:grumpy:bashful:doc')
+! call get_indices_(indices, aList, 'sleepy:grumpy:bashful:doc')
 ! \end{verbatim}
 ! The array {\tt indices(:)} will be returned with 4 entries:  
 ! ${\tt indices(1)}=2$, ${\tt indices(2)}=4$, ${\tt indices(3)}=6$, and
 ! ${\tt indices(4)}=7$.
 !
+! {\bf N.B.}:  This routine operates on the assumption that each of the 
+! substrings in the colon-delimited string {\tt Values} is an item in 
+! {\tt aList}.  If this assumption is invalid, this routine terminates 
+! execution with an error message.
+!
+! {\bf N.B.}:  The pointer {\tt indices} must be {\tt UNASSOCIATED} on entry 
+! to this routine, and will be {\tt ASSOCIATED} upon return.  After this pointer
+! is no longer needed, it should be deallocated.  Failure to do so will result 
+! in a memory leak.
+!
 ! !INTERFACE:
 
- subroutine set_indices_(indices, aList, values)
+ subroutine get_indices_(indices, aList, Values)
 
 ! !USES:
 !
-      use m_String, only : String,clean
+      use m_stdio
+      use m_die
+      use m_String, only : String
+      use m_String, only : String_clean => clean
+      use m_String, only : String_toChar => toChar
 
       implicit none
 
 ! !INPUT PARAMETERS: 
 !
-      type(List),            intent(in)	 :: aList  ! an indexed string values
-      character(len=*),      intent(in)  :: Values ! ":" delimited names
+      type(List),            intent(in)	:: aList  ! an indexed string values
+      character(len=*),      intent(in) :: Values ! ":" delimited names
 
 ! !OUTPUT PARAMETERS:   
 !
-      integer, dimension(:), intent(out) :: indices
+      integer, dimension(:), pointer    :: indices
 
 ! !REVISION HISTORY:
-!      31May98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 31May98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 12Feb03 - J. Larson <larson@mcs.anl.gov> Working refactored version  
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname_=myname//'::set_indices_'
+  character(len=*),parameter :: myname_=myname//'::get_indices_'
   type(List)   :: tList
   type(String) :: tStr
-  integer :: n,i
+  integer :: i, ierr, n
 
-  call init_(tList,values)
-  n=min(nitem_(tList),size(indices))
+       ! Create working list based on input colon-delimited string
+
+  call init_(tList, values)
+
+
+       ! Count items in tList and allocate indices(:) accordingly
+
+  n = nitem_(tList)
+  allocate(indices(n), stat=ierr)
+  if(ierr /= 0) then
+     write(stderr,'(2a,i8,a)') myname_, &
+	  ':: FATAL--allocate(indices(...) failed with stat=',ierr,&
+	  '.  On entry to this routine, this pointer must be NULL.'
+     call die(myname_)
+  endif
+
+       ! Retrieve each item from tList as a String and index it
 
   do i=1,n
     call get_(tStr,i,tList)
-    indices(i)=indexStr_(aList,tStr)
+    indices(i) = indexStr_(aList,tStr)
+    if(indices(i) == 0) then ! ith item not present in aList!
+       write(stderr,'(4a)') myname_, &
+	    ':: FATAL--item "',String_toChar(tStr),'" not found.'
+       call die(myname_)
+    endif
+    call String_clean(tStr)
   end do
 
-  call clean_(tList)
-  call clean(tStr)
+       ! Clean up temporary List tList
 
- end subroutine set_indices_
+  call clean_(tList)
+
+ end subroutine get_indices_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
@@ -1477,7 +1515,6 @@
 	     ':: FATAL--deallocate(CatBuff) failed.  ierr=',ierr
 	call die(myname_)
      endif
-
 
   endif
 
