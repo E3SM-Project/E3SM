@@ -16,9 +16,6 @@ F90FLAGS        = @F90FLAGS@
 # OF NATIVE REAL TO 8 BIT REAL
 REAL8           = @REAL8@
 
-# SUFFIX FOR MODULE FILES (USUALLY "MOD" or "mod")
-MOD             = @MOD@
-
 # INCLUDE FLAG FOR LOCATING MODULES (-I, -M, or -p)
 INCFLAG         = @INCLUDEFLAG@
 
@@ -64,12 +61,14 @@ F90RULECPP      = @F90RULECPP@
 
 # INSTALLATION VARIABLES
 
-# INSTALL COMMAND - HARD CODE IT FOR NOW
+# INSTALL COMMAND - HARD CODED FOR NOW
 INSTALL         = install
 
 # INSTALLATION DIRECTORIES
 libdir          = @prefix@/lib
 includedir      = @prefix@/include
 
-
+# OTHER COMMANDS #
+RM		= rm -f
+AR		= ar cq
 
