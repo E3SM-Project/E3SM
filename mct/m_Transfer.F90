@@ -134,6 +134,10 @@
 
 !--------------------------------------------------------
 
+! Return if no one to send to
+  if(Rout%nprocs .eq. 0 ) RETURN
+
+
 !check Av size against Router
 !
   if(lsize(aV) /= Rout%lAvsize) then
@@ -288,6 +292,8 @@ end subroutine isend_
   character(len=*),parameter :: myname_=myname//'::waitsend_'
   integer ::   proc,ier
 
+! Return if nothing to wait for
+  if(Rout%nprocs .eq. 0 ) RETURN
 
   ! wait for all sends to complete
   if(Rout%numiatt .ge. 1) then
@@ -442,6 +448,9 @@ end subroutine send_
 
 !--------------------------------------------------------
 
+! Return if no one to receive from
+  if(Rout%nprocs .eq. 0 ) RETURN
+
 !check Av size against Router
 !
   if(lsize(aV) /= Rout%lAvsize) then
@@ -582,6 +591,9 @@ end subroutine irecv_
   integer ::   proc,ier,j,k,nseg
   integer ::   AttrIndex,VectIndex,seg_start,seg_end
   logical ::   DoSum
+
+! Return if nothing to wait for
+  if(Rout%nprocs .eq. 0 ) RETURN
 
 !check Av size against Router
 !
