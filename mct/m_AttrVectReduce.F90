@@ -100,7 +100,7 @@
 !
 ! {\bf N.B.}:  The output {\tt AttrVect} argument {\tt outAV} is
 ! allocated memory, and must be destroyed by invoking the routine 
-! {\tt AttrVect_clean()} when it is no longer needed.  Failure to 
+! {\tt AttrVect\_clean()} when it is no longer needed.  Failure to 
 ! do so will result in a memory leak.
 !
 ! !INTERFACE:
@@ -270,7 +270,7 @@
 !
 ! {\bf N.B.}:  The output {\tt AttrVect} argument {\tt outAV} is
 ! allocated memory, and must be destroyed by invoking the routine 
-! {\tt AttrVect_clean()} when it is no longer needed.  Failure to 
+! {\tt AttrVect\_clean()} when it is no longer needed.  Failure to 
 ! do so will result in a memory leak.
 !
 ! !INTERFACE:
@@ -405,7 +405,7 @@
 !
 ! {\bf N.B.}:  The output {\tt AttrVect} argument {\tt outAV} is
 ! allocated memory, and must be destroyed by invoking the routine 
-! {\tt AttrVect_clean()} when it is no longer needed.  Failure to 
+! {\tt AttrVect\_clean()} when it is no longer needed.  Failure to 
 ! do so will result in a memory leak.
 !
 ! !INTERFACE:
@@ -516,7 +516,7 @@
 !
 ! {\bf N.B.}:  The output {\tt AttrVect} argument {\tt outAV} is
 ! allocated memory, and must be destroyed by invoking the routine 
-! {\tt AttrVect_clean()} when it is no longer needed.  Failure to 
+! {\tt AttrVect\_clean()} when it is no longer needed.  Failure to 
 ! do so will result in a memory leak.
 !
 ! !INTERFACE:
@@ -650,7 +650,7 @@
 !
 ! {\bf N.B.}:  The output {\tt AttrVect} argument {\tt outAV} is
 ! allocated memory, and must be destroyed by invoking the routine 
-! {\tt AttrVect_clean()} when it is no longer needed.  Failure to 
+! {\tt AttrVect\_clean()} when it is no longer needed.  Failure to 
 ! do so will result in a memory leak.
 !
 ! !INTERFACE:
