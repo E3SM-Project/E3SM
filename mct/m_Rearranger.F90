@@ -506,7 +506,7 @@
 !
 ! !INTERFACE:
 
- subroutine rearrange_(SourceAV,TargetAV,InRearranger,Tag,Sum)
+ subroutine rearrange_(SourceAV,TargetAV,InRearranger,Tag,Sum,Vector)
 
 !
 ! !USES:
@@ -536,11 +536,14 @@
    type(Rearranger), target,   intent(in)      :: InRearranger
    integer,          optional, intent(in)      :: Tag
    logical,          optional, intent(in)      :: Sum
+   logical,          optional, intent(in)      :: Vector
 
 ! !REVISION HISTORY:
 ! 31Jan02 - E.T. Ong <eong@mcs.anl.gov> - initial prototype
 ! 20Mar02 - E.T. Ong <eong@mcs.anl.gov> - working code
 ! 08Jul02 - E.T. Ong <eong@mcs.anl.gov> - change intent of Target,Source
+! 29Oct03 - R. Jacob <jacob@mcs.anl.gov> - add optional argument vector
+!           to control use of vector-friendly mods provided by Fujitsu.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'Rearrange_'
@@ -550,6 +553,7 @@
   integer ::    proc,numprocs,nseg
   integer ::    mp_Type_rp
   integer ::    mytag
+  logical ::    usevector
 !-----------------------------------------------------------------------
 
    ! DECLARE STRUCTURES FOR MPI ARGUMENTS.
@@ -621,6 +625,11 @@
       "Number of attributes in SourceAV and TargetAV do not match")
       call die(myname_,"nRAttr(SourceAV)", nRAttr(SourceAV), &
                         "nRAttr(TargetAV)", nRAttr(TargetAV))
+   endif
+
+   usevector=.false.
+   if(present(Vector)) then
+    if(Vector) usevector=.true.
    endif
 
    ! ASSIGN VARIABLES
@@ -903,7 +912,28 @@
 
   ! LOAD THE LOCAL PIECES OF THE INTEGER AND REAL VECTOR
 
-  do localindex=1,InRearranger%LocalSize
+  if(usevector) then
+    do IAttrIndex=1,numi
+!CDIR SELECT(VECTOR)
+     do localindex=1,InRearranger%LocalSize
+        TrgVectIndex = InRearranger%LocalPack(1,localindex)
+        SrcVectIndex = InRearranger%LocalPack(2,localindex)
+        TargetAV%iAttr(IAttrIndex,TrgVectIndex) = &
+             SourceAV%iAttr(IAttrIndex,SrcVectIndex)
+      enddo
+    enddo
+    do RAttrIndex=1,numr
+!CDIR SELECT(VECTOR)
+     do localindex=1,InRearranger%LocalSize
+        TrgVectIndex = InRearranger%LocalPack(1,localindex)
+        SrcVectIndex = InRearranger%LocalPack(2,localindex)
+        TargetAV%rAttr(RAttrIndex,TrgVectIndex) = &
+             SourceAV%rAttr(RAttrIndex,SrcVectIndex)
+     enddo
+    enddo
+
+  else
+    do localindex=1,InRearranger%LocalSize
      TrgVectIndex = InRearranger%LocalPack(1,localindex)
      SrcVectIndex = InRearranger%LocalPack(2,localindex)
      do IAttrIndex=1,numi
@@ -914,7 +944,8 @@
 	TargetAV%rAttr(RAttrIndex,TrgVectIndex) = &
 	     SourceAV%rAttr(RAttrIndex,SrcVectIndex)
      enddo
-  enddo
+    enddo
+  endif
 
 !:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
