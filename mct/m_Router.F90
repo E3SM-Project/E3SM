@@ -184,6 +184,8 @@
 !       03May01 - R.L. Jacob <jacob@mcs.anl.gov> - Initial code brought
 !                 in from old init routine.
 !
+!       31Jul01 - Jace A Mogill <mogill@cray.com>
+!                 Rewrote to reduce number of loops and temp storage
 !EOP -------------------------------------------------------------------
 
   character(len=*),parameter :: myname_=myname//'::ExGMapGMap_'
@@ -196,21 +198,25 @@
   integer,dimension(:,:),pointer :: tmpsegcount,tmpsegstart
   logical :: firstpoint
   integer :: maxsegcount,mmax,othercomp
+  integer :: procn      ! Index over processors
+  integer :: my_segn    ! Index into local segments
+  integer :: r_segn     ! Index into remote segments
+  integer :: my_left    ! Left point in local segment
+  integer :: my_right   ! Right point in local segment
+  integer :: r_left     ! Left point in remote segment
+  integer :: r_right    ! Right point in remote segment
+  integer :: v_left     ! Leftmost point in overlap
+  integer :: v_right    ! Rightmost point in overlap
+  integer :: nsegs_overlap ! Number of segments that overlap between two procs
+
 
   call MP_comm_rank(mycomm,myPid,ier)
   if(ier/=0) call MP_perr_die(myname_,'MP_comm_rank',ier)
-
-  count =0
-  mmax=0
-  firstpoint = .TRUE.
 
   mysize = ProcessStorage(GSMap,myPid)
   othercomp = GSMap_comp_id(RGSMap)
 
 ! allocate space for searching
-  allocate(hitparade(mysize),stat=ier)
-  if(ier/=0) call MP_perr_die(myname_,'allocate(hitparade,..)',ier)
-
   allocate(tmpsegcount(ThisMCTWorld%nprocspid(othercomp),mysize),&
            tmpsegstart(ThisMCTWorld%nprocspid(othercomp),mysize),&
  	   tmppe_list(ThisMCTWorld%nprocspid(othercomp)),stat=ier)
@@ -218,81 +224,44 @@
 
   tmpsegcount=0
   tmpsegstart=0
+  count =0
+  maxsegcount=0
+!.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  
 
-! form the vector of points this processor owns.
-  call OrderedPoints(GSMap,myPid,myvector) 
-
-!  check each processor of remote map to see what I have in common
-  do i=1,ThisMCTWorld%nprocspid(othercomp)
-
-      hitparade=.FALSE.
-
-! build the vector of GSMap points handled on remote proc i-1
-
-      call OrderedPoints(RGSMap,i-1,rvector) 
-      rlsize=ProcessStorage(RGSMap,i-1)
-
-
-! check every point in my local vector against every point of
-! the remote procs vector.  Record hits.
-      do j=1,mysize
-	do k=1,rlsize
-	  if(myvector(j)==rvector(k)) hitparade(j)=.TRUE.
-        enddo
-      enddo
-
-!     if(myPid==0) then
-! 	write(*,*)"ROUTER",i,hitparade,rvector(1),rvector(rlsize)
-!     endif
-
-! if no hits found, go look at the next processor.
-      if(.NOT.ANY(hitparade)) then
-        deallocate(rvector,stat=ier)
-        if(ier/=0) call MP_perr_die(myname_,'deallocate()',ier)
-        tmppe_list(i)=.FALSE.
-	CYCLE
-      endif
-      
-! if reached this point, then this processor has some points
-      count=count+1
-      tmppe_list(i)=.TRUE.
-
-!  now find and count them.
-      firstpoint=.TRUE.
-      m=0
-
-! search my vector again
-      do j=1,mysize
-	if(hitparade(j)) then
-!       found a segment.  note firstpoint and start counting
-	  if(firstpoint) then 
-	    m=m+1
-	    tmpsegstart(count,m)=myvector(j)
-	    tmpsegcount(count,m)=1
-	    firstpoint=.FALSE.
-          else
-	    tmpsegcount(count,m)=tmpsegcount(count,m)+1
-	  endif
-        else
-! if firstpoint is false, then I just finished counting a
-! segment and need to reset it in case I find another one.
-	  if(.NOT.firstpoint) then
-	    firstpoint=.TRUE.
-          endif
+  do procn = 1, ThisMCTWorld%nprocspid(othercomp)
+     nsegs_overlap = 0
+     tmppe_list(procn) = .FALSE.
+     do my_segn = 1, GSMap%ngseg
+        if(GSMap%pe_loc(my_segn) == myPid) then
+           do r_segn = 1, RGSMap%ngseg
+              if(RGSMap%pe_loc(r_segn) == procn - 1) then
+                 my_left = GSMap%start(my_segn)
+                 my_right= GSMap%length(my_segn) + my_left - 1
+                 r_left  = RGSMap%start(r_segn)
+                 r_right = RGSMap%length(r_segn) + r_left - 1
+                 if( .not. (my_right < r_left   .or.  &
+                            my_left  > r_right  .or.  &
+                            my_left  > r_right  .or.  &
+                            my_right < r_left) ) then
+                    v_left  = max(my_left, r_left)
+                    v_right = min(my_right, r_right)
+                    if(nsegs_overlap == 0) then
+                       count = count + 1
+                       tmppe_list(procn) = .TRUE.
+                    endif
+                    nsegs_overlap = nsegs_overlap + 1
+                    tmpsegstart(count, nsegs_overlap) = v_left
+                    tmpsegcount(count, nsegs_overlap) = v_right - v_left + 1
+                 endif
+              endif
+           enddo
         endif
-      enddo
-!----end of search through my vector again
- 
-!     if(myPid==0) then
-!       do k=1,m
-! 	 write(*,*)"ROUTERD",i,k,tmpsegcount(i,k),tmpsegstart(i,k)
-!       enddo
-!     endif
-
-      mmax=MAX(m,mmax)
-      deallocate(rvector,stat=ier)
-      if(ier/=0) call MP_perr_die(myname_,'deallocate()',ier)
+     enddo
+     maxsegcount = max(nsegs_overlap, maxsegcount)
   enddo
+
+!.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  
+
 
 !!!!!!!!!!!!!!!!!!!!end of search through remote GSMap
 
@@ -302,9 +271,6 @@
   Rout%comp2id = othercomp
   Rout%type = "2way"
   Rout%nprocs = count
-
-    maxsegcount=mmax
-!   if(myPid==0)  write(*,*)"COUNT",count,maxsegcount
 
     allocate(Rout%pe_list(count),Rout%num_segs(count), &
     Rout%seg_starts(count,maxsegcount), &
@@ -353,8 +319,7 @@
     endif
        
       
-  deallocate(tmpsegstart,tmpsegcount,tmppe_list, &
-    myvector,hitparade,stat=ier)
+  deallocate(tmpsegstart,tmpsegcount,tmppe_list,stat=ier)
   if(ier/=0) call MP_perr_die(myname_,'deallocate()',ier)
 
  end subroutine initp_
