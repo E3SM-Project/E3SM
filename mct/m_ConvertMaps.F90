@@ -392,7 +392,10 @@
 
      GMap%comp_id = GlobalSegMap_comp_id(GSMap)
      GMap%gsize = GlobalSegMap_gsize(GSMap)
+
+       ! lsize is not defined in this case!!! -ETO
 !     GMap%lsize = GlobalSegMap_lsize(GSMap)
+     GMap%lsize = -1
 
        ! Indexing components:
 
