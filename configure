@@ -3396,6 +3396,9 @@ if echo $f90_version | grep -i workshop >/dev/null 2>&1; then
 fi
 if echo $f90_version | grep -i mipspro >/dev/null 2>&1; then
    MACHDEFS="-DCPRMIPSPRO $MACHDEFS"
+   if test -z "$FCFLAGS"; then
+      FCFLAGS="-O3"
+   fi
    if test -z "$CCFLAGS"; then
       CCFLAGS="-64"
    fi
