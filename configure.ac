@@ -223,10 +223,11 @@ fi
 
 # Set FC to MPIF90 if it exists, otherwise to F90.
 AC_ARG_VAR(FC,The Fortran compiler)
+FC=$F90
 if test "$F90" != "$MPIF90";  then
-   FC=$MPIF90
-else
-   FC=$F90  
+   if test -n "$MPILIBS"; then
+      FC=$MPIF90
+   fi
 fi
 
 # Set the following variables by checking the compiler name
