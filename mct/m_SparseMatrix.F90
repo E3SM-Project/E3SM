@@ -1562,7 +1562,7 @@
 
   integer :: i, igcol, lsize
 
-  igcol = AttrVect_indexIA(sMat%data, 'lcol')
+  igcol = AttrVect_indexIA(sMat%data, 'gcol')
   lsize = AttrVect_lsize(sMat%data)
 
        ! Initialize start_col and end_col:
