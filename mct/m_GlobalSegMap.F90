@@ -1667,7 +1667,7 @@
 
        ! Clean up allocated memory:
 
-  allocate(start(ngseg), length(ngseg), perm(ngseg), stat=ierr)
+  deallocate(start, length, perm, stat=ierr)
   if (ierr /= 0) then
      call MP_perr_die(myname_,'deallocate(start...',ierr)
   endif
