@@ -1543,6 +1543,7 @@
       use m_List,  only : List_allocated => allocated
       use m_List,  only : List_copy => copy
       use m_List,  only : List_exportToChar => exportToChar
+      use m_List,  only : List_clean => clean
 
       implicit none
 
@@ -1582,6 +1583,7 @@
   if(List_allocated(aV%iList)) then
      call List_copy(iListCopy,aV%iList)
      exportIListToChar_ = List_exportToChar(iListCopy)
+     call List_clean(iListCopy)
   else
      exportIListToChar_ = ''
   endif
@@ -1619,6 +1621,7 @@
       use m_List,  only : List_allocated => allocated
       use m_List,  only : List_copy => copy
       use m_List,  only : List_exportToChar => exportToChar
+      use m_List,  only : List_clean => clean
 
       implicit none
 
@@ -1658,6 +1661,7 @@
   if(List_allocated(aV%rList)) then
      call List_copy(rListCopy,aV%rList)
      exportRListToChar_ = List_exportToChar(rListCopy)
+     call List_clean(rListCopy)
   else
      exportRListToChar_ = ''
   endif
