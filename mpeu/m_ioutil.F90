@@ -394,7 +394,7 @@ end function luavail
 
     subroutine luflush(unit)
       use m_stdio, only : stdout
-#ifdef NAG
+#ifdef CPRNAG
       use F90_UNIX_IO,only : flush
 #endif
       implicit none
@@ -420,20 +420,20 @@ end function luavail
 
 	! The following call may be system dependent.
 
-#ifdef sysIRIX64
+#ifdef SYSIRIX64
   call flush(lu,ier)
 #endif
 
-#ifdef sysAIX
+#ifdef SYSAIX
   call flush_(lu)      ! Function defined in xlf reference document.
 #endif
 
-#if NAG || sysUNICOS
+#if CPRNAG || SYSUNICOS
   call flush(lu,ier)
-#elif IA64
+#elif CPRINTEL
 ! no flush on Linux IA64 with Intel compiler
 #else
-# if sysLinux || sysOSF1 || sysSunOS || sysUNICOS || sysT3E || sysFujitsu || sysSUPER_UX
+# if SYSLINUX || SYSOSF1 || SYSSUNOS || SYSUNICOS || SYST3E || SYSFUJITSU || SYSSUPERUX
    call flush(lu)
 # endif
 #endif
