@@ -11,27 +11,28 @@
 !
 ! !INTERFACE:
 
- subroutine MCT_Send(aV, Rout,iList,rList)
+ subroutine MCT_Send(aV, Rout, iList, rList)
 
 !
 ! !USES:
 !
-      use m_Router,only  : Router
-      use m_AttrVect,only : AttrVect
-      use m_AttrVect,only : nIAttr,nRAttr
-      use m_MCTWorld,only :MCTWorld
-      use m_MCTWorld,only :ThisMCTWorld
-      use m_list,only:	List
-      use m_list,only:  nitem
+      use m_MCTWorld, only : MCTWorld
+      use m_MCTWorld, only : ThisMCTWorld
+      use m_AttrVect, only : AttrVect
+      use m_AttrVect, only : nIAttr,nRAttr
+      use m_Router,   only : Router
+      use m_List,     only : List
+
       use m_mpif90
       use m_die
       use m_stdio
 
       implicit none
-      Type(AttrVect),intent(in) :: 	aV	
-      Type(Router),intent(in) ::	Rout
-      Type(List),optional,intent(in) ::	iList
-      Type(List),optional,intent(in) ::	rList
+
+      Type(AttrVect),       intent(in) :: aV	
+      Type(Router),         intent(in) :: Rout
+      Type(List), optional, intent(in) :: iList
+      Type(List), optional, intent(in) :: rList
 
 ! !REVISION HISTORY:
 !      07Feb01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
@@ -44,14 +45,17 @@
 !      03Aug01 - E. Ong <eong@mcs.anl.gov> - Explicitly specify the starting
 !                address in mpi_send.  
 !      15Feb02 - R. Jacob <jacob@mcs.anl.gov> - Use MCT_comm
+!      26Mar02 - E. Ong <eong@mcs.anl.gov> - Apply faster copy order
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_='MCT_Send'
-  integer ::	numi,numr,i,proc,buffsize,j,k
-  integer ::	ier,nseg,mycomp,othercomp,tag
+  integer ::	numi,numr,i,j,k,ier
+  integer ::    mycomp,othercomp
+  integer ::    AttrIndex,VectIndex,seg_start,seg_end
+  integer ::    proc,nseg,tag
   integer ::    mp_Type_rp1
-  integer,dimension(:),pointer	:: ireqs,rreqs
-  integer,dimension(:,:),allocatable	:: istatus,rstatus
+  integer, dimension(:), pointer	     :: ireqs,rreqs
+  integer, dimension(:,:), allocatable       :: istatus,rstatus
 
 ! declare a pointer structure for the real data
   type :: rptr
@@ -77,13 +81,18 @@
   numi = nIAttr(aV)
   numr = nRAttr(aV)
 
-
 !!!!!!!!!!!!!! IF SENDING INTEGER DATA
   if(numi .ge. 1) then
 
 ! allocate the number of pointers needed
   allocate(ip1(Rout%nprocs),stat=ier)
   if(ier/=0) call die(myname_,'allocate(ip1)',ier)
+
+! allocate buffers to hold all outgoing data
+  do proc=1,Rout%nprocs
+     allocate(ip1(proc)%pi(Rout%locsize(proc)*numi),stat=ier)
+     if(ier/=0) call die(myname_,'allocate(ip1%pi)',ier)
+  enddo
 
 ! allocate MPI request array
   allocate(ireqs(Rout%nprocs),stat=ier)
@@ -93,11 +102,6 @@
   allocate(istatus(MP_STATUS_SIZE,Rout%nprocs),stat=ier)
   if(ier/=0) call die(myname_,'allocate(istatus)',ier)
 
-! allocate buffers to hold all outgoing data
-   do proc=1,Rout%nprocs
-    allocate(ip1(proc)%pi(Rout%locsize(proc)*numi),stat=ier)
-    if(ier/=0) call die(myname_,'allocate(ip1%pi)',ier)
-   enddo
   endif
 
 !!!!!!!!!!!!!! IF SENDING REAL DATA
@@ -107,6 +111,12 @@
   allocate(rp1(Rout%nprocs),stat=ier)
   if(ier/=0) call die(myname_,'allocate(rp1)',ier)
 
+! allocate buffers to hold all outgoing data
+  do proc=1,Rout%nprocs
+     allocate(rp1(proc)%pr(Rout%locsize(proc)*numr),stat=ier)
+     if(ier/=0) call die(myname_,'allocate(rp1%pr)',ier)
+  enddo
+
 ! allocate MPI request array
   allocate(rreqs(Rout%nprocs),stat=ier)
   if(ier/=0) call die(myname_,'allocate(rreqs)',ier)
@@ -115,135 +125,108 @@
   allocate(rstatus(MP_STATUS_SIZE,Rout%nprocs),stat=ier)
   if(ier/=0) call die(myname_,'allocate(rstatus)',ier)
 
-! allocate buffers to hold all outgoing data
-   do proc=1,Rout%nprocs
-    allocate(rp1(proc)%pr(Rout%locsize(proc) *numr),stat=ier)
-    if(ier/=0) call die(myname_,'allocate(rp1%pr)',ier)
-   enddo
+  mp_Type_rp1=MP_Type(rp1(1)%pr(1))
 
   endif
-! if(myproc==0) then
-! do proc=1,Rout%nprocs
-!  write(*,*)'Send',size(rp1(proc)%pr),Rout%pe_list(proc),ThisMCTWorld%mygrank
-! enddo
-! endif
 
 
+  ! Load data going to each processor
+  do proc = 1,Rout%nprocs
+    
+     j=1
+     k=1
 
-! Load data going to each processor
-  do proc=1,Rout%nprocs
+     ! load the correct pieces of the integer and real vectors
+     do nseg = 1,Rout%num_segs(proc)
+	seg_start = Rout%seg_starts(proc,nseg)
+	seg_end = seg_start + Rout%seg_lengths(proc,nseg)-1
+	do VectIndex = seg_start,seg_end
+	   do AttrIndex = 1,numi
+	      ip1(proc)%pi(j) = aV%iAttr(AttrIndex,VectIndex)
+	      j=j+1
+	   enddo
+	   do AttrIndex = 1,numr
+	      rp1(proc)%pr(k) = aV%rAttr(AttrIndex,VectIndex)
+	      k=k+1
+	   enddo
+	enddo
+     enddo
 
+     ! Send the integer data
+     if(numi .ge. 1) then
 
-! Load the integer data
-    if(numi .ge. 1) then
+	! corresponding tag logic must be in MCT_Recv
+	tag = 100000*mycomp + 1000*ThisMCTWorld%mygrank + &
+	      500 + Rout%pe_list(proc)
 
-      k=1
-! load all integer vectors to be sent into buffer
-      do j=1,numi
+	call MPI_ISEND(ip1(proc)%pi(1),Rout%locsize(proc)*numi,MP_INTEGER,&
+	       Rout%pe_list(proc),tag,ThisMCTWorld%MCT_comm,ireqs(proc),ier)
 
-! load the correct pieces of this particular integer vector
-       do nseg=1,Rout%num_segs(proc)
-	 do i=0,Rout%seg_lengths(proc,nseg)-1
-           ip1(proc)%pi(k)=aV%iAttr(j,Rout%seg_starts(proc,nseg)+i)
-	   k=k+1
-	 enddo
-       enddo
+	if(ier /= 0) call MP_perr_die(myname_,'MPI_ISEND(ints)',ier)
 
-      enddo
+     endif
+
+     ! Send the real data
+     if(numr .ge. 1) then
+
+       ! corresponding tag logic must be in MCT_Recv
+       tag = 100000*mycomp + 1000*ThisMCTWorld%mygrank + &
+	     700 + Rout%pe_list(proc)
+
+       call MPI_ISEND(rp1(proc)%pr(1),Rout%locsize(proc)*numr,mp_Type_rp1,&
+	      Rout%pe_list(proc),tag,ThisMCTWorld%MCT_comm,rreqs(proc),ier)
+
+       if(ier /= 0) call MP_perr_die(myname_,'MPI_ISEND(reals)',ier)
+
     endif
 
-
-! Load the real data
-    if(numr .ge. 1) then
-
-      k=1
-! load all real vectors to be sent into buffer
-      do j=1,numr
-
-! load the correct pieces of this particular real vector
-       do nseg=1,Rout%num_segs(proc)
-	 do i=0,Rout%seg_lengths(proc,nseg)-1
-           rp1(proc)%pr(k)=aV%rAttr(j,Rout%seg_starts(proc,nseg)+i)
-	   k=k+1
-	 enddo
-       enddo
-
-      enddo
-    endif
   enddo
 
-! send the integer data
-  if(numi .ge. 1) then
-    do proc=1,Rout%nprocs
 
-! corresponding tag logic must be in MCT_Recv
-      tag = 100000*mycomp + 1000*ThisMCTWorld%mygrank + &
-	    500 + Rout%pe_list(proc)
-      call MPI_ISEND(ip1(proc)%pi(1),Rout%locsize(proc)*numi,MP_INTEGER,&
-	 Rout%pe_list(proc),tag,ThisMCTWorld%MCT_comm,ireqs(proc),ier)
-      if(ier /= 0) call MP_perr_die(myname_,'MPI_ISEND(ints)',ier)
-    enddo
-  endif
-
-! send the real data
-  if(numr .ge. 1) then
-    mp_Type_rp1=MP_Type(rp1(1)%pr(1))
-    do proc=1,Rout%nprocs
-! corresponding tag logic must be in MCT_Recv
-      tag = 100000*mycomp + 1000*ThisMCTWorld%mygrank + &
-	    700 + Rout%pe_list(proc)
-!     write(*,*)"SENDR",ThisMCTWorld%mygrank,Rout%pe_list(proc),tag
-      call MPI_ISEND(rp1(proc)%pr(1),Rout%locsize(proc)*numr,mp_Type_rp1, &
-	 Rout%pe_list(proc),tag,ThisMCTWorld%MCT_comm,rreqs(proc),ier)
-      if(ier /= 0) call MP_perr_die(myname_,'MPI_ISEND(reals)',ier)
-    enddo
-  endif
-
-! wait for all sends to complete
+  ! wait for all sends to complete
   if(numi .ge. 1) then
 
-   call MPI_WAITALL(Rout%nprocs,ireqs,istatus,ier)
-   if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL(ints)',ier)
+     call MPI_WAITALL(Rout%nprocs,ireqs,istatus,ier)
+     if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL(ints)',ier)
 
-   ! Deallocate memory to prevent leaks!
+     do proc=1,Rout%nprocs
+	deallocate(ip1(proc)%pi,stat=ier)
+	if(ier/=0) call die(myname_,'deallocate(ip1%pi)',ier)
+     enddo
 
-   do proc=1,Rout%nprocs
-      deallocate(ip1(proc)%pi,stat=ier)
-      if(ier/=0) call die(myname_,'deallocate(ip1%pi)',ier)
-   enddo
-
-   deallocate(ip1,stat=ier)
-   if(ier/=0) call die(myname_,'deallocate(ip1)',ier)
+     deallocate(ip1,stat=ier)
+     if(ier/=0) call die(myname_,'deallocate(ip1)',ier)
        
-   deallocate(ireqs,stat=ier)
-   if(ier/=0) call die(myname_,'deallocate(ireqs)',ier)
+     deallocate(ireqs,stat=ier)
+     if(ier/=0) call die(myname_,'deallocate(ireqs)',ier)
 
-   deallocate(istatus,stat=ier)
-   if(ier/=0) call die(myname_,'deallocate(istatus)',ier)
+     deallocate(istatus,stat=ier)
+     if(ier/=0) call die(myname_,'deallocate(istatus)',ier)
 
   endif
 
-  if(numr .ge. 1)   then
-   call MPI_WAITALL(Rout%nprocs,rreqs,rstatus,ier)
-   if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL(reals)',ier)
+  if(numr .ge. 1) then
 
-   do proc=1,Rout%nprocs
-      deallocate(rp1(proc)%pr,stat=ier)
-      if(ier/=0) call die(myname_,'deallocate(rp1%pi)',ier)
-   enddo
+     call MPI_WAITALL(Rout%nprocs,rreqs,rstatus,ier)
+     if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL(reals)',ier)
 
-   deallocate(rp1,stat=ier)
-   if(ier/=0) call die(myname_,'deallocate(rp1)',ier)
+     do proc=1,Rout%nprocs
+	deallocate(rp1(proc)%pr,stat=ier)
+	if(ier/=0) call die(myname_,'deallocate(rp1%pi)',ier)
+     enddo
 
-   deallocate(rreqs,stat=ier)
-   if(ier/=0) call die(myname_,'deallocate(rreqs)',ier)
+     deallocate(rp1,stat=ier)
+     if(ier/=0) call die(myname_,'deallocate(rp1)',ier)
 
-   deallocate(rstatus,stat=ier)
-   if(ier/=0) call die(myname_,'deallocate(rstatus)',ier)
+     deallocate(rreqs,stat=ier)
+     if(ier/=0) call die(myname_,'deallocate(rreqs)',ier)
+
+     deallocate(rstatus,stat=ier)
+     if(ier/=0) call die(myname_,'deallocate(rstatus)',ier)
+
   endif
 
 
-
-end subroutine
+end subroutine MCT_Send
 
 
