@@ -11,8 +11,8 @@
 !
 ! This module provides communications support for the {\tt GlobalSegMap} 
 ! datatype.  Both blocking and non-blocking point-to-point communications 
-! are supported (i.e., analogues to {\tt MPI\_SEND()/MPI\_RECV()} and 
-! {\tt MPI\_ISEND()/MPI\_IRECV()}).  A broadcast method is also supplied.
+! are provided for send (analogues to {\tt MPI\_SEND()/MPI\_ISEND()})
+! A receive and broadcast method is also supplied.
 !
 ! !INTERFACE:
 
@@ -30,8 +30,8 @@
       public :: bcast
 
       interface bcast ; module procedure bcast_ ; end interface
-      interface send ; module procedure send_ ; end interface
-      interface recv ; module procedure recv_ ; end interface
+      interface send  ; module procedure send_  ; end interface
+      interface recv  ; module procedure recv_  ; end interface
       interface isend ; module procedure isend_ ; end interface
 
 ! !REVISION HISTORY:
@@ -55,7 +55,7 @@
 ! {\tt comp\_id}. The input {\tt INTEGER} argument {\tt TagBase} 
 ! is used to generate tags for the messages associated with this operation; 
 ! there are six messages involved, so the user should avoid using tag 
-! values {\tt TagBase} and {\tt TagBase + 6}.  All six messages are blocking.
+! values {\tt TagBase} and {\tt TagBase + 5}.  All six messages are blocking.
 ! The success (failure) of this operation is reported in the zero 
 ! (non-zero) value of the optional {\tt INTEGER} output variable {\tt status}.
 !
@@ -165,12 +165,15 @@
 ! {\tt comp\_id}  The input {\tt INTEGER} argument {\tt TagBase} 
 ! is used to generate tags for the messages associated with this operation; 
 ! there are six messages involved, so the user should avoid using tag 
-! values {\tt TagBase} and {\tt TagBase + 6}.  All six messages are non-
+! values {\tt TagBase} and {\tt TagBase + 5}.  All six messages are non-
 ! blocking, and the request handles for them are returned in the output
 ! {\tt INTEGER} array {\tt reqHandle}, which can be checked for completion 
 ! using any of MPI's wait functions.  The success (failure) of 
 ! this operation is reported in the zero (non-zero) value of the optional 
 ! {\tt INTEGER} output variable {\tt status}.
+!
+! {\bf N.B.}:  Data is sent directly out of {\tt outgoingGSMap} so it
+! must not be deleted until the send has completed.
 !
 ! {\bf N.B.}:  The array {\tt reqHandle} represents allocated memory that 
 ! must be deallocated when it is no longer needed.  Failure to do so will 
@@ -287,7 +290,7 @@
 ! {\tt comp\_id}. The input {\tt INTEGER} argument {\tt TagBase} 
 ! is used to generate tags for the messages associated with this operation; 
 ! there are six messages involved, so the user should avoid using tag 
-! values {\tt TagBase} and {\tt TagBase + 6}. The success (failure) of this
+! values {\tt TagBase} and {\tt TagBase + 5}. The success (failure) of this
 ! operation is reported in the zero (non-zero) value of the optional {\tt INTEGER} 
 ! output variable {\tt status}.
 !
