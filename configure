@@ -3118,6 +3118,10 @@ if echo $f90_version | grep -i mipspro >/dev/null 2>&1; then
    REAL8="-r8"
    BIT64="-64"
 fi
+if echo $f90_version | grep -i compaq >/dev/null 2>&1; then
+   MACHDEFS="-DCPRCOMPAQ $MACHDEFS"
+   MPILIBS="$MPILIBS -lelan"
+fi
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
