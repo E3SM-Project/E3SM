@@ -1176,7 +1176,7 @@ contains
        ! Step 3.  Send CHARACTER portion of String DummStr 
        ! to process dest.
 
- call MPI_SEND(DummStr%c, length, MP_CHARACTER, dest, TagBase+1, &
+ call MPI_SEND(DummStr%c(1), length, MP_CHARACTER, dest, TagBase+1, &
                comm, ierr)
   if(ierr /= 0) then
      if(present(status)) then
@@ -1276,7 +1276,7 @@ contains
        ! Step 2.  Send CHARACTER portion of String DummStr 
        ! to process dest.
 
- call MPI_RECV(DummStr%c, length, MP_CHARACTER, source, TagBase+1, &
+ call MPI_RECV(DummStr%c(1), length, MP_CHARACTER, source, TagBase+1, &
                comm, MPstatus, ierr)
   if(ierr /= 0) then
      if(present(status)) then
