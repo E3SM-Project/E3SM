@@ -28,7 +28,7 @@
 #EOP
 #-----------------------------------------------------------------------
 
-_Dsys		= -DsysSUPER_UX -UES
+_Dsys		= -DsysSUPER_UX
 _Dnod		= 
 
 # Environments
@@ -38,9 +38,9 @@ _Dnod		=
 
 _LMPI		= 
 _lMPI		= 
-_IMPI		= -I/usr/include
+_IMPI		= 
 
-#_R		= -ew
+#_R		= 
 
 _Iconf		= $(_IMPI)
 _I		= $(_IMPI)
@@ -54,29 +54,16 @@ F90		= esmpif90
 FC		= $(F90)
 CC		= escc
 
-#_Ftrace                = -ftrace
-#_Ftrace                = -Wf,"-vampir" -vampir
-#_Ftrace                = -vampir
 
-# ES orignal
-#FFLAGS         = $(_R) -C hopt
-#FFLAGS_O1      = $(_R) -C hopt
-#FFLAGS_O2      = $(_R) -C hopt
-#
-#FFLAGS         = $(_R) -C vsafe -Wf"-pvctl fullmsg -L fmtlist transform map" $(_Ftrace)
-FFLAGS          = $(_R) -C vopt -Wf"-pvctl fullmsg -L fmtlist transform map" $(_Ftrace)
-#
-#INLINE         = -pi exp=get_,indexstr_,index_ expin=m_List.F90
-#FFLAGS         = $(_R) -C vopt $(INLINE) -Wf"-pvctl fullmsg -L fmtlist transform map" $(_Ftrace) $(INLINE)
-
+FFLAGS          = $(_R) -C vopt -Wf"-pvctl fullmsg -L fmtlist transform map"
 
 CFLAGS		= -O $(_Dsys)
 
 ZIP		= /usr/bin/compress
-ZCAT		= /usr/local/bin/zcat
+ZCAT		= /usr/bin/zcat
 TAR		= /usr/bin/tar
 
-LD		= mpif90
+LD		= esmpif90
 LDFLAGS		= $(FFLAGS)
 
 AR		= esar cqs

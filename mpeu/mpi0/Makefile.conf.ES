@@ -28,7 +28,7 @@
 #EOP
 #-----------------------------------------------------------------------
 
-_Dsys		= -DsysSUPER_UX 
+_Dsys		= -DSYSSUPERUX
 _Dnod		= 
 
 # Environments
@@ -38,7 +38,7 @@ _Dnod		=
 
 _LMPI		= 
 _lMPI		= 
-_IMPI		= -I/usr/include
+_IMPI		= 
 
 #_R		= -ew
 
@@ -49,27 +49,22 @@ SHELL		= /usr/bin/sh
 
 CPP		= /usr/lib/cpp
 
-F77		= mpif90
-F90		= mpif90
+F77		= esmpif90
+F90		= esmpif90
 FC		= $(F90)
+CC		= escc
 
-_Ftrace                = -ftrace
-#_Ftrace                = -Wf,"-vampir" -vampir
-#_Ftrace                = -vampir
-
-# orignal
-#FFLAGS		= $(_R) -C hopt -Wf"-pvctl noassoc"
-FFLAGS		= $(_R) -C vopt -Wf"-pvctl fullmsg -L fmtlist" $(_Ftrace)
+FFLAGS		= $(_R) -C vopt -Wf"-pvctl fullmsg -L fmtlist" 
 CFLAGS		= -O $(_Dsys)
 
 ZIP		= /usr/bin/compress
 ZCAT		= /usr/bin/zcat
 TAR		= /usr/bin/tar
 
-LD		= mpif90
+LD		= esmpif90
 LDFLAGS		= $(FFLAGS)
 
-#AR		= ar cqs
+AR		= esar cqs
 #RM		= rm -f
 MV		= /usr/bin/mv
 

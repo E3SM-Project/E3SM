@@ -85,6 +85,11 @@ if [ ! -r ${makeconf} ]; then
   if [ "${OpSys}" = ESOS ]; then # The Earth Simulator?
       makeconf="Makefile.conf.ES"
   fi # closes if [ "${OpSys}" = ESOS ]; then...
+  if [ "${OpSys}" = HP-UX ]; then # The Earth Simulator?
+    if [ `hostname` = moon ]; then # Really?
+      makeconf="Makefile.conf.ES"
+    fi
+  fi # closes if [ "${OpSys}" = ESOS ]; then...
 fi # closes if [ ! -r ${makeconf} ]...Block to test for NEC
 
 # OS specific configuration
