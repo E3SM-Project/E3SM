@@ -16,9 +16,14 @@
 
       public :: GlobalSegMapToLocal ! Translate Global indices from 
                                     ! the GlobalSegMap to local indices.
+      public :: GlobalToLocalIndex  ! Translate Global indices from 
 
     interface GlobalSegMapToLocal ; module procedure   &
         GlobalSegMapToIndices_      ! local arrays of starts/lengths
+    end interface
+
+    interface GlobalToLocalIndex ; module procedure &
+	GlobalSegMapToIndex_
     end interface
 
 ! !REVISION HISTORY:
@@ -127,5 +132,111 @@
   end do
 
  end subroutine GlobalSegMapToIndices_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: GlobalSegMapToIndex_ - translate global to local index.
+!
+! !DESCRIPTION:  {\tt GlobalSegMapToIndex\_()} takes a user-supplied
+! {\tt GlobalSegMap} data type {\tt GSMap}, input global index value 
+! {\tt i\_g}, and input communicator {\tt comm} and returns a positive 
+! local index value if the datum {\tt i\_g} is on the local communicator.
+! If the datum {\tt i\_g} is not local, a value of {\tt -1} is returned.
+!
+! !INTERFACE:
+
+ integer function GlobalSegMapToIndex_(GSMap, i_g, comm)
+
+!
+! !USES:
+!
+      use m_mpif90
+      use m_die,          only : MP_perr_die
+      use m_GlobalSegMap, only : GlobalSegMap
+      use m_GlobalSegMap, only : GlobalSegMap_ngseg => ngseg
+      use m_GlobalSegMap, only : GlobalSegMap_nlseg => nlseg
+
+      implicit none
+
+      type(GlobalSegMap),intent(in)  :: GSMap ! Output GlobalSegMap
+      integer,           intent(in)  :: comm  ! global index
+      integer,           intent(in)  :: i_g   ! communicator handle
+
+! !REVISION HISTORY:
+!       02Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
+
+  character(len=*),parameter :: myname_=myname//'::GlobalSegMapToIndex_'
+
+  integer :: myID
+  integer :: count, ierr, ngseg, nlseg, n
+  integer :: lower_bound, upper_bound
+  integer :: local_start, local_index
+  logical :: found
+
+  ! Determine local process id myID:
+
+  call MP_COMM_RANK(comm, myID, ierr)
+  if(ierr /= 0) call MP_perr_die(myname_,'MP_COMM_RANK()',ierr)
+
+  ! Extract the global number of segments in GSMap
+
+  ngseg = GlobalSegMap_ngseg(GSMap)
+
+  ! Extract the global number of segments in GSMap for myID
+
+  nlseg = GlobalSegMap_nlseg(GSMap, myID)
+
+  ! set the counter count, which records the number of times myID
+  ! matches entries in GSMap%pe_loc(:)
+
+  count = 0
+
+  ! set local_start, which is the current local storage segment
+  ! starting position
+
+  local_start = 1
+
+  ! set logical flag found to signify we haven't found i_g:
+
+  found = .false.
+
+  SEARCH_LOOP: do n=1, ngseg
+
+     if(GSMap%pe_loc(n) == myID) then
+
+  ! increment / check the pe_loc match counter
+
+        count = count + 1
+        if(count > nlseg) then
+           ierr = 2
+           call MP_perr_die(myname_,'too many pe matches',ierr)
+	endif
+
+  ! is i_g in this segment?
+
+        lower_bound = GSMap%start(n)
+        upper_bound = GSMap%start(n) + GSMap%length(n) - 1
+        if((lower_bound <= i_g) .or. (i_g <= upper_bound)) then
+	   local_index = local_start + (i_g - GSMap%start(n))
+	   found = .true.
+	   EXIT
+	else
+	   local_start = local_start + GSMap%length(n)
+        endif
+
+     endif
+  end do SEARCH_LOOP
+
+  ! We either found the local index, or have exhausted our options.
+
+  if(found) then
+     GlobalSegMapToIndex_ = local_index
+  else
+     GlobalSegMapToIndex_ = -1
+  endif
+
+ end function GlobalSegMapToIndex_
 
  end module m_GlobalToLocal
