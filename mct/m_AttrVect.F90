@@ -21,7 +21,7 @@
 ! the fieldnames in {\tt List} format, along with the direct mapping
 ! between {\tt List} items and locations in the data buffer, allows 
 ! the user to have {\em random access} to the field data.  This 
-! approach alsoallows the user to set the number and the names of fields 
+! approach also allows the user to set the number and the names of fields 
 ! stored in an {\tt AttrVect} at run-time.  
 !
 ! The {\tt AttrVect} stores field data in a {\em pointwise} fashion 
@@ -1186,7 +1186,9 @@
 !
 ! !DESCRIPTION:  This routine takes an input {\tt AttrVect} argument 
 ! {\tt aV}, and an input character string {\tt rList} and Appends {\tt rList}
-! to the INTEGER part of {\tt aV}.
+! to the INTEGER part of {\tt aV}. The success (failure) of this operation is
+! signified by a zero (nonzero) value for the optional {\tt INTEGER} 
+! output argument {\tt status}.  
 !
 ! !INTERFACE:
 
@@ -1282,7 +1284,9 @@
 !
 ! !DESCRIPTION:  This routine takes an input {\tt AttrVect} argument 
 ! {\tt aV}, and an input character string {\tt rList} and Appends {\tt rList}
-! to the REAL part of {\tt aV}.
+! to the REAL part of {\tt aV}. The success (failure) of this operation is
+! signified by a zero (nonzero) value for the optional {\tt INTEGER} 
+! output argument {\tt status}.  
 !
 ! !INTERFACE:
 
