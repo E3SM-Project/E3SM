@@ -29,6 +29,7 @@
       public :: bcast
       public :: send
       public :: recv
+      public :: GetSharedListIndices
 
     type List
       character(len=1),dimension(:),pointer :: bf
@@ -46,6 +47,8 @@
 !                 function allocated_().
 ! 	13Feb02 - J. Larson <larson@mcs.anl.gov> - Added the List query 
 !                 functions exportToChar() and CharBufferLength().
+!       13Jun02-  R.L. Jacob <jacob@mcs.anl.gov> - Move GetSharedListIndices
+!                 from mct to this module.
 !EOP ___________________________________________________________________
 
   interface init ; module procedure	&
@@ -79,6 +82,7 @@
   interface bcast; module procedure bcast_; end interface
   interface send; module procedure send_; end interface
   interface recv; module procedure recv_; end interface
+  interface GetSharedListIndices; module procedure GetSharedListIndices_; end interface
 
   character(len=*),parameter :: myname='m_List'
 
@@ -1290,6 +1294,143 @@ contains
  call initStr_(outList, DummStr)
 
  end subroutine recv_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: GetSharedListIndices_
+!
+! !DESCRIPTION:  {\tt GetSharedListIndices\_()} compares two user-
+! supplied {\tt List} arguments {\tt List1} and {\tt Lis2} to determine:  
+! the number of shared items {\tt NumShared}, and arrays of the locations 
+! {\tt Indices1} and {\tt Indices2} in {\tt List1} and {\tt List2}, 
+! respectively.
+!
+! {\bf N.B.:}  This routine returns two allocated arrays---{\tt Indices1(:)} 
+! and {\tt Indices2(:)}---which must be deallocated once the user no longer
+! needs them.  Failure to do this will create a memory leak.
+!
+! !INTERFACE:
+
+ subroutine GetSharedListIndices_(List1, List2, NumShared, Indices1, &
+                                   Indices2)
+
+!
+! !USES:
+!
+      use m_die,  only : MP_perr_die, die, warn
+
+      use m_String, only : String
+      use m_String, only : String_clean => clean
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+!
+      type(List),    intent(in)  :: List1
+      type(List),    intent(in)  :: List2
+
+! !OUTPUT PARAMETERS:   
+!
+      integer,           intent(out) :: NumShared
+
+      integer,dimension(:), pointer  :: Indices1
+      integer,dimension(:), pointer  :: Indices2
+
+! !REVISION HISTORY:
+!       07Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::GetSharedListIndices_'
+
+! Error flag
+  integer :: ierr
+
+! number of items in List1 and List2, respectively:
+  integer :: nitem1, nitem2
+
+! MAXIMUM number of matches possible:
+  integer :: NumSharedMax
+
+! Temporary storage for a string tag retrieved from a list:
+  type(String) :: tag
+
+! Loop counters / temporary indices:
+  integer :: n1, n2
+
+       ! Determine the number of items in each list:
+
+  nitem1 = nitem_(List1)
+  nitem2 = nitem_(List2)
+
+       ! The maximum number of list item matches possible
+       ! is the minimum(nitem1,nitem2):
+
+  NumSharedMax = min(nitem1,nitem2)
+
+       ! Allocate sufficient space for the matches we may find:
+
+  allocate(Indices1(NumSharedMax), Indices2(NumSharedMax), stat=ierr)
+
+       ! Initialize the counter for the number of matches found:
+
+  NumShared = 0
+
+       ! Scan through the two lists.  For the sake of speed, loop 
+       ! over the shorter of the two lists...
+
+  if(nitem1 <= nitem2) then ! List1 is shorter--scan it...
+
+     do n1=1,NumSharedMax
+
+       ! Retrieve string tag n1 from List1:
+        call get_(tag, n1, List1)
+
+       ! Index this tag WRT List2--a nonzero value signifies a match
+        n2 = indexStr_(List2, tag)
+
+       ! Clear out tag for the next iteration...
+        call String_clean(tag)
+
+       ! If we have a hit, update NumShared, and load the indices
+       ! n1 and n2 in Indices1 and Indices2, respectively...
+
+        if((0 < n2) .and. (n2 <= nitem2)) then
+           NumShared = NumShared + 1
+           Indices1(NumShared) = n1
+           Indices2(NumShared) = n2
+        endif
+
+     end do ! do n1=1,NumSharedMax
+
+  else ! List1 is shorter--scan it...
+
+     do n2=1,NumSharedMax
+
+       ! Retrieve string tag n2 from List2:
+        call get_(tag, n2, List2)
+
+       ! Index this tag WRT List1--a nonzero value signifies a match
+        n1 = indexStr_(List1, tag)
+
+       ! Clear out tag for the next iteration...
+        call String_clean(tag)
+
+       ! If we have a hit, update NumShared, and load the indices
+       ! n1 and n2 in Indices1 and Indices2, respectively...
+
+        if((0 < n1) .and. (n1 <= nitem1)) then
+           NumShared = NumShared + 1
+           Indices1(NumShared) = n1
+           Indices2(NumShared) = n2
+        endif
+
+     end do ! do n2=1,NumSharedMax
+
+  endif ! if(nitem1 <= nitem2)...
+
+ end subroutine GetSharedListIndices_
 
  end module m_List
 !.
