@@ -10,23 +10,26 @@
 
 ######################################################################
 
-  This is an early distribution of the Model Coupling Toolkit (mct).
+  This is version 1.0 of the Model Coupling Toolkit (mct).
+
   Our purpose in creating this toolkit is to support the construction
-  of a highly portable and extensible high-performance flux couplers 
-  for climate system models such as the Community Climate System Model
-  (CCSM) and the Parallel Climate Model (PCM).  
+  of highly portable and extensible high-performance couplers 
+  for disributed memory parallel coupled models.
+
+  For more information, see http://www.mcs.anl.gov/mct
 
 ######################################################################
 
   REVISION HISTORY:
 
-  18 Oct, 2000 -- Initial Release.
+  18 Oct, 2000 -- Initial prototype
   09 Feb, 2001 -- working MxN transfer
   27 Apr, 2001 -- Sparse Matrix Multiply
   13 Jun, 2001 -- General Grid
   23 Aug, 2001 -- Linux PGF90 port
   14 Dec, 2001 -- PCM support
   29 Mar, 2002 -- Rearranger
+  14 Nov, 2002 -- version 1.0.0
 
 Tag $Name$
 $Id$
@@ -37,7 +40,7 @@ $Id$
   README -- this file
 
   mpeu   -- Source code for the message-passing environment utilities
-            library (mpeu), which provides support for 
+            library (mpeu), which provides support for mct 
 
   mct    -- Source code for the model coupling toolkit, which is built
             on top of mpeu.
