@@ -1,5 +1,8 @@
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!-----------------------------------------------------------------------
+! CVS $Id$
+! CVS $Name$  
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_IndexBin_logical - Template of indexed bin-sorting module

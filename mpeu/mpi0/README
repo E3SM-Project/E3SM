@@ -1,4 +1,7 @@
-
+!-----------------------------------------------------------------------
+! CVS $Id$
+! CVS $Name$  
+!-----------------------------------------------------------------------
 29Sep99	- Jing Guo
 	. The design objective of this module is to create prototype
 	  interfaces for selected MPI calls, to be used when there is
