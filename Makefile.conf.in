@@ -62,7 +62,7 @@ F90RULECPP      = @F90RULECPP@
 # INSTALLATION VARIABLES #
 
 # INSTALL COMMANDS
-INSTALL         = @abs_top_builddir@/install-sh
+INSTALL         = @abs_top_builddir@/install-sh -c
 MKINSTALLDIRS   = @abs_top_builddir@/mkinstalldirs
 
 # INSTALLATION DIRECTORIES

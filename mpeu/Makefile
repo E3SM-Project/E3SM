@@ -75,7 +75,7 @@ clean:
 install: all
 	$(MKINSTALLDIRS) $(libdir) $(includedir)
 	$(INSTALL) lib$(MODULE).a -m 644 $(libdir)
-	@for modfile in $(wildcard *.mod); do             \
+	@for modfile in *.mod; do                         \
 	  echo $(INSTALL) $$modfile -m 644 $(includedir); \
 	  $(INSTALL) $$modfile -m 644 $(includedir);      \
 	done
