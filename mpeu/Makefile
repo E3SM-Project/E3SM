@@ -43,13 +43,16 @@ all:	lib$(MODULE).a
 
 lib$(MODULE).a:	$(OBJS_ALL)
 	$(RM) $@
-	$(AR) cq $@ $(OBJS_ALL)
+	$(AR) $@ $(OBJS_ALL)
 
 # MACHINE AND COMPILER FLAGS
 
-sinclude ../Makefile.conf
+include ../Makefile.conf
 
 # RULES
+
+.SUFFIXES:
+.SUFFIXES: .F90 .c .o
 
 $(CRULE):
 	$(CC) -c $(ALLCFLAGS) $*.c
@@ -62,9 +65,6 @@ $(F90RULECPP):
 	$(FC) -c $(INCPATH) $(FCFLAGS) $(F90FLAGS) $*.f90
 	$(RM) $*.f90
 
-.SUFFIXES:
-.SUFFIXES: .F90 .c .o
-
 clean:
 	${RM} *.o *.mod lib$(MODULE).a
 
@@ -75,7 +75,7 @@ install:
 
 # COMPATIBILITY WITH OLD MAKE SYSTEM
 
-sinclude Makefile.conf
+include Makefile.conf
 
 # DEPENDENCIES
 

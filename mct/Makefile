@@ -37,7 +37,7 @@ OBJS_ALL	= $(SRCS_F90:.F90=.o)
 
 # MACHINE AND COMPILER FLAGS
 
-sinclude ../Makefile.conf
+include ../Makefile.conf
 
 # TARGETS
 
@@ -45,7 +45,7 @@ all: 	lib$(MODULE).a
 
 lib$(MODULE).a:	$(OBJS_ALL)
 	$(RM) $@
-	$(AR) cq $@ $(OBJS_ALL)
+	$(AR) $@ $(OBJS_ALL)
 
 # ADDITIONAL DEFINITIONS SPECIFIC FOR MCT COMPILATION
 
@@ -54,6 +54,9 @@ INCPATH += $(INCFLAG)$(MPEUPATH)
 
 # RULES
 
+.SUFFIXES:
+.SUFFIXES: .F90 .o
+
 $(F90RULE):
 	$(FC) -c $(INCPATH) $(DEFS) $(FCFLAGS) $(F90FLAGS) $*.F90
 
@@ -61,9 +64,6 @@ $(F90RULECPP):
 	$(FPP) $(DEFS) $(FPPFLAGS) $*.F90 $*.f90
 	$(FC) -c $(INCPATH) $(FCFLAGS) $(F90FLAGS) $*.f90
 	$(RM) $*.f90
-
-.SUFFIXES:
-.SUFFIXES: .F90 .o
 
 clean:
 	${RM} *.o *.mod lib$(MODULE).a
@@ -75,7 +75,7 @@ install:
 
 # COMPATIBILITY WITH OLD MAKE SYSTEM
 
-sinclude Makefile.conf
+include Makefile.conf
 
 # DEPENDENCIES
 
