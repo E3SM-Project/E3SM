@@ -97,10 +97,10 @@
 
   select case(trim(attrib))
   case('REAL','real')
-     call GetSharedListIndices(aV1%rList, aV2%rList, NumShared, &
+     call GetSharedListIndices_(aV1%rList, aV2%rList, NumShared, &
 	                         Indices1, Indices2)
   case('INTEGER','integer')
-     call GetSharedListIndices(aV1%iList, aV2%iList, NumShared, &
+     call GetSharedListIndices_(aV1%iList, aV2%iList, NumShared, &
 	                         Indices1, Indices2)
   case default
      write(stderr,'(4a)') myname_,":: value of argument attrib=",attrib, &
@@ -171,10 +171,10 @@
 
   select case(trim(attrib))
   case('REAL','real')
-     call GetSharedListIndices(aC1%av%rList, aC2%av%rList, NumShared, &
+     call GetSharedListIndices_(aC1%av%rList, aC2%av%rList, NumShared, &
 	                         Indices1, Indices2)
   case('INTEGER','integer')
-     call GetSharedListIndices(aC1%av%iList, aC2%av%iList, NumShared, &
+     call GetSharedListIndices_(aC1%av%iList, aC2%av%iList, NumShared, &
 	                         Indices1, Indices2)
   case default
      write(stderr,'(4a)') myname_,":: value of argument attrib=",attrib, &
@@ -247,10 +247,10 @@
 
   select case(trim(attrib))
   case('REAL','real')
-     call GetSharedListIndices(aV%rList, aC%av%rList, NumShared, &
+     call GetSharedListIndices_(aV%rList, aC%av%rList, NumShared, &
 	                         Indices1, Indices2)
   case('INTEGER','integer')
-     call GetSharedListIndices(aV%iList, aC%av%iList, NumShared, &
+     call GetSharedListIndices_(aV%iList, aC%av%iList, NumShared, &
 	                         Indices1, Indices2)
   case default
      write(stderr,'(4a)') myname_,":: value of argument attrib=",attrib, &
