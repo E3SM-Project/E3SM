@@ -1,17 +1,75 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT(MCT, 1.8)
+AC_INIT(MCT, 2.0)
 
-# Process the following makefiles
+# PROCESS THE FOLLOWING MAKEFILES
+
 AC_CONFIG_FILES(Makefile.conf)
 
-# Hardcode values for specific hostnames
+# DECLARE PACKAGE OPTIONS
 
+AC_ARG_ENABLE(selectedrealkind,
+AC_HELP_STRING([--enable-selectedrealkind],
+[define single precision and double precision numbers using the selected_real_kind function. Default uses the kind inquiry function.]),
+[SRKDEF="SELECTEDREALKIND"]
+)
+
+# DECLARE THE FOLLOWING PRECIOUS VARIABLES
+
+AC_ARG_VAR(MPILIBS,[MPI library command line invocation])
+AC_ARG_VAR(MPIHEADER,[MPI header include path])
+AC_ARG_VAR(FPP,C-preprocessor for Fortran source code)
+AC_ARG_VAR(FPPFLAGS,C-preprocessing flags for Fortran source code)
+AC_ARG_VAR(MACHDEFS,MCT compiler and OS flags)
+AC_ARG_VAR(FC,The Fortran compiler)
+AC_ARG_VAR(FCFLAGS,User-defined Fortran compiler flags)
+AC_ARG_VAR(ALLCFLAGS,Customized C source compilation flags)
+AC_ARG_VAR(OPT,Fortran compiler flag for optimization level) 
+AC_ARG_VAR(REAL8,[Fortran compiler flag for setting the default REAL size to REAL(KIND=8)])
+AC_ARG_VAR(BIT64,Fortran compiler flag for generating 64-bit objects)
+AC_ARG_VAR(ENDIAN,Fortran compiler flag for converting big-endian to little-endian)
+AC_ARG_VAR(INCLUDEFLAG,Fortran compiler flag for specifying module search path)
+AC_ARG_VAR(INCLUDEPATH,Additional library and module paths)
+AC_ARG_VAR(AR,Archive command)
+
+# SET TEMPORARY VARIABLES
+
+# OS AND PLATFORM NAME
 test "$osname"=NONE && osname=`uname -s`
 test "$machinename"=NONE && machinename=`uname -m`
 
-# Check if we are on the Earth Simulator
+# SAVE F90FLAGS IN CASE ITS SET IN THE COMMAND LINE
+OLDF90FLAGS="$F90FLAGS"
+
+# SET HARDCODED VARIABLES AS A LAST RESORT
+
+# ALWAYS ENABLE CRULE IN MAKEFILE
+AC_SUBST(CRULE,[.c.o])
+
+# DO NOT USE THE GNU C PREPROCESESSOR. 
+# IT DOES NOT PROCESS FORTRAN SOURCES CORRECTLY.
+# LOOK FOR MACHINE DEPENDENT CPP
+if test -z "$FPP"; then
+   AC_CHECK_PROGS(FPP,[cpp],$CPP)
+fi
+if test -z "$FPPFLAGS"; then
+   FPPFLAGS="-P -C -N -traditional" # WORKS WITH MOST CPPs
+fi
+
+# INCLUDE FLAG SEEMS TO BE ALWAYS -I
+if test -z "$INCLUDEFLAG"; then
+   INCLUDEFLAG="-I"
+fi
+
+# ARCHIVE COMMAND SIMILAR ACROSS ALL PLATFORMS 
+if test -z "$AR"; then
+   AR="ar cq"
+fi
+
+# HARDCODE SPECIFIC MACHINES FOR EXTRAORDINARY CIRCUMSTANCES
+
+# CHECK IF WE ARE ON THE EARTH SIMULATOR
 ES="NO"
 if echo $osname | grep -i esos >/dev/null 2>&1; then
    ES="YES"
@@ -19,7 +77,7 @@ fi
 if echo $osname | grep -i hp-ux >/dev/null 2>&1; then   
    if test "$ac_hostname" = "moon"; then 
       ES="YES"
-      # Tells configure not to run any tests that require execution
+      # TELLS CONFIGURE NOT TO RUN ANY TESTS THAT REQUIRE EXECUTION
       cross_compiling="yes"
    fi
 fi
@@ -46,47 +104,60 @@ if test "$ES" = "YES"; then
    if test -z "$OPT"; then
       OPT="-C vopt"
    fi      
-   MACHDEFS="-DESVEC $MACHDEFS"
+   if test -z "$MACHDEFS"; then
+      MACHDEFS="-DESVEC"
+   fi
 fi
 
-# Check if we are on NCSA IA-64 cluster titan
+# CHECK IF WE ARE ON THE NCSA IA-64 CLUSTER TITAN
 if test "$ac_hostname" = "user02"; then
-   if test -z "$MPILIBS"; then
-   if test -z "$MPIHEADER"; then
-      echo "Using preset MPI configuration for titan"
-      MPILIBS="-L/usr/local/vmi/mpich/lib/intel -lmpich -lvmi -ldl -lpthread"
-      MPIHEADER="/usr/local/vmi/mpich/include"
-   fi
+   if echo $osname | grep -i linux >/dev/null 2>&1; then
+      if test -z "$MPILIBS"; then
+         if test -z "$MPIHEADER"; then
+            echo "Using preset MPI configuration for titan"
+	    MPILIBS="-L/usr/local/vmi/mpich/lib/intel -lmpich -lvmi -ldl -lpthread"
+	    MPIHEADER="/usr/local/vmi/mpich/include"
+         fi
+      fi
    fi
 fi
 
-# Check for the C compiler
+# START TESTS
+
+# CHECK FOR THE C COMPILER
 AC_PROG_CC([cc])
 
-# Save F90FLAGS
-OLDF90FLAGS="$F90FLAGS"
-
-# Check for the Fortran compiler. 
+# CHECK FOR THE FORTRAN COMPILER
 AC_PROG_F90
 
-# Check for MPI libraries. 
+# CHECK FOR MPI LIBRARIES
 AC_LANG_PUSH(Fortran 90)
 
-AC_ARG_VAR(MPILIBS,[MPI library command line invocation])
-AC_ARG_VAR(MPIHEADER,[MPI header include path])
 if test -n "$MPIHEADER"; then
    F90FLAGS="$F90FLAGS $MPIHEADER"
 fi
+
 ACX_MPI
+
 F90FLAGS="$OLDF90FLAGS"
 
-# A hack to fix ACX_MPI to get MPILIBS to be an empty string
+# A HACK TO FIX ACX_MPI TO GET MPILIBS TO BE AN EMPTY STRING
 if test "$MPILIBS" = " "; then
    MPILIBS=""
 fi
 
-# Check how to get the compiler version.
-# This test does not work for xlf compilers.
+# SET FC TO MPIF90. IF MPILIBS IS PRESENT, SET FC TO F90.
+if test -z "$FC"; then
+   FC=$MPIF90
+   if test "$F90" != "$MPIF90";  then
+      if test -n "$MPILIBS"; then
+	 FC=$F90
+      fi
+   fi
+fi
+
+# CHECK HOW TO GET THE COMPILER VERSION.
+# THIS TEST DOES NOT WORK FOR XLF COMPILERS.
 if test "$F90" != "xlf90"; then
    _AC_PROG_F90_VERSION
 fi
@@ -94,48 +165,41 @@ f90_version="$ac_f90_version_output"
 
 AC_LANG_POP(Fortran 90)
 
-# Checks for compiler characteristics.
-
-# Check for endianness
+# CHECK FOR BYTE ORDERING
 AC_C_BIGENDIAN
 
-# Check if fortran compiler creates modules files
-# in uppercase or lowercase
+# CHECK IF FORTRAN COMPILER CREATES MODULE FILES IN UPPERCASE OR LOWERCASE
 if test "$F90" = "frt"; then # -Am flag needed for frt to gerate mod files
    F90FLAGS="$F90FLAGS -Am"
 fi
 if test "$F90" = "ftn"; then # -em flag needed for ftn to gerate mod files
    F90FLAGS="$F90FLAGS -em"
 fi
+
 AC_F90_MOD_UPPERCASE
+
 F90FLAGS="$OLDF90FLAGS"
 
-# Check the fortran name mangling scheme
+# CHECK HOW TO NAME MANGLE C FUNCTIONS SO THAT IT CAN BE CALLED FROM FORTRAN
 AC_F90_C_NAME_MANGLING
 case $ac_cv_f90_mangling in
   "lower case, underscore") 
-	 name_mangling="FORTRAN_UNDERSCORE_" ;;
+	 name_mangling="FORTRAN_UNDERSCORE_"
+         ALLCFLAGS="-O $ALLCFLAGS" ;;
   "lower case, no underscore")
-	 name_mangling="FORTRAN_SAME" ;;
+	 name_mangling="FORTRAN_SAME"
+	 ALLCFLAGS="-DFORTRAN_SAME -O $ALLCFLAGS";;
   "upper case, no underscore")  
-	 name_mangling="FORTRAN_CAPS_" ;;
-  *) name_mangling="UNKNOWN" ;;
+	 name_mangling="FORTRAN_CAPS_"
+	 ALLCFLAGS="-DFORTRAN_CAPS_ -O $ALLCFLAGS";;
+  *) 
+         name_mangling="UNKNOWN" 
+	 AC_MSG_WARN([unusual Fortran 90 name-mangling scheme])
+	 ALLCFLAGS="-O $ALLCFLAGS";;
 esac
 
-# Set FPP and FPPFLAGS
-AC_ARG_VAR(FPP,C-preprocessor for Fortran source code)
-AC_ARG_VAR(FPPFLAGS,C-preprocessing flags for Fortran source code)
-
-if test -z "$FPP"; then
-   AC_CHECK_PROGS(FPP,[cpp],$CPP)
-fi
-if test -z "$FPPFLAGS"; then
-   FPPFLAGS="-P -C -N -traditional"
-fi
-
-# Check that the Fortran compiler can correctly process these directives
-# If not, use the C preprocessor.
-
+# CHECK THAT THE FORTRAN COMPILER CAN CORRECTLY PROCESS THESE DIRECTIVES
+# IF NOT, USE THE EXTERNAL C PREPROCESSOR
 defineflag="-Daardvark"
 if test "$F90" = "xlf90"; then
    defineflag="-WF,-Daardvark"
@@ -178,10 +242,10 @@ AC_MSG_WARN(cpp is not defined in your path)
 
 fi
 
+# ACTIVATE F90RULE IF FORTRAN COMPILER SUCCEEDS AT PREPROCESSING
+# ACTIVATE F90RULECPP IF FOTRAN COMPILER FAILS AT PREPROCESSING
 if test "$ac_cv_f90_fpp_compiler" = "yes"; then
-   AC_SUBST(FRULE,[.F.o])
    AC_SUBST(F90RULE,[.F90.o])
-   AC_SUBST(FRULECPP,[.FRULECPP])
    AC_SUBST(F90RULECPP,[.F90RULECPP])
 fi
 
@@ -190,240 +254,176 @@ if test "$ac_cv_f90_fpp_external" = "no"; then
    AC_MSG_WARN(Fortran Source Preprocessing has failed)
 fi
 if test "$ac_cv_f90_fpp_external" = "yes"; then
-   AC_SUBST(FRULE,[.FRULE])
    AC_SUBST(F90RULE,[.F90RULE])
-   AC_SUBST(FRULECPP,[.F.o])
    AC_SUBST(F90RULECPP,[.F90.o])
 fi
 fi
 
-# Always enable the CRULE
-
-AC_SUBST(CRULE,[.c.o])
-
-# Checks OS, compiler and machine type
+# DEFINE VARIABLES ACCORDING TO OS AND COMPILER
 
 echo "Hostname=$ac_hostname"
 echo "Machine=$machinename"
 echo "OS=$osname"
 
-# DEFINE MACHDEFS ACCORDING TO OS, COMPILER AND PACKAGE OPTIONS
-
-AC_ARG_VAR(MACHDEFS,MCT compiler and OS flags)
-
-# DEFINE PACKAGE OPTIONS
-
-AC_ARG_ENABLE(selectedrealkind,
-AC_HELP_STRING([--enable-selectedrealkind],
-[define single precision and double precision numbers using the selected_real_kind function. Default uses the kind inquiry function.]),
-[MACHDEFS="-DSELECTEDREALKIND $MACHDEFS"
-SELECTEDREALKIND="YES"]
-)
-
-# Check OS name
-
+# CHECK OS NAME
 if echo $osname | grep -i aix >/dev/null 2>&1; then
-   if test "$ac_cv_f90_fpp_compiler" = "yes"; then
-      MACHDEFS="-WF,-DSYSAIX"
-   else
-      MACHDEFS="-DSYSAIX $MACHDEFS"
-   fi
+   OSDEF="AIX"
 fi
 if echo $osname | grep -i darwin >/dev/null 2>&1; then
-   MACHDEFS="-DSYSDARWIN $MACHDEFS"
+   OSDEF="DARWIN"
 fi
 if echo $osname | grep -i unix_system_v >/dev/null 2>&1; then
-   if test "$ac_cv_f90_fpp_compiler" = "yes"; then
-      MACHDEFS="-Wp,-DSYSUNIXSYSTEMV"
-   else
-      MACHDEFS="-DSYSUNIXSYSTEMV $MACHDEFS"
-   fi
-fi
-if echo $osname | grep -i irix64 >/dev/null 2>&1; then
-   MACHDEFS="-DSYSIRIX64 $MACHDEFS"
+   OSDEF="UNIXSYSTEMV"
 fi
 if echo $osname | grep -i irix >/dev/null 2>&1; then
-if echo $MACHDEFS | grep -i irix64 >/dev/null 2>&1; then
-MACHDEFS="$MACHDEFS" # do nothing
-else
-MACHDEFS="-DSYSIRIX $MACHDEFS"
+   OSDEF="IRIX"
 fi
+if echo $osname | grep -i irix64 >/dev/null 2>&1; then
+   OSDEF="IRIX64"
 fi
 if echo $osname | grep -i linux >/dev/null 2>&1; then
-   MACHDEFS="-DSYSLINUX $MACHDEFS"
+   OSDEF="LINUX"
 fi
 if echo $osname | grep -i osf1 >/dev/null 2>&1; then
-   MACHDEFS="-DSYSOSF1 $MACHDEFS"
+   OSDEF="OSF1"
 fi
 if echo $osname | grep -i super >/dev/null 2>&1; then
-   MACHDEFS="-DSYSSUPERUX $MACHDEFS"
+   OSDEF="SUPERUX"
 fi
 if echo $osname | grep -i sun >/dev/null 2>&1; then
-   MACHDEFS="-DSYSSUNOS $MACHDEFS"
+   OSDEF="SUNOS"
 fi
 if echo $osname | grep -i t3e >/dev/null 2>&1; then
-   MACHDEFS="-DSYST3E $MACHDEFS"
+   OSDEF="T3E"
 fi
 if echo $osname | grep -i unicos >/dev/null 2>&1; then
-   MACHDEFS="-DSYSUNICOS $MACHDEFS"
+   OSDEF="UNICOS"
 fi
 
-# Set FC to MPIF90. If MPILIBS is present, set FC to F90.
-AC_ARG_VAR(FC,The Fortran compiler)
-if test -z "$FC"; then
-   FC=$MPIF90
-   if test "$F90" != "$MPIF90";  then
-      if test -n "$MPILIBS"; then
-	 FC=$F90
-      fi
-   fi
-fi
-
-# Set the following variables by checking the compiler name
-AC_ARG_VAR(FCFLAGS,User-defined Fortran compiler flags)
-AC_ARG_VAR(ALLCFLAGS,Customized C source compilation flags)
-AC_ARG_VAR(OPT,Fortran compiler flag for optimization level) 
-AC_ARG_VAR(REAL8,[Fortran compiler flag for setting the default REAL size to REAL(KIND=8)])
-AC_ARG_VAR(BIT64,Fortran compiler flag for generating 64-bit objects)
-AC_ARG_VAR(ENDIAN,Fortran compiler flag for converting big-endian to little-endian)
-AC_ARG_VAR(INCLUDEFLAG,Fortran compiler flag for specifying module search path)
-AC_ARG_VAR(INCLUDEPATH,Additional library and module paths)
-AC_ARG_VAR(AR,Archive command)
-
-# Set AR 
-if test -z "$AR"; then
-   AR="ar cq"
-fi
-
-# Check compiler name
+# CHECK COMPILER NAME
 case $F90 in
-xlf90) 
-echo "Fortran Compiler is XLF"
-if test -z "$REAL8"; then
-   REAL8="-qrealsize=8"
-fi
-if test "$MACHDEFS" = "-WF,-DSYSAIX"; then
-   MACHDEFS="$MACHDEFS,-DCPRXLF"
-   if test "$SELECTEDREALKIND" = "YES"; then
-      MACHDEFS="$MACHDEFS,-DSELECTEDREALKIND"
+
+xlf90)
+   echo "Fortran Compiler is XLF"
+   CPRDEF="XLF"
+   if test -z "$REAL8"; then
+      REAL8="-qrealsize=8"
    fi
-else
-   MACHDEFS="-DCPRXLF $MACHDEFS"
-fi
-if test -z "$OPT"; then
-   OPT="-O2"
-fi
-if test -z "$F90FLAGS"; then
-  if test "$ac_cv_f90_fpp_compiler" = "yes"; then
-     F90FLAGS="-qarch=auto -qsuffix=f=F90:cpp=F90"
-  fi
-  if test "$ac_cv_f90_fpp_compiler" = "no"; then
-     if test "$ac_cv_f90_fpp_external" = "yes"; then
-	F90FLAGS="-qarch=auto -qsuffix=f=f90"
-     else
-        echo "ERROR:: NO SUITABLE C PREPROCESSOR FOUND. F90FLAGS NOT SET."
-     fi
-  fi
-fi;;	
-pgf90) 
-echo "Fortran Compiler is Portland Group"
-MACHDEFS="-DCPRPGI $MACHDEFS"
-if test -z "$REAL8"; then
-   REAL8="-r8"
-fi
-if test -z "$BIT64"; then
-   BIT64="-pc 64"
-fi
-if test -z "$ENDIAN"; then
-   ENDIAN="-byteswapio"
-fi
-if test -z "$OPT"; then
-   OPT="-O2"
-fi;;
-ftn) 
-echo "Fortran Compiler is Cray"
-MACHDEFS="-DCPRCRAY $MACHDEFS"
-if test -z "$F90FLAGS"; then 
-   F90FLAGS="-em -dy -m0 -M1068,1132,399"
-fi
-if test -z "$INCLUDEFLAG"; then
-   INCLUDEFLAG="-p"
-fi
-if test -z "$OPT"; then
-   OPT="-Oscalar3 -Ovector3 -Ostream3"
-fi;;
+   if test -z "$OPT"; then
+      OPT="-O2"
+   fi
+   if test -z "$F90FLAGS"; then
+      if test "$ac_cv_f90_fpp_compiler" = "yes"; then
+         F90FLAGS="-qarch=auto -qsuffix=f=F90:cpp=F90"
+      fi
+      if test "$ac_cv_f90_fpp_compiler" = "no"; then
+         if test "$ac_cv_f90_fpp_external" = "yes"; then
+	    F90FLAGS="-qarch=auto -qsuffix=f=f90"
+         fi
+      fi
+   fi;;
+
+pgf90)
+   CPRDEF="PGI"
+   echo "Fortran Compiler is Portland Group"
+   if test -z "$REAL8"; then
+      REAL8="-r8"
+   fi
+   if test -z "$BIT64"; then
+      BIT64="-pc 64"
+   fi
+   if test -z "$ENDIAN"; then
+      ENDIAN="-byteswapio"
+   fi
+   if test -z "$OPT"; then
+      OPT="-O2"
+   fi;;
+
+ftn)
+   echo "Fortran Compiler is Cray"
+   CPRDEF="CRAY" 
+   if test -z "$F90FLAGS"; then 
+      F90FLAGS="-em -dy -m0 -M1068,1132,399"
+   fi
+   if test -z "$INCLUDEFLAG"; then
+      INCLUDEFLAG="-p"
+   fi
+   if test -z "$OPT"; then
+      OPT="-Oscalar3 -Ovector3 -Ostream3"
+   fi;;
+
 frt)
-echo "Fortran Compiler is UXP/V"
-if test "$MACHDEFS" = "-Wp,-DSYSUNIXSYSTEMV"; then
-   MACHDEFS="$MACHDEFS,-DSYSFUJITSU"
-   if test "$SELECTEDREALKIND" = "YES"; then
-      MACHDEFS="$MACHDEFS,-DSELECTEDREALKIND"
+   echo "Fortran Compiler is UXP/V"
+   echo "Suggested additional vectorization flags: -Wv,-s5,-t3,-noalias,-ilfunc,-md"
+   CPRDEF="FUJITSU"
+   if test -z "$F90FLAGS"; then
+      F90FLAGS="-Am -X9"
    fi
-else
-   MACHDEFS="-DSYSFUJITSU $MACHDEFS"
-fi
-if test -z "$F90FLAGS"; then
-   F90FLAGS="-Am -X9"
-fi
-if test -z "$BIT64"; then
-   BIT64="-KA64"
-fi
-if test -z "$REAL8"; then
-   REAL8="-Ad"
-fi
-echo "Suggested additional vectorization flags: -Wv,-s5,-t3,-noalias,-ilfunc,-md";;
-epcf90) 
-"Everest has never tested this fortran compiler :("
-MACHDEFS="-DCPREPC $MACHDEFS";;
-lf95) 
-echo "Fortran Compiler is Lahey"
-MACHDEFS="-DCPRLAHEY $MACHDEFS";;
+   if test -z "$BIT64"; then
+      BIT64="-KA64"
+   fi
+   if test -z "$REAL8"; then
+      REAL8="-Ad"
+   fi;;
+
+epcf90)
+   echo "Everest has never tested the epcf90 compiler :("
+   CPRDEF="EPC";;
+
+lf95)
+   echo "Fortran Compiler is Lahey"
+   CPRDEF="LAHEY";;
+
 ifc)
-echo "Fortran Compiler is Intel IA-32"
-MACHDEFS="-DCPRINTEL $MACHDEFS"
-if test -z "$REAL8"; then
-   REAL8="-r8"
-fi
-if test -z "$F90FLAGS"; then
-   F90FLAGS="-w"
-fi
-if test -z "$OPT"; then
-   OPT="-O2"
-fi
-echo "Intel ifc compiler must set the environment variable F_UFMTENDIAN=big to do endian conversion";;
+   echo "Fortran Compiler is Intel IA-32"
+   echo "Intel ifc compiler must set the environment variable F_UFMTENDIAN=big to do endian conversion"
+   CPRDEF="INTEL"
+   if test -z "$REAL8"; then
+      REAL8="-r8"
+   fi
+   if test -z "$F90FLAGS"; then
+      F90FLAGS="-w"
+   fi
+   if test -z "$OPT"; then
+      OPT="-O2"
+   fi;;
+
 efc)
-echo "Fortran Compiler is Intel Itanium"
-MACHDEFS="-DCPRINTEL $MACHDEFS"
-if test -z "$REAL8"; then
-   REAL8="-r8"
-fi
-if test -z "$F90FLAGS"; then
-   F90FLAGS="-w -ftz"
-fi
-if test -z "$OPT"; then
-   OPT="-O2"
-fi
-echo "Intel efc compiler must set the environment variable F_UFMTENDIAN=big to do endian conversion";;
+   echo "Fortran Compiler is Intel Itanium"
+   CPRDEF="INTEL"
+   echo "Intel efc compiler must set the environment variable F_UFMTENDIAN=big to do endian conversion"
+   if test -z "$REAL8"; then
+      REAL8="-r8"
+   fi
+   if test -z "$F90FLAGS"; then
+      F90FLAGS="-w -ftz"
+   fi
+   if test -z "$OPT"; then
+      OPT="-O2"
+   fi;;
+
 ifort)
-echo "Fortran Compiler is Intel Itanium"
-MACHDEFS="-DCPRINTEL $MACHDEFS"
-if test -z "$REAL8"; then
-   REAL8="-r8"
-fi
-if test -z "$F90FLAGS"; then
-   F90FLAGS="-w -ftz -assume byterecl -convert big_endian"
-fi
-if test -z "$OPT"; then
-   OPT="-O2"
-fi;;
+   echo "Fortran Compiler is Intel Itanium"
+   CPRDEF="INTEL"
+   if test -z "$REAL8"; then
+      REAL8="-r8"
+   fi
+   if test -z "$F90FLAGS"; then
+      F90FLAGS="-w -ftz -assume byterecl -convert big_endian"
+   fi
+   if test -z "$OPT"; then
+      OPT="-O2"
+   fi;;
+
 g95)
-echo "Fortran Compiler is GNU"
-MACHDEFS="-DCPRGNU $MACHDEFS";;
+   echo "Fortran Compiler is GNU"
+   CPRDEF="GNU";;
+
 esac
 
 if echo $f90_version | grep -i nag >/dev/null 2>&1; then
    echo "Fortran Compiler is NAG"
-   MACHDEFS="-DCPRNAG $MACHDEFS"
+   CPRDEF="NAG"
    if test -z "$F90FLAGS"; then
       F90FLAGS="-dusty -kind=byte"
    fi
@@ -431,9 +431,10 @@ if echo $f90_version | grep -i nag >/dev/null 2>&1; then
       OPT="-O2"
    fi
 fi
+
 if echo $f90_version | grep -i absoft >/dev/null 2>&1; then
    echo "Fortran Compiler is Absoft"
-   MACHDEFS="-DCPRABSOFT $MACHDEFS"
+   CPRDEF="ABSOFT"
    if test -z "$REAL8"; then
       REAL8="-N113"
    fi    
@@ -444,16 +445,18 @@ if echo $f90_version | grep -i absoft >/dev/null 2>&1; then
       OPT="-O2"
    fi
 fi
+
 if echo $f90_version | grep -i workshop >/dev/null 2>&1; then
    echo "Fortran Compiler is Workshop"
-   MACHDEFS="-DCPRWORKSHOP $MACHDEFS"
+   CPRDEF="WORKSHOP"
    if test -z "$INCLUDEFLAG"; then
       INCLUDEFLAG="-M"
    fi
 fi
+
 if echo $f90_version | grep -i mipspro >/dev/null 2>&1; then
    echo "Fortran Compiler is MIPSPro"
-   MACHDEFS="-DCPRMIPSPRO $MACHDEFS"
+   CPRDEF="MIPSPRO"
    if test -z "$OPT"; then
       OPT="-O3"
    fi
@@ -467,9 +470,10 @@ if echo $f90_version | grep -i mipspro >/dev/null 2>&1; then
       BIT64="-64"
    fi
 fi
+
 if echo $f90_version | grep -i compaq >/dev/null 2>&1; then
    echo "Fortran Compiler is Compaq"
-   MACHDEFS="-DCPRCOMPAQ $MACHDEFS"
+   CPRDEF="COMPAQ"
    MPILIBS="$MPILIBS -lelan"
    if test -z "$OPT"; then
       OPT="-fast"
@@ -481,11 +485,12 @@ if echo $f90_version | grep -i compaq >/dev/null 2>&1; then
       ENDIAN="-convert big_endian"
    fi
 fi
+
 # Compaq Fortran changed its name to HP Fortran.
 # Lets support both versions for now.
 if echo $f90_version | grep HP >/dev/null 2>&1; then
    echo "Fortran Compiler is HP"
-   MACHDEFS="-DCPRCOMPAQ $MACHDEFS"
+   CPRDEF="COMPAQ"
    MPILIBS="$MPILIBS -lelan"
    if test -z "$OPT"; then
       OPT="-fast"
@@ -497,9 +502,10 @@ if echo $f90_version | grep HP >/dev/null 2>&1; then
       ENDIAN="-convert big_endian"
    fi
 fi
+
 if echo $f90_version | grep -i sx >/dev/null 2>&1; then
    echo "Fortran Compiler is SX"
-   MACHDEFS="-DCPRSX $MACHDEFS"
+   CPRDEF="SX"
    if test -z "$F90FLAGS"; then
       F90FLAGS="-EP -Wf'-pvctl noassoc'"
    fi
@@ -508,33 +514,54 @@ if echo $f90_version | grep -i sx >/dev/null 2>&1; then
    fi
 fi
 
-case $name_mangling in
-  FORTRAN_CAPS_) ALLCFLAGS="-DFORTRAN_CAPS_ -O $ALLCFLAGS";;
-  FORTRAN_SAME)  ALLCFLAGS="-DFORTRAN_SAME -O $ALLCFLAGS";;
-  FORTRAN_UNDERSCORE_) ALLCFLAGS="-O $ALLCFLAGS";;
-  *) AC_MSG_WARN([unusual Fortran 90 name-mangling scheme])
-     ALLCFLAGS="-O $ALLCFLAGS";;
-esac
+# SET THE PREPROCESSOR DEFINE FLAGS
 
-if test -z "$INCLUDEFLAG"; then
-   INCLUDEFLAG="-I"
+if test -z "$MACHDEFS"; then
+
+   MACHDEFS="-D$SYSDEF -D$CPRDEF"
+   if test -n "$SRKDEF"; then
+      MACHDEFS="$MACHDEFS -D$SRKDEF"
+   fi
+
+   if test "$F90" = "xlf90"; then
+      if test "$ac_cv_f90_fpp_compiler" = "yes"; then
+         MACHDEFS="-WF,-D$SYSDEF,-D$CPRDEF"
+	 if test -n "$SRKDEF"; then
+            MACHDEFS="$MACHDEFS,-D$SRKDEF"
+         fi
+      fi
+   fi
+
+   if test "$F90" = "frt"; then
+      if test "$ac_cv_f90_fpp_compiler" = "yes"; then
+         MACHDEFS="-Wp,-D$SYSDEF,-D$CPRDEF"
+         if test -n "$SRKDEF"; then
+            MACHDEFS="$MACHDEFS,-D$SRKDEF"
+         fi
+      fi
+   fi
+
 fi
-
-AC_OUTPUT
 
 echo
 echo Output Variables: {CC=$CC} {ALLCFLAGS=$ALLCFLAGS} \
-{FPP=$FPP} {FPPFLAGS=$FPPFLAGS} {FC=$FC} {F90=$F90} \
-{FCFLAGS=$FCFLAGS} {F90FLAGS=$F90FLAGS} {OPT=$OPT} \
-{REAL8=$REAL8} {BIT64=$BIT64} {MPIF90=$MPIF90} \
-{MPILIBS=$MPILIBS} {MPIHEADER=$MPIHEADER} {MACHDEFS=$MACHDEFS} \
-{ENDIAN=$ENDIAN} {INCLUDEFLAG=$INCLUDEFLAG} \
-{INCLUDEPATH=$INCLUDEPATH} {AR=$AR} \
-{prefix=$prefix}
-
+{FPP=$FPP} {FPPFLAGS=$FPPFLAGS} {FC=$FC} \
+{F90=$F90} {FCFLAGS=$FCFLAGS} {F90FLAGS=$F90FLAGS} \
+{MACHDEFS=$MACHDEFS} {OPT=$OPT} {REAL8=$REAL8} \
+{BIT64=$BIT64} {ENDIAN=$ENDIAN} {MPIF90=$MPIF90} \
+{MPILIBS=$MPILIBS} {MPIHEADER=$MPIHEADER}  \
+{INCLUDEFLAG=$INCLUDEFLAG} {INCLUDEPATH=$INCLUDEPATH} \
+{AR=$AR} {prefix=$prefix}
 echo
+
+AC_OUTPUT
+
 echo Please check the Makefile.conf
 echo Have a nice day!
 
 # test -z is true for empty strings
 # test -n is true for non-empty strings
+
+
+
+
