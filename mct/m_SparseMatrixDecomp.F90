@@ -53,7 +53,7 @@
 ! 
 ! !INTERFACE:
 
- subroutine ByColumnGSMap_(xGSMap, sMat, sMGSMap)
+ subroutine ByColumnGSMap_(xGSMap, sMat, sMGSMap, root, comm)
 !
 ! !USES:
 !
@@ -80,18 +80,26 @@
 ! !INPUT PARAMETERS: 
 !
    type(GlobalSegMap), intent(in)    :: xGSMap
+   integer,            intent(in)    :: root
+   integer,            intent(in)    :: comm
+
+! !INPUT/OUTPUT PARAMETERS: 
+!
    type(SparseMatrix), intent(inout) :: sMat
 
 ! !OUTPUT PARAMETERS:
 !
-   type(GlobalSegMap), intent(out)   :: sMGSMap
+   type(GlobalSegMap), intent(out) :: sMGSMap
 
-! !DESCRIPTION: This routine is invoked from the root to compare 
-! the global row index entries of an input {\tt SparseMatrix} argument 
-! {\tt sMat} with the {\bf x}-vector decomposition stored in the 
-! {\tt GlobalSegMap} argument {\tt xGSMap}, and compute the appropriate
-! output {\tt GlobalSegMap} variable {\tt sMGSMap} that can be used to
-! decompose the matrix {\tt sMat} by column.
+! !DESCRIPTION: This routine is invoked from all processes on the 
+! communicator {\tt comm} to create from an input {\tt SparseMatrix}
+! {\tt sMat} (valid only on the {\tt root} process) and an input 
+! {\bf x}-vector decomposition described by the {\tt GlobalSegMap} 
+! argument {\tt xGSMap} (valid at least on the {\tt root}) to create 
+! an output {\tt GlobalSegMap} decomposition of the matrix elements 
+! {\tt sMGSMap}, which is valid on all processes on the communicator.
+! This matrix {\tt GlobalSegMap} describes the corresponding column 
+! decomposition of {\tt sMat}.
 !
 ! {\bf N.B.}:  The argument {\tt sMat} is returned sorted in lexicographic 
 ! order by column and row.
@@ -107,11 +115,16 @@
 !                 change attribute on starts,lengths, and pe_locs to
 !                 pointer to match GSMap_init.
 !                 add use m_die statement
+!       26Apr01 - J.W. Larson <larson@mcs.anl.gov> - fixed major logic bug
+!                 that had all processes executing some operations that 
+!                 should only occur on the root.
 !EOP
 !-------------------------------------------------------------------------
 
   character(len=*),parameter :: myname_=myname//'ByColumnGSMap_'
-
+! Process ID number
+  integer :: myID
+! Attributes for the output GlobalSegMap
   integer :: gsize, comp_id, ngseg
 ! Temporary array for identifying each matrix element column and 
 ! process ID destination
@@ -127,64 +140,80 @@
 ! Loop index
   integer :: i
 
+       ! Determine process id number myID
+
+  call MPI_COMM_RANK(comm, myID, ierr)
+  if(ierr /= 0) then
+     call MP_perr_die(myname_,'call MPI_COMM_RANK(...',ierr)
+  endif
+
+       ! First step:  a lot of prep work on the root only:
+
+  if(myID == root) then
+
        ! The global size of matrix GlobalSegMap is the number nonzero
        ! elements in sMat.  
 
-  gsize = SparseMatrix_lsize(sMat)
+     gsize = SparseMatrix_lsize(sMat)
 
        ! The matrix GlobalSegMap inherits the component ID from xGSMap:
 
-  comp_id = GlobalSegMap_comp_id(xGSMap)
+     comp_id = GlobalSegMap_comp_id(xGSMap)
    
        ! Sort the matrix entries in sMat by column, then row.  First,
        ! create the key list...
 
-  call List_init(sort_keys,'gcol:grow')
+     call List_init(sort_keys,'gcol:grow')
 
        ! Now perform the sort/permute...
 
-  call SparseMatrix_SortPermute(sMat, sort_keys)
+     call SparseMatrix_SortPermute(sMat, sort_keys)
 
        ! Allocate storage space for matrix element column indices and
        ! process ID destinations
 
-  allocate(gCol(gsize), element_pe_locs(gsize), stat=ierr)
+     allocate(gCol(gsize), element_pe_locs(gsize), stat=ierr)
 
-  if(ierr /= 0) then
-     call MP_perr_die(myname_,'allocate(gCol...',ierr)
-  endif
+     if(ierr /= 0) then
+	call MP_perr_die(myname_,'allocate(gCol...',ierr)
+     endif
 
        ! Extract global column information and place in array gCol
 
-  igCol = SparseMatrix_indexIA(sMat,'gcol')
+     igCol = SparseMatrix_indexIA(sMat,'gcol')
 
-  do i=1, gsize
-     gCol(i) = sMat%data%iAttr(igCol,i)
-  end do
+     do i=1, gsize
+	gCol(i) = sMat%data%iAttr(igCol,i)
+     end do
 
        ! Compute process ID destination for each matrix element,
        ! and store in the array element_pe_locs
 
-  call GlobalSegMap_peLocs(xGSMap, gsize, gCol, element_pe_locs)
+     call GlobalSegMap_peLocs(xGSMap, gsize, gCol, element_pe_locs)
 
        ! Using the entries of gCol and element_pe_locs, build the
        ! output GlobalSegMap attribute arrays starts(:), lengths(:),
        ! and pe_locs(:)
 
-  call ComputeSegments_(element_pe_locs, gCol, gsize, ngseg, starts, &
-                       lengths, pe_locs)
+     call ComputeSegments_(element_pe_locs, gCol, gsize, ngseg, starts, &
+                           lengths, pe_locs)
 
-       ! Using this local data, create the SparseMatrix GlobalSegMap sMGSMap:
+  endif ! if(myID == root)
 
-  call GlobalSegMap_init(sMGSMap, comp_id, ngseg, gsize, starts, &
-                         lengths, pe_locs)
+       ! Using this local data on the root, create the SparseMatrix 
+       ! GlobalSegMap sMGSMap (which will be valid on all processes
+       ! on the communicator:
 
-       ! Clean up
+  call GlobalSegMap_init(sMGSMap, ngseg, starts, lengths, pe_locs, &
+                         root, comm, comp_id, gsize)
 
-  deallocate(starts, lengths, pe_locs, stat=ierr)
+       ! Clean up (on the root)
 
-  if(ierr /= 0) then
-     call MP_perr_die(myname_,'deallocate(starts...',ierr)
+  if(myID == root) then
+     deallocate(starts, lengths, pe_locs, stat=ierr)
+     if(ierr /= 0) then
+	call MP_perr_die(myname_,'deallocate(starts...',ierr)
+     endif
   endif
 
  end subroutine ByColumnGSMap_
@@ -198,7 +227,7 @@
 ! 
 ! !INTERFACE:
 
- subroutine ByRowGSMap_(yGSMap, sMat, sMGSMap)
+ subroutine ByRowGSMap_(yGSMap, sMat, sMGSMap, root, comm)
 !
 ! !USES:
 !
@@ -227,18 +256,26 @@
 ! !INPUT PARAMETERS: 
 !
    type(GlobalSegMap), intent(in)    :: yGSMap
+   integer,            intent(in)    :: root
+   integer,            intent(in)    :: comm
+
+! !INPUT/OUTPUT PARAMETERS: 
+!
    type(SparseMatrix), intent(inout) :: sMat
 
 ! !OUTPUT PARAMETERS:
 !
    type(GlobalSegMap), intent(out) :: sMGSMap
 
-! !DESCRIPTION: This routine is invoked from the root to compare 
-! the global row index entries of an input {\tt SparseMatrix} argument 
-! {\tt sMat} with the {\bf y}-vector decomposition stored in the 
-! {\tt GlobalSegMap} argument {\tt yGSMap}, and compute the appropriate
-! output {\tt GlobalSegMap} variable {\tt sMGSMap} that can be used to
-! decompose the matrix {\tt sMat} by row.
+! !DESCRIPTION: This routine is invoked from all processes on the 
+! communicator {\tt comm} to create from an input {\tt SparseMatrix}
+! {\tt sMat} (valid only on the {\tt root} process) and an input 
+! {\bf y}-vector decomposition described by the {\tt GlobalSegMap} 
+! argument {\tt yGSMap} (valid at least on the {\tt root}) to create 
+! an output {\tt GlobalSegMap} decomposition of the matrix elements 
+! {\tt sMGSMap}, which is valid on all processes on the communicator.
+! This matrix {\tt GlobalSegMap} describes the corresponding row 
+! decomposition of {\tt sMat}.
 !
 ! {\bf N.B.}:  The argument {\tt sMat} is returned sorted in lexicographic 
 ! order by row and column.
@@ -253,12 +290,16 @@
 !                 the subroutine decleration.
 !                 change attribute on starts,lengths, and pe_locs to
 !                  pointer to match GSMap_init.
-
+!       26Apr01 - J.W. Larson <larson@mcs.anl.gov> - fixed major logic bug
+!                 that had all processes executing some operations that 
+!                 should only occur on the root.
 !EOP
 !-------------------------------------------------------------------------
 
   character(len=*),parameter :: myname_=myname//'ByRowGSMap_'
-
+! Process ID number
+  integer :: myID
+! Attributes for the output GlobalSegMap
   integer :: gsize, comp_id, ngseg
 ! Temporary array for identifying each matrix element row and 
 ! process ID destination
@@ -274,62 +315,79 @@
 ! Loop index
   integer :: i
 
+       ! Determine process id number myID
+
+  call MPI_COMM_RANK(comm, myID, ierr)
+  if(ierr /= 0) then
+     call MP_perr_die(myname_,'call MPI_COMM_RANK(...',ierr)
+  endif
+
+       ! First step:  a lot of prep work on the root only:
+
+  if(myID == root) then
+
        ! The global size of matrix GlobalSegMap is the number of rows.  
 
-  gsize = SparseMatrix_lsize(sMat)
+     gsize = SparseMatrix_lsize(sMat)
 
        ! The matrix GlobalSegMap inherits the component ID from yGSMap:
 
-  comp_id = GlobalSegMap_comp_id(yGSMap)
+     comp_id = GlobalSegMap_comp_id(yGSMap)
    
        ! Sort the matrix entries in sMat by row, then column.  First,
        ! create the key list...
 
-  call List_init(sort_keys,'grow:gcol')
+     call List_init(sort_keys,'grow:gcol')
 
        ! Now perform the sort/permute...
 
-  call SparseMatrix_SortPermute(sMat, sort_keys)
+     call SparseMatrix_SortPermute(sMat, sort_keys)
 
        ! Allocate storage space for matrix element row indices and
        ! process ID destinations
 
-  allocate(gRow(gsize), element_pe_locs(gsize), stat=ierr)
+     allocate(gRow(gsize), element_pe_locs(gsize), stat=ierr)
 
-  if(ierr /= 0) then
-     call MP_perr_die(myname_,'allocate(gRow...',ierr)
-  endif
+     if(ierr /= 0) then
+	call MP_perr_die(myname_,'allocate(gRow...',ierr)
+     endif
 
        ! Extract global row information and place in array gRow
 
-  igRow = SparseMatrix_indexIA(sMat,'grow')
+     igRow = SparseMatrix_indexIA(sMat,'grow')
 
-  do i=1, gsize
-     gRow(i) = sMat%data%iAttr(igRow,i)
-  end do
+     do i=1, gsize
+	gRow(i) = sMat%data%iAttr(igRow,i)
+     end do
 
        ! Compute process ID destination for each matrix element,
        ! and store in the array element_pe_locs
 
-  call GlobalSegMap_peLocs(yGSMap, gsize, gRow, element_pe_locs)
+     call GlobalSegMap_peLocs(yGSMap, gsize, gRow, element_pe_locs)
 
        ! Using the entries of gRow and element_pe_locs, build the
        ! output GlobalSegMap attribute arrays starts(:), lengths(:),
        ! and pe_locs(:)
 
-  call ComputeSegments_(element_pe_locs, gRow, gsize, ngseg, starts, &
-                       lengths, pe_locs)
+     call ComputeSegments_(element_pe_locs, gRow, gsize, ngseg, starts, &
+                           lengths, pe_locs)
 
-       ! Using this local data, create the SparseMatrix GlobalSegMap sMGSMap:
+  endif ! if(myID == root)
 
-  call GlobalSegMap_init(sMGSMap, comp_id, ngseg, gsize, starts, lengths, pe_locs)
+       ! Using this local data on the root, create the SparseMatrix 
+       ! GlobalSegMap sMGSMap (which will be valid on all processes
+       ! on the communicator:
 
-       ! Clean up
+  call GlobalSegMap_init(sMGSMap, ngseg, starts, lengths, pe_locs, &
+                         root, comm, comp_id, gsize)
 
-  deallocate(starts, lengths, pe_locs, stat=ierr)
+       ! Clean up on the root:
 
-  if(ierr /= 0) then
-     call MP_perr_die(myname_,'deallocate(starts...',ierr)
+  if(myID == root) then
+     deallocate(starts, lengths, pe_locs, stat=ierr)
+     if(ierr /= 0) then
+	call MP_perr_die(myname_,'deallocate(starts...',ierr)
+     endif
   endif
 
  end subroutine ByRowGSMap_

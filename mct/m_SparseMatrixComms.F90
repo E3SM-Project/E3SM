@@ -127,7 +127,9 @@
        ! Create from columnGSMap the corresponding GlobalSegMap
        ! that will decompose GsMat by column the same way.
 
-  call SparseMatrixDecompByColumn(columnGSMap, GsMat, MatGSMap)
+  call SparseMatrixDecompByColumn(columnGSMap, GsMat, MatGSMap, root, comm)
+
+       ! Broadcast the resulting GlobalSegMap across the communicator
 
        ! Scatter the matrix element data GsMat%data accordingly
 
@@ -237,7 +239,7 @@
        ! Create from rowGSMap the corresponding GlobalSegMap
        ! that will decompose GsMat by row the same way.
 
-  call SparseMatrixDecompByRow(rowGSMap, GsMat, MatGSMap)
+  call SparseMatrixDecompByRow(rowGSMap, GsMat, MatGSMap, root, comm)
 
        ! Scatter the matrix element data GsMat%data accordingly
 
