@@ -152,11 +152,14 @@
 
 ! !REVISION HISTORY:
 !       06Feb01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
+!       20Apr01 - R.L. Jacob  <jacob@mcs.anl.gov> - add status argument
+!                 to MPI_RECV
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::MapHandshake_'
 
   integer :: ierr, myID, RemoteRootID, SendTag, RecvTag
+  integer,dimension(MP_STATUS_SIZE) :: status
 
   call MP_COMM_RANK(LocalComm, myID, ierr)
   if(ierr /= 0) then
@@ -183,7 +186,7 @@
       ! Post receive from RemoteRootID:
 
      call MPI_RECV(RemoteMapPars, NumHandshakePars, MP_INTEGER, &
-	           RemoteRootID, RecvTag, MP_COMM_WORLD, ierr)
+	           RemoteRootID, RecvTag, MP_COMM_WORLD, status, ierr)
      if(ierr /= 0) then
 	call MP_perr_die(myname_,'call MPI_RECV()',ierr)
      endif
@@ -367,6 +370,8 @@
 ! !REVISION HISTORY:
 !       03Feb01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
 !       07Feb01 - J.W. Larson <larson@mcs.anl.gov> - First full version.
+!       20Apr01 - R.L. Jacob  <jacob@mcs.anl.gov> - add status argument
+!                 to MPI_RECV
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::ExGSMapGSMap_'
@@ -386,6 +391,7 @@
 
   integer :: myID, ngseg, remote_root
   integer :: local_gsize, remote_gsize
+  integer,dimension(MP_STATUS_SIZE) :: status
 
       ! Determine rank on local communicator:
 
@@ -461,7 +467,7 @@
       ! Receive RecvBuf from the remote component root:
 
      call MPI_RECV(RecvBuf, 3*RemoteMapPars(GsizeIndex), MP_INTEGER, &
-	           remote_root, RecvTag, MP_COMM_WORLD, ierr)
+	           remote_root, RecvTag, MP_COMM_WORLD, status, ierr)
      if(ierr /= 0) then
 	call MP_perr_die(myname_,'MPI_Recv(RecvBuf...',ierr)
      endif
