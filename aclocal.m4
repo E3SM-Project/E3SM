@@ -145,6 +145,7 @@ AC_CACHE_CHECK([if Fortran 90 compiler performs preprocessing],
 AC_LANG_PUSH(Fortran 90)
 AC_LANG_CONFTEST([AC_LANG_PROGRAM([$1])])
 AC_COMPILE_IFELSE([],[ac_cv_f90_fpp_compiler="yes"],[ac_cv_f90_fpp_compiler="no"])
+rm -f conftest.*
 F90=$old_F90
 ])])
 
@@ -179,6 +180,7 @@ if test "$old_ac_ext" = "f90"; then
    ac_ext="f90"
 fi
 AC_COMPILE_IFELSE([],[ac_cv_f90_fpp_external="yes"],[ac_cv_f90_fpp_external="no"])])
+rm -f conftest.*
 ac_ext=$old_ac_ext
 ])
 # This file is part of Autoconf.                       -*- Autoconf -*-

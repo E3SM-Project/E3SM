@@ -3207,6 +3207,7 @@ sed 's/^/| /' conftest.$ac_ext >&5
 ac_cv_f90_fpp_compiler="no"
 fi
 rm -f conftest.$ac_objext
+rm -f conftest.*
 F90=$old_F90
 
 fi
@@ -3305,6 +3306,7 @@ rm -f conftest.$ac_objext
 fi
 echo "$as_me:$LINENO: result: $ac_cv_f90_fpp_external" >&5
 echo "${ECHO_T}$ac_cv_f90_fpp_external" >&6
+rm -f conftest.*
 ac_ext=$old_ac_ext
 
 
