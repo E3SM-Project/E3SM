@@ -45,8 +45,6 @@
       integer :: mynprocs      !  number of procs
       integer :: mylrank       !  rank in local comm
       integer :: mygrank       !  rank in mpi_comm_world
-      integer,dimension(:),pointer :: allids	   ! unique id for each 
-                                                   ! component
       integer,dimension(:),pointer :: nprocspid	   ! number of processes 
                                                    ! each component is on
       integer,dimension(:,:),pointer :: idGprocid  ! translate between local 
@@ -79,6 +77,9 @@
 !                ComponentRootRank
 !      08Feb01 - R. Jacob <jacob@mcs.anl.gov> - add mylrank and mygrank
 !                to datatype
+!      20Apr01 - R. Jacob <jacob@mcs.anl.gov> - remove allids from
+!                MCTWorld datatype.  Not needed because component
+!                ids are always from 1 to number-of-components.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_MCTWorld'
@@ -118,6 +119,9 @@
 !	if init is called a second time.
 !       08Feb01 - R. Jacob <jacob@mcs.anl.gov> - initialize the new
 !                mygrank and mylrank
+!       20Apr01 - R. Jacob <jacob@mcs.anl.gov> - remove allids from
+!                MCTWorld datatype.  Not needed because component
+!                ids are always from 1 to number-of-components.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::init_'
@@ -132,7 +136,7 @@
 ! ------------------------------------------------------------------
 
 ! make sure this has not been called already
-  if(associated(ThisMCTWorld%allids) ) then
+  if(associated(ThisMCTWorld%nprocspid) ) then
      write(stderr,'(2a)') myname_, &
       'MCTERROR:  MCTWorld has already been initialized...Continuing'
        RETURN
@@ -172,45 +176,6 @@
         call MP_perr_die(myname_, 'allocate(compids,...)',ier)
      endif
   endif
-
-!!!!!!!!!!!!!!!!!!
-!  Gather the component id from the root of each component
-!!!!!!!!!!!!!!!!!!
-!
-!  First on the global root, post a receive for each component
-  if(myGid == 0) then
-    do i=1,ncomps
-       call MPI_IRECV(compids(i), 1, MP_INTEGER, MP_ANY_SOURCE,i, &
-	 MP_COMM_WORLD, reqs(i), ier)
-       if(ier /= 0) call MP_perr_die(myname_,'MPI_IRECV()',ier)
-    enddo
-  endif
-
-!  The root on each component sends
-  if(myLid == 0) then
-    call MPI_SEND(myid,1,MP_INTEGER,0,myid,MP_COMM_WORLD,ier)
-    if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL()',ier)
-  endif
-
-!  Global root waits for all sends
-  if(myGid == 0) then
-    call MPI_WAITALL(size(reqs), reqs, status, ier)
-    if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL()',ier)
-  endif
-
-!  declare space for the component ids
-  allocate(ThisMCTWorld%allids(ncomps),stat=ier)
-  if(ier/=0) call MP_perr_die(myname_,'allocate(MCTWorld%allids(:),...',ier)
-
-!  Now store the component ids in the World description and Broadcast
-  if(myGid == 0) then
-    ThisMCTWorld%allids(1:ncomps) = compids(1:ncomps)
-  endif
-  call MPI_BCAST(ThisMCTWorld%allids, ncomps, MP_INTEGER, 0, MP_COMM_WORLD, ier)
-  if(ier/=0) call MP_perr_die(myname_,'MPI_BCast allids',ier)
-!!!!!!!!!!!!!!!!!!
-! end of component id 
-!!!!!!!!!!!!!!!!!!
 
 
 !!!!!!!!!!!!!!!!!!
@@ -360,12 +325,15 @@
 !       19Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
 !       08Feb01 - R. Jacob <jacob@mcs.anl.gov> - clean the new
 !                mygrank and mylrank
+!       20Apr01 - R. Jacob <jacob@mcs.anl.gov> - remove allids from
+!                MCTWorld datatype.  Not needed because component
+!                ids are always from 1 to number-of-components.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::clean_'
   integer :: ier
 
-  deallocate(ThisMCTWorld%allids,ThisMCTWorld%nprocspid,ThisMCTWorld%idGprocid,stat=ier)
+  deallocate(ThisMCTWorld%nprocspid,ThisMCTWorld%idGprocid,stat=ier)
   if(ier /= 0) call perr_die(myname_,'deallocate(MCTW,...)',ier)
 
   ThisMCTWorld%myid = 0
@@ -523,16 +491,10 @@
 	valid = .false.
 	n = 0
 
-	CHECK_COMP_ID_LOOP: do 
-
-	   n = n + 1
-	   if(n > NumComponents_(World)) EXIT
-	   if((comp_id) == World%allids(n)) then
-	      valid = .true.
-	      EXIT
-	   endif
-
-	end do CHECK_COMP_ID_LOOP
+	if((comp_id <= World%ncomps) .and. &
+	  (comp_id > 0)) then
+	     valid = .true.
+	endif
 
 	if(.not. valid) then
 	   write(stderr,'(2a,1i7)') myname,":: invalid component id no. = ",&
