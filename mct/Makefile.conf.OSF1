@@ -37,19 +37,16 @@ _Dsys		= -DsysOSF1
 
 # If use the MPICH implementation
 
-_LMPI		= -L/usr/local/mpi/lib/alpha/ch_shmem
-_lMPI		= -lmpi -lrpc
-_lMPIlog	= -lfmpi -llmpi -lpmpi
-_lMPItrace	= -lfmpi -ltmpi -lpmpi
-_lMPIanime	= -lfmpi -lampi -lpmpi -lmpe -lX11 -lm
-_IMPI		= -noinclude -I -I/usr/local/mpi-1.0.13/include
+_LMPI		= 
+_lMPI		= -lfmpi -lmpi -lelan
+_IMPI		= 
 
 # If use DEC implementation
 
-_LMPI		= -L/usr/opt/MPI154/lib
-_lMPI		= -lfmpi -lmpi -lrt -pthread
-_Inull		= -noinclude -I
-_IMPI		= -I/usr/opt/MPI154/include/
+#_LMPI		= -L/usr/opt/MPI154/lib
+#_lMPI		= -lfmpi -lmpi -lrt -pthread
+#_Inull		= -noinclude -I
+#_IMPI		= -I/usr/opt/MPI154/include/
 
 _Lmpeu		= -L../mpeu
 _lmpeu		= -lmpeu
