@@ -3165,7 +3165,8 @@ MACHDEFS="-DCPRINTEL $MACHDEFS"
 if test -z "$REAL8"; then
    REAL8="-r8"
 fi
-FFLAGS="-w $FFLAGS";;
+FFLAGS="-w $FFLAGS"
+echo "Intel Compilers must set the environment variable F_UFMTENDIAN=big to do endian conversion";;
 fort) MACHDEFS="-DCPRCOMPAQ $MACHDEFS";;
 g95) MACHDEFS="-DCPRGNU $MACHDEFS";;
 esac
@@ -3175,6 +3176,12 @@ if echo $f90_version | grep -i nag >/dev/null 2>&1; then
 fi
 if echo $f90_version | grep -i absoft >/dev/null 2>&1; then
    MACHDEFS="-DCPRABSOFT $MACHDEFS"
+   if test -z "$REAL8"; then
+      REAL8="-N113"
+   fi
+   if test -z "$INCLUDEFLAG"; then
+      INCLUDEFLAG="-p"
+   fi
 fi
 if echo $f90_version | grep -i mipspro >/dev/null 2>&1; then
    MACHDEFS="-DCPRMIPSPRO $MACHDEFS"
@@ -4111,6 +4118,7 @@ echo "BIT64=$BIT64"
 echo "MPIF90=$MPIF90"
 echo "MPILIBS=$MPILIBS"
 echo "MACHDEFS=$MACHDEFS"
+echo "ENDIAN=$ENDIAN"
 echo "INCLUDEFLAG=$INCLUDEFLAG"
 echo "INCLUDEPATH=$INCLUDEPATH"
 echo
