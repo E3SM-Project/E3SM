@@ -24,6 +24,7 @@ m_SparseMatrixDecomp.tex \
 m_SparseMatrixToMaps.tex \
 m_SparseMatrixPlus.tex \
 m_SpatialIntegral.tex \
+m_SpatialIntegralV.tex \
 m_String.tex \
 m_Transfer.tex \
 m_List.tex
