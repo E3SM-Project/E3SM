@@ -220,7 +220,7 @@
 !
 ! !INTERFACE:
 
-    subroutine clean_(sMat)
+    subroutine clean_(sMat,stat)
 !
 ! !USES:
 !
@@ -229,18 +229,24 @@
       implicit none
 
       type(SparseMatrix), intent(inout) :: sMat
+      integer, optional,  intent(out)   :: stat
 
 ! !REVISION HISTORY:
 !       19Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 !       23Apr00 - J.W. Larson <larson@mcs.anl.gov> - added changes to
 !                 accomodate clearing nrows and ncols.
+!       01Mar02 - E.T. Ong <eong@mcs.anl.gov> Added stat argument.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::clean_'
 
        ! Deallocate memory held by sMat:
 
-  call AttrVect_clean(sMat%data)
+  if(present(stat)) then
+     call AttrVect_clean(sMat%data,stat)
+  else
+     call AttrVect_clean(sMat%data)
+  endif
 
        ! Set the number of rows and columns in sMat to zero:
 
