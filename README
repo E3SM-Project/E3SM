@@ -82,7 +82,7 @@
 
   INSTALLATION INSTRUCTIONS:
   "make install" will copy the .mod files to the /usr/include directory
-  and the *lib.a files to /usr/lib.   To overide these choices, use
+  and the *lib.a files to /usr/lib.   To override these choices, use
   "-prefix" when running configure:
        > ./configure -prefix=/home/$USER
 
