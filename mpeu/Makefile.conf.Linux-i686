@@ -1,0 +1,84 @@
+#!/bin/make
+#-----------------------------------------------------------------------
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#BOP
+#
+# !ROUTINE: Makefile.conf.Linux
+# 
+# !DESCRIPTION: 
+#	An include file of configurations.  See Makefile for additional
+#   `make' procedures.  This include file is used to overide the default
+#   environments (including commands) defined in file Makefile.
+#
+# !INTERFACE:
+#
+#	% ln -s Makefile.conf.Linux Makefile.conf
+#	% make ...
+#
+# !SEE ALSO: Makefile
+#
+# !REVISION HISTORY: (`cvs log <>' for more)
+#	02Apr96 - J. Guo	- use include for configuration files
+# 	21Aug95 - J. Guo	- added the prolog
+#	28Sep98 - Jing Guo (guo@dao.gsfc.nasa.gov)
+#		- Cleaned _Dnod for this library
+#       18Jan01 - J. Larson <larson@mcs.anl.gov> - adapted for Linux
+#
+#EOP
+#-----------------------------------------------------------------------
+
+_Dsys		= -DsysLinux
+_Dnod		=
+
+# Environments
+# ============
+
+# If use the MPICH implementation
+
+_LMPI		= -L/soft/apps/packages/mpich-pg-1.2.0/lib
+_lMPI		= -lmpich
+_IMPI		= -I/soft/apps/packages/mpich-pg-1.2.0/include
+
+# The default design requirement for this library is to use the OS
+# specific default REAL kind for all its REAL type variables, while
+# supports both REAL and DOUPLE PRECISION kinds for its interfaces
+# through the Fortran 90 generic interface feature. (Jing Guo)
+
+_R		= -r4
+_R		= -r8
+_R		=
+
+_Iconf		= $(_IMPI)
+
+SHELL		= /bin/sh
+F77		= pgf77
+F90		= pgf90
+FC		= $(F90)
+
+FFLAGS		= -O2 -tp p6 -pc 32 -Mnoframe -byteswapio $(_R)
+CFLAGS		= -O
+
+
+LD		= pgf90
+LDFLAGS		= $(FFLAGS)
+
+LIBprof		= #-lprof
+LIBsys	 	= 
+
+
+FPPFLAGS	= -DLANGUAGE_FORTRAN
+
+.F.o:
+	$(FPP) $(FPPFLAGS) $(_I) $(_DF) $*.F $*.f
+	$(FC) -c $(FFLAGS) $(_I) $*.f
+	$(RM) $*.f
+
+.F90.o:
+	$(FPP) $(FPPFLAGS) $(_I) $(_DF) $*.F90 $*.f90
+	$(FC) -c $(FFLAGS) $(_I) $*.f90
+	$(RM) $*.f90
+
+#.----------------------------------------------------------------------
+
+MUPDATE         = sh LCupdate.sh

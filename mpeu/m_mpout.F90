@@ -138,7 +138,7 @@ contains
     if(lu > 0) mpout=lu
 
     write(sfix,'(a,z3.3)') '.',irank
-    call opntext(mpout,trim(upfix)//sfix,'unknown',ier)
+!    call opntext(mpout,trim(upfix)//sfix,'unknown',ier)
     if(ier /= 0) then
       write(stderr,'(4a,i4)') myname_,	&
 	': opntext("',trim(upfix)//sfix,'") error, ier =',ier

@@ -95,7 +95,7 @@
 !
 ! 10may96 - Jing Guo <guo@eramus>		-
 !
-!     + This `zeit' subroutine collection replaces original zeit files
+!     + This zeit subroutine collection replaces original zeit files
 !	used in PSAS on both systems, UNICOS and IRIX, with following
 !	changes:
 !
@@ -130,7 +130,7 @@
 !     +	The precision of "wall clock" time returned by syszeit_() is
 !	only required to be reliable upto seconds.
 !
-!     +	The "wall clock" time for individual `name' (clkknt) is
+!     +	The wall clock time for individual name tag (clkknt) is
 !	accumulated by adding the differences between two integer
 !	values, iclk and iclksv.  Care must be taken to compute the
 !	differences of iclk and iclksv first.  That is, doing

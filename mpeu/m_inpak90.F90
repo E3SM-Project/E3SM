@@ -53,7 +53,7 @@
 ! \end{verbatim}
 !
 ! Resource files are random access, the particular order of the
-! records are not important (except between ::'s in a table definition).
+! records are not important (except between ::s in a table definition).
 !
 !    \subsection{A Quick Stroll}
 !
@@ -156,7 +156,7 @@
 !
 !
 !    \subsection{Package History} 
-!       Back in the 70's Eli Isaacson wrote IOPACK in Fortran
+!       Back in the 70s Eli Isaacson wrote IOPACK in Fortran
 !       66.  In June of 1987 I wrote Inpak77 using
 !       Fortran 77 string functions; Inpak 77 is a vastly
 !       simplified IOPACK, but has its own goodies not found in
@@ -244,8 +244,9 @@
      public :: lablin,rdnext,fltget,intget,getwrd,str2rn,chrget,getstr
      public :: strget
 
-     interface fltget;
-      module procedure fltgetsp, fltgetdp
+     interface fltget; module procedure &
+	  fltgetsp, &
+	  fltgetdp
      end interface
 
 
@@ -334,7 +335,7 @@
   if(myID == root) then
     call i90_LoadF(fname,ier)
     if(ier /= 0) then
-      call perr(myname_,'i90_LoadF("'//trim(fname)//'")',ier)
+      call perr(myname_,'i90_LoadF("//trim(fname)//")',ier)
       istat=ier
       return
     endif
@@ -504,7 +505,7 @@ end subroutine pop_
 ! !SEE ALSO:
 !
 ! !REVISION HISTORY:
-! 	03Jul96 - J. Guo	- added to Arlindo's inpak90 for its
+! 	03Jul96 - J. Guo	- added to Arlindos inpak90 for its
 !				  Fortran 90 revision.
 !_______________________________________________________________________
   character(len=*),parameter :: myname_=myname//'::i90_Release'
@@ -568,7 +569,7 @@ end subroutine i90_fullRelease
 ! 
 ! !DESCRIPTION: 
 !
-!  Reads resource file, strips out comments, translate TAB's into
+!  Reads resource file, strips out comments, translate TABs into
 !  blanks, and loads the modified file contents into memory.
 !  Must be called only once for each resource file.
 !
@@ -751,11 +752,17 @@ end subroutine i90_fullRelease
 ! !REVISION HISTORY: 
 !
 !  19Jun96   da Silva   Original code.
+!  19Jan01   Jay Larson <larson@mcs.anl.gov> - introduced CHARACTER 
+!            variable EOL_label, which is used to circumvent pgf90
+!            problems with passing concatenated characters as an argument
+!            to a function.
 !
 !EOP
 !-------------------------------------------------------------------------
 
       integer i, j
+
+      character(len=(len(label)+len(EOL))) :: EOL_label
 
 !	Make sure that a buffer is defined (JG)
 !	----------------------------------
@@ -766,7 +773,8 @@ end subroutine i90_fullRelease
 
 !     Determine whether label exists
 !     ------------------------------     
-      i = index ( i90_now%buffer(1:i90_now%nbuf), EOL//label ) + 1
+      EOL_label = EOL // label
+      i = index ( i90_now%buffer(1:i90_now%nbuf), EOL_label ) + 1
       if ( i .le. 1 ) then
            i90_now%this_line = BLK // EOL
            iret = -2
@@ -920,7 +928,7 @@ end subroutine i90_fullRelease
 !
 !  Get next token from current line. The current line is defined by a
 !  call to {\tt i90\_label()}. Tokens are sequences of characters (including
-!  blanks) which may be enclosed by single (') or double (") quotes. 
+!  blanks) which may be enclosed by single or double quotes. 
 !  If no quotes are present, the token from the current position to the next
 !  blank of TAB is returned.
 !  
@@ -939,7 +947,7 @@ end subroutine i90_fullRelease
 !  {\em Invalid string constructs:}
 !
 !  \begin{verbatim}
-!               'cannot handle mixed quotes"
+!               cannot handle mixed quotes (i.e. single/double)
 !               'escaping like this \' is not implemented'
 !               'this # will not work because of the #'
 !  \end{verbatim}
@@ -1036,7 +1044,7 @@ end subroutine i90_fullRelease
 !
 !  Get next string from current line. The current line is defined by a
 !  call to {\tt i90\_label()}. Strings are sequence of characters (including
-!  blanks) enclosed by single (') or double (") quotes. If no quotes
+!  blanks) enclosed by single or double quotes. If no quotes
 !  are present, the string from the current position to the end of 
 !  the line is returned.
 !
@@ -1059,7 +1067,7 @@ end subroutine i90_fullRelease
 !  {\em Invalid string constructs:}
 !
 !  \begin{verbatim}
-!               'cannot handle mixed quotes"
+!               cannot handle mixed quotes
 !               'escaping like this \' is not implemented'
 !  \end{verbatim}
 !
@@ -1494,7 +1502,7 @@ end subroutine i90_fullRelease
 ! !DESCRIPTION: 
 !
 !     Pads from the right with the comment character (\#). It also
-!  replaces TAB's with blanks for convenience. This is a low level
+!  replaces TABs with blanks for convenience. This is a low level
 !  i90 routine.
 !
 ! !CALLING SEQUENCE: 
@@ -1511,7 +1519,7 @@ end subroutine i90_fullRelease
 !
 ! !BUGS:  
 !
-!      It alters TAB's even inside strings.
+!      It alters TABs even inside strings.
 !
 !
 ! !REVISION HISTORY: 
@@ -1532,7 +1540,7 @@ end subroutine i90_fullRelease
       end do
  11   continue
 
-!     Replace TAB's with blanks
+!     Replace TABs with blanks
 !     -------------------------
       do i = 1, 256
          if ( string(i:i) .eq. TAB ) string(i:i) = BLK

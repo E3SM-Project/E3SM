@@ -13,7 +13,10 @@
 #			- special configuration for CRAY
 #			- fool-prove configuration
 #			- additional information
-#  23dec99   da Silva   Modified error messages.
+#  25jun99   J. Larson  Added distinction between Cray T3E and
+#                       other Cray (UNICOS) platforms.
+#  19jan01   J. Larson  Added distinction for linux clusters of the
+#                       i686 and alpha type.
 #
 #.....................................................................
 
@@ -26,27 +29,55 @@ c=`basename $0 .sh`
 # ---------------------------------------
 makeconf="Makefile.conf.`uname -n | awk '{print $1}'`"
 
-# Site specific configuration
-# ---------------------------
+# OS/chip specific configuration for Linux clusters
+# -------------------------------------------------
 if [ ! -r ${makeconf} ]; then
-  echo "$c: not using site specific ${makeconf} in `pwd`" 1>&2
+  echo "$c: not available, ${makeconf}" 1>&2
+#
+  OpSys="`uname -s | awk '{print $1}'`"
+  Mach="`uname -m | awk '{print $1}'`"
+#
+  echo "OpSys = " ${OpSys}
+  echo "Mach = " ${Mach}
+#
+  if [ "${OpSys}" = Linux ]; then
+    if [ "${Mach}" = i686 ]; then
+      makeconf="Makefile.conf.Linux-i686"
+    fi
+    if [ "${Mach}" = alpha ]; then
+      makeconf="Makefile.conf.Linux-alpha"
+    fi
+  fi
+fi #closes if [ ! -r ${makeconf} ]...Block for Linux 
+
+# OS specific configuration
+# ---------------------------------------
+if [ ! -r ${makeconf} ]; then
+  echo "$c: not available, ${makeconf}" 1>&2
+
   makeconf="Makefile.conf.`uname -s | awk '{print $1}'`"
 fi
 
 # if the OS is UNICOS, it does not follow the convention
-# ------------------------------------------------------
+# ---------------------------------------
 if [ ! -r ${makeconf} ]; then
-  echo "$c: cannot find ${makeconf} in `pwd`" 1>&2
+  echo "$c: not available, ${makeconf}" 1>&2
+
   mech="`uname -m | awk '{print $1}'`"
   if [ "${mech}" = CRAY ]; then
-    makeconf="Makefile.conf.UNICOS"
+    model="`uname -m | awk '{print $2}'`"
+    if [ "${model}" = T3E ]; then
+       makeconf="Makefile.conf.T3E"
+    else
+       makeconf="Makefile.conf.UNICOS"
+    fi
   fi
 fi
 
 # if all are failed, make a simple one
 # ---------------------------------------
 if [ ! -r ${makeconf} ]; then
-  echo "$c: cannot find ${makeconf} in `pwd` " 1>&2
+  echo "$c: not available, ${makeconf}" 1>&2
 
   makeconf="Makefile.conf.unknown"
   if [ ! -r ${makeconf} ]; then
@@ -57,6 +88,6 @@ fi
 rm -f Makefile.conf
 ln -s ${makeconf} Makefile.conf
 
-echo "$c: using ${makeconf} in `pwd`" 1>&2
+echo "$c: Makefile.conf is ${makeconf}" 1>&2
 
 #.

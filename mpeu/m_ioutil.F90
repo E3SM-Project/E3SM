@@ -43,9 +43,9 @@ contains
 !
 ! !DESCRIPTION:
 !
-!	Open a file in `IEEE' format.
+!	Open a file in IEEE format.
 !
-!	`IEEE' format is refered as a FORTRAN "unformatted" file with
+!	IEEE format is refered as a FORTRAN "unformatted" file with
 !	"sequantial" access and variable record lengths.  Under common
 !	Unix, it is only a file with records packed with a leading 4-
 !	byte word and a trailing 4-byte word indicating the size of
@@ -374,7 +374,7 @@ contains
 
 #ifdef _UNICOS
 		! Test #3, if the user has reserved the unit through
-		! UNICOS' assign().
+		! UNICOS assign().
 
 	  if(ios.eq.0 .and. .not.inuse) then
 	    call asnqunit(lu,attr,ios)

@@ -41,6 +41,12 @@
 ! !REVISION HISTORY:
 ! 	01Jun99	- Jing Guo <guo@dao.gsfc.nasa.gov>
 !		- initial prototype/prolog/code
+! 	19Jan01	- Jay Larson <larson@mcs.anl.gov> - removed numerous
+!                 double-quote characters appearing inside single-quote
+!                 blocks.  This was done to comply with pgf90.  Also,
+!                 numerous double-quote characters were removed from
+!                 within comment blocks because pgf90 kept trying to
+!                 interpret them (spooky).
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_StrTemplate'
@@ -82,16 +88,16 @@ contains
 			! choose a UNIX or a GrADS(defulat) type format
 
       character(len=*),intent(in ),optional :: xid
-			! a string substituting a "%s".  Trailing
+			! a string substituting a '%s'.  Trailing
 			! spaces will be ignored
 
       integer,intent(in ),optional :: nymd
-			! yyyymmdd, substituting "%y4", "%y2", "%m1",
-			! "%m2", "%mc", "%Mc', and "%MC"
+			! yyyymmdd, substituting '%y4', '%y2', '%m1',
+			! '%m2', '%mc', '%Mc', and '%MC'
 
       integer,intent(in ),optional :: nhms
-			! hhmmss, substituting "%h1", "%h2", "%h3",
-			! and "%n2"
+			! hhmmss, substituting '%h1', '%h2', '%h3',
+			! and '%n2'
 
       integer,intent(out),optional :: stat
 			! error code
@@ -116,8 +122,8 @@ contains
   !  call UX_(str,tmpl,xid,nymd,nhms,stat)
 
   case default
-    write(stderr,'(4a)') myname_,': unknown class, "',	&
-	trim(tmpl_class),'"'
+    write(stderr,'(4a)') myname_,': unknown class:  ',	&
+	trim(tmpl_class),'.'
     if(.not.present(stat)) call die(myname_)
     stat=-1
     return
@@ -148,6 +154,10 @@ end subroutine strTemplate_
 ! !REVISION HISTORY:
 ! 	01Jun99	- Jing Guo <guo@dao.gsfc.nasa.gov>
 !		- initial prototype/prolog/code
+!       19Jan01 - Jay Larson <larson@mcs.anl.gov> - added
+!                 variable c1c2, to store c1//c2, which pgf90
+!                 would not allow as an argument to the 'select case'
+!                 statement.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GX_'
@@ -159,6 +169,7 @@ end subroutine strTemplate_
   integer :: istp,kstp
 
   character(len=1) :: c0,c1,c2
+  character(len=2) :: c1c2
   character(len=4) :: sbuf
 !________________________________________
 	! Determine iyr, imo, and idy
@@ -259,7 +270,8 @@ do while( i+istp <= ln_tmpl )	! A loop over all tokens in (tmpl)
       if(i2 <= ln_Tmpl) c2=tmpl(i2:i2)
 	!________________________________________
 
-      select case(c1//c2)
+      c1c2 = c1 // c2
+      select case(c1c2)
 
       case("y4","y2","m1","m2","mc","Mc","MC","d1","d2")
         if(.not.present(nymd)) then
@@ -284,7 +296,7 @@ do while( i+istp <= ln_tmpl )	! A loop over all tokens in (tmpl)
       case default
 
         write(stderr,'(4a)') myname_,	&
-	  ': invalid template entry, "',trim(tmpl(i:)),'"'
+	  ': invalid template entry:  ',trim(tmpl(i:)),'.'
         if(.not.present(stat)) call die(myname_)
         stat=2
         return
@@ -305,7 +317,7 @@ do while( i+istp <= ln_tmpl )	! A loop over all tokens in (tmpl)
 	kstp=4
       case default
 	write(stderr,'(4a)') myname_,	&
-	  ': invalid template entry, "',trim(tmpl(i:)),'"'
+	  ': invalid template entry:  ',trim(tmpl(i:)),'.'
 	if(.not.present(stat)) call die(myname_)
 	stat=2
 	return
@@ -329,7 +341,7 @@ do while( i+istp <= ln_tmpl )	! A loop over all tokens in (tmpl)
 	kstp=3
       case default
 	write(stderr,'(4a)') myname_,	&
-	  ': invalid template entry, "',trim(tmpl(i:)),'"'
+	  ': invalid template entry:  ',trim(tmpl(i:)),'.'
 	if(.not.present(stat)) call die(myname_)
 	stat=2
 	return
@@ -345,7 +357,7 @@ do while( i+istp <= ln_tmpl )	! A loop over all tokens in (tmpl)
 	kstp=3
       case default
 	write(stderr,'(4a)') myname_,	&
-	  ': invalid template entry, "',trim(tmpl(i:)),'"'
+	  ': invalid template entry:  ',trim(tmpl(i:)),'.'
 	if(.not.present(stat)) call die(myname_)
 	stat=2
 	return
@@ -366,7 +378,7 @@ do while( i+istp <= ln_tmpl )	! A loop over all tokens in (tmpl)
 	kstp=2
       case default
 	write(stderr,'(4a)') myname_,	&
-	  ': invalid template entry, "',trim(tmpl(i:)),'"'
+	  ': invalid template entry:  ',trim(tmpl(i:)),'.'
 	if(.not.present(stat)) call die(myname_)
 	stat=2
 	return
@@ -390,7 +402,7 @@ do while( i+istp <= ln_tmpl )	! A loop over all tokens in (tmpl)
 	kstp=3
       case default
 	write(stderr,'(4a)') myname_,	&
-	  ': invalid template entry, "',trim(tmpl(i:)),'"'
+	  ': invalid template entry:  ',trim(tmpl(i:)),'.'
 	if(.not.present(stat)) call die(myname_)
 	stat=2
 	return
@@ -403,7 +415,7 @@ do while( i+istp <= ln_tmpl )	! A loop over all tokens in (tmpl)
 	kstp=2
       case default
 	write(stderr,'(4a)') myname_,	&
-	  ': invalid template entry, "',trim(tmpl(i:)),'"'
+	  ': invalid template entry:  ',trim(tmpl(i:)),'.'
 	if(.not.present(stat)) call die(myname_)
 	stat=2
 	return
@@ -411,7 +423,7 @@ do while( i+istp <= ln_tmpl )	! A loop over all tokens in (tmpl)
 
     case default
 	write(stderr,'(4a)') myname_,	&
-	  ': invalid template entry, "',trim(tmpl(i:)),'"'
+	  ': invalid template entry:  ',trim(tmpl(i:)),'.'
 	if(.not.present(stat)) call die(myname_)
 	stat=2
       return
