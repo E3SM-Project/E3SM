@@ -3192,7 +3192,7 @@ fi
 if echo $f90_version | grep -i mipspro >/dev/null 2>&1; then
    MACHDEFS="-DCPRMIPSPRO $MACHDEFS"
    if test -z "CCFLAGS"; then
-      CCFLAGS="-64 -O $DEFS"
+      CCFLAGS="-64"
    fi
    if test -z "$REAL8"; then
       REAL8="-r8"
@@ -3213,7 +3213,7 @@ if echo $f90_version | grep -i sx >/dev/null 2>&1; then
 fi
 
 if test -z "$CCFLAGS"; then
-   CCFLAGS="-O $MACHDEFS"
+   CCFLAGS="-O"
 fi
 if test -z "$INCLUDEFLAG"; then
    INCLUDEFLAG="-I"
