@@ -155,8 +155,8 @@
            ierr = 2
            call die(myname_,'too many pe matches',ierr)
 	endif
-	start(count) = GSMap%start(count)
-	length(count) = GSMap%length(count)
+	start(count) = GSMap%start(n)
+	length(count) = GSMap%length(n)
      endif
   end do
 
