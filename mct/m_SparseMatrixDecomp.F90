@@ -468,7 +468,9 @@
 ! !REVISION HISTORY: 
 !
 !       18Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial version.
-
+!       28Aug01 - M.J. Zavislak <zavislak@mcs.anl.gov>
+!                     Changed first sanity check to get size(element_pe_locs)
+!                     instead of size(elements)
 !EOP
 !-------------------------------------------------------------------------
   character(len=*),parameter :: myname_=myname//'ComputeSegments_'
@@ -477,7 +479,7 @@
 
        ! Input argument sanity checks:
 
-  if(size(elements) < num_elements) then
+  if(size(element_pe_locs) < num_elements) then
      call MP_perr_die(myname_,'input argument array element_pe_locs too small', &
 	  num_elements-size(element_pe_locs))
   endif
