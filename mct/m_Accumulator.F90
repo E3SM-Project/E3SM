@@ -85,6 +85,7 @@
 				    ! attributes, and lists of the
 				    ! respective locations of these
 				    ! shared attributes
+      public :: accumulate   ! Add AttrVect data into an Accumulator
 
 ! Definition of interfaces for the methods for the Accumulator:
 
@@ -113,6 +114,7 @@
        aCaCSharedAttrIndexList_,  &   
        aVaCSharedAttrIndexList_
     end interface
+    interface accumulate ; module procedure accumulate_ ; end interface
 
 ! !PUBLIC DATA MEMBERS:
 !
@@ -1685,5 +1687,203 @@
 
  end subroutine aVaCSharedAttrIndexList_
 
-end module m_Accumulator
+!BOP -------------------------------------------------------------------
+!
+! !ROUTINE: accumulate_--Acumulate from an AttrVect to an Accumulator.
+!
+! !DESCRIPTION:
+! This routine performs time {\em accumlation} of data present in an
+! MCT field data {\tt AttrVect} variable {\tt aV} (more information 
+! about the {\tt AttrVect} can be found in the MCT module 
+! {\tt m\_AttrVect}), and combines it with the running tallies stored 
+! in the MCT {\tt Accumulator} variable {\tt aC} (more information about 
+! the {\tt Accumulator} can be found in the MCT module 
+! {\tt m\_Accumulator}).  This routine automatically identifies which 
+! fields are held in common by {\tt aV} and {\tt aC} and uses the 
+! accumulation action information stored in {\tt aC} to decide how
+! each field in {\tt aV} is to be combined into its corresponding 
+! running tally in {\tt aC}.  The accumulation operations currently 
+! supported correspond to those defined among the public data members
+! of the declaration section of the MCT module {\tt m\_Accumulator}.  
+! This routine also automatically increments the counter in {\tt aC} 
+! signifying the number of steps completed in the accumulation cycle.
+!
+! !INTERFACE:
 
+ subroutine accumulate_(aV, aC)
+
+!
+! !USES:
+!
+      use m_stdio, only : stdout,stderr
+      use m_die,   only : die
+
+      use m_AttrVect, only : AttrVect
+      use m_AttrVect, only : AttrVect_lsize => lsize
+      use m_AttrVect, only : AttrVect_nIAttr => nIAttr
+      use m_AttrVect, only : AttrVect_nRAttr => nRAttr
+      use m_AttrVect, only : AttrVect_indexRA => indexRA
+      use m_AttrVect, only : AttrVect_indexIA => indexIA
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+!
+      type(AttrVect),     intent(in)    :: aV      ! Input AttrVect
+
+! !INPUT/OUTPUT PARAMETERS: 
+!
+      type(Accumulator),  intent(inout) :: aC      ! Output Accumulator
+
+! !REVISION HISTORY:
+! 18Sep00 - J.W. Larson <larson@mcs.anl.gov> -- initial version.
+!  7Feb01 - J.W. Larson <larson@mcs.anl.gov> -- General version.
+! 10Jun01 - E.T. Ong -- fixed divide-by-zero problem in integer
+!           attribute accumulation.
+! 27Jul01 - E.T. Ong <eong@mcs.anl.gov> -- removed action argument.
+!           Make compatible with new Accumulator type.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::accumulate_'
+
+! Overlapping attribute index number
+  integer :: num_indices
+
+! Overlapping attribute index storage arrays:
+  integer, dimension(:), pointer :: aCindices, aVindices
+  integer :: aCindex, aVindex
+
+! Error flag and loop indices
+  integer :: ierr, l, n
+
+! Averaging time-weighting factor:
+  real :: step_weight
+  integer :: num_steps
+
+! Character variable used as a data type flag:
+  character*7 :: data_flag
+
+        ! Sanity check of arguments:
+
+  if(lsize_(aC) /= AttrVect_lsize(aV)) then
+     write(stderr,'(2a,i8,a,i8)') myname_, &
+     ':: Mismatched Accumulator/AttrVect lengths. AttrVect_lsize(aV) = ',&
+     AttrVect_lsize(aV), 'lsize_(aC) = ',lsize_(aC)
+     call die(myname_)
+  endif
+
+  if(aC%num_steps == 0) then
+     write(stderr,'(2a)') myname,':: FATAL--Zero steps in accumulation cycle.'
+     call die(myname_)
+  endif
+
+        ! Set num_steps from aC:
+
+  num_steps = aC%num_steps
+
+        ! Accumulation of REAL attribute data:
+
+  if( associated(aC%rAction) ) then   ! if summing or avergaging reals... 
+        
+        ! Accumulate only if fields are present 
+
+     data_flag = 'REAL'
+     call aVaCSharedAttrIndexList_(aV, aC, data_flag, num_indices, &
+                                   aVindices, aCindices)
+
+     if(num_indices > 0) then
+        do n=1,num_indices
+           aVindex = aVindices(n)
+           aCindex = aCindices(n)
+
+           ! Accumulate if the action is MCT_SUM or MCT_AVG
+           if( (aC%rAction(aCindex) == MCT_SUM).or. &
+               (aC%rAction(aCindex) == MCT_AVG) ) then
+              do l=1,AttrVect_lsize(aV)
+                 aC%data%rAttr(aCindex,l) = aC%data%rAttr(aCindex,l) + &
+                      aV%rAttr(aVindex,l)
+              end do
+           endif
+        end do
+
+        deallocate(aVindices, aCindices, stat=ierr)
+        if(ierr /= 0) then
+	   write(stderr,'(2a,i8)') myname_, &
+		':: Error in first deallocate(aVindices...), ierr = ',ierr
+	   call die(myname_)
+	endif
+
+     endif ! if(num_indices > 0)
+
+  endif ! if( associated(aC%rAction) )
+
+
+        ! Accumulation of INTEGER attribute data:
+
+  if( associated(aC%iAction) ) then    ! if summing or avergaging ints... 
+
+        ! Accumulate only if fields are present
+
+
+     data_flag = 'INTEGER'
+     call aVaCSharedAttrIndexList_(aV, aC, data_flag, num_indices, &
+                                   aVindices, aCindices)
+
+     if(num_indices > 0) then
+
+        do n=1,num_indices
+           aVindex = aVindices(n)
+           aCindex = aCindices(n)
+
+           ! Accumulate if the action is MCT_SUM or MCT_AVG
+           if( (aC%iAction(aCindex) == MCT_SUM) .or. &
+               (aC%iAction(aCindex) == MCT_AVG) ) then
+              do l=1,AttrVect_lsize(aV)
+                 aC%data%iAttr(aCindex,l) = aC%data%iAttr(aCindex,l) + &
+                      aV%iAttr(aVindex,l)
+              end do
+           endif
+        end do
+
+        deallocate(aVindices, aCindices, stat=ierr)
+        if(ierr /= 0) then
+	   write(stderr,'(2a,i8)') myname_, &
+		':: Error in second deallocate(aVindices...), ierr = ',ierr
+	   call die(myname_)
+	endif
+
+     endif ! if(num_indices > 0)
+
+  endif ! if( associated(aC%iAction) )
+
+        ! Increment aC%steps_done:
+
+  aC%steps_done = aC%steps_done + 1
+
+        ! If we are at the end of an averaging period, compute the
+        ! average (if desired).
+
+  if(aC%steps_done == num_steps) then
+
+     step_weight = 1 / float(num_steps)
+     do n=1,nRAttr_(aC)
+        if( aC%rAction(n) == MCT_AVG ) then
+           do l=1,lsize_(aC)
+              aC%data%rAttr(n,l) = step_weight * aC%data%rAttr(n,l)
+           enddo
+        endif
+     enddo
+     
+     do n=1,nIAttr_(aC)
+        if( aC%iAction(n) == MCT_AVG ) then
+           do l=1,lsize_(aC)
+              aC%data%iAttr(n,l) = aC%data%iAttr(n,l) / num_steps
+           enddo
+        endif
+     enddo
+
+  endif
+
+ end subroutine accumulate_
+
+ end module m_Accumulator
