@@ -604,7 +604,7 @@
 	 if(present(stat)) then
 	    stat=ier
 	 else
-	    call die(myname_,'deallocate(aC%iAction)',ier)
+	    call warn(myname_,'deallocate(aC%iAction)',ier)
 	 endif
       endif
 
@@ -618,7 +618,7 @@
 	 if(present(stat)) then
 	    stat=ier
 	 else
-	    call die(myname_,'deallocate(aC%rAction)',ier)
+	    call warn(myname_,'deallocate(aC%rAction)',ier)
 	 endif
       endif
 

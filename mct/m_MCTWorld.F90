@@ -478,7 +478,7 @@
   integer :: ier
 
   deallocate(ThisMCTWorld%nprocspid,ThisMCTWorld%idGprocid,stat=ier)
-  if(ier /= 0) call die(myname_,'deallocate(MCTW,...)',ier)
+  if(ier /= 0) call warn(myname_,'deallocate(MCTW,...)',ier)
 
   ThisMCTWorld%ncomps = 0
   ThisMCTWorld%mygrank = 0
