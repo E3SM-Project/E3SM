@@ -11,6 +11,7 @@ m_GeneralGrid.o: m_AttrVect.o
 m_GeneralGridComms.o: m_AttrVect.o m_GeneralGrid.o m_AttrVectComms.o \
 m_GlobalMap.o m_GlobalSegMap.o
 m_MatAttrVectMul.o: m_AttrVect.o m_SparseMatrix.o m_GlobalMap.o m_GlobalSegMap.o
+m_Merge.o: m_AttrVect.o m_GeneralGrid.o
 m_Router.o: m_GlobalToLocal.o m_MCTWorld.o m_GlobalSegMap.o m_ExchangeMaps.o
 m_GlobalToLocal.o: m_GlobalSegMap.o
 m_ExchangeMaps.o: m_GlobalMap.o m_GlobalSegMap.o m_MCTWorld.o
