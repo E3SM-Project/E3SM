@@ -1340,11 +1340,11 @@
 
   do i=1,size(GSMap%start)
     ilc = GSMap%start(i)
-    ile = ilc + GSMap%length(i)
+    ile = ilc + GSMap%length(i) - 1
 
-		! If i_g in (ilc,ile].  Note that i_g := [1:..]
+		! If i_g in [ilc,ile].  Note that i_g := [1:..]
 
-    if(ilc < i_g .and. i_g <= ile) then
+    if(ilc <= i_g .and. i_g <= ile) then
       rank = GSMap%pe_loc(i)
       return
     endif
