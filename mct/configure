@@ -57,6 +57,9 @@ if [ ! -r ${makeconf} ]; then
     if [ "${Mach}" = alpha ]; then
       makeconf="Makefile.conf.Linux-alpha"
     fi
+    if [ "${Mach}" = ia64 ]; then
+      makeconf="Makefile.conf.Linux-ia64"
+    fi
   fi
 fi #closes if [ ! -r ${makeconf} ]...Block for Linux clusters
 
