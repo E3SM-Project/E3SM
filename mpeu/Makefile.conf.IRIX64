@@ -90,7 +90,7 @@ LDFLAGS		= $(FFLAGS)
 LIBprof		= -lprof
 LIBsys	 	= -lcomplib.sgimath
 
-
+FPP             = cpp
 FPPFLAGS	= -DLANGUAGE_FORTRAN
 
 .F.o:
