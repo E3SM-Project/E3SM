@@ -919,6 +919,7 @@
   if(usevector) then
     do IAttrIndex=1,numi
 !CDIR SELECT(VECTOR)
+!DIR$ PREFERVECTOR
      do localindex=1,InRearranger%LocalSize
         TrgVectIndex = InRearranger%LocalPack(1,localindex)
         SrcVectIndex = InRearranger%LocalPack(2,localindex)
@@ -928,6 +929,7 @@
     enddo
     do RAttrIndex=1,numr
 !CDIR SELECT(VECTOR)
+!DIR$ PREFERVECTOR
      do localindex=1,InRearranger%LocalSize
         TrgVectIndex = InRearranger%LocalPack(1,localindex)
         SrcVectIndex = InRearranger%LocalPack(2,localindex)

@@ -206,9 +206,11 @@
             call SparseMatrix_vecinit(sMat)
        endif
 
+!DIR$ CONCURRENT
        do m=1,num_indices
           do l=1,sMat%tbl_end
 !CDIR NOLOOPCHG
+!DIR$ CONCURRENT
              do i=sMat%row_s(l),sMat%row_e(l)
                col = sMat%tcol(i,l)
                wgt = sMat%twgt(i,l)

@@ -2455,6 +2455,7 @@
            if(usevector) then
 	      outxmin=aVoutindices(1)-1
 	      inxmin=aVinindices(1)-1
+!DIR$ CONCURRENT
 	      do i=1,num_indices
 !CDIR SELECT(VECTOR)
 	         do j=1,aVsize
@@ -2464,6 +2465,7 @@
            else
 	      outxmin=aVoutindices(1)-1
 	      inxmin=aVinindices(1)-1
+!DIR$ CONCURRENT
 	      do j=1,aVsize
 	         do i=1,num_indices
 	   	    aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)       
@@ -2473,6 +2475,7 @@
 
 	else
 
+!DIR$ PREFERVECTOR
            do j=1,aVsize
               do i=1,num_indices
                  outx=aVoutindices(i)
@@ -2533,6 +2536,7 @@
            if(usevector) then
 	      outxmin=aVoutindices(1)-1
 	      inxmin=aVinindices(1)-1
+!DIR$ CONCURRENT
 	      do i=1,num_indices
 !CDIR SELECT(VECTOR)
 	         do j=1,aVsize
@@ -2542,6 +2546,7 @@
            else
 	      outxmin=aVoutindices(1)-1
 	      inxmin=aVinindices(1)-1
+!DIR$ CONCURRENT
 	      do j=1,aVsize
 	         do i=1,num_indices
 	   	    aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)       
@@ -2551,6 +2556,7 @@
 
 	else
 
+!DIR$ PREFERVECTOR
            do j=1,aVsize
               do i=1,num_indices
                 outx=aVoutindices(i)
@@ -2598,6 +2604,7 @@
               inxmin=aVinindices(1)-1
               do i=1,num_indices
 !CDIR SELECT(VECTOR)
+!DIR$ CONCURRENT
                  do j=1,aVsize
                     aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)
                  enddo
@@ -2605,6 +2612,7 @@
            else
               outxmin=aVoutindices(1)-1
               inxmin=aVinindices(1)-1
+!DIR$ CONCURRENT
               do j=1,aVsize
                  do i=1,num_indices
                     aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)
@@ -2614,6 +2622,7 @@
 
         else
            
+!DIR$ PREFERVECTOR
            do j=1,aVsize
               do i=1,num_indices
                  outx=aVoutindices(i)
@@ -2655,6 +2664,7 @@
               inxmin=aVinindices(1)-1
               do i=1,num_indices
 !CDIR SELECT(VECTOR)
+!DIR$ CONCURRENT
                  do j=1,aVsize
                     aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)
                  enddo
@@ -2662,6 +2672,7 @@
            else
               outxmin=aVoutindices(1)-1
               inxmin=aVinindices(1)-1
+!DIR$ CONCURRENT
               do j=1,aVsize
                  do i=1,num_indices
                     aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)
@@ -2671,6 +2682,7 @@
 
         else
 
+!DIR$ PREFERVECTOR
            do j=1,aVsize
               do i=1,num_indices
                  outx=aVoutindices(i)
