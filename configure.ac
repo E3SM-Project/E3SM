@@ -220,10 +220,6 @@ AC_CHECK_FPP_EXTERNAL(
           "YES!"
 ], [$defineflag])
 
-else
-
-AC_MSG_WARN([CPP IS NOT DEFINED IN YOUR PATH])
-
 fi
 
 # ACTIVATE F90RULE IF FORTRAN COMPILER SUCCEEDS AT PREPROCESSING
@@ -236,6 +232,9 @@ fi
 if test "$ac_cv_f90_fpp_compiler" = "no"; then
 if test "$ac_cv_f90_fpp_external" = "no"; then
    AC_MSG_WARN([FORTRAN SOURCE PREPROCESSING HAS FAILED])
+   if test -z "$FPP"; then
+      AC_MSG_WARN([TRY DEFINING CPP PATH IN CONFIGURE INVOCATION])
+   fi
 fi
 if test "$ac_cv_f90_fpp_external" = "yes"; then
    AC_SUBST(F90RULE,[.F90RULE])

@@ -3291,11 +3291,6 @@ echo "${ECHO_T}$ac_cv_f90_fpp_external" >&6
 ac_ext=$old_ac_ext
 
 
-else
-
-{ echo "$as_me:$LINENO: WARNING: CPP IS NOT DEFINED IN YOUR PATH" >&5
-echo "$as_me: WARNING: CPP IS NOT DEFINED IN YOUR PATH" >&2;}
-
 fi
 
 # ACTIVATE F90RULE IF FORTRAN COMPILER SUCCEEDS AT PREPROCESSING
@@ -3311,6 +3306,10 @@ if test "$ac_cv_f90_fpp_compiler" = "no"; then
 if test "$ac_cv_f90_fpp_external" = "no"; then
    { echo "$as_me:$LINENO: WARNING: FORTRAN SOURCE PREPROCESSING HAS FAILED" >&5
 echo "$as_me: WARNING: FORTRAN SOURCE PREPROCESSING HAS FAILED" >&2;}
+   if test -z "$FPP"; then
+      { echo "$as_me:$LINENO: WARNING: TRY DEFINING CPP PATH IN CONFIGURE INVOCATION" >&5
+echo "$as_me: WARNING: TRY DEFINING CPP PATH IN CONFIGURE INVOCATION" >&2;}
+   fi
 fi
 if test "$ac_cv_f90_fpp_external" = "yes"; then
    F90RULE=.F90RULE
