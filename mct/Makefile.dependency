@@ -23,3 +23,4 @@ m_SpatialIntegral.o: m_GeneralGrid.o m_AttrVect.o m_AttrVectReduce.o
 MCT_Send.o: m_AttrVect.o m_Router.o m_MCTWorld.o
 m_NBSend.o: m_AttrVect.o m_Router.o m_MCTWorld.o
 MCT_Recv.o: m_AttrVect.o m_Router.o m_MCTWorld.o
+MCT_Recvsum.o: m_AttrVect.o m_Router.o m_MCTWorld.o
