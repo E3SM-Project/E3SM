@@ -5,11 +5,24 @@
 ! CVS $Name$ 
 !BOP -------------------------------------------------------------------
 !
-! !MODULE: m_Rearranger -- Remaps an attrvect within a component
+! !MODULE: m_Rearranger -- Remaps an AttrVect within a group of processes
 !
 ! !DESCRIPTION:
-! A Rearranger is a data class used for remapping one attrvect into anonther
-! given their globalsegmaps.  
+! This module provides routines and datatypes for rearranging data
+! between two {\tt Attribute Vectors} defined on the same grid but
+! with two different {\tt GlobalSegMaps}.  ''Rearrange'' is a
+! generalized form of a parallel matrix transpose.
+! A parallel matrix transpose can take advantage of symmetry in the
+! data movement algorithm.  An MCT Rearranger makes no assumptions
+! about symmetry.
+!
+! When data needs to move between two components and the components
+! share any processors, use m\_Rearranger.  If the components are on
+! distinct sets of processors, use m\_Transfer.
+!
+! !SEE ALSO:
+!  m_Transfer
+! 
 !
 ! !INTERFACE:
 
@@ -24,11 +37,19 @@
 
       private	! except
 
-      ! The class data structure
+! !PUBLIC DATA MEMBERS:
 
-      public :: Rearranger
+      public :: Rearranger  ! The class data structure
 
-      ! List of methods for the rearranger class
+      type :: Rearranger
+         private
+         type(Router) :: SendRouter
+         type(Router) :: RecvRouter
+         integer,dimension(:,:),pointer :: LocalPack
+         integer :: LocalSize
+      end type Rearranger
+
+! !PUBLIC MEMBER FUNCTIONS:
 
       public :: init         ! creation method
 
@@ -36,29 +57,16 @@
 
       public :: clean        ! destruction method
 
-      ! Definition of Rearranger class:
-
-      type :: Rearranger
-         private
-	 type(Router) :: SendRouter
-	 type(Router) :: RecvRouter
-	 integer,dimension(:,:),pointer :: LocalPack
-	 integer :: LocalSize
-      end type Rearranger
-
-
-      ! Definition of interfaces for the methods for the RearrangerX:
-
       interface init      ; module procedure init_      ; end interface
       interface Rearrange ; module procedure Rearrange_ ; end interface
       interface clean     ; module procedure clean_     ; end interface
 
 ! !REVISION HISTORY:
-!      31Jan02 - E.T. Ong <eong@mcs.anl.gov> - initial prototype
-!      04Jun02 - E.T. Ong <eong@mcs.anl.gov> - changed local copy structure to
-!                LocalSize. Made myPid a global process in MCTWorld.
-!      27Sep02 - R. Jacob <jacob@mcs.anl.gov> - Remove SrcAVsize and TrgAVsize
-!                and use Router%lAvsize instead for sanity check.
+! 31Jan02 - E.T. Ong <eong@mcs.anl.gov> - initial prototype
+! 04Jun02 - E.T. Ong <eong@mcs.anl.gov> - changed local copy structure to
+!           LocalSize. Made myPid a global process in MCTWorld.
+! 27Sep02 - R. Jacob <jacob@mcs.anl.gov> - Remove SrcAVsize and TrgAVsize
+!           and use Router%lAvsize instead for sanity check.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_Rearranger'
@@ -69,9 +77,12 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: Init_ - Initialize a Rearranger from Two GlobalSegMaps
+! !IROUTINE: Init_ - Initialize a Rearranger
 !
 ! !DESCRIPTION:
+! This routine takes two {\tt GlobalSegMap} inputs, {\tt SourceGSMap}
+! and {\tt TargetGSMap} and build a Rearranger {\tt OutRearranger}
+! between them. {\tt myComm} is used for the internal communication.
 !
 ! !INTERFACE:
 
@@ -92,11 +103,19 @@
 
    implicit none
   
+! !INPUT PARAMETERS:
+!
    type(GlobalSegMap), intent(in)            :: SourceGSMap, TargetGSMap
    integer,            intent(in)            :: myComm
+
+! !OUTPUT PARAMETERS:
+!
    type(Rearranger),   intent(out)           :: OutRearranger
 
 ! !REVISION HISTORY:
+! 31Jan02 - E.T. Ong <eong@mcs.anl.gov> - initial prototype
+! 20Mar02 - E.T. Ong <eong@mcs.anl.gov> - working code
+! 05Jun02 - E.T. Ong <eong@mcs.anl.gov> - Use LocalPack
 !EOP ___________________________________________________________________
    character(len=*),parameter :: myname_=myname//'::init_'
    integer,dimension(:,:),pointer :: temp_seg_starts,temp_seg_lengths
@@ -390,10 +409,17 @@
 
    implicit none
   
+! !INPUT/OUTPUT PARAMETERS:
+!
    type(Rearranger),    intent(inout)           :: ReArr
+
+! !OUTPUT PARAMETERS:
+!
    integer, optional,   intent(out)             :: status
    
 ! !REVISION HISTORY:
+! 31Jan02 - E.T. Ong <eong@mcs.anl.gov> - initial prototype
+! 20Mar02 - E.T. Ong <eong@mcs.anl.gov> - working code
 !EOP ___________________________________________________________________
    character(len=*),parameter :: myname_=myname//'::clean_'
    integer :: ier
@@ -450,12 +476,25 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: rearrange_ - perform the remapping given the respective
-!                         Attribute Vectors and rearranger type. 
+! !IROUTINE: rearrange_ - Rearrange data between two Attribute Vectors
 !
-! !DESCRIPTION: Receive and Sum into TargetAV with optional argument 'Sum'.
-!               Note: Source and Target must match arguments in the 
-!               Rearranger init routine.
+! !DESCRIPTION: 
+! This subroutine will take data in the {\tt SourceAv} Attribute
+! Vector and rearrange it to match the GlobalSegMap used to define
+! the {\tt TargetAv} Attribute Vector using the Rearrnger
+! {\tt InRearranger}.
+!
+! If the optional argument {\tt Sum} is present, data for the same
+! physical point coming from two or more processes will be summed.
+! Otherwise, data is overwritten.
+!
+! The size of the {\tt SourceAv} and {\tt TargetAv}
+! argument must match those stored in the {\tt InRearranger} or
+! and error will result.
+!
+! {\bf N.B.:} {\tt SourceAv} and {\tt TargetAv} are
+! assumed to have exactly the same attributes
+! in exactly the same order.
 !
 ! !INTERFACE:
 
@@ -479,12 +518,20 @@
 
    implicit none
   
-   type(AttrVect),             intent(in)      :: SourceAV
+! !INPUT/OUTPUT PARAMETERS:
+!
    type(AttrVect),             intent(inout)   :: TargetAV
+   
+! !INPUT PARAMETERS:
+!
+   type(AttrVect),             intent(in)      :: SourceAV
    type(Rearranger), target,   intent(in)      :: InRearranger
    logical,          optional, intent(in)      :: Sum
 
 ! !REVISION HISTORY:
+! 31Jan02 - E.T. Ong <eong@mcs.anl.gov> - initial prototype
+! 20Mar02 - E.T. Ong <eong@mcs.anl.gov> - working code
+! 08Jul02 - E.T. Ong <eong@mcs.anl.gov> - change intent of Target,Source
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'Rearrange_'
