@@ -41,6 +41,7 @@
 !
       use m_List, only : List
       use m_AttrVect, only : AttrVect
+      use m_realkinds
 
       implicit none
 
@@ -1360,7 +1361,6 @@
 !
       use m_die 
       use m_stdio
-      use m_realkinds,     only : SP
 
       use m_AttrVect,      only : AttrVect_exportRAttr => exportRAttr
 
@@ -1425,7 +1425,6 @@
 !
       use m_die 
       use m_stdio
-      use m_realkinds,     only : DP
 
       use m_AttrVect,      only : AttrVect_exportRAttr => exportRAttr
 
@@ -1535,7 +1534,6 @@
 !
       use m_die 
       use m_stdio ,        only : stderr
-      use m_realkinds,     only : SP
 
       use m_AttrVect,      only : AttrVect_importRAttr => importRAttr
 
@@ -1594,7 +1592,6 @@
 !
       use m_die 
       use m_stdio ,        only : stderr
-      use m_realkinds,     only : DP
 
       use m_AttrVect,      only : AttrVect_importRAttr => importRAttr
 
@@ -1889,7 +1886,7 @@
   integer :: ierr, l, n
 
 ! Averaging time-weighting factor:
-  real :: step_weight
+  real(FP) :: step_weight
   integer :: num_steps
 
 ! Character variable used as a data type flag:
