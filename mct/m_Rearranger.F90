@@ -61,6 +61,11 @@
       interface Rearrange ; module procedure Rearrange_ ; end interface
       interface clean     ; module procedure clean_     ; end interface
 
+! !DEFINED PARAMETERS:
+
+  integer,parameter                    :: DefaultTag = 500
+
+
 ! !REVISION HISTORY:
 ! 31Jan02 - E.T. Ong <eong@mcs.anl.gov> - initial prototype
 ! 04Jun02 - E.T. Ong <eong@mcs.anl.gov> - changed local copy structure to
@@ -498,7 +503,7 @@
 !
 ! !INTERFACE:
 
- subroutine rearrange_(SourceAV,TargetAV,InRearranger,Sum)
+ subroutine rearrange_(SourceAV,TargetAV,InRearranger,Tag,Sum)
 
 !
 ! !USES:
@@ -526,6 +531,7 @@
 !
    type(AttrVect),             intent(in)      :: SourceAV
    type(Rearranger), target,   intent(in)      :: InRearranger
+   integer,          optional, intent(in)      :: Tag
    logical,          optional, intent(in)      :: Sum
 
 ! !REVISION HISTORY:
@@ -540,6 +546,7 @@
   integer ::    localindex,SrcVectIndex,TrgVectIndex,IAttrIndex,RAttrIndex
   integer ::    proc,numprocs,nseg
   integer ::    mp_Type_rp
+  integer ::    mytag
 !-----------------------------------------------------------------------
 
    ! DECLARE STRUCTURES FOR MPI ARGUMENTS.
@@ -744,18 +751,22 @@
      ! receive the integer data
      if(numi .ge. 1) then
 
+        ! set tag
+        mytag = DefaultTag
+        if(present(Tag)) mytag=Tag
+
 	if( (RecvRout%num_segs(proc) > 1) .or. present(Sum) ) then
 
 	   call MPI_IRECV(ip2(proc)%pi(1),                        &
 		          RecvRout%locsize(proc)*numi,MP_INTEGER, &
-			  RecvRout%pe_list(proc),500,             &
+			  RecvRout%pe_list(proc),mytag,             &
 			  ThisMCTWorld%MCT_comm,recv_ireqs(proc),ier)
 
 	else
 
 	   call MPI_IRECV(TargetAV%iAttr(1,RecvRout%seg_starts(proc,1)), &
 		          RecvRout%locsize(proc)*numi,MP_INTEGER,        &
-                          RecvRout%pe_list(proc),500,                    &
+                          RecvRout%pe_list(proc),mytag,                    &
                           ThisMCTWorld%MCT_comm,recv_ireqs(proc),ier)
 
 	endif
@@ -767,18 +778,22 @@
      ! receive the real data
      if(numr .ge. 1) then
 
+        ! set tag
+        mytag = DefaultTag + 1
+        if(present(Tag)) mytag=Tag +1
+
 	if( (RecvRout%num_segs(proc) > 1) .or. present(Sum) ) then
 
 	   call MPI_IRECV(rp2(proc)%pr(1),                        &
 		          RecvRout%locsize(proc)*numr,mp_Type_rp, &
-			  RecvRout%pe_list(proc),700,             &
+			  RecvRout%pe_list(proc),mytag,             &
 			  ThisMCTWorld%MCT_comm,recv_rreqs(proc),ier)
 
 	else
 
 	   call MPI_IRECV(TargetAV%rAttr(1,RecvRout%seg_starts(proc,1)), &
 		          RecvRout%locsize(proc)*numr,mp_Type_rp,        &
-			  RecvRout%pe_list(proc),700,                    &
+			  RecvRout%pe_list(proc),mytag,                    &
 			  ThisMCTWorld%MCT_comm,recv_rreqs(proc),ier)
 
 	endif
@@ -822,18 +837,22 @@
      ! send the integer data
      if(numi .ge. 1) then
 
+        ! set tag
+        mytag = DefaultTag
+        if(present(Tag)) mytag=Tag
+
 	if( SendRout%num_segs(proc) > 1 ) then
 
 	   call MPI_ISEND(ip1(proc)%pi(1),                        &
 		          SendRout%locsize(proc)*numi,MP_INTEGER, &
-			  SendRout%pe_list(proc),500,             &
+			  SendRout%pe_list(proc),mytag,             &
 			  ThisMCTWorld%MCT_comm,send_ireqs(proc),ier)
 
 	else
 
 	   call MPI_ISEND(SourceAV%iAttr(1,SendRout%seg_starts(proc,1)), &
 		          SendRout%locsize(proc)*numi,MP_INTEGER,        &
-                          SendRout%pe_list(proc),500,                    &
+                          SendRout%pe_list(proc),mytag,                  &
                           ThisMCTWorld%MCT_comm,send_ireqs(proc),ier)
 
 	endif
@@ -845,18 +864,22 @@
      ! send the real data
      if(numr .ge. 1) then
 
+        ! set tag
+        mytag = DefaultTag +1
+        if(present(Tag)) mytag=Tag +1
+
 	if( SendRout%num_segs(proc) > 1 ) then
 
 	   call MPI_ISEND(rp1(proc)%pr(1),                        &
 		          SendRout%locsize(proc)*numr,mp_Type_rp, &
-			  SendRout%pe_list(proc),700,             &
+			  SendRout%pe_list(proc),mytag,             &
 			  ThisMCTWorld%MCT_comm,send_rreqs(proc),ier)
 
 	else
 
 	   call MPI_ISEND(SourceAV%rAttr(1,SendRout%seg_starts(proc,1)), &
 		          SendRout%locsize(proc)*numr,mp_Type_rp,        &
-			  SendRout%pe_list(proc),700,                    &
+			  SendRout%pe_list(proc),mytag,                    &
 			  ThisMCTWorld%MCT_comm,send_rreqs(proc),ier)
 
 	endif
