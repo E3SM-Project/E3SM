@@ -750,7 +750,7 @@
 
   else
      if(size(xL%lc,2) < 0) then ! serious error...
-	write(stderr,'(2a,i8)'), myname_, &
+	write(stderr,'(2a,i8)') myname_, &
 	     ':: FATAL size(xL%lc,2) = ',size(xL%lc,2)
      endif
        ! Initialize yL as a blank list
@@ -1013,7 +1013,7 @@
        ! Argument Sanity Checks:
 
   if(.not. allocated_(aList)) then
-     write(stderr,'(2a)'), myname_, &
+     write(stderr,'(2a)') myname_, &
 	  ':: FATAL--List argument aList is not initialized.'
      call die(myname_)
   endif
@@ -1021,7 +1021,7 @@
        ! is i2 >= i1 as we assume?
 
   if(i1 > i2) then
-     write(stderr,'(2a,2(a,i8))'), myname_, &
+     write(stderr,'(2a,2(a,i8))') myname_, &
 	  ':: FATAL.  Starting/Ending item ranks are out of order; ', &
 	  'i2 must be greater or equal to i1.  i1 =',i1,' i2 = ',i2
      call die(myname_)
@@ -1032,14 +1032,14 @@
        ! is i1 or i2 too big?
 
   if(i1 > ni) then
-     write(stderr,'(2a,2(a,i8))'), myname_, &
+     write(stderr,'(2a,2(a,i8))') myname_, &
 	  ':: FATAL--i1 is greater than the number of items in ', &
 	  'The List argument aList: i1 =',i1,' ni = ',ni
      call die(myname_)
   endif
 
   if(i2 > ni) then
-     write(stderr,'(2a,2(a,i8))'), myname_, &
+     write(stderr,'(2a,2(a,i8))') myname_, &
 	  ':: FATAL--i2 is greater than the number of items in ', &
 	  'The List argument aList: i2 =',i2,' ni = ',ni
      call die(myname_)
@@ -1081,8 +1081,8 @@
 
 ! !INPUT PARAMETERS: 
 !
-      type(List),intent(in) :: yL
-      type(List),intent(in) :: xL
+      type(List), intent(in) :: yL
+      type(List), intent(in) :: xL
 
 ! !REVISION HISTORY:
 ! 	14Oct01 - J. Larson <larson@mcs.anl.gov> - original version
@@ -1250,9 +1250,9 @@
  character(len=*),parameter :: myname_=myname//'::concatenate_'
 
  type(String) :: iStr1, iStr2
- character( CharBufferSize(iList1) ) :: iChr1
- character( CharBufferSize(iList2) ) :: iChr2
- character( CharBufferSize(iList1) + CharBufferSize(iList2) + 1 ) :: oChr
+ character( len(iList1%bf) ) :: iChr1
+ character( len(iList2%bf) ) :: iChr2
+ character( len(iList1%bf) + len(iList2%bf) + 1 ) :: oChr
 
        ! First, handle the case of either iList1 and/or iList2 being
        ! null

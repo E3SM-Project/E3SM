@@ -63,11 +63,13 @@
 
   interface String_init;  module procedure	&
 	initc_,		&
+	initc1_,	&
 	inits_
   end interface
 
   interface init;  module procedure	&
 	initc_,		&
+	initc1_,	&
 	inits_
   end interface
 
@@ -193,8 +195,8 @@ contains
 ! !IROUTINE: initc_ - Create a String using a CHARACTER
 !
 ! !DESCRIPTION:
-! This routine takes an input {\tt CHARACTER} argument {\tt chr}, and 
-! uses it to create the output {\tt String} argument {\tt str}.
+! This routine takes an input scalar {\tt CHARACTER} argument {\tt chr}, 
+! and uses it to create the output {\tt String} argument {\tt str}.
 !
 ! !INTERFACE:
 
@@ -236,6 +238,57 @@ contains
   end do
 
  end subroutine initc_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: initc1_ - Create a String using a CHARACTER array
+!
+! !DESCRIPTION:
+! This routine takes an input {\tt CHARACTER(:)} argument {\tt chr}, 
+! and uses it to create the output {\tt String} argument {\tt str}.
+!
+! !INTERFACE:
+
+ subroutine initc1_(str, chr)
+
+! !USES:
+!
+      use m_die, only : die,perr
+      use m_mall,only : mall_mci,mall_ison
+ 
+      implicit none
+
+! !INPUT PARAMETERS: 
+!
+      character,     dimension(:), intent(in)  :: chr
+
+! !OUTPUT PARAMETERS: 
+!
+      type(String),                intent(out) :: str
+
+! !REVISION HISTORY:
+!  2Aug02 - J. Larson <larson@mcs.anl.gov> - initial prototype
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::initc1_'
+  integer :: ln,ier,i
+
+  ln=size(chr)
+  allocate(str%c(ln),stat=ier)
+  if(ier /= 0) then
+    call perr(myname_,'allocate()',ier)
+    call die(myname_)
+  endif
+
+	if(mall_ison()) call mall_mci(str%c,myname)
+
+  do i=1,ln
+    str%c(i)=chr(i)
+  end do
+
+ end subroutine initc1_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
