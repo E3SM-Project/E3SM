@@ -138,10 +138,10 @@
 
 ! !PUBLIC DATA MEMBERS:
 
-      public :: Xonly ! Matrix decomposed only by COLUMN (i.e., based 
-                      ! on the decomposition of x)
-      public :: Yonly ! Matrix decomposed only by ROW (i.e., based 
-                      ! on the decomposition of y)
+      public :: Xonly ! Matrix decomposed only by ROW (i.e., based 
+                      ! on the decomposition of y); comms x->x'
+      public :: Yonly ! Matrix decomposed only by COLUMN (i.e., based 
+                      ! on the decomposition of x); comms y'->y
       public :: XandY ! Matrix has complex ROW/COLUMN decomposed
 
 ! !DEFINED PARAMETERS:
