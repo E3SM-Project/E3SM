@@ -101,6 +101,11 @@ contains
 	character(len=len(status)) :: Ustat
 	integer :: i,ic
 
+! Work-around for absoft 9.0 f90, which has trouble understanding that
+! ier is an output argument from the write() call below.
+
+	ier = 0
+
 	direct=.false.
 	if(present(recl)) then
 	  if(recl<0) then
