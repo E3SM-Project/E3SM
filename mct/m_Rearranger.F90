@@ -8,7 +8,7 @@
 ! !MODULE: m_Rearranger -- Remaps an attrvect within a component
 !
 ! !DESCRIPTION:
-! A RearrangerX is a data class used for remapping one attrvect into anonther
+! A Rearranger is a data class used for remapping one attrvect into anonther
 ! given their globalsegmaps.  
 !
 ! !INTERFACE:
@@ -36,7 +36,7 @@
 
       public :: clean        ! destruction method
 
-      ! Definition of RearrangerX class:
+      ! Definition of Rearranger class:
 
       type :: Rearranger
          private
@@ -69,7 +69,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: Init_ - initialize with given GlobalSegMaps and local communicator
+! !IROUTINE: Init_ - Initialize a Rearranger from Two GlobalSegMaps
 !
 ! !DESCRIPTION:
 !
@@ -367,13 +367,17 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: clean_ - clean a RearrangerX
+! !IROUTINE: clean_ - Clean a Rearranger
 !
 ! !DESCRIPTION:
+! This routine deallocates allocated memory associated with the 
+! input/output {\tt Rearranger} argument {\tt ReArr}.  The success 
+! (failure) of this operation is reported in the zero (nonzero) value of
+! the optional output {\tt INTEGER} argument {\tt status}.
 !
 ! !INTERFACE:
 
- subroutine clean_(CleanRearranger,stat)
+ subroutine clean_(ReArr, status)
 
 !
 ! !USES:
@@ -386,35 +390,61 @@
 
    implicit none
   
-   type(Rearranger),    intent(inout)           :: CleanRearranger
-   integer, optional,   intent(out)             :: stat
+   type(Rearranger),    intent(inout)           :: ReArr
+   integer, optional,   intent(out)             :: status
    
 ! !REVISION HISTORY:
 !EOP ___________________________________________________________________
    character(len=*),parameter :: myname_=myname//'::clean_'
    integer :: ier
 
-   if(present(stat)) then
-      call Router_clean(CleanRearranger%SendRouter,ier)
-      if(ier/=0) stat=ier
-      call Router_clean(CleanRearranger%RecvRouter,ier)
-      if(ier/=0) stat=ier
-   else
-      call Router_clean(CleanRearranger%SendRouter)
-      call Router_clean(CleanRearranger%RecvRouter)
+        ! Set output status flag (if present) to zero, which assumes
+        ! success.
+
+   if(present(status)) status = 0
+
+        ! Clean up send and receive Routers:
+
+   call Router_clean(ReArr%SendRouter,ier)
+   if(ier /= 0) then
+      write(stderr,'(2a,i8)') myname_, &
+	   ':: ERROR--Router_clean(ReArr%SendRouter) failed with ier=',ier
+      if(present(status)) then
+	 status = ier
+	 return
+      else
+	 call die(myname_)
+      endif
    endif
 
-   deallocate(CleanRearranger%LocalPack,stat=ier)
+   call Router_clean(ReArr%RecvRouter,ier)
    if(ier /= 0) then
-      if(present(stat)) then
-	 stat=ier
+      write(stderr,'(2a,i8)') myname_, &
+	   ':: ERROR--Router_clean(ReArr%RecvRouter) failed with ier=',ier
+      if(present(status)) then
+	 status = ier
+	 return
       else
-	 call warn(myname_,'deallocate(CleanRearranger%TrgIndex)',ier)
+	 call die(myname_)
+      endif
+   endif
+
+       ! Clean up Local on-PE copy buffer:
+
+   if(associated(ReArr%LocalPack)) then
+      deallocate(ReArr%LocalPack, stat=ier)
+      if(ier /= 0) then
+	 write(stderr,'(2a,i8)') myname_, &
+	      ':: ERROR--deallocate(ReArr%LocalPack) failed with stat=',ier
+	 if(present(status)) then
+	    status=ier
+	 else
+	    call die(myname_)
+	 endif
       endif
    endif
 
  end subroutine clean_
-
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
@@ -440,7 +470,6 @@
    use m_AttrVect,  only : AttrVect
    use m_AttrVect,  only : AttrVect_init => init
    use m_AttrVect,  only : AttrVect_lsize => lsize
-   use m_AttrVect,  only : AttrVect_clean => clean
    use m_AttrVect,  only : AttrVect_zero => zero
    use m_AttrVect,  only : nIAttr,nRAttr
    use m_Router,    only : Router     

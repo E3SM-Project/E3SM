@@ -199,6 +199,9 @@
       use m_stdio
       use m_mpif90
 
+      use m_String, only : String
+      use m_String, only : String_init => init
+
       use m_GlobalSegMap, only : GlobalSegMap
       use m_GlobalSegMap, only : GlobalSegMap_gsize => gsize
       use m_GlobalSegMap, only : GlobalSegMap_lsize => lsize
@@ -258,7 +261,10 @@
 
        ! Get local process ID number
 
-  call MPI_COMM_RANK(myID, comm)
+  call MPI_COMM_RANK(comm, myID, ierr)
+  if(ierr /= 0) then
+     call MP_perr_die(myname_,'MPI_COMM_RANK() failed',ierr)
+  endif
 
        ! Basic Input Argument Checks:
 
@@ -269,7 +275,7 @@
   if(myID == root) then
 
      if(GlobalSegMap_gsize(yGSMap) /= SparseMatrix_nRows(sMat)) then
-	write(stderr,'(3a,i8,2a,i8)') myname, &
+	write(stderr,'(3a,i8,2a,i8)') myname_, &
 	     ':: FATAL--length of vector y different from row count of sMat.', &
 	     'Length of y = ',GlobalSegMap_gsize(yGSMap),' Number of rows in ',&
 	     'sMat = ',SparseMatrix_nRows(sMat)
@@ -277,9 +283,9 @@
      endif
 
      if(GlobalSegMap_gsize(xGSMap) /= SparseMatrix_nCols(sMat)) then
-	write(stderr,'(3a,i8,2a,i8)') myname, &
+	write(stderr,'(3a,i8,2a,i8)') myname_, &
 	     ':: FATAL--length of vector x different from column count of sMat.', &
-	     'Length of y = ',GlobalSegMap_gsize(yGSMap),' Number of columns in ',&
+	     'Length of x = ',GlobalSegMap_gsize(xGSMap),' Number of columns in ',&
 	     'sMat = ',SparseMatrix_nCols(sMat)
 	call die(myname_)
      endif
@@ -325,6 +331,8 @@
      call Rearranger_init(xGSMap, xPrimeGSMap, comm, sMatPlus%XToXPrime)
        ! Create local column indices based on xPrimeGSMap
      call GlobalToLocalMatrix(sMatPlus%Matrix, xPrimeGSMap, 'column', comm)
+       ! Create local row indices based on yGSMap
+     call GlobalToLocalMatrix(sMatPlus%Matrix, yGSMap, 'row', comm)
        ! Destroy intermediate GlobalSegMap for x'
      call GlobalSegMap_clean(xPrimeGSMap)
   case(Yonly)
@@ -340,6 +348,8 @@
      call Rearranger_init(yPrimeGSMap, yGSMap, comm, sMatPlus%YPrimeToY)
        ! Create local row indices based on yPrimeGSMap
      call GlobalToLocalMatrix(sMatPlus%Matrix, yPrimeGSMap, 'row', comm)
+       ! Create local column indices based on xGSMap
+     call GlobalToLocalMatrix(sMatPlus%Matrix, xGSMap, 'column', comm)
        ! Destroy intermediate GlobalSegMap for y'
      call GlobalSegMap_clean(yPrimeGSMap)
   case default ! do nothing
@@ -389,6 +399,9 @@
       use m_die
       use m_stdio
       use m_mpif90
+
+      use m_String, only : String
+      use m_String, only : String_init => init
 
       use m_GlobalSegMap, only : GlobalSegMap
       use m_GlobalSegMap, only : GlobalSegMap_gsize => gsize
@@ -450,8 +463,10 @@
 
        ! Get local process ID number
 
-  call MPI_COMM_RANK(myID, comm)
-
+  call MPI_COMM_RANK(comm, myID, ierr)
+  if(ierr /= 0) then
+     call MP_perr_die(myname_,'MPI_COMM_RANK() failed',ierr)
+  endif
        ! Basic Input Argument Checks:
 
        ! A portion of sMat (even if there are no nonzero elements in 

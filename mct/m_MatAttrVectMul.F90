@@ -307,6 +307,8 @@
   type(AttrVect) :: xPrimeAV, yPrimeAV
   integer :: ierr
 
+       ! Examine the parallelization strategy, and act accordingly
+
   select case(String_ToChar(sMatPlus%Strategy))
   case(Xonly)
        ! Create intermediate AttrVect for x'
