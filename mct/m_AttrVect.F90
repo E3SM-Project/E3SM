@@ -413,7 +413,7 @@
 !
 ! !INTERFACE:
 
- subroutine clean_(aV)
+ subroutine clean_(aV,stat)
 !
 ! !USES:
 !
@@ -424,12 +424,16 @@
 
       implicit none
 
-      type(AttrVect),intent(inout) :: aV
+      type(AttrVect),    intent(inout) :: aV
+      integer, optional, intent(out)   :: stat
 
 ! !REVISION HISTORY:
 ! 	09Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
 ! 	10Oct01 - J. Larson <larson@mcs.anl.gov> - various fixes to 
 !                 prevent deallocation of UNASSOCIATED pointers.
+!       01Mar01 - E.T. Ong <eong@mcs.anl.gov> - removed dies to prevent
+!                 crashes when cleaning uninitialized attrvects. Added
+!                 optional stat argument.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::clean_'
@@ -440,30 +444,72 @@
 	! One should therefore avoid using the function on an 
 	! undefined pointer.
 
-        ! Clean up attribute lists:
+        ! Clean up INTEGER attribute list:
 
-  if(associated(aV%iList%bf)) call List_clean(aV%iList)
-  if(associated(aV%rList%bf)) call List_clean(aV%rList)
+  if(present(stat)) stat=0
+  
+  if(associated(aV%iList%bf)) then
 
-        ! Clean up INTEGER attributes:
+     deallocate(aV%iList%bf,aV%iList%lc,stat=ier)
 
-  if(associated(aV%iAttr)) then
-     deallocate(aV%iAttr, stat=ier)
-     if(ier /= 0) call perr_die(myname_,'deallocte(aV%iAttr)',ier)
+     if(ier /= 0) then
+	if(present(stat)) then
+	   stat=ier
+	else
+	   call warn(myname_,'deallocate(aV%iList)',ier)
+	endif
+     endif
+
+     if(ier == 0) then
+#ifdef MALL_ON
+	call mall_mco(aV%iList%bf,"m_List")
+	call mall_mco(aV%iList%lc,"m_List")
+#endif
+     endif
+
+  endif
+
+        ! Clean up REAL attribute list:
+
+  if(associated(aV%rList%bf)) then
+
+     deallocate(aV%rList%bf,aV%rList%lc,stat=ier)
+
+     if(ier /= 0) then
+	if(present(stat)) then
+	   stat=ier
+	else
+	   call warn(myname_,'deallocate(aV%rList)',ier)
+	endif
+     endif
+
+     if(ier == 0) then
+#ifdef MALL_ON
+	call mall_mco(aV%rList%bf,"m_List")
+	call mall_mco(aV%rList%lc,"m_List")
+#endif
+     endif
+
+  endif
+
+        ! Clean up INTEGER and REAL attributes:
+
+  deallocate(aV%iAttr,aV%rAttr,stat=ier)
+
+  if(ier /= 0) then
+     if(present(stat)) then
+	stat=ier
+     else
+	call warn(myname_,'deallocate(aV%iAttr,aV%rAttr)',ier)
+     endif
+  endif
+
+  if(ier == 0) then
 #ifdef MALL_ON
      call mall_co(size(transfer(aV%iAttr,(/1/)),myname_)
-#endif
-  endif ! if(associated(aV%iAttr))...
-
-        ! Clean up REAL attributes:
-
-  if(associated(aV%rAttr)) then
-     deallocate(aV%rAttr, stat=ier)
-     if(ier /= 0) call perr_die(myname_,'deallocte(aV%rAttr)',ier)
-#ifdef MALL_ON
      call mall_co(size(transfer(aV%rAttr,(/1/)),myname_)
 #endif
-  endif ! if(associated(aV%rAttr))...
+  endif
 
  end subroutine clean_
 
