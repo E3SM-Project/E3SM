@@ -55,6 +55,7 @@
       public :: exportRAttr     ! export REAL attribute to vector
       public :: importIAttr     ! import INTEGER attribute from vector
       public :: importRAttr     ! import REAL attribute from vector
+      public :: Copy		! copy attributes from one Av to another
       public :: Sort            ! sort entries, and return permutation
       public :: Permute         ! permute entries
       public :: SortPermute     ! sort and permute entries
@@ -85,6 +86,7 @@
     interface exportRAttr; module procedure exportRAttr_; end interface
     interface importIAttr; module procedure importIAttr_; end interface
     interface importRAttr; module procedure importRAttr_; end interface
+    interface Copy    ; module procedure Copy_    ; end interface
     interface Sort    ; module procedure Sort_    ; end interface
     interface Permute ; module procedure Permute_ ; end interface
     interface SortPermute ; module procedure SortPermute_ ; end interface
@@ -116,6 +118,7 @@
 !                 LocalReduce() and the public data members AttrVectSUM,
 !                 AttrVectMIN, and AttrVectMAX to a new module named
 !                 m_AttrVectReduce.
+!       12Jun02 - R.L. Jacob <jacob@mcs.anl.gov> - add Copy function
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_AttrVect'
@@ -1482,6 +1485,117 @@
   end do
 
  end subroutine importRAttr_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: Copy_ - copy attributes from one Av to another
+!
+! !DESCRIPTION:
+! This routine copies from input argment {\tt aVin} into the output 
+! {\tt AttrVect} argument {\tt aVout} the real and integer attributes specified in 
+! input {\tt CHARACTER} argument {\tt iList} and {\tt rList}. If
+! neither {\tt iList} nor {\tt rList} are provided, all attributes from
+! {\tt aVin} will be copied.
+!
+! {\bf N.B.:}  This routine will fail if the {\tt aVout} is not initialized or
+! if any of the attributes are not present in {\tt aVout}.
+!
+! !INTERFACE:
+
+ subroutine Copy_(aVin, rList, iList, aVout)
+
+!
+! !USES:
+!
+      use m_die ,          only : die
+      use m_stdio ,        only : stderr
+      use m_List ,         only : List
+      use m_String ,       only : String_toChar => toChar
+      use m_String , 	   only : String
+      use m_List,          only : List_get => get
+      use m_List,          only : List_nullify => nullify
+      use m_List,          only : init,nitem
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      type(AttrVect),     intent(in)       :: aVin
+      character(len=*),optional,intent(in) :: iList
+      character(len=*),optional,intent(in) :: rList
+
+! !OUTPUT PARAMETERS: 
+
+      type(AttrVect),     intent(out) :: aVout
+
+
+! !REVISION HISTORY:
+! 	12Jun02 - R.L. Jacob <jacob@mcs.anl.gov> - initial version.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::Copy_'
+
+  type(List)   :: rcpList	!  The list of real attributes to copy
+  type(List)   :: icpList	!  The list of integer attributes to copy
+  type(String) :: attr          !  an individual attribute
+  integer      :: i,j,ier
+  integer      :: inx,outx
+
+  call List_nullify(rcpList)
+  call List_nullify(icpList)
+
+  if(lsize_(aVin) .ne. lsize_(aVout)) then
+     write(stderr,'(2a)')myname_, &
+      'MCTERROR:  Input aV and output aV do not have the same size'
+     call die(myname_,'lsize check',ier)
+  endif
+
+  if( present(rList) .and. (len_trim(rList)>0) ) then
+    call init(rcpList,rList)	! init.List()
+  endif
+
+  if( present(iList) .and. (len_trim(iList)>0) ) then
+    call init(icpList,iList)	! init.List()
+  endif
+
+! if neither rList nor iList is present, copy all attibutes
+! from in to out.
+
+  if( .not.present(rList) .and. .not.present(iList)) then
+     call exportRList_(aVin, rcpList)
+     call exportIList_(aVin, icpList)
+  endif
+
+  if(nitem(rcpList) .ge. 1) then
+
+    do i=1,lsize_(aVin)
+      do j=1,nitem(rcpList)
+       call List_get(attr,j,rcpList)
+       inx=indexRA_(aVin,String_toChar(attr),dieWith=myname_//' aVin')
+       outx=indexRA_(aVout,String_toChar(attr),dieWith=myname_//' aVout')
+       aVout%rAttr(outx,i)=aVin%rAttr(inx,i)
+      enddo
+    enddo
+
+  endif
+
+  if(nitem(icpList) .ge. 1) then
+
+    do i=1,lsize_(aVin)
+      do j=1,nitem(icpList)
+       call List_get(attr,j,icpList)
+       inx=indexIA_(aVin,String_toChar(attr),dieWith=myname_//' aVin')
+       outx=indexIA_(aVout,String_toChar(attr),dieWith=myname_//' aVout')
+       aVout%iAttr(outx,i)=aVin%iAttr(inx,i)
+      enddo
+    enddo
+
+  endif
+
+ end subroutine Copy_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
