@@ -75,7 +75,7 @@ AC_LANG_PUSH(Fortran 90)
 AC_ARG_VAR(MPILIBS,[MPI library command line invocation])
 AC_ARG_VAR(MPIHEADER,[MPI header include path])
 if test -n "$MPIHEADER"; then
-   F90FLAGS="$MPIHEADER"
+   F90FLAGS="$F90FLAGS $MPIHEADER"
 fi
 ACX_MPI
 F90FLAGS="$OLDF90FLAGS"
@@ -102,10 +102,10 @@ AC_C_BIGENDIAN
 # Check if fortran compiler creates modules files
 # in uppercase or lowercase
 if test "$F90" = "frt"; then # -Am flag needed for frt to gerate mod files
-   F90FLAGS="-Am"
+   F90FLAGS="$F90FLAGS -Am"
 fi
 if test "$F90" = "ftn"; then # -em flag needed for ftn to gerate mod files
-   F90FLAGS="-em"
+   F90FLAGS="$F90FLAGS -em"
 fi
 AC_F90_MOD_UPPERCASE
 F90FLAGS="$OLDF90FLAGS"
@@ -207,12 +207,9 @@ echo "Hostname=$ac_hostname"
 echo "Machine=$machinename"
 echo "OS=$osname"
 
-# Set F90FLAGS and MACHDEFS
-
-F90FLAGS="$F90TEMPFLAGS"
-AC_ARG_VAR(MACHDEFS,MCT compiler and OS flags)
-
 # DEFINE MACHDEFS ACCORDING TO OS, COMPILER AND PACKAGE OPTIONS
+
+AC_ARG_VAR(MACHDEFS,MCT compiler and OS flags)
 
 # DEFINE PACKAGE OPTIONS
 
