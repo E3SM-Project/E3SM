@@ -46,6 +46,8 @@
 
 ! !REVISION HISTORY:
 !      07Jun01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
+!      14Feb02 - R. Jacob <jacob@mcs.anl.gov> - Use MCT_comm instead
+!		 of MP_COMM_WORLD
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_NBSend'
@@ -100,7 +102,6 @@
 
 !--------------------------------------------------------
 
-! call MP_Comm_rank(MP_COMM_WORLD,myproc,ier)
   mycomp=Rout%comp1id
   othercomp=Rout%comp2id
 
@@ -208,7 +209,7 @@
       tag = 100000*mycomp + 1000*ThisMCTWorld%mygrank + &
 	    500 + Rout%pe_list(proc)
       call MPI_ISEND(ip1(proc)%pi(1),Rout%locsize(proc)*numi,MP_INTEGER,&
-	 Rout%pe_list(proc),tag,MP_COMM_WORLD,Reqs%ireqs(proc),ier)
+	 Rout%pe_list(proc),tag,ThisMCTWorld%MCT_comm,Reqs%ireqs(proc),ier)
       if(ier /= 0) call MP_perr_die(myname_,'MPI_ISEND(ints)',ier)
     enddo
   endif
@@ -222,7 +223,7 @@
 	    700 + Rout%pe_list(proc)
 !     write(*,*)"SENDR",ThisMCTWorld%mygrank,Rout%pe_list(proc),tag
       call MPI_ISEND(rp1(proc)%pr(1),Rout%locsize(proc)*numr,mp_Type_rp1, &
-	 Rout%pe_list(proc),tag,MP_COMM_WORLD,Reqs%rreqs(proc),ier)
+	 Rout%pe_list(proc),tag,ThisMCTWorld%MCT_comm,Reqs%rreqs(proc),ier)
       if(ier /= 0) call MP_perr_die(myname_,'MPI_ISEND(reals)',ier)
     enddo
   endif

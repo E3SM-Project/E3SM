@@ -66,6 +66,8 @@
 !                 call GlobalSegMap_init with actual shaped arrays
 !                 for non-root processes to satisfy Fortran 90 standard.
 !                 See comments in subroutine.
+!       15Feb02 - R. Jacob <jacob@mcs.anl.gov> - use MCT_comm instead of
+!		  MP_COMM_WORLD
 !EOP ___________________________________________________________________
 
 
@@ -182,7 +184,7 @@
       ! Post send to RemoteRootID:
 
      call MPI_SEND(LocalMapPars, NumHandshakePars, MP_INTEGER, &
-	           RemoteRootID, SendTag, MP_COMM_WORLD, ierr)
+	           RemoteRootID, SendTag, ThisMCTWorld%MCT_comm, ierr)
      if(ierr /= 0) then
 	call MP_perr_die(myname_,'call MPI_SEND()',ierr)
      endif
@@ -190,7 +192,7 @@
       ! Post receive from RemoteRootID:
 
      call MPI_RECV(RemoteMapPars, NumHandshakePars, MP_INTEGER, &
-	           RemoteRootID, RecvTag, MP_COMM_WORLD, status, ierr)
+	           RemoteRootID, RecvTag, ThisMCTWorld%MCT_comm, status, ierr)
      if(ierr /= 0) then
 	call MP_perr_die(myname_,'call MPI_RECV()',ierr)
      endif
@@ -474,7 +476,7 @@
       ! Send off SendBuf to the remote component root:
 
      call MPI_ISEND(SendBuf(1), 3*LocalMapPars(NumSegIndex), MP_INTEGER, &
-	           remote_root, SendTag, MP_COMM_WORLD, req, ierr)
+	           remote_root, SendTag, ThisMCTWorld%MCT_comm, req, ierr)
      if(ierr /= 0) then
 	call MP_perr_die(myname_,'MPI_SEND(SendBuf...',ierr)
      endif
@@ -482,7 +484,7 @@
       ! Receive RecvBuf from the remote component root:
 
      call MPI_RECV(RecvBuf, 3*RemoteMapPars(NumSegIndex), MP_INTEGER, &
-	           remote_root, RecvTag, MP_COMM_WORLD, status, ierr)
+	           remote_root, RecvTag, ThisMCTWorld%MCT_comm, status, ierr)
      if(ierr /= 0) then
 	call MP_perr_die(myname_,'MPI_Recv(RecvBuf...',ierr)
      endif
