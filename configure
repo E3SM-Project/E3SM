@@ -270,7 +270,7 @@ PACKAGE_VERSION='0.01'
 PACKAGE_STRING='MCT 0.01'
 PACKAGE_BUGREPORT=''
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT F90 F90FLAGS ac_ct_F90 MPIF90 MPILIBS FC MUPDATE FPP FPPFLAGS CPP FRULE F90RULE FRULECPP F90RULECPP MACHDEFS FFLAGS REAL8 LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT F90 F90FLAGS ac_ct_F90 MPIF90 MPILIBS FC MUPDATE FPP FPPFLAGS CPP FRULE F90RULE FRULECPP F90RULECPP MACHDEFS FFLAGS REAL8 BIT64 LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -767,6 +767,10 @@ ac_env_REAL8_set=${REAL8+set}
 ac_env_REAL8_value=$REAL8
 ac_cv_env_REAL8_set=${REAL8+set}
 ac_cv_env_REAL8_value=$REAL8
+ac_env_BIT64_set=${BIT64+set}
+ac_env_BIT64_value=$BIT64
+ac_cv_env_BIT64_set=${BIT64+set}
+ac_cv_env_BIT64_value=$BIT64
 
 #
 # Report the --help message.
@@ -852,7 +856,9 @@ Some influential environment variables:
   FPPFLAGS    C-preprocessing flags for Fortran source code
   MACHDEFS    MCT compiler and OS flags
   FFLAGS      Fortran compiler flags for all source files
-  REAL8       Fortran compiler flag for setting the size of REAL values
+  REAL8       Fortran compiler flag for setting the default REAL size to
+              REAL(KIND=8)
+  BIT64       Fortran compiler flag for generating 64-bit objects
 
 Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -2110,7 +2116,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:2113:" \
+echo "$as_me:2119:" \
      "checking for Fortran 90 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -2473,7 +2479,7 @@ _ACEOF
 # 1 to this macro) to the Fortran 90 compiler in order to get "version" output
 ac_save_F90FLAGS=$F90FLAGS
 F90FLAGS="$F90FLAGS $ac_version"
-(eval echo $as_me:2476: \"$ac_link\") >&5
+(eval echo $as_me:2482: \"$ac_link\") >&5
 ac_f90_version_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 echo "$ac_f90_version_output" >&5
 F90FLAGS=$ac_save_F90FLAGS
@@ -2862,7 +2868,7 @@ program main
 
   implicit none
 #if zebra || aardvark
-  character(len=25) :: ch  ! '"
+  character(len=25) :: ch  ! '
 #endif
   ch="Does this test work? "// &
           "YES!"
@@ -2946,7 +2952,7 @@ program main
 
   implicit none
 #if zebra || aardvark
-  character(len=25) :: ch  ! '"
+  character(len=25) :: ch  ! '
 #endif
   ch="Does this test work? "// &
           "YES!"
@@ -3039,11 +3045,15 @@ fi
 if echo $osname | grep -i fujitsu >/dev/null 2>&1; then
    MACHDEFS="-DSYSFUJITSU $MACHDEFS"
 fi
-if echo $osname | grep -i irix >/dev/null 2>&1; then
-   MACHDEFS="-DSYSIRIX $MACHDEFS"
-fi
 if echo $osname | grep -i irix64 >/dev/null 2>&1; then
    MACHDEFS="-DSYSIRIX64 $MACHDEFS"
+fi
+if echo $osname | grep -i irix >/dev/null 2>&1; then
+if echo $MACHDEFS | grep -i irix64 >/dev/null 2>&1; then
+MACHDEFS="$MACHDEFS" # do nothing
+else
+MACHDEFS="-DSYSIRIX $MACHDEFS"
+fi
 fi
 if echo $osname | grep -i linux >/dev/null 2>&1; then
    MACHDEFS="-DSYSLINUX $MACHDEFS"
@@ -3067,13 +3077,14 @@ fi
 
 
 
+
 # Check compiler name
 case $F90 in
 xlf90)
 if test -z "$REAL8"; then
    REAL8="-qrealsize=8"
 fi
-MACHDEFS="$MACHDEFS,-DXLF"
+MACHDEFS="$MACHDEFS,-DCPRXLF"
 if test -z "$FFLAGS"; then
    FFLAGS="-qarch=auto -O2"
 fi
@@ -3084,22 +3095,28 @@ if test -z "$F90FLAGS"; then
      F90FLAGS="-qsuffix=f=f90"
   fi
 fi;;
-pgf90) MACHDEFS="-DPGI $MACHDEFS";;
-ftn) MACHDEFS="-DCRAY $MACHDEFS";;
-epcf90) MACHDEFS="-DEPC $MACHDEFS";;
-lf95) MACHDEFS="-DLAHEY $MACHDEFS";;
-fort) MACHDEFS="-DCOMPAQ $MACHDEFS";;
-g95) MACHDEFS="-DGNU $MACHDEFS";;
+pgf90) MACHDEFS="-DCPRPGI $MACHDEFS";;
+ftn) MACHDEFS="-DCPRCRAY $MACHDEFS";;
+epcf90) MACHDEFS="-DCPREPC $MACHDEFS";;
+lf95) MACHDEFS="-DCPRLAHEY $MACHDEFS";;
+fort) MACHDEFS="-DCPRCOMPAQ $MACHDEFS";;
+g95) MACHDEFS="-DCPRGNU $MACHDEFS";;
 esac
 
 if echo $f90_version | grep -i nag >/dev/null 2>&1; then
-   MACHDEFS="-DNAG $MACHDEFS"
+   MACHDEFS="-DCPRNAG $MACHDEFS"
 fi
 if echo $f90_version | grep -i absoft >/dev/null 2>&1; then
-   MACHDEFS="-DABSOFT $MACHDEFS"
+   MACHDEFS="-DCPRABSOFT $MACHDEFS"
 fi
 if echo $f90_version | grep -i intel >/dev/null 2>&1; then
-   MACHDEFS="-DINTEL $MACHDEFS"
+   MACHDEFS="-DCPRINTEL $MACHDEFS"
+fi
+if echo $f90_version | grep -i mipspro >/dev/null 2>&1; then
+   MACHDEFS="-DCPRMIPSPRO $MACHDEFS"
+   FFLAGS="-O3"
+   REAL8="-r8"
+   BIT64="-64"
 fi
 
 cat >confcache <<\_ACEOF
@@ -3761,6 +3778,7 @@ s,@F90RULECPP@,$F90RULECPP,;t t
 s,@MACHDEFS@,$MACHDEFS,;t t
 s,@FFLAGS@,$FFLAGS,;t t
 s,@REAL8@,$REAL8,;t t
+s,@BIT64@,$BIT64,;t t
 s,@LIBOBJS@,$LIBOBJS,;t t
 s,@LTLIBOBJS@,$LTLIBOBJS,;t t
 CEOF
@@ -4004,6 +4022,7 @@ echo "F90=$F90"
 echo "FFLAGS=$FFLAGS"
 echo "F90FLAGS=$F90FLAGS"
 echo "REAL8=$REAL8"
+echo "BIT64=$BIT64"
 echo "MPIF90=$MPIF90"
 echo "MPILIBS=$MPILIBS"
 echo "MACHDEFS=$MACHDEFS"
