@@ -151,22 +151,22 @@
         ! NOTE: removed argument check for oC on the root. 
         ! Is there any good way to check if an accumulator is NOT initialized? 
 
-        ! Initialize oC from iC. Clean oC%av - we don't want this av.
+        ! Initialize oC from iC. Clean oC%data - we don't want this av.
 
   if(myID == root) then
      
      call Accumulator_initv(oC,iC,lsize=1, &
                             num_steps=iC%num_steps,steps_done=iC%steps_done)
-     call AttrVect_clean(oC%av)
+     call AttrVect_clean(oC%data)
 
   endif
 
-       ! Initialize oC%av. Gather distributed iC%av to oC%av on the root
+       ! Initialize oC%data. Gather distributed iC%data to oC%data on the root
 
-  call AttrVect_gather(iC%av, oC%av, GMap, root, comm, ier)
+  call AttrVect_gather(iC%data, oC%data, GMap, root, comm, ier)
 
   if(ier /= 0) then
-    call perr(myname_,'AttrVect_gather(iC%av, oC%av...',ier)
+    call perr(myname_,'AttrVect_gather(iC%data, oC%data...',ier)
     if(.not.present(stat)) call die(myname_)
     stat=ier
     return
@@ -251,20 +251,20 @@
         ! NOTE: removed argument check for oC on the root. 
         ! Is there any good way to check if an accumulator is NOT initialized? 
 
-        ! Initialize oC from iC. Clean oC%av - we don't want this av.
+        ! Initialize oC from iC. Clean oC%data - we don't want this av.
 
   if(myID == root) then
      call Accumulator_initv(oC,iC,lsize=1, &
                             num_steps=iC%num_steps,steps_done=iC%steps_done)
-     call AttrVect_clean(oC%av)
+     call AttrVect_clean(oC%data)
   endif
 
-       ! Gather distributed iC%av to oC%av on the root
+       ! Gather distributed iC%data to oC%data on the root
 
-  call AttrVect_gather(iC%av, oC%av, GSMap, root, comm, ier)
+  call AttrVect_gather(iC%data, oC%data, GSMap, root, comm, ier)
   
   if(ier /= 0) then
-    call perr(myname_,'AttrVect_gather(iC%av, oC%av...',ier)
+    call perr(myname_,'AttrVect_gather(iC%data, oC%data...',ier)
     if(.not.present(stat)) call die(myname_)
     stat=ier
     return
@@ -358,24 +358,24 @@
         ! Is there any good way to check if an accumulator is NOT initialized? 
 
         ! Copy accumulator from iC to oC
-        ! Clean up oC%av on root. 
+        ! Clean up oC%data on root. 
 
   if(myID == root) then
      call Accumulator_initv(oC,iC,lsize=1,num_steps=iC%num_steps, &
                             steps_done=iC%steps_done)
-     call AttrVect_clean(oC%av)
+     call AttrVect_clean(oC%data)
   endif
 
-        ! Broadcast oC (except for oC%av)
+        ! Broadcast oC (except for oC%data)
 
   call bcastp_(oC, root, comm, stat)
 
 	! Scatter the AttrVect component of iC
 
-  call AttrVect_scatter(iC%av, oC%av, GMap, root, comm, ier)
+  call AttrVect_scatter(iC%data, oC%data, GMap, root, comm, ier)
 
   if(ier /= 0) then
-    call perr(myname_,'AttrVect_scatter(iC%av, oC%av...',ier)
+    call perr(myname_,'AttrVect_scatter(iC%data, oC%data...',ier)
     if(.not.present(stat)) call die(myname_)
     stat=ier
     return
@@ -462,24 +462,24 @@
         ! Is there any good way to check if an accumulator is NOT initialized? 
   
         ! Copy accumulator from iC to oC
-        ! Clean up oC%av on root. 
+        ! Clean up oC%data on root. 
 
   if(myID == root) then
      call Accumulator_initv(oC,iC,lsize=1,num_steps=iC%num_steps, &
                             steps_done=iC%steps_done)
-     call AttrVect_clean(oC%av)
+     call AttrVect_clean(oC%data)
   endif
 
-        ! Broadcast oC (except for oC%av)
+        ! Broadcast oC (except for oC%data)
 
   call bcastp_(oC, root, comm, stat)
 
 	! Scatter the AttrVect component of aC
 
-  call AttrVect_scatter(iC%av, oC%av, GSMap, root, comm, ier)
+  call AttrVect_scatter(iC%data, oC%data, GSMap, root, comm, ier)
 
   if(ier /= 0) then
-    call perr(myname_,'AttrVect_scatter(iC%av, oC%av...',ier)
+    call perr(myname_,'AttrVect_scatter(iC%data, oC%data...',ier)
     if(.not.present(stat)) call die(myname_)
     stat=ier
     return
@@ -566,12 +566,12 @@
   call bcastp_(aC, root, comm, stat)
 
 
-	! Broadcast the root value of aC%av
+	! Broadcast the root value of aC%data
 
-  call AttrVect_bcast(aC%av, root, comm, ier)
+  call AttrVect_bcast(aC%data, root, comm, ier)
 
   if(ier /= 0) then
-    call perr(myname_,'AttrVect_bcast(aC%av)',ier)
+    call perr(myname_,'AttrVect_bcast(aC%data)',ier)
     if(.not.present(stat)) call die(myname_)
     stat=ier
     return
@@ -592,7 +592,7 @@
 ! !IROUTINE: bcastp_ - Broadcast an Accumulator (but Not its Registers)
 !
 ! !DESCRIPTION:  This routine broadcasts all components of the accumulator 
-!                aC except for aC%av. This is a private routine, only meant
+!                aC except for aC%data. This is a private routine, only meant
 !                to be used by accumulator scatter and gather routines.
 !                 
 !

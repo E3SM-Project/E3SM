@@ -125,7 +125,7 @@
 	   if( (aC%rAction(aCindex) == MCT_SUM).or. &
                (aC%rAction(aCindex) == MCT_AVG) ) then
               do l=1,AttrVect_lsize(aV)
-		 aC%av%rAttr(aCindex,l) = aC%av%rAttr(aCindex,l) + &
+		 aC%data%rAttr(aCindex,l) = aC%data%rAttr(aCindex,l) + &
 		      aV%rAttr(aVindex,l)
 	      end do
 	   endif
@@ -159,7 +159,7 @@
 	   if( (aC%iAction(aCindex) == MCT_SUM) .or. &
                (aC%iAction(aCindex) == MCT_AVG) ) then
 	      do l=1,AttrVect_lsize(aV)
-		 aC%av%iAttr(aCindex,l) = aC%av%iAttr(aCindex,l) + &
+		 aC%data%iAttr(aCindex,l) = aC%data%iAttr(aCindex,l) + &
 		      aV%iAttr(aVindex,l)
 	      end do
 	   endif
@@ -185,7 +185,7 @@
      do n=1,Accumulator_nRAttr(aC)
 	if( aC%rAction(n) == MCT_AVG ) then
 	   do l=1,Accumulator_lsize(aC)
-	      aC%av%rAttr(n,l) = step_weight * aC%av%rAttr(n,l)
+	      aC%data%rAttr(n,l) = step_weight * aC%data%rAttr(n,l)
 	   enddo
 	endif
      enddo
@@ -193,7 +193,7 @@
      do n=1,Accumulator_nIAttr(aC)
 	if( aC%iAction(n) == MCT_AVG ) then
 	   do l=1,Accumulator_lsize(aC)
-	      aC%av%iAttr(n,l) = aC%av%iAttr(n,l) / num_steps
+	      aC%data%iAttr(n,l) = aC%data%iAttr(n,l) / num_steps
 	   enddo
 	endif
      enddo

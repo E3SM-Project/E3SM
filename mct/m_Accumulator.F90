@@ -23,7 +23,7 @@
 ! the number of steps in the accumulation cycle to determine if the 
 ! accumulation cycle has been completed.  The accumulation buffers 
 ! of the {\tt Accumulator} are stored in an {\tt AttrVect} (namely 
-! the component {\tt Accumulator\%av}), which allows the user to 
+! the component {\tt Accumulator\%data}), which allows the user to 
 ! define the number of variables and their names to be defined by 
 ! the user at run-time.  Finally, one can define for each field 
 ! being accumulated the specific accumulation {\em action}.  Currently,
@@ -55,7 +55,7 @@
       integer :: steps_done     ! number of accumulation steps performed
       integer, pointer, dimension(:) :: iAction ! index of integer actions
       integer, pointer, dimension(:) :: rAction ! index of real actions
-      type(AttrVect) :: av      ! accumulated sum field storage
+      type(AttrVect) :: data    ! accumulated sum field storage
     End Type Accumulator
 
 ! !PUBLIC MEMBER FUNCTIONS:
@@ -236,17 +236,17 @@
         ! Initialize the AttrVect component aC:
 
   if(present(iList) .and. present(rList)) then
-     call AttrVect_init(aC%av,iList,rList,lsize)
+     call AttrVect_init(aC%data,iList,rList,lsize)
   else
      if(present(iList)) then
-	call AttrVect_init(aV=aC%av,iList=iList,lsize=lsize)
+	call AttrVect_init(aV=aC%data,iList=iList,lsize=lsize)
      endif
      if(present(rList)) then
-	call AttrVect_init(aV=aC%av,rList=rList,lsize=lsize)
+	call AttrVect_init(aV=aC%data,rList=rList,lsize=lsize)
      endif
   endif
 
-  call AttrVect_zero(aC%av)
+  call AttrVect_zero(aC%data)
 
         ! Check that aC has been properly initialized
 
@@ -461,13 +461,13 @@
   niActions = 0
   nrActions = 0
 
-  if(List_allocated(bC%av%iList)) then
-     call List_copy(temp_iList,bC%av%iList)
+  if(List_allocated(bC%data%iList)) then
+     call List_copy(temp_iList,bC%data%iList)
      niActions = nIAttr_(bC)
   endif
 
-  if(List_allocated(bC%av%rList)) then
-     call List_copy(temp_rList,bC%av%rList)
+  if(List_allocated(bC%data%rList)) then
+     call List_copy(temp_rList,bC%data%rList)
      nrActions = nRAttr_(bC)
   endif
 
@@ -582,9 +582,9 @@
 
   if(present(stat)) then
      stat=0
-     call AttrVect_clean(aC%av,stat)
+     call AttrVect_clean(aC%data,stat)
   else
-     call AttrVect_clean(aC%av)
+     call AttrVect_clean(aC%data)
   endif
 
   if( associated(aC%iAction) )  then
@@ -702,15 +702,15 @@
       endif
    endif
 
-   if( List_allocated(aC%av%iList) .or. List_allocated(aC%av%rList) ) then
+   if( List_allocated(aC%data%iList) .or. List_allocated(aC%data%rList) ) then
       aC_associated = .true.
    else
       initialized_ = .false.
       aC_associated = .false.
       if(kill) then
 	 if(present(source_name)) write(stderr,*) source_name, myname_, &
-	      ":: ERROR, Neither aC%av%iList nor aC%av%rList are allocated"
-	 call die(myname_,"Neither aC%av%iList nor aC%av%rList are allocated")
+	      ":: ERROR, Neither aC%data%iList nor aC%data%rList are allocated"
+	 call die(myname_,"Neither aC%data%iList nor aC%data%rList are allocated")
       endif
    endif
 
@@ -744,27 +744,27 @@
 
    if( aC_associated ) then
 
-      if( (Attr_nIAttr(aC%av) == 0) .and. (Attr_nRAttr(aC%av) == 0) ) then
+      if( (Attr_nIAttr(aC%data) == 0) .and. (Attr_nRAttr(aC%data) == 0) ) then
 	 initialized_ = .false.
 	 if(kill) then
 	    if(present(source_name)) write(stderr,*) source_name, myname_, &
-		 ":: ERROR, No attributes found in aC%av"
-	    call die(myname_,"No attributes found in aC%av")
+		 ":: ERROR, No attributes found in aC%data"
+	    call die(myname_,"No attributes found in aC%data")
 	 endif
       endif
 
-      if(Attr_nIAttr(aC%av) > 0) then
+      if(Attr_nIAttr(aC%data) > 0) then
 
-	 if( size(aC%iAction) /=  Attr_nIAttr(aC%av) ) then
+	 if( size(aC%iAction) /=  Attr_nIAttr(aC%data) ) then
 	    initialized_ = .false.
 	    if(kill) then
 	       if(present(source_name)) write(stderr,*) source_name, myname_, &
-		    ":: ERROR, size(aC%iAction) /= nIAttr(aC%av)"
-	       call die(myname_,"size(aC%iAction) /= nIAttr(aC%av)")
+		    ":: ERROR, size(aC%iAction) /= nIAttr(aC%data)"
+	       call die(myname_,"size(aC%iAction) /= nIAttr(aC%data)")
 	    endif
 	 endif
 
-	 do i=1,Attr_nIAttr(aC%av)
+	 do i=1,Attr_nIAttr(aC%data)
 	    if( (aC%iAction(i) /= MCT_SUM) .and. &
                 (aC%iAction(i) /= MCT_AVG) ) then
 	       initialized_ = .false.
@@ -777,20 +777,20 @@
 	    endif
 	 enddo
 
-      endif ! if(Attr_nIAttr(aC%av) > 0)
+      endif ! if(Attr_nIAttr(aC%data) > 0)
 
-      if(Attr_nRAttr(aC%av) > 0) then
+      if(Attr_nRAttr(aC%data) > 0) then
 
-	 if( size(aC%rAction) /=  Attr_nRAttr(aC%av) ) then
+	 if( size(aC%rAction) /=  Attr_nRAttr(aC%data) ) then
 	    initialized_ = .false.
 	    if(kill) then
 	      if(present(source_name)) write(stderr,*) source_name, &
-		   myname_, ":: ERROR, size(aC%rAction) /= nRAttr(aC%av)"
-	      call die(myname_,"size(aC%rAction) /= nRAttr(aC%av)")
+		   myname_, ":: ERROR, size(aC%rAction) /= nRAttr(aC%data)"
+	      call die(myname_,"size(aC%rAction) /= nRAttr(aC%data)")
 	    endif
 	 endif
 
-	 do i=1,Attr_nRAttr(aC%av)
+	 do i=1,Attr_nRAttr(aC%data)
 	    if( (aC%rAction(i) /= MCT_SUM) .and. &
                 (aC%rAction(i) /= MCT_AVG) ) then
 	       initialized_ = .false.
@@ -804,7 +804,7 @@
 	    endif
 	 enddo
 
-      endif ! if(Attr_nRAttr(aC%av) > 0)
+      endif ! if(Attr_nRAttr(aC%data) > 0)
 
    endif  ! if (aC_associated)
 
@@ -820,7 +820,7 @@
 ! This {\tt INTEGER} query function returns the number of data points 
 ! for which the input {\tt Accumulator} argument {\tt aC} is performing
 ! accumulation.  This value corresponds to the length of the {\tt AttrVect}
-! component {\tt aC\%av} that stores the accumulation registers.
+! component {\tt aC\%data} that stores the accumulation registers.
 !
 ! !INTERFACE:
 
@@ -846,7 +846,7 @@
 	! The function AttrVect_lsize is called to return
         ! its local size data
 
-  lsize_=AttrVect_lsize(aC%aV)
+  lsize_=AttrVect_lsize(aC%data)
 
  end function lsize_
 
@@ -958,7 +958,7 @@
 ! This {\tt INTEGER} query function returns the number of integer 
 ! attributes that are stored in the input {\tt Accumulator} argument 
 ! {\tt aC}.  This value is equal to the number of integer attributes 
-! in the {\tt AttrVect} component {\tt aC\%av} that stores the 
+! in the {\tt AttrVect} component {\tt aC\%data} that stores the 
 ! accumulation registers.
 !
 ! !INTERFACE:
@@ -984,7 +984,7 @@
 	! The function AttrVect_nIAttr is called to return the
         ! number of integer fields
 
-  nIAttr_=AttrVect_nIAttr(aC%av)
+  nIAttr_=AttrVect_nIAttr(aC%data)
 
  end function nIAttr_
 
@@ -998,7 +998,7 @@
 ! This {\tt INTEGER} query function returns the number of real
 ! attributes that are stored in the input {\tt Accumulator} argument 
 ! {\tt aC}.  This value is equal to the number of real attributes 
-! in the {\tt AttrVect} component {\tt aC\%av} that stores the 
+! in the {\tt AttrVect} component {\tt aC\%data} that stores the 
 ! accumulation registers.
 !
 ! !INTERFACE:
@@ -1024,7 +1024,7 @@
 	! The function AttrVect_nRAttr is called to return the
         ! number of real fields
 
-  nRAttr_=AttrVect_nRAttr(aC%aV)
+  nRAttr_=AttrVect_nRAttr(aC%data)
 
  end function nRAttr_
 
@@ -1065,7 +1065,7 @@
 
   character(len=*),parameter :: myname_=myname//'::getIList_'
 
-  call AttrVect_getIList(item,ith,aC%av)
+  call AttrVect_getIList(item,ith,aC%data)
 
  end subroutine getIList_
 
@@ -1106,7 +1106,7 @@
 
   character(len=*),parameter :: myname_=myname//'::getRList_'
 
-  call AttrVect_getRList(item,ith,aC%av)
+  call AttrVect_getRList(item,ith,aC%data)
 
  end subroutine getRList_
 
@@ -1123,7 +1123,7 @@
 ! is, all the accumulator running tallies for the attribute named 
 ! {\tt item} reside in 
 !\begin{verbatim}
-! aC%av%iAttr(indexIA_(aC,item),:).
+! aC%data%iAttr(indexIA_(aC,item),:).
 !\end{verbatim}
 ! The user may request traceback information (e.g., the name of the 
 ! routine from which this one is called) by providing values for either 
@@ -1165,7 +1165,7 @@
 
   character(len=*),parameter :: myname_=myname//'::indexIA_'
 
-  indexIA_=AttrVect_indexIA(aC%aV,item)
+  indexIA_=AttrVect_indexIA(aC%data,item)
 
 	if(indexIA_==0) then
 	  if(.not.present(dieWith)) then
@@ -1193,7 +1193,7 @@
 ! is, all the accumulator running tallies for the attribute named 
 ! {\tt item} reside in 
 !\begin{verbatim}
-! aC%av%rAttr(indexRA_(aC,item),:).
+! aC%data%rAttr(indexRA_(aC,item),:).
 !\end{verbatim}
 ! The user may request traceback information (e.g., the name of the 
 ! routine from which this one is called) by providing values for either 
@@ -1236,7 +1236,7 @@
 
   character(len=*),parameter :: myname_=myname//'::indexRA_'
 
-  indexRA_=AttrVect_indexRA(aC%aV,item)
+  indexRA_=AttrVect_indexRA(aC%data,item)
 
 	if(indexRA_==0) then
 	  if(.not.present(dieWith)) then
@@ -1263,7 +1263,7 @@
 ! output {\tt INTEGER} argument {\tt lsize}.
 !
 ! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
-! the {\tt Accumulator} {\tt List} component {\tt aC\%av\%iList}.
+! the {\tt Accumulator} {\tt List} component {\tt aC\%data\%iList}.
 !
 ! {\bf N.B.:}  The flexibility of this routine regarding the pointer 
 ! association status of the output argument {\tt outVect} means the
@@ -1312,7 +1312,7 @@
 
        ! Export the data (inheritance from AttrVect)
 
-  call AttrVect_exportIAttr(aC%av, AttrTag, outVect, lsize)
+  call AttrVect_exportIAttr(aC%data, AttrTag, outVect, lsize)
 
  end subroutine exportIAttr_
 
@@ -1328,7 +1328,7 @@
 ! output {\tt INTEGER} argument {\tt lsize}.
 !
 ! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
-! the {\tt Accumulator} {\tt List} component {\tt aC\%av\%iList}.
+! the {\tt Accumulator} {\tt List} component {\tt aC\%data\%iList}.
 !
 ! {\bf N.B.:}  The flexibility of this routine regarding the pointer 
 ! association status of the output argument {\tt outVect} means the
@@ -1376,7 +1376,7 @@
 
        ! Export the data (inheritance from AttrVect)
 
-  call AttrVect_exportRAttr(aC%av, AttrTag, outVect, lsize)
+  call AttrVect_exportRAttr(aC%data, AttrTag, outVect, lsize)
 
  end subroutine exportRAttr_
 
@@ -1393,7 +1393,7 @@
 ! sufficient space in the {\tt Accumulator} to store the data.
 !
 ! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
-! the {\tt Accumulator} {\tt List} component {\tt aC\%av\%rList}.
+! the {\tt Accumulator} {\tt List} component {\tt aC\%data\%rList}.
 !
 ! !INTERFACE:
 
@@ -1434,7 +1434,7 @@
 
        ! Import the data (inheritance from AttrVect)
 
-  call AttrVect_importIAttr(aC%av, AttrTag, inVect, lsize)
+  call AttrVect_importIAttr(aC%data, AttrTag, inVect, lsize)
 
  end subroutine importIAttr_
 
@@ -1451,7 +1451,7 @@
 ! sufficient space in the {\tt Accumulator} to store the data.
 !
 ! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
-! the {\tt Accumulator} {\tt List} component {\tt aC\%av\%rList}.
+! the {\tt Accumulator} {\tt List} component {\tt aC\%data\%rList}.
 !
 ! !INTERFACE:
 
@@ -1492,7 +1492,7 @@
 
        ! Import the data (inheritance from AttrVect)
 
-  call AttrVect_importRAttr(aC%av, AttrTag, inVect, lsize)
+  call AttrVect_importRAttr(aC%data, AttrTag, inVect, lsize)
 
  end subroutine importRAttr_
 
@@ -1534,7 +1534,7 @@
 
 	! Zero out the accumulation registers:
 
-  call AttrVect_zero(aC%av)
+  call AttrVect_zero(aC%data)
 
  end subroutine zero_
 
@@ -1596,10 +1596,10 @@
 
   select case(trim(attrib))
   case('REAL','real')
-     call GetSharedListIndices(aC1%av%rList, aC2%av%rList, NumShared, &
+     call GetSharedListIndices(aC1%data%rList, aC2%data%rList, NumShared, &
                                  Indices1, Indices2)
   case('INTEGER','integer')
-     call GetSharedListIndices(aC1%av%iList, aC2%av%iList, NumShared, &
+     call GetSharedListIndices(aC1%data%iList, aC2%data%iList, NumShared, &
                                  Indices1, Indices2)
   case default
      write(stderr,'(4a)') myname_,":: value of argument attrib=",attrib, &
@@ -1671,10 +1671,10 @@
 
   select case(trim(attrib))
   case('REAL','real')
-     call GetSharedListIndices(aV%rList, aC%av%rList, NumShared, &
+     call GetSharedListIndices(aV%rList, aC%data%rList, NumShared, &
                                  Indices1, Indices2)
   case('INTEGER','integer')
-     call GetSharedListIndices(aV%iList, aC%av%iList, NumShared, &
+     call GetSharedListIndices(aV%iList, aC%data%iList, NumShared, &
                                  Indices1, Indices2)
   case default
      write(stderr,'(4a)') myname_,":: value of argument attrib=",attrib, &
