@@ -793,12 +793,14 @@
 
   if(myZeroInts) then ! zero out INTEGER attributes
      if(List_allocated(aV%iList)) then
+!CDIR COLLAPSE
         if(associated(aV%iAttr).and. (nIAttr_(aV)>0)) aV%iAttr=0
      endif
   endif
 
   if(myZeroReals) then ! zero out REAL attributes
      if(List_allocated(aV%rList)) then
+!CDIR COLLAPSE
         if(associated(aV%rAttr) .and. (nRAttr_(aV)>0)) aV%rAttr=0.
      endif
   endif
@@ -2122,7 +2124,7 @@
 !
 ! !INTERFACE:
 
- subroutine Copy_(aVin, aVout, rList, TrList, iList, TiList)
+ subroutine Copy_(aVin, aVout, rList, TrList, iList, TiList, vector)
 
 !
 ! !USES:
@@ -2142,6 +2144,7 @@
       character(len=*), optional, intent(in)    :: rList
       character(len=*), optional, intent(in)    :: TiList
       character(len=*), optional, intent(in)    :: TrList
+      logical, optional,          intent(in)    :: vector 
 
 ! !OUTPUT PARAMETERS: 
 
@@ -2156,6 +2159,8 @@
 !           optional arguments last
 ! 19Feb02 - E. Ong <eong@mcs.anl.gov> - new implementation using 
 !           new list function get_indices and faster memory copy  
+! 28Oct03 - R. Jacob <jacob@mcs.anl.gov> - add optional vector
+!           argument to use vector-friendly code provided by Fujitsu
 !
 !EOP ___________________________________________________________________
 
@@ -2168,6 +2173,7 @@
   integer :: inxmin, outxmin, inx, outx      ! Index variables
   logical :: TiListIsPresent, TrListIsPresent! true if list argument is present
   logical :: contiguous    ! true if index segments are contiguous in memory  
+  logical :: usevector    ! true if vector flag is present and true.
   character*7 :: data_flag ! character variable used as data type flag
 
   ! Overlapping attribute index storage arrays:
@@ -2181,6 +2187,12 @@
       'MCTERROR: Input aV and output aV do not have the same size'
      call die(myname_,'MCTERROR: Input aV and output aV &
                        &do not have the same size',2)
+  endif
+
+  ! check vector flag.
+  usevector = .false.
+  if (present(vector)) then
+   if(vector) usevector = .true.
   endif
 
   ! Copy the listed real attributes
@@ -2223,13 +2235,24 @@
 	! Start copying (arranged loop order optimized for xlf90)
 	if(contiguous) then
 
-	   outxmin=aVoutindices(1)-1
-	   inxmin=aVinindices(1)-1
-	   do j=1,aVsize
+           if(usevector) then
+	      outxmin=aVoutindices(1)-1
+	      inxmin=aVinindices(1)-1
 	      do i=1,num_indices
-		 aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)       
+!CDIR SELECT(VECTOR)
+	         do j=1,aVsize
+	   	    aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)       
+	         enddo
 	      enddo
-	   enddo
+           else
+	      outxmin=aVoutindices(1)-1
+	      inxmin=aVinindices(1)-1
+	      do j=1,aVsize
+	         do i=1,num_indices
+	   	    aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)       
+	         enddo
+	      enddo
+           endif
 
 	else
 
@@ -2290,21 +2313,32 @@
 	! Start copying (arranged loop order optimized for xlf90)
 	if(contiguous) then
 
-	   outxmin=aVoutindices(1)-1
-	   inxmin=aVinindices(1)-1
-	   do j=1,aVsize
+           if(usevector) then
+	      outxmin=aVoutindices(1)-1
+	      inxmin=aVinindices(1)-1
 	      do i=1,num_indices
-		 aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)       
+!CDIR SELECT(VECTOR)
+	         do j=1,aVsize
+	   	    aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)       
+	         enddo
 	      enddo
-	   enddo
+           else
+	      outxmin=aVoutindices(1)-1
+	      inxmin=aVinindices(1)-1
+	      do j=1,aVsize
+	         do i=1,num_indices
+	   	    aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)       
+	         enddo
+	      enddo
+           endif
 
 	else
 
            do j=1,aVsize
               do i=1,num_indices
-                 outx=aVoutindices(i)
-                 inx=aVinindices(i)     
-                 aVout%iAttr(outx,j) = aVin%iAttr(inx,j)
+                outx=aVoutindices(i)
+                inx=aVinindices(i)     
+                aVout%iAttr(outx,j) = aVin%iAttr(inx,j)
               enddo
            enddo
 
@@ -2342,13 +2376,24 @@
 
         if(contiguous) then
 
-           outxmin=aVoutindices(1)-1
-           inxmin=aVinindices(1)-1
-           do j=1,aVsize
+           if(usevector) then
+              outxmin=aVoutindices(1)-1
+              inxmin=aVinindices(1)-1
               do i=1,num_indices
-                 aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)
+!CDIR SELECT(VECTOR)
+                 do j=1,aVsize
+                    aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)
+                 enddo
               enddo
-           enddo
+           else
+              outxmin=aVoutindices(1)-1
+              inxmin=aVinindices(1)-1
+              do j=1,aVsize
+                 do i=1,num_indices
+                    aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)
+                 enddo
+              enddo
+           endif
 
         else
            
@@ -2388,13 +2433,24 @@
 
         if(contiguous) then
       
-           outxmin=aVoutindices(1)-1
-           inxmin=aVinindices(1)-1
-           do j=1,aVsize
+           if(usevector) then
+              outxmin=aVoutindices(1)-1
+              inxmin=aVinindices(1)-1
               do i=1,num_indices
-                 aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)
+!CDIR SELECT(VECTOR)
+                 do j=1,aVsize
+                    aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)
+                 enddo
               enddo
-           enddo
+           else
+              outxmin=aVoutindices(1)-1
+              inxmin=aVinindices(1)-1
+              do j=1,aVsize
+                 do i=1,num_indices
+                    aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)
+                 enddo
+              enddo
+           endif
 
         else
 
