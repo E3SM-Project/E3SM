@@ -77,6 +77,12 @@
       public :: PairedSpatialAverages  ! A Pair of Spatial 
                                       ! Area Averages
 
+      public :: PairedMaskedSpatialIntegrals ! A Pair of Masked
+                                             ! Spatial Integrals 
+
+      public :: PairedMaskedSpatialAverages ! A Pair of Masked
+                                            ! Spatial Area Averages
+
       interface SpatialIntegral ; module procedure &
 	   SpatialIntegralRAttrGG_, &
 	   SpatialIntegralRAttrV_
