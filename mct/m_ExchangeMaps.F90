@@ -328,6 +328,9 @@
 
 ! !REVISION HISTORY:
 !       03Feb01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
+!       20Apr01 - R.L. Jacob  <larson@mcs.anl.gov> - bug fix.  Use
+!                 NumSegIndex instead of GsizeIndex for start,length,
+!                 pe_loc arrays.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::ExGMapGMap_'
@@ -390,7 +393,7 @@
   integer, dimension(:), allocatable :: start, length, pe_loc
 
   integer :: myID, ngseg, remote_root
-  integer :: local_gsize, remote_gsize
+  integer :: local_ngseg, remote_ngseg
   integer,dimension(MP_STATUS_SIZE) :: status
 
       ! Determine rank on local communicator:
@@ -429,7 +432,7 @@
       ! SendBuf will hold the arrays LocalGSMap%start, LocalGSMap%length,
       ! and LocalGSMap%pe_loc in that order.
 
-     allocate(SendBuf(3*LocalMapPars(GsizeIndex)), stat=ierr)
+     allocate(SendBuf(3*LocalMapPars(NumSegIndex)), stat=ierr)
      if(ierr /= 0) then
 	call MP_perr_die(myname_,'allocate(SendBuf...)',ierr)
      endif
@@ -437,19 +440,19 @@
       ! RecvBuf will hold the arrays RemoteGSMap%start, RemoteGSMap%length,
       ! and RemoteGSMap%pe_loc in that order.
 
-     allocate(RecvBuf(3*RemoteMapPars(GsizeIndex)), stat=ierr)
+     allocate(RecvBuf(3*RemoteMapPars(NumSegIndex)), stat=ierr)
      if(ierr /= 0) then
 	call MP_perr_die(myname_,'allocate(RecvBuf...)',ierr)
      endif
 
       ! Load SendBuf in the order described above:
-     local_gsize = LocalMapPars(GsizeIndex)
-     SendBuf(1:local_gsize) = &
-	                  LocalGSMap%start(1:local_gsize)
-     SendBuf(local_gsize+1:2*local_gsize) = &
-	                  LocalGSMap%length(1:local_gsize)
-     SendBuf(2*local_gsize+1:3*local_gsize) = &
-	                  LocalGSMap%pe_loc(1:local_gsize)
+     local_ngseg = LocalMapPars(NumSegIndex)
+     SendBuf(1:local_ngseg) = &
+	                  LocalGSMap%start(1:local_ngseg)
+     SendBuf(local_ngseg+1:2*local_ngseg) = &
+	                  LocalGSMap%length(1:local_ngseg)
+     SendBuf(2*local_ngseg+1:3*local_ngseg) = &
+	                  LocalGSMap%pe_loc(1:local_ngseg)
 
       ! Determine the remote component root:
 
@@ -458,7 +461,7 @@
 
       ! Send off SendBuf to the remote component root:
 
-     call MPI_SEND(SendBuf, 3*LocalMapPars(GsizeIndex), MP_INTEGER, &
+     call MPI_SEND(SendBuf, 3*LocalMapPars(NumSegIndex), MP_INTEGER, &
 	           remote_root, SendTag, MP_COMM_WORLD, ierr)
      if(ierr /= 0) then
 	call MP_perr_die(myname_,'MPI_SEND(SendBuf...',ierr)
@@ -466,7 +469,7 @@
 
       ! Receive RecvBuf from the remote component root:
 
-     call MPI_RECV(RecvBuf, 3*RemoteMapPars(GsizeIndex), MP_INTEGER, &
+     call MPI_RECV(RecvBuf, 3*RemoteMapPars(NumSegIndex), MP_INTEGER, &
 	           remote_root, RecvTag, MP_COMM_WORLD, status, ierr)
      if(ierr /= 0) then
 	call MP_perr_die(myname_,'MPI_Recv(RecvBuf...',ierr)
@@ -474,21 +477,21 @@
 
       ! Allocate arrays start(:), length(:), and pe_loc(:)
 
-     allocate(start(RemoteMapPars(GsizeIndex)),  &
-	      length(RemoteMapPars(GsizeIndex)), &
-	      pe_loc(RemoteMapPars(GsizeIndex)), stat=ierr)
+     allocate(start(RemoteMapPars(NumSegIndex)),  &
+	      length(RemoteMapPars(NumSegIndex)), &
+	      pe_loc(RemoteMapPars(NumSegIndex)), stat=ierr)
 
      if(ierr /= 0) then
 	call MP_perr_die(myname_,'allocate(start...',ierr)
      endif
 
       ! Unpack RecvBuf into arrays start(:), length(:), and pe_loc(:)
-     remote_gsize = RemoteMapPars(GsizeIndex)
-     start(1:remote_gsize) = RecvBuf(1:remote_gsize)
-     length(1:remote_gsize) = &
-                        RecvBuf(remote_gsize+1:2*remote_gsize)
-     pe_loc(1:remote_gsize) = &
-                        RecvBuf(2*remote_gsize+1:3*remote_gsize)
+     remote_ngseg = RemoteMapPars(NumSegIndex)
+     start(1:remote_ngseg) = RecvBuf(1:remote_ngseg)
+     length(1:remote_ngseg) = &
+                        RecvBuf(remote_ngseg+1:2*remote_ngseg)
+     pe_loc(1:remote_ngseg) = &
+                        RecvBuf(2*remote_ngseg+1:3*remote_ngseg)
 
   endif ! if(myID == root)
 
