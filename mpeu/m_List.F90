@@ -1199,6 +1199,8 @@
        ! finished.  If both Lists sport the same number of items,
        ! we must compare them one-by-one...
 
+  myIdentical = .FALSE.
+
   if(nitem_(yL) == nitem_(xL)) then
 
      NumItems = nitem_(yL)
@@ -1219,8 +1221,6 @@
 
      end do COMPARE_LOOP
 
-  else
-     myIdentical = .FALSE.
   endif
 
   identical_ = myIdentical
