@@ -2102,6 +2102,7 @@
 !
       use m_String,        only : String
       use m_String,        only : String_tochar => tochar
+      use m_List ,         only : List_allocated => allocated
       use m_List ,         only : List_index => index
       use m_List ,         only : List_nitem => nitem
       use m_List ,         only : List_get   => get
@@ -2175,11 +2176,21 @@
 
         ! determine wheter this key refers to an
         ! integer or real attribute:
-
+! jwl commented out in favor of below code block unitl an error 
+! handling strategy is settled upon for indexIA_() and indexRA_().
 !     rIndex(n) = indexRA_(aV, String_tochar(key), dieWith=myname_)
 !     iIndex(n) = indexIA_(aV, String_tochar(key), dieWith=myname_)
-     rIndex(n) = List_index(aV%rList, String_tochar(key))
-     iIndex(n) = List_index(aV%iList, String_tochar(key))
+
+     if(List_allocated(aV%rList)) then
+	rIndex(n) = List_index(aV%rList, String_tochar(key))
+     else
+	rIndex(n) = 0
+     endif
+     if(List_allocated(aV%iList)) then
+	iIndex(n) = List_index(aV%iList, String_tochar(key))
+     else
+	iIndex(n) = 0
+     endif
 
         ! If both rIndex(n) and iIndex(n) are greater than
         ! zero, then we have an integer attribute sharing 
