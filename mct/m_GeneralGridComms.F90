@@ -45,6 +45,8 @@
 !       07Jun01 - J.W. Larson <larson@mcs.anl.gov> - Added point-to-point
 !       27Mar02 - J.W. Larson <larson@mcs.anl.gov> - Overhaul of error
 !                 handling calls throughout this module.
+!       05Aug02 - E. Ong <eong@mcs.anl.gov> - Added buffer association 
+!                 error checks to avoid making bad MPI calls
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_GeneralGridComms'
@@ -95,7 +97,8 @@
 
       use m_AttrVectComms,only : AttrVect_send => send
 
-      use m_List,only : List_send => send
+      use m_List, only : List_send => send
+      use m_List, only : List_allocated => allocated
 
       implicit none
 
@@ -140,12 +143,12 @@
       ! which components of it are allocated.  Load the results
       ! into HeaderAssoc(:), and send it to process dest.
 
-  HeaderAssoc(1) = associated(iGGrid%coordinate_list%bf)
-  HeaderAssoc(2) = associated(iGGrid%coordinate_sort_order%bf)
+  HeaderAssoc(1) = List_allocated(iGGrid%coordinate_list)
+  HeaderAssoc(2) = List_allocated(iGGrid%coordinate_sort_order)
   HeaderAssoc(3) = associated(iGGrid%descend)
-  HeaderAssoc(4) = associated(iGGrid%weight_list%bf)
-  HeaderAssoc(5) = associated(iGGrid%other_list%bf)
-  HeaderAssoc(6) = associated(iGGrid%index_list%bf)
+  HeaderAssoc(4) = List_allocated(iGGrid%weight_list)
+  HeaderAssoc(5) = List_allocated(iGGrid%other_list)
+  HeaderAssoc(6) = List_allocated(iGGrid%index_list)
 
   call MPI_SEND(HeaderAssoc, 6, MP_LOGICAL, dest, TagBase, ThisMCTWorld%MCT_comm, ierr)
   if(ierr /= 0) then
@@ -204,6 +207,7 @@
      if(ierr /= 0) then
 	call MP_perr_die(myname_,':: call MPI_SEND(size(iGGrid%descend)...',ierr)
      endif
+     if(size(iGGrid%descend)<=0) call die(myname_,'size(iGGrid%descend)<=0')
 
      call MPI_SEND(iGGrid%descend, size(iGGrid%descend), MP_type(iGGrid%descend(1)), &
                    dest, TagBase+6, ThisMCTWorld%MCT_comm, ierr)
@@ -389,12 +393,12 @@
       ! defined in send_().  Here are the definitions of these
       ! values:
       !
-      !  HeaderAssoc(1) = associated(oGGrid%coordinate_list%bf)
-      !  HeaderAssoc(2) = associated(oGGrid%coordinate_sort_order%bf)
+      !  HeaderAssoc(1) = List_allocated(oGGrid%coordinate_list)
+      !  HeaderAssoc(2) = List_allocated(oGGrid%coordinate_sort_order)
       !  HeaderAssoc(3) = associated(oGGrid%descend)
-      !  HeaderAssoc(4) = associated(oGGrid%weight_list%bf)
-      !  HeaderAssoc(5) = associated(oGGrid%other_list%bf)
-      !  HeaderAssoc(6) = associated(oGGrid%index_list%bf)
+      !  HeaderAssoc(4) = List_allocated(oGGrid%weight_list)
+      !  HeaderAssoc(5) = List_allocated(oGGrid%other_list)
+      !  HeaderAssoc(6) = List_allocated(oGGrid%index_list)
 
       ! Initialize status (if present)
 
@@ -464,16 +468,16 @@
 	   call MP_perr_die(myname_,':: call MPI_RECV(size(oGGrid%descend)...',ierr)
      endif
 
-  allocate(oGGrid%descend(DescendSize), stat=ierr)
-  if(ierr /= 0) then
-     if(present(status)) then
-	write(stderr,*) myname_,':: allocate(oGGrid%descend...'
-	status = ierr
-	return
-     else
-	call die(myname_,':: allocate(oGGrid%descend... failed.',ierr)
+     allocate(oGGrid%descend(DescendSize), stat=ierr)
+     if(ierr /= 0) then
+	if(present(status)) then
+	   write(stderr,*) myname_,':: allocate(oGGrid%descend...'
+	   status = ierr
+	   return
+	else
+	   call die(myname_,':: allocate(oGGrid%descend... failed.',ierr)
+	endif
      endif
-  endif
 
      call MPI_RECV(oGGrid%descend, DescendSize, MP_type(oGGrid%descend(1)), &
                    source, TagBase+6, ThisMCTWorld%MCT_comm, MPstatus, ierr)
@@ -1193,6 +1197,7 @@
       use m_GeneralGrid, only : GeneralGrid_lsize => lsize
 
       use m_List, only : List
+      use m_List, only : List_allocated => allocated
       use m_List, only : List_bcast => bcast
 
       implicit none
@@ -1214,6 +1219,7 @@
 !       05Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initial code.
 !       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize stat
 !                 (if present).
+!       05Aug02 - E. Ong <eong@mcs.anl.gov> - added association checking
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::bcastGeneralGridHeader_'
@@ -1239,63 +1245,73 @@
 
        ! Step 1. Broadcast List attributes of the GeneralGrid.
 
-  call List_bcast(ioGGrid%coordinate_list, root, comm, ierr)
-  if(ierr /= 0) then
-     write(stderr,*) myname_,'List_bcast(ioGGrid%coordinate_list... failed.',&
-	  ' ierr = ',ierr
-     if(present(stat)) then
-	stat = ierr
-	return
-     else
-	call die(myname_)
+  if(List_allocated(ioGGrid%coordinate_list)) then
+     call List_bcast(ioGGrid%coordinate_list, root, comm, ierr)
+     if(ierr /= 0) then
+	write(stderr,*) myname_,'List_bcast(ioGGrid%coordinate_list... failed.',&
+	     ' ierr = ',ierr
+	if(present(stat)) then
+	   stat = ierr
+	   return
+	else
+	   call die(myname_)
+	endif
      endif
   endif
 
-  call List_bcast(ioGGrid%coordinate_sort_order, root, comm, ierr)
-  if(ierr /= 0) then
-     write(stderr,*) myname_,'List_bcast(ioGGrid%coordinate_sort_order... failed', &
-	  ' ierr = ',ierr
-     if(present(stat)) then
-	stat = ierr
-	return
-     else
-	call die(myname_)
+  if(List_allocated(ioGGrid%coordinate_sort_order)) then
+     call List_bcast(ioGGrid%coordinate_sort_order, root, comm, ierr)
+     if(ierr /= 0) then
+	write(stderr,*) myname_,'List_bcast(ioGGrid%coordinate_sort_order... failed', &
+	     ' ierr = ',ierr
+	if(present(stat)) then
+	   stat = ierr
+	   return
+	else
+	   call die(myname_)
+	endif
      endif
   endif
 
-  call List_bcast(ioGGrid%weight_list, root, comm, ierr)
-  if(ierr /= 0) then
-     write(stderr,*) myname_,'List_bcast(ioGGrid%weight_list... failed',&
-	  ' ierr = ',ierr
-     if(present(stat)) then
-	stat = ierr
-	return
-     else
-	call die(myname_)
+  if(List_allocated(ioGGrid%weight_list)) then
+     call List_bcast(ioGGrid%weight_list, root, comm, ierr)
+     if(ierr /= 0) then
+	write(stderr,*) myname_,'List_bcast(ioGGrid%weight_list... failed',&
+	     ' ierr = ',ierr
+	if(present(stat)) then
+	   stat = ierr
+	   return
+	else
+	   call die(myname_)
+	endif
      endif
   endif
 
-  call List_bcast(ioGGrid%other_list, root, comm, ierr)
-  if(ierr /= 0) then
-     write(stderr,*) myname_,'List_bcast(ioGGrid%other_list... failed',&
-	  ' ierr = ',ierr
-     if(present(stat)) then
-	stat = ierr
-	return
-     else
-	call die(myname_)
+  if(List_allocated(ioGGrid%other_list)) then
+     call List_bcast(ioGGrid%other_list, root, comm, ierr)
+     if(ierr /= 0) then
+	write(stderr,*) myname_,'List_bcast(ioGGrid%other_list... failed',&
+	     ' ierr = ',ierr
+	if(present(stat)) then
+	   stat = ierr
+	   return
+	else
+	   call die(myname_)
+	endif
      endif
   endif
 
-  call List_bcast(ioGGrid%index_list, root, comm, ierr)
-  if(ierr /= 0) then
-     write(stderr,*) myname_,'List_bcast(ioGGrid%index_list... failed',&
-	  ' ierr = ',ierr
-     if(present(stat)) then
-	stat = ierr
-	return
-     else
-	call die(myname_)
+  if(List_allocated(ioGGrid%index_list)) then
+     call List_bcast(ioGGrid%index_list, root, comm, ierr)
+     if(ierr /= 0) then
+	write(stderr,*) myname_,'List_bcast(ioGGrid%index_list... failed',&
+	     ' ierr = ',ierr
+	if(present(stat)) then
+	   stat = ierr
+	   return
+	else
+	   call die(myname_)
+	endif
      endif
   endif
 
@@ -1319,6 +1335,7 @@
 
      if(myID == root) then
 	DescendSize = size(ioGGrid%descend)
+	if(DescendSize<=0) call die(myname_,'size(ioGGrid%descend)<=0')
      endif
 
        ! Broadcast the size of ioGGrid%descend(:) from the root.
@@ -1389,6 +1406,7 @@
       use m_List, only : List
       use m_List, only : List_nitem => nitem
       use m_List, only : List_copy => copy
+      use m_List, only : List_allocated => allocated
 
       use m_GlobalSegMap, only : GlobalSegMap
       use m_GlobalSegMap, only : GlobalSegMap_lsize => lsize
@@ -1412,6 +1430,7 @@
 !       05Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initial code.
 !       08Aug01 - E.T. Ong <eong@mcs.anl.gov> - changed list assignments(=)
 !                 to list copy.
+!       05Aug02 - E. Ong <eong@mcs.anl.gov> - added association checking
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::copyGeneralGridHeader_'
@@ -1422,36 +1441,29 @@
        ! Step 1. Copy GeneralGrid List attributes from iGGrid 
        ! to oGGrid.
 
-  call List_copy(oGGrid%coordinate_list,iGGrid%coordinate_list)
-  call List_copy(oGGrid%coordinate_sort_order,iGGrid%coordinate_sort_order)
-  call List_copy(oGGrid%weight_list,iGGrid%weight_list)
-  call List_copy(oGGrid%other_list,iGGrid%other_list)
-  call List_copy(oGGrid%index_list,iGGrid%index_list)
-
-       ! Step 2. If necessary, copy over the LOGICAL flags in
-       ! iGGrid%descend(:).
-
-  DescendAssoc = .FALSE.
-
-       ! Is iGGrid%descend associated?  If so, does the size of 
-       ! iGGrid%descend match the number of coordinates?
-
-  DescendAssoc = associated(iGGrid%descend)
-  if(DescendAssoc) then
-     DescendSize = size(iGGrid%descend)
-     if((DescendSize) /= List_nitem(iGGrid%coordinate_list)) then
-	write(stderr,*) myname,':: ERROR size(iGGrid%descend)/coordinate count mismatch'
-	write(stderr,*) myname_,':: size(iGGrid%descend) = ',size(iGGrid%descend)
-	write(stderr,*) myname_,':: List_nitem(iGGrid%coordinate_list = ', &
-	     List_nitem(iGGrid%coordinate_list)
-	call die(myname_)
-     endif
+  if(List_allocated(iGGrid%coordinate_list)) then
+     call List_copy(oGGrid%coordinate_list,iGGrid%coordinate_list)
   endif
 
-       ! If iGGrid%descend is associated, copy its entries to 
-       ! oGGrid%descend.
+  if(List_allocated(iGGrid%coordinate_sort_order)) then
+     call List_copy(oGGrid%coordinate_sort_order,iGGrid%coordinate_sort_order)
+  endif
 
+  if(List_allocated(iGGrid%weight_list)) then
+     call List_copy(oGGrid%weight_list,iGGrid%weight_list)
+  endif
+
+  if(List_allocated(iGGrid%other_list)) then
+     call List_copy(oGGrid%other_list,iGGrid%other_list)
+  endif
+
+  if(List_allocated(iGGrid%index_list)) then
+     call List_copy(oGGrid%index_list,iGGrid%index_list)
+  endif
+
+  DescendAssoc = associated(iGGrid%descend) 
   if(DescendAssoc) then
+     DescendSize = size(iGGrid%descend)
      allocate(oGGrid%descend(DescendSize), stat=ierr)
      if(ierr /= 0) then 
 	write(stderr,*) myname_,':: ERROR--allocate(iGGrid%descend(... failed.',&
