@@ -1,4 +1,5 @@
 SRCS_F90	=	\
+m_MCTWorld.F90		\
 m_AttrVect.F90		\
 m_GlobalMap.F90	        \
 m_GlobalSegMap.F90	\
@@ -19,7 +20,6 @@ m_SparseMatrixDecomp.F90	\
 m_SparseMatrixToMaps.F90	\
 m_SparseMatrixComms.F90 \
 m_Router.F90		\
-m_MCTWorld.F90		\
 m_NBSend.F90		\
 MCT_Send.F90		\
 MCT_Recv.F90
