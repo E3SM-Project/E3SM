@@ -270,7 +270,7 @@ PACKAGE_VERSION='1.0'
 PACKAGE_STRING='MCT 1.0'
 PACKAGE_BUGREPORT=''
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT F90 F90FLAGS ac_ct_F90 MPIF90 MPILIBS FC FPP FPPFLAGS FRULE F90RULE FRULECPP F90RULECPP MACHDEFS FFLAGS REAL8 BIT64 ENDIAN INCLUDEFLAG INCLUDEPATH LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT F90 F90FLAGS ac_ct_F90 MPIF90 MPILIBS FC FPP FPPFLAGS FRULE F90RULE FRULECPP F90RULECPP MACHDEFS FFLAGS CCFLAGS REAL8 BIT64 ENDIAN INCLUDEFLAG INCLUDEPATH LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -759,6 +759,10 @@ ac_env_FFLAGS_set=${FFLAGS+set}
 ac_env_FFLAGS_value=$FFLAGS
 ac_cv_env_FFLAGS_set=${FFLAGS+set}
 ac_cv_env_FFLAGS_value=$FFLAGS
+ac_env_CCFLAGS_set=${CCFLAGS+set}
+ac_env_CCFLAGS_value=$CCFLAGS
+ac_cv_env_CCFLAGS_set=${CCFLAGS+set}
+ac_cv_env_CCFLAGS_value=$CCFLAGS
 ac_env_REAL8_set=${REAL8+set}
 ac_env_REAL8_value=$REAL8
 ac_cv_env_REAL8_set=${REAL8+set}
@@ -863,6 +867,7 @@ Some influential environment variables:
   FPPFLAGS    C-preprocessing flags for Fortran source code
   MACHDEFS    MCT compiler and OS flags
   FFLAGS      Fortran compiler flags for all source files
+  CCFLAGS     C source compilation flags
   REAL8       Fortran compiler flag for setting the default REAL size to
               REAL(KIND=8)
   BIT64       Fortran compiler flag for generating 64-bit objects
@@ -2138,7 +2143,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:2141:" \
+echo "$as_me:2146:" \
      "checking for Fortran 90 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -2500,7 +2505,7 @@ _ACEOF
 # 1 to this macro) to the Fortran 90 compiler in order to get "version" output
 ac_save_F90FLAGS=$F90FLAGS
 F90FLAGS="$F90FLAGS $ac_version"
-(eval echo $as_me:2503: \"$ac_link\") >&5
+(eval echo $as_me:2508: \"$ac_link\") >&5
 ac_f90_version_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 echo "$ac_f90_version_output" >&5
 F90FLAGS=$ac_save_F90FLAGS
@@ -3106,6 +3111,7 @@ if echo $osname | grep -i unicos >/dev/null 2>&1; then
 fi
 
 # Set the following variables by checking the compiler name
+
 
 
 
@@ -3869,6 +3875,7 @@ s,@FRULECPP@,$FRULECPP,;t t
 s,@F90RULECPP@,$F90RULECPP,;t t
 s,@MACHDEFS@,$MACHDEFS,;t t
 s,@FFLAGS@,$FFLAGS,;t t
+s,@CCFLAGS@,$CCFLAGS,;t t
 s,@REAL8@,$REAL8,;t t
 s,@BIT64@,$BIT64,;t t
 s,@ENDIAN@,$ENDIAN,;t t
