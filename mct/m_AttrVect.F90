@@ -671,6 +671,9 @@
 ! 	20Oct00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 !       25Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - add -1 to make a
 !                 backwards loop go backwards
+!       14Jun01 - J. Larson / E. Ong -- Fixed logic bug in REAL attribute
+!                 sort (discovered by E. Ong), and cleaned up error / 
+!                 shutdown logic.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::Sort_'
@@ -722,35 +725,40 @@
         ! zero, then we have an integer attribute sharing 
         ! the same name as a real attribute, and there is 
         ! no clear path as to which one is the sort key.
-        ! This is a fatal error
+        ! This is a fatal error that triggers shutdown.
 
      if ((rIndex(n) > 0) .and. (iIndex(n) > 0)) then
 	if(.not.present(dieWith)) then
 	   if(present(perrWith)) write(stderr,'(4a)') myname, &
 		":: ambiguous key, ", perrWith, &
 		" both iIndex(n) and rIndex(n) positive."
+	    call die(myname_,":: both iIndex(n) and rIndex(n) > 0.")
 	else
-	    write(stderr,'(4a)') myname,":: ambiguous key, ", &
-		 dieWith,	&
-		" both iIndex(n) and rIndex(n) positive."
-	    call die(dieWith)
+	   if(present(perrWith)) then
+	       write(stderr,'(4a)') myname_,":: ", perrWith, &
+		       " both iIndex(n) and rIndex(n) positive."
+           endif
+	   call die(myname_,dieWith)
 	endif
      endif
 
         ! If both rIndex(n) and iIndex(n) are nonpositive,
         ! then the requested sort key is not present in either
         ! aV%rList or aV%iList, and we cannot perform the sort.
-        ! This is a fatal error
+        ! This is a fatal error that triggers shutdown.
 
      if ((rIndex(n) <= 0) .and. (iIndex(n) <= 0)) then
 	if(.not.present(dieWith)) then
 	   if(present(perrWith)) write(stderr,'(4a)') myname,":: ", &
 		perrWith, &
 		" both iIndex(n) and rIndex(n) nonpositive"
+	   call die(myname_,":: both iIndex(n) and rIndex(n) <= 0.")
 	else
-	    write(stderr,'(4a)') myname,":: ", dieWith,	&
-		" both iIndex(n) and rIndex(n) nonpositive"
-	    call die(dieWith)
+	   if(present(perrWith)) then
+	      write(stderr,'(4a)') myname_,":: ", perrWith,	&
+		   " both iIndex(n) and rIndex(n) nonpositive"
+           endif
+	   call die(myname_,dieWith)
 	endif
      endif
 
@@ -791,16 +799,18 @@
 	else
    	   call IndexSort(length, perm, aV%iAttr(iIndex(n),:), &
                		  descend=.false.)
-	endif
+	endif ! if(present(descend)...
      else
-	if(present(descend)) then
-	   call IndexSort(length, perm, aV%rAttr(iIndex(n),:), &
-		          descend(n))
-	else
-   	   call IndexSort(length, perm, aV%rAttr(iIndex(n),:), &
-               		  descend=.false.)
-	endif
-     endif
+	if(rIndex(n) > 0) then
+	   if(present(descend)) then
+	      call IndexSort(length, perm, aV%rAttr(rIndex(n),:), &
+		             descend(n))
+	   else
+	      call IndexSort(length, perm, aV%rAttr(rIndex(n),:), &
+               		     descend=.false.)
+	   endif ! if(present(descend)...
+	endif ! if (rIndex(n) > 0)...
+     endif ! if (iIndex(n) > 0)...
   enddo
 
         ! Now perm(1:length) is the transformation we seek--we are
