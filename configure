@@ -1358,9 +1358,6 @@ fi;
 test "$osname"=NONE && osname=`uname -s`
 test "$machinename"=NONE && machinename=`uname -m`
 
-# SAVE F90FLAGS IN CASE ITS SET IN THE COMMAND LINE
-OLDF90FLAGS="$F90FLAGS"
-
 # HARDCODE SPECIFIC MACHINES FOR EXTRAORDINARY CIRCUMSTANCES
 
 # CHECK IF WE ARE ON THE EARTH SIMULATOR
@@ -2251,7 +2248,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:2254:" \
+echo "$as_me:2251:" \
      "checking for Fortran 90 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -2331,6 +2328,8 @@ ac_compile='$F90 -c $F90FLAGS conftest.$ac_ext >&5'
 ac_link='$F90 -o conftest$ac_exeext $F90FLAGS $LD90FLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_f90_compiler_gnu
 
+
+OLDF90FLAGS="$F90FLAGS"
 
 if test -n "$MPIHEADER"; then
    F90FLAGS="$F90FLAGS $MPIHEADER"
@@ -2636,7 +2635,7 @@ _ACEOF
 # 1 to this macro) to the Fortran 90 compiler in order to get "version" output
 ac_save_F90FLAGS=$F90FLAGS
 F90FLAGS="$F90FLAGS $ac_version"
-(eval echo $as_me:2639: \"$ac_link\") >&5
+(eval echo $as_me:2638: \"$ac_link\") >&5
 ac_f90_version_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 echo "$ac_f90_version_output" >&5
 F90FLAGS=$ac_save_F90FLAGS
@@ -2891,6 +2890,8 @@ esac
 
 
 # CHECK IF FORTRAN COMPILER CREATES MODULE FILES IN UPPERCASE OR LOWERCASE
+OLDF90FLAGS="$F90FLAGS"
+
 if test "$F90" = "frt"; then # -Am flag needed for frt to gerate mod files
    F90FLAGS="$F90FLAGS -Am"
 fi
