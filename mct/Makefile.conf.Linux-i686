@@ -25,6 +25,7 @@
 #		- Cleaned _Dnod for this library
 #       18Jan01 - J. Larson <larson@mcs.anl.gov> - adapted for Linux
 #	11Apr02 - R. Jacob <jacob@mcs.anl.gov> - assume MPICH for i686
+#       09Jul02 - E. Ong <eong@mcs.anl.gov> - added support for ABSOFT compiler
 #
 #EOP
 #-----------------------------------------------------------------------
@@ -34,6 +35,15 @@ _Dnod		=
 
 # Environments
 # ============
+
+# If using pgf90 compiler, add the following flags: 
+# FFLAGS = -tp p6 -pc 32 -Mnoframe -byteswapio 
+# -pc specifies 32-bit or 64-bit 
+
+# If using Absoft compiler, add the following flags: 
+# FFLAGS = -Mnoframe
+# FPPFLAGS = -DABSOFT
+# Add $(_p) to the compilation lines for *.f and *.f90
 
 # Assume MPICH is being used for Linux-i686
 #  use mpif90 and mpif77 to compile and link.
@@ -47,6 +57,7 @@ _IMPI		=
 _Lmpeu          = -L../mpeu
 _lmpeu          = -lmpeu
 _Impeu          = -I../mpeu
+_pmpeu          = -p../mpeu
 
 # The default design requirement for this library is to use the OS
 # specific default REAL kind for all its REAL type variables, while
@@ -58,6 +69,7 @@ _R		= -r8
 _R		=
 
 _I		=  -I. $(_Impeu) $(_IMPI)
+_p              = $(_pmpeu)
 
 SHELL		= /bin/sh
 F77		= mpif77
