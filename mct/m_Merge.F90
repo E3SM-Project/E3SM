@@ -312,7 +312,7 @@
        ! Initialize the elements of WeightSum(:) to zero:
 
   do i=1,size(WeightSum)
-     WeightSum(i) = 0.
+     WeightSum(i) = 0._FP
   end do
 
        ! Process the incoming data one input AttrVect and mask tag 
@@ -382,8 +382,8 @@
 
   do i=1,AttrVect_lsize(outAv)
 
-     if(WeightSum(i) /= 0) then
-	invWeightSum = 1. / WeightSum(i)
+     if(WeightSum(i) /= 0._FP) then
+	invWeightSum = 1._FP / WeightSum(i)
      else
 	write(stderr,'(2a,i8,a)') myname_,':: FATAL--WeightSum(', &
 	                          i,') is zero!'
@@ -622,7 +622,7 @@
        ! Initialize the elements of WeightSum(:) to zero:
 
   do i=1,size(WeightSum)
-     WeightSum(i) = 0.
+     WeightSum(i) = 0._FP
   end do
 
        ! Process the incoming data one input AttrVect and mask tag 
@@ -692,8 +692,8 @@
 
   do i=1,AttrVect_lsize(outAv)
 
-     if(WeightSum(i) /= 0) then
-	invWeightSum = 1. / WeightSum(i)
+     if(WeightSum(i) /= 0._FP) then
+	invWeightSum = 1._FP / WeightSum(i)
      else
 	write(stderr,'(2a,i8,a)') myname_,':: FATAL--WeightSum(', &
 	                          i,') is zero!'
@@ -961,7 +961,7 @@
        ! Initialize the elements of WeightSum(:) to zero:
 
   do i=1,size(WeightSum)
-     WeightSum(i) = 0.
+     WeightSum(i) = 0._FP
   end do
 
        ! Process the incoming data one input AttrVect and mask tag 
@@ -1060,8 +1060,8 @@
 
   do i=1,AttrVect_lsize(outAv)
 
-     if(WeightSum(i) /= 0) then
-	invWeightSum = 1. / WeightSum(i)
+     if(WeightSum(i) /= 0._FP) then
+	invWeightSum = 1._FP / WeightSum(i)
      else
 	write(stderr,'(2a,i8,a)') myname_,':: FATAL--WeightSum(', &
 	                          i,') is zero!'
@@ -1329,7 +1329,7 @@
        ! Initialize the elements of WeightSum(:) to zero:
 
   do i=1,size(WeightSum)
-     WeightSum(i) = 0.
+     WeightSum(i) = 0._FP
   end do
 
        ! Process the incoming data one input AttrVect and mask tag 
@@ -1428,8 +1428,8 @@
 
   do i=1,AttrVect_lsize(outAv)
 
-     if(WeightSum(i) /= 0) then
-	invWeightSum = 1. / WeightSum(i)
+     if(WeightSum(i) /= 0._FP) then
+	invWeightSum = 1._FP / WeightSum(i)
      else
 	write(stderr,'(2a,i8,a)') myname_,':: FATAL--WeightSum(', &
 	                          i,') is zero!'
@@ -1728,7 +1728,7 @@
        ! Initialize the elements of WeightSum(:) to zero:
 
   do i=1,size(WeightSum)
-     WeightSum(i) = 0.
+     WeightSum(i) = 0._FP
   end do
 
        ! Process the incoming data one input AttrVect and mask tag 
@@ -1856,8 +1856,8 @@
 
   do i=1,AttrVect_lsize(outAv)
 
-     if(WeightSum(i) /= 0) then
-	invWeightSum = 1. / WeightSum(i)
+     if(WeightSum(i) /= 0._FP) then
+	invWeightSum = 1._FP / WeightSum(i)
      else
 	write(stderr,'(2a,i8,a)') myname_,':: FATAL--WeightSum(', &
 	                          i,') is zero!'
@@ -2156,7 +2156,7 @@
        ! Initialize the elements of WeightSum(:) to zero:
 
   do i=1,size(WeightSum)
-     WeightSum(i) = 0.
+     WeightSum(i) = 0._FP
   end do
 
        ! Process the incoming data one input AttrVect and mask tag 
@@ -2284,8 +2284,8 @@
 
   do i=1,AttrVect_lsize(outAv)
 
-     if(WeightSum(i) /= 0) then
-	invWeightSum = 1. / WeightSum(i)
+     if(WeightSum(i) /= 0._FP) then
+	invWeightSum = 1._FP / WeightSum(i)
      else
 	write(stderr,'(2a,i8,a)') myname_,':: FATAL--WeightSum(', &
 	                          i,') is zero!'
@@ -2560,7 +2560,7 @@
      endif
 
        ! Initialize all the elements of rMask to unity:
-     rMask = 1
+     rMask = 1._FP
 
        ! turn the colon-delimited string of tags into a List:
      call List_init(rMaskList,rMaskTags)
@@ -2701,7 +2701,7 @@
 		 outAv%rAttr(j,i) = outAv%rAttr(j,i) + inAv%rAttr(j,i)
 	      end do ! do j=1,AttrVect_nRAttr(inAv)
        ! add in mask contribution to total of merge weights
-	      WeightSum(i) = WeightSum(i) + 1.
+	      WeightSum(i) = WeightSum(i) + 1._FP
 	   end do ! do i=1,AttrVect_lsize(inAv)...
 	else ! use previously generated cross-indices
 	   do i=1, AttrVect_lsize(inAv)
@@ -2711,7 +2711,7 @@
 		      		         inAv%rAttr(inAvIndices(j),i) 
 	      end do ! do j=1,NumSharedRAttr
        ! add in mask contribution to total of merge weights
-	      WeightSum(i) = WeightSum(i) + 1.
+	      WeightSum(i) = WeightSum(i) + 1._FP
 	   end do ! do i=1,AttrVect_lsize(inAv)...
 	endif ! if(RAttrIdentical)
 
@@ -3011,7 +3011,7 @@
      endif
 
        ! Initialize all the elements of rMask to unity:
-     rMask = 1
+     rMask = 1._FP
 
        ! turn the colon-delimited string of tags into a List:
      call List_init(rMaskList,rMaskTags)
@@ -3152,7 +3152,7 @@
 		 outAv%rAttr(j,i) = outAv%rAttr(j,i) + inAv%rAttr(j,i)
 	      end do ! do j=1,AttrVect_nRAttr(inAv)
        ! add in mask contribution to total of merge weights
-	      WeightSum(i) = WeightSum(i) + 1.
+	      WeightSum(i) = WeightSum(i) + 1._FP
 	   end do ! do i=1,AttrVect_lsize(inAv)...
 	else ! use previously generated cross-indices
 	   do i=1, AttrVect_lsize(inAv)
@@ -3162,7 +3162,7 @@
 		      		         inAv%rAttr(inAvIndices(j),i) 
 	      end do ! do j=1,NumSharedRAttr
        ! add in mask contribution to total of merge weights
-	      WeightSum(i) = WeightSum(i) + 1.
+	      WeightSum(i) = WeightSum(i) + 1._FP
 	   end do ! do i=1,AttrVect_lsize(inAv)...
 	endif ! if(RAttrIdentical)
 

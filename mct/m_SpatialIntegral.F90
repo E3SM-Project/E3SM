@@ -300,6 +300,8 @@
 
 ! ! USES:
 
+      use m_realkinds, only : FP
+   
       use m_stdio
       use m_die
       use m_mpif90
@@ -357,7 +359,7 @@
        ! Check value of summed weights (to avoid division by zero):
 
   iweight = AttrVect_indexRA(integratedAv, WeightTag)
-  if(integratedAv%rAttr(iweight, 1) == 0) then
+  if(integratedAv%rAttr(iweight, 1) == 0._FP) then
      write(stderr,'(2a)') myname_, &
 	  '::ERROR--Global sum of grid weights is zero.'
      call die(myname_)
@@ -961,6 +963,8 @@
 
 ! ! USES:
 
+      use m_realkinds, only : FP
+
       use m_stdio
       use m_die
       use m_mpif90
@@ -1101,7 +1105,7 @@
        ! Check value of summed weights (to avoid division by zero):
 
   iweight = AttrVect_indexRA(integratedAv, WeightSumTag)
-  if(integratedAv%rAttr(iweight, 1) == 0.) then
+  if(integratedAv%rAttr(iweight, 1) == 0._FP) then
      write(stderr,'(2a)') myname_, &
 	  '::ERROR--Global sum of grid weights is zero.'
      call die(myname_)
@@ -1330,6 +1334,8 @@
                                          comm)
 ! ! USES:
 
+      use m_realkinds, only : FP
+   
       use m_stdio
       use m_die
       use m_mpif90
@@ -1392,14 +1398,14 @@
        ! Check value of summed weights (to avoid division by zero):
 
   iweight1 = AttrVect_indexRA(integratedAv1, WeightTag1)
-  if(integratedAv1%rAttr(iweight1, 1) == 0) then   
+  if(integratedAv1%rAttr(iweight1, 1) == 0._FP) then   
      write(stderr,'(2a)') myname_, &
 	  '::ERROR--Global sum of grid weights in first integral is zero.'
      call die(myname_)
   endif
 
   iweight2 = AttrVect_indexRA(integratedAv2, WeightTag2)
-  if(integratedAv2%rAttr(iweight2, 1) == 0) then
+  if(integratedAv2%rAttr(iweight2, 1) == 0._FP) then
      write(stderr,'(2a)') myname_, &
 	  '::ERROR--Global sum of grid weights in second integral is zero.'
      call die(myname_)
@@ -1968,7 +1974,7 @@
        ! First outAv1:
 
   if(OutPairedBuffer(nRA1+1) /= 0.) then
-     WeightSumInv = 1. / OutPairedBuffer(nRA1+1) ! Sum of weights on grid1
+     WeightSumInv = 1._FP / OutPairedBuffer(nRA1+1) ! Sum of weights on grid1
                                                  ! is the nRA1+1th element in
                                                  ! the paired buffer.
   else
@@ -1986,7 +1992,7 @@
        ! And then outAv2:
 
   if(OutPairedBuffer(PairedBufferLength) /= 0.) then
-     WeightSumInv = 1. / OutPairedBuffer(PairedBufferLength) ! Sum of weights on grid2
+     WeightSumInv = 1._FP / OutPairedBuffer(PairedBufferLength) ! Sum of weights on grid2
                                                              ! is the last element in
                                                              ! the paired buffer.
   else

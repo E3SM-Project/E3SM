@@ -63,7 +63,9 @@
 !
 ! !USES:
 !
+      use m_realkinds, only : FP
       use m_AttrVect, only : AttrVect
+
 
       private   ! except
 
@@ -79,7 +81,7 @@
          logical :: vecinit       ! additional data for the vectorized sMat
          integer,dimension(:),pointer :: row_s, row_e
          integer, dimension(:,:), pointer :: tcol
-         real   , dimension(:,:), pointer :: twgt
+         real(FP), dimension(:,:), pointer :: twgt
          integer :: row_max, row_min
          integer :: tbl_end
       End Type SparseMatrix
@@ -2235,7 +2237,7 @@
   igrow = AttrVect_indexIA(aV=sMat%data,item='grow',dieWith=myname_)
   iwgt = AttrVect_indexRA(aV=sMat%data,item='weight',dieWith=myname_)
 
-  lsums = 0.
+  lsums = 0._FP
   do i=1,lsize
      lsums(sMat%data%iAttr(igrow,i)) = lsums(sMat%data%iAttr(igrow,i)) + &
 	                           sMat%data%rAttr(iwgt,i)
@@ -2354,7 +2356,7 @@
   igrow = AttrVect_indexIA(aV=sMat%data,item='grow',dieWith=myname_)
   iwgt = AttrVect_indexRA(aV=sMat%data,item='weight',dieWith=myname_)
 
-  lsums = 0.
+  lsums = 0._FP
   do i=1,lsize
      lsums(sMat%data%iAttr(igrow,i)) = lsums(sMat%data%iAttr(igrow,i)) + &
 	                           sMat%data%rAttr(iwgt,i)

@@ -379,7 +379,7 @@
       use m_stdio
       use m_die
       use m_mpif90
-      use m_realkinds, only : SP
+      use m_realkinds, only : SP, FP
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
@@ -424,7 +424,7 @@
        ! Check value of summed weights (to avoid division by zero):
 
   iweight = AttrVect_indexRA(integratedAv, 'weights')
-  if(integratedAv%rAttr(iweight, 1) == 0.) then
+  if(integratedAv%rAttr(iweight, 1) == 0._FP) then
      write(stderr,'(2a)') myname_, &
 	  '::ERROR--Global sum of grid weights is zero.'
      call die(myname_)
@@ -467,7 +467,7 @@
       use m_stdio
       use m_die
       use m_mpif90
-      use m_realkinds, only : DP
+      use m_realkinds, only : DP, FP
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
@@ -512,7 +512,7 @@
        ! Check value of summed weights (to avoid division by zero):
 
   iweight = AttrVect_indexRA(integratedAv, 'weights')
-  if(integratedAv%rAttr(iweight, 1) == 0.) then
+  if(integratedAv%rAttr(iweight, 1) == 0._FP) then
      write(stderr,'(2a)') myname_, &
 	  '::ERROR--Global sum of grid weights is zero.'
      call die(myname_)
@@ -719,13 +719,13 @@
 	   do i=1,length
 	      select case(iMask(i))
 	      case(0)
-		 Weights(i) = 0.
+		 Weights(i) = 0._FP
 	      case(1)
-		 if(rMask(i) == 1.) then
+		 if(rMask(i) == 1._FP) then
 		    Weights(i) = SpatialWeights(i)
-		 elseif(rMask(i) == 0.) then
-		    Weights(i) = 0.
-		 elseif((rMask(i) > 0.) .and. (rMask(i) < 1.)) then
+		 elseif(rMask(i) == 0._FP) then
+		    Weights(i) = 0._FP
+		 elseif((rMask(i) > 0._FP) .and. (rMask(i) < 1._FP)) then
 		    Weights(i) = rMask(i) * SpatialWeights(i)
 		 else ! rMask(i) < 0. or rMask(i) > 1.
 		    write(stderr,'(3a,i8,a,f10.7)') myname_, &
@@ -742,11 +742,11 @@
 	   end do
 	else
 	   do i=1,length
-	      if(rMask(i) == 1.) then
+	      if(rMask(i) == 1._FP) then
 		 Weights(i) = SpatialWeights(i)
-	      elseif(rMask(i) == 0.) then
-		 Weights(i) = 0.
-	      elseif((rMask(i) > 0.) .and. (rMask(i) < 1.)) then
+	      elseif(rMask(i) == 0._FP) then
+		 Weights(i) = 0._FP
+	      elseif((rMask(i) > 0._FP) .and. (rMask(i) < 1._FP)) then
 		 Weights(i) = rMask(i) * SpatialWeights(i)
 	      else ! rMask(i) < 0. or rMask(i) > 1.
 		 write(stderr,'(3a,i8,a,e10.6)') myname_, &
@@ -761,7 +761,7 @@
 	   do i=1,length
 	      select case(iMask(i))
 	      case(0)
-		 Weights(i) = 0.
+		 Weights(i) = 0._FP
 	      case(1)
 		 Weights(i) = SpatialWeights(i)
 	      case default
@@ -962,13 +962,13 @@
 	   do i=1,length
 	      select case(iMask(i))
 	      case(0)
-		 Weights(i) = 0.
+		 Weights(i) = 0._FP
 	      case(1)
-		 if(rMask(i) == 1.) then
+		 if(rMask(i) == 1._FP) then
 		    Weights(i) = SpatialWeights(i)
-		 elseif(rMask(i) == 0.) then
-		    Weights(i) = 0.
-		 elseif((rMask(i) > 0.) .and. (rMask(i) < 1.)) then
+		 elseif(rMask(i) == 0._FP) then
+		    Weights(i) = 0._FP
+		 elseif((rMask(i) > 0._FP) .and. (rMask(i) < 1._FP)) then
 		    Weights(i) = rMask(i) * SpatialWeights(i)
 		 else ! rMask(i) < 0. or rMask(i) > 1.
 		    write(stderr,'(3a,i8,a,f10.7)') myname_, &
@@ -985,11 +985,11 @@
 	   end do
 	else
 	   do i=1,length
-	      if(rMask(i) == 1.) then
+	      if(rMask(i) == 1._FP) then
 		 Weights(i) = SpatialWeights(i)
-	      elseif(rMask(i) == 0.) then
-		 Weights(i) = 0.
-	      elseif((rMask(i) > 0.) .and. (rMask(i) < 1.)) then
+	      elseif(rMask(i) == 0._FP) then
+		 Weights(i) = 0._FP
+	      elseif((rMask(i) > 0._FP) .and. (rMask(i) < 1._FP)) then
 		 Weights(i) = rMask(i) * SpatialWeights(i)
 	      else ! rMask(i) < 0. or rMask(i) > 1.
 		 write(stderr,'(3a,i8,a,e10.6)') myname_, &
@@ -1004,7 +1004,7 @@
 	   do i=1,length
 	      select case(iMask(i))
 	      case(0)
-		 Weights(i) = 0.
+		 Weights(i) = 0._FP
 	      case(1)
 		 Weights(i) = SpatialWeights(i)
 	      case default
@@ -1109,7 +1109,7 @@
       use m_stdio
       use m_die
       use m_mpif90
-      use m_realkinds, only : SP
+      use m_realkinds, only : SP, FP
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
@@ -1258,7 +1258,7 @@
        ! Check value of summed weights (to avoid division by zero):
 
   iweight = AttrVect_indexRA(integratedAv, 'MaskedWeightsSum')
-  if(integratedAv%rAttr(iweight, 1) == 0.) then
+  if(integratedAv%rAttr(iweight, 1) == 0._FP) then
      write(stderr,'(2a)') myname_, &
 	  '::ERROR--Global sum of grid weights is zero.'
      call die(myname_)
@@ -1302,7 +1302,7 @@
       use m_stdio
       use m_die
       use m_mpif90
-      use m_realkinds, only : DP
+      use m_realkinds, only : DP, FP
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
@@ -1451,7 +1451,7 @@
        ! Check value of summed weights (to avoid division by zero):
 
   iweight = AttrVect_indexRA(integratedAv, 'MaskedWeightsSum')
-  if(integratedAv%rAttr(iweight, 1) == 0.) then
+  if(integratedAv%rAttr(iweight, 1) == 0._FP) then
      write(stderr,'(2a)') myname_, &
 	  '::ERROR--Global sum of grid weights is zero.'
      call die(myname_)
@@ -1836,7 +1836,7 @@
       use m_stdio
       use m_die
       use m_mpif90
-      use m_realkinds, only : SP
+      use m_realkinds, only : SP, FP
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
@@ -1890,14 +1890,14 @@
        ! Check value of summed weights (to avoid division by zero):
 
   iweight1 = AttrVect_indexRA(integratedAv1, WeightName1)
-  if(integratedAv1%rAttr(iweight1, 1) == 0) then   
+  if(integratedAv1%rAttr(iweight1, 1) == 0._FP) then   
      write(stderr,'(2a)') myname_, &
 	  '::ERROR--Global sum of grid weights in first integral is zero.'
      call die(myname_)
   endif
 
   iweight2 = AttrVect_indexRA(integratedAv2, WeightName2)
-  if(integratedAv2%rAttr(iweight2, 1) == 0) then
+  if(integratedAv2%rAttr(iweight2, 1) == 0._FP) then
      write(stderr,'(2a)') myname_, &
 	  '::ERROR--Global sum of grid weights in second integral is zero.'
      call die(myname_)
@@ -1969,7 +1969,7 @@
       use m_stdio
       use m_die
       use m_mpif90
-      use m_realkinds, only : DP
+      use m_realkinds, only : DP, FP
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
@@ -2023,14 +2023,14 @@
        ! Check value of summed weights (to avoid division by zero):
 
   iweight1 = AttrVect_indexRA(integratedAv1, WeightName1)
-  if(integratedAv1%rAttr(iweight1, 1) == 0) then   
+  if(integratedAv1%rAttr(iweight1, 1) == 0._FP) then   
      write(stderr,'(2a)') myname_, &
 	  '::ERROR--Global sum of grid weights in first integral is zero.'
      call die(myname_)
   endif
 
   iweight2 = AttrVect_indexRA(integratedAv2, WeightName2)
-  if(integratedAv2%rAttr(iweight2, 1) == 0) then
+  if(integratedAv2%rAttr(iweight2, 1) == 0._FP) then
      write(stderr,'(2a)') myname_, &
 	  '::ERROR--Global sum of grid weights in second integral is zero.'
      call die(myname_)

@@ -138,6 +138,7 @@
 !
 ! !USES:
 !
+      use m_realkinds,     only : FP
       use m_die ,          only : die
       use m_stdio ,        only : stderr
       use m_AttrVect,      only : AttrVect
@@ -179,7 +180,7 @@
      end do
 
      do i=1,AttrVect_nRAttr(outAV)
-	outAV%rAttr(i,1) = 0.
+	outAV%rAttr(i,1) = 0._FP
      end do
 
         ! Compute INTEGER and REAL attribute sums:
@@ -309,6 +310,8 @@
 !
 ! !USES:
 !
+      use m_realkinds,     only : FP
+
       use m_die ,          only : die
       use m_stdio ,        only : stderr
 
@@ -363,7 +366,7 @@
         ! Initialize REAL attribute sums:
 
      do i=1,AttrVect_nRAttr(outAV)
-	outAV%rAttr(i,1) = 0.
+	outAV%rAttr(i,1) = 0._FP
      end do
 
         ! Compute REAL attribute sums:
@@ -707,7 +710,7 @@
 !
       use m_die ,          only : die
       use m_stdio ,        only : stderr
-      use m_realkinds,     only : SP
+      use m_realkinds,     only : SP, FP
 
       use m_List,          only : List
       use m_List,          only : List_init => init
@@ -773,7 +776,7 @@
         ! Initialize REAL attribute sums:
 
   do i=1,AttrVect_nRAttr(outAV)
-     outAV%rAttr(i,1) = 0.
+     outAV%rAttr(i,1) = 0._FP
   end do
 
         ! Compute REAL attribute sums:
@@ -838,7 +841,7 @@
 !
       use m_die ,          only : die
       use m_stdio ,        only : stderr
-      use m_realkinds,     only : DP
+      use m_realkinds,     only : DP, FP
 
       use m_List,          only : List
       use m_List,          only : List_init => init
@@ -904,7 +907,7 @@
         ! Initialize REAL attribute sums:
 
   do i=1,AttrVect_nRAttr(outAV)
-     outAV%rAttr(i,1) = 0.
+     outAV%rAttr(i,1) = 0._FP
   end do
 
         ! Compute REAL attribute sums:

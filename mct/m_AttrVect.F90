@@ -749,6 +749,8 @@
 
 ! !USES:
 
+     use m_realkinds, only : FP
+
      use m_die,only	: die
      use m_stdio,only	: stderr
 
@@ -800,14 +802,14 @@
   if(myZeroInts) then ! zero out INTEGER attributes
      if(List_allocated(aV%iList)) then
 !CDIR COLLAPSE
-        if(associated(aV%iAttr).and. (nIAttr_(aV)>0)) aV%iAttr=0
+        if(associated(aV%iAttr) .and. (nIAttr_(aV)>0)) aV%iAttr=0
      endif
   endif
 
   if(myZeroReals) then ! zero out REAL attributes
      if(List_allocated(aV%rList)) then
 !CDIR COLLAPSE
-        if(associated(aV%rAttr) .and. (nRAttr_(aV)>0)) aV%rAttr=0.
+        if(associated(aV%rAttr) .and. (nRAttr_(aV)>0)) aV%rAttr=0._FP
      endif
   endif
 
