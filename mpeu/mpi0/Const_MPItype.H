@@ -16,8 +16,12 @@
 #ifdef sysSunOS
 #define Const_MPItype_
 #else
+#ifdef sysSUPER_UX
+#define Const_MPItype_
+#else
 #ifdef Const_MPItype_
 #undef Const_MPItype_
+#endif
 #endif
 #endif
 #endif
