@@ -69,8 +69,8 @@ LDFLAGS		= $(FFLAGS)
 LIBprof		= #-lprof
 LIBsys	 	= 
 
-
-FPPFLAGS	= -DLANGUAGE_FORTRAN
+# Flags we use with the GNU C preprocessor
+FPPFLAGS	= -DLANGUAGE_FORTRAN -traditional
 
 .F.o:
 	$(FPP) $(FPPFLAGS) $(_I) $(_DF) $*.F $*.f
