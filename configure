@@ -3412,6 +3412,9 @@ fi
 if echo $f90_version | grep -i compaq >/dev/null 2>&1; then
    MACHDEFS="-DCPRCOMPAQ $MACHDEFS"
    MPILIBS="$MPILIBS -lelan"
+   if test -z "$FCFLAGS"; then
+      FCFLAGS="-fast"
+   fi
    if test -z "$REAL8"; then
       REAL8="-real_size 64"
    fi
