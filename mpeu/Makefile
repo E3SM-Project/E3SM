@@ -90,6 +90,20 @@ lib$(MODULE).a:	$(OBJS_ALL)
 	@ echo $(AR) $@ $(OBJS_ALL)
 	@ $(AR) $@ $(OBJS_ALL)
 
+# mpi0 targets:
+
+#libeu.a: $(OBJS_ALL) mpi0/libmpi0.a
+#	$(RM) $@
+#	cp -p mpi0/libmpi0.a $@
+#	@ echo $(AR) $@ $(OBJS_ALL)
+#	@ $(AR) $@ $(OBJS_ALL)
+
+#mpi0/libmpi0.a:
+#	@(cd mpi0; make libmpi0.a)
+
+#$(MODULE): $(MODS_OBJ)
+#	env M=$M $(MUPDATE) $@ $?
+
 # dependencies:
 
 m_mpif.o:
