@@ -1,11 +1,9 @@
 
 To build the .dvi files for the documentation. type "make".
 
-This will build both the Users Guide
-and the API's only, mct_APIs.dvi
+This will build the API's document.
 
-To build just the Users guide, type "make users"
-To build just the APIs, type "make apis"
+To build the APIs, type "make apis"
 
 NOTE:  this build system isn't working perfectly yet.  It will
 build a .dvi file but you will need to run "bibtex" manually to
@@ -15,11 +13,8 @@ To build "by hand" using the design doc as an example:
 cd to texsrc, type "make"
 cd back to doc directory then do:
 
-latex MCTUsersGuide
-bibtex MCTUsersGuide
-latex MCTUsersGuide
-latex MCTUsersGuide
+latex mct_APIs
+bibtex mct_APIs
+latex mct_APIs
+latex mct_APIs
 
-Similarily for the APIs document
-
-R. Jacob  13Sep01  MCS/ANL
