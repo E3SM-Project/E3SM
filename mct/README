@@ -1,0 +1,36 @@
+######################################################################
+
+ -- Mathematics + Computer Science Div. / Argonne National Laboratory
+
+    Model Coupling Toolkit (mct)
+    Points of contact: Jay Larson <larson@mcs.anl.gov>
+                       630 252 7806
+                       Robert Jacob <jacob@mcs.anl.gov>
+                       630 252 2983
+######################################################################
+!-----------------------------------------------------------------------
+! CVS $Id$
+! CVS $Name$  
+!-----------------------------------------------------------------------
+
+This directory contains the basic MCT source code.
+
+MCT distribution contents:
+MCT/
+MCT/doc
+MCT/mct    <- You are here
+MCT/mpeu  
+MCT/protex
+MCT/ut-mct
+
+A complete distribution of MCT can be obtained from http://www.mcs.anl.gov/mct.
+
+---------------------------------------------------
+Build instructions:
+The build system assumes a built version of mpeu is located in
+directory ../mpeu.
+
+1) ./configure
+2) make all
+
+---------------------------------------------------
