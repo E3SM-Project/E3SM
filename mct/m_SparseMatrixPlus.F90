@@ -378,6 +378,8 @@
       use m_die
       use m_stdio
 
+      use m_String, only : String
+      use m_String, only : String_init => init
       use m_String, only : String_ToChar => toChar
       use m_String, only : String_clean => clean
 
@@ -403,18 +405,28 @@
 !
   character(len=*),parameter :: myname_=myname//'::clean_'
 
-  integer myStatus
+  integer :: myStatus
+  type(String) :: SMatP_Strategy_copy
 
        ! If status was supplied, set it to zero (success)
 
   if(present(status)) status = 0
+
+       ! The following string copy is superfluous. It is placed here
+       ! to outwit a compiler bug in the SGI and SunOS compilers. 
+       ! It occurs when a component of a derived type is used as an
+       ! argument to String_ToChar. This bug crashes the compiler 
+       ! with the error message:
+       ! Error: Signal Segmentation fault in phase IR->WHIRL Conversion
+
+  call String_init(SMatP_Strategy_copy,SMatP%Strategy)
 
        ! Use SMatP%Strategy to determine which Rearranger(s) need
        ! to be destroyed.  The CHARACTER parameters Xonly, Yonly, 
        ! and XandY are inherited from the declaration section of 
        ! this module.
 
-  select case(String_ToChar(SMatP%Strategy))
+  select case(String_ToChar(SMatP_Strategy_copy))
   case(Xonly) ! destroy X-rearranger only
 
      call Rearranger_clean(SMatP%XToXprime, myStatus)
@@ -495,9 +507,10 @@
      endif
   endif
 
-       ! Destroy the String SMatP%Strategy
+       ! Destroy the String SMatP%Strategy and its copy
 
   call String_clean(SMatP%Strategy)
+  call String_clean(SMatP_Strategy_copy)
 
        ! Set initialization flag SMatP%Initialized to .FALSE.
 
