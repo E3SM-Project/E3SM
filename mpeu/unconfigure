@@ -1,7 +1,0 @@
-#!/bin/sh
-
-# 1. remove mpeu/Makefile.conf
-  rm -f Makefile.conf
-
-# 1. remove mpeu/Makefile.conf
-  rm -f mpi0/Makefile.conf
