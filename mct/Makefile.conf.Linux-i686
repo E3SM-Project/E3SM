@@ -24,6 +24,7 @@
 #	28Sep98 - Jing Guo (guo@dao.gsfc.nasa.gov)
 #		- Cleaned _Dnod for this library
 #       18Jan01 - J. Larson <larson@mcs.anl.gov> - adapted for Linux
+#	11Apr02 - R. Jacob <jacob@mcs.anl.gov> - assume MPICH for i686
 #
 #EOP
 #-----------------------------------------------------------------------
@@ -34,11 +35,12 @@ _Dnod		=
 # Environments
 # ============
 
-# If use the MPICH implementation
+# Assume MPICH is being used for Linux-i686
+#  use mpif90 and mpif77 to compile and link.
 
-_LMPI		= -L/soft/apps/packages/mpich-pg-1.2.0/lib
-_lMPI		= -lmpich
-_IMPI		= -I/soft/apps/packages/mpich-pg-1.2.0/include
+_LMPI		=
+_lMPI		=
+_IMPI		=
 
 # This module requires ../mpeu module
 
@@ -58,15 +60,15 @@ _R		=
 _I		=  -I. $(_Impeu) $(_IMPI)
 
 SHELL		= /bin/sh
-F77		= pgf77
-F90		= pgf90
+F77		= mpif77
+F90		= mpif90
 FC		= $(F90)
 
 FFLAGS		= -O2 -tp p6 -pc 32 -Mnoframe -byteswapio $(_R)
 CFLAGS		= -O
 
 
-LD		= pgf90
+LD		= mpif90
 LDFLAGS		= $(FFLAGS)
 
 LIBprof		= #-lprof
