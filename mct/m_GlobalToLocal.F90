@@ -72,7 +72,7 @@
 ! !USES:
 !
       use m_mpif90
-      use m_die,          only : MP_perr_die
+      use m_die,          only : MP_perr_die, die, warn
       use m_GlobalSegMap, only : GlobalSegMap
       use m_GlobalSegMap, only : GlobalSegMap_ngseg => ngseg
       use m_GlobalSegMap, only : GlobalSegMap_nlseg => nlseg
@@ -110,7 +110,7 @@
           ! segment information.
 
   allocate(start(nlseg), length(nlseg), stat=ierr)
-  if(ierr /= 0) call MP_perr_die(myname_,'allocate(start...',ierr)
+  if(ierr /= 0) call die(myname_,'allocate(start...',ierr)
 
           ! Loop over GlobalSegMap%pe_loc(:) values to isolate
           ! global index values of local data.  Record number of
@@ -122,7 +122,7 @@
         count = count + 1
         if(count > nlseg) then
            ierr = 2
-           call MP_perr_die(myname_,'too many pe matches',ierr)
+           call die(myname_,'too many pe matches',ierr)
 	endif
 	start(count) = GSMap%start(count)
 	length(count) = GSMap%length(count)
@@ -131,7 +131,7 @@
 
   if(count < nlseg) then
      ierr = 3
-     call MP_perr_die(myname_,'too few pe matches',ierr)
+     call die(myname_,'too few pe matches',ierr)
   endif
 
           ! translate global start indices to their local 
@@ -168,7 +168,7 @@
 ! !USES:
 !
       use m_mpif90
-      use m_die,          only : MP_perr_die
+      use m_die,          only : MP_perr_die, die, warn
       use m_GlobalSegMap, only : GlobalSegMap
       use m_GlobalSegMap, only : GlobalSegMap_ngseg => ngseg
       use m_GlobalSegMap, only : GlobalSegMap_nlseg => nlseg
@@ -232,7 +232,7 @@
         count = count + 1
         if(count > nlseg) then
            ierr = 2
-           call MP_perr_die(myname_,'too many pe matches',ierr)
+           call die(myname_,'too many pe matches',ierr)
 	endif
 
   ! is i_g in this segment?
@@ -281,7 +281,7 @@
 ! !USES:
 !
       use m_mpif90
-      use m_die,          only : MP_perr_die
+      use m_die,          only : MP_perr_die, die, warn
       use m_GlobalMap, only : GlobalMap
 
       implicit none
@@ -352,7 +352,7 @@
 ! !USES:
 !
       use m_mpif90
-      use m_die,          only : MP_perr_die
+      use m_die,          only : MP_perr_die, die, warn
       use m_GlobalSegMap, only : GlobalSegMap
       use m_GlobalSegMap, only : GlobalSegMap_ngseg => ngseg
       use m_GlobalSegMap, only : GlobalSegMap_nlseg => nlseg
@@ -390,7 +390,7 @@
           ! Allocate space for the Navigator oNav:
 
   call Navigator_init(oNav, nlseg, ierr)
-  if(ierr /= 0) call MP_perr_die(myname_,'Navigator_init',ierr)
+  if(ierr /= 0) call die(myname_,'Navigator_init',ierr)
 
   call GlobalSegMapToIndices_(GSMap, comm, oNav%displs, oNav%counts)
 
