@@ -84,7 +84,7 @@
 !
 ! !INTERFACE:
 
- subroutine sMatAvMult_DataLocal_(xAV, sMat, yAV)
+ subroutine sMatAvMult_DataLocal_(xAV, sMat, yAV, Vector)
 !
 ! !USES:
 !
@@ -105,16 +105,18 @@
       use m_SparseMatrix, only : SparseMatrix_lsize => lsize
       use m_SparseMatrix, only : SparseMatrix_indexIA => indexIA
       use m_SparseMatrix, only : SparseMatrix_indexRA => indexRA
+      use m_SparseMatrix, only : SparseMatrix_vecinit => vecinit
 
       implicit none
 
 ! !INPUT PARAMETERS:
 
       type(AttrVect),     intent(in)    :: xAV
-      type(SparseMatrix), intent(in)    :: sMat
+      logical,optional,   intent(in)    :: Vector
 
 ! !INPUT/OUTPUT PARAMETERS:
 
+      type(SparseMatrix), intent(inout)    :: sMat
       type(AttrVect),     intent(inout) :: yAV
 
 ! !REVISION HISTORY:
@@ -135,6 +137,9 @@
 ! 29Nov01 - E.T. Ong <eong@mcs.anl.gov> - Removed MP_PERR_DIE if
 !           there are zero elements in sMat. This allows for
 !           decompositions where a process may own zero points.
+! 29Oct03 - R. Jacob <jacob@mcs.anl.gov> - add Vector argument to
+!           optionally use the vector-friendly version provided by
+!           Fujitsu
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::sMatAvMult_DataLocal_'
@@ -156,10 +161,18 @@
   real :: wgt
 
 ! Error flag and loop indices
-  integer :: ierr, m, n
+  integer :: ierr, i, m, n, l
 
 ! Character variable used as a data type flag:
   character*7 :: data_flag
+
+! logical flag
+  logical :: usevector 
+
+  usevector = .false.
+  if(present(Vector)) then
+    if(Vector) usevector = .true.
+  endif
 
        ! Retrieve the number of elements in sMat:
 
@@ -180,24 +193,44 @@
   if(List_identical(xAV%rList, yAV%rList)) then ! no cross-indexing
 
      num_indices = List_nitem(xAV%rList)
-  
-       ! loop over matrix elements
 
-     do n=1,num_elements
+     if(usevector) then
 
-	row = sMat%data%iAttr(irow,n)
-	col = sMat%data%iAttr(icol,n)
-	wgt = sMat%data%rAttr(iwgt,n)
+       if(.not.sMat%vecinit) then
+            call SparseMatrix_vecinit(sMat)
+       endif
 
-       ! loop over attributes being regridded.
+       do m=1,num_indices
+          do l=1,sMat%tbl_end
+!CDIR NOLOOPCHG
+             do i=sMat%row_s(l),sMat%row_e(l)
+               col = sMat%tcol(i,l)
+               wgt = sMat%twgt(i,l)
+               if (col < 0) cycle
+               yAV%rAttr(m,i) = yAV%rAttr(m,i) + wgt * xAV%rAttr(m,col)
+             enddo
+          enddo
+       enddo
+ 
+     else
 
-	do m=1,num_indices
+       do n=1,num_elements
 
-	   yAV%rAttr(m,row) = yAV%rAttr(m,row) + wgt * xAV%rAttr(m,col)
+    	  row = sMat%data%iAttr(irow,n)
+    	  col = sMat%data%iAttr(icol,n)
+	  wgt = sMat%data%rAttr(iwgt,n)
 
-	end do ! m=1,num_indices
+         ! loop over attributes being regridded.
 
-     end do ! n=1,num_elements
+	  do m=1,num_indices
+
+	     yAV%rAttr(m,row) = yAV%rAttr(m,row) + wgt * xAV%rAttr(m,col)
+
+  	  end do ! m=1,num_indices
+
+       end do ! n=1,num_elements
+
+     endif
 
   else
 
@@ -260,7 +293,7 @@
 !
 ! !INTERFACE:
 
- subroutine sMatAvMult_SMPlus_(xAV, sMatPlus, yAV)
+ subroutine sMatAvMult_SMPlus_(xAV, sMatPlus, yAV, Vector)
 !
 ! !USES:
 !
@@ -288,26 +321,37 @@
 ! !INPUT PARAMETERS:
 
       type(AttrVect),         intent(in)    :: xAV
-      type(SparseMatrixPlus), intent(in)    :: sMatPlus
+      logical, optional,      intent(in)    :: Vector
 
 ! !INPUT/OUTPUT PARAMETERS:
 
       type(AttrVect),         intent(inout) :: yAV
+      type(SparseMatrixPlus), intent(inout) :: sMatPlus
 
 ! !SEE ALSO:
 ! The MCT module m_AttrVect for more information about the AttrVect type.
 ! The MCT module m_SparseMatrixPlus for more information about the 
 ! SparseMatrixPlus type.
+
 ! !REVISION HISTORY:
 ! 26Sep02 - J.W. Larson <larson@mcs.anl.gov> - API specification and
 !           implementation.
+! 29Oct03 - R. Jacob <jacob@mcs.anl.gov> - add vector argument to all
+!           calls to Rearrange and DataLocal_.  Add optional input
+!           argument to change value (assumed false)
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::sMatAvMult_SMPlus_'
   type(AttrVect) :: xPrimeAV, yPrimeAV
   integer :: ierr
+  logical ::  usevector
   character(len=5) :: strat
 
+
+  usevector = .FALSE.
+  if(present(Vector)) then
+   if(Vector)usevector = .TRUE.
+  endif
        ! Examine the parallelization strategy, and act accordingly
 
   strat = String_ToChar(sMatPlus%Strategy)
@@ -316,18 +360,20 @@
        ! Create intermediate AttrVect for x'
      call AttrVect_init(xPrimeAV, xAV, sMatPlus%XPrimeLength)
        ! Rearrange data from x to get x'
-     call Rearrange(xAV, xPrimeAV, sMatPlus%XToXPrime, sMatPlus%Tag )
+     call Rearrange(xAV, xPrimeAV, sMatPlus%XToXPrime, &
+                    sMatPlus%Tag ,vector=usevector)
        ! Perform perfectly data-local multiply y = Mx'
-     call sMatAvMult_DataLocal_(xPrimeAV, sMatPlus%Matrix, yaV)
+     call sMatAvMult_DataLocal_(xPrimeAV, sMatPlus%Matrix, yaV, Vector=usevector)
        ! Clean up space occupied by x'
      call AttrVect_clean(xPrimeAV, ierr)
   case('Yonly')
        ! Create intermediate AttrVect for y'
      call AttrVect_init(yPrimeAV, yAV, sMatPlus%YPrimeLength)
        ! Perform perfectly data-local multiply y' = Mx
-     call sMatAvMult_DataLocal_(xAV, sMatPlus%Matrix, yPrimeAV)
+     call sMatAvMult_DataLocal_(xAV, sMatPlus%Matrix, yPrimeAV, Vector=usevector)
        ! Rearrange/reduce partial sums in y' to get y
-     call Rearrange(yPrimeAV, yAV, sMatPlus%YPrimeToY, sMatPlus%Tag, .TRUE.)
+     call Rearrange(yPrimeAV, yAV, sMatPlus%YPrimeToY, sMatPlus%Tag, &
+                    .TRUE., Vector=usevector)
        ! Clean up space occupied by y'
      call AttrVect_clean(yPrimeAV, ierr)
   case('XandY')
@@ -336,11 +382,14 @@
        ! Create intermediate AttrVect for y'
      call AttrVect_init(yPrimeAV, yAV, sMatPlus%YPrimeLength)
        ! Rearrange data from x to get x'
-     call Rearrange(xAV, xPrimeAV, sMatPlus%XToXPrime, sMatPlus%Tag)
+     call Rearrange(xAV, xPrimeAV, sMatPlus%XToXPrime, sMatPlus%Tag, &
+                       Vector=usevector)
        ! Perform perfectly data-local multiply y' = Mx'
-     call sMatAvMult_DataLocal_(xPrimeAV, sMatPlus%Matrix, yPrimeAV)
+     call sMatAvMult_DataLocal_(xPrimeAV, sMatPlus%Matrix, yPrimeAV, &
+                             Vector=usevector)
        ! Rearrange/reduce partial sums in y' to get y
-     call Rearrange(yPrimeAV, yAV, sMatPlus%YPrimeToY, sMatPlus%Tag, .TRUE.)
+     call Rearrange(yPrimeAV, yAV, sMatPlus%YPrimeToY, sMatPlus%Tag, &
+                            .TRUE., Vector=usevector)
        ! Clean up space occupied by x'
      call AttrVect_clean(xPrimeAV, ierr)
        ! Clean up space occupied by y'
