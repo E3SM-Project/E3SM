@@ -61,11 +61,11 @@ F77		= f90
 F90		= f90
 FC		= $(F90)
 
-FOPT_normal	= -O5 -fast -tune host -convert big_endian -automatic
+FOPT_normal	= -fast -real_size 64 -convert big_endian -automatic
 FOPT_indxck	= -g -convert big_endian -check bounds -automatic
 FOPT_syntax	= -syntax_only
 
-FFLAGS		= $(_IMPI) $(FOPT_indxck)
+#FFLAGS		= $(_IMPI) $(FOPT_indxck)
 FFLAGS		= $(_IMPI) $(FOPT_normal)
 
 ZIP		= /usr/bin/compress
@@ -102,14 +102,14 @@ FPPFLAGS	= $(F90PPFLAGS)
 
 .F.o:
 	$(FPP) $(FPPFLAGS) $(_DS) $(_I) $*.F $*.f
-	- $(FC) -c $(FCFLAGS) $(_I) $*.f;		\
+	- $(FC) -c $(FFLAGS) $(_I) $*.f;		\
 	  if [ $$? -ne 0 ]; then $(RM) $*.o; fi
 	$(RM) $*.f
 
 
 .F90.o:
 	$(FPP) $(FPPFLAGS) $(_DS) $(_I) $*.F90 $*.f90
-	- $(FC) -c $(FCFLAGS) $(_I) $*.f90;		\
+	- $(FC) -c $(FFLAGS) $(_I) $*.f90;		\
 	  if [ $$? -ne 0 ]; then $(RM) $*.o; fi
 	$(RM) $*.f90
 
