@@ -23,7 +23,6 @@ m_SparseMatrixComms.F90 \
 m_SparseMatrixPlus.F90	\
 m_Router.F90		\
 m_Rearranger.F90        \
-m_Transfer.F90          \
-m_NBSend.F90		
+m_Transfer.F90          
 
 
