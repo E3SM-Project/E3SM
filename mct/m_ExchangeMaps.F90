@@ -377,6 +377,9 @@
 !                 to MPI_RECV
 !       25Apr01 - R.L. Jacob  <jacob@mcs.anl.gov> - set SendTag and
 !                 RecvTag values
+!       03May01 - R.L. Jacob <jacob@mcs.anl.gov> - change MPI_SEND to
+!                 MPI_ISEND to avoid possible buffering problems seen
+!                 on IBM SP.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::ExGSMapGSMap_'
@@ -394,9 +397,9 @@
 ! Storage arrays for Remote GlobalSegMap data:
   integer, dimension(:), allocatable :: start, length, pe_loc
 
-  integer :: myID, ngseg, remote_root
+  integer :: myID, ngseg, remote_root,req
   integer :: local_ngseg, remote_ngseg
-  integer,dimension(MP_STATUS_SIZE) :: status
+  integer,dimension(MP_STATUS_SIZE) :: status,wstatus
 
       ! Determine rank on local communicator:
 
@@ -466,8 +469,8 @@
 
       ! Send off SendBuf to the remote component root:
 
-     call MPI_SEND(SendBuf, 3*LocalMapPars(NumSegIndex), MP_INTEGER, &
-	           remote_root, SendTag, MP_COMM_WORLD, ierr)
+     call MPI_ISEND(SendBuf, 3*LocalMapPars(NumSegIndex), MP_INTEGER, &
+	           remote_root, SendTag, MP_COMM_WORLD, req, ierr)
      if(ierr /= 0) then
 	call MP_perr_die(myname_,'MPI_SEND(SendBuf...',ierr)
      endif
@@ -478,6 +481,11 @@
 	           remote_root, RecvTag, MP_COMM_WORLD, status, ierr)
      if(ierr /= 0) then
 	call MP_perr_die(myname_,'MPI_Recv(RecvBuf...',ierr)
+     endif
+
+     call MPI_WAIT(req,wstatus,ierr)
+     if(ierr /= 0) then
+	call MP_perr_die(myname_,'MPI_WAIT(SendBuf..',ierr)
      endif
 
       ! Allocate arrays start(:), length(:), and pe_loc(:)
