@@ -1007,6 +1007,8 @@
 ! \item if {\tt perrWith} is present, but {\tt dieWith} is not, an error 
 ! message is written to {\tt stderr} incorporating user-supplied traceback
 ! information stored in the argument {\tt perrWith};
+! \item if {\tt perrWith} is present, but {\tt dieWith} is not, and
+! {\tt perrWith} is equal to ``quiet'', no error message is written.
 ! \item if {\tt dieWith} is present, execution terminates with an error 
 ! message written to {\tt stderr} that incorporates user-supplied traceback
 ! information stored in the argument {\tt dieWith}; and 
@@ -1045,6 +1047,7 @@
 ! !REVISION HISTORY:
 ! 27Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
 !  2Aug02 - J. Larson - Solidified error handling using perrWith/dieWith
+!  1Jan05 - R. Jacob - add quiet option for error handling
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::indexIA_'
@@ -1065,10 +1068,14 @@
 
   if(indexIA_==0) then ! The attribute was not found!
        ! As per the prologue, decide how to handle this error
-     if(present(perrWith) .and. (.not. present(dieWith))) then ! Return
-	write(stderr,'(5a)') myname_, &
-	     ':: ERROR--attribute not found: "',trim(item),'" ', &
-	     'Traceback:  ',String_ToChar(myTrace)
+     if(present(perrWith) .and. (.not. present(dieWith))) then
+       if (trim(perrWith).eq.'quiet') then
+        ! do nothing
+       else
+        write(stderr,'(5a)') myname_, &
+             ':: ERROR--attribute not found: "',trim(item),'" ', &
+             'Traceback:  ',String_ToChar(myTrace)
+       endif
      else ! Shutdown
 	write(stderr,'(5a)') myname_, &
 	     ':: FATAL--attribute not found: "',trim(item),'" ', &
@@ -1107,6 +1114,8 @@
 ! \item if {\tt perrWith} is present, but {\tt dieWith} is not, an error 
 ! message is written to {\tt stderr} incorporating user-supplied traceback
 ! information stored in the argument {\tt perrWith};
+! \item if {\tt perrWith} is present, but {\tt dieWith} is not, and
+! {\tt perrWith} is equal to ``quiet'', no error message is written.
 ! \item if {\tt dieWith} is present, execution terminates with an error 
 ! message written to {\tt stderr} that incorporates user-supplied traceback
 ! information stored in the argument {\tt dieWith}; and 
@@ -1145,6 +1154,7 @@
 ! !REVISION HISTORY:
 ! 27Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
 !  2Aug02 - J. Larson - Solidified error handling using perrWith/dieWith
+! 18Jan05 - R. Jacob - add quiet option for error handling
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::indexRA_'
@@ -1165,11 +1175,15 @@
 
   if(indexRA_==0) then ! The attribute was not found!
        ! As per the prologue, decide how to handle this error
-     if(present(perrWith) .and. (.not. present(dieWith))) then ! Return
+     if(present(perrWith) .and. (.not. present(dieWith))) then
+       if (trim(perrWith).eq.'quiet') then
+        ! do nothing
+       else
 	write(stderr,'(5a)') myname_, &
 	     ':: ERROR--attribute not found: "',trim(item),'" ', &
 	     'Traceback:  ',String_ToChar(myTrace)
-     else ! Shutdown
+       endif
+     else ! Shutdown if dieWith or no arguments present
 	write(stderr,'(5a)') myname_, &
 	     ':: FATAL--attribute not found: "',trim(item),'" ', &
 	     'Traceback:  ',String_ToChar(myTrace)
