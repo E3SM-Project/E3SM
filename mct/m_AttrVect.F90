@@ -2081,12 +2081,12 @@
 !
 ! !DESCRIPTION:
 ! The subroutine {\tt Sort\_()} uses a list of keys defined by the {\tt List} 
-! {\tt key_list}, searches for the appropriate integer or real attributes
-! referenced by the items in {\tt key_list} ( that is, it identifies the 
+! {\tt key\_list}, searches for the appropriate integer or real attributes
+! referenced by the items in {\tt key\_list} ( that is, it identifies the 
 ! appropriate entries in {aV\%iList} and {\tt aV\%rList}), and then 
 ! uses these keys to generate a permutation {\tt perm} that will put
 ! the entries of the attribute vector {\tt aV} in lexicographic order
-! as defined by {\tt key_list} (the ordering in {\tt key_list} being from
+! as defined by {\tt key\_list} (the ordering in {\tt key\_list} being from
 ! left to right.
 !
 ! {\bf N.B.:}  This routine will fail if {\tt aV\%rList} and 
