@@ -37,6 +37,10 @@
       public :: nRAttr		! number of real fields
       public :: indexIA		! index the integer fields
       public :: indexRA		! index the real fields
+      public :: getIList	! Return tag from INTEGER 
+                                ! attribute list
+      public :: getRList	! Return tag from REAL attribute
+                                ! list
 
 ! Definition of the Accumulator class:
 
@@ -58,14 +62,19 @@
     interface nRAttr ; module procedure nRAttr_ ; end interface
     interface indexIA; module procedure indexIA_; end interface
     interface indexRA; module procedure indexRA_; end interface
+    interface getIList; module procedure getIList_; end interface
+    interface getRList; module procedure getRList_; end interface
 
 ! !REVISION HISTORY:
 ! 	 7Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+! 	 7Feb01 - Jay Larson <larson@mcs.anl.gov> - Public interfaces
+!                 to getIList() and getRList().
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_Accumulator'
 
  contains
+
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
@@ -141,6 +150,7 @@
   call AttrVect_init(aC%av,iList,rList,lsize)
 
  end subroutine init_
+
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
