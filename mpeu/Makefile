@@ -90,8 +90,7 @@ m_List.o: m_String.o m_die.o m_mall.o
 m_MergeSorts.o: m_die.o m_realkinds.o m_stdio.o
 m_Filename.o:
 m_Permuter.o: m_die.o m_realkinds.o
-m_SortingTools.o: m_IndexBin_char. -m 644 $(libdir)
-	$(INSTALL) *.mod -m 644 $o m_IndexBin_integer.o m_IndexBin_logical.o m_MergeSorts.o m_Permuter.o m_rankMerge.o
+m_SortingTools.o: m_IndexBin_char.o m_IndexBin_integer.o m_IndexBin_logical.o m_MergeSorts.o m_Permuter.o m_rankMerge.o
 m_String.o: m_die.o m_mall.o m_mpif90.o
 m_StrTemplate.o: m_chars.o m_die.o m_stdio.o
 m_chars.o:
