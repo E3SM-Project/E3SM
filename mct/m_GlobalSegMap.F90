@@ -39,7 +39,7 @@
                                 ! including halo points (if present).
       public :: ProcessStorage  ! Return local storage on a given process.
       public :: OrderedPoints  ! Return grid points of a given process in
-				! MCT's assumed order.
+				! MCT-assumed order.
       public :: lsize           ! Return local--that is, on-process--storage 
                                 ! size (incl. halos)
       public :: ngseg           ! Return global number of segments
