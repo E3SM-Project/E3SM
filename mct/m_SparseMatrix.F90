@@ -1607,6 +1607,8 @@
   sMatCopy%nrows = sMat%nrows
   sMatCopy%ncols = sMat%ncols
 
+  sMatCopy%vecinit = sMat%vecinit
+
        ! Step two:  Initialize the AttrVect sMatCopy%data off of sMat:
 
   call AttrVect_init(sMatCopy%data, sMat%data, AttrVect_lsize(sMat%data))
