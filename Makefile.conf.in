@@ -75,7 +75,7 @@ MKINSTALLDIRS   = @abs_top_builddir@/mkinstalldirs
 abs_top_builddir= @abs_top_builddir@
 MCTPATH         = @abs_top_builddir@/mct
 MPEUPATH        = @abs_top_builddir@/mpeu
-EXAMPLEPATH     = @abs_top_builddir@/ut-mct
+EXAMPLEPATH     = @abs_top_builddir@/examples
 libdir          = @prefix@/lib
 includedir      = @prefix@/include
 

@@ -27,7 +27,7 @@ install: subdirs
 	  cd $(abs_top_builddir);  \
 	done
 
-example: subdirs
+examples: subdirs
 	@cd $(EXAMPLEPATH) && $(MAKE)
 
 
