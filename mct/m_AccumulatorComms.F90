@@ -68,6 +68,8 @@
 !  9Aug01 - E.T. Ong <eong@mcs.anl.gov> - Added private routine
 !           bcastp_. Used new Accumulator routines initp_ and 
 !           initialized_ to simplify the routines.
+!  26Aug02 - E.T. Ong <eong@mcs.anl.gov> - thourough code revision; 
+!            no added routines
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_AccumulatorComms'
@@ -141,14 +143,13 @@
   call MP_comm_rank(comm, myID, ier)
   if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
 
-        ! Argument check of iC and oC
+        ! Argument check of iC: kill if iC is not initialized 
+        ! on all processes
 
-  if(myID == root) then
-     status = Accumulator_initialized(oC,die_flag=.true.,source_name=myname_)
-  endif
+  status = Accumulator_initialized(iC,die_flag=.true.,source_name=myname_)
 
-  status = Accumulator_initialized(iC,die_flag=.false.,source_name=myname_)
-
+        ! NOTE: removed argument check for oC on the root. 
+        ! Is there any good way to check if an accumulator is NOT initialized? 
 
         ! Initialize oC from iC. Clean oC%av - we don't want this av.
 
@@ -171,10 +172,10 @@
     return
   endif
 
-        ! Check oC if its valid
+        ! Check oC to see if its valid
   
   if(myID == root) then
-     status = Accumulator_initialized(oC,die_flag=.false.,source_name=myname_)
+     status = Accumulator_initialized(oC,die_flag=.true.,source_name=myname_)
   endif
 
  end subroutine GM_gather_
@@ -243,14 +244,12 @@
   call MP_comm_rank(comm, myID, ier)
   if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
 
-        ! Argument check of iC and oC
+        ! Argument check of iC 
 
-  if(myID == root) then
-     status = Accumulator_initialized(oC,die_flag=.true.,source_name=myname_)
-  endif
+  status = Accumulator_initialized(iC,die_flag=.true.,source_name=myname_)
 
-  status = Accumulator_initialized(iC,die_flag=.false.,source_name=myname_)
-
+        ! NOTE: removed argument check for oC on the root. 
+        ! Is there any good way to check if an accumulator is NOT initialized? 
 
         ! Initialize oC from iC. Clean oC%av - we don't want this av.
 
@@ -271,10 +270,10 @@
     return
   endif
 
-        ! Check oC if its valid
+        ! Check oC to see if its valid
 
   if(myID == root) then
-     status = Accumulator_initialized(oC,die_flag=.false.,source_name=myname_)
+     status = Accumulator_initialized(oC,die_flag=.true.,source_name=myname_)
   endif
   
 
@@ -349,13 +348,14 @@
   call MP_comm_rank(comm, myID, ier)
   if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
 
-        ! Argument check of iC and oC
+        ! Argument check of iC 
 
   if(myID==root) then
-     status = Accumulator_initialized(iC,die_flag=.false.,source_name=myname_)
+     status = Accumulator_initialized(iC,die_flag=.true.,source_name=myname_)
   endif
 
-  status = Accumulator_initialized(oC,die_flag=.true.,source_name=myname_)
+        ! NOTE: removed argument check for oC on all processes. 
+        ! Is there any good way to check if an accumulator is NOT initialized? 
 
         ! Copy accumulator from iC to oC
         ! Clean up oC%av on root. 
@@ -381,9 +381,9 @@
     return
   endif
 
-        ! Check oC if its valid
+        ! Check oC to see if its valid
 
-  status = Accumulator_initialized(oC,die_flag=.false.,source_name=myname_)
+  status = Accumulator_initialized(oC,die_flag=.true.,source_name=myname_)
 
  end subroutine GM_scatter_
 
@@ -452,13 +452,14 @@
   call MP_comm_rank(comm, myID, ier)
   if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
 
-        ! Argument check of iC and oC
+        ! Argument check of iC 
 
   if(myID == root) then
-     status = Accumulator_initialized(iC,die_flag=.false.,source_name=myname_)
+     status = Accumulator_initialized(iC,die_flag=.true.,source_name=myname_)
   endif
 
-  status = Accumulator_initialized(oC,die_flag=.true.,source_name=myname_)
+        ! NOTE: removed argument check for oC on all processes. 
+        ! Is there any good way to check if an accumulator is NOT initialized? 
   
         ! Copy accumulator from iC to oC
         ! Clean up oC%av on root. 
@@ -486,7 +487,7 @@
 
         ! Check oC if its valid
 
-  status = Accumulator_initialized(oC,die_flag=.false.,source_name=myname_)
+  status = Accumulator_initialized(oC,die_flag=.true.,source_name=myname_)
   
 
  end subroutine GSM_scatter_
@@ -510,7 +511,7 @@
 !
 ! !USES:
 !
-      use m_die, only : die, perr
+      use m_die
       use m_mpif90
       use m_AttrVectComms, only : AttrVect_bcast => bcast
 
@@ -556,11 +557,12 @@
         ! or if the non-root aC is initialized
 
   if(myID == root) then
-     status = Accumulator_initialized(aC,die_flag=.false.,source_name=myname_)
-  else
      status = Accumulator_initialized(aC,die_flag=.true.,source_name=myname_)
   endif
-
+  
+        ! NOTE: removed argument check for aC on all non-root processes. 
+        ! Is there any good way to check if an accumulator is NOT initialized? 
+  
   call bcastp_(aC, root, comm, stat)
 
 
@@ -577,7 +579,7 @@
 
         ! Check that aC on all processes are initialized
 
-  status = Accumulator_initialized(aC,die_flag=.false.,source_name=myname_)
+  status = Accumulator_initialized(aC,die_flag=.true.,source_name=myname_)
 
 
  end subroutine bcast_
@@ -606,6 +608,8 @@
       use m_AttrVectComms, only : AttrVect_bcast => bcast
       use m_Accumulator, only : Accumulator
       use m_Accumulator, only : Accumulator_initp => initp
+      use m_Accumulator, only : Accumulator_nIAttr => nIAttr
+      use m_Accumulator, only : Accumulator_nRAttr => nRAttr
 
       implicit none
 
@@ -651,8 +655,8 @@
 
 
   if(myID == root) then
-     nIAttr = sum(aC%niAction)
-     nRAttr = sum(aC%nrAction)
+     nIAttr = Accumulator_nIAttr(aC) 
+     nRAttr = Accumulator_nRAttr(aC)
      AccBuffSize = 4+nIAttr+nRAttr
   endif
 
@@ -738,9 +742,11 @@
      if(myID /= root) then
 	call Accumulator_initp(aC,iAction=aC_iAction,rAction=aC_rAction, &
                                num_steps=aC_num_steps, &
-                               steps_done=aC_steps_done, &
-                               warning_flag=.true.)
+                               steps_done=aC_steps_done)
      endif 
+
+     deallocate(aC_iAction,aC_rAction,stat=ier)
+     if(ier /= 0) call die(myname_,"deallocate aC_iAction...",ier)
 
   else
 
@@ -748,25 +754,23 @@
 	if(myID /= root) then
 	   call Accumulator_initp(aC,iAction=aC_iAction, &
                                   num_steps=aC_num_steps, &
-                                  steps_done=aC_steps_done, &
-                                  warning_flag=.true.)
+                                  steps_done=aC_steps_done)
 	endif
+	deallocate(aC_iAction,stat=ier)
+	if(ier /= 0) call die(myname_,"deallocate aC_iAction...",ier)
      endif
 
      if (aC_nRAttr > 0) then
 	if(myID /= root) then
 	   call Accumulator_initp(aC,rAction=aC_rAction, &
                                   num_steps=aC_num_steps, &
-                                  steps_done=aC_steps_done, &
-                                  warning_flag=.true.)
+                                  steps_done=aC_steps_done)
 	endif
+	deallocate(aC_rAction,stat=ier)
+	if(ier /= 0) call die(myname_,"deallocate aC_iAction...",ier)
      endif
 
   endif
-
-
-  deallocate(aC_iAction,aC_rAction,stat=ier)
-  if(ier /= 0) call die(myname_,"deallocate aC_iAction...",ier)
 
 
  end subroutine bcastp_

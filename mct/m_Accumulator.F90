@@ -53,8 +53,6 @@
     Type Accumulator
       integer :: num_steps      ! total number of accumulation steps
       integer :: steps_done     ! number of accumulation steps performed
-      integer :: niAction(1:2)  ! number of integer actions
-      integer :: nrAction(1:2)  ! number of real actions
       integer, pointer, dimension(:) :: iAction ! index of integer actions
       integer, pointer, dimension(:) :: rAction ! index of real actions
       type(AttrVect) :: av      ! accumulated sum field storage
@@ -132,6 +130,8 @@
 !           initp_ routines. Added 'action' in Accumulator type.
 !  6May02 - Jay Larson <larson@mcs.anl.gov> - added import/export
 !            routines.
+!  26Aug02 - E.T. Ong <eong@mcs.anl.gov> - thourough code revision; 
+!            no added routines
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_Accumulator'
@@ -209,29 +209,48 @@
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::init_'
-  integer :: n,i,ier
-  integer :: steps_completed
-  integer :: action(2)
+  integer :: my_steps_done
   logical :: status
-
-  action(1) = MCT_SUM
-  action(2) = MCT_AVG
-
-        ! Check that aC is not initialized
-
-  status = initialized_(aC,die_flag=.true.,source_name=myname_)
 
         ! Initialize the Accumulator components.
 
-  call initp_(aC,iAction,rAction,num_steps,steps_done,warning_flag=.true.)
+  if(present(steps_done)) then
+     my_steps_done = steps_done
+  else
+     my_steps_done = 0
+  endif
+
+  if(present(iAction) .and. present(rAction)) then
+     call initp_(aC,iAction,rAction,num_steps,my_steps_done)
+  else
+     if(present(iAction)) then
+	call initp_(aC=aC, iAction=iAction, num_steps=num_steps, &
+	            steps_done=my_steps_done)
+     endif
+     if(present(rAction)) then
+	call initp_(aC=aC, rAction=rAction, num_steps=num_steps, &
+	            steps_done=my_steps_done)
+     endif
+  endif
 
         ! Initialize the AttrVect component aC:
 
-  call AttrVect_init(aC%av,iList,rList,lsize)
+  if(present(iList) .and. present(rList)) then
+     call AttrVect_init(aC%av,iList,rList,lsize)
+  else
+     if(present(iList)) then
+	call AttrVect_init(aV=aC%av,iList=iList,lsize=lsize)
+     endif
+     if(present(rList)) then
+	call AttrVect_init(aV=aC%av,rList=rList,lsize=lsize)
+     endif
+  endif
+
   call AttrVect_zero(aC%av)
 
-        ! Check that aC is initialized
-  status = initialized_(aC,die_flag=.false.,source_name=myname_)
+        ! Check that aC has been properly initialized
+
+  status = initialized_(aC=aC,die_flag=.true.,source_name=myname_)
 
  end subroutine init_
 
@@ -264,8 +283,8 @@
 !
 ! !INTERFACE:
 
- subroutine initp_(aC, iAction, rAction, num_steps, steps_done, &
-                   warning_flag)
+ subroutine initp_(aC, iAction, rAction, num_steps, steps_done)
+
 !
 ! !USES:
 !
@@ -279,7 +298,6 @@
       integer, dimension(:), optional, intent(in)  :: rAction
       integer,                         intent(in)  :: num_steps
       integer,               optional, intent(in)  :: steps_done
-      logical,                         intent(in)  :: warning_flag
 
 ! !OUTPUT PARAMETERS: 
 !
@@ -292,13 +310,9 @@
 !           MCT_SUM and MCT_AVG for accumulator module.
 !EOP ___________________________________________________________________
 !
-  character(len=*),parameter :: myname_=myname//'::init_'
-  integer :: n,i,ier
+  character(len=*),parameter :: myname_=myname//'::initp_'
+  integer :: i,ier
   integer :: steps_completed
-  integer :: action(2)
-
-  action(1) = MCT_SUM
-  action(2) = MCT_AVG
 
         ! if the argument steps_done is not present, assume
         ! the accumulator is starting at step zero, that is,
@@ -313,60 +327,39 @@
   aC%steps_done = steps_completed
 
 
-        ! Set indexing info
-
-  aC%niAction = 0
-  aC%nrAction = 0
-
-        ! Assign iAction and niAction components
+        ! Assign iAction and niAction components 
 
   nullify(aC%iAction,aC%rAction)
 
   if(present(iAction)) then
 
-      allocate(aC%iAction(1:size(iAction)),stat=ier)
-      if(ier /= 0) call die(myname_,"iAction allocate",ier)
+     if(size(iAction)>0) then
+
+	allocate(aC%iAction(size(iAction)),stat=ier)
+	if(ier /= 0) call die(myname_,"iAction allocate",ier)
       
-      do i=1,size(iAction)
+	do i=1,size(iAction)
+	   aC%iAction(i) = iAction(i)
+	enddo
 
-	 select case (iAction(i))
-	 case (MCT_SUM)
-	    aC%niAction(MCT_SUM) = aC%niAction(MCT_SUM) + 1
-	 case(MCT_AVG)
-	    aC%niAction(MCT_AVG) = aC%niAction(MCT_AVG) + 1
-	 case default
-	    call die(myname_,"illegal iAction assignment")
-	 end select
+     endif
 
-	 ! Safe? pointer copy
-	 aC%iAction(i) = iAction(i)
-
-      enddo
-
-   endif
+  endif
 
   if(present(rAction)) then
 
-      allocate(aC%rAction(1:size(rAction)),stat=ier)
-      if(ier /= 0) call die(myname_,"iAction allocate",ier)
+     if(size(rAction)>0) then
+     
+	allocate(aC%rAction(size(rAction)),stat=ier)
+	if(ier /= 0) call die(myname_,"iAction allocate",ier)
 
-      do i=1,size(rAction)
-
-	 select case (rAction(i))
-	 case (MCT_SUM)
-	    aC%nrAction(MCT_SUM) = aC%nrAction(MCT_SUM) + 1
-	 case(MCT_AVG)
-	    aC%nrAction(MCT_AVG) = aC%nrAction(MCT_AVG) + 1
-	 case default
-	    call die(myname_,"illegal rAction assignment")
-	 end select
-
-	 ! Safe? pointer copy
-	 aC%rAction(i) = rAction(i)
-
-      enddo
+	do i=1,size(rAction)
+	   aC%rAction(i) = rAction(i)
+	enddo
 	 
-   endif
+     endif
+
+  endif
 
  end subroutine initp_
 
@@ -426,15 +419,14 @@
   type(String) :: iLStr,rLStr
   integer :: myNumSteps, myStepsDone 
   integer :: aC_lsize
-  integer :: bC_iActions, bC_rActions 
+  integer :: niActions, nrActions
   integer, dimension(:), allocatable :: iActionArray, rActionArray
   integer :: i,ier
   logical :: status
 
-        ! Check aC and bC arguments
+        ! Check that bC has been initialized
 
-  status = initialized(aC,die_flag=.true.,source_name=myname_)
-  status = initialized(bC,die_flag=.false.,source_name=myname_)
+  status = initialized(aC=bC,die_flag=.true.,source_name=myname_)
 
         ! If the argument steps_done is present, set myStepsDone
         ! to this value; otherwise, set it to zero
@@ -468,53 +460,56 @@
   call List_get(iLStr,bC%av%iList)
   call List_get(rLStr,bC%av%rList)
 
-  bC_iActions = size(bC%iAction)
-  bC_rActions = size(bC%rAction)
-
         ! Convert the pointers to arrays
 
-  allocate(iActionArray(bC_iActions),rActionArray(bC_rActions),stat=ier)
+  niActions = nIAttr_(bC)
+  nrActions = nRAttr_(bC)
+
+  allocate(iActionArray(niActions),rActionArray(nrActions),stat=ier)
   if(ier /= 0) call die(myname_,"iActionArray/rActionArray allocate",ier)
 
+  if( niActions>0 ) then
+     do i=1,niActions
+	iActionArray(i)=bC%iAction(i)
+     enddo
+  endif
+
+  if( nrActions>0 ) then
+     do i=1,nrActions
+	rActionArray(i)=bC%rAction(i)
+     enddo     
+  endif
 
         ! Call init with present arguments
 
-  if( (bC_iActions > 0) .and. (bC_rActions > 0) ) then
+  if( (niActions>0) .and. (nrActions>0) ) then 
 
-     do i=1,bC_iActions
-	iActionArray(i)=bC%iAction(i)
-     enddo
-
-     do i=1,bC_rActions
-	rActionArray(i)=bC%rAction(i)
-     enddo     
-
-     call init_(aC, iList=String_char(iLStr), iAction=iActionArray, &
-	        rList=String_char(rLStr), rAction=rActionArray, &
-                lsize=aC_lsize, num_steps=myNumSteps, &
+     call init_(aC, iList=String_char(iLStr), &
+                iAction=iActionArray,         &
+	        rList=String_char(rLStr),     &
+		rAction=rActionArray,         &
+                lsize=aC_lsize,               &    
+                num_steps=myNumSteps,         &
                 steps_done=myStepsDone)
 
   else 
 
-     if( bC_iActions > 0 ) then
+     if( niActions>0 ) then
 
-	do i=1,bC_iActions
-	   iActionArray(i)=bC%iAction(i)
-	enddo
-
-	call init_(aC, iList=String_char(iLStr), iAction=iActionArray, &
-                   lsize=aC_lsize, num_steps=myNumSteps, &
+	call init_(aC, iList=String_char(iLStr), &
+	           iAction=iActionArray,         &
+                   lsize=aC_lsize,               &
+		   num_steps=myNumSteps,         &
                    steps_done=myStepsDone)
+
      endif
 
-     if( bC_rActions > 0 ) then
+     if( nrActions>0 ) then
 
-	do i=1,bC_rActions
-	   rActionArray(i)=bC%rAction(i)
-	enddo
-
-	call init_(aC, rList=String_char(rLStr), rAction=rActionArray, &
-                   lsize=aC_lsize, num_steps=myNumSteps, &
+	call init_(aC, rList=String_char(rLStr), &
+	           rAction=rActionArray,         &
+		   lsize=aC_lsize,               &
+		   num_steps=myNumSteps,         &
                    steps_done=myStepsDone)
      endif
 
@@ -522,6 +517,10 @@
 
   deallocate(iActionArray,rActionArray,stat=ier)
   if(ier /= 0) call die(myname_,"iActionArray/rActionArray deallocate",ier)
+
+  ! Check that aC as been properly initialized
+
+  status = initialized(aC=aC,die_flag=.true.,source_name=myname_)
 
  end subroutine initv_
 
@@ -644,6 +643,7 @@
 ! !USES:
 !
 
+   use m_stdio
    use m_die
    use m_List, only : List
    use m_List, only : List_allocated => allocated
@@ -666,60 +666,92 @@
 !EOP ___________________________________________________________________
 
    character(len=*),parameter :: myname_=myname//'::initialized_'
-   integer :: i,ier
-   logical :: init_kill,uninit_kill
+   integer :: i
+   logical :: kill
    logical :: aC_associated
 
    if(present(die_flag)) then
-      if(die_flag .eqv. .true.) then
-	 init_kill = .true.
-	 uninit_kill = .false.
-      endif
-      if(die_flag .eqv. .false.) then
-	 init_kill = .false.
-	 uninit_kill = .true.
-      endif
+      kill = .true.
    else
-      init_kill = .false.
-      uninit_kill = .false.
+      kill = .false. 
    endif
 
           ! Initial value
-   initialized_ = .true.
-   aC_associated = .true.
+   initialized_ = .true. 
+   aC_associated = .true. 
 
-          ! If any of the pointers in the Accumulator are associated,
-          ! then the Accumulator has been initialized
+          ! Check the association status of pointers in aC
 
-   if( .NOT. (associated(aC%iACtion) .and. associated(aC%rAction) .and. &
-              List_allocated(aC%av%iList) .and. &
-	      List_allocated(aC%av%rList)) ) then
+   if( associated(aC%iAction) .or. associated(aC%rAction) ) then
+      aC_associated = .true.
+   else
       initialized_ = .false.
       aC_associated = .false.
-      if(uninit_kill) then
-	 if(present(source_name)) call perr(source_name,"Accumulator Initialization Error")
-	 call die(myname_,"aC pointers are unassociated")
+      if(kill) then
+	 if(present(source_name)) write(stderr,*), source_name, myname_, &
+	      ":: ERROR, Neither aC%iAction nor aC%rAction are associated"
+	 call die(myname_,"Neither aC%iAction nor aC%rAction are associated") 
       endif
-
    endif
-   
-        ! More sanity checking
 
-   if( aC_associated .eqv. .true. ) then
+   if( List_allocated(aC%av%iList) .or. List_allocated(aC%av%rList) ) then
+      aC_associated = .true.
+   else
+      initialized_ = .false.
+      aC_associated = .false.
+      if(kill) then
+	 if(present(source_name)) write(stderr,*), source_name, myname_, &
+	      ":: ERROR, Neither aC%av%iList nor aC%av%rList are allocated"
+	 call die(myname_,"Neither aC%av%iList nor aC%av%rList are allocated")
+      endif
+   endif
+
+           ! Make sure iAction and rAction sizes are greater than zero
+
+   if(associated(aC%iAction)) then
+      if(size(aC%iAction)<=0) then
+	 initialized_ = .false.
+	 aC_associated = .false.
+	 if(kill) then
+	    if(present(source_name)) write(stderr,*), source_name, myname_, &
+		 ":: ERROR, size(aC%iAction<=0), size = ", size(aC%iAction)
+	    call die(myname_,"size(aC%iAction<=0), size = ", size(aC%iAction))
+	 endif
+      endif
+   endif
+
+   if(associated(aC%rAction)) then
+      if(size(aC%rAction)<=0) then
+	 initialized_ = .false.
+	 aC_associated = .false.
+	 if(kill) then
+	    if(present(source_name)) write(stderr,*), source_name, myname_, &
+		 ":: ERROR, size(aC%rAction<=0), size = ", size(aC%rAction)
+	    call die(myname_,"size(aC%rAction<=0), size = ", size(aC%rAction))
+	 endif
+      endif
+   endif
+
+          ! More sanity checking...
+
+   if( aC_associated ) then
 
       if( (Attr_nIAttr(aC%av) == 0) .and. (Attr_nRAttr(aC%av) == 0) ) then
 	 initialized_ = .false.
-	 if(uninit_kill) then
-	    if(present(source_name)) call perr(source_name,"Accumulator Initialization Error")
+	 if(kill) then
+	    if(present(source_name)) write(stderr,*), source_name, myname_, &
+		 ":: ERROR, No attributes found in aC%av"
 	    call die(myname_,"No attributes found in aC%av")
 	 endif
       endif
 
       if(Attr_nIAttr(aC%av) > 0) then
+
 	 if( size(aC%iAction) /=  Attr_nIAttr(aC%av) ) then
 	    initialized_ = .false.
-	    if(uninit_kill) then
-	       if(present(source_name)) call perr(source_name,"Accumulator Initialization Error")
+	    if(kill) then
+	       if(present(source_name)) write(stderr,*), source_name, myname_, &
+		    ":: ERROR, size(aC%iAction) /= nIAttr(aC%av)"
 	       call die(myname_,"size(aC%iAction) /= nIAttr(aC%av)")
 	    endif
 	 endif
@@ -728,9 +760,11 @@
 	    if( (aC%iAction(i) /= MCT_SUM) .and. &
                 (aC%iAction(i) /= MCT_AVG) ) then
 	       initialized_ = .false.
-	       if(uninit_kill) then
-		  if(present(source_name)) call perr(source_name,"Accumulator Initialization Error")
-		  call die(myname_,"Invalid aC%iAction")
+	       if(kill) then
+		  if(present(source_name)) write(stderr,*), source_name, &
+		       myname_, ":: ERROR, Invalid value found in aC%iAction"
+		  call die(myname_,"Invalid value found in aC%iAction", &
+		       aC%iAction(i))
 	       endif
 	    endif
 	 enddo
@@ -741,8 +775,9 @@
 
 	 if( size(aC%rAction) /=  Attr_nRAttr(aC%av) ) then
 	    initialized_ = .false.
-	    if(uninit_kill) then
-	      if(present(source_name)) call perr(source_name,"Accumulator Initialization Error")
+	    if(kill) then
+	      if(present(source_name)) write(stderr,*), source_name, &
+		   myname_, ":: ERROR, size(aC%rAction) /= nRAttr(aC%av)"
 	      call die(myname_,"size(aC%rAction) /= nRAttr(aC%av)")
 	    endif
 	 endif
@@ -751,23 +786,19 @@
 	    if( (aC%rAction(i) /= MCT_SUM) .and. &
                 (aC%rAction(i) /= MCT_AVG) ) then
 	       initialized_ = .false.
-	       if(uninit_kill) then
-		  if(present(source_name)) call perr(source_name,"Accumulator Initialization Error")
-		  call die(myname_,"Invalid aC%rAction")
+	       if(kill) then
+		  if(present(source_name)) write(stderr,*), source_name, &
+		       myname_, ":: ERROR, Invalid value found in aC%rAction", &
+		       aC%rAction(i)
+		  call die(myname_,"Invalid value found in aC%rAction", &
+		       aC%iAction(i)) 
 	       endif
 	    endif
 	 enddo
 
       endif ! if(Attr_nRAttr(aC%av) > 0)
 
-   endif  ! if (aC_associated .eqv. .true.)
-
-   if(init_kill) then
-      if(initialized_ .eqv. .true.) then
-	 if(present(source_name)) call perr(source_name,"Accumulator Initialization Error")
-	 call die(myname_,"aC has been previously initialized")
-      endif
-   endif
+   endif  ! if (aC_associated)
 
  end function initialized_
 
