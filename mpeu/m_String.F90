@@ -443,7 +443,11 @@ contains
     return
   endif
 
-  if(myID==root) ln=size(Str%c)
+  if(myID==root) then
+     ln=size(Str%c)
+     if(ln<=0) call die(myname_,'size(Str%c) <= 0')
+  endif
+
   call MPI_bcast(ln,1,MP_INTEGER,root,comm,ier)
   if(ier/=0) then
     call MP_perr(myname_,'MPI_bcast(ln)',ier)
@@ -465,7 +469,7 @@ contains
 	if(mall_ison()) call mall_mci(Str%c,myname)
   endif
 
-  call MPI_bcast(Str%c,ln,MP_CHARACTER,root,comm,ier)
+  call MPI_bcast(Str%c(1),ln,MP_CHARACTER,root,comm,ier)
   if(ier/=0) then
     call MP_perr(myname_,'MPI_bcast(Str%c)',ier)
     if(.not.present(stat)) call die(myname_)
