@@ -43,6 +43,8 @@
       integer :: myid	       ! my unique id 
       integer :: ncomps	       !  number of components
       integer :: mynprocs      !  number of procs
+      integer :: mylrank       !  rank in local comm
+      integer :: mygrank       !  rank in mpi_comm_world
       integer,dimension(:),pointer :: allids	   ! unique id for each 
                                                    ! component
       integer,dimension(:),pointer :: nprocspid	   ! number of processes 
@@ -75,6 +77,8 @@
 !                local-to-global mapping services NumComponents, 
 !                ComponentNumProcs, ComponentToWorldRank, and 
 !                ComponentRootRank
+!      08Feb01 - R. Jacob <jacob@mcs.anl.gov> - add mylrank and mygrank
+!                to datatype
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_MCTWorld'
@@ -112,6 +116,8 @@
 !       19Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
 !       07Feb01 - R. Jacob <jacob@mcs.anl.gov> - non fatal error
 !	if init is called a second time.
+!       08Feb01 - R. Jacob <jacob@mcs.anl.gov> - initialize the new
+!                mygrank and mylrank
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::init_'
@@ -149,9 +155,13 @@
   call MP_comm_rank(MP_COMM_WORLD,myGid,ier)
   if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
 
+  ThisMCTWorld%mygrank = myGid
+
 ! determine my rank in local comm
   call MP_comm_rank(mycomm,myLid,ier)
   if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
+
+  ThisMCTWorld%mylrank = myLid
 
 
 ! allocate space on global root
@@ -348,6 +358,8 @@
 
 ! !REVISION HISTORY:
 !       19Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
+!       08Feb01 - R. Jacob <jacob@mcs.anl.gov> - clean the new
+!                mygrank and mylrank
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::clean_'
@@ -359,6 +371,8 @@
   ThisMCTWorld%myid = 0
   ThisMCTWorld%ncomps = 0
   ThisMCTWorld%mynprocs = 0
+  ThisMCTWorld%mygrank = 0
+  ThisMCTWorld%mylrank = 0
 
  end subroutine clean_
 
