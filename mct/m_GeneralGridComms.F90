@@ -672,9 +672,8 @@
 
      length = GlobalMap_gsize(GMap)
 
-       ! Initialize attributes of oG from iG, and length
-
-     call GeneralGrid_init(oG, iG, length)
+       ! Initialize attributes of oG from iG
+     call copyGeneralGridHeader_(iG,oG) 
 
   endif
 
@@ -793,9 +792,8 @@
 
      length = GlobalSegMap_gsize(GSMap)
 
-       ! Initialize attributes of oG from iG, and length
-
-     call GeneralGrid_init(oG, iG, length)
+       ! Initialize attributes of oG from iG
+     call copyGeneralGridHeader_(iG,oG) 
 
   endif
 
