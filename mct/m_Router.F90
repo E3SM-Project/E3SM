@@ -42,8 +42,10 @@
       integer :: comp2id	       ! id of second component
       character*4 :: type	       ! '1way' or '2way'
       integer :: nprocs	       ! number of procs to talk to
-      integer,dimension(:),pointer :: pe_list ! processor ranks of send/receive
+      integer :: maxsize		! maximum amount of data going to a processor
+      integer,dimension(:),pointer :: pe_list ! processor ranks of send/receive in MPI_COMM_WORLD
       integer,dimension(:),pointer :: num_segs ! number of segments to send/receive
+      integer,dimension(:),pointer :: locsize ! total of seg_lengths for a proc
       integer,dimension(:,:),pointer :: seg_starts ! starting index
       integer,dimension(:,:),pointer :: seg_lengths ! total length
 
@@ -62,6 +64,8 @@
 !                for port to SunOS platform:  made more explicit the
 !                use blocks for m_Navigator to alleviate confusion in
 !                interface declarations.
+!      08Feb01 - R. Jacob <jacob@mcs.anl.gov> add locsize and maxsize 
+!                to Router type
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_Router'
@@ -85,6 +89,7 @@
       use m_GlobalSegMap, only :GlobalSegMap
       use m_GlobalSegMap, only :nlseg
       use m_GlobalSegMap, only :lsize
+      use m_GlobalToLocal, only :GlobalToLocalIndex
       use m_MCTWorld,only :MCTWorld
       use m_MCTWorld,only :ThisMCTWorld
       use m_mpif90
@@ -104,25 +109,24 @@
 !       02Feb01 - R. Jacob <jacob@mcs.anl.gov> - initialize the send
 !       06Feb01 - R. Jacob <jacob@mcs.anl.gov> - Finish initialization
 !			of the Router.  Router now works both ways.
-!
-!		portion
+!       08Feb01 - R. Jacob <jacob@mcs.anl.gov> - use GlobaltoLocalIndex
+!		  to load local index values into Router. Init locsize
+!                 and maxsize.  add deallocate statements.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::init_'
   integer			:: myPid,ier,nlsegs,i,j,k,m
   integer			:: mysize,recvsize,rngseg,tag,pr
   integer			:: sendsize,mysize,count,prsize
+  integer			:: lmaxsize,totallength
   integer 	:: status(MP_STATUS_SIZE)
-  integer,dimension(:),allocatable :: reqs,rstarts,rlengths
-  integer,dimension(:),allocatable :: rpe_locs,rlsizes
+  integer,dimension(:),allocatable :: rstarts,rlengths
+  integer,dimension(:),allocatable :: rpe_locs,rlsizes,rvector
   integer,dimension(:),allocatable :: mystarts,mylengths
-  integer,dimension(:),allocatable :: myvector,lsizes,rvector
+  integer,dimension(:),allocatable :: myvector,lsizes
   logical,dimension(:),allocatable :: hitparade,tmppe_list
 
-  integer,dimension(:,:),pointer :: recvstarts
   integer,dimension(:,:),pointer :: tmpsegcount,tmpsegstart
-  integer,dimension(:),pointer :: precvstarts
-  integer,dimension(:),pointer :: beginseg,targproc,numpoints
   logical :: firstpoint
   integer :: maxsegcount,mmax,othercomp,mycomp
 
@@ -150,12 +154,17 @@
 
 ! form one long vector which is all local GSMap points
   i=1
-   do j=1,nlsegs
+  do j=1,nlsegs
     do k=1,mylengths(j)
     myvector(i)=mystarts(j)+k-1
     i=i+1
     enddo
-   enddo
+  enddo
+
+  deallocate(mystarts,mylengths, stat=ier)
+  if(ier/=0) call MP_perr_die(myname_,'deallocate(mystarts,..)',ier)
+
+  
 
   if(ThisMCTWorld%myid == comp1) then
     mycomp=comp1
@@ -289,6 +298,7 @@
         endif
       enddo
 
+
 ! check every point in my local vector against every point of
 ! the remote procs vector.  Record hits.
       do j=1,mysize
@@ -304,6 +314,7 @@
 ! if no hits found, go look at the next processor.
       if(.NOT.ANY(hitparade)) then
         deallocate(rvector,stat=ier)
+        if(ier/=0) call MP_perr_die(myname_,'deallocate()',ier)
         tmppe_list(i)=.FALSE.
 	CYCLE
       endif
@@ -345,9 +356,10 @@
 
       mmax=MAX(m,mmax)
       deallocate(rvector,stat=ier)
+      if(ier/=0) call MP_perr_die(myname_,'deallocate()',ier)
     enddo
 
-! start loading up the Router
+! start loading up the Router with data
     Rout%nprocs = count
 
     maxsegcount=mmax
@@ -355,7 +367,8 @@
 
     allocate(Rout%pe_list(count),Rout%num_segs(count), &
     Rout%seg_starts(count,maxsegcount), &
-    Rout%seg_lengths(count,maxsegcount),stat=ier)
+    Rout%seg_lengths(count,maxsegcount), &
+    Rout%locsize(count),stat=ier)
     if(ier/=0) call MP_perr_die(myname_,'allocate(Rout..)',ier)
     
     m=0
@@ -367,22 +380,31 @@
       endif
     enddo
 
+    lmaxsize=0
     do i=1,count
       k=0
+      totallength=0
       do j=1,mysize
 !	if(myPid==0)write(*,*)"RRR",i,j,tmpsegcount(i,j)
 	if(tmpsegcount(i,j) /= 0) then
 	 k=k+1
-	 Rout%seg_starts(i,k)=tmpsegstart(i,j)
+ 	 Rout%seg_starts(i,k)=GlobalToLocalIndex(GSMap,tmpsegstart(i,j),mycomm)
+! 	 Rout%seg_starts(i,k)=tmpsegstart(i,j)
 	 Rout%seg_lengths(i,k)=tmpsegcount(i,j)
+	 totallength=totallength+Rout%seg_lengths(i,k)
 	endif
       enddo
       Rout%num_segs(i)=k
+
+      Rout%locsize(i)=totallength
+      lmaxsize=MAX(lmaxsize,totallength)
     enddo
+
+    Rout%maxsize=lmaxsize
 
     if((myPid==0) .and. (ThisMCTWorld%myid == comp1)) then
      do i=1,Rout%nprocs
-!      write(*,*)"ROUTERE",i,Rout%pe_list(i),Rout%num_segs(i)
+!      write(*,*)"ROUTERE",i,Rout%pe_list(i),Rout%num_segs(i),Rout%locsize(i),Rout%maxsize
       do j=1,Rout%num_segs(i)
 !       write(*,*)"ROUTEREE",i,j,Rout%seg_starts(i,j),Rout%seg_lengths(i,j)
       enddo
@@ -390,7 +412,10 @@
     endif
        
       
-    deallocate(tmpsegstart,tmpsegcount,tmppe_list,stat=ier)
+  deallocate(tmpsegstart,tmpsegcount,tmppe_list, &
+    myvector,rstarts,rlengths,rlsizes,lsizes,hitparade,&
+    stat=ier)
+  if(ier/=0) call MP_perr_die(myname_,'deallocate()',ier)
 !endif
 
  end subroutine init_
@@ -418,17 +443,22 @@
 ! !REVISION HISTORY:
 !       15Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
 !       31Jan01 - R. Jacob <jacob@mcs.anl.gov> - actual code
+!       08Feb01 - R. Jacob <jacob@mcs.anl.gov> - add code to clean
+!                 the maxsize and locsize
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::clean_'
   integer :: ier
 
-  deallocate(Rout%pe_list,Rout%num_segs,Rout%seg_starts, stat=ier)
+  deallocate(Rout%pe_list,Rout%num_segs,Rout%seg_starts, &
+  Rout%locsize,Rout%seg_lengths,stat=ier)
   if(ier /= 0) call perr_die(myname_,'deallocate(Rout,...)',ier)
 
   Rout%comp1id = 0
   Rout%comp2id = 0
   Rout%type = ""
+  Rout%nprocs = 0
+  Rout%maxsize = 0
 
 
  end subroutine clean_
