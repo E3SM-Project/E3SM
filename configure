@@ -3370,9 +3370,6 @@ fi
 if echo $osname | grep -i darwin >/dev/null 2>&1; then
    MACHDEFS="-DSYSDARWIN $MACHDEFS"
 fi
-if echo $osname | grep -i esos >/dev/null 2>&1; then
-   AR="esar cqs"
-fi
 if echo $osname | grep -i unix_system_v >/dev/null 2>&1; then
    if test "$ac_cv_f90_fpp_compiler" = "yes"; then
       MACHDEFS="-Wp,-DSYSUNIXSYSTEMV"
@@ -3582,6 +3579,7 @@ if echo $f90_version | grep -i sx >/dev/null 2>&1; then
       fi
    fi
    if test "$ES" = "YES"; then
+      AR="esar cqs"
       if test -z "$FCFLAGS"; then
          FCFLAGS="-EP -Wf'-pvctl fullmsg -L fmtlist transform map'"
       fi
