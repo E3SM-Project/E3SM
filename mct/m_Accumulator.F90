@@ -38,6 +38,7 @@
 
       public :: init		! creation method
       public :: clean		! destruction method
+      public :: initialized     ! check if initialized
       public :: lsize		! local length of the data arrays
       public :: nIAttr		! number of integer fields
       public :: nRAttr		! number of real fields
@@ -70,9 +71,11 @@
 
     interface init   ; module procedure	&
 	init_,	&
-	initv_
+	initv_, &
+        initp_ 
     end interface
     interface clean  ; module procedure clean_  ; end interface
+    interface initialized; module procedure initialized_ ; end interface
     interface lsize  ; module procedure lsize_  ; end interface
     interface nIAttr ; module procedure nIAttr_ ; end interface
     interface nRAttr ; module procedure nRAttr_ ; end interface
@@ -85,6 +88,8 @@
 ! 	 7Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
 ! 	 7Feb01 - Jay Larson <larson@mcs.anl.gov> - Public interfaces
 !                 to getIList() and getRList().
+!        09Aug01 - E.T. Ong <eong@mcs.anl.gov> - added initialized and
+!                  initp_ routines. Added 'action' in Accumulator type.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_Accumulator'
@@ -95,7 +100,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: init_ - initialize with given iList, rList, length, 
+! !IROUTINE: init_ - initialize an accumulator with given iList, rList, length, 
 ! num\_steps, and steps\_done.
 !
 ! !DESCRIPTION:
@@ -106,23 +111,84 @@
 !
 ! !USES:
 !
-      use m_List, only : List_init=>init
-      use m_List, only : List_nitem=>nitem
+      use m_List, only : List_init => init
       use m_AttrVect, only : AttrVect_init => init
-      use m_AttrVect, only : AttrVect_nIAttr => nIAttr
-      use m_AttrVect, only : AttrVect_nRAttr => nRAttr
+      use m_AttrVect, only : AttrVect_zero => zero
       use m_die
 
       implicit none
 
-      type(Accumulator),intent(out)        :: aC
-      character(len=*),optional,intent(in) :: iList
-      integer,dimension(:),optional,intent(in) :: iaction
-      character(len=*),optional,intent(in) :: rList
-      integer,dimension(:),optional,intent(in) :: raction
-      integer,         intent(in) :: lsize
-      integer,         intent(in)          :: num_steps
-      integer,         optional,intent(in) :: steps_done
+      type(Accumulator),               intent(out) :: aC
+      character(len=*),      optional, intent(in)  :: iList
+      integer, dimension(:), optional, intent(in)  :: iAction
+      character(len=*),      optional, intent(in)  :: rList
+      integer, dimension(:), optional, intent(in)  :: rAction
+      integer,                         intent(in)  :: lsize
+      integer,                         intent(in)  :: num_steps
+      integer,               optional, intent(in)  :: steps_done
+
+! !REVISION HISTORY:
+! 	11Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+!       27JUL01 - E.T. Ong <eong@mcs.anl.gov> - added iAction, rAction,
+!                 niAction, and nrAction to accumulator type. Also defined
+!                 MCT_SUM and MCT_AVG for accumulator module.
+!EOP ___________________________________________________________________
+!
+  character(len=*),parameter :: myname_=myname//'::init_'
+  integer :: n,i,ier
+  integer :: steps_completed
+  integer :: action(2)
+  logical :: status
+
+  action(1) = MCT_SUM
+  action(2) = MCT_AVG
+
+        ! Check that aC is not initialized
+
+  status = initialized_(aC,die_flag=.true.,source_name=myname_)
+
+        ! Initialize the Accumulator components.
+
+  call initp_(aC,iAction,rAction,num_steps,steps_done,warning_flag=.true.)
+
+        ! Initialize the AttrVect component aC:
+
+  call AttrVect_init(aC%av,iList,rList,lsize)
+  call AttrVect_zero(aC%av)
+
+        ! Check that aC is initialized
+  status = initialized_(aC,die_flag=.false.,source_name=myname_)
+
+ end subroutine init_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: initp_ - initialize an accumulator with given iList, rList, 
+!            length, num\_steps, and steps\_done, without initializing 
+!            av component of accumulator
+!
+! !DESCRIPTION: This routine is meant to be used only by member modules, not
+!               by the user. The warning flag must be present for the routine
+!               to be called correctly. 
+!
+! !INTERFACE:
+
+ subroutine initp_(aC,iAction,rAction,num_steps,steps_done,warning_flag)
+!
+! !USES:
+!
+      use m_die
+
+      implicit none
+
+      type(Accumulator),               intent(out) :: aC
+      integer, dimension(:), optional, intent(in)  :: iAction
+      integer, dimension(:), optional, intent(in)  :: rAction
+      integer,                         intent(in)  :: num_steps
+      integer,               optional, intent(in)  :: steps_done
+      logical,                         intent(in)  :: warning_flag
 
 ! !REVISION HISTORY:
 ! 	11Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
@@ -139,21 +205,9 @@
   action(1) = MCT_SUM
   action(2) = MCT_AVG
 
-        ! Argument dummy check
-  
-  ! Bug note: On denali, this portion will kill before MP_perr_die can execute
-  if(.not.( (present(iList).and.present(iAction)) .or. &
-            (present(rList).and.present(rAction)) ) ) then
-     call MP_perr_die(myname_,"List and Action arguments must be paired",ier)
-  endif
-
-  if(lsize .le. 0) then
-     call MP_perr_die(myname_,"lsize argument must be > 0",ier) 
-  endif
-
         ! if the argument steps_done is not present, assume
         ! the accumulator is starting at step zero, that is,
-        ! set st_complete to zero
+        ! set steps_completed to zero
 
   steps_completed = 0
   if(present(steps_done)) steps_completed = steps_done
@@ -164,34 +218,23 @@
   aC%steps_done = steps_completed
 
 
-        ! Initialize the AttrVect component aC%av:
-
-
-  call AttrVect_init(aC%av,iList,rList,lsize)
-
-
-
         ! Set indexing info
 
   aC%niAction = 0
   aC%nrAction = 0
 
+        ! Assign iAction and niAction components
+
   nullify(aC%iAction,aC%rAction)
 
   if(present(iAction)) then
 
-      ! More argument checking
-
-      if( size(iAction) /=  AttrVect_nIAttr(aC%av) ) then
-	 call MP_perr_die(myname_,"size(iaction) /= size(iList)",ier)
-      endif
-
-      allocate(aC%iAction(1:AttrVect_nIAttr(aC%av)),stat=ier)
+      allocate(aC%iAction(1:size(iAction)),stat=ier)
       if(ier /= 0) then
            call MP_perr_die(myname_,"iAction allocate",ier)
       endif
       
-      do i=1,AttrVect_nIAttr(aC%av)
+      do i=1,size(iAction)
 
 	 select case (iAction(i))
 	 case (MCT_SUM)
@@ -211,16 +254,10 @@
 
   if(present(rAction)) then
 
-      ! More argument checking
-
-      if( size(rAction) .ne.  AttrVect_nRAttr(aC%av) ) then
-	 call MP_perr_die(myname_,"size(raction) /= size(rList)",ier)
-      endif
-
-      allocate(aC%rAction(1:AttrVect_nRAttr(aC%av)),stat=ier)
+      allocate(aC%rAction(1:size(rAction)),stat=ier)
       if(ier /= 0) call MP_perr_die(myname_,"iAction allocate",ier)
 
-      do i=1,AttrVect_nRAttr(aC%av)
+      do i=1,size(rAction)
 
 	 select case (rAction(i))
 	 case (MCT_SUM)
@@ -238,7 +275,9 @@
 	 
    endif
 
- end subroutine init_
+ end subroutine initp_
+
+
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
@@ -263,7 +302,7 @@
 
       type(Accumulator),    intent(out) :: aC
       type(Accumulator),    intent(in)  :: bC
-      integer,           intent(in)  :: lsize
+      integer, optional, intent(in)  :: lsize
       integer,           intent(in)  :: num_steps
       integer, optional, intent(in)  :: steps_done
 
@@ -279,15 +318,31 @@
 
   type(String) :: iLStr,rLStr
   integer :: steps_completed
+  integer :: aC_lsize
   integer :: bC_iActions, bC_rActions 
   integer, dimension(:), allocatable :: iActionArray, rActionArray
-  integer :: ier
+  integer :: i,ier
+  logical :: status
+
+        ! Check aC and bC arguments
+
+  status = initialized(aC,die_flag=.true.,source_name=myname_)
+  status = initialized(bC,die_flag=.false.,source_name=myname_)
 
         ! If the argument steps_done is present, set steps_completed
         ! to this value; otherwise, set it to zero
 
   steps_completed = 0
   if(present(steps_done)) steps_completed = steps_done 
+
+        ! If the argument lsize is present, 
+        ! set aC_lsize to this value; otherwise, set it to the lsize of bC
+ 
+  if(present(lsize)) then 
+     aC_lsize = lsize     
+  else
+     aC_lsize = lsize_(bC)
+  endif
 
 	! Convert the two Lists to two Strings
 
@@ -307,20 +362,41 @@
 
   if( (bC_iActions > 0) .and. (bC_rActions > 0) ) then
 
-     call init_(aC, iList=String_char(iLStr), iAction=bC%iAction, &
-                rList=String_char(rLStr), rAction=bC%rAction, &
-                lsize=lsize, num_steps=num_steps, steps_done=steps_completed)
+     do i=1,bC_iActions
+	iActionArray(i)=bC%iAction(i)
+     enddo
+
+     do i=1,bC_rActions
+	rActionArray(i)=bC%rAction(i)
+     enddo     
+
+     call init_(aC, iList=String_char(iLStr), iAction=iActionArray, &
+	        rList=String_char(rLStr), rAction=rActionArray, &
+                lsize=aC_lsize, num_steps=num_steps, &
+                steps_done=steps_completed)
 
   else 
 
      if( bC_iActions > 0 ) then
-	call init_(aC, iList=String_char(iLStr), iAction=bC%iAction, &
-                  lsize=lsize, num_steps=num_steps, steps_done=steps_completed)
+
+	do i=1,bC_iActions
+	   iActionArray(i)=bC%iAction(i)
+	enddo
+
+	call init_(aC, iList=String_char(iLStr), iAction=iActionArray, &
+                   lsize=aC_lsize, num_steps=num_steps, &
+                   steps_done=steps_completed)
      endif
 
      if( bC_rActions > 0 ) then
-	call init_(aC, rList=String_char(rLStr), rAction=bC%rAction, &
-                  lsize=lsize, num_steps=num_steps, steps_done=steps_completed)
+
+	do i=1,bC_rActions
+	   rActionArray(i)=bC%rAction(i)
+	enddo
+
+	call init_(aC, rList=String_char(rLStr), rAction=rActionArray, &
+                   lsize=aC_lsize, num_steps=num_steps, &
+                   steps_done=steps_completed)
      endif
 
   endif
@@ -364,17 +440,160 @@
 
   call AttrVect_clean(aC%av)
   
-  if( associated(aC%iAction) )  deallocate(aC%iAction,stat=ier)
-  if(ier /= 0) then
-     call MP_perr_die(myname_,"iAction deallocate",ier)
-  endif
+  if( associated(aC%iAction) )  then
+      deallocate(aC%iAction,stat=ier)
+      if(ier /= 0) call MP_perr_die(myname_,"iAction deallocate",ier)
+   endif
 
-  if( associated(aC%rAction) ) deallocate(aC%rAction,stat=ier)
-  if(ier /= 0) then
-     call MP_perr_die(myname_,"rAction deallocate",ier)
+  if( associated(aC%rAction) ) then
+     deallocate(aC%rAction,stat=ier)
+     if(ier /= 0) call MP_perr_die(myname_,"rAction deallocate",ier)
   endif
 
  end subroutine clean_
+
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: initialized_ - Check if an Accumulator is initialized.
+!
+! !DESCRIPTION: If an Accumulator is initialized correctly, the function
+!               returns true. Argument die_flag, if present, will err 
+!               if die_flag is true and aC is correctly initialized, and
+!               if die_flag is false and aC is incorrectly initialized.
+!
+! !INTERFACE:
+
+ function initialized_(aC, die_flag, source_name)
+!
+! !USES:
+!
+
+   use m_die
+   use m_AttrVect, only : AttrVect
+   use m_AttrVect, only : Attr_nIAttr => nIAttr
+   use m_AttrVect, only : Attr_nRAttr => nRAttr
+
+   implicit none
+
+   logical                                :: initialized_
+   type(Accumulator),          intent(in) :: aC
+   logical,          optional, intent(in) :: die_flag
+   character(len=*), optional, intent(in) :: source_name
+
+! !REVISION HISTORY:
+!       07AUG01 - E.T. Ong <eong@mcs.anl.gov> - initital prototype
+!
+!EOP ___________________________________________________________________
+
+   character(len=*),parameter :: myname_=myname//'::initialized_'
+   integer :: i,ier
+   logical :: init_kill,uninit_kill
+   logical :: aC_associated
+
+   if(present(die_flag)) then
+      if(die_flag .eqv. .true.) then
+	 init_kill = .true.
+	 uninit_kill = .false.
+      endif
+      if(die_flag .eqv. .false.) then
+	 init_kill = .false.
+	 uninit_kill = .true.
+      endif
+   else
+      init_kill = .false.
+      uninit_kill = .false.
+   endif
+
+          ! Initial value
+   initialized_ = .true.
+   aC_associated = .true.
+
+          ! If any of the pointers in the Accumulator are associated,
+          ! then the Accumulator has been initialized
+
+   if( .NOT. (associated(aC%iACtion) .and. associated(aC%rAction) .and. &
+              associated(aC%av%iAttr) .and. associated(aC%av%rAttr)) ) then
+      initialized_ = .false.
+      aC_associated = .false.
+      if(uninit_kill) then
+	 if(present(source_name)) call perr(source_name,"Accumulator Initialization Error")
+	 call MP_perr_die(myname_,"aC pointers are unassociated",ier)
+      endif
+
+   endif
+   
+        ! More sanity checking
+
+   if( aC_associated .eqv. .true. ) then
+
+      if( (Attr_nIAttr(aC%av) == 0) .and. (Attr_nRAttr(aC%av) == 0) ) then
+	 initialized_ = .false.
+	 if(uninit_kill) then
+	    if(present(source_name)) call perr(source_name,"Accumulator Initialization Error")
+	    call MP_perr_die(myname_,"No attributes found in aC%av",ier)
+	 endif
+      endif
+
+      if(Attr_nIAttr(aC%av) > 0) then
+	 if( size(aC%iAction) /=  Attr_nIAttr(aC%av) ) then
+	    initialized_ = .false.
+	    if(uninit_kill) then
+	       if(present(source_name)) call perr(source_name,"Accumulator Initialization Error")
+	       call MP_perr_die(myname_, &
+                                "size(aC%iAction) /= nIAttr(aC%av)",ier)
+	    endif
+	 endif
+
+	 do i=1,Attr_nIAttr(aC%av)
+	    if( (aC%iAction(i) /= MCT_SUM) .and. &
+                (aC%iAction(i) /= MCT_AVG) ) then
+	       initialized_ = .false.
+	       if(uninit_kill) then
+		  if(present(source_name)) call perr(source_name,"Accumulator Initialization Error")
+		  call MP_perr_die(myname_,"Invalid aC%iAction",ier)
+	       endif
+	    endif
+	 enddo
+
+      endif ! if(Attr_nIAttr(aC%av) > 0)
+
+      if(Attr_nRAttr(aC%av) > 0) then
+
+	 if( size(aC%rAction) /=  Attr_nRAttr(aC%av) ) then
+	    initialized_ = .false.
+	    if(uninit_kill) then
+	      if(present(source_name)) call perr(source_name,"Accumulator Initialization Error")
+	      call MP_perr_die(myname_,"size(aC%rAction) /= nRAttr(aC%av)",ier)
+	    endif
+	 endif
+
+	 do i=1,Attr_nRAttr(aC%av)
+	    if( (aC%rAction(i) /= MCT_SUM) .and. &
+                (aC%rAction(i) /= MCT_AVG) ) then
+	       initialized_ = .false.
+	       if(uninit_kill) then
+		  if(present(source_name)) call perr(source_name,"Accumulator Initialization Error")
+		  call MP_perr_die(myname_,"Invalid aC%rAction",ier)
+	       endif
+	    endif
+	 enddo
+
+      endif ! if(Attr_nRAttr(aC%av) > 0)
+
+   endif  ! if (aC_associated .eqv. .true.)
+
+   if(init_kill) then
+      if(initialized_ .eqv. .true.) then
+	 if(present(source_name)) call perr(source_name,"Accumulator Initialization Error")
+	 call MP_perr_die(myname_,"aC has been previously initialized",ier)
+      endif
+   endif
+
+ end function initialized_
+
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
