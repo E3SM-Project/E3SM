@@ -99,7 +99,7 @@ CFLAGS		= -O
 #############################
 # Absoft flags 
 #############################
-#FFLAGS         = -O2 -Mnoframe  $(_R)
+#FFLAGS         = -O2 -Mnoframe $(_p) $(_R)
 #FPPFLAGS       = -DLANGUAGE_FORTRAN -traditional
 #CFLAGS         = -O -DABSOFT
 
