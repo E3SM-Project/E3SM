@@ -24,11 +24,13 @@
 ! declare a private pointer structure for the real data
   public :: rptr,iptr
   type :: rptr
+    sequence
     real,dimension(:),pointer :: pr
   end type
 
 ! declare a private pointer structure for the integer data
   type :: iptr
+    sequence
     integer,dimension(:),pointer :: pi
   end type
 
@@ -47,6 +49,7 @@
 !\begin{verbatim}
 
     type Router
+      sequence
       integer :: comp1id                           ! myid
       integer :: comp2id                           ! id of second component
       integer :: nprocs	                           ! number of procs to talk to
