@@ -541,6 +541,8 @@
 
 ! !REVISION HISTORY:
 !       05Feb01 - J. Larson <larson@mcs.anl.gov> - initial version
+!       02Jul01 - J. Larson <larson@mcs.anl.gov> - minor change to
+!                 error statements.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::ComponentToWorldRank_'
@@ -570,7 +572,7 @@
 	endif
 
 	if(.not. valid) then
-	   write(stderr,'(2a,1i7)') myname,":: invalid component id no. = ",&
+	   write(stderr,'(2a,1i7)') myname_,":: invalid component id no. = ",&
 		comp_id
 	   call MP_perr_die(myname_,'invalid comp_id = ',comp_id)
 	endif
@@ -586,7 +588,7 @@
 	endif
 
 	if(.not. valid) then
-	   write(stderr,'(2a,1i5,1a,1i2)') myname, &
+	   write(stderr,'(2a,1i5,1a,1i2)') myname_, &
 		":: invalid process ID. = ", &
 		comp_rank, "on component ",comp_id
 	   call MP_perr_die(myname_,'invalid comp_rank = ',comp_rank)
@@ -602,7 +604,7 @@
   world_rank = World%idGprocid(comp_id, comp_rank)
 
   if(world_rank < 0) then
-     write(stderr,'(2a,1i6)') myname,":: negative world rank = ",world_rank
+     write(stderr,'(2a,1i6)') myname_,":: negative world rank = ",world_rank
      call MP_perr_die(myname_,'negative world rank = ',world_rank)
   endif    
 
