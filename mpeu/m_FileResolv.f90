@@ -83,7 +83,9 @@ CONTAINS
 !
 ! !REVISION HISTORY: 
 !
-!  10Jan2000  da Silva  Initial code,
+! 10Jan2000  da Silva  Initial code,
+! 23Jul2002  J. Larson <larson@mcs.anl.gov> - fixed bug detected by the
+!            Fujitsu frt compiler (on the VPP).
 !
 !EOP
 !--------------------------------------------------------------------------
@@ -175,9 +177,10 @@ CONTAINS
          if ( rc .eq. 0 ) then
             fname = basen
          else
-            if ( present(stat) ) then
+            if ( present(stat) ) then ! return an error code
                stat = 2
                return
+	    else ! shut down
                fname = basen
                call die ( myname, 'cannot execute: '//trim(cmd) )
             end if

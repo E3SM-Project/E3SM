@@ -22,6 +22,9 @@
 
 ! !REVISION HISTORY:
 !	10oct96 - Jing G.	- Defined
+!       25Jul02 - J. Larson     - Changed cpp define token HP-UX to
+!                                 HP_UX for compatibility with Fujitsu
+!                                 cpp.
 !EOP
 !_______________________________________________________________________
 
@@ -30,7 +33,7 @@
 	integer, parameter :: stdin  = 5
 	integer, parameter :: stdout = 6
 
-#ifdef	sysHP-UX
+#ifdef	sysHP_UX
 		! Special setting for HP-UX
 
 	integer, parameter :: stderr = 7

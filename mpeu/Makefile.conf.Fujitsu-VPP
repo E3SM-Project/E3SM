@@ -1,0 +1,111 @@
+#!/bin/make
+#-----------------------------------------------------------------------
+#   Math and Computer Science Division, Argonne National Laboratory    |
+#-----------------------------------------------------------------------
+#BOP
+#
+# !ROUTINE: Makefile.conf.Fujitsu-VPP
+#
+# !DESCRIPTION:
+#       An include file of configurations for the Fujitsu VPP platform.
+#   See Makefile for additional `make' procedures.  This include file is
+#   used to overide the default environments (including commands) defined
+#   in file Makefile.
+#
+# !INTERFACE:
+#
+#       % ln -s Makefile.conf.Fujitsu-VPP Makefile.conf
+#       % make ...
+#
+# !SEE ALSO: Makefile
+#
+# !REVISION HISTORY: (`cvs log <>' for more)
+#       16Jul02 - J. W. Larson - initial version
+#
+#EOP
+#-----------------------------------------------------------------------
+
+_Dsys		= -DsysFujitsu
+_Dnod		= 
+
+# Environments
+# ============
+
+# If use the MPICH implementation
+
+_LMPI		= 
+_lMPI		= 
+_lMPIlog	= 
+_lMPItrace	= 
+_lMPIanime	= 
+_IMPI		= 
+
+# If use the vendor implementation
+
+_LMPI		= -L/usr/lang/mpi/lib
+_lMPI		= -lmpi
+_IMPI		= -I/usr/lang/mpi/include
+
+
+#_R		= -r4
+#_R		= -r8
+
+_Iconf		= $(_IMPI)
+_I		= $(_IMPI)
+
+SHELL		= /usr/bin/sh
+
+CPP		= /usr/ccs/lib/cpp
+FPP		= $(CPP)
+
+CPPFLAGS	= $(_Dsys)
+FPPFLAGS	= $(CPPFLAGS)
+
+F77		= frt
+F90		= frt
+FC		= $(F90)
+
+# Fujitsu Fortran compiler flags governing code processing, precision, 
+# and optimization.  The first value of FFLAGS is what one uses to 
+# build an executable for general build/debugging purposes.  The
+# second definition of FFLAGS employs aggressive optimization.
+#  FFLAGS		= $(_R) -Wv,-s5,-te,-noalias -On -Sw -Ab -Am -X9
+ FFLAGS		= $(_R) -Wv,-s5,-te,-ilfunc,-noalias -Oe,-e,-P,-u -Sw -Ab -Am -X9
+
+CFLAGS		= -c -O 
+
+ZIP		= /usr/bin/compress
+ZCAT		= /usr/bin/zcat
+TAR		= /usr/bin/tar
+
+LD		= f90
+LDFLAGS		= $(FFLAGS)
+
+#AR		= ar cqs
+#RM		= rm -f
+MV		= /usr/bin/mv
+
+LIBprof		= 
+LIBsys	 	= 
+
+# Rules for generating object files from Fortran source files.
+# This entails running the code through the C preprocessor.
+
+.F.o:
+	$(FPP) $(FPPFLAGS) $(_I) $*.F $*_scratch.f
+	$(FC) -c $(_I) $(_M) $(FFLAGS) $*_scratch.f
+	$(MV) $*_scratch.o $*.o
+	$(RM) $*_scratch.f
+
+.F90.o:
+	$(FPP) $(FPPFLAGS) $(_I) $(_DF) $*.F90 $*_scratch.f90
+	$(FC) -c $(FFLAGS) $(_I) $(_M) $*_scratch.f90
+	$(MV) $*_scratch.o $*.o
+	$(RM) $*_scratch.f90
+
+.f90.o:
+	$(FC) -c $(FFLAGS) $(_I) $(_M) $*.f90
+
+#.----------------------------------------------------------------------
+
+MUPDATE         = sh LCupdate.sh

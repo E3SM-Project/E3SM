@@ -263,7 +263,12 @@
 ! On Linux with the Fujitsu compiler, I needed to reduce NBUF_MAX
 !ams 
 ! integer,   parameter :: NBUF_MAX = 400*(LSZ) ! max size of buffer
-  integer,   parameter :: NBUF_MAX = 200*(LSZ) ! max size of buffer
+! integer,   parameter :: NBUF_MAX = 200*(LSZ) ! max size of buffer
+! Further reduction of NBUF_MAX was necessary for the Fujitsu VPP:
+  integer,   parameter :: NBUF_MAX = 128*(LSZ)-1 ! Maximum buffer size
+                                                 ! that works with the
+                                                 ! Fujitsu-VPP platform.
+
 
   character, parameter :: BLK = achar(32)   ! blank (space)
   character, parameter :: TAB = achar(09)   ! TAB

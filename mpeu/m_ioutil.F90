@@ -423,7 +423,7 @@ end function luavail
 #ifdef sysAIX
   call flush_(lu)      ! Function defined in xlf reference document.
 #endif
-#if sysLinux || NAG || sysOSF1 || sysSunOS || sysUNICOS || sysT3E
+#if sysLinux || NAG || sysOSF1 || sysSunOS || sysUNICOS || sysT3E || sysFujitsu
   call flush(lu)
 #endif
 
