@@ -3,7 +3,7 @@
 
 include ../Makefile.conf
 
-SHELL           = /bin/sh
+SHELL           = $(SHELL)
 
 # SOURCE FILES
 
