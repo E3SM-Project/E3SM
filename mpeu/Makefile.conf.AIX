@@ -84,8 +84,11 @@ LIBprof		=
 LIBsys	 	= 
 
 
-CPPFLAGS	= -P -C
-FPPFLAGS	= $(CPPFLAGS)
+CPPFLAGS	= 
+FPPFLAGS	= $(CPPFLAGS) -C -P
+
+.c.o:
+	$(CC) -c $(CFLAGS) $(_DC) $(_IC) $*.c
 
 .f90.o:
 	$(FPP) $(FPPFLAGS) $(_I) $(_DF) $*.f90 $*_scratch.f
