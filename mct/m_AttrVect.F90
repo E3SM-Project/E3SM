@@ -548,6 +548,9 @@
 
 ! !USES:
 
+     use m_List,  only : List
+     use m_List,  only : List_allocated => allocated
+
      use m_stdio, only : stderr
      use m_die
  
@@ -572,13 +575,13 @@
 
   lsize_=0
 
-  if(associated(aV%iAttr)) then
+  if(List_allocated(aV%iList) .and. associated(aV%iAttr)) then
      iLength = size(aV%iAttr,2)
   else
      iLength = 0
   endif
 
-  if(associated(aV%rAttr)) then
+  if(List_allocated(aV%rList) .and. associated(aV%rAttr)) then
      rLength = size(aV%rAttr,2)
   else
      rLength = 0
@@ -621,6 +624,11 @@
 
      use m_die,only	: die
      use m_stdio,only	: stderr
+
+     use m_List, only : List
+     use m_List, only : List_allocated => allocated
+
+
  
      implicit none
 
@@ -637,15 +645,19 @@
 
   character(len=*),parameter :: myname_=myname//'::zero_'
 
-  if(.not.associated(aV%iAttr) .and. .not.associated(aV%rAttr)) then
+  if((.not. List_allocated(aV%iList)) .and. (.not. List_allocated(aV%rList))) then
     write(stderr,'(2a)')myname_, &
       'MCTERROR:  Trying to zero an uninitialized AttrVect'
-      call die(myname_,'undefined input argument',0)
+      call die(myname_)
   endif
 
-  if(nIAttr_(aV)>0) aV%iAttr=0
-  if(nRAttr_(aV)>0) aV%rAttr=0.
+  if(List_allocated(aV%iList)) then
+     if(associated(aV%iAttr).and. (nIAttr_(aV)>0)) aV%iAttr=0
+  endif
 
+  if(List_allocated(aV%rList)) then
+     if(associated(aV%rAttr) .and. (nRAttr_(aV)>0)) aV%rAttr=0.
+  endif
 
  end subroutine zero_
 

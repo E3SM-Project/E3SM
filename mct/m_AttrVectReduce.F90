@@ -459,6 +459,7 @@
 
       use m_List,          only : List
       use m_List,          only : List_exportToChar => exportToChar
+      use m_List,          only : List_allocated => allocated
 
       use m_AttrVect,      only : AttrVect
       use m_AttrVect,      only : AttrVect_init => init
@@ -481,6 +482,10 @@
 
 ! !REVISION HISTORY:
 !        8May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!        9Jul02 - J.W. Larson <larson@mcs.anl.gov> - slight modification;
+!                 use List_allocated() to determine if there is attribute
+!                 data to be reduced (this patch is to support the Sun
+!                 F90 compiler).
 !
 !EOP ___________________________________________________________________
 
@@ -499,8 +504,8 @@
 
   call AttrVect_init(outAV, inAV, lsize=AttrVect_lsize(inAV))
 
-  if(associated(inAV%rList%lc)) then ! invoke MPI_AllReduce() for the real
-                                  ! attribute data.
+  if(List_allocated(inAV%rList)) then ! invoke MPI_AllReduce() for the real
+                                      ! attribute data.
      BufferSize = AttrVect_lsize(inAV) * AttrVect_nRAttr(inAV)
      call MPI_AllReduce(inAV%rAttr, outAV%rAttr, BufferSize, &
 	                MP_Type(inAV%rAttr(1,1)), ReductionOp, &
@@ -511,10 +516,10 @@
 	     ':: Fatal Error in MPI_AllReduce(), myID = ',myID
 	call MP_perr_die(myname_, 'MPI_AllReduce() failed.', ierr)
      endif
-  endif ! if(associated(inAV%rAttr)...
+  endif ! if(List_allocated(inAV%rList))...
 
-  if(associated(inAV%iList%lc)) then ! invoke MPI_AllReduce() for the 
-                                  ! integer attribute data.
+  if(List_allocated(inAV%iList)) then ! invoke MPI_AllReduce() for the 
+                                      ! integer attribute data.
      BufferSize = AttrVect_lsize(inAV) * AttrVect_nIAttr(inAV)
      call MPI_AllReduce(inAV%iAttr, outAV%iAttr, BufferSize, &
 	                MP_Type(inAV%iAttr(1,1)), ReductionOp, &
@@ -525,7 +530,7 @@
 	     ':: Fatal Error in MPI_AllReduce(), myID = ',myID
 	call MP_perr_die(myname_, 'MPI_AllReduce() failed.', ierr)
      endif
-  endif ! if(associated(inAV%rAttr)...
+  endif ! if(List_allocated(inAV%iList))...
 
  end subroutine AllReduce_
 

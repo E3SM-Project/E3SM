@@ -498,6 +498,7 @@
       use m_die
 
       use m_List, only : List
+      use m_List, only : List_allocated => allocated
       use m_List, only : List_copy => copy
 
       use m_AttrVect, only:  AttrVect_init => init
@@ -569,19 +570,19 @@
        ! and iGGrid%index_list _should_ be defined.  Test all the
        ! list attributes before copying them.
 
-  if(associated(oGGrid%coordinate_list%bf)) then
+  if(List_allocated(oGGrid%coordinate_list)) then
      call List_copy(oGGrid%coordinate_list,iGGrid%coordinate_list)
   endif
 
-  if(associated(oGGrid%coordinate_sort_order%bf)) then
+  if(List_allocated(oGGrid%coordinate_sort_order)) then
      call List_copy(oGGrid%coordinate_sort_order,iGGrid%coordinate_sort_order)
   endif
 
-  if(associated(oGGrid%weight_list%bf)) then
+  if(List_allocated(oGGrid%weight_list)) then
      call List_copy(oGGrid%weight_list,iGGrid%weight_list)
   endif
 
-  if(associated(oGGrid%other_list%bf)) then
+  if(List_allocated(oGGrid%other_list)) then
      call List_copy(oGGrid%other_list,iGGrid%other_list)
   endif
 
@@ -972,6 +973,8 @@
 !
 ! !USES:
 !
+      use m_List,     only : List
+      use m_List,     only : List_allocated => allocated
 
       use m_AttrVect,     only : AttrVect_lsize => lsize
 
@@ -984,6 +987,9 @@
 ! !REVISION HISTORY:
 !       15Jan01 - Jay Larson <larson@mcs.anl.gov> - Initial version.
 !       27Mar02 - Jay Larson <larson@mcs.anl.gov> - slight logic change.
+!       27Mar02 - Jay Larson <larson@mcs.anl.gov> - Bug fix and use of
+!                 List_allocated() function to check for existence of 
+!                 attributes.
 !EOP ___________________________________________________________________
 !
  character(len=*),parameter :: myname_=myname//'::lsize_'
@@ -995,12 +1001,12 @@
 
  lsize_ = 0
 
- if(associated(GGrid%data%rAttr) .or. associated(GGrid%data%iAttr)) then
+ if(List_allocated(GGrid%data%rList) .or. List_allocated(GGrid%data%iList)) then
 
-    if(associated(GGrid%data%rAttr)) then
-       lsizeR = AttrVect_lsize( GGrid%data )
+    if(List_allocated(GGrid%data%iList)) then
+       lsizeI = AttrVect_lsize( GGrid%data )
     endif
-    if(associated(GGrid%data%rAttr)) then
+    if(List_allocated(GGrid%data%rList)) then
        lsizeR = AttrVect_lsize( GGrid%data )
     endif
 

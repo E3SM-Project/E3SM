@@ -516,6 +516,9 @@
 !
 
    use m_die
+   use m_List, only : List
+   use m_List, only : List_allocated => allocated
+
    use m_AttrVect, only : AttrVect
    use m_AttrVect, only : Attr_nIAttr => nIAttr
    use m_AttrVect, only : Attr_nRAttr => nRAttr
@@ -559,7 +562,8 @@
           ! then the Accumulator has been initialized
 
    if( .NOT. (associated(aC%iACtion) .and. associated(aC%rAction) .and. &
-              associated(aC%av%iAttr) .and. associated(aC%av%rAttr)) ) then
+              List_allocated(aC%av%iList) .and. &
+	      List_allocated(aC%av%rList)) ) then
       initialized_ = .false.
       aC_associated = .false.
       if(uninit_kill) then

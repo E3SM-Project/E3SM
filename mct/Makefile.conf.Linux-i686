@@ -36,13 +36,26 @@ _Dnod		=
 # Environments
 # ============
 
-# If using pgf90 compiler, add the following flags: 
+# Regarding Compilers...
+#
+# We have tested the Linux-i686 build using the pgf90 and Absoft 
+# f90 compilers.  We have been successful using the NAG F95 compiler 
+# on the SunOS platform, which was achieved by providing the
+# additional options to the # macros FFLAGS and FPPFLAGS shown below:
+#
+# FFLAGS = -dusty -kind=byte
+# FPPFLAGS = -DNAG
+#
+# If using pgf90 compiler, add the following options to the 
+# FFLAGS macro:
 # FFLAGS = -tp p6 -pc 32 -Mnoframe -byteswapio 
 # -pc specifies 32-bit or 64-bit 
-
-# If using Absoft compiler, add the following flags: 
+#
+# If using Absoft compiler, add the following options to the 
+# FFLAGS macro.  Also, use the MUPDATE macro defined below: 
 # FFLAGS = -Mnoframe
 # Add $(_p) to the compilation lines for *.f and *.f90
+# MUPDATE         = sh UCupdate.sh
 
 # Assume MPICH is being used for Linux-i686
 #  use mpif90 and mpif77 to compile and link.

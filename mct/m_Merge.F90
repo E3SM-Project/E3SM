@@ -178,6 +178,9 @@
       use m_stdio
       use m_die
 
+      use m_List, only : List
+      use m_List, only : List_allocated => allocated
+
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
@@ -206,6 +209,8 @@
 ! !REVISION HISTORY:
 !       19Jun02 - Jay Larson <larson@mcs.anl.gov> - Interface spec.
 !        3Jul02 - Jay Larson <larson@mcs.anl.gov> - Implementation.
+!       10Jul02 - J. Larson <larson@mcs.anl.gov> - Improved argument 
+!                 checking.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::MergeTwoGG_'
@@ -217,28 +222,40 @@
 
        ! Have the input arguments been allocated?
 
-  if(.not.(associated(inAv1%rAttr))) then
+  if(.not.(List_allocated(inAv1%rList))) then
      write(stderr,'(2a)') myname_, &
 	  'ERROR--INPUT argument inAv1 has no real attributes!'
      call die(myname_)
   endif
 
-  if(.not.(associated(inAv2%rAttr))) then
+  if(.not.(List_allocated(inAv2%rList))) then
      write(stderr,'(2a)') myname_, &
 	  'ERROR--INPUT argument inAv2 has no real attributes!'
      call die(myname_)
   endif
 
-  if(.not.(associated(outaV%rAttr))) then
+  if(.not.(List_allocated(outaV%rList))) then
      write(stderr,'(2a)') myname_, &
 	  'ERROR--INPUT/OUTPUT argument outAv has no real attributes!'
      call die(myname_)
   endif
 
-  if(.not.(associated(GGrid%data%rAttr))) then
-     write(stderr,'(2a)') myname_, &
-	  'ERROR--INPUT argument GGrid has no real attributes!'
-     call die(myname_)
+  if(present(iMaskTags1) .or. present(iMaskTags2)) then
+     if(.not.(List_allocated(GGrid%data%iList))) then
+	write(stderr,'(3a)') myname_, &
+	     'ERROR--Integer masking requested, but input argument GGrid ', &
+	     'has no integer attributes!'
+	call die(myname_)
+     endif
+  endif
+
+  if(present(rMaskTags1) .or. present(rMaskTags2)) then
+     if(.not.(List_allocated(GGrid%data%rList))) then
+	write(stderr,'(3a)') myname_, &
+	     'ERROR--Real masking requested, but input argument GGrid ', &
+	     'has no real attributes!'
+	call die(myname_)
+     endif
   endif
 
   if(.not.(associated(WeightSum))) then
@@ -481,6 +498,9 @@
       use m_stdio
       use m_die
 
+      use m_List, only : List
+      use m_List, only : List_allocated => allocated
+
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
@@ -512,6 +532,8 @@
 ! !REVISION HISTORY:
 !       19Jun02 - Jay Larson <larson@mcs.anl.gov> - Interface spec.
 !        3Jul02 - Jay Larson <larson@mcs.anl.gov> - Implementation.
+!       10Jul02 - J. Larson <larson@mcs.anl.gov> - Improved argument 
+!                 checking.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::MergeThreeGG_'
@@ -523,34 +545,46 @@
 
        ! Have the input arguments been allocated?
 
-  if(.not.(associated(inAv1%rAttr))) then
+  if(.not.(List_allocated(inAv1%rList))) then
      write(stderr,'(2a)') myname_, &
 	  'ERROR--INPUT argument inAv1 has no real attributes!'
      call die(myname_)
   endif
 
-  if(.not.(associated(inAv2%rAttr))) then
+  if(.not.(List_allocated(inAv2%rList))) then
      write(stderr,'(2a)') myname_, &
 	  'ERROR--INPUT argument inAv2 has no real attributes!'
      call die(myname_)
   endif
 
-  if(.not.(associated(inAv3%rAttr))) then
+  if(.not.(List_allocated(inAv3%rList))) then
      write(stderr,'(2a)') myname_, &
 	  'ERROR--INPUT argument inAv3 has no real attributes!'
      call die(myname_)
   endif
 
-  if(.not.(associated(outaV%rAttr))) then
+  if(.not.(List_allocated(outaV%rList))) then
      write(stderr,'(2a)') myname_, &
 	  'ERROR--INPUT/OUTPUT argument outAv has no real attributes!'
      call die(myname_)
   endif
 
-  if(.not.(associated(GGrid%data%rAttr))) then
-     write(stderr,'(2a)') myname_, &
-	  'ERROR--INPUT argument GGrid has no real attributes!'
-     call die(myname_)
+  if(present(iMaskTags1) .or. present(iMaskTags2) .or. present(iMaskTags3)) then
+     if(.not.(List_allocated(GGrid%data%iList))) then
+	write(stderr,'(3a)') myname_, &
+	     'ERROR--Integer masking requested, but input argument GGrid ', &
+	     'has no integer attributes!'
+	call die(myname_)
+     endif
+  endif
+
+  if(present(rMaskTags1) .or. present(rMaskTags2) .or. present(rMaskTags3)) then
+     if(.not.(List_allocated(GGrid%data%rList))) then
+	write(stderr,'(3a)') myname_, &
+	     'ERROR--Real masking requested, but input argument GGrid ', &
+	     'has no real attributes!'
+	call die(myname_)
+     endif
   endif
 
   if(.not.(associated(WeightSum))) then
@@ -842,6 +876,9 @@
       use m_stdio
       use m_die
 
+      use m_List, only : List
+      use m_List, only : List_allocated => allocated
+
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
@@ -876,6 +913,8 @@
 ! !REVISION HISTORY:
 !       19Jun02 - Jay Larson <larson@mcs.anl.gov> - Interface spec.
 !        3Jul02 - Jay Larson <larson@mcs.anl.gov> - Implementation.
+!       10Jul02 - J. Larson <larson@mcs.anl.gov> - Improved argument 
+!                 checking.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::MergeFourGG_'
@@ -887,40 +926,54 @@
 
        ! Have the input arguments been allocated?
 
-  if(.not.(associated(inAv1%rAttr))) then
+  if(.not.(List_allocated(inAv1%rList))) then
      write(stderr,'(2a)') myname_, &
 	  'ERROR--INPUT argument inAv1 has no real attributes!'
      call die(myname_)
   endif
 
-  if(.not.(associated(inAv2%rAttr))) then
+  if(.not.(List_allocated(inAv2%rList))) then
      write(stderr,'(2a)') myname_, &
 	  'ERROR--INPUT argument inAv2 has no real attributes!'
      call die(myname_)
   endif
 
-  if(.not.(associated(inAv3%rAttr))) then
+  if(.not.(List_allocated(inAv3%rList))) then
      write(stderr,'(2a)') myname_, &
 	  'ERROR--INPUT argument inAv3 has no real attributes!'
      call die(myname_)
   endif
 
-  if(.not.(associated(inAv4%rAttr))) then
+  if(.not.(List_allocated(inAv4%rList))) then
      write(stderr,'(2a)') myname_, &
 	  'ERROR--INPUT argument inAv4 has no real attributes!'
      call die(myname_)
   endif
 
-  if(.not.(associated(outaV%rAttr))) then
+  if(.not.(List_allocated(outaV%rList))) then
      write(stderr,'(2a)') myname_, &
 	  'ERROR--INPUT/OUTPUT argument outAv has no real attributes!'
      call die(myname_)
   endif
 
-  if(.not.(associated(GGrid%data%rAttr))) then
-     write(stderr,'(2a)') myname_, &
-	  'ERROR--INPUT argument GGrid has no real attributes!'
-     call die(myname_)
+  if(present(iMaskTags1) .or. present(iMaskTags2) .or. &
+                        present(iMaskTags3) .or. present(iMaskTags4)) then
+     if(.not.(List_allocated(GGrid%data%iList))) then
+	write(stderr,'(3a)') myname_, &
+	     'ERROR--Integer masking requested, but input argument GGrid ', &
+	     'has no integer attributes!'
+	call die(myname_)
+     endif
+  endif
+
+  if(present(rMaskTags1) .or. present(rMaskTags2) .or. &
+                        present(rMaskTags3) .or. present(rMaskTags4)) then
+     if(.not.(List_allocated(GGrid%data%rList))) then
+	write(stderr,'(3a)') myname_, &
+	     'ERROR--Real masking requested, but input argument GGrid ', &
+	     'has no real attributes!'
+	call die(myname_)
+     endif
   endif
 
   if(.not.(associated(WeightSum))) then
@@ -1194,6 +1247,7 @@
       use m_List, only : List_nitem => nitem
       use m_List, only : List_get => get
       use m_List, only : List_identical => identical
+      use m_List, only : List_allocated => allocated
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_lsize => lsize
@@ -1223,6 +1277,8 @@
 
 ! !REVISION HISTORY:
 !       19Jun02 - Jay Larson <larson@mcs.anl.gov> - initial verson.
+!       10Jul02 - J. Larson <larson@mcs.anl.gov> - Improved argument 
+!                 checking.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::MergeInDataGG_'
@@ -1243,22 +1299,34 @@
 
        ! Have the input arguments been allocated?
 
-  if(.not.(associated(inAv%rAttr))) then
+  if(.not.(List_allocated(inAv%rList))) then
      write(stderr,'(2a)') myname_, &
 	  'ERROR--INPUT argument inAv has no real attributes.'
      call die(myname_)
   endif
 
-  if(.not.(associated(outaV%rAttr))) then
+  if(.not.(List_allocated(outaV%rList))) then
      write(stderr,'(2a)') myname_, &
 	  'ERROR--INPUT/OUTPUT argument outAv has no real attributes.'
      call die(myname_)
   endif
 
-  if(.not.(associated(GGrid%data%rAttr))) then
-     write(stderr,'(2a)') myname_, &
-	  'ERROR--INPUT argument GGrid has no real attributes.'
-     call die(myname_)
+  if(present(iMaskTags)) then
+     if(.not.(List_allocated(GGrid%data%iList))) then
+	write(stderr,'(3a)') myname_, &
+	     'ERROR--Integer masking requested, but input argument GGrid ', &
+	     'has no integer attributes.'
+	call die(myname_)
+     endif
+  endif
+
+  if(present(rMaskTags)) then
+     if(.not.(List_allocated(GGrid%data%rList))) then
+	write(stderr,'(3a)') myname_, &
+	     'ERROR--Real masking requested, but input argument GGrid ', &
+	     'has no real attributes.'
+	call die(myname_)
+     endif
   endif
 
   if(.not.(associated(WeightSum))) then
