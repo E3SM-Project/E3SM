@@ -55,17 +55,31 @@
 !
 ! !DESCRIPTION:
 !
+! The sparse matrix-vector multiplication routine {\tt sMatAvMult\_xlyl\_()} 
+! operates on the assumption of total data locality.  That is, the input 
+! {\tt AttrVect} {\tt xaV} contains all the column data required by the 
+! distributed {\tt SparseMatrix} {\tt sMat}, and the row data in {\tt sMat} 
+! corresponds to the local index mapping of the output {\tt AttrVect} 
+! {\tt yaV}.
+!
 ! !INTERFACE:
 
  subroutine sMatAvMult_xlyl_(xaV, sMat, yaV)
 !
 ! !USES:
 !
-      use m_stdio
-      use m_die
-      use m_mpif90
+      use m_stdio, only : stderr
+      use m_die,   only : MP_perr_die
+
       use m_AttrVect, only : AttrVect
+      use m_AttrVect, only : AttrVect_lsize => lsize
+      use m_AttrVect, only : AttrVect_nIAttr => nIAttr
+      use m_AttrVect, only : AttrVect_nRAttr => nRAttr
+      use m_AttrVect, only : AttrVect_indexRA => indexRA
+      use m_AttrVect, only : AttrVect_indexIA => indexIA
+
       use m_SparseMatrix, only : SparseMatrix
+      use m_SharedAttrIndices, only : SharedAttrIndexList
 
       implicit none
 
@@ -75,9 +89,102 @@
 
 ! !REVISION HISTORY:
 !       15Jan01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
+!       10Feb01 - J.W. Larson <larson@mcs.anl.gov> - Prototype code.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::sMatAvMult_xlyl_'
+
+! Matrix element count:
+  integer :: num_elements
+! Matrix row, column, and weight indices:
+  integer :: icol, irow, iwgt
+
+! Overlapping attribute index number
+  integer :: num_indices
+! Overlapping attribute index storage arrays:
+  integer, dimension(:), pointer :: xaVindices, yaVindices
+  integer :: xaVindex, yaVindex
+
+! Error flag and loop indices
+  integer :: ierr, m, n
+
+! Character variable used as a data type flag:
+  character*7 :: data_flag
+
+       ! Retrieve the number of elements in sMat:
+
+  num_elements = AttrVect_lsize(sMat)
+
+  if(num_elements == 0) then
+     write(stderr,'(2a)') myname_, &
+          ":: Zero elements in SparseMatrix sMat."
+     ierr = 1
+     call MP_perr_die(myname_,'Zero steps in sMat.',ierr)
+  endif
+
+       ! Indexing the sparse matrix sMat:
+  irow = AttrVect_indexIA(sMat,'row')  ! row index
+  icol = AttrVect_indexIA(sMat,'col')  ! column index
+  iwgt = AttrVect_indexRA(sMat,'col')  ! weight index
+
+       ! Regridding Operations:  First the REAL attributes:
+
+  data_flag = 'REAL'
+  call SharedAttrIndexList(xaV, yaV, data_flag, num_indices, &
+                              xaVindices, yaVindices)
+
+       ! loop over attributes being regridded.
+
+  do m=1,num_indices
+
+     xaVindex = xaVindices(m)
+     yaVindex = yaVindices(m)
+
+       ! loop over matrix elements
+
+     do n=1,num_elements
+
+	yaV%rAttr(yaVindex,sMat%iAttr(irow,n)) = sMat%rAttr(iwgt, n) &
+	     * xaV%rAttr(xaVindex,sMat%iAttr(icol,n))
+
+     end do
+
+  end do
+
+  deallocate(xaVindices, yaVindices, stat=ierr)
+  if(ierr /= 0) then
+     call MP_perr_die(myname_,'first deallocate(xaVindices...',ierr)
+  endif
+
+       ! Regrid the INTEGER Attributes:
+
+  data_flag = 'INTEGER'
+  call SharedAttrIndexList(xaV, yaV, data_flag, num_indices, &
+                              xaVindices, yaVindices)
+
+       ! loop over attributes being regridded.
+
+  do m=1,num_indices
+
+     xaVindex = xaVindices(m)
+     yaVindex = yaVindices(m)
+
+       ! loop over matrix elements
+
+     do n=1,num_elements
+
+	yaV%iAttr(yaVindex,sMat%iAttr(irow,n)) = sMat%rAttr(iwgt, n) &
+	     * xaV%iAttr(xaVindex,sMat%iAttr(icol,n))
+
+     end do
+
+  end do
+
+  deallocate(xaVindices, yaVindices, stat=ierr)
+  if(ierr /= 0) then
+     call MP_perr_die(myname_,'second deallocate(xaVindices...',ierr)
+  endif
+     
 
  end subroutine sMatAvMult_xlyl_
 
