@@ -1900,9 +1900,12 @@
       use m_String ,       only : String_toChar => toChar
       use m_String , 	   only : String
       use m_String , 	   only : String_init
+      use m_String,        only : String_clean => clean
       use m_List,          only : List_get => get
       use m_List,          only : List_nullify => nullify
-      use m_List,          only : init,nitem
+      use m_List,          only : List_init => init
+      use m_List,          only : List_nitem => nitem
+      use m_List,          only : List_clean => clean
 
       implicit none
 
@@ -1957,12 +1960,12 @@
 !  Copy the listed real attributes
   if( present(rList) .and. (len_trim(rList)>0) ) then
 
-    call init(rcpList,rList)	! init.List()
+    call List_init(rcpList,rList)	! init.List()
 
 ! check translation list
     if( present(TrList) .and. (len_trim(TrList)>0) ) then
-      call init(TrcpList,TrList)
-      if( nitem(rcpList) .ne. nitem(TrcpList)) then
+      call List_init(TrcpList,TrList)
+      if( List_nitem(rcpList) .ne. List_nitem(TrcpList)) then
         write(stderr,'(2a)')myname_, &
          'MCTERROR:  Input rList and TrList do not have the same size'
         call die(myname_,'nitem TrList check',3)
@@ -1970,9 +1973,9 @@
     endif
 
 
-    if(nitem(rcpList) .ge. 1) then
+    if(List_nitem(rcpList) .ge. 1) then
      do i=1,lsize_(aVin)
-      do j=1,nitem(rcpList)
+      do j=1,List_nitem(rcpList)
        call List_get(attr,j,rcpList)
        if(present(TrList)) then
          call List_get(attr2,j,TrcpList)
@@ -1982,30 +1985,35 @@
        inx=indexRA_(aVin,String_toChar(attr),dieWith=myname_//'real aVin')
        outx=indexRA_(aVout,String_toChar(attr2),dieWith=myname_//'real aVout')
        aVout%rAttr(outx,i)=aVin%rAttr(inx,i)
+       call String_clean(attr)
+       call String_clean(attr2)
       enddo
      enddo
     endif
+
+    call List_clean(rcpList)
+    if(present(TrList)) call List_clean(TrcpList)
 
   endif
 
 !  Copy the listed integer attributes
   if( present(iList) .and. (len_trim(iList)>0) ) then
 
-    call init(icpList,iList)	! init.List()
+    call List_init(icpList,iList)	! init.List()
     
 ! check translation list
     if( present(TiList) .and. (len_trim(TiList)>0) ) then
-      call init(TicpList,TiList)
-      if( nitem(icpList) .ne. nitem(TicpList)) then
+      call List_init(TicpList,TiList)
+      if( List_nitem(icpList) .ne. List_nitem(TicpList)) then
         write(stderr,'(2a)')myname_, &
          'MCTERROR:  Input iList and TiList do not have the same size'
         call die(myname_,'nitem TiList check',4)
       endif
     endif
 
-    if(nitem(icpList) .ge. 1) then
+    if(List_nitem(icpList) .ge. 1) then
      do i=1,lsize_(aVin)
-      do j=1,nitem(icpList)
+      do j=1,List_nitem(icpList)
        call List_get(attr,j,icpList)
        if(present(TiList)) then
          call List_get(attr2,j,TicpList)
@@ -2015,9 +2023,15 @@
        inx=indexIA_(aVin,String_toChar(attr),dieWith=myname_//'int aVin')
        outx=indexIA_(aVout,String_toChar(attr2),dieWith=myname_//'int aVout')
        aVout%iAttr(outx,i)=aVin%iAttr(inx,i)
+       call String_clean(attr)
+       call String_clean(attr2)
       enddo
      enddo
     endif
+
+    call List_clean(icpList)
+    if(present(TrList)) call List_clean(TicpList)
+
   endif
 
 ! if neither rList nor iList is present, copy shared attibutes
