@@ -661,7 +661,7 @@
 ! !DESCRIPTION:
 !
 ! The routine {\tt initp1\_()} takes the input {\em replicated} arguments
-! {\tt comp\_id}, {\tt ngseg}, {\tt gsize}, and {\tt all_arrays(:)}, 
+! {\tt comp\_id}, {\tt ngseg}, {\tt gsize}, and {\tt all\_arrays(:)}, 
 ! and uses them to initialize an output {\tt GlobalSegMap} {\tt GSMap}.  
 ! This routine operates on the assumption that these data are replicated 
 ! across the communicator on which the {\tt GlobalSegMap} is being created.
