@@ -32,12 +32,16 @@
 
     type MCTWorld
       integer :: MCT_comm                          ! MCT communicator
-      integer :: ncomps	                           ! number of components
-      integer :: mygrank                           ! rank of this processor in 
-                                                   ! global communicator
-      integer,dimension(:),pointer :: nprocspid	   ! number of processes 
-                                                   ! each component is on
-      integer,dimension(:,:),pointer :: idGprocid  ! translate between local component
+      integer :: ncomps	                           ! Total number of components
+      integer :: mygrank                           ! Rank of this processor in 
+                                                   ! global communicator.
+      integer,dimension(:),pointer :: nprocspid	   ! Number of processes 
+                                                   ! each component is on (e.g. rank of its
+						   ! local communicator.
+      integer,dimension(:,:),pointer :: idGprocid  ! Translate between local component rank
+                                                   ! rank in global communicator.
+						   ! idGprocid(modelid,localrank)=globalrank
+
     end type MCTWorld
 
 ! !PUBLIC DATA MEMBERS:
