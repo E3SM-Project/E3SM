@@ -76,7 +76,7 @@ FC		= $(F90)
 #############################
 #  Portland Group (pgf90) flags
 #############################
-FFLAGS		= -O2 -tp p6 -pc 32 -Mnoframe -byteswapio $(_R)
+FFLAGS		= -O2 -pc 64 -Mnoframe -byteswapio $(_R)
 FPPFLAGS	= -DLANGUAGE_FORTRAN -traditional
 CFLAGS		= -O
 
