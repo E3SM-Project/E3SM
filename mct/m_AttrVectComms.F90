@@ -59,6 +59,8 @@
 !       13Dec01 - E.T. Ong <eong@mcs.anl.gov> - GSM_scatter, allow users
 !                 to scatter with a haloed GSMap. Fixed some bugs in 
 !                 GM_scatter.
+!       19Dec01 - E.T. Ong <eong@mcs.anl.gov> - allow bcast of an AttrVect
+!                 with only an integer or real attribute.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_AttrVectComms'
@@ -897,8 +899,6 @@
   integer :: nIA,nRA,niV,noV,ier
   integer :: myID
   integer :: mp_Type_iV,mp_Type_oV
-  integer :: iitems,ritems
-  logical :: iflag,rflag
   type(List) :: iList, rList
 
   if(present(stat)) stat=0
@@ -938,37 +938,34 @@
   call List_nullify(iList)
   call List_nullify(rList)
 
-  iflag=.false.
-  rflag=.false.
-
   if(myID == root) then
 
-     iitems=List_nitem(iV%iList)
-     ritems=List_nitem(iV%rList)
+     ! Count the number of real and integer attributes
 
-     if(iitems > 0) then
+     nIA = AttrVect_nIAttr(iV)	! number of INTEGER attributes
+     nRA = AttrVect_nRAttr(iV)	! number of REAL attributes
+
+     if(nIA > 0) then
 	call List_copy(iList,iV%iList)
-	iflag=.true.
      endif
 
-     if(ritems > 0) then
+     if(nRA > 0) then
 	call List_copy(rList,iV%rList)
-	rflag=.true.
      endif
 
   endif
   
         ! From the root, broadcast iList and rList
 
-  call MPI_BCAST(iflag,1,MP_LOGICAL,root,comm,ier)
-  if(ier /= 0) call MP_perr(myname_,'MPI_BCAST(iflag)',ier)
+  call MPI_BCAST(nIA,1,MP_INTEGER,root,comm,ier)
+  if(ier /= 0) call MP_perr(myname_,'MPI_BCAST(nIA)',ier)
 
-  call MPI_BCAST(rflag,1,MP_LOGICAL,root,comm,ier)
-  if(ier /= 0) call MP_perr(myname_,'MPI_BCAST(rflag)',ier)
+  call MPI_BCAST(nRA,1,MP_INTEGER,root,comm,ier)
+  if(ier /= 0) call MP_perr(myname_,'MPI_BCAST(nRA)',ier)
 
-  if(iflag) call List_bcast(iList, root, comm)
+  if(nIA>0) call List_bcast(iList, root, comm)
 
-  if(rflag) call List_bcast(rList, root, comm)
+  if(nRA>0) call List_bcast(rList, root, comm)
 
 
         ! On all processes, use List data and noV to initialize oV
@@ -976,12 +973,8 @@
   call AttrVect_init(oV, iList, rList, noV)
 
 
-  ! Count the number of real and integer attributes
-
-  nIA = AttrVect_nIAttr(oV)	! number of INTEGER attributes
-  nRA = AttrVect_nRAttr(oV)	! number of REAL attributes
-
   if(nIA > 0) then
+
      call MPI_scatterv(iV%iAttr(1,1),GMap%counts*nIA,	&
 	  GMap%displs*nIA,MP_INTEGER,			&
 	  oV%iAttr(1,1),noV*nIA,MP_INTEGER,root,comm,ier )
@@ -991,9 +984,13 @@
 	stat=ier
 	return
      endif
+
+     call List_clean(iList)
+
   endif
 
   if(nRA > 0) then
+
      mp_Type_iV=MP_Type(iV%rAttr(1,1))
      mp_Type_oV=MP_Type(oV%rAttr(1,1))
      call MPI_scatterv(iV%rAttr(1,1),GMap%counts*nRA,	&
@@ -1005,12 +1002,11 @@
 	stat=ier
 	return
      endif
+
+     call List_clean(rList)
+
   endif
 
-        ! Clean up
-
-  if(iflag) call List_clean(iList)
-  if(rflag) call List_clean(rList)
 
  end subroutine GM_scatter_
 
@@ -1386,7 +1382,7 @@
 !
       use m_die, only : die, perr
       use m_mpif90
-      use m_String, only : String,bcast,char
+      use m_String, only : String,bcast,char,String_clean
       use m_String, only : String_bcast => bcast
       use m_List, only : List_get => get
       use m_AttrVect, only : AttrVect
@@ -1418,6 +1414,8 @@
 ! 	09May01 - J.W. Larson <larson@mcs.anl.gov> - tidied up prologue
 !       18May01 - R.L. Jacob <jacob@mcs.anl.gov> - use MP_Type function
 !                 to determine type for bcast
+!       19Dec01 - E.T. Ong <eong@mcs.anl.gov> - adjusted for case of AV with 
+!                 only integer or real attribute 
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::bcast_'
@@ -1437,33 +1435,34 @@
     return
   endif
 
-	! Convert the two Lists to two Strings
+       ! Broadcaast to all PEs
 
-  if(myID == root) call List_get(iLStr,aV%iList)
+  if(myID == root) then
+     nIA = AttrVect_nIAttr(aV)
+     nRA = AttrVect_nRAttr(aV)
+     lsize = AttrVect_lsize(aV)
+  endif
 
-  call String_bcast(iLStr,root,comm,stat=ier)	! bcast.String()
+  call MPI_bcast(nIA,1,MP_INTEGER,root,comm,ier)
+
   if(ier /= 0) then
-    call perr(myname_,'bcast.String(iLstr)',ier)
+    call MP_perr(myname_,'MPI_bcast(nIA)',ier)
     if(.not.present(stat)) call die(myname_)
     stat=ier
     return
   endif
 
-  if(myID == root) call List_get(rLStr,aV%rList)
+  call MPI_bcast(nRA,1,MP_INTEGER,root,comm,ier)
 
-  call String_bcast(rLStr,root,comm,stat=ier)	! bcast.String()
   if(ier /= 0) then
-    call perr(myname_,'bcast.String(rLstr)',ier)
+    call MP_perr(myname_,'MPI_bcast(nRA)',ier)
     if(.not.present(stat)) call die(myname_)
     stat=ier
     return
   endif
-
-  if(myID == root) lsize = AttrVect_lsize(aV)
-
-	! Set lsize for all PEs
 
   call MPI_bcast(lsize,1,MP_INTEGER,root,comm,ier)
+
   if(ier /= 0) then
     call MP_perr(myname_,'MPI_bcast(lsize)',ier)
     if(.not.present(stat)) call die(myname_)
@@ -1471,31 +1470,94 @@
     return
   endif
 
+	! Convert the two Lists to two Strings 
+
+  if(nIA>0) then
+
+     if(myID == root) call List_get(iLStr,aV%iList)
+
+     call String_bcast(iLStr,root,comm,stat=ier)	! bcast.String()
+
+     if(ier /= 0) then
+	call perr(myname_,'bcast.String(iLstr)',ier)
+	if(.not.present(stat)) call die(myname_)
+	stat=ier
+	return
+     endif
+
+  endif
+
+
+  if(nRA>0) then
+
+     if(myID == root) call List_get(rLStr,aV%rList)
+
+     call String_bcast(rLStr,root,comm,stat=ier)	! bcast.String()
+
+     if(ier /= 0) then
+	call perr(myname_,'bcast.String(rLstr)',ier)
+	if(.not.present(stat)) call die(myname_)
+	stat=ier
+	return
+     endif
+
+  endif
+
   if(myID /= root) then
-     call AttrVect_init(aV,iList=char(iLStr),rList=char(rLStr), &
-	                lsize=lsize)
+     
+     if( (nIA>0) .and. (nRA>0) ) then
+	call AttrVect_init(aV,iList=char(iLStr),rList=char(rLStr), &
+	                   lsize=lsize)
+     endif
+
+     if( (nIA>0) .and. (nRA<=0) ) then
+	call AttrVect_init(aV,iList=char(iLStr),lsize=lsize)
+     endif
+
+     if( (nIA<=0) .and. (nRA>0) ) then
+	call AttrVect_init(aV,rList=char(rLStr),lsize=lsize)
+     endif
+
+     if( (nIA<=0) .and. (nRA<=0) ) then
+	call MP_perr(myname_,'AV has not been initialized',0)
+	if(.not.present(stat)) call die(myname_)
+	return
+     endif
+
   endif
 
-  nIA = AttrVect_nIAttr(aV)
-  nRA = AttrVect_nRAttr(aV)
+  if(nIA > 0) then
 
-  call MPI_bcast(aV%iAttr,nIA*lsize,MP_INTEGER,root,comm,ier)
-  if(ier /= 0) then
-    call MP_perr(myname_,'MPI_bcast(iAttr)',ier)
-    if(.not.present(stat)) call die(myname_)
-    stat=ier
-    return
+     call MPI_bcast(aV%iAttr,nIA*lsize,MP_INTEGER,root,comm,ier)
+     if(ier /= 0) then
+	call MP_perr(myname_,'MPI_bcast(iAttr)',ier)
+	if(.not.present(stat)) call die(myname_)
+	stat=ier
+	return
+     endif
+
+     call String_clean(iLStr)
+
   endif
 
-  mp_Type_aV=MP_Type(av%rAttr)
-  call MPI_bcast(aV%rAttr,nRA*lsize,mp_Type_av,   root,comm,ier)
-  if(ier /= 0) then
-    call MP_perr(myname_,'MPI_bcast(rAttr)',ier)
-    if(.not.present(stat)) call die(myname_)
-    stat=ier
-    return
+  if(nRA > 0) then
+
+     mp_Type_aV=MP_Type(av%rAttr)
+     call MPI_bcast(aV%rAttr,nRA*lsize,mp_Type_av,root,comm,ier)
+     if(ier /= 0) then
+	call MP_perr(myname_,'MPI_bcast(rAttr)',ier)
+	if(.not.present(stat)) call die(myname_)
+	stat=ier
+	return
+     endif
+
+     call String_clean(rLStr)
+
   endif
 
  end subroutine bcast_
 
  end module m_AttrVectComms
+
+
+
