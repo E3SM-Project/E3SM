@@ -376,6 +376,8 @@
 !       25Apr01 - J.W. Larson <larson@mcs.anl.gov> - Initial code.
 !       27Apr01 - J.W. Larson <larson@mcs.anl.gov> - Bug fix--error in
 !                 computation of segment starts/lengths.
+!       27Nov01 - E.T. Ong <eong@mcs.anl.gov> - Bug fix--initialize
+!                 nsegs=0 in case num_indices=0.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::ComputeSegments_'
@@ -383,6 +385,8 @@
   integer :: i, ierr
 
        ! First pass:  count the segments
+
+  nsegs = 0
 
   do i=1,num_indices
 
