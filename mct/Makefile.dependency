@@ -13,6 +13,7 @@ m_GlobalMap.o m_GlobalSegMap.o
 m_MatAttrVectMul.o: m_AttrVect.o m_SparseMatrix.o m_GlobalMap.o m_GlobalSegMap.o
 m_Merge.o: m_AttrVect.o m_GeneralGrid.o
 m_Router.o: m_GlobalToLocal.o m_MCTWorld.o m_GlobalSegMap.o m_ExchangeMaps.o
+m_Rearranger.o: m_Router.o m_MCTWorld.o m_GlobalSegMap.o m_AttrVect.o
 m_GlobalToLocal.o: m_GlobalSegMap.o
 m_ExchangeMaps.o: m_GlobalMap.o m_GlobalSegMap.o m_MCTWorld.o m_ConvertMaps.o
 m_ConvertMaps.o: m_GlobalMap.o m_GlobalSegMap.o m_MCTWorld.o
@@ -25,3 +26,4 @@ MCT_Send.o: m_AttrVect.o m_Router.o m_MCTWorld.o
 m_NBSend.o: m_AttrVect.o m_Router.o m_MCTWorld.o
 MCT_Recv.o: m_AttrVect.o m_Router.o m_MCTWorld.o
 MCT_Recvsum.o: m_AttrVect.o m_Router.o m_MCTWorld.o
+
