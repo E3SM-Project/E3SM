@@ -31,13 +31,15 @@ _I              = @MPILIBS@
 
 DEFS            = @MACHDEFS@
 
-FPP		= @CPP@
-FPPFLAGS	= @CPPFLAGS@
+FPP		= @FPP@
+FPPFLAGS	= @FPPFLAGS@
 
 CC		= @CC@
 
-FC		= @F90@
-FFLAGS		= @F90FLAGS@
+FC		= @FC@
+FFLAGS		= @FFLAGS@
+F90FLAGS        = @F90FLAGS@
+
 
 _R		=
 
@@ -50,7 +52,7 @@ MUPDATE         = @MUPDATE@
 	$(FC) -c $(_I) $(DEFS) $(FFLAGS) $*.F
 
 @F90RULE@:
-	$(FC) -c $(_I) $(DEFS) $(FFLAGS) $*.F90
+	$(FC) -c $(_I) $(DEFS) $(FFLAGS) $(F90FLAGS) $*.F90
 
 @FRULECPP@:
 	$(FPP) $(FPPFLAGS) $(_I) $(DEFS) $*.F $*.f
@@ -59,7 +61,7 @@ MUPDATE         = @MUPDATE@
 
 @F90RULECPP@:
 	$(FPP) $(FPPFLAGS) $(_I) $(DEFS) $*.F90 $*.f90
-	$(FC) -c $(FFLAGS) $(_I) $*.f90
+	$(FC) -c $(FFLAGS) $(F90FLAGS) $(_I) $*.f90
 	$(RM) $*.f90
 
 #.----------------------------------------------------------------------
