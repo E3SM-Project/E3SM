@@ -19,6 +19,8 @@
       public :: nitem
       public :: get
       public :: assignment(=)
+      public :: concatenate
+      public :: bcast
 
     type List
       character(len=1),dimension(:),pointer :: bf
@@ -49,8 +51,13 @@
     module procedure copy_
   end interface
 
+  interface concatenate ; module procedure concatenate_ ; end interface
+  interface bcast; module procedure bcast_; end interface
+
   character(len=*),parameter :: myname='m_List'
+
 contains
+
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
@@ -70,7 +77,8 @@ contains
 !
 ! !INTERFACE:
 
-    subroutine init_(aList,Values)
+ subroutine init_(aList,Values)
+
       use m_die,only : die
       use m_mall,only : mall_mci,mall_ison
       implicit none
@@ -160,7 +168,7 @@ contains
     aList%lc(0:1,ni)=(/lb,le/)
   endif
 
-end subroutine init_
+ end subroutine init_
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
@@ -171,7 +179,8 @@ end subroutine init_
 !
 ! !INTERFACE:
 
-    subroutine initStr_(aList,pstr)
+ subroutine initStr_(aList,pstr)
+
       use m_String, only : String,toChar
       implicit none
       type(List),intent(out)	  :: aList  ! an indexed string values
@@ -184,7 +193,7 @@ end subroutine init_
   character(len=*),parameter :: myname_=myname//'::initStr_'
   call init_(aList,toChar(pstr))
 
-end subroutine initStr_
+ end subroutine initStr_
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
@@ -195,7 +204,8 @@ end subroutine initStr_
 !
 ! !INTERFACE:
 
-    subroutine initStr1_(aList,strs)
+ subroutine initStr1_(aList,strs)
+
       use m_String, only : String,toChar
       use m_String, only : len
       use m_String, only : ptr_chars
@@ -240,7 +250,8 @@ end subroutine initStr_
 	deallocate(ch1,stat=ier)
 		if(ier/=0) call die(myname_,'deallocate()',ier)
 
-end subroutine initStr1_
+ end subroutine initStr1_
+
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
@@ -251,7 +262,8 @@ end subroutine initStr1_
 !
 ! !INTERFACE:
 
-    subroutine clean_(aList)
+ subroutine clean_(aList)
+
       use m_die,only : die
       use m_mall,only : mall_mco,mall_ison
       implicit none
@@ -272,7 +284,7 @@ end subroutine initStr1_
   deallocate(aList%bf,aList%lc,stat=ier)
   if(ier /= 0) call die(myname_,'deallocate()',ier)
 
-end subroutine clean_
+ end subroutine clean_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
@@ -284,7 +296,8 @@ end subroutine clean_
 !
 ! !INTERFACE:
 
-    function nitem_(aList)
+ function nitem_(aList)
+
       implicit none
       type(List),intent(in) :: aList
       integer :: nitem_
@@ -297,7 +310,7 @@ end subroutine clean_
 
   nitem_=size(aList%lc,2)
 
-end function nitem_
+ end function nitem_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
@@ -309,7 +322,8 @@ end function nitem_
 !
 ! !INTERFACE:
 
-    function index_(aList,item)
+ function index_(aList,item)
+
       use m_String, only : toChar
       implicit none
       type(List),      intent(in) :: aList	! a List of names
@@ -333,7 +347,8 @@ end function nitem_
     endif
   enddo
 
-end function index_
+ end function index_
+
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
@@ -344,7 +359,8 @@ end function index_
 !
 ! !INTERFACE:
 
-    function indexStr_(aList,itemStr)
+ function indexStr_(aList,itemStr)
+
       use m_String,only : String,toChar
       implicit none
       type(List),      intent(in) :: aList	! a List of names
@@ -368,7 +384,8 @@ end function index_
     endif
   enddo
 
-end function indexStr_
+ end function indexStr_
+
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
@@ -379,7 +396,8 @@ end function indexStr_
 !
 ! !INTERFACE:
 
-    subroutine copy_(yL,xL)	! yL=xL
+ subroutine copy_(yL,xL)	! yL=xL
+
       use m_die,only : die
       use m_mall,only : mall_mci,mall_ison
       implicit none
@@ -413,7 +431,7 @@ end function indexStr_
 	! pointer to the old copy of %bf.  LBOUND() and UBOUND() of
 	! a pointer will return only 1 and its size().
 
-end subroutine copy_
+ end subroutine copy_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
@@ -425,7 +443,7 @@ end subroutine copy_
 !
 ! !INTERFACE:
 
-    subroutine get_(itemStr,ith,aList)
+ subroutine get_(itemStr,ith,aList)
       use m_String, only : String,init,toChar
       implicit none
       type(String),intent(out) :: itemStr
@@ -446,7 +464,8 @@ end subroutine copy_
   else
     call init(itemStr,'')
   endif
-end subroutine get_
+
+ end subroutine get_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
@@ -458,7 +477,7 @@ end subroutine get_
 !
 ! !INTERFACE:
 
-    subroutine getall_(itemStr,aList)
+ subroutine getall_(itemStr,aList)
       use m_String, only : String,init,toChar
       implicit none
       type(String),intent(out) :: itemStr
@@ -475,7 +494,8 @@ end subroutine get_
   lb=aList%lc(0,1)
   le=aList%lc(1,ni)
   call init(itemStr,toChar(aList%bf(lb:le)))
-end subroutine getall_
+
+ end subroutine getall_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
@@ -487,7 +507,8 @@ end subroutine getall_
 !
 ! !INTERFACE:
 
-    subroutine getrange_(itemStr,i1,i2,aList)
+ subroutine getrange_(itemStr,i1,i2,aList)
+
       use m_String, only : String,init,toChar
       implicit none
       type(String),intent(out) :: itemStr
@@ -506,7 +527,8 @@ end subroutine getall_
   lb=aList%lc(0,max(1,i1))
   le=aList%lc(1,min(ni,i2))
   call init(itemStr,toChar(aList%bf(lb:le)))
-end subroutine getrange_
+
+ end subroutine getrange_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
@@ -518,7 +540,7 @@ end subroutine getrange_
 !
 ! !INTERFACE:
 
-    subroutine set_indices_(indices,aList,values)
+ subroutine set_indices_(indices,aList,values)
       use m_String, only : String,clean
       implicit none
       integer,dimension(:),intent(out) :: indices
@@ -545,7 +567,222 @@ end subroutine getrange_
   call clean_(tList)
   call clean(tStr)
 
-end subroutine set_indices_
+ end subroutine set_indices_
 
-end module m_List
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: concatenate_ - Concatenates two Lists into a third List.
+!
+! !DESCRIPTION:  This routine takes two input {\tt List} arguments
+! {\tt iList1} and {\tt iList2}, and concatenates them, producing an 
+! output {\tt List} argument {\tt oList}.
+!
+! {\bf N.B.}:  The outcome of this routine is order dependent.  That is,
+! the entries of {\tt iList2} will follow {\tt iList1}.
+!
+! {\bf N.B.}:  The outcome of this routine, {\tt oList} on non-root
+! processes, represents allocated memory.  When this {\tt List} is
+! no longer needed, it must be deallocated by invoking the routine 
+! {\tt List\_clean()}.  Failure to do so will cause a memory leak.
+!
+! !INTERFACE:
+
+    subroutine concatenate_(iList1, iList2, oList)
+!
+! !USES:
+!
+      use m_stdio
+      use m_die, only : die
+
+      use m_mpif90
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+!
+      type(List),         intent(in)  :: iList1
+      type(List),         intent(in)  :: iList2 
+
+! !OUTPUT PARAMETERS: 
+!
+      type(List),         intent(out) :: oList
+
+! !REVISION HISTORY:
+! 	08May01 - J.W. Larson - initial version.
+!EOP ___________________________________________________________________
+
+ character(len=*),parameter :: myname_=myname//'::concatenate_'
+
+ integer :: ilen1, ilen2, olen
+ integer :: InNitems1, InNitems2, OutNitems
+ integer :: ierr, n
+
+       ! Determine the number of items in iList1 and iList2
+
+  InNitems1 = nitem_(iList1)
+  InNitems2 = nitem_(iList2)
+
+       ! The number of items in oList is the sum of the number
+       ! of items in iList1 and iList2
+
+  OutNitems = InNitems1 + InNitems2
+
+       ! Determine the CHARACTER buffer lengths for iList1 and iList2
+
+  ilen1 = len(iList1%bf)
+  ilen2 = len(iList2%bf)
+
+       ! The CHARACTER buffer lengths for oList is the sum of the
+       ! CHARACTER buffer lengths of iList1 and iList2
+
+  olen = ilen1 + ilen2
+
+       ! Allocate the components of oList
+
+  allocate(oList%lc(0:1,OutNitems), oList%bf(olen), stat=ierr)
+  if(ierr /= 0) call die(myname_,'allocate(oList%lc(...',ierr)
+
+       ! Fill in the entries of oList%bf
+
+  oList%bf(1:ilen1) = iList1%bf(1:ilen1)
+  oList%bf(ilen1+1:olen) = iList2%bf(1:ilen2)
+
+       ! Fill in the entries of oList%lc, adjusting the
+       ! entries from iList2%lc to reflect their starting
+       ! position in oList
+
+  do n=1,OutNitems
+     if(n <= InNitems1) then
+	oList%lc(0,n) = iList1%lc(0,n)
+	oList%lc(1,n) = iList1%lc(1,n)
+     else
+	oList%lc(0,n) = iList2%lc(0,n-InNitems1) + ilen1
+	oList%lc(1,n) = iList2%lc(1,n-InNitems1) + ilen1
+     endif
+  end do
+
+       ! The concatenation is complete.
+
+ end subroutine concatenate_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: bcast_ - Broadcast a List variable...
+!
+! !DESCRIPTION:  This routine takes an input {\tt List} argument 
+! {\tt iList} (on input, valid on the root only), and broadcasts it.
+!
+! {\bf N.B.}:  The outcome of this routine, {\tt ioList} on non-root
+! processes, represents allocated memory.  When this {\tt List} is
+! no longer needed, it must be deallocated by invoking the routine 
+! {\tt List\_clean()}.  Failure to do so will cause a memory leak.
+!
+! !INTERFACE:
+
+    subroutine bcast_(ioList, root, comm, status)
+!
+! !USES:
+!
+      use m_stdio
+      use m_die, only : MP_perr_die
+
+      use m_mpif90
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+!
+      integer,            intent(in)     :: root
+      integer,            intent(in)     :: comm
+
+! !INPUT/OUTPUT PARAMETERS: 
+!
+      type(List),         intent(inout)  :: ioList  
+
+
+! !OUTPUT PARAMETERS: 
+!
+      integer, optional,  intent(out)    :: status
+
+! !REVISION HISTORY:
+! 	07May01 - J.W. Larson - initial version.
+!EOP ___________________________________________________________________
+
+ character(len=*),parameter :: myname_=myname//'::bcast_'
+ integer :: myID, ierr
+ integer :: ListDims(2)
+
+       ! Which process am I?
+
+  call MPI_COMM_RANK(comm, myID, ierr)
+  if(present(status)) then
+     status = ierr
+     write(stderr,'(2a,i4)') myname_,":: MPI_COMM_RANK(), ierr=",ierr
+     return
+  else
+     call MP_perr_die(myname_,"MPI_COMM_RANK()",ierr)
+  endif
+
+        ! On the root, load up List dimensions for broadcast
+
+  if(myID == root) then 
+     ListDims(1) = len(ioList%bf)
+     ListDims(2) = nitem_(ioList)
+  endif
+
+       ! Broadcast List dimensions
+
+  call MPI_BCAST(ListDims, 2, MP_INTEGER, root, comm, ierr)
+  if(present(status)) then
+     status = ierr
+     write(stderr,'(2a,i4)') myname_,":: MPI_BCAST(ioList%bf...), ierr=",ierr
+     return
+  else
+     call MP_perr_die(myname_,"MPI_BCAST(ioList%bf...",ierr)
+  endif
+
+       ! allocate recipient List attributes on non-root processes
+
+  if(myID /= root) then 
+     allocate(ioList%lc(0:1,ListDims(2)), ioList%bf(ListDims(1)), stat=ierr)
+  endif
+  if(present(status)) then
+     status = ierr
+     write(stderr,'(2a,i4)') myname_,":: allocate(ioList%lc...), stat=",ierr
+     return
+  else
+     call MP_perr_die(myname_,"MPI_BCAST(ioList%bf...",ierr)
+  endif
+
+       ! Broadcast ioList%bf
+
+  call MPI_BCAST(ioList%bf, ListDims(1), MP_CHARACTER, root, comm, ierr)
+  if(present(status)) then
+     status = ierr
+     write(stderr,'(2a,i4)') myname_,":: MPI_BCAST(ioList%bf...), ierr=",ierr
+     return
+  else
+     call MP_perr_die(myname_,"MPI_BCAST(ioList%bf...",ierr)
+  endif
+
+       ! Broadcast ioList%lc
+
+  call MPI_BCAST(ioList%lc(0,1), 2*ListDims(2), MP_INTEGER, root, comm, ierr)
+  if(present(status)) then
+     status = ierr
+     write(stderr,'(2a,i4)') myname_,":: MPI_BCAST(ioList%lc...), ierr=",ierr
+     return
+  else
+     call MP_perr_die(myname_,"MPI_BCAST(ioList%lc...",ierr)
+  endif
+
+       ! And now, the List broadcast is complete.
+
+ end subroutine bcast_
+
+ end module m_List
 !.
