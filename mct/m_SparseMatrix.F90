@@ -5,29 +5,53 @@
 ! CVS $Name$ 
 !BOP -------------------------------------------------------------------
 !
-! !MODULE: m_SparseMatrix -- Sparse Matrix class and methods.
+! !MODULE: m_SparseMatrix -- Sparse Matrix Object
 !
 ! !DESCRIPTION:
-! The SparseMatrix data type is a special case of the  AttrVect data 
-! type (see the module {\tt m\_AttrVect} for more details).  This 
-! data type has two storage arrays, one for integer attributes 
-! (SparseMatrix\%iAttr) to hold row and column data, and one for 
-! real attributes (SparseMatrix\%rAttr) which holds the matrix element 
-! for that row and column.
+! The {\tt SparseMatrix} data type is MCT's object for storing sparse 
+! matrices.  In MCT, intergrid interpolation is implemented as a sparse 
+! matrix-vector multiplication, with the {\tt AttrVect} type playing the 
+! roles of the input and output vectors.  The interpolation matrices tend
+! to be {\em extremely} sparse.  For ${\bf x} \in \Re^{N_x}$, and
+! ${\bf y} \in \Re^{N_y}$, the interpolation matrix {\bf M} used to effect 
+! ${\bf y} = {\bf M} {\bf x}$ will typically have ${\cal O}({N_y})$ 
+! non-zero elements.  For that reason, the {\tt SparseMatrix} type 
+! stores {\em only} information about non-zero matrix elements, along 
+! with the number of rows and columns in the full matrix.  The nonzero  
+! matrix elements are stored in {\tt AttrVect} form (see the module 
+! {\tt m\_AttrVect} for more details), and the set of attributes are 
+! listed below:
 !
-! The set of attributes in each storage array are defined by a List; 
-! SparseMatrix\%iList for integer attributes, and SparseMatrix\%rList 
-! for real attributes.  The integer and real attribute tags are defined
-! below:
+!\begin{table}[htbp]
+!\begin{center}
+!\begin{tabular}{|l|l|l|}
+!\hline
+!{\bf Attribute Name} & {\bf Significance} & {\tt Type} \\
+!\hline
+!{\tt grow} & Global Row Index & {\tt INTEGER} \\
+!\hline
+!{\tt gcol} & Global Column Index & {\tt INTEGER} \\
+!\hline
+!{\tt lrow} & Local Row Index & {\tt INTEGER} \\
+!\hline
+!{\tt lcol} & Local Column Index & {\tt INTEGER} \\
+!\hline
+!{\tt weight} & Matrix Element ${M_{ij}}$ & {\tt REAL} \\
+!\hline
+!\end{tabular}
+!\end{center}
+!\end{table}
+! 
+! The provision of both local and global column and row indices is 
+! made because this datatype can be used in either shared-memory or 
+! distributed-memory parallel matrix-vector products.
 !
-! SparseMatrix\%data\%iList components:
-!    grow : global row index
-!    gcol : global column index
-!    lrow : local row index
-!    lcol : local column index
+! This module contains the definition of the {\tt SparseMatrix} type, 
+! creation and destruction methods, a variety of accessor methods, 
+! routines for testing the suitability of the matrix for interpolation 
+! (i.e. the sum of each row is either zero or unity), and methods for 
+! sorting and permuting matrix entries.
 !
-! SparseMatrix\%data\%rList components:
-!    weight : matrix element
 !
 ! !INTERFACE:
 
@@ -184,15 +208,15 @@
     interface SortPermute ; module procedure SortPermute_ ; end interface
 
 ! !REVISION HISTORY:
-!       19Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
-!       15Jan01 - J.W. Larson <larson@mcs.anl.gov> - added numerous APIs
-!       25Feb01 - J.W. Larson <larson@mcs.anl.gov> - changed from row/column
-!                 attributes to global and local row and column attributes
-!       23Apr01 - J.W. Larson <larson@mcs.anl.gov> - added number of rows
-!                 and columns to the SparseMatrix type.  This means the
-!                 SparseMatrix is no longer a straight AttrVect type.  This
-!                 also made necessary the addition of lsize(), indexIA(),
-!                 and indexRA().
+! 19Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+! 15Jan01 - J.W. Larson <larson@mcs.anl.gov> - added numerous APIs
+! 25Feb01 - J.W. Larson <larson@mcs.anl.gov> - changed from row/column
+!           attributes to global and local row and column attributes
+! 23Apr01 - J.W. Larson <larson@mcs.anl.gov> - added number of rows
+!           and columns to the SparseMatrix type.  This means the
+!           SparseMatrix is no longer a straight AttrVect type.  This
+!           also made necessary the addition of lsize(), indexIA(),
+!           and indexRA().
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_SparseMatrix'
@@ -214,7 +238,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: init_ - initialize a SparseMatrix
+! !IROUTINE: init_ - Initialize an Empty SparseMatrix
 !
 ! !DESCRIPTION:  This routine creates the storage space for the
 ! entries of a {\tt SparseMatrix}, and sets the number of rows and
@@ -240,16 +264,21 @@
 
       implicit none
 
-      type(SparseMatrix), intent(out)  :: sMat
+! !INPUT PARAMETERS:
+
       integer,            intent(in)   :: nrows
       integer,            intent(in)   :: ncols
       integer, optional,  intent(in)   :: lsize
 
+! !OUTPUT PARAMETERS:
+
+      type(SparseMatrix), intent(out)  :: sMat
+
 ! !REVISION HISTORY:
-!       19Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
-!       23Apr01 - Jay Larson <larson@mcs.anl.gov> - added arguments
-!                 nrows and ncols--number of rows and columns in the
-!                 SparseMatrix
+! 19Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+! 23Apr01 - Jay Larson <larson@mcs.anl.gov> - added arguments
+!           nrows and ncols--number of rows and columns in the
+!           SparseMatrix
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::init_'
@@ -293,14 +322,19 @@
 
       implicit none
 
+! !INPUT/OUTPTU PARAMETERS:
+
       type(SparseMatrix), intent(inout) :: sMat
+
+! !OUTPUT PARAMETERS:
+
       integer, optional,  intent(out)   :: stat
 
 ! !REVISION HISTORY:
-!       19Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
-!       23Apr00 - J.W. Larson <larson@mcs.anl.gov> - added changes to
-!                 accomodate clearing nrows and ncols.
-!       01Mar02 - E.T. Ong <eong@mcs.anl.gov> Added stat argument.
+! 19Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+! 23Apr00 - J.W. Larson <larson@mcs.anl.gov> - added changes to
+!           accomodate clearing nrows and ncols.
+! 01Mar02 - E.T. Ong <eong@mcs.anl.gov> Added stat argument.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::clean_'
@@ -324,7 +358,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: lsize_ - Local number of elements in a SparseMatrix.
+! !IROUTINE: lsize_ - Local Number Non-zero Elements
 !
 ! !DESCRIPTION:  This {\tt INTEGER} function reports on-processor storage 
 ! of the number of nonzero elements in the input {\tt SparseMatrix} 
@@ -340,10 +374,12 @@
 
       implicit none
 
+! !INPUT PARAMETERS:
+
       type(SparseMatrix), intent(in) :: sMat
 
 ! !REVISION HISTORY:
-!       23Apr00 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+! 23Apr00 - J.W. Larson <larson@mcs.anl.gov> - initial version.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::lsize_'
@@ -356,7 +392,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE:  GlobalNumElements_ - Number of nonzero elements.
+! !IROUTINE:  GlobalNumElements_ - Global Number of Non-zero Elements
 !
 ! !DESCRIPTION:  This routine computes the number of nonzero elements 
 ! in a distributed {\tt SparseMatrix} variable {\tt sMat}.  The input 
@@ -384,7 +420,7 @@
       integer, optional,  intent(in)  :: comm
 
 ! !REVISION HISTORY:
-!       24Apr01 - Jay Larson <larson@mcs.anl.gov> - New routine.
+! 24Apr01 - Jay Larson <larson@mcs.anl.gov> - New routine.
 !
 !EOP ___________________________________________________________________
 !
@@ -410,7 +446,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: indexIA_ - Index integer attribute of a SparseMatrix.
+! !IROUTINE: indexIA_ - Index an Integer Attribute
 !
 ! !DESCRIPTION:  This {\tt INTEGER} function reports the row index 
 ! for a given {\tt INTEGER} attribute of the input {\tt SparseMatrix} 
@@ -449,8 +485,10 @@
 
       implicit none
 
-      type(SparseMatrix), intent(in) :: sMat
-      character(len=*),   intent(in) :: item
+! !INPUT PARAMETERS:
+
+      type(SparseMatrix),         intent(in) :: sMat
+      character(len=*),           intent(in) :: item
       character(len=*), optional, intent(in) :: perrWith
       character(len=*), optional, intent(in) :: dieWith
 
@@ -492,7 +530,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: indexRA_ - Index real attribute of a SparseMatrix.
+! !IROUTINE: indexRA_ - Index a Real Attribute
 !
 ! !DESCRIPTION:  This {\tt INTEGER} function reports the row index 
 ! for a given {\tt REAL} attribute of the input {\tt SparseMatrix} 
@@ -530,13 +568,15 @@
 
       implicit none
 
-      type(SparseMatrix), intent(in) :: sMat
-      character(len=*),   intent(in) :: item
+! !INPUT PARAMETERS:
+
+      type(SparseMatrix),         intent(in) :: sMat
+      character(len=*),           intent(in) :: item
       character(len=*), optional, intent(in) :: perrWith
       character(len=*), optional, intent(in) :: dieWith
 
 ! !REVISION HISTORY:
-!       24Apr00 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+! 24Apr00 - J.W. Larson <larson@mcs.anl.gov> - initial version.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::indexRA_'
@@ -574,7 +614,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: nRows_ - Return the number of rows in a SparseMatrix.
+! !IROUTINE: nRows_ - Return the Number of Rows
 !
 ! !DESCRIPTION:  This routine returns the {\em total} number of rows
 ! in the input {\tt SparseMatrix} argument {\tt sMat}.  This number of
@@ -589,10 +629,12 @@
 !
       implicit none
 
+! !INPUT PARAMETERS:
+
       type(SparseMatrix), intent(in) :: sMat
 
 ! !REVISION HISTORY:
-!       19Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+! 19Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::nRows_'
@@ -605,7 +647,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: nCols_ - Return the number of columns in a SparseMatrix.
+! !IROUTINE: nCols_ - Return the Number of Columns
 !
 ! !DESCRIPTION:  This routine returns the {\em total} number of columns
 ! in the input {\tt SparseMatrix} argument {\tt sMat}.  This number of
@@ -620,10 +662,12 @@
 !
       implicit none
 
+! !INPUT PARAMETERS:
+
       type(SparseMatrix), intent(in) :: sMat
 
 ! !REVISION HISTORY:
-!       19Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+! 19Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::nCols_'
@@ -634,7 +678,7 @@
 
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: exportGlobalRowIndices_ - return Global Row Indices
+! !IROUTINE: exportGlobalRowIndices_ - Return Global Row Indices
 !
 ! !DESCRIPTION:
 ! This routine extracts from the input {\tt SparseMatrix} argument 
@@ -679,7 +723,7 @@
       integer,                intent(out) :: length
 
 ! !REVISION HISTORY:
-!        7May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!  7May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
 !
 !EOP ___________________________________________________________________
 
@@ -693,7 +737,7 @@
 
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: exportGlobalColumnIndices_ - return Global Column Indices
+! !IROUTINE: exportGlobalColumnIndices_ - Return Global Column Indices
 !
 ! !DESCRIPTION:
 ! This routine extracts from the input {\tt SparseMatrix} argument 
@@ -739,7 +783,7 @@
       integer,                intent(out) :: length
 
 ! !REVISION HISTORY:
-!        7May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!  7May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
 !
 !EOP ___________________________________________________________________
 
@@ -753,7 +797,7 @@
 
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: exportLocalRowIndices_ - return Local Row Indices
+! !IROUTINE: exportLocalRowIndices_ - Return Local Row Indices
 !
 ! !DESCRIPTION:
 ! This routine extracts from the input {\tt SparseMatrix} argument 
@@ -798,7 +842,7 @@
       integer,                intent(out) :: length
 
 ! !REVISION HISTORY:
-!        7May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!  7May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
 !
 !EOP ___________________________________________________________________
 
@@ -812,7 +856,7 @@
 
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: exportLocalColumnIndices_ - return Local Column Indices
+! !IROUTINE: exportLocalColumnIndices_ - Return Local Column Indices 
 !
 ! !DESCRIPTION:
 ! This routine extracts from the input {\tt SparseMatrix} argument 
@@ -858,7 +902,7 @@
       integer,                intent(out) :: length
 
 ! !REVISION HISTORY:
-!        7May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!  7May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
 !
 !EOP ___________________________________________________________________
 
@@ -872,7 +916,7 @@
 
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: exportMatrixElements_ - return MatrixElements as an array.
+! !IROUTINE: exportMatrixElements_ - Return Matrix Elements as Array
 !
 ! !DESCRIPTION:
 ! This routine extracts the matrix elements from the input {\tt SparseMatrix} 
@@ -918,7 +962,7 @@
       integer,                intent(out) :: length
 
 ! !REVISION HISTORY:
-!        7May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+!  7May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
 !
 !EOP ___________________________________________________________________
 
@@ -932,7 +976,7 @@
 
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: importGlobalRowIndices_ - Import Global Row Indices
+! !IROUTINE: importGlobalRowIndices_ - Set Global Row Indices of Elements
 !
 ! !DESCRIPTION:
 ! This routine imports global row index data into the {\tt SparseMatrix} 
@@ -965,7 +1009,7 @@
       type(SparseMatrix),     intent(inout) :: sMat
 
 ! !REVISION HISTORY:
-!        7May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+!  7May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
 !
 !EOP ___________________________________________________________________
 
@@ -987,7 +1031,7 @@
 
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: importGlobalColumnIndices_ - Import Global Column Indices
+! !IROUTINE: importGlobalColumnIndices_ - Set Global Column Indices of Elements
 !
 ! !DESCRIPTION:
 ! This routine imports global column index data into the {\tt SparseMatrix} 
@@ -1020,7 +1064,7 @@
       type(SparseMatrix),     intent(inout) :: sMat
 
 ! !REVISION HISTORY:
-!        7May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+!  7May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
 !
 !EOP ___________________________________________________________________
 
@@ -1042,7 +1086,7 @@
 
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: importLocalRowIndices_ - Import Local Row Indices
+! !IROUTINE: importLocalRowIndices_ - Set Local Row Indices of Elements
 !
 ! !DESCRIPTION:
 ! This routine imports local row index data into the {\tt SparseMatrix} 
@@ -1075,7 +1119,7 @@
       type(SparseMatrix),     intent(inout) :: sMat
 
 ! !REVISION HISTORY:
-!        7May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+!  7May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
 !
 !EOP ___________________________________________________________________
 
@@ -1097,7 +1141,7 @@
 
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: importLocalColumnIndices_ - Import Local Column Indices
+! !IROUTINE: importLocalColumnIndices_ - Set Local Column Indices of Elements
 !
 ! !DESCRIPTION:
 ! This routine imports local column index data into the {\tt SparseMatrix} 
@@ -1130,7 +1174,7 @@
       type(SparseMatrix),     intent(inout) :: sMat
 
 ! !REVISION HISTORY:
-!        7May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+!  7May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
 !
 !EOP ___________________________________________________________________
 
@@ -1152,7 +1196,7 @@
 
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: importMatrixElements_ - Import Local Column Indices
+! !IROUTINE: importMatrixElements_ - Import Non-zero Matrix Elements
 !
 ! !DESCRIPTION:
 ! This routine imports matrix elements index data into the 
@@ -1186,7 +1230,7 @@
       type(SparseMatrix),     intent(inout) :: sMat
 
 ! !REVISION HISTORY:
-!        7May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+!  7May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
 !
 !EOP ___________________________________________________________________
 
@@ -1210,7 +1254,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: local_row_range_ - range of rows with nonzero elements
+! !IROUTINE: local_row_range_ - Local Row Extent of Non-zero Elements
 !
 ! !DESCRIPTION: This routine examines the input distributed 
 ! {\tt SparseMatrix} variable {\tt sMat}, and returns the range of local 
@@ -1231,15 +1275,20 @@
 
       implicit none
 
+! !INPUT PARAMETERS:
+
       type(SparseMatrix), intent(in)  :: sMat
+
+! !OUTPUT PARAMETERS:
+
       integer,            intent(out) :: start_row
       integer,            intent(out) :: end_row
 
 ! !REVISION HISTORY:
-!       15Jan01 - Jay Larson <larson@mcs.anl.gov> - API specification.
-!       25Feb01 - Jay Larson <larson@mcs.anl.gov> - Initial prototype.
-!       23Apr01 - Jay Larson <larson@mcs.anl.gov> - Modified to accomodate
-!                 changes to the SparseMatrix type.
+! 15Jan01 - Jay Larson <larson@mcs.anl.gov> - API specification.
+! 25Feb01 - Jay Larson <larson@mcs.anl.gov> - Initial prototype.
+! 23Apr01 - Jay Larson <larson@mcs.anl.gov> - Modified to accomodate
+!           changes to the SparseMatrix type.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::local_row_range_'
@@ -1265,7 +1314,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: global_row_range_ - range of rows with nonzero elements
+! !IROUTINE: global_row_range_ - Global Row Extent of Non-zero Elements
 !
 ! !DESCRIPTION:  This routine examines the input distributed 
 ! {\tt SparseMatrix} variable {\tt sMat}, and returns the range of 
@@ -1286,16 +1335,21 @@
 
       implicit none
 
+! !INPUT PARAMETERS:
+
       type(SparseMatrix), intent(in)  :: sMat
       integer,            intent(in)  :: comm
+
+! !OUTPUT PARAMETERS:
+
       integer,            intent(out) :: start_row
       integer,            intent(out) :: end_row
 
 ! !REVISION HISTORY:
-!       15Jan01 - Jay Larson <larson@mcs.anl.gov> - API specification.
-!       25Feb01 - Jay Larson <larson@mcs.anl.gov> - Initial prototype.
-!       23Apr01 - Jay Larson <larson@mcs.anl.gov> - Modified to accomodate
-!                 changes to the SparseMatrix type.
+! 15Jan01 - Jay Larson <larson@mcs.anl.gov> - API specification.
+! 25Feb01 - Jay Larson <larson@mcs.anl.gov> - Initial prototype.
+! 23Apr01 - Jay Larson <larson@mcs.anl.gov> - Modified to accomodate
+!           changes to the SparseMatrix type.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::global_row_range_'
@@ -1321,7 +1375,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: local_col_range_ - range of cols with nonzero elements
+! !IROUTINE: local_col_range_ - Local Column Extent of Non-zero Elements
 !
 ! !DESCRIPTION: This routine examines the input distributed 
 ! {\tt SparseMatrix} variable {\tt sMat}, and returns the range of
@@ -1342,15 +1396,20 @@
 
       implicit none
 
+! !INPUT PARAMETERS:
+
       type(SparseMatrix), intent(in)  :: sMat
+
+! !OUTPUT PARAMETERS:
+
       integer,            intent(out) :: start_col
       integer,            intent(out) :: end_col
 
 ! !REVISION HISTORY:
-!       15Jan01 - Jay Larson <larson@mcs.anl.gov> - API specification.
-!       25Feb01 - Jay Larson <larson@mcs.anl.gov> - Initial prototype.
-!       23Apr01 - Jay Larson <larson@mcs.anl.gov> - Modified to accomodate
-!                 changes to the SparseMatrix type.
+! 15Jan01 - Jay Larson <larson@mcs.anl.gov> - API specification.
+! 25Feb01 - Jay Larson <larson@mcs.anl.gov> - Initial prototype.
+! 23Apr01 - Jay Larson <larson@mcs.anl.gov> - Modified to accomodate
+!           changes to the SparseMatrix type.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::local_col_range_'
@@ -1376,7 +1435,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: global_col_range_ - range of cols with nonzero elements
+! !IROUTINE: global_col_range_ - Global Column Extent of Non-zero Elements
 !
 ! !DESCRIPTION:  This routine examines the input distributed 
 ! {\tt SparseMatrix} variable {\tt sMat}, and returns the range of 
@@ -1397,16 +1456,21 @@
 
       implicit none
 
+! !INPUT PARAMETERS:
+
       type(SparseMatrix), intent(in)  :: sMat
       integer,            intent(in)  :: comm
+
+! !OUTPUT PARAMETERS:
+
       integer,            intent(out) :: start_col
       integer,            intent(out) :: end_col
 
 ! !REVISION HISTORY:
-!       15Jan01 - Jay Larson <larson@mcs.anl.gov> - API specification.
-!       25Feb01 - Jay Larson <larson@mcs.anl.gov> - Initial prototype.
-!       23Apr01 - Jay Larson <larson@mcs.anl.gov> - Modified to accomodate
-!                 changes to the SparseMatrix type.
+! 15Jan01 - Jay Larson <larson@mcs.anl.gov> - API specification.
+! 25Feb01 - Jay Larson <larson@mcs.anl.gov> - Initial prototype.
+! 23Apr01 - Jay Larson <larson@mcs.anl.gov> - Modified to accomodate
+!           changes to the SparseMatrix type.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::global_col_range_'
@@ -1432,7 +1496,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: ComputeSparsity_ - sparsity of a SparseMatrix
+! !IROUTINE: ComputeSparsity_ - Compute Matrix Sparsity
 !
 ! !DESCRIPTION:  This routine computes the sparsity of a consolidated
 ! (all on one process) or distributed {\tt SparseMatrix}.  The input 
@@ -1471,7 +1535,7 @@
       real,               intent(out) :: sparsity
 
 ! !REVISION HISTORY:
-!       23Apr01 - Jay Larson <larson@mcs.anl.gov> - New routine.
+! 23Apr01 - Jay Larson <larson@mcs.anl.gov> - New routine.
 !
 !EOP ___________________________________________________________________
 !
@@ -1525,7 +1589,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: CheckBounds_ - Check for out-of-bounds row/column values.
+! !IROUTINE: CheckBounds_ - Check for Out-of-Bounds Row/Column Values
 !
 ! !DESCRIPTION:  This routine examines the input distributed 
 ! {\tt SparseMatrix} variable {\tt sMat}, and examines the global row
@@ -1550,11 +1614,16 @@
 
       implicit none
 
+! !INPUT PARAMETERS:
+
       type(SparseMatrix), intent(in)  :: sMat
+
+! !OUTPUT PARAMETERS:
+
       integer,            intent(out) :: ierror
 
 ! !REVISION HISTORY:
-!       24Apr01 - Jay Larson <larson@mcs.anl.gov> - Initial prototype.
+! 24Apr01 - Jay Larson <larson@mcs.anl.gov> - Initial prototype.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::CheckBounds_'
@@ -1612,7 +1681,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: row_sum_ - Sum elements in each row of a sparse matrix
+! !IROUTINE: row_sum_ - Sum Elements in Each Row
 !
 ! !DESCRIPTION:
 ! Given an input {\tt SparseMatrix} argument {\tt sMat}, {\tt row\_sum\_()}
@@ -1642,19 +1711,25 @@
 
       implicit none
 
+! !INPUT PARAMETERS:
+
       type(SparseMatrix), intent(in)  :: sMat
+      integer,            intent(in)  :: comm
+
+! !OUTPUT PARAMETERS:
+
       integer,            intent(out) :: num_rows
       real, dimension(:), pointer     :: sums
-      integer,            intent(in)  :: comm
+
 
 
 ! !REVISION HISTORY:
-!       15Jan01 - Jay Larson <larson@mcs.anl.gov> - API specification.
-!       25Jan01 - Jay Larson <larson@mcs.anl.gov> - Prototype code.
-!       23Apr01 - Jay Larson <larson@mcs.anl.gov> - Modified to accomodate
-!                 changes to the SparseMatrix type.
-!       18May01 - R. Jacob <jacob@mcs.anl.gov> - Use MP_TYPE function
-!                 to set type in the mpi_allreduce
+! 15Jan01 - Jay Larson <larson@mcs.anl.gov> - API specification.
+! 25Jan01 - Jay Larson <larson@mcs.anl.gov> - Prototype code.
+! 23Apr01 - Jay Larson <larson@mcs.anl.gov> - Modified to accomodate
+!           changes to the SparseMatrix type.
+! 18May01 - R. Jacob <jacob@mcs.anl.gov> - Use MP_TYPE function
+!           to set type in the mpi_allreduce
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::row_sum_'
@@ -1723,7 +1798,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: row_sum_check - Check row sums of a distributed SparseMatrix.
+! !IROUTINE: row_sum_check - Check Row Sums vs. Valid Values
 !
 ! !DESCRIPTION:  The routine {\tt row\_sum\_check()} sums the rows of 
 ! the input distributed (across the communicator identified by {\tt comm}) 
@@ -1745,16 +1820,21 @@
 
       implicit none
 
+! !INPUT PARAMETERS:
+
       type(SparseMatrix), intent(in)  :: sMat
       integer,            intent(in)  :: comm
       integer,            intent(in)  :: num_valid
       real,               intent(in)  :: valid_sums(num_valid)
       real,               intent(in)  :: abs_tol
+
+! !OUTPUT PARAMETERS:
+
       logical,            intent(out) :: valid
 
 ! !REVISION HISTORY:
-!       15Jan01 - Jay Larson <larson@mcs.anl.gov> - API specification.
-!       25Feb01 - Jay Larson <larson@mcs.anl.gov> - Prototype code.
+! 15Jan01 - Jay Larson <larson@mcs.anl.gov> - API specification.
+! 25Feb01 - Jay Larson <larson@mcs.anl.gov> - Prototype code.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::row_sum_check_'
@@ -1805,8 +1885,7 @@
 
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: Sort_ - return index permutation keyed by a list of
-!            attributes
+! !IROUTINE: Sort_ - Generate Index Permutation
 !
 ! !DESCRIPTION:
 ! The subroutine {\tt Sort\_()} uses a list of sorting keys defined by 
@@ -1852,7 +1931,7 @@
 
 
 ! !REVISION HISTORY:
-!       24Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+! 24Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::Sort_'
@@ -1867,7 +1946,7 @@
 
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: Permute_ - permute SparseMatrix entries
+! !IROUTINE: Permute_ - Permute Matrix Elements using Supplied Index Permutation
 !
 ! !DESCRIPTION:
 ! The subroutine {\tt Permute\_()} uses an input index permutation 
@@ -1900,7 +1979,7 @@
 
 
 ! !REVISION HISTORY:
-!       24Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+! 24Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::Permute_'
@@ -1911,7 +1990,7 @@
 
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: SortPermute_ - sort/permute SparseMatrix entries.
+! !IROUTINE: SortPermute_ - Sort and Permute Matrix Elements
 !
 ! !DESCRIPTION:
 ! The subroutine {\tt SortPermute\_()} uses a list of sorting keys defined 
@@ -1956,7 +2035,7 @@
       type(SparseMatrix),              intent(inout) :: sMat
 
 ! !REVISION HISTORY:
-!       24Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+! 24Apr01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::SortPermute_'
