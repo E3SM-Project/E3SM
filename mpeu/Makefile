@@ -4,7 +4,6 @@ MODULE		= mpeu
 
 SRCS_mks	= Makefile			\
 		  Makefile.conf.in              \
-		  Makefile.dependency		\
 		  Makefile.rules		\
 		  configure			\
 		  unconfigure			\
