@@ -119,17 +119,22 @@ end subroutine init_
   character(len=*),parameter :: myname_=myname//'::clean_'
   integer :: ier
 
-	if(mall_ison()) then
-	  call mall_mco(nav%displs,myname)
-	  call mall_mco(nav%counts,myname)
-	endif
   deallocate(nav%displs,nav%counts,stat=ier)
-	if(ier/=0) then
-	  call perr(myname_,'deallocate()',ier)
-	  if(.not.present(stat)) call die(myname_)
-	  stat=ier
-	  return
-	endif
+
+  if(present(stat)) then
+     stat=ier
+  else
+     if(ier /= 0) call warn(myname_,'deallocate(nav%...)',ier)
+  endif
+
+  if(ier == 0) then
+
+     if(mall_ison()) then
+	call mall_mco(nav%displs,myname)
+	call mall_mco(nav%counts,myname)
+     endif
+
+  endif
 
   nav%lsize=0
 end subroutine clean_
@@ -151,6 +156,8 @@ end subroutine clean_
 ! !REVISION HISTORY:
 ! 	22May00	- Jing Guo <guo@dao.gsfc.nasa.gov>
 !		- initial prototype/prolog/code
+!       01Mar02 - E.T. Ong <eong@mcs.anl.gov> - removed die to prevent 
+!                 crashes.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::lsize_'
