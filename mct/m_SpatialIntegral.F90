@@ -1824,7 +1824,7 @@
 
        ! Check value of summed weights (to avoid division by zero):
 
-  iweight = AttrVect_indexRA(integratedAv, 'MaskedWeightSum')
+  iweight = AttrVect_indexRA(integratedAv, 'MaskedWeightsSum')
   if(integratedAv%rAttr(iweight, 1) == 0.) then
      write(stderr,'(2a)') myname_, &
 	  '::ERROR--Global sum of grid weights is zero.'
