@@ -19,6 +19,8 @@ fi
 if echo $osname | grep -i hp-ux >/dev/null 2>&1; then   
    if test "$ac_hostname" = "moon"; then 
       ES="YES"
+      # Tells configure not to run any tests that require execution
+      cross_compiling="yes"
    fi
 fi
 if test "$ES" = "YES"; then   

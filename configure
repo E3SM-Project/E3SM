@@ -1329,6 +1329,8 @@ fi
 if echo $osname | grep -i hp-ux >/dev/null 2>&1; then
    if test "$ac_hostname" = "moon"; then
       ES="YES"
+      # Tells configure not to run any tests that require execution
+      cross_compiling="yes"
    fi
 fi
 if test "$ES" = "YES"; then
@@ -2216,7 +2218,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:2219:" \
+echo "$as_me:2221:" \
      "checking for Fortran 90 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -2591,7 +2593,7 @@ _ACEOF
 # 1 to this macro) to the Fortran 90 compiler in order to get "version" output
 ac_save_F90FLAGS=$F90FLAGS
 F90FLAGS="$F90FLAGS $ac_version"
-(eval echo $as_me:2594: \"$ac_link\") >&5
+(eval echo $as_me:2596: \"$ac_link\") >&5
 ac_f90_version_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 echo "$ac_f90_version_output" >&5
 F90FLAGS=$ac_save_F90FLAGS
