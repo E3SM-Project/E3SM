@@ -204,7 +204,7 @@
 
   local_start = 1
 
-  ! set logical flag found to signify we haven't found i_g:
+  ! set logical flag found to signify we havent found i_g:
 
   found = .false.
 

@@ -7,7 +7,7 @@
 ! !DESCRIPTION:
 ! Recieve into the AttrVect the data coming from the component
 ! specified in the Router.  An Error will result if the
-! attribute list of the incoming data doesn't match any of
+! attribute list of the incoming data doesnt match any of
 ! the attributes in the argument AttrVect.
 ! Requires a corresponding MCT_Send to be called on the other component.
 !

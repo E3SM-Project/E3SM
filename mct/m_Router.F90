@@ -31,7 +31,7 @@
 !% On return, pe_list is the processor ranks of the other
 !% component to receive from/send to.  num_segs is the
 !% number of segments out of my local AttrVect which must
-!% be sent/received.  (In general, these won't coincide exactly
+!% be sent/received.  (In general, these wont coincide exactly
 !% with the segments used to define the GlobalMap)
 !% seg_start is the start *in the local AttrVect* of each segment
 !%  (start goes from 1 to lsize(GSMap))
