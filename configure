@@ -888,8 +888,9 @@ Optional Features:
                           define single precision and double precision numbers
                           using the selected_real_kind function. Default uses
                           the kind inquiry function.
-  --enable-babel          Modify MCT types to make them contiguous in memory.
-                          necessary to get Babel bindings to work.
+  --enable-sequence       Modify MCT types to make them contiguous in memory.
+  --enable-babel          Supply this option if you plan on building the Babel
+                          bindings to MCT
 
 Some influential environment variables:
   MPILIBS     MPI library command line invocation
@@ -1385,11 +1386,19 @@ if test "${enable_selectedrealkind+set}" = set; then
   SRKDEF="SELECTEDREALKIND"
 
 fi;
+# Check whether --enable-sequence or --disable-sequence was given.
+if test "${enable_sequence+set}" = set; then
+  enableval="$enable_sequence"
+  SRKDEF="SEQUENCE"
+fi;
+
 # Check whether --enable-babel or --disable-babel was given.
 if test "${enable_babel+set}" = set; then
   enableval="$enable_babel"
   SRKDEF="SEQUENCE"
 fi;
+
+
 
 # DECLARE THE FOLLOWING PRECIOUS VARIABLES
 
@@ -2325,7 +2334,7 @@ echo "$as_me: FORTRAN 90 FILENAME EXTENSION HAS BEEN SET TO .$F90SUFFIX" >&6;}
 fi
 
 # Provide some information about the compiler.
-echo "$as_me:2328:" \
+echo "$as_me:2337:" \
      "checking for Fortran 90 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -2817,7 +2826,7 @@ _ACEOF
 # 1 to this macro) to the Fortran 90 compiler in order to get "version" output
 ac_save_F90FLAGS=$F90FLAGS
 F90FLAGS="$F90FLAGS $ac_version"
-(eval echo $as_me:2820: \"$ac_link\") >&5
+(eval echo $as_me:2829: \"$ac_link\") >&5
 ac_f90_version_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 echo "$ac_f90_version_output" >&5
 F90FLAGS=$ac_save_F90FLAGS
@@ -3469,6 +3478,7 @@ sed 's/^/| /' conftest.$ac_ext >&5
 ac_cv_f90_fpp_compiler="no"
 fi
 rm -f conftest.err conftest.$ac_objext
+rm -f conftest.*
 F90=$old_F90
 
 fi
@@ -3577,6 +3587,7 @@ rm -f conftest.err conftest.$ac_objext
 fi
 echo "$as_me:$LINENO: result: $ac_cv_f90_fpp_external" >&5
 echo "${ECHO_T}$ac_cv_f90_fpp_external" >&6
+rm -f conftest.*
 ac_ext=$old_ac_ext
 
 

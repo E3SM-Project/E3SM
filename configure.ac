@@ -14,9 +14,15 @@ AC_HELP_STRING([--enable-selectedrealkind],
 [define single precision and double precision numbers using the selected_real_kind function. Default uses the kind inquiry function.]),
 [SRKDEF="SELECTEDREALKIND"]
 )
-AC_ARG_ENABLE(babel,
-AC_HELP_STRING([--enable-babel],[Modify MCT types to make them contiguous in memory. necessary to get Babel bindings to work.]),
+AC_ARG_ENABLE(sequence,
+AC_HELP_STRING([--enable-sequence],[Modify MCT types to make them contiguous in memory.]),
 [SRKDEF="SEQUENCE"],)
+
+AC_ARG_ENABLE(babel,
+AC_HELP_STRING([--enable-babel],[Supply this option if you plan on building the Babel bindings to MCT]),
+[SRKDEF="SEQUENCE"],)
+
+
 
 # DECLARE THE FOLLOWING PRECIOUS VARIABLES
 
