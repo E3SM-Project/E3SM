@@ -80,10 +80,6 @@ install: all
 	  $(INSTALL) $$modfile -m 644 $(includedir);      \
 	done
 
-# COMPATIBILITY WITH OLD MAKE SYSTEM
-
-include Makefile.conf
-
 # DEPENDENCIES
 
 m_IndexBin_char.o: m_die.o m_stdio.o
