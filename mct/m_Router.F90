@@ -43,6 +43,7 @@
       integer :: sendid	       ! id of sending component
       integer :: recvid	       ! id of receiving component
       character*4 :: type	       ! 'send' or 'recv'
+      integer :: nprocs	       ! number of procs to talk to
       integer,dimension(:),pointer :: pe_list ! processor ranks of send/receive
       integer,dimension(:),pointer :: num_segs ! number of segments to send/receive
       integer,dimension(:,:),pointer :: seg_starts ! starting index
@@ -102,29 +103,38 @@
 ! !REVISION HISTORY:
 !       15Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
 !       01Feb01 - R. Jacob <jacob@mcs.anl.gov> - initialize some parts
+!       02Feb01 - R. Jacob <jacob@mcs.anl.gov> - initialize the send
+!		portion
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::init_'
-  integer			:: myPid,ier,totalsegs,i,j,k
-  integer			:: mysize,recvsize,rngseg,tag
-  integer			:: sendsize
+  integer			:: myPid,ier,nlsegs,i,j,k,m
+  integer			:: mysize,recvsize,rngseg,tag,pr
+  integer			:: sendsize,mysize,count
   integer 	:: status(MP_STATUS_SIZE)
   integer,dimension(:),allocatable :: reqs,rstarts,rlengths
-  integer,dimension(:),allocatable :: rpe_locs
+  integer,dimension(:),allocatable :: rpe_locs,rlsizes
   integer,dimension(:),allocatable :: mystarts,mylengths
-  integer,dimension(:),allocatable :: myvector
+  integer,dimension(:),allocatable :: myvector,lsizes,rvector
+  logical,dimension(:),allocatable :: hitparade,tmppe_list
 
   integer,dimension(:,:),pointer :: recvstarts
+  integer,dimension(:,:),pointer :: tmpsegcount,tmpsegstart
   integer,dimension(:),pointer :: precvstarts
+  integer,dimension(:),pointer :: beginseg,targproc,numpoints
+  logical :: firstpoint
+  integer :: maxsegcount,mmax
 
   call MP_comm_rank(mycomm,myPid,ier)
   call MP_comm_size(mycomm,mysize,ier)
+  firstpoint = .TRUE.
 
-  totalsegs = nlseg(GSMap,myPid)
+  nlsegs = nlseg(GSMap,myPid)
+  mysize = lsize(GSMap)
 
 ! build a mystart and mylength array on all processors
-  allocate(mystarts(totalsegs),mylengths(totalsegs), &
-   myvector(lsize(GSMap)), stat=ier)
+  allocate(mystarts(nlsegs),mylengths(nlsegs), &
+   myvector(mysize), stat=ier)
   if(ier/=0) call MP_perr_die(myname_,'allocate(mystarts,..)',ier)
 
 
@@ -138,13 +148,13 @@
   enddo
 
 ! form one long vector which is all local GSMap points
-  do i=1,lsize(GSMap)
-   do j=1,totalsegs
+  i=1
+   do j=1,nlsegs
     do k=1,mylengths(j)
     myvector(i)=mystarts(j)+k-1
+    i=i+1
     enddo
    enddo
-  enddo
 
 
 !NOTE  at this point the init routine follows two different
@@ -173,7 +183,8 @@
     call MPI_BCAST(rngseg,1,MP_INTEGER,0,mycomm,ier)
     if(ier /= 0) call MP_perr_die(myname_,'MPI_BCAST(rngseg)',ier)
 
-    allocate(rstarts(rngseg),rlengths(rngseg),rpe_locs(rngseg),stat=ier)
+    allocate(rstarts(rngseg),rlengths(rngseg), &
+    rlsizes(ThisMCTWorld%nprocspid(comp2)),rpe_locs(rngseg),stat=ier)
     if(ier/=0) call MP_perr_die(myname_,'allocate(rngseg)',ier)
 
 ! get starts of receivers GSMap
@@ -201,13 +212,156 @@
 
        call MPI_RECV(rpe_locs,rngseg,MP_INTEGER,ThisMCTWorld%idGprocid(comp2,0), &
 	3040,MP_COMM_WORLD,status,ier)
-       if(ier /= 0) call MP_perr_die(myname_,'MPI_RECV(rlengths)',ier)
+       if(ier /= 0) call MP_perr_die(myname_,'MPI_RECV(rpe_locs)',ier)
     endif
     call MPI_BCAST(rpe_locs,rngseg,MP_INTEGER,0,mycomm,ier)
-    if(ier /= 0) call MP_perr_die(myname_,'MPI_BCAST(rlengths)',ier)
+    if(ier /= 0) call MP_perr_die(myname_,'MPI_BCAST(rpe_locs)',ier)
 
-! begin looping through other components processors
-! looking for points in common
+! get sizes of receivers GSMap
+    if(myPid ==0) then
+
+       call MPI_RECV(rlsizes,ThisMCTWorld%nprocspid(comp2),MP_INTEGER,&
+       ThisMCTWorld%idGprocid(comp2,0),3050,MP_COMM_WORLD,status,ier)
+       if(ier /= 0) call MP_perr_die(myname_,'MPI_RECV(sizes)',ier)
+    endif
+    call MPI_BCAST(rlsizes,ThisMCTWorld%nprocspid(comp2),MP_INTEGER,0,mycomm,ier)
+    if(ier /= 0) call MP_perr_die(myname_,'MPI_BCAST(sizes)',ier)
+!    write(*,*)"ROUTER",myPid,rlsizes
+
+    count =0
+    mmax=0
+    allocate(hitparade(mysize),stat=ier)
+    if(ier/=0) call MP_perr_die(myname_,'allocate(hitparade,..)',ier)
+    allocate(tmpsegcount(ThisMCTWorld%nprocspid(comp2),mysize),&
+             tmpsegstart(ThisMCTWorld%nprocspid(comp2),mysize),&
+    		tmppe_list(ThisMCTWorld%nprocspid(comp2)),stat=ier)
+    if(ier/=0) call MP_perr_die(myname_,'allocate(tmpsegcount,..)',ier)
+    tmpsegcount=0
+    tmpsegstart=0
+
+!  check each processor to see what I need to send
+    do i=1,ThisMCTWorld%nprocspid(comp2)
+
+      hitparade=.FALSE.
+
+! build the vector of GSMap points handled on remote proc i-1
+      allocate(rvector(rlsizes(i)),stat=ier)
+      if(ier/=0) call MP_perr_die(myname_,'allocate(mysize,..)',ier)
+
+      m=1
+
+      do j=1,rngseg
+        if(rpe_locs(j)== (i-1)) then
+          do k=1,rlengths(j)
+            rvector(m)=rstarts(j)+k-1
+           m=m+1
+          enddo
+        endif
+      enddo
+
+! check every point in my local vector against every point of
+! the remote procs vector.  Record hits.
+      do j=1,mysize
+	do k=1,rlsizes(i)
+	  if(myvector(j)==rvector(k)) hitparade(j)=.TRUE.
+        enddo
+      enddo
+
+      if(myPid==0)then
+! 	write(*,*)"ROUTER",i,hitparade,rlsizes(i),rvector(1),rvector(rlsizes(i))
+      endif
+
+! if no hits found, go look at the next processor.
+      if(.NOT.ANY(hitparade)) then
+        deallocate(rvector,stat=ier)
+        tmppe_list(i)=.FALSE.
+	CYCLE
+      endif
+      
+! if reached this point, then this processor has some points
+      count=count+1
+      tmppe_list(i)=.TRUE.
+
+!  now find and count them.
+      firstpoint=.TRUE.
+      m=0
+
+! search my vector again
+      do j=1,mysize
+	if(hitparade(j)) then
+!       found a segment.  note firstpoint and start counting
+	  if(firstpoint) then 
+	    m=m+1
+	    tmpsegstart(count,m)=myvector(j)
+	    tmpsegcount(count,m)=1
+	    firstpoint=.FALSE.
+          else
+	    tmpsegcount(count,m)=tmpsegcount(count,m)+1
+	  endif
+        else
+! if firstpoint is false, then I just finished counting a
+! segment and need to reset it in case I find another one.
+	  if(.NOT.firstpoint) then
+	    firstpoint=.TRUE.
+          endif
+        endif
+      enddo
+
+      if(myPid==0)then
+	 do pr=1,m
+! 	write(*,*)"ROUTERD",i,pr,tmpsegcount(i,pr),tmpsegstart(i,pr)
+	enddo
+      endif
+
+
+      mmax=MAX(m,mmax)
+      deallocate(rvector,stat=ier)
+    enddo
+
+! start loading up the Router
+    Rout%nprocs = count
+
+    maxsegcount=mmax
+!   if(myPid==0) write(*,*)"COUNT",count,maxsegcount
+
+    allocate(Rout%pe_list(count),Rout%num_segs(count), &
+    Rout%seg_starts(count,maxsegcount), &
+    Rout%seg_lengths(count,maxsegcount),stat=ier)
+    if(ier/=0) call MP_perr_die(myname_,'allocate(Rout..)',ier)
+    
+    m=0
+    do i=1,ThisMCTWorld%nprocspid(comp2)
+      if(tmppe_list(i))then 
+      m=m+1
+! load processor rank in MPI_COMM_WORLD
+      Rout%pe_list(m)=ThisMCTWorld%idGprocid(comp2,i-1)
+      endif
+    enddo
+
+    do i=1,count
+      k=0
+      do j=1,mysize
+!	if(myPid==0)write(*,*)"RRR",i,j,tmpsegcount(i,j)
+	if(tmpsegcount(i,j) /= 0) then
+	 k=k+1
+	 Rout%seg_starts(i,k)=tmpsegstart(i,j)
+	 Rout%seg_lengths(i,k)=tmpsegcount(i,j)
+	endif
+      enddo
+      Rout%num_segs(i)=k
+    enddo
+
+    if(myPid==0) then
+     do i=1,Rout%nprocs
+!      write(*,*)"ROUTERE",i,Rout%pe_list(i),Rout%num_segs(i)
+      do j=1,Rout%num_segs(i)
+!       write(*,*)"ROUTEREE",i,j,Rout%seg_starts(i,j),Rout%seg_lengths(i,j)
+      enddo
+     enddo
+    endif
+       
+      
+    deallocate(tmpsegstart,tmpsegcount,tmppe_list,stat=ier)
 
 
 
@@ -220,6 +374,13 @@
   Rout%recvid = comp2
   Rout%type = "recv"
 
+    allocate(lsizes(ThisMCTWorld%nprocspid(comp2)),stat=ier)
+    if(ier/=0) call MP_perr_die(myname_,'allocate(lsizes,..)',ier)
+
+    
+    mysize=lsize(GSMap)
+    call MPI_GATHER(mysize,1,MP_INTEGER,lsizes,1,MP_INTEGER,0,mycomm,ier)
+    if(ier /= 0) call MP_perr_die(myname_,'MPI_GATHER(lsize)',ier)
 
 ! local roots on sender and receiver talk to each other
     if(myPid ==0) then
@@ -243,6 +404,12 @@
      call MPI_SEND(GSMap%pe_loc,GSMap%ngseg,MP_INTEGER, &
      ThisMCTWorld%idGprocid(comp1,0),3040,MP_COMM_WORLD,status,ier)
      if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND(pe_loc)',ier)
+
+! send sizes
+     call MPI_SEND(lsizes,ThisMCTWorld%nprocspid(comp2),MP_INTEGER, &
+     ThisMCTWorld%idGprocid(comp1,0),3050,MP_COMM_WORLD,status,ier)
+     if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND(sizes)',ier)
+
 
     endif
 
