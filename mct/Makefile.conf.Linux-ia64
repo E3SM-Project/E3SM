@@ -49,14 +49,8 @@ _Lmpeu          = -L../mpeu
 _lmpeu          = -lmpeu
 _Impeu          = -I../mpeu
 
-# The default design requirement for this library is to use the OS
-# specific default REAL kind for all its REAL type variables, while
-# supports both REAL and DOUPLE PRECISION kinds for its interfaces
-# through the Fortran 90 generic interface feature. (Jing Guo)
-
 _R		= -r4
 _R		= -r8
-_R		=
 
 _I		= -I. $(_Impeu) $(_IMPI)
 
@@ -65,7 +59,7 @@ F77		= efc
 F90		= efc
 FC		= $(F90)
 
-FFLAGS		= -O2 -extend_source -w95
+FFLAGS		= -O2 -extend_source -w95 $(_R)
 CFLAGS		= -O
 
 
