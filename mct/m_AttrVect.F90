@@ -2057,8 +2057,9 @@
 ! do so will result in a memory leak.
 !
 ! !INTERFACE:
-
+!
  subroutine LocalReduceReals_(inAV, outAV, weights, action) 
+
 !
 ! !USES:
 !

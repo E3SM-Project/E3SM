@@ -205,7 +205,7 @@
 !
 ! !INTERFACE:
 
- subroutine SparseMatrixToYGlobalSegMap_(sMat, root, comm, comp_id, yGSMap)
+ subroutine SparseMatrixToYGlobalSegMap_(sMat, yGSMap, root, comm, comp_id)
 !
 ! !USES:
 !
@@ -250,6 +250,8 @@
 !                statement for SortPermute
 !       01May01 - R.L. Jacob <jacob@mcs.anl.gov> - make comp_id an
 !                 input argument
+!       07May02 - J.W. Larson <larson@mcs.anl.gov> - Changed interface to
+!                 make it consistent with SparseMatrixToXGlobalSegMap_().
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::SparseMatrixToYGlobalSegMap_'
