@@ -298,9 +298,10 @@
 ! {\tt INTEGER} argument {\tt my\_root}, and its MPI communinicator 
 ! is defined by the input {\tt INTEGER} argument {\tt my\_comm}.  The 
 ! input {\tt INTEGER} argument {\tt remote\_npes} is the number of MPI 
-! processes on the remote component's communicator.  The input 
-! the {\tt INTEGER} array {\tt remote\_lns(:)}, and the {\tt INTEGER} 
-! argument {\tt remote\_comp\_id} need only be valid on the process 
+! processes on the remote component's communicator (which need be valid 
+! only on the process {\tt my\_root}).  The input the {\tt INTEGER} 
+! array {\tt remote\_lns(:)}, and the {\tt INTEGER} argument 
+! {\tt remote\_comp\_id} need only be valid on the process 
 ! whose rank on the communicator {\tt my\_comm} is {\tt my\_root}.  The 
 ! argument {\tt remote\_lns(:)} defines the vector segment length on each 
 ! process of the remote component's communicator, and the argument 
@@ -356,7 +357,10 @@
         ! for the sake of compactness, store the value of remote_npes
         ! in the more tersely named variable nPEs.
 
-  nPEs = remote_npes
+  if(myID == my_root) nPEs = remote_npes
+
+  call MPI_bcast(nPEs, 1, MP_INTEGER, my_root, my_comm, ier)
+  if(ier/=0) call MP_perr_die(myname_,'MPI_bcast(nPEs...)',ier)
 
   allocate(GMap%counts(0:nPEs-1),GMap%displs(0:nPEs-1),stat=ier)
   if(ier /= 0) call die(myname_,'allocate()',ier)
