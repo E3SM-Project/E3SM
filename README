@@ -3,8 +3,10 @@
  -- Mathematics + Computer Science Div. / Argonne National Laboratory
 
     Model Coupling Toolkit (mct)
-    Point of contact:  Jay Larson <larson@mcs.anl.gov>
+    Points of contact: Jay Larson <larson@mcs.anl.gov>
                        630 252 7806
+		       Robert Jacob <jacob@mcs.anl.gov>
+		       630 252 2983
 
 ######################################################################
 
@@ -31,6 +33,13 @@
   mct    -- Source code for the model coupling toolkit, which is built
             on top of mpeu.
 
+  ut-mct -- Source code for a unit tester which demonstrates the
+	    use of MCT in a simple parallel ocean-atmosphere "model".
+
+  doc    -- documentation for MCT
+
+  protex -- tool for constructing documentation from source code
+
 ######################################################################
 
   BUILD INSTRUCTIONS:
@@ -48,6 +57,13 @@
   3) Usage of mct is then available through use of its modules, and
      by linking in the libraries mpeu/libmpeu.a and mct/libmct.a
 
+  4) go to the ut-mct directory and perform the following steps:
+	$ ./configure
+	$ make all
+
+There should be a MCT/data directory which contains interpolation
+weights needed for the test case. 
+
 ######################################################################
 
   Both mct and mpeu source code are self-documenting.  All modules 
@@ -59,6 +75,9 @@
       ftp://dao.gsfc.nasa.gov/pub/papers/sawyer/protex1.4.tar.Z 
      Documentation:
       ftp://dao.gsfc.nasa.gov/pub/office_notes/on9711r0.ps.Z 
+
+  You can build the documentation with protex and latex by following
+  the directions in the doc directory.
 
 ######################################################################
 
