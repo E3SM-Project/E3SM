@@ -202,12 +202,13 @@
      
   if(HeaderAssoc(3)) then
 
+     if(size(iGGrid%descend)<=0) call die(myname_,'size(iGGrid%descend)<=0')
+
      call MPI_SEND(size(iGGrid%descend), 1, MP_type(size(iGGrid%descend)), &
                    dest, TagBase+5, ThisMCTWorld%MCT_comm, ierr)
      if(ierr /= 0) then
 	call MP_perr_die(myname_,':: call MPI_SEND(size(iGGrid%descend)...',ierr)
      endif
-     if(size(iGGrid%descend)<=0) call die(myname_,'size(iGGrid%descend)<=0')
 
      call MPI_SEND(iGGrid%descend, size(iGGrid%descend), MP_type(iGGrid%descend(1)), &
                    dest, TagBase+6, ThisMCTWorld%MCT_comm, ierr)
@@ -348,6 +349,7 @@
       use m_AttrVectComms,only : AttrVect_recv => recv
 
       use m_List,only : List_recv => recv
+      use m_List,only : List_nullify => nullify
 
       implicit none
 
@@ -404,8 +406,15 @@
 
   if(present(status)) status = 0
 
-      ! Step 1.  Set HeaderAssoc(:) to .FALSE., then receive incoming 
-      ! HeaderAssoc(:) data
+      ! Step 1.  Nullify oGGrid components, set HeaderAssoc(:) to .FALSE., 
+      ! then receive incoming HeaderAssoc(:) data
+
+  call List_nullify(oGGrid%coordinate_list)
+  call List_nullify(oGGrid%coordinate_sort_order)
+  call List_nullify(oGGrid%weight_list)
+  call List_nullify(oGGrid%other_list)
+  call List_nullify(oGGrid%index_list)
+  nullify(oGGrid%descend)
 
   HeaderAssoc = .FALSE.
 
@@ -442,18 +451,17 @@
        ! Step 3.  If oGGrid%coordinate_sort_order is defined, receive it.
 
   if(HeaderAssoc(2)) then
-    call List_recv(oGGrid%coordinate_sort_order, source, TagBase+3, ThisMCTWorld%MCT_comm, ierr)
-    if(ierr /= 0) then
-       if(present(status)) then
-          write(stderr,*) myname_,':: Error calling ',&
-	  'List_recv(oGGrid%coordinate_sort_order...'
-          status = ierr
-          return
-       else
-          call die(myname_,':: call List_recv(oGGrid%coordinate_sort_order...', &
-	       ierr)
-       endif
-    endif
+     call List_recv(oGGrid%coordinate_sort_order, source, TagBase+3, ThisMCTWorld%MCT_comm, ierr)
+     if(ierr /= 0) then
+	if(present(status)) then
+	   write(stderr,*) myname_,':: Error calling ',&
+		'List_recv(oGGrid%coordinate_sort_order...'
+	   status = ierr
+	   return
+	else
+	   call die(myname_,':: call List_recv(oGGrid%coordinate_sort_order...', ierr)
+	endif
+     endif
   endif ! if(HeaderAssoc(2))...
 
        ! Step 4.  If oGGrid%descend is allocated, determine its size,
@@ -1198,6 +1206,7 @@
 
       use m_List, only : List
       use m_List, only : List_allocated => allocated
+      use m_List, only : List_nullify => nullify
       use m_List, only : List_bcast => bcast
 
       implicit none
@@ -1256,6 +1265,15 @@
      HeaderAssoc(4) = List_allocated(ioGGrid%other_list)
      HeaderAssoc(5) = List_allocated(ioGGrid%index_list)
      HeaderAssoc(6) = associated(ioGGrid%descend)
+
+  else
+
+     call List_nullify(ioGGrid%coordinate_list)
+     call List_nullify(ioGGrid%coordinate_sort_order)
+     call List_nullify(ioGGrid%weight_list)
+     call List_nullify(ioGGrid%other_list)
+     call List_nullify(ioGGrid%index_list)
+     nullify(ioGGrid%descend) 
 
   endif
 
@@ -1443,34 +1461,31 @@
        ! Step 1. Copy GeneralGrid List attributes from iGGrid 
        ! to oGGrid.
 
+  call List_nullify(oGGrid%coordinate_list)
+  call List_nullify(oGGrid%coordinate_sort_order)
+  call List_nullify(oGGrid%weight_list)
+  call List_nullify(oGGrid%other_list)
+  call List_nullify(oGGrid%index_list)
+  nullify(oGGrid%descend)
+
   if(List_allocated(iGGrid%coordinate_list)) then
      call List_copy(oGGrid%coordinate_list,iGGrid%coordinate_list)
-  else
-     call List_nullify(oGGrid%coordinate_list)
   endif
 
   if(List_allocated(iGGrid%coordinate_sort_order)) then
      call List_copy(oGGrid%coordinate_sort_order,iGGrid%coordinate_sort_order)
-  else
-     call List_nullify(oGGrid%coordinate_sort_order)
   endif
 
   if(List_allocated(iGGrid%weight_list)) then
      call List_copy(oGGrid%weight_list,iGGrid%weight_list)
-  else
-     call List_nullify(oGGrid%weight_list)
   endif
 
   if(List_allocated(iGGrid%other_list)) then
      call List_copy(oGGrid%other_list,iGGrid%other_list)
-  else
-     call List_nullify(oGGrid%other_list)
   endif
 
   if(List_allocated(iGGrid%index_list)) then
      call List_copy(oGGrid%index_list,iGGrid%index_list)
-  else
-     call List_nullify(oGGrid%index_list)
   endif
 
   DescendAssoc = associated(iGGrid%descend) 
@@ -1480,16 +1495,12 @@
      allocate(oGGrid%descend(DescendSize), stat=ierr)
      if(ierr /= 0) then 
 	write(stderr,*) myname_,':: ERROR--allocate(iGGrid%descend(... failed.',&
-	     ' ierr = ',ierr
+	     ' ierr = ', ierr, 'DescendSize = ', DescendSize
         call die(myname_)
      endif
      do i=1,DescendSize
 	oGGrid%descend(i) = iGGrid%descend(i)
      end do
-
-  else
-     
-     nullify(oGGrid%descend)
 
   endif
 
