@@ -405,7 +405,7 @@
  end subroutine recv_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: GM_gather_ - Gather an AttrVect Distributed by a GlobalMap
@@ -852,7 +852,7 @@
  end subroutine GSM_gather_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: GM_scatter_ - Scatter an AttrVect Using a GlobalMap
@@ -1456,7 +1456,7 @@
  end subroutine GSM_scatter_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: bcast_ - Broadcast an AttrVect
