@@ -25,6 +25,8 @@
 #	28Sep98 - Jing Guo (guo@dao.gsfc.nasa.gov)
 #		- Cleaned _Dnod for this library
 # 	22Jan01 - J. Larson <larson@mcs.anl.gov> - initial version
+# 	22Jan01 - J. Larson <larson@mcs.anl.gov> - minor update to
+#                 add _M macro (this is how Sun's f90 finds modules)
 #
 #EOP
 #-----------------------------------------------------------------------
@@ -57,6 +59,11 @@ _IMPI		= -I/soft/apps/packages/mpich-1.1.0/include
 
 _Iconf		= $(_IMPI)
 
+# Under SunOS, the f90 compiler looks for modules in the paths
+# specified by the -M (rather than -I) flag:
+
+_M		= -M.
+
 SHELL		= /bin/sh
 F77		= f90
 F90		= f90
@@ -87,7 +94,7 @@ FPPFLAGS	= $(F90PPFLAGS)
 .F.o:
 	$(RM) $*.f
 	$(FPP) $(FPPFLAGS) $(_DF) $(_I) $*.F $*.f
-	$(FC) -c $(FCFLAGS) $(_I) $*.f;		\
+	$(FC) -c $(FCFLAGS) $(_I) $(_M) $*.f;		\
 	  if [ $$? -ne 0 ]; then $(RM) $*.o; fi
 	$(RM) $*.f
 
@@ -95,34 +102,10 @@ FPPFLAGS	= $(F90PPFLAGS)
 .F90.o:
 	$(RM) $*.f90
 	$(FPP) $(FPPFLAGS) $(_DF) $(_I) $*.F90 $*.f90
-	$(FC) -c $(FCFLAGS) $(_I) $*.f90;	\
+	$(FC) -c $(FCFLAGS) $(_I) $(_M) $*.f90;	\
 	  if [ $$? -ne 0 ]; then $(RM) $*.o; fi
 	$(RM) $*.f90
 
 #.----------------------------------------------------------------------
 
-MUPDATE		= sh LCupdate.sh
-M		= mod
-MODS_OBJ	= m_chars.o		\
-		  m_die.o		\
-		  m_dropdead.o		\
-		  m_flow.o		\
-		  m_IndexBin_char.o	\
-		  m_IndexBin_integer.o	\
-		  m_IndexBin_logical.o	\
-		  m_inpak90.o		\
-		  m_ioutil.o		\
-		  m_List.o		\
-		  m_mall.o		\
-		  m_MergeSorts.o	\
-		  m_mpif.o		\
-		  m_mpif90.o		\
-		  m_mpout.o		\
-		  m_Permuter.o		\
-		  m_rankMerge.o		\
-		  m_realkinds.o		\
-		  m_SortingTools.o	\
-		  m_stdio.o		\
-		  m_String.o		\
-		  m_StrTemplate.o	\
-		  m_zeit.o
+MUPDATE         = sh LCupdate.sh
