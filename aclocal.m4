@@ -170,6 +170,14 @@ if test "$old_ac_ext" = "F90"; then
    AC_TRY_COMMAND([[$FPP $2 $FPPFLAGS conftest.$ac_ext conftest.f90]])
    ac_ext="f90"
 fi
+if test "$old_ac_ext" = "f"; then
+   AC_TRY_COMMAND([[$FPP $2 $FPPFLAGS conftest.$ac_ext conftest.f]])
+   ac_ext="f"
+fi
+if test "$old_ac_ext" = "f90"; then
+   AC_TRY_COMMAND([[$FPP $2 $FPPFLAGS conftest.$ac_ext conftest.f90]])
+   ac_ext="f90"
+fi
 AC_COMPILE_IFELSE([],[ac_cv_f90_fpp_external="yes"],[ac_cv_f90_fpp_external="no"])])
 ac_ext=$old_ac_ext
 ])
