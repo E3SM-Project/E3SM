@@ -431,7 +431,9 @@
 
         ! Clean up the array pe_loc(:) if it was allocated
 
-  if(.not. present(pe_loc)) then
+  if(present(pe_loc)) then
+     nullify(my_pe_loc) 
+  else
      deallocate(my_pe_loc, stat=ier)
      if(ier /= 0) call die(myname_, 'deallocate(my_pe_loc)', ier)
   endif
