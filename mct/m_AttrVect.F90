@@ -472,24 +472,46 @@
 
   endif
 
-        ! Clean up INTEGER and REAL attributes:
+        ! Clean up INTEGER attributes:
 
-  deallocate(aV%iAttr,aV%rAttr,stat=ier)
-  
-  if(ier /= 0) then
-     if(present(stat)) then
-	stat=ier
-     else
-	call warn(myname_,'deallocate(aV%iAttr,aV%rAttr)',ier)
-     endif
-  endif
+  if(associated(aV%iAttr)) then
 
-  if(ier == 0) then
 #ifdef MALL_ON
      call mall_co(size(transfer(aV%iAttr,(/1/)),myname_)
+#endif
+
+     deallocate(aV%iAttr,stat=ier)
+
+     if(ier /= 0) then
+	if(present(stat)) then
+	   stat=ier
+	else
+	   call warn(myname_,'deallocate(aV%iAttr)',ier)
+	endif
+     endif
+
+  endif ! if(associated(aV%iAttr))...
+  
+        ! Clean up REAL attributes:
+
+  if(associated(aV%rAttr)) then
+
+#ifdef MALL_ON
      call mall_co(size(transfer(aV%rAttr,(/1/)),myname_)
 #endif
-  endif
+
+     deallocate(aV%rAttr,stat=ier)
+
+     if(ier /= 0) then
+	if(present(stat)) then
+	   stat=ier
+	else
+	   call warn(myname_,'deallocate(aV%rAttr)',ier)
+	endif
+     endif
+
+  endif ! if(associated(aV%rAttr))...
+
 
  end subroutine clean_
 
