@@ -748,7 +748,7 @@
 	allocate(recv_rstatus(MP_STATUS_SIZE),stat=ier)
 	if(ier/=0) call die(myname_,'allocate(rstatus)',ier)
 
-	mp_Type_rp=MP_Type(rp2(2)%pr(1))
+	mp_Type_rp=MP_Type(rp2(1)%pr(1))
 
      endif
 
