@@ -2,16 +2,24 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !MODULE: m_AccumulatorComms - Communication methods for the 
-!          the Accumulator class.
+! !MODULE: m_AccumulatorComms - MPI Communication Methods for the Accumulator
+!          
 !
 ! !DESCRIPTION:
 !
-! An {\em accumulator} is a data class used for computing running sums 
-! and/or time averages of {\tt AttrVect} class data (see 
-! {\tt m\_Accumulator} for details).  This module defines the 
-! communications methods for the accumulator, employing both the 
-! {\tt GlobalMap} and {\tt GlobalSegMap} decomposition descriptors.
+! This module contains communications methods for the {\tt Accumulator}
+! datatype (see {\tt m\_Accumulator} for details).  MCT's communications 
+! are implemented in terms of the Message Passing Interface (MPI) standard, 
+! and we have as best as possible, made the interfaces to these routines 
+! appear as similar as possible to the corresponding MPI routines.  For the 
+! { \tt Accumulator}, we currently support only the following collective 
+! operations: broadcast, gather, and scatter.  The gather and scatter 
+! operations rely on domain decomposition descriptors that are defined
+! elsewhere in MCT:  the {\tt GlobalMap}, which is a one-dimensional 
+! decomposition (see the MCT module {\tt m\_GlobalMap} for more details); 
+! and the {\tt GlobalSegMap}, which is a segmented decomposition capable
+! of supporting multidimensional domain decompositions (see the MCT module 
+! {\tt m\_GlobalSegMap} for more details).
 !
 ! !INTERFACE:
 
@@ -19,13 +27,14 @@
 !
 ! !USES:
 !
-      use m_Accumulator, only : Accumulator
-      use m_GlobalMap,   only : GlobalMap
+! No external modules are used in the declaration section of this module.
 
       implicit none
 
       private	! except
 
+! !PUBLIC MEMBER FUNCTIONS:
+!
 ! List of communications Methods for the Accumulator class
 
       public :: gather		! gather all local vectors to the root
@@ -46,18 +55,16 @@
     interface bcast  ; module procedure bcast_  ; end interface
 
 ! !REVISION HISTORY:
-! 	31Oct00 - Jay Larson <larson@mcs.anl.gov> - initial prototype--
-!                 These routines were separated from the module 
-!                 {\tt m\_Accumulator}
-!       15Jan01 - Jay Larson <larson@mcs.anl.gov> - Specification of 
-!                 APIs for the routines {\tt GSM_gather_()} and 
-!                 {\tt GSM_scatter_()}.
-!       10May01 - Jay Larson <larson@mcs.anl.gov> - Changes in the
-!                 comms routine to match the MPI model for collective
-!                 communications, and general clean-up of prologues.
-!       09Aug01 - E.T. Ong <eong@mcs.anl.gov> - Added private routine
-!                 bcastp_. Used new Accumulator routines initp_ and 
-!                 initialized_ to simplify the routines.
+! 31Oct00 - Jay Larson <larson@mcs.anl.gov> - initial prototype--
+!           These routines were separated from the module m_Accumulator
+! 15Jan01 - Jay Larson <larson@mcs.anl.gov> - Specification of 
+!           APIs for the routines GSM_gather_() and GSM_scatter_().
+! 10May01 - Jay Larson <larson@mcs.anl.gov> - Changes in the
+!           comms routine to match the MPI model for collective
+!           communications, and general clean-up of prologues.
+!  9Aug01 - E.T. Ong <eong@mcs.anl.gov> - Added private routine
+!           bcastp_. Used new Accumulator routines initp_ and 
+!           initialized_ to simplify the routines.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_AccumulatorComms'
@@ -68,7 +75,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: GM_gather_ - gather a vector using input GlobalMap.
+! !IROUTINE: GM_gather_ - Gather Accumulator Distributed by a GlobalMap
 !
 ! !DESCRIPTION:  {\tt GM\_gather()} takes a distributed (across the
 ! communicator associated with the handle {\tt comm}) input 
@@ -91,7 +98,7 @@
       use m_GlobalMap, only : GlobalMap
       use m_AttrVect, only : AttrVect_clean => clean
       use m_Accumulator, only : Accumulator
-      use m_Accumulator,   only : Accumulator_initialized => initialized
+      use m_Accumulator, only : Accumulator_initialized => initialized
       use m_Accumulator, only : Accumulator_initv => init
       use m_AttrVectComms, only : AttrVect_gather => gather
 
@@ -110,14 +117,14 @@
       integer, optional,intent(out)  :: stat
 
 ! !REVISION HISTORY:
-! 	13Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
-! 	31Oct00 - Jay Larson <larson@mcs.anl.gov> - relocated to the
-!                 module m_AccumulatorComms
-! 	15Jan01 - Jay Larson <larson@mcs.anl.gov> - renamed GM_gather_
-! 	10May01 - Jay Larson <larson@mcs.anl.gov> - revamped comms 
-!                 model to match MPI comms model, and cleaned up prologue
-!       09Aug01 - E.T. Ong <eong@mcs.anl.gov> - 2nd prototype. Used the 
-!                 intiialized_ and accumulator init routines.
+! 13Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+! 31Oct00 - Jay Larson <larson@mcs.anl.gov> - relocated to the
+!           module m_AccumulatorComms
+! 15Jan01 - Jay Larson <larson@mcs.anl.gov> - renamed GM_gather_
+! 10May01 - Jay Larson <larson@mcs.anl.gov> - revamped comms 
+!           model to match MPI comms model, and cleaned up prologue
+!  9Aug01 - E.T. Ong <eong@mcs.anl.gov> - 2nd prototype. Used the 
+!           intiialized_ and accumulator init routines.
 !EOP ___________________________________________________________________
 
  character(len=*),parameter :: myname_=myname//'::GM_gather_'
@@ -173,7 +180,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: GSM_gather_ - gather an Accumulator using input GlobalSegMap.
+! !IROUTINE: GSM_gather_ - Gather Accumulator Distributed by a GlobalSegMap
 !
 ! !DESCRIPTION:  This routine takes the distrubuted (on the communcator
 ! associated with the handle {\tt comm}) input {\tt Accumulator} 
@@ -274,7 +281,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: GM_scatter_ - scatter an Accumulator using input GlobalMap.
+! !IROUTINE: GM_scatter_ - Scatter an Accumulator using a GlobalMap
 !
 ! !DESCRIPTION:  This routine takes the input {\tt Accumulator} argument
 ! {\tt iC} (valid only on the {\tt root}), and scatters it to the 
@@ -295,7 +302,7 @@
       use m_die
       use m_mpif90
 
-      use m_GlobalSegMap, only : GlobalSegMap
+      use m_GlobalMap,   only : GlobalMap
       use m_Accumulator, only : Accumulator
       use m_Accumulator, only : Accumulator_initv => init
       use m_Accumulator, only : Accumulator_initialized => initialized
@@ -381,7 +388,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: GSM_scatter_ - scatter Accumulator using input GlobalSegMap.
+! !IROUTINE: GSM_scatter_ - Scatter an Accumulator using a GlobalSegMap
 !
 ! !DESCRIPTION:  This routine takes the input {\tt Accumulator} argument
 ! {\tt iC} (valid only on the {\tt root}), and scatters it to the 
@@ -485,7 +492,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: bcast_ - broadcast an Accumulator from the root to all PEs.
+! !IROUTINE: bcast_ - Broadcast an Accumulator
 !
 ! !DESCRIPTION:  This routine takes the input {\tt Accumulator} argument
 ! {\tt aC} (on input valid only on the {\tt root}), and broadcasts it 
@@ -577,8 +584,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: bcastp_ - broadcast an Accumulator except for av from 
-!                      the root to all PEs.
+! !IROUTINE: bcastp_ - Broadcast an Accumulator (but Not its Registers)
 !
 ! !DESCRIPTION:  This routine broadcasts all components of the accumulator 
 !                aC except for aC%av. This is a private routine, only meant
@@ -596,7 +602,7 @@
       use m_mpif90
       use m_AttrVectComms, only : AttrVect_bcast => bcast
       use m_Accumulator, only : Accumulator
-      use m_Accumulator, only : Accumulator_initp => init
+      use m_Accumulator, only : Accumulator_initp => initp
 
       implicit none
 
@@ -617,7 +623,7 @@
 !       09Aug01 - E.T. Ong <eong@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname_=myname//'::bcast_'
+  character(len=*),parameter :: myname_=myname//'::bcastp_'
 
   integer :: myID
   integer :: ier, i

@@ -2,13 +2,25 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !MODULE: m_AttrVectComms - Communications methods for the AttrVect
+! !MODULE: m_AttrVectComms - MPI Communications Methods for the AttrVect
 !
 ! !DESCRIPTION:
 !
-! In this module, we define communications methods specific to the 
-! {\tt AttrVect} class (see the module {\tt m\_AttrVect} for more 
-! information about this class and its methods).
+! This module defines the communications methods for the {\tt AttrVect} 
+! datatype (see the module {\tt m\_AttrVect} for more information about 
+! this class and its methods).  MCT's communications are implemented 
+! in terms of the Message Passing Interface (MPI) standard, and we have 
+! as best as possible, made the interfaces to these routines appear as
+! similar as possible to the corresponding MPI routines.  For the 
+! { \tt AttrVect}, we supply {\em blocking} point-to-point send and 
+! receive operations.  We also supply the following collective 
+! operations: broadcast, gather, and scatter.  The gather and scatter 
+! operations rely on domain decomposition descriptors that are defined
+! elsewhere in MCT:  the {\tt GlobalMap}, which is a one-dimensional 
+! decomposition (see the MCT module {\tt m\_GlobalMap} for more details); 
+! and the {\tt GlobalSegMap}, which is a segmented decomposition capable
+! of supporting multidimensional domain decompositions (see the MCT module 
+! {\tt m\_GlobalSegMap} for more details).
 !
 ! !INTERFACE:
  module m_AttrVectComms
@@ -40,29 +52,29 @@
     interface recv  ; module procedure recv_  ; end interface
 
 ! !REVISION HISTORY:
-! 	27Oct00 - J.W. Larson <larson@mcs.anl.gov> - relocated routines
-!                 from m_AttrVect to create this module.
-!       15Jan01 - J.W. Larson <larson@mcs.anl.gov> - Added APIs for 
-!                 GSM_gather_() and GSM_scatter_().
-! 	09May01 - J.W. Larson <larson@mcs.anl.gov> - Modified GM_scatter_
-!                 so its communication model agrees with MPI_scatter().
-!                 Also tidied up prologues in all module routines.
-! 	07Jun01 - J.W. Larson <larson@mcs.anl.gov> - Added send() 
-!                 and recv().
-!       03Aug01 - E.T. Ong <eong@mcs.anl.gov> - in GSM_scatter, call 
-!                 GlobalMap_init with actual shaped array to satisfy
-!                 Fortran 90 standard. See comment in subroutine.
-!       23Aug01 - E.T. Ong <eong@mcs.anl.gov> - replaced assignment(=)
-!                 with copy for list type to avoid compiler bugs in pgf90.
-!                 Added more error checking in gsm scatter. Fixed minor bugs 
-!                 in gsm and gm gather.
-!       13Dec01 - E.T. Ong <eong@mcs.anl.gov> - GSM_scatter, allow users
-!                 to scatter with a haloed GSMap. Fixed some bugs in 
-!                 GM_scatter.
-!       19Dec01 - E.T. Ong <eong@mcs.anl.gov> - allow bcast of an AttrVect
-!                 with only an integer or real attribute.
-!       27Mar02 - J.W. Larson <larson@mcs.anl.gov> - Corrected usage of
-!                 m_die routines throughout this module.
+! 27Oct00 - J.W. Larson <larson@mcs.anl.gov> - relocated routines
+!           from m_AttrVect to create this module.
+! 15Jan01 - J.W. Larson <larson@mcs.anl.gov> - Added APIs for 
+!           GSM_gather_() and GSM_scatter_().
+!  9May01 - J.W. Larson <larson@mcs.anl.gov> - Modified GM_scatter_
+!           so its communication model agrees with MPI_scatter().
+!           Also tidied up prologues in all module routines.
+!  7Jun01 - J.W. Larson <larson@mcs.anl.gov> - Added send() 
+!           and recv().
+!  3Aug01 - E.T. Ong <eong@mcs.anl.gov> - in GSM_scatter, call 
+!           GlobalMap_init with actual shaped array to satisfy
+!           Fortran 90 standard. See comment in subroutine.
+! 23Aug01 - E.T. Ong <eong@mcs.anl.gov> - replaced assignment(=)
+!           with copy for list type to avoid compiler bugs in pgf90.
+!           Added more error checking in gsm scatter. Fixed minor bugs 
+!          in gsm and gm gather.
+! 13Dec01 - E.T. Ong <eong@mcs.anl.gov> - GSM_scatter, allow users
+!           to scatter with a haloed GSMap. Fixed some bugs in 
+!           GM_scatter.
+! 19Dec01 - E.T. Ong <eong@mcs.anl.gov> - allow bcast of an AttrVect
+!           with only an integer or real attribute.
+! 27Mar02 - J.W. Larson <larson@mcs.anl.gov> - Corrected usage of
+!           m_die routines throughout this module.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_AttrVectComms'
@@ -73,14 +85,14 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: send_ - Point-to-point send of an AttrVect variable...
+! !IROUTINE: send_ - Point-to-point Send of an AttrVect
 !
 ! !DESCRIPTION:  This routine takes an input {\tt AttrVect} argument 
 ! {\tt inAV} and sends it to processor {\tt dest} on the communicator 
-! associated with the fortran 90 {\tt INTEGER} handle {\tt comm}.  The 
-! message is tagged by the input {\tt INTEGER} argument {\tt TagBase}.  
-! The success (failure) of this operation is reported in the zero 
-! (nonzero) optional output argument {\tt status}.
+! associated with the Fortran {\tt INTEGER} MPI communicator handle 
+! {\tt comm}.  The overalll message is tagged by the input {\tt INTEGER} 
+! argument {\tt TagBase}.  The success (failure) of this operation is 
+! reported in the zero (nonzero) optional output argument {\tt status}.
 !
 ! {\bf N.B.}:  One must avoid assigning elsewhere the MPI tag values 
 ! between {\tt TagBase} and {\tt TagBase+7}, inclusive.  This is 
@@ -89,7 +101,7 @@
 !
 ! !INTERFACE:
 
-    subroutine send_(inAV, dest, TagBase, comm, status)
+ subroutine send_(inAV, dest, TagBase, comm, status)
 !
 ! !USES:
 !
@@ -118,9 +130,9 @@
       integer, optional,  intent(out) :: status
 
 ! !REVISION HISTORY:
-!       07Jun01 - J.W. Larson - initial version.
-!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize status
-!                 (if present).
+!  7Jun01 - J.W. Larson - initial version.
+! 13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize status
+!           (if present).
 !EOP ___________________________________________________________________
 
  character(len=*),parameter :: myname_=myname//'::send_'
@@ -224,14 +236,14 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: recv_ - Point-to-point receive of an AttrVect variable...
+! !IROUTINE: recv_ - Point-to-point Receive of an AttrVect
 !
 ! !DESCRIPTION:  This routine receives the output {\tt AttrVect} argument 
 ! {\tt outAV} from processor {\tt source} on the communicator associated 
-! with the fortran 90 {\tt INTEGER} handle {\tt comm}.  The message is 
-! tagged by the input {\tt INTEGER} argument {\tt tag}.  The success 
-! (failure) of this operation is reported in the zero (nonzero) optional 
-! output argument {\tt status}.
+! with the Fortran {\tt INTEGER} MPI communicator handle {\tt comm}.  The 
+! overall message is tagged by the input {\tt INTEGER} argument 
+! {\tt TagBase}.  The success (failure) of this operation is reported in 
+! the zero (nonzero) optional output argument {\tt status}.
 !
 ! {\bf N.B.}:  One must avoid assigning elsewhere the MPI tag values 
 ! between {\tt TagBase} and {\tt TagBase+7}, inclusive.  This is 
@@ -240,7 +252,7 @@
 !
 ! !INTERFACE:
 
-    subroutine recv_(outAV, dest, TagBase, comm, status)
+ subroutine recv_(outAV, dest, TagBase, comm, status)
 !
 ! !USES:
 !
@@ -268,9 +280,9 @@
       integer, optional,  intent(out) :: status
 
 ! !REVISION HISTORY:
-!       07Jun01 - J.W. Larson - initial working version.
-!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize status
-!                 (if present).
+!  7Jun01 - J.W. Larson - initial working version.
+! 13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize status
+!           (if present).
 !EOP ___________________________________________________________________
 
  character(len=*),parameter :: myname_=myname//'::recv_'
@@ -382,9 +394,16 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: GM_gather_ - gather a vector using input GlobalMap.
+! !IROUTINE: GM_gather_ - Gather an AttrVect Distributed by a GlobalMap
 !
 ! !DESCRIPTION:
+! This routine gathers a {\em distributed} {\tt AttrVect} {\tt iV} to 
+! the {\tt root} process, and returns it in the output {\tt AttrVect}
+! argument {\tt oV}.  The decomposition of {\tt iV} is described by 
+! the input {\tt GlobalMap} argument {\tt GMap}.  The input {\tt INTEGER}
+! argument {\tt comm} is the Fortran integer MPI communicator handle.
+! The success (failure) of this operation corresponds to a zero (nonzero)
+! value of the optional output {\tt INTEGER} argument {\tt stat}.
 !
 ! !INTERFACE:
 
@@ -408,24 +427,24 @@
 
 ! !INPUT PARAMETERS: 
 !
-      type(AttrVect),    intent(in)  :: iV
-      type(GlobalMap),   intent(in)  :: GMap
-      integer,           intent(in)  :: root
-      integer,           intent(in)  :: comm
+      type(AttrVect),           intent(in)  :: iV
+      type(GlobalMap),          intent(in)  :: GMap
+      integer,                  intent(in)  :: root
+      integer,                  intent(in)  :: comm
 
 ! !OUTPUT PARAMETERS:
 !
-      type(AttrVect),    intent(out) :: oV
-      integer, optional, intent(out) :: stat
+      type(AttrVect),           intent(out) :: oV
+      integer,        optional, intent(out) :: stat
 
 ! !REVISION HISTORY:
-! 	15Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
-! 	27Oct00 - J.W. Larson <larson@mcs.anl.gov> - relocated from
-!                 m_AttrVect
-!       15Jan01 - J.W. Larson <larson@mcs.anl.gov> - renamed GM_gather_
-! 	09May01 - J.W. Larson <larson@mcs.anl.gov> - tidied up prologue
-!       18May01 - R.L. Jacob <jacob@mcs.anl.gov> - use MP_Type function
-!                 to determine type for mpi_gatherv
+! 15Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 27Oct00 - J.W. Larson <larson@mcs.anl.gov> - relocated from
+!           m_AttrVect
+! 15Jan01 - J.W. Larson <larson@mcs.anl.gov> - renamed GM_gather_
+!  9May01 - J.W. Larson <larson@mcs.anl.gov> - tidied up prologue
+! 18May01 - R.L. Jacob <jacob@mcs.anl.gov> - use MP_Type function
+!           to determine type for mpi_gatherv
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GM_gather_'
@@ -492,7 +511,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: GSM_gather_ - gather a vector using input GlobalSegMap.
+! !IROUTINE: GSM_gather_ - Gather an AttrVect Distributed by a GlobalSegMap
 !
 ! !DESCRIPTION:
 ! The routine {\tt GSM\_gather\_()} takes a distributed input 
@@ -554,27 +573,27 @@
 
 ! !INPUT PARAMETERS: 
 !
-      type(AttrVect),     intent(in)  :: iV
-      type(GlobalSegMap) ,intent(in)  :: GSMap
-      integer,            intent(in)  :: root
-      integer,            intent(in)  :: comm
+      type(AttrVect),            intent(in)  :: iV
+      type(GlobalSegMap),        intent(in)  :: GSMap
+      integer,                   intent(in)  :: root
+      integer,                   intent(in)  :: comm
 
 ! !OUTPUT PARAMETERS:
 !
-      type(AttrVect),     intent(out) :: oV
-      integer, optional,  intent(out) :: stat
+      type(AttrVect),            intent(out) :: oV
+      integer,        optional,  intent(out) :: stat
 
 ! !REVISION HISTORY:
-! 	15Jan01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
-! 	25Feb01 - J.W. Larson <larson@mcs.anl.gov> - Prototype code.
-! 	26Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - add use statement for
-!                 AttVect_clean
-! 	09May01 - J.W. Larson <larson@mcs.anl.gov> - tidied up prologue
-!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize stat
-!                 (if present).
-!       20Aug01 - E.T. Ong <eong@mcs.anl.gov> - Added error checking for
-!                 matching processors in gsmap and comm. Corrected
-!                 current_pos assignment.
+! 15Jan01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
+! 25Feb01 - J.W. Larson <larson@mcs.anl.gov> - Prototype code.
+! 26Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - add use statement for
+!           AttVect_clean
+!  9May01 - J.W. Larson <larson@mcs.anl.gov> - tidied up prologue
+! 13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize stat
+!           (if present).
+! 20Aug01 - E.T. Ong <eong@mcs.anl.gov> - Added error checking for
+!           matching processors in gsmap and comm. Corrected
+!           current_pos assignment.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GSM_gather_'
@@ -771,7 +790,7 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: GM_scatter_ - scatter a vector using input GlobalMap.
+! !IROUTINE: GM_scatter_ - Scatter an AttrVect Using a GlobalMap
 !
 ! !DESCRIPTION:
 ! The routine {\tt GM\_scatter\_} takes an input {\tt AttrVect} type
@@ -817,34 +836,34 @@
 
 ! !INPUT PARAMETERS: 
 !
-      type(AttrVect),    intent(in)  :: iV
-      type(GlobalMap),   intent(in)  :: GMap
-      integer,           intent(in) :: root
-      integer,           intent(in) :: comm
+      type(AttrVect),           intent(in)  :: iV
+      type(GlobalMap),          intent(in)  :: GMap
+      integer,                  intent(in) :: root
+      integer,                  intent(in) :: comm
 
 ! !OUTPUT PARAMETERS:
 !
-      type(AttrVect),    intent(out) :: oV
-      integer, optional, intent(out) :: stat
+      type(AttrVect),           intent(out) :: oV
+      integer,        optional, intent(out) :: stat
 
 ! !REVISION HISTORY:
-! 	21Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
-! 	27Oct00 - J.W. Larson <larson@mcs.anl.gov> - relocated from
-!                 m_AttrVect
-! 	15Jan01 - J.W. Larson <larson@mcs.anl.gov> - renamed  GM_scatter_
-! 	08Feb01 - J.W. Larson <larson@mcs.anl.gov> - add logic to prevent
-!                 empty calls (i.e. no data in buffer) to MPI_SCATTERV()
-!       27Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - small bug fix to
-!                 integer attribute scatter
-! 	09May01 - J.W. Larson <larson@mcs.anl.gov> - Re-vamped comms model
-!                 to reflect MPI comms model for the scatter.  Tidied up
-!                 the prologue, too.
-!       18May01 - R.L. Jacob <jacob@mcs.anl.gov> - use MP_Type function
-!                 to determine type for mpi_scatterv
-!       08Aug01 - E.T. Ong <eong@mcs.anl.gov> - replace list assignment(=)
-!                 with list copy to avoid compiler errors in pgf90.
-!       13Dec01 - E.T. Ong <eong@mcs.anl.gov> - allow scatter with an
-!                 AttrVect containing only an iList or rList.
+! 21Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 27Oct00 - J.W. Larson <larson@mcs.anl.gov> - relocated from
+!           m_AttrVect
+! 15Jan01 - J.W. Larson <larson@mcs.anl.gov> - renamed  GM_scatter_
+!  8Feb01 - J.W. Larson <larson@mcs.anl.gov> - add logic to prevent
+!           empty calls (i.e. no data in buffer) to MPI_SCATTERV()
+! 27Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - small bug fix to
+!           integer attribute scatter
+!  9May01 - J.W. Larson <larson@mcs.anl.gov> - Re-vamped comms model
+!           to reflect MPI comms model for the scatter.  Tidied up
+!           the prologue, too.
+! 18May01 - R.L. Jacob <jacob@mcs.anl.gov> - use MP_Type function
+!           to determine type for mpi_scatterv
+!  8Aug01 - E.T. Ong <eong@mcs.anl.gov> - replace list assignment(=)
+!           with list copy to avoid compiler errors in pgf90.
+! 13Dec01 - E.T. Ong <eong@mcs.anl.gov> - allow scatter with an
+!           AttrVect containing only an iList or rList.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GM_scatter_'
@@ -959,7 +978,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: GSM_scatter_ - scatter a vecter using input GlobalSegMap.
+! !IROUTINE: GSM_scatter_ - Scatter an AttrVect using a GlobalSegMap
 !
 ! !DESCRIPTION:
 ! The routine {\tt GSM\_scatter\_} takes an input {\tt AttrVect} type
@@ -1030,42 +1049,42 @@
 
 ! !INPUT PARAMETERS: 
 !
-      type(AttrVect),     intent(in)  :: iV
-      type(GlobalSegMap), intent(in)  :: GSMap
-      integer,            intent(in)  :: root
-      integer,            intent(in)  :: comm
+      type(AttrVect),            intent(in)  :: iV
+      type(GlobalSegMap),        intent(in)  :: GSMap
+      integer,                   intent(in)  :: root
+      integer,                   intent(in)  :: comm
 
 ! !OUTPUT PARAMETERS:
 !
-      type(AttrVect),     intent(out) :: oV
-      integer, optional,  intent(out) :: stat
+      type(AttrVect),            intent(out) :: oV
+      integer,        optional,  intent(out) :: stat
 
 ! !REVISION HISTORY:
-! 	15Jan01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
-! 	08Feb01 - J.W. Larson <larson@mcs.anl.gov> - Initial code.
-! 	25Feb01 - J.W. Larson <larson@mcs.anl.gov> - Bug fix--replaced
-!                 call to GlobalSegMap_lsize with call to the new fcn.
-!                 GlobalSegMap_ProcessStorage().
-! 	26Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - add use statement for
-!                 AttVect_clean
-! 	26Apr01 - J.W. Larson <larson@mcs.anl.gov> - bug fixes--data 
-!                 misalignment in use of the GlobalMap to compute the
-!                 memory map into workV, and initialization of workV
-!                 on all processes.
-! 	09May01 - J.W. Larson <larson@mcs.anl.gov> - tidied up prologue
-! 	15May01 - Larson / Jacob <larson@mcs.anl.gov> - stopped initializing
-!                 workV on off-root processes (no longer necessary).
-!       13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize stat
-!                 (if present).
-!       20Jun01 - J.W. Larson <larson@mcs.anl.gov> - Fixed a subtle bug
-!                 appearing on AIX regarding the fact workV is uninitial-
-!                 ized on non-root processes.  This is fixed by nullifying
-!                 all the pointers in workV for non-root processes.
-!       20Aug01 - E.T. Ong <eong@mcs.anl.gov> - Added argument check
-!                 for matching processors in gsmap and comm.
-!       13Dec01 - E.T. Ong <eong@mcs.anl.gov> - got rid of restriction 
-!                 GlobalStorage(GSMap)==AttrVect_lsize(AV) to allow for
-!                 GSMap to be haloed.
+! 15Jan01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
+!  8Feb01 - J.W. Larson <larson@mcs.anl.gov> - Initial code.
+! 25Feb01 - J.W. Larson <larson@mcs.anl.gov> - Bug fix--replaced
+!           call to GlobalSegMap_lsize with call to the new fcn.
+!           GlobalSegMap_ProcessStorage().
+! 26Apr01 - R.L. Jacob <jacob@mcs.anl.gov> - add use statement for
+!           AttVect_clean
+! 26Apr01 - J.W. Larson <larson@mcs.anl.gov> - bug fixes--data 
+!           misalignment in use of the GlobalMap to compute the
+!           memory map into workV, and initialization of workV
+!           on all processes.
+!  9May01 - J.W. Larson <larson@mcs.anl.gov> - tidied up prologue
+! 15May01 - Larson / Jacob <larson@mcs.anl.gov> - stopped initializing
+!           workV on off-root processes (no longer necessary).
+! 13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize stat
+!           (if present).
+! 20Jun01 - J.W. Larson <larson@mcs.anl.gov> - Fixed a subtle bug
+!           appearing on AIX regarding the fact workV is uninitial-
+!           ized on non-root processes.  This is fixed by nullifying
+!           all the pointers in workV for non-root processes.
+! 20Aug01 - E.T. Ong <eong@mcs.anl.gov> - Added argument check
+!           for matching processors in gsmap and comm.
+! 13Dec01 - E.T. Ong <eong@mcs.anl.gov> - got rid of restriction 
+!           GlobalStorage(GSMap)==AttrVect_lsize(AV) to allow for
+!           GSMap to be haloed.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GSM_scatter_'
@@ -1333,7 +1352,7 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: bcast_ - broadcast from the root to all PEs
+! !IROUTINE: bcast_ - Broadcast an AttrVect
 !
 ! !DESCRIPTION:  This routine takes an {\tt AttrVect} argument {\tt aV}
 ! (at input, valid on the root only), and broadcasts it to all the
@@ -1368,27 +1387,27 @@
 
 ! !INPUT PARAMETERS: 
 !
-      integer,           intent(in)    :: root
-      integer,           intent(in)    :: comm
+      integer,                  intent(in)    :: root
+      integer,                  intent(in)    :: comm
 
 ! !INPUT/OUTPUT PARAMETERS: 
 !
-      type(AttrVect),    intent(inout) :: aV ! (IN) on the root, 
-                                             ! (OUT) elsewhere
+      type(AttrVect),           intent(inout) :: aV ! (IN) on the root, 
+                                                    ! (OUT) elsewhere
 
 ! !OUTPUT PARAMETERS:
 !
-      integer, optional, intent(out)   :: stat
+      integer,        optional, intent(out)   :: stat
 
 ! !REVISION HISTORY:
-! 	27Apr98 - Jing Guo <guo@thunder> - initial prototype/prologue/code
-! 	27Oct00 - J.W. Larson <larson@mcs.anl.gov> - relocated from
-!                 m_AttrVect
-! 	09May01 - J.W. Larson <larson@mcs.anl.gov> - tidied up prologue
-!       18May01 - R.L. Jacob <jacob@mcs.anl.gov> - use MP_Type function
-!                 to determine type for bcast
-!       19Dec01 - E.T. Ong <eong@mcs.anl.gov> - adjusted for case of AV with 
-!                 only integer or real attribute 
+! 27Apr98 - Jing Guo <guo@thunder> - initial prototype/prologue/code
+! 27Oct00 - J.W. Larson <larson@mcs.anl.gov> - relocated from
+!           m_AttrVect
+!  9May01 - J.W. Larson <larson@mcs.anl.gov> - tidied up prologue
+! 18May01 - R.L. Jacob <jacob@mcs.anl.gov> - use MP_Type function
+!           to determine type for bcast
+! 19Dec01 - E.T. Ong <eong@mcs.anl.gov> - adjusted for case of AV with 
+!           only integer or real attribute 
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::bcast_'

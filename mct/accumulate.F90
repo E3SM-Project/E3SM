@@ -5,6 +5,21 @@
 ! !ROUTINE: accumulate--Acumulate from an AttrVect to an Accumulator.
 !
 ! !DESCRIPTION:
+! This routine performs time {\em accumlation} of data present in an
+! MCT field data {\tt AttrVect} variable {\tt aV} (more information 
+! about the {\tt AttrVect} can be found in the MCT module 
+! {\tt m\_AttrVect}), and combines it with the running tallies stored 
+! in the MCT {\tt Accumulator} variable {\tt aC} (more information about 
+! the {\tt Accumulator} can be found in the MCT module 
+! {\tt m\_Accumulator}).  This routine automatically identifies which 
+! fields are held in common by {\tt aV} and {\tt aC} and uses the 
+! accumulation action information stored in {\tt aC} to decide how
+! each field in {\tt aV} is to be combined into its corresponding 
+! running tally in {\tt aC}.  The accumulation operations currently 
+! supported correspond to those defined among the public data members
+! of the declaration section of the MCT module {\tt m\_Accumulator}.  
+! This routine also automatically increments the counter in {\tt aC} 
+! signifying the number of steps completed in the accumulation cycle.
 !
 ! !INTERFACE:
 
@@ -35,7 +50,12 @@
 
       implicit none
 
+! !INPUT PARAMETERS: 
+!
       type(AttrVect),     intent(in)    :: aV      ! Input AttrVect
+
+! !INPUT/OUTPUT PARAMETERS: 
+!
       type(Accumulator),  intent(inout) :: aC      ! Output Accumulator
 
 ! !REVISION HISTORY:

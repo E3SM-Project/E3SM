@@ -2,14 +2,33 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !MODULE: m_Accumulator - a distributed accumulator for time-averaging.
+! !MODULE: m_Accumulator - Time Averaging/Accumlation Buffer
 !
 ! !DESCRIPTION:
 !
 ! An {\em accumulator} is a data class used for computing running sums 
-! and/or time averages of {\tt AttrVect} class data.  The fortran 90 
+! and/or time averages of {\tt AttrVect} class data.  The Fortran 
 ! implementation of this concept is the {\tt Accumulator} class, 
 ! which---along with its basic methods---is defined in this module.
+! The period of time over which data are accumulated/averaged is the 
+! {\em accumulation cycle}, which is defined by in terms of a number 
+! of time steps (the component {\tt Accumulator\%num\_steps}).  When
+! the accumulation routine is invoked (for example the MCT routine 
+! {\tt accumulate()} which is not defined in this module), the number 
+! of accumulation cycle steps (the component 
+! {\tt Accumulator\%steps\_done})is incremented, and compared with 
+! the number of steps in the accumulation cycle to determine if the 
+! accumulation cycle has been completed.  The accumulation buffers 
+! of the {\tt Accumulator} are stored in an {\tt AttrVect} (namely 
+! the component {\tt Accumulator\%av}), which allows the user to 
+! define the number of variables and their names to be defined by 
+! the user at run-time.  Finally, one can define for each field 
+! being accumulated the specific accumulation {\em action}.  Currently,
+! there are two options:  Time Averaging and Time Summation.  The 
+! user chooses the specific action by setting an integer action 
+! flag for each attribute being accumulated.  The supported options
+! are defined by the public data member constants {\tt MCT\_SUM} and
+! {\tt MCT\_AVG}.
 !
 ! !INTERFACE:
 
@@ -24,19 +43,24 @@
 
       private	! except
 
-! The class data structure
+! !PUBLIC TYPES:
 
-      public :: Accumulator     
+      public :: Accumulator ! The class data structure
 
-! Defined constants
+    Type Accumulator
+      integer :: num_steps      ! total number of accumulation steps
+      integer :: steps_done     ! number of accumulation steps performed
+      integer :: niAction(1:2)  ! number of integer actions
+      integer :: nrAction(1:2)  ! number of real actions
+      integer, pointer, dimension(:) :: iAction ! index of integer actions
+      integer, pointer, dimension(:) :: rAction ! index of real actions
+      type(AttrVect) :: av      ! accumulated sum field storage
+    End Type Accumulator
 
-      public :: MCT_SUM
-      public :: MCT_AVG
-
-
-! List of Methods for the Accumulator class
-
+! !PUBLIC MEMBER FUNCTIONS:
+!
       public :: init		! creation method
+      public :: initp		! partial creation method (MCT USE ONLY)
       public :: clean		! destruction method
       public :: initialized     ! check if initialized
       public :: lsize		! local length of the data arrays
@@ -57,32 +81,13 @@
 				    ! respective locations of these
 				    ! shared attributes
 
-
-! Definition of the Accumulator class:
-
-    type Accumulator
-      integer :: num_steps      ! total number of accumulation steps
-      integer :: steps_done     ! number of accumulation steps performed
-      integer :: niAction(1:2)  ! number of integer actions
-      integer :: nrAction(1:2)  ! number of real actions
-      integer, pointer, dimension(:) :: iAction ! index of integer actions
-      integer, pointer, dimension(:) :: rAction ! index of real actions
-      type(AttrVect) :: av      ! accumulated sum field storage
-      
-    end type Accumulator
-
-! Assignment of constants
-
-    integer, parameter :: MCT_SUM = 1
-    integer, parameter :: MCT_AVG = 2
-
 ! Definition of interfaces for the methods for the Accumulator:
 
     interface init   ; module procedure	&
-	init_,	&
-	initv_, &
-        initp_ 
+       init_,	&
+       initv_
     end interface
+    interface initp  ; module procedure	initp_ ; end interface
     interface clean  ; module procedure clean_  ; end interface
     interface initialized; module procedure initialized_ ; end interface
     interface lsize  ; module procedure lsize_  ; end interface
@@ -97,19 +102,26 @@
     interface importIAttr ; module procedure importIAttr_ ; end interface
     interface importRAttr ; module procedure importRAttr_ ; end interface
     interface SharedAttrIndexList ; module procedure   &
-        aCaCSharedAttrIndexList_,  &   
-        aVaCSharedAttrIndexList_
+       aCaCSharedAttrIndexList_,  &   
+       aVaCSharedAttrIndexList_
     end interface
 
+! !PUBLIC DATA MEMBERS:
+!
+      public :: MCT_SUM
+      public :: MCT_AVG
+
+    integer, parameter :: MCT_SUM = 1
+    integer, parameter :: MCT_AVG = 2
 
 ! !REVISION HISTORY:
-! 	 7Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
-! 	 7Feb01 - Jay Larson <larson@mcs.anl.gov> - Public interfaces
-!                 to getIList() and getRList().
-!        09Aug01 - E.T. Ong <eong@mcs.anl.gov> - added initialized and
-!                  initp_ routines. Added 'action' in Accumulator type.
-! 	  6May02 - Jay Larson <larson@mcs.anl.gov> - added import/export
-!                  routines.
+!  7Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+!  7Feb01 - Jay Larson <larson@mcs.anl.gov> - Public interfaces
+!           to getIList() and getRList().
+!  9Aug01 - E.T. Ong <eong@mcs.anl.gov> - added initialized and
+!           initp_ routines. Added 'action' in Accumulator type.
+!  6May02 - Jay Larson <larson@mcs.anl.gov> - added import/export
+!            routines.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_Accumulator'
@@ -120,14 +132,41 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: init_ - initialize an accumulator with given iList, rList, length, 
-! num\_steps, and steps\_done.
+! !IROUTINE: init_ - Initialize an Accumulator and its Registers
 !
 ! !DESCRIPTION:
+! This routine allocates space for the output {\tt Accumulator} argument 
+! {\tt aC}, and at a minimum sets the number of time steps in an 
+! accumulation cycle (defined by the input {\tt INTEGER} argument 
+! {\tt num\_steps}), and the {\em length} of the {\tt Accumulator} 
+! register buffer (defined by the input {\tt INTEGER} argument {\tt 
+! lsize}).  If one wishes to accumulate integer fields, the list of
+! these fields is defined by the input {\tt CHARACTER} argument 
+! {\tt iList}, which is specified as a colon-delimited set of 
+! substrings (further information regarding this is available in the 
+! routine {\tt init\_()} of the module {\tt m\_AttrVect}).  If no 
+! value of {\tt iList} is supplied, no integer attribute accumulation 
+! buffers will be allocated.  The accumulation action on each of the
+! integer attributes can be defined by supplying the input {\tt INTEGER}
+! array argument {\tt iAction(:)} (whose length must correspond to the
+! number of items in {\tt iList}.  The values of the elements of 
+! {\tt iAction(:)} must be one of the values among the public data 
+! members defined in the declaration section of this module.  If the
+! integer attributes are to be accumulated (i.e. one supplies {\tt iList}),
+! but {\tt iAction(:)} is not specified, the default action for all 
+! integer accumulation operations will be summation.  The input arguments
+! {\tt rList} and {\tt rAction(:)} define the names of the real variables 
+! to be accumulated and the accumulation action for each.  The arguments
+! {\tt rList} and {\tt rAction(:)} are related to each other the same 
+! way as {\tt iList} and {\tt iAction(:)}.  Finally, the user can 
+! manually set the number of completed steps in an accumulation cycle
+! (e.g. for restart purposes) by supplying a value for the optional 
+! input {\tt INTEGER} argument {\tt steps\_done}.
 !
 ! !INTERFACE:
 
- subroutine init_(aC,iList,iAction,rList,rAction,lsize,num_steps,steps_done)
+ subroutine init_(aC, iList, iAction, rList, rAction, lsize, &
+                  num_steps,steps_done)
 !
 ! !USES:
 !
@@ -138,7 +177,8 @@
 
       implicit none
 
-      type(Accumulator),               intent(out) :: aC
+! !INPUT PARAMETERS: 
+!
       character(len=*),      optional, intent(in)  :: iList
       integer, dimension(:), optional, intent(in)  :: iAction
       character(len=*),      optional, intent(in)  :: rList
@@ -147,11 +187,15 @@
       integer,                         intent(in)  :: num_steps
       integer,               optional, intent(in)  :: steps_done
 
+! !OUTPUT PARAMETERS: 
+!
+      type(Accumulator),               intent(out) :: aC
+
 ! !REVISION HISTORY:
-! 	11Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
-!       27JUL01 - E.T. Ong <eong@mcs.anl.gov> - added iAction, rAction,
-!                 niAction, and nrAction to accumulator type. Also defined
-!                 MCT_SUM and MCT_AVG for accumulator module.
+! 11Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+! 27JUL01 - E.T. Ong <eong@mcs.anl.gov> - added iAction, rAction,
+!           niAction, and nrAction to accumulator type. Also defined
+!           MCT_SUM and MCT_AVG for accumulator module.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::init_'
@@ -185,17 +229,33 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: initp_ - initialize an accumulator with given iList, rList, 
-!            length, num\_steps, and steps\_done, without initializing 
-!            av component of accumulator
+! !IROUTINE: initp_ - Initialize an Accumulator but not its Registers
 !
-! !DESCRIPTION: This routine is meant to be used only by member modules, not
-!               by the user. The warning flag must be present for the routine
-!               to be called correctly. 
+! !DESCRIPTION: 
+! This routine is an internal service routine for use by the other 
+! initialization routines in this module.  It sets up some---but not
+! all---of the components of the output {\tt Accumulator} argument 
+! {\tt aC}.  This routine can set up the following components of 
+! {\tt aC}:
+! \begin{enumerate}
+! \item {\tt aC\%iAction}, the array of accumlation actions for the
+! integer attributes of {\tt aC} (if the input {\tt INTEGER} array 
+! argument {\tt iAction(:)} is supplied);
+! \item {\tt aC\%rAction}, the array of accumlation actions for the
+! real attributes of {\tt aC} (if the input {\tt INTEGER} array 
+! argument {\tt rAction(:)} is supplied);
+! \item {\tt aC\%num\_steps}, the number of steps in an accumulation
+! cycle (if the input {\tt INTEGER} argument {\tt num\_steps} is 
+! supplied); and
+! \item {\tt aC\%steps\_done}, the number of steps completed so far 
+! in an accumulation cycle (if the input {\tt INTEGER} argument 
+! {\tt steps\_done} is supplied).
+! \end{enumerate}
 !
 ! !INTERFACE:
 
- subroutine initp_(aC,iAction,rAction,num_steps,steps_done,warning_flag)
+ subroutine initp_(aC, iAction, rAction, num_steps, steps_done, &
+                   warning_flag)
 !
 ! !USES:
 !
@@ -203,18 +263,23 @@
 
       implicit none
 
-      type(Accumulator),               intent(out) :: aC
+! !INPUT PARAMETERS: 
+!
       integer, dimension(:), optional, intent(in)  :: iAction
       integer, dimension(:), optional, intent(in)  :: rAction
       integer,                         intent(in)  :: num_steps
       integer,               optional, intent(in)  :: steps_done
       logical,                         intent(in)  :: warning_flag
 
+! !OUTPUT PARAMETERS: 
+!
+      type(Accumulator),               intent(out) :: aC
+
 ! !REVISION HISTORY:
-! 	11Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
-!       27JUL01 - E.T. Ong <eong@mcs.anl.gov> - added iAction, rAction,
-!                 niAction, and nrAction to accumulator type. Also defined
-!                 MCT_SUM and MCT_AVG for accumulator module.
+! 11Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+! 27JUL01 - E.T. Ong <eong@mcs.anl.gov> - added iAction, rAction,
+!           niAction, and nrAction to accumulator type. Also defined
+!           MCT_SUM and MCT_AVG for accumulator module.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::init_'
@@ -295,19 +360,26 @@
 
  end subroutine initp_
 
-
-
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: initv_-Initialize an accumulator using another Accumulator.
+! !IROUTINE: initv_-Initialize One Accumulator using Another
 !
 ! !DESCRIPTION:
+! This routine takes the integer and real attribute information (including
+! accumulation action settings for each attribute) from a previously 
+! initialized {\tt Accumulator} (the input argument {\tt bC}), and uses
+! it to create another {\tt Accumulator} (the output argument {\tt aC}).
+! In the absence of the {\tt INTEGER} input arguments {\tt lsize}, 
+! {\tt num\_steps}, and {\tt steps\_done}, {\tt aC} will inherit from 
+! {\tt bC} its length, the number of steps in its accumulation cycle, and
+! the number of steps completed in its present accumulation cycle, 
+! respectively.
 !
 ! !INTERFACE:
 
- subroutine initv_(aC,bC,lsize,num_steps,steps_done)
+ subroutine initv_(aC, bC, lsize, num_steps, steps_done)
 !
 ! !USES:
 !
@@ -318,24 +390,31 @@
 
       implicit none
 
-      type(Accumulator),    intent(out) :: aC
-      type(Accumulator),    intent(in)  :: bC
-      integer, optional, intent(in)  :: lsize
-      integer,           intent(in)  :: num_steps
-      integer, optional, intent(in)  :: steps_done
+! !INPUT PARAMETERS: 
+!
+      type(Accumulator),           intent(in)  :: bC
+      integer,           optional, intent(in)  :: lsize
+      integer,           optional, intent(in)  :: num_steps
+      integer,           optional, intent(in)  :: steps_done
+
+! !OUTPUT PARAMETERS: 
+!
+      type(Accumulator),           intent(out) :: aC
 
 ! !REVISION HISTORY:
-! 	11Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
-! 	17May01 - R. Jacob <jacob@mcs.anl.gov> - change string_get to
-!                 list_get
-!       27JUL01 - E.T. Ong <eong@mcs.anl.gov> - added iaction,raction 
-!                 compatibility
+! 11Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+! 17May01 - R. Jacob <jacob@mcs.anl.gov> - change string_get to
+!           list_get
+! 27JUL01 - E.T. Ong <eong@mcs.anl.gov> - added iaction,raction 
+!           compatibility
+!  2Aug02 - J. Larson <larson@mcs.anl.gov> made argument num_steps
+!           optional 
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::initv_'
 
   type(String) :: iLStr,rLStr
-  integer :: steps_completed
+  integer :: myNumSteps, myStepsDone 
   integer :: aC_lsize
   integer :: bC_iActions, bC_rActions 
   integer, dimension(:), allocatable :: iActionArray, rActionArray
@@ -347,18 +426,30 @@
   status = initialized(aC,die_flag=.true.,source_name=myname_)
   status = initialized(bC,die_flag=.false.,source_name=myname_)
 
-        ! If the argument steps_done is present, set steps_completed
+        ! If the argument steps_done is present, set myStepsDone
         ! to this value; otherwise, set it to zero
 
-  steps_completed = 0
-  if(present(steps_done)) steps_completed = steps_done 
+  if(present(num_steps)) then ! set it manually
+     myNumSteps = num_steps
+  else ! inherit it from bC
+     myNumSteps = bC%num_steps
+  endif
+
+        ! If the argument steps_done is present, set myStepsDone
+        ! to this value; otherwise, set it to zero
+
+  if(present(steps_done)) then ! set it manually
+     myStepsDone= steps_done 
+  else ! inherit it from bC
+     myStepsDone = bC%steps_done
+  endif
 
         ! If the argument lsize is present, 
         ! set aC_lsize to this value; otherwise, set it to the lsize of bC
  
-  if(present(lsize)) then 
+  if(present(lsize)) then  ! set it manually
      aC_lsize = lsize     
-  else
+  else ! inherit it from bC
      aC_lsize = lsize_(bC)
   endif
 
@@ -390,8 +481,8 @@
 
      call init_(aC, iList=String_char(iLStr), iAction=iActionArray, &
 	        rList=String_char(rLStr), rAction=rActionArray, &
-                lsize=aC_lsize, num_steps=num_steps, &
-                steps_done=steps_completed)
+                lsize=aC_lsize, num_steps=myNumSteps, &
+                steps_done=myStepsDone)
 
   else 
 
@@ -402,8 +493,8 @@
 	enddo
 
 	call init_(aC, iList=String_char(iLStr), iAction=iActionArray, &
-                   lsize=aC_lsize, num_steps=num_steps, &
-                   steps_done=steps_completed)
+                   lsize=aC_lsize, num_steps=myNumSteps, &
+                   steps_done=myStepsDone)
      endif
 
      if( bC_rActions > 0 ) then
@@ -413,8 +504,8 @@
 	enddo
 
 	call init_(aC, rList=String_char(rLStr), rAction=rActionArray, &
-                   lsize=aC_lsize, num_steps=num_steps, &
-                   steps_done=steps_completed)
+                   lsize=aC_lsize, num_steps=myNumSteps, &
+                   steps_done=myStepsDone)
      endif
 
   endif
@@ -428,13 +519,21 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: clean_ - Destruction method for the Accumulator.
+! !IROUTINE: clean_ - Destroy an Accumulator
 !
 ! !DESCRIPTION:
+! This routine deallocates all allocated memory structures associated 
+! with the input/output {\tt Accumulator} argument {\tt aC}.  The 
+! success (failure) of this operation is signified by the zero (non-zero)
+! value of the optional {\tt INTEGER} output argument {\tt stat}.  If 
+! {\tt clean\_()} is invoked with {\tt stat} present, it is the user's
+! obligation to check this return code and act accordingly.  If {\tt stat}
+! is not supplied and any of the deallocation operations fail, this
+! routine will terminate execution with an error statement.
 !
 ! !INTERFACE:
 
- subroutine clean_(aC,stat)
+ subroutine clean_(aC, stat)
 !
 ! !USES:
 !
@@ -445,15 +544,20 @@
 
       implicit none
 
+! !INPUT/OUTPUT PARAMETERS: 
+!
       type(Accumulator), intent(inout) :: aC
+
+! !OUTPUT PARAMETERS: 
+!
       integer, optional, intent(out)   :: stat
 
 ! !REVISION HISTORY:
-! 	11Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
-!       27JUL01 - E.T. Ong <eong@mcs.anl.gov> - deallocate pointers iAction
-!                 and rAction.
-!       01Mar02 - E.T. Ong <eong@mcs.anl.gov> removed the die to prevent
-!                 crashes and added stat argument.       
+! 11Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+! 27JUL01 - E.T. Ong <eong@mcs.anl.gov> - deallocate pointers iAction
+!           and rAction.
+!  1Mar02 - E.T. Ong <eong@mcs.anl.gov> removed the die to prevent
+!           crashes and added stat argument.       
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::clean_'
@@ -474,7 +578,7 @@
 	 if(present(stat)) then
 	    stat=ier
 	 else
-	    call warn(myname_,'deallocate(aC%iAction)',ier)
+	    call die(myname_,'deallocate(aC%iAction)',ier)
 	 endif
       endif
 
@@ -488,7 +592,7 @@
 	 if(present(stat)) then
 	    stat=ier
 	 else
-	    call warn(myname_,'deallocate(aC%rAction)',ier)
+	    call die(myname_,'deallocate(aC%rAction)',ier)
 	 endif
       endif
 
@@ -496,21 +600,36 @@
 
  end subroutine clean_
 
-
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: initialized_ - Check if an Accumulator is initialized.
+! !IROUTINE: initialized_ - Check if an Accumulator is Initialized
 !
-! !DESCRIPTION: If an Accumulator is initialized correctly, the function
-!               returns true. Argument die\_flag, if present, will err 
-!               if die\_flag is true and aC is correctly initialized, and
-!               if die\_flag is false and aC is incorrectly initialized.
+! !DESCRIPTION: 
+! This logical function returns a value of {\tt .TRUE.} if the input 
+! {\tt Accumulator} argument {\tt aC}  is initialized correctly.  The
+! term "correctly initialized" means there is internal consistency 
+! between the number of integer and real attributes in {\tt aC}, and
+! their respective data structures for accumulation registers, and 
+! accumulation action flags.  The optional {\tt LOGICAL} input argument
+! {\tt die\_flag}  if present, can result in messages written to 
+! {\tt stderr}:
+! \begin {itemize}  
+! \item if {\tt die\_flag} is true and {\tt aC} is correctly initialized, 
+! and
+! \item if {\tt die\_flag} is false and {\tt aC} is incorrectly 
+! initialized.
+! \end{itemize}
+! Otherwise, inconsistencies in how {\tt aC} is set up will result in
+! termination with an error message.
+! The optional {\tt CHARACTER} input argument {\tt source\_name} allows
+! the user to, in the event of error, generate traceback information 
+! (e.g., the name of the routine that invoked this one).
 !
 ! !INTERFACE:
 
- function initialized_(aC, die_flag, source_name)
+ logical function initialized_(aC, die_flag, source_name)
 !
 ! !USES:
 !
@@ -525,13 +644,14 @@
 
    implicit none
 
-   logical                                :: initialized_
+! !INPUT PARAMETERS: 
+!
    type(Accumulator),          intent(in) :: aC
    logical,          optional, intent(in) :: die_flag
    character(len=*), optional, intent(in) :: source_name
 
 ! !REVISION HISTORY:
-!       07AUG01 - E.T. Ong <eong@mcs.anl.gov> - initital prototype
+!  7AUG01 - E.T. Ong <eong@mcs.anl.gov> - initital prototype
 !
 !EOP ___________________________________________________________________
 
@@ -646,13 +766,17 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: lsize_ - local size of data storage in the Accumulator.
+! !IROUTINE: lsize_ - Length of an Accumulator
 !
 ! !DESCRIPTION:
+! This {\tt INTEGER} query function returns the number of data points 
+! for which the input {\tt Accumulator} argument {\tt aC} is performing
+! accumulation.  This value corresponds to the length of the {\tt AttrVect}
+! component {\tt aC\%av} that stores the accumulation registers.
 !
 ! !INTERFACE:
 
- function lsize_(aC)
+ integer function lsize_(aC)
 !
 ! !USES:
 !
@@ -660,11 +784,12 @@
 
       implicit none
 
+! !INPUT PARAMETERS: 
+!
       type(Accumulator), intent(in) :: aC
-      integer :: lsize_
 
 ! !REVISION HISTORY:
-! 	12Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+! 12Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::lsize_'
@@ -681,13 +806,18 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: nIAttr_ - number of INTEGER fields stored in the Accumulator.
+! !IROUTINE: nIAttr_ - Return the Number of INTEGER Attributes
 !
 ! !DESCRIPTION:
+! This {\tt INTEGER} query function returns the number of integer 
+! attributes that are stored in the input {\tt Accumulator} argument 
+! {\tt aC}.  This value is equal to the number of integer attributes 
+! in the {\tt AttrVect} component {\tt aC\%av} that stores the 
+! accumulation registers.
 !
 ! !INTERFACE:
 
-    function nIAttr_(aC)
+ integer function nIAttr_(aC)
 !
 ! !USES:
 !
@@ -695,11 +825,12 @@
 
       implicit none
 
+! !INPUT PARAMETERS: 
+!
       type(Accumulator),intent(in) :: aC
-      integer :: nIAttr_
 
 ! !REVISION HISTORY:
-! 	12Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+! 12Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::nIAttr_'
@@ -718,10 +849,15 @@
 ! !IROUTINE: nRAttr_ - number of REAL fields stored in the Accumulator.
 !
 ! !DESCRIPTION:
+! This {\tt INTEGER} query function returns the number of real
+! attributes that are stored in the input {\tt Accumulator} argument 
+! {\tt aC}.  This value is equal to the number of real attributes 
+! in the {\tt AttrVect} component {\tt aC\%av} that stores the 
+! accumulation registers.
 !
 ! !INTERFACE:
 
- function nRAttr_(aC)
+ integer function nRAttr_(aC)
 !
 ! !USES:
 !
@@ -729,11 +865,12 @@
  
       implicit none
 
+! !INPUT PARAMETERS: 
+!
       type(Accumulator),intent(in) :: aC
-      integer :: nRAttr_
 
 ! !REVISION HISTORY:
-! 	12Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+! 12Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::nRAttr_'
@@ -749,14 +886,16 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: getIList_ - get an item from the integer attribute list 
-! in the accumulator data storage area (i.e. its AttrVect component).
+! !IROUTINE: getIList_ - Retrieve a Numbered INTEGER Attribute Name
 !
 ! !DESCRIPTION:
+! This routine returns as a {\tt String} (see the mpeu module 
+! {\tt m\_String} for information) the name of the {\tt ith} item in 
+! the integer registers of the {\tt Accumulator} argument {\tt aC}.
 !
 ! !INTERFACE:
 
-    subroutine getIList_(item,ith,aC)
+ subroutine getIList_(item, ith, aC)
 !
 ! !USES:
 !
@@ -764,12 +903,18 @@
       use m_String,   only : String
 
       implicit none
-      type(String),intent(out)     :: item
-      integer,     intent(in)      :: ith
-      type(Accumulator),intent(in) :: aC
+
+! !INPUT PARAMETERS: 
+!
+      integer,           intent(in)  :: ith
+      type(Accumulator), intent(in)  :: aC
+
+! !OUTPUT PARAMETERS: 
+!
+      type(String),      intent(out) :: item
 
 ! !REVISION HISTORY:
-! 	12Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+! 12Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::getIList_'
@@ -782,14 +927,16 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: getRList_ - get an item from real attribute list in the
-! accumulator data storage space (i.e. its AttrVect component).
+! !IROUTINE: getRList_ - Retrieve a Numbered REAL Attribute Name
 !
 ! !DESCRIPTION:
+! This routine returns as a {\tt String} (see the mpeu module 
+! {\tt m\_String} for information) the name of the {\tt ith} item in 
+! the real registers of the {\tt Accumulator} argument {\tt aC}.
 !
 ! !INTERFACE:
 
-    subroutine getRList_(item,ith,aC)
+ subroutine getRList_(item, ith, aC)
 !
 ! !USES:
 !
@@ -797,12 +944,18 @@
       use m_String,   only : String
 
       implicit none
-      type(String),     intent(out) :: item
+
+! !INPUT PARAMETERS: 
+!
       integer,          intent(in)  :: ith
       type(Accumulator),intent(in)  :: aC
 
+! !OUTPUT PARAMETERS: 
+!
+      type(String),     intent(out) :: item
+
 ! !REVISION HISTORY:
-! 	12Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+! 12Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::getRList_'
@@ -815,13 +968,35 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: indexIA_ - index the Accumulator integer attribute List.
+! !IROUTINE: indexIA_ - Index an INTEGER Attribute
 !
 ! !DESCRIPTION:
-!
+! This {\tt INTEGER} query function returns the index in the integer 
+! accumulation register buffer of the {\tt Accumulator} argument {\tt aC} 
+! the attribute named by the {\tt CHARACTER} argument {\tt item}.  That
+! is, all the accumulator running tallies for the attribute named 
+! {\tt item} reside in 
+!\begin{verbatim}
+! aC%av%iAttr(indexIA_(aC,item),:).
+!\end{verbatim}
+! The user may request traceback information (e.g., the name of the 
+! routine from which this one is called) by providing values for either 
+! of the optional {\tt CHARACTER} arguments {\tt perrWith} or {\tt dieWith}
+! In the event {\tt indexIA\_()} can not find {\tt item} in {\tt aC}, 
+! the routine behaves as follows:
+! \begin{enumerate}
+! \item if neither {\tt perrWith} nor {\tt dieWith} are present, 
+! {\tt indexIA\_()} returns a value of zero;
+! \item if {\tt perrWith} is present, but {\tt dieWith} is not, an error 
+! message is written to {\tt stderr} incorporating user-supplied traceback
+! information stored in the argument {\tt perrWith};
+! \item if {\tt dieWith} is present, execution terminates with an error 
+! message written to {\tt stderr} that incorporates user-supplied traceback
+! information stored in the argument {\tt dieWith}.
+! \end{enumerate}
 ! !INTERFACE:
 
- function indexIA_(aC,item,perrWith,dieWith)
+ integer function indexIA_(aC, item, perrWith, dieWith)
 !
 ! !USES:
 !
@@ -830,15 +1005,16 @@
       use m_stdio,only : stderr
 
       implicit none
- 
-     type(Accumulator), intent(in) :: aC
-      character(len=*),intent(in) :: item
-      character(len=*),optional,intent(in) :: perrWith
-      character(len=*),optional,intent(in) :: dieWith
-      integer :: indexIA_
+
+! !INPUT PARAMETERS: 
+!
+      type(Accumulator),          intent(in) :: aC
+      character(len=*),           intent(in) :: item
+      character(len=*), optional, intent(in) :: perrWith
+      character(len=*), optional, intent(in) :: dieWith
 
 ! !REVISION HISTORY:
-! 	14Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
+! 14Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::indexIA_'
@@ -865,10 +1041,33 @@
 ! !IROUTINE: indexRA_ - index the Accumulator real attribute list.
 !
 ! !DESCRIPTION:
+! This {\tt INTEGER} query function returns the index in the real
+! accumulation register buffer of the {\tt Accumulator} argument {\tt aC} 
+! the attribute named by the {\tt CHARACTER} argument {\tt item}.  That
+! is, all the accumulator running tallies for the attribute named 
+! {\tt item} reside in 
+!\begin{verbatim}
+! aC%av%rAttr(indexRA_(aC,item),:).
+!\end{verbatim}
+! The user may request traceback information (e.g., the name of the 
+! routine from which this one is called) by providing values for either 
+! of the optional {\tt CHARACTER} arguments {\tt perrWith} or {\tt dieWith}
+! In the event {\tt indexRA\_()} can not find {\tt item} in {\tt aC}, 
+! the routine behaves as follows:
+! \begin{enumerate}
+! \item if neither {\tt perrWith} nor {\tt dieWith} are present, 
+! {\tt indexRA\_()} returns a value of zero;
+! \item if {\tt perrWith} is present, but {\tt dieWith} is not, an error 
+! message is written to {\tt stderr} incorporating user-supplied traceback
+! information stored in the argument {\tt perrWith};
+! \item if {\tt dieWith} is present, execution terminates with an error 
+! message written to {\tt stderr} that incorporates user-supplied traceback
+! information stored in the argument {\tt dieWith}.
+! \end{enumerate}
 !
 ! !INTERFACE:
 
- function indexRA_(aC,item,perrWith,dieWith)
+ integer function indexRA_(aC, item, perrWith, dieWith)
 !
 ! !USES:
 !
@@ -878,11 +1077,12 @@
 
       implicit none
 
-      type(Accumulator), intent(in) :: aC
-      character(len=*),intent(in) :: item
-      character(len=*),optional,intent(in) :: perrWith
-      character(len=*),optional,intent(in) :: dieWith
-      integer :: indexRA_
+! !INPUT PARAMETERS: 
+!
+      type(Accumulator),          intent(in) :: aC
+      character(len=*),           intent(in) :: item
+      character(len=*), optional, intent(in) :: perrWith
+      character(len=*), optional, intent(in) :: dieWith
 
 ! !REVISION HISTORY:
 ! 	14Sep00 - Jay Larson <larson@mcs.anl.gov> - initial prototype
@@ -907,7 +1107,7 @@
 
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: exportIAttr_ - return Accumulator INTEGER attribute
+! !IROUTINE: exportIAttr_ - Export INTEGER Attribute to a Vector
 !
 ! !DESCRIPTION:
 ! This routine extracts from the input {\tt Accumulator} argument 
@@ -958,7 +1158,7 @@
 
 ! !REVISION HISTORY:
 
-!        6May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+!  6May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
 !
 !EOP ___________________________________________________________________
 
@@ -972,7 +1172,7 @@
 
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: exportRAttr_ - return Accumulator REAL attribute
+! !IROUTINE: exportRAttr_ - Export REAL Attribute to a Vector
 !
 ! !DESCRIPTION:
 ! This routine extracts from the input {\tt Accumulator} argument 
@@ -1022,8 +1222,7 @@
       integer,                intent(out) :: lsize
 
 ! !REVISION HISTORY:
-
-!        6May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+!  6May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
 !
 !EOP ___________________________________________________________________
 
@@ -1037,7 +1236,7 @@
 
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: importIAttr_ - import Accumulator INTEGER attribute
+! !IROUTINE: importIAttr_ - Import INTEGER Attribute from a Vector
 !
 ! !DESCRIPTION:
 ! This routine imports data provided in the input {\tt INTEGER} vector 
@@ -1074,7 +1273,7 @@
       type(Accumulator),      intent(inout) :: aC
 
 ! !REVISION HISTORY:
-!        6May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+!  6May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::importIAttr_'
@@ -1095,7 +1294,7 @@
 
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: importRAttr_ - import Accumulator REAL attribute
+! !IROUTINE: importRAttr_ - Import REAL Attribute from a Vector
 !
 ! !DESCRIPTION:
 ! This routine imports data provided in the input {\tt REAL} vector 
@@ -1132,7 +1331,7 @@
       type(Accumulator),      intent(inout) :: aC
 
 ! !REVISION HISTORY:
-!        6May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+!  6May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::importRAttr_'
@@ -1155,7 +1354,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: aCaCSharedAttrIndexList_ - AttrVect shared attributes.
+! !IROUTINE: aCaCSharedAttrIndexList_ - Cross-index Two Accumulators
 !
 ! !DESCRIPTION:  {\tt aCaCSharedAttrIndexList\_()} takes a pair of 
 ! user-supplied {\tt Accumulator} variables {\tt aC1} and {\tt aC2}, 
@@ -1192,13 +1391,12 @@
 
 ! !OUTPUT PARAMETERS:   
 !
-      integer,           intent(out) :: NumShared
-
-      integer,dimension(:), pointer  :: Indices1
-      integer,dimension(:), pointer  :: Indices2
+      integer,              intent(out) :: NumShared
+      integer,dimension(:), pointer     :: Indices1
+      integer,dimension(:), pointer     :: Indices2
 
 ! !REVISION HISTORY:
-!       07Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
+!  7Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::aCaCSharedAttrIndexList_'
@@ -1228,7 +1426,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: aVaCSharedAttrIndexList_ - AttrVect/Accumulator shared attributes.
+! !IROUTINE: aVaCSharedAttrIndexList_ - Cross-index with an AttrVect
 !
 ! !DESCRIPTION:  {\tt aVaCSharedAttrIndexList\_()} a user-supplied 
 ! {\tt AttrVect} variable {\tt aV} and an {\tt Accumulator} variable 
@@ -1262,19 +1460,18 @@
 
 ! !INPUT PARAMETERS: 
 !
-      type(AttrVect),    intent(in)  :: aV   
-      type(Accumulator), intent(in)  :: aC
-      character*7,       intent(in)  :: attrib
+      type(AttrVect),       intent(in)  :: aV   
+      type(Accumulator),    intent(in)  :: aC
+      character*7,          intent(in)  :: attrib
 
 ! !OUTPUT PARAMETERS:   
 !
-      integer,           intent(out) :: NumShared
-
-      integer,dimension(:), pointer  :: Indices1
-      integer,dimension(:), pointer  :: Indices2
+      integer,              intent(out) :: NumShared
+      integer,dimension(:), pointer     :: Indices1
+      integer,dimension(:), pointer     :: Indices2
 
 ! !REVISION HISTORY:
-!       07Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
+!  7Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::aVaCSharedAttrIndexList_'
