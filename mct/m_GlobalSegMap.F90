@@ -30,7 +30,9 @@
 
       private	! except
 
-      public :: GlobalSegMap	! The class data structure
+! !PUBLIC MEMBER FUNCTIONS:
+
+      public :: GlobalSegMap    ! The class data structure
       public :: init            ! Create
       public :: clean           ! Destroy
       public :: comp_id         ! Return component ID number
@@ -38,8 +40,8 @@
       public :: GlobalStorage   ! Return total number of points in map,
                                 ! including halo points (if present).
       public :: ProcessStorage  ! Return local storage on a given process.
-      public :: OrderedPoints  ! Return grid points of a given process in
-				! MCT-assumed order.
+      public :: OrderedPoints   ! Return grid points of a given process in
+                                ! MCT-assumed order.
       public :: lsize           ! Return local--that is, on-process--storage 
                                 ! size (incl. halos)
       public :: ngseg           ! Return global number of segments
@@ -59,6 +61,10 @@
                                 ! re-order the GlobalSegMap components
                                 ! GlobalSegMap%start, GlobalSegMap%length,
                                 ! and GlobalSegMap%pe_loc
+      public :: bcast           ! Broadcast a GlobalSegMap object from the
+                                ! root process to its communicator.
+
+! !PUBLIC TYPES:
 
     type GlobalSegMap
       integer :: comp_id			! Component ID number
@@ -73,7 +79,7 @@
 	initd_,	&	! initialize from all PEs
 	initr_, &	! initialize from the root
 	initp_,	&	! initialize in parallel from replicated arrays
-	initp1_		! initialize in parallel from 1 replicated array
+	initp1_ 	! initialize in parallel from 1 replicated array
     end interface
     interface clean ; module procedure clean_ ; end interface
     interface comp_id  ; module procedure comp_id_  ; end interface
@@ -104,7 +110,7 @@
     interface SortPermute ; module procedure &
 	SortPermuteInPlace_ 
     end interface
-
+    interface bcast; module procedure bcast_ ; end interface
 
 ! !REVISION HISTORY:
 ! 	28Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
@@ -122,7 +128,10 @@
 ! 	26Apr01 - R. Jacob <jacob@mcs.anl.gov> - Added the routine
 !                 OrderedPoints_().
 !       03Aug01 - E. Ong <eong@mcs.anl.gov> - In initd_, call initr_
-!                 with actual shaped arguments on non-root processes to satisfy!                 F90 standard. See comments in initd.          
+!                 with actual shaped arguments on non-root processes to satisfy
+!                 F90 standard. See comments in initd.          
+! 	18Oct01 - J.W. Larson <larson@mcs.anl.gov> - Added the routine 
+!                 bcast(), and also cleaned up prologues.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_GlobalSegMap'
@@ -136,6 +145,15 @@
 ! !IROUTINE: initd_ - define the map from distributed data
 !
 ! !DESCRIPTION:
+! This routine takes the {\em scattered} input {\tt INTEGER} arrays 
+! {\tt start}, {\tt length}, and {\tt pe\_loc}, gathers these data to
+! the {\tt root} process, and from them creates a {\em global} set of
+! segment information for the output {\tt GlobalSegMap} argument 
+! {\tt GSMap}.  The input {\tt INTEGER} arguments {\tt comp\_id}, 
+! {\tt gsize} provide the {\tt GlobalSegMap} component ID number and 
+! global grid size, respectively.  The input argument {\tt my\_comm} is 
+! the F90 {\tt INTEGER} handle for the MPI communicator.
+! 
 !
 ! !INTERFACE:
 
@@ -151,7 +169,7 @@
 
       implicit none
 
-      type(GlobalSegMap),intent(out)  :: GSMap   ! Output GlobalSegMap
+! !INPUT PARAMETERS:
 
       integer,dimension(:),intent(in) :: start   ! segment local start index 
       integer,dimension(:),intent(in) :: length  ! the distributed sizes
@@ -164,6 +182,10 @@
                                                  ! be computed by this 
                                                  ! routine if no haloing
                                                  ! is assumed.
+
+! !OUTPUT PARAMETERS:
+
+      type(GlobalSegMap),intent(out)  :: GSMap   ! Output GlobalSegMap
 
 ! !REVISION HISTORY:
 ! 	29Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
@@ -316,7 +338,6 @@
         ! the appropriate portion of root_start(:y) on the root--post
         ! non-blocking receives on the root first, then the individual
         ! sends, followed by a call to MPI_WAITALL().
-   
 
   if(myID == root) then
      do i=0,npes-1
@@ -340,7 +361,6 @@
         ! the appropriate portion of root_length(:) on the root--post
         ! non-blocking receives on the root first, then the individual
         ! sends, followed by a call to MPI_WAITALL().
-   
 
   if(myID == root) then
      do i=0,npes-1
@@ -432,21 +452,31 @@
 ! !IROUTINE: initr_ initialize the map from the root
 !
 ! !DESCRIPTION:
+! This routine takes the input {\tt INTEGER} arrays {\tt start}, 
+! {\tt length}, and {\tt pe\_loc} (all valid only on the {\tt root} 
+! process), and from them creates a {\em global} set of segment 
+! information for the output {\tt GlobalSegMap} argument 
+! {\tt GSMap}.  The input {\tt INTEGER} arguments {\tt ngseg}, 
+! {\tt comp\_id}, {\tt gsize} (again, valid only on the {\tt root} 
+! process) provide the {\tt GlobalSegMap} global segment count, component 
+! ID number, and global grid size, respectively.  The input argument 
+! {\tt my\_comm} is the F90 {\tt INTEGER} handle for the MPI communicator.
 !
 ! !INTERFACE:
 
  subroutine initr_(GSMap, ngseg, start, length, pe_loc, root,  &
                    my_comm, comp_id, gsize)
 !
-! !Uses:
+! !USES:
 !
       use m_mpif90
       use m_die
       use m_stdio
  
-     implicit none
+      implicit none
 
-      type(GlobalSegMap),intent(out)  :: GSMap   ! Output GlobalSegMap
+! !INPUT PARAMETERS:
+
       integer, intent(in)             :: ngseg   ! no. of global segments
       integer,dimension(:),intent(in) :: start   ! segment local start index 
       integer,dimension(:),intent(in) :: length  ! the distributed sizes
@@ -459,6 +489,11 @@
                                                  ! be computed by this 
                                                  ! routine if no haloing
                                                  ! is assumed.
+
+! !OUTPUT PARAMETERS:
+
+      type(GlobalSegMap),intent(out)  :: GSMap   ! Output GlobalSegMap
+
 ! !REVISION HISTORY:
 ! 	29Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 ! 	09Nov00 - J.W. Larson <larson@mcs.anl.gov> - final working version
@@ -611,7 +646,7 @@
 
       implicit none
 
-      type(GlobalSegMap),intent(out)  :: GSMap   ! Output GlobalSegMap
+! !INPUT PARAMETERS: 
 
       integer,intent(in)              :: comp_id ! component model ID
       integer,intent(in)              :: ngseg   ! global number of segments
@@ -619,6 +654,10 @@
       integer,dimension(:),intent(in) :: start   ! segment local start index 
       integer,dimension(:),intent(in) :: length  ! the distributed sizes
       integer,dimension(:),intent(in) :: pe_loc  ! process location
+
+! !OUTPUT PARAMETERS:
+
+      type(GlobalSegMap),intent(out)  :: GSMap   ! Output GlobalSegMap
 
 ! !REVISION HISTORY:
 ! 	24Feb01 - J.W. Larson <larson@mcs.anl.gov> - Initial version.
@@ -713,7 +752,7 @@
 
       implicit none
 
-      type(GlobalSegMap),intent(out)  :: GSMap      ! Output GlobalSegMap
+! !INPUT PARAMETERS: 
 
       integer,intent(in)              :: comp_id    ! component model ID
       integer,intent(in)              :: ngseg      ! global no. of segments
@@ -722,6 +761,10 @@
                                                     ! 3*ngseg containing (in
                                                     ! this order):  start(:),
                                                     ! length(:), and pe_loc(:)
+
+! !OUTPUT PARAMETERS:
+
+      type(GlobalSegMap),intent(out)  :: GSMap      ! Output GlobalSegMap
 
 ! !REVISION HISTORY:
 ! 	24Feb01 - J.W. Larson <larson@mcs.anl.gov> - Initial version.
@@ -800,6 +843,8 @@
 
       implicit none
  
+! !INPUT/OUTPUT PARAMETERS: 
+
       type(GlobalSegMap),intent(inout) :: GSMap
 
 ! !REVISION HISTORY:
@@ -842,12 +887,13 @@
 !
 ! !INTERFACE:
 
- function ngseg_(GSMap)
+ integer function ngseg_(GSMap)
 
       implicit none
 
+! !INPUT PARAMETERS: 
+
       type(GlobalSegMap),intent(in) :: GSMap
-      integer :: ngseg_
 
 ! !REVISION HISTORY:
 ! 	29Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
@@ -873,14 +919,14 @@
 !
 ! !INTERFACE:
 
- function nlseg_(GSMap, pID)
+ integer function nlseg_(GSMap, pID)
 
       implicit none
 
+! !INPUT PARAMETERS: 
+
       type(GlobalSegMap),intent(in) :: GSMap
       integer,           intent(in) :: pID
-
-      integer :: nlseg_
 
 ! !REVISION HISTORY:
 ! 	29Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
@@ -924,15 +970,18 @@
 !
 ! !INTERFACE:
 
- function comp_id_(GSMap)
+ integer function comp_id_(GSMap)
+
+! !USES:
 
       use m_die,only: die
       use m_stdio, only :stderr
 
       implicit none
 
+! !INPUT PARAMETERS: 
+
       type(GlobalSegMap),intent(in) :: GSMap
-      integer :: comp_id_
 
 ! !REVISION HISTORY:
 ! 	29Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
@@ -967,12 +1016,13 @@
 !
 ! !INTERFACE:
 
- function gsize_(GSMap)
+ integer function gsize_(GSMap)
 
       implicit none
 
+! !INPUT PARAMETERS: 
+
       type(GlobalSegMap),intent(in) :: GSMap
-      integer :: gsize_
 
 ! !REVISION HISTORY:
 ! 	29Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
@@ -1005,14 +1055,17 @@
 
       implicit none
 
+! !INPUT PARAMETERS:
+
       type(GlobalSegMap),intent(in) :: GSMap
-      integer :: global_storage, ngseg, n
 
 ! !REVISION HISTORY:
 ! 	06Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GlobalStorage_'
+
+  integer :: global_storage, ngseg, n
 
       ! Return global number of segments:
 
@@ -1051,6 +1104,8 @@
 
       implicit none
 
+! !INPUT PARAMETERS:
+
       type(GlobalSegMap),intent(in) :: GSMap
       integer,           intent(in) :: PEno
 
@@ -1060,7 +1115,7 @@
 
   character(len=*),parameter :: myname_=myname//'::ProcessStorage_'
 
-      integer :: pe_storage, ngseg, n
+  integer :: pe_storage, ngseg, n
 
       ! Return global number of segments:
 
@@ -1082,6 +1137,7 @@
   ProcessStorage_ = pe_storage
 
  end function ProcessStorage_
+
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
@@ -1096,6 +1152,7 @@
 ! is responsible for deallocating the space.
 !
 ! !INTERFACE:
+
     subroutine OrderedPoints_(GSMap, PEno, Points)
 
 !
@@ -1105,9 +1162,11 @@
 
       implicit none
 
+ ! !INPUT PARAMETERS:
+
       type(GlobalSegMap), intent(in) :: GSMap   ! input GlobalSegMap
       integer,            intent(in) :: PEno	! input process number
-      integer,dimension(:),pointer :: Points ! the vector of points
+      integer,dimension(:),pointer   :: Points  ! the vector of points
 
 ! !REVISION HISTORY:
 ! 	25Apr01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
@@ -1150,6 +1209,7 @@
   if(ier/=0) call MP_perr_die(myname_,'deallocate(mystarts,..)',ier)
 
  end subroutine OrderedPoints_
+
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
@@ -1157,6 +1217,11 @@
 ! !IROUTINE: lsize_ - find the local storage size from the map
 !
 ! !DESCRIPTION:
+! This function returns the number of points owned by the local process,
+! as defined by the input {\tt GlobalSegMap} argument {\tt GSMap}.  The
+! local process ID is determined through use of the input {\tt INTEGER} 
+! argument {\tt comm}, which is the Fortran handle for the MPI 
+! communicator.
 !
 ! !INTERFACE:
 
@@ -1169,8 +1234,10 @@
 
       implicit none
 
-      type(GlobalSegMap),intent(in) :: GSMap
-      integer,           intent(in) :: comm
+! !INPUT PARAMETERS:
+
+      type(GlobalSegMap), intent(in) :: GSMap
+      integer,            intent(in) :: comm
 
 
 ! !REVISION HISTORY:
@@ -1229,10 +1296,15 @@
 
       implicit none
 
-      type(GlobalSegMap), intent(in) :: GSMap   ! input GlobalSegMap
-      integer,            intent(in) :: i_g	! a global index
-      integer,           intent(out) :: rank    ! the pe on which this
-                                                ! element resides
+! !INPUT PARAMETERS:
+
+      type(GlobalSegMap), intent(in)  :: GSMap   ! input GlobalSegMap
+      integer,            intent(in)  :: i_g	 ! a global index
+
+! !OUTPUT PARAMETERS:
+
+      integer,            intent(out) :: rank    ! the pe on which this
+                                                 ! element resides
 ! !REVISION HISTORY:
 ! 	29Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
@@ -1278,12 +1350,17 @@
 
       implicit none
 
-      type(GlobalSegMap), intent(in) :: GSMap   ! input GlobalSegMap
-      integer,            intent(in) :: i_g	! a global index
-      integer,           intent(out) :: num_loc ! the number of processes
-                                                ! which own element i_g
-      integer, dimension(:), pointer :: rank    ! the process(es) on which 
-                                                ! element i_g resides
+! !INPUT PARAMETERS:
+
+      type(GlobalSegMap), intent(in)  :: GSMap   ! input GlobalSegMap
+      integer,            intent(in)  :: i_g	 ! a global index
+
+! !OUTPUT PARAMETERS:
+
+      integer,            intent(out) :: num_loc ! the number of processes
+                                                 ! which own element i_g
+      integer, dimension(:), pointer  :: rank    ! the process(es) on which 
+                                                 ! element i_g resides
 ! !REVISION HISTORY:
 ! 	29Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
@@ -1379,8 +1456,13 @@
 
       implicit none
 
-      type(GlobalSegMap), intent(in)           :: GSMap 
-      integer,            intent(out)          :: n_active
+! !INPUT PARAMETERS:
+
+      type(GlobalSegMap),    intent(in)        :: GSMap 
+
+! !OUTPUT PARAMETERS: 
+
+      integer,               intent(out)       :: n_active
       integer, dimension(:), pointer, optional :: pe_list
 
 ! !REVISION HISTORY:
@@ -1509,7 +1591,7 @@
 !
 ! !INTERFACE:
 
-    subroutine peLocs_(pointGSMap, npoints, points, pe_locs)
+ subroutine peLocs_(pointGSMap, npoints, points, pe_locs)
 !
 ! !USES:
 !
@@ -1517,9 +1599,14 @@
 
       implicit none
 
-      type(GlobalSegMap), intent(in)      :: pointGSMap 
+! !INPUT PARAMETERS:
+
+      type(GlobalSegMap),    intent(in)   :: pointGSMap 
       integer,               intent(in)   :: npoints
       integer, dimension(:), intent(in)   :: points
+
+! !OUTPUT PARAMETERS: 
+
       integer, dimension(:), intent(out)  :: pe_locs
 
 ! !REVISION HISTORY:
@@ -1617,7 +1704,9 @@
 
       implicit none
 
-      type(GlobalSegMap), intent(in)           :: GSMap 
+ ! !INPUT PARAMETERS:
+
+     type(GlobalSegMap), intent(in)           :: GSMap 
 
 ! !REVISION HISTORY:
 ! 	08Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version.
@@ -1739,10 +1828,16 @@
 
       implicit none
 
-      type(GlobalSegMap), intent(in) :: GSMap   ! input GlobalSegMap
-      integer, dimension(:), intent(in)           :: key1 ! first sort key
-      integer, dimension(:), intent(in), optional :: key2 ! second sort key
+! !INPUT PARAMETERS:
+
+      type(GlobalSegMap),    intent(in)           :: GSMap ! input GlobalSegMap
+      integer, dimension(:), intent(in)           :: key1  ! first sort key
+      integer, dimension(:), intent(in), optional :: key2  ! second sort key
+
+! !OUTPUT PARAMETERS:
+
       integer, dimension(:), pointer :: perm    ! output index permutation
+
 ! !REVISION HISTORY:
 ! 	02Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
 !EOP ___________________________________________________________________
@@ -1821,8 +1916,13 @@
 
       implicit none
 
-      type(GlobalSegMap), intent(inout) :: GSMap
+! !INPUT PARAMETERS:
+
       integer, dimension(:), intent(in) :: perm
+
+! !INPUT/OUTPUT PARAMETERS: 
+
+      type(GlobalSegMap), intent(inout) :: GSMap
 
 ! !REVISION HISTORY:
 !       02Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version.
@@ -1878,9 +1978,15 @@
 
       implicit none
 
-      type(GlobalSegMap), intent(inout) :: GSMap
+! !INPUT PARAMETERS: 
+
       integer, dimension(:), intent(in)           :: key1
       integer, dimension(:), intent(in), optional :: key2
+
+! !INPUT/OUTPUT PARAMETERS: 
+
+      type(GlobalSegMap),    intent(inout)        :: GSMap
+
 ! !REVISION HISTORY:
 !       02Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version.
 !EOP ___________________________________________________________________
@@ -1931,6 +2037,188 @@
   if(ierr /= 0) call MP_perr_die(myname_,'deallocate(perm...)',ierr)
 
  end subroutine SortPermuteInPlace_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: bcast_ - broadcast a GlobalSegMap object
+!
+! !DESCRIPTION:
+!
+! The routine {\tt bcast\_()} takes the input/output {\em GlobalSegMap} 
+! argument {\tt GSMap} (on input valid only on the {\tt root} process,
+! on output valid on all processes) and broadcasts it to all processes
+! on the communicator associated with the F90 handle {\tt comm}.  The
+! success (failure) of this operation is returned as a zero (non-zero) 
+! value of the optional output {\tt INTEGER} argument {\tt status}.
+!
+! !INTERFACE:
+
+ subroutine bcast_(GSMap, root, comm, status)
+
+!
+! !USES:
+!
+      use m_mpif90
+      use m_die, only : MP_perr_die
+      use m_stdio
+
+      implicit none
+
+! !INPUT PARAMETERS:
+
+      integer,            intent(in)     :: root
+      integer,            intent(in)     :: comm
+
+! !INPUT/OUTPUT PARAMETERS: 
+
+      type(GlobalSegMap), intent(inout)  :: GSMap  ! Output GlobalSegMap
+
+! !OUTPUT PARAMETERS: 
+
+      integer, optional,  intent(out)    :: status ! global vector size
+
+! !REVISION HISTORY:
+! 	17Oct01 - J.W. Larson <larson@mcs.anl.gov> - Initial version.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::bcast_'
+
+  integer :: myID, ierr, n
+  integer, dimension(:), allocatable :: IntBuffer
+
+       ! Step One:  which process am I?
+
+  call MP_COMM_RANK(comm, myID, ierr)
+  if(ierr /= 0) then
+    if(.not. present(status)) then
+       call MP_perr_die(myname_,'MP_comm_rank()',ierr)
+    else
+       write(stderr,*) myname_,':: error encountered in MP_comm_rank()'
+       status = 1
+       return
+    endif
+  endif
+
+       ! Step Two:  Broadcast the scalar bits of the GlobalSegMap from
+       ! the root.
+
+  allocate(IntBuffer(3), stat=ierr) ! allocate buffer space (all PEs)
+  if(ierr /= 0) then
+    if(.not. present(status)) then
+       call MP_perr_die(myname_,'allocate(IntBuffer)',ierr)
+    else
+       write(stderr,*) myname_,':: error during allocate(IntBuffer)'
+       status = 2
+       return
+    endif
+  endif
+
+  if(myID == root) then ! pack the buffer
+     IntBuffer(1) = GSMap%comp_id
+     IntBuffer(2) = GSMap%ngseg
+     IntBuffer(3) = GSMap%gsize
+  endif
+
+  call MPI_BCAST(IntBuffer, 3, MP_type(IntBuffer(1)), root, comm, ierr)
+  if(ierr /= 0) then
+    if(.not. present(status)) then
+       call MP_perr_die(myname_,'MPI_BCAST(IntBuffer)',ierr)
+    else
+       write(stderr,*) myname_,':: error during MPI_BCAST(IntBuffer)'
+       status = 3
+       return
+    endif
+  endif
+
+  if(myID /= root) then ! unpack from buffer to GSMap
+     GSMap%comp_id = IntBuffer(1)
+     GSMap%ngseg = IntBuffer(2)
+     GSMap%gsize = IntBuffer(3)
+  endif
+
+  deallocate(IntBuffer, stat=ierr) ! deallocate buffer space
+  if(ierr /= 0) then
+    if(.not. present(status)) then
+       call MP_perr_die(myname_,'deallocate(IntBuffer)',ierr)
+    else
+       write(stderr,*) myname_,':: error during deallocate(IntBuffer)'
+       status = 4
+       return
+    endif
+  endif
+
+       ! Step Three:  Broadcast the vector bits of GSMap from the root.
+       ! Pack them into one big array to save latency costs associated
+       ! with multiple broadcasts.
+
+  allocate(IntBuffer(3*GSMap%ngseg), stat=ierr) ! allocate buffer space (all PEs)
+  if(ierr /= 0) then
+    if(.not. present(status)) then
+       call MP_perr_die(myname_,'second allocate(IntBuffer)',ierr)
+    else
+       write(stderr,*) myname_,':: error during second allocate(IntBuffer)'
+       status = 5
+       return
+    endif
+  endif 
+
+  if(myID == root) then ! pack outgoing broadcast buffer
+     do n=1,GSMap%ngseg
+	IntBuffer(n) = GSMap%start(n)
+	IntBuffer(GSMap%ngseg+n) = GSMap%length(n)
+	IntBuffer(2*GSMap%ngseg+n) = GSMap%pe_loc(n)
+     end do
+  endif
+
+  call MPI_BCAST(IntBuffer, 3*GSMap%ngseg, MP_Type(IntBuffer(1)), root, comm, ierr)
+  if(ierr /= 0) then
+    if(.not. present(status)) then
+       call MP_perr_die(myname_,'Error in second MPI_BCAST(IntBuffer)',ierr)
+    else
+       write(stderr,*) myname_,':: error during second MPI_BCAST(IntBuffer)'
+       status = 6
+       return
+    endif
+  endif
+
+  if(myID /= root) then ! Allocate GSMap%start, GSMap%length,...and fill them
+
+     allocate(GSMap%start(GSMap%ngseg), GSMap%length(GSMap%ngseg), &
+	      GSMap%pe_loc(GSMap%ngseg), stat=ierr)
+     if(ierr /= 0) then
+	if(.not. present(status)) then
+	   call MP_perr_die(myname_,'off-root allocate(GSMap%start...)',ierr)
+	else
+	   write(stderr,*) myname_,':: error during off-root allocate(GSMap%start...)'
+	   status = 7
+	   return
+	endif
+     endif
+
+     do n=1,GSMap%ngseg ! unpack the buffer into the GlobalSegMap
+	GSMap%start(n) = IntBuffer(n)
+	GSMap%length(n) = IntBuffer(GSMap%ngseg+n)
+	GSMap%pe_loc(n) = IntBuffer(2*GSMap%ngseg+n)
+     end do
+
+  endif
+
+       ! Clean up buffer space:
+
+  deallocate(IntBuffer, stat=ierr) 
+  if(ierr /= 0) then
+    if(.not. present(status)) then
+       call MP_perr_die(myname_,'second deallocate(IntBuffer)',ierr)
+    else
+       write(stderr,*) myname_,':: error during second deallocate(IntBuffer)'
+       status = 8
+       return
+    endif
+  endif 
+
+ end subroutine bcast_
 
  end module m_GlobalSegMap
 
