@@ -59,11 +59,7 @@ F77		= esmpif90
 F90		= esmpif90
 FC		= $(F90)
 
-#_Ftrace                = -ftrace
-#_Ftrace                =  -vampir 
-#_Ftrace                = -Wf,"-vampir" -vampir
 
-#FFLAGS         = -C vsafe -Wf"-pvctl fullmsg -L fmtlist transform map" $(_Ftrace)
 FFLAGS          = -C vopt -Wf"-pvctl fullmsg -L fmtlist transform map"
 
 CFLAGS		= -O $(_Dsys)
