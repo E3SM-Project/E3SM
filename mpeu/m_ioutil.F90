@@ -26,11 +26,16 @@
 ! 	16Jul96 - J. Guo	- (to do)
 ! 	02Apr97 - Jing Guo <guo@eramus> - finished the coding
 !	11Feb97 - Jing Guo <guo@thunder> - added luflush()
+!   2001-11-08  - Jace A Mogill <mogill@cray.com>  FORTRAN only defines 
+!                 99 units, three units below unit 10 are often used for
+!                 stdin, stdout, and stderr.  Be far more conservative
+!                 and stay within FORTRAN standard.
+!
 !EOP
 !_______________________________________________________________________
 
 	character(len=*),parameter :: myname="m_ioutil"
-	integer,parameter :: MX_LU=255
+	integer,parameter :: MX_LU=99
 
 contains
 
@@ -77,6 +82,10 @@ contains
 !EOP
 !_______________________________________________________________________
 
+#ifdef _UNICOS
+	character(len=128) :: attr
+#endif
+
 		! local parameter
 	character(len=*),parameter :: myname_=myname//'::opnieee'
 
@@ -103,8 +112,6 @@ contains
 	endif
 
 #ifdef _UNICOS
-	character(len=128) :: attr
-
 	call asnqunit(lu,attr,ier)	! test the unit
 
 	if(ier.eq.-1) then		! the unit is not used
@@ -344,53 +351,23 @@ contains
 !
 ! 	: Jing Guo, [01-Apr-94]
 ! 		+ Initial code.
+!   2001-11-08  - Jace A Mogill <mogill@cray.com>  clean up
+!		  logic for finding lu.
+!
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::luavail'
 
 	integer lu,ios
 	logical inuse
-	character*8 attr
 
-	lu=-1
+	lu=10
 	ios=0
 	inuse=.true.
 
-	do while(ios.eq.0.and.inuse)
+	do while(ios.eq.0 .and. inuse .and. lu.le.MX_LU)
 	  lu=lu+1
-
-		! Test #1, reserved
-
-	  inuse = lu.eq.stdout .or. lu.eq.stdin .or. lu.eq.stderr
-
-#ifdef sysSunOS
-		! Reserved units under SunOS
-	  inuse = lu.eq.100 .or. lu.eq.101 .or. lu.eq.102
-#endif
-
-		! Test #2, in-use
-
-	  if(.not.inuse) inquire(unit=lu,opened=inuse,iostat=ios)
-
-#ifdef _UNICOS
-		! Test #3, if the user has reserved the unit through
-		! UNICOS assign().
-
-	  if(ios.eq.0 .and. .not.inuse) then
-	    call asnqunit(lu,attr,ios)
-
-		! see asnqunig(3f):
-		!
-		! ios ==  0, has been assigned to some attributes
-		!        -1, not been assigned any attributes
-		!     >   0, an error condition, but who cares why.
-
-	    inuse=ios.ne.-1		! the unit is in-use
-	    if(ios >= -1) ios=0		! still a valid test
-	  endif
-#endif
-
-	  if(lu >= MX_LU) ios=-1
+	  inquire(unit=lu,opened=inuse,iostat=ios)
 	end do
 
 	if(ios.ne.0) lu=-1
@@ -423,6 +400,8 @@ end function luavail
 ! !REVISION HISTORY:
 ! 	13Mar98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
 !       08Jul02 - E. Ong <eong@mcs.anl.gov> - added flush support for nag95
+!  2001-11-08  Jace A Mogill <mogill@cray.com>  - Flush is not part of
+!              the F90 standard.  Default is NO unit flush.
 !EOP
 !_______________________________________________________________________
   character(len=*),parameter :: myname_=myname//'::luflush'
@@ -440,13 +419,14 @@ end function luavail
 
 #ifdef sysIRIX64
   call flush(lu,ier)
-#else
-#if sysAIX 
+#endif
+#ifdef sysAIX
   call flush_(lu)      ! Function defined in xlf reference document.
-#else
+#endif
+#if sysLinux || NAG || sysOSF1 || sysSunOS || sysUNICOS || sysT3E
   call flush(lu)
 #endif
-#endif
+
 
 end subroutine luflush
 !-----------------------------------------------------------------------
