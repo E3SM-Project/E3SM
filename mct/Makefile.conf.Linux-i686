@@ -42,7 +42,6 @@ _Dnod		=
 
 # If using Absoft compiler, add the following flags: 
 # FFLAGS = -Mnoframe
-# FPPFLAGS = -DABSOFT
 # Add $(_p) to the compilation lines for *.f and *.f90
 
 # Assume MPICH is being used for Linux-i686
