@@ -48,21 +48,16 @@
   IBM (AIX) xlf 8.1
   SGI (IRIX64) f90 MIPSpro 7.30
   SUN (Solaris) f90 WorkShop 5.0
+  Compaq  Compaq Fortran Compiler X5.5-2801-48CAG
   Linux pgf90
+  Linux NAG
   NEC
   Fujitsu
 
   We are fairly confident of the following but have not verified:
-  Linux Absoft, NAG
+  Linux Absoft
   Sun NAG
   CrayT3E
-
-  Other OS/compilers:
-  Compaq  
-  MCT generates internal compiler errors with Compaq.  Every module
-  except mct/m_SpatialIntegral.F90 will compile with version 5.5-2602.
-  This module is not needed for basic usage of MCT.
-
 
   Running the unit tester requires a parallel platform 
   (the default is for 16 processors).  Memory requirements 
@@ -127,6 +122,7 @@ N.B.:  mpeu is Authored and maintained by Jing Guo of NASA's Data
   14 Dec, 2001 -- PCM support
   29 Mar, 2002 -- Rearranger
   14 Nov, 2002 -- version 1.0.0
+  11 Feb, 2003 -- version 1.0.4
 
 Tag $Name$
 $Id$
