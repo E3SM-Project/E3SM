@@ -48,7 +48,7 @@
 ! Send the local AttrVect to another component using a Router.
 ! Will send entire AttrVect. Requires a corresponding MCT\_Recv 
 ! or MCT\_IRecv to be called on the other component.
-! Returns immediately after posting the send with a MCT_Req data type.
+! Returns immediately after posting the send with a MCT\_Req data type.
 !
 ! !INTERFACE:
 

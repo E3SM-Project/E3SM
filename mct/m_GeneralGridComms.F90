@@ -57,11 +57,11 @@
 ! !IROUTINE: send_ - Point-to-point blocking send for the GeneralGrid.
 !
 ! !DESCRIPTION:  The point-to-point send routine {\tt send\_()} sends 
-! the input {\tt GeneralGrid} argument {\tt iGGrid} to component {\tt comp_id} 
+! the input {\tt GeneralGrid} argument {\tt iGGrid} to component {\tt comp\_id} 
 ! on the communicator associated with the F90 integer handle {\tt comm}.
 ! The message is identified by the tag defined by the {\tt INTEGER} 
 ! argument {\tt TagBase}.  The value of {\tt TagBase} must match the 
-! value used in the call to {\tt recv_()} on process {\tt dest}.  The 
+! value used in the call to {\tt recv\_()} on process {\tt dest}.  The 
 ! success (failure) of this operation corresponds to a zero (nonzero) 
 ! value for the output {\tt INTEGER} flag {\tt status}. 
 ! The argument will be sent to the local root of the component.
@@ -311,10 +311,10 @@
 !
 ! !DESCRIPTION:  The point-to-point receive routine {\tt recv\_()} 
 ! receives the output {\tt GeneralGrid} argument {\tt oGGrid} from component
-! {\tt comp_id} on the communicator associated with the F90 integer handle 
+! {\tt comp\_id} on the communicator associated with the F90 integer handle 
 ! {\tt comm}.  The message is identified by the tag defined by the 
 ! {\tt INTEGER} argument {\tt TagBase}.  The value of {\tt TagBase} must 
-! match the value used in the call to {\tt send_()} on the other component.
+! match the value used in the call to {\tt send\_()} on the other component.
 ! The success (failure) of this operation corresponds to a zero (nonzero) 
 ! value for the output {\tt INTEGER} flag {\tt status}. 
 !
@@ -325,7 +325,7 @@
 ! uninitialized.  The {\tt GeneralGrid} {\tt oGGrid} represents allocated
 ! memory.  When the user no longer needs {\tt oGGrid}, it should be 
 ! deallocated by invoking {\tt GeneralGrid\_clean()} (see 
-! {\tt m_GeneralGrid} for further details).
+! {\tt m\_GeneralGrid} for further details).
 !
 ! {\bf N.B.}:  One must avoid assigning elsewhere the MPI tag values 
 ! between {\tt TagBase} and {\tt TagBase+20}, inclusive.  This is 
