@@ -804,7 +804,7 @@
       use m_GlobalMap, only : GlobalMap_lsize => lsize
       use m_GlobalMap, only : GlobalMap_gsize => gsize
 
-!      use m_AttrVectComms
+      use m_AttrVectComms, only : AttrVect_scatter => scatter
 
       use m_GeneralGrid, only : GeneralGrid
       use m_GeneralGrid, only : GeneralGrid_init => init
@@ -934,6 +934,8 @@
       use m_GlobalSegMap, only : GlobalSegMap
       use m_GlobalSegMap, only : GlobalSegMap_lsize => lsize
       use m_GlobalSegMap, only : GlobalSegMap_gsize => gsize
+
+      use m_AttrVectComms, only : AttrVect_scatter => scatter
 
       use m_GeneralGrid, only : GeneralGrid
       use m_GeneralGrid, only : GeneralGrid_init => init
