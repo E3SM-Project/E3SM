@@ -71,6 +71,7 @@ LIBprof		= #-lprof
 LIBsys	 	= 
 
 # These flags are for use with the GNU C preprocessor
+FPP		= /lib/cpp
 FPPFLAGS	= -DLANGUAGE_FORTRAN -traditional
 
 .F.o:
