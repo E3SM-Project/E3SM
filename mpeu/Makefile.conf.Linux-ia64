@@ -54,6 +54,7 @@ _IMPI		= -I/usr/local/vmi/mpich/include
 _R		=
 
 _Iconf		= $(_IMPI)
+_I              = $(_Inull) -I. $(_Iconf)
 
 SHELL		= /bin/sh
 
@@ -70,6 +71,7 @@ CFLAGS		= -O
 LD		= efc
 LDFLAGS		= $(FFLAGS)
 
+FPP		= /lib/cpp
 LIBprof		= #-lprof
 LIBsys	 	= 
 
