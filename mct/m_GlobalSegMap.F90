@@ -904,6 +904,9 @@
 
  function comp_id_(GSMap)
 
+      use m_die,only: die
+      use m_stdio, only :stderr
+
       implicit none
 
       type(GlobalSegMap),intent(in) :: GSMap
@@ -913,9 +916,17 @@
 ! 	29Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 ! 	26Jan01 - J.W. Larson <larson@mcs.anl.gov> - renamed comp_id_
 !                 to fit within MCT_World component ID context.
+!       01May01 - R.L. Jacob  <jacob@mcs.anl.gov> - make sure GSMap
+!                 is defined.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::comp_id_'
+
+  if(.not.associated(GSMap%start) ) then
+    write(stderr,'(2a)') myname_, &
+    ' MCTERROR:  GSMap argument not initialized...exiting'
+    call die(myname_)
+  endif
 
   comp_id_ = GSMap%comp_id
 
