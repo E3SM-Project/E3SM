@@ -1019,12 +1019,12 @@
   if(indexIA_==0) then ! The attribute was not found!
        ! As per the prologue, decide how to handle this error
      if(present(perrWith) .and. (.not. present(dieWith))) then ! Return
-	write(stderr,'(6a)') myname_, &
-	     '":: ERROR--attribute not found: "',trim(item),'"', &
+	write(stderr,'(5a)') myname_, &
+	     ':: ERROR--attribute not found: "',trim(item),'" ', &
 	     'Traceback:  ',String_ToChar(myTrace)
      else ! Shutdown
-	write(stderr,'(6a)') myname_, &
-	     '":: FATAL--attribute not found: "',trim(item),'"', &
+	write(stderr,'(5a)') myname_, &
+	     ':: FATAL--attribute not found: "',trim(item),'" ', &
 	     'Traceback:  ',String_ToChar(myTrace)
 	call die(myname_)
      endif
@@ -1119,12 +1119,12 @@
   if(indexRA_==0) then ! The attribute was not found!
        ! As per the prologue, decide how to handle this error
      if(present(perrWith) .and. (.not. present(dieWith))) then ! Return
-	write(stderr,'(6a)') myname_, &
-	     '":: ERROR--attribute not found: "',trim(item),'"', &
+	write(stderr,'(5a)') myname_, &
+	     ':: ERROR--attribute not found: "',trim(item),'" ', &
 	     'Traceback:  ',String_ToChar(myTrace)
      else ! Shutdown
-	write(stderr,'(6a)') myname_, &
-	     '":: FATAL--attribute not found: "',trim(item),'"', &
+	write(stderr,'(5a)') myname_, &
+	     ':: FATAL--attribute not found: "',trim(item),'" ', &
 	     'Traceback:  ',String_ToChar(myTrace)
 	call die(myname_)
      endif
@@ -1532,7 +1532,7 @@
 
   if(associated(outVect)) then ! check the size of outVect
      if(size(outVect) < lsize) then
-	write(stderr,'(2a,i8,a,i8)') myname_, &
+	write(stderr,'(3a,i8,a,i8)') myname_, &
 	    ':: ERROR length of output array outVect ', &
 	    ' less than length of aV.  size(outVect)=',size(outVect), &
 	    ', length of aV=',lsize
@@ -1669,7 +1669,7 @@
 
   if(associated(outVect)) then ! check the size of outVect
      if(size(outVect) < lsize) then
-	write(stderr,'(2a,i8,a,i8)') myname_, &
+	write(stderr,'(3a,i8,a,i8)') myname_, &
 	    ':: ERROR length of output array outVect ', &
 	    ' less than length of aV.  size(outVect)=',size(outVect), &
 	    ', length of aV=',lsize
