@@ -3379,7 +3379,7 @@ else
    MACHDEFS="-DCPRXLF $MACHDEFS"
 fi
 if test -z "$FCFLAGS"; then
-   FCFLAGS="-qarch=auto -O2"
+   FCFLAGS="-qarch=auto"
 fi
 if test -z "$OPT"; then
    OPT="-O2"
