@@ -10,7 +10,7 @@
 
 ######################################################################
 
-  This is version 1.0 of the Model Coupling Toolkit (mct).
+  This is version 1.8 of the Model Coupling Toolkit (mct).
 
   Our purpose in creating this toolkit is to support the construction
   of highly portable and extensible high-performance couplers 
@@ -54,11 +54,6 @@
   NEC
   Fujitsu
 
-  We are fairly confident of the following but have not verified:
-  Linux Absoft
-  Sun NAG
-  CrayT3E
-
   Running the unit tester requires a parallel platform 
   (the default is for 16 processors).  Memory requirements 
   are reasonable.
@@ -66,22 +61,9 @@
 ######################################################################
   BUILD INSTRUCTIONS:
 
-  1) cd mpeu, and in that directory perform the following steps:
-
-	$ ./configure
-	$ make all
-
-  2) go over to the mct directory and perform the following steps:
-
-	$ ./configure
-	$ make all
-
-  3) Usage of mct is then available through use of its modules, and
-     by linking in the libraries mpeu/libmpeu.a and mct/libmct.a
-
-  4) go to the ut-mct directory and perform the following steps:
-	$ ./configure
-	$ make all
+  In the top level directory (the location of this README):
+	> ./configure
+	> make
 
 There should also be a MCT/data directory which contains interpolation
 weights needed for the test case.   This data is available at the
@@ -104,14 +86,6 @@ website.
 
 ######################################################################
 
-N.B.:  mpeu is Authored and maintained by Jing Guo of NASA's Data 
-       Assimilation Office at Goddard Space Flight Center.  We have
-       established a branch in their repository to allow us to track
-       future DAO development of mpeu, and to allow us to incorporate
-       our own enhancements into their product.
-
-######################################################################
-
   REVISION HISTORY:
 
   18 Oct, 2000 -- Initial prototype
@@ -121,8 +95,17 @@ N.B.:  mpeu is Authored and maintained by Jing Guo of NASA's Data
   23 Aug, 2001 -- Linux PGF90 port
   14 Dec, 2001 -- PCM support
   29 Mar, 2002 -- Rearranger
-  14 Nov, 2002 -- version 1.0.0
+  14 Nov, 2002 -- version 1.0.0 -- first public release
   11 Feb, 2003 -- version 1.0.4
+  12 Mar, 2003 -- version 1.0.5
+  02 Apr, 2003 -- version 1.0.7
+  03 Jul, 2003 -- version 1.0.9
+  26 Aug, 2003 -- version 1.0.12
+  12 Sep, 2003 -- version 1.0.14
+  21 Jan, 2004 -- version 1.4.0
+  05 Feb, 2004 -- version 1.6.0
+
+
 
 Tag $Name$
 $Id$
