@@ -38,6 +38,8 @@
       public :: lsize           ! Return local storage size (incl. halos)
       public :: ngseg           ! Return global number of segments
       public :: nlseg           ! Return local number of segments
+      public :: active_pes      ! Return number of pes with at least 1 
+                                ! datum, and if requested, a list of them.
       public :: Sort            ! compute index permutation to re-order
                                 ! GlobalSegMap%start, GlobalSegMap%length,
                                 ! and GlobalSegMap%pe_loc
@@ -69,6 +71,7 @@
     interface lsize ; module procedure lsize_ ; end interface
     interface ngseg ; module procedure ngseg_ ; end interface
     interface nlseg ; module procedure nlseg_ ; end interface
+    interface active_pes ; module procedure active_pes_ ; end interface
     interface rank  ; module procedure &
 	rank1_ , &	! single rank case
 	rankm_	        ! degenerate (multiple) ranks for halo case
@@ -903,7 +906,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: active_pes - number of processes that own data.
+! !IROUTINE: active_pes_ - number of processes that own data.
 ! index.
 !
 ! !DESCRIPTION:
