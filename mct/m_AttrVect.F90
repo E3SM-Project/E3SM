@@ -2079,12 +2079,12 @@
 !
 ! !DESCRIPTION:
 ! The subroutine {\tt Sort\_()} uses a list of keys defined by the {\tt List} 
-! {\tt sList}, searches for the appropriate integer or real attributes
-! referenced by the items in {\tt sList} ( that is, it identifies the 
+! {\tt key_list}, searches for the appropriate integer or real attributes
+! referenced by the items in {\tt key_list} ( that is, it identifies the 
 ! appropriate entries in {aV\%iList} and {\tt aV\%rList}), and then 
 ! uses these keys to generate a permutation {\tt perm} that will put
 ! the entries of the attribute vector {\tt aV} in lexicographic order
-! as defined by {\tt sList} (the ordering in {\tt sList} being from
+! as defined by {\tt key_list} (the ordering in {\tt key_list} being from
 ! left to right.
 !
 ! {\bf N.B.:}  This routine will fail if {\tt aV\%rList} and 
@@ -2094,7 +2094,7 @@
 !
 ! !INTERFACE:
 
- subroutine Sort_(aV, sList, perm, descend, perrWith, dieWith)
+ subroutine Sort_(aV, key_list, perm, descend, perrWith, dieWith)
 !
 ! !USES:
 !
@@ -2113,7 +2113,7 @@
 ! !INPUT PARAMETERS: 
 !
       type(AttrVect),                  intent(in) :: aV
-      type(List),                      intent(in) :: sList
+      type(List),                      intent(in) :: key_list
       logical, dimension(:), optional, intent(in) :: descend
       character(len=*),      optional, intent(in) :: perrWith
       character(len=*),      optional, intent(in) :: dieWith
@@ -2136,7 +2136,7 @@
 
 ! local variables
 
-        ! storage for key extracted from sList:
+        ! storage for key extracted from key_list:
 
   type(String) :: key
 
@@ -2150,7 +2150,7 @@
 
         ! count the sorting keys:
 
-  nkeys = List_nitem(sList)
+  nkeys = List_nitem(key_list)
 
         ! allocate and initialize rIndex and iIndex to
         ! zero (the null return values from the functions
@@ -2169,7 +2169,7 @@
 
         ! grab the next key
 
-     call List_get(key, n, sList)
+     call List_get(key, n, key_list)
 
         ! determine wheter this key refers to an
         ! integer or real attribute:
@@ -2245,9 +2245,9 @@
         ! Now we can perform the stable successive keyed sorts to
         ! transform perm into the permutation that will place the
         ! entries of the attribute arrays in the lexicographic order
-        ! defined by sList.  This is achieved by successive calls to
+        ! defined by key_list.  This is achieved by successive calls to
         ! IndexSort(), but in reverse order to the order of the keys
-        ! as they appear in sList.
+        ! as they appear in key_list.
 
   do n=nkeys, 1, -1
      if(iIndex(n) > 0) then
