@@ -735,7 +735,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: initialized_() - Confirmation of Initialization
+! !IROUTINE: initialized_ - Confirmation of Initialization
 !
 ! !DESCRIPTION:
 ! This {\tt LOGICAL} query function tells the user if the input 
