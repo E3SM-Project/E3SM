@@ -189,25 +189,24 @@
 !EOP -------------------------------------------------------------------
 
   character(len=*),parameter :: myname_=myname//'::ExGMapGMap_'
-  integer			:: ier,i,j,k,m
-  integer			:: mysize,myPid
-  integer			:: count
-  integer			:: lmaxsize,totallength,rlsize
-  integer,dimension(:),pointer	   :: myvector,rvector
-  logical,dimension(:),allocatable :: hitparade,tmppe_list
-  integer,dimension(:,:),pointer :: tmpsegcount,tmpsegstart
-  logical :: firstpoint
-  integer :: maxsegcount,mmax,othercomp
-  integer :: procn      ! Index over processors
-  integer :: my_segn    ! Index into local segments
-  integer :: r_segn     ! Index into remote segments
-  integer :: my_left    ! Left point in local segment
-  integer :: my_right   ! Right point in local segment
-  integer :: r_left     ! Left point in remote segment
-  integer :: r_right    ! Right point in remote segment
-  integer :: v_left     ! Leftmost point in overlap
-  integer :: v_right    ! Rightmost point in overlap
-  integer :: nsegs_overlap ! Number of segments that overlap between two procs
+  integer			     :: ier,i,j,k,m
+  integer			     :: mysize,myPid,othercomp
+  integer			     :: lmaxsize,totallength
+  integer                            :: maxsegcount,count
+  logical, dimension(:), allocatable :: tmppe_list
+  integer, dimension(:,:), pointer   :: tmpsegcount,tmpsegstart
+
+  integer :: procn          ! Index over processors
+  integer :: my_segn        ! Index into local segments
+  integer :: r_segn         ! Index into remote segments
+  integer :: my_left        ! Left point in local segment (global memory)
+  integer :: my_right       ! Right point in local segment (global memory)
+  integer :: r_left         ! Left point in remote segment (global memory)
+  integer :: r_right        ! Right point in remote segment (global memory)
+  integer :: v_left         ! Leftmost point in overlap (local memory)
+  integer :: v_right        ! Rightmost point in overlap (local memory)
+  integer :: previous_right ! Rightmost point in previous overlapped segment (local memory)
+  integer :: nsegs_overlap  ! Number of segments that overlap between two procs
 
 
   call MP_comm_rank(mycomm,myPid,ier)
@@ -243,15 +242,22 @@
                             my_left  > r_right  .or.  &
                             my_left  > r_right  .or.  &
                             my_right < r_left) ) then
-                    v_left  = max(my_left, r_left)
-                    v_right = min(my_right, r_right)
                     if(nsegs_overlap == 0) then
                        count = count + 1
+		       v_right = -9999
                        tmppe_list(procn) = .TRUE.
                     endif
-                    nsegs_overlap = nsegs_overlap + 1
-                    tmpsegstart(count, nsegs_overlap) = v_left
-                    tmpsegcount(count, nsegs_overlap) = v_right - v_left + 1
+		    v_left = GlobalToLocalIndex(GSMap,max(my_left, r_left),mycomm)
+		    previous_right = v_right
+		    v_right = v_left + min(my_right, r_right) - max(my_left, r_left)
+		    if(v_left == previous_right+1) then
+		       tmpsegcount(count, nsegs_overlap) = &
+		       tmpsegcount(count, nsegs_overlap) + v_right - v_left + 1
+		    else
+		       nsegs_overlap = nsegs_overlap + 1
+		       tmpsegstart(count, nsegs_overlap) = v_left
+		       tmpsegcount(count, nsegs_overlap) = v_right - v_left + 1
+		    endif
                  endif
               endif
            enddo
@@ -282,42 +288,28 @@
     do i=1,ThisMCTWorld%nprocspid(othercomp)
       if(tmppe_list(i))then 
       m=m+1
-! load processor rank in MCT_comm
+      ! load processor rank in MCT_comm
       Rout%pe_list(m)=ThisMCTWorld%idGprocid(othercomp,i-1)
       endif
     enddo
 
     lmaxsize=0
     do i=1,count
-      k=0
       totallength=0
-      do j=1,mysize
-!	if(myPid==0)write(*,*)"RRR",i,j,tmpsegcount(i,j)
+      do j=1,maxsegcount
 	if(tmpsegcount(i,j) /= 0) then
-	 k=k+1
- 	 Rout%seg_starts(i,k)=GlobalToLocalIndex(GSMap,tmpsegstart(i,j),mycomm)
-! 	 Rout%seg_starts(i,k)=tmpsegstart(i,j)
-	 Rout%seg_lengths(i,k)=tmpsegcount(i,j)
-	 totallength=totallength+Rout%seg_lengths(i,k)
+	 Rout%num_segs(i)=j
+ 	 Rout%seg_starts(i,j)=tmpsegstart(i,j)
+	 Rout%seg_lengths(i,j)=tmpsegcount(i,j)
+	 totallength=totallength+Rout%seg_lengths(i,j)
 	endif
       enddo
-      Rout%num_segs(i)=k
-
       Rout%locsize(i)=totallength
       lmaxsize=MAX(lmaxsize,totallength)
     enddo
 
     Rout%maxsize=lmaxsize
 
-    if(myPid==0) then
-     do i=1,Rout%nprocs
-!      write(*,*)"ROUTERE",i,Rout%pe_list(i),Rout%num_segs(i),Rout%locsize(i),Rout%maxsize
-      do j=1,Rout%num_segs(i)
-!       write(*,*)"ROUTEREE",i,j,Rout%seg_starts(i,j),Rout%seg_lengths(i,j)
-      enddo
-     enddo
-    endif
-       
       
   deallocate(tmpsegstart,tmpsegcount,tmppe_list,stat=ier)
   if(ier/=0) call die(myname_,'deallocate()',ier)
