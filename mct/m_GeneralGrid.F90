@@ -1054,6 +1054,7 @@
 ! !USES:
 !
       use m_die ,          only : die
+      use m_die ,          only : MP_perr_die
       use m_stdio ,        only : stderr
 
       use m_AttrVect,      only : AttrVect_importIAttr => importIAttr
@@ -1113,6 +1114,7 @@
 ! !USES:
 !
       use m_die ,          only : die
+      use m_die ,          only : MP_perr_die
       use m_stdio ,        only : stderr
 
       use m_AttrVect,      only : AttrVect_importRAttr => importRAttr
