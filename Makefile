@@ -1,38 +1,33 @@
 
 SHELL = /bin/sh
 
-MPEUPATH = ./mpeu
-MCTPATH = ./mct
-EXAMPLEPATH = ./ut-mct
+include Makefile.conf
 
 SUBDIRS = $(MPEUPATH) $(MCTPATH)
 
 # TARGETS
-subdirs: $(SUBDIRS)
-	@ argv="$(SUBDIRS)" ; \
-	for dir in $$argv; do \
-	  cd $$dir;           \
-	  $(MAKE);            \
-	  cd ..;              \
+subdirs:
+	for dir in $(SUBDIRS); do \
+	  cd $$dir;               \
+	  $(MAKE);                \
+	  cd ..;                  \
 	done
 
-clean: $(SUBDIRS) 
-	@ argv="$(SUBDIRS)" ; \
-	for dir in $$argv; do \
-	  cd $$dir;           \
-	  $(MAKE) clean;      \
-	  cd ..;              \
+clean:
+	for dir in $(SUBDIRS); do \
+	  cd $$dir;               \
+	  $(MAKE) clean;          \
+	  cd ..;                  \
 	done
 
 install: subdirs
-	@ argv="$(SUBDIRS)" ; \
-	for dir in $$argv; do \
-	  cd $$dir;           \
-	  $(MAKE) install;    \
-	  cd ..;              \
+	for dir in $(SUBDIRS); do \
+	  cd $$dir;               \
+	  $(MAKE) install;        \
+	  cd ..;                  \
 	done
 
-ut-mct: subdirs
+example: subdirs
 	cd $(EXAMPLEPATH) && $(MAKE)
 
 

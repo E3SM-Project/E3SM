@@ -49,7 +49,6 @@ lib$(MODULE).a:	$(OBJS_ALL)
 
 # ADDITIONAL FLAGS SPECIFIC FOR MCT COMPILATION
 
-MPEUPATH = ../mpeu
 MCTFLAGS = $(INCFLAG)$(MPEUPATH)
 
 # RULES
@@ -69,7 +68,7 @@ clean:
 	${RM} *.o *.mod lib$(MODULE).a
 
 install:
-	$(INSTALL) -d -v $(libdir) $(includedir)
+	$(MKINSTALLDIRS) $(libdir) $(includedir)
 	$(INSTALL) lib$(MODULE).a -m 644 $(libdir)
 	$(INSTALL) *.mod -m 644 $(includedir)
 

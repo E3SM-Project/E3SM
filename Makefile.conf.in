@@ -59,12 +59,16 @@ F90RULE         = @F90RULE@
 # BY SETTING TO .F90.o AND DISABLING F90RULE
 F90RULECPP      = @F90RULECPP@
 
-# INSTALLATION VARIABLES
+# INSTALLATION VARIABLES #
 
-# INSTALL COMMAND - HARD CODED FOR NOW
-INSTALL         = install
+# INSTALL COMMANDS
+INSTALL         = @INSTALL@
+MKINSTALLDIRS   = @abs_top_builddir@/mkinstalldirs
 
 # INSTALLATION DIRECTORIES
+MCTPATH         = @abs_top_builddir@/mct
+MPEUPATH        = @abs_top_builddir@/mpeu
+EXAMPLEPATH     = @abs_top_builddir@/ut-mct
 libdir          = @prefix@/lib
 includedir      = @prefix@/include
 
