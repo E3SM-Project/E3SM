@@ -270,7 +270,7 @@ PACKAGE_VERSION='0.01'
 PACKAGE_STRING='MCT 0.01'
 PACKAGE_BUGREPORT=''
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT F90 F90FLAGS ac_ct_F90 MPIF90 MPILIBS FC MUPDATE FPP FPPFLAGS CPP FRULE F90RULE FRULECPP F90RULECPP MACHDEFS FFLAGS REAL8 BIT64 INCLUDE LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT F90 F90FLAGS ac_ct_F90 MPIF90 MPILIBS FC FPP FPPFLAGS CPP FRULE F90RULE FRULECPP F90RULECPP MACHDEFS FFLAGS REAL8 BIT64 ENDIAN INCLUDE LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -743,10 +743,6 @@ ac_env_FC_set=${FC+set}
 ac_env_FC_value=$FC
 ac_cv_env_FC_set=${FC+set}
 ac_cv_env_FC_value=$FC
-ac_env_MUPDATE_set=${MUPDATE+set}
-ac_env_MUPDATE_value=$MUPDATE
-ac_cv_env_MUPDATE_set=${MUPDATE+set}
-ac_cv_env_MUPDATE_value=$MUPDATE
 ac_env_FPP_set=${FPP+set}
 ac_env_FPP_value=$FPP
 ac_cv_env_FPP_set=${FPP+set}
@@ -771,6 +767,10 @@ ac_env_BIT64_set=${BIT64+set}
 ac_env_BIT64_value=$BIT64
 ac_cv_env_BIT64_set=${BIT64+set}
 ac_cv_env_BIT64_value=$BIT64
+ac_env_ENDIAN_set=${ENDIAN+set}
+ac_env_ENDIAN_value=$ENDIAN
+ac_cv_env_ENDIAN_set=${ENDIAN+set}
+ac_cv_env_ENDIAN_value=$ENDIAN
 ac_env_INCLUDE_set=${INCLUDE+set}
 ac_env_INCLUDE_value=$INCLUDE
 ac_cv_env_INCLUDE_set=${INCLUDE+set}
@@ -855,7 +855,6 @@ Some influential environment variables:
   F90FLAGS    Fortran 90 compiler flags
   MPIF90      MPI Fortran compiler command
   FC          The Fortran compiler
-  MUPDATE     Find and copy F90 modules to a directory
   FPP         C-preprocessor for Fortran source code
   FPPFLAGS    C-preprocessing flags for Fortran source code
   MACHDEFS    MCT compiler and OS flags
@@ -863,6 +862,7 @@ Some influential environment variables:
   REAL8       Fortran compiler flag for setting the default REAL size to
               REAL(KIND=8)
   BIT64       Fortran compiler flag for generating 64-bit objects
+  ENDIAN      Fortran compiler flag for converting big-endian to little-endian
   INCLUDE     Fortran compiler flag for specifying module search path
 
 Use these variables to override the choices made by `configure' or to help
@@ -2833,20 +2833,15 @@ _ACEOF
 echo "$as_me: WARNING: Bizarre compiler result. Please check compiler manual for module file behavior." >&2;} ;;
 esac
 
-
-if test "${MUPDATE+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-
-case $ac_cv_f90_mod_uppercase in
-  yes) MUPDATE="sh UCupdate.sh";;
-   no) MUPDATE="sh LCupdate.sh";;
-    *) { echo "$as_me:$LINENO: WARNING: MUPDATE must be defined for Makefiles!" >&5
-echo "$as_me: WARNING: MUPDATE must be defined for Makefiles!" >&2;};;
-esac
-
-fi
-
+#AC_ARG_VAR(MUPDATE,[Find and copy F90 modules to a directory])
+#AC_CACHE_VAL([MUPDATE],
+#[
+#case $ac_cv_f90_mod_uppercase in
+#  yes) MUPDATE="sh UCupdate.sh";;
+#   no) MUPDATE="sh LCupdate.sh";;
+#    *) AC_MSG_WARN([MUPDATE must be defined for Makefiles!]);;
+#esac
+#])
 
 # Check that the c-preprocessor can correctly process these directives
 # If the Fortran compiler can process directives,
@@ -3096,6 +3091,7 @@ fi
 
 
 
+
 # Check compiler name
 case $F90 in
 xlf90)
@@ -3113,7 +3109,17 @@ if test -z "$F90FLAGS"; then
      F90FLAGS="-qsuffix=f=f90"
   fi
 fi;;
-pgf90) MACHDEFS="-DCPRPGI $MACHDEFS";;
+pgf90)
+MACHDEFS="-DCPRPGI $MACHDEFS"
+if test -z "$REAL8"; then
+   REAL8="-r8"
+fi
+if test -z "$BIT64"; then
+   BIT64="-pc 64"
+fi
+if test -z "$ENDIAN"; then
+   ENDIAN="-byteswapio"
+fi;;
 ftn)
 MACHDEFS="-DCPRCRAY $MACHDEFS"
 FFLAGS="-em $FFLAGS"
@@ -3810,7 +3816,6 @@ s,@ac_ct_F90@,$ac_ct_F90,;t t
 s,@MPIF90@,$MPIF90,;t t
 s,@MPILIBS@,$MPILIBS,;t t
 s,@FC@,$FC,;t t
-s,@MUPDATE@,$MUPDATE,;t t
 s,@FPP@,$FPP,;t t
 s,@FPPFLAGS@,$FPPFLAGS,;t t
 s,@CPP@,$CPP,;t t
@@ -3822,6 +3827,7 @@ s,@MACHDEFS@,$MACHDEFS,;t t
 s,@FFLAGS@,$FFLAGS,;t t
 s,@REAL8@,$REAL8,;t t
 s,@BIT64@,$BIT64,;t t
+s,@ENDIAN@,$ENDIAN,;t t
 s,@INCLUDE@,$INCLUDE,;t t
 s,@LIBOBJS@,$LIBOBJS,;t t
 s,@LTLIBOBJS@,$LTLIBOBJS,;t t
@@ -4070,7 +4076,6 @@ echo "BIT64=$BIT64"
 echo "MPIF90=$MPIF90"
 echo "MPILIBS=$MPILIBS"
 echo "MACHDEFS=$MACHDEFS"
-echo "MUPDATE=$MUPDATE"
 echo "INCLUDE=$INCLUDE"
 echo
 
