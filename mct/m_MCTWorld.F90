@@ -562,14 +562,11 @@
 ! The function {\tt ComponentToWorldRank\_} takes an input component ID 
 ! {\tt comp\_id} and input rank on that component communicator 
 ! {\tt comp\_rank}, and returns the rank of that process on the world 
-! communicator of {\tt MCTWorld}.  The optional {\tt LOGICAL} argument 
-! {\tt check} is used to control exhaustive argument validity checking 
-! against {\tt World}.  If the argument {\tt check} is not provided, 
-! no checking, which can hamper performance will be done.
+! communicator of {\tt MCTWorld}.  
 !
 ! !INTERFACE:
 
- integer function ComponentToWorldRank_(comp_rank, comp_id, World, check)
+ integer function ComponentToWorldRank_(comp_rank, comp_id, World)
 !
 ! !USES:
 !
@@ -584,11 +581,11 @@
                                                   ! comp_id
       integer, intent(in)	     :: comp_id   ! component id
       type(MCTWorld), intent(in)     :: World     ! World
-      logical, intent(in), optional  :: check     ! exhaustive checking
-                                                  ! flag
+
 
 ! !REVISION HISTORY:
 !       05Feb01 - J. Larson <larson@mcs.anl.gov> - initial version
+!       14Jul02 - E. Ong <eong@mcs.anl.gov> - made argument checking required
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::ComponentToWorldRank_'
@@ -604,45 +601,44 @@
       ! necessary (unless one alters MCTWorld), and impose a cost
       ! one may wish to avoid.
 
-  if(present(check)) then
-     if(check) then
+      ! These checks are just conditional statements and are 
+      ! not particularly time-consuming. It's better to be safe
+      ! than sorry. -EONG
+
 
       ! Check argument comp_id for validity--assume initially it is not...
 
-	valid = .false.
-	n = 0
+  valid = .false.
+  n = 0
 
-	if((comp_id <= World%ncomps) .and. &
-	  (comp_id > 0)) then
-	     valid = .true.
-	endif
-
-	if(.not. valid) then
-	   write(stderr,'(2a,1i7)') myname,":: invalid component id no. = ",&
-		comp_id
-	   call die(myname_,'invalid comp_id = ',comp_id)
-	endif
+  if((comp_id <= World%ncomps) .and. &
+       (comp_id > 0)) then
+     valid = .true.
+  endif
+  
+  if(.not. valid) then
+     write(stderr,'(2a,1i7)') myname,":: invalid component id no. = ",&
+	  comp_id
+     call die(myname_,'invalid comp_id = ',comp_id)
+  endif
 
       ! Check argument comp_rank for validity on the communicator associated
       ! with comp_id.  Assume initialy it is invalid.
 
-	valid = .false.
+  valid = .false.
+  
+  if((0 <= comp_rank) .or. &
+       (comp_rank < ComponentNumProcs_(World, comp_id))) then
+     valid = .true.
+  endif
 
-	if((0 <= comp_rank) .or. &
-	     (comp_rank < ComponentNumProcs_(World, comp_id))) then
-	   valid = .true.
-	endif
+  if(.not. valid) then
+     write(stderr,'(2a,1i5,1a,1i2)') myname, &
+	  ":: invalid process ID. = ", &
+	  comp_rank, "on component ",comp_id
+     call die(myname_,'invalid comp_rank = ',comp_rank)
+  endif
 
-	if(.not. valid) then
-	   write(stderr,'(2a,1i5,1a,1i2)') myname, &
-		":: invalid process ID. = ", &
-		comp_rank, "on component ",comp_id
-	   call die(myname_,'invalid comp_rank = ',comp_rank)
-	endif
-
-     endif ! if(check)
-
-  endif ! if((present(check)) .and. check)
 
       ! If we have reached this point, the input data are valid.
       ! Return the global rank for comp_rank on component comp_id
@@ -667,11 +663,7 @@
 ! !DESCRIPTION:
 ! The function {\tt ComponentRootRank\_} takes an input component ID 
 ! {\tt comp\_id} and input {\tt MCTWorld} variable {\tt World}, and
-! returns the global rank of the root of this component.  The optional 
-! {\tt LOGICAL} argument {\tt check} is used to control exhaustive 
-! argument validity checking against {\tt World}.  If the argument 
-! {\tt check} is not provided, no checking, which can hamper performance 
-! is done.
+! returns the global rank of the root of this component.  
 !
 ! !INTERFACE:
 
@@ -691,6 +683,7 @@
 
 ! !REVISION HISTORY:
 !       05Feb01 - J. Larson <larson@mcs.anl.gov> - initial version
+!       14Jul02 - E. Ong <eong@mcs.anl.gov> - made argument checking required
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::ComponentRootRank_'
@@ -700,11 +693,7 @@
       ! Call ComponentToWorldRank_ assuming the root on a remote component
       ! has rank zero on the communicator associated with that component.
 
-  if(present(check)) then
-     world_comp_root = ComponentToWorldRank_(0, comp_id, World, check)
-  else
-     world_comp_root = ComponentToWorldRank_(0, comp_id, World)
-  endif
+  world_comp_root = ComponentToWorldRank_(0, comp_id, World)
 
   if(world_comp_root < 0) then
      write(stderr,'(2a,1i6)') myname,":: negative world rank = ",& 
