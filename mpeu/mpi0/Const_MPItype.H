@@ -1,28 +1,28 @@
-#ifdef sysIRIX64
+#ifdef SYSIRIX64
 #define Const_MPItype_
 #else
-#ifdef sysAIX
+#ifdef SYSAIX
 #define Const_MPItype_
 #else
-#ifdef sysIRIX
+#ifdef SYSIRIX
 #define Const_MPItype_
 #else
-#ifdef sysLinux
+#ifdef SYSLINUX
 #define Const_MPItype_
 #else
-#ifdef sysOSF1
+#ifdef SYSOSF1
 #define Const_MPItype_
 #else
-#ifdef sysSunOS
+#ifdef SYSSUNOS
 #define Const_MPItype_
 #else
-#ifdef sysSUPER_UX
+#ifdef SYSSUPERUX
 #define Const_MPItype_
 #else
-#ifdef sysFujitsu
+#ifdef SYSFUJITSU
 #define Const_MPItype_
 #else
-#ifdef sysUNICOS
+#ifdef SYSUNICOS
 #define Const_MPItype_
 #else
 #ifdef Const_MPItype_
