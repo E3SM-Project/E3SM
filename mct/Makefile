@@ -2,25 +2,59 @@
 
 MODULE		= mct
 
-SRCS_mks	=
-include SRCS_mks.mk
+SRCS_mks	= Makefile			\
+		  Makefile.conf.in		\
+	          Makefile.dependency		\
+		  Makefile.rules		\
+		  configure			\
+		  README			
 
 SRCS_C		=
 
 SRCS_f		=
-include SRCS_f.mk
 
 SRCS_F		=
-include SRCS_F.mk
 
 SRCS_f90	=
-include SRCS_f90.mk
 
-SRCS_F90	=
-include SRCS_F90.mk
+SRCS_F90	= m_MCTWorld.F90		\
+		  m_AttrVect.F90		\
+		  m_GlobalMap.F90	        \
+		  m_GlobalSegMap.F90		\
+		  m_Accumulator.F90		\
+		  m_SparseMatrix.F90      	\
+		  m_Navigator.F90		\
+		  m_AttrVectComms.F90		\
+		  m_AttrVectReduce.F90		\
+		  m_AccumulatorComms.F90  	\
+		  m_GeneralGrid.F90		\
+		  m_GeneralGridComms.F90	\
+		  m_SpatialIntegral.F90		\
+		  m_MatAttrVectMul.F90    	\
+		  m_Merge.F90			\
+		  m_GlobalToLocal.F90		\
+		  m_ExchangeMaps.F90		\
+		  m_ConvertMaps.F90		\
+		  m_SparseMatrixDecomp.F90	\
+		  m_SparseMatrixToMaps.F90	\
+		  m_SparseMatrixComms.F90 	\
+		  m_SparseMatrixPlus.F90	\
+		  m_Router.F90			\
+		  m_Rearranger.F90        	\
+		  m_Transfer.F90          
 
-TEXFILES	=
-include SRCS_tex.mk
+TEXFILES	= m_AttrVect.tex		\
+		  m_GlobalMap.tex         	\
+		  m_GlobalSegMap.tex      	\
+		  m_Accumulator.tex       	\
+		  m_SparseMatrix.tex      	\
+		  m_Navigator.tex         	\
+		  m_AttrVectComms.tex     	\
+		  m_AccumulatorComms.tex  	\
+		  m_GeneralGrid.tex		\
+		  m_MatAttrVectMul.tex    	\
+		  m_Merge.tex 			\
+		  m_Router.tex
 
 SRCS_ALL	= $(SRCS_f)		\
 		  $(SRCS_F)		\
@@ -36,26 +70,6 @@ OBJS_ALL	= $(SRCS_f:.f=.o)	\
 
 ARCH_TARGETS	= $(SRCS_mks) $(SRCS_ALL)
 ALL_TARGETS	= lib$(MODULE).a
-
-#	Try to define _Ddft, _Dsys and _Dnod in proper Makefiles.
-#
-#		1) _D for the make() time macros, as in
-#		make _D="-Dxxx ..."
-#
-#		2) _Ddft for the default global macros defined
-#		in the main Makefile.
-#
-#		3) _Dsys for the OS dependent macros defined
-#		in the main Makefile and can be redefined in
-#		the Makefile.conf file.
-#
-#		4) _Dnod for the OS or the node dependent
-#		macros defined in the Makefile.conf file.
-
-_Ddft	=
-_Dsys	= -Dsys`uname -s`
-
-_DS	= $(_Ddft) $(_Dsys) $(_Dnod) $(_D)
 
 include Makefile.rules
 include Makefile.conf
