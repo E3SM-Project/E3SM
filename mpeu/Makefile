@@ -37,6 +37,10 @@ SRCS_C		= get_zeits.c
 OBJS_ALL	= $(SRCS_F90:.F90=.o)	\
 		  $(SRCS_C:.c=.o)
 
+# MACHINE AND COMPILER FLAGS
+
+include ../Makefile.conf
+
 # TARGETS
 
 all:	lib$(MODULE).a
@@ -45,9 +49,9 @@ lib$(MODULE).a:	$(OBJS_ALL)
 	$(RM) $@
 	$(AR) $@ $(OBJS_ALL)
 
-# MACHINE AND COMPILER FLAGS
+# ADDITIONAL FLAGS SPECIFIC FOR MPEU COMPILATION
 
-include ../Makefile.conf
+MPEUFLAGS =
 
 # RULES
 
@@ -58,11 +62,11 @@ $(CRULE):
 	$(CC) -c $(ALLCFLAGS) $*.c
 
 $(F90RULE):
-	$(FC) -c $(INCPATH) $(DEFS) $(FCFLAGS) $(F90FLAGS) $*.F90
+	$(FC) -c $(INCPATH) $(DEFS) $(FCFLAGS) $(F90FLAGS) $(MPEUFLAGS) $*.F90
 
 $(F90RULECPP):
 	$(FPP) $(DEFS) $(FPPFLAGS) $*.F90 $*.f90
-	$(FC) -c $(INCPATH) $(FCFLAGS) $(F90FLAGS) $*.f90
+	$(FC) -c $(INCPATH) $(FCFLAGS) $(F90FLAGS) $(MPEUFLAGS) $*.f90
 	$(RM) $*.f90
 
 clean:
