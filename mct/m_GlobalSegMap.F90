@@ -834,15 +834,15 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: rankm_ - rank which process owns a datum with given global 
+! !IROUTINE: rankm_ - rank which processes own a datum with given global 
 ! index.
 !
 ! !DESCRIPTION:
-! This routine assumes that there is one process that owns the datum with
-! a given global index.  It should not be used when the input 
-! {\tt GlobalSegMap} argument {\tt GSMap} has been built to incorporate
-! halo points.  {\em Nota Bene}:  The output array {\tt rank} is allocated 
-! in this routine and must be deallocated by the routine calling 
+! This routine assumes that there may be more than one process that owns 
+! the datum with a given global index.  This routine should  be used when 
+! the input {\tt GlobalSegMap} argument {\tt GSMap} has been built to 
+! incorporate ! halo points.  {\em Nota Bene}:  The output array {\tt rank} 
+! is allocated in this routine and must be deallocated by the routine calling 
 ! {\tt rankm\_()}.  Failure to do so could result in a memory leak.
 !
 ! !INTERFACE:
