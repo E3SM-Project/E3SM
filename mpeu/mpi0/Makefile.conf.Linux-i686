@@ -14,6 +14,12 @@
 #   `make' procedures.  This include file is used to overide the default
 #   environments (including commands) defined in file Makefile.
 #
+#   IMPORTANT NOTE:  This Linux makefile assumes you are using the Portland Group
+#   compiler pgf90.  You must comment/uncomment the appropriate FFLAGS string below
+#   if you are using a different Linux compiler (NAG, Absoft, Intel).  You'll
+#   need to do this in each Makefile.conf.Linux-i686 in the MCT directory structure.
+#   (There's 3 in the basic mpeu,mct dirs.  1 more in ut-mct.)
+#
 # !INTERFACE:
 #
 #	% ln -s Makefile.conf.Linux Makefile.conf
@@ -38,23 +44,6 @@ _Dnod		=
 # Environments
 # ============
 
-# Regarding Compilers:
-#
-# If using NAG95 compiler, add the following options to the  
-# FFLAGS and FPPFLAGS macros: 
-# FFLAGS = -dusty -kind=byte
-# FPPFLAGS = -DNAG 
-#
-# If using the pgf90 compiler, add the following options to the  
-# FFLAGS and FPPFLAGS macros: 
-# FFLAGS = -tp p6 -pc 32 -Mnoframe -byteswapio 
-# -pc speciefies 32-bit or 64-bit  
-
-# If using the Absoft compiler, add the following options to the  
-# FFLAGS, FPPFLAGS and CFLAGS macros.  
-# FFLAGS = -Mnoframe
-# CFLAGS = -DABSOFT
-
 # Assume MPICH for Linux
 # then use mpif90,mpif77 to compile and link
 
@@ -78,10 +67,41 @@ F77		= mpif77
 F90		= mpif90
 FC		= $(F90)
 
+######################################################################
+# NOTE:  Choose the appropriate pair of FFLAGS/FPPFLAGS strings
+# for your Linux compiler below by commenting out/uncommenting
+# the appropriate lines
+######################################################################
+
+#############################
+#  Portland Group (pgf90) flags
+#############################
 FFLAGS		= -O2 -tp p6 -pc 32 -Mnoframe -byteswapio $(_R)
+FPPFLAGS	= -DLANGUAGE_FORTRAN -traditional
 CFLAGS		= -O
 
-FPPFLAGS	= -DLANGUAGE_FORTRAN -traditional
+#############################
+# NAG flags 
+#############################
+#FFLAGS		= -O2 -dusty -kind=byte  $(_R)
+#FPPFLAGS	= -DLANGUAGE_FORTRAN -DNAG -traditional
+#CFLAGS		= -O
+
+#############################
+# Absoft flags 
+#############################
+#FFLAGS		= -O2 -Mnoframe  $(_R)
+#FPPFLAGS	= -DLANGUAGE_FORTRAN -traditional
+#CFLAGS		= -O -DABSOFT
+
+#############################
+# Intel v7 (ifc) flags
+#############################
+#FFLAGS		= -O2 -tpp6 -w95 $(_R)
+#FPPFLAGS	= -DLANGUAGE_FORTRAN -traditional
+#CFLAGS		= -O
+
+#####################################################################
 
 LD		= mpif90
 LDFLAGS		= $(FFLAGS)
