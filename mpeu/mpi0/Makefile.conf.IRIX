@@ -58,14 +58,14 @@ _IRIX		= irix6.2
 LABI		= IRIX64
 LABI		= IRIXN32
 
-_LMPI		= -L/ford1/local/$(_IRIX)/mpi/lib/$(LABI)/ch_p4
+_LMPI		=
 
 _lMPIlog	= -lfmpi -llmpi -lpmpi
 _lMPItrace	= -lfmpi -ltmpi -lpmpi
 _lMPIanime	= -lfmpi -lampi -lpmpi -lmpe -lX11 -lm
 _lMPI		= -lmpi
 
-_IMPI		= -I/ford1/local/$(_IRIX)/mpi/include
+_IMPI		=
 
 
 # Use the libmalloc.a?
