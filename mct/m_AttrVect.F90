@@ -259,12 +259,16 @@
   call List_nullify(aV%iList)
   call List_nullify(aV%rList)
 
-  if( present(rList) .and. (len_trim(rList)>0) ) then
-    call init(aV%rList,rList)	! init.List()
+  if(present(rList)) then
+     if(len_trim(rList) > 0) then
+	call init(aV%rList,rList)	! init.List()
+     endif
   endif
 
-  if( present(iList) .and. (len_trim(iList)>0) ) then
-    call init(aV%iList,iList)	! init.List()
+  if(present(iList)) then
+     if(len_trim(iList) > 0) then
+	call init(aV%iList,iList)	! init.List()
+     endif
   endif
 
   nIA=nitem(aV%iList)		! nitem.List()
@@ -2133,8 +2137,9 @@
   integer :: i,j,ier       ! dummy variables
   integer :: num_indices   ! Overlapping attribute index number
   integer :: aVsize        ! The lsize of aVin and aVout
-  integer :: num_inindices, num_outindices  ! Number of matching indices in aV
-  integer :: inxmin, outxmin, inx, outx     ! Index variables
+  integer :: num_inindices, num_outindices   ! Number of matching indices in aV
+  integer :: inxmin, outxmin, inx, outx      ! Index variables
+  logical :: TiListIsPresent, TrListIsPresent! true if list argument is present
   logical :: contiguous    ! true if index segments are contiguous in memory  
   character*7 :: data_flag ! character variable used as data type flag
 
@@ -2152,113 +2157,137 @@
   endif
 
   ! Copy the listed real attributes
-  if( present(rList) .and. (len_trim(rList)>0) ) then
+  if(present(rList)) then
+     if(len_trim(rList) > 0) then
 
-     ! Index rList with the AttrVects
-     call GetIndices(aVinindices,aVin%rList,trim(rList))
-     if( present(TrList) .and. (len_trim(TrList)>0) ) then
-        call GetIndices(aVoutindices,aVout%rList,trim(TrList))
-        if(size(aVinindices) /= size(aVoutindices)) then
-           call die(myname_,"Arguments rList and TrList do not&
+	! Index rList with the AttrVects
+	call GetIndices(aVinindices,aVin%rList,trim(rList))
+	
+	! TrList is present if it is provided and its length>0
+	TrListIsPresent = .false.
+	if(present(TrList)) then
+	   if(len_trim(TrList) > 0) then
+	      TrListIsPresent = .true.
+	   endif
+	endif
+
+	if(TrListIsPresent) then
+	   call GetIndices(aVoutindices,aVout%rList,trim(TrList))
+	   if(size(aVinindices) /= size(aVoutindices)) then
+	      call die(myname_,"Arguments rList and TrList do not&
                 &contain the same number of items")
-        endif
-     else
-        call GetIndices(aVoutindices,aVout%rList,trim(rList))
-     endif
+	   endif
+	else
+	   call GetIndices(aVoutindices,aVout%rList,trim(rList))
+	endif
 
-     ! Check if the indices are contiguous in memory for faster copy
-     num_indices=size(aVoutindices)
-     contiguous=.true.
-     do i=2,num_indices
-        if(aVinindices(i) /= aVinindices(i-1)+1) contiguous = .false.
-     enddo
-     if(contiguous) then
-        do i=2,num_indices
-           if(aVoutindices(i) /= aVoutindices(i-1)+1) contiguous=.false.
-        enddo
-     endif
+	! Check if the indices are contiguous in memory for faster copy
+	num_indices=size(aVoutindices)
+	contiguous=.true.
+	do i=2,num_indices
+	   if(aVinindices(i) /= aVinindices(i-1)+1) contiguous = .false.
+	enddo
+	if(contiguous) then
+	   do i=2,num_indices
+	      if(aVoutindices(i) /= aVoutindices(i-1)+1) contiguous=.false.
+	   enddo
+	endif
 
-     ! Start copying (arranged loop order optimized for xlf90)
-     if(contiguous) then
+	! Start copying (arranged loop order optimized for xlf90)
+	if(contiguous) then
 
-        outxmin=aVoutindices(1)-1
-        inxmin=aVinindices(1)-1
-        do j=1,aVsize
-           do i=1,num_indices
-              aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)       
-           enddo
-        enddo
-
-     else
-
-	do i=1,num_indices
-	   outx=aVoutindices(i)
-	   inx=aVinindices(i)
+	   outxmin=aVoutindices(1)-1
+	   inxmin=aVinindices(1)-1
 	   do j=1,aVsize
-              aVout%rAttr(outx,j) = aVin%rAttr(inx,j)
-           enddo
-        enddo
-     endif
+	      do i=1,num_indices
+		 aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)       
+	      enddo
+	   enddo
 
-     deallocate(aVinindices, aVoutindices, stat=ier)
-     if(ier/=0) call die(myname_,"deallocate(aVinindices...)",ier)
+	else
 
-  endif
+	   do i=1,num_indices
+	      outx=aVoutindices(i)
+	      inx=aVinindices(i)
+	      do j=1,aVsize
+		 aVout%rAttr(outx,j) = aVin%rAttr(inx,j)
+	      enddo
+	   enddo
+	endif
+
+	deallocate(aVinindices, aVoutindices, stat=ier)
+	if(ier/=0) call die(myname_,"deallocate(aVinindices...)",ier)
+
+     endif  ! if(len_trim(rList) > 0)
+     
+  endif   ! if(present(rList)
 
   !  Copy the listed integer attributes
-  if( present(iList) .and. (len_trim(iList)>0) ) then
+  if(present(iList)) then
+     if(len_trim(iList) > 0) then
 
-     ! Index rList with the AttrVects
-     call GetIndices(aVinindices,aVin%iList,trim(iList))
-     if( present(TiList) .and. (len_trim(TiList)>0) ) then
-        call GetIndices(aVoutindices,aVout%iList,trim(TiList))
-        if(size(aVinindices) /= size(aVoutindices)) then
-           call die(myname_,"Arguments iList and TiList do not&
+	! Index rList with the AttrVects
+	call GetIndices(aVinindices,aVin%iList,trim(iList))
+
+	! TiList is present if its provided and its length>0
+	TiListIsPresent = .false.
+	if(present(TiList)) then
+	   if(len_trim(TiList) > 0) then
+	      TiListIsPresent = .true.
+	   endif
+	endif
+
+	if(TiListIsPresent) then
+	   call GetIndices(aVoutindices,aVout%iList,trim(TiList))
+	   if(size(aVinindices) /= size(aVoutindices)) then
+	      call die(myname_,"Arguments iList and TiList do not&
                 &contain the same number of items")
-        endif
-     else
-        call GetIndices(aVoutindices,aVout%iList,trim(iList))
-     endif
+	   endif
+	else
+	   call GetIndices(aVoutindices,aVout%iList,trim(iList))
+	endif
 
-     ! Check if the indices are contiguous in memory for faster copy
-     num_indices=size(aVoutindices)
-     contiguous=.true.
-     do i=2,num_indices
-        if(aVinindices(i) /= aVinindices(i-1)+1) contiguous = .false.
-     enddo
-     if(contiguous) then
-        do i=2,num_indices
-           if(aVoutindices(i) /= aVoutindices(i-1)+1) contiguous=.false.
-        enddo
-     endif
+	! Check if the indices are contiguous in memory for faster copy
+	num_indices=size(aVoutindices)
+	contiguous=.true.
+	do i=2,num_indices
+	   if(aVinindices(i) /= aVinindices(i-1)+1) contiguous = .false.
+	enddo
+	if(contiguous) then
+	   do i=2,num_indices
+	      if(aVoutindices(i) /= aVoutindices(i-1)+1) contiguous=.false.
+	   enddo
+	endif
+	
+	! Start copying (arranged loop order optimized for xlf90)
+	if(contiguous) then
 
-     ! Start copying (arranged loop order optimized for xlf90)
-     if(contiguous) then
-
-        outxmin=aVoutindices(1)-1
-        inxmin=aVinindices(1)-1
-        do j=1,aVsize
-           do i=1,num_indices
-             aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)       
-           enddo
-        enddo
-
-     else
-
-	do i=1,num_indices
-	   outx=aVoutindices(i)
-	   inx=aVinindices(i)
+	   outxmin=aVoutindices(1)-1
+	   inxmin=aVinindices(1)-1
 	   do j=1,aVsize
-              aVout%iAttr(outx,j) = aVin%iAttr(inx,j)
-           enddo
-        enddo
+	      do i=1,num_indices
+		 aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)       
+	      enddo
+	   enddo
 
-     endif
+	else
+
+	   do i=1,num_indices
+	      outx=aVoutindices(i)
+	      inx=aVinindices(i)
+	      do j=1,aVsize
+		 aVout%iAttr(outx,j) = aVin%iAttr(inx,j)
+	      enddo
+	   enddo
+
+	endif
                 
-     deallocate(aVinindices, aVoutindices, stat=ier)
-     if(ier/=0) call die(myname_,"deallocate(aVinindices...)",ier)
+	deallocate(aVinindices, aVoutindices, stat=ier)
+	if(ier/=0) call die(myname_,"deallocate(aVinindices...)",ier)
 
-  endif
+     endif  ! if(len_trim(iList) > 0)
+
+  endif   ! if(present(iList))
 
   ! If neither rList nor iList is present, copy shared attibutes
   ! from in to out.
