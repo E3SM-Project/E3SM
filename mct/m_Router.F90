@@ -117,7 +117,7 @@
   character(len=*),parameter :: myname_=myname//'::init_'
   integer			:: myPid,ier,nlsegs,i,j,k,m
   integer			:: mysize,recvsize,rngseg,tag,pr
-  integer			:: sendsize,mysize,count,prsize
+  integer			:: sendsize,count,prsize
   integer			:: lmaxsize,totallength
   integer 	:: status(MP_STATUS_SIZE)
   integer,dimension(:),allocatable :: rstarts,rlengths
