@@ -908,6 +908,7 @@ contains
 
 ! !REVISION HISTORY:
 ! 	06Jun01 - J.W. Larson - initial version.
+! 	11Jun01 - R. Jacob - small bug fix; status in MPI_RECV
 !EOP ___________________________________________________________________
 
  character(len=*),parameter :: myname_=myname//'::recv_'
@@ -919,7 +920,7 @@ contains
        ! Step 1.  Receive Length of String DummStr from process source.
 
  call MPI_RECV(length, 1, MP_type(length), source, TagBase, comm, &
-               status, ierr)
+               MPstatus, ierr)
 
  allocate(DummStr%c(length), stat=ierr)
 
