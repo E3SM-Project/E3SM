@@ -35,17 +35,16 @@ FPP		= @FPP@
 FPPFLAGS	= @FPPFLAGS@
 
 CC		= @CC@
+CFLAGS          = -O @BIT64@
 
 FC		= @FC@
-FFLAGS		= @FFLAGS@
+FFLAGS		= @FFLAGS@ @BIT64@
 F90FLAGS        = @F90FLAGS@
-
-_R		=
 
 MUPDATE         = @MUPDATE@
 
 .c.o:
-	$(CC) -c -O $*.c
+	$(CC) -c $(CFLAGS) $*.c
 
 @FRULE@:
 	$(FC) -c $(_I) $(DEFS) $(FFLAGS) $*.F
