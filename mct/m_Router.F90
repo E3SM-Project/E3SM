@@ -28,6 +28,7 @@
       public :: init            ! Create a Router
       public :: clean           ! Destroy a Router
 
+!\end{verbatim}
 !% On return, pe_list is the processor ranks of the other
 !% component to receive from/send to.  num_segs is the
 !% number of segments out of my local AttrVect which must
@@ -36,6 +37,7 @@
 !% seg_start is the start *in the local AttrVect* of each segment
 !%  (start goes from 1 to lsize(GSMap))
 !% and seg_lengths is the length.
+!\begin{verbatim}
 !  
     type Router
       integer :: comp1id	       ! id of first component
@@ -108,9 +110,9 @@
 !       01Feb01 - R. Jacob <jacob@mcs.anl.gov> - initialize some parts
 !       02Feb01 - R. Jacob <jacob@mcs.anl.gov> - initialize the send
 !       06Feb01 - R. Jacob <jacob@mcs.anl.gov> - Finish initialization
-!			of the Router.  Router now works both ways.
+!                 of the Router.  Router now works both ways.
 !       08Feb01 - R. Jacob <jacob@mcs.anl.gov> - use GlobaltoLocalIndex
-!		  to load local index values into Router. Init locsize
+!                 to load local index values into Router. Init locsize
 !                 and maxsize.  add deallocate statements.
 !EOP ___________________________________________________________________
 !

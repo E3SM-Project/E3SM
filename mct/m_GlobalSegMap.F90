@@ -553,7 +553,7 @@
 ! This routine deallocates the array components of the {\tt GlobalSegMap}
 ! argument {\tt GSMap}: {\tt GSMap\%start}, {\tt GSMap\%length}, and
 ! {\tt GSMap\%pe\_loc}.  It also zeroes out the values of the integer
-! components {\tt GSMap\%ngseg}, {\tt GSMap\%comp_id}, and
+! components {\tt GSMap\%ngseg}, {\tt GSMap\%comp\_id}, and
 ! {\tt GSMap\%gsize}.
 !
 ! !INTERFACE:
@@ -995,7 +995,7 @@
 ! the active processes will be returned.
 !
 ! {\bf N.B.:} If {\tt active\_pes\_()} is invoked with the optional argument
-! {\tt pe_list} included, this routine will alloocate and return this array.
+! {\tt pe\_list} included, this routine will allocate and return this array.
 ! The user must deallocate this array once it is no longer needed.  Failure
 ! to do so will result in a memory leak.
 !

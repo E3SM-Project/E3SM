@@ -79,6 +79,7 @@
 
 ! !REVISION HISTORY:
 !       02Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GlobalSegMapToIndices_'
 
@@ -172,6 +173,7 @@
 
 ! !REVISION HISTORY:
 !       02Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GlobalSegMapToIndex_'
 
@@ -282,6 +284,7 @@
 
 ! !REVISION HISTORY:
 !       02Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GlobalMapToIndex_'
 
@@ -357,6 +360,7 @@
 
 ! !REVISION HISTORY:
 !       02Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GlobalSegMapToNavigator_'
 

@@ -7,7 +7,7 @@
 ! !DESCRIPTION:
 ! Send the local AttrVect to another component using a Router.
 ! Will send entire AttrVect.
-! Requires a corresponding MCT_Recv to be called on the other component.
+! Requires a corresponding MCT\_Recv to be called on the other component.
 !
 ! !INTERFACE:
 

@@ -9,7 +9,7 @@
 ! specified in the Router.  An Error will result if the
 ! attribute list of the incoming data doesnt match any of
 ! the attributes in the argument AttrVect.
-! Requires a corresponding MCT_Send to be called on the other component.
+! Requires a corresponding MCT\_Send to be called on the other component.
 !
 ! !INTERFACE:
 
