@@ -14,7 +14,7 @@
 ! !USES:
 !
       use m_stdio, only : stdout,stderr
-      use m_die,   only : MP_perr_die
+      use m_die,   only : die
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_lsize => lsize
@@ -70,19 +70,11 @@
         ! Sanity check of arguments:
 
   if(Accumulator_lsize(aC) /= AttrVect_lsize(aV)) then
-     write(stderr,'(2a,2(1a,1i7))') myname, &
-	  ":: mismatched Accumulator / AttrVect sizes.", &
-	  "AttrVect_lsize(aV)=",AttrVect_lsize(aV), &
-	  "Accumulator_lsize(aC)=",Accumulator_lsize(aC)
-     ierr = 1
-     call MP_perr_die(myname,'Accum. vs. AttrVect sizes.',ierr)
+     call die(myname, "mismatched Accumulator / AttrVect sizes. AttrVect_lsize(aV) = ", AttrVect_lsize(aV), "Accumulator_lsize(aC) = ", Accumulator_lsize(aC))
   endif
 
   if(aC%num_steps == 0) then
-     write(stderr,'(2a)') myname, &
-	  ":: Zero steps in Accumulation cycle."
-     ierr = 2
-     call MP_perr_die(myname,'Zero steps in accumulation cycle.',ierr)
+     call die(myname, 'Zero steps in accumulation cycle.')
   endif
 
         ! Set num_steps from aC:
@@ -115,9 +107,7 @@
 	end do
 
 	deallocate(aVindices, aCindices, stat=ierr)
-	if(ierr /= 0) then
-	   call MP_perr_die(myname,'first deallocate(aVindices...',ierr)
-	endif
+	if(ierr /= 0) call die(myname,'first deallocate(aVindices...',ierr)
 
      endif ! if(num_indices > 0)
 
@@ -151,9 +141,7 @@
 	end do
 
 	deallocate(aVindices, aCindices, stat=ierr)
-	if(ierr /= 0) then
-	   call MP_perr_die(myname,'second deallocate(aVindices...',ierr)
-	endif
+	if(ierr /= 0) call die(myname,'second deallocate(aVindices...',ierr)
 
      endif ! if(num_indices > 0)
 
@@ -192,5 +180,12 @@
   endif
 
  end subroutine accumulate
+
+
+
+
+
+
+
 
 
