@@ -1,0 +1,92 @@
+#!/bin/make
+#-----------------------------------------------------------------------
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+# CVS $Id$
+# CVS $Name$ 
+#-----------------------------------------------------------------------
+#BOP
+#
+# !ROUTINE: Makefile.conf.Darwin
+# 
+# !DESCRIPTION: 
+#	An include file of configurations.  See Makefile for additional
+#   `make' procedures.  This include file is used to overide the default
+#   environments (including commands) defined in file Makefile.
+#
+# !INTERFACE:
+#
+#	% ln -s Makefile.conf.Darwin Makefile.conf
+#	% make ...
+#
+# !SEE ALSO: Makefile
+#
+# !REVISION HISTORY: (`cvs log <>' for more)
+#
+#       16Apr01 - C. Rasmussen/J. Larson <larson@mcs.anl.gov> - first
+#                 version.
+#EOP
+#-----------------------------------------------------------------------
+
+_Dsys		= -DsysDarwin
+_Dnod		=
+
+# Environments
+# ============
+
+# Macros for MPI paths and library name:
+
+_LMPI		=
+_lMPI		=
+_IMPI		=
+
+# This module requires ../mpeu module
+
+_Lmpeu          = -L../mpeu
+_lmpeu          = -lmpeu
+_Impeu          = -I../mpeu
+_pmpeu          = -p../mpeu
+
+# The default design requirement for this library is to use the OS
+# specific default REAL kind for all its REAL type variables, while
+# supports both REAL and DOUPLE PRECISION kinds for its interfaces
+# through the Fortran 90 generic interface feature. (Jing Guo)
+
+_R		= -r4
+_R		= -r8
+_R		=
+
+_I		=  -I. $(_pmpeu) $(_IMPI)
+_p              = $(_pmpeu)
+
+SHELL		= /bin/sh
+FPP		= /usr/bin/cpp
+F77		= f77
+F90		= f90
+FC		= $(F90)
+
+FFLAGS		= -O2 $(_R)
+CFLAGS		= -O
+
+
+LD		= f90
+LDFLAGS		= $(FFLAGS)
+
+LIBprof		= #-lprof
+LIBsys	 	= 
+
+
+FPPFLAGS	= -DLANGUAGE_FORTRAN -traditional
+
+.F.o:
+	$(FPP) $(FPPFLAGS) $(_I) $(_DF) $*.F > $*_scratch.f
+	$(FC) -c $(FFLAGS) $(_I) $*_scratch.f
+	$(RM) $*_scratch.f
+
+.F90.o:
+	$(FPP) $(FPPFLAGS) $(_I) $(_DF) $*.F90 > $*_scratch.f90
+	$(FC) -c $(FFLAGS) $(_I) $*_scratch.f90
+	$(RM) $*_scratch.f90
+
+#.----------------------------------------------------------------------
+
