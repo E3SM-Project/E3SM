@@ -688,7 +688,7 @@
       initialized_ = .false.
       aC_associated = .false.
       if(kill) then
-	 if(present(source_name)) write(stderr,*), source_name, myname_, &
+	 if(present(source_name)) write(stderr,*) source_name, myname_, &
 	      ":: ERROR, Neither aC%iAction nor aC%rAction are associated"
 	 call die(myname_,"Neither aC%iAction nor aC%rAction are associated") 
       endif
@@ -700,7 +700,7 @@
       initialized_ = .false.
       aC_associated = .false.
       if(kill) then
-	 if(present(source_name)) write(stderr,*), source_name, myname_, &
+	 if(present(source_name)) write(stderr,*) source_name, myname_, &
 	      ":: ERROR, Neither aC%av%iList nor aC%av%rList are allocated"
 	 call die(myname_,"Neither aC%av%iList nor aC%av%rList are allocated")
       endif
@@ -713,7 +713,7 @@
 	 initialized_ = .false.
 	 aC_associated = .false.
 	 if(kill) then
-	    if(present(source_name)) write(stderr,*), source_name, myname_, &
+	    if(present(source_name)) write(stderr,*) source_name, myname_, &
 		 ":: ERROR, size(aC%iAction<=0), size = ", size(aC%iAction)
 	    call die(myname_,"size(aC%iAction<=0), size = ", size(aC%iAction))
 	 endif
@@ -725,7 +725,7 @@
 	 initialized_ = .false.
 	 aC_associated = .false.
 	 if(kill) then
-	    if(present(source_name)) write(stderr,*), source_name, myname_, &
+	    if(present(source_name)) write(stderr,*) source_name, myname_, &
 		 ":: ERROR, size(aC%rAction<=0), size = ", size(aC%rAction)
 	    call die(myname_,"size(aC%rAction<=0), size = ", size(aC%rAction))
 	 endif
@@ -739,7 +739,7 @@
       if( (Attr_nIAttr(aC%av) == 0) .and. (Attr_nRAttr(aC%av) == 0) ) then
 	 initialized_ = .false.
 	 if(kill) then
-	    if(present(source_name)) write(stderr,*), source_name, myname_, &
+	    if(present(source_name)) write(stderr,*) source_name, myname_, &
 		 ":: ERROR, No attributes found in aC%av"
 	    call die(myname_,"No attributes found in aC%av")
 	 endif
@@ -750,7 +750,7 @@
 	 if( size(aC%iAction) /=  Attr_nIAttr(aC%av) ) then
 	    initialized_ = .false.
 	    if(kill) then
-	       if(present(source_name)) write(stderr,*), source_name, myname_, &
+	       if(present(source_name)) write(stderr,*) source_name, myname_, &
 		    ":: ERROR, size(aC%iAction) /= nIAttr(aC%av)"
 	       call die(myname_,"size(aC%iAction) /= nIAttr(aC%av)")
 	    endif
@@ -761,7 +761,7 @@
                 (aC%iAction(i) /= MCT_AVG) ) then
 	       initialized_ = .false.
 	       if(kill) then
-		  if(present(source_name)) write(stderr,*), source_name, &
+		  if(present(source_name)) write(stderr,*) source_name, &
 		       myname_, ":: ERROR, Invalid value found in aC%iAction"
 		  call die(myname_,"Invalid value found in aC%iAction", &
 		       aC%iAction(i))
@@ -776,7 +776,7 @@
 	 if( size(aC%rAction) /=  Attr_nRAttr(aC%av) ) then
 	    initialized_ = .false.
 	    if(kill) then
-	      if(present(source_name)) write(stderr,*), source_name, &
+	      if(present(source_name)) write(stderr,*) source_name, &
 		   myname_, ":: ERROR, size(aC%rAction) /= nRAttr(aC%av)"
 	      call die(myname_,"size(aC%rAction) /= nRAttr(aC%av)")
 	    endif
@@ -787,7 +787,7 @@
                 (aC%rAction(i) /= MCT_AVG) ) then
 	       initialized_ = .false.
 	       if(kill) then
-		  if(present(source_name)) write(stderr,*), source_name, &
+		  if(present(source_name)) write(stderr,*) source_name, &
 		       myname_, ":: ERROR, Invalid value found in aC%rAction", &
 		       aC%rAction(i)
 		  call die(myname_,"Invalid value found in aC%rAction", &
