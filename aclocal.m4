@@ -23,7 +23,7 @@ AC_LANG_CASE([C], [
 [Fortran 77], [
 	AC_REQUIRE([AC_PROG_F77])
 	AC_ARG_VAR(MPIF77,[MPI Fortran compiler command])
-	AC_CHECK_PROGS(MPIF77, mpif77 hf77 mpxlf mpf77 mpif90 mpf90 mpxlf90 mpxlf95 mpxlf90_r mpxlf_r, $F77)
+	AC_CHECK_PROGS(MPIF77, mpif77 hf77 mpxlf mpf77 mpif90 mpxlf90 mpxlf95 mpxlf90_r mpxlf_r mpifrt mpf90, $F77)
 	acx_mpi_save_F77="$F77"
 	F77="$MPIF77"
 	AC_SUBST(MPIF77)
@@ -31,7 +31,7 @@ AC_LANG_CASE([C], [
 [Fortran 90], [
 	AC_REQUIRE([AC_PROG_F90])
 	AC_ARG_VAR(MPIF90,[MPI Fortran compiler command])
-	AC_CHECK_PROGS(MPIF90, mpif90 mpf90 mpxlf90 mpxlf95 mpxlf90_r, $F90)
+	AC_CHECK_PROGS(MPIF90, mpif90 mpxlf90 mpxlf95 mpxlf90_r mpifrt mpf90, $F90)
 	acx_mpi_save_F90="$F90"
 	F90="$MPIF90"
 	AC_SUBST(MPIF90)
@@ -1180,7 +1180,74 @@ m4_if(m4_index([$1],[_]),-1,[],
 ])
 m4_default([$2],[$1])="$ac_val"
 ])# AC_F95_FUNC
-# _AC_PROG_F90_VERSION_OUTPUT([FLAG = $ac_cv_prog_f90_version])
+# AC_F90_C_NAME_MANGLING
+# ---------------------
+# Test for the name mangling scheme used by the Fortran 90 compiler.
+#
+# This scheme uses the fortran compiler to do the linking. 
+# This avoids having to guess the verbose flag for the fortan compiler
+# from the call to LD_LIBRARY_FLAGS
+#
+# Sets ac_cv_f90_mangling. The value contains two fields, separated
+# by commas:
+#
+# The translation describes how a c routine should be defined in order for
+# it to be called by a fortran source file in lower case and no underscore
+#
+AC_DEFUN([AC_F90_C_NAME_MANGLING],
+[
+AC_CACHE_CHECK([for Fortran 90 name-mangling scheme],
+               ac_cv_f90_mangling,
+[AC_LANG_PUSH(C)dnl
+AC_COMPILE_IFELSE(
+[
+void foobar_()
+{}
+void BARFOO_()
+{}
+],
+[mv conftest.$ac_objext cf90_test.$ac_objext
+
+  AC_LANG_PUSH(Fortran 90)dnl
+
+  ac_save_LIBS=$LIBS
+  LIBS="cf90_test.$ac_objext $F90LIBS $LIBS"
+
+  ac_success=no
+  for ac_foobar in foobar barfoo; do
+    for ac_underscore in "" "_"; do
+      ac_func="$ac_foobar$ac_underscore"
+      AC_TRY_LINK_FUNC($ac_func,
+         [ac_success=yes; break 2])
+    done
+  done
+
+  if test "$ac_success" = "yes"; then
+     case $ac_foobar in
+        foobar)
+           ac_cv_f90_mangling="lower case"
+           ;;
+        barfoo)
+           ac_cv_f90_mangling="upper case"
+           ;;
+     esac
+
+     if test -z "$ac_underscore"; then
+        ac_cv_f90_mangling="$ac_cv_f90_mangling, underscore"
+     else
+        ac_cv_f90_mangling="$ac_cv_f90_mangling, no underscore"
+     fi
+  
+  else
+     ac_cv_f90_mangling="unknown"
+  fi
+
+  LIBS=$ac_save_LIBS
+  AC_LANG_POP(Fortran 90)dnl
+  rm -f cf90_test* conftest*])
+AC_LANG_POP(C)dnl
+]) 
+])# AC_F90_C_NAME_MANGLING# _AC_PROG_F90_VERSION_OUTPUT([FLAG = $ac_cv_prog_f90_version])
 # -------------------------------------------------
 # Link a trivial Fortran program, compiling with a version output FLAG
 # (which default value, $ac_cv_prog_f90_version, is computed by
@@ -1220,7 +1287,7 @@ for ac_version in -V -version --version; do
   # look for "copyright" constructs in the output
   for ac_arg in $ac_f90_version_output; do
      case $ac_arg in
-        COPYRIGHT | copyright | Copyright | '(c)' | '(C)' | Compiler | Version)
+        COPYRIGHT | copyright | Copyright | '(c)' | '(C)' | Compiler | Compilers | Version)
           ac_cv_prog_f90_version=$ac_version
           break 2 ;;
      esac

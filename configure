@@ -270,7 +270,7 @@ PACKAGE_VERSION='1.0'
 PACKAGE_STRING='MCT 1.0'
 PACKAGE_BUGREPORT=''
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT F90 F90FLAGS ac_ct_F90 MPIF90 MPILIBS F90LIBS FPP FPPFLAGS FRULE F90RULE FRULECPP F90RULECPP MACHDEFS FC FCFLAGS CCFLAGS REAL8 BIT64 ENDIAN INCLUDEFLAG INCLUDEPATH LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT F90 F90FLAGS ac_ct_F90 MPIF90 MPILIBS FPP FPPFLAGS FRULE F90RULE FRULECPP F90RULECPP MACHDEFS FC FCFLAGS CCFLAGS REAL8 BIT64 ENDIAN INCLUDEFLAG INCLUDEPATH LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -2228,7 +2228,7 @@ ac_compiler_gnu=$ac_cv_f90_compiler_gnu
 
 
 
-	for ac_prog in mpif90 mpf90 mpxlf90 mpxlf95 mpxlf90_r
+	for ac_prog in mpif90 mpxlf90 mpxlf95 mpxlf90_r mpifrt mpf90
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -2520,7 +2520,7 @@ ac_compiler_gnu=$ac_cv_f90_compiler_gnu
   # look for "copyright" constructs in the output
   for ac_arg in $ac_f90_version_output; do
      case $ac_arg in
-        COPYRIGHT | copyright | Copyright | '(c)' | '(C)' | Compiler | Version)
+        COPYRIGHT | copyright | Copyright | '(c)' | '(C)' | Compiler | Compilers | Version)
           ac_cv_prog_f90_version=$ac_version
           break 2 ;;
      esac
@@ -2830,311 +2830,24 @@ esac
 
 
 # Check the fortran name mangling scheme
-ac_ext=$ac_save_ext
-ac_compile='$F90 -c $F90FLAGS conftest.$ac_ext >&5'
-ac_link='$F90 -o conftest$ac_exeext $F90FLAGS $LD90FLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_f90_compiler_gnu
-echo "$as_me:$LINENO: checking how to get verbose linking output from $F90" >&5
-echo $ECHO_N "checking how to get verbose linking output from $F90... $ECHO_C" >&6
-if test "${ac_cv_prog_f90_v+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-
-cat >conftest.$ac_ext <<_ACEOF
-
-program main
-
-
-end program main
-
-_ACEOF
-rm -f conftest.$ac_objext
-if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
-  (eval $ac_compile) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } &&
-         { ac_try='test -s conftest.$ac_objext'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
-  ac_cv_prog_f90_v=
-# Try some options frequently used verbose output
-for ac_verb in -v -verbose --verbose -V -\#\#\#; do
-  ac_ext=$ac_save_ext
-ac_compile='$F90 -c $F90FLAGS conftest.$ac_ext >&5'
-ac_link='$F90 -o conftest$ac_exeext $F90FLAGS $LD90FLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_f90_compiler_gnu
-
-cat >conftest.$ac_ext <<_ACEOF
-
-program main
-
-
-end program main
-
-_ACEOF
-
-# Compile and link our simple test program by passing a flag (argument
-# 1 to this macro) to the Fortran 90 compiler in order to get
-# "verbose" output that we can then parse for the Fortran 90 linker
-# flags.
-ac_save_F90FLAGS=$F90FLAGS
-F90FLAGS="$F90FLAGS $ac_verb"
-(eval echo $as_me:2886: \"$ac_link\") >&5
-ac_f90_v_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
-echo "$ac_f90_v_output" >&5
-F90FLAGS=$ac_save_F90FLAGS
-
-rm -f conftest.*
-ac_ext=$ac_save_ext
-ac_compile='$F90 -c $F90FLAGS conftest.$ac_ext >&5'
-ac_link='$F90 -o conftest$ac_exeext $F90FLAGS $LD90FLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_f90_compiler_gnu
-
-# If we are using xlf then replace all the commas with spaces.
-if echo $ac_f90_v_output | grep xlfentry >/dev/null 2>&1; then
-  ac_f90_v_output=`echo $ac_f90_v_output | sed 's/,/ /g'`
-fi
-
-# If we are using Cray Fortran then delete quotes.
-# Use "\"" instead of '"' for font-lock-mode.
-# FIXME: a more general fix for quoted arguments with spaces?
-if echo $ac_f90_v_output | grep cft90 >/dev/null 2>&1; then
-  ac_f90_v_output=`echo $ac_f90_v_output | sed "s/\"//g"`
-fi
-  # look for -l* and *.a constructs in the output
-  for ac_arg in $ac_f90_v_output; do
-     case $ac_arg in
-        [\\/]*.a | ?:[\\/]*.a | -[lLRu]*)
-          ac_cv_prog_f90_v=$ac_verb
-          break 2 ;;
-     esac
-  done
-done
-if test -z "$ac_cv_prog_f90_v"; then
-   { echo "$as_me:$LINENO: WARNING: cannot determine how to obtain linking information from $F90" >&5
-echo "$as_me: WARNING: cannot determine how to obtain linking information from $F90" >&2;}
-fi
-else
-  echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-{ echo "$as_me:$LINENO: WARNING: compilation failed" >&5
-echo "$as_me: WARNING: compilation failed" >&2;}
-fi
-rm -f conftest.$ac_objext conftest.$ac_ext
-
-fi
-echo "$as_me:$LINENO: result: $ac_cv_prog_f90_v" >&5
-echo "${ECHO_T}$ac_cv_prog_f90_v" >&6
-echo "$as_me:$LINENO: checking for Fortran 90 libraries" >&5
-echo $ECHO_N "checking for Fortran 90 libraries... $ECHO_C" >&6
-if test "${ac_cv_flibs+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  if test "x$F90LIBS" != "x"; then
-  ac_cv_f90libs="$F90LIBS" # Let the user override the test.
-else
-
-ac_ext=$ac_save_ext
-ac_compile='$F90 -c $F90FLAGS conftest.$ac_ext >&5'
-ac_link='$F90 -o conftest$ac_exeext $F90FLAGS $LD90FLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_f90_compiler_gnu
-
-cat >conftest.$ac_ext <<_ACEOF
-
-program main
-
-
-end program main
-
-_ACEOF
-
-# Compile and link our simple test program by passing a flag (argument
-# 1 to this macro) to the Fortran 90 compiler in order to get
-# "verbose" output that we can then parse for the Fortran 90 linker
-# flags.
-ac_save_F90FLAGS=$F90FLAGS
-F90FLAGS="$F90FLAGS $ac_cv_prog_f90_v"
-(eval echo $as_me:2962: \"$ac_link\") >&5
-ac_f90_v_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
-echo "$ac_f90_v_output" >&5
-F90FLAGS=$ac_save_F90FLAGS
-
-rm -f conftest.*
-ac_ext=$ac_save_ext
-ac_compile='$F90 -c $F90FLAGS conftest.$ac_ext >&5'
-ac_link='$F90 -o conftest$ac_exeext $F90FLAGS $LD90FLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_f90_compiler_gnu
-
-# If we are using xlf then replace all the commas with spaces.
-if echo $ac_f90_v_output | grep xlfentry >/dev/null 2>&1; then
-  ac_f90_v_output=`echo $ac_f90_v_output | sed 's/,/ /g'`
-fi
-
-# If we are using Cray Fortran then delete quotes.
-# Use "\"" instead of '"' for font-lock-mode.
-# FIXME: a more general fix for quoted arguments with spaces?
-if echo $ac_f90_v_output | grep cft90 >/dev/null 2>&1; then
-  ac_f90_v_output=`echo $ac_f90_v_output | sed "s/\"//g"`
-fi
-
-ac_cv_f90libs=
-
-# Save positional arguments (if any)
-ac_save_positional="$@"
-
-set X $ac_f90_v_output
-while test $# != 1; do
-  shift
-  ac_arg=$1
-  case $ac_arg in
-        [\\/]*.a | ?:[\\/]*.a)
-            ac_exists=false
-  for ac_i in $ac_cv_f90libs; do
-    if test x"$ac_arg" = x"$ac_i"; then
-      ac_exists=true
-      break
-    fi
-  done
-
-  if test x"$ac_exists" = xtrue; then
-  :
-else
-  ac_cv_f90libs="$ac_cv_f90libs $ac_arg"
-fi
-
-          ;;
-        -bI:*)
-            ac_exists=false
-  for ac_i in $ac_cv_f90libs; do
-    if test x"$ac_arg" = x"$ac_i"; then
-      ac_exists=true
-      break
-    fi
-  done
-
-  if test x"$ac_exists" = xtrue; then
-  :
-else
-  if test "$ac_compiler_gnu" = yes; then
-  for ac_link_opt in $ac_arg; do
-    ac_cv_f90libs="$ac_cv_f90libs -Xlinker $ac_link_opt"
-  done
-else
-  ac_cv_f90libs="$ac_cv_f90libs $ac_arg"
-fi
-fi
-
-          ;;
-          # Ignore these flags.
-        -lang* | -lcrt0.o | -lc | -lgcc | -LANG:=*)
-          ;;
-        -lkernel32)
-          test x"$CYGWIN" != xyes && ac_cv_f90libs="$ac_cv_f90libs $ac_arg"
-          ;;
-        -[LRuY])
-          # These flags, when seen by themselves, take an argument.
-          # We remove the space between option and argument and re-iterate
-          # unless we find an empty arg or a new option (starting with -)
-	  case $2 in
-             "" | -*);;
-             *)
-		ac_arg="$ac_arg$2"
-		shift; shift
-		set X $ac_arg "$@"
-		;;
-	  esac
-          ;;
-        -YP,*)
-          for ac_j in `echo $ac_arg | sed -e 's/-YP,/-L/;s/:/ -L/g'`; do
-              ac_exists=false
-  for ac_i in $ac_cv_f90libs; do
-    if test x"$ac_j" = x"$ac_i"; then
-      ac_exists=true
-      break
-    fi
-  done
-
-  if test x"$ac_exists" = xtrue; then
-  :
-else
-  ac_arg="$ac_arg $ac_j"
-                             ac_cv_f90libs="$ac_cv_f90libs $ac_j"
-fi
-
-          done
-          ;;
-        -[lLR]*)
-            ac_exists=false
-  for ac_i in $ac_cv_f90libs; do
-    if test x"$ac_arg" = x"$ac_i"; then
-      ac_exists=true
-      break
-    fi
-  done
-
-  if test x"$ac_exists" = xtrue; then
-  :
-else
-  ac_cv_f90libs="$ac_cv_f90libs $ac_arg"
-fi
-
-          ;;
-          # Ignore everything else.
-  esac
-done
-# restore positional arguments
-set X $ac_save_positional; shift
-
-# We only consider "LD_RUN_PATH" on Solaris systems.  If this is seen,
-# then we insist that the "run path" must be an absolute path (i.e. it
-# must begin with a "/").
-case `(uname -sr) 2>/dev/null` in
-   "SunOS 5"*)
-      ac_ld_run_path=`echo $ac_f90_v_output |
-                        sed -n 's,^.*LD_RUN_PATH *= *\(/[^ ]*\).*$,-R\1,p'`
-      test "x$ac_ld_run_path" != x &&
-        if test "$ac_compiler_gnu" = yes; then
-  for ac_link_opt in $ac_ld_run_path; do
-    ac_cv_f90libs="$ac_cv_f90libs -Xlinker $ac_link_opt"
-  done
-else
-  ac_cv_f90libs="$ac_cv_f90libs $ac_ld_run_path"
-fi
-      ;;
-esac
-fi # test "x$F90LIBS" = "x"
-
-fi
-echo "$as_me:$LINENO: result: $ac_cv_flibs" >&5
-echo "${ECHO_T}$ac_cv_flibs" >&6
-F90LIBS="$ac_cv_f90libs"
-
-ac_ext=$ac_save_ext
-ac_compile='$F90 -c $F90FLAGS conftest.$ac_ext >&5'
-ac_link='$F90 -o conftest$ac_exeext $F90FLAGS $LD90FLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_f90_compiler_gnu
 
 echo "$as_me:$LINENO: checking for Fortran 90 name-mangling scheme" >&5
 echo $ECHO_N "checking for Fortran 90 name-mangling scheme... $ECHO_C" >&6
 if test "${ac_cv_f90_mangling+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
-  ac_ext=$ac_save_ext
-ac_compile='$F90 -c $F90FLAGS conftest.$ac_ext >&5'
-ac_link='$F90 -o conftest$ac_exeext $F90FLAGS $LD90FLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_f90_compiler_gnu
+  ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
 cat >conftest.$ac_ext <<_ACEOF
-subroutine foobar()
-return
-end
-subroutine foo_bar()
-return
-end
+
+void foobar_()
+{}
+void BARFOO_()
+{}
+
 _ACEOF
 rm -f conftest.$ac_objext
 if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
@@ -3150,41 +2863,25 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (exit $ac_status); }; }; then
   mv conftest.$ac_objext cf90_test.$ac_objext
 
-  ac_ext=c
-ac_cpp='$CPP $CPPFLAGS'
-ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_c_compiler_gnu
+  ac_ext=$ac_save_ext
+ac_compile='$F90 -c $F90FLAGS conftest.$ac_ext >&5'
+ac_link='$F90 -o conftest$ac_exeext $F90FLAGS $LD90FLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_f90_compiler_gnu
 
   ac_save_LIBS=$LIBS
   LIBS="cf90_test.$ac_objext $F90LIBS $LIBS"
 
   ac_success=no
-  for ac_foobar in foobar FOOBAR; do
+  for ac_foobar in foobar barfoo; do
     for ac_underscore in "" "_"; do
       ac_func="$ac_foobar$ac_underscore"
       cat >conftest.$ac_ext <<_ACEOF
-#line $LINENO "configure"
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
 
-/* Override any gcc2 internal prototype to avoid an error.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-/* We use char because int might match the return type of a gcc2
-   builtin and then its argument prototype would still apply.  */
-char $ac_func ();
-int
-main ()
-{
-$ac_func ();
-  ;
-  return 0;
-}
+program main
+
+call $ac_func
+end program main
+
 _ACEOF
 rm -f conftest.$ac_objext conftest$ac_exeext
 if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
@@ -3211,86 +2908,29 @@ rm -f conftest.$ac_objext conftest$ac_exeext conftest.$ac_ext
   if test "$ac_success" = "yes"; then
      case $ac_foobar in
         foobar)
-           ac_case=lower
-           ac_foo_bar=foo_bar
+           ac_cv_f90_mangling="lower case"
            ;;
-        FOOBAR)
-           ac_case=upper
-           ac_foo_bar=FOO_BAR
+        barfoo)
+           ac_cv_f90_mangling="upper case"
            ;;
      esac
 
-     ac_success_extra=no
-     for ac_extra in "" "_"; do
-        ac_func="$ac_foo_bar$ac_underscore$ac_extra"
-        cat >conftest.$ac_ext <<_ACEOF
-#line $LINENO "configure"
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
+     if test -z "$ac_underscore"; then
+        ac_cv_f90_mangling="$ac_cv_f90_mangling, underscore"
+     else
+        ac_cv_f90_mangling="$ac_cv_f90_mangling, no underscore"
+     fi
 
-/* Override any gcc2 internal prototype to avoid an error.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-/* We use char because int might match the return type of a gcc2
-   builtin and then its argument prototype would still apply.  */
-char $ac_func ();
-int
-main ()
-{
-$ac_func ();
-  ;
-  return 0;
-}
-_ACEOF
-rm -f conftest.$ac_objext conftest$ac_exeext
-if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
-  (eval $ac_link) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } &&
-         { ac_try='test -s conftest$ac_exeext'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
-  ac_success_extra=yes; break
-else
-  echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-fi
-rm -f conftest.$ac_objext conftest$ac_exeext conftest.$ac_ext
-     done
-
-     if test "$ac_success_extra" = "yes"; then
-	ac_cv_f90_mangling="$ac_case case"
-        if test -z "$ac_underscore"; then
-           ac_cv_f90_mangling="$ac_cv_f90_mangling, no underscore"
-	else
-           ac_cv_f90_mangling="$ac_cv_f90_mangling, underscore"
-        fi
-        if test -z "$ac_extra"; then
-           ac_cv_f90_mangling="$ac_cv_f90_mangling, no extra underscore"
-	else
-           ac_cv_f90_mangling="$ac_cv_f90_mangling, extra underscore"
-        fi
-      else
-	ac_cv_f90_mangling="unknown"
-      fi
   else
      ac_cv_f90_mangling="unknown"
   fi
 
   LIBS=$ac_save_LIBS
-  ac_ext=$ac_save_ext
-ac_compile='$F90 -c $F90FLAGS conftest.$ac_ext >&5'
-ac_link='$F90 -o conftest$ac_exeext $F90FLAGS $LD90FLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_f90_compiler_gnu
+  ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
   rm -f cf90_test* conftest*
 else
   echo "$as_me: failed program was:" >&5
@@ -3308,11 +2948,11 @@ echo "$as_me:$LINENO: result: $ac_cv_f90_mangling" >&5
 echo "${ECHO_T}$ac_cv_f90_mangling" >&6
 
 case $ac_cv_f90_mangling in
-  "lower case, underscore, no extra underscore")
+  "lower case, underscore")
 	 name_mangling="FORTRAN_UNDERSCORE_" ;;
-  "lower case, no underscore, no extra underscore")
+  "lower case, no underscore")
 	 name_mangling="FORTRAN_SAME" ;;
-  "upper case, no underscore, no extra underscore")
+  "upper case, no underscore")
 	 name_mangling="FORTRAN_CAPS_" ;;
   *) name_mangling="UNKNOWN" ;;
 esac
@@ -3436,6 +3076,8 @@ fi
 echo "$as_me:$LINENO: result: $ac_cv_f90_fpp_compiler" >&5
 echo "${ECHO_T}$ac_cv_f90_fpp_compiler" >&6
 
+if test -n "$FPP"; then
+
 defineflag="-Daardvark"
 
 
@@ -3509,6 +3151,13 @@ echo "$as_me:$LINENO: result: $ac_cv_f90_fpp_external" >&5
 echo "${ECHO_T}$ac_cv_f90_fpp_external" >&6
 ac_ext=$old_ac_ext
 
+
+else
+
+{ echo "$as_me:$LINENO: WARNING: cpp is not defined in your path" >&5
+echo "$as_me: WARNING: cpp is not defined in your path" >&2;}
+
+fi
 
 if test "$ac_cv_f90_fpp_compiler" = "yes"; then
    FRULE=.F.o
@@ -3739,8 +3388,9 @@ case $name_mangling in
   FORTRAN_CAPS_) CCFLAGS="-DFORTRAN_CAPS_ -O $CCFLAGS";;
   FORTRAN_SAME)  CCFLAGS="-DFORTRAN_SAME -O $CCFLAGS";;
   FORTRAN_UNDERSCORE_) CCFLAGS="-O $CCFLAGS";;
-  *) { echo "$as_me:$LINENO: WARNING: unusual Fortran 90 name-mangling scheme; CCFLAGS left undefined" >&5
-echo "$as_me: WARNING: unusual Fortran 90 name-mangling scheme; CCFLAGS left undefined" >&2;};;
+  *) { echo "$as_me:$LINENO: WARNING: unusual Fortran 90 name-mangling scheme" >&5
+echo "$as_me: WARNING: unusual Fortran 90 name-mangling scheme" >&2;}
+     CCFLAGS="-O $CCFLAGS";;
 esac
 
 if test -z "$INCLUDEFLAG"; then
@@ -4393,7 +4043,6 @@ s,@F90FLAGS@,$F90FLAGS,;t t
 s,@ac_ct_F90@,$ac_ct_F90,;t t
 s,@MPIF90@,$MPIF90,;t t
 s,@MPILIBS@,$MPILIBS,;t t
-s,@F90LIBS@,$F90LIBS,;t t
 s,@FPP@,$FPP,;t t
 s,@FPPFLAGS@,$FPPFLAGS,;t t
 s,@FRULE@,$FRULE,;t t
