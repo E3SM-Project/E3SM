@@ -3,18 +3,17 @@
 # Documentation
 all: 
 	cd texsrc; make
-	make design
+	make users
 	make apis
 	
-design:
-	cd texsrc; make
-	make designdvi
+users:
+	make usersdvi
 
 apis:
 	cd texsrc; make
 	make apisdvi
 
-designdvi: mct_design.dvi
+usersdvi: MCTUsersGuide.dvi
 
 apisdvi: mct_APIs.dvi
 
