@@ -8,9 +8,12 @@
 ! !MODULE: m_MCTWorld -- MCTWorld Class
 !
 ! !DESCRIPTION:
-! Summarize the number of things MCT is hooked up to and how they are
-! distributed on processors.  Every component MCT is communicating
-! with must call this routine once.
+! MCTWorld is a datatype which acts as a component model registry.
+! All models communicating through MCT must participate in initialization
+! of MCTWorld.  The single instance of MCTWorld, {\tt ThisMCTWorld} stores
+! the component id and local and global processor rank of each component.
+! This module contains methods for creating and destroying {\tt ThisMCTWorld}
+! as well as inquiry functions.
 !
 ! !INTERFACE:
 
@@ -23,37 +26,39 @@
 
       private   ! except
 
-      public :: MCTWorld        ! The class data structure
+! !PUBLIC TYPES:
 
-      public :: init            ! Create a MCTWorld
-      public :: clean           ! Destroy a MCTWorld
+      public :: MCTWorld        ! The MCTWorld  class data structure
 
-      public :: NumComponents      ! Number of Components in the MCTWorld
-      public :: ComponentNumProcs  ! Number of processes owned by a given
-                                   ! component
+    type MCTWorld
+      integer :: MCT_comm                          ! MCT communicator
+      integer :: ncomps	                           ! number of components
+      integer :: mygrank                           ! rank of this processor in 
+                                                   ! global communicator
+      integer,dimension(:),pointer :: nprocspid	   ! number of processes 
+                                                   ! each component is on
+      integer,dimension(:,:),pointer :: idGprocid  ! translate between local component
+    end type MCTWorld
 
+! !PUBLIC DATA MEMBERS:
+
+    type(MCTWorld) :: ThisMCTWorld   !  declare the MCTWorld
+
+! !PUBLIC MEMBER FUNCTIONS:
+      public :: init                 ! Create a MCTWorld
+      public :: clean                ! Destroy a MCTWorld
+      public :: NumComponents        ! Number of Components in the MCTWorld
+      public :: ComponentNumProcs    ! Number of processes owned by a given
+                                     ! component
       public :: ComponentToWorldRank ! Given the rank of a process on a 
                                      ! component, return its rank on the 
                                      ! world communicator
       public :: ComponentRootRank    ! Return the rank on the world 
                                      ! communicator of the root process of 
                                      ! a component
-
-      public :: ThisMCTWorld   ! Instantiation of the MCTWorld
+      public :: ThisMCTWorld         ! Instantiation of the MCTWorld
 
 !  
-    type MCTWorld
-      integer :: MCT_comm      !  MCT communicator
-      integer :: ncomps	       !  number of components
-      integer :: mygrank       !  rank of this processor in global communicator
-      integer,dimension(:),pointer :: nprocspid	   ! number of processes 
-                                                   ! each component is on
-      integer,dimension(:,:),pointer :: idGprocid  ! translate between local 
-                                                   ! and global ranks for each 
-                                                   ! component
-    end type MCTWorld
-
-    type(MCTWorld) :: ThisMCTWorld	! declare an MCTWorld
 
     interface init ; module procedure &
       initd_, &
@@ -61,7 +66,7 @@
     end interface
     interface clean ; module procedure clean_ ; end interface
     interface NumComponents ; module procedure &
-	 NumComponents_ 
+       NumComponents_ 
     end interface
     interface ComponentNumProcs ; module procedure &
        ComponentNumProcs_ 
@@ -74,28 +79,26 @@
     end interface
 
 ! !REVISION HISTORY:
-!      19Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
-!       5Feb01 - J. Larson <larson@mcs.anl.gov> - added query and
-!                local-to-global mapping services NumComponents, 
-!                ComponentNumProcs, ComponentToWorldRank, and 
-!                ComponentRootRank
-!      08Feb01 - R. Jacob <jacob@mcs.anl.gov> - add mylrank and mygrank
-!                to datatype
-!      20Apr01 - R. Jacob <jacob@mcs.anl.gov> - remove allids from
-!                MCTWorld datatype.  Not needed because component
-!                ids are always from 1 to number-of-components.
-!      07Jun01 - R. Jacob <jacob@mcs.anl.gov> - remove myid, mynprocs
-!                and mylrank from MCTWorld datatype because they
-!                are not clearly defined in PCM mode.
-!                Add MCT_comm for future use.
-!      03Aug01 - E. Ong <eong@mcs.anl.gov> - explicity specify starting
-!                address in mpi_irecv
-!      27Nov01 - E. Ong <eong@mcs.anl.gov> - added R. Jacob's version of initd_
-!                to support PCM mode. 
-!      15Feb02 - R. Jacob - elminate use of MP_COMM_WORLD.  Use
-!		 argument globalcomm instead.  Create MCT_comm from
-!		 globalcomm
-!EOP ___________________________________________________________________
+! 19Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
+! 05Feb01 - J. Larson <larson@mcs.anl.gov> - added query and
+!           local-to-global mapping services NumComponents, 
+!           ComponentNumProcs, ComponentToWorldRank, and ComponentRootRank
+! 08Feb01 - R. Jacob <jacob@mcs.anl.gov> - add mylrank and mygrank
+!           to datatype
+! 20Apr01 - R. Jacob <jacob@mcs.anl.gov> - remove allids from
+!           MCTWorld datatype.  Not needed because component
+!           ids are always from 1 to number-of-components.
+! 07Jun01 - R. Jacob <jacob@mcs.anl.gov> - remove myid, mynprocs
+!           and mylrank from MCTWorld datatype because they are not 
+!           clearly defined in PCM mode.  Add MCT_comm for future use.
+! 03Aug01 - E. Ong <eong@mcs.anl.gov> - explicity specify starting
+!           address in mpi_irecv
+! 27Nov01 - E. Ong <eong@mcs.anl.gov> - added R. Jacob's version of initd_
+!           to support PCM mode. 
+! 15Feb02 - R. Jacob - elminate use of MP_COMM_WORLD.  Use
+!           argument globalcomm instead.  Create MCT_comm from
+!           globalcomm
+!EOP __________________________________________________________________
 
   character(len=*),parameter :: myname='m_MCTWorld'
 
@@ -108,12 +111,14 @@
 ! !IROUTINE: initd_ - initialize MCTWorld
 !
 ! !DESCRIPTION:
-! Do a distributed init of MCTWorld using the total number of components and
-! a unique component id (provided by MPH).  Also need the local 
-! communicator mycomm and global communicator globalcomm.
-!
-! This routine is called once by each component in a no-overlap
-! configuration (each component has its own set of processors)
+! Do a distributed init of MCTWorld using the total number of components 
+! {\tt ncomps} and either a unique integer component id {\tt myid} or,
+! if more than one model is placed on a processor, an array of integer ids 
+! specifying the models {\tt myids}.  Also required is
+! the local communicator {\tt mycomm} and global communicator {\tt globalcomm}
+! which encompasses all the models (typically this can be MPI\_COMM\_WORLD).
+! This routine must be called once by each component (using {\em myid}) or
+! component group (using {\em myids}).
 !
 ! !INTERFACE:
 
@@ -127,23 +132,25 @@
 
       implicit none
 
-      integer, intent(in)	       :: ncomps  ! number of components
-      integer, intent(in)	       :: globalcomm  ! global communicator
-      integer, intent(in)	       :: mycomm  ! my communicator
-      integer, intent(in),optional     :: myid    ! my component id
+! !INPUT PARAMETERS:
+
+      integer, intent(in)	       :: ncomps          ! number of components
+      integer, intent(in)	       :: globalcomm      ! global communicator
+      integer, intent(in)	       :: mycomm          ! my communicator
+      integer, intent(in),optional     :: myid            ! my component id
       integer, dimension(:),pointer,optional  :: myids    ! component ids
 
 ! !REVISION HISTORY:
-!       19Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
-!       07Feb01 - R. Jacob <jacob@mcs.anl.gov> - non fatal error
-!	if init is called a second time.
-!       08Feb01 - R. Jacob <jacob@mcs.anl.gov> - initialize the new
-!                mygrank and mylrank
-!       20Apr01 - R. Jacob <jacob@mcs.anl.gov> - remove allids from
-!                MCTWorld datatype.  Not needed because component
-!                ids are always from 1 to number-of-components.
-!       22Jun01 - R. Jacob <jacob@mcs.anl.gov> - move Bcast and init
-!                 of MCTWorld to initr_
+! 19Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
+! 07Feb01 - R. Jacob <jacob@mcs.anl.gov> - non fatal error
+!           if init is called a second time.
+! 08Feb01 - R. Jacob <jacob@mcs.anl.gov> - initialize the new
+!           mygrank and mylrank
+! 20Apr01 - R. Jacob <jacob@mcs.anl.gov> - remove allids from
+!           MCTWorld datatype.  Not needed because component
+!           ids are always from 1 to number-of-components.
+! 22Jun01 - R. Jacob <jacob@mcs.anl.gov> - move Bcast and init
+!           of MCTWorld to initr_
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::initd_'
@@ -351,9 +358,9 @@
 ! !IROUTINE: initr_ - initialize MCTWorld from global root
 !
 ! !DESCRIPTION:
-! Initialize MCTWorld using information valid on the global root.
-! This is called by initd\_ but should also be called by the user
-! for very complex model--processor geometries
+! Initialize MCTWorld using information valid only on the global root.
+! This is called by initd\_ but could also be called by the user
+! for very complex model--processor geometries.
 !
 ! !INTERFACE:
 
@@ -367,14 +374,16 @@
 
       implicit none
 
-      integer, intent(in)	       :: ncomps  ! total number of components
-      integer, intent(in)	       :: globalcomm  ! the global communicator
-      integer, dimension(:),intent(in) :: rnprocspid ! number of processors for each component
+! !INPUT PARAMETERS:
+
+      integer, intent(in)                :: ncomps     ! total number of components
+      integer, intent(in)                :: globalcomm ! the global communicator
+      integer, dimension(:),intent(in)   :: rnprocspid ! number of processors for each component
       integer, dimension(:,:),intent(in) :: ridGprocid ! an array of size (1:ncomps) x (0:Gsize-1) 
 						       ! which maps local ranks to global ranks
 
 ! !REVISION HISTORY:
-!       22Jun01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
+! 22Jun01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::initr_'
@@ -431,7 +440,7 @@
 ! !IROUTINE: clean_ - Destroy a MCTWorld
 !
 ! !DESCRIPTION:
-! This routine deallocates the array componets of the {\tt ThisMCTWorld}
+! This routine deallocates the arrays of {\tt ThisMCTWorld}
 ! It also zeros out the integer components.
 !
 ! !INTERFACE:
@@ -445,14 +454,14 @@
       implicit none
 
 ! !REVISION HISTORY:
-!       19Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
-!       08Feb01 - R. Jacob <jacob@mcs.anl.gov> - clean the new
-!                mygrank and mylrank
-!       20Apr01 - R. Jacob <jacob@mcs.anl.gov> - remove allids from
-!                MCTWorld datatype.  Not needed because component
-!                ids are always from 1 to number-of-components.
-!       07Jun01 - R. Jacob <jacob@mcs.anl.gov> - remove myid,mynprocs
-!                 and mylrank.
+! 19Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
+! 08Feb01 - R. Jacob <jacob@mcs.anl.gov> - clean the new
+!           mygrank and mylrank
+! 20Apr01 - R. Jacob <jacob@mcs.anl.gov> - remove allids from
+!           MCTWorld datatype.  Not needed because component
+!           ids are always from 1 to number-of-components.
+! 07Jun01 - R. Jacob <jacob@mcs.anl.gov> - remove myid,mynprocs
+!           and mylrank.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::clean_'
@@ -488,10 +497,12 @@
 
       implicit none
 
+! !INPUT PARAMETERS:
+
       type(MCTWorld), intent(in)      :: World
 
 ! !REVISION HISTORY:
-!       05Feb01 - J. Larson <larson@mcs.anl.gov> - initial version
+! 05Feb01 - J. Larson <larson@mcs.anl.gov> - initial version
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::NumComponents_'
@@ -531,13 +542,14 @@
 
       implicit none
 
+! !INPUT PARAMETERS:
       type(MCTWorld), intent(in)      :: World
       integer,        intent(in)      :: comp_id
 
 ! !REVISION HISTORY:
-!       05Feb01 - J. Larson <larson@mcs.anl.gov> - initial version
-!       07Jun01 - R. Jacob <jacob@mcs.anl.gov> - modify to use
-!                 nprocspid and comp_id instead of World%mynprocs
+! 05Feb01 - J. Larson <larson@mcs.anl.gov> - initial version
+! 07Jun01 - R. Jacob <jacob@mcs.anl.gov> - modify to use
+!           nprocspid and comp_id instead of World%mynprocs
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::ComponentNumPros_'
@@ -577,11 +589,10 @@
       use m_stdio
 
       implicit none
-
-      integer, intent(in)	     :: comp_rank ! process rank on
-                                                  ! the communicator
-                                                  ! associated with
-                                                  ! comp_id
+  
+! !INPUT PARAMETERS:
+      integer, intent(in)	     :: comp_rank ! process rank on the communicator
+                                                  ! associated with comp_id
       integer, intent(in)	     :: comp_id   ! component id
       type(MCTWorld), intent(in)     :: World     ! World
 
@@ -679,6 +690,7 @@
 
       implicit none
 
+! !INPUT PARAMETERS:
       integer, intent(in)	     :: comp_id   ! component id
       type(MCTWorld), intent(in)     :: World     ! World
       logical, intent(in), optional  :: check     ! exhaustive checking
