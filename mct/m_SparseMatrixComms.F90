@@ -15,6 +15,11 @@
 ! column decompositions, gathering of matrix elements to the root, and 
 ! broadcasting from the root.
 !
+! {\bf N.B.:}  These routines will not communicate the vector portion
+! of a {\tt SparseMatrix}, if it has been initialized.  A WARNING will
+! be issued in most cases.  In general, do communication first,  then 
+! call {\tt vecinit}.
+!
 ! !INTERFACE:
 
  module m_SparseMatrixComms
@@ -148,8 +153,7 @@
        ! can't scatter vector parts.
   if(GsMat%vecinit) then
       write(stderr,*) myname_,&
-      "Cannot scatter SparseMatrix with initialized vector parts."
-      call die(myname_,"Scatter SparseMatrix with vecinit TRUE.",ierr)
+      "WARNING: will not scatter vector parts of GsMat"
   endif
 
 
@@ -316,8 +320,7 @@
        ! can't scatter vector parts.
   if(GsMat%vecinit) then
       write(stderr,*) myname_,&
-      "Cannot scatter SparseMatrix with initialized vector parts."
-      call die(myname_,"Scatter SparseMatrix with vecinit TRUE.",ierr)
+      "WARNING: will not scatter vector parts of GsMat."
   endif
 
        ! Which process are we?
@@ -450,8 +453,7 @@
 
   if(LsMat%vecinit) then
       write(stderr,*) myname_,&
-      "Cannot gather SparseMatrix with initialized vector parts."
-      call die(myname_,"Gather SparseMatrix with vecinit TRUE.",ierr)
+      "WARNING: will not gather vector parts of LsMat."
   endif
 
   call AttrVect_gather(LsMat%data, GsMat%data, GMap, root, comm, ierr)
@@ -543,8 +545,7 @@
 
   if(LsMat%vecinit) then
       write(stderr,*) myname_,&
-      "Cannot gather SparseMatrix with initialized vector parts."
-      call die(myname_,"Gather SparseMatrix with vecinit TRUE.",ierr)
+      "WARNING: will not gather vector parts of LsMat."
   endif
 
        ! Gather the AttrVect component of LsMat to GsMat...
@@ -587,6 +588,9 @@
 ! {\bf N.B.:}  This routine returns an allocated {\tt SparseMatrix} 
 ! variable {\tt sMat}.  The user must destroy this variable when it
 ! is no longer needed by invoking {\tt SparseMatrix\_Clean()}.
+!
+! {\bf N.B.:}  This routine will exit with an error if the vector portion
+! of {\tt sMat} has been initialized prior to broadcast.
 !
 ! !INTERFACE:
 
