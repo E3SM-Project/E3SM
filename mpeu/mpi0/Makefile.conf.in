@@ -27,7 +27,7 @@
 # supports both REAL and DOUPLE PRECISION kinds for its interfaces
 # through the Fortran 90 generic interface feature. (Jing Guo)
 
-_I              = @MPILIBS@
+_I              = @MPILIBS@ @INCLUDEPATH@
 
 DEFS            = @MACHDEFS@
 
@@ -35,7 +35,7 @@ FPP		= @FPP@
 FPPFLAGS	= @FPPFLAGS@
 
 CC		= @CC@
-CFLAGS          = -O @BIT64@
+CFLAGS          = -O
 
 FC		= @FC@
 FFLAGS		= @FFLAGS@ @BIT64@
@@ -44,7 +44,7 @@ F90FLAGS        = @F90FLAGS@
 MUPDATE         = @MUPDATE@
 
 .c.o:
-	$(CC) -c -O $*.c
+	$(CC) -c $(CFLAGS) $*.c
 
 @FRULE@:
 	$(FC) -c $(_I) $(DEFS) $(FFLAGS) $*.F
@@ -61,6 +61,8 @@ MUPDATE         = @MUPDATE@
 	$(FPP) $(FPPFLAGS) $(_I) $(DEFS) $*.F90 $*.f90
 	$(FC) -c $(FFLAGS) $(F90FLAGS) $(_I) $*.f90
 	$(RM) $*.f90
+
+.SUFFIXES: .H .h .F90 .f90 .F .f .c .o
 
 #.----------------------------------------------------------------------
 

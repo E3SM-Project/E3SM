@@ -29,7 +29,7 @@
 
 # This module requires ../mpeu module
 
-_I              = @INCLUDE@../mpeu @MPILIBS@
+_I              = @INCLUDE@../mpeu @MPILIBS@ @INCLUDEPATH@
 
 DEFS            = @MACHDEFS@
 
@@ -59,6 +59,8 @@ MUPDATE         = @MUPDATE@
 	$(FPP) $(FPPFLAGS) $(_I) $(DEFS) $*.F90 $*.f90
 	$(FC) -c $(FFLAGS) $(F90FLAGS) $(_I) $*.f90
 	$(RM) $*.f90
+
+.SUFFIXES: .H .h .F90 .f90 .F .f .c .o
 
 #.----------------------------------------------------------------------
 
