@@ -72,6 +72,7 @@
       public :: nullify
       public :: index
       public :: get_indices
+      public :: test_indices
       public :: nitem
       public :: get
       public :: identical
@@ -100,6 +101,7 @@
       indexStr_
   end interface
   interface get_indices; module procedure get_indices_; end interface
+  interface test_indices; module procedure test_indices_; end interface
   interface nitem; module procedure nitem_; end interface
   interface get  ; module procedure	&
       get_,		&
@@ -133,18 +135,18 @@
   end interface
 
 ! !REVISION HISTORY:
-! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
-! 	16May01 - J. Larson <larson@mcs.anl.gov> - Several changes / fixes:
-!                 public interface for copy_(), corrected version of copy_(),
-!                 corrected version of bcast_().
-! 	15Oct01 - J. Larson <larson@mcs.anl.gov> - Added the LOGICAL 
-!                 function identical_().
-! 	14Dec01 - J. Larson <larson@mcs.anl.gov> - Added the LOGICAL 
-!                 function allocated_().
-! 	13Feb02 - J. Larson <larson@mcs.anl.gov> - Added the List query 
-!                 functions exportToChar() and CharBufferLength().
-! 	13Jun02-  R.L. Jacob <jacob@mcs.anl.gov> - Move GetSharedListIndices
-!                 from mct to this module.
+! 22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 16May01 - J. Larson <larson@mcs.anl.gov> - Several changes / fixes:
+!           public interface for copy_(), corrected version of copy_(),
+!           corrected version of bcast_().
+! 15Oct01 - J. Larson <larson@mcs.anl.gov> - Added the LOGICAL 
+!           function identical_().
+! 14Dec01 - J. Larson <larson@mcs.anl.gov> - Added the LOGICAL 
+!           function allocated_().
+! 13Feb02 - J. Larson <larson@mcs.anl.gov> - Added the List query 
+!           functions exportToChar() and CharBufferLength().
+! 13Jun02-  R.L. Jacob <jacob@mcs.anl.gov> - Move GetSharedListIndices
+!           from mct to this module.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_List'
@@ -199,7 +201,7 @@
  
 
 ! !REVISION HISTORY:
-! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::init_'
@@ -316,7 +318,7 @@
 
 
 ! !REVISION HISTORY:
-! 	23Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 23Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::initStr_'
@@ -370,7 +372,7 @@
 
 
 ! !REVISION HISTORY:
-! 	23Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 23Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::initStr1_'
@@ -440,9 +442,9 @@
       integer, optional, intent(out)   :: stat
 
 ! !REVISION HISTORY:
-! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
-! 	01Mar02 - E.T. Ong <eong@mcs.anl.gov> - added stat argument and
-!                 removed die to prevent crashes.
+! 22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+!  1Mar02 - E.T. Ong <eong@mcs.anl.gov> - added stat argument and
+!           removed die to prevent crashes.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::clean_'
@@ -497,7 +499,7 @@
       type(List),intent(inout) :: aList
 
 ! !REVISION HISTORY:
-! 	18Jun01 - J.W. Larson - <larson@mcs.anl.gov> - initial version
+! 18Jun01 - J.W. Larson - <larson@mcs.anl.gov> - initial version
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::nullify_'
@@ -535,12 +537,12 @@
       type(List),intent(in) :: aList
 
 ! !REVISION HISTORY:
-! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
-! 	10Oct01 - J.W. Larson <larson@mcs.anl.gov> - modified routine to
-!                 check pointers aList%bf and aList%lc using  the f90 
-!                 intrinsic ASSOCIATED before proceeding with the item
-!                 count.  If these pointers are UNASSOCIATED, an item
-!                 count of zero is returned.
+! 22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 10Oct01 - J.W. Larson <larson@mcs.anl.gov> - modified routine to
+!           check pointers aList%bf and aList%lc using  the f90 
+!           intrinsic ASSOCIATED before proceeding with the item
+!           count.  If these pointers are UNASSOCIATED, an item
+!           count of zero is returned.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::nitem_'
@@ -593,7 +595,7 @@
       character(len=*),intent(in) :: item	! a given item name
 
 ! !REVISION HISTORY:
-! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::index_'
@@ -691,8 +693,8 @@
       type(String),    intent(in) :: itemStr
 
 ! !REVISION HISTORY:
-! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
-! 	25Oct02 - R. Jacob <jacob@mcs.anl.gov> - just call index_ above
+! 22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 25Oct02 - R. Jacob <jacob@mcs.anl.gov> - just call index_ above
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::indexStr_'
@@ -738,7 +740,7 @@
       type(List), intent(in) :: inList
 
 ! !REVISION HISTORY:
-! 	14Dec01 - J. Larson <larson@mcs.anl.gov> - inital version
+! 14Dec01 - J. Larson <larson@mcs.anl.gov> - inital version
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::allocated_'
@@ -853,7 +855,7 @@
       character(len=size(inList%bf)) :: exportToChar_
 
 ! !REVISION HISTORY:
-! 	13Feb02 - J. Larson <larson@mcs.anl.gov> - initial version.
+! 13Feb02 - J. Larson <larson@mcs.anl.gov> - initial version.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::exportToChar_'
@@ -956,7 +958,7 @@
       type(List),         intent(in) :: inList
 
 ! !REVISION HISTORY:
-! 	13Feb02 - J. Larson <larson@mcs.anl.gov> - initial version.
+! 13Feb02 - J. Larson <larson@mcs.anl.gov> - initial version.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::CharBufferSize_'
@@ -1006,7 +1008,7 @@
 
 
 ! !REVISION HISTORY:
-! 	23Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 23Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::get_'
@@ -1055,7 +1057,7 @@
 
 
 ! !REVISION HISTORY:
-! 	23Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 23Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::getall_'
@@ -1105,8 +1107,8 @@
       type(String),intent(out) :: itemStr
 
 ! !REVISION HISTORY:
-! 	23Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
-! 	26Jul02 - J. Larson - Added argument checks.
+! 23Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 26Jul02 - J. Larson - Added argument checks.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::getrange_'
@@ -1186,7 +1188,7 @@
       type(List), intent(in) :: xL
 
 ! !REVISION HISTORY:
-! 	14Oct01 - J. Larson <larson@mcs.anl.gov> - original version
+! 14Oct01 - J. Larson <larson@mcs.anl.gov> - original version
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::identical_'
@@ -1301,6 +1303,14 @@
        ! Count items in tList and allocate indices(:) accordingly
 
   n = nitem_(tList)
+
+  if(n > nitem_(aList)) then
+     write(stderr,'(5a,2(i8,a))') myname_, &
+	  ':: FATAL--more items in argument Values than aList!  Input string', &
+	  'Values = "',Values,'" has ',n,' items.  aList has ',nitem_(aList),  &
+	  ' items.'
+     call die(myname_)
+  endif
   allocate(indices(n), stat=ierr)
   if(ierr /= 0) then
      write(stderr,'(2a,i8,a)') myname_, &
@@ -1327,6 +1337,108 @@
   call clean_(tList)
 
  end subroutine get_indices_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: test_indices_ - Test/Index Multiple Items in a List
+!
+! !DESCRIPTION:  This routine takes as input a {\tt List} argument 
+! {\tt aList}, and a {\tt CHARACTER} string {Values}, which is a colon-
+! delimited string of items, and returns an {\tt INTEGER} array 
+! {\tt indices(:)}, which contain the rank of each item in {\tt aList}.
+! For example, suppose {\tt aList} was created from the character string
+! \begin{verbatim}
+! 'happy:sleepy:sneezey:grumpy:dopey::bashful:doc'
+! \end{verbatim}
+! and {\tt test\_indices\_()} is invoked as follows:
+! \begin{verbatim}
+! call test_indices_(indices, aList, 'sleepy:grumpy:bashful:doc')
+! \end{verbatim}
+! The array {\tt indices(:)} will be returned with 4 entries:  
+! ${\tt indices(1)}=2$, ${\tt indices(2)}=4$, ${\tt indices(3)}=6$, and
+! ${\tt indices(4)}=7$.
+!
+! Now suppose {\tt test\_indices\_()} is invoked as follows:
+! \begin{verbatim}
+! call test_indices_(indices, aList, 'sleepy:grumpy:bashful:Snow White')
+! \end{verbatim}
+! The array {\tt indices(:)} will be returned with 4 entries:  
+! ${\tt indices(1)}=2$, ${\tt indices(2)}=4$, ${\tt indices(3)}=6$, and
+! ${\tt indices(4)}=0$.
+!
+! {\bf N.B.}:  This routine operates on the assumption that one or more 
+! of the substrings in the colon-delimited string {\tt Values} is may not 
+! be an item in {\tt aList}.  If an item in {\tt Values} is {\em not} in 
+! {\tt aList}, its corresponding entry in {\tt indices(:)} is set to zero.
+!
+! {\bf N.B.}:  The pointer {\tt indices} must be {\tt UNASSOCIATED} on entry 
+! to this routine, and will be {\tt ASSOCIATED} upon return.  After this pointer
+! is no longer needed, it should be deallocated.  Failure to do so will result 
+! in a memory leak.
+!
+! !INTERFACE:
+
+ subroutine test_indices_(indices, aList, Values)
+
+! !USES:
+!
+      use m_stdio
+      use m_die
+      use m_String, only : String
+      use m_String, only : String_clean => clean
+      use m_String, only : String_toChar => toChar
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+!
+      type(List),            intent(in)	:: aList  ! an indexed string values
+      character(len=*),      intent(in) :: Values ! ":" delimited names
+
+! !OUTPUT PARAMETERS:   
+!
+      integer, dimension(:), pointer    :: indices
+
+! !REVISION HISTORY:
+! 12Feb03 - J. Larson <larson@mcs.anl.gov> Working refactored version  
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::test_indices_'
+  type(List)   :: tList
+  type(String) :: tStr
+  integer :: i, ierr, n
+
+       ! Create working list based on input colon-delimited string
+
+  call init_(tList, values)
+
+
+       ! Count items in tList and allocate indices(:) accordingly
+
+  n = nitem_(tList)
+  allocate(indices(n), stat=ierr)
+  if(ierr /= 0) then
+     write(stderr,'(2a,i8,a)') myname_, &
+	  ':: FATAL--allocate(indices(...) failed with stat=',ierr,&
+	  '.  On entry to this routine, this pointer must be NULL.'
+     call die(myname_)
+  endif
+
+       ! Retrieve each item from tList as a String and index it
+
+  do i=1,n
+    call get_(tStr,i,tList)
+    indices(i) = indexStr_(aList,tStr)
+    call String_clean(tStr)
+  end do
+
+       ! Clean up temporary List tList
+
+  call clean_(tList)
+
+ end subroutine test_indices_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
@@ -1440,9 +1552,9 @@
 ! ASAP.
 !
 ! !REVISION HISTORY:
-! 	08May01 - J.W. Larson - initial version.
-! 	17May01 - J.W. Larson - Re-worked and tested successfully.
-! 	17Jul02 - E. Ong - fixed the bug mentioned above
+!  8May01 - J.W. Larson - initial version.
+! 17May01 - J.W. Larson - Re-worked and tested successfully.
+! 17Jul02 - E. Ong - fixed the bug mentioned above
 !EOP ___________________________________________________________________
 
  character(len=*),parameter :: myname_=myname//'::concatenate_'
@@ -1566,13 +1678,13 @@
       integer, optional,  intent(out)    :: status
 
 ! !REVISION HISTORY:
-! 	07May01 - J.W. Larson - initial version.
-! 	14May01 - R.L. Jacob - fix error checking
-! 	16May01 - J.W. Larson - new, simpler String-based algorigthm
-!                 (see m_String for details), which works properly on
-!                 the SGI platform.
-! 	13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize status
-!                 (if present).
+!  7May01 - J.W. Larson - initial version.
+! 14May01 - R.L. Jacob - fix error checking
+! 16May01 - J.W. Larson - new, simpler String-based algorigthm
+!           (see m_String for details), which works properly on
+!           the SGI platform.
+! 13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize status
+!           (if present).
 !EOP ___________________________________________________________________
 
  character(len=*),parameter :: myname_=myname//'::bcast_'
@@ -1680,9 +1792,9 @@
       integer, optional,  intent(out) :: status
 
 ! !REVISION HISTORY:
-! 	06Jun01 - J.W. Larson - initial version.
-! 	13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize status
-!                 (if present).
+!  6Jun01 - J.W. Larson - initial version.
+! 13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize status
+!           (if present).
 !EOP ___________________________________________________________________
 
  character(len=*),parameter :: myname_=myname//'::send_'
@@ -1780,10 +1892,10 @@
       integer, optional,  intent(out) :: status
 
 ! !REVISION HISTORY:
-! 	06Jun01 - J.W. Larson - initial version.
-! 	11Jun01 - R. Jacob - small bug fix; status in MPI_RECV
-! 	13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize status
-!                 (if present).
+!  6Jun01 - J.W. Larson - initial version.
+! 11Jun01 - R. Jacob - small bug fix; status in MPI_RECV
+! 13Jun01 - J.W. Larson <larson@mcs.anl.gov> - Initialize status
+!           (if present).
 !EOP ___________________________________________________________________
 
  character(len=*),parameter :: myname_=myname//'::recv_'
@@ -1879,7 +1991,7 @@
       integer,dimension(:), pointer  :: Indices2
 
 ! !REVISION HISTORY:
-! 	07Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
+!  7Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GetSharedListIndices_'
