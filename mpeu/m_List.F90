@@ -78,6 +78,7 @@
       public :: allocated
       public :: copy
       public :: exportToChar
+      public :: exportToString
       public :: CharBufferSize
       public :: append
       public :: concatenate
@@ -113,6 +114,9 @@
   interface copy ; module procedure copy_ ;  end interface
   interface exportToChar ; module procedure &
        exportToChar_
+  end interface
+  interface exportToString ; module procedure &
+       exportToString_
   end interface
   interface CharBufferSize ; module procedure &
       CharBufferSize_
@@ -447,12 +451,16 @@
      if(associated(aList%lc)) call mall_mco(aList%lc,myname_)
   endif
 
-  deallocate(aList%bf, aList%lc, stat=ier)
+  if(associated(aList%bf) .and. associated(aList%lc)) then
 
-  if(present(stat)) then
-     stat=ier
-  else
-     if(ier /= 0) call warn(myname_,'deallocate(aList%...)',ier)
+     deallocate(aList%bf, aList%lc, stat=ier)
+
+     if(present(stat)) then
+	stat=ier
+     else
+	if(ier /= 0) call warn(myname_,'deallocate(aList%...)',ier)
+     endif
+
   endif
 
  end subroutine clean_
@@ -588,16 +596,63 @@
 
   character(len=*),parameter :: myname_=myname//'::index_'
   integer :: i,lb,le
+  integer :: itemLength, length, nMatch, j
+
+       ! How long is the input item name?
+
+  itemLength = len(item)
+
+       ! Set output to zero (no item match) value:
 
   index_=0
-  do i=1,size(aList%lc,2)		! == nitem_(aList)
-    lb=aList%lc(0,i)
-    le=aList%lc(1,i)
-    if(item==toChar(aList%bf(lb:le))) then
-      index_=i
-      exit
+
+       ! Now, go through the aList one item at a time
+
+  ITEM_COMPARE: do i=1,size(aList%lc,2)		! == nitem_(aList)
+
+       ! Compute some stats for the current item in aList:
+
+    lb=aList%lc(0,i) ! starting index of item in aList%bf
+    le=aList%lc(1,i) ! ending index item in aList%bf
+
+    length = le -lb + 1 ! length of the current item
+    if(length /= itemLength) then ! this list item can't match input item
+
+       CYCLE ! that is, jump to the next item in aList...
+
+    else ! compare one character at a time...
+
+       ! Initialize number of matching characters in the two strings
+
+       nMatch = 0 
+
+       ! Now, compare item to the current item in aList one character 
+       ! at a time:
+
+       CHAR_COMPARE: do j=1,length
+	  if(aList%bf(lb+j-1) == item(j:j)) then ! a match for this character
+	     nMatch = nMatch + 1
+	  else
+	     EXIT
+	  endif
+       end do CHAR_COMPARE
+
+       ! Check the number of leading characters in the current item in aList
+       ! that match the input item.  If it is equal to the item length, then
+       ! we have found a match and are finished.  Otherwise, we cycle on to
+       ! the next item in aList.
+
+       if(nMatch == itemLength) then 
+	  index_ = i
+	  EXIT
+       endif
+
+! Old code that does not work with V. of the IBM 
+!    if(item==toChar(aList%bf(lb:le))) then
+!      index_=i
+!      exit
     endif
-  enddo
+  end do ITEM_COMPARE
 
  end function index_
 
@@ -796,7 +851,7 @@
 
 ! ! INPUT PARAMETERS:
 
-      type(List),         intent(in) :: inList
+      type(List),        intent(in)  :: inList
 
 ! ! OUTPUT PARAMETERS:
 
@@ -814,12 +869,59 @@
      call getall_(DummStr,inList)
      exportToChar_ = String_ToChar(DummStr)
      call String_clean(DummStr)
-  else
-     write(stderr,'(2a)') myname_,":: Argument inList not allocated."
-     call die(myname_)
   endif
 
  end function exportToChar_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: exportToString_ - Export List to a String
+!
+! !DESCRIPTION:  This function returns the character buffer portion of
+! the input {\tt List} argument {\tt inList}---that is, the contents of
+! {\tt inList\%bf}---as a {\tt String} (see the mpeu module m\_String 
+! for more information regarding the {\tt String} type).  This function
+! was created to circumvent problems with implementing inheritance of 
+! the function {\tt exportToChar\_()} to other datatypes build on top
+! of the {\tt List} type.
+!
+! !INTERFACE:
+
+ function exportToString_(inList)
+
+! !USES:
+!
+      use m_die,    only : die
+      use m_stdio,  only : stderr
+
+      use m_String, only : String
+      use m_String, only : String_init => init
+
+      implicit none
+
+! ! INPUT PARAMETERS:
+
+      type(List),       intent(in) :: inList
+
+! ! OUTPUT PARAMETERS:
+
+      type(String)                 :: exportToString_
+
+! !REVISION HISTORY:
+! 14Aug02 - J. Larson <larson@mcs.anl.gov> - initial version.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::exportToString_'
+
+  if(allocated_(inList)) then
+     call getall_(exportToString_, inList)
+  else
+     call String_init(exportToString_, 'NOTHING')
+  endif
+
+ end function exportToString_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
