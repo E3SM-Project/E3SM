@@ -1588,6 +1588,7 @@
 
 ! !REVISION HISTORY:
 ! 	08Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version.
+! 	26Apr01 - J.W. Larson <larson@mcs.anl.gov> - Bug fix.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::haloed_'
@@ -1619,6 +1620,13 @@
   if (ierr /= 0) then
      call MP_perr_die(myname_,'allocate(start...',ierr)
   endif
+
+       ! Fill the temporary arrays start(:) and length(:)
+
+  do n=1,ngseg
+     start(n) = GSMap%start(n)
+     length(n) = GSMap%length(n)
+  end do
 
        ! Initialize the index permutation array:
 
