@@ -22,8 +22,12 @@
 #ifdef sysFujitsu
 #define Const_MPItype_
 #else
+#ifdef sysUNICOS
+#define Const_MPItype_
+#else
 #ifdef Const_MPItype_
 #undef Const_MPItype_
+#endif
 #endif
 #endif
 #endif
