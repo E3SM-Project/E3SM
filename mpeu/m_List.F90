@@ -19,6 +19,7 @@
       public :: index
       public :: nitem
       public :: get
+      public :: identical
       public :: assignment(=)
       public :: copy
       public :: concatenate
@@ -36,6 +37,8 @@
 ! 	16May01 - J. Larson <larson@mcs.anl.gov> - Several changes / fixes:
 !                 public interface for copy_(), corrected version of copy_(),
 !                 corrected version of bcast_().
+! 	15Oct01 - J. Larson <larson@mcs.anl.gov> - Added the LOGICAL 
+!                 function identical_().
 !EOP ___________________________________________________________________
 
   interface init ; module procedure	&
@@ -55,6 +58,7 @@
 	getall_,	&
 	getrange_
   end interface
+  interface identical; module procedure identical_; end interface
   interface assignment(=)
     module procedure copy_
   end interface
@@ -595,6 +599,71 @@ contains
   call init(itemStr,toChar(aList%bf(lb:le)))
 
  end subroutine getrange_
+
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: identical_ - Compare two lists to see if they are the same.
+!
+! !DESCRIPTION:
+!
+! !INTERFACE:
+
+ logical function identical_(yL,xL)
+
+      use m_die,only : die
+      use m_String ,only : String
+      use m_String ,only : String_clean
+
+      implicit none
+
+      type(List),intent(in) :: yL
+      type(List),intent(in) :: xL
+
+! !REVISION HISTORY:
+! 	14Oct01 - J. Larson <larson@mcs.anl.gov> - original version
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::identical_'
+
+  logical :: myIdentical
+  type(String) :: DummStr
+  integer :: n, NumItems
+
+       ! Compare the number of the items in the Lists xL and yL.
+       ! If they differ, myIdentical is set to .FALSE. and we are
+       ! finished.  If both Lists sport the same number of items,
+       ! we must compare them one-by-one...
+
+  if(nitem_(yL) == nitem_(xL)) then
+
+     NumItems = nitem_(yL)
+
+     COMPARE_LOOP:  do n=1,NumItems
+
+	call get_(DummStr, n, yL)  ! retrieve nth tag as a String
+
+	if( indexStr_(xL, Dummstr) /= n ) then ! a discrepency spotted.
+	   call String_clean(Dummstr)
+	   myIdentical = .FALSE.    
+	   EXIT
+	else
+	   call String_clean(Dummstr)
+	endif
+
+	   myIdentical = .TRUE.   ! we survived the whole test process.
+
+     end do COMPARE_LOOP
+
+  else
+     myIdentical = .FALSE.
+  endif
+
+  identical_ = myIdentical
+
+ end function identical_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !

@@ -162,6 +162,7 @@
 !
       use m_String, only : String,char
       use m_List,   only : get
+      use m_List,   only : List_nullify => nullify
       use m_die
       use m_stdio
 
@@ -261,6 +262,7 @@
       use m_List, only : List_nitem => nitem
       use m_List, only : List_copy => copy
       use m_List, only : List_get => get
+      use m_List,   only : List_nullify => nullify
 
       implicit none
 
@@ -513,6 +515,8 @@
 
 ! !REVISION HISTORY:
 ! 	17May01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype/code
+! 	15Oct01 - J. Larson <larson@mcs.anl.gov> - switched loop order
+!                 for cache optimization.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::zero_'
@@ -525,14 +529,15 @@
   endif
 
   size = lsize_(aV)
-  do i=1,nIAttr_(aV)
-   do j=1,size
+
+  do j=1,size
+   do i=1,nIAttr_(aV)
     aV%iAttr(i,j)=0
    enddo
   enddo
 
-  do i=1,nRAttr_(aV)
-   do j=1,size
+  do j=1,size
+   do i=1,nRAttr_(aV)
     aV%rAttr(i,j)=0.
    enddo
   enddo

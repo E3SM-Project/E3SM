@@ -61,6 +61,9 @@
       use m_stdio, only : stderr
       use m_die,   only : MP_perr_die
 
+      use m_List, only : List_identical => identical
+      use m_List, only : List_nitem => nitem
+
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_zero => zero
@@ -96,6 +99,9 @@
 !       10Oct01 - J. Larson <larson@mcs.anl.gov> - Added optional LOGICAL
 !                 input argument InterpInts to make application of the
 !                 multiply to INTEGER attributes optional
+!       15Oct01 - J. Larson <larson@mcs.anl.gov> - Added feature to 
+!                 detect when attribute lists are identical, and cross-
+!                 indexing of attributes is not needed.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::sMatAvMult_xlyl_'
@@ -140,69 +146,120 @@
 
        ! Regridding Operations:  First the REAL attributes:
 
-  data_flag = 'REAL'
-  call SharedAttrIndexList(xaV, yaV, data_flag, num_indices, &
-                              xaVindices, yaVindices)
+  if(List_identical(xaV%rList, yaV%rList)) then ! no cross-indexing
 
+     num_indices = List_nitem(xaV%rList)
+  
        ! loop over matrix elements
 
-  do n=1,num_elements
+     do n=1,num_elements
 
        ! loop over attributes being regridded.
 
-     do m=1,num_indices
+	do m=1,num_indices
 
-	xaVindex = xaVindices(m)
-	yaVindex = yaVindices(m)
+	   yaV%rAttr(m,sMat%data%iAttr(irow,n)) = &
+		yaV%rAttr(m,sMat%data%iAttr(irow,n)) + &
+		sMat%data%rAttr(iwgt, n)  * &
+		xaV%rAttr(m,sMat%data%iAttr(icol,n))
 
-	yaV%rAttr(yaVindex,sMat%data%iAttr(irow,n)) = &
-	     yaV%rAttr(yaVindex,sMat%data%iAttr(irow,n)) + &
-	     sMat%data%rAttr(iwgt, n)  * &
-	     xaV%rAttr(xaVindex,sMat%data%iAttr(icol,n))
+	end do ! m=1,num_indices
 
-     end do ! m=1,num_indices
+     end do ! n=1,num_elements
 
-  end do ! n=1,num_elements
+  else
 
-  deallocate(xaVindices, yaVindices, stat=ierr)
-  if(ierr /= 0) then
-     call MP_perr_die(myname_,'first deallocate(xaVindices...',ierr)
-  endif
+     data_flag = 'REAL'
+     call SharedAttrIndexList(xaV, yaV, data_flag, num_indices, &
+	                      xaVindices, yaVindices)
+
+       ! loop over matrix elements
+
+     do n=1,num_elements
+
+       ! loop over attributes being regridded.
+
+	do m=1,num_indices
+
+	   xaVindex = xaVindices(m)
+	   yaVindex = yaVindices(m)
+
+	   yaV%rAttr(yaVindex,sMat%data%iAttr(irow,n)) = &
+		yaV%rAttr(yaVindex,sMat%data%iAttr(irow,n)) + &
+		sMat%data%rAttr(iwgt, n)  * &
+		xaV%rAttr(xaVindex,sMat%data%iAttr(icol,n))
+
+	end do ! m=1,num_indices
+
+     end do ! n=1,num_elements
+
+     deallocate(xaVindices, yaVindices, stat=ierr)
+     if(ierr /= 0) then
+	call MP_perr_die(myname_,'first deallocate(xaVindices...',ierr)
+     endif
+
+  endif ! if(List_identical(xaV%rAttr, yaV%rAttr))...
 
        ! Regrid the INTEGER Attributes (if desired):
 
-  if(present(InterpInts)) then
+  if(present(InterpInts)) then  ! if this argument is not present, skip...
+
      if(InterpInts) then
 
-	data_flag = 'INTEGER'
-	call SharedAttrIndexList(xaV, yaV, data_flag, num_indices, &
-	     xaVindices, yaVindices)
+	if(List_identical(xaV%iList, yaV%iList)) then ! no cross-indexing
 
+	   num_indices = List_nitem(xaV%iList)
+  
        ! loop over matrix elements
 
-	do n=1,num_elements
+	   do n=1,num_elements
 
        ! loop over attributes being regridded.
 
-	   do m=1,num_indices
+	      do m=1,num_indices
 
-	      xaVindex = xaVindices(m)
-	      yaVindex = yaVindices(m)
+		 yaV%iAttr(m,sMat%data%iAttr(irow,n)) = &
+		      yaV%iAttr(m,sMat%data%iAttr(irow,n)) + &
+		      sMat%data%rAttr(iwgt, n)  * &
+		      xaV%iAttr(m,sMat%data%iAttr(icol,n))
 
-	      yaV%iAttr(yaVindex,sMat%data%iAttr(irow,n)) = &
-		   yaV%iAttr(yaVindex,sMat%data%iAttr(irow,n)) + &
-		   sMat%data%rAttr(iwgt, n) * &
-		   xaV%iAttr(xaVindex,sMat%data%iAttr(icol,n))
+	      end do ! m=1,num_indices
 
-	   end do ! m=1,num_indices
+	   end do ! n=1,num_elements
 
-	end do ! n=1,num_elements
+	else ! must do attribute cross-indexing
 
-	deallocate(xaVindices, yaVindices, stat=ierr)
-	if(ierr /= 0) then
-	   call MP_perr_die(myname_,'second deallocate(xaVindices...', &
-		ierr)
-	endif
+	   data_flag = 'INTEGER'
+	   call SharedAttrIndexList(xaV, yaV, data_flag, num_indices, &
+		                    xaVindices, yaVindices)
+
+       ! loop over matrix elements
+
+	   do n=1,num_elements
+
+       ! loop over attributes being regridded.
+
+	      do m=1,num_indices
+
+		 xaVindex = xaVindices(m)
+		 yaVindex = yaVindices(m)
+
+		 yaV%iAttr(yaVindex,sMat%data%iAttr(irow,n)) = &
+		      yaV%iAttr(yaVindex,sMat%data%iAttr(irow,n)) + &
+		      sMat%data%rAttr(iwgt, n) * &
+		      xaV%iAttr(xaVindex,sMat%data%iAttr(icol,n))
+
+	      end do ! m=1,num_indices
+
+	   end do ! n=1,num_elements
+
+	   deallocate(xaVindices, yaVindices, stat=ierr)
+	   if(ierr /= 0) then
+	      call MP_perr_die(myname_,'second deallocate(xaVindices...', &
+		               ierr)
+	   endif
+
+	endif ! if(List_identical(xaV%iList, yaV%iList))...
 
      endif ! if(InterpInts)...
 
