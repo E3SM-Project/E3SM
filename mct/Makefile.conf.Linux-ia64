@@ -61,7 +61,7 @@ F77		= efc
 F90		= efc
 FC		= $(F90)
 
-FFLAGS		= -O2 -extend_source -w95 $(_R)
+FFLAGS		= -O2 -extend_source -w95
 CFLAGS		= -O
 
 

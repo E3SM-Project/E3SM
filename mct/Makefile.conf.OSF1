@@ -61,7 +61,7 @@ F77		= f90
 F90		= f90
 FC		= $(F90)
 
-FOPT_normal	= -fast -real_size 64 -convert big_endian
+FOPT_normal	= -fast -convert big_endian
 FOPT_indxck	= -g -convert big_endian -check bounds -automatic
 FOPT_syntax	= -syntax_only
 

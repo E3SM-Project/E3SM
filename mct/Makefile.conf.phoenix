@@ -66,7 +66,7 @@ F90		= ftn
 FC		= $(F90)
 
 
-FFLAGS		= $(_R) -em
+FFLAGS		= -em
 FPPFLAGS	= 
 CFLAGS		= 
 

@@ -86,28 +86,28 @@ FC		= $(F90)
 #############################
 #  Portland Group (pgf90) flags
 #############################
-FFLAGS		= -O2 -pc 64 -Mnoframe -byteswapio $(_R)
+FFLAGS		= -O2 -pc 64 -Mnoframe -byteswapio 
 FPPFLAGS	= -DLANGUAGE_FORTRAN -traditional
 CFLAGS		= -O
 
 #############################
 # NAG flags 
 #############################
-#FFLAGS         = -O2 -dusty -kind=byte  $(_R)
+#FFLAGS         = -O2 -dusty -kind=byte  
 #FPPFLAGS       = -DLANGUAGE_FORTRAN -DNAG -traditional
 #CFLAGS         = -O
 
 #############################
 # Absoft flags 
 #############################
-#FFLAGS         = -O2 -Mnoframe $(_p) $(_R)
+#FFLAGS         = -O2 -Mnoframe $(_p) 
 #FPPFLAGS       = -DLANGUAGE_FORTRAN -traditional
 #CFLAGS         = -O -DABSOFT
 
 #############################
 # Intel v7 (ifc) flags
 #############################
-#FFLAGS         = -O2 -tpp6 -w95 $(_R)
+#FFLAGS         = -O2 -tpp6 -w95 
 #FPPFLAGS       = -DLANGUAGE_FORTRAN -traditional
 #CFLAGS         = -O
 
