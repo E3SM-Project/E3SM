@@ -105,6 +105,8 @@
 !       01Feb01 - R. Jacob <jacob@mcs.anl.gov> - initialize some parts
 !       02Feb01 - R. Jacob <jacob@mcs.anl.gov> - initialize the send
 !		portion
+!       06Feb01 - J. Larson <larson@mcs.anl.gov> - added communicator
+!                 argument now required by GlobalSegMap%lsize().
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::init_'
@@ -130,7 +132,7 @@
   firstpoint = .TRUE.
 
   nlsegs = nlseg(GSMap,myPid)
-  mysize = lsize(GSMap)
+  mysize = lsize(GSMap, mycomm)
 
 ! build a mystart and mylength array on all processors
   allocate(mystarts(nlsegs),mylengths(nlsegs), &
@@ -376,9 +378,8 @@
 
     allocate(lsizes(ThisMCTWorld%nprocspid(comp2)),stat=ier)
     if(ier/=0) call MP_perr_die(myname_,'allocate(lsizes,..)',ier)
-
-    
-    mysize=lsize(GSMap)
+   
+    mysize=lsize(GSMap, mycomm)
     call MPI_GATHER(mysize,1,MP_INTEGER,lsizes,1,MP_INTEGER,0,mycomm,ier)
     if(ier /= 0) call MP_perr_die(myname_,'MPI_GATHER(lsize)',ier)
 

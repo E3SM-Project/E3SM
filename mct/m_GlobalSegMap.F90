@@ -35,6 +35,8 @@
       public :: clean           ! Destroy
       public :: comp_id         ! Return component ID number
       public :: gsize           ! Return global vector size (excl. halos)
+      public :: GlobalStorage   ! Return total number of points in map,
+                                ! including halo points (if present).
       public :: lsize           ! Return local storage size (incl. halos)
       public :: ngseg           ! Return global number of segments
       public :: nlseg           ! Return local number of segments
@@ -55,7 +57,6 @@
       integer :: comp_id			! Component ID number
       integer :: ngseg				! No. of Global segments
       integer :: gsize				! No. of Global elements
-      integer :: lsize				! No. of Local elements
       integer,dimension(:),pointer :: start	! global seg. start index
       integer,dimension(:),pointer :: length	! segment lengths
       integer,dimension(:),pointer :: pe_loc	! PE locations
@@ -68,6 +69,9 @@
     interface clean ; module procedure clean_ ; end interface
     interface comp_id  ; module procedure comp_id_  ; end interface
     interface gsize ; module procedure gsize_ ; end interface
+    interface GlobalStorage ; module procedure &
+       GlobalStorage_
+    end interface
     interface lsize ; module procedure lsize_ ; end interface
     interface ngseg ; module procedure ngseg_ ; end interface
     interface nlseg ; module procedure nlseg_ ; end interface
@@ -89,6 +93,9 @@
 ! 	28Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 ! 	26Jan01 - J.W. Larson <larson@mcs.anl.gov> - replaced the component
 !                 GlobalSegMap%comm with GlobalSegMap%comp_id.
+! 	06Feb01 - J.W. Larson <larson@mcs.anl.gov> - removed the 
+!                 GlobalSegMap%lsize component.  Also, added the 
+!                 GlobalStorage query function.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_GlobalSegMap'
@@ -532,19 +539,6 @@
      end do
   endif
 
-        ! Compute the local size of the distributed vector by summing
-        ! the entries of GSMap%length(:) whose corresponding values in
-        ! GSMap%pe_loc(:) equal the local process ID.  This automatically
-        ! takes into account haloing (if present).
-
-  GSMap%lsize = 0
-
-  do i=1,GSMap%ngseg
-     if(GSMap%pe_loc(i) == myID) then
-	GSMap%lsize = GSMap%lsize + GSMap%length(i)
-     endif
-  end do
-
  end subroutine initr_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -557,8 +551,8 @@
 ! This routine deallocates the array components of the {\tt GlobalSegMap}
 ! argument {\tt GSMap}: {\tt GSMap\%start}, {\tt GSMap\%length}, and
 ! {\tt GSMap\%pe\_loc}.  It also zeroes out the values of the integer
-! components {\tt GSMap\%ngseg}, {\tt GSMap\%comp_id}, {\tt GSMap\%gsize},
-! and {\tt GSMap\%lsize}.
+! components {\tt GSMap\%ngseg}, {\tt GSMap\%comp_id}, and
+! {\tt GSMap\%gsize}.
 !
 ! !INTERFACE:
 
@@ -596,7 +590,6 @@
   GSMap%ngseg = 0
   GSMap%comp_id  = 0
   GSMap%gsize = 0
-  GSMap%lsize = 0
 
  end subroutine clean_
 
@@ -743,26 +736,108 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
+! !IROUTINE: GlobalStorage_ - Return global storage space required.
+!
+! !DESCRIPTION:
+! The function {\tt GlobalStorage\_()} takes the input {\tt GlobalSegMap} 
+! arguement {\tt GSMap} and returns the global storage space required 
+! ({\em i.e.}, the vector length) to hold all the data specified by 
+! {\tt GSMap}.
+!
+! {\bf N.B.:  } If {\tt GSMap} contains halo or masked points, the value 
+! by {\tt GlobalStorage\_()} may differ from {\tt GSMap\%gsize}.
+!
+! !INTERFACE:
+
+ integer function GlobalStorage_(GSMap)
+
+      implicit none
+
+      type(GlobalSegMap),intent(in) :: GSMap
+      integer :: global_storage, ngseg, n
+
+! !REVISION HISTORY:
+! 	06Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::GlobalStorage_'
+
+      ! Return global number of segments:
+
+  ngseg = ngseg_(GSMap)
+
+      ! Initialize global_storage (the total number of points in the
+      ! GlobalSegMap:
+
+  global_storage = 0
+
+      ! Add up the number of points present in the GlobalSegMap:
+
+  do n=1,ngseg
+     global_storage = global_storage + GSMap%length(n)
+  end do
+
+  GlobalStorage_ = global_storage
+
+ end function GlobalStorage_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
 ! !IROUTINE: lsize_ - find the local storage size from the map
 !
 ! !DESCRIPTION:
 !
 ! !INTERFACE:
 
- function lsize_(GSMap)
+ integer function lsize_(GSMap, comm)
+!
+! !USES:
+!
+      use m_mpif90
+      use m_die ,          only : MP_perr_die
 
       implicit none
 
       type(GlobalSegMap),intent(in) :: GSMap
-      integer :: lsize_
+      integer,           intent(in) :: comm
+
 
 ! !REVISION HISTORY:
 ! 	29Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
+! 	06Feb01 - J.W. Larson <larson@mcs.anl.gov> - Computed directly
+!                 from the GlobalSegMap, rather than returning a hard-
+!                 wired local attribute. This required the addition of
+!                 the communicator argument.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::lsize_'
+  integer :: ierr, local_size, myID, n, ngseg
 
-  lsize_=GSMap%lsize
+        ! Determine local rank myID:
+
+  call MP_COMM_RANK(comm, myID, ierr)
+  if(ierr /= 0) call MP_perr_die(myname_,'MP_COMM_RANK',ierr)
+
+        ! Determine global number of segments:
+
+  ngseg = ngseg_(GSMap)
+
+        ! Compute the local size of the distributed vector by summing
+        ! the entries of GSMap%length(:) whose corresponding values in
+        ! GSMap%pe_loc(:) equal the local process ID.  This automatically
+        ! takes into account haloing (if present).
+
+  local_size = 0
+
+  do n=1,ngseg
+     if(GSMap%pe_loc(n) == myID) then
+	local_size = local_size + GSMap%length(n)
+     endif
+  end do
+
+  lsize_ = local_size
 
  end function lsize_
 
