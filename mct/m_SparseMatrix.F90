@@ -887,7 +887,7 @@
      if((sMat%data%iAttr(igrow,i) > MaxRow) .or. &
 	  (sMat%data%iAttr(igrow,i) <= 0)) then
 	ierror = 1
-	call MP_perr_die(myname_,"Row index out of bounds",ierror)
+	call die(myname_,"Row index out of bounds",ierror)
      endif
 
        ! Column index out of bounds?
@@ -895,7 +895,7 @@
      if((sMat%data%iAttr(igcol,i) > MaxCol) .or. &
 	  (sMat%data%iAttr(igcol,i) <= 0)) then
 	ierror = 2
-	call MP_perr_die(myname_,"Column index out of bounds",ierror)
+	call die(myname_,"Column index out of bounds",ierror)
      endif
 
   end do
@@ -980,7 +980,7 @@
   allocate(lsums(num_rows), sums(num_rows), stat=ierr)
 
   if(ierr /= 0) then
-     call MP_perr_die(myname_,"allocate(lsums(...",ierr)
+     call die(myname_,"allocate(lsums(...",ierr)
   endif
 
        ! Compute the local entries to lsum(1:num_rows) for each process:
@@ -1008,7 +1008,7 @@
 
   deallocate(lsums, stat=ierr)
   if(ierr /= 0) then
-     call MP_perr_die(myname_,"deallocate(lsums...",ierr)
+     call die(myname_,"deallocate(lsums...",ierr)
   endif
 
  end subroutine row_sum_
