@@ -681,7 +681,7 @@
 !
 ! !INTERFACE:
 
- integer function ComponentRootRank_(comp_id, World, check)
+ integer function ComponentRootRank_(comp_id, World)
 !
 ! !USES:
 !
@@ -693,8 +693,6 @@
 ! !INPUT PARAMETERS:
       integer, intent(in)	     :: comp_id   ! component id
       type(MCTWorld), intent(in)     :: World     ! World
-      logical, intent(in), optional  :: check     ! exhaustive checking
-                                                  ! flag
 
 ! !REVISION HISTORY:
 !       05Feb01 - J. Larson <larson@mcs.anl.gov> - initial version
