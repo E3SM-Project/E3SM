@@ -581,6 +581,7 @@
   character(len=*),parameter :: myname_=myname//'::clean_'
 
   integer :: myStatus
+  type(String) :: dummyStrategy ! SGI IR->WHIRL work-around
   character(len=5) :: myStrategy
 
        ! If status was supplied, set it to zero (success)
@@ -594,8 +595,8 @@
        ! with the error message:
        ! Error: Signal Segmentation fault in phase IR->WHIRL Conversion
 
-
-  myStrategy = String_ToChar(SMatP%Strategy)
+  call String_init(dummyStrategy, SMatP%Strategy)
+  myStrategy = String_ToChar(dummyStrategy)
 
        ! Use SMatP%Strategy to determine which Rearranger(s) need
        ! to be destroyed.  The CHARACTER parameters Xonly, Yonly, 
@@ -687,6 +688,7 @@
        ! Destroy the String SMatP%Strategy and its copy
 
   call String_clean(SMatP%Strategy)
+  call String_clean(dummyStrategy)
 
  end subroutine clean_
 
