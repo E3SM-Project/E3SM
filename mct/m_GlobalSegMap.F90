@@ -679,9 +679,9 @@
 ! across the communicator on which the {\tt GlobalSegMap} is being created.
 ! The input array {\tt all\_arrays(:)} should be of length {\tt 2 * ngseg},
 ! and is packed so that
-! $$ {\tt all\_arrays(1:ngseg)} = {\tt GSMap\%start(1:ngseg) $$
-! $$ {\tt all\_arrays(ngseg+1:2*ngseg)} = {\tt GSMap\%length(1:ngseg) $$
-! $$ {\tt all\_arrays(2*ngseg+1:3*ngseg)} = {\tt GSMap\%pe\_loc(1:ngseg) .$$
+! $$ {\tt all\_arrays(1:ngseg)} = {\tt GSMap\%start(1:ngseg)} $$
+! $$ {\tt all\_arrays(ngseg+1:2*ngseg)} = {\tt GSMap\%length(1:ngseg)} $$
+! $$ {\tt all\_arrays(2*ngseg+1:3*ngseg)} = {\tt GSMap\%pe\_loc(1:ngseg)} .$$
 !
 ! !INTERFACE:
 

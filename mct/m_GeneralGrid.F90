@@ -687,7 +687,7 @@
 !
 ! !DESCRIPTION:
 ! The subroutine {\tt Sortg\_()} uses the list of sorting keys present in 
-! the input  {\tt GeneralGrid} variable {\tt GGrid\%coordinate\_sort\_order}} 
+! the input  {\tt GeneralGrid} variable {\tt GGrid\%coordinate\_sort\_order}
 ! to create a sort permutation {\tt perm(:)}.  Sorting is either in ascending
 ! or descending order based on the entries of {\tt GGrid\%descend(:)}.
 ! The output index permutation is stored in the array {\tt perm(:)} that 

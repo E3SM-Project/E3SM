@@ -394,7 +394,7 @@
 !
 ! {\bf N.B.}:  The output {\tt AttrVect} argument {\tt oV} represents
 ! dynamically allocated memory.  When it is no longer needed, it should
-! be deallocated by invoking {\tt AttrVect_clean()} (see the module
+! be deallocated by invoking {\tt AttrVect\_clean()} (see the module
 ! {\tt m\_AttrVect} for more details).
 !
 ! !INTERFACE:
@@ -575,7 +575,7 @@
 !
 ! {\bf N.B.}:  The output {\tt AttrVect} argument {\tt oV} represents
 ! dynamically allocated memory.  When it is no longer needed, it should
-! be deallocated by invoking {\tt AttrVect_clean()} (see the module
+! be deallocated by invoking {\tt AttrVect\_clean()} (see the module
 ! {\tt m\_AttrVect} for more details).
 !
 ! !INTERFACE:
@@ -802,7 +802,7 @@
 !
 ! {\bf N.B.}:  The output (on non-root processes) {\tt AttrVect} argument 
 ! {\tt aV} represents dynamically allocated memory.  When it is no longer 
-! needed, it should be deallocated by invoking {\tt AttrVect_clean()} 
+! needed, it should be deallocated by invoking {\tt AttrVect\_clean()} 
 ! (see the module {\tt m\_AttrVect} for details).
 !
 ! !INTERFACE:
