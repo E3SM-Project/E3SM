@@ -1916,7 +1916,6 @@
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::LocalReduce_'
-
   integer :: i,j
 
         ! First Step:  create outAV from inAV (but with one element)
@@ -2066,7 +2065,7 @@
       use m_die ,          only : die
       use m_stdio ,        only : stderr
 
-      use m_List,          only : List_exportToChar => exportToChar
+      use m_List,          only : List_nullify => nullify
 
       implicit none
 
@@ -2084,11 +2083,18 @@
 !       16Apr02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
 !        6May02 - J.W. Larson <larson@mcs.anl.gov> - added optional
 !                 argument weights(:)
+!        6Jun02 - J.W. Larson <larson@mcs.anl.gov> - Work-around for 
+!                 compiler bug in the SGI f90 (7.3) compiler:  added
+!                 extra local List variable nullIList and changed 
+!                 initialization call for outAV from init_() to initl_(). 
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::LocalReduceReals_'
 
   integer :: i,j
+
+        ! Internal List variable (for SGI compiler 7.3 bug work-around)
+  type(List) nullIList
 
         ! Check for consistencey between inAV and the weights array
         ! (if supplied):
@@ -2107,7 +2113,8 @@
 
         ! First Step:  create outAV from inAV (but with one element)
 
-  call init_(outAV, rList=List_exportToChar(inAV%rList), lsize=1)
+  call List_nullify(nullIList)
+  call initl_(outAV, nullIList, inAV%rList, lsize=1)
 
   select case(action)
   case(AttrVectSUM) ! sum up each attribute...
