@@ -28,9 +28,9 @@
 #EOP
 #-----------------------------------------------------------------------
 
-_Dsys		= -DsysSUPER_UX
+_Dsys		= -DSYSSUPERUX
 _Dnod		= 
-
+_DF             = $(_Dsys) $(_Dnod)
 # Environments
 # ============
 

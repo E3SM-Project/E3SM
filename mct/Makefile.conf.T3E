@@ -29,8 +29,9 @@
 #EOP
 #-----------------------------------------------------------------------
 
-_Dsys		= -DsysT3E
+_Dsys		= -DSYST3E
 _Dnod		= -DCACHE_TABLE_OPT1 -DLOOP_BLOCKING
+_DF             = $(_Dsys) $(_Dnod)
 
 # Cray CF90 compiler f90() requires a explicit listing module filenames
 

@@ -27,8 +27,9 @@
 #
 #-----------------------------------------------------------------------
 
-_Dsys		= -DsysIRIX
+_Dsys		= -DSYSIRIX
 _Dnod		= -DCACHE_TABLE_OPT1 -DLOOP_BLOCKING
+_DF             = $(_Dsys) $(_Dnod)
 
 # Environments
 # ============

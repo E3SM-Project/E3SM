@@ -28,8 +28,9 @@
 #EOP
 #-----------------------------------------------------------------------
 
-_Dsys		= -DsysFujitsu
+_Dsys		= -DSYSFUJITSU
 _Dnod		= 
+_DF             = $(_Dsys) $(_Dnod)
 
 # Environments
 # ============

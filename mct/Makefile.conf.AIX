@@ -28,8 +28,9 @@
 #EOP
 #-----------------------------------------------------------------------
 
-_Dsys		= -DsysAIX -DFORTRAN_SAME
+_Dsys		= -DSYSAIX -DFORTRAN_SAME
 _Dnod		= -DCACHE_TABLE_OPT1 -DLOOP_BLOCKING
+_DF             = $(_Dsys) $(_Dnod)
 
 # Environments
 # ============
@@ -61,6 +62,7 @@ _I		= -I. $(_Impeu) $(_IMPI)
 
 SHELL		= /usr/bin/sh
 
+FPP             = $(CPP)
 CPP		= /usr/ccs/lib/cpp
 
 F77		= mpxlf
