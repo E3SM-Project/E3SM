@@ -152,6 +152,8 @@
 !
       use m_String, only : String,char
       use m_List,   only : get
+      use m_die
+      use m_stdio
 
       implicit none
 
@@ -161,6 +163,9 @@
 
 ! !REVISION HISTORY:
 ! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+!       17May01 - R. Jacob <jacob@mcs.anl.gov> - add a check to see if
+!                 input argument has been defined.  SGI will dump
+!                 core if its not.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::initv_'
@@ -168,6 +173,11 @@
 
 	! Convert the two Lists to two Strings
 
+  if(.not.associated(bv%iAttr) .and. .not.associated(bv%rAttr)) then
+    write(stderr,'(2a)')myname_, &
+      'MCTERROR:  Trying to initialize a new AttrVect off an undefined AttrVect'
+      call perr_die(myname_,'undefined input argument',0)
+  endif
   call get(iLStr,bv%iList)
   call get(rLStr,bv%rList)
 
