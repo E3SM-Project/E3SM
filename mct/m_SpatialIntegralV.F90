@@ -5,57 +5,17 @@
 ! CVS $Name$ 
 !BOP -------------------------------------------------------------------
 !
-! !MODULE: m_SpatialIntegralV - Spatial Integrals and Averages
+! !MODULE: m_SpatialIntegralV - Spatial Integrals and Averages using vectors of weights
 !
 ! !DESCRIPTION:  This module provides spatial integration and averaging 
-! services for the MCT.  For a field $\Phi$ sampled at a point ${\bf x}$ 
-! in some multidimensional domain $\Omega$, the integral $I$ of 
-! $\Phi({\bf x})$ is
-! $$ I = \int_{\Omega} \Phi ({\bf x}) d\Omega .$$ 
-! The spatial average $A$ of $\Phi({\bf x})$ over $\Omega$ is
-! $$ A = {{ \int_{\Omega} \Phi ({\bf x}) d\Omega} \over 
-! { \int_{\Omega} d\Omega} }. $$
-! Since the {\tt AttrVect} represents a discretized field, the integrals 
-! above are implemented as:
-! $$ I = \sum_{i=1}^N \Phi_i \Delta \Omega_i $$
-! and 
-! $$ A = {{\sum_{i=1}^N \Phi_i \Delta \Omega_i } \over 
-!{\sum_{i=1}^N \Delta \Omega_i } }, $$
-! where $N$ is the number of physical locations, $\Phi_i$ is the value 
-! of the field $\Phi$ at location $i$, and $\Delta \Omega_i$ is the spatial 
-! weight (lenghth element, cross-sectional area element, volume element, 
-! {\em et cetera}) at location $i$.
+! services for the MCT similar to those in {\tt m\_SpatialIntegral} except
+! the weights are provided by an input vector instead of through a
+! {\tt GeneralGrid}.  See the description for {\tt m\_SpatialIntegral} for
+! more information
 !
-! MCT extends the concept of integrals and area/volume averages to include 
-! {\em masked} integrals and averages.  MCT recognizes both {\em integer}
-! and {\em real} masks.  An integer mask $M$ is a vector of integers (one
-! corresponding to each physical location) with each element having value 
-! either zero or one.  Integer masks are used to include/exclude data from
-! averages or integrals.  For example, if one were to compute globally 
-! averaged cloud amount over land (but not ocean nor sea-ice), one would 
-! assign a $1$ to each location on the land and a $0$ to each non-land 
-! location.  A {\em real} mask $F$ is a vector of real numbers (one corresponding 
-! to each physical location) with each element having value within the 
-! closed interval $[0,1]$.  .Real masks are used to represent fractional 
-! area/volume coverage at a location by a given component model.  For 
-! example, if one wishes to compute area averages over sea-ice, one must 
-! include the ice fraction present at each point.  Masked Integrals and 
-! averages are represented in the MCT by:
-! $$ I = \sum_{i=1}^N {\prod_{j=1}^J M_i} {\prod_{k=1}^K F_i} 
-! \Phi_i \Delta \Omega_i $$
-! and 
-! $$ A = {{\sum_{i=1}^N \bigg({\prod_{j=1}^J M_i}\bigg) \bigg( {\prod_{k=1}^K F_i}
-! \bigg) \Phi_i 
-! \Delta \Omega_i } \over 
-!{\sum_{i=1}^N \bigg({\prod_{j=1}^J M_i}\bigg) \bigg( {\prod_{k=1}^K F_i} \bigg) 
-!  \Delta \Omega_i } }, $$
-! where $J$ is the number of integer masks and $K$ is the number of real masks.
 !
-! All of the routines in this module assume field data is stored in an 
-! attribute vector ({\tt AttrVect}), and the integration/averaging is performed 
-! only on the {\tt REAL} attributes.  Physical coordinate grid and mask 
-! information is assumed to be pre-combined into a single integer mask and a single 
-! real mask.  
+! Paired masked spatial integrals and averages have not yet been implemented in
+! vector form.
 !
 ! !INTERFACE:
 
@@ -1480,7 +1440,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: PairedSpatialIntegralRAttrVSP_ - Two spatial integrals.
+! !IROUTINE: PairedSpatialIntegralRAttrVSP_ - Do two spatial integrals at once.
 !
 ! !DESCRIPTION: 
 ! This routine computes spatial integrals of the {\tt REAL} attributes
@@ -1800,7 +1760,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: PairedSpatialAverageRAttrVSP_ - Two spatial averages.
+! !IROUTINE: PairedSpatialAverageRAttrVSP_ - Do two spatial averages at once.
 !
 ! !DESCRIPTION:
 ! This routine computes spatial averages of the {\tt REAL} attributes
@@ -1931,34 +1891,12 @@
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
-!BOP -------------------------------------------------------------------
+! ----------------------------------------------------------------------
 !
 ! !IROUTINE: PairedSpatialAverageRAttrVDP_ - Two spatial averages.
 !
 ! !DESCRIPTION:
-! This routine computes spatial averages of the {\tt REAL} attributes
-! of the {\tt REAL} attributes of the input {\tt AttrVect} arguments 
-! {\tt inAv1} and {\tt inAv2}, returning the integrals in the output 
-! {\tt AttrVect} arguments {\tt outAv1} and {\tt outAv2}, respectively .  
-! The averages of {\tt inAv1} and {\tt inAv2} are computed using 
-! spatial weights stored in the input {\tt REAL} array arguments  
-! {\tt Weights1} and {\tt Weights2}, respectively.  This paired average 
-! is implicitly a 
-! distributed operation (the whole motivation for pairing the integrals is 
-! to reduce communication latency costs), and the Fortran MPI communicator
-! handle is defined by the input {\tt INTEGER} argument {\tt comm}.  The 
-! summation is an AllReduce operation, with all processes receiving the 
-! global sum.
-!
-! {\bf N.B.:  } The local lengths of the {\tt AttrVect} argument {\tt inAv1} 
-! and the array {\tt Weights} must be equal.  That is, there must be a 
-! one-to-one correspondence between the field point values stored 
-! in {\tt inAv1} and the spatial weights stored in {\tt Weights}
-!
-! {\bf N.B.:  } The output {\tt AttrVect} arguments {\tt outAv1} and 
-! {\tt outAv2} are allocated data structures.  The user must deallocate them
-!  using the routine {\tt AttrVect\_clean()} when they are no longer needed.  
-! Failure to do so will result in a memory leak.
+! Double precision version of PairedSpatialAverageRAttrVSP_
 !
 ! !INTERFACE:
 
@@ -2002,7 +1940,7 @@
 ! !REVISION HISTORY:
 ! 	09May02 - J.W. Larson <larson@mcs.anl.gov> - Initial version.
 !
-!EOP ___________________________________________________________________
+! ______________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::PairedSpatialAverageRAttrVDP_'
 
