@@ -9,12 +9,15 @@
 !
 ! !DESCRIPTION:
 ! This module contains tools for exchanging between two communicators 
-! comm_A and comm_B the global mapping index objects on the two 
-! communicators.
+! {\tt comm\_A} and {\tt comm\_B} the global mapping index objects on 
+! the two communicators.
 !
 ! !INTERFACE:
 
  module m_ExchangeMaps
+
+! !USES:
+! No external modules are used in the declaration section of this module.
 
       implicit none
 
@@ -42,8 +45,8 @@
         ExGSMapGMap_      ! GlobalSegMap for GlobalMap
     end interface
 
-! !PUBLIC DATA MEMBERS:
 
+! !PUBLIC DATA MEMBERS:
                                 ! Map handshaking is implemented as
                                 ! the exchange of an INTEGER array of
                                 ! flags / values.  These are defined
@@ -63,18 +66,6 @@
                                 ! segments in the map:  Number of 
                                 ! processes for a GlobalMap; Number of
                                 ! segments for GlobalSegMap
-! !REVISION HISTORY:
-!       03Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial module
-!       03Aug01 - E.T. Ong <eong@mcs.anl.gov> - in ExGSMapGSMap,
-!                 call GlobalSegMap_init with actual shaped arrays
-!                 for non-root processes to satisfy Fortran 90 standard.
-!                 See comments in subroutine.
-!       15Feb02 - R. Jacob <jacob@mcs.anl.gov> - use MCT_comm instead of
-!		  MP_COMM_WORLD
-!EOP ___________________________________________________________________
-
-
-  character(len=*),parameter :: myname='m_ExchangeMaps'
 
 ! Map Handshaking Parameters:  Map handshaking occurs via 
 ! exchange of an array of INTEGER flags.
@@ -112,6 +103,18 @@
   ! For a GlobalSegMap, this is the number of global segments (ngseg).
 
   integer, parameter :: NumSegIndex = 4
+
+! !REVISION HISTORY:
+!  3Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial module
+!  3Aug01 - E.T. Ong <eong@mcs.anl.gov> - in ExGSMapGSMap,
+!           call GlobalSegMap_init with actual shaped arrays
+!           for non-root processes to satisfy Fortran 90 standard.
+!           See comments in subroutine.
+! 15Feb02 - R. Jacob <jacob@mcs.anl.gov> - use MCT_comm instead of
+!           MP_COMM_WORLD
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname='m_ExchangeMaps'
 
  contains
 
@@ -160,9 +163,9 @@
       integer, intent(out) :: RemoteMapPars(NumHandshakePars)
 
 ! !REVISION HISTORY:
-!       06Feb01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
-!       20Apr01 - R.L. Jacob  <jacob@mcs.anl.gov> - add status argument
-!                 to MPI_RECV
+!  6Feb01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
+! 20Apr01 - R.L. Jacob  <jacob@mcs.anl.gov> - add status argument
+!           to MPI_RECV
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::MapHandshake_'
@@ -236,7 +239,7 @@
       integer,         intent(out) :: MapPars(NumHandshakePars)
 
 ! !REVISION HISTORY:
-!       06Feb01 - J.W. Larson <larson@mcs.anl.gov> - Initial version.
+!  6Feb01 - J.W. Larson <larson@mcs.anl.gov> - Initial version.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::LoadGlobalMapPars_'
@@ -287,7 +290,7 @@
       integer,            intent(out) :: MapPars(NumHandshakePars)
 
 ! !REVISION HISTORY:
-!       06Feb01 - J.W. Larson <larson@mcs.anl.gov> - Initial version.
+!  6Feb01 - J.W. Larson <larson@mcs.anl.gov> - Initial version.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::LoadGlobalSegMapPars_'
@@ -323,17 +326,22 @@
 
       implicit none
 
+! !INPUT PARAMETERS: 
+
       type(GlobalMap), intent(in)  :: LocalGMap      ! Local GlobalMap
       integer,         intent(in)  :: LocalComm      ! Local Communicator
-      type(GlobalMap), intent(out) :: RemoteGMap     ! Remote GlobalMap
       integer        , intent(in)  :: Remote_comp_id ! Remote component id
+
+! !OUTPUT PARAMETERS: 
+
+      type(GlobalMap), intent(out) :: RemoteGMap     ! Remote GlobalMap
       integer        , intent(out) :: ierr           ! Error Flag
 
 ! !REVISION HISTORY:
-!       03Feb01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
-!       20Apr01 - R.L. Jacob  <larson@mcs.anl.gov> - bug fix.  Use
-!                 NumSegIndex instead of GsizeIndex for start,length,
-!                 pe_loc arrays.
+!  3Feb01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
+! 20Apr01 - R.L. Jacob  <larson@mcs.anl.gov> - bug fix.  Use
+!           NumSegIndex instead of GsizeIndex for start,length,
+!           pe_loc arrays.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::ExGMapGMap_'
@@ -367,22 +375,27 @@
 
       implicit none
 
-      type(GlobalSegMap), intent(in)  :: LocalGSMap  ! Local GlobalSegMap
-      integer,            intent(in)  :: LocalComm   ! Local Communicator
+! !INPUT PARAMETERS: 
+
+      type(GlobalSegMap), intent(in)  :: LocalGSMap   ! Local GlobalSegMap
+      integer,            intent(in)  :: LocalComm    ! Local Communicator
+      integer        ,    intent(in)  :: RemoteCompID ! Remote component id
+
+! !OUTPUT PARAMETERS: 
+
       type(GlobalSegMap), intent(out) :: RemoteGSMap ! Remote GlobalSegMap
-      integer        , intent(in)  :: RemoteCompID   ! Remote component id
-      integer        , intent(out) :: ierr           ! Error Flag
+      integer,            intent(out) :: ierr        ! Error Flag
 
 ! !REVISION HISTORY:
-!       03Feb01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
-!       07Feb01 - J.W. Larson <larson@mcs.anl.gov> - First full version.
-!       20Apr01 - R.L. Jacob  <jacob@mcs.anl.gov> - add status argument
-!                 to MPI_RECV
-!       25Apr01 - R.L. Jacob  <jacob@mcs.anl.gov> - set SendTag and
-!                 RecvTag values
-!       03May01 - R.L. Jacob <jacob@mcs.anl.gov> - change MPI_SEND to
-!                 MPI_ISEND to avoid possible buffering problems seen
-!                 on IBM SP.
+!  3Feb01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
+!  7Feb01 - J.W. Larson <larson@mcs.anl.gov> - First full version.
+! 20Apr01 - R.L. Jacob  <jacob@mcs.anl.gov> - add status argument
+!           to MPI_RECV
+! 25Apr01 - R.L. Jacob  <jacob@mcs.anl.gov> - set SendTag and
+!           RecvTag values
+!  3May01 - R.L. Jacob <jacob@mcs.anl.gov> - change MPI_SEND to
+!           MPI_ISEND to avoid possible buffering problems seen
+!           on IBM SP.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::ExGSMapGSMap_'
@@ -568,14 +581,20 @@
 
       implicit none
 
-      type(GlobalMap),    intent(in)  :: LocalGMap   ! Local GlobalMap
-      integer,            intent(in)  :: LocalComm   ! Local Communicator
+! !INPUT PARAMETERS: 
+
+      type(GlobalMap),    intent(in)  :: LocalGMap      ! Local GlobalMap
+      integer,            intent(in)  :: LocalComm      ! Local Communicator
+      integer,            intent(in)  :: Remote_comp_id ! Remote component id
+
+
+! !OUTPUT PARAMETERS: 
+
       type(GlobalSegMap), intent(out) :: RemoteGSMap ! Remote GlobalSegMap
-      integer        , intent(in)  :: Remote_comp_id ! Remote component id
-      integer        , intent(out) :: ierr           ! Error Flag
+      integer,            intent(out) :: ierr        ! Error Flag
 
 ! !REVISION HISTORY:
-!       03Feb01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
+!  3Feb01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::ExGMapGSMap_'
@@ -609,14 +628,19 @@
 
       implicit none
 
+! !INPUT PARAMETERS: 
+
       type(GlobalSegMap), intent(in)  :: LocalGSMap  ! Local GlobalSegMap
       integer,            intent(in)  :: LocalComm   ! Local Communicator
+      integer,            intent(in)  :: Remote_comp_id ! Remote component id
+
+! !OUTPUT PARAMETERS: 
+
       type(GlobalMap),    intent(out) :: RemoteGMap  ! Remote GlobalMap
-      integer        , intent(in)  :: Remote_comp_id ! Remote component id
-      integer        , intent(out) :: ierr           ! Error Flag
+      integer,            intent(out) :: ierr        ! Error Flag
 
 ! !REVISION HISTORY:
-!       03Feb01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
+!  3Feb01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::ExGSMapGMap_'
