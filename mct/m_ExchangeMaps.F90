@@ -62,6 +62,10 @@
                                 ! segments for GlobalSegMap
 
 !       03Feb01 - J.W. Larson <larson@mcs.anl.gov> - initial module
+!       03Aug01 - E.T. Ong <eong@mcs.anl.gov> - in ExGSMapGSMap,
+!                 call GlobalSegMap_init with actual shaped arrays
+!                 for non-root processes to satisfy Fortran 90 standard.
+!                 See comments in subroutine.
 !EOP ___________________________________________________________________
 
 
@@ -508,17 +512,43 @@
 
   endif ! if(myID == root)
 
+        ! Non-root processes call GlobalSegMap_init with start, 
+        ! length, and pe_loc, although these arguments are 
+        ! not used in the subroutine. Since these correspond to dummy 
+        ! shaped array arguments in GlobalSegMap_init, the Fortran 90 
+        ! standard dictates that the actual arguments must contain 
+        ! complete shape information. Therefore, these array arguments 
+        ! must be allocated on all processes.
+
+  if(myID /= root) then
+     
+      allocate(start(1), length(1), pe_loc(1), stat=ierr)
+      if(ierr /= 0) then
+	 call MP_perr_die(myname_,'non-root allocate(start...',ierr)
+      endif
+
+  endif
+  
+
       ! Initialize the Remote GlobalSegMap RemoteGSMap
 
   call GlobalSegMap_init(RemoteGSMap, RemoteMapPars(NumSegIndex), &
                          start, length, pe_loc, root, LocalComm,  &
 			 RemoteCompID, RemoteMapPars(GsizeIndex))
 
+
+      ! Deallocate allocated arrays
+
+  deallocate(start, length, pe_loc, stat=ierr)
+  if(ierr /= 0) then
+     call MP_perr_die(myname_,'deallocate(start...',ierr)
+  endif
+
       ! Deallocate allocated arrays on the root:
 
   if(myID == root) then
      
-     deallocate(SendBuf, RecvBuf, start, length, pe_loc, stat=ierr)
+     deallocate(SendBuf, RecvBuf, stat=ierr)
      if(ierr /= 0) then
 	call MP_perr_die(myname_,'deallocate(SendBuf...',ierr)
      endif
