@@ -426,10 +426,13 @@ end function luavail
 #ifdef sysAIX
   call flush_(lu)      ! Function defined in xlf reference document.
 #endif
-#if sysLinux || NAG || sysOSF1 || sysSunOS || sysUNICOS || sysT3E || sysFujitsu
+#ifdef NAG
+  call flush(lu,ier)
+#else
+#if sysLinux || sysOSF1 || sysSunOS || sysUNICOS || sysT3E || sysFujitsu
   call flush(lu)
 #endif
-
+#endif
 
 end subroutine luflush
 !-----------------------------------------------------------------------
