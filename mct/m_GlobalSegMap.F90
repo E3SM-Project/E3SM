@@ -424,7 +424,8 @@
 ! 	10Jan01 - J.W. Larson <larson@mcs.anl.gov> - minor bug fix
 ! 	12Jan01 - J.W. Larson <larson@mcs.anl.gov> - minor bug fix regarding
 !                                                    disparities in ngseg on
-!                                                    the root and other pe's
+!                                                    the root and other 
+!                                                    processes
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::initr_'
@@ -523,7 +524,7 @@
      endif
   endif
 
-        ! Broadcast the root process' (integer) value of GSMap%comm
+        ! Broadcast the root process (integer) value of GSMap%comm
 
   call MPI_BCAST(GSMap%comm, 1, MP_INTEGER, root, my_comm, ier)
   if(ier/=0) call MP_perr_die(myname_, 'MPI_BCAST(GSMap%comm)', ier)

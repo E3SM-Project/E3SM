@@ -595,7 +595,7 @@
 
         ! If both rIndex(n) and iIndex(n) are nonpositive,
         ! then the requested sort key is not present in either
-        ! aV%rList or aV%iList, and we can't perform the sort.
+        ! aV%rList or aV%iList, and we cannot perform the sort.
         ! This is a fatal error
 
      if ((rIndex(n) <= 0) .and. (iIndex(n) <= 0)) then
@@ -659,7 +659,7 @@
      endif
   enddo
 
-        ! Now perm(1:length) is the transformation we seek--we're
+        ! Now perm(1:length) is the transformation we seek--we are
         ! finished.
 
   deallocate(iIndex, rIndex, stat=ierr)  ! clean up allocated arrays.

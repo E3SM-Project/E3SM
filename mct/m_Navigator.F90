@@ -189,7 +189,7 @@ end function msize_
 !
 ! !DESCRIPTION:
 !
-!       It is user's responsibility to ensure lsize is no greater than
+!       The user is responsibile for ensuring lsize is no greater than
 !   the maximum size of the vector.
 !
 !       If lsize is not specified, the size of the vector is adjusted
@@ -219,7 +219,7 @@ end subroutine resize_
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: get_ - get an entry according to the user's preference
+! !IROUTINE: get_ - get an entry according to user preference.
 !
 ! !DESCRIPTION:
 !
@@ -243,8 +243,7 @@ end subroutine resize_
   character(len=*),parameter :: myname_=myname//'::get_'
 
 	! No checking is done here to ensure the entry is a valid.
-	! It is the user's responsibility to ensure the index is
-	! valid.
+	! The user must ensure the index is valid.
 
   if(present(displ)) displ=nav%displs(inav)
   if(present(count)) count=nav%counts(inav)

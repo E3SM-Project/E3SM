@@ -334,7 +334,7 @@
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: getIList_ - get an item from the integer attribute list 
-! in the accumulator's data storage area (i.e. its AttrVect component).
+! in the accumulator data storage area (i.e. its AttrVect component).
 !
 ! !DESCRIPTION:
 !
@@ -367,7 +367,7 @@
 !BOP -------------------------------------------------------------------
 !
 ! !IROUTINE: getRList_ - get an item from real attribute list in the
-! accumulator's data storage space (i.e. its AttrVect component).
+! accumulator data storage space (i.e. its AttrVect component).
 !
 ! !DESCRIPTION:
 !
@@ -399,7 +399,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: indexIA_ - index the Accumulator's integer attribute List.
+! !IROUTINE: indexIA_ - index the Accumulator integer attribute List.
 !
 ! !DESCRIPTION:
 !
@@ -446,7 +446,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: indexRA_ - index the Accumulator's real attribute list.
+! !IROUTINE: indexRA_ - index the Accumulator real attribute list.
 !
 ! !DESCRIPTION:
 !

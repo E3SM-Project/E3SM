@@ -26,13 +26,13 @@
       public :: init            ! Create a Router
       public :: clean           ! Destroy a Router
 
-!  if I'm the sending model, then on return pe_list is the
+!  if I am the sending model, then on return pe_list is the
 !  processor ranks in the remote model to send to, num_segs
 !  is how many segments of my GlobalSegMap to send to each, seg_starts
 !  is the starting place for each segment and each destination processor
 !  and seg_lengths is the total length of each segment, for each processor
 !
-!  if I'm the receiving model, the on return pe_list is the
+!  if I am the receiving model, the on return pe_list is the
 !  the processors to receive from, num_segs
 !  
     type Router

@@ -192,8 +192,8 @@ contains
       type(GlobalMap),intent(out) :: GMap
       integer, dimension(:) :: remote_lns     ! distributed sizes on 
                                               ! the remote communicator
-      integer            :: remote_npes       ! number of pe's on remote 
-                                              ! communicator
+      integer            :: remote_npes       ! number of processes
+                                              ! on remote communicator
       integer,intent(in) :: my_root           ! my root
       integer,intent(in) :: my_comm           ! my communicator
       integer,intent(in) :: remote_comm       ! remote communicator
@@ -227,7 +227,7 @@ contains
 #endif
 
         ! On the Root processor, check the size of remote_lns(:)
-        ! to see it is equal to nPEs, the number of remote pe's,
+        ! to see it is equal to nPEs, the number of remote processes,
         ! then store it as GMap%counts and broadcast it.
 
   if(myID == my_root) then

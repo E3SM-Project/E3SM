@@ -85,7 +85,7 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: sMatAvMult_gm_xdyl_() -- Multiply, x dist'd with GlobalMap.
+! !IROUTINE: sMatAvMult_gm_xdyl_() -- Multiply, x GlobalMap distributed.
 !
 ! !DESCRIPTION:
 !
@@ -122,7 +122,7 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: sMatAvMult_gsm_xdyl_() -- Multiply, x dist'd with GlobalSegMap.
+! !IROUTINE: sMatAvMult_gsm_xdyl_() -- Multiply, x GlobalSegMap distributed.
 !
 ! !DESCRIPTION:
 !
@@ -158,7 +158,7 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: sMatAvMult_gm_xlyd_() -- Multiply, y dist'd with GlobalMap.
+! !IROUTINE: sMatAvMult_gm_xlyd_() -- Multiply, y GlobalMap distributed.
 !
 ! !DESCRIPTION:
 !
@@ -195,7 +195,7 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: sMatAvMult_gsm_xlyd_() -- Multiply, x dist'd with GlobalSegMap.
+! !IROUTINE: sMatAvMult_gsm_xlyd_() -- Multiply, x GlobalSegMap distributed.
 !
 ! !DESCRIPTION:
 !
@@ -232,7 +232,7 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: sMatAvMult_gm_xdyd_() -- Multiply, x and y GlobalMap dist'd.
+! !IROUTINE: sMatAvMult_gm_xdyd_() -- Multiply, x, y GlobalMap distributed.
 !
 ! !DESCRIPTION:
 !
@@ -270,7 +270,7 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: sMatAvMult_gsm_xdyd_() -- Mult., x and y GlobalSegMap dist'd.
+! !IROUTINE: sMatAvMult_gsm_xdyd_() -- Mult., x,y GlobalSegMap distributed.
 !
 ! !DESCRIPTION:
 !

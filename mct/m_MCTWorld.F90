@@ -5,7 +5,7 @@
 ! !MODULE: m_MCTWorld -- MCTWorld Class
 !
 ! !DESCRIPTION:
-! Summarize the number of things MCT is hooked up to and how they're
+! Summarize the number of things MCT is hooked up to and how they are
 ! distributed on processors.  Every component MCT is communicating
 ! with must call this routine once.
 !
@@ -90,7 +90,7 @@
   integer,dimension(:),pointer :: apoint
 ! ------------------------------------------------------------------
 
-! make sure this hasn't been called already
+! make sure this has not been called already
   if(associated(ThisMCTWorld%allids) ) then
      write(stderr,'(2a)') myname_, &
       'Trying to initialize MCTWorld twice'
@@ -129,7 +129,7 @@
   endif
 
 !!!!!!!!!!!!!!!!!!
-!  Gather the component id from each component's root
+!  Gather the component id from the root of each component
 !!!!!!!!!!!!!!!!!!
 !
 !  First on the global root, post a receive for each component
@@ -141,7 +141,7 @@
     enddo
   endif
 
-!  Each component's local root sends
+!  The root on each component sends
   if(myLid == 0) then
     call MPI_SEND(myid,1,MP_INTEGER,0,myid,MP_COMM_WORLD,ier)
     if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL()',ier)
@@ -169,7 +169,7 @@
 
 
 !!!!!!!!!!!!!!!!!!
-!  Gather the number of procs from each component's root
+!  Gather the number of procs from the root of each component
 !!!!!!!!!!!!!!!!!!
 !
 !  First on the global root, post a receive for each component
@@ -181,7 +181,7 @@
     enddo
   endif
 
-!  Each component's local root sends
+!  The local root on each component sends
   if(myLid == 0) then
     call MPI_SEND(mysize,1,MP_INTEGER,0,myid,MP_COMM_WORLD,ier)
     if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL()',ier)
@@ -248,7 +248,7 @@
     enddo
   endif
 
-!  Each component's local root sends
+!  The root on each component sends
   if(myLid == 0) then
     call MPI_SEND(Gprocids,mysize,MP_INTEGER,0,myid,MP_COMM_WORLD,ier)
     if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND(Gprocids)',ier)

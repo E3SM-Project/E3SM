@@ -87,7 +87,7 @@
 !                 GeneralGrid type to allow inclusion of grid cell
 !                 dimensions (lengths) and area/volume weights.
 !       15Jan01 - J.W. Larson implemented new GeneralGrid type 
-!                 definition and added numerous API's.
+!                 definition and added numerous APIs.
 !       17Jan01 - J.W. Larson fixed minor bug in module header use
 !                 statement.
 !EOP ___________________________________________________________________

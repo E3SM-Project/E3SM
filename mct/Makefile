@@ -35,7 +35,7 @@ OBJS_ALL	= $(SRCS_f:.f=.o)	\
 		  $(SRCS_C:.c=.o)
 
 ARCH_TARGETS	= $(SRCS_mks) $(SRCS_ALL)
-ALL_TARGETS	= lib$(MODULE).a doc
+ALL_TARGETS	= lib$(MODULE).a
 
 #	Try to define _Ddft, _Dsys and _Dnod in proper Makefiles.
 #
