@@ -60,11 +60,19 @@ F77		= f90
 F90		= f90
 FC		= $(F90)
 
-FOPT_normal	= -O5 -fast -tune host -convert big_endian -automatic
+#
+# -fast       Sets the following command options that can improve run-time
+#             performance: -align dcommons, -arch host, -assume
+#             noaccuracy_sensitive, -math_library fast, -O4 (the default),
+#             and -tune host.  For f90 and f95, -fast also sets -align
+#             sequence, -assume bigarrays, and -assume nozsize.  The default
+#             is -nofast.
+
+FOPT_normal	= -fast -convert big_endian -automatic
 FOPT_indxck	= -g -convert big_endian -check bounds -automatic
 FOPT_syntax	= -syntax_only
 
-FFLAGS		= $(FOPT_indxck)
+#FFLAGS		= $(FOPT_indxck)
 FFLAGS		= $(FOPT_normal)
 
 ZIP		= /usr/bin/compress
@@ -102,7 +110,7 @@ FPPFLAGS	= $(F90PPFLAGS)
 .F.o:
 	$(RM) $*.f
 	$(FPP) $(FPPFLAGS) $(_DF) $(_I) $*.F $*.f
-	$(FC) -c $(FCFLAGS) $(_I) $*.f;		\
+	$(FC) -c $(FFLAGS) $(_I) $*.f;		\
 	  if [ $$? -ne 0 ]; then $(RM) $*.o; fi
 	$(RM) $*.f
 
@@ -110,7 +118,7 @@ FPPFLAGS	= $(F90PPFLAGS)
 .F90.o:
 	$(RM) $*.f90
 	$(FPP) $(FPPFLAGS) $(_DF) $(_I) $*.F90 $*.f90
-	$(FC) -c $(FCFLAGS) $(_I) $*.f90;	\
+	$(FC) -c $(FFLAGS) $(_I) $*.f90;	\
 	  if [ $$? -ne 0 ]; then $(RM) $*.o; fi
 	$(RM) $*.f90
 
