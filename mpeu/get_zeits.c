@@ -43,7 +43,7 @@ Kept the difference for reference.
 #  define FORTRAN_CAPS_
 #endif
 
-#ifdef ABSOFT
+#ifdef CPRABSOFT
 #  define FORTRAN_CAPS_
 #endif
 
