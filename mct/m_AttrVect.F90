@@ -2233,13 +2233,14 @@
 
 	else
 
-	   do i=1,num_indices
-	      outx=aVoutindices(i)
-	      inx=aVinindices(i)
-	      do j=1,aVsize
-		 aVout%rAttr(outx,j) = aVin%rAttr(inx,j)
-	      enddo
-	   enddo
+           do j=1,aVsize
+              do i=1,num_indices
+                 outx=aVoutindices(i)
+                 inx=aVinindices(i)     
+                 aVout%rAttr(outx,j) = aVin%rAttr(inx,j)
+              enddo
+           enddo
+
 	endif
 
 	deallocate(aVinindices, aVoutindices, stat=ier)
@@ -2299,13 +2300,13 @@
 
 	else
 
-	   do i=1,num_indices
-	      outx=aVoutindices(i)
-	      inx=aVinindices(i)
-	      do j=1,aVsize
-		 aVout%iAttr(outx,j) = aVin%iAttr(inx,j)
-	      enddo
-	   enddo
+           do j=1,aVsize
+              do i=1,num_indices
+                 outx=aVoutindices(i)
+                 inx=aVinindices(i)     
+                 aVout%iAttr(outx,j) = aVin%iAttr(inx,j)
+              enddo
+           enddo
 
 	endif
                 
@@ -2336,27 +2337,31 @@
         enddo
      endif
      
-     ! Start copying (arranged loop order optimized for xlf90)
-     if( contiguous .and. (num_indices > 0) ) then
+     ! Start copying 
+     if(num_indices > 0) then
 
-        outxmin=aVoutindices(1)-1
-        inxmin=aVinindices(1)-1
-        do j=1,aVsize
-           do i=1,num_indices
-              aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)
+        if(contiguous) then
+
+           outxmin=aVoutindices(1)-1
+           inxmin=aVinindices(1)-1
+           do j=1,aVsize
+              do i=1,num_indices
+                 aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)
+              enddo
            enddo
-        enddo
 
-     else
-
-	do i=1,num_indices
-	   outx=aVoutindices(i)
-	   inx=aVinindices(i)
-	   do j=1,aVsize
-              aVout%rAttr(outx,j) = aVin%rAttr(inx,j)
+        else
+           
+           do j=1,aVsize
+              do i=1,num_indices
+                 outx=aVoutindices(i)
+                 inx=aVinindices(i)     
+                 aVout%rAttr(outx,j) = aVin%rAttr(inx,j)
+              enddo
            enddo
-        enddo
         
+        endif
+
      endif
 
      deallocate(aVinindices, aVoutindices,stat=ier)
@@ -2378,27 +2383,31 @@
         enddo
      endif
 
-     ! Start copying (arranged loop order optimized for xlf90)
-     if( contiguous .and. (num_indices > 0) ) then
+     ! Start copying 
+     if(num_indices > 0) then
+
+        if(contiguous) then
       
-        outxmin=aVoutindices(1)-1
-        inxmin=aVinindices(1)-1
-        do j=1,aVsize
-           do i=1,num_indices
-              aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)
+           outxmin=aVoutindices(1)-1
+           inxmin=aVinindices(1)-1
+           do j=1,aVsize
+              do i=1,num_indices
+                 aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)
+              enddo
            enddo
-        enddo
 
-     else
+        else
 
-	do i=1,num_indices
-	   outx=aVoutindices(i)
-	   inx=aVinindices(i)
-	   do j=1,aVsize
-             aVout%iAttr(outx,j) = aVin%iAttr(inx,j)
+           do j=1,aVsize
+              do i=1,num_indices
+                 outx=aVoutindices(i)
+                 inx=aVinindices(i)     
+                 aVout%iAttr(outx,j) = aVin%iAttr(inx,j)
+              enddo
            enddo
-        enddo
         
+        endif
+
      endif
 
      deallocate(aVinindices, aVoutindices,stat=ier)
