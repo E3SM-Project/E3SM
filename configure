@@ -2040,7 +2040,7 @@ ac_compile='$F90 -c $F90FLAGS conftest.$ac_ext >&5'
 ac_link='$F90 -o conftest$ac_exeext $F90FLAGS $LD90FLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_f90_compiler_gnu
 if test -n "$ac_tool_prefix"; then
-  for ac_prog in f90 xlf90 pgf90 ftn frt esf90 epcf90 f95 xlf95 lf95 ifc efc fort g95
+  for ac_prog in f90 xlf90 pgf90 ftn frt f95 ifort efc ifc lf95 xlf95 fort g95
   do
     # Extract the first word of "$ac_tool_prefix$ac_prog", so it can be a program name with args.
 set dummy $ac_tool_prefix$ac_prog; ac_word=$2
@@ -2082,7 +2082,7 @@ fi
 fi
 if test -z "$F90"; then
   ac_ct_F90=$F90
-  for ac_prog in f90 xlf90 pgf90 ftn frt esf90 epcf90 f95 xlf95 lf95 ifc efc fort g95
+  for ac_prog in f90 xlf90 pgf90 ftn frt f95 ifort efc ifc lf95 xlf95 fort g95
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -3459,8 +3459,8 @@ MACHDEFS="-DCPREPC $MACHDEFS";;
 lf95)
 echo "Fortran Compiler is Lahey"
 MACHDEFS="-DCPRLAHEY $MACHDEFS";;
-ifc | efc)
-echo "Fortran Compiler is Intel"
+ifc)
+echo "Fortran Compiler is Intel IA-32"
 MACHDEFS="-DCPRINTEL $MACHDEFS"
 if test -z "$REAL8"; then
    REAL8="-r8"
@@ -3471,7 +3471,32 @@ fi
 if test -z "$OPT"; then
    OPT="-O2"
 fi
-echo "Intel Compilers must set the environment variable F_UFMTENDIAN=big to do endian conversion";;
+echo "Intel ifc compiler must set the environment variable F_UFMTENDIAN=big to do endian conversion";;
+efc)
+echo "Fortran Compiler is Intel Itanium"
+MACHDEFS="-DCPRINTEL $MACHDEFS"
+if test -z "$REAL8"; then
+   REAL8="-r8"
+fi
+if test -z "$F90FLAGS"; then
+   F90FLAGS="-w -ftz"
+fi
+if test -z "$OPT"; then
+   OPT="-O2"
+fi
+echo "Intel efc compiler must set the environment variable F_UFMTENDIAN=big to do endian conversion";;
+ifort)
+echo "Fortran Compiler is Intel Itanium"
+MACHDEFS="-DCPRINTEL $MACHDEFS"
+if test -z "$REAL8"; then
+   REAL8="-r8"
+fi
+if test -z "$F90FLAGS"; then
+   F90FLAGS="-w -ftz -assume byterecl -convert big_endian"
+fi
+if test -z "$OPT"; then
+   OPT="-O2"
+fi;;
 g95)
 echo "Fortran Compiler is GNU"
 MACHDEFS="-DCPRGNU $MACHDEFS";;

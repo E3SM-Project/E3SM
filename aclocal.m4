@@ -383,7 +383,7 @@ AC_ARG_VAR([F90FLAGS], [Fortran 90 compiler flags])dnl
 _AC_ARG_VAR_LDFLAGS()dnl
 AC_CHECK_TOOLS(F90,
       [m4_default([$1],
-                  [f90 xlf90 pgf90 ftn frt esf90 epcf90 f95 xlf95 lf95 ifc efc fort g95])])
+                  [f90 xlf90 pgf90 ftn frt f95 ifort efc ifc lf95 xlf95 fort g95])])
 
 ac_ext=f90
 AC_MSG_CHECKING([Fortran compiler source file extension])

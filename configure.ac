@@ -378,8 +378,8 @@ MACHDEFS="-DCPREPC $MACHDEFS";;
 lf95) 
 echo "Fortran Compiler is Lahey"
 MACHDEFS="-DCPRLAHEY $MACHDEFS";;
-ifc | efc)
-echo "Fortran Compiler is Intel"
+ifc)
+echo "Fortran Compiler is Intel IA-32"
 MACHDEFS="-DCPRINTEL $MACHDEFS"
 if test -z "$REAL8"; then
    REAL8="-r8"
@@ -390,7 +390,32 @@ fi
 if test -z "$OPT"; then
    OPT="-O2"
 fi
-echo "Intel Compilers must set the environment variable F_UFMTENDIAN=big to do endian conversion";;
+echo "Intel ifc compiler must set the environment variable F_UFMTENDIAN=big to do endian conversion";;
+efc)
+echo "Fortran Compiler is Intel Itanium"
+MACHDEFS="-DCPRINTEL $MACHDEFS"
+if test -z "$REAL8"; then
+   REAL8="-r8"
+fi
+if test -z "$F90FLAGS"; then
+   F90FLAGS="-w -ftz"
+fi
+if test -z "$OPT"; then
+   OPT="-O2"
+fi
+echo "Intel efc compiler must set the environment variable F_UFMTENDIAN=big to do endian conversion";;
+ifort)
+echo "Fortran Compiler is Intel Itanium"
+MACHDEFS="-DCPRINTEL $MACHDEFS"
+if test -z "$REAL8"; then
+   REAL8="-r8"
+fi
+if test -z "$F90FLAGS"; then
+   F90FLAGS="-w -ftz -assume byterecl -convert big_endian"
+fi
+if test -z "$OPT"; then
+   OPT="-O2"
+fi;;
 g95)
 echo "Fortran Compiler is GNU"
 MACHDEFS="-DCPRGNU $MACHDEFS";;
