@@ -49,6 +49,8 @@
       public :: getRList        ! return list of real attributes
       public :: exportIList     ! export INTEGER attibute List
       public :: exportRList     ! export REAL attibute List
+      public :: exportIListToChar ! export INTEGER attibute List as Char
+      public :: exportRListToChar ! export REAL attibute List as Char
       public :: exportIAttr     ! export INTEGER attribute to vector
       public :: exportRAttr     ! export REAL attribute to vector
       public :: importIAttr     ! import INTEGER attribute from vector
@@ -73,6 +75,12 @@
     interface getRList; module procedure getRList_; end interface
     interface exportIList; module procedure exportIList_; end interface
     interface exportRList; module procedure exportRList_; end interface
+    interface exportIListToChar
+       module procedure exportIListToChar_
+    end interface
+    interface exportRListToChar
+       module procedure exportRListToChar_
+    end interface
     interface exportIAttr; module procedure exportIAttr_; end interface
     interface exportRAttr; module procedure exportRAttr_; end interface
     interface importIAttr; module procedure importIAttr_; end interface
@@ -97,6 +105,8 @@
 !                 and importRAttr() public (bug fix).
 !       14Dec01 - J.W. Larson <larson@mcs.anl.gov> - added exportIList()
 !                 and exportRList().
+!       14Feb02 - J.W. Larson <larson@mcs.anl.gov> - added CHARCTER
+!                 functions exportIListToChar() and exportRListToChar()
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='m_AttrVect'
@@ -837,6 +847,8 @@
 
       use m_List,  only : List
       use m_List,  only : List_allocated => allocated
+      use m_List,  only : List_copy => copy
+      use m_List,  only : List_nullify => nullify
 
       implicit none
 
@@ -861,8 +873,9 @@
   if(present(status)) status = 0
 
   if(List_allocated(aV%iList)) then
-     call List_copy(aV%iList, outIList)
+     call List_copy(outIList, aV%iList)
   else
+     call List_nullify(outIList)
      if(present(status)) then
 	status = 1
      else
@@ -903,6 +916,8 @@
 
       use m_List,  only : List
       use m_List,  only : List_allocated => allocated
+      use m_List,  only : List_copy => copy
+      use m_List,  only : List_nullify => nullify
 
       implicit none
 
@@ -927,8 +942,9 @@
   if(present(status)) status = 0
 
   if(List_allocated(aV%rList)) then
-     call List_copy(aV%rList, outRList)
+     call List_copy(outRList, aV%rList)
   else
+     call List_nullify(outRList)
      if(present(status)) then
 	status = 1
      else
@@ -937,6 +953,108 @@
   endif
 
  end subroutine exportRList_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: exportIListToChar_ - return AttrVect%iList as CHARACTER
+!
+! !DESCRIPTION:
+! This routine extracts from the input {\tt AttrVect} argument {\tt aV} 
+! the integer attribute list, and returns it as a {\tt CHARACTER}.
+!
+! !INTERFACE:
+
+ function exportIListToChar_(aV)
+
+!
+! !USES:
+!
+      use m_die ,  only : die
+      use m_stdio, only : stderr
+
+      use m_List,  only : List
+      use m_List,  only : List_allocated => allocated
+      use m_List,  only : List_exportToChar => exportToChar
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      type(AttrVect),       intent(in) :: aV
+
+! !OUTPUT PARAMETERS: 
+
+      character(len=size(aV%iList%bf)) :: exportIListToChar_
+
+! !REVISION HISTORY:
+! 	13Feb02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::exportIListToChar_'
+
+       ! Extract the INTEGER attribute list to a character:
+
+  if(List_allocated(aV%iList)) then
+     exportIListToChar_ = List_exportToChar(aV%iList)
+  else
+     call die(myname_)
+  endif
+
+ end function exportIListToChar_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: exportRListToChar_ - Return AttrVect%rList as CHARACTER
+!
+! !DESCRIPTION:
+! This routine extracts from the input {\tt AttrVect} argument {\tt aV} 
+! the real attribute list, and returns it as a {\tt CHARACTER}.
+!
+! !INTERFACE:
+
+ function exportRListToChar_(aV)
+
+!
+! !USES:
+!
+      use m_die ,  only : die
+      use m_stdio, only : stderr
+
+      use m_List,  only : List
+      use m_List,  only : List_allocated => allocated
+      use m_List,  only : List_exportToChar => exportToChar
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      type(AttrVect),       intent(in) :: aV
+
+! !OUTPUT PARAMETERS: 
+
+      character(len=size(aV%rList%bf)) :: exportRListToChar_
+
+! !REVISION HISTORY:
+! 	13Feb02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::exportRListToChar_'
+
+       ! Extract the REAL attribute list to a character:
+
+  if(List_allocated(aV%rList)) then
+     exportRListToChar_ = List_exportToChar(aV%rList)
+  else
+     call die(myname_)
+  endif
+
+ end function exportRListToChar_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
