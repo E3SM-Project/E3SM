@@ -54,7 +54,7 @@
 !
 ! !INTERFACE:
 
- subroutine sMatAvMult_xlyl_(xaV, sMat, yaV)
+ subroutine sMatAvMult_xlyl_(xaV, sMat, yaV, InterpInts)
 !
 ! !USES:
 !
@@ -78,9 +78,11 @@
 
       implicit none
 
-      type(AttrVect),     intent(in  )  :: xaV
-      type(AttrVect),     intent(inout) :: yaV
+      type(AttrVect),     intent(in)    :: xaV
       type(SparseMatrix), intent(in)    :: sMat
+      logical, optional,  intent(in)    :: InterpInts
+
+      type(AttrVect),     intent(inout) :: yaV
 
 ! !REVISION HISTORY:
 !       15Jan01 - J.W. Larson <larson@mcs.anl.gov> - API specification.
@@ -91,6 +93,9 @@
 !                 for cache-friendliness
 !       17May01 - R. Jacob <jacob@mcs.anl.gov> - Zero the output
 !                 attribute vector
+!       10Oct01 - J. Larson <larson@mcs.anl.gov> - Added optional LOGICAL
+!                 input argument InterpInts to make application of the
+!                 multiply to INTEGER attributes optional
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::sMatAvMult_xlyl_'
@@ -164,36 +169,44 @@
      call MP_perr_die(myname_,'first deallocate(xaVindices...',ierr)
   endif
 
-       ! Regrid the INTEGER Attributes:
+       ! Regrid the INTEGER Attributes (if desired):
 
-  data_flag = 'INTEGER'
-  call SharedAttrIndexList(xaV, yaV, data_flag, num_indices, &
-                              xaVindices, yaVindices)
+  if(present(InterpInts)) then
+     if(InterpInts) then
+
+	data_flag = 'INTEGER'
+	call SharedAttrIndexList(xaV, yaV, data_flag, num_indices, &
+	     xaVindices, yaVindices)
 
        ! loop over matrix elements
 
-  do n=1,num_elements
+	do n=1,num_elements
 
        ! loop over attributes being regridded.
 
-     do m=1,num_indices
+	   do m=1,num_indices
 
-	xaVindex = xaVindices(m)
-	yaVindex = yaVindices(m)
+	      xaVindex = xaVindices(m)
+	      yaVindex = yaVindices(m)
 
-	yaV%iAttr(yaVindex,sMat%data%iAttr(irow,n)) = &
-	     yaV%iAttr(yaVindex,sMat%data%iAttr(irow,n)) + &
-	     sMat%data%rAttr(iwgt, n) * &
-	     xaV%iAttr(xaVindex,sMat%data%iAttr(icol,n))
+	      yaV%iAttr(yaVindex,sMat%data%iAttr(irow,n)) = &
+		   yaV%iAttr(yaVindex,sMat%data%iAttr(irow,n)) + &
+		   sMat%data%rAttr(iwgt, n) * &
+		   xaV%iAttr(xaVindex,sMat%data%iAttr(icol,n))
 
-     end do ! m=1,num_indices
+	   end do ! m=1,num_indices
 
-  end do ! n=1,num_elements
+	end do ! n=1,num_elements
 
-  deallocate(xaVindices, yaVindices, stat=ierr)
-  if(ierr /= 0) then
-     call MP_perr_die(myname_,'second deallocate(xaVindices...',ierr)
-  endif
+	deallocate(xaVindices, yaVindices, stat=ierr)
+	if(ierr /= 0) then
+	   call MP_perr_die(myname_,'second deallocate(xaVindices...', &
+		ierr)
+	endif
+
+     endif ! if(InterpInts)...
+
+  endif ! if(present(InterpInts))...
      
  end subroutine sMatAvMult_xlyl_
 
