@@ -106,9 +106,15 @@
     interface getIList; module procedure getIList_; end interface
     interface getRList; module procedure getRList_; end interface
     interface exportIAttr ; module procedure exportIAttr_ ; end interface
-    interface exportRAttr ; module procedure exportRAttr_ ; end interface
+    interface exportRAttr ; module procedure &
+         exportRAttrSP_, &
+         exportRAttrDP_
+    end interface
     interface importIAttr ; module procedure importIAttr_ ; end interface
-    interface importRAttr ; module procedure importRAttr_ ; end interface
+    interface importRAttr ; module procedure &
+         importRAttrSP_, &
+         importRAttrDP_
+    end interface
     interface zero ; module procedure zero_ ; end interface
     interface SharedAttrIndexList ; module procedure   &
        aCaCSharedAttrIndexList_,  &   
@@ -1320,7 +1326,7 @@
 
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: exportRAttr_ - Export REAL Attribute to a Vector
+! !IROUTINE: exportRAttrSP_ - Export REAL Attribute to a Vector
 !
 ! !DESCRIPTION:
 ! This routine extracts from the input {\tt Accumulator} argument 
@@ -1348,12 +1354,13 @@
 !
 ! !INTERFACE:
 
- subroutine exportRAttr_(aC, AttrTag, outVect, lsize)
+ subroutine exportRAttrSP_(aC, AttrTag, outVect, lsize)
 !
 ! !USES:
 !
       use m_die 
       use m_stdio
+      use m_realkinds,     only : SP
 
       use m_AttrVect,      only : AttrVect_exportRAttr => exportRAttr
 
@@ -1366,7 +1373,7 @@
 
 ! !OUTPUT PARAMETERS: 
 
-      real, dimension(:),     pointer     :: outVect
+      real(SP), dimension(:), pointer     :: outVect
       integer,                intent(out) :: lsize
 
 ! !REVISION HISTORY:
@@ -1374,13 +1381,78 @@
 !
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname_=myname//'::exportRAttr_'
+  character(len=*),parameter :: myname_=myname//'::exportRAttrSP_'
 
        ! Export the data (inheritance from AttrVect)
 
   call AttrVect_exportRAttr(aC%data, AttrTag, outVect, lsize)
 
- end subroutine exportRAttr_
+ end subroutine exportRAttrSP_
+
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: exportRAttrDP_ - Export REAL Attribute to a Vector
+!
+! !DESCRIPTION:
+! This routine extracts from the input {\tt Accumulator} argument 
+! {\tt aC} the real attribute corresponding to the tag defined in 
+! the input {\tt CHARACTER} argument {\tt AttrTag}, and returns it in 
+! the {\tt REAL} output array {\tt outVect}, and its length in the 
+! output {\tt INTEGER} argument {\tt lsize}.
+!
+! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
+! the {\tt Accumulator} {\tt List} component {\tt aC\%data\%iList}.
+!
+! {\bf N.B.:}  The flexibility of this routine regarding the pointer 
+! association status of the output argument {\tt outVect} means the
+! user must invoke this routine with care.  If the user wishes this
+! routine to fill a pre-allocated array, then obviously this array
+! must be allocated prior to calling this routine.  If the user wishes
+! that the routine {\em create} the output argument array {\tt outVect},
+! then the user must ensure this pointer is not allocated (i.e. the user
+! must nullify this pointer) at the time this routine is invoked.
+!
+! {\bf N.B.:}  If the user has relied on this routine to allocate memory
+! associated with the pointer {\tt outVect}, then the user is responsible 
+! for deallocating this array once it is no longer needed.  Failure to 
+! do so will result in a memory leak.
+!
+! !INTERFACE:
+
+ subroutine exportRAttrDP_(aC, AttrTag, outVect, lsize)
+!
+! !USES:
+!
+      use m_die 
+      use m_stdio
+      use m_realkinds,     only : DP
+
+      use m_AttrVect,      only : AttrVect_exportRAttr => exportRAttr
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      type(Accumulator),      intent(in)  :: aC
+      character(len=*),       intent(in)  :: AttrTag
+
+! !OUTPUT PARAMETERS: 
+
+      real(DP), dimension(:), pointer     :: outVect
+      integer,                intent(out) :: lsize
+
+! !REVISION HISTORY:
+!  6May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::exportRAttrDP_'
+
+       ! Export the data (inheritance from AttrVect)
+
+  call AttrVect_exportRAttr(aC%data, AttrTag, outVect, lsize)
+
+ end subroutine exportRAttrDP_
 
 !BOP -------------------------------------------------------------------
 !
@@ -1442,7 +1514,7 @@
 
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: importRAttr_ - Import REAL Attribute from a Vector
+! !IROUTINE: importRAttrSP_ - Import REAL Attribute from a Vector
 !
 ! !DESCRIPTION:
 ! This routine imports data provided in the input {\tt REAL} vector 
@@ -1457,12 +1529,13 @@
 !
 ! !INTERFACE:
 
- subroutine importRAttr_(aC, AttrTag, inVect, lsize)
+ subroutine importRAttrSP_(aC, AttrTag, inVect, lsize)
 !
 ! !USES:
 !
       use m_die 
       use m_stdio ,        only : stderr
+      use m_realkinds,     only : SP
 
       use m_AttrVect,      only : AttrVect_importRAttr => importRAttr
 
@@ -1471,7 +1544,7 @@
 ! !INPUT PARAMETERS: 
 
       character(len=*),       intent(in)    :: AttrTag
-      real, dimension(:),     pointer       :: inVect
+      real(SP), dimension(:), pointer       :: inVect
       integer,                intent(in)    :: lsize
 
 ! !INPUT/OUTPUT PARAMETERS: 
@@ -1482,7 +1555,7 @@
 !  6May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname_=myname//'::importRAttr_'
+  character(len=*),parameter :: myname_=myname//'::importRAttrSP_'
 
        ! Argument Check:
 
@@ -1496,7 +1569,66 @@
 
   call AttrVect_importRAttr(aC%data, AttrTag, inVect, lsize)
 
- end subroutine importRAttr_
+ end subroutine importRAttrSP_
+
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: importRAttrDP_ - Import REAL Attribute from a Vector
+!
+! !DESCRIPTION:
+! This routine imports data provided in the input {\tt REAL} vector 
+! {\tt inVect} into the {\tt Accumulator} argument {\tt aC}, storing 
+! it as the real attribute corresponding to the tag defined in 
+! the input {\tt CHARACTER} argument {\tt AttrTag}.  The input 
+! {\tt INTEGER} argument {\tt lsize} is used to ensure there is 
+! sufficient space in the {\tt Accumulator} to store the data.
+!
+! {\bf N.B.:}  This routine will fail if the {\tt AttrTag} is not in 
+! the {\tt Accumulator} {\tt List} component {\tt aC\%data\%rList}.
+!
+! !INTERFACE:
+
+ subroutine importRAttrDP_(aC, AttrTag, inVect, lsize)
+!
+! !USES:
+!
+      use m_die 
+      use m_stdio ,        only : stderr
+      use m_realkinds,     only : DP
+
+      use m_AttrVect,      only : AttrVect_importRAttr => importRAttr
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      character(len=*),       intent(in)    :: AttrTag
+      real(DP), dimension(:), pointer       :: inVect
+      integer,                intent(in)    :: lsize
+
+! !INPUT/OUTPUT PARAMETERS: 
+
+      type(Accumulator),      intent(inout) :: aC
+
+! !REVISION HISTORY:
+!  6May02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::importRAttrDP_'
+
+       ! Argument Check:
+
+  if(lsize > lsize_(aC)) then
+     write(stderr,*) myname_,':: ERROR, lsize > lsize_(aC).', &
+          'lsize = ',lsize,'lsize_(aC) = ',lsize_(ac)
+     call die(myname_)
+  endif
+
+       ! Import the data (inheritance from AttrVect)
+
+  call AttrVect_importRAttr(aC%data, AttrTag, inVect, lsize)
+
+ end subroutine importRAttrDP_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
