@@ -460,9 +460,9 @@
 ! !IROUTINE: initialized_ - Check if an Accumulator is initialized.
 !
 ! !DESCRIPTION: If an Accumulator is initialized correctly, the function
-!               returns true. Argument die_flag, if present, will err 
-!               if die_flag is true and aC is correctly initialized, and
-!               if die_flag is false and aC is incorrectly initialized.
+!               returns true. Argument die\_flag, if present, will err 
+!               if die\_flag is true and aC is correctly initialized, and
+!               if die\_flag is false and aC is incorrectly initialized.
 !
 ! !INTERFACE:
 
