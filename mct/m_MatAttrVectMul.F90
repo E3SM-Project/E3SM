@@ -316,7 +316,7 @@
        ! Create intermediate AttrVect for x'
      call AttrVect_init(xPrimeAV, xAV, sMatPlus%XPrimeLength)
        ! Rearrange data from x to get x'
-     call Rearrange(xAV, xPrimeAV, sMatPlus%XToXPrime)
+     call Rearrange(xAV, xPrimeAV, sMatPlus%XToXPrime, sMatPlus%Tag )
        ! Perform perfectly data-local multiply y = Mx'
      call sMatAvMult_DataLocal_(xPrimeAV, sMatPlus%Matrix, yaV)
        ! Clean up space occupied by x'
@@ -327,7 +327,7 @@
        ! Perform perfectly data-local multiply y' = Mx
      call sMatAvMult_DataLocal_(xAV, sMatPlus%Matrix, yPrimeAV)
        ! Rearrange/reduce partial sums in y' to get y
-     call Rearrange(yPrimeAV, yAV, sMatPlus%YPrimeToY, .TRUE.)
+     call Rearrange(yPrimeAV, yAV, sMatPlus%YPrimeToY, sMatPlus%Tag, .TRUE.)
        ! Clean up space occupied by y'
      call AttrVect_clean(yPrimeAV, ierr)
   case('XandY')
@@ -336,11 +336,11 @@
        ! Create intermediate AttrVect for y'
      call AttrVect_init(yPrimeAV, yAV, sMatPlus%YPrimeLength)
        ! Rearrange data from x to get x'
-     call Rearrange(xAV, xPrimeAV, sMatPlus%XToXPrime)
+     call Rearrange(xAV, xPrimeAV, sMatPlus%XToXPrime, sMatPlus%Tag)
        ! Perform perfectly data-local multiply y' = Mx'
      call sMatAvMult_DataLocal_(xPrimeAV, sMatPlus%Matrix, yPrimeAV)
        ! Rearrange/reduce partial sums in y' to get y
-     call Rearrange(yPrimeAV, yAV, sMatPlus%YPrimeToY, .TRUE.)
+     call Rearrange(yPrimeAV, yAV, sMatPlus%YPrimeToY, sMatPlus%Tag, .TRUE.)
        ! Clean up space occupied by x'
      call AttrVect_clean(xPrimeAV, ierr)
        ! Clean up space occupied by y'
