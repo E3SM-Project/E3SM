@@ -407,7 +407,7 @@ if echo $F90 | grep lf95 >/dev/null 2>&1; then
 fi
 
 if echo $F90 | grep ifc >/dev/null 2>&1; then
-   echo "Fortran Compiler is Intel IA-32"
+   echo "Fortran Compiler is Intel 7.x or earlier"
    echo "Intel ifc compiler must set the environment variable F_UFMTENDIAN=big to do endian conversion"
    CPRDEF="INTEL"
    if test -z "$REAL8"; then
@@ -422,7 +422,7 @@ if echo $F90 | grep ifc >/dev/null 2>&1; then
 fi
 
 if echo $F90 | grep efc >/dev/null 2>&1; then
-   echo "Fortran Compiler is Intel Itanium"
+   echo "Fortran Compiler is Intel 7.x or earlier for IA-64"
    echo "Intel efc compiler must set the environment variable F_UFMTENDIAN=big to do endian conversion"
    CPRDEF="INTEL"
    if test -z "$REAL8"; then
@@ -437,13 +437,16 @@ if echo $F90 | grep efc >/dev/null 2>&1; then
 fi
 
 if echo $F90 | grep ifort >/dev/null 2>&1; then
-   echo "Fortran Compiler is Intel Itanium"
+   echo "Fortran Compiler is Intel ifort"
    CPRDEF="INTEL"
    if test -z "$REAL8"; then
       REAL8="-r8"
    fi
    if test -z "$F90FLAGS"; then
-      F90FLAGS="-w -ftz -assume byterecl -convert big_endian"
+      F90FLAGS="-w -ftz -assume byterecl"
+   fi
+   if test -z "$ENDIAN"; then
+      ENDIAN="-convert big_endian"
    fi
    if test -z "$OPT"; then
       OPT="-O2"
