@@ -386,6 +386,7 @@ AC_DEFUN([AC_LANG_COMPILER(Fortran 90)],
 # xlf90/xlf95 are IBM (AIX) F90/F95 compilers.
 # lf95 is the Lahey-Fujitsu compiler.
 # epcf90 is the "Edinburgh Portable Compiler" F90.
+# pathf90 is the PathScale compiler
 # fort is the Compaq Fortran 90 (now 95) compiler for Tru64 and Linux/Alpha.
 AC_DEFUN([AC_PROG_F90],
 [AC_LANG_PUSH(Fortran 90)dnl
@@ -395,7 +396,7 @@ AC_ARG_VAR([F90SUFFIX], [Fortran 90 filename extension])dnl
 _AC_ARG_VAR_LDFLAGS()dnl
 AC_CHECK_TOOLS(F90,
       [m4_default([$1],
-                  [xlf90 pgf90 ifort efc ifc f90 ftn frt f95 lf95 xlf95 fort g95])])
+                  [xlf90 pgf90 ifort pathf90 f90 ftn frt f95 lf95 xlf95 fort efc ifc g95])])
 
 # Check for a valid filname extension in the following order: F90, f90, F, f
 if test -z "$F90SUFFIX"; then
