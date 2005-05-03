@@ -3771,6 +3771,20 @@ if echo $F90 | grep ifort >/dev/null 2>&1; then
    fi
 fi
 
+if echo $F90 | grep pathf90 >/dev/null 2>&1; then
+   echo "Fortran Compiler is PathScale"
+   CPRDEF="PATHSC"
+   if test -z "$REAL8"; then
+      REAL8="-r8"
+   fi
+   if test -z "$BIT64"; then
+      BIT64="-m64"
+   fi
+   if test -z "$OPT"; then
+      OPT="-O2"
+   fi
+fi
+
 if echo $F90 | grep g95 >/dev/null 2>&1; then
    echo "Fortran Compiler is GNU"
    CPRDEF="GNU"
