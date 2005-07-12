@@ -224,10 +224,10 @@ OLDF90="$F90"
 F90="$FC" # use MPIF90, since differences may exist between MPIF90 and F90
 
 defineflag="-Daardvark"
-if test "$F90" = "xlf90"; then
+if test "$OLDF90" = "xlf90"; then
    defineflag="-WF,-Daardvark"
 fi   
-if test "$F90" = "frt"; then
+if test "$OLDF90" = "frt"; then
    defineflag="-Wp,-Daardvark"
 fi
 
