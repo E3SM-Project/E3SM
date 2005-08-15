@@ -1,56 +1,45 @@
+                            Modeling Coupling Toolkit (MCT) Software
 
-                       The Model Coupling Toolkit
+Copyright © 2005, University of Chicago as Operator of Argonne National Laboratory.  
+All rights reserved.
 
-                                ---------
-
-               ------------ ----- --- ---------- ------
-  ********** | DISTRIBUTION TERMS AND CONDITIONS NOTICE | ************
-               ------------ ----- --- ---------- ------
-
-(c) Copyright Notice
- + 2000 University of Chicago
-
-The "Software" below refers to the Model Coupling Toolkit (MCT), either
-in source code, in part or in whole, or binary form and any accompanying documentation.
-
-Access and use of this software shall impose the following obligations and
-understandings on the user.  The user is granted the right, without any fee
-or cost, to use, copy, modify, alter, enhance and distribute this software,
-and any derivative works thereof, and its supporting documentation for any
-purpose whatsoever, except commercial sales, provided that the following conditions
-are met: 
-
-  1) This entire notice appears in all copies of the software, derivative works and
-     supporting documentation.  
-
-  2) If you modify the software and give a copy or copies of those modifications
-     to others, either in source code or binary form, the software must carry
-     notices stating that you changed specified portions of the Software.
-
-     
-                              GOVERNMENT LICENSE
-
-Portions of this material resulted from work developed under a U.S.
-Government Contract and are subject to the following license: the Government
-is granted for itself and others acting on its behalf a paid-up, non-exclusive,
-irrevocable worldwide license in this computer software to reproduce, prepare
-derivative works, and perform publicly and display publicly.
+Redistribution and use in source and binary forms, with or without modification, 
+are permitted provided that the following conditions are met:
 
 
-				DISCLAIMER
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
 
-THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
-WARRANTIES, INCLUDING BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
 
-IN NO EVENT WILL THE UNITED STATES, THE UNIVERSITY OF CHICAGO OR
-ANY CONTRIBUTORS TO THE SOFTWARE BE LIABLE FOR ANY DAMAGES, INCLUDING DIRECT, 
-INCIDENTAL, SPECIAL, OR CONSEQUENTIAL DAMAGES RESULTING FROM EXERCISE OF 
-THIS LICENSE AGREEMENT OR THE USE OF THE SOFTWARE.
+3. The end-user documentation included with the redistribution, if any, must include the following acknowledgment:
 
-THIS MATERIAL IS MADE AVAILABLE WITH THE UNDERSTANDING THAT
-THE UNIVERSITY OF CHICAGO IS NOT OBLIGATED TO PROVIDE 
-(AND WILL NOT PROVIDE) THE USER WITH ANY SUPPORT, CONSULTING, TRAINING, 
-OR ASSISTANCE OF ANY KIND WITH REGARD TO THE USE, OPERATION AND 
-PERFORMANCE OF THIS SOFTWARE, NOR TO PROVIDE THE USER WITH ANY UPDATES, 
-REVISIONS, NEW VERSIONS, OR "BUG FIXES."
+   "This product includes software developed by the University of Chicago, as Operator of Argonne National Laboratory." 
+
+   Alternately, this acknowledgment may appear in the software itself, if and wherever such third-party acknowledgments normally appear.
+
+This software was authored by:
+
+Argonne National Laboratory Group
+Jay Larson, tel: (630) 252-7806, E-mail: larson@mcs.anl.gov
+Robert Jacob, tel: (630) 252-2983, E-mail: jocob@msc.anl.gov
+Everest Ong
+Mathematics and Computer Science Division
+Argonne National Laboratory, Argonne IL 60439
+
+
+4. WARRANTY DISCLAIMER. THE SOFTWARE IS SUPPLIED "AS IS" WITHOUT WARRANTY OF ANY KIND. THE COPYRIGHT HOLDER,
+   THE UNITED STATES, THE UNITED STATES DEPARTMENT OF ENERGY, AND THEIR EMPLOYEES: (1) DISCLAIM ANY
+   WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY IMPLIED WARRANTIES OF MERCHANTABILITY, 
+   FITNESS FOR A PARTICULAR PURPOSE, TITLE OR NON-INFRINGEMENT, (2) DO NOT ASSUME ANY LEGAL LIABILITY OR 
+   RESPONSIBILITY FOR THE ACCURACY, COMPLETENESS, OR USEFULNESS OF THE SOFTWARE, (3) DO NOT REPRESENT THAT 
+   USE OF THE SOFTWARE WOULD NOT INFRINGE PRIVATELY OWNED RIGHTS, (4) DO NOT WARRANT THAT THE SOFTWARE WILL 
+   FUNCTION UNINTERRUPTED, THAT IT IS ERROR-FREE OR THAT ANY ERRORS WILL BE CORRECTED. 
+
+5. LIMITATION OF LIABILITY. IN NO EVENT WILL THE COPYRIGHT HOLDER, THE UNITED STATES, THE UNITED STATES 
+   DEPARTMENT OF ENERGY, OR THEIR EMPLOYEES: BE LIABLE FOR ANY INDIRECT, INCIDENTAL, CONSEQUENTIAL, SPECIAL 
+   OR PUNITIVE DAMAGES OF ANY KIND OR NATURE, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS OR LOSS OF 
+   DATA, FOR ANY REASON WHATSOEVER, WHETHER SUCH LIABILITY IS ASSERTED ON THE BASIS OF CONTRACT, TORT 
+   (INCLUDING NEGLIGENCE OR STRICT LIABILITY), OR OTHERWISE, EVEN IF ANY OF SAID PARTIES HAS BEEN WARNED 
+   OF THE POSSIBILITY OF SUCH LOSS OR DAMAGES.
+
+
