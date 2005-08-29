@@ -1,0 +1,30 @@
+
+
+mpi-serial
+
+
+this library provides a one-processor version of MPI.
+
+in particular it supports MPI_Send, MPI_Receive, MPI_Isend,
+MPI_Ireceive, MPI_Test, MPI_Wait*, and most collective
+calls like MPI_Reduce, MPI_Gather, MPI_Scatter, etc.
+
+
+INSTALLATION:
+
+'make' to compile the library.
+'make clean' to get rid of everything.
+
+
+the C interface should be very portable.
+
+in rare cases the fortran constants in mpif.h may need to be changed.
+there are checks at runtime (withing MPI_Init) and if any are
+bad there will be an error message.  so just try it first as-is.
+
+
+RL
+
+
+
+

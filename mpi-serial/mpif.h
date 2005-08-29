@@ -1,0 +1,110 @@
+
+!!!
+!!! mpif.h
+!!!
+
+
+!
+! MPI_COMM_WORLD
+!
+
+	INTEGER MPI_COMM_WORLD
+        parameter (mpi_comm_world=1)
+
+
+!
+! source,tag
+!
+
+	integer MPI_ANY_SOURCE, MPI_ANY_TAG
+        parameter (mpi_any_source=-1, mpi_any_tag=-1)
+
+
+        integer mpi_comm_null, mpi_request_null
+        parameter (mpi_comm_null=0, mpi_request_null=0)
+
+
+        integer MPI_MAX_ERROR_STRING
+        parameter (MPI_MAX_ERROR_STRING=128)
+
+
+
+!
+! MPI_Status
+!
+! The values in this section MUST match the struct definition
+! in mpi.h
+!
+
+
+        INTEGER MPI_STATUS_SIZE
+        PARAMETER (MPI_STATUS_SIZE=3)
+
+        INTEGER MPI_SOURCE, MPI_TAG, MPI_ERROR
+        PARAMETER(MPI_SOURCE=1, MPI_TAG=2, MPI_ERROR=3)
+
+
+
+!
+! MPI_Datatype values
+!  
+! The value is the size of the datatype in bytes.
+! Change if necessary for the machine in question.
+! (The mpi.h file uses sizeof(), so it should be more
+! portable).
+! 
+! Add more type names if desired, it is not necessary
+! to recompile the libary.
+!
+
+
+	INTEGER MPI_BYTE
+	PARAMETER (MPI_BYTE=1)
+
+	INTEGER MPI_CHARACTER
+	PARAMETER (MPI_CHARACTER=1)
+
+	INTEGER MPI_INTEGER
+	PARAMETER (MPI_INTEGER=4)
+
+	INTEGER MPI_LOGICAL
+	PARAMETER (MPI_LOGICAL=4)
+
+	INTEGER MPI_REAL
+	PARAMETER (MPI_REAL=4)
+
+	INTEGER MPI_REAL4
+	PARAMETER (MPI_REAL4=4)
+
+	INTEGER MPI_DOUBLE_PRECISION
+	PARAMETER (MPI_DOUBLE_PRECISION=8)
+
+	INTEGER MPI_REAL8
+	PARAMETER (MPI_REAL8=8)
+
+	INTEGER MPI_COMPLEX
+	PARAMETER (MPI_COMPLEX=8)
+	
+
+!!
+
+        integer MPI_2REAL
+        parameter (MPI_2REAL=2*MPI_REAL)
+
+        integer MPI_2DOUBLE_PRECISION
+        parameter (MPI_2DOUBLE_PRECISION=2*MPI_DOUBLE_PRECISION)
+
+        integer MPI_2INTEGER
+        parameter (MPI_2INTEGER=2*MPI_INTEGER)
+
+!
+! MPI_Op values
+!
+! (All are handled as no-op so no value is necessary)
+!
+
+        INTEGER MPI_SUM, MPI_MAX, MPI_MIN, MPI_PROD, MPI_LAND, MPI_BAND
+        INTEGER MPI_LOR, MPI_BOR, MPI_LXOR, MPI_BXOR, MPI_MINLOC
+        INTEGER MPI_MAXLOC
+        INTEGER MPI_OP_NULL
+
