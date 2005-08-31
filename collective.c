@@ -8,7 +8,7 @@
  */
 
 
-FORT_NAME( mpi_barrier )(int *comm, int *ierror)
+FORT_NAME( mpi_barrier , MPI_BARRIER )(int *comm, int *ierror)
 {
   *ierror=MPI_Barrier( *comm );
 }
@@ -23,8 +23,8 @@ int MPI_Barrier(MPI_Comm comm )
 /*********/
 
 
-FORT_NAME( mpi_bcast )(void *buffer, int *count, int *datatype,
-		       int *root, int *comm, int *ierror )
+FORT_NAME( mpi_bcast , MPI_BCAST )(void *buffer, int *count, int *datatype,
+				   int *root, int *comm, int *ierror )
 {
   *ierror=MPI_Bcast(buffer, *count, *datatype, *root, *comm);
 }
@@ -48,7 +48,8 @@ int MPI_Bcast(void* buffer, int count, MPI_Datatype datatype,
 /*********/
 
 
-FORT_NAME( mpi_gather )(void *sendbuf, int *sendcount, int *sendtype,
+FORT_NAME( mpi_gather , MPI_GATHER )
+                       (void *sendbuf, int *sendcount, int *sendtype,
 			void *recvbuf, int *recvcount, int *recvtype,
 			int *root, int *comm, int *ierror)
 {
@@ -77,7 +78,8 @@ int MPI_Gather(void* sendbuf, int sendcount, MPI_Datatype sendtype,
 
 
 
-FORT_NAME( mpi_gatherv )( void *sendbuf, int *sendcount, int *sendtype,
+FORT_NAME( mpi_gatherv , MPI_GATHERV )
+                        ( void *sendbuf, int *sendcount, int *sendtype,
 			  void *recvbuf, int *recvcounts, int *displs,
 			  int *recvtype, int *root, int *comm, int *ierror)
 {
@@ -110,7 +112,8 @@ int MPI_Gatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
 /*********/
 
 
-FORT_NAME( mpi_allgather )( void *sendbuf, int *sendcount, int *sendtype,
+FORT_NAME( mpi_allgather , MPI_ALLGATHER )
+                          ( void *sendbuf, int *sendcount, int *sendtype,
 			    void *recvbuf, int *recvcount, int *recvtype,
 			    int *comm, int *ierror)
 {
@@ -134,7 +137,8 @@ int MPI_Allgather(void* sendbuf, int sendcount, MPI_Datatype sendtype,
 /*********/
 
 
-FORT_NAME( mpi_scatterv )( void *sendbuf, int *sendcounts, int *displs,
+FORT_NAME( mpi_scatterv , MPI_SCATTERV )
+                         ( void *sendbuf, int *sendcounts, int *displs,
 			   int *sendtype, void *recvbuf, int *recvcount,
 			   int *recvtype, int *root, int *comm, int *ierror)
 {
@@ -168,7 +172,8 @@ int MPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
 /*********/
 
 
-FORT_NAME( mpi_reduce )( void *sendbuf, void *recvbuf, int *count,
+FORT_NAME( mpi_reduce , MPI_REDUCE )
+                       ( void *sendbuf, void *recvbuf, int *count,
 			 int *datatype, int *op, int *root, int *comm,
 			 int *ierror)
 {
@@ -197,7 +202,8 @@ int MPI_Reduce(void* sendbuf, void* recvbuf, int count,
 /*********/
 
 
-FORT_NAME( mpi_allreduce )( void *sendbuf, void *recvbuf, int *count,
+FORT_NAME( mpi_allreduce , MPI_ALLREDUCE )
+                          ( void *sendbuf, void *recvbuf, int *count,
 			    int *datatype, int *op, int *comm, int *ierror)
 {
   *ierror=MPI_Allreduce(sendbuf, recvbuf, *count,

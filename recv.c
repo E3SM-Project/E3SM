@@ -24,9 +24,9 @@ static int mpi_match_send(void *r, void *tag)
 
 
 
-FORT_NAME( mpi_irecv )(void *buf, int *count, int *datatype,
-		       int *source, int *tag, int *comm,
-		       int *request, int *ierror)
+FORT_NAME( mpi_irecv , MPI_IRECV )(void *buf, int *count, int *datatype,
+				   int *source, int *tag, int *comm,
+				   int *request, int *ierror)
 {
 
   *ierror=MPI_Irecv(buf,*count,*datatype,*source,*tag,
@@ -97,9 +97,9 @@ int MPI_Irecv(void *buf, int count, MPI_Datatype datatype,
 /*********/
 
 
-FORT_NAME( mpi_recv )(void *buf, int *count, int *datatype,
-		      int *source, int *tag, int *comm,
-		      int *status, int *ierror)
+FORT_NAME( mpi_recv , MPI_RECV )(void *buf, int *count, int *datatype,
+				 int *source, int *tag, int *comm,
+				 int *status, int *ierror)
 {
   *ierror=MPI_Recv(buf,*count,*datatype,*source,*tag,*comm,
 		   (MPI_Status *)status);

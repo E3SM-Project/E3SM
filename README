@@ -19,8 +19,9 @@ INSTALLATION:
 the C interface should be very portable.
 
 in rare cases the fortran constants in mpif.h may need to be changed.
-there are checks at runtime (withing MPI_Init) and if any are
-bad there will be an error message.  so just try it first as-is.
+there are checks at runtime (within MPI_Init) and if any values are
+bad there will be an error message.  so it should be safe to try it
+first as-is.
 
 
 RL
