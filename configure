@@ -884,6 +884,8 @@ if test -n "$ac_init_help"; then
 Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --enable-mpiserial      Use the included MPI replacement library for single
+                          processor
   --enable-selectedrealkind
                           define single precision and double precision numbers
                           using the selected_real_kind function. Default uses
@@ -1380,12 +1382,20 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 # DECLARE PACKAGE OPTIONS
 
+# Check whether --enable-mpiserial or --disable-mpiserial was given.
+if test "${enable_mpiserial+set}" = set; then
+  enableval="$enable_mpiserial"
+  DONOTCHECKMPI="DONOTCHECKMPI"
+
+fi;
+
 # Check whether --enable-selectedrealkind or --disable-selectedrealkind was given.
 if test "${enable_selectedrealkind+set}" = set; then
   enableval="$enable_selectedrealkind"
   SRKDEF="SELECTEDREALKIND"
 
 fi;
+
 # Check whether --enable-sequence or --disable-sequence was given.
 if test "${enable_sequence+set}" = set; then
   enableval="$enable_sequence"
@@ -2328,7 +2338,7 @@ echo "$as_me: FORTRAN 90 FILENAME EXTENSION HAS BEEN SET TO .$F90SUFFIX" >&6;}
 fi
 
 # Provide some information about the compiler.
-echo "$as_me:2331:" \
+echo "$as_me:2341:" \
      "checking for Fortran 90 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -2424,6 +2434,8 @@ if test -n "$MPIHEADER"; then
    F90FLAGS="$F90FLAGS $MPIHEADER"
 fi
 
+# CHECK MPI BY DEFAULT
+if test -z "$DONOTCHECKMPI"; then
 
 
 
@@ -2695,6 +2707,16 @@ _ACEOF
         :
 fi
 
+fi
+
+# DONT CHECK MPI IF SERIALMPI OPTION IS ENABLED
+if test -n "$DONOTCHECKMPI"; then
+   echo "MPISERIAL ENABLED: BYPASSING MPI CHECK"
+
+   if test -z "$MPIF90"; then
+      MPIF90=$F90
+   fi
+fi
 
 F90FLAGS="$OLDF90FLAGS"
 
@@ -2813,7 +2835,7 @@ _ACEOF
 # 1 to this macro) to the Fortran 90 compiler in order to get "version" output
 ac_save_F90FLAGS=$F90FLAGS
 F90FLAGS="$F90FLAGS $ac_version"
-(eval echo $as_me:2816: \"$ac_link\") >&5
+(eval echo $as_me:2838: \"$ac_link\") >&5
 ac_f90_version_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 echo "$ac_f90_version_output" >&5
 F90FLAGS=$ac_save_F90FLAGS

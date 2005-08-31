@@ -9,11 +9,18 @@ AC_CONFIG_FILES(Makefile.conf)
 
 # DECLARE PACKAGE OPTIONS
 
+AC_ARG_ENABLE(mpiserial,
+AC_HELP_STRING([--enable-mpiserial],
+[Use the included MPI replacement library for single processor]),
+[DONOTCHECKMPI="DONOTCHECKMPI"]
+)
+
 AC_ARG_ENABLE(selectedrealkind,
 AC_HELP_STRING([--enable-selectedrealkind],
 [define single precision and double precision numbers using the selected_real_kind function. Default uses the kind inquiry function.]),
 [SRKDEF="SELECTEDREALKIND"]
 )
+
 AC_ARG_ENABLE(sequence,
 AC_HELP_STRING([--enable-sequence],[Modify MCT types to make them contiguous in memory.]),
 [SRKDEF="SEQUENCE"],)
@@ -128,7 +135,19 @@ if test -n "$MPIHEADER"; then
    F90FLAGS="$F90FLAGS $MPIHEADER"
 fi
 
-ACX_MPI
+# CHECK MPI BY DEFAULT
+if test -z "$DONOTCHECKMPI"; then
+   ACX_MPI
+fi
+
+# DONT CHECK MPI IF SERIALMPI OPTION IS ENABLED
+if test -n "$DONOTCHECKMPI"; then
+   echo "MPISERIAL ENABLED: BYPASSING MPI CHECK"
+   AC_ARG_VAR(MPIF90,[MPI Fortran compiler command])	
+   if test -z "$MPIF90"; then
+      MPIF90=$F90
+   fi
+fi
 
 F90FLAGS="$OLDF90FLAGS"
 
