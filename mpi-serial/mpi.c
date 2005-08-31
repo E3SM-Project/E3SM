@@ -5,7 +5,7 @@
 
 /****************************************************************************/
 
-static int mpi_initialized=0;
+static int initialized=0;
 
 
 /****************************************************************************/
@@ -60,7 +60,7 @@ static MPI_Comm mpi_comm_new(void)
 /*********/
 
 
-FORT_NAME( mpi_comm_free )(int *comm, int *ierror)
+FORT_NAME( mpi_comm_free , MPI_COMM_FREE )(int *comm, int *ierror)
 {
   *ierror=MPI_Comm_free(comm);
 }
@@ -110,7 +110,7 @@ int MPI_Comm_free(MPI_Comm *comm)
 /*********/
 
 
-FORT_NAME( mpi_comm_dup )(int *comm, int *newcomm, int *ierror)
+FORT_NAME( mpi_comm_dup , MPI_COMM_DUP )(int *comm, int *newcomm, int *ierror)
 {
 
   *ierror=MPI_Comm_dup( *comm, newcomm);
@@ -135,7 +135,7 @@ int MPI_Comm_dup(MPI_Comm comm, MPI_Comm *newcomm)
 
 
 
-FORT_NAME( mpi_comm_size )(int *comm, int *size, int *ierror)
+FORT_NAME( mpi_comm_size , MPI_COMM_SIZE )(int *comm, int *size, int *ierror)
 {
   *ierror=MPI_Comm_size(*comm, size);
 }
@@ -153,7 +153,7 @@ int MPI_Comm_size(MPI_Comm comm, int *size)
 /*********/
 
 
-FORT_NAME( mpi_comm_rank )(int *comm, int *rank, int *ierror)
+FORT_NAME( mpi_comm_rank , MPI_COMM_RANK )(int *comm, int *rank, int *ierror)
 {
   *ierror=MPI_Comm_rank( *comm, rank);
 }
@@ -177,7 +177,8 @@ int MPI_Comm_rank(MPI_Comm comm, int *rank)
 
 
 
-FORT_NAME( mpi_init_fort )(int *f_MPI_COMM_WORLD,
+FORT_NAME( mpi_init_fort , MPI_INIT_FORT)
+                          (int *f_MPI_COMM_WORLD,
                            int *f_MPI_ANY_SOURCE, int *f_MPI_ANY_TAG,
                            int *f_MPI_COMM_NULL, int *f_MPI_REQUEST_NULL,
                            int *f_MPI_MAX_ERROR_STRING, 
@@ -267,7 +268,7 @@ int MPI_Init(int *argc, char **argv[])
       abort();
     }
 
-  mpi_initialized=1;
+  initialized=1;
   return(MPI_SUCCESS);
 }
 
@@ -275,7 +276,7 @@ int MPI_Init(int *argc, char **argv[])
 /*********/
 
 
-FORT_NAME(mpi_finalize)(int *ierror)
+FORT_NAME( mpi_finalize, MPI_FINALIZE )(int *ierror)
 {
   *ierror=MPI_Finalize();
 }
@@ -292,7 +293,7 @@ FORT_NAME(mpi_finalize)(int *ierror)
 
 int MPI_Finalize(void)
 {
-  mpi_initialized=0;
+  initialized=0;
 
   mpi_destroy_handles();
 
@@ -303,7 +304,7 @@ int MPI_Finalize(void)
 /*********/
 
 
-FORT_NAME( mpi_abort )(int *comm, int *errorcode, int *ierror)
+FORT_NAME( mpi_abort , MPI_ABORT )(int *comm, int *errorcode, int *ierror)
 {
   *ierror=MPI_Abort( *comm, *errorcode);
 }
@@ -321,7 +322,8 @@ int MPI_Abort(MPI_Comm comm, int errorcode)
 
 
 
-FORT_NAME( mpi_error_string )(int *errorcode, char *string,
+FORT_NAME( mpi_error_string , MPI_ERROR_STRING)
+                             (int *errorcode, char *string,
 			      int *resultlen, int *ierror)
 {
   *ierror=MPI_Error_string(*errorcode, string, resultlen);
@@ -340,7 +342,7 @@ int MPI_Error_string(int errorcode, char *string, int *resultlen)
 /*********/
 
 
-FORT_NAME( mpi_initialized )(int *flag, int *ierror)
+FORT_NAME( mpi_initialized , MPI_INITIALIZED )(int *flag, int *ierror)
 {
   *ierror=MPI_Initialized(flag);
 }
@@ -348,7 +350,7 @@ FORT_NAME( mpi_initialized )(int *flag, int *ierror)
 
 int MPI_Initialized(int *flag)
 {
-  *flag= mpi_initialized;
+  *flag= initialized;
 
   return(MPI_SUCCESS);
 }

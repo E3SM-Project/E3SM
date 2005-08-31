@@ -64,9 +64,11 @@ typedef struct        /* Order and size MUST match mpif.h */
 #define MPI_STATUS_SIZE       (sizeof(MPI_Status) / sizeof(int))
 
 
-/******************************************************  
- * WARNING: The below is automatically generated.     *  
- ******************************************************  
+/**********************************************************
+ *
+ * Note: if you need to regenerate the prototypes below,
+ * you can use 'protify.awk' and paste the output here.
+ *
  */                                                      
 
 
