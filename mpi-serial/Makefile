@@ -1,11 +1,36 @@
+SHELL		= /bin/sh
 
-#
-# for debugging
-# -DCHECKS -DHANDLE_INFO
-#
+# SOURCE FILES
+
+MODULE		= mpi
+
+SRCS_F90	= fort.F90
+
+SRCS_C		= mpi.c \
+		  send.c \
+		  recv.c \
+		  collective.c \
+		  req.c \
+		  list.c \
+		  handles.c
+
+
+OBJS_ALL	= $(SRCS_C:.c=.o) \
+		  $(SRCS_F90:.F90=.o)
 
 
 include ../Makefile.conf
+
+# TARGETS
+
+all:	lib$(MODULE).a
+
+LIB	= lib$(MODULE).a
+
+lib$(MODULE).a: $(OBJS_ALL)
+	echo $(OBJS_ALL)
+	$(RM) $@
+	$(AR) $@ $(OBJS_ALL)
 
 #
 # The values used from Makefile.conf
@@ -18,39 +43,34 @@ include ../Makefile.conf
 # FC=pgf90
 # AR=ar rv
 # CC=cc
-
 ###############################
 
+#RULES
 
-.SUFFIXES: .F90 .c
+.SUFFIXES:
+.SUFFIXES: .F90 .c .o
 
+$(CRULE):
+	$(CC) -c $(ALLCFLAGS) $*.c
 
-.F90.o:
-	$(FC) $(FFLAGS) -c -o $@ $<
+$(F90RULE):
+	$(FC) -c $(INCPATH) $(DEFS) $(FCFLAGS) $(F90FLAGS) $(MPEUFLAGS) $*.F90
 
-.c.o:
-	$(CC) $(ALLCFLAGS) -c -o $@ $<
-
-
-###############################
-
-LIBOBJS= mpi.o send.o recv.o collective.o req.o list.o fort.o handles.o
-
-LIB=libmpi.a
-
-$(LIB)(%.o): %.o
-	$(AR) $(LIB) $%
+$(F90RULECPP):
+	$(FPP) $(DEFS) $(FPPFLAGS) $*.F90 $*.f90 
+	$(FC) -c $(INCPATH) $(FCFLAGS) $(F90FLAGS) $(MPEUFLAGS) $*.f90
+	$(RM) $*.f90
 
 
-LIB_MEMBERS= $(foreach file, $(LIBOBJS), $(LIB)($(file)))
+clean:
+	/bin/rm -f *.o ctest ftest $(LIB)
 
 
-#
-# Default target is library
-
-$(LIB): $(LIB_MEMBERS)
-	@echo "Done building $@"
-
+install: all
+	$(MKINSTALLDIRS) $(libdir) $(includedir)
+	$(INSTALL) lib$(MODULE).a -m 644 $(libdir)
+	$(INSTALL) mpi.h -m 644 $(includedir)
+	$(INSTALL) mpif.h -m 644 $(includedir)
 
 ###############################
 
@@ -59,16 +79,9 @@ $(LIB): $(LIB_MEMBERS)
 #
 
 
-all: ctest ftest
-
-
 ctest: $(LIB) ctest.c
 	$(CC) $(ALLCFLAGS) -o $@ ctest.c -L. -lmpi
 
 ftest: $(LIB) ftest.F90
 	$(FC) -o $@ ftest.F90 -L. -lmpi
-
-
-clean:
-	/bin/rm -f *.o ctest ftest $(LIB)
 
