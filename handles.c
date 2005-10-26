@@ -75,6 +75,30 @@ static Handleitem *nextfree;
 
 /************************************************************************/
 
+void *mpi_malloc(int size)
+{
+  void *ret;
+
+  ret=malloc(size);
+
+  if (!ret)
+    {
+      fprintf(stderr,"mpi_malloc: failed to allocate %d bytes\n",size);
+      abort();
+    }
+      
+  return(ret);
+}
+
+
+void mpi_free(void *ptr)
+{
+  free(ptr);
+}
+
+
+/************************************************************************/
+
 
 /*
  * initialize a block s.t. handles are set and

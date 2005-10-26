@@ -5,11 +5,20 @@ typedef int MPI_Request;
 typedef int MPI_Datatype;
 typedef int MPI_Op;
 
-
 #define MPI_COMM_WORLD (1)
 #define MPI_COMM_NULL (0)      /* handle 0 maps to NULL */
 
+
+typedef int MPI_Group;
+
+/* MPI_GROUP_EMPTY and MPI_GROUP_NULL must not conflict with MPI_GROUP_ONE */
+#define MPI_GROUP_EMPTY (-1)  
+#define MPI_GROUP_NULL  (0)
+
+
 #define MPI_SUCCESS   (0)
+
+#define MPI_UNDEFINED (-1)     /* value for "color" in e.g. comm_split */
 
 
 /* The type's value is its size in bytes */
@@ -72,10 +81,6 @@ typedef struct        /* Order and size MUST match mpif.h */
  */                                                      
 
 
-
-extern void *mpi_malloc(int size);
-extern void mpi_free(void *ptr);
-
 extern int MPI_Comm_free(MPI_Comm *comm);
 extern int MPI_Comm_dup(MPI_Comm comm, MPI_Comm *newcomm);
 extern int MPI_Comm_size(MPI_Comm comm, int *size);
@@ -123,8 +128,4 @@ extern int MPI_Allreduce(void* sendbuf, void* recvbuf, int count,
                          MPI_Datatype datatype, MPI_Op op, MPI_Comm comm);
 
 
-extern void mpi_destroy_handles(void);
-extern void mpi_alloc_handle(int *handle, void **data);
-extern void *mpi_handle_to_ptr(int handle);
-extern void mpi_free_handle(int handle);
 

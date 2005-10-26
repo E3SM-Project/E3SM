@@ -23,6 +23,8 @@
         call mpi_init_fort( MPI_COMM_WORLD, &
 	                    MPI_ANY_SOURCE, MPI_ANY_TAG, &
                             MPI_COMM_NULL, MPI_REQUEST_NULL, &
+                            MPI_GROUP_NULL, MPI_GROUP_EMPTY, &
+                            MPI_UNDEFINED, &
                             MPI_MAX_ERROR_STRING, &
                             MPI_STATUS_SIZE, &
                             MPI_SOURCE, MPI_TAG, MPI_ERROR, &

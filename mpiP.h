@@ -35,6 +35,13 @@
 #endif
 
 
+/*
+ * MPI_GROUP_ONE must not conflict with MPI_GROUP_NULL or
+ * MPI_GROUP_EMPTY
+ */
+
+#define MPI_GROUP_ONE  (1)
+
 
 /****************************************************************************/
 
@@ -63,4 +70,16 @@ typedef struct
 
 
 
+/****************************************************************************/
+
+
+extern void *mpi_malloc(int size);
+extern void mpi_free(void *ptr);
+
+extern MPI_Comm mpi_comm_new(void);
+
+extern void mpi_destroy_handles(void);
+extern void mpi_alloc_handle(int *handle, void **data);
+extern void *mpi_handle_to_ptr(int handle);
+extern void mpi_free_handle(int handle);
 
