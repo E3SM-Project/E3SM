@@ -52,7 +52,7 @@ MPIFH= mpif$(BITS).h
 fort.o: mpif.h
 
 lib:
-	@if [ ! $(BITS) ] ; \
+	@if [ ! "$(BITS)" ] ; \
            then echo "Please setenv BITS (32 or 64)"; \
                 exit 1; fi
 	@if [ ! -r $(MPIFH) ] ; \
@@ -110,9 +110,16 @@ install: lib
 #
 
 
-ctest: lib ctest.c
-	$(CC) $(ALLCFLAGS) -o $@ ctest.c -L. -lmpi
+ctest: lib ctest.o
+	$(RM) ctest.o
 
-ftest: lib ftest.F90
-	$(FC) -o $@ ftest.F90 -L. -lmpi
+ftest: lib ftest.o
+	$(RM) ftest.o
+
+
+# ctest: lib ctest.c
+#	$(CC) $(ALLCFLAGS) -o $@ ctest.c -L. -lmpi
+
+# ftest: lib ftest.F90
+#	$(FC) -o $@ ftest.F90 -L. -lmpi
 
