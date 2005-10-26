@@ -12,25 +12,18 @@ SRCS_C		= mpi.c \
 		  collective.c \
 		  req.c \
 		  list.c \
-		  handles.c
+		  handles.c \
+                  comm.c \
+                  group.c
 
 
 OBJS_ALL	= $(SRCS_C:.c=.o) \
 		  $(SRCS_F90:.F90=.o)
 
 
+###############################
+
 include ../Makefile.conf
-
-# TARGETS
-
-all:	lib$(MODULE).a
-
-LIB	= lib$(MODULE).a
-
-lib$(MODULE).a: $(OBJS_ALL)
-	echo $(OBJS_ALL)
-	$(RM) $@
-	$(AR) $@ $(OBJS_ALL)
 
 #
 # The values used from Makefile.conf
@@ -43,8 +36,46 @@ lib$(MODULE).a: $(OBJS_ALL)
 # FC=pgf90
 # AR=ar rv
 # CC=cc
+
+
 ###############################
 
+# TARGETS
+
+default: lib
+
+examples: ctest ftest
+
+
+MPIFH= mpif$(BITS).h
+
+fort.o: mpif.h
+
+lib:
+	@if [ ! $(BITS) ] ; \
+           then echo "Please setenv BITS (32 or 64)"; \
+                exit 1; fi
+	@if [ ! -r $(MPIFH) ] ; \
+           then echo "Error: there is no $(MPIFH) -" \
+                      "check the environment value of BITS" ; \
+                exit 1; fi
+	cp -f mpif$(BITS).h mpif.h
+	chmod -w mpif.h
+	$(MAKE) $(LIB)
+
+
+
+lib$(MODULE).a: $(OBJS_ALL)
+	echo $(OBJS_ALL)
+	$(RM) $@
+	$(AR) $@ $(OBJS_ALL)
+
+
+LIB	= lib$(MODULE).a
+
+
+
+###############################
 #RULES
 
 .SUFFIXES:
@@ -63,10 +94,10 @@ $(F90RULECPP):
 
 
 clean:
-	/bin/rm -f *.o ctest ftest $(LIB)
+	/bin/rm -f *.o ctest ftest $(LIB) mpif.h
 
 
-install: all
+install: lib
 	$(MKINSTALLDIRS) $(libdir) $(includedir)
 	$(INSTALL) lib$(MODULE).a -m 644 $(libdir)
 	$(INSTALL) mpi.h -m 644 $(includedir)
@@ -79,9 +110,9 @@ install: all
 #
 
 
-ctest: $(LIB) ctest.c
+ctest: lib ctest.c
 	$(CC) $(ALLCFLAGS) -o $@ ctest.c -L. -lmpi
 
-ftest: $(LIB) ftest.F90
+ftest: lib ftest.F90
 	$(FC) -o $@ ftest.F90 -L. -lmpi
 
