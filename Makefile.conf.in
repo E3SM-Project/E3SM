@@ -82,6 +82,7 @@ abs_top_builddir= @abs_top_builddir@
 MCTPATH         = @abs_top_builddir@/mct
 MPEUPATH        = @abs_top_builddir@/mpeu
 EXAMPLEPATH     = @abs_top_builddir@/examples
+MPISERPATH      = @abs_top_builddir@/mpi-serial
 libdir          = @prefix@/lib
 includedir      = @prefix@/include
 
