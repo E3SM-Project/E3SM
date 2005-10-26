@@ -87,6 +87,8 @@ $(CRULE):
 $(F90RULE):
 	$(FC) -c $(INCPATH) $(DEFS) $(FCFLAGS) $(F90FLAGS) $(MPEUFLAGS) $*.F90
 
+MYF90FLAGS=$(INCPATH) $(DEFS) $(FCFLAGS) $(F90FLAGS) $(MPEUFLAGS)
+
 $(F90RULECPP):
 	$(FPP) $(DEFS) $(FPPFLAGS) $*.F90 $*.f90 
 	$(FC) -c $(INCPATH) $(FCFLAGS) $(F90FLAGS) $(MPEUFLAGS) $*.f90
@@ -110,16 +112,9 @@ install: lib
 #
 
 
-ctest: lib ctest.o
-	$(RM) ctest.o
+ctest: lib ctest.c
+	$(CC) $(ALLCFLAGS) -o $@ ctest.c -L. -lmpi
 
-ftest: lib ftest.o
-	$(RM) ftest.o
-
-
-# ctest: lib ctest.c
-#	$(CC) $(ALLCFLAGS) -o $@ ctest.c -L. -lmpi
-
-# ftest: lib ftest.F90
-#	$(FC) -o $@ ftest.F90 -L. -lmpi
+ftest: lib ftest.F90
+	$(FC) $(MYF90FLAGS) -o $@ ftest.F90 -L. -lmpi
 
