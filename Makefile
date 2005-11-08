@@ -2,7 +2,7 @@ SHELL		= /bin/sh
 
 # SOURCE FILES
 
-MODULE		= mpi
+MODULE		= mpi-serial
 
 SRCS_F90	= fort.F90
 
@@ -47,19 +47,19 @@ default: lib
 examples: ctest ftest
 
 
-MPIFH= mpif$(BITS).h
+MPIFH= mpif.$(FORT_SIZE).h
 
 fort.o: mpif.h
 
 lib:
-	@if [ ! "$(BITS)" ] ; \
-           then echo "Please setenv BITS (32 or 64)"; \
+	@if [ ! "$(FORT_SIZE)" ] ; \
+           then echo "Please setenv FORT_SIZE (e.g. real4double8 or real8double16)"; \
                 exit 1; fi
 	@if [ ! -r $(MPIFH) ] ; \
            then echo "Error: there is no $(MPIFH) -" \
-                      "check the environment value of BITS" ; \
+                      "check the environment value of FORT_SIZE" ; \
                 exit 1; fi
-	cp -f mpif$(BITS).h mpif.h
+	cp -f $(MPIFH) mpif.h
 	chmod -w mpif.h
 	$(MAKE) $(LIB)
 
@@ -113,8 +113,8 @@ install: lib
 
 
 ctest: lib ctest.c
-	$(CC) $(ALLCFLAGS) -o $@ ctest.c -L. -lmpi
+	$(CC) $(ALLCFLAGS) -o $@ ctest.c -L. -lmpi-serial
 
 ftest: lib ftest.F90
-	$(FC) $(MYF90FLAGS) -o $@ ftest.F90 -L. -lmpi
+	$(FC) $(MYF90FLAGS) -o $@ ftest.F90 -L. -lmpi-serial
 

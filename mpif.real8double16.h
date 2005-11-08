@@ -1,6 +1,6 @@
 
 !!!
-!!! mpif.h  (64 bit version)
+!!! mpif.real8double16.h  (real is 8 bytes, double precision 16)
 !!!
 !!!   NOTE: mpif.h is copied from either mpif32.h or mpi64.h when
 !!!   the library is built.  Do not modify mpif.h, the changes will 
@@ -77,25 +77,22 @@
 	INTEGER MPI_REAL8
 	PARAMETER (MPI_REAL8=8)
 
-
-!!!!!!!
 	INTEGER MPI_INTEGER
-	PARAMETER (MPI_INTEGER=8)
+	PARAMETER (MPI_INTEGER=4)
 
 	INTEGER MPI_LOGICAL
-	PARAMETER (MPI_LOGICAL=8)
+	PARAMETER (MPI_LOGICAL=4)
 
+!!!!!!!
 	INTEGER MPI_REAL
 	PARAMETER (MPI_REAL=8)
 
 	INTEGER MPI_DOUBLE_PRECISION
 	PARAMETER (MPI_DOUBLE_PRECISION=16)
-
-	INTEGER MPI_COMPLEX
-	PARAMETER (MPI_COMPLEX=16)
 !!!!!!!
 
-
+	integer MPI_COMPLEX
+	parameter (MPI_COMPLEX=2*MPI_REAL)
 
         integer MPI_2REAL
         parameter (MPI_2REAL=2*MPI_REAL)

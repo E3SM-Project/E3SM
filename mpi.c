@@ -79,7 +79,7 @@ FORT_NAME( mpi_init_fort , MPI_INIT_FORT)
 #define verify_size(name,p1,p2) \
   if ( (size=((char *)(p2) - (char *)(p1))) != *f_##name ) \
     { fprintf(stderr,"mpi_init_fort: mpif.h %s (%d) " \
-                     "does not match fortran size (%d)\n", \
+                     "does not match actual fortran size (%d)\n", \
                      #name,*f_##name,size); \
       err=1; }
 
