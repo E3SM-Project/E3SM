@@ -54,11 +54,24 @@ typedef int MPI_Group;
 #define MPI_MAX_ERROR_STRING (128)
 
 
-typedef struct        /* Order and size MUST match mpif.h */
+/*
+ * MPI_Status
+ *
+ * definition must be compatible with the mpif.h values for
+ * MPI_STATUS_SIZE, MPI_SOURCE, MPI_TAG, and MPI_ERROR.
+ *
+ * Note: The type used for MPI_Status_int must be chosen to match
+ * Fortran INTEGER.
+ *
+ */
+
+typedef int MPI_Status_int;
+
+typedef struct                  /* Fortran: INTEGER status(MPI_STATUS_SIZE) */
 {
-  int MPI_SOURCE;
-  int MPI_TAG;
-  int MPI_ERROR;
+  MPI_Status_int MPI_SOURCE;    /* Fortran: status(MPI_SOURCE) */
+  MPI_Status_int MPI_TAG;       /* Fortran: status(MPI_TAG) */
+  MPI_Status_int MPI_ERROR;     /* Fortran: status(MPI_ERROR) */
 
 } MPI_Status;
 
