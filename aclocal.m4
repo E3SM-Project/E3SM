@@ -382,12 +382,19 @@ AC_DEFUN([AC_LANG_COMPILER(Fortran 90)],
 #  1. F90, F95
 #  2. Good/tested native compilers, bad/untested native compilers
 #
-# pgf90 is the Portland Group F90 compilers.
 # xlf90/xlf95 are IBM (AIX) F90/F95 compilers.
-# lf95 is the Lahey-Fujitsu compiler.
-# epcf90 is the "Edinburgh Portable Compiler" F90.
+# pgf90 is the Portland Group F90 compilers.
+# ifort is the Intel 8.x compiler
 # pathf90 is the PathScale compiler
+# f90 is Absoft and SGI/MIPS fortran
+# ftn is Cray Fortran
+# frt is 
+# lf95 is the Lahey-Fujitsu compiler.
+# f95 is Abosft Fortran
+# epcf90 is the "Edinburgh Portable Compiler" F90.
 # fort is the Compaq Fortran 90 (now 95) compiler for Tru64 and Linux/Alpha.
+# g95 is the free GNU fortran compiler based on gfortran-gcc4.0
+# efc/ifc are the Intel 7.x and prior compilers
 AC_DEFUN([AC_PROG_F90],
 [AC_LANG_PUSH(Fortran 90)dnl
 AC_ARG_VAR([F90],      [Fortran 90 compiler command])dnl
@@ -396,7 +403,7 @@ AC_ARG_VAR([F90SUFFIX], [Fortran 90 filename extension])dnl
 _AC_ARG_VAR_LDFLAGS()dnl
 AC_CHECK_TOOLS(F90,
       [m4_default([$1],
-                  [xlf90 pgf90 ifort pathf90 f90 ftn frt f95 lf95 xlf95 fort efc ifc g95])])
+                  [xlf90 pgf90 ifort pathf90 f90 ftn frt lf95 f95 xlf95 fort efc ifc g95])])
 
 # Check for a valid filname extension in the following order: F90, f90, F, f
 if test -z "$F90SUFFIX"; then
