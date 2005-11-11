@@ -388,9 +388,9 @@ AC_DEFUN([AC_LANG_COMPILER(Fortran 90)],
 # pathf90 is the PathScale compiler
 # f90 is Absoft and SGI/MIPS fortran
 # ftn is Cray Fortran
-# frt is 
+# frt is Fujitsu vpp Fortran
 # lf95 is the Lahey-Fujitsu compiler.
-# f95 is Abosft Fortran
+# f95 is Absoft Fortran
 # epcf90 is the "Edinburgh Portable Compiler" F90.
 # fort is the Compaq Fortran 90 (now 95) compiler for Tru64 and Linux/Alpha.
 # g95 is the free GNU fortran compiler based on gfortran-gcc4.0
