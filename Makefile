@@ -3,7 +3,7 @@ SHELL = /bin/sh
 
 include Makefile.conf
 
-SUBDIRS = $(MPEUPATH) $(MCTPATH)
+SUBDIRS = $(MPISERPATH) $(MPEUPATH) $(MCTPATH)
 
 # TARGETS
 subdirs:

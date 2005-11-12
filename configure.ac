@@ -143,10 +143,14 @@ fi
 # DONT CHECK MPI IF SERIALMPI OPTION IS ENABLED
 if test -n "$DONOTCHECKMPI"; then
    echo "MPISERIAL ENABLED: BYPASSING MPI CHECK"
-   AC_ARG_VAR(MPIF90,[MPI Fortran compiler command])	
    if test -z "$MPIF90"; then
       MPIF90=$F90
    fi
+   abs_top_builddir=`pwd`
+   MPISERPATH=$abs_top_builddir/mpi-serial
+   AC_SUBST(MPISERPATH)
+   MPIHEADER=-I$MPISERPATH
+   MPILIBS="-L$MPISERPATH -lmpi-serial"
 fi
 
 F90FLAGS="$OLDF90FLAGS"
