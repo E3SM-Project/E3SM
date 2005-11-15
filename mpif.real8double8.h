@@ -1,6 +1,6 @@
 
 !!!
-!!! mpif.real4double8.h (real is 4 bytes, double precision 8)
+!!! mpif.real8double8.h (real is 8 bytes, double precision 8)
 !!!
 !!!   NOTE: mpif.h is copied from either mpif.XXXX.h when the
 !!!   library is built.  Do not modify mpif.h, the changes will 
@@ -85,7 +85,7 @@
 
 !!!!!!!
 	INTEGER MPI_REAL
-	PARAMETER (MPI_REAL=4)
+	PARAMETER (MPI_REAL=8)
 
 	INTEGER MPI_DOUBLE_PRECISION
 	PARAMETER (MPI_DOUBLE_PRECISION=8)

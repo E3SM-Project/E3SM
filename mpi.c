@@ -63,10 +63,18 @@ FORT_NAME( mpi_init_fort , MPI_INIT_FORT)
 
 #define verify_eq(name)  \
   if (*f_##name != name) \
-    { fprintf(stderr,"mpi_init_fort: mpif.h %s (%d) " \
+    { fprintf(stderr,"mpi_init_fort: %s: mpif.h value (%d) " \
                      "is not consistant with mpi.h value (%d)\n", \
                      #name,*f_##name,name); \
       err=1; }
+
+#define verify_eq_warn(name)  \
+  if (*f_##name != name) \
+    { fprintf(stderr,"mpi_init_fort: warning: %s: mpif.h value (%d) " \
+                     "is not consistant with mpi.h value (%d)\n", \
+                     #name,*f_##name,name); \
+    }
+
 
   /*
    * verify_size
@@ -120,7 +128,7 @@ FORT_NAME( mpi_init_fort , MPI_INIT_FORT)
 
   verify_size(MPI_LOGICAL,flog1,flog2);
 
-  verify_eq(MPI_REAL);
+  verify_eq_warn(MPI_REAL);
   verify_size(MPI_REAL,freal1,freal2);
 
   verify_eq(MPI_DOUBLE_PRECISION);

@@ -2,9 +2,9 @@
 !!!
 !!! mpif.real8double16.h  (real is 8 bytes, double precision 16)
 !!!
-!!!   NOTE: mpif.h is copied from either mpif32.h or mpi64.h when
-!!!   the library is built.  Do not modify mpif.h, the changes will 
-!!!   get clobbered.  Instead, modify mpif32.h or mpi64.h.
+!!!   NOTE: mpif.h is copied from either mpif.XXXX.h when the
+!!!   library is built.  Do not modify mpif.h, the changes will 
+!!!   get clobbered.
 !!!
 
 
