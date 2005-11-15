@@ -63,15 +63,15 @@ FORT_NAME( mpi_init_fort , MPI_INIT_FORT)
 
 #define verify_eq(name)  \
   if (*f_##name != name) \
-    { fprintf(stderr,"mpi_init_fort: %s: mpif.h value (%d) " \
-                     "is not consistant with mpi.h value (%d)\n", \
+    { fprintf(stderr,"mpi-serial: mpi_init_fort: %s not consistant " \
+                     "between mpif.h (%d) and mpi.h (%d)\n",\
                      #name,*f_##name,name); \
       err=1; }
 
 #define verify_eq_warn(name)  \
   if (*f_##name != name) \
-    { fprintf(stderr,"mpi_init_fort: warning: %s: mpif.h value (%d) " \
-                     "is not consistant with mpi.h value (%d)\n", \
+    { fprintf(stderr,"mpi-serial: mpi_init_fort: warning: %s not consistant " \
+                     "between mpif.h (%d) and mpi.h (%d)\n",\
                      #name,*f_##name,name); \
     }
 
@@ -86,7 +86,7 @@ FORT_NAME( mpi_init_fort , MPI_INIT_FORT)
 
 #define verify_size(name,p1,p2) \
   if ( (size=((char *)(p2) - (char *)(p1))) != *f_##name ) \
-    { fprintf(stderr,"mpi_init_fort: mpif.h %s (%d) " \
+    { fprintf(stderr,"mpi-serial: mpi_init_fort: mpif.h %s (%d) " \
                      "does not match actual fortran size (%d)\n", \
                      #name,*f_##name,size); \
       err=1; }
@@ -101,7 +101,7 @@ FORT_NAME( mpi_init_fort , MPI_INIT_FORT)
 #define verify_field(name) \
   { offset= (char *)&((MPI_Status *)f_status)->name - (char *)f_status; \
     if ( offset != (*f_##name-1)*sizeof(int) ) \
-    { fprintf(stderr,"mpi_init_fort: mpif.h %s (%d) (%d bytes) " \
+    { fprintf(stderr,"mpi-serial: mpi_init_fort: mpif.h %s (%d) (%d bytes) " \
                      "is inconsistant w/offset in MPI_Status (%d bytes)\n", \
                     #name,*f_##name,(*f_##name-1)*sizeof(int),offset); \
       err=1; }}
