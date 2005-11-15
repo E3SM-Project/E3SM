@@ -50,6 +50,7 @@ AC_ARG_VAR(INCLUDEPATH,Additional library and module paths with INCLUDEFLAG)
 AC_ARG_VAR(AR,Archive command)
 AC_ARG_VAR(BABELROOT,Root directory of your Babel installation. i.e.: $BABELROOT/bin/babel $BABELROOT/lib/libsidl.so)
 AC_ARG_VAR(COMPILER_ROOT,Root directory of your (F90) compiler)
+AC_ARG_VAR(FORT_SIZE, Number of bits in Fortran real and double kind)
 
 # INCLUDE BABELROOT and COMPILER_ROOT in Makefile.conf(autoconf output)
 AC_SUBST(BABELROOT)
@@ -146,6 +147,10 @@ if test -n "$DONOTCHECKMPI"; then
    if test -z "$MPIF90"; then
       MPIF90=$F90
    fi
+   if test -z "$FORT_SIZE"; then
+      FORT_SIZE="real4double8"
+      echo "FORT_SIZE IS PRESET TO $FORT_SIZE"
+   fi   
    abs_top_builddir=`pwd`
    MPISERPATH=$abs_top_builddir/mpi-serial
    AC_SUBST(MPISERPATH)
@@ -650,7 +655,7 @@ echo Output Variables: {CC=$CC} {ALLCFLAGS=$ALLCFLAGS} \
 {MPILIBS=$MPILIBS} {MPIHEADER=$MPIHEADER}  \
 {INCLUDEFLAG=$INCLUDEFLAG} {INCLUDEPATH=$INCLUDEPATH} \
 {AR=$AR} {BABELROOT=$BABELROOT} {COMPILER_ROOT=$COMPILER_ROOT} \
-{PYTHON=$PYTHON} {PYTHONOPTS=$PYTHONOPTS} {prefix=$prefix}
+{PYTHON=$PYTHON} {PYTHONOPTS=$PYTHONOPTS} {FORT_SIZE=$FORT_SIZE} {prefix=$prefix}
 echo
 
 AC_OUTPUT

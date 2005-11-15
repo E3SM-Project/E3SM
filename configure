@@ -270,7 +270,7 @@ PACKAGE_VERSION='2.0'
 PACKAGE_STRING='MCT 2.0'
 PACKAGE_BUGREPORT=''
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS MPILIBS MPIHEADER FPP FPPFLAGS MACHDEFS FC FCFLAGS ALLCFLAGS OPT REAL8 BIT64 ENDIAN INCLUDEFLAG INCLUDEPATH AR BABELROOT COMPILER_ROOT PYTHON PYTHONOPTS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT F90 F90FLAGS F90SUFFIX ac_ct_F90 MPIF90 MPISERPATH F90RULE F90RULECPP CRULE LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS MPILIBS MPIHEADER FPP FPPFLAGS MACHDEFS FC FCFLAGS ALLCFLAGS OPT REAL8 BIT64 ENDIAN INCLUDEFLAG INCLUDEPATH AR BABELROOT COMPILER_ROOT FORT_SIZE PYTHON PYTHONOPTS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT F90 F90FLAGS F90SUFFIX ac_ct_F90 MPIF90 MPISERPATH F90RULE F90RULECPP CRULE LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -779,6 +779,10 @@ ac_env_COMPILER_ROOT_set=${COMPILER_ROOT+set}
 ac_env_COMPILER_ROOT_value=$COMPILER_ROOT
 ac_cv_env_COMPILER_ROOT_set=${COMPILER_ROOT+set}
 ac_cv_env_COMPILER_ROOT_value=$COMPILER_ROOT
+ac_env_FORT_SIZE_set=${FORT_SIZE+set}
+ac_env_FORT_SIZE_value=$FORT_SIZE
+ac_cv_env_FORT_SIZE_set=${FORT_SIZE+set}
+ac_cv_env_FORT_SIZE_value=$FORT_SIZE
 ac_env_CC_set=${CC+set}
 ac_env_CC_value=$CC
 ac_cv_env_CC_set=${CC+set}
@@ -914,6 +918,7 @@ Some influential environment variables:
               $BABELROOT/bin/babel $BABELROOT/lib/libsidl.so
   COMPILER_ROOT
               Root directory of your (F90) compiler
+  FORT_SIZE   Number of bits in Fortran real and double kind
   CC          C compiler command
   CFLAGS      C compiler flags
   LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
@@ -1378,6 +1383,7 @@ fi;
 
 
 # DECLARE THE FOLLOWING PRECIOUS VARIABLES
+
 
 
 
@@ -2249,7 +2255,7 @@ echo "$as_me: FORTRAN 90 FILENAME EXTENSION HAS BEEN SET TO .$F90SUFFIX" >&6;}
 fi
 
 # Provide some information about the compiler.
-echo "$as_me:2252:" \
+echo "$as_me:2258:" \
      "checking for Fortran 90 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -2578,6 +2584,10 @@ if test -n "$DONOTCHECKMPI"; then
    if test -z "$MPIF90"; then
       MPIF90=$F90
    fi
+   if test -z "$FORT_SIZE"; then
+      FORT_SIZE="real4double8"
+      echo "FORT_SIZE IS PRESET TO $FORT_SIZE"
+   fi
    abs_top_builddir=`pwd`
    MPISERPATH=$abs_top_builddir/mpi-serial
 
@@ -2684,7 +2694,7 @@ _ACEOF
 # 1 to this macro) to the Fortran 90 compiler in order to get "version" output
 ac_save_F90FLAGS=$F90FLAGS
 F90FLAGS="$F90FLAGS $ac_version"
-(eval echo $as_me:2687: \"$ac_link\") >&5
+(eval echo $as_me:2697: \"$ac_link\") >&5
 ac_f90_version_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 echo "$ac_f90_version_output" >&5
 F90FLAGS=$ac_save_F90FLAGS
@@ -3749,7 +3759,7 @@ echo Output Variables: {CC=$CC} {ALLCFLAGS=$ALLCFLAGS} \
 {MPILIBS=$MPILIBS} {MPIHEADER=$MPIHEADER}  \
 {INCLUDEFLAG=$INCLUDEFLAG} {INCLUDEPATH=$INCLUDEPATH} \
 {AR=$AR} {BABELROOT=$BABELROOT} {COMPILER_ROOT=$COMPILER_ROOT} \
-{PYTHON=$PYTHON} {PYTHONOPTS=$PYTHONOPTS} {prefix=$prefix}
+{PYTHON=$PYTHON} {PYTHONOPTS=$PYTHONOPTS} {FORT_SIZE=$FORT_SIZE} {prefix=$prefix}
 echo
 
 cat >confcache <<\_ACEOF
@@ -4402,6 +4412,7 @@ s,@INCLUDEPATH@,$INCLUDEPATH,;t t
 s,@AR@,$AR,;t t
 s,@BABELROOT@,$BABELROOT,;t t
 s,@COMPILER_ROOT@,$COMPILER_ROOT,;t t
+s,@FORT_SIZE@,$FORT_SIZE,;t t
 s,@PYTHON@,$PYTHON,;t t
 s,@PYTHONOPTS@,$PYTHONOPTS,;t t
 s,@CC@,$CC,;t t
