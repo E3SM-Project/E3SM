@@ -596,7 +596,8 @@
 ! for each distributed piece of {\tt iV}.  On the root, a complete 
 ! (including halo points) gathered copy of {\tt iV} is collected into 
 ! the temporary {\tt AttrVect} variable {\tt workV} (the length of
-! {\tt workV} is {\tt GlobalSegMap\_GlobalStorage(GSMap)}).  The 
+! {\tt workV} is the larger of {\tt GlobalSegMap\_GlobalStorage(GSMap)} or
+! {\tt GlobalSegMap\_GlobalSize(GSMap)}).  The 
 ! variable {\tt workV} is segmented by process, and segments are 
 ! copied into it by process, but ordered in the same order the segments
 ! appear in {\tt GSMap}.  Once {\tt workV} is loaded, the data are 
@@ -681,6 +682,8 @@
   integer :: m, n, ilb, iub, olb, oub, pe
 ! workV segment tracking index array:
   integer, dimension(:), allocatable :: current_pos
+! workV sizes
+  integer :: gssize, gstorage
 
       ! Initialize stat (if present)
 
@@ -755,7 +758,12 @@
 
   if(myID == root) then
 
-     global_storage = GlobalSegMap_GlobalStorage(GSMap)
+! bug fix:  gstorage will be bigger than gssize if GSmap is
+! haloed.  But gstorage may be smaller than gsize if GSmap
+! is masked.  So take the maximum.  RLJ
+     gstorage = GlobalSegMap_GlobalStorage(GSMap)
+     gssize = GlobalSegMap_gsize(GSMap)
+     global_storage = MAX(gstorage,gssize)
 
      call AttrVect_init(oV,iV,global_storage)
 
