@@ -85,8 +85,10 @@
         initr_, &       ! initialize from the root
         initp_,	&       ! initialize in parallel from replicated arrays
         initp1_, &      ! initialize in parallel from 1 replicated array
-        initp0_         ! null constructor using replicated data
+        initp0_, &      ! null constructor using replicated data
+        init_index_     ! initialize from local index arrays
     end interface
+
     interface clean   ; module procedure clean_   ; end interface
     interface comp_id ; module procedure comp_id_ ; end interface
     interface gsize   ; module procedure gsize_   ; end interface
@@ -902,6 +904,122 @@
   endif
 
  end subroutine initp0_
+
+
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: init_index_ - initialize GSM from local index arrays
+!
+! !DESCRIPTION:
+!
+! The routine {\tt init_index\_()} takes a local array of indices 
+! uses them to create a {\tt GlobalSegMap}.  They are parsed to 
+! determine the lengths of the runs, and then a call is made to
+! {\tt initd_}.
+!
+!
+! !INTERFACE:
+
+    subroutine init_index_(GSMap, lindx, lsize, my_comm, comp_id, gsize)
+
+!
+! !USES:
+!
+
+!  use m_GlobalSegMap,only: GlobalSegMap
+!  use m_GlobalSegMap,only: MCT_GSMap_init => init
+
+!  use shr_sys_mod
+  implicit none
+
+! !INPUT PARAMETERS: 
+
+     integer , intent(in) :: lindx(lsize)    ! index buffer
+     integer , intent(in) :: lsize           ! size of index buffer
+     integer , intent(in) :: my_comm         ! mpi communicator group (mine)
+     integer , intent(in) :: comp_id         ! component id (mine)
+     integer , intent(in),optional :: gsize  ! global size
+
+! !OUTPUT PARAMETERS:
+
+     type(GlobalSegMap),intent(out) :: GSMap ! Output GlobalSegMap
+     
+
+! !REVISION HISTORY:
+! 	15Nov05 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
+!       17Nov05 - R. Loy <rloy@mcs.anl.gov> - install into MCT
+!EOP ___________________________________________________________________
+
+
+     !--- local ---
+     integer             :: i,j,k,n      ! generic indicies
+     integer             :: nseg         ! counts number of segments for GSMap
+     integer,allocatable :: start(:)     ! used to init GSMap 
+     integer,allocatable :: count(:)     ! used to init GSMap 
+     integer,parameter   :: pid0=0       ! mpi process id for root pe
+     integer,parameter   :: debug=0      ! 
+
+     integer rank,ierr
+
+     call MPI_COMM_RANK(my_comm,rank, ierr)
+
+     ! compute segment's start indicies and length counts 
+
+     ! first pass - count how many runs of consecutive numbers
+
+     nseg=1
+     do n = 2,lsize
+        i = lindx(n-1)
+        j = lindx(n)
+        if ( j-i /= 1) nseg=nseg+1
+     end do
+
+     allocate(start(nseg),count(nseg))
+
+     ! second pass - determine how long each run is
+
+     nseg = 1
+     start(nseg) = lindx(1)
+     count(nseg) = 1
+     do n = 2,lsize
+        i = lindx(n-1)
+        j = lindx(n)
+        if ( j-i /= 1) then
+            nseg = nseg+1
+            start(nseg) = lindx(n)
+            count(nseg) = 1
+         else
+            count(nseg) = count(nseg)+1
+         end if
+      end do
+
+
+     if (debug.ne.0) then
+	write(6,*) rank,'init_index: SIZE ',nseg
+
+	do n=1,nseg
+          write(6,*) rank,'init_index: START,COUNT ',start(n),count(n)
+	end do
+     endif
+
+
+      if (present(gsize)) then
+        call initd_( GSMap, start, count, pid0, my_comm,  &
+                     comp_id, gsize=gsize)
+      else
+        call initd_( GSMap, start, count, pid0, my_comm,  &
+  	             comp_id)
+      endif
+
+
+      deallocate(start, count)
+
+   end subroutine init_index_
+
+
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
