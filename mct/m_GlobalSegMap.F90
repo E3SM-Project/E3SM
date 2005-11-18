@@ -923,7 +923,7 @@
 !
 ! !INTERFACE:
 
-    subroutine init_index_(GSMap, lindx, lsize, my_comm, comp_id, gsize)
+    subroutine init_index_(GSMap, lindx, my_comm, comp_id, lsize, gsize)
 
 !
 ! !USES:
@@ -937,10 +937,11 @@
 
 ! !INPUT PARAMETERS: 
 
-     integer , intent(in) :: lindx(lsize)    ! index buffer
-     integer , intent(in) :: lsize           ! size of index buffer
+     integer , dimension(:),intent(in) :: lindx   ! index buffer
      integer , intent(in) :: my_comm         ! mpi communicator group (mine)
      integer , intent(in) :: comp_id         ! component id (mine)
+
+     integer , intent(in),optional :: lsize  ! size of index buffer
      integer , intent(in),optional :: gsize  ! global size
 
 ! !OUTPUT PARAMETERS:
@@ -951,6 +952,7 @@
 ! !REVISION HISTORY:
 ! 	15Nov05 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
 !       17Nov05 - R. Loy <rloy@mcs.anl.gov> - install into MCT
+!       18Nov05 - R. Loy <rloy@mcs.anl.gov> - make lsize optional
 !EOP ___________________________________________________________________
 
 
@@ -963,6 +965,14 @@
      integer,parameter   :: debug=0      ! 
 
      integer rank,ierr
+     integer mysize
+
+
+     if (present(lsize)) then
+       mysize=lsize
+     else
+       mysize=size(lindx)
+     endif
 
      call MPI_COMM_RANK(my_comm,rank, ierr)
 
@@ -971,7 +981,7 @@
      ! first pass - count how many runs of consecutive numbers
 
      nseg=1
-     do n = 2,lsize
+     do n = 2,mysize
         i = lindx(n-1)
         j = lindx(n)
         if ( j-i /= 1) nseg=nseg+1
@@ -984,7 +994,7 @@
      nseg = 1
      start(nseg) = lindx(1)
      count(nseg) = 1
-     do n = 2,lsize
+     do n = 2,mysize
         i = lindx(n-1)
         j = lindx(n)
         if ( j-i /= 1) then
