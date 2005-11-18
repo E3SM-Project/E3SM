@@ -550,7 +550,7 @@
 !           to control use of vector-friendly mods provided by Fujitsu.
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname_=myname//'Rearrange_'
+  character(len=*),parameter :: myname_=myname//'::Rearrange_'
   integer ::	numi,numr,i,j,k,ier
   integer ::    VectIndex,AttrIndex,seg_start,seg_end
   integer ::    localindex,SrcVectIndex,TrgVectIndex,IAttrIndex,RAttrIndex
