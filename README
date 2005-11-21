@@ -14,7 +14,7 @@
 
 ######################################################################
 
-  This is version 2.1.0 of the Model Coupling Toolkit (MCT).
+  This is version 2.2.0 of the Model Coupling Toolkit (MCT).
 
   Our purpose in creating this toolkit is to support the construction
   of highly portable and extensible high-performance couplers 
@@ -34,6 +34,8 @@
   mpeu/    -- Source code for the message-passing environment utilities
               library (MPEU), which provides support for MCT 
 
+  mpi-serial/  -- Source code for optional mpi replacement library.
+
   examples/-- Source code for examples which demonstrate the use of MCT.
 
   doc/     -- documentation for MCT
@@ -51,24 +53,27 @@ Optional Contents available
 ######################################################################
   REQUIREMENTS:
 
-  Building MCT requires a Fortran90 compiler and the MPI library.
+  Building MCT requires a Fortran90 compiler.
 
-  The MCT library builds and the examples run on the following:
+  An MPI library is now optional.  To compile without MPI, add
+  --enable-mpiserial to the configure command below.  Note that
+  not all the examples will work without MPI.  See mpi-serial/README
+  for more information.
+
+
+  The MCT library builds and the examples run on the following
+  platforms/compilers:
 
   IBM (AIX) xlf
   SGI (IRIX64) f90 MIPSpro 
+  SGI Altix
   SUN (Solaris) f90 WorkShop
   Compaq  Compaq Fortran Compiler (X5.5-2801-48CAG or later)
-  SGI Altix
   Cray X1
-  Linux pgf90
-  Linux NAG
-  Linux ifc/efc/ifort
-     NOTE:  The following Intel Fortran Compiler versions are needed
-            to compile/run MCT: 8.0: Build 20040212 or later;
-	    7.1: Builds 20030519,20030605,20030617Z,20030814,20031106 or later;
-	    7.0: Builds 20021028Z, 20021212Z or later
-	    See the MCT homepage for updated information.
+  Linux: Portland Group, Intel, g95, Absoft, Pathscale, Lahey, NAG
+     NOTE:  In general, Intel version 8.1 and later have no problems.
+      Some earlier versions generated internal compiler errors.
+      See the MCT homepage for more information.
   NEC
   Fujitsu
 
@@ -87,15 +92,23 @@ Optional Contents available
   BUILD HELP:
   Try "./configure -help"  for a list of options.
 
-  The Fortran90 compiler must be in your current path.
+  The correct Fortran90 compiler must be in your current path.
+  A frequent problem on Linux is when more than one F90 compiler
+  is in your path and configure finds one and later finds mpif90
+  for another.
 
-  Example: If configure has trouble finding the correct F90 compiler
-     on IBM:
-    > ./configure F90=xlf90. 
+  Example: If configure has trouble finding the correct F90 compiler:
+    > ./configure F90=pgf90. 
 
   You can also direct configure through environment variables:
     > setenv F90 xlf90
     > ./configure
+
+  If the build fails, please do the following:
+    > ./configure >& config.out
+    > make >& make.out
+  and send us config.out, make.out and config.log (which is produced by the
+  configure command)
 
 
 ######################################################################
@@ -104,7 +117,7 @@ Optional Contents available
   "make install" will copy the .mod files to the /usr/include directory
   and the *lib.a files to /usr/lib.   To override these choices, use
   "-prefix" when running configure:
-       > ./configure -prefix=/home/$USER
+       > ./configure --prefix=/home/$USER
   With the above option, "make install" will place .mod's in /home/$USER/include 
   and *lib.a's in /home/$USER/lib
 
@@ -113,8 +126,8 @@ Optional Contents available
 
   The programs in MCT/examples/simple require no input.
 
-  The program in MCT/examples/climate_concur1 requires some input data
-   in a directory called MCT/data.  The dataset is available with MCT
+  The programs in MCT/examples/climate_concur1 and MCT/examples/climate_sequen1
+  require some input data in a directory called MCT/data.  The dataset is available with MCT
    or separately from the website.
 
   To build them, type "make examples" in the top level directory or
@@ -160,6 +173,7 @@ Optional Contents available
   11 Jul, 2004 -- version 2.0.2
   19 Oct, 2004 -- version 2.0.3 (not released)
   21 Jan, 2005 -- version 2.1.0
+  22 Nov, 2005 -- version 2.2.0
 
 
 
