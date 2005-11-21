@@ -915,10 +915,14 @@
 !
 ! !DESCRIPTION:
 !
-! The routine {\tt init_index\_()} takes a local array of indices 
-! uses them to create a {\tt GlobalSegMap}.  They are parsed to 
-! determine the lengths of the runs, and then a call is made to
-! {\tt initd_}.
+! The routine {\tt init\_index\_()} takes a local array of indices 
+! {\tt lindx} and uses them to create a {\tt GlobalSegMap}.  
+! {\tt lindx} is parsed to determine the lengths of the runs, and 
+! then a call is made to {\tt initd\_}.  The optional argument 
+! {\tt lsize} can be used if only the first {\tt lsize} number 
+! of elements of {\tt lindx} are valid.  The optional argument
+! {\tt gsize} is used to specify the global number of unique points
+! if this can not be determined from the collective {\tt lindx}.
 !
 !
 ! !INTERFACE:
@@ -942,7 +946,7 @@
      integer , intent(in) :: comp_id         ! component id (mine)
 
      integer , intent(in),optional :: lsize  ! size of index buffer
-     integer , intent(in),optional :: gsize  ! global size
+     integer , intent(in),optional :: gsize  ! global vector size
 
 ! !OUTPUT PARAMETERS:
 
@@ -950,7 +954,7 @@
      
 
 ! !REVISION HISTORY:
-! 	15Nov05 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
+!       30Jul02 - T. Craig - initial version in cpl6.
 !       17Nov05 - R. Loy <rloy@mcs.anl.gov> - install into MCT
 !       18Nov05 - R. Loy <rloy@mcs.anl.gov> - make lsize optional
 !EOP ___________________________________________________________________
