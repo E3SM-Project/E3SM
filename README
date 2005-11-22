@@ -3,8 +3,7 @@
 
 mpi-serial
 
-   Rob Jacob
-   Ray Loy
+   Ray Loy (rloy@mcs.anl.gov)
 
 ######################################################################
 
@@ -40,8 +39,8 @@ specify a value for FORT_SIZE, e.g.:
 The built-in choices for FORT_SIZE are:
 
    real4double8       (default)
-   real8double8       (use when REALs are auto-promoted)
-   real8double16
+   real8double8       (use when only REALs are auto-promoted)
+   real8double16      (use when REALs and DOUBLEs are auto-promoted)
 
 
 How to configure for other Fortran data sizes:
