@@ -626,6 +626,7 @@
 ! AttrVect and associated services:
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
+      use m_AttrVect, only : AttrVect_zero => zero
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nIAttr => nIAttr
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
@@ -660,6 +661,8 @@
 ! 20Aug01 - E.T. Ong <eong@mcs.anl.gov> - Added error checking for
 !           matching processors in gsmap and comm. Corrected
 !           current_pos assignment.
+! 23Nov01 - R. Jacob <jacob@mcs.anl.gov> - zero the oV before copying in
+!           gathered data.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GSM_gather_'
@@ -766,6 +769,7 @@
      global_storage = MAX(gstorage,gssize)
 
      call AttrVect_init(oV,iV,global_storage)
+     call AttrVect_zero(oV)
 
        ! On the root, allocate current position index for
        ! each process chunk:
