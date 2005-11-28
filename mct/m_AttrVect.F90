@@ -2720,10 +2720,11 @@
 ! as defined by {\tt key\_list} (the ordering in {\tt key\_list} being from
 ! left to right.
 !
-! {\bf N.B.:}  This routine will fail if {\tt aV\%rList} and 
+! {\bf N.B.:}  This routine will fail if {\tt aV\%iList} and 
 ! {\tt aV\%rList} share one or more common entries. 
 !
-! {\bf N.B.:}  This routine will fail if {\tt aV\%rList} and 
+! {\bf N.B.:}  This routine will fail if one of the sorting keys presented is 
+! not present in {\tt aV\%iList} nor {\tt aV\%rList}.
 !
 ! !INTERFACE:
 
