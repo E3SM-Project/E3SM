@@ -92,6 +92,9 @@
 ! and {\tt TargetGSMap} and build a Rearranger {\tt OutRearranger}
 ! between them. {\tt myComm} is used for the internal communication.
 !
+! {\bf N.B.} The two {\tt GlolbalSegMap} inputs must be initialized so
+! that the index values on a processor are in ascending order.
+!
 ! !INTERFACE:
 
  subroutine init_(SourceGSMap,TargetGSMap,myComm,OutRearranger)

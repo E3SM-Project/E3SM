@@ -108,6 +108,9 @@
 ! component identified by {\tt othercomp} and then calls {\tt initp\_()}
 ! to build a Router {\tt Rout} between them.
 !
+! {\bf N.B.} The  {\tt GSMap} argument must be declared so that the index values
+! on a processor are in ascending order.
+!
 ! !INTERFACE:
 
  subroutine initd_(othercomp,GSMap,mycomm,Rout )
@@ -174,6 +177,9 @@
 !
 ! Given two GlobalSegmentMaps {\tt GSMap} and {\tt RGSMap}, intialize a
 ! Router {\tt Rout} between them.  Use local communicator {\tt mycomm}.
+!
+! {\bf N.B.} The two {\tt GSMap} arguments must be declared so that the index values
+! on a processor are in ascending order.
 !
 ! !INTERFACE:
 
