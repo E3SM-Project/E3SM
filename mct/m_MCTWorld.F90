@@ -265,11 +265,10 @@
 ! make the master list of global proc ids
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! allocate space on local root to hold global ids
-  if(myLid == 0) then
-    allocate(Gprocids(mysize),stat=ier)
-    if(ier/=0) call die(myname_,'allocate(Gprocids)',ier)
-  endif
+! allocate space to hold global ids
+! only needed on root, but allocate everywhere to avoid complaints.
+  allocate(Gprocids(mysize),stat=ier)
+  if(ier/=0) call die(myname_,'allocate(Gprocids)',ier)
 
 ! gather over the LOCAL comm
   call MPI_GATHER(myGid,1,MP_INTEGER,Gprocids,1,MP_INTEGER,0,mycomm,ier)
