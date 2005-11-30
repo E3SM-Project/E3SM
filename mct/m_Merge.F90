@@ -2115,8 +2115,7 @@
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
-      use m_AttrVect, only : AttrVect_SharedAttrIndexList => &
-                                                  SharedAttrIndexList
+      use m_AttrVect, only : SharedAttrIndexList
 
       use m_GeneralGrid, only : GeneralGrid
       use m_GeneralGrid, only : GeneralGrid_lsize => lsize
@@ -2531,8 +2530,7 @@
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
-      use m_AttrVect, only : AttrVect_SharedAttrIndexList => &
-                                                  SharedAttrIndexList
+      use m_AttrVect, only : SharedAttrIndexList
 
       use m_GeneralGrid, only : GeneralGrid
       use m_GeneralGrid, only : GeneralGrid_lsize => lsize
