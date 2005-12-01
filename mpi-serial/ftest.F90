@@ -13,6 +13,7 @@
 	integer comm2;
 	logical flag;
 
+        print *, 'Time=',mpi_wtime()
 
 	call mpi_initialized(flag,ier)
 	print *, 'MPI is initialized=',flag
@@ -66,6 +67,7 @@
 	end do
 
 
+        print *, 'Time=',mpi_wtime()
 	call mpi_waitall(5,sreq,status,ier)
 	print *,'sends on MPI_COMM_WORLD done'
 
@@ -88,6 +90,10 @@
                    '  tag=',status(MPI_TAG,i)
 	end do
 
+	do i=1,5
+          print *, 'Time=',mpi_wtime()
+          call sleep(1)
+	end do
 
  	end
 
