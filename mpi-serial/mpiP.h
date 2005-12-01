@@ -27,7 +27,7 @@
 #define FORT_NAME(lower,upper) lower##_
 #elif defined(FORTRAN_SAME)
 #define FORT_NAME(lower,upper) lower
-#elif defined(FORTRAN_CAPS)
+#elif defined(FORTRAN_CAPS_)
 #define FORT_NAME(lower,upper) upper
 #else
 #define FORT_NAME(lower,upper) FORTRAN_MANGLE_ERROR
