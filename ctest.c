@@ -18,6 +18,8 @@ main(int argc, char *argv[])
   MPI_Group mygroup;
 
 
+  printf("Time: %f\n",MPI_Wtime());
+
   MPI_Initialized(&flag);
   printf("MPI is initialized = %d\n",flag);
 
@@ -66,6 +68,7 @@ main(int argc, char *argv[])
     }
 
 
+  printf("Time: %f\n",MPI_Wtime());
   MPI_Waitall(5,sreq,status);
   MPI_Waitall(5,rreq,status);
 
@@ -95,6 +98,12 @@ main(int argc, char *argv[])
 
   MPI_Finalize();
 
+
+  for (i=0; i<5; i++)
+    {
+      printf("Time: %f\n",MPI_Wtime());
+      sleep(1);
+    }
 }
 
 
