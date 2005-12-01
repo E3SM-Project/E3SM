@@ -95,9 +95,17 @@ typedef struct                  /* Fortran: INTEGER status(MPI_STATUS_SIZE) */
 
 
 extern int MPI_Comm_free(MPI_Comm *comm);
-extern int MPI_Comm_dup(MPI_Comm comm, MPI_Comm *newcomm);
 extern int MPI_Comm_size(MPI_Comm comm, int *size);
 extern int MPI_Comm_rank(MPI_Comm comm, int *rank);
+extern int MPI_Comm_dup(MPI_Comm comm, MPI_Comm *newcomm);
+extern int MPI_Comm_create(MPI_Comm comm, MPI_Group group, MPI_Comm *newcomm);
+extern int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm);
+extern int MPI_Comm_group(MPI_Comm comm, MPI_Group *group);
+
+extern int MPI_Group_incl(MPI_Group group, int n, int *ranks, MPI_Group *newgroup);
+extern int MPI_Group_free(MPI_Group *group);
+
+
 extern int MPI_Init(int *argc, char **argv[]) ;
 extern int MPI_Finalize(void);
 extern int MPI_Abort(MPI_Comm comm, int errorcode);
