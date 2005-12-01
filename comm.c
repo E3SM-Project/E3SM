@@ -167,7 +167,7 @@ int MPI_Comm_create(MPI_Comm comm, MPI_Group group, MPI_Comm *newcomm)
 FORT_NAME( mpi_comm_split, MPI_COMM_SPLIT )
      (int *comm, int *color, int *key, int *newcomm, int *ierror)
 {
-  *ierror=MPI_Comm_split(*comm,*color,*key,*newcomm);
+  *ierror=MPI_Comm_split(*comm,*color,*key,newcomm);
 
 }
 
