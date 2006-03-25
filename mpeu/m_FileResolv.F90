@@ -95,7 +95,11 @@ CONTAINS
 
    character(len=*), parameter	:: myname = 'MCT(MPEU)::FileResolv'
 
+#if SYSUNICOS
+   integer, external  :: ishell
+#else
    integer, external  :: system
+#endif
    character(len=255) :: path, host, dirn, basen, head, tail, cmd, filen
 
    integer i, rc
@@ -176,7 +180,12 @@ CONTAINS
       if ( .not. ( fexists .and. caching ) ) then
          cmd = trim(remote_cp) // ' ' // &
                trim(host) // ':' // trim(fname) // ' . '
+#if SYSUNICOS
+         rc = ishell ( cmd ) 
+#else
          rc = system ( cmd ) 
+#endif
+
          if ( rc .eq. 0 ) then
             fname = basen
          else
@@ -221,7 +230,11 @@ CONTAINS
         else                                          ! keep   file.gz
              cmd = trim(gunzip) // ' -c ' // trim(fname) // ' > ' // trim(head)
         end if
+#if SYSUNICOS
+        rc = ishell ( cmd ) 
+#else
         rc = system ( cmd ) 
+#endif
         if ( rc .eq. 0 ) then
            fname = head             
         else
