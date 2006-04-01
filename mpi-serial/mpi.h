@@ -151,3 +151,12 @@ extern int MPI_Allreduce(void* sendbuf, void* recvbuf, int count,
 
 extern double MPI_Wtime(void);
 
+extern int MPI_Alltoall(void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                        void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                        MPI_Comm comm);
+
+extern int MPI_Alltoallv(void *sendbuf, int *sendcounts,
+                         int *sdispls, MPI_Datatype sendtype,
+                         void *recvbuf, int *recvcounts,
+                         int *rdispls, MPI_Datatype recvtype,
+                         MPI_Comm comm) ;
