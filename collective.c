@@ -223,3 +223,63 @@ int MPI_Allreduce(void* sendbuf, void* recvbuf, int count,
 }
 
 
+/*********/
+
+
+FORT_NAME( mpi_alltoall , MPI_ALLTOALL )
+                        ( void *sendbuf, int *sendcount, int *sendtype,
+			  void *recvbuf, int *recvcount, int *recvtype,
+                          int *comm, int *ierror )
+{
+  *ierror=MPI_Alltoall(sendbuf, *sendcount, *sendtype,
+		       recvbuf, *recvcount, *recvtype,
+		       *comm);
+}
+
+
+int MPI_Alltoall(void *sendbuf, int sendcount, MPI_Datatype sendtype,
+		 void *recvbuf, int recvcount, MPI_Datatype recvtype,
+		 MPI_Comm comm)
+{
+
+  memcpy(recvbuf,sendbuf,sendcount * sendtype);
+
+  return(MPI_SUCCESS);
+}
+
+
+/*********/
+
+
+FORT_NAME( mpi_alltoallv , MPI_ALLTOALLV )
+           ( void *sendbuf, int *sendcounts, int *sdispls, int *sendtype,
+	     void *recvbuf, int *recvcounts, int *rdispls, int *recvtype,
+             int *comm, int *ierror )
+{
+
+  *ierror=MPI_Alltoallv(sendbuf, sendcounts, sdispls, *sendtype,
+			recvbuf, recvcounts, rdispls, *recvtype,
+			*comm);
+
+}
+
+int MPI_Alltoallv(void *sendbuf, int *sendcounts,
+		  int *sdispls, MPI_Datatype sendtype,
+                  void *recvbuf, int *recvcounts,
+		  int *rdispls, MPI_Datatype recvtype,
+                  MPI_Comm comm) 
+
+{
+  int send_offset;
+  int recv_offset;
+
+  send_offset=sdispls[0]*sendtype;
+  recv_offset=rdispls[0]*recvtype;
+
+
+  memcpy( (char *)recvbuf+recv_offset, (char *)sendbuf+send_offset,
+	  sendcounts[0] * sendtype);
+
+
+  return(MPI_SUCCESS);
+}
