@@ -95,7 +95,7 @@ CONTAINS
 
    character(len=*), parameter	:: myname = 'MCT(MPEU)::FileResolv'
 
-#if SYSUNICOS
+#if SYSUNICOS || CPRCRAY
    integer, external  :: ishell
 #else
    integer, external  :: system
@@ -180,7 +180,7 @@ CONTAINS
       if ( .not. ( fexists .and. caching ) ) then
          cmd = trim(remote_cp) // ' ' // &
                trim(host) // ':' // trim(fname) // ' . '
-#if SYSUNICOS
+#if SYSUNICOS || CPRCRAY
          rc = ishell ( cmd ) 
 #else
          rc = system ( cmd ) 
@@ -230,7 +230,7 @@ CONTAINS
         else                                          ! keep   file.gz
              cmd = trim(gunzip) // ' -c ' // trim(fname) // ' > ' // trim(head)
         end if
-#if SYSUNICOS
+#if SYSUNICOS || CPRCRAY
         rc = ishell ( cmd ) 
 #else
         rc = system ( cmd ) 
