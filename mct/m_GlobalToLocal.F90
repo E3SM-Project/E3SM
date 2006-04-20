@@ -46,7 +46,8 @@
 
     interface GlobalToLocalIndices ; module procedure   &
        GlobalSegMapToIndices_,  &   ! local arrays of starts/lengths
-       GlobalSegMapToNavigator_     ! return local indices as Navigator
+       GlobalSegMapToNavigator_, &  ! return local indices as Navigator
+       GlobalSegMapToIndexArr_
     end interface
 
     interface GlobalToLocalIndex ; module procedure &
@@ -57,6 +58,7 @@
     interface GlobalToLocalMatrix ; module procedure &
        GlobalSegMapToLocalMatrix_
     end interface
+
 
 ! !SEE ALSO:
 !
@@ -195,6 +197,7 @@
 !
 ! !INTERFACE:
 
+
  integer function GlobalSegMapToIndex_(GSMap, i_g, comm)
 
 !
@@ -296,6 +299,162 @@
 
  end function GlobalSegMapToIndex_
 
+
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: GlobalSegMapToIndexArr_ - Global to Local Index Array Translation
+!
+! !DESCRIPTION:  Given a {\tt GlobalSegMap} data type {\tt GSMap}
+! and MPI communicator corresponding to the Fortran {\tt INTEGER} 
+! handle {\tt comm}, convert an array of global index values
+! {\tt i\_global()} to an array of local index values {\tt i\_local()}.  If 
+! the datum {\tt i\_global(j)} is not stored on the local process ID,
+! then {\tt i\_local(j)} will be set to {\tt -1}/
+!
+! !INTERFACE:
+
+
+subroutine GlobalSegMapToIndexArr_(GSMap, i_global, i_local, nindex, comm)
+
+!
+! !USES:
+!
+      use m_stdio
+      use m_mpif90
+      use m_die,          only : MP_perr_die, die, warn
+      use m_GlobalSegMap, only : GlobalSegMap
+      use m_GlobalSegMap, only : GlobalSegMap_ngseg => ngseg
+      use m_GlobalSegMap, only : GlobalSegMap_nlseg => nlseg
+
+      implicit none
+
+! !INPUT PARAMETERS:
+
+      type(GlobalSegMap), intent(in)  :: GSMap ! Output GlobalSegMap
+      integer,            intent(in)  :: i_global(:)   ! global index
+      integer,            intent(out) :: i_local(:)    ! local index
+      integer,            intent(in)  :: nindex          ! size of i_global()
+      integer,            intent(in)  :: comm  ! communicator handle
+
+! !REVISION HISTORY:
+!  12-apr-2006   R. Loy <rloy@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::GlobalSegMapToIndexArr_'
+
+  integer :: myID
+  integer :: count, ierr, ngseg, nlseg
+  integer,allocatable  :: mygs_lb(:),mygs_ub(:),mygs_len(:),mygs_lstart(:)
+
+  integer :: i,j,n,startj
+
+  ! Determine local process id myID:
+
+  call MP_COMM_RANK(comm, myID, ierr)
+  if(ierr /= 0) call MP_perr_die(myname_,'MP_COMM_RANK()',ierr)
+
+
+  ngseg = GlobalSegMap_ngseg(GSMap)
+  nlseg = GlobalSegMap_nlseg(GSMap, myID)
+
+  if (nlseg <= 0) return;
+
+  allocate( mygs_lb(nlseg), mygs_ub(nlseg), mygs_len(nlseg) )
+  allocate( mygs_lstart(nlseg) )
+
+
+!! 
+!! determine the global segments on this processor 
+!! just once, so the info be used repeatedly below
+!!
+
+  n = 0
+  do i=1,ngseg
+    if (GSMap%pe_loc(i) == myID ) then
+      n=n+1
+      mygs_lb(n)=GSMap%start(i)
+      mygs_ub(n)=GSMap%start(i) + GSMap%length(i) -1
+      mygs_len(n)=GSMap%length(i)
+    endif
+  enddo
+
+  if (n .ne. nlseg) then
+    write(stderr,*) myname_,"mismatch nlseg",n,nlseg
+    call die(myname)
+  endif
+
+  mygs_lstart(1)=1
+  do j=2,nlseg
+    mygs_lstart(j)=mygs_lstart(j-1)+mygs_len(j-1)
+  enddo
+
+
+!! 
+!! this loop is optimized for the case that the indices in iglobal()
+!! are in the same order that they appear in the global segments,
+!! which seems usually (always?) to be the case. 
+!!
+!! note that the j loop exit condition is only executed when the index
+!! is not found in the current segment, which saves a factor of 2
+!! since many consecutive indices are in the same segment.
+!! 
+
+
+  j=1
+  do i=1,nindex
+
+    i_local(i)= -1
+
+    startj=j
+    SEARCH_LOOP: do
+
+      if ( (mygs_lb(j) <= i_global(i)) .and. &
+           (i_global(i) <= mygs_ub(j))) then
+        i_local(i) = mygs_lstart(j) + (i_global(i) - mygs_lb(j))
+        EXIT SEARCH_LOOP
+      else
+        j=j+1
+        if (j > nlseg) j=1                      ! wrap around
+        if (j == startj) EXIT SEARCH_LOOP
+      endif
+
+    end do SEARCH_LOOP
+
+  end do
+
+!!!! this version vectorizes (outer loop)
+!!!! performance for in-order input is slightly slower than the above
+!!!! but performance on out-of-order input is probably much better
+!!!! at the moment we are going on the assumption that caller is
+!!!! likely providing in-order, so we won't use this version.
+!!
+!!  do i=1,nindex
+!!
+!!    i_local(i)= -1
+!!
+!!    SEARCH_LOOP: do j=1,nlseg
+!!
+!!      if ( (mygs_lb(j) <= i_global(i)) .and. &
+!!           (i_global(i) <= mygs_ub(j))) then
+!!        i_local(i) = mygs_lstart(j) + (i_global(i) - mygs_lb(j))
+!!      endif
+!!
+!!    end do SEARCH_LOOP
+!!
+!!  end do
+
+
+  deallocate( mygs_lb, mygs_ub, mygs_len, mygs_lstart )
+
+ end subroutine GlobalSegMapToIndexArr_
+
+
+
+
+
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
@@ -312,6 +471,7 @@
 ! of {\tt -1} is returned.
 !
 ! !INTERFACE:
+
 
  integer function GlobalMapToIndex_(GMap, i_g, comm)
 
@@ -479,6 +639,7 @@
 
       use m_GlobalSegMap, only : GlobalSegMap
 
+
       implicit none
 
 ! !INPUT PARAMETERS:
@@ -504,7 +665,12 @@
 
   character(len=*),parameter :: myname_=myname//'::GlobalSegMapToLocalMatrix_'
 
+
   integer :: i, GlobalIndex, gindex, lindex, lsize
+
+   integer, allocatable :: temp_gindex(:)  !! rml
+   integer, allocatable :: temp_lindex(:)  !! rml
+
 
        ! What are we re-indexing, rows or columns?
 
@@ -520,16 +686,33 @@
      call die(myname)
   end select
 
+
        ! How many matrix elements are there?
 
   lsize = SparseMatrix_lsize(sMat)
 
-       ! Re-index, one element at a time (this is the slow part)
+
+  !! rml new code from here down - do the mapping all in one
+  !! function call which has been tuned for speed
+
+  allocate( temp_gindex(lsize) )
+  allocate( temp_lindex(lsize) )
+
 
   do i=1,lsize
-     GlobalIndex = sMat%data%iAttr(gindex,i)
-     sMat%data%iAttr(lindex,i) = GlobalSegMapToIndex_(GSMap, GlobalIndex, comm)
+     temp_gindex(i) = sMat%data%iAttr(gindex,i)
   end do
+
+  call GlobalSegMapToIndexArr_(GSMap, temp_gindex, temp_lindex, lsize, comm)  
+
+  do i=1,lsize
+    sMat%data%iAttr(lindex,i) = temp_lindex(i)
+  end do
+
+
+  deallocate(temp_gindex)  ! rml
+  deallocate(temp_lindex)  ! rml
+
 
  end subroutine	GlobalSegMapToLocalMatrix_
 
