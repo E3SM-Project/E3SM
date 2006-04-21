@@ -45,12 +45,15 @@
 #ifdef SEQUENCE
          sequence
 #endif
-         private
          type(Router) :: SendRouter
          type(Router) :: RecvRouter
          integer,dimension(:,:),pointer :: LocalPack
          integer :: LocalSize
       end type Rearranger
+
+! !PRIVATE DATA MEMBERS:
+      integer :: max_nprocs  ! size of MPI_COMM_WORLD used for generation of
+                             ! local automatic arrays
 
 ! !PUBLIC MEMBER FUNCTIONS:
 
@@ -127,6 +130,8 @@
 ! 31Jan02 - E.T. Ong <eong@mcs.anl.gov> - initial prototype
 ! 20Mar02 - E.T. Ong <eong@mcs.anl.gov> - working code
 ! 05Jun02 - E.T. Ong <eong@mcs.anl.gov> - Use LocalPack
+! 30Mar06 - P. Worley <worleyph@ornl.gov> - added max_nprocs,
+!           used in communication optimizations in rearrange
 !EOP ___________________________________________________________________
    character(len=*),parameter :: myname_=myname//'::init_'
    integer,dimension(:,:),pointer :: temp_seg_starts,temp_seg_lengths
@@ -140,6 +145,9 @@
    ! Initialize Router component of Rearranger
    call Router_init(SourceGSMap,TargetGSMap,myComm,OutRearranger%SendRouter)
    call Router_init(TargetGSMap,SourceGSMap,myComm,OutRearranger%RecvRouter)
+
+   call MP_comm_size(MP_COMM_WORLD,max_nprocs,ier)
+   if(ier/=0) call MP_perr_die(myname_,'MP_comm_size',ier)
 
    ! SANITY CHECK: Make sure that if SendRouter is sending to self, then,
    ! by definition, RecvRouter is also receiving from self. If this is not 
@@ -502,6 +510,10 @@
 ! If the optional argument {\tt Vector} is present and true,
 ! vector architecture-friendly parts of this routine will be invoked.
 !
+! If the optional argument {\tt AlltoAll} is present and true,
+! the communication will be done with an alltoall call instead of
+! individual sends and receives.
+!
 ! The size of the {\tt SourceAv} and {\tt TargetAv}
 ! argument must match those stored in the {\tt InRearranger} or
 ! and error will result.
@@ -512,7 +524,7 @@
 !
 ! !INTERFACE:
 
- subroutine rearrange_(SourceAV,TargetAV,InRearranger,Tag,Sum,Vector)
+ subroutine rearrange_(SourceAV,TargetAV,InRearranger,Tag,Sum,Vector,AlltoAll)
 
 !
 ! !USES:
@@ -544,6 +556,7 @@
    integer,          optional, intent(in)      :: Tag
    logical,          optional, intent(in)      :: Sum
    logical,          optional, intent(in)      :: Vector
+   logical,          optional, intent(in)      :: AlltoAll
 
 ! !REVISION HISTORY:
 ! 31Jan02 - E.T. Ong <eong@mcs.anl.gov> - initial prototype
@@ -551,57 +564,79 @@
 ! 08Jul02 - E.T. Ong <eong@mcs.anl.gov> - change intent of Target,Source
 ! 29Oct03 - R. Jacob <jacob@mcs.anl.gov> - add optional argument vector
 !           to control use of vector-friendly mods provided by Fujitsu.
+! 30Mar06 - P. Worley <worleyph@ornl.gov> - added alltoall option and
+!           reordered send/receive order to improve communication 
+!           performance.  Also remove replace allocated arrays with
+!           automatic.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::Rearrange_'
   integer ::	numi,numr,i,j,k,ier
   integer ::    VectIndex,AttrIndex,seg_start,seg_end
   integer ::    localindex,SrcVectIndex,TrgVectIndex,IAttrIndex,RAttrIndex
-  integer ::    proc,numprocs,nseg
+  integer ::    proc,numprocs,nseg,pe,pe_shift,max_pe,myPid
   integer ::    mp_Type_rp
   integer ::    mytag
-  logical ::    usevector
+  integer ::    ISendSize, RSendSize, IRecvSize, RRecvSize
+  logical ::    usevector, usealltoall
+  real(FP) ::  realtyp
 !-----------------------------------------------------------------------
 
    ! DECLARE STRUCTURES FOR MPI ARGUMENTS.
 
-   ! declare a pointer structure for the real data
-   type :: rptr
-      real(FP),dimension(:),pointer :: pr
-   end type rptr
+   ! declare arrays mapping from all processes to those sending to
+   ! or receiving from
+   integer :: SendList(0:max_nprocs-1)
+   integer :: RecvList(0:max_nprocs-1)
 
-   ! declare a pointer structure for the integer data
-   type :: iptr
-      integer,dimension(:),pointer :: pi
-   end type iptr
+   ! declare arrays to hold count and locations where data is to be sent from
+   integer :: ISendLoc(max_nprocs)
+   integer :: RSendLoc(max_nprocs)
 
-   ! declare arrays of pointers to hold data to be sent
-   type(rptr),dimension(:),allocatable :: rp1
-   type(iptr),dimension(:),allocatable :: ip1
+   integer :: ISendCnts(0:max_nprocs-1)
+   integer :: RSendCnts(0:max_nprocs-1)
 
-   ! declare arrays of pointers to hold data to be received
-   type(rptr),dimension(:),allocatable :: rp2
-   type(iptr),dimension(:),allocatable :: ip2
+   integer :: ISdispls(0:max_nprocs-1)
+   integer :: RSdispls(0:max_nprocs-1)
+
+   ! declare arrays to hold data to be sent
+   integer,dimension(:),allocatable  :: ISendBuf
+   real(FP),dimension(:),allocatable :: RSendBuf
+
+   ! declare arrays to hold count and locations where data is to be received into
+   integer :: IRecvLoc(max_nprocs)
+   integer :: RRecvLoc(max_nprocs)
+
+   integer :: IRecvCnts(0:max_nprocs-1)
+   integer :: RRecvCnts(0:max_nprocs-1)
+
+   integer :: IRdispls(0:max_nprocs-1)
+   integer :: RRdispls(0:max_nprocs-1)
+
+   ! declare arrays to hold data to be received
+   integer,dimension(:),allocatable  :: IRecvBuf
+   real(FP),dimension(:),allocatable :: RRecvBuf
 
    ! Structure to hold MPI request information for sends
-   integer,dimension(:),allocatable :: send_ireqs
-   integer,dimension(:),allocatable :: send_rreqs
+   integer :: send_ireqs(max_nprocs)
+   integer :: send_rreqs(max_nprocs)
 
    ! Structure to hold MPI request information for sends
-   integer,dimension(:),allocatable :: recv_ireqs
-   integer,dimension(:),allocatable :: recv_rreqs
+   integer :: recv_ireqs(max_nprocs)
+   integer :: recv_rreqs(max_nprocs)
 
    ! Structure to hold MPI status information for sends 
-   integer,dimension(:,:),allocatable :: send_istatus,send_rstatus
+   integer :: send_istatus(MP_STATUS_SIZE,max_nprocs)
+   integer :: send_rstatus(MP_STATUS_SIZE,max_nprocs)
 
    ! Structure to hold MPI status information for sends 
-   integer,dimension(:),allocatable :: recv_istatus,recv_rstatus
+   integer :: recv_istatus(MP_STATUS_SIZE,max_nprocs)
+   integer :: recv_rstatus(MP_STATUS_SIZE,max_nprocs)
 
    ! Pointer structure to make Router access simpler
    type(Router), pointer :: SendRout, RecvRout
 
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
    ! CHECK ARGUMENTS 
 
    ! Check the size of the Source AttrVect
@@ -639,6 +674,11 @@
     if(Vector) usevector=.true.
    endif
 
+   usealltoall=.false.
+   if(present(Alltoall)) then
+    if(Alltoall) usealltoall=.true.
+   endif
+
    ! ASSIGN VARIABLES
 
    ! Get the number of integer and real attributes
@@ -650,6 +690,8 @@
    SendRout => InRearranger%SendRouter
    RecvRout => InRearranger%RecvRouter
 
+   mp_Type_rp=MP_Type(realtyp)
+
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   ! ALLOCATE DATA STRUCTURES !
@@ -660,48 +702,31 @@
      ! IF SENDING INTEGER DATA
      if(numi .ge. 1) then
 
-	! allocate the number of pointers needed to send
-	allocate(ip1(SendRout%nprocs),stat=ier)
-	if(ier/=0) call die(myname_,'allocate(ip1)',ier)
-
-	! allocate buffers to hold all outgoing data
+	! allocate buffer to hold all outgoing data
+        ISendSize = 1
 	do proc=1,SendRout%nprocs
-	   allocate(ip1(proc)%pi(SendRout%locsize(proc)*numi),stat=ier)
-	   if(ier/=0) call die(myname_,'allocate(ip1%pi)',ier)
+           ISendLoc(proc) = ISendSize
+           ISendSize = ISendSize + SendRout%locsize(proc)*numi
 	enddo
-
-	! allocate MPI send request array
-	allocate(send_ireqs(SendRout%nprocs),stat=ier)
-	if(ier/=0) call die(myname_,'allocate(send_ireqs)',ier)
-
-	! allocatAe MPI status array
-	allocate(send_istatus(MP_STATUS_SIZE,SendRout%nprocs),stat=ier)
-	if(ier/=0) call die(myname_,'allocate(istatus)',ier)
+        ISendSize = ISendSize - 1        
+	allocate(ISendBuf(ISendSize),stat=ier)
+	if(ier/=0) call die(myname_,'allocate(ISendBuf)',ier)
 
      endif
 
      ! IF SENDING REAL DATA
      if(numr .ge. 1) then
 
-	! allocate the number of pointers needed to send
-	allocate(rp1(SendRout%nprocs),stat=ier)
-	if(ier/=0) call die(myname_,'allocate(rp1)',ier)
-
-	! allocate buffers to hold all outgoing data
+	! allocate buffer to hold all outgoing data
+        RSendSize = 1
 	do proc=1,SendRout%nprocs
-	   allocate(rp1(proc)%pr(SendRout%locsize(proc)*numr),stat=ier)
-	   if(ier/=0) call die(myname_,'allocate(rp1%pr)',ier)
+           RSendLoc(proc) = RSendSize
+           RSendSize = RSendSize + SendRout%locsize(proc)*numr
 	enddo
-	
-	! allocate MPI send request array
-	allocate(send_rreqs(SendRout%nprocs),stat=ier)
-	if(ier/=0) call die(myname_,'allocate(send_rreqs)',ier)
+        RSendSize = RSendSize - 1        
+	allocate(RSendBuf(RSendSize),stat=ier)
+	if(ier/=0) call die(myname_,'allocate(RSendBuf)',ier)
 
-	! allocate MPI status array
-	allocate(send_rstatus(MP_STATUS_SIZE,SendRout%nprocs),stat=ier)
-	if(ier/=0) call die(myname_,'allocate(rstatus)',ier)
-
-	mp_Type_rp=MP_Type(rp1(1)%pr(1))
 
      endif
 
@@ -713,59 +738,119 @@
      ! IF RECEIVING INTEGER DATA
      if(numi .ge. 1) then
 
-	! allocate the number of pointers needed to receive
-	allocate(ip2(RecvRout%nprocs),stat=ier)
-	if(ier/=0) call die(myname_,'allocate(ip2)',ier)
-
-	! allocate buffers to hold all incoming data
+	! allocate buffer to hold all outgoing data
+        IRecvSize = 1
 	do proc=1,RecvRout%nprocs
-	   allocate(ip2(proc)%pi(RecvRout%locsize(proc)*numi),stat=ier)
-	   if(ier/=0) call die(myname_,'allocate(ip2%pi)',ier)
+           IRecvLoc(proc) = IRecvSize
+           IRecvSize = IRecvSize + RecvRout%locsize(proc)*numi
 	enddo
-     
-	! allocate MPI send request array
-	allocate(recv_ireqs(RecvRout%nprocs),stat=ier)
-	if(ier/=0) call die(myname_,'allocate(recv_ireqs)',ier)
-
-	! allocate MPI integer status array
-	allocate(recv_istatus(MP_STATUS_SIZE),stat=ier)
-	if(ier/=0) call die(myname_,'allocate(istatus)',ier)
+        IRecvSize = IRecvSize - 1        
+	allocate(IRecvBuf(IRecvSize),stat=ier)
+	if(ier/=0) call die(myname_,'allocate(IRecvBuf)',ier)
 
      endif
 
      ! IF RECEIVING REAL DATA
      if(numr .ge. 1) then
 
-	! allocate the number of pointers needed to receive
-	allocate(rp2(RecvRout%nprocs),stat=ier)
-	if(ier/=0) call die(myname_,'allocate(rp2)',ier)
-
-	! allocate buffers to hold all incoming data
+	! allocate buffer to hold all outgoing data
+        RRecvSize = 1
 	do proc=1,RecvRout%nprocs
-	   allocate(rp2(proc)%pr(RecvRout%locsize(proc)*numr),stat=ier)
-	   if(ier/=0) call die(myname_,'allocate(rp2%pr)',ier)
+           RRecvLoc(proc) = RRecvSize
+           RRecvSize = RRecvSize + RecvRout%locsize(proc)*numr
 	enddo
-     
-	! allocate MPI receive request array
-	allocate(recv_rreqs(RecvRout%nprocs),stat=ier)
-	if(ier/=0) call die(myname_,'allocate(recv_rreqs)',ier)
+        RRecvSize = RRecvSize - 1        
+	allocate(RRecvBuf(RRecvSize),stat=ier)
+	if(ier/=0) call die(myname_,'allocate(RRecvBuf)',ier)
 
-	! allocate MPI real status array
-	allocate(recv_rstatus(MP_STATUS_SIZE),stat=ier)
-	if(ier/=0) call die(myname_,'allocate(rstatus)',ier)
-
-	mp_Type_rp=MP_Type(rp2(1)%pr(1))
 
      endif
 
   endif
 
-!::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+!::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+  ! INVERT PE LIST !
+  call MP_comm_rank(ThisMCTWorld%MCT_comm,myPid,ier)
+  if(ier/=0) call MP_perr_die(myname_,'MP_comm_rank',ier)
+
+  call MP_comm_size(ThisMCTWorld%MCT_comm, max_pe, ier)
+  if(ier/=0) call MP_perr_die(myname_,'MP_comm_size',ier)
+
+  SendList(:) = -1
+  do proc = 1,SendRout%nprocs
+     SendList(SendRout%pe_list(proc)) = proc
+  enddo
+
+  RecvList(:) = -1
+  do proc = 1,RecvRout%nprocs
+     RecvList(RecvRout%pe_list(proc)) = proc
+  enddo
+
+  if (usealltoall) then
+     ! CONSTRUCT CNTS AND DISPLS FOR ALLTOALLV !
+     ISendCnts(:) = 0
+     ISdispls(:)  = 0
+     RSendCnts(:) = 0
+     RSdispls(:)  = 0
+     IRecvCnts(:) = 0
+     IRdispls(:)  = 0
+     RRecvCnts(:) = 0
+     RRdispls(:)  = 0
+     do pe = 0,max_pe-1
+        proc = SendList(pe)
+        if (proc .ne. -1) then
+           ISendCnts(pe) = SendRout%locsize(proc)*numi
+           ISdispls(pe)  = ISendLoc(proc) - 1
+
+           RSendCnts(pe) = SendRout%locsize(proc)*numr
+           RSdispls(pe)  = RSendLoc(proc) - 1
+        endif
+
+        proc = RecvList(pe)
+        if (proc .ne. -1) then
+           IRecvCnts(pe) = RecvRout%locsize(proc)*numi
+           IRdispls(pe)  = IRecvLoc(proc) - 1
+
+           RRecvCnts(pe) = RecvRout%locsize(proc)*numr
+           RRdispls(pe)  = RRecvLoc(proc) - 1
+        endif
+     enddo
+  endif
+  
+
+!::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+if (usealltoall) then
+
+  ! Load data going to each processor
+  do proc = 1,SendRout%nprocs
+     j=0
+     k=0
+
+     ! load the correct pieces of the integer and real vectors
+     do nseg = 1,SendRout%num_segs(proc)
+        seg_start = SendRout%seg_starts(proc,nseg)
+        seg_end = seg_start + SendRout%seg_lengths(proc,nseg)-1
+        do VectIndex = seg_start,seg_end
+           do AttrIndex = 1,numi
+              ISendBuf(ISendLoc(proc)+j) = SourceAV%iAttr(AttrIndex,VectIndex)
+              j=j+1
+           enddo
+           do AttrIndex = 1,numr
+              RSendBuf(RSendLoc(proc)+k) = SourceAV%rAttr(AttrIndex,VectIndex)
+              k=k+1
+           enddo
+        enddo
+     enddo
+  enddo
+
+else
   ! POST MPI_IRECV
 
   ! Load data coming from each processor
-  do proc = 1,RecvRout%nprocs
+  do pe_shift = 1,max_pe
+   proc = RecvList(mod(myPid+pe_shift,max_pe))
+    if (proc .ne. -1) then
     
      ! receive the integer data
      if(numi .ge. 1) then
@@ -776,8 +861,8 @@
 
 	if( (RecvRout%num_segs(proc) > 1) .or. present(Sum) ) then
 
-	   call MPI_IRECV(ip2(proc)%pi(1),                        &
-		          RecvRout%locsize(proc)*numi,MP_INTEGER, &
+	   call MPI_IRECV(IRecvBuf(IRecvLoc(proc)),                 &
+		          RecvRout%locsize(proc)*numi,MP_INTEGER,   &
 			  RecvRout%pe_list(proc),mytag,             &
 			  ThisMCTWorld%MCT_comm,recv_ireqs(proc),ier)
 
@@ -785,7 +870,7 @@
 
 	   call MPI_IRECV(TargetAV%iAttr(1,RecvRout%seg_starts(proc,1)), &
 		          RecvRout%locsize(proc)*numi,MP_INTEGER,        &
-                          RecvRout%pe_list(proc),mytag,                    &
+                          RecvRout%pe_list(proc),mytag,                  &
                           ThisMCTWorld%MCT_comm,recv_ireqs(proc),ier)
 
 	endif
@@ -803,8 +888,8 @@
 
 	if( (RecvRout%num_segs(proc) > 1) .or. present(Sum) ) then
 
-	   call MPI_IRECV(rp2(proc)%pr(1),                        &
-		          RecvRout%locsize(proc)*numr,mp_Type_rp, &
+	   call MPI_IRECV(RRecvBuf(RRecvLoc(proc)),                 &
+		          RecvRout%locsize(proc)*numr,mp_Type_rp,   &
 			  RecvRout%pe_list(proc),mytag,             &
 			  ThisMCTWorld%MCT_comm,recv_rreqs(proc),ier)
 
@@ -812,7 +897,7 @@
 
 	   call MPI_IRECV(TargetAV%rAttr(1,RecvRout%seg_starts(proc,1)), &
 		          RecvRout%locsize(proc)*numr,mp_Type_rp,        &
-			  RecvRout%pe_list(proc),mytag,                    &
+			  RecvRout%pe_list(proc),mytag,                  &
 			  ThisMCTWorld%MCT_comm,recv_rreqs(proc),ier)
 
 	endif
@@ -820,7 +905,7 @@
 	if(ier /= 0) call MP_perr_die(myname_,'MPI_IRECV(reals)',ier)
 
      endif
-
+    endif
   enddo
 
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -828,12 +913,14 @@
   ! POST MPI_ISEND
 
   ! Load data going to each processor
-  do proc = 1,SendRout%nprocs
+  do pe_shift = max_pe,1,-1
+   proc = SendList(mod(myPid+pe_shift,max_pe))
+    if (proc .ne. -1) then
     
      if( SendRout%num_segs(proc) > 1 ) then
 
-	j=1
-	k=1
+	j=0
+	k=0
 
 	! load the correct pieces of the integer and real vectors
 	do nseg = 1,SendRout%num_segs(proc)
@@ -841,11 +928,11 @@
 	   seg_end = seg_start + SendRout%seg_lengths(proc,nseg)-1
 	   do VectIndex = seg_start,seg_end
 	      do AttrIndex = 1,numi
-		 ip1(proc)%pi(j) = SourceAV%iAttr(AttrIndex,VectIndex)
+		 ISendBuf(ISendLoc(proc)+j) = SourceAV%iAttr(AttrIndex,VectIndex)
 		 j=j+1
 	      enddo
 	      do AttrIndex = 1,numr
-		 rp1(proc)%pr(k) = SourceAV%rAttr(AttrIndex,VectIndex)
+		 RSendBuf(RSendLoc(proc)+k) = SourceAV%rAttr(AttrIndex,VectIndex)
 		 k=k+1
 	      enddo
 	   enddo
@@ -862,8 +949,8 @@
 
 	if( SendRout%num_segs(proc) > 1 ) then
 
-	   call MPI_ISEND(ip1(proc)%pi(1),                        &
-		          SendRout%locsize(proc)*numi,MP_INTEGER, &
+	   call MPI_ISEND(ISendBuf(ISendLoc(proc)),                 &
+		          SendRout%locsize(proc)*numi,MP_INTEGER,   &
 			  SendRout%pe_list(proc),mytag,             &
 			  ThisMCTWorld%MCT_comm,send_ireqs(proc),ier)
 
@@ -889,8 +976,8 @@
 
 	if( SendRout%num_segs(proc) > 1 ) then
 
-	   call MPI_ISEND(rp1(proc)%pr(1),                        &
-		          SendRout%locsize(proc)*numr,mp_Type_rp, &
+	   call MPI_ISEND(RSendBuf(RSendLoc(proc)),                 &
+		          SendRout%locsize(proc)*numr,mp_Type_rp,   &
 			  SendRout%pe_list(proc),mytag,             &
 			  ThisMCTWorld%MCT_comm,send_rreqs(proc),ier)
 
@@ -906,9 +993,9 @@
 	if(ier /= 0) call MP_perr_die(myname_,'MPI_ISEND(reals)',ier)
 
      endif
-
+    endif
   enddo
-
+endif
 !:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   ! ZERO TARGETAV WHILE WAITING FOR MESSAGES TO COMPLETE
@@ -922,6 +1009,7 @@
   if(usevector) then
     do IAttrIndex=1,numi
 !CDIR SELECT(VECTOR)
+!DIR$ CONCURRENT
 !DIR$ PREFERVECTOR
      do localindex=1,InRearranger%LocalSize
         TrgVectIndex = InRearranger%LocalPack(1,localindex)
@@ -932,6 +1020,7 @@
     enddo
     do RAttrIndex=1,numr
 !CDIR SELECT(VECTOR)
+!DIR$ CONCURRENT
 !DIR$ PREFERVECTOR
      do localindex=1,InRearranger%LocalSize
         TrgVectIndex = InRearranger%LocalPack(1,localindex)
@@ -958,6 +1047,22 @@
 
 !:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+if (usealltoall) then
+
+  if (numi .ge. 1) then
+     call MPI_Alltoallv(ISendBuf, ISendCnts, ISdispls, MP_INTEGER, &
+                        IRecvBuf, IRecvCnts, IRdispls, MP_INTEGER, &
+                        ThisMCTWorld%MCT_comm,ier)
+  endif
+
+  if (numr .ge. 1) then
+     call MPI_Alltoallv(RSendBuf, RSendCnts, RSdispls, mp_Type_rp, &
+                        RRecvBuf, RRecvCnts, RRdispls, mp_Type_rp, &
+                        ThisMCTWorld%MCT_comm,ier)
+  endif
+
+else
+
   ! WAIT FOR THE NONBLOCKING SENDS TO COMPLETE
 
   if(SendRout%nprocs > 0) then
@@ -967,23 +1072,6 @@
 	call MPI_WAITALL(SendRout%nprocs,send_ireqs,send_istatus,ier)
 	if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL(ints)',ier)
 
-	! deallocatAe MPI status array
-	deallocate(send_istatus,stat=ier)
-	if(ier/=0) call die(myname_,'deallocate(istatus)',ier)
-
-	! done waiting, free up ireqs
-	deallocate(send_ireqs,stat=ier)
-	if(ier /= 0) call die(myname_,'deallocate(Reqs%ireqs)',ier)
-
-	! Deallocate the send buffers
-	do proc=1,SendRout%nprocs
-	   deallocate(ip1(proc)%pi,stat=ier)
-	   if(ier/=0) call die(myname_,'deallocate(ip1%pr)',ier)
-	enddo
-
-	deallocate(ip1,stat=ier)
-	if(ier/=0) call die(myname_,'deallocate(ip1)',ier)
-
      endif
 
      if(numr .ge. 1) then
@@ -991,27 +1079,11 @@
 	call MPI_WAITALL(SendRout%nprocs,send_rreqs,send_rstatus,ier)
 	if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL(reals)',ier)
 
-	! deallocate MPI status array
-	deallocate(send_rstatus,stat=ier)
-	if(ier/=0) call die(myname_,'deallocate(rstatus)',ier)
-
-	! done waiting, free up Reqs%rreqs
-	deallocate(send_rreqs,stat=ier)
-	if(ier /= 0) call die(myname_,'deallocate(Reqs%rreqs)',ier)
-
-	! Deallocate the send buffers
-	do proc=1,SendRout%nprocs
-	   deallocate(rp1(proc)%pr,stat=ier)
-	   if(ier/=0) call die(myname_,'deallocate(rp1%pr)',ier)
-	enddo
-
-	deallocate(rp1,stat=ier)
-	if(ier/=0) call die(myname_,'deallocate(rp1)',ier)
-
      endif
 
   endif
 
+endif
 !:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   ! WAIT FOR THE NONBLOCKING RECEIVES TO COMPLETE AND UNPACK BUFFER
@@ -1020,20 +1092,23 @@
 
      if(numi .ge. 1) then
 
+if (usealltoall) then
+        proc = numprocs
+else
 	call MPI_WAITANY(RecvRout%nprocs,recv_ireqs,proc,recv_istatus,ier)
-
-	j=1
+endif
 
 	if(present(Sum)) then
 
 	   ! load the correct pieces of the integer vectors
+           j=0
 	   do nseg = 1,RecvRout%num_segs(proc)
 	      seg_start = RecvRout%seg_starts(proc,nseg)
 	      seg_end = seg_start + RecvRout%seg_lengths(proc,nseg)-1
 	      do VectIndex = seg_start,seg_end
 		 do AttrIndex = 1,numi
 		    TargetAV%iAttr(AttrIndex,VectIndex)= &
-                    TargetAV%iAttr(AttrIndex,VectIndex) + ip2(proc)%pi(j)
+                    TargetAV%iAttr(AttrIndex,VectIndex) + IRecvBuf(IRecvLoc(proc)+j)
 		    j=j+1
 		 enddo
 	      enddo
@@ -1041,15 +1116,16 @@
 	   
 	else
 
-	   if( RecvRout%num_segs(proc) > 1 ) then
+	   if (( RecvRout%num_segs(proc) > 1 ) .or. (usealltoall)) then
 
 	      ! load the correct pieces of the integer vectors
+              j=0
 	      do nseg = 1,RecvRout%num_segs(proc)
 		 seg_start = RecvRout%seg_starts(proc,nseg)
 		 seg_end = seg_start + RecvRout%seg_lengths(proc,nseg)-1
 		 do VectIndex = seg_start,seg_end
 		    do AttrIndex = 1,numi
-		       TargetAV%iAttr(AttrIndex,VectIndex)=ip2(proc)%pi(j)
+		       TargetAV%iAttr(AttrIndex,VectIndex)=IRecvBuf(IRecvLoc(proc)+j)
 		       j=j+1
 		    enddo
 		 enddo
@@ -1063,20 +1139,23 @@
 
      if(numr .ge. 1) then
 
+if (usealltoall) then
+        proc = numprocs
+else
 	call MPI_WAITANY(RecvRout%nprocs,recv_rreqs,proc,recv_rstatus,ier)
-
-	k=1
+endif
 
 	if(present(Sum)) then
 
 	   ! load the correct pieces of the integer vectors
+           k=0
 	   do nseg = 1,RecvRout%num_segs(proc)
 	      seg_start = RecvRout%seg_starts(proc,nseg)
 	      seg_end = seg_start + RecvRout%seg_lengths(proc,nseg)-1
 	      do VectIndex = seg_start,seg_end
 		 do AttrIndex = 1,numr
 		    TargetAV%rAttr(AttrIndex,VectIndex) = &
-                    TargetAV%rAttr(AttrIndex,VectIndex) + rp2(proc)%pr(k)
+                    TargetAV%rAttr(AttrIndex,VectIndex) + RRecvBuf(RRecvLoc(proc)+k)
 		    k=k+1
 		 enddo
 	      enddo
@@ -1084,15 +1163,16 @@
 	   
 	else
 
-	   if( RecvRout%num_segs(proc) > 1 ) then
+	   if (( RecvRout%num_segs(proc) > 1 ) .or. (usealltoall)) then
 
 	      ! load the correct pieces of the integer vectors
+              k=0
 	      do nseg = 1,RecvRout%num_segs(proc)
 		 seg_start = RecvRout%seg_starts(proc,nseg)
 		 seg_end = seg_start + RecvRout%seg_lengths(proc,nseg)-1
 		 do VectIndex = seg_start,seg_end
 		    do AttrIndex = 1,numr
-		       TargetAV%rAttr(AttrIndex,VectIndex)=rp2(proc)%pr(k)
+		       TargetAV%rAttr(AttrIndex,VectIndex)=RRecvBuf(RRecvLoc(proc)+k)
 		       k=k+1
 		    enddo
 		 enddo
@@ -1110,54 +1190,47 @@
 
   ! DEALLOCATE ALL STRUCTURES
 
-  if(RecvRout%nprocs > 0) then
+  if(SendRout%nprocs > 0) then
 
      if(numi .ge. 1) then
 
-	! deallocatAe MPI status array
-	deallocate(recv_istatus,stat=ier)
-	if(ier/=0) call die(myname_,'deallocate(istatus)',ier)
-
-	! done waiting, free up ireqs
-	deallocate(recv_ireqs,stat=ier)
-	if(ier /= 0) call die(myname_,'deallocate(Reqs%ireqs)',ier)
-
-	! Deallocate the send buffers
-	do proc=1,RecvRout%nprocs
-	   deallocate(ip2(proc)%pi,stat=ier)
-	   if(ier/=0) call die(myname_,'deallocate(ip1%pr)',ier)
-	enddo
-
-	deallocate(ip2,stat=ier)
-	if(ier/=0) call die(myname_,'deallocate(ip1)',ier)
+	! Deallocate the send buffer
+	deallocate(ISendBuf,stat=ier)
+	if(ier/=0) call die(myname_,'deallocate(ISendBuf)',ier)
 
      endif
 
      if(numr .ge. 1) then
 
-	! deallocate MPI status array
-	deallocate(recv_rstatus,stat=ier)
-	if(ier/=0) call die(myname_,'deallocate(rstatus)',ier)
+	! Deallocate the send buffer
+	deallocate(RSendBuf,stat=ier)
+	if(ier/=0) call die(myname_,'deallocate(RSendBuf)',ier)
 
-	! done waiting, free up Reqs%rreqs
-	deallocate(recv_rreqs,stat=ier)
-	if(ier /= 0) call die(myname_,'deallocate(Reqs%rreqs)',ier)
+     endif
 
-	! Deallocate the send buffers
-	do proc=1,RecvRout%nprocs
-	   deallocate(rp2(proc)%pr,stat=ier)
-	   if(ier/=0) call die(myname_,'deallocate(rp1%pr)',ier)
-	enddo
+  endif
 
-	deallocate(rp2,stat=ier)
-	if(ier/=0) call die(myname_,'deallocate(rp1)',ier)
+  if(RecvRout%nprocs > 0) then
+
+     if(numi .ge. 1) then
+
+	! Deallocate the receive buffer
+	deallocate(IRecvBuf,stat=ier)
+	if(ier/=0) call die(myname_,'deallocate(IRecvBuf)',ier)
+
+     endif
+
+     if(numr .ge. 1) then
+
+	! Deallocate the receive buffer
+	deallocate(RRecvBuf,stat=ier)
+	if(ier/=0) call die(myname_,'deallocate(RRecvBuf)',ier)
 
      endif
 
   endif
 
   nullify(SendRout,RecvRout)
-
 
  end subroutine rearrange_
 
