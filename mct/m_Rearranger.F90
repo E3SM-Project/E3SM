@@ -45,6 +45,7 @@
 #ifdef SEQUENCE
          sequence
 #endif
+         private 
          type(Router) :: SendRouter
          type(Router) :: RecvRouter
          integer,dimension(:,:),pointer :: LocalPack
