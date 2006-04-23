@@ -3501,7 +3501,7 @@ if echo $F90 | grep ftn >/dev/null 2>&1; then
    echo "Fortran Compiler is Cray"
    CPRDEF="CRAY"
    if test -z "$F90FLAGS"; then
-      F90FLAGS="-em -dy -m0 -M1068,1132,399"
+      F90FLAGS="-c -em -dy -rm -Omsgs,negmsgs"
    fi
    if test -z "$INCLUDEFLAG"; then
       INCLUDEFLAG="-p"
