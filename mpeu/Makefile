@@ -34,8 +34,8 @@ SRCS_F90	= m_IndexBin_char.F90		\
 
 SRCS_C		= get_zeits.c
 
-OBJS_ALL	= $(SRCS_F90:.F90=.o)	\
-		  $(SRCS_C:.c=.o)
+OBJS_ALL	= $(SRCS_C:.c=.o)  \
+		  $(SRCS_F90:.F90=.o)
 
 # MACHINE AND COMPILER FLAGS
 
