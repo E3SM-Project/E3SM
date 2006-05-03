@@ -2,7 +2,7 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$  
+! CVS $Name$
 !-----------------------------------------------------------------------
 !BOP
 !
@@ -23,6 +23,16 @@
 
 #if !defined(CLK_TCK)
 #  include <limits.h>         /* if not, try here */
+#endif
+
+/* if CLK_TCK is still not defined try using sysconf to get the value 
+   
+   I believe this is a linux only solution
+   - M. Steder
+*/
+#if !defined(CLK_TCK)
+#include <unistd.h>
+#define CLK_TCK sysconf(_SC_CLK_TCK)
 #endif
 
 /*
@@ -76,7 +86,6 @@ void get_zeits_(zts)
 
   struct tms tm;
   double secs;
-
   secs=1./CLK_TCK;
 
   zts[0]=times(&tm)*secs;
@@ -92,3 +101,4 @@ void get_ztick_(tic)
 {
   tic[0]=1./CLK_TCK;
 }
+
