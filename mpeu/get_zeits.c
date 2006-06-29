@@ -25,25 +25,40 @@
 #  include <limits.h>         /* if not, try here */
 #endif
 
-/* if CLK_TCK is still not defined try using sysconf to get the value 
-   
-   I believe this is a linux only solution
-   - M. Steder
-*/
-#if !defined(CLK_TCK)
-#include <unistd.h>
-#define CLK_TCK sysconf(_SC_CLK_TCK)
-#endif
+
+/****************
+ * Old stuff
+ ****************
+ *
+ * * if CLK_TCK is still not defined try using sysconf to get the value 
+ *    
+ *    I believe this is a linux only solution
+ *    - M. Steder
+ * 
+ * #if !defined(CLK_TCK)
+ * #include <unistd.h>
+ * #define CLK_TCK sysconf(_SC_CLK_TCK)
+ * #endif
+ *
+ * 
+ * Kept the difference for reference.
+ * =======
+ * #if defined(__osf__) || defined(sysAIX)
+ * #  include <time.h>
+ * #else
+ * #  include <limits.h>
+ * >>>>>>> 1.1.2.2
+ * 
+ */
+
 
 /*
-Kept the difference for reference.
-=======
-#if defined(__osf__) || defined(sysAIX)
-#  include <time.h>
-#else
-#  include <limits.h>
->>>>>>> 1.1.2.2
-*/
+ *  CLK_TCK is obsolete - replace with CLOCKS_PER_SEC
+ */
+
+#define ZCLK_TCK ((double)CLOCKS_PER_SEC)
+
+
 
  /*
   The default is FORTRAN_UNDERSCORE_, but not explicitly used.
@@ -86,7 +101,7 @@ void get_zeits_(zts)
 
   struct tms tm;
   double secs;
-  secs=1./CLK_TCK;
+  secs=1./ZCLK_TCK;
 
   zts[0]=times(&tm)*secs;
   zts[1]=tm.tms_utime*secs;
@@ -99,6 +114,6 @@ void get_zeits_(zts)
 void get_ztick_(tic)
   double *tic;
 {
-  tic[0]=1./CLK_TCK;
+  tic[0]=1./ZCLK_TCK;
 }
 
