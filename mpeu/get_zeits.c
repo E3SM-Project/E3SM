@@ -19,38 +19,7 @@
 #include <sys/types.h>
 #include <sys/times.h>
 
-#include <time.h>             /* CLK_TCK is usually here */
-
-#if !defined(CLK_TCK)
-#  include <limits.h>         /* if not, try here */
-#endif
-
-
-/****************
- * Old stuff
- ****************
- *
- * * if CLK_TCK is still not defined try using sysconf to get the value 
- *    
- *    I believe this is a linux only solution
- *    - M. Steder
- * 
- * #if !defined(CLK_TCK)
- * #include <unistd.h>
- * #define CLK_TCK sysconf(_SC_CLK_TCK)
- * #endif
- *
- * 
- * Kept the difference for reference.
- * =======
- * #if defined(__osf__) || defined(sysAIX)
- * #  include <time.h>
- * #else
- * #  include <limits.h>
- * >>>>>>> 1.1.2.2
- * 
- */
-
+#include <time.h> /* POSIX standard says CLOCKS_PER_SEC is here */
 
 /*
  *  CLK_TCK is obsolete - replace with CLOCKS_PER_SEC
