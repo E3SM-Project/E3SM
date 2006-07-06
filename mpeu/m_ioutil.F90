@@ -429,10 +429,8 @@ end function luavail
   call flush(lu,ier)
 #elif  SYSAIX || CPRXLF
   call flush_(lu)      ! Function defined in xlf reference document.
-#elif CPRINTEL
-! no flush on Linux IA64 with Intel compiler
 #elif SYSLINUX || SYSOSF1 || SYSSUNOS || SYST3E || SYSUNIXSYSTEMV || SYSSUPERUX
-   call flush(lu)
+  call flush(lu)
 #endif
 
 end subroutine luflush
