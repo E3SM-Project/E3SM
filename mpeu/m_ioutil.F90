@@ -425,22 +425,14 @@ end function luavail
 
 	! The following call may be system dependent.
 
-#ifdef SYSIRIX64
+#if SYSIRIX64 || CPRNAG || SYSUNICOS
   call flush(lu,ier)
-#endif
-
-#ifdef SYSAIX
+#elif  SYSAIX || CPRXLF
   call flush_(lu)      ! Function defined in xlf reference document.
-#endif
-
-#if CPRNAG || SYSUNICOS
-  call flush(lu,ier)
 #elif CPRINTEL
 ! no flush on Linux IA64 with Intel compiler
-#else
-# if SYSLINUX || SYSOSF1 || SYSSUNOS || SYSUNICOS || SYST3E || SYSUNIXSYSTEMV || SYSSUPERUX
+#elif SYSLINUX || SYSOSF1 || SYSSUNOS || SYST3E || SYSUNIXSYSTEMV || SYSSUPERUX
    call flush(lu)
-# endif
 #endif
 
 end subroutine luflush
