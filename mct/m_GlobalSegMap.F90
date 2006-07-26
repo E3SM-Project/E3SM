@@ -937,6 +937,8 @@
 !  use m_GlobalSegMap,only: MCT_GSMap_init => init
 
 !  use shr_sys_mod
+
+  use m_die
   implicit none
 
 ! !INPUT PARAMETERS: 
@@ -957,10 +959,14 @@
 !       30Jul02 - T. Craig - initial version in cpl6.
 !       17Nov05 - R. Loy <rloy@mcs.anl.gov> - install into MCT
 !       18Nov05 - R. Loy <rloy@mcs.anl.gov> - make lsize optional
+!       25Jul06 - R. Loy <rloy@mcs.anl.gov> - error check on lindex/alloc/dealloc
 !EOP ___________________________________________________________________
 
 
      !--- local ---
+
+     character(len=*),parameter :: myname_=myname//'::init_index_'
+
      integer             :: i,j,k,n      ! generic indicies
      integer             :: nseg         ! counts number of segments for GSMap
      integer,allocatable :: start(:)     ! used to init GSMap 
@@ -978,6 +984,9 @@
        mysize=size(lindx)
      endif
 
+     if (mysize<=0) call die(myname_, &
+        'lindx is empty (you may have run out of points)')
+
      call MPI_COMM_RANK(my_comm,rank, ierr)
 
      ! compute segment's start indicies and length counts 
@@ -991,7 +1000,8 @@
         if ( j-i /= 1) nseg=nseg+1
      end do
 
-     allocate(start(nseg),count(nseg))
+     allocate(start(nseg),count(nseg),stat=ierr)
+     if(ierr/=0) call die(myname_,'allocate(start,count)',ierr)
 
      ! second pass - determine how long each run is
 
@@ -1029,7 +1039,9 @@
       endif
 
 
-      deallocate(start, count)
+      deallocate(start, count, stat=ierr)
+      if(ierr/=0) call warn(myname_,'deallocate(start,count)',ierr)
+      
 
    end subroutine init_index_
 
