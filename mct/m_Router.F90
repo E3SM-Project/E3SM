@@ -197,6 +197,14 @@
       use m_mpif90
       use m_die
 
+!      use m_zeit
+
+      use m_GlobalSegMap, only : GlobalSegMap_ngseg => ngseg  ! rml
+      use m_GlobalSegMap, only : GlobalSegMap_nlseg => nlseg  ! rml
+
+      use m_stdio    ! rml
+!      use shr_timer_mod        ! rml timers
+
       implicit none
 
 ! !INPUT PARAMETERS:
@@ -214,6 +222,8 @@
 !           in from old init routine.
 ! 31Jul01 - Jace A Mogill <mogill@cray.com>
 !           Rewrote to reduce number of loops and temp storage
+! 26Apr06 - R. Loy <rloy@mcs.anl.gov> - recode the search through
+!           the remote GSMap to improve efficiency
 !EOP -------------------------------------------------------------------
 
   character(len=*),parameter :: myname_=myname//'::initp_'
@@ -224,18 +234,43 @@
   logical, dimension(:), allocatable :: tmppe_list
   integer, dimension(:,:), pointer   :: tmpsegcount,tmpsegstart
 
-  integer :: procn          ! Index over processors
-  integer :: my_segn        ! Index into local segments
-  integer :: r_segn         ! Index into remote segments
+
   integer :: my_left        ! Left point in local segment (global memory)
   integer :: my_right       ! Right point in local segment (global memory)
   integer :: r_left         ! Left point in remote segment (global memory)
   integer :: r_right        ! Right point in remote segment (global memory)
-  integer :: v_left         ! Leftmost point in overlap (local memory)
-  integer :: v_right        ! Rightmost point in overlap (local memory)
-  integer :: previous_right ! Rightmost point in previous overlapped segment (local memory)
   integer :: nsegs_overlap  ! Number of segments that overlap between two procs
 
+
+  integer i,n
+  integer :: ngseg, nlseg
+  integer :: myseg, rseg
+  integer :: prev_right         ! Rightmost local point in previous overlapped segment
+  integer :: local_left, local_right
+  integer,allocatable  :: mygs_lb(:),mygs_ub(:),mygs_len(:),mygs_lstart(:)
+  integer :: r_ngseg
+  integer,allocatable  :: rgs_count(:),rgs_lb(:,:),rgs_ub(:,:)
+  integer,allocatable  :: nsegs_overlap_arr(:)
+
+  integer :: overlap_left, overlap_right, overlap_diff
+
+  integer :: proc, nprocs
+
+
+   integer,save  :: t_initialized=0   ! rml timers
+   integer,save  :: t_loop            ! rml timers
+   integer,save  :: t_loop2            ! rml timers
+   integer,save  :: t_load            ! rml timers
+
+#if 0
+   if (t_initialized == 0) then        ! rml timers
+     t_initialized=1                   ! rml timers
+
+     call shr_timer_get(t_loop,"m_Router:initp_ loop")  ! rml timers
+     call shr_timer_get(t_loop2,"m_Router:initp_ loop2")  ! rml timers
+     call shr_timer_get(t_load,"m_Router:initp_ load")  ! rml timers
+   endif
+#endif
 
   call MP_comm_rank(mycomm,myPid,ier)
   if(ier/=0) call MP_perr_die(myname_,'MP_comm_rank',ier)
@@ -249,50 +284,168 @@
  	   tmppe_list(ThisMCTWorld%nprocspid(othercomp)),stat=ier)
   if(ier/=0) call die(myname_,'allocate(tmpsegcount,..)',ier)
 
+
+
+!.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  
+
   tmpsegcount=0
   tmpsegstart=0
   count =0
   maxsegcount=0
-!.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  
 
-  do procn = 1, ThisMCTWorld%nprocspid(othercomp)
-     nsegs_overlap = 0
-     tmppe_list(procn) = .FALSE.
-     do my_segn = 1, GSMap%ngseg
-        if(GSMap%pe_loc(my_segn) == myPid) then
-           do r_segn = 1, RGSMap%ngseg
-              if(RGSMap%pe_loc(r_segn) == procn - 1) then
-                 my_left = GSMap%start(my_segn)
-                 my_right= GSMap%length(my_segn) + my_left - 1
-                 r_left  = RGSMap%start(r_segn)
-                 r_right = RGSMap%length(r_segn) + r_left - 1
-                 if( .not. (my_right < r_left   .or.  &
-                            my_left  > r_right  .or.  &
-                            my_left  > r_right  .or.  &
-                            my_right < r_left) ) then
-                    if(nsegs_overlap == 0) then
-                       count = count + 1
-		       v_right = -9999
-                       tmppe_list(procn) = .TRUE.
-                    endif
-		    v_left = GlobalToLocalIndex(GSMap,max(my_left, r_left),mycomm)
-		    previous_right = v_right
-		    v_right = v_left + min(my_right, r_right) - max(my_left, r_left)
-		    if(v_left == previous_right+1) then
-		       tmpsegcount(count, nsegs_overlap) = &
-		       tmpsegcount(count, nsegs_overlap) + v_right - v_left + 1
-		    else
-		       nsegs_overlap = nsegs_overlap + 1
-		       tmpsegstart(count, nsegs_overlap) = v_left
-		       tmpsegcount(count, nsegs_overlap) = v_right - v_left + 1
-		    endif
-                 endif
-              endif
-           enddo
-        endif
-     enddo
-     maxsegcount = max(nsegs_overlap, maxsegcount)
+!!!!  call zeit_ci('t_loop2')
+!  call shr_timer_start(t_loop2)    ! rml timers
+
+
+!! 
+!! determine the global segments on this processor 
+!! just once, so the info be used repeatedly below
+!! same code was used in m_GlobalToLocal - should make a subroutine...
+!!
+
+  ngseg = GlobalSegMap_ngseg(GSMap)
+  nlseg = GlobalSegMap_nlseg(GSMap, myPid)
+
+  allocate( mygs_lb(nlseg), mygs_ub(nlseg), mygs_len(nlseg), &
+            mygs_lstart(nlseg), stat=ier )
+  if(ier/=0) call die(myname_,'allocate mygs',ier)
+
+  n = 0
+  do i=1,ngseg
+    if (GSMap%pe_loc(i) == myPid ) then
+      n=n+1
+      mygs_lb(n)=GSMap%start(i)
+      mygs_ub(n)=GSMap%start(i) + GSMap%length(i) -1
+      mygs_len(n)=GSMap%length(i)
+    endif
   enddo
+
+  if (n .ne. nlseg) then
+    write(stderr,*) myname_,"mismatch nlseg",n,nlseg
+    call die(myname)
+  endif
+
+  mygs_lstart(1)=1
+  do i=2,nlseg
+    mygs_lstart(i)=mygs_lstart(i-1)+mygs_len(i-1)
+  enddo
+
+
+!!
+!! determine the segments in RGSMap that are local to each proc
+!!
+
+  nprocs=ThisMCTWorld%nprocspid(othercomp)
+  r_ngseg = GlobalSegMap_ngseg(RGSMap)
+
+  !! worst case for number of local segments is global number 
+  !! don't think a tighter bound is available without looping
+  !! through the pe_loc array just to count
+
+  allocate( rgs_count(nprocs) , &
+            rgs_lb(r_ngseg,nprocs), rgs_ub(r_ngseg,nprocs), &
+            nsegs_overlap_arr(nprocs), stat=ier )
+  if(ier/=0) call die(myname_,'allocate rgs, nsegs',ier)
+
+
+  do proc = 1, nprocs
+
+     rgs_count(proc)=0                !! number of segments in RGSMap local to proc
+
+     do i=1,r_ngseg
+       if (RGSMap%pe_loc(i) == (proc-1) ) then
+
+         rgs_count(proc) = rgs_count(proc) +1
+
+         rgs_lb( rgs_count(proc) , proc )=RGSMap%start(i)
+         rgs_ub( rgs_count(proc) , proc )=RGSMap%start(i) + RGSMap%length(i) -1
+
+       endif
+     enddo
+
+  end do
+
+!!! 
+!!! this is purely for error checking
+
+  do proc = 1, nprocs
+    if (rgs_count(proc) > r_ngseg) then
+      write(stderr,*) myname_,"overflow on rgs array",proc,rgs_count(proc)
+      call die(myname_,'overflow on rgs',0)
+    endif
+  enddo
+
+!!!
+
+  do proc = 1, nprocs
+    nsegs_overlap = 0
+    tmppe_list(proc) = .FALSE.         ! no overlaps with proc yet
+
+    if ( rgs_count(proc) > 0 ) then
+      do myseg = 1, nlseg                  ! loop over local segs on 'myPID'
+
+        my_left = mygs_lb(myseg)
+        my_right= mygs_ub(myseg)
+
+        do rseg = 1, rgs_count(proc)       !   loop over remote segs on 'proc'
+
+          r_left  = rgs_lb(rseg,proc)
+          r_right = rgs_ub(rseg,proc)
+
+          if (.not. (my_right < r_left   .or.  &     ! overlap
+                     my_left  > r_right) ) then
+
+             if (nsegs_overlap == 0) then        ! first overlap w/this proc
+               count = count + 1
+               tmppe_list(proc) = .TRUE.
+               prev_right = -9999
+             else
+               prev_right = local_right
+             endif
+
+             overlap_left=max(my_left, r_left)
+             overlap_right=min(my_right, r_right)
+             overlap_diff= overlap_right - overlap_left
+
+             local_left  = mygs_lstart(myseg) + (overlap_left - my_left)
+             local_right = local_left + overlap_diff
+
+                                                   ! non-contiguous w/prev one
+             if (local_left /= (prev_right+1) ) then
+               nsegs_overlap = nsegs_overlap + 1
+               tmpsegstart(count, nsegs_overlap) = local_left
+             endif
+
+             tmpsegcount(count, nsegs_overlap) = &
+               tmpsegcount(count, nsegs_overlap) + overlap_diff + 1
+
+           endif
+        enddo
+      enddo
+    endif
+
+    nsegs_overlap_arr(proc)=nsegs_overlap
+  enddo
+
+  !! pull this out of the loop to vectorize
+  do proc=1,nprocs
+    maxsegcount=max(maxsegcount,nsegs_overlap_arr(proc))
+  enddo
+
+
+  deallocate( mygs_lb, mygs_ub, mygs_len, mygs_lstart, &
+              rgs_count, rgs_lb, rgs_ub, &
+              nsegs_overlap_arr, stat=ier)
+  if(ier/=0) call die(myname_,'deallocate mygs,rgs,nsegs',ier)
+
+
+!  call shr_timer_stop(t_loop2)    ! rml timers
+!!!!  call zeit_co('t_loop2')
+!!!!  call zeit_flush(6)
+! this doesn't seem to work
+!  call zeit_allflush(mycomm,0,6)
+
+
 
 !.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  
 
@@ -300,6 +453,8 @@
 !!!!!!!!!!!!!!!!!!!!end of search through remote GSMap
 
 ! start loading up the Router with data
+
+!  call shr_timer_start(t_load)    ! rml timers
 
   Rout%comp1id = GSMap_comp_id(GSMap)
   Rout%comp2id = othercomp
@@ -358,6 +513,9 @@
       
   deallocate(tmpsegstart,tmpsegcount,tmppe_list,stat=ier)
   if(ier/=0) call die(myname_,'deallocate()',ier)
+
+
+!  call shr_timer_stop(t_load)    ! rml timers
 
  end subroutine initp_
 
