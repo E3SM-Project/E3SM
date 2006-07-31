@@ -25,6 +25,8 @@
 
 #if   defined(FORTRAN_UNDERSCORE_)
 #define FORT_NAME(lower,upper) lower##_
+#elif   defined(FORTRAN_DOUBLEUNDERSCORE_)
+#define FORT_NAME(lower,upper) lower##__
 #elif defined(FORTRAN_SAME)
 #define FORT_NAME(lower,upper) lower
 #elif defined(FORTRAN_CAPS_)
