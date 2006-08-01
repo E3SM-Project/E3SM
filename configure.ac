@@ -405,7 +405,7 @@ if echo $F90 | grep ftn >/dev/null 2>&1; then
       INCLUDEFLAG="-p"
    fi
    if test -z "$OPT"; then
-      OPT="-Oscalar3 -Ovector3 -Ostream3"
+      OPT="-Oscalar3 -Ovector1 -Ostream1"
    fi
 fi
 
