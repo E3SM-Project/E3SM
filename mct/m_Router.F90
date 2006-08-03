@@ -227,7 +227,7 @@
 !EOP -------------------------------------------------------------------
 
   character(len=*),parameter :: myname_=myname//'::initp_'
-  integer			     :: ier,i,j,k,m
+  integer			     :: ier,i,j,k,m,n
   integer			     :: mysize,myPid,othercomp
   integer			     :: lmaxsize,totallength
   integer                            :: maxsegcount,count
@@ -242,7 +242,6 @@
   integer :: nsegs_overlap  ! Number of segments that overlap between two procs
 
 
-  integer i,n
   integer :: ngseg, nlseg
   integer :: myseg, rseg
   integer :: prev_right         ! Rightmost local point in previous overlapped segment
