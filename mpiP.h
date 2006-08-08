@@ -20,12 +20,20 @@
  * of the argument, so the invocation of the macro
  * has to be give both e.g. FORT_NAME(hello,HELLO)
  * and maps to "hello_", "hello", and "HELLO" repectively.
+ *
+ * IMPORTANT NOTE:
+ * In the case of FORTRAN_GNUF2C (e.g. g95), the rule is this:
+ *    name does not contain an underscore -> append *one* underscore
+ *    name contains an underscore -> append *two* underscore
+ * Since all the mpi-serial names exported to fortran start with "mpi_",
+ * we only support the latter.
+ *
  */
 
 
 #if   defined(FORTRAN_UNDERSCORE_)
 #define FORT_NAME(lower,upper) lower##_
-#elif   defined(FORTRAN_DOUBLEUNDERSCORE_)
+#elif   defined(FORTRAN_GNUF2C)
 #define FORT_NAME(lower,upper) lower##__
 #elif defined(FORTRAN_SAME)
 #define FORT_NAME(lower,upper) lower
