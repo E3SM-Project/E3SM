@@ -105,7 +105,7 @@ m_mpout.o: m_dropdead.o m_ioutil.o m_mpif90.o m_stdio.o
 m_rankMerge.o:
 m_realkinds.o:
 m_stdio.o:
-m_zeit.o: m_SortingTools.o m_die.o m_ioutil.o m_mpif90.o m_stdio.o
+m_zeit.o: m_SortingTools.o m_die.o m_ioutil.o m_mpif90.o m_stdio.o get_zeits.o
 get_zeits.o:
 m_FileResolv.o: m_die.o m_StrTemplate.o
 m_TraceBack.o:	m_die.o m_stdio.o m_String.o
