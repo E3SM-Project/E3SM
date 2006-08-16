@@ -110,6 +110,8 @@
       public :: importIAttr     ! import INTEGER attribute from vector
       public :: importRAttr     ! import REAL attribute from vector
       public :: Copy		! copy attributes from one Av to another
+      public :: RCopy		! copy real attributes from one Av to another
+      public :: ICopy		! copy integer attributes from one Av to another
       public :: Sort            ! sort entries, and return permutation
       public :: Permute         ! permute entries
       public :: Unpermute       ! Unpermute entries
@@ -153,6 +155,14 @@
          importRAttrDP_
     end interface
     interface Copy    ; module procedure Copy_    ; end interface
+    interface RCopy   ; module procedure  &
+         RCopy_, &
+         RCopyL_
+    end interface
+    interface ICopy   ; module procedure  &
+          ICopy_, &
+          ICopyL_
+    end interface
     interface Sort    ; module procedure Sort_    ; end interface
     interface Permute ; module procedure Permute_ ; end interface
     interface Unpermute ; module procedure Unpermute_ ; end interface
@@ -2320,7 +2330,634 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: Copy_ - Copy Specific Attributes from One AttrVect to Another
+! !IROUTINE: RCopy_ - Copy Real Attributes from One AttrVect to Another
+!
+! !DESCRIPTION:
+! This routine copies from input argment {\tt aVin} into the output 
+! {\tt AttrVect} argument {\tt aVout} the shared real attributes.
+!
+! If the optional argument {\tt Vector} is present and true, the vector 
+! architecture-friendly portions of this routine will be invoked.
+!
+! {\bf N.B.:}  This routine will fail if the {\tt aVout} is not initialized.
+!
+! !INTERFACE:
+
+ subroutine RCopy_(aVin, aVout, vector)
+
+!
+! !USES:
+!
+      use m_die ,          only : die
+      use m_stdio ,        only : stderr
+
+      use m_List,          only : GetSharedListIndices
+      use m_List,          only : GetIndices => get_indices
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      type(AttrVect),             intent(in)    :: aVin
+      logical, optional,          intent(in)    :: vector 
+
+! !OUTPUT PARAMETERS: 
+
+      type(AttrVect),             intent(inout) :: aVout
+
+
+! !REVISION HISTORY:
+! 18Aug06 - R. Jacob <jacob@mcs.anl.gov> - initial version.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::RCopy_'
+
+  integer :: i,j,ier       ! dummy variables
+  integer :: num_indices   ! Overlapping attribute index number
+  integer :: aVsize        ! The lsize of aVin and aVout
+  integer :: num_inindices, num_outindices   ! Number of matching indices in aV
+  integer :: inxmin, outxmin, inx, outx      ! Index variables
+  logical :: contiguous    ! true if index segments are contiguous in memory  
+  logical :: usevector    ! true if vector flag is present and true.
+  character*7 :: data_flag ! character variable used as data type flag
+
+  ! Overlapping attribute index storage arrays:
+  integer, dimension(:), pointer :: aVinindices, aVoutindices
+
+
+  ! Check the arguments
+  aVsize = lsize_(aVin)
+  if(lsize_(aVin) /= lsize_(aVout)) then
+     write(stderr,'(2a)') myname_, &
+      'MCTERROR: Input aV and output aV do not have the same size'
+     call die(myname_,'MCTERROR: Input aV and output aV &
+                       &do not have the same size',2)
+  endif
+
+  ! Check REAL attributes for matching indices
+  data_flag = 'REAL'
+  call aVaVSharedAttrIndexList_(aVin, aVout, data_flag, num_indices, &
+	               		   aVinindices, aVoutindices)
+
+  if(num_indices <= 0) then
+    deallocate(aVinindices, aVoutindices,stat=ier)
+    if(ier /= 0) call die(myname_,'deallocate int(Vinindices...',ier)
+    return
+  endif
+
+  ! check vector flag.
+  usevector = .false.
+  if (present(vector)) then
+   if(vector) usevector = .true.
+  endif
+
+  ! Check indices for contiguous segments in memory
+  contiguous=.true.
+  do i=2,num_indices
+     if(aVinindices(i) /= aVinindices(i-1)+1) contiguous = .false.
+  enddo
+  if(contiguous) then
+     do i=2,num_indices
+        if(aVoutindices(i) /= aVoutindices(i-1)+1) contiguous=.false.
+     enddo
+  endif
+     
+  ! Start copying 
+
+  if(contiguous) then
+
+     if(usevector) then
+        outxmin=aVoutindices(1)-1
+        inxmin=aVinindices(1)-1
+        do i=1,num_indices
+!CDIR SELECT(VECTOR)
+!DIR$ CONCURRENT
+           do j=1,aVsize
+              aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)
+           enddo
+        enddo
+     else
+        outxmin=aVoutindices(1)-1
+        inxmin=aVinindices(1)-1
+!DIR$ CONCURRENT
+        do j=1,aVsize
+           do i=1,num_indices
+              aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)
+           enddo
+        enddo
+     endif
+
+  else
+           
+!DIR$ PREFERVECTOR
+     do j=1,aVsize
+        do i=1,num_indices
+           outx=aVoutindices(i)
+           inx=aVinindices(i)     
+           aVout%rAttr(outx,j) = aVin%rAttr(inx,j)
+        enddo
+     enddo
+        
+  endif
+
+
+  deallocate(aVinindices, aVoutindices,stat=ier)
+  if(ier /= 0) call die(myname_,'deallocate real(Vinindices...',ier)
+
+ end subroutine RCopy_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: RCopyL_ - Copy Specific Real Attributes from One AttrVect to Another
+!
+! !DESCRIPTION:
+! This routine copies from input argment {\tt aVin} into the output 
+! {\tt AttrVect} argument {\tt aVout} the real attributes specified in 
+! input {\tt CHARACTER} argument {\tt rList}. The attributes can
+! be listed in any order.  
+!
+! If any attributes in {\tt aVout} have different names but represent the
+! the same quantity and should still be copied, you must provide a translation
+! argument {\tt TrList}.  The translation arguments should
+! be identical in length to the {\tt rList} but with the correct {\tt aVout}
+! name subsititued at the appropriate place.
+!
+! If the optional argument {\tt Vector} is present and true, the vector 
+! architecture-friendly portions of this routine will be invoked.
+!
+! {\bf N.B.:}  This routine will fail if the {\tt aVout} is not initialized or
+! if any of the specified attributes are not present in either {\tt aVout} or {\tt aVin}.
+!
+! !INTERFACE:
+
+ subroutine RCopyL_(aVin, aVout, rList, TrList,  vector)
+
+!
+! !USES:
+!
+      use m_die ,          only : die
+      use m_stdio ,        only : stderr
+
+      use m_List,          only : GetSharedListIndices
+      use m_List,          only : GetIndices => get_indices
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      type(AttrVect),             intent(in)    :: aVin
+      character(len=*),           intent(in)    :: rList
+      character(len=*), optional, intent(in)    :: TrList
+      logical, optional,          intent(in)    :: vector 
+
+! !OUTPUT PARAMETERS: 
+
+      type(AttrVect),             intent(inout) :: aVout
+
+
+! !REVISION HISTORY:
+! 16Aug06 - R. Jacob <jacob@mcs.anl.gov> - initial version from breakup
+!           of Copy_.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::RCopyL_'
+
+  integer :: i,j,ier       ! dummy variables
+  integer :: num_indices   ! Overlapping attribute index number
+  integer :: aVsize        ! The lsize of aVin and aVout
+  integer :: num_inindices, num_outindices   ! Number of matching indices in aV
+  integer :: inxmin, outxmin, inx, outx      ! Index variables
+  logical :: TrListIsPresent   ! true if list argument is present
+  logical :: contiguous    ! true if index segments are contiguous in memory  
+  logical :: usevector    ! true if vector flag is present and true.
+  character*7 :: data_flag ! character variable used as data type flag
+
+  ! Overlapping attribute index storage arrays:
+  integer, dimension(:), pointer :: aVinindices, aVoutindices
+
+
+  ! Check the arguments
+  aVsize = lsize_(aVin)
+  if(lsize_(aVin) /= lsize_(aVout)) then
+     write(stderr,'(2a)') myname_, &
+      'MCTERROR: Input aV and output aV do not have the same size'
+     call die(myname_,'MCTERROR: Input aV and output aV &
+                       &do not have the same size',2)
+  endif
+
+  if(len_trim(rList) <= 0) return
+  ! Copy the listed real attributes
+
+  ! Index rList with the AttrVects
+  call GetIndices(aVinindices,aVin%rList,trim(rList))
+	
+!  TrList is present if it is provided and its length>0
+  TrListIsPresent = .false.
+  if(present(TrList)) then
+     if(len_trim(TrList) > 0) then
+       TrListIsPresent = .true.
+     endif
+  endif
+
+  if(TrListIsPresent) then
+     call GetIndices(aVoutindices,aVout%rList,trim(TrList))
+
+     if(size(aVinindices) /= size(aVoutindices)) then
+       call die(myname_,"Arguments rList and TrList do not&
+             &contain the same number of items")
+     endif
+  else
+       call GetIndices(aVoutindices,aVout%rList,trim(rList))
+  endif
+
+  num_indices=size(aVoutindices)
+
+  ! nothing to do if num_indices <=0
+  if (num_indices <= 0) then
+    deallocate(aVinindices, aVoutindices, stat=ier)
+    if(ier/=0) call die(myname_,"deallocate(aVinindices...)",ier)
+    return
+  endif
+ 
+  ! check vector flag.
+  usevector = .false.
+  if (present(vector)) then
+   if(vector) usevector = .true.
+  endif
+
+! Check if the indices are contiguous in memory for faster copy
+  contiguous=.true.
+  do i=2,num_indices
+     if(aVinindices(i) /= aVinindices(i-1)+1) contiguous = .false.
+  enddo
+  if(contiguous) then
+     do i=2,num_indices
+         if(aVoutindices(i) /= aVoutindices(i-1)+1) contiguous=.false.
+     enddo
+  endif
+
+! Start copying (arranged loop order optimized for xlf90)
+  if(contiguous) then
+
+     if(usevector) then
+        outxmin=aVoutindices(1)-1
+        inxmin=aVinindices(1)-1
+!DIR$ CONCURRENT
+        do i=1,num_indices
+!CDIR SELECT(VECTOR)
+	   do j=1,aVsize
+	     aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)       
+	   enddo
+	enddo
+     else
+        outxmin=aVoutindices(1)-1
+        inxmin=aVinindices(1)-1
+!DIR$ CONCURRENT
+        do j=1,aVsize
+	   do i=1,num_indices
+	      aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)       
+	   enddo
+	enddo
+     endif
+
+  else
+
+!DIR$ PREFERVECTOR
+    do j=1,aVsize
+       do i=1,num_indices
+          outx=aVoutindices(i)
+          inx=aVinindices(i)     
+          aVout%rAttr(outx,j) = aVin%rAttr(inx,j)
+       enddo
+    enddo
+
+  endif
+
+  deallocate(aVinindices, aVoutindices, stat=ier)
+  if(ier/=0) call die(myname_,"deallocate(aVinindices...)",ier)
+
+ end subroutine RCopyL_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: ICopy_ - Copy Integer Attributes from One AttrVect to Another
+!
+! !DESCRIPTION:
+! This routine copies from input argment {\tt aVin} into the output 
+! {\tt AttrVect} argument {\tt aVout} the shared integer attributes.
+!
+! If the optional argument {\tt Vector} is present and true, the vector 
+! architecture-friendly portions of this routine will be invoked.
+!
+! {\bf N.B.:}  This routine will fail if the {\tt aVout} is not initialized.
+!
+! !INTERFACE:
+
+ subroutine ICopy_(aVin, aVout, vector)
+
+!
+! !USES:
+!
+      use m_die ,          only : die
+      use m_stdio ,        only : stderr
+
+      use m_List,          only : GetSharedListIndices
+      use m_List,          only : GetIndices => get_indices
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      type(AttrVect),             intent(in)    :: aVin
+      logical, optional,          intent(in)    :: vector 
+
+! !OUTPUT PARAMETERS: 
+
+      type(AttrVect),             intent(inout) :: aVout
+
+
+! !REVISION HISTORY:
+! 16Aug06 - R. Jacob <jacob@mcs.anl.gov> - initial version.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::ICopy_'
+
+  integer :: i,j,ier       ! dummy variables
+  integer :: num_indices   ! Overlapping attribute index number
+  integer :: aVsize        ! The lsize of aVin and aVout
+  integer :: num_inindices, num_outindices   ! Number of matching indices in aV
+  integer :: inxmin, outxmin, inx, outx      ! Index variables
+  logical :: contiguous    ! true if index segments are contiguous in memory  
+  logical :: usevector    ! true if vector flag is present and true.
+  character*7 :: data_flag ! character variable used as data type flag
+
+  ! Overlapping attribute index storage arrays:
+  integer, dimension(:), pointer :: aVinindices, aVoutindices
+
+
+  ! Check the arguments
+  aVsize = lsize_(aVin)
+  if(lsize_(aVin) /= lsize_(aVout)) then
+     write(stderr,'(2a)') myname_, &
+      'MCTERROR: Input aV and output aV do not have the same size'
+     call die(myname_,'MCTERROR: Input aV and output aV &
+                       &do not have the same size',2)
+  endif
+
+  ! Check INTEGER attributes for matching indices
+  data_flag = 'INTEGER'
+  call aVaVSharedAttrIndexList_(aVin, aVout, data_flag, num_indices, &
+		   		   aVinindices, aVoutindices)
+  if(num_indices <= 0) then
+    deallocate(aVinindices, aVoutindices,stat=ier)
+    if(ier /= 0) call die(myname_,'deallocate int(Vinindices...',ier)
+    return
+  endif
+
+  ! check vector flag.
+  usevector = .false.
+  if (present(vector)) then
+   if(vector) usevector = .true.
+  endif
+
+  ! Check indices for contiguous segments in memory
+  contiguous=.true.
+  do i=2,num_indices
+     if(aVinindices(i) /= aVinindices(i-1)+1) contiguous = .false.
+  enddo
+  if(contiguous) then
+     do i=2,num_indices
+        if(aVoutindices(i) /= aVoutindices(i-1)+1) contiguous=.false.
+     enddo
+  endif
+
+
+  if(contiguous) then
+      
+     if(usevector) then
+        outxmin=aVoutindices(1)-1
+        inxmin=aVinindices(1)-1
+        do i=1,num_indices
+!CDIR SELECT(VECTOR)
+!DIR$ CONCURRENT
+           do j=1,aVsize
+              aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)
+           enddo
+        enddo
+     else
+        outxmin=aVoutindices(1)-1
+        inxmin=aVinindices(1)-1
+!DIR$ CONCURRENT
+        do j=1,aVsize
+           do i=1,num_indices
+              aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)
+           enddo
+        enddo
+     endif
+
+  else
+
+!DIR$ PREFERVECTOR
+     do j=1,aVsize
+        do i=1,num_indices
+           outx=aVoutindices(i)
+           inx=aVinindices(i)     
+           aVout%iAttr(outx,j) = aVin%iAttr(inx,j)
+        enddo
+     enddo
+     
+  endif
+
+  deallocate(aVinindices, aVoutindices,stat=ier)
+  if(ier /= 0) call die(myname_,'deallocate int(Vinindices...',ier)
+
+ end subroutine ICopy_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: ICopyL_ - Copy Specific Integer Attributes from One AttrVect to Another
+!
+! !DESCRIPTION:
+! This routine copies from input argment {\tt aVin} into the output 
+! {\tt AttrVect} argument {\tt aVout} the integer attributes specified in 
+! input {\tt CHARACTER} argument {\tt iList}. The attributes can
+! be listed in any order. 
+!
+! If any attributes in {\tt aVout} have different names but represent the
+! the same quantity and should still be copied, you must provide a translation
+! argument {\tt TiList}.  The translation arguments should
+! be identical in length to the {\tt iList} but with the correct {\tt aVout}
+! name subsititued at the appropriate place.
+!
+! If the optional argument {\tt Vector} is present and true, the vector 
+! architecture-friendly portions of this routine will be invoked.
+!
+! {\bf N.B.:}  This routine will fail if the {\tt aVout} is not initialized or
+! if any of the specified attributes are not present in either {\tt aVout} or {\tt aVin}.
+!
+! !INTERFACE:
+
+ subroutine ICopyL_(aVin, aVout, iList, TiList, vector)
+
+!
+! !USES:
+!
+      use m_die ,          only : die
+      use m_stdio ,        only : stderr
+
+      use m_List,          only : GetIndices => get_indices
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      type(AttrVect),             intent(in)    :: aVin
+      character(len=*)          , intent(in)    :: iList
+      character(len=*), optional, intent(in)    :: TiList
+      logical, optional,          intent(in)    :: vector 
+
+! !OUTPUT PARAMETERS: 
+
+      type(AttrVect),             intent(inout) :: aVout
+
+
+! !REVISION HISTORY:
+! 16Aug06 - R. Jacob <jacob@mcs.anl.gov> - initial version from breakup
+!           of Copy_.
+!
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::ICopyL_'
+
+  integer :: i,j,ier       ! dummy variables
+  integer :: num_indices   ! Overlapping attribute index number
+  integer :: aVsize        ! The lsize of aVin and aVout
+  integer :: num_inindices, num_outindices   ! Number of matching indices in aV
+  integer :: inxmin, outxmin, inx, outx      ! Index variables
+  logical :: TiListIsPresent     ! true if list argument is present
+  logical :: contiguous    ! true if index segments are contiguous in memory  
+  logical :: usevector    ! true if vector flag is present and true.
+  character*7 :: data_flag ! character variable used as data type flag
+
+  ! Overlapping attribute index storage arrays:
+  integer, dimension(:), pointer :: aVinindices, aVoutindices
+
+
+  ! Check the arguments
+  aVsize = lsize_(aVin)
+  if(lsize_(aVin) /= lsize_(aVout)) then
+     write(stderr,'(2a)') myname_, &
+      'MCTERROR: Input aV and output aV do not have the same size'
+     call die(myname_,'MCTERROR: Input aV and output aV &
+                       &do not have the same size',2)
+  endif
+
+  if(len_trim(iList) <= 0) return
+  ! Copy the listed real attributes
+
+
+! Index rList with the AttrVects
+  call GetIndices(aVinindices,aVin%iList,trim(iList))
+
+! TiList is present if its provided and its length>0
+  TiListIsPresent = .false.
+  if(present(TiList)) then
+    if(len_trim(TiList) > 0) then
+      TiListIsPresent = .true.
+    endif
+  endif
+
+  if(TiListIsPresent) then
+     call GetIndices(aVoutindices,aVout%iList,trim(TiList))
+     if(size(aVinindices) /= size(aVoutindices)) then
+        call die(myname_,"Arguments iList and TiList do not&
+               &contain the same number of items")
+     endif
+  else
+     call GetIndices(aVoutindices,aVout%iList,trim(iList))
+  endif
+
+  num_indices=size(aVoutindices)
+
+  ! nothing to do if num_indices <=0
+  if (num_indices <= 0) then
+    deallocate(aVinindices, aVoutindices, stat=ier)
+    if(ier/=0) call die(myname_,"deallocate(aVinindices...)",ier)
+    return
+  endif
+
+  ! check vector flag.
+  usevector = .false.
+  if (present(vector)) then
+   if(vector) usevector = .true.
+  endif
+
+! Check if the indices are contiguous in memory for faster copy
+  contiguous=.true.
+  do i=2,num_indices
+    if(aVinindices(i) /= aVinindices(i-1)+1) contiguous = .false.
+  enddo
+  if(contiguous) then
+    do i=2,num_indices
+      if(aVoutindices(i) /= aVoutindices(i-1)+1) contiguous=.false.
+    enddo
+  endif
+	
+! Start copying (arranged loop order optimized for xlf90)
+  if(contiguous) then
+
+    if(usevector) then
+      outxmin=aVoutindices(1)-1
+      inxmin=aVinindices(1)-1
+!DIR$ CONCURRENT
+      do i=1,num_indices
+!CDIR SELECT(VECTOR)
+         do j=1,aVsize
+   	    aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)       
+         enddo
+      enddo
+    else
+      outxmin=aVoutindices(1)-1
+      inxmin=aVinindices(1)-1
+!DIR$ CONCURRENT
+      do j=1,aVsize
+         do i=1,num_indices
+   	    aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)       
+         enddo
+      enddo
+    endif
+
+  else
+
+!DIR$ PREFERVECTOR
+     do j=1,aVsize
+       do i=1,num_indices
+          outx=aVoutindices(i)
+          inx=aVinindices(i)     
+          aVout%iAttr(outx,j) = aVin%iAttr(inx,j)
+       enddo
+     enddo
+
+  endif
+                
+  deallocate(aVinindices, aVoutindices, stat=ier)
+  if(ier/=0) call die(myname_,"deallocate(aVinindices...)",ier)
+
+ end subroutine ICopyL_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: Copy_ - Copy Real and Integer Attributes from One AttrVect to Another
 !
 ! !DESCRIPTION:
 ! This routine copies from input argment {\tt aVin} into the output 
@@ -2334,6 +2971,11 @@
 ! argument {\tt TrList} and/or {\tt TiList}.  The translation arguments should
 ! be identical to the {\tt rList} or {\tt iList} but with the correct {\tt aVout}
 ! name subsititued at the appropriate place.
+!
+! This routines combines the functions of {\tt RCopy\_}, {\tt RCopyL\_},
+! {\tt ICopy\_} and {\tt ICopyL\_}.  If you know you only want to copy real
+! attributes, use the {\tt RCopy} functions.  If you know you only want to
+! copy integer attributes, use the {\tt ICopy} functions.
 !
 ! If the optional argument {\tt Vector} is present and true, the vector 
 ! architecture-friendly portions of this routine will be invoked.
@@ -2380,6 +3022,8 @@
 !           new list function get_indices and faster memory copy  
 ! 28Oct03 - R. Jacob <jacob@mcs.anl.gov> - add optional vector
 !           argument to use vector-friendly code provided by Fujitsu
+! 16Aug06 - R. Jacob <jacob@mcs.anl.gov> - split into 4 routines:
+!           RCopy_,RCopyL_,ICopy_,ICopyL_
 !
 !EOP ___________________________________________________________________
 
@@ -2416,11 +3060,6 @@
 
   ! Copy the listed real attributes
   if(present(rList)) then
-     if(len_trim(rList) > 0) then
-
-	! Index rList with the AttrVects
-	call GetIndices(aVinindices,aVin%rList,trim(rList))
-	
 	! TrList is present if it is provided and its length>0
 	TrListIsPresent = .false.
 	if(present(TrList)) then
@@ -2430,77 +3069,15 @@
 	endif
 
 	if(TrListIsPresent) then
-	   call GetIndices(aVoutindices,aVout%rList,trim(TrList))
-	   if(size(aVinindices) /= size(aVoutindices)) then
-	      call die(myname_,"Arguments rList and TrList do not&
-                &contain the same number of items")
-	   endif
+	   call RCopyL_(aVin,aVout,rList,TrList,vector=usevector)
 	else
-	   call GetIndices(aVoutindices,aVout%rList,trim(rList))
+	   call RCopyL_(aVin,aVout,rList,vector=usevector)
 	endif
 
-	! Check if the indices are contiguous in memory for faster copy
-	num_indices=size(aVoutindices)
-	contiguous=.true.
-	do i=2,num_indices
-	   if(aVinindices(i) /= aVinindices(i-1)+1) contiguous = .false.
-	enddo
-	if(contiguous) then
-	   do i=2,num_indices
-	      if(aVoutindices(i) /= aVoutindices(i-1)+1) contiguous=.false.
-	   enddo
-	endif
-
-	! Start copying (arranged loop order optimized for xlf90)
-	if(contiguous) then
-
-           if(usevector) then
-	      outxmin=aVoutindices(1)-1
-	      inxmin=aVinindices(1)-1
-!DIR$ CONCURRENT
-	      do i=1,num_indices
-!CDIR SELECT(VECTOR)
-	         do j=1,aVsize
-	   	    aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)       
-	         enddo
-	      enddo
-           else
-	      outxmin=aVoutindices(1)-1
-	      inxmin=aVinindices(1)-1
-!DIR$ CONCURRENT
-	      do j=1,aVsize
-	         do i=1,num_indices
-	   	    aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)       
-	         enddo
-	      enddo
-           endif
-
-	else
-
-!DIR$ PREFERVECTOR
-           do j=1,aVsize
-              do i=1,num_indices
-                 outx=aVoutindices(i)
-                 inx=aVinindices(i)     
-                 aVout%rAttr(outx,j) = aVin%rAttr(inx,j)
-              enddo
-           enddo
-
-	endif
-
-	deallocate(aVinindices, aVoutindices, stat=ier)
-	if(ier/=0) call die(myname_,"deallocate(aVinindices...)",ier)
-
-     endif  ! if(len_trim(rList) > 0)
-     
   endif   ! if(present(rList)
 
   !  Copy the listed integer attributes
   if(present(iList)) then
-     if(len_trim(iList) > 0) then
-
-	! Index rList with the AttrVects
-	call GetIndices(aVinindices,aVin%iList,trim(iList))
 
 	! TiList is present if its provided and its length>0
 	TiListIsPresent = .false.
@@ -2511,68 +3088,10 @@
 	endif
 
 	if(TiListIsPresent) then
-	   call GetIndices(aVoutindices,aVout%iList,trim(TiList))
-	   if(size(aVinindices) /= size(aVoutindices)) then
-	      call die(myname_,"Arguments iList and TiList do not&
-                &contain the same number of items")
-	   endif
+	   call ICopyL_(aVin,aVout,iList,TiList,vector=usevector)
 	else
-	   call GetIndices(aVoutindices,aVout%iList,trim(iList))
+	   call ICopyL_(aVin,aVout,iList,vector=usevector)
 	endif
-
-	! Check if the indices are contiguous in memory for faster copy
-	num_indices=size(aVoutindices)
-	contiguous=.true.
-	do i=2,num_indices
-	   if(aVinindices(i) /= aVinindices(i-1)+1) contiguous = .false.
-	enddo
-	if(contiguous) then
-	   do i=2,num_indices
-	      if(aVoutindices(i) /= aVoutindices(i-1)+1) contiguous=.false.
-	   enddo
-	endif
-	
-	! Start copying (arranged loop order optimized for xlf90)
-	if(contiguous) then
-
-           if(usevector) then
-	      outxmin=aVoutindices(1)-1
-	      inxmin=aVinindices(1)-1
-!DIR$ CONCURRENT
-	      do i=1,num_indices
-!CDIR SELECT(VECTOR)
-	         do j=1,aVsize
-	   	    aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)       
-	         enddo
-	      enddo
-           else
-	      outxmin=aVoutindices(1)-1
-	      inxmin=aVinindices(1)-1
-!DIR$ CONCURRENT
-	      do j=1,aVsize
-	         do i=1,num_indices
-	   	    aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)       
-	         enddo
-	      enddo
-           endif
-
-	else
-
-!DIR$ PREFERVECTOR
-           do j=1,aVsize
-              do i=1,num_indices
-                outx=aVoutindices(i)
-                inx=aVinindices(i)     
-                aVout%iAttr(outx,j) = aVin%iAttr(inx,j)
-              enddo
-           enddo
-
-	endif
-                
-	deallocate(aVinindices, aVoutindices, stat=ier)
-	if(ier/=0) call die(myname_,"deallocate(aVinindices...)",ier)
-
-     endif  ! if(len_trim(iList) > 0)
 
   endif   ! if(present(iList))
 
@@ -2580,125 +3099,8 @@
   ! from in to out.
   if( .not.present(rList) .and. .not.present(iList)) then
 
-     ! Check REAL attributes for matching indices
-     data_flag = 'REAL'
-     call aVaVSharedAttrIndexList_(aVin, aVout, data_flag, num_indices, &
-	               		   aVinindices, aVoutindices)
-
-     ! Check indices for contiguous segments in memory
-     contiguous=.true.
-     do i=2,num_indices
-        if(aVinindices(i) /= aVinindices(i-1)+1) contiguous = .false.
-     enddo
-     if(contiguous) then
-        do i=2,num_indices
-           if(aVoutindices(i) /= aVoutindices(i-1)+1) contiguous=.false.
-        enddo
-     endif
-     
-     ! Start copying 
-     if(num_indices > 0) then
-
-        if(contiguous) then
-
-           if(usevector) then
-              outxmin=aVoutindices(1)-1
-              inxmin=aVinindices(1)-1
-              do i=1,num_indices
-!CDIR SELECT(VECTOR)
-!DIR$ CONCURRENT
-                 do j=1,aVsize
-                    aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)
-                 enddo
-              enddo
-           else
-              outxmin=aVoutindices(1)-1
-              inxmin=aVinindices(1)-1
-!DIR$ CONCURRENT
-              do j=1,aVsize
-                 do i=1,num_indices
-                    aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)
-                 enddo
-              enddo
-           endif
-
-        else
-           
-!DIR$ PREFERVECTOR
-           do j=1,aVsize
-              do i=1,num_indices
-                 outx=aVoutindices(i)
-                 inx=aVinindices(i)     
-                 aVout%rAttr(outx,j) = aVin%rAttr(inx,j)
-              enddo
-           enddo
-        
-        endif
-
-     endif
-
-     deallocate(aVinindices, aVoutindices,stat=ier)
-     if(ier /= 0) call die(myname_,'deallocate real(Vinindices...',ier)
-
-     ! Check INTEGER attributes for matching indices
-     data_flag = 'INTEGER'
-     call aVaVSharedAttrIndexList_(aVin, aVout, data_flag, num_indices, &
-		   		   aVinindices, aVoutindices)
-
-     ! Check indices for contiguous segments in memory
-     contiguous=.true.
-     do i=2,num_indices
-        if(aVinindices(i) /= aVinindices(i-1)+1) contiguous = .false.
-     enddo
-     if(contiguous) then
-        do i=2,num_indices
-           if(aVoutindices(i) /= aVoutindices(i-1)+1) contiguous=.false.
-        enddo
-     endif
-
-     ! Start copying 
-     if(num_indices > 0) then
-
-        if(contiguous) then
-      
-           if(usevector) then
-              outxmin=aVoutindices(1)-1
-              inxmin=aVinindices(1)-1
-              do i=1,num_indices
-!CDIR SELECT(VECTOR)
-!DIR$ CONCURRENT
-                 do j=1,aVsize
-                    aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)
-                 enddo
-              enddo
-           else
-              outxmin=aVoutindices(1)-1
-              inxmin=aVinindices(1)-1
-!DIR$ CONCURRENT
-              do j=1,aVsize
-                 do i=1,num_indices
-                    aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)
-                 enddo
-              enddo
-           endif
-
-        else
-
-!DIR$ PREFERVECTOR
-           do j=1,aVsize
-              do i=1,num_indices
-                 outx=aVoutindices(i)
-                 inx=aVinindices(i)     
-                 aVout%iAttr(outx,j) = aVin%iAttr(inx,j)
-              enddo
-           enddo
-        
-        endif
-
-     endif
-
-     deallocate(aVinindices, aVoutindices,stat=ier)
-     if(ier /= 0) call die(myname_,'deallocate int(Vinindices...',ier)
+     call RCopy_(aVin, Avout, vector=usevector)
+     call ICopy_(aVin, Avout, vector=usevector)
 
   endif
 
