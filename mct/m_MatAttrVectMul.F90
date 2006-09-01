@@ -230,6 +230,7 @@
 
          ! loop over attributes being regridded.
 
+!DIR$ CONCURRENT
 	  do m=1,num_indices
 
 	     yAV%rAttr(m,row) = yAV%rAttr(m,row) + wgt * xAV%rAttr(m,col)
@@ -256,6 +257,7 @@
 
        ! loop over attributes being regridded.
 
+!DIR$ CONCURRENT
 	do m=1,num_indices
 
 	   yAV%rAttr(yAVindices(m),row) = &
