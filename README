@@ -14,7 +14,7 @@
 
 ######################################################################
 
-  This is version 2.2.0 of the Model Coupling Toolkit (MCT).
+  This is version 2.2.2 of the Model Coupling Toolkit (MCT).
 
   Our purpose in creating this toolkit is to support the construction
   of highly portable and extensible high-performance couplers 
@@ -65,6 +65,7 @@ Optional Contents available
   platforms/compilers:
 
   IBM (AIX) xlf
+  IBM BlueGene (see PLATFORM NOTE below)
   SGI (IRIX64) f90 MIPSpro 
   SGI Altix
   SUN (Solaris) f90 WorkShop
@@ -109,6 +110,10 @@ Optional Contents available
     > make >& make.out
   and send us config.out, make.out and config.log (which is produced by the
   configure command)
+
+  PLATFORM NOTE:
+  On the Argonne BlueGene/L, use:
+  > ./configure FC=mpif90.ibm CC=mpicc.ibm
 
 
 ######################################################################
@@ -174,6 +179,8 @@ Optional Contents available
   19 Oct, 2004 -- version 2.0.3 (not released)
   21 Jan, 2005 -- version 2.1.0
   01 Dec, 2005 -- version 2.2.0
+  22 Apr, 2006 -- version 2.2.1 (not released)
+  08 Sep, 2006 -- version 2.2.2
 
 
 
