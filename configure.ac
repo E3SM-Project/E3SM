@@ -396,6 +396,23 @@ if echo $F90 | grep pgf90 >/dev/null 2>&1; then
 fi
 
 if echo $F90 | grep ftn >/dev/null 2>&1; then
+ if echo $f90_version | grep -i Portland >/dev/null 2>&1; then
+   echo "Fortran Compiler is Portland Group, XT3"
+   CPRDEF="PGI"
+   SYSDEF="CATAMOUNT"
+   if test -z "$REAL8"; then
+      REAL8="-r8"
+   fi
+   if test -z "$BIT64"; then
+      BIT64="-pc 64"
+   fi
+   if test -z "$ENDIAN"; then
+      ENDIAN="-byteswapio"
+   fi
+   if test -z "$OPT"; then
+      OPT="-O2"
+   fi
+ else
    echo "Fortran Compiler is Cray"
    CPRDEF="CRAY" 
    if test -z "$F90FLAGS"; then 
@@ -407,6 +424,7 @@ if echo $F90 | grep ftn >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT="-Oscalar3 -Ovector1 -Ostream1"
    fi
+ fi
 fi
 
 if echo $F90 | grep frt >/dev/null 2>&1; then
