@@ -73,14 +73,11 @@ Optional Contents available
   Compaq  Compaq Fortran Compiler (X5.5-2801-48CAG or later)
   Cray X1
   Linux: Portland Group, Intel, g95, Absoft, Pathscale, Lahey, NAG
-     NOTE:  In general, Intel version 8.1 and later have no problems.
-      Some earlier versions generated internal compiler errors.
-      See the MCT homepage for more information.
   NEC
   Fujitsu
 
-  Running the examples requires a parallel platform.
-  Memory requirements are reasonable.
+  Running all the examples requires a parallel platform.
+  Memory requirements are modest.
 
 ######################################################################
   BUILD INSTRUCTIONS:
@@ -115,6 +112,12 @@ Optional Contents available
   PLATFORM NOTE:
   On the Argonne BlueGene/L, use:
   > ./configure FC=mpif90.ibm CC=mpicc.ibm
+
+  On robin at NCCS, use:
+  > ./configure --host=Linux
+
+  On the Cray XT3, use:
+  > ./configure --host=Linux F90=ftn
 
 
 ######################################################################
