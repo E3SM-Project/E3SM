@@ -2,7 +2,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$ 
+! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_Rearranger -- Remaps an AttrVect within a group of processes
@@ -1096,7 +1096,12 @@ endif
 if (usealltoall) then
         proc = numprocs
 else
-	call MPI_WAITANY(RecvRout%nprocs,recv_ireqs,proc,recv_istatus,ier)
+        if(present(Sum)) then
+           proc = numprocs
+	   call MPI_WAIT(recv_ireqs(proc),recv_istatus,ier)
+        else
+	   call MPI_WAITANY(RecvRout%nprocs,recv_ireqs,proc,recv_istatus,ier)
+        endif
 endif
 
 	if(present(Sum)) then
@@ -1143,7 +1148,12 @@ endif
 if (usealltoall) then
         proc = numprocs
 else
-	call MPI_WAITANY(RecvRout%nprocs,recv_rreqs,proc,recv_rstatus,ier)
+	if(present(Sum)) then
+           proc = numprocs
+	   call MPI_WAIT(recv_rreqs(proc),recv_rstatus,ier)
+        else
+	   call MPI_WAITANY(RecvRout%nprocs,recv_rreqs,proc,recv_rstatus,ier)
+        endif
 endif
 
 	if(present(Sum)) then
