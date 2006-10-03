@@ -646,7 +646,7 @@ if test -z "$MACHDEFS"; then
 fi
 
 if test -z "$ALLCFLAGS"; then # SET C COMPILE FLAGS
-   ALLCFLAGS="-D$name_mangling -O"
+   ALLCFLAGS="-D$name_mangling -DSYS$SYSDEF -DCPR$CPRDEF -O"
    if test -n "$EXTRACFLAGS"; then
       ALLCFLAGS="-D$name_mangling -O $EXTRACFLAGS"
    fi
