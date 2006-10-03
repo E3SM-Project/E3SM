@@ -17,7 +17,9 @@
 
 
 #include <sys/types.h>
+#ifndef SYSCATAMOUNT /* times is not implemented and will always fail on Catamount */ 
 #include <sys/times.h>
+#endif
 
 #include <time.h> /* POSIX standard says CLOCKS_PER_SEC is here */
 
@@ -72,6 +74,7 @@ void get_zeits_(zts)
   double *zts;
 {
 
+#ifndef SYSCATAMOUNT
   struct tms tm;
   double secs;
   secs=1./ZCLK_TCK;
@@ -81,6 +84,13 @@ void get_zeits_(zts)
   zts[2]=tm.tms_stime*secs;
   zts[3]=tm.tms_cutime*secs;
   zts[4]=tm.tms_cstime*secs;
+#else
+  zts[0]=0.;
+  zts[1]=0.;
+  zts[2]=0.;
+  zts[3]=0.;
+  zts[4]=0.;
+#endif
 
 }
 
