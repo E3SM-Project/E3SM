@@ -54,11 +54,11 @@ fort.o: mpif.h
 
 lib:
 	@if [ ! "$(FORT_SIZE)" ] ; \
-           then echo "Please setenv FORT_SIZE (e.g. real4double8 or real8double16)"; \
+           then echo "Please set FORT_SIZE (e.g. real4double8 or real8double16) when you do the main MCT configure"; \
                 exit 1; fi
 	@if [ ! -r $(MPIFH) ] ; \
            then echo "Error: there is no $(MPIFH) -" \
-                      "check the environment value of FORT_SIZE" ; \
+                      "check the value of FORT_SIZE in the main MCT configure" ; \
                 exit 1; fi
 	cp -f $(MPIFH) mpif.h
 	chmod -w mpif.h
