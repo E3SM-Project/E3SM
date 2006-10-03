@@ -220,6 +220,7 @@ OLDF90="$F90"
 F90="$FC" # use MPIF90, since differences may exist between MPIF90 and F90
 
 AC_F90_C_NAME_MANGLING
+
 case $ac_cv_f90_mangling in
   "lower case, underscore") 
 	 name_mangling="FORTRAN_UNDERSCORE_";;
@@ -227,6 +228,8 @@ case $ac_cv_f90_mangling in
 	 name_mangling="FORTRAN_SAME";;
   "upper case, no underscore")  
 	 name_mangling="FORTRAN_CAPS_";;
+  "lower case, double underscore") 
+	 name_mangling="FORTRAN_GNUF2C";;
   *) 
          name_mangling="FORTRAN_MANGLING_UNKNOWN" 
 	 AC_MSG_WARN([UNKNOWN FORTRAN 90 NAME-MANGLING SCHEME]);;

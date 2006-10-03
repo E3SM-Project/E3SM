@@ -1196,6 +1196,8 @@ m4_if(m4_index([$1],[_]),-1,[],
 ])
 m4_default([$2],[$1])="$ac_val"
 ])# AC_F95_FUNC
+
+
 # AC_F90_C_NAME_MANGLING
 # ---------------------
 # Test for the name mangling scheme used by the Fortran 90 compiler.
@@ -1210,6 +1212,10 @@ m4_default([$2],[$1])="$ac_val"
 # The translation describes how a c routine should be defined in order for
 # it to be called by a fortran source file in lower case and no underscore
 #
+# The GNU F2C convention adds two underscores if the name has a contained
+# underscore but only one underscore if the name has no underscores.
+# This test is based on mangling of a name with a contained underscore.
+
 AC_DEFUN([AC_F90_C_NAME_MANGLING],
 [
 AC_CACHE_CHECK([for Fortran 90 name-mangling scheme],
@@ -1217,9 +1223,9 @@ AC_CACHE_CHECK([for Fortran 90 name-mangling scheme],
 [AC_LANG_PUSH(C)dnl
 AC_COMPILE_IFELSE(
 [
-void foobar_()
+void foo_bar__()
 {}
-void BARFOO_()
+void BAR_FOO__()
 {}
 ],
 [mv conftest.$ac_objext cf90_test.$ac_objext
@@ -1230,8 +1236,8 @@ void BARFOO_()
   LIBS="cf90_test.$ac_objext $F90LIBS $LIBS"
 
   ac_success=no
-  for ac_foobar in foobar barfoo; do
-    for ac_underscore in "" "_"; do
+  for ac_foobar in foo_bar bar_foo; do
+    for ac_underscore in "_" "__" ""; do
       ac_func="$ac_foobar$ac_underscore"
       AC_TRY_LINK_FUNC($ac_func,
          [ac_success=yes; break 2])
@@ -1239,23 +1245,32 @@ void BARFOO_()
   done
 
   if test "$ac_success" = "yes"; then
+
      case $ac_foobar in
-        foobar)
+        foo_bar)
            ac_cv_f90_mangling="lower case"
            ;;
-        barfoo)
+        bar_foo)
            ac_cv_f90_mangling="upper case"
            ;;
      esac
 
-     if test -z "$ac_underscore"; then
-        ac_cv_f90_mangling="$ac_cv_f90_mangling, underscore"
-     else
-        ac_cv_f90_mangling="$ac_cv_f90_mangling, no underscore"
-     fi
-  
+     case $ac_underscore in
+        "_")
+           ac_cv_f90_mangling="$ac_cv_f90_mangling, underscore"
+           ;;
+        "__")
+           ac_cv_f90_mangling="$ac_cv_f90_mangling, no underscore"
+           ;;
+        "")
+           ac_cv_f90_mangling="$ac_cv_f90_mangling, double underscore"
+	   ;;
+    esac
+
   else
+
      ac_cv_f90_mangling="unknown"
+
   fi
 
   LIBS=$ac_save_LIBS

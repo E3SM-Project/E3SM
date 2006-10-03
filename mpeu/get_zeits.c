@@ -51,6 +51,10 @@
 #  define	get_ztick_		get_ztick
 #endif
 
+#ifdef FORTRAN_GNUF2C
+#  define	get_zeits_		get_zeits__
+#  define	get_ztick_		get_ztick__
+#endif
 
  /*  Prototype: */
 
