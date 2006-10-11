@@ -34,6 +34,9 @@
         parameter (MPI_MAX_ERROR_STRING=128)
 
 
+        integer MPI_SUCCESS
+        parameter (MPI_SUCCESS=0)
+
         integer MPI_UNDEFINED
         parameter (MPI_UNDEFINED= -1)
 
