@@ -90,6 +90,8 @@
                    '  tag=',status(MPI_TAG,i)
 	end do
 
+	call mpi_finalize(ier)
+
 	do i=1,5
           print *, 'Time=',mpi_wtime()
           call sleep(1)
