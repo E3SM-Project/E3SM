@@ -504,7 +504,7 @@
 ! The optional argument {\tt Tag} can be used to set the tag value used in 
 ! the rearrangement.  DefaultTag will be used otherwise.
 !
-! If the optional argument {\tt Sum} is present, data for the same
+! If the optional argument {\tt Sum} is present and true, data for the same
 ! physical point coming from two or more processes will be summed.
 ! Otherwise, data is overwritten.
 !
@@ -569,6 +569,7 @@
 !           reordered send/receive order to improve communication 
 !           performance.  Also remove replace allocated arrays with
 !           automatic.
+! 14Oct06 - R. Jacob <jacob@mcs.anl.gov> - check value of Sum argument.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::Rearrange_'
@@ -580,6 +581,7 @@
   integer ::    mytag
   integer ::    ISendSize, RSendSize, IRecvSize, RRecvSize
   logical ::    usevector, usealltoall
+  logical ::    DoSum
   real(FP) ::  realtyp
 !-----------------------------------------------------------------------
 
@@ -678,6 +680,11 @@
    usealltoall=.false.
    if(present(Alltoall)) then
     if(Alltoall) usealltoall=.true.
+   endif
+
+   DoSum=.false.
+   if(present(Sum)) then
+    if(Sum) DoSum=.true.
    endif
 
    ! ASSIGN VARIABLES
@@ -860,7 +867,7 @@ else
         mytag = DefaultTag
         if(present(Tag)) mytag=Tag
 
-	if( (RecvRout%num_segs(proc) > 1) .or. present(Sum) ) then
+	if( (RecvRout%num_segs(proc) > 1) .or. DoSum ) then
 
 	   call MPI_IRECV(IRecvBuf(IRecvLoc(proc)),                 &
 		          RecvRout%locsize(proc)*numi,MP_INTEGER,   &
@@ -887,7 +894,7 @@ else
         mytag = DefaultTag + 1
         if(present(Tag)) mytag=Tag +1
 
-	if( (RecvRout%num_segs(proc) > 1) .or. present(Sum) ) then
+	if( (RecvRout%num_segs(proc) > 1) .or. DoSum ) then
 
 	   call MPI_IRECV(RRecvBuf(RRecvLoc(proc)),                 &
 		          RecvRout%locsize(proc)*numr,mp_Type_rp,   &
@@ -1001,7 +1008,7 @@ endif
 
   ! ZERO TARGETAV WHILE WAITING FOR MESSAGES TO COMPLETE
 
-  if(present(Sum)) call AttrVect_zero(TargetAV)
+  if(DoSum) call AttrVect_zero(TargetAV)
 
 !:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -1096,7 +1103,7 @@ endif
 if (usealltoall) then
         proc = numprocs
 else
-        if(present(Sum)) then
+        if(DoSum) then
            proc = numprocs
 	   call MPI_WAIT(recv_ireqs(proc),recv_istatus,ier)
         else
@@ -1104,7 +1111,7 @@ else
         endif
 endif
 
-	if(present(Sum)) then
+	if(DoSum) then
 
 	   ! load the correct pieces of the integer vectors
            j=0
@@ -1148,7 +1155,7 @@ endif
 if (usealltoall) then
         proc = numprocs
 else
-	if(present(Sum)) then
+	if(DoSum) then
            proc = numprocs
 	   call MPI_WAIT(recv_rreqs(proc),recv_rstatus,ier)
         else
@@ -1156,7 +1163,7 @@ else
         endif
 endif
 
-	if(present(Sum)) then
+	if(DoSum) then
 
 	   ! load the correct pieces of the integer vectors
            k=0
