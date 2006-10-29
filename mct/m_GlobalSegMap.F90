@@ -984,8 +984,18 @@
        mysize=size(lindx)
      endif
 
-     if (mysize<=0) call die(myname_, &
-        'lindx is empty (you may have run out of points)')
+     if (mysize<0) call die(myname_, &
+        'lindx size is negative (you may have run out of points)')
+
+!!
+!! Special case if this processor doesn't have any data indices
+!! 
+   if (mysize==0) then
+     allocate(start(0),count(0),stat=ierr)
+     if(ierr/=0) call die(myname_,'allocate(start,count)',ierr)
+    
+     nseg=0
+   else
 
      call MPI_COMM_RANK(my_comm,rank, ierr)
 
@@ -1018,7 +1028,9 @@
          else
             count(nseg) = count(nseg)+1
          end if
-      end do
+     end do
+
+   endif ! if mysize==0
 
 
      if (debug.ne.0) then
