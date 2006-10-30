@@ -281,8 +281,10 @@
   allocate(tmpsegcount(ThisMCTWorld%nprocspid(othercomp),mysize),&
            tmpsegstart(ThisMCTWorld%nprocspid(othercomp),mysize),&
  	   tmppe_list(ThisMCTWorld%nprocspid(othercomp)),stat=ier)
-  if(ier/=0) call die(myname_,'allocate(tmpsegcount,..)',ier)
-
+  if(ier/=0)  &
+    call die( myname_,'allocate tmpsegcount etc. size ', &
+              ThisMCTWorld%nprocspid(othercomp), &
+              ' by ',mysize)
 
 
 !.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  
@@ -324,7 +326,7 @@
     call die(myname)
   endif
 
-  mygs_lstart(1)=1
+  if (nlseg > 0) mygs_lstart(1)=1
   do i=2,nlseg
     mygs_lstart(i)=mygs_lstart(i-1)+mygs_len(i-1)
   enddo
