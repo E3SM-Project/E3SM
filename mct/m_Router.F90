@@ -224,6 +224,7 @@
 !           Rewrote to reduce number of loops and temp storage
 ! 26Apr06 - R. Loy <rloy@mcs.anl.gov> - recode the search through
 !           the remote GSMap to improve efficiency
+! 30Oct06 - R. Loy <rloy@mcs.anl.gov> - fix mygs_lstat(1) segfault on 0 segs
 !EOP -------------------------------------------------------------------
 
   character(len=*),parameter :: myname_=myname//'::initp_'
