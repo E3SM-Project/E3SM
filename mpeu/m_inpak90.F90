@@ -227,6 +227,7 @@
 
      module m_inpak90
      use m_stdio, only : stderr,stdout
+     use m_realkinds, only: FP, SP, DP,kind_r8
      implicit none
      private
      public :: I90_LoadF   ! loads a resource file into memory
@@ -1162,7 +1163,7 @@ end subroutine i90_fullRelease
 
 !...................................................................
 
-      real function i90_GFloat( iret )
+      real(FP) function i90_GFloat( iret )
 
       implicit NONE
 
@@ -1202,7 +1203,7 @@ end subroutine i90_fullRelease
 
       character*256 token
       integer       ios
-      real          x
+      real(FP)      x
 
 !	Make sure that a buffer is defined (JG)
 !	----------------------------------
@@ -1265,7 +1266,7 @@ end subroutine i90_fullRelease
 !-------------------------------------------------------------------------
 
       character*256 token
-      real*8        x
+      real(kind_r8) x
       integer       ios
 
 !	Make sure that a buffer is defined (JG)
@@ -1288,7 +1289,7 @@ end subroutine i90_fullRelease
       
 !...................................................................
 
-      real function i90_AtoF( string, iret )
+      real(FP) function i90_AtoF( string, iret )
 
       implicit NONE
 
@@ -1672,9 +1673,7 @@ end subroutine i90_fullRelease
       
 !...................................................................
 
-      real function fltgetsp ( default )
-
-      use m_realkinds, only : SP
+      real(SP) function fltgetsp ( default )
 
       implicit NONE
 
@@ -1710,7 +1709,7 @@ end subroutine i90_fullRelease
 !-------------------------------------------------------------------------
 
       character*256 token
-      real          x
+      real(FP)      x
       integer       iret
 
       call i90_gtoken ( token, iret )
@@ -1726,9 +1725,7 @@ end subroutine i90_fullRelease
       
 !...................................................................
 
-      real function fltgetdp ( default )
-
-      use m_realkinds, only : DP
+      real(DP) function fltgetdp ( default )
 
       implicit NONE
 
@@ -1765,7 +1762,7 @@ end subroutine i90_fullRelease
 !-------------------------------------------------------------------------
 
       character*256 token
-      real          x
+      real(FP)          x
       integer       iret
 
       call i90_gtoken ( token, iret )
@@ -1816,7 +1813,7 @@ end subroutine i90_fullRelease
 !-------------------------------------------------------------------------
 
       character*256 token
-      real          x
+      real(FP)      x
       integer       iret
 
       call i90_gtoken ( token, iret )
@@ -1985,7 +1982,7 @@ end subroutine i90_fullRelease
 
 !...................................................................
             
-      real function str2rn ( string, iret )
+      real(FP) function str2rn ( string, iret )
       implicit NONE
       character*(*) string
       integer iret
