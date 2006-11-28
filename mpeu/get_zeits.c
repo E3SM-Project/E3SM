@@ -35,14 +35,6 @@
   The default is FORTRAN_UNDERSCORE_, but not explicitly used.
  */
 
-#ifdef _UNICOS
-#  define FORTRAN_CAPS_
-#endif
-
-#ifdef CPRABSOFT
-#  define FORTRAN_CAPS_
-#endif
-
 #ifdef FORTRAN_CAPS_
 #  define	get_zeits_		GET_ZEITS
 #  define	get_ztick_		GET_ZTICK
