@@ -329,7 +329,7 @@
 ! 	28Jul98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname_='I90_allLoadF'
+  character(len=*),parameter :: myname_=myname//'::I90_allLoadF'
   integer :: myID,ier
 
   istat=0
@@ -623,13 +623,13 @@ end subroutine i90_fullRelease
 !-------------------------------------------------------------------------
       integer         lu, ios, loop, ls, ptr
       character*256   line
-      character(len=*), parameter :: myname = 'i90_loadf'
+      character(len=*), parameter :: myname_ = myname//'::i90_loadf'
 
 		! Check to make sure there is not too many levels
 		! of the stacked resource files
 
   if(i90_depth >= i90_MXDEP) then
-	call perr(myname,'(overflow)',i90_depth)
+	call perr(myname_,'(overflow)',i90_depth)
 	iret=1
 	return
   endif
@@ -649,7 +649,7 @@ end subroutine i90_fullRelease
 
       call opntext(lu,filen,'old',ios)
       if ( ios .ne. 0 ) then
-	 write(stderr,'(2a,i5)') myname,': opntext() error, ios =',ios
+	 write(stderr,'(2a,i5)') myname_,': opntext() error, ios =',ios
          iret = ios
          return
       end if
@@ -662,7 +662,7 @@ end subroutine i90_fullRelease
 
       call push_(ios)	! to create buffer space
       if ( ios .ne. 0 ) then
-	 write(stderr,'(2a,i5)') myname,': push_() error, ios =',ios
+	 write(stderr,'(2a,i5)') myname_,': push_() error, ios =',ios
          iret = ios
          return
       end if
