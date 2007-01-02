@@ -31,7 +31,10 @@
       interface mpout_sync;  module procedure sync_;  end interface
       interface mpout_flush; module procedure flush_; end interface
       interface mpout_ison;  module procedure ison_;  end interface
-      interface mpout_log;   module procedure log_;   end interface
+      interface mpout_log
+          module procedure log1_
+          module procedure log2_
+      end interface
 
 ! !REVISION HISTORY:
 ! 	25Feb98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
@@ -296,16 +299,40 @@ end subroutine flush_
 
 end function ison_
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!       ANL/MCS  Mathematics and Computer Science Division             !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: log_ - write a message to mpout
+! !IROUTINE: log1_ - write a message to mpout
 !
 ! !DESCRIPTION:
 !
 ! !INTERFACE:
 
-    subroutine log_(where,message)
+    subroutine log1_(message)
+      implicit none
+      character(len=*),intent(in) :: message
+
+! !REVISION HISTORY:
+! 	07Jan02	- R. Jacob (jacob@mcs.anl.gov)
+!		- based on log2_.
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::log1_'
+
+  if(mpout_set) write(mpout,'(3a)') message
+
+end subroutine log1_
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: log2_ - write a message to mpout with a where
+!
+! !DESCRIPTION:
+!
+! !INTERFACE:
+
+    subroutine log2_(where,message)
       implicit none
       character(len=*),intent(in) :: where
       character(len=*),intent(in) :: message
@@ -313,12 +340,14 @@ end function ison_
 ! !REVISION HISTORY:
 ! 	14Sep99	- Jing Guo <guo@dao.gsfc.nasa.gov>
 !		- initial prototype/prolog/code
+! 	07Jan02	- R. Jacob (jacob@mcs.anl.gov)
+!               - change name to log2_
 !EOP ___________________________________________________________________
 
-  character(len=*),parameter :: myname_=myname//'::log_'
+  character(len=*),parameter :: myname_=myname//'::log2_'
 
   if(mpout_set) write(mpout,'(3a)') where,': ',message
 
-end subroutine log_
+end subroutine log2_
 end module m_mpout
 !.
