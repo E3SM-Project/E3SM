@@ -224,7 +224,8 @@
 !           Rewrote to reduce number of loops and temp storage
 ! 26Apr06 - R. Loy <rloy@mcs.anl.gov> - recode the search through
 !           the remote GSMap to improve efficiency
-! 30Oct06 - R. Loy <rloy@mcs.anl.gov> - fix mygs_lstat(1) segfault on 0 segs
+! 05Jan07 - R. Loy <rloy@mcs.anl.gov> - improved bound on size of 
+!           tmpsegcount and tmpsegstart
 !EOP -------------------------------------------------------------------
 
   character(len=*),parameter :: myname_=myname//'::initp_'
@@ -256,6 +257,8 @@
 
   integer :: proc, nprocs
 
+  integer :: max_rgs_count, max_overlap_segs
+
 
    integer,save  :: t_initialized=0   ! rml timers
    integer,save  :: t_loop            ! rml timers
@@ -278,22 +281,9 @@
   mysize = ProcessStorage(GSMap,myPid)
   othercomp = GSMap_comp_id(RGSMap)
 
-! allocate space for searching
-  allocate(tmpsegcount(ThisMCTWorld%nprocspid(othercomp),mysize),&
-           tmpsegstart(ThisMCTWorld%nprocspid(othercomp),mysize),&
- 	   tmppe_list(ThisMCTWorld%nprocspid(othercomp)),stat=ier)
-  if(ier/=0)  &
-    call die( myname_,'allocate tmpsegcount etc. size ', &
-              ThisMCTWorld%nprocspid(othercomp), &
-              ' by ',mysize)
-
 
 !.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  
 
-  tmpsegcount=0
-  tmpsegstart=0
-  count =0
-  maxsegcount=0
 
 !!!!  call zeit_ci('t_loop2')
 !  call shr_timer_start(t_loop2)    ! rml timers
@@ -379,6 +369,37 @@
 
 !!!
 
+
+!!!!!!!!!!!!!!!!!!
+
+! allocate space for searching
+!   overlap segments to a given remote proc cannot be more than
+!   the max of the local segments and the remote segments
+
+  max_rgs_count=0
+  do proc=1,nprocs
+    max_rgs_count = max( max_rgs_count, rgs_count(proc) )
+  enddo
+
+  max_overlap_segs = max(nlseg,max_rgs_count)
+
+  allocate(tmpsegcount(ThisMCTWorld%nprocspid(othercomp), max_overlap_segs),&
+           tmpsegstart(ThisMCTWorld%nprocspid(othercomp), max_overlap_segs),&
+ 	   tmppe_list(ThisMCTWorld%nprocspid(othercomp)),stat=ier)
+  if(ier/=0)  &
+    call die( myname_,'allocate tmpsegcount etc. size ', &
+              ThisMCTWorld%nprocspid(othercomp), &
+              ' by ',max_overlap_segs)
+
+
+  tmpsegcount=0
+  tmpsegstart=0
+  count =0
+  maxsegcount=0
+
+!!!!!!!!!!!!!!!!!!
+
+
   do proc = 1, nprocs
     nsegs_overlap = 0
     tmppe_list(proc) = .FALSE.         ! no overlaps with proc yet
@@ -433,6 +454,15 @@
   do proc=1,nprocs
     maxsegcount=max(maxsegcount,nsegs_overlap_arr(proc))
   enddo
+
+
+  if (maxsegcount > max_overlap_segs) &
+    call die( myname_,'overran max_overlap_segs =', &
+              max_overlap_segs, ' count = ',maxsegcount)
+
+!  write(stderr,*) 'max_overlap_segs =', max_overlap_segs, &
+!                  'maxsegcount =',maxsegcount, &
+!                  'mysize =',mysize
 
 
   deallocate( mygs_lb, mygs_ub, mygs_len, mygs_lstart, &
