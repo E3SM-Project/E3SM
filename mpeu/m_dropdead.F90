@@ -48,17 +48,25 @@ contains
       use m_mpif90,only : MP_comm_world
       use m_mpif90,only : MP_comm_rank
       use m_mpif90,only : MP_abort
+      use m_mpif90,only : MP_initialized
       implicit none
       character(len=*),intent(in) :: where	! where it is called
 
 ! !REVISION HISTORY:
 ! 	20Feb97 - Jing Guo <guo@eramus> - defined template
+!       09Jan07 - R. Loy <rloy@mcs.anl.gov> - check for initialized, add
+!                 options for abort 
 !
 !EOP
 !_______________________________________________________________________
 
   character(len=*),parameter :: myname_='MCT(MPEU)::die.'
   integer :: myrank,ier
+  logical :: initialized
+
+  call MP_initialized(initialized,ier)
+
+  if (initialized) then
 
 	!-------------------------------------------------
 	! MPI_ should have been initialized for this call
@@ -73,7 +81,20 @@ contains
 
 	! raise a condition to the OS
 
+#ifdef ENABLE_UNIX_ABORT
+    call abort
+#else
     call MP_abort(MP_comm_world,2,ier)
+#endif
+
+  else
+
+    write(stderr,'(5a)') 'unknown rank .',myname_,	&
+      ': from ',trim(where),'()'
+
+    call abort
+
+  endif
 
 end subroutine die_
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -97,6 +118,7 @@ end subroutine die_
       use m_mpif90,only : MP_comm_world
       use m_mpif90,only : MP_comm_rank
       use m_mpif90,only : MP_abort
+      use m_mpif90,only : MP_initialized
       implicit none
       character(len=*),intent(in) :: where	! where it is called
       character(len=*),intent(in) :: fnam
@@ -104,6 +126,8 @@ end subroutine die_
 
 ! !REVISION HISTORY:
 ! 	20Feb97 - Jing Guo <guo@eramus> - defined template
+!       09Jan07 - R. Loy <rloy@mcs.anl.gov> - check for initialized, add
+!                 options for abort 
 !
 !EOP
 !_______________________________________________________________________
@@ -112,6 +136,14 @@ end subroutine die_
   integer :: myrank,ier
   character(len=16) :: lineno
 
+  logical :: initialized
+
+  write(lineno,'(i16)') line
+
+  call MP_initialized(initialized,ier)
+
+  if (initialized) then
+
 	!-------------------------------------------------
 	! MPI_ should have been initialized for this call
 	!-------------------------------------------------
@@ -119,9 +151,6 @@ end subroutine die_
     call MP_comm_rank(MP_comm_world,myrank,ier)
 
 	! a message for the users:
-
-    write(lineno,'(i16)') line
-
     write(stderr,'(z3.3,9a)') myrank,'.',myname_,	&
       ': from ',trim(where),'()',	&
       ', line ',trim(adjustl(lineno)),	&
@@ -129,7 +158,23 @@ end subroutine die_
 
 	! raise a condition to the OS
 
+#ifdef ENABLE_UNIX_ABORT
+    call abort
+#else
     call MP_abort(MP_comm_world,2,ier)
+#endif
+
+  else
+
+	! a message for the users:
+    write(stderr,'(9a)') 'unknown rank .',myname_,	&
+      ': from ',trim(where),'()',	&
+      ', line ',trim(adjustl(lineno)),	&
+      ' of file ',fnam
+
+    call abort
+  endif
+
 
 end subroutine diex_
 !=======================================================================
