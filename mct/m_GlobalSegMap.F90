@@ -49,6 +49,7 @@
                                 ! size (incl. halos)
       public :: ngseg           ! Return global number of segments
       public :: nlseg           ! Return local number of segments
+      public :: max_nlseg       ! Return max local number of segments
       public :: active_pes      ! Return number of pes with at least 1 
                                 ! datum, and if requested, a list of them.
       public :: peLocs          ! Given an input list of point indices,
@@ -104,6 +105,7 @@
     interface lsize ; module procedure lsize_ ; end interface
     interface ngseg ; module procedure ngseg_ ; end interface
     interface nlseg ; module procedure nlseg_ ; end interface
+    interface max_nlseg ; module procedure max_nlseg_ ; end interface
     interface active_pes ; module procedure active_pes_ ; end interface
     interface peLocs ; module procedure peLocs_ ; end interface
     interface haloed ; module procedure haloed_ ; end interface
@@ -1204,6 +1206,98 @@
   nlseg_ = nlocseg
 
  end function nlseg_
+
+
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: max_nlseg_ - Return the max number of segments over all procs
+!
+! !DESCRIPTION:
+! The function {\tt max_nlseg\_()} returns the maximum number 
+! over all processors of the vector
+! segments in the {\tt GlobalSegMap} argument {\tt gsap} 
+! E.g. max_p(nlseg(gsmap,p)) but computed more efficiently
+!
+! !INTERFACE:
+
+        integer function max_nlseg_(gsmap)
+
+! !USES:
+
+        use m_MCTWorld,      only :ThisMCTWorld
+        use m_mpif90
+        use m_die
+
+        use m_stdio    ! rml
+
+        implicit none
+
+! !INPUT PARAMETERS: 
+
+        type(GlobalSegMap), intent(in) :: gsmap
+
+
+! !REVISION HISTORY:
+! 	17Jan07 - R. Loy <rloy@mcs.anl.gov> - initial prototype
+!EOP ___________________________________________________________________
+
+
+
+! Local variables
+
+        character(len=*),parameter :: myname_=myname//'::max_local_segs'
+
+        integer i
+        integer this_comp_id
+        integer nprocs
+
+        integer, allocatable::  segcount(:)  ! segments on proc i
+        integer ier
+
+        integer this_ngseg
+        integer segment_pe
+        integer max_segcount
+
+
+! Start of routine
+
+        this_comp_id = comp_id(gsmap)
+        nprocs=ThisMCTWorld%nprocspid(this_comp_id)
+
+        allocate( segcount(nprocs), stat=ier )
+        if (ier/=0) call die(myname_,'allocate segcount')
+
+        segcount=0
+
+        this_ngseg=ngseg(gsmap)
+
+        do i=1,this_ngseg
+
+          segment_pe = gsmap%pe_loc(i) + 1     ! want value 1..nprocs
+
+          if (segment_pe < 1 .OR. segment_pe > nprocs) then
+            call die(myname_,'bad segment location',segment_pe)
+          endif
+
+          segcount(segment_pe) = segcount(segment_pe) + 1
+        enddo
+
+        max_segcount=0
+        do i=1,nprocs
+          max_segcount= max( max_segcount, segcount(i) )
+        enddo
+
+        deallocate(segcount, stat=ier)
+        if (ier/=0) call die(myname_,'deallocate segcount')
+
+
+        max_nlseg_=max_segcount
+
+        end function max_nlseg_
+
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
