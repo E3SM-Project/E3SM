@@ -33,6 +33,9 @@
         integer MPI_MAX_ERROR_STRING
         parameter (MPI_MAX_ERROR_STRING=128)
 
+        integer MPI_MAX_PROCESSOR_NAME
+        parameter (MPI_MAX_PROCESSOR_NAME=128)
+
 
         integer MPI_SUCCESS
         parameter (MPI_SUCCESS=0)

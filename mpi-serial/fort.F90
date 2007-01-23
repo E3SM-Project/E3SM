@@ -26,6 +26,7 @@
                             MPI_GROUP_NULL, MPI_GROUP_EMPTY, &
                             MPI_UNDEFINED, &
                             MPI_MAX_ERROR_STRING, &
+                            MPI_MAX_PROCESSOR_NAME, &
                             MPI_STATUS_SIZE, &
                             MPI_SOURCE, MPI_TAG, MPI_ERROR, &
                             status, status(MPI_SOURCE), &
