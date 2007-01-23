@@ -16,7 +16,8 @@ main(int argc, char *argv[])
   MPI_Comm comm2;
   int flag;
   MPI_Group mygroup;
-
+  char pname[MPI_MAX_PROCESSOR_NAME];
+  int pnamelen;
 
   printf("Time: %f\n",MPI_Wtime());
 
@@ -24,6 +25,9 @@ main(int argc, char *argv[])
   printf("MPI is initialized = %d\n",flag);
 
   MPI_Init(NULL,NULL);
+
+  MPI_Get_processor_name(pname,&pnamelen);
+  printf("Processor name: %s (len=%d)\n",pname,pnamelen);
 
 #if 0
   MPI_Comm_dup(MPI_COMM_WORLD,&comm2);

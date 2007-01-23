@@ -134,6 +134,34 @@ int MPI_Allgather(void* sendbuf, int sendcount, MPI_Datatype sendtype,
 
 }
 
+
+/*********/
+
+
+FORT_NAME( mpi_allgatherv , MPI_ALLGATHERV )
+                          ( void *sendbuf, int *sendcount, int *sendtype,
+			    void *recvbuf, int *recvcounts, int *displs,
+                            int *recvtype, int *comm, int *ierror)
+{
+  *ierror=MPI_Allgatherv( sendbuf, *sendcount, *sendtype,
+			  recvbuf, recvcounts, displs,
+                          *recvtype, *comm );
+}
+
+
+int MPI_Allgatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
+		   void* recvbuf, int *recvcounts, int *displs,
+                   MPI_Datatype recvtype, MPI_Comm comm)
+{
+  int offset;
+
+  offset=displs[0]*recvtype;
+  memcpy( (char *)recvbuf+offset, sendbuf, recvcounts[0] * recvtype);
+
+  return(MPI_SUCCESS);
+}
+
+
 /*********/
 
 

@@ -25,6 +25,7 @@ FORT_NAME( mpi_init_fort , MPI_INIT_FORT)
 			   int *f_MPI_GROUP_NULL, int *f_MPI_GROUP_EMPTY,
 			   int *f_MPI_UNDEFINED,
                            int *f_MPI_MAX_ERROR_STRING, 
+                           int *f_MPI_MAX_PROCESSOR_NAME, 
                            int *f_MPI_STATUS_SIZE, 
                            int *f_MPI_SOURCE, int *f_MPI_TAG, int *f_MPI_ERROR,
 			   int *f_status,
@@ -117,6 +118,7 @@ FORT_NAME( mpi_init_fort , MPI_INIT_FORT)
   verify_eq(MPI_GROUP_EMPTY);
   verify_eq(MPI_UNDEFINED);
   verify_eq(MPI_MAX_ERROR_STRING);
+  verify_eq(MPI_MAX_PROCESSOR_NAME);
 
   verify_eq(MPI_STATUS_SIZE);
   verify_field(MPI_SOURCE);
@@ -220,6 +222,33 @@ int MPI_Error_string(int errorcode, char *string, int *resultlen)
 {
   sprintf(string,"MPI Error: code %d\n",errorcode);
   *resultlen=strlen(string);
+
+  return(MPI_SUCCESS);
+}
+
+
+/*********/
+
+
+FORT_NAME( mpi_get_processor_name , MPI_GET_PROCESSOR_NAME )
+                          (char *name, int *resultlen, int *ierror)
+{
+  *ierror=MPI_Get_processor_name(name,resultlen);
+}
+
+
+int MPI_Get_processor_name(char *name, int *resultlen)
+{
+  int ret;
+
+  ret=gethostname(name,MPI_MAX_PROCESSOR_NAME);
+
+  if (ret!=0)
+    strncpy(name,"unknown host name",MPI_MAX_PROCESSOR_NAME);
+
+
+  name[MPI_MAX_PROCESSOR_NAME-1]='\0';  /* make sure NULL terminated */
+  *resultlen=strlen(name);
 
   return(MPI_SUCCESS);
 }

@@ -52,6 +52,7 @@ typedef int MPI_Group;
 #define MPI_REQUEST_NULL (0)
 
 #define MPI_MAX_ERROR_STRING (128)
+#define MPI_MAX_PROCESSOR_NAME (128)
 
 
 /*
@@ -110,6 +111,7 @@ extern int MPI_Init(int *argc, char **argv[]) ;
 extern int MPI_Finalize(void);
 extern int MPI_Abort(MPI_Comm comm, int errorcode);
 extern int MPI_Error_string(int errorcode, char *string, int *resultlen);
+extern int MPI_Get_processor_name(char *name, int *resultlen);
 extern int MPI_Initialized(int *flag);
 
 extern int MPI_Irecv(void *buf, int count, MPI_Datatype datatype,
@@ -140,6 +142,9 @@ extern int MPI_Gatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
 extern int MPI_Allgather(void* sendbuf, int sendcount, MPI_Datatype sendtype,
                          void* recvbuf, int recvcount, MPI_Datatype recvtype,
                          MPI_Comm comm);
+extern int MPI_Allgatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
+                          void* recvbuf, int *recvcounts, int *displs,
+                          MPI_Datatype recvtype, MPI_Comm comm);
 extern int MPI_Scatterv(void* sendbuf, int *sendcounts, int *displs, 
                         MPI_Datatype sendtype, void* recvbuf, int recvcount, 
                         MPI_Datatype recvtype, int root, MPI_Comm comm);

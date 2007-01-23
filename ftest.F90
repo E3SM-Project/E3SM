@@ -12,6 +12,9 @@
 	integer i
 	integer comm2;
 	logical flag;
+	character pname(MPI_MAX_PROCESSOR_NAME)
+	integer pnamesize
+
 
         print *, 'Time=',mpi_wtime()
 
@@ -19,6 +22,10 @@
 	print *, 'MPI is initialized=',flag
 
 	call mpi_init(ier)
+
+	call mpi_get_processor_name(pname,pnamesize,ier)
+	print *, 'proc name: "',pname(1:pnamesize),'"  size:',pnamesize
+
 
 	call mpi_comm_dup(MPI_COMM_WORLD,comm2,ier)
 
