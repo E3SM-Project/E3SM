@@ -14,6 +14,13 @@
 	INTEGER MPI_COMM_WORLD
         parameter (mpi_comm_world=1)
 
+!
+!
+!
+
+        integer MPI_BOTTOM
+        parameter (MPI_BOTTOM=0)
+
 
 !
 ! source,tag

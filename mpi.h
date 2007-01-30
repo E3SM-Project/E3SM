@@ -1,9 +1,11 @@
 
+#ifndef _MPI_H_
+#define _MPI_H_
+
+
 typedef int MPI_Comm;
 typedef int MPI_Request;
 
-typedef int MPI_Datatype;
-typedef int MPI_Op;
 
 #define MPI_COMM_WORLD (1)
 #define MPI_COMM_NULL (0)      /* handle 0 maps to NULL */
@@ -19,6 +21,15 @@ typedef int MPI_Group;
 #define MPI_SUCCESS   (0)
 
 #define MPI_UNDEFINED (-1)     /* value for "color" in e.g. comm_split */
+
+
+/*
+ * Data types etc.
+ */
+
+typedef unsigned int MPI_Aint;
+#define MPI_BOTTOM (0)
+typedef int MPI_Datatype;
 
 
 /* The type's value is its size in bytes */
@@ -77,8 +88,37 @@ typedef struct                  /* Fortran: INTEGER status(MPI_STATUS_SIZE) */
 } MPI_Status;
 
 
+/*
+ * Collective operations
+ */
 
-/* These are provided for Fortran... */
+
+typedef int MPI_Op;
+
+typedef void MPI_User_function( void *invec, void *inoutvec, int *len,
+				MPI_Datatype *datatype); 
+
+#define MPI_OP_NULL (0)
+
+#define MPI_MAX     (0)
+#define MPI_MIN     (0)
+#define MPI_SUM     (0)
+#define MPI_PROD    (0)
+#define MPI_LAND    (0)
+#define MPI_BAND    (0)
+#define MPI_LOR     (0)
+#define MPI_BOR     (0)
+#define MPI_LXOR    (0)
+#define MPI_BXOR    (0)
+#define MPI_MAXLOC  (0)
+#define MPI_MINLOC  (0)
+
+
+
+/*
+ * These are provided for Fortran...
+ */
+
 
 #define MPI_INTEGER           MPI_INT
 #define MPI_REAL              MPI_FLOAT
@@ -165,3 +205,6 @@ extern int MPI_Alltoallv(void *sendbuf, int *sendcounts,
                          void *recvbuf, int *recvcounts,
                          int *rdispls, MPI_Datatype recvtype,
                          MPI_Comm comm) ;
+
+
+#endif
