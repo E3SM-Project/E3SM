@@ -106,6 +106,19 @@ install: lib
 	$(INSTALL) mpi.h -m 644 $(includedir)
 	$(INSTALL) mpif.h -m 644 $(includedir)
 
+
+
+###############################
+#
+# Create mpif.realXdoubleY.h filesfrom mpif.master.h template
+#
+
+mpif:
+	make-mpif 4 8
+	make-mpif 8 8
+	make-mpif 8 16
+
+
 ###############################
 
 #
