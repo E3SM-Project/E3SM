@@ -1,10 +1,9 @@
 
 !!!
-!!! mpif.real8double16.h  (real is 8 bytes, double precision 16)
-!!!
-!!!   NOTE: mpif.h is copied from either mpif.XXXX.h when the
-!!!   library is built.  Do not modify mpif.h, the changes will 
-!!!   get clobbered.
+!!!   NOTE: The files mpif.realXdoubleY.h are generated from
+!!!   mpif.master.h using make-mpif and later copied to mpif.h
+!!!   during the library make.  All modifications should be
+!!!   made to mpif.master.h
 !!!
 
 
