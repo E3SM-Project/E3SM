@@ -15,6 +15,8 @@
 	character pname(MPI_MAX_PROCESSOR_NAME)
 	integer pnamesize
 
+        integer temp,position
+
 
         print *, 'Time=',mpi_wtime()
 
@@ -96,6 +98,31 @@
           print *, 'Status source=',status(MPI_SOURCE,i), &
                    '  tag=',status(MPI_TAG,i)
 	end do
+
+
+! pack/unpack
+
+	position=0
+	do i=1,5
+          temp=100+i
+	  call mpi_pack(temp,1,MPI_INTEGER,sbuf,20,position,MPI_COMM_WORLD,ier)
+ 	end do
+
+        call mpi_isend(sbuf,position,MPI_PACKED,0,0,MPI_COMM_WORLD,sreq(0))
+	call mpi_irecv(rbuf,position,MPI_PACKED,0,0,MPI_COMM_WORLD,rreq(0))
+        call mpi_waitall(1,rreq,status)
+
+        print *,"Pack/send/unpack:"
+
+        position=0
+	do i=1,5
+	  call mpi_unpack( rbuf,20,position,temp,1,MPI_INTEGER, &
+                           MPI_COMM_WORLD)
+          print *,temp
+        end do
+
+!
+
 
 	call mpi_finalize(ier)
 

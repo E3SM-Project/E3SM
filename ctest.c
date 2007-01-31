@@ -12,12 +12,15 @@ main(int argc, char *argv[])
   int sbuf[10],sbuf2[10],rbuf[10],rbuf2[10];
   int tag;
   MPI_Status status[10];
-  int i;
+  int i,j;
   MPI_Comm comm2;
   int flag;
   MPI_Group mygroup;
   char pname[MPI_MAX_PROCESSOR_NAME];
   int pnamelen;
+
+  int position, temp;
+
 
   printf("Time: %f\n",MPI_Wtime());
 
@@ -99,6 +102,32 @@ main(int argc, char *argv[])
 
   for (i=0; i<5; i++)
     printf("tag %d rbuf= %d\n",status[i].MPI_TAG,rbuf2[i]);
+
+
+  /*
+   * pack/unpack
+   */
+
+  position=0;
+  for (i=0; i<5; i++)
+    {
+      temp=100+i;
+      MPI_Pack(&temp, 1, MPI_INT, sbuf, 20, &position, MPI_COMM_WORLD); 
+    }
+
+  MPI_Isend( sbuf, position, MPI_PACKED, 0, 0, MPI_COMM_WORLD,&sreq[0]); 
+
+  MPI_Irecv( rbuf, position, MPI_PACKED, 0, 0, MPI_COMM_WORLD, &rreq[0] );
+  MPI_Waitall(1,rreq,status);
+
+  printf("Pack/send/unpack: \n");
+
+  position=0;
+  for (i=0; i<5; i++)
+    {
+      MPI_Unpack(rbuf,20,&position,&temp,1,MPI_INT,MPI_COMM_WORLD);
+      printf("%d\n",temp);
+    }
 
   MPI_Finalize();
 
