@@ -34,7 +34,7 @@
  */
 
 
-#if   defined(FORTRAN_UNDERSCORE_) || defined (FORTRANUNDERSCORE)
+#if   defined(FORTRAN_UNDERSCORE_) || defined(FORTRANUNDERSCORE)
 #define FORT_NAME(lower,upper) lower##_
 #elif defined(FORTRAN_GNUF2C)
 #define FORT_NAME(lower,upper) lower##__
