@@ -29,12 +29,14 @@
  * Since all the mpi-serial names exported to fortran start with "mpi_",
  * we only support the latter.
  *
+ * Note: FORTRANUNDERSCORE is needed by ccsm
+ *
  */
 
 
-#if   defined(FORTRAN_UNDERSCORE_)
+#if   defined(FORTRAN_UNDERSCORE_) || defined (FORTRANUNDERSCORE)
 #define FORT_NAME(lower,upper) lower##_
-#elif   defined(FORTRAN_GNUF2C)
+#elif defined(FORTRAN_GNUF2C)
 #define FORT_NAME(lower,upper) lower##__
 #elif defined(FORTRAN_SAME)
 #define FORT_NAME(lower,upper) lower
