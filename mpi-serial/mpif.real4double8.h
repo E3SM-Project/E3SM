@@ -115,6 +115,9 @@
         integer MPI_2INTEGER
         parameter (MPI_2INTEGER=2*MPI_INTEGER)
 
+        integer MPI_PACKED
+        parameter (MPI_PACKED=1)
+        
 !
 ! MPI_Op values
 !

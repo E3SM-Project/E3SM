@@ -46,6 +46,7 @@ typedef int MPI_Datatype;
 #define MPI_FLOAT          (sizeof(float))
 #define MPI_DOUBLE         (sizeof(double))
 #define MPI_LONG_DOUBLE    (sizeof(long double))
+#define MPI_PACKED         (sizeof(char))
 
 /* types for MINLOC and MAXLOC */
 
@@ -206,5 +207,12 @@ extern int MPI_Alltoallv(void *sendbuf, int *sendcounts,
                          int *rdispls, MPI_Datatype recvtype,
                          MPI_Comm comm) ;
 
+
+extern int MPI_Pack( void *inbuf, int incount, MPI_Datatype datatype,
+                     void *outbuf, int outsize, int *position, MPI_Comm comm);
+
+extern int MPI_Unpack( void *inbuf, int insize, int *position,
+                       void *outbuf, int outcount, MPI_Datatype datatype,
+                       MPI_Comm comm );
 
 #endif

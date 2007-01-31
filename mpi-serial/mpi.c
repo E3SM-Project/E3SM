@@ -148,6 +148,13 @@ int MPI_Init(int *argc, char **argv[])
 {
   MPI_Comm my_comm_world;
 
+  if (sizeof(MPI_Aint) < sizeof(void *))
+    {
+      fprintf(stderr, "mpi-serial: MPI_Init: "
+                      "MPI_Aint is not large enough for void *\n");
+      abort();
+    }
+
   my_comm_world=mpi_comm_new();
 
   if (my_comm_world != MPI_COMM_WORLD)

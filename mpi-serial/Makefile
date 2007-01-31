@@ -15,7 +15,8 @@ SRCS_C		= mpi.c \
 		  handles.c \
                   comm.c \
                   group.c \
-                  time.c
+                  time.c \
+                  pack.c
 
 
 OBJS_ALL	= $(SRCS_C:.c=.o) \
