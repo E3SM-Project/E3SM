@@ -43,8 +43,9 @@
 #elif defined(FORTRAN_CAPS_)
 #define FORT_NAME(lower,upper) upper
 #else
-#define FORT_NAME(lower,upper) FORTRAN_MANGLE_ERROR
 #error "Unrecognized Fortran-mangle type"
+/* set to something reasonable to avoid cascade of cc errors */
+#define FORT_NAME(lower,upper) lower##_
 #endif
 
 
