@@ -378,7 +378,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: initDistributed_ - Creation and Initializtion from the Root
+! !IROUTINE: initDistributed_ - Distributed Creation and Initializtion
 !
 ! !DESCRIPTION:  
 ! This routine creates an {\tt SparseMatrixPlus} {\tt sMatPlus} using 
