@@ -425,7 +425,8 @@
      case(1)  ! bootstrap segment counting process
 	nsegs = 1
 	starts(nsegs) = indices(i)
-
+! rml patch
+        lengths(nsegs) = 1
      case default
 
 	if(i == num_indices) then ! last point
