@@ -1019,6 +1019,8 @@
 
 ! !REVISION HISTORY:
 ! 23Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
+! 14May07 - Larson, Jacob - add space to else case string so function
+!                           matches documentation.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::get_'
@@ -1029,7 +1031,7 @@
     le=aList%lc(1,ith)
     call init(itemStr,toChar(aList%bf(lb:le)))
   else
-    call init(itemStr,'')
+    call init(itemStr,' ')
   endif
 
  end subroutine get_
@@ -2036,6 +2038,7 @@
        ! Allocate sufficient space for the matches we may find:
 
   allocate(Indices1(NumSharedMax), Indices2(NumSharedMax), stat=ierr)
+  if(ierr /= 0) call die(myname_,'allocate() Indices1 and 2',ierr)
 
        ! Initialize the counter for the number of matches found:
 
