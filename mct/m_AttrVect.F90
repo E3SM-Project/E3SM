@@ -1832,6 +1832,8 @@
      outVect(n) = aV%iAttr(index,n)
   end do
 
+  call String_clean(myTrace)
+
  end subroutine exportIAttr_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1970,6 +1972,8 @@
      outVect(n) = aV%rAttr(index,n)
   end do
 
+  call String_clean(myTrace)
+
  end subroutine exportRAttrSP_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2070,6 +2074,8 @@
   do n=1,lsize
      outVect(n) = aV%rAttr(index,n)
   end do
+
+  call String_clean(myTrace)
 
  end subroutine exportRAttrDP_
 
