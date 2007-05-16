@@ -201,6 +201,7 @@
 
       use m_GlobalSegMap, only : GlobalSegMap_ngseg => ngseg  ! rml
       use m_GlobalSegMap, only : GlobalSegMap_nlseg => nlseg  ! rml
+      use m_GlobalSegMap, only : GlobalSegMap_max_nlseg => max_nlseg  ! rml
 
       use m_stdio    ! rml
 !      use shr_timer_mod        ! rml timers
@@ -250,6 +251,7 @@
   integer :: local_left, local_right
   integer,allocatable  :: mygs_lb(:),mygs_ub(:),mygs_len(:),mygs_lstart(:)
   integer :: r_ngseg
+  integer :: r_max_nlseg   ! max number of local segments in RGSMap
   integer,allocatable  :: rgs_count(:),rgs_lb(:,:),rgs_ub(:,:)
   integer,allocatable  :: nsegs_overlap_arr(:)
 
@@ -329,13 +331,15 @@
 
   nprocs=ThisMCTWorld%nprocspid(othercomp)
   r_ngseg = GlobalSegMap_ngseg(RGSMap)
+!! rml: tighter bound (although will loop to compute it) 
+  r_max_nlseg = GlobalSegMap_max_nlseg(RGSMap)
 
   !! worst case for number of local segments is global number 
   !! don't think a tighter bound is available without looping
   !! through the pe_loc array just to count
 
   allocate( rgs_count(nprocs) , &
-            rgs_lb(r_ngseg,nprocs), rgs_ub(r_ngseg,nprocs), &
+            rgs_lb(r_max_nlseg,nprocs), rgs_ub(r_max_nlseg,nprocs), &
             nsegs_overlap_arr(nprocs), stat=ier )
   if(ier/=0) call die(myname_,'allocate rgs, nsegs',ier)
 
@@ -361,7 +365,7 @@
 !!! this is purely for error checking
 
   do proc = 1, nprocs
-    if (rgs_count(proc) > r_ngseg) then
+    if (rgs_count(proc) > r_max_nlseg) then
       write(stderr,*) myname_,"overflow on rgs array",proc,rgs_count(proc)
       call die(myname_,'overflow on rgs',0)
     endif
