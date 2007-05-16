@@ -227,6 +227,8 @@
 !           the remote GSMap to improve efficiency
 ! 05Jan07 - R. Loy <rloy@mcs.anl.gov> - improved bound on size of 
 !           tmpsegcount and tmpsegstart
+! 15May07 - R. Loy <rloy@mcs.anl.gov> - improved bound on size of
+!           rgs_lb and rgs_ub
 !EOP -------------------------------------------------------------------
 
   character(len=*),parameter :: myname_=myname//'::initp_'
