@@ -333,12 +333,17 @@
 
   nprocs=ThisMCTWorld%nprocspid(othercomp)
   r_ngseg = GlobalSegMap_ngseg(RGSMap)
-!! rml: tighter bound (although will loop to compute it) 
-  r_max_nlseg = GlobalSegMap_max_nlseg(RGSMap)
 
-  !! worst case for number of local segments is global number 
-  !! don't think a tighter bound is available without looping
-  !! through the pe_loc array just to count
+  !! original size of rgs_lb()/ub() was (r_ngseg,nprocs)
+  !! at the cost of looping to compute it (within GlobalSegMap_max_nlseg),
+  !!   reduced size to (r_max_nlseg,nprocs)
+  !! further reduction could be made by flattening it to one dimension
+  !!   of size (r_ngseg) and allocating another array to index into it.
+  !!   would not improve overall mem use unless this were also done for
+  !!   tmpsegstart()/count() and possibly seg_starts()/lengths (the 
+  !!   latter would be a major change).
+
+  r_max_nlseg = GlobalSegMap_max_nlseg(RGSMap)
 
   allocate( rgs_count(nprocs) , &
             rgs_lb(r_max_nlseg,nprocs), rgs_ub(r_max_nlseg,nprocs), &
