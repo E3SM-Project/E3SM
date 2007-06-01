@@ -49,6 +49,7 @@
     type(MCTWorld) :: ThisMCTWorld   !  declare the MCTWorld
 
 ! !PUBLIC MEMBER FUNCTIONS:
+      public :: initialized          ! Determine if MCT is initialized
       public :: init                 ! Create a MCTWorld
       public :: clean                ! Destroy a MCTWorld
       public :: NumComponents        ! Number of Components in the MCTWorld
@@ -64,6 +65,9 @@
 
 !  
 
+    interface initialized ; module procedure &
+      initialized_
+    end interface
     interface init ; module procedure &
       initd_, &
       initr_
@@ -81,6 +85,8 @@
     interface ComponentRootRank ; module procedure &
        ComponentRootRank_ 
     end interface
+
+
 
 ! !REVISION HISTORY:
 ! 19Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
@@ -107,6 +113,42 @@
   character(len=*),parameter :: myname='MCT::m_MCTWorld'
 
  contains
+
+
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: initialized_ - determine if MCTWorld is initialized
+!
+! !DESCRIPTION:
+! This routine may be used to determine whether {\tt MCTWorld::init} 
+! has been called.  If not, the user must call {\tt init} before
+! performing any other MCT library calls.
+!
+! !INTERFACE:
+
+ logical function initialized_()
+
+!
+! !USES:
+!
+
+! !INPUT PARAMETERS:
+
+
+! !REVISION HISTORY:
+! 01June07 - R. Loy <rloy@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
+!
+
+  initialized_ = associated(ThisMCTWorld%nprocspid)
+
+  end function initialized_
+
+
+
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
