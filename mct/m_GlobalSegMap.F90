@@ -66,7 +66,8 @@
                                 ! re-order the GlobalSegMap components
                                 ! GlobalSegMap%start, GlobalSegMap%length,
                                 ! and GlobalSegMap%pe_loc
-
+      public :: increasing      ! Are the indices for each pe strictly
+                                ! increasing?
 ! !PUBLIC TYPES:
 
     type GlobalSegMap
@@ -120,6 +121,8 @@
     interface SortPermute ; module procedure &
 	SortPermuteInPlace_ 
     end interface
+    interface increasing ; module procedure increasing_ ; end interface
+
 
 ! !REVISION HISTORY:
 ! 	28Sep00 - J.W. Larson <larson@mcs.anl.gov> - initial prototype
@@ -2378,6 +2381,73 @@
   if(ierr /= 0) call die(myname_,'deallocate(perm...)',ierr)
 
  end subroutine SortPermuteInPlace_
+
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: increasing_ - Return .TRUE. if GSMap has increasing indices
+!
+! !DESCRIPTION:
+! The function {\tt monotonic\_()} returns .TRUE. if each proc's
+! indices in the {\tt GlobalSegMap} argument {\tt GSMap} have 
+! strictly increasing indices.  I.e. the proc's segments have indices
+! in ascending order and are non-overlapping.
+!
+! !INTERFACE:
+
+ logical function increasing_(gsmap)
+
+! !USES:
+      use m_MCTWorld, only: ThisMCTWorld
+      use m_die
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      type(GlobalSegMap),intent(in) :: gsmap
+
+! !REVISION HISTORY:
+! 	06Jun07 - R. Loy <rloy@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::increasing_'
+
+  integer comp_id
+  integer nprocs
+  integer i
+  integer this_ngseg
+  integer ier
+  integer, allocatable:: last_index(:)
+  integer pe_loc
+
+  comp_id = gsmap%comp_id
+  nprocs=ThisMCTWorld%nprocspid(comp_id)
+
+  allocate( last_index(nprocs), stat=ier )
+  if (ier/=0) call die(myname_,'allocate last_index')
+
+  last_index= -1
+  increasing_ = .TRUE.
+  this_ngseg=ngseg(gsmap)
+
+  iloop: do i=1,this_ngseg
+    pe_loc=gsmap%pe_loc(i)+1  ! want value 1..nprocs
+    if (gsmap%start(i) <= last_index(pe_loc)) then
+      increasing_ = .FALSE.
+      exit iloop
+    endif
+    last_index(pe_loc)=gsmap%start(i)+gsmap%length(i)-1
+  enddo iloop
+
+  deallocate( last_index, stat=ier )
+  if (ier/=0) call die(myname_,'deallocate last_index')
+
+ end function increasing_
+
+
 
  end module m_GlobalSegMap
 

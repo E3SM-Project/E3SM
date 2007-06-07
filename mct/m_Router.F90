@@ -191,6 +191,7 @@
       use m_GlobalSegMap,  only :OrderedPoints
       use m_GlobalSegMap,  only :ProcessStorage
       use m_GlobalSegMap,  only : GSMap_comp_id => comp_id
+      use m_GlobalSegMap, only : GSMap_increasing => increasing
       use m_GlobalToLocal, only :GlobalToLocalIndex
       use m_MCTWorld,      only :MCTWorld
       use m_MCTWorld,      only :ThisMCTWorld
@@ -268,6 +269,16 @@
    integer,save  :: t_loop            ! rml timers
    integer,save  :: t_loop2            ! rml timers
    integer,save  :: t_load            ! rml timers
+
+
+   if (.not. GSMap_increasing(GSMap)) then
+     call die(myname_,'argument GSMap must have strictly increasing indices')
+   endif
+
+   if (.not. GSMap_increasing(RGSMap)) then
+     call die(myname_,'argument RGSMap must have strictly increasing indices')
+   endif
+
 
 #if 0
    if (t_initialized == 0) then        ! rml timers

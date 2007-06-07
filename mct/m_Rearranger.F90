@@ -110,6 +110,7 @@
    use m_MCTWorld,     only : ThisMCTWorld
    use m_GlobalSegMap, only : GlobalSegMap
    use m_GlobalSegMap, only : GSMap_lsize => lsize
+   use m_GlobalSegMap, only : GSMap_increasing => increasing
    use m_Router,       only : Router     
    use m_Router,       only : Router_init => init
    use m_mpif90
@@ -142,6 +143,17 @@
    integer :: src_seg_start,src_seg_length,trg_seg_start,trg_seg_length
    integer :: i,j,k,l,m,n,ier
    logical :: SendingToMyself,ReceivingFromMyself
+
+   if (.not. GSMap_increasing(SourceGSMap)) then
+     call die( myname_, &
+               'argument SourceGSMap must have strictly increasing indices')
+   endif
+
+   if (.not. GSMap_increasing(TargetGSMap)) then
+     call die( myname_, &
+               'argument TargetGSMap must have strictly increasing indices')
+   endif
+
 
    ! Initialize Router component of Rearranger
    call Router_init(SourceGSMap,TargetGSMap,myComm,OutRearranger%SendRouter)
