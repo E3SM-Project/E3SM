@@ -179,12 +179,14 @@
 ! Error flag and loop indices
   integer :: ierr, i, m, n, l,ier
   integer :: inxmin,outxmin
+  integer :: ysize, numav,j
 
 ! Character variable used as a data type flag:
   character*7 :: data_flag
 
 ! logical flag
-  logical :: usevector,TrListIsPresent,rListIsPresent,contiguous
+  logical :: usevector,TrListIsPresent,rListIsPresent
+  logical :: contiguous,ycontiguous
 
   usevector = .false.
   if(present(Vector)) then
@@ -218,14 +220,14 @@
   icol = SparseMatrix_indexIA(sMat,'lcol')    ! local column index
   iwgt = SparseMatrix_indexRA(sMat,'weight')  ! weight index
 
-       ! zero the output AttributeVector
-
-  call AttrVect_zero(yAV, zeroInts=.FALSE.)
 
        ! Multiplication sMat by REAL attributes in xAV:
 
   if(List_identical(xAV%rList, yAV%rList).and.   &
     .not.rListIsPresent) then                  ! no cross-indexing
+
+       ! zero the output AttributeVector
+     call AttrVect_zero(yAV, zeroInts=.FALSE.)
 
      num_indices = List_nitem(xAV%rList)
 
@@ -283,6 +285,7 @@
          call die(myname_,"Arguments rList and TrList do not& 
              &contain the same number of items") 
        endif   
+
      else
        call GetIndices(yAVindices,yAV%rList,trim(rList))
      endif
@@ -313,16 +316,37 @@
 
 ! Check if the indices are contiguous in memory for faster copy
    contiguous=.true.
+   ycontiguous=.true.
    do i=2,num_indices
       if(xaVindices(i) /= xAVindices(i-1)+1) contiguous = .false. 
    enddo
    if(contiguous) then
       do i=2,num_indices
-          if(yAVindices(i) /= yAVindices(i-1)+1) contiguous=.false.
+          if(yAVindices(i) /= yAVindices(i-1)+1) then
+	    contiguous=.false.
+            ycontiguous=.false.
+          endif
       enddo   
    endif
 
+       ! zero the right parts of the output AttributeVector
+   ysize = AttrVect_lsize(yAV)
+   numav=size(yAVindices)
 
+   if(ycontiguous) then
+     outxmin=yaVindices(1)-1
+     do j=1,ysize
+       do i=1,numav
+         yAV%rAttr(outxmin+i,j)=0._FP
+       enddo
+     enddo
+   else
+     do j=1,ysize
+       do i=1,numav
+         yAV%rAttr(yaVindices(i),j)=0._FP
+       enddo
+     enddo
+   endif
 
        ! loop over matrix elements
 
