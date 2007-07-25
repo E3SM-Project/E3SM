@@ -25,13 +25,17 @@
 
 ! !declare a private pointer structure for the real data
       type :: rptr
+#ifdef SEQUENCE
         sequence
+#endif
         real(FP),dimension(:),pointer :: pr
       end type
 
 ! !declare a private pointer structure for the integer data
       type :: iptr
+#ifdef SEQUENCE
         sequence
+#endif
         integer,dimension(:),pointer :: pi
       end type
 
@@ -51,7 +55,9 @@
 !\begin{verbatim}
 
     type Router
+#ifdef SEQUENCE
       sequence
+#endif
       integer :: comp1id                           ! myid
       integer :: comp2id                           ! id of second component
       integer :: nprocs	                           ! number of procs to talk to
