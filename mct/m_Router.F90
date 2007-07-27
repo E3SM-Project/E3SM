@@ -693,7 +693,7 @@
           length = length + rout%seg_lengths(iproc,iseg)
         end do
 
-        write(lun,*) myrank,iproc,length
+        write(lun,*) myrank,rout%pe_list(iproc),length,rout%locsize(iproc)
       endif
     end do        
 
