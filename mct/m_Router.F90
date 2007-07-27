@@ -660,6 +660,7 @@
 ! !USES:
 !
       use m_die
+      use m_mpif90
 
       implicit none
 
