@@ -675,8 +675,6 @@
 
 
     integer iproc
-    integer length
-    integer iseg
     integer myrank
     integer ier
     character(len=*),parameter :: myname_=myname//'::print_'
@@ -687,13 +685,7 @@
 
     do iproc=1,rout%nprocs
       if (rout%num_segs(iproc) > 1) then
-        ! count total size for this destination proc
-        length=0
-        do iseg=1,rout%num_segs(iproc)
-          length = length + rout%seg_lengths(iproc,iseg)
-        end do
-
-        write(lun,*) myrank,rout%pe_list(iproc),length,rout%locsize(iproc)
+        write(lun,*) myrank,rout%pe_list(iproc),rout%locsize(iproc)
       endif
     end do        
 
