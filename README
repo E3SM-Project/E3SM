@@ -116,7 +116,7 @@ Optional Contents available
   On robin at NCCS, use:
   > ./configure --host=Linux ac_cv_c_bigendian=yes
 
-  On the Cray XT3, use:
+  On the Cray XT3/XT4 (e.g. jaguar) use:
   > ./configure --host=Linux F90=ftn
 
 
