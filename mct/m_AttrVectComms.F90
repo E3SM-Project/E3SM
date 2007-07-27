@@ -606,7 +606,7 @@
 !
 ! !INTERFACE:
 
- subroutine GSM_gather_(iV, oV, GSMap, root, comm, stat)
+ subroutine GSM_gather_(iV, oV, GSMap, root, comm, stat, rdefault, idefault)
 !
 ! !USES:
 !
@@ -614,6 +614,7 @@
       use m_stdio
       use m_die
       use m_mpif90
+      use m_realkinds, only: FP
 ! GlobalSegMap and associated services:
       use m_GlobalSegMap, only : GlobalSegMap
       use m_GlobalSegMap, only : GlobalSegMap_comp_id => comp_id
@@ -644,6 +645,8 @@
       type(GlobalSegMap),        intent(in)  :: GSMap
       integer,                   intent(in)  :: root
       integer,                   intent(in)  :: comm
+      real(FP), optional,        intent(in)  :: rdefault
+      integer, optional,         intent(in)  :: idefault
 
 ! !OUTPUT PARAMETERS:
 !
@@ -663,6 +666,8 @@
 !           current_pos assignment.
 ! 23Nov01 - R. Jacob <jacob@mcs.anl.gov> - zero the oV before copying in
 !           gathered data.
+! 27Jul07 - R. Loy <rloy@mcs.anl.gov> - add Tony's suggested improvement
+!           for a default value in the output AV
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GSM_gather_'
@@ -770,6 +775,13 @@
 
      call AttrVect_init(oV,iV,global_storage)
      call AttrVect_zero(oV)
+
+     if (present(rdefault)) then
+       if (AttrVect_nRAttr(oV) > 0) oV%rAttr=rdefault
+     endif
+     if (present(idefault)) then
+       if (AttrVect_nIAttr(oV) > 0) oV%iAttr=idefault
+     endif
 
        ! On the root, allocate current position index for
        ! each process chunk:

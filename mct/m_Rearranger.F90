@@ -63,10 +63,12 @@
       public :: rearrange    ! the rearrange routine
 
       public :: clean        ! destruction method
+      public :: print        ! print out comm info
 
       interface init      ; module procedure init_      ; end interface
       interface Rearrange ; module procedure Rearrange_ ; end interface
       interface clean     ; module procedure clean_     ; end interface
+      interface print     ; module procedure print_     ; end interface
 
 ! !DEFINED PARAMETERS:
 
@@ -1265,6 +1267,44 @@ endif
  end subroutine rearrange_
 
 
+
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: print_ - Print rearranger communication info
+!
+! !DESCRIPTION:
+! Print out communication info for both routers in a 
+! rearranger.  Print out on unit number 'lun'
+! e.g. (source,destination,length)
+!
+! !INTERFACE:
+
+    subroutine print_(rearr,mycomm,lun)
+!
+! !USES:
+!
+      use m_die
+      use m_Router, only: router_print => print
+
+      implicit none
+
+!INPUT/OUTPUT PARAMETERS:
+      type(Rearranger),      intent(in) :: rearr
+      integer, intent(in)           :: mycomm
+      integer, intent(in)           :: lun
+
+! !REVISION HISTORY:
+! 27Jul07 - R. Loy <rloy@mcs.anl.gov>  initial version
+!EOP ___________________________________________________________________
+
+
+      call router_print(rearr%SendRouter,mycomm,lun)
+      call router_print(rearr%RecvRouter,mycomm,lun)
+
+  end subroutine print_
 
 
 end module m_Rearranger

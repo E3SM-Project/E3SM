@@ -80,6 +80,7 @@
 ! !PUBLIC MEMBER FUNCTIONS:
       public :: init            ! Create a Router
       public :: clean           ! Destroy a Router
+      public :: print           ! Print info about a Router
 
 
     interface init  ; module procedure  &
@@ -87,6 +88,7 @@
         initp_ 	        ! initialize a Router locally with two GSMaps
     end interface
     interface clean ; module procedure clean_ ; end interface
+    interface print ; module procedure print_ ; end interface
 
 ! !REVISION HISTORY:
 ! 15Jan01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
@@ -639,6 +641,64 @@
 
 
  end subroutine clean_
+
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: print_ - Print router info
+!
+! !DESCRIPTION:
+! Print out communication info about router on unit number 'lun'
+! e.g. (source,destination,length)
+!
+! !INTERFACE:
+
+    subroutine print_(rout,mycomm,lun)
+!
+! !USES:
+!
+      use m_die
+
+      implicit none
+
+!INPUT/OUTPUT PARAMETERS:
+      type(Router),      intent(in) :: Rout
+      integer, intent(in)           :: mycomm
+      integer, intent(in)           :: lun
+
+! !REVISION HISTORY:
+! 27Jul07 - R. Loy <rloy@mcs.anl.gov>  initial version
+!EOP ___________________________________________________________________
+
+
+    integer iproc
+    integer length
+    integer iseg
+    integer myrank
+    integer ier
+    character(len=*),parameter :: myname_=myname//'::print_'
+  
+    call MP_comm_rank(mycomm,myrank,ier)
+    if(ier/=0) call MP_perr_die(myname_,'MP_comm_rank',ier)
+
+
+    do iproc=1,rout%nprocs
+      if (rout%num_segs(iproc) > 1) then
+        ! count total size for this destination proc
+        length=0
+        do iseg=1,rout%num_segs(iproc)
+          length = length + rout%seg_lengths(iproc,iseg)
+        end do
+
+        write(lun,*) myrank,iproc,length
+      endif
+    end do        
+
+
+  end subroutine print_
+
 
  end module m_Router
 

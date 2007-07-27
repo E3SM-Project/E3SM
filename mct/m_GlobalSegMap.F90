@@ -68,6 +68,8 @@
                                 ! and GlobalSegMap%pe_loc
       public :: increasing      ! Are the indices for each pe strictly
                                 ! increasing?
+      public :: copy            ! Copy the gsmap
+
 ! !PUBLIC TYPES:
 
     type GlobalSegMap
@@ -122,6 +124,7 @@
 	SortPermuteInPlace_ 
     end interface
     interface increasing ; module procedure increasing_ ; end interface
+    interface copy ; module procedure copy_ ; end interface
 
 
 ! !REVISION HISTORY:
@@ -2448,6 +2451,44 @@
  end function increasing_
 
 
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: copy_ - Copy the gsmap to a new gsmap
+!
+! !DESCRIPTION:
+! Make a copy of a gsmap.
+! Note this is a deep copy of all arrays.
+!
+! !INTERFACE:
+
+  subroutine copy_(src,dest)
+
+! !USES:
+      use m_MCTWorld, only: ThisMCTWorld
+      use m_die
+
+      implicit none
+
+! !INPUT PARAMETERS: 
+
+      type(GlobalSegMap),intent(in) :: src
+
+! !OUTPUT PARAMETERS: 
+
+      type(GlobalSegMap),intent(out) :: dest
+
+
+! !REVISION HISTORY:
+! 	27Jul07 - R. Loy <rloy@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
+
+
+    call initp_( dest, src%comp_id, src%ngseg, src%gsize, &
+                 src%start, src%length, src%pe_loc )
+
+  end subroutine copy_
 
  end module m_GlobalSegMap
 
