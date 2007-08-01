@@ -903,7 +903,7 @@
 ! !OUTPUT PARAMETERS: 
 
       integer,  dimension(:), pointer     :: GlobalRows
-      integer,                intent(out) :: length
+      integer,  optional,     intent(out) :: length
 
 ! !REVISION HISTORY:
 !  7May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
@@ -913,8 +913,11 @@
   character(len=*),parameter :: myname_=myname//'::exportGlobalRowIndices_'
 
        ! Export the data (inheritance from AttrVect)
-
-  call AttrVect_exportIAttr(sMat%data, 'grow', GlobalRows, length)
+  if(present(length)) then
+     call AttrVect_exportIAttr(sMat%data, 'grow', GlobalRows, length)
+  else
+     call AttrVect_exportIAttr(sMat%data, 'grow', GlobalRows)
+  endif
 
  end subroutine exportGlobalRowIndices_
 
@@ -965,7 +968,7 @@
 ! !OUTPUT PARAMETERS: 
 
       integer,  dimension(:), pointer     :: GlobalColumns
-      integer,                intent(out) :: length
+      integer,  optional,     intent(out) :: length
 
 ! !REVISION HISTORY:
 !  7May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
@@ -975,8 +978,11 @@
   character(len=*),parameter :: myname_=myname//'::exportGlobalColumnIndices_'
 
        ! Export the data (inheritance from AttrVect)
-
-  call AttrVect_exportIAttr(sMat%data, 'gcol', GlobalColumns, length)
+  if(present(length)) then
+     call AttrVect_exportIAttr(sMat%data, 'gcol', GlobalColumns, length)
+  else
+     call AttrVect_exportIAttr(sMat%data, 'gcol', GlobalColumns)
+  endif
 
  end subroutine exportGlobalColumnIndices_
 
@@ -1026,7 +1032,7 @@
 ! !OUTPUT PARAMETERS: 
 
       integer,  dimension(:), pointer     :: LocalRows
-      integer,                intent(out) :: length
+      integer,  optional,     intent(out) :: length
 
 ! !REVISION HISTORY:
 !  7May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
@@ -1036,8 +1042,11 @@
   character(len=*),parameter :: myname_=myname//'::exportLocalRowIndices_'
 
        ! Export the data (inheritance from AttrVect)
-
-  call AttrVect_exportIAttr(sMat%data, 'lrow', LocalRows, length)
+  if(present(length)) then
+     call AttrVect_exportIAttr(sMat%data, 'lrow', LocalRows, length)
+  else
+     call AttrVect_exportIAttr(sMat%data, 'lrow', LocalRows)
+  endif
 
  end subroutine exportLocalRowIndices_
 
@@ -1088,7 +1097,7 @@
 ! !OUTPUT PARAMETERS: 
 
       integer,  dimension(:), pointer     :: LocalColumns
-      integer,                intent(out) :: length
+      integer,  optional,     intent(out) :: length
 
 ! !REVISION HISTORY:
 !  7May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
@@ -1098,8 +1107,11 @@
   character(len=*),parameter :: myname_=myname//'::exportLocalColumnIndices_'
 
        ! Export the data (inheritance from AttrVect)
-
-  call AttrVect_exportIAttr(sMat%data, 'lcol', LocalColumns, length)
+  if(present(length)) then
+     call AttrVect_exportIAttr(sMat%data, 'lcol', LocalColumns, length)
+  else
+     call AttrVect_exportIAttr(sMat%data, 'lcol', LocalColumns)
+  endif
 
  end subroutine exportLocalColumnIndices_
 
@@ -1154,7 +1166,7 @@
 ! !OUTPUT PARAMETERS: 
 
       real(SP),  dimension(:),    pointer     :: MatrixElements
-      integer,                intent(out) :: length
+      integer,   optional,        intent(out) :: length
 
 ! !REVISION HISTORY:
 !  7May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
@@ -1165,8 +1177,11 @@
   character(len=*),parameter :: myname_=myname//'::exportMatrixElementsSP_'
 
        ! Export the data (inheritance from AttrVect)
-
-  call AttrVect_exportRAttr(sMat%data, 'weight', MatrixElements, length)
+  if(present(length)) then
+     call AttrVect_exportRAttr(sMat%data, 'weight', MatrixElements, length)
+  else
+     call AttrVect_exportRAttr(sMat%data, 'weight', MatrixElements)
+  endif
 
  end subroutine exportMatrixElementsSP_
 
@@ -1201,7 +1216,7 @@
 ! !OUTPUT PARAMETERS: 
 
       real(DP),  dimension(:),    pointer     :: MatrixElements
-      integer,                intent(out) :: length
+      integer,   optional,        intent(out) :: length
 
 ! !REVISION HISTORY:
 !  7May02 - J.W. Larson <larson@mcs.anl.gov> - initial version.
@@ -1211,8 +1226,11 @@
   character(len=*),parameter :: myname_=myname//'::exportMatrixElementsDP_'
 
        ! Export the data (inheritance from AttrVect)
-
-  call AttrVect_exportRAttr(sMat%data, 'weight', MatrixElements, length)
+  if(present(length)) then
+     call AttrVect_exportRAttr(sMat%data, 'weight', MatrixElements, length)
+  else
+     call AttrVect_exportRAttr(sMat%data, 'weight', MatrixElements)
+  endif
 
  end subroutine exportMatrixElementsDP_
 

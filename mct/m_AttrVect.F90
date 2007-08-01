@@ -1772,7 +1772,7 @@
 ! !OUTPUT PARAMETERS: 
 
       integer,      dimension(:), pointer     :: outVect
-      integer,                    intent(out) :: lsize
+      integer,          optional, intent(out) :: lsize
 
 ! !REVISION HISTORY:
 ! 19Oct01 - J.W. Larson <larson@mcs.anl.gov> - initial (slow) 
@@ -1784,7 +1784,7 @@
 
   character(len=*),parameter :: myname_=myname//'::exportIAttr_'
 
-  integer :: index, ierr, n
+  integer :: index, ierr, n, myLsize
   type(String) :: myTrace
 
   if(present(dieWith)) then ! Append onto TraceBack
@@ -1803,21 +1803,21 @@
 
        ! Determine the number of data points:
 
-  lsize = lsize_(aV)
+  myLsize = lsize_(aV)
 
        ! Allocate space for outVect (if it is not already dimensioned)
 
   if(associated(outVect)) then ! check the size of outVect
-     if(size(outVect) < lsize) then
+     if(size(outVect) < myLsize) then
 	write(stderr,'(3a,i8,a,i8)') myname_, &
 	    ':: ERROR length of output array outVect ', &
 	    ' less than length of aV.  size(outVect)=',size(outVect), &
-	    ', length of aV=',lsize
+	    ', length of aV=',myLsize
 	write(stderr,'(2a)') 'Traceback:  ',String_ToChar(myTrace)
 	call die(myname_)
      endif
   else ! allocate space for outVect
-     allocate(outVect(lsize), stat=ierr)
+     allocate(outVect(myLsize), stat=ierr)
      if(ierr /= 0) then
 	write(stderr,'(2a,i8)') myname_, &
 	     ':: Error - allocate(outVect(...) failed. ierr = ',ierr
@@ -1828,9 +1828,12 @@
 
        ! Copy the attribute data into outVect
 
-  do n=1,lsize
+  do n=1,myLsize
      outVect(n) = aV%iAttr(index,n)
   end do
+
+  ! return optional output argument lsize:
+  if(present(lsize)) lsize = myLsize
 
   call String_clean(myTrace)
 
@@ -1912,7 +1915,7 @@
 ! !OUTPUT PARAMETERS: 
 
       real(SP),        dimension(:),  pointer     :: outVect
-      integer,                    intent(out) :: lsize
+      integer,          optional,     intent(out) :: lsize
 
 ! !REVISION HISTORY:
 ! 19Oct01 - J.W. Larson <larson@mcs.anl.gov> - initial (slow) 
@@ -1924,7 +1927,7 @@
 
   character(len=*),parameter :: myname_=myname//'::exportRAttrSP_'
 
-  integer :: index, ierr, n
+  integer :: index, ierr, n, myLsize
   type(String) :: myTrace
 
   if(present(dieWith)) then ! Append onto TraceBack
@@ -1943,21 +1946,21 @@
 
        ! Determine the number of data points:
 
-  lsize = lsize_(aV)
+  myLsize = lsize_(aV)
 
        ! Allocate space for outVect (if it is not already dimensioned)
 
   if(associated(outVect)) then ! check the size of outVect
-     if(size(outVect) < lsize) then
+     if(size(outVect) < myLsize) then
 	write(stderr,'(3a,i8,a,i8)') myname_, &
 	    ':: ERROR length of output array outVect ', &
 	    ' less than length of aV.  size(outVect)=',size(outVect), &
-	    ', length of aV=',lsize
+	    ', length of aV=',myLsize
 	write(stderr,'(2a)') 'Traceback:  ',String_ToChar(myTrace)
 	call die(myname_)
      endif
   else ! allocate space for outVect
-     allocate(outVect(lsize), stat=ierr)
+     allocate(outVect(myLsize), stat=ierr)
      if(ierr /= 0) then
 	write(stderr,'(2a,i8)') myname_, &
 	     ':: Error - allocate(outVect(...) failed. ierr = ',ierr
@@ -1968,11 +1971,14 @@
 
        ! Copy the attribute data into outVect
 
-  do n=1,lsize
+  do n=1,myLsize
      outVect(n) = aV%rAttr(index,n)
   end do
 
   call String_clean(myTrace)
+
+  ! return optional argument lsize
+  if(present(lsize)) lsize = myLsize
 
  end subroutine exportRAttrSP_
 
@@ -2015,7 +2021,7 @@
 ! !OUTPUT PARAMETERS: 
 
       real(DP),    dimension(:),  pointer     :: outVect
-      integer,                    intent(out) :: lsize
+      integer,          optional, intent(out) :: lsize
 
 ! !REVISION HISTORY:
 ! 19Oct01 - J.W. Larson <larson@mcs.anl.gov> - initial (slow) 
@@ -2027,7 +2033,7 @@
 
   character(len=*),parameter :: myname_=myname//'::exportRAttrDP_'
 
-  integer :: index, ierr, n
+  integer :: index, ierr, n, myLsize
   type(String) :: myTrace
 
   if(present(dieWith)) then ! Append onto TraceBack
@@ -2046,21 +2052,21 @@
 
        ! Determine the number of data points:
 
-  lsize = lsize_(aV)
+  myLsize = lsize_(aV)
 
        ! Allocate space for outVect (if it is not already dimensioned)
 
   if(associated(outVect)) then ! check the size of outVect
-     if(size(outVect) < lsize) then
+     if(size(outVect) < myLsize) then
 	write(stderr,'(3a,i8,a,i8)') myname_, &
 	    ':: ERROR length of output array outVect ', &
 	    ' less than length of aV.  size(outVect)=',size(outVect), &
-	    ', length of aV=',lsize
+	    ', length of aV=',myLsize
 	write(stderr,'(2a)') 'Traceback:  ',String_ToChar(myTrace)
 	call die(myname_)
      endif
   else ! allocate space for outVect
-     allocate(outVect(lsize), stat=ierr)
+     allocate(outVect(myLsize), stat=ierr)
      if(ierr /= 0) then
 	write(stderr,'(2a,i8)') myname_, &
 	     ':: Error - allocate(outVect(...) failed. ierr = ',ierr
@@ -2071,11 +2077,14 @@
 
        ! Copy the attribute data into outVect
 
-  do n=1,lsize
+  do n=1,myLsize
      outVect(n) = aV%rAttr(index,n)
   end do
 
   call String_clean(myTrace)
+
+  ! return optional argument lsize
+  if(present(lsize)) lsize = myLsize
 
  end subroutine exportRAttrDP_
 
@@ -2111,7 +2120,7 @@
 
       character(len=*),       intent(in)    :: AttrTag
       integer,  dimension(:), pointer       :: inVect
-      integer, optional,      intent(in)    :: lsize
+      integer,  optional,     intent(in)    :: lsize
 
 ! !INPUT/OUTPUT PARAMETERS: 
 

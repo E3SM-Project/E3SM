@@ -2617,7 +2617,7 @@
 ! !OUTPUT PARAMETERS: 
 
       integer,  dimension(:), pointer     :: outVect
-      integer,                intent(out) :: lsize
+      integer,  optional,     intent(out) :: lsize
 
 ! !REVISION HISTORY:
 ! 13Dec01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
@@ -2626,8 +2626,11 @@
   character(len=*),parameter :: myname_=myname//'::exportIAttr_'
 
        ! Export the data (inheritance from AttrVect)
-
-  call AttrVect_exportIAttr(GGrid%data, AttrTag, outVect, lsize)
+  if(present(lsize)) then
+     call AttrVect_exportIAttr(GGrid%data, AttrTag, outVect, lsize)
+  else
+     call AttrVect_exportIAttr(GGrid%data, AttrTag, outVect)
+  endif
 
  end subroutine exportIAttr_
 
@@ -2684,7 +2687,7 @@
 ! !OUTPUT PARAMETERS: 
 
       real(SP),  dimension(:),    pointer     :: outVect
-      integer,                    intent(out) :: lsize
+      integer,   optional,        intent(out) :: lsize
 
 ! !REVISION HISTORY:
 ! 13Dec01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
@@ -2695,7 +2698,11 @@
 
        ! Export the data (inheritance from AttrVect)
 
-  call AttrVect_exportRAttr(GGrid%data, AttrTag, outVect, lsize)
+  if(present(lsize)) then
+     call AttrVect_exportRAttr(GGrid%data, AttrTag, outVect, lsize)
+  else
+     call AttrVect_exportRAttr(GGrid%data, AttrTag, outVect)
+  endif
 
  end subroutine exportRAttrSP_
 
@@ -2731,7 +2738,7 @@
 ! !OUTPUT PARAMETERS: 
 
       real(DP),  dimension(:),    pointer     :: outVect
-      integer,                    intent(out) :: lsize
+      integer,   optional,        intent(out) :: lsize
 
 ! !REVISION HISTORY:
 ! 13Dec01 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
@@ -2741,8 +2748,11 @@
   character(len=*),parameter :: myname_=myname//'::exportRAttrDP_'
 
        ! Export the data (inheritance from AttrVect)
-
-  call AttrVect_exportRAttr(GGrid%data, AttrTag, outVect, lsize)
+  if(present(lsize)) then
+     call AttrVect_exportRAttr(GGrid%data, AttrTag, outVect, lsize)
+  else
+     call AttrVect_exportRAttr(GGrid%data, AttrTag, outVect)
+  endif
 
  end subroutine exportRAttrDP_
 
