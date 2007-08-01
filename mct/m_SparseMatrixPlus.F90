@@ -132,6 +132,7 @@
       public :: vecinit
       public :: clean
       public :: initialized
+      public :: exportStrategyToChar
 
       interface init ; module procedure &
         initFromRoot_, &
@@ -140,6 +141,9 @@
       interface vecinit ; module procedure vecinit_ ; end interface
       interface clean ; module procedure clean_ ; end interface
       interface initialized ; module procedure initialized_ ; end interface
+      interface exportStrategyTohar ; module procedure &
+        exportStrategyToChar_ 
+      end interface
 
 ! !PUBLIC DATA MEMBERS:
 
@@ -801,6 +805,60 @@
   endif
 
  end function initialized_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: exportStrategyToChar - Return Parallelization Strategy
+!
+! !DESCRIPTION:
+! This query subroutine returns the parallelization  strategy set in 
+! the input {\tt SparseMatrixPlus} argument {\tt sMatPlus}.  The result
+! is returned in the output {\tt CHARACTER} argument {\tt StratChars}.
+!
+! !INTERFACE:
+
+ function exportStrategyToChar_(sMatPlus)
+!
+! !USES:
+!
+   use m_stdio
+   use m_die
+
+   use m_String, only : String_ToChar => toChar
+
+   implicit none
+
+! !INPUT PARAMETERS: 
+!
+      type(SparseMatrixPlus), intent(in)  :: sMatPlus
+
+! !OUTPUT PARAMETERS: 
+!
+      character(len=size(sMatPlus%Strategy%c)) :: exportStrategyToChar_
+
+! !REVISION HISTORY:
+! 01Aug07 - Jay Larson <larson@mcs.anl.gov> - Implementation
+!EOP ___________________________________________________________________
+!
+ character(len=*),parameter :: myname_=myname//'::exportStrategyToChar_'
+
+   ! Check input argument to ensure it has been initialized.  If not,
+   ! signal an error and terminate execution.
+
+  if( .not. initialized_(sMatPlus) ) then
+     write(stderr,'(3a)') myname_,':: Warning, input argument not initialized, '&
+          'returning empty character field for parallelization strategy.'
+     exportStrategyToChar_ = ' '
+     return
+  endif
+
+   ! Return in character form the parallelizaiton strategy
+
+  exportStrategyToChar_ = String_ToChar(sMatPlus%Strategy) 
+
+ end function exportStrategyToChar_
 
  end module m_SparseMatrixPlus
 
