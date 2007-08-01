@@ -437,7 +437,9 @@
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
+      use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_clean => clean
+      use m_AttrVect, only : AttrVect_Rcopy => Rcopy
 
       use m_Rearranger, only : Rearranger
       use m_Rearranger, only : Rearrange
@@ -477,6 +479,7 @@
 
   character(len=*),parameter :: myname_=myname//'::sMatAvMult_SMPlus_'
   type(AttrVect) :: xPrimeAV, yPrimeAV
+  type(AttrVect) :: yAVre
   integer :: ierr
   logical ::  usevector
   character(len=5) :: strat
@@ -519,7 +522,16 @@
      call AttrVect_clean(xPrimeAV, ierr)
   case('Yonly')
        ! Create intermediate AttrVect for y'
-     call AttrVect_init(yPrimeAV, yAV, sMatPlus%YPrimeLength)
+     if (present(TrList).and.present(rList)) then
+        call AttrVect_init(yPrimeAV, rList=TrList, lsize=sMatPlus%YPrimeLength)
+     else if(.not.present(TrList) .and. present(rList)) then
+        call AttrVect_init(yPrimeAV, rList=rList, lsize=sMatPlus%YPrimeLength)
+     else
+        call AttrVect_init(yPrimeAV, yAV, sMatPlus%YPrimeLength)
+     endif
+
+     if (present(TrList).or.present(rList))  &
+        call AttrVect_init(yAVre, yPrimeAV , lsize=AttrVect_lsize(yAV))
 
        ! Perform perfectly data-local multiply y' = Mx
      if (present(TrList).and.present(rList)) then
@@ -534,15 +546,34 @@
      endif
      
        ! Rearrange/reduce partial sums in y' to get y
-     call Rearrange(yPrimeAV, yAV, sMatPlus%YPrimeToY, sMatPlus%Tag, &
+     if (present(TrList).or.present(rList)) then
+       call Rearrange(yPrimeAV, yAVre, sMatPlus%YPrimeToY, sMatPlus%Tag, &
                     .TRUE., Vector=usevector)
+       call AttrVect_Rcopy(yAVre,yAV,vector=usevector)
+       call AttrVect_clean(yAVre, ierr)
+     else
+       call Rearrange(yPrimeAV, yAV, sMatPlus%YPrimeToY, sMatPlus%Tag, &
+                    .TRUE., Vector=usevector)
+     endif
        ! Clean up space occupied by y'
      call AttrVect_clean(yPrimeAV, ierr)
+
   case('XandY')
        ! Create intermediate AttrVect for x'
      call AttrVect_init(xPrimeAV, xAV, sMatPlus%XPrimeLength)
+
        ! Create intermediate AttrVect for y'
-     call AttrVect_init(yPrimeAV, yAV, sMatPlus%YPrimeLength)
+     if (present(TrList).and.present(rList)) then
+        call AttrVect_init(yPrimeAV, rList=TrList, lsize=sMatPlus%YPrimeLength)
+     else if(.not.present(TrList) .and. present(rList)) then
+        call AttrVect_init(yPrimeAV, rList=rList, lsize=sMatPlus%YPrimeLength)
+     else
+        call AttrVect_init(yPrimeAV, yAV, sMatPlus%YPrimeLength)
+     endif
+
+     if (present(TrList).or.present(rList)) &
+        call AttrVect_init(yAVre, yPrimeAV , lsize=AttrVect_lsize(yAV))
+
        ! Rearrange data from x to get x'
      call Rearrange(xAV, xPrimeAV, sMatPlus%XToXPrime, sMatPlus%Tag, &
                        Vector=usevector)
@@ -560,8 +591,16 @@
      endif
 
        ! Rearrange/reduce partial sums in y' to get y
-     call Rearrange(yPrimeAV, yAV, sMatPlus%YPrimeToY, sMatPlus%Tag, &
-                            .TRUE., Vector=usevector)
+     if (present(TrList).or.present(rList)) then
+       call Rearrange(yPrimeAV, yAVre, sMatPlus%YPrimeToY, sMatPlus%Tag, &
+                    .TRUE., Vector=usevector)
+       call AttrVect_Rcopy(yAVre,yAV,vector=usevector)
+       call AttrVect_clean(yAVre, ierr)
+     else
+       call Rearrange(yPrimeAV, yAV, sMatPlus%YPrimeToY, sMatPlus%Tag, &
+                    .TRUE., Vector=usevector)
+     endif
+
        ! Clean up space occupied by x'
      call AttrVect_clean(xPrimeAV, ierr)
        ! Clean up space occupied by y'
