@@ -848,7 +848,7 @@
    ! signal an error and terminate execution.
 
   if( .not. initialized_(sMatPlus) ) then
-     write(stderr,'(3a)') myname_,':: Warning, input argument not initialized, '&
+     write(stderr,'(3a)') myname_,':: Warning, input argument not initialized, ', &
           'returning empty character field for parallelization strategy.'
      exportStrategyToChar_ = ' '
      return
