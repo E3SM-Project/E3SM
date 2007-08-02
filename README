@@ -109,7 +109,7 @@ Optional Contents available
   and send us config.out, make.out and config.log (which is produced by the
   configure command)
 
-  PLATFORM NOTE:
+  PLATFORM NOTES:
   On the Argonne BlueGene/L, use:
   > ./configure FC=mpif90.ibm CC=mpicc.ibm
 
@@ -117,9 +117,12 @@ Optional Contents available
   > ./configure --host=Linux ac_cv_c_bigendian=yes
 
   On the Cray XT3/XT4 (e.g. jaguar) use:
-  > ./configure --host=Linux F90=ftn
+  > ./configure --host=Linux FC=ftn F90=ftn 
 
-
+  On jazz for g95:
+  use .soft key @all-mpich_gm-gcc4.0.2-g95-0.50
+  > ./configure F90=mpif90
+ 
 ######################################################################
   INSTALLATION INSTRUCTIONS:
 
