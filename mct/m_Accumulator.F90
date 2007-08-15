@@ -873,7 +873,7 @@
 ! !IROUTINE: NumSteps_ - Number of Accumulation Cycle Time Steps
 !
 ! !DESCRIPTION:
-! This {\tt INTEGER} query function returns the of time steps in an 
+! This {\tt INTEGER} query function returns the number of time steps in an 
 ! accumulation cycle for the input {\tt Accumulator} argument {\tt aC}.
 !
 ! !INTERFACE:
