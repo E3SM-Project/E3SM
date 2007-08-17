@@ -5,14 +5,14 @@
 ! CVS $Name$  
 !BOP -------------------------------------------------------------------
 !
-! !MODULE: assert.H - an #include section of ASSERT() macro for Fortran
+! !MODULE: assertmpeu.H - an #include section of ASSERT() macro for Fortran
 !
 ! !DESCRIPTION:
 !
 ! !INTERFACE:
 !
 !	#define NDEBUG
-!	#include "assert.H"
+!	#include "assertmpeu.H"
 !	...
 !		use m_die,only : assert_
 !	...
@@ -23,6 +23,8 @@
 !	This macro requires Fortran friendly cpp() for macro processing.
 !
 ! !REVISION HISTORY:
+!       17Aug07 - R. Jacob <jacob@mcs.anl.gov> - renamed from assert.H to 
+!                 prevent namespace collision with assert.h on Mac
 ! 	28Aug00	- Jing Guo <guo@dao.gsfc.nasa.gov>
 !		- modified
 !		- added the prolog for a brief documentation
