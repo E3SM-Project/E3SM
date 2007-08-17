@@ -1222,10 +1222,10 @@
 ! !IROUTINE: max_nlseg_ - Return the max number of segments over all procs
 !
 ! !DESCRIPTION:
-! The function {\tt max_nlseg\_()} returns the maximum number 
+! The function {\tt max\_nlseg\_()} returns the maximum number 
 ! over all processors of the vector
 ! segments in the {\tt GlobalSegMap} argument {\tt gsap} 
-! E.g. max_p(nlseg(gsmap,p)) but computed more efficiently
+! E.g. max\_p(nlseg(gsmap,p)) but computed more efficiently
 !
 ! !INTERFACE:
 
