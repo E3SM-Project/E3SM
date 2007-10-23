@@ -117,7 +117,7 @@
         position=0
 	do i=1,5
 	  call mpi_unpack( rbuf,20,position,temp,1,MPI_INTEGER, &
-                           MPI_COMM_WORLD)
+                           MPI_COMM_WORLD,ier)
           print *,temp
         end do
 
