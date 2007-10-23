@@ -206,3 +206,22 @@ int MPI_Comm_group(MPI_Comm comm, MPI_Group *group)
 }    
 
 
+
+/*********/
+
+
+MPI_Comm MPI_Comm_f2c(MPI_Fint comm)
+{
+  /* Comm is an integer handle used both by C and Fortran */
+  return(comm);
+}
+
+
+MPI_Fint MPI_Comm_c2f(MPI_Comm comm)
+{
+  return(comm);
+}
+
+
+
+
