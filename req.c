@@ -137,3 +137,20 @@ int MPI_Waitall(int count, MPI_Request *array_of_requests,
 
 
 
+/*********/
+
+
+MPI_Request MPI_Request_f2c(MPI_Fint request)
+{
+  return(request);
+}
+
+
+/*********/
+
+
+
+MPI_Fint MPI_Request_c2f(MPI_Request request)
+{
+  return(request);
+}

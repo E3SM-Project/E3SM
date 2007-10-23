@@ -42,9 +42,76 @@
         integer MPI_MAX_PROCESSOR_NAME
         parameter (MPI_MAX_PROCESSOR_NAME=128)
 
+!
+! Return codes
+!
 
         integer MPI_SUCCESS
         parameter (MPI_SUCCESS=0)
+
+        integer MPI_ERR_BUFFER 
+        parameter (MPI_ERR_BUFFER= -1)
+
+        integer MPI_ERR_COUNT 
+        parameter (MPI_ERR_COUNT= -1)
+
+        integer MPI_ERR_TYPE 
+        parameter (MPI_ERR_TYPE= -1)
+
+        integer MPI_ERR_TAG
+        parameter (MPI_ERR_TAG= -1)
+
+        integer MPI_ERR_COMM 
+        parameter (MPI_ERR_COMM= -1)
+
+        integer MPI_ERR_RANK 
+        parameter (MPI_ERR_RANK= -1)
+
+        integer MPI_ERR_REQUEST 
+        parameter (MPI_ERR_REQUEST= -1)
+
+        integer MPI_ERR_ROOT 
+        parameter (MPI_ERR_ROOT= -1)
+
+        integer MPI_ERR_GROUP 
+        parameter (MPI_ERR_GROUP= -1)
+
+        integer MPI_ERR_OP 
+        parameter (MPI_ERR_OP= -1)
+
+        integer MPI_ERR_TOPOLOGY 
+        parameter (MPI_ERR_TOPOLOGY= -1)
+
+        integer MPI_ERR_DIMS 
+        parameter (MPI_ERR_DIMS= -1)
+
+        integer MPI_ERR_ARG 
+        parameter (MPI_ERR_ARG= -1)
+
+        integer MPI_ERR_UNKNOWN 
+        parameter (MPI_ERR_UNKNOWN= -1)
+
+        integer MPI_ERR_TRUNCATE 
+        parameter (MPI_ERR_TRUNCATE= -1)
+
+        integer MPI_ERR_OTHER 
+        parameter (MPI_ERR_OTHER= -1)
+
+        integer MPI_ERR_INTERN 
+        parameter (MPI_ERR_INTERN= -1)
+
+        integer MPI_PENDING 
+        parameter (MPI_PENDING= -1)
+
+        integer MPI_ERR_IN_STATUS 
+        parameter (MPI_ERR_IN_STATUS= -1)
+
+        integer MPI_ERR_LASTCODE 
+        parameter (MPI_ERR_LASTCODE= -1)
+
+!
+!
+
 
         integer MPI_UNDEFINED
         parameter (MPI_UNDEFINED= -1)

@@ -311,3 +311,21 @@ int MPI_Alltoallv(void *sendbuf, int *sendcounts,
 
   return(MPI_SUCCESS);
 }
+
+
+/*********/
+
+MPI_Op MPI_Op_f2c(MPI_Fint op)
+{
+  return(op);
+}
+
+
+/*********/
+
+
+MPI_Fint MPI_Op_c2f(MPI_Op op)
+{
+  return(op);
+}
+

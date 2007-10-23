@@ -18,9 +18,47 @@ typedef int MPI_Group;
 #define MPI_GROUP_NULL  (0)
 
 
-#define MPI_SUCCESS   (0)
+/*
+ * Return codes
+ *   On error, mpi-serial aborts so the values don't really matter
+ *   as long as they are different than MPI_SUCCESS
+ *
+ */
 
-#define MPI_UNDEFINED (-1)     /* value for "color" in e.g. comm_split */
+#define MPI_SUCCESS        (0)
+#define MPI_ERR_BUFFER     (-1)
+#define MPI_ERR_COUNT      (-1)
+#define MPI_ERR_TYPE       (-1)
+#define MPI_ERR_TAG        (-1)
+#define MPI_ERR_COMM       (-1)
+#define MPI_ERR_RANK       (-1)
+#define MPI_ERR_REQUEST    (-1)
+#define MPI_ERR_ROOT       (-1)
+#define MPI_ERR_GROUP      (-1)
+#define MPI_ERR_OP         (-1)
+#define MPI_ERR_TOPOLOGY   (-1)
+#define MPI_ERR_DIMS       (-1)
+#define MPI_ERR_ARG        (-1)
+#define MPI_ERR_UNKNOWN    (-1)
+#define MPI_ERR_TRUNCATE   (-1)
+#define MPI_ERR_OTHER      (-1)
+#define MPI_ERR_INTERN     (-1)
+#define MPI_PENDING        (-1)
+#define MPI_ERR_IN_STATUS  (-1)
+#define MPI_ERR_LASTCODE   (-1)
+
+
+/*
+ * MPI_UNDEFINED
+ *
+ * Uses:
+ *   value for "color" in e.g. comm_split
+ *   value for rank in Group_translate_ranks
+ *
+ */
+
+
+#define MPI_UNDEFINED (-1)
 
 
 /*
@@ -56,6 +94,14 @@ typedef int MPI_Datatype;
 #define MPI_2INT             (sizeof(struct{int a; int b;}))
 #define MPI_SHORT_INT        (sizeof (struct{short a; int b;}))
 #define MPI_LONG_DOUBLE_INT  (sizeof (struct{long double a; int b;}))
+
+/*
+ * Fortran int size
+ *
+ */
+
+typedef int MPI_Fint;
+
 
 
 #define MPI_ANY_TAG (-1)
