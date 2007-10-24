@@ -202,3 +202,12 @@
 
         DOUBLE PRECISION MPI_WTIME
         EXTERNAL MPI_WTIME
+
+
+!
+! Kinds
+!
+
+        integer, parameter :: MPI_OFFSET_KIND=kind(1)
+
+        integer, parameter :: MPI_INFO_NULL=0
