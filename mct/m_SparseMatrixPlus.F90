@@ -827,7 +827,8 @@
    use m_die
 
    use m_String, only : String_ToChar => toChar
-   use m_String, only : String_Init => init
+   use m_String, only : String_init => init
+   use m_String, only : String_clean => clean
    use m_String, only : String
 
    implicit none
