@@ -65,7 +65,7 @@ typedef int MPI_Group;
  * Data types etc.
  */
 
-typedef unsigned int MPI_Aint;
+typedef unsigned long int MPI_Aint;
 #define MPI_BOTTOM (0)
 typedef int MPI_Datatype;
 
