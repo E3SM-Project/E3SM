@@ -141,7 +141,7 @@
       interface vecinit ; module procedure vecinit_ ; end interface
       interface clean ; module procedure clean_ ; end interface
       interface initialized ; module procedure initialized_ ; end interface
-      interface exportStrategyTohar ; module procedure &
+      interface exportStrategyToChar ; module procedure &
         exportStrategyToChar_ 
       end interface
 
@@ -827,6 +827,8 @@
    use m_die
 
    use m_String, only : String_ToChar => toChar
+   use m_String, only : String_Init => init
+   use m_String, only : String
 
    implicit none
 
@@ -843,6 +845,7 @@
 !EOP ___________________________________________________________________
 !
  character(len=*),parameter :: myname_=myname//'::exportStrategyToChar_'
+ type(String) :: dummyStrategy ! SGI IR->WHIRL work-around
 
    ! Check input argument to ensure it has been initialized.  If not,
    ! signal an error and terminate execution.
@@ -855,8 +858,11 @@
   endif
 
    ! Return in character form the parallelizaiton strategy
+  call String_init(dummyStrategy, SMatPlus%Strategy)
 
-  exportStrategyToChar_ = String_ToChar(sMatPlus%Strategy) 
+  exportStrategyToChar_ = String_ToChar(dummyStrategy) 
+
+  call String_clean(dummyStrategy)
 
  end function exportStrategyToChar_
 
