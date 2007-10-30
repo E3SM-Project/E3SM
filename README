@@ -121,6 +121,8 @@ Optional Contents available
 
   On jazz for g95:
   use .soft key @all-mpich_gm-gcc4.0.2-g95-0.50
+  set the environment variable G95_UNBUFFERED_6 to prevent
+  truncation of stdout
   > ./configure F90=mpif90
  
 ######################################################################
