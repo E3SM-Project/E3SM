@@ -1582,7 +1582,7 @@
 
 ! !OUTPUT PARAMETERS: 
 
-      character(len=size(aV%iList%bf)) :: exportIListToChar_
+      character(len=size(aV%iList%bf,1)) :: exportIListToChar_
 
 ! !REVISION HISTORY:
 ! 13Feb02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
@@ -1660,7 +1660,7 @@
 
 ! !OUTPUT PARAMETERS: 
 
-      character(len=size(aV%rList%bf)) :: exportRListToChar_
+      character(len=size(aV%rList%bf,1)) :: exportRListToChar_
 
 ! !REVISION HISTORY:
 ! 13Feb02 - J.W. Larson <larson@mcs.anl.gov> - initial prototype.
