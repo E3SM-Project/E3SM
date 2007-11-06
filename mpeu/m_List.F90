@@ -859,7 +859,7 @@
 
 ! ! OUTPUT PARAMETERS:
 
-      character(len=size(inList%bf)) :: exportToChar_
+      character(len=size(inList%bf,1)) :: exportToChar_
 
 ! !REVISION HISTORY:
 ! 13Feb02 - J. Larson <larson@mcs.anl.gov> - initial version.

@@ -138,7 +138,7 @@ contains
 
 ! !OUTPUT PARAMETERS: 
 !
-     character(len=size(str%c))            :: str2ch0_
+     character(len=size(str%c,1))            :: str2ch0_
 
 ! !REVISION HISTORY:
 ! 	23Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
@@ -179,7 +179,7 @@ contains
 
 ! !OUTPUT PARAMETERS: 
 !
-      character(len=size(ch1))                   :: ch12ch0_
+      character(len=size(ch1,1))                   :: ch12ch0_
 
 ! !REVISION HISTORY:
 ! 	22Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
