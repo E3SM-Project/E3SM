@@ -1,8 +1,8 @@
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
-! CVS $Id$
-! CVS $Name$ 
+! CVS m_MCTWorld.F90,v 1.26 2007/06/01 19:56:25 rloy Exp
+! CVS MCT_2_4_0 
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_MCTWorld -- MCTWorld Class
@@ -41,7 +41,6 @@
       integer,dimension(:,:),pointer :: idGprocid  ! Translate between local component rank
                                                    ! rank in global communicator.
 						   ! idGprocid(modelid,localrank)=globalrank
-
     end type MCTWorld
 
 ! !PUBLIC DATA MEMBERS:
@@ -70,6 +69,7 @@
     end interface
     interface init ; module procedure &
       initd_, &
+      initm_, &
       initr_
     end interface
     interface clean ; module procedure clean_ ; end interface
@@ -154,6 +154,228 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
+! !IROUTINE: initm_ - initialize MCTWorld
+!
+! !DESCRIPTION:
+! Do a distributed init of MCTWorld for the case where a set of processors
+! contains more then one model and the models may not span the set of processors.
+! {\tt ncomps} is the total number of components in the entire coupled system.
+! {\tt globalcomm} encompasses all the models (typically this can be MPI\_COMM\_WORLD).
+! {\tt mycomms} is an array of MPI communicators, each sized for the appropriate model
+! and {\tt myids} is a corresponding array of integers containing the model ids for 
+! the models on this particular set of processors.
+!
+! This routine is called once for the models covered by the set of processors.
+!
+! !INTERFACE:
+
+ subroutine initm_(ncomps,globalcomm,mycomms,myids)
+!
+! !USES:
+!
+      use m_mpif90
+      use m_die
+      use m_stdio
+
+      implicit none
+
+! !INPUT PARAMETERS:
+
+      integer, intent(in)	       :: ncomps          ! number of components
+      integer, intent(in)	       :: globalcomm      ! global communicator
+      integer, dimension(:),pointer    :: mycomms         ! my communicators
+      integer, dimension(:),pointer    :: myids           ! component ids
+
+! !REVISION HISTORY:
+! 20Sep07 - T. Craig migrated code from initd routine
+! 20Sep07 - T. Craig - made mycomms an array
+!EOP ___________________________________________________________________
+!
+  character(len=*),parameter :: myname_=myname//'::initm_'
+  integer :: ier,myGid,myLid,i,mysize,Gsize,j
+  integer :: ncomps_old
+
+! arrays allocated on the root to coordinate gathring of data
+! and non-blocking receives by the root
+  integer, dimension(:), allocatable :: compids,reqs,nprocs,Gprocids
+  integer, dimension(:), allocatable :: root_nprocs
+  integer, dimension(:,:),allocatable :: status,root_idGprocid
+  integer, dimension(:,:),pointer :: tmparray
+  integer,dimension(:),pointer :: apoint
+! ------------------------------------------------------------------
+
+! Check that ncomps is a legal value
+  if(ncomps < 1) then
+     call die(myname_, "argument ncomps can't less than one!",ncomps)
+  endif
+
+  if (size(myids) /= size(mycomms)) then
+     call die(myname_, "size of myids and mycomms inconsistent")
+  endif
+
+! make sure this has not been called already
+  if(associated(ThisMCTWorld%nprocspid) ) then
+     write(stderr,'(2a)') myname_, &
+      'MCTERROR:  MCTWorld has already been initialized...Continuing'
+       RETURN
+  endif
+
+! determine overall size
+  call MP_comm_size(globalcomm,Gsize,ier)
+  if(ier /= 0) call MP_perr_die(myname_,'MP_comm_size()',ier)
+
+! determine my rank in comm_world
+  call MP_comm_rank(globalcomm,myGid,ier)
+  if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
+
+! allocate space on global root to receive info about 
+! the other components
+  if(myGid == 0) then
+     allocate(nprocs(ncomps),compids(ncomps),&
+     reqs(ncomps),status(MP_STATUS_SIZE,ncomps),&
+     root_nprocs(ncomps),stat=ier)
+     if (ier /= 0) then
+        call die(myname_, 'allocate(nprocs,...)',ier)
+     endif
+  endif
+
+
+!!!!!!!!!!!!!!!!!!
+!  Gather the number of procs from the root of each component
+!!!!!!!!!!!!!!!!!!
+!
+!  First on the global root, post a receive for each component
+  if(myGid == 0) then
+    do i=1,ncomps
+       call MPI_IRECV(root_nprocs(i), 1, MP_INTEGER, MP_ANY_SOURCE,i, &
+	 globalcomm, reqs(i), ier)
+       if(ier /= 0) call MP_perr_die(myname_,'MPI_IRECV(root_nprocs)',ier)
+    enddo
+  endif
+
+!  The local root on each component sends
+  do i=1,size(myids)
+    if(mycomms(i)/=MP_COMM_NULL) then
+      call MP_comm_size(mycomms(i),mysize,ier)
+      if(ier /= 0) call MP_perr_die(myname_,'MP_comm_size()',ier)
+      call MP_comm_rank(mycomms(i),myLid,ier)
+      if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
+      if(myLid == 0) then
+        call MPI_SEND(mysize,1,MP_INTEGER,0,myids(i),globalcomm,ier)
+        if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND(mysize)',ier)
+      endif
+    endif
+  enddo
+
+!  Global root waits for all sends
+  if(myGid == 0) then
+    call MPI_WAITALL(size(reqs), reqs, status, ier)
+    if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL()',ier)
+  endif
+! Global root now knows how many processors each component is using
+
+!!!!!!!!!!!!!!!!!!
+! end of nprocs
+!!!!!!!!!!!!!!!!!!
+
+
+! allocate a tmp array for the receive on root.
+  if(myGid == 0) then
+    allocate(tmparray(0:Gsize-1,ncomps),stat=ier)
+    if(ier/=0) call die(myname_,'allocate(tmparray)',ier)
+
+! fill tmparray with a bad rank value for later error checking
+    tmparray = -1
+  endif
+
+!!!!!!!!!!!!!!!!!!
+!  Gather the Gprocids from each local root
+!!!!!!!!!!!!!!!!!!
+!
+!  First on the global root, post a receive for each component
+  if(myGid == 0) then
+    do i=1,ncomps
+       apoint => tmparray(0:Gsize-1,i)
+       call MPI_IRECV(apoint(1), root_nprocs(i),MP_INTEGER, &
+       MP_ANY_SOURCE,i,globalcomm, reqs(i), ier)
+       if(ier /= 0) call MP_perr_die(myname_,'MPI_IRECV()',ier)
+    enddo
+  endif
+
+!  The root on each component sends
+  do i=1,size(myids)
+   if(mycomms(i)/=MP_COMM_NULL) then
+    call MP_comm_size(mycomms(i),mysize,ier)
+    if(ier /= 0) call MP_perr_die(myname_,'MP_comm_size()',ier)
+    call MP_comm_rank(mycomms(i),myLid,ier)
+    if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
+
+! make the master list of global proc ids
+!
+! allocate space to hold global ids
+! only needed on root, but allocate everywhere to avoid complaints.
+    allocate(Gprocids(mysize),stat=ier)
+    if(ier/=0) call die(myname_,'allocate(Gprocids)',ier)
+! gather over the LOCAL comm
+    call MPI_GATHER(myGid,1,MP_INTEGER,Gprocids,1,MP_INTEGER,0,mycomms(i),ier)
+    if(ier/=0) call die(myname_,'MPI_GATHER Gprocids',ier)
+
+    if(myLid == 0) then
+      call MPI_SEND(Gprocids,mysize,MP_INTEGER,0,myids(i),globalcomm,ier)
+      if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND(Gprocids)',ier)
+    endif
+
+    deallocate(Gprocids,stat=ier)
+    if(ier/=0) call die(myname_,'deallocate(Gprocids)',ier)
+   endif
+  enddo
+
+!  Global root waits for all sends
+  if(myGid == 0) then
+    call MPI_WAITALL(size(reqs), reqs, status, ier)
+    if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL(Gprocids)',ier)
+  endif
+
+!  Now store the Gprocids in the World description and Broadcast
+
+  if(myGid == 0) then
+    allocate(root_idGprocid(ncomps,0:Gsize-1),stat=ier)
+    if(ier/=0) call die(myname_,'allocate(root_idGprocid)',ier)
+
+    root_idGprocid = transpose(tmparray)
+  endif
+
+  if(myGid /= 0) then
+     allocate(root_nprocs(1),root_idGprocid(1,1),stat=ier)
+     if(ier/=0) call die(myname_,'non-root allocate(root_idGprocid)',ier)
+  endif
+
+!!!!!!!!!!!!!!!!!!
+! end of Gprocids
+!!!!!!!!!!!!!!!!!!
+
+! now call the init from root.
+  call initr_(ncomps,globalcomm,root_nprocs,root_idGprocid)
+
+! if(myGid==0 .or. myGid==17) then
+!   write(*,*)'MCTA',myGid,ThisMCTWorld%ncomps,ThisMCTWorld%MCT_comm,ThisMCTWorld%nprocspid
+!   do i=1,ThisMCTWorld%ncomps
+!     write(*,*)'MCTK',myGid,i,ThisMCTWorld%idGprocid(i,0:ThisMCTWorld%nprocspid(i)-1)
+!   enddo
+! endif
+
+! deallocate temporary arrays
+ deallocate(root_nprocs,root_idGprocid,stat=ier)
+ if(ier/=0) call die(myname_,'deallocate(root_nprocs,..)',ier)
+ if(myGid == 0) then
+  deallocate(compids,reqs,status,nprocs,tmparray,stat=ier)
+  if(ier/=0) call die(myname_,'deallocate(compids,..)',ier)
+ endif
+
+ end subroutine initm_
+
+!BOP -------------------------------------------------------------------
+!
 ! !IROUTINE: initd_ - initialize MCTWorld
 !
 ! !DESCRIPTION:
@@ -197,24 +419,15 @@
 !           ids are always from 1 to number-of-components.
 ! 22Jun01 - R. Jacob <jacob@mcs.anl.gov> - move Bcast and init
 !           of MCTWorld to initr_
+! 20Sep07 - T. Craig migrated code to new initm routine
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::initd_'
-  integer :: ier,myGid,myLid,i,mysize,Gsize,j
+  integer :: msize,ier
+  integer, dimension(:), pointer :: mycomm1d,myids1d
 
-! arrays allocated on the root to coordinate gathring of data
-! and non-blocking receives by the root
-  integer, dimension(:), allocatable :: compids,reqs,nprocs,Gprocids
-  integer, dimension(:), allocatable :: root_nprocs
-  integer, dimension(:,:),allocatable :: status,root_idGprocid
-  integer, dimension(:,:),pointer :: tmparray
-  integer,dimension(:),pointer :: apoint
 ! ------------------------------------------------------------------
 
-! Check that ncomps is a legal value
-  if(ncomps < 1) then
-     call die(myname_, "argument ncomps can't less than one!",ncomps)
-  endif
 
 ! only one of myid and myids should be present
   if(present(myid) .and. present(myids)) then
@@ -229,175 +442,25 @@
       call die(myname_)
   endif
 
-! make sure this has not been called already
-  if(associated(ThisMCTWorld%nprocspid) ) then
-     write(stderr,'(2a)') myname_, &
-      'MCTERROR:  MCTWorld has already been initialized...Continuing'
-       RETURN
+  if (present(myids)) then
+     msize = size(myids)
+  else
+     msize = 1
   endif
 
-! determine size on local communicator
-  call MP_comm_size(mycomm,mysize,ier)
-  if(ier /= 0) call MP_perr_die(myname_,'MP_comm_size()',ier)
+  allocate(mycomm1d(msize),myids1d(msize),stat=ier)
+  if(ier/=0) call die(myname_,'non-root allocate(root_idGprocid)',ier)
+  mycomm1d(:) = mycomm
 
-! determine overall size
-  call MP_comm_size(globalcomm,Gsize,ier)
-  if(ier /= 0) call MP_perr_die(myname_,'MP_comm_size()',ier)
-
-! determine my rank in comm_world
-  call MP_comm_rank(globalcomm,myGid,ier)
-  if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
-
-! determine my rank in local comm
-  call MP_comm_rank(mycomm,myLid,ier)
-  if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
-
-
-! allocate space on global root to receive info about 
-! the other components
-  if(myGid == 0) then
-     allocate(nprocs(ncomps),compids(ncomps),&
-     reqs(ncomps),status(MP_STATUS_SIZE,ncomps),&
-     root_nprocs(ncomps),stat=ier)
-     if (ier /= 0) then
-        call die(myname_, 'allocate(nprocs,...)',ier)
-     endif
+  if (present(myids)) then
+     myids1d(:) = myids(:)
+  else
+     myids1d(:) = myid
   endif
 
+  call initm_(ncomps,globalcomm,mycomm1d,myids1d)
 
-!!!!!!!!!!!!!!!!!!
-!  Gather the number of procs from the root of each component
-!!!!!!!!!!!!!!!!!!
-!
-!  First on the global root, post a receive for each component
-  if(myGid == 0) then
-    do i=1,ncomps
-       call MPI_IRECV(root_nprocs(i), 1, MP_INTEGER, MP_ANY_SOURCE,i, &
-	 globalcomm, reqs(i), ier)
-       if(ier /= 0) call MP_perr_die(myname_,'MPI_IRECV(root_nprocs)',ier)
-    enddo
-  endif
-
-!  The local root on each component sends
-  if(myLid == 0) then
-    if(present(myids)) then
-      do i=1,size(myids)
-        call MPI_SEND(mysize,1,MP_INTEGER,0,myids(i),globalcomm,ier)
-        if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND(mysize)',ier)
-      enddo
-    else
-        call MPI_SEND(mysize,1,MP_INTEGER,0,myid,globalcomm,ier)
-        if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND(mysize)',ier)
-    endif
-  endif
-
-!  Global root waits for all sends
-  if(myGid == 0) then
-    call MPI_WAITALL(size(reqs), reqs, status, ier)
-    if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL()',ier)
-  endif
-! Global root now knows how many processors each component is using
-
-!!!!!!!!!!!!!!!!!!
-! end of nprocs
-!!!!!!!!!!!!!!!!!!
-
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! make the master list of global proc ids
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! allocate space to hold global ids
-! only needed on root, but allocate everywhere to avoid complaints.
-  allocate(Gprocids(mysize),stat=ier)
-  if(ier/=0) call die(myname_,'allocate(Gprocids)',ier)
-
-! gather over the LOCAL comm
-  call MPI_GATHER(myGid,1,MP_INTEGER,Gprocids,1,MP_INTEGER,0,mycomm,ier)
-  if(ier/=0) call die(myname_,'MPI_GATHER Gprocids',ier)
-
-! allocate a tmp array for the receive on root.
-  if(myGid == 0) then
-    allocate(tmparray(0:Gsize-1,ncomps),stat=ier)
-    if(ier/=0) call die(myname_,'allocate(tmparray)',ier)
-
-! fill tmparray with a bad rank value for later error checking
-    tmparray = -1
-  endif
-
-!!!!!!!!!!!!!!!!!!
-!  Gather the Gprocids from each local root
-!!!!!!!!!!!!!!!!!!
-!
-!  First on the global root, post a receive for each component
-  if(myGid == 0) then
-    do i=1,ncomps
-       apoint => tmparray(0:Gsize-1,i)
-       call MPI_IRECV(apoint(1), root_nprocs(i),MP_INTEGER, &
-       MP_ANY_SOURCE,i,globalcomm, reqs(i), ier)
-       if(ier /= 0) call MP_perr_die(myname_,'MPI_IRECV()',ier)
-    enddo
-  endif
-
-!  The root on each component sends
-  if(myLid == 0) then
-    if(present(myids)) then
-      do i=1,size(myids)
-        call MPI_SEND(Gprocids,mysize,MP_INTEGER,0,myids(i),globalcomm,ier)
-        if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND(Gprocids)',ier)
-      enddo
-    else
-        call MPI_SEND(Gprocids,mysize,MP_INTEGER,0,myid,globalcomm,ier)
-        if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND(Gprocids)',ier)
-    endif
-  endif
-
-!  Global root waits for all sends
-  if(myGid == 0) then
-    call MPI_WAITALL(size(reqs), reqs, status, ier)
-    if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL(Gprocids)',ier)
-  endif
-
-!  Now store the Gprocids in the World description and Broadcast
-
-  if(myGid == 0) then
-    allocate(root_idGprocid(ncomps,0:Gsize-1),stat=ier)
-    if(ier/=0) call die(myname_,'allocate(root_idGprocid)',ier)
-
-    root_idGprocid = transpose(tmparray)
-  endif
-
-  if(myGid /= 0) then
-     allocate(root_nprocs(1),root_idGprocid(1,1),stat=ier)
-     if(ier/=0) call die(myname_,'non-root allocate(root_idGprocid)',ier)
-  endif
-
-!!!!!!!!!!!!!!!!!!
-! end of Gprocids
-!!!!!!!!!!!!!!!!!!
-
-! now call the init from root.
-  call initr_(ncomps,globalcomm,root_nprocs,root_idGprocid)
-
-! if(myGid==17) then
-!      do i=1,ThisMCTWorld%ncomps
-!       do j=1,ThisMCTWorld%nprocspid(i)
-!     write(*,*)'MCTK',myGid,i,j-1,ThisMCTWorld%idGprocid(i,j-1)
-!    enddo
-!   enddo
-! endif
-
-! deallocate temporary arrays
- deallocate(root_nprocs,root_idGprocid,stat=ier)
- if(ier/=0) call die(myname_,'deallocate(root_nprocs,..)',ier)
- if(myGid == 0) then
-  deallocate(compids,reqs,status,nprocs,tmparray,stat=ier)
-  if(ier/=0) call die(myname_,'deallocate(compids,..)',ier)
- endif
- if(myLid == 0) then
-  deallocate(Gprocids,stat=ier)
-  if(ier/=0) call die(myname_,'deallocate(Gprocids)',ier)
- endif
+  deallocate(mycomm1d,myids1d)
 
  end subroutine initd_
 
@@ -409,7 +472,7 @@
 !
 ! !DESCRIPTION:
 ! Initialize MCTWorld using information valid only on the global root.
-! This is called by initd\_ but could also be called by the user
+! This is called by initm\_ but could also be called by the user
 ! for very complex model--processor geometries.
 !
 ! !INTERFACE:
@@ -431,6 +494,7 @@
       integer, dimension(:),intent(in)   :: rnprocspid ! number of processors for each component
       integer, dimension(:,:),intent(in) :: ridGprocid ! an array of size (1:ncomps) x (0:Gsize-1) 
 						       ! which maps local ranks to global ranks
+                                                       ! it's actually 1:Gsize here
 
 ! !REVISION HISTORY:
 ! 22Jun01 - R. Jacob <jacob@mcs.anl.gov> - initial prototype
