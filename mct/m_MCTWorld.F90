@@ -193,7 +193,6 @@
 !
   character(len=*),parameter :: myname_=myname//'::initm_'
   integer :: ier,myGid,myLid,i,mysize,Gsize,j
-  integer :: ncomps_old
 
 ! arrays allocated on the root to coordinate gathring of data
 ! and non-blocking receives by the root
@@ -304,30 +303,30 @@
 
 !  The root on each component sends
   do i=1,size(myids)
-   if(mycomms(i)/=MP_COMM_NULL) then
-    call MP_comm_size(mycomms(i),mysize,ier)
-    if(ier /= 0) call MP_perr_die(myname_,'MP_comm_size()',ier)
-    call MP_comm_rank(mycomms(i),myLid,ier)
-    if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
+    if(mycomms(i)/=MP_COMM_NULL) then
+      call MP_comm_size(mycomms(i),mysize,ier)
+      if(ier /= 0) call MP_perr_die(myname_,'MP_comm_size()',ier)
+      call MP_comm_rank(mycomms(i),myLid,ier)
+      if(ier /= 0) call MP_perr_die(myname_,'MP_comm_rank()',ier)
 
 ! make the master list of global proc ids
 !
 ! allocate space to hold global ids
 ! only needed on root, but allocate everywhere to avoid complaints.
-    allocate(Gprocids(mysize),stat=ier)
-    if(ier/=0) call die(myname_,'allocate(Gprocids)',ier)
+      allocate(Gprocids(mysize),stat=ier)
+      if(ier/=0) call die(myname_,'allocate(Gprocids)',ier)
 ! gather over the LOCAL comm
-    call MPI_GATHER(myGid,1,MP_INTEGER,Gprocids,1,MP_INTEGER,0,mycomms(i),ier)
-    if(ier/=0) call die(myname_,'MPI_GATHER Gprocids',ier)
+      call MPI_GATHER(myGid,1,MP_INTEGER,Gprocids,1,MP_INTEGER,0,mycomms(i),ier)
+      if(ier/=0) call die(myname_,'MPI_GATHER Gprocids',ier)
 
-    if(myLid == 0) then
-      call MPI_SEND(Gprocids,mysize,MP_INTEGER,0,myids(i),globalcomm,ier)
-      if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND(Gprocids)',ier)
+      if(myLid == 0) then
+        call MPI_SEND(Gprocids,mysize,MP_INTEGER,0,myids(i),globalcomm,ier)
+        if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND(Gprocids)',ier)
+      endif
+
+      deallocate(Gprocids,stat=ier)
+      if(ier/=0) call die(myname_,'deallocate(Gprocids)',ier)
     endif
-
-    deallocate(Gprocids,stat=ier)
-    if(ier/=0) call die(myname_,'deallocate(Gprocids)',ier)
-   endif
   enddo
 
 !  Global root waits for all sends
@@ -368,8 +367,8 @@
  deallocate(root_nprocs,root_idGprocid,stat=ier)
  if(ier/=0) call die(myname_,'deallocate(root_nprocs,..)',ier)
  if(myGid == 0) then
-  deallocate(compids,reqs,status,nprocs,tmparray,stat=ier)
-  if(ier/=0) call die(myname_,'deallocate(compids,..)',ier)
+   deallocate(compids,reqs,status,nprocs,tmparray,stat=ier)
+   if(ier/=0) call die(myname_,'deallocate(compids,..)',ier)
  endif
 
  end subroutine initm_
