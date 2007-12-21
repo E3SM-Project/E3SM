@@ -197,6 +197,9 @@ extern int MPI_Allgather(void* sendbuf, int sendcount, MPI_Datatype sendtype,
 extern int MPI_Allgatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
                           void* recvbuf, int *recvcounts, int *displs,
                           MPI_Datatype recvtype, MPI_Comm comm);
+extern int MPI_Scatter( void* sendbuf, int sendcount, MPI_Datatype sendtype, 
+                        void* recvbuf, int recvcount, MPI_Datatype recvtype,
+                        int root, MPI_Comm comm);
 extern int MPI_Scatterv(void* sendbuf, int *sendcounts, int *displs, 
                         MPI_Datatype sendtype, void* recvbuf, int recvcount, 
                         MPI_Datatype recvtype, int root, MPI_Comm comm);
@@ -204,6 +207,8 @@ extern int MPI_Reduce(void* sendbuf, void* recvbuf, int count,
                       MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm);
 extern int MPI_Allreduce(void* sendbuf, void* recvbuf, int count, 
                          MPI_Datatype datatype, MPI_Op op, MPI_Comm comm);
+extern int MPI_Scan( void* sendbuf, void* recvbuf, int count, 
+                     MPI_Datatype datatype, MPI_Op op, MPI_Comm comm);
 extern int MPI_Alltoall(void *sendbuf, int sendcount, MPI_Datatype sendtype,
                         void *recvbuf, int recvcount, MPI_Datatype recvtype,
                         MPI_Comm comm);

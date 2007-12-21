@@ -165,6 +165,39 @@ int MPI_Allgatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
 /*********/
 
 
+FORT_NAME( mpi_scatter , MPI_SCATTER )
+                         ( void *sendbuf, int *sendcount, int *sendtype,
+                           void *recvbuf, int *recvcount, int *recvtype,
+                           int *root, int *comm, int *ierror)
+{
+  *ierror=MPI_Scatter( sendbuf, *sendcount, *sendtype,
+                       recvbuf, *recvcount, *recvtype,
+                       *root, *comm);
+}
+		       
+		       
+
+int MPI_Scatter( void* sendbuf, int sendcount, MPI_Datatype sendtype, 
+                 void* recvbuf, int recvcount, MPI_Datatype recvtype,
+                 int root, MPI_Comm comm)
+{
+
+  if (root!=0)
+    {
+      fprintf(stderr,"MPI_Scatter: bad root = %d\n",root);
+      abort();
+    }
+
+  memcpy(recvbuf,sendbuf,sendcount * sendtype);
+  
+  return(MPI_SUCCESS);
+}
+
+
+
+/*********/
+
+
 FORT_NAME( mpi_scatterv , MPI_SCATTERV )
                          ( void *sendbuf, int *sendcounts, int *displs,
 			   int *sendtype, void *recvbuf, int *recvcount,
@@ -248,6 +281,31 @@ int MPI_Allreduce(void* sendbuf, void* recvbuf, int count,
 
   return(MPI_SUCCESS);
 
+}
+
+
+/*********/
+
+
+FORT_NAME( mpi_scan , MPI_SCAN )
+                       ( void *sendbuf, void *recvbuf, int *count,
+			 int *datatype, int *op, int *comm,
+			 int *ierror)
+{
+  *ierror=MPI_Scan( sendbuf, recvbuf, *count,
+                    *datatype, *op, *comm);
+}
+
+
+
+int MPI_Scan( void* sendbuf, void* recvbuf, int count, 
+              MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
+
+{
+
+  memcpy(recvbuf,sendbuf,count * datatype);
+
+  return(MPI_SUCCESS);
 }
 
 
