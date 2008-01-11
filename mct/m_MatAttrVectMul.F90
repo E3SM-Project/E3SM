@@ -440,6 +440,7 @@
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_clean => clean
       use m_AttrVect, only : AttrVect_Rcopy => Rcopy
+      use m_AttrVect, only : AttrVect_zero  => zero
 
       use m_Rearranger, only : Rearranger
       use m_Rearranger, only : Rearrange
@@ -475,6 +476,8 @@
 !           calls to Rearrange and DataLocal_.  Add optional input
 !           argument to change value (assumed false)
 ! 22Nov06 - R. Jacob <jacob@mcs.anl.gov> - add rList,TrList arguments
+! 10Jan08 - T. Craig <tcraig@ucar.edu> - zero out intermediate aVs before
+!           they are used
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::sMatAvMult_SMPlus_'
@@ -502,6 +505,7 @@
   case('Xonly')
        ! Create intermediate AttrVect for x'
      call AttrVect_init(xPrimeAV, xAV, sMatPlus%XPrimeLength)
+     call AttrVect_zero(xPrimeAV)
        ! Rearrange data from x to get x'
      call Rearrange(xAV, xPrimeAV, sMatPlus%XToXPrime, &
                     sMatPlus%Tag ,vector=usevector)
@@ -529,9 +533,12 @@
      else
         call AttrVect_init(yPrimeAV, yAV, sMatPlus%YPrimeLength)
      endif
+     call AttrVect_zero(yPrimeAV)
 
-     if (present(TrList).or.present(rList))  &
+     if (present(TrList).or.present(rList)) then
         call AttrVect_init(yAVre, yPrimeAV , lsize=AttrVect_lsize(yAV))
+        call AttrVect_zero(yAVre)
+     endif
 
        ! Perform perfectly data-local multiply y' = Mx
      if (present(TrList).and.present(rList)) then
@@ -561,6 +568,7 @@
   case('XandY')
        ! Create intermediate AttrVect for x'
      call AttrVect_init(xPrimeAV, xAV, sMatPlus%XPrimeLength)
+     call AttrVect_zero(xPrimeAV)
 
        ! Create intermediate AttrVect for y'
      if (present(TrList).and.present(rList)) then
@@ -570,9 +578,12 @@
      else
         call AttrVect_init(yPrimeAV, yAV, sMatPlus%YPrimeLength)
      endif
+     call AttrVect_zero(yPrimeAV)
 
-     if (present(TrList).or.present(rList)) &
+     if (present(TrList).or.present(rList)) then
         call AttrVect_init(yAVre, yPrimeAV , lsize=AttrVect_lsize(yAV))
+        call AttrVect_zero(yAVre)
+     endif
 
        ! Rearrange data from x to get x'
      call Rearrange(xAV, xPrimeAV, sMatPlus%XToXPrime, sMatPlus%Tag, &
