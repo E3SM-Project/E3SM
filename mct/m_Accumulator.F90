@@ -10,28 +10,31 @@
 ! !DESCRIPTION:
 !
 ! An {\em accumulator} is a data class used for computing running sums 
-! and/or time averages of {\tt AttrVect} class data.  The Fortran 
-! implementation of this concept is the {\tt Accumulator} class, 
-! which---along with its basic methods---is defined in this module.
+! and/or time averages of {\tt AttrVect} class data.
 ! The period of time over which data are accumulated/averaged is the 
-! {\em accumulation cycle}, which is defined by in terms of a number 
-! of time steps (the component {\tt Accumulator\%num\_steps}).  When
-! the accumulation routine is invoked (for example the MCT routine 
-! {\tt accumulate()} which is not defined in this module), the number 
+! {\em accumulation cycle}, which is defined by the total number 
+! of accumulation steps (the component {\tt Accumulator\%num\_steps}).  When
+! the accumulation routine {\tt accumulate\_} is invoked, the number
 ! of accumulation cycle steps (the component 
 ! {\tt Accumulator\%steps\_done})is incremented, and compared with 
 ! the number of steps in the accumulation cycle to determine if the 
 ! accumulation cycle has been completed.  The accumulation buffers 
 ! of the {\tt Accumulator} are stored in an {\tt AttrVect} (namely 
 ! the component {\tt Accumulator\%data}), which allows the user to 
-! define the number of variables and their names to be defined by 
-! the user at run-time.  Finally, one can define for each field 
+! define the number of variables and their names at run-time.
+! Finally, one can define for each field 
 ! being accumulated the specific accumulation {\em action}.  Currently,
 ! there are two options:  Time Averaging and Time Summation.  The 
 ! user chooses the specific action by setting an integer action 
 ! flag for each attribute being accumulated.  The supported options
 ! are defined by the public data member constants {\tt MCT\_SUM} and
 ! {\tt MCT\_AVG}.
+! \\
+! This module also supports a simple usage of accumulator where all
+! the actions are SUM ({\tt inits\_} and {\tt initavs\_}) and the user
+! must call {\tt average\_} to calculate the average from the current
+! value of {\tt Accumulator\%steps\_done}.  {\tt Accumulator\%num\_steps}
+! is ignored in this case.
 !
 ! !INTERFACE:
 
@@ -64,8 +67,8 @@
 
 ! !PUBLIC MEMBER FUNCTIONS:
 !
-      public :: init		! creation method
-      public :: initp		! partial creation method (MCT USE ONLY)
+      public :: init            ! creation method
+      public :: initp           ! partial creation method (MCT USE ONLY)
       public :: clean		! destruction method
       public :: initialized     ! check if initialized
       public :: lsize		! local length of the data arrays
@@ -148,6 +151,8 @@
 !            routines.
 !  26Aug02 - E.T. Ong <eong@mcs.anl.gov> - thourough code revision; 
 !            no added routines
+!  10Jan08 - R. Jacob <jacob@mcs.anl.gov> - add simple accumulator
+!            use support and check documentation.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='MCT::m_Accumulator'
@@ -175,7 +180,7 @@
 ! buffers will be allocated.  The accumulation action on each of the
 ! integer attributes can be defined by supplying the input {\tt INTEGER}
 ! array argument {\tt iAction(:)} (whose length must correspond to the
-! number of items in {\tt iList}.  The values of the elements of 
+! number of items in {\tt iList}).  The values of the elements of 
 ! {\tt iAction(:)} must be one of the values among the public data 
 ! members defined in the declaration section of this module.  If the
 ! integer attributes are to be accumulated (i.e. one supplies {\tt iList}),
@@ -683,7 +688,7 @@
 ! it to create a simple (sum only) {\tt Accumulator} (the output argument {\tt aC}).
 ! In the absence of the {\tt INTEGER} input argument {\tt lsize}, 
 ! {\tt aC} will inherit from {\tt Av} its length.  In the absence of the
-! optional INTEGER argument steps_done, steps_done will be set to zero.
+! optional INTEGER argument, {\tt steps\_done} will be set to zero.
 !
 ! !INTERFACE:
 
@@ -2039,20 +2044,25 @@
 !
 ! !DESCRIPTION:
 ! This routine performs time {\em accumlation} of data present in an
-! MCT field data {\tt AttrVect} variable {\tt aV} (more information 
-! about the {\tt AttrVect} can be found in the MCT module 
-! {\tt m\_AttrVect}), and combines it with the running tallies stored 
-! in the MCT {\tt Accumulator} variable {\tt aC} (more information about 
-! the {\tt Accumulator} can be found in the MCT module 
-! {\tt m\_Accumulator}).  This routine automatically identifies which 
+! MCT field data {\tt AttrVect} variable {\tt aV} and combines it with
+! the running tallies stored in the MCT {\tt Accumulator} variable {\tt aC}.
+! This routine automatically identifies which 
 ! fields are held in common by {\tt aV} and {\tt aC} and uses the 
 ! accumulation action information stored in {\tt aC} to decide how
 ! each field in {\tt aV} is to be combined into its corresponding 
 ! running tally in {\tt aC}.  The accumulation operations currently 
-! supported correspond to those defined among the public data members
-! of the declaration section of the MCT module {\tt m\_Accumulator}.  
+! supported are:
+! \begin {itemize}
+! \item {\tt MCT\_SUM}:  Add the current values in the {\tt Av} to the current values in {\tt Ac}.  
+! \item {\tt MCT\_AVG}:  Same as {\tt MCT\_SUM} except when {\tt steps\_done} is equal
+! to {\tt num\_steps} then perform one more sum and replaced with average. 
+! \end {itemize}
+! 
 ! This routine also automatically increments the counter in {\tt aC} 
 ! signifying the number of steps completed in the accumulation cycle.
+!
+! NOTE:  The user must reset (zero) the {\tt Accumulator} after the average
+! has been formed or the next call to {\tt accumulate} will add to the average.
 !
 ! !INTERFACE:
 
@@ -2238,7 +2248,7 @@
 !
 ! !DESCRIPTION:
 ! This routine will compute the average of the current values in an
-! {\tt Accumulator} using the current value of {\tt steps_done}
+! {\tt Accumulator} using the current value of {\tt steps\_done}
 ! in the {\tt Accumulator}
 !
 ! !INTERFACE:
