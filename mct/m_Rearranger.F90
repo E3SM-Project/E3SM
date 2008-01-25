@@ -81,6 +81,8 @@
 !           LocalSize. Made myPid a global process in MCTWorld.
 ! 27Sep02 - R. Jacob <jacob@mcs.anl.gov> - Remove SrcAVsize and TrgAVsize
 !           and use Router%lAvsize instead for sanity check.
+! 25Jan08 - R. Jacob <jacob@mcs.anl.gov> - Add ability to handle unordered
+!           gsmaps.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='MCT::m_Rearranger'
@@ -145,16 +147,6 @@
    integer :: src_seg_start,src_seg_length,trg_seg_start,trg_seg_length
    integer :: i,j,k,l,m,n,ier
    logical :: SendingToMyself,ReceivingFromMyself
-
-   if (.not. GSMap_increasing(SourceGSMap)) then
-     call die( myname_, &
-               'argument SourceGSMap must have strictly increasing indices')
-   endif
-
-   if (.not. GSMap_increasing(TargetGSMap)) then
-     call die( myname_, &
-               'argument TargetGSMap must have strictly increasing indices')
-   endif
 
 
    ! Initialize Router component of Rearranger
@@ -552,6 +544,7 @@
    use m_AttrVect,  only : AttrVect_lsize => lsize
    use m_AttrVect,  only : AttrVect_zero => zero
    use m_AttrVect,  only : nIAttr,nRAttr
+   use m_AttrVect,  only : Permute,Unpermute
    use m_Router,    only : Router     
    use m_realkinds, only : FP
    use m_mpif90
@@ -566,7 +559,7 @@
    
 ! !INPUT PARAMETERS:
 !
-   type(AttrVect),             intent(in)      :: SourceAV
+   type(AttrVect),             intent(inout)   :: SourceAV
    type(Rearranger), target,   intent(in)      :: InRearranger
    integer,          optional, intent(in)      :: Tag
    logical,          optional, intent(in)      :: Sum
@@ -584,6 +577,8 @@
 !           performance.  Also remove replace allocated arrays with
 !           automatic.
 ! 14Oct06 - R. Jacob <jacob@mcs.anl.gov> - check value of Sum argument.
+! 25Jan08 - R. Jacob <jacob@mcs.anl.gov> - Permute/unpermute if the internal
+!           routers permarr is defined.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::Rearrange_'
@@ -596,6 +591,8 @@
   integer ::    ISendSize, RSendSize, IRecvSize, RRecvSize
   logical ::    usevector, usealltoall
   logical ::    DoSum
+  logical ::    Sendunordered
+  logical ::    Recvunordered
   real(FP) ::  realtyp
 !-----------------------------------------------------------------------
 
@@ -703,6 +700,7 @@
 
    ! ASSIGN VARIABLES
 
+
    ! Get the number of integer and real attributes
    numi = nIAttr(SourceAV)
    numr = nRAttr(SourceAV)
@@ -711,6 +709,10 @@
    nullify(SendRout,RecvRout)
    SendRout => InRearranger%SendRouter
    RecvRout => InRearranger%RecvRouter
+
+   Sendunordered=associated(SendRout%permarr)
+   Recvunordered=associated(RecvRout%permarr)
+
 
    mp_Type_rp=MP_Type(realtyp)
 
@@ -840,6 +842,7 @@
      enddo
   endif
   
+if(Sendunordered) call Permute(SourceAv,SendRout%permarr)
 
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 if (usealltoall) then
@@ -1017,7 +1020,7 @@ else
      endif
     endif
   enddo
-endif
+endif  ! end of else for if(usealltoall)
 !:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   ! ZERO TARGETAV WHILE WAITING FOR MESSAGES TO COMPLETE
@@ -1160,9 +1163,9 @@ endif
 	
 	   endif
 
-	endif
+	endif ! end of if DoSum
 
-     endif
+     endif  ! end of in numi>1
 
      if(numr .ge. 1) then
 
@@ -1212,11 +1215,14 @@ endif
 	   
 	   endif
 
-	endif
+	endif  ! end if DoSum
 
-     endif
+     endif  ! endif if numr>1
 
   enddo
+
+  if(Sendunordered) call Unpermute(SourceAv,SendRout%permarr)
+  if(Recvunordered) call Unpermute(TargetAv,RecvRout%permarr)
 
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
