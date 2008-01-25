@@ -24,6 +24,7 @@
   use m_MCTWorld, only : ThisMCTWorld
   use m_AttrVect, only : AttrVect
   use m_AttrVect, only : nIAttr,nRAttr
+  use m_AttrVect, only : Permute, Unpermute
   use m_AttrVect, only : lsize
   use m_Router,   only : Router
 
@@ -65,6 +66,7 @@
 !           MPI_Reqest and MPI_Status arrays to Router.  Use them.
 ! 24Jul03 - R. Jacob <jacob@mcs.anl.gov> - Split send_ into isend_ and
 !           waitsend_.  Redefine send_.
+! 22Jan08 - R. Jacob <jacob@mcs.anl.gov> - Handle unordered GSMaps
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='MCT::m_Transfer'
@@ -105,7 +107,7 @@
 ! !INPUT PARAMETERS:
 !
 
-      Type(AttrVect),       intent(in) :: aV	
+      Type(AttrVect),       intent(inout) :: aV	
       Type(Router),         intent(inout) :: Rout
       integer,optional,     intent(in) :: Tag
 
@@ -123,6 +125,9 @@
 ! 08Nov02 - R. Jacob <jacob@mcs.anl.gov> - MCT_Send is now send_ in m_Transfer
 ! 11Nov02 - R. Jacob <jacob@mcs.anl.gov> - Use DefaultTag and add optional Tag argument
 ! 25Jul03 - R. Jacob <jacob@mcs.anl.gov> - Split into isend_ and waitsend_
+! 22Jan08 - R. Jacob <jacob@mcs.anl.gov> - Handle unordered GSMaps by permuting before send.
+!           remove special case for sending one segment directly from Av which probably
+!           wasn't safe.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::isend_'
@@ -131,6 +136,7 @@
   integer ::    AttrIndex,VectIndex,seg_start,seg_end
   integer ::    proc,nseg,mytag
   integer ::    mp_Type_rp1
+  logical ::    unordered
 
 !--------------------------------------------------------
 
@@ -150,7 +156,11 @@
   mycomp=Rout%comp1id
   othercomp=Rout%comp2id
 
-!  find total number of real and integer vectors
+  unordered = associated(Rout%permarr)
+  if (unordered) call Permute(aV,Rout%permarr)
+
+
+! find total number of real and integer vectors
 ! for now, assume we are sending all of them
   Rout%numiatt = nIAttr(aV)
   Rout%numratt = nRAttr(aV)
@@ -185,28 +195,26 @@
   ! Load data going to each processor
   do proc = 1,Rout%nprocs
     
-     if( Rout%num_segs(proc) > 1 ) then
+     j=1
+     k=1
 
-	j=1
-	k=1
+     ! load the correct pieces of the integer and real vectors
+     ! if Rout%num_segs(proc)=1, then this will do one loop
+     do nseg = 1,Rout%num_segs(proc)
+	 seg_start = Rout%seg_starts(proc,nseg)
+	 seg_end = seg_start + Rout%seg_lengths(proc,nseg)-1
+	 do VectIndex = seg_start,seg_end
+	    do AttrIndex = 1,numi
+	        Rout%ip1(proc)%pi(j) = aV%iAttr(AttrIndex,VectIndex)
+		j=j+1
+	    enddo
+	    do AttrIndex = 1,numr
+	        Rout%rp1(proc)%pr(k) = aV%rAttr(AttrIndex,VectIndex)
+	        k=k+1
+	    enddo
+	 enddo
+     enddo
 
-	! load the correct pieces of the integer and real vectors
-	do nseg = 1,Rout%num_segs(proc)
-	   seg_start = Rout%seg_starts(proc,nseg)
-	   seg_end = seg_start + Rout%seg_lengths(proc,nseg)-1
-	   do VectIndex = seg_start,seg_end
-	      do AttrIndex = 1,numi
-		 Rout%ip1(proc)%pi(j) = aV%iAttr(AttrIndex,VectIndex)
-		 j=j+1
-	      enddo
-	      do AttrIndex = 1,numr
-		 Rout%rp1(proc)%pr(k) = aV%rAttr(AttrIndex,VectIndex)
-		 k=k+1
-	      enddo
-	   enddo
-	enddo
-
-     endif
 
 
      ! Send the integer data
@@ -216,20 +224,11 @@
         mytag = DefaultTag
         if(present(Tag)) mytag=Tag
 
-	if( Rout%num_segs(proc) > 1 ) then
 
-	   call MPI_ISEND(Rout%ip1(proc)%pi(1), &
-		Rout%locsize(proc)*numi,MP_INTEGER,Rout%pe_list(proc), &
-		mytag,ThisMCTWorld%MCT_comm,Rout%ireqs(proc),ier)
+	call MPI_ISEND(Rout%ip1(proc)%pi(1), &
+	     Rout%locsize(proc)*numi,MP_INTEGER,Rout%pe_list(proc), &
+	     mytag,ThisMCTWorld%MCT_comm,Rout%ireqs(proc),ier)
 	   
-	else
-
-	   call MPI_ISEND(aV%iAttr(1,Rout%seg_starts(proc,1)), & 
-		Rout%locsize(proc)*numi,MP_INTEGER,Rout%pe_list(proc), &
-		mytag,ThisMCTWorld%MCT_comm,Rout%ireqs(proc),ier)
-
-	endif
-
 	if(ier /= 0) call MP_perr_die(myname_,'MPI_ISEND(ints)',ier)
 
      endif
@@ -241,25 +240,19 @@
        mytag = DefaultTag + 1 
        if(present(Tag)) mytag=Tag +1
 
-       if( Rout%num_segs(proc) > 1 ) then
 
-	  call MPI_ISEND(Rout%rp1(proc)%pr(1), &
-	       Rout%locsize(proc)*numr,mp_Type_rp1,Rout%pe_list(proc), &
-	       mytag,ThisMCTWorld%MCT_comm,Rout%rreqs(proc),ier)
+       call MPI_ISEND(Rout%rp1(proc)%pr(1), &
+	    Rout%locsize(proc)*numr,mp_Type_rp1,Rout%pe_list(proc), &
+	    mytag,ThisMCTWorld%MCT_comm,Rout%rreqs(proc),ier)
 
-       else
-
-	  call MPI_ISEND(aV%rAttr(1,Rout%seg_starts(proc,1)), &
-	       Rout%locsize(proc)*numr,mp_Type_rp1,Rout%pe_list(proc), &
-	       mytag,ThisMCTWorld%MCT_comm,Rout%rreqs(proc),ier)
-
-       endif
 
        if(ier /= 0) call MP_perr_die(myname_,'MPI_ISEND(reals)',ier)
 
     endif
 
   enddo
+
+  if (unordered) call Unpermute(aV,Rout%permarr)
 
 end subroutine isend_
 
@@ -358,7 +351,7 @@ end subroutine waitsend_
 ! !INPUT PARAMETERS:
 !
 
-      Type(AttrVect),       intent(in) :: aV	
+      Type(AttrVect),       intent(inout) :: aV	
       Type(Router),         intent(inout) :: Rout
       integer,optional,     intent(in) :: Tag
 
@@ -418,7 +411,7 @@ end subroutine send_
 
 ! !INPUT PARAMETERS:
 !
-      Type(Router),         intent(inout)    :: Rout
+      Type(Router),         intent(inout) :: Rout
       integer,optional,     intent(in)    :: Tag
       logical,optional,     intent(in)    :: Sum
 
@@ -590,11 +583,14 @@ end subroutine irecv_
 ! !REVISION HISTORY:
 ! 25Jul03 - R. Jacob <jacob@mcs.anl.gov> - First working version is the wait
 !           and copy parts from old recv_.
+! 25Jan08 - R. Jacob <jacob@mcs.anl.gov> - Handle unordered GSMaps by
+!           applying permutation to received array.
 !EOP ___________________________________________________________________
   character(len=*),parameter :: myname_=myname//'::waitrecv_'
   integer ::   proc,ier,j,k,nseg
   integer ::   AttrIndex,VectIndex,seg_start,seg_end
   logical ::   DoSum
+  logical ::   unordered
 
 ! Return if nothing to wait for
   if(Rout%nprocs .eq. 0 ) RETURN
@@ -606,6 +602,8 @@ end subroutine irecv_
     ' MCTERROR:  AV size not appropriate for this Router...exiting'
     call die(myname_)
   endif
+
+  unordered = associated(Rout%permarr)
 
   DoSum = .false.
   if(present(Sum)) DoSum=Sum
@@ -630,7 +628,7 @@ end subroutine irecv_
 
      if( (Rout%num_segs(proc) > 1) .or. DoSum ) then
 
-	j=1
+        j=1
 	k=1
 
 	if(DoSum) then
@@ -736,6 +734,7 @@ end subroutine irecv_
 
   endif
 
+  if (unordered) call Unpermute(aV,Rout%permarr)
 
 end subroutine waitrecv_
 
