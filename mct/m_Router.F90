@@ -69,6 +69,7 @@
       integer,dimension(:),pointer   :: pe_list    ! processor ranks of send/receive in MCT_comm
       integer,dimension(:),pointer   :: num_segs   ! number of segments to send/receive
       integer,dimension(:),pointer   :: locsize    ! total of seg_lengths for a proc
+      integer,dimension(:),pointer   :: permarr    ! possible permutation array
       integer,dimension(:,:),pointer :: seg_starts ! starting index
       integer,dimension(:,:),pointer :: seg_lengths! total length
       type(rptr),dimension(:),pointer :: rp1       ! buffer to hold real data
@@ -99,6 +100,9 @@
 !           in send/recv to the Router datatype.
 ! 24Jul03 - R. Jacob <jacob@mcs.anl.gov> Add real and integer buffers
 !           for send/recv to the Router datatype.
+! 22Jan08 - R. Jacob <jacob@mcs.anl.gov> Add ability to handle an unordered
+!           GSMap by creating a new, ordered one and building Router from
+!           that.  Save permutation info in Router datatype.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='MCT::m_Router'
@@ -191,26 +195,35 @@
 !
 ! !INTERFACE:
 
- subroutine initp_(GSMap,RGSMap,mycomm,Rout )
+ subroutine initp_(inGSMap,inRGSMap,mycomm,Rout )
 !
 ! !USES:
 !
       use m_GlobalSegMap,  only :GlobalSegMap
-      use m_GlobalSegMap,  only :OrderedPoints
       use m_GlobalSegMap,  only :ProcessStorage
-      use m_GlobalSegMap,  only : GSMap_comp_id => comp_id
-      use m_GlobalSegMap, only : GSMap_increasing => increasing
+      use m_GlobalSegMap,  only :GSMap_comp_id => comp_id
+      use m_GlobalSegMap,  only :GSMap_increasing => increasing
+      use m_GlobalSegMap,  only :GlobalSegMap_copy => copy
+      use m_GlobalSegMap,  only :GlobalSegMap_init => init
+      use m_GlobalSegMap,  only :GlobalSegMap_clean => clean
+      use m_GlobalSegMap,  only :GlobalSegMap_OPoints => OrderedPoints
+      use m_GlobalSegMap,  only :GlobalSegMap_ngseg => ngseg  ! rml
+      use m_GlobalSegMap,  only :GlobalSegMap_nlseg => nlseg  ! rml
+      use m_GlobalSegMap,  only :GlobalSegMap_max_nlseg => max_nlseg  ! rml
+
       use m_GlobalToLocal, only :GlobalToLocalIndex
       use m_MCTWorld,      only :MCTWorld
       use m_MCTWorld,      only :ThisMCTWorld
+
+      use m_Permuter      ,only:Permute
+      use m_MergeSorts    ,only:IndexSet
+      use m_MergeSorts    ,only:IndexSort
+
       use m_mpif90
       use m_die
 
 !      use m_zeit
 
-      use m_GlobalSegMap, only : GlobalSegMap_ngseg => ngseg  ! rml
-      use m_GlobalSegMap, only : GlobalSegMap_nlseg => nlseg  ! rml
-      use m_GlobalSegMap, only : GlobalSegMap_max_nlseg => max_nlseg  ! rml
 
       use m_stdio    ! rml
 !      use shr_timer_mod        ! rml timers
@@ -219,8 +232,8 @@
 
 ! !INPUT PARAMETERS:
 !
-      type(GlobalSegMap), intent(in)	:: GSMap
-      type(GlobalSegMap), intent(in)	:: RGSMap
+      type(GlobalSegMap), intent(in)	:: inGSMap
+      type(GlobalSegMap), intent(in)	:: inRGSMap
       integer	     ,    intent(in)	:: mycomm
 
 ! !OUTPUT PARAMETERS:
@@ -238,6 +251,8 @@
 !           tmpsegcount and tmpsegstart
 ! 15May07 - R. Loy <rloy@mcs.anl.gov> - improved bound on size of
 !           rgs_lb and rgs_ub
+! 25Jan08 - R. Jacob <jacob@mcs.anl.gov> - Dont die if GSMap is not
+!           increasing.  Instead, permute it to increasing and proceed.
 !EOP -------------------------------------------------------------------
 
   character(len=*),parameter :: myname_=myname//'::initp_'
@@ -271,21 +286,63 @@
   integer :: proc, nprocs
 
   integer :: max_rgs_count, max_overlap_segs
+  type(GlobalSegMap)	:: GSMap
+  type(GlobalSegMap)	:: RGSMap
+  integer, dimension(:), pointer   :: gpoints
+  integer, dimension(:), pointer   :: permarr
+  integer, dimension(:), pointer   :: rpermarr
+  integer  :: gmapsize
 
 
-   integer,save  :: t_initialized=0   ! rml timers
-   integer,save  :: t_loop            ! rml timers
-   integer,save  :: t_loop2            ! rml timers
-   integer,save  :: t_load            ! rml timers
+  integer,save  :: t_initialized=0   ! rml timers
+  integer,save  :: t_loop            ! rml timers
+  integer,save  :: t_loop2            ! rml timers
+  integer,save  :: t_load            ! rml timers
 
+  call MP_comm_rank(mycomm,myPid,ier)
+  if(ier/=0) call MP_perr_die(myname_,'MP_comm_rank',ier)
 
-   if (.not. GSMap_increasing(GSMap)) then
-     call die(myname_,'argument GSMap must have strictly increasing indices')
-   endif
+  nullify(Rout%permarr)
 
-   if (.not. GSMap_increasing(RGSMap)) then
-     call die(myname_,'argument RGSMap must have strictly increasing indices')
-   endif
+  if (.not. GSMap_increasing(inGSMap)) then
+    call warn(myname_,'GSMap indices not increasing...Will correct')
+    call GlobalSegMap_OPoints(inGSMap,myPid,gpoints)
+    gmapsize=ProcessStorage(inGSMap,myPid)
+    allocate(permarr(gmapsize), stat=ier)
+    if(ier/=0) call die(myname_,'allocate permarr',ier)
+    call IndexSet(permarr)
+    call IndexSort(gmapsize,permarr,gpoints)
+    call Permute(gpoints,permarr,gmapsize)
+    call GlobalSegMap_init(GSMap,gpoints,mycomm,inGSMap%comp_id,gsize=inGSMap%gsize)
+
+    allocate(Rout%permarr(gmapsize),stat=ier)
+    if(ier/=0) call die(myname_,'allocate Router%permarr',ier)
+    Rout%permarr(:)=permarr(:)
+
+    deallocate(gpoints,permarr, stat=ier)
+    if(ier/=0) call die(myname_,'deallocate gpoints,permarr',ier)
+
+  else
+    call GlobalSegMap_copy(inGSMap,GSMap)
+  endif
+
+  if (.not. GSMap_increasing(inRGSMap)) then
+    call warn(myname_,'RGSMap indices not increasing...Will correct')
+    call GlobalSegMap_OPoints(inRGSMap,myPid,gpoints)
+    gmapsize=ProcessStorage(inRGSMap,myPid)
+    allocate(rpermarr(gmapsize), stat=ier)
+    if(ier/=0) call die(myname_,'allocate rpermarr',ier)
+    call IndexSet(rpermarr)
+    call IndexSort(gmapsize,rpermarr,gpoints)
+    call Permute(gpoints,rpermarr,gmapsize)
+
+    call GlobalSegMap_init(RGSMap,gpoints,mycomm,inRGSMap%comp_id,gsize=inRGSMap%gsize)
+
+    deallocate(gpoints,rpermarr, stat=ier)
+    if(ier/=0) call die(myname_,'deallocate gpoints,rpermarr',ier)
+  else
+    call GlobalSegMap_copy(inRGSMap,RGSMap)
+  endif
 
 
 #if 0
@@ -297,9 +354,6 @@
      call shr_timer_get(t_load,"m_Router:initp_ load")  ! rml timers
    endif
 #endif
-
-  call MP_comm_rank(mycomm,myPid,ier)
-  if(ier/=0) call MP_perr_die(myname_,'MP_comm_rank',ier)
 
   mysize = ProcessStorage(GSMap,myPid)
   othercomp = GSMap_comp_id(RGSMap)
@@ -576,6 +630,9 @@
   deallocate(tmpsegstart,tmpsegcount,tmppe_list,stat=ier)
   if(ier/=0) call die(myname_,'deallocate()',ier)
 
+  call GlobalSegMap_clean(RGSMap)
+  call GlobalSegMap_clean(GSMap)
+
 
 !  call shr_timer_stop(t_load)    ! rml timers
 
@@ -623,7 +680,7 @@
   deallocate(Rout%rreqs,Rout%ireqs,Rout%rstatus,&
    Rout%istatus,stat=ier)
 
-  deallocate(Rout%ip1,Rout%rp1,stat=ier)
+  deallocate(Rout%ip1,Rout%rp1,Rout%permarr,stat=ier)
 
   if(present(stat)) then
      stat=ier
