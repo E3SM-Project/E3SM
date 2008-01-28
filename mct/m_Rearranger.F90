@@ -531,7 +531,7 @@
 !
 ! !INTERFACE:
 
- subroutine rearrange_(SourceAV,TargetAV,InRearranger,Tag,Sum,Vector,AlltoAll)
+ subroutine rearrange_(SourceAVin,TargetAV,InRearranger,Tag,Sum,Vector,AlltoAll)
 
 !
 ! !USES:
@@ -542,6 +542,8 @@
    use m_AttrVect,  only : AttrVect
    use m_AttrVect,  only : AttrVect_init => init
    use m_AttrVect,  only : AttrVect_lsize => lsize
+   use m_AttrVect,  only : AttrVect_copy => copy
+   use m_AttrVect,  only : AttrVect_clean => clean
    use m_AttrVect,  only : AttrVect_zero => zero
    use m_AttrVect,  only : nIAttr,nRAttr
    use m_AttrVect,  only : Permute,Unpermute
@@ -559,7 +561,7 @@
    
 ! !INPUT PARAMETERS:
 !
-   type(AttrVect),             intent(inout)   :: SourceAV
+   type(AttrVect),   target,   intent(in)      :: SourceAVin
    type(Rearranger), target,   intent(in)      :: InRearranger
    integer,          optional, intent(in)      :: Tag
    logical,          optional, intent(in)      :: Sum
@@ -649,8 +651,25 @@
 
    ! Pointer structure to make Router access simpler
    type(Router), pointer :: SendRout, RecvRout
+   type(AttrVect), pointer :: SourceAv
 
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+   ! Assign the pointers
+   nullify(SendRout,RecvRout)
+   SendRout => InRearranger%SendRouter
+   RecvRout => InRearranger%RecvRouter
+
+   Sendunordered=associated(SendRout%permarr)
+   Recvunordered=associated(RecvRout%permarr)
+
+   if(Sendunordered) then 
+      call AttrVect_init(SourceAv,SourceAvin,AttrVect_lsize(SourceAvin))    
+      call AttrVect_copy(SourceAvin, SourceAv)
+      call Permute(SourceAv,SendRout%permarr)
+   else
+      SourceAv => SourceAvin
+   endif
+
    ! CHECK ARGUMENTS 
 
    ! Check the size of the Source AttrVect
@@ -709,10 +728,6 @@
    nullify(SendRout,RecvRout)
    SendRout => InRearranger%SendRouter
    RecvRout => InRearranger%RecvRouter
-
-   Sendunordered=associated(SendRout%permarr)
-   Recvunordered=associated(RecvRout%permarr)
-
 
    mp_Type_rp=MP_Type(realtyp)
 
@@ -842,8 +857,6 @@
      enddo
   endif
   
-if(Sendunordered) call Permute(SourceAv,SendRout%permarr)
-
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 if (usealltoall) then
 
@@ -1221,7 +1234,12 @@ endif
 
   enddo
 
-  if(Sendunordered) call Unpermute(SourceAv,SendRout%permarr)
+  if(Sendunordered) then
+    call AttrVect_clean(SourceAv)
+  else
+    nullify(SourceAv)
+  endif
+
   if(Recvunordered) call Unpermute(TargetAv,RecvRout%permarr)
 
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
