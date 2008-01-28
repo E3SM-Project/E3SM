@@ -141,6 +141,7 @@
   integer ::    mp_Type_rp1
   logical ::    unordered
   type(AttrVect),pointer :: Av
+  type(AttrVect),target  :: Avtmp
 
 !--------------------------------------------------------
 
@@ -150,9 +151,10 @@
 ! set up Av to send from
   unordered = associated(Rout%permarr)
   if (unordered) then
-     call AttrVect_init(Av,Avin,lsize(Avin))
-     call AttrVect_copy(Avin,aV)
-     call Permute(aV,Rout%permarr)
+     call AttrVect_init(Avtmp,Avin,lsize(Avin))
+     call AttrVect_copy(Avin,aVtmp)
+     call Permute(aVtmp,Rout%permarr)
+     Av => Avtmp
   else
      Av => Avin
   endif
@@ -263,7 +265,8 @@
   enddo
 
   if (unordered) then
-     call AttrVect_clean(aV)
+     call AttrVect_clean(aVtmp)
+     nullify(aV)
   else
      nullify(aV)
   endif

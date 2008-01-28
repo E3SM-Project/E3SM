@@ -651,21 +651,19 @@
 
    ! Pointer structure to make Router access simpler
    type(Router), pointer :: SendRout, RecvRout
-   type(AttrVect), pointer :: SourceAv
+   type(AttrVect),pointer :: SourceAv
+   type(AttrVect),target  :: SourceAvtmp
 
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-   ! Assign the pointers
-   nullify(SendRout,RecvRout)
-   SendRout => InRearranger%SendRouter
-   RecvRout => InRearranger%RecvRouter
 
-   Sendunordered=associated(SendRout%permarr)
-   Recvunordered=associated(RecvRout%permarr)
+   Sendunordered=associated(InRearranger%SendRouter%permarr)
+   Recvunordered=associated(InRearranger%RecvRouter%permarr)
 
    if(Sendunordered) then 
-      call AttrVect_init(SourceAv,SourceAvin,AttrVect_lsize(SourceAvin))    
-      call AttrVect_copy(SourceAvin, SourceAv)
-      call Permute(SourceAv,SendRout%permarr)
+      call AttrVect_init(SourceAvtmp,SourceAvin,AttrVect_lsize(SourceAvin))    
+      call AttrVect_copy(SourceAvin, SourceAvtmp)
+      call Permute(SourceAvtmp,InRearranger%SendRouter%permarr)
+      SourceAv => SourceAvtmp
    else
       SourceAv => SourceAvin
    endif
@@ -1235,7 +1233,8 @@ endif
   enddo
 
   if(Sendunordered) then
-    call AttrVect_clean(SourceAv)
+    call AttrVect_clean(SourceAvtmp)
+    nullify(SourceAv)
   else
     nullify(SourceAv)
   endif
