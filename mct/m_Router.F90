@@ -676,16 +676,34 @@
 
   deallocate(Rout%pe_list,Rout%num_segs,Rout%seg_starts, &
   Rout%locsize,Rout%seg_lengths,stat=ier)
-
-  deallocate(Rout%rreqs,Rout%ireqs,Rout%rstatus,&
-   Rout%istatus,stat=ier)
-
-  deallocate(Rout%ip1,Rout%rp1,Rout%permarr,stat=ier)
-
   if(present(stat)) then
      stat=ier
   else
-     if(ier /= 0) call warn(myname_,'deallocate(Rout%...)',ier)
+     if(ier /= 0) call warn(myname_,'deallocate(Rout%pe_list,...)',ier)
+  endif
+
+  deallocate(Rout%rreqs,Rout%ireqs,Rout%rstatus,&
+   Rout%istatus,stat=ier)
+  if(present(stat)) then
+     stat=ier
+  else
+     if(ier /= 0) call warn(myname_,'deallocate(Rout%rreqs,...)',ier)
+  endif
+
+  deallocate(Rout%ip1,Rout%rp1,stat=ier)
+  if(present(stat)) then
+     stat=ier
+  else
+     if(ier /= 0) call warn(myname_,'deallocate(Rout%ip1,...)',ier)
+  endif
+
+  if(associated(Rout%permarr)) then
+     deallocate(Rout%permarr,stat=ier)
+     if(present(stat)) then
+        stat=ier
+     else
+        if(ier /= 0) call warn(myname_,'deallocate(Rout%ip1,...)',ier)
+     endif
   endif
 
   Rout%comp1id = 0
