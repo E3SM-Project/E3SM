@@ -25,6 +25,9 @@
   use m_AttrVect, only : AttrVect
   use m_AttrVect, only : nIAttr,nRAttr
   use m_AttrVect, only : Permute, Unpermute
+  use m_AttrVect, only : AttrVect_init => init
+  use m_AttrVect, only : AttrVect_copy => copy 
+  use m_AttrVect, only : AttrVect_clean => clean
   use m_AttrVect, only : lsize
   use m_Router,   only : Router
 
@@ -97,7 +100,7 @@
 !
 ! !INTERFACE:
 
- subroutine isend_(aV, Rout, Tag)
+ subroutine isend_(aVin, Rout, Tag)
 
 !
 ! !USES:
@@ -107,7 +110,7 @@
 ! !INPUT PARAMETERS:
 !
 
-      Type(AttrVect),       intent(inout) :: aV	
+      Type(AttrVect),target,intent(in)    :: aVin
       Type(Router),         intent(inout) :: Rout
       integer,optional,     intent(in) :: Tag
 
@@ -137,12 +140,22 @@
   integer ::    proc,nseg,mytag
   integer ::    mp_Type_rp1
   logical ::    unordered
+  type(AttrVect),pointer :: Av
 
 !--------------------------------------------------------
 
 ! Return if no one to send to
   if(Rout%nprocs .eq. 0 ) RETURN
 
+! set up Av to send from
+  unordered = associated(Rout%permarr)
+  if (unordered) then
+     call AttrVect_init(Av,Avin,lsize(Avin))
+     call AttrVect_copy(Avin,aV)
+     call Permute(aV,Rout%permarr)
+  else
+     Av => Avin
+  endif
 
 !check Av size against Router
 !
@@ -155,9 +168,6 @@
 ! get ids of components involved in this communication
   mycomp=Rout%comp1id
   othercomp=Rout%comp2id
-
-  unordered = associated(Rout%permarr)
-  if (unordered) call Permute(aV,Rout%permarr)
 
 
 ! find total number of real and integer vectors
@@ -252,7 +262,11 @@
 
   enddo
 
-  if (unordered) call Unpermute(aV,Rout%permarr)
+  if (unordered) then
+     call AttrVect_clean(aV)
+  else
+     nullify(aV)
+  endif
 
 end subroutine isend_
 
@@ -351,9 +365,9 @@ end subroutine waitsend_
 ! !INPUT PARAMETERS:
 !
 
-      Type(AttrVect),       intent(inout) :: aV	
+      Type(AttrVect),       intent(in)    :: aV	
       Type(Router),         intent(inout) :: Rout
-      integer,optional,     intent(in) :: Tag
+      integer,optional,     intent(in)    :: Tag
 
 ! !REVISION HISTORY:
 ! 24Jul03 - R. Jacob <jacob@mcs.anl.gov> - New version uses isend and waitsend
