@@ -311,7 +311,7 @@
     allocate(permarr(gmapsize), stat=ier)
     if(ier/=0) call die(myname_,'allocate permarr',ier)
     call IndexSet(permarr)
-    call IndexSort(gmapsize,permarr,gpoints)
+    call IndexSort(permarr,gpoints)
     call Permute(gpoints,permarr,gmapsize)
     call GlobalSegMap_init(GSMap,gpoints,mycomm,inGSMap%comp_id,gsize=inGSMap%gsize)
 
@@ -333,7 +333,7 @@
     allocate(rpermarr(gmapsize), stat=ier)
     if(ier/=0) call die(myname_,'allocate rpermarr',ier)
     call IndexSet(rpermarr)
-    call IndexSort(gmapsize,rpermarr,gpoints)
+    call IndexSort(rpermarr,gpoints)
     call Permute(gpoints,rpermarr,gmapsize)
 
     call GlobalSegMap_init(RGSMap,gpoints,mycomm,inRGSMap%comp_id,gsize=inRGSMap%gsize)
