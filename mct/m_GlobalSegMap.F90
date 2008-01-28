@@ -304,15 +304,15 @@
   endif
 
   call MPI_SEND(ngseg, 1, MP_INTEGER, root, myID, my_comm, ier)
-  if(ier /= 0) call MP_perr_die(myname_,'MPI_COMM_SIZE()',ier)
+  if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND ngseg',ier)
 
   if(myID == root) then
      call MPI_WAITALL(size(reqs), reqs, status, ier)
-     if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL()',ier)
+     if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL() size',ier)
   endif
 
   call MPI_BARRIER(my_comm, ier)
-  if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL()',ier)
+  if(ier /= 0) call MP_perr_die(myname_,'MPI_BARRIER size',ier)
 
         ! On the root compute the value of ngseg, along with
         ! the entries of counts and displs.
@@ -373,15 +373,15 @@
   endif
 
   call MPI_SEND(start, size(start), MP_INTEGER, root, myID, my_comm, ier)
-  if(ier /= 0) call MP_perr_die(myname_,'MPI_COMM_SIZE()',ier)
+  if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND start',ier)
 
   if(myID == root) then
      call MPI_WAITALL(size(reqs), reqs, status, ier)
-     if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL()',ier)
+     if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL start',ier)
   endif
 
   call MPI_BARRIER(my_comm, ier)
-  if(ier /= 0) call MP_perr_die(myname_,'MPI_BARRIER()',ier)
+  if(ier /= 0) call MP_perr_die(myname_,'MPI_BARRIER start',ier)
 
         ! Next, each process sends its values of length(:) to fill in 
         ! the appropriate portion of root_length(:) on the root--post
@@ -396,15 +396,15 @@
   endif
 
   call MPI_SEND(length, size(length), MP_INTEGER, root, myID, my_comm, ier)
-  if(ier /= 0) call MP_perr_die(myname_,'MPI_COMM_SIZE()',ier)
+  if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND length',ier)
 
   if(myID == root) then
      call MPI_WAITALL(size(reqs), reqs, status, ier)
-     if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL()',ier)
+     if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL length',ier)
   endif
 
   call MPI_BARRIER(my_comm, ier)
-  if(ier /= 0) call MP_perr_die(myname_,'MPI_BARRIER()',ier)
+  if(ier /= 0) call MP_perr_die(myname_,'MPI_BARRIER length',ier)
 
         ! Finally, if the argument pe_loc is present, each process sends 
         ! its values of pe_loc(:) to fill in the appropriate portion of 
@@ -421,15 +421,15 @@
 
   call MPI_SEND(my_pe_loc, size(my_pe_loc), MP_INTEGER, root, myID, &
        my_comm, ier)
-  if(ier /= 0) call MP_perr_die(myname_,'MPI_COMM_SIZE()',ier)
+  if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND my_pe_loc',ier)
 
   if(myID == root) then
      call MPI_WAITALL(size(reqs), reqs, status, ier)
-     if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL()',ier)
+     if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL my_pe_loc',ier)
   endif
 
   call MPI_BARRIER(my_comm, ier)
-  if(ier /= 0) call MP_perr_die(myname_,'MPI_BARRIER()',ier)
+  if(ier /= 0) call MP_perr_die(myname_,'MPI_BARRIER my_pe_loc',ier)
 
         ! Now, we have everything on the root needed to call initr_().
 
