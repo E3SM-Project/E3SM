@@ -2393,7 +2393,7 @@
 ! !IROUTINE: increasing_ - Return .TRUE. if GSMap has increasing indices
 !
 ! !DESCRIPTION:
-! The function {\tt monotonic\_()} returns .TRUE. if each proc's
+! The function {\tt increasing\_()} returns .TRUE. if each proc's
 ! indices in the {\tt GlobalSegMap} argument {\tt GSMap} have 
 ! strictly increasing indices.  I.e. the proc's segments have indices
 ! in ascending order and are non-overlapping.
