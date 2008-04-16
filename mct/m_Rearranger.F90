@@ -667,6 +667,8 @@
    else
       SourceAv => SourceAvin
    endif
+   
+   if(Recvunordered) call Permute(TargetAv,InRearranger%RecvRouter%permarr)
 
    ! CHECK ARGUMENTS 
 
