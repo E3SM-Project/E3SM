@@ -428,6 +428,7 @@
       use m_stdio
       use m_die
       use m_mpif90
+      use m_realkinds, only : FP
       use m_GlobalMap, only : GlobalMap
       use m_GlobalMap, only : GlobalMap_lsize => lsize
       use m_GlobalMap, only : GlobalMap_gsize => gsize
@@ -465,7 +466,7 @@
   character(len=*),parameter :: myname_=myname//'::GM_gather_'
   integer :: nIA,nRA,niV,noV,ier
   integer :: myID
-  integer :: mp_Type_iV,mp_Type_oV
+  integer :: mp_type_Av
   type(AttrVect) :: nonRootAV
 
   if(present(stat)) stat=0
@@ -502,6 +503,8 @@
   nIA=AttrVect_nIAttr(iV)	! number of INTEGER attributes
   nRA=AttrVect_nRAttr(iV)	! number of REAL attributes
 
+  mp_type_Av = MP_Type(1._FP)   ! set mpi type to same as AV%rAttr
+
   if(nIA > 0) then
      
      if(myID == root) then
@@ -530,24 +533,18 @@
 
      if(myID == root) then
 
-        mp_Type_iV=MP_Type(iV%rAttr(1,1))
-        mp_Type_oV=MP_Type(oV%rAttr(1,1))
-
-        call MPI_gatherv(iV%rAttr(1,1),niV*nRA,mp_Type_iV,	        &
+        call MPI_gatherv(iV%rAttr(1,1),niV*nRA,mp_type_Av,	        &
              oV%rAttr(1,1),GMap%counts*nRA,GMap%displs*nRA,             & 
-             mp_Type_oV,root,comm,ier)
+             mp_type_Av,root,comm,ier)
         if(ier /= 0) then
            call MP_perr_die(myname_,':: MPI_gatherv(rAttr) on root',ier)
         endif
 
      else
 
-        mp_Type_iV=MP_Type(iV%rAttr(1,1))
-        mp_Type_oV=MP_Type(nonRootAV%rAttr(1,1))
-
-        call MPI_gatherv(iV%rAttr(1,1),niV*nRA,mp_Type_iV,	        &
-             nonRootAV%rAttr(1,1),GMap%counts*nRA,GMap%displs*nRA,      &
-             mp_Type_oV,root,comm,ier)
+        call MPI_gatherv(iV%rAttr,niV*nRA,mp_type_Av,	        &
+             nonRootAV%rAttr,GMap%counts*nRA,GMap%displs*nRA,      &
+             mp_type_Av,root,comm,ier)
         if(ier /= 0) then
            call MP_perr_die(myname_,':: MPI_gatherv(rAttr) off root',ier)
         endif
@@ -903,6 +900,7 @@
       use m_stdio
       use m_die
       use m_mpif90
+      use m_realkinds, only : FP
 
       use m_List, only : List
       use m_List, only : List_copy => copy
@@ -959,7 +957,7 @@
   character(len=*),parameter :: myname_=myname//'::GM_scatter_'
   integer :: nIA,nRA,niV,noV,ier
   integer :: myID
-  integer :: mp_Type_iV,mp_Type_oV
+  integer :: mp_type_Av
   type(List) :: iList, rList
   type(AttrVect) :: nonRootAV
 
@@ -1034,6 +1032,7 @@
 
   if(myID/=root) call AttrVect_init(nonRootAV,oV,1)
 
+
   if(nIA > 0) then
 
      if(myID == root) then
@@ -1060,28 +1059,26 @@
 
   endif   ! if(nIA > 0)
 
+  mp_type_Av = MP_Type(1._FP)   ! set mpi type to same as AV%rAttr
+
   if(nRA > 0) then
 
      if(myID == root) then
 
-        mp_Type_iV=MP_Type(iV%rAttr(1,1))
-        mp_Type_oV=MP_Type(oV%rAttr(1,1))
 
         call MPI_scatterv(iV%rAttr(1,1),GMap%counts*nRA,	&
-             GMap%displs*nRA,mp_Type_iV,oV%rAttr(1,1),          &
-             noV*nRA,mp_Type_oV,root,comm,ier )
+             GMap%displs*nRA,mp_type_Av,oV%rAttr(1,1),          &
+             noV*nRA,mp_type_Av,root,comm,ier )
         if(ier /= 0) then
            call MP_perr_die(myname_,'MPI_scatterv(rAttr) on root',ier)
         endif
 
      else
 
-        mp_Type_iV=MP_Type(nonRootAV%rAttr(1,1))
-        mp_Type_oV=MP_Type(oV%rAttr(1,1))
 
-        call MPI_scatterv(nonRootAV%rAttr(1,1),GMap%counts*nRA,	&
-             GMap%displs*nRA,mp_Type_iV,oV%rAttr(1,1),          &
-             noV*nRA,mp_Type_oV,root,comm,ier )
+        call MPI_scatterv(nonRootAV%rAttr,GMap%counts*nRA,	&
+             GMap%displs*nRA,mp_type_Av,oV%rAttr,          &
+             noV*nRA,mp_type_Av,root,comm,ier )
         if(ier /= 0) then
            call MP_perr_die(myname_,'MPI_scatterv(rAttr) off root',ier)
         endif
