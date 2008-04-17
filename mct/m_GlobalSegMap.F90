@@ -222,7 +222,9 @@
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::initd_'
-  integer :: nPEs, myID, ier, l, i, ngseg
+  integer :: nPEs, myID, ier, l, i
+  integer :: ngseg  ! number of global segments
+  integer :: nlseg  ! number of global segments
 
         ! arrays allocated on the root to which data are gathered
   integer, dimension(:), allocatable :: root_start, root_length, root_pe_loc
@@ -254,25 +256,25 @@
      endif
   endif
 
-        ! Store in the variable ngseg the local size 
+        ! Store in the variable nlseg the local size 
         ! array start(:)
 
   if(present(numel)) then
-    ngseg=numel
+    nlseg=numel
   else
-    ngseg = size(start)
+    nlseg = size(start)
   endif
 
         ! If the argument pe_loc is not present, then we are
         ! initializing the GlobalSegMap on the communicator 
         ! my_comm.  We will need pe_loc to be allocated and
-        ! with local size given by the input value of ngseg,
+        ! with local size given by the input value of nlseg,
         ! and then initialize it with the local process id myID.
 
   if(present(pe_loc)) then
      my_pe_loc => pe_loc
   else
-     allocate(my_pe_loc(ngseg), stat=ier)
+     allocate(my_pe_loc(nlseg), stat=ier)
      if(ier /= 0) call die(myname_,'allocate(my_pe_loc)',ier)
      my_pe_loc = myID
   endif
@@ -281,7 +283,7 @@
   if(ier /= 0) call MP_perr_die(myname_,'MPI_COMM_SIZE()',ier)
 
         ! Allocate an array of displacements (displs) and counts
-        ! to hold the local values of ngseg on the root
+        ! to hold the local values of nlseg on the root
 
   if(myID == root) then
      allocate(counts(0:npes-1), displs(0:npes-1), reqs(0:npes-1), &
@@ -303,8 +305,8 @@
      end do
   endif
 
-  call MPI_SEND(ngseg, 1, MP_INTEGER, root, myID, my_comm, ier)
-  if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND ngseg',ier)
+  call MPI_SEND(nlseg, 1, MP_INTEGER, root, myID, my_comm, ier)
+  if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND nlseg',ier)
 
   if(myID == root) then
      call MPI_WAITALL(size(reqs), reqs, status, ier)
@@ -367,13 +369,16 @@
 
   if(myID == root) then
      do i=0,npes-1
+       if (counts(i) /= 0) &
 	call MPI_IRECV(root_start(displs(i)), counts(i), MP_INTEGER, &
 	     i, i, my_comm, reqs(i), ier)
      end do
   endif
 
-  call MPI_SEND(start, size(start), MP_INTEGER, root, myID, my_comm, ier)
-  if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND start',ier)
+  if (nlseg /= 0) then
+    call MPI_SEND(start, nlseg, MP_INTEGER, root, myID, my_comm, ier)
+    if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND start',ier)
+  endif
 
   if(myID == root) then
      call MPI_WAITALL(size(reqs), reqs, status, ier)
@@ -390,13 +395,16 @@
 
   if(myID == root) then
      do i=0,npes-1
+       if (counts(i) /= 0) &
 	call MPI_IRECV(root_length(displs(i)), counts(i), MP_INTEGER, &
 	     i, i, my_comm, reqs(i), ier)
      end do
   endif
 
-  call MPI_SEND(length, size(length), MP_INTEGER, root, myID, my_comm, ier)
-  if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND length',ier)
+  if (nlseg /= 0) then
+    call MPI_SEND(length, nlseg, MP_INTEGER, root, myID, my_comm, ier)
+    if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND length',ier)
+  endif
 
   if(myID == root) then
      call MPI_WAITALL(size(reqs), reqs, status, ier)
@@ -414,14 +422,17 @@
    
   if(myID == root) then
      do i=0,npes-1
+       if (counts(i) /= 0) &
 	call MPI_IRECV(root_pe_loc(displs(i)), counts(i), MP_INTEGER, &
 	     i, i, my_comm, reqs(i), ier)
      end do
   endif
 
-  call MPI_SEND(my_pe_loc, size(my_pe_loc), MP_INTEGER, root, myID, &
+  if(nlseg /= 0) then
+    call MPI_SEND(my_pe_loc, nlseg, MP_INTEGER, root, myID, &
        my_comm, ier)
-  if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND my_pe_loc',ier)
+    if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND my_pe_loc',ier)
+  endif
 
   if(myID == root) then
      call MPI_WAITALL(size(reqs), reqs, status, ier)
@@ -1164,7 +1175,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: nlseg_ - Return the global number of segments from the map
+! !IROUTINE: nlseg_ - Return the local number of segments from the map
 !
 ! !DESCRIPTION:
 ! The function {\tt nlseg\_()} returns the number of vector segments 
