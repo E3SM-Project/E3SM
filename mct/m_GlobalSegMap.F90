@@ -224,7 +224,7 @@
   character(len=*),parameter :: myname_=myname//'::initd_'
   integer :: nPEs, myID, ier, l, i
   integer :: ngseg  ! number of global segments
-  integer :: nlseg  ! number of global segments
+  integer :: nlseg  ! number of local segments
 
         ! arrays allocated on the root to which data are gathered
   integer, dimension(:), allocatable :: root_start, root_length, root_pe_loc
