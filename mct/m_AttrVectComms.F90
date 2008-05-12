@@ -434,6 +434,7 @@
       use m_GlobalMap, only : GlobalMap_gsize => gsize
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
+      use m_AttrVect, only : AttrVect_zero => zero 
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nIAttr => nIAttr
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
@@ -494,8 +495,10 @@
 
   if(myID == root) then
      call AttrVect_init(oV,iV,noV)
+     call AttrVect_zero(oV)
   else
      call AttrVect_init(nonRootAV,iV,1)
+     call AttrVect_zero(nonRootAV)
   endif
 
   niV=GlobalMap_lsize(GMap) ! the scattered local size, as for the input
@@ -915,6 +918,7 @@
 
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
+      use m_AttrVect, only : AttrVect_zero => zero
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nIAttr => nIAttr
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
@@ -1027,10 +1031,14 @@
         ! On all processes, use List data and noV to initialize oV 
 
   call AttrVect_init(oV, iList, rList, noV)
+  call AttrVect_zero(oV)
 
         ! Initialize a dummy AttrVect for non-root MPI calls
 
-  if(myID/=root) call AttrVect_init(nonRootAV,oV,1)
+  if(myID/=root) then
+    call AttrVect_init(nonRootAV,oV,1)
+    call AttrVect_zero(nonRootAV)
+  endif
 
 
   if(nIA > 0) then
@@ -1164,6 +1172,7 @@
 ! AttrVect and associated services:
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
+      use m_AttrVect, only : AttrVect_zero => zero
       use m_AttrVect,  only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nIAttr => nIAttr
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
@@ -1272,6 +1281,7 @@
 
      global_storage = GlobalSegMap_GlobalStorage(GSMap)
      call AttrVect_init(workV, iV, global_storage)
+     call AttrVect_zero(workV)
 
   else
        ! nullify workV just to be safe
@@ -1507,6 +1517,7 @@
       use m_List, only : List_get => get
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
+      use m_AttrVect, only : AttrVect_zero => zero
       use m_AttrVect, only : AttrVect_lsize => lsize
       use m_AttrVect, only : AttrVect_nIAttr => nIAttr
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
@@ -1638,6 +1649,9 @@
 	   call die(myname_,'AV has not been initialized',-1)
 	endif
      endif ! if((nIA<= 0) .and. (nRA<=0))...
+
+     call AttrVect_zero(aV)
+
 
   endif ! if(myID /= root)...
 

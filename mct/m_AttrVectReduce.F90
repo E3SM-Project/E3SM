@@ -143,6 +143,7 @@
       use m_stdio ,        only : stderr
       use m_AttrVect,      only : AttrVect
       use m_AttrVect,      only : AttrVect_init => init
+      use m_AttrVect,      only : AttrVect_zero => zero
       use m_AttrVect,      only : AttrVect_nIAttr => nIAttr
       use m_AttrVect,      only : AttrVect_nRAttr => nRAttr
       use m_AttrVect,      only : AttrVect_lsize => lsize
@@ -170,18 +171,10 @@
 
   call AttrVect_init(outAV, inAV, lsize=1)
 
+  call AttrVect_zero(outAV)
+
   select case(action)
   case(AttrVectSUM) ! sum up each attribute...
-
-        ! Initialize INTEGER and REAL attribute sums:
-
-     do i=1,AttrVect_nIAttr(outAV)
-	outAV%iAttr(i,1) = 0
-     end do
-
-     do i=1,AttrVect_nRAttr(outAV)
-	outAV%rAttr(i,1) = 0._FP
-     end do
 
         ! Compute INTEGER and REAL attribute sums:
 
@@ -322,6 +315,7 @@
 
       use m_AttrVect,      only : AttrVect
       use m_AttrVect,      only : AttrVect_init => init
+      use m_AttrVect,      only : AttrVect_zero => zero
       use m_AttrVect,      only : AttrVect_nIAttr => nIAttr
       use m_AttrVect,      only : AttrVect_nRAttr => nRAttr
       use m_AttrVect,      only : AttrVect_lsize => lsize
@@ -360,16 +354,11 @@
         ! Superflous list copy circumvents SGI compiler bug
   call List_copy(rList_copy,inAV%rList)
   call AttrVect_init(outAV, rList=List_exportToChar(rList_copy), lsize=1)
+  call AttrVect_zero(outAV)
   call List_clean(rList_copy)
 
   select case(action)
   case(AttrVectSUM) ! sum up each attribute...
-
-        ! Initialize REAL attribute sums:
-
-     do i=1,AttrVect_nRAttr(outAV)
-	outAV%rAttr(i,1) = 0._FP
-     end do
 
         ! Compute REAL attribute sums:
 
@@ -479,6 +468,7 @@
 
       use m_AttrVect,      only : AttrVect
       use m_AttrVect,      only : AttrVect_init => init
+      use m_AttrVect,      only : AttrVect_zero => zero
       use m_AttrVect,      only : AttrVect_lsize => lsize
       use m_AttrVect,      only : AttrVect_nIAttr => nIAttr
       use m_AttrVect,      only : AttrVect_nRAttr => nRAttr
@@ -518,6 +508,7 @@
   endif
 
   call AttrVect_init(outAV, inAV, lsize=AttrVect_lsize(inAV))
+  call AttrVect_zero(outAV)
 
   if(List_allocated(inAV%rList)) then ! invoke MPI_AllReduce() for the real
                                       ! attribute data.
@@ -722,6 +713,7 @@
 
       use m_AttrVect,      only : AttrVect
       use m_AttrVect,      only : AttrVect_init => init
+      use m_AttrVect,      only : AttrVect_zero => zero
       use m_AttrVect,      only : AttrVect_nIAttr => nIAttr
       use m_AttrVect,      only : AttrVect_nRAttr => nRAttr
       use m_AttrVect,      only : AttrVect_lsize => lsize
@@ -776,10 +768,7 @@
   endif
 
         ! Initialize REAL attribute sums:
-
-  do i=1,AttrVect_nRAttr(outAV)
-     outAV%rAttr(i,1) = 0._FP
-  end do
+  call AttrVect_zero(outAV)
 
         ! Compute REAL attribute sums:
 
@@ -835,6 +824,7 @@
 
       use m_AttrVect,      only : AttrVect
       use m_AttrVect,      only : AttrVect_init => init
+      use m_AttrVect,      only : AttrVect_zero => zero
       use m_AttrVect,      only : AttrVect_nIAttr => nIAttr
       use m_AttrVect,      only : AttrVect_nRAttr => nRAttr
       use m_AttrVect,      only : AttrVect_lsize => lsize
@@ -889,10 +879,7 @@
   endif
 
         ! Initialize REAL attribute sums:
-
-  do i=1,AttrVect_nRAttr(outAV)
-     outAV%rAttr(i,1) = 0._FP
-  end do
+  call AttrVect_zero(outAV)
 
         ! Compute REAL attribute sums:
 
@@ -967,7 +954,6 @@
       use m_List,          only : List_exportToChar => exportToChar
 
       use m_AttrVect,      only : AttrVect
-      use m_AttrVect,      only : AttrVect_init => init
       use m_AttrVect,      only : AttrVect_clean => clean
       use m_AttrVect,      only : AttrVect_lsize => lsize
 
@@ -1054,7 +1040,6 @@
       use m_List,          only : List_exportToChar => exportToChar
 
       use m_AttrVect,      only : AttrVect
-      use m_AttrVect,      only : AttrVect_init => init
       use m_AttrVect,      only : AttrVect_clean => clean
       use m_AttrVect,      only : AttrVect_lsize => lsize
 
