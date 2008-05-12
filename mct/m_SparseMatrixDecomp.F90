@@ -72,6 +72,7 @@
 
    use m_AttrVect, only: AttrVect
    use m_AttrVect, only: AttrVect_init => init
+   use m_AttrVect, only: AttrVect_zero => zero
    use m_AttrVect, only: AttrVect_lsize => lsize
    use m_AttrVect, only: AttrVect_indexIA => indexIA
    use m_AttrVect, only: AttrVect_copy => copy
@@ -245,6 +246,7 @@
 
   call AttrVect_init(aV=dist_element_pe_locs, iList="element_pe_locs", &
                      lsize=dist_gsize)
+  call AttrVect_zero(dist_element_pe_locs)
      
        ! Compute process ID destination for each matrix element,
        ! and store in the AttrVect element_pe_locs
@@ -353,6 +355,7 @@
    use m_AttrVect, only: AttrVect_indexIA => indexIA
    use m_AttrVect, only: AttrVect_copy => copy
    use m_AttrVect, only: AttrVect_clean => clean
+   use m_AttrVect, only: AttrVect_zero => zero
    
    use m_AttrVectComms, only: AttrVect_scatter => scatter
    use m_AttrVectComms, only: AttrVect_gather => gather
@@ -520,6 +523,7 @@
 
   call AttrVect_init(aV=dist_element_pe_locs, iList="element_pe_locs", &
                      lsize=dist_gsize)
+  call AttrVect_zero(dist_element_pe_locs)
      
        ! Compute process ID destination for each matrix element,
        ! and store in the AttrVect element_pe_locs
