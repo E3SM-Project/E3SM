@@ -305,7 +305,7 @@
   nullify(Rout%permarr)
 
   if (.not. GSMap_increasing(inGSMap)) then
-    call warn(myname_,'GSMap indices not increasing...Will correct')
+    if(myPid == 0) call warn(myname_,'GSMap indices not increasing...Will correct')
     call GlobalSegMap_OPoints(inGSMap,myPid,gpoints)
     gmapsize=ProcessStorage(inGSMap,myPid)
     allocate(permarr(gmapsize), stat=ier)
@@ -327,7 +327,7 @@
   endif
 
   if (.not. GSMap_increasing(inRGSMap)) then
-    call warn(myname_,'RGSMap indices not increasing...Will correct')
+    if(myPid == 0) call warn(myname_,'RGSMap indices not increasing...Will correct')
     call GlobalSegMap_OPoints(inRGSMap,myPid,gpoints)
     gmapsize=ProcessStorage(inRGSMap,myPid)
     allocate(rpermarr(gmapsize), stat=ier)
