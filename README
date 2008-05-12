@@ -113,6 +113,9 @@ Optional Contents available
   On the Argonne BlueGene/L, use:
   > ./configure FC=mpif90.ibm CC=mpicc.ibm
 
+  On the BlueGene/P, use:
+  > ./configure FC=mpixlf90_r CC=mpixlc_r
+
   On robin at NCCS, use:
   > ./configure --host=Linux ac_cv_c_bigendian=yes
 
