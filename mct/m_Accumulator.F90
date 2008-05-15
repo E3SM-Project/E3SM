@@ -201,10 +201,14 @@
 !
 ! !USES:
 !
-      use m_List, only : List_nitem => nitem
-
       use m_AttrVect, only : AttrVect_init => init
       use m_AttrVect, only : AttrVect_zero => zero
+
+      use m_List, only: List
+      use m_List, only: List_nullify => nullify
+      use m_List, only: List_init => init
+      use m_List, only: List_nitem => nitem
+      use m_List, only: List_clean => clean
 
       use m_stdio
       use m_die
@@ -233,12 +237,16 @@
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::init_'
-  integer :: my_steps_done
+  integer :: my_steps_done, nIAttr, nRAttr, ierr
   integer, dimension(:), pointer :: my_iAction, my_rAction
   logical :: status
+  type(List) :: temp_iList, temp_rList
 
   nullify(my_iAction)
   nullify(my_rAction)
+
+  call List_nullify(temp_iList)
+  call List_nullify(temp_rList)
 
         ! Argument consistency checks:  
 
@@ -255,24 +263,37 @@
      call die(myname_)
   endif
 
-        ! 2) Terminate with error message if optional arguments iAction (rAction) 
+        ! 2) For iList and rList, generate temporary List data structures to facilitate
+        ! attribute counting.
+
+  if(present(iList)) then ! create temp_iList
+     call List_init(temp_iList, iList)
+     nIAttr = List_nitem(temp_iList)
+  endif
+
+  if(present(rList)) then ! create temp_iList
+     call List_init(temp_rList, rList)
+     nRAttr = List_nitem(temp_rList)
+  endif
+
+        ! 3) Terminate with error message if optional arguments iAction (rAction) 
         ! and iList (rList) are supplied but the size of iAction (rAction) does not 
         ! match the number of items in iList (rList).
 
   if(present(iAction) .and.  present(iList)) then
-     if(size(iAction) /= List_nitem(iList)) then
-        write(stderr,'(2a,2(a,i8))') myname_,
+     if(size(iAction) /= nIAttr) then
+        write(stderr,'(2a,2(a,i8))') myname_, &
              '::FATAL--Size mismatch between iAction and iList!  ', &
-             'size(iAction)=',size(iAction),', ','List_nitem(iList)=',List_nitem(iList)
+             'size(iAction)=',size(iAction),', ','No. items in iList=',nIAttr
         call die(myname_)
      endif
   endif
 
   if(present(rAction) .and.  present(rList)) then
-     if(size(rAction) /= List_nitem(rList)) then
-        write(stderr,'(2a,2(a,i8))') myname_,
+     if(size(rAction) /= nRAttr) then
+        write(stderr,'(2a,2(a,i8))') myname_, &
              '::FATAL--Size mismatch between rAction and rList!  ', &
-             'size(rAction)=',size(rAction),', ','List_nitem(rList)=',List_nitem(rList)
+             'size(rAction)=',size(rAction),', ','No items in rList=',nRAttr
         call die(myname_)
      endif
   endif
@@ -291,7 +312,7 @@
 
   if(present(iList)) then ! set up my_iAction
 
-     allocate(my_iAction(List_nitem(iList), stat=ierr)
+     allocate(my_iAction(nIAttr), stat=ierr)
      if(ierr /= 0) then
         write(stderr,'(2a,i8)') myname_, &
            '::FATAL: allocate(my_iAction) failed with ierr=',ierr
@@ -310,7 +331,7 @@
 
   if(present(rList)) then ! set up my_rAction
 
-     allocate(my_rAction(List_nitem(rList), stat=ierr)
+     allocate(my_rAction(nRAttr), stat=ierr)
      if(ierr /= 0) then
         write(stderr,'(2a,i8)') myname_, &
            '::FATAL: allocate(my_rAction) failed with ierr=',ierr
@@ -384,6 +405,11 @@
   endif
 
   call AttrVect_zero(aC%data)
+
+        ! Clean up
+
+  if(present(iList)) call List_clean(temp_iList)
+  if(present(rList)) call List_clean(temp_rList)
 
         ! Check that aC has been properly initialized
 
