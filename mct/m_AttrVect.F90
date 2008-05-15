@@ -407,6 +407,12 @@
 ! input length {\tt lsize}.  The resulting {\tt AttrVect} is returned in
 ! the argument {\tt aV}.
 !
+! {\bf N.B.}:  If the user supplies an empty list for the arguments 
+! {\tt iList} ({\tt rList}), then {\tt aV} will be created only with 
+! {\tt REAL} ({\tt INTEGER}) attributes.  If both arguments {\tt iList} 
+! and {\tt rList} are empty, the routine will terminate execution and 
+! report an error.
+!
 ! {\bf N.B.}:  The outcome of this routine, {\tt aV} represents 
 ! allocated memory.  When this {\tt AttrVect} is no longer needed, 
 ! it must be deallocated by invoking the routine {\tt AttrVect\_clean()}.  
@@ -421,18 +427,14 @@
 !
       use m_die
       use m_stdio
-      use m_mall
 
       use m_String, only : String
       use m_String, only : String_clean => clean
       use m_String, only : String_toChar => toChar
 
       use m_List, only : List
-      use m_List, only : List_init => init
       use m_List, only : List_nitem => nitem
-      use m_List, only : List_copy => copy
-      use m_List, only : List_get => get
-      use m_List,   only : List_nullify => nullify
+      use m_List, only : List_exportToChar => exportToChar
 
       implicit none
 
@@ -457,73 +459,48 @@
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::initl_'
-  integer :: nIA, nRA, ier
 
-	! Step One:  Nullify all pointers in aV.  We will set
-        ! only the pointers we really need for aV based on those
-        ! currently ASSOCIATED in bV.
+  ! Basic argument sanity checks:
 
-  call List_nullify(aV%iList)
-  call List_nullify(aV%rList)
-  nullify(aV%iAttr)
-  nullify(aV%rAttr)
-
-       ! Assign iList to aV%iList and rList to aV%rList
-
-  if(associated(iList%bf)) then
-     call List_copy(aV%iList,iList)
+  if (List_nitem(iList) < 0) then
+     write(stderr,'(2a,i8,a)') myname_, &
+          ':: FATAL:  List argument iList has a negative number ( ',List_nitem(iList), &
+          ' ) of attributes!'
+     call die(myname_)
   endif
 
-  if(associated(rList%bf)) then
-     call List_copy(aV%rList,rList)
+  if (List_nitem(rList) < 0) then
+     write(stderr,'(2a,i8,a)') myname_, &
+          ':: FATAL:  List argument rList has a negative number ( ',List_nitem(rList), &
+          ' ) of attributes!'
+     call die(myname_)
   endif
 
-       ! Count items in aV%iList and aV%rList: 
+  if ((List_nitem(iList) > 0) .and. (List_nitem(rList) > 0)) then
 
-  if(associated(aV%iList%bf)) then
-     nIA = List_nitem(aV%iList)
-  else
-     nIA = 0
-  endif
+     call init_(aV, List_exportToChar(iList), List_exportToChar(rList), lsize)
 
-  if(associated(aV%rList%bf)) then
-     nRA = List_nitem(aV%rList)
-  else
-     nRA = 0
-  endif
+  else ! Then solely REAL or solely INTEGER attributes:
 
-  if(lsize < 0) then 
-     write(stderr,*) myname_,":: Warning:  length argument lsize negative."
-  endif
+     if (List_nitem(iList) > 0) then ! solely INTEGER attributes
+                
+        call init_(aV, iList=List_exportToChar(iList), lsize=lsize)
 
-  if(lsize >= 0) then
+        write(stderr,'(2a)') myname_, &
+             ':: WARNING:  input List rList empty; output argument aV will have only INTEGER attributes.'
 
-     if(associated(aV%iList%bf) .and. associated(aV%rList%bf)) then
-	allocate( aV%iAttr(nIA,lsize), aV%rAttr(nRA,lsize), stat=ier)
-	if(ier /= 0) call die(myname_,'allocate(aV%iAttr,aV%rAttr)',ier)
-#ifdef MALL_ON
-	call mall_ci(size(transfer(aV%iAttr,(/1/)),myname_)
-	call mall_ci(size(transfer(aV%rAttr,(/1/)),myname_)
-#endif
-     endif
+     endif ! if (List_nitem(iList) > 0) then...
 
-     if(associated(aV%iList%bf) .and. .not.associated(aV%rList%bf)) then
-	allocate( aV%iAttr(nIA,lsize), stat=ier)
-	if(ier /= 0) call die(myname_,'allocate(aV%iAttr)',ier)
-#ifdef MALL_ON
-	call mall_ci(size(transfer(aV%iAttr,(/1/)),myname_)
-#endif
-     endif
+     if (List_nitem(rList) > 0) then ! solely REAL attributes
+                
+        call init_(aV, rList=List_exportToChar(rList), lsize=lsize)
 
-     if(.not.associated(aV%iList%bf) .and. associated(aV%rList%bf)) then
-	allocate( aV%rAttr(nRA,lsize), stat=ier)
-	if(ier /= 0) call die(myname_,'allocate(aV%rAttr)',ier)
-#ifdef MALL_ON
-	call mall_ci(size(transfer(aV%rAttr,(/1/)),myname_)
-#endif
-     endif
+        write(stderr,'(2a)') myname_, &
+             ':: WARNING:  input List iList empty; output argument aV will have only REAL attributes.'
 
-  endif ! if(lsize > 0)... block
+     endif ! if (List_nitem(rList) > 0) then...
+
+  endif ! if ((List_nitem(iList) > 0) .and. (List_nitem(rList) > 0)) then...
 
  end subroutine initl_
 
