@@ -201,9 +201,12 @@
 !
 ! !USES:
 !
-      use m_List, only : List_init => init
+      use m_List, only : List_nitem => nitem
+
       use m_AttrVect, only : AttrVect_init => init
       use m_AttrVect, only : AttrVect_zero => zero
+
+      use m_stdio
       use m_die
 
       implicit none
@@ -231,9 +234,52 @@
 !
   character(len=*),parameter :: myname_=myname//'::init_'
   integer :: my_steps_done
+  integer, dimension(:), pointer :: my_iAction, my_rAction
   logical :: status
 
+  nullify(my_iAction)
+  nullify(my_rAction)
+
+        ! Argument consistency checks:  
+
+        ! 1) Terminate with error message if optional argument iAction (rAction) 
+        ! is supplied but optional argument iList (rList) is not.
+
+  if(present(iAction) .and. (.not. present(iList))) then
+     write(stderr,'(2a)') myname_,'::FATAL--Argument iAction supplied but action iList absent!'
+     call die(myname_)
+  endif
+
+  if(present(rAction) .and. (.not. present(rList))) then
+     write(stderr,'(2a)') myname_,'::FATAL--Argument rAction supplied but action rList absent!'
+     call die(myname_)
+  endif
+
+        ! 2) Terminate with error message if optional arguments iAction (rAction) 
+        ! and iList (rList) are supplied but the size of iAction (rAction) does not 
+        ! match the number of items in iList (rList).
+
+  if(present(iAction) .and.  present(iList)) then
+     if(size(iAction) /= List_nitem(iList)) then
+        write(stderr,'(2a,2(a,i8))') myname_,
+             '::FATAL--Size mismatch between iAction and iList!  ', &
+             'size(iAction)=',size(iAction),', ','List_nitem(iList)=',List_nitem(iList)
+        call die(myname_)
+     endif
+  endif
+
+  if(present(rAction) .and.  present(rList)) then
+     if(size(rAction) /= List_nitem(rList)) then
+        write(stderr,'(2a,2(a,i8))') myname_,
+             '::FATAL--Size mismatch between rAction and rList!  ', &
+             'size(rAction)=',size(rAction),', ','List_nitem(rList)=',List_nitem(rList)
+        call die(myname_)
+     endif
+  endif
+
         ! Initialize the Accumulator components.
+
+        ! steps_done:
 
   if(present(steps_done)) then
      my_steps_done = steps_done
@@ -241,20 +287,90 @@
      my_steps_done = 0
   endif
 
-  if(present(iAction) .and. present(rAction)) then
-     call initp_(aC,iAction,rAction,num_steps,my_steps_done)
-  else
-     if(present(iAction)) then
-	call initp_(aC=aC, iAction=iAction, num_steps=num_steps, &
-	            steps_done=my_steps_done)
+        ! my_iAction (if iList is present)
+
+  if(present(iList)) then ! set up my_iAction
+
+     allocate(my_iAction(List_nitem(iList), stat=ierr)
+     if(ierr /= 0) then
+        write(stderr,'(2a,i8)') myname_, &
+           '::FATAL: allocate(my_iAction) failed with ierr=',ierr
+        call die(myname_)
      endif
-     if(present(rAction)) then
-	call initp_(aC=aC, rAction=rAction, num_steps=num_steps, &
-	            steps_done=my_steps_done)
+     
+     if(present(iAction)) then ! use its values
+        my_iAction = iAction
+     else ! go with default summation by assigning value MCT_SUM
+        my_iAction = MCT_SUM
      endif
+
   endif
 
-        ! Initialize the AttrVect component aC:
+        ! my_rAction (if rList is present)
+
+  if(present(rList)) then ! set up my_rAction
+
+     allocate(my_rAction(List_nitem(rList), stat=ierr)
+     if(ierr /= 0) then
+        write(stderr,'(2a,i8)') myname_, &
+           '::FATAL: allocate(my_rAction) failed with ierr=',ierr
+        call die(myname_)
+     endif
+     
+     if(present(rAction)) then ! use its values
+        my_rAction = rAction
+     else ! go with default summation by assigning value MCT_SUM
+        my_rAction = MCT_SUM
+     endif
+
+  endif
+  
+        ! Build the Accumulator aC minus its data component:
+
+  if(present(iList) .and. present(rList)) then ! Both REAL and INTEGER registers
+
+     call initp_(aC,my_iAction,my_rAction,num_steps,my_steps_done)
+
+     deallocate(my_iAction, my_rAction, stat=ierr)
+     if(ierr /= 0) then
+        write(stderr,'(2a,i8)') myname_, &
+           '::FATAL: deallocate(my_iAction, my_rAction) failed with ierr=',ierr
+        call die(myname_)
+     endif
+
+  else ! Either only REAL or only INTEGER registers in aC
+
+     if(present(iList)) then ! Only  INTEGER REGISTERS
+
+	call initp_(aC=aC, iAction=my_iAction, num_steps=num_steps, &
+	            steps_done=my_steps_done)
+
+        deallocate(my_iAction, stat=ierr)
+        if(ierr /= 0) then
+           write(stderr,'(2a,i8)') myname_, &
+                '::FATAL: deallocate(my_iAction) failed with ierr=',ierr
+           call die(myname_)
+        endif
+
+     endif
+
+     if(present(rList)) then ! Only  REAL REGISTERS
+
+	call initp_(aC=aC, rAction=my_rAction, num_steps=num_steps, &
+	            steps_done=my_steps_done)
+
+        deallocate(my_rAction, stat=ierr)
+        if(ierr /= 0) then
+           write(stderr,'(2a,i8)') myname_, &
+                '::FATAL: deallocate(my_rAction) failed with ierr=',ierr
+           call die(myname_)
+        endif
+
+     endif
+
+  endif
+
+        ! Initialize the AttrVect data component for aC:
 
   if(present(iList) .and. present(rList)) then
      call AttrVect_init(aC%data,iList,rList,lsize)
