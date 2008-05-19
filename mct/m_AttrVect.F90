@@ -456,6 +456,8 @@
 !           in ouput AttrVect aV before initializing aV.  Also, 
 !           greater caution taken regarding validity of input 
 !           arguments iList and rList.
+! 15May08 - J. Larson <larson@mcs.anl.gov> - Simplify to use
+!           the init_ routine.  Better argument checking.
 !EOP ___________________________________________________________________
 !
   character(len=*),parameter :: myname_=myname//'::initl_'
@@ -486,17 +488,11 @@
                 
         call init_(aV, iList=List_exportToChar(iList), lsize=lsize)
 
-        write(stderr,'(2a)') myname_, &
-             ':: WARNING:  input List rList empty; output argument aV will have only INTEGER attributes.'
-
      endif ! if (List_nitem(iList) > 0) then...
 
      if (List_nitem(rList) > 0) then ! solely REAL attributes
                 
         call init_(aV, rList=List_exportToChar(rList), lsize=lsize)
-
-        write(stderr,'(2a)') myname_, &
-             ':: WARNING:  input List iList empty; output argument aV will have only REAL attributes.'
 
      endif ! if (List_nitem(rList) > 0) then...
 
