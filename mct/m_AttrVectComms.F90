@@ -622,7 +622,6 @@
       use m_GlobalSegMap, only : GlobalSegMap_lsize => lsize
       use m_GlobalSegMap, only : GlobalSegMap_gsize => gsize
       use m_GlobalSegMap, only : GlobalSegMap_haloed => haloed
-      use m_GlobalSegMap, only : GlobalSegMap_ProcessStorage => ProcessStorage
       use m_GlobalSegMap, only : GlobalSegMap_GlobalStorage => GlobalStorage
 ! AttrVect and associated services:
       use m_AttrVect, only : AttrVect
@@ -668,6 +667,8 @@
 !           gathered data.
 ! 27Jul07 - R. Loy <rloy@mcs.anl.gov> - add Tony's suggested improvement
 !           for a default value in the output AV
+! 11Aug08 - R. Jacob <jacob@mcs.anl.gov> - add Pat Worley's faster way
+!           to initialize lns
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GSM_gather_'
@@ -675,7 +676,7 @@
 ! Temporary workspace AttrVect:
   type(AttrVect) :: workV
 ! Component ID and number of segments for GSMap:
-  integer :: comp_id, ngseg
+  integer :: comp_id, ngseg, iseg
 ! Total length of GSMap segments laid end-to-end:
   integer :: global_storage
 ! Error Flag
@@ -738,8 +739,10 @@
 
        ! And Load it...
 
-     do n=0,NumProcs-1
-        lns(n) = GlobalSegMap_ProcessStorage(GSMap, n)
+     lns(:)=0
+     do iseg=1,GSMap%ngseg
+        n = GSMap%pe_loc(iseg)
+	lns(n) = lns(n) + GSMap%length(n)
      end do
 
   else
@@ -1168,7 +1171,6 @@
       use m_GlobalSegMap, only : GlobalSegMap_lsize => lsize
       use m_GlobalSegMap, only : GlobalSegMap_gsize => gsize
       use m_GlobalSegMap, only : GlobalSegMap_GlobalStorage => GlobalStorage
-      use m_GlobalSegMap, only : GlobalSegMap_ProcessStorage => ProcessStorage
 ! AttrVect and associated services:
       use m_AttrVect, only : AttrVect
       use m_AttrVect, only : AttrVect_init => init
@@ -1222,6 +1224,8 @@
 ! 13Dec01 - E.T. Ong <eong@mcs.anl.gov> - got rid of restriction 
 !           GlobalStorage(GSMap)==AttrVect_lsize(AV) to allow for
 !           GSMap to be haloed.
+! 11Aug08 - R. Jacob <jacob@mcs.anl.gov> - remove call to ProcessStorage
+!           and replace with faster algorithm provided by Pat Worley
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GSM_scatter_'
@@ -1229,7 +1233,7 @@
 ! Temporary workspace AttrVect:
   type(AttrVect) :: workV
 ! Component ID and number of segments for GSMap:
-  integer :: comp_id, ngseg
+  integer :: comp_id, ngseg, iseg
 ! Total length of GSMap segments laid end-to-end:
   integer :: global_storage
 ! Error Flag
@@ -1333,8 +1337,10 @@
 
        ! And Load it...
 
-     do n=0,NumProcs-1
-	lns(n) = GlobalSegMap_ProcessStorage(GSMap, n)
+     lns(:)=0
+     do iseg=1,GSMap%ngseg
+        n = GSMap%pe_loc(iseg)
+	lns(n) = lns(n) + GSMap%length(n)
      end do
 
   endif ! if(myID == root)
