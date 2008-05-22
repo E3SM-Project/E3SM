@@ -742,7 +742,7 @@
      lns(:)=0
      do iseg=1,GSMap%ngseg
         n = GSMap%pe_loc(iseg)
-	lns(n) = lns(n) + GSMap%length(n)
+	lns(n) = lns(n) + GSMap%length(iseg)
      end do
 
   else
@@ -1340,7 +1340,7 @@
      lns(:)=0
      do iseg=1,GSMap%ngseg
         n = GSMap%pe_loc(iseg)
-	lns(n) = lns(n) + GSMap%length(n)
+	lns(n) = lns(n) + GSMap%length(iseg)
      end do
 
   endif ! if(myID == root)
