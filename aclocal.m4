@@ -145,7 +145,7 @@ AC_CACHE_CHECK([if Fortran 90 compiler performs preprocessing],
 AC_LANG_PUSH(Fortran 90)
 AC_LANG_CONFTEST([AC_LANG_PROGRAM([$1])])
 AC_COMPILE_IFELSE([],[ac_cv_f90_fpp_compiler="yes"],[ac_cv_f90_fpp_compiler="no"])
-rm -f conftest.*
+rm -rf conftest.*
 F90=$old_F90
 ])])
 
@@ -393,7 +393,8 @@ AC_DEFUN([AC_LANG_COMPILER(Fortran 90)],
 # f95 is Absoft Fortran
 # epcf90 is the "Edinburgh Portable Compiler" F90.
 # fort is the Compaq Fortran 90 (now 95) compiler for Tru64 and Linux/Alpha.
-# g95 is the free GNU fortran compiler based on gfortran-gcc4.0
+# g95 is the free GNU fortran compiler branched from gfortran-gcc4.0
+# gfortran is the free GNU fortran compiler available with gcc4.0
 # efc/ifc are the Intel 7.x and prior compilers
 AC_DEFUN([AC_PROG_F90],
 [AC_LANG_PUSH(Fortran 90)dnl
@@ -403,7 +404,7 @@ AC_ARG_VAR([F90SUFFIX], [Fortran 90 filename extension])dnl
 _AC_ARG_VAR_LDFLAGS()dnl
 AC_CHECK_TOOLS(F90,
       [m4_default([$1],
-                  [xlf90 pgf90 ifort pathf90 f90 ftn frt lf95 f95 xlf95 fort efc ifc g95])])
+                  [xlf90 pgf90 ifort pathf90 f90 ftn frt lf95 f95 xlf95 fort efc ifc g95 gfortran])])
 
 # Check for a valid filname extension in the following order: F90, f90, F, f
 if test -z "$F90SUFFIX"; then
@@ -780,7 +781,7 @@ end],
 
   LIBS=$ac_save_LIBS
   AC_LANG_POP(C)dnl
-  rm -f cf90_test* conftest*])
+  rm -rf cf90_test* conftest*])
 AC_LANG_POP(Fortran 90)dnl
 ])
 ])# _AC_F90_NAME_MANGLING
@@ -1275,7 +1276,7 @@ void BAR_FOO__()
 
   LIBS=$ac_save_LIBS
   AC_LANG_POP(Fortran 90)dnl
-  rm -f cf90_test* conftest*])
+  rm -rf cf90_test* conftest*])
 AC_LANG_POP(C)dnl
 ]) 
 ])# AC_F90_C_NAME_MANGLING# _AC_PROG_F90_VERSION_OUTPUT([FLAG = $ac_cv_prog_f90_version])
