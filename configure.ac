@@ -521,6 +521,11 @@ if echo $F90 | grep g95 >/dev/null 2>&1; then
    CPRDEF="GNU"
 fi
 
+if echo $F90 | grep gfortran >/dev/null 2>&1; then
+   echo "Fortran Compiler is GNU"
+   CPRDEF="GNU"
+fi
+
 if echo $f90_version | grep -i nag >/dev/null 2>&1; then
    echo "Fortran Compiler is NAG"
    CPRDEF="NAG"
