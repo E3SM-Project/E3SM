@@ -107,17 +107,19 @@ AC_LANG_PUSH(Fortran 90)
 AC_COMPILE_IFELSE(
 [module foobar
 end],
-[if test -f FOOBAR.mod ; then
-  ac_cv_f90_mod_uppercase=yes
-fi
+[
+#Both upper and lower case will be found on MAC OSX Darwin
+#test for lower case first to use that
 if test -f foobar.mod ; then
-  if test "$ac_cv_f90_mod_uppercase" = unknown; then
-    ac_cv_f90_mod_uppercase=no
+  ac_cv_f90_mod_uppercase=no
+else
+  if test -f FOOBAR.mod ; then
+    ac_cv_f90_mod_uppercase=yes
   else
-    # finding both strings is unlikely to happen, but who knows?
-    ac_cv_f90_mod_uppercase=unknown
+   ac_cv_f90_mod_uppercase=unknown
   fi
-fi])])
+fi
+])])
 case $ac_cv_f90_mod_uppercase in
   yes)
     m4_default([$1],
