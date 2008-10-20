@@ -11,6 +11,10 @@
 #include "listops.h"
 #include "mpi.h"
 
+#ifdef SYSDARWIN
+#include "string.h"
+#endif
+
 
 /*
  * Fortran name mangling
