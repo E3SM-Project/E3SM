@@ -63,6 +63,8 @@ AC_SUBST(PYTHONOPTS)
 # OS AND PLATFORM NAME
 test "$osname"=NONE && osname=`uname -s`
 test "$machinename"=NONE && machinename=`uname -m`
+fullhostname=`hostname -f`
+
 
 # HARDCODE SPECIFIC MACHINES FOR EXTRAORDINARY CIRCUMSTANCES
 
@@ -118,6 +120,20 @@ if test "$ac_hostname" = "user02"; then
       fi
    fi
 fi
+
+
+# Check if we are on the ANL BG/P
+
+if echo $fullhostname | egrep -q '.\.(surveyor|intrepid)\.alcf\.anl\.gov' 
+  then if test -z "$FC"; then
+         FC=mpixlf90_r
+       fi
+       if test -z "$CC"; then
+         CC=mpixlc_r
+       fi
+fi
+
+
 
 # START TESTS
 

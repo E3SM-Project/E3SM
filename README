@@ -114,6 +114,8 @@ Optional Contents available
   > ./configure FC=mpif90.ibm CC=mpicc.ibm
 
   On the BlueGene/P, use:
+  > ./configure
+  This is equivalent to:
   > ./configure FC=mpixlf90_r CC=mpixlc_r
 
   On robin at NCCS, use:
