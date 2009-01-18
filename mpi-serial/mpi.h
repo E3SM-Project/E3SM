@@ -95,6 +95,20 @@ typedef int MPI_Datatype;
 #define MPI_SHORT_INT        (sizeof (struct{short a; int b;}))
 #define MPI_LONG_DOUBLE_INT  (sizeof (struct{long double a; int b;}))
 
+/* size-specific types */
+
+#define MPI_INTEGER1       (1)
+#define MPI_INTEGER2       (2)
+#define MPI_INTEGER4       (4)
+#define MPI_INTEGER8       (8)
+#define MPI_INTEGER16      (16)
+
+#define MPI_REAL4          (4)
+#define MPI_REAL8          (8)
+#define MPI_REAL16         (16)
+
+
+
 /*
  * Fortran int size
  *
