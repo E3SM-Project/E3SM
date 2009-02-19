@@ -350,7 +350,7 @@
 !           core if its not.
 ! 10Oct01 - J. Larson <larson@mcs.anl.gov> - Nullify all pointers
 !           in ouput AttrVect aV before initializing aV.
-! 19Sep08 - T. Craig <tcraig@ucar.edu> - plug memory leak from not deallocating
+! 19Sep08 - J. Wolfe <jwolfe@ucar.edu> - plug memory leak from not deallocating
 !           strings.
 !EOP ___________________________________________________________________
 
