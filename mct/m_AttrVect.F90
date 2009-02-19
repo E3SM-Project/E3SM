@@ -326,6 +326,7 @@
 ! !USES:
 !
       use m_String, only : String,char
+      use m_String, only : String_clean => clean    
       use m_List,   only : get
       use m_List,   only : List_nullify => nullify
       use m_die
@@ -349,6 +350,8 @@
 !           core if its not.
 ! 10Oct01 - J. Larson <larson@mcs.anl.gov> - Nullify all pointers
 !           in ouput AttrVect aV before initializing aV.
+! 19Sep08 - T. Craig <tcraig@ucar.edu> - plug memory leak from not deallocating
+!           strings.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::initv_'
@@ -392,6 +395,13 @@
   if(associated(bv%iList%bf) .and. .not.associated(bv%rList%bf)) then
      call init_(aV,iList=char(iLStr),lsize=lsize)
   endif
+
+  if(associated(bv%iList%bf)) then  
+     call String_clean(iLStr)       
+  endif                             
+  if(associated(bv%rList%bf)) then  
+     call String_clean(rLStr)       
+  endif                             
 
  end subroutine initv_
 
