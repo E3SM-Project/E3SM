@@ -22,14 +22,16 @@
       public :: fc_gather_fp   ! flow control version of mpi_gather for FP vectors
       public :: fc_gatherv_int ! flow control version of mpi_gatherv for integer vectors
       public :: fc_gatherv_fp  ! flow control version of mpi_gatherv for integer vectors
+      public :: get_fcblocksize ! get current value of max_gather_block_size
+      public :: set_fcblocksize ! set current value of max_gather_block_size
 
 
 ! !REVISION HISTORY:
 ! 30Jan09 - P.H. Worley <worleyph@ornl.gov> - imported routines
 !           from CAM's spmd_utils to create this module.
 
-  integer, parameter :: max_gather_block_size = 64
-  character(len=*),parameter :: myname='MCT::m_FcComms'
+  integer, public :: max_gather_block_size = 64
+  character(len=*),parameter :: myname='MCT(MPEU)::m_FcComms'
 
  contains
 
@@ -596,5 +598,73 @@
 
  return
  end subroutine fc_gatherv_fp
+
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: get_fcblocksize - return max_gather_block_size
+!
+! !DESCRIPTION:
+! This function returns the current value of max_gather_block_size
+!
+! !INTERFACE:
+
+ function get_fcblocksize()
+
+! !USES:
+!
+! No external modules are used by this function.
+
+     implicit none
+
+! !INPUT PARAMETERS: 
+!
+
+! !OUTPUT PARAMETERS: 
+!
+    integer           :: get_fcblocksize
+
+! !REVISION HISTORY:
+!       03Mar09 - R. Jacob (jacob@mcs.anl.gov) -- intial version
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::get_fcblocksize'
+
+  get_fcblocksize = max_gather_block_size
+
+ end function  get_fcblocksize
+
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: set_fcblocksize - set max_gather_block_size
+!
+! !DESCRIPTION:
+! This function sets the current value of max_gather_block_size
+!
+! !INTERFACE:
+
+ subroutine set_fcblocksize(gather_block_size)
+
+! !USES:
+!
+! No external modules are used by this function.
+
+     implicit none
+
+! !INPUT PARAMETERS: 
+!
+    integer           :: gather_block_size
+
+! !OUTPUT PARAMETERS: 
+!
+
+! !REVISION HISTORY:
+!       03Mar09 - R. Jacob (jacob@mcs.anl.gov) -- intial version
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//':: set_fcblocksize'
+
+  max_gather_block_size = gather_block_size
+
+ end subroutine  set_fcblocksize
 
  end module m_FcComms
