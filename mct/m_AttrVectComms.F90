@@ -439,6 +439,7 @@
       use m_AttrVect, only : AttrVect_nIAttr => nIAttr
       use m_AttrVect, only : AttrVect_nRAttr => nRAttr
       use m_AttrVect, only : AttrVect_clean => clean
+      use m_FcComms,  only : fc_gatherv_int, fc_gatherv_fp
 
       implicit none
 
@@ -462,6 +463,8 @@
 !  9May01 - J.W. Larson <larson@mcs.anl.gov> - tidied up prologue
 ! 18May01 - R.L. Jacob <jacob@mcs.anl.gov> - use MP_Type function
 !           to determine type for mpi_gatherv
+! 31Jan09 - P.H. Worley <worleyph@ornl.gov> - replaced call to
+!           MPI_gatherv with call to flow controlled gather routines
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::GM_gather_'
@@ -512,21 +515,15 @@
      
      if(myID == root) then
 
-        call MPI_gatherv(iV%iAttr(1,1),niV*nIA,MP_INTEGER,		&
+        call fc_gatherv_int(iV%iAttr(1,1),niV*nIA,MP_INTEGER,		&
              oV%iAttr(1,1),GMap%counts*nIA,GMap%displs*nIA,             &
-             MP_INTEGER,root,comm,ier)
-        if(ier /= 0) then
-           call MP_perr_die(myname_,':: MPI_gatherv(iAttr) on root',ier)
-        endif
+             MP_INTEGER,root,comm)
 
      else
         
-        call MPI_gatherv(iV%iAttr(1,1),niV*nIA,MP_INTEGER,		&
+        call fc_gatherv_int(iV%iAttr(1,1),niV*nIA,MP_INTEGER,		&
              nonRootAV%iAttr(1,1),GMap%counts*nIA,GMap%displs*nIA,      &
-             MP_INTEGER,root,comm,ier)
-        if(ier /= 0) then
-           call MP_perr_die(myname_,':: MPI_gatherv(iAttr) off root',ier)
-        endif
+             MP_INTEGER,root,comm)
 
      endif  ! if(myID == root)
         
@@ -536,22 +533,15 @@
 
      if(myID == root) then
 
-        call MPI_gatherv(iV%rAttr(1,1),niV*nRA,mp_type_Av,	        &
+        call fc_gatherv_fp(iV%rAttr(1,1),niV*nRA,mp_type_Av,	        &
              oV%rAttr(1,1),GMap%counts*nRA,GMap%displs*nRA,             & 
-             mp_type_Av,root,comm,ier)
-        if(ier /= 0) then
-           call MP_perr_die(myname_,':: MPI_gatherv(rAttr) on root',ier)
-        endif
+             mp_type_Av,root,comm)
 
      else
 
-        call MPI_gatherv(iV%rAttr,niV*nRA,mp_type_Av,	        &
+        call fc_gatherv_fp(iV%rAttr,niV*nRA,mp_type_Av,	        &
              nonRootAV%rAttr,GMap%counts*nRA,GMap%displs*nRA,      &
-             mp_type_Av,root,comm,ier)
-        if(ier /= 0) then
-           call MP_perr_die(myname_,':: MPI_gatherv(rAttr) off root',ier)
-        endif
-
+             mp_type_Av,root,comm)
 
      endif  ! if(myID == root)
 

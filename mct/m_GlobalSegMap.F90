@@ -183,6 +183,7 @@
       use m_mpif90
       use m_die
       use m_stdio
+      use m_FcComms, only : fc_gather_int, fc_gatherv_int
 
       implicit none
 
@@ -219,6 +220,8 @@
 !                 argument gsm_comm with required argument comp_id.
 !       23Sep02 - Add optional argument numel to allow start, length
 !                 arrays to be overdimensioned.
+!       31Jan09 - P.H. Worley <worleyph@ornl.gov> - replaced irecv/send/waitall 
+!                 logic with calls to flow controlled gather routines
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::initd_'
@@ -294,27 +297,9 @@
   endif
 
         ! Send local number of segments to the root.
-        ! Here, the root posts non-blocking receives,
-        ! and a barrier brings all the processes together
-        ! once the root has good data.
 
-  if(myID == root) then
-     do i=0,npes-1
-	call MPI_IRECV(counts(i), 1, MP_INTEGER, i, i, &
-	     my_comm, reqs(i), ier)
-     end do
-  endif
-
-  call MPI_SEND(nlseg, 1, MP_INTEGER, root, myID, my_comm, ier)
-  if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND nlseg',ier)
-
-  if(myID == root) then
-     call MPI_WAITALL(size(reqs), reqs, status, ier)
-     if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL() size',ier)
-  endif
-
-  call MPI_BARRIER(my_comm, ier)
-  if(ier /= 0) call MP_perr_die(myname_,'MPI_BARRIER size',ier)
+  call fc_gather_int(nlseg, 1, MP_INTEGER, counts, 1, MP_INTEGER, &
+                     root, my_comm)
 
         ! On the root compute the value of ngseg, along with
         ! the entries of counts and displs.
@@ -324,7 +309,7 @@
      do i=0,npes-1
 	ngseg = ngseg + counts(i)
         if(i == 0) then
-	   displs(i) = 1
+	   displs(i) = 0
 	else
 	   displs(i) = displs(i-1) + counts(i-1)
 	endif
@@ -363,81 +348,26 @@
   endif
 
         ! Now, each process sends its values of start(:) to fill in 
-        ! the appropriate portion of root_start(:y) on the root--post
-        ! non-blocking receives on the root first, then the individual
-        ! sends, followed by a call to MPI_WAITALL().
+        ! the appropriate portion of root_start(:y) on the root.
 
-  if(myID == root) then
-     do i=0,npes-1
-       if (counts(i) /= 0) &
-	call MPI_IRECV(root_start(displs(i)), counts(i), MP_INTEGER, &
-	     i, i, my_comm, reqs(i), ier)
-     end do
-  endif
-
-  if (nlseg /= 0) then
-    call MPI_SEND(start, nlseg, MP_INTEGER, root, myID, my_comm, ier)
-    if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND start',ier)
-  endif
-
-  if(myID == root) then
-     call MPI_WAITALL(size(reqs), reqs, status, ier)
-     if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL start',ier)
-  endif
-
-  call MPI_BARRIER(my_comm, ier)
-  if(ier /= 0) call MP_perr_die(myname_,'MPI_BARRIER start',ier)
+  call fc_gatherv_int(start, nlseg, MP_INTEGER, &
+                      root_start, counts, displs, MP_INTEGER, &
+                      root, my_comm)
 
         ! Next, each process sends its values of length(:) to fill in 
-        ! the appropriate portion of root_length(:) on the root--post
-        ! non-blocking receives on the root first, then the individual
-        ! sends, followed by a call to MPI_WAITALL().
+        ! the appropriate portion of root_length(:) on the root.
 
-  if(myID == root) then
-     do i=0,npes-1
-       if (counts(i) /= 0) &
-	call MPI_IRECV(root_length(displs(i)), counts(i), MP_INTEGER, &
-	     i, i, my_comm, reqs(i), ier)
-     end do
-  endif
-
-  if (nlseg /= 0) then
-    call MPI_SEND(length, nlseg, MP_INTEGER, root, myID, my_comm, ier)
-    if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND length',ier)
-  endif
-
-  if(myID == root) then
-     call MPI_WAITALL(size(reqs), reqs, status, ier)
-     if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL length',ier)
-  endif
-
-  call MPI_BARRIER(my_comm, ier)
-  if(ier /= 0) call MP_perr_die(myname_,'MPI_BARRIER length',ier)
+  call fc_gatherv_int(length, nlseg, MP_INTEGER, &
+                      root_length, counts, displs, MP_INTEGER, &
+                      root, my_comm)
 
         ! Finally, if the argument pe_loc is present, each process sends 
         ! its values of pe_loc(:) to fill in the appropriate portion of 
-        ! root_pe_loc(:) on the root--post non-blocking receives on the 
-        ! root first, then the individual sends, followed by a call to 
-        ! MPI_WAITALL().  
+        ! root_pe_loc(:) on the root.  
    
-  if(myID == root) then
-     do i=0,npes-1
-       if (counts(i) /= 0) &
-	call MPI_IRECV(root_pe_loc(displs(i)), counts(i), MP_INTEGER, &
-	     i, i, my_comm, reqs(i), ier)
-     end do
-  endif
-
-  if(nlseg /= 0) then
-    call MPI_SEND(my_pe_loc, nlseg, MP_INTEGER, root, myID, &
-       my_comm, ier)
-    if(ier /= 0) call MP_perr_die(myname_,'MPI_SEND my_pe_loc',ier)
-  endif
-
-  if(myID == root) then
-     call MPI_WAITALL(size(reqs), reqs, status, ier)
-     if(ier /= 0) call MP_perr_die(myname_,'MPI_WAITALL my_pe_loc',ier)
-  endif
+  call fc_gatherv_int(my_pe_loc, nlseg, MP_INTEGER, &
+                      root_pe_loc, counts, displs, MP_INTEGER, &
+                      root, my_comm)
 
   call MPI_BARRIER(my_comm, ier)
   if(ier /= 0) call MP_perr_die(myname_,'MPI_BARRIER my_pe_loc',ier)
