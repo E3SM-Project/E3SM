@@ -65,14 +65,15 @@ Optional Contents available
   The MCT library builds and the examples run on the following
   platforms/compilers:
 
+  Linux: Portland Group, Intel, g95, Absoft, Pathscale, Lahey, NAG
+  MacOSX: gfortran
   IBM (AIX) xlf
   IBM BlueGene (see PLATFORM NOTE below)
-  SGI (IRIX64) f90 MIPSpro 
   SGI Altix
-  SUN (Solaris) f90 WorkShop
+  Cray XT4/5
   Compaq  Compaq Fortran Compiler (X5.5-2801-48CAG or later)
+  SUN (Solaris) f90 WorkShop
   Cray X1
-  Linux: Portland Group, Intel, g95, Absoft, Pathscale, Lahey, NAG
   NEC
   Fujitsu
 
@@ -117,9 +118,6 @@ Optional Contents available
   > ./configure
   This is equivalent to:
   > ./configure FC=mpixlf90_r CC=mpixlc_r
-
-  On robin at NCCS, use:
-  > ./configure --host=Linux ac_cv_c_bigendian=yes
 
   On the Cray XT3/XT4 (e.g. jaguar) use:
   > ./configure --host=Linux FC=ftn F90=ftn 
