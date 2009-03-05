@@ -228,6 +228,7 @@
   integer :: nPEs, myID, ier, l, i
   integer :: ngseg  ! number of global segments
   integer :: nlseg  ! number of local segments
+  integer :: nlseg_tmp(1) ! workaround for explicit interface expecting an array
 
         ! arrays allocated on the root to which data are gathered
   integer, dimension(:), allocatable :: root_start, root_length, root_pe_loc
@@ -298,7 +299,8 @@
 
         ! Send local number of segments to the root.
 
-  call fc_gather_int(nlseg, 1, MP_INTEGER, counts, 1, MP_INTEGER, &
+  nlseg_tmp(1) = nlseg
+  call fc_gather_int(nlseg_tmp, 1, MP_INTEGER, counts, 1, MP_INTEGER, &
                      root, my_comm)
 
         ! On the root compute the value of ngseg, along with
