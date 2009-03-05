@@ -11,6 +11,7 @@ SRCS_F90	= m_IndexBin_char.F90		\
 		  m_List.F90			\
 		  m_MergeSorts.F90		\
 		  m_Filename.F90		\
+		  m_FcComms.F90                 \
 		  m_Permuter.F90		\
 		  m_SortingTools.F90		\
 		  m_String.F90			\
