@@ -515,14 +515,14 @@
      
      if(myID == root) then
 
-        call fc_gatherv_int(iV%iAttr(1,1),niV*nIA,MP_INTEGER,		&
-             oV%iAttr(1,1),GMap%counts*nIA,GMap%displs*nIA,             &
+        call fc_gatherv_int(iV%iAttr,niV*nIA,MP_INTEGER,		&
+             oV%iAttr,GMap%counts*nIA,GMap%displs*nIA,             &
              MP_INTEGER,root,comm)
 
      else
         
-        call fc_gatherv_int(iV%iAttr(1,1),niV*nIA,MP_INTEGER,		&
-             nonRootAV%iAttr(1,1),GMap%counts*nIA,GMap%displs*nIA,      &
+        call fc_gatherv_int(iV%iAttr,niV*nIA,MP_INTEGER,		&
+             nonRootAV%iAttr,GMap%counts*nIA,GMap%displs*nIA,      &
              MP_INTEGER,root,comm)
 
      endif  ! if(myID == root)
@@ -533,8 +533,8 @@
 
      if(myID == root) then
 
-        call fc_gatherv_fp(iV%rAttr(1,1),niV*nRA,mp_type_Av,	        &
-             oV%rAttr(1,1),GMap%counts*nRA,GMap%displs*nRA,             & 
+        call fc_gatherv_fp(iV%rAttr,niV*nRA,mp_type_Av,	        &
+             oV%rAttr,GMap%counts*nRA,GMap%displs*nRA,             & 
              mp_type_Av,root,comm)
 
      else
