@@ -285,6 +285,10 @@ extern int MPI_Isend(void *buf, int count, MPI_Datatype datatype,
                      int dest, int tag, MPI_Comm comm, MPI_Request *request) ;
 extern int MPI_Send(void* buf, int count, MPI_Datatype datatype,
                     int dest, int tag, MPI_Comm comm);
+extern int MPI_Ssend(void* buf, int count, MPI_Datatype datatype,
+                     int dest, int tag, MPI_Comm comm);
+extern int MPI_Rsend(void* buf, int count, MPI_Datatype datatype,
+                     int dest, int tag, MPI_Comm comm);
 extern double MPI_Wtime(void);;
 extern double MPI_Wtime(void);
 
