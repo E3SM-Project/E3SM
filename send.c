@@ -121,3 +121,47 @@ int MPI_Send(void* buf, int count, MPI_Datatype datatype,
 
 
 
+
+/*********/
+
+
+FORT_NAME(mpi_ssend, MPI_SSEND) ( void *buf, int *count, int *datatype,
+ 		                  int *dest, int *tag, int *comm, int *ierror)
+{
+  *ierror=MPI_Send(buf, *count, *datatype, *dest, *tag, *comm);
+}
+
+
+
+int MPI_Ssend(void* buf, int count, MPI_Datatype datatype,
+	      int dest, int tag, MPI_Comm comm)
+{
+  return(MPI_Send(buf,count,datatype,dest,tag,comm));
+}
+
+
+
+/*********/
+
+
+FORT_NAME(mpi_rsend, MPI_RSEND) ( void *buf, int *count, int *datatype,
+ 		                  int *dest, int *tag, int *comm, int *ierror)
+{
+  *ierror=MPI_Send(buf, *count, *datatype, *dest, *tag, *comm);
+}
+
+
+
+int MPI_Rsend(void* buf, int count, MPI_Datatype datatype,
+	      int dest, int tag, MPI_Comm comm)
+{
+  return(MPI_Send(buf,count,datatype,dest,tag,comm));
+}
+
+
+
+
+
+
+
+
