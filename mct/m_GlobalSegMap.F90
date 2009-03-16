@@ -234,8 +234,7 @@
   integer, dimension(:), allocatable :: root_start, root_length, root_pe_loc
         ! arrays allocated on the root to coordinate gathering of 
         ! data and non-blocking receives by the root
-  integer, dimension(:), allocatable :: counts, displs, reqs
-  integer, dimension(:,:), allocatable :: status
+  integer, dimension(:), allocatable :: counts, displs
         ! data and non-blocking receives by the root
   integer, dimension(:), pointer :: my_pe_loc
 
@@ -290,8 +289,12 @@
         ! to hold the local values of nlseg on the root
 
   if(myID == root) then
-     allocate(counts(0:npes-1), displs(0:npes-1), reqs(0:npes-1), &
-	      status(MP_STATUS_SIZE,0:npes-1), stat=ier)
+     allocate(counts(0:npes-1), displs(0:npes-1), stat=ier)
+     if (ier /= 0) then  
+	call die(myname_, 'allocate(counts,...',ier)
+     endif
+  else
+     allocate(counts(1), displs(1), stat=ier)
      if (ier /= 0) then  
 	call die(myname_, 'allocate(counts,...',ier)
      endif
@@ -407,7 +410,7 @@
 
         ! Clean up the arrays counts(:) and displs(:)
 
-     deallocate(counts, displs, reqs, status, stat=ier)
+     deallocate(counts, displs, stat=ier)
      if(ier /= 0) then
 	call die(myname_, 'deallocate(counts,...)', ier)
      endif
