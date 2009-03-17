@@ -404,18 +404,12 @@
      call die(myname_, 'deallocate(root_start,...)', ier)
   endif
 
-        ! Clean up arrays allocated on the root process:
-
-  if(myID == root) then
-
         ! Clean up the arrays counts(:) and displs(:)
 
-     deallocate(counts, displs, stat=ier)
-     if(ier /= 0) then
-	call die(myname_, 'deallocate(counts,...)', ier)
-     endif
-
-  endif
+   deallocate(counts, displs, stat=ier)
+   if(ier /= 0) then
+     call die(myname_, 'deallocate(counts,...)', ier)
+   endif
 
  end subroutine initd_
 
