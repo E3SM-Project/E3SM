@@ -1,0 +1,72 @@
+
+# COMPILER, LIBRARY, AND MACHINE MAKE VARIABLES
+
+# FORTRAN COMPILER VARIABLES #
+
+FC		= 
+MPIF90          = mpxlf90_r
+FFLAGS		= -O4 -qmaxmem=-1    -WF,-DSPMD -WF,-DAIX -WF,-DSEQ_MCT  -q64 -g -qfullpath -qmaxmem=-1 -qarch=auto -qsigtrap=xl__trcedump  -O2 -qstrict -Q   -WF,-DSYSAIX,-DAIX,-DCPRXLF
+
+FOPTS           = -WF,-DUSEMPIIO,-D_NETCDF,-D_PNETCDF,-D_NOUSEMCT,-D_USEBOX
+
+INCLUDES        =  -I/usr/local/include -I/contrib/pnetcdf/include
+
+# INCLUDE FLAG FOR LOCATING MODULES (-I, -M, or -p)
+MODINC         = -I
+
+# explicit fortran preprocessing
+EXPLICIT_CPP = no
+
+# FORTRAN PREPROCESSOR COMMAND
+CPP		= cpp
+
+# FORTRAN PREPROCESSOR FLAGS
+CPPFLAGS	= -P -C -N -traditional
+
+# C COMPILER VARIABLES #
+
+# C COMPILER
+
+CC		= xlc_r
+MPICC           = mpcc_r
+CFLAGS          = -DFORTRAN_SAME -DSYSAIX -DAIX -DCPRXLF
+COPTS           =  -DUSEMPIIO -D_NETCDF -D_PNETCDF -D_NOUSEMCT -D_USEBOX 
+
+
+# Linking
+
+LDLIBS =   -L/usr/local/lib -lnetcdf -L/contrib/pnetcdf/lib -lpnetcdf 
+
+
+# DIRECTORIES
+
+PIO_PATH       = /ptmp/tcraig/Ber04/pio
+
+PREFIX         = /usr/local
+INSTALL_INC    = /usr/local/include
+INSTALL_LIB    = /usr/local/lib
+
+
+# OTHER COMMANDS #
+AR		= ar
+ARFLAGS         = cq
+RM		= rm -f
+AWK             = awk
+
+
+# Sizes (in C)
+
+SIZEOF_CHAR     = 1
+SIZEOF_INT      = 4
+SIZEOF_FLOAT    = 4
+SIZEOF_DOUBLE   = 8
+SIZEOF_VOID_P   = 8
+
+
+#ifeq ($(TIMING),yes)
+#  FOPTS:= $(FOPTS),-DTIMING
+#  COPTS+= -DTIMING
+#  INCLUDES += -I$(PIO_PATH)/../timing
+#  LDLIBS += -L$(PIO_PATH)/../timing -ltiming
+#endif
+

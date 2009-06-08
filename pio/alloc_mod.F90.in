@@ -1,0 +1,291 @@
+module alloc_mod
+
+  use pio_kinds
+  use pio_types
+  use pio_support, only : piodie, CheckMPIreturn
+  implicit none
+  private
+
+  include 'mpif.h'        ! _EXTERNAL
+
+  public:: alloc_check,  &
+       dealloc_check
+
+
+  interface alloc_check
+     ! TYPE long,int,real,double ! DIMS 1,2
+     module procedure alloc_check_{DIMS}d_{TYPE} 
+     ! TYPE double,long,int,real
+     module procedure alloc_check_0d_{TYPE}
+ end interface
+
+
+  interface dealloc_check
+     ! TYPE long,int,real,double ! DIMS 1,2
+     module procedure dealloc_check_{DIMS}d_{TYPE}
+     ! TYPE double,long,int,real
+     module procedure dealloc_check_0d_{TYPE}
+  end interface
+
+
+  public:: alloc_print_usage
+  public:: alloc_trace_on
+  public:: alloc_trace_off
+
+  character(len=*), parameter :: modName='pio::alloc_mod'
+
+contains
+
+  !
+  ! Instantiate all the variations of alloc_check_ and dealloc_check_
+  !
+
+  ! TYPE long,int,real,double 
+  subroutine alloc_check_1d_{TYPE} (data,size,msg)
+
+    {VTYPE}, pointer :: data(:)
+    integer, intent(in) :: size
+    character(len=*), intent(in), optional:: msg
+
+    character(len=*), parameter :: subName=modName//'::alloc_check_1d_{TYPE}'
+
+    integer ierr, ierror, rank
+
+    if(size==0) then
+      allocate(data(1),stat=ierr)
+    else
+      allocate(data(size),stat=ierr)
+    endif
+    if (ierr /= 0) then
+       call MPI_COMM_rank(MPI_COMM_WORLD,rank,ierror)
+       call CheckMPIReturn(subName,ierror)
+       if (present(msg)) then
+          call piodie('alloc_check_1d_{TYPE}',__LINE__,'allocate failed on task:',&
+            rank,msg2=msg)
+       else
+          call piodie('alloc_check_1d_{TYPE}',__LINE__,'allocate failed on task:',&
+            rank)
+       endif
+    endif
+
+  end subroutine alloc_check_1d_{TYPE}
+
+  ! TYPE long,int,real,double 
+  subroutine alloc_check_2d_{TYPE} (data,size1, size2,msg)
+
+    {VTYPE}, pointer :: data(:,:)
+    integer, intent(in) :: size1, size2
+    character(len=*), intent(in), optional:: msg
+
+    character(len=*), parameter :: subName=modName//'::alloc_check_2d_{TYPE}'
+    integer ierr, ierror, rank
+
+    allocate(data(size1,size2),stat=ierr)
+
+    if (ierr /= 0) then
+       call MPI_COMM_rank(MPI_COMM_WORLD,rank,ierror)
+       call CheckMPIReturn(subName,ierror)
+       if (present(msg)) then
+          call piodie('alloc_check_2d_{TYPE}',__LINE__,'allocate failed on task:',&
+            rank,msg2=msg)
+       else
+          call piodie('alloc_check_2d_{TYPE}',__LINE__,'allocate failed on task:',&
+            rank)
+       endif
+    endif
+
+  end subroutine alloc_check_2d_{TYPE}
+
+  !
+  !
+  !
+  ! TYPE long,int,real,double ! DIMS 1,2
+  subroutine dealloc_check_{DIMS}d_{TYPE} (data,msg)
+
+    {VTYPE}, pointer :: data{DIMSTR}
+    character(len=*), intent(in), optional:: msg
+
+    character(len=*), parameter :: subName=modName//'::dealloc_check_{DIMS}d_{TYPE}'
+    integer ierr, ierror, rank
+
+    deallocate(data,stat=ierr)
+
+    if (ierr /= 0) then
+       call MPI_COMM_rank(MPI_COMM_WORLD,rank,ierror)
+       call CheckMPIReturn(subName,ierror)
+       if (present(msg)) then
+          call piodie('dealloc_check_{DIMS}d_{TYPE}',__LINE__, &
+               ': deallocate failed on task:',rank, msg2=msg)
+       else
+          call piodie('dealloc_check_{DIMS}d_{TYPE}',__LINE__, &
+               ': deallocate failed on task:',rank)
+       endif
+
+    endif
+
+  end subroutine dealloc_check_{DIMS}d_{TYPE}
+
+! TYPE long,int,real,double
+  subroutine alloc_check_0d_{TYPE}(data,msg)
+
+  {VTYPE}, pointer :: data
+  character(len=*), intent(in), optional:: msg
+
+  character(len=*), parameter :: subName=modName//'::alloc_check_0d_{TYPE}'
+  integer ierr, ierror, rank
+
+  allocate(data,stat=ierr)
+
+  if (ierr /= 0) then
+     call MPI_COMM_rank(MPI_COMM_WORLD,rank,ierror)
+     call CheckMPIReturn(subName,ierror)
+     if (present(msg)) then
+        call piodie('alloc_check_0d_{TYPE}',__LINE__,'allocate failed on task:',&
+             rank,msg2=msg)
+     else
+        call piodie('alloc_check_0d_{TYPE}',__LINE__,'allocate failed on task:',&
+             rank)
+     endif
+
+  endif
+
+end subroutine alloc_check_0d_{TYPE}
+
+
+
+
+! TYPE long,int,real,double
+subroutine dealloc_check_0d_{TYPE} (data,msg)
+
+  {VTYPE}, pointer :: data
+  character(len=*), intent(in), optional:: msg
+
+  character(len=*), parameter :: subName=modName//'::dealloc_check_0d_{TYPE}'
+  integer ierr, ierror, rank
+
+  deallocate(data,stat=ierr)
+
+  if (ierr /= 0) then
+    call MPI_COMM_rank(MPI_COMM_WORLD,rank,ierror)
+    call CheckMPIReturn(subName,ierror)
+       if (present(msg)) then
+          call piodie('dealloc_check_0d_{TYPE}',__LINE__, &
+               ': deallocate failed on task:',rank, msg2=msg)
+       else
+          call piodie('dealloc_check_0d_{TYPE}',__LINE__, &
+               ': deallocate failed on task:',rank)
+       endif
+
+  endif
+
+end subroutine dealloc_check_0d_{TYPE}
+
+
+
+
+
+  subroutine alloc_print_usage(rank,msg)
+
+    integer, intent(in) :: rank
+    character(len=*), intent(in), optional :: msg
+
+    character(len=*), parameter :: subName=modName//'::alloc_print_usage'
+    integer ierr, myrank
+
+#ifdef _TESTMEM
+    call MPI_COMM_RANK(MPI_COMM_WORLD,myrank,ierr)
+    call CheckMPIReturn(subName,ierr)
+#ifdef _MEMMON
+    if ( rank<0 .or. rank==myrank ) then
+       print *,''
+       if (present(msg)) then
+          print *,myrank,': alloc_print_usage: ',msg
+       else
+          print *,myrank,': alloc_print_usage: '
+       endif
+
+       call memmon_print_usage
+
+       print *,''
+
+    endif
+#endif
+
+#ifdef _STACKMON
+    if ( myrank == 0 ) then
+       print *,''
+       print *,myrank,': alloc_print_usage: ',msg
+       print *,myrank,': writing stackmonitor.txt'
+    endif
+
+    call print_stack_size
+#endif
+
+
+#endif  /* _TESTMEM */
+
+  end subroutine alloc_print_usage
+
+
+
+  subroutine alloc_trace_on(rank,msg)
+
+    integer, intent(in) :: rank
+    character(len=*), intent(in), optional :: msg
+
+    character(len=*), parameter :: subName=modName//'::alloc_trace_on'
+    integer ierr, myrank
+
+#ifdef _TESTMEM
+#ifdef _MEMMON
+    call MPI_COMM_RANK(MPI_COMM_WORLD,myrank,ierr)
+    call CheckMPIReturn(subName,ierr)
+    if ( rank<0 .or. rank==myrank ) then
+       if (present(msg)) then
+          print *,myrank,': alloc_trace_on: ',msg
+       else
+          print *,myrank,': alloc_trace_on: '
+       endif
+       call memmon_trace_on(myrank)
+       print *,''
+
+    endif
+
+#endif
+#endif
+
+  end subroutine alloc_trace_on
+
+
+
+  subroutine alloc_trace_off(rank,msg)
+
+    integer, intent(in) :: rank
+    character(len=*), intent(in), optional :: msg
+
+    character(len=*), parameter :: subName=modName//'::alloc_trace_off'
+    integer ierr, myrank
+
+#ifdef _TESTMEM
+#ifdef _MEMMON
+
+    call MPI_COMM_RANK(MPI_COMM_WORLD,myrank,ierr)
+    call CheckMPIReturn(subName,ierr)
+    if ( rank<0 .or. rank==myrank ) then
+       if (present(msg)) then
+          print *,myrank,': alloc_trace_off: ',msg
+       else
+          print *,myrank,': alloc_trace_off: '
+       endif
+       call memmon_trace_off(myrank)
+       print *,''
+
+    endif
+
+#endif
+#endif
+
+  end subroutine alloc_trace_off
+
+
+end module alloc_mod

@@ -1,0 +1,72 @@
+
+# COMPILER, LIBRARY, AND MACHINE MAKE VARIABLES
+
+# FORTRAN COMPILER VARIABLES #
+
+FC		= @FC@
+MPIF90          = @MPIF90@
+FFLAGS		= @OPT@ @BIT64@ @REAL8@ @ENDIAN@ @FFLAGS@ @F90FLAGS@ @MACHDEFS@
+
+FOPTS           = @PDEFSF@
+
+INCLUDES        = @PINCS@
+
+# INCLUDE FLAG FOR LOCATING MODULES (-I, -M, or -p)
+MODINC         = @MODINC@
+
+# explicit fortran preprocessing
+EXPLICIT_CPP = @EXPLICIT_FPP@
+
+# FORTRAN PREPROCESSOR COMMAND
+CPP		= @FPP@
+
+# FORTRAN PREPROCESSOR FLAGS
+CPPFLAGS	= @FPPFLAGS@
+
+# C COMPILER VARIABLES #
+
+# C COMPILER
+
+CC		= @CC@
+MPICC           = @MPICC@
+CFLAGS          = @ALLCFLAGS@
+COPTS           = @PDEFS@ 
+
+
+# Linking
+
+LDLIBS = @LDLIBS@
+
+
+# DIRECTORIES
+
+PIO_PATH       = @PIO_PATH@
+
+PREFIX         = @prefix@
+INSTALL_INC    = @prefix@/include
+INSTALL_LIB    = @prefix@/lib
+
+
+# OTHER COMMANDS #
+AR		= @AR@
+ARFLAGS         = @ARFLAGS@
+RM		= @RM@
+AWK             = @AWK@
+
+
+# Sizes (in C)
+
+SIZEOF_CHAR     = @SIZEOF_CHAR@
+SIZEOF_INT      = @SIZEOF_INT@
+SIZEOF_FLOAT    = @SIZEOF_FLOAT@
+SIZEOF_DOUBLE   = @SIZEOF_DOUBLE@
+SIZEOF_VOID_P   = @SIZEOF_VOID_P@
+
+
+#ifeq ($(TIMING),yes)
+#  FOPTS:= $(FOPTS),-DTIMING
+#  COPTS+= -DTIMING
+#  INCLUDES += -I$(PIO_PATH)/../timing
+#  LDLIBS += -L$(PIO_PATH)/../timing -ltiming
+#endif
+

@@ -1,0 +1,84 @@
+GPTL is a general-purpose timing library.  By itself it can gather wallclock
+and cpu timing statistics for a code instrumented with an aribtrary sequence
+of calls to the pair of routines "GPTLstart" and "GPTLstop" (more details
+below).  It is thread-safe, presuming either OpenMP or pthreads is available.
+
+GPTL also provides hooks into the hardware counters library PAPI
+(http://icl.cs.utk.edu/papi/index.html).  If this option is enabled
+(./configure --enable-papi), the same "GPTLstart" and "GPTLstop" calls can be
+used to provide various low-level hardware counter info, such as total
+cycles, floating point ops, cache misses, and various other performance
+information depending on the target architecture.  PAPI must already be
+installed in order to enable this option.
+
+
+Building GPTL
+-------- ---
+
+The simplest procedure for building GPTL is:
+
+./configure
+make
+make install
+
+Some important options to configure are:
+
+--enable-papi      Enables support for the PAPI low-level counters library.
+--with-papi=<path> Specify path to root of PAPI installation (only useful if
+                   --enable-papi also specified)
+--enable-openmp    Enables OpenMP threading support.  This means the
+                   same timer can be called from multiple threads.
+--enable-pthreads  Enables pthreads threading support.  OpenMP is preferable
+                   if available, because the pthreads option utilizes an 
+                   arbitrary (but changeable) upper limit on the number of
+                   available threads.  --enable-openmp overrides
+                   --enable-pthreads if both are specified.
+--enable-bit64     build 64-bit version of library.  For now this only has an
+                   effect on AIX and IRIX.
+--enable-debug     Turn on -g and turn off optimization compiler flags.
+--enable-opt       Turn on compiler optimization (recommended).
+--prefix=<dir>     For installing GPTL in a non-standard place.
+
+configure also accepts CC= and F77= command line options to specify C and
+Fortran compilers, respectively.
+
+Don't hesitate to edit the Makefile that configure produces if you like.  It
+is quite straightforward.
+
+
+Using GPTL
+----- ---
+
+Code instrumentation to utilize GPTL involves an arbitrary number of calls to
+GPTLsetoption(), then a single call to GPTLinitialize(), then an arbitrary
+sequence of calls to GPTLstart() and GPTLstop(), and finally a call to GPTLpr().
+See the man pages for details of arguments to these functions.  The man pages
+for GPTLstart and GPTLstop give an example complete sequence of GPTL calls to
+instrument a code.  Also, various test codes are built in the tests/
+subdirectory of this distribution.
+
+The purpose of GPTLsetoption is to enable or disable certain types of timing.
+The default is to only gather wallclock timing stats.  If this is the
+desired bahavior then no calls to GPTLsetoption are required.  If for example,
+the PAPI counter for total cycles is also desired, then a call of the form:
+
+GPTLsetoption (PAPI_TOT_CYC, 1)
+
+is required.  The list of available GPTL options is contained in gptl.h, and
+the list of possible PAPI options is contained in the file papiStdEventDefs.h 
+included with the PAPI distribution.
+
+GPTLinitialize () initializes the GPTL library for subsequent calls to GPTLstart
+and GPTLstop.  This is necessary for threading, and to initialize the PAPI
+library in case support for it was enabled at configure time.
+
+There can be an arbitrary number of start/stop pairs before GPTLpr is called
+to print the results.  And an arbitrary amount of nesting of timers is also
+allowed.  The printed results will be indented to indicate the level of
+nesting.
+
+GPTLpr prints the results to a file named timing.<number>, where <number> is
+an input argument to GPTLpr.
+
+GPTLfinalize can be called to clean up the GPTL environment.  All space
+malloc'ed by the GPTL library will be freed by this call.

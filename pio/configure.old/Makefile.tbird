@@ -1,0 +1,132 @@
+#
+# This file should define the following:
+#
+#   INCLUDES
+#   LIBS
+#   COPTS
+#   FOPTS
+#   CFLAGS
+#   FFLAGS
+#   AWK
+#   AR
+#
+USEPNETCDF = yes
+USENETCDF  = yes
+USEMCT     = yes
+USEBOX     = yes
+EXPLICIT_CPP=no
+
+
+# Serial NETCDF
+ifeq ($(USENETCDF),yes)
+   SNETCDF=/home/mataylo/netcdf/tbird-intel
+   SNETCDFINC = -I$(SNETCDF)/include -I$(SNETCDF)/lib
+   SNETCDFLIB = -L$(SNETCDF)/lib -lnetcdf
+   SNETCDF_DEFINE = _NETCDF
+else
+   SNETCDF        =
+   SNETCDFINC     =
+   SNETCDFLIB     =
+   SNETCDF_DEFINE = _NONETCDF
+endif
+
+
+# Parallel NETCDF
+ifeq ($(USEPNETCDF),yes)
+   PNETCDF=/home/mataylo/pnetcdf/tbird-intel
+   PNETCDFINC = -I$(PNETCDF)/include
+   PNETCDFLIB = -L$(PNETCDF)/lib -lpnetcdf
+   PNETCDF_DEFINE = _PNETCDF
+else
+   PNETCDFINC     =
+   PNETCDFLIB     =
+   PNETCDF_DEFINE = _NOPNETCDF
+endif
+
+NETCDFINCS = $(SNETCDFINC) $(PNETCDFINC)
+NETCDFLIBS = $(SNETCDFLIB) $(PNETCDFLIB)
+
+ifeq ($(USEMCT), yes)
+   MPEU=../mct/mpeu
+   MPEUINC= -I$(MPEU)
+   MPEULIB=-L$(MPEU) -lmpeu
+   MCT=../mct/mct
+   MCTINC=-I$(MCT)
+   MCTLIB= -L$(MCT) -lmct 
+   MCT_DEFINE = _USEMCT
+else
+   MPEUINC    =
+   MPEULIB    =
+   MCTINC     =
+   MCTLIB     =
+   MCT_DEFINE = _NOUSEMCT
+endif
+MCTINCS = $(MCTINC) $(MPEUINC)
+MCTLIBS = $(MCTLIB) $(MPEULIB)
+
+ifeq ($(USEBOX), yes)
+   BOX_DEFINE = _USEBOX
+else
+   BOX_DEFINE = _NOBOX_REARR
+endif
+
+# MEMMON=/soft/tools/memmon
+# MEMMONLIB=-L$(MEMMON) -lmemmon.rts
+
+STACKMON=/contrib/bgl/lib
+STACKMONLIB=-L$(STACKMON) -lstackmonitor
+
+
+#
+# 
+#
+
+FC= mpif90
+FBASE=  -O2 -w90 -Vaxlib  
+
+CC= mpicc
+
+SYSLIBS=  
+
+
+
+#
+# 
+#
+
+
+INCLUDES= $(MCTINCS) $(NETCDFINCS) 
+
+# LIBS = $(NETCDFLIB) $(MCTLIB) $(MPEULIB) $(STACKMONLIB) $(SYSLIBS)
+LIBS = $(NETCDFLIBS) $(MCTLIBS) $(MEMMONLIB) $(SYSLIBS)
+
+
+
+#
+# Options
+#
+
+
+COPTS := -D_Linux -D$(MCT_DEFINE) -D$(BOX_DEFINE) -D$(PNETCDF_DEFINE) -D$(SNETCDF_DEFINE) -DUSEMPIIO  -DPIO_LUSTRE_HINTS
+
+FOPTS   := $(COPTS)
+
+
+#
+# Optimize
+#
+
+
+OPTIMIZE=yes
+
+
+ifeq ($(OPTIMIZE),yes)
+  FFLAGS = $(FBASE) -O2 
+else
+  FFLAGS := $(FBASE) -O0 
+endif
+
+
+AWK=/usr/bin/awk
+AR=ar cq
+

@@ -1,0 +1,66 @@
+module pio
+! Package all exposed variables and functions under one roof
+
+! only pio_offset is intended for export from kinds
+  use pio_kinds, only : pio_offset
+
+  use piolib_mod, only : pio_initdecomp, &
+       pio_openfile, pio_closefile, pio_createfile, pio_setdebuglevel, &
+       pio_seterrorhandling, pio_setframe, pio_init, pio_get_local_array_size, &
+       pio_freedecomp, pio_syncfile,pio_numtowrite,pio_numtoread,pio_setiotype, &
+       pio_dupiodesc
+
+  use pio_types, only : io_desc_t, file_desc_t, var_desc_t, iosystem_desc_t, &
+	pio_int, pio_real, pio_double, pio_noerr, iotype_netcdf, &
+	iotype_pnetcdf, iotype_binary, iotype_direct_pbinary, iotype_pbinary, &
+	pio_global, pio_char, pio_write, pio_nowrite, pio_clobber, pio_noclobber, &
+	pio_max_name, pio_max_var_dims, pio_rearr_none, pio_rearr_mct, &
+#if defined(_NETCDF) || defined(_PNETCDF)
+	pio_nofill, pio_unlimited, pio_64bit_offset, &
+#endif
+        pio_rearr_box, pio_internal_error, pio_bcast_error, pio_return_error
+
+
+
+  use piodarray, only : pio_read_darray, pio_write_darray  
+
+  use nf_mod, only:        &
+       PIO_enddef => enddef,            &
+       PIO_inquire => inquire,          &
+       PIO_inq_attname => inq_attname,  &
+       PIO_inq_att => inq_att,          &
+       PIO_inq_attlen => inq_attlen,    &
+       PIO_inq_varid => inq_varid,      &
+       PIO_inq_varname => inq_varname,  &
+       PIO_inq_vartype => inq_vartype,  &
+       PIO_inq_varndims => inq_varndims,&
+       PIO_inq_vardimid => inq_vardimid,&
+       PIO_inq_varnatts => inq_varnatts,&
+       PIO_inq_dimid => inq_dimid,      &
+       PIO_inq_dimname => inq_dimname,  &
+       PIO_inq_dimlen => inq_dimlen,    &
+       PIO_def_dim   => def_dim,        &
+       PIO_def_var   => def_var,        &
+       PIO_redef     => redef,          &
+       PIO_copy_att  => copy_att
+
+  use pionfatt_mod, only : PIO_put_att   => put_att,        &
+       PIO_get_att   => get_att
+  use pionfput_mod, only : PIO_put_var   => put_var
+  use pionfget_mod, only : PIO_get_var   => get_var
+  implicit none
+  public
+contains
+  function pio_iam_iotask(iosystem) result(task)
+    type(iosystem_desc_t), intent(in) :: iosystem
+    logical :: task
+    task = iosystem%ioproc
+  end function pio_iam_iotask
+  function pio_iotask_rank(iosystem) result(rank)
+    type(iosystem_desc_t), intent(in) :: iosystem
+    integer :: rank
+    rank = iosystem%io_rank
+  end function pio_iotask_rank
+
+end module pio
+

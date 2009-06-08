@@ -1,0 +1,128 @@
+#
+# This file should define the following:
+#
+#   INCLUDES
+#   LIBS
+#   COPTS
+#   FOPTS
+#   CFLAGS
+#   FFLAGS
+#   AWK
+#   AR
+#
+USEPNETCDF = yes
+USENETCDF  = yes
+USEMCT     = no
+USEBOX     = yes
+
+# Serial NETCDF
+ifeq ($(USENETCDF),yes)
+  SNETCDF        = /contrib/bgl/netcdf-3.6.1
+  SNETCDFINC     = -I$(SNETCDF)/include
+  SNETCDFLIB     = -L$(SNETCDF)/lib -L$(SNETCDF)/include -lnetcdf
+  SNETCDF_DEFINE = _NETCDF
+else
+  SNETCDF        =
+  SNETCDFINC     =
+  SNETCDFLIB     =
+  SNETCDF_DEFINE = _NONETCDF
+endif
+
+# Parallel NETCDF
+ifeq ($(USEPNETCDF),yes) 
+   PNETCDF        = /contrib/bgl/pnetcdf
+   PNETCDFINC     = -I$(PNETCDF)/include
+   PNETCDFLIB     = -L$(PNETCDF)/lib -lpnetcdf
+   PNETCDF_DEFINE = _PNETCDF
+else
+   PNETCDFINC     =
+   PNETCDFLIB     =
+   PNETCDF_DEFINE = _NOPNETCDF
+endif
+
+NETCDFINCS = $(SNETCDFINC) $(PNETCDFINC)
+NETCDFLIBS = $(SNETCDFLIB) $(PNETCDFLIB)
+
+
+ifeq ($(USEMCT), yes)
+   MPEU       = ../mct/mpeu
+   MPEUINC    = -I$(MPEU)
+   MPEULIB    = -L$(MPEU) -lmpeu
+   MCT        = ../mct/mct
+   MCTINC     = -I$(MCT)
+   MCTLIB     = -L$(MCT) -lmct 
+   MCT_DEFINE = _USEMCT
+else
+   MPEUINC    =
+   MPEULIB    =
+   MCTINC     =
+   MCTLIB     =
+   MCT_DEFINE = _NOUSEMCT
+endif
+MCTINCS = $(MCTINC) $(MPEUINC)
+MCTLIBS = $(MCTLIB) $(MPEULIB)
+
+ifeq ($(USEBOX), yes)
+  BOX_DEFINE= _USEBOX
+else
+  BOX_DEFINE= _NOUSEBOX
+endif
+
+
+# MEMMON=/soft/tools/memmon
+# MEMMONLIB=-L$(MEMMON) -lmemmon.rts
+
+STACKMON=/contrib/bgl/lib
+STACKMONLIB=-L$(STACKMON) -lstackmonitor
+
+MPIINC = -I/bgl/BlueLight/ppcfloor/bglsys/include
+#
+# 
+#
+
+FC= blrts_xlf90
+FBASE= -g -qarch=440 -qmaxmem=64000
+
+CC= blrts_xlc
+
+SYSLIBS= -L/bgl/BlueLight/ppcfloor/bglsys/lib -lmpich.rts -lmsglayer.rts -lrts.rts -ldevices.rts
+
+#
+# 
+#
+
+INCLUDES= $(MPIINC) $(MCTINCS) $(NETCDFINCS) 
+
+LIBS = $(NETCDFLIBS) $(MCTLIBS) $(MEMMONLIB) $(SYSLIBS)
+
+
+
+#
+# Options
+#
+
+
+COPTS := -D_BGL -D$(MCT_DEFINE) -D$(BOX_DEFINE) -D$(PNETCDF_DEFINE) -D$(SNETCDF_DEFINE) -DUSEMPIIO
+
+# xlf needs -Dfoo changed to -WF,-Dfoo
+cpre = -WF,-D
+FOPTS   := $(patsubst -D%,$(cpre)%,$(COPTS))
+
+#
+# Optimize
+#
+
+
+OPTIMIZE=yes
+
+
+ifeq ($(OPTIMIZE),yes)
+  FFLAGS = $(FBASE) -O2 -qnoipa -qmaxmem=-1 -qstrict
+else
+  FFLAGS := $(FBASE) -g 
+endif
+
+
+AWK=/usr/bin/awk
+AR=ar cq
+

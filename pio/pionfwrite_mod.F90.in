@@ -1,0 +1,215 @@
+#define _FILE_ "pionfwrite_mod.F90.in"
+module pionfwrite_mod
+  implicit none
+  private
+  public :: write_nf
+  interface write_nf
+     ! TYPE real,int,double
+     module procedure write_nfdarray_{TYPE}
+  end interface
+
+  character(len=*), parameter :: modName='pionfwrite_mod'
+contains
+  ! note: IOBUF may actually point to the original data
+  ! array, and cannot be modified (which is why it is intent(in))
+
+  ! TYPE real,int,double
+  integer function write_nfdarray_{TYPE} (File,IOBUF,varDesc,iodesc,start,count) result(ierr)
+    use nf_mod
+    use pio_types
+    use pio_kinds
+    use alloc_mod, only: alloc_check
+    use pio_support, only : Debug, DebugIO, piodie, checkmpireturn 
+
+#ifdef _NETCDF
+    use netcdf, only : nf90_put_var  !_EXTERNAL
+#endif
+#ifdef TIMING
+    use perf_mod, only : t_startf, t_stopf  !_EXTERNAL
+#endif
+    include 'mpif.h'   !_EXTERNAL
+#ifdef _PNETCDF
+#   include <pnetcdf.inc>   /* _EXTERNAL */
+#endif
+
+    type (File_desc_t), intent(inout) :: File
+    {VTYPE} , intent(in)           :: IOBUF(:)
+    type (var_desc_t), intent(in)   :: varDesc
+    type (IO_desc_t), intent(in)   :: IODesc
+
+
+    integer(pio_offset), intent(in) :: start(:), count(:)
+
+    character(len=*), parameter :: subName=modName//'::write_nfdarray_{TYPE}'
+
+    integer(i4) :: iotype, mpierr
+
+    integer iobuf_size, max_iobuf_size
+    {VTYPE} , pointer :: temp_iobuf(:)
+    integer, pointer :: temp_start(:), temp_count(:)
+    integer :: status(MPI_STATUS_SIZE,3)
+    integer :: request(3)
+    integer start_size, count_size
+    integer i
+    integer :: fh, vid, oldval
+
+#ifdef TIMING
+    call t_startf("pio_write_nfdarray_{TYPE}")
+#endif
+    iotype = File%iotype
+    ierr=PIO_noerr
+
+    if(file%iosystem%ioproc) then
+       select case (iotype) 
+
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
+#ifdef DEBUG
+          if(size(iobuf)<=0) then
+             call piodie(_FILE_,__LINE__,'empty iobuf')
+          end if
+#endif
+          ierr=nfmpi_put_vara_all( File%fh,varDesc%varid,start, &
+               count,IOBUF, &
+               iodesc%Write%n_ElemTYPE, &
+               iodesc%Write%ElemTYPE)
+
+          if(Debug.or.ierr/=PIO_noerr) print *,_FILE_,__LINE__, &
+               '  IAM: ',File%iosystem%io_rank,' start: ',start,' count: ',count,&
+               ' size :',iodesc%Write%n_ElemTYPE, ' error: ',ierr, &
+               iodesc%Write%ElemTYPE
+          if(Debug.or.ierr/=PIO_noerr) print *,_FILE_,__LINE__, &
+               '  IAM: ',File%iosystem%io_rank,'minval: ',minval(IOBUF),'maxval: ',maxval(IOBUF)
+#endif
+
+#ifdef _NETCDF
+       case(iotype_netcdf)
+          if(File%iosystem%num_iotasks>1) then
+             ! allocate space on root for copy of iobuf etc.
+             iobuf_size=size(IOBUF)
+
+             call MPI_REDUCE(iobuf_size,max_iobuf_size, &
+                  1,MPI_INTEGER,MPI_MAX,0,File%iosystem%IO_comm,mpierr)
+             call CheckMPIReturn(subName, mpierr)
+             if (File%iosystem%io_rank==0) then
+                call alloc_check(temp_iobuf,max_iobuf_size)
+             end if
+          endif
+
+
+
+
+          start_size=size(start)
+          call alloc_check(temp_start,start_size)
+          temp_start=start
+
+          count_size=size(count)
+          call alloc_check(temp_count,count_size)
+          temp_count=count
+
+          ! Every i/o proc send data to root
+
+          if (File%iosystem%io_rank>0) then
+             if (Debug) print *, subName,': File%iosystem%comp_rank:',File%iosystem%comp_rank, &
+                  ': relaying IOBUF for write', &
+                  ' size=',size(IOBUF)
+
+             ! Wait for io_rank 0 to indicate that its ready before sending
+             ! this handshaking is nessasary for jaguar
+
+	     call MPI_RECV( i, 1, MPI_INTEGER, 0, file%iosystem%io_rank, &
+                  file%iosystem%io_comm, status(:,1), mpierr)
+             call CheckMPIReturn(subName, mpierr)
+
+             call MPI_SEND( IOBUF,size(IOBUF), &
+                  {MPITYPE}, &
+                  0,File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
+             call CheckMPIReturn(subName, mpierr)
+
+             call MPI_SEND( temp_start,size(start),MPI_INTEGER, &
+                  0,File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
+             call CheckMPIReturn(subName, mpierr)
+
+             call MPI_SEND( temp_count,size(count),MPI_INTEGER, &
+                  0,File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
+             call CheckMPIReturn(subName, mpierr)
+
+          endif
+
+          if (File%iosystem%io_rank==0) then 
+             if (Debug) print *, subName,': 0: writing netcdf for self ', &
+                  'fh=',File%fh,' varid=',varDesc%varid, temp_start, temp_count, size(iobuf)
+             fh = file%fh
+             vid = vardesc%varid
+             ierr=nf90_put_var( fh, vid,IOBUF,temp_start,temp_count)
+             if(Debug) print *, _FILE_,__LINE__,fh,vid, ierr
+             if(ierr==pio_noerr) then
+                if (Debug) print *, subName,': 0: done writing for self'
+
+                do i=1,File%iosystem%num_iotasks-1
+                   if (Debug) print *, subName,': 0: writing netcdf for ',i
+                   ! receive IOBUF, temp_start, temp_count from io_rank i
+
+                   call MPI_IRECV( temp_iobuf, size(temp_iobuf),  &
+                        {MPITYPE}, &
+                        i,i,File%iosystem%IO_comm,request(1),mpierr)
+                   call CheckMPIReturn(subName,mpierr)
+
+                   call MPI_IRECV( temp_start, &
+                        size(temp_start), MPI_INTEGER,  &
+                        i,i,File%iosystem%IO_comm,request(2),mpierr)
+                   call CheckMPIReturn(subName,mpierr)
+
+                   call MPI_IRECV( temp_count, &
+                        size(temp_count), MPI_INTEGER,  &
+                        i,i,File%iosystem%IO_comm,request(3),mpierr)
+                   call CheckMPIReturn(subName,mpierr)
+
+                   ! Send a signal indicating ready to recv
+
+                   call MPI_SEND( i, 1, MPI_INTEGER, i, i, &
+                        file%iosystem%io_comm, mpierr)
+                   call CheckMPIReturn(subName,mpierr)
+                   call MPI_WAITALL(3, request, status, mpierr)
+                   call CheckMPIReturn(subName,mpierr)
+#ifdef TIMING
+                   call t_startf("nc_put_var2")
+#endif
+                   ierr=nf90_put_var( fh,vid, &
+                        temp_iobuf,temp_start,temp_count)
+
+                   if(Debug) print *, _FILE_,__LINE__,i,fh,vid, ierr
+
+#ifdef TIMING
+                   call t_stopf("nc_put_var2")
+#endif
+
+                   if (Debug) print *, subName,': 0: done writing for ',i
+
+                end do ! i=1,File%iosystem%num_iotasks-1
+             end if ! ierr==pio_noerr
+          endif  ! File%iosystem%io_rank==0
+
+          deallocate(temp_start)
+          deallocate(temp_count)
+
+          if (File%iosystem%io_rank==0 .and. File%iosystem%num_iotasks>1) then
+             deallocate(temp_iobuf)
+          endif
+
+#endif
+
+       case default
+          call bad_iotype(iotype,_FILE_,__LINE__)
+
+       end select
+    endif  ! if (File%iosystem%IOproc)
+
+    call check_netcdf(File, ierr,_FILE_,__LINE__)
+#ifdef TIMING
+    call t_stopf("pio_write_nfdarray_{TYPE}")
+#endif
+
+  end function WRITE_NFDARRAY_{TYPE}
+
+end module pionfwrite_mod

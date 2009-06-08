@@ -1,0 +1,1195 @@
+
+
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
+Tag name: pio48_prod
+Originator(s): John
+Date: 06-05-09
+One-line Summary: Added support for benchmark and testsuite on frost
+
+List all component tags that were used to create pio tag:
+   mct   https://svn-ccsm-models.cgd.ucar.edu/mct/trunk_tags/MCT2_5_1_080912
+   timing  https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_081221	
+
+	Added support for the benchmark and testsuite on frost.  
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by:
+
+Summary of pre-tag testing:
+
+  Regression tests:
+     A total of 50 passed and 24 failures.
+	
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
+Tag name: pio47_prod
+Originator(s): Jim, Pat Worley
+Date: 05-28-09
+One-line Summary: Added communications options to box_rearranger
+
+List all component tags that were used to create pio tag:
+   mct   https://svn-ccsm-models.cgd.ucar.edu/mct/trunk_tags/MCT2_5_1_080912
+   timing  https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_081221	
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+      There are a number of options to be exercised,
+      and exercising these is not yet very convenient.
+      The options can be set in the calls to
+
+      box_rearrange_comp2io_{TYPE}
+      box_rearrange_io2comp_{TYPE}
+
+      as optional parameters. As the calls to these routine
+      don't do this currently, you will need to add defines
+      to the Makefile and/or modify the code in order
+      to enable the different options.
+
+      1) Out of the box, the original cam3_6_39 algorithms
+      are used. 
+
+      2) Compiling with
+
+      -D_USE_ALLTOALLW
+
+      (after deleting box_rearrange.o :-) )
+
+      will use the MPI_ALLTOALLW branch that
+      Ray put in originally. Note that this code is always
+      compiled. The ifdef now simply sets the option
+      variable and a runtime if-test selects calling
+      MPI_ALLTOALLW .
+
+      3) Compiling with
+
+      -D_USE_COMP2IO_FC
+
+      (and not compiling with -D_USE_ALLTOALLW and
+      deleting box_rearrange.o)) will use the
+      pio_swapm routine in box_rearrange_comp2io_{TYPE} .
+
+      Similarly, compiling with
+
+      -D_USE_COMP2IO_FC
+
+      will use the pio_swapm routine in box_rearrange_io2comp_{TYPE} .
+
+       a) The default for this is to use handshaking, use MPI_SEND (not MPI_ISEND),
+       and set the throttle on the number of nonblocking requests to 64.
+
+        b) If you want to try one of the other options, modify the defaults at the
+	top of box_rearrange.F90 as follows:
+
+	enabling/disabling handshaking (true/false)
+	#define DEF_P2P_HANDSHAKE .true.
+
+	enabling/disabling using MPI_ISEND  (true/false)
+	#define DEF_P2P_ISEND .false.
+
+	setting/disbling the throttle (>0, -1)
+	#define DEF_P2P_MAXREQ 64
+
+	and recompile.
+
+	
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by:
+
+Summary of pre-tag testing:
+
+  Regression tests:
+      Passed all expected tests on bluefire and jaguar (13 expected failures on each)
+      Passed cam regression tests
+	
+===============================================================
+===============================================================
+
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
+Tag name: pio46_prod
+Originator(s): John
+Date: 05-22-09
+One-line Summary: Bug fixes to benchmark code
+
+List all component tags that were used to create pio tag:
+   mct   https://svn-ccsm-models.cgd.ucar.edu/mct/trunk_tags/MCT2_5_1_080912
+   timing  https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_081221
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+	* Reduced the amount of memory used in gdecomp_DOF subroutine
+	* Added several new benchmark configurations
+	* Addressed bug in decomposition calculation algorithm 
+	* Added support for full specification of IO decomposition
+	  using namelist 
+	* Added output of maximum memory across processors in testpio code
+	
+
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: self
+
+Summary of pre-tag testing:
+
+  Regression tests:  kraken tests completed
+                     there are 13 tests expected to fail on kraken and 61 pass.
+
+===============================================================
+
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
+Tag name: pio45_prod
+Originator(s): Jim, Pat Worley
+Date: 05-19-09
+One-line Summary: Changed send recv algorythm in pionfwrite_mod, minor bug fixes
+
+List all component tags that were used to create pio tag: 
+   mct   https://svn-ccsm-models.cgd.ucar.edu/mct/trunk_tags/MCT2_5_1_080912
+   timing  https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_081221
+	
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+    
+	Added handshaking to make sure that irecv is posted prior to send in
+	communications for netcdf output method in pionfwrite_mod.
+	Replaced mpi_int with mpi_integer.  
+
+	
+Bugs fixed:  
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: self
+
+Summary of pre-tag testing:
+
+  Regression tests:  bluefire tests completed
+	             there are 13 tests expected to fail on bluefire and 61 pass.
+                     cam regression suite completed
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
+Tag name: pio44_prod
+Originator(s): Jim
+Date: 05-15-09
+One-line Summary: Rewrite getiostartandcount routine in piolib_mod.F90
+
+List all component tags that were used to create pio tag: 
+   mct   https://svn-ccsm-models.cgd.ucar.edu/mct/trunk_tags/MCT2_5_1_080912
+   timing  https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_081221
+	
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+   
+   A complete rewrite of thegetiostartandcount routine includes 3 options for
+	how arrays should be decomposed onto the io processors plus allows the 
+	user to specify start and count arrays at the application level.   
+        The initdecomp interface therefor has three additional optional parameters
+	
+	initDecomp_1dof_nf_box(Iosystem,basepioTYPE,dims,compDOF, IOdesc, start, count, method_in)
+
+	where start and count are of type PIO_OFFSET and have the same number of dimensions as dims
+	and method_in is an integer with value 1 (inner dim first) ,2 (outer dim first), or 3 (largest to smallest)
+	If either start or count is provided both must be and method_in is ignored.
+
+Bugs fixed:  
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: self
+
+Summary of pre-tag testing:
+
+  Regression tests:  bluefire tests completed
+	             there are 13 tests expected to fail on bluefire and 61 pass.
+                     cam regression suite completed
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
+Tag name: pio43_prod
+Originator(s): Jim
+Date: May 11, 2009
+One-line Summary:  PGI compiler doesnt like 0 sized arrays.
+
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: self
+
+Summary of pre-tag testing: testpio run on bluefire
+
+  Regression tests: cam tests on bluefire and calgary(lahey and pgi)
+
+
+==============================================================================================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
+Tag name: pio42_prod
+Originator(s): Jim
+Date: May 4, 2009
+One-line Summary:  Fixed problem when size of field output with parallel mechanism write_darray was smaller than the number of io procs.   Added a minimum count per io proc - currently set to 16.
+
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: self
+
+Summary of pre-tag testing: 
+
+  Regression tests: 
+
+
+===============================================================
+
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
+Tag name: pio41_prod
+Originator(s): Jim
+Date: May 1, 2009
+One-line Summary:  fixed a configure error: -D_MPISERIAL define was missing
+
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: self
+
+Summary of pre-tag testing: 
+
+  Regression tests: bluefire all pass
+
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
+Tag name: pio40_prod
+Originator(s): Jim
+Date: May 1, 2009
+One-line Summary:  Added pio_64bit_offset flag, --enable-mpiserial forces --disable-pnetcdf
+
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: self
+
+Summary of pre-tag testing: 
+
+  Regression tests: bluefire all pass
+
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+===============================================================
+
+Tag name: pio39_prod
+Originator(s): tcraig
+Date: April 30, 2009
+One-line Summary: Comment out 64BIT_OFFSET in nf_mod.F90
+
+- commented out use of the 64BIT_OFFSET hardwired setting
+  in nf_mod.F90, createfile.
+
+===============================================================
+Tag name: pio38_prod
+Originator(s): Jim
+Date: April 17, 2009
+One-line Summary: Fixed generated files, clarified procedure for commiting
+
+===============================================================
+ 
+Tag name: pio37_prod
+Originator(s): tcraig
+Date: 03/20/2009
+One-line Summary: add Makefile.conf.bluefire for ccsm build
+
+add Makefile.conf.bluefire for ccsm build.  has no effect on
+standalone implementation.
+
+===============================================================
+ 
+Tag name: pio36_prod
+Originator(s): Jim
+Date: 03/20/2009
+One-line Summary: minor bug fix and sanity check
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed: Subname variable was undeclared in mct_rearrange_init
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by:
+
+Summary of pre-tag testing:  
+
+  Regression tests: cam regression tests
+
+
+===============================================================
+
+===============================================================
+ 
+Tag name: pio35_prod
+Originator(s): tcraig
+Date: 03/05/09
+One-line Summary: merge testdev11_pio34_prod to trunk
+
+ - Add timing lib
+ - Update tests
+ - Update error checking
+ - Update testpio scripts
+ - and more...
+
+===============================================================
+ 
+Tag name: pio34_prod
+Originator(s): tcraig
+Date: 03/05/09
+One-line Summary: pio bug fixes
+
+ - Fix pio_types bug for MPIIO builds only in pio_types.F90 (jedwards)
+ - Fix xl__trbk calls in pio_support.F90.in (jedwards)
+ - Fix argument attributes on dof in pio_support.F90.in (jedwards)
+ - Fix use of pio_nofill and pio_unlimited in ifdef in pio.F90 (jedwards)
+ - Fix fill value bug in piodarray.F90.in (tcraig)
+
+===============================================================
+ 
+Tag name: pio33_prod
+Originator(s): tcraig
+Date: 02/06/09
+One-line Summary: testpio update, pio update
+
+ - Fix a couple pio bugs (jedwards)
+ - Add pio_readdof, pio_writedof subroutines in pio_support
+ - Update build and run scripts for bluefire, jaguar,
+   franklin, kraken, and intrepid.
+ - Update suite of tests to better reflect capabilities
+ - Update testpio to add readdof and writedof capability
+ - Update README
+ - Extend testpio logic wrt test capabilities
+
+===============================================================
+ 
+Tag name: pio32_prod
+Originator(s): tcraig
+Date: 01/30/09
+One-line Summary: Merge testdev07_pio31_prod to trunk
+
+ - Update testpio
+ - Update pio for fixes to bin/rearrange mode (jd)
+
+testpio.bluefire.run
+testpio_suite.bluefire.run
+testdecomp.bluefire.run
+
+all run to completion on bluefire
+	
+===============================================================
+ 
+Tag name: pio31_prod
+Originator(s): Jim Edwards
+Date: 01/30/09
+One-line Summary: Minor bug fix, update configure for mpiio
+
+  pio/configure    
+  pio/configure.ac 
+  pio/piolib_mod.F90
+	
+===============================================================
+ 
+Tag name: pio30_prod
+Originator(s): Jim Edwards
+Date: 01/30/09
+One-line Summary: Minor bug fixes for Lahey compiler
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by:
+
+Summary of pre-tag testing:  cam regression on bluefire and calgary
+
+  Regression tests:
+
+
+===============================================================
+
+===============================================================
+ 
+Tag name: pio29_prod
+Originator(s): John Dennis
+Date: 01/21/09
+One-line Summary:  Exported more symbols need by POP
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by:
+
+Summary of pre-tag testing:
+
+  Regression tests:
+
+
+===============================================================
+===============================================================
+ 
+Tag name: pio28_prod
+Originator(s): Jim
+Date: 12/16/08
+One-line Summary: Changed configure to not try to compute sizeof when --host is specified
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by:
+
+Summary of pre-tag testing:
+
+  Regression tests:
+
+
+===============================================================
+===============================================================
+ 
+Tag name: pio27_prod
+Originator(s): Jim, Ray
+Date: 12/10/08
+One-line Summary: configuration changes
+
+List all component tags that were used to create pio tag:
+  mct   https://svn-ccsm-models.cgd.ucar.edu/mct/trunk_tags/MCT2_5_1_080912
+	
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+	Reconfigured to build as a standalone library in CCSM build.
+    
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+   configuration tools moved to pio subdirectory to allow exporting
+   pio lib without test directory and externals
+	
+Describe any substantial timing or memory changes:
+
+Code reviewed by: Jim
+
+Summary of pre-tag testing:  tested using cam test suite on bluefire and calgary
+
+  Regression tests:
+
+
+===============================================================
+===============================================================
+ 
+Tag name: pio26_prod
+Originator(s): Jim
+Date: 10/20/08
+One-line Summary: Minor bug fixes
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed: 
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: self
+
+Summary of pre-tag testing: tested with homme/cam on bluefire and calgary
+
+  Regression tests:
+
+
+===============================================================
+===============================================================
+ 
+Tag name: pio25_prod
+Originator(s): Jim
+Date: 10/03/08
+One-line Summary:  Port to lf95 6.1 compiler
+
+List all component tags that were used to create pio tag: MCT2_5_1_080912
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:  
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: me
+
+Summary of pre-tag testing:  tested against cam on bluefire and bangkok
+
+  Regression tests:
+
+
+===============================================================
+===============================================================
+ 
+Tag name: pio24_prod
+Originator(s): Jim
+Date: 8/28/08
+One-line Summary:  mem leak fix, updates to pio unified interface
+
+List all component tags that were used to create pio tag: MCT2_5_1_080522
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: me
+
+Summary of pre-tag testing:  tested on bluefire and with cam and homme interfaces
+
+  Regression tests:
+
+
+===============================================================
+
+===============================================================
+ 
+Tag name: pio23_prod
+Originator(s): Jim
+Date: 4/24/08
+One-line Summary:  Added line-number generation to code generator
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: self
+
+Summary of pre-tag testing: tested on aix and with cam
+
+  Regression tests:
+
+
+===============================================================
+===============================================================
+ 
+Tag name: pio22_prod
+Originator(s): Jim Edwards
+Date: 4/14/08
+One-line Summary:  Moved F90 generation from cpp to perl script genf90.pl
+
+List all component tags that were used to create pio tag: 
+	mct   https://svn-ccsm-models.cgd.ucar.edu/mct/trunk_tags/MCT2_4_2_071026
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+       This change reduces duplication of code and reduces reliance on CPP
+       which can be a bit finicky.
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: self
+
+Summary of pre-tag testing:   Tested on AIX
+
+  Regression tests:
+
+
+===============================================================
+===============================================================
+ 
+Tag name: pio21_prod
+Originator(s): Jim Edwards
+Date: 4-9-2008
+One-line Summary: Consolidate all exports into a single pio module
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: self
+
+Summary of pre-tag testing:  tested on blueice
+
+  Regression tests:
+
+
+===============================================================
+===============================================================
+ 
+Tag name: pio20_prod
+Originator(s): Jim Edwards
+Date: 3-26-2008
+One-line Summary: bug fixes for pnetcdf interface
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed: text variables were not handled correctly in nf_put and nf_get
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: me
+
+Summary of pre-tag testing: tested on blueice
+
+  Regression tests:
+
+
+===============================================================
+===============================================================
+ 
+Tag name: pio18_prod
+Originator(s): Jim Edwards
+Date: 03-20-2008
+One-line Summary:  minor updates to netcdf attributes and put/get functions
+
+List all component tags that were used to create pio tag: 
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system: none
+ 
+Describe any substantial timing or memory changes: none
+
+Code reviewed by: me
+
+Summary of pre-tag testing:  tested against cam on blueice
+
+  Regression tests:
+
+
+===============================================================
+===============================================================
+ 
+Tag name: pio16_prod
+Originator(s): John Dennis
+Date: 03-14-2008
+One-line Summary: Improved decomposition support in testcode.
+A	testpio/factor_mod.F90
+
+		Several factoring need by the new decompostion algorthm in testcode
+
+M	testpio/Makefile
+		
+		Added the source file factor_mod.F90 to build 
+
+M	testpio/check_mod.F90	
+	
+		Eliminated excessive error messages generation
+
+M	testpio/testPIO.F90
+M	testpio/pdiff.F90
+
+		Minor changes to use the improved decomposition algorithm
+
+M	testpio/decomp.F90
+
+		Added a slightly more generate decompostion algorithm
+
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+	See above. 
+
+Code reviewed by: John
+
+Summary of pre-tag testing:
+
+  Regression tests:
+	tested on frost for binary files 
+
+
+===============================================================
+===============================================================
+ 
+Tag name: pio15_prod
+Originator(s): Jim Edwards
+Date: 03-07-2008
+One-line Summary:  API changes
+M            9138   pio/pionfread.inc
+M            9138   pio/mct_rearrange.inc
+M            9138   pio/pionfget.inc
+M            9138   pio/alloc_mod.F90
+M            9138   pio/box_rearrange.inc
+M            9138   pio/pioreadmpiio.inc
+M            9138   pio/pioread.inc
+M            9138   pio/pionfatt.inc
+M            9138   pio/pionfwrite.inc
+M            9138   pio/nf_mod.F90
+M            9138   pio/rearrange.F90
+M            9138   pio/mct_rearrange.F90
+M            9138   pio/pio_types.F90
+M            9138   pio/piowritempiio.inc
+M            9138   pio/iompi_mod.F90
+M            9138   pio/piolib_mod.F90
+M            9138   pio/piowrite.inc
+M            9138   pio/box_rearrange.F90
+M            9138   pio/pionfput.inc
+M            9138   pio/rearrange.inc
+M            9138   Makefile.ncarAIX
+M            9138   testpio/decomp.F90
+M            9138   testpio/testPIO.F90
+M            9138   testpio/pdiff.F90
+M            9138   testpio/popio_in
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+ Rename PIO_INITFILE to PIO_INIT and create a iosystem_desc_t structure which consists of the file independent portion of the file_desc_t structure remove iotype as an argument to this routine.
+ Change the arguments to PIO_OPENFILE and PIO_CREATEFILE  from (File, filename) to (PIO, FIle, iotype, filename)
+ Change the first argument to PIO_INITDECOMP from file_desc_t to iosystem_desc_t
+ Explicitly include the io_desc_t  in calls to pio_read_darray and pio_write_darray
+	
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+ Remove mct from defaults on ncarAIX
+Describe any substantial timing or memory changes:
+
+Code reviewed by:
+Jim
+Summary of pre-tag testing:
+  Tested on blueice with bin, netcdf and pnetcdf all passed
+  Regression tests:
+
+
+===============================================================
+===============================================================
+ 
+Tag name: pio14_prod
+Originator(s): J. Dennis
+Date: 03/04/08
+One-line Summary: Add rearranger support for binary files
+
+M	testPIO.F90
+
+	- Added code to use rearranger for binary files 
+
+	- Added namelist variables to control number of IO processors (nprocsIO)
+
+M 	piolib_mod.F90
+
+	- Cleaned up some dead code in initDecomp_2dof_BIN 
+
+M	iompi_mod.F90
+
+	- Removed broadcast of MPI-IO file handle
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: J. Dennis
+
+Summary of pre-tag testing:  tested on BGL
+
+  Regression tests:
+
+
+===============================================================
+===============================================================
+ 
+Tag name: pio13_prod
+Originator(s): J. Dennis
+Date: 02/29/08
+One-line Summary: Changes to improve benchmarking of testpio code. 
+
+M	testPIO.F90
+
+	- Added ability to read/write to a other directories
+	
+	- Added support to flush buffer cache
+
+	- Added support to run performance test several iterations.
+
+m	Makefile.ncarbgl
+
+	- Changed flags to support box rearranger
+
+List all component tags that were used to create pio tag:
+
+  mct MCT2_4_2_071026
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: self
+
+Summary of pre-tag testing:
+
+  Regression tests:
+
+     Passed pio test on frost
+
+===============================================================
+===============================================================
+ 
+Tag name: pio11_prod
+Originator(s):  Jim Edwards
+Date: 01/17/08
+One-line Summary:  Additional functionality in netcdf interface
+
+M            8542   mct_rearrange.inc
+	Replaced stop statements with piodie calls
+M            8542   pionfget.inc
+	Added support for calls using vdesc instead of vdesc%var_id
+M            8542   box_rearrange.inc
+	Changed some io format for port to pgi compiler
+M            8542   pio_quicksort.F90
+	Removed DOS style EOL characters (^M)
+M            8542   pioread.inc
+	minor format changes
+A  +            -   pionfatt.inc
+	Moved from nf_mod and added support for calls using vdesc instead of vdesc%var_id
+M            8542   pionfwrite.inc
+	Added timing calls 
+M            8542   nf_mod.F90
+	Added support for calls using vdesc instead of vdesc%var_id
+M            8542   rearrange.F90
+	minor format changes
+M            8542   pio_types.F90
+	Additional types copied from (p)netcdf
+M            8542   piolib_mod.F90
+	minor format changes
+M            8542   piowrite.inc
+	minor format changes
+M            8542   box_rearrange.F90
+	added  MPI_TYPE_CREATE_INDEXED_BLOCK for platforms without MPI2 support (NO_MPI2)
+M            8542   pionfput.inc
+	Added support for calls using vdesc instead of vdesc%var_id
+M            8542   rearrange.inc
+        minor format changes
+	
+List all component tags that were used to create pio tag:
+
+  mct MCT2_4_2_071026
+
+Describe the changes for each component above that was changed relative 
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed: 
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: self
+
+Summary of pre-tag testing:
+
+  Regression tests:
+
+     Passed pio test on blueice
+
+===============================================================
+===============================================================
+
+Changes since last tag
+
+	updated to MCT2_4_2_071026
+        use MCT_initialized to determine if need to start MCT
+	added timers to rearranger
+
+	
+===============================================================
+ 
+Tag name: pio10_prod
+Originator(s): Ray Loy
+Date: Jan 3, 2008
+One-line Summary: changed initDecomp args from MPI types to PIO types
+
+List all component tags that were used to create pio tag:
+
+  mct 	MCT2_3_0_070524    
+
+Describe the changes for each component above that was changed relative 
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+	all interfaces of PIO_initDecomp are now changed to use
+        PIO_{double,real,int,char} instead of 
+        MPI_{DOUBLE_PRECISION,REAL,INTEGER,CHAR}
+
+        this is to be more consistent
+	
+Bugs fixed: 
+
+
+Summary of pre-tag testing:
+
+  Regression tests:
+
+	testpio run on BG/L
+
+  Machine (frost):
+    Regression tests:
+
+  Machine (nyblue):
+    Regression tests:
+
+===============================================================
+ 
+Tag name: pio09_prod
+Originator(s): Ray Loy
+Date: Dec 5, 2007
+One-line Summary: added mp_alltoallw option to box rearrange
+
+List all component tags that were used to create pio tag:
+
+  mct 	MCT2_3_0_070524    
+
+Describe the changes for each component above that was changed relative 
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+	box_rearrange.inc will use mpi_alltoall2 instead
+        of point-to-point sends if you compile with -D_USE_ALLTOALLW
+
+        on some platforms this might be faster.
+
+Bugs fixed: 
+
+
+Summary of pre-tag testing:
+
+  Regression tests:
+
+	box rearranger test and testpio run on BG/L
+
+  Machine (frost):
+    Regression tests:
+
+  Machine (nyblue):
+    Regression tests:
+
+===============================================================
+ 
+Tag name: pio08_prod
+Originator(s): Ray Loy
+Date: Nov 30, 2007
+One-line Summary: mpi type caching in box rearranger
+
+List all component tags that were used to create pio tag:
+
+  mct 	MCT2_3_0_070524    
+
+Describe the changes for each component above that was changed relative 
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+box rearranger restructured so that the creation of the scatter/gather
+mpi types happens up front in the rearranger_create instead of at the
+time of the rearrange.
+
+also was able to remove some of the data in IODesc because it is no
+longer needed after the type creation.
+
+	
+
+Bugs fixed: 
+
+
+Summary of pre-tag testing:
+
+  Regression tests:
+
+	box rearranger test and testpio run on BG/L
+
+  Machine (frost):
+    Regression tests:
+
+  Machine (nyblue):
+    Regression tests:
+
+===============================================================
+ 
+Tag name: pio05_prod
+Originator(s): John Dennis
+Date: Oct 23, 2007
+One-line Summary: Support for PIO in POP
+
+List all component tags that were used to create pio tag:
+
+  mct 	MCT2_3_0_070524    
+
+Describe the changes for each component above that was changed relative 
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+PIO in POP
+
+	Several major changes were applied to PIO to enable use in 
+POP.  This included the porting of the old version of the subroutine 
+initDecomp_2dof_BIN.  The previous version of the subroutine does not 
+use the two separate IODOF properly.
+
+ChangeLog
+
+	PIO now uses a changed log and new form of tags:  pio##_prod
+
+
+Bugs fixed: 
+
+	Binary writing with MPI-IO now works again.  
+
+Summary of pre-tag testing:
+
+  Regression tests:
+
+	Minor testing on BlueGene within LANL POP and CCSM POP in coupled system.  
+
+  Machine (frost):
+    Regression tests:
+
+  Machine (nyblue):
+    Regression tests:
+
+===============================================================

@@ -1,0 +1,191 @@
+#define _FILE_ "pionfput_mod.F90"
+module pionfput_mod
+  ! Provides put_var and get_var interface to the netcdf and or pnetcdf library.
+  ! This module provides functionality for data which is not distributed.
+  !
+  !pl  This file is input to the perl program genf90.pl which generates  
+  !pl  f90 code for various datatypes and dimensions.
+  !pl  Supported parser keywords are {TYPE}, {DIMS}, {VTYPE}, {DIMSTR} and {MPITYPE} 
+#ifdef TIMING
+  use perf_mod, only : t_startf, t_stopf      ! _EXTERNAL
+#endif
+  use pio_kinds, only: i4,r4,r8,pio_offset
+  use pio_types
+  use nf_mod, only : check_netcdf
+
+  use pio_support, only : Debug, DebugIO, piodie   
+#ifdef _NETCDF
+  use netcdf            ! _EXTERNAL
+#endif
+  implicit none
+  private
+#ifdef _PNETCDF
+#include <pnetcdf.inc>  /* _EXTERNAL */
+#endif
+  include 'mpif.h'   ! _EXTERNAL
+  public :: put_var
+  interface put_var
+     module procedure put_var_{DIMS}d_{TYPE}, put_var_vdesc_{DIMS}d_{TYPE}
+     !  DIMS 1,2,3
+     module procedure put_vara_{DIMS}d_{TYPE}, put_vara_vdesc_{DIMS}d_{TYPE}
+     module procedure put_var1_{TYPE}, put_var1_vdesc_{TYPE}
+  end interface
+contains
+  integer function put_var1_{TYPE} (File,varid, index, ival) result(ierr)
+    type (File_desc_t), intent(inout) :: File
+    integer, intent(in) :: varid, index(:)
+    {VTYPE}, intent(in) :: ival
+#ifdef _PNETCDF
+    integer, allocatable :: count(:)
+#endif
+    integer :: iotype
+
+#ifdef TIMING
+    call t_startf("pio_put_var1_{TYPE}")
+#endif 
+    ierr=0
+    iotype = File%iotype 
+    if(debug) print *,_FILE_,__LINE__,ival,iotype, index
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
+          allocate(count(size(index)))
+          count(:) = 1
+#if ({ITYPE} == TYPETEXT)
+          count(1) = len(ival)
+#endif	
+          ierr = nfmpi_put_vara_all (File%fh, varid, int(index,kind=PIO_OFFSET), int(count,kind=PIO_OFFSET), ival, count, {MPITYPE})
+          deallocate(count)
+#endif
+#ifdef _NETCDF
+       case(iotype_netcdf)
+          ! Only io proc 0 will do writing
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_put_var(File%fh, varid, ival, start=index)
+          end if
+#endif
+       case default
+          print *,_FILE_,__LINE__,iotype
+          call piodie(_FILE_,__LINE__,"bad iotype specified")
+       end select
+    end if
+    call check_netcdf(File,ierr,_FILE_,__LINE__)
+
+#ifdef TIMING
+    call t_stopf("pio_put_var1_{TYPE}")
+#endif 
+  end function put_var1_{TYPE}
+
+  integer function put_var1_vdesc_{TYPE} (File,vardesc, start, ival) result(ierr)
+    type (File_desc_t), intent(inout) :: File
+    type(var_desc_t), intent(in) :: vardesc
+    integer, intent(in) ::  start(:)
+    {VTYPE}, intent(in) :: ival
+
+    ierr = put_var1_{TYPE} (File, vardesc%varid, start, ival)
+
+  end function put_var1_vdesc_{TYPE}
+  integer function put_var_{DIMS}d_{TYPE} (File,varid, ival) result(ierr)
+    type (File_desc_t), intent(inout) :: File
+    integer, intent(in) :: varid
+    {VTYPE}, intent(in) :: ival{DIMSTR}
+    integer :: iotype
+
+#ifdef TIMING
+    call t_startf("pio_put_var_{DIMS}d_{TYPE}")
+#endif 
+    ierr=PIO_NOERR
+    if(File%iosystem%IOProc) then
+       iotype = File%iotype 
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
+          ierr = nfmpi_begin_indep_data(File%fh)
+          if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+             ierr = nfmpi_put_var_{TYPE} (File%fh, varid, ival)
+          end if
+          if(ierr==PIO_NOERR) then
+             ierr = nfmpi_end_indep_data(File%fh)
+          end if
+#endif
+#ifdef _NETCDF
+       case(iotype_netcdf)
+          ! Only io proc 0 will do writing
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_put_var(File%fh, varid, ival)
+          end if
+#endif
+       case default
+          print *,_FILE_,__LINE__,iotype
+          call piodie(_FILE_,__LINE__,"bad iotype specified" )
+
+       end select
+    end if
+
+    call check_netcdf(File,ierr,_FILE_,__LINE__)
+#ifdef TIMING
+    call t_stopf("pio_put_var_{DIMS}d_{TYPE}")
+#endif 
+  end function put_var_{DIMS}d_{TYPE}
+
+  integer function put_var_vdesc_{DIMS}d_{TYPE} (File, vdesc, ival) result(ierr)
+    type (File_desc_t), intent(inout) :: File
+    type(var_desc_t) , intent(in) :: vdesc
+    {VTYPE}, intent(in) :: ival{DIMSTR}
+    integer :: iotype
+
+    ierr = put_var_{DIMS}d_{TYPE} (File, vdesc%varid, ival)
+  end function put_var_vdesc_{DIMS}d_{TYPE}
+  ! DIMS 1,2,3
+  integer function put_vara_{DIMS}d_{TYPE} (File,varid, start, count, ival) result(ierr)
+    type (File_desc_t), intent(inout) :: File
+    integer, intent(in) :: varid, start(:), count(:)
+    {VTYPE}, intent(in) :: ival{DIMSTR}
+    integer :: iotype, len, i
+#ifdef TIMING
+    call t_startf("pio_put_vara_{DIMS}d_{TYPE}")
+#endif 
+    ierr=0
+    iotype = File%iotype 
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
+          len=count(1)
+          do i=2,size(count)
+             len=len*count(i)
+          end do
+          ierr = nfmpi_put_vara_{TYPE}_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
+               int(count,kind=PIO_OFFSET), ival, len, {MPITYPE})
+#endif
+#ifdef _NETCDF
+       case(iotype_netcdf)
+          ! Only io proc 0 will do writing
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_put_var(File%fh, varid, ival, start=start, count=count)
+          end if
+#endif
+       case default
+          print *,_FILE_,__LINE__,iotype
+          call piodie(_FILE_,__LINE__,"bad iotype specified")
+       end select
+    end if
+    call check_netcdf(File, ierr,_FILE_,__LINE__)
+
+#ifdef TIMING
+    call t_stopf("pio_put_vara_{DIMS}d_{TYPE}")
+#endif 
+  end function put_vara_{DIMS}d_{TYPE}
+  ! DIMS 1,2,3
+  integer function put_vara_vdesc_{DIMS}d_{TYPE} (File,vardesc, start, count, ival) result(ierr)
+    type (File_desc_t), intent(inout) :: File
+    type(var_desc_t), intent(in) :: vardesc
+    integer, intent(in) ::  start(:), count(:)
+    {VTYPE}, intent(in) :: ival{DIMSTR}
+
+    ierr = put_vara_{DIMS}d_{TYPE} (File, vardesc%varid, start, count, ival)
+
+
+  end function put_vara_vdesc_{DIMS}d_{TYPE}
+end module pionfput_mod

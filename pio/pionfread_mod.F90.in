@@ -1,0 +1,186 @@
+#define _FILE_ "pionfread_mod.F90.in"
+module pionfread_mod
+
+  implicit none
+
+  private
+  public :: read_nf
+  interface read_nf
+     ! TYPE real,double,int
+     module procedure read_nfdarray_{TYPE}
+  end interface
+
+  character(len=*), parameter :: modName='pionfread_mod'
+
+contains
+
+  ! TYPE real,double,int
+  integer function read_nfdarray_{TYPE} (File,IOBUF,varDesc,IODesc, start,count) result(ierr)
+    use pio_types
+    use pio_kinds
+    use nf_mod
+    use pio_support, only : Debug, DebugIO, piodie, checkmpireturn
+    use alloc_mod, only: alloc_check
+#ifdef _NETCDF
+    use netcdf, only : nf90_get_var  !_EXTERNAL
+#endif
+#ifdef TIMING
+    use perf_mod, only : t_startf, t_stopf  !_EXTERNAL
+#endif
+    implicit none
+
+    include 'mpif.h'   !_EXTERNAL
+#ifdef _PNETCDF
+#include <pnetcdf.inc>   /* _EXTERNAL */
+#endif
+
+    type (File_desc_t), intent(inout) :: File
+    {VTYPE}, intent(inout)           :: IOBUF(:)
+    type (Var_desc_t), intent(in) :: varDesc
+    type (IO_desc_t), intent(in) :: IODesc
+    integer(kind=pio_offset), intent(in) :: start(:), count(:)
+
+
+    character(len=*), parameter :: subName=modName//'::read_nfdarray_{TYPE}'
+    integer(kind=i4) :: iotype
+
+    integer :: iobuf_size, max_iobuf_size
+    integer :: status(MPI_STATUS_SIZE)
+    integer, pointer :: temp_start(:), temp_count(:)
+    integer :: start_size, count_size
+    integer :: i, mpierr
+
+#ifdef TIMING
+    call t_startf("pio_read_nfdarray_{TYPE}")
+#endif
+    iotype = File%iotype
+    ierr=PIO_noerr
+
+    if (File%iosystem%IOproc) then
+       select case (iotype) 
+
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
+          if(DebugIO) print *,_FILE_,__LINE__, &
+               '  IAM: ',File%iosystem%io_rank
+
+          if(Debug) print *,_FILE_,__LINE__, &
+               '  IAM: ',File%iosystem%io_rank,' start: ', &
+               int(start,kind=mpi_offset_kind),' count: ', &
+               int(count,kind=mpi_offset_kind), ' iobuf size: ',size(iobuf)
+
+          ierr=nfmpi_get_vara_all( File%fh,varDesc%varid, &
+               int(start,kind=mpi_offset_kind), &
+               int(count,kind=mpi_offset_kind), &
+               IOBUF,iodesc%Read%n_ElemTYPE, &
+               iodesc%Read%ElemTYPE)
+#endif
+
+#ifdef _NETCDF
+       case(iotype_netcdf)
+          iobuf_size=size(IOBUF)
+          call MPI_REDUCE( iobuf_size,max_iobuf_size, &
+               1,MPI_INTEGER,MPI_MAX,0,File%iosystem%IO_comm,mpierr )
+          call checkmpireturn(subName, mpierr)
+
+          if (File%iosystem%io_rank==0) then
+             if (max_iobuf_size > iobuf_size) then
+                print *, 'IOBUF on root is not big enough'
+                call abort
+             endif
+          endif
+
+          ! create temporaries of size int (netcdf limitation)
+          start_size=size(start)
+          call alloc_check(temp_start,start_size)
+
+          count_size=size(count)
+          call alloc_check(temp_count,count_size)
+
+          if (File%iosystem%io_rank>0) then
+             temp_start=start
+             temp_count=count
+
+             if (Debug) print *, File%iosystem%comp_rank,': waiting to receive IOBUF', start, count
+
+             call MPI_SEND( temp_start,start_size,MPI_INTEGER, &
+                  0,File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
+             call checkmpireturn(subName, mpierr)
+
+             call MPI_SEND( temp_count,count_size,MPI_INTEGER, &
+                  0,File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
+             call checkmpireturn(subName, mpierr)
+
+             call MPI_SEND( iobuf_size,1,MPI_INTEGER, &
+                  0,File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
+             call checkmpireturn(subName, mpierr)
+
+             call MPI_RECV( IOBUF,size(IOBUF), &
+                  {MPITYPE}, &
+                  0,File%iosystem%io_rank,File%iosystem%IO_comm,status,mpierr )
+             call checkmpireturn(subName, mpierr)
+
+             if (Debug) print *, subName,':: comp_rank: ',File%iosystem%comp_rank, &
+                  ': received IOBUF size=',size(IOBUF)
+          endif
+
+          ! Read rank>0 first then go back and read 0
+          ! so that we can re-use the rank 0 IOBUF
+
+          if (File%iosystem%io_rank==0) then
+             do i=1,File%iosystem%num_iotasks-1
+                if (Debug) print *, subName,': 0: reading netcdf for ',i
+
+                call MPI_RECV( temp_start, size(temp_start), MPI_INTEGER, &
+                     i,i,File%iosystem%IO_comm,status,mpierr)
+                call CheckMPIReturn('read_nfdarray_{TYPE}',mpierr)
+
+                call MPI_RECV( temp_count, size(temp_count), MPI_INTEGER, &
+                     i,i,File%iosystem%IO_comm,status,mpierr)
+                call CheckMPIReturn('read_nfdarray_{TYPE}',mpierr)
+
+                call MPI_RECV( iobuf_size, 1, MPI_INTEGER,    &
+                     i,i,File%iosystem%IO_comm,status,mpierr)
+                call CheckMPIReturn('read_nfdarray_{TYPE}',mpierr)
+
+                ierr=nf90_get_var( File%fh, varDesc%varid, &
+                     IOBUF, temp_start, temp_count )
+
+                call MPI_SEND( IOBUF,iobuf_size, &
+                     {MPITYPE}, &
+                     i,i,File%iosystem%IO_comm,mpierr)
+                call CheckMPIReturn('read_nfdarray_{TYPE}',mpierr)
+
+                if (Debug) print *, subName,': 0: done reading netcdf for ',i
+             end do ! i=1,File%iosystem%num_iotasks-1
+
+             ! Read root data last
+
+             if (Debug) print *, subName,': 0: reading netcdf for self', start, count
+
+             temp_start=start
+             temp_count=count
+
+             ierr=nf90_get_var( File%fh, varDesc%varid, &
+                  IOBUF, temp_start, temp_count )
+
+             if (Debug) print *, subName,': 0: done reading netcdf for self'
+
+          endif ! File%iosystem%io_rank==0
+          deallocate(temp_start)
+          deallocate(temp_count)
+
+#endif
+
+       case default
+          call bad_iotype(iotype,_FILE_,__LINE__)
+
+       end select
+    endif ! File%iosystem%IOproc
+    call check_netcdf(File, ierr,_FILE_,__LINE__);
+#ifdef TIMING
+    call t_stopf("pio_read_nfdarray_{TYPE}")
+#endif
+
+  end function read_nfdarray_{TYPE}
+end module pionfread_mod

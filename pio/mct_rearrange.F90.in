@@ -1,0 +1,359 @@
+#define NODE 0
+
+! Enable/disable sorting of dofs before creating GSMap
+#define SORT 1
+#define _FILE_ "mct_rearrange.inc"
+module mct_rearrange
+
+     use pio_kinds
+     use pio_types
+     use alloc_mod
+     use pio_support, only : piodie, CheckMPIReturn, Debug
+#ifdef _USEMCT
+
+     use m_GlobalSegMap, only: GlobalSegMap                ! _EXTERNAL
+     use m_GlobalSegMap, only: MCT_GSMap_init => init      ! _EXTERNAL
+     use m_GlobalSegMap, only: MCT_GSMap_lsize => lsize    ! _EXTERNAL
+     use m_GlobalSegMap, only: MCT_GSMap_clean => clean    ! _EXTERNAL
+
+     use m_Rearranger, only: Rearranger                    ! _EXTERNAL
+     use m_Rearranger, only: MCT_Rearr_init => init        ! _EXTERNAL
+     use m_Rearranger, only: MCT_Rearr_Rearrange => Rearrange   ! _EXTERNAL
+     use m_Rearranger, only: MCT_Rearr_clean => clean      ! _EXTERNAL
+
+     use m_AttrVect, only    : AttrVect                    ! _EXTERNAL
+     use m_AttrVect, only    : MCT_Attr_init => init       ! _EXTERNAL
+     use m_AttrVect, only    : MCT_Attr_clean => clean     ! _EXTERNAL
+
+     use m_MCTWorld, only: MCT_MCTWorld_initialized => initialized  ! _EXTERNAL
+     use m_MCTWorld, only: MCT_MCTWorld_init => init       ! _EXTERNAL
+
+     use pio_quicksort
+
+     implicit none 
+     private 
+     save
+
+    public :: mct_rearrange_io2comp, &
+	      mct_rearrange_comp2io, &
+	      mct_rearrange_create, &
+	      mct_rearrange_init,   &
+              mct_rearrange_free
+
+    interface mct_rearrange_io2comp
+! TYPE real,int,double
+       module procedure mct_rearrange_io2comp_{TYPE}
+    end interface
+
+    interface mct_rearrange_comp2io
+! TYPE real,int,double
+       module procedure mct_rearrange_comp2io_{TYPE}
+    end interface
+
+    character(len=*), parameter :: modName='mct_rearrange'
+
+contains 
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! Templated functions for use in mct_rearrange.F90
+!
+! Initial version 9/21/07  R. Loy
+!
+
+
+! TYPE real,int,double
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! mct_rearrange_comp2io_{TYPE}
+!
+!
+subroutine mct_rearrange_comp2io_{TYPE} (Iosystem,IOdesc,src,dest)
+
+     type (Iosystem_desc_t), intent(inout) :: Iosystem
+     type (io_desc_t)                  :: IOdesc
+     {VTYPE}, intent(in)           :: src(:)
+     {VTYPE}, intent(out)          :: dest(:)
+
+    call mct_rearrange_{TYPE} (IOdesc%lsize_comp,src, &
+		       IOdesc%lsize_io, dest, &
+		       IOdesc%rearr_comp_to_io, .TRUE., &
+                       IOdesc%compDOF_index, Iosystem%comp_comm)     
+
+end subroutine mct_rearrange_comp2io_{TYPE}
+
+
+! TYPE real,int,double
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! mct_rearrange_io2comp_{TYPE}
+!
+!
+
+subroutine mct_rearrange_io2comp_{TYPE} (Iosystem,IOdesc,src,dest)
+
+     type (Iosystem_desc_t), intent(inout) :: Iosystem
+     type (io_desc_t)                  :: IOdesc
+     {VTYPE}, intent(inout)           :: src(:)
+     {VTYPE}, intent(out)          :: dest(:)
+
+    call mct_rearrange_{TYPE} (IOdesc%lsize_io,src, &
+		       IOdesc%lsize_comp, dest, &
+		       IOdesc%rearr_io_to_comp, .FALSE., &
+                       IOdesc%compDOF_index, Iosystem%comp_comm)     
+
+end subroutine mct_rearrange_io2comp_{TYPE}
+
+
+! TYPE int,real,double
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! mct_rearrange_{TYPE}
+!
+subroutine mct_rearrange_{TYPE} ( lsize_source, source_array, &
+                          lsize_dest, dest_array, &
+                          rearr, comp_to_io, compDOF_index, &
+                          comm )
+   use pio_support, only : piodie
+   !-----------------
+   ! arguments
+
+   integer lsize_source     ! size of local source array
+   integer lsize_dest       ! size of local dest array
+
+   {VTYPE}       :: source_array(:)
+   {VTYPE}       :: dest_array(:)
+   type (Rearranger)   :: rearr
+   logical             :: comp_to_io         ! direction of rearrange
+   integer(i4)         :: compDOF_index(:)   ! permutation array
+   integer(i4)         :: comm
+
+   !-----------------
+   ! local vars
+   character(len=*), parameter :: subName=modName//'::mct_rearrange_{TYPE}'
+   integer i
+
+   type (AttrVect)  :: av_source
+   type (AttrVect)  :: av_dest
+#if ({ITYPE} == TYPEINT)
+#define TEMPLATE_LIST iList
+#define TEMPLATE_ATTR iAttr
+#else
+#define TEMPLATE_LIST rList
+#define TEMPLATE_ATTR rAttr
+#endif
+   !-----------------
+   ! body
+
+   call alloc_print_usage(NODE,'rearrange_ start')
+
+   if (lsize_source /= size(source_array)) then
+!     print *,'ERROR: rearrange: mismatch in source array size'
+!     print *,'       lsize_source',lsize_source,' size(source_array)',size(source_array)
+     call piodie(_FILE_,__LINE__)
+   endif
+
+   call MCT_Attr_init(av_source, TEMPLATE_LIST="field1", lsize=lsize_source)
+   call alloc_print_usage(NODE,'rearrange_ after Attr_init 1')
+
+
+#if SORT
+   if (comp_to_io) then
+     do i=1,lsize_source
+       av_source%TEMPLATE_ATTR(1,i)=source_array(compDOF_index(i))
+     end do
+   else
+#endif
+     do i=1,lsize_source
+       av_source%TEMPLATE_ATTR(1,i)=source_array(i)
+     end do
+#if SORT
+   endif
+#endif
+
+   if (lsize_dest /= size(dest_array)) then
+!     print *,'ERROR: rearrange: mismatch in dest array size'
+!     print *,'       lsize_dest',lsize_dest,' size(source_dest)',size(dest_array)
+     call piodie(_FILE_,__LINE__)
+   endif
+
+   call MCT_Attr_init(av_dest, TEMPLATE_LIST="field1", lsize=lsize_dest)
+   call alloc_print_usage(NODE,'rearrange_ after Attr_init 2')
+   av_dest%TEMPLATE_ATTR(1,:) = dest_array(:)         ! default value for holes
+
+   call MCT_Rearr_Rearrange(av_source, av_dest, rearr )
+   call alloc_print_usage(NODE,'rearrange_ after rearrange')
+
+#if SORT
+   if (comp_to_io) then
+#endif
+     do i=1,lsize_dest
+       dest_array(i)=av_dest%TEMPLATE_ATTR(1,i)
+     end do
+#if SORT
+   else
+     do i=1,lsize_dest
+       dest_array(compDOF_index(i))=av_dest%TEMPLATE_ATTR(1,i)
+     end do
+   endif
+#endif
+
+   call MCT_Attr_clean(av_source)
+   call MCT_Attr_clean(av_dest)
+   call alloc_print_usage(NODE,'rearrange_ end after clean')
+#undef TEMPLATE_LIST
+#undef TEMPLATE_ATTR
+
+   end subroutine mct_rearrange_{TYPE}
+
+
+  subroutine mct_rearrange_free(ioDesc)
+
+    type (IO_desc_t), intent(inout) :: ioDesc
+
+    integer(i4) :: ierr
+
+    call alloc_print_usage(NODE,'freeDecomp start')
+
+    call MCT_Rearr_clean(ioDesc%rearr_comp_to_io,ierr)
+    call MCT_Rearr_clean(ioDesc%rearr_io_to_comp,ierr)
+#if SORT
+    call dealloc_check(ioDesc%compDOF_index)
+#endif
+
+    call alloc_print_usage(NODE,'free_rearranger after Rearr_clean')
+
+  end subroutine mct_rearrange_free
+  
+
+  subroutine mct_rearrange_init(Iosystem)
+    character(len=*), parameter :: subName=modName//'::mct_rearrange_init'	
+    type (Iosystem_desc_t), intent(in) :: Iosystem
+
+    integer(i4) :: mct_local_comm
+    integer(i4) :: ierr
+
+    ! Initialize MCT
+    !   specify one component with ID 1
+
+    call mpi_comm_dup(Iosystem%comp_comm,mct_local_comm,ierr)
+    call CheckMPIReturn(subName, ierr)
+
+
+    if (.not. MCT_MCTWorld_initialized() ) then
+      call MCT_MCTWorld_init(1,Iosystem%comp_comm,mct_local_comm,1)
+    endif
+
+
+  end subroutine mct_rearrange_init
+
+
+
+
+  subroutine mct_rearrange_create(Iosystem,compDOF,ioDof,ioDesc)
+    type (Iosystem_desc_t), intent(in) :: Iosystem
+    integer(i4), intent(in)           :: compDOF(:)
+    integer(i4), intent(in)           :: ioDOF(:)
+    type (IO_desc_t), intent(inout)   :: ioDesc
+
+    type (GlobalSegMap) :: gsmap_comp  ! for computational layout
+    type (GlobalSegMap) :: gsmap_io    ! for IO layout
+
+    character(len=*), parameter :: subName=modName//'::mct_rearrange_create'    
+    integer(i4) :: ierr
+
+#if SORT
+    integer(i4) :: compDOF_size
+    integer(i4),pointer :: compDOF_sorted(:)
+
+    !
+    ! create sorted version of compDOF
+    !
+
+    compDOF_size=size(compDOF)
+    call alloc_check(compDOF_sorted,compDOF_size,"compDOF_sorted")
+    call alloc_check(IOdesc%compDOF_index,compDOF_size,"compDOF_index")
+
+#if 0
+    if (Iosystem%comp_rank == 0) then
+      print *, subName,':: sorting'
+    endif
+#endif
+
+    compDOF_sorted=compDOF
+    call quick_sort(compDOF_sorted,IOdesc%compDOF_index)
+
+#if 0
+! for debugging
+    if (Iosystem%comp_rank < 5) then
+      write(50+Iosystem%comp_rank,"(10I8)") compDOF
+      close(50+Iosystem%comp_rank)
+      write(60+Iosystem%comp_rank,"(10I8)") compDOF_sorted
+      close(60+Iosystem%comp_rank)
+      write(70+Iosystem%comp_rank,"(10I8)") IOdesc%compDOF_index
+      close(70+Iosystem%comp_rank)
+    endif
+#endif
+#endif
+
+
+    !------------------------------------------------------------
+    ! MCT setup data rearranger
+    !------------------------------------------------------------
+
+
+    ! create GSMap for computational decomp  (comp_rank)
+    ! one segment per comp_rank
+
+#if SORT
+    call MCT_GSMap_init( gsmap_comp, compDOF_sorted, Iosystem%comp_comm, 1)
+    call dealloc_check(compDOF_sorted)
+#else
+    call MCT_GSMap_init( gsmap_comp, compDOF, Iosystem%comp_comm, 1)
+#endif
+
+    IOdesc%lsize_comp=MCT_GSMap_lsize(gsmap_comp,Iosystem%comp_comm)
+
+    call alloc_print_usage(NODE,'initDecomp: after gsmap init compDOF')
+
+    ! Note: for the non-IO procs, need to use 0 as local index count
+    !       so the ioDOF is ignored (they have ioDof(1)= -1)
+
+    if (Iosystem%IOproc) then
+        call MCT_GSMap_init( gsmap_io, ioDof, Iosystem%comp_comm, 1)
+    else
+        call MCT_GSMap_init( gsmap_io, ioDof, Iosystem%comp_comm, 1, lsize=0)
+    endif
+
+    IOdesc%lsize_io=MCT_GSMap_lsize(gsmap_io,Iosystem%comp_comm)
+
+    call alloc_print_usage(NODE,'initDecomp: after gsmap init ioDOF')
+
+    ! create IOdesc%rearr_xxx
+    call MCT_Rearr_init( gsmap_comp, gsmap_io, &
+                      Iosystem%comp_comm, IOdesc%rearr_comp_to_io)
+
+    call alloc_print_usage(NODE,'initDecomp: after rearr init comp_to_io')
+
+    call MCT_Rearr_init( gsmap_io, gsmap_comp, &
+                      Iosystem%comp_comm, IOdesc%rearr_io_to_comp)
+
+    call alloc_print_usage(NODE,'initDecomp: after rearr init io_to_comp')
+
+    ! Do not need gsmaps anymore
+    call MCT_GSMap_clean(gsmap_comp,ierr)
+    call MCT_GSMap_clean(gsmap_io,ierr)
+
+    call alloc_print_usage(NODE,'initDecomp: after freeing gsmaps')
+
+    !------------------------------------------------------------
+    ! end MCT setup data rearranger
+    !------------------------------------------------------------
+
+end subroutine mct_rearrange_create
+
+
+
+#endif
+
+end module mct_rearrange

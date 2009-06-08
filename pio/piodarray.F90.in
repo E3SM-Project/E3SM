@@ -1,0 +1,897 @@
+#define _FILE_ 'piodarray'
+module piodarray
+  use pio_types
+  use pio_kinds
+  use pio_support
+  use pionfwrite_mod, only : write_nf
+  use pionfread_mod, only : read_nf
+  use iompi_mod
+  use alloc_mod
+  use rearrange
+#ifdef TIMING
+  use perf_mod, only : t_startf, t_stopf   !_EXTERNAL
+#endif
+  implicit none
+  private
+  public :: pio_read_darray, pio_write_darray
+  !-----------------------------------------------------------------------
+  !
+  !  interfaces for i/o routines
+  !
+  !-----------------------------------------------------------------------
+  
+  interface PIO_write_darray
+! TYPE real,int,double
+     module procedure write_darray_{TYPE}
+  end interface
+
+
+  interface PIO_read_darray
+! TYPE real,int,double
+     module procedure read_darray_{TYPE}
+  end interface
+
+  character(len=*), parameter :: modName='piodarray'
+
+contains
+! TYPE real,int,double
+  !***********************************************************************
+  !
+  ! write_darray_{TYPE}
+  !
+  subroutine write_darray_{TYPE} (File,varDesc,iodesc, array, iostat, fillval)
+
+    ! !DESCRIPTION:
+    !  Writes a 2-d slab of TYPE to a netcdf file.
+    !
+    ! !REVISION HISTORY:
+    !  same as module
+
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+         File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+         varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+         ioDesc                      ! variable descriptor
+
+    {VTYPE}, dimension(:), target, intent(in) ::  &
+         array                 ! array to be written
+
+    {VTYPE}, optional, intent(in) :: fillval    ! rearrange receiver fill value
+
+    integer(i4), intent(out) :: iostat
+
+    character(len=*), parameter :: subName=modName//'::write_darray_{TYPE}'
+
+    select case(File%iotype)
+    case(iotype_pbinary, iotype_direct_pbinary)
+       if (present(fillval)) then
+          call write_darray_bin_{TYPE}(File,varDesc,iodesc, array, iostat, fillval)
+       else
+          call write_darray_bin_{TYPE}(File,varDesc,iodesc, array, iostat)
+       endif
+    case(iotype_pnetcdf, iotype_netcdf)
+       if (present(fillval)) then
+          call write_darray_nf_{TYPE}(File,varDesc,iodesc, array, iostat, fillval)
+       else
+          call write_darray_nf_{TYPE}(File,varDesc,iodesc, array, iostat)
+       endif
+    case(iotype_binary)
+       print *, subName,': IO type not supported'
+    end select
+
+  end subroutine write_darray_{TYPE}
+
+
+! TYPE real,int,double
+  !***********************************************************************
+  !BOP
+  ! !IROUTINE: NAME
+  ! !INTERFACE:
+  subroutine write_darray_nf_{TYPE} (File,varDesc,iodesc,array, iostat, fillval)
+
+    ! !DESCRIPTION:
+    !  Writes a 2-d slab of TYPE to a netcdf file.
+    !
+    ! !REVISION HISTORY:
+    !  same as module
+
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+         File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+         varDesc                      ! variable descriptor
+    type (io_desc_t), intent(inout) :: &
+         ioDesc                      ! io decomp descriptor
+
+    {VTYPE}, target, intent(in) ::  &
+         array(:)                 ! array to be written
+
+    {VTYPE}, optional, intent(in) :: fillval    ! rearrange receiver fill value
+
+    integer(pio_offset), pointer :: start(:), count(:)
+
+    integer(i4), intent(out) :: iostat
+
+    !EOP
+    !BOC
+    !-----------------------------------------------------------------------
+    !
+    !  local variables
+    !
+    !-----------------------------------------------------------------------
+
+    character(len=*), parameter :: subName=modName//'::write_darray_nf_{TYPE}'
+    {VTYPE}, dimension(:), pointer ::  &
+         IOBUF                ! local IO buffer
+
+    logical (log_kind) :: IOproc     ! true if IO processor
+    integer (i4) ::  len,           &! length of IO decomp segmap
+         glen,          &! global length of IO decomp in words
+         reclen,        &! global length of IO decomp in bytes
+         iotype,        &! type of IO to perform
+         ndims           ! number of variable dimensions
+    integer(kind=PIO_OFFSET)  :: offset   ! local offset of IO decomp
+
+    logical(log_kind) :: UseRearranger
+
+
+#if DEBUG_REARR
+    {VTYPE}, dimension(:), pointer ::  array2
+    integer i
+#endif
+
+    {VTYPE} :: rsum
+    integer(i4) :: ierr
+
+#ifdef TIMING
+    call t_startf("pio_write_darray")
+#endif
+    ! -----------------------------------------------------
+    ! pull information from file_desc_t data structure
+    ! -----------------------------------------------------
+    IOproc     = File%iosystem%IOproc
+    iotype     = File%iotype
+    UseRearranger  = File%iosystem%UseRearranger
+
+
+    ! ---------------------------------------------------------
+    ! pull information out of the decomposition data structure 
+    ! ---------------------------------------------------------
+
+    glen       = iodesc%glen
+    offset     = iodesc%IOmap%start
+    len        = iodesc%IOmap%length
+
+    if(Debug) print *,_FILE_,__LINE__,' NAME : IAM: ',File%iosystem%comp_rank,' UseRearranger: ',UseRearranger, glen, offset, len   
+#ifdef TIMING
+    call t_startf("pio_rearrange_write")
+#endif
+    if(UseRearranger) then 
+       if (IOproc) then 
+          if(Debug) print *, subName,': IAM: ',File%iosystem%comp_rank,'Before call to allocate(IOBUF): ',len
+
+          call alloc_check(IOBUF,len,' TYPE :IOBUF')
+
+          if (present(fillval)) then
+             IOBUF=fillval
+          else
+             IOBUF= -1.0_r8
+          endif
+
+          !------------------------------------------------
+          !  set the IO buffer to a particular test pattern
+          !------------------------------------------------
+          !JMD	IOBUF(:) = real(File%iosystem%io_rank,kind=r8)
+          if(Debug) print *, subName,': {comp,io}_rank: ',File%iosystem%comp_rank,File%iosystem%io_rank,  &
+               'offset: ',offset,'len: ',len   !,' IOBUF: ',IOBUF
+
+       else
+          call alloc_check(IOBUF,0)
+          IOBUF= -1.0_r8
+       endif
+
+       !------------------------------------
+       ! Rearrange data from comp->io decomp
+       !------------------------------------
+       ! "array" is comp data
+       call rearrange_comp2io(File%iosystem,iodesc, array, iobuf)
+
+#if DEBUG_REARR
+       call alloc_check(array2,size(array),'array2')
+
+       call rearrange_io2comp(File%iosystem,iodesc,IOBUF,array2)
+
+       do i=1,size(array)
+          if (array(i) /= array2(i)) then
+             print *, subName,': error: write ping-pong test failed on index',i
+
+          end if
+       end do
+
+       print *, subName,': passed write ping-pong test'
+
+       deallocate(array2)
+
+!!!!!!! end debug
+#endif
+       !--------------------------------------------
+       ! End data rearrange
+       !--------------------------------------------
+
+    else
+       iobuf=>array
+    endif   ! if(UseRearranger) 
+#ifdef TIMING
+    call t_stopf("pio_rearrange_write")
+#endif
+
+    if (IOproc) then
+
+       !----------------------------------------------
+       ! write the global 2-d slice from IO processors
+       !----------------------------------------------
+
+
+       if (DebugIO.and.userearranger.and.len>1) then
+          print *,_FILE_,__LINE__, &
+               File%iosystem%comp_rank,': write IOBUF r8', &
+               IOBUF(1:2),' ...',IOBUF(len-1:len), &
+               glen,len,offset
+          ! write an ascii version
+          write(10+File%iosystem%comp_rank,*) IOBUF(1:len)
+          close(10+File%iosystem%comp_rank)
+       endif
+
+       ! this is a time dependent multidimensional array
+       if(vardesc%rec>=0 .and. iodesc%start(1)>=0) then
+          ndims = size(iodesc%start)+1
+          call alloc_check(start,ndims)
+          call alloc_check(count,ndims)
+          start(1:ndims-1)=iodesc%start
+          count(1:ndims-1)=iodesc%count
+          start(ndims:ndims)=vardesc%rec
+          count(ndims:ndims)=1
+          if(Debug) print *, _FILE_,__LINE__,'start:',start,' count:',count,' ndims:',ndims, minval(iobuf),maxval(iobuf)
+          ! this is a timedependent single value
+       else if(vardesc%rec>=0) then
+          call alloc_check(start,1)
+          call alloc_check(count,1)
+          start(1) = int(vardesc%rec,kind=PIO_Offset)
+          count(1) = 1_PIO_Offset
+          if(Debug) print *, _FILE_,__LINE__,'start:',start,' count:',count
+
+          ! this is a non-timedependent array
+       else
+          ndims = size(iodesc%start)
+          call alloc_check(start,ndims)
+          call alloc_check(count,ndims)
+          start=iodesc%start
+          count=iodesc%count
+          if(Debug) print *, _FILE_,__LINE__,'start:',start,' count:',count,' ndims:',ndims
+       end if
+    else
+       ! some compilers have problems passing 
+       ! unassociated pointers when they are intent in
+       call alloc_check(start, 0)
+       call alloc_check(count, 0)
+    endif
+#ifdef TIMING
+    call t_startf("pio_write_nf")
+#endif
+    ierr = write_nf(File,IOBUF,varDesc,iodesc,start,count) 
+#ifdef TIMING
+    call t_stopf("pio_write_nf")
+#endif
+    deallocate(start,count)
+
+    if(UseRearranger) deallocate(IOBUF)
+
+    !   call MPI_Barrier(File%iosystem%comp_comm,ierr)
+
+    !--------------------------
+    ! set the error return code
+    !--------------------------
+    iostat=ierr
+
+    !-----------------------------------------------------------------------
+    !EOC
+#ifdef TIMING
+    call t_stopf("pio_write_darray")
+#endif
+  end subroutine write_darray_nf_{TYPE}
+
+! TYPE real,int,double
+  !***********************************************************************
+  !BOP
+  ! !IROUTINE:  write_darray_bin_{TYPE}
+  ! !INTERFACE:
+  subroutine write_darray_bin_{TYPE}(File,varDesc,iodesc,array, iostat, fillval)
+
+    ! !DESCRIPTION:
+    !  Writes a 2-d slab of integers to a file
+    !
+    ! !REVISION HISTORY:
+    !  same as module
+
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+         File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+         varDesc                      ! varable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+         IODesc                      ! IO decomp descriptor
+
+
+    {VTYPE}, dimension(:), intent(in), target ::  &
+         array                 ! array to be written
+
+    {VTYPE}, optional, intent(in) :: fillval
+
+    integer (i4), intent(out)   :: iostat
+
+    !EOP
+    !BOC
+    !-----------------------------------------------------------------------
+    !
+    !  local variables
+    !
+    !-----------------------------------------------------------------------
+    character(len=*), parameter :: subName=modName//'::write_darray_bin_{TYPE}'
+
+    {VTYPE}, dimension(:), pointer ::  &
+         IOBUF                ! local IO buffer
+
+
+#if DEBUG_REARR
+    {VTYPE}, dimension(:), pointer :: array2
+    integer i
+#endif
+
+    logical (log_kind) :: IOproc     ! true if IO processor
+    integer (i4) ::  len,           &! length of IO decomp segmap 
+         glen,          &! global length of IO decomp in words
+         reclen,        &! global length of IO decomp in bytes
+         iotype,        &! type of IO to perform
+         varID           ! variable ID
+    integer (i4) :: ierr
+
+    integer(kind=PIO_OFFSET)  :: offset   ! local offset of IO decomp
+
+    logical(log_kind) :: UseRearranger
+
+#ifdef TIMING
+    call t_startf("pio_write_darray")
+#endif
+    ! -----------------------------------------------------
+    ! pull information from file_desc_t data structure
+    ! -----------------------------------------------------
+    IOproc     = File%iosystem%IOproc
+    iotype     = File%iotype
+    UseRearranger  = File%iosystem%UseRearranger
+
+    ! -------------------------------------------------
+    ! Pull information about the IO decomposition
+    ! -------------------------------------------------
+    if(Debug) print *, _FILE_,__LINE__,iodesc%Write%elemTYPE, iodesc%Write%fileTYPE
+    offset     = iodesc%IOmap%start
+    len        = iodesc%IOmap%length
+    glen       = iodesc%glen
+
+    ierr = pio_noerr
+    if (IOproc) then       
+       if(userearranger) then
+          call alloc_check(IOBUF,len,' TYPE :IOBUF')
+
+          if (present(fillval)) then
+             IOBUF=fillval
+          else
+             IOBUF=-1.0_r8
+          endif
+       else
+          iobuf=>array
+       end if
+       !------------------------------------------------
+       !  set the IO buffer to a particular test pattern 
+       !------------------------------------------------
+       !JMD	IOBUF(:) = File%iosystem%io_rank
+       if(Debug) print *, subName,': {comp,io}_rank: ',File%iosystem%comp_rank,File%iosystem%io_rank,  &
+            'offset: ',offset,'len: ',len ! ,' IOBUF: ',IOBUF
+    else
+       if(userearranger) call alloc_check(IOBUF,0,'write_darray_int:IOBUF')
+    endif
+
+    !-----------------------------------------
+    !NEED HELP:
+    !
+    !  Need a call to a data rearranger here 
+    !
+    !        call ESMF_rearrange() 
+    !  
+    !              or 
+    !
+    !        call MCT_rearrange()
+    !-----------------------------------------
+#ifdef TIMING
+    call t_startf("pio_rearrange_write")
+#endif
+    if(UseRearranger) then 
+       !------------------------------------
+       ! Rearrange data from comp->io decomp
+       !------------------------------------
+
+       ! "array" is comp data
+
+       call rearrange_comp2io(File%iosystem,iodesc,array,IOBUF)
+
+#if DEBUG_REARR
+       call alloc_check(array2,size(array),'array2')
+
+       call rearrange_io2comp(File%iosystem,iodesc,IOBUF,array2)
+
+       do i=1,size(array)
+          if (array(i) /= array2(i)) then
+             print *, subName,': error: int write ping-pong test failed on index',i
+
+          end if
+       end do
+
+       print *, subName,': passed int write ping-pong test'
+
+       deallocate(array2)
+
+!!!!!!! end debug
+#endif
+       !--------------------------------------------
+       ! End data rearrange
+       !--------------------------------------------
+    endif
+#ifdef TIMING
+    call t_stopf("pio_rearrange_write")
+#endif
+
+    if(IOProc) then 
+#ifdef TIMING
+    call t_startf("pio_write_bin")
+#endif
+       !----------------------------------------------
+       !	 write the global 2-d slice from IO processors
+       !----------------------------------------------
+       ierr = write_mpiio(File,IOBUF,varDesc,iodesc)
+#ifdef TIMING
+    call t_stopf("pio_write_bin")
+#endif
+    endif
+
+    !--------------------------
+    ! deallocate the IO buffer
+    !--------------------------
+    if(userearranger) deallocate(IOBUF)
+    !   call MPI_Barrier(File%iosystem%comp_comm,ierr)
+
+    !--------------------------
+    ! set the error return code
+    !--------------------------
+    iostat=ierr
+
+    !-----------------------------------------------------------------------
+    !EOC
+#ifdef TIMING
+    call t_stopf("pio_write_darray")
+#endif
+  end subroutine write_darray_bin_{TYPE}
+
+  ! TYPE real,int,double
+  subroutine read_darray_{TYPE} (File,varDesc, iodesc, array, iostat)
+
+    ! !DESCRIPTION:
+    !  Reads a 2-d slab of TYPE to a netcdf file.
+    !
+    ! !REVISION HISTORY:
+    !  same as module
+
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+	 File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+	 varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+	 ioDesc                      ! iodecomp descriptor
+
+    {VTYPE}, dimension(:), target, intent(out) ::  &
+	 array                 ! array to be written
+
+    integer(i4), intent(out) :: iostat
+
+    character(len=*), parameter :: subName=modName//'::read_darray_{TYPE}'
+
+    select case(File%iotype)
+    case(iotype_pbinary, iotype_direct_pbinary)
+       call read_darray_bin_{TYPE} (File,varDesc,iodesc,array, iostat)
+    case(iotype_pnetcdf, iotype_netcdf)
+       call read_darray_nf_{TYPE} (File,varDesc,iodesc,array, iostat)
+    case(iotype_binary)
+       print *, subName,': IO type not supported'
+    end select
+
+  end subroutine read_darray_{TYPE}
+! TYPE real,int,double
+  !***********************************************************************
+  !BOP
+  ! !IROUTINE: read_darray_nf_{TYPE}
+  ! !INTERFACE:
+  subroutine read_darray_nf_{TYPE} (File,varDesc,iodesc,array, iostat)
+    !
+    ! !DESCRIPTION:
+    !  Reads a 2-d horizontal slice of integers from a binary file
+    !
+    ! !REVISION HISTORY:
+    !  same as module
+
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+         File                   ! info about data file
+
+    type (var_desc_t), intent(inout) :: &
+         varDesc			  ! variable descriptor
+    type (io_desc_t), intent(inout) :: &
+         ioDesc			  ! io decomp descriptor
+
+    ! !INPUT/OUTPUT PARAMETERS:
+
+    {VTYPE}, dimension(:), intent(out), target :: &
+         array                        ! array to be read
+    integer (i4), intent(out) :: iostat
+    !EOP
+    !BOC
+    !-----------------------------------------------------------------------
+    !
+    !  local variables
+    !
+    !-----------------------------------------------------------------------
+
+    character(len=*), parameter :: subName=modName//'::read_darray_nf_{TYPE}'
+    {VTYPE}, dimension(:), pointer ::  &
+         IOBUF                ! local IO buffer
+
+    logical (log_kind) :: IOproc     ! true if an IO processor
+    integer (i4) ::  len,           &! local length of IO decomp 
+         glen,          &! global length of IO decomp in words
+         reclen,        &! global length of IO decomp in bytes
+         iotype,        &! type of IO to perform
+         ndims
+    integer(pio_offset), pointer :: start(:), count(:)
+
+
+
+    integer(kind=PIO_OFFSET)  :: offset   ! local offset of IO decomp
+
+    logical(log_kind), parameter :: Debug = .FALSE.
+    logical(log_kind) :: UseRearranger
+
+    integer(i4) :: ierr
+#if DEBUG_REARR
+    {VTYPE}, dimension(:), pointer :: iobuf2
+    integer i
+#endif
+#ifdef TIMING
+    call t_startf("pio_read_darray")
+#endif
+
+    ! -----------------------------------------------------
+    ! pull information from file_desc_t data structure
+    ! -----------------------------------------------------
+    IOproc    = File%iosystem%IOproc
+    iotype    = File%iotype
+    UseRearranger = File%iosystem%UseRearranger
+    ierr = PIO_NOERR
+
+    ! -----------------------------------------------------
+    ! Pull out information of DecompMap_t data structure
+    ! -----------------------------------------------------
+    glen   = iodesc%glen
+    offset = iodesc%IOmap%start
+    len    = iodesc%IOmap%length
+
+    if (IOproc) then
+
+       !-----------------------------
+       ! allocate temporary IO buffer 
+       !-----------------------------
+       if(userearranger) then
+          if(File%iotype == iotype_netcdf .and. file%iosystem%io_rank==0) then	
+             call alloc_check(IOBUF,iodesc%maxiobuflen,' TYPE :IOBUF')
+          else
+             call alloc_check(IOBUF,len,' TYPE :IOBUF')
+          end if
+       else
+          iobuf=>array
+       end if
+       !----------------------------------------------
+       ! read the global 2-d slice to IO processors
+       !----------------------------------------------
+       ! this is a time dependent multidimensional array
+
+
+       if(vardesc%rec>=0 .and. iodesc%start(1)>=0) then
+          ndims = size(iodesc%start)+1
+          call alloc_check(start,ndims)
+          call alloc_check(count,ndims)
+          start(1:ndims-1)=iodesc%start
+          count(1:ndims-1)=iodesc%count
+          start(ndims:ndims)=vardesc%rec
+          count(ndims:ndims)=1
+
+	  ! this is a timedependent single value
+       else if(vardesc%rec>=0) then
+          call alloc_check(start,1)
+          call alloc_check(count,1)
+          start(1) = int(vardesc%rec,kind=PIO_Offset)
+          count(1) = 1_PIO_Offset
+
+	  ! this is a non-timedependent array
+       else
+          ndims = size(iodesc%start)
+          call alloc_check(start,ndims)
+          call alloc_check(count,ndims)
+          start=iodesc%start
+          count=iodesc%count
+       end if
+    else 
+       if(userearranger) then
+          call alloc_check(IOBUF,0,'IOBUF')
+       end if
+       ! some compilers have problems passing 
+       ! unassociated pointers when they are intent in
+       call alloc_check(start, 0)
+       call alloc_check(count, 0)
+    endif
+
+#ifdef TIMING
+    call t_startf("pio_read_nf")
+#endif
+    ierr = read_nf(File,IOBUF,varDesc,iodesc,start,count)
+#ifdef TIMING
+    call t_stopf("pio_read_nf")
+#endif
+
+    deallocate(start, count)
+    if(DebugIO) print *, subName,': {comp,io}_rank: ',File%iosystem%comp_rank,File%iosystem%io_rank,  &
+	 'offset: ',offset,'len: ',len !,' IOBUF: ',IOBUF
+
+
+#ifdef TIMING
+    call t_startf("pio_rearrange_read")
+#endif
+    if(UseRearranger) then 
+       !------------------------------------
+       ! Rearrange data from io->comp decomp
+       !------------------------------------
+
+       ! "array" is comp data
+       call rearrange_io2comp(File%iosystem,iodesc,IOBUF,array) 
+
+
+#if DEBUG_REARR
+       call alloc_check(iobuf2,size(IOBUF),'iobuf2')
+
+       call rearrange_comp2io(File%iosystem,iodesc,array,iobuf2)
+
+       do i=1,size(iobuf)
+          if (iobuf(i) /= iobuf2(i)) then
+             print *, subName,': error: int read ping-pong test failed on index',i
+
+          end if
+       end do
+
+       print *, subName,': passed int read ping-pong test'
+
+       deallocate(iobuf2)
+
+!!!!!!! end debug
+#endif
+       ! --------------------------
+       ! deallocate IO buffer 
+       ! --------------------------
+       deallocate(IOBUF)
+
+    endif
+#ifdef TIMING
+    call t_stopf("pio_rearrange_read")
+#endif
+
+    !----------------
+    ! set errror code
+    !----------------
+    iostat = ierr
+    !-----------------------------------------------------------------------
+    !EOC
+#ifdef TIMING
+    call t_stopf("pio_read_darray")
+#endif
+
+  end subroutine read_darray_nf_{TYPE}
+
+! TYPE real,int,double
+  !***********************************************************************
+  !BOP
+  ! !IROUTINE: read_darray_bin_{TYPE}
+  ! !INTERFACE:
+  subroutine read_darray_bin_{TYPE} (File,varDesc,iodesc,array, iostat)
+    !
+    ! !DESCRIPTION:
+    !  Reads a 2-d horizontal slice of integers from a binary file
+    !
+    ! !REVISION HISTORY:
+    !  same as module
+
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+         File                   ! info about data file
+
+    type (var_desc_t), intent(inout) :: &
+         varDesc			  ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+         ioDesc			  ! io decomp descriptor
+
+    ! !INPUT/OUTPUT PARAMETERS:
+
+    {VTYPE}, dimension(:), intent(out), target :: &
+         array                        ! array to be read
+    integer (i4), intent(out) :: iostat
+    !EOP
+    !BOC
+    !-----------------------------------------------------------------------
+    !
+    !  local variables
+    !
+    !-----------------------------------------------------------------------
+
+    character(len=*), parameter :: subName=modName//'::read_darray_bin_{TYPE}'
+    {VTYPE}, dimension(:), pointer ::  &
+         IOBUF                ! local IO buffer
+
+    logical (log_kind) :: IOproc     ! true if an IO processor
+    integer (i4) ::  len,           &! local length of IO decomp 
+         glen,          &! global length of IO decomp in words
+         reclen,        &! global length of IO decomp in bytes
+         iotype          ! type of IO to perform
+
+
+    integer(kind=PIO_OFFSET)  :: offset   ! local offset of IO decomp
+
+    logical(log_kind), parameter :: Debug = .FALSE.
+    logical(log_kind) :: UseRearranger
+
+    integer(i4) :: ierr
+
+#if DEBUG_REARR
+    {VTYPE}, dimension(:), pointer :: iobuf2
+    integer i
+#endif
+
+#ifdef TIMING
+    call t_startf("pio_read_darray")
+#endif
+
+    ! -----------------------------------------------------
+    ! pull information from file_desc_t data structure
+    ! -----------------------------------------------------
+    IOproc    = File%iosystem%IOproc
+    iotype    = File%iotype
+    UseRearranger = File%iosystem%UseRearranger
+
+
+    ! -----------------------------------------------------
+    ! Pull out information of DecompMap_t data structure
+    ! -----------------------------------------------------
+    glen   = iodesc%glen
+    !    offset = iodesc%IOmap%start
+    !    len    = iodesc%IOmap%length
+    len    = iodesc%Read%n_words 
+    ierr = pio_noerr
+
+    if (IOproc) then
+
+       !-----------------------------
+       ! allocate temporary IO buffer 
+       !-----------------------------
+       if(userearranger) then
+          call alloc_check(IOBUF,len,'read_darray_ :IOBUF')
+       else
+          iobuf=>array
+       end if
+       !----------------------------------------------
+       ! read the global 2-d slice to IO processors
+       !----------------------------------------------
+       if(iotype.eq.iotype_binary) then
+          print *, subName,': TYPE : IO type not supported'
+          iostat =-1
+          return
+       end if
+
+#ifdef TIMING
+    call t_startf("pio_read_bin")
+#endif
+       ierr = read_mpiio(File,IOBUF,varDesc,iodesc)
+#ifdef TIMING
+    call t_stopf("pio_read_bin")
+#endif
+
+       if(DebugIO) print *, subName,': TYPE: {comp,io}_rank: ',File%iosystem%comp_rank,File%iosystem%io_rank,  &
+            'len: ',len,' IOBUF: ',IOBUF(1:4)
+    else if(userearranger) then
+       call alloc_check(IOBUF,0,'IOBUF')
+    endif
+
+#ifdef TIMING
+    call t_startf("pio_rearrange_read")
+#endif
+    if(UseRearranger) then 
+       !------------------------------------
+       ! Rearrange data from io->comp decomp
+       !------------------------------------
+
+       ! "array" is comp data
+       call rearrange_io2comp(File%iosystem,iodesc,IOBUF,array) 
+
+
+#if DEBUG_REARR
+       call alloc_check(iobuf2,size(IOBUF),'iobuf2')
+
+       call rearrange_comp2io(File%iosystem,iodesc,array,iobuf2)
+
+
+       do i=1,size(iobuf)
+          if (iobuf(i) /= iobuf2(i)) then
+             print *, subName,': error: int read ping-pong test failed on index',i
+
+          end if
+       end do
+
+       print *, subName,': passed int read ping-pong test'
+
+       deallocate(iobuf2)
+
+!!!!!!! end debug
+#endif
+       ! --------------------------
+       ! deallocate IO buffer 
+       ! --------------------------
+       deallocate(IOBUF)
+    endif
+#ifdef TIMING
+    call t_stopf("pio_rearrange_read")
+#endif
+
+    !----------------
+    ! set errror code
+    !----------------
+    iostat = ierr
+    !-----------------------------------------------------------------------
+    !EOC
+#ifdef TIMING
+    call t_stopf("pio_read_darray")
+#endif
+
+  end subroutine read_darray_bin_{TYPE}
+
+end module piodarray
+
+
+

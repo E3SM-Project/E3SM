@@ -1,0 +1,310 @@
+#define _FILE_ "pionfatt_mod.F90"
+module pionfatt_mod
+  use pio_kinds, only : r4, r8, i4
+  use pio_types, only : iotype_netcdf, iotype_pnetcdf, pio_noerr
+  use nf_mod, only : check_netcdf, bad_iotype
+  use pio_types, only : file_desc_t, var_desc_t
+  use pio_kinds, only : pio_offset
+  use pio_support, only : piodie, checkmpireturn
+
+#ifdef _NETCDF
+    use netcdf      ! _EXTERNAL
+#endif
+  
+  implicit none
+#ifdef _PNETCDF
+#  include <pnetcdf.inc>  /* _EXTERNAL */
+#endif
+  include 'mpif.h'  ! _EXTERNAL 
+
+  public :: put_att
+  interface put_att
+     module procedure put_att_{TYPE}, put_att_desc_{TYPE}
+     ! TYPE real,int,double
+     module procedure put_att_1d_{TYPE}, put_att_desc_1d_{TYPE}
+  end interface
+  public :: get_att
+  interface get_att
+     module procedure get_att_{TYPE}, get_att_desc_{TYPE}
+     ! TYPE real,int,double
+     module procedure get_att_1d_{TYPE}, get_att_desc_1d_{TYPE}
+  end interface
+
+  private :: modName
+  character(len=*), parameter :: modName='pionfatt_mod'
+
+contains
+
+  integer function put_att_{TYPE} (File, varid, name, value) result(ierr)
+    type (File_desc_t), intent(inout) :: File
+    integer, intent(in) :: varid
+    character(len=*), intent(in) :: name
+    {VTYPE}, intent(in) :: value
+
+#if ({ITYPE} != TYPETEXT)
+#ifdef DEBUG
+    {VTYPE} :: chkval
+#endif
+#endif
+    !------------------
+    ! Local variables
+    !------------------
+    character(len=*), parameter :: subName=modName//'::put_att_{TYPE}'
+    integer :: iotype, mpierr
+    integer(kind=PIO_Offset) ::  clen=1
+
+    iotype = File%iotype
+    ierr=PIO_noerr
+    if(File%iosystem%IOproc) then
+       select case(iotype)
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
+#if ({ITYPE} == TYPETEXT)
+          clen = len(value)
+          ierr= nfmpi_put_att_text (File%fh,varid,name,clen,value)
+#else
+
+#ifdef DEBUG
+          print *, _FILE_,__LINE__,value
+          call MPI_ALLREDUCE(value, chkval, 1, {MPITYPE}, MPI_MAX ,File%iosystem%io_comm, mpierr)
+          call CheckMPIReturn(subName, mpierr)
+          if(chkval /= value) then
+             print *,_FILE_,__LINE__,chkval,value, mpierr
+             call piodie(_FILE_,__LINE__,'attributes do not match')
+          end if
+#endif             
+#undef DEBUG
+          ierr= nfmpi_put_att_{TYPE} (File%fh,varid,name, nf_{TYPE} , clen,value)
+#endif
+#endif
+
+#ifdef _NETCDF
+       case(iotype_netcdf)
+          if (File%iosystem%io_rank==0) then
+             ierr=nf90_put_att(File%fh,varid,name,value)
+          endif
+#endif
+
+       case default
+          call bad_iotype(iotype,_FILE_,__LINE__)
+
+       end select
+    endif
+    call check_netcdf(File, ierr,_FILE_,__LINE__)
+  end function put_att_{TYPE}
+!pl The next line is needed by genf90.pl, do not remove it.
+  ! TYPE real,double,int
+  integer function put_att_1d_{TYPE} (File, varid, name, value) result(ierr)
+    type (File_desc_t), intent(inout) :: File
+    integer, intent(in) :: varid
+    character(len=*), intent(in) :: name
+    {VTYPE}, intent(in) :: value(:)
+
+#ifdef DEBUG
+    {VTYPE} :: chkval
+#endif
+    !------------------
+    ! Local variables
+    !------------------
+
+    character(len=*), parameter :: subName=modName//'::put_att_1d_{TYPE}'
+    integer :: iotype, mpierr
+    integer(kind=PIO_Offset) ::  clen
+
+    iotype = File%iotype
+    ierr=PIO_noerr
+    clen = size(value)
+
+    if(File%iosystem%IOproc) then
+       select case(iotype)
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
+#ifdef DEBUG
+          print *, _FILE_,__LINE__,value
+          call MPI_ALLREDUCE(value, chkval, 1, {MPITYPE}, MPI_MAX ,File%iosystem%io_comm, mpierr)
+          call CheckMPIReturn(subName, mpierr)
+          if(chkval /= value) then
+             print *,_FILE_,__LINE__,chkval,value, mpierr
+             call piodie(_FILE_,__LINE__,'attributes do not match')
+          end if
+#endif             
+#undef DEBUG
+          ierr= nfmpi_put_att_{TYPE} (File%fh,varid,name, nf_{TYPE} , clen,value)
+#endif
+#ifdef _NETCDF
+       case(iotype_netcdf)
+          if (File%iosystem%io_rank==0) then
+             ierr=nf90_put_att(File%fh,varid,name,value)
+          endif
+#endif
+
+       case default
+          call bad_iotype(iotype,_FILE_,__LINE__)
+
+       end select
+    endif
+    call check_netcdf(File, ierr,_FILE_,__LINE__)
+  end function put_att_1d_{TYPE}
+
+
+  integer function put_att_desc_{TYPE} (File,varDesc,name,value) result(ierr)
+
+    type (File_desc_t), intent(inout) :: File
+    type (VAR_desc_t), intent(in)     :: varDesc
+    character(len=*), intent(in)      :: name
+    {VTYPE}, intent(in)      :: value
+
+    ierr = put_att_{TYPE} (File,varDesc%varid,name,value)
+
+  end function put_att_desc_{TYPE}
+
+  ! TYPE real,int,double
+  integer function put_att_desc_1d_{TYPE} (File,varDesc,name,value) result(ierr)
+
+    type (File_desc_t), intent(inout) :: File
+    type (VAR_desc_t), intent(in)     :: varDesc
+    character(len=*), intent(in)      :: name
+    {VTYPE}, intent(in)      :: value(:)
+
+    character(len=*), parameter :: subName=modName//'::put_att_desc_1d_{TYPE}'
+
+    ierr = put_att_1d_{TYPE} (File,varDesc%varid,name,value)
+
+  end function put_att_desc_1d_{TYPE}
+
+
+  integer function get_att_desc_{TYPE} (File,varDesc,name,value) result(ierr)
+
+    type (File_desc_t), intent(inout) :: File
+    type (VAR_desc_t), intent(in)     :: varDesc
+    character(len=*), intent(in)      :: name
+    {VTYPE}, intent(out)      :: value
+
+    character(len=*), parameter :: subName=modName//'::get_att_desc_{TYPE}'
+
+    ierr = get_att_{TYPE} (File,varDesc%varid,name,value)
+
+  end function get_att_desc_{TYPE}
+  ! TYPE real,int,double
+  integer function get_att_desc_1d_{TYPE} (File,varDesc,name,value) result(ierr)
+
+    type (File_desc_t), intent(inout) :: File
+    type (VAR_desc_t), intent(in)     :: varDesc
+    character(len=*), intent(in)      :: name
+    {VTYPE}, intent(out)      :: value(:)
+
+    character(len=*), parameter :: subName=modName//'::get_att_desc_1d_{TYPE}'
+
+    ierr = get_att_1d_{TYPE} (File,varDesc%varid,name,value)
+
+  end function get_att_desc_1d_{TYPE}
+
+
+  !============================================
+  ! get_att_{TYPE} :
+  !
+  !  Reads a {TYPE} attribute from a file
+  !   {netcdf,pnetcdf} only
+  !============================================
+
+  integer function get_att_{TYPE} (File,varid,name,value) result(ierr)
+
+    type (File_desc_t), intent(in) :: File
+    integer(i4), intent(in)        :: varid
+    character(len=*), intent(in)   :: name
+    {VTYPE}, intent(out)          :: value
+
+    !------------------
+    ! Local variables
+    !------------------
+    character(len=*), parameter :: subName=modName//'::get_att_{TYPE}'
+    integer :: iotype, mpierr
+    integer :: clen=1
+
+    iotype = File%iotype
+    ierr=PIO_noerr
+#if ({ITYPE} == TYPETEXT)	
+    clen = len(value)
+    value = ' '
+#endif
+    if(File%iosystem%IOproc) then
+       select case(iotype)
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
+          ierr= nfmpi_get_att_{TYPE} (File%fh,varid,name,value)
+#endif
+
+#ifdef _NETCDF
+       case(iotype_netcdf)
+          if (File%iosystem%io_rank==0) then
+             ierr=nf90_get_att(File%fh,varid,name,value)
+          endif
+          if(File%iosystem%num_tasks==File%iosystem%num_iotasks) then
+
+             call MPI_BCAST(value,clen ,{MPITYPE} ,0,File%iosystem%IO_comm, mpierr)
+             call CheckMPIReturn(subName, mpierr)
+          end if
+#endif
+
+       case default
+          call bad_iotype(iotype,_FILE_,__LINE__)
+
+       end select
+    endif
+    call check_netcdf(File, ierr,_FILE_,__LINE__)
+    if(File%iosystem%num_tasks>File%iosystem%num_iotasks) then
+       call MPI_BCAST(value, clen, {MPITYPE},File%iosystem%iomaster,File%iosystem%comp_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+  end function get_att_{TYPE}
+  ! TYPE real,int,double
+  integer function get_att_1d_{TYPE} (File,varid,name,value) result(ierr)
+
+    type (File_desc_t), intent(in) :: File
+    integer(i4), intent(in)        :: varid
+    character(len=*), intent(in)   :: name
+    {VTYPE}, intent(out)          :: value(:)
+
+    !------------------
+    ! Local variables
+    !------------------
+    character(len=*), parameter :: subName=modName//'::get_att_1d_{TYPE}'
+    integer :: iotype, mpierr
+    integer :: clen
+
+    iotype = File%iotype
+    ierr=PIO_noerr
+    clen = size(value)
+    if(File%iosystem%IOproc) then
+       select case(iotype)
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
+          ierr= nfmpi_get_att_{TYPE} (File%fh,varid,name,value)
+#endif
+#ifdef _NETCDF
+       case(iotype_netcdf)
+          if (File%iosystem%io_rank==0) then
+             ierr=nf90_get_att(File%fh,varid,name,value)
+          endif
+          if(File%iosystem%num_tasks==File%iosystem%num_iotasks) then
+             call MPI_BCAST(value,clen ,{MPITYPE} ,0,File%iosystem%IO_comm, mpierr)
+             call CheckMPIReturn(subName, mpierr)
+          end if
+#endif
+
+       case default
+          call bad_iotype(iotype,_FILE_,__LINE__)
+
+       end select
+    endif
+    call check_netcdf(File, ierr,_FILE_,__LINE__)
+    if(File%iosystem%num_tasks>File%iosystem%num_iotasks) then
+       call MPI_BCAST(value, clen, {MPITYPE},File%iosystem%iomaster,File%iosystem%comp_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+
+  end function get_att_1d_{TYPE}
+
+
+end module pionfatt_mod
+

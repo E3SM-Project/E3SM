@@ -1,0 +1,461 @@
+===============================================================
+Tag name:MCT2_5_1_080912
+Originator(s): Jon Wolfe
+Date: Fri Sep 12 13:46:46 MDT 2008
+One-line Summary:  Bug fix for memory leak
+
+Purpose of changes:
+Subroutine initv_ was modified to add a string clean
+(as shown below) in order to fix a significant memory
+leak problem in ccsm.
+
+  if(associated(bv%iList%bf)) then  
+     call String_clean(iLStr)       
+  endif                             
+  if(associated(bv%rList%bf)) then  
+     call String_clean(rLStr)       
+  endif                             
+
+===============================================================
+Tag name:MCT2_5_1_080522
+Originator(s): Rob Jacob
+Date: Thu May 22 14:25:11 MDT 2008
+One-line Summary:  Update to MCT 2.5.1
+
+Purpose of changes:
+Fix some outstanding bugs including the one mentioned
+below (MCT2_5_0_080415) also bugs involving PGF90 debug
+mode on Jaguar and some performance issues noted by
+Pat Worley.
+
+Describe any changes made to build system:  none
+Describe any substantial timing or memory changes:
+Scatter/gather methods in AvComms should be faster.
+Code reviewed by:  Rob Jacob
+
+List all subroutines eliminated: none
+
+List all subroutines added and what they do:
+m_GeneralGrid::zero - sets the Av in the GGrid to zero.
+
+List all existing files that have been modified, and describe the changes:
+m_Accumulator.F90 - fix init so it does what docs say
+m_AttrVect.F90 - initl_ now uses init_
+m_AttrVectComms.F90 - workaround PGf90 out-of-bounds error and speed up
+ GSM_scatter and GSM_gather
+m_AttrVectReduce.F90 - zero internal Av
+m_GeneralGrid.F90 - zero internal Av and add zero function
+m_GlobalSegMap.F90 - workaround for PGF90 out-of-bounds error.
+ also clariy use of nlseg
+m_Router.F90 - output warning about unordered GSMaps only to node 0
+m_SparseMatrixDecomp.F90 - zero internal Av
+m_SpatialIntegral.F90 - zero internal Av
+m_SpatialIntegralV.F90 - zero internal Av
+
+===============================================================
+Tag name:MCT2_5_0_080415
+Originator(s): tcraig
+Date: Mon Apr 14 20:25:53 MST 2008
+One-line Summary: fix TargetAV permute in rearrange
+
+Purpose of changes: fix problem when targetAV enters
+  the rearrange with valid values then gets unpermuted.
+  Normally this won't be an issue because the targetAV
+  enters with zero values, doesn't need to be unpermuted
+  or is filled completely when rearranged.
+
++++ mct/m_Rearranger.F90        (working copy)
+
+@@ -668,6 +667,10 @@
+       SourceAv => SourceAvin
+    endif
+
++   if(Recvunordered) then
++      call Permute(TargetAV,InRearranger%RecvRouter%permarr)
++   endif
+	
+===============================================================
+Tag name:MCT2_5_0_080128
+Originator(s): Rob Jacob
+Date: Mon Jan 28 21:25:53 CST 2008
+One-line Summary: Update to MCT 2.5.0. Add new features needed for CCSM4
+
+Purpose of changes: 
+Add support for many features requested for CCSM4 development such as:
+-simplified accumulator behavior
+-ability to used unordered GSMaps.  Can remove permute calls from CCSM4
+includes changes for MCT 2.4.2 and 2.4.3
+
+
+Describe any changes made to build system:  none
+Describe any substantial timing or memory changes:
+Code reviewed by: robj
+
+List all subroutines eliminated: none
+
+List all subroutines added and what they do:
+Accumulator::average - form the average in an accumulator
+Accumulator::inits - initialize a simple accumulator
+Accumulator::initavs - initialize a simple accumulator from an Av
+MCTWorld::new init method for multiple models on the same processors.
+mpi-serial: add MPI_Scan MPI_Scatter
+
+
+List all existing files that have been modified, and describe the changes:
+m_MatAttrVecMul.F90: zero intermediate Avs in Plus method.
+m_Accumulator.F90:  see above.
+m_GlobalSegMap.F90:  fix error messages in initd_
+m_Router.F90:  add ability to handle unordered GSMaps
+m_Transfer.F90:  add ability to handle unordered GSMaps
+m_Rearranger.F90:  add ability to handle unordered GSMaps
+m_MCTWorld.F90:  see above.
+
+Summarize any changes to answers: none unless permutation is removed from
+CCSM4.  Then changes will be roundoff.
+
+===============================================================
+Tag name:MCT2_4_2_071026
+Originator(s): Ray Loy
+Date: Fri Oct 26 2007
+One-line Summary: Add some MPI_ERR defs to mpi-serial needed by CLM
+
+Purpose of changes: 
+NOTE:  This is NOT an update to MCT 2.4.2
+These changes were later included in the official MCT 2.4.1.
+
+Describe any changes made to build system: none
+Describe any substantial timing or memory changes:  none
+Code reviewed by: rloy
+List all subroutines eliminated: none
+List all subroutines added and what they do: 
+mpi-serial:  Add MPI_ERR_ definitions
+Fix definition of MPI_Aint for 64-bit systems.
+
+List all existing files that have been modified, and describe the changes:
+
+
+Summarize any changes to answers: none
+
+===============================================================
+Tag name:MCT2_4_1_071025
+Originator(s): Rob Jacob
+Date: Thu Oct 25 2007
+One-line Summary: Update to almost all of MCT 2.4.1
+
+Purpose of changes: 
+Add workaround for SGI compiler bug seen in SMatPlus::exportStrategyToChar
+Also workaround runtime error in export*ListToCHar with empty list seen
+on SGI, pathscale and PGI-debug.
+MCT 2.4.1 was tagged later in November 21, 2007
+
+Describe any changes made to build system:  none
+Describe any substantial timing or memory changes:  none
+Code reviewed by: robj
+List all subroutines eliminated: none
+List all subroutines added and what they do: 
+mpi-serial:  add functions such as f2c, Group.
+
+List all existing files that have been modified, and describe the changes:
+Changes for workaround in:
+m_SparseMatrixPlus.F90
+m_AttrVect.F90
+m_Accumulator.F90
+
+
+Summarize any changes to answers: none
+
+===============================================================
+Tag name:MCT2_4_0_071012
+Originator(s): Rob Jacob
+Date: Friday, Oct 12, 2007
+One-line Summary: Update to MCT 2.4.0
+
+Purpose of changes: 
+
+Describe any changes made to build system:  none
+Describe any substantial timing or memory changes: fix memory leak in AttrVect:export
+Code reviewed by: robj
+List all subroutines eliminated: none
+List all subroutines added and what they do:
+GlobalSegMap::copy
+GlobalSegMap::increasing - logical returns true if points are in increasing order
+GlobalSegMap::max_nlsegs - return the maximum number of local segments
+Router::print - print comm table in Router.
+SparseMatrixPlus::exportStrategytoChar - return Strategy as a character string
+MCTWorld::initialized - return true if initialized
+
+mpi-serial/ several MPI functions/constants added: mpi_pack,mpi_unpack, MPI_PACKED
+MPI_MAX_PROCESSOR_NAME, mpi_get_processor_name, mpi_allgatherv
+MPI_OP_NULL, MPI_Aint, MPI_BOTTOM, MPI_User_function
+
+
+
+List all existing files that have been modified, and describe the changes:
+Changes as above and:
+m_Accumulator.F90:  lsize now optional in export
+m_AttrVect.F90: lsize now option in export
+m_GeneralGrid.F90:  lsize now optional in export
+m_GlobalSegMap.F90: see above
+m_MCTWorld.F90:  see above
+m_Router.F90:  check for increasing GSMap
+m_Rearranger.F90:  check for increasing GSMap
+m_SparseMatrix.F90:  lsize now optional in export
+
+
+Summarize any changes to answers: none
+
+===============================================================
+Tag name:MCT2_3_0_070206
+Originator(s): Rob Jacob
+Date: Tue Feb 06 2007
+One-line Summary: fix FORTRANUNDERSCORE option
+
+Purpose of changes: 
+
+Describe any changes made to build system:  see above
+Describe any substantial timing or memory changes: 
+Code reviewed by: robj
+List all subroutines eliminated: none
+List all subroutines added and what they do: none
+List all existing files that have been modified, and describe the changes:
+mpiP.h:  remove _ from FORTRANUNDERSCORE
+
+
+Summarize any changes to answers: none
+
+===============================================================
+Tag name:MCT2_3_0_070205
+Originator(s): Rob Jacob
+Date: Mon Feb 05 2007
+One-line Summary: Added FORTRANUNDERSCORE option to mpi-serial to use with
+CCSM build
+
+Purpose of changes: 
+
+Describe any changes made to build system:  see above
+Describe any substantial timing or memory changes: 
+Code reviewed by: robj
+List all subroutines eliminated: none
+List all subroutines added and what they do: none
+List all existing files that have been modified, and describe the changes:
+mpiP.h
+
+
+Summarize any changes to answers: none
+===============================================================
+Tag name:MCT2_3_0_070124
+Originator(s): Ray Loy
+Date: Wed Jan 24 2007
+One-line Summary: Add things to mpi-serial needed by CLM
+
+Purpose of changes: 
+
+Describe any changes made to build system:
+Describe any substantial timing or memory changes: 
+Code reviewed by: robj, erik
+List all subroutines eliminated: none
+List all subroutines added and what they do: none
+List all existing files that have been modified, and describe the changes:
+mpif.h, mpiP.h, mpif.real8double16.h, mpi.c, mpif.real4double8.h, collective.h
+mpi.h, mpif.real8double8.h
+add MPI_MAX_PROCESSOR_NAME, mpi_get_processor_name and mpi_allgatherv
+
+
+Summarize any changes to answers: none
+
+===============================================================
+Tag name:MCT2_3_0_070112
+Originator(s): Rob Jacob
+Date: Fri Jan 12 2007
+One-line Summary: Fix change to MCT 2.3.0 import
+
+Purpose of changes: 
+
+Describe any changes made to build system:
+Describe any substantial timing or memory changes: 
+Code reviewed by: robj
+List all subroutines eliminated: none
+List all subroutines added and what they do: none
+List all existing files that have been modified, and describe the changes:
+m_stdio.h - make necessary changes for CCSM
+
+
+Summarize any changes to answers: none
+===============================================================
+
+Tag name:MCT2_3_0_070110
+Originator(s): Rob Jacob
+Date: Wed Jan 10 15:34:46 MST 2007
+One-line Summary: Update to MCT 2.3.0
+
+Purpose of changes: 
+
+Bugs fixed (include MCT bugzilla ID): 33,45-49,52,53
+Describe any changes made to build system:
+Describe any substantial timing or memory changes: 
+Code reviewed by: robj
+List all subroutines eliminated: none
+List all subroutines added and what they do: none
+List all existing files that have been modified, and describe the changes:
+
+mct/m_MatAttrVectMul.F90    -- allow specification of attributes to be multiplied
+mct/m_Router.F90            -- lower memeory neded during Router init
+mct/m_GlobalSegMap.F90      -- init_index now allows processors with no points.
+mpeu/m_inpak90.F90          -- explicitly type all reals
+mpeu/m_dropdead.F90         -- check if MPI is initialized before calling abort
+mpeu/get_zeit.c             -- remove outdated CPP commands.
+
+Summarize any changes to answers: none
+===============================================================
+
+Tag name:MCT2_2_3_061018
+Originator(s): Rob Jacob
+Date: Wed Oct 18 15:44:14 MDT 2006
+One-line Summary: Update to MCT 2.2.3
+
+Purpose of changes: 
+
+Bugs fixed (include bugzilla ID): none
+Describe any changes made to build system:  support XT3 and g95 in MCTs build
+Describe any substantial timing or memory changes: 
+Code reviewed by: robj
+List all subroutines eliminated: none
+List all subroutines added and what they do: none
+List all existing files that have been modified, and describe the changes:
+
+mct/m_Rerranger.F90      -- Include fix from previous tag and add check of value
+			    of sum argument.
+mpi-serial/mpif.*.h      --  Add MPI_SUCCESS        
+mpeu/get_zeits.c         -- workaround for XT3.
+        
+Summarize any changes to answers: none
+===============================================================
+
+Tag name:MCT2_2_2_060930
+Originator(s): Rob Jacob
+Date: Sat Sep 30 08:57:53 MDT 2006
+One-line Summary: Bug fix for XT3
+
+Purpose of changes: 
+
+Bugs fixed (include bugzilla ID): none
+Describe any changes made to build system: 
+Describe any substantial timing or memory changes: 
+Code reviewed by: tcraig, robj
+List all subroutines eliminated: none
+List all subroutines added and what they do: none
+List all existing files that have been modified, and describe the changes:
+
+mct/m_Rerranger.F90      -- use MPI_WAIT instead of MPI_WAITANY when Sum is present.
+                            This fixes non-reproduciability in the r2o mapping seen on
+			    the XT3.
+        
+Summarize any changes to answers: none
+===============================================================
+
+Tag name:MCT2_2_2_060912
+Originator(s): Rob Jacob
+Date: Tue Sep 12 17:23:09 MDT 2006
+One-line Summary: Additional Cray vector changes
+
+Purpose of changes: 
+
+Bugs fixed (include bugzilla ID): none
+Describe any changes made to build system:  lower Cray optimization
+Describe any substantial timing or memory changes: should speed up
+ initialization time for CAM
+Code reviewed by: 
+List all subroutines eliminated: none
+List all subroutines added and what they do:  AV::RCopy,RCopyL,ICopy,ICopyL see
+below for explanation.
+List all existing files that have been modified, and describe the changes:
+
+configure, configure.ac  --  lower Cray optimization
+mct/m_AttrVectMul.F90    --  add Cray compiler directives
+mct/m_Router.F90         --  re-write initialization routine for better
+			       vectorization
+mct/m_AttrVect.F90       --  Move Cray compiler directives and break Copy_
+			     routine in to 4 new subroutines.
+mct/m_GlobalSegMap.F90   --  check errors on allocate in init_index.
+mpeu/m_ioutil.F90        --  clean up ifdef logic
+        
+Summarize any changes to answers: none
+===============================================================
+
+Tag name:MCT2_2_1_060706
+Originator(s): Rob Jacob
+Date: Thu Jul  6 14:17:34 MDT 2006
+One-line Summary: Changes to use new clock tick
+
+Purpose of changes: 
+
+Bugs fixed (include bugzilla ID): none
+Describe any changes made to build system:  none
+Describe any substantial timing or memory changes: none
+Code reviewed by: Erik Kluzek, Brian Eaton
+List all subroutines eliminated: none
+List all subroutines added and what they do:  none
+List all existing files that have been modified, and describe the changes:
+
+mpeu/get_zeits.c --- using updated clock macro files rather than obsolete 
+			version, required on new upgrade to bangkok
+        
+Summarize any changes to answers: none
+
+===============================================================
+===============================================================
+
+Tag name:MCT2_2_1_060424
+Originator(s): Rob Jacob
+Date: Mon Apr 24 23:28:29 CDT 2006
+One-line Summary: import of MCT 2.2.1 with Cray changes.
+
+Purpose of changes: First round of Cray mods
+
+Bugs fixed (include bugzilla ID): none
+
+Describe any changes made to build system: 
+Changed Cray options for MCT build to include vector info
+
+Describe any substantial timing or memory changes: faster on X1
+
+Code reviewed by: none
+
+List all subroutines eliminated: none
+        
+List all subroutines added and what they do: 
+GlobalToLocal::GlobalSegMapToIndexArr_  - convert an array of global index
+values to local values.
+
+List all existing files that have been modified, and describe the changes:
+configure, configure.ac - new Cray compile options (native MCT build)
+mct/m_GlobalToLocal.F90 - use new subroutine in GlobalSegMapToLocalMatrix
+mct/m_Rearranger.F90 - rewrite by Pat Worley.  New send/recv order and
+AlltoAll option.
+mpeu/m_FileResolve.F90 - add CPRCRAY for cross compiling
+mpeu/Makefile - compile C code first, then F90
+mpi-serial/collective.c and mpi.h - support MPI_ALLTOALLV and MPI_ALLTOALL
+        
+Summarize any changes to answers, i.e.,
+- what code configurations:
+- what platforms/compilers:
+- nature of change (roundoff; larger than roundoff but same climate; new
+  climate): 
+none
+
+If bitwise differences were observed, how did you show they were no worse
+than roundoff?
+
+If this tag changes climate describe the run(s) done to evaluate the new
+climate in enough detail that it(they) could be reproduced, i.e.,
+- source tag (all code used must be in the repository):
+- platform/compilers:
+- configure commandline:
+- build-namelist command (or complete namelist):
+- MSS location of output:
+
+MSS location of control simulations used to validate new climate:
+
+URL for AMWG diagnostics output used to validate new climate:
+
+===============================================================
