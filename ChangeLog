@@ -1,3 +1,49 @@
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
+Tag name: pio49_prod
+Originator(s): Jim
+Date: 06-11-2009
+One-line Summary: Improved boxrearranger performance
+
+List all component tags that were used to create pio tag:
+   mct   https://svn-ccsm-models.cgd.ucar.edu/mct/trunk_tags/MCT2_5_1_080912
+   timing  https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_081221	
+	
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+   Disabled timing tests in frost test suite - the timing library needs a few changes 
+	to work on frost
+   Replaced getiostartandcount with an algorithm provided by Tony, this is doing a better
+	job of decomposing into optimal strips
+   Relaxed an error condition in box_rearranger that required the size of the comp location
+	to be equal to the size of the dof.  We now require that the comp location is >= the
+	size of the dof.
+   Added a cpp instruction to allow a build with pnetcdf but without netcdf to work on a single
+	processor.   This reduces the number of expected failures from 13 to 12.
+
+   Changed cpp formating in box_rearranger.F90.in to satisfy fussy cpp in intel compiler.
+	
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+   Disabled timing tests in frost test suite - the timing library needs a few changes 
+	to work on frost
+
+Describe any substantial timing or memory changes:
+    
+Code reviewed by: Jim, Mariana
+
+Summary of pre-tag testing:  testpio suite on bluefire and frost
+	 cam testsuite on bluefire and calgary
+
+  Regression tests:
+      bluefire: 62 PASS, 12 FAIL
+      frost   : 
+
+===============================================================
 
 
 ===============================================================

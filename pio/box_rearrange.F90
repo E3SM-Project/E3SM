@@ -33,22 +33,23 @@
 #define DEF_P2P_HANDSHAKE .true.
 #define DEF_P2P_ISEND .false.
 #define DEF_P2P_MAXREQ 64
-
+!
+! The completly unreadable nature of the following lines is required by some compilers
+!
 #ifdef _USE_ALLTOALLW
-  #define DEF_COMP2IO_OPTION 0
-  #define DEF_IO2COMP_OPTION 0
+#define DEF_COMP2IO_OPTION 0
+#define DEF_IO2COMP_OPTION 0
 #else
-  #ifdef _USE_COMP2IO_FC
-    #define DEF_COMP2IO_OPTION 2
-  #else
-    #define DEF_COMP2IO_OPTION 1
-  #endif
-
-  #ifdef _USE_IO2COMP_FC
-    #define DEF_IO2COMP_OPTION 2
-  #else
-    #define DEF_IO2COMP_OPTION 1
-  #endif
+#ifdef _USE_COMP2IO_FC
+#define DEF_COMP2IO_OPTION 2
+#else
+#define DEF_COMP2IO_OPTION 1
+#endif
+#ifdef _USE_IO2COMP_FC
+#define DEF_IO2COMP_OPTION 2
+#else
+#define DEF_IO2COMP_OPTION 1
+#endif
 #endif
 
 
@@ -119,9 +120,9 @@ module box_rearrange
   character(len=*), parameter :: modName='box_rearrange'
 
 contains
-# 109 "box_rearrange.F90.in"
-#ifdef _MPISERIAL
 # 110 "box_rearrange.F90.in"
+#ifdef _MPISERIAL
+# 111 "box_rearrange.F90.in"
 !
 ! box_rearrange.inc
 !
@@ -170,7 +171,7 @@ subroutine box_rearrange_comp2io_real (IOsystem,ioDesc,s1, src,s2, dest, &
 
   ! begin
 
-  ndof=size(src)
+  ndof=size(ioDesc%dest_ioindex)
   niodof=size(dest)
   num_tasks=IOsystem%num_tasks
   num_iotasks=IOsystem%num_iotasks
@@ -180,11 +181,10 @@ subroutine box_rearrange_comp2io_real (IOsystem,ioDesc,s1, src,s2, dest, &
                  'built with -D_MPISERIAL but num_tasks=',num_tasks, &
                  'num_iotasks=', num_iotasks )
 
-  if (ndof>0 .and. ndof/=size(ioDesc%dest_ioindex)) &
+  if (size(src)>0 .and. size(src)< ndof) &
     call piodie( _FILE_,__LINE__, &
-                 'box_rearrange_comp2io: size(compbuf)=',ndof, &
-                 ' not equal to size(compdof)=', &
-                 size(ioDesc%dest_ioindex) )
+                 'box_rearrange_comp2io: size(compbuf)=',size(src), &
+                 ' not equal to size(compdof)=', ndof )
 
   do i=1,ndof
     ioproc=ioDesc%dest_ioproc(i)
@@ -256,7 +256,7 @@ subroutine box_rearrange_comp2io_double (IOsystem,ioDesc,s1, src,s2, dest, &
 
   ! begin
 
-  ndof=size(src)
+  ndof=size(ioDesc%dest_ioindex)
   niodof=size(dest)
   num_tasks=IOsystem%num_tasks
   num_iotasks=IOsystem%num_iotasks
@@ -266,11 +266,10 @@ subroutine box_rearrange_comp2io_double (IOsystem,ioDesc,s1, src,s2, dest, &
                  'built with -D_MPISERIAL but num_tasks=',num_tasks, &
                  'num_iotasks=', num_iotasks )
 
-  if (ndof>0 .and. ndof/=size(ioDesc%dest_ioindex)) &
+  if (size(src)>0 .and. size(src)< ndof) &
     call piodie( _FILE_,__LINE__, &
-                 'box_rearrange_comp2io: size(compbuf)=',ndof, &
-                 ' not equal to size(compdof)=', &
-                 size(ioDesc%dest_ioindex) )
+                 'box_rearrange_comp2io: size(compbuf)=',size(src), &
+                 ' not equal to size(compdof)=', ndof )
 
   do i=1,ndof
     ioproc=ioDesc%dest_ioproc(i)
@@ -342,7 +341,7 @@ subroutine box_rearrange_comp2io_int (IOsystem,ioDesc,s1, src,s2, dest, &
 
   ! begin
 
-  ndof=size(src)
+  ndof=size(ioDesc%dest_ioindex)
   niodof=size(dest)
   num_tasks=IOsystem%num_tasks
   num_iotasks=IOsystem%num_iotasks
@@ -352,11 +351,10 @@ subroutine box_rearrange_comp2io_int (IOsystem,ioDesc,s1, src,s2, dest, &
                  'built with -D_MPISERIAL but num_tasks=',num_tasks, &
                  'num_iotasks=', num_iotasks )
 
-  if (ndof>0 .and. ndof/=size(ioDesc%dest_ioindex)) &
+  if (size(src)>0 .and. size(src)< ndof) &
     call piodie( _FILE_,__LINE__, &
-                 'box_rearrange_comp2io: size(compbuf)=',ndof, &
-                 ' not equal to size(compdof)=', &
-                 size(ioDesc%dest_ioindex) )
+                 'box_rearrange_comp2io: size(compbuf)=',size(src), &
+                 ' not equal to size(compdof)=', ndof )
 
   do i=1,ndof
     ioproc=ioDesc%dest_ioproc(i)
@@ -459,18 +457,18 @@ subroutine box_rearrange_comp2io_real (IOsystem,ioDesc, s1, src, s2, dest, &
     endif
   endif
 
-  ndof=size(src)
+
+  ndof=size(ioDesc%dest_ioindex)
   niodof=size(dest)
   num_iotasks=IOsystem%num_iotasks
   nrecvs=ioDesc%nrecvs             ! number of distinct senders to the ioproc
   myrank=IOsystem%comp_rank
   nprocs=IOsystem%num_tasks
 
-  if (ndof > 0 .and. ndof/=size(ioDesc%dest_ioindex)) &
+  if (size(src) > 0 .and. size(src)<ndof) &
     call piodie( _FILE_,__LINE__, &
-                 'box_rearrange_comp2io: size(compbuf)=',ndof, &
-                 ' not equal to size(compdof)=', &
-                 size(ioDesc%dest_ioindex) )
+                 'box_rearrange_comp2io: size(compbuf)=',size(src), &
+                 ' not equal to size(compdof)=', ndof)
 
   if (IOsystem%IOproc) then
     rfrom=>ioDesc%rfrom
@@ -687,18 +685,18 @@ subroutine box_rearrange_comp2io_double (IOsystem,ioDesc, s1, src, s2, dest, &
     endif
   endif
 
-  ndof=size(src)
+
+  ndof=size(ioDesc%dest_ioindex)
   niodof=size(dest)
   num_iotasks=IOsystem%num_iotasks
   nrecvs=ioDesc%nrecvs             ! number of distinct senders to the ioproc
   myrank=IOsystem%comp_rank
   nprocs=IOsystem%num_tasks
 
-  if (ndof > 0 .and. ndof/=size(ioDesc%dest_ioindex)) &
+  if (size(src) > 0 .and. size(src)<ndof) &
     call piodie( _FILE_,__LINE__, &
-                 'box_rearrange_comp2io: size(compbuf)=',ndof, &
-                 ' not equal to size(compdof)=', &
-                 size(ioDesc%dest_ioindex) )
+                 'box_rearrange_comp2io: size(compbuf)=',size(src), &
+                 ' not equal to size(compdof)=', ndof)
 
   if (IOsystem%IOproc) then
     rfrom=>ioDesc%rfrom
@@ -915,18 +913,18 @@ subroutine box_rearrange_comp2io_int (IOsystem,ioDesc, s1, src, s2, dest, &
     endif
   endif
 
-  ndof=size(src)
+
+  ndof=size(ioDesc%dest_ioindex)
   niodof=size(dest)
   num_iotasks=IOsystem%num_iotasks
   nrecvs=ioDesc%nrecvs             ! number of distinct senders to the ioproc
   myrank=IOsystem%comp_rank
   nprocs=IOsystem%num_tasks
 
-  if (ndof > 0 .and. ndof/=size(ioDesc%dest_ioindex)) &
+  if (size(src) > 0 .and. size(src)<ndof) &
     call piodie( _FILE_,__LINE__, &
-                 'box_rearrange_comp2io: size(compbuf)=',ndof, &
-                 ' not equal to size(compdof)=', &
-                 size(ioDesc%dest_ioindex) )
+                 'box_rearrange_comp2io: size(compbuf)=',size(src), &
+                 ' not equal to size(compdof)=', ndof)
 
   if (IOsystem%IOproc) then
     rfrom=>ioDesc%rfrom
@@ -1104,7 +1102,7 @@ subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf, s2, compbuf, &
 
   ! begin
   compbuf(:) = 0
-  ndof=size(compbuf)
+  ndof=size(iodesc%dest_ioindex)
   niodof=size(iobuf)
   num_tasks=IOsystem%num_tasks
   num_iotasks=IOsystem%num_iotasks
@@ -1114,11 +1112,10 @@ subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf, s2, compbuf, &
                  'built with -D_MPISERIAL but num_tasks=',num_tasks, &
                  'num_iotasks=', num_iotasks )
 
-  if (ndof > 0 .and. ndof/=size(ioDesc%dest_ioindex)) &
+  if (size(compbuf) > 0 .and. size(compbuf)<ndof) &
     call piodie( _FILE_,__LINE__, &
-                 'box_rearrange_io2comp: size(compbuf)=',ndof, &
-                 ' not equal to size(compdof)=', &
-                 size(ioDesc%dest_ioindex) )
+                 'box_rearrange_io2comp: size(compbuf)=',size(compbuf), &
+                 ' not equal to size(compdof)=', ndof)
 
   do i=1,ndof
     ioproc=ioDesc%dest_ioproc(i)
@@ -1175,7 +1172,7 @@ subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf, s2, compbuf,
 
   ! begin
   compbuf(:) = 0
-  ndof=size(compbuf)
+  ndof=size(iodesc%dest_ioindex)
   niodof=size(iobuf)
   num_tasks=IOsystem%num_tasks
   num_iotasks=IOsystem%num_iotasks
@@ -1185,11 +1182,10 @@ subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf, s2, compbuf,
                  'built with -D_MPISERIAL but num_tasks=',num_tasks, &
                  'num_iotasks=', num_iotasks )
 
-  if (ndof > 0 .and. ndof/=size(ioDesc%dest_ioindex)) &
+  if (size(compbuf) > 0 .and. size(compbuf)<ndof) &
     call piodie( _FILE_,__LINE__, &
-                 'box_rearrange_io2comp: size(compbuf)=',ndof, &
-                 ' not equal to size(compdof)=', &
-                 size(ioDesc%dest_ioindex) )
+                 'box_rearrange_io2comp: size(compbuf)=',size(compbuf), &
+                 ' not equal to size(compdof)=', ndof)
 
   do i=1,ndof
     ioproc=ioDesc%dest_ioproc(i)
@@ -1246,7 +1242,7 @@ subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf, s2, compbuf, &
 
   ! begin
   compbuf(:) = 0
-  ndof=size(compbuf)
+  ndof=size(iodesc%dest_ioindex)
   niodof=size(iobuf)
   num_tasks=IOsystem%num_tasks
   num_iotasks=IOsystem%num_iotasks
@@ -1256,11 +1252,10 @@ subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf, s2, compbuf, &
                  'built with -D_MPISERIAL but num_tasks=',num_tasks, &
                  'num_iotasks=', num_iotasks )
 
-  if (ndof > 0 .and. ndof/=size(ioDesc%dest_ioindex)) &
+  if (size(compbuf) > 0 .and. size(compbuf)<ndof) &
     call piodie( _FILE_,__LINE__, &
-                 'box_rearrange_io2comp: size(compbuf)=',ndof, &
-                 ' not equal to size(compdof)=', &
-                 size(ioDesc%dest_ioindex) )
+                 'box_rearrange_io2comp: size(compbuf)=',size(compbuf), &
+                 ' not equal to size(compdof)=', ndof)
 
   do i=1,ndof
     ioproc=ioDesc%dest_ioproc(i)
@@ -1284,7 +1279,7 @@ subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf, s2, compbuf, &
 
 end subroutine box_rearrange_io2comp_int
 #else /* not _MPISERIAL */
-# 499 "box_rearrange.F90.in"
+# 498 "box_rearrange.F90.in"
 
 ! TYPE real,double,int
 subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
@@ -1362,19 +1357,17 @@ subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
   endif
 
   compbuf(:) = 0
-  ndof=size(compbuf)
+  ndof=size(iodesc%dest_ioindex)
   niodof=size(iobuf)
   num_iotasks=IOsystem%num_iotasks
   nrecvs=ioDesc%nrecvs             ! number of distinct senders to the ioproc
   myrank=IOsystem%comp_rank
   nprocs=IOsystem%num_tasks
 
-  if (ndof > 0 .and. ndof/=size(ioDesc%dest_ioindex)) &
+  if (size(compbuf) > 0 .and. size(compbuf)<ndof) &
     call piodie( _FILE_,__LINE__, &
-                 'box_rearrange_io2comp: size(compbuf)=',ndof, &
-                 ' not equal to size(compdof)=', &
-                 size(ioDesc%dest_ioindex) )
-
+                 'box_rearrange_io2comp: size(compbuf)=',size(compbuf), &
+                 ' not equal to size(compdof)=', ndof)
 
   if (IOsystem%IOproc) then
     rfrom=>ioDesc%rfrom
@@ -1583,19 +1576,17 @@ subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
   endif
 
   compbuf(:) = 0
-  ndof=size(compbuf)
+  ndof=size(iodesc%dest_ioindex)
   niodof=size(iobuf)
   num_iotasks=IOsystem%num_iotasks
   nrecvs=ioDesc%nrecvs             ! number of distinct senders to the ioproc
   myrank=IOsystem%comp_rank
   nprocs=IOsystem%num_tasks
 
-  if (ndof > 0 .and. ndof/=size(ioDesc%dest_ioindex)) &
+  if (size(compbuf) > 0 .and. size(compbuf)<ndof) &
     call piodie( _FILE_,__LINE__, &
-                 'box_rearrange_io2comp: size(compbuf)=',ndof, &
-                 ' not equal to size(compdof)=', &
-                 size(ioDesc%dest_ioindex) )
-
+                 'box_rearrange_io2comp: size(compbuf)=',size(compbuf), &
+                 ' not equal to size(compdof)=', ndof)
 
   if (IOsystem%IOproc) then
     rfrom=>ioDesc%rfrom
@@ -1804,19 +1795,17 @@ subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
   endif
 
   compbuf(:) = 0
-  ndof=size(compbuf)
+  ndof=size(iodesc%dest_ioindex)
   niodof=size(iobuf)
   num_iotasks=IOsystem%num_iotasks
   nrecvs=ioDesc%nrecvs             ! number of distinct senders to the ioproc
   myrank=IOsystem%comp_rank
   nprocs=IOsystem%num_tasks
 
-  if (ndof > 0 .and. ndof/=size(ioDesc%dest_ioindex)) &
+  if (size(compbuf) > 0 .and. size(compbuf)<ndof) &
     call piodie( _FILE_,__LINE__, &
-                 'box_rearrange_io2comp: size(compbuf)=',ndof, &
-                 ' not equal to size(compdof)=', &
-                 size(ioDesc%dest_ioindex) )
-
+                 'box_rearrange_io2comp: size(compbuf)=',size(compbuf), &
+                 ' not equal to size(compdof)=', ndof)
 
   if (IOsystem%IOproc) then
     rfrom=>ioDesc%rfrom
@@ -1949,7 +1938,7 @@ subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
 
 end subroutine box_rearrange_io2comp_int
 #endif  /* not _MPISERIAL */
-# 721 "box_rearrange.F90.in"
+# 718 "box_rearrange.F90.in"
 
 
   !

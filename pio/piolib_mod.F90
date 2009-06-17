@@ -95,7 +95,6 @@ module piolib_mod
 #endif
   public :: PIO_setNUMAgg,     &
        PIO_dupIODesc
-!       PIO_dupFileDesc,   &
 #ifdef MEMCHK
   integer :: lastrss=0
 #endif
@@ -143,10 +142,10 @@ module piolib_mod
 
   interface PIO_initDecomp
      module procedure initDecomp_1dof_nf, &
-                      initDecomp_1dof_nf_box, &
-                      initDecomp_1dof_bin,& 
-                      initDecomp_2dof_nf, &
-                      initDecomp_2dof_bin
+          initDecomp_1dof_nf_box, &
+          initDecomp_1dof_bin,& 
+          initDecomp_2dof_nf, &
+          initDecomp_2dof_bin
   end interface
 
   interface PIO_dupIOdesc
@@ -190,9 +189,9 @@ contains
   end function pio_get_local_array_size
 
 
-!************************************
-! AdvanceFrame
-!
+  !************************************
+  ! AdvanceFrame
+  !
 
   subroutine AdvanceFrame(vardesc)
     type(Var_Desc_t), intent(inout) :: vardesc
@@ -201,9 +200,9 @@ contains
 
 
 
-!************************************
-! SetFrame
-!
+  !************************************
+  ! SetFrame
+  !
 
   subroutine SetFrame(vardesc,frame)
     type(Var_Desc_t), intent(inout) :: vardesc
@@ -213,9 +212,9 @@ contains
 
 
 
-!************************************
-! SetDebugLevel
-!
+  !************************************
+  ! SetDebugLevel
+  !
 
   subroutine SetDebugLevel(level)
     integer(i4), intent(in) :: level	
@@ -253,9 +252,9 @@ contains
     end if
   end subroutine SetErrorHandlingI
 
-!************************************
-! initDecomp_2dof_BIN
-!************************************
+  !************************************
+  ! initDecomp_2dof_BIN
+  !************************************
   subroutine initDecomp_2dof_BIN(Iosystem,basepioTYPE,dims,lenBLOCKS,compDOF,ioDofr,iodofw,IOdesc)
     type (Iosystem_desc_t), intent(in) :: Iosystem
     integer(i4), intent(in)           :: basepioTYPE
@@ -304,7 +303,7 @@ contains
     !--------------------------------------------
     ! calculate MPI data structure displacements
     !--------------------------------------------
-!DBG    print *,'PIO_initDecomp: before call to CalcDisplace'
+    !DBG    print *,'PIO_initDecomp: before call to CalcDisplace'
     call CalcDisplace(lenBLOCKS,ioDofR,displaceR)
     call CalcDisplace(lenBLOCKS,ioDofW,displaceW)
 
@@ -314,12 +313,9 @@ contains
 
     if(Debug) print *,'IAM: ',Iosystem%io_rank,'initDecomp: UseRearranger: ',UseRearranger
 
-!    if(Iosystem%iotype == iotype_pbinary .or.   &
-!       Iosystem%iotype == iotype_direct_pbinary .or. &
-!       Iosystem%iotype == iotype_pnetcdf ) then
-       !---------------------------------------------
-       !  The setup for the MPI-IO type information
-       !---------------------------------------------
+    !---------------------------------------------
+    !  The setup for the MPI-IO type information
+    !---------------------------------------------
     if(Iosystem%IOproc) then
        !-----------------------------------------------
        ! setup the data structure for the read operation
@@ -336,9 +332,8 @@ contains
        call GenIndexedBlock(lenBLOCKS,baseTYPE,IODesc%Write%elemTYPE,IODesc%Write%fileTYPE,displaceW)
 
        if(Debug) print *,'initDecomp: At the end of subroutine'
-!       if(IODesc%Read%n_elemTYPE == 0 .and. IODesc%Write%n_elemTYPE == 0) IoSystem%IOproc = .FALSE.
+       !       if(IODesc%Read%n_elemTYPE == 0 .and. IODesc%Write%n_elemTYPE == 0) IoSystem%IOproc = .FALSE.
     endif
-!    endif
 
     deallocate(displaceR,displaceW)
 
@@ -346,9 +341,9 @@ contains
   end subroutine initDecomp_2dof_BIN
 
 
-!************************************
-! initDecomp_1dof_BIN
-!
+  !************************************
+  ! initDecomp_1dof_BIN
+  !
 
   subroutine initDecomp_1dof_BIN(Iosystem,baseTYPE,dims,lenBLOCKS,compDOF,ioDofr,IOdesc)
     type (Iosystem_desc_t), intent(in) :: Iosystem
@@ -361,11 +356,7 @@ contains
 
     integer(kind=PIO_Offset) :: start(1), count(1)
     ! these are not used in the binary interface
-!    if(  Iosystem%iotype == iotype_pnetcdf .or.  &
-!         Iosystem%iotype == iotype_netcdf ) then
-!
-!       call piodie(_FILE_,__LINE__,'initdecomp should include a start and count for netcdf format')
-!    end if
+
     start(1)=-1
     count(1)=-1
     call initDecomp_1dof_nf(Iosystem,baseTYPE,dims,lenBLOCKS,compDOF,ioDofr,start, count, IOdesc)
@@ -373,9 +364,9 @@ contains
 
 
 
-!************************************
-! initDecomp_2dof_nf
-!
+  !************************************
+  ! initDecomp_2dof_nf
+  !
 
   subroutine initDecomp_2dof_nf(Iosystem,baseTYPE,dims,lenBLOCKS,compDOF,ioDofr,iodofw,start, count, IOdesc)
     type (Iosystem_desc_t), intent(in) :: Iosystem
@@ -393,7 +384,7 @@ contains
 
 
     call initDecomp_1dof_nf(Iosystem, baseType, dims, lenblocks, compdof, iodofR, start, count, iodesc)
-	
+
     call initDecomp_1dof_nf(Iosystem, baseType, dims, lenblocks, compdof, iodofW, start, count, tmp)
 
     call dupiodesc2(iodesc%write,tmp%write)
@@ -409,9 +400,9 @@ contains
 
 
 
-!************************************
-! initDecomp_1dof_nf
-!
+  !************************************
+  ! initDecomp_1dof_nf
+  !
 
   subroutine initDecomp_1dof_nf(Iosystem,basepioTYPE,dims,lenblocks,compDOF,ioDof,start, count, IOdesc)
     type (Iosystem_desc_t), intent(in) :: Iosystem
@@ -449,14 +440,14 @@ contains
     ! testing.
     !-------------------------------------------
 #ifdef TIMING
-     call t_startf("pio_initDecomp")
+    call t_startf("pio_initDecomp")
 #endif
 #ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
-	lastrss=rss
-	print *,_FILE_,__LINE__,'mem=',rss
-     end if
+       lastrss=rss
+       print *,_FILE_,__LINE__,'mem=',rss
+    end if
 #endif
     UseRearranger = Iosystem%UseRearranger
     !---------------------
@@ -473,30 +464,20 @@ contains
 
     nDisp=SIZE(ioDof)/lenBLOCKS
 
-!    if (nDisp <= 0) then
-!      call piodie(_FILE_,__LINE__, &
-!           "initDecomp_1dof_nf: nDisp=",nDisp, &
-!           "(expected >0), size(ioDof)=",size(ioDof), &
-!           "lenBLOCKS=",lenBLOCKS)
-!    endif
-
     call alloc_check(displace,nDisp)
 
 #ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
-	lastrss=rss
-	print *,_FILE_,__LINE__,'mem=',rss
-     end if
+       lastrss=rss
+       print *,_FILE_,__LINE__,'mem=',rss
+    end if
 #endif
-!    if(  (Iosystem%iotype == iotype_pnetcdf .or.  &
-!         Iosystem%iotype == iotype_netcdf) &
-!         .and. Iosystem%IOProc) then 
-       call alloc_check(IODesc%start,ndims)
-       call alloc_check(IODesc%count,ndims)
-       IODesc%start(:) = start(:)
-       IODesc%count(:) = count(:)
-!    end if
+
+    call alloc_check(IODesc%start,ndims)
+    call alloc_check(IODesc%count,ndims)
+    IODesc%start(:) = start(:)
+    IODesc%count(:) = count(:)
     !--------------------------------------------
     ! calculate MPI data structure displacements 
     !--------------------------------------------
@@ -505,16 +486,16 @@ contains
 #ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
-	lastrss=rss
-	print *,_FILE_,__LINE__,'mem=',rss
-     end if
+       lastrss=rss
+       print *,_FILE_,__LINE__,'mem=',rss
+    end if
 #endif
 
     n_iotasks = Iosystem%num_iotasks
     length = size(iodof)
-!
-!   This facilitates the use of seperate read and write descripters. 
-!
+    !
+    !   This facilitates the use of seperate read and write descripters. 
+    !
     IOdesc%IOmap%start  = Iosystem%io_rank*length
     IOdesc%IOmap%length = length
     IOdesc%glen = glength
@@ -526,36 +507,31 @@ contains
 #ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
-	lastrss=rss
-	print *,_FILE_,__LINE__,'mem=',rss
-     end if
+       lastrss=rss
+       print *,_FILE_,__LINE__,'mem=',rss
+    end if
 #endif
 
 
-!    if(Iosystem%iotype == iotype_pbinary .or.   &
-!         Iosystem%iotype == iotype_direct_pbinary .or. &
-!         Iosystem%iotype == iotype_pnetcdf .or.  &
-!         Iosystem%iotype == iotype_netcdf ) then
-       !---------------------------------------------
-       !  The setup for the MPI-IO type information 
-       !---------------------------------------------
-     if(Iosystem%IOproc) then 
-        !-----------------------------------------------
-        ! setup the data structure for the io operation 
-        !-----------------------------------------------
-        IODesc%Write%n_elemTYPE = SIZE(displace)
-        IODesc%Write%n_words    = IODesc%Write%n_elemTYPE*lenBLOCKS
-        call GenIndexedBlock(lenBLOCKS,baseTYPE,IODesc%Write%elemTYPE,IODesc%Write%fileTYPE,displace)
+    !---------------------------------------------
+    !  The setup for the MPI-IO type information 
+    !---------------------------------------------
+    if(Iosystem%IOproc) then 
+       !-----------------------------------------------
+       ! setup the data structure for the io operation 
+       !-----------------------------------------------
+       IODesc%Write%n_elemTYPE = SIZE(displace)
+       IODesc%Write%n_words    = IODesc%Write%n_elemTYPE*lenBLOCKS
+       call GenIndexedBlock(lenBLOCKS,baseTYPE,IODesc%Write%elemTYPE,IODesc%Write%fileTYPE,displace)
 
-          if(Debug) print *,'initDecomp: At the end of subroutine',IODesc%Write%n_elemTYPE,IODesc%Write%n_words
-       endif
-!    endif
+       if(Debug) print *,'initDecomp: At the end of subroutine',IODesc%Write%n_elemTYPE,IODesc%Write%n_words
+    endif
 #ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
-	lastrss=rss
-	print *,_FILE_,__LINE__,'mem=',rss
-     end if
+       lastrss=rss
+       print *,_FILE_,__LINE__,'mem=',rss
+    end if
 #endif
     call dupiodesc2(iodesc%write,iodesc%read)
     if(Debug) then
@@ -569,12 +545,12 @@ contains
 #ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
-	lastrss=rss
-	print *,_FILE_,__LINE__,'mem=',rss
-     end if
+       lastrss=rss
+       print *,_FILE_,__LINE__,'mem=',rss
+    end if
 #endif
 #ifdef TIMING
-     call t_stopf("pio_initDecomp")
+    call t_stopf("pio_initDecomp")
 #endif
   end subroutine initDecomp_1dof_nf
 
@@ -618,10 +594,10 @@ contains
     end if
 
 #ifdef TIMING
-     call t_startf("pio_initDecomp_box")
+    call t_startf("pio_initDecomp_box")
 #endif
     if (Iosystem%comp_rank == 0 .and. Debug) &
-      print *,Iosystem%comp_rank,': Invoking initDecomp_1dof_nf_box'
+         print *,Iosystem%comp_rank,': Invoking initDecomp_1dof_nf_box'
 
     baseTYPE=pio_type_to_mpi_type(basepioTYPE)
 
@@ -633,9 +609,9 @@ contains
 #ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
-	lastrss=rss
-	print *,_FILE_,__LINE__,'mem=',rss
-     end if
+       lastrss=rss
+       print *,_FILE_,__LINE__,'mem=',rss
+    end if
 #endif
     UseRearranger = Iosystem%UseRearranger
     !---------------------
@@ -671,114 +647,106 @@ contains
        if(present(start) .and. present(count)) then
           iodesc%start = start
           iodesc%count = count
-          iosize=1
-          do i=1,ndims
-             iosize=iosize*IODESC%count(i)
-          end do
-          call MPI_ALLREDUCE(iosize, iodesc%maxiobuflen, 1, mpi_integer, mpi_sum, iosystem%io_comm, ierr)
-          call CheckMPIreturn('MPI_ALLREDUCE in initdecomp',ierr)
        else if(present(start) .or. present(count)) then
           call piodie( _FILE_,__LINE__, &
                'Both optional parameters start and count must be provided')
        else
-          call getiostartandcount(ndims, dims, Iosystem%num_iotasks, Iosystem%io_rank, IODESC%start, IODESC%count, &
-               mthd, iodesc%maxiobuflen )
-          ! Each block is of size count(1).  
-          ! Number of blocks is product of count(2)*count(3)*...
-          iosize=1
-          do i=1,ndims
-             iosize=iosize*IODESC%count(i)
-          end do
+          call getiostartandcount(ndims, dims, Iosystem%num_iotasks, Iosystem%io_rank, IODESC%start, IODESC%count)
+
        end if
+       iosize=1
+       do i=1,ndims
+          iosize=iosize*IODESC%count(i)
+       end do
+       call MPI_ALLREDUCE(iosize, iodesc%maxiobuflen, 1, mpi_integer, mpi_sum, iosystem%io_comm, ierr)
+       call CheckMPIreturn('MPI_ALLREDUCE in initdecomp',ierr)
+
+
        lenBLOCKS=IODESC%count(1)
 
 
-      if(lenblocks>0) then
-         nDisp=iosize/lenBLOCKS
-      else
-         ndisp=0
-      end if
-      call alloc_check(displace,nDisp)
+       if(lenblocks>0) then
+          nDisp=iosize/lenBLOCKS
+       else
+          ndisp=0
+       end if
+       call alloc_check(displace,nDisp)
 
-      !--------------------------------------------
-      ! calculate MPI data structure displacements 
-      !--------------------------------------------
-      
-      if(Debug) print *,'PIO_initDecomp: CalcDisplace', &
-                ndisp,iosize,lenblocks, iodesc%start, iodesc%count
-      call CalcDisplace_box(dims,IODESC%start,IODESC%count,ndims,displace)
+       !--------------------------------------------
+       ! calculate MPI data structure displacements 
+       !--------------------------------------------
 
-      n_iotasks = Iosystem%num_iotasks
-      length = iosize                      ! rml
+       if(Debug) print *,'PIO_initDecomp: CalcDisplace', &
+            ndisp,iosize,lenblocks, iodesc%start, iodesc%count
+       call CalcDisplace_box(dims,IODESC%start,IODESC%count,ndims,displace)
 
-      !
-      !   This facilitates the use of seperate read and write descripters. 
-      !
+       n_iotasks = Iosystem%num_iotasks
+       length = iosize                      ! rml
 
-      IOdesc%IOmap%start  = Iosystem%io_rank*length
-      IOdesc%IOmap%length = length
-      IOdesc%glen = glength
+       !
+       !   This facilitates the use of seperate read and write descripters. 
+       !
+
+       IOdesc%IOmap%start  = Iosystem%io_rank*length
+       IOdesc%IOmap%length = length
+       IOdesc%glen = glength
     endif
 
 
 #ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
-	lastrss=rss
-	print *,_FILE_,__LINE__,'mem=',rss
-     end if
+       lastrss=rss
+       print *,_FILE_,__LINE__,'mem=',rss
+    end if
 #endif
     if(Debug) print *,'IAM: ',Iosystem%io_rank, &
-              'initDecomp: UseRearranger: ',UseRearranger, glength
+         'initDecomp: UseRearranger: ',UseRearranger, glength
 
     if(UseRearranger) then 
-      call rearrange_create( Iosystem,compDOF,dims,ndims,ioDesc)
+       call rearrange_create( Iosystem,compDOF,dims,ndims,ioDesc)
     endif
 
 #ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
-	lastrss=rss
-	print *,_FILE_,__LINE__,'mem=',rss
-     end if
+       lastrss=rss
+       print *,_FILE_,__LINE__,'mem=',rss
+    end if
 #endif
 
 
-!    if(Iosystem%iotype == iotype_pbinary .or.   &
-!         Iosystem%iotype == iotype_direct_pbinary .or. &
-!         Iosystem%iotype == iotype_pnetcdf .or.  &
-!         Iosystem%iotype == iotype_netcdf ) then
-     !---------------------------------------------
-     !  The setup for the MPI-IO type information 
-     !---------------------------------------------
-     if(Iosystem%IOproc) then 
-        !-----------------------------------------------
-        ! setup the data structure for the io operation 
-        !-----------------------------------------------
-        IODesc%Write%n_elemTYPE = SIZE(displace)
-        IODesc%Write%n_words    = IODesc%Write%n_elemTYPE*lenBLOCKS
-        call GenIndexedBlock(lenBLOCKS,baseTYPE,IODesc%Write%elemTYPE,IODesc%Write%fileTYPE,displace)
 
-        if(Debug) print *,'initDecomp: At the end of subroutine',IODesc%Write%n_elemTYPE,IODesc%Write%n_words, &
-             iodesc%write%elemtype
+    !---------------------------------------------
+    !  The setup for the MPI-IO type information 
+    !---------------------------------------------
+    if(Iosystem%IOproc) then 
+       !-----------------------------------------------
+       ! setup the data structure for the io operation 
+       !-----------------------------------------------
+       IODesc%Write%n_elemTYPE = SIZE(displace)
+       IODesc%Write%n_words    = IODesc%Write%n_elemTYPE*lenBLOCKS
+       call GenIndexedBlock(lenBLOCKS,baseTYPE,IODesc%Write%elemTYPE,IODesc%Write%fileTYPE,displace)
 
-        IODesc%Read%n_elemTYPE = SIZE(displace)
-        IODesc%Read%n_words    = IODesc%Read%n_elemTYPE*lenBLOCKS
-        call GenIndexedBlock(lenBLOCKS,baseTYPE,IODesc%Read%elemTYPE,IODesc%Read%fileTYPE,displace)
-     else
-	iodesc%write%n_elemtype=0
-	iodesc%write%n_words=0
-	iodesc%write%elemType=-1
-	iodesc%write%fileType=-1
-     endif
-!    endif
+       if(Debug) print *,'initDecomp: At the end of subroutine',IODesc%Write%n_elemTYPE,IODesc%Write%n_words, &
+            iodesc%write%elemtype
+
+       IODesc%Read%n_elemTYPE = SIZE(displace)
+       IODesc%Read%n_words    = IODesc%Read%n_elemTYPE*lenBLOCKS
+       call GenIndexedBlock(lenBLOCKS,baseTYPE,IODesc%Read%elemTYPE,IODesc%Read%fileTYPE,displace)
+    else
+       iodesc%write%n_elemtype=0
+       iodesc%write%n_words=0
+       iodesc%write%elemType=-1
+       iodesc%write%fileType=-1
+    endif
 
 #ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
-	lastrss=rss
-	print *,_FILE_,__LINE__,'mem=',rss
-     end if
+       lastrss=rss
+       print *,_FILE_,__LINE__,'mem=',rss
+    end if
 #endif
 
     call dupiodesc2(iodesc%write,iodesc%read)
@@ -791,262 +759,113 @@ contains
     end if
 
     if (Iosystem%IOproc) then
-      call dealloc_check(displace)
+       call dealloc_check(displace)
     endif
-	
+
 #ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
-	lastrss=rss
-	print *,_FILE_,__LINE__,'mem=',rss
-     end if
+       lastrss=rss
+       print *,_FILE_,__LINE__,'mem=',rss
+    end if
 #endif
 #ifdef TIMING
-     call t_stopf("pio_initDecomp_box")
+    call t_stopf("pio_initDecomp_box")
 #endif
 
   end subroutine initDecomp_1dof_nf_box
 
 
-!
-! Given the global dimensions of a variable get the local io dimensions for that variable on each io 
-! processor.  The contents of each IO proc must be representable in the form (n1*n2*n3 ... nndims)
-! We try to divide the data evenly over the number of io procs and offer several methods of doing so
-! the first is to start with the inner most dimension of gdims and work our way to the outermost
-! the second is to start with the outer most and work our way toward the innermost
-! the third is to start from the largest dimension and work our way toward the smallest.
-!
-  subroutine GetIOstartandcount(ndims, gdims, num_io_procs, iorank, start, count, method, maxiosize)
-    integer(i4), intent(in) :: ndims, num_io_procs, iorank, method
-    integer(i4), intent(in) :: gdims(ndims)
-    integer(kind=PIO_OFFSET), intent(out) :: start(ndims), count(ndims)
-    integer(i4), intent(out) :: maxiosize
-    integer :: i, p, dims(ndims), lb, ub, inc
-    integer :: use_io_procs, extras, subrank
 
-    integer, parameter :: minblocksize=16
-    integer, parameter :: inner_dim_first=1, outer_dim_first=2, max_dim_first=3
+  subroutine getiostartandcount(ndims, gdims, num_io_procs, iorank, start, count)
+
+    implicit none
+
+    real, parameter :: eps = 1.0e-4
+    integer, intent(in) :: ndims, gdims(ndims), num_io_procs
+
+    integer(kind=PIO_Offset), intent(out) :: start(ndims), count(ndims)   ! Start and count arrays 
 
 
-    p=1
-    do i=1,ndims
-       p=p*gdims(i)
+    integer :: n,m
+    integer :: use_io_procs,iorank, sdims, cnt
+    logical :: done
+    integer :: xiam, xpes, ps, pe, ds, de
+    integer :: size,tsize
+    integer, parameter :: minblocksize=16        ! minimum block size on a task
+
+    !    integer(kind=PIO_Offset), allocatable :: start(:,:)
+    !    integer(kind=PIO_Offset), allocatable :: count(:,:)
+
+
+    tsize=1
+    do n=1,ndims
+       tsize=tsize*gdims(n)
     end do
-    use_io_procs = num_io_procs
-    do while(p/minblocksize < use_io_procs .and. use_io_procs>1)
+
+    use_io_procs=num_io_procs
+    do while(tsize/minblocksize < use_io_procs .and. use_io_procs>1)
        use_io_procs=use_io_procs-1
     end do
-    start(:)=1
-    count(:)=0
+
+    start = 1
+    count = 0
+
+
     if(iorank>=use_io_procs) return 
 
-    dims(:) = 0
+    !-----------------
 
-    if(method .eq. outer_dim_first) then
-       call outerdimfirst(use_io_procs, ndims, gdims, dims)
-       lb=1
-       ub=ndims
-       inc=1
-    else if(method .eq. inner_dim_first) then
-       call innerdimfirst(use_io_procs, ndims, gdims, dims)
-       ub=1
-       lb=ndims
-       inc=-1
-    else
-       call maxdimfirst(use_io_procs, ndims, gdims, dims)
-       lb=1
-       ub=ndims
-       inc=1
-    end if
+    cnt = 1
+    sdims = ndims
+    do while (cnt < use_io_procs .and. sdims > 0)
+       cnt = cnt * gdims(sdims)
+       sdims = sdims - 1
+    enddo
+    if (sdims < 0) then
+       write(6,*) 'error in sdims ', sdims
+       stop
+    endif
 
-    count(:)=gdims(:)
-    p=1
-    maxiosize = 1
-    do i=lb,ub,inc
-       p=p*dims(i)
-       if(dims(i)>1) then
-          count(i)=gdims(i)/dims(i)
-          subrank = (p*iorank)/use_io_procs
+    do m = 1,sdims
+       start(m) = 1
+       count(m) = gdims(m)
+    enddo
 
-          start(i)= mod(count(i)*subrank ,count(i)*dims(i)) +1
-          
-          extras = gdims(i)-count(i)*dims(i)
- 
-! We return the maxio size so that buffers for serial netcdf are always big enough
-          if(extras>0) then
-             maxiosize=maxiosize*(count(i)+1)
-          else
-             maxiosize=maxiosize*count(i)
-          end if
-!
-! We couldnt divide into equally sized domains, we have extras
-! So we add those to some of the io tasks
-!           
-          if(extras>0 .and. subrank >= p-extras) then
-             start(i)=start(i)+ (subrank+extras-p) 
-             count(i)=count(i)+1
-          end if
-       else
-          maxiosize=maxiosize*count(i)
-       end if
+    xpes = use_io_procs
+    xiam = iorank   ! goes from 0 to xpes-1
+    do m = ndims, sdims+1, -1
 
-    end do
+       ds = int(float(gdims(m)*(xiam  ))/float(xpes) + 1)
+       de = int(float(gdims(m)*(xiam+1))/float(xpes))
 
-  contains
+       start(m) = ds
+       count(m) = max(de-ds+1,1)
 
-    recursive function gcd( a, b ) result( divisor )
+       !     write(6,*) 'tcx1 ',n,m,start(n,m),count(n,m),iorank
 
-      ! Note that the function itself is not declared when the result
-      ! variable is present.  The type of the function is the type of 
-      ! the result variable.  Thus, only the result variable may be 
-      ! declared. 
+       ps = int(float(xpes*(start(m)-1))/float(gdims(m)) - eps + 1)
+       pe = int(float(xpes*(start(m)  ))/float(gdims(m)) - eps)
 
-      integer divisor
-      integer, intent(in) :: a, b
+       xpes = pe - ps + 1
+       xiam = xiam - ps
 
-      integer m, n
+       !     write(6,*) 'tcx2 ',n,m,ps,pe,xpes,xiam
 
-      ! Multiple statements may be written on a single source line
-      ! provided they are delimited with semicolons.
-
-      m = abs(a); n = abs(b)
-      if ( m > n ) call swap( m, n )  ! Insure that m <= n.
-
-      ! When the function invokes itself recursively, the result variable
-      ! should be used to store the result of the function.  The function
-      ! name is used to invoke the function.  Thus, the function name should
-      ! not appear on the left-hand side of an assignment statement.
-
-      if ( m == 0 ) then 
-         divisor = n
-      else
-         divisor = gcd( mod( n, m ), m )
-      end if
-
-   end function gcd
-   subroutine swap( x, y )
-     integer, intent(inout) :: x, y
-     
-     integer tmp
-
-     tmp = x; x = y; y = tmp 
-   end subroutine swap
-
-   subroutine outerdimfirst(iocnt,ndims,extent,dims)
-     implicit none
-     integer, intent(in) :: iocnt,ndims
-     integer, intent(in) :: extent(ndims)
-     integer, intent(out) :: dims(ndims)
-     integer :: sub(0:ndims)
-     integer :: lextent(ndims)
-     integer :: i, p, j(1), k
-     logical :: done
-     
-     done = .false.
-     lextent(:)=extent(:)
-     sub(ndims)=iocnt
-     dims=1
-     k=1
-     do while(.not. done)
-        p=1
-        k=k+1
-        do i=ndims,1,-1
-           dims(i) = gcd(lextent(i),sub(i))
-           p=p*dims(i)
-           sub(i-1)=sub(i)/dims(i)
-           if(p>=iocnt) exit
-        end do
-        if(i==0) then
-           j = maxloc(lextent)
-           lextent(j(1))=lextent(j(1))-1        
-        else
-          done=.true.
-        end if
-        if(k>100 .or. minval(lextent)< 1) then
-           call piodie( _FILE_,__LINE__, &
-                   'OuterDimFirst: Failed to converge')
-        end if
-
-     end do
-
-   end subroutine outerdimfirst
-   subroutine innerdimfirst(iocnt,ndims,extent,dims)
-     implicit none
-     integer, intent(in) :: iocnt,ndims
-     integer, intent(in) :: extent(ndims)
-     integer, intent(out) :: dims(ndims)
-     integer :: sub(1:ndims+1), lextent(ndims)
-    
-
-     integer :: i, p, j(1), k
-     logical :: done
-     k=1
-     done=.false.
-     lextent(:)=extent(:)
-     sub(1)=iocnt
-     dims=1
-     do while(.not. done)
-        p=1
-        k=k+1
-        do i=1,ndims
-           dims(i) = gcd(lextent(i),sub(i))
-           p=p*dims(i)
-           sub(i+1)=sub(i)/dims(i)
-           if(p>=iocnt) exit
-        end do
-        if(i>ndims) then
-           j = maxloc(lextent)
-           lextent(j(1))=lextent(j(1))-1        
-        else
-           done=.true.
-        end if
-        if(k>100 .or. minval(lextent)< 1) then
-           call piodie( _FILE_,__LINE__, &
-                   'InnerDimFirst: Failed to converge')
-        end if
-     end do
-   end subroutine innerdimfirst
-
-
-   subroutine maxdimfirst(iocnt,ndims,extent,dims)
-     implicit none
-     integer, intent(in) :: iocnt,ndims
-     integer, intent(in) :: extent(ndims)
-     integer, intent(out) :: dims(ndims)
-     integer :: lextent1(ndims), lextent2(ndims), order(ndims)
-
-     integer :: i, j(1)
-
-     lextent1=extent
-
-     do i=1,ndims
-        j = maxloc(lextent1)
-        lextent2(i)=lextent1(j(1))
-        lextent1(j(1))=0
-        order(i)=j(1)
-     end do
-
-     call innerdimfirst(iocnt, ndims, lextent2, dims)
-
-     lextent1=dims
-     do i=1,ndims
-        dims(order(i))=lextent1(i)
-     enddo
+    enddo
 
 
 
-   end subroutine maxdimfirst
-  end subroutine GetIOstartandcount
+  end subroutine getiostartandcount
 
 
 
 
 
 
-
-!************************************
-! dupiodesc2
-!
+  !************************************
+  ! dupiodesc2
+  !
 
   subroutine dupiodesc2(src, dest)
     type(io_desc2_t), intent(in) :: src
@@ -1060,15 +879,15 @@ contains
 
 
 
-!************************************
-! GenIndexedBlock
-!
-! given input lenBLOCKS, baseTYPE, and displacement
-! create two MPI types: 
-!   elemTYPE - a single block of baseTYPE repeated lenBLOCKS times
-!   fileTYPE - elemTYPE repeated at each entry in displacement()
-!              (i.e. size(displacement) entries)
-!
+  !************************************
+  ! GenIndexedBlock
+  !
+  ! given input lenBLOCKS, baseTYPE, and displacement
+  ! create two MPI types: 
+  !   elemTYPE - a single block of baseTYPE repeated lenBLOCKS times
+  !   fileTYPE - elemTYPE repeated at each entry in displacement()
+  !              (i.e. size(displacement) entries)
+  !
 
 
   subroutine GenIndexedBlock(lenBLOCKS,baseTYPE,elemTYPE,fileTYPE,displace)
@@ -1088,20 +907,14 @@ contains
 
     if (lenBLOCKS < 1) then
        return
-      call piodie( _FILE_,__LINE__, &
-                   'GenIndexedBlock: lenBLOCKS=',lenBLOCKS,' (expected >=1)')
+       call piodie( _FILE_,__LINE__, &
+            'GenIndexedBlock: lenBLOCKS=',lenBLOCKS,' (expected >=1)')
     endif
 
     numBLOCKS = SIZE(displace)
 
-!tcx - allow empty iodofs
+    !tcx - allow empty iodofs
     if (numBLOCKS > 0) then
-
-!tcx - now obsolete
-!       if (numBLOCKS < 1) then
-!         call piodie( _FILE_,__LINE__, &
-!                      'GenIndexedBlock: numBLOCKS=',numBLOCKS,' (expected >=1)')
-!       endif
 
        if(Debug) print *,'GenIndexedBlock: Setting up MPI-IO data structure stuff, numBLOCKS, lenBLOCKS',&
             numBLOCKS,lenBLOCKS
@@ -1129,10 +942,10 @@ contains
 
 
 #ifdef _MPISERIAL
-   ! When compiling w/mpiserial for snetcdf output, these fields are not used
-   elemTYPE=0
-   fileTYPE=0
-! _MPISERIAL
+    ! When compiling w/mpiserial for snetcdf output, these fields are not used
+    elemTYPE=0
+    fileTYPE=0
+    ! _MPISERIAL
 #else
 
     call MPI_Type_contiguous(lenBLOCKS,lbaseTYPE,elemTYPE,ierr)
@@ -1145,16 +958,16 @@ contains
     if(Check) call CheckMPIreturn('GenIndexedBlock: after call to Type_commit: ',ierr)
     call mpi_type_get_envelope(elemtype, nints, nadds, ndtypes, comb, ierr)
 
-! _MPISERIAL
+    ! _MPISERIAL
 #endif
 
   end subroutine GenIndexedBlock
 
 
 
-!************************************
-! init
-!
+  !************************************
+  ! init
+  !
 
   subroutine init(comp_rank, comp_comm, num_iotasks, num_aggregator, stride,  rearr, IOsystem,base)
 
@@ -1163,7 +976,7 @@ contains
     integer(i4), intent(in) :: num_iotasks 
     integer(i4), intent(in) :: num_aggregator
     integer(i4), intent(in) :: stride
-!    integer(i4), intent(in) :: ioType
+    !    integer(i4), intent(in) :: ioType
     integer(i4), intent(in) :: rearr
     type (IOsystem_desc_t), intent(out)  :: IOsystem  ! IO descriptor to initalize
     integer(i4), intent(in),optional :: base
@@ -1181,7 +994,7 @@ contains
     integer(i4) :: MPI_GROUP_WORLD, MPI_GROUP_IO
 
 #ifdef TIMING
-     call t_startf("pio_init")
+    call t_startf("pio_init")
 #endif
     IOsystem%error_handling = PIO_INTERNAL_ERROR
     IOsystem%comp_comm = comp_comm
@@ -1198,11 +1011,11 @@ contains
     n_iotasks=num_iotasks
 
     if (n_iotasks>IOsystem%num_tasks) then
-      n_iotasks=IOsystem%num_tasks
-      if (IOsystem%comp_rank==0) then
-        print *,'***WARNING, reducing io tasks to ',n_iotasks, &
-        ' because there are not enough processors'
-      endif
+       n_iotasks=IOsystem%num_tasks
+       if (IOsystem%comp_rank==0) then
+          print *,'***WARNING, reducing io tasks to ',n_iotasks, &
+               ' because there are not enough processors'
+       endif
     endif
 
     lbase = 0
@@ -1223,12 +1036,10 @@ contains
     ! nodes and set IOProc
     ! --------------------------
     lstride = stride
-!    if((iotype .eq. iotype_pbinary) .or. &
-!         (iotype .eq. iotype_direct_pbinary)) lstride = 1   ! reset stride if using MPI-IO aggregators
 
     if (lbase+(n_iotasks-1)*lstride >= IOsystem%num_tasks) then
-	print *,_FILE_,__LINE__,lbase,n_iotasks,lstride,IOsystem%num_tasks
-      call piodie(_FILE_,__LINE__,'Not enough procs for the stride')
+       print *,_FILE_,__LINE__,lbase,n_iotasks,lstride,IOsystem%num_tasks
+       call piodie(_FILE_,__LINE__,'Not enough procs for the stride')
     endif
 
     call alloc_check(ioranks,n_iotasks,'init:n_ioranks')
@@ -1237,10 +1048,10 @@ contains
        ioranks(i)=(lbase + (i-1)*lstride)
 
        if (ioranks(i)>=IOsystem%num_tasks) then
-         call piodie( _FILE_,__LINE__, &
-                      'tried to assign io processor beyond max rank ',&
-                      ioranks(i), &
-		      ' num_tasks=',IOsystem%num_tasks )
+          call piodie( _FILE_,__LINE__, &
+               'tried to assign io processor beyond max rank ',&
+               ioranks(i), &
+               ' num_tasks=',IOsystem%num_tasks )
        endif
 
        if(comp_rank == ioranks(i))  IOsystem%IOProc = .TRUE.
@@ -1269,18 +1080,13 @@ contains
 
     if(IOsystem%IOproc) call MPI_COMM_rank(IOsystem%io_comm,IOsystem%io_rank,ierr)
     if(Check) call CheckMPIreturn('init: after call to COMM_rank: ',ierr)
-    
+
 
     if(Debug) print *,'init: IAM: ',comp_rank,'IO processor: ',IOsystem%IOproc, 'IO rank ',IOsystem%io_rank
 
 
 
     if(Debug) print *,'init: IAM: ',comp_rank,' before allocate(status): n_iotasks: ',n_iotasks
-    !----------------------------
-    ! status for the MPI-IO calls 
-    !----------------------------
-!    call alloc_check(status,MPI_STATUS_SIZE,n_iotasks)
-!    call alloc_check(fstatus,MPI_STATUS_SIZE)
 
     usehints = .FALSE.
 
@@ -1293,32 +1099,24 @@ contains
 
 #if defined(USEMPIIO) || defined(_PNETCDF)
 
-   call MPI_info_create(IOsystem%info,ierr)
-! Turn on MPI-IO aggregation 
-!    if(.not.IOsystem%UseRearranger) then 
-	if(num_aggregator .gt. 0) then 
-		call setNUMAgg(IOsystem,num_aggregator)  ! let mpi-io do aggregation
-         	usehints = .TRUE.
-	endif
-!    endif
+    call MPI_info_create(IOsystem%info,ierr)
+    ! Turn on MPI-IO aggregation 
+    if(num_aggregator .gt. 0) then 
+       call setNUMAgg(IOsystem,num_aggregator)  ! let mpi-io do aggregation
+       usehints = .TRUE.
+    endif
 
 #ifdef PIO_GPFS_HINTS
-   call MPI_info_set(IOsystem%info,"IBM_largeblock_io","true",ierr)
-   usehints = .TRUE.
+    call MPI_info_set(IOsystem%info,"IBM_largeblock_io","true",ierr)
+    usehints = .TRUE.
 #endif
 #ifdef PIO_LUSTRE_HINTS
-   call MPI_info_set(IOsystem%info,'romio_ds_read','disable',ierr)
-   call MPI_info_set(IOsystem%info,'romio_ds_write','disable',ierr)
-   usehints = .TRUE.
-!   print *,'PIO MPI hint: disable romio_cb_read/write'
-!   call MPI_info_set(IOsystem%info,'romio_cb_read','disable',ierr)
-!   call MPI_info_set(IOsystem%info,'romio_cb_write','disable',ierr)
-!  OR:
-!   print *,'PIO: SETTING hint ind'
-!   call MPI_info_set(IOsystem%info,'ind_wr_buffer_size','16777216',ierr)
+    call MPI_info_set(IOsystem%info,'romio_ds_read','disable',ierr)
+    call MPI_info_set(IOsystem%info,'romio_ds_write','disable',ierr)
+    usehints = .TRUE.
 #endif
 
-   if(.not. usehints) IOsystem%info = MPI_INFO_NULL
+    if(.not. usehints) IOsystem%info = MPI_INFO_NULL
 
 #endif
 
@@ -1329,19 +1127,19 @@ contains
     !---------------------------------
 
     if (IOsystem%UseRearranger) then
-      call rearrange_init(IOsystem)
+       call rearrange_init(IOsystem)
     endif
 #ifdef TIMING
-     call t_stopf("pio_init")
+    call t_stopf("pio_init")
 #endif
 
   end subroutine init
 
 
 
-!************************************
-! setNUMAgg
-!
+  !************************************
+  ! setNUMAgg
+  !
 
   subroutine setNUMAgg(iosystem,numAgg)
     type (iosystem_desc_t), intent(inout) :: iosystem
@@ -1367,16 +1165,16 @@ contains
 
 
 
-!=============================================
-!  dupIOdesc:
-!
-!   Duplicate the IO descriptor
-!
-!=============================================
+  !=============================================
+  !  dupIOdesc:
+  !
+  !   Duplicate the IO descriptor
+  !
+  !=============================================
 
 
-! rml: possible problem here wrt dubbing the box rearranger
-! data, as well as maybe the mct rearranger???
+  ! rml: possible problem here wrt dubbing the box rearranger
+  ! data, as well as maybe the mct rearranger???
 
   subroutine dupIOdesc(src,dest)
 
@@ -1398,63 +1196,63 @@ contains
        dest%count(:)       =  src%count(:)
     endif
 
-!DBG    print *,'before dupiodesc2'
+    !DBG    print *,'before dupiodesc2'
     call dupiodesc2(src%Read, dest%Read)
     call dupiodesc2(src%Write, dest%Write)
-!DBG    print *,'after dupiodesc2'
+    !DBG    print *,'after dupiodesc2'
 #ifdef _USEMCT
-!DBG    print *, _FILE_,__LINE__, 'This function is broken'
+    !DBG    print *, _FILE_,__LINE__, 'This function is broken'
     dest%lsize_comp = src%lsize_comp
     dest%lsize_io = src%lsize_io
 
     if(associated(src%compDOF_index)) then
-        n = SIZE(src%compDOF_index)
-        allocate(dest%compDOF_index(n))
-        dest%compDOF_index(:) = src%compDOF_index(:)
+       n = SIZE(src%compDOF_index)
+       allocate(dest%compDOF_index(n))
+       dest%compDOF_index(:) = src%compDOF_index(:)
     endif
 
 #endif
     dest%baseTYPE = src%baseTYPE
 
     if(associated(src%dest_ioproc)) then 
-        n = SIZE(src%dest_ioproc)
-        allocate(dest%dest_ioproc(n))
-        dest%dest_ioproc(:) = src%dest_ioproc(:)
-    endif 
+       n = SIZE(src%dest_ioproc)
+       allocate(dest%dest_ioproc(n))
+       dest%dest_ioproc(:) = src%dest_ioproc(:)
+    endif
 
     if(associated(src%dest_ioindex)) then 
-        n = SIZE(src%dest_ioindex)
-        allocate(dest%dest_ioindex(n))
-        dest%dest_ioindex(:) = src%dest_ioindex(:)
-    endif 
+       n = SIZE(src%dest_ioindex)
+       allocate(dest%dest_ioindex(n))
+       dest%dest_ioindex(:) = src%dest_ioindex(:)
+    endif
 
     if(associated(src%rfrom)) then 
-        n = SIZE(src%rfrom)
-        allocate(dest%rfrom(n))
-        dest%rfrom(:) = src%rfrom(:)
-    endif 
+       n = SIZE(src%rfrom)
+       allocate(dest%rfrom(n))
+       dest%rfrom(:) = src%rfrom(:)
+    endif
 
     if(associated(src%rtype)) then 
-        n = SIZE(src%rtype)
-        allocate(dest%rtype(n))
-        dest%rtype(:) = src%rtype(:)
-    endif 
+       n = SIZE(src%rtype)
+       allocate(dest%rtype(n))
+       dest%rtype(:) = src%rtype(:)
+    endif
 
     if(associated(src%scount)) then 
-        n = SIZE(src%scount)
-        allocate(dest%scount(n))
-        dest%scount(:) = src%scount(:)
-    endif 
+       n = SIZE(src%scount)
+       allocate(dest%scount(n))
+       dest%scount(:) = src%scount(:)
+    endif
 
     if(associated(src%stype)) then 
-        n = SIZE(src%stype)
-        allocate(dest%stype(n))
-        dest%stype(:) = src%stype(:)
-    endif 
+       n = SIZE(src%stype)
+       allocate(dest%stype(n))
+       dest%stype(:) = src%stype(:)
+    endif
 
     call copy_decompMap(src%IOmap,dest%IOmap)
     call copy_decompMap(src%COMPmap,dest%COMPmap)
-    
+
     dest%compsize = src%compsize
 
 
@@ -1462,12 +1260,12 @@ contains
 
 
 
-!=============================================
-!  copy_decompMAP:
-!
-!   Copy decompMAP_t data structures
-!
-!=============================================
+  !=============================================
+  !  copy_decompMAP:
+  !
+  !   Copy decompMAP_t data structures
+  !
+  !=============================================
 
   subroutine copy_decompMap(src,dest)
 
@@ -1477,19 +1275,17 @@ contains
 
     dest%start    = src%start
     dest%length   = src%length
-    !     dest%startJMD = src%startJMD
-    !     dest%count    = src%count
 
   end subroutine copy_decompMap
 
 
 
-!=============================================
-!  setIOType:
-!   
-!   Set the desired type of IO to perform 
-!
-!=============================================
+  !=============================================
+  !  setIOType:
+  !   
+  !   Set the desired type of IO to perform 
+  !
+  !=============================================
 
   subroutine setIOType(File,iotype,rearr)
 
@@ -1504,10 +1300,10 @@ contains
 
 
 
-!*****************************************
-! numToRead_io
-!
-!*****************************************
+  !*****************************************
+  ! numToRead_io
+  !
+  !*****************************************
 
   integer function numToRead(ioDesc) result(num)
 
@@ -1519,10 +1315,10 @@ contains
 
 
 
-!*****************************************
-! numToWrite
-!
-!*****************************************
+  !*****************************************
+  ! numToWrite
+  !
+  !*****************************************
 
   integer function numToWrite(ioDesc) result(num)
 
@@ -1535,11 +1331,11 @@ contains
 
 
 
-!=============================
-! CreateFile:
-!
-!  Open a disk file
-! ============================
+  !=============================
+  ! CreateFile:
+  !
+  !  Open a disk file
+  ! ============================
 
   integer function CreateFile(IOSystem, File,iotype, fname, amode_in) result(ierr)
     type (iosystem_desc_t), intent(inout), target :: IOsystem
@@ -1555,7 +1351,7 @@ contains
     character(len=9) :: rd_buffer
 
 #ifdef TIMING
-     call t_startf("pio_createfile")
+    call t_startf("pio_createfile")
 #endif
 
     if(Debug) print *,'CreateFile: {comp,io}_rank:',IOsystem%comp_rank,IOsystem%io_rank,'IO proc: ',IOsystem%IOproc
@@ -1574,7 +1370,11 @@ contains
     !--------------------------------
 
     if(iosystem%num_iotasks.eq.1.and.iotype.eq.iotype_pnetcdf) then	
+#if defined(_NETCDF)
        File%iotype=iotype_netcdf
+#else
+       File%iotype = iotype 
+#endif
     else
        File%iotype = iotype 
     end if
@@ -1603,17 +1403,17 @@ contains
 
     if(Debug) print *, _FILE_,__LINE__,'CreateFile complete', amode
 #ifdef TIMING
-     call t_stopf("pio_createfile")
+    call t_stopf("pio_createfile")
 #endif
   end function CreateFile
 
 
 
-!=============================
-! OpenFile:
-!
-!  Open a disk file
-! ============================
+  !=============================
+  ! OpenFile:
+  !
+  !  Open a disk file
+  ! ============================
 
   integer function OpenFile(IOsystem, File, iotype, fname,mode) result(ierr)
     type (IOsystem_desc_t), intent(inout), target :: IOsystem
@@ -1629,7 +1429,7 @@ contains
     character(len=9) :: rd_buffer
 
 #ifdef TIMING
-     call t_startf("pio_openfile")
+    call t_startf("pio_openfile")
 #endif
 
     if(Debug) print *,'OpenFile: {comp,io}_rank:',Iosystem%comp_rank,Iosystem%io_rank,'IO proc: ',Iosystem%IOproc
@@ -1643,7 +1443,11 @@ contains
     !--------------------------------
 
     if(iosystem%num_iotasks.eq.1.and.iotype.eq.iotype_pnetcdf) then	
+#if defined(_NETCDF)
        File%iotype=iotype_netcdf
+#else
+       File%iotype = iotype 
+#endif       
     else
        File%iotype = iotype 
     end if
@@ -1672,16 +1476,16 @@ contains
     end select
 
 #ifdef TIMING
-     call t_stopf("pio_openfile")
+    call t_stopf("pio_openfile")
 #endif
 
   end function OpenFile
 
 
 
-!=============================
-! Sync a netcdf file
-! ============================
+  !=============================
+  ! Sync a netcdf file
+  ! ============================
   subroutine SyncFile(File)
     implicit none
     type (File_desc_t) :: File
@@ -1689,7 +1493,7 @@ contains
 
     select case(File%iotype)
     case( iotype_pnetcdf, iotype_netcdf)
-          ierr = sync_nf(File)
+       ierr = sync_nf(File)
     case(iotype_pbinary, iotype_direct_pbinary)
     case(iotype_binary) 
     end select
@@ -1697,11 +1501,11 @@ contains
 
 
 
-!=============================
-! Free a decomp
-!
-!  free all allocated mct storage
-! ============================
+  !=============================
+  ! Free a decomp
+  !
+  !  free all allocated mct storage
+  ! ============================
   subroutine freeDecomp_ios(IOS,ioDesc)
     implicit none
     type (IOsystem_desc_t) :: IOS
@@ -1719,11 +1523,11 @@ contains
     end if
   end subroutine freeDecomp_ios
 
-!=============================
-! Free a decomp
-!
-!  free all allocated mct storage
-! ============================
+  !=============================
+  ! Free a decomp
+  !
+  !  free all allocated mct storage
+  ! ============================
   subroutine freeDecomp_file(File,ioDesc)
     implicit none
     type (File_desc_t) :: File
@@ -1735,11 +1539,11 @@ contains
 
 
 
-!=============================
-! CloseFile:
-!
-!  Close a disk file
-! ============================
+  !=============================
+  ! CloseFile:
+  !
+  !  Close a disk file
+  ! ============================
 
   subroutine CloseFile(File)
 
@@ -1750,29 +1554,29 @@ contains
     logical, parameter :: Check = .TRUE.
 
 #ifdef TIMING
-     call t_startf("pio_closefile")
+    call t_startf("pio_closefile")
 #endif
-     if(debug) print *,_FILE_,__LINE__,'close: ',File%fh
-     iotype = File%iotype 
-     select case(iotype)
-     case(iotype_pbinary, iotype_direct_pbinary)
-        ierr = close_mpiio(File)
-     case( iotype_pnetcdf, iotype_netcdf)
-        ierr = close_nf(File)
-     case(iotype_binary)
-        print *,'CloseFile: IO type not supported'
-     end select
+    if(debug) print *,_FILE_,__LINE__,'close: ',File%fh
+    iotype = File%iotype 
+    select case(iotype)
+    case(iotype_pbinary, iotype_direct_pbinary)
+       ierr = close_mpiio(File)
+    case( iotype_pnetcdf, iotype_netcdf)
+       ierr = close_nf(File)
+    case(iotype_binary)
+       print *,'CloseFile: IO type not supported'
+    end select
 #ifdef TIMING
-     call t_stopf("pio_closefile")
+    call t_stopf("pio_closefile")
 #endif
 
 
   end subroutine CloseFile
 
 
-!******************************
-! read_ascii
-!
+  !******************************
+  ! read_ascii
+  !
 
   subroutine read_ascii(rank,IOBUF,size)
 
@@ -1813,9 +1617,9 @@ contains
 
 
 
-!*****************************
-! CalcDisplace
-!
+  !*****************************
+  ! CalcDisplace
+  !
 
   subroutine CalcDisplace(bsize,dof,displace)
 
@@ -1830,9 +1634,7 @@ contains
     do i=1,numBLOCKS
        ii = (i-1)*lenBLOCKS+1
        dis = DOF(ii)-1
-!       if(dis .ne. 1) then          ! rml: this does not look correct
-          dis = dis/lenBLOCKS   
-!       endif
+       dis = dis/lenBLOCKS   
        displace(i) = dis
     enddo
     do i=1,numBLOCKS-1	
@@ -1845,10 +1647,10 @@ contains
   end subroutine CalcDisplace
 
 
-!*********************************
-!
-! new version
-!
+  !*********************************
+  !
+  ! new version
+  !
 
   subroutine CalcDisplace_box(gsize,start,count,ndim,displace)
 
@@ -1871,12 +1673,12 @@ contains
 
     gstride(1)=gsize(1)
     do i=2,ndim
-      gstride(i)=gsize(i)*gstride(i-1)
+       gstride(i)=gsize(i)*gstride(i-1)
     end do
-    
+
     iosize=1
     do i=2,ndim
-      iosize=iosize*count(i)
+       iosize=iosize*count(i)
     end do
 
     ndisp=size(displace)
@@ -1885,72 +1687,70 @@ contains
 
 
     if (ndisp/=iosize) then
-      call piodie(_FILE_,__LINE__,'ndisp=',ndisp,' /= iosize=',iosize)
+       call piodie(_FILE_,__LINE__,'ndisp=',ndisp,' /= iosize=',iosize)
     endif
 
     do i=1,ndim
-      ub(i)=start(i)+count(i)-1
+       ub(i)=start(i)+count(i)-1
     end do
 
-! skip x dimension (start of each block)
-! generate displacement for every 1,y,z
-!  i.e. loop over y,z,...
-!       compute corresponding global index
-!       divide by lenBLOCKS
+    ! skip x dimension (start of each block)
+    ! generate displacement for every 1,y,z
+    !  i.e. loop over y,z,...
+    !       compute corresponding global index
+    !       divide by lenBLOCKS
 
     displace(1)=1
     myloc=start
 
     do i=1,iosize
-      ! go from myloc() to 1-based global index
-      gindex=myloc(1)
-      do j=2,ndim
-        gindex=gindex+(myloc(j)-1)*gstride(j-1)
-      end do
+       ! go from myloc() to 1-based global index
+       gindex=myloc(1)
+       do j=2,ndim
+          gindex=gindex+(myloc(j)-1)*gstride(j-1)
+       end do
 
-! rml
-! following original but is that right???
-! seems like the 'if' is erroneous
+       ! rml
+       ! following original but is that right???
+       ! seems like the 'if' is erroneous
 
-      gindex=gindex-1
+       gindex=gindex-1
 
-!      if (gindex.ne.1) then
-        gindex=gindex/count(1)    ! gindex/lenblock
-!      endif
+       gindex=gindex/count(1)    ! gindex/lenblock
 
-      displace(i)=gindex
+       displace(i)=gindex
 
-! increment myloc to next position
- 
+       ! increment myloc to next position
 
-      idim=2                    ! dimension to increment
-      done=.false.
 
-      if (i<iosize) then
-        do while (.not. done)
-          if (myloc(idim)<ub(idim)) then
-            myloc(idim)=myloc(idim)+1
-            done=.true.
-          else
-            myloc(idim)=start(idim)
-            idim=idim+1
-            if (idim>ndim) call piodie(_FILE_,__LINE__,'dim overflow')
-          endif
-        end do
-      endif
+       idim=2                    ! dimension to increment
+       done=.false.
+
+       if (i<iosize) then
+          do while (.not. done)
+             if (myloc(idim)<ub(idim)) then
+                myloc(idim)=myloc(idim)+1
+                done=.true.
+             else
+                myloc(idim)=start(idim)
+                idim=idim+1
+                if (idim>ndim) call piodie(_FILE_,__LINE__,'dim overflow')
+             endif
+          end do
+       endif
 
     end do
 
     do i=2,ndim
-      if (myloc(i) /= ub(i)) then
-        print *,'myloc=',myloc
-        print *,'ub=',ub
-        call piodie( _FILE_,__LINE__,'myloc/=ub')
-      endif
+       if (myloc(i) /= ub(i)) then
+          print *,'myloc=',myloc
+          print *,'ub=',ub
+          call piodie( _FILE_,__LINE__,'myloc/=ub')
+       endif
     end do
 
 
-! check for strictly increasing
+    ! check for strictly increasing
 
     do i=1,nDisp-1	
        if(displace(i) .gt. displace(i+1)) then

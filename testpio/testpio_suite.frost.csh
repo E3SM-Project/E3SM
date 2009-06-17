@@ -1,4 +1,4 @@
-#!/bin/csh -f
+#!/bin/csh -fx
 
 # this sets up a suite of preset tests on intrepid
 # edit the "USER SETTINGS" section
@@ -26,8 +26,8 @@ setenv MPI_INC -I/bgl/BlueLight/ppcfloor/bglsys/include
 setenv MPI_LIB '-L/bgl/BlueLight/ppcfloor/bglsys/lib -lmpich.rts -lmsglayer.rts -lrts.rts -ldevices.rts'
 
 
-setenv FC /usr/bin/blrts_xlf90
-setenv CC /usr/bin/gcc
+setenv FC blrts_xlf90
+setenv CC xlc
 
 # --------------------------
 
@@ -46,17 +46,17 @@ touch ${outfil}
 foreach suite (snet pnet mpiio all ant)
 #foreach suite (snet)
   if (${suite} =~ "snet") then
-     set confopts = "--disable-mct --disable-pnetcdf --disable-mpiio --enable-netcdf --enable-timing"
+     set confopts = "--disable-mct --disable-pnetcdf --disable-mpiio --enable-netcdf --disable-timing"
      set testlist = "sn01 sn02 sn03 sb01 sb02 sb03 sb04 sb05 sb06 sb07 sb08"
 #     set testlist = "sn01"
   else if (${suite} =~ "pnet") then
-     set confopts = "--disable-mct --enable-pnetcdf --disable-mpiio --disable-netcdf --enable-timing"
+     set confopts = "--disable-mct --enable-pnetcdf --disable-mpiio --disable-netcdf --disable-timing"
      set testlist = "pn01 pn02 pn03 pb01 pb02 pb03 pb04 pb05 pb06 pb07 pb08"
   else if (${suite} =~ "mpiio") then
-     set confopts = "--disable-mct --disable-pnetcdf --enable-mpiio --disable-netcdf --enable-timing"
+     set confopts = "--disable-mct --disable-pnetcdf --enable-mpiio --disable-netcdf --disable-timing"
      set testlist = "bn01 bn02 bn03 bb01 bb02 bb03 bb04 bb05 bb06 bb07 bb08"
   else if (${suite} =~ "all") then
-     set confopts = "--disable-mct --enable-pnetcdf --enable-mpiio --enable-netcdf --enable-timing"
+     set confopts = "--disable-mct --enable-pnetcdf --enable-mpiio --enable-netcdf --disable-timing"
      set testlist = "sn01 sn02 sn03 sb01 sb02 sb03 sb04 sb05 sb06 sb07 sb08 pn01 pn02 pn03 pb01 pb02 pb03 pb04 pb05 pb06 pb07 pb08 bn01 bn02 bn03 bb01 bb02 bb03 bb04 bb05 bb06 bb07 bb08 wr01 rd01"
   else if (${suite} =~ "ant") then
      set confopts = "--disable-mct --enable-pnetcdf --enable-mpiio --enable-netcdf --disable-timing"
@@ -72,7 +72,7 @@ foreach suite (snet pnet mpiio all ant)
 
   cd ${tstdir}
   cd ../pio
-  ./configure MPIF90="\$FC" CC="\$CC" ${confopts}
+  ./configure MPIF90="$FC" ${confopts}
   gmake clean
   cd ../timing
   cp -f ../testpio/Makefile.timing ./Makefile.timing
