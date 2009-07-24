@@ -23,9 +23,11 @@ set outfil = ${testpiodir}/${testname}.out.$LID
 setenv NETCDF_PATH /soft/apps/netcdf-3.6.2
 setenv PNETCDF_PATH /soft/apps/parallel-netcdf-1.0.2
 
-#setenv F90 /bgsys/drivers/ppcfloor/comm/bin/mpixlf90_r
+setenv F90 /bgsys/drivers/ppcfloor/comm/bin/mpixlf90_r
 setenv FC /bgsys/drivers/ppcfloor/comm/bin/mpixlf90_r
 setenv CC /bgsys/drivers/ppcfloor/comm/bin/mpixlc_r
+setenv FFLAGS '-qextname=flush'
+
 #setenv MPIF90 /bgsys/drivers/ppcfloor/comm/bin/mpixlf90_r
 #setenv MPICC /bgsys/drivers/ppcfloor/comm/bin/mpixlc_r
 
@@ -70,7 +72,7 @@ foreach suite (snet pnet mpiio all ant)
 
   cd ${tstdir}
   cd ../pio
-  ./configure MPIF90="$FC" CC="$CC" ${confopts}
+  ./configure MPIF90="$FC" CC="$CC" --build powerpc-bgp-linux --host powerpc64-suse-linux ${confopts}
   gmake clean
   cd ../timing
   cp -f ../testpio/Makefile.timing ./Makefile.timing

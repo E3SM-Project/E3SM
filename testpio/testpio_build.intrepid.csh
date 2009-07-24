@@ -14,6 +14,7 @@ setenv NETCDF_PATH /soft/apps/netcdf-3.6.2
 setenv PNETCDF_PATH /soft/apps/parallel-netcdf-1.0.2
 setenv FC /bgsys/drivers/ppcfloor/comm/bin/mpixlf90_r
 setenv CC /bgsys/drivers/ppcfloor/comm/bin/mpixlc_r
+setenv FFLAGS '-qextname=flush'
 
 set confopt = ""
 if ($timing =~ true) then
@@ -22,7 +23,7 @@ if ($timing =~ true) then
 endif
 
 cd ../pio
-./configure --disable-mct MPIF90="$FC" CC="$CC" ${confopt}
+./configure --disable-mct MPIF90="$FC" CC="$CC" --build powerpc-bgp-linux --host powerpc64-suse-linux ${confopt}
 
 if ($clean =~ true) then
   echo "cleaning first"

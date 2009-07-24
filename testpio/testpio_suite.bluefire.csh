@@ -31,9 +31,6 @@ cat >! ${testpiodir}/${testname}.sub << EOF
 #BSUB -W 0:50
 #BSUB -P  43310039
 
-setenv NETCDF_PATH /usr/local
-setenv PNETCDF_PATH /contrib/pnetcdf
-
 # --------------------------
 
 if (! -d ${srcdir}) mkdir -p ${srcdir}
@@ -69,24 +66,9 @@ foreach suite (all snet pnet mpiio ant)
      exit -2
   endif
 
-#  echo "confopts \${confopts}"
-#  echo "testlist \${testlist}"
 
-  cd ${tstdir}
-  cd ../pio
-  ./configure \${confopts}
-  gmake clean
-  cd ../timing
-  cp -f ../testpio/Makefile.timing ./Makefile
-  gmake clean
-  cd ../testpio
-  gmake clean
-  cd ../timing
-  gmake
-  cd ../pio
-  gmake
-  cd ../testpio
-  gmake
+  perl ./testpio_build.pl \${confopts}
+
 
   foreach test (\${testlist})
 

@@ -135,7 +135,7 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
     write(*,*) trim(string),' iodof_input = ',trim(iodof_input)
     write(*,*) ' '
 
-    string = 'derived__input'
+    string = 'derived_input'
     select case(trim(rearr))
     case('none')
        rearr_type=PIO_rearr_none
@@ -175,26 +175,35 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
     write(*,*) trim(string),' iofmtd     = ',trim(iofmtd)
 
     num_iotasks = -1
-!    if (rearr_type == PIO_rearr_none) then
-!      num_iotasks=nprocs
-!      stride = 1
-!      base = 0
-!    else
-      if (nprocsIO > 0) then
-         num_iotasks=nprocsIO
-         if (stride <= 0) then
-            stride = (nprocs-base)/num_iotasks
-         endif
-      elseif (nprocsIO <= 0) then
-         if (stride <= 0) then
-            num_iotasks = nprocs
-            stride = 1
-            base=0
-         else
-            num_iotasks = (nprocs-base)/stride
-         endif
-      endif
-!    endif
+    if (nprocsIO > 0) then
+       num_iotasks=nprocsIO
+       if (stride <= 0) then
+          stride = (nprocs-base)/num_iotasks
+       endif
+    elseif (nprocsIO <= 0) then
+       if (stride <= 0) then
+          num_iotasks = nprocs
+          stride = 1
+          base=0
+       else
+          num_iotasks = (nprocs-base)/stride
+       endif
+    endif
+
+    !------------------------------------------------
+    ! reset stride if there are not enough processors 
+    !------------------------------------------------
+    if (base + num_iotasks * (stride-1) > nprocs-1) then
+       stride = FLOOR(real((nprocs - 1 - base),kind=r8)/real(num_iotasks,kind=r8))
+    endif
+
+    !-------------------------------------------------------
+    ! If rearrangement is 'none' reset to the proper values
+    !-------------------------------------------------------
+    if(trim(rearr) == 'none') then  
+        stride = 1
+        num_iotasks = nprocs	
+    endif
 
     write(*,*) trim(string),' n_iotasks  = ',num_iotasks,'  (updated)'
     write(*,*) trim(string),' base       = ',base,'  (updated)'

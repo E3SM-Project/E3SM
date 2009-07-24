@@ -398,6 +398,7 @@ contains
 
    selectcase (trim(gdecomp%grddecomp))
       case default
+	 print *,'gdecomp_DOF: grdecomp is:',gdecomp%grddecomp
          call calcdecomp(gdecomp%grddecomp,npesx,gsiz,bsiz,ierr)
    end select
 !DBG   print *,'IAM: ',my_task,'gdecomp_DOF: point #5 bsiz:',bsiz

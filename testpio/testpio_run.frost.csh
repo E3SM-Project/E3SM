@@ -10,9 +10,9 @@ set testpiodir = `pwd`
 set new_input_file = TRUE
 set piodir = ${testpiodir}/..
 set wrkdir = "/ptmp/$USER/${run_name}"
-set input_file = "${run_name}_in"
+set input_file = "testpio_in"
 set project = " "
-set nodes =  32
+set nodes =  64
 set mode = vn
 set queue = debug
 # ---------------------------
@@ -45,14 +45,14 @@ cat >! ${testpiodir}/${input_file} << EOF
   nx_global   = 3600
   ny_global   = 2400
   nz_global   = 1
-  iofmt       = 'bin'
+  iofmt       = 'pnc'
   rearr       = 'box'
   nprocsIO    = -1
-  stride      = 10
+  stride      = 8
   base        = 0
   maxiter     = 10
   dir         = './none/'
-  num_aggregator = 8
+  num_aggregator = 4
   DebugLevel  = 0
   compdof_input = 'namelist'
   compdof_output = 'none'
@@ -63,7 +63,7 @@ cat >! ${testpiodir}/${input_file} << EOF
   grdorder = 'xyz'
   grddecomp = 'setblk'
   gdx = 450
-  gdy = 300
+  gdy = 150
   gdz = 1
   blkorder = 'xyz'
   blkdecomp1 = 'xy'
@@ -75,10 +75,10 @@ cat >! ${testpiodir}/${input_file} << EOF
 &iodof_nml
   nblksppe = 1
   grdorder = 'xyz'
-  grddecomp = 'y'
-  gdx = 0
-  gdy = 0
-  gdz = 0
+  grddecomp = 'setblk'
+  gdx = 3600
+  gdy = 150
+  gdz = 1
   blkorder = 'xyz'
   blkdecomp1 = 'yz'
   blkdecomp2 = ''

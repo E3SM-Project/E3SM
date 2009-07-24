@@ -15,9 +15,10 @@ setenv PNETCDF_PATH /contrib/bgl/parallel-netcdf-bld121807
 setenv MPI_INC -I/bgl/BlueLight/ppcfloor/bglsys/include
 setenv MPI_LIB '-L/bgl/BlueLight/ppcfloor/bglsys/lib -lmpich.rts -lmsglayer.rts -lrts.rts -ldevices.rts'
 
-setenv F90 /usr/bin/blrts_xlf90
-setenv FC  /usr/bin/blrts_xlf90
-setenv CC  /usr/bin/gcc
+setenv F90 /usr/bin/blrts_xlf2003
+setenv FC  /usr/bin/blrts_xlf2003
+setenv CC  /usr/bin/blrts_xlc
+setenv F90FLAGS '-g -qfullpath -qextname=flush '
 
 
 set confopt = ""
@@ -27,7 +28,7 @@ if ($timing =~ true) then
 endif
 
 cd ../pio
-./configure --enable-pnetcdf --enable-mpiio --enable-netcdf --disable-mct MPIF90="$FC" CC="$CC" ${confopt}
+./configure --enable-pnetcdf --enable-mpiio --enable-netcdf --disable-mct MPIF90="$FC" CC="$CC" --build powerpc-bgp-linux --host powerpc64-suse-linux ${confopt}
 
 if ($clean =~ true) then
   echo "cleaning first"

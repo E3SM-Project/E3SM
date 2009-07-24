@@ -61,6 +61,19 @@ module nf_mod
           inq_varid_vardesc
   end interface
 
+  interface inq_att
+     module procedure inq_att_vid, &
+          inq_att_vardesc
+  end interface
+  interface inq_attlen
+     module procedure inq_attlen_vid, &
+          inq_attlen_vardesc
+  end interface
+  interface inq_attname
+     module procedure inq_attname_vid, &
+          inq_attname_vardesc
+  end interface
+
   public :: check_netcdf, bad_iotype
 
 
@@ -172,7 +185,7 @@ contains
              end if
              ierr = nf90_open(fname,amode,File%fh)
              ! Set default to NOFILL for performance.  
-             if(iand(amode, NF90_WRITE) > 0) then
+             if(ierr .eq. NF90_NOERR .and. iand(amode, NF90_WRITE) > 0) then
                 ierr = nf90_set_fill(File%fh, NF90_NOFILL, ier2)
              end if
           endif
@@ -420,7 +433,7 @@ contains
   !  Inquire function {netcdf,pnetcdf} only
   !============================================
 
-  integer function inq_att(File,varid,name,xtype,len) result(ierr)
+  integer function inq_att_vid(File,varid,name,xtype,len) result(ierr)
 
     type (File_desc_t), intent(inout) :: File
     integer(i4), intent(in)           :: varid
@@ -477,7 +490,27 @@ contains
        call MPI_BCAST(len,1,MPI_INTEGER,File%iosystem%IOMaster, File%iosystem%Comp_comm  , mpierr)
        call CheckMPIReturn('nf_mod',mpierr)
     end if
-  end function inq_att
+  end function inq_att_vid
+
+
+  !============================================
+  ! inq_att:
+  !
+  !  Inquire function {netcdf,pnetcdf} only
+  !============================================
+
+  integer function inq_att_vardesc(File,vardesc,name,xtype,len) result(ierr)
+
+    type (File_desc_t), intent(inout) :: File
+    type(var_desc_t), intent(in)           :: vardesc
+    character(len=*), intent(in)      :: name
+    integer, intent(out)              :: xtype
+    integer, intent(out)              :: len !Attribute length
+
+    ierr = inq_att(file, vardesc%varid, name, xtype, len)
+  end function inq_att_vardesc
+
+
 
 
 
@@ -487,7 +520,7 @@ contains
   !  Inquire function {netcdf,pnetcdf} only
   !============================================
 
-  integer function inq_attlen(File,varid,name,len) result(ierr)
+  integer function inq_attlen_vid(File,varid,name,len) result(ierr)
 
     type (File_desc_t), intent(inout) :: File
     integer(i4), intent(in)            :: varid
@@ -541,9 +574,18 @@ contains
        call CheckMPIReturn('nf_mod',mpierr)
     end if
 
-  end function inq_attlen
+  end function inq_attlen_vid
 
+  integer function inq_attlen_vardesc(File,vardesc,name,len) result(ierr)
 
+    type (File_desc_t), intent(inout) :: File
+    type (Var_desc_t), intent(in)            :: vardesc
+    character(len=*), intent(in)      :: name
+    integer, intent(out),optional     :: len !Attribute length
+
+    ierr = inq_attlen(file, vardesc%varid, name, len)
+
+  end function inq_attlen_vardesc
 
   !============================================
   ! inq_attname:
@@ -551,7 +593,7 @@ contains
   !  Inquire function {netcdf,pnetcdf} only
   !============================================
 
-  integer function inq_attname(File,varid,attnum,name) result(ierr)
+  integer function inq_attname_vid(File,varid,attnum,name) result(ierr)
 
     type (File_desc_t), intent(inout) :: File
     integer(i4), intent(in)           :: varid
@@ -599,9 +641,17 @@ contains
        call CheckMPIReturn('nf_mod',mpierr)
     end if
 
-  end function inq_attname
+  end function inq_attname_vid
+  integer function inq_attname_vardesc(File,vdesc,attnum,name) result(ierr)
 
+    type (File_desc_t), intent(inout) :: File
+    type(var_desc_t), intent(in)           :: vdesc
+    integer, intent(in)              :: attnum !Attribute number
+    character(len=*), intent(out)     :: name
 
+    ierr = inq_attname(file, vdesc%varid, attnum, name)
+
+  end function inq_attname_vardesc
 
   !============================================
   ! Inq_varid:

@@ -38,22 +38,22 @@ subroutine check_1D_r8(fname,wr_array,rd_array,iostat)
 
     call alloc_check(diff,len,' check_1D_r8:diff ')
 
-    diff = wr_array - rd_array
-    cbad = COUNT(diff .ne. 0.0)
+    diff = abs(wr_array - rd_array)
+    cbad = COUNT(diff > 1.0d-299)
     lsum = SUM(diff)
     
     call MPI_Allreduce(lsum,gsum,1,MPI_REAL8,MPI_SUM,MPI_COMM_WORLD,ierr)
     call CheckMPIReturn('Call to MPI_Allreduce()',ierr,__FILE__,__LINE__)
 
-    if(abs(gsum) > 1.0e-80) then ! There is a discrepency between read + write data
+    if(lsum > 1.0d-80) then ! There is a discrepency between read + write data
        call MPI_COMM_rank(MPI_COMM_WORLD,rank,ierr)
        call CheckMPIReturn('Call to MPI_COMM_RANK()',ierr,__FILE__,__LINE__)
-      if(lsum .ne. 0.0) print *,'IAM: ', rank, 'File: ',TRIM(fname),' Error dected for correctness test(1D,R8): ',lsum,' # bad: ',cbad
+       print *,'IAM: ', rank, 'File: ',TRIM(fname),' Error detected for correctness test(1D,R8): ',lsum,' # bad: ',cbad, ' gsum:', gsum
        if(present(iostat)) iostat = -20
     else
        if(present(iostat)) iostat = PIO_noerr
     endif
-
+    call dealloc_check(diff)	
 end subroutine check_1D_r8
 
 subroutine check_3D_r8(fname,wr_array,rd_array)
@@ -80,11 +80,12 @@ subroutine check_3D_r8(fname,wr_array,rd_array)
     call MPI_Allreduce(lsum,gsum,1,MPI_REAL8,MPI_SUM,MPI_COMM_WORLD,ierr)
     call CheckMPIReturn('Call to MPI_Allreduce()',ierr,__FILE__,__LINE__)
 
-    if(abs(gsum) > 1.0e-80) then
+    if(abs(gsum) > 1.0d-80) then
        call MPI_COMM_rank(MPI_COMM_WORLD,rank,ierr)
        call CheckMPIReturn('Call to MPI_COMM_RANK()',ierr,__FILE__,__LINE__)
-       if(lsum .ne. 0.0) print *,'IAM: ', rank, 'File: ',TRIM(fname),' Error dected for correctness test(3D,R8): ',lsum,' # bad: ',cbad
+       if(lsum .ne. 0.0) print *,'IAM: ', rank, 'File: ',TRIM(fname),' Error detected for correctness test(3D,R8): ',lsum,' # bad: ',cbad
     endif
+    deallocate(diff)	
 
 end subroutine check_3D_r8
 
@@ -115,8 +116,9 @@ subroutine check_3D_r4(fname,wr_array,rd_array)
     if(abs(gsum) .gt. 1.e-40) then
        call MPI_COMM_rank(MPI_COMM_WORLD,rank,ierr)
        call CheckMPIReturn('Call to MPI_COMM_RANK()',ierr,__FILE__,__LINE__)
-       if(lsum .ne. 0) print *,'IAM: ', rank, 'File: ',TRIM(fname),' Error dected for correctness test(3D,R4): ',lsum,' # bad: ',cbad
+       if(lsum .ne. 0) print *,'IAM: ', rank, 'File: ',TRIM(fname),' Error detected for correctness test(3D,R4): ',lsum,' # bad: ',cbad
     endif
+    deallocate(diff)	
 
 end subroutine check_3D_r4
 
@@ -146,8 +148,9 @@ subroutine check_3D_i4(fname,wr_array,rd_array)
     if(gsum .ne. 0.0) then
        call MPI_COMM_rank(MPI_COMM_WORLD,rank,ierr)
        call CheckMPIReturn('Call to MPI_COMM_RANK()',ierr,__FILE__,__LINE__)
-       if(lsum .ne. 0) print *,'IAM: ', rank, 'File: ',TRIM(fname),' Error dected for correctness test(3D,I4): ',lsum,' # bad: ',cbad
+       if(lsum .ne. 0) print *,'IAM: ', rank, 'File: ',TRIM(fname),' Error detected for correctness test(3D,I4): ',lsum,' # bad: ',cbad
     endif
+    deallocate(diff)	
 
 end subroutine check_3D_i4
 
@@ -178,9 +181,10 @@ subroutine check_1D_r4(fname,wr_array,rd_array,iostat)
     if(abs(gsum) > 1.0e-40) then
        call MPI_COMM_rank(MPI_COMM_WORLD,rank,ierr)
        call CheckMPIReturn('Call to MPI_COMM_RANK()',ierr,__FILE__,__LINE__)
-       if(lsum .ne. 0.0) print *,'IAM: ', rank, 'File: ',TRIM(fname),' Error dected for correctness test(1D,R4): ',lsum,' # bad: ',cbad
+       if(lsum .ne. 0.0) print *,'IAM: ', rank, 'File: ',TRIM(fname),' Error detected for correctness test(1D,R4): ',lsum,' # bad: ',cbad
        if(present(iostat)) iostat = -20
     endif
+    deallocate(diff)	
 
 end subroutine check_1D_r4
 
@@ -211,9 +215,10 @@ subroutine check_1D_i4(fname,wr_array,rd_array,iostat)
     if(gsum .ne. 0.0) then
        call MPI_COMM_rank(MPI_COMM_WORLD,rank,ierr)
        call CheckMPIReturn('Call to MPI_COMM_RANK()',ierr,__FILE__,__LINE__)
-       if(lsum .ne. 0) print *,'IAM: ', rank, 'File: ',TRIM(fname),' Error dected for correctness test(1D,I4): ',lsum,' # bad: ',cbad
+       if(lsum .ne. 0) print *,'IAM: ', rank, 'File: ',TRIM(fname),' Error detected for correctness test(1D,I4): ',lsum,' # bad: ',cbad
        if(present(iostat)) iostat = -20
     endif
+    deallocate(diff)	
 
 end subroutine check_1D_i4
 

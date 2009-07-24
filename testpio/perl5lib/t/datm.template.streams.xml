@@ -1,0 +1,226 @@
+<streamstemplate>
+
+<!--
+
+    Streams template for datasource=CLMNCEP 
+
+-->
+
+<datm_comment>DATM streams template for use with stand-alone CLM</datm_comment>
+
+<stream datasource="CLMNCEP">
+
+<!-- Comment on description of stream data -->
+
+<comment>Stream description file for CLM-NCEP data</comment>
+
+<!-- Data source names -->
+<dataSource>CLMNCEP</dataSource>
+
+<fieldInfo>
+   <!-- Field names -->
+   <variableNames>
+      TBOT     tbot
+      WIND     wind
+      QBOT     shum
+      PRECTmms precn
+      FSDS     swdn
+      PSRF     pbot
+   </variableNames>
+   <!-- File path to data -->
+   <filePath>%p</filePath>
+   <!-- data filenames template -->
+   <fileNames>clmncep.T62.%ym.nc</fileNames>
+</fieldInfo>
+
+<!-- Domain information -->
+<domainInfo>
+   <variableNames>
+       time tVarName
+       xc   xVarName
+       yc   yVarName
+       area   areaName
+       mask   maskName
+   </variableNames>
+   <filePath>%d/atm/datm7</filePath>
+   <fileNames> domain.T62.050609.nc </fileNames>
+</domainInfo>
+
+</stream>
+
+<stream datasource="CLMNCEP.Solar">
+
+<!-- Comment on description of stream data -->
+
+<comment>Stream description file for Solar CLM-NCEP data</comment>
+
+<!-- Data source names -->
+<dataSource>CLMNCEP</dataSource>
+
+<fieldInfo>
+   <!-- Field names -->
+   <variableNames>
+      FSDS     swdn
+   </variableNames>
+   <tInterpAlgo>coszen</tInterpAlgo>
+   <offset>-21600</offset>
+   <!-- File path to data -->
+   <filePath>%p</filePath>
+   <!-- data filenames template -->
+   <fileNames>clmncep.T62.%ym.nc</fileNames>
+</fieldInfo>
+
+<!-- Domain information -->
+<domainInfo>
+   <variableNames>
+       time tVarName
+       xc   xVarName
+       yc   yVarName
+       area   areaName
+       mask   maskName
+   </variableNames>
+   <filePath>%d/atm/datm7</filePath>
+   <fileNames> domain.T62.050609.nc </fileNames>
+</domainInfo>
+
+</stream>
+
+<!--
+
+    Streams template for datasource=CAMHIST
+
+-->
+<stream datasource="CAMHIST">
+
+<!-- Comment on description of stream data -->
+
+<comment>Stream description file for CAM history data from an arbitrary case</comment>
+
+<!-- Data source names -->
+<dataSource>CAM</dataSource>
+
+<fieldInfo>
+
+   <!-- names -->
+   <variableNames>
+   co2vmr   co2diag
+   FSNS     swnet
+   PRECC    precc
+   PRECL    precl
+   PRECSC   snowc
+   PRECSL   snowl
+   PS       ps
+   PSL      pslv
+   QBOT     shum
+   SOLLD    swndf
+   SOLL     swndr
+   SOLS     swvdr
+   SOLSD    swvdf
+   SRFRAD   srfrad
+   FSNS     swnet
+   TBOT     tbot
+   UBOT     u
+   VBOT     v
+   ZBOT     z
+   </variableNames>
+
+   <!-- File path to data -->
+   <filePath>%p</filePath>
+
+   <!-- data filenames template -->
+   <fileNames>%c.cam2.h0.%ym.nc</fileNames>
+
+</fieldInfo>
+
+<!-- Domain information -->
+<domainInfo>
+   <variableNames>
+       time tVarName
+       xc   xVarName
+       yc   yVarName
+       area   areaName
+       mask   maskName
+   </variableNames>
+   <filePath>%d/atm/datm7</filePath>
+   <fileNames> %do </fileNames>
+</domainInfo>
+
+</stream>
+
+<!--
+
+    Streams template for datasource=CPLHIST
+
+-->
+<stream datasource="CPLHIST">
+
+<!-- Comment on description of stream data -->
+
+<comment>Stream description file for CPL history data from an arbitrary case</comment>
+
+<!-- Data source names -->
+<dataSource>CPLHIST</dataSource>
+
+<fieldInfo>
+
+   <!-- names -->
+   <variableNames>
+      a2x_Sa_z           z
+      a2x_Sa_u           u
+      a2x_Sa_v           v
+      a2x_Sa_tbot        tbot
+      a2x_Sa_ptem        ptem
+      a2x_Sa_shum        shum
+      a2x_Sa_dens        dens
+      a2x_Sa_pslv        pslv
+      a2x_Sa_pbot        pbot
+      a2x_Faxa_lwdn      lwdn
+      a2x_Faxa_rainc     rainc
+      a2x_Faxa_rainl     rainl
+      a2x_Faxa_snowc     snowc
+      a2x_Faxa_snowl     snowl
+      a2x_Faxa_swndr     swndr
+      a2x_Faxa_swvdr     swvdr
+      a2x_Faxa_swndf     swndf
+      a2x_Faxa_swvdf     swvdf
+      a2x_Faxa_swnet     swnet
+      a2x_Faxa_bcphidry  bcphidry
+      a2x_Faxa_bcphodry  bcphodry
+      a2x_Faxa_bcphiwet  bcphiwet
+      a2x_Faxa_ocphidry  ocphidry
+      a2x_Faxa_ocphodry  ocphodry
+      a2x_Faxa_ocphiwet  ocphiwet
+      a2x_Faxa_dstwet1   dstwet1
+      a2x_Faxa_dstwet2   dstwet2
+      a2x_Faxa_dstwet3   dstwet3
+      a2x_Faxa_dstwet4   dstwet4
+      a2x_Faxa_dstdry1   dstdry1
+      a2x_Faxa_dstdry2   dstdry2
+      a2x_Faxa_dstdry3   dstdry3
+      a2x_Faxa_dstdry4   dstdry4
+   </variableNames>
+
+   <!-- File path to data -->
+   <filePath>%p</filePath>
+
+   <!-- data filenames template -->
+   <fileNames>%c.cpl.hxa.%ymd.nc</fileNames>
+
+</fieldInfo>
+
+<!-- Domain information -->
+<domainInfo>
+   <variableNames>
+       time        time
+       doma_lon    lon
+       doma_lat    lat
+       doma_area   area
+       doma_mask   mask
+   </variableNames>
+   <filePath>%d/atm/datm7/CPLHIST</filePath>
+   <fileNames> %do </fileNames>
+</domainInfo>
+
+</stream>
+
+</streamstemplate>

@@ -184,6 +184,9 @@
        call piodie(__FILE__,__LINE__)
     endif
 
+    ! ----------------------------------------------------------------
+    ! if stride is and num_iotasks is incompatible than reset stride
+    ! ----------------------------------------------------------------
     if (base + num_iotasks * (stride-1) > nprocs-1) then
        write(*,*) trim(myname),' ERROR: num_iotasks, base and stride too large', &
           ' base=',base,' num_iotasks=',num_iotasks,' stride=',stride,' nprocs=',nprocs
@@ -1001,6 +1004,7 @@ enddo ! do it=1,maxiter
   real(r8), parameter :: tiny = 1.e-10
   real(r8) :: ReadBWAvg, ReadBWStdDev, ReadBWStdErrMean, ReadBWMin, ReadBWMax
   real(r8) :: WriteBWAvg, WriteBWStdDev, WriteBWStdErrMean, WriteBWMin, WriteBWMax
+  real(r8) :: WriteTimeAvg,ReadTimeAvg
   real(r8) :: TotalMBytes
   integer ::  datumSize, i, nDOF
   real(r8), dimension(:), pointer :: ReadBW, WriteBW
@@ -1060,16 +1064,22 @@ enddo ! do it=1,maxiter
 
 ! Compute mean read/write bandwidths
   ReadBWAvg = 0.
+  ReadTimeAvg = 0.
   WriteBWAvg = 0.
+  WriteTimeAvg = 0.
   do i=1,nTrials
     ReadBW(i) = TotalMBytes / (ReadTimes(i) + tiny)
     WriteBW(i) = TotalMBytes / (WriteTimes(i) + tiny)
     ReadBWAvg = ReadBWAvg + ReadBW(i)
+    ReadTimeAvg = ReadTimeAvg + 1.0e3*ReadTimes(i)
     WriteBWAvg = WriteBWAvg + WriteBW(i)
+    WriteTimeAvg = WriteTimeAvg + 1.0e3*WriteTimes(i)
   enddo
 
   ReadBWAvg = ReadBWAvg / float(nTrials)
+  ReadTimeAvg = ReadTimeAvg / float(nTrials)
   WriteBWAvg = WriteBWAvg / float(nTrials)
+  WriteTimeAvg = WriteTimeAvg / float(nTrials)
 
 ! Compute Standard Deviation and Std Error of the Mean
   ReadBWStdDev = 0.
@@ -1100,8 +1110,11 @@ enddo ! do it=1,maxiter
   write(*,102)  'read  avg=',ReadBWAvg ,' +/-',ReadBWStderrMean, &
 	' min=',ReadBWMin ,' max=',ReadBWMax ,' stddev=',ReadBWStdDev, &
         trim(casename),trim(TestName)
+  write(*,103)   'Write Time Avg (usec) =',WriteTimeAvg
+  write(*,103)   'Read Time Avg (usec) =',ReadTimeAvg
 
 102 format(3x,5(a,f9.1),1x,a,1x,a)
+103 format(3x,a,f9.1)
 
   call dealloc_check(ReadBW, myname_//':: ReadBW')
   call dealloc_check(WriteBW, myname_//':: WriteBW')

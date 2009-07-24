@@ -231,7 +231,6 @@ fi
 AC_PROG_CC(xlc_r cc)
 
 # CHECK MPI BY DEFAULT
-echo "here $USE_MPISERIAL" 
 if test "$USE_MPISERIAL" = "yes"
   then PDEFS="$PDEFS -D_MPISERIAL"
        echo "building for use with mpi-serial"
@@ -410,14 +409,14 @@ AC_C_BIGENDIAN
 
 
 # CHECK COMPILER NAME
-if echo $F90 | grep xlf90 >/dev/null 2>&1; then
+if echo $F90 | grep xlf >/dev/null 2>&1; then
    echo "Fortran Compiler is XLF"
    CPRDEF="XLF"
 #   if test -z "$REAL8"; then
 #      REAL8="-qrealsize=8"
 #   fi
    if test -z "$OPT"; then
-      OPT="-O4 -qmaxmem=-1"
+      OPT="-O4 "
    fi
    if test -z "$F90FLAGS"; then
       if test "$ac_cv_f90_fpp_compiler" = "yes"; then

@@ -658,7 +658,7 @@ contains
        do i=1,ndims
           iosize=iosize*IODESC%count(i)
        end do
-       call MPI_ALLREDUCE(iosize, iodesc%maxiobuflen, 1, mpi_integer, mpi_sum, iosystem%io_comm, ierr)
+       call MPI_ALLREDUCE(iosize, iodesc%maxiobuflen, 1, mpi_integer, mpi_max, iosystem%io_comm, ierr)
        call CheckMPIreturn('MPI_ALLREDUCE in initdecomp',ierr)
 
 
@@ -781,7 +781,6 @@ contains
 
     implicit none
 
-    real, parameter :: eps = 1.0e-4
     integer, intent(in) :: ndims, gdims(ndims), num_io_procs
 
     integer(kind=PIO_Offset), intent(out) :: start(ndims), count(ndims)   ! Start and count arrays 
@@ -790,13 +789,9 @@ contains
     integer :: n,m
     integer :: use_io_procs,iorank, sdims, cnt
     logical :: done
-    integer :: xiam, xpes, ps, pe, ds, de
+    integer :: xiam, xpes, ps, pe, ds, de, ns, pe1, ps1
     integer :: size,tsize
     integer, parameter :: minblocksize=16        ! minimum block size on a task
-
-    !    integer(kind=PIO_Offset), allocatable :: start(:,:)
-    !    integer(kind=PIO_Offset), allocatable :: count(:,:)
-
 
     tsize=1
     do n=1,ndims
@@ -823,8 +818,8 @@ contains
        sdims = sdims - 1
     enddo
     if (sdims < 0) then
-       write(6,*) 'error in sdims ', sdims
-       stop
+       call piodie( _FILE_,__LINE__, &
+            'error in sdims',sdims)
     endif
 
     do m = 1,sdims
@@ -835,26 +830,42 @@ contains
     xpes = use_io_procs
     xiam = iorank   ! goes from 0 to xpes-1
     do m = ndims, sdims+1, -1
+       if(xpes >= gdims(m)) then
 
-       ds = int(float(gdims(m)*(xiam  ))/float(xpes) + 1)
-       de = int(float(gdims(m)*(xiam+1))/float(xpes))
-
-       start(m) = ds
-       count(m) = max(de-ds+1,1)
-
+          ps = -1
+          ns = 1
+          do while (ps < 0 .and. ns <= gdims(m))
+             ps1 = int((dble(xpes)*dble(ns-1))/dble(gdims(m)))
+             pe1 = int((dble(xpes)*dble(ns  ))/dble(gdims(m))) - 1
+             if (xiam >= ps1 .and. xiam <= pe1) then
+                ps = ps1
+                pe = pe1
+                start(m) = ns
+                count(m) = 1
+             end if
+             ns = ns+1
+          end do
+          xpes = pe - ps + 1
+          xiam = xiam - ps
        !     write(6,*) 'tcx1 ',n,m,start(n,m),count(n,m),iorank
+       else
+          if (m /= sdims+1) then
+             call piodie( _FILE_,__LINE__, &
+                  'm /= sdims+1',ival1=m,ival2=sdims)
+          endif
+          ds = int((dble(gdims(m))*dble(xiam  ))/dble(xpes)) + 1
+          de = int((dble(gdims(m))*dble(xiam+1))/dble(xpes))
+          start(m) = ds
+          count(m) = de-ds+1
+       end if
 
-       ps = int(float(xpes*(start(m)-1))/float(gdims(m)) - eps + 1)
-       pe = int(float(xpes*(start(m)  ))/float(gdims(m)) - eps)
-
-       xpes = pe - ps + 1
-       xiam = xiam - ps
-
-       !     write(6,*) 'tcx2 ',n,m,ps,pe,xpes,xiam
+       if (start(m) < 1 .or. count(m) < 1) then
+          print *, 'start =',start, ' count=',count
+          call piodie( _FILE_,__LINE__, &
+               'start or count failed to converge')
+       endif
 
     enddo
-
-
 
   end subroutine getiostartandcount
 
@@ -1024,7 +1035,7 @@ contains
        lbase=1
     end if
     if (present(base)) then
-       if(base>0 .and. base<IOsystem%num_tasks) lbase = base
+       if(base>=0 .and. base<IOsystem%num_tasks) lbase = base
     endif
     IOsystem%IOMaster=lbase
 

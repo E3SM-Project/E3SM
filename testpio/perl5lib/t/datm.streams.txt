@@ -1,0 +1,75 @@
+<streamstemplate>
+      <datm_comment>
+         DATM streams template for use with stand-alone CLM
+      </datm_comment>
+<stream>
+      <comment>
+         Stream description file for CLM-NCEP data
+      </comment>
+      <dataSource>
+         CLMNCEP
+      </dataSource>
+      <domainInfo>
+         <variableNames>
+            time tVarName
+            xc   xVarName
+            yc   yVarName
+            area   areaName
+            mask   maskName
+         </variableNames>
+         <filePath>
+            csmdata/atm/datm7
+         </filePath>
+         <fileNames>
+            domain.T62.050609.nc
+         </fileNames>
+      </domainInfo>
+      <fieldInfo>
+         <variableNames>
+            TBOT     tbot
+            WIND     wind
+            QBOT     shum
+            PRECTmms precn
+            FSDS     swdn
+            PSRF     pbot
+         </variableNames>
+         <filePath>
+            .
+         </filePath>
+         <fileNames>
+            clmncep.T62.0000-12.nc
+            clmncep.T62.0001-01.nc
+            clmncep.T62.0001-02.nc
+            clmncep.T62.0001-03.nc
+            clmncep.T62.0001-04.nc
+            clmncep.T62.0001-05.nc
+            clmncep.T62.0001-06.nc
+            clmncep.T62.0001-07.nc
+            clmncep.T62.0001-08.nc
+            clmncep.T62.0001-09.nc
+            clmncep.T62.0001-10.nc
+            clmncep.T62.0001-11.nc
+            clmncep.T62.0001-12.nc
+            clmncep.T62.0002-01.nc
+            clmncep.T62.0002-02.nc
+            clmncep.T62.0002-03.nc
+            clmncep.T62.0002-04.nc
+            clmncep.T62.0002-05.nc
+            clmncep.T62.0002-06.nc
+            clmncep.T62.0002-07.nc
+            clmncep.T62.0002-08.nc
+            clmncep.T62.0002-09.nc
+            clmncep.T62.0002-10.nc
+            clmncep.T62.0002-11.nc
+            clmncep.T62.0002-12.nc
+         </fileNames>
+      </fieldInfo>
+      <!-- Information on the program that created this file -->
+      <02.t_documentation>
+         This CCSM stream text file was created by 02.t using the command line:
+               /Users/erik/perl5lib_trunk/t/02.t    
+         For more information on 02.t:  
+             /Users/erik/perl5lib_trunk/t/02.t -help          
+      </02.t_documentation>
+</stream>
+</streamstemplate>
