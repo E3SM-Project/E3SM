@@ -1811,6 +1811,7 @@
 
        ! Copy the attribute data into outVect
 
+!$OMP PARALLEL DO PRIVATE(n)
   do n=1,myLsize
      outVect(n) = aV%iAttr(index,n)
   end do
@@ -1954,6 +1955,7 @@
 
        ! Copy the attribute data into outVect
 
+!$OMP PARALLEL DO PRIVATE(n)
   do n=1,myLsize
      outVect(n) = aV%rAttr(index,n)
   end do
@@ -2060,6 +2062,7 @@
 
        ! Copy the attribute data into outVect
 
+!$OMP PARALLEL DO PRIVATE(n)
   do n=1,myLsize
      outVect(n) = aV%rAttr(index,n)
   end do
@@ -2151,6 +2154,7 @@
 
        ! Copy the data from inVect to its attribute slot:
 
+!$OMP PARALLEL DO PRIVATE(n)
   do n=1,mysize
      aV%iAttr(index,n) = inVect(n)
   end do
@@ -2238,6 +2242,7 @@
 
        ! Copy the attribute data into outVect
 
+!$OMP PARALLEL DO PRIVATE(n)
   do n=1,mysize
      aV%rAttr(index,n) = inVect(n)
   end do
@@ -2318,6 +2323,7 @@
 
        ! Copy the attribute data into outVect
 
+!$OMP PARALLEL DO PRIVATE(n)
   do n=1,mysize
      aV%rAttr(index,n) = inVect(n)
   end do
@@ -2427,6 +2433,7 @@
      if(usevector) then
         outxmin=aVoutindices(1)-1
         inxmin=aVinindices(1)-1
+!$OMP PARALLEL DO PRIVATE(i,j)
         do i=1,num_indices
 !CDIR SELECT(VECTOR)
 !DIR$ CONCURRENT
@@ -2437,6 +2444,7 @@
      else
         outxmin=aVoutindices(1)-1
         inxmin=aVinindices(1)-1
+!$OMP PARALLEL DO PRIVAtE(j,i)
         do j=1,aVsize
 !DIR$ CONCURRENT
            do i=1,num_indices
@@ -2446,7 +2454,8 @@
      endif
 
   else
-           
+          
+!$OMP PARALLEL DO PRIVATE(j,i,outx,inx) 
      do j=1,aVsize
 !DIR$ CONCURRENT
         do i=1,num_indices
@@ -2603,6 +2612,7 @@
      if(usevector) then
         outxmin=aVoutindices(1)-1
         inxmin=aVinindices(1)-1
+!$OMP PARALLEL DO PRIVATE(i,j)
         do i=1,num_indices
 !DIR$ CONCURRENT
 	   do j=1,aVsize
@@ -2612,6 +2622,7 @@
      else
         outxmin=aVoutindices(1)-1
         inxmin=aVinindices(1)-1
+!$OMP PARALLEL DO PRIVATE(j,i)
         do j=1,aVsize
 !DIR$ CONCURRENT
 	   do i=1,num_indices
@@ -2622,6 +2633,7 @@
 
   else
 
+!$OMP PARALLEL DO PRIVATE(j,i,outx,inx)
     do j=1,aVsize
 !DIR$ CONCURRENT
        do i=1,num_indices
@@ -2740,6 +2752,7 @@
      if(usevector) then
         outxmin=aVoutindices(1)-1
         inxmin=aVinindices(1)-1
+!$OMP PARALLEL DO PRIVATE(i,j)
         do i=1,num_indices
 !CDIR SELECT(VECTOR)
 !DIR$ CONCURRENT
@@ -2750,6 +2763,7 @@
      else
         outxmin=aVoutindices(1)-1
         inxmin=aVinindices(1)-1
+!$OMP PARALLEL DO PRIVATE(j,i)
         do j=1,aVsize
 !DIR$ CONCURRENT
            do i=1,num_indices
@@ -2760,6 +2774,7 @@
 
   else
 
+!$OMP PARALLEL DO PRIVATE(j,i,outx,inx)
      do j=1,aVsize
 !DIR$ CONCURRENT
         do i=1,num_indices
@@ -2914,6 +2929,7 @@
     if(usevector) then
       outxmin=aVoutindices(1)-1
       inxmin=aVinindices(1)-1
+!$OMP PARALLEL DO PRIVAtE(i,j)
       do i=1,num_indices
 !CDIR SELECT(VECTOR)
 !DIR$ CONCURRENT
@@ -2924,6 +2940,7 @@
     else
       outxmin=aVoutindices(1)-1
       inxmin=aVinindices(1)-1
+!$OMP PARALLEL DO PRIVATE(j,i)
       do j=1,aVsize
 !DIR$ CONCURRENT
          do i=1,num_indices
@@ -2934,6 +2951,7 @@
 
   else
 
+!$OMP PARALLEL DO PRIVATE(j,i,outx,inx)
      do j=1,aVsize
 !DIR$ CONCURRENT
        do i=1,num_indices
