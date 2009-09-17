@@ -1045,7 +1045,8 @@ endif  ! end of else for if(usealltoall)
   ! LOAD THE LOCAL PIECES OF THE INTEGER AND REAL VECTOR
 
   if(usevector) then
-    do IAttrIndex=1,numi
+!$OMP PARALLEL DO PRIVATE(IAttrIndex,localindex,TrgVectIndex,SrcVectIndex)    
+     do IAttrIndex=1,numi
 !CDIR SELECT(VECTOR)
 !DIR$ CONCURRENT
 !DIR$ PREFERVECTOR
@@ -1056,6 +1057,7 @@ endif  ! end of else for if(usealltoall)
              SourceAV%iAttr(IAttrIndex,SrcVectIndex)
       enddo
     enddo
+!$OMP PARALLEL DO PRIVATE(RAttrIndex,localindex,TrgVectIndex,SrcVectIndex)
     do RAttrIndex=1,numr
 !CDIR SELECT(VECTOR)
 !DIR$ CONCURRENT
@@ -1069,6 +1071,7 @@ endif  ! end of else for if(usealltoall)
     enddo
 
   else
+!$OMP PARALLEL DO PRIVATE(localindex,TrgVectIndex,SrcVectIndex,IAttrIndex,RAttrIndex)
     do localindex=1,InRearranger%LocalSize
      TrgVectIndex = InRearranger%LocalPack(1,localindex)
      SrcVectIndex = InRearranger%LocalPack(2,localindex)
