@@ -74,10 +74,10 @@ endif
 PIOLIBA = $(PIODIR)/libpio.a
 
 $(EXE): $(OBJS) $(PIOLIBA)
-	$(MPIF90) -o $@ $(OBJS) $(PIOLIB) $(LDLIBS)
+	$(MPIF90) $(FFLAGS) -o $@ $(OBJS) $(PIOLIB) $(LDLIBS)
 
 $(EXE2): $(OBJS2) $(PIOLIBA)
-	$(MPIF90) -o $@ $(OBJS2) $(PIOLIB) $(LDLIBS)
+	$(MPIF90) $(FFLAGS) -o $@ $(OBJS2) $(PIOLIB) $(LDLIBS)
 
 #
 # Suffix rules

@@ -155,12 +155,12 @@ module pio_types
     integer(i4), public, parameter :: PIO_rearr_mct =  1
     integer(i4), public, parameter :: PIO_rearr_box =  2
 
-! constants for error handling methods
-!  Three choices for error handling:
-!  1: abort on error from any task           PIO_INTERNAL_ERROR
-!  2: broadcast an error from io_rank 0      PIO_BCAST_ERROR
-!  3: do nothing - allow the user to handle it PIO_RETURN_ERROR
-!
+!> constants for error handling methods
+!!  Three choices for error handling:
+!!  1: abort on error from any task           PIO_INTERNAL_ERROR
+!!  2: broadcast an error from io_rank 0      PIO_BCAST_ERROR
+!!  3: do nothing - allow the user to handle it PIO_RETURN_ERROR
+!<
   integer(i4), public :: PIO_INTERNAL_ERROR = -51
   integer(i4), public :: PIO_BCAST_ERROR = -52
   integer(i4), public :: PIO_RETURN_ERROR = -53
@@ -219,11 +219,13 @@ module pio_types
    integer, public, parameter :: PIO_NOCLOBBER = 11
    integer, public, parameter :: PIO_WRITE = 20
    integer, public, parameter :: PIO_NOWRITE = 21
+   integer, public, parameter :: PIO_64bit_offset = 0
 #endif
 #endif
-
-
-
+! should be defined in the mct mpiserial library.
+#ifdef _MPISERIAL
+   integer, public, parameter :: MPI_DATATYPE_NULL=0
+#endif
 
    public:: pio_type_to_mpi_type
 

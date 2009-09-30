@@ -26,33 +26,111 @@ module piodarray
   
   interface PIO_write_darray
 ! TYPE real,int,double
-     module procedure write_darray_real
+! DIMS 1,2,3,4,5
+     module procedure write_darray_1d_real
 ! TYPE real,int,double
-     module procedure write_darray_int
+! DIMS 1,2,3,4,5
+     module procedure write_darray_2d_real
 ! TYPE real,int,double
-     module procedure write_darray_double
+! DIMS 1,2,3,4,5
+     module procedure write_darray_3d_real
+! TYPE real,int,double
+! DIMS 1,2,3,4,5
+     module procedure write_darray_4d_real
+! TYPE real,int,double
+! DIMS 1,2,3,4,5
+     module procedure write_darray_5d_real
+! TYPE real,int,double
+! DIMS 1,2,3,4,5
+     module procedure write_darray_1d_int
+! TYPE real,int,double
+! DIMS 1,2,3,4,5
+     module procedure write_darray_2d_int
+! TYPE real,int,double
+! DIMS 1,2,3,4,5
+     module procedure write_darray_3d_int
+! TYPE real,int,double
+! DIMS 1,2,3,4,5
+     module procedure write_darray_4d_int
+! TYPE real,int,double
+! DIMS 1,2,3,4,5
+     module procedure write_darray_5d_int
+! TYPE real,int,double
+! DIMS 1,2,3,4,5
+     module procedure write_darray_1d_double
+! TYPE real,int,double
+! DIMS 1,2,3,4,5
+     module procedure write_darray_2d_double
+! TYPE real,int,double
+! DIMS 1,2,3,4,5
+     module procedure write_darray_3d_double
+! TYPE real,int,double
+! DIMS 1,2,3,4,5
+     module procedure write_darray_4d_double
+! TYPE real,int,double
+! DIMS 1,2,3,4,5
+     module procedure write_darray_5d_double
   end interface
 
 
   interface PIO_read_darray
 ! TYPE real,int,double
-     module procedure read_darray_real
+! DIMS 1,2,3,4,5
+     module procedure read_darray_1d_real
 ! TYPE real,int,double
-     module procedure read_darray_int
+! DIMS 1,2,3,4,5
+     module procedure read_darray_2d_real
 ! TYPE real,int,double
-     module procedure read_darray_double
+! DIMS 1,2,3,4,5
+     module procedure read_darray_3d_real
+! TYPE real,int,double
+! DIMS 1,2,3,4,5
+     module procedure read_darray_4d_real
+! TYPE real,int,double
+! DIMS 1,2,3,4,5
+     module procedure read_darray_5d_real
+! TYPE real,int,double
+! DIMS 1,2,3,4,5
+     module procedure read_darray_1d_int
+! TYPE real,int,double
+! DIMS 1,2,3,4,5
+     module procedure read_darray_2d_int
+! TYPE real,int,double
+! DIMS 1,2,3,4,5
+     module procedure read_darray_3d_int
+! TYPE real,int,double
+! DIMS 1,2,3,4,5
+     module procedure read_darray_4d_int
+! TYPE real,int,double
+! DIMS 1,2,3,4,5
+     module procedure read_darray_5d_int
+! TYPE real,int,double
+! DIMS 1,2,3,4,5
+     module procedure read_darray_1d_double
+! TYPE real,int,double
+! DIMS 1,2,3,4,5
+     module procedure read_darray_2d_double
+! TYPE real,int,double
+! DIMS 1,2,3,4,5
+     module procedure read_darray_3d_double
+! TYPE real,int,double
+! DIMS 1,2,3,4,5
+     module procedure read_darray_4d_double
+! TYPE real,int,double
+! DIMS 1,2,3,4,5
+     module procedure read_darray_5d_double
   end interface
 
   character(len=*), parameter :: modName='piodarray'
 
 contains
-# 36 "piodarray.F90.in"
+# 38 "piodarray.F90.in"
 ! TYPE real,int,double
   !***********************************************************************
   !
   ! write_darray_real
   !
-  subroutine write_darray_real (File,varDesc,iodesc, array, iostat, fillval)
+  subroutine write_darray_1d_real (File,varDesc,iodesc, array, iostat, fillval)
 
     ! !DESCRIPTION:
     !  Writes a 2-d slab of TYPE to a netcdf file.
@@ -97,13 +175,13 @@ contains
        print *, subName,': IO type not supported'
     end select
 
-  end subroutine write_darray_real
+  end subroutine write_darray_1d_real
 ! TYPE real,int,double
   !***********************************************************************
   !
   ! write_darray_int
   !
-  subroutine write_darray_int (File,varDesc,iodesc, array, iostat, fillval)
+  subroutine write_darray_1d_int (File,varDesc,iodesc, array, iostat, fillval)
 
     ! !DESCRIPTION:
     !  Writes a 2-d slab of TYPE to a netcdf file.
@@ -148,13 +226,13 @@ contains
        print *, subName,': IO type not supported'
     end select
 
-  end subroutine write_darray_int
+  end subroutine write_darray_1d_int
 ! TYPE real,int,double
   !***********************************************************************
   !
   ! write_darray_double
   !
-  subroutine write_darray_double (File,varDesc,iodesc, array, iostat, fillval)
+  subroutine write_darray_1d_double (File,varDesc,iodesc, array, iostat, fillval)
 
     ! !DESCRIPTION:
     !  Writes a 2-d slab of TYPE to a netcdf file.
@@ -199,7 +277,417 @@ contains
        print *, subName,': IO type not supported'
     end select
 
-  end subroutine write_darray_double
+  end subroutine write_darray_1d_double
+
+
+! TYPE real,int,double
+! DIMS 2,3,4,5
+  subroutine write_darray_2d_real (File,varDesc,iodesc, array, iostat, fillval)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+         File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+         varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+         ioDesc                      ! variable descriptor
+
+    real(r4), intent(in) ::  &
+         array(:,:)                 ! array to be written
+
+    real(r4), optional, intent(in) :: fillval    ! rearrange receiver fill value
+
+    integer(i4), intent(out) :: iostat
+    real(r4) :: transvar(1), dumbvar(0)
+
+! cannot call transfer function with a 0 sized array
+    if(size(array)==0) then
+       call write_darray_1d_real (File, varDesc, iodesc, dumbvar, iostat)
+    else if(present(fillval)) then
+       call write_darray_1d_real (File, varDesc, iodesc, transfer(array,transvar), iostat, fillval)
+    else
+       call write_darray_1d_real (File, varDesc, iodesc, transfer(array,transvar), iostat)
+    end if
+
+  end subroutine write_darray_2d_real
+
+
+! TYPE real,int,double
+! DIMS 2,3,4,5
+  subroutine write_darray_3d_real (File,varDesc,iodesc, array, iostat, fillval)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+         File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+         varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+         ioDesc                      ! variable descriptor
+
+    real(r4), intent(in) ::  &
+         array(:,:,:)                 ! array to be written
+
+    real(r4), optional, intent(in) :: fillval    ! rearrange receiver fill value
+
+    integer(i4), intent(out) :: iostat
+    real(r4) :: transvar(1), dumbvar(0)
+
+! cannot call transfer function with a 0 sized array
+    if(size(array)==0) then
+       call write_darray_1d_real (File, varDesc, iodesc, dumbvar, iostat)
+    else if(present(fillval)) then
+       call write_darray_1d_real (File, varDesc, iodesc, transfer(array,transvar), iostat, fillval)
+    else
+       call write_darray_1d_real (File, varDesc, iodesc, transfer(array,transvar), iostat)
+    end if
+
+  end subroutine write_darray_3d_real
+
+
+! TYPE real,int,double
+! DIMS 2,3,4,5
+  subroutine write_darray_4d_real (File,varDesc,iodesc, array, iostat, fillval)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+         File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+         varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+         ioDesc                      ! variable descriptor
+
+    real(r4), intent(in) ::  &
+         array(:,:,:,:)                 ! array to be written
+
+    real(r4), optional, intent(in) :: fillval    ! rearrange receiver fill value
+
+    integer(i4), intent(out) :: iostat
+    real(r4) :: transvar(1), dumbvar(0)
+
+! cannot call transfer function with a 0 sized array
+    if(size(array)==0) then
+       call write_darray_1d_real (File, varDesc, iodesc, dumbvar, iostat)
+    else if(present(fillval)) then
+       call write_darray_1d_real (File, varDesc, iodesc, transfer(array,transvar), iostat, fillval)
+    else
+       call write_darray_1d_real (File, varDesc, iodesc, transfer(array,transvar), iostat)
+    end if
+
+  end subroutine write_darray_4d_real
+
+
+! TYPE real,int,double
+! DIMS 2,3,4,5
+  subroutine write_darray_5d_real (File,varDesc,iodesc, array, iostat, fillval)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+         File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+         varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+         ioDesc                      ! variable descriptor
+
+    real(r4), intent(in) ::  &
+         array(:,:,:,:,:)                 ! array to be written
+
+    real(r4), optional, intent(in) :: fillval    ! rearrange receiver fill value
+
+    integer(i4), intent(out) :: iostat
+    real(r4) :: transvar(1), dumbvar(0)
+
+! cannot call transfer function with a 0 sized array
+    if(size(array)==0) then
+       call write_darray_1d_real (File, varDesc, iodesc, dumbvar, iostat)
+    else if(present(fillval)) then
+       call write_darray_1d_real (File, varDesc, iodesc, transfer(array,transvar), iostat, fillval)
+    else
+       call write_darray_1d_real (File, varDesc, iodesc, transfer(array,transvar), iostat)
+    end if
+
+  end subroutine write_darray_5d_real
+
+
+! TYPE real,int,double
+! DIMS 2,3,4,5
+  subroutine write_darray_2d_int (File,varDesc,iodesc, array, iostat, fillval)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+         File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+         varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+         ioDesc                      ! variable descriptor
+
+    integer(i4), intent(in) ::  &
+         array(:,:)                 ! array to be written
+
+    integer(i4), optional, intent(in) :: fillval    ! rearrange receiver fill value
+
+    integer(i4), intent(out) :: iostat
+    integer(i4) :: transvar(1), dumbvar(0)
+
+! cannot call transfer function with a 0 sized array
+    if(size(array)==0) then
+       call write_darray_1d_int (File, varDesc, iodesc, dumbvar, iostat)
+    else if(present(fillval)) then
+       call write_darray_1d_int (File, varDesc, iodesc, transfer(array,transvar), iostat, fillval)
+    else
+       call write_darray_1d_int (File, varDesc, iodesc, transfer(array,transvar), iostat)
+    end if
+
+  end subroutine write_darray_2d_int
+
+
+! TYPE real,int,double
+! DIMS 2,3,4,5
+  subroutine write_darray_3d_int (File,varDesc,iodesc, array, iostat, fillval)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+         File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+         varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+         ioDesc                      ! variable descriptor
+
+    integer(i4), intent(in) ::  &
+         array(:,:,:)                 ! array to be written
+
+    integer(i4), optional, intent(in) :: fillval    ! rearrange receiver fill value
+
+    integer(i4), intent(out) :: iostat
+    integer(i4) :: transvar(1), dumbvar(0)
+
+! cannot call transfer function with a 0 sized array
+    if(size(array)==0) then
+       call write_darray_1d_int (File, varDesc, iodesc, dumbvar, iostat)
+    else if(present(fillval)) then
+       call write_darray_1d_int (File, varDesc, iodesc, transfer(array,transvar), iostat, fillval)
+    else
+       call write_darray_1d_int (File, varDesc, iodesc, transfer(array,transvar), iostat)
+    end if
+
+  end subroutine write_darray_3d_int
+
+
+! TYPE real,int,double
+! DIMS 2,3,4,5
+  subroutine write_darray_4d_int (File,varDesc,iodesc, array, iostat, fillval)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+         File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+         varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+         ioDesc                      ! variable descriptor
+
+    integer(i4), intent(in) ::  &
+         array(:,:,:,:)                 ! array to be written
+
+    integer(i4), optional, intent(in) :: fillval    ! rearrange receiver fill value
+
+    integer(i4), intent(out) :: iostat
+    integer(i4) :: transvar(1), dumbvar(0)
+
+! cannot call transfer function with a 0 sized array
+    if(size(array)==0) then
+       call write_darray_1d_int (File, varDesc, iodesc, dumbvar, iostat)
+    else if(present(fillval)) then
+       call write_darray_1d_int (File, varDesc, iodesc, transfer(array,transvar), iostat, fillval)
+    else
+       call write_darray_1d_int (File, varDesc, iodesc, transfer(array,transvar), iostat)
+    end if
+
+  end subroutine write_darray_4d_int
+
+
+! TYPE real,int,double
+! DIMS 2,3,4,5
+  subroutine write_darray_5d_int (File,varDesc,iodesc, array, iostat, fillval)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+         File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+         varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+         ioDesc                      ! variable descriptor
+
+    integer(i4), intent(in) ::  &
+         array(:,:,:,:,:)                 ! array to be written
+
+    integer(i4), optional, intent(in) :: fillval    ! rearrange receiver fill value
+
+    integer(i4), intent(out) :: iostat
+    integer(i4) :: transvar(1), dumbvar(0)
+
+! cannot call transfer function with a 0 sized array
+    if(size(array)==0) then
+       call write_darray_1d_int (File, varDesc, iodesc, dumbvar, iostat)
+    else if(present(fillval)) then
+       call write_darray_1d_int (File, varDesc, iodesc, transfer(array,transvar), iostat, fillval)
+    else
+       call write_darray_1d_int (File, varDesc, iodesc, transfer(array,transvar), iostat)
+    end if
+
+  end subroutine write_darray_5d_int
+
+
+! TYPE real,int,double
+! DIMS 2,3,4,5
+  subroutine write_darray_2d_double (File,varDesc,iodesc, array, iostat, fillval)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+         File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+         varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+         ioDesc                      ! variable descriptor
+
+    real(r8), intent(in) ::  &
+         array(:,:)                 ! array to be written
+
+    real(r8), optional, intent(in) :: fillval    ! rearrange receiver fill value
+
+    integer(i4), intent(out) :: iostat
+    real(r8) :: transvar(1), dumbvar(0)
+
+! cannot call transfer function with a 0 sized array
+    if(size(array)==0) then
+       call write_darray_1d_double (File, varDesc, iodesc, dumbvar, iostat)
+    else if(present(fillval)) then
+       call write_darray_1d_double (File, varDesc, iodesc, transfer(array,transvar), iostat, fillval)
+    else
+       call write_darray_1d_double (File, varDesc, iodesc, transfer(array,transvar), iostat)
+    end if
+
+  end subroutine write_darray_2d_double
+
+
+! TYPE real,int,double
+! DIMS 2,3,4,5
+  subroutine write_darray_3d_double (File,varDesc,iodesc, array, iostat, fillval)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+         File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+         varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+         ioDesc                      ! variable descriptor
+
+    real(r8), intent(in) ::  &
+         array(:,:,:)                 ! array to be written
+
+    real(r8), optional, intent(in) :: fillval    ! rearrange receiver fill value
+
+    integer(i4), intent(out) :: iostat
+    real(r8) :: transvar(1), dumbvar(0)
+
+! cannot call transfer function with a 0 sized array
+    if(size(array)==0) then
+       call write_darray_1d_double (File, varDesc, iodesc, dumbvar, iostat)
+    else if(present(fillval)) then
+       call write_darray_1d_double (File, varDesc, iodesc, transfer(array,transvar), iostat, fillval)
+    else
+       call write_darray_1d_double (File, varDesc, iodesc, transfer(array,transvar), iostat)
+    end if
+
+  end subroutine write_darray_3d_double
+
+
+! TYPE real,int,double
+! DIMS 2,3,4,5
+  subroutine write_darray_4d_double (File,varDesc,iodesc, array, iostat, fillval)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+         File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+         varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+         ioDesc                      ! variable descriptor
+
+    real(r8), intent(in) ::  &
+         array(:,:,:,:)                 ! array to be written
+
+    real(r8), optional, intent(in) :: fillval    ! rearrange receiver fill value
+
+    integer(i4), intent(out) :: iostat
+    real(r8) :: transvar(1), dumbvar(0)
+
+! cannot call transfer function with a 0 sized array
+    if(size(array)==0) then
+       call write_darray_1d_double (File, varDesc, iodesc, dumbvar, iostat)
+    else if(present(fillval)) then
+       call write_darray_1d_double (File, varDesc, iodesc, transfer(array,transvar), iostat, fillval)
+    else
+       call write_darray_1d_double (File, varDesc, iodesc, transfer(array,transvar), iostat)
+    end if
+
+  end subroutine write_darray_4d_double
+
+
+! TYPE real,int,double
+! DIMS 2,3,4,5
+  subroutine write_darray_5d_double (File,varDesc,iodesc, array, iostat, fillval)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+         File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+         varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+         ioDesc                      ! variable descriptor
+
+    real(r8), intent(in) ::  &
+         array(:,:,:,:,:)                 ! array to be written
+
+    real(r8), optional, intent(in) :: fillval    ! rearrange receiver fill value
+
+    integer(i4), intent(out) :: iostat
+    real(r8) :: transvar(1), dumbvar(0)
+
+! cannot call transfer function with a 0 sized array
+    if(size(array)==0) then
+       call write_darray_1d_double (File, varDesc, iodesc, dumbvar, iostat)
+    else if(present(fillval)) then
+       call write_darray_1d_double (File, varDesc, iodesc, transfer(array,transvar), iostat, fillval)
+    else
+       call write_darray_1d_double (File, varDesc, iodesc, transfer(array,transvar), iostat)
+    end if
+
+  end subroutine write_darray_5d_double
+
+
 
 
 ! TYPE real,int,double
@@ -423,6 +911,8 @@ contains
   end subroutine write_darray_nf_real
 
 
+
+
 ! TYPE real,int,double
   !***********************************************************************
   !BOP
@@ -642,6 +1132,8 @@ contains
     call t_stopf("pio_write_darray")
 #endif
   end subroutine write_darray_nf_int
+
+
 
 
 ! TYPE real,int,double
@@ -1414,7 +1906,7 @@ contains
   end subroutine write_darray_bin_double
 
   ! TYPE real,int,double
-  subroutine read_darray_real (File,varDesc, iodesc, array, iostat)
+  subroutine read_darray_1d_real (File,varDesc, iodesc, array, iostat)
 
     ! !DESCRIPTION:
     !  Reads a 2-d slab of TYPE to a netcdf file.
@@ -1433,13 +1925,14 @@ contains
     type (io_desc_t), intent(inout) :: &
 	 ioDesc                      ! iodecomp descriptor
 
-    real(r4), dimension(:), target, intent(out) ::  &
-	 array                 ! array to be written
+    real(r4), dimension(:), intent(out) ::  &
+	 array                 ! array to be read
 
     integer(i4), intent(out) :: iostat
 
     character(len=*), parameter :: subName=modName//'::read_darray_real'
 
+    array = 0	
     select case(File%iotype)
     case(iotype_pbinary, iotype_direct_pbinary)
        call read_darray_bin_real (File,varDesc,iodesc,array, iostat)
@@ -1449,10 +1942,10 @@ contains
        print *, subName,': IO type not supported'
     end select
 
-  end subroutine read_darray_real
+  end subroutine read_darray_1d_real
 
   ! TYPE real,int,double
-  subroutine read_darray_int (File,varDesc, iodesc, array, iostat)
+  subroutine read_darray_1d_int (File,varDesc, iodesc, array, iostat)
 
     ! !DESCRIPTION:
     !  Reads a 2-d slab of TYPE to a netcdf file.
@@ -1471,13 +1964,14 @@ contains
     type (io_desc_t), intent(inout) :: &
 	 ioDesc                      ! iodecomp descriptor
 
-    integer(i4), dimension(:), target, intent(out) ::  &
-	 array                 ! array to be written
+    integer(i4), dimension(:), intent(out) ::  &
+	 array                 ! array to be read
 
     integer(i4), intent(out) :: iostat
 
     character(len=*), parameter :: subName=modName//'::read_darray_int'
 
+    array = 0	
     select case(File%iotype)
     case(iotype_pbinary, iotype_direct_pbinary)
        call read_darray_bin_int (File,varDesc,iodesc,array, iostat)
@@ -1487,10 +1981,10 @@ contains
        print *, subName,': IO type not supported'
     end select
 
-  end subroutine read_darray_int
+  end subroutine read_darray_1d_int
 
   ! TYPE real,int,double
-  subroutine read_darray_double (File,varDesc, iodesc, array, iostat)
+  subroutine read_darray_1d_double (File,varDesc, iodesc, array, iostat)
 
     ! !DESCRIPTION:
     !  Reads a 2-d slab of TYPE to a netcdf file.
@@ -1509,13 +2003,14 @@ contains
     type (io_desc_t), intent(inout) :: &
 	 ioDesc                      ! iodecomp descriptor
 
-    real(r8), dimension(:), target, intent(out) ::  &
-	 array                 ! array to be written
+    real(r8), dimension(:), intent(out) ::  &
+	 array                 ! array to be read
 
     integer(i4), intent(out) :: iostat
 
     character(len=*), parameter :: subName=modName//'::read_darray_double'
 
+    array = 0	
     select case(File%iotype)
     case(iotype_pbinary, iotype_direct_pbinary)
        call read_darray_bin_double (File,varDesc,iodesc,array, iostat)
@@ -1525,7 +2020,345 @@ contains
        print *, subName,': IO type not supported'
     end select
 
-  end subroutine read_darray_double
+  end subroutine read_darray_1d_double
+
+
+! TYPE real,int,double
+! DIMS 2,3,4,5
+  subroutine read_darray_2d_real (File,varDesc,iodesc, array, iostat)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+	 File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+	 varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+	 ioDesc                      ! iodecomp descriptor
+
+    real(r4), intent(out) ::  array(:,:)                 ! array to be read
+
+    integer(i4), intent(out) :: iostat
+
+    real(r4), allocatable :: tmpvar(:)
+
+    allocate(tmpvar(size(array)))
+    call read_darray_1d_real (File, varDesc, iodesc, tmpvar, iostat)
+    array = reshape(tmpvar,shape(array))
+    deallocate(tmpvar)
+
+  end subroutine read_darray_2d_real
+
+
+! TYPE real,int,double
+! DIMS 2,3,4,5
+  subroutine read_darray_3d_real (File,varDesc,iodesc, array, iostat)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+	 File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+	 varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+	 ioDesc                      ! iodecomp descriptor
+
+    real(r4), intent(out) ::  array(:,:,:)                 ! array to be read
+
+    integer(i4), intent(out) :: iostat
+
+    real(r4), allocatable :: tmpvar(:)
+
+    allocate(tmpvar(size(array)))
+    call read_darray_1d_real (File, varDesc, iodesc, tmpvar, iostat)
+    array = reshape(tmpvar,shape(array))
+    deallocate(tmpvar)
+
+  end subroutine read_darray_3d_real
+
+
+! TYPE real,int,double
+! DIMS 2,3,4,5
+  subroutine read_darray_4d_real (File,varDesc,iodesc, array, iostat)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+	 File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+	 varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+	 ioDesc                      ! iodecomp descriptor
+
+    real(r4), intent(out) ::  array(:,:,:,:)                 ! array to be read
+
+    integer(i4), intent(out) :: iostat
+
+    real(r4), allocatable :: tmpvar(:)
+
+    allocate(tmpvar(size(array)))
+    call read_darray_1d_real (File, varDesc, iodesc, tmpvar, iostat)
+    array = reshape(tmpvar,shape(array))
+    deallocate(tmpvar)
+
+  end subroutine read_darray_4d_real
+
+
+! TYPE real,int,double
+! DIMS 2,3,4,5
+  subroutine read_darray_5d_real (File,varDesc,iodesc, array, iostat)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+	 File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+	 varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+	 ioDesc                      ! iodecomp descriptor
+
+    real(r4), intent(out) ::  array(:,:,:,:,:)                 ! array to be read
+
+    integer(i4), intent(out) :: iostat
+
+    real(r4), allocatable :: tmpvar(:)
+
+    allocate(tmpvar(size(array)))
+    call read_darray_1d_real (File, varDesc, iodesc, tmpvar, iostat)
+    array = reshape(tmpvar,shape(array))
+    deallocate(tmpvar)
+
+  end subroutine read_darray_5d_real
+
+
+! TYPE real,int,double
+! DIMS 2,3,4,5
+  subroutine read_darray_2d_int (File,varDesc,iodesc, array, iostat)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+	 File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+	 varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+	 ioDesc                      ! iodecomp descriptor
+
+    integer(i4), intent(out) ::  array(:,:)                 ! array to be read
+
+    integer(i4), intent(out) :: iostat
+
+    integer(i4), allocatable :: tmpvar(:)
+
+    allocate(tmpvar(size(array)))
+    call read_darray_1d_int (File, varDesc, iodesc, tmpvar, iostat)
+    array = reshape(tmpvar,shape(array))
+    deallocate(tmpvar)
+
+  end subroutine read_darray_2d_int
+
+
+! TYPE real,int,double
+! DIMS 2,3,4,5
+  subroutine read_darray_3d_int (File,varDesc,iodesc, array, iostat)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+	 File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+	 varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+	 ioDesc                      ! iodecomp descriptor
+
+    integer(i4), intent(out) ::  array(:,:,:)                 ! array to be read
+
+    integer(i4), intent(out) :: iostat
+
+    integer(i4), allocatable :: tmpvar(:)
+
+    allocate(tmpvar(size(array)))
+    call read_darray_1d_int (File, varDesc, iodesc, tmpvar, iostat)
+    array = reshape(tmpvar,shape(array))
+    deallocate(tmpvar)
+
+  end subroutine read_darray_3d_int
+
+
+! TYPE real,int,double
+! DIMS 2,3,4,5
+  subroutine read_darray_4d_int (File,varDesc,iodesc, array, iostat)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+	 File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+	 varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+	 ioDesc                      ! iodecomp descriptor
+
+    integer(i4), intent(out) ::  array(:,:,:,:)                 ! array to be read
+
+    integer(i4), intent(out) :: iostat
+
+    integer(i4), allocatable :: tmpvar(:)
+
+    allocate(tmpvar(size(array)))
+    call read_darray_1d_int (File, varDesc, iodesc, tmpvar, iostat)
+    array = reshape(tmpvar,shape(array))
+    deallocate(tmpvar)
+
+  end subroutine read_darray_4d_int
+
+
+! TYPE real,int,double
+! DIMS 2,3,4,5
+  subroutine read_darray_5d_int (File,varDesc,iodesc, array, iostat)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+	 File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+	 varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+	 ioDesc                      ! iodecomp descriptor
+
+    integer(i4), intent(out) ::  array(:,:,:,:,:)                 ! array to be read
+
+    integer(i4), intent(out) :: iostat
+
+    integer(i4), allocatable :: tmpvar(:)
+
+    allocate(tmpvar(size(array)))
+    call read_darray_1d_int (File, varDesc, iodesc, tmpvar, iostat)
+    array = reshape(tmpvar,shape(array))
+    deallocate(tmpvar)
+
+  end subroutine read_darray_5d_int
+
+
+! TYPE real,int,double
+! DIMS 2,3,4,5
+  subroutine read_darray_2d_double (File,varDesc,iodesc, array, iostat)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+	 File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+	 varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+	 ioDesc                      ! iodecomp descriptor
+
+    real(r8), intent(out) ::  array(:,:)                 ! array to be read
+
+    integer(i4), intent(out) :: iostat
+
+    real(r8), allocatable :: tmpvar(:)
+
+    allocate(tmpvar(size(array)))
+    call read_darray_1d_double (File, varDesc, iodesc, tmpvar, iostat)
+    array = reshape(tmpvar,shape(array))
+    deallocate(tmpvar)
+
+  end subroutine read_darray_2d_double
+
+
+! TYPE real,int,double
+! DIMS 2,3,4,5
+  subroutine read_darray_3d_double (File,varDesc,iodesc, array, iostat)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+	 File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+	 varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+	 ioDesc                      ! iodecomp descriptor
+
+    real(r8), intent(out) ::  array(:,:,:)                 ! array to be read
+
+    integer(i4), intent(out) :: iostat
+
+    real(r8), allocatable :: tmpvar(:)
+
+    allocate(tmpvar(size(array)))
+    call read_darray_1d_double (File, varDesc, iodesc, tmpvar, iostat)
+    array = reshape(tmpvar,shape(array))
+    deallocate(tmpvar)
+
+  end subroutine read_darray_3d_double
+
+
+! TYPE real,int,double
+! DIMS 2,3,4,5
+  subroutine read_darray_4d_double (File,varDesc,iodesc, array, iostat)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+	 File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+	 varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+	 ioDesc                      ! iodecomp descriptor
+
+    real(r8), intent(out) ::  array(:,:,:,:)                 ! array to be read
+
+    integer(i4), intent(out) :: iostat
+
+    real(r8), allocatable :: tmpvar(:)
+
+    allocate(tmpvar(size(array)))
+    call read_darray_1d_double (File, varDesc, iodesc, tmpvar, iostat)
+    array = reshape(tmpvar,shape(array))
+    deallocate(tmpvar)
+
+  end subroutine read_darray_4d_double
+
+
+! TYPE real,int,double
+! DIMS 2,3,4,5
+  subroutine read_darray_5d_double (File,varDesc,iodesc, array, iostat)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+	 File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+	 varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+	 ioDesc                      ! iodecomp descriptor
+
+    real(r8), intent(out) ::  array(:,:,:,:,:)                 ! array to be read
+
+    integer(i4), intent(out) :: iostat
+
+    real(r8), allocatable :: tmpvar(:)
+
+    allocate(tmpvar(size(array)))
+    call read_darray_1d_double (File, varDesc, iodesc, tmpvar, iostat)
+    array = reshape(tmpvar,shape(array))
+    deallocate(tmpvar)
+
+  end subroutine read_darray_5d_double
+
+
 ! TYPE real,int,double
   !***********************************************************************
   !BOP
@@ -1723,6 +2556,8 @@ contains
 #endif
 
   end subroutine read_darray_nf_real
+
+
 ! TYPE real,int,double
   !***********************************************************************
   !BOP
@@ -1920,6 +2755,8 @@ contains
 #endif
 
   end subroutine read_darray_nf_int
+
+
 ! TYPE real,int,double
   !***********************************************************************
   !BOP

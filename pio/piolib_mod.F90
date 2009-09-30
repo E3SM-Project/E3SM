@@ -1,24 +1,11 @@
 #define _FILE_ "piolib_mod.F90"
-! Node of interest for TESTMEM (-1 means all)
-#define NODE 0
 
 #define DEBUG_REARR 0
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!> \file
+!! This module contains the application interface routines for PIO 
+!!
 
 module piolib_mod
-
-  !BOP
-  ! !MODULE: piolib_mod
-  ! !DESCRIPTION:
-  !  This module provides a parallel input/output interface
-  !  for writing fields.
-  !
-  ! !REVISION HISTORY:
-  !  CVS:$Id: piolib_mod.F90,v 1.25 2007/02/06 21:37:14 dennis Exp $
-  !  CVS:$Name:  $
-
-  ! !USES:
-
   !--------------
   use pio_kinds
   !--------------
@@ -46,7 +33,8 @@ module piolib_mod
 
   ! !PUBLIC MEMBER FUNCTIONS:
 
-  public ::  PIO_init,      &
+  public ::  PIO_init,    &
+       PIO_finalize,      &
        PIO_initDecomp,    &
        PIO_OpenFile,      &
        PIO_SyncFile,      &
@@ -60,42 +48,16 @@ module piolib_mod
        PIO_SetDebugLevel, &
        PIO_SetErrorHandling, &
        PIO_get_local_array_size, &
-       PIO_FreeDecomp
+       PIO_FreeDecomp,     &
+       PIO_setNUMAgg,     &
+       PIO_Dupiodesc
 
-#ifdef DOTHIS
-  !
-  !  Attribute functions 
-  !
-  public ::  PIO_inquire, &
-       PIO_put_var,       &
-       PIO_get_var,       &
-       PIO_ReDef,         &
-       PIO_inq_attname, &
-       PIO_inq_varid, &
-       PIO_inq_varname, &
-       PIO_inq_vartype, &
-       PIO_inq_varndims, &
-       PIO_inq_vardimid, &
-       PIO_inq_varnatts, &
-       PIO_inq_att,   &
-       PIO_inq_attlen,&
-       PIO_inq_dimid, &
-       PIO_inq_dimname, &
-       PIO_inq_dimlen, &
-       PIO_put_att,   &
-       PIO_get_att,   &
-       PIO_copy_att
 
-  !
-  !  Define functions
-  !
-  public :: PIO_def_dim, &
-       PIO_def_var, &
-       PIO_enddef
-#endif
-  public :: PIO_setNUMAgg,     &
-       PIO_dupIODesc
 #ifdef MEMCHK
+!> This is an internal variable for memory leak debugging 
+!! It is used when macro MEMCHK is defined and it causes each task to print the 
+!! memory resident set size anytime it changes within pio.
+!<
   integer :: lastrss=0
 #endif
 
@@ -138,6 +100,10 @@ module piolib_mod
 
   interface PIO_init
      module procedure init
+  end interface
+
+  interface PIO_finalize
+     module procedure finalize
   end interface
 
   interface PIO_initDecomp
@@ -183,27 +149,31 @@ module piolib_mod
 
 
 contains
+!> This function returns the expected local size of an array associated with iodesc
+!! \param IODESC : IO descriptor returned from PIO_initdecomp defined in pio_types
+!<
   integer function pio_get_local_array_size(iodesc)
-    type(io_desc_t), intent(in) :: iodesc
+    type(io_desc_t), intent(in) :: iodesc   
     pio_get_local_array_size = iodesc%compsize
   end function pio_get_local_array_size
 
 
-  !************************************
-  ! AdvanceFrame
-  !
-
-  subroutine AdvanceFrame(vardesc)
+!> Advances the record dimension of a variable in a netcdf format file 
+!! or the block address in a binary file
+!! \param vardesc : var descriptor defined in pio_types
+!<
+  SUBROUTINE AdvanceFrame(vardesc)
     type(Var_Desc_t), intent(inout) :: vardesc
     vardesc%rec=vardesc%rec+1
   end subroutine AdvanceFrame
 
 
 
-  !************************************
-  ! SetFrame
-  !
-
+!> Sets the record dimension of a variable in a netcdf format file 
+!! or the block address in a binary file
+!! \param vardesc : var descriptor defined in pio_types
+!! \param frame   : frame number to set
+!<
   subroutine SetFrame(vardesc,frame)
     type(Var_Desc_t), intent(inout) :: vardesc
     integer(kind=PIO_OffSet), intent(in) :: frame
@@ -212,10 +182,9 @@ contains
 
 
 
-  !************************************
-  ! SetDebugLevel
-  !
-
+!>  Sets the level of debug information output to stdout by PIO 
+!! \param level : default value is 0, allowed values 0-3
+!<
   subroutine SetDebugLevel(level)
     integer(i4), intent(in) :: level	
     if(level.eq.0) then
@@ -233,6 +202,14 @@ contains
     end if
   end subroutine SetDebugLevel
 
+!> Set the PIO error handling method for a File
+!! \param File : a defined PIO file descriptor, see pio_types
+!! \param method : 
+!!  Three choices for error handling:
+!!   -# abort on error from any task           PIO_INTERNAL_ERROR
+!!   -# broadcast an error from io_rank 0      PIO_BCAST_ERROR
+!!   -# do nothing - allow the user to handle it PIO_RETURN_ERROR
+!<
 
   subroutine SetErrorHandlingF(File, method)
     type(file_desc_t), intent(inout) :: File
@@ -240,6 +217,15 @@ contains
 
     call SetErrorHandlingI(File%iosystem, method)
   end subroutine SetErrorHandlingF
+
+!> Set the PIO error handling method for the IOSystem
+!! \param IOsystem : a defined PIO system descriptor, see pio_types
+!! \param method : 
+!!  Three choices for error handling:
+!!   -# abort on error from any task           PIO_INTERNAL_ERROR
+!!   -# broadcast an error from io_rank 0      PIO_BCAST_ERROR
+!!   -# do nothing - allow the user to handle it PIO_RETURN_ERROR
+!<
 
   subroutine SetErrorHandlingI(IOsystem, method)
     type(iosystem_desc_t), intent(inout) :: IOsystem
@@ -252,18 +238,26 @@ contains
     end if
   end subroutine SetErrorHandlingI
 
-  !************************************
-  ! initDecomp_2dof_BIN
-  !************************************
+!> \ingroup PIO_initdecomp
+!! \param IOsystem : a defined PIO system descriptor, see pio_types
+!! \param basepiotype : The pio type of the variable(s) to be associated with this iodesc
+!! \param dims : An array of the global length of each dimesion of the variable(s)
+!! \param lenblocks : 
+!! \param compdof : Mapping of the storage order of the variable to its memory order
+!! \param iodofr : 
+!! \param iodofw :
+!! \param IOdesc : The IO description structure defined in this subroutine and used in 
+!! subsequent read and write calls.
+!<
   subroutine initDecomp_2dof_BIN(Iosystem,basepioTYPE,dims,lenBLOCKS,compDOF,ioDofr,iodofw,IOdesc)
     type (Iosystem_desc_t), intent(in) :: Iosystem
     integer(i4), intent(in)           :: basepioTYPE
     integer(i4)                       :: baseTYPE
     integer(i4), intent(in)           :: dims(:)
     integer (i4), intent(in)          :: lenBLOCKS
-    integer (i4), intent(in)          :: compDOF(:)   ! Global degrees of freedom for computational decomposition
-    integer (i4), intent(in)          :: ioDofR(:)     ! Global degrees of freedom for IO decomposition 
-    integer (i4), intent(in)          :: ioDofW(:)     ! Global degrees of freedom for IO decomposition 
+    integer (i4), intent(in)          :: compDOF(:)   !> Global degrees of freedom for computational decomposition
+    integer (i4), intent(in)          :: ioDofR(:)     !> Global degrees of freedom for IO decomposition 
+    integer (i4), intent(in)          :: ioDofW(:)     !> Global degrees of freedom for IO decomposition 
     type (IO_desc_t), intent(out)     :: IOdesc
 
     integer(kind=PIO_Offset) :: start(1), count(1)
@@ -304,9 +298,10 @@ contains
     ! calculate MPI data structure displacements
     !--------------------------------------------
     !DBG    print *,'PIO_initDecomp: before call to CalcDisplace'
-    call CalcDisplace(lenBLOCKS,ioDofR,displaceR)
-    call CalcDisplace(lenBLOCKS,ioDofW,displaceW)
-
+    if(lenBlocks>0) then
+       call CalcDisplace(lenBLOCKS,ioDofR,displaceR)
+       call CalcDisplace(lenBLOCKS,ioDofW,displaceW)
+    end if
     n_iotasks = Iosystem%num_iotasks
 
     IOdesc%glen = gLength
@@ -341,10 +336,16 @@ contains
   end subroutine initDecomp_2dof_BIN
 
 
-  !************************************
-  ! initDecomp_1dof_BIN
-  !
-
+!> \ingroup PIO_initdecomp
+!! \param IOsystem : a defined PIO system descriptor, see pio_types
+!! \param basetype : The pio type of the variable(s) to be associated with this iodesc
+!! \param dims : An array of the global length of each dimesion of the variable(s)
+!! \param lenblocks : 
+!! \param compdof : Mapping of the storage order of the variable to its memory order
+!! \param iodofr : 
+!! \param IOdesc : The IO description structure defined in this subroutine and used in 
+!! subsequent read and write calls.
+!<
   subroutine initDecomp_1dof_BIN(Iosystem,baseTYPE,dims,lenBLOCKS,compDOF,ioDofr,IOdesc)
     type (Iosystem_desc_t), intent(in) :: Iosystem
     integer(i4), intent(in)           :: baseTYPE
@@ -362,12 +363,19 @@ contains
     call initDecomp_1dof_nf(Iosystem,baseTYPE,dims,lenBLOCKS,compDOF,ioDofr,start, count, IOdesc)
   end subroutine initDecomp_1dof_BIN
 
-
-
-  !************************************
-  ! initDecomp_2dof_nf
-  !
-
+!> \ingroup PIO_initdecomp
+!! \param IOsystem : a defined PIO system descriptor, see pio_types
+!! \param basetype : The pio type of the variable(s) to be associated with this iodesc
+!! \param dims : An array of the global length of each dimesion of the variable(s)
+!! \param lenblocks : 
+!! \param compdof : Mapping of the storage order of the variable to its memory order
+!! \param iodofr : 
+!! \param iodofw :
+!! \param start : Used with count to give a block description of the shape of the data
+!! \param count : 
+!! \param IOdesc : The IO description structure defined in this subroutine and used in 
+!! subsequent read and write calls.
+!<
   subroutine initDecomp_2dof_nf(Iosystem,baseTYPE,dims,lenBLOCKS,compDOF,ioDofr,iodofw,start, count, IOdesc)
     type (Iosystem_desc_t), intent(in) :: Iosystem
     integer(i4), intent(in)           :: baseTYPE
@@ -398,12 +406,18 @@ contains
 
   end subroutine initDecomp_2dof_nf
 
-
-
-  !************************************
-  ! initDecomp_1dof_nf
-  !
-
+!> \ingroup PIO_initdecomp
+!! \param IOsystem : a defined PIO system descriptor, see pio_types
+!! \param basepiotype : The pio type of the variable(s) to be associated with this iodesc
+!! \param dims : An array of the global length of each dimesion of the variable(s)
+!! \param lenblocks : 
+!! \param compdof : Mapping of the storage order of the variable to its memory order
+!! \param iodof : 
+!! \param start :
+!! \param count :
+!! \param IOdesc : The IO description structure defined in this subroutine and used in 
+!! subsequent read and write calls.
+!<
   subroutine initDecomp_1dof_nf(Iosystem,basepioTYPE,dims,lenblocks,compDOF,ioDof,start, count, IOdesc)
     type (Iosystem_desc_t), intent(in) :: Iosystem
     integer(i4), intent(in)           :: basepioTYPE
@@ -461,9 +475,11 @@ contains
     do i=1,ndims
        gLength = gLength*dims(i)
     enddo
-
-    nDisp=SIZE(ioDof)/lenBLOCKS
-
+    if(lenBLOCKS>0) then
+       nDisp=SIZE(ioDof)/lenBLOCKS
+    else
+       ndisp=0
+    end if
     call alloc_check(displace,nDisp)
 
 #ifdef MEMCHK	
@@ -481,8 +497,10 @@ contains
     !--------------------------------------------
     ! calculate MPI data structure displacements 
     !--------------------------------------------
-    if(Debug) print *,'PIO_initDecomp: CalcDisplace',ndisp,size(iodof),lenblocks
-    call CalcDisplace(lenBLOCKS,ioDof,displace)
+    if(lenblocks>0) then
+       if(Debug) print *,'PIO_initDecomp: CalcDisplace',ndisp,size(iodof),lenblocks
+       call CalcDisplace(lenBLOCKS,ioDof,displace)
+    end if
 #ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
@@ -556,14 +574,23 @@ contains
 
 
 
-
-  subroutine initDecomp_1dof_nf_box(Iosystem,basepioTYPE,dims,compDOF, IOdesc, start, count, method)
+!> \ingroup PIO_initdecomp
+!! \param IOsystem : a defined PIO system descriptor, see pio_types
+!! \param basepiotype : The pio type of the variable(s) to be associated with this iodesc
+!! \param dims : An array of the global length of each dimesion of the variable(s)
+!! \param compdof : Mapping of the storage order of the variable to its memory order
+!! \param IOdesc : The IO description structure defined in this subroutine and used in 
+!! subsequent read and write calls.
+!! \param start :  Along with count Optional user defined shape of arrays on io tasks
+!! \param count :
+!! 
+!<
+  subroutine initDecomp_1dof_nf_box(Iosystem,basepioTYPE,dims,compDOF, IOdesc, start, count)
     type (Iosystem_desc_t), intent(inout) :: Iosystem
     integer(i4), intent(in)           :: basepioTYPE
     integer(i4), intent(in)           :: dims(:)
     integer (i4), intent(in)          :: compDOF(:)   ! Global degrees of freedom for computational decomposition
     integer (kind=PIO_OFFSET), optional :: start(:), count(:)    
-    integer (i4), optional, intent(in) :: method
     type (IO_desc_t), intent(out)     :: IOdesc
 
     integer(i4) :: length,n_iotasks
@@ -581,7 +608,7 @@ contains
     logical, parameter :: Check = .TRUE.
     integer(i4) :: nDisp
     integer(i4) :: iosize               ! rml
-    integer(i4) :: mthd
+
 #ifdef MEMCHK
     integer :: msize, rss, mshare, mtext, mstack
 #endif
@@ -638,12 +665,6 @@ contains
     iodesc%start=0
     iodesc%count=0
     if (Iosystem%IOproc) then
-
-       if(present(method)) then
-          mthd=method
-       else
-          mthd=2
-       end if
        if(present(start) .and. present(count)) then
           iodesc%start = start
           iodesc%count = count
@@ -675,7 +696,7 @@ contains
        !--------------------------------------------
        ! calculate MPI data structure displacements 
        !--------------------------------------------
-
+      
        if(Debug) print *,'PIO_initDecomp: CalcDisplace', &
             ndisp,iosize,lenblocks, iodesc%start, iodesc%count
        call CalcDisplace_box(dims,IODESC%start,IODESC%count,ndims,displace)
@@ -728,17 +749,12 @@ contains
        IODesc%Write%n_words    = IODesc%Write%n_elemTYPE*lenBLOCKS
        call GenIndexedBlock(lenBLOCKS,baseTYPE,IODesc%Write%elemTYPE,IODesc%Write%fileTYPE,displace)
 
-       if(Debug) print *,'initDecomp: At the end of subroutine',IODesc%Write%n_elemTYPE,IODesc%Write%n_words, &
-            iodesc%write%elemtype
-
-       IODesc%Read%n_elemTYPE = SIZE(displace)
-       IODesc%Read%n_words    = IODesc%Read%n_elemTYPE*lenBLOCKS
-       call GenIndexedBlock(lenBLOCKS,baseTYPE,IODesc%Read%elemTYPE,IODesc%Read%fileTYPE,displace)
+       if(Debug) print *,__FILE__,__LINE__,IODesc%Write%n_elemTYPE,IODesc%Write%n_words,iodesc%write%elemtype,iodesc%write%filetype
     else
        iodesc%write%n_elemtype=0
        iodesc%write%n_words=0
-       iodesc%write%elemType=-1
-       iodesc%write%fileType=-1
+       iodesc%write%elemType = MPI_DATATYPE_NULL
+       iodesc%write%fileType = MPI_DATATYPE_NULL
     endif
 
 #ifdef MEMCHK	
@@ -908,7 +924,7 @@ contains
     integer(i4), intent(in) :: lenBLOCKS     ! length of blocks
     integer(i4), intent(in) :: baseTYPE      ! base MPI type 
     integer(i4), intent(inout) :: elemTYPE   ! elementary MPI type
-    integer(i4), intent(inout) :: fileTYPE   ! file MPII type 
+    integer(i4), intent(inout) :: fileTYPE   ! file MPI type 
     integer(i4), intent(in) :: displace(:)   ! MPI displacement in the array
 
     integer(i4) :: numBLOCKS,i,ierr,prev
@@ -917,6 +933,8 @@ contains
     integer:: nints, nadds, ndtypes, comb, lbasetype
 
     if (lenBLOCKS < 1) then
+       elemtype = MPI_DATATYPE_NULL
+       filetype = MPI_DATATYPE_NULL
        return
        call piodie( _FILE_,__LINE__, &
             'GenIndexedBlock: lenBLOCKS=',lenBLOCKS,' (expected >=1)')
@@ -976,10 +994,19 @@ contains
 
 
 
-  !************************************
-  ! init
-  !
-
+!> Initialize the PIO subsystem.  
+!! 
+!! This is a collective call which expects:
+!! \param comp_rank MPI rank of each participating task,
+!! \param comp_comm The MPI communicator which defines the collective.
+!! \param num_iotasks The number of iotasks to define.
+!! \param num_aggregator The MPI aggregator count
+!! \param stride The stride in the MPI rank between io tasks.
+!! \param rearr  Whether PIO should initialize a rearranger function.
+!! \param IOsystem a derived type which can be used in subsequent PIO operations (defined in pio_types).
+!! \param base \em Optional argument can be used to offset the first io task - default base is task 1.
+!! \callgraph
+!<
   subroutine init(comp_rank, comp_comm, num_iotasks, num_aggregator, stride,  rearr, IOsystem,base)
 
     integer(i4), intent(in) :: comp_rank
@@ -987,7 +1014,6 @@ contains
     integer(i4), intent(in) :: num_iotasks 
     integer(i4), intent(in) :: num_aggregator
     integer(i4), intent(in) :: stride
-    !    integer(i4), intent(in) :: ioType
     integer(i4), intent(in) :: rearr
     type (IOsystem_desc_t), intent(out)  :: IOsystem  ! IO descriptor to initalize
     integer(i4), intent(in),optional :: base
@@ -1147,6 +1173,20 @@ contains
   end subroutine init
 
 
+  subroutine finalize(IOsystem,ierr)
+     type (IOsystem_desc_t), intent(inout) :: IOsystem 
+     integer(i4), intent(out) :: ierr
+#ifndef _MPISERIAL
+     if(IoSystem%info .ne. MPI_INFO_NULL) then 
+        call MPI_Info_free(IOsystem%info,ierr) 
+     endif
+     if(IOsystem%io_comm .ne. MPI_COMM_NULL) then 
+        call MPI_Comm_free(IOsystem%io_comm,ierr)
+     endif
+#endif
+     ierr = 0
+
+  end subroutine finalize
 
   !************************************
   ! setNUMAgg
@@ -1521,8 +1561,34 @@ contains
     implicit none
     type (IOsystem_desc_t) :: IOS
     type (IO_desc_t) :: ioDesc
+    integer :: ierr
+
 
     call rearrange_free(IOS,ioDesc)
+
+#ifndef _MPISERIAL
+    if(ios%ioproc) then
+       if(Debug) print *,__FILE__,__LINE__,IODesc%Write%n_elemTYPE,IODesc%Write%n_words,iodesc%write%elemtype,iodesc%write%filetype
+
+       if((iodesc%read%filetype .ne. MPI_DATATYPE_NULL)  &
+	  .and. (iodesc%read%filetype .ne. iodesc%write%filetype)) then 
+          call mpi_type_free(iodesc%read%filetype,ierr)
+          call CheckMPIreturn('freedecomp mpi_type_free: ',ierr)
+          call mpi_type_free(iodesc%read%elemtype,ierr)
+          call CheckMPIreturn('freedecomp mpi_type_free: ',ierr)
+          iodesc%read%filetype=MPI_DATATYPE_NULL
+       endif
+       if(iodesc%write%filetype .ne. MPI_DATATYPE_NULL) then 
+          call mpi_type_free(iodesc%write%filetype,ierr)
+          call CheckMPIreturn('freedecomp mpi_type_free: ',ierr)
+          call mpi_type_free(iodesc%write%elemtype,ierr)
+          call CheckMPIreturn('freedecomp mpi_type_free: ',ierr)
+          iodesc%write%filetype=MPI_DATATYPE_NULL
+       endif
+   
+    end if
+#endif
+
     if(associated(IODESC%start)) then
        call dealloc_check(IODESC%start,'iodesc%start')
        nullify(IODESC%start)
@@ -1618,10 +1684,6 @@ contains
 
     end do
 
-
-
-100 continue
-
     close(lun)
 
   end subroutine read_ascii
@@ -1657,11 +1719,6 @@ contains
 
   end subroutine CalcDisplace
 
-
-  !*********************************
-  !
-  ! new version
-  !
 
   subroutine CalcDisplace_box(gsize,start,count,ndim,displace)
 

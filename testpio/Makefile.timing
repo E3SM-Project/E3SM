@@ -23,12 +23,6 @@ endif
 include ../pio/Makefile.$(PIOARCH)
 export PIOARCH
 
-CFLAGS := $(CFLAGS) -DSPMD
-FFLAGS := $(FFLAGS),-DSPMD
-# for bluegene, must override the Makefile.conf settings
-#CFLAGS := -DBGP -DAIX -DSPMD
-#FFLAGS := -WF,-DBGP,-DAIX,-DSPMD
-
 SRCS_C = GPTLget_memusage.c \
          GPTLprint_memusage.c \
          GPTLutil.c \

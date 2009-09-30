@@ -97,7 +97,9 @@ contains
     integer, intent(in) :: varid
     {VTYPE}, intent(in) :: ival{DIMSTR}
     integer :: iotype
-
+#ifdef _PNETCDF
+    integer :: i, start({DIMS}), count({DIMS})
+#endif
 #ifdef TIMING
     call t_startf("pio_put_var_{DIMS}d_{TYPE}")
 #endif 
@@ -107,13 +109,26 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
+#if ({DIMS} > 0)
+          if(File%iosystem%io_rank==0) then
+             start = 1
+             do i=1,{DIMS}
+                count(i) = size(ival,i)
+             end do
+          else
+             start = 0
+             count = 0
+          end if
+          ierr = put_vara_{DIMS}d_{TYPE} (File, varid, start, count, ival)
+#else
           ierr = nfmpi_begin_indep_data(File%fh)
-          if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_var_{TYPE} (File%fh, varid, ival)
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#endif
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -157,6 +172,7 @@ contains
   integer function put_vara_{DIMS}d_{TYPE} (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
+    integer(kind=PIO_OFFSET) :: pstart({DIMS}), pcount({DIMS})
     {VTYPE}, intent(in) :: ival{DIMSTR}
     integer :: iotype, len, i
 #ifdef TIMING
@@ -172,8 +188,11 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_{TYPE}_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
-               int(count,kind=PIO_OFFSET), ival, len, {MPITYPE})
+	  pstart = start
+	  pcount = count
+	  if(sum(pstart)==0) pstart=1 ! avoids an unessasary pnetcdf error 
+          ierr = nfmpi_put_vara_{TYPE}_all (File%fh, varid, pstart, &
+               pcount, ival, len, {MPITYPE})
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)

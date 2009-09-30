@@ -353,7 +353,9 @@ contains
     integer, intent(in) :: varid
     character(len=*), intent(in) :: ival
     integer :: iotype
-
+#ifdef _PNETCDF
+    integer :: i, start(0), count(0)
+#endif
 #ifdef TIMING
     call t_startf("pio_put_var_0d_text")
 #endif 
@@ -363,13 +365,26 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
+#if (0 > 0)
+          if(File%iosystem%io_rank==0) then
+             start = 1
+             do i=1,0
+                count(i) = size(ival,i)
+             end do
+          else
+             start = 0
+             count = 0
+          end if
+          ierr = put_vara_0d_text (File, varid, start, count, ival)
+#else
           ierr = nfmpi_begin_indep_data(File%fh)
-          if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_var_text (File%fh, varid, ival)
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#endif
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -406,7 +421,9 @@ contains
     integer, intent(in) :: varid
     character(len=*), intent(in) :: ival(:)
     integer :: iotype
-
+#ifdef _PNETCDF
+    integer :: i, start(1), count(1)
+#endif
 #ifdef TIMING
     call t_startf("pio_put_var_1d_text")
 #endif 
@@ -416,13 +433,26 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
+#if (1 > 0)
+          if(File%iosystem%io_rank==0) then
+             start = 1
+             do i=1,1
+                count(i) = size(ival,i)
+             end do
+          else
+             start = 0
+             count = 0
+          end if
+          ierr = put_vara_1d_text (File, varid, start, count, ival)
+#else
           ierr = nfmpi_begin_indep_data(File%fh)
-          if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_var_text (File%fh, varid, ival)
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#endif
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -459,7 +489,9 @@ contains
     integer, intent(in) :: varid
     character(len=*), intent(in) :: ival(:,:)
     integer :: iotype
-
+#ifdef _PNETCDF
+    integer :: i, start(2), count(2)
+#endif
 #ifdef TIMING
     call t_startf("pio_put_var_2d_text")
 #endif 
@@ -469,13 +501,26 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
+#if (2 > 0)
+          if(File%iosystem%io_rank==0) then
+             start = 1
+             do i=1,2
+                count(i) = size(ival,i)
+             end do
+          else
+             start = 0
+             count = 0
+          end if
+          ierr = put_vara_2d_text (File, varid, start, count, ival)
+#else
           ierr = nfmpi_begin_indep_data(File%fh)
-          if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_var_text (File%fh, varid, ival)
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#endif
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -512,7 +557,9 @@ contains
     integer, intent(in) :: varid
     character(len=*), intent(in) :: ival(:,:,:)
     integer :: iotype
-
+#ifdef _PNETCDF
+    integer :: i, start(3), count(3)
+#endif
 #ifdef TIMING
     call t_startf("pio_put_var_3d_text")
 #endif 
@@ -522,13 +569,26 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
+#if (3 > 0)
+          if(File%iosystem%io_rank==0) then
+             start = 1
+             do i=1,3
+                count(i) = size(ival,i)
+             end do
+          else
+             start = 0
+             count = 0
+          end if
+          ierr = put_vara_3d_text (File, varid, start, count, ival)
+#else
           ierr = nfmpi_begin_indep_data(File%fh)
-          if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_var_text (File%fh, varid, ival)
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#endif
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -565,7 +625,9 @@ contains
     integer, intent(in) :: varid
     character(len=*), intent(in) :: ival(:,:,:,:)
     integer :: iotype
-
+#ifdef _PNETCDF
+    integer :: i, start(4), count(4)
+#endif
 #ifdef TIMING
     call t_startf("pio_put_var_4d_text")
 #endif 
@@ -575,13 +637,26 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
+#if (4 > 0)
+          if(File%iosystem%io_rank==0) then
+             start = 1
+             do i=1,4
+                count(i) = size(ival,i)
+             end do
+          else
+             start = 0
+             count = 0
+          end if
+          ierr = put_vara_4d_text (File, varid, start, count, ival)
+#else
           ierr = nfmpi_begin_indep_data(File%fh)
-          if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_var_text (File%fh, varid, ival)
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#endif
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -618,7 +693,9 @@ contains
     integer, intent(in) :: varid
     character(len=*), intent(in) :: ival(:,:,:,:,:)
     integer :: iotype
-
+#ifdef _PNETCDF
+    integer :: i, start(5), count(5)
+#endif
 #ifdef TIMING
     call t_startf("pio_put_var_5d_text")
 #endif 
@@ -628,13 +705,26 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
+#if (5 > 0)
+          if(File%iosystem%io_rank==0) then
+             start = 1
+             do i=1,5
+                count(i) = size(ival,i)
+             end do
+          else
+             start = 0
+             count = 0
+          end if
+          ierr = put_vara_5d_text (File, varid, start, count, ival)
+#else
           ierr = nfmpi_begin_indep_data(File%fh)
-          if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_var_text (File%fh, varid, ival)
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#endif
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -671,7 +761,9 @@ contains
     integer, intent(in) :: varid
     real(r4), intent(in) :: ival
     integer :: iotype
-
+#ifdef _PNETCDF
+    integer :: i, start(0), count(0)
+#endif
 #ifdef TIMING
     call t_startf("pio_put_var_0d_real")
 #endif 
@@ -681,13 +773,26 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
+#if (0 > 0)
+          if(File%iosystem%io_rank==0) then
+             start = 1
+             do i=1,0
+                count(i) = size(ival,i)
+             end do
+          else
+             start = 0
+             count = 0
+          end if
+          ierr = put_vara_0d_real (File, varid, start, count, ival)
+#else
           ierr = nfmpi_begin_indep_data(File%fh)
-          if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_var_real (File%fh, varid, ival)
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#endif
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -724,7 +829,9 @@ contains
     integer, intent(in) :: varid
     real(r4), intent(in) :: ival(:)
     integer :: iotype
-
+#ifdef _PNETCDF
+    integer :: i, start(1), count(1)
+#endif
 #ifdef TIMING
     call t_startf("pio_put_var_1d_real")
 #endif 
@@ -734,13 +841,26 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
+#if (1 > 0)
+          if(File%iosystem%io_rank==0) then
+             start = 1
+             do i=1,1
+                count(i) = size(ival,i)
+             end do
+          else
+             start = 0
+             count = 0
+          end if
+          ierr = put_vara_1d_real (File, varid, start, count, ival)
+#else
           ierr = nfmpi_begin_indep_data(File%fh)
-          if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_var_real (File%fh, varid, ival)
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#endif
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -777,7 +897,9 @@ contains
     integer, intent(in) :: varid
     real(r4), intent(in) :: ival(:,:)
     integer :: iotype
-
+#ifdef _PNETCDF
+    integer :: i, start(2), count(2)
+#endif
 #ifdef TIMING
     call t_startf("pio_put_var_2d_real")
 #endif 
@@ -787,13 +909,26 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
+#if (2 > 0)
+          if(File%iosystem%io_rank==0) then
+             start = 1
+             do i=1,2
+                count(i) = size(ival,i)
+             end do
+          else
+             start = 0
+             count = 0
+          end if
+          ierr = put_vara_2d_real (File, varid, start, count, ival)
+#else
           ierr = nfmpi_begin_indep_data(File%fh)
-          if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_var_real (File%fh, varid, ival)
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#endif
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -830,7 +965,9 @@ contains
     integer, intent(in) :: varid
     real(r4), intent(in) :: ival(:,:,:)
     integer :: iotype
-
+#ifdef _PNETCDF
+    integer :: i, start(3), count(3)
+#endif
 #ifdef TIMING
     call t_startf("pio_put_var_3d_real")
 #endif 
@@ -840,13 +977,26 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
+#if (3 > 0)
+          if(File%iosystem%io_rank==0) then
+             start = 1
+             do i=1,3
+                count(i) = size(ival,i)
+             end do
+          else
+             start = 0
+             count = 0
+          end if
+          ierr = put_vara_3d_real (File, varid, start, count, ival)
+#else
           ierr = nfmpi_begin_indep_data(File%fh)
-          if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_var_real (File%fh, varid, ival)
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#endif
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -883,7 +1033,9 @@ contains
     integer, intent(in) :: varid
     real(r4), intent(in) :: ival(:,:,:,:)
     integer :: iotype
-
+#ifdef _PNETCDF
+    integer :: i, start(4), count(4)
+#endif
 #ifdef TIMING
     call t_startf("pio_put_var_4d_real")
 #endif 
@@ -893,13 +1045,26 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
+#if (4 > 0)
+          if(File%iosystem%io_rank==0) then
+             start = 1
+             do i=1,4
+                count(i) = size(ival,i)
+             end do
+          else
+             start = 0
+             count = 0
+          end if
+          ierr = put_vara_4d_real (File, varid, start, count, ival)
+#else
           ierr = nfmpi_begin_indep_data(File%fh)
-          if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_var_real (File%fh, varid, ival)
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#endif
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -936,7 +1101,9 @@ contains
     integer, intent(in) :: varid
     real(r4), intent(in) :: ival(:,:,:,:,:)
     integer :: iotype
-
+#ifdef _PNETCDF
+    integer :: i, start(5), count(5)
+#endif
 #ifdef TIMING
     call t_startf("pio_put_var_5d_real")
 #endif 
@@ -946,13 +1113,26 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
+#if (5 > 0)
+          if(File%iosystem%io_rank==0) then
+             start = 1
+             do i=1,5
+                count(i) = size(ival,i)
+             end do
+          else
+             start = 0
+             count = 0
+          end if
+          ierr = put_vara_5d_real (File, varid, start, count, ival)
+#else
           ierr = nfmpi_begin_indep_data(File%fh)
-          if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_var_real (File%fh, varid, ival)
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#endif
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -989,7 +1169,9 @@ contains
     integer, intent(in) :: varid
     real(r8), intent(in) :: ival
     integer :: iotype
-
+#ifdef _PNETCDF
+    integer :: i, start(0), count(0)
+#endif
 #ifdef TIMING
     call t_startf("pio_put_var_0d_double")
 #endif 
@@ -999,13 +1181,26 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
+#if (0 > 0)
+          if(File%iosystem%io_rank==0) then
+             start = 1
+             do i=1,0
+                count(i) = size(ival,i)
+             end do
+          else
+             start = 0
+             count = 0
+          end if
+          ierr = put_vara_0d_double (File, varid, start, count, ival)
+#else
           ierr = nfmpi_begin_indep_data(File%fh)
-          if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_var_double (File%fh, varid, ival)
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#endif
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -1042,7 +1237,9 @@ contains
     integer, intent(in) :: varid
     real(r8), intent(in) :: ival(:)
     integer :: iotype
-
+#ifdef _PNETCDF
+    integer :: i, start(1), count(1)
+#endif
 #ifdef TIMING
     call t_startf("pio_put_var_1d_double")
 #endif 
@@ -1052,13 +1249,26 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
+#if (1 > 0)
+          if(File%iosystem%io_rank==0) then
+             start = 1
+             do i=1,1
+                count(i) = size(ival,i)
+             end do
+          else
+             start = 0
+             count = 0
+          end if
+          ierr = put_vara_1d_double (File, varid, start, count, ival)
+#else
           ierr = nfmpi_begin_indep_data(File%fh)
-          if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_var_double (File%fh, varid, ival)
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#endif
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -1095,7 +1305,9 @@ contains
     integer, intent(in) :: varid
     real(r8), intent(in) :: ival(:,:)
     integer :: iotype
-
+#ifdef _PNETCDF
+    integer :: i, start(2), count(2)
+#endif
 #ifdef TIMING
     call t_startf("pio_put_var_2d_double")
 #endif 
@@ -1105,13 +1317,26 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
+#if (2 > 0)
+          if(File%iosystem%io_rank==0) then
+             start = 1
+             do i=1,2
+                count(i) = size(ival,i)
+             end do
+          else
+             start = 0
+             count = 0
+          end if
+          ierr = put_vara_2d_double (File, varid, start, count, ival)
+#else
           ierr = nfmpi_begin_indep_data(File%fh)
-          if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_var_double (File%fh, varid, ival)
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#endif
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -1148,7 +1373,9 @@ contains
     integer, intent(in) :: varid
     real(r8), intent(in) :: ival(:,:,:)
     integer :: iotype
-
+#ifdef _PNETCDF
+    integer :: i, start(3), count(3)
+#endif
 #ifdef TIMING
     call t_startf("pio_put_var_3d_double")
 #endif 
@@ -1158,13 +1385,26 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
+#if (3 > 0)
+          if(File%iosystem%io_rank==0) then
+             start = 1
+             do i=1,3
+                count(i) = size(ival,i)
+             end do
+          else
+             start = 0
+             count = 0
+          end if
+          ierr = put_vara_3d_double (File, varid, start, count, ival)
+#else
           ierr = nfmpi_begin_indep_data(File%fh)
-          if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_var_double (File%fh, varid, ival)
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#endif
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -1201,7 +1441,9 @@ contains
     integer, intent(in) :: varid
     real(r8), intent(in) :: ival(:,:,:,:)
     integer :: iotype
-
+#ifdef _PNETCDF
+    integer :: i, start(4), count(4)
+#endif
 #ifdef TIMING
     call t_startf("pio_put_var_4d_double")
 #endif 
@@ -1211,13 +1453,26 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
+#if (4 > 0)
+          if(File%iosystem%io_rank==0) then
+             start = 1
+             do i=1,4
+                count(i) = size(ival,i)
+             end do
+          else
+             start = 0
+             count = 0
+          end if
+          ierr = put_vara_4d_double (File, varid, start, count, ival)
+#else
           ierr = nfmpi_begin_indep_data(File%fh)
-          if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_var_double (File%fh, varid, ival)
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#endif
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -1254,7 +1509,9 @@ contains
     integer, intent(in) :: varid
     real(r8), intent(in) :: ival(:,:,:,:,:)
     integer :: iotype
-
+#ifdef _PNETCDF
+    integer :: i, start(5), count(5)
+#endif
 #ifdef TIMING
     call t_startf("pio_put_var_5d_double")
 #endif 
@@ -1264,13 +1521,26 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
+#if (5 > 0)
+          if(File%iosystem%io_rank==0) then
+             start = 1
+             do i=1,5
+                count(i) = size(ival,i)
+             end do
+          else
+             start = 0
+             count = 0
+          end if
+          ierr = put_vara_5d_double (File, varid, start, count, ival)
+#else
           ierr = nfmpi_begin_indep_data(File%fh)
-          if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_var_double (File%fh, varid, ival)
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#endif
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -1307,7 +1577,9 @@ contains
     integer, intent(in) :: varid
     integer(i4), intent(in) :: ival
     integer :: iotype
-
+#ifdef _PNETCDF
+    integer :: i, start(0), count(0)
+#endif
 #ifdef TIMING
     call t_startf("pio_put_var_0d_int")
 #endif 
@@ -1317,13 +1589,26 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
+#if (0 > 0)
+          if(File%iosystem%io_rank==0) then
+             start = 1
+             do i=1,0
+                count(i) = size(ival,i)
+             end do
+          else
+             start = 0
+             count = 0
+          end if
+          ierr = put_vara_0d_int (File, varid, start, count, ival)
+#else
           ierr = nfmpi_begin_indep_data(File%fh)
-          if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_var_int (File%fh, varid, ival)
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#endif
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -1360,7 +1645,9 @@ contains
     integer, intent(in) :: varid
     integer(i4), intent(in) :: ival(:)
     integer :: iotype
-
+#ifdef _PNETCDF
+    integer :: i, start(1), count(1)
+#endif
 #ifdef TIMING
     call t_startf("pio_put_var_1d_int")
 #endif 
@@ -1370,13 +1657,26 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
+#if (1 > 0)
+          if(File%iosystem%io_rank==0) then
+             start = 1
+             do i=1,1
+                count(i) = size(ival,i)
+             end do
+          else
+             start = 0
+             count = 0
+          end if
+          ierr = put_vara_1d_int (File, varid, start, count, ival)
+#else
           ierr = nfmpi_begin_indep_data(File%fh)
-          if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_var_int (File%fh, varid, ival)
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#endif
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -1413,7 +1713,9 @@ contains
     integer, intent(in) :: varid
     integer(i4), intent(in) :: ival(:,:)
     integer :: iotype
-
+#ifdef _PNETCDF
+    integer :: i, start(2), count(2)
+#endif
 #ifdef TIMING
     call t_startf("pio_put_var_2d_int")
 #endif 
@@ -1423,13 +1725,26 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
+#if (2 > 0)
+          if(File%iosystem%io_rank==0) then
+             start = 1
+             do i=1,2
+                count(i) = size(ival,i)
+             end do
+          else
+             start = 0
+             count = 0
+          end if
+          ierr = put_vara_2d_int (File, varid, start, count, ival)
+#else
           ierr = nfmpi_begin_indep_data(File%fh)
-          if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_var_int (File%fh, varid, ival)
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#endif
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -1466,7 +1781,9 @@ contains
     integer, intent(in) :: varid
     integer(i4), intent(in) :: ival(:,:,:)
     integer :: iotype
-
+#ifdef _PNETCDF
+    integer :: i, start(3), count(3)
+#endif
 #ifdef TIMING
     call t_startf("pio_put_var_3d_int")
 #endif 
@@ -1476,13 +1793,26 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
+#if (3 > 0)
+          if(File%iosystem%io_rank==0) then
+             start = 1
+             do i=1,3
+                count(i) = size(ival,i)
+             end do
+          else
+             start = 0
+             count = 0
+          end if
+          ierr = put_vara_3d_int (File, varid, start, count, ival)
+#else
           ierr = nfmpi_begin_indep_data(File%fh)
-          if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_var_int (File%fh, varid, ival)
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#endif
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -1519,7 +1849,9 @@ contains
     integer, intent(in) :: varid
     integer(i4), intent(in) :: ival(:,:,:,:)
     integer :: iotype
-
+#ifdef _PNETCDF
+    integer :: i, start(4), count(4)
+#endif
 #ifdef TIMING
     call t_startf("pio_put_var_4d_int")
 #endif 
@@ -1529,13 +1861,26 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
+#if (4 > 0)
+          if(File%iosystem%io_rank==0) then
+             start = 1
+             do i=1,4
+                count(i) = size(ival,i)
+             end do
+          else
+             start = 0
+             count = 0
+          end if
+          ierr = put_vara_4d_int (File, varid, start, count, ival)
+#else
           ierr = nfmpi_begin_indep_data(File%fh)
-          if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_var_int (File%fh, varid, ival)
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#endif
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -1572,7 +1917,9 @@ contains
     integer, intent(in) :: varid
     integer(i4), intent(in) :: ival(:,:,:,:,:)
     integer :: iotype
-
+#ifdef _PNETCDF
+    integer :: i, start(5), count(5)
+#endif
 #ifdef TIMING
     call t_startf("pio_put_var_5d_int")
 #endif 
@@ -1582,13 +1929,26 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
+#if (5 > 0)
+          if(File%iosystem%io_rank==0) then
+             start = 1
+             do i=1,5
+                count(i) = size(ival,i)
+             end do
+          else
+             start = 0
+             count = 0
+          end if
+          ierr = put_vara_5d_int (File, varid, start, count, ival)
+#else
           ierr = nfmpi_begin_indep_data(File%fh)
-          if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_var_int (File%fh, varid, ival)
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#endif
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -1862,6 +2222,7 @@ contains
   integer function put_vara_1d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
+    integer(kind=PIO_OFFSET) :: pstart(1), pcount(1)
     character(len=*), intent(in) :: ival(:)
     integer :: iotype, len, i
 #ifdef TIMING
@@ -1877,8 +2238,11 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_text_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
-               int(count,kind=PIO_OFFSET), ival, len, MPI_CHARACTER)
+	  pstart = start
+	  pcount = count
+	  if(sum(pstart)==0) pstart=1 ! avoids an unessasary pnetcdf error 
+          ierr = nfmpi_put_vara_text_all (File%fh, varid, pstart, &
+               pcount, ival, len, MPI_CHARACTER)
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -1902,6 +2266,7 @@ contains
   integer function put_vara_2d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
+    integer(kind=PIO_OFFSET) :: pstart(2), pcount(2)
     character(len=*), intent(in) :: ival(:,:)
     integer :: iotype, len, i
 #ifdef TIMING
@@ -1917,8 +2282,11 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_text_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
-               int(count,kind=PIO_OFFSET), ival, len, MPI_CHARACTER)
+	  pstart = start
+	  pcount = count
+	  if(sum(pstart)==0) pstart=1 ! avoids an unessasary pnetcdf error 
+          ierr = nfmpi_put_vara_text_all (File%fh, varid, pstart, &
+               pcount, ival, len, MPI_CHARACTER)
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -1942,6 +2310,7 @@ contains
   integer function put_vara_3d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
+    integer(kind=PIO_OFFSET) :: pstart(3), pcount(3)
     character(len=*), intent(in) :: ival(:,:,:)
     integer :: iotype, len, i
 #ifdef TIMING
@@ -1957,8 +2326,11 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_text_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
-               int(count,kind=PIO_OFFSET), ival, len, MPI_CHARACTER)
+	  pstart = start
+	  pcount = count
+	  if(sum(pstart)==0) pstart=1 ! avoids an unessasary pnetcdf error 
+          ierr = nfmpi_put_vara_text_all (File%fh, varid, pstart, &
+               pcount, ival, len, MPI_CHARACTER)
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -1982,6 +2354,7 @@ contains
   integer function put_vara_4d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
+    integer(kind=PIO_OFFSET) :: pstart(4), pcount(4)
     character(len=*), intent(in) :: ival(:,:,:,:)
     integer :: iotype, len, i
 #ifdef TIMING
@@ -1997,8 +2370,11 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_text_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
-               int(count,kind=PIO_OFFSET), ival, len, MPI_CHARACTER)
+	  pstart = start
+	  pcount = count
+	  if(sum(pstart)==0) pstart=1 ! avoids an unessasary pnetcdf error 
+          ierr = nfmpi_put_vara_text_all (File%fh, varid, pstart, &
+               pcount, ival, len, MPI_CHARACTER)
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -2022,6 +2398,7 @@ contains
   integer function put_vara_5d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
+    integer(kind=PIO_OFFSET) :: pstart(5), pcount(5)
     character(len=*), intent(in) :: ival(:,:,:,:,:)
     integer :: iotype, len, i
 #ifdef TIMING
@@ -2037,8 +2414,11 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_text_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
-               int(count,kind=PIO_OFFSET), ival, len, MPI_CHARACTER)
+	  pstart = start
+	  pcount = count
+	  if(sum(pstart)==0) pstart=1 ! avoids an unessasary pnetcdf error 
+          ierr = nfmpi_put_vara_text_all (File%fh, varid, pstart, &
+               pcount, ival, len, MPI_CHARACTER)
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -2062,6 +2442,7 @@ contains
   integer function put_vara_1d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
+    integer(kind=PIO_OFFSET) :: pstart(1), pcount(1)
     real(r4), intent(in) :: ival(:)
     integer :: iotype, len, i
 #ifdef TIMING
@@ -2077,8 +2458,11 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_real_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
-               int(count,kind=PIO_OFFSET), ival, len, MPI_REAL4)
+	  pstart = start
+	  pcount = count
+	  if(sum(pstart)==0) pstart=1 ! avoids an unessasary pnetcdf error 
+          ierr = nfmpi_put_vara_real_all (File%fh, varid, pstart, &
+               pcount, ival, len, MPI_REAL4)
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -2102,6 +2486,7 @@ contains
   integer function put_vara_2d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
+    integer(kind=PIO_OFFSET) :: pstart(2), pcount(2)
     real(r4), intent(in) :: ival(:,:)
     integer :: iotype, len, i
 #ifdef TIMING
@@ -2117,8 +2502,11 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_real_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
-               int(count,kind=PIO_OFFSET), ival, len, MPI_REAL4)
+	  pstart = start
+	  pcount = count
+	  if(sum(pstart)==0) pstart=1 ! avoids an unessasary pnetcdf error 
+          ierr = nfmpi_put_vara_real_all (File%fh, varid, pstart, &
+               pcount, ival, len, MPI_REAL4)
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -2142,6 +2530,7 @@ contains
   integer function put_vara_3d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
+    integer(kind=PIO_OFFSET) :: pstart(3), pcount(3)
     real(r4), intent(in) :: ival(:,:,:)
     integer :: iotype, len, i
 #ifdef TIMING
@@ -2157,8 +2546,11 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_real_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
-               int(count,kind=PIO_OFFSET), ival, len, MPI_REAL4)
+	  pstart = start
+	  pcount = count
+	  if(sum(pstart)==0) pstart=1 ! avoids an unessasary pnetcdf error 
+          ierr = nfmpi_put_vara_real_all (File%fh, varid, pstart, &
+               pcount, ival, len, MPI_REAL4)
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -2182,6 +2574,7 @@ contains
   integer function put_vara_4d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
+    integer(kind=PIO_OFFSET) :: pstart(4), pcount(4)
     real(r4), intent(in) :: ival(:,:,:,:)
     integer :: iotype, len, i
 #ifdef TIMING
@@ -2197,8 +2590,11 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_real_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
-               int(count,kind=PIO_OFFSET), ival, len, MPI_REAL4)
+	  pstart = start
+	  pcount = count
+	  if(sum(pstart)==0) pstart=1 ! avoids an unessasary pnetcdf error 
+          ierr = nfmpi_put_vara_real_all (File%fh, varid, pstart, &
+               pcount, ival, len, MPI_REAL4)
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -2222,6 +2618,7 @@ contains
   integer function put_vara_5d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
+    integer(kind=PIO_OFFSET) :: pstart(5), pcount(5)
     real(r4), intent(in) :: ival(:,:,:,:,:)
     integer :: iotype, len, i
 #ifdef TIMING
@@ -2237,8 +2634,11 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_real_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
-               int(count,kind=PIO_OFFSET), ival, len, MPI_REAL4)
+	  pstart = start
+	  pcount = count
+	  if(sum(pstart)==0) pstart=1 ! avoids an unessasary pnetcdf error 
+          ierr = nfmpi_put_vara_real_all (File%fh, varid, pstart, &
+               pcount, ival, len, MPI_REAL4)
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -2262,6 +2662,7 @@ contains
   integer function put_vara_1d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
+    integer(kind=PIO_OFFSET) :: pstart(1), pcount(1)
     real(r8), intent(in) :: ival(:)
     integer :: iotype, len, i
 #ifdef TIMING
@@ -2277,8 +2678,11 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_double_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
-               int(count,kind=PIO_OFFSET), ival, len, MPI_REAL8)
+	  pstart = start
+	  pcount = count
+	  if(sum(pstart)==0) pstart=1 ! avoids an unessasary pnetcdf error 
+          ierr = nfmpi_put_vara_double_all (File%fh, varid, pstart, &
+               pcount, ival, len, MPI_REAL8)
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -2302,6 +2706,7 @@ contains
   integer function put_vara_2d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
+    integer(kind=PIO_OFFSET) :: pstart(2), pcount(2)
     real(r8), intent(in) :: ival(:,:)
     integer :: iotype, len, i
 #ifdef TIMING
@@ -2317,8 +2722,11 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_double_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
-               int(count,kind=PIO_OFFSET), ival, len, MPI_REAL8)
+	  pstart = start
+	  pcount = count
+	  if(sum(pstart)==0) pstart=1 ! avoids an unessasary pnetcdf error 
+          ierr = nfmpi_put_vara_double_all (File%fh, varid, pstart, &
+               pcount, ival, len, MPI_REAL8)
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -2342,6 +2750,7 @@ contains
   integer function put_vara_3d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
+    integer(kind=PIO_OFFSET) :: pstart(3), pcount(3)
     real(r8), intent(in) :: ival(:,:,:)
     integer :: iotype, len, i
 #ifdef TIMING
@@ -2357,8 +2766,11 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_double_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
-               int(count,kind=PIO_OFFSET), ival, len, MPI_REAL8)
+	  pstart = start
+	  pcount = count
+	  if(sum(pstart)==0) pstart=1 ! avoids an unessasary pnetcdf error 
+          ierr = nfmpi_put_vara_double_all (File%fh, varid, pstart, &
+               pcount, ival, len, MPI_REAL8)
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -2382,6 +2794,7 @@ contains
   integer function put_vara_4d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
+    integer(kind=PIO_OFFSET) :: pstart(4), pcount(4)
     real(r8), intent(in) :: ival(:,:,:,:)
     integer :: iotype, len, i
 #ifdef TIMING
@@ -2397,8 +2810,11 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_double_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
-               int(count,kind=PIO_OFFSET), ival, len, MPI_REAL8)
+	  pstart = start
+	  pcount = count
+	  if(sum(pstart)==0) pstart=1 ! avoids an unessasary pnetcdf error 
+          ierr = nfmpi_put_vara_double_all (File%fh, varid, pstart, &
+               pcount, ival, len, MPI_REAL8)
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -2422,6 +2838,7 @@ contains
   integer function put_vara_5d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
+    integer(kind=PIO_OFFSET) :: pstart(5), pcount(5)
     real(r8), intent(in) :: ival(:,:,:,:,:)
     integer :: iotype, len, i
 #ifdef TIMING
@@ -2437,8 +2854,11 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_double_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
-               int(count,kind=PIO_OFFSET), ival, len, MPI_REAL8)
+	  pstart = start
+	  pcount = count
+	  if(sum(pstart)==0) pstart=1 ! avoids an unessasary pnetcdf error 
+          ierr = nfmpi_put_vara_double_all (File%fh, varid, pstart, &
+               pcount, ival, len, MPI_REAL8)
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -2462,6 +2882,7 @@ contains
   integer function put_vara_1d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
+    integer(kind=PIO_OFFSET) :: pstart(1), pcount(1)
     integer(i4), intent(in) :: ival(:)
     integer :: iotype, len, i
 #ifdef TIMING
@@ -2477,8 +2898,11 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_int_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
-               int(count,kind=PIO_OFFSET), ival, len, MPI_INTEGER)
+	  pstart = start
+	  pcount = count
+	  if(sum(pstart)==0) pstart=1 ! avoids an unessasary pnetcdf error 
+          ierr = nfmpi_put_vara_int_all (File%fh, varid, pstart, &
+               pcount, ival, len, MPI_INTEGER)
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -2502,6 +2926,7 @@ contains
   integer function put_vara_2d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
+    integer(kind=PIO_OFFSET) :: pstart(2), pcount(2)
     integer(i4), intent(in) :: ival(:,:)
     integer :: iotype, len, i
 #ifdef TIMING
@@ -2517,8 +2942,11 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_int_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
-               int(count,kind=PIO_OFFSET), ival, len, MPI_INTEGER)
+	  pstart = start
+	  pcount = count
+	  if(sum(pstart)==0) pstart=1 ! avoids an unessasary pnetcdf error 
+          ierr = nfmpi_put_vara_int_all (File%fh, varid, pstart, &
+               pcount, ival, len, MPI_INTEGER)
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -2542,6 +2970,7 @@ contains
   integer function put_vara_3d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
+    integer(kind=PIO_OFFSET) :: pstart(3), pcount(3)
     integer(i4), intent(in) :: ival(:,:,:)
     integer :: iotype, len, i
 #ifdef TIMING
@@ -2557,8 +2986,11 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_int_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
-               int(count,kind=PIO_OFFSET), ival, len, MPI_INTEGER)
+	  pstart = start
+	  pcount = count
+	  if(sum(pstart)==0) pstart=1 ! avoids an unessasary pnetcdf error 
+          ierr = nfmpi_put_vara_int_all (File%fh, varid, pstart, &
+               pcount, ival, len, MPI_INTEGER)
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -2582,6 +3014,7 @@ contains
   integer function put_vara_4d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
+    integer(kind=PIO_OFFSET) :: pstart(4), pcount(4)
     integer(i4), intent(in) :: ival(:,:,:,:)
     integer :: iotype, len, i
 #ifdef TIMING
@@ -2597,8 +3030,11 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_int_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
-               int(count,kind=PIO_OFFSET), ival, len, MPI_INTEGER)
+	  pstart = start
+	  pcount = count
+	  if(sum(pstart)==0) pstart=1 ! avoids an unessasary pnetcdf error 
+          ierr = nfmpi_put_vara_int_all (File%fh, varid, pstart, &
+               pcount, ival, len, MPI_INTEGER)
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
@@ -2622,6 +3058,7 @@ contains
   integer function put_vara_5d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
+    integer(kind=PIO_OFFSET) :: pstart(5), pcount(5)
     integer(i4), intent(in) :: ival(:,:,:,:,:)
     integer :: iotype, len, i
 #ifdef TIMING
@@ -2637,8 +3074,11 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_int_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
-               int(count,kind=PIO_OFFSET), ival, len, MPI_INTEGER)
+	  pstart = start
+	  pcount = count
+	  if(sum(pstart)==0) pstart=1 ! avoids an unessasary pnetcdf error 
+          ierr = nfmpi_put_vara_int_all (File%fh, varid, pstart, &
+               pcount, ival, len, MPI_INTEGER)
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)

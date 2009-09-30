@@ -23,25 +23,29 @@ module check_mod
 
 contains 
 
-subroutine check_1D_r8(fname,wr_array,rd_array,iostat)
+subroutine check_1D_r8(fname,wr_array,rd_array,len,iostat)
  
     character(len=*) :: fname
     real(r8) :: wr_array(:)
     real(r8) :: rd_array(:)
+    integer(i4), intent(in) :: len
     integer(i4),optional :: iostat
 
     real(r8),pointer :: diff(:)
     real(r8) :: lsum,gsum
-    integer(i4) :: ierr,len,cbad,rank
+    integer(i4) :: ierr,cbad,rank
 
-    len = SIZE(wr_array) 
-
+    if(present(iostat)) iostat = PIO_noerr
+   
     call alloc_check(diff,len,' check_1D_r8:diff ')
 
-    diff = abs(wr_array - rd_array)
-    cbad = COUNT(diff > 1.0d-299)
-    lsum = SUM(diff)
-    
+    if(len>0) then
+       diff = abs(wr_array - rd_array)
+       cbad = COUNT(diff > 1.0d-299)
+       lsum = SUM(diff)
+    else
+       lsum = 0
+    end if
     call MPI_Allreduce(lsum,gsum,1,MPI_REAL8,MPI_SUM,MPI_COMM_WORLD,ierr)
     call CheckMPIReturn('Call to MPI_Allreduce()',ierr,__FILE__,__LINE__)
 
@@ -50,8 +54,6 @@ subroutine check_1D_r8(fname,wr_array,rd_array,iostat)
        call CheckMPIReturn('Call to MPI_COMM_RANK()',ierr,__FILE__,__LINE__)
        print *,'IAM: ', rank, 'File: ',TRIM(fname),' Error detected for correctness test(1D,R8): ',lsum,' # bad: ',cbad, ' gsum:', gsum
        if(present(iostat)) iostat = -20
-    else
-       if(present(iostat)) iostat = PIO_noerr
     endif
     call dealloc_check(diff)	
 end subroutine check_1D_r8
@@ -154,7 +156,7 @@ subroutine check_3D_i4(fname,wr_array,rd_array)
 
 end subroutine check_3D_i4
 
-subroutine check_1D_r4(fname,wr_array,rd_array,iostat)
+subroutine check_1D_r4(fname,wr_array,rd_array,len,iostat)
  
     character(len=*) :: fname
     real(r4) :: wr_array(:)
@@ -165,16 +167,20 @@ subroutine check_1D_r4(fname,wr_array,rd_array,iostat)
     real(r4) :: lsum,gsum
     integer(i4) :: ierr,len,cbad,rank
 
-    len = SIZE(wr_array) 
+    
 
 ! Set default (no error) value for iostat if present)
     if(present(iostat)) iostat = PIO_noerr
-
+   
     call alloc_check(diff,len,' check_1D_r4:diff ')
 
-    diff = wr_array - rd_array
-    cbad = COUNT(diff .ne. 0.0)
-    lsum = SUM(diff)
+    if(len>0) then
+       diff = wr_array - rd_array
+       cbad = COUNT(diff .ne. 0.0)
+       lsum = SUM(diff)
+    else
+       lsum = 0
+    end if
     
     call MPI_Allreduce(lsum,gsum,1,MPI_REAL,MPI_SUM,MPI_COMM_WORLD,ierr)
     call CheckMPIReturn('Call to MPI_Allreduce()',ierr,__FILE__,__LINE__)
@@ -188,28 +194,31 @@ subroutine check_1D_r4(fname,wr_array,rd_array,iostat)
 
 end subroutine check_1D_r4
 
-subroutine check_1D_i4(fname,wr_array,rd_array,iostat)
+subroutine check_1D_i4(fname,wr_array,rd_array,len,iostat)
  
     character(len=*) :: fname
     integer(i4) :: wr_array(:)
     integer(i4) :: rd_array(:)
+    integer(i4), intent(in) :: len
     integer(i4),optional :: iostat
 
     integer(i4),pointer :: diff(:)
     integer(i4) :: lsum,gsum
-    integer(i4) :: ierr,len,cbad,rank
+    integer(i4) :: ierr,cbad,rank
 
-    len = SIZE(wr_array) 
+    
 
 ! Set default (no error) value for iostat if present)
     if(present(iostat)) iostat = PIO_noerr
-
+   
     call alloc_check(diff,len,' check_1D_r4:diff ')
-
-    diff = wr_array - rd_array
-    cbad = COUNT(diff .ne. 0.0)
-    lsum = SUM(diff)
-    
+    if(len>0) then
+       diff = wr_array - rd_array
+       cbad = COUNT(diff .ne. 0.0)
+       lsum = SUM(diff)
+    else
+       lsum = 0
+    end if
     call MPI_Allreduce(lsum,gsum,1,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,ierr)
     call CheckMPIReturn('Call to MPI_Allreduce()',ierr,__FILE__,__LINE__)
     if(gsum .ne. 0.0) then

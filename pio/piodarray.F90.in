@@ -22,13 +22,15 @@ module piodarray
   
   interface PIO_write_darray
 ! TYPE real,int,double
-     module procedure write_darray_{TYPE}
+! DIMS 1,2,3,4,5
+     module procedure write_darray_{DIMS}d_{TYPE}
   end interface
 
 
   interface PIO_read_darray
 ! TYPE real,int,double
-     module procedure read_darray_{TYPE}
+! DIMS 1,2,3,4,5
+     module procedure read_darray_{DIMS}d_{TYPE}
   end interface
 
   character(len=*), parameter :: modName='piodarray'
@@ -39,7 +41,7 @@ contains
   !
   ! write_darray_{TYPE}
   !
-  subroutine write_darray_{TYPE} (File,varDesc,iodesc, array, iostat, fillval)
+  subroutine write_darray_1d_{TYPE} (File,varDesc,iodesc, array, iostat, fillval)
 
     ! !DESCRIPTION:
     !  Writes a 2-d slab of TYPE to a netcdf file.
@@ -84,7 +86,43 @@ contains
        print *, subName,': IO type not supported'
     end select
 
-  end subroutine write_darray_{TYPE}
+  end subroutine write_darray_1d_{TYPE}
+
+
+! TYPE real,int,double
+! DIMS 2,3,4,5
+  subroutine write_darray_{DIMS}d_{TYPE} (File,varDesc,iodesc, array, iostat, fillval)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+         File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+         varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+         ioDesc                      ! variable descriptor
+
+    {VTYPE}, intent(in) ::  &
+         array{DIMSTR}                 ! array to be written
+
+    {VTYPE}, optional, intent(in) :: fillval    ! rearrange receiver fill value
+
+    integer(i4), intent(out) :: iostat
+    {VTYPE} :: transvar(1), dumbvar(0)
+
+! cannot call transfer function with a 0 sized array
+    if(size(array)==0) then
+       call write_darray_1d_{TYPE} (File, varDesc, iodesc, dumbvar, iostat)
+    else if(present(fillval)) then
+       call write_darray_1d_{TYPE} (File, varDesc, iodesc, transfer(array,transvar), iostat, fillval)
+    else
+       call write_darray_1d_{TYPE} (File, varDesc, iodesc, transfer(array,transvar), iostat)
+    end if
+
+  end subroutine write_darray_{DIMS}d_{TYPE}
+
+
 
 
 ! TYPE real,int,double
@@ -491,7 +529,7 @@ contains
   end subroutine write_darray_bin_{TYPE}
 
   ! TYPE real,int,double
-  subroutine read_darray_{TYPE} (File,varDesc, iodesc, array, iostat)
+  subroutine read_darray_1d_{TYPE} (File,varDesc, iodesc, array, iostat)
 
     ! !DESCRIPTION:
     !  Reads a 2-d slab of TYPE to a netcdf file.
@@ -510,13 +548,14 @@ contains
     type (io_desc_t), intent(inout) :: &
 	 ioDesc                      ! iodecomp descriptor
 
-    {VTYPE}, dimension(:), target, intent(out) ::  &
-	 array                 ! array to be written
+    {VTYPE}, dimension(:), intent(out) ::  &
+	 array                 ! array to be read
 
     integer(i4), intent(out) :: iostat
 
     character(len=*), parameter :: subName=modName//'::read_darray_{TYPE}'
 
+    array = 0	
     select case(File%iotype)
     case(iotype_pbinary, iotype_direct_pbinary)
        call read_darray_bin_{TYPE} (File,varDesc,iodesc,array, iostat)
@@ -526,7 +565,37 @@ contains
        print *, subName,': IO type not supported'
     end select
 
-  end subroutine read_darray_{TYPE}
+  end subroutine read_darray_1d_{TYPE}
+
+
+! TYPE real,int,double
+! DIMS 2,3,4,5
+  subroutine read_darray_{DIMS}d_{TYPE} (File,varDesc,iodesc, array, iostat)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+	 File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+	 varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+	 ioDesc                      ! iodecomp descriptor
+
+    {VTYPE}, intent(out) ::  array{DIMSTR}                 ! array to be read
+
+    integer(i4), intent(out) :: iostat
+
+    {VTYPE}, allocatable :: tmpvar(:)
+
+    allocate(tmpvar(size(array)))
+    call read_darray_1d_{TYPE} (File, varDesc, iodesc, tmpvar, iostat)
+    array = reshape(tmpvar,shape(array))
+    deallocate(tmpvar)
+
+  end subroutine read_darray_{DIMS}d_{TYPE}
+
+
 ! TYPE real,int,double
   !***********************************************************************
   !BOP

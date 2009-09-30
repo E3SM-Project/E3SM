@@ -43,8 +43,8 @@ AC_HELP_STRING([--enable-mpiio],
 [USE_MPIIO=$enableval],[USE_MPIIO=default])
 
 AC_ARG_ENABLE(mct,
-AC_HELP_STRING([--enable-mct],[use mct (Uses MCT_PATH) (default yes)]),
-[USE_MCT=$enableval],[USE_MCT=yes])
+AC_HELP_STRING([--enable-mct],[use mct (Uses MCT_PATH) (default no)]),
+[USE_MCT=$enableval],[USE_MCT=no])
 
 AC_ARG_ENABLE(box,
 AC_HELP_STRING([--enable-box],[use box rearranger (default yes)]),
@@ -249,6 +249,7 @@ if test "$USE_MPISERIAL" = "yes"
     MPI_INC="-I$MPI_PATH" 
   fi
 else
+  PDEFS="$PDEFS -DSPMD"
   ACX_MPI()
 fi
 

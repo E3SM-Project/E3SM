@@ -358,7 +358,7 @@ contains
    if (present(write_decomp)) then
       wdecomp = write_decomp
    endif
-   start = 0
+   start = 1
    count = 0
 
 !DBG   print *,'IAM: ',my_task,'gdecomp_DOF: point #2'
@@ -648,7 +648,7 @@ contains
              (max(pend(2,n1)-pstart(2,n1)+1,0))* &
              (max(pend(3,n1)-pstart(3,n1)+1,0))
       if (cnt2 == 0) then
-         start = 0
+         start = 1
          count = 0
       else
          start(1:3) = pstart(1:3,my_task)
@@ -657,7 +657,7 @@ contains
       if (my_task == master_task) &
          write(6,*) trim(subname),' start and count were computed ',my_task,start,count
    else
-      start = 0
+      start = 1
       count = 0
       if (my_task == master_task) &
          write(6,*) trim(subname),' start and count could NOT be computed '

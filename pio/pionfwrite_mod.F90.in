@@ -147,7 +147,6 @@ contains
                 if (Debug) print *, subName,': 0: done writing for self'
 
                 do i=1,File%iosystem%num_iotasks-1
-                   if (Debug) print *, subName,': 0: writing netcdf for ',i
                    ! receive IOBUF, temp_start, temp_count from io_rank i
 
                    call MPI_IRECV( temp_iobuf, size(temp_iobuf),  &
@@ -172,19 +171,23 @@ contains
                    call CheckMPIReturn(subName,mpierr)
                    call MPI_WAITALL(3, request, status, mpierr)
                    call CheckMPIReturn(subName,mpierr)
-#ifdef TIMING
-                   call t_startf("nc_put_var2")
-#endif
-                   ierr=nf90_put_var( fh,vid, &
-                        temp_iobuf,temp_start,temp_count)
-
-                   if(Debug) print *, _FILE_,__LINE__,i,fh,vid, ierr
+                   if (Debug) print *, subName,': 0: writing netcdf for ',i, temp_start,temp_count
+	           if(sum(temp_count)>0) then
 
 #ifdef TIMING
-                   call t_stopf("nc_put_var2")
+                      call t_startf("nc_put_var2")
 #endif
+                      ierr=nf90_put_var( fh,vid,	&
+                           temp_iobuf,temp_start,temp_count)
+                      if(Debug) print *, _FILE_,__LINE__,i,fh,vid, ierr
+#ifdef TIMING
+                      call t_stopf("nc_put_var2")
+#endif
+                      if (Debug) print *, subName,': 0: done writing for ',i
+                   else
+                      ierr = PIO_NOERR
+                   end if
 
-                   if (Debug) print *, subName,': 0: done writing for ',i
 
                 end do ! i=1,File%iosystem%num_iotasks-1
              end if ! ierr==pio_noerr

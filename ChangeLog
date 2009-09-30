@@ -1,6 +1,133 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio55_prod
+Originator(s): Jim
+Date: 09-29-09
+One-line Summary: New test scripts.  Added support for multidimensional darrays.
+                  New documentation
+	
+List all component tags that were used to create pio tag: 
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+   There is no longer a need to flatten multidimensional arrays when calling
+   pio_read_darray and pio_write_darray.  
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:  testpio_build.pl and testpio_run.pl 
+	replace individual csh scripts.  
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: self
+
+Summary of pre-tag testing:  Tested on bluefire, frost, dublin, athena, jaguar
+	70 tests now pass and 4 fail - (bn01 and bn03).   
+	Tests were also run with the cam testsuite.
+	
+  Regression tests:
+
+
+==============================================================
+
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
+Tag name: pio54_prod
+Originator(s): J. Dennis
+Date: 9-18-09
+One-line Summary: Added PIO_finalize method. Reworked some of the logic checks in PIO_freedecomp.
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: self
+
+Summary of pre-tag testing:  Bluefire test suite (12 failures expected)
+                             Kraken test suite (12 failues expected)
+  Regression tests:
+
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
+Tag name: pio53_prod
+Originator(s): Jim
+Date: 9-11-09
+One-line Summary: Rearranged structure of testpio so that memory leaks would be easier to detect.
+	Added code to pio_freedecomp to deallocate mpi_types created in initdecomp.
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:  
+
+Describe any substantial timing or memory changes: 
+
+Code reviewed by: self
+
+Summary of pre-tag testing:  Bluefire test suite (12 failures expected)
+                             cam test suite on bluefire
+  Regression tests:
+
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
+Tag name: pio52_prod
+Originator(s): Jim
+Date: 09-02-2009
+One-line Summary: Additional options for testpio, reduce number of switchs to indep mode
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Added a new variable to the testpio_in namelist: nvars 
+	which controls the number of variables written to the r4 and r8 files
+	also added an unlimited dimension to test file variables
+	moved setframe calls in testpio
+	
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: self
+
+Summary of pre-tag testing: 
+
+  Regression tests: bluefire test suite (12 failures expected)
+
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio51_prod
 Originator(s): Jim
 Date: 07-20-2009

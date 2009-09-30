@@ -21,6 +21,7 @@ module namelist_mod
     integer(i4), public :: num_aggregator
     integer(i4), public :: iotype
     integer(i4), public :: num_iodofs
+    integer(i4), public :: nvars
     character(len=80), public :: compdof_input
     character(len=80), public :: iodof_input 
     character(len=80), public :: compdof_output
@@ -44,6 +45,7 @@ module namelist_mod
 	nx_global,	&
 	ny_global,	&
 	nz_global,	&
+        nvars,          &
 	dir, 		&
 	casename, 	&
 	maxiter,	&
@@ -91,6 +93,7 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
     compdof_input = 'namelist'
     iodof_input = 'internal'
     compdof_output = 'none'
+    nvars = 10
 
     ioFMT = 'bin'
     dir   = './'
@@ -114,12 +117,22 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
 
     if (ierror == 0) close(device)
 
+    if(nvars > 99999) then
+       write(*,*) 'nvars exceeds limit of 99999, resetting'
+       nvars = 99999
+    else if(nvars < 1) then
+       write(*,*) 'nvars < 1, resetting'
+       nvars = 1
+    end if
+
+
     string = 'namelist_input'
     write(*,*) ' '
     write(*,*) trim(string),' casename   = ',trim(casename)
     write(*,*) trim(string),' nx_global  = ',nx_global
     write(*,*) trim(string),' ny_global  = ',ny_global
     write(*,*) trim(string),' nz_global  = ',nz_global
+    write(*,*) trim(string),' nvars      = ',nvars
     write(*,*) trim(string),' ioFMT      = ',ioFMT
     write(*,*) trim(string),' rearr      = ',rearr
     write(*,*) trim(string),' nprocsIO   = ',nprocsIO
@@ -263,6 +276,8 @@ subroutine Broadcast_Namelist(caller, myID, root, comm, ierror)
         call MPI_Bcast(nz_global, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
         call CheckMPIReturn('Call to MPI_Bcast(nz_global)',ierror,__FILE__,__LINE__)
 
+        call MPI_Bcast(nvars, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+        call CheckMPIReturn('Call to MPI_Bcast(nvars)',ierror,__FILE__,__LINE__)
         call MPI_Bcast(iotype, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
         call CheckMPIReturn('Call to MPI_Bcast(iotype)',ierror,__FILE__,__LINE__)
 
