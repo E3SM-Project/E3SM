@@ -115,7 +115,6 @@ contains
      integer(i4) :: errorlen
 
      integer(i4) :: ierr
-#ifdef USEMPIIO
 
      if (errcode .ne. MPI_SUCCESS) then
         call MPI_Error_String(errcode,errorstring,errorlen,ierr)
@@ -124,7 +123,7 @@ contains
            call piodie(file,line)
         endif
      end if
-#endif
+
   end subroutine CheckMPIreturn
 
   subroutine pio_writedof (file, DOF, comm, punit)

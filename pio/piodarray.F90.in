@@ -1,4 +1,8 @@
 #define _FILE_ 'piodarray'
+!> \file
+!! This module contains the distributed read and write routines.
+!<
+
 module piodarray
   use pio_types
   use pio_kinds
@@ -14,11 +18,6 @@ module piodarray
   implicit none
   private
   public :: pio_read_darray, pio_write_darray
-  !-----------------------------------------------------------------------
-  !
-  !  interfaces for i/o routines
-  !
-  !-----------------------------------------------------------------------
   
   interface PIO_write_darray
 ! TYPE real,int,double
@@ -37,10 +36,14 @@ module piodarray
 
 contains
 ! TYPE real,int,double
-  !***********************************************************************
-  !
-  ! write_darray_{TYPE}
-  !
+!>  Write a 1D array defined by vardesc using the decomposition described in iodesc to the file File. 
+!!  \param File: A file handle returned from pio_open or pio_create
+!!  \param vardesc: A variable handle returned from pio_def_var
+!!  \param iodesc : An io description handle returned from pio_initdecomp
+!!  \param array  : The data to be written
+!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!<  \param fillval : An optional fill value to fill holes in the data written
+!!
   subroutine write_darray_1d_{TYPE} (File,varDesc,iodesc, array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -91,6 +94,16 @@ contains
 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5
+
+!>  Write a {DIMS}D array of type {TYPE} defined by vardesc using the decomposition 
+!!  described in iodesc to the file File. 
+!!  \param File: A file handle returned from pio_open or pio_create
+!!  \param vardesc: A variable handle returned from pio_def_var
+!!  \param iodesc : An io description handle returned from pio_initdecomp
+!!  \param array  : The data to be written
+!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!<  \param fillval : An optional fill value to fill holes in the data written
+!!
   subroutine write_darray_{DIMS}d_{TYPE} (File,varDesc,iodesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -126,10 +139,17 @@ contains
 
 
 ! TYPE real,int,double
-  !***********************************************************************
-  !BOP
-  ! !IROUTINE: NAME
-  ! !INTERFACE:
+
+!>  Write a 1D array of type {TYPE} defined by vardesc using the decomposition 
+!!  described in iodesc to the netcdf or pnetcdf file File. 
+!!  \param File: A file handle returned from pio_open or pio_create
+!!  \param vardesc: A variable handle returned from pio_def_var
+!!  \param iodesc : An io description handle returned from pio_initdecomp
+!!  \param array  : The data to be written
+!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!!  \param fillval : An optional fill value to fill holes in the data written
+!<  This routine is internal to PIO, the user interface is pio_writedarray.
+
   subroutine write_darray_nf_{TYPE} (File,varDesc,iodesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -255,7 +275,7 @@ contains
 
        print *, subName,': passed write ping-pong test'
 
-       deallocate(array2)
+       call dealloc_check(array2)
 
 !!!!!!! end debug
 #endif
@@ -327,9 +347,10 @@ contains
 #ifdef TIMING
     call t_stopf("pio_write_nf")
 #endif
-    deallocate(start,count)
+    call dealloc_check(start)
+    call dealloc_check(count)
 
-    if(UseRearranger) deallocate(IOBUF)
+    if(UseRearranger) call dealloc_check(IOBUF)
 
     !   call MPI_Barrier(File%iosystem%comp_comm,ierr)
 
@@ -346,10 +367,16 @@ contains
   end subroutine write_darray_nf_{TYPE}
 
 ! TYPE real,int,double
-  !***********************************************************************
-  !BOP
-  ! !IROUTINE:  write_darray_bin_{TYPE}
-  ! !INTERFACE:
+
+!>  Write a 1D array of type {TYPE} defined by vardesc using the decomposition 
+!!  described in iodesc to the binary file File. 
+!!  \param File: A file handle returned from pio_open or pio_create
+!!  \param vardesc: A variable handle returned from pio_def_var
+!!  \param iodesc : An io description handle returned from pio_initdecomp
+!!  \param array  : The data to be written
+!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!!  \param fillval : An optional fill value to fill holes in the data written
+!<  This routine is internal to PIO, the user interface is pio_writedarray.
   subroutine write_darray_bin_{TYPE}(File,varDesc,iodesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -485,7 +512,7 @@ contains
 
        print *, subName,': passed int write ping-pong test'
 
-       deallocate(array2)
+       call dealloc_check(array2)
 
 !!!!!!! end debug
 #endif
@@ -513,7 +540,7 @@ contains
     !--------------------------
     ! deallocate the IO buffer
     !--------------------------
-    if(userearranger) deallocate(IOBUF)
+    if(userearranger) call dealloc_check(IOBUF)
     !   call MPI_Barrier(File%iosystem%comp_comm,ierr)
 
     !--------------------------
@@ -529,6 +556,7 @@ contains
   end subroutine write_darray_bin_{TYPE}
 
   ! TYPE real,int,double
+
   subroutine read_darray_1d_{TYPE} (File,varDesc, iodesc, array, iostat)
 
     ! !DESCRIPTION:
@@ -586,12 +614,12 @@ contains
 
     integer(i4), intent(out) :: iostat
 
-    {VTYPE}, allocatable :: tmpvar(:)
+    {VTYPE}, pointer :: tmpvar(:)
 
-    allocate(tmpvar(size(array)))
+    call alloc_check(tmpvar,size(array))
     call read_darray_1d_{TYPE} (File, varDesc, iodesc, tmpvar, iostat)
     array = reshape(tmpvar,shape(array))
-    deallocate(tmpvar)
+    call dealloc_check(tmpvar)
 
   end subroutine read_darray_{DIMS}d_{TYPE}
 
@@ -737,7 +765,8 @@ contains
     call t_stopf("pio_read_nf")
 #endif
 
-    deallocate(start, count)
+    call dealloc_check(start)
+    call dealloc_check(count)
     if(DebugIO) print *, subName,': {comp,io}_rank: ',File%iosystem%comp_rank,File%iosystem%io_rank,  &
 	 'offset: ',offset,'len: ',len !,' IOBUF: ',IOBUF
 
@@ -768,14 +797,14 @@ contains
 
        print *, subName,': passed int read ping-pong test'
 
-       deallocate(iobuf2)
+       call dealloc_check(iobuf2)
 
 !!!!!!! end debug
 #endif
        ! --------------------------
        ! deallocate IO buffer 
        ! --------------------------
-       deallocate(IOBUF)
+       call dealloc_check(IOBUF)
 
     endif
 #ifdef TIMING
@@ -935,14 +964,14 @@ contains
 
        print *, subName,': passed int read ping-pong test'
 
-       deallocate(iobuf2)
+       call dealloc_check(iobuf2)
 
 !!!!!!! end debug
 #endif
        ! --------------------------
        ! deallocate IO buffer 
        ! --------------------------
-       deallocate(IOBUF)
+       call dealloc_check(IOBUF)
     endif
 #ifdef TIMING
     call t_stopf("pio_rearrange_read")

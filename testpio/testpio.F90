@@ -278,6 +278,7 @@ program testpio
   !--------------------------------
 
   startIO = 0
+  countIO = 0
   if (trim(rearr) == 'none') then
      ioDOF   => compDOF
      startIO(1:3) = startCOMP(1:3)
@@ -866,7 +867,7 @@ program testpio
      ! Print out the performance measurements 
      !---------------------------------------
      call MPI_Barrier(MPI_COMM_WORLD,ierr)
-     print *,__FILE__,__LINE__,dt_write_r8, dt_read_r8
+
      if(TestR8) then
         ! Maximum read/write times
         call GetMaxTime(dt_write_r8, gdt_write_r8(it), MPI_COMM_WORLD, ierr)
@@ -976,8 +977,12 @@ contains
     real(r8),    intent(OUT) :: gdtMax
     integer(i4), intent(IN)  :: comm
     integer(i4), intent(OUT) :: ierror
+    real(r8) :: local_temp
 
-    call MPI_Allreduce(dtLocal, gdtMax, 1,MPI_DOUBLE_PRECISION, MPI_MAX, MPI_COMM_WORLD, ierror)
+    local_temp = max(dtlocal, MPI_Wtick())
+
+    call MPI_Allreduce(Local_temp, gdtMax, 1,MPI_DOUBLE_PRECISION, MPI_MAX, comm, ierror)
+
     call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierror,__FILE__,__LINE__)
 
   end subroutine GetMaxTime
@@ -1088,15 +1093,27 @@ contains
     write(*,*) '  IO Procs=',num_iotasks,'  Aggregators=',num_aggregator,&
          '  Base=',base,'  Stride=',stride
     do i = 1,nTrials
-       write(*,101) 'n=',i,'  write (Mb/sec)=',TotalMBytes/WriteTimes(i), &
-            '  write_time(sec)=',WriteTimes(i), &
-            trim(casename),trim(TestName)
+       if(writetimes(i)>0) then
+          write(*,101) 'n=',i,'  write (Mb/sec)=',TotalMBytes/WriteTimes(i), &
+               '  write_time(sec)=',WriteTimes(i), &
+               trim(casename),trim(TestName)
+       else
+          write(*,101) 'n=',i,'  write (Mb/sec)=',TotalMBytes, &
+               '?  write_time(sec)=',WriteTimes(i), &
+               trim(casename),trim(TestName)
+       end if
     enddo
     if (nTrials > 1) write(*,*) '         -------------------'
     do i = 1,nTrials
-       write(*,101) 'n=',i,'   read (Mb/sec)=',TotalMBytes/ReadTimes(i), &
-            '   read_time(sec)=',ReadTimes(i), &
-            trim(casename),trim(TestName)
+	if(Readtimes(i)>0) then
+           write(*,101) 'n=',i,'   read (Mb/sec)=',TotalMBytes/ReadTimes(i), &
+                '   read_time(sec)=',ReadTimes(i), &
+                trim(casename),trim(TestName)
+        else
+           write(*,101) 'n=',i,'   read (Mb/sec)=',TotalMBytes, &
+                '?   read_time(sec)=',ReadTimes(i), &
+                trim(casename),trim(TestName)
+        end if
     enddo
 
 101 format(3x,a,i5,a,f9.1,a,e12.4,2x,a,2x,a)

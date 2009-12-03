@@ -9,6 +9,7 @@ module pionfread_mod
 
   private
   public :: read_nf
+# 8 "pionfread_mod.F90.in"
   interface read_nf
      ! TYPE real,double,int
      module procedure read_nfdarray_real
@@ -20,10 +21,11 @@ module pionfread_mod
 
   character(len=*), parameter :: modName='pionfread_mod'
 
-contains
 # 15 "pionfread_mod.F90.in"
+contains
 
   ! TYPE real,double,int
+# 18 "pionfread_mod.F90.in"
   integer function read_nfdarray_real (File,IOBUF,varDesc,IODesc, start,count) result(ierr)
     use pio_types
     use pio_kinds
@@ -194,6 +196,7 @@ contains
   end function read_nfdarray_real
 
   ! TYPE real,double,int
+# 18 "pionfread_mod.F90.in"
   integer function read_nfdarray_double (File,IOBUF,varDesc,IODesc, start,count) result(ierr)
     use pio_types
     use pio_kinds
@@ -364,6 +367,7 @@ contains
   end function read_nfdarray_double
 
   ! TYPE real,double,int
+# 18 "pionfread_mod.F90.in"
   integer function read_nfdarray_int (File,IOBUF,varDesc,IODesc, start,count) result(ierr)
     use pio_types
     use pio_kinds

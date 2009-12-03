@@ -3,6 +3,10 @@
 ! Any changes you make to this file may be lost
 !===================================================
 #define _FILE_ 'piodarray'
+!> \file
+!! This module contains the distributed read and write routines.
+!<
+
 module piodarray
   use pio_types
   use pio_kinds
@@ -18,12 +22,8 @@ module piodarray
   implicit none
   private
   public :: pio_read_darray, pio_write_darray
-  !-----------------------------------------------------------------------
-  !
-  !  interfaces for i/o routines
-  !
-  !-----------------------------------------------------------------------
   
+# 22 "piodarray.F90.in"
   interface PIO_write_darray
 ! TYPE real,int,double
 ! DIMS 1,2,3,4,5
@@ -73,6 +73,7 @@ module piodarray
   end interface
 
 
+# 29 "piodarray.F90.in"
   interface PIO_read_darray
 ! TYPE real,int,double
 ! DIMS 1,2,3,4,5
@@ -123,13 +124,18 @@ module piodarray
 
   character(len=*), parameter :: modName='piodarray'
 
+# 37 "piodarray.F90.in"
 contains
-# 38 "piodarray.F90.in"
 ! TYPE real,int,double
-  !***********************************************************************
-  !
-  ! write_darray_real
-  !
+!>  Write a 1D array defined by vardesc using the decomposition described in iodesc to the file File. 
+!!  \param File: A file handle returned from pio_open or pio_create
+!!  \param vardesc: A variable handle returned from pio_def_var
+!!  \param iodesc : An io description handle returned from pio_initdecomp
+!!  \param array  : The data to be written
+!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!<  \param fillval : An optional fill value to fill holes in the data written
+!!
+# 47 "piodarray.F90.in"
   subroutine write_darray_1d_real (File,varDesc,iodesc, array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -177,10 +183,15 @@ contains
 
   end subroutine write_darray_1d_real
 ! TYPE real,int,double
-  !***********************************************************************
-  !
-  ! write_darray_int
-  !
+!>  Write a 1D array defined by vardesc using the decomposition described in iodesc to the file File. 
+!!  \param File: A file handle returned from pio_open or pio_create
+!!  \param vardesc: A variable handle returned from pio_def_var
+!!  \param iodesc : An io description handle returned from pio_initdecomp
+!!  \param array  : The data to be written
+!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!<  \param fillval : An optional fill value to fill holes in the data written
+!!
+# 47 "piodarray.F90.in"
   subroutine write_darray_1d_int (File,varDesc,iodesc, array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -228,10 +239,15 @@ contains
 
   end subroutine write_darray_1d_int
 ! TYPE real,int,double
-  !***********************************************************************
-  !
-  ! write_darray_double
-  !
+!>  Write a 1D array defined by vardesc using the decomposition described in iodesc to the file File. 
+!!  \param File: A file handle returned from pio_open or pio_create
+!!  \param vardesc: A variable handle returned from pio_def_var
+!!  \param iodesc : An io description handle returned from pio_initdecomp
+!!  \param array  : The data to be written
+!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!<  \param fillval : An optional fill value to fill holes in the data written
+!!
+# 47 "piodarray.F90.in"
   subroutine write_darray_1d_double (File,varDesc,iodesc, array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -282,6 +298,17 @@ contains
 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5
+
+!>  Write a 2D array of type real defined by vardesc using the decomposition 
+!!  described in iodesc to the file File. 
+!!  \param File: A file handle returned from pio_open or pio_create
+!!  \param vardesc: A variable handle returned from pio_def_var
+!!  \param iodesc : An io description handle returned from pio_initdecomp
+!!  \param array  : The data to be written
+!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!<  \param fillval : An optional fill value to fill holes in the data written
+!!
+# 107 "piodarray.F90.in"
   subroutine write_darray_2d_real (File,varDesc,iodesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -302,6 +329,7 @@ contains
     integer(i4), intent(out) :: iostat
     real(r4) :: transvar(1), dumbvar(0)
 
+# 127 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_real (File, varDesc, iodesc, dumbvar, iostat)
@@ -316,6 +344,17 @@ contains
 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5
+
+!>  Write a 3D array of type real defined by vardesc using the decomposition 
+!!  described in iodesc to the file File. 
+!!  \param File: A file handle returned from pio_open or pio_create
+!!  \param vardesc: A variable handle returned from pio_def_var
+!!  \param iodesc : An io description handle returned from pio_initdecomp
+!!  \param array  : The data to be written
+!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!<  \param fillval : An optional fill value to fill holes in the data written
+!!
+# 107 "piodarray.F90.in"
   subroutine write_darray_3d_real (File,varDesc,iodesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -336,6 +375,7 @@ contains
     integer(i4), intent(out) :: iostat
     real(r4) :: transvar(1), dumbvar(0)
 
+# 127 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_real (File, varDesc, iodesc, dumbvar, iostat)
@@ -350,6 +390,17 @@ contains
 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5
+
+!>  Write a 4D array of type real defined by vardesc using the decomposition 
+!!  described in iodesc to the file File. 
+!!  \param File: A file handle returned from pio_open or pio_create
+!!  \param vardesc: A variable handle returned from pio_def_var
+!!  \param iodesc : An io description handle returned from pio_initdecomp
+!!  \param array  : The data to be written
+!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!<  \param fillval : An optional fill value to fill holes in the data written
+!!
+# 107 "piodarray.F90.in"
   subroutine write_darray_4d_real (File,varDesc,iodesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -370,6 +421,7 @@ contains
     integer(i4), intent(out) :: iostat
     real(r4) :: transvar(1), dumbvar(0)
 
+# 127 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_real (File, varDesc, iodesc, dumbvar, iostat)
@@ -384,6 +436,17 @@ contains
 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5
+
+!>  Write a 5D array of type real defined by vardesc using the decomposition 
+!!  described in iodesc to the file File. 
+!!  \param File: A file handle returned from pio_open or pio_create
+!!  \param vardesc: A variable handle returned from pio_def_var
+!!  \param iodesc : An io description handle returned from pio_initdecomp
+!!  \param array  : The data to be written
+!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!<  \param fillval : An optional fill value to fill holes in the data written
+!!
+# 107 "piodarray.F90.in"
   subroutine write_darray_5d_real (File,varDesc,iodesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -404,6 +467,7 @@ contains
     integer(i4), intent(out) :: iostat
     real(r4) :: transvar(1), dumbvar(0)
 
+# 127 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_real (File, varDesc, iodesc, dumbvar, iostat)
@@ -418,6 +482,17 @@ contains
 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5
+
+!>  Write a 2D array of type int defined by vardesc using the decomposition 
+!!  described in iodesc to the file File. 
+!!  \param File: A file handle returned from pio_open or pio_create
+!!  \param vardesc: A variable handle returned from pio_def_var
+!!  \param iodesc : An io description handle returned from pio_initdecomp
+!!  \param array  : The data to be written
+!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!<  \param fillval : An optional fill value to fill holes in the data written
+!!
+# 107 "piodarray.F90.in"
   subroutine write_darray_2d_int (File,varDesc,iodesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -438,6 +513,7 @@ contains
     integer(i4), intent(out) :: iostat
     integer(i4) :: transvar(1), dumbvar(0)
 
+# 127 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_int (File, varDesc, iodesc, dumbvar, iostat)
@@ -452,6 +528,17 @@ contains
 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5
+
+!>  Write a 3D array of type int defined by vardesc using the decomposition 
+!!  described in iodesc to the file File. 
+!!  \param File: A file handle returned from pio_open or pio_create
+!!  \param vardesc: A variable handle returned from pio_def_var
+!!  \param iodesc : An io description handle returned from pio_initdecomp
+!!  \param array  : The data to be written
+!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!<  \param fillval : An optional fill value to fill holes in the data written
+!!
+# 107 "piodarray.F90.in"
   subroutine write_darray_3d_int (File,varDesc,iodesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -472,6 +559,7 @@ contains
     integer(i4), intent(out) :: iostat
     integer(i4) :: transvar(1), dumbvar(0)
 
+# 127 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_int (File, varDesc, iodesc, dumbvar, iostat)
@@ -486,6 +574,17 @@ contains
 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5
+
+!>  Write a 4D array of type int defined by vardesc using the decomposition 
+!!  described in iodesc to the file File. 
+!!  \param File: A file handle returned from pio_open or pio_create
+!!  \param vardesc: A variable handle returned from pio_def_var
+!!  \param iodesc : An io description handle returned from pio_initdecomp
+!!  \param array  : The data to be written
+!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!<  \param fillval : An optional fill value to fill holes in the data written
+!!
+# 107 "piodarray.F90.in"
   subroutine write_darray_4d_int (File,varDesc,iodesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -506,6 +605,7 @@ contains
     integer(i4), intent(out) :: iostat
     integer(i4) :: transvar(1), dumbvar(0)
 
+# 127 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_int (File, varDesc, iodesc, dumbvar, iostat)
@@ -520,6 +620,17 @@ contains
 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5
+
+!>  Write a 5D array of type int defined by vardesc using the decomposition 
+!!  described in iodesc to the file File. 
+!!  \param File: A file handle returned from pio_open or pio_create
+!!  \param vardesc: A variable handle returned from pio_def_var
+!!  \param iodesc : An io description handle returned from pio_initdecomp
+!!  \param array  : The data to be written
+!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!<  \param fillval : An optional fill value to fill holes in the data written
+!!
+# 107 "piodarray.F90.in"
   subroutine write_darray_5d_int (File,varDesc,iodesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -540,6 +651,7 @@ contains
     integer(i4), intent(out) :: iostat
     integer(i4) :: transvar(1), dumbvar(0)
 
+# 127 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_int (File, varDesc, iodesc, dumbvar, iostat)
@@ -554,6 +666,17 @@ contains
 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5
+
+!>  Write a 2D array of type double defined by vardesc using the decomposition 
+!!  described in iodesc to the file File. 
+!!  \param File: A file handle returned from pio_open or pio_create
+!!  \param vardesc: A variable handle returned from pio_def_var
+!!  \param iodesc : An io description handle returned from pio_initdecomp
+!!  \param array  : The data to be written
+!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!<  \param fillval : An optional fill value to fill holes in the data written
+!!
+# 107 "piodarray.F90.in"
   subroutine write_darray_2d_double (File,varDesc,iodesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -574,6 +697,7 @@ contains
     integer(i4), intent(out) :: iostat
     real(r8) :: transvar(1), dumbvar(0)
 
+# 127 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_double (File, varDesc, iodesc, dumbvar, iostat)
@@ -588,6 +712,17 @@ contains
 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5
+
+!>  Write a 3D array of type double defined by vardesc using the decomposition 
+!!  described in iodesc to the file File. 
+!!  \param File: A file handle returned from pio_open or pio_create
+!!  \param vardesc: A variable handle returned from pio_def_var
+!!  \param iodesc : An io description handle returned from pio_initdecomp
+!!  \param array  : The data to be written
+!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!<  \param fillval : An optional fill value to fill holes in the data written
+!!
+# 107 "piodarray.F90.in"
   subroutine write_darray_3d_double (File,varDesc,iodesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -608,6 +743,7 @@ contains
     integer(i4), intent(out) :: iostat
     real(r8) :: transvar(1), dumbvar(0)
 
+# 127 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_double (File, varDesc, iodesc, dumbvar, iostat)
@@ -622,6 +758,17 @@ contains
 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5
+
+!>  Write a 4D array of type double defined by vardesc using the decomposition 
+!!  described in iodesc to the file File. 
+!!  \param File: A file handle returned from pio_open or pio_create
+!!  \param vardesc: A variable handle returned from pio_def_var
+!!  \param iodesc : An io description handle returned from pio_initdecomp
+!!  \param array  : The data to be written
+!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!<  \param fillval : An optional fill value to fill holes in the data written
+!!
+# 107 "piodarray.F90.in"
   subroutine write_darray_4d_double (File,varDesc,iodesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -642,6 +789,7 @@ contains
     integer(i4), intent(out) :: iostat
     real(r8) :: transvar(1), dumbvar(0)
 
+# 127 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_double (File, varDesc, iodesc, dumbvar, iostat)
@@ -656,6 +804,17 @@ contains
 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5
+
+!>  Write a 5D array of type double defined by vardesc using the decomposition 
+!!  described in iodesc to the file File. 
+!!  \param File: A file handle returned from pio_open or pio_create
+!!  \param vardesc: A variable handle returned from pio_def_var
+!!  \param iodesc : An io description handle returned from pio_initdecomp
+!!  \param array  : The data to be written
+!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!<  \param fillval : An optional fill value to fill holes in the data written
+!!
+# 107 "piodarray.F90.in"
   subroutine write_darray_5d_double (File,varDesc,iodesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -676,6 +835,7 @@ contains
     integer(i4), intent(out) :: iostat
     real(r8) :: transvar(1), dumbvar(0)
 
+# 127 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_double (File, varDesc, iodesc, dumbvar, iostat)
@@ -691,10 +851,18 @@ contains
 
 
 ! TYPE real,int,double
-  !***********************************************************************
-  !BOP
-  ! !IROUTINE: NAME
-  ! !INTERFACE:
+
+!>  Write a 1D array of type real defined by vardesc using the decomposition 
+!!  described in iodesc to the netcdf or pnetcdf file File. 
+!!  \param File: A file handle returned from pio_open or pio_create
+!!  \param vardesc: A variable handle returned from pio_def_var
+!!  \param iodesc : An io description handle returned from pio_initdecomp
+!!  \param array  : The data to be written
+!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!!  \param fillval : An optional fill value to fill holes in the data written
+!<  This routine is internal to PIO, the user interface is pio_writedarray.
+
+# 153 "piodarray.F90.in"
   subroutine write_darray_nf_real (File,varDesc,iodesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -820,7 +988,7 @@ contains
 
        print *, subName,': passed write ping-pong test'
 
-       deallocate(array2)
+       call dealloc_check(array2)
 
 !!!!!!! end debug
 #endif
@@ -892,9 +1060,10 @@ contains
 #ifdef TIMING
     call t_stopf("pio_write_nf")
 #endif
-    deallocate(start,count)
+    call dealloc_check(start)
+    call dealloc_check(count)
 
-    if(UseRearranger) deallocate(IOBUF)
+    if(UseRearranger) call dealloc_check(IOBUF)
 
     !   call MPI_Barrier(File%iosystem%comp_comm,ierr)
 
@@ -914,10 +1083,18 @@ contains
 
 
 ! TYPE real,int,double
-  !***********************************************************************
-  !BOP
-  ! !IROUTINE: NAME
-  ! !INTERFACE:
+
+!>  Write a 1D array of type int defined by vardesc using the decomposition 
+!!  described in iodesc to the netcdf or pnetcdf file File. 
+!!  \param File: A file handle returned from pio_open or pio_create
+!!  \param vardesc: A variable handle returned from pio_def_var
+!!  \param iodesc : An io description handle returned from pio_initdecomp
+!!  \param array  : The data to be written
+!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!!  \param fillval : An optional fill value to fill holes in the data written
+!<  This routine is internal to PIO, the user interface is pio_writedarray.
+
+# 153 "piodarray.F90.in"
   subroutine write_darray_nf_int (File,varDesc,iodesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -1043,7 +1220,7 @@ contains
 
        print *, subName,': passed write ping-pong test'
 
-       deallocate(array2)
+       call dealloc_check(array2)
 
 !!!!!!! end debug
 #endif
@@ -1115,9 +1292,10 @@ contains
 #ifdef TIMING
     call t_stopf("pio_write_nf")
 #endif
-    deallocate(start,count)
+    call dealloc_check(start)
+    call dealloc_check(count)
 
-    if(UseRearranger) deallocate(IOBUF)
+    if(UseRearranger) call dealloc_check(IOBUF)
 
     !   call MPI_Barrier(File%iosystem%comp_comm,ierr)
 
@@ -1137,10 +1315,18 @@ contains
 
 
 ! TYPE real,int,double
-  !***********************************************************************
-  !BOP
-  ! !IROUTINE: NAME
-  ! !INTERFACE:
+
+!>  Write a 1D array of type double defined by vardesc using the decomposition 
+!!  described in iodesc to the netcdf or pnetcdf file File. 
+!!  \param File: A file handle returned from pio_open or pio_create
+!!  \param vardesc: A variable handle returned from pio_def_var
+!!  \param iodesc : An io description handle returned from pio_initdecomp
+!!  \param array  : The data to be written
+!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!!  \param fillval : An optional fill value to fill holes in the data written
+!<  This routine is internal to PIO, the user interface is pio_writedarray.
+
+# 153 "piodarray.F90.in"
   subroutine write_darray_nf_double (File,varDesc,iodesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -1266,7 +1452,7 @@ contains
 
        print *, subName,': passed write ping-pong test'
 
-       deallocate(array2)
+       call dealloc_check(array2)
 
 !!!!!!! end debug
 #endif
@@ -1338,9 +1524,10 @@ contains
 #ifdef TIMING
     call t_stopf("pio_write_nf")
 #endif
-    deallocate(start,count)
+    call dealloc_check(start)
+    call dealloc_check(count)
 
-    if(UseRearranger) deallocate(IOBUF)
+    if(UseRearranger) call dealloc_check(IOBUF)
 
     !   call MPI_Barrier(File%iosystem%comp_comm,ierr)
 
@@ -1357,10 +1544,17 @@ contains
   end subroutine write_darray_nf_double
 
 ! TYPE real,int,double
-  !***********************************************************************
-  !BOP
-  ! !IROUTINE:  write_darray_bin_real
-  ! !INTERFACE:
+
+!>  Write a 1D array of type real defined by vardesc using the decomposition 
+!!  described in iodesc to the binary file File. 
+!!  \param File: A file handle returned from pio_open or pio_create
+!!  \param vardesc: A variable handle returned from pio_def_var
+!!  \param iodesc : An io description handle returned from pio_initdecomp
+!!  \param array  : The data to be written
+!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!!  \param fillval : An optional fill value to fill holes in the data written
+!<  This routine is internal to PIO, the user interface is pio_writedarray.
+# 380 "piodarray.F90.in"
   subroutine write_darray_bin_real(File,varDesc,iodesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -1496,7 +1690,7 @@ contains
 
        print *, subName,': passed int write ping-pong test'
 
-       deallocate(array2)
+       call dealloc_check(array2)
 
 !!!!!!! end debug
 #endif
@@ -1524,7 +1718,7 @@ contains
     !--------------------------
     ! deallocate the IO buffer
     !--------------------------
-    if(userearranger) deallocate(IOBUF)
+    if(userearranger) call dealloc_check(IOBUF)
     !   call MPI_Barrier(File%iosystem%comp_comm,ierr)
 
     !--------------------------
@@ -1540,10 +1734,17 @@ contains
   end subroutine write_darray_bin_real
 
 ! TYPE real,int,double
-  !***********************************************************************
-  !BOP
-  ! !IROUTINE:  write_darray_bin_int
-  ! !INTERFACE:
+
+!>  Write a 1D array of type int defined by vardesc using the decomposition 
+!!  described in iodesc to the binary file File. 
+!!  \param File: A file handle returned from pio_open or pio_create
+!!  \param vardesc: A variable handle returned from pio_def_var
+!!  \param iodesc : An io description handle returned from pio_initdecomp
+!!  \param array  : The data to be written
+!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!!  \param fillval : An optional fill value to fill holes in the data written
+!<  This routine is internal to PIO, the user interface is pio_writedarray.
+# 380 "piodarray.F90.in"
   subroutine write_darray_bin_int(File,varDesc,iodesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -1679,7 +1880,7 @@ contains
 
        print *, subName,': passed int write ping-pong test'
 
-       deallocate(array2)
+       call dealloc_check(array2)
 
 !!!!!!! end debug
 #endif
@@ -1707,7 +1908,7 @@ contains
     !--------------------------
     ! deallocate the IO buffer
     !--------------------------
-    if(userearranger) deallocate(IOBUF)
+    if(userearranger) call dealloc_check(IOBUF)
     !   call MPI_Barrier(File%iosystem%comp_comm,ierr)
 
     !--------------------------
@@ -1723,10 +1924,17 @@ contains
   end subroutine write_darray_bin_int
 
 ! TYPE real,int,double
-  !***********************************************************************
-  !BOP
-  ! !IROUTINE:  write_darray_bin_double
-  ! !INTERFACE:
+
+!>  Write a 1D array of type double defined by vardesc using the decomposition 
+!!  described in iodesc to the binary file File. 
+!!  \param File: A file handle returned from pio_open or pio_create
+!!  \param vardesc: A variable handle returned from pio_def_var
+!!  \param iodesc : An io description handle returned from pio_initdecomp
+!!  \param array  : The data to be written
+!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!!  \param fillval : An optional fill value to fill holes in the data written
+!<  This routine is internal to PIO, the user interface is pio_writedarray.
+# 380 "piodarray.F90.in"
   subroutine write_darray_bin_double(File,varDesc,iodesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -1862,7 +2070,7 @@ contains
 
        print *, subName,': passed int write ping-pong test'
 
-       deallocate(array2)
+       call dealloc_check(array2)
 
 !!!!!!! end debug
 #endif
@@ -1890,7 +2098,7 @@ contains
     !--------------------------
     ! deallocate the IO buffer
     !--------------------------
-    if(userearranger) deallocate(IOBUF)
+    if(userearranger) call dealloc_check(IOBUF)
     !   call MPI_Barrier(File%iosystem%comp_comm,ierr)
 
     !--------------------------
@@ -1906,6 +2114,8 @@ contains
   end subroutine write_darray_bin_double
 
   ! TYPE real,int,double
+
+# 560 "piodarray.F90.in"
   subroutine read_darray_1d_real (File,varDesc, iodesc, array, iostat)
 
     ! !DESCRIPTION:
@@ -1945,6 +2155,8 @@ contains
   end subroutine read_darray_1d_real
 
   ! TYPE real,int,double
+
+# 560 "piodarray.F90.in"
   subroutine read_darray_1d_int (File,varDesc, iodesc, array, iostat)
 
     ! !DESCRIPTION:
@@ -1984,6 +2196,8 @@ contains
   end subroutine read_darray_1d_int
 
   ! TYPE real,int,double
+
+# 560 "piodarray.F90.in"
   subroutine read_darray_1d_double (File,varDesc, iodesc, array, iostat)
 
     ! !DESCRIPTION:
@@ -2025,6 +2239,7 @@ contains
 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5
+# 601 "piodarray.F90.in"
   subroutine read_darray_2d_real (File,varDesc,iodesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2041,18 +2256,19 @@ contains
 
     integer(i4), intent(out) :: iostat
 
-    real(r4), allocatable :: tmpvar(:)
+    real(r4), pointer :: tmpvar(:)
 
-    allocate(tmpvar(size(array)))
+    call alloc_check(tmpvar,size(array))
     call read_darray_1d_real (File, varDesc, iodesc, tmpvar, iostat)
     array = reshape(tmpvar,shape(array))
-    deallocate(tmpvar)
+    call dealloc_check(tmpvar)
 
   end subroutine read_darray_2d_real
 
 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5
+# 601 "piodarray.F90.in"
   subroutine read_darray_3d_real (File,varDesc,iodesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2069,18 +2285,19 @@ contains
 
     integer(i4), intent(out) :: iostat
 
-    real(r4), allocatable :: tmpvar(:)
+    real(r4), pointer :: tmpvar(:)
 
-    allocate(tmpvar(size(array)))
+    call alloc_check(tmpvar,size(array))
     call read_darray_1d_real (File, varDesc, iodesc, tmpvar, iostat)
     array = reshape(tmpvar,shape(array))
-    deallocate(tmpvar)
+    call dealloc_check(tmpvar)
 
   end subroutine read_darray_3d_real
 
 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5
+# 601 "piodarray.F90.in"
   subroutine read_darray_4d_real (File,varDesc,iodesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2097,18 +2314,19 @@ contains
 
     integer(i4), intent(out) :: iostat
 
-    real(r4), allocatable :: tmpvar(:)
+    real(r4), pointer :: tmpvar(:)
 
-    allocate(tmpvar(size(array)))
+    call alloc_check(tmpvar,size(array))
     call read_darray_1d_real (File, varDesc, iodesc, tmpvar, iostat)
     array = reshape(tmpvar,shape(array))
-    deallocate(tmpvar)
+    call dealloc_check(tmpvar)
 
   end subroutine read_darray_4d_real
 
 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5
+# 601 "piodarray.F90.in"
   subroutine read_darray_5d_real (File,varDesc,iodesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2125,18 +2343,19 @@ contains
 
     integer(i4), intent(out) :: iostat
 
-    real(r4), allocatable :: tmpvar(:)
+    real(r4), pointer :: tmpvar(:)
 
-    allocate(tmpvar(size(array)))
+    call alloc_check(tmpvar,size(array))
     call read_darray_1d_real (File, varDesc, iodesc, tmpvar, iostat)
     array = reshape(tmpvar,shape(array))
-    deallocate(tmpvar)
+    call dealloc_check(tmpvar)
 
   end subroutine read_darray_5d_real
 
 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5
+# 601 "piodarray.F90.in"
   subroutine read_darray_2d_int (File,varDesc,iodesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2153,18 +2372,19 @@ contains
 
     integer(i4), intent(out) :: iostat
 
-    integer(i4), allocatable :: tmpvar(:)
+    integer(i4), pointer :: tmpvar(:)
 
-    allocate(tmpvar(size(array)))
+    call alloc_check(tmpvar,size(array))
     call read_darray_1d_int (File, varDesc, iodesc, tmpvar, iostat)
     array = reshape(tmpvar,shape(array))
-    deallocate(tmpvar)
+    call dealloc_check(tmpvar)
 
   end subroutine read_darray_2d_int
 
 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5
+# 601 "piodarray.F90.in"
   subroutine read_darray_3d_int (File,varDesc,iodesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2181,18 +2401,19 @@ contains
 
     integer(i4), intent(out) :: iostat
 
-    integer(i4), allocatable :: tmpvar(:)
+    integer(i4), pointer :: tmpvar(:)
 
-    allocate(tmpvar(size(array)))
+    call alloc_check(tmpvar,size(array))
     call read_darray_1d_int (File, varDesc, iodesc, tmpvar, iostat)
     array = reshape(tmpvar,shape(array))
-    deallocate(tmpvar)
+    call dealloc_check(tmpvar)
 
   end subroutine read_darray_3d_int
 
 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5
+# 601 "piodarray.F90.in"
   subroutine read_darray_4d_int (File,varDesc,iodesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2209,18 +2430,19 @@ contains
 
     integer(i4), intent(out) :: iostat
 
-    integer(i4), allocatable :: tmpvar(:)
+    integer(i4), pointer :: tmpvar(:)
 
-    allocate(tmpvar(size(array)))
+    call alloc_check(tmpvar,size(array))
     call read_darray_1d_int (File, varDesc, iodesc, tmpvar, iostat)
     array = reshape(tmpvar,shape(array))
-    deallocate(tmpvar)
+    call dealloc_check(tmpvar)
 
   end subroutine read_darray_4d_int
 
 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5
+# 601 "piodarray.F90.in"
   subroutine read_darray_5d_int (File,varDesc,iodesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2237,18 +2459,19 @@ contains
 
     integer(i4), intent(out) :: iostat
 
-    integer(i4), allocatable :: tmpvar(:)
+    integer(i4), pointer :: tmpvar(:)
 
-    allocate(tmpvar(size(array)))
+    call alloc_check(tmpvar,size(array))
     call read_darray_1d_int (File, varDesc, iodesc, tmpvar, iostat)
     array = reshape(tmpvar,shape(array))
-    deallocate(tmpvar)
+    call dealloc_check(tmpvar)
 
   end subroutine read_darray_5d_int
 
 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5
+# 601 "piodarray.F90.in"
   subroutine read_darray_2d_double (File,varDesc,iodesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2265,18 +2488,19 @@ contains
 
     integer(i4), intent(out) :: iostat
 
-    real(r8), allocatable :: tmpvar(:)
+    real(r8), pointer :: tmpvar(:)
 
-    allocate(tmpvar(size(array)))
+    call alloc_check(tmpvar,size(array))
     call read_darray_1d_double (File, varDesc, iodesc, tmpvar, iostat)
     array = reshape(tmpvar,shape(array))
-    deallocate(tmpvar)
+    call dealloc_check(tmpvar)
 
   end subroutine read_darray_2d_double
 
 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5
+# 601 "piodarray.F90.in"
   subroutine read_darray_3d_double (File,varDesc,iodesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2293,18 +2517,19 @@ contains
 
     integer(i4), intent(out) :: iostat
 
-    real(r8), allocatable :: tmpvar(:)
+    real(r8), pointer :: tmpvar(:)
 
-    allocate(tmpvar(size(array)))
+    call alloc_check(tmpvar,size(array))
     call read_darray_1d_double (File, varDesc, iodesc, tmpvar, iostat)
     array = reshape(tmpvar,shape(array))
-    deallocate(tmpvar)
+    call dealloc_check(tmpvar)
 
   end subroutine read_darray_3d_double
 
 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5
+# 601 "piodarray.F90.in"
   subroutine read_darray_4d_double (File,varDesc,iodesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2321,18 +2546,19 @@ contains
 
     integer(i4), intent(out) :: iostat
 
-    real(r8), allocatable :: tmpvar(:)
+    real(r8), pointer :: tmpvar(:)
 
-    allocate(tmpvar(size(array)))
+    call alloc_check(tmpvar,size(array))
     call read_darray_1d_double (File, varDesc, iodesc, tmpvar, iostat)
     array = reshape(tmpvar,shape(array))
-    deallocate(tmpvar)
+    call dealloc_check(tmpvar)
 
   end subroutine read_darray_4d_double
 
 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5
+# 601 "piodarray.F90.in"
   subroutine read_darray_5d_double (File,varDesc,iodesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2349,12 +2575,12 @@ contains
 
     integer(i4), intent(out) :: iostat
 
-    real(r8), allocatable :: tmpvar(:)
+    real(r8), pointer :: tmpvar(:)
 
-    allocate(tmpvar(size(array)))
+    call alloc_check(tmpvar,size(array))
     call read_darray_1d_double (File, varDesc, iodesc, tmpvar, iostat)
     array = reshape(tmpvar,shape(array))
-    deallocate(tmpvar)
+    call dealloc_check(tmpvar)
 
   end subroutine read_darray_5d_double
 
@@ -2364,6 +2590,7 @@ contains
   !BOP
   ! !IROUTINE: read_darray_nf_real
   ! !INTERFACE:
+# 632 "piodarray.F90.in"
   subroutine read_darray_nf_real (File,varDesc,iodesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -2500,7 +2727,8 @@ contains
     call t_stopf("pio_read_nf")
 #endif
 
-    deallocate(start, count)
+    call dealloc_check(start)
+    call dealloc_check(count)
     if(DebugIO) print *, subName,': {comp,io}_rank: ',File%iosystem%comp_rank,File%iosystem%io_rank,  &
 	 'offset: ',offset,'len: ',len !,' IOBUF: ',IOBUF
 
@@ -2531,14 +2759,14 @@ contains
 
        print *, subName,': passed int read ping-pong test'
 
-       deallocate(iobuf2)
+       call dealloc_check(iobuf2)
 
 !!!!!!! end debug
 #endif
        ! --------------------------
        ! deallocate IO buffer 
        ! --------------------------
-       deallocate(IOBUF)
+       call dealloc_check(IOBUF)
 
     endif
 #ifdef TIMING
@@ -2563,6 +2791,7 @@ contains
   !BOP
   ! !IROUTINE: read_darray_nf_int
   ! !INTERFACE:
+# 632 "piodarray.F90.in"
   subroutine read_darray_nf_int (File,varDesc,iodesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -2699,7 +2928,8 @@ contains
     call t_stopf("pio_read_nf")
 #endif
 
-    deallocate(start, count)
+    call dealloc_check(start)
+    call dealloc_check(count)
     if(DebugIO) print *, subName,': {comp,io}_rank: ',File%iosystem%comp_rank,File%iosystem%io_rank,  &
 	 'offset: ',offset,'len: ',len !,' IOBUF: ',IOBUF
 
@@ -2730,14 +2960,14 @@ contains
 
        print *, subName,': passed int read ping-pong test'
 
-       deallocate(iobuf2)
+       call dealloc_check(iobuf2)
 
 !!!!!!! end debug
 #endif
        ! --------------------------
        ! deallocate IO buffer 
        ! --------------------------
-       deallocate(IOBUF)
+       call dealloc_check(IOBUF)
 
     endif
 #ifdef TIMING
@@ -2762,6 +2992,7 @@ contains
   !BOP
   ! !IROUTINE: read_darray_nf_double
   ! !INTERFACE:
+# 632 "piodarray.F90.in"
   subroutine read_darray_nf_double (File,varDesc,iodesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -2898,7 +3129,8 @@ contains
     call t_stopf("pio_read_nf")
 #endif
 
-    deallocate(start, count)
+    call dealloc_check(start)
+    call dealloc_check(count)
     if(DebugIO) print *, subName,': {comp,io}_rank: ',File%iosystem%comp_rank,File%iosystem%io_rank,  &
 	 'offset: ',offset,'len: ',len !,' IOBUF: ',IOBUF
 
@@ -2929,14 +3161,14 @@ contains
 
        print *, subName,': passed int read ping-pong test'
 
-       deallocate(iobuf2)
+       call dealloc_check(iobuf2)
 
 !!!!!!! end debug
 #endif
        ! --------------------------
        ! deallocate IO buffer 
        ! --------------------------
-       deallocate(IOBUF)
+       call dealloc_check(IOBUF)
 
     endif
 #ifdef TIMING
@@ -2960,6 +3192,7 @@ contains
   !BOP
   ! !IROUTINE: read_darray_bin_real
   ! !INTERFACE:
+# 831 "piodarray.F90.in"
   subroutine read_darray_bin_real (File,varDesc,iodesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -3096,14 +3329,14 @@ contains
 
        print *, subName,': passed int read ping-pong test'
 
-       deallocate(iobuf2)
+       call dealloc_check(iobuf2)
 
 !!!!!!! end debug
 #endif
        ! --------------------------
        ! deallocate IO buffer 
        ! --------------------------
-       deallocate(IOBUF)
+       call dealloc_check(IOBUF)
     endif
 #ifdef TIMING
     call t_stopf("pio_rearrange_read")
@@ -3126,6 +3359,7 @@ contains
   !BOP
   ! !IROUTINE: read_darray_bin_int
   ! !INTERFACE:
+# 831 "piodarray.F90.in"
   subroutine read_darray_bin_int (File,varDesc,iodesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -3262,14 +3496,14 @@ contains
 
        print *, subName,': passed int read ping-pong test'
 
-       deallocate(iobuf2)
+       call dealloc_check(iobuf2)
 
 !!!!!!! end debug
 #endif
        ! --------------------------
        ! deallocate IO buffer 
        ! --------------------------
-       deallocate(IOBUF)
+       call dealloc_check(IOBUF)
     endif
 #ifdef TIMING
     call t_stopf("pio_rearrange_read")
@@ -3292,6 +3526,7 @@ contains
   !BOP
   ! !IROUTINE: read_darray_bin_double
   ! !INTERFACE:
+# 831 "piodarray.F90.in"
   subroutine read_darray_bin_double (File,varDesc,iodesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -3428,14 +3663,14 @@ contains
 
        print *, subName,': passed int read ping-pong test'
 
-       deallocate(iobuf2)
+       call dealloc_check(iobuf2)
 
 !!!!!!! end debug
 #endif
        ! --------------------------
        ! deallocate IO buffer 
        ! --------------------------
-       deallocate(IOBUF)
+       call dealloc_check(IOBUF)
     endif
 #ifdef TIMING
     call t_stopf("pio_rearrange_read")

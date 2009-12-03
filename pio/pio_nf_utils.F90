@@ -1,6 +1,6 @@
 module pio_nf_utils
   use pio_types, only : file_desc_t, var_desc_t
-  use nf_mod, only : pio_inq_vartype=>inq_vartype
+  use nf_mod, only : pio_inq_vartype
   use pionfget_mod, only : pio_get_var=>get_var
   use pionfput_mod, only : pio_put_var=>put_var
   use pio_types, only : pio_int, pio_real, pio_double, pio_char

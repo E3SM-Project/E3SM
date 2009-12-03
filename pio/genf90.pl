@@ -25,7 +25,7 @@ my $mpitype = {'text' => 'MPI_CHARACTER',
 	       'double' => 'MPI_REAL8',
 	       'int' => 'MPI_INTEGER'};
 
-my @dims =(0..3);
+my @dims =(0..5);
 
 
 # begin
@@ -35,8 +35,28 @@ foreach(@ARGV){
     usage() unless($infile =~ /(.*.F90).in/);
     $outfile = $1;
     open(F,"$infile") || die "$0 Could not open $infile to read";
-    my $linecnt;    
-    my @parsetext = <F>;
+    my @parsetext;
+    my $cnt=0;
+    foreach(<F>){
+	$cnt++;
+	if(/^\s*contains/i){
+	    push(@parsetext,"# $cnt \"$infile\"\n");
+	}
+	if(/^\s*interface/i){
+	    push(@parsetext,"# $cnt \"$infile\"\n");
+	}
+	if(/^\s*subroutine/i){
+	    push(@parsetext,"# $cnt \"$infile\"\n");
+	}
+	if(/^.*[^d] function/i){
+	    push(@parsetext,"# $cnt \"$infile\"\n");
+	}
+
+	push(@parsetext,$_);
+    }
+
+    close(F);
+
     my $end;
     my $contains=0;
     my @unit;
@@ -56,7 +76,6 @@ foreach(@ARGV){
     my $itypeflag;
 
     foreach $line (@parsetext){
-	$linecnt++;
 # skip parser comments
 	next if($line =~ /\s*!pl/);
 
@@ -86,7 +105,6 @@ foreach(@ARGV){
 	}
 	if($line =~ /^\s*contains\s*!*/i){
 	    $contains=1;
-            push(@output,"# $linecnt \"$infile\"\n");
 	    next;
 	}
 	if($line=~/^\s*end module\s*/){
@@ -97,11 +115,9 @@ foreach(@ARGV){
 	if($contains==1){
 	    # first parse into functions or subroutines
             if(! defined($unit[$unitcnt])){
-		# print "here $linecnt $line\n";
 		# Make cpp lines between routines units
 		if($line =~ /^\s*\#/){
 		    push(@{$unit[$unitcnt]},$line);
-		    push(@{$unit[$unitcnt]},"# $linecnt \"$infile\"\n");
 		    $unitcnt++;
 		    next;
 		}
@@ -110,7 +126,6 @@ foreach(@ARGV){
 	       
 	    push(@{$unit[$unitcnt]},$line);
 	    if($line =~ /\s*end function/i or $line =~ /\s*end subroutine/i){
-#		push(@{$unit[$unitcnt]},"# $linecnt \"$infile\"\n");
 		$unitcnt++;
 	    }
 
@@ -130,7 +145,6 @@ foreach(@ARGV){
 	}
 	unshift(@output,$str);
     }
-
     print @output;
 }
 

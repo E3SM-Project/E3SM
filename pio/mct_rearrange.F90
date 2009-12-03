@@ -49,6 +49,7 @@ module mct_rearrange
 	      mct_rearrange_init,   &
               mct_rearrange_free
 
+# 43 "mct_rearrange.F90.in"
     interface mct_rearrange_io2comp
 ! TYPE real,int,double
        module procedure mct_rearrange_io2comp_real
@@ -58,6 +59,7 @@ module mct_rearrange
        module procedure mct_rearrange_io2comp_double
     end interface
 
+# 48 "mct_rearrange.F90.in"
     interface mct_rearrange_comp2io
 ! TYPE real,int,double
        module procedure mct_rearrange_comp2io_real
@@ -69,8 +71,8 @@ module mct_rearrange
 
     character(len=*), parameter :: modName='mct_rearrange'
 
-contains 
 # 55 "mct_rearrange.F90.in"
+contains 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -86,6 +88,7 @@ contains
 ! mct_rearrange_comp2io_real
 !
 !
+# 71 "mct_rearrange.F90.in"
 subroutine mct_rearrange_comp2io_real (Iosystem,IOdesc,src,dest)
 
      type (Iosystem_desc_t), intent(inout) :: Iosystem
@@ -114,6 +117,7 @@ end subroutine mct_rearrange_comp2io_real
 ! mct_rearrange_comp2io_int
 !
 !
+# 71 "mct_rearrange.F90.in"
 subroutine mct_rearrange_comp2io_int (Iosystem,IOdesc,src,dest)
 
      type (Iosystem_desc_t), intent(inout) :: Iosystem
@@ -142,6 +146,7 @@ end subroutine mct_rearrange_comp2io_int
 ! mct_rearrange_comp2io_double
 !
 !
+# 71 "mct_rearrange.F90.in"
 subroutine mct_rearrange_comp2io_double (Iosystem,IOdesc,src,dest)
 
      type (Iosystem_desc_t), intent(inout) :: Iosystem
@@ -164,6 +169,7 @@ end subroutine mct_rearrange_comp2io_double
 !
 !
 
+# 93 "mct_rearrange.F90.in"
 subroutine mct_rearrange_io2comp_real (Iosystem,IOdesc,src,dest)
 
      type (Iosystem_desc_t), intent(inout) :: Iosystem
@@ -186,6 +192,7 @@ end subroutine mct_rearrange_io2comp_real
 !
 !
 
+# 93 "mct_rearrange.F90.in"
 subroutine mct_rearrange_io2comp_int (Iosystem,IOdesc,src,dest)
 
      type (Iosystem_desc_t), intent(inout) :: Iosystem
@@ -208,6 +215,7 @@ end subroutine mct_rearrange_io2comp_int
 !
 !
 
+# 93 "mct_rearrange.F90.in"
 subroutine mct_rearrange_io2comp_double (Iosystem,IOdesc,src,dest)
 
      type (Iosystem_desc_t), intent(inout) :: Iosystem
@@ -228,6 +236,7 @@ end subroutine mct_rearrange_io2comp_double
 !
 ! mct_rearrange_int
 !
+# 113 "mct_rearrange.F90.in"
 subroutine mct_rearrange_int ( lsize_source, source_array, &
                           lsize_dest, dest_array, &
                           rearr, comp_to_io, compDOF_index, &
@@ -330,6 +339,7 @@ subroutine mct_rearrange_int ( lsize_source, source_array, &
 !
 ! mct_rearrange_real
 !
+# 113 "mct_rearrange.F90.in"
 subroutine mct_rearrange_real ( lsize_source, source_array, &
                           lsize_dest, dest_array, &
                           rearr, comp_to_io, compDOF_index, &
@@ -432,6 +442,7 @@ subroutine mct_rearrange_real ( lsize_source, source_array, &
 !
 ! mct_rearrange_double
 !
+# 113 "mct_rearrange.F90.in"
 subroutine mct_rearrange_double ( lsize_source, source_array, &
                           lsize_dest, dest_array, &
                           rearr, comp_to_io, compDOF_index, &
@@ -529,6 +540,7 @@ subroutine mct_rearrange_double ( lsize_source, source_array, &
    end subroutine mct_rearrange_double
 
 
+# 210 "mct_rearrange.F90.in"
   subroutine mct_rearrange_free(ioDesc)
 
     type (IO_desc_t), intent(inout) :: ioDesc
@@ -548,6 +560,7 @@ subroutine mct_rearrange_double ( lsize_source, source_array, &
   end subroutine mct_rearrange_free
   
 
+# 229 "mct_rearrange.F90.in"
   subroutine mct_rearrange_init(Iosystem)
     character(len=*), parameter :: subName=modName//'::mct_rearrange_init'	
     type (Iosystem_desc_t), intent(in) :: Iosystem
@@ -572,6 +585,7 @@ subroutine mct_rearrange_double ( lsize_source, source_array, &
 
 
 
+# 253 "mct_rearrange.F90.in"
   subroutine mct_rearrange_create(Iosystem,compDOF,ioDof,ioDesc)
     type (Iosystem_desc_t), intent(in) :: Iosystem
     integer(i4), intent(in)           :: compDOF(:)

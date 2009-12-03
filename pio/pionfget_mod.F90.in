@@ -118,7 +118,7 @@ CONTAINS
     ierr=0
     iotype = File%iotype 
     isize=1
-    do i=1,{DIMS}
+    do i=1,size(count)
        isize=isize*count(i)
     end do
 
@@ -160,7 +160,6 @@ CONTAINS
     ierr = get_vara_{DIMS}d_{TYPE} (File, vdesc%varid, start, count, ival)
 
   end function get_vara_vdesc_{DIMS}d_{TYPE}
-
 
   integer function get_var_{DIMS}d_{TYPE} (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File

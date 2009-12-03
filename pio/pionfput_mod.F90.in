@@ -109,7 +109,15 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
-#if ({DIMS} > 0)
+#if(({DIMS}==0) || ({ITYPE}== TYPETEXT))
+          ierr = nfmpi_begin_indep_data(File%fh)
+          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
+             ierr = nfmpi_put_var_{TYPE} (File%fh, varid, ival)
+          end if
+          if(ierr==PIO_NOERR) then
+             ierr = nfmpi_end_indep_data(File%fh)
+          end if
+#else
           if(File%iosystem%io_rank==0) then
              start = 1
              do i=1,{DIMS}
@@ -120,14 +128,6 @@ contains
              count = 0
           end if
           ierr = put_vara_{DIMS}d_{TYPE} (File, varid, start, count, ival)
-#else
-          ierr = nfmpi_begin_indep_data(File%fh)
-          if(File%iosystem%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
-             ierr = nfmpi_put_var_{TYPE} (File%fh, varid, ival)
-          end if
-          if(ierr==PIO_NOERR) then
-             ierr = nfmpi_end_indep_data(File%fh)
-          end if
 #endif
 #endif
 #ifdef _NETCDF
@@ -158,7 +158,6 @@ contains
     call t_stopf("pio_put_var_{DIMS}d_{TYPE}")
 #endif 
   end function put_var_{DIMS}d_{TYPE}
-
   ! DIMS 0,1,2,3,4,5
   integer function put_var_vdesc_{DIMS}d_{TYPE} (File, vdesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File

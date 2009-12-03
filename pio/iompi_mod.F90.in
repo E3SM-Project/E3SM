@@ -46,6 +46,8 @@ contains
      integer    :: amode,iotype
 
      logical, parameter :: Check = .TRUE.
+
+     ierr = PIO_NOERR
      if(File%iosystem%ioproc) then
 #ifdef USEMPIIO
         iotype = File%iotype
@@ -61,7 +63,6 @@ contains
         end select
 #else
         call piodie(_FILE_,__LINE__,'PIO was not built with -DUSEMPIIO')
-        ierr=0
 #endif
      end if
  end function close_mpiio

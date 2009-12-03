@@ -22,56 +22,74 @@ module nf_mod
 #include <pnetcdf.inc>   /* _EXTERNAL */
 #endif
 
-
-  ! Removed definition of PIO_error (not used)
-  ! and PIO_noerror (defined in pio_types)
-  ! 
-
-  public :: enddef,    &
-       def_dim,   &
-       def_var   
   !
   !  Attribute functions
   !
-  public :: inquire,        &
-       inq_attname,    & 
-       inq_att,        &
-       inq_attlen,     &
-       inq_varid,      &
-       inq_varname,    &
-       inq_vartype,    &
-       inq_varndims,   &
-       inq_vardimid,   &
-       inq_varnatts,   &
-       inq_dimid,      &
-       inq_dimname,    &
-       inq_dimlen,     &
-       redef,          &             
-       copy_att
+  public :: pio_enddef,    &
+       pio_def_dim,   &
+       pio_def_var,   &
+       pio_inquire,        &
+       pio_inq_attname,    & 
+       pio_inq_att,        &
+       pio_inq_attlen,     &
+       pio_inq_varid,      &
+       pio_inq_varname,    &
+       pio_inq_vartype,    &
+       pio_inq_varndims,   &
+       pio_inq_vardimid,   &
+       pio_inq_varnatts,   &
+       pio_inq_dimid,      &
+       pio_inq_dimname,    &
+       pio_inq_dimlen,     &
+       pio_redef,          &             
+       pio_copy_att,       &
+       pio_inquire_variable, &
+       pio_inquire_dimension
 
-  interface def_var
+  interface pio_def_var
      module procedure &
           def_var0d, &
           def_varmd
   end interface
           
 
-  interface inq_varid
+  interface pio_inq_varid
      module procedure inq_varid_vid, &
           inq_varid_vardesc
   end interface
 
-  interface inq_att
+  interface pio_inq_att
      module procedure inq_att_vid, &
           inq_att_vardesc
   end interface
-  interface inq_attlen
+  interface pio_inq_attlen
      module procedure inq_attlen_vid, &
           inq_attlen_vardesc
   end interface
-  interface inq_attname
+  interface pio_inq_attname
      module procedure inq_attname_vid, &
           inq_attname_vardesc
+  end interface
+
+  interface pio_inq_varname
+     module procedure inq_varname_vid, inq_varname_vdesc
+  end interface
+  interface pio_inq_varndims
+     module procedure inq_varndims_vid, inq_varndims_vdesc
+  end interface
+  interface pio_inq_varnatts
+     module procedure inq_varnatts_vid, inq_varnatts_vdesc
+  end interface
+
+  interface pio_inq_vardimid
+     module procedure inq_vardimid_vid, inq_vardimid_vdesc
+  end interface
+
+  interface pio_inq_vartype
+     module procedure inq_vartype_vid, inq_vartype_vdesc
+  end interface
+  interface pio_inquire_variable
+     module procedure inquire_variable_vid, inquire_variable_vdesc
   end interface
 
   public :: check_netcdf, bad_iotype
@@ -353,7 +371,7 @@ contains
   !  Inquire function {netcdf,pnetcdf} only
   !============================================
 
-  integer function inquire(File,nDimensions,nVariables,nAttributes,unlimitedDimID) result(ierr)
+  integer function pio_inquire(File,nDimensions,nVariables,nAttributes,unlimitedDimID) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, optional, intent(out) :: &
          nDimensions,  &! number of dimensions
@@ -423,7 +441,7 @@ contains
        unlimitedDimID = vals(4)
     endif
 
-  end function inquire
+  end function pio_inquire
 
 
 
@@ -507,7 +525,7 @@ contains
     integer, intent(out)              :: xtype
     integer, intent(out)              :: len !Attribute length
 
-    ierr = inq_att(file, vardesc%varid, name, xtype, len)
+    ierr = pio_inq_att(file, vardesc%varid, name, xtype, len)
   end function inq_att_vardesc
 
 
@@ -583,7 +601,7 @@ contains
     character(len=*), intent(in)      :: name
     integer, intent(out),optional     :: len !Attribute length
 
-    ierr = inq_attlen(file, vardesc%varid, name, len)
+    ierr = pio_inq_attlen(file, vardesc%varid, name, len)
 
   end function inq_attlen_vardesc
 
@@ -649,7 +667,7 @@ contains
     integer, intent(in)              :: attnum !Attribute number
     character(len=*), intent(out)     :: name
 
-    ierr = inq_attname(file, vdesc%varid, attnum, name)
+    ierr = pio_inq_attname(file, vdesc%varid, attnum, name)
 
   end function inq_attname_vardesc
 
@@ -713,7 +731,7 @@ contains
     type (Var_desc_t), intent(inout) :: varDesc
 
 
-    ierr = inq_varid_vid(File, name, vardesc%varid)
+    ierr = pio_inq_varid(File, name, vardesc%varid)
     vardesc%rec=-1
   end function inq_varid_vardesc
 
@@ -726,13 +744,21 @@ contains
   !   {netcdf,pnetcdf} only
   !============================================
 
-  integer function inq_varname(File,varDesc,name) result(ierr)
+  integer function inq_varname_vdesc(File,varDesc,name) result(ierr)
 
     type (File_desc_t), intent(in)   :: File
-    type (Var_desc_t), intent(inout) :: varDesc
+    type (Var_desc_t), intent(in)    :: varDesc
     character(len=*), intent(out)    :: name
+    
+    ierr = pio_inq_varname(file,vardesc%varid,name)
 
+  end function inq_varname_vdesc
 
+  integer function inq_varname_vid(File,varid,name) result(ierr)
+
+    type (File_desc_t), intent(in)   :: File
+    integer, intent(in) :: varid
+    character(len=*), intent(out)    :: name
     !------------------
     ! Local variables
     !------------------
@@ -746,14 +772,14 @@ contains
 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
-          ierr=nfmpi_inq_varname(File%fh,varDesc%varid,name)
+          ierr=nfmpi_inq_varname(File%fh,varid,name)
 
 #endif
 
 #ifdef _NETCDF
        case(iotype_netcdf)
           if (File%iosystem%io_rank==0) then
-             ierr=nf90_inquire_variable(File%fh,varDesc%varid,name=name)
+             ierr=nf90_inquire_variable(File%fh,varid,name=name)
           endif
 
           if(File%iosystem%num_tasks==File%iosystem%num_iotasks) then
@@ -773,67 +799,7 @@ contains
        call MPI_BCAST(name,len(name),MPI_CHARACTER,File%iosystem%IOMaster,File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn('nf_mod',mpierr)
     end if
-  end function inq_varname
-
-
-
-  !============================================
-  ! Inq_vartype:
-  !
-  !  Returns the type of the variable
-  !   {netcdf,pnetcdf} only
-  !============================================
-
-  integer function inq_vartype(File,varDesc,xtype) result(ierr)
-
-    type (File_desc_t), intent(in)   :: File
-    type (Var_desc_t), intent(inout) :: varDesc
-    integer(i4), intent(out)    :: xtype
-
-
-    !------------------
-    ! Local variables
-    !------------------
-    integer :: iotype, mpierr
-
-    iotype = File%iotype
-    ierr=PIO_noerr
-
-    if(File%iosystem%IOproc) then
-       select case(iotype)
-
-#ifdef _PNETCDF
-       case(iotype_pnetcdf)
-          ierr=nfmpi_inq_vartype(File%fh,varDesc%varid,xtype)
-
-#endif
-
-#ifdef _NETCDF
-       case(iotype_netcdf)
-
-          if (File%iosystem%io_rank==0) then
-             ierr=nf90_inquire_variable(File%fh,varDesc%varid,xtype=xtype)
-          endif
-
-          if(File%iosystem%num_tasks==File%iosystem%num_iotasks) then
-             call MPI_BCAST(xtype,1,MPI_INTEGER,0,File%iosystem%IO_comm, mpierr)
-             call CheckMPIReturn('nf_mod',mpierr)
-          end if
-#endif
-
-       case default
-          call bad_iotype(iotype,_FILE_,__LINE__)
-
-       end select
-    endif
-    call check_netcdf(File, ierr, _FILE_,__LINE__)
-    if(File%iosystem%num_tasks>File%iosystem%num_iotasks) then
-       call MPI_BCAST(xtype,1,MPI_INTEGER,File%iosystem%IOMaster,File%iosystem%Comp_comm, mpierr)
-       call CheckMPIReturn('nf_mod',mpierr)
-    end if
-  end function inq_vartype
-
-
+  end function inq_varname_vid
 
   !============================================
   ! Inq_varndims:
@@ -842,10 +808,10 @@ contains
   !   {netcdf,pnetcdf} only
   !============================================
 
-  integer function inq_varndims(File,varDesc,ndims) result(ierr)
+  integer function inq_varndims_vid(File,varid,ndims) result(ierr)
 
     type (File_desc_t), intent(in)   :: File
-    type (Var_desc_t), intent(inout) :: varDesc
+    integer, intent(in) :: varid
     integer(i4), intent(out)    :: ndims
 
 
@@ -862,15 +828,14 @@ contains
 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
-
-          ierr=nfmpi_inq_varndims(File%fh,varDesc%varid,ndims)
+          ierr=nfmpi_inq_varndims(File%fh,varid,ndims)
 #endif
 
 #ifdef _NETCDF
        case(iotype_netcdf)
 
           if (File%iosystem%io_rank==0) then
-             ierr=nf90_inquire_variable(File%fh,varDesc%varid,ndims=ndims)
+             ierr=nf90_inquire_variable(File%fh,varid,ndims=ndims)
           endif
 
           if(File%iosystem%num_tasks==File%iosystem%num_iotasks) then
@@ -889,8 +854,79 @@ contains
        call MPI_BCAST(ndims,1,MPI_INTEGER,File%iosystem%IOMaster,File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn('nf_mod',mpierr)
     end if
-  end function inq_varndims
+  end function inq_varndims_vid
 
+  integer function inq_varndims_vdesc(File,varDesc,ndims) result(ierr)
+
+    type (File_desc_t), intent(in)   :: File
+    type (Var_desc_t), intent(in) :: varDesc
+    integer(i4), intent(out)    :: ndims
+
+    ierr = pio_inq_varndims(File, vardesc%varid, ndims)
+  end function inq_varndims_vdesc
+  !============================================
+  ! Inq_vartype:
+  !
+  !  Returns the number of dimensions of the variable
+  !   {netcdf,pnetcdf} only
+  !============================================
+
+  integer function inq_vartype_vid(File,varid,type) result(ierr)
+
+    type (File_desc_t), intent(in)   :: File
+    integer, intent(in) :: varid
+    integer(i4), intent(out)    :: type
+
+
+    !------------------
+    ! Local variables
+    !------------------
+    integer :: iotype, mpierr
+
+    iotype = File%iotype
+    ierr=PIO_noerr
+
+    if(File%iosystem%IOproc) then
+       select case(iotype)
+
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
+          ierr=nfmpi_inq_vartype(File%fh,varid,type)
+#endif
+
+#ifdef _NETCDF
+       case(iotype_netcdf)
+
+          if (File%iosystem%io_rank==0) then
+             ierr=nf90_inquire_variable(File%fh,varid,xtype=type)
+          endif
+
+          if(File%iosystem%num_tasks==File%iosystem%num_iotasks) then
+             call MPI_BCAST(type,1,MPI_INTEGER,0,File%iosystem%IO_comm, mpierr)
+             call CheckMPIReturn('nf_mod',mpierr)
+          end if
+#endif
+
+       case default
+          call bad_iotype(iotype,_FILE_,__LINE__)
+
+       end select
+    endif
+    call check_netcdf(File,ierr,_FILE_,__LINE__)
+    if(File%iosystem%num_tasks>File%iosystem%num_iotasks) then
+       call MPI_BCAST(type,1,MPI_INTEGER,File%iosystem%IOMaster,File%iosystem%Comp_comm, mpierr)
+       call CheckMPIReturn('nf_mod',mpierr)
+    end if
+  end function inq_vartype_vid
+
+  integer function inq_vartype_vdesc(File,varDesc,type) result(ierr)
+
+    type (File_desc_t), intent(in)   :: File
+    type (Var_desc_t), intent(in) :: varDesc
+    integer(i4), intent(out)    :: type
+
+    ierr = pio_inq_vartype(File, vardesc%varid, type)
+  end function inq_vartype_vdesc
 
 
   !============================================
@@ -900,10 +936,10 @@ contains
   !   {netcdf,pnetcdf} only
   !============================================
 
-  integer function inq_vardimid(File,varDesc,dimids) result(ierr)
+  integer function inq_vardimid_vid(File,varid,dimids) result(ierr)
 
     type (File_desc_t), intent(in)   :: File
-    type (Var_desc_t), intent(inout) :: varDesc
+    integer,            intent(in) :: varid
     integer(i4), intent(out)    :: dimids(:)
 
 
@@ -920,14 +956,13 @@ contains
 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
-          ierr=nfmpi_inq_vardimid(File%fh,varDesc%varid,dimids)
+          ierr=nfmpi_inq_vardimid(File%fh,varid,dimids)
 #endif
 
 #ifdef _NETCDF
        case(iotype_netcdf)
           if (File%iosystem%io_rank==0) then
-             ierr=nf90_inquire_variable(File%fh,varDesc%varid,dimids=dimids)
-             if(ierr<0) print *,_FILE_,__LINE__,vardesc%varid
+             ierr=nf90_inquire_variable(File%fh,varid,dimids=dimids)
           endif
 
           if(File%iosystem%num_tasks==File%iosystem%num_iotasks) then
@@ -946,9 +981,23 @@ contains
        call MPI_BCAST(dimids,size(dimids),MPI_INTEGER,File%iosystem%IOMaster,File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn('nf_mod',mpierr)
     end if
-  end function inq_vardimid
+  end function inq_vardimid_vid
+  !============================================
+  ! Inq_vardimid:
+  !
+  !  Returns the dimids of the variable as an integer array
+  !   {netcdf,pnetcdf} only
+  !============================================
+
+  integer function inq_vardimid_vdesc(File,varDesc,dimids) result(ierr)
+
+    type (File_desc_t), intent(in)   :: File
+    type (Var_desc_t), intent(in) :: varDesc
+    integer(i4), intent(out)    :: dimids(:)
 
 
+    ierr = pio_inq_vardimid(File, vardesc%varid, dimids)
+  end function inq_vardimid_vdesc
 
   !============================================
   ! Inq_varnatts:
@@ -957,10 +1006,10 @@ contains
   !   {netcdf,pnetcdf} only
   !============================================
 
-  integer function inq_varnatts(File,varDesc,natts) result(ierr)
+  integer function inq_varnatts_vid(File,varid,natts) result(ierr)
 
     type (File_desc_t), intent(in)   :: File
-    type (Var_desc_t), intent(inout) :: varDesc
+    integer           , intent(in) :: varid
     integer(i4), intent(out)         :: natts
 
 
@@ -977,13 +1026,13 @@ contains
 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
-          ierr=nfmpi_inq_varnatts(File%fh,varDesc%varid,natts)
+          ierr=nfmpi_inq_varnatts(File%fh,varid,natts)
 #endif
 
 #ifdef _NETCDF
        case(iotype_netcdf)
           if (File%iosystem%io_rank==0) then
-             ierr=nf90_inquire_variable(File%fh,varDesc%varid,nAtts=natts)
+             ierr=nf90_inquire_variable(File%fh,varid,nAtts=natts)
           endif
 
           call MPI_BCAST(natts,1,MPI_INTEGER,0,File%iosystem%IO_comm, mpierr)
@@ -1000,8 +1049,23 @@ contains
        call MPI_BCAST(natts,1,MPI_INTEGER,File%iosystem%IOMaster,File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn('nf_mod',mpierr)
     end if
-  end function inq_varnatts
+  end function inq_varnatts_vid
+  !============================================
+  ! Inq_varnatts:
+  !
+  !  Returns the number of attributes associated with a variable
+  !   {netcdf,pnetcdf} only
+  !============================================
 
+  integer function inq_varnatts_vdesc(File,varDesc,natts) result(ierr)
+
+    type (File_desc_t), intent(in)   :: File
+    type (Var_desc_t), intent(in)    :: varDesc
+    integer(i4), intent(out)         :: natts
+
+
+    ierr = pio_inq_varnatts(file, vardesc%varid, natts)
+  end function inq_varnatts_vdesc
 
 
   !============================================
@@ -1012,7 +1076,7 @@ contains
   !  We do not want internal error checking on this function.
   !============================================
 
-  integer function inq_dimid(File,name,dimid) result(ierr)
+  integer function pio_inq_dimid(File,name,dimid) result(ierr)
 
     type (File_desc_t), intent(in) :: File
     character(len=*), intent(in)   :: name
@@ -1059,7 +1123,7 @@ contains
        call CheckMPIReturn('nf_mod',mpierr)
     end if
 
-  end function inq_dimid
+  end function pio_inq_dimid
 
 
 
@@ -1070,7 +1134,7 @@ contains
   !   {netcdf,pnetcdf} only
   !============================================
 
-  integer function inq_dimname(File,dimid,dimname) result(ierr)
+  integer function pio_inq_dimname(File,dimid,dimname) result(ierr)
 
     type (File_desc_t), intent(in) :: File
     integer         , intent(in)   :: dimid
@@ -1116,7 +1180,7 @@ contains
        call CheckMPIReturn('nf_mod',mpierr)
     end if
 
-  end function inq_dimname
+  end function pio_inq_dimname
 
 
 
@@ -1127,7 +1191,7 @@ contains
   !   {netcdf,pnetcdf} only
   !============================================
 
-  integer function inq_dimlen(File,dimid,dimlen) result(ierr)
+  integer function pio_inq_dimlen(File,dimid,dimlen) result(ierr)
 
     type (File_desc_t), intent(in) :: File
     integer(i4)     , intent(in)   :: dimid
@@ -1177,7 +1241,7 @@ contains
        call CheckMPIReturn('nf_mod',mpierr)
     end if
 
-  end function inq_dimlen
+  end function pio_inq_dimlen
 
 
 
@@ -1187,7 +1251,7 @@ contains
   !  End definition mode {netcdf,pnetcdf} only
   !============================================
 
-  integer function EndDef(File) result(ierr)
+  integer function pio_EndDef(File) result(ierr)
     type (File_desc_t), intent(inout) :: File
 
     !------------------
@@ -1226,7 +1290,7 @@ contains
        end select
     endif
     call check_netcdf(File, ierr,_FILE_,__LINE__)
-  end function Enddef
+  end function pio_Enddef
 
 
   !============================================
@@ -1235,7 +1299,7 @@ contains
   !  End definition mode {netcdf,pnetcdf} only
   !============================================
 
-  integer function ReDef(File) result(ierr)
+  integer function pio_ReDef(File) result(ierr)
     type (File_desc_t), intent(inout) :: File
 
     !------------------
@@ -1274,7 +1338,7 @@ contains
        end select
     endif
     call check_netcdf(File, ierr,_FILE_,__LINE__)
-  end function ReDef
+  end function pio_ReDef
 
 
 
@@ -1285,7 +1349,7 @@ contains
   !   {netcdf,pnetcdf} only
   !============================================
 
-  integer function def_dim(File,name,len,dimid) result(ierr)
+  integer function pio_def_dim(File,name,len,dimid) result(ierr)
 
     type (File_desc_t), intent(in)  :: File
     character(len=*), intent(in)    :: name
@@ -1334,7 +1398,7 @@ contains
     if(File%iosystem%num_tasks>File%iosystem%num_iotasks) then
        call MPI_BCAST(dimid, 1, MPI_INTEGER, File%iosystem%IOMaster, File%iosystem%Comp_Comm, ierr)
     end if
-  end function def_dim
+  end function pio_def_dim
 
 
 
@@ -1415,7 +1479,7 @@ contains
     end if
   end function def_varmd
 
-  integer function copy_att(infile, invarid, name, outfile, outvarid) result(ierr)
+  integer function pio_copy_att(infile, invarid, name, outfile, outvarid) result(ierr)
 
     type (File_desc_t), intent(in)  :: inFile, outfile
     character(len=*), intent(in)    :: name
@@ -1445,7 +1509,54 @@ contains
        end select
     end if
     call check_netcdf(outFile, ierr,_FILE_,__LINE__)
-  end function copy_att
+  end function pio_copy_att
+
+
+  integer function inquire_variable_vid(ncid, varid, name, xtype, ndims, dimids, nAtts) result(ierr)
+    type(file_desc_t), intent(in) :: ncid
+    integer,                         intent( in) :: varid
+    character (len = *),   optional, intent(out) :: name
+    integer,               optional, intent(out) :: xtype, ndims
+    integer, dimension(:), optional, intent(out) :: dimids
+    integer,               optional, intent(out) :: nAtts
+
+    
+    if(present(name)) ierr = pio_inq_varname(ncid, varid, name)
+    if(present(ndims)) ierr = pio_inq_varndims(ncid, varid, ndims)
+    if(present(dimids)) ierr = pio_inq_vardimid(ncid, varid, dimids)
+    if(present(natts)) ierr = pio_inq_varnatts(ncid, varid, natts)
+    if(present(xtype)) ierr = pio_inq_vartype(ncid, varid, xtype)
+
+
+
+  end function inquire_variable_vid
+  integer function inquire_variable_vdesc(ncid, varid, name, xtype, ndims, dimids, nAtts) result(ierr)
+    type(file_desc_t),               intent(in) :: ncid
+    type(var_desc_t),                intent( in) :: varid
+    character (len = *),   optional, intent(out) :: name
+    integer,               optional, intent(out) :: xtype, ndims
+    integer, dimension(:), optional, intent(out) :: dimids
+    integer,               optional, intent(out) :: nAtts
+
+    if(present(name)) ierr = pio_inq_varname(ncid, varid, name)
+    if(present(ndims)) ierr = pio_inq_varndims(ncid, varid, ndims)
+    if(present(dimids)) ierr = pio_inq_vardimid(ncid, varid, dimids)
+    if(present(natts)) ierr = pio_inq_varnatts(ncid, varid, natts)
+    if(present(xtype)) ierr = pio_inq_vartype(ncid, varid, xtype)
+
+  end function inquire_variable_vdesc
+
+  integer function pio_inquire_dimension(ncid, dimid, name, len) result(ierr)
+    type(file_desc_T),             intent(in)  :: ncid
+    integer,                       intent( in) :: dimid
+    character (len = *), optional, intent(out) :: name
+    integer,             optional, intent(out) :: len
+
+    if(present(len)) ierr = pio_inq_dimlen(ncid, dimid, len)
+    if(present(name)) ierr = pio_inq_dimname(ncid, dimid,name)
+
+  end function pio_inquire_dimension
+
 
 
 

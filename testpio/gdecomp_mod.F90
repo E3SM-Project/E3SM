@@ -305,7 +305,7 @@ contains
 
    type(gdecomp_type), intent(in)  :: gdecomp
    integer(i4),        intent(in)  :: my_task  ! task number
-   integer(i4),pointer,intent(out) :: DOF(:)   ! allocated in this routine
+   integer(i4),pointer             :: DOF(:)   ! allocated in this routine
    integer(i4),        intent(out) :: start(3) ! netcdf start index
    integer(i4),        intent(out) :: count(3) ! netcdf count index
    logical, optional,  intent(in)  :: write_decomp  ! write gdecomp.nc output file

@@ -27,6 +27,7 @@ module pio_spmd_utils
 
   public :: pio_swapm
 
+# 26 "pio_spmd_utils.F90.in"
   interface pio_swapm
      ! TYPE int,real,double
      module procedure pio_swapm_int
@@ -38,11 +39,12 @@ module pio_spmd_utils
 
   character(len=*), parameter :: modName='pio_spmd_utils'
 
-contains
 # 33 "pio_spmd_utils.F90.in"
+contains
 !========================================================================
 !
 
+# 37 "pio_spmd_utils.F90.in"
    integer function pair(np,p,k)
 
       integer np,p,k,q
@@ -60,6 +62,7 @@ contains
 !========================================================================
 !
 
+# 54 "pio_spmd_utils.F90.in"
   integer function ceil2(n)
      integer n,p
      p=1
@@ -70,9 +73,7 @@ contains
      return
   end function ceil2
 
-!
-!========================================================================
-!
+# 64 "pio_spmd_utils.F90.in"
    subroutine pio_swapm_text ( nprocs, mytask,   &
       sndbuf, sbuf_siz, sndlths, sdispls, stypes,  &
       rcvbuf, rbuf_siz, rcvlths, rdispls, rtypes,  &
@@ -80,23 +81,23 @@ contains
 
 !----------------------------------------------------------------------- 
 ! 
-! Purpose: 
-!   Reduced version of original swapm (for swap of multiple messages 
-!   using MPI point-to-point routines), more efficiently implementing a 
-!   subset of the swap protocols.
-! 
-! Method: 
-! comm_protocol:
-!  comm_isend == .true.: use nonblocking send, else use blocking send
-!  comm_hs == .true.: use handshaking protocol
-! comm_maxreq:
-!  =-1,0: do not limit number of outstanding send/receive requests
-!     >0: do not allow more than min(comm_maxreq, steps) outstanding
-!         nonblocking send requests or nonblocking receive requests
-!
-! Author of original version:  P. Worley
-! Ported from CAM: P. Worley, May 2009
-! 
+!> Purpose: 
+!!   Reduced version of original swapm (for swap of multiple messages 
+!!   using MPI point-to-point routines), more efficiently implementing a 
+!!   subset of the swap protocols.
+!! 
+!! Method: 
+!! comm_protocol:
+!!  comm_isend == .true.: use nonblocking send, else use blocking send
+!!  comm_hs == .true.: use handshaking protocol
+!! comm_maxreq:
+!!  =-1,0: do not limit number of outstanding send/receive requests
+!!     >0: do not allow more than min(comm_maxreq, steps) outstanding
+!!         nonblocking send requests or nonblocking receive requests
+!!
+!! Author of original version:  P. Worley
+!! Ported from CAM: P. Worley, May 2009
+!< 
 !-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
@@ -146,6 +147,7 @@ contains
                                                !  receive buffer
    integer :: sndids(nprocs)                   ! send request ids
    integer :: rcvids(nprocs)                   ! receive request ids
+   integer :: hs_rcvids(nprocs)                ! handshake receive request ids
 
    integer :: maxreq, maxreqh                  ! maximum number of outstanding 
                                                !  nonblocking requests (and half)
@@ -233,7 +235,18 @@ contains
 !  (1) handshaking + blocking sends
    if ((handshake) .and. (sendd)) then
 
-      ! Post receive requests
+      ! Post initial handshake receive requests
+      do istep=1,maxreq
+         p = swapids(istep)
+         if (sndlths(p) > 0) then
+            tag = mytask + offset_t
+            call mpi_irecv( hs, 1, MPI_INTEGER, p, tag, comm, &
+                            hs_rcvids(istep), ier )
+            call CheckMPIReturn(subName,ier)
+         endif
+      enddo
+
+      ! Post initial receive requests
       do istep=1,maxreq
          p = swapids(istep)
          if (rcvlths(p) > 0) then
@@ -259,7 +272,7 @@ contains
             tag = mytask + offset_t
 
             offset_s = sdispls(p)+1
-            call mpi_recv  ( hs, 1, MPI_INTEGER, p, tag, comm, status, ier )
+            call mpi_wait  ( hs_rcvids(istep), status, ier )
             call CheckMPIReturn(subName,ier)
 
             call mpi_rsend ( sndbuf(offset_s), sndlths(p), stypes(p), &
@@ -276,10 +289,19 @@ contains
                call CheckMPIReturn(subName,ier)
             endif
 
-            ! Submit a new irecv request
             if (rstep < steps) then
                rstep = rstep + 1
                p = swapids(rstep)
+
+               ! Submit a new handshake irecv request
+               if (sndlths(p) > 0) then
+                  tag = mytask + offset_t
+                  call mpi_irecv( hs, 1, MPI_INTEGER, p, tag, comm, &
+                                  hs_rcvids(rstep), ier )
+                  call CheckMPIReturn(subName,ier)
+               endif
+
+               ! Submit a new irecv request
                if (rcvlths(p) > 0) then
                   tag = p + offset_t
 
@@ -309,7 +331,18 @@ contains
 !  (2) handshaking + nonblocking sends
    elseif ((handshake) .and. (.not. sendd)) then
 
-      ! Post receive requests
+      ! Post initial handshake receive requests
+      do istep=1,maxreq
+         p = swapids(istep)
+         if (sndlths(p) > 0) then
+            tag = mytask + offset_t
+            call mpi_irecv( hs, 1, MPI_INTEGER, p, tag, comm, &
+                            hs_rcvids(istep), ier )
+            call CheckMPIReturn(subName,ier)
+         endif
+      enddo
+
+      ! Post initial receive requests
       do istep=1,maxreq
          p = swapids(istep)
          if (rcvlths(p) > 0) then
@@ -335,7 +368,7 @@ contains
             tag = mytask + offset_t
 
             offset_s = sdispls(p)+1
-            call mpi_recv  ( hs, 1, MPI_INTEGER, p, tag, comm, status, ier )
+            call mpi_wait  ( hs_rcvids(istep), status, ier )
             call CheckMPIReturn(subName,ier)
 
             call mpi_irsend( sndbuf(offset_s), sndlths(p), stypes(p), &
@@ -352,10 +385,19 @@ contains
                call CheckMPIReturn(subName,ier)
             endif
 
-            ! Submit a new irecv request
             if (rstep < steps) then
                rstep = rstep + 1
                p = swapids(rstep)
+
+               ! Submit a new handshake irecv request
+               if (sndlths(p) > 0) then
+                  tag = mytask + offset_t
+                  call mpi_irecv( hs, 1, MPI_INTEGER, p, tag, comm, &
+                                  hs_rcvids(rstep), ier )
+                  call CheckMPIReturn(subName,ier)
+               endif
+
+               ! Submit a new irecv request
                if (rcvlths(p) > 0) then
                   tag = p + offset_t
 
@@ -546,9 +588,7 @@ contains
 
    end subroutine pio_swapm_text
 
-!
-!========================================================================
-!
+# 64 "pio_spmd_utils.F90.in"
    subroutine pio_swapm_real ( nprocs, mytask,   &
       sndbuf, sbuf_siz, sndlths, sdispls, stypes,  &
       rcvbuf, rbuf_siz, rcvlths, rdispls, rtypes,  &
@@ -556,23 +596,23 @@ contains
 
 !----------------------------------------------------------------------- 
 ! 
-! Purpose: 
-!   Reduced version of original swapm (for swap of multiple messages 
-!   using MPI point-to-point routines), more efficiently implementing a 
-!   subset of the swap protocols.
-! 
-! Method: 
-! comm_protocol:
-!  comm_isend == .true.: use nonblocking send, else use blocking send
-!  comm_hs == .true.: use handshaking protocol
-! comm_maxreq:
-!  =-1,0: do not limit number of outstanding send/receive requests
-!     >0: do not allow more than min(comm_maxreq, steps) outstanding
-!         nonblocking send requests or nonblocking receive requests
-!
-! Author of original version:  P. Worley
-! Ported from CAM: P. Worley, May 2009
-! 
+!> Purpose: 
+!!   Reduced version of original swapm (for swap of multiple messages 
+!!   using MPI point-to-point routines), more efficiently implementing a 
+!!   subset of the swap protocols.
+!! 
+!! Method: 
+!! comm_protocol:
+!!  comm_isend == .true.: use nonblocking send, else use blocking send
+!!  comm_hs == .true.: use handshaking protocol
+!! comm_maxreq:
+!!  =-1,0: do not limit number of outstanding send/receive requests
+!!     >0: do not allow more than min(comm_maxreq, steps) outstanding
+!!         nonblocking send requests or nonblocking receive requests
+!!
+!! Author of original version:  P. Worley
+!! Ported from CAM: P. Worley, May 2009
+!< 
 !-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
@@ -622,6 +662,7 @@ contains
                                                !  receive buffer
    integer :: sndids(nprocs)                   ! send request ids
    integer :: rcvids(nprocs)                   ! receive request ids
+   integer :: hs_rcvids(nprocs)                ! handshake receive request ids
 
    integer :: maxreq, maxreqh                  ! maximum number of outstanding 
                                                !  nonblocking requests (and half)
@@ -709,7 +750,18 @@ contains
 !  (1) handshaking + blocking sends
    if ((handshake) .and. (sendd)) then
 
-      ! Post receive requests
+      ! Post initial handshake receive requests
+      do istep=1,maxreq
+         p = swapids(istep)
+         if (sndlths(p) > 0) then
+            tag = mytask + offset_t
+            call mpi_irecv( hs, 1, MPI_INTEGER, p, tag, comm, &
+                            hs_rcvids(istep), ier )
+            call CheckMPIReturn(subName,ier)
+         endif
+      enddo
+
+      ! Post initial receive requests
       do istep=1,maxreq
          p = swapids(istep)
          if (rcvlths(p) > 0) then
@@ -735,7 +787,7 @@ contains
             tag = mytask + offset_t
 
             offset_s = sdispls(p)+1
-            call mpi_recv  ( hs, 1, MPI_INTEGER, p, tag, comm, status, ier )
+            call mpi_wait  ( hs_rcvids(istep), status, ier )
             call CheckMPIReturn(subName,ier)
 
             call mpi_rsend ( sndbuf(offset_s), sndlths(p), stypes(p), &
@@ -752,10 +804,19 @@ contains
                call CheckMPIReturn(subName,ier)
             endif
 
-            ! Submit a new irecv request
             if (rstep < steps) then
                rstep = rstep + 1
                p = swapids(rstep)
+
+               ! Submit a new handshake irecv request
+               if (sndlths(p) > 0) then
+                  tag = mytask + offset_t
+                  call mpi_irecv( hs, 1, MPI_INTEGER, p, tag, comm, &
+                                  hs_rcvids(rstep), ier )
+                  call CheckMPIReturn(subName,ier)
+               endif
+
+               ! Submit a new irecv request
                if (rcvlths(p) > 0) then
                   tag = p + offset_t
 
@@ -785,7 +846,18 @@ contains
 !  (2) handshaking + nonblocking sends
    elseif ((handshake) .and. (.not. sendd)) then
 
-      ! Post receive requests
+      ! Post initial handshake receive requests
+      do istep=1,maxreq
+         p = swapids(istep)
+         if (sndlths(p) > 0) then
+            tag = mytask + offset_t
+            call mpi_irecv( hs, 1, MPI_INTEGER, p, tag, comm, &
+                            hs_rcvids(istep), ier )
+            call CheckMPIReturn(subName,ier)
+         endif
+      enddo
+
+      ! Post initial receive requests
       do istep=1,maxreq
          p = swapids(istep)
          if (rcvlths(p) > 0) then
@@ -811,7 +883,7 @@ contains
             tag = mytask + offset_t
 
             offset_s = sdispls(p)+1
-            call mpi_recv  ( hs, 1, MPI_INTEGER, p, tag, comm, status, ier )
+            call mpi_wait  ( hs_rcvids(istep), status, ier )
             call CheckMPIReturn(subName,ier)
 
             call mpi_irsend( sndbuf(offset_s), sndlths(p), stypes(p), &
@@ -828,10 +900,19 @@ contains
                call CheckMPIReturn(subName,ier)
             endif
 
-            ! Submit a new irecv request
             if (rstep < steps) then
                rstep = rstep + 1
                p = swapids(rstep)
+
+               ! Submit a new handshake irecv request
+               if (sndlths(p) > 0) then
+                  tag = mytask + offset_t
+                  call mpi_irecv( hs, 1, MPI_INTEGER, p, tag, comm, &
+                                  hs_rcvids(rstep), ier )
+                  call CheckMPIReturn(subName,ier)
+               endif
+
+               ! Submit a new irecv request
                if (rcvlths(p) > 0) then
                   tag = p + offset_t
 
@@ -1022,9 +1103,7 @@ contains
 
    end subroutine pio_swapm_real
 
-!
-!========================================================================
-!
+# 64 "pio_spmd_utils.F90.in"
    subroutine pio_swapm_double ( nprocs, mytask,   &
       sndbuf, sbuf_siz, sndlths, sdispls, stypes,  &
       rcvbuf, rbuf_siz, rcvlths, rdispls, rtypes,  &
@@ -1032,23 +1111,23 @@ contains
 
 !----------------------------------------------------------------------- 
 ! 
-! Purpose: 
-!   Reduced version of original swapm (for swap of multiple messages 
-!   using MPI point-to-point routines), more efficiently implementing a 
-!   subset of the swap protocols.
-! 
-! Method: 
-! comm_protocol:
-!  comm_isend == .true.: use nonblocking send, else use blocking send
-!  comm_hs == .true.: use handshaking protocol
-! comm_maxreq:
-!  =-1,0: do not limit number of outstanding send/receive requests
-!     >0: do not allow more than min(comm_maxreq, steps) outstanding
-!         nonblocking send requests or nonblocking receive requests
-!
-! Author of original version:  P. Worley
-! Ported from CAM: P. Worley, May 2009
-! 
+!> Purpose: 
+!!   Reduced version of original swapm (for swap of multiple messages 
+!!   using MPI point-to-point routines), more efficiently implementing a 
+!!   subset of the swap protocols.
+!! 
+!! Method: 
+!! comm_protocol:
+!!  comm_isend == .true.: use nonblocking send, else use blocking send
+!!  comm_hs == .true.: use handshaking protocol
+!! comm_maxreq:
+!!  =-1,0: do not limit number of outstanding send/receive requests
+!!     >0: do not allow more than min(comm_maxreq, steps) outstanding
+!!         nonblocking send requests or nonblocking receive requests
+!!
+!! Author of original version:  P. Worley
+!! Ported from CAM: P. Worley, May 2009
+!< 
 !-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
@@ -1098,6 +1177,7 @@ contains
                                                !  receive buffer
    integer :: sndids(nprocs)                   ! send request ids
    integer :: rcvids(nprocs)                   ! receive request ids
+   integer :: hs_rcvids(nprocs)                ! handshake receive request ids
 
    integer :: maxreq, maxreqh                  ! maximum number of outstanding 
                                                !  nonblocking requests (and half)
@@ -1185,7 +1265,18 @@ contains
 !  (1) handshaking + blocking sends
    if ((handshake) .and. (sendd)) then
 
-      ! Post receive requests
+      ! Post initial handshake receive requests
+      do istep=1,maxreq
+         p = swapids(istep)
+         if (sndlths(p) > 0) then
+            tag = mytask + offset_t
+            call mpi_irecv( hs, 1, MPI_INTEGER, p, tag, comm, &
+                            hs_rcvids(istep), ier )
+            call CheckMPIReturn(subName,ier)
+         endif
+      enddo
+
+      ! Post initial receive requests
       do istep=1,maxreq
          p = swapids(istep)
          if (rcvlths(p) > 0) then
@@ -1211,7 +1302,7 @@ contains
             tag = mytask + offset_t
 
             offset_s = sdispls(p)+1
-            call mpi_recv  ( hs, 1, MPI_INTEGER, p, tag, comm, status, ier )
+            call mpi_wait  ( hs_rcvids(istep), status, ier )
             call CheckMPIReturn(subName,ier)
 
             call mpi_rsend ( sndbuf(offset_s), sndlths(p), stypes(p), &
@@ -1228,10 +1319,19 @@ contains
                call CheckMPIReturn(subName,ier)
             endif
 
-            ! Submit a new irecv request
             if (rstep < steps) then
                rstep = rstep + 1
                p = swapids(rstep)
+
+               ! Submit a new handshake irecv request
+               if (sndlths(p) > 0) then
+                  tag = mytask + offset_t
+                  call mpi_irecv( hs, 1, MPI_INTEGER, p, tag, comm, &
+                                  hs_rcvids(rstep), ier )
+                  call CheckMPIReturn(subName,ier)
+               endif
+
+               ! Submit a new irecv request
                if (rcvlths(p) > 0) then
                   tag = p + offset_t
 
@@ -1261,7 +1361,18 @@ contains
 !  (2) handshaking + nonblocking sends
    elseif ((handshake) .and. (.not. sendd)) then
 
-      ! Post receive requests
+      ! Post initial handshake receive requests
+      do istep=1,maxreq
+         p = swapids(istep)
+         if (sndlths(p) > 0) then
+            tag = mytask + offset_t
+            call mpi_irecv( hs, 1, MPI_INTEGER, p, tag, comm, &
+                            hs_rcvids(istep), ier )
+            call CheckMPIReturn(subName,ier)
+         endif
+      enddo
+
+      ! Post initial receive requests
       do istep=1,maxreq
          p = swapids(istep)
          if (rcvlths(p) > 0) then
@@ -1287,7 +1398,7 @@ contains
             tag = mytask + offset_t
 
             offset_s = sdispls(p)+1
-            call mpi_recv  ( hs, 1, MPI_INTEGER, p, tag, comm, status, ier )
+            call mpi_wait  ( hs_rcvids(istep), status, ier )
             call CheckMPIReturn(subName,ier)
 
             call mpi_irsend( sndbuf(offset_s), sndlths(p), stypes(p), &
@@ -1304,10 +1415,19 @@ contains
                call CheckMPIReturn(subName,ier)
             endif
 
-            ! Submit a new irecv request
             if (rstep < steps) then
                rstep = rstep + 1
                p = swapids(rstep)
+
+               ! Submit a new handshake irecv request
+               if (sndlths(p) > 0) then
+                  tag = mytask + offset_t
+                  call mpi_irecv( hs, 1, MPI_INTEGER, p, tag, comm, &
+                                  hs_rcvids(rstep), ier )
+                  call CheckMPIReturn(subName,ier)
+               endif
+
+               ! Submit a new irecv request
                if (rcvlths(p) > 0) then
                   tag = p + offset_t
 
@@ -1498,9 +1618,7 @@ contains
 
    end subroutine pio_swapm_double
 
-!
-!========================================================================
-!
+# 64 "pio_spmd_utils.F90.in"
    subroutine pio_swapm_int ( nprocs, mytask,   &
       sndbuf, sbuf_siz, sndlths, sdispls, stypes,  &
       rcvbuf, rbuf_siz, rcvlths, rdispls, rtypes,  &
@@ -1508,23 +1626,23 @@ contains
 
 !----------------------------------------------------------------------- 
 ! 
-! Purpose: 
-!   Reduced version of original swapm (for swap of multiple messages 
-!   using MPI point-to-point routines), more efficiently implementing a 
-!   subset of the swap protocols.
-! 
-! Method: 
-! comm_protocol:
-!  comm_isend == .true.: use nonblocking send, else use blocking send
-!  comm_hs == .true.: use handshaking protocol
-! comm_maxreq:
-!  =-1,0: do not limit number of outstanding send/receive requests
-!     >0: do not allow more than min(comm_maxreq, steps) outstanding
-!         nonblocking send requests or nonblocking receive requests
-!
-! Author of original version:  P. Worley
-! Ported from CAM: P. Worley, May 2009
-! 
+!> Purpose: 
+!!   Reduced version of original swapm (for swap of multiple messages 
+!!   using MPI point-to-point routines), more efficiently implementing a 
+!!   subset of the swap protocols.
+!! 
+!! Method: 
+!! comm_protocol:
+!!  comm_isend == .true.: use nonblocking send, else use blocking send
+!!  comm_hs == .true.: use handshaking protocol
+!! comm_maxreq:
+!!  =-1,0: do not limit number of outstanding send/receive requests
+!!     >0: do not allow more than min(comm_maxreq, steps) outstanding
+!!         nonblocking send requests or nonblocking receive requests
+!!
+!! Author of original version:  P. Worley
+!! Ported from CAM: P. Worley, May 2009
+!< 
 !-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
@@ -1574,6 +1692,7 @@ contains
                                                !  receive buffer
    integer :: sndids(nprocs)                   ! send request ids
    integer :: rcvids(nprocs)                   ! receive request ids
+   integer :: hs_rcvids(nprocs)                ! handshake receive request ids
 
    integer :: maxreq, maxreqh                  ! maximum number of outstanding 
                                                !  nonblocking requests (and half)
@@ -1661,7 +1780,18 @@ contains
 !  (1) handshaking + blocking sends
    if ((handshake) .and. (sendd)) then
 
-      ! Post receive requests
+      ! Post initial handshake receive requests
+      do istep=1,maxreq
+         p = swapids(istep)
+         if (sndlths(p) > 0) then
+            tag = mytask + offset_t
+            call mpi_irecv( hs, 1, MPI_INTEGER, p, tag, comm, &
+                            hs_rcvids(istep), ier )
+            call CheckMPIReturn(subName,ier)
+         endif
+      enddo
+
+      ! Post initial receive requests
       do istep=1,maxreq
          p = swapids(istep)
          if (rcvlths(p) > 0) then
@@ -1687,7 +1817,7 @@ contains
             tag = mytask + offset_t
 
             offset_s = sdispls(p)+1
-            call mpi_recv  ( hs, 1, MPI_INTEGER, p, tag, comm, status, ier )
+            call mpi_wait  ( hs_rcvids(istep), status, ier )
             call CheckMPIReturn(subName,ier)
 
             call mpi_rsend ( sndbuf(offset_s), sndlths(p), stypes(p), &
@@ -1704,10 +1834,19 @@ contains
                call CheckMPIReturn(subName,ier)
             endif
 
-            ! Submit a new irecv request
             if (rstep < steps) then
                rstep = rstep + 1
                p = swapids(rstep)
+
+               ! Submit a new handshake irecv request
+               if (sndlths(p) > 0) then
+                  tag = mytask + offset_t
+                  call mpi_irecv( hs, 1, MPI_INTEGER, p, tag, comm, &
+                                  hs_rcvids(rstep), ier )
+                  call CheckMPIReturn(subName,ier)
+               endif
+
+               ! Submit a new irecv request
                if (rcvlths(p) > 0) then
                   tag = p + offset_t
 
@@ -1737,7 +1876,18 @@ contains
 !  (2) handshaking + nonblocking sends
    elseif ((handshake) .and. (.not. sendd)) then
 
-      ! Post receive requests
+      ! Post initial handshake receive requests
+      do istep=1,maxreq
+         p = swapids(istep)
+         if (sndlths(p) > 0) then
+            tag = mytask + offset_t
+            call mpi_irecv( hs, 1, MPI_INTEGER, p, tag, comm, &
+                            hs_rcvids(istep), ier )
+            call CheckMPIReturn(subName,ier)
+         endif
+      enddo
+
+      ! Post initial receive requests
       do istep=1,maxreq
          p = swapids(istep)
          if (rcvlths(p) > 0) then
@@ -1763,7 +1913,7 @@ contains
             tag = mytask + offset_t
 
             offset_s = sdispls(p)+1
-            call mpi_recv  ( hs, 1, MPI_INTEGER, p, tag, comm, status, ier )
+            call mpi_wait  ( hs_rcvids(istep), status, ier )
             call CheckMPIReturn(subName,ier)
 
             call mpi_irsend( sndbuf(offset_s), sndlths(p), stypes(p), &
@@ -1780,10 +1930,19 @@ contains
                call CheckMPIReturn(subName,ier)
             endif
 
-            ! Submit a new irecv request
             if (rstep < steps) then
                rstep = rstep + 1
                p = swapids(rstep)
+
+               ! Submit a new handshake irecv request
+               if (sndlths(p) > 0) then
+                  tag = mytask + offset_t
+                  call mpi_irecv( hs, 1, MPI_INTEGER, p, tag, comm, &
+                                  hs_rcvids(rstep), ier )
+                  call CheckMPIReturn(subName,ier)
+               endif
+
+               ! Submit a new irecv request
                if (rcvlths(p) > 0) then
                   tag = p + offset_t
 

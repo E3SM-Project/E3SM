@@ -25,24 +25,26 @@ module pio
   use piodarray, only : pio_read_darray, pio_write_darray  
 
   use nf_mod, only:        &
-       PIO_enddef => enddef,            &
-       PIO_inquire => inquire,          &
-       PIO_inq_attname => inq_attname,  &
-       PIO_inq_att => inq_att,          &
-       PIO_inq_attlen => inq_attlen,    &
-       PIO_inq_varid => inq_varid,      &
-       PIO_inq_varname => inq_varname,  &
-       PIO_inq_vartype => inq_vartype,  &
-       PIO_inq_varndims => inq_varndims,&
-       PIO_inq_vardimid => inq_vardimid,&
-       PIO_inq_varnatts => inq_varnatts,&
-       PIO_inq_dimid => inq_dimid,      &
-       PIO_inq_dimname => inq_dimname,  &
-       PIO_inq_dimlen => inq_dimlen,    &
-       PIO_def_dim   => def_dim,        &
-       PIO_def_var   => def_var,        &
-       PIO_redef     => redef,          &
-       PIO_copy_att  => copy_att
+       PIO_enddef,            &
+       PIO_inquire ,          &
+       PIO_inq_attname ,  &
+       PIO_inq_att ,          &
+       PIO_inq_attlen ,    &
+       PIO_inq_varid ,      &
+       PIO_inq_varname ,  &
+       PIO_inq_vartype ,  &
+       PIO_inq_varndims ,&
+       PIO_inq_vardimid ,&
+       PIO_inq_varnatts ,&
+       PIO_inq_dimid ,      &
+       PIO_inq_dimname ,  &
+       PIO_inq_dimlen ,    &
+       PIO_def_dim   ,        &
+       PIO_def_var   ,        &
+       PIO_redef     ,          &
+       PIO_copy_att  ,       &
+       PIO_inquire_variable , &
+       PIO_inquire_dimension 
 
   use pionfatt_mod, only : PIO_put_att   => put_att,        &
        PIO_get_att   => get_att

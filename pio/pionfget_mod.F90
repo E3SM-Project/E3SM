@@ -28,23 +28,32 @@ module pionfget_mod
   include 'mpif.h'  ! _EXTERNAL
   public :: get_var
 
+# 22 "pionfget_mod.F90.in"
   interface get_var
      module procedure get_var_0d_text, get_var_vdesc_0d_text
      module procedure get_var_1d_text, get_var_vdesc_1d_text
      module procedure get_var_2d_text, get_var_vdesc_2d_text
      module procedure get_var_3d_text, get_var_vdesc_3d_text
+     module procedure get_var_4d_text, get_var_vdesc_4d_text
+     module procedure get_var_5d_text, get_var_vdesc_5d_text
      module procedure get_var_0d_real, get_var_vdesc_0d_real
      module procedure get_var_1d_real, get_var_vdesc_1d_real
      module procedure get_var_2d_real, get_var_vdesc_2d_real
      module procedure get_var_3d_real, get_var_vdesc_3d_real
+     module procedure get_var_4d_real, get_var_vdesc_4d_real
+     module procedure get_var_5d_real, get_var_vdesc_5d_real
      module procedure get_var_0d_double, get_var_vdesc_0d_double
      module procedure get_var_1d_double, get_var_vdesc_1d_double
      module procedure get_var_2d_double, get_var_vdesc_2d_double
      module procedure get_var_3d_double, get_var_vdesc_3d_double
+     module procedure get_var_4d_double, get_var_vdesc_4d_double
+     module procedure get_var_5d_double, get_var_vdesc_5d_double
      module procedure get_var_0d_int, get_var_vdesc_0d_int
      module procedure get_var_1d_int, get_var_vdesc_1d_int
      module procedure get_var_2d_int, get_var_vdesc_2d_int
      module procedure get_var_3d_int, get_var_vdesc_3d_int
+     module procedure get_var_4d_int, get_var_vdesc_4d_int
+     module procedure get_var_5d_int, get_var_vdesc_5d_int
      !  DIMS 1,2,3
      module procedure get_vara_1d_text, get_vara_vdesc_1d_text
      !  DIMS 1,2,3
@@ -77,9 +86,10 @@ module pionfget_mod
 
  character(len=*), parameter :: modName='pionfget_mod'
 
-CONTAINS
 # 31 "pionfget_mod.F90.in"
+CONTAINS
 
+# 33 "pionfget_mod.F90.in"
   integer function get_var1_text (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, index(:)
@@ -141,6 +151,7 @@ CONTAINS
 #endif
   end function get_var1_text
 
+# 33 "pionfget_mod.F90.in"
   integer function get_var1_real (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, index(:)
@@ -202,6 +213,7 @@ CONTAINS
 #endif
   end function get_var1_real
 
+# 33 "pionfget_mod.F90.in"
   integer function get_var1_double (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, index(:)
@@ -263,6 +275,7 @@ CONTAINS
 #endif
   end function get_var1_double
 
+# 33 "pionfget_mod.F90.in"
   integer function get_var1_int (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, index(:)
@@ -323,6 +336,7 @@ CONTAINS
     call t_stopf("pio_get_var1_int")
 #endif
   end function get_var1_int
+# 93 "pionfget_mod.F90.in"
   integer function get_var1_vdesc_text (File,vdesc, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -370,6 +384,7 @@ CONTAINS
 
 
   ! DIMS 1,2,3
+# 107 "pionfget_mod.F90.in"
   integer function get_vara_1d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -384,7 +399,7 @@ CONTAINS
     ierr=0
     iotype = File%iotype 
     isize=1
-    do i=1,1
+    do i=1,size(count)
        isize=isize*count(i)
     end do
 
@@ -417,6 +432,7 @@ CONTAINS
 
 
   ! DIMS 1,2,3
+# 107 "pionfget_mod.F90.in"
   integer function get_vara_2d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -431,7 +447,7 @@ CONTAINS
     ierr=0
     iotype = File%iotype 
     isize=1
-    do i=1,2
+    do i=1,size(count)
        isize=isize*count(i)
     end do
 
@@ -464,6 +480,7 @@ CONTAINS
 
 
   ! DIMS 1,2,3
+# 107 "pionfget_mod.F90.in"
   integer function get_vara_3d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -478,7 +495,7 @@ CONTAINS
     ierr=0
     iotype = File%iotype 
     isize=1
-    do i=1,3
+    do i=1,size(count)
        isize=isize*count(i)
     end do
 
@@ -511,6 +528,7 @@ CONTAINS
 
 
   ! DIMS 1,2,3
+# 107 "pionfget_mod.F90.in"
   integer function get_vara_1d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -525,7 +543,7 @@ CONTAINS
     ierr=0
     iotype = File%iotype 
     isize=1
-    do i=1,1
+    do i=1,size(count)
        isize=isize*count(i)
     end do
 
@@ -558,6 +576,7 @@ CONTAINS
 
 
   ! DIMS 1,2,3
+# 107 "pionfget_mod.F90.in"
   integer function get_vara_2d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -572,7 +591,7 @@ CONTAINS
     ierr=0
     iotype = File%iotype 
     isize=1
-    do i=1,2
+    do i=1,size(count)
        isize=isize*count(i)
     end do
 
@@ -605,6 +624,7 @@ CONTAINS
 
 
   ! DIMS 1,2,3
+# 107 "pionfget_mod.F90.in"
   integer function get_vara_3d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -619,7 +639,7 @@ CONTAINS
     ierr=0
     iotype = File%iotype 
     isize=1
-    do i=1,3
+    do i=1,size(count)
        isize=isize*count(i)
     end do
 
@@ -652,6 +672,7 @@ CONTAINS
 
 
   ! DIMS 1,2,3
+# 107 "pionfget_mod.F90.in"
   integer function get_vara_1d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -666,7 +687,7 @@ CONTAINS
     ierr=0
     iotype = File%iotype 
     isize=1
-    do i=1,1
+    do i=1,size(count)
        isize=isize*count(i)
     end do
 
@@ -699,6 +720,7 @@ CONTAINS
 
 
   ! DIMS 1,2,3
+# 107 "pionfget_mod.F90.in"
   integer function get_vara_2d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -713,7 +735,7 @@ CONTAINS
     ierr=0
     iotype = File%iotype 
     isize=1
-    do i=1,2
+    do i=1,size(count)
        isize=isize*count(i)
     end do
 
@@ -746,6 +768,7 @@ CONTAINS
 
 
   ! DIMS 1,2,3
+# 107 "pionfget_mod.F90.in"
   integer function get_vara_3d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -760,7 +783,7 @@ CONTAINS
     ierr=0
     iotype = File%iotype 
     isize=1
-    do i=1,3
+    do i=1,size(count)
        isize=isize*count(i)
     end do
 
@@ -793,6 +816,7 @@ CONTAINS
 
 
   ! DIMS 1,2,3
+# 107 "pionfget_mod.F90.in"
   integer function get_vara_1d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -807,7 +831,7 @@ CONTAINS
     ierr=0
     iotype = File%iotype 
     isize=1
-    do i=1,1
+    do i=1,size(count)
        isize=isize*count(i)
     end do
 
@@ -840,6 +864,7 @@ CONTAINS
 
 
   ! DIMS 1,2,3
+# 107 "pionfget_mod.F90.in"
   integer function get_vara_2d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -854,7 +879,7 @@ CONTAINS
     ierr=0
     iotype = File%iotype 
     isize=1
-    do i=1,2
+    do i=1,size(count)
        isize=isize*count(i)
     end do
 
@@ -887,6 +912,7 @@ CONTAINS
 
 
   ! DIMS 1,2,3
+# 107 "pionfget_mod.F90.in"
   integer function get_vara_3d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -901,7 +927,7 @@ CONTAINS
     ierr=0
     iotype = File%iotype 
     isize=1
-    do i=1,3
+    do i=1,size(count)
        isize=isize*count(i)
     end do
 
@@ -932,6 +958,7 @@ CONTAINS
 #endif
   end function get_vara_3d_int
   ! DIMS 1,2,3
+# 152 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_1d_text (File,vdesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -944,6 +971,7 @@ CONTAINS
 
   end function get_vara_vdesc_1d_text
   ! DIMS 1,2,3
+# 152 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_2d_text (File,vdesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -956,6 +984,7 @@ CONTAINS
 
   end function get_vara_vdesc_2d_text
   ! DIMS 1,2,3
+# 152 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_3d_text (File,vdesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -968,6 +997,7 @@ CONTAINS
 
   end function get_vara_vdesc_3d_text
   ! DIMS 1,2,3
+# 152 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_1d_real (File,vdesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -980,6 +1010,7 @@ CONTAINS
 
   end function get_vara_vdesc_1d_real
   ! DIMS 1,2,3
+# 152 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_2d_real (File,vdesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -992,6 +1023,7 @@ CONTAINS
 
   end function get_vara_vdesc_2d_real
   ! DIMS 1,2,3
+# 152 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_3d_real (File,vdesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -1004,6 +1036,7 @@ CONTAINS
 
   end function get_vara_vdesc_3d_real
   ! DIMS 1,2,3
+# 152 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_1d_double (File,vdesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -1016,6 +1049,7 @@ CONTAINS
 
   end function get_vara_vdesc_1d_double
   ! DIMS 1,2,3
+# 152 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_2d_double (File,vdesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -1028,6 +1062,7 @@ CONTAINS
 
   end function get_vara_vdesc_2d_double
   ! DIMS 1,2,3
+# 152 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_3d_double (File,vdesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -1040,6 +1075,7 @@ CONTAINS
 
   end function get_vara_vdesc_3d_double
   ! DIMS 1,2,3
+# 152 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_1d_int (File,vdesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -1052,6 +1088,7 @@ CONTAINS
 
   end function get_vara_vdesc_1d_int
   ! DIMS 1,2,3
+# 152 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_2d_int (File,vdesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -1064,6 +1101,7 @@ CONTAINS
 
   end function get_vara_vdesc_2d_int
   ! DIMS 1,2,3
+# 152 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_3d_int (File,vdesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -1076,7 +1114,7 @@ CONTAINS
 
   end function get_vara_vdesc_3d_int
 
-
+# 164 "pionfget_mod.F90.in"
   integer function get_var_0d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1124,7 +1162,7 @@ CONTAINS
 #endif
   end function get_var_0d_text
 
-
+# 164 "pionfget_mod.F90.in"
   integer function get_var_1d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1172,7 +1210,7 @@ CONTAINS
 #endif
   end function get_var_1d_text
 
-
+# 164 "pionfget_mod.F90.in"
   integer function get_var_2d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1220,7 +1258,7 @@ CONTAINS
 #endif
   end function get_var_2d_text
 
-
+# 164 "pionfget_mod.F90.in"
   integer function get_var_3d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1268,7 +1306,103 @@ CONTAINS
 #endif
   end function get_var_3d_text
 
+# 164 "pionfget_mod.F90.in"
+  integer function get_var_4d_text (File,varid, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    character(len=*), intent(out) :: ival(:,:,:,:)
 
+    character(len=*), parameter :: subName=modName//'::get_var_4d_text'
+    integer :: iotype, mpierr, isize
+
+#ifdef TIMING
+    call t_startf("pio_get_var_4d_text")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1	
+#if (4 > 0)
+    isize= size(ival)
+#endif
+#if (100 == TYPETEXT)
+    isize = isize*len(ival)	
+    ival(:,:,:,:) = ' '
+#endif
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
+          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_CHARACTER)
+#endif
+#ifdef _NETCDF
+       case(iotype_netcdf)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival)
+          end if
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,_FILE_,__LINE__)
+    if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
+       call MPI_Bcast(ival,isize, MPI_CHARACTER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+#ifdef TIMING
+    call t_stopf("pio_get_var_4d_text")
+#endif
+  end function get_var_4d_text
+
+# 164 "pionfget_mod.F90.in"
+  integer function get_var_5d_text (File,varid, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    character(len=*), intent(out) :: ival(:,:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_var_5d_text'
+    integer :: iotype, mpierr, isize
+
+#ifdef TIMING
+    call t_startf("pio_get_var_5d_text")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1	
+#if (5 > 0)
+    isize= size(ival)
+#endif
+#if (100 == TYPETEXT)
+    isize = isize*len(ival)	
+    ival(:,:,:,:,:) = ' '
+#endif
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
+          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_CHARACTER)
+#endif
+#ifdef _NETCDF
+       case(iotype_netcdf)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival)
+          end if
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,_FILE_,__LINE__)
+    if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
+       call MPI_Bcast(ival,isize, MPI_CHARACTER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+#ifdef TIMING
+    call t_stopf("pio_get_var_5d_text")
+#endif
+  end function get_var_5d_text
+
+# 164 "pionfget_mod.F90.in"
   integer function get_var_0d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1316,7 +1450,7 @@ CONTAINS
 #endif
   end function get_var_0d_real
 
-
+# 164 "pionfget_mod.F90.in"
   integer function get_var_1d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1364,7 +1498,7 @@ CONTAINS
 #endif
   end function get_var_1d_real
 
-
+# 164 "pionfget_mod.F90.in"
   integer function get_var_2d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1412,7 +1546,7 @@ CONTAINS
 #endif
   end function get_var_2d_real
 
-
+# 164 "pionfget_mod.F90.in"
   integer function get_var_3d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1460,7 +1594,103 @@ CONTAINS
 #endif
   end function get_var_3d_real
 
+# 164 "pionfget_mod.F90.in"
+  integer function get_var_4d_real (File,varid, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    real(r4), intent(out) :: ival(:,:,:,:)
 
+    character(len=*), parameter :: subName=modName//'::get_var_4d_real'
+    integer :: iotype, mpierr, isize
+
+#ifdef TIMING
+    call t_startf("pio_get_var_4d_real")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1	
+#if (4 > 0)
+    isize= size(ival)
+#endif
+#if (101 == TYPETEXT)
+    isize = isize*len(ival)	
+    ival(:,:,:,:) = ' '
+#endif
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
+          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL4)
+#endif
+#ifdef _NETCDF
+       case(iotype_netcdf)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival)
+          end if
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,_FILE_,__LINE__)
+    if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
+       call MPI_Bcast(ival,isize, MPI_REAL4 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+#ifdef TIMING
+    call t_stopf("pio_get_var_4d_real")
+#endif
+  end function get_var_4d_real
+
+# 164 "pionfget_mod.F90.in"
+  integer function get_var_5d_real (File,varid, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    real(r4), intent(out) :: ival(:,:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_var_5d_real'
+    integer :: iotype, mpierr, isize
+
+#ifdef TIMING
+    call t_startf("pio_get_var_5d_real")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1	
+#if (5 > 0)
+    isize= size(ival)
+#endif
+#if (101 == TYPETEXT)
+    isize = isize*len(ival)	
+    ival(:,:,:,:,:) = ' '
+#endif
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
+          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL4)
+#endif
+#ifdef _NETCDF
+       case(iotype_netcdf)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival)
+          end if
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,_FILE_,__LINE__)
+    if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
+       call MPI_Bcast(ival,isize, MPI_REAL4 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+#ifdef TIMING
+    call t_stopf("pio_get_var_5d_real")
+#endif
+  end function get_var_5d_real
+
+# 164 "pionfget_mod.F90.in"
   integer function get_var_0d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1508,7 +1738,7 @@ CONTAINS
 #endif
   end function get_var_0d_double
 
-
+# 164 "pionfget_mod.F90.in"
   integer function get_var_1d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1556,7 +1786,7 @@ CONTAINS
 #endif
   end function get_var_1d_double
 
-
+# 164 "pionfget_mod.F90.in"
   integer function get_var_2d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1604,7 +1834,7 @@ CONTAINS
 #endif
   end function get_var_2d_double
 
-
+# 164 "pionfget_mod.F90.in"
   integer function get_var_3d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1652,7 +1882,103 @@ CONTAINS
 #endif
   end function get_var_3d_double
 
+# 164 "pionfget_mod.F90.in"
+  integer function get_var_4d_double (File,varid, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    real(r8), intent(out) :: ival(:,:,:,:)
 
+    character(len=*), parameter :: subName=modName//'::get_var_4d_double'
+    integer :: iotype, mpierr, isize
+
+#ifdef TIMING
+    call t_startf("pio_get_var_4d_double")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1	
+#if (4 > 0)
+    isize= size(ival)
+#endif
+#if (102 == TYPETEXT)
+    isize = isize*len(ival)	
+    ival(:,:,:,:) = ' '
+#endif
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
+          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL8)
+#endif
+#ifdef _NETCDF
+       case(iotype_netcdf)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival)
+          end if
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,_FILE_,__LINE__)
+    if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
+       call MPI_Bcast(ival,isize, MPI_REAL8 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+#ifdef TIMING
+    call t_stopf("pio_get_var_4d_double")
+#endif
+  end function get_var_4d_double
+
+# 164 "pionfget_mod.F90.in"
+  integer function get_var_5d_double (File,varid, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    real(r8), intent(out) :: ival(:,:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_var_5d_double'
+    integer :: iotype, mpierr, isize
+
+#ifdef TIMING
+    call t_startf("pio_get_var_5d_double")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1	
+#if (5 > 0)
+    isize= size(ival)
+#endif
+#if (102 == TYPETEXT)
+    isize = isize*len(ival)	
+    ival(:,:,:,:,:) = ' '
+#endif
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
+          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL8)
+#endif
+#ifdef _NETCDF
+       case(iotype_netcdf)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival)
+          end if
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,_FILE_,__LINE__)
+    if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
+       call MPI_Bcast(ival,isize, MPI_REAL8 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+#ifdef TIMING
+    call t_stopf("pio_get_var_5d_double")
+#endif
+  end function get_var_5d_double
+
+# 164 "pionfget_mod.F90.in"
   integer function get_var_0d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1700,7 +2026,7 @@ CONTAINS
 #endif
   end function get_var_0d_int
 
-
+# 164 "pionfget_mod.F90.in"
   integer function get_var_1d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1748,7 +2074,7 @@ CONTAINS
 #endif
   end function get_var_1d_int
 
-
+# 164 "pionfget_mod.F90.in"
   integer function get_var_2d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1796,7 +2122,7 @@ CONTAINS
 #endif
   end function get_var_2d_int
 
-
+# 164 "pionfget_mod.F90.in"
   integer function get_var_3d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1844,6 +2170,103 @@ CONTAINS
 #endif
   end function get_var_3d_int
 
+# 164 "pionfget_mod.F90.in"
+  integer function get_var_4d_int (File,varid, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    integer(i4), intent(out) :: ival(:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_var_4d_int'
+    integer :: iotype, mpierr, isize
+
+#ifdef TIMING
+    call t_startf("pio_get_var_4d_int")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1	
+#if (4 > 0)
+    isize= size(ival)
+#endif
+#if (103 == TYPETEXT)
+    isize = isize*len(ival)	
+    ival(:,:,:,:) = ' '
+#endif
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
+          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_INTEGER)
+#endif
+#ifdef _NETCDF
+       case(iotype_netcdf)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival)
+          end if
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,_FILE_,__LINE__)
+    if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
+       call MPI_Bcast(ival,isize, MPI_INTEGER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+#ifdef TIMING
+    call t_stopf("pio_get_var_4d_int")
+#endif
+  end function get_var_4d_int
+
+# 164 "pionfget_mod.F90.in"
+  integer function get_var_5d_int (File,varid, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    integer(i4), intent(out) :: ival(:,:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_var_5d_int'
+    integer :: iotype, mpierr, isize
+
+#ifdef TIMING
+    call t_startf("pio_get_var_5d_int")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1	
+#if (5 > 0)
+    isize= size(ival)
+#endif
+#if (103 == TYPETEXT)
+    isize = isize*len(ival)	
+    ival(:,:,:,:,:) = ' '
+#endif
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
+          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_INTEGER)
+#endif
+#ifdef _NETCDF
+       case(iotype_netcdf)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival)
+          end if
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,_FILE_,__LINE__)
+    if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
+       call MPI_Bcast(ival,isize, MPI_INTEGER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+#ifdef TIMING
+    call t_stopf("pio_get_var_5d_int")
+#endif
+  end function get_var_5d_int
+
+# 211 "pionfget_mod.F90.in"
   integer function get_var_vdesc_0d_text (File,vdesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -1855,6 +2278,7 @@ CONTAINS
 
   end function get_var_vdesc_0d_text
 
+# 211 "pionfget_mod.F90.in"
   integer function get_var_vdesc_1d_text (File,vdesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -1866,6 +2290,7 @@ CONTAINS
 
   end function get_var_vdesc_1d_text
 
+# 211 "pionfget_mod.F90.in"
   integer function get_var_vdesc_2d_text (File,vdesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -1877,6 +2302,7 @@ CONTAINS
 
   end function get_var_vdesc_2d_text
 
+# 211 "pionfget_mod.F90.in"
   integer function get_var_vdesc_3d_text (File,vdesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -1888,6 +2314,31 @@ CONTAINS
 
   end function get_var_vdesc_3d_text
 
+# 211 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_4d_text (File,vdesc, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    type(var_desc_t), intent(in) :: vdesc
+    character(len=*), intent(out) :: ival(:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_var_vdesc_4d_text'
+
+    ierr = get_var_4d_text (File, vdesc%varid, ival)
+
+  end function get_var_vdesc_4d_text
+
+# 211 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_5d_text (File,vdesc, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    type(var_desc_t), intent(in) :: vdesc
+    character(len=*), intent(out) :: ival(:,:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_var_vdesc_5d_text'
+
+    ierr = get_var_5d_text (File, vdesc%varid, ival)
+
+  end function get_var_vdesc_5d_text
+
+# 211 "pionfget_mod.F90.in"
   integer function get_var_vdesc_0d_real (File,vdesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -1899,6 +2350,7 @@ CONTAINS
 
   end function get_var_vdesc_0d_real
 
+# 211 "pionfget_mod.F90.in"
   integer function get_var_vdesc_1d_real (File,vdesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -1910,6 +2362,7 @@ CONTAINS
 
   end function get_var_vdesc_1d_real
 
+# 211 "pionfget_mod.F90.in"
   integer function get_var_vdesc_2d_real (File,vdesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -1921,6 +2374,7 @@ CONTAINS
 
   end function get_var_vdesc_2d_real
 
+# 211 "pionfget_mod.F90.in"
   integer function get_var_vdesc_3d_real (File,vdesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -1932,6 +2386,31 @@ CONTAINS
 
   end function get_var_vdesc_3d_real
 
+# 211 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_4d_real (File,vdesc, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    type(var_desc_t), intent(in) :: vdesc
+    real(r4), intent(out) :: ival(:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_var_vdesc_4d_real'
+
+    ierr = get_var_4d_real (File, vdesc%varid, ival)
+
+  end function get_var_vdesc_4d_real
+
+# 211 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_5d_real (File,vdesc, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    type(var_desc_t), intent(in) :: vdesc
+    real(r4), intent(out) :: ival(:,:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_var_vdesc_5d_real'
+
+    ierr = get_var_5d_real (File, vdesc%varid, ival)
+
+  end function get_var_vdesc_5d_real
+
+# 211 "pionfget_mod.F90.in"
   integer function get_var_vdesc_0d_double (File,vdesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -1943,6 +2422,7 @@ CONTAINS
 
   end function get_var_vdesc_0d_double
 
+# 211 "pionfget_mod.F90.in"
   integer function get_var_vdesc_1d_double (File,vdesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -1954,6 +2434,7 @@ CONTAINS
 
   end function get_var_vdesc_1d_double
 
+# 211 "pionfget_mod.F90.in"
   integer function get_var_vdesc_2d_double (File,vdesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -1965,6 +2446,7 @@ CONTAINS
 
   end function get_var_vdesc_2d_double
 
+# 211 "pionfget_mod.F90.in"
   integer function get_var_vdesc_3d_double (File,vdesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -1976,6 +2458,31 @@ CONTAINS
 
   end function get_var_vdesc_3d_double
 
+# 211 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_4d_double (File,vdesc, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    type(var_desc_t), intent(in) :: vdesc
+    real(r8), intent(out) :: ival(:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_var_vdesc_4d_double'
+
+    ierr = get_var_4d_double (File, vdesc%varid, ival)
+
+  end function get_var_vdesc_4d_double
+
+# 211 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_5d_double (File,vdesc, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    type(var_desc_t), intent(in) :: vdesc
+    real(r8), intent(out) :: ival(:,:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_var_vdesc_5d_double'
+
+    ierr = get_var_5d_double (File, vdesc%varid, ival)
+
+  end function get_var_vdesc_5d_double
+
+# 211 "pionfget_mod.F90.in"
   integer function get_var_vdesc_0d_int (File,vdesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -1987,6 +2494,7 @@ CONTAINS
 
   end function get_var_vdesc_0d_int
 
+# 211 "pionfget_mod.F90.in"
   integer function get_var_vdesc_1d_int (File,vdesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -1998,6 +2506,7 @@ CONTAINS
 
   end function get_var_vdesc_1d_int
 
+# 211 "pionfget_mod.F90.in"
   integer function get_var_vdesc_2d_int (File,vdesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -2009,6 +2518,7 @@ CONTAINS
 
   end function get_var_vdesc_2d_int
 
+# 211 "pionfget_mod.F90.in"
   integer function get_var_vdesc_3d_int (File,vdesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vdesc
@@ -2019,4 +2529,28 @@ CONTAINS
     ierr = get_var_3d_int (File, vdesc%varid, ival)
 
   end function get_var_vdesc_3d_int
+
+# 211 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_4d_int (File,vdesc, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    type(var_desc_t), intent(in) :: vdesc
+    integer(i4), intent(out) :: ival(:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_var_vdesc_4d_int'
+
+    ierr = get_var_4d_int (File, vdesc%varid, ival)
+
+  end function get_var_vdesc_4d_int
+
+# 211 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_5d_int (File,vdesc, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    type(var_desc_t), intent(in) :: vdesc
+    integer(i4), intent(out) :: ival(:,:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_var_vdesc_5d_int'
+
+    ierr = get_var_5d_int (File, vdesc%varid, ival)
+
+  end function get_var_vdesc_5d_int
 end module pionfget_mod

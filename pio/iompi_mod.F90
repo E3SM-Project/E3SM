@@ -25,6 +25,7 @@ module iompi_mod
 
     public :: open_mpiio, create_mpiio, close_mpiio, write_mpiio,read_mpiio
 
+# 24 "iompi_mod.F90.in"
     interface write_mpiio
 ! TYPE int,real,double
        module procedure write_mpiio_int
@@ -34,6 +35,7 @@ module iompi_mod
        module procedure write_mpiio_double
     end interface
 
+# 29 "iompi_mod.F90.in"
     interface read_mpiio
 ! TYPE int,real,double
        module procedure read_mpiio_int
@@ -45,9 +47,10 @@ module iompi_mod
 
 character(len=*), parameter :: modName='iompi_mod'
 
-contains 
 # 36 "iompi_mod.F90.in"
+contains 
 
+# 38 "iompi_mod.F90.in"
  integer function close_mpiio(File) result(ierr)
 
      type (File_desc_t), intent(inout) :: File ! file descriptor
@@ -59,6 +62,8 @@ contains
      integer    :: amode,iotype
 
      logical, parameter :: Check = .TRUE.
+
+     ierr = PIO_NOERR
      if(File%iosystem%ioproc) then
 #ifdef USEMPIIO
         iotype = File%iotype
@@ -74,11 +79,11 @@ contains
         end select
 #else
         call piodie(_FILE_,__LINE__,'PIO was not built with -DUSEMPIIO')
-        ierr=0
 #endif
      end if
  end function close_mpiio
 
+# 70 "iompi_mod.F90.in"
  integer function create_mpiio(File,fname) result(ierr)
 
      type (File_desc_t), intent(inout) :: File ! file descriptor
@@ -121,6 +126,7 @@ contains
 #endif
  end function create_mpiio
 
+# 112 "iompi_mod.F90.in"
  integer function open_mpiio(File,fname) result(ierr)
 
      type (File_desc_t), intent(inout) :: File ! file descriptor
@@ -165,6 +171,7 @@ contains
 
 
 ! TYPE int,real,double
+# 156 "iompi_mod.F90.in"
  integer function write_mpiio_int (File,IOBUF,varDesc, iodesc) result(ierr)
     type (File_desc_t), intent(inout)          :: File     ! file descriptor
     integer(i4), intent(in)                    :: IOBUF(:) ! IO buffer
@@ -238,6 +245,7 @@ contains
 
 
 ! TYPE int,real,double
+# 156 "iompi_mod.F90.in"
  integer function write_mpiio_real (File,IOBUF,varDesc, iodesc) result(ierr)
     type (File_desc_t), intent(inout)          :: File     ! file descriptor
     real(r4), intent(in)                    :: IOBUF(:) ! IO buffer
@@ -311,6 +319,7 @@ contains
 
 
 ! TYPE int,real,double
+# 156 "iompi_mod.F90.in"
  integer function write_mpiio_double (File,IOBUF,varDesc, iodesc) result(ierr)
     type (File_desc_t), intent(inout)          :: File     ! file descriptor
     real(r8), intent(in)                    :: IOBUF(:) ! IO buffer
@@ -381,6 +390,7 @@ contains
 #endif
 
  end function write_mpiio_double
+# 226 "iompi_mod.F90.in"
  integer function read_mpiio_text (File,IOBUF,varDesc, iodesc) result(ierr)
    
     type (File_desc_t), intent(inout)          :: File     ! file descriptor
@@ -647,6 +657,7 @@ contains
  end function read_mpiio_int
 
           
+# 294 "iompi_mod.F90.in"
  subroutine Write_FORTRAN_CntrlWord(File,reclen)
            
       type (File_desc_t), intent(inout) :: File
@@ -686,6 +697,7 @@ contains
 
  end subroutine Write_FORTRAN_CntrlWord
 !***********************************************************************
+# 333 "iompi_mod.F90.in"
  subroutine Read_FORTRAN_CntrlWord(File,reclen)
 
       type (File_desc_t), intent(inout) :: File

@@ -40,16 +40,19 @@ module rearrange
             rearrange_io2comp, &
             rearrange_free
 
+# 39 "rearrange.F90.in"
   interface rearrange_init
     module procedure rearrange_init_
   end interface
 
 
+# 44 "rearrange.F90.in"
   interface rearrange_create
     module procedure rearrange_create_mct_,  &
                      rearrange_create_box_
   end interface
 
+# 49 "rearrange.F90.in"
   interface rearrange_comp2io
     ! TYPE real,double,int
     module procedure rearrange_comp2io_real
@@ -59,6 +62,7 @@ module rearrange
     module procedure rearrange_comp2io_int
   end interface
 
+# 54 "rearrange.F90.in"
   interface rearrange_io2comp
     ! TYPE real,double,int
     module procedure rearrange_io2comp_real
@@ -68,13 +72,14 @@ module rearrange
     module procedure rearrange_io2comp_int
   end interface
 
+# 59 "rearrange.F90.in"
   interface rearrange_free
     module procedure rearrange_free_
   end interface
 
 
-contains
 # 64 "rearrange.F90.in"
+contains
 
 ! TYPE real,double,int
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -82,6 +87,7 @@ contains
 ! rearrange_comp2io_real
 !
 
+# 72 "rearrange.F90.in"
   subroutine rearrange_comp2io_real(Iosystem,iodesc,compbuf,iobuf)
     implicit none
 
@@ -126,6 +132,7 @@ contains
 ! rearrange_comp2io_double
 !
 
+# 72 "rearrange.F90.in"
   subroutine rearrange_comp2io_double(Iosystem,iodesc,compbuf,iobuf)
     implicit none
 
@@ -170,6 +177,7 @@ contains
 ! rearrange_comp2io_int
 !
 
+# 72 "rearrange.F90.in"
   subroutine rearrange_comp2io_int(Iosystem,iodesc,compbuf,iobuf)
     implicit none
 
@@ -216,6 +224,7 @@ contains
 !
 ! rearrange_io2comp_real
 !
+# 118 "rearrange.F90.in"
   subroutine rearrange_io2comp_real (Iosystem,iodesc,iobuf,compbuf)
     implicit none
 
@@ -261,6 +270,7 @@ contains
 !
 ! rearrange_io2comp_double
 !
+# 118 "rearrange.F90.in"
   subroutine rearrange_io2comp_double (Iosystem,iodesc,iobuf,compbuf)
     implicit none
 
@@ -306,6 +316,7 @@ contains
 !
 ! rearrange_io2comp_int
 !
+# 118 "rearrange.F90.in"
   subroutine rearrange_io2comp_int (Iosystem,iodesc,iobuf,compbuf)
     implicit none
 
@@ -351,6 +362,7 @@ contains
 !
 
 
+# 163 "rearrange.F90.in"
   subroutine die_nomct(file,line)
     character(len=*) :: file
     integer :: line
@@ -370,6 +382,7 @@ contains
 !
 
 
+# 182 "rearrange.F90.in"
   subroutine rearrange_init_(Iosystem)
     implicit none
 
@@ -409,6 +422,7 @@ contains
 !  called from initDecomp
 !
 
+# 221 "rearrange.F90.in"
   subroutine rearrange_create_mct_(Iosystem,compDOF,ioDOF,ioDesc)
     implicit none
 
@@ -453,6 +467,7 @@ contains
 !
 
 
+# 265 "rearrange.F90.in"
   subroutine rearrange_create_box_(Iosystem,compDOF, &
                                dims,ndims,ioDesc)
     implicit none
@@ -495,6 +510,7 @@ contains
 ! called from freeDecomp
 
 
+# 307 "rearrange.F90.in"
   subroutine rearrange_free_(Iosystem,ioDesc)
     implicit none
 

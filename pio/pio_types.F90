@@ -31,8 +31,6 @@ module pio_types
 #ifdef SEQUENCE
 	sequence
 #endif
-!       integer(kind=PIO_OFFSET) :: offset             ! offset into file
-!       integer(i4)              :: fh                 ! The file handle
         integer(i4)              :: IO_comm            ! The IO communicator
         integer(i4)              :: comp_comm          ! The Compute communicator
         integer(i4)              :: num_tasks        ! total number of tasks
@@ -80,9 +78,9 @@ module pio_types
 
 
     type, public :: IO_desc_t
-!#ifdef SEQUENCE
-!	sequence
-!#endif
+#ifdef SEQUENCE
+	sequence
+#endif
         type(IO_desc2_t)    :: Read
         type(IO_desc2_t)    :: Write
 	integer(kind=PIO_Offset), pointer :: start(:)

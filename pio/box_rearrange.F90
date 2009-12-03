@@ -99,6 +99,7 @@ module box_rearrange
        box_rearrange_comp2io, &
        box_rearrange_io2comp
 
+# 98 "box_rearrange.F90.in"
   interface box_rearrange_comp2io
      ! TYPE int,real,double
      module procedure box_rearrange_comp2io_int
@@ -108,6 +109,7 @@ module box_rearrange
      module procedure box_rearrange_comp2io_double
   end interface
 
+# 103 "box_rearrange.F90.in"
   interface box_rearrange_io2comp
      ! TYPE int,real,double
      module procedure box_rearrange_io2comp_int
@@ -119,10 +121,9 @@ module box_rearrange
 
   character(len=*), parameter :: modName='box_rearrange'
 
-contains
 # 110 "box_rearrange.F90.in"
+contains
 #ifdef _MPISERIAL
-# 111 "box_rearrange.F90.in"
 !
 ! box_rearrange.inc
 !
@@ -143,6 +144,7 @@ contains
 ! be more efficient overall.
 !
 ! TYPE real,double,int
+# 132 "box_rearrange.F90.in"
 subroutine box_rearrange_comp2io_real (IOsystem,ioDesc,s1, src,s2, dest, &
                                          comm_option, fc_options)
   implicit none
@@ -228,6 +230,7 @@ end subroutine box_rearrange_comp2io_real
 ! be more efficient overall.
 !
 ! TYPE real,double,int
+# 132 "box_rearrange.F90.in"
 subroutine box_rearrange_comp2io_double (IOsystem,ioDesc,s1, src,s2, dest, &
                                          comm_option, fc_options)
   implicit none
@@ -313,6 +316,7 @@ end subroutine box_rearrange_comp2io_double
 ! be more efficient overall.
 !
 ! TYPE real,double,int
+# 132 "box_rearrange.F90.in"
 subroutine box_rearrange_comp2io_int (IOsystem,ioDesc,s1, src,s2, dest, &
                                          comm_option, fc_options)
   implicit none
@@ -379,8 +383,8 @@ subroutine box_rearrange_comp2io_int (IOsystem,ioDesc,s1, src,s2, dest, &
 
 end subroutine box_rearrange_comp2io_int
 #else /* not _MPISERIAL */
-# 197 "box_rearrange.F90.in"
 ! TYPE real,double,int
+# 199 "box_rearrange.F90.in"
 subroutine box_rearrange_comp2io_real (IOsystem,ioDesc, s1, src, s2, dest, &
                                          comm_option, fc_options)
 
@@ -609,6 +613,7 @@ subroutine box_rearrange_comp2io_real (IOsystem,ioDesc, s1, src, s2, dest, &
 
 end subroutine box_rearrange_comp2io_real
 ! TYPE real,double,int
+# 199 "box_rearrange.F90.in"
 subroutine box_rearrange_comp2io_double (IOsystem,ioDesc, s1, src, s2, dest, &
                                          comm_option, fc_options)
 
@@ -837,6 +842,7 @@ subroutine box_rearrange_comp2io_double (IOsystem,ioDesc, s1, src, s2, dest, &
 
 end subroutine box_rearrange_comp2io_double
 ! TYPE real,double,int
+# 199 "box_rearrange.F90.in"
 subroutine box_rearrange_comp2io_int (IOsystem,ioDesc, s1, src, s2, dest, &
                                          comm_option, fc_options)
 
@@ -1065,9 +1071,7 @@ subroutine box_rearrange_comp2io_int (IOsystem,ioDesc, s1, src, s2, dest, &
 
 end subroutine box_rearrange_comp2io_int
 #endif /* not _MPISERIAL */
-# 426 "box_rearrange.F90.in"
 #ifdef _MPISERIAL
-# 427 "box_rearrange.F90.in"
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1076,6 +1080,7 @@ end subroutine box_rearrange_comp2io_int
 !  rearrange from the io decomposition to the comp decomposition
 !
 ! TYPE real,double,int
+# 436 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf, s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -1146,6 +1151,7 @@ end subroutine box_rearrange_io2comp_real
 !  rearrange from the io decomposition to the comp decomposition
 !
 ! TYPE real,double,int
+# 436 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf, s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -1216,6 +1222,7 @@ end subroutine box_rearrange_io2comp_double
 !  rearrange from the io decomposition to the comp decomposition
 !
 ! TYPE real,double,int
+# 436 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf, s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -1279,9 +1286,9 @@ subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf, s2, compbuf, &
 
 end subroutine box_rearrange_io2comp_int
 #else /* not _MPISERIAL */
-# 498 "box_rearrange.F90.in"
 
 ! TYPE real,double,int
+# 501 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -1501,6 +1508,7 @@ subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
 end subroutine box_rearrange_io2comp_real
 
 ! TYPE real,double,int
+# 501 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -1720,6 +1728,7 @@ subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
 end subroutine box_rearrange_io2comp_double
 
 ! TYPE real,double,int
+# 501 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -1938,7 +1947,6 @@ subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
 
 end subroutine box_rearrange_io2comp_int
 #endif  /* not _MPISERIAL */
-# 718 "box_rearrange.F90.in"
 
 
   !
@@ -1948,6 +1956,7 @@ end subroutine box_rearrange_io2comp_int
   !
 
 
+# 728 "box_rearrange.F90.in"
   integer function find_io_comprank( Iosystem, ioprocindex )
     implicit none
 
@@ -1970,6 +1979,7 @@ end subroutine box_rearrange_io2comp_int
   !
 
 
+# 750 "box_rearrange.F90.in"
   subroutine gindex_to_coord( gindex, gstride, ndim, gcoord )
     implicit none
     integer,intent(in) :: gindex           ! 0-based global index
@@ -2010,6 +2020,7 @@ end subroutine box_rearrange_io2comp_int
   !
 
 
+# 790 "box_rearrange.F90.in"
   logical function find_ioproc( gcoord, lb, ub, lstride, ndim, nioproc, &
        io_proc, io_index )
     implicit none
@@ -2085,6 +2096,7 @@ end subroutine box_rearrange_io2comp_int
   !
   !
 
+# 865 "box_rearrange.F90.in"
   subroutine compute_dest( compdof,start,count,gsize,ndim,nioproc, &
        dest_ioproc,dest_ioindex)
     implicit none
@@ -2204,6 +2216,7 @@ end subroutine box_rearrange_io2comp_int
   !
 
 
+# 984 "box_rearrange.F90.in"
   subroutine box_rearrange_create( Iosystem,compdof,gsize,ndim,nioproc,ioDesc)
     implicit none
 
@@ -2397,6 +2410,7 @@ end subroutine box_rearrange_io2comp_int
 
 #ifndef _MPISERIAL
 
+# 1177 "box_rearrange.F90.in"
   subroutine compute_counts( Iosystem,ioDesc,ndof,niodof )
 
     type (Iosystem_desc_t), intent(in) :: Iosystem
@@ -2882,6 +2896,7 @@ end subroutine box_rearrange_io2comp_int
   !   the rearrangement
   !
 
+# 1662 "box_rearrange.F90.in"
   subroutine box_rearrange_free(Iosystem,ioDesc)
     implicit none
 

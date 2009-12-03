@@ -26,6 +26,7 @@ module pio_support
 
 #ifdef NO_SIZEOF
   public sizeof
+# 20 "pio_support.F90.in"
   interface sizeof
      module procedure sizeof_text
      module procedure sizeof_real
@@ -40,9 +41,10 @@ module pio_support
 
   character(len=*), parameter :: modName='pio_support'
 
-contains
 # 31 "pio_support.F90.in"
+contains
 
+# 33 "pio_support.F90.in"
   subroutine piodie (file,line, msg, ival1, msg2, ival2, msg3, ival3)
     !-----------------------------------------------------------------------
     ! Purpose:
@@ -117,6 +119,7 @@ contains
 !      Check and prints an error message
 !  if an error occured in a MPI subroutine.
 !=============================================
+# 107 "pio_support.F90.in"
   subroutine CheckMPIreturn(locmesg, errcode, file, line)
 
      character(len=*), intent(in) :: locmesg
@@ -128,7 +131,6 @@ contains
      integer(i4) :: errorlen
 
      integer(i4) :: ierr
-#ifdef USEMPIIO
 
      if (errcode .ne. MPI_SUCCESS) then
         call MPI_Error_String(errcode,errorstring,errorlen,ierr)
@@ -137,9 +139,10 @@ contains
            call piodie(file,line)
         endif
      end if
-#endif
+
   end subroutine CheckMPIreturn
 
+# 129 "pio_support.F90.in"
   subroutine pio_writedof (file, DOF, comm, punit)
     !-----------------------------------------------------------------------
     ! Purpose:
@@ -226,6 +229,7 @@ contains
 
   end subroutine pio_writedof
 
+# 215 "pio_support.F90.in"
   subroutine pio_readdof (file, DOF, comm, punit)
     !-----------------------------------------------------------------------
     ! Purpose:
@@ -317,6 +321,7 @@ contains
 
 #ifdef NO_MPI2
 
+# 306 "pio_support.F90.in"
   subroutine MPI_TYPE_CREATE_INDEXED_BLOCK(count, blen, disp, oldtype, newtype, ierr)
     integer, intent(in)  :: count
     integer, intent(in)  :: blen
@@ -333,10 +338,9 @@ contains
 
   end subroutine MPI_TYPE_CREATE_INDEXED_BLOCK
 #endif
-# 322 "pio_support.F90.in"
 #ifdef NO_SIZEOF
-# 323 "pio_support.F90.in"
 
+# 324 "pio_support.F90.in"
   integer function sizeof_text(val) result(i)
     implicit none
     character(len=*),intent(in) :: val
@@ -352,6 +356,7 @@ contains
 #endif
   end function sizeof_text
 
+# 324 "pio_support.F90.in"
   integer function sizeof_real(val) result(i)
     implicit none
     real(r4),intent(in) :: val
@@ -367,6 +372,7 @@ contains
 #endif
   end function sizeof_real
 
+# 324 "pio_support.F90.in"
   integer function sizeof_double(val) result(i)
     implicit none
     real(r8),intent(in) :: val
@@ -382,6 +388,7 @@ contains
 #endif
   end function sizeof_double
 
+# 324 "pio_support.F90.in"
   integer function sizeof_int(val) result(i)
     implicit none
     integer(i4),intent(in) :: val
@@ -397,6 +404,5 @@ contains
 #endif
   end function sizeof_int
 #endif
-# 339 "pio_support.F90.in"
 
 end module pio_support

@@ -492,8 +492,8 @@ contains
 
     call alloc_check(IODesc%start,ndims)
     call alloc_check(IODesc%count,ndims)
-    IODesc%start(:) = start(:)
-    IODesc%count(:) = count(:)
+    IODesc%start(1:size(start)) = start(:)
+    IODesc%count(1:size(count)) = count(:)
     !--------------------------------------------
     ! calculate MPI data structure displacements 
     !--------------------------------------------
@@ -932,21 +932,21 @@ contains
 
     integer:: nints, nadds, ndtypes, comb, lbasetype
 
-    if (lenBLOCKS < 1) then
-       elemtype = MPI_DATATYPE_NULL
-       filetype = MPI_DATATYPE_NULL
-       return
-       call piodie( _FILE_,__LINE__, &
-            'GenIndexedBlock: lenBLOCKS=',lenBLOCKS,' (expected >=1)')
-    endif
+!    if (lenBLOCKS < 1) then
+!       elemtype = MPI_DATATYPE_NULL
+!       filetype = MPI_DATATYPE_NULL
+!       return
+!       call piodie( _FILE_,__LINE__, &
+!            'GenIndexedBlock: lenBLOCKS=',lenBLOCKS,' (expected >=1)')
+!    endif
 
     numBLOCKS = SIZE(displace)
 
     !tcx - allow empty iodofs
     if (numBLOCKS > 0) then
 
-       if(Debug) print *,'GenIndexedBlock: Setting up MPI-IO data structure stuff, numBLOCKS, lenBLOCKS',&
-            numBLOCKS,lenBLOCKS
+!       if(Debug) print *,'GenIndexedBlock: Setting up MPI-IO data structure stuff, numBLOCKS, lenBLOCKS',&
+!            numBLOCKS,lenBLOCKS
        prev = displace(1)
        do i=2,numBLOCKS
           if(prev > displace(i)) then
@@ -1153,9 +1153,8 @@ contains
     usehints = .TRUE.
 #endif
 
-    if(.not. usehints) IOsystem%info = MPI_INFO_NULL
-
 #endif
+    if(.not. usehints) IOsystem%info = MPI_INFO_NULL
 
     if(Debug) print *,'IAM: ',IOsystem%io_rank,__LINE__,'init: UseRearranger: ',IOsystem%UseRearranger
 
@@ -1568,7 +1567,7 @@ contains
 
 #ifndef _MPISERIAL
     if(ios%ioproc) then
-       if(Debug) print *,__FILE__,__LINE__,IODesc%Write%n_elemTYPE,IODesc%Write%n_words,iodesc%write%elemtype,iodesc%write%filetype
+!       if(Debug) print *,__FILE__,__LINE__,IODesc%Write%n_elemTYPE,IODesc%Write%n_words,iodesc%write%elemtype,iodesc%write%filetype
 
        if((iodesc%read%filetype .ne. MPI_DATATYPE_NULL)  &
 	  .and. (iodesc%read%filetype .ne. iodesc%write%filetype)) then 

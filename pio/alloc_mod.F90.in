@@ -41,20 +41,20 @@ contains
   !
 
   ! TYPE long,int,real,double 
-  subroutine alloc_check_1d_{TYPE} (data,size,msg)
+  subroutine alloc_check_1d_{TYPE} (data,varlen,msg)
 
     {VTYPE}, pointer :: data(:)
-    integer, intent(in) :: size
+    integer, intent(in) :: varlen
     character(len=*), intent(in), optional:: msg
 
     character(len=*), parameter :: subName=modName//'::alloc_check_1d_{TYPE}'
 
     integer ierr, ierror, rank
 
-    if(size==0) then
+    if(varlen==0) then
       allocate(data(1),stat=ierr)
     else
-      allocate(data(size),stat=ierr)
+      allocate(data(varlen),stat=ierr)
     endif
     if (ierr /= 0) then
        call MPI_COMM_rank(MPI_COMM_WORLD,rank,ierror)
