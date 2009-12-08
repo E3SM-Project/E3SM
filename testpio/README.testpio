@@ -101,15 +101,12 @@ pio read/write calls which generally will also include copy and rearrange
 overhead as well as actual I/O time.  Addition timers will be added
 in the future.
 
-Several scripts are provided.  These should be run interactively.  Except
-for the build scripts, these scripts will automatically submit a batch job.
-  testpio_build.bluefire.csh - builds pio and the testpio binary on bluefire
-  testpio_run.bluefire.csh   - runs a testpio case including the ability to
-                               run a set of tests across processor counts
-  testpio_suite.bluefire.csh - run a suite of testpio tests
-And several sample "testpio_in" input files are provided
-
-Scripts are provided for other platforms as well.
+The test script is called testpio_run.pl, it uses the hostname
+function to determine the platform.  New platforms can be added by
+editing the files build_defaults.xml and Utils.pm.  If more than one
+configuration should be tested on a single platform you can provide
+two hostnames in this file and specify the name to test in a --host
+option to testpio_run.pl
 
 There are several testpio_in files for the pio test suite.  The ones that
 come with pio test specific things.  In general, there are tests for

@@ -1,6 +1,199 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio60_prod
+Originator(s): Jim
+Date:  12-07-2009
+One-line Summary: Fix problems when using lahey compiler, fix last two 
+	problems in testsuite.
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+
+  pionfwrite_mod.F90.in : Removed irecv and replaced with recv
+	irecv waitall combination was failing on dublin with lahey compiler
+	no explaination was found.
+  alloc_mod.F90.in : Changed variable named size to varlen to avoid conflict
+	with intrensic of same name.
+  piolib_mod.F90 : Modified GenIndexedBlock to allow for 0 length writes
+	thus allowing tests bn01 and bn03 to pass.
+  pio_support.F90.in: Removed a #ifdef USEMPIIO that was unneeded.	
+
+  genf90.pl : Modified to print line numbers at the beginning of routines 
+	instead of the end.  This should make line numbers from compilers and
+	debuggers more accurate.
+  iompi_mod.F90.in : 
+
+
+	
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+   fixed the bn01 and bn03 tests.
+	
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: self
+
+Summary of pre-tag testing:
+     all 74 tests PASS on bluefire, frost and Jaguar
+     all 22 tests PASS on dublin using lahey and intel compilers.
+	
+  Regression tests:
+     
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
+Tag name: pio59_prod
+Originator(s): Jim
+Date: 10-20-2009 
+One-line Summary: bug fix in pio_get_var
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+     Renamed functions in nf_mod to avoid redirection, this was done for the intel compiler
+     Updated ChangeLog_template
+	
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+
+Bugs fixed:  MPI_Bcast was incorrect when number of dimensions on file
+	 was greater than number of dimensions in variable.
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: self
+
+Summary of pre-tag testing:  bluefire 70 of 74
+                            cam regression
+  Regression tests:
+
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
+Tag name: pio58_prod
+Originator(s): Jim
+Date: 10-19-2009
+One-line Summary:  Extend support for netcdf
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by:  self
+
+Summary of pre-tag testing:
+                      Bluefire  70 of 74
+		      cam regressions
+  Regression tests:
+
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
+Tag name: pio57_prod
+Originator(s): Jim, Pat Worley
+Date: 10-12-2009
+One-line Summary: Fix bug in put_var_text, remove definition of MPI_INFO_NULL - defined in mpi_serial library.   Change logic of handshaking to avoid deadlock
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+pionf_mod.F90.in fixed a bug that caused text writes to fail if the text variable included the netcdf unlimited dimension
+
+genf90.pl fixed preprocessor line numbering to refer to correct .in 
+	file line numbers.  Debuggers and core files should now point back to
+	the correct source line.  
+
+pio_spmd_utils.F90.in : Changed send to isend in handshaking algorythm to avoid potential deadlock should mpi buffers become filled.
+
+pio_types.F90 removed definition of MPI_INFO_NULL when compiled with mpi-serial, mpi-serial already defines this variable.
+
+	
+Bugs fixed:
+	
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: Self
+
+Summary of pre-tag testing:
+                      testpio was run on bluefire and frost
+		      cam regression tests run on bluefire, calgary and dublin
+	              homme interpolation tested
+  Regression tests:
+
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
+Tag name: pio56_prod
+Originator(s): Jim
+Date: 10-08-09
+One-line Summary: Fixed a bug in mpi_free_info
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+
+Bugs fixed:  mpi_free_info was being called on an undefined mpi_info handle
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: self
+
+Summary of pre-tag testing:  bluefire passes 70 of 74.
+	cam regression test.
+
+  Regression tests:
+
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio55_prod
 Originator(s): Jim
 Date: 09-29-09

@@ -18,6 +18,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div class="tabs">
     <ul>
       <li><a href="index.html"><span>Main&nbsp;Page</span></a></li>
+      <li><a href="pages.html"><span>Related&nbsp;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Modules</span></a></li>
       <li><a href="annotated.html"><span>Data&nbsp;Types&nbsp;List</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
@@ -69,45 +70,47 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00025"></a>00025   use <span class="keywordflow">piodarray</span>, only : pio_read_darray, pio_write_darray  
 <a name="l00026"></a>00026 
 <a name="l00027"></a>00027   use <span class="keywordflow">nf_mod</span>, only:        &amp;
-<a name="l00028"></a>00028        PIO_enddef =&gt; enddef,            &amp;
-<a name="l00029"></a>00029        PIO_inquire =&gt; <span class="keyword">inquire</span>,          &amp;
-<a name="l00030"></a>00030        PIO_inq_attname =&gt; <a class="code" href="interfacenf__mod_1_1inq__attname.html">inq_attname</a>,  &amp;
-<a name="l00031"></a>00031        PIO_inq_att =&gt; <a class="code" href="interfacenf__mod_1_1inq__att.html">inq_att</a>,          &amp;
-<a name="l00032"></a>00032        PIO_inq_attlen =&gt; <a class="code" href="interfacenf__mod_1_1inq__attlen.html">inq_attlen</a>,    &amp;
-<a name="l00033"></a>00033        PIO_inq_varid =&gt; <a class="code" href="interfacenf__mod_1_1inq__varid.html">inq_varid</a>,      &amp;
-<a name="l00034"></a>00034        PIO_inq_varname =&gt; <a class="code" href="namespacenf__mod.html#a04c89a0198618b51f0038bab0a78e336">inq_varname</a>,  &amp;
-<a name="l00035"></a>00035        PIO_inq_vartype =&gt; <a class="code" href="namespacenf__mod.html#a6d5c93d4bcdc016e0650f5903dd4c5d1">inq_vartype</a>,  &amp;
-<a name="l00036"></a>00036        PIO_inq_varndims =&gt; <a class="code" href="namespacenf__mod.html#a80bb3824dae4d63fd4b31a646764a04b">inq_varndims</a>,&amp;
-<a name="l00037"></a>00037        PIO_inq_vardimid =&gt; <a class="code" href="namespacenf__mod.html#a619d06cd12810cad41cf12eaba7b849f">inq_vardimid</a>,&amp;
-<a name="l00038"></a>00038        PIO_inq_varnatts =&gt; <a class="code" href="namespacenf__mod.html#ae14fae1462923e3b2ef6f24489bbc1a9">inq_varnatts</a>,&amp;
-<a name="l00039"></a>00039        PIO_inq_dimid =&gt; <a class="code" href="namespacenf__mod.html#a65f094376b24f4c0619b837603094437">inq_dimid</a>,      &amp;
-<a name="l00040"></a>00040        PIO_inq_dimname =&gt; <a class="code" href="namespacenf__mod.html#a6d48ac07c305ab918a31da10b1fe5d86">inq_dimname</a>,  &amp;
-<a name="l00041"></a>00041        PIO_inq_dimlen =&gt; <a class="code" href="namespacenf__mod.html#ad7bb87ac573e7caeeffd325f7ff30012">inq_dimlen</a>,    &amp;
-<a name="l00042"></a>00042        PIO_def_dim   =&gt; <a class="code" href="namespacenf__mod.html#a3022b1f076e1d3aa484bcd67a33ace49">def_dim</a>,        &amp;
-<a name="l00043"></a>00043        PIO_def_var   =&gt; <a class="code" href="interfacenf__mod_1_1def__var.html">def_var</a>,        &amp;
-<a name="l00044"></a>00044        PIO_redef     =&gt; redef,          &amp;
-<a name="l00045"></a>00045        PIO_copy_att  =&gt; <a class="code" href="namespacenf__mod.html#a60bdae46fd0ffb3828bcc608f5b1ae4c">copy_att</a>
-<a name="l00046"></a>00046 
-<a name="l00047"></a>00047   use <span class="keywordflow">pionfatt_mod</span>, only : PIO_put_att   =&gt; put_att,        &amp;
-<a name="l00048"></a>00048        PIO_get_att   =&gt; <a class="code" href="interfacepionfatt__mod_1_1get__att.html">get_att</a>
-<a name="l00049"></a>00049   use <span class="keywordflow">pionfput_mod</span>, only : PIO_put_var   =&gt; put_var
-<a name="l00050"></a>00050   use <span class="keywordflow">pionfget_mod</span>, only : PIO_get_var   =&gt; get_var
-<a name="l00051"></a>00051   <span class="keyword">implicit none</span>
-<a name="l00052"></a>00052   <span class="keywordtype">public</span>
-<a name="l00053"></a>00053 <span class="keyword">contains</span>
-<a name="l00054"></a><a class="code" href="namespacepio.html#aaccdd865f153c201cb2de544523f1904">00054</a>   <span class="keyword">function </span><a class="code" href="namespacepio.html#aaccdd865f153c201cb2de544523f1904">pio_iam_iotask</a>(iosystem) result(task)
-<a name="l00055"></a>00055     <span class="keywordtype">type(</span>iosystem_desc_t<span class="keywordtype">)</span>, <span class="keywordtype">intent(in)</span> :: iosystem
-<a name="l00056"></a>00056     <span class="keywordtype">logical</span> :: task
-<a name="l00057"></a>00057     task = iosystem%ioproc
-<a name="l00058"></a>00058 <span class="keyword">  end function pio_iam_iotask</span>
-<a name="l00059"></a><a class="code" href="namespacepio.html#ac4ba6066aa6e622acdc01f7086789793">00059</a>   <span class="keyword">function </span><a class="code" href="namespacepio.html#ac4ba6066aa6e622acdc01f7086789793">pio_iotask_rank</a>(iosystem) result(rank)
-<a name="l00060"></a>00060     <span class="keywordtype">type(</span>iosystem_desc_t<span class="keywordtype">)</span>, <span class="keywordtype">intent(in)</span> :: iosystem
-<a name="l00061"></a>00061     <span class="keywordtype">integer</span> :: rank
-<a name="l00062"></a>00062     rank = iosystem%io_rank
-<a name="l00063"></a>00063 <span class="keyword">  end function pio_iotask_rank</span>
-<a name="l00064"></a>00064 
-<a name="l00065"></a>00065 <span class="keyword">end module pio</span>
+<a name="l00028"></a>00028        PIO_enddef,            &amp;
+<a name="l00029"></a>00029        PIO_inquire ,          &amp;
+<a name="l00030"></a>00030        PIO_inq_attname ,  &amp;
+<a name="l00031"></a>00031        PIO_inq_att ,          &amp;
+<a name="l00032"></a>00032        PIO_inq_attlen ,    &amp;
+<a name="l00033"></a>00033        PIO_inq_varid ,      &amp;
+<a name="l00034"></a>00034        PIO_inq_varname ,  &amp;
+<a name="l00035"></a>00035        PIO_inq_vartype ,  &amp;
+<a name="l00036"></a>00036        PIO_inq_varndims ,&amp;
+<a name="l00037"></a>00037        PIO_inq_vardimid ,&amp;
+<a name="l00038"></a>00038        PIO_inq_varnatts ,&amp;
+<a name="l00039"></a>00039        PIO_inq_dimid ,      &amp;
+<a name="l00040"></a>00040        PIO_inq_dimname ,  &amp;
+<a name="l00041"></a>00041        PIO_inq_dimlen ,    &amp;
+<a name="l00042"></a>00042        PIO_def_dim   ,        &amp;
+<a name="l00043"></a>00043        PIO_def_var   ,        &amp;
+<a name="l00044"></a>00044        PIO_redef     ,          &amp;
+<a name="l00045"></a>00045        PIO_copy_att  ,       &amp;
+<a name="l00046"></a>00046        PIO_inquire_variable , &amp;
+<a name="l00047"></a>00047        PIO_inquire_dimension 
+<a name="l00048"></a>00048 
+<a name="l00049"></a>00049   use <span class="keywordflow">pionfatt_mod</span>, only : PIO_put_att   =&gt; put_att,        &amp;
+<a name="l00050"></a>00050        PIO_get_att   =&gt; <a class="code" href="interfacepionfatt__mod_1_1get__att.html">get_att</a>
+<a name="l00051"></a>00051   use <span class="keywordflow">pionfput_mod</span>, only : PIO_put_var   =&gt; put_var
+<a name="l00052"></a>00052   use <span class="keywordflow">pionfget_mod</span>, only : PIO_get_var   =&gt; get_var
+<a name="l00053"></a>00053   <span class="keyword">implicit none</span>
+<a name="l00054"></a>00054   <span class="keywordtype">public</span>
+<a name="l00055"></a>00055 <span class="keyword">contains</span>
+<a name="l00056"></a><a class="code" href="namespacepio.html#aaccdd865f153c201cb2de544523f1904">00056</a>   <span class="keyword">function </span><a class="code" href="namespacepio.html#aaccdd865f153c201cb2de544523f1904">pio_iam_iotask</a>(iosystem) result(task)
+<a name="l00057"></a>00057     <span class="keywordtype">type(</span>iosystem_desc_t<span class="keywordtype">)</span>, <span class="keywordtype">intent(in)</span> :: iosystem
+<a name="l00058"></a>00058     <span class="keywordtype">logical</span> :: task
+<a name="l00059"></a>00059     task = iosystem%ioproc
+<a name="l00060"></a>00060 <span class="keyword">  end function pio_iam_iotask</span>
+<a name="l00061"></a><a class="code" href="namespacepio.html#ac4ba6066aa6e622acdc01f7086789793">00061</a>   <span class="keyword">function </span><a class="code" href="namespacepio.html#ac4ba6066aa6e622acdc01f7086789793">pio_iotask_rank</a>(iosystem) result(rank)
+<a name="l00062"></a>00062     <span class="keywordtype">type(</span>iosystem_desc_t<span class="keywordtype">)</span>, <span class="keywordtype">intent(in)</span> :: iosystem
+<a name="l00063"></a>00063     <span class="keywordtype">integer</span> :: rank
+<a name="l00064"></a>00064     rank = iosystem%io_rank
+<a name="l00065"></a>00065 <span class="keyword">  end function pio_iotask_rank</span>
 <a name="l00066"></a>00066 
+<a name="l00067"></a>00067 <span class="keyword">end module pio</span>
+<a name="l00068"></a>00068 
 </pre></div></div>
 <!--- window showing the filter options -->
 <div id="MSearchSelectWindow"
@@ -123,7 +126,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Thu Sep 24 12:57:39 2009 for PIO by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Fri Dec 4 14:24:48 2009 for PIO by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

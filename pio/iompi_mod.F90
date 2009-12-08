@@ -216,15 +216,20 @@ contains
      call MPI_File_set_view(File%fh,File%offset, iodesc%Write%elemTYPE, iodesc%Write%fileTYPE, 'native',File%iosystem%info,ierr)
 
      if(Check.and.ierr/=MPI_SUCCESS) then
-        print *, _FILE_,__LINE__,iodesc%Write%elemTYPE, iodesc%Write%fileTYPE
 	call CheckMPIreturn('write_mpiio_int after call to file_set_view: ',ierr)
 	call piodie(_FILE_,__LINE__)
      end if
      !-----------------------------
      ! Write out distributed array
      !-----------------------------
-     call MPI_file_write_all(File%fh,IOBUF,iodesc%Write%n_elemTYPE,iodesc%Write%elemTYPE,fstatus,ierr)
 
+        print *, _FILE_,__LINE__,iodesc%Write%n_elemTYPE,iodesc%Write%elemTYPE, iodesc%Write%fileTYPE
+
+     if(iodesc%Write%n_words==0) then	
+        call MPI_file_write_all(File%fh,IOBUF,0,iodesc%Write%elemTYPE,fstatus,ierr)
+     else	
+        call MPI_file_write_all(File%fh,IOBUF,iodesc%Write%n_elemTYPE,iodesc%Write%elemTYPE,fstatus,ierr)
+     end if
      if(Check.and.ierr/=MPI_SUCCESS) then
         call CheckMPIreturn('write_mpiio_int: after call to file_write_all: ',ierr)
         call piodie(_FILE_,__LINE__)
@@ -290,15 +295,20 @@ contains
      call MPI_File_set_view(File%fh,File%offset, iodesc%Write%elemTYPE, iodesc%Write%fileTYPE, 'native',File%iosystem%info,ierr)
 
      if(Check.and.ierr/=MPI_SUCCESS) then
-        print *, _FILE_,__LINE__,iodesc%Write%elemTYPE, iodesc%Write%fileTYPE
 	call CheckMPIreturn('write_mpiio_real after call to file_set_view: ',ierr)
 	call piodie(_FILE_,__LINE__)
      end if
      !-----------------------------
      ! Write out distributed array
      !-----------------------------
-     call MPI_file_write_all(File%fh,IOBUF,iodesc%Write%n_elemTYPE,iodesc%Write%elemTYPE,fstatus,ierr)
 
+        print *, _FILE_,__LINE__,iodesc%Write%n_elemTYPE,iodesc%Write%elemTYPE, iodesc%Write%fileTYPE
+
+     if(iodesc%Write%n_words==0) then	
+        call MPI_file_write_all(File%fh,IOBUF,0,iodesc%Write%elemTYPE,fstatus,ierr)
+     else	
+        call MPI_file_write_all(File%fh,IOBUF,iodesc%Write%n_elemTYPE,iodesc%Write%elemTYPE,fstatus,ierr)
+     end if
      if(Check.and.ierr/=MPI_SUCCESS) then
         call CheckMPIreturn('write_mpiio_real: after call to file_write_all: ',ierr)
         call piodie(_FILE_,__LINE__)
@@ -364,15 +374,20 @@ contains
      call MPI_File_set_view(File%fh,File%offset, iodesc%Write%elemTYPE, iodesc%Write%fileTYPE, 'native',File%iosystem%info,ierr)
 
      if(Check.and.ierr/=MPI_SUCCESS) then
-        print *, _FILE_,__LINE__,iodesc%Write%elemTYPE, iodesc%Write%fileTYPE
 	call CheckMPIreturn('write_mpiio_double after call to file_set_view: ',ierr)
 	call piodie(_FILE_,__LINE__)
      end if
      !-----------------------------
      ! Write out distributed array
      !-----------------------------
-     call MPI_file_write_all(File%fh,IOBUF,iodesc%Write%n_elemTYPE,iodesc%Write%elemTYPE,fstatus,ierr)
 
+        print *, _FILE_,__LINE__,iodesc%Write%n_elemTYPE,iodesc%Write%elemTYPE, iodesc%Write%fileTYPE
+
+     if(iodesc%Write%n_words==0) then	
+        call MPI_file_write_all(File%fh,IOBUF,0,iodesc%Write%elemTYPE,fstatus,ierr)
+     else	
+        call MPI_file_write_all(File%fh,IOBUF,iodesc%Write%n_elemTYPE,iodesc%Write%elemTYPE,fstatus,ierr)
+     end if
      if(Check.and.ierr/=MPI_SUCCESS) then
         call CheckMPIreturn('write_mpiio_double: after call to file_write_all: ',ierr)
         call piodie(_FILE_,__LINE__)
@@ -390,7 +405,7 @@ contains
 #endif
 
  end function write_mpiio_double
-# 226 "iompi_mod.F90.in"
+# 231 "iompi_mod.F90.in"
  integer function read_mpiio_text (File,IOBUF,varDesc, iodesc) result(ierr)
    
     type (File_desc_t), intent(inout)          :: File     ! file descriptor
@@ -657,7 +672,7 @@ contains
  end function read_mpiio_int
 
           
-# 294 "iompi_mod.F90.in"
+# 299 "iompi_mod.F90.in"
  subroutine Write_FORTRAN_CntrlWord(File,reclen)
            
       type (File_desc_t), intent(inout) :: File
@@ -697,7 +712,7 @@ contains
 
  end subroutine Write_FORTRAN_CntrlWord
 !***********************************************************************
-# 333 "iompi_mod.F90.in"
+# 338 "iompi_mod.F90.in"
  subroutine Read_FORTRAN_CntrlWord(File,reclen)
 
       type (File_desc_t), intent(inout) :: File

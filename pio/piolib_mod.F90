@@ -266,7 +266,7 @@ contains
     logical :: UseRearranger
     integer (i4) ::  nDispR,nDispW
     integer (i4) :: lengthR, lengthW
-    integer (i4), allocatable :: displaceR(:),displaceW(:)
+    integer (i4), pointer :: displaceR(:),displaceW(:)
 
     baseTYPE=pio_type_to_mpi_type(basepioTYPE)
 
@@ -290,9 +290,15 @@ contains
     enddo
     lengthR = SIZE(ioDofR);
     lengthW = SIZE(ioDofW)
-    nDispW=SIZE(ioDofW)/lenBLOCKS; nDispR=SIZE(ioDofR)/lenBLOCKS
-
-    allocate(displaceR(nDispR),displaceW(nDispW))
+    if(lenblocks>0) then
+       nDispW=SIZE(ioDofW)/lenBLOCKS 
+       nDispR=SIZE(ioDofR)/lenBLOCKS
+    else
+       ndispw=0
+       ndispr=0
+    end if
+    call alloc_check(displaceR,nDispR)
+    call alloc_check(displaceW,nDispW)
 
     !--------------------------------------------
     ! calculate MPI data structure displacements
@@ -315,15 +321,16 @@ contains
        !-----------------------------------------------
        ! setup the data structure for the read operation
        !-----------------------------------------------
-       IODesc%Read%n_elemTYPE = SIZE(displaceR)
+       IODesc%Read%n_elemTYPE = ndispR
        IODesc%Read%n_words    = IODesc%Read%n_elemTYPE*lenBLOCKS
        call GenIndexedBlock(lenBLOCKS,baseTYPE,IODesc%Read%elemTYPE,IODesc%Read%fileTYPE,displaceR)
 
        !-------------------------------------------------
        ! setup the data structure for the write operation
        !-------------------------------------------------
-       IODesc%Write%n_elemTYPE = SIZE(displaceW)
+       IODesc%Write%n_elemTYPE = ndispW
        IODesc%Write%n_words    = IODesc%Write%n_elemTYPE*lenBLOCKS
+
        call GenIndexedBlock(lenBLOCKS,baseTYPE,IODesc%Write%elemTYPE,IODesc%Write%fileTYPE,displaceW)
 
        if(Debug) print *,'initDecomp: At the end of subroutine'
@@ -538,8 +545,9 @@ contains
        !-----------------------------------------------
        ! setup the data structure for the io operation 
        !-----------------------------------------------
-       IODesc%Write%n_elemTYPE = SIZE(displace)
+       IODesc%Write%n_elemTYPE = ndisp
        IODesc%Write%n_words    = IODesc%Write%n_elemTYPE*lenBLOCKS
+
        call GenIndexedBlock(lenBLOCKS,baseTYPE,IODesc%Write%elemTYPE,IODesc%Write%fileTYPE,displace)
 
        if(Debug) print *,'initDecomp: At the end of subroutine',IODesc%Write%n_elemTYPE,IODesc%Write%n_words
@@ -745,7 +753,7 @@ contains
        !-----------------------------------------------
        ! setup the data structure for the io operation 
        !-----------------------------------------------
-       IODesc%Write%n_elemTYPE = SIZE(displace)
+       IODesc%Write%n_elemTYPE = ndisp
        IODesc%Write%n_words    = IODesc%Write%n_elemTYPE*lenBLOCKS
        call GenIndexedBlock(lenBLOCKS,baseTYPE,IODesc%Write%elemTYPE,IODesc%Write%fileTYPE,displace)
 
@@ -932,21 +940,10 @@ contains
 
     integer:: nints, nadds, ndtypes, comb, lbasetype
 
-!    if (lenBLOCKS < 1) then
-!       elemtype = MPI_DATATYPE_NULL
-!       filetype = MPI_DATATYPE_NULL
-!       return
-!       call piodie( _FILE_,__LINE__, &
-!            'GenIndexedBlock: lenBLOCKS=',lenBLOCKS,' (expected >=1)')
-!    endif
-
     numBLOCKS = SIZE(displace)
 
     !tcx - allow empty iodofs
     if (numBLOCKS > 0) then
-
-!       if(Debug) print *,'GenIndexedBlock: Setting up MPI-IO data structure stuff, numBLOCKS, lenBLOCKS',&
-!            numBLOCKS,lenBLOCKS
        prev = displace(1)
        do i=2,numBLOCKS
           if(prev > displace(i)) then
@@ -976,17 +973,21 @@ contains
     fileTYPE=0
     ! _MPISERIAL
 #else
+    if(lenblocks<1) then
+       elemtype = lbasetype
+       filetype = lbasetype
+    else
 
-    call MPI_Type_contiguous(lenBLOCKS,lbaseTYPE,elemTYPE,ierr)
-    if(Check) call CheckMPIreturn('GenIndexedBlock: after call to Type_contiguous: ',ierr)
-    call MPI_Type_commit(elemTYPE,ierr)
-    if(Check) call CheckMPIreturn('GenIndexedBlock: after call to Type_commit: ',ierr)
-    call MPI_Type_create_indexed_block(numBLOCKS,1,displace,elemTYPE,fileTYPE,ierr)
-    if(Check) call CheckMPIreturn('GenIndexedBlock: after call to Type_create_indexed_block: ',ierr)
-    call MPI_Type_commit(fileTYPE,ierr)
-    if(Check) call CheckMPIreturn('GenIndexedBlock: after call to Type_commit: ',ierr)
-    call mpi_type_get_envelope(elemtype, nints, nadds, ndtypes, comb, ierr)
-
+       call MPI_Type_contiguous(lenBLOCKS,lbaseTYPE,elemTYPE,ierr)
+       if(Check) call CheckMPIreturn('GenIndexedBlock: after call to Type_contiguous: ',ierr)
+       call MPI_Type_commit(elemTYPE,ierr)
+       if(Check) call CheckMPIreturn('GenIndexedBlock: after call to Type_commit: ',ierr)
+       call MPI_Type_create_indexed_block(numBLOCKS,1,displace,elemTYPE,fileTYPE,ierr)
+       if(Check) call CheckMPIreturn('GenIndexedBlock: after call to Type_create_indexed_block: ',ierr)
+       call MPI_Type_commit(fileTYPE,ierr)
+       if(Check) call CheckMPIreturn('GenIndexedBlock: after call to Type_commit: ',ierr)
+       call mpi_type_get_envelope(elemtype, nints, nadds, ndtypes, comb, ierr)
+    end if
     ! _MPISERIAL
 #endif
 
@@ -1144,7 +1145,7 @@ contains
     endif
 
 #ifdef PIO_GPFS_HINTS
-    call MPI_info_set(IOsystem%info,"IBM_largeblock_io","true",ierr)
+    call MPI_info_set(IOsystem%info,"IBM_sparse_access","true",ierr)
     usehints = .TRUE.
 #endif
 #ifdef PIO_LUSTRE_HINTS
@@ -1570,14 +1571,16 @@ contains
 !       if(Debug) print *,__FILE__,__LINE__,IODesc%Write%n_elemTYPE,IODesc%Write%n_words,iodesc%write%elemtype,iodesc%write%filetype
 
        if((iodesc%read%filetype .ne. MPI_DATATYPE_NULL)  &
-	  .and. (iodesc%read%filetype .ne. iodesc%write%filetype)) then 
+	  .and. (iodesc%read%filetype .ne. iodesc%write%filetype) .and. &
+	  iodesc%read%n_words>0) then 
           call mpi_type_free(iodesc%read%filetype,ierr)
           call CheckMPIreturn('freedecomp mpi_type_free: ',ierr)
           call mpi_type_free(iodesc%read%elemtype,ierr)
           call CheckMPIreturn('freedecomp mpi_type_free: ',ierr)
           iodesc%read%filetype=MPI_DATATYPE_NULL
        endif
-       if(iodesc%write%filetype .ne. MPI_DATATYPE_NULL) then 
+       if(iodesc%write%filetype .ne. MPI_DATATYPE_NULL .and. &
+	  iodesc%write%n_words>0) then 
           call mpi_type_free(iodesc%write%filetype,ierr)
           call CheckMPIreturn('freedecomp mpi_type_free: ',ierr)
           call mpi_type_free(iodesc%write%elemtype,ierr)

@@ -21,6 +21,7 @@
   FFLAGS = "-g -qfullpath -WF,-D_USE_COMP2IO_FC,-D_USE_IO2COMP_FC"
   ENV_PREATTACH_PROCESSOR_LIST="AUTO_SELECT"
   ENV_MP_EAGER_LIMIT="0"
+  MPIF90 = "mpxlf2003_r"
   conopts = "--disable-mct --enable-filesystem-hints=gpfs  "
   workdir = "/ptmp/${USER}/testpio"
   submit = "bsub < "

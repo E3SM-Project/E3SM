@@ -71,7 +71,7 @@ sub loadmodules{
 #	require "/opt/modules/default/init/perl";
 	module(" purge");
 	module(" load PrgEnv-pgi Base-opts");
-	module(" load xtpe-quadcore");
+	module(" load xtpe-barcelona");
 	module(" load torque moab");
 	module(" switch pgi pgi/7.1.6");
 	module(" load netcdf/3.6.2");      

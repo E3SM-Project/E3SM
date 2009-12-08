@@ -197,15 +197,14 @@ contains
      call MPI_File_set_view(File%fh,File%offset, iodesc%Write%elemTYPE, iodesc%Write%fileTYPE, 'native',File%iosystem%info,ierr)
 
      if(Check.and.ierr/=MPI_SUCCESS) then
-        print *, _FILE_,__LINE__,iodesc%Write%elemTYPE, iodesc%Write%fileTYPE
 	call CheckMPIreturn('write_mpiio_{TYPE} after call to file_set_view: ',ierr)
 	call piodie(_FILE_,__LINE__)
      end if
      !-----------------------------
      ! Write out distributed array
      !-----------------------------
-     call MPI_file_write_all(File%fh,IOBUF,iodesc%Write%n_elemTYPE,iodesc%Write%elemTYPE,fstatus,ierr)
 
+     call MPI_file_write_all(File%fh,IOBUF,iodesc%Write%n_elemTYPE,iodesc%Write%elemTYPE,fstatus,ierr)
      if(Check.and.ierr/=MPI_SUCCESS) then
         call CheckMPIreturn('write_mpiio_{TYPE}: after call to file_write_all: ',ierr)
         call piodie(_FILE_,__LINE__)
