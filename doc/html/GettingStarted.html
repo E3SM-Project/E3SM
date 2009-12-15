@@ -50,7 +50,16 @@ Introduction</a></h2>
 <h2><a class="anchor" id="error">
 Error Handling</a></h2>
 <p>By default PIO handles errors internally by printing a string describing the error and then calling mpi_abort. Application developers can change this behaivior with a call to piolib_mod::PIO_SetErrorHandling. For example if a developer wanted to see if an input netcdf file contained the variable 'U' he might do</p>
-<div class="fragment"><pre class="fragment"></pre></div> </div>
+<div class="fragment"><pre class="fragment"> call pio_seterrorhandling(File, PIO_BCAST_ERROR)
+ ierr =  pio_inq_varid(File, 'U', uid)
+ call pio_seterrorhandling(File, PIO_INTERNAL_ERROR)
+ if(ierr/= PIO_NOERR) then
+   write(stderr,*) 'Variable U not found on input file, setting to 0'
+   U=0
+ else
+   ...
+ endif
+</pre></div> </div>
 <!--- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -65,7 +74,7 @@ Error Handling</a></h2>
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Tue Dec 15 13:53:29 2009 for PIO User's Guide by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Tue Dec 15 14:40:23 2009 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

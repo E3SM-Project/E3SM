@@ -53,7 +53,16 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <hr/><a name="_details"></a><h2>Detailed Description</h2>
 <p>Sets the form of error handeling for PIO. </p>
 <p>An example of its use is seen in the following example By default PIO handles errors internally by printing a string describing the error and then calling mpi_abort. Application developers can change this behaivior with a call to PIO_seterrorhandling. For example if a developer wanted to see if an input netcdf file contained the variable 'U' they might write the following </p>
-<div class="fragment"><pre class="fragment"></pre></div> <hr/><h2>Function/Subroutine Documentation</h2>
+<div class="fragment"><pre class="fragment"> call pio_seterrorhandling(File, PIO_BCAST_ERROR)
+ ierr =  pio_inq_varid(File, 'U', uid)
+ call pio_seterrorhandling(File, PIO_INTERNAL_ERROR)
+ if(ierr/= PIO_NOERR) then
+   write(stderr,*) 'Variable U not found on input file, setting to 0'
+   U=0
+ else
+   ...
+ endif
+</pre></div> <hr/><h2>Function/Subroutine Documentation</h2>
 <a class="anchor" id="gacc11f85597eadb3beee185316a224e8a"></a><!-- doxytag: member="piolib_mod::SetErrorHandlingF" ref="gacc11f85597eadb3beee185316a224e8a" args="(File, method)" -->
 <div class="memitem">
 <div class="memproto">
@@ -166,7 +175,7 @@ Here is the call graph for this function:</div>
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Tue Dec 15 13:53:31 2009 for PIO User's Guide by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Tue Dec 15 14:40:24 2009 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>
