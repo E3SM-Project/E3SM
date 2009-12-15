@@ -27,6 +27,11 @@ module pionfput_mod
   integer, external :: nf_put_vars_text
 #endif
   include 'mpif.h'   ! _EXTERNAL
+
+!>
+!! \defgroup PIO_put_var PIO_put_var
+!! Writes netcdf metadata to a file
+!<
   public :: put_var
   interface put_var
      !  DIMS 0,1,2,3,4,5
@@ -36,6 +41,18 @@ module pionfput_mod
      module procedure put_var1_{TYPE}, put_var1_vdesc_{TYPE}
   end interface
 contains
+
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param index : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
   integer function put_var1_{TYPE} (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, index(:)
@@ -82,6 +99,17 @@ contains
 #endif 
   end function put_var1_{TYPE}
 
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
   integer function put_var1_vdesc_{TYPE} (File,vardesc, start, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -91,7 +119,17 @@ contains
     ierr = put_var1_{TYPE} (File, vardesc%varid, start, ival)
   end function put_var1_vdesc_{TYPE}
 
-  ! DIMS 0,1,2,3,4,5
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
   integer function put_var_{DIMS}d_{TYPE} (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -158,16 +196,40 @@ contains
     call t_stopf("pio_put_var_{DIMS}d_{TYPE}")
 #endif 
   end function put_var_{DIMS}d_{TYPE}
-  ! DIMS 0,1,2,3,4,5
-  integer function put_var_vdesc_{DIMS}d_{TYPE} (File, vdesc, ival) result(ierr)
+
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+  integer function put_var_vdesc_{DIMS}d_{TYPE} (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
-    type(var_desc_t) , intent(in) :: vdesc
+    type(var_desc_t) , intent(in) :: vardesc
     {VTYPE}, intent(in) :: ival{DIMSTR}
     integer :: iotype
 
-    ierr = put_var_{DIMS}d_{TYPE} (File, vdesc%varid, ival)
+    ierr = put_var_{DIMS}d_{TYPE} (File, vardesc%varid, ival)
   end function put_var_vdesc_{DIMS}d_{TYPE}
-  ! DIMS 1,2,3,4,5
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
   integer function put_vara_{DIMS}d_{TYPE} (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -211,7 +273,20 @@ contains
     call t_stopf("pio_put_vara_{DIMS}d_{TYPE}")
 #endif 
   end function put_vara_{DIMS}d_{TYPE}
-  ! DIMS 1,2,3,4,5
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf variable to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start : 
+!! \param count : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
   integer function put_vara_vdesc_{DIMS}d_{TYPE} (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc

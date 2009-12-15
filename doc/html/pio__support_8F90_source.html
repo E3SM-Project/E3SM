@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>PIO: pio_support.F90 Source File</title>
+<title>PIO User&#39;s Guide: pio_support.F90 Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javaScript" src="search/search.js"></script>
@@ -19,6 +19,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
     <ul>
       <li><a href="index.html"><span>Main&nbsp;Page</span></a></li>
       <li><a href="pages.html"><span>Related&nbsp;Pages</span></a></li>
+      <li><a href="modules.html"><span>Modules</span></a></li>
       <li><a href="namespaces.html"><span>Modules</span></a></li>
       <li><a href="annotated.html"><span>Data&nbsp;Types&nbsp;List</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
@@ -40,10 +41,9 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div class="tabs">
     <ul>
       <li><a href="files.html"><span>File&nbsp;List</span></a></li>
-      <li><a href="globals.html"><span>File&nbsp;Members</span></a></li>
     </ul>
   </div>
-<h1>pio_support.F90</h1><a href="pio__support_8F90.html">Go to the documentation of this file.</a><div class="fragment"><pre class="fragment"><a name="l00001"></a>00001 <span class="preprocessor">#define TYPEDOUBLE 102</span>
+<h1>pio_support.F90</h1><div class="fragment"><pre class="fragment"><a name="l00001"></a>00001 <span class="preprocessor">#define TYPEDOUBLE 102</span>
 <a name="l00002"></a>00002 <span class="preprocessor"></span><span class="preprocessor">#define TYPEINT 103</span>
 <a name="l00003"></a>00003 <span class="preprocessor"></span><span class="preprocessor">#define TYPETEXT 100</span>
 <a name="l00004"></a>00004 <span class="preprocessor"></span><span class="preprocessor">#define TYPELONG 104</span>
@@ -61,36 +61,36 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00016"></a>00016 
 <a name="l00017"></a>00017   include <span class="stringliteral">&apos;mpif.h&apos;</span>    <span class="comment">! _EXTERNAL</span>
 <a name="l00018"></a>00018 
-<a name="l00019"></a>00019   <span class="keywordtype">public</span> :: <a class="code" href="namespacepio__support.html#a371d622b080eefa34a598b26fbb6ebf5">piodie</a>
-<a name="l00020"></a>00020   <span class="keywordtype">public</span> :: <a class="code" href="namespacepio__support.html#a17c6da23a3e724ab02ce7fc31d138299">CheckMPIreturn</a>
-<a name="l00021"></a>00021   <span class="keywordtype">public</span> :: <a class="code" href="namespacepio__support.html#a776f22b4c83bb2cab975414cb7ef87fc">pio_readdof</a>
-<a name="l00022"></a>00022   <span class="keywordtype">public</span> :: <a class="code" href="namespacepio__support.html#a5b8ddfd2b320cc7d5af80a6ea3a90d21">pio_writedof</a>
+<a name="l00019"></a>00019   <span class="keywordtype">public</span> :: piodie
+<a name="l00020"></a>00020   <span class="keywordtype">public</span> :: CheckMPIreturn
+<a name="l00021"></a>00021   <span class="keywordtype">public</span> :: pio_readdof
+<a name="l00022"></a>00022   <span class="keywordtype">public</span> :: pio_writedof
 <a name="l00023"></a>00023 <span class="preprocessor">#ifdef NO_MPI2</span>
-<a name="l00024"></a>00024 <span class="preprocessor"></span>  <span class="keywordtype">public</span> :: <a class="code" href="namespacepio__support.html#a30ba2d2beb33df5531eb1689236acaba">MPI_TYPE_CREATE_INDEXED_BLOCK</a>
+<a name="l00024"></a>00024 <span class="preprocessor"></span>  <span class="keywordtype">public</span> :: MPI_TYPE_CREATE_INDEXED_BLOCK
 <a name="l00025"></a>00025 <span class="preprocessor">#endif</span>
 <a name="l00026"></a>00026 <span class="preprocessor"></span>
 <a name="l00027"></a>00027 <span class="preprocessor">#ifdef NO_SIZEOF</span>
 <a name="l00028"></a>00028 <span class="preprocessor"></span>  <span class="keywordtype">public</span> <a class="code" href="interfacepio__support_1_1sizeof.html">sizeof</a>
 <a name="l00029"></a>00029 <span class="preprocessor"># 20 &quot;pio_support.F90.in&quot;</span>
 <a name="l00030"></a><a class="code" href="interfacepio__support_1_1sizeof.html">00030</a> <span class="preprocessor"></span>  <span class="keyword">interface</span> <a class="code" href="interfacepio__support_1_1sizeof.html">sizeof</a>
-<a name="l00031"></a>00031      <span class="keyword">module procedure</span> <a class="code" href="namespacepio__support.html#a9826d7622ba62c3d04142b203828e74f">sizeof_text</a>
-<a name="l00032"></a>00032      <span class="keyword">module procedure</span> <a class="code" href="namespacepio__support.html#a8f623b9db41e1f3905803972a3ed9e10">sizeof_real</a>
-<a name="l00033"></a>00033      <span class="keyword">module procedure</span> <a class="code" href="namespacepio__support.html#aa2a944990a847dc8aed1d98e8777dec5">sizeof_double</a>
-<a name="l00034"></a>00034      <span class="keyword">module procedure</span> <a class="code" href="namespacepio__support.html#af4d55479709f4e2a749985aa737b008d">sizeof_int</a>
+<a name="l00031"></a>00031      <span class="keyword">module procedure</span> sizeof_text
+<a name="l00032"></a>00032      <span class="keyword">module procedure</span> sizeof_real
+<a name="l00033"></a>00033      <span class="keyword">module procedure</span> sizeof_double
+<a name="l00034"></a>00034      <span class="keyword">module procedure</span> sizeof_int
 <a name="l00035"></a>00035 <span class="keyword">  end interface</span>
 <a name="l00036"></a>00036 <span class="preprocessor">#endif</span>
 <a name="l00037"></a>00037 <span class="preprocessor"></span>
-<a name="l00038"></a><a class="code" href="namespacepio__support.html#a64d601cf1bf351d0e88917ca44230e11">00038</a>   <span class="keywordtype">logical</span>, <span class="keywordtype">public</span> :: Debug=.FALSE.
-<a name="l00039"></a><a class="code" href="namespacepio__support.html#a22ae62104fd733629101d42b439fd0a9">00039</a>   <span class="keywordtype">logical</span>, <span class="keywordtype">public</span> :: DebugIO=.FALSE.
-<a name="l00040"></a><a class="code" href="namespacepio__support.html#a77513a6471d8ccfb7337ba47daaf6eee">00040</a>   <span class="keywordtype">integer</span>,<span class="keywordtype">private</span>,<span class="keywordtype">parameter</span> :: versno = 1001
+<a name="l00038"></a><a class="code" href="namespacepio__support.html#ac131f510d76dcdf0cc8afa2fc1fe80ed">00038</a>   <span class="keywordtype">logical</span>, <span class="keywordtype">public</span> :: Debug=.FALSE.
+<a name="l00039"></a><a class="code" href="namespacepio__support.html#a55fa14df8ac7aecd77d6f88f2843c009">00039</a>   <span class="keywordtype">logical</span>, <span class="keywordtype">public</span> :: DebugIO=.FALSE.
+<a name="l00040"></a><a class="code" href="namespacepio__support.html#ae5ffce9ac95f219711569dc6edfd010f">00040</a>   <span class="keywordtype">integer</span>,<span class="keywordtype">private</span>,<span class="keywordtype">parameter</span> :: versno = 1001
 <a name="l00041"></a>00041 
-<a name="l00042"></a><a class="code" href="namespacepio__support.html#a86f24691448722f445c344db50bb4abc">00042</a>   <span class="keywordtype">character(len=*)</span>, <span class="keywordtype">parameter</span> :: modName=<span class="stringliteral">&apos;pio_support&apos;</span>
+<a name="l00042"></a><a class="code" href="namespacepio__support.html#af9c601df7608efb3baa76c17042dd16c">00042</a>   <span class="keywordtype">character(len=*)</span>, <span class="keywordtype">parameter</span> :: modName=<span class="stringliteral">&apos;pio_support&apos;</span>
 <a name="l00043"></a>00043 
 <a name="l00044"></a>00044 <span class="preprocessor"># 31 &quot;pio_support.F90.in&quot;</span>
 <a name="l00045"></a>00045 <span class="preprocessor"></span><span class="keyword">contains</span>
 <a name="l00046"></a>00046 
 <a name="l00047"></a>00047 <span class="preprocessor"># 33 &quot;pio_support.F90.in&quot;</span>
-<a name="l00048"></a><a class="code" href="namespacepio__support.html#a371d622b080eefa34a598b26fbb6ebf5">00048</a> <span class="preprocessor"></span>  <span class="keyword">subroutine </span><a class="code" href="namespacepio__support.html#a371d622b080eefa34a598b26fbb6ebf5">piodie</a> (file,line, msg, ival1, msg2, ival2, msg3, ival3)
+<a name="l00048"></a><a class="code" href="namespacepio__support.html#a371d622b080eefa34a598b26fbb6ebf5">00048</a> <span class="preprocessor"></span>  <span class="keyword">subroutine </span>piodie (file,line, msg, ival1, msg2, ival2, msg3, ival3)
 <a name="l00049"></a>00049     <span class="comment">!-----------------------------------------------------------------------</span>
 <a name="l00050"></a>00050     <span class="comment">! Purpose:</span>
 <a name="l00051"></a>00051     <span class="comment">!</span>
@@ -165,7 +165,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00120"></a>00120 <span class="comment">!  if an error occured in a MPI subroutine.</span>
 <a name="l00121"></a>00121 <span class="comment">!=============================================</span>
 <a name="l00122"></a>00122 <span class="preprocessor"># 107 &quot;pio_support.F90.in&quot;</span>
-<a name="l00123"></a><a class="code" href="namespacepio__support.html#a17c6da23a3e724ab02ce7fc31d138299">00123</a> <span class="preprocessor"></span>  <span class="keyword">subroutine </span><a class="code" href="namespacepio__support.html#a17c6da23a3e724ab02ce7fc31d138299">CheckMPIreturn</a>(locmesg, errcode, file, line)
+<a name="l00123"></a><a class="code" href="namespacepio__support.html#a17c6da23a3e724ab02ce7fc31d138299">00123</a> <span class="preprocessor"></span>  <span class="keyword">subroutine </span>CheckMPIreturn(locmesg, errcode, file, line)
 <a name="l00124"></a>00124 
 <a name="l00125"></a>00125      <span class="keywordtype">character(len=*)</span>, <span class="keywordtype">intent(in)</span> :: locmesg
 <a name="l00126"></a>00126      <span class="keywordtype">integer(i4)</span>, <span class="keywordtype">intent(in)</span> :: errcode
@@ -181,14 +181,14 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00136"></a>00136         call MPI_Error_String(errcode,errorstring,errorlen,ierr)
 <a name="l00137"></a>00137         <span class="keyword">write</span>(*,*) TRIM(ADJUSTL(locmesg))//errorstring(1:errorlen)
 <a name="l00138"></a>00138         <span class="keyword">if</span>(present(file).and.present(line)) <span class="keyword">then</span>
-<a name="l00139"></a>00139            call <a class="code" href="namespacepio__support.html#a371d622b080eefa34a598b26fbb6ebf5">piodie</a>(file,line)
+<a name="l00139"></a>00139            call piodie(file,line)
 <a name="l00140"></a>00140         <span class="keyword">endif</span>
 <a name="l00141"></a>00141      <span class="keyword">end if</span>
 <a name="l00142"></a>00142 
 <a name="l00143"></a>00143 <span class="keyword">  end subroutine CheckMPIreturn</span>
 <a name="l00144"></a>00144 
 <a name="l00145"></a>00145 <span class="preprocessor"># 129 &quot;pio_support.F90.in&quot;</span>
-<a name="l00146"></a><a class="code" href="namespacepio__support.html#a5b8ddfd2b320cc7d5af80a6ea3a90d21">00146</a> <span class="preprocessor"></span>  <span class="keyword">subroutine </span><a class="code" href="namespacepio__support.html#a5b8ddfd2b320cc7d5af80a6ea3a90d21">pio_writedof</a> (file, DOF, comm, punit)
+<a name="l00146"></a><a class="code" href="namespacepio__support.html#a5b8ddfd2b320cc7d5af80a6ea3a90d21">00146</a> <span class="preprocessor"></span>  <span class="keyword">subroutine </span>pio_writedof (file, DOF, comm, punit)
 <a name="l00147"></a>00147     <span class="comment">!-----------------------------------------------------------------------</span>
 <a name="l00148"></a>00148     <span class="comment">! Purpose:</span>
 <a name="l00149"></a>00149     <span class="comment">!</span>
@@ -233,12 +233,12 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00188"></a>00188     <span class="keyword">allocate</span>(sdof1d(0:npes-1))
 <a name="l00189"></a>00189     sdof1d = -1
 <a name="l00190"></a>00190     call MPI_GATHER(sdof,1,MPI_INTEGER,sdof1d,1,MPI_INTEGER,masterproc,comm,ierr)
-<a name="l00191"></a>00191     <span class="keyword">if</span> (ierr /= MPI_SUCCESS) call <a class="code" href="namespacepio__support.html#a371d622b080eefa34a598b26fbb6ebf5">piodie</a>(_FILE_,__LINE__,<span class="stringliteral">&apos; pio_writedof mpi_gather&apos;</span>)
+<a name="l00191"></a>00191     <span class="keyword">if</span> (ierr /= MPI_SUCCESS) call piodie(_FILE_,__LINE__,<span class="stringliteral">&apos; pio_writedof mpi_gather&apos;</span>)
 <a name="l00192"></a>00192 
 <a name="l00193"></a>00193     <span class="keyword">if</span> (myrank == masterproc) <span class="keyword">then</span>
 <a name="l00194"></a>00194        <span class="keyword">write</span>(6,*) subName,<span class="stringliteral">&apos;: writing file &apos;</span>,trim(file),<span class="stringliteral">&apos; unit=&apos;</span>,unit
 <a name="l00195"></a>00195        <span class="keyword">open</span>(unit,file=file)
-<a name="l00196"></a>00196        <span class="keyword">write</span>(unit,*) <a class="code" href="namespacepio__support.html#a77513a6471d8ccfb7337ba47daaf6eee">versno</a>,npes
+<a name="l00196"></a>00196        <span class="keyword">write</span>(unit,*) versno,npes
 <a name="l00197"></a>00197     <span class="keyword">endif</span>
 <a name="l00198"></a>00198 
 <a name="l00199"></a>00199     <span class="keyword">do</span> n = 0,npes-1
@@ -250,11 +250,11 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00205"></a>00205        <span class="keyword">else</span>
 <a name="l00206"></a>00206           <span class="keyword">if</span> (myrank == n .and. sdof &gt; 0) <span class="keyword">then</span>
 <a name="l00207"></a>00207              call MPI_SEND(dof,sdof,MPI_INTEGER,masterproc,n,comm,status,ierr)
-<a name="l00208"></a>00208              <span class="keyword">if</span> (ierr /= MPI_SUCCESS) call <a class="code" href="namespacepio__support.html#a371d622b080eefa34a598b26fbb6ebf5">piodie</a>(_FILE_,__LINE__,<span class="stringliteral">&apos; pio_writedof mpi_send&apos;</span>)
+<a name="l00208"></a>00208              <span class="keyword">if</span> (ierr /= MPI_SUCCESS) call piodie(_FILE_,__LINE__,<span class="stringliteral">&apos; pio_writedof mpi_send&apos;</span>)
 <a name="l00209"></a>00209           <span class="keyword">endif</span>
 <a name="l00210"></a>00210           <span class="keyword">if</span> (myrank == masterproc .and. sdof1d(n) &gt; 0) <span class="keyword">then</span>
 <a name="l00211"></a>00211              call MPI_RECV(wdof,sdof1d(n),MPI_INTEGER,n,n,comm,status,ierr)
-<a name="l00212"></a>00212              <span class="keyword">if</span> (ierr /= MPI_SUCCESS) call <a class="code" href="namespacepio__support.html#a371d622b080eefa34a598b26fbb6ebf5">piodie</a>(_FILE_,__LINE__,<span class="stringliteral">&apos; pio_writedof mpi_recv&apos;</span>)
+<a name="l00212"></a>00212              <span class="keyword">if</span> (ierr /= MPI_SUCCESS) call piodie(_FILE_,__LINE__,<span class="stringliteral">&apos; pio_writedof mpi_recv&apos;</span>)
 <a name="l00213"></a>00213           <span class="keyword">endif</span>
 <a name="l00214"></a>00214        <span class="keyword">endif</span>
 <a name="l00215"></a>00215        <span class="keyword">if</span> (myrank == masterproc) <span class="keyword">then</span>
@@ -275,7 +275,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00230"></a>00230 <span class="keyword">  end subroutine pio_writedof</span>
 <a name="l00231"></a>00231 
 <a name="l00232"></a>00232 <span class="preprocessor"># 215 &quot;pio_support.F90.in&quot;</span>
-<a name="l00233"></a><a class="code" href="namespacepio__support.html#a776f22b4c83bb2cab975414cb7ef87fc">00233</a> <span class="preprocessor"></span>  <span class="keyword">subroutine </span><a class="code" href="namespacepio__support.html#a776f22b4c83bb2cab975414cb7ef87fc">pio_readdof</a> (file, DOF, comm, punit)
+<a name="l00233"></a><a class="code" href="namespacepio__support.html#a776f22b4c83bb2cab975414cb7ef87fc">00233</a> <span class="preprocessor"></span>  <span class="keyword">subroutine </span>pio_readdof (file, DOF, comm, punit)
 <a name="l00234"></a>00234     <span class="comment">!-----------------------------------------------------------------------</span>
 <a name="l00235"></a>00235     <span class="comment">! Purpose:</span>
 <a name="l00236"></a>00236     <span class="comment">!</span>
@@ -324,13 +324,13 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00279"></a>00279        <span class="keyword">read</span>(unit,*) rversno,rnpes
 <a name="l00280"></a>00280        <span class="keyword">write</span>(6,*) subName,<span class="stringliteral">&apos;: reading file &apos;</span>,trim(file),<span class="stringliteral">&apos; versno=&apos;</span>,rversno
 <a name="l00281"></a>00281        <span class="keyword">if</span> (rnpes /= npes) <span class="keyword">then</span>
-<a name="l00282"></a>00282           call <a class="code" href="namespacepio__support.html#a371d622b080eefa34a598b26fbb6ebf5">piodie</a>(_FILE_,__LINE__,<span class="stringliteral">&apos;pio_readdof npes incorrect&apos;</span>)
+<a name="l00282"></a>00282           call piodie(_FILE_,__LINE__,<span class="stringliteral">&apos;pio_readdof npes incorrect&apos;</span>)
 <a name="l00283"></a>00283        <span class="keyword">endif</span>
 <a name="l00284"></a>00284 
 <a name="l00285"></a>00285        <span class="keyword">do</span> n = 0,npes-1
 <a name="l00286"></a>00286           <span class="keyword">read</span>(unit,*) rn,sdof
 <a name="l00287"></a>00287           <span class="keyword">if</span> (rn /= n) <span class="keyword">then</span>
-<a name="l00288"></a>00288              call <a class="code" href="namespacepio__support.html#a371d622b080eefa34a598b26fbb6ebf5">piodie</a>(_FILE_,__LINE__,<span class="stringliteral">&apos;pio_readdof rn out of sync&apos;</span>)
+<a name="l00288"></a>00288              call piodie(_FILE_,__LINE__,<span class="stringliteral">&apos;pio_readdof rn out of sync&apos;</span>)
 <a name="l00289"></a>00289           <span class="keyword">endif</span>
 <a name="l00290"></a>00290           <span class="keyword">allocate</span>(wdof(sdof))
 <a name="l00291"></a>00291           <span class="keyword">do</span> m = 1,sdof
@@ -342,10 +342,10 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00297"></a>00297              dof = wdof
 <a name="l00298"></a>00298           <span class="keyword">else</span>
 <a name="l00299"></a>00299              call MPI_SEND(sdof,1,MPI_INTEGER,n,n,comm,status,ierr)
-<a name="l00300"></a>00300              <span class="keyword">if</span> (ierr /= MPI_SUCCESS) call <a class="code" href="namespacepio__support.html#a371d622b080eefa34a598b26fbb6ebf5">piodie</a>(_FILE_,__LINE__,<span class="stringliteral">&apos; pio_readdof mpi_send1&apos;</span>)
+<a name="l00300"></a>00300              <span class="keyword">if</span> (ierr /= MPI_SUCCESS) call piodie(_FILE_,__LINE__,<span class="stringliteral">&apos; pio_readdof mpi_send1&apos;</span>)
 <a name="l00301"></a>00301              <span class="keyword">if</span> (sdof &gt; 0) <span class="keyword">then</span>
 <a name="l00302"></a>00302                 call MPI_SEND(wdof,sdof,MPI_INTEGER,n,npes+n,comm,status,ierr)
-<a name="l00303"></a>00303                 <span class="keyword">if</span> (ierr /= MPI_SUCCESS) call <a class="code" href="namespacepio__support.html#a371d622b080eefa34a598b26fbb6ebf5">piodie</a>(_FILE_,__LINE__,<span class="stringliteral">&apos; pio_readdof mpi_send2&apos;</span>)
+<a name="l00303"></a>00303                 <span class="keyword">if</span> (ierr /= MPI_SUCCESS) call piodie(_FILE_,__LINE__,<span class="stringliteral">&apos; pio_readdof mpi_send2&apos;</span>)
 <a name="l00304"></a>00304              <span class="keyword">endif</span>
 <a name="l00305"></a>00305           <span class="keyword">endif</span>
 <a name="l00306"></a>00306           <span class="keyword">deallocate</span>(wdof)
@@ -353,12 +353,12 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00308"></a>00308        <span class="keyword">close</span>(unit)
 <a name="l00309"></a>00309     <span class="keyword">else</span>
 <a name="l00310"></a>00310        call MPI_RECV(sdof,1,MPI_INTEGER,masterproc,myrank,comm,status,ierr)
-<a name="l00311"></a>00311        <span class="keyword">if</span> (ierr /= MPI_SUCCESS) call <a class="code" href="namespacepio__support.html#a371d622b080eefa34a598b26fbb6ebf5">piodie</a>(_FILE_,__LINE__,<span class="stringliteral">&apos; pio_readdof mpi_recv1&apos;</span>)
+<a name="l00311"></a>00311        <span class="keyword">if</span> (ierr /= MPI_SUCCESS) call piodie(_FILE_,__LINE__,<span class="stringliteral">&apos; pio_readdof mpi_recv1&apos;</span>)
 <a name="l00312"></a>00312        <span class="keyword">if</span> (sdof &gt; 0) <span class="keyword">then</span>
 <a name="l00313"></a>00313           <span class="keyword">deallocate</span>(dof)
 <a name="l00314"></a>00314           <span class="keyword">allocate</span>(dof(sdof))
 <a name="l00315"></a>00315           call MPI_RECV(dof,sdof,MPI_INTEGER,masterproc,npes+myrank,comm,status,ierr)
-<a name="l00316"></a>00316           <span class="keyword">if</span> (ierr /= MPI_SUCCESS) call <a class="code" href="namespacepio__support.html#a371d622b080eefa34a598b26fbb6ebf5">piodie</a>(_FILE_,__LINE__,<span class="stringliteral">&apos; pio_readdof mpi_recv2&apos;</span>)
+<a name="l00316"></a>00316           <span class="keyword">if</span> (ierr /= MPI_SUCCESS) call piodie(_FILE_,__LINE__,<span class="stringliteral">&apos; pio_readdof mpi_recv2&apos;</span>)
 <a name="l00317"></a>00317        <span class="keyword">endif</span>
 <a name="l00318"></a>00318     <span class="keyword">endif</span>
 <a name="l00319"></a>00319 
@@ -367,7 +367,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00322"></a>00322 <span class="preprocessor">#ifdef NO_MPI2</span>
 <a name="l00323"></a>00323 <span class="preprocessor"></span>
 <a name="l00324"></a>00324 <span class="preprocessor"># 306 &quot;pio_support.F90.in&quot;</span>
-<a name="l00325"></a><a class="code" href="namespacepio__support.html#a30ba2d2beb33df5531eb1689236acaba">00325</a> <span class="preprocessor"></span>  <span class="keyword">subroutine </span><a class="code" href="namespacepio__support.html#a30ba2d2beb33df5531eb1689236acaba">MPI_TYPE_CREATE_INDEXED_BLOCK</a>(count, blen, disp, oldtype, newtype, ierr)
+<a name="l00325"></a><a class="code" href="namespacepio__support.html#a30ba2d2beb33df5531eb1689236acaba">00325</a> <span class="preprocessor"></span>  <span class="keyword">subroutine </span>MPI_TYPE_CREATE_INDEXED_BLOCK(count, blen, disp, oldtype, newtype, ierr)
 <a name="l00326"></a>00326     <span class="keywordtype">integer</span>, <span class="keywordtype">intent(in)</span>  :: count
 <a name="l00327"></a>00327     <span class="keywordtype">integer</span>, <span class="keywordtype">intent(in)</span>  :: blen
 <a name="l00328"></a>00328     <span class="keywordtype">integer</span>, <span class="keywordtype">intent(in)</span>  :: disp(:)
@@ -386,7 +386,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00341"></a>00341 <span class="preprocessor"></span><span class="preprocessor">#ifdef NO_SIZEOF</span>
 <a name="l00342"></a>00342 <span class="preprocessor"></span>
 <a name="l00343"></a>00343 <span class="preprocessor"># 324 &quot;pio_support.F90.in&quot;</span>
-<a name="l00344"></a><a class="code" href="namespacepio__support.html#a9826d7622ba62c3d04142b203828e74f">00344</a> <span class="preprocessor"></span>  <span class="keyword">integer </span><span class="keyword">function </span><a class="code" href="namespacepio__support.html#a9826d7622ba62c3d04142b203828e74f">sizeof_text</a>(val) result(i)
+<a name="l00344"></a>00344 <span class="preprocessor"></span>  <span class="keyword">integer </span><span class="keyword">function </span>sizeof_text(val) result(i)
 <a name="l00345"></a>00345     <span class="keyword">implicit none</span>
 <a name="l00346"></a>00346     <span class="keywordtype">character(len=*)</span>,<span class="keywordtype">intent(in)</span> :: val
 <a name="l00347"></a>00347 
@@ -402,7 +402,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00357"></a>00357 <span class="preprocessor"></span><span class="keyword">  end function sizeof_text</span>
 <a name="l00358"></a>00358 
 <a name="l00359"></a>00359 <span class="preprocessor"># 324 &quot;pio_support.F90.in&quot;</span>
-<a name="l00360"></a><a class="code" href="namespacepio__support.html#a8f623b9db41e1f3905803972a3ed9e10">00360</a> <span class="preprocessor"></span>  <span class="keyword">integer </span><span class="keyword">function </span><a class="code" href="namespacepio__support.html#a8f623b9db41e1f3905803972a3ed9e10">sizeof_real</a>(val) result(i)
+<a name="l00360"></a>00360 <span class="preprocessor"></span>  <span class="keyword">integer </span><span class="keyword">function </span>sizeof_real(val) result(i)
 <a name="l00361"></a>00361     <span class="keyword">implicit none</span>
 <a name="l00362"></a>00362     <span class="keywordtype">real(r4)</span>,<span class="keywordtype">intent(in)</span> :: val
 <a name="l00363"></a>00363 
@@ -418,7 +418,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00373"></a>00373 <span class="preprocessor"></span><span class="keyword">  end function sizeof_real</span>
 <a name="l00374"></a>00374 
 <a name="l00375"></a>00375 <span class="preprocessor"># 324 &quot;pio_support.F90.in&quot;</span>
-<a name="l00376"></a><a class="code" href="namespacepio__support.html#aa2a944990a847dc8aed1d98e8777dec5">00376</a> <span class="preprocessor"></span>  <span class="keyword">integer </span><span class="keyword">function </span><a class="code" href="namespacepio__support.html#aa2a944990a847dc8aed1d98e8777dec5">sizeof_double</a>(val) result(i)
+<a name="l00376"></a>00376 <span class="preprocessor"></span>  <span class="keyword">integer </span><span class="keyword">function </span>sizeof_double(val) result(i)
 <a name="l00377"></a>00377     <span class="keyword">implicit none</span>
 <a name="l00378"></a>00378     <span class="keywordtype">real(r8)</span>,<span class="keywordtype">intent(in)</span> :: val
 <a name="l00379"></a>00379 
@@ -434,7 +434,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00389"></a>00389 <span class="preprocessor"></span><span class="keyword">  end function sizeof_double</span>
 <a name="l00390"></a>00390 
 <a name="l00391"></a>00391 <span class="preprocessor"># 324 &quot;pio_support.F90.in&quot;</span>
-<a name="l00392"></a><a class="code" href="namespacepio__support.html#af4d55479709f4e2a749985aa737b008d">00392</a> <span class="preprocessor"></span>  <span class="keyword">integer </span><span class="keyword">function </span><a class="code" href="namespacepio__support.html#af4d55479709f4e2a749985aa737b008d">sizeof_int</a>(val) result(i)
+<a name="l00392"></a>00392 <span class="preprocessor"></span>  <span class="keyword">integer </span><span class="keyword">function </span>sizeof_int(val) result(i)
 <a name="l00393"></a>00393     <span class="keyword">implicit none</span>
 <a name="l00394"></a>00394     <span class="keywordtype">integer(i4)</span>,<span class="keywordtype">intent(in)</span> :: val
 <a name="l00395"></a>00395 
@@ -457,7 +457,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
      onmouseover="return searchBox.OnSearchSelectShow()"
      onmouseout="return searchBox.OnSearchSelectHide()"
      onkeydown="return searchBox.OnSearchSelectKey(event)">
-<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&nbsp;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&nbsp;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&nbsp;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&nbsp;</span>Files</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&nbsp;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(5)"><span class="SelectionMark">&nbsp;</span>Variables</a></div>
+<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&nbsp;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&nbsp;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&nbsp;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&nbsp;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&nbsp;</span>Variables</a></div>
 
 <!-- iframe showing the search results (closed by default) -->
 <div id="MSearchResultsWindow">
@@ -466,7 +466,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Fri Dec 4 14:24:48 2009 for PIO by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Tue Dec 15 13:53:29 2009 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

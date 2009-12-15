@@ -1,7 +1,4 @@
 #define _FILE_ 'piodarray'
-!> \file
-!! This module contains the distributed read and write routines.
-!<
 
 module piodarray
   use pio_types
@@ -19,6 +16,10 @@ module piodarray
   private
   public :: pio_read_darray, pio_write_darray
   
+!> 
+!! \defgroup PIO_write_darray PIO_write_darray
+!! Writes an array to disk usin PIO.
+!<
   interface PIO_write_darray
 ! TYPE real,int,double
 ! DIMS 1,2,3,4,5
@@ -26,6 +27,10 @@ module piodarray
   end interface
 
 
+!> 
+!! \defgroup PIO_read_darray PIO_read_darray
+!! Reads an array on disk using PIO. 
+!<
   interface PIO_read_darray
 ! TYPE real,int,double
 ! DIMS 1,2,3,4,5
@@ -35,16 +40,20 @@ module piodarray
   character(len=*), parameter :: modName='piodarray'
 
 contains
+
 ! TYPE real,int,double
-!>  Write a 1D array defined by vardesc using the decomposition described in iodesc to the file File. 
-!!  \param File: A file handle returned from pio_open or pio_create
-!!  \param vardesc: A variable handle returned from pio_def_var
-!!  \param iodesc : An io description handle returned from pio_initdecomp
-!!  \param array  : The data to be written
-!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
-!<  \param fillval : An optional fill value to fill holes in the data written
-!!
-  subroutine write_darray_1d_{TYPE} (File,varDesc,iodesc, array, iostat, fillval)
+!> 
+!! \public
+!! \ingroup PIO_write_darray
+!! Writes a 1D array of type {TYPE}. 
+!! \param File : A file handle returned from \ref PIO_openfile or \ref PIO_createfile
+!! \param varDesc : A variable handle returned from \ref PIO_def_var (see pio_types) (see pio_types)
+!! \param ioDesc : An io description handle returned from \ref PIO_initdecomp (see pio_types)
+!! \param array  : The data to be written
+!! \param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
+!! \param fillval : An optional fill value to fill holes in the data written
+!<  
+  subroutine write_darray_1d_{TYPE} (File,varDesc,ioDesc, array, iostat, fillval)
 
     ! !DESCRIPTION:
     !  Writes a 2-d slab of TYPE to a netcdf file.
@@ -91,20 +100,20 @@ contains
 
   end subroutine write_darray_1d_{TYPE}
 
-
 ! TYPE real,int,double
 ! DIMS 2,3,4,5
-
-!>  Write a {DIMS}D array of type {TYPE} defined by vardesc using the decomposition 
-!!  described in iodesc to the file File. 
-!!  \param File: A file handle returned from pio_open or pio_create
-!!  \param vardesc: A variable handle returned from pio_def_var
-!!  \param iodesc : An io description handle returned from pio_initdecomp
-!!  \param array  : The data to be written
-!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
-!<  \param fillval : An optional fill value to fill holes in the data written
-!!
-  subroutine write_darray_{DIMS}d_{TYPE} (File,varDesc,iodesc, array, iostat, fillval)
+!> 
+!! \public
+!! \ingroup PIO_write_darray
+!! Writes a {DIMS}D array of type {TYPE}. 
+!! \param File : A file handle returned from \ref PIO_openfile or \ref PIO_createfile
+!! \param varDesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ioDesc : An io description handle returned from \ref PIO_initdecomp (see pio_types)
+!! \param array  : The data to be written
+!! \param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
+!! \param fillval : An optional fill value to fill holes in the data written
+!<  
+  subroutine write_darray_{DIMS}d_{TYPE} (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
     type (File_desc_t), intent(inout) :: &
@@ -135,22 +144,102 @@ contains
 
   end subroutine write_darray_{DIMS}d_{TYPE}
 
+! TYPE real,int,double
+!> 
+!! \public
+!! \ingroup PIO_read_darray
+!! \param File : A file handle returned from \ref PIO_openfile or \ref PIO_createfile
+!! \param varDesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ioDesc : An io description handle returned from \ref PIO_initdecomp (see pio_types)
+!! \param array  : The read data
+!! \param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
+!<
+  subroutine read_darray_1d_{TYPE} (File,varDesc, ioDesc, array, iostat)
+    ! !DESCRIPTION:
+    !  Reads a 2-d slab of TYPE to a netcdf file.
+    !
+    ! !REVISION HISTORY:
+    !  same as module
 
+    ! !INPUT PARAMETERS:
 
+    type (File_desc_t), intent(inout) :: &
+	 File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+	 varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+	 ioDesc                      ! iodecomp descriptor
+
+    {VTYPE}, dimension(:), intent(out) ::  &
+	 array                 ! array to be read
+
+    integer(i4), intent(out) :: iostat
+
+    character(len=*), parameter :: subName=modName//'::read_darray_{TYPE}'
+
+    array = 0	
+    select case(File%iotype)
+    case(iotype_pbinary, iotype_direct_pbinary)
+       call read_darray_bin_{TYPE} (File,varDesc,iodesc,array, iostat)
+    case(iotype_pnetcdf, iotype_netcdf)
+       call read_darray_nf_{TYPE} (File,varDesc,iodesc,array, iostat)
+    case(iotype_binary)
+       print *, subName,': IO type not supported'
+    end select
+
+  end subroutine read_darray_1d_{TYPE}
+ 
+! TYPE real,int,double
+! DIMS 2,3,4,5
+!> 
+!! \public
+!! \ingroup PIO_read_darray
+!!  Reads a {DIMS}D array of type {TYPE}. 
+!! \param File : A file handle returned from \ref PIO_openfile or \ref PIO_createfile
+!! \param varDesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ioDesc : An io description handle returned from \ref PIO_initdecomp (see pio_types)
+!! \param array  : The read data  
+!! \param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
+!<
+  subroutine read_darray_{DIMS}d_{TYPE} (File,varDesc,ioDesc, array, iostat)
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+	 File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+	 varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+	 ioDesc                      ! iodecomp descriptor
+
+    {VTYPE}, intent(out) ::  array{DIMSTR}                 ! array to be read
+
+    integer(i4), intent(out) :: iostat
+
+    {VTYPE}, pointer :: tmpvar(:)
+
+    call alloc_check(tmpvar,size(array))
+    call read_darray_1d_{TYPE} (File, varDesc, iodesc, tmpvar, iostat)
+    array = reshape(tmpvar,shape(array))
+    call dealloc_check(tmpvar)
+
+  end subroutine read_darray_{DIMS}d_{TYPE}
 
 ! TYPE real,int,double
-
-!>  Write a 1D array of type {TYPE} defined by vardesc using the decomposition 
-!!  described in iodesc to the netcdf or pnetcdf file File. 
-!!  \param File: A file handle returned from pio_open or pio_create
-!!  \param vardesc: A variable handle returned from pio_def_var
-!!  \param iodesc : An io description handle returned from pio_initdecomp
+!>
+!! \private
+!! Write a 1D array of type {TYPE} defined by varDesc using the decomposition described in iodesc to the netcdf or pnetcdf file File. 
+!!  \param File : A file handle returned from \ref PIO_openfile or \ref PIO_createfile
+!!  \param varDesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!!  \param ioDesc : An io description handle returned from \ref PIO_initdecomp (see pio_types)
 !!  \param array  : The data to be written
-!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!!  \param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !!  \param fillval : An optional fill value to fill holes in the data written
-!<  This routine is internal to PIO, the user interface is pio_writedarray.
-
-  subroutine write_darray_nf_{TYPE} (File,varDesc,iodesc,array, iostat, fillval)
+!<
+  subroutine write_darray_nf_{TYPE} (File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
     !  Writes a 2-d slab of TYPE to a netcdf file.
@@ -367,17 +456,17 @@ contains
   end subroutine write_darray_nf_{TYPE}
 
 ! TYPE real,int,double
-
-!>  Write a 1D array of type {TYPE} defined by vardesc using the decomposition 
-!!  described in iodesc to the binary file File. 
-!!  \param File: A file handle returned from pio_open or pio_create
-!!  \param vardesc: A variable handle returned from pio_def_var
-!!  \param iodesc : An io description handle returned from pio_initdecomp
+!>
+!! \private
+!!  Write a 1D array of type {TYPE}.
+!!  \param File : A file handle returned from \ref PIO_openfile or \ref PIO_createfile
+!!  \param varDesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!!  \param ioDesc : An io description handle returned from \ref PIO_initdecomp (see pio_types)
 !!  \param array  : The data to be written
-!!  \param iostat : The status returned from this routine (see pio_seterrorhandling for details)
+!!  \param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !!  \param fillval : An optional fill value to fill holes in the data written
-!<  This routine is internal to PIO, the user interface is pio_writedarray.
-  subroutine write_darray_bin_{TYPE}(File,varDesc,iodesc,array, iostat, fillval)
+!<  
+  subroutine write_darray_bin_{TYPE}(File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
     !  Writes a 2-d slab of integers to a file
@@ -394,7 +483,7 @@ contains
          varDesc                      ! varable descriptor
 
     type (io_desc_t), intent(inout) :: &
-         IODesc                      ! IO decomp descriptor
+         ioDesc                      ! IO decomp descriptor
 
 
     {VTYPE}, dimension(:), intent(in), target ::  &
@@ -555,81 +644,19 @@ contains
 #endif
   end subroutine write_darray_bin_{TYPE}
 
-  ! TYPE real,int,double
-
-  subroutine read_darray_1d_{TYPE} (File,varDesc, iodesc, array, iostat)
-
-    ! !DESCRIPTION:
-    !  Reads a 2-d slab of TYPE to a netcdf file.
-    !
-    ! !REVISION HISTORY:
-    !  same as module
-
-    ! !INPUT PARAMETERS:
-
-    type (File_desc_t), intent(inout) :: &
-	 File                   ! file information
-
-    type (var_desc_t), intent(inout) :: &
-	 varDesc                      ! variable descriptor
-
-    type (io_desc_t), intent(inout) :: &
-	 ioDesc                      ! iodecomp descriptor
-
-    {VTYPE}, dimension(:), intent(out) ::  &
-	 array                 ! array to be read
-
-    integer(i4), intent(out) :: iostat
-
-    character(len=*), parameter :: subName=modName//'::read_darray_{TYPE}'
-
-    array = 0	
-    select case(File%iotype)
-    case(iotype_pbinary, iotype_direct_pbinary)
-       call read_darray_bin_{TYPE} (File,varDesc,iodesc,array, iostat)
-    case(iotype_pnetcdf, iotype_netcdf)
-       call read_darray_nf_{TYPE} (File,varDesc,iodesc,array, iostat)
-    case(iotype_binary)
-       print *, subName,': IO type not supported'
-    end select
-
-  end subroutine read_darray_1d_{TYPE}
-
 
 ! TYPE real,int,double
-! DIMS 2,3,4,5
-  subroutine read_darray_{DIMS}d_{TYPE} (File,varDesc,iodesc, array, iostat)
-    ! !INPUT PARAMETERS:
-
-    type (File_desc_t), intent(inout) :: &
-	 File                   ! file information
-
-    type (var_desc_t), intent(inout) :: &
-	 varDesc                      ! variable descriptor
-
-    type (io_desc_t), intent(inout) :: &
-	 ioDesc                      ! iodecomp descriptor
-
-    {VTYPE}, intent(out) ::  array{DIMSTR}                 ! array to be read
-
-    integer(i4), intent(out) :: iostat
-
-    {VTYPE}, pointer :: tmpvar(:)
-
-    call alloc_check(tmpvar,size(array))
-    call read_darray_1d_{TYPE} (File, varDesc, iodesc, tmpvar, iostat)
-    array = reshape(tmpvar,shape(array))
-    call dealloc_check(tmpvar)
-
-  end subroutine read_darray_{DIMS}d_{TYPE}
-
-
-! TYPE real,int,double
-  !***********************************************************************
-  !BOP
-  ! !IROUTINE: read_darray_nf_{TYPE}
-  ! !INTERFACE:
-  subroutine read_darray_nf_{TYPE} (File,varDesc,iodesc,array, iostat)
+!> 
+!! \private
+!!  Read a 1D array of type {TYPE} defined by varDesc using the decomposition 
+!!  described in ioDesc to the netcdf or pnetcdf file File. 
+!!  \param File : A file handle returned from \ref PIO_openfile or \ref PIO_createfile
+!!  \param varDesc : A variable handle returned from \fef PIO_def_var (see pio_types)
+!!  \param ioDesc : An io description handle returned from \ref PIO_initdecomp (see pio_types)
+!!  \param array  : The read data
+!!  \param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
+!<
+  subroutine read_darray_nf_{TYPE} (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
     !  Reads a 2-d horizontal slice of integers from a binary file
@@ -824,11 +851,17 @@ contains
   end subroutine read_darray_nf_{TYPE}
 
 ! TYPE real,int,double
-  !***********************************************************************
-  !BOP
-  ! !IROUTINE: read_darray_bin_{TYPE}
-  ! !INTERFACE:
-  subroutine read_darray_bin_{TYPE} (File,varDesc,iodesc,array, iostat)
+!> 
+!! \private
+!!  Read an array of type {TYPE} defined by varDesc using the decomposition 
+!!  described in ioDesc to the netcdf or pnetcdf file File. 
+!!  \param File : A file handle returned from \ref PIO_openfile or \ref PIO_createfile
+!!  \param varDesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!!  \param ioDesc : An io description handle returned from \ref PIO_initdecomp (see pio_types)
+!!  \param array  : The read data
+!!  \param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
+!<
+  subroutine read_darray_bin_{TYPE} (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
     !  Reads a 2-d horizontal slice of integers from a binary file
@@ -990,6 +1023,4 @@ contains
   end subroutine read_darray_bin_{TYPE}
 
 end module piodarray
-
-
 

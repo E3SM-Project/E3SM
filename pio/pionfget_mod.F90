@@ -26,9 +26,13 @@ module pionfget_mod
 #include <pnetcdf.inc>  /*  _EXTERNAL */
 #endif
   include 'mpif.h'  ! _EXTERNAL
-  public :: get_var
 
-# 22 "pionfget_mod.F90.in"
+!>
+!! \defgroup PIO_get_var PIO_get_var
+!! Reads netcdf metadata from a file
+!<
+  public :: get_var
+# 26 "pionfget_mod.F90.in"
   interface get_var
      module procedure get_var_0d_text, get_var_vdesc_0d_text
      module procedure get_var_1d_text, get_var_vdesc_1d_text
@@ -86,10 +90,21 @@ module pionfget_mod
 
  character(len=*), parameter :: modName='pionfget_mod'
 
-# 31 "pionfget_mod.F90.in"
+# 35 "pionfget_mod.F90.in"
 CONTAINS
 
-# 33 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param index :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 48 "pionfget_mod.F90.in"
   integer function get_var1_text (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, index(:)
@@ -151,7 +166,18 @@ CONTAINS
 #endif
   end function get_var1_text
 
-# 33 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param index :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 48 "pionfget_mod.F90.in"
   integer function get_var1_real (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, index(:)
@@ -213,7 +239,18 @@ CONTAINS
 #endif
   end function get_var1_real
 
-# 33 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param index :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 48 "pionfget_mod.F90.in"
   integer function get_var1_double (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, index(:)
@@ -275,7 +312,18 @@ CONTAINS
 #endif
   end function get_var1_double
 
-# 33 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param index :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 48 "pionfget_mod.F90.in"
   integer function get_var1_int (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, index(:)
@@ -336,55 +384,118 @@ CONTAINS
     call t_stopf("pio_get_var1_int")
 #endif
   end function get_var1_int
-# 93 "pionfget_mod.F90.in"
-  integer function get_var1_vdesc_text (File,vdesc, index, ival) result(ierr)
+
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param index :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 120 "pionfget_mod.F90.in"
+  integer function get_var1_vdesc_text (File,vardesc, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     integer, intent(in) :: index(:)
     character(len=*), intent(out) :: ival
 
     character(len=*), parameter :: subName=modName//'::get_var1_vdesc_text'
 
-    ierr = get_var1_text (File, vdesc%varid, index, ival)
+    ierr = get_var1_text (File, vardesc%varid, index, ival)
 
   end function get_var1_vdesc_text
-  integer function get_var1_vdesc_real (File,vdesc, index, ival) result(ierr)
+
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param index :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 120 "pionfget_mod.F90.in"
+  integer function get_var1_vdesc_real (File,vardesc, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     integer, intent(in) :: index(:)
     real(r4), intent(out) :: ival
 
     character(len=*), parameter :: subName=modName//'::get_var1_vdesc_real'
 
-    ierr = get_var1_real (File, vdesc%varid, index, ival)
+    ierr = get_var1_real (File, vardesc%varid, index, ival)
 
   end function get_var1_vdesc_real
-  integer function get_var1_vdesc_double (File,vdesc, index, ival) result(ierr)
+
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param index :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 120 "pionfget_mod.F90.in"
+  integer function get_var1_vdesc_double (File,vardesc, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     integer, intent(in) :: index(:)
     real(r8), intent(out) :: ival
 
     character(len=*), parameter :: subName=modName//'::get_var1_vdesc_double'
 
-    ierr = get_var1_double (File, vdesc%varid, index, ival)
+    ierr = get_var1_double (File, vardesc%varid, index, ival)
 
   end function get_var1_vdesc_double
-  integer function get_var1_vdesc_int (File,vdesc, index, ival) result(ierr)
+
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param index :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 120 "pionfget_mod.F90.in"
+  integer function get_var1_vdesc_int (File,vardesc, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     integer, intent(in) :: index(:)
     integer(i4), intent(out) :: ival
 
     character(len=*), parameter :: subName=modName//'::get_var1_vdesc_int'
 
-    ierr = get_var1_int (File, vdesc%varid, index, ival)
+    ierr = get_var1_int (File, vardesc%varid, index, ival)
 
   end function get_var1_vdesc_int
 
 
-  ! DIMS 1,2,3
-# 107 "pionfget_mod.F90.in"
+! DIMS 1,2,3
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 146 "pionfget_mod.F90.in"
   integer function get_vara_1d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -431,8 +542,20 @@ CONTAINS
   end function get_vara_1d_text
 
 
-  ! DIMS 1,2,3
-# 107 "pionfget_mod.F90.in"
+! DIMS 1,2,3
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 146 "pionfget_mod.F90.in"
   integer function get_vara_2d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -479,8 +602,20 @@ CONTAINS
   end function get_vara_2d_text
 
 
-  ! DIMS 1,2,3
-# 107 "pionfget_mod.F90.in"
+! DIMS 1,2,3
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 146 "pionfget_mod.F90.in"
   integer function get_vara_3d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -527,8 +662,20 @@ CONTAINS
   end function get_vara_3d_text
 
 
-  ! DIMS 1,2,3
-# 107 "pionfget_mod.F90.in"
+! DIMS 1,2,3
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 146 "pionfget_mod.F90.in"
   integer function get_vara_1d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -575,8 +722,20 @@ CONTAINS
   end function get_vara_1d_real
 
 
-  ! DIMS 1,2,3
-# 107 "pionfget_mod.F90.in"
+! DIMS 1,2,3
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 146 "pionfget_mod.F90.in"
   integer function get_vara_2d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -623,8 +782,20 @@ CONTAINS
   end function get_vara_2d_real
 
 
-  ! DIMS 1,2,3
-# 107 "pionfget_mod.F90.in"
+! DIMS 1,2,3
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 146 "pionfget_mod.F90.in"
   integer function get_vara_3d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -671,8 +842,20 @@ CONTAINS
   end function get_vara_3d_real
 
 
-  ! DIMS 1,2,3
-# 107 "pionfget_mod.F90.in"
+! DIMS 1,2,3
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 146 "pionfget_mod.F90.in"
   integer function get_vara_1d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -719,8 +902,20 @@ CONTAINS
   end function get_vara_1d_double
 
 
-  ! DIMS 1,2,3
-# 107 "pionfget_mod.F90.in"
+! DIMS 1,2,3
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 146 "pionfget_mod.F90.in"
   integer function get_vara_2d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -767,8 +962,20 @@ CONTAINS
   end function get_vara_2d_double
 
 
-  ! DIMS 1,2,3
-# 107 "pionfget_mod.F90.in"
+! DIMS 1,2,3
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 146 "pionfget_mod.F90.in"
   integer function get_vara_3d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -815,8 +1022,20 @@ CONTAINS
   end function get_vara_3d_double
 
 
-  ! DIMS 1,2,3
-# 107 "pionfget_mod.F90.in"
+! DIMS 1,2,3
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 146 "pionfget_mod.F90.in"
   integer function get_vara_1d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -863,8 +1082,20 @@ CONTAINS
   end function get_vara_1d_int
 
 
-  ! DIMS 1,2,3
-# 107 "pionfget_mod.F90.in"
+! DIMS 1,2,3
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 146 "pionfget_mod.F90.in"
   integer function get_vara_2d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -911,8 +1142,20 @@ CONTAINS
   end function get_vara_2d_int
 
 
-  ! DIMS 1,2,3
-# 107 "pionfget_mod.F90.in"
+! DIMS 1,2,3
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 146 "pionfget_mod.F90.in"
   integer function get_vara_3d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -957,164 +1200,330 @@ CONTAINS
     call t_stopf("pio_get_vara_3d_int")
 #endif
   end function get_vara_3d_int
-  ! DIMS 1,2,3
-# 152 "pionfget_mod.F90.in"
-  integer function get_vara_vdesc_1d_text (File,vdesc, start, count, ival) result(ierr)
+
+! DIMS 1,2,3
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 204 "pionfget_mod.F90.in"
+  integer function get_vara_vdesc_1d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     integer, intent(in) :: start(:), count(:)
     character(len=*), intent(out) :: ival(:)
 
     character(len=*), parameter :: subName=modName//'::get_vara_vdesc_1d_text'
 
-    ierr = get_vara_1d_text (File, vdesc%varid, start, count, ival)
+    ierr = get_vara_1d_text (File, vardesc%varid, start, count, ival)
 
   end function get_vara_vdesc_1d_text
-  ! DIMS 1,2,3
-# 152 "pionfget_mod.F90.in"
-  integer function get_vara_vdesc_2d_text (File,vdesc, start, count, ival) result(ierr)
+
+! DIMS 1,2,3
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 204 "pionfget_mod.F90.in"
+  integer function get_vara_vdesc_2d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     integer, intent(in) :: start(:), count(:)
     character(len=*), intent(out) :: ival(:,:)
 
     character(len=*), parameter :: subName=modName//'::get_vara_vdesc_2d_text'
 
-    ierr = get_vara_2d_text (File, vdesc%varid, start, count, ival)
+    ierr = get_vara_2d_text (File, vardesc%varid, start, count, ival)
 
   end function get_vara_vdesc_2d_text
-  ! DIMS 1,2,3
-# 152 "pionfget_mod.F90.in"
-  integer function get_vara_vdesc_3d_text (File,vdesc, start, count, ival) result(ierr)
+
+! DIMS 1,2,3
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 204 "pionfget_mod.F90.in"
+  integer function get_vara_vdesc_3d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     integer, intent(in) :: start(:), count(:)
     character(len=*), intent(out) :: ival(:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_vara_vdesc_3d_text'
 
-    ierr = get_vara_3d_text (File, vdesc%varid, start, count, ival)
+    ierr = get_vara_3d_text (File, vardesc%varid, start, count, ival)
 
   end function get_vara_vdesc_3d_text
-  ! DIMS 1,2,3
-# 152 "pionfget_mod.F90.in"
-  integer function get_vara_vdesc_1d_real (File,vdesc, start, count, ival) result(ierr)
+
+! DIMS 1,2,3
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 204 "pionfget_mod.F90.in"
+  integer function get_vara_vdesc_1d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     integer, intent(in) :: start(:), count(:)
     real(r4), intent(out) :: ival(:)
 
     character(len=*), parameter :: subName=modName//'::get_vara_vdesc_1d_real'
 
-    ierr = get_vara_1d_real (File, vdesc%varid, start, count, ival)
+    ierr = get_vara_1d_real (File, vardesc%varid, start, count, ival)
 
   end function get_vara_vdesc_1d_real
-  ! DIMS 1,2,3
-# 152 "pionfget_mod.F90.in"
-  integer function get_vara_vdesc_2d_real (File,vdesc, start, count, ival) result(ierr)
+
+! DIMS 1,2,3
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 204 "pionfget_mod.F90.in"
+  integer function get_vara_vdesc_2d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     integer, intent(in) :: start(:), count(:)
     real(r4), intent(out) :: ival(:,:)
 
     character(len=*), parameter :: subName=modName//'::get_vara_vdesc_2d_real'
 
-    ierr = get_vara_2d_real (File, vdesc%varid, start, count, ival)
+    ierr = get_vara_2d_real (File, vardesc%varid, start, count, ival)
 
   end function get_vara_vdesc_2d_real
-  ! DIMS 1,2,3
-# 152 "pionfget_mod.F90.in"
-  integer function get_vara_vdesc_3d_real (File,vdesc, start, count, ival) result(ierr)
+
+! DIMS 1,2,3
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 204 "pionfget_mod.F90.in"
+  integer function get_vara_vdesc_3d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     integer, intent(in) :: start(:), count(:)
     real(r4), intent(out) :: ival(:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_vara_vdesc_3d_real'
 
-    ierr = get_vara_3d_real (File, vdesc%varid, start, count, ival)
+    ierr = get_vara_3d_real (File, vardesc%varid, start, count, ival)
 
   end function get_vara_vdesc_3d_real
-  ! DIMS 1,2,3
-# 152 "pionfget_mod.F90.in"
-  integer function get_vara_vdesc_1d_double (File,vdesc, start, count, ival) result(ierr)
+
+! DIMS 1,2,3
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 204 "pionfget_mod.F90.in"
+  integer function get_vara_vdesc_1d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     integer, intent(in) :: start(:), count(:)
     real(r8), intent(out) :: ival(:)
 
     character(len=*), parameter :: subName=modName//'::get_vara_vdesc_1d_double'
 
-    ierr = get_vara_1d_double (File, vdesc%varid, start, count, ival)
+    ierr = get_vara_1d_double (File, vardesc%varid, start, count, ival)
 
   end function get_vara_vdesc_1d_double
-  ! DIMS 1,2,3
-# 152 "pionfget_mod.F90.in"
-  integer function get_vara_vdesc_2d_double (File,vdesc, start, count, ival) result(ierr)
+
+! DIMS 1,2,3
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 204 "pionfget_mod.F90.in"
+  integer function get_vara_vdesc_2d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     integer, intent(in) :: start(:), count(:)
     real(r8), intent(out) :: ival(:,:)
 
     character(len=*), parameter :: subName=modName//'::get_vara_vdesc_2d_double'
 
-    ierr = get_vara_2d_double (File, vdesc%varid, start, count, ival)
+    ierr = get_vara_2d_double (File, vardesc%varid, start, count, ival)
 
   end function get_vara_vdesc_2d_double
-  ! DIMS 1,2,3
-# 152 "pionfget_mod.F90.in"
-  integer function get_vara_vdesc_3d_double (File,vdesc, start, count, ival) result(ierr)
+
+! DIMS 1,2,3
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 204 "pionfget_mod.F90.in"
+  integer function get_vara_vdesc_3d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     integer, intent(in) :: start(:), count(:)
     real(r8), intent(out) :: ival(:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_vara_vdesc_3d_double'
 
-    ierr = get_vara_3d_double (File, vdesc%varid, start, count, ival)
+    ierr = get_vara_3d_double (File, vardesc%varid, start, count, ival)
 
   end function get_vara_vdesc_3d_double
-  ! DIMS 1,2,3
-# 152 "pionfget_mod.F90.in"
-  integer function get_vara_vdesc_1d_int (File,vdesc, start, count, ival) result(ierr)
+
+! DIMS 1,2,3
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 204 "pionfget_mod.F90.in"
+  integer function get_vara_vdesc_1d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     integer, intent(in) :: start(:), count(:)
     integer(i4), intent(out) :: ival(:)
 
     character(len=*), parameter :: subName=modName//'::get_vara_vdesc_1d_int'
 
-    ierr = get_vara_1d_int (File, vdesc%varid, start, count, ival)
+    ierr = get_vara_1d_int (File, vardesc%varid, start, count, ival)
 
   end function get_vara_vdesc_1d_int
-  ! DIMS 1,2,3
-# 152 "pionfget_mod.F90.in"
-  integer function get_vara_vdesc_2d_int (File,vdesc, start, count, ival) result(ierr)
+
+! DIMS 1,2,3
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 204 "pionfget_mod.F90.in"
+  integer function get_vara_vdesc_2d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     integer, intent(in) :: start(:), count(:)
     integer(i4), intent(out) :: ival(:,:)
 
     character(len=*), parameter :: subName=modName//'::get_vara_vdesc_2d_int'
 
-    ierr = get_vara_2d_int (File, vdesc%varid, start, count, ival)
+    ierr = get_vara_2d_int (File, vardesc%varid, start, count, ival)
 
   end function get_vara_vdesc_2d_int
-  ! DIMS 1,2,3
-# 152 "pionfget_mod.F90.in"
-  integer function get_vara_vdesc_3d_int (File,vdesc, start, count, ival) result(ierr)
+
+! DIMS 1,2,3
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 204 "pionfget_mod.F90.in"
+  integer function get_vara_vdesc_3d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     integer, intent(in) :: start(:), count(:)
     integer(i4), intent(out) :: ival(:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_vara_vdesc_3d_int'
 
-    ierr = get_vara_3d_int (File, vdesc%varid, start, count, ival)
+    ierr = get_vara_3d_int (File, vardesc%varid, start, count, ival)
 
   end function get_vara_vdesc_3d_int
 
-# 164 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 226 "pionfget_mod.F90.in"
   integer function get_var_0d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1162,7 +1571,17 @@ CONTAINS
 #endif
   end function get_var_0d_text
 
-# 164 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 226 "pionfget_mod.F90.in"
   integer function get_var_1d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1210,7 +1629,17 @@ CONTAINS
 #endif
   end function get_var_1d_text
 
-# 164 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 226 "pionfget_mod.F90.in"
   integer function get_var_2d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1258,7 +1687,17 @@ CONTAINS
 #endif
   end function get_var_2d_text
 
-# 164 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 226 "pionfget_mod.F90.in"
   integer function get_var_3d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1306,7 +1745,17 @@ CONTAINS
 #endif
   end function get_var_3d_text
 
-# 164 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 226 "pionfget_mod.F90.in"
   integer function get_var_4d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1354,7 +1803,17 @@ CONTAINS
 #endif
   end function get_var_4d_text
 
-# 164 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 226 "pionfget_mod.F90.in"
   integer function get_var_5d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1402,7 +1861,17 @@ CONTAINS
 #endif
   end function get_var_5d_text
 
-# 164 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 226 "pionfget_mod.F90.in"
   integer function get_var_0d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1450,7 +1919,17 @@ CONTAINS
 #endif
   end function get_var_0d_real
 
-# 164 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 226 "pionfget_mod.F90.in"
   integer function get_var_1d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1498,7 +1977,17 @@ CONTAINS
 #endif
   end function get_var_1d_real
 
-# 164 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 226 "pionfget_mod.F90.in"
   integer function get_var_2d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1546,7 +2035,17 @@ CONTAINS
 #endif
   end function get_var_2d_real
 
-# 164 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 226 "pionfget_mod.F90.in"
   integer function get_var_3d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1594,7 +2093,17 @@ CONTAINS
 #endif
   end function get_var_3d_real
 
-# 164 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 226 "pionfget_mod.F90.in"
   integer function get_var_4d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1642,7 +2151,17 @@ CONTAINS
 #endif
   end function get_var_4d_real
 
-# 164 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 226 "pionfget_mod.F90.in"
   integer function get_var_5d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1690,7 +2209,17 @@ CONTAINS
 #endif
   end function get_var_5d_real
 
-# 164 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 226 "pionfget_mod.F90.in"
   integer function get_var_0d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1738,7 +2267,17 @@ CONTAINS
 #endif
   end function get_var_0d_double
 
-# 164 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 226 "pionfget_mod.F90.in"
   integer function get_var_1d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1786,7 +2325,17 @@ CONTAINS
 #endif
   end function get_var_1d_double
 
-# 164 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 226 "pionfget_mod.F90.in"
   integer function get_var_2d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1834,7 +2383,17 @@ CONTAINS
 #endif
   end function get_var_2d_double
 
-# 164 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 226 "pionfget_mod.F90.in"
   integer function get_var_3d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1882,7 +2441,17 @@ CONTAINS
 #endif
   end function get_var_3d_double
 
-# 164 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 226 "pionfget_mod.F90.in"
   integer function get_var_4d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1930,7 +2499,17 @@ CONTAINS
 #endif
   end function get_var_4d_double
 
-# 164 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 226 "pionfget_mod.F90.in"
   integer function get_var_5d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1978,7 +2557,17 @@ CONTAINS
 #endif
   end function get_var_5d_double
 
-# 164 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 226 "pionfget_mod.F90.in"
   integer function get_var_0d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -2026,7 +2615,17 @@ CONTAINS
 #endif
   end function get_var_0d_int
 
-# 164 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 226 "pionfget_mod.F90.in"
   integer function get_var_1d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -2074,7 +2673,17 @@ CONTAINS
 #endif
   end function get_var_1d_int
 
-# 164 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 226 "pionfget_mod.F90.in"
   integer function get_var_2d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -2122,7 +2731,17 @@ CONTAINS
 #endif
   end function get_var_2d_int
 
-# 164 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 226 "pionfget_mod.F90.in"
   integer function get_var_3d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -2170,7 +2789,17 @@ CONTAINS
 #endif
   end function get_var_3d_int
 
-# 164 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 226 "pionfget_mod.F90.in"
   integer function get_var_4d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -2218,7 +2847,17 @@ CONTAINS
 #endif
   end function get_var_4d_int
 
-# 164 "pionfget_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 226 "pionfget_mod.F90.in"
   integer function get_var_5d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -2266,291 +2905,531 @@ CONTAINS
 #endif
   end function get_var_5d_int
 
-# 211 "pionfget_mod.F90.in"
-  integer function get_var_vdesc_0d_text (File,vdesc, ival) result(ierr)
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 283 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_0d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     character(len=*), intent(out) :: ival
 
     character(len=*), parameter :: subName=modName//'::get_var_vdesc_0d_text'
 
-    ierr = get_var_0d_text (File, vdesc%varid, ival)
+    ierr = get_var_0d_text (File, vardesc%varid, ival)
 
   end function get_var_vdesc_0d_text
 
-# 211 "pionfget_mod.F90.in"
-  integer function get_var_vdesc_1d_text (File,vdesc, ival) result(ierr)
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 283 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_1d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     character(len=*), intent(out) :: ival(:)
 
     character(len=*), parameter :: subName=modName//'::get_var_vdesc_1d_text'
 
-    ierr = get_var_1d_text (File, vdesc%varid, ival)
+    ierr = get_var_1d_text (File, vardesc%varid, ival)
 
   end function get_var_vdesc_1d_text
 
-# 211 "pionfget_mod.F90.in"
-  integer function get_var_vdesc_2d_text (File,vdesc, ival) result(ierr)
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 283 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_2d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     character(len=*), intent(out) :: ival(:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_vdesc_2d_text'
 
-    ierr = get_var_2d_text (File, vdesc%varid, ival)
+    ierr = get_var_2d_text (File, vardesc%varid, ival)
 
   end function get_var_vdesc_2d_text
 
-# 211 "pionfget_mod.F90.in"
-  integer function get_var_vdesc_3d_text (File,vdesc, ival) result(ierr)
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 283 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_3d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     character(len=*), intent(out) :: ival(:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_vdesc_3d_text'
 
-    ierr = get_var_3d_text (File, vdesc%varid, ival)
+    ierr = get_var_3d_text (File, vardesc%varid, ival)
 
   end function get_var_vdesc_3d_text
 
-# 211 "pionfget_mod.F90.in"
-  integer function get_var_vdesc_4d_text (File,vdesc, ival) result(ierr)
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 283 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_4d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     character(len=*), intent(out) :: ival(:,:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_vdesc_4d_text'
 
-    ierr = get_var_4d_text (File, vdesc%varid, ival)
+    ierr = get_var_4d_text (File, vardesc%varid, ival)
 
   end function get_var_vdesc_4d_text
 
-# 211 "pionfget_mod.F90.in"
-  integer function get_var_vdesc_5d_text (File,vdesc, ival) result(ierr)
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 283 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_5d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     character(len=*), intent(out) :: ival(:,:,:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_vdesc_5d_text'
 
-    ierr = get_var_5d_text (File, vdesc%varid, ival)
+    ierr = get_var_5d_text (File, vardesc%varid, ival)
 
   end function get_var_vdesc_5d_text
 
-# 211 "pionfget_mod.F90.in"
-  integer function get_var_vdesc_0d_real (File,vdesc, ival) result(ierr)
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 283 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_0d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     real(r4), intent(out) :: ival
 
     character(len=*), parameter :: subName=modName//'::get_var_vdesc_0d_real'
 
-    ierr = get_var_0d_real (File, vdesc%varid, ival)
+    ierr = get_var_0d_real (File, vardesc%varid, ival)
 
   end function get_var_vdesc_0d_real
 
-# 211 "pionfget_mod.F90.in"
-  integer function get_var_vdesc_1d_real (File,vdesc, ival) result(ierr)
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 283 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_1d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     real(r4), intent(out) :: ival(:)
 
     character(len=*), parameter :: subName=modName//'::get_var_vdesc_1d_real'
 
-    ierr = get_var_1d_real (File, vdesc%varid, ival)
+    ierr = get_var_1d_real (File, vardesc%varid, ival)
 
   end function get_var_vdesc_1d_real
 
-# 211 "pionfget_mod.F90.in"
-  integer function get_var_vdesc_2d_real (File,vdesc, ival) result(ierr)
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 283 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_2d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     real(r4), intent(out) :: ival(:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_vdesc_2d_real'
 
-    ierr = get_var_2d_real (File, vdesc%varid, ival)
+    ierr = get_var_2d_real (File, vardesc%varid, ival)
 
   end function get_var_vdesc_2d_real
 
-# 211 "pionfget_mod.F90.in"
-  integer function get_var_vdesc_3d_real (File,vdesc, ival) result(ierr)
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 283 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_3d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     real(r4), intent(out) :: ival(:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_vdesc_3d_real'
 
-    ierr = get_var_3d_real (File, vdesc%varid, ival)
+    ierr = get_var_3d_real (File, vardesc%varid, ival)
 
   end function get_var_vdesc_3d_real
 
-# 211 "pionfget_mod.F90.in"
-  integer function get_var_vdesc_4d_real (File,vdesc, ival) result(ierr)
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 283 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_4d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     real(r4), intent(out) :: ival(:,:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_vdesc_4d_real'
 
-    ierr = get_var_4d_real (File, vdesc%varid, ival)
+    ierr = get_var_4d_real (File, vardesc%varid, ival)
 
   end function get_var_vdesc_4d_real
 
-# 211 "pionfget_mod.F90.in"
-  integer function get_var_vdesc_5d_real (File,vdesc, ival) result(ierr)
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 283 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_5d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     real(r4), intent(out) :: ival(:,:,:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_vdesc_5d_real'
 
-    ierr = get_var_5d_real (File, vdesc%varid, ival)
+    ierr = get_var_5d_real (File, vardesc%varid, ival)
 
   end function get_var_vdesc_5d_real
 
-# 211 "pionfget_mod.F90.in"
-  integer function get_var_vdesc_0d_double (File,vdesc, ival) result(ierr)
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 283 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_0d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     real(r8), intent(out) :: ival
 
     character(len=*), parameter :: subName=modName//'::get_var_vdesc_0d_double'
 
-    ierr = get_var_0d_double (File, vdesc%varid, ival)
+    ierr = get_var_0d_double (File, vardesc%varid, ival)
 
   end function get_var_vdesc_0d_double
 
-# 211 "pionfget_mod.F90.in"
-  integer function get_var_vdesc_1d_double (File,vdesc, ival) result(ierr)
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 283 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_1d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     real(r8), intent(out) :: ival(:)
 
     character(len=*), parameter :: subName=modName//'::get_var_vdesc_1d_double'
 
-    ierr = get_var_1d_double (File, vdesc%varid, ival)
+    ierr = get_var_1d_double (File, vardesc%varid, ival)
 
   end function get_var_vdesc_1d_double
 
-# 211 "pionfget_mod.F90.in"
-  integer function get_var_vdesc_2d_double (File,vdesc, ival) result(ierr)
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 283 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_2d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     real(r8), intent(out) :: ival(:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_vdesc_2d_double'
 
-    ierr = get_var_2d_double (File, vdesc%varid, ival)
+    ierr = get_var_2d_double (File, vardesc%varid, ival)
 
   end function get_var_vdesc_2d_double
 
-# 211 "pionfget_mod.F90.in"
-  integer function get_var_vdesc_3d_double (File,vdesc, ival) result(ierr)
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 283 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_3d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     real(r8), intent(out) :: ival(:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_vdesc_3d_double'
 
-    ierr = get_var_3d_double (File, vdesc%varid, ival)
+    ierr = get_var_3d_double (File, vardesc%varid, ival)
 
   end function get_var_vdesc_3d_double
 
-# 211 "pionfget_mod.F90.in"
-  integer function get_var_vdesc_4d_double (File,vdesc, ival) result(ierr)
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 283 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_4d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     real(r8), intent(out) :: ival(:,:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_vdesc_4d_double'
 
-    ierr = get_var_4d_double (File, vdesc%varid, ival)
+    ierr = get_var_4d_double (File, vardesc%varid, ival)
 
   end function get_var_vdesc_4d_double
 
-# 211 "pionfget_mod.F90.in"
-  integer function get_var_vdesc_5d_double (File,vdesc, ival) result(ierr)
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 283 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_5d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     real(r8), intent(out) :: ival(:,:,:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_vdesc_5d_double'
 
-    ierr = get_var_5d_double (File, vdesc%varid, ival)
+    ierr = get_var_5d_double (File, vardesc%varid, ival)
 
   end function get_var_vdesc_5d_double
 
-# 211 "pionfget_mod.F90.in"
-  integer function get_var_vdesc_0d_int (File,vdesc, ival) result(ierr)
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 283 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_0d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     integer(i4), intent(out) :: ival
 
     character(len=*), parameter :: subName=modName//'::get_var_vdesc_0d_int'
 
-    ierr = get_var_0d_int (File, vdesc%varid, ival)
+    ierr = get_var_0d_int (File, vardesc%varid, ival)
 
   end function get_var_vdesc_0d_int
 
-# 211 "pionfget_mod.F90.in"
-  integer function get_var_vdesc_1d_int (File,vdesc, ival) result(ierr)
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 283 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_1d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     integer(i4), intent(out) :: ival(:)
 
     character(len=*), parameter :: subName=modName//'::get_var_vdesc_1d_int'
 
-    ierr = get_var_1d_int (File, vdesc%varid, ival)
+    ierr = get_var_1d_int (File, vardesc%varid, ival)
 
   end function get_var_vdesc_1d_int
 
-# 211 "pionfget_mod.F90.in"
-  integer function get_var_vdesc_2d_int (File,vdesc, ival) result(ierr)
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 283 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_2d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     integer(i4), intent(out) :: ival(:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_vdesc_2d_int'
 
-    ierr = get_var_2d_int (File, vdesc%varid, ival)
+    ierr = get_var_2d_int (File, vardesc%varid, ival)
 
   end function get_var_vdesc_2d_int
 
-# 211 "pionfget_mod.F90.in"
-  integer function get_var_vdesc_3d_int (File,vdesc, ival) result(ierr)
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 283 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_3d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     integer(i4), intent(out) :: ival(:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_vdesc_3d_int'
 
-    ierr = get_var_3d_int (File, vdesc%varid, ival)
+    ierr = get_var_3d_int (File, vardesc%varid, ival)
 
   end function get_var_vdesc_3d_int
 
-# 211 "pionfget_mod.F90.in"
-  integer function get_var_vdesc_4d_int (File,vdesc, ival) result(ierr)
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 283 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_4d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     integer(i4), intent(out) :: ival(:,:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_vdesc_4d_int'
 
-    ierr = get_var_4d_int (File, vdesc%varid, ival)
+    ierr = get_var_4d_int (File, vardesc%varid, ival)
 
   end function get_var_vdesc_4d_int
 
-# 211 "pionfget_mod.F90.in"
-  integer function get_var_vdesc_5d_int (File,vdesc, ival) result(ierr)
+!>
+!! \public
+!! \ingroup PIO_get_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 283 "pionfget_mod.F90.in"
+  integer function get_var_vdesc_5d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
-    type(var_desc_t), intent(in) :: vdesc
+    type(var_desc_t), intent(in) :: vardesc
     integer(i4), intent(out) :: ival(:,:,:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_vdesc_5d_int'
 
-    ierr = get_var_5d_int (File, vdesc%varid, ival)
+    ierr = get_var_5d_int (File, vardesc%varid, ival)
 
   end function get_var_vdesc_5d_int
 end module pionfget_mod

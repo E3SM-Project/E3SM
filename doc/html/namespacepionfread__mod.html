@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>PIO: pionfread_mod Module Reference</title>
+<title>PIO User&#39;s Guide: pionfread_mod Module Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javaScript" src="search/search.js"></script>
@@ -19,6 +19,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
     <ul>
       <li><a href="index.html"><span>Main&nbsp;Page</span></a></li>
       <li><a href="pages.html"><span>Related&nbsp;Pages</span></a></li>
+      <li><a href="modules.html"><span>Modules</span></a></li>
       <li class="current"><a href="namespaces.html"><span>Modules</span></a></li>
       <li><a href="annotated.html"><span>Data&nbsp;Types&nbsp;List</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -49,11 +50,10 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <tr><td colspan="2"><h2>Data Types</h2></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">interface &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacepionfread__mod_1_1read__nf.html">read_nf</a></td></tr>
 <tr><td colspan="2"><h2>Functions/Subroutines</h2></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">integer&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepionfread__mod.html#afd701984621c550d90eafd5e9733bfc0">read_nfdarray_real</a> (File, IOBUF, varDesc, IODesc, start, count)</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">integer&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepionfread__mod.html#aade3ada4d3a1e6b1309915f34471446f">read_nfdarray_double</a> (File, IOBUF, varDesc, IODesc, start, count)</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">integer&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepionfread__mod.html#a11ade5da40fc82dfba219d82c7e15035">read_nfdarray_int</a> (File, IOBUF, varDesc, IODesc, start, count)</td></tr>
 <tr><td colspan="2"><h2>Variables</h2></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">character(len=*), paramete&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepionfread__mod.html#a4ee040e90a65700af22c7ac1568e8183">modName</a> )</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">character(len=*), paramete&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepionfread__mod.html#af9c601df7608efb3baa76c17042dd16c">modName</a> )</td></tr>
 </table>
 <hr/><h2>Function/Subroutine Documentation</h2>
 <a class="anchor" id="aade3ada4d3a1e6b1309915f34471446f"></a><!-- doxytag: member="pionfread_mod::read_nfdarray_double" ref="aade3ada4d3a1e6b1309915f34471446f" args="(File, IOBUF, varDesc, IODesc, start, count)" -->
@@ -63,7 +63,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
         <tr>
           <td class="memname">integer pionfread_mod::read_nfdarray_double </td>
           <td>(</td>
-          <td class="paramtype">type (<a class="el" href="typepio__types_1_1File__desc__t.html">File_desc_t</a>),intent(inout)&nbsp;</td>
+          <td class="paramtype">type (File_desc_t),intent(inout)&nbsp;</td>
           <td class="paramname"> <em>File</em>, </td>
         </tr>
         <tr>
@@ -75,13 +75,13 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">type (<a class="el" href="typepio__types_1_1Var__desc__t.html">Var_desc_t</a>),intent(in)&nbsp;</td>
+          <td class="paramtype">type (Var_desc_t),intent(in)&nbsp;</td>
           <td class="paramname"> <em>varDesc</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">type (<a class="el" href="typepio__types_1_1IO__desc__t.html">IO_desc_t</a>),intent(in)&nbsp;</td>
+          <td class="paramtype">type (IO_desc_t),intent(in)&nbsp;</td>
           <td class="paramname"> <em>IODesc</em>, </td>
         </tr>
         <tr>
@@ -116,7 +116,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
         <tr>
           <td class="memname">integer pionfread_mod::read_nfdarray_int </td>
           <td>(</td>
-          <td class="paramtype">type (<a class="el" href="typepio__types_1_1File__desc__t.html">File_desc_t</a>),intent(inout)&nbsp;</td>
+          <td class="paramtype">type (File_desc_t),intent(inout)&nbsp;</td>
           <td class="paramname"> <em>File</em>, </td>
         </tr>
         <tr>
@@ -128,13 +128,13 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">type (<a class="el" href="typepio__types_1_1Var__desc__t.html">Var_desc_t</a>),intent(in)&nbsp;</td>
+          <td class="paramtype">type (Var_desc_t),intent(in)&nbsp;</td>
           <td class="paramname"> <em>varDesc</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">type (<a class="el" href="typepio__types_1_1IO__desc__t.html">IO_desc_t</a>),intent(in)&nbsp;</td>
+          <td class="paramtype">type (IO_desc_t),intent(in)&nbsp;</td>
           <td class="paramname"> <em>IODesc</em>, </td>
         </tr>
         <tr>
@@ -162,66 +162,13 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 
 </div>
 </div>
-<a class="anchor" id="afd701984621c550d90eafd5e9733bfc0"></a><!-- doxytag: member="pionfread_mod::read_nfdarray_real" ref="afd701984621c550d90eafd5e9733bfc0" args="(File, IOBUF, varDesc, IODesc, start, count)" -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">integer pionfread_mod::read_nfdarray_real </td>
-          <td>(</td>
-          <td class="paramtype">type (<a class="el" href="typepio__types_1_1File__desc__t.html">File_desc_t</a>),intent(inout)&nbsp;</td>
-          <td class="paramname"> <em>File</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">real(r4),dimension(:),intent(inout)&nbsp;</td>
-          <td class="paramname"> <em>IOBUF</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">type (<a class="el" href="typepio__types_1_1Var__desc__t.html">Var_desc_t</a>),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>varDesc</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">type (<a class="el" href="typepio__types_1_1IO__desc__t.html">IO_desc_t</a>),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>IODesc</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer(kind=pio_offset),dimension(:),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>start</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer(kind=pio_offset),dimension(:),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>count</em></td><td>&nbsp;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td><td><code> [private]</code></td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>Definition at line <a class="el" href="pionfread__mod_8F90_source.html#l00029">29</a> of file <a class="el" href="pionfread__mod_8F90_source.html">pionfread_mod.F90</a>.</p>
-
-</div>
-</div>
 <hr/><h2>Variable Documentation</h2>
-<a class="anchor" id="a4ee040e90a65700af22c7ac1568e8183"></a><!-- doxytag: member="pionfread_mod::modName" ref="a4ee040e90a65700af22c7ac1568e8183" args=")" -->
+<a class="anchor" id="af9c601df7608efb3baa76c17042dd16c"></a><!-- doxytag: member="pionfread_mod::modName" ref="af9c601df7608efb3baa76c17042dd16c" args=")" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">character(len=*),paramete <a class="el" href="namespacepionfread__mod.html#a4ee040e90a65700af22c7ac1568e8183">pionfread_mod::modName</a>)</td>
+          <td class="memname">character(len=*),paramete <a class="el" href="namespacepionfread__mod.html#af9c601df7608efb3baa76c17042dd16c">modName</a>)</td>
         </tr>
       </table>
 </div>
@@ -237,7 +184,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
      onmouseover="return searchBox.OnSearchSelectShow()"
      onmouseout="return searchBox.OnSearchSelectHide()"
      onkeydown="return searchBox.OnSearchSelectKey(event)">
-<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&nbsp;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&nbsp;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&nbsp;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&nbsp;</span>Files</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&nbsp;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(5)"><span class="SelectionMark">&nbsp;</span>Variables</a></div>
+<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&nbsp;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&nbsp;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&nbsp;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&nbsp;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&nbsp;</span>Variables</a></div>
 
 <!-- iframe showing the search results (closed by default) -->
 <div id="MSearchResultsWindow">
@@ -246,7 +193,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Fri Dec 4 14:24:49 2009 for PIO by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Tue Dec 15 13:53:37 2009 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

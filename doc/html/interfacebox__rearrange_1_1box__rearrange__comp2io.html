@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>PIO: box_rearrange::box_rearrange_comp2io Interface Reference</title>
+<title>PIO User&#39;s Guide: box_rearrange_comp2io Interface Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javaScript" src="search/search.js"></script>
@@ -19,6 +19,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
     <ul>
       <li><a href="index.html"><span>Main&nbsp;Page</span></a></li>
       <li><a href="pages.html"><span>Related&nbsp;Pages</span></a></li>
+      <li><a href="modules.html"><span>Modules</span></a></li>
       <li><a href="namespaces.html"><span>Modules</span></a></li>
       <li class="current"><a href="annotated.html"><span>Data&nbsp;Types&nbsp;List</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -47,213 +48,13 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   </div>
 </div>
 <div class="contents">
-<h1>box_rearrange::box_rearrange_comp2io Interface Reference</h1><!-- doxytag: class="box_rearrange::box_rearrange_comp2io" -->
+<h1>box_rearrange_comp2io Interface Reference</h1><!-- doxytag: class="box_rearrange::box_rearrange_comp2io" -->
 <p><a href="interfacebox__rearrange_1_1box__rearrange__comp2io-members.html">List of all members.</a></p>
 <table border="0" cellpadding="0" cellspacing="0">
-<tr><td colspan="2"><h2>Private Member Functions</h2></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacebox__rearrange_1_1box__rearrange__comp2io.html#adb135ecd04e68bd7fb92660bbbfdc7fd">box_rearrange_comp2io_int</a> (IOsystem, ioDesc, s1, src, s2, dest, comm_option, fc_options)</td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacebox__rearrange_1_1box__rearrange__comp2io.html#ad1fdd53d5d656e9f715dfbfd0444bfb8">box_rearrange_comp2io_real</a> (IOsystem, ioDesc, s1, src, s2, dest, comm_option, fc_options)</td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacebox__rearrange_1_1box__rearrange__comp2io.html#add9918b60bbe2252465388cb01d17914">box_rearrange_comp2io_double</a> (IOsystem, ioDesc, s1, src, s2, dest, comm_option, fc_options)</td></tr>
 </table>
 <hr/><a name="_details"></a><h2>Detailed Description</h2>
 
 <p>Definition at line <a class="el" href="box__rearrange_8F90_source.html#l00103">103</a> of file <a class="el" href="box__rearrange_8F90_source.html">box_rearrange.F90</a>.</p>
-<hr/><h2>Member Function/Subroutine Documentation</h2>
-<a class="anchor" id="add9918b60bbe2252465388cb01d17914"></a><!-- doxytag: member="box_rearrange::box_rearrange_comp2io::box_rearrange_comp2io_double" ref="add9918b60bbe2252465388cb01d17914" args="(IOsystem, ioDesc, s1, src, s2, dest, comm_option, fc_options)" -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">subroutine box_rearrange::box_rearrange_comp2io::box_rearrange_comp2io_double </td>
-          <td>(</td>
-          <td class="paramtype">type (IOsystem_desc_t),intent(inout)&nbsp;</td>
-          <td class="paramname"> <em>IOsystem</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">type (<a class="el" href="typepio__types_1_1IO__desc__t.html">IO_desc_t</a>)&nbsp;</td>
-          <td class="paramname"> <em>ioDesc</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>s1</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">real(r8),dimension(s1),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>src</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>s2</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">real(r8),dimension(s2),intent(out)&nbsp;</td>
-          <td class="paramname"> <em>dest</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,intent(in),optional&nbsp;</td>
-          <td class="paramname"> <em>comm_option</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,dimension(3),intent(in),optional&nbsp;</td>
-          <td class="paramname"> <em>fc_options</em></td><td>&nbsp;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td><td><code> [private]</code></td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>Definition at line <a class="el" href="box__rearrange_8F90_source.html#l00617">617</a> of file <a class="el" href="box__rearrange_8F90_source.html">box_rearrange.F90</a>.</p>
-
-</div>
-</div>
-<a class="anchor" id="adb135ecd04e68bd7fb92660bbbfdc7fd"></a><!-- doxytag: member="box_rearrange::box_rearrange_comp2io::box_rearrange_comp2io_int" ref="adb135ecd04e68bd7fb92660bbbfdc7fd" args="(IOsystem, ioDesc, s1, src, s2, dest, comm_option, fc_options)" -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">subroutine box_rearrange::box_rearrange_comp2io::box_rearrange_comp2io_int </td>
-          <td>(</td>
-          <td class="paramtype">type (IOsystem_desc_t),intent(inout)&nbsp;</td>
-          <td class="paramname"> <em>IOsystem</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">type (<a class="el" href="typepio__types_1_1IO__desc__t.html">IO_desc_t</a>)&nbsp;</td>
-          <td class="paramname"> <em>ioDesc</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>s1</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer(i4),dimension(s1),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>src</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>s2</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer(i4),dimension(s2),intent(out)&nbsp;</td>
-          <td class="paramname"> <em>dest</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,intent(in),optional&nbsp;</td>
-          <td class="paramname"> <em>comm_option</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,dimension(3),intent(in),optional&nbsp;</td>
-          <td class="paramname"> <em>fc_options</em></td><td>&nbsp;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td><td><code> [private]</code></td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>Definition at line <a class="el" href="box__rearrange_8F90_source.html#l00846">846</a> of file <a class="el" href="box__rearrange_8F90_source.html">box_rearrange.F90</a>.</p>
-
-</div>
-</div>
-<a class="anchor" id="ad1fdd53d5d656e9f715dfbfd0444bfb8"></a><!-- doxytag: member="box_rearrange::box_rearrange_comp2io::box_rearrange_comp2io_real" ref="ad1fdd53d5d656e9f715dfbfd0444bfb8" args="(IOsystem, ioDesc, s1, src, s2, dest, comm_option, fc_options)" -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">subroutine box_rearrange::box_rearrange_comp2io::box_rearrange_comp2io_real </td>
-          <td>(</td>
-          <td class="paramtype">type (IOsystem_desc_t),intent(inout)&nbsp;</td>
-          <td class="paramname"> <em>IOsystem</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">type (<a class="el" href="typepio__types_1_1IO__desc__t.html">IO_desc_t</a>)&nbsp;</td>
-          <td class="paramname"> <em>ioDesc</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>s1</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">real(r4),dimension(s1),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>src</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>s2</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">real(r4),dimension(s2),intent(out)&nbsp;</td>
-          <td class="paramname"> <em>dest</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,intent(in),optional&nbsp;</td>
-          <td class="paramname"> <em>comm_option</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,dimension(3),intent(in),optional&nbsp;</td>
-          <td class="paramname"> <em>fc_options</em></td><td>&nbsp;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td><td><code> [private]</code></td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>Definition at line <a class="el" href="box__rearrange_8F90_source.html#l00388">388</a> of file <a class="el" href="box__rearrange_8F90_source.html">box_rearrange.F90</a>.</p>
-
-</div>
-</div>
 <hr/>The documentation for this interface was generated from the following file:<ul>
 <li><a class="el" href="box__rearrange_8F90_source.html">box_rearrange.F90</a></li>
 </ul>
@@ -263,7 +64,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
      onmouseover="return searchBox.OnSearchSelectShow()"
      onmouseout="return searchBox.OnSearchSelectHide()"
      onkeydown="return searchBox.OnSearchSelectKey(event)">
-<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&nbsp;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&nbsp;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&nbsp;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&nbsp;</span>Files</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&nbsp;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(5)"><span class="SelectionMark">&nbsp;</span>Variables</a></div>
+<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&nbsp;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&nbsp;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&nbsp;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&nbsp;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&nbsp;</span>Variables</a></div>
 
 <!-- iframe showing the search results (closed by default) -->
 <div id="MSearchResultsWindow">
@@ -272,7 +73,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Fri Dec 4 14:24:48 2009 for PIO by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Tue Dec 15 13:53:37 2009 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

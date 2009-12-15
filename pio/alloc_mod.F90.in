@@ -1,3 +1,7 @@
+!> \file
+!! This module contains routines which allocate memory and monitor its usage 
+!<
+
 module alloc_mod
 
   use pio_kinds

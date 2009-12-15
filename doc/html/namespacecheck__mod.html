@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>PIO: check_mod Module Reference</title>
+<title>PIO User&#39;s Guide: check_mod Module Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javaScript" src="search/search.js"></script>
@@ -19,6 +19,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
     <ul>
       <li><a href="index.html"><span>Main&nbsp;Page</span></a></li>
       <li><a href="pages.html"><span>Related&nbsp;Pages</span></a></li>
+      <li><a href="modules.html"><span>Modules</span></a></li>
       <li class="current"><a href="namespaces.html"><span>Modules</span></a></li>
       <li><a href="annotated.html"><span>Data&nbsp;Types&nbsp;List</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -48,268 +49,14 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <h1>check_mod Module Reference</h1><table border="0" cellpadding="0" cellspacing="0">
 <tr><td colspan="2"><h2>Data Types</h2></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">interface &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecheck__mod_1_1checkpattern.html">checkpattern</a></td></tr>
-<tr><td colspan="2"><h2>Functions/Subroutines</h2></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecheck__mod.html#af6a9e5da94302bdae6fefc94c2491b69">check_1D_r8</a> (fname, wr_array, rd_array, len, iostat)</td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecheck__mod.html#aa86a31bee7bf9212b74bc8df4e17cc82">check_3D_r8</a> (fname, wr_array, rd_array)</td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecheck__mod.html#a7b001a391eccfb74336db36b82938d9f">check_3D_r4</a> (fname, wr_array, rd_array)</td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecheck__mod.html#a15bdc788af853c53ed425c7f0ddb62b7">check_3D_i4</a> (fname, wr_array, rd_array)</td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecheck__mod.html#a47ef83e6f8fec1b5f471b306bd4be216">check_1D_r4</a> (fname, wr_array, rd_array, len, iostat)</td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecheck__mod.html#ab2456bedb7b0573c234dcd32a51fbeef">check_1D_i4</a> (fname, wr_array, rd_array, len, iostat)</td></tr>
 </table>
-<hr/><h2>Function/Subroutine Documentation</h2>
-<a class="anchor" id="ab2456bedb7b0573c234dcd32a51fbeef"></a><!-- doxytag: member="check_mod::check_1D_i4" ref="ab2456bedb7b0573c234dcd32a51fbeef" args="(fname, wr_array, rd_array, len, iostat)" -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">subroutine check_mod::check_1D_i4 </td>
-          <td>(</td>
-          <td class="paramtype">character(len=*)&nbsp;</td>
-          <td class="paramname"> <em>fname</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer(i4),dimension(:)&nbsp;</td>
-          <td class="paramname"> <em>wr_array</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer(i4),dimension(:)&nbsp;</td>
-          <td class="paramname"> <em>rd_array</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer(i4),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>len</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer(i4),optional&nbsp;</td>
-          <td class="paramname"> <em>iostat</em></td><td>&nbsp;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td><td><code> [private]</code></td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>Definition at line <a class="el" href="check__mod_8F90_source.html#l00197">197</a> of file <a class="el" href="check__mod_8F90_source.html">check_mod.F90</a>.</p>
-
-</div>
-</div>
-<a class="anchor" id="a47ef83e6f8fec1b5f471b306bd4be216"></a><!-- doxytag: member="check_mod::check_1D_r4" ref="a47ef83e6f8fec1b5f471b306bd4be216" args="(fname, wr_array, rd_array, len, iostat)" -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">subroutine check_mod::check_1D_r4 </td>
-          <td>(</td>
-          <td class="paramtype">character(len=*)&nbsp;</td>
-          <td class="paramname"> <em>fname</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">real(r4),dimension(:)&nbsp;</td>
-          <td class="paramname"> <em>wr_array</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">real(r4),dimension(:)&nbsp;</td>
-          <td class="paramname"> <em>rd_array</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer(i4)&nbsp;</td>
-          <td class="paramname"> <em>len</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer(i4),optional&nbsp;</td>
-          <td class="paramname"> <em>iostat</em></td><td>&nbsp;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td><td><code> [private]</code></td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>Definition at line <a class="el" href="check__mod_8F90_source.html#l00159">159</a> of file <a class="el" href="check__mod_8F90_source.html">check_mod.F90</a>.</p>
-
-</div>
-</div>
-<a class="anchor" id="af6a9e5da94302bdae6fefc94c2491b69"></a><!-- doxytag: member="check_mod::check_1D_r8" ref="af6a9e5da94302bdae6fefc94c2491b69" args="(fname, wr_array, rd_array, len, iostat)" -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">subroutine check_mod::check_1D_r8 </td>
-          <td>(</td>
-          <td class="paramtype">character(len=*)&nbsp;</td>
-          <td class="paramname"> <em>fname</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">real(r8),dimension(:)&nbsp;</td>
-          <td class="paramname"> <em>wr_array</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">real(r8),dimension(:)&nbsp;</td>
-          <td class="paramname"> <em>rd_array</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer(i4),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>len</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer(i4),optional&nbsp;</td>
-          <td class="paramname"> <em>iostat</em></td><td>&nbsp;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td><td><code> [private]</code></td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>Definition at line <a class="el" href="check__mod_8F90_source.html#l00026">26</a> of file <a class="el" href="check__mod_8F90_source.html">check_mod.F90</a>.</p>
-
-</div>
-</div>
-<a class="anchor" id="a15bdc788af853c53ed425c7f0ddb62b7"></a><!-- doxytag: member="check_mod::check_3D_i4" ref="a15bdc788af853c53ed425c7f0ddb62b7" args="(fname, wr_array, rd_array)" -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">subroutine check_mod::check_3D_i4 </td>
-          <td>(</td>
-          <td class="paramtype">character(len=*)&nbsp;</td>
-          <td class="paramname"> <em>fname</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer(i4),dimension(:,:,:)&nbsp;</td>
-          <td class="paramname"> <em>wr_array</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer(i4),dimension(:,:,:)&nbsp;</td>
-          <td class="paramname"> <em>rd_array</em></td><td>&nbsp;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td><td><code> [private]</code></td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>Definition at line <a class="el" href="check__mod_8F90_source.html#l00127">127</a> of file <a class="el" href="check__mod_8F90_source.html">check_mod.F90</a>.</p>
-
-</div>
-</div>
-<a class="anchor" id="a7b001a391eccfb74336db36b82938d9f"></a><!-- doxytag: member="check_mod::check_3D_r4" ref="a7b001a391eccfb74336db36b82938d9f" args="(fname, wr_array, rd_array)" -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">subroutine check_mod::check_3D_r4 </td>
-          <td>(</td>
-          <td class="paramtype">character(len=*)&nbsp;</td>
-          <td class="paramname"> <em>fname</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">real(r4),dimension(:,:,:)&nbsp;</td>
-          <td class="paramname"> <em>wr_array</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">real(r4),dimension(:,:,:)&nbsp;</td>
-          <td class="paramname"> <em>rd_array</em></td><td>&nbsp;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td><td><code> [private]</code></td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>Definition at line <a class="el" href="check__mod_8F90_source.html#l00094">94</a> of file <a class="el" href="check__mod_8F90_source.html">check_mod.F90</a>.</p>
-
-</div>
-</div>
-<a class="anchor" id="aa86a31bee7bf9212b74bc8df4e17cc82"></a><!-- doxytag: member="check_mod::check_3D_r8" ref="aa86a31bee7bf9212b74bc8df4e17cc82" args="(fname, wr_array, rd_array)" -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">subroutine check_mod::check_3D_r8 </td>
-          <td>(</td>
-          <td class="paramtype">character(len=*)&nbsp;</td>
-          <td class="paramname"> <em>fname</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">real(r8),dimension(:,:,:)&nbsp;</td>
-          <td class="paramname"> <em>wr_array</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">real(r8),dimension(:,:,:)&nbsp;</td>
-          <td class="paramname"> <em>rd_array</em></td><td>&nbsp;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td><td><code> [private]</code></td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>Definition at line <a class="el" href="check__mod_8F90_source.html#l00061">61</a> of file <a class="el" href="check__mod_8F90_source.html">check_mod.F90</a>.</p>
-
-</div>
-</div>
 </div>
 <!--- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
      onmouseout="return searchBox.OnSearchSelectHide()"
      onkeydown="return searchBox.OnSearchSelectKey(event)">
-<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&nbsp;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&nbsp;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&nbsp;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&nbsp;</span>Files</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&nbsp;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(5)"><span class="SelectionMark">&nbsp;</span>Variables</a></div>
+<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&nbsp;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&nbsp;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&nbsp;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&nbsp;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&nbsp;</span>Variables</a></div>
 
 <!-- iframe showing the search results (closed by default) -->
 <div id="MSearchResultsWindow">
@@ -318,7 +65,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Fri Dec 4 14:24:48 2009 for PIO by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Tue Dec 15 13:53:37 2009 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

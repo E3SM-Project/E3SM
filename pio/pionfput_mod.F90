@@ -34,8 +34,13 @@ module pionfput_mod
   integer, external :: nf_put_vars_text
 #endif
   include 'mpif.h'   ! _EXTERNAL
+
+!>
+!! \defgroup PIO_put_var PIO_put_var
+!! Writes netcdf metadata to a file
+!<
   public :: put_var
-# 31 "pionfput_mod.F90.in"
+# 36 "pionfput_mod.F90.in"
   interface put_var
      !  DIMS 0,1,2,3,4,5
      module procedure put_var_0d_text, put_var_vdesc_0d_text
@@ -130,9 +135,21 @@ module pionfput_mod
      module procedure put_var1_double, put_var1_vdesc_double
      module procedure put_var1_int, put_var1_vdesc_int
   end interface
-# 38 "pionfput_mod.F90.in"
+# 43 "pionfput_mod.F90.in"
 contains
-# 39 "pionfput_mod.F90.in"
+
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param index : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 56 "pionfput_mod.F90.in"
   integer function put_var1_text (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, index(:)
@@ -178,6 +195,19 @@ contains
     call t_stopf("pio_put_var1_text")
 #endif 
   end function put_var1_text
+
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param index : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 56 "pionfput_mod.F90.in"
   integer function put_var1_real (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, index(:)
@@ -223,6 +253,19 @@ contains
     call t_stopf("pio_put_var1_real")
 #endif 
   end function put_var1_real
+
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param index : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 56 "pionfput_mod.F90.in"
   integer function put_var1_double (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, index(:)
@@ -268,6 +311,19 @@ contains
     call t_stopf("pio_put_var1_double")
 #endif 
   end function put_var1_double
+
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param index : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 56 "pionfput_mod.F90.in"
   integer function put_var1_int (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, index(:)
@@ -314,7 +370,18 @@ contains
 #endif 
   end function put_var1_int
 
-# 85 "pionfput_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 113 "pionfput_mod.F90.in"
   integer function put_var1_vdesc_text (File,vardesc, start, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -324,7 +391,18 @@ contains
     ierr = put_var1_text (File, vardesc%varid, start, ival)
   end function put_var1_vdesc_text
 
-# 85 "pionfput_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 113 "pionfput_mod.F90.in"
   integer function put_var1_vdesc_real (File,vardesc, start, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -334,7 +412,18 @@ contains
     ierr = put_var1_real (File, vardesc%varid, start, ival)
   end function put_var1_vdesc_real
 
-# 85 "pionfput_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 113 "pionfput_mod.F90.in"
   integer function put_var1_vdesc_double (File,vardesc, start, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -344,7 +433,18 @@ contains
     ierr = put_var1_double (File, vardesc%varid, start, ival)
   end function put_var1_vdesc_double
 
-# 85 "pionfput_mod.F90.in"
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 113 "pionfput_mod.F90.in"
   integer function put_var1_vdesc_int (File,vardesc, start, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -354,8 +454,18 @@ contains
     ierr = put_var1_int (File, vardesc%varid, start, ival)
   end function put_var1_vdesc_int
 
-  ! DIMS 0,1,2,3,4,5
-# 95 "pionfput_mod.F90.in"
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 133 "pionfput_mod.F90.in"
   integer function put_var_0d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -403,7 +513,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 142 "pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -424,8 +534,18 @@ contains
 #endif 
   end function put_var_0d_text
 
-  ! DIMS 0,1,2,3,4,5
-# 95 "pionfput_mod.F90.in"
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 133 "pionfput_mod.F90.in"
   integer function put_var_1d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -473,7 +593,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 142 "pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -494,8 +614,18 @@ contains
 #endif 
   end function put_var_1d_text
 
-  ! DIMS 0,1,2,3,4,5
-# 95 "pionfput_mod.F90.in"
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 133 "pionfput_mod.F90.in"
   integer function put_var_2d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -543,7 +673,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 142 "pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -564,8 +694,18 @@ contains
 #endif 
   end function put_var_2d_text
 
-  ! DIMS 0,1,2,3,4,5
-# 95 "pionfput_mod.F90.in"
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 133 "pionfput_mod.F90.in"
   integer function put_var_3d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -613,7 +753,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 142 "pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -634,8 +774,18 @@ contains
 #endif 
   end function put_var_3d_text
 
-  ! DIMS 0,1,2,3,4,5
-# 95 "pionfput_mod.F90.in"
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 133 "pionfput_mod.F90.in"
   integer function put_var_4d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -683,7 +833,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 142 "pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -704,8 +854,18 @@ contains
 #endif 
   end function put_var_4d_text
 
-  ! DIMS 0,1,2,3,4,5
-# 95 "pionfput_mod.F90.in"
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 133 "pionfput_mod.F90.in"
   integer function put_var_5d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -753,7 +913,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 142 "pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -774,8 +934,18 @@ contains
 #endif 
   end function put_var_5d_text
 
-  ! DIMS 0,1,2,3,4,5
-# 95 "pionfput_mod.F90.in"
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 133 "pionfput_mod.F90.in"
   integer function put_var_0d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -823,7 +993,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 142 "pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -844,8 +1014,18 @@ contains
 #endif 
   end function put_var_0d_real
 
-  ! DIMS 0,1,2,3,4,5
-# 95 "pionfput_mod.F90.in"
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 133 "pionfput_mod.F90.in"
   integer function put_var_1d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -893,7 +1073,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 142 "pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -914,8 +1094,18 @@ contains
 #endif 
   end function put_var_1d_real
 
-  ! DIMS 0,1,2,3,4,5
-# 95 "pionfput_mod.F90.in"
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 133 "pionfput_mod.F90.in"
   integer function put_var_2d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -963,7 +1153,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 142 "pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -984,8 +1174,18 @@ contains
 #endif 
   end function put_var_2d_real
 
-  ! DIMS 0,1,2,3,4,5
-# 95 "pionfput_mod.F90.in"
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 133 "pionfput_mod.F90.in"
   integer function put_var_3d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1033,7 +1233,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 142 "pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1054,8 +1254,18 @@ contains
 #endif 
   end function put_var_3d_real
 
-  ! DIMS 0,1,2,3,4,5
-# 95 "pionfput_mod.F90.in"
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 133 "pionfput_mod.F90.in"
   integer function put_var_4d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1103,7 +1313,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 142 "pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1124,8 +1334,18 @@ contains
 #endif 
   end function put_var_4d_real
 
-  ! DIMS 0,1,2,3,4,5
-# 95 "pionfput_mod.F90.in"
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 133 "pionfput_mod.F90.in"
   integer function put_var_5d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1173,7 +1393,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 142 "pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1194,8 +1414,18 @@ contains
 #endif 
   end function put_var_5d_real
 
-  ! DIMS 0,1,2,3,4,5
-# 95 "pionfput_mod.F90.in"
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 133 "pionfput_mod.F90.in"
   integer function put_var_0d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1243,7 +1473,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 142 "pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1264,8 +1494,18 @@ contains
 #endif 
   end function put_var_0d_double
 
-  ! DIMS 0,1,2,3,4,5
-# 95 "pionfput_mod.F90.in"
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 133 "pionfput_mod.F90.in"
   integer function put_var_1d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1313,7 +1553,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 142 "pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1334,8 +1574,18 @@ contains
 #endif 
   end function put_var_1d_double
 
-  ! DIMS 0,1,2,3,4,5
-# 95 "pionfput_mod.F90.in"
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 133 "pionfput_mod.F90.in"
   integer function put_var_2d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1383,7 +1633,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 142 "pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1404,8 +1654,18 @@ contains
 #endif 
   end function put_var_2d_double
 
-  ! DIMS 0,1,2,3,4,5
-# 95 "pionfput_mod.F90.in"
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 133 "pionfput_mod.F90.in"
   integer function put_var_3d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1453,7 +1713,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 142 "pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1474,8 +1734,18 @@ contains
 #endif 
   end function put_var_3d_double
 
-  ! DIMS 0,1,2,3,4,5
-# 95 "pionfput_mod.F90.in"
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 133 "pionfput_mod.F90.in"
   integer function put_var_4d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1523,7 +1793,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 142 "pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1544,8 +1814,18 @@ contains
 #endif 
   end function put_var_4d_double
 
-  ! DIMS 0,1,2,3,4,5
-# 95 "pionfput_mod.F90.in"
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 133 "pionfput_mod.F90.in"
   integer function put_var_5d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1593,7 +1873,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 142 "pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1614,8 +1894,18 @@ contains
 #endif 
   end function put_var_5d_double
 
-  ! DIMS 0,1,2,3,4,5
-# 95 "pionfput_mod.F90.in"
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 133 "pionfput_mod.F90.in"
   integer function put_var_0d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1663,7 +1953,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 142 "pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1684,8 +1974,18 @@ contains
 #endif 
   end function put_var_0d_int
 
-  ! DIMS 0,1,2,3,4,5
-# 95 "pionfput_mod.F90.in"
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 133 "pionfput_mod.F90.in"
   integer function put_var_1d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1733,7 +2033,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 142 "pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1754,8 +2054,18 @@ contains
 #endif 
   end function put_var_1d_int
 
-  ! DIMS 0,1,2,3,4,5
-# 95 "pionfput_mod.F90.in"
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 133 "pionfput_mod.F90.in"
   integer function put_var_2d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1803,7 +2113,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 142 "pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1824,8 +2134,18 @@ contains
 #endif 
   end function put_var_2d_int
 
-  ! DIMS 0,1,2,3,4,5
-# 95 "pionfput_mod.F90.in"
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 133 "pionfput_mod.F90.in"
   integer function put_var_3d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1873,7 +2193,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 142 "pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1894,8 +2214,18 @@ contains
 #endif 
   end function put_var_3d_int
 
-  ! DIMS 0,1,2,3,4,5
-# 95 "pionfput_mod.F90.in"
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 133 "pionfput_mod.F90.in"
   integer function put_var_4d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1943,7 +2273,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 142 "pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1964,8 +2294,18 @@ contains
 #endif 
   end function put_var_4d_int
 
-  ! DIMS 0,1,2,3,4,5
-# 95 "pionfput_mod.F90.in"
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 133 "pionfput_mod.F90.in"
   integer function put_var_5d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -2013,7 +2353,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 142 "pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -2033,248 +2373,525 @@ contains
     call t_stopf("pio_put_var_5d_int")
 #endif 
   end function put_var_5d_int
-  ! DIMS 0,1,2,3,4,5
-# 162 "pionfput_mod.F90.in"
-  integer function put_var_vdesc_0d_text (File, vdesc, ival) result(ierr)
+
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 211 "pionfput_mod.F90.in"
+  integer function put_var_vdesc_0d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
-    type(var_desc_t) , intent(in) :: vdesc
+    type(var_desc_t) , intent(in) :: vardesc
     character(len=*), intent(in) :: ival
     integer :: iotype
 
-    ierr = put_var_0d_text (File, vdesc%varid, ival)
+    ierr = put_var_0d_text (File, vardesc%varid, ival)
   end function put_var_vdesc_0d_text
-  ! DIMS 0,1,2,3,4,5
-# 162 "pionfput_mod.F90.in"
-  integer function put_var_vdesc_1d_text (File, vdesc, ival) result(ierr)
+
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 211 "pionfput_mod.F90.in"
+  integer function put_var_vdesc_1d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
-    type(var_desc_t) , intent(in) :: vdesc
+    type(var_desc_t) , intent(in) :: vardesc
     character(len=*), intent(in) :: ival(:)
     integer :: iotype
 
-    ierr = put_var_1d_text (File, vdesc%varid, ival)
+    ierr = put_var_1d_text (File, vardesc%varid, ival)
   end function put_var_vdesc_1d_text
-  ! DIMS 0,1,2,3,4,5
-# 162 "pionfput_mod.F90.in"
-  integer function put_var_vdesc_2d_text (File, vdesc, ival) result(ierr)
+
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 211 "pionfput_mod.F90.in"
+  integer function put_var_vdesc_2d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
-    type(var_desc_t) , intent(in) :: vdesc
+    type(var_desc_t) , intent(in) :: vardesc
     character(len=*), intent(in) :: ival(:,:)
     integer :: iotype
 
-    ierr = put_var_2d_text (File, vdesc%varid, ival)
+    ierr = put_var_2d_text (File, vardesc%varid, ival)
   end function put_var_vdesc_2d_text
-  ! DIMS 0,1,2,3,4,5
-# 162 "pionfput_mod.F90.in"
-  integer function put_var_vdesc_3d_text (File, vdesc, ival) result(ierr)
+
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 211 "pionfput_mod.F90.in"
+  integer function put_var_vdesc_3d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
-    type(var_desc_t) , intent(in) :: vdesc
+    type(var_desc_t) , intent(in) :: vardesc
     character(len=*), intent(in) :: ival(:,:,:)
     integer :: iotype
 
-    ierr = put_var_3d_text (File, vdesc%varid, ival)
+    ierr = put_var_3d_text (File, vardesc%varid, ival)
   end function put_var_vdesc_3d_text
-  ! DIMS 0,1,2,3,4,5
-# 162 "pionfput_mod.F90.in"
-  integer function put_var_vdesc_4d_text (File, vdesc, ival) result(ierr)
+
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 211 "pionfput_mod.F90.in"
+  integer function put_var_vdesc_4d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
-    type(var_desc_t) , intent(in) :: vdesc
+    type(var_desc_t) , intent(in) :: vardesc
     character(len=*), intent(in) :: ival(:,:,:,:)
     integer :: iotype
 
-    ierr = put_var_4d_text (File, vdesc%varid, ival)
+    ierr = put_var_4d_text (File, vardesc%varid, ival)
   end function put_var_vdesc_4d_text
-  ! DIMS 0,1,2,3,4,5
-# 162 "pionfput_mod.F90.in"
-  integer function put_var_vdesc_5d_text (File, vdesc, ival) result(ierr)
+
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 211 "pionfput_mod.F90.in"
+  integer function put_var_vdesc_5d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
-    type(var_desc_t) , intent(in) :: vdesc
+    type(var_desc_t) , intent(in) :: vardesc
     character(len=*), intent(in) :: ival(:,:,:,:,:)
     integer :: iotype
 
-    ierr = put_var_5d_text (File, vdesc%varid, ival)
+    ierr = put_var_5d_text (File, vardesc%varid, ival)
   end function put_var_vdesc_5d_text
-  ! DIMS 0,1,2,3,4,5
-# 162 "pionfput_mod.F90.in"
-  integer function put_var_vdesc_0d_real (File, vdesc, ival) result(ierr)
+
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 211 "pionfput_mod.F90.in"
+  integer function put_var_vdesc_0d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
-    type(var_desc_t) , intent(in) :: vdesc
+    type(var_desc_t) , intent(in) :: vardesc
     real(r4), intent(in) :: ival
     integer :: iotype
 
-    ierr = put_var_0d_real (File, vdesc%varid, ival)
+    ierr = put_var_0d_real (File, vardesc%varid, ival)
   end function put_var_vdesc_0d_real
-  ! DIMS 0,1,2,3,4,5
-# 162 "pionfput_mod.F90.in"
-  integer function put_var_vdesc_1d_real (File, vdesc, ival) result(ierr)
+
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 211 "pionfput_mod.F90.in"
+  integer function put_var_vdesc_1d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
-    type(var_desc_t) , intent(in) :: vdesc
+    type(var_desc_t) , intent(in) :: vardesc
     real(r4), intent(in) :: ival(:)
     integer :: iotype
 
-    ierr = put_var_1d_real (File, vdesc%varid, ival)
+    ierr = put_var_1d_real (File, vardesc%varid, ival)
   end function put_var_vdesc_1d_real
-  ! DIMS 0,1,2,3,4,5
-# 162 "pionfput_mod.F90.in"
-  integer function put_var_vdesc_2d_real (File, vdesc, ival) result(ierr)
+
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 211 "pionfput_mod.F90.in"
+  integer function put_var_vdesc_2d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
-    type(var_desc_t) , intent(in) :: vdesc
+    type(var_desc_t) , intent(in) :: vardesc
     real(r4), intent(in) :: ival(:,:)
     integer :: iotype
 
-    ierr = put_var_2d_real (File, vdesc%varid, ival)
+    ierr = put_var_2d_real (File, vardesc%varid, ival)
   end function put_var_vdesc_2d_real
-  ! DIMS 0,1,2,3,4,5
-# 162 "pionfput_mod.F90.in"
-  integer function put_var_vdesc_3d_real (File, vdesc, ival) result(ierr)
+
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 211 "pionfput_mod.F90.in"
+  integer function put_var_vdesc_3d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
-    type(var_desc_t) , intent(in) :: vdesc
+    type(var_desc_t) , intent(in) :: vardesc
     real(r4), intent(in) :: ival(:,:,:)
     integer :: iotype
 
-    ierr = put_var_3d_real (File, vdesc%varid, ival)
+    ierr = put_var_3d_real (File, vardesc%varid, ival)
   end function put_var_vdesc_3d_real
-  ! DIMS 0,1,2,3,4,5
-# 162 "pionfput_mod.F90.in"
-  integer function put_var_vdesc_4d_real (File, vdesc, ival) result(ierr)
+
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 211 "pionfput_mod.F90.in"
+  integer function put_var_vdesc_4d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
-    type(var_desc_t) , intent(in) :: vdesc
+    type(var_desc_t) , intent(in) :: vardesc
     real(r4), intent(in) :: ival(:,:,:,:)
     integer :: iotype
 
-    ierr = put_var_4d_real (File, vdesc%varid, ival)
+    ierr = put_var_4d_real (File, vardesc%varid, ival)
   end function put_var_vdesc_4d_real
-  ! DIMS 0,1,2,3,4,5
-# 162 "pionfput_mod.F90.in"
-  integer function put_var_vdesc_5d_real (File, vdesc, ival) result(ierr)
+
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 211 "pionfput_mod.F90.in"
+  integer function put_var_vdesc_5d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
-    type(var_desc_t) , intent(in) :: vdesc
+    type(var_desc_t) , intent(in) :: vardesc
     real(r4), intent(in) :: ival(:,:,:,:,:)
     integer :: iotype
 
-    ierr = put_var_5d_real (File, vdesc%varid, ival)
+    ierr = put_var_5d_real (File, vardesc%varid, ival)
   end function put_var_vdesc_5d_real
-  ! DIMS 0,1,2,3,4,5
-# 162 "pionfput_mod.F90.in"
-  integer function put_var_vdesc_0d_double (File, vdesc, ival) result(ierr)
+
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 211 "pionfput_mod.F90.in"
+  integer function put_var_vdesc_0d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
-    type(var_desc_t) , intent(in) :: vdesc
+    type(var_desc_t) , intent(in) :: vardesc
     real(r8), intent(in) :: ival
     integer :: iotype
 
-    ierr = put_var_0d_double (File, vdesc%varid, ival)
+    ierr = put_var_0d_double (File, vardesc%varid, ival)
   end function put_var_vdesc_0d_double
-  ! DIMS 0,1,2,3,4,5
-# 162 "pionfput_mod.F90.in"
-  integer function put_var_vdesc_1d_double (File, vdesc, ival) result(ierr)
+
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 211 "pionfput_mod.F90.in"
+  integer function put_var_vdesc_1d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
-    type(var_desc_t) , intent(in) :: vdesc
+    type(var_desc_t) , intent(in) :: vardesc
     real(r8), intent(in) :: ival(:)
     integer :: iotype
 
-    ierr = put_var_1d_double (File, vdesc%varid, ival)
+    ierr = put_var_1d_double (File, vardesc%varid, ival)
   end function put_var_vdesc_1d_double
-  ! DIMS 0,1,2,3,4,5
-# 162 "pionfput_mod.F90.in"
-  integer function put_var_vdesc_2d_double (File, vdesc, ival) result(ierr)
+
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 211 "pionfput_mod.F90.in"
+  integer function put_var_vdesc_2d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
-    type(var_desc_t) , intent(in) :: vdesc
+    type(var_desc_t) , intent(in) :: vardesc
     real(r8), intent(in) :: ival(:,:)
     integer :: iotype
 
-    ierr = put_var_2d_double (File, vdesc%varid, ival)
+    ierr = put_var_2d_double (File, vardesc%varid, ival)
   end function put_var_vdesc_2d_double
-  ! DIMS 0,1,2,3,4,5
-# 162 "pionfput_mod.F90.in"
-  integer function put_var_vdesc_3d_double (File, vdesc, ival) result(ierr)
+
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 211 "pionfput_mod.F90.in"
+  integer function put_var_vdesc_3d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
-    type(var_desc_t) , intent(in) :: vdesc
+    type(var_desc_t) , intent(in) :: vardesc
     real(r8), intent(in) :: ival(:,:,:)
     integer :: iotype
 
-    ierr = put_var_3d_double (File, vdesc%varid, ival)
+    ierr = put_var_3d_double (File, vardesc%varid, ival)
   end function put_var_vdesc_3d_double
-  ! DIMS 0,1,2,3,4,5
-# 162 "pionfput_mod.F90.in"
-  integer function put_var_vdesc_4d_double (File, vdesc, ival) result(ierr)
+
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 211 "pionfput_mod.F90.in"
+  integer function put_var_vdesc_4d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
-    type(var_desc_t) , intent(in) :: vdesc
+    type(var_desc_t) , intent(in) :: vardesc
     real(r8), intent(in) :: ival(:,:,:,:)
     integer :: iotype
 
-    ierr = put_var_4d_double (File, vdesc%varid, ival)
+    ierr = put_var_4d_double (File, vardesc%varid, ival)
   end function put_var_vdesc_4d_double
-  ! DIMS 0,1,2,3,4,5
-# 162 "pionfput_mod.F90.in"
-  integer function put_var_vdesc_5d_double (File, vdesc, ival) result(ierr)
+
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 211 "pionfput_mod.F90.in"
+  integer function put_var_vdesc_5d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
-    type(var_desc_t) , intent(in) :: vdesc
+    type(var_desc_t) , intent(in) :: vardesc
     real(r8), intent(in) :: ival(:,:,:,:,:)
     integer :: iotype
 
-    ierr = put_var_5d_double (File, vdesc%varid, ival)
+    ierr = put_var_5d_double (File, vardesc%varid, ival)
   end function put_var_vdesc_5d_double
-  ! DIMS 0,1,2,3,4,5
-# 162 "pionfput_mod.F90.in"
-  integer function put_var_vdesc_0d_int (File, vdesc, ival) result(ierr)
+
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 211 "pionfput_mod.F90.in"
+  integer function put_var_vdesc_0d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
-    type(var_desc_t) , intent(in) :: vdesc
+    type(var_desc_t) , intent(in) :: vardesc
     integer(i4), intent(in) :: ival
     integer :: iotype
 
-    ierr = put_var_0d_int (File, vdesc%varid, ival)
+    ierr = put_var_0d_int (File, vardesc%varid, ival)
   end function put_var_vdesc_0d_int
-  ! DIMS 0,1,2,3,4,5
-# 162 "pionfput_mod.F90.in"
-  integer function put_var_vdesc_1d_int (File, vdesc, ival) result(ierr)
+
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 211 "pionfput_mod.F90.in"
+  integer function put_var_vdesc_1d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
-    type(var_desc_t) , intent(in) :: vdesc
+    type(var_desc_t) , intent(in) :: vardesc
     integer(i4), intent(in) :: ival(:)
     integer :: iotype
 
-    ierr = put_var_1d_int (File, vdesc%varid, ival)
+    ierr = put_var_1d_int (File, vardesc%varid, ival)
   end function put_var_vdesc_1d_int
-  ! DIMS 0,1,2,3,4,5
-# 162 "pionfput_mod.F90.in"
-  integer function put_var_vdesc_2d_int (File, vdesc, ival) result(ierr)
+
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 211 "pionfput_mod.F90.in"
+  integer function put_var_vdesc_2d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
-    type(var_desc_t) , intent(in) :: vdesc
+    type(var_desc_t) , intent(in) :: vardesc
     integer(i4), intent(in) :: ival(:,:)
     integer :: iotype
 
-    ierr = put_var_2d_int (File, vdesc%varid, ival)
+    ierr = put_var_2d_int (File, vardesc%varid, ival)
   end function put_var_vdesc_2d_int
-  ! DIMS 0,1,2,3,4,5
-# 162 "pionfput_mod.F90.in"
-  integer function put_var_vdesc_3d_int (File, vdesc, ival) result(ierr)
+
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 211 "pionfput_mod.F90.in"
+  integer function put_var_vdesc_3d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
-    type(var_desc_t) , intent(in) :: vdesc
+    type(var_desc_t) , intent(in) :: vardesc
     integer(i4), intent(in) :: ival(:,:,:)
     integer :: iotype
 
-    ierr = put_var_3d_int (File, vdesc%varid, ival)
+    ierr = put_var_3d_int (File, vardesc%varid, ival)
   end function put_var_vdesc_3d_int
-  ! DIMS 0,1,2,3,4,5
-# 162 "pionfput_mod.F90.in"
-  integer function put_var_vdesc_4d_int (File, vdesc, ival) result(ierr)
+
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 211 "pionfput_mod.F90.in"
+  integer function put_var_vdesc_4d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
-    type(var_desc_t) , intent(in) :: vdesc
+    type(var_desc_t) , intent(in) :: vardesc
     integer(i4), intent(in) :: ival(:,:,:,:)
     integer :: iotype
 
-    ierr = put_var_4d_int (File, vdesc%varid, ival)
+    ierr = put_var_4d_int (File, vardesc%varid, ival)
   end function put_var_vdesc_4d_int
-  ! DIMS 0,1,2,3,4,5
-# 162 "pionfput_mod.F90.in"
-  integer function put_var_vdesc_5d_int (File, vdesc, ival) result(ierr)
+
+! DIMS 0,1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 211 "pionfput_mod.F90.in"
+  integer function put_var_vdesc_5d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
-    type(var_desc_t) , intent(in) :: vdesc
+    type(var_desc_t) , intent(in) :: vardesc
     integer(i4), intent(in) :: ival(:,:,:,:,:)
     integer :: iotype
 
-    ierr = put_var_5d_int (File, vdesc%varid, ival)
+    ierr = put_var_5d_int (File, vardesc%varid, ival)
   end function put_var_vdesc_5d_int
-  ! DIMS 1,2,3,4,5
-# 171 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 233 "pionfput_mod.F90.in"
   integer function put_vara_1d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2318,8 +2935,21 @@ contains
     call t_stopf("pio_put_vara_1d_text")
 #endif 
   end function put_vara_1d_text
-  ! DIMS 1,2,3,4,5
-# 171 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 233 "pionfput_mod.F90.in"
   integer function put_vara_2d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2363,8 +2993,21 @@ contains
     call t_stopf("pio_put_vara_2d_text")
 #endif 
   end function put_vara_2d_text
-  ! DIMS 1,2,3,4,5
-# 171 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 233 "pionfput_mod.F90.in"
   integer function put_vara_3d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2408,8 +3051,21 @@ contains
     call t_stopf("pio_put_vara_3d_text")
 #endif 
   end function put_vara_3d_text
-  ! DIMS 1,2,3,4,5
-# 171 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 233 "pionfput_mod.F90.in"
   integer function put_vara_4d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2453,8 +3109,21 @@ contains
     call t_stopf("pio_put_vara_4d_text")
 #endif 
   end function put_vara_4d_text
-  ! DIMS 1,2,3,4,5
-# 171 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 233 "pionfput_mod.F90.in"
   integer function put_vara_5d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2498,8 +3167,21 @@ contains
     call t_stopf("pio_put_vara_5d_text")
 #endif 
   end function put_vara_5d_text
-  ! DIMS 1,2,3,4,5
-# 171 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 233 "pionfput_mod.F90.in"
   integer function put_vara_1d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2543,8 +3225,21 @@ contains
     call t_stopf("pio_put_vara_1d_real")
 #endif 
   end function put_vara_1d_real
-  ! DIMS 1,2,3,4,5
-# 171 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 233 "pionfput_mod.F90.in"
   integer function put_vara_2d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2588,8 +3283,21 @@ contains
     call t_stopf("pio_put_vara_2d_real")
 #endif 
   end function put_vara_2d_real
-  ! DIMS 1,2,3,4,5
-# 171 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 233 "pionfput_mod.F90.in"
   integer function put_vara_3d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2633,8 +3341,21 @@ contains
     call t_stopf("pio_put_vara_3d_real")
 #endif 
   end function put_vara_3d_real
-  ! DIMS 1,2,3,4,5
-# 171 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 233 "pionfput_mod.F90.in"
   integer function put_vara_4d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2678,8 +3399,21 @@ contains
     call t_stopf("pio_put_vara_4d_real")
 #endif 
   end function put_vara_4d_real
-  ! DIMS 1,2,3,4,5
-# 171 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 233 "pionfput_mod.F90.in"
   integer function put_vara_5d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2723,8 +3457,21 @@ contains
     call t_stopf("pio_put_vara_5d_real")
 #endif 
   end function put_vara_5d_real
-  ! DIMS 1,2,3,4,5
-# 171 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 233 "pionfput_mod.F90.in"
   integer function put_vara_1d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2768,8 +3515,21 @@ contains
     call t_stopf("pio_put_vara_1d_double")
 #endif 
   end function put_vara_1d_double
-  ! DIMS 1,2,3,4,5
-# 171 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 233 "pionfput_mod.F90.in"
   integer function put_vara_2d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2813,8 +3573,21 @@ contains
     call t_stopf("pio_put_vara_2d_double")
 #endif 
   end function put_vara_2d_double
-  ! DIMS 1,2,3,4,5
-# 171 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 233 "pionfput_mod.F90.in"
   integer function put_vara_3d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2858,8 +3631,21 @@ contains
     call t_stopf("pio_put_vara_3d_double")
 #endif 
   end function put_vara_3d_double
-  ! DIMS 1,2,3,4,5
-# 171 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 233 "pionfput_mod.F90.in"
   integer function put_vara_4d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2903,8 +3689,21 @@ contains
     call t_stopf("pio_put_vara_4d_double")
 #endif 
   end function put_vara_4d_double
-  ! DIMS 1,2,3,4,5
-# 171 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 233 "pionfput_mod.F90.in"
   integer function put_vara_5d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2948,8 +3747,21 @@ contains
     call t_stopf("pio_put_vara_5d_double")
 #endif 
   end function put_vara_5d_double
-  ! DIMS 1,2,3,4,5
-# 171 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 233 "pionfput_mod.F90.in"
   integer function put_vara_1d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2993,8 +3805,21 @@ contains
     call t_stopf("pio_put_vara_1d_int")
 #endif 
   end function put_vara_1d_int
-  ! DIMS 1,2,3,4,5
-# 171 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 233 "pionfput_mod.F90.in"
   integer function put_vara_2d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -3038,8 +3863,21 @@ contains
     call t_stopf("pio_put_vara_2d_int")
 #endif 
   end function put_vara_2d_int
-  ! DIMS 1,2,3,4,5
-# 171 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 233 "pionfput_mod.F90.in"
   integer function put_vara_3d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -3083,8 +3921,21 @@ contains
     call t_stopf("pio_put_vara_3d_int")
 #endif 
   end function put_vara_3d_int
-  ! DIMS 1,2,3,4,5
-# 171 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 233 "pionfput_mod.F90.in"
   integer function put_vara_4d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -3128,8 +3979,21 @@ contains
     call t_stopf("pio_put_vara_4d_int")
 #endif 
   end function put_vara_4d_int
-  ! DIMS 1,2,3,4,5
-# 171 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf attribute to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param varid : The netcdf variable identifier
+!! \param start :
+!! \param count :
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 233 "pionfput_mod.F90.in"
   integer function put_vara_5d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -3173,8 +4037,21 @@ contains
     call t_stopf("pio_put_vara_5d_int")
 #endif 
   end function put_vara_5d_int
-  ! DIMS 1,2,3,4,5
-# 215 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf variable to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start : 
+!! \param count : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 290 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3185,8 +4062,21 @@ contains
 
 
   end function put_vara_vdesc_1d_text
-  ! DIMS 1,2,3,4,5
-# 215 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf variable to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start : 
+!! \param count : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 290 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3197,8 +4087,21 @@ contains
 
 
   end function put_vara_vdesc_2d_text
-  ! DIMS 1,2,3,4,5
-# 215 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf variable to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start : 
+!! \param count : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 290 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3209,8 +4112,21 @@ contains
 
 
   end function put_vara_vdesc_3d_text
-  ! DIMS 1,2,3,4,5
-# 215 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf variable to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start : 
+!! \param count : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 290 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3221,8 +4137,21 @@ contains
 
 
   end function put_vara_vdesc_4d_text
-  ! DIMS 1,2,3,4,5
-# 215 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf variable to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start : 
+!! \param count : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 290 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3233,8 +4162,21 @@ contains
 
 
   end function put_vara_vdesc_5d_text
-  ! DIMS 1,2,3,4,5
-# 215 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf variable to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start : 
+!! \param count : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 290 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3245,8 +4187,21 @@ contains
 
 
   end function put_vara_vdesc_1d_real
-  ! DIMS 1,2,3,4,5
-# 215 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf variable to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start : 
+!! \param count : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 290 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3257,8 +4212,21 @@ contains
 
 
   end function put_vara_vdesc_2d_real
-  ! DIMS 1,2,3,4,5
-# 215 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf variable to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start : 
+!! \param count : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 290 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3269,8 +4237,21 @@ contains
 
 
   end function put_vara_vdesc_3d_real
-  ! DIMS 1,2,3,4,5
-# 215 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf variable to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start : 
+!! \param count : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 290 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3281,8 +4262,21 @@ contains
 
 
   end function put_vara_vdesc_4d_real
-  ! DIMS 1,2,3,4,5
-# 215 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf variable to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start : 
+!! \param count : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 290 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3293,8 +4287,21 @@ contains
 
 
   end function put_vara_vdesc_5d_real
-  ! DIMS 1,2,3,4,5
-# 215 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf variable to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start : 
+!! \param count : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 290 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3305,8 +4312,21 @@ contains
 
 
   end function put_vara_vdesc_1d_double
-  ! DIMS 1,2,3,4,5
-# 215 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf variable to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start : 
+!! \param count : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 290 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3317,8 +4337,21 @@ contains
 
 
   end function put_vara_vdesc_2d_double
-  ! DIMS 1,2,3,4,5
-# 215 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf variable to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start : 
+!! \param count : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 290 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3329,8 +4362,21 @@ contains
 
 
   end function put_vara_vdesc_3d_double
-  ! DIMS 1,2,3,4,5
-# 215 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf variable to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start : 
+!! \param count : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 290 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3341,8 +4387,21 @@ contains
 
 
   end function put_vara_vdesc_4d_double
-  ! DIMS 1,2,3,4,5
-# 215 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf variable to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start : 
+!! \param count : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 290 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3353,8 +4412,21 @@ contains
 
 
   end function put_vara_vdesc_5d_double
-  ! DIMS 1,2,3,4,5
-# 215 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf variable to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start : 
+!! \param count : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 290 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3365,8 +4437,21 @@ contains
 
 
   end function put_vara_vdesc_1d_int
-  ! DIMS 1,2,3,4,5
-# 215 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf variable to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start : 
+!! \param count : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 290 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3377,8 +4462,21 @@ contains
 
 
   end function put_vara_vdesc_2d_int
-  ! DIMS 1,2,3,4,5
-# 215 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf variable to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start : 
+!! \param count : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 290 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3389,8 +4487,21 @@ contains
 
 
   end function put_vara_vdesc_3d_int
-  ! DIMS 1,2,3,4,5
-# 215 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf variable to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start : 
+!! \param count : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 290 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3401,8 +4512,21 @@ contains
 
 
   end function put_vara_vdesc_4d_int
-  ! DIMS 1,2,3,4,5
-# 215 "pionfput_mod.F90.in"
+
+! DIMS 1,2,3,4,5
+!>
+!! \public
+!! \ingroup PIO_put_var
+!! Writes an netcdf variable to a file
+!!
+!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
+!! \param start : 
+!! \param count : 
+!! \param ival : The value for the netcdf metadata
+!! \retval ierr : error return code
+!<
+# 290 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc

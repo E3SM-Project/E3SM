@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>PIO: pio_spmd_utils::pio_swapm Interface Reference</title>
+<title>PIO User&#39;s Guide: pio_swapm Interface Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javaScript" src="search/search.js"></script>
@@ -19,6 +19,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
     <ul>
       <li><a href="index.html"><span>Main&nbsp;Page</span></a></li>
       <li><a href="pages.html"><span>Related&nbsp;Pages</span></a></li>
+      <li><a href="modules.html"><span>Modules</span></a></li>
       <li><a href="namespaces.html"><span>Modules</span></a></li>
       <li class="current"><a href="annotated.html"><span>Data&nbsp;Types&nbsp;List</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -47,381 +48,13 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   </div>
 </div>
 <div class="contents">
-<h1>pio_spmd_utils::pio_swapm Interface Reference</h1><!-- doxytag: class="pio_spmd_utils::pio_swapm" -->
+<h1>pio_swapm Interface Reference</h1><!-- doxytag: class="pio_spmd_utils::pio_swapm" -->
 <p><a href="interfacepio__spmd__utils_1_1pio__swapm-members.html">List of all members.</a></p>
 <table border="0" cellpadding="0" cellspacing="0">
-<tr><td colspan="2"><h2>Private Member Functions</h2></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacepio__spmd__utils_1_1pio__swapm.html#a0a50d09dfd118a3bf13a3e516a7763dd">pio_swapm_int</a> (nprocs, mytask, sndbuf, sbuf_siz, sndlths, sdispls, stypes, rcvbuf, rbuf_siz, rcvlths, rdispls, rtypes, comm, comm_hs, comm_isend, comm_maxreq)</td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacepio__spmd__utils_1_1pio__swapm.html#afaeb75b7419d59339f3849bab10d0c45">pio_swapm_real</a> (nprocs, mytask, sndbuf, sbuf_siz, sndlths, sdispls, stypes, rcvbuf, rbuf_siz, rcvlths, rdispls, rtypes, comm, comm_hs, comm_isend, comm_maxreq)</td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacepio__spmd__utils_1_1pio__swapm.html#a6a18593c5aed3c3be53f7a691dc14f06">pio_swapm_double</a> (nprocs, mytask, sndbuf, sbuf_siz, sndlths, sdispls, stypes, rcvbuf, rbuf_siz, rcvlths, rdispls, rtypes, comm, comm_hs, comm_isend, comm_maxreq)</td></tr>
 </table>
 <hr/><a name="_details"></a><h2>Detailed Description</h2>
 
 <p>Definition at line <a class="el" href="pio__spmd__utils_8F90_source.html#l00031">31</a> of file <a class="el" href="pio__spmd__utils_8F90_source.html">pio_spmd_utils.F90</a>.</p>
-<hr/><h2>Member Function/Subroutine Documentation</h2>
-<a class="anchor" id="a6a18593c5aed3c3be53f7a691dc14f06"></a><!-- doxytag: member="pio_spmd_utils::pio_swapm::pio_swapm_double" ref="a6a18593c5aed3c3be53f7a691dc14f06" args="(nprocs, mytask, sndbuf, sbuf_siz, sndlths, sdispls, stypes, rcvbuf, rbuf_siz, rcvlths, rdispls, rtypes, comm, comm_hs, comm_isend, comm_maxreq)" -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">subroutine pio_spmd_utils::pio_swapm::pio_swapm_double </td>
-          <td>(</td>
-          <td class="paramtype">integer,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>nprocs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>mytask</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">real(r8),dimension(sbuf_siz),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>sndbuf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>sbuf_siz</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,dimension(0:nprocs-1),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>sndlths</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,dimension(0:nprocs-1),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>sdispls</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,dimension(0:nprocs-1),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>stypes</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">real(r8),dimension(rbuf_siz),intent(out)&nbsp;</td>
-          <td class="paramname"> <em>rcvbuf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>rbuf_siz</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,dimension(0:nprocs-1),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>rcvlths</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,dimension(0:nprocs-1),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>rdispls</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,dimension(0:nprocs-1),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>rtypes</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>comm</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">logical,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>comm_hs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">logical,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>comm_isend</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>comm_maxreq</em></td><td>&nbsp;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td><td><code> [private]</code></td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-<dl><dt><b>Parameters:</b></dt><dd>
-  <table border="0" cellspacing="2" cellpadding="0">
-    <tr><td valign="top"></td><td valign="top"><em>nprocs</em>&nbsp;</td><td>Purpose: Reduced version of original swapm (for swap of multiple messages using MPI point-to-point routines), more efficiently implementing a subset of the swap protocols.</td></tr>
-  </table>
-  </dd>
-</dl>
-<p>Method: comm_protocol: comm_isend == .true.: use nonblocking send, else use blocking send comm_hs == .true.: use handshaking protocol comm_maxreq: =-1,0: do not limit number of outstanding send/receive requests &gt;0: do not allow more than min(comm_maxreq, steps) outstanding nonblocking send requests or nonblocking receive requests</p>
-<p>Author of original version: P. Worley Ported from CAM: P. Worley, May 2009 </p>
-
-<p>Definition at line <a class="el" href="pio__spmd__utils_8F90_source.html#l01107">1107</a> of file <a class="el" href="pio__spmd__utils_8F90_source.html">pio_spmd_utils.F90</a>.</p>
-
-</div>
-</div>
-<a class="anchor" id="a0a50d09dfd118a3bf13a3e516a7763dd"></a><!-- doxytag: member="pio_spmd_utils::pio_swapm::pio_swapm_int" ref="a0a50d09dfd118a3bf13a3e516a7763dd" args="(nprocs, mytask, sndbuf, sbuf_siz, sndlths, sdispls, stypes, rcvbuf, rbuf_siz, rcvlths, rdispls, rtypes, comm, comm_hs, comm_isend, comm_maxreq)" -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">subroutine pio_spmd_utils::pio_swapm::pio_swapm_int </td>
-          <td>(</td>
-          <td class="paramtype">integer,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>nprocs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>mytask</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer(i4),dimension(sbuf_siz),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>sndbuf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>sbuf_siz</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,dimension(0:nprocs-1),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>sndlths</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,dimension(0:nprocs-1),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>sdispls</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,dimension(0:nprocs-1),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>stypes</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer(i4),dimension(rbuf_siz),intent(out)&nbsp;</td>
-          <td class="paramname"> <em>rcvbuf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>rbuf_siz</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,dimension(0:nprocs-1),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>rcvlths</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,dimension(0:nprocs-1),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>rdispls</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,dimension(0:nprocs-1),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>rtypes</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>comm</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">logical,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>comm_hs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">logical,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>comm_isend</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>comm_maxreq</em></td><td>&nbsp;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td><td><code> [private]</code></td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-<dl><dt><b>Parameters:</b></dt><dd>
-  <table border="0" cellspacing="2" cellpadding="0">
-    <tr><td valign="top"></td><td valign="top"><em>nprocs</em>&nbsp;</td><td>Purpose: Reduced version of original swapm (for swap of multiple messages using MPI point-to-point routines), more efficiently implementing a subset of the swap protocols.</td></tr>
-  </table>
-  </dd>
-</dl>
-<p>Method: comm_protocol: comm_isend == .true.: use nonblocking send, else use blocking send comm_hs == .true.: use handshaking protocol comm_maxreq: =-1,0: do not limit number of outstanding send/receive requests &gt;0: do not allow more than min(comm_maxreq, steps) outstanding nonblocking send requests or nonblocking receive requests</p>
-<p>Author of original version: P. Worley Ported from CAM: P. Worley, May 2009 </p>
-
-<p>Definition at line <a class="el" href="pio__spmd__utils_8F90_source.html#l01622">1622</a> of file <a class="el" href="pio__spmd__utils_8F90_source.html">pio_spmd_utils.F90</a>.</p>
-
-</div>
-</div>
-<a class="anchor" id="afaeb75b7419d59339f3849bab10d0c45"></a><!-- doxytag: member="pio_spmd_utils::pio_swapm::pio_swapm_real" ref="afaeb75b7419d59339f3849bab10d0c45" args="(nprocs, mytask, sndbuf, sbuf_siz, sndlths, sdispls, stypes, rcvbuf, rbuf_siz, rcvlths, rdispls, rtypes, comm, comm_hs, comm_isend, comm_maxreq)" -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">subroutine pio_spmd_utils::pio_swapm::pio_swapm_real </td>
-          <td>(</td>
-          <td class="paramtype">integer,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>nprocs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>mytask</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">real(r4),dimension(sbuf_siz),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>sndbuf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>sbuf_siz</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,dimension(0:nprocs-1),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>sndlths</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,dimension(0:nprocs-1),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>sdispls</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,dimension(0:nprocs-1),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>stypes</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">real(r4),dimension(rbuf_siz),intent(out)&nbsp;</td>
-          <td class="paramname"> <em>rcvbuf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>rbuf_siz</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,dimension(0:nprocs-1),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>rcvlths</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,dimension(0:nprocs-1),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>rdispls</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,dimension(0:nprocs-1),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>rtypes</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>comm</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">logical,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>comm_hs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">logical,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>comm_isend</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">integer,intent(in)&nbsp;</td>
-          <td class="paramname"> <em>comm_maxreq</em></td><td>&nbsp;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td><td><code> [private]</code></td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-<dl><dt><b>Parameters:</b></dt><dd>
-  <table border="0" cellspacing="2" cellpadding="0">
-    <tr><td valign="top"></td><td valign="top"><em>nprocs</em>&nbsp;</td><td>Purpose: Reduced version of original swapm (for swap of multiple messages using MPI point-to-point routines), more efficiently implementing a subset of the swap protocols.</td></tr>
-  </table>
-  </dd>
-</dl>
-<p>Method: comm_protocol: comm_isend == .true.: use nonblocking send, else use blocking send comm_hs == .true.: use handshaking protocol comm_maxreq: =-1,0: do not limit number of outstanding send/receive requests &gt;0: do not allow more than min(comm_maxreq, steps) outstanding nonblocking send requests or nonblocking receive requests</p>
-<p>Author of original version: P. Worley Ported from CAM: P. Worley, May 2009 </p>
-
-<p>Definition at line <a class="el" href="pio__spmd__utils_8F90_source.html#l00592">592</a> of file <a class="el" href="pio__spmd__utils_8F90_source.html">pio_spmd_utils.F90</a>.</p>
-
-</div>
-</div>
 <hr/>The documentation for this interface was generated from the following file:<ul>
 <li><a class="el" href="pio__spmd__utils_8F90_source.html">pio_spmd_utils.F90</a></li>
 </ul>
@@ -431,7 +64,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
      onmouseover="return searchBox.OnSearchSelectShow()"
      onmouseout="return searchBox.OnSearchSelectHide()"
      onkeydown="return searchBox.OnSearchSelectKey(event)">
-<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&nbsp;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&nbsp;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&nbsp;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&nbsp;</span>Files</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&nbsp;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(5)"><span class="SelectionMark">&nbsp;</span>Variables</a></div>
+<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&nbsp;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&nbsp;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&nbsp;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&nbsp;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&nbsp;</span>Variables</a></div>
 
 <!-- iframe showing the search results (closed by default) -->
 <div id="MSearchResultsWindow">
@@ -440,7 +73,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Fri Dec 4 14:24:49 2009 for PIO by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Tue Dec 15 13:53:37 2009 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

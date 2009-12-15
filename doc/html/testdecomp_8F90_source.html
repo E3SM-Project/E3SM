@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>PIO: testdecomp.F90 Source File</title>
+<title>PIO User&#39;s Guide: testdecomp.F90 Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javaScript" src="search/search.js"></script>
@@ -19,6 +19,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
     <ul>
       <li><a href="index.html"><span>Main&nbsp;Page</span></a></li>
       <li><a href="pages.html"><span>Related&nbsp;Pages</span></a></li>
+      <li><a href="modules.html"><span>Modules</span></a></li>
       <li><a href="namespaces.html"><span>Modules</span></a></li>
       <li><a href="annotated.html"><span>Data&nbsp;Types&nbsp;List</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
@@ -40,10 +41,9 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div class="tabs">
     <ul>
       <li><a href="files.html"><span>File&nbsp;List</span></a></li>
-      <li><a href="globals.html"><span>File&nbsp;Members</span></a></li>
     </ul>
   </div>
-<h1>testdecomp.F90</h1><a href="testdecomp_8F90.html">Go to the documentation of this file.</a><div class="fragment"><pre class="fragment"><a name="l00001"></a><a class="code" href="testdecomp_8F90.html#ac0944f795a3b6ba34b14fcfd1b87e59d">00001</a>    <span class="keyword">program</span> <a class="code" href="testdecomp_8F90.html#ac0944f795a3b6ba34b14fcfd1b87e59d">testdecomp</a>
+<h1>testdecomp.F90</h1><div class="fragment"><pre class="fragment"><a name="l00001"></a>00001    <span class="keyword">program</span> testdecomp
 <a name="l00002"></a>00002 
 <a name="l00003"></a>00003 <span class="comment">! xlf90 -g -I/usr/local/include -c kinds_mod.F90</span>
 <a name="l00004"></a>00004 <span class="comment">! xlf90 -g -DSTANDALONE_TEST -I/usr/local/include -c gdecomp_mod.F90</span>
@@ -60,7 +60,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00015"></a>00015    <span class="keywordtype">logical</span> :: test
 <a name="l00016"></a>00016    <span class="keywordtype">character(len=*)</span>,<span class="keywordtype">parameter</span> :: fin = <span class="stringliteral">&apos;testdecomp_in&apos;</span>
 <a name="l00017"></a>00017    <span class="keywordtype">character(len=*)</span>,<span class="keywordtype">parameter</span> :: progname = <span class="stringliteral">&apos;testdecomp&apos;</span>
-<a name="l00018"></a>00018    <span class="keywordtype">type(</span><a class="code" href="typegdecomp__mod_1_1gdecomp__type.html">gdecomp_type</a><span class="keywordtype">)</span> :: gdecomp
+<a name="l00018"></a>00018    <span class="keywordtype">type(</span>gdecomp_type<span class="keywordtype">)</span> :: gdecomp
 <a name="l00019"></a>00019 
 <a name="l00020"></a>00020    test = .true.
 <a name="l00021"></a>00021 
@@ -70,19 +70,19 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00025"></a>00025    gdims(2) = 200
 <a name="l00026"></a>00026    gdims(3) = 1
 <a name="l00027"></a>00027 
-<a name="l00028"></a>00028    call <a class="code" href="namespacegdecomp__mod.html#af8fe103f3b63a3321b20f72dcac03c44">gdecomp_read_nml</a>(gdecomp,fin,<span class="stringliteral">&apos;comp&apos;</span>,my_task)
-<a name="l00029"></a>00029    call <a class="code" href="namespacegdecomp__mod.html#aa5364b8f8500d91a6946c599f163df76">gdecomp_DOF</a>(gdecomp,my_task,compDOF,startcomp,cntcomp,test=test,write_decomp=.true.)
+<a name="l00028"></a>00028    call gdecomp_read_nml(gdecomp,fin,<span class="stringliteral">&apos;comp&apos;</span>,my_task)
+<a name="l00029"></a>00029    call gdecomp_DOF(gdecomp,my_task,compDOF,startcomp,cntcomp,test=test,write_decomp=.true.)
 <a name="l00030"></a>00030 
-<a name="l00031"></a>00031    call <a class="code" href="namespacegdecomp__mod.html#af8fe103f3b63a3321b20f72dcac03c44">gdecomp_read_nml</a>(gdecomp,fin,<span class="stringliteral">&apos;io&apos;</span>,my_task)
-<a name="l00032"></a>00032    call <a class="code" href="namespacegdecomp__mod.html#aa5364b8f8500d91a6946c599f163df76">gdecomp_DOF</a>(gdecomp,my_task,ioDOF,startio,cntio,test=test,write_decomp=.true.)
+<a name="l00031"></a>00031    call gdecomp_read_nml(gdecomp,fin,<span class="stringliteral">&apos;io&apos;</span>,my_task)
+<a name="l00032"></a>00032    call gdecomp_DOF(gdecomp,my_task,ioDOF,startio,cntio,test=test,write_decomp=.true.)
 <a name="l00033"></a>00033 
-<a name="l00034"></a>00034    call <a class="code" href="namespacegdecomp__mod.html#af8fe103f3b63a3321b20f72dcac03c44">gdecomp_read_nml</a>(gdecomp,fin,<span class="stringliteral">&apos;comp&apos;</span>,my_task,num_tasks,gdims)
-<a name="l00035"></a>00035    call <a class="code" href="namespacegdecomp__mod.html#aa5364b8f8500d91a6946c599f163df76">gdecomp_DOF</a>(gdecomp,my_task,compDOF,startcomp,cntcomp,test=test)
+<a name="l00034"></a>00034    call gdecomp_read_nml(gdecomp,fin,<span class="stringliteral">&apos;comp&apos;</span>,my_task,num_tasks,gdims)
+<a name="l00035"></a>00035    call gdecomp_DOF(gdecomp,my_task,compDOF,startcomp,cntcomp,test=test)
 <a name="l00036"></a>00036 
-<a name="l00037"></a>00037    call <a class="code" href="namespacegdecomp__mod.html#a94e8c97fc84c6b172d7b45631c666309">gdecomp_set</a>(gdecomp,name=<span class="stringliteral">&apos;xx1&apos;</span>,my_task=my_task, &amp;
+<a name="l00037"></a>00037    call gdecomp_set(gdecomp,name=<span class="stringliteral">&apos;xx1&apos;</span>,my_task=my_task, &amp;
 <a name="l00038"></a>00038      nxg=360,nyg=240,nzg=10,gdz=5,npes=32,nblksppe=4, &amp;
 <a name="l00039"></a>00039      grdorder=<span class="stringliteral">&apos;zxy&apos;</span>,grddecomp=<span class="stringliteral">&apos;xy&apos;</span>,blkorder=<span class="stringliteral">&apos;xyz&apos;</span>,blkdecomp1=<span class="stringliteral">&apos;xyz&apos;</span>)
-<a name="l00040"></a>00040    call <a class="code" href="namespacegdecomp__mod.html#aa5364b8f8500d91a6946c599f163df76">gdecomp_DOF</a>(gdecomp,my_task,compDOF,startcomp,cntcomp,test=test,write_decomp=.true.)
+<a name="l00040"></a>00040    call gdecomp_DOF(gdecomp,my_task,compDOF,startcomp,cntcomp,test=test,write_decomp=.true.)
 <a name="l00041"></a>00041 
 <a name="l00042"></a>00042    <span class="keyword">write</span>(6,*) <span class="stringliteral">&apos; testdecomp completed successfully &apos;</span>
 <a name="l00043"></a>00043 
@@ -93,7 +93,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
      onmouseover="return searchBox.OnSearchSelectShow()"
      onmouseout="return searchBox.OnSearchSelectHide()"
      onkeydown="return searchBox.OnSearchSelectKey(event)">
-<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&nbsp;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&nbsp;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&nbsp;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&nbsp;</span>Files</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&nbsp;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(5)"><span class="SelectionMark">&nbsp;</span>Variables</a></div>
+<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&nbsp;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&nbsp;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&nbsp;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&nbsp;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&nbsp;</span>Variables</a></div>
 
 <!-- iframe showing the search results (closed by default) -->
 <div id="MSearchResultsWindow">
@@ -102,7 +102,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Fri Dec 4 14:24:48 2009 for PIO by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Tue Dec 15 13:53:29 2009 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

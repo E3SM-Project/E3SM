@@ -153,11 +153,13 @@ module pio_types
     integer(i4), public, parameter :: PIO_rearr_mct =  1
     integer(i4), public, parameter :: PIO_rearr_box =  2
 
-!> constants for error handling methods
+!> 
+!! \var foo
+!!  constants for error handling methods
 !!  Three choices for error handling:
-!!  1: abort on error from any task           PIO_INTERNAL_ERROR
-!!  2: broadcast an error from io_rank 0      PIO_BCAST_ERROR
-!!  3: do nothing - allow the user to handle it PIO_RETURN_ERROR
+!!  -# abort on error from any task             PIO_INTERNAL_ERROR
+!!  -# broadcast an error from io_rank 0        PIO_BCAST_ERROR
+!!  -# do nothing - allow the user to handle it PIO_RETURN_ERROR
 !<
   integer(i4), public :: PIO_INTERNAL_ERROR = -51
   integer(i4), public :: PIO_BCAST_ERROR = -52

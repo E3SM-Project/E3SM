@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>PIO: pio_quicksort.F90 Source File</title>
+<title>PIO User&#39;s Guide: pio_quicksort.F90 Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javaScript" src="search/search.js"></script>
@@ -19,6 +19,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
     <ul>
       <li><a href="index.html"><span>Main&nbsp;Page</span></a></li>
       <li><a href="pages.html"><span>Related&nbsp;Pages</span></a></li>
+      <li><a href="modules.html"><span>Modules</span></a></li>
       <li><a href="namespaces.html"><span>Modules</span></a></li>
       <li><a href="annotated.html"><span>Data&nbsp;Types&nbsp;List</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
@@ -40,10 +41,9 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div class="tabs">
     <ul>
       <li><a href="files.html"><span>File&nbsp;List</span></a></li>
-      <li><a href="globals.html"><span>File&nbsp;Members</span></a></li>
     </ul>
   </div>
-<h1>pio_quicksort.F90</h1><a href="pio__quicksort_8F90.html">Go to the documentation of this file.</a><div class="fragment"><pre class="fragment"><a name="l00001"></a>00001 <span class="comment">!</span>
+<h1>pio_quicksort.F90</h1><div class="fragment"><pre class="fragment"><a name="l00001"></a>00001 <span class="comment">!</span>
 <a name="l00002"></a>00002 <span class="comment">! this code borrowed from cam</span>
 <a name="l00003"></a>00003 <span class="comment">!</span>
 <a name="l00004"></a>00004 <span class="comment">! http://www.ccsm.ucar.edu/models/atm-cam/docs/cam3.0/cam30fv-browser/</span>
@@ -72,11 +72,11 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00027"></a>00027 <span class="keyword">implicit none</span>
 <a name="l00028"></a>00028 <span class="keywordtype">save</span>
 <a name="l00029"></a>00029 <span class="keywordtype">private</span>
-<a name="l00030"></a>00030 <span class="keywordtype">public</span> <a class="code" href="namespacepio__quicksort.html#abd4e0be5b566c1f6c62ba5af741c59db">quick_sort</a>
+<a name="l00030"></a>00030 <span class="keywordtype">public</span> quick_sort
 <a name="l00031"></a>00031 <span class="keyword">contains</span>
 <a name="l00032"></a>00032 
 <a name="l00033"></a>00033 
-<a name="l00034"></a><a class="code" href="namespacepio__quicksort.html#abd4e0be5b566c1f6c62ba5af741c59db">00034</a> <span class="keywordtype">RECURSIVE</span> <span class="keyword">SUBROUTINE </span><a class="code" href="namespacepio__quicksort.html#abd4e0be5b566c1f6c62ba5af741c59db">quick_sort</a>(list, order)
+<a name="l00034"></a><a class="code" href="namespacepio__quicksort.html#abd4e0be5b566c1f6c62ba5af741c59db">00034</a> <span class="keywordtype">RECURSIVE</span> <span class="keyword">SUBROUTINE </span>quick_sort(list, order)
 <a name="l00035"></a>00035   use <span class="keywordflow">pio_kinds</span>, only : i4
 <a name="l00036"></a>00036 <span class="keyword">implicit none</span>
 <a name="l00037"></a>00037 
@@ -92,12 +92,12 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00047"></a>00047     order(i)=i
 <a name="l00048"></a>00048   <span class="keyword">end do</span>
 <a name="l00049"></a>00049 
-<a name="l00050"></a>00050 CALL <a class="code" href="pio__quicksort_8F90.html#a408da791fbd5631d118a82c1e49cee6b">quick_sort_1</a>(1, <span class="keyword">SIZE</span>(list))
+<a name="l00050"></a>00050 CALL quick_sort_1(1, <span class="keyword">SIZE</span>(list))
 <a name="l00051"></a>00051 
 <a name="l00052"></a>00052 <span class="keyword">CONTAINS</span>
 <a name="l00053"></a>00053 
 <a name="l00054"></a>00054 
-<a name="l00055"></a><a class="code" href="pio__quicksort_8F90.html#a408da791fbd5631d118a82c1e49cee6b">00055</a> <span class="keywordtype">RECURSIVE</span> <span class="keyword">SUBROUTINE </span><a class="code" href="pio__quicksort_8F90.html#a408da791fbd5631d118a82c1e49cee6b">quick_sort_1</a>(left_end, right_end)
+<a name="l00055"></a>00055 <span class="keywordtype">RECURSIVE</span> <span class="keyword">SUBROUTINE </span>quick_sort_1(left_end, right_end)
 <a name="l00056"></a>00056 
 <a name="l00057"></a>00057 <span class="keyword">implicit none</span>
 <a name="l00058"></a>00058 <span class="keywordtype">INTEGER</span>, <span class="keywordtype">INTENT(IN)</span> :: left_end, right_end
@@ -109,7 +109,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00064"></a>00064 
 <a name="l00065"></a>00065 <span class="keyword">IF</span> (right_end &lt; left_end + max_simple_sort_size) <span class="keyword">THEN</span>
 <a name="l00066"></a>00066   <span class="comment">! Use interchange sort for small lists</span>
-<a name="l00067"></a>00067   CALL <a class="code" href="pio__quicksort_8F90.html#a2b962dc78c955c08065bb5ce036ff318">interchange_sort</a>(left_end, right_end)
+<a name="l00067"></a>00067   CALL interchange_sort(left_end, right_end)
 <a name="l00068"></a>00068 
 <a name="l00069"></a>00069 <span class="keyword">ELSE</span>
 <a name="l00070"></a>00070   <span class="comment">! Use partition (&quot;quick&quot;) sort</span>
@@ -141,15 +141,15 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00096"></a>00096     <span class="keyword">END IF</span>
 <a name="l00097"></a>00097   <span class="keyword">END DO</span>
 <a name="l00098"></a>00098 
-<a name="l00099"></a>00099   <span class="keyword">IF</span> (left_end &lt; j) CALL <a class="code" href="pio__quicksort_8F90.html#a408da791fbd5631d118a82c1e49cee6b">quick_sort_1</a>(left_end, j)
-<a name="l00100"></a>00100   <span class="keyword">IF</span> (i &lt; right_end) CALL <a class="code" href="pio__quicksort_8F90.html#a408da791fbd5631d118a82c1e49cee6b">quick_sort_1</a>(i, right_end)
+<a name="l00099"></a>00099   <span class="keyword">IF</span> (left_end &lt; j) CALL quick_sort_1(left_end, j)
+<a name="l00100"></a>00100   <span class="keyword">IF</span> (i &lt; right_end) CALL quick_sort_1(i, right_end)
 <a name="l00101"></a>00101 <span class="keyword">END IF</span>
 <a name="l00102"></a>00102 
 <a name="l00103"></a>00103 <span class="keyword">END SUBROUTINE quick_sort_1</span>
 <a name="l00104"></a>00104 
 <a name="l00105"></a>00105 
 <a name="l00106"></a>00106 
-<a name="l00107"></a><a class="code" href="pio__quicksort_8F90.html#a2b962dc78c955c08065bb5ce036ff318">00107</a> <span class="keyword">SUBROUTINE </span><a class="code" href="pio__quicksort_8F90.html#a2b962dc78c955c08065bb5ce036ff318">interchange_sort</a>(left_end, right_end)
+<a name="l00107"></a>00107 <span class="keyword">SUBROUTINE </span>interchange_sort(left_end, right_end)
 <a name="l00108"></a>00108 
 <a name="l00109"></a>00109 <span class="keyword">implicit none</span>
 <a name="l00110"></a>00110 <span class="keywordtype">INTEGER</span>, <span class="keywordtype">INTENT(IN)</span> :: left_end, right_end
@@ -178,7 +178,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
      onmouseover="return searchBox.OnSearchSelectShow()"
      onmouseout="return searchBox.OnSearchSelectHide()"
      onkeydown="return searchBox.OnSearchSelectKey(event)">
-<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&nbsp;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&nbsp;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&nbsp;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&nbsp;</span>Files</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&nbsp;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(5)"><span class="SelectionMark">&nbsp;</span>Variables</a></div>
+<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&nbsp;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&nbsp;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&nbsp;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&nbsp;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&nbsp;</span>Variables</a></div>
 
 <!-- iframe showing the search results (closed by default) -->
 <div id="MSearchResultsWindow">
@@ -187,7 +187,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Fri Dec 4 14:24:48 2009 for PIO by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Tue Dec 15 13:53:29 2009 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>
