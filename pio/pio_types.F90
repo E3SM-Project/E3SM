@@ -160,11 +160,11 @@ module pio_types
 !! @public
 !! @brief An integer parameter which controls the iotype
 !! @details
-!!   - iotype_pbinary : Use MPI-IO with to read/write C like binary file
+!!   - iotype_pbinary : Use MPI-IO to read/write C like binary file
 !!   - iotype_direct_pbinary: Use MPI-IO to read/write direct access binary files
 !!   - iotype_binary : serial read/write of binary files using 'base_node'
 !!   - iotype_pnetcdf : parallel read/write of pNetCDF files (netcdf3)
-!!   - iotype_netcdf : serial read/write of NetCDF files uing 'base_node' (netcdf3)
+!!   - iotype_netcdf : serial read/write of NetCDF files using 'base_node' (netcdf3)
 !>
     integer(i4), public, parameter ::  &
         iotype_pbinary = 1, &! use MPI-IO with data types to read/write C like binary files
@@ -193,7 +193,7 @@ module pio_types
 !! @brief  The three types of error handling methods are: 
 !! @details
 !!  - PIO_INTERNAL_ERROR  : abort on error from any task
-!!  - PIO_BCAST_ERROR     : broadcast an error from io_rank 0
+!!  - PIO_BCAST_ERROR     : broadcast an error from io_rank 0 to all tasks in comm
 !!  - PIO_RETURN_ERROR    : do nothing - allow the user to handle it
 !<
   integer(i4), public :: PIO_INTERNAL_ERROR = -51

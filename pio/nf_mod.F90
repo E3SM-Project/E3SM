@@ -1474,8 +1474,11 @@ contains
 !> 
 !! @public
 !! @ingroup PIO_redef
-!! @brief Reinters  netcdf define mode.
-!! @details
+!! @brief Re-enters netcdf define mode.   
+!! @details 
+!! @warning Entering and leaving netcdf define mode causes a file sync operation to 
+!!          occur, these operations can be very expensive in parallel systems.   We 
+!!          recommend structuring your code to minimize calls to this function.
 !! @param File @copydoc file_desc_t
 !! @retval ierr @copydoc error_return
 !<

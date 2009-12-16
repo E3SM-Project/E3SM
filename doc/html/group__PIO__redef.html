@@ -43,7 +43,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <h1>PIO_redef</h1><table border="0" cellpadding="0" cellspacing="0">
 <tr><td colspan="2"><h2>Functions/Subroutines</h2></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">integer&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__redef.html#ga7498358db98522d7c17ee0d400395d29">PIO_redef</a> (File)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Reinters netcdf define mode.  <a href="#ga7498358db98522d7c17ee0d400395d29"></a><br/></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Re-enters netcdf define mode.  <a href="#ga7498358db98522d7c17ee0d400395d29"></a><br/></td></tr>
 </table>
 <hr/><h2>Function/Subroutine Documentation</h2>
 <a class="anchor" id="ga7498358db98522d7c17ee0d400395d29"></a><!-- doxytag: member="nf_mod::PIO_redef" ref="ga7498358db98522d7c17ee0d400395d29" args="(File)" -->
@@ -61,6 +61,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
       </table>
 </div>
 <div class="memdoc">
+<dl class="warning"><dt><b>Warning:</b></dt><dd>Entering and leaving netcdf define mode causes a file sync operation to occur, these operations can be very expensive in parallel systems. We recommend structuring your code to minimize calls to this function. </dd></dl>
 <dl><dt><b>Parameters:</b></dt><dd>
   <table border="0" cellspacing="2" cellpadding="0">
     <tr><td valign="top"></td><td valign="top"><em>File</em>&nbsp;</td><td>: File descriptor returned by <a class="el" href="group__PIO__openfile.html">PIO_openfile</a> or <a class="el" href="group__PIO__createfile.html">PIO_createfile</a> (see <a class="el" href="namespacepio__types.html">pio_types</a>)  </td></tr>
@@ -74,7 +75,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="nf__mod_8F90_source.html#l01482">1482</a> of file <a class="el" href="nf__mod_8F90_source.html">nf_mod.F90</a>.</p>
+<p>Definition at line <a class="el" href="nf__mod_8F90_source.html#l01485">1485</a> of file <a class="el" href="nf__mod_8F90_source.html">nf_mod.F90</a>.</p>
 
 </div>
 </div>
@@ -93,7 +94,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 14:28:30 2009 for PIO User's Guide by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 15:25:20 2009 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

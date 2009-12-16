@@ -200,13 +200,12 @@ module piolib_mod
 
 !> 
 !!  @defgroup PIO_seterrorhandling PIO_seterrorhandling
-!!  Sets the form of error handeling for PIO.
+!!  Sets the form of error handling for PIO.
 !!
-!!  An example of its use is seen in the following example
 !! By default PIO handles errors internally by printing a string
 !! describing the error and then calling mpi_abort.  Application
-!! developers can change this behaivior with a call to PIO_seterrorhandling.
-!!  For example if a developer wanted
+!! developers can change this behavior with a call to PIO_seterrorhandling.
+!! For example if a developer wanted
 !! to see if an input netcdf file contained the variable 'U' they  might write the following
 !! @verbinclude errorhandle
 !<

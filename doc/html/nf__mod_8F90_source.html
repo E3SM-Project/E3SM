@@ -1216,250 +1216,250 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l01471"></a>01471     call check_netcdf(File, ierr,_FILE_,__LINE__)
 <a name="l01472"></a>01472 <span class="keyword">  end function PIO_enddef</span>
 <a name="l01473"></a>01473 
-<a name="l01482"></a><a class="code" href="group__PIO__redef.html#ga7498358db98522d7c17ee0d400395d29">01482</a>   <span class="keyword">integer </span><span class="keyword">function </span><a class="code" href="group__PIO__redef.html#ga7498358db98522d7c17ee0d400395d29">PIO_redef</a>(File) result(ierr)
-<a name="l01483"></a>01483     <span class="keywordtype">type (</span>File_desc_t<span class="keywordtype">)</span>, <span class="keywordtype">intent(inout)</span> :: File
-<a name="l01484"></a>01484 
-<a name="l01485"></a>01485     <span class="comment">!------------------</span>
-<a name="l01486"></a>01486     <span class="comment">! Local variables</span>
-<a name="l01487"></a>01487     <span class="comment">!------------------</span>
-<a name="l01488"></a>01488     <span class="keywordtype">integer</span> :: iotype, mpierr
-<a name="l01489"></a>01489     <span class="keywordtype">logical</span>, <span class="keywordtype">parameter</span> :: Check = .TRUE.
-<a name="l01490"></a>01490 
-<a name="l01491"></a>01491     iotype = File%iotype
-<a name="l01492"></a>01492 
-<a name="l01493"></a>01493     ierr=PIO_noerr
-<a name="l01494"></a>01494 
-<a name="l01495"></a>01495     <span class="keyword">if</span>(File%iosystem%IOproc) <span class="keyword">then</span>
-<a name="l01496"></a>01496        <span class="keyword">select</span> <span class="keyword">case</span>(iotype)
+<a name="l01485"></a><a class="code" href="group__PIO__redef.html#ga7498358db98522d7c17ee0d400395d29">01485</a>   <span class="keyword">integer </span><span class="keyword">function </span><a class="code" href="group__PIO__redef.html#ga7498358db98522d7c17ee0d400395d29">PIO_redef</a>(File) result(ierr)
+<a name="l01486"></a>01486     <span class="keywordtype">type (</span>File_desc_t<span class="keywordtype">)</span>, <span class="keywordtype">intent(inout)</span> :: File
+<a name="l01487"></a>01487 
+<a name="l01488"></a>01488     <span class="comment">!------------------</span>
+<a name="l01489"></a>01489     <span class="comment">! Local variables</span>
+<a name="l01490"></a>01490     <span class="comment">!------------------</span>
+<a name="l01491"></a>01491     <span class="keywordtype">integer</span> :: iotype, mpierr
+<a name="l01492"></a>01492     <span class="keywordtype">logical</span>, <span class="keywordtype">parameter</span> :: Check = .TRUE.
+<a name="l01493"></a>01493 
+<a name="l01494"></a>01494     iotype = File%iotype
+<a name="l01495"></a>01495 
+<a name="l01496"></a>01496     ierr=PIO_noerr
 <a name="l01497"></a>01497 
-<a name="l01498"></a>01498 <span class="preprocessor">#ifdef _PNETCDF</span>
-<a name="l01499"></a>01499 <span class="preprocessor"></span>       <span class="keyword">case</span>(iotype_pnetcdf)
+<a name="l01498"></a>01498     <span class="keyword">if</span>(File%iosystem%IOproc) <span class="keyword">then</span>
+<a name="l01499"></a>01499        <span class="keyword">select</span> <span class="keyword">case</span>(iotype)
 <a name="l01500"></a>01500 
-<a name="l01501"></a>01501           ierr=nfmpi_redef(File%fh)
-<a name="l01502"></a>01502 <span class="preprocessor">#endif</span>
-<a name="l01503"></a>01503 <span class="preprocessor"></span>
-<a name="l01504"></a>01504 <span class="preprocessor">#ifdef _NETCDF</span>
-<a name="l01505"></a>01505 <span class="preprocessor"></span>       <span class="keyword">case</span>(iotype_netcdf)
-<a name="l01506"></a>01506 
-<a name="l01507"></a>01507 
-<a name="l01508"></a>01508 
-<a name="l01509"></a>01509           <span class="keyword">if</span> (File%iosystem%io_rank==0) <span class="keyword">then</span>
-<a name="l01510"></a>01510              ierr=nf90_redef(File%fh)
-<a name="l01511"></a>01511           <span class="keyword">endif</span>
-<a name="l01512"></a>01512 
-<a name="l01513"></a>01513 <span class="preprocessor">#endif</span>
-<a name="l01514"></a>01514 <span class="preprocessor"></span>
-<a name="l01515"></a>01515        <span class="keyword">case</span> default
-<a name="l01516"></a>01516           call bad_iotype(iotype,_FILE_,__LINE__)
-<a name="l01517"></a>01517 
-<a name="l01518"></a>01518        <span class="keyword">end select</span>
-<a name="l01519"></a>01519     <span class="keyword">endif</span>
-<a name="l01520"></a>01520     call check_netcdf(File, ierr,_FILE_,__LINE__)
-<a name="l01521"></a>01521 <span class="keyword">  end function PIO_redef</span>
-<a name="l01522"></a>01522 
-<a name="l01533"></a><a class="code" href="group__PIO__def__dim.html#ga980aa0e8a6b08a6c2c3adf4a3f2d8010">01533</a>   <span class="keyword">integer </span><span class="keyword">function </span><a class="code" href="group__PIO__def__dim.html#ga980aa0e8a6b08a6c2c3adf4a3f2d8010">PIO_def_dim</a>(File,name,len,dimid) result(ierr)
-<a name="l01534"></a>01534 
-<a name="l01535"></a>01535     <span class="keywordtype">type (</span>File_desc_t<span class="keywordtype">)</span>, <span class="keywordtype">intent(in)</span>  :: File
-<a name="l01536"></a>01536     <span class="keywordtype">character(len=*)</span>, <span class="keywordtype">intent(in)</span>    :: name
-<a name="l01537"></a>01537     <span class="keywordtype">integer(i4)</span>, <span class="keywordtype">intent(in)</span>         :: len
-<a name="l01538"></a>01538     <span class="keywordtype">integer(i4)</span>, <span class="keywordtype">intent(out)</span>        :: dimid
-<a name="l01539"></a>01539 
-<a name="l01540"></a>01540     <span class="comment">!------------------</span>
-<a name="l01541"></a>01541     <span class="comment">! Local variables</span>
-<a name="l01542"></a>01542     <span class="comment">!------------------</span>
-<a name="l01543"></a>01543     <span class="keywordtype">integer</span> :: iotype, mpierr
-<a name="l01544"></a>01544     <span class="keywordtype">integer(kind=PIO_Offset)  </span>:: clen
-<a name="l01545"></a>01545 
-<a name="l01546"></a>01546     iotype = File%iotype
-<a name="l01547"></a>01547 
-<a name="l01548"></a>01548     ierr=PIO_noerr
-<a name="l01549"></a>01549 
-<a name="l01550"></a>01550     <span class="keyword">if</span>(File%iosystem%IOproc) <span class="keyword">then</span>
-<a name="l01551"></a>01551        <span class="keyword">select</span> <span class="keyword">case</span>(iotype)
+<a name="l01501"></a>01501 <span class="preprocessor">#ifdef _PNETCDF</span>
+<a name="l01502"></a>01502 <span class="preprocessor"></span>       <span class="keyword">case</span>(iotype_pnetcdf)
+<a name="l01503"></a>01503 
+<a name="l01504"></a>01504           ierr=nfmpi_redef(File%fh)
+<a name="l01505"></a>01505 <span class="preprocessor">#endif</span>
+<a name="l01506"></a>01506 <span class="preprocessor"></span>
+<a name="l01507"></a>01507 <span class="preprocessor">#ifdef _NETCDF</span>
+<a name="l01508"></a>01508 <span class="preprocessor"></span>       <span class="keyword">case</span>(iotype_netcdf)
+<a name="l01509"></a>01509 
+<a name="l01510"></a>01510 
+<a name="l01511"></a>01511 
+<a name="l01512"></a>01512           <span class="keyword">if</span> (File%iosystem%io_rank==0) <span class="keyword">then</span>
+<a name="l01513"></a>01513              ierr=nf90_redef(File%fh)
+<a name="l01514"></a>01514           <span class="keyword">endif</span>
+<a name="l01515"></a>01515 
+<a name="l01516"></a>01516 <span class="preprocessor">#endif</span>
+<a name="l01517"></a>01517 <span class="preprocessor"></span>
+<a name="l01518"></a>01518        <span class="keyword">case</span> default
+<a name="l01519"></a>01519           call bad_iotype(iotype,_FILE_,__LINE__)
+<a name="l01520"></a>01520 
+<a name="l01521"></a>01521        <span class="keyword">end select</span>
+<a name="l01522"></a>01522     <span class="keyword">endif</span>
+<a name="l01523"></a>01523     call check_netcdf(File, ierr,_FILE_,__LINE__)
+<a name="l01524"></a>01524 <span class="keyword">  end function PIO_redef</span>
+<a name="l01525"></a>01525 
+<a name="l01536"></a><a class="code" href="group__PIO__def__dim.html#ga980aa0e8a6b08a6c2c3adf4a3f2d8010">01536</a>   <span class="keyword">integer </span><span class="keyword">function </span><a class="code" href="group__PIO__def__dim.html#ga980aa0e8a6b08a6c2c3adf4a3f2d8010">PIO_def_dim</a>(File,name,len,dimid) result(ierr)
+<a name="l01537"></a>01537 
+<a name="l01538"></a>01538     <span class="keywordtype">type (</span>File_desc_t<span class="keywordtype">)</span>, <span class="keywordtype">intent(in)</span>  :: File
+<a name="l01539"></a>01539     <span class="keywordtype">character(len=*)</span>, <span class="keywordtype">intent(in)</span>    :: name
+<a name="l01540"></a>01540     <span class="keywordtype">integer(i4)</span>, <span class="keywordtype">intent(in)</span>         :: len
+<a name="l01541"></a>01541     <span class="keywordtype">integer(i4)</span>, <span class="keywordtype">intent(out)</span>        :: dimid
+<a name="l01542"></a>01542 
+<a name="l01543"></a>01543     <span class="comment">!------------------</span>
+<a name="l01544"></a>01544     <span class="comment">! Local variables</span>
+<a name="l01545"></a>01545     <span class="comment">!------------------</span>
+<a name="l01546"></a>01546     <span class="keywordtype">integer</span> :: iotype, mpierr
+<a name="l01547"></a>01547     <span class="keywordtype">integer(kind=PIO_Offset)  </span>:: clen
+<a name="l01548"></a>01548 
+<a name="l01549"></a>01549     iotype = File%iotype
+<a name="l01550"></a>01550 
+<a name="l01551"></a>01551     ierr=PIO_noerr
 <a name="l01552"></a>01552 
-<a name="l01553"></a>01553 <span class="preprocessor">#ifdef _PNETCDF</span>
-<a name="l01554"></a>01554 <span class="preprocessor"></span>       <span class="keyword">case</span>(iotype_pnetcdf)
+<a name="l01553"></a>01553     <span class="keyword">if</span>(File%iosystem%IOproc) <span class="keyword">then</span>
+<a name="l01554"></a>01554        <span class="keyword">select</span> <span class="keyword">case</span>(iotype)
 <a name="l01555"></a>01555 
-<a name="l01556"></a>01556           clen = len
-<a name="l01557"></a>01557           ierr=nfmpi_def_dim(File%fh,name,clen,dimid)
-<a name="l01558"></a>01558 <span class="preprocessor">#endif</span>
-<a name="l01559"></a>01559 <span class="preprocessor"></span>
-<a name="l01560"></a>01560 <span class="preprocessor">#ifdef _NETCDF</span>
-<a name="l01561"></a>01561 <span class="preprocessor"></span>       <span class="keyword">case</span>(iotype_netcdf)
-<a name="l01562"></a>01562 
-<a name="l01563"></a>01563 
-<a name="l01564"></a>01564 
-<a name="l01565"></a>01565           <span class="keyword">if</span> (File%iosystem%io_rank==0) <span class="keyword">then</span>
-<a name="l01566"></a>01566              ierr=nf90_def_dim(ncid=File%fh,name=name,len=len,dimid=dimid)
-<a name="l01567"></a>01567           <span class="keyword">endif</span>
-<a name="l01568"></a>01568           <span class="keyword">if</span>(File%iosystem%num_tasks==File%iosystem%num_iotasks) <span class="keyword">then</span>
-<a name="l01569"></a>01569              call MPI_BCAST(dimid, 1, MPI_INTEGER, 0, File%iosystem%IO_Comm, ierr)
-<a name="l01570"></a>01570           <span class="keyword">end if</span>
-<a name="l01571"></a>01571 
-<a name="l01572"></a>01572 <span class="preprocessor">#endif</span>
-<a name="l01573"></a>01573 <span class="preprocessor"></span>       <span class="keyword">case</span> default
-<a name="l01574"></a>01574           call bad_iotype(iotype,_FILE_,__LINE__)
-<a name="l01575"></a>01575 
-<a name="l01576"></a>01576        <span class="keyword">end select</span>
-<a name="l01577"></a>01577     <span class="keyword">endif</span>
-<a name="l01578"></a>01578     call check_netcdf(File, ierr,_FILE_,__LINE__)
-<a name="l01579"></a>01579     <span class="keyword">if</span>(File%iosystem%num_tasks&gt;File%iosystem%num_iotasks) <span class="keyword">then</span>
-<a name="l01580"></a>01580        call MPI_BCAST(dimid, 1, MPI_INTEGER, File%iosystem%IOMaster, File%iosystem%Comp_Comm, ierr)
-<a name="l01581"></a>01581     <span class="keyword">end if</span>
-<a name="l01582"></a>01582 <span class="keyword">  end function PIO_def_dim</span>
-<a name="l01583"></a>01583 
-<a name="l01595"></a><a class="code" href="group__PIO__def__var.html#gac5e55b282f83ef3dd709dbd6e3c8e4a3">01595</a>   <span class="keyword">integer </span><span class="keyword">function </span><a class="code" href="group__PIO__def__var.html#gac5e55b282f83ef3dd709dbd6e3c8e4a3">def_var_0d</a>(File,name,type,varDesc) result(ierr)
-<a name="l01596"></a>01596 
-<a name="l01597"></a>01597     <span class="keywordtype">type (</span>File_desc_t<span class="keywordtype">)</span>, <span class="keywordtype">intent(in)</span>  :: File
-<a name="l01598"></a>01598     <span class="keywordtype">character(len=*)</span>, <span class="keywordtype">intent(in)</span>    :: name
-<a name="l01599"></a>01599     <span class="keywordtype">integer</span>, <span class="keywordtype">intent(in)</span>             :: type
-<a name="l01600"></a>01600     <span class="keywordtype">type (</span>Var_desc_t<span class="keywordtype">)</span>, <span class="keywordtype">intent(inout)</span> :: varDesc
-<a name="l01601"></a>01601     <span class="keywordtype">integer</span> :: len=0, dimids(1)
-<a name="l01602"></a>01602 
-<a name="l01603"></a>01603     ierr = <a class="code" href="group__PIO__def__var.html#ga832d332d26601b172a235bdafbc4906d">def_var_md</a>(File,name,type,dimids(1:len),vardesc)
-<a name="l01604"></a>01604 
-<a name="l01605"></a>01605 <span class="keyword">  end function def_va_r0d</span>
-<a name="l01606"></a>01606 
-<a name="l01619"></a><a class="code" href="group__PIO__def__var.html#ga832d332d26601b172a235bdafbc4906d">01619</a>   <span class="keyword">integer </span><span class="keyword">function </span><a class="code" href="group__PIO__def__var.html#ga832d332d26601b172a235bdafbc4906d">def_var_md</a>(File,name,type,dimids,varDesc) result(ierr)
-<a name="l01620"></a>01620 
-<a name="l01621"></a>01621     <span class="keywordtype">type (</span>File_desc_t<span class="keywordtype">)</span>, <span class="keywordtype">intent(in)</span>  :: File
-<a name="l01622"></a>01622     <span class="keywordtype">character(len=*)</span>, <span class="keywordtype">intent(in)</span>    :: name
-<a name="l01623"></a>01623     <span class="keywordtype">integer</span>, <span class="keywordtype">intent(in)</span>             :: type
-<a name="l01624"></a>01624     <span class="keywordtype">integer</span>, <span class="keywordtype">intent(in)</span>             :: dimids(:)
-<a name="l01625"></a>01625     <span class="keywordtype">type (</span>Var_desc_t<span class="keywordtype">)</span>, <span class="keywordtype">intent(inout)</span> :: varDesc
-<a name="l01626"></a>01626 
-<a name="l01627"></a>01627     <span class="comment">!------------------</span>
-<a name="l01628"></a>01628     <span class="comment">! Local variables</span>
-<a name="l01629"></a>01629     <span class="comment">!------------------</span>
-<a name="l01630"></a>01630     <span class="keywordtype">integer</span> :: iotype, mpierr,len
-<a name="l01631"></a>01631 
-<a name="l01632"></a>01632     iotype = File%iotype
-<a name="l01633"></a>01633 
-<a name="l01634"></a>01634     ierr=PIO_noerr
-<a name="l01635"></a>01635     vardesc%rec=-1
+<a name="l01556"></a>01556 <span class="preprocessor">#ifdef _PNETCDF</span>
+<a name="l01557"></a>01557 <span class="preprocessor"></span>       <span class="keyword">case</span>(iotype_pnetcdf)
+<a name="l01558"></a>01558 
+<a name="l01559"></a>01559           clen = len
+<a name="l01560"></a>01560           ierr=nfmpi_def_dim(File%fh,name,clen,dimid)
+<a name="l01561"></a>01561 <span class="preprocessor">#endif</span>
+<a name="l01562"></a>01562 <span class="preprocessor"></span>
+<a name="l01563"></a>01563 <span class="preprocessor">#ifdef _NETCDF</span>
+<a name="l01564"></a>01564 <span class="preprocessor"></span>       <span class="keyword">case</span>(iotype_netcdf)
+<a name="l01565"></a>01565 
+<a name="l01566"></a>01566 
+<a name="l01567"></a>01567 
+<a name="l01568"></a>01568           <span class="keyword">if</span> (File%iosystem%io_rank==0) <span class="keyword">then</span>
+<a name="l01569"></a>01569              ierr=nf90_def_dim(ncid=File%fh,name=name,len=len,dimid=dimid)
+<a name="l01570"></a>01570           <span class="keyword">endif</span>
+<a name="l01571"></a>01571           <span class="keyword">if</span>(File%iosystem%num_tasks==File%iosystem%num_iotasks) <span class="keyword">then</span>
+<a name="l01572"></a>01572              call MPI_BCAST(dimid, 1, MPI_INTEGER, 0, File%iosystem%IO_Comm, ierr)
+<a name="l01573"></a>01573           <span class="keyword">end if</span>
+<a name="l01574"></a>01574 
+<a name="l01575"></a>01575 <span class="preprocessor">#endif</span>
+<a name="l01576"></a>01576 <span class="preprocessor"></span>       <span class="keyword">case</span> default
+<a name="l01577"></a>01577           call bad_iotype(iotype,_FILE_,__LINE__)
+<a name="l01578"></a>01578 
+<a name="l01579"></a>01579        <span class="keyword">end select</span>
+<a name="l01580"></a>01580     <span class="keyword">endif</span>
+<a name="l01581"></a>01581     call check_netcdf(File, ierr,_FILE_,__LINE__)
+<a name="l01582"></a>01582     <span class="keyword">if</span>(File%iosystem%num_tasks&gt;File%iosystem%num_iotasks) <span class="keyword">then</span>
+<a name="l01583"></a>01583        call MPI_BCAST(dimid, 1, MPI_INTEGER, File%iosystem%IOMaster, File%iosystem%Comp_Comm, ierr)
+<a name="l01584"></a>01584     <span class="keyword">end if</span>
+<a name="l01585"></a>01585 <span class="keyword">  end function PIO_def_dim</span>
+<a name="l01586"></a>01586 
+<a name="l01598"></a><a class="code" href="group__PIO__def__var.html#gac5e55b282f83ef3dd709dbd6e3c8e4a3">01598</a>   <span class="keyword">integer </span><span class="keyword">function </span><a class="code" href="group__PIO__def__var.html#gac5e55b282f83ef3dd709dbd6e3c8e4a3">def_var_0d</a>(File,name,type,varDesc) result(ierr)
+<a name="l01599"></a>01599 
+<a name="l01600"></a>01600     <span class="keywordtype">type (</span>File_desc_t<span class="keywordtype">)</span>, <span class="keywordtype">intent(in)</span>  :: File
+<a name="l01601"></a>01601     <span class="keywordtype">character(len=*)</span>, <span class="keywordtype">intent(in)</span>    :: name
+<a name="l01602"></a>01602     <span class="keywordtype">integer</span>, <span class="keywordtype">intent(in)</span>             :: type
+<a name="l01603"></a>01603     <span class="keywordtype">type (</span>Var_desc_t<span class="keywordtype">)</span>, <span class="keywordtype">intent(inout)</span> :: varDesc
+<a name="l01604"></a>01604     <span class="keywordtype">integer</span> :: len=0, dimids(1)
+<a name="l01605"></a>01605 
+<a name="l01606"></a>01606     ierr = <a class="code" href="group__PIO__def__var.html#ga832d332d26601b172a235bdafbc4906d">def_var_md</a>(File,name,type,dimids(1:len),vardesc)
+<a name="l01607"></a>01607 
+<a name="l01608"></a>01608 <span class="keyword">  end function def_va_r0d</span>
+<a name="l01609"></a>01609 
+<a name="l01622"></a><a class="code" href="group__PIO__def__var.html#ga832d332d26601b172a235bdafbc4906d">01622</a>   <span class="keyword">integer </span><span class="keyword">function </span><a class="code" href="group__PIO__def__var.html#ga832d332d26601b172a235bdafbc4906d">def_var_md</a>(File,name,type,dimids,varDesc) result(ierr)
+<a name="l01623"></a>01623 
+<a name="l01624"></a>01624     <span class="keywordtype">type (</span>File_desc_t<span class="keywordtype">)</span>, <span class="keywordtype">intent(in)</span>  :: File
+<a name="l01625"></a>01625     <span class="keywordtype">character(len=*)</span>, <span class="keywordtype">intent(in)</span>    :: name
+<a name="l01626"></a>01626     <span class="keywordtype">integer</span>, <span class="keywordtype">intent(in)</span>             :: type
+<a name="l01627"></a>01627     <span class="keywordtype">integer</span>, <span class="keywordtype">intent(in)</span>             :: dimids(:)
+<a name="l01628"></a>01628     <span class="keywordtype">type (</span>Var_desc_t<span class="keywordtype">)</span>, <span class="keywordtype">intent(inout)</span> :: varDesc
+<a name="l01629"></a>01629 
+<a name="l01630"></a>01630     <span class="comment">!------------------</span>
+<a name="l01631"></a>01631     <span class="comment">! Local variables</span>
+<a name="l01632"></a>01632     <span class="comment">!------------------</span>
+<a name="l01633"></a>01633     <span class="keywordtype">integer</span> :: iotype, mpierr,len
+<a name="l01634"></a>01634 
+<a name="l01635"></a>01635     iotype = File%iotype
 <a name="l01636"></a>01636 
-<a name="l01637"></a>01637     vardesc%type = <span class="keyword">type</span>
-<a name="l01638"></a>01638 
-<a name="l01639"></a>01639     <span class="keyword">if</span>(File%iosystem%IOproc) <span class="keyword">then</span>
-<a name="l01640"></a>01640        <span class="keyword">select</span> <span class="keyword">case</span>(iotype)
+<a name="l01637"></a>01637     ierr=PIO_noerr
+<a name="l01638"></a>01638     vardesc%rec=-1
+<a name="l01639"></a>01639 
+<a name="l01640"></a>01640     vardesc%type = <span class="keyword">type</span>
 <a name="l01641"></a>01641 
-<a name="l01642"></a>01642 <span class="preprocessor">#ifdef _PNETCDF</span>
-<a name="l01643"></a>01643 <span class="preprocessor"></span>       <span class="keyword">case</span>(iotype_pnetcdf)
+<a name="l01642"></a>01642     <span class="keyword">if</span>(File%iosystem%IOproc) <span class="keyword">then</span>
+<a name="l01643"></a>01643        <span class="keyword">select</span> <span class="keyword">case</span>(iotype)
 <a name="l01644"></a>01644 
-<a name="l01645"></a>01645           len = <span class="keyword">SIZE</span>(dimids)
-<a name="l01646"></a>01646           ierr=nfmpi_def_var(File%fh,name,type,len,dimids,varDesc%varid)
-<a name="l01647"></a>01647 <span class="preprocessor">#endif</span>
-<a name="l01648"></a>01648 <span class="preprocessor"></span>
-<a name="l01649"></a>01649 <span class="preprocessor">#ifdef _NETCDF</span>
-<a name="l01650"></a>01650 <span class="preprocessor"></span>       <span class="keyword">case</span>(iotype_netcdf)
-<a name="l01651"></a>01651 
-<a name="l01652"></a>01652 
-<a name="l01653"></a>01653 
-<a name="l01654"></a>01654           <span class="comment">! assuming type valid for both pnetcdf and netcdf</span>
+<a name="l01645"></a>01645 <span class="preprocessor">#ifdef _PNETCDF</span>
+<a name="l01646"></a>01646 <span class="preprocessor"></span>       <span class="keyword">case</span>(iotype_pnetcdf)
+<a name="l01647"></a>01647 
+<a name="l01648"></a>01648           len = <span class="keyword">SIZE</span>(dimids)
+<a name="l01649"></a>01649           ierr=nfmpi_def_var(File%fh,name,type,len,dimids,varDesc%varid)
+<a name="l01650"></a>01650 <span class="preprocessor">#endif</span>
+<a name="l01651"></a>01651 <span class="preprocessor"></span>
+<a name="l01652"></a>01652 <span class="preprocessor">#ifdef _NETCDF</span>
+<a name="l01653"></a>01653 <span class="preprocessor"></span>       <span class="keyword">case</span>(iotype_netcdf)
+<a name="l01654"></a>01654 
 <a name="l01655"></a>01655 
-<a name="l01656"></a>01656           <span class="keyword">if</span> (File%iosystem%io_rank==0) <span class="keyword">then</span>
-<a name="l01657"></a>01657              ierr=nf90_def_var( ncid=File%fh,name=name,xtype=type, &amp;
-<a name="l01658"></a>01658                   dimids=dimids,varid=varDesc%varid)
-<a name="l01659"></a>01659              <span class="keyword">if</span> (Debug) print *, <span class="stringliteral">&apos;0: def_var fh=&apos;</span>,File%fh, &amp;
-<a name="l01660"></a>01660                   <span class="stringliteral">&apos;name=&apos;</span>,name,<span class="stringliteral">&apos; id=&apos;</span>,varDesc%varid
-<a name="l01661"></a>01661           <span class="keyword">endif</span>
-<a name="l01662"></a>01662           <span class="keyword">if</span>(File%iosystem%num_tasks==File%iosystem%num_iotasks) <span class="keyword">then</span>
-<a name="l01663"></a>01663              call MPI_BCAST(varDesc%varid, 1, MPI_INTEGER, 0, File%iosystem%IO_Comm, ierr)
-<a name="l01664"></a>01664           <span class="keyword">end if</span>
-<a name="l01665"></a>01665 
-<a name="l01666"></a>01666 <span class="preprocessor">#endif</span>
-<a name="l01667"></a>01667 <span class="preprocessor"></span>
-<a name="l01668"></a>01668        <span class="keyword">case</span> default
-<a name="l01669"></a>01669           call bad_iotype(iotype,_FILE_,__LINE__)
-<a name="l01670"></a>01670 
-<a name="l01671"></a>01671        <span class="keyword">end select</span>
-<a name="l01672"></a>01672     <span class="keyword">endif</span>
-<a name="l01673"></a>01673     call check_netcdf(File, ierr,_FILE_,__LINE__)
-<a name="l01674"></a>01674     <span class="keyword">if</span>(File%iosystem%num_tasks&gt;File%iosystem%num_iotasks) <span class="keyword">then</span>
-<a name="l01675"></a>01675        call MPI_BCAST(vardesc%varid, 1, MPI_INTEGER, File%iosystem%IOMaster, File%iosystem%Comp_Comm, ierr)
-<a name="l01676"></a>01676     <span class="keyword">end if</span>
-<a name="l01677"></a>01677 <span class="keyword">  end function def_va_rmd</span>
-<a name="l01678"></a>01678 
-<a name="l01691"></a><a class="code" href="group__PIO__copy__att.html#ga378be324bd5af06a11d0253556a484fb">01691</a>   <span class="keyword">integer </span><span class="keyword">function </span><a class="code" href="group__PIO__copy__att.html#ga378be324bd5af06a11d0253556a484fb">pio_copy_att</a>(infile, invarid, name, outfile, outvarid) result(ierr)
-<a name="l01692"></a>01692 
-<a name="l01693"></a>01693     <span class="keywordtype">type (</span>File_desc_t<span class="keywordtype">)</span>, <span class="keywordtype">intent(in)</span>  :: infile, outfile
-<a name="l01694"></a>01694     <span class="keywordtype">character(len=*)</span>, <span class="keywordtype">intent(in)</span>    :: name
-<a name="l01695"></a>01695     <span class="keywordtype">integer</span>, <span class="keywordtype">intent(in)</span> :: invarid, outvarid
-<a name="l01696"></a>01696     <span class="keywordtype">integer</span> :: iotype, mpierr
-<a name="l01697"></a>01697 
-<a name="l01698"></a>01698     ierr=PIO_noerr
-<a name="l01699"></a>01699     iotype = infile%iotype
-<a name="l01700"></a>01700     <span class="keyword">if</span>(InFile%iosystem%IOproc) <span class="keyword">then</span>
-<a name="l01701"></a>01701        <span class="keyword">select</span> <span class="keyword">case</span>(iotype)
-<a name="l01702"></a>01702 
-<a name="l01703"></a>01703 <span class="preprocessor">#ifdef _PNETCDF</span>
-<a name="l01704"></a>01704 <span class="preprocessor"></span>       <span class="keyword">case</span>(iotype_pnetcdf)
+<a name="l01656"></a>01656 
+<a name="l01657"></a>01657           <span class="comment">! assuming type valid for both pnetcdf and netcdf</span>
+<a name="l01658"></a>01658 
+<a name="l01659"></a>01659           <span class="keyword">if</span> (File%iosystem%io_rank==0) <span class="keyword">then</span>
+<a name="l01660"></a>01660              ierr=nf90_def_var( ncid=File%fh,name=name,xtype=type, &amp;
+<a name="l01661"></a>01661                   dimids=dimids,varid=varDesc%varid)
+<a name="l01662"></a>01662              <span class="keyword">if</span> (Debug) print *, <span class="stringliteral">&apos;0: def_var fh=&apos;</span>,File%fh, &amp;
+<a name="l01663"></a>01663                   <span class="stringliteral">&apos;name=&apos;</span>,name,<span class="stringliteral">&apos; id=&apos;</span>,varDesc%varid
+<a name="l01664"></a>01664           <span class="keyword">endif</span>
+<a name="l01665"></a>01665           <span class="keyword">if</span>(File%iosystem%num_tasks==File%iosystem%num_iotasks) <span class="keyword">then</span>
+<a name="l01666"></a>01666              call MPI_BCAST(varDesc%varid, 1, MPI_INTEGER, 0, File%iosystem%IO_Comm, ierr)
+<a name="l01667"></a>01667           <span class="keyword">end if</span>
+<a name="l01668"></a>01668 
+<a name="l01669"></a>01669 <span class="preprocessor">#endif</span>
+<a name="l01670"></a>01670 <span class="preprocessor"></span>
+<a name="l01671"></a>01671        <span class="keyword">case</span> default
+<a name="l01672"></a>01672           call bad_iotype(iotype,_FILE_,__LINE__)
+<a name="l01673"></a>01673 
+<a name="l01674"></a>01674        <span class="keyword">end select</span>
+<a name="l01675"></a>01675     <span class="keyword">endif</span>
+<a name="l01676"></a>01676     call check_netcdf(File, ierr,_FILE_,__LINE__)
+<a name="l01677"></a>01677     <span class="keyword">if</span>(File%iosystem%num_tasks&gt;File%iosystem%num_iotasks) <span class="keyword">then</span>
+<a name="l01678"></a>01678        call MPI_BCAST(vardesc%varid, 1, MPI_INTEGER, File%iosystem%IOMaster, File%iosystem%Comp_Comm, ierr)
+<a name="l01679"></a>01679     <span class="keyword">end if</span>
+<a name="l01680"></a>01680 <span class="keyword">  end function def_va_rmd</span>
+<a name="l01681"></a>01681 
+<a name="l01694"></a><a class="code" href="group__PIO__copy__att.html#ga378be324bd5af06a11d0253556a484fb">01694</a>   <span class="keyword">integer </span><span class="keyword">function </span><a class="code" href="group__PIO__copy__att.html#ga378be324bd5af06a11d0253556a484fb">pio_copy_att</a>(infile, invarid, name, outfile, outvarid) result(ierr)
+<a name="l01695"></a>01695 
+<a name="l01696"></a>01696     <span class="keywordtype">type (</span>File_desc_t<span class="keywordtype">)</span>, <span class="keywordtype">intent(in)</span>  :: infile, outfile
+<a name="l01697"></a>01697     <span class="keywordtype">character(len=*)</span>, <span class="keywordtype">intent(in)</span>    :: name
+<a name="l01698"></a>01698     <span class="keywordtype">integer</span>, <span class="keywordtype">intent(in)</span> :: invarid, outvarid
+<a name="l01699"></a>01699     <span class="keywordtype">integer</span> :: iotype, mpierr
+<a name="l01700"></a>01700 
+<a name="l01701"></a>01701     ierr=PIO_noerr
+<a name="l01702"></a>01702     iotype = infile%iotype
+<a name="l01703"></a>01703     <span class="keyword">if</span>(InFile%iosystem%IOproc) <span class="keyword">then</span>
+<a name="l01704"></a>01704        <span class="keyword">select</span> <span class="keyword">case</span>(iotype)
 <a name="l01705"></a>01705 
-<a name="l01706"></a>01706           ierr = nfmpi_copy_att(infile%fh, invarid, name, &amp;
-<a name="l01707"></a>01707                outfile%fh, outvarid)
-<a name="l01708"></a>01708 <span class="preprocessor">#endif</span>
-<a name="l01709"></a>01709 <span class="preprocessor"></span><span class="preprocessor">#ifdef _NETCDF</span>
-<a name="l01710"></a>01710 <span class="preprocessor"></span>       <span class="keyword">case</span>(iotype_netcdf)
-<a name="l01711"></a>01711 
-<a name="l01712"></a>01712 
-<a name="l01713"></a>01713           <span class="keyword">if</span> (inFile%iosystem%io_rank==0) <span class="keyword">then</span>
-<a name="l01714"></a>01714              ierr = nf90_copy_att(infile%fh,invarid,name,&amp;
-<a name="l01715"></a>01715                   outfile%fh,outvarid)     
-<a name="l01716"></a>01716           <span class="keyword">end if</span>
-<a name="l01717"></a>01717 <span class="preprocessor">#endif    </span>
-<a name="l01718"></a>01718 <span class="preprocessor"></span>       <span class="keyword">end select</span>
-<a name="l01719"></a>01719     <span class="keyword">end if</span>
-<a name="l01720"></a>01720     call check_netcdf(outFile, ierr,_FILE_,__LINE__)
-<a name="l01721"></a>01721 <span class="keyword">  end function pio_copy_att</span>
-<a name="l01722"></a>01722 
-<a name="l01723"></a>01723 
-<a name="l01738"></a><a class="code" href="group__PIO__inquire__variable.html#gaf2369a0a16c8a9dd3aff9a2e2a7eecbd">01738</a>   <span class="keyword">integer </span><span class="keyword">function </span><a class="code" href="group__PIO__inquire__variable.html#gaf2369a0a16c8a9dd3aff9a2e2a7eecbd">inquire_variable_vid</a>(ncid, varid, name, xtype, ndims, dimids, natts) result(ierr)
-<a name="l01739"></a>01739     <span class="keywordtype">type(</span>file_desc_t<span class="keywordtype">)</span>, <span class="keywordtype">intent(in)</span> :: ncid
-<a name="l01740"></a>01740     <span class="keywordtype">integer</span>,                         <span class="keywordtype">intent( in)</span> :: varid
-<a name="l01741"></a>01741     <span class="keywordtype">character (len = *)</span>,   <span class="keywordtype">optional</span>, <span class="keywordtype">intent(out)</span> :: name
-<a name="l01742"></a>01742     <span class="keywordtype">integer</span>,               <span class="keywordtype">optional</span>, <span class="keywordtype">intent(out)</span> :: xtype, ndims
-<a name="l01743"></a>01743     <span class="keywordtype">integer</span>, <span class="keywordtype">dimension(:)</span>, <span class="keywordtype">optional</span>, <span class="keywordtype">intent(out)</span> :: dimids
-<a name="l01744"></a>01744     <span class="keywordtype">integer</span>,               <span class="keywordtype">optional</span>, <span class="keywordtype">intent(out)</span> :: natts
-<a name="l01745"></a>01745 
-<a name="l01746"></a>01746     
-<a name="l01747"></a>01747     <span class="keyword">if</span>(present(name)) ierr = pio_inq_varname(ncid, varid, name)
-<a name="l01748"></a>01748     <span class="keyword">if</span>(present(ndims)) ierr = pio_inq_varndims(ncid, varid, ndims)
-<a name="l01749"></a>01749     <span class="keyword">if</span>(present(dimids)) ierr = pio_inq_vardimid(ncid, varid, dimids)
-<a name="l01750"></a>01750     <span class="keyword">if</span>(present(natts)) ierr = pio_inq_varnatts(ncid, varid, natts)
-<a name="l01751"></a>01751     <span class="keyword">if</span>(present(xtype)) ierr = pio_inq_vartype(ncid, varid, xtype)
-<a name="l01752"></a>01752 
-<a name="l01753"></a>01753 
-<a name="l01754"></a>01754 
-<a name="l01755"></a>01755 <span class="keyword">  end function inquire_variable_vid</span>
+<a name="l01706"></a>01706 <span class="preprocessor">#ifdef _PNETCDF</span>
+<a name="l01707"></a>01707 <span class="preprocessor"></span>       <span class="keyword">case</span>(iotype_pnetcdf)
+<a name="l01708"></a>01708 
+<a name="l01709"></a>01709           ierr = nfmpi_copy_att(infile%fh, invarid, name, &amp;
+<a name="l01710"></a>01710                outfile%fh, outvarid)
+<a name="l01711"></a>01711 <span class="preprocessor">#endif</span>
+<a name="l01712"></a>01712 <span class="preprocessor"></span><span class="preprocessor">#ifdef _NETCDF</span>
+<a name="l01713"></a>01713 <span class="preprocessor"></span>       <span class="keyword">case</span>(iotype_netcdf)
+<a name="l01714"></a>01714 
+<a name="l01715"></a>01715 
+<a name="l01716"></a>01716           <span class="keyword">if</span> (inFile%iosystem%io_rank==0) <span class="keyword">then</span>
+<a name="l01717"></a>01717              ierr = nf90_copy_att(infile%fh,invarid,name,&amp;
+<a name="l01718"></a>01718                   outfile%fh,outvarid)     
+<a name="l01719"></a>01719           <span class="keyword">end if</span>
+<a name="l01720"></a>01720 <span class="preprocessor">#endif    </span>
+<a name="l01721"></a>01721 <span class="preprocessor"></span>       <span class="keyword">end select</span>
+<a name="l01722"></a>01722     <span class="keyword">end if</span>
+<a name="l01723"></a>01723     call check_netcdf(outFile, ierr,_FILE_,__LINE__)
+<a name="l01724"></a>01724 <span class="keyword">  end function pio_copy_att</span>
+<a name="l01725"></a>01725 
+<a name="l01726"></a>01726 
+<a name="l01741"></a><a class="code" href="group__PIO__inquire__variable.html#gaf2369a0a16c8a9dd3aff9a2e2a7eecbd">01741</a>   <span class="keyword">integer </span><span class="keyword">function </span><a class="code" href="group__PIO__inquire__variable.html#gaf2369a0a16c8a9dd3aff9a2e2a7eecbd">inquire_variable_vid</a>(ncid, varid, name, xtype, ndims, dimids, natts) result(ierr)
+<a name="l01742"></a>01742     <span class="keywordtype">type(</span>file_desc_t<span class="keywordtype">)</span>, <span class="keywordtype">intent(in)</span> :: ncid
+<a name="l01743"></a>01743     <span class="keywordtype">integer</span>,                         <span class="keywordtype">intent( in)</span> :: varid
+<a name="l01744"></a>01744     <span class="keywordtype">character (len = *)</span>,   <span class="keywordtype">optional</span>, <span class="keywordtype">intent(out)</span> :: name
+<a name="l01745"></a>01745     <span class="keywordtype">integer</span>,               <span class="keywordtype">optional</span>, <span class="keywordtype">intent(out)</span> :: xtype, ndims
+<a name="l01746"></a>01746     <span class="keywordtype">integer</span>, <span class="keywordtype">dimension(:)</span>, <span class="keywordtype">optional</span>, <span class="keywordtype">intent(out)</span> :: dimids
+<a name="l01747"></a>01747     <span class="keywordtype">integer</span>,               <span class="keywordtype">optional</span>, <span class="keywordtype">intent(out)</span> :: natts
+<a name="l01748"></a>01748 
+<a name="l01749"></a>01749     
+<a name="l01750"></a>01750     <span class="keyword">if</span>(present(name)) ierr = pio_inq_varname(ncid, varid, name)
+<a name="l01751"></a>01751     <span class="keyword">if</span>(present(ndims)) ierr = pio_inq_varndims(ncid, varid, ndims)
+<a name="l01752"></a>01752     <span class="keyword">if</span>(present(dimids)) ierr = pio_inq_vardimid(ncid, varid, dimids)
+<a name="l01753"></a>01753     <span class="keyword">if</span>(present(natts)) ierr = pio_inq_varnatts(ncid, varid, natts)
+<a name="l01754"></a>01754     <span class="keyword">if</span>(present(xtype)) ierr = pio_inq_vartype(ncid, varid, xtype)
+<a name="l01755"></a>01755 
 <a name="l01756"></a>01756 
-<a name="l01771"></a><a class="code" href="group__PIO__inquire__variable.html#gab1bb96cac640784584be3658f68013e9">01771</a>   <span class="keyword">integer </span><span class="keyword">function </span><a class="code" href="group__PIO__inquire__variable.html#gab1bb96cac640784584be3658f68013e9">inquire_variable_vdesc</a>(ncid, vardesc, name, xtype, ndims, dimids, natts) result(ierr)
-<a name="l01772"></a>01772     <span class="keywordtype">type(</span>file_desc_t<span class="keywordtype">)</span>,               <span class="keywordtype">intent(in)</span> :: ncid
-<a name="l01773"></a>01773     <span class="keywordtype">type(</span>var_desc_t<span class="keywordtype">)</span>,                <span class="keywordtype">intent( in)</span> :: vardesc
-<a name="l01774"></a>01774     <span class="keywordtype">character (len = *)</span>,   <span class="keywordtype">optional</span>, <span class="keywordtype">intent(out)</span> :: name
-<a name="l01775"></a>01775     <span class="keywordtype">integer</span>,               <span class="keywordtype">optional</span>, <span class="keywordtype">intent(out)</span> :: xtype, ndims
-<a name="l01776"></a>01776     <span class="keywordtype">integer</span>, <span class="keywordtype">dimension(:)</span>, <span class="keywordtype">optional</span>, <span class="keywordtype">intent(out)</span> :: dimids
-<a name="l01777"></a>01777     <span class="keywordtype">integer</span>,               <span class="keywordtype">optional</span>, <span class="keywordtype">intent(out)</span> :: natts
-<a name="l01778"></a>01778 
-<a name="l01779"></a>01779     <span class="keyword">if</span>(present(name)) ierr = pio_inq_varname(ncid, vardesc, name)
-<a name="l01780"></a>01780     <span class="keyword">if</span>(present(ndims)) ierr = pio_inq_varndims(ncid, vardesc, ndims)
-<a name="l01781"></a>01781     <span class="keyword">if</span>(present(dimids)) ierr = pio_inq_vardimid(ncid, vardesc, dimids)
-<a name="l01782"></a>01782     <span class="keyword">if</span>(present(natts)) ierr = pio_inq_varnatts(ncid, vardesc, natts)
-<a name="l01783"></a>01783     <span class="keyword">if</span>(present(xtype)) ierr = pio_inq_vartype(ncid, vardesc, xtype)
-<a name="l01784"></a>01784 
-<a name="l01785"></a>01785 <span class="keyword">  end function inquire_variable_vdesc</span>
-<a name="l01786"></a>01786 
-<a name="l01798"></a><a class="code" href="group__PIO__inquire__dimension.html#ga0c9ad1f6c60d091ce706ed187e409f0b">01798</a>   <span class="keyword">integer </span><span class="keyword">function </span><a class="code" href="group__PIO__inquire__dimension.html#ga0c9ad1f6c60d091ce706ed187e409f0b">PIO_inquire_dimension</a>(ncid, dimid, name, len) result(ierr)
-<a name="l01799"></a>01799     <span class="keywordtype">type(</span>file_desc_T<span class="keywordtype">)</span>,             <span class="keywordtype">intent(in)</span>  :: ncid
-<a name="l01800"></a>01800     <span class="keywordtype">integer</span>,                       <span class="keywordtype">intent( in)</span> :: dimid
-<a name="l01801"></a>01801     <span class="keywordtype">character (len = *)</span>, <span class="keywordtype">optional</span>, <span class="keywordtype">intent(out)</span> :: name
-<a name="l01802"></a>01802     <span class="keywordtype">integer</span>,             <span class="keywordtype">optional</span>, <span class="keywordtype">intent(out)</span> :: len
-<a name="l01803"></a>01803 
-<a name="l01804"></a>01804     <span class="keyword">if</span>(present(len)) ierr = <a class="code" href="group__PIO__inq__dimlen.html#ga609ea8e407d994800ca00fe3c3955059">pio_inq_dimlen</a>(ncid, dimid, len)
-<a name="l01805"></a>01805     <span class="keyword">if</span>(present(name)) ierr = <a class="code" href="group__PIO__inq__dimname.html#ga6bbc80a0c10c228e9c5c96647df3c9f5">pio_inq_dimname</a>(ncid, dimid,name)
+<a name="l01757"></a>01757 
+<a name="l01758"></a>01758 <span class="keyword">  end function inquire_variable_vid</span>
+<a name="l01759"></a>01759 
+<a name="l01774"></a><a class="code" href="group__PIO__inquire__variable.html#gab1bb96cac640784584be3658f68013e9">01774</a>   <span class="keyword">integer </span><span class="keyword">function </span><a class="code" href="group__PIO__inquire__variable.html#gab1bb96cac640784584be3658f68013e9">inquire_variable_vdesc</a>(ncid, vardesc, name, xtype, ndims, dimids, natts) result(ierr)
+<a name="l01775"></a>01775     <span class="keywordtype">type(</span>file_desc_t<span class="keywordtype">)</span>,               <span class="keywordtype">intent(in)</span> :: ncid
+<a name="l01776"></a>01776     <span class="keywordtype">type(</span>var_desc_t<span class="keywordtype">)</span>,                <span class="keywordtype">intent( in)</span> :: vardesc
+<a name="l01777"></a>01777     <span class="keywordtype">character (len = *)</span>,   <span class="keywordtype">optional</span>, <span class="keywordtype">intent(out)</span> :: name
+<a name="l01778"></a>01778     <span class="keywordtype">integer</span>,               <span class="keywordtype">optional</span>, <span class="keywordtype">intent(out)</span> :: xtype, ndims
+<a name="l01779"></a>01779     <span class="keywordtype">integer</span>, <span class="keywordtype">dimension(:)</span>, <span class="keywordtype">optional</span>, <span class="keywordtype">intent(out)</span> :: dimids
+<a name="l01780"></a>01780     <span class="keywordtype">integer</span>,               <span class="keywordtype">optional</span>, <span class="keywordtype">intent(out)</span> :: natts
+<a name="l01781"></a>01781 
+<a name="l01782"></a>01782     <span class="keyword">if</span>(present(name)) ierr = pio_inq_varname(ncid, vardesc, name)
+<a name="l01783"></a>01783     <span class="keyword">if</span>(present(ndims)) ierr = pio_inq_varndims(ncid, vardesc, ndims)
+<a name="l01784"></a>01784     <span class="keyword">if</span>(present(dimids)) ierr = pio_inq_vardimid(ncid, vardesc, dimids)
+<a name="l01785"></a>01785     <span class="keyword">if</span>(present(natts)) ierr = pio_inq_varnatts(ncid, vardesc, natts)
+<a name="l01786"></a>01786     <span class="keyword">if</span>(present(xtype)) ierr = pio_inq_vartype(ncid, vardesc, xtype)
+<a name="l01787"></a>01787 
+<a name="l01788"></a>01788 <span class="keyword">  end function inquire_variable_vdesc</span>
+<a name="l01789"></a>01789 
+<a name="l01801"></a><a class="code" href="group__PIO__inquire__dimension.html#ga0c9ad1f6c60d091ce706ed187e409f0b">01801</a>   <span class="keyword">integer </span><span class="keyword">function </span><a class="code" href="group__PIO__inquire__dimension.html#ga0c9ad1f6c60d091ce706ed187e409f0b">PIO_inquire_dimension</a>(ncid, dimid, name, len) result(ierr)
+<a name="l01802"></a>01802     <span class="keywordtype">type(</span>file_desc_T<span class="keywordtype">)</span>,             <span class="keywordtype">intent(in)</span>  :: ncid
+<a name="l01803"></a>01803     <span class="keywordtype">integer</span>,                       <span class="keywordtype">intent( in)</span> :: dimid
+<a name="l01804"></a>01804     <span class="keywordtype">character (len = *)</span>, <span class="keywordtype">optional</span>, <span class="keywordtype">intent(out)</span> :: name
+<a name="l01805"></a>01805     <span class="keywordtype">integer</span>,             <span class="keywordtype">optional</span>, <span class="keywordtype">intent(out)</span> :: len
 <a name="l01806"></a>01806 
-<a name="l01807"></a>01807 <span class="keyword">  end function PIO_inquire_dimension</span>
-<a name="l01808"></a>01808 
-<a name="l01809"></a>01809 <span class="keyword">end module nf_mod</span>
+<a name="l01807"></a>01807     <span class="keyword">if</span>(present(len)) ierr = <a class="code" href="group__PIO__inq__dimlen.html#ga609ea8e407d994800ca00fe3c3955059">pio_inq_dimlen</a>(ncid, dimid, len)
+<a name="l01808"></a>01808     <span class="keyword">if</span>(present(name)) ierr = <a class="code" href="group__PIO__inq__dimname.html#ga6bbc80a0c10c228e9c5c96647df3c9f5">pio_inq_dimname</a>(ncid, dimid,name)
+<a name="l01809"></a>01809 
+<a name="l01810"></a>01810 <span class="keyword">  end function PIO_inquire_dimension</span>
+<a name="l01811"></a>01811 
+<a name="l01812"></a>01812 <span class="keyword">end module nf_mod</span>
 </pre></div></div>
 <!--- window showing the filter options -->
 <div id="MSearchSelectWindow"
@@ -1475,7 +1475,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 14:28:29 2009 for PIO User's Guide by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 15:25:19 2009 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

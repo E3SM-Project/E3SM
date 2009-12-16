@@ -41,7 +41,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </div>
 <div class="contents">
 <h1>PIO_seterrorhandling</h1>
-<p>Sets the form of error handeling for PIO.  
+<p>Sets the form of error handling for PIO.  
 <a href="#_details">More...</a></p>
 <table border="0" cellpadding="0" cellspacing="0">
 <tr><td colspan="2"><h2>Functions/Subroutines</h2></td></tr>
@@ -51,7 +51,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Set the PIO error handling method for the IOSystem.  <a href="#gaca54ab6a291ff2dbbada6e0ccc50cc6f"></a><br/></td></tr>
 </table>
 <hr/><a name="_details"></a><h2>Detailed Description</h2>
-<p>An example of its use is seen in the following example By default PIO handles errors internally by printing a string describing the error and then calling mpi_abort. Application developers can change this behaivior with a call to PIO_seterrorhandling. For example if a developer wanted to see if an input netcdf file contained the variable 'U' they might write the following </p>
+<p>By default PIO handles errors internally by printing a string describing the error and then calling mpi_abort. Application developers can change this behavior with a call to PIO_seterrorhandling. For example if a developer wanted to see if an input netcdf file contained the variable 'U' they might write the following </p>
 <div class="fragment"><pre class="fragment"> call pio_seterrorhandling(File, PIO_BCAST_ERROR)
  ierr =  pio_inq_varid(File, 'U', uid)
  call pio_seterrorhandling(File, PIO_INTERNAL_ERROR)
@@ -91,7 +91,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
     <tr><td valign="top"></td><td valign="top"><em>File</em>&nbsp;</td><td>: File descriptor returned by <a class="el" href="group__PIO__openfile.html">PIO_openfile</a> or <a class="el" href="group__PIO__createfile.html">PIO_createfile</a> (see <a class="el" href="namespacepio__types.html">pio_types</a>)  </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>method</em>&nbsp;</td><td>: The three types of error handling methods are:. <ul>
 <li>PIO_INTERNAL_ERROR : abort on error from any task</li>
-<li>PIO_BCAST_ERROR : broadcast an error from io_rank 0</li>
+<li>PIO_BCAST_ERROR : broadcast an error from io_rank 0 to all tasks in comm</li>
 <li>PIO_RETURN_ERROR : do nothing - allow the user to handle it </li>
 </ul>
  </td></tr>
@@ -99,7 +99,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l00301">301</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
+<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l00300">300</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
 
 <p><div class="dynheader">
 Here is the call graph for this function:</div>
@@ -141,7 +141,7 @@ Here is the call graph for this function:</div>
     <tr><td valign="top"></td><td valign="top"><em>IOsystem</em>&nbsp;</td><td>: a defined PIO system descriptor, see <a class="el" href="namespacepio__types.html">pio_types</a> </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>method</em>&nbsp;</td><td>: The three types of error handling methods are:. <ul>
 <li>PIO_INTERNAL_ERROR : abort on error from any task</li>
-<li>PIO_BCAST_ERROR : broadcast an error from io_rank 0</li>
+<li>PIO_BCAST_ERROR : broadcast an error from io_rank 0 to all tasks in comm</li>
 <li>PIO_RETURN_ERROR : do nothing - allow the user to handle it </li>
 </ul>
  </td></tr>
@@ -149,7 +149,7 @@ Here is the call graph for this function:</div>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l00316">316</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
+<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l00315">315</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
 
 </div>
 </div>
@@ -168,7 +168,7 @@ Here is the call graph for this function:</div>
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 14:28:30 2009 for PIO User's Guide by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 15:25:20 2009 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

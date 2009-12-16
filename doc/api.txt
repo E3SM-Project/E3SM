@@ -15,8 +15,8 @@
   \section readwrite Reading and Writing distributed variables
     - \ref PIO_read_darray
     - \ref PIO_write_darray
-  \section netcdf Netcdf specific routines 
-
+  \section netcdf Netcdf format specific routines 
+     Also see: http://www.unidata.ucar.edu/software/netcdf/docs/
      \subsection putget Reading/Writing netcdf metadata  
          - \ref PIO_get_att
          - \ref PIO_put_att
