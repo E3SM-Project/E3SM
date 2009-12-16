@@ -19,8 +19,8 @@ module pionfget_mod
   include 'mpif.h'  ! _EXTERNAL
 
 !>
-!! \defgroup PIO_get_var PIO_get_var
-!! Reads netcdf metadata from a file
+!! @defgroup PIO_get_var PIO_get_var
+!! @brief Reads netcdf metadata from a file
 !<
   public :: get_var
   interface get_var
@@ -35,15 +35,15 @@ module pionfget_mod
 CONTAINS
 
 !>
-!! \public
-!! \ingroup PIO_get_var
-!! Writes an netcdf attribute to a file
-!!
-!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
-!! \param varid : The netcdf variable identifier
-!! \param index :
-!! \param ival : The value for the netcdf metadata
-!! \retval ierr : error return code
+!! @public
+!! @ingroup PIO_get_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid : The netcdf variable identifier
+!! @param index :
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr : error return code
 !<
   integer function get_var1_{TYPE} (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
@@ -107,15 +107,15 @@ CONTAINS
   end function get_var1_{TYPE}
 
 !>
-!! \public
-!! \ingroup PIO_get_var
-!! Writes an netcdf attribute to a file
-!!
-!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
-!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
-!! \param index :
-!! \param ival : The value for the netcdf metadata
-!! \retval ierr : error return code
+!! @public
+!! @ingroup PIO_get_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param vardesc @copydoc var_desc_t
+!! @param index :
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr : error return code
 !<
   integer function get_var1_vdesc_{TYPE} (File,vardesc, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
@@ -132,16 +132,16 @@ CONTAINS
 
 ! DIMS 1,2,3
 !>
-!! \public
-!! \ingroup PIO_get_var
-!! Writes an netcdf attribute to a file
-!!
-!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
-!! \param varid : The netcdf variable identifier
-!! \param start :
-!! \param count :
-!! \param ival : The value for the netcdf metadata
-!! \retval ierr : error return code
+!! @public
+!! @ingroup PIO_get_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid : The netcdf variable identifier
+!! @param start :
+!! @param count :
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr : error return code
 !<
   integer function get_vara_{DIMS}d_{TYPE} (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
@@ -190,16 +190,16 @@ CONTAINS
 
 ! DIMS 1,2,3
 !>
-!! \public
-!! \ingroup PIO_get_var
-!! Writes an netcdf attribute to a file
-!!
-!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
-!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
-!! \param start :
-!! \param count :
-!! \param ival : The value for the netcdf metadata
-!! \retval ierr : error return code
+!! @public
+!! @ingroup PIO_get_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param vardesc @copydoc var_desc_t
+!! @param start :
+!! @param count :
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr : error return code
 !<
   integer function get_vara_vdesc_{DIMS}d_{TYPE} (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
@@ -214,14 +214,14 @@ CONTAINS
   end function get_vara_vdesc_{DIMS}d_{TYPE}
 
 !>
-!! \public
-!! \ingroup PIO_get_var
-!! Writes an netcdf attribute to a file
-!!
-!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
-!! \param varid : The netcdf variable identifier
-!! \param ival : The value for the netcdf metadata
-!! \retval ierr : error return code
+!! @public
+!! @ingroup PIO_get_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid : The netcdf variable identifier
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr : error return code
 !<
   integer function get_var_{DIMS}d_{TYPE} (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
@@ -271,14 +271,14 @@ CONTAINS
   end function get_var_{DIMS}d_{TYPE}
 
 !>
-!! \public
-!! \ingroup PIO_get_var
-!! Writes an netcdf attribute to a file
-!!
-!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
-!! \param vardesc : A variable handle returned from \ref PIO_def_var (see pio_types)
-!! \param ival : The value for the netcdf metadata
-!! \retval ierr : error return code
+!! @public
+!! @ingroup PIO_get_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param vardesc @copydoc var_desc_t
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr : error return code
 !<
   integer function get_var_vdesc_{DIMS}d_{TYPE} (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File

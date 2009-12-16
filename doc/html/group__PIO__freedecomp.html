@@ -42,7 +42,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="contents">
 <h1>PIO_freedecomp</h1>
 <p>Free memory associated with a IO descriptor.  
-<a href="#_details">More...</a></p>
+</p>
 <table border="0" cellpadding="0" cellspacing="0">
 <tr><td colspan="2"><h2>Functions/Subroutines</h2></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__freedecomp.html#ga2c0410db2f26566bb589cfd575fd3119">freeDecomp_ios</a> (IOS, ioDesc)</td></tr>
@@ -50,8 +50,6 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__freedecomp.html#ga6bb7f935067b53edb83e5597f09ab8f1">freeDecomp_file</a> (File, ioDesc)</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Free all allocated storage associated with this decomposition.  <a href="#ga6bb7f935067b53edb83e5597f09ab8f1"></a><br/></td></tr>
 </table>
-<hr/><a name="_details"></a><h2>Detailed Description</h2>
-<p>Free memory associated with a IO descriptor. </p>
 <hr/><h2>Function/Subroutine Documentation</h2>
 <a class="anchor" id="ga6bb7f935067b53edb83e5597f09ab8f1"></a><!-- doxytag: member="piolib_mod::freeDecomp_file" ref="ga6bb7f935067b53edb83e5597f09ab8f1" args="(File, ioDesc)" -->
 <div class="memitem">
@@ -77,22 +75,21 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
       </table>
 </div>
 <div class="memdoc">
-
-<p>Free all allocated storage associated with this decomposition. </p>
 <dl><dt><b>Parameters:</b></dt><dd>
   <table border="0" cellspacing="2" cellpadding="0">
-    <tr><td valign="top"></td><td valign="top"><em>File</em>&nbsp;</td><td>: a file descriptor created by a call to <a class="el" href="group__PIO__createfile.html">PIO_createfile</a> or <a class="el" href="group__PIO__openfile.html">PIO_openfile</a> (see <a class="el" href="namespacepio__types.html">pio_types</a>) </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>File</em>&nbsp;</td><td> </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>ioDesc</em>&nbsp;</td><td>:  </td></tr>
   </table>
   </dd>
 </dl>
 <dl><dt><b>Return values:</b></dt><dd>
   <table border="0" cellspacing="2" cellpadding="0">
-    <tr><td valign="top"></td><td valign="top"><em>ioDesc</em>&nbsp;</td><td>: a PIO IO descriptor created by a call to <a class="el" href="group__PIO__initdecomp.html">PIO_initdecomp</a> (see <a class="el" href="namespacepio__types.html">pio_types</a>) </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>ierr</em>&nbsp;</td><td>: error return code </td></tr>
   </table>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l01739">1739</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
+<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l01744">1744</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
 
 </div>
 </div>
@@ -120,8 +117,6 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
       </table>
 </div>
 <div class="memdoc">
-
-<p>Free all allocated storage associated with this decomposition. </p>
 <dl><dt><b>Parameters:</b></dt><dd>
   <table border="0" cellspacing="2" cellpadding="0">
     <tr><td valign="top"></td><td valign="top"><em>IOS</em>&nbsp;</td><td>: a defined PIO system descriptor created by call to <a class="el" href="group__PIO__init.html">PIO_init</a> (see <a class="el" href="namespacepio__types.html">pio_types</a>) </td></tr>
@@ -135,7 +130,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l01688">1688</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
+<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l01691">1691</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
 
 </div>
 </div>
@@ -154,7 +149,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Tue Dec 15 14:40:24 2009 for PIO User's Guide by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 13:41:12 2009 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

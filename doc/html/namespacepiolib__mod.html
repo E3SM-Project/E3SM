@@ -58,7 +58,8 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <tr><td class="memItemLeft" align="right" valign="top">interface &nbsp;</td><td class="memItemRight" valign="bottom"><b>PIO_init</b></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">interface &nbsp;</td><td class="memItemRight" valign="bottom"><b>PIO_finalize</b></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">interface &nbsp;</td><td class="memItemRight" valign="bottom"><b>PIO_initDecomp</b></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">interface &nbsp;</td><td class="memItemRight" valign="bottom"><b>PIO_dupIOdesc</b></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">interface &nbsp;</td><td class="memItemRight" valign="bottom"><b>PIO_dupiodesc</b></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">interface &nbsp;</td><td class="memItemRight" valign="bottom"><b>PIO_setiotype</b></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">interface &nbsp;</td><td class="memItemRight" valign="bottom"><b>PIO_NumToRead</b></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">interface &nbsp;</td><td class="memItemRight" valign="bottom"><b>PIO_NumToWrite</b></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">interface &nbsp;</td><td class="memItemRight" valign="bottom"><b>PIO_setNUMAgg</b></td></tr>
@@ -79,8 +80,8 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Set the PIO error handling method for the IOSystem.  <a href="group__PIO__seterrorhandling.html#gaca54ab6a291ff2dbbada6e0ccc50cc6f"></a><br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__initdecomp.html#gaf6e4886d25b4a250c65ba905506c6b22">initDecomp_2dof_BIN</a> (IOsystem, basepiotype, dims, lenblocks, compdof, iodofr, iodofw, IOdesc)</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">This interface is should be called with specifying both the computational and io degrees of freedom. This allows greater flexibilty to generate a binary file.  <a href="group__PIO__initdecomp.html#gaf6e4886d25b4a250c65ba905506c6b22"></a><br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__initdecomp.html#ga76c6e8dece1ee199f30883ee9bdce151">initDecomp_1dof_BIN</a> (IOsystem, basetype, dims, lenblocks, compdof, iodofr, IOdesc)</td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__initdecomp.html#ga2dc9940c715bf2b7817d3443936bd041">initDecomp_2dof_nf</a> (IOsystem, basetype, dims, lenblocks, compdof, iodofr, iodofw, start, count, IOdesc)</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__initdecomp.html#ga01c249c34d42490e092a2ede04b82833">initDecomp_1dof_BIN</a> (IOsystem, basepiotype, dims, lenblocks, compdof, iodofr, IOdesc)</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__initdecomp.html#ga01f13360bf735df79355709f04050979">initDecomp_2dof_nf</a> (IOsystem, basepiotype, dims, lenblocks, compdof, iodofr, iodofw, start, count, IOdesc)</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__initdecomp.html#ga2d8eb80eef55d86b7e8886b259a60057">initDecomp_1dof_nf</a> (iosystem, basepiotype, dims, lenblocks, compdof, iodof, start, count, IOdesc)</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__initdecomp.html#ga644e9541dc9d03ae1ed606bfcbface08">initDecomp_1dof_nf_box</a> (IOsystem, basepiotype, dims, compdof, IOdesc, start, count)</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__init.html#gafd1cef696d56644349d9b57d8e501c61">init</a> (comp_rank, comp_comm, num_iotasks, num_aggregator, stride, rearr, IOsystem, base)</td></tr>
@@ -125,8 +126,6 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </div>
 <div class="memdoc">
 
-<p>This is an internal variable for memory leak debugging It is used when macro MEMCHK is defined and it causes each task to print the memory resident set size anytime it changes within <a class="el" href="namespacepio.html">pio</a>. </p>
-
 <p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l00060">60</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
 
 </div>
@@ -146,7 +145,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Tue Dec 15 14:40:24 2009 for PIO User's Guide by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 13:41:13 2009 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

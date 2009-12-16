@@ -1569,7 +1569,7 @@ contains
 
     ierr = def_var_md(File,name,type,dimids(1:len),vardesc)
 
-  end function def_va_r0d
+  end function def_var_0d
 
 !> \public
 !! \ingroup PIO_def_var
@@ -1639,7 +1639,7 @@ contains
     if(File%iosystem%num_tasks>File%iosystem%num_iotasks) then
        call MPI_BCAST(vardesc%varid, 1, MPI_INTEGER, File%iosystem%IOMaster, File%iosystem%Comp_Comm, ierr)
     end if
-  end function def_va_rmd
+  end function def_var_md
 
 !>
 !! \public

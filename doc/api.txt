@@ -54,9 +54,8 @@
     - \ref PIO_get_local_array_size
     - \ref PIO_setnumagg
     - \ref PIO_dupiodesc
-*/
 
-
-
+  PIO error handling \n
+  \copydoc PIO_error_method
 
 */

@@ -95,12 +95,12 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00050"></a>00050         <span class="comment">! This holds the IODESC</span>
 <a name="l00051"></a>00051 <span class="keyword">    end type</span>
 <a name="l00052"></a>00052     
-<a name="l00053"></a>00053     <span class="keyword">type</span>, public :: File_desc_t
+<a name="l00053"></a>00053     <span class="keyword">type</span>, public :: file_desc_t
 <a name="l00054"></a>00054        <span class="keywordtype">type(</span>iosystem_desc_t<span class="keywordtype">)</span>, <span class="keywordtype">pointer</span> :: iosystem
 <a name="l00055"></a>00055        <span class="keywordtype">integer(i4) </span>:: fh
 <a name="l00056"></a>00056        <span class="keywordtype">integer(kind=PIO_OFFSET) </span>:: offset             <span class="comment">! offset into file</span>
 <a name="l00057"></a>00057        <span class="keywordtype">integer(i4)              </span>:: iotype             <span class="comment">! Type of IO to perform see parameter statement below    </span>
-<a name="l00058"></a>00058 <span class="keyword">    end type File_desc_t</span>
+<a name="l00058"></a>00058 <span class="keyword">    end type file_desc_t</span>
 <a name="l00059"></a>00059 
 <a name="l00060"></a>00060 
 <a name="l00061"></a>00061     <span class="comment">!------------------------------------------------------</span>
@@ -315,7 +315,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Tue Dec 15 14:40:23 2009 for PIO User's Guide by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 13:41:11 2009 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

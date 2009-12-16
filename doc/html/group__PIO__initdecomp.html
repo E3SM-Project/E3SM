@@ -42,20 +42,18 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="contents">
 <h1>PIO_initdecomp</h1>
 <p>Defines a PIO decomposition contains multiple entry points.  
-<a href="#_details">More...</a></p>
+</p>
 <table border="0" cellpadding="0" cellspacing="0">
 <tr><td colspan="2"><h2>Functions/Subroutines</h2></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__initdecomp.html#gaf6e4886d25b4a250c65ba905506c6b22">initDecomp_2dof_BIN</a> (IOsystem, basepiotype, dims, lenblocks, compdof, iodofr, iodofw, IOdesc)</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">This interface is should be called with specifying both the computational and io degrees of freedom. This allows greater flexibilty to generate a binary file.  <a href="#gaf6e4886d25b4a250c65ba905506c6b22"></a><br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__initdecomp.html#ga76c6e8dece1ee199f30883ee9bdce151">initDecomp_1dof_BIN</a> (IOsystem, basetype, dims, lenblocks, compdof, iodofr, IOdesc)</td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__initdecomp.html#ga2dc9940c715bf2b7817d3443936bd041">initDecomp_2dof_nf</a> (IOsystem, basetype, dims, lenblocks, compdof, iodofr, iodofw, start, count, IOdesc)</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__initdecomp.html#ga01c249c34d42490e092a2ede04b82833">initDecomp_1dof_BIN</a> (IOsystem, basepiotype, dims, lenblocks, compdof, iodofr, IOdesc)</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__initdecomp.html#ga01f13360bf735df79355709f04050979">initDecomp_2dof_nf</a> (IOsystem, basepiotype, dims, lenblocks, compdof, iodofr, iodofw, start, count, IOdesc)</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__initdecomp.html#ga2d8eb80eef55d86b7e8886b259a60057">initDecomp_1dof_nf</a> (iosystem, basepiotype, dims, lenblocks, compdof, iodof, start, count, IOdesc)</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__initdecomp.html#ga644e9541dc9d03ae1ed606bfcbface08">initDecomp_1dof_nf_box</a> (IOsystem, basepiotype, dims, compdof, IOdesc, start, count)</td></tr>
 </table>
-<hr/><a name="_details"></a><h2>Detailed Description</h2>
-<p>Defines a PIO decomposition contains multiple entry points. </p>
 <hr/><h2>Function/Subroutine Documentation</h2>
-<a class="anchor" id="ga76c6e8dece1ee199f30883ee9bdce151"></a><!-- doxytag: member="piolib_mod::initDecomp_1dof_BIN" ref="ga76c6e8dece1ee199f30883ee9bdce151" args="(IOsystem, basetype, dims, lenblocks, compdof, iodofr, IOdesc)" -->
+<a class="anchor" id="ga01c249c34d42490e092a2ede04b82833"></a><!-- doxytag: member="piolib_mod::initDecomp_1dof_BIN" ref="ga01c249c34d42490e092a2ede04b82833" args="(IOsystem, basepiotype, dims, lenblocks, compdof, iodofr, IOdesc)" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
@@ -69,7 +67,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">integer(i4),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>basetype</em>, </td>
+          <td class="paramname"> <em>basepiotype</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -112,23 +110,23 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <dl><dt><b>Parameters:</b></dt><dd>
   <table border="0" cellspacing="2" cellpadding="0">
     <tr><td valign="top"></td><td valign="top"><em>IOsystem</em>&nbsp;</td><td>: a defined PIO system descriptor, see <a class="el" href="namespacepio__types.html">pio_types</a> </td></tr>
-    <tr><td valign="top"></td><td valign="top"><em>basetype</em>&nbsp;</td><td>: The <a class="el" href="namespacepio.html">pio</a> type of the variable(s) to be associated with this iodesc </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>basepiotype</em>&nbsp;</td><td>: The type of variable(s) associated with this iodesc.  </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>dims</em>&nbsp;</td><td>: An array of the global length of each dimesion of the variable(s) </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>lenblocks</em>&nbsp;</td><td>: </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>compdof</em>&nbsp;</td><td>: Mapping of the storage order of the variable to its memory order </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>iodofr</em>&nbsp;</td><td>: </td></tr>
-    <tr><td valign="top"></td><td valign="top"><em>IOdesc</em>&nbsp;</td><td>: The IO description structure defined in this subroutine and used in subsequent read and write calls. </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>IOdesc</em>&nbsp;</td><td> </td></tr>
   </table>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l00450">450</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
+<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l00453">453</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
 
 <p><div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dynsection">
-<div class="center"><img src="group__PIO__initdecomp_ga76c6e8dece1ee199f30883ee9bdce151_cgraph.png" border="0" usemap="#group__PIO__initdecomp_ga76c6e8dece1ee199f30883ee9bdce151_cgraph_map" alt=""></div>
-<map name="group__PIO__initdecomp_ga76c6e8dece1ee199f30883ee9bdce151_cgraph_map" id="group__PIO__initdecomp_ga76c6e8dece1ee199f30883ee9bdce151_cgraph">
+<div class="center"><img src="group__PIO__initdecomp_ga01c249c34d42490e092a2ede04b82833_cgraph.png" border="0" usemap="#group__PIO__initdecomp_ga01c249c34d42490e092a2ede04b82833_cgraph_map" alt=""></div>
+<map name="group__PIO__initdecomp_ga01c249c34d42490e092a2ede04b82833_cgraph_map" id="group__PIO__initdecomp_ga01c249c34d42490e092a2ede04b82833_cgraph">
 <area shape="rect" id="node3" href="group__PIO__initdecomp.html#ga2d8eb80eef55d86b7e8886b259a60057" title="initDecomp_1dof_nf" alt="" coords="212,5,361,35"/></map>
 </div>
 </p>
@@ -204,19 +202,19 @@ Here is the call graph for this function:</div>
 <dl><dt><b>Parameters:</b></dt><dd>
   <table border="0" cellspacing="2" cellpadding="0">
     <tr><td valign="top"></td><td valign="top"><em>iosystem</em>&nbsp;</td><td>: a defined PIO system descriptor, see <a class="el" href="namespacepio__types.html">pio_types</a> </td></tr>
-    <tr><td valign="top"></td><td valign="top"><em>basepiotype</em>&nbsp;</td><td>: The <a class="el" href="namespacepio.html">pio</a> type of the variable(s) to be associated with this iodesc </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>basepiotype</em>&nbsp;</td><td>: The type of variable(s) associated with this iodesc.  </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>dims</em>&nbsp;</td><td>: An array of the global length of each dimesion of the variable(s) </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>lenblocks</em>&nbsp;</td><td>: </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>compdof</em>&nbsp;</td><td>: Mapping of the storage order of the variable to its memory order </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>iodof</em>&nbsp;</td><td>: </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>start</em>&nbsp;</td><td>: </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>count</em>&nbsp;</td><td>: </td></tr>
-    <tr><td valign="top"></td><td valign="top"><em>IOdesc</em>&nbsp;</td><td>: The IO description structure defined in this subroutine and used in subsequent read and write calls. </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>IOdesc</em>&nbsp;</td><td> </td></tr>
   </table>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l00524">524</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
+<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l00529">529</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
 
 </div>
 </div>
@@ -277,17 +275,17 @@ Here is the call graph for this function:</div>
 <dl><dt><b>Parameters:</b></dt><dd>
   <table border="0" cellspacing="2" cellpadding="0">
     <tr><td valign="top"></td><td valign="top"><em>IOsystem</em>&nbsp;</td><td>: a defined PIO system descriptor, see <a class="el" href="namespacepio__types.html">pio_types</a> </td></tr>
-    <tr><td valign="top"></td><td valign="top"><em>basepiotype</em>&nbsp;</td><td>: The <a class="el" href="namespacepio.html">pio</a> type of the variable(s) to be associated with this iodesc </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>basepiotype</em>&nbsp;</td><td>: The type of variable(s) associated with this iodesc.  </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>dims</em>&nbsp;</td><td>: An array of the global length of each dimesion of the variable(s) </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>compdof</em>&nbsp;</td><td>: Mapping of the storage order of the variable to its memory order </td></tr>
-    <tr><td valign="top"></td><td valign="top"><em>IOdesc</em>&nbsp;</td><td>: The IO description structure defined in this subroutine and used in subsequent read and write calls. </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>IOdesc</em>&nbsp;</td><td> </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>start</em>&nbsp;</td><td>: Along with count Optional user defined shape of arrays on io tasks </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>count</em>&nbsp;</td><td>: </td></tr>
   </table>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l00692">692</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
+<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l00697">697</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
 
 </div>
 </div>
@@ -351,18 +349,16 @@ Here is the call graph for this function:</div>
       </table>
 </div>
 <div class="memdoc">
-
-<p>This interface is should be called with specifying both the computational and io degrees of freedom. This allows greater flexibilty to generate a binary file. </p>
 <dl><dt><b>Parameters:</b></dt><dd>
   <table border="0" cellspacing="2" cellpadding="0">
     <tr><td valign="top"></td><td valign="top"><em>IOsystem</em>&nbsp;</td><td>: a defined PIO system descriptor, see <a class="el" href="namespacepio__types.html">pio_types</a> </td></tr>
-    <tr><td valign="top"></td><td valign="top"><em>basepiotype</em>&nbsp;</td><td>: The <a class="el" href="namespacepio.html">pio</a> type of the variable(s) to be associated with this iodesc </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>basepiotype</em>&nbsp;</td><td>: The type of variable(s) associated with this iodesc.  </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>dims</em>&nbsp;</td><td>: An array of the global length of each dimesion of the variable(s) </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>lenblocks</em>&nbsp;</td><td>: </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>compdof</em>&nbsp;</td><td>: Mapping of the storage order of the variable to its memory order </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>iodofr</em>&nbsp;</td><td>: </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>iodofw</em>&nbsp;</td><td>: </td></tr>
-    <tr><td valign="top"></td><td valign="top"><em>IOdesc</em>&nbsp;</td><td>: The IO description structure defined in this subroutine and used in subsequent read and write calls. </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>IOdesc</em>&nbsp;</td><td> </td></tr>
   </table>
   </dd>
 </dl>
@@ -371,7 +367,7 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a class="anchor" id="ga2dc9940c715bf2b7817d3443936bd041"></a><!-- doxytag: member="piolib_mod::initDecomp_2dof_nf" ref="ga2dc9940c715bf2b7817d3443936bd041" args="(IOsystem, basetype, dims, lenblocks, compdof, iodofr, iodofw, start, count, IOdesc)" -->
+<a class="anchor" id="ga01f13360bf735df79355709f04050979"></a><!-- doxytag: member="piolib_mod::initDecomp_2dof_nf" ref="ga01f13360bf735df79355709f04050979" args="(IOsystem, basepiotype, dims, lenblocks, compdof, iodofr, iodofw, start, count, IOdesc)" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
@@ -385,7 +381,7 @@ Here is the call graph for this function:</div>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">integer(i4),intent(in)&nbsp;</td>
-          <td class="paramname"> <em>basetype</em>, </td>
+          <td class="paramname"> <em>basepiotype</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -446,7 +442,7 @@ Here is the call graph for this function:</div>
 <dl><dt><b>Parameters:</b></dt><dd>
   <table border="0" cellspacing="2" cellpadding="0">
     <tr><td valign="top"></td><td valign="top"><em>IOsystem</em>&nbsp;</td><td>: a defined PIO system descriptor, see <a class="el" href="namespacepio__types.html">pio_types</a> </td></tr>
-    <tr><td valign="top"></td><td valign="top"><em>basetype</em>&nbsp;</td><td>: The <a class="el" href="namespacepio.html">pio</a> type of the variable(s) to be associated with this iodesc </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>basepiotype</em>&nbsp;</td><td>: The type of variable(s) associated with this iodesc.  </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>dims</em>&nbsp;</td><td>: An array of the global length of each dimesion of the variable(s) </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>lenblocks</em>&nbsp;</td><td>: </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>compdof</em>&nbsp;</td><td>: Mapping of the storage order of the variable to its memory order </td></tr>
@@ -454,18 +450,18 @@ Here is the call graph for this function:</div>
     <tr><td valign="top"></td><td valign="top"><em>iodofw</em>&nbsp;</td><td>: </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>start</em>&nbsp;</td><td>: Used with count to give a block description of the shape of the data </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>count</em>&nbsp;</td><td>: </td></tr>
-    <tr><td valign="top"></td><td valign="top"><em>IOdesc</em>&nbsp;</td><td>: The IO description structure defined in this subroutine and used in subsequent read and write calls. </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>IOdesc</em>&nbsp;</td><td> </td></tr>
   </table>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l00482">482</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
+<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l00485">485</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
 
 <p><div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dynsection">
-<div class="center"><img src="group__PIO__initdecomp_ga2dc9940c715bf2b7817d3443936bd041_cgraph.png" border="0" usemap="#group__PIO__initdecomp_ga2dc9940c715bf2b7817d3443936bd041_cgraph_map" alt=""></div>
-<map name="group__PIO__initdecomp_ga2dc9940c715bf2b7817d3443936bd041_cgraph_map" id="group__PIO__initdecomp_ga2dc9940c715bf2b7817d3443936bd041_cgraph">
+<div class="center"><img src="group__PIO__initdecomp_ga01f13360bf735df79355709f04050979_cgraph.png" border="0" usemap="#group__PIO__initdecomp_ga01f13360bf735df79355709f04050979_cgraph_map" alt=""></div>
+<map name="group__PIO__initdecomp_ga01f13360bf735df79355709f04050979_cgraph_map" id="group__PIO__initdecomp_ga01f13360bf735df79355709f04050979_cgraph">
 <area shape="rect" id="node3" href="group__PIO__initdecomp.html#ga2d8eb80eef55d86b7e8886b259a60057" title="initDecomp_1dof_nf" alt="" coords="207,5,356,35"/></map>
 </div>
 </p>
@@ -487,7 +483,7 @@ Here is the call graph for this function:</div>
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Tue Dec 15 14:40:24 2009 for PIO User's Guide by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 13:41:12 2009 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

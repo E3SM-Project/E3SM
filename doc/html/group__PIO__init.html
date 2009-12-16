@@ -42,14 +42,12 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="contents">
 <h1>PIO_init</h1>
 <p>Initializes the PIO subsystem.  
-<a href="#_details">More...</a></p>
+</p>
 <table border="0" cellpadding="0" cellspacing="0">
 <tr><td colspan="2"><h2>Functions/Subroutines</h2></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__init.html#gafd1cef696d56644349d9b57d8e501c61">init</a> (comp_rank, comp_comm, num_iotasks, num_aggregator, stride, rearr, IOsystem, base)</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Initialize the PIO subsystem.  <a href="#gafd1cef696d56644349d9b57d8e501c61"></a><br/></td></tr>
 </table>
-<hr/><a name="_details"></a><h2>Detailed Description</h2>
-<p>Initializes the PIO subsystem. </p>
 <hr/><h2>Function/Subroutine Documentation</h2>
 <a class="anchor" id="gafd1cef696d56644349d9b57d8e501c61"></a><!-- doxytag: member="piolib_mod::init" ref="gafd1cef696d56644349d9b57d8e501c61" args="(comp_rank, comp_comm, num_iotasks, num_aggregator, stride, rearr, IOsystem, base)" -->
 <div class="memitem">
@@ -111,8 +109,6 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
       </table>
 </div>
 <div class="memdoc">
-
-<p>Initialize the PIO subsystem. </p>
 <p>This is a collective call which expects: </p>
 <dl><dt><b>Parameters:</b></dt><dd>
   <table border="0" cellspacing="2" cellpadding="0">
@@ -121,14 +117,14 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
     <tr><td valign="top"></td><td valign="top"><em>num_iotasks</em>&nbsp;</td><td>The number of iotasks to define. </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>num_aggregator</em>&nbsp;</td><td>The MPI aggregator count </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>stride</em>&nbsp;</td><td>The stride in the MPI rank between io tasks. </td></tr>
-    <tr><td valign="top"></td><td valign="top"><em>rearr</em>&nbsp;</td><td>Whether PIO should initialize a rearranger function. </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>rearr</em>&nbsp;</td><td> </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>IOsystem</em>&nbsp;</td><td>a derived type which can be used in subsequent PIO operations (defined in <a class="el" href="namespacepio__types.html">pio_types</a>). </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>base</em>&nbsp;</td><td><em>Optional</em> argument can be used to offset the first io task - default base is task 1. </td></tr>
   </table>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l01108">1108</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
+<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l01112">1112</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
 
 <p><div class="dynheader">
 Here is the call graph for this function:</div>
@@ -156,7 +152,7 @@ Here is the call graph for this function:</div>
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Tue Dec 15 14:40:24 2009 for PIO User's Guide by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 13:41:12 2009 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

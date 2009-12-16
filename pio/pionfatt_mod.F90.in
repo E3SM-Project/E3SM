@@ -18,8 +18,8 @@ module pionfatt_mod
   include 'mpif.h'  ! _EXTERNAL 
 
 !>
-!!  \defgroup PIO_put_att PIO_put_att
-!!  Writes an netcdf attribute to a file 
+!!  @defgroup PIO_put_att PIO_put_att
+!!  @brief Writes an netcdf attribute to a file 
 !<
   public :: put_att
   interface put_att
@@ -29,8 +29,8 @@ module pionfatt_mod
   end interface
 
 !>
-!!  \defgroup PIO_get_att PIO_get_att
-!!  Reads  an netcdf attribute from a file 
+!!  @defgroup PIO_get_att PIO_get_att
+!!  @brief Reads  an netcdf attribute from a file 
 !<
   public :: get_att
   interface get_att
@@ -45,15 +45,15 @@ module pionfatt_mod
 contains
 
 !>
-!! \public 
-!! \ingroup PIO_put_att
-!! Writes an netcdf attribute to a file
-!!
-!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
-!! \param varid : The netcdf variable identifier
-!! \param name : name of the attribute to add
-!! \param value : The value for the netcdf attribute 
-!! \retval ierr : error return code 
+!! @public 
+!! @ingroup PIO_put_att
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid : The netcdf variable identifier
+!! @param name : name of the attribute to add
+!! @param value : The value for the netcdf attribute 
+!! @retval ierr : error return code 
 !<
   integer function put_att_{TYPE} (File, varid, name, value) result(ierr)
     type (File_desc_t), intent(inout) :: File
@@ -116,15 +116,15 @@ contains
 !pl The next line is needed by genf90.pl, do not remove it.
 ! TYPE real,double,int
 !>
-!! \public 
-!! \ingroup PIO_put_att
-!! Writes an netcdf attribute to a file
-!!
-!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
-!! \param varid : The netcdf variable identifier
-!! \param name : name of the attribute to add
-!! \param value : The value for the netcdf attribute 
-!! \retval ierr : error return code 
+!! @public 
+!! @ingroup PIO_put_att
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid : The netcdf variable identifier
+!! @param name : name of the attribute to add
+!! @param value : The value for the netcdf attribute 
+!! @retval ierr : error return code 
 !<
   integer function put_att_1d_{TYPE} (File, varid, name, value) result(ierr)
     type (File_desc_t), intent(inout) :: File
@@ -179,15 +179,15 @@ contains
   end function put_att_1d_{TYPE}
 
 !>
-!! \public 
-!! \ingroup PIO_put_att
-!! Writes an netcdf attribute to a file
-!!
-!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
-!! \param varDesc : A variable handle returned from \ref PIO_def_var
-!! \param name : name of the attribute to add
-!! \param value : The value for the netcdf attribute 
-!! \retval ierr : error return code 
+!! @public 
+!! @ingroup PIO_put_att
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varDesc @copydoc var_desc_t
+!! @param name : name of the attribute to add
+!! @param value : The value for the netcdf attribute 
+!! @retval ierr : error return code 
 !<
   integer function put_att_desc_{TYPE} (File,varDesc,name,value) result(ierr)
 
@@ -202,15 +202,15 @@ contains
 
 ! TYPE real,int,double
 !>
-!! \public 
-!! \ingroup PIO_put_att
-!! Writes an netcdf attribute to a file
-!!
-!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
-!! \param varDesc : A variable handle returned from \ref PIO_def_var
-!! \param name : name of the attribute to add
-!! \param value : The value for the netcdf attribute 
-!! \retval ierr : error return code 
+!! @public 
+!! @ingroup PIO_put_att
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varDesc @copydoc var_desc_t
+!! @param name : name of the attribute to add
+!! @param value : The value for the netcdf attribute 
+!! @retval ierr : error return code 
 !<
   integer function put_att_desc_1d_{TYPE} (File,varDesc,name,value) result(ierr)
 
@@ -227,15 +227,15 @@ contains
 
 
 !>
-!! \public 
-!! \ingroup PIO_get_att
-!! Reads an netcdf attribute from a  file
-!!
-!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
-!! \param varDesc : A variable handle returned from \ref PIO_def_var
-!! \param name : name of the attribute to get
-!! \param value : The value for the netcdf attribute 
-!! \retval ierr : error return code 
+!! @public 
+!! @ingroup PIO_get_att
+!! @brief Reads an netcdf attribute from a  file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varDesc @copydoc var_desc_t
+!! @param name : name of the attribute to get
+!! @param value : The value for the netcdf attribute 
+!! @retval ierr : error return code 
 !<
   integer function get_att_desc_{TYPE} (File,varDesc,name,value) result(ierr)
 
@@ -252,15 +252,15 @@ contains
 
 ! TYPE real,int,double
 !>
-!! \public 
-!! \ingroup PIO_get_att
-!! Reads an netcdf attribute from a  file
-!!
-!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
-!! \param varDesc : A variable handle returned from \ref PIO_def_var
-!! \param name : name of the attribute to get
-!! \param value : The value for the netcdf attribute 
-!! \retval ierr : error return code 
+!! @public 
+!! @ingroup PIO_get_att
+!! @brief Reads an netcdf attribute from a  file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varDesc @copydoc var_desc_t
+!! @param name : name of the attribute to get
+!! @param value : The value for the netcdf attribute 
+!! @retval ierr : error return code 
 !<
   integer function get_att_desc_1d_{TYPE} (File,varDesc,name,value) result(ierr)
 
@@ -276,15 +276,15 @@ contains
   end function get_att_desc_1d_{TYPE}
 
 !>
-!! \public 
-!! \ingroup PIO_get_att
-!! Reads an netcdf attribute from a  file
-!!
-!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
-!! \param varid : The netcdf variable identifier
-!! \param name : name of the attribute to get
-!! \param value : The value for the netcdf attribute 
-!! \retval ierr : error return code 
+!! @public 
+!! @ingroup PIO_get_att
+!! @brief Reads an netcdf attribute from a  file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid : The netcdf variable identifier
+!! @param name : name of the attribute to get
+!! @param value : The value for the netcdf attribute 
+!! @retval ierr : error return code 
 !<
   integer function get_att_{TYPE} (File,varid,name,value) result(ierr)
 
@@ -339,15 +339,15 @@ contains
 
 ! TYPE real,int,double
 !>
-!! \public 
-!! \ingroup PIO_get_att
-!! Reads an netcdf attribute from a  file
-!!
-!! \param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
-!! \param varid : The netcdf variable identifier
-!! \param name : name of the attribute to get
-!! \param value : The value for the netcdf attribute 
-!! \retval ierr : error return code 
+!! @public 
+!! @ingroup PIO_get_att
+!! @brief Reads an netcdf attribute from a  file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid : The netcdf variable identifier
+!! @param name : name of the attribute to get
+!! @param value : The value for the netcdf attribute 
+!! @retval ierr : error return code 
 !<
   integer function get_att_1d_{TYPE} (File,varid,name,value) result(ierr)
 
