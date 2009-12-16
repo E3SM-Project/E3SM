@@ -51,7 +51,7 @@ contains
 !! @param varid : The netcdf variable identifier
 !! @param index : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
   integer function put_var1_{TYPE} (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
@@ -108,7 +108,7 @@ contains
 !! @param vardesc @copydoc var_desc_t
 !! @param start : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
   integer function put_var1_vdesc_{TYPE} (File,vardesc, start, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
@@ -129,7 +129,7 @@ contains
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
   integer function put_var_{DIMS}d_{TYPE} (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
@@ -207,7 +207,7 @@ contains
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
   integer function put_var_vdesc_{DIMS}d_{TYPE} (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
@@ -229,7 +229,7 @@ contains
 !! @param start :
 !! @param count :
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
   integer function put_vara_{DIMS}d_{TYPE} (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
@@ -286,7 +286,7 @@ contains
 !! @param start : 
 !! @param count : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
   integer function put_vara_vdesc_{DIMS}d_{TYPE} (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File

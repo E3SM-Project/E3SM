@@ -43,7 +43,7 @@ CONTAINS
 !! @param varid : The netcdf variable identifier
 !! @param index :
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
   integer function get_var1_{TYPE} (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
@@ -115,7 +115,7 @@ CONTAINS
 !! @param vardesc @copydoc var_desc_t
 !! @param index :
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
   integer function get_var1_vdesc_{TYPE} (File,vardesc, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
@@ -141,7 +141,7 @@ CONTAINS
 !! @param start :
 !! @param count :
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
   integer function get_vara_{DIMS}d_{TYPE} (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
@@ -199,7 +199,7 @@ CONTAINS
 !! @param start :
 !! @param count :
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
   integer function get_vara_vdesc_{DIMS}d_{TYPE} (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
@@ -221,7 +221,7 @@ CONTAINS
 !! @param File @copydoc file_desc_t
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
   integer function get_var_{DIMS}d_{TYPE} (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
@@ -278,7 +278,7 @@ CONTAINS
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
   integer function get_var_vdesc_{DIMS}d_{TYPE} (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File

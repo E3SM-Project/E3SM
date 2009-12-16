@@ -50,6 +50,10 @@ module pio_types
 	! This holds the IODESC
     end type
     
+!> @public
+!! @defgroup file_desc_t file_desc_t
+!! @brief : File descriptor returned by \ref PIO_openfile or \ref PIO_createfile (see pio_types)
+!>
     type, public :: File_desc_t
        type(iosystem_desc_t), pointer :: iosystem
        integer(i4) :: fh
@@ -71,13 +75,21 @@ module pio_types
         integer(i4)         :: n_words
     end type IO_desc2_t
 
+!>
+!! @public
+!! @defgroup iodesc_generate iodesc_generate
+!! @brief The io descriptor structure in defined in this subroutine 
+!! and subsequently used in @ref PIO_read_darray, @ref PIO_write_darray,
+!! @ref PIO_put_var, @ref PIO_get_var calls (see pio_types).
+!<
 
-    !------------------------------------------------------
-    ! IO_desc_t
-    !------------------------------------------------------
-
-
-    type, public :: IO_desc_t
+!>
+!! @public
+!! @defgroup io_desc_t io_desc_t
+!! @brief : An io descriptor handle that is generated in @ref PIO_initdecomp 
+!! (see pio_types)
+!<
+   type, public :: IO_desc_t
 #ifdef SEQUENCE
 	sequence
 #endif
@@ -128,6 +140,11 @@ module pio_types
         integer(i4)         :: maxiobuflen   ! size of largest iobuffer
     end type
 
+!>
+!! @public
+!! @defgroup var_desc_t var_desc_t
+!! @brief : A variable descriptor returned from @ref PIO_def_var (see pio_types) 
+!<
     type, public :: Var_desc_t
 #ifdef SEQUENCE
 	sequence
@@ -138,7 +155,17 @@ module pio_types
                                  ! netcdf file
     end type 
 
-! !PUBLIC parameters:
+!>
+!! @defgroup PIO_iotype PIO_iotype
+!! @public
+!! @brief An integer parameter which controls the iotype
+!! @details
+!!   - iotype_pbinary : Use MPI-IO with to read/write C like binary file
+!!   - iotype_direct_pbinary: Use MPI-IO to read/write direct access binary files
+!!   - iotype_binary : serial read/write of binary files using 'base_node'
+!!   - iotype_pnetcdf : parallel read/write of pNetCDF files (netcdf3)
+!!   - iotype_netcdf : serial read/write of NetCDF files uing 'base_node' (netcdf3)
+!>
     integer(i4), public, parameter ::  &
         iotype_pbinary = 1, &! use MPI-IO with data types to read/write C like binary files
         iotype_direct_pbinary = 2,  & !use MPI-IO with data types to read/write direct access binary files
@@ -147,31 +174,50 @@ module pio_types
         iotype_netcdf  = 6      ! serial read/write of NetCDF file using 'base_node'
 
 
-! Constants to define rearranger type
-
+!>
+!! @defgroup PIO_rearr_method PIO_rearr_method
+!! @public 
+!! @brief The three choices to control rearrangement are:
+!! @details
+!!  - PIO_rearr_none : Do not use any form of rearrangement
+!!  - PIO_rearr_mct : Use MCT based rearrangement
+!!  - PIO_rearr_box : Use a PIO internal box rearrangement
+!>
     integer(i4), public, parameter :: PIO_rearr_none = 0
     integer(i4), public, parameter :: PIO_rearr_mct =  1
     integer(i4), public, parameter :: PIO_rearr_box =  2
 
 !> 
-!! \var foo
-!!  constants for error handling methods
-!!  Three choices for error handling:
-!!  -# abort on error from any task             PIO_INTERNAL_ERROR
-!!  -# broadcast an error from io_rank 0        PIO_BCAST_ERROR
-!!  -# do nothing - allow the user to handle it PIO_RETURN_ERROR
+!! @public 
+!! @defgroup PIO_error_method PIO_error_method
+!! @brief  The three types of error handling methods are: 
+!! @details
+!!  - PIO_INTERNAL_ERROR  : abort on error from any task
+!!  - PIO_BCAST_ERROR     : broadcast an error from io_rank 0
+!!  - PIO_RETURN_ERROR    : do nothing - allow the user to handle it
 !<
   integer(i4), public :: PIO_INTERNAL_ERROR = -51
   integer(i4), public :: PIO_BCAST_ERROR = -52
   integer(i4), public :: PIO_RETURN_ERROR = -53
 
+!>
+!! @public 
+!! @defgroup error_return error_return
+!! @brief : The error return code; ierr != PIO_noerr indicates
+!! an error. (see @ref PIO_seterrorhandling ) 
+!> 
 
 
-
-! pnetcdf/netcdf constants should be the same, but
-! have to pick one...
-
-
+!>
+!! @public 
+!! @defgroup PIO_kinds PIO_kinds
+!! @brief The base types supported by PIO are:
+!! @details
+!!  - PIO_double : 8-byte reals or double precision 
+!!  - PIO_real : 4-byte reals
+!!  - PIO_int :  4-byte integers
+!!  - PIO_char : character
+!<
 #ifdef _PNETCDF
 #include <pnetcdf.inc>   /* _EXTERNAL */
    integer, public, parameter :: PIO_global = nf_global
@@ -229,7 +275,6 @@ module pio_types
 
    public:: pio_type_to_mpi_type
 
-
 contains
 
 
@@ -259,7 +304,5 @@ contains
     end select
 
   end function pio_type_to_mpi_type
-
-
 
 end module pio_types

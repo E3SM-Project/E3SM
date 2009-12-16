@@ -43,13 +43,19 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <h2><a class="anchor" id="Introduction">
 Introduction</a></h2>
 <p>PIO is a software interface layer designed to encapsolate the complexities of parallel IO and make it easier to replace the lower level software backend. It currently supports netcdf (<a href="http://www.unidata.com">http://www.unidata.com</a>), pnetcdf (<a href="http://trac.mcs.anl.gov/projects/parallel-netcdf">http://trac.mcs.anl.gov/projects/parallel-netcdf</a>) and MPI-IO.</p>
-<p>PIO calls are collective, an MPI communicator is set in a call to PIO_init and all tasks associated with that communicator must participate in all subsequent calls to PIO. An application can make multiple calls to PIO in order to support multiple MPI communicators.</p>
-<p>To use PIO your program should begin by calling the piolib_mod::PIO_init function providing the MPI communicator and the rank within that communicator of the calling task. You should also provide the number of iotasks to be used, the stride or number of tasks between iotasks, and the number of mpi aggregators to be used. You may optionally also choose the base IO task, this task will be used for output of any non-decomposed data. This call initializes an IO system type structure that will be used in subsequent file and decomposition functions.</p>
-<p>You can then open a file for reading or writing with a call to piolib_mod::PIO_CreateFile or piolib_mod::PIO_OpenFile. In this call you will specify the file type (netcdf, pnetcdf, or binary) along with the file name and optionally the netcdf mode.</p>
-<p>To read or write decomposed data you must first describe the mapping between the organization of data in the file and that in the application space. This is done in a call to piolib_mod::PIO_initDecomp. In the simplist call to this function a one dimensional integer array is passed from each task the values in the array represent the 0 based offset from the beginning of the array on file.</p>
+<p>PIO calls are collective, an MPI communicator is set in a call to <a class="el" href="group__PIO__init.html">PIO_init</a> and all tasks associated with that communicator must participate in all subsequent calls to PIO. An application can make multiple calls to PIO in order to support multiple MPI communicators.</p>
+<p>To use PIO your program should begin by calling the <a class="el" href="group__PIO__init.html">PIO_init</a> function providing the MPI communicator and the rank within that communicator of the calling task. You should also provide the number of iotasks to be used, the stride or number of tasks between iotasks, and the number of mpi aggregators to be used. You may optionally also choose the base IO task, this task will be used for output of any non-decomposed data. This call initializes an IO system type structure that will be used in subsequent file and decomposition functions.</p>
+<p>You can then open a file for reading or writing with a call to <a class="el" href="group__PIO__createfile.html">PIO_createfile</a> or <a class="el" href="group__PIO__openfile.html">PIO_openfile</a>. In this call you will specify the file type (netcdf, pnetcdf, or binary) along with the file name and optionally the netcdf mode.</p>
+<p>To read or write decomposed data you must first describe the mapping between the organization of data in the file and that in the application space. This is done in a call to <a class="el" href="group__PIO__initdecomp.html">PIO_initdecomp</a>. In the simplist call to this function a one dimensional integer array is passed from each task the values in the array represent the 0 based offset from the beginning of the array on file.</p>
 <h2><a class="anchor" id="error">
 Error Handling</a></h2>
-<p>By default PIO handles errors internally by printing a string describing the error and then calling mpi_abort. Application developers can change this behaivior with a call to piolib_mod::PIO_SetErrorHandling. For example if a developer wanted to see if an input netcdf file contained the variable 'U' he might do</p>
+<p>By default PIO handles errors internally by printing a string describing the error and then calling mpi_abort. Application developers can change this behaivior with a call to <a class="el" href="group__PIO__seterrorhandling.html">PIO_seterrorhandling</a>. The three types of error handling methods are:. <ul>
+<li>PIO_INTERNAL_ERROR : abort on error from any task</li>
+<li>PIO_BCAST_ERROR : broadcast an error from io_rank 0</li>
+<li>PIO_RETURN_ERROR : do nothing - allow the user to handle it </li>
+</ul>
+</p>
+<p>For example if a developer wanted to see if an input netcdf file contained the variable 'U' they might do the following</p>
 <div class="fragment"><pre class="fragment"> call pio_seterrorhandling(File, PIO_BCAST_ERROR)
  ierr =  pio_inq_varid(File, 'U', uid)
  call pio_seterrorhandling(File, PIO_INTERNAL_ERROR)
@@ -74,7 +80,7 @@ Error Handling</a></h2>
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 13:41:12 2009 for PIO User's Guide by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 14:28:29 2009 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

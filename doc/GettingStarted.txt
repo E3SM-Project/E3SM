@@ -22,13 +22,13 @@ level software backend.  It currently supports netcdf
 (http://trac.mcs.anl.gov/projects/parallel-netcdf) and MPI-IO.
 
 PIO calls are collective, an MPI communicator is set in a call to
-PIO_init and all tasks associated with that communicator must
+\ref PIO_init and all tasks associated with that communicator must
 participate in all subsequent calls to PIO.  An application can make
 multiple calls to PIO in order to support multiple MPI communicators.
 
 
 To use PIO your program should begin by calling the
-piolib_mod::PIO_init function providing the MPI communicator and the
+\ref PIO_init function providing the MPI communicator and the
 rank within that communicator of the calling task.  You should also
 provide the number of iotasks to be used, the stride or number of
 tasks between iotasks, and the number of mpi aggregators to be used.
@@ -38,14 +38,14 @@ IO system type structure that will be used in subsequent file and
 decomposition functions.
 
 You can then open a file for reading or writing with a call to
-piolib_mod::PIO_CreateFile or piolib_mod::PIO_OpenFile. In this call you will
+\ref PIO_createfile or \ref PIO_openfile. In this call you will
 specify the file type (netcdf, pnetcdf, or binary) along with the file
 name and optionally the netcdf mode.  
 
 To read or write decomposed data you must first describe the mapping
 between the organization of data in the file and that in the
 application space.  This is done in a call to
-piolib_mod::PIO_initDecomp. In the simplist call to this function a
+\ref PIO_initdecomp. In the simplist call to this function a
 one dimensional integer array is passed from each task the values in
 the array represent the 0 based offset from the beginning of the array
 on file.   
@@ -56,9 +56,11 @@ on file.
 By default PIO handles errors internally by printing a string
 describing the error and then calling mpi_abort.  Application
 developers can change this behaivior with a call to
-piolib_mod::PIO_SetErrorHandling.  For example if a developer wanted
-to see if an input netcdf file contained the variable 'U' he might do
+\ref PIO_seterrorhandling. @copydoc PIO_error_method 
+
+For example if a developer wanted
+to see if an input netcdf file contained the variable 'U' they might do the following
 
 \verbinclude errorhandle
- 
+
 */

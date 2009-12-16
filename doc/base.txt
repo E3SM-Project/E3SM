@@ -17,7 +17,8 @@
 /*! \mainpage PIO Users Guide 
 
  - \ref GettingStarted
- - \subpage api
+ - \ref Decomp
+ - \ref api
  - \ref CAMexample
  - \ref FAQ
 */

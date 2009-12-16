@@ -92,7 +92,14 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <table border="0" cellspacing="2" cellpadding="0">
     <tr><td valign="top"></td><td valign="top"><em>IOsystem</em>&nbsp;</td><td>: a defined PIO system descriptor created by a call to <a class="el" href="group__PIO__init.html">PIO_init</a> (see <a class="el" href="namespacepio__types.html">pio_types</a>) </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>File</em>&nbsp;</td><td>: the returned File descriptor </td></tr>
-    <tr><td valign="top"></td><td valign="top"><em>iotype</em>&nbsp;</td><td>:  </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>iotype</em>&nbsp;</td><td>: An integer parameter which controls the iotype. <ul>
+<li>iotype_pbinary : Use MPI-IO with to read/write C like binary file</li>
+<li>iotype_direct_pbinary: Use MPI-IO to read/write direct access binary files</li>
+<li>iotype_binary : serial read/write of binary files using 'base_node'</li>
+<li>iotype_pnetcdf : parallel read/write of pNetCDF files (netcdf3)</li>
+<li>iotype_netcdf : serial read/write of NetCDF files uing 'base_node' (netcdf3) </li>
+</ul>
+ </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>fname</em>&nbsp;</td><td>: the name of the file to open </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>mode</em>&nbsp;</td><td>: the mode flag for the file open </td></tr>
   </table>
@@ -100,12 +107,12 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </dl>
 <dl><dt><b>Return values:</b></dt><dd>
   <table border="0" cellspacing="2" cellpadding="0">
-    <tr><td valign="top"></td><td valign="top"><em>ierr</em>&nbsp;</td><td>: the error return code </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>ierr</em>&nbsp;</td><td>: The error return code; ierr != PIO_noerr indicates an error. (see <a class="el" href="group__PIO__seterrorhandling.html">PIO_seterrorhandling</a> )  </td></tr>
   </table>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l01598">1598</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
+<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l01600">1600</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
 
 </div>
 </div>
@@ -124,7 +131,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 13:41:12 2009 for PIO User's Guide by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 14:28:30 2009 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

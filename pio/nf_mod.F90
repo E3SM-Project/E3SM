@@ -119,12 +119,12 @@ module nf_mod
   end interface
 
 !>
-!! \defgroup PIO_def_dim
+!! @defgroup PIO_def_dim
 !<
    public :: PIO_def_dim
 
 !>
-!! \defgroup PIO_enddef
+!! @defgroup PIO_enddef
 !<
   public :: PIO_enddef
 
@@ -431,15 +431,16 @@ contains
   end subroutine bad_iotype
 
 !>
-!! \public 
-!! \ingroup PIO_inquire
-!! Gets metadata information for netcdf file.
-!! \param File : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile
-!! \param nDimensions :  Number of dimensions defined for the netcdf file
-!! \param nVariables : Number of variables defined for the netcdf file 
-!! \param nAttributes : Number of attributes defined for the netcdf file
-!! \param unlimitedDimID : the Unlimited dimension ID
-!! \retval ierr : error return code
+!! @public 
+!! @ingroup PIO_inquire
+!! @brief Gets metadata information for netcdf file.
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param nDimensions :  Number of dimensions defined for the netcdf file
+!! @param nVariables : Number of variables defined for the netcdf file 
+!! @param nAttributes : Number of attributes defined for the netcdf file
+!! @param unlimitedDimID : the Unlimited dimension ID
+!! @retval ierr @copydoc error_return
 !>
   integer function pio_inquire(File,nDimensions,nVariables,nAttributes,unlimitedDimID) result(ierr)
     type (File_desc_t), intent(in) :: File
@@ -514,15 +515,16 @@ contains
   end function pio_inquire
 
 !>
-!! \public 
-!! \ingroup PIO_inq_att
-!!  Gets information about attributes
-!! \param File : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile
-!! \param varid : The netcdf variable identifier
-!! \param name : Name of the attribute 
-!! \param xtype : The type of attribute
-!! \param len : The length of the attribute 
-!! \retval ierr : error return code
+!! @public 
+!! @ingroup PIO_inq_att
+!! @brief Gets information about attributes
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid : The netcdf variable identifier
+!! @param name : Name of the attribute 
+!! @param xtype : The type of attribute
+!! @param len : The length of the attribute 
+!! @retval ierr @copydoc error_return
 !>
   integer function inq_att_vid(File,varid,name,xtype,len) result(ierr)
 
@@ -586,15 +588,16 @@ contains
 
 
 !>
-!! \public 
-!! \ingroup PIO_inq_att
-!!  Gets information about attributes
-!! \param File : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile
-!! \param vardesc : The variable descriptor
-!! \param name : Name of the attribute 
-!! \param xtype : The type of attribute
-!! \param len : The length of the attribute 
-!! \retval ierr : error return code
+!! @public 
+!! @ingroup PIO_inq_att
+!! @brief  Gets information about attributes
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param vardesc @copydoc var_desc_t
+!! @param name : Name of the attribute 
+!! @param xtype : The type of attribute
+!! @param len : The length of the attribute 
+!! @retval ierr @copydoc error_return
 !>
   integer function inq_att_vardesc(File,vardesc,name,xtype,len) result(ierr)
 
@@ -609,14 +612,15 @@ contains
   end function inq_att_vardesc
 
 !>
-!! \public 
-!! \ingroup PIO_inq_attlen
-!!  Gets the attribute length 
-!! \param File : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile
-!! \param varid : attribute id
-!! \param name : name of attribute
-!! \param len : Length of attribute
-!! \retval ierr : error return code
+!! @public 
+!! @ingroup PIO_inq_attlen
+!! @brief Gets the attribute length 
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid : attribute id
+!! @param name : name of attribute
+!! @param len : Length of attribute
+!! @retval ierr @copydoc error_return
 !>
   integer function inq_attlen_vid(File,varid,name,len) result(ierr)
 
@@ -675,14 +679,15 @@ contains
   end function inq_attlen_vid
 
 !>
-!! \public 
-!! \ingroup PIO_inq_attlen
-!!  Gets the attribute length 
-!! \param File : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile
-!! \param vardesc : The variable descriptor
-!! \param name : name of attribute
-!! \param len : Length of attribute
-!! \retval ierr : error return code
+!! @public 
+!! @ingroup PIO_inq_attlen
+!! @brief  Gets the attribute length 
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param vardesc @copydoc var_desc_t
+!! @param name : name of attribute
+!! @param len : Length of attribute
+!! @retval ierr @copydoc error_return
 !>
   integer function inq_attlen_vardesc(File,vardesc,name,len) result(ierr)
 
@@ -695,14 +700,16 @@ contains
 
   end function inq_attlen_vardesc
 
-!> \public 
-!! \ingroup PIO_inq_attname
-!!  Returns the name of a netcdf attribute 
-!! \param File : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile
-!!  \param varid :  The variable ID 
-!!  \param attnum : Attribute number returned from function ????
-!!  \param name   : Name of the returned attribute
-!!  \retval ierr  : Error return code 
+!> 
+!! @public 
+!! @ingroup PIO_inq_attname
+!! @brief Returns the name of a netcdf attribute 
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid :  The variable ID 
+!! @param attnum : Attribute number returned from function ????
+!! @param name   : Name of the returned attribute
+!! @retval ierr @copydoc error_return
 !<
   integer function inq_attname_vid(File,varid,attnum,name) result(ierr)
 
@@ -754,33 +761,36 @@ contains
 
   end function inq_attname_vid
 
-!> \public 
-!! \ingroup PIO_inq_attname
-!!  Returns the name of a netcdf attribute.
-!! \param File : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile
-!! \param vdesc :  Variable descriptor 
-!! \param attnum : Attribute number returned from function ????
-!! \param name   : Name of the returned attribute
-!! \retval ierr  : Error return code 
-!!
+!> 
+!! @public 
+!! @ingroup PIO_inq_attname
+!! @brief  Returns the name of a netcdf attribute.
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param vardesc @copydoc var_desc_t 
+!! @param attnum : Attribute number returned from function ????
+!! @param name   : Name of the returned attribute
+!! @retval ierr @copydoc error_return
 !<
-  integer function inq_attname_vardesc(File,vdesc,attnum,name) result(ierr)
+  integer function inq_attname_vardesc(File,vardesc,attnum,name) result(ierr)
     type (File_desc_t), intent(inout) :: File
-    type(var_desc_t), intent(in)           :: vdesc
+    type(var_desc_t), intent(in)           :: vardesc
     integer, intent(in)              :: attnum !Attribute number
     character(len=*), intent(out)     :: name
 
-    ierr = pio_inq_attname(file, vdesc%varid, attnum, name)
+    ierr = pio_inq_attname(file, vardesc%varid, attnum, name)
 
   end function inq_attname_vardesc
 
-!> \public 
-!! \ingroup PIO_inq_varid
-!!  Returns the ID of a netcdf variable given its name 
-!! \param File : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile
-!! \param name : Name of the returned attribute
-!! \param varid : variable ID
-!! \retval ierr : error return code
+!> 
+!! @public 
+!! @ingroup PIO_inq_varid
+!! @brief  Returns the ID of a netcdf variable given its name 
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param name : Name of the returned attribute
+!! @param varid : variable ID
+!! @retval ierr @copydoc error_return
 !<
   integer function inq_varid_vid(File,name,varid) result(ierr)
 
@@ -828,13 +838,15 @@ contains
     call MPI_BCAST(ierr,1,MPI_INTEGER,File%iosystem%IOMaster,File%iosystem%Comp_comm,ierr2)
   end function inq_varid_vid
 
-!> \public 
-!! \ingroup PIO_inq_varid
-!!  Returns the ID of a netcdf variable given its name 
-!! \param File : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile
-!! \param name   : Name of the returned attribute
-!! \param varDesc : A variable handle returned from \ref PIO_def_var
-!! \retval ierr  : error return code
+!> 
+!! @public 
+!! @ingroup PIO_inq_varid
+!! @brief Returns the ID of a netcdf variable given its name 
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param name   : Name of the returned attribute
+!! @param varDesc @copydoc var_desc_t
+!! @retval ierr @copydoc error_return
 !<
   integer function inq_varid_vardesc(File,name,varDesc) result(ierr)
 
@@ -847,13 +859,14 @@ contains
   end function inq_varid_vardesc
 
 !>
-!! \public 
-!! \ingroup PIO_inq_varname
-!! Get the name associated with a variable
-!! \param File : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile
-!! \param varDesc : A variable handle returned from \ref PIO_def_var
-!! \param name : The name of the netcdf variable.
-!! \retval ierr : error return code
+!! @public 
+!! @ingroup PIO_inq_varname
+!! @brief Get the name associated with a variable
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varDesc @copydoc var_desc_t
+!! @param name : The name of the netcdf variable.
+!! @retval ierr @copydoc error_return
 !>
   integer function inq_varname_vdesc(File,varDesc,name) result(ierr)
 
@@ -866,13 +879,14 @@ contains
   end function inq_varname_vdesc
 
 !>
-!! \public 
-!! \ingroup PIO_inq_varname
-!! Get the name associated with a variable
-!! \param File : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile
-!! \param varid : The netcdf variable id.
-!! \param name : The name of the netcdf variable.
-!! \retval ierr : error return code
+!! @public 
+!! @ingroup PIO_inq_varname
+!! @brief Get the name associated with a variable
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid : The netcdf variable id.
+!! @param name : The name of the netcdf variable.
+!! @retval ierr @copydoc error_return
 !>
   integer function inq_varname_vid(File,varid,name) result(ierr)
 
@@ -922,13 +936,14 @@ contains
   end function inq_varname_vid
 
 !>
-!! \public 
-!! \ingroup PIO_inq_varndims
-!! Gets the number of dimension associated with a netcdf variable
-!! \param File : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile
-!! \param varid : The variable identifier
-!! \param ndims : The number of dimensions for the variable 
-!! \retval ierr : error return code
+!! @public 
+!! @ingroup PIO_inq_varndims
+!! @brief Gets the number of dimension associated with a netcdf variable
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid : The variable identifier
+!! @param ndims : The number of dimensions for the variable 
+!! @retval ierr @copydoc error_return
 !>
   integer function inq_varndims_vid(File,varid,ndims) result(ierr)
 
@@ -979,13 +994,14 @@ contains
   end function inq_varndims_vid
 
 !>
-!! \public 
-!! \ingroup PIO_inq_varndims
-!! Gets the number of dimension associated with a netcdf variable
-!! \param File : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile
-!! \param varDesc : A variable handle returned from \ref PIO_def_var
-!! \param ndims : The number of dimensions for the variable 
-!! \retval ierr : error return code
+!! @public 
+!! @ingroup PIO_inq_varndims
+!! @brief Gets the number of dimension associated with a netcdf variable
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varDesc @copydoc var_desc_t
+!! @param ndims : The number of dimensions for the variable 
+!! @retval ierr @copydoc error_return
 !>
   integer function inq_varndims_vdesc(File,varDesc,ndims) result(ierr)
 
@@ -997,13 +1013,14 @@ contains
   end function inq_varndims_vdesc
 
 !>
-!! \public 
-!! \ingroup PIO_inq_vartype
-!! Gets metadata information for netcdf file.
-!! \param File : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile
-!! \param varid : The netcdf variable id
-!! \param type : The type of variable
-!! \retval ierr : error return code
+!! @public 
+!! @ingroup PIO_inq_vartype
+!! @brief Gets metadata information for netcdf file.
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid : The netcdf variable id
+!! @param type : The type of variable
+!! @retval ierr @copydoc error_return
 !>
   integer function inq_vartype_vid(File,varid,type) result(ierr)
 
@@ -1054,13 +1071,14 @@ contains
   end function inq_vartype_vid
 
 !>
-!! \public 
-!! \ingroup PIO_inq_vartype
-!! Gets metadata information for netcdf file.
-!! \param File : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile
-!! \param varDesc : A variable handle returned from \ref PIO_def_var
-!! \param type : The type of variable
-!! \retval ierr : error return code
+!! @public 
+!! @ingroup PIO_inq_vartype
+!! @brief Gets metadata information for netcdf file.
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varDesc @copydoc var_desc_t
+!! @param type : The type of variable
+!! @retval ierr @copydoc error_return
 !>
   integer function inq_vartype_vdesc(File,varDesc,type) result(ierr)
 
@@ -1072,13 +1090,14 @@ contains
   end function inq_vartype_vdesc
 
 !>
-!! \public 
-!! \ingroup PIO_inq_vardimid
-!! returns the dimids of the variable as an interger array
-!! \param File : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile
-!! \param varid : The variable id
-!! \param dimids : The dimension identifier returned by \ref PIO_def_dim
-!! \retval ierr : error return code
+!! @public 
+!! @ingroup PIO_inq_vardimid
+!! @brief returns the dimids of the variable as an interger array
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid : The variable id
+!! @param dimids : The dimension identifier returned by \ref PIO_def_dim
+!! @retval ierr @copydoc error_return
 !>
   integer function inq_vardimid_vid(File,varid,dimids) result(ierr)
 
@@ -1128,13 +1147,14 @@ contains
   end function inq_vardimid_vid
 
 !>
-!! \public 
-!! \ingroup PIO_inq_vardimid
-!! returns the dimids of the variable as an interger array
-!! \param File : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile
-!! \param varDesc : A variable handle returned from \ref PIO_def_var
-!! \param dimids : The dimension identifier returned by \ref PIO_def_dim
-!! \retval ierr : error return code
+!! @public 
+!! @ingroup PIO_inq_vardimid
+!! @brief returns the dimids of the variable as an interger array
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varDesc @copydoc var_desc_t
+!! @param dimids : The dimension identifier returned by \ref PIO_def_dim
+!! @retval ierr @copydoc error_return
 !>
   integer function inq_vardimid_vdesc(File,varDesc,dimids) result(ierr)
 
@@ -1147,13 +1167,14 @@ contains
   end function inq_vardimid_vdesc
 
 !>
-!! \public 
-!! \ingroup PIO_inq_varnatts
-!! Returns the number of attributes associated with a varaible
-!! \param File : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile
-!! \param varid : The netcdf variable id
-!! \param natts : The number of attributes associated with the variable
-!! \retval ierr : error return code
+!! @public 
+!! @ingroup PIO_inq_varnatts
+!! @brief Returns the number of attributes associated with a varaible
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid : The netcdf variable id
+!! @param natts : The number of attributes associated with the variable
+!! @retval ierr @copydoc error_return
 !>
   integer function inq_varnatts_vid(File,varid,natts) result(ierr)
 
@@ -1201,13 +1222,14 @@ contains
   end function inq_varnatts_vid
 
 !>
-!! \public 
-!! \ingroup PIO_inq_varnatts
-!! Returns the number of attributes associated with a varaible
-!! \param File : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile
-!! \param varDesc : A variable handle returned from \ref PIO_def_var
-!! \param natts : The number of attributes associated with the variable
-!! \retval ierr : error return code
+!! @public 
+!! @ingroup PIO_inq_varnatts
+!! @brief Returns the number of attributes associated with a varaible
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varDesc @copydoc var_desc_t
+!! @param natts : The number of attributes associated with the variable
+!! @retval ierr @copydoc error_return
 !>
   integer function inq_varnatts_vdesc(File,varDesc,natts) result(ierr)
 
@@ -1220,13 +1242,14 @@ contains
   end function inq_varnatts_vdesc
 
 !>
-!! \public 
-!! \ingroup PIO_inq_dimid
-!! Returns the netcdf dimension id for the name.
-!! \param File : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile.
-!! \param name : The name of the netcdf dimension.
-!! \param dimid : The netcdf dimension id.
-!! \retval ierr : error return code
+!! @public 
+!! @ingroup PIO_inq_dimid
+!! @brief Returns the netcdf dimension id for the name.
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param name : The name of the netcdf dimension.
+!! @param dimid : The netcdf dimension id.
+!! @retval ierr @copydoc error_return
 !!
 !! Note that we do not want internal error checking for this funtion.
 !>
@@ -1280,13 +1303,14 @@ contains
   end function pio_inq_dimid
 
 !>
-!! \public 
-!! \ingroup PIO_inq_dimname
-!! Gets the name of a dimension given its ID
-!! \param File : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile
-!! \param dimid : The netcdf dimension id.
-!! \param dimname : The name associated with the netcdf dimension id.
-!! \retval ierr : error return code
+!! @public 
+!! @ingroup PIO_inq_dimname
+!! @brief Gets the name of a dimension given its ID
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param dimid : The netcdf dimension id.
+!! @param dimname : The name associated with the netcdf dimension id.
+!! @retval ierr @copydoc error_return
 !>
   integer function pio_inq_dimname(File,dimid,dimname) result(ierr)
 
@@ -1337,13 +1361,14 @@ contains
   end function pio_inq_dimname
 
 !>
-!! \public 
-!! \ingroup PIO_inq_dimlen
-!! Returns the extent of a netCDF dimension 
-!! \param File : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile.
-!! \param dimid : The netcdf dimension.
-!! \param dimlen : The extent of the netcdf dimension.
-!! \retval ierr : error return code.
+!! @public 
+!! @ingroup PIO_inq_dimlen
+!! @brief Returns the extent of a netCDF dimension 
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param dimid : The netcdf dimension.
+!! @param dimlen : The extent of the netcdf dimension.
+!! @retval ierr @copydoc error_return
 !>
   integer function pio_inq_dimlen(File,dimid,dimlen) result(ierr)
 
@@ -1397,11 +1422,13 @@ contains
 
   end function pio_inq_dimlen
 
-!> \public
-!! \ingroup PIO_enddef
-!!  Exits netcdf define mode.
-!! \param File : File descriptor returned by \ref PIO_openfile or \ref PIO_createfile
-!! \retval ierr : error return code
+!> 
+!! @public
+!! @ingroup PIO_enddef
+!! @brief Exits netcdf define mode.
+!! @details
+!! @param File @copydoc file_desc_t
+!! @retval ierr @copydoc error_return
 !<
   integer function PIO_enddef(File) result(ierr)
     type (File_desc_t), intent(inout) :: File
@@ -1444,11 +1471,13 @@ contains
     call check_netcdf(File, ierr,_FILE_,__LINE__)
   end function PIO_enddef
 
-!> \public
-!! \ingroup PIO_redef
-!!  Reinters  netcdf define mode.
-!! \param File : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile
-!! \retval ierr : Error return code
+!> 
+!! @public
+!! @ingroup PIO_redef
+!! @brief Reinters  netcdf define mode.
+!! @details
+!! @param File @copydoc file_desc_t
+!! @retval ierr @copydoc error_return
 !<
   integer function PIO_redef(File) result(ierr)
     type (File_desc_t), intent(inout) :: File
@@ -1491,13 +1520,15 @@ contains
     call check_netcdf(File, ierr,_FILE_,__LINE__)
   end function PIO_redef
 
-!> \public
-!! \ingroup PIO_def_dim
-!! Defines the netcdf dimension
-!! \param File : File descriptor returned by \ref PIO_openfile or \ref PIO_createfile
-!! \param name : The name of the dimension to define
-!! \param len :  The size of the dimension
-!! \param dimid : The dimension identifier
+!> 
+!! @public
+!! @ingroup PIO_def_dim
+!! @brief Defines the netcdf dimension
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param name : The name of the dimension to define
+!! @param len :  The size of the dimension
+!! @param dimid : The dimension identifier
 !<
   integer function PIO_def_dim(File,name,len,dimid) result(ierr)
 
@@ -1550,14 +1581,16 @@ contains
     end if
   end function PIO_def_dim
 
-!> \public 
-!! \ingroup PIO_def_var
-!! Defines a netcdf variable
-!! \param File : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile
-!! \param name : The name of the variable to define
-!! \param type : The type of variable 
-!! \param varDesc : A variable handle returned from \ref PIO_def_var
-!! \retval ierr : Error return code
+!> 
+!! @public 
+!! @ingroup PIO_def_var
+!! @brief Defines a netcdf variable
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param name : The name of the variable to define
+!! @param type : The type of variable 
+!! @param varDesc @copydoc var_desc_t
+!! @retval ierr @copydoc error_return
 !<
   integer function def_var_0d(File,name,type,varDesc) result(ierr)
 
@@ -1569,17 +1602,19 @@ contains
 
     ierr = def_var_md(File,name,type,dimids(1:len),vardesc)
 
-  end function def_var_0d
+  end function def_va_r0d
 
-!> \public
-!! \ingroup PIO_def_var
-!! Defines the a netcdf variable
-!! \param File : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile
-!! \param name : The name of the variable to define
-!! \param type : The type of variable 
-!! \param dimids : The dimension identifier returned by \ref PIO_def_dim
-!! \param varDesc : The returned variable descriptor
-!! \retval ierr : Error return code
+!> 
+!! @public
+!! @ingroup PIO_def_var
+!! @brief Defines the a netcdf variable
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param name : The name of the variable to define
+!! @param type : The type of variable 
+!! @param dimids : The dimension identifier returned by \ref PIO_def_dim
+!! @param varDesc @copydoc var_desc_t
+!! @retval ierr @copydoc error_return
 !<
   integer function def_var_md(File,name,type,dimids,varDesc) result(ierr)
 
@@ -1639,18 +1674,19 @@ contains
     if(File%iosystem%num_tasks>File%iosystem%num_iotasks) then
        call MPI_BCAST(vardesc%varid, 1, MPI_INTEGER, File%iosystem%IOMaster, File%iosystem%Comp_Comm, ierr)
     end if
-  end function def_var_md
+  end function def_va_rmd
 
 !>
-!! \public
-!! \ingroup PIO_copy_att
-!! Not idea what this function does
-!! \param infile : 
-!! \param invarid :
-!! \param name : 
-!! \param outfile :
-!! \param outvarid :
-!! \retval ierr : Error return code
+!! @public
+!! @ingroup PIO_copy_att
+!! @brief No idea what this function does
+!! @details 
+!! @param infile @copydoc file_desc_t
+!! @param invarid :
+!! @param name : 
+!! @param outfile :
+!! @param outvarid :
+!! @retval ierr @copydoc error_return
 !<
   integer function pio_copy_att(infile, invarid, name, outfile, outvarid) result(ierr)
 
@@ -1686,17 +1722,18 @@ contains
 
 
 !>
-!! \public 
-!! \ingroup PIO_inquire_variable
-!! Inquires if a NetCDF variable is present and returns its attributes  
-!! \param ncid : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile.
-!! \param varid : The netcdf variable ID.
-!! \param name : The name of the variable
-!! \param xtype : The type of the variable
-!! \param ndims : The number of dimensions for the variable.
-!! \param dimids : The dimension identifier returned by \ref PIO_def_dim
-!! \param natts : Number of attributes associated with the variable
-!! \retval ierr : error return code
+!! @public 
+!! @ingroup PIO_inquire_variable
+!! @brief Inquires if a NetCDF variable is present and returns its attributes  
+!! @details
+!! @param ncid : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile.
+!! @param varid : The netcdf variable ID.
+!! @param name : The name of the variable
+!! @param xtype : The type of the variable
+!! @param ndims : The number of dimensions for the variable.
+!! @param dimids : The dimension identifier returned by \ref PIO_def_dim
+!! @param natts : Number of attributes associated with the variable
+!! @retval ierr @copydoc error_return
 !>
   integer function inquire_variable_vid(ncid, varid, name, xtype, ndims, dimids, natts) result(ierr)
     type(file_desc_t), intent(in) :: ncid
@@ -1718,17 +1755,18 @@ contains
   end function inquire_variable_vid
 
 !>
-!! \public 
-!! \ingroup PIO_inquire_variable
-!! Inquires if a NetCDF variable is present and returns its attributes  
-!! \param ncid : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile.
-!! \param vardesc : The variable descriptor of variable.
-!! \param name : The name of the variable
-!! \param xtype : The type of the variable
-!! \param ndims : The number of dimensions for the variable.
-!! \param dimids : The dimension identifier returned by \ref PIO_def_dim
-!! \param natts : Number of attributes associated with the variable
-!! \retval ierr : error return code
+!! @public 
+!! @ingroup PIO_inquire_variable
+!! @brief Inquires if a NetCDF variable is present and returns its attributes  
+!! @details
+!! @param ncid : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile.
+!! @param vardesc @copydoc var_desc_t
+!! @param name : The name of the variable
+!! @param xtype : The type of the variable
+!! @param ndims : The number of dimensions for the variable.
+!! @param dimids : The dimension identifier returned by \ref PIO_def_dim
+!! @param natts : Number of attributes associated with the variable
+!! @retval ierr @copydoc error_return
 !>
   integer function inquire_variable_vdesc(ncid, vardesc, name, xtype, ndims, dimids, natts) result(ierr)
     type(file_desc_t),               intent(in) :: ncid
@@ -1747,14 +1785,15 @@ contains
   end function inquire_variable_vdesc
 
 !>
-!! \public 
-!! \ingroup PIO_inquire_dimension
-!!  Get information about a particular dimension in netcdf file 
-!! \param ncid : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile.
-!! \param dimid : The netcdf dimension ID.
-!! \param name : The name of the dimension.
-!! \param len : The length of the dimesions name.
-!! \retval ierr : error return code
+!! @public 
+!! @ingroup PIO_inquire_dimension
+!! @brief  Get information about a particular dimension in netcdf file 
+!! @details
+!! @param ncid : A netcdf file descriptor returned by \ref PIO_openfile or \ref PIO_createfile.
+!! @param dimid : The netcdf dimension ID.
+!! @param name : The name of the dimension.
+!! @param len : The length of the dimesions name.
+!! @retval ierr @copydoc error_return
 !>
   integer function PIO_inquire_dimension(ncid, dimid, name, len) result(ierr)
     type(file_desc_T),             intent(in)  :: ncid

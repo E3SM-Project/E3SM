@@ -147,7 +147,7 @@ contains
 !! @param varid : The netcdf variable identifier
 !! @param index : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 56 "pionfput_mod.F90.in"
   integer function put_var1_text (File,varid, index, ival) result(ierr)
@@ -205,7 +205,7 @@ contains
 !! @param varid : The netcdf variable identifier
 !! @param index : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 56 "pionfput_mod.F90.in"
   integer function put_var1_real (File,varid, index, ival) result(ierr)
@@ -263,7 +263,7 @@ contains
 !! @param varid : The netcdf variable identifier
 !! @param index : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 56 "pionfput_mod.F90.in"
   integer function put_var1_double (File,varid, index, ival) result(ierr)
@@ -321,7 +321,7 @@ contains
 !! @param varid : The netcdf variable identifier
 !! @param index : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 56 "pionfput_mod.F90.in"
   integer function put_var1_int (File,varid, index, ival) result(ierr)
@@ -379,7 +379,7 @@ contains
 !! @param vardesc @copydoc var_desc_t
 !! @param start : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 113 "pionfput_mod.F90.in"
   integer function put_var1_vdesc_text (File,vardesc, start, ival) result(ierr)
@@ -400,7 +400,7 @@ contains
 !! @param vardesc @copydoc var_desc_t
 !! @param start : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 113 "pionfput_mod.F90.in"
   integer function put_var1_vdesc_real (File,vardesc, start, ival) result(ierr)
@@ -421,7 +421,7 @@ contains
 !! @param vardesc @copydoc var_desc_t
 !! @param start : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 113 "pionfput_mod.F90.in"
   integer function put_var1_vdesc_double (File,vardesc, start, ival) result(ierr)
@@ -442,7 +442,7 @@ contains
 !! @param vardesc @copydoc var_desc_t
 !! @param start : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 113 "pionfput_mod.F90.in"
   integer function put_var1_vdesc_int (File,vardesc, start, ival) result(ierr)
@@ -464,7 +464,7 @@ contains
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 134 "pionfput_mod.F90.in"
   integer function put_var_0d_text (File,varid, ival) result(ierr)
@@ -545,7 +545,7 @@ contains
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 134 "pionfput_mod.F90.in"
   integer function put_var_1d_text (File,varid, ival) result(ierr)
@@ -626,7 +626,7 @@ contains
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 134 "pionfput_mod.F90.in"
   integer function put_var_2d_text (File,varid, ival) result(ierr)
@@ -707,7 +707,7 @@ contains
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 134 "pionfput_mod.F90.in"
   integer function put_var_3d_text (File,varid, ival) result(ierr)
@@ -788,7 +788,7 @@ contains
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 134 "pionfput_mod.F90.in"
   integer function put_var_4d_text (File,varid, ival) result(ierr)
@@ -869,7 +869,7 @@ contains
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 134 "pionfput_mod.F90.in"
   integer function put_var_5d_text (File,varid, ival) result(ierr)
@@ -950,7 +950,7 @@ contains
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 134 "pionfput_mod.F90.in"
   integer function put_var_0d_real (File,varid, ival) result(ierr)
@@ -1031,7 +1031,7 @@ contains
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 134 "pionfput_mod.F90.in"
   integer function put_var_1d_real (File,varid, ival) result(ierr)
@@ -1112,7 +1112,7 @@ contains
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 134 "pionfput_mod.F90.in"
   integer function put_var_2d_real (File,varid, ival) result(ierr)
@@ -1193,7 +1193,7 @@ contains
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 134 "pionfput_mod.F90.in"
   integer function put_var_3d_real (File,varid, ival) result(ierr)
@@ -1274,7 +1274,7 @@ contains
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 134 "pionfput_mod.F90.in"
   integer function put_var_4d_real (File,varid, ival) result(ierr)
@@ -1355,7 +1355,7 @@ contains
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 134 "pionfput_mod.F90.in"
   integer function put_var_5d_real (File,varid, ival) result(ierr)
@@ -1436,7 +1436,7 @@ contains
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 134 "pionfput_mod.F90.in"
   integer function put_var_0d_double (File,varid, ival) result(ierr)
@@ -1517,7 +1517,7 @@ contains
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 134 "pionfput_mod.F90.in"
   integer function put_var_1d_double (File,varid, ival) result(ierr)
@@ -1598,7 +1598,7 @@ contains
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 134 "pionfput_mod.F90.in"
   integer function put_var_2d_double (File,varid, ival) result(ierr)
@@ -1679,7 +1679,7 @@ contains
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 134 "pionfput_mod.F90.in"
   integer function put_var_3d_double (File,varid, ival) result(ierr)
@@ -1760,7 +1760,7 @@ contains
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 134 "pionfput_mod.F90.in"
   integer function put_var_4d_double (File,varid, ival) result(ierr)
@@ -1841,7 +1841,7 @@ contains
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 134 "pionfput_mod.F90.in"
   integer function put_var_5d_double (File,varid, ival) result(ierr)
@@ -1922,7 +1922,7 @@ contains
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 134 "pionfput_mod.F90.in"
   integer function put_var_0d_int (File,varid, ival) result(ierr)
@@ -2003,7 +2003,7 @@ contains
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 134 "pionfput_mod.F90.in"
   integer function put_var_1d_int (File,varid, ival) result(ierr)
@@ -2084,7 +2084,7 @@ contains
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 134 "pionfput_mod.F90.in"
   integer function put_var_2d_int (File,varid, ival) result(ierr)
@@ -2165,7 +2165,7 @@ contains
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 134 "pionfput_mod.F90.in"
   integer function put_var_3d_int (File,varid, ival) result(ierr)
@@ -2246,7 +2246,7 @@ contains
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 134 "pionfput_mod.F90.in"
   integer function put_var_4d_int (File,varid, ival) result(ierr)
@@ -2327,7 +2327,7 @@ contains
 !! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 134 "pionfput_mod.F90.in"
   integer function put_var_5d_int (File,varid, ival) result(ierr)
@@ -2407,7 +2407,7 @@ contains
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 212 "pionfput_mod.F90.in"
   integer function put_var_vdesc_0d_text (File, vardesc, ival) result(ierr)
@@ -2428,7 +2428,7 @@ contains
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 212 "pionfput_mod.F90.in"
   integer function put_var_vdesc_1d_text (File, vardesc, ival) result(ierr)
@@ -2449,7 +2449,7 @@ contains
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 212 "pionfput_mod.F90.in"
   integer function put_var_vdesc_2d_text (File, vardesc, ival) result(ierr)
@@ -2470,7 +2470,7 @@ contains
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 212 "pionfput_mod.F90.in"
   integer function put_var_vdesc_3d_text (File, vardesc, ival) result(ierr)
@@ -2491,7 +2491,7 @@ contains
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 212 "pionfput_mod.F90.in"
   integer function put_var_vdesc_4d_text (File, vardesc, ival) result(ierr)
@@ -2512,7 +2512,7 @@ contains
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 212 "pionfput_mod.F90.in"
   integer function put_var_vdesc_5d_text (File, vardesc, ival) result(ierr)
@@ -2533,7 +2533,7 @@ contains
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 212 "pionfput_mod.F90.in"
   integer function put_var_vdesc_0d_real (File, vardesc, ival) result(ierr)
@@ -2554,7 +2554,7 @@ contains
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 212 "pionfput_mod.F90.in"
   integer function put_var_vdesc_1d_real (File, vardesc, ival) result(ierr)
@@ -2575,7 +2575,7 @@ contains
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 212 "pionfput_mod.F90.in"
   integer function put_var_vdesc_2d_real (File, vardesc, ival) result(ierr)
@@ -2596,7 +2596,7 @@ contains
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 212 "pionfput_mod.F90.in"
   integer function put_var_vdesc_3d_real (File, vardesc, ival) result(ierr)
@@ -2617,7 +2617,7 @@ contains
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 212 "pionfput_mod.F90.in"
   integer function put_var_vdesc_4d_real (File, vardesc, ival) result(ierr)
@@ -2638,7 +2638,7 @@ contains
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 212 "pionfput_mod.F90.in"
   integer function put_var_vdesc_5d_real (File, vardesc, ival) result(ierr)
@@ -2659,7 +2659,7 @@ contains
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 212 "pionfput_mod.F90.in"
   integer function put_var_vdesc_0d_double (File, vardesc, ival) result(ierr)
@@ -2680,7 +2680,7 @@ contains
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 212 "pionfput_mod.F90.in"
   integer function put_var_vdesc_1d_double (File, vardesc, ival) result(ierr)
@@ -2701,7 +2701,7 @@ contains
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 212 "pionfput_mod.F90.in"
   integer function put_var_vdesc_2d_double (File, vardesc, ival) result(ierr)
@@ -2722,7 +2722,7 @@ contains
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 212 "pionfput_mod.F90.in"
   integer function put_var_vdesc_3d_double (File, vardesc, ival) result(ierr)
@@ -2743,7 +2743,7 @@ contains
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 212 "pionfput_mod.F90.in"
   integer function put_var_vdesc_4d_double (File, vardesc, ival) result(ierr)
@@ -2764,7 +2764,7 @@ contains
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 212 "pionfput_mod.F90.in"
   integer function put_var_vdesc_5d_double (File, vardesc, ival) result(ierr)
@@ -2785,7 +2785,7 @@ contains
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 212 "pionfput_mod.F90.in"
   integer function put_var_vdesc_0d_int (File, vardesc, ival) result(ierr)
@@ -2806,7 +2806,7 @@ contains
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 212 "pionfput_mod.F90.in"
   integer function put_var_vdesc_1d_int (File, vardesc, ival) result(ierr)
@@ -2827,7 +2827,7 @@ contains
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 212 "pionfput_mod.F90.in"
   integer function put_var_vdesc_2d_int (File, vardesc, ival) result(ierr)
@@ -2848,7 +2848,7 @@ contains
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 212 "pionfput_mod.F90.in"
   integer function put_var_vdesc_3d_int (File, vardesc, ival) result(ierr)
@@ -2869,7 +2869,7 @@ contains
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 212 "pionfput_mod.F90.in"
   integer function put_var_vdesc_4d_int (File, vardesc, ival) result(ierr)
@@ -2890,7 +2890,7 @@ contains
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 212 "pionfput_mod.F90.in"
   integer function put_var_vdesc_5d_int (File, vardesc, ival) result(ierr)
@@ -2913,7 +2913,7 @@ contains
 !! @param start :
 !! @param count :
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 234 "pionfput_mod.F90.in"
   integer function put_vara_1d_text (File,varid, start, count, ival) result(ierr)
@@ -2971,7 +2971,7 @@ contains
 !! @param start :
 !! @param count :
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 234 "pionfput_mod.F90.in"
   integer function put_vara_2d_text (File,varid, start, count, ival) result(ierr)
@@ -3029,7 +3029,7 @@ contains
 !! @param start :
 !! @param count :
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 234 "pionfput_mod.F90.in"
   integer function put_vara_3d_text (File,varid, start, count, ival) result(ierr)
@@ -3087,7 +3087,7 @@ contains
 !! @param start :
 !! @param count :
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 234 "pionfput_mod.F90.in"
   integer function put_vara_4d_text (File,varid, start, count, ival) result(ierr)
@@ -3145,7 +3145,7 @@ contains
 !! @param start :
 !! @param count :
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 234 "pionfput_mod.F90.in"
   integer function put_vara_5d_text (File,varid, start, count, ival) result(ierr)
@@ -3203,7 +3203,7 @@ contains
 !! @param start :
 !! @param count :
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 234 "pionfput_mod.F90.in"
   integer function put_vara_1d_real (File,varid, start, count, ival) result(ierr)
@@ -3261,7 +3261,7 @@ contains
 !! @param start :
 !! @param count :
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 234 "pionfput_mod.F90.in"
   integer function put_vara_2d_real (File,varid, start, count, ival) result(ierr)
@@ -3319,7 +3319,7 @@ contains
 !! @param start :
 !! @param count :
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 234 "pionfput_mod.F90.in"
   integer function put_vara_3d_real (File,varid, start, count, ival) result(ierr)
@@ -3377,7 +3377,7 @@ contains
 !! @param start :
 !! @param count :
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 234 "pionfput_mod.F90.in"
   integer function put_vara_4d_real (File,varid, start, count, ival) result(ierr)
@@ -3435,7 +3435,7 @@ contains
 !! @param start :
 !! @param count :
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 234 "pionfput_mod.F90.in"
   integer function put_vara_5d_real (File,varid, start, count, ival) result(ierr)
@@ -3493,7 +3493,7 @@ contains
 !! @param start :
 !! @param count :
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 234 "pionfput_mod.F90.in"
   integer function put_vara_1d_double (File,varid, start, count, ival) result(ierr)
@@ -3551,7 +3551,7 @@ contains
 !! @param start :
 !! @param count :
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 234 "pionfput_mod.F90.in"
   integer function put_vara_2d_double (File,varid, start, count, ival) result(ierr)
@@ -3609,7 +3609,7 @@ contains
 !! @param start :
 !! @param count :
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 234 "pionfput_mod.F90.in"
   integer function put_vara_3d_double (File,varid, start, count, ival) result(ierr)
@@ -3667,7 +3667,7 @@ contains
 !! @param start :
 !! @param count :
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 234 "pionfput_mod.F90.in"
   integer function put_vara_4d_double (File,varid, start, count, ival) result(ierr)
@@ -3725,7 +3725,7 @@ contains
 !! @param start :
 !! @param count :
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 234 "pionfput_mod.F90.in"
   integer function put_vara_5d_double (File,varid, start, count, ival) result(ierr)
@@ -3783,7 +3783,7 @@ contains
 !! @param start :
 !! @param count :
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 234 "pionfput_mod.F90.in"
   integer function put_vara_1d_int (File,varid, start, count, ival) result(ierr)
@@ -3841,7 +3841,7 @@ contains
 !! @param start :
 !! @param count :
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 234 "pionfput_mod.F90.in"
   integer function put_vara_2d_int (File,varid, start, count, ival) result(ierr)
@@ -3899,7 +3899,7 @@ contains
 !! @param start :
 !! @param count :
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 234 "pionfput_mod.F90.in"
   integer function put_vara_3d_int (File,varid, start, count, ival) result(ierr)
@@ -3957,7 +3957,7 @@ contains
 !! @param start :
 !! @param count :
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 234 "pionfput_mod.F90.in"
   integer function put_vara_4d_int (File,varid, start, count, ival) result(ierr)
@@ -4015,7 +4015,7 @@ contains
 !! @param start :
 !! @param count :
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 234 "pionfput_mod.F90.in"
   integer function put_vara_5d_int (File,varid, start, count, ival) result(ierr)
@@ -4073,7 +4073,7 @@ contains
 !! @param start : 
 !! @param count : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 291 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_text (File,vardesc, start, count, ival) result(ierr)
@@ -4098,7 +4098,7 @@ contains
 !! @param start : 
 !! @param count : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 291 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_text (File,vardesc, start, count, ival) result(ierr)
@@ -4123,7 +4123,7 @@ contains
 !! @param start : 
 !! @param count : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 291 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_text (File,vardesc, start, count, ival) result(ierr)
@@ -4148,7 +4148,7 @@ contains
 !! @param start : 
 !! @param count : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 291 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_text (File,vardesc, start, count, ival) result(ierr)
@@ -4173,7 +4173,7 @@ contains
 !! @param start : 
 !! @param count : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 291 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_text (File,vardesc, start, count, ival) result(ierr)
@@ -4198,7 +4198,7 @@ contains
 !! @param start : 
 !! @param count : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 291 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_real (File,vardesc, start, count, ival) result(ierr)
@@ -4223,7 +4223,7 @@ contains
 !! @param start : 
 !! @param count : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 291 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_real (File,vardesc, start, count, ival) result(ierr)
@@ -4248,7 +4248,7 @@ contains
 !! @param start : 
 !! @param count : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 291 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_real (File,vardesc, start, count, ival) result(ierr)
@@ -4273,7 +4273,7 @@ contains
 !! @param start : 
 !! @param count : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 291 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_real (File,vardesc, start, count, ival) result(ierr)
@@ -4298,7 +4298,7 @@ contains
 !! @param start : 
 !! @param count : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 291 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_real (File,vardesc, start, count, ival) result(ierr)
@@ -4323,7 +4323,7 @@ contains
 !! @param start : 
 !! @param count : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 291 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_double (File,vardesc, start, count, ival) result(ierr)
@@ -4348,7 +4348,7 @@ contains
 !! @param start : 
 !! @param count : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 291 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_double (File,vardesc, start, count, ival) result(ierr)
@@ -4373,7 +4373,7 @@ contains
 !! @param start : 
 !! @param count : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 291 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_double (File,vardesc, start, count, ival) result(ierr)
@@ -4398,7 +4398,7 @@ contains
 !! @param start : 
 !! @param count : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 291 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_double (File,vardesc, start, count, ival) result(ierr)
@@ -4423,7 +4423,7 @@ contains
 !! @param start : 
 !! @param count : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 291 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_double (File,vardesc, start, count, ival) result(ierr)
@@ -4448,7 +4448,7 @@ contains
 !! @param start : 
 !! @param count : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 291 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_int (File,vardesc, start, count, ival) result(ierr)
@@ -4473,7 +4473,7 @@ contains
 !! @param start : 
 !! @param count : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 291 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_int (File,vardesc, start, count, ival) result(ierr)
@@ -4498,7 +4498,7 @@ contains
 !! @param start : 
 !! @param count : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 291 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_int (File,vardesc, start, count, ival) result(ierr)
@@ -4523,7 +4523,7 @@ contains
 !! @param start : 
 !! @param count : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 291 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_int (File,vardesc, start, count, ival) result(ierr)
@@ -4548,7 +4548,7 @@ contains
 !! @param start : 
 !! @param count : 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr : error return code
+!! @retval ierr @copydoc error_return
 !<
 # 291 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_int (File,vardesc, start, count, ival) result(ierr)

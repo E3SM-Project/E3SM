@@ -88,13 +88,18 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="memdoc">
 <dl><dt><b>Parameters:</b></dt><dd>
   <table border="0" cellspacing="2" cellpadding="0">
-    <tr><td valign="top"></td><td valign="top"><em>File</em>&nbsp;</td><td> </td></tr>
-    <tr><td valign="top"></td><td valign="top"><em>method</em>&nbsp;</td><td>:  </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>File</em>&nbsp;</td><td>: File descriptor returned by <a class="el" href="group__PIO__openfile.html">PIO_openfile</a> or <a class="el" href="group__PIO__createfile.html">PIO_createfile</a> (see <a class="el" href="namespacepio__types.html">pio_types</a>)  </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>method</em>&nbsp;</td><td>: The three types of error handling methods are:. <ul>
+<li>PIO_INTERNAL_ERROR : abort on error from any task</li>
+<li>PIO_BCAST_ERROR : broadcast an error from io_rank 0</li>
+<li>PIO_RETURN_ERROR : do nothing - allow the user to handle it </li>
+</ul>
+ </td></tr>
   </table>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l00303">303</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
+<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l00301">301</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
 
 <p><div class="dynheader">
 Here is the call graph for this function:</div>
@@ -134,12 +139,17 @@ Here is the call graph for this function:</div>
 <dl><dt><b>Parameters:</b></dt><dd>
   <table border="0" cellspacing="2" cellpadding="0">
     <tr><td valign="top"></td><td valign="top"><em>IOsystem</em>&nbsp;</td><td>: a defined PIO system descriptor, see <a class="el" href="namespacepio__types.html">pio_types</a> </td></tr>
-    <tr><td valign="top"></td><td valign="top"><em>method</em>&nbsp;</td><td>:  </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>method</em>&nbsp;</td><td>: The three types of error handling methods are:. <ul>
+<li>PIO_INTERNAL_ERROR : abort on error from any task</li>
+<li>PIO_BCAST_ERROR : broadcast an error from io_rank 0</li>
+<li>PIO_RETURN_ERROR : do nothing - allow the user to handle it </li>
+</ul>
+ </td></tr>
   </table>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l00318">318</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
+<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l00316">316</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
 
 </div>
 </div>
@@ -158,7 +168,7 @@ Here is the call graph for this function:</div>
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 13:41:12 2009 for PIO User's Guide by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 14:28:30 2009 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

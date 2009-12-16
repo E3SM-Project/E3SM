@@ -53,7 +53,7 @@ contains
 !! @param varid : The netcdf variable identifier
 !! @param name : name of the attribute to add
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
   integer function put_att_{TYPE} (File, varid, name, value) result(ierr)
     type (File_desc_t), intent(inout) :: File
@@ -124,7 +124,7 @@ contains
 !! @param varid : The netcdf variable identifier
 !! @param name : name of the attribute to add
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
   integer function put_att_1d_{TYPE} (File, varid, name, value) result(ierr)
     type (File_desc_t), intent(inout) :: File
@@ -187,7 +187,7 @@ contains
 !! @param varDesc @copydoc var_desc_t
 !! @param name : name of the attribute to add
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
   integer function put_att_desc_{TYPE} (File,varDesc,name,value) result(ierr)
 
@@ -210,7 +210,7 @@ contains
 !! @param varDesc @copydoc var_desc_t
 !! @param name : name of the attribute to add
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
   integer function put_att_desc_1d_{TYPE} (File,varDesc,name,value) result(ierr)
 
@@ -235,7 +235,7 @@ contains
 !! @param varDesc @copydoc var_desc_t
 !! @param name : name of the attribute to get
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
   integer function get_att_desc_{TYPE} (File,varDesc,name,value) result(ierr)
 
@@ -260,7 +260,7 @@ contains
 !! @param varDesc @copydoc var_desc_t
 !! @param name : name of the attribute to get
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
   integer function get_att_desc_1d_{TYPE} (File,varDesc,name,value) result(ierr)
 
@@ -284,7 +284,7 @@ contains
 !! @param varid : The netcdf variable identifier
 !! @param name : name of the attribute to get
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
   integer function get_att_{TYPE} (File,varid,name,value) result(ierr)
 
@@ -347,7 +347,7 @@ contains
 !! @param varid : The netcdf variable identifier
 !! @param name : name of the attribute to get
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
   integer function get_att_1d_{TYPE} (File,varid,name,value) result(ierr)
 

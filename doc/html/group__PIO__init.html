@@ -117,14 +117,19 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
     <tr><td valign="top"></td><td valign="top"><em>num_iotasks</em>&nbsp;</td><td>The number of iotasks to define. </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>num_aggregator</em>&nbsp;</td><td>The MPI aggregator count </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>stride</em>&nbsp;</td><td>The stride in the MPI rank between io tasks. </td></tr>
-    <tr><td valign="top"></td><td valign="top"><em>rearr</em>&nbsp;</td><td> </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>rearr</em>&nbsp;</td><td>The three choices to control rearrangement are:. <ul>
+<li>PIO_rearr_none : Do not use any form of rearrangement</li>
+<li>PIO_rearr_mct : Use MCT based rearrangement</li>
+<li>PIO_rearr_box : Use a PIO internal box rearrangement </li>
+</ul>
+ </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>IOsystem</em>&nbsp;</td><td>a derived type which can be used in subsequent PIO operations (defined in <a class="el" href="namespacepio__types.html">pio_types</a>). </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>base</em>&nbsp;</td><td><em>Optional</em> argument can be used to offset the first io task - default base is task 1. </td></tr>
   </table>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l01112">1112</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
+<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l01113">1113</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
 
 <p><div class="dynheader">
 Here is the call graph for this function:</div>
@@ -152,7 +157,7 @@ Here is the call graph for this function:</div>
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 13:41:12 2009 for PIO User's Guide by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 14:28:30 2009 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

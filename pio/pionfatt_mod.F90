@@ -79,7 +79,7 @@ contains
 !! @param varid : The netcdf variable identifier
 !! @param name : name of the attribute to add
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 58 "pionfatt_mod.F90.in"
   integer function put_att_text (File, varid, name, value) result(ierr)
@@ -149,7 +149,7 @@ contains
 !! @param varid : The netcdf variable identifier
 !! @param name : name of the attribute to add
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 58 "pionfatt_mod.F90.in"
   integer function put_att_real (File, varid, name, value) result(ierr)
@@ -219,7 +219,7 @@ contains
 !! @param varid : The netcdf variable identifier
 !! @param name : name of the attribute to add
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 58 "pionfatt_mod.F90.in"
   integer function put_att_double (File, varid, name, value) result(ierr)
@@ -289,7 +289,7 @@ contains
 !! @param varid : The netcdf variable identifier
 !! @param name : name of the attribute to add
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 58 "pionfatt_mod.F90.in"
   integer function put_att_int (File, varid, name, value) result(ierr)
@@ -360,7 +360,7 @@ contains
 !! @param varid : The netcdf variable identifier
 !! @param name : name of the attribute to add
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 129 "pionfatt_mod.F90.in"
   integer function put_att_1d_real (File, varid, name, value) result(ierr)
@@ -425,7 +425,7 @@ contains
 !! @param varid : The netcdf variable identifier
 !! @param name : name of the attribute to add
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 129 "pionfatt_mod.F90.in"
   integer function put_att_1d_double (File, varid, name, value) result(ierr)
@@ -490,7 +490,7 @@ contains
 !! @param varid : The netcdf variable identifier
 !! @param name : name of the attribute to add
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 129 "pionfatt_mod.F90.in"
   integer function put_att_1d_int (File, varid, name, value) result(ierr)
@@ -554,7 +554,7 @@ contains
 !! @param varDesc @copydoc var_desc_t
 !! @param name : name of the attribute to add
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 192 "pionfatt_mod.F90.in"
   integer function put_att_desc_text (File,varDesc,name,value) result(ierr)
@@ -577,7 +577,7 @@ contains
 !! @param varDesc @copydoc var_desc_t
 !! @param name : name of the attribute to add
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 192 "pionfatt_mod.F90.in"
   integer function put_att_desc_real (File,varDesc,name,value) result(ierr)
@@ -600,7 +600,7 @@ contains
 !! @param varDesc @copydoc var_desc_t
 !! @param name : name of the attribute to add
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 192 "pionfatt_mod.F90.in"
   integer function put_att_desc_double (File,varDesc,name,value) result(ierr)
@@ -623,7 +623,7 @@ contains
 !! @param varDesc @copydoc var_desc_t
 !! @param name : name of the attribute to add
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 192 "pionfatt_mod.F90.in"
   integer function put_att_desc_int (File,varDesc,name,value) result(ierr)
@@ -647,7 +647,7 @@ contains
 !! @param varDesc @copydoc var_desc_t
 !! @param name : name of the attribute to add
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 215 "pionfatt_mod.F90.in"
   integer function put_att_desc_1d_real (File,varDesc,name,value) result(ierr)
@@ -673,7 +673,7 @@ contains
 !! @param varDesc @copydoc var_desc_t
 !! @param name : name of the attribute to add
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 215 "pionfatt_mod.F90.in"
   integer function put_att_desc_1d_int (File,varDesc,name,value) result(ierr)
@@ -699,7 +699,7 @@ contains
 !! @param varDesc @copydoc var_desc_t
 !! @param name : name of the attribute to add
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 215 "pionfatt_mod.F90.in"
   integer function put_att_desc_1d_double (File,varDesc,name,value) result(ierr)
@@ -725,7 +725,7 @@ contains
 !! @param varDesc @copydoc var_desc_t
 !! @param name : name of the attribute to get
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 240 "pionfatt_mod.F90.in"
   integer function get_att_desc_text (File,varDesc,name,value) result(ierr)
@@ -751,7 +751,7 @@ contains
 !! @param varDesc @copydoc var_desc_t
 !! @param name : name of the attribute to get
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 240 "pionfatt_mod.F90.in"
   integer function get_att_desc_real (File,varDesc,name,value) result(ierr)
@@ -777,7 +777,7 @@ contains
 !! @param varDesc @copydoc var_desc_t
 !! @param name : name of the attribute to get
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 240 "pionfatt_mod.F90.in"
   integer function get_att_desc_double (File,varDesc,name,value) result(ierr)
@@ -803,7 +803,7 @@ contains
 !! @param varDesc @copydoc var_desc_t
 !! @param name : name of the attribute to get
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 240 "pionfatt_mod.F90.in"
   integer function get_att_desc_int (File,varDesc,name,value) result(ierr)
@@ -829,7 +829,7 @@ contains
 !! @param varDesc @copydoc var_desc_t
 !! @param name : name of the attribute to get
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 265 "pionfatt_mod.F90.in"
   integer function get_att_desc_1d_real (File,varDesc,name,value) result(ierr)
@@ -855,7 +855,7 @@ contains
 !! @param varDesc @copydoc var_desc_t
 !! @param name : name of the attribute to get
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 265 "pionfatt_mod.F90.in"
   integer function get_att_desc_1d_int (File,varDesc,name,value) result(ierr)
@@ -881,7 +881,7 @@ contains
 !! @param varDesc @copydoc var_desc_t
 !! @param name : name of the attribute to get
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 265 "pionfatt_mod.F90.in"
   integer function get_att_desc_1d_double (File,varDesc,name,value) result(ierr)
@@ -906,7 +906,7 @@ contains
 !! @param varid : The netcdf variable identifier
 !! @param name : name of the attribute to get
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 289 "pionfatt_mod.F90.in"
   integer function get_att_text (File,varid,name,value) result(ierr)
@@ -969,7 +969,7 @@ contains
 !! @param varid : The netcdf variable identifier
 !! @param name : name of the attribute to get
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 289 "pionfatt_mod.F90.in"
   integer function get_att_real (File,varid,name,value) result(ierr)
@@ -1032,7 +1032,7 @@ contains
 !! @param varid : The netcdf variable identifier
 !! @param name : name of the attribute to get
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 289 "pionfatt_mod.F90.in"
   integer function get_att_double (File,varid,name,value) result(ierr)
@@ -1095,7 +1095,7 @@ contains
 !! @param varid : The netcdf variable identifier
 !! @param name : name of the attribute to get
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 289 "pionfatt_mod.F90.in"
   integer function get_att_int (File,varid,name,value) result(ierr)
@@ -1159,7 +1159,7 @@ contains
 !! @param varid : The netcdf variable identifier
 !! @param name : name of the attribute to get
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 352 "pionfatt_mod.F90.in"
   integer function get_att_1d_real (File,varid,name,value) result(ierr)
@@ -1219,7 +1219,7 @@ contains
 !! @param varid : The netcdf variable identifier
 !! @param name : name of the attribute to get
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 352 "pionfatt_mod.F90.in"
   integer function get_att_1d_int (File,varid,name,value) result(ierr)
@@ -1279,7 +1279,7 @@ contains
 !! @param varid : The netcdf variable identifier
 !! @param name : name of the attribute to get
 !! @param value : The value for the netcdf attribute 
-!! @retval ierr : error return code 
+!! @retval ierr @copydoc error_return
 !<
 # 352 "pionfatt_mod.F90.in"
   integer function get_att_1d_double (File,varid,name,value) result(ierr)

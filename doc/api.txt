@@ -1,4 +1,4 @@
-/*!  \page api PIO user interface
+ /*!  \page api PIO user interface
   This is a list of all user interface routines
   Lets not forget about the very important routine piolib_mod::PIO_freeDecomp
   \section fileops PIO file Operations
@@ -54,8 +54,4 @@
     - \ref PIO_get_local_array_size
     - \ref PIO_setnumagg
     - \ref PIO_dupiodesc
-
-  PIO error handling \n
-  \copydoc PIO_error_method
-
 */

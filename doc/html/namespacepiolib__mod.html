@@ -58,8 +58,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <tr><td class="memItemLeft" align="right" valign="top">interface &nbsp;</td><td class="memItemRight" valign="bottom"><b>PIO_init</b></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">interface &nbsp;</td><td class="memItemRight" valign="bottom"><b>PIO_finalize</b></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">interface &nbsp;</td><td class="memItemRight" valign="bottom"><b>PIO_initDecomp</b></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">interface &nbsp;</td><td class="memItemRight" valign="bottom"><b>PIO_dupiodesc</b></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">interface &nbsp;</td><td class="memItemRight" valign="bottom"><b>PIO_setiotype</b></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">interface &nbsp;</td><td class="memItemRight" valign="bottom"><b>PIO_dupIOdesc</b></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">interface &nbsp;</td><td class="memItemRight" valign="bottom"><b>PIO_NumToRead</b></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">interface &nbsp;</td><td class="memItemRight" valign="bottom"><b>PIO_NumToWrite</b></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">interface &nbsp;</td><td class="memItemRight" valign="bottom"><b>PIO_setNUMAgg</b></td></tr>
@@ -79,10 +78,11 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__seterrorhandling.html#gaca54ab6a291ff2dbbada6e0ccc50cc6f">SetErrorHandlingI</a> (IOsystem, method)</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Set the PIO error handling method for the IOSystem.  <a href="group__PIO__seterrorhandling.html#gaca54ab6a291ff2dbbada6e0ccc50cc6f"></a><br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__initdecomp.html#gaf6e4886d25b4a250c65ba905506c6b22">initDecomp_2dof_BIN</a> (IOsystem, basepiotype, dims, lenblocks, compdof, iodofr, iodofw, IOdesc)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">This interface is should be called with specifying both the computational and io degrees of freedom. This allows greater flexibilty to generate a binary file.  <a href="group__PIO__initdecomp.html#gaf6e4886d25b4a250c65ba905506c6b22"></a><br/></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">This subroutine provides the <a class="el" href="Decomp.html#initdecomp_dof">Degree of freedom interface</a> to PIO_initdecomp.  <a href="group__PIO__initdecomp.html#gaf6e4886d25b4a250c65ba905506c6b22"></a><br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__initdecomp.html#ga01c249c34d42490e092a2ede04b82833">initDecomp_1dof_BIN</a> (IOsystem, basepiotype, dims, lenblocks, compdof, iodofr, IOdesc)</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__initdecomp.html#ga01f13360bf735df79355709f04050979">initDecomp_2dof_nf</a> (IOsystem, basepiotype, dims, lenblocks, compdof, iodofr, iodofw, start, count, IOdesc)</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__initdecomp.html#ga2d8eb80eef55d86b7e8886b259a60057">initDecomp_1dof_nf</a> (iosystem, basepiotype, dims, lenblocks, compdof, iodof, start, count, IOdesc)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">This subroutine provides the <a class="el" href="Decomp.html#initdecomp_bc">Block-cyclic interface</a> to PIO_initdecomp.  <a href="group__PIO__initdecomp.html#ga2d8eb80eef55d86b7e8886b259a60057"></a><br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__initdecomp.html#ga644e9541dc9d03ae1ed606bfcbface08">initDecomp_1dof_nf_box</a> (IOsystem, basepiotype, dims, compdof, IOdesc, start, count)</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__init.html#gafd1cef696d56644349d9b57d8e501c61">init</a> (comp_rank, comp_comm, num_iotasks, num_aggregator, stride, rearr, IOsystem, base)</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Initialize the PIO subsystem.  <a href="group__PIO__init.html#gafd1cef696d56644349d9b57d8e501c61"></a><br/></td></tr>
@@ -145,7 +145,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 13:41:13 2009 for PIO User's Guide by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 14:28:30 2009 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>
