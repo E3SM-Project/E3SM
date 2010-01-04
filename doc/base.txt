@@ -14,7 +14,15 @@
  * input used in their production; they are not affected by this license.
  *
  */ 
-/*! \mainpage PIO Users Guide 
+/*! 
+
+\mainpage PIO Users Guide 
+\author John M. Dennis
+\author Jim Edwards
+\author Robert Jacob
+\author Ray Loy
+\author Art Mirin
+\author Mariana Vertenstein
 
  - \ref GettingStarted
  - \ref Decomp

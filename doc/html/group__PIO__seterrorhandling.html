@@ -41,17 +41,17 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </div>
 <div class="contents">
 <h1>PIO_seterrorhandling</h1>
-<p>Sets the form of error handling for PIO.  
+<p>sets the form of error handling for <a class="el" href="namespacepio.html">pio</a>.  
 <a href="#_details">More...</a></p>
 <table border="0" cellpadding="0" cellspacing="0">
 <tr><td colspan="2"><h2>Functions/Subroutines</h2></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__seterrorhandling.html#gacc11f85597eadb3beee185316a224e8a">SetErrorHandlingF</a> (File, method)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Set the PIO error handling method for a File.  <a href="#gacc11f85597eadb3beee185316a224e8a"></a><br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__seterrorhandling.html#gaca54ab6a291ff2dbbada6e0ccc50cc6f">SetErrorHandlingI</a> (IOsystem, method)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Set the PIO error handling method for the IOSystem.  <a href="#gaca54ab6a291ff2dbbada6e0ccc50cc6f"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__seterrorhandling.html#ga52fbaf1e8f20ef769cb432004467aaf0">seterrorhandlingf</a> (file, method)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">set the <a class="el" href="namespacepio.html">pio</a> error handling method for a file  <a href="#ga52fbaf1e8f20ef769cb432004467aaf0"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__seterrorhandling.html#ga22a936771c2515978c9bb856a92c0055">seterrorhandlingi</a> (iosystem, method)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">set the <a class="el" href="namespacepio.html">pio</a> error handling method for the iosystem  <a href="#ga22a936771c2515978c9bb856a92c0055"></a><br/></td></tr>
 </table>
 <hr/><a name="_details"></a><h2>Detailed Description</h2>
-<p>By default PIO handles errors internally by printing a string describing the error and then calling mpi_abort. Application developers can change this behavior with a call to PIO_seterrorhandling. For example if a developer wanted to see if an input netcdf file contained the variable 'U' they might write the following </p>
+<p>By default <a class="el" href="namespacepio.html">pio</a> handles errors internally by printing a string describing the error and calling mpi_abort. Application developers can change this behavior for calls to the underlying netcdf libraries with a call to PIO_seterrorhandling. For example if a developer wanted to see if an input netcdf format file contained the variable 'u' they might write the following </p>
 <div class="fragment"><pre class="fragment"> call pio_seterrorhandling(File, PIO_BCAST_ERROR)
  ierr =  pio_inq_varid(File, 'U', uid)
  call pio_seterrorhandling(File, PIO_INTERNAL_ERROR)
@@ -62,15 +62,15 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
    ...
  endif
 </pre></div> <hr/><h2>Function/Subroutine Documentation</h2>
-<a class="anchor" id="gacc11f85597eadb3beee185316a224e8a"></a><!-- doxytag: member="piolib_mod::SetErrorHandlingF" ref="gacc11f85597eadb3beee185316a224e8a" args="(File, method)" -->
+<a class="anchor" id="ga52fbaf1e8f20ef769cb432004467aaf0"></a><!-- doxytag: member="piolib_mod::seterrorhandlingf" ref="ga52fbaf1e8f20ef769cb432004467aaf0" args="(file, method)" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">subroutine piolib_mod::SetErrorHandlingF </td>
+          <td class="memname">subroutine piolib_mod::seterrorhandlingf </td>
           <td>(</td>
           <td class="paramtype">type(file_desc_t),intent(inout)&nbsp;</td>
-          <td class="paramname"> <em>File</em>, </td>
+          <td class="paramname"> <em>file</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -88,7 +88,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="memdoc">
 <dl><dt><b>Parameters:</b></dt><dd>
   <table border="0" cellspacing="2" cellpadding="0">
-    <tr><td valign="top"></td><td valign="top"><em>File</em>&nbsp;</td><td>: File descriptor returned by <a class="el" href="group__PIO__openfile.html">PIO_openfile</a> or <a class="el" href="group__PIO__createfile.html">PIO_createfile</a> (see <a class="el" href="namespacepio__types.html">pio_types</a>)  </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>file</em>&nbsp;</td><td>: File descriptor returned by <a class="el" href="group__PIO__openfile.html">PIO_openfile</a> or <a class="el" href="group__PIO__createfile.html">PIO_createfile</a> (see <a class="el" href="namespacepio__types.html">pio_types</a>)  </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>method</em>&nbsp;</td><td>: The three types of error handling methods are:. <ul>
 <li>PIO_INTERNAL_ERROR : abort on error from any task</li>
 <li>PIO_BCAST_ERROR : broadcast an error from io_rank 0 to all tasks in comm</li>
@@ -104,23 +104,23 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <p><div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dynsection">
-<div class="center"><img src="group__PIO__seterrorhandling_gacc11f85597eadb3beee185316a224e8a_cgraph.png" border="0" usemap="#group__PIO__seterrorhandling_gacc11f85597eadb3beee185316a224e8a_cgraph_map" alt=""></div>
-<map name="group__PIO__seterrorhandling_gacc11f85597eadb3beee185316a224e8a_cgraph_map" id="group__PIO__seterrorhandling_gacc11f85597eadb3beee185316a224e8a_cgraph">
-<area shape="rect" id="node3" href="group__PIO__seterrorhandling.html#gaca54ab6a291ff2dbbada6e0ccc50cc6f" title="Set the PIO error handling method for the IOSystem." alt="" coords="188,5,316,35"/></map>
+<div class="center"><img src="group__PIO__seterrorhandling_ga52fbaf1e8f20ef769cb432004467aaf0_cgraph.png" border="0" usemap="#group__PIO__seterrorhandling_ga52fbaf1e8f20ef769cb432004467aaf0_cgraph_map" alt=""></div>
+<map name="group__PIO__seterrorhandling_ga52fbaf1e8f20ef769cb432004467aaf0_cgraph_map" id="group__PIO__seterrorhandling_ga52fbaf1e8f20ef769cb432004467aaf0_cgraph">
+<area shape="rect" id="node3" href="group__PIO__seterrorhandling.html#ga22a936771c2515978c9bb856a92c0055" title="set the pio error handling method for the iosystem" alt="" coords="184,5,312,35"/></map>
 </div>
 </p>
 
 </div>
 </div>
-<a class="anchor" id="gaca54ab6a291ff2dbbada6e0ccc50cc6f"></a><!-- doxytag: member="piolib_mod::SetErrorHandlingI" ref="gaca54ab6a291ff2dbbada6e0ccc50cc6f" args="(IOsystem, method)" -->
+<a class="anchor" id="ga22a936771c2515978c9bb856a92c0055"></a><!-- doxytag: member="piolib_mod::seterrorhandlingi" ref="ga22a936771c2515978c9bb856a92c0055" args="(iosystem, method)" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">subroutine piolib_mod::SetErrorHandlingI </td>
+          <td class="memname">subroutine piolib_mod::seterrorhandlingi </td>
           <td>(</td>
           <td class="paramtype">type(iosystem_desc_t),intent(inout)&nbsp;</td>
-          <td class="paramname"> <em>IOsystem</em>, </td>
+          <td class="paramname"> <em>iosystem</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -138,7 +138,7 @@ Here is the call graph for this function:</div>
 <div class="memdoc">
 <dl><dt><b>Parameters:</b></dt><dd>
   <table border="0" cellspacing="2" cellpadding="0">
-    <tr><td valign="top"></td><td valign="top"><em>IOsystem</em>&nbsp;</td><td>: a defined PIO system descriptor, see <a class="el" href="namespacepio__types.html">pio_types</a> </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>iosystem</em>&nbsp;</td><td>: a defined <a class="el" href="namespacepio.html">pio</a> system descriptor, see PIO_types </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>method</em>&nbsp;</td><td>: The three types of error handling methods are:. <ul>
 <li>PIO_INTERNAL_ERROR : abort on error from any task</li>
 <li>PIO_BCAST_ERROR : broadcast an error from io_rank 0 to all tasks in comm</li>
@@ -168,7 +168,7 @@ Here is the call graph for this function:</div>
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 15:25:20 2009 for PIO User's Guide by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Mon Jan 4 13:14:26 2010 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

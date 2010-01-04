@@ -124,7 +124,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00079"></a>00079 <span class="preprocessor">#endif</span>
 <a name="l00080"></a>00080 <span class="preprocessor"></span>          ierr=nfmpi_put_vara_all( File%fh,varDesc%varid,start, &amp;
 <a name="l00081"></a>00081                count,IOBUF, &amp;
-<a name="l00082"></a>00082                iodesc%Write%n_ElemTYPE, &amp;
+<a name="l00082"></a>00082                int(iodesc%Write%n_ElemTYPE,kind=pio_offset), &amp;
 <a name="l00083"></a>00083                iodesc%Write%ElemTYPE)
 <a name="l00084"></a>00084 
 <a name="l00085"></a>00085           <span class="keyword">if</span>(Debug.or.ierr/=PIO_noerr) print *,subname,__LINE__, &amp;
@@ -335,7 +335,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00290"></a>00290 <span class="preprocessor">#endif</span>
 <a name="l00291"></a>00291 <span class="preprocessor"></span>          ierr=nfmpi_put_vara_all( File%fh,varDesc%varid,start, &amp;
 <a name="l00292"></a>00292                count,IOBUF, &amp;
-<a name="l00293"></a>00293                iodesc%Write%n_ElemTYPE, &amp;
+<a name="l00293"></a>00293                int(iodesc%Write%n_ElemTYPE,kind=pio_offset), &amp;
 <a name="l00294"></a>00294                iodesc%Write%ElemTYPE)
 <a name="l00295"></a>00295 
 <a name="l00296"></a>00296           <span class="keyword">if</span>(Debug.or.ierr/=PIO_noerr) print *,subname,__LINE__, &amp;
@@ -546,7 +546,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00501"></a>00501 <span class="preprocessor">#endif</span>
 <a name="l00502"></a>00502 <span class="preprocessor"></span>          ierr=nfmpi_put_vara_all( File%fh,varDesc%varid,start, &amp;
 <a name="l00503"></a>00503                count,IOBUF, &amp;
-<a name="l00504"></a>00504                iodesc%Write%n_ElemTYPE, &amp;
+<a name="l00504"></a>00504                int(iodesc%Write%n_ElemTYPE,kind=pio_offset), &amp;
 <a name="l00505"></a>00505                iodesc%Write%ElemTYPE)
 <a name="l00506"></a>00506 
 <a name="l00507"></a>00507           <span class="keyword">if</span>(Debug.or.ierr/=PIO_noerr) print *,subname,__LINE__, &amp;
@@ -714,7 +714,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 15:25:20 2009 for PIO User's Guide by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Mon Jan 4 13:14:16 2010 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

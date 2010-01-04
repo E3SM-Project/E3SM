@@ -41,20 +41,20 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </div>
 <div class="contents">
 <h1>PIO_setnumagg</h1>
-<p>Uses the MPI-IO hint functionality to set the number of aggregators to use. Is ignored if MPI-IO is not enabled.  
+<p>uses the mpi-io hint functionality to set the number of aggregators to use. is ignored if mpi-io is not enabled.  
 </p>
 <table border="0" cellpadding="0" cellspacing="0">
 <tr><td colspan="2"><h2>Functions/Subroutines</h2></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__setnumagg.html#gab3ac0b6f9e4b66dfe4da655dbb1cebf5">setNUMAgg</a> (iosystem, numagg)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">This sets the number of MPI-IO aggregators by setting MPI-IO hints. Note that the MPI-IO layer is free to ignore any hints passed to it.  <a href="#gab3ac0b6f9e4b66dfe4da655dbb1cebf5"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__setnumagg.html#gaa275425e44aa179ac56614a801c0f17d">setnumagg</a> (iosystem, numagg)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">this sets the number of mpi-io aggregators by setting mpi-io hints. note that the mpi-io layer is free to ignore any hints passed to it.  <a href="#gaa275425e44aa179ac56614a801c0f17d"></a><br/></td></tr>
 </table>
 <hr/><h2>Function/Subroutine Documentation</h2>
-<a class="anchor" id="gab3ac0b6f9e4b66dfe4da655dbb1cebf5"></a><!-- doxytag: member="piolib_mod::setNUMAgg" ref="gab3ac0b6f9e4b66dfe4da655dbb1cebf5" args="(iosystem, numagg)" -->
+<a class="anchor" id="gaa275425e44aa179ac56614a801c0f17d"></a><!-- doxytag: member="piolib_mod::setnumagg" ref="gaa275425e44aa179ac56614a801c0f17d" args="(iosystem, numagg)" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">subroutine piolib_mod::setNUMAgg </td>
+          <td class="memname">subroutine piolib_mod::setnumagg </td>
           <td>(</td>
           <td class="paramtype">type (iosystem_desc_t),intent(inout)&nbsp;</td>
           <td class="paramname"> <em>iosystem</em>, </td>
@@ -73,16 +73,16 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
       </table>
 </div>
 <div class="memdoc">
-<p>This is a collective call with the following parameters: </p>
+<p>this is a collective call with the following parameters: </p>
 <dl><dt><b>Parameters:</b></dt><dd>
   <table border="0" cellspacing="2" cellpadding="0">
-    <tr><td valign="top"></td><td valign="top"><em>iosystem</em>&nbsp;</td><td>: a defined PIO system descriptor, see <a class="el" href="namespacepio__types.html">pio_types</a> </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>iosystem</em>&nbsp;</td><td>: a defined <a class="el" href="namespacepio.html">pio</a> system descriptor, see PIO_types </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>numagg</em>&nbsp;</td><td>: the number of aggregators </td></tr>
   </table>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l01310">1310</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
+<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l01417">1417</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
 
 </div>
 </div>
@@ -101,7 +101,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 15:25:20 2009 for PIO User's Guide by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Mon Jan 4 13:14:25 2010 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

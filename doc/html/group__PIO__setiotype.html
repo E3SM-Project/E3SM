@@ -41,15 +41,15 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </div>
 <div class="contents">
 <h1>PIO_setiotype</h1>
-<p>Sets the IO type used by PIO.  
+<p>sets the io type used by <a class="el" href="namespacepio.html">pio</a>  
 </p>
 <table border="0" cellpadding="0" cellspacing="0">
 <tr><td colspan="2"><h2>Functions/Subroutines</h2></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__setiotype.html#ga76ac64717387bbc496bc8a74870e8440">setiotype</a> (File, iotype, rearr)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Sets the desired type of IO to perform.  <a href="#ga76ac64717387bbc496bc8a74870e8440"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">subroutine&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__setiotype.html#gacf1ab2ddd2c30a191e5305eecaceed4a">setiotype</a> (file, iotype, rearr)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">sets the desired type of io to perform  <a href="#gacf1ab2ddd2c30a191e5305eecaceed4a"></a><br/></td></tr>
 </table>
 <hr/><h2>Function/Subroutine Documentation</h2>
-<a class="anchor" id="ga76ac64717387bbc496bc8a74870e8440"></a><!-- doxytag: member="piolib_mod::setiotype" ref="ga76ac64717387bbc496bc8a74870e8440" args="(File, iotype, rearr)" -->
+<a class="anchor" id="gacf1ab2ddd2c30a191e5305eecaceed4a"></a><!-- doxytag: member="piolib_mod::setiotype" ref="gacf1ab2ddd2c30a191e5305eecaceed4a" args="(file, iotype, rearr)" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
@@ -57,7 +57,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
           <td class="memname">subroutine piolib_mod::setiotype </td>
           <td>(</td>
           <td class="paramtype">type (file_desc_t),intent(inout)&nbsp;</td>
-          <td class="paramname"> <em>File</em>, </td>
+          <td class="paramname"> <em>file</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -81,7 +81,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="memdoc">
 <dl><dt><b>Parameters:</b></dt><dd>
   <table border="0" cellspacing="2" cellpadding="0">
-    <tr><td valign="top"></td><td valign="top"><em>File</em>&nbsp;</td><td>: File descriptor returned by <a class="el" href="group__PIO__openfile.html">PIO_openfile</a> or <a class="el" href="group__PIO__createfile.html">PIO_createfile</a> (see <a class="el" href="namespacepio__types.html">pio_types</a>)  </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>file</em>&nbsp;</td><td>: File descriptor returned by <a class="el" href="group__PIO__openfile.html">PIO_openfile</a> or <a class="el" href="group__PIO__createfile.html">PIO_createfile</a> (see <a class="el" href="namespacepio__types.html">pio_types</a>)  </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>iotype</em>&nbsp;</td><td>: An integer parameter which controls the iotype. <ul>
 <li>iotype_pbinary : Use MPI-IO to read/write C like binary file</li>
 <li>iotype_direct_pbinary: Use MPI-IO to read/write direct access binary files</li>
@@ -100,7 +100,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l01462">1462</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
+<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l01569">1569</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
 
 </div>
 </div>
@@ -119,7 +119,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 15:25:20 2009 for PIO User's Guide by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Mon Jan 4 13:14:25 2010 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

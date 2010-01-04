@@ -45,6 +45,7 @@
     - \ref PIO_inquire_dimension
   \section utility Utility routines
     - \ref PIO_setiotype
+    - \ref PIO_set_hint
     - \ref PIO_numtoread
     - \ref PIO_numtowrite
     - \ref PIO_setframe

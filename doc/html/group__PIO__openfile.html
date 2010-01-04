@@ -42,25 +42,25 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="contents">
 <h1>PIO_openfile</h1><table border="0" cellpadding="0" cellspacing="0">
 <tr><td colspan="2"><h2>Functions/Subroutines</h2></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">integer&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__openfile.html#ga7876f5b503c1e068bc8849f855217481">OpenFile</a> (IOsystem, File, iotype, fname, mode)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Open an existing file using PIO.  <a href="#ga7876f5b503c1e068bc8849f855217481"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">integer&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__openfile.html#gad87d886ca5f77e679ea576ef5235f664">PIO_openfile</a> (iosystem, file, iotype, fname, mode)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">open an existing file using <a class="el" href="namespacepio.html">pio</a>  <a href="#gad87d886ca5f77e679ea576ef5235f664"></a><br/></td></tr>
 </table>
 <hr/><h2>Function/Subroutine Documentation</h2>
-<a class="anchor" id="ga7876f5b503c1e068bc8849f855217481"></a><!-- doxytag: member="piolib_mod::OpenFile" ref="ga7876f5b503c1e068bc8849f855217481" args="(IOsystem, File, iotype, fname, mode)" -->
+<a class="anchor" id="gad87d886ca5f77e679ea576ef5235f664"></a><!-- doxytag: member="piolib_mod::PIO_openfile" ref="gad87d886ca5f77e679ea576ef5235f664" args="(iosystem, file, iotype, fname, mode)" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">integer piolib_mod::OpenFile </td>
+          <td class="memname">integer piolib_mod::PIO_openfile </td>
           <td>(</td>
-          <td class="paramtype">type (IOsystem_desc_t),intent(inout),target&nbsp;</td>
-          <td class="paramname"> <em>IOsystem</em>, </td>
+          <td class="paramtype">type (iosystem_desc_t),intent(inout),target&nbsp;</td>
+          <td class="paramname"> <em>iosystem</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">type (File_desc_t),intent(out)&nbsp;</td>
-          <td class="paramname"> <em>File</em>, </td>
+          <td class="paramtype">type (file_desc_t),intent(out)&nbsp;</td>
+          <td class="paramname"> <em>file</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -90,8 +90,8 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="memdoc">
 <dl><dt><b>Parameters:</b></dt><dd>
   <table border="0" cellspacing="2" cellpadding="0">
-    <tr><td valign="top"></td><td valign="top"><em>IOsystem</em>&nbsp;</td><td>: a defined PIO system descriptor created by a call to <a class="el" href="group__PIO__init.html">PIO_init</a> (see <a class="el" href="namespacepio__types.html">pio_types</a>) </td></tr>
-    <tr><td valign="top"></td><td valign="top"><em>File</em>&nbsp;</td><td>: the returned File descriptor </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>iosystem</em>&nbsp;</td><td>: a defined <a class="el" href="namespacepio.html">pio</a> system descriptor created by a call to <a class="el" href="group__PIO__init.html">PIO_init</a> (see PIO_types) </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>file</em>&nbsp;</td><td>: the returned file descriptor </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>iotype</em>&nbsp;</td><td>: An integer parameter which controls the iotype. <ul>
 <li>iotype_pbinary : Use MPI-IO to read/write C like binary file</li>
 <li>iotype_direct_pbinary: Use MPI-IO to read/write direct access binary files</li>
@@ -101,7 +101,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </ul>
  </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>fname</em>&nbsp;</td><td>: the name of the file to open </td></tr>
-    <tr><td valign="top"></td><td valign="top"><em>mode</em>&nbsp;</td><td>: the mode flag for the file open </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>mode</em>&nbsp;</td><td>: a zero value (or PIO_nowrite) specifies the default behavior: open the dataset with read-only access, buffering and caching accesses for efficiency otherwise, the creation mode is PIO_write. setting the PIO_write flag opens the dataset with read-write access. ("writing" means any kind of change to the dataset, including appending or changing data, adding or renaming dimensions, variables, and attributes, or deleting attributes.) </td></tr>
   </table>
   </dd>
 </dl>
@@ -112,7 +112,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l01599">1599</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
+<p>Definition at line <a class="el" href="piolib__mod_8F90_source.html#l01711">1711</a> of file <a class="el" href="piolib__mod_8F90_source.html">piolib_mod.F90</a>.</p>
 
 </div>
 </div>
@@ -131,7 +131,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 15:25:20 2009 for PIO User's Guide by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Mon Jan 4 13:14:24 2010 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

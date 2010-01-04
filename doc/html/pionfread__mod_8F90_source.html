@@ -122,13 +122,13 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00077"></a>00077 
 <a name="l00078"></a>00078           <span class="keyword">if</span>(Debug) print *,_FILE_,__LINE__, &amp;
 <a name="l00079"></a>00079                <span class="stringliteral">&apos;  IAM: &apos;</span>,File%iosystem%io_rank,<span class="stringliteral">&apos; start: &apos;</span>, &amp;
-<a name="l00080"></a>00080                int(start,kind=mpi_offset_kind),<span class="stringliteral">&apos; count: &apos;</span>, &amp;
-<a name="l00081"></a>00081                int(count,kind=mpi_offset_kind), <span class="stringliteral">&apos; iobuf size: &apos;</span>,<span class="keyword">size</span>(iobuf)
+<a name="l00080"></a>00080                int(start,kind=pio_offset),<span class="stringliteral">&apos; count: &apos;</span>, &amp;
+<a name="l00081"></a>00081                int(count,kind=pio_offset), <span class="stringliteral">&apos; iobuf size: &apos;</span>,<span class="keyword">size</span>(iobuf)
 <a name="l00082"></a>00082 
 <a name="l00083"></a>00083           ierr=nfmpi_get_vara_all( File%fh,varDesc%varid, &amp;
-<a name="l00084"></a>00084                int(start,kind=mpi_offset_kind), &amp;
-<a name="l00085"></a>00085                int(count,kind=mpi_offset_kind), &amp;
-<a name="l00086"></a>00086                IOBUF,iodesc%Read%n_ElemTYPE, &amp;
+<a name="l00084"></a>00084                int(start,kind=pio_offset), &amp;
+<a name="l00085"></a>00085                int(count,kind=pio_offset), &amp;
+<a name="l00086"></a>00086                IOBUF,int(iodesc%Read%n_ElemTYPE,kind=pio_offset), &amp;
 <a name="l00087"></a>00087                iodesc%Read%ElemTYPE)
 <a name="l00088"></a>00088 <span class="preprocessor">#endif</span>
 <a name="l00089"></a>00089 <span class="preprocessor"></span>
@@ -293,13 +293,13 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00248"></a>00248 
 <a name="l00249"></a>00249           <span class="keyword">if</span>(Debug) print *,_FILE_,__LINE__, &amp;
 <a name="l00250"></a>00250                <span class="stringliteral">&apos;  IAM: &apos;</span>,File%iosystem%io_rank,<span class="stringliteral">&apos; start: &apos;</span>, &amp;
-<a name="l00251"></a>00251                int(start,kind=mpi_offset_kind),<span class="stringliteral">&apos; count: &apos;</span>, &amp;
-<a name="l00252"></a>00252                int(count,kind=mpi_offset_kind), <span class="stringliteral">&apos; iobuf size: &apos;</span>,<span class="keyword">size</span>(iobuf)
+<a name="l00251"></a>00251                int(start,kind=pio_offset),<span class="stringliteral">&apos; count: &apos;</span>, &amp;
+<a name="l00252"></a>00252                int(count,kind=pio_offset), <span class="stringliteral">&apos; iobuf size: &apos;</span>,<span class="keyword">size</span>(iobuf)
 <a name="l00253"></a>00253 
 <a name="l00254"></a>00254           ierr=nfmpi_get_vara_all( File%fh,varDesc%varid, &amp;
-<a name="l00255"></a>00255                int(start,kind=mpi_offset_kind), &amp;
-<a name="l00256"></a>00256                int(count,kind=mpi_offset_kind), &amp;
-<a name="l00257"></a>00257                IOBUF,iodesc%Read%n_ElemTYPE, &amp;
+<a name="l00255"></a>00255                int(start,kind=pio_offset), &amp;
+<a name="l00256"></a>00256                int(count,kind=pio_offset), &amp;
+<a name="l00257"></a>00257                IOBUF,int(iodesc%Read%n_ElemTYPE,kind=pio_offset), &amp;
 <a name="l00258"></a>00258                iodesc%Read%ElemTYPE)
 <a name="l00259"></a>00259 <span class="preprocessor">#endif</span>
 <a name="l00260"></a>00260 <span class="preprocessor"></span>
@@ -464,13 +464,13 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00419"></a>00419 
 <a name="l00420"></a>00420           <span class="keyword">if</span>(Debug) print *,_FILE_,__LINE__, &amp;
 <a name="l00421"></a>00421                <span class="stringliteral">&apos;  IAM: &apos;</span>,File%iosystem%io_rank,<span class="stringliteral">&apos; start: &apos;</span>, &amp;
-<a name="l00422"></a>00422                int(start,kind=mpi_offset_kind),<span class="stringliteral">&apos; count: &apos;</span>, &amp;
-<a name="l00423"></a>00423                int(count,kind=mpi_offset_kind), <span class="stringliteral">&apos; iobuf size: &apos;</span>,<span class="keyword">size</span>(iobuf)
+<a name="l00422"></a>00422                int(start,kind=pio_offset),<span class="stringliteral">&apos; count: &apos;</span>, &amp;
+<a name="l00423"></a>00423                int(count,kind=pio_offset), <span class="stringliteral">&apos; iobuf size: &apos;</span>,<span class="keyword">size</span>(iobuf)
 <a name="l00424"></a>00424 
 <a name="l00425"></a>00425           ierr=nfmpi_get_vara_all( File%fh,varDesc%varid, &amp;
-<a name="l00426"></a>00426                int(start,kind=mpi_offset_kind), &amp;
-<a name="l00427"></a>00427                int(count,kind=mpi_offset_kind), &amp;
-<a name="l00428"></a>00428                IOBUF,iodesc%Read%n_ElemTYPE, &amp;
+<a name="l00426"></a>00426                int(start,kind=pio_offset), &amp;
+<a name="l00427"></a>00427                int(count,kind=pio_offset), &amp;
+<a name="l00428"></a>00428                IOBUF,int(iodesc%Read%n_ElemTYPE,kind=pio_offset), &amp;
 <a name="l00429"></a>00429                iodesc%Read%ElemTYPE)
 <a name="l00430"></a>00430 <span class="preprocessor">#endif</span>
 <a name="l00431"></a>00431 <span class="preprocessor"></span>
@@ -597,7 +597,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 15:25:20 2009 for PIO User's Guide by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Mon Jan 4 13:14:15 2010 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

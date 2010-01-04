@@ -72,218 +72,218 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00027"></a>00027     <span class="comment">!------------------------------------</span>
 <a name="l00028"></a>00028     <span class="comment">!  a file descriptor data structure</span>
 <a name="l00029"></a>00029     <span class="comment">!------------------------------------</span>
-<a name="l00030"></a>00030     <span class="keyword">type</span>, public :: IOSystem_desc_t
-<a name="l00031"></a>00031 <span class="preprocessor">#ifdef SEQUENCE</span>
-<a name="l00032"></a>00032 <span class="preprocessor"></span>        sequence
-<a name="l00033"></a>00033 <span class="preprocessor">#endif</span>
-<a name="l00034"></a>00034 <span class="preprocessor"></span>        <span class="keywordtype">integer(i4)              </span>:: IO_comm            <span class="comment">! The IO communicator</span>
-<a name="l00035"></a>00035         <span class="keywordtype">integer(i4)              </span>:: comp_comm          <span class="comment">! The Compute communicator</span>
-<a name="l00036"></a>00036         <span class="keywordtype">integer(i4)              </span>:: num_tasks        <span class="comment">! total number of tasks</span>
-<a name="l00037"></a>00037         <span class="keywordtype">integer(i4)              </span>:: num_iotasks        <span class="comment">! total number of IO tasks</span>
-<a name="l00038"></a>00038         <span class="keywordtype">integer(i4)              </span>:: io_stride          <span class="comment">! stride between IO tasks</span>
-<a name="l00039"></a>00039         <span class="keywordtype">integer(i4)              </span>:: comp_rank          <span class="comment">! the computational rank</span>
-<a name="l00040"></a>00040         <span class="keywordtype">integer(i4)              </span>:: io_rank            <span class="comment">! the io rank if io_rank = -1 not an IO processor</span>
-<a name="l00041"></a>00041 <span class="comment">!</span>
-<a name="l00042"></a>00042         <span class="keywordtype">integer(i4)              </span>:: Info               <span class="comment">! MPI-IO info structure</span>
-<a name="l00043"></a>00043         <span class="keywordtype">integer(i4)              </span>:: IOMaster           <span class="comment">! The comp_rank of the io_rank 0</span>
-<a name="l00044"></a>00044         <span class="keywordtype">logical(log_kind)        </span>:: IOproc             <span class="comment">! .true. if an IO processor</span>
-<a name="l00045"></a>00045         <span class="keywordtype">logical(log_kind)        </span>:: UseRearranger      <span class="comment">! .true. if data rearrangement is necessary</span>
-<a name="l00046"></a>00046         <span class="keywordtype">integer(i4)              </span>:: rearr         <span class="comment">! type of rearranger</span>
-<a name="l00047"></a>00047                                                   <span class="comment">! e.g. rearr_{none,mct,box}</span>
-<a name="l00048"></a>00048         <span class="keywordtype">integer(i4)              </span>:: error_handling <span class="comment">! how pio handles errors</span>
-<a name="l00049"></a>00049 
-<a name="l00050"></a>00050         <span class="comment">! This holds the IODESC</span>
-<a name="l00051"></a>00051 <span class="keyword">    end type</span>
-<a name="l00052"></a>00052     
-<a name="l00057"></a>00057     <span class="keyword">type</span>, public :: File_desc_t
-<a name="l00058"></a>00058        <span class="keywordtype">type(</span>iosystem_desc_t<span class="keywordtype">)</span>, <span class="keywordtype">pointer</span> :: iosystem
-<a name="l00059"></a>00059        <span class="keywordtype">integer(i4) </span>:: fh
-<a name="l00060"></a>00060        <span class="keywordtype">integer(kind=PIO_OFFSET) </span>:: offset             <span class="comment">! offset into file</span>
-<a name="l00061"></a>00061        <span class="keywordtype">integer(i4)              </span>:: iotype             <span class="comment">! Type of IO to perform see parameter statement below    </span>
-<a name="l00062"></a>00062 <span class="keyword">    end type File_desc_t</span>
-<a name="l00063"></a>00063 
-<a name="l00064"></a>00064 
-<a name="l00065"></a>00065     <span class="comment">!------------------------------------------------------</span>
-<a name="l00066"></a>00066     <span class="comment">!  data structure to describe a data movement operator</span>
-<a name="l00067"></a>00067     <span class="comment">!------------------------------------------------------</span>
-<a name="l00068"></a>00068     <span class="keyword">type</span>, public :: IO_desc2_t
-<a name="l00069"></a>00069 <span class="preprocessor">#ifdef SEQUENCE</span>
-<a name="l00070"></a>00070 <span class="preprocessor"></span>        sequence
-<a name="l00071"></a>00071 <span class="preprocessor">#endif</span>
-<a name="l00072"></a>00072 <span class="preprocessor"></span>        <span class="keywordtype">integer(i4)         </span>::  fileTYPE   <span class="comment">! MPI data types for file</span>
-<a name="l00073"></a>00073         <span class="keywordtype">integer(i4)         </span>::  elemTYPE
-<a name="l00074"></a>00074         <span class="keywordtype">integer(i4)         </span>:: n_elemTYPE
-<a name="l00075"></a>00075         <span class="keywordtype">integer(i4)         </span>:: n_words
-<a name="l00076"></a>00076 <span class="keyword">    end type IO_desc2_t</span>
-<a name="l00077"></a>00077 
-<a name="l00085"></a>00085 
-<a name="l00092"></a>00092    <span class="keyword">type</span>, public :: IO_desc_t
-<a name="l00093"></a>00093 <span class="preprocessor">#ifdef SEQUENCE</span>
-<a name="l00094"></a>00094 <span class="preprocessor"></span>        sequence
-<a name="l00095"></a>00095 <span class="preprocessor">#endif</span>
-<a name="l00096"></a>00096 <span class="preprocessor"></span>        <span class="keywordtype">type(</span>IO_desc2_t<span class="keywordtype">)</span>    :: Read
-<a name="l00097"></a>00097         <span class="keywordtype">type(</span>IO_desc2_t<span class="keywordtype">)</span>    :: Write
-<a name="l00098"></a>00098         <span class="keywordtype">integer(kind=PIO_Offset)</span>, <span class="keywordtype">pointer</span> :: start(:)
-<a name="l00099"></a>00099         <span class="keywordtype">integer(kind=PIO_Offset)</span>, <span class="keywordtype">pointer</span> :: count(:)
-<a name="l00100"></a>00100 <span class="preprocessor">#ifdef _USEMCT</span>
-<a name="l00101"></a>00101 <span class="preprocessor"></span>        <span class="comment">! MCT GlobalSegMaps defined on comp_comm</span>
-<a name="l00102"></a>00102 
-<a name="l00103"></a>00103         <span class="keywordtype">integer(i4) </span>:: lsize_comp      <span class="comment">! local size of GSMap for comp layout</span>
-<a name="l00104"></a>00104         <span class="keywordtype">integer(i4) </span>:: lsize_io        <span class="comment">! local size of GSMap for IO layout</span>
+<a name="l00034"></a>00034     <span class="keyword">type</span>, public :: IOSystem_desc_t
+<a name="l00035"></a>00035 <span class="preprocessor">#ifdef SEQUENCE</span>
+<a name="l00036"></a>00036 <span class="preprocessor"></span>        sequence
+<a name="l00037"></a>00037 <span class="preprocessor">#endif</span>
+<a name="l00038"></a>00038 <span class="preprocessor"></span>        <span class="keywordtype">integer(i4)              </span>:: IO_comm            <span class="comment">! The IO communicator</span>
+<a name="l00039"></a>00039         <span class="keywordtype">integer(i4)              </span>:: comp_comm          <span class="comment">! The Compute communicator</span>
+<a name="l00040"></a>00040         <span class="keywordtype">integer(i4)              </span>:: num_tasks        <span class="comment">! total number of tasks</span>
+<a name="l00041"></a>00041         <span class="keywordtype">integer(i4)              </span>:: num_iotasks        <span class="comment">! total number of IO tasks</span>
+<a name="l00042"></a>00042         <span class="keywordtype">integer(i4)              </span>:: io_stride          <span class="comment">! stride between IO tasks</span>
+<a name="l00043"></a>00043         <span class="keywordtype">integer(i4)              </span>:: comp_rank          <span class="comment">! the computational rank</span>
+<a name="l00044"></a>00044         <span class="keywordtype">integer(i4)              </span>:: io_rank            <span class="comment">! the io rank if io_rank = -1 not an IO processor</span>
+<a name="l00045"></a>00045 <span class="comment">!</span>
+<a name="l00046"></a>00046         <span class="keywordtype">integer(i4)              </span>:: Info               <span class="comment">! MPI-IO info structure</span>
+<a name="l00047"></a>00047         <span class="keywordtype">integer(i4)              </span>:: IOMaster           <span class="comment">! The comp_rank of the io_rank 0</span>
+<a name="l00048"></a>00048         <span class="keywordtype">logical(log_kind)        </span>:: IOproc             <span class="comment">! .true. if an IO processor</span>
+<a name="l00049"></a>00049         <span class="keywordtype">logical(log_kind)        </span>:: UseRearranger      <span class="comment">! .true. if data rearrangement is necessary</span>
+<a name="l00050"></a>00050         <span class="keywordtype">integer(i4)              </span>:: rearr         <span class="comment">! type of rearranger</span>
+<a name="l00051"></a>00051                                                   <span class="comment">! e.g. rearr_{none,mct,box}</span>
+<a name="l00052"></a>00052         <span class="keywordtype">integer(i4)              </span>:: error_handling <span class="comment">! how pio handles errors</span>
+<a name="l00053"></a>00053 
+<a name="l00054"></a>00054         <span class="comment">! This holds the IODESC</span>
+<a name="l00055"></a>00055 <span class="keyword">    end type</span>
+<a name="l00056"></a>00056     
+<a name="l00061"></a>00061     <span class="keyword">type</span>, public :: File_desc_t
+<a name="l00062"></a>00062        <span class="keywordtype">type(</span>iosystem_desc_t<span class="keywordtype">)</span>, <span class="keywordtype">pointer</span> :: iosystem
+<a name="l00063"></a>00063        <span class="keywordtype">integer(i4) </span>:: fh
+<a name="l00064"></a>00064        <span class="keywordtype">integer(kind=PIO_OFFSET) </span>:: offset             <span class="comment">! offset into file</span>
+<a name="l00065"></a>00065        <span class="keywordtype">integer(i4)              </span>:: iotype             <span class="comment">! Type of IO to perform see parameter statement below    </span>
+<a name="l00066"></a>00066 <span class="keyword">    end type File_desc_t</span>
+<a name="l00067"></a>00067 
+<a name="l00068"></a>00068 
+<a name="l00069"></a>00069     <span class="comment">!------------------------------------------------------</span>
+<a name="l00070"></a>00070     <span class="comment">!  data structure to describe a data movement operator</span>
+<a name="l00071"></a>00071     <span class="comment">!------------------------------------------------------</span>
+<a name="l00072"></a>00072     <span class="keyword">type</span>, public :: IO_desc2_t
+<a name="l00073"></a>00073 <span class="preprocessor">#ifdef SEQUENCE</span>
+<a name="l00074"></a>00074 <span class="preprocessor"></span>        sequence
+<a name="l00075"></a>00075 <span class="preprocessor">#endif</span>
+<a name="l00076"></a>00076 <span class="preprocessor"></span>        <span class="keywordtype">integer(i4)         </span>::  fileTYPE   <span class="comment">! MPI data types for file</span>
+<a name="l00077"></a>00077         <span class="keywordtype">integer(i4)         </span>::  elemTYPE
+<a name="l00078"></a>00078         <span class="keywordtype">integer(i4)         </span>:: n_elemTYPE
+<a name="l00079"></a>00079         <span class="keywordtype">integer(i4)         </span>:: n_words
+<a name="l00080"></a>00080 <span class="keyword">    end type IO_desc2_t</span>
+<a name="l00081"></a>00081 
+<a name="l00089"></a>00089 
+<a name="l00095"></a>00095    <span class="keyword">type</span>, public :: IO_desc_t
+<a name="l00096"></a>00096 <span class="preprocessor">#ifdef SEQUENCE</span>
+<a name="l00097"></a>00097 <span class="preprocessor"></span>        sequence
+<a name="l00098"></a>00098 <span class="preprocessor">#endif</span>
+<a name="l00099"></a>00099 <span class="preprocessor"></span>        <span class="keywordtype">type(</span>IO_desc2_t<span class="keywordtype">)</span>    :: Read
+<a name="l00100"></a>00100         <span class="keywordtype">type(</span>IO_desc2_t<span class="keywordtype">)</span>    :: Write
+<a name="l00101"></a>00101         <span class="keywordtype">integer(kind=PIO_Offset)</span>, <span class="keywordtype">pointer</span> :: start(:)
+<a name="l00102"></a>00102         <span class="keywordtype">integer(kind=PIO_Offset)</span>, <span class="keywordtype">pointer</span> :: count(:)
+<a name="l00103"></a>00103 <span class="preprocessor">#ifdef _USEMCT</span>
+<a name="l00104"></a>00104 <span class="preprocessor"></span>        <span class="comment">! MCT GlobalSegMaps defined on comp_comm</span>
 <a name="l00105"></a>00105 
-<a name="l00106"></a>00106         <span class="keywordtype">type (</span>Rearranger<span class="keywordtype">)</span> :: rearr_comp_to_io   <span class="comment">! mct rearranger comp-&gt;io</span>
-<a name="l00107"></a>00107         <span class="keywordtype">type (</span>Rearranger<span class="keywordtype">)</span> :: rearr_io_to_comp   <span class="comment">! mct rearranger io-&gt;comp</span>
+<a name="l00106"></a>00106         <span class="keywordtype">integer(i4) </span>:: lsize_comp      <span class="comment">! local size of GSMap for comp layout</span>
+<a name="l00107"></a>00107         <span class="keywordtype">integer(i4) </span>:: lsize_io        <span class="comment">! local size of GSMap for IO layout</span>
 <a name="l00108"></a>00108 
-<a name="l00109"></a>00109         <span class="keywordtype">integer(i4)</span>, <span class="keywordtype">pointer</span> :: compDOF_index(:)  <span class="comment">! permutation array</span>
-<a name="l00110"></a>00110 <span class="preprocessor">#endif</span>
-<a name="l00111"></a>00111 <span class="preprocessor"></span>
-<a name="l00112"></a>00112         <span class="comment">!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</span>
-<a name="l00113"></a>00113         <span class="comment">! fields for box-based rearranger</span>
-<a name="l00114"></a>00114         <span class="comment">! should put this in its own derived type later</span>
-<a name="l00115"></a>00115 
-<a name="l00116"></a>00116         <span class="keywordtype">integer</span> :: baseTYPE
-<a name="l00117"></a>00117 
-<a name="l00118"></a>00118         <span class="keywordtype">integer</span>, <span class="keywordtype">pointer</span> :: dest_ioproc(:)     <span class="comment">! for each dof</span>
-<a name="l00119"></a>00119         <span class="keywordtype">integer</span>, <span class="keywordtype">pointer</span> :: dest_ioindex(:)    <span class="comment">! for each dof</span>
+<a name="l00109"></a>00109         <span class="keywordtype">type (</span>Rearranger<span class="keywordtype">)</span> :: rearr_comp_to_io   <span class="comment">! mct rearranger comp-&gt;io</span>
+<a name="l00110"></a>00110         <span class="keywordtype">type (</span>Rearranger<span class="keywordtype">)</span> :: rearr_io_to_comp   <span class="comment">! mct rearranger io-&gt;comp</span>
+<a name="l00111"></a>00111 
+<a name="l00112"></a>00112         <span class="keywordtype">integer(i4)</span>, <span class="keywordtype">pointer</span> :: compDOF_index(:)  <span class="comment">! permutation array</span>
+<a name="l00113"></a>00113 <span class="preprocessor">#endif</span>
+<a name="l00114"></a>00114 <span class="preprocessor"></span>
+<a name="l00115"></a>00115         <span class="comment">!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</span>
+<a name="l00116"></a>00116         <span class="comment">! fields for box-based rearranger</span>
+<a name="l00117"></a>00117         <span class="comment">! should put this in its own derived type later</span>
+<a name="l00118"></a>00118 
+<a name="l00119"></a>00119         <span class="keywordtype">integer</span> :: baseTYPE
 <a name="l00120"></a>00120 
-<a name="l00121"></a>00121 
-<a name="l00122"></a>00122         <span class="comment">! Values needed only on io procs</span>
-<a name="l00123"></a>00123         <span class="keywordtype">integer</span>,<span class="keywordtype">pointer</span> :: rfrom(:)   <span class="comment">! rfrom(nrecvs)= rank of ith sender</span>
-<a name="l00124"></a>00124         <span class="keywordtype">integer</span>,<span class="keywordtype">pointer</span> :: rtype(:)   <span class="comment">! rtype(nrecvs)=mpi types for receives</span>
-<a name="l00125"></a>00125 
-<a name="l00126"></a>00126         
-<a name="l00127"></a>00127         <span class="comment">! needed on all procs</span>
-<a name="l00128"></a>00128         <span class="keywordtype">integer</span>,<span class="keywordtype">pointer</span> :: scount(:)  <span class="comment">! scount(num_iotasks)= # sends to ith ioproc</span>
-<a name="l00129"></a>00129         <span class="keywordtype">integer</span>,<span class="keywordtype">pointer</span> :: stype(:)   <span class="comment">! stype(num_iotasks)=mpi type for sends</span>
-<a name="l00130"></a>00130 
-<a name="l00131"></a>00131         <span class="comment">!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</span>
-<a name="l00132"></a>00132         
+<a name="l00121"></a>00121         <span class="keywordtype">integer</span>, <span class="keywordtype">pointer</span> :: dest_ioproc(:)     <span class="comment">! for each dof</span>
+<a name="l00122"></a>00122         <span class="keywordtype">integer</span>, <span class="keywordtype">pointer</span> :: dest_ioindex(:)    <span class="comment">! for each dof</span>
+<a name="l00123"></a>00123 
+<a name="l00124"></a>00124 
+<a name="l00125"></a>00125         <span class="comment">! Values needed only on io procs</span>
+<a name="l00126"></a>00126         <span class="keywordtype">integer</span>,<span class="keywordtype">pointer</span> :: rfrom(:)   <span class="comment">! rfrom(nrecvs)= rank of ith sender</span>
+<a name="l00127"></a>00127         <span class="keywordtype">integer</span>,<span class="keywordtype">pointer</span> :: rtype(:)   <span class="comment">! rtype(nrecvs)=mpi types for receives</span>
+<a name="l00128"></a>00128 
+<a name="l00129"></a>00129         
+<a name="l00130"></a>00130         <span class="comment">! needed on all procs</span>
+<a name="l00131"></a>00131         <span class="keywordtype">integer</span>,<span class="keywordtype">pointer</span> :: scount(:)  <span class="comment">! scount(num_iotasks)= # sends to ith ioproc</span>
+<a name="l00132"></a>00132         <span class="keywordtype">integer</span>,<span class="keywordtype">pointer</span> :: stype(:)   <span class="comment">! stype(num_iotasks)=mpi type for sends</span>
 <a name="l00133"></a>00133 
-<a name="l00134"></a>00134 
-<a name="l00135"></a>00135         <span class="keywordtype">type (</span>DecompMap_t<span class="keywordtype">)</span>  :: IOmap      <span class="comment">! IO decomposition map</span>
-<a name="l00136"></a>00136         <span class="keywordtype">type (</span>DecompMap_t<span class="keywordtype">)</span>  :: COMPmap    <span class="comment">! Computational decomposition map</span>
-<a name="l00137"></a>00137         <span class="keywordtype">integer</span> :: nrecvs                      <span class="comment">! valid for io procs</span>
-<a name="l00138"></a>00138         <span class="keywordtype">integer(i4)         </span>:: glen       <span class="comment">! global length of array in words</span>
-<a name="l00139"></a>00139         <span class="keywordtype">integer(i4)         </span>:: compsize   <span class="comment">! size of expected comp buffer</span>
-<a name="l00140"></a>00140         <span class="keywordtype">integer(i4)         </span>:: maxiobuflen   <span class="comment">! size of largest iobuffer</span>
-<a name="l00141"></a>00141 <span class="keyword">    end type</span>
-<a name="l00142"></a>00142 
-<a name="l00148"></a>00148     <span class="keyword">type</span>, public :: Var_desc_t
-<a name="l00149"></a>00149 <span class="preprocessor">#ifdef SEQUENCE</span>
-<a name="l00150"></a>00150 <span class="preprocessor"></span>        sequence
-<a name="l00151"></a>00151 <span class="preprocessor">#endif  </span>
-<a name="l00152"></a>00152 <span class="preprocessor"></span>        <span class="keywordtype">integer(i4)     </span>:: varID
-<a name="l00153"></a>00153         <span class="keywordtype">integer(i4)     </span>:: rec   <span class="comment">! This is a record number or pointer into the unlim dimension of the       </span>
-<a name="l00154"></a>00154         <span class="keywordtype">integer(i4)     </span>:: type
-<a name="l00155"></a>00155                                  <span class="comment">! netcdf file</span>
-<a name="l00156"></a>00156 <span class="keyword">    end type </span>
-<a name="l00157"></a>00157 
-<a name="l00169"></a><a class="code" href="namespacepio__types.html#a3a9447e6587f60f48b15f4e4c2910e70">00169</a>     <span class="keywordtype">integer(i4)</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> ::  
-<a name="l00170"></a>00170         iotype_pbinary = 1, <span class="comment">! use MPI-IO with data types to read/write C like binary files</span>
-<a name="l00171"></a>00171         iotype_direct_pbinary = 2,   <span class="comment">!use MPI-IO with data types to read/write direct access binary files</span>
-<a name="l00172"></a>00172         iotype_binary  = 4,    <span class="comment">! serial read/write of binary files using &apos;base_node&apos;</span>
-<a name="l00173"></a>00173         iotype_pnetcdf = 5,    <span class="comment">! parallel read/write of pNetCDF files</span>
-<a name="l00174"></a>00174         iotype_netcdf  = 6      <span class="comment">! serial read/write of NetCDF file using &apos;base_node&apos;</span>
-<a name="l00175"></a>00175 
-<a name="l00176"></a>00176 
-<a name="l00186"></a><a class="code" href="namespacepio__types.html#ab816bae281a8d740936563b8fbe5ea08">00186</a>     <span class="keywordtype">integer(i4)</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_rearr_none = 0
-<a name="l00187"></a><a class="code" href="namespacepio__types.html#a0bfe97496e58a7699b83c41685ad662b">00187</a>     <span class="keywordtype">integer(i4)</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_rearr_mct =  1
-<a name="l00188"></a><a class="code" href="namespacepio__types.html#aab388f5e4d912c0865e7c3774bdf0f05">00188</a>     <span class="keywordtype">integer(i4)</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_rearr_box =  2
-<a name="l00189"></a>00189 
-<a name="l00199"></a><a class="code" href="namespacepio__types.html#a736c305e483d13aa12935fdd45211e51">00199</a>   <span class="keywordtype">integer(i4)</span>, <span class="keywordtype">public</span> :: PIO_INTERNAL_ERROR = -51
-<a name="l00200"></a><a class="code" href="namespacepio__types.html#add23457014fae1a6b5aefecd9bf463da">00200</a>   <span class="keywordtype">integer(i4)</span>, <span class="keywordtype">public</span> :: PIO_BCAST_ERROR = -52
-<a name="l00201"></a><a class="code" href="namespacepio__types.html#a80c3911aff770efd12c8078ed88b62dd">00201</a>   <span class="keywordtype">integer(i4)</span>, <span class="keywordtype">public</span> :: PIO_RETURN_ERROR = -53
-<a name="l00202"></a>00202 
-<a name="l00209"></a>00209 
-<a name="l00210"></a>00210 
-<a name="l00221"></a>00221 <span class="preprocessor">#ifdef _PNETCDF</span>
-<a name="l00222"></a>00222 <span class="preprocessor"></span><span class="preprocessor">#include &lt;pnetcdf.inc&gt;   /* _EXTERNAL */</span>
-<a name="l00223"></a><a class="code" href="namespacepio__types.html#aaf185a427553c6caff8013420a4f3b9a">00223</a> <span class="preprocessor"></span>   <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_global = nf_global
-<a name="l00224"></a><a class="code" href="namespacepio__types.html#ae63f1ca5f98b1f4edb93ac70c60470a1">00224</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_unlimited = nf_unlimited
-<a name="l00225"></a><a class="code" href="namespacepio__types.html#a763780954fb31439fb2146ad2450d526">00225</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_double = nf_double
-<a name="l00226"></a><a class="code" href="namespacepio__types.html#aaba5f6ae3ed664e917ebad9eb617205f">00226</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_real   = nf_real
-<a name="l00227"></a><a class="code" href="namespacepio__types.html#a1f77089106798056f4434c6964b085a6">00227</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_int    = nf_int
-<a name="l00228"></a><a class="code" href="namespacepio__types.html#aedb831e554c3674a26f54c7f31d90625">00228</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_char   = nf_char
-<a name="l00229"></a><a class="code" href="namespacepio__types.html#ad04b454c7114f02abea4895c376dffb4">00229</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_noerr  = nf_noerr
-<a name="l00230"></a><a class="code" href="namespacepio__types.html#a8cfd37d8164343875563424aa0eec2a2">00230</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_WRITE  = nf_write
-<a name="l00231"></a><a class="code" href="namespacepio__types.html#a42e31007382da0996fcf7902b1764e3c">00231</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_nowrite  = nf_nowrite
-<a name="l00232"></a><a class="code" href="namespacepio__types.html#a765387866497bf710cb71605b6effb2c">00232</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_CLOBBER = nf_clobber       
-<a name="l00233"></a><a class="code" href="namespacepio__types.html#a97865ce3b3ef05b75e3b0908096164a2">00233</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_NOCLOBBER = nf_NOclobber   
-<a name="l00234"></a><a class="code" href="namespacepio__types.html#ace5e12c0b7c23cc38e4953b7702623d2">00234</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_NOFILL = nf_nofill
-<a name="l00235"></a><a class="code" href="namespacepio__types.html#a318441715ad7fcfc49f0f77a92a45868">00235</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_MAX_NAME = nf_max_name
-<a name="l00236"></a><a class="code" href="namespacepio__types.html#a2a63759fe9cf1a4d66b3b5b5dfe5fd42">00236</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_MAX_VAR_DIMS = nf_max_var_dims
-<a name="l00237"></a><a class="code" href="namespacepio__types.html#ae0fd8231c434818fcc6b1886538d1e17">00237</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_64BIT_OFFSET = nf_64bit_offset
-<a name="l00238"></a>00238 <span class="preprocessor">#else</span>
-<a name="l00239"></a>00239 <span class="preprocessor"></span><span class="preprocessor">#ifdef _NETCDF</span>
-<a name="l00240"></a>00240 <span class="preprocessor"></span>   <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_global = nf90_global
-<a name="l00241"></a>00241    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_unlimited = nf90_unlimited
-<a name="l00242"></a>00242    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_double = nf90_double
-<a name="l00243"></a>00243    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_real   = nf90_real
-<a name="l00244"></a>00244    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_int    = nf90_int
-<a name="l00245"></a>00245    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_char   = nf90_char
-<a name="l00246"></a>00246    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_noerr  = nf90_noerr
-<a name="l00247"></a>00247    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_WRITE  = nf90_write
-<a name="l00248"></a>00248    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_nowrite = nf90_nowrite
-<a name="l00249"></a>00249    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_CLOBBER = nf90_clobber     
-<a name="l00250"></a>00250    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_NOCLOBBER = nf90_NOclobber 
-<a name="l00251"></a>00251    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_NOFILL = nf90_nofill
-<a name="l00252"></a>00252    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_MAX_NAME = nf90_max_name
-<a name="l00253"></a>00253    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_MAX_VAR_DIMS = nf90_max_var_dims
-<a name="l00254"></a>00254    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_64BIT_OFFSET = nf90_64bit_offset
-<a name="l00255"></a>00255 <span class="preprocessor">#else</span>
-<a name="l00256"></a>00256 <span class="preprocessor"></span>   <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_global = 0
-<a name="l00257"></a>00257    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_double = 6
-<a name="l00258"></a>00258    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_real   = 5
-<a name="l00259"></a>00259    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_int    = 4
-<a name="l00260"></a>00260    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_char   = 2
-<a name="l00261"></a>00261    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_noerr  = 0
-<a name="l00262"></a>00262    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_MAX_NAME = 25
-<a name="l00263"></a>00263    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_MAX_VAR_DIMS = 6
-<a name="l00264"></a>00264    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_CLOBBER = 10
-<a name="l00265"></a>00265    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_NOCLOBBER = 11
-<a name="l00266"></a>00266    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_WRITE = 20
-<a name="l00267"></a><a class="code" href="namespacepio__types.html#a735c026ed4e334998296b2f9110298c6">00267</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_NOWRITE = 21
-<a name="l00268"></a><a class="code" href="namespacepio__types.html#a5fd27561cfc71a7daf1f9d48f0aa7ac0">00268</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_64bit_offset = 0
-<a name="l00269"></a>00269 <span class="preprocessor">#endif</span>
-<a name="l00270"></a>00270 <span class="preprocessor"></span><span class="preprocessor">#endif</span>
-<a name="l00271"></a>00271 <span class="preprocessor"></span><span class="comment">! should be defined in the mct mpiserial library.</span>
-<a name="l00272"></a>00272 <span class="preprocessor">#ifdef _MPISERIAL</span>
-<a name="l00273"></a><a class="code" href="namespacepio__types.html#a67bbaccdf5534199b88be23ef0d28b87">00273</a> <span class="preprocessor"></span>   <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: MPI_DATATYPE_NULL=0
-<a name="l00274"></a>00274 <span class="preprocessor">#endif</span>
-<a name="l00275"></a>00275 <span class="preprocessor"></span>
-<a name="l00276"></a>00276    <span class="keywordtype">public</span>:: pio_type_to_mpi_type
-<a name="l00277"></a>00277 
-<a name="l00278"></a>00278 <span class="keyword">contains</span>
-<a name="l00279"></a>00279 
-<a name="l00280"></a>00280 
-<a name="l00281"></a>00281 <span class="comment">!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</span>
-<a name="l00282"></a>00282 <span class="comment">!</span>
-<a name="l00283"></a>00283 <span class="comment">! pio_type_to_mpi_type</span>
-<a name="l00284"></a>00284 
+<a name="l00134"></a>00134         <span class="comment">!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</span>
+<a name="l00135"></a>00135         
+<a name="l00136"></a>00136 
+<a name="l00137"></a>00137 
+<a name="l00138"></a>00138         <span class="keywordtype">type (</span>DecompMap_t<span class="keywordtype">)</span>  :: IOmap      <span class="comment">! IO decomposition map</span>
+<a name="l00139"></a>00139         <span class="keywordtype">type (</span>DecompMap_t<span class="keywordtype">)</span>  :: COMPmap    <span class="comment">! Computational decomposition map</span>
+<a name="l00140"></a>00140         <span class="keywordtype">integer</span> :: nrecvs                      <span class="comment">! valid for io procs</span>
+<a name="l00141"></a>00141         <span class="keywordtype">integer(i4)         </span>:: glen       <span class="comment">! global length of array in words</span>
+<a name="l00142"></a>00142         <span class="keywordtype">integer(i4)         </span>:: compsize   <span class="comment">! size of expected comp buffer</span>
+<a name="l00143"></a>00143         <span class="keywordtype">integer(i4)         </span>:: maxiobuflen   <span class="comment">! size of largest iobuffer</span>
+<a name="l00144"></a>00144 <span class="keyword">    end type</span>
+<a name="l00145"></a>00145 
+<a name="l00150"></a>00150     <span class="keyword">type</span>, public :: Var_desc_t
+<a name="l00151"></a>00151 <span class="preprocessor">#ifdef SEQUENCE</span>
+<a name="l00152"></a>00152 <span class="preprocessor"></span>        sequence
+<a name="l00153"></a>00153 <span class="preprocessor">#endif  </span>
+<a name="l00154"></a>00154 <span class="preprocessor"></span>        <span class="keywordtype">integer(i4)     </span>:: varID
+<a name="l00155"></a>00155         <span class="keywordtype">integer(i4)     </span>:: rec   <span class="comment">! This is a record number or pointer into the unlim dimension of the       </span>
+<a name="l00156"></a>00156         <span class="keywordtype">integer(i4)     </span>:: type
+<a name="l00157"></a>00157                                  <span class="comment">! netcdf file</span>
+<a name="l00158"></a>00158 <span class="keyword">    end type </span>
+<a name="l00159"></a>00159 
+<a name="l00171"></a><a class="code" href="namespacepio__types.html#a3a9447e6587f60f48b15f4e4c2910e70">00171</a>     <span class="keywordtype">integer(i4)</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> ::  
+<a name="l00172"></a>00172         iotype_pbinary = 1, <span class="comment">! use MPI-IO with data types to read/write C like binary files</span>
+<a name="l00173"></a>00173         iotype_direct_pbinary = 2,   <span class="comment">!use MPI-IO with data types to read/write direct access binary files</span>
+<a name="l00174"></a>00174         iotype_binary  = 4,    <span class="comment">! serial read/write of binary files using &apos;base_node&apos;</span>
+<a name="l00175"></a>00175         iotype_pnetcdf = 5,    <span class="comment">! parallel read/write of pNetCDF files</span>
+<a name="l00176"></a>00176         iotype_netcdf  = 6      <span class="comment">! serial read/write of NetCDF file using &apos;base_node&apos;</span>
+<a name="l00177"></a>00177 
+<a name="l00178"></a>00178 
+<a name="l00188"></a><a class="code" href="namespacepio__types.html#ab816bae281a8d740936563b8fbe5ea08">00188</a>     <span class="keywordtype">integer(i4)</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_rearr_none = 0
+<a name="l00189"></a><a class="code" href="namespacepio__types.html#a0bfe97496e58a7699b83c41685ad662b">00189</a>     <span class="keywordtype">integer(i4)</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_rearr_mct =  1
+<a name="l00190"></a><a class="code" href="namespacepio__types.html#aab388f5e4d912c0865e7c3774bdf0f05">00190</a>     <span class="keywordtype">integer(i4)</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_rearr_box =  2
+<a name="l00191"></a>00191 
+<a name="l00201"></a><a class="code" href="namespacepio__types.html#a736c305e483d13aa12935fdd45211e51">00201</a>   <span class="keywordtype">integer(i4)</span>, <span class="keywordtype">public</span> :: PIO_INTERNAL_ERROR = -51
+<a name="l00202"></a><a class="code" href="namespacepio__types.html#add23457014fae1a6b5aefecd9bf463da">00202</a>   <span class="keywordtype">integer(i4)</span>, <span class="keywordtype">public</span> :: PIO_BCAST_ERROR = -52
+<a name="l00203"></a><a class="code" href="namespacepio__types.html#a80c3911aff770efd12c8078ed88b62dd">00203</a>   <span class="keywordtype">integer(i4)</span>, <span class="keywordtype">public</span> :: PIO_RETURN_ERROR = -53
+<a name="l00204"></a>00204 
+<a name="l00211"></a>00211 
+<a name="l00218"></a>00218 
+<a name="l00229"></a>00229 <span class="preprocessor">#ifdef _PNETCDF</span>
+<a name="l00230"></a>00230 <span class="preprocessor"></span><span class="preprocessor">#include &lt;pnetcdf.inc&gt;   /* _EXTERNAL */</span>
+<a name="l00231"></a><a class="code" href="namespacepio__types.html#aaf185a427553c6caff8013420a4f3b9a">00231</a> <span class="preprocessor"></span>   <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_global = nf_global
+<a name="l00232"></a><a class="code" href="namespacepio__types.html#ae63f1ca5f98b1f4edb93ac70c60470a1">00232</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_unlimited = nf_unlimited
+<a name="l00233"></a><a class="code" href="namespacepio__types.html#a763780954fb31439fb2146ad2450d526">00233</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_double = nf_double
+<a name="l00234"></a><a class="code" href="namespacepio__types.html#aaba5f6ae3ed664e917ebad9eb617205f">00234</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_real   = nf_real
+<a name="l00235"></a><a class="code" href="namespacepio__types.html#a1f77089106798056f4434c6964b085a6">00235</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_int    = nf_int
+<a name="l00236"></a><a class="code" href="namespacepio__types.html#aedb831e554c3674a26f54c7f31d90625">00236</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_char   = nf_char
+<a name="l00237"></a><a class="code" href="namespacepio__types.html#ad04b454c7114f02abea4895c376dffb4">00237</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_noerr  = nf_noerr
+<a name="l00238"></a><a class="code" href="namespacepio__types.html#a8cfd37d8164343875563424aa0eec2a2">00238</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_WRITE  = nf_write
+<a name="l00239"></a><a class="code" href="namespacepio__types.html#a42e31007382da0996fcf7902b1764e3c">00239</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_nowrite  = nf_nowrite
+<a name="l00240"></a><a class="code" href="namespacepio__types.html#a765387866497bf710cb71605b6effb2c">00240</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_CLOBBER = nf_clobber       
+<a name="l00241"></a><a class="code" href="namespacepio__types.html#a97865ce3b3ef05b75e3b0908096164a2">00241</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_NOCLOBBER = nf_NOclobber   
+<a name="l00242"></a><a class="code" href="namespacepio__types.html#ace5e12c0b7c23cc38e4953b7702623d2">00242</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_NOFILL = nf_nofill
+<a name="l00243"></a><a class="code" href="namespacepio__types.html#a318441715ad7fcfc49f0f77a92a45868">00243</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_MAX_NAME = nf_max_name
+<a name="l00244"></a><a class="code" href="namespacepio__types.html#a2a63759fe9cf1a4d66b3b5b5dfe5fd42">00244</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_MAX_VAR_DIMS = nf_max_var_dims
+<a name="l00245"></a><a class="code" href="namespacepio__types.html#ae0fd8231c434818fcc6b1886538d1e17">00245</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_64BIT_OFFSET = nf_64bit_offset
+<a name="l00246"></a>00246 <span class="preprocessor">#else</span>
+<a name="l00247"></a>00247 <span class="preprocessor"></span><span class="preprocessor">#ifdef _NETCDF</span>
+<a name="l00248"></a>00248 <span class="preprocessor"></span>   <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_global = nf90_global
+<a name="l00249"></a>00249    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_unlimited = nf90_unlimited
+<a name="l00250"></a>00250    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_double = nf90_double
+<a name="l00251"></a>00251    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_real   = nf90_real
+<a name="l00252"></a>00252    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_int    = nf90_int
+<a name="l00253"></a>00253    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_char   = nf90_char
+<a name="l00254"></a>00254    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_noerr  = nf90_noerr
+<a name="l00255"></a>00255    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_WRITE  = nf90_write
+<a name="l00256"></a>00256    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_nowrite = nf90_nowrite
+<a name="l00257"></a>00257    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_CLOBBER = nf90_clobber     
+<a name="l00258"></a>00258    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_NOCLOBBER = nf90_NOclobber 
+<a name="l00259"></a>00259    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_NOFILL = nf90_nofill
+<a name="l00260"></a>00260    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_MAX_NAME = nf90_max_name
+<a name="l00261"></a>00261    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_MAX_VAR_DIMS = nf90_max_var_dims
+<a name="l00262"></a>00262    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_64BIT_OFFSET = nf90_64bit_offset
+<a name="l00263"></a>00263 <span class="preprocessor">#else</span>
+<a name="l00264"></a>00264 <span class="preprocessor"></span>   <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_global = 0
+<a name="l00265"></a>00265    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_double = 6
+<a name="l00266"></a>00266    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_real   = 5
+<a name="l00267"></a>00267    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_int    = 4
+<a name="l00268"></a>00268    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_char   = 2
+<a name="l00269"></a>00269    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_noerr  = 0
+<a name="l00270"></a>00270    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_MAX_NAME = 25
+<a name="l00271"></a>00271    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_MAX_VAR_DIMS = 6
+<a name="l00272"></a>00272    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_CLOBBER = 10
+<a name="l00273"></a>00273    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_NOCLOBBER = 11
+<a name="l00274"></a>00274    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_WRITE = 20
+<a name="l00275"></a><a class="code" href="namespacepio__types.html#a735c026ed4e334998296b2f9110298c6">00275</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_NOWRITE = 21
+<a name="l00276"></a><a class="code" href="namespacepio__types.html#a5fd27561cfc71a7daf1f9d48f0aa7ac0">00276</a>    <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: PIO_64bit_offset = 0
+<a name="l00277"></a>00277 <span class="preprocessor">#endif</span>
+<a name="l00278"></a>00278 <span class="preprocessor"></span><span class="preprocessor">#endif</span>
+<a name="l00279"></a>00279 <span class="preprocessor"></span><span class="comment">! should be defined in the mct mpiserial library.</span>
+<a name="l00280"></a>00280 <span class="preprocessor">#ifdef _MPISERIAL</span>
+<a name="l00281"></a><a class="code" href="namespacepio__types.html#a67bbaccdf5534199b88be23ef0d28b87">00281</a> <span class="preprocessor"></span>   <span class="keywordtype">integer</span>, <span class="keywordtype">public</span>, <span class="keywordtype">parameter</span> :: MPI_DATATYPE_NULL=0
+<a name="l00282"></a>00282 <span class="preprocessor">#endif</span>
+<a name="l00283"></a>00283 <span class="preprocessor"></span>
+<a name="l00284"></a>00284    <span class="keywordtype">public</span>:: pio_type_to_mpi_type
 <a name="l00285"></a>00285 
-<a name="l00286"></a><a class="code" href="namespacepio__types.html#a9af42d02000bbaf2f7e4741ccb292281">00286</a>   <span class="keyword">integer </span><span class="keyword">function </span>pio_type_to_mpi_type(ptype) result(mtype)
-<a name="l00287"></a>00287     use <span class="keywordflow">pio_support</span>
-<a name="l00288"></a>00288     <span class="keyword">implicit none</span>
-<a name="l00289"></a>00289     include <span class="stringliteral">&apos;mpif.h&apos;</span>            <span class="comment">! _EXTERNAL</span>
-<a name="l00290"></a>00290     <span class="keywordtype">integer</span>, <span class="keywordtype">intent(in)</span>:: ptype
-<a name="l00291"></a>00291 
-<a name="l00292"></a>00292     <span class="keyword">select</span> <span class="keyword">case</span>(ptype)
-<a name="l00293"></a>00293       <span class="keyword">case</span> (PIO_double)
-<a name="l00294"></a>00294          mtype=MPI_REAL8
-<a name="l00295"></a>00295       <span class="keyword">case</span> (PIO_real)
-<a name="l00296"></a>00296          mtype=MPI_REAL4
-<a name="l00297"></a>00297       <span class="keyword">case</span> (PIO_int)
-<a name="l00298"></a>00298          mtype=MPI_INTEGER
-<a name="l00299"></a>00299       <span class="keyword">case</span> (PIO_char)
-<a name="l00300"></a>00300          mtype=MPI_CHARACTER
-<a name="l00301"></a>00301       <span class="keyword">case</span> default
-<a name="l00302"></a>00302          call piodie( _FILE_,__LINE__, &amp;
-<a name="l00303"></a>00303                       <span class="stringliteral">&apos;Could not convert pio type=&apos;</span>,ptype,<span class="stringliteral">&apos; to an mpi type&apos;</span>)
-<a name="l00304"></a>00304     <span class="keyword">end select</span>
-<a name="l00305"></a>00305 
-<a name="l00306"></a>00306 <span class="keyword">  end function pio_type_to_mpi_type</span>
-<a name="l00307"></a>00307 
-<a name="l00308"></a>00308 <span class="keyword">end module pio_types</span>
+<a name="l00286"></a>00286 <span class="keyword">contains</span>
+<a name="l00287"></a>00287 
+<a name="l00288"></a>00288 
+<a name="l00289"></a>00289 <span class="comment">!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</span>
+<a name="l00290"></a>00290 <span class="comment">!</span>
+<a name="l00291"></a>00291 <span class="comment">! pio_type_to_mpi_type</span>
+<a name="l00292"></a>00292 
+<a name="l00293"></a>00293 
+<a name="l00294"></a><a class="code" href="namespacepio__types.html#a9af42d02000bbaf2f7e4741ccb292281">00294</a>   <span class="keyword">integer </span><span class="keyword">function </span>pio_type_to_mpi_type(ptype) result(mtype)
+<a name="l00295"></a>00295     use <span class="keywordflow">pio_support</span>
+<a name="l00296"></a>00296     <span class="keyword">implicit none</span>
+<a name="l00297"></a>00297     include <span class="stringliteral">&apos;mpif.h&apos;</span>            <span class="comment">! _EXTERNAL</span>
+<a name="l00298"></a>00298     <span class="keywordtype">integer</span>, <span class="keywordtype">intent(in)</span>:: ptype
+<a name="l00299"></a>00299 
+<a name="l00300"></a>00300     <span class="keyword">select</span> <span class="keyword">case</span>(ptype)
+<a name="l00301"></a>00301       <span class="keyword">case</span> (PIO_double)
+<a name="l00302"></a>00302          mtype=MPI_REAL8
+<a name="l00303"></a>00303       <span class="keyword">case</span> (PIO_real)
+<a name="l00304"></a>00304          mtype=MPI_REAL4
+<a name="l00305"></a>00305       <span class="keyword">case</span> (PIO_int)
+<a name="l00306"></a>00306          mtype=MPI_INTEGER
+<a name="l00307"></a>00307       <span class="keyword">case</span> (PIO_char)
+<a name="l00308"></a>00308          mtype=MPI_CHARACTER
+<a name="l00309"></a>00309       <span class="keyword">case</span> default
+<a name="l00310"></a>00310          call piodie( _FILE_,__LINE__, &amp;
+<a name="l00311"></a>00311                       <span class="stringliteral">&apos;Could not convert pio type=&apos;</span>,ptype,<span class="stringliteral">&apos; to an mpi type&apos;</span>)
+<a name="l00312"></a>00312     <span class="keyword">end select</span>
+<a name="l00313"></a>00313 
+<a name="l00314"></a>00314 <span class="keyword">  end function pio_type_to_mpi_type</span>
+<a name="l00315"></a>00315 
+<a name="l00316"></a>00316 <span class="keyword">end module pio_types</span>
 </pre></div></div>
 <!--- window showing the filter options -->
 <div id="MSearchSelectWindow"
@@ -299,7 +299,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 15:25:20 2009 for PIO User's Guide by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Mon Jan 4 13:14:15 2010 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>

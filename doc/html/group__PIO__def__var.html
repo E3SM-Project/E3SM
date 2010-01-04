@@ -42,13 +42,13 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="contents">
 <h1>PIO_def_var</h1><table border="0" cellpadding="0" cellspacing="0">
 <tr><td colspan="2"><h2>Functions/Subroutines</h2></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">integer&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__def__var.html#gac5e55b282f83ef3dd709dbd6e3c8e4a3">def_var_0d</a> (File, name, type, varDesc)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Defines a netcdf variable.  <a href="#gac5e55b282f83ef3dd709dbd6e3c8e4a3"></a><br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">integer&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__def__var.html#ga832d332d26601b172a235bdafbc4906d">def_var_md</a> (File, name, type, dimids, varDesc)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Defines the a netcdf variable.  <a href="#ga832d332d26601b172a235bdafbc4906d"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">integer&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__def__var.html#ga38978198664677275d78daa78b51e63a">def_var_0d</a> (File, name, type, vardesc)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Defines a netcdf variable.  <a href="#ga38978198664677275d78daa78b51e63a"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">integer&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__PIO__def__var.html#ga3678e5bc0e26d35b6faa312a3019d3f8">def_var_md</a> (File, name, type, dimids, vardesc)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Defines the a netcdf variable.  <a href="#ga3678e5bc0e26d35b6faa312a3019d3f8"></a><br/></td></tr>
 </table>
 <hr/><h2>Function/Subroutine Documentation</h2>
-<a class="anchor" id="gac5e55b282f83ef3dd709dbd6e3c8e4a3"></a><!-- doxytag: member="nf_mod::def_var_0d" ref="gac5e55b282f83ef3dd709dbd6e3c8e4a3" args="(File, name, type, varDesc)" -->
+<a class="anchor" id="ga38978198664677275d78daa78b51e63a"></a><!-- doxytag: member="nf_mod::def_var_0d" ref="ga38978198664677275d78daa78b51e63a" args="(File, name, type, vardesc)" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
@@ -74,7 +74,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">type (Var_desc_t),intent(inout)&nbsp;</td>
-          <td class="paramname"> <em>varDesc</em></td><td>&nbsp;</td>
+          <td class="paramname"> <em>vardesc</em></td><td>&nbsp;</td>
         </tr>
         <tr>
           <td></td>
@@ -89,7 +89,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
     <tr><td valign="top"></td><td valign="top"><em>File</em>&nbsp;</td><td>: File descriptor returned by <a class="el" href="group__PIO__openfile.html">PIO_openfile</a> or <a class="el" href="group__PIO__createfile.html">PIO_createfile</a> (see <a class="el" href="namespacepio__types.html">pio_types</a>)  </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>name</em>&nbsp;</td><td>: The name of the variable to define </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>type</em>&nbsp;</td><td>: The type of variable </td></tr>
-    <tr><td valign="top"></td><td valign="top"><em>varDesc</em>&nbsp;</td><td>: A variable descriptor returned from <a class="el" href="group__PIO__def__var.html">PIO_def_var</a> (see <a class="el" href="namespacepio__types.html">pio_types</a>)  </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>vardesc</em>&nbsp;</td><td>: A variable descriptor returned from <a class="el" href="group__PIO__def__var.html">PIO_def_var</a> (see <a class="el" href="namespacepio__types.html">pio_types</a>)  </td></tr>
   </table>
   </dd>
 </dl>
@@ -100,20 +100,20 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="nf__mod_8F90_source.html#l01598">1598</a> of file <a class="el" href="nf__mod_8F90_source.html">nf_mod.F90</a>.</p>
+<p>Definition at line <a class="el" href="nf__mod_8F90_source.html#l01601">1601</a> of file <a class="el" href="nf__mod_8F90_source.html">nf_mod.F90</a>.</p>
 
 <p><div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dynsection">
-<div class="center"><img src="group__PIO__def__var_gac5e55b282f83ef3dd709dbd6e3c8e4a3_cgraph.png" border="0" usemap="#group__PIO__def__var_gac5e55b282f83ef3dd709dbd6e3c8e4a3_cgraph_map" alt=""></div>
-<map name="group__PIO__def__var_gac5e55b282f83ef3dd709dbd6e3c8e4a3_cgraph_map" id="group__PIO__def__var_gac5e55b282f83ef3dd709dbd6e3c8e4a3_cgraph">
-<area shape="rect" id="node3" href="group__PIO__def__var.html#ga832d332d26601b172a235bdafbc4906d" title="Defines the a netcdf variable." alt="" coords="147,5,245,35"/></map>
+<div class="center"><img src="group__PIO__def__var_ga38978198664677275d78daa78b51e63a_cgraph.png" border="0" usemap="#group__PIO__def__var_ga38978198664677275d78daa78b51e63a_cgraph_map" alt=""></div>
+<map name="group__PIO__def__var_ga38978198664677275d78daa78b51e63a_cgraph_map" id="group__PIO__def__var_ga38978198664677275d78daa78b51e63a_cgraph">
+<area shape="rect" id="node3" href="group__PIO__def__var.html#ga3678e5bc0e26d35b6faa312a3019d3f8" title="Defines the a netcdf variable." alt="" coords="147,5,245,35"/></map>
 </div>
 </p>
 
 </div>
 </div>
-<a class="anchor" id="ga832d332d26601b172a235bdafbc4906d"></a><!-- doxytag: member="nf_mod::def_var_md" ref="ga832d332d26601b172a235bdafbc4906d" args="(File, name, type, dimids, varDesc)" -->
+<a class="anchor" id="ga3678e5bc0e26d35b6faa312a3019d3f8"></a><!-- doxytag: member="nf_mod::def_var_md" ref="ga3678e5bc0e26d35b6faa312a3019d3f8" args="(File, name, type, dimids, vardesc)" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
@@ -145,7 +145,7 @@ Here is the call graph for this function:</div>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">type (Var_desc_t),intent(inout)&nbsp;</td>
-          <td class="paramname"> <em>varDesc</em></td><td>&nbsp;</td>
+          <td class="paramname"> <em>vardesc</em></td><td>&nbsp;</td>
         </tr>
         <tr>
           <td></td>
@@ -161,7 +161,7 @@ Here is the call graph for this function:</div>
     <tr><td valign="top"></td><td valign="top"><em>name</em>&nbsp;</td><td>: The name of the variable to define </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>type</em>&nbsp;</td><td>: The type of variable </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>dimids</em>&nbsp;</td><td>: The dimension identifier returned by <a class="el" href="group__PIO__def__dim.html">PIO_def_dim</a> </td></tr>
-    <tr><td valign="top"></td><td valign="top"><em>varDesc</em>&nbsp;</td><td>: A variable descriptor returned from <a class="el" href="group__PIO__def__var.html">PIO_def_var</a> (see <a class="el" href="namespacepio__types.html">pio_types</a>)  </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>vardesc</em>&nbsp;</td><td>: A variable descriptor returned from <a class="el" href="group__PIO__def__var.html">PIO_def_var</a> (see <a class="el" href="namespacepio__types.html">pio_types</a>)  </td></tr>
   </table>
   </dd>
 </dl>
@@ -172,7 +172,7 @@ Here is the call graph for this function:</div>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="nf__mod_8F90_source.html#l01622">1622</a> of file <a class="el" href="nf__mod_8F90_source.html">nf_mod.F90</a>.</p>
+<p>Definition at line <a class="el" href="nf__mod_8F90_source.html#l01625">1625</a> of file <a class="el" href="nf__mod_8F90_source.html">nf_mod.F90</a>.</p>
 
 </div>
 </div>
@@ -191,7 +191,7 @@ Here is the call graph for this function:</div>
 </iframe>
 </div>
 
-<hr size="1"/><address style="text-align: right;"><small>Generated on Wed Dec 16 15:25:20 2009 for PIO User's Guide by&nbsp;
+<hr size="1"/><address style="text-align: right;"><small>Generated on Mon Jan 4 13:14:22 2010 for PIO User's Guide by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.1 </small></address>
 </body>
