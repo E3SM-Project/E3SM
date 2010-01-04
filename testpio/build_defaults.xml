@@ -17,7 +17,7 @@
  />
 <bluefire
   NETCDF_PATH="/usr/local/" 
-  PNETCDF_PATH="/contrib/pnetcdf" 
+  PNETCDF_PATH="/contrib/parallel-netcdf-1.1.0" 
   FFLAGS = "-g -qfullpath -WF,-D_USE_COMP2IO_FC,-D_USE_IO2COMP_FC"
   ENV_PREATTACH_PROCESSOR_LIST="AUTO_SELECT"
   ENV_MP_EAGER_LIMIT="0"
