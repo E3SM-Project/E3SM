@@ -66,13 +66,13 @@ contains
 
           if(Debug) print *,_FILE_,__LINE__, &
                '  IAM: ',File%iosystem%io_rank,' start: ', &
-               int(start,kind=mpi_offset_kind),' count: ', &
-               int(count,kind=mpi_offset_kind), ' iobuf size: ',size(iobuf)
+               int(start,kind=pio_offset),' count: ', &
+               int(count,kind=pio_offset), ' iobuf size: ',size(iobuf)
 
           ierr=nfmpi_get_vara_all( File%fh,varDesc%varid, &
-               int(start,kind=mpi_offset_kind), &
-               int(count,kind=mpi_offset_kind), &
-               IOBUF,iodesc%Read%n_ElemTYPE, &
+               int(start,kind=pio_offset), &
+               int(count,kind=pio_offset), &
+               IOBUF,int(iodesc%Read%n_ElemTYPE,kind=pio_offset), &
                iodesc%Read%ElemTYPE)
 #endif
 

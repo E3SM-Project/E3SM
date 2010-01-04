@@ -35,6 +35,9 @@ module nf_mod
        pio_inq_varndims,   &
        pio_inq_vardimid,   &
        pio_inq_varnatts,   &
+#ifdef _PNETCDF
+       pnetcdf_version_check, &
+#endif
        pio_inquire_variable
 !>
 !! \defgroup PIO_def_var
@@ -845,14 +848,14 @@ contains
 !! @details
 !! @param File @copydoc file_desc_t
 !! @param name   : Name of the returned attribute
-!! @param varDesc @copydoc var_desc_t
+!! @param vardesc @copydoc var_desc_t
 !! @retval ierr @copydoc error_return
 !<
-  integer function inq_varid_vardesc(File,name,varDesc) result(ierr)
+  integer function inq_varid_vardesc(File,name,vardesc) result(ierr)
 
     type (File_desc_t), intent(in)   :: File
     character(len=*), intent(in)     :: name
-    type (Var_desc_t), intent(inout) :: varDesc
+    type (Var_desc_t), intent(inout) :: vardesc
 
     ierr = pio_inq_varid(File, name, vardesc%varid)
     vardesc%rec=-1
@@ -864,14 +867,14 @@ contains
 !! @brief Get the name associated with a variable
 !! @details
 !! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc var_desc_t
+!! @param vardesc @copydoc var_desc_t
 !! @param name : The name of the netcdf variable.
 !! @retval ierr @copydoc error_return
 !>
-  integer function inq_varname_vdesc(File,varDesc,name) result(ierr)
+  integer function inq_varname_vdesc(File,vardesc,name) result(ierr)
 
     type (File_desc_t), intent(in)   :: File
-    type (Var_desc_t), intent(in)    :: varDesc
+    type (Var_desc_t), intent(in)    :: vardesc
     character(len=*), intent(out)    :: name
     
     ierr = pio_inq_varname(file,vardesc%varid,name)
@@ -999,14 +1002,14 @@ contains
 !! @brief Gets the number of dimension associated with a netcdf variable
 !! @details
 !! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc var_desc_t
+!! @param vardesc @copydoc var_desc_t
 !! @param ndims : The number of dimensions for the variable 
 !! @retval ierr @copydoc error_return
 !>
-  integer function inq_varndims_vdesc(File,varDesc,ndims) result(ierr)
+  integer function inq_varndims_vdesc(File,vardesc,ndims) result(ierr)
 
     type (File_desc_t), intent(in)   :: File
-    type (Var_desc_t), intent(in) :: varDesc
+    type (Var_desc_t), intent(in) :: vardesc
     integer(i4), intent(out)    :: ndims
 
     ierr = pio_inq_varndims(File, vardesc%varid, ndims)
@@ -1076,14 +1079,14 @@ contains
 !! @brief Gets metadata information for netcdf file.
 !! @details
 !! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc var_desc_t
+!! @param vardesc @copydoc var_desc_t
 !! @param type : The type of variable
 !! @retval ierr @copydoc error_return
 !>
-  integer function inq_vartype_vdesc(File,varDesc,type) result(ierr)
+  integer function inq_vartype_vdesc(File,vardesc,type) result(ierr)
 
     type (File_desc_t), intent(in)   :: File
-    type (Var_desc_t), intent(in) :: varDesc
+    type (Var_desc_t), intent(in) :: vardesc
     integer(i4), intent(out)    :: type
 
     ierr = pio_inq_vartype(File, vardesc%varid, type)
@@ -1152,14 +1155,14 @@ contains
 !! @brief returns the dimids of the variable as an interger array
 !! @details
 !! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc var_desc_t
+!! @param vardesc @copydoc var_desc_t
 !! @param dimids : The dimension identifier returned by \ref PIO_def_dim
 !! @retval ierr @copydoc error_return
 !>
-  integer function inq_vardimid_vdesc(File,varDesc,dimids) result(ierr)
+  integer function inq_vardimid_vdesc(File,vardesc,dimids) result(ierr)
 
     type (File_desc_t), intent(in)   :: File
-    type (Var_desc_t), intent(in) :: varDesc
+    type (Var_desc_t), intent(in) :: vardesc
     integer(i4), intent(out)    :: dimids(:)
 
 
@@ -1227,14 +1230,14 @@ contains
 !! @brief Returns the number of attributes associated with a varaible
 !! @details
 !! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc var_desc_t
+!! @param vardesc @copydoc var_desc_t
 !! @param natts : The number of attributes associated with the variable
 !! @retval ierr @copydoc error_return
 !>
-  integer function inq_varnatts_vdesc(File,varDesc,natts) result(ierr)
+  integer function inq_varnatts_vdesc(File,vardesc,natts) result(ierr)
 
     type (File_desc_t), intent(in)   :: File
-    type (Var_desc_t), intent(in)    :: varDesc
+    type (Var_desc_t), intent(in)    :: vardesc
     integer(i4), intent(out)         :: natts
 
 
@@ -1592,20 +1595,20 @@ contains
 !! @param File @copydoc file_desc_t
 !! @param name : The name of the variable to define
 !! @param type : The type of variable 
-!! @param varDesc @copydoc var_desc_t
+!! @param vardesc @copydoc var_desc_t
 !! @retval ierr @copydoc error_return
 !<
-  integer function def_var_0d(File,name,type,varDesc) result(ierr)
+  integer function def_var_0d(File,name,type,vardesc) result(ierr)
 
     type (File_desc_t), intent(in)  :: File
     character(len=*), intent(in)    :: name
     integer, intent(in)             :: type
-    type (Var_desc_t), intent(inout) :: varDesc
+    type (Var_desc_t), intent(inout) :: vardesc
     integer :: len=0, dimids(1)
 
     ierr = def_var_md(File,name,type,dimids(1:len),vardesc)
 
-  end function def_va_r0d
+  end function def_var_0d
 
 !> 
 !! @public
@@ -1616,16 +1619,16 @@ contains
 !! @param name : The name of the variable to define
 !! @param type : The type of variable 
 !! @param dimids : The dimension identifier returned by \ref PIO_def_dim
-!! @param varDesc @copydoc var_desc_t
+!! @param vardesc @copydoc var_desc_t
 !! @retval ierr @copydoc error_return
 !<
-  integer function def_var_md(File,name,type,dimids,varDesc) result(ierr)
+  integer function def_var_md(File,name,type,dimids,vardesc) result(ierr)
 
     type (File_desc_t), intent(in)  :: File
     character(len=*), intent(in)    :: name
     integer, intent(in)             :: type
     integer, intent(in)             :: dimids(:)
-    type (Var_desc_t), intent(inout) :: varDesc
+    type (Var_desc_t), intent(inout) :: vardesc
 
     !------------------
     ! Local variables
@@ -1646,7 +1649,7 @@ contains
        case(iotype_pnetcdf)
 
           len = SIZE(dimids)
-          ierr=nfmpi_def_var(File%fh,name,type,len,dimids,varDesc%varid)
+          ierr=nfmpi_def_var(File%fh,name,type,len,dimids,vardesc%varid)
 #endif
 
 #ifdef _NETCDF
@@ -1658,12 +1661,12 @@ contains
 
           if (File%iosystem%io_rank==0) then
              ierr=nf90_def_var( ncid=File%fh,name=name,xtype=type, &
-                  dimids=dimids,varid=varDesc%varid)
+                  dimids=dimids,varid=vardesc%varid)
              if (Debug) print *, '0: def_var fh=',File%fh, &
-                  'name=',name,' id=',varDesc%varid
+                  'name=',name,' id=',vardesc%varid
           endif
           if(File%iosystem%num_tasks==File%iosystem%num_iotasks) then
-             call MPI_BCAST(varDesc%varid, 1, MPI_INTEGER, 0, File%iosystem%IO_Comm, ierr)
+             call MPI_BCAST(vardesc%varid, 1, MPI_INTEGER, 0, File%iosystem%IO_Comm, ierr)
           end if
 
 #endif
@@ -1677,7 +1680,7 @@ contains
     if(File%iosystem%num_tasks>File%iosystem%num_iotasks) then
        call MPI_BCAST(vardesc%varid, 1, MPI_INTEGER, File%iosystem%IOMaster, File%iosystem%Comp_Comm, ierr)
     end if
-  end function def_va_rmd
+  end function def_var_md
 
 !>
 !! @public
@@ -1808,5 +1811,41 @@ contains
     if(present(name)) ierr = pio_inq_dimname(ncid, dimid,name)
 
   end function PIO_inquire_dimension
+
+#ifdef _PNETCDF  
+  subroutine pnetcdf_version_check()
+    character(len=80) :: version
+    integer :: dot1, dot2, s
+    integer :: v1, v2, v3
+    integer, parameter :: rv1=1, rv2=1, rv3=0
+    character(len=80) :: error
+
+    write(error,*) 'Pnetcdf version appears to be older than minimum required ',rv1,'.',rv2,'.',rv3
+
+    version = nfmpi_inq_libvers()
+
+    dot1 = index(version,'.')
+    dot2 = index(version,'.',.true.)
+    
+    s = index(version(1:dot1),' ',.true.)
+    read(version(s:dot1-1),'(i)') v1
+    read(version(dot1+1:dot2-1),'(i)') v2
+    s = index(version(dot2:),' ')
+    read(version(dot2+1:s-1),'(s)') v3
+
+    if(v1<rv1) then
+       call piodie(version,__LINE__,error)
+    else if(v1==rv1) then
+       if(v2<rv2) then
+          call piodie(version,__LINE__,error)
+       else if(v2==rv2) then
+          if(v3<rv3) then
+             call piodie(version,__LINE__,error)
+          end if
+       end if
+    end if
+
+  end subroutine pnetcdf_version_check
+#endif  
 
 end module nf_mod

@@ -30,9 +30,12 @@ module pionfget_mod
 !>
 !! @defgroup PIO_get_var PIO_get_var
 !! @brief Reads netcdf metadata from a file
+!! @details The get_var interface is provided as a simplified interface to
+!!  read variables from a netcdf format file.   The variable is read on the 
+!!  root IO task and broadcast in its entirety to all tasks.  
 !<
   public :: get_var
-# 26 "pionfget_mod.F90.in"
+# 29 "pionfget_mod.F90.in"
   interface get_var
      module procedure get_var_0d_text, get_var_vdesc_0d_text
      module procedure get_var_1d_text, get_var_vdesc_1d_text
@@ -90,7 +93,7 @@ module pionfget_mod
 
  character(len=*), parameter :: modName='pionfget_mod'
 
-# 35 "pionfget_mod.F90.in"
+# 38 "pionfget_mod.F90.in"
 CONTAINS
 
 !>
@@ -104,7 +107,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 48 "pionfget_mod.F90.in"
+# 51 "pionfget_mod.F90.in"
   integer function get_var1_text (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, index(:)
@@ -177,7 +180,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 48 "pionfget_mod.F90.in"
+# 51 "pionfget_mod.F90.in"
   integer function get_var1_real (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, index(:)
@@ -250,7 +253,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 48 "pionfget_mod.F90.in"
+# 51 "pionfget_mod.F90.in"
   integer function get_var1_double (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, index(:)
@@ -323,7 +326,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 48 "pionfget_mod.F90.in"
+# 51 "pionfget_mod.F90.in"
   integer function get_var1_int (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, index(:)
@@ -396,7 +399,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 120 "pionfget_mod.F90.in"
+# 123 "pionfget_mod.F90.in"
   integer function get_var1_vdesc_text (File,vardesc, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -420,7 +423,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 120 "pionfget_mod.F90.in"
+# 123 "pionfget_mod.F90.in"
   integer function get_var1_vdesc_real (File,vardesc, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -444,7 +447,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 120 "pionfget_mod.F90.in"
+# 123 "pionfget_mod.F90.in"
   integer function get_var1_vdesc_double (File,vardesc, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -468,7 +471,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 120 "pionfget_mod.F90.in"
+# 123 "pionfget_mod.F90.in"
   integer function get_var1_vdesc_int (File,vardesc, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -495,14 +498,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 146 "pionfget_mod.F90.in"
+# 149 "pionfget_mod.F90.in"
   integer function get_vara_1d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
     character(len=*), intent(out) :: ival(:)
 
     character(len=*), parameter :: subName=modName//'::get_vara_1d_text'
-    integer :: iotype, isize, mpierr, i
+    integer :: iotype, mpierr, i
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_vara_1d_text")
@@ -532,7 +536,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_CHARACTER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_CHARACTER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 
@@ -555,14 +559,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 146 "pionfget_mod.F90.in"
+# 149 "pionfget_mod.F90.in"
   integer function get_vara_2d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
     character(len=*), intent(out) :: ival(:,:)
 
     character(len=*), parameter :: subName=modName//'::get_vara_2d_text'
-    integer :: iotype, isize, mpierr, i
+    integer :: iotype, mpierr, i
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_vara_2d_text")
@@ -592,7 +597,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_CHARACTER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_CHARACTER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 
@@ -615,14 +620,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 146 "pionfget_mod.F90.in"
+# 149 "pionfget_mod.F90.in"
   integer function get_vara_3d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
     character(len=*), intent(out) :: ival(:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_vara_3d_text'
-    integer :: iotype, isize, mpierr, i
+    integer :: iotype, mpierr, i
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_vara_3d_text")
@@ -652,7 +658,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_CHARACTER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_CHARACTER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 
@@ -675,14 +681,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 146 "pionfget_mod.F90.in"
+# 149 "pionfget_mod.F90.in"
   integer function get_vara_1d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
     real(r4), intent(out) :: ival(:)
 
     character(len=*), parameter :: subName=modName//'::get_vara_1d_real'
-    integer :: iotype, isize, mpierr, i
+    integer :: iotype, mpierr, i
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_vara_1d_real")
@@ -712,7 +719,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_REAL4 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_REAL4 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 
@@ -735,14 +742,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 146 "pionfget_mod.F90.in"
+# 149 "pionfget_mod.F90.in"
   integer function get_vara_2d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
     real(r4), intent(out) :: ival(:,:)
 
     character(len=*), parameter :: subName=modName//'::get_vara_2d_real'
-    integer :: iotype, isize, mpierr, i
+    integer :: iotype, mpierr, i
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_vara_2d_real")
@@ -772,7 +780,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_REAL4 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_REAL4 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 
@@ -795,14 +803,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 146 "pionfget_mod.F90.in"
+# 149 "pionfget_mod.F90.in"
   integer function get_vara_3d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
     real(r4), intent(out) :: ival(:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_vara_3d_real'
-    integer :: iotype, isize, mpierr, i
+    integer :: iotype, mpierr, i
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_vara_3d_real")
@@ -832,7 +841,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_REAL4 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_REAL4 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 
@@ -855,14 +864,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 146 "pionfget_mod.F90.in"
+# 149 "pionfget_mod.F90.in"
   integer function get_vara_1d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
     real(r8), intent(out) :: ival(:)
 
     character(len=*), parameter :: subName=modName//'::get_vara_1d_double'
-    integer :: iotype, isize, mpierr, i
+    integer :: iotype, mpierr, i
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_vara_1d_double")
@@ -892,7 +902,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_REAL8 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_REAL8 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 
@@ -915,14 +925,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 146 "pionfget_mod.F90.in"
+# 149 "pionfget_mod.F90.in"
   integer function get_vara_2d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
     real(r8), intent(out) :: ival(:,:)
 
     character(len=*), parameter :: subName=modName//'::get_vara_2d_double'
-    integer :: iotype, isize, mpierr, i
+    integer :: iotype, mpierr, i
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_vara_2d_double")
@@ -952,7 +963,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_REAL8 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_REAL8 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 
@@ -975,14 +986,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 146 "pionfget_mod.F90.in"
+# 149 "pionfget_mod.F90.in"
   integer function get_vara_3d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
     real(r8), intent(out) :: ival(:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_vara_3d_double'
-    integer :: iotype, isize, mpierr, i
+    integer :: iotype, mpierr, i
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_vara_3d_double")
@@ -1012,7 +1024,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_REAL8 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_REAL8 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 
@@ -1035,14 +1047,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 146 "pionfget_mod.F90.in"
+# 149 "pionfget_mod.F90.in"
   integer function get_vara_1d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
     integer(i4), intent(out) :: ival(:)
 
     character(len=*), parameter :: subName=modName//'::get_vara_1d_int'
-    integer :: iotype, isize, mpierr, i
+    integer :: iotype, mpierr, i
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_vara_1d_int")
@@ -1072,7 +1085,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_INTEGER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_INTEGER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 
@@ -1095,14 +1108,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 146 "pionfget_mod.F90.in"
+# 149 "pionfget_mod.F90.in"
   integer function get_vara_2d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
     integer(i4), intent(out) :: ival(:,:)
 
     character(len=*), parameter :: subName=modName//'::get_vara_2d_int'
-    integer :: iotype, isize, mpierr, i
+    integer :: iotype, mpierr, i
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_vara_2d_int")
@@ -1132,7 +1146,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_INTEGER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_INTEGER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 
@@ -1155,14 +1169,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 146 "pionfget_mod.F90.in"
+# 149 "pionfget_mod.F90.in"
   integer function get_vara_3d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
     integer(i4), intent(out) :: ival(:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_vara_3d_int'
-    integer :: iotype, isize, mpierr, i
+    integer :: iotype, mpierr, i
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_vara_3d_int")
@@ -1192,7 +1207,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_INTEGER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_INTEGER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 
@@ -1214,7 +1229,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 204 "pionfget_mod.F90.in"
+# 208 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_1d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -1240,7 +1255,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 204 "pionfget_mod.F90.in"
+# 208 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_2d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -1266,7 +1281,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 204 "pionfget_mod.F90.in"
+# 208 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_3d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -1292,7 +1307,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 204 "pionfget_mod.F90.in"
+# 208 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_1d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -1318,7 +1333,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 204 "pionfget_mod.F90.in"
+# 208 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_2d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -1344,7 +1359,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 204 "pionfget_mod.F90.in"
+# 208 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_3d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -1370,7 +1385,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 204 "pionfget_mod.F90.in"
+# 208 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_1d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -1396,7 +1411,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 204 "pionfget_mod.F90.in"
+# 208 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_2d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -1422,7 +1437,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 204 "pionfget_mod.F90.in"
+# 208 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_3d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -1448,7 +1463,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 204 "pionfget_mod.F90.in"
+# 208 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_1d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -1474,7 +1489,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 204 "pionfget_mod.F90.in"
+# 208 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_2d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -1500,7 +1515,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 204 "pionfget_mod.F90.in"
+# 208 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_3d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -1523,14 +1538,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 226 "pionfget_mod.F90.in"
+# 230 "pionfget_mod.F90.in"
   integer function get_var_0d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     character(len=*), intent(out) :: ival
 
     character(len=*), parameter :: subName=modName//'::get_var_0d_text'
-    integer :: iotype, mpierr, isize
+    integer :: iotype, mpierr
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_var_0d_text")
@@ -1563,7 +1579,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_CHARACTER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_CHARACTER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING
@@ -1581,14 +1597,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 226 "pionfget_mod.F90.in"
+# 230 "pionfget_mod.F90.in"
   integer function get_var_1d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     character(len=*), intent(out) :: ival(:)
 
     character(len=*), parameter :: subName=modName//'::get_var_1d_text'
-    integer :: iotype, mpierr, isize
+    integer :: iotype, mpierr
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_var_1d_text")
@@ -1621,7 +1638,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_CHARACTER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_CHARACTER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING
@@ -1639,14 +1656,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 226 "pionfget_mod.F90.in"
+# 230 "pionfget_mod.F90.in"
   integer function get_var_2d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     character(len=*), intent(out) :: ival(:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_2d_text'
-    integer :: iotype, mpierr, isize
+    integer :: iotype, mpierr
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_var_2d_text")
@@ -1679,7 +1697,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_CHARACTER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_CHARACTER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING
@@ -1697,14 +1715,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 226 "pionfget_mod.F90.in"
+# 230 "pionfget_mod.F90.in"
   integer function get_var_3d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     character(len=*), intent(out) :: ival(:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_3d_text'
-    integer :: iotype, mpierr, isize
+    integer :: iotype, mpierr
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_var_3d_text")
@@ -1737,7 +1756,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_CHARACTER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_CHARACTER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING
@@ -1755,14 +1774,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 226 "pionfget_mod.F90.in"
+# 230 "pionfget_mod.F90.in"
   integer function get_var_4d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     character(len=*), intent(out) :: ival(:,:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_4d_text'
-    integer :: iotype, mpierr, isize
+    integer :: iotype, mpierr
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_var_4d_text")
@@ -1795,7 +1815,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_CHARACTER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_CHARACTER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING
@@ -1813,14 +1833,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 226 "pionfget_mod.F90.in"
+# 230 "pionfget_mod.F90.in"
   integer function get_var_5d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     character(len=*), intent(out) :: ival(:,:,:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_5d_text'
-    integer :: iotype, mpierr, isize
+    integer :: iotype, mpierr
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_var_5d_text")
@@ -1853,7 +1874,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_CHARACTER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_CHARACTER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING
@@ -1871,14 +1892,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 226 "pionfget_mod.F90.in"
+# 230 "pionfget_mod.F90.in"
   integer function get_var_0d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     real(r4), intent(out) :: ival
 
     character(len=*), parameter :: subName=modName//'::get_var_0d_real'
-    integer :: iotype, mpierr, isize
+    integer :: iotype, mpierr
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_var_0d_real")
@@ -1911,7 +1933,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_REAL4 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_REAL4 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING
@@ -1929,14 +1951,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 226 "pionfget_mod.F90.in"
+# 230 "pionfget_mod.F90.in"
   integer function get_var_1d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     real(r4), intent(out) :: ival(:)
 
     character(len=*), parameter :: subName=modName//'::get_var_1d_real'
-    integer :: iotype, mpierr, isize
+    integer :: iotype, mpierr
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_var_1d_real")
@@ -1969,7 +1992,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_REAL4 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_REAL4 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING
@@ -1987,14 +2010,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 226 "pionfget_mod.F90.in"
+# 230 "pionfget_mod.F90.in"
   integer function get_var_2d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     real(r4), intent(out) :: ival(:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_2d_real'
-    integer :: iotype, mpierr, isize
+    integer :: iotype, mpierr
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_var_2d_real")
@@ -2027,7 +2051,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_REAL4 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_REAL4 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING
@@ -2045,14 +2069,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 226 "pionfget_mod.F90.in"
+# 230 "pionfget_mod.F90.in"
   integer function get_var_3d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     real(r4), intent(out) :: ival(:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_3d_real'
-    integer :: iotype, mpierr, isize
+    integer :: iotype, mpierr
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_var_3d_real")
@@ -2085,7 +2110,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_REAL4 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_REAL4 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING
@@ -2103,14 +2128,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 226 "pionfget_mod.F90.in"
+# 230 "pionfget_mod.F90.in"
   integer function get_var_4d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     real(r4), intent(out) :: ival(:,:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_4d_real'
-    integer :: iotype, mpierr, isize
+    integer :: iotype, mpierr
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_var_4d_real")
@@ -2143,7 +2169,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_REAL4 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_REAL4 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING
@@ -2161,14 +2187,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 226 "pionfget_mod.F90.in"
+# 230 "pionfget_mod.F90.in"
   integer function get_var_5d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     real(r4), intent(out) :: ival(:,:,:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_5d_real'
-    integer :: iotype, mpierr, isize
+    integer :: iotype, mpierr
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_var_5d_real")
@@ -2201,7 +2228,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_REAL4 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_REAL4 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING
@@ -2219,14 +2246,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 226 "pionfget_mod.F90.in"
+# 230 "pionfget_mod.F90.in"
   integer function get_var_0d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     real(r8), intent(out) :: ival
 
     character(len=*), parameter :: subName=modName//'::get_var_0d_double'
-    integer :: iotype, mpierr, isize
+    integer :: iotype, mpierr
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_var_0d_double")
@@ -2259,7 +2287,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_REAL8 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_REAL8 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING
@@ -2277,14 +2305,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 226 "pionfget_mod.F90.in"
+# 230 "pionfget_mod.F90.in"
   integer function get_var_1d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     real(r8), intent(out) :: ival(:)
 
     character(len=*), parameter :: subName=modName//'::get_var_1d_double'
-    integer :: iotype, mpierr, isize
+    integer :: iotype, mpierr
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_var_1d_double")
@@ -2317,7 +2346,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_REAL8 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_REAL8 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING
@@ -2335,14 +2364,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 226 "pionfget_mod.F90.in"
+# 230 "pionfget_mod.F90.in"
   integer function get_var_2d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     real(r8), intent(out) :: ival(:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_2d_double'
-    integer :: iotype, mpierr, isize
+    integer :: iotype, mpierr
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_var_2d_double")
@@ -2375,7 +2405,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_REAL8 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_REAL8 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING
@@ -2393,14 +2423,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 226 "pionfget_mod.F90.in"
+# 230 "pionfget_mod.F90.in"
   integer function get_var_3d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     real(r8), intent(out) :: ival(:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_3d_double'
-    integer :: iotype, mpierr, isize
+    integer :: iotype, mpierr
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_var_3d_double")
@@ -2433,7 +2464,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_REAL8 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_REAL8 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING
@@ -2451,14 +2482,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 226 "pionfget_mod.F90.in"
+# 230 "pionfget_mod.F90.in"
   integer function get_var_4d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     real(r8), intent(out) :: ival(:,:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_4d_double'
-    integer :: iotype, mpierr, isize
+    integer :: iotype, mpierr
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_var_4d_double")
@@ -2491,7 +2523,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_REAL8 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_REAL8 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING
@@ -2509,14 +2541,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 226 "pionfget_mod.F90.in"
+# 230 "pionfget_mod.F90.in"
   integer function get_var_5d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     real(r8), intent(out) :: ival(:,:,:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_5d_double'
-    integer :: iotype, mpierr, isize
+    integer :: iotype, mpierr
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_var_5d_double")
@@ -2549,7 +2582,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_REAL8 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_REAL8 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING
@@ -2567,14 +2600,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 226 "pionfget_mod.F90.in"
+# 230 "pionfget_mod.F90.in"
   integer function get_var_0d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     integer(i4), intent(out) :: ival
 
     character(len=*), parameter :: subName=modName//'::get_var_0d_int'
-    integer :: iotype, mpierr, isize
+    integer :: iotype, mpierr
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_var_0d_int")
@@ -2607,7 +2641,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_INTEGER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_INTEGER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING
@@ -2625,14 +2659,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 226 "pionfget_mod.F90.in"
+# 230 "pionfget_mod.F90.in"
   integer function get_var_1d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     integer(i4), intent(out) :: ival(:)
 
     character(len=*), parameter :: subName=modName//'::get_var_1d_int'
-    integer :: iotype, mpierr, isize
+    integer :: iotype, mpierr
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_var_1d_int")
@@ -2665,7 +2700,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_INTEGER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_INTEGER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING
@@ -2683,14 +2718,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 226 "pionfget_mod.F90.in"
+# 230 "pionfget_mod.F90.in"
   integer function get_var_2d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     integer(i4), intent(out) :: ival(:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_2d_int'
-    integer :: iotype, mpierr, isize
+    integer :: iotype, mpierr
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_var_2d_int")
@@ -2723,7 +2759,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_INTEGER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_INTEGER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING
@@ -2741,14 +2777,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 226 "pionfget_mod.F90.in"
+# 230 "pionfget_mod.F90.in"
   integer function get_var_3d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     integer(i4), intent(out) :: ival(:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_3d_int'
-    integer :: iotype, mpierr, isize
+    integer :: iotype, mpierr
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_var_3d_int")
@@ -2781,7 +2818,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_INTEGER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_INTEGER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING
@@ -2799,14 +2836,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 226 "pionfget_mod.F90.in"
+# 230 "pionfget_mod.F90.in"
   integer function get_var_4d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     integer(i4), intent(out) :: ival(:,:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_4d_int'
-    integer :: iotype, mpierr, isize
+    integer :: iotype, mpierr
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_var_4d_int")
@@ -2839,7 +2877,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_INTEGER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_INTEGER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING
@@ -2857,14 +2895,15 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 226 "pionfget_mod.F90.in"
+# 230 "pionfget_mod.F90.in"
   integer function get_var_5d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     integer(i4), intent(out) :: ival(:,:,:,:,:)
 
     character(len=*), parameter :: subName=modName//'::get_var_5d_int'
-    integer :: iotype, mpierr, isize
+    integer :: iotype, mpierr
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_var_5d_int")
@@ -2897,7 +2936,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, MPI_INTEGER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), MPI_INTEGER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING
@@ -2915,7 +2954,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 283 "pionfget_mod.F90.in"
+# 288 "pionfget_mod.F90.in"
   integer function get_var_vdesc_0d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -2937,7 +2976,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 283 "pionfget_mod.F90.in"
+# 288 "pionfget_mod.F90.in"
   integer function get_var_vdesc_1d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -2959,7 +2998,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 283 "pionfget_mod.F90.in"
+# 288 "pionfget_mod.F90.in"
   integer function get_var_vdesc_2d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -2981,7 +3020,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 283 "pionfget_mod.F90.in"
+# 288 "pionfget_mod.F90.in"
   integer function get_var_vdesc_3d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3003,7 +3042,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 283 "pionfget_mod.F90.in"
+# 288 "pionfget_mod.F90.in"
   integer function get_var_vdesc_4d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3025,7 +3064,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 283 "pionfget_mod.F90.in"
+# 288 "pionfget_mod.F90.in"
   integer function get_var_vdesc_5d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3047,7 +3086,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 283 "pionfget_mod.F90.in"
+# 288 "pionfget_mod.F90.in"
   integer function get_var_vdesc_0d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3069,7 +3108,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 283 "pionfget_mod.F90.in"
+# 288 "pionfget_mod.F90.in"
   integer function get_var_vdesc_1d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3091,7 +3130,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 283 "pionfget_mod.F90.in"
+# 288 "pionfget_mod.F90.in"
   integer function get_var_vdesc_2d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3113,7 +3152,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 283 "pionfget_mod.F90.in"
+# 288 "pionfget_mod.F90.in"
   integer function get_var_vdesc_3d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3135,7 +3174,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 283 "pionfget_mod.F90.in"
+# 288 "pionfget_mod.F90.in"
   integer function get_var_vdesc_4d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3157,7 +3196,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 283 "pionfget_mod.F90.in"
+# 288 "pionfget_mod.F90.in"
   integer function get_var_vdesc_5d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3179,7 +3218,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 283 "pionfget_mod.F90.in"
+# 288 "pionfget_mod.F90.in"
   integer function get_var_vdesc_0d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3201,7 +3240,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 283 "pionfget_mod.F90.in"
+# 288 "pionfget_mod.F90.in"
   integer function get_var_vdesc_1d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3223,7 +3262,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 283 "pionfget_mod.F90.in"
+# 288 "pionfget_mod.F90.in"
   integer function get_var_vdesc_2d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3245,7 +3284,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 283 "pionfget_mod.F90.in"
+# 288 "pionfget_mod.F90.in"
   integer function get_var_vdesc_3d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3267,7 +3306,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 283 "pionfget_mod.F90.in"
+# 288 "pionfget_mod.F90.in"
   integer function get_var_vdesc_4d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3289,7 +3328,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 283 "pionfget_mod.F90.in"
+# 288 "pionfget_mod.F90.in"
   integer function get_var_vdesc_5d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3311,7 +3350,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 283 "pionfget_mod.F90.in"
+# 288 "pionfget_mod.F90.in"
   integer function get_var_vdesc_0d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3333,7 +3372,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 283 "pionfget_mod.F90.in"
+# 288 "pionfget_mod.F90.in"
   integer function get_var_vdesc_1d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3355,7 +3394,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 283 "pionfget_mod.F90.in"
+# 288 "pionfget_mod.F90.in"
   integer function get_var_vdesc_2d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3377,7 +3416,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 283 "pionfget_mod.F90.in"
+# 288 "pionfget_mod.F90.in"
   integer function get_var_vdesc_3d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3399,7 +3438,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 283 "pionfget_mod.F90.in"
+# 288 "pionfget_mod.F90.in"
   integer function get_var_vdesc_4d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3421,7 +3460,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 283 "pionfget_mod.F90.in"
+# 288 "pionfget_mod.F90.in"
   integer function get_var_vdesc_5d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc

@@ -27,6 +27,10 @@ module pio_types
     !------------------------------------
     !  a file descriptor data structure
     !------------------------------------
+!>
+!! @struct iosystem_desc_t iosystem_desc_t
+!! @brief A definfed PIO system descriptor created by @ref PIO_init (see pio_types)
+!<
     type, public :: IOSystem_desc_t
 #ifdef SEQUENCE
 	sequence
@@ -50,8 +54,8 @@ module pio_types
 	! This holds the IODESC
     end type
     
-!> @public
-!! @defgroup file_desc_t file_desc_t
+!> 
+!! @struct file_desc_t file_desc_t
 !! @brief : File descriptor returned by \ref PIO_openfile or \ref PIO_createfile (see pio_types)
 !>
     type, public :: File_desc_t
@@ -77,15 +81,14 @@ module pio_types
 
 !>
 !! @public
-!! @defgroup iodesc_generate iodesc_generate
+!! @defgroup iodesc_generate io descriptors, generating
 !! @brief The io descriptor structure in defined in this subroutine 
 !! and subsequently used in @ref PIO_read_darray, @ref PIO_write_darray,
 !! @ref PIO_put_var, @ref PIO_get_var calls (see pio_types).
 !<
 
 !>
-!! @public
-!! @defgroup io_desc_t io_desc_t
+!! @struct io_desc_t io_desc_t
 !! @brief : An io descriptor handle that is generated in @ref PIO_initdecomp 
 !! (see pio_types)
 !<
@@ -141,8 +144,7 @@ module pio_types
     end type
 
 !>
-!! @public
-!! @defgroup var_desc_t var_desc_t
+!! @struct var_desc_t var_desc_t
 !! @brief : A variable descriptor returned from @ref PIO_def_var (see pio_types) 
 !<
     type, public :: Var_desc_t
@@ -189,7 +191,7 @@ module pio_types
 
 !> 
 !! @public 
-!! @defgroup PIO_error_method PIO_error_method
+!! @defgroup PIO_error_method error handling method 
 !! @brief  The three types of error handling methods are: 
 !! @details
 !!  - PIO_INTERNAL_ERROR  : abort on error from any task
@@ -202,11 +204,17 @@ module pio_types
 
 !>
 !! @public 
-!! @defgroup error_return error_return
+!! @defgroup error_return error return codes
 !! @brief : The error return code; ierr != PIO_noerr indicates
 !! an error. (see @ref PIO_seterrorhandling ) 
 !> 
 
+!>
+!! @public 
+!! @struct use_PIO_kinds
+!! @brief The type of variable(s) associated with this iodesc.
+!! @copydoc PIO_kinds
+!<
 
 !>
 !! @public 

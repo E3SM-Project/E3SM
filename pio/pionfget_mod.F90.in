@@ -21,6 +21,9 @@ module pionfget_mod
 !>
 !! @defgroup PIO_get_var PIO_get_var
 !! @brief Reads netcdf metadata from a file
+!! @details The get_var interface is provided as a simplified interface to
+!!  read variables from a netcdf format file.   The variable is read on the 
+!!  root IO task and broadcast in its entirety to all tasks.  
 !<
   public :: get_var
   interface get_var
@@ -149,7 +152,8 @@ CONTAINS
     {VTYPE}, intent(out) :: ival{DIMSTR}
 
     character(len=*), parameter :: subName=modName//'::get_vara_{DIMS}d_{TYPE}'
-    integer :: iotype, isize, mpierr, i
+    integer :: iotype, mpierr, i
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_vara_{DIMS}d_{TYPE}")
@@ -179,7 +183,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, {MPITYPE} , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), {MPITYPE} , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 
@@ -229,7 +233,8 @@ CONTAINS
     {VTYPE}, intent(out) :: ival{DIMSTR}
 
     character(len=*), parameter :: subName=modName//'::get_var_{DIMS}d_{TYPE}'
-    integer :: iotype, mpierr, isize
+    integer :: iotype, mpierr
+    integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
     call t_startf("pio_get_var_{DIMS}d_{TYPE}")
@@ -262,7 +267,7 @@ CONTAINS
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
     if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,isize, {MPITYPE} , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call MPI_Bcast(ival,int(isize), {MPITYPE} , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING

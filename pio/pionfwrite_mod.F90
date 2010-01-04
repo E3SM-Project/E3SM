@@ -79,7 +79,7 @@ contains
 #endif
           ierr=nfmpi_put_vara_all( File%fh,varDesc%varid,start, &
                count,IOBUF, &
-               iodesc%Write%n_ElemTYPE, &
+               int(iodesc%Write%n_ElemTYPE,kind=pio_offset), &
                iodesc%Write%ElemTYPE)
 
           if(Debug.or.ierr/=PIO_noerr) print *,subname,__LINE__, &
@@ -290,7 +290,7 @@ contains
 #endif
           ierr=nfmpi_put_vara_all( File%fh,varDesc%varid,start, &
                count,IOBUF, &
-               iodesc%Write%n_ElemTYPE, &
+               int(iodesc%Write%n_ElemTYPE,kind=pio_offset), &
                iodesc%Write%ElemTYPE)
 
           if(Debug.or.ierr/=PIO_noerr) print *,subname,__LINE__, &
@@ -501,7 +501,7 @@ contains
 #endif
           ierr=nfmpi_put_vara_all( File%fh,varDesc%varid,start, &
                count,IOBUF, &
-               iodesc%Write%n_ElemTYPE, &
+               int(iodesc%Write%n_ElemTYPE,kind=pio_offset), &
                iodesc%Write%ElemTYPE)
 
           if(Debug.or.ierr/=PIO_noerr) print *,subname,__LINE__, &

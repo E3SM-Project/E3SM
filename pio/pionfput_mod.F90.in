@@ -1,8 +1,5 @@
 #define _FILE_ "pionfput_mod.F90"
 module pionfput_mod
-  ! Provides put_var and get_var interface to the netcdf and or pnetcdf library.
-  ! This module provides functionality for data which is not distributed.
-  !
   !pl  This file is input to the perl program genf90.pl which generates  
   !pl  f90 code for various datatypes and dimensions.
   !pl  Supported parser keywords are {TYPE}, {DIMS}, {VTYPE}, {DIMSTR} and {MPITYPE} 
@@ -31,6 +28,11 @@ module pionfput_mod
 !>
 !! @defgroup PIO_put_var PIO_put_var
 !! @brief Writes netcdf metadata to a file
+!! @details The put_var interface is provided as a simplified interface to
+!!  write variables to a netcdf format file.   
+!! @warning Although this is a collective call the variable is written from the 
+!!  root IO task, no consistancy check is made with data passed on other tasks.
+!! 
 !<
   public :: put_var
   interface put_var
@@ -58,7 +60,7 @@ contains
     integer, intent(in) :: varid, index(:)
     {VTYPE}, intent(in) :: ival
 #ifdef _PNETCDF
-    integer, allocatable :: count(:)
+    integer(kind=PIO_OFFSET), allocatable :: count(:)
 #endif
     integer :: iotype
 
@@ -77,7 +79,8 @@ contains
 #if ({ITYPE} == TYPETEXT)
           count(1) = len(ival)
 #endif	
-          ierr = nfmpi_put_vara_all (File%fh, varid, int(index,kind=PIO_OFFSET), int(count,kind=PIO_OFFSET), ival, count, {MPITYPE})
+          ierr = nfmpi_put_vara_all (File%fh, varid, int(index,kind=PIO_OFFSET), count, &
+               ival, count, {MPITYPE})
           deallocate(count)
 #endif
 #ifdef _NETCDF
@@ -234,9 +237,14 @@ contains
   integer function put_vara_{DIMS}d_{TYPE} (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
+#if ({ITYPE} == TYPETEXT)
+    integer(kind=PIO_OFFSET) :: pstart({DIMS}+1), pcount({DIMS}+1)
+#else
     integer(kind=PIO_OFFSET) :: pstart({DIMS}), pcount({DIMS})
+#endif
     {VTYPE}, intent(in) :: ival{DIMSTR}
-    integer :: iotype, len, i
+    integer :: iotype, i
+    integer(kind=pio_offset) :: len
 #ifdef TIMING
     call t_startf("pio_put_vara_{DIMS}d_{TYPE}")
 #endif 
@@ -250,9 +258,14 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-	  pstart = start
-	  pcount = count
-	  if(sum(pstart)==0) pstart=1 ! avoids an unessasary pnetcdf error 
+	  if(File%iosystem%io_rank==0) then
+             pstart = start	
+             pcount = count
+          else
+	     pstart=1 ! avoids an unessasary pnetcdf error 
+	     pcount=0
+          endif
+	print *,__FILE__,__LINE__,pstart,pcount
           ierr = nfmpi_put_vara_{TYPE}_all (File%fh, varid, pstart, &
                pcount, ival, len, {MPITYPE})
 #endif
