@@ -1,10 +1,17 @@
+timing_091021: update to GPTL version 3.5; rewrite of GPTLpr_summary: much faster, merging 
+	       events from all processes and all threads (not just process 0/thread 0);
+	       miscellaneous fixes
+	       [Jim Rosinski (gptl 3.5), Joseph Singh, Patrick Worley]
+timing_090929: added explicit support for the GPTL-native token HAVE_MPI (indicating
+	       presence of MPI library)
+	       [Patrick Worley]
 timing_081221: restore default assumption that gettimeofday available
 timing_081028: bug fix in include order in gptl_papi.c
 timing_081026: change in output format to make postprocessing simpler
 timing_081024: support for up to one million processes and writing timing files to 
 	       subdirectories
 timing_081017: updated to gptl version 3_4_2. Changed some defaults.
-               [J. Rosinski, Patrick Worley]
+               [Jim Rosinski, Patrick Worley]
 timing_080629: added optional parameters perf_outpe_num and perf_outpe_stride to t_prf.
 	       These are used to override the user specified values for timing data
 	       written out before the end of a simulation.
@@ -18,7 +25,7 @@ timing_071213: changed default to disable inline keyword; changed global statist
 timing_071023: updated to gptl version 2.16, added support for output of global
                statistics; removed dependencies on shr and CAM routines; renamed
                gptlutil.c to GPTLutil.c
-               [Patrick Worley, J. Rosinski]
+               [Patrick Worley, Jim Rosinski]
 timing_071019: modified namelist logic to abort if try to set unknown namelist parameters; 
 	       changed default number of reporting processes to 1; 
                reversed meaning and changed names of CPP tokens to NO_C99_INLINE and NO_VPRINTF
@@ -35,7 +42,7 @@ timing_070810: added ChangeLog
 	         PAPI counters 
                - added papi_inparm namelist and papi_ctr1,2,3,4 namelist
 	         parameters to specify PAPI counters
-               [Patrick Worley, J. Rosinski]
+               [Patrick Worley, Jim Rosinski]
 timing_070525: bug fix in gptl.c 
                - unitialized pointer, testing for null pter
                  before traversing

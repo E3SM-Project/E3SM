@@ -810,7 +810,8 @@ contains
 !
 !========================================================================
 !
-   subroutine t_prf(filename, mpicom, num_outpe, stride_outpe)
+   subroutine t_prf(filename, mpicom, num_outpe, stride_outpe, &
+                    single_file, global_stats)
 !----------------------------------------------------------------------- 
 ! Purpose: Write out performance timer data
 ! Author: P. Worley 
@@ -825,9 +826,17 @@ contains
    integer, intent(in), optional :: num_outpe
    ! separation between process ids for processes writing out data 
    integer, intent(in), optional :: stride_outpe
+   ! enable/disable the writing of data to a single file
+   logical, intent(in), optional :: single_file
+   ! enable/disable the collection of global statistics
+   logical, intent(in), optional :: global_stats
 !
 !---------------------------Local workspace-----------------------------
 !
+   logical  one_file              ! flag indicting whether to write
+                                  !  all data to a single file
+   logical  glb_stats             ! flag indicting whether to compute
+                                  !  global statistics
    integer  i                     ! loop index
    integer  mpicom2               ! local copy of MPI communicator
    integer  me                    ! communicator local process id
@@ -874,6 +883,20 @@ contains
 
    unitn = shr_file_getUnit()
 
+   ! Determine whether to write all data to a single fie
+   if (present(single_file)) then
+      one_file = single_file
+   else
+      one_file = perf_single_file
+   endif
+
+   ! Determine whether to compute global statistics
+   if (present(global_stats)) then
+      glb_stats = global_stats
+   else
+      glb_stats = perf_global_stats
+   endif
+
    ! Determine which processes are writing out timing data
    if (present(num_outpe)) then
       if (num_outpe < 0) then
@@ -906,7 +929,7 @@ contains
    max_outpe = min(outpe_num*outpe_stride, npes) - 1
 
    ! If a single timing output file, take turns writing to it.
-   if (perf_single_file) then
+   if (one_file) then
 
       if ( present(filename) ) then
          str_length = min(SHR_KIND_CX,len_trim(filename))
@@ -918,17 +941,17 @@ contains
       signal = 0
       if (me .eq. 0) then
 
-         if (perf_global_stats) then
+         if (glb_stats) then
             open( unitn, file=trim(fname), status='UNKNOWN' )
             write( unitn, 100) npes
  100        format(/,"***** GLOBAL STATISTICS (",I6," MPI TASKS) *****",/)
             close( unitn )
 
-            ierr = GPTLpr_summary(mpicom2, 0, trim(fname))
+            ierr = GPTLpr_summary_file(mpicom2, 0, trim(fname))
          endif
 
          if (me .le. max_outpe) then
-            if (perf_global_stats) then
+            if (glb_stats) then
                open( unitn, file=trim(fname), status='OLD', position='APPEND' )
             else
                open( unitn, file=trim(fname), status='UNKNOWN' )
@@ -943,8 +966,8 @@ contains
 
       else
 
-         if (perf_global_stats) then
-            ierr = GPTLpr_summary(mpicom2, 0, trim(fname))
+         if (glb_stats) then
+            ierr = GPTLpr_summary_file(mpicom2, 0, trim(fname))
          endif
 
          call mpi_recv (signal, 1, mpi_integer, me-1, me-1, mpicom2, status, ierr)
@@ -968,7 +991,7 @@ contains
 
    else
 
-      if (perf_global_stats) then
+      if (glb_stats) then
          if ( present(filename) ) then
             str_length = min(SHR_KIND_CX-6,len_trim(filename))
             fname(1:str_length) = filename(1:str_length)
@@ -984,7 +1007,7 @@ contains
             close( unitn )
          endif
 
-         ierr = GPTLpr_summary(mpicom2, 0, trim(fname))
+         ierr = GPTLpr_summary_file(mpicom2, 0, trim(fname))
          fname(str_length+1:str_length+6) = '      '
       endif
 
@@ -1238,22 +1261,24 @@ contains
               (papi_ctr2_str(1:11) .eq. "PAPI_NO_CTR") .and. &
               (papi_ctr3_str(1:11) .eq. "PAPI_NO_CTR") .and. &
               (papi_ctr4_str(1:11) .eq. "PAPI_NO_CTR")) then
-              papi_ctr1_str = "PAPI_TOT_CYC"
-              papi_ctr2_str = "PAPI_FP_OPS"
-              papi_ctr3_str = "PAPI_FP_INS"
+!pw              papi_ctr1_str = "PAPI_TOT_CYC"
+!pw              papi_ctr2_str = "PAPI_TOT_INS"
+!pw              papi_ctr3_str = "PAPI_FP_OPS"
+!pw              papi_ctr4_str = "PAPI_FP_INS"
+              papi_ctr1_str = "PAPI_FP_OPS"
           endif
 
           if (papi_ctr1_str(1:11) /= "PAPI_NO_CTR") then
-             papi_ctr1_id = gptl_papiname2id(trim(papi_ctr1_str))
+             ierr = gptlevent_name_to_code(trim(papi_ctr1_str), papi_ctr1_id)
           endif
           if (papi_ctr2_str(1:11) /= "PAPI_NO_CTR") then
-             papi_ctr2_id = gptl_papiname2id(trim(papi_ctr2_str))
+             ierr = gptlevent_name_to_code(trim(papi_ctr2_str), papi_ctr2_id)
           endif
           if (papi_ctr3_str(1:11) /= "PAPI_NO_CTR") then
-             papi_ctr3_id = gptl_papiname2id(trim(papi_ctr3_str))
+             ierr = gptlevent_name_to_code(trim(papi_ctr3_str), papi_ctr3_id)
           endif
           if (papi_ctr4_str(1:11) /= "PAPI_NO_CTR") then
-             papi_ctr4_id = gptl_papiname2id(trim(papi_ctr4_str))
+             ierr = gptlevent_name_to_code(trim(papi_ctr4_str), papi_ctr4_id)
           endif
 
        endif

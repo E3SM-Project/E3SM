@@ -1,4 +1,8 @@
 /*
+** $Id: print_memusage.c,v 1.5 2009/03/24 20:51:25 rosinski Exp $
+**
+** Author: Jim Rosinski
+**
 ** print_memusage:
 **
 **   Prints info about memory usage of this process by calling get_memusage.
@@ -7,8 +11,8 @@
 **                 -1 = failure
 */
 
-#include <stdio.h>
 #include "gptl.h"
+#include <stdio.h>
 
 int GPTLprint_memusage (const char *str)
 {

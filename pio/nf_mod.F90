@@ -1830,8 +1830,9 @@ contains
     s = index(version(1:dot1),' ',.true.)
     read(version(s:dot1-1),'(i)') v1
     read(version(dot1+1:dot2-1),'(i)') v2
-    s = index(version(dot2:),' ')
-    read(version(dot2+1:s-1),'(s)') v3
+    s = dot2+index(version(dot2:),' ') 
+!    print *,__FILE__,__LINE__,version,dot2,s
+    read(version(dot2+1:s-1),'(i)') v3
 
     if(v1<rv1) then
        call piodie(version,__LINE__,error)

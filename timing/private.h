@@ -1,5 +1,9 @@
 /*
-$Id: private.h,v 1.48 2008/06/30 00:45:33 rosinski Exp $
+** $Id: private.h,v 1.65 2009/04/29 22:17:01 rosinski Exp $
+**
+** Author: Jim Rosinski
+**
+** Contains definitions private to GPTL and inaccessible to invoking user environment
 */
 
 #include <stdio.h>
@@ -25,8 +29,12 @@ $Id: private.h,v 1.48 2008/06/30 00:45:33 rosinski Exp $
 /* longest timer name allowed (probably safe to just change) */
 #define MAX_CHARS 63
 
-/* max allowable number of PAPI counters */
-#define MAX_AUX 16
+/* 
+** max allowable number of PAPI counters, or derived events. For convenience,
+** set to max (# derived events, # papi counters required) so "avail" lists
+** all available options.
+*/
+#define MAX_AUX 9
 
 #ifndef __cplusplus
 typedef enum {false = 0, true = 1} bool;  /* mimic C++ */
@@ -53,15 +61,16 @@ typedef struct {
   
 typedef struct {
   int counter;      /* PAPI or Derived counter */
-  char *counterstr; /* PAPI or Derived counter as string */
-  char *prstr;      /* print string for output timers (16 chars) */
-  char *str;        /* descriptive print string (more descriptive than prstr) */
+  char *namestr;    /* PAPI or Derived counter as string */
+  char *str8;       /* print string for output timers (8 chars) */
+  char *str16;      /* print string for output timers (16 chars) */
+  char *longstr;    /* long descriptive print string */
 } Entry;
 
 typedef struct {
   Entry event;
-  int numidx;
-  int denomidx;
+  int numidx;       /* derived event: PAPI counter array index for numerator */
+  int denomidx;     /* derived event: PAPI counter array index for denominator */
 } Pr_event;
 
 typedef struct TIMER {
@@ -78,18 +87,17 @@ typedef struct TIMER {
   struct TIMER **parent;    /* array of parents */
   struct TIMER **children;  /* array of children */
   int *parent_count;        /* array of call counts, one for each parent */
-  unsigned int depth;       /* depth in "calling" tree */
   unsigned int recurselvl;  /* recursion level */
-  unsigned int max_recurse; /* max recursion level */
   unsigned int nchildren;   /* number of children */
   unsigned int nparent;     /* number of parents */
   unsigned int norphan;     /* number of times this timer was an orphan */
+  int num_desc;             /* number of descendants */
   bool onflg;               /* timer currently on or off */
 } Timer;
 
 typedef struct {
-  unsigned int nument;      /* number of entries hashed to the same value */
   Timer **entries;          /* array of timers hashed to the same value */
+  unsigned int nument;      /* number of entries hashed to the same value */
 } Hashentry;
 
 /* Function prototypes */
@@ -101,6 +109,7 @@ extern int threadinit (int *, int *);          /* initialize threading environme
 extern void threadfinalize (void);             /* finalize threading environment */
 #if ( defined THREADED_PTHREADS )
 extern int get_thread_num (int *, int *);      /* determine thread number */
+extern void print_threadmapping (int, FILE *); /* print mapping of pthread ids */
 #endif
 
 /* 
@@ -117,7 +126,10 @@ extern void GPTL_PAPIpr (FILE *, const Papistats *, const int, const int, const 
 extern void GPTL_PAPIadd (Papistats *, const Papistats *);
 extern void GPTL_PAPIfinalize (int);
 extern void GPTL_PAPIquery (const Papistats *, long long *, int);
+extern int GPTL_PAPIget_eventvalue (const char *, const Papistats *, double *);
 extern bool GPTL_PAPIis_multiplexed (void);
 extern void GPTL_PAPIprintenabled (FILE *);
 extern void read_counters100 (void);
+extern int GPTLget_npapievents (void);
+extern int GPTLcreate_and_start_events (const int);
 #endif

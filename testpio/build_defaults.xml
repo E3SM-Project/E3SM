@@ -3,7 +3,7 @@
 <testpioconfig>
 <frost
   NETCDF_PATH="/contrib/bgl/netcdf" 
-  PNETCDF_PATH="/contrib/bgl/pnetcdf" 
+  PNETCDF_PATH="/contrib/bgl/parallel-netcdf-1.1.0" 
   MPI_INC="-I/bgl/BlueLight/ppcfloor/bglsys/include" 
   MPI_LIB="-L/bgl/BlueLight/ppcfloor/bglsys/lib -lmpich.rts -lmsglayer.rts -lrts.rts -ldevices.rts"
   F90 = "blrts_xlf90"

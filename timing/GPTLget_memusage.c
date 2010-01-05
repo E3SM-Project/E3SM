@@ -12,6 +12,12 @@
 
 #include <sys/resource.h>
 
+#if defined(LINUX) && defined(CPRXLF)
+#undef LINUX
+#define AIX
+#endif
+
+
 #ifdef AIX
 #include <sys/times.h>
 #endif

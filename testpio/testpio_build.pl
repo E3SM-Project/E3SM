@@ -21,8 +21,12 @@ EOF
 
 unshift @INC, "$cfgdir/perl5lib";
 require XML::Lite;
+require Utils;
 
 my $xml = XML::Lite->new( "build_defaults.xml" );
+
+$host = Utils->host() unless(defined $host);
+
 print "host=$host\n";
 my $root = $xml->root_element();
 my $settings = $xml->elements_by_name($host);
