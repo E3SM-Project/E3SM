@@ -16,7 +16,8 @@
  */ 
 /*! 
 
-\mainpage PIO Users Guide 
+\mainpage Parallel I/O library (PIO)
+
 \author John M. Dennis
 \author Jim Edwards
 \author Robert Jacob
@@ -24,9 +25,14 @@
 \author Art Mirin
 \author Mariana Vertenstein
 
- - \ref GettingStarted
- - \ref Decomp
+   The Parallel I/O (PIO) library was developed over several years to address the needs improve the 
+ability of component models of the Community Climate System Model (CCSM) to perform I/O.  However we 
+believe that the interface is sufficiently general to usage by a broader community of users.
+
+ - \ref intro
+ - \ref decomp
+ - \ref error
+ - \ref examp
+ - \ref faq
  - \ref api
- - \ref CAMexample
- - \ref FAQ
 */

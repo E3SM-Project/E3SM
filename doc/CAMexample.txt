@@ -14,9 +14,9 @@
  * input used in their production; they are not affected by this license.
  *
  */ 
-/*! \page CAMexample Example of PIO usage in CAM
+/*! \page CAMexample Community Atmosphere Model (CAM)
 
-\section intro Implementation of PIO in CAM
+\section cam Implementation of PIO in CAM
 
 CAM references PIO through both interface routines (which call PIO routines) and
 PIO routines proper. The interface routines control much of the setting up of PIO

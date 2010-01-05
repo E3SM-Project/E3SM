@@ -1,15 +1,15 @@
  /*!  \page api PIO user interface
   This is a list of all user interface routines
   Lets not forget about the very important routine piolib_mod::PIO_freeDecomp
-  \section fileops PIO file Operations
-     - \subpage PIO_openfile
+  \section api_fileops PIO file Operations
+     - \ref PIO_openfile
      - \ref PIO_createfile
      - \ref PIO_syncfile
      - \ref PIO_closefile
-  \section system PIO startup and shutdown routines
+  \section api_system PIO startup and shutdown routines
      - \ref PIO_init
      - \ref PIO_finalize
-  \section decomp PIO decomposition routines
+  \section api_decomp PIO decomposition routines
     - \ref PIO_initdecomp
     - \ref PIO_freedecomp
   \section readwrite Reading and Writing distributed variables

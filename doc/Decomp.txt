@@ -13,7 +13,7 @@
  * Documents produced by Doxygen are derivative works derived from the
  * input used in their production; they are not affected by this license.
  *
- */ /*! \page Decomp Describing your decompostion to PIO
+ */ /*! \page decomp Describing decompositions
 
 
 On of the biggest challenges to working with PIO is setting up 
