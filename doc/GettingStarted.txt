@@ -13,8 +13,8 @@
  * Documents produced by Doxygen are derivative works derived from the
  * input used in their production; they are not affected by this license.
  *
- */ /*! \page GettingStarted 
-\section Introduction 
+ */ /*! \page intro Introduction 
+
 PIO is a software interface layer designed to encapsolate the
 complexities of parallel IO and make it easier to replace the lower
 level software backend.  It currently supports netcdf
@@ -49,18 +49,5 @@ application space.  This is done in a call to
 one dimensional integer array is passed from each task the values in
 the array represent the 0 based offset from the beginning of the array
 on file.   
-
-
-\section error Error Handling
-
-By default PIO handles errors internally by printing a string
-describing the error and then calling mpi_abort.  Application
-developers can change this behaivior with a call to
-\ref PIO_seterrorhandling. @copydoc PIO_error_method 
-
-For example if a developer wanted
-to see if an input netcdf file contained the variable 'U' they might do the following
-
-\verbinclude errorhandle
 
 */

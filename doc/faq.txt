@@ -1,0 +1,19 @@
+/******************************************************************************
+ *
+ * 
+ *
+ * Copyright (C) 2009 
+ *
+ * Permission to use, copy, modify, and distribute this software and its
+ * documentation under the terms of the GNU General Public License is hereby 
+ * granted. No representations are made about the suitability of this software 
+ * for any purpose. It is provided "as is" without express or implied warranty.
+ * See the GNU General Public License for more details.
+ *
+ * Documents produced by Doxygen are derivative works derived from the
+ * input used in their production; they are not affected by this license.
+ *
+ */ /*! \page faq Frequency Asked Questions 
+   Here is a list of frequently asked questions and their answers.
+
+*/
