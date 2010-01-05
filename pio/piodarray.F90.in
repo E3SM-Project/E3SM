@@ -37,7 +37,10 @@ module piodarray
      module procedure read_darray_{DIMS}d_{TYPE}
   end interface
 
-  character(len=*), parameter :: modName='piodarray'
+!>
+!! @private
+!<
+  character(len=*), parameter, private  :: modName='piodarray'
 
 contains
 
@@ -240,7 +243,6 @@ contains
 !! @details
 !! @param File @copydoc file_desc_t
 !! @param varDesc @copydoc var_desc_t
-
 !! @param ioDesc @copydoc io_desc_t
 !! @param array  : The data to be written
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)

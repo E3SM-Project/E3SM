@@ -1,21 +1,30 @@
 #define _FILE_ "pio_support.F90"
-! This module is intended for the internal use of PIO only
+!>
+!! @private
+!<
 module pio_support
   use pio_kinds
+  use pio_types, only : iotype_pnetcdf, iotype_netcdf, iotype_pnetcdf
   implicit none
   private
 
   include 'mpif.h'    ! _EXTERNAL
+  
 
   public :: piodie
   public :: CheckMPIreturn
   public :: pio_readdof
   public :: pio_writedof
+
+
 #ifdef NO_MPI2
   public :: MPI_TYPE_CREATE_INDEXED_BLOCK
 #endif
 
 #ifdef NO_SIZEOF
+!>
+!! @private
+!<
   public sizeof
   interface sizeof
      module procedure sizeof_{TYPE}
@@ -336,5 +345,7 @@ contains
 #endif
   end function sizeof_{TYPE}
 #endif
+
+
 
 end module pio_support

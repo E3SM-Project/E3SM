@@ -28,8 +28,9 @@ module pio_types
     !  a file descriptor data structure
     !------------------------------------
 !>
+!! @public
 !! @struct iosystem_desc_t iosystem_desc_t
-!! @brief A definfed PIO system descriptor created by @ref PIO_init (see pio_types)
+!! @brief A defined PIO system descriptor created by @ref PIO_init (see pio_types)
 !<
     type, public :: IOSystem_desc_t
 #ifdef SEQUENCE
@@ -55,8 +56,9 @@ module pio_types
     end type
     
 !> 
+!! @public
 !! @struct file_desc_t file_desc_t
-!! @brief : File descriptor returned by \ref PIO_openfile or \ref PIO_createfile (see pio_types)
+!! @brief File descriptor returned by \ref PIO_openfile or \ref PIO_createfile (see pio_types)
 !>
     type, public :: File_desc_t
        type(iosystem_desc_t), pointer :: iosystem
@@ -80,7 +82,7 @@ module pio_types
     end type IO_desc2_t
 
 !>
-!! @public
+!! @private
 !! @defgroup iodesc_generate io descriptors, generating
 !! @brief The io descriptor structure in defined in this subroutine 
 !! and subsequently used in @ref PIO_read_darray, @ref PIO_write_darray,
@@ -88,8 +90,9 @@ module pio_types
 !<
 
 !>
+!! @public 
 !! @struct io_desc_t io_desc_t
-!! @brief : An io descriptor handle that is generated in @ref PIO_initdecomp 
+!! @brief  An io descriptor handle that is generated in @ref PIO_initdecomp 
 !! (see pio_types)
 !<
    type, public :: IO_desc_t
@@ -144,8 +147,9 @@ module pio_types
     end type
 
 !>
+!! @public
 !! @struct var_desc_t var_desc_t
-!! @brief : A variable descriptor returned from @ref PIO_def_var (see pio_types) 
+!! @brief A variable descriptor returned from @ref PIO_def_var (see pio_types) 
 !<
     type, public :: Var_desc_t
 #ifdef SEQUENCE
@@ -162,18 +166,25 @@ module pio_types
 !! @public
 !! @brief An integer parameter which controls the iotype
 !! @details
-!!   - iotype_pbinary : Use MPI-IO to read/write C like binary file
-!!   - iotype_direct_pbinary: Use MPI-IO to read/write direct access binary files
-!!   - iotype_binary : serial read/write of binary files using 'base_node'
-!!   - iotype_pnetcdf : parallel read/write of pNetCDF files (netcdf3)
-!!   - iotype_netcdf : serial read/write of NetCDF files using 'base_node' (netcdf3)
+!!   - PIO_iotype_pbinary : Use MPI-IO to read/write C like binary file
+!!   - PIO_iotype_direct_pbinary: Use MPI-IO to read/write direct access binary files
+!!   - PIO_iotype_binary : serial read/write of binary files using 'base_node'
+!!   - PIO_iotype_pnetcdf : parallel read/write of pNetCDF files (netcdf3)
+!!   - PIO_iotype_netcdf : serial read/write of NetCDF files using 'base_node' (netcdf3)
 !>
     integer(i4), public, parameter ::  &
-        iotype_pbinary = 1, &! use MPI-IO with data types to read/write C like binary files
-        iotype_direct_pbinary = 2,  & !use MPI-IO with data types to read/write direct access binary files
-        iotype_binary  = 4, &   ! serial read/write of binary files using 'base_node'
-        iotype_pnetcdf = 5, &   ! parallel read/write of pNetCDF files
-        iotype_netcdf  = 6      ! serial read/write of NetCDF file using 'base_node'
+        PIO_iotype_pbinary = 1, &! use MPI-IO with data types to read/write C like binary files
+        PIO_iotype_direct_pbinary = 2,  & !use MPI-IO with data types to read/write direct access binary files
+        PIO_iotype_binary  = 4, &   ! serial read/write of binary files using 'base_node'
+        PIO_iotype_pnetcdf = 5, &   ! parallel read/write of pNetCDF files
+        PIO_iotype_netcdf  = 6      ! serial read/write of NetCDF file using 'base_node'
+
+    integer(i4), public, parameter ::                       &
+        iotype_pbinary = PIO_iotype_pbinary,                &
+        iotype_direct_pbinary = PIO_iotype_direct_pbinary,  &
+        iotype_binary  = PIO_iotype_binary,                 &
+        iotype_pnetcdf = PIO_iotype_pnetcdf,                &
+        iotype_netcdf  = PIO_iotype_netcdf
 
 
 !>
@@ -190,7 +201,7 @@ module pio_types
     integer(i4), public, parameter :: PIO_rearr_box =  2
 
 !> 
-!! @public 
+!! @public
 !! @defgroup PIO_error_method error handling method 
 !! @brief  The three types of error handling methods are: 
 !! @details
@@ -210,7 +221,6 @@ module pio_types
 !> 
 
 !>
-!! @public 
 !! @struct use_PIO_kinds
 !! @brief The type of variable(s) associated with this iodesc.
 !! @copydoc PIO_kinds
@@ -273,44 +283,12 @@ module pio_types
    integer, public, parameter :: PIO_NOCLOBBER = 11
    integer, public, parameter :: PIO_WRITE = 20
    integer, public, parameter :: PIO_NOWRITE = 21
-   integer, public, parameter :: PIO_64bit_offset = 0
+   integer, public, parameter :: PIO_64BIT_OFFSET = 0
 #endif
 #endif
 ! should be defined in the mct mpiserial library.
 #ifdef _MPISERIAL
    integer, public, parameter :: MPI_DATATYPE_NULL=0
 #endif
-
-   public:: pio_type_to_mpi_type
-
-contains
-
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! pio_type_to_mpi_type
-
-
-  integer function pio_type_to_mpi_type(ptype) result(mtype)
-    use pio_support
-    implicit none
-    include 'mpif.h'            ! _EXTERNAL
-    integer, intent(in):: ptype
-
-    select case(ptype)
-      case (PIO_double)
-         mtype=MPI_REAL8
-      case (PIO_real)
-         mtype=MPI_REAL4
-      case (PIO_int)
-         mtype=MPI_INTEGER
-      case (PIO_char)
-         mtype=MPI_CHARACTER
-      case default
-         call piodie( _FILE_,__LINE__, &
-                      'Could not convert pio type=',ptype,' to an mpi type')
-    end select
-
-  end function pio_type_to_mpi_type
 
 end module pio_types

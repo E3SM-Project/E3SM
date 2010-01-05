@@ -11,10 +11,11 @@ module piolib_mod
   !--------------
   use pio_support, only : piodie, debug, debugio, checkmpireturn
   !
-  use nf_mod, only : create_nf, open_nf,close_nf, sync_nf
+  use ionf_mod, only : create_nf, open_nf,close_nf, sync_nf
   use pionfread_mod, only : read_nf
   use pionfwrite_mod, only : write_nf
 
+  use pio_mpi_utils, only : PIO_type_to_mpi_type 
   use iompi_mod
   use rearrange
 #ifdef timing
@@ -128,7 +129,7 @@ module piolib_mod
 
 !> 
 !! @defgroup PIO_finalize PIO_finalize
-!! shuts down and cleans up any memory associated with the pio library
+!! Shuts down and cleans up any memory associated with the pio library.
 !<
   interface PIO_finalize
      module procedure finalize
@@ -227,7 +228,7 @@ contains
 !> 
 !! @public 
 !! @ingroup PIO_get_local_array_size
-!! @brief this function returns the expected local size of an array associated with iodesc
+!! @brief This function returns the expected local size of an array associated with iodesc
 !! @details
 !! @param iodesc @copydoc io_desc_t
 !<
@@ -1175,8 +1176,7 @@ contains
 !! @public
 !! @ingroup PIO_init
 !! @brief initialize the pio subsystem.
-!! @details 
-!!  this is a collective call which expects:
+!! @details  This is a collective call which expects the following parameters:
 !! @param comp_rank mpi rank of each participating task,
 !! @param comp_comm the mpi communicator which defines the collective.
 !! @param num_iotasks the number of iotasks to define.
@@ -1351,20 +1351,16 @@ contains
 #ifdef timing
     call t_stopf("PIO_init")
 #endif
-
   end subroutine init
-
-
 
 !> 
 !! @public
 !! @defgroup PIO_set_hint  PIO_set_hint
 !! @brief set file system hints using mpi_info_set
-!! @details
-!! this is a collective call which expects:
-!! @param iosystem : a defined pio system descriptor, see PIO_types
-!! @param hint : the string name of the hint to define
-!! @param hintval : the string value to set the hint to
+!! @details This is a collective call which expects the following parameters:
+!! @param iosystem @copydoc io_desc_t
+!! @param hint  the string name of the hint to define
+!! @param hintval  the string value to set the hint to
 !! @retval ierr @copydoc  error_return
 !<
   subroutine PIO_set_hint(iosystem, hint, hintval)
@@ -1384,9 +1380,8 @@ contains
 !! @public
 !! @ingroup PIO_finalize 
 !! @brief finalizes the pio subsystem.
-!! @details
-!! this is a collective call which expects:
-!! @param iosystem : a defined pio system descriptor, see PIO_types
+!! @details This is a collective call which expects the following parameters
+!! @param iosystem : @copydoc io_desc_t
 !! @retval ierr @copydoc  error_return
 !<
   subroutine finalize(iosystem,ierr)

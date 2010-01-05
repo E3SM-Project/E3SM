@@ -95,6 +95,10 @@ module box_rearrange
        box_rearrange_comp2io, &
        box_rearrange_io2comp
 
+!>
+!! @private
+!! Internal PIO interface for the box rearranger
+!<
   interface box_rearrange_comp2io
      ! TYPE int,real,double
      module procedure box_rearrange_comp2io_{TYPE}

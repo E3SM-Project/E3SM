@@ -1,7 +1,3 @@
-!> \file
-!! This module contains routines which allocate memory and monitor its usage 
-!<
-
 module alloc_mod
 
   use pio_kinds
@@ -12,9 +8,16 @@ module alloc_mod
 
   include 'mpif.h'        ! _EXTERNAL
 
-  public:: alloc_check,  &
-       dealloc_check
-
+!>
+!! @private
+!! PIO internal memory allocation check routines.  
+!<
+  public:: alloc_check
+!>
+!! @private
+!! PIO internal memory allocation check routines.  
+!<
+  public:: dealloc_check 
 
   interface alloc_check
      ! TYPE long,int,real,double ! DIMS 1,2
@@ -32,9 +35,23 @@ module alloc_mod
   end interface
 
 
-  public:: alloc_print_usage
-  public:: alloc_trace_on
-  public:: alloc_trace_off
+!>
+!! @private
+!! PIO internal memory allocation check routines.  
+!<
+  public :: alloc_print_usage
+
+!>
+!! @private
+!! PIO internal memory allocation check routines.  
+!<
+  public :: alloc_trace_on
+
+!>
+!! @private
+!! PIO internal memory allocation check routines.  
+!<
+  public :: alloc_trace_off
 
   character(len=*), parameter :: modName='pio::alloc_mod'
 
@@ -184,10 +201,11 @@ subroutine dealloc_check_0d_{TYPE} (data,msg)
 
 end subroutine dealloc_check_0d_{TYPE}
 
-
-
-
-
+!>
+!! @private
+!! @fn alloc_print_usage
+!! PIO internal memory allocation check routines.  
+!<
   subroutine alloc_print_usage(rank,msg)
 
     integer, intent(in) :: rank

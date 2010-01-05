@@ -6,7 +6,7 @@ module pionfget_mod
 
   use pio_kinds, only: i4,r4,r8,pio_offset
   use pio_types
-  use nf_mod, only : check_netcdf
+  use pio_utils, only : check_netcdf
   use pio_support, only : Debug, DebugIO, piodie, CheckMPIReturn
 #ifdef _NETCDF
   use netcdf            ! _EXTERNAL

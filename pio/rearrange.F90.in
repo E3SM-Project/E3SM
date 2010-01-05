@@ -30,6 +30,9 @@ module rearrange
   private
   save
 
+!> 
+!! @private
+!<
   public :: rearrange_init, &
             rearrange_create, &
             rearrange_comp2io, &

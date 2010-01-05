@@ -10,7 +10,6 @@
 !
 !  20090508  Initial version (based on spmd_utils in CAM) - P. Worley
 !
-
 module pio_spmd_utils
 
   use pio_kinds
@@ -21,6 +20,9 @@ module pio_spmd_utils
   private
   include 'mpif.h'  ! _EXTERNAL
 
+!>
+!! @private
+!<
   public :: pio_swapm
 
   interface pio_swapm

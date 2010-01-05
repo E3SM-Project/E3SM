@@ -1,8 +1,15 @@
+!>
+!! @file testpio.F90
+!! An example of how PIO can be used
+!<
 program testpio
 
   ! Modules from PIO package that are used by this application
 
   use kinds_mod
+  !>
+  !! Use PIO methods and data structures
+  !<
   use pio             ! _EXTERNAL
   use utils_mod
 #ifdef TIMING

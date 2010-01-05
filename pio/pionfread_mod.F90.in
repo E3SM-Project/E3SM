@@ -4,6 +4,9 @@ module pionfread_mod
   implicit none
 
   private
+!> 
+!! @private
+!<
   public :: read_nf
   interface read_nf
      ! TYPE real,double,int
@@ -15,10 +18,14 @@ module pionfread_mod
 contains
 
   ! TYPE real,double,int
+!>
+!! @private
+!<
   integer function read_nfdarray_{TYPE} (File,IOBUF,varDesc,IODesc, start,count) result(ierr)
     use pio_types
     use pio_kinds
     use nf_mod
+    use pio_utils, only : check_netcdf, bad_iotype 
     use pio_support, only : Debug, DebugIO, piodie, checkmpireturn
     use alloc_mod, only: alloc_check
 #ifdef _NETCDF

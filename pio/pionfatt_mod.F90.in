@@ -2,10 +2,10 @@
 module pionfatt_mod
   use pio_kinds, only : r4, r8, i4
   use pio_types, only : iotype_netcdf, iotype_pnetcdf, pio_noerr
-  use nf_mod, only : check_netcdf, bad_iotype
   use pio_types, only : file_desc_t, var_desc_t
   use pio_kinds, only : pio_offset
   use pio_support, only : piodie, checkmpireturn
+  use pio_utils, only : check_netcdf, bad_iotype
 
 #ifdef _NETCDF
     use netcdf      ! _EXTERNAL
@@ -17,9 +17,9 @@ module pionfatt_mod
 #endif
   include 'mpif.h'  ! _EXTERNAL 
 
+
 !>
-!!  @defgroup PIO_put_att PIO_put_att
-!!  @brief Writes an netcdf attribute to a file 
+!! @private
 !<
   public :: put_att
   interface put_att
@@ -28,9 +28,9 @@ module pionfatt_mod
      module procedure put_att_1d_{TYPE}, put_att_desc_1d_{TYPE}
   end interface
 
+
 !>
-!!  @defgroup PIO_get_att PIO_get_att
-!!  @brief Reads  an netcdf attribute from a file 
+!! @private
 !<
   public :: get_att
   interface get_att
@@ -38,6 +38,17 @@ module pionfatt_mod
      ! TYPE real,int,double
      module procedure get_att_1d_{TYPE}, get_att_desc_1d_{TYPE}
   end interface
+
+!>
+!!  @public 
+!!  @defgroup PIO_put_att PIO_put_att
+!!  @brief Writes an netcdf attribute to a file 
+!<
+!>
+!! @public 
+!! @defgroup PIO_get_att PIO_get_att
+!! @brief Reads  an netcdf attribute from a file 
+!<
 
   private :: modName
   character(len=*), parameter :: modName='pionfatt_mod'

@@ -9,11 +9,15 @@ module pio_nf_utils
 
   implicit none
   private
+!>
+!! @private
+!<
   public :: copy_pio_var
   interface copy_pio_var
      module procedure copy_pio_var01d
      module procedure copy_pio_var2d
   end interface
+
 contains
 
 subroutine copy_pio_var01d(ifh, ofh, ivid, ovid, length, strlength)
@@ -110,6 +114,5 @@ subroutine copy_pio_var2d(ifh, ofh, ivid, ovid, length)
      !        deallocate(cval)
   end select
 end subroutine copy_pio_var2d
-
 
 end module pio_nf_utils

@@ -34,6 +34,9 @@ module mct_rearrange
      private 
      save
 
+!>
+!! @private
+!<
     public :: mct_rearrange_io2comp, &
 	      mct_rearrange_comp2io, &
 	      mct_rearrange_create, &

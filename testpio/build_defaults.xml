@@ -25,7 +25,7 @@
   conopts = "--disable-mct --enable-filesystem-hints=gpfs  "
   workdir = "/ptmp/${USER}/testpio"
   submit = "bsub < "
-  run = "mpirun.lsf preattach"
+  run = "mpirun.lsf"
   preamble = "#BSUB -n 16
 #BSUB -q premium
 #BSUB -N

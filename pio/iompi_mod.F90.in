@@ -21,6 +21,9 @@ module iompi_mod
 
     public :: open_mpiio, create_mpiio, close_mpiio, write_mpiio,read_mpiio
 
+!>
+!! @private
+!<
     interface write_mpiio
 ! TYPE int,real,double
        module procedure write_mpiio_{TYPE}
