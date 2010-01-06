@@ -30,9 +30,12 @@ SRCS_C =
 SRCS_F90 =  pio.F90 \
             pio_kinds.F90  \
             nf_mod.F90     \
+            ionf_mod.F90 \
             pio_types.F90  \
             piolib_mod.F90 \
+	    pio_mpi_utils.F90 \
             pio_nf_utils.F90 \
+	    pio_utils.F90 \
             pio_quicksort.F90 
            
 
