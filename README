@@ -15,7 +15,7 @@
 
 ######################################################################
 
-  This is version 2.6.0 of the Model Coupling Toolkit (MCT).
+  This is version 2.7.0 of the Model Coupling Toolkit (MCT).
 
   Our purpose in creating this toolkit is to support the construction
   of highly portable and extensible high-performance couplers 
@@ -202,6 +202,7 @@ Optional Contents available
   28 Jan, 2008 -- version 2.5.0
   20 May, 2008 -- version 2.5.1
   05 Mar, 2009 -- version 2.6.0
+  05 Jan, 2010 -- version 2.7.0
 
 
 
