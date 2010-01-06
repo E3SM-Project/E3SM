@@ -772,6 +772,8 @@
 ! 03Dec01 - E.T. Ong <eong@mcs.anl.gov> - eliminated looping method of
 !           of zeroing. "Compiler assignment" of attrvect performs faster
 !           on the IBM SP with mpxlf90 compiler.
+! 05Jan10 - R. Jacob <jacob@mcs.anl.gov> - zeroing an uninitialized aV is no
+!           longer a fatal error.
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::zero_'
@@ -790,11 +792,11 @@
      myZeroInts = .TRUE.
   endif
 
-  if((.not. List_allocated(aV%iList)) .and. (.not. List_allocated(aV%rList))) then
-    write(stderr,'(2a)')myname_, &
-      'MCTERROR:  Trying to zero an uninitialized AttrVect'
-      call die(myname_)
-  endif
+!  if((.not. List_allocated(aV%iList)) .and. (.not. List_allocated(aV%rList))) then
+!    write(stderr,'(2a)')myname_, &
+!      'MCTERROR:  Trying to zero an uninitialized AttrVect'
+!      call die(myname_)
+!  endif
 
   if(myZeroInts) then ! zero out INTEGER attributes
      if(List_allocated(aV%iList)) then
