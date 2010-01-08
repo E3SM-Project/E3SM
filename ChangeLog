@@ -1,6 +1,40 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_0_6
+Originator(s): Jim & John
+Date: 01-08-2010
+One-line Summary: Moved repository to google code, changed revision naming scheme
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+	Removed the mct requirement
+        Removed OPT flags added by default in configure, no OPT flags are
+	included unless explicitly added by the user.
+	
+Describe any substantial timing or memory changes:
+
+Code reviewed by: Jim and John
+
+Summary of pre-tag testing:  
+
+  Regression tests:  Bluefire, frost, dublin (pgi and intel) all tests pass
+
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio60_prod
 Originator(s): Jim
 Date:  12-07-2009
