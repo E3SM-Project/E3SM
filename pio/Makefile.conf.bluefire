@@ -5,9 +5,9 @@
 
 FC		= 
 MPIF90          = mpxlf90_r
-FFLAGS		= -O4 -qmaxmem=-1    -WF,-DSPMD -WF,-DAIX -WF,-DSEQ_MCT  -q64 -g -qfullpath -qmaxmem=-1 -qarch=auto -qsigtrap=xl__trcedump  -O2 -qstrict -Q   -WF,-DSYSAIX,-DAIX,-DCPRXLF
+FFLAGS		=     -WF,-DAIX -WF,-DSEQ_ -WF,-DFORTRAN_SAME  -q64 -g -qfullpath -qmaxmem=-1 -qarch=auto -qsigtrap=xl__trcedump  -O2 -qstrict -Q   -WF,-DSYSAIX,-DAIX,-DCPRXLF
 
-FOPTS           = -WF,-DUSEMPIIO,-D_NETCDF,-D_PNETCDF,-D_NOUSEMCT,-D_USEBOX
+FOPTS           = -WF,-DSPMD,-DUSEMPIIO,-D_NETCDF,-D_PNETCDF,-D_NOUSEMCT,-D_USEBOX
 
 INCLUDES        =  -I/usr/local/include -I/contrib/pnetcdf/include
 
@@ -30,7 +30,7 @@ CPPFLAGS	= -P -C -N -traditional
 CC		= xlc_r
 MPICC           = mpcc_r
 CFLAGS          = -DFORTRAN_SAME -DSYSAIX -DAIX -DCPRXLF
-COPTS           =  -DUSEMPIIO -D_NETCDF -D_PNETCDF -D_NOUSEMCT -D_USEBOX 
+COPTS           =  -DSPMD -DUSEMPIIO -D_NETCDF -D_PNETCDF -D_NOUSEMCT -D_USEBOX 
 
 
 # Linking
@@ -40,7 +40,7 @@ LDLIBS =   -L/usr/local/lib -lnetcdf -L/contrib/pnetcdf/lib -lpnetcdf
 
 # DIRECTORIES
 
-PIO_PATH       = /ptmp/tcraig/Ber04/pio
+PIO_PATH       =
 
 PREFIX         = /usr/local
 INSTALL_INC    = /usr/local/include

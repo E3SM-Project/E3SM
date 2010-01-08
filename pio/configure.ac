@@ -201,9 +201,6 @@ if test "$ES" = "YES"; then
    if test -z "$F90FLAGS"; then
       F90FLAGS="-EP -Wf'-pvctl fullmsg -L fmtlist transform map'"
    fi
-   if test -z "$OPT"; then
-      OPT="-C vopt"
-   fi      
    if test -z "$MACHDEFS"; then
       MACHDEFS="-DESVEC"
    fi
@@ -413,12 +410,6 @@ AC_C_BIGENDIAN
 if echo $F90 | grep xlf >/dev/null 2>&1; then
    echo "Fortran Compiler is XLF"
    CPRDEF="XLF"
-#   if test -z "$REAL8"; then
-#      REAL8="-qrealsize=8"
-#   fi
-   if test -z "$OPT"; then
-      OPT="-O4 "
-   fi
    if test -z "$F90FLAGS"; then
       if test "$ac_cv_f90_fpp_compiler" = "yes"; then
          F90FLAGS="-qarch=auto -qsuffix=f=F90:cpp=F90"
@@ -443,9 +434,6 @@ if echo $F90 | grep pgf90 >/dev/null 2>&1; then
    if test -z "$ENDIAN"; then
       ENDIAN="-byteswapio"
    fi
-   if test -z "$OPT"; then
-      OPT="-O2"
-   fi
 fi
 
 if echo $F90 | grep ftn >/dev/null 2>&1; then
@@ -462,21 +450,12 @@ if echo $F90 | grep ftn >/dev/null 2>&1; then
    if test -z "$ENDIAN"; then
       ENDIAN="-byteswapio"
    fi
-   if test -z "$OPT"; then
-      OPT="-O2"
-   fi
  else
    echo "Fortran Compiler is Cray"
    CPRDEF="CRAY" 
-#   if test -z "$F90FLAGS"; then 
-#      F90FLAGS="-c -em -dy -rm -Omsgs,negmsgs"
-#   fi
    if test -z "$MODINC"; then
       MODINC="-p"
    fi
-#   if test -z "$OPT"; then
-#      OPT="-Oscalar3 -Ovector1 -Ostream1"
-#   fi
  fi
 fi
 
@@ -515,9 +494,6 @@ if echo $F90 | grep ifc >/dev/null 2>&1; then
    if test -z "$F90FLAGS"; then
       F90FLAGS="-w"
    fi
-   if test -z "$OPT"; then
-      OPT="-O2"
-   fi
 fi
 
 if echo $F90 | grep efc >/dev/null 2>&1; then
@@ -529,9 +505,6 @@ if echo $F90 | grep efc >/dev/null 2>&1; then
    fi
    if test -z "$F90FLAGS"; then
       F90FLAGS="-w -ftz"
-   fi
-   if test -z "$OPT"; then
-      OPT="-O2"
    fi
 fi
 
@@ -547,9 +520,6 @@ if echo $F90 | grep ifort >/dev/null 2>&1; then
    if test -z "$ENDIAN"; then
       ENDIAN="-convert big_endian"
    fi
-   if test -z "$OPT"; then
-      OPT="-O2"
-   fi
 fi
 
 if echo $F90 | grep pathf90 >/dev/null 2>&1; then
@@ -560,9 +530,6 @@ if echo $F90 | grep pathf90 >/dev/null 2>&1; then
    fi
    if test -z "$BIT64"; then
       BIT64="-m64"
-   fi
-   if test -z "$OPT"; then
-      OPT="-O2"
    fi
 fi
 
@@ -577,9 +544,6 @@ if echo $f90_version | grep -i nag >/dev/null 2>&1; then
    if test -z "$F90FLAGS"; then
       F90FLAGS="-dusty -kind=byte"
    fi
-   if test -z "$OPT"; then
-      OPT="-O2"
-   fi
 fi
 
 if echo $f90_version | grep -i absoft >/dev/null 2>&1; then
@@ -590,9 +554,6 @@ if echo $f90_version | grep -i absoft >/dev/null 2>&1; then
    fi    
    if test -z "$MODINC"; then
       MODINC="-p"
-   fi
-   if test -z "$OPT"; then
-      OPT="-O2"
    fi
 fi
 
@@ -608,9 +569,6 @@ if echo $f90_version | grep -i mipspro >/dev/null 2>&1; then
    echo "Fortran Compiler is MIPSPro"
    CPRDEF="MIPSPRO"
    EXTRACFLAGS="-64"
-   if test -z "$OPT"; then
-      OPT="-O3"
-   fi
    if test -z "$REAL8"; then
       REAL8="-r8"
    fi
@@ -623,9 +581,6 @@ if echo $f90_version | grep -i compaq >/dev/null 2>&1; then
    echo "Fortran Compiler is Compaq"
    CPRDEF="COMPAQ"
    MPI_LIB="$MPI_LIB -lelan"
-   if test -z "$OPT"; then
-      OPT="-fast"
-   fi
    if test -z "$REAL8"; then
       REAL8="-real_size 64"
    fi
@@ -640,9 +595,6 @@ if echo $f90_version | grep HP >/dev/null 2>&1; then
    echo "Fortran Compiler is HP"
    CPRDEF="COMPAQ"
    MPI_LIB="$MPI_LIB -lelan"
-   if test -z "$OPT"; then
-      OPT="-fast"
-   fi
    if test -z "$REAL8"; then
       REAL8="-real_size 64"
    fi
@@ -656,9 +608,6 @@ if echo $f90_version | grep -i sx >/dev/null 2>&1; then
    CPRDEF="SX"
    if test -z "$F90FLAGS"; then
       F90FLAGS="-EP -Wf'-pvctl noassoc'"
-   fi
-   if test -z "$OPT"; then
-      OPT="-Chopt"
    fi
 fi
 
