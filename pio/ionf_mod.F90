@@ -45,7 +45,11 @@ contains
     integer :: nmode
 
     
-    nmode=amode
+    if(iotype==iotype_netcdf4c) then
+       nmode=ior(amode,NF90_NETCDF4)
+    else
+       nmode=amode
+    end if
     if(Debug) print *, 'Create file ', fname, 'with amode ',nmode
     ierr=PIO_noerr
     if(File%iosystem%ioproc) then
@@ -61,20 +65,22 @@ contains
 !	  ierr = nfmpi_set_fill(File%fh, NF_NOFILL, nmode)
 #endif
 #ifdef _NETCDF
-       case(iotype_netcdf)
+       case(iotype_netcdf, iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
              ! Stores the ncid in File%fh
-!             ierr = nf__create(fname, amode, 2147483647, 46006272,File%fh )
              ierr = nf90_create(fname, nmode , File%fh)
 ! Set default to NOFILL for performance.  
              ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
           endif
           call MPI_BCAST(File%fh,1,MPI_INTEGER,0, File%iosystem%IO_comm  , mpierr)
           call CheckMPIReturn('nf_mod',mpierr)
-
+       case(iotype_netcdf4p)
+          ierr = nf90_create_par(fname, ior(NF90_NETCDF4,nmode), &
+               File%iosystem%IO_comm,File%iosystem%info,File%fh) 
+          if(ierr==NF90_NOERR) &
+               ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
 #endif
-
        case default
           call bad_iotype(iotype,_FILE_,__LINE__)
 
@@ -120,7 +126,7 @@ contains
 #endif
 
 #ifdef _NETCDF
-       case(iotype_netcdf)
+       case(iotype_netcdf, iotype_netcdf4c)
 
           if (File%iosystem%io_rank == 0) then
              ! Stores the ncid in File%fh
@@ -143,6 +149,10 @@ contains
              call MPI_BCAST(File%fh,1,MPI_INTEGER,0, File%iosystem%IO_comm  , mpierr)
              call CheckMPIReturn('nf_mod',mpierr)
           end if
+       case(iotype_netcdf4p)
+          
+
+
 #endif
 
        case default
