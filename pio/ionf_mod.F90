@@ -7,8 +7,11 @@ module ionf_mod
 
   use pio_kinds, only: i4,r4,r8,pio_offset
   use pio_types
-
+#ifndef _PNETCDF
   use pio_utils, only: bad_iotype, check_netcdf
+#else
+  use pio_utils, only: bad_iotype, check_netcdf, pnetcdf_version_check
+#endif
   use pio_support, only : Debug, DebugIO, piodie   
 #ifdef _NETCDF
   use netcdf            ! _EXTERNAL
@@ -54,21 +57,30 @@ contains
        select case (iotype) 
 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(PIO_iotype_pnetcdf)
+          call pnetcdf_version_check()
           ierr  = nfmpi_create(File%iosystem%IO_comm,fname,nmode ,File%iosystem%info,File%fh)
 ! Set default to NOFILL for performance.  
 !   pnetcdf is nofill by default and doesn't support a fill mode
 !	  ierr = nfmpi_set_fill(File%fh, NF_NOFILL, nmode)
 #endif
+#ifdef _NETCDF4
+       case(PIO_iotype_netcdf4p)
+          ierr = nf90_create_par(fname, amode, File%iosystem%io_comm, File%iosystem%info, File%fh)
+! Set default to NOFILL for performance.  
+          if(ierr==NF90_NOERR) &
+             ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
+          call check_netcdf(File, ierr,_FILE_,__LINE__)
+#endif          
 #ifdef _NETCDF
-       case(iotype_netcdf)
+       case(PIO_iotype_netcdf)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
              ! Stores the ncid in File%fh
-!             ierr = nf__create(fname, amode, 2147483647, 46006272,File%fh )
              ierr = nf90_create(fname, nmode , File%fh)
 ! Set default to NOFILL for performance.  
-             ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
+             if(ierr==NF90_NOERR) &
+                  ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
           endif
           call MPI_BCAST(File%fh,1,MPI_INTEGER,0, File%iosystem%IO_comm  , mpierr)
           call CheckMPIReturn('nf_mod',mpierr)
@@ -105,11 +117,27 @@ contains
     ierr=PIO_noerr
     if(file%iosystem%ioproc) then
        iotype = File%iotype 
-
+#ifdef _NETCDF
+       if(present(mode)) then
+          if(mode == 1) then
+             amode = NF90_WRITE
+          else
+             amode = mode
+          end if
+       else
+          amode = NF90_NOWRITE
+       end if
+#endif
        select case (iotype) 
+#ifdef _NETCDF4
+       case(PIO_iotype_netcdf4p)
+          ierr = nf90_open_par(fname, amode, File%iosystem%io_comm, File%iosystem%info, File%fh)
+          print *,__FILE__,__LINE__,ierr
 
+#endif
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(PIO_iotype_pnetcdf)
+          call pnetcdf_version_check()
           if(present(mode)) then
              amode = mode
           else
@@ -120,19 +148,10 @@ contains
 #endif
 
 #ifdef _NETCDF
-       case(iotype_netcdf)
+       case(PIO_iotype_netcdf)
 
           if (File%iosystem%io_rank == 0) then
              ! Stores the ncid in File%fh
-             if(present(mode)) then
-                if(mode == 1) then
-                   amode = NF90_WRITE
-                else
-                   amode = mode
-                end if
-             else
-                amode = NF90_NOWRITE
-             end if
              ierr = nf90_open(fname,amode,File%fh)
              ! Set default to NOFILL for performance.  
              if(ierr .eq. NF90_NOERR .and. iand(amode, NF90_WRITE) > 0) then
@@ -178,11 +197,11 @@ contains
        if(Debug) print *,_FILE_,__LINE__,'CFILE closing : ',file%fh
        select case (File%iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(PIO_iotype_pnetcdf)
           ierr=nfmpi_close(file%fh)
 #endif
 #ifdef _NETCDF
-       case(iotype_netcdf)
+       case(PIO_iotype_netcdf)
           if (File%iosystem%io_rank==0) then
              ierr= nf90_sync(File%fh)
              ierr= nf90_close(File%fh)
@@ -211,11 +230,11 @@ contains
        if(Debug) print *,_FILE_,__LINE__,'CFILE syncing : ',file%fh
        select case (File%iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(PIO_iotype_pnetcdf)
           ierr=nfmpi_sync(file%fh)
 #endif
 #ifdef _NETCDF
-       case(iotype_netcdf)
+       case(PIO_iotype_netcdf)
           if (File%iosystem%io_rank==0) then
              ierr= nf90_sync(File%fh)
           endif

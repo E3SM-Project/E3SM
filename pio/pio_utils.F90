@@ -2,6 +2,7 @@ module pio_utils
   use pio_types, only : file_desc_t, var_desc_t
   use pio_types, only : pio_int, pio_real, pio_double, pio_char
   use pio_types, only : iotype_netcdf, iotype_pnetcdf, PIO_internal_error
+  use pio_types, only : PIO_iotype_netcdf4p, pio_iotype_netcdf4c
   use pio_types, only : PIO_bcast_error 
   use pio_kinds, only : i4, r4, r8
   use pio_support, only : checkmpireturn, piodie
@@ -23,7 +24,7 @@ module pio_utils
 #ifdef _PNETCDF
   public :: pnetcdf_version_check
 #endif
-
+  
 
 contains
 
@@ -84,13 +85,16 @@ contains
        call piodie(file,line,'PNETCDF not enabled in the build')
     endif
 #endif
-
 #ifndef _NETCDF
     if (iotype==iotype_netcdf) then
        call piodie(file,line,'NETCDF not enabled in the build')
     endif
 #endif
-
+#ifndef _NETCDF4
+    if (iotype==PIO_iotype_netcdf4p .or. iotype==pio_iotype_netcdf4c) then
+       call piodie(file,line,'NETCDF4 not enabled in the build')
+    endif
+#endif
     print *,'Invalid iotype, value=',iotype
     call piodie(file,line,'Quitting')
 
@@ -102,7 +106,11 @@ contains
     integer :: dot1, dot2, s
     integer :: v1, v2, v3
     integer, parameter :: rv1=1, rv2=1, rv3=0
+    logical,save :: pnetcdf_version_okay=.false.
     character(len=80) :: error
+
+    if(pnetcdf_version_okay) return
+
 
     write(error,*) 'Pnetcdf version appears to be older than minimum required ',rv1,'.',rv2,'.',rv3
 
@@ -129,7 +137,7 @@ contains
           end if
        end if
     end if
-
+    pnetcdf_version_okay=.true.
   end subroutine pnetcdf_version_check
 #endif
 

@@ -110,10 +110,12 @@ contains
 #endif
 
 #ifdef _NETCDF
-       case(iotype_netcdf)
+       case(iotype_netcdf,PIO_iotype_netcdf4c)
           if (File%iosystem%io_rank==0) then
              ierr=nf90_put_att(File%fh,varid,name,value)
           endif
+       case(PIO_iotype_netcdf4p)
+          ierr=nf90_put_att(File%fh,varid,name,value)
 #endif
 
        case default
@@ -175,10 +177,12 @@ contains
           ierr= nfmpi_put_att_{TYPE} (File%fh,varid,name, nf_{TYPE} , clen,value)
 #endif
 #ifdef _NETCDF
-       case(iotype_netcdf)
+       case(iotype_netcdf, PIO_iotype_netcdf4c)
           if (File%iosystem%io_rank==0) then
              ierr=nf90_put_att(File%fh,varid,name,value)
           endif
+       case(iotype_netcdf4p)
+          ierr=nf90_put_att(File%fh,varid,name,value)
 #endif
 
        case default
@@ -334,6 +338,8 @@ contains
              call MPI_BCAST(value,clen ,{MPITYPE} ,0,File%iosystem%IO_comm, mpierr)
              call CheckMPIReturn(subName, mpierr)
           end if
+       case(PIO_iotype_netcdf4p,PIO_iotype_netcdf4c)
+          ierr=nf90_get_att(File%fh,varid,name,value)
 #endif
 
        case default
@@ -392,6 +398,8 @@ contains
              call MPI_BCAST(value,clen ,{MPITYPE} ,0,File%iosystem%IO_comm, mpierr)
              call CheckMPIReturn(subName, mpierr)
           end if
+       case(PIO_iotype_netcdf4p,PIO_iotype_netcdf4c)
+          ierr=nf90_get_att(File%fh,varid,name,value)
 #endif
 
        case default

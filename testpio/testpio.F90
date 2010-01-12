@@ -472,6 +472,7 @@ program testpio
      if(TestR8) then
         if (Debug) write(*,'(2a,i8)') myname,':: REAL*8 Test:  Creating File...it=',it
         ierr = PIO_CreateFile(PIOSYS,File_r8,iotype,trim(fname_r8), mode)
+        print *,__FILE__,__LINE__,iotype
         call check_pioerr(ierr,__FILE__,__LINE__,' r8 createfile')
      endif
 
@@ -599,6 +600,7 @@ program testpio
 #ifdef TIMING
         call t_startf('testpio_write')
 #endif
+        print *,__FILE__,__LINE__,file_r8%iotype
         do ivar=1,nvars
            call PIO_write_darray(File_r8,vard_r8(ivar), iodesc_r8, test_r8wr, iostat)
            call check_pioerr(iostat,__FILE__,__LINE__,' r8 write_darray')

@@ -73,6 +73,8 @@ if(defined $suites){
     @testsuites = split(' ',$attributes{testsuites});
 }
 
+@testsuites = qw(all);
+
 
 
 my $workdir = $attributes{workdir};
@@ -176,6 +178,10 @@ my \$testlist = {all=>["sn01","sn02","sn03","sb01","sb02","sb03","sb04","sb05","
 		ant=>["sn02","sb02","pn02","pb02","bn02","bb02"],
 		mpiio=>["bn01","bn02","bn03","bb01","bb02","bb03","bb04","bb05","bb06","bb07","bb08"]
 	    };
+
+
+\$testlist = {all=>["n4b03"]};
+
 
 unlink("$workdir/wr01.dof.txt") if(-e "$workdir/wr01.dof.txt");
 my \$suite;

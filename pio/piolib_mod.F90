@@ -1186,9 +1186,6 @@ contains
 !! @param base @em optional argument can be used to offset the first io task - default base is task 1.
 !<
   subroutine init(comp_rank, comp_comm, num_iotasks, num_aggregator, stride,  rearr, iosystem,base)
-#ifdef _PNETCDF
-    use nf_mod, only : pnetcdf_version_check
-#endif
     integer(i4), intent(in) :: comp_rank
     integer(i4), intent(in) :: comp_comm
     integer(i4), intent(in) :: num_iotasks 
@@ -1218,10 +1215,6 @@ contains
     iosystem%comp_rank = comp_rank
     iosystem%rearr = rearr
 
-#ifdef _PNETCDF
-    call pnetcdf_version_check()
-#endif
-    
     call mpi_comm_size(comp_comm,iosystem%num_tasks,ierr)
     if(check) call checkmpireturn('init: after call to comm_size: ',ierr)
     ! ---------------------------------------
@@ -1635,15 +1628,7 @@ contains
     ! set some iotype specific stuff
     !--------------------------------
 
-    if(iosystem%num_iotasks.eq.1.and.iotype.eq.iotype_pnetcdf) then	
-#if defined(_netcdf)
-       file%iotype=iotype_netcdf
-#else
-       file%iotype = iotype 
-#endif
-    else
-       file%iotype = iotype 
-    end if
+    file%iotype = iotype 
 #if defined(usempiio) || defined(_pnetcdf)
     if ( (file%iotype==iotype_pbinary .or. file%iotype==iotype_direct_pbinary) &
          .and. (.not. iosystem%userearranger) ) then
@@ -1659,7 +1644,7 @@ contains
           print *, 'warning, the mode argument is currently ignored for binary file operations'
        end if
        ierr = create_mpiio(file,fname)
-    case( iotype_pnetcdf, iotype_netcdf)
+    case( iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c)
        ierr = create_nf(file,fname, amode)	
        if(debug .and. iosystem%io_rank==0)print *,_FILE_,__LINE__,' open: ', fname, file%fh
     case(iotype_binary)
@@ -1740,7 +1725,7 @@ contains
           print *, 'warning, the mode argument is currently ignored for binary file operations'
        end if
        ierr = open_mpiio(file,fname)
-    case( iotype_pnetcdf, iotype_netcdf)
+    case( iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
        if(present(mode)) then
           ierr = open_nf(file,fname,mode)
        else

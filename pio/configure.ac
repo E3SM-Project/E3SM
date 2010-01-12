@@ -37,6 +37,11 @@ AC_HELP_STRING( [--enable-netcdf],
 [use serial netcdf (Uses NETCDF_PATH) (default yes)]),
 [USE_NETCDF=$enableval],[USE_NETCDF=yes])
 
+AC_ARG_ENABLE(netcdf4,
+AC_HELP_STRING( [--enable-netcdf4],
+[use netcdf4 with HDF5 capability (Uses NETCDF_PATH) (default no)]),
+[USE_NETCDF4=$enableval],[USE_NETCDF4=no])
+
 AC_ARG_ENABLE(mpiio,
 AC_HELP_STRING([--enable-mpiio],
 [Enable support for MPI-IO (default auto detect)]),
@@ -833,6 +838,11 @@ fi
 PINCS="$MPI_INC"
 PLIBS=""
 
+if test "$USE_NETCDF4" = "yes"
+  then
+   USE_NETCDF=yes
+fi
+
 if test "$USE_NETCDF" = "yes"
   then
        if test -n "$NETCDF_PATH"
@@ -858,7 +868,62 @@ if test "$USE_NETCDF" = "yes"
        fi
   else
        PDEFS="$PDEFS -D_NONETCDF"
+       USE_NETCDF4="no"
 fi
+
+if test "$USE_NETCDF4" = "yes"
+  then
+   PDEFS="$PDEFS -D_NETCDF4"
+   if test -e "$NETCDF_PATH/lib/pkgconfig/"
+     then
+     export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:$NETCDF_PATH/lib/pkgconfig/"
+     PKG_CHECK_MODULES([NETCDF4], netcdf)
+     PLIBS="$PLIBS $NETCDF4_LIBS"
+   else
+     # Did the user specify a location for the HDF5 library?
+     AC_MSG_CHECKING([whether a location for the HDF5 library was specified])
+     AC_ARG_WITH([hdf5],
+                 [AS_HELP_STRING([--with-hdf5=<directory>],
+                                 [Specify location of HDF5 library. HDF5 is required for netCDF-4. Configure will expect to find subdir lib.])],
+               [HDF5DIR=$with_hdf5])
+     AC_MSG_RESULT([$HDF5DIR])
+     AC_SUBST(HDF5DIR, [$HDF5DIR])
+
+     # Did the user specify a location for the ZLIB library?
+     AC_MSG_CHECKING([whether a location for the ZLIB library was specified])
+     AC_ARG_WITH([zlib],
+                 [AS_HELP_STRING([--with-zlib=<directory>],
+                                 [Specify location of ZLIB library. ZLIB is required for netCDF-4. Configure will expect to find subdir lib.])],
+               [ZLIBDIR=$with_zlib])
+     AC_MSG_RESULT([$ZLIBDIR])
+     AC_SUBST(ZLIBDIR, [$ZLIBDIR])
+
+     # Did the user specify a location for the SZLIB library?
+     AC_MSG_CHECKING([whether a location for the SZLIB library was specified])
+     AC_ARG_WITH([szlib],
+                 [AS_HELP_STRING([--with-szlib=<directory>],
+                                 [Specify location of SZLIB library. SZLIB is not required for netCDF-4, but you must specify its location \
+   			      if HDF5 was built with SZLIB. Configure will expect to find subdir lib.])],
+               [SZLIBDIR=$with_szlib])
+     AC_MSG_RESULT([$SZLIBDIR])
+     AC_SUBST(SZLIBDIR, [$SZLIBDIR])
+	
+     PDEFS="$PDEFS -D_NETCDF4"
+     if test -n "$HDF5DIR"
+       then PLIBS="$PLIBS -L$HDF5DIR/lib"
+     fi 
+     if test -n "$ZLIBDIR"
+       then PLIBS="$PLIBS -L$ZLIBDIR/lib"
+     fi 
+     if test -n "$SZLIBDIR"
+       then PLIBS="$PLIBS -L$SZLIBDIR/lib"
+     fi 
+     PLIBS="$PLIBS -lhdf5 -lz -lsz"   
+   fi
+fi
+
+
+
 
 if test ! "$USE_PNETCDF" = "no"
   then
@@ -1057,6 +1122,7 @@ echo Output Variables: {CC=$CC} \
 {PDEFS=$PDEFS} \
 {PDEFSF=$PDEFSF} \
 {PINCS=$PINCS} \
+{PLIBS=$PLIBS} \
 {DEBUG=$DEBUG}
 
 echo

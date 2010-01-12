@@ -185,7 +185,7 @@ contains
        else
           call write_darray_bin_real(File,varDesc,iodesc, array, iostat)
        endif
-    case(iotype_pnetcdf, iotype_netcdf)
+    case(iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
        if (present(fillval)) then
           call write_darray_nf_real(File,varDesc,iodesc, array, iostat, fillval)
        else
@@ -246,7 +246,7 @@ contains
        else
           call write_darray_bin_int(File,varDesc,iodesc, array, iostat)
        endif
-    case(iotype_pnetcdf, iotype_netcdf)
+    case(iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
        if (present(fillval)) then
           call write_darray_nf_int(File,varDesc,iodesc, array, iostat, fillval)
        else
@@ -307,7 +307,7 @@ contains
        else
           call write_darray_bin_double(File,varDesc,iodesc, array, iostat)
        endif
-    case(iotype_pnetcdf, iotype_netcdf)
+    case(iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
        if (present(fillval)) then
           call write_darray_nf_double(File,varDesc,iodesc, array, iostat, fillval)
        else
@@ -925,7 +925,7 @@ contains
     select case(File%iotype)
     case(iotype_pbinary, iotype_direct_pbinary)
        call read_darray_bin_real (File,varDesc,iodesc,array, iostat)
-    case(iotype_pnetcdf, iotype_netcdf)
+    case(iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
        call read_darray_nf_real (File,varDesc,iodesc,array, iostat)
     case(iotype_binary)
        print *, subName,': IO type not supported'
@@ -975,7 +975,7 @@ contains
     select case(File%iotype)
     case(iotype_pbinary, iotype_direct_pbinary)
        call read_darray_bin_int (File,varDesc,iodesc,array, iostat)
-    case(iotype_pnetcdf, iotype_netcdf)
+    case(iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
        call read_darray_nf_int (File,varDesc,iodesc,array, iostat)
     case(iotype_binary)
        print *, subName,': IO type not supported'
@@ -1025,7 +1025,7 @@ contains
     select case(File%iotype)
     case(iotype_pbinary, iotype_direct_pbinary)
        call read_darray_bin_double (File,varDesc,iodesc,array, iostat)
-    case(iotype_pnetcdf, iotype_netcdf)
+    case(iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
        call read_darray_nf_double (File,varDesc,iodesc,array, iostat)
     case(iotype_binary)
        print *, subName,': IO type not supported'

@@ -73,10 +73,10 @@ contains
 #endif
     iotype = File%iotype
     ierr=PIO_noerr
-
+	
     if(file%iosystem%ioproc) then
+	print *,__FILE__,__LINE__,iotype
        select case (iotype) 
-
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
 #ifdef DEBUG
@@ -98,7 +98,10 @@ contains
 #endif
 
 #ifdef _NETCDF
-       case(iotype_netcdf)
+       case(PIO_iotype_netcdf4p)	
+          ierr=nf90_put_var(File%fh, vardesc%varid, iobuf,start=int(start),count=int(count))
+          print *,__FILE__,__LINE__,ierr
+       case(iotype_netcdf,pio_iotype_netcdf4c)
           ! allocate space on root for copy of iobuf etc.
           iobuf_size=size(IOBUF)
           if(File%iosystem%num_iotasks>1) then
@@ -288,10 +291,10 @@ contains
 #endif
     iotype = File%iotype
     ierr=PIO_noerr
-
+	
     if(file%iosystem%ioproc) then
+	print *,__FILE__,__LINE__,iotype
        select case (iotype) 
-
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
 #ifdef DEBUG
@@ -313,7 +316,10 @@ contains
 #endif
 
 #ifdef _NETCDF
-       case(iotype_netcdf)
+       case(PIO_iotype_netcdf4p)	
+          ierr=nf90_put_var(File%fh, vardesc%varid, iobuf,start=int(start),count=int(count))
+          print *,__FILE__,__LINE__,ierr
+       case(iotype_netcdf,pio_iotype_netcdf4c)
           ! allocate space on root for copy of iobuf etc.
           iobuf_size=size(IOBUF)
           if(File%iosystem%num_iotasks>1) then
@@ -503,10 +509,10 @@ contains
 #endif
     iotype = File%iotype
     ierr=PIO_noerr
-
+	
     if(file%iosystem%ioproc) then
+	print *,__FILE__,__LINE__,iotype
        select case (iotype) 
-
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
 #ifdef DEBUG
@@ -528,7 +534,10 @@ contains
 #endif
 
 #ifdef _NETCDF
-       case(iotype_netcdf)
+       case(PIO_iotype_netcdf4p)	
+          ierr=nf90_put_var(File%fh, vardesc%varid, iobuf,start=int(start),count=int(count))
+          print *,__FILE__,__LINE__,ierr
+       case(iotype_netcdf,pio_iotype_netcdf4c)
           ! allocate space on root for copy of iobuf etc.
           iobuf_size=size(IOBUF)
           if(File%iosystem%num_iotasks>1) then

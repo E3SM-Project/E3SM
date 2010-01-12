@@ -1190,19 +1190,16 @@ contains
 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
-
           ierr=nfmpi_enddef(File%fh)
 #endif
 
 #ifdef _NETCDF
-       case(iotype_netcdf)
-
-
-
+       case(iotype_netcdf, pio_iotype_netcdf4c)
           if (File%iosystem%io_rank==0) then
              ierr=nf90_enddef(File%fh)
           endif
-
+       case(PIO_iotype_netcdf4p)
+          ierr=nf90_enddef(File%fh)
 #endif
 
        case default
@@ -1303,17 +1300,15 @@ contains
 #endif
 
 #ifdef _NETCDF
-       case(iotype_netcdf)
-
-
-
+       case(iotype_netcdf,PIO_iotype_netcdf4c)
           if (File%iosystem%io_rank==0) then
              ierr=nf90_def_dim(ncid=File%fh,name=name,len=len,dimid=dimid)
           endif
           if(File%iosystem%num_tasks==File%iosystem%num_iotasks) then
              call MPI_BCAST(dimid, 1, MPI_INTEGER, 0, File%iosystem%IO_Comm, ierr)
           end if
-
+       case(PIO_iotype_netcdf4p)
+          ierr=nf90_def_dim(ncid=File%fh,name=name,len=len,dimid=dimid)
 #endif
        case default
           call bad_iotype(iotype,_FILE_,__LINE__)
@@ -1392,12 +1387,8 @@ contains
 #endif
 
 #ifdef _NETCDF
-       case(iotype_netcdf)
-
-
-
+       case(iotype_netcdf,pio_iotype_netcdf4c)
           ! assuming type valid for both pnetcdf and netcdf
-
           if (File%iosystem%io_rank==0) then
              ierr=nf90_def_var( ncid=File%fh,name=name,xtype=type, &
                   dimids=dimids,varid=vardesc%varid)
@@ -1407,7 +1398,9 @@ contains
           if(File%iosystem%num_tasks==File%iosystem%num_iotasks) then
              call MPI_BCAST(vardesc%varid, 1, MPI_INTEGER, 0, File%iosystem%IO_Comm, ierr)
           end if
-
+       case(pio_iotype_netcdf4p)
+          ierr=nf90_def_var( ncid=File%fh,name=name,xtype=type, &
+               dimids=dimids,varid=vardesc%varid)
 #endif
 
        case default
@@ -1452,13 +1445,14 @@ contains
                outfile%fh, outvarid)
 #endif
 #ifdef _NETCDF
-       case(iotype_netcdf)
-
-
+       case(iotype_netcdf,PIO_iotype_netcdf4c)
           if (inFile%iosystem%io_rank==0) then
              ierr = nf90_copy_att(infile%fh,invarid,name,&
                   outfile%fh,outvarid)     
           end if
+       case(PIO_iotype_netcdf4p)
+          ierr = nf90_copy_att(infile%fh,invarid,name,&
+               outfile%fh,outvarid)     
 #endif    
        end select
     end if
