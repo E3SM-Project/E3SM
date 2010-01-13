@@ -1,9 +1,9 @@
 &io_nml
-  casename    = 'n4b03:n4nc:box:stride=1:g_root'
+  casename    = 'n4n03:n4nc:none:stride=1:g_root'
   nx_global   = 360
   ny_global   = 240
   iofmt       = 'nc4p'
-  rearr       = 'box'
+  rearr       = 'none'
   nprocsIO    = -1
   stride      = 1
   base        = 0

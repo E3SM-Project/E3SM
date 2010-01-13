@@ -512,7 +512,9 @@ program testpio
      ! Code specifically for netCDF files 
      !---------------------------
      if(iotype == iotype_pnetcdf .or. & 
-          iotype == iotype_netcdf ) then
+          iotype == iotype_netcdf .or. &
+          iotype == PIO_iotype_netcdf4p .or. &
+          iotype == PIO_iotype_netcdf4c) then
 
         if(TestR8) then 
            !-----------------------------------
@@ -525,6 +527,7 @@ program testpio
               iostat = PIO_def_var(File_r8,varname,PIO_double,(/dimid_x,dimid_y,dimid_z/),vard_r8(ivar))
               call check_pioerr(iostat,__FILE__,__LINE__,' r8 defvar')
            end do
+           print *,__FILE__,__LINE__,file_r8%iotype
            iostat = PIO_enddef(File_r8)
            call check_pioerr(iostat,__FILE__,__LINE__,' r8 enddef')
         endif

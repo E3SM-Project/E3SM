@@ -1,9 +1,9 @@
 &io_nml
-  casename    = 'n4b03:n4nc:box:stride=1:g_root'
+  casename    = 'n4n02:n4nc:none:stride=1:g_xy'
   nx_global   = 360
   ny_global   = 240
   iofmt       = 'nc4p'
-  rearr       = 'box'
+  rearr       = 'none'
   nprocsIO    = -1
   stride      = 1
   base        = 0
@@ -17,10 +17,10 @@
 &compdof_nml
   nblksppe = 1
   grdorder = 'xyz'
-  grddecomp = 'setblk'
-  gdx = 360
-  gdy = 240
-  gdz = 1
+  grddecomp = 'xy'
+  gdx = 0
+  gdy = 0
+  gdz = 0
   blkorder = 'xyz'
   blkdecomp1 = 'xy'
   blkdecomp2 = ''

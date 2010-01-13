@@ -71,20 +71,26 @@ contains
     iotype = File%iotype 
     if(debug) print *,_FILE_,__LINE__,ival,iotype, index
     if(File%iosystem%IOProc) then
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(iotype_pnetcdf)
-          allocate(count(size(index)))
+       allocate(count(size(index)))
+       if(File%iosystem%io_rank == 0) then
           count(:) = 1
 #if ({ITYPE} == TYPETEXT)
           count(1) = len(ival)
 #endif	
+       else
+          count(:) = 0
+       end if
+
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
           ierr = nfmpi_put_vara_all (File%fh, varid, int(index,kind=PIO_OFFSET), count, &
                ival, count, {MPITYPE})
-          deallocate(count)
 #endif
 #ifdef _NETCDF
-       case(iotype_netcdf)
+       case (pio_iotype_netcdf4p)
+          ierr = nf90_put_var(File%fh, varid, ival, start=index, count=int(count))
+       case(iotype_netcdf,pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_put_var(File%fh, varid, ival, start=index)
@@ -94,6 +100,7 @@ contains
           print *,_FILE_,__LINE__,iotype
           call piodie(_FILE_,__LINE__,"bad iotype specified")
        end select
+       deallocate(count)
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
 
@@ -148,6 +155,15 @@ contains
     ierr=PIO_NOERR
     if(File%iosystem%IOProc) then
        iotype = File%iotype 
+       if(File%iosystem%io_rank==0) then
+          start = 1
+          do i=1,{DIMS}
+             count(i) = size(ival,i)
+          end do
+       else
+          start = 0
+          count = 0
+       end if
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
@@ -160,20 +176,13 @@ contains
              ierr = nfmpi_end_indep_data(File%fh)
           end if
 #else
-          if(File%iosystem%io_rank==0) then
-             start = 1
-             do i=1,{DIMS}
-                count(i) = size(ival,i)
-             end do
-          else
-             start = 0
-             count = 0
-          end if
-          ierr = put_vara_{DIMS}d_{TYPE} (File, varid, start, count, ival)
+          ierr = put_vara_{DIMS}d_{TYPE} (File, varid, int(start,kind=pio_offset), int(count,kind=pio_offset), ival)
 #endif
 #endif
 #ifdef _NETCDF
-       case(iotype_netcdf)
+       case(pio_iotype_netcdfp)
+          ierr = nf90_put_var(File%fh, varid, ival, start, count)
+       case(iotype_netcdf,pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
 

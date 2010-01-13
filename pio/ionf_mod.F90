@@ -53,9 +53,7 @@ contains
     ierr=PIO_noerr
     if(File%iosystem%ioproc) then
        iotype = File%iotype 
-
        select case (iotype) 
-
 #ifdef _PNETCDF
        case(PIO_iotype_pnetcdf)
           call pnetcdf_version_check()
@@ -66,7 +64,14 @@ contains
 #endif
 #ifdef _NETCDF4
        case(PIO_iotype_netcdf4p)
-          ierr = nf90_create_par(fname, amode, File%iosystem%io_comm, File%iosystem%info, File%fh)
+          if(iand(PIO_64BIT_OFFSET,amode)==PIO_64BIT_OFFSET) then
+             nmode = ieor(amode,PIO_64bit_OFFSET)
+          else
+             nmode=amode
+          end if
+          nmode = ior(nmode,NF90_NETCDF4)
+
+          ierr = nf90_create_par(fname, nmode, File%iosystem%io_comm, File%iosystem%info, File%fh)
 ! Set default to NOFILL for performance.  
           if(ierr==NF90_NOERR) &
              ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
@@ -201,7 +206,10 @@ contains
           ierr=nfmpi_close(file%fh)
 #endif
 #ifdef _NETCDF
-       case(PIO_iotype_netcdf)
+       case(pio_iotype_netcdf4p)
+          ierr= nf90_sync(File%fh)
+          ierr= nf90_close(File%fh)
+       case(PIO_iotype_netcdf, pio_iotype_netcdf4c)
           if (File%iosystem%io_rank==0) then
              ierr= nf90_sync(File%fh)
              ierr= nf90_close(File%fh)

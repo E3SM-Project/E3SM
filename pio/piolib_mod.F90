@@ -1854,7 +1854,7 @@ contains
     select case(iotype)
     case(iotype_pbinary, iotype_direct_pbinary)
        ierr = close_mpiio(file)
-    case( iotype_pnetcdf, iotype_netcdf)
+    case( iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c)
        ierr = close_nf(file)
     case(iotype_binary)
        print *,'closefile: io type not supported'

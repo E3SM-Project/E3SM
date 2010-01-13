@@ -75,7 +75,6 @@ contains
     ierr=PIO_noerr
 	
     if(file%iosystem%ioproc) then
-	print *,__FILE__,__LINE__,iotype
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
@@ -293,7 +292,6 @@ contains
     ierr=PIO_noerr
 	
     if(file%iosystem%ioproc) then
-	print *,__FILE__,__LINE__,iotype
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
@@ -511,7 +509,6 @@ contains
     ierr=PIO_noerr
 	
     if(file%iosystem%ioproc) then
-	print *,__FILE__,__LINE__,iotype
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)

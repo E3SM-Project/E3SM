@@ -84,17 +84,20 @@ contains
 
           if(Debug) print *,_FILE_,__LINE__, &
                '  IAM: ',File%iosystem%io_rank,' start: ', &
-               int(start,kind=pio_offset),' count: ', &
-               int(count,kind=pio_offset), ' iobuf size: ',size(iobuf)
+               start,' count: ', &
+               count, ' iobuf size: ',size(iobuf)
 
           ierr=nfmpi_get_vara_all( File%fh,varDesc%varid, &
-               int(start,kind=pio_offset), &
-               int(count,kind=pio_offset), &
+               start, &
+               count, &
                IOBUF,int(iodesc%Read%n_ElemTYPE,kind=pio_offset), &
                iodesc%Read%ElemTYPE)
 #endif
 
 #ifdef _NETCDF
+       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)	
+! all reads can be parallel in netcdf4 format
+          ierr= nf90_get_var(File%fh, vardesc%varid, iobuf, start=int(start),count=int(count))
        case(iotype_netcdf)
           iobuf_size=size(IOBUF)
           call MPI_REDUCE( iobuf_size,max_iobuf_size, &
@@ -259,17 +262,20 @@ contains
 
           if(Debug) print *,_FILE_,__LINE__, &
                '  IAM: ',File%iosystem%io_rank,' start: ', &
-               int(start,kind=pio_offset),' count: ', &
-               int(count,kind=pio_offset), ' iobuf size: ',size(iobuf)
+               start,' count: ', &
+               count, ' iobuf size: ',size(iobuf)
 
           ierr=nfmpi_get_vara_all( File%fh,varDesc%varid, &
-               int(start,kind=pio_offset), &
-               int(count,kind=pio_offset), &
+               start, &
+               count, &
                IOBUF,int(iodesc%Read%n_ElemTYPE,kind=pio_offset), &
                iodesc%Read%ElemTYPE)
 #endif
 
 #ifdef _NETCDF
+       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)	
+! all reads can be parallel in netcdf4 format
+          ierr= nf90_get_var(File%fh, vardesc%varid, iobuf, start=int(start),count=int(count))
        case(iotype_netcdf)
           iobuf_size=size(IOBUF)
           call MPI_REDUCE( iobuf_size,max_iobuf_size, &
@@ -434,17 +440,20 @@ contains
 
           if(Debug) print *,_FILE_,__LINE__, &
                '  IAM: ',File%iosystem%io_rank,' start: ', &
-               int(start,kind=pio_offset),' count: ', &
-               int(count,kind=pio_offset), ' iobuf size: ',size(iobuf)
+               start,' count: ', &
+               count, ' iobuf size: ',size(iobuf)
 
           ierr=nfmpi_get_vara_all( File%fh,varDesc%varid, &
-               int(start,kind=pio_offset), &
-               int(count,kind=pio_offset), &
+               start, &
+               count, &
                IOBUF,int(iodesc%Read%n_ElemTYPE,kind=pio_offset), &
                iodesc%Read%ElemTYPE)
 #endif
 
 #ifdef _NETCDF
+       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)	
+! all reads can be parallel in netcdf4 format
+          ierr= nf90_get_var(File%fh, vardesc%varid, iobuf, start=int(start),count=int(count))
        case(iotype_netcdf)
           iobuf_size=size(IOBUF)
           call MPI_REDUCE( iobuf_size,max_iobuf_size, &

@@ -2,6 +2,7 @@
 module pionfatt_mod
   use pio_kinds, only : r4, r8, i4
   use pio_types, only : iotype_netcdf, iotype_pnetcdf, pio_noerr
+  use pio_types, only : pio_iotype_netcdf4p, pio_iotype_netcdf4c
   use pio_types, only : file_desc_t, var_desc_t
   use pio_kinds, only : pio_offset
   use pio_support, only : piodie, checkmpireturn
@@ -181,7 +182,7 @@ contains
           if (File%iosystem%io_rank==0) then
              ierr=nf90_put_att(File%fh,varid,name,value)
           endif
-       case(iotype_netcdf4p)
+       case(pio_iotype_netcdf4p)
           ierr=nf90_put_att(File%fh,varid,name,value)
 #endif
 

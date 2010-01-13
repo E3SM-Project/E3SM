@@ -1186,6 +1186,7 @@ contains
     ierr=PIO_noerr
 
     if(File%iosystem%IOproc) then
+          print *,__FILE__,__LINE__, iotype
        select case(iotype)
 
 #ifdef _PNETCDF
@@ -1199,6 +1200,7 @@ contains
              ierr=nf90_enddef(File%fh)
           endif
        case(PIO_iotype_netcdf4p)
+          print *,__FILE__,__LINE__
           ierr=nf90_enddef(File%fh)
 #endif
 
