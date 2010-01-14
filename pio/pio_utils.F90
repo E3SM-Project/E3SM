@@ -34,16 +34,16 @@ contains
     character(len=*), intent(in) :: filestr
     integer, intent(in) :: line
 
-    integer :: mpierr
+    integer :: mpierr, iotype
 
 !  Three choices for error handling:
 !  1: abort on error from any task           PIO_INTERNAL_ERROR
 !  2: broadcast an error from io_rank 0      PIO_BCAST_ERROR
 !  3: do nothing - allow the user to handle it PIO_RETURN_ERROR
 !
-
-
-    if(file%iotype==iotype_pnetcdf) then
+    iotype = file%iotype
+    select case(iotype)
+    case(iotype_pnetcdf)
 #ifdef _PNETCDF
        if(file%iosystem%error_handling==PIO_INTERNAL_ERROR) then
           if(status /= nf_noerr) then
@@ -55,7 +55,7 @@ contains
        end if
 
 #endif
-    else if(file%iotype==iotype_netcdf) then
+    case(iotype_netcdf,pio_iotype_netcdf4p,pio_iotype_netcdf4c)
 #ifdef _NETCDF
        if(File%iosystem%error_handling==PIO_INTERNAL_ERROR) then
           if(status /= nf90_noerr) then
@@ -66,7 +66,7 @@ contains
           call CheckMPIReturn('nf_mod',mpierr)
        end if
 #endif
-    end if
+    end select
 
   end subroutine check_netcdf
 

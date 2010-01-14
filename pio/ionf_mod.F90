@@ -72,6 +72,8 @@ contains
           nmode = ior(nmode,NF90_NETCDF4)
 
           ierr = nf90_create_par(fname, nmode, File%iosystem%io_comm, File%iosystem%info, File%fh)
+
+          print *,__FILE__,__LINE__,fname,file%fh
 ! Set default to NOFILL for performance.  
           if(ierr==NF90_NOERR) &
              ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
@@ -87,8 +89,9 @@ contains
              if(ierr==NF90_NOERR) &
                   ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
           endif
-          call MPI_BCAST(File%fh,1,MPI_INTEGER,0, File%iosystem%IO_comm  , mpierr)
-          call CheckMPIReturn('nf_mod',mpierr)
+! Why do we need this particular bcast?
+!          call MPI_BCAST(File%fh,1,MPI_INTEGER,0, File%iosystem%IO_comm  , mpierr)
+!          call CheckMPIReturn('nf_mod',mpierr)
 
 #endif
 
@@ -99,10 +102,10 @@ contains
     end if
     call check_netcdf(File, ierr,_FILE_,__LINE__)
 
-    if(File%iosystem%num_tasks>File%iosystem%num_iotasks) then
-       call MPI_BCAST(File%fh,1,MPI_INTEGER,File%iosystem%IOMaster, File%iosystem%Comp_comm  , mpierr)
-       call CheckMPIReturn('nf_mod',mpierr)
-    end if
+!    if(File%iosystem%num_tasks>File%iosystem%num_iotasks) then
+!       call MPI_BCAST(File%fh,1,MPI_INTEGER,File%iosystem%IOMaster, File%iosystem%Comp_comm  , mpierr)
+!       call CheckMPIReturn('nf_mod',mpierr)
+!    end if
 
   end function create_nf
 
@@ -134,12 +137,6 @@ contains
        end if
 #endif
        select case (iotype) 
-#ifdef _NETCDF4
-       case(PIO_iotype_netcdf4p)
-          ierr = nf90_open_par(fname, amode, File%iosystem%io_comm, File%iosystem%info, File%fh)
-          print *,__FILE__,__LINE__,ierr
-
-#endif
 #ifdef _PNETCDF
        case(PIO_iotype_pnetcdf)
           call pnetcdf_version_check()
@@ -153,20 +150,25 @@ contains
 #endif
 
 #ifdef _NETCDF
+#ifdef _NETCDF4
+       case(PIO_iotype_netcdf4p, pio_iotype_netcdf4c)
+          ierr = nf90_open_par(fname, amode, File%iosystem%io_comm, File%iosystem%info, File%fh)
+#endif
        case(PIO_iotype_netcdf)
-
           if (File%iosystem%io_rank == 0) then
              ! Stores the ncid in File%fh
              ierr = nf90_open(fname,amode,File%fh)
              ! Set default to NOFILL for performance.  
+          print *,__FILE__,__LINE__,ierr, amode
              if(ierr .eq. NF90_NOERR .and. iand(amode, NF90_WRITE) > 0) then
                 ierr = nf90_set_fill(File%fh, NF90_NOFILL, ier2)
+          print *,__FILE__,__LINE__,ierr, NF90_NOFILL, ier2
              end if
           endif
-          if(File%iosystem%num_iotasks>1) then
-             call MPI_BCAST(File%fh,1,MPI_INTEGER,0, File%iosystem%IO_comm  , mpierr)
-             call CheckMPIReturn('nf_mod',mpierr)
-          end if
+!          if(File%iosystem%num_iotasks>1) then
+!             call MPI_BCAST(File%fh,1,MPI_INTEGER,0, File%iosystem%IO_comm  , mpierr)
+!             call CheckMPIReturn('nf_mod',mpierr)
+!          end if
 #endif
 
        case default
@@ -178,10 +180,10 @@ contains
     call check_netcdf(File, ierr,_FILE_,__LINE__)
 
 
-    if(File%iosystem%num_tasks>File%iosystem%num_iotasks) then
-       call MPI_BCAST(File%fh,1,MPI_INTEGER,File%iosystem%IOMaster, File%iosystem%Comp_comm  , mpierr)
-       call CheckMPIReturn('nf_mod',mpierr)
-    end if
+!    if(File%iosystem%num_tasks>File%iosystem%num_iotasks) then
+!       call MPI_BCAST(File%fh,1,MPI_INTEGER,File%iosystem%IOMaster, File%iosystem%Comp_comm  , mpierr)
+!       call CheckMPIReturn('nf_mod',mpierr)
+!    end if
 
   end function open_nf
 

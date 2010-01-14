@@ -59,9 +59,7 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, index(:)
     {VTYPE}, intent(in) :: ival
-#ifdef _PNETCDF
-    integer(kind=PIO_OFFSET), allocatable :: count(:)
-#endif
+    integer, allocatable :: count(:)
     integer :: iotype
 
 #ifdef TIMING
@@ -84,12 +82,12 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
-          ierr = nfmpi_put_vara_all (File%fh, varid, int(index,kind=PIO_OFFSET), count, &
-               ival, count, {MPITYPE})
+          ierr = nfmpi_put_vara_all (File%fh, varid, int(index,kind=PIO_OFFSET), int(count,kind=PIO_OFFSET), &
+               ival, int(count,kind=PIO_OFFSET), {MPITYPE})
 #endif
 #ifdef _NETCDF
        case (pio_iotype_netcdf4p)
-          ierr = nf90_put_var(File%fh, varid, ival, start=index, count=int(count))
+          ierr = nf90_put_var(File%fh, varid, ival, start=index)
        case(iotype_netcdf,pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
@@ -146,24 +144,23 @@ contains
     integer, intent(in) :: varid
     {VTYPE}, intent(in) :: ival{DIMSTR}
     integer :: iotype
-#ifdef _PNETCDF
     integer :: i, start({DIMS}), count({DIMS})
-#endif
 #ifdef TIMING
     call t_startf("pio_put_var_{DIMS}d_{TYPE}")
 #endif 
     ierr=PIO_NOERR
     if(File%iosystem%IOProc) then
        iotype = File%iotype 
+       start = 1
+       count = 0
+#if ({DIMS} > 0)
        if(File%iosystem%io_rank==0) then
           start = 1
           do i=1,{DIMS}
              count(i) = size(ival,i)
           end do
-       else
-          start = 0
-          count = 0
        end if
+#endif
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
@@ -176,12 +173,28 @@ contains
              ierr = nfmpi_end_indep_data(File%fh)
           end if
 #else
-          ierr = put_vara_{DIMS}d_{TYPE} (File, varid, int(start,kind=pio_offset), int(count,kind=pio_offset), ival)
+          ierr = put_vara_{DIMS}d_{TYPE} (File, varid, start, count, ival)
 #endif
 #endif
 #ifdef _NETCDF
-       case(pio_iotype_netcdfp)
-          ierr = nf90_put_var(File%fh, varid, ival, start, count)
+       case(pio_iotype_netcdf4p)
+          print *,__FILE__,__LINE__,start,count
+#if (({ITYPE} == TYPETEXT) && ({DIMS}==0))
+! This is a workaround for a bug in the netcdf f90 interface
+! The netcdf bug is that when you use nf90_put_var
+! to write a scalar string the trailing blanks are stripped by the specific
+! function nf90_put_var_text before it calls nf_put_vars_text. 
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
+          else
+             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/0/), (/1/), ival)
+          end if
+#elif({DIMS} == 0) 
+          ierr = nf90_put_var(File%fh, varid, ival)
+#else
+          ierr = nf90_put_var(File%fh, varid, ival, start=start, count=count)
+          if(ierr>0) print *,__FILE__,__LINE__,start,count
+#endif
        case(iotype_netcdf,pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
@@ -260,6 +273,13 @@ contains
     ierr=0
     iotype = File%iotype 
     if(File%iosystem%IOProc) then
+       if(File%iosystem%io_rank==0) then
+          pstart = start	
+          pcount = count
+       else
+          pstart=1 ! avoids an unessasary pnetcdf error 
+          pcount=0
+       endif
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
@@ -267,19 +287,13 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-	  if(File%iosystem%io_rank==0) then
-             pstart = start	
-             pcount = count
-          else
-	     pstart=1 ! avoids an unessasary pnetcdf error 
-	     pcount=0
-          endif
-	print *,__FILE__,__LINE__,pstart,pcount
           ierr = nfmpi_put_vara_{TYPE}_all (File%fh, varid, pstart, &
                pcount, ival, len, {MPITYPE})
 #endif
 #ifdef _NETCDF
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf4p)
+          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+       case(iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_put_var(File%fh, varid, ival, start=start, count=count)

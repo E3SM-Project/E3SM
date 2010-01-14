@@ -99,7 +99,6 @@ contains
 #ifdef _NETCDF
        case(PIO_iotype_netcdf4p)	
           ierr=nf90_put_var(File%fh, vardesc%varid, iobuf,start=int(start),count=int(count))
-          print *,__FILE__,__LINE__,ierr
        case(iotype_netcdf,pio_iotype_netcdf4c)
           ! allocate space on root for copy of iobuf etc.
           iobuf_size=size(IOBUF)
@@ -316,7 +315,6 @@ contains
 #ifdef _NETCDF
        case(PIO_iotype_netcdf4p)	
           ierr=nf90_put_var(File%fh, vardesc%varid, iobuf,start=int(start),count=int(count))
-          print *,__FILE__,__LINE__,ierr
        case(iotype_netcdf,pio_iotype_netcdf4c)
           ! allocate space on root for copy of iobuf etc.
           iobuf_size=size(IOBUF)
@@ -533,7 +531,6 @@ contains
 #ifdef _NETCDF
        case(PIO_iotype_netcdf4p)	
           ierr=nf90_put_var(File%fh, vardesc%varid, iobuf,start=int(start),count=int(count))
-          print *,__FILE__,__LINE__,ierr
        case(iotype_netcdf,pio_iotype_netcdf4c)
           ! allocate space on root for copy of iobuf etc.
           iobuf_size=size(IOBUF)
