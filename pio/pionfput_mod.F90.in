@@ -144,7 +144,12 @@ contains
     integer, intent(in) :: varid
     {VTYPE}, intent(in) :: ival{DIMSTR}
     integer :: iotype
-    integer :: i, start({DIMS}), count({DIMS})
+    integer :: i, is
+#if({ITYPE}== TYPETEXT)
+    integer :: start({DIMS}+1), count({DIMS}+1)
+#else
+    integer :: start({DIMS}), count({DIMS})
+#endif
 #ifdef TIMING
     call t_startf("pio_put_var_{DIMS}d_{TYPE}")
 #endif 
@@ -153,14 +158,18 @@ contains
        iotype = File%iotype 
        start = 1
        count = 0
-#if ({DIMS} > 0)
+       is=0       
        if(File%iosystem%io_rank==0) then
-          start = 1
+#if({ITYPE}== TYPETEXT)
+    	  count(1)=len(ival)
+	  is=1
+#if ({DIMS} > 0)
           do i=1,{DIMS}
-             count(i) = size(ival,i)
+             count(i+is) = size(ival,i)
           end do
-       end if
 #endif
+#endif
+       end if
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
@@ -178,7 +187,6 @@ contains
 #endif
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p)
-          print *,__FILE__,__LINE__,start,count
 #if (({ITYPE} == TYPETEXT) && ({DIMS}==0))
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
@@ -193,7 +201,6 @@ contains
           ierr = nf90_put_var(File%fh, varid, ival)
 #else
           ierr = nf90_put_var(File%fh, varid, ival, start=start, count=count)
-          if(ierr>0) print *,__FILE__,__LINE__,start,count
 #endif
        case(iotype_netcdf,pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
