@@ -163,11 +163,11 @@ contains
 #if({ITYPE}== TYPETEXT)
     	  count(1)=len(ival)
 	  is=1
+#endif
 #if ({DIMS} > 0)
           do i=1,{DIMS}
              count(i+is) = size(ival,i)
           end do
-#endif
 #endif
        end if
        select case (iotype) 

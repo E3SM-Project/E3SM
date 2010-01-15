@@ -516,11 +516,11 @@ contains
 #if(100== TYPETEXT)
     	  count(1)=len(ival)
 	  is=1
+#endif
 #if (0 > 0)
           do i=1,0
              count(i+is) = size(ival,i)
           end do
-#endif
 #endif
        end if
        select case (iotype) 
@@ -622,11 +622,11 @@ contains
 #if(100== TYPETEXT)
     	  count(1)=len(ival)
 	  is=1
+#endif
 #if (1 > 0)
           do i=1,1
              count(i+is) = size(ival,i)
           end do
-#endif
 #endif
        end if
        select case (iotype) 
@@ -728,11 +728,11 @@ contains
 #if(100== TYPETEXT)
     	  count(1)=len(ival)
 	  is=1
+#endif
 #if (2 > 0)
           do i=1,2
              count(i+is) = size(ival,i)
           end do
-#endif
 #endif
        end if
        select case (iotype) 
@@ -834,11 +834,11 @@ contains
 #if(100== TYPETEXT)
     	  count(1)=len(ival)
 	  is=1
+#endif
 #if (3 > 0)
           do i=1,3
              count(i+is) = size(ival,i)
           end do
-#endif
 #endif
        end if
        select case (iotype) 
@@ -940,11 +940,11 @@ contains
 #if(100== TYPETEXT)
     	  count(1)=len(ival)
 	  is=1
+#endif
 #if (4 > 0)
           do i=1,4
              count(i+is) = size(ival,i)
           end do
-#endif
 #endif
        end if
        select case (iotype) 
@@ -1046,11 +1046,11 @@ contains
 #if(100== TYPETEXT)
     	  count(1)=len(ival)
 	  is=1
+#endif
 #if (5 > 0)
           do i=1,5
              count(i+is) = size(ival,i)
           end do
-#endif
 #endif
        end if
        select case (iotype) 
@@ -1152,11 +1152,11 @@ contains
 #if(101== TYPETEXT)
     	  count(1)=len(ival)
 	  is=1
+#endif
 #if (0 > 0)
           do i=1,0
              count(i+is) = size(ival,i)
           end do
-#endif
 #endif
        end if
        select case (iotype) 
@@ -1258,11 +1258,11 @@ contains
 #if(101== TYPETEXT)
     	  count(1)=len(ival)
 	  is=1
+#endif
 #if (1 > 0)
           do i=1,1
              count(i+is) = size(ival,i)
           end do
-#endif
 #endif
        end if
        select case (iotype) 
@@ -1364,11 +1364,11 @@ contains
 #if(101== TYPETEXT)
     	  count(1)=len(ival)
 	  is=1
+#endif
 #if (2 > 0)
           do i=1,2
              count(i+is) = size(ival,i)
           end do
-#endif
 #endif
        end if
        select case (iotype) 
@@ -1470,11 +1470,11 @@ contains
 #if(101== TYPETEXT)
     	  count(1)=len(ival)
 	  is=1
+#endif
 #if (3 > 0)
           do i=1,3
              count(i+is) = size(ival,i)
           end do
-#endif
 #endif
        end if
        select case (iotype) 
@@ -1576,11 +1576,11 @@ contains
 #if(101== TYPETEXT)
     	  count(1)=len(ival)
 	  is=1
+#endif
 #if (4 > 0)
           do i=1,4
              count(i+is) = size(ival,i)
           end do
-#endif
 #endif
        end if
        select case (iotype) 
@@ -1682,11 +1682,11 @@ contains
 #if(101== TYPETEXT)
     	  count(1)=len(ival)
 	  is=1
+#endif
 #if (5 > 0)
           do i=1,5
              count(i+is) = size(ival,i)
           end do
-#endif
 #endif
        end if
        select case (iotype) 
@@ -1788,11 +1788,11 @@ contains
 #if(102== TYPETEXT)
     	  count(1)=len(ival)
 	  is=1
+#endif
 #if (0 > 0)
           do i=1,0
              count(i+is) = size(ival,i)
           end do
-#endif
 #endif
        end if
        select case (iotype) 
@@ -1894,11 +1894,11 @@ contains
 #if(102== TYPETEXT)
     	  count(1)=len(ival)
 	  is=1
+#endif
 #if (1 > 0)
           do i=1,1
              count(i+is) = size(ival,i)
           end do
-#endif
 #endif
        end if
        select case (iotype) 
@@ -2000,11 +2000,11 @@ contains
 #if(102== TYPETEXT)
     	  count(1)=len(ival)
 	  is=1
+#endif
 #if (2 > 0)
           do i=1,2
              count(i+is) = size(ival,i)
           end do
-#endif
 #endif
        end if
        select case (iotype) 
@@ -2106,11 +2106,11 @@ contains
 #if(102== TYPETEXT)
     	  count(1)=len(ival)
 	  is=1
+#endif
 #if (3 > 0)
           do i=1,3
              count(i+is) = size(ival,i)
           end do
-#endif
 #endif
        end if
        select case (iotype) 
@@ -2212,11 +2212,11 @@ contains
 #if(102== TYPETEXT)
     	  count(1)=len(ival)
 	  is=1
+#endif
 #if (4 > 0)
           do i=1,4
              count(i+is) = size(ival,i)
           end do
-#endif
 #endif
        end if
        select case (iotype) 
@@ -2318,11 +2318,11 @@ contains
 #if(102== TYPETEXT)
     	  count(1)=len(ival)
 	  is=1
+#endif
 #if (5 > 0)
           do i=1,5
              count(i+is) = size(ival,i)
           end do
-#endif
 #endif
        end if
        select case (iotype) 
@@ -2424,11 +2424,11 @@ contains
 #if(103== TYPETEXT)
     	  count(1)=len(ival)
 	  is=1
+#endif
 #if (0 > 0)
           do i=1,0
              count(i+is) = size(ival,i)
           end do
-#endif
 #endif
        end if
        select case (iotype) 
@@ -2530,11 +2530,11 @@ contains
 #if(103== TYPETEXT)
     	  count(1)=len(ival)
 	  is=1
+#endif
 #if (1 > 0)
           do i=1,1
              count(i+is) = size(ival,i)
           end do
-#endif
 #endif
        end if
        select case (iotype) 
@@ -2636,11 +2636,11 @@ contains
 #if(103== TYPETEXT)
     	  count(1)=len(ival)
 	  is=1
+#endif
 #if (2 > 0)
           do i=1,2
              count(i+is) = size(ival,i)
           end do
-#endif
 #endif
        end if
        select case (iotype) 
@@ -2742,11 +2742,11 @@ contains
 #if(103== TYPETEXT)
     	  count(1)=len(ival)
 	  is=1
+#endif
 #if (3 > 0)
           do i=1,3
              count(i+is) = size(ival,i)
           end do
-#endif
 #endif
        end if
        select case (iotype) 
@@ -2848,11 +2848,11 @@ contains
 #if(103== TYPETEXT)
     	  count(1)=len(ival)
 	  is=1
+#endif
 #if (4 > 0)
           do i=1,4
              count(i+is) = size(ival,i)
           end do
-#endif
 #endif
        end if
        select case (iotype) 
@@ -2954,11 +2954,11 @@ contains
 #if(103== TYPETEXT)
     	  count(1)=len(ival)
 	  is=1
+#endif
 #if (5 > 0)
           do i=1,5
              count(i+is) = size(ival,i)
           end do
-#endif
 #endif
        end if
        select case (iotype) 
