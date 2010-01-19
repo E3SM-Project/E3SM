@@ -51,6 +51,8 @@ contains
     nmode=amode
     if(Debug) print *, 'Create file ', fname, 'with amode ',nmode
     ierr=PIO_noerr
+    File%fh=-1
+
     if(File%iosystem%ioproc) then
        iotype = File%iotype 
        select case (iotype) 
@@ -62,6 +64,7 @@ contains
 !   pnetcdf is nofill by default and doesn't support a fill mode
 !	  ierr = nfmpi_set_fill(File%fh, NF_NOFILL, nmode)
 #endif
+#ifdef _NETCDF
 #ifdef _NETCDF4
        case(PIO_iotype_netcdf4p)
           if(iand(PIO_64BIT_OFFSET,amode)==PIO_64BIT_OFFSET) then
@@ -73,13 +76,27 @@ contains
 
           ierr = nf90_create_par(fname, nmode, File%iosystem%io_comm, File%iosystem%info, File%fh)
 
-          print *,__FILE__,__LINE__,fname,file%fh
 ! Set default to NOFILL for performance.  
           if(ierr==NF90_NOERR) &
-             ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
+               ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
           call check_netcdf(File, ierr,_FILE_,__LINE__)
+       case(PIO_iotype_netcdf4c)
+          if(iand(PIO_64BIT_OFFSET,amode)==PIO_64BIT_OFFSET) then
+             nmode = ieor(amode,PIO_64bit_OFFSET)
+          else
+             nmode=amode
+          end if
+          nmode = ior(nmode,NF90_NETCDF4)
+
+          ! Only io proc 0 will do writing
+          if (File%iosystem%io_rank == 0) then
+             ! Stores the ncid in File%fh
+             ierr = nf90_create(fname, nmode , File%fh)
+! Set default to NOFILL for performance.  
+             if(ierr==NF90_NOERR) &
+                  ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
+          endif
 #endif          
-#ifdef _NETCDF
        case(PIO_iotype_netcdf)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
@@ -89,23 +106,13 @@ contains
              if(ierr==NF90_NOERR) &
                   ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
           endif
-! Why do we need this particular bcast?
-!          call MPI_BCAST(File%fh,1,MPI_INTEGER,0, File%iosystem%IO_comm  , mpierr)
-!          call CheckMPIReturn('nf_mod',mpierr)
-
 #endif
-
        case default
           call bad_iotype(iotype,_FILE_,__LINE__)
 
        end select
     end if
     call check_netcdf(File, ierr,_FILE_,__LINE__)
-
-!    if(File%iosystem%num_tasks>File%iosystem%num_iotasks) then
-!       call MPI_BCAST(File%fh,1,MPI_INTEGER,File%iosystem%IOMaster, File%iosystem%Comp_comm  , mpierr)
-!       call CheckMPIReturn('nf_mod',mpierr)
-!    end if
 
   end function create_nf
 
@@ -123,6 +130,7 @@ contains
     integer(i4) :: iotype, amode , mpierr, ier2
 
     ierr=PIO_noerr
+    File%fh=-1
     if(file%iosystem%ioproc) then
        iotype = File%iotype 
 #ifdef _NETCDF
@@ -159,16 +167,10 @@ contains
              ! Stores the ncid in File%fh
              ierr = nf90_open(fname,amode,File%fh)
              ! Set default to NOFILL for performance.  
-          print *,__FILE__,__LINE__,ierr, amode
              if(ierr .eq. NF90_NOERR .and. iand(amode, NF90_WRITE) > 0) then
                 ierr = nf90_set_fill(File%fh, NF90_NOFILL, ier2)
-          print *,__FILE__,__LINE__,ierr, NF90_NOFILL, ier2
              end if
           endif
-!          if(File%iosystem%num_iotasks>1) then
-!             call MPI_BCAST(File%fh,1,MPI_INTEGER,0, File%iosystem%IO_comm  , mpierr)
-!             call CheckMPIReturn('nf_mod',mpierr)
-!          end if
 #endif
 
        case default
@@ -178,12 +180,6 @@ contains
     end if
 
     call check_netcdf(File, ierr,_FILE_,__LINE__)
-
-
-!    if(File%iosystem%num_tasks>File%iosystem%num_iotasks) then
-!       call MPI_BCAST(File%fh,1,MPI_INTEGER,File%iosystem%IOMaster, File%iosystem%Comp_comm  , mpierr)
-!       call CheckMPIReturn('nf_mod',mpierr)
-!    end if
 
   end function open_nf
 
@@ -208,11 +204,8 @@ contains
           ierr=nfmpi_close(file%fh)
 #endif
 #ifdef _NETCDF
-       case(pio_iotype_netcdf4p)
-          ierr= nf90_sync(File%fh)
-          ierr= nf90_close(File%fh)
-       case(PIO_iotype_netcdf, pio_iotype_netcdf4c)
-          if (File%iosystem%io_rank==0) then
+       case(PIO_iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
+          if (File%fh>0) then
              ierr= nf90_sync(File%fh)
              ierr= nf90_close(File%fh)
           endif
@@ -221,6 +214,7 @@ contains
           call bad_iotype(File%iotype,_FILE_,__LINE__)
        end select
     end if
+    file%fh=-1
     call check_netcdf(File, ierr,_FILE_,__LINE__)
   end function close_nf
 

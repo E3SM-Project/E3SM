@@ -1203,7 +1203,6 @@ contains
 
     character(len=5) :: cb_nodes
     logical(log_kind), parameter :: check = .true.
-    logical(log_kind) :: usehints
 
     integer(i4) :: mpi_group_world, mpi_group_io
 
@@ -1302,8 +1301,6 @@ contains
 
     if(debug) print *,'init: iam: ',comp_rank,' before allocate(status): n_iotasks: ',n_iotasks
 
-    usehints = .false.
-
     if (rearr == PIO_rearr_none) then
        iosystem%userearranger= .false.
     else
@@ -1311,13 +1308,14 @@ contains
     endif
 
 
-#if defined(usempiio) || defined(_pnetcdf)
+#if defined(USEMPIIO) || defined(_PNETCDF) || defined(_NETCDF4)
 
     call mpi_info_create(iosystem%info,ierr)
     ! turn on mpi-io aggregation 
     if(num_aggregator .gt. 0) then 
        call setnumagg(iosystem,num_aggregator)  ! let mpi-io do aggregation
-       usehints = .true.
+    else
+       iosystem%info = mpi_info_null
     endif
 
 #ifdef PIO_GPFS_HINTS
@@ -1329,7 +1327,6 @@ contains
 #endif
 
 #endif
-    if(.not. usehints) iosystem%info = mpi_info_null
 
     if(debug) print *,'iam: ',iosystem%io_rank,__LINE__,'init: userearranger: ',iosystem%userearranger
 
@@ -1360,10 +1357,11 @@ contains
     character(len=*), intent(in) :: hint, hintval
     
     integer :: ierr
-#if defined(usempiio) || defined(_pnetcdf)    
-    call mpi_info_set(iosystem%info,hint,hintval,ierr)
-    call checkmpireturn('PIO_set_hint',ierr)
-    usehints = .true.
+#if defined(USEMPIIO) || defined(_PNETCDF) || defined(_NETCDF4)
+    if(iosystem%info /= mpi_info_null) then
+       call mpi_info_set(iosystem%info,hint,hintval,ierr)
+       call checkmpireturn('PIO_set_hint',ierr)
+    end if
 #endif
   end subroutine PIO_set_hint
 
@@ -1408,7 +1406,7 @@ contains
     character(len=5) :: cb_nodes
     integer(i4) :: ierr
     logical(log_kind), parameter ::  check = .true.
-#if defined(usempiio) || defined(_pnetcdf)
+#if defined(USEMPIIO) || defined(_PNETCDF)
     write(cb_nodes,('(i5)')) numagg
     call mpi_info_create(iosystem%info,ierr)    
     if(check) call checkmpireturn('setnumagg: after call to mpi_info_create: ',ierr)
@@ -1629,7 +1627,7 @@ contains
     !--------------------------------
 
     file%iotype = iotype 
-#if defined(usempiio) || defined(_pnetcdf)
+#if defined(USEMPIIO) 
     if ( (file%iotype==iotype_pbinary .or. file%iotype==iotype_direct_pbinary) &
          .and. (.not. iosystem%userearranger) ) then
        write(rd_buffer,('(i9)')) 16*1024*1024
@@ -1651,8 +1649,9 @@ contains
        print *,'createfile: io type not supported'
     end select
 
+    if(debug .and. file%iosystem%io_rank==0) print *,_FILE_,__LINE__,'open: ',file%fh, fname
 
-    if(debug) print *, _FILE_,__LINE__,'createfile complete', amode
+
 #ifdef TIMING
     call t_stopf("PIO_createfile")
 #endif
@@ -1704,7 +1703,7 @@ contains
     !--------------------------------
 
     if(iosystem%num_iotasks.eq.1.and.iotype.eq.iotype_pnetcdf) then	
-#if defined(_netcdf)
+#if defined(_NETCDF)
        file%iotype=iotype_netcdf
 #else
        file%iotype = iotype 
@@ -1712,7 +1711,7 @@ contains
     else
        file%iotype = iotype 
     end if
-#if defined(usempiio) || defined(_pnetcdf)
+#if defined(USEMPIIO)
     if ( (file%iotype==iotype_pbinary .or. file%iotype==iotype_direct_pbinary) &
          .and. (.not. iosystem%userearranger) ) then
        write(rd_buffer,('(i9)')) 16*1024*1024
@@ -1735,6 +1734,7 @@ contains
     case(iotype_binary)   ! appears to be a no-op
 
     end select
+    if(Debug .and. file%iosystem%io_rank==0) print *,_FILE_,__LINE__,'open: ',file%fh, fname
 
 #ifdef TIMING
     call t_stopf("PIO_openfile")
@@ -1849,7 +1849,7 @@ contains
 #ifdef TIMING
     call t_startf("PIO_closefile")
 #endif
-    if(debug) print *,_FILE_,__LINE__,'close: ',file%fh
+    if(debug .and. file%iosystem%io_rank==0) print *,_FILE_,__LINE__,'close: ',file%fh
     iotype = file%iotype 
     select case(iotype)
     case(iotype_pbinary, iotype_direct_pbinary)

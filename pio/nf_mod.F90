@@ -1399,12 +1399,10 @@ contains
     vardesc%type = type
 
     if(File%iosystem%IOproc) then
+       len = SIZE(dimids)
        select case(iotype)
-
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
-
-          len = SIZE(dimids)
           ierr=nfmpi_def_var(File%fh,name,type,len,dimids,vardesc%varid)
 #endif
 
@@ -1419,6 +1417,14 @@ contains
                   dimids=dimids,varid=vardesc%varid)
              if (Debug) print *, '0: def_var fh=',File%fh, &
                   'name=',name,' id=',vardesc%varid
+#ifdef _NETCDF4
+             if(iotype==pio_iotype_netcdf4c) then
+                if(len>0 .and. ierr==PIO_NOERR) then
+                   ierr = nf90_def_var_deflate(File%fh,vardesc%varid,0,1,1)
+                end if
+             endif
+#endif
+
           endif
           if(File%iosystem%num_tasks==File%iosystem%num_iotasks) then
              call MPI_BCAST(vardesc%varid, 1, MPI_INTEGER, 0, File%iosystem%IO_Comm, ierr)

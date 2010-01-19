@@ -107,7 +107,7 @@ contains
     integer :: v1, v2, v3
     integer, parameter :: rv1=1, rv2=1, rv3=0
     logical,save :: pnetcdf_version_okay=.false.
-    character(len=80) :: error
+    character(len=180) :: error
 
     if(pnetcdf_version_okay) return
 
