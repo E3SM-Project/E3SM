@@ -73,9 +73,11 @@ contains
              nmode=amode
           end if
           nmode = ior(nmode,NF90_NETCDF4)
-
+#ifdef _MPISERIAL
+          ierr = nf90_create(fname, nmode , File%fh)
+#else
           ierr = nf90_create_par(fname, nmode, File%iosystem%io_comm, File%iosystem%info, File%fh)
-
+#endif
 ! Set default to NOFILL for performance.  
           if(ierr==NF90_NOERR) &
                ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
@@ -120,7 +122,7 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! open_nf
-  !
+  ! 
 
   integer function open_nf(File,fname, mode) result(ierr)
 
@@ -144,9 +146,8 @@ contains
           amode = NF90_NOWRITE
        end if
 #endif
-       select case (iotype) 
 #ifdef _PNETCDF
-       case(PIO_iotype_pnetcdf)
+       if(iotype==PIO_iotype_pnetcdf) then
           call pnetcdf_version_check()
           if(present(mode)) then
              amode = mode
@@ -154,15 +155,31 @@ contains
              amode = NF_NOWRITE
           end if
           ierr  = nfmpi_open(File%iosystem%IO_comm,fname,amode,File%iosystem%info,File%fh)
+
+#ifdef _NETCDF
+#ifdef _NETCDF4
+          if(ierr /= PIO_NOERR) then    ! try hdf5 format
+             File%iotype = pio_iotype_netcdf4c
+             iotype = pio_iotype_netcdf4c
+          end if
+#endif
+#endif
           if(Debug) print *, _FILE_,__LINE__,'CFILE open ',file%fh
+       end if
 #endif
 
 #ifdef _NETCDF
 #ifdef _NETCDF4
-       case(PIO_iotype_netcdf4p, pio_iotype_netcdf4c)
-          ierr = nf90_open_par(fname, amode, File%iosystem%io_comm, File%iosystem%info, File%fh)
+        if(iotype==PIO_iotype_netcdf4p .or. iotype ==pio_iotype_netcdf4c) then
+#ifdef _MPISERIAL
+           ierr = nf90_open(fname,amode,File%fh)           
+#else
+           ierr = nf90_open_par(fname, amode, File%iosystem%io_comm, File%iosystem%info, File%fh)
 #endif
-       case(PIO_iotype_netcdf)
+        end if
+#endif
+
+       if(iotype==PIO_iotype_netcdf) then
           if (File%iosystem%io_rank == 0) then
              ! Stores the ncid in File%fh
              ierr = nf90_open(fname,amode,File%fh)
@@ -172,11 +189,7 @@ contains
              end if
           endif
 #endif
-
-       case default
-          call bad_iotype(iotype,_FILE_,__LINE__)
-
-       end select
+       end if
     end if
 
     call check_netcdf(File, ierr,_FILE_,__LINE__)

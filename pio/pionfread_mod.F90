@@ -106,7 +106,7 @@ contains
 
           if (File%iosystem%io_rank==0) then
              if (max_iobuf_size > iobuf_size) then
-                print *, 'IOBUF on root is not big enough'
+                print *, 'IOBUF on root is not big enough', max_iobuf_size, iobuf_size
                 call abort
              endif
           endif
@@ -284,7 +284,7 @@ contains
 
           if (File%iosystem%io_rank==0) then
              if (max_iobuf_size > iobuf_size) then
-                print *, 'IOBUF on root is not big enough'
+                print *, 'IOBUF on root is not big enough', max_iobuf_size, iobuf_size
                 call abort
              endif
           endif
@@ -462,7 +462,7 @@ contains
 
           if (File%iosystem%io_rank==0) then
              if (max_iobuf_size > iobuf_size) then
-                print *, 'IOBUF on root is not big enough'
+                print *, 'IOBUF on root is not big enough', max_iobuf_size, iobuf_size
                 call abort
              endif
           endif

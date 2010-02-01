@@ -2,7 +2,7 @@
   casename    = 'pb02:pnc:box:stride=1:g_xy'
   nx_global   = 360
   ny_global   = 240
-  iofmt       = 'pnc'
+  iofmt       = 'nc4p'
   rearr       = 'box'
   nprocsIO    = -1
   stride      = 1
