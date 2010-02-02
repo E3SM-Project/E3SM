@@ -1,6 +1,98 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_0_8
+Originator(s): Jim
+Date: 02-02-10
+One-line Summary: add netcdf4 backend
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+M              58   pionfwrite_mod.F90.in
+M              58   pionfput_mod.F90.in
+M              58   pionfatt_mod.F90.in
+M              58   piodarray.F90.in
+M              58   pionfget_mod.F90.in
+M              58   pionfread_mod.F90.in
+M              58   pio_types.F90
+M              58   pio.F90
+M              58   ionf_mod.F90
+M              58   nf_mod.F90
+M              58   pio_utils.F90
+M              58   piolib_mod.F90
+M              58   pio_spmd_utils.F90
+M              58   configure.ac
+M              58   aclocal.m4
+     Added support for netcdf4, two new iotypes are defined  PIO_IOTYPE_NETCDF4C and PIO_IOTYPE_NETCDF4P
+	for compressed and parallel options of netcdf4.   Files opened for read should open in the correct
+	format 
+	
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+
+
+Code reviewed by:
+
+Summary of pre-tag testing:
+
+  Regression tests:
+
+
+===============================================================
+
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
+Tag name: pio1_0_7
+Originator(s): Jim
+Date: 1-12-10
+One-line Summary: fix piolib_mod.F90 cpp macro bug
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+   piolib_mod.F90 corrected case of cpp macros
+	
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+
+
+Code reviewed by:  self
+
+Summary of pre-tag testing:
+
+  Regression tests:   cam test and bluefire
+
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_0_6
 Originator(s): Jim & John
 Date: 01-08-2010

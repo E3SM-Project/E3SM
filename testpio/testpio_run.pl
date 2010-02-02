@@ -74,7 +74,6 @@ if(defined $suites){
 }
 
 
-
 my $workdir = $attributes{workdir};
 
 if(-d $workdir){
@@ -117,9 +116,11 @@ if($host eq "bluefire" or $host eq "frost"){
 #    $project = `showproj -s athena | tail -1`;
     print F "##PBS -A $project\n";
 }
+my $enablenetcdf4;
 if($host eq "bluefire"){
     print F "#BSUB -R \"span[ptile=64]\"\n";
     print F "#BSUB -P $project\n";
+    $enablenetcdf4="--enable-netcdf4";
 }
 
 my @env;
@@ -137,14 +138,6 @@ foreach(keys %attributes){
     
 }
 
-
-
-
-    
-
-
-
-
 print F << "EOF";
 use strict;
 use File::Copy;
@@ -161,21 +154,26 @@ if(\$rc != 0) {
     system("cp -fr $piodir/testpio $srcdir");
 }
 
-my \$confopts = {all=>" --enable-pnetcdf --enable-mpiio --enable-netcdf --enable-timing",
-		snet=>"--disable-pnetcdf --disable-mpiio --enable-netcdf --enable-timing",
+my \$confopts = {all=>" --enable-pnetcdf --enable-mpiio --enable-netcdf --enable-timing $enablenetcdf4",
+		snet=>"--disable-pnetcdf --disable-mpiio --enable-netcdf --enable-timing $enablenetcdf4",
 		pnet=>"--enable-pnetcdf --disable-mpiio --disable-netcdf --enable-timing",
-		ant=>"--enable-pnetcdf --enable-mpiio --enable-netcdf --disable-timing",
+		ant=>"--enable-pnetcdf --enable-mpiio --enable-netcdf --disable-timing $enablenetcdf4",
 		mpiio=>"--disable-pnetcdf --enable-mpiio --disable-netcdf --enable-timing"
 	    };
 
-my \$testlist = {all=>["sn01","sn02","sn03","sb01","sb02","sb03","sb04","sb05","sb06","sb07","sb08","pn01",
-                      "pn02","pn03","pb01","pb02","pb03","pb04","pb05","pb06","pb07","pb08","bn01","bn02",
-                      "bn03","bb01","bb02","bb03","bb04","bb05","bb06","bb07","bb08","wr01","rd01"],
+my \$testlist = {all=>["sn01","sn02","sn03","sb01","sb02","sb03","sb04","sb05","sb06","sb07","sb08",
+                      "pn01","pn02","pn03","pb01","pb02","pb03","pb04","pb05","pb06","pb07","pb08",
+                      "bn01","bn02","bn03","bb01","bb02","bb03","bb04","bb05","bb06","bb07","bb08",
+                      "wr01","rd01"],
 		snet=>["sn01","sn02","sn03","sb01","sb02","sb03","sb04","sb05","sb06","sb07","sb08"],
 		pnet=>["pn01","pn02","pn03","pb01","pb02","pb03","pb04","pb05","pb06","pb07","pb08"],
 		ant=>["sn02","sb02","pn02","pb02","bn02","bb02"],
 		mpiio=>["bn01","bn02","bn03","bb01","bb02","bb03","bb04","bb05","bb06","bb07","bb08"]
 	    };
+
+
+my \@netcdf4tests = ("n4n01","n4n02","n4n03","n4b01","n4b02","n4b03","n4b04","n4b05","n4b06","n4b07","n4b08");
+
 
 unlink("$workdir/wr01.dof.txt") if(-e "$workdir/wr01.dof.txt");
 my \$suite;
@@ -186,6 +184,9 @@ my \$failcnt=0;
 foreach \$suite (qw(@testsuites)){
     my \$confopts = \$confopts->{\$suite};
     my \@testlist = \@{\$testlist->{\$suite}};
+    if(\$confopts =~ /netcdf4/){
+	push(\@testlist,\@netcdf4tests);
+    }
     chdir ("$tstdir");
     unlink("../pio/Makefile.conf");
     system("perl ./testpio_build.pl --conopts=\\"\$confopts\\" --host=$host");

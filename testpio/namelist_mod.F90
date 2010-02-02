@@ -181,6 +181,14 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
          iotype = iotype_netcdf
          ioFmtd = 'nc'
          write(*,*) trim(string),' iotype     = ','iotype_netcdf'
+      case('nc4p') ! netCDF4 parallel
+         iotype = PIO_iotype_netcdf4p
+         ioFmtd = 'nc'
+         write(*,*) trim(string),' iotype     = ','PIO_iotype_netcdf4p'
+      case('nc4c') ! netCDF4 compressed
+         iotype = PIO_iotype_netcdf4c
+         ioFmtd = 'nc'
+         write(*,*) trim(string),' iotype     = ','PIO_iotype_netcdf4c'
       case default
          write(*,'(4a,i8)') caller,'->',myname,':: Unrecognized value of ioFMT =',ioFMT
          call piodie(__FILE__,__LINE__)

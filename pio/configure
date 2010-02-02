@@ -702,6 +702,12 @@ F90
 F90FLAGS
 F90SUFFIX
 ac_ct_F90
+PKG_CONFIG
+NETCDF4_CFLAGS
+NETCDF4_LIBS
+HDF5DIR
+ZLIBDIR
+SZLIBDIR
 LIBOBJS
 LTLIBOBJS'
 ac_subst_files=''
@@ -747,7 +753,10 @@ CPPFLAGS
 CPP
 F90
 F90FLAGS
-F90SUFFIX'
+F90SUFFIX
+PKG_CONFIG
+NETCDF4_CFLAGS
+NETCDF4_LIBS'
 
 
 # Initialize some variables set by options.
@@ -1322,6 +1331,8 @@ Optional Features:
   --enable-pnetcdf        use pnetcdf (Uses PNETCDF_PATH) (default auto
                           detect)
   --enable-netcdf         use serial netcdf (Uses NETCDF_PATH) (default yes)
+  --enable-netcdf4        use netcdf4 with HDF5 capability (Uses NETCDF_PATH)
+                          (default no)
   --enable-mpiio          Enable support for MPI-IO (default auto detect)
   --enable-mct            use mct (Uses MCT_PATH) (default no)
   --enable-box            use box rearranger (default yes)
@@ -1337,6 +1348,21 @@ Optional Features:
   --enable-exithandler    use exithandler library (Must set EXITHANDLER_PATH)
   --enable-filesystem-hints
                           set hints for gpfs or lustre parallel file systems
+
+Optional Packages:
+  --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
+  --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-hdf5=<directory> Specify location of HDF5 library. HDF5 is required
+                          for netCDF-4. Configure will expect to find subdir
+                          lib.
+  --with-zlib=<directory> Specify location of ZLIB library. ZLIB is required
+                          for netCDF-4. Configure will expect to find subdir
+                          lib.
+  --with-szlib=<directory>
+                          Specify location of SZLIB library. SZLIB is not
+                          required for netCDF-4, but you must specify its
+                          location if HDF5 was built with SZLIB. Configure
+                          will expect to find subdir lib.
 
 Some influential environment variables:
   MPI_INC     MPI include flags
@@ -1388,6 +1414,11 @@ Some influential environment variables:
   F90         Fortran 90 compiler command
   F90FLAGS    Fortran 90 compiler flags
   F90SUFFIX   Fortran 90 filename extension
+  PKG_CONFIG  path to pkg-config utility
+  NETCDF4_CFLAGS
+              C compiler flags for NETCDF4, overriding pkg-config
+  NETCDF4_LIBS
+              linker flags for NETCDF4, overriding pkg-config
 
 Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -1861,6 +1892,14 @@ if test "${enable_netcdf+set}" = set; then
   enableval=$enable_netcdf; USE_NETCDF=$enableval
 else
   USE_NETCDF=yes
+fi
+
+
+# Check whether --enable-netcdf4 was given.
+if test "${enable_netcdf4+set}" = set; then
+  enableval=$enable_netcdf4; USE_NETCDF4=$enableval
+else
+  USE_NETCDF4=no
 fi
 
 
@@ -6060,7 +6099,7 @@ echo "$as_me: FORTRAN 90 FILENAME EXTENSION HAS BEEN SET TO .$F90SUFFIX" >&6;}
 fi
 
 # Provide some information about the compiler.
-echo "$as_me:6063:" \
+echo "$as_me:6102:" \
      "checking for Fortran 90 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -6589,7 +6628,7 @@ _ACEOF
 # 1 to this macro) to the Fortran 90 compiler in order to get "version" output
 ac_save_F90FLAGS=$F90FLAGS
 F90FLAGS="$F90FLAGS $ac_version"
-(eval echo $as_me:6592: \"$ac_link\") >&5
+(eval echo $as_me:6631: \"$ac_link\") >&5
 ac_f90_version_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 echo "$ac_f90_version_output" >&5
 F90FLAGS=$ac_save_F90FLAGS
@@ -7699,6 +7738,11 @@ fi
 PINCS="$MPI_INC"
 PLIBS=""
 
+if test "$USE_NETCDF4" = "yes"
+  then
+   USE_NETCDF=yes
+fi
+
 if test "$USE_NETCDF" = "yes"
   then
        if test -n "$NETCDF_PATH"
@@ -7732,7 +7776,302 @@ echo "$as_me: error: libnetcdf.a not found in NETCDF_PATH/lib \
        fi
   else
        PDEFS="$PDEFS -D_NONETCDF"
+       USE_NETCDF4="no"
 fi
+
+if test "$USE_NETCDF4" = "yes"
+  then
+   PDEFS="$PDEFS -D_NETCDF4"
+   if test -e "$NETCDF_PATH/lib/pkgconfig/"
+     then
+     export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:$NETCDF_PATH/lib/pkgconfig/"
+
+
+if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
+	if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}pkg-config", so it can be a program name with args.
+set dummy ${ac_tool_prefix}pkg-config; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_PKG_CONFIG+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $PKG_CONFIG in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_PKG_CONFIG="$PKG_CONFIG" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_PKG_CONFIG="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+PKG_CONFIG=$ac_cv_path_PKG_CONFIG
+if test -n "$PKG_CONFIG"; then
+  { echo "$as_me:$LINENO: result: $PKG_CONFIG" >&5
+echo "${ECHO_T}$PKG_CONFIG" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_path_PKG_CONFIG"; then
+  ac_pt_PKG_CONFIG=$PKG_CONFIG
+  # Extract the first word of "pkg-config", so it can be a program name with args.
+set dummy pkg-config; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_ac_pt_PKG_CONFIG+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $ac_pt_PKG_CONFIG in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_ac_pt_PKG_CONFIG="$ac_pt_PKG_CONFIG" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_ac_pt_PKG_CONFIG="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+ac_pt_PKG_CONFIG=$ac_cv_path_ac_pt_PKG_CONFIG
+if test -n "$ac_pt_PKG_CONFIG"; then
+  { echo "$as_me:$LINENO: result: $ac_pt_PKG_CONFIG" >&5
+echo "${ECHO_T}$ac_pt_PKG_CONFIG" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+  if test "x$ac_pt_PKG_CONFIG" = x; then
+    PKG_CONFIG=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ echo "$as_me:$LINENO: WARNING: In the future, Autoconf will not detect cross-tools
+whose name does not start with the host triplet.  If you think this
+configuration is useful to you, please write to autoconf@gnu.org." >&5
+echo "$as_me: WARNING: In the future, Autoconf will not detect cross-tools
+whose name does not start with the host triplet.  If you think this
+configuration is useful to you, please write to autoconf@gnu.org." >&2;}
+ac_tool_warned=yes ;;
+esac
+    PKG_CONFIG=$ac_pt_PKG_CONFIG
+  fi
+else
+  PKG_CONFIG="$ac_cv_path_PKG_CONFIG"
+fi
+
+fi
+if test -n "$PKG_CONFIG"; then
+	_pkg_min_version=0.9.0
+	{ echo "$as_me:$LINENO: checking pkg-config is at least version $_pkg_min_version" >&5
+echo $ECHO_N "checking pkg-config is at least version $_pkg_min_version... $ECHO_C" >&6; }
+	if $PKG_CONFIG --atleast-pkgconfig-version $_pkg_min_version; then
+		{ echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6; }
+	else
+		{ echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+		PKG_CONFIG=""
+	fi
+
+fi
+
+pkg_failed=no
+{ echo "$as_me:$LINENO: checking for NETCDF4" >&5
+echo $ECHO_N "checking for NETCDF4... $ECHO_C" >&6; }
+
+if test -n "$NETCDF4_CFLAGS"; then
+    pkg_cv_NETCDF4_CFLAGS="$NETCDF4_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { (echo "$as_me:$LINENO: \$PKG_CONFIG --exists --print-errors \"netcdf\"") >&5
+  ($PKG_CONFIG --exists --print-errors "netcdf") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; then
+  pkg_cv_NETCDF4_CFLAGS=`$PKG_CONFIG --cflags "netcdf" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$NETCDF4_LIBS"; then
+    pkg_cv_NETCDF4_LIBS="$NETCDF4_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { (echo "$as_me:$LINENO: \$PKG_CONFIG --exists --print-errors \"netcdf\"") >&5
+  ($PKG_CONFIG --exists --print-errors "netcdf") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; then
+  pkg_cv_NETCDF4_LIBS=`$PKG_CONFIG --libs "netcdf" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        NETCDF4_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "netcdf" 2>&1`
+        else
+	        NETCDF4_PKG_ERRORS=`$PKG_CONFIG --print-errors "netcdf" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$NETCDF4_PKG_ERRORS" >&5
+
+	{ { echo "$as_me:$LINENO: error: Package requirements (netcdf) were not met:
+
+$NETCDF4_PKG_ERRORS
+
+Consider adjusting the PKG_CONFIG_PATH environment variable if you
+installed software in a non-standard prefix.
+
+Alternatively, you may set the environment variables NETCDF4_CFLAGS
+and NETCDF4_LIBS to avoid the need to call pkg-config.
+See the pkg-config man page for more details.
+" >&5
+echo "$as_me: error: Package requirements (netcdf) were not met:
+
+$NETCDF4_PKG_ERRORS
+
+Consider adjusting the PKG_CONFIG_PATH environment variable if you
+installed software in a non-standard prefix.
+
+Alternatively, you may set the environment variables NETCDF4_CFLAGS
+and NETCDF4_LIBS to avoid the need to call pkg-config.
+See the pkg-config man page for more details.
+" >&2;}
+   { (exit 1); exit 1; }; }
+elif test $pkg_failed = untried; then
+	{ { echo "$as_me:$LINENO: error: The pkg-config script could not be found or is too old.  Make sure it
+is in your PATH or set the PKG_CONFIG environment variable to the full
+path to pkg-config.
+
+Alternatively, you may set the environment variables NETCDF4_CFLAGS
+and NETCDF4_LIBS to avoid the need to call pkg-config.
+See the pkg-config man page for more details.
+
+To get pkg-config, see <http://pkg-config.freedesktop.org/>.
+See \`config.log' for more details." >&5
+echo "$as_me: error: The pkg-config script could not be found or is too old.  Make sure it
+is in your PATH or set the PKG_CONFIG environment variable to the full
+path to pkg-config.
+
+Alternatively, you may set the environment variables NETCDF4_CFLAGS
+and NETCDF4_LIBS to avoid the need to call pkg-config.
+See the pkg-config man page for more details.
+
+To get pkg-config, see <http://pkg-config.freedesktop.org/>.
+See \`config.log' for more details." >&2;}
+   { (exit 1); exit 1; }; }
+else
+	NETCDF4_CFLAGS=$pkg_cv_NETCDF4_CFLAGS
+	NETCDF4_LIBS=$pkg_cv_NETCDF4_LIBS
+        { echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6; }
+	:
+fi
+     PLIBS="$PLIBS $NETCDF4_LIBS"
+   else
+     # Did the user specify a location for the HDF5 library?
+     { echo "$as_me:$LINENO: checking whether a location for the HDF5 library was specified" >&5
+echo $ECHO_N "checking whether a location for the HDF5 library was specified... $ECHO_C" >&6; }
+
+# Check whether --with-hdf5 was given.
+if test "${with_hdf5+set}" = set; then
+  withval=$with_hdf5; HDF5DIR=$with_hdf5
+fi
+
+     { echo "$as_me:$LINENO: result: $HDF5DIR" >&5
+echo "${ECHO_T}$HDF5DIR" >&6; }
+     HDF5DIR=$HDF5DIR
+
+
+     # Did the user specify a location for the ZLIB library?
+     { echo "$as_me:$LINENO: checking whether a location for the ZLIB library was specified" >&5
+echo $ECHO_N "checking whether a location for the ZLIB library was specified... $ECHO_C" >&6; }
+
+# Check whether --with-zlib was given.
+if test "${with_zlib+set}" = set; then
+  withval=$with_zlib; ZLIBDIR=$with_zlib
+fi
+
+     { echo "$as_me:$LINENO: result: $ZLIBDIR" >&5
+echo "${ECHO_T}$ZLIBDIR" >&6; }
+     ZLIBDIR=$ZLIBDIR
+
+
+     # Did the user specify a location for the SZLIB library?
+     { echo "$as_me:$LINENO: checking whether a location for the SZLIB library was specified" >&5
+echo $ECHO_N "checking whether a location for the SZLIB library was specified... $ECHO_C" >&6; }
+
+# Check whether --with-szlib was given.
+if test "${with_szlib+set}" = set; then
+  withval=$with_szlib; SZLIBDIR=$with_szlib
+fi
+
+     { echo "$as_me:$LINENO: result: $SZLIBDIR" >&5
+echo "${ECHO_T}$SZLIBDIR" >&6; }
+     SZLIBDIR=$SZLIBDIR
+
+
+     PDEFS="$PDEFS -D_NETCDF4"
+     if test -n "$HDF5DIR"
+       then PLIBS="$PLIBS -L$HDF5DIR/lib"
+     fi
+     if test -n "$ZLIBDIR"
+       then PLIBS="$PLIBS -L$ZLIBDIR/lib"
+     fi
+     if test -n "$SZLIBDIR"
+       then PLIBS="$PLIBS -L$SZLIBDIR/lib"
+     fi
+     PLIBS="$PLIBS -lhdf5 -lz -lsz"
+   fi
+fi
+
+
+
 
 if test ! "$USE_PNETCDF" = "no"
   then
@@ -7987,6 +8326,7 @@ echo Output Variables: {CC=$CC} \
 {PDEFS=$PDEFS} \
 {PDEFSF=$PDEFSF} \
 {PINCS=$PINCS} \
+{PLIBS=$PLIBS} \
 {DEBUG=$DEBUG}
 
 echo
@@ -8709,11 +9049,16 @@ F90!$F90$ac_delim
 F90FLAGS!$F90FLAGS$ac_delim
 F90SUFFIX!$F90SUFFIX$ac_delim
 ac_ct_F90!$ac_ct_F90$ac_delim
+PKG_CONFIG!$PKG_CONFIG$ac_delim
+NETCDF4_CFLAGS!$NETCDF4_CFLAGS$ac_delim
+NETCDF4_LIBS!$NETCDF4_LIBS$ac_delim
+HDF5DIR!$HDF5DIR$ac_delim
+ZLIBDIR!$ZLIBDIR$ac_delim
+SZLIBDIR!$SZLIBDIR$ac_delim
 LIBOBJS!$LIBOBJS$ac_delim
-LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 92; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -8732,6 +9077,48 @@ fi
 
 cat >>$CONFIG_STATUS <<_ACEOF
 cat >"\$tmp/subs-1.sed" <<\CEOF$ac_eof
+/@[a-zA-Z_][a-zA-Z_0-9]*@/!b
+_ACEOF
+sed '
+s/[,\\&]/\\&/g; s/@/@|#_!!_#|/g
+s/^/s,@/; s/!/@,|#_!!_#|/
+:n
+t n
+s/'"$ac_delim"'$/,g/; t
+s/$/\\/; p
+N; s/^.*\n//; s/[,\\&]/\\&/g; s/@/@|#_!!_#|/g; b n
+' >>$CONFIG_STATUS <conf$$subs.sed
+rm -f conf$$subs.sed
+cat >>$CONFIG_STATUS <<_ACEOF
+CEOF$ac_eof
+_ACEOF
+
+
+ac_delim='%!_!# '
+for ac_last_try in false false false false false :; do
+  cat >conf$$subs.sed <<_ACEOF
+LTLIBOBJS!$LTLIBOBJS$ac_delim
+_ACEOF
+
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 1; then
+    break
+  elif $ac_last_try; then
+    { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
+echo "$as_me: error: could not make $CONFIG_STATUS" >&2;}
+   { (exit 1); exit 1; }; }
+  else
+    ac_delim="$ac_delim!$ac_delim _$ac_delim!! "
+  fi
+done
+
+ac_eof=`sed -n '/^CEOF[0-9]*$/s/CEOF/0/p' conf$$subs.sed`
+if test -n "$ac_eof"; then
+  ac_eof=`echo "$ac_eof" | sort -nru | sed 1q`
+  ac_eof=`expr $ac_eof + 1`
+fi
+
+cat >>$CONFIG_STATUS <<_ACEOF
+cat >"\$tmp/subs-2.sed" <<\CEOF$ac_eof
 /@[a-zA-Z_][a-zA-Z_0-9]*@/!b end
 _ACEOF
 sed '
@@ -8989,7 +9376,7 @@ s&@builddir@&$ac_builddir&;t t
 s&@abs_builddir@&$ac_abs_builddir&;t t
 s&@abs_top_builddir@&$ac_abs_top_builddir&;t t
 $ac_datarootdir_hack
-" $ac_file_inputs | sed -f "$tmp/subs-1.sed" >$tmp/out
+" $ac_file_inputs | sed -f "$tmp/subs-1.sed" | sed -f "$tmp/subs-2.sed" >$tmp/out
 
 test -z "$ac_datarootdir_hack$ac_datarootdir_seen" &&
   { ac_out=`sed -n '/\${datarootdir}/p' "$tmp/out"`; test -n "$ac_out"; } &&
