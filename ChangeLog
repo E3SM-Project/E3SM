@@ -39,16 +39,20 @@ of new functionality and how user can use it):
 Bugs fixed:
 
 Describe any changes made to scripts/build system:
-
+    Added tests for netcdf4 on bluefire
+        
+	
 Describe any substantial timing or memory changes:
 
 
 
-Code reviewed by:
+Code reviewed by: Jim 
 
 Summary of pre-tag testing:
-
-  Regression tests:
+       bluefire: 107 tests PASS, 0 tests FAIL
+       frost   : 74 tests PASS, 0 tests FAIL
+       dublin  : 22 tests PASS, 0 tests FAIL
+  Regression tests:   Tested in cam 
 
 
 ===============================================================
