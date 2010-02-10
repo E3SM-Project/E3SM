@@ -15,9 +15,11 @@
 !  20070807  Improved way MPI is called - R. Loy
 !  20070825  fix hardcoded dim and unintentionally templated int - R. Loy
 !  20071111  cache rearranger setup (1st and 2nd communications)
-!  20090512  imported flow-controlled alltoall logic ("swapm") from
-!            Community Atmosphere Model - P. Worley
-!
+!  20090512  added flow-control logic option to comp2io and io2comp
+!            (imported flow-controlled alltoall logic ("swapm") from
+!            Community Atmosphere Model) - P. Worley
+!  20100207  added flow-control logic option to box_rearrange_create 
+!            - P. Worley
 
 !#define DEBUG 0
 !#define DEBUG_INDICES 0
@@ -33,8 +35,15 @@
 #define DEF_P2P_HANDSHAKE .true.
 #define DEF_P2P_ISEND .false.
 #define DEF_P2P_MAXREQ 64
+
+#ifdef _USE_FLOW_CONTROL
+#define _USE_COMP2IO_FC 1
+#define _USE_IO2COMP_FC 1
+#define _USE_CREATE_FC 1
+#endif  
+
 !
-! The completly unreadable nature of the following lines is required by some compilers
+! The completely unreadable nature of the following lines is required by some compilers
 !
 #ifdef _USE_ALLTOALLW
 #define DEF_COMP2IO_OPTION 0
@@ -52,20 +61,19 @@
 #endif
 #endif
 
-
 !
 ! USESPACE
 ! By default, use an algorithm on the senders that uses
 ! very little temp space but needs to make one pass through
-! the compdof destinations for each io proc.  If USESPACE
+! the compdof destinations for each io proc.  If _USE_SPACE
 ! is nonzero, enable an alternate algorithm that makes a 
 ! single pass but needs a lot of temp space to store the
 ! results
 !
 
 ! NOTE: code change caching is allocating anyway so do not shut off
-#define USESPACE 1
-!#undef USESPACE
+#define _USE_SPACE 1
+!#undef _USE_SPACE
 
 !
 ! arbitrary mpi message tags used for the rearrange
@@ -75,16 +83,17 @@
 #define TAG1  101
 #define TAG2  102
 
-
 module box_rearrange
 
 #ifdef _USEBOX
   use pio_kinds
   use pio_types
 #ifdef NO_MPI2
-  use pio_support, only : MPI_TYPE_CREATE_INDEXED_BLOCK, piodie, Debug, DebugIO, CheckMPIReturn
+  use pio_support, only : MPI_TYPE_CREATE_INDEXED_BLOCK, piodie, &
+                          Debug, DebugIO, CheckMPIReturn, pio_fc_gather_int
 #else
-  use pio_support, only: piodie, Debug, DebugIO, CheckMPIReturn
+  use pio_support, only : piodie, Debug, DebugIO, CheckMPIReturn, &
+                          pio_fc_gather_int
 #endif
   use alloc_mod
   use pio_spmd_utils
@@ -99,11 +108,7 @@ module box_rearrange
        box_rearrange_comp2io, &
        box_rearrange_io2comp
 
-!>
-!! @private
-!! Internal PIO interface for the box rearranger
-!<
-# 102 "box_rearrange.F90.in"
+# 107 "box_rearrange.F90.in"
   interface box_rearrange_comp2io
      ! TYPE int,real,double
      module procedure box_rearrange_comp2io_int
@@ -113,7 +118,7 @@ module box_rearrange
      module procedure box_rearrange_comp2io_double
   end interface
 
-# 107 "box_rearrange.F90.in"
+# 112 "box_rearrange.F90.in"
   interface box_rearrange_io2comp
      ! TYPE int,real,double
      module procedure box_rearrange_io2comp_int
@@ -125,7 +130,7 @@ module box_rearrange
 
   character(len=*), parameter :: modName='box_rearrange'
 
-# 114 "box_rearrange.F90.in"
+# 119 "box_rearrange.F90.in"
 contains
 #ifdef _MPISERIAL
 !
@@ -134,7 +139,7 @@ contains
 ! these are the templated routines for the box_rearrange.F90 module
 !
 ! TYPE real,double,int
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !  box_rearrange_comp2io_real
 !
@@ -142,15 +147,14 @@ contains
 !
 !    Note use of ioDesc instead of varDesc
 !
-!
 ! This version uses mpi types to pack the data.  There is extra
 ! work and additional communication to set this up but it should
 ! be more efficient overall.
 !
 ! TYPE real,double,int
-# 136 "box_rearrange.F90.in"
-subroutine box_rearrange_comp2io_real (IOsystem,ioDesc,s1, src,s2, dest, &
-                                         comm_option, fc_options)
+# 140 "box_rearrange.F90.in"
+subroutine box_rearrange_comp2io_real (IOsystem, ioDesc, s1, src, s2, &
+                                         dest, comm_option, fc_options)
   implicit none
 
   type (IOsystem_desc_t), intent(inout) :: IOsystem
@@ -177,37 +181,37 @@ subroutine box_rearrange_comp2io_real (IOsystem,ioDesc,s1, src,s2, dest, &
 
   ! begin
 
-  ndof=size(ioDesc%dest_ioindex)
-  niodof=size(dest)
-  num_tasks=IOsystem%num_tasks
-  num_iotasks=IOsystem%num_iotasks
+  ndof   = size(ioDesc%dest_ioindex)
+  niodof = size(dest)
+  num_tasks   = IOsystem%num_tasks
+  num_iotasks = IOsystem%num_iotasks
 
   if (num_tasks /= 1 .or. num_iotasks /= 1) &
     call piodie( _FILE_,__LINE__, &
-                 'built with -D_MPISERIAL but num_tasks=',num_tasks, &
+                 'built with -D_MPISERIAL but num_tasks=', num_tasks, &
                  'num_iotasks=', num_iotasks )
 
   if (size(src)>0 .and. size(src)< ndof) &
     call piodie( _FILE_,__LINE__, &
-                 'box_rearrange_comp2io: size(compbuf)=',size(src), &
+                 'box_rearrange_comp2io: size(compbuf)=', size(src), &
                  ' not equal to size(compdof)=', ndof )
 
   do i=1,ndof
-    ioproc=ioDesc%dest_ioproc(i)
-    ioindex=ioDesc%dest_ioindex(i)
+    ioproc  = ioDesc%dest_ioproc(i)
+    ioindex = ioDesc%dest_ioindex(i)
 
     if (ioproc /= -1 ) then  ! ignore sender hole
       if (ioproc /= 1) &     ! ioproc is 1-based
         call piodie( _FILE_,__LINE__, &
-                     'box_rearrange_comp2io: i=',i,&
-                     'dest_ioproc(i)=',ioproc )
+                     'box_rearrange_comp2io: i=', i, &
+                     'dest_ioproc(i)=', ioproc )
 
       if ( ioindex<0 .or. ioindex>=niodof ) &
         call piodie( _FILE_,__LINE__, &
-                     'box_rearrange_comp2io: i=',i, &
+                     'box_rearrange_comp2io: i=', i, &
                      'dest_ioindex(i) out of range=', ioindex )
 
-      dest(ioindex+1)=src(i)      ! ioindex is 0-based
+      dest(ioindex+1) = src(i)      ! ioindex is 0-based
 
     endif
 
@@ -220,7 +224,7 @@ end subroutine box_rearrange_comp2io_real
 ! these are the templated routines for the box_rearrange.F90 module
 !
 ! TYPE real,double,int
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !  box_rearrange_comp2io_double
 !
@@ -228,15 +232,14 @@ end subroutine box_rearrange_comp2io_real
 !
 !    Note use of ioDesc instead of varDesc
 !
-!
 ! This version uses mpi types to pack the data.  There is extra
 ! work and additional communication to set this up but it should
 ! be more efficient overall.
 !
 ! TYPE real,double,int
-# 136 "box_rearrange.F90.in"
-subroutine box_rearrange_comp2io_double (IOsystem,ioDesc,s1, src,s2, dest, &
-                                         comm_option, fc_options)
+# 140 "box_rearrange.F90.in"
+subroutine box_rearrange_comp2io_double (IOsystem, ioDesc, s1, src, s2, &
+                                         dest, comm_option, fc_options)
   implicit none
 
   type (IOsystem_desc_t), intent(inout) :: IOsystem
@@ -263,37 +266,37 @@ subroutine box_rearrange_comp2io_double (IOsystem,ioDesc,s1, src,s2, dest, &
 
   ! begin
 
-  ndof=size(ioDesc%dest_ioindex)
-  niodof=size(dest)
-  num_tasks=IOsystem%num_tasks
-  num_iotasks=IOsystem%num_iotasks
+  ndof   = size(ioDesc%dest_ioindex)
+  niodof = size(dest)
+  num_tasks   = IOsystem%num_tasks
+  num_iotasks = IOsystem%num_iotasks
 
   if (num_tasks /= 1 .or. num_iotasks /= 1) &
     call piodie( _FILE_,__LINE__, &
-                 'built with -D_MPISERIAL but num_tasks=',num_tasks, &
+                 'built with -D_MPISERIAL but num_tasks=', num_tasks, &
                  'num_iotasks=', num_iotasks )
 
   if (size(src)>0 .and. size(src)< ndof) &
     call piodie( _FILE_,__LINE__, &
-                 'box_rearrange_comp2io: size(compbuf)=',size(src), &
+                 'box_rearrange_comp2io: size(compbuf)=', size(src), &
                  ' not equal to size(compdof)=', ndof )
 
   do i=1,ndof
-    ioproc=ioDesc%dest_ioproc(i)
-    ioindex=ioDesc%dest_ioindex(i)
+    ioproc  = ioDesc%dest_ioproc(i)
+    ioindex = ioDesc%dest_ioindex(i)
 
     if (ioproc /= -1 ) then  ! ignore sender hole
       if (ioproc /= 1) &     ! ioproc is 1-based
         call piodie( _FILE_,__LINE__, &
-                     'box_rearrange_comp2io: i=',i,&
-                     'dest_ioproc(i)=',ioproc )
+                     'box_rearrange_comp2io: i=', i, &
+                     'dest_ioproc(i)=', ioproc )
 
       if ( ioindex<0 .or. ioindex>=niodof ) &
         call piodie( _FILE_,__LINE__, &
-                     'box_rearrange_comp2io: i=',i, &
+                     'box_rearrange_comp2io: i=', i, &
                      'dest_ioindex(i) out of range=', ioindex )
 
-      dest(ioindex+1)=src(i)      ! ioindex is 0-based
+      dest(ioindex+1) = src(i)      ! ioindex is 0-based
 
     endif
 
@@ -306,7 +309,7 @@ end subroutine box_rearrange_comp2io_double
 ! these are the templated routines for the box_rearrange.F90 module
 !
 ! TYPE real,double,int
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !  box_rearrange_comp2io_int
 !
@@ -314,15 +317,14 @@ end subroutine box_rearrange_comp2io_double
 !
 !    Note use of ioDesc instead of varDesc
 !
-!
 ! This version uses mpi types to pack the data.  There is extra
 ! work and additional communication to set this up but it should
 ! be more efficient overall.
 !
 ! TYPE real,double,int
-# 136 "box_rearrange.F90.in"
-subroutine box_rearrange_comp2io_int (IOsystem,ioDesc,s1, src,s2, dest, &
-                                         comm_option, fc_options)
+# 140 "box_rearrange.F90.in"
+subroutine box_rearrange_comp2io_int (IOsystem, ioDesc, s1, src, s2, &
+                                         dest, comm_option, fc_options)
   implicit none
 
   type (IOsystem_desc_t), intent(inout) :: IOsystem
@@ -349,37 +351,37 @@ subroutine box_rearrange_comp2io_int (IOsystem,ioDesc,s1, src,s2, dest, &
 
   ! begin
 
-  ndof=size(ioDesc%dest_ioindex)
-  niodof=size(dest)
-  num_tasks=IOsystem%num_tasks
-  num_iotasks=IOsystem%num_iotasks
+  ndof   = size(ioDesc%dest_ioindex)
+  niodof = size(dest)
+  num_tasks   = IOsystem%num_tasks
+  num_iotasks = IOsystem%num_iotasks
 
   if (num_tasks /= 1 .or. num_iotasks /= 1) &
     call piodie( _FILE_,__LINE__, &
-                 'built with -D_MPISERIAL but num_tasks=',num_tasks, &
+                 'built with -D_MPISERIAL but num_tasks=', num_tasks, &
                  'num_iotasks=', num_iotasks )
 
   if (size(src)>0 .and. size(src)< ndof) &
     call piodie( _FILE_,__LINE__, &
-                 'box_rearrange_comp2io: size(compbuf)=',size(src), &
+                 'box_rearrange_comp2io: size(compbuf)=', size(src), &
                  ' not equal to size(compdof)=', ndof )
 
   do i=1,ndof
-    ioproc=ioDesc%dest_ioproc(i)
-    ioindex=ioDesc%dest_ioindex(i)
+    ioproc  = ioDesc%dest_ioproc(i)
+    ioindex = ioDesc%dest_ioindex(i)
 
     if (ioproc /= -1 ) then  ! ignore sender hole
       if (ioproc /= 1) &     ! ioproc is 1-based
         call piodie( _FILE_,__LINE__, &
-                     'box_rearrange_comp2io: i=',i,&
-                     'dest_ioproc(i)=',ioproc )
+                     'box_rearrange_comp2io: i=', i, &
+                     'dest_ioproc(i)=', ioproc )
 
       if ( ioindex<0 .or. ioindex>=niodof ) &
         call piodie( _FILE_,__LINE__, &
-                     'box_rearrange_comp2io: i=',i, &
+                     'box_rearrange_comp2io: i=', i, &
                      'dest_ioindex(i) out of range=', ioindex )
 
-      dest(ioindex+1)=src(i)      ! ioindex is 0-based
+      dest(ioindex+1) = src(i)      ! ioindex is 0-based
 
     endif
 
@@ -388,9 +390,9 @@ subroutine box_rearrange_comp2io_int (IOsystem,ioDesc,s1, src,s2, dest, &
 end subroutine box_rearrange_comp2io_int
 #else /* not _MPISERIAL */
 ! TYPE real,double,int
-# 203 "box_rearrange.F90.in"
-subroutine box_rearrange_comp2io_real (IOsystem,ioDesc, s1, src, s2, dest, &
-                                         comm_option, fc_options)
+# 207 "box_rearrange.F90.in"
+subroutine box_rearrange_comp2io_real (IOsystem, ioDesc, s1, src, s2, &
+                                         dest, comm_option, fc_options)
 
   implicit none
 
@@ -465,69 +467,68 @@ subroutine box_rearrange_comp2io_real (IOsystem,ioDesc, s1, src, s2, dest, &
     endif
   endif
 
-
-  ndof=size(ioDesc%dest_ioindex)
-  niodof=size(dest)
-  num_iotasks=IOsystem%num_iotasks
-  nrecvs=ioDesc%nrecvs             ! number of distinct senders to the ioproc
-  myrank=IOsystem%comp_rank
-  nprocs=IOsystem%num_tasks
+  ndof   = size(ioDesc%dest_ioindex)
+  niodof = size(dest)
+  nrecvs = ioDesc%nrecvs             ! number of distinct senders to the ioproc
+  myrank = IOsystem%comp_rank
+  nprocs = IOsystem%num_tasks
+  num_iotasks = IOsystem%num_iotasks
 
   if (size(src) > 0 .and. size(src)<ndof) &
     call piodie( _FILE_,__LINE__, &
-                 'box_rearrange_comp2io: size(compbuf)=',size(src), &
+                 'box_rearrange_comp2io: size(compbuf)=', size(src), &
                  ' not equal to size(compdof)=', ndof)
 
   if (IOsystem%IOproc) then
-    rfrom=>ioDesc%rfrom
-    rtype=>ioDesc%rtype
+    rfrom => ioDesc%rfrom
+    rtype => ioDesc%rtype
     if (pio_option == POINT_TO_POINT) then
-      call alloc_check(rreq,nrecvs,'receive requests')
+      call alloc_check(rreq, nrecvs, 'receive requests')
     endif
   endif
 
-  scount=>ioDesc%scount
-  stype=>ioDesc%stype
+  scount => ioDesc%scount
+  stype  => ioDesc%stype
   if (pio_option /= POINT_TO_POINT) then
-    call alloc_check(a2a_sendcounts,nprocs)
-    call alloc_check(a2a_displs,nprocs)
-    call alloc_check(a2a_sendtypes,nprocs)
-    call alloc_check(a2a_recvcounts,nprocs)
-    call alloc_check(a2a_recvtypes,nprocs)
+    call alloc_check(a2a_sendcounts, nprocs)
+    call alloc_check(a2a_displs, nprocs)
+    call alloc_check(a2a_sendtypes, nprocs)
+    call alloc_check(a2a_recvcounts, nprocs)
+    call alloc_check(a2a_recvtypes, nprocs)
     do i=1,nprocs
-      a2a_displs(i)=0
+      a2a_displs(i) = 0
 
-      a2a_sendcounts(i)=0
-      a2a_sendtypes(i)=MPI_INTEGER
-      a2a_recvcounts(i)=0
-      a2a_recvtypes(i)=MPI_INTEGER
+      a2a_sendcounts(i) = 0
+      a2a_sendtypes(i)  = MPI_INTEGER
+      a2a_recvcounts(i) = 0
+      a2a_recvtypes(i)  = MPI_INTEGER
     end do
 
     if (IOsystem%IOproc) then
       do i=1,nrecvs
-        from=rfrom(i)+1        ! array is 1-based
-        a2a_recvcounts(from)=1
-        a2a_recvtypes(from)=rtype(i)
+        from = rfrom(i)+1        ! array is 1-based
+        a2a_recvcounts(from) = 1
+        a2a_recvtypes(from)  = rtype(i)
       end do
     endif
 
     do i=1,num_iotasks
       if (scount(i) /= 0) then
         ! go from 1-based io rank to 0-based comprank
-        io_comprank=find_io_comprank(IOsystem,i) + 1  ! array is 1-based
+        io_comprank = find_io_comprank(IOsystem,i) + 1  ! array is 1-based
 
-        a2a_sendcounts(io_comprank)=1
-        a2a_sendtypes(io_comprank)=stype(i)
+        a2a_sendcounts(io_comprank) = 1
+        a2a_sendtypes(io_comprank)  = stype(i)
       endif
     end do
 
 #ifdef _USE_ALLTOALLW
     if (pio_option == COLLECTIVE) then
 
-      call MPI_ALLTOALLW( src,a2a_sendcounts,a2a_displs,a2a_sendtypes, &
-                          dest,a2a_recvcounts,a2a_displs,a2a_recvtypes,&
-                          IOsystem%comp_comm, ierror )
-      call CheckMPIReturn('box_rearrange',ierror)
+      call MPI_ALLTOALLW(src,  a2a_sendcounts, a2a_displs, a2a_sendtypes, &
+                         dest, a2a_recvcounts, a2a_displs, a2a_recvtypes, &
+                         IOsystem%comp_comm, ierror                       )
+      call CheckMPIReturn('box_rearrange', ierror)
     else
 #endif
       call pio_swapm( nprocs, myrank,                            &
@@ -544,7 +545,7 @@ subroutine box_rearrange_comp2io_real (IOsystem,ioDesc, s1, src, s2, dest, &
     call dealloc_check(a2a_recvtypes)
 
   else
-    call alloc_check(sreq,num_iotasks,'send requests')
+    call alloc_check(sreq, num_iotasks, 'send requests')
 
 #ifdef DEBUG
     if (myrank==0) then
@@ -595,7 +596,7 @@ subroutine box_rearrange_comp2io_real (IOsystem,ioDesc, s1, src, s2, dest, &
         call MPI_WAIT( rreq(i), status, ierror )
         call CheckMPIReturn('box_rearrange',ierror)
       end do
-      call dealloc_check(rreq,'receive requests')
+      call dealloc_check(rreq, 'receive requests')
     endif
 
     do i=1,num_iotasks
@@ -605,7 +606,7 @@ subroutine box_rearrange_comp2io_real (IOsystem,ioDesc, s1, src, s2, dest, &
       endif
     end do
 
-    call dealloc_check(sreq,'send requests')
+    call dealloc_check(sreq, 'send requests')
 
 #if DEBUG_BARRIER
     call MPI_BARRIER(IOsystem%comp_comm,ierror)
@@ -617,9 +618,9 @@ subroutine box_rearrange_comp2io_real (IOsystem,ioDesc, s1, src, s2, dest, &
 
 end subroutine box_rearrange_comp2io_real
 ! TYPE real,double,int
-# 203 "box_rearrange.F90.in"
-subroutine box_rearrange_comp2io_double (IOsystem,ioDesc, s1, src, s2, dest, &
-                                         comm_option, fc_options)
+# 207 "box_rearrange.F90.in"
+subroutine box_rearrange_comp2io_double (IOsystem, ioDesc, s1, src, s2, &
+                                         dest, comm_option, fc_options)
 
   implicit none
 
@@ -694,69 +695,68 @@ subroutine box_rearrange_comp2io_double (IOsystem,ioDesc, s1, src, s2, dest, &
     endif
   endif
 
-
-  ndof=size(ioDesc%dest_ioindex)
-  niodof=size(dest)
-  num_iotasks=IOsystem%num_iotasks
-  nrecvs=ioDesc%nrecvs             ! number of distinct senders to the ioproc
-  myrank=IOsystem%comp_rank
-  nprocs=IOsystem%num_tasks
+  ndof   = size(ioDesc%dest_ioindex)
+  niodof = size(dest)
+  nrecvs = ioDesc%nrecvs             ! number of distinct senders to the ioproc
+  myrank = IOsystem%comp_rank
+  nprocs = IOsystem%num_tasks
+  num_iotasks = IOsystem%num_iotasks
 
   if (size(src) > 0 .and. size(src)<ndof) &
     call piodie( _FILE_,__LINE__, &
-                 'box_rearrange_comp2io: size(compbuf)=',size(src), &
+                 'box_rearrange_comp2io: size(compbuf)=', size(src), &
                  ' not equal to size(compdof)=', ndof)
 
   if (IOsystem%IOproc) then
-    rfrom=>ioDesc%rfrom
-    rtype=>ioDesc%rtype
+    rfrom => ioDesc%rfrom
+    rtype => ioDesc%rtype
     if (pio_option == POINT_TO_POINT) then
-      call alloc_check(rreq,nrecvs,'receive requests')
+      call alloc_check(rreq, nrecvs, 'receive requests')
     endif
   endif
 
-  scount=>ioDesc%scount
-  stype=>ioDesc%stype
+  scount => ioDesc%scount
+  stype  => ioDesc%stype
   if (pio_option /= POINT_TO_POINT) then
-    call alloc_check(a2a_sendcounts,nprocs)
-    call alloc_check(a2a_displs,nprocs)
-    call alloc_check(a2a_sendtypes,nprocs)
-    call alloc_check(a2a_recvcounts,nprocs)
-    call alloc_check(a2a_recvtypes,nprocs)
+    call alloc_check(a2a_sendcounts, nprocs)
+    call alloc_check(a2a_displs, nprocs)
+    call alloc_check(a2a_sendtypes, nprocs)
+    call alloc_check(a2a_recvcounts, nprocs)
+    call alloc_check(a2a_recvtypes, nprocs)
     do i=1,nprocs
-      a2a_displs(i)=0
+      a2a_displs(i) = 0
 
-      a2a_sendcounts(i)=0
-      a2a_sendtypes(i)=MPI_INTEGER
-      a2a_recvcounts(i)=0
-      a2a_recvtypes(i)=MPI_INTEGER
+      a2a_sendcounts(i) = 0
+      a2a_sendtypes(i)  = MPI_INTEGER
+      a2a_recvcounts(i) = 0
+      a2a_recvtypes(i)  = MPI_INTEGER
     end do
 
     if (IOsystem%IOproc) then
       do i=1,nrecvs
-        from=rfrom(i)+1        ! array is 1-based
-        a2a_recvcounts(from)=1
-        a2a_recvtypes(from)=rtype(i)
+        from = rfrom(i)+1        ! array is 1-based
+        a2a_recvcounts(from) = 1
+        a2a_recvtypes(from)  = rtype(i)
       end do
     endif
 
     do i=1,num_iotasks
       if (scount(i) /= 0) then
         ! go from 1-based io rank to 0-based comprank
-        io_comprank=find_io_comprank(IOsystem,i) + 1  ! array is 1-based
+        io_comprank = find_io_comprank(IOsystem,i) + 1  ! array is 1-based
 
-        a2a_sendcounts(io_comprank)=1
-        a2a_sendtypes(io_comprank)=stype(i)
+        a2a_sendcounts(io_comprank) = 1
+        a2a_sendtypes(io_comprank)  = stype(i)
       endif
     end do
 
 #ifdef _USE_ALLTOALLW
     if (pio_option == COLLECTIVE) then
 
-      call MPI_ALLTOALLW( src,a2a_sendcounts,a2a_displs,a2a_sendtypes, &
-                          dest,a2a_recvcounts,a2a_displs,a2a_recvtypes,&
-                          IOsystem%comp_comm, ierror )
-      call CheckMPIReturn('box_rearrange',ierror)
+      call MPI_ALLTOALLW(src,  a2a_sendcounts, a2a_displs, a2a_sendtypes, &
+                         dest, a2a_recvcounts, a2a_displs, a2a_recvtypes, &
+                         IOsystem%comp_comm, ierror                       )
+      call CheckMPIReturn('box_rearrange', ierror)
     else
 #endif
       call pio_swapm( nprocs, myrank,                            &
@@ -773,7 +773,7 @@ subroutine box_rearrange_comp2io_double (IOsystem,ioDesc, s1, src, s2, dest, &
     call dealloc_check(a2a_recvtypes)
 
   else
-    call alloc_check(sreq,num_iotasks,'send requests')
+    call alloc_check(sreq, num_iotasks, 'send requests')
 
 #ifdef DEBUG
     if (myrank==0) then
@@ -824,7 +824,7 @@ subroutine box_rearrange_comp2io_double (IOsystem,ioDesc, s1, src, s2, dest, &
         call MPI_WAIT( rreq(i), status, ierror )
         call CheckMPIReturn('box_rearrange',ierror)
       end do
-      call dealloc_check(rreq,'receive requests')
+      call dealloc_check(rreq, 'receive requests')
     endif
 
     do i=1,num_iotasks
@@ -834,7 +834,7 @@ subroutine box_rearrange_comp2io_double (IOsystem,ioDesc, s1, src, s2, dest, &
       endif
     end do
 
-    call dealloc_check(sreq,'send requests')
+    call dealloc_check(sreq, 'send requests')
 
 #if DEBUG_BARRIER
     call MPI_BARRIER(IOsystem%comp_comm,ierror)
@@ -846,9 +846,9 @@ subroutine box_rearrange_comp2io_double (IOsystem,ioDesc, s1, src, s2, dest, &
 
 end subroutine box_rearrange_comp2io_double
 ! TYPE real,double,int
-# 203 "box_rearrange.F90.in"
-subroutine box_rearrange_comp2io_int (IOsystem,ioDesc, s1, src, s2, dest, &
-                                         comm_option, fc_options)
+# 207 "box_rearrange.F90.in"
+subroutine box_rearrange_comp2io_int (IOsystem, ioDesc, s1, src, s2, &
+                                         dest, comm_option, fc_options)
 
   implicit none
 
@@ -923,69 +923,68 @@ subroutine box_rearrange_comp2io_int (IOsystem,ioDesc, s1, src, s2, dest, &
     endif
   endif
 
-
-  ndof=size(ioDesc%dest_ioindex)
-  niodof=size(dest)
-  num_iotasks=IOsystem%num_iotasks
-  nrecvs=ioDesc%nrecvs             ! number of distinct senders to the ioproc
-  myrank=IOsystem%comp_rank
-  nprocs=IOsystem%num_tasks
+  ndof   = size(ioDesc%dest_ioindex)
+  niodof = size(dest)
+  nrecvs = ioDesc%nrecvs             ! number of distinct senders to the ioproc
+  myrank = IOsystem%comp_rank
+  nprocs = IOsystem%num_tasks
+  num_iotasks = IOsystem%num_iotasks
 
   if (size(src) > 0 .and. size(src)<ndof) &
     call piodie( _FILE_,__LINE__, &
-                 'box_rearrange_comp2io: size(compbuf)=',size(src), &
+                 'box_rearrange_comp2io: size(compbuf)=', size(src), &
                  ' not equal to size(compdof)=', ndof)
 
   if (IOsystem%IOproc) then
-    rfrom=>ioDesc%rfrom
-    rtype=>ioDesc%rtype
+    rfrom => ioDesc%rfrom
+    rtype => ioDesc%rtype
     if (pio_option == POINT_TO_POINT) then
-      call alloc_check(rreq,nrecvs,'receive requests')
+      call alloc_check(rreq, nrecvs, 'receive requests')
     endif
   endif
 
-  scount=>ioDesc%scount
-  stype=>ioDesc%stype
+  scount => ioDesc%scount
+  stype  => ioDesc%stype
   if (pio_option /= POINT_TO_POINT) then
-    call alloc_check(a2a_sendcounts,nprocs)
-    call alloc_check(a2a_displs,nprocs)
-    call alloc_check(a2a_sendtypes,nprocs)
-    call alloc_check(a2a_recvcounts,nprocs)
-    call alloc_check(a2a_recvtypes,nprocs)
+    call alloc_check(a2a_sendcounts, nprocs)
+    call alloc_check(a2a_displs, nprocs)
+    call alloc_check(a2a_sendtypes, nprocs)
+    call alloc_check(a2a_recvcounts, nprocs)
+    call alloc_check(a2a_recvtypes, nprocs)
     do i=1,nprocs
-      a2a_displs(i)=0
+      a2a_displs(i) = 0
 
-      a2a_sendcounts(i)=0
-      a2a_sendtypes(i)=MPI_INTEGER
-      a2a_recvcounts(i)=0
-      a2a_recvtypes(i)=MPI_INTEGER
+      a2a_sendcounts(i) = 0
+      a2a_sendtypes(i)  = MPI_INTEGER
+      a2a_recvcounts(i) = 0
+      a2a_recvtypes(i)  = MPI_INTEGER
     end do
 
     if (IOsystem%IOproc) then
       do i=1,nrecvs
-        from=rfrom(i)+1        ! array is 1-based
-        a2a_recvcounts(from)=1
-        a2a_recvtypes(from)=rtype(i)
+        from = rfrom(i)+1        ! array is 1-based
+        a2a_recvcounts(from) = 1
+        a2a_recvtypes(from)  = rtype(i)
       end do
     endif
 
     do i=1,num_iotasks
       if (scount(i) /= 0) then
         ! go from 1-based io rank to 0-based comprank
-        io_comprank=find_io_comprank(IOsystem,i) + 1  ! array is 1-based
+        io_comprank = find_io_comprank(IOsystem,i) + 1  ! array is 1-based
 
-        a2a_sendcounts(io_comprank)=1
-        a2a_sendtypes(io_comprank)=stype(i)
+        a2a_sendcounts(io_comprank) = 1
+        a2a_sendtypes(io_comprank)  = stype(i)
       endif
     end do
 
 #ifdef _USE_ALLTOALLW
     if (pio_option == COLLECTIVE) then
 
-      call MPI_ALLTOALLW( src,a2a_sendcounts,a2a_displs,a2a_sendtypes, &
-                          dest,a2a_recvcounts,a2a_displs,a2a_recvtypes,&
-                          IOsystem%comp_comm, ierror )
-      call CheckMPIReturn('box_rearrange',ierror)
+      call MPI_ALLTOALLW(src,  a2a_sendcounts, a2a_displs, a2a_sendtypes, &
+                         dest, a2a_recvcounts, a2a_displs, a2a_recvtypes, &
+                         IOsystem%comp_comm, ierror                       )
+      call CheckMPIReturn('box_rearrange', ierror)
     else
 #endif
       call pio_swapm( nprocs, myrank,                            &
@@ -1002,7 +1001,7 @@ subroutine box_rearrange_comp2io_int (IOsystem,ioDesc, s1, src, s2, dest, &
     call dealloc_check(a2a_recvtypes)
 
   else
-    call alloc_check(sreq,num_iotasks,'send requests')
+    call alloc_check(sreq, num_iotasks, 'send requests')
 
 #ifdef DEBUG
     if (myrank==0) then
@@ -1053,7 +1052,7 @@ subroutine box_rearrange_comp2io_int (IOsystem,ioDesc, s1, src, s2, dest, &
         call MPI_WAIT( rreq(i), status, ierror )
         call CheckMPIReturn('box_rearrange',ierror)
       end do
-      call dealloc_check(rreq,'receive requests')
+      call dealloc_check(rreq, 'receive requests')
     endif
 
     do i=1,num_iotasks
@@ -1063,7 +1062,7 @@ subroutine box_rearrange_comp2io_int (IOsystem,ioDesc, s1, src, s2, dest, &
       endif
     end do
 
-    call dealloc_check(sreq,'send requests')
+    call dealloc_check(sreq, 'send requests')
 
 #if DEBUG_BARRIER
     call MPI_BARRIER(IOsystem%comp_comm,ierror)
@@ -1077,16 +1076,16 @@ end subroutine box_rearrange_comp2io_int
 #endif /* not _MPISERIAL */
 #ifdef _MPISERIAL
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !  box_rearrange_io2comp_real
 !
 !  rearrange from the io decomposition to the comp decomposition
 !
 ! TYPE real,double,int
-# 440 "box_rearrange.F90.in"
-subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf, s2, compbuf, &
-                                         comm_option, fc_options)
+# 443 "box_rearrange.F90.in"
+subroutine box_rearrange_io2comp_real (IOsystem, ioDesc, s1, iobuf, &
+   s2, compbuf, comm_option, fc_options)
   implicit none
 
   type (IOsystem_desc_t), intent(inout) :: IOsystem
@@ -1107,40 +1106,40 @@ subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf, s2, compbuf, &
   integer :: num_iotasks
 
   integer :: i
-  integer :: ioproc,ioindex
+  integer :: ioproc, ioindex
 
   ! begin
   compbuf(:) = 0
-  ndof=size(iodesc%dest_ioindex)
-  niodof=size(iobuf)
-  num_tasks=IOsystem%num_tasks
-  num_iotasks=IOsystem%num_iotasks
+  ndof   = size(iodesc%dest_ioindex)
+  niodof = size(iobuf)
+  num_tasks   = IOsystem%num_tasks
+  num_iotasks = IOsystem%num_iotasks
 
   if (num_tasks /= 1 .or. num_iotasks /= 1) &
     call piodie( _FILE_,__LINE__, &
-                 'built with -D_MPISERIAL but num_tasks=',num_tasks, &
+                 'built with -D_MPISERIAL but num_tasks=', num_tasks, &
                  'num_iotasks=', num_iotasks )
 
   if (size(compbuf) > 0 .and. size(compbuf)<ndof) &
     call piodie( _FILE_,__LINE__, &
-                 'box_rearrange_io2comp: size(compbuf)=',size(compbuf), &
+                 'box_rearrange_io2comp: size(compbuf)=', size(compbuf), &
                  ' not equal to size(compdof)=', ndof)
 
   do i=1,ndof
-    ioproc=ioDesc%dest_ioproc(i)
-    ioindex=ioDesc%dest_ioindex(i)
+    ioproc  = ioDesc%dest_ioproc(i)
+    ioindex = ioDesc%dest_ioindex(i)
 
     if (ioproc /= -1 ) then  ! ignore sender hole
       if (ioproc /= 1) &
         call piodie( _FILE_,__LINE__, &
-                     'box_rearrange_io2comp: i=',i,'dest_ioproc(i)=',ioproc )
+                     'box_rearrange_io2comp: i=',i,'dest_ioproc(i)=', ioproc )
 
       if ( ioindex<0 .or. ioindex>=niodof ) &
         call piodie( _FILE_,__LINE__, &
                      'box_rearrange_io2comp: i=',i, &
                      'dest_ioindex(i) out of range=', ioindex )
 
-      compbuf(i)=iobuf(ioindex+1)      ! ioindex is 0-based
+      compbuf(i) = iobuf(ioindex+1)      ! ioindex is 0-based
 
     endif
 
@@ -1148,16 +1147,16 @@ subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf, s2, compbuf, &
 
 end subroutine box_rearrange_io2comp_real
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !  box_rearrange_io2comp_double
 !
 !  rearrange from the io decomposition to the comp decomposition
 !
 ! TYPE real,double,int
-# 440 "box_rearrange.F90.in"
-subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf, s2, compbuf, &
-                                         comm_option, fc_options)
+# 443 "box_rearrange.F90.in"
+subroutine box_rearrange_io2comp_double (IOsystem, ioDesc, s1, iobuf, &
+   s2, compbuf, comm_option, fc_options)
   implicit none
 
   type (IOsystem_desc_t), intent(inout) :: IOsystem
@@ -1178,40 +1177,40 @@ subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf, s2, compbuf,
   integer :: num_iotasks
 
   integer :: i
-  integer :: ioproc,ioindex
+  integer :: ioproc, ioindex
 
   ! begin
   compbuf(:) = 0
-  ndof=size(iodesc%dest_ioindex)
-  niodof=size(iobuf)
-  num_tasks=IOsystem%num_tasks
-  num_iotasks=IOsystem%num_iotasks
+  ndof   = size(iodesc%dest_ioindex)
+  niodof = size(iobuf)
+  num_tasks   = IOsystem%num_tasks
+  num_iotasks = IOsystem%num_iotasks
 
   if (num_tasks /= 1 .or. num_iotasks /= 1) &
     call piodie( _FILE_,__LINE__, &
-                 'built with -D_MPISERIAL but num_tasks=',num_tasks, &
+                 'built with -D_MPISERIAL but num_tasks=', num_tasks, &
                  'num_iotasks=', num_iotasks )
 
   if (size(compbuf) > 0 .and. size(compbuf)<ndof) &
     call piodie( _FILE_,__LINE__, &
-                 'box_rearrange_io2comp: size(compbuf)=',size(compbuf), &
+                 'box_rearrange_io2comp: size(compbuf)=', size(compbuf), &
                  ' not equal to size(compdof)=', ndof)
 
   do i=1,ndof
-    ioproc=ioDesc%dest_ioproc(i)
-    ioindex=ioDesc%dest_ioindex(i)
+    ioproc  = ioDesc%dest_ioproc(i)
+    ioindex = ioDesc%dest_ioindex(i)
 
     if (ioproc /= -1 ) then  ! ignore sender hole
       if (ioproc /= 1) &
         call piodie( _FILE_,__LINE__, &
-                     'box_rearrange_io2comp: i=',i,'dest_ioproc(i)=',ioproc )
+                     'box_rearrange_io2comp: i=',i,'dest_ioproc(i)=', ioproc )
 
       if ( ioindex<0 .or. ioindex>=niodof ) &
         call piodie( _FILE_,__LINE__, &
                      'box_rearrange_io2comp: i=',i, &
                      'dest_ioindex(i) out of range=', ioindex )
 
-      compbuf(i)=iobuf(ioindex+1)      ! ioindex is 0-based
+      compbuf(i) = iobuf(ioindex+1)      ! ioindex is 0-based
 
     endif
 
@@ -1219,16 +1218,16 @@ subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf, s2, compbuf,
 
 end subroutine box_rearrange_io2comp_double
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !  box_rearrange_io2comp_int
 !
 !  rearrange from the io decomposition to the comp decomposition
 !
 ! TYPE real,double,int
-# 440 "box_rearrange.F90.in"
-subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf, s2, compbuf, &
-                                         comm_option, fc_options)
+# 443 "box_rearrange.F90.in"
+subroutine box_rearrange_io2comp_int (IOsystem, ioDesc, s1, iobuf, &
+   s2, compbuf, comm_option, fc_options)
   implicit none
 
   type (IOsystem_desc_t), intent(inout) :: IOsystem
@@ -1249,40 +1248,40 @@ subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf, s2, compbuf, &
   integer :: num_iotasks
 
   integer :: i
-  integer :: ioproc,ioindex
+  integer :: ioproc, ioindex
 
   ! begin
   compbuf(:) = 0
-  ndof=size(iodesc%dest_ioindex)
-  niodof=size(iobuf)
-  num_tasks=IOsystem%num_tasks
-  num_iotasks=IOsystem%num_iotasks
+  ndof   = size(iodesc%dest_ioindex)
+  niodof = size(iobuf)
+  num_tasks   = IOsystem%num_tasks
+  num_iotasks = IOsystem%num_iotasks
 
   if (num_tasks /= 1 .or. num_iotasks /= 1) &
     call piodie( _FILE_,__LINE__, &
-                 'built with -D_MPISERIAL but num_tasks=',num_tasks, &
+                 'built with -D_MPISERIAL but num_tasks=', num_tasks, &
                  'num_iotasks=', num_iotasks )
 
   if (size(compbuf) > 0 .and. size(compbuf)<ndof) &
     call piodie( _FILE_,__LINE__, &
-                 'box_rearrange_io2comp: size(compbuf)=',size(compbuf), &
+                 'box_rearrange_io2comp: size(compbuf)=', size(compbuf), &
                  ' not equal to size(compdof)=', ndof)
 
   do i=1,ndof
-    ioproc=ioDesc%dest_ioproc(i)
-    ioindex=ioDesc%dest_ioindex(i)
+    ioproc  = ioDesc%dest_ioproc(i)
+    ioindex = ioDesc%dest_ioindex(i)
 
     if (ioproc /= -1 ) then  ! ignore sender hole
       if (ioproc /= 1) &
         call piodie( _FILE_,__LINE__, &
-                     'box_rearrange_io2comp: i=',i,'dest_ioproc(i)=',ioproc )
+                     'box_rearrange_io2comp: i=',i,'dest_ioproc(i)=', ioproc )
 
       if ( ioindex<0 .or. ioindex>=niodof ) &
         call piodie( _FILE_,__LINE__, &
                      'box_rearrange_io2comp: i=',i, &
                      'dest_ioindex(i) out of range=', ioindex )
 
-      compbuf(i)=iobuf(ioindex+1)      ! ioindex is 0-based
+      compbuf(i) = iobuf(ioindex+1)      ! ioindex is 0-based
 
     endif
 
@@ -1290,9 +1289,8 @@ subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf, s2, compbuf, &
 
 end subroutine box_rearrange_io2comp_int
 #else /* not _MPISERIAL */
-
 ! TYPE real,double,int
-# 505 "box_rearrange.F90.in"
+# 507 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -1329,7 +1327,7 @@ subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
   integer,pointer :: rfrom(:)     ! rank of ith sender to this ioproc
   integer,pointer :: rtype(:)     ! mpi receive types
 
-  integer,pointer :: scount(:)    ! scount(i) =  # sends to ith ioproc
+  integer,pointer :: scount(:)    ! scount(i) =  no. sends to ith ioproc
   integer,pointer :: stype(:)     ! mpi send types
 
   integer,pointer :: a2a_displs(:)
@@ -1368,68 +1366,68 @@ subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
   endif
 
   compbuf(:) = 0
-  ndof=size(iodesc%dest_ioindex)
-  niodof=size(iobuf)
-  num_iotasks=IOsystem%num_iotasks
-  nrecvs=ioDesc%nrecvs             ! number of distinct senders to the ioproc
-  myrank=IOsystem%comp_rank
-  nprocs=IOsystem%num_tasks
+  ndof   = size(iodesc%dest_ioindex)
+  niodof = size(iobuf)
+  nrecvs = ioDesc%nrecvs             ! number of distinct senders to the ioproc
+  myrank = IOsystem%comp_rank
+  nprocs = IOsystem%num_tasks
+  num_iotasks = IOsystem%num_iotasks
 
   if (size(compbuf) > 0 .and. size(compbuf)<ndof) &
     call piodie( _FILE_,__LINE__, &
-                 'box_rearrange_io2comp: size(compbuf)=',size(compbuf), &
+                 'box_rearrange_io2comp: size(compbuf)=', size(compbuf), &
                  ' not equal to size(compdof)=', ndof)
 
   if (IOsystem%IOproc) then
-    rfrom=>ioDesc%rfrom
-    rtype=>ioDesc%rtype
+    rfrom => ioDesc%rfrom
+    rtype => ioDesc%rtype
     if (pio_option == POINT_TO_POINT) then
-      call alloc_check(sreq,nrecvs,'send requests')
+      call alloc_check(sreq, nrecvs, 'send requests')
     endif
   endif
 
-  scount=>ioDesc%scount
-  stype=>ioDesc%stype
+  scount => ioDesc%scount
+  stype  => ioDesc%stype
   if (pio_option /= POINT_TO_POINT) then
-    call alloc_check(a2a_sendcounts,nprocs)
-    call alloc_check(a2a_displs,nprocs)
-    call alloc_check(a2a_sendtypes,nprocs)
-    call alloc_check(a2a_recvcounts,nprocs)
-    call alloc_check(a2a_recvtypes,nprocs)
+    call alloc_check(a2a_sendcounts, nprocs)
+    call alloc_check(a2a_displs, nprocs)
+    call alloc_check(a2a_sendtypes, nprocs)
+    call alloc_check(a2a_recvcounts, nprocs)
+    call alloc_check(a2a_recvtypes, nprocs)
 
     do i=1,nprocs
-      a2a_displs(i)=0
+      a2a_displs(i) = 0
 
-      a2a_sendcounts(i)=0
-      a2a_sendtypes(i)=MPI_INTEGER
-      a2a_recvcounts(i)=0
-      a2a_recvtypes(i)=MPI_INTEGER
+      a2a_sendcounts(i) = 0
+      a2a_sendtypes(i)  = MPI_INTEGER
+      a2a_recvcounts(i) = 0
+      a2a_recvtypes(i)  = MPI_INTEGER
     end do
 
     do i=1,num_iotasks
       if (scount(i) /= 0) then
         ! go from 1-based io rank to 0-based comprank
-        io_comprank=find_io_comprank(IOsystem,i) +1  ! array is 1-based
+        io_comprank = find_io_comprank(IOsystem,i) +1  ! array is 1-based
 
-        a2a_recvcounts(io_comprank)=1
-        a2a_recvtypes(io_comprank)=stype(i)
+        a2a_recvcounts(io_comprank) = 1
+        a2a_recvtypes(io_comprank)  = stype(i)
       endif
     end do
 
     if (IOsystem%IOproc) then
       do i=1,nrecvs
-        comprank=rfrom(i) +1  ! array is 1-based
-        a2a_sendcounts(comprank)=1
-        a2a_sendtypes(comprank)=rtype(i)
+        comprank = rfrom(i) +1  ! array is 1-based
+        a2a_sendcounts(comprank) = 1
+        a2a_sendtypes(comprank)  = rtype(i)
       end do
     endif
 
 #ifdef _USE_ALLTOALLW
     if (pio_option == COLLECTIVE) then
-      call MPI_ALLTOALLW( iobuf,a2a_sendcounts,a2a_displs,a2a_sendtypes,   &
-                          compbuf,a2a_recvcounts,a2a_displs,a2a_recvtypes, &
-                          IOsystem%comp_comm, ierror )
-      call CheckMPIReturn(subName,ierror)
+      call MPI_ALLTOALLW(iobuf,   a2a_sendcounts, a2a_displs, a2a_sendtypes, &
+                         compbuf, a2a_recvcounts, a2a_displs, a2a_recvtypes, &
+                         IOsystem%comp_comm, ierror                          )
+      call CheckMPIReturn(subName, ierror)
     else
 #endif
       call pio_swapm( nprocs, myrank,                               &
@@ -1447,7 +1445,7 @@ subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
 
   else
 
-    call alloc_check(rreq,num_iotasks,'recv requests')
+    call alloc_check(rreq, num_iotasks, 'recv requests')
 
     !
     ! post receives on comp procs
@@ -1510,9 +1508,8 @@ subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
   endif ! POINT_TO_POINT
 
 end subroutine box_rearrange_io2comp_real
-
 ! TYPE real,double,int
-# 505 "box_rearrange.F90.in"
+# 507 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -1549,7 +1546,7 @@ subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
   integer,pointer :: rfrom(:)     ! rank of ith sender to this ioproc
   integer,pointer :: rtype(:)     ! mpi receive types
 
-  integer,pointer :: scount(:)    ! scount(i) =  # sends to ith ioproc
+  integer,pointer :: scount(:)    ! scount(i) =  no. sends to ith ioproc
   integer,pointer :: stype(:)     ! mpi send types
 
   integer,pointer :: a2a_displs(:)
@@ -1588,68 +1585,68 @@ subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
   endif
 
   compbuf(:) = 0
-  ndof=size(iodesc%dest_ioindex)
-  niodof=size(iobuf)
-  num_iotasks=IOsystem%num_iotasks
-  nrecvs=ioDesc%nrecvs             ! number of distinct senders to the ioproc
-  myrank=IOsystem%comp_rank
-  nprocs=IOsystem%num_tasks
+  ndof   = size(iodesc%dest_ioindex)
+  niodof = size(iobuf)
+  nrecvs = ioDesc%nrecvs             ! number of distinct senders to the ioproc
+  myrank = IOsystem%comp_rank
+  nprocs = IOsystem%num_tasks
+  num_iotasks = IOsystem%num_iotasks
 
   if (size(compbuf) > 0 .and. size(compbuf)<ndof) &
     call piodie( _FILE_,__LINE__, &
-                 'box_rearrange_io2comp: size(compbuf)=',size(compbuf), &
+                 'box_rearrange_io2comp: size(compbuf)=', size(compbuf), &
                  ' not equal to size(compdof)=', ndof)
 
   if (IOsystem%IOproc) then
-    rfrom=>ioDesc%rfrom
-    rtype=>ioDesc%rtype
+    rfrom => ioDesc%rfrom
+    rtype => ioDesc%rtype
     if (pio_option == POINT_TO_POINT) then
-      call alloc_check(sreq,nrecvs,'send requests')
+      call alloc_check(sreq, nrecvs, 'send requests')
     endif
   endif
 
-  scount=>ioDesc%scount
-  stype=>ioDesc%stype
+  scount => ioDesc%scount
+  stype  => ioDesc%stype
   if (pio_option /= POINT_TO_POINT) then
-    call alloc_check(a2a_sendcounts,nprocs)
-    call alloc_check(a2a_displs,nprocs)
-    call alloc_check(a2a_sendtypes,nprocs)
-    call alloc_check(a2a_recvcounts,nprocs)
-    call alloc_check(a2a_recvtypes,nprocs)
+    call alloc_check(a2a_sendcounts, nprocs)
+    call alloc_check(a2a_displs, nprocs)
+    call alloc_check(a2a_sendtypes, nprocs)
+    call alloc_check(a2a_recvcounts, nprocs)
+    call alloc_check(a2a_recvtypes, nprocs)
 
     do i=1,nprocs
-      a2a_displs(i)=0
+      a2a_displs(i) = 0
 
-      a2a_sendcounts(i)=0
-      a2a_sendtypes(i)=MPI_INTEGER
-      a2a_recvcounts(i)=0
-      a2a_recvtypes(i)=MPI_INTEGER
+      a2a_sendcounts(i) = 0
+      a2a_sendtypes(i)  = MPI_INTEGER
+      a2a_recvcounts(i) = 0
+      a2a_recvtypes(i)  = MPI_INTEGER
     end do
 
     do i=1,num_iotasks
       if (scount(i) /= 0) then
         ! go from 1-based io rank to 0-based comprank
-        io_comprank=find_io_comprank(IOsystem,i) +1  ! array is 1-based
+        io_comprank = find_io_comprank(IOsystem,i) +1  ! array is 1-based
 
-        a2a_recvcounts(io_comprank)=1
-        a2a_recvtypes(io_comprank)=stype(i)
+        a2a_recvcounts(io_comprank) = 1
+        a2a_recvtypes(io_comprank)  = stype(i)
       endif
     end do
 
     if (IOsystem%IOproc) then
       do i=1,nrecvs
-        comprank=rfrom(i) +1  ! array is 1-based
-        a2a_sendcounts(comprank)=1
-        a2a_sendtypes(comprank)=rtype(i)
+        comprank = rfrom(i) +1  ! array is 1-based
+        a2a_sendcounts(comprank) = 1
+        a2a_sendtypes(comprank)  = rtype(i)
       end do
     endif
 
 #ifdef _USE_ALLTOALLW
     if (pio_option == COLLECTIVE) then
-      call MPI_ALLTOALLW( iobuf,a2a_sendcounts,a2a_displs,a2a_sendtypes,   &
-                          compbuf,a2a_recvcounts,a2a_displs,a2a_recvtypes, &
-                          IOsystem%comp_comm, ierror )
-      call CheckMPIReturn(subName,ierror)
+      call MPI_ALLTOALLW(iobuf,   a2a_sendcounts, a2a_displs, a2a_sendtypes, &
+                         compbuf, a2a_recvcounts, a2a_displs, a2a_recvtypes, &
+                         IOsystem%comp_comm, ierror                          )
+      call CheckMPIReturn(subName, ierror)
     else
 #endif
       call pio_swapm( nprocs, myrank,                               &
@@ -1667,7 +1664,7 @@ subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
 
   else
 
-    call alloc_check(rreq,num_iotasks,'recv requests')
+    call alloc_check(rreq, num_iotasks, 'recv requests')
 
     !
     ! post receives on comp procs
@@ -1730,9 +1727,8 @@ subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
   endif ! POINT_TO_POINT
 
 end subroutine box_rearrange_io2comp_double
-
 ! TYPE real,double,int
-# 505 "box_rearrange.F90.in"
+# 507 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -1769,7 +1765,7 @@ subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
   integer,pointer :: rfrom(:)     ! rank of ith sender to this ioproc
   integer,pointer :: rtype(:)     ! mpi receive types
 
-  integer,pointer :: scount(:)    ! scount(i) =  # sends to ith ioproc
+  integer,pointer :: scount(:)    ! scount(i) =  no. sends to ith ioproc
   integer,pointer :: stype(:)     ! mpi send types
 
   integer,pointer :: a2a_displs(:)
@@ -1808,68 +1804,68 @@ subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
   endif
 
   compbuf(:) = 0
-  ndof=size(iodesc%dest_ioindex)
-  niodof=size(iobuf)
-  num_iotasks=IOsystem%num_iotasks
-  nrecvs=ioDesc%nrecvs             ! number of distinct senders to the ioproc
-  myrank=IOsystem%comp_rank
-  nprocs=IOsystem%num_tasks
+  ndof   = size(iodesc%dest_ioindex)
+  niodof = size(iobuf)
+  nrecvs = ioDesc%nrecvs             ! number of distinct senders to the ioproc
+  myrank = IOsystem%comp_rank
+  nprocs = IOsystem%num_tasks
+  num_iotasks = IOsystem%num_iotasks
 
   if (size(compbuf) > 0 .and. size(compbuf)<ndof) &
     call piodie( _FILE_,__LINE__, &
-                 'box_rearrange_io2comp: size(compbuf)=',size(compbuf), &
+                 'box_rearrange_io2comp: size(compbuf)=', size(compbuf), &
                  ' not equal to size(compdof)=', ndof)
 
   if (IOsystem%IOproc) then
-    rfrom=>ioDesc%rfrom
-    rtype=>ioDesc%rtype
+    rfrom => ioDesc%rfrom
+    rtype => ioDesc%rtype
     if (pio_option == POINT_TO_POINT) then
-      call alloc_check(sreq,nrecvs,'send requests')
+      call alloc_check(sreq, nrecvs, 'send requests')
     endif
   endif
 
-  scount=>ioDesc%scount
-  stype=>ioDesc%stype
+  scount => ioDesc%scount
+  stype  => ioDesc%stype
   if (pio_option /= POINT_TO_POINT) then
-    call alloc_check(a2a_sendcounts,nprocs)
-    call alloc_check(a2a_displs,nprocs)
-    call alloc_check(a2a_sendtypes,nprocs)
-    call alloc_check(a2a_recvcounts,nprocs)
-    call alloc_check(a2a_recvtypes,nprocs)
+    call alloc_check(a2a_sendcounts, nprocs)
+    call alloc_check(a2a_displs, nprocs)
+    call alloc_check(a2a_sendtypes, nprocs)
+    call alloc_check(a2a_recvcounts, nprocs)
+    call alloc_check(a2a_recvtypes, nprocs)
 
     do i=1,nprocs
-      a2a_displs(i)=0
+      a2a_displs(i) = 0
 
-      a2a_sendcounts(i)=0
-      a2a_sendtypes(i)=MPI_INTEGER
-      a2a_recvcounts(i)=0
-      a2a_recvtypes(i)=MPI_INTEGER
+      a2a_sendcounts(i) = 0
+      a2a_sendtypes(i)  = MPI_INTEGER
+      a2a_recvcounts(i) = 0
+      a2a_recvtypes(i)  = MPI_INTEGER
     end do
 
     do i=1,num_iotasks
       if (scount(i) /= 0) then
         ! go from 1-based io rank to 0-based comprank
-        io_comprank=find_io_comprank(IOsystem,i) +1  ! array is 1-based
+        io_comprank = find_io_comprank(IOsystem,i) +1  ! array is 1-based
 
-        a2a_recvcounts(io_comprank)=1
-        a2a_recvtypes(io_comprank)=stype(i)
+        a2a_recvcounts(io_comprank) = 1
+        a2a_recvtypes(io_comprank)  = stype(i)
       endif
     end do
 
     if (IOsystem%IOproc) then
       do i=1,nrecvs
-        comprank=rfrom(i) +1  ! array is 1-based
-        a2a_sendcounts(comprank)=1
-        a2a_sendtypes(comprank)=rtype(i)
+        comprank = rfrom(i) +1  ! array is 1-based
+        a2a_sendcounts(comprank) = 1
+        a2a_sendtypes(comprank)  = rtype(i)
       end do
     endif
 
 #ifdef _USE_ALLTOALLW
     if (pio_option == COLLECTIVE) then
-      call MPI_ALLTOALLW( iobuf,a2a_sendcounts,a2a_displs,a2a_sendtypes,   &
-                          compbuf,a2a_recvcounts,a2a_displs,a2a_recvtypes, &
-                          IOsystem%comp_comm, ierror )
-      call CheckMPIReturn(subName,ierror)
+      call MPI_ALLTOALLW(iobuf,   a2a_sendcounts, a2a_displs, a2a_sendtypes, &
+                         compbuf, a2a_recvcounts, a2a_displs, a2a_recvtypes, &
+                         IOsystem%comp_comm, ierror                          )
+      call CheckMPIReturn(subName, ierror)
     else
 #endif
       call pio_swapm( nprocs, myrank,                               &
@@ -1887,7 +1883,7 @@ subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
 
   else
 
-    call alloc_check(rreq,num_iotasks,'recv requests')
+    call alloc_check(rreq, num_iotasks, 'recv requests')
 
     !
     ! post receives on comp procs
@@ -1952,28 +1948,23 @@ subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
 end subroutine box_rearrange_io2comp_int
 #endif  /* not _MPISERIAL */
 
-
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! io_comprank
   ! 
   !   find the rank in comp_comm of the ith io processor
   !
 
-
-# 732 "box_rearrange.F90.in"
+# 733 "box_rearrange.F90.in"
   integer function find_io_comprank( Iosystem, ioprocindex )
     implicit none
 
     type (Iosystem_desc_t), intent(in) :: Iosystem
     integer ioprocindex
 
-
-    find_io_comprank=Iosystem%iomaster+(ioprocindex-1)*Iosystem%io_stride
+    find_io_comprank = Iosystem%iomaster+(ioprocindex-1)*Iosystem%io_stride
 
   end function find_io_comprank
-
-
-
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1982,8 +1973,7 @@ end subroutine box_rearrange_io2comp_int
   !   find global xyz coordinates given a global index
   !
 
-
-# 754 "box_rearrange.F90.in"
+# 750 "box_rearrange.F90.in"
   subroutine gindex_to_coord( gindex, gstride, ndim, gcoord )
     implicit none
     integer,intent(in) :: gindex           ! 0-based global index
@@ -1997,34 +1987,30 @@ end subroutine box_rearrange_io2comp_int
     integer i
     integer tempindex
 
-
     ! loop outermost to innermost e.g. z,y,x
 
     tempindex=gindex
 
     do i=ndim,2,-1    
-       gcoord(i)=tempindex/gstride(i-1)                 ! integer division
+       gcoord(i) = tempindex/gstride(i-1)                 ! integer division
        tempindex = tempindex - gcoord(i)*gstride(i-1)   ! remainder
     end do
 
     ! base case - innermost dimension
-    gcoord(1)=tempindex
+    gcoord(1) = tempindex
 
   end subroutine gindex_to_coord
-
-
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! find_ioproc
   !
-  !   determine if a coordinate is in any ioproc's box   '! extra apostophy added for cpp
+  !   determine if a coordinate is in any ioproc's box   '! extra apostrophy added for cpp
   !   if so, return a 1-based ioproc number
   !   and 1-based index for that ioproc's iobuf          '
   !
 
-
-# 794 "box_rearrange.F90.in"
+# 786 "box_rearrange.F90.in"
   logical function find_ioproc( gcoord, lb, ub, lstride, ndim, nioproc, &
        io_proc, io_index )
     implicit none
@@ -2043,9 +2029,9 @@ end subroutine box_rearrange_io2comp_int
     integer :: lcoord(ndim)
     integer lindex
 
-    found=.false.
-    io_proc= -1
-    io_index= -1
+    found = .false.
+    io_proc  = -1
+    io_index = -1
 
     loop_ioproc: do i=1,nioproc
 
@@ -2061,36 +2047,32 @@ end subroutine box_rearrange_io2comp_int
           call piodie(_FILE_,__LINE__, 'multiple matches')
        endif
 
-       found=.true.
-       io_proc=i           ! 1-based here
+       found = .true.
+       io_proc = i           ! 1-based here
        exit loop_ioproc
 
     end do loop_ioproc
 
-    find_ioproc=found
+    find_ioproc = found
 
     if (found) then
 
        ! find location within the ioproc's box   '
        do i=1,ndim
-          lcoord(i)=gcoord(i)-lb(i,io_proc)
+          lcoord(i) = gcoord(i)-lb(i,io_proc)
        end do
 
        ! find index into ioproc's buffer    '
-       lindex=lcoord(1)
+       lindex = lcoord(1)
        do i=2,ndim
-          lindex=lindex+lcoord(i)*lstride(i-1,io_proc)
+          lindex = lindex+lcoord(i)*lstride(i-1,io_proc)
        end do
 
        !      io_index=lindex+1    ! convert to 1-based
-       io_index=lindex       ! 0-based
+       io_index = lindex       ! 0-based
     endif
 
-
   end function find_ioproc
-
-
-
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -2100,9 +2082,9 @@ end subroutine box_rearrange_io2comp_int
   !
   !
 
-# 869 "box_rearrange.F90.in"
-  subroutine compute_dest( compdof,start,count,gsize,ndim,nioproc, &
-       dest_ioproc,dest_ioindex)
+# 857 "box_rearrange.F90.in"
+  subroutine compute_dest(compdof, start, count, gsize, ndim, nioproc, &
+                          dest_ioproc, dest_ioindex                    )
     implicit none
     integer, intent(in) :: compdof(:)
     integer, intent(in) :: start(:,:)       ! start(ndim,nioproc)
@@ -2113,7 +2095,6 @@ end subroutine box_rearrange_io2comp_int
     integer, intent(in) :: nioproc
     integer, intent(out) :: dest_ioproc(:)    ! ioproc number to send to
     integer, intent(out) :: dest_ioindex(:)     ! index in iobuf on that ioproc
-
 
     ! local vars
     character(len=*), parameter :: subName=modName//'::compute_dest'
@@ -2127,31 +2108,29 @@ end subroutine box_rearrange_io2comp_int
     integer lstride(ndim,nioproc)   ! stride for each dim on each ioprocs
     integer ioproc, ioindex
 
-
     ! compute 0-based start array
 
     do i=1,nioproc
        do j=1,ndim                ! rml fix 3->ndim
-          lb(j,i)=start(j,i)-1
-          ub(j,i)=lb(j,i)+count(j,i)
+          lb(j,i) = start(j,i)-1
+          ub(j,i) = lb(j,i)+count(j,i)
        end do
     end do
 
     ! compute stride for each dimension of array
     ! e.g. (NX,NX*NY,NX*NY*NZ)
 
-    gstride(1)=gsize(1)                 ! innermost dimension
+    gstride(1) = gsize(1)                 ! innermost dimension
     do i=2,ndim
-       gstride(i)=gsize(i)*gstride(i-1)
+       gstride(i) = gsize(i)*gstride(i-1)
     end do
 
-    do i=1,nioproc                     ! loop over all io boxes
-       lstride(1,i)=count(1,i)            ! innermost dimension
+    do i=1,nioproc                        ! loop over all io boxes
+       lstride(1,i) = count(1,i)          ! innermost dimension
        do j=2,ndim
-          lstride(j,i)=count(j,i)*lstride(j-1,i)
+          lstride(j,i) = count(j,i)*lstride(j-1,i)
        end do
     end do
-
 
     ndof=size(compdof)
 
@@ -2160,42 +2139,38 @@ end subroutine box_rearrange_io2comp_int
        ! Compute global coordinates for compdof(i)
 
        if (compdof(i)==0) then             ! sender hole
-          dest_ioproc(i)= -1
-          dest_ioindex(i)= -1
+          dest_ioproc(i)  = -1
+          dest_ioindex(i) = -1
        else
 
-          gindex=compdof(i)-1   ! 0-based index
+          gindex = compdof(i)-1   ! 0-based index
 
-          call gindex_to_coord(gindex,gstride,ndim,gcoord)
-
+          call gindex_to_coord(gindex, gstride, ndim, gcoord)
 
           !        if(Debug) print *, subName,':: dof ',i,' index=',gindex,' gcoord=',gcoord
 
-
           ! determine if gcoord lies in any io proc's start/count box '
 
-          if (.not. find_ioproc(gcoord,lb,ub,lstride,ndim,nioproc, &
-               ioproc,ioindex)) then
+          if (.not. find_ioproc(gcoord, lb, ub, lstride, ndim, nioproc, &
+               ioproc, ioindex)) then
 
-             print *, subName,':: ERROR: no destination found for compdof=',compdof(i)
-
-             print *, subName,':: INFO: gsize=',gsize
+             print *, subName,':: ERROR: no destination found for compdof=', compdof(i)
+             print *, subName,':: INFO: gsize=', gsize
 
              do j=1,nioproc
-                print *, subName,':: INFO io ',j,' start=',start(:,j),' count=',count(:,j)
+                print *, subName, ':: INFO io ', j, ' start=', start(:,j), ' count=', count(:,j)
              end do
 
              do j=1,nioproc
-                print *, subName,':: INFO io ',j,' lb=',lb(:,j),' ub=',ub(:,j)
+                print *, subName, ':: INFO io ', j, ' lb=', lb(:,j), ' ub=', ub(:,j)
              end do
 
-             print *, subName,':: INFO dof ',i,' index=',gindex,' gcoord=',gcoord
-
+             print *, subName, ':: INFO dof ', i, ' index=', gindex, ' gcoord=', gcoord
              call piodie( _FILE_,__LINE__, 'quitting' )
           endif
 
-          dest_ioproc(i)=ioproc
-          dest_ioindex(i)=ioindex
+          dest_ioproc(i)  = ioproc
+          dest_ioindex(i) = ioindex
 
        endif
 
@@ -2203,8 +2178,510 @@ end subroutine box_rearrange_io2comp_int
 
   end subroutine compute_dest
 
+#ifdef _USE_CREATE_FC
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! box_rearrange_create
+  !
+  !   create a rearranger
+  !
+  !   this will allocate the following storage in ioDesc:
+  !     dest_ioproc(ndof)
+  !     dest_ioindex(ndof)
+  !
+  ! this space should be freed in box_rearrange_free
+  !
 
+# 967 "box_rearrange.F90.in"
+  subroutine box_rearrange_create(Iosystem, compdof, gsize, ndim, &
+                                  nioproc, ioDesc)
+    implicit none
+
+    type (Iosystem_desc_t), intent(in) :: Iosystem
+    integer, intent(in) :: compdof(:)      ! global indices for compbuf
+    integer, intent(in) :: gsize(:)        ! global domain size gsize(ndim)
+    integer, intent(in) :: ndim, nioproc
+    type (IO_desc_t), intent(inout) :: ioDesc
+
+    ! local vars
+    character(len=*), parameter :: subName=modName//'::box_rearrange_create'
+    integer :: start(ndim,nioproc)
+    integer :: count(ndim,nioproc)
+    integer :: ndof
+    integer :: ierror
+    integer :: i
+
+    integer :: niodof
+
+!!!!!!
+    ndof = size(compdof)
+    call alloc_check( ioDesc%dest_ioproc, ndof,          &
+                      'box_rearrange_create dest_ioproc' )
+    call alloc_check( ioDesc%dest_ioindex, ndof,         &
+                      'box_rearrange_create dest_ioindex')
+
+!!!!!!
+    ! Gather iodesc%start,iodesc%count from IO procs to root IO proc
+    ! then broadcast to all procs
+    if(ndim.ne.size(iodesc%start)) then
+       print *,_FILE_,__LINE__,ndim, size(iodesc%start)
+       call piodie(_FILE_,__LINE__,'bad ndim size',ndim)
+    end if
+
+    start = 0
+    count = 0
+
+    if (Iosystem%IOproc) then
+       call pio_fc_gather_int(int(iodesc%start), ndim, MPI_INTEGER, & ! sendbuf, count, type
+                              start, ndim, MPI_INTEGER,             & ! recvbuf, count, type
+                              0, Iosystem%IO_comm                   )
+
+       call pio_fc_gather_int(int(iodesc%count), ndim, MPI_INTEGER, & ! sendbuf, count, type
+                              count, ndim, MPI_INTEGER,             & ! recvbuf, count, type
+                              0, Iosystem%IO_comm                   )
+
+       if(Debug) then
+          print *, _FILE_,__LINE__,iodesc%start, iodesc%count
+          if(iosystem%io_rank==0) &
+             print *,_FILE_,__LINE__,ndim,(i,' :', &
+                start(:,i), count(:,i),i=1,iosystem%num_iotasks)
+       end if
+       ! note that index in start,count is the io_rank not comp_rank
+    endif
+
+    call MPI_BCAST(start, ndim*Iosystem%num_iotasks, MPI_INTEGER,   & ! buf, cnt
+                   Iosystem%iomaster, Iosystem%comp_comm, ierror    )
+    call CheckMPIReturn(subName, ierror)
+
+    call MPI_BCAST(count, ndim*Iosystem%num_iotasks, MPI_INTEGER,   & ! buf, cnt
+                   Iosystem%iomaster, Iosystem%comp_comm, ierror    )
+    call CheckMPIReturn(subName, ierror)
+
+#if DEBUG
+    if (Iosystem%comp_rank==0) then
+       do i=1,Iosystem%num_iotasks
+          print *, subName,':: comp_rank=', Iosystem%comp_rank, ': io ', &
+             i, ' start=',start(:,i), ' count=', count(:,i)
+       end do
+    endif
+#endif
+
+!!!!!!!
+    ! compute io dest and indices
+
+    call compute_dest(compdof, start, count, gsize, ndim,              &
+         Iosystem%num_iotasks, ioDesc%dest_ioproc, ioDesc%dest_ioindex )
+
+#ifdef _MPISERIAL
+! Version for use with mpi-serial. 
+! NOTE: cached values in iodesc other than dest_ioproc() and dest_ioindex()
+!       will NOT be allocated in this build
+
+    if (Iosystem%num_tasks /= 1 .or. Iosystem%num_iotasks /= 1) then
+      call piodie( _FILE_,__LINE__, &
+                   'pio was built with -D_MPISERIAL but tasks=', &
+                   Iosystem%num_tasks, &
+                   'iotasks=', Iosystem%num_iotasks)
+    endif
+
+#else 
+! else not _MPISERIAL
+
+    niodof = ioDesc%count(1)
+    do i=2,ndim
+       niodof = niodof*ioDesc%count(i)
+    end do
+
+    call compute_counts(Iosystem, ioDesc, ndof, niodof)
+
+! not _MPISERIAL
+#endif
+
+  end subroutine box_rearrange_create
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! routines broken out of box_rearrange.inc
+  !
+
+#ifndef _MPISERIAL
+
+# 1080 "box_rearrange.F90.in"
+  subroutine compute_counts(Iosystem, ioDesc, ndof, niodof)
+
+    type (Iosystem_desc_t), intent(in) :: Iosystem
+    type (IO_desc_t),intent(in) :: ioDesc
+
+    integer, intent(in) :: ndof
+    integer, intent(in) :: niodof
+
+    ! local vars
+    character(len=*), parameter :: subName=modName//'::compute_counts'
+    integer :: myrank             ! local task id
+    integer :: num_tasks          ! size of comp communicator
+    integer :: num_iotasks        ! size of I/O communicator
+    integer :: i                  ! loop index
+    integer :: iorank             ! i/o task id in i/o communicator + 1
+    integer :: io_comprank        ! i/o task id in comp communicator
+    integer :: nrecvs             ! if i/o task, number of comp tasks sending 
+                                  !   to/receiving from this task (cached)
+    integer :: ioindex            ! offset for data to be sent to i/o task
+    integer :: pos                ! array offset
+    integer :: ierror             ! MPI error return
+
+    integer,pointer :: scount(:)  ! scount(num_iotasks) is no. sends to each i/o task (cached)
+    integer,pointer :: sindex(:)  ! sindex(ndof) is blocks of src indices
+    integer,pointer :: s2rindex(:)! s2rindex(ndof) is local blocks of dest indices
+    integer,pointer :: spos(:)    ! spos(num_iotasks) is start in sindex for each i/o task
+    integer,pointer :: tempcount(:) ! used in calculating sindex and s2rindex
+    integer,pointer :: stype(:)   ! MPI type used in i/o sends (cached)
+
+    ! needed on ioprocs only
+    integer,pointer :: rcount(:)  ! rcount(nrecvs) is no. recvs from each sender
+    integer,pointer :: rfrom(:)   ! rfrom(nrecvs)  is id of each sender (cached)
+    integer,pointer :: rindex(:)  ! rindex(niodof) is blocks of dest indices
+    integer,pointer :: rtype(:)   ! MPI type used in comp receives (cached)
+
+    ! swapm alltoall communication variables
+    integer,pointer :: sr_types(:)
+    integer,pointer :: send_counts(:)
+    integer,pointer :: send_displs(:)
+    integer :: rbuf_size          
+    integer,pointer :: recv_buf(:)
+    integer,pointer :: recv_counts(:)
+    integer,pointer :: recv_displs(:)
+
+    ! swapm flow control parameters
+    logical :: pio_hs
+    logical :: pio_isend
+    integer :: pio_maxreq
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! Communication initialization
+    pio_hs     = DEF_P2P_HANDSHAKE
+    pio_isend  = DEF_P2P_ISEND
+    pio_maxreq = DEF_P2P_MAXREQ
+
+    ! First communication
+    ! comp procs tell io procs how many items they will send
+
+    ! init
+    myrank      = Iosystem%comp_rank
+    num_tasks   = IOsystem%num_tasks
+    num_iotasks = Iosystem%num_iotasks
+
+    !need to cache
+    call alloc_check(ioDesc%scount, num_iotasks, 'scount buffer')
+    scount=>ioDesc%scount
+
+    ! determine number of items going to each io proc
+    scount=0
+    do i=1,ndof
+       iorank=ioDesc%dest_ioproc(i)
+
+       if (iorank /= -1) then                       ! not a sender hole
+          if (iorank<1 .or. iorank>num_iotasks) &
+               call piodie(_FILE_,__LINE__,'io destination out of range',iorank)
+          scount(iorank) = scount(iorank) + 1
+       endif
+
+    end do
+
+#if DEBUG
+    print *,myrank,': scount()=',scount
+#endif
+
+    ! allocate and initialize swapm specification arguments
+    call alloc_check(sr_types, num_tasks, 'sr_types temp')
+    sr_types = MPI_INTEGER
+
+    ! send data structures for all processes
+    !  send_buf (num_iotasks) is scount
+    !  sbuf_size = num_iotasks
+    !  send_counts(num_tasks) = 0 for non-io, 1 for i/o
+    !  send_displs(num_tasks) = 0 for non-io, (i-1) for i/o
+
+    call alloc_check(send_counts, num_tasks, 'send_counts temp')
+    send_counts = 0
+
+    call alloc_check(send_displs, num_tasks, 'send_displs temp')
+    send_displs = 0
+
+    do i=1,num_iotasks
+       ! go from 1-based io rank to 0-based rank in comp_comm
+       io_comprank = find_io_comprank(IOsystem,i) + 1  ! arrays are 1-based
+       send_counts(io_comprank) = 1
+       send_displs(io_comprank) = i-1
+    end do
+
+    ! receive data structures
+    if (Iosystem%IOproc) then
+
+       ! for i/o processes:
+       !  recv_buf (num_tasks) == scount from each process
+       !  rbuf_size = num_tasks
+       !  recv_counts(num_tasks) == 1
+       !  recv_displs(num_tasks) == (i-1)
+
+       rbuf_size = num_tasks
+       call alloc_check(recv_buf, rbuf_size, 'recv_buf temp')
+       recv_buf = 0
+
+       call alloc_check(recv_counts, num_tasks, 'recv_counts temp')
+       recv_counts = 1
+
+       call alloc_check(recv_displs, num_tasks, 'recv_displs temp')
+       do i=1,num_tasks
+          recv_displs(i) = i-1
+       end do
+
+    else
+
+       ! for non-i/o processes
+       !  recv_buf(1) is ignored
+       !  rbuf_size = 1
+       !  recv_counts(num_tasks) == 0
+       !  recv_displs(num_tasks) == 0
+
+       rbuf_size = 1
+       call alloc_check(recv_buf, rbuf_size, 'recv_buf temp')
+       recv_buf = 0
+
+       call alloc_check(recv_counts, num_tasks, 'recv_counts temp')
+       recv_counts = 0
+
+       call alloc_check(recv_displs, num_tasks, 'recv_displs temp')
+       recv_displs = 0
+
+    endif
+
+    call pio_swapm( num_tasks, myrank,                           &
+      scount,   num_iotasks, send_counts, send_displs, sr_types, &
+      recv_buf, rbuf_size,   recv_counts, recv_displs, sr_types, &
+      IOsystem%comp_comm, pio_hs, pio_isend, pio_maxreq          )
+
+    ! determine nrecvs, rcount, and rfrom
+    nrecvs = 0
+    if (Iosystem%IOproc) then
+
+       do i=1,num_tasks
+          if (recv_buf(i) /= 0) then
+             nrecvs = nrecvs + 1
+          endif
+       enddo
+
+       call alloc_check(rcount, nrecvs, 'rcount buffer')
+       rcount = 0
+
+       !need to cache
+       call alloc_check(ioDesc%rfrom, nrecvs, 'rfrom')
+       rfrom=>ioDesc%rfrom
+
+       nrecvs = 0
+       do i=1,num_tasks
+          if (recv_buf(i) /= 0) then
+             nrecvs = nrecvs + 1
+             rcount(nrecvs) = recv_buf(i)
+             rfrom(nrecvs)  = i-1             
+          endif
+       enddo
+
+    endif
+    ioDesc%nrecvs = nrecvs
+
+    call dealloc_check(recv_buf, 'recv_buf temp')
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! Second communication
+    ! send indices to io procs
+
+    ! sindex() contains blocks of indices defining
+    ! data going to/coming from the i/o processes
+    call alloc_check(sindex, ndof, 'sindex temp')
+    sindex = 0
+
+    ! s2rindex() contains the destination indices
+    ! corresponding to sindex
+    call alloc_check(s2rindex, ndof, 'sindex temp')
+    s2rindex = 0
+
+    ! spos(i) is the position in sindex() where the 
+    ! block of indices going to the ith ioproc starts
+    call alloc_check(spos, num_iotasks, 'spos temp')
+    spos(1)=1
+    do i=2,num_iotasks
+       spos(i)=spos(i-1)+scount(i-1)
+
+       if (scount(i)/=0 .and. spos(i) > ndof) & 
+            call piodie(_FILE_,__LINE__,'spos=',spos(i),'> ndof=',ndof)
+    end do
+
+    call alloc_check(tempcount, num_iotasks, 'tempcount')
+    tempcount=0
+    do i=1,ndof
+       iorank  = ioDesc%dest_ioproc(i)
+       ioindex = ioDesc%dest_ioindex(i)
+
+       if (iorank /= -1) then                                  ! skip sender hole
+          sindex(spos(iorank)+tempcount(iorank))   = i-1
+          s2rindex(spos(iorank)+tempcount(iorank)) = ioindex
+          tempcount(iorank) = tempcount(iorank) + 1
+
+          if (tempcount(iorank) > scount(iorank)) &
+               call piodie(_FILE_,__LINE__,'tempcount>scount')
+       endif
+    end do
+    call dealloc_check(tempcount, 'tempcount')
+
+    ! send data mapping for all processes
+    !  send_buf (ndof) is s2rindex
+    !  sbuf_size = ndof
+    !  send_counts(num_tasks) = 0 for non-i/o, scount for i/o
+    !  send_displs(num_tasks) = 0 for non-i/o, spos-1 for i/o
+
+    send_counts = 0
+    send_displs = 0
+    do i=1,num_iotasks
+       ! go from 1-based io rank to 0-based rank in comp_comm
+       io_comprank = find_io_comprank(IOsystem,i) + 1  ! arrays are 1-based
+       send_counts(io_comprank) = scount(i)
+       send_displs(io_comprank) = spos(i)-1
+    end do
+    call dealloc_check(spos, 'spos temp')
+
+    ! receive data structures
+    if (Iosystem%IOproc) then
+
+       ! for i/o processes:
+       !  recv_buf (niodof) is rindex
+       !  rbuf_size = niodof
+       !  recv_counts(num_tasks) is 0 for non-'rfrom', is rcount for 'rfrom'
+       !  recv_displs(num_tasks) is 0 for non-'rfrom', is sum_i recv_counts for 'rfrom'
+
+       rbuf_size = niodof
+       call alloc_check(rindex, niodof, 'rindex buffer')
+       rindex = 0
+
+       recv_counts = 0
+       do i=1,nrecvs
+          recv_counts(rfrom(i)+1) = rcount(i)
+       enddo
+
+       recv_displs = 0
+       do i=2,nrecvs
+          recv_displs(rfrom(i)+1) = recv_displs(rfrom(i-1)+1) + rcount(i-1)
+       enddo
+
+    else
+
+       ! for non-i/o processes
+       !  recv_buf(1) is rindex, which is ignored
+       !  rbuf_size = 1
+       !  recv_counts(num_tasks) == 0
+       !  recv_displs(num_tasks) == 0
+
+       rbuf_size = 1
+       call alloc_check(rindex, rbuf_size)
+       rindex = 0
+
+       recv_counts = 0
+       recv_displs = 0
+
+    endif
+
+    call pio_swapm( num_tasks, myrank,                         &
+      s2rindex, ndof,      send_counts, send_displs, sr_types, &
+      rindex,   rbuf_size, recv_counts, recv_displs, sr_types, &
+      IOsystem%comp_comm, pio_hs, pio_isend, pio_maxreq        )
+
+   call dealloc_check(s2rindex,    's2rindex temp')
+   call dealloc_check(sr_types,    'sr_types temp')
+   call dealloc_check(send_counts, 'send_counts temp')
+   call dealloc_check(send_displs, 'send_displs temp')
+   call dealloc_check(recv_counts, 'recv_counts temp')
+   call dealloc_check(recv_displs, 'recv_displs temp')
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    !
+    ! Create the mpi types for io proc receives
+    !
+
+    if (Iosystem%IOproc) then
+
+       !need to cache
+       call alloc_check(ioDesc%rtype, nrecvs, 'mpi recv types')
+       rtype=>ioDesc%rtype
+
+       pos = 1
+       do i=1,nrecvs
+
+#if DEBUG
+#if DEBUG_INDICES
+          print *, subName,':: myrank=',myrank,': recv indices from ',rfrom(i), &
+               ' count=',rcount(i),' value=',rindex(pos:pos+rcount(i)-1)
+#else
+          print *, subName,':: myrank=',myrank,': recv indices from ',rfrom(i), &
+               ' count=',rcount(i)
+#endif
+#endif
+
+          ! need rindex to contain 0-based displacements here
+          call MPI_TYPE_CREATE_INDEXED_BLOCK( &
+               rcount(i), 1, rindex(pos:pos+rcount(i)-1), &               ! count,blen, disp
+               ioDesc%baseTYPE, rtype(i), ierror )       ! oldtype, newtype
+          call CheckMPIReturn(subName,ierror)
+
+          call MPI_TYPE_COMMIT(rtype(i), ierror)
+          call CheckMPIReturn(subName,ierror)
+
+          pos = pos + rcount(i)
+       end do
+
+    endif
+
+    !
+    ! Create the mpi types for the comp proc sends
+
+    !need to cache
+    call alloc_check(ioDesc%stype, num_iotasks, 'mpi send types')
+    stype=>ioDesc%stype
+
+    pos = 1
+    do i=1,num_iotasks
+       if (scount(i) /= 0) then
+
+          call MPI_TYPE_CREATE_INDEXED_BLOCK( &
+               scount(i), 1, sindex(pos:pos+scount(i)-1), &        ! count, blen, disp
+               ioDesc%baseTYPE, stype(i), ierror )       ! oldtype, newtype
+          call CheckMPIReturn(subName,ierror)
+
+          call MPI_TYPE_COMMIT(stype(i), ierror)
+          call CheckMPIReturn(subName,ierror)
+
+          pos = pos + scount(i)
+       endif
+
+    end do
+
+    !
+    ! clean up
+    !
+
+    if (Iosystem%IOproc) then
+       call dealloc_check(rcount, 'rcount temp')
+       call dealloc_check(rindex, 'rindex temp')
+    endif
+
+    call dealloc_check(sindex, 'sindex temp')
+
+  end subroutine compute_counts
+
+! ifndef _MPISERIAL
+#endif
+
+#else
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -2220,7 +2697,7 @@ end subroutine box_rearrange_io2comp_int
   !
 
 
-# 988 "box_rearrange.F90.in"
+# 1469 "box_rearrange.F90.in"
   subroutine box_rearrange_create( Iosystem,compdof,gsize,ndim,nioproc,ioDesc)
     implicit none
 
@@ -2414,7 +2891,7 @@ end subroutine box_rearrange_io2comp_int
 
 #ifndef _MPISERIAL
 
-# 1181 "box_rearrange.F90.in"
+# 1662 "box_rearrange.F90.in"
   subroutine compute_counts( Iosystem,ioDesc,ndof,niodof )
 
     type (Iosystem_desc_t), intent(in) :: Iosystem
@@ -2622,7 +3099,7 @@ end subroutine box_rearrange_io2comp_int
     ! comp procs send the index sets
     !
 
-#if USESPACE
+#ifdef _USE_SPACE
     ! Uses three temp arrays but
     ! computes everything in one pass.  Alternative is
     ! to make a pass per ioproc through the destinations 
@@ -2698,7 +3175,7 @@ end subroutine box_rearrange_io2comp_int
 
     call dealloc_check(spos,'spos')
 
-    ! USESPACE
+    ! _USE_SPACE
 #else  
 
     ! This alternative trades uses much less temp space
@@ -2818,7 +3295,7 @@ end subroutine box_rearrange_io2comp_int
     ! Create the mpi types for the comp proc sends
 
 
-#if USESPACE
+#ifdef _USE_SPACE
 
     pos=1
     do i=1,num_iotasks
@@ -2837,7 +3314,7 @@ end subroutine box_rearrange_io2comp_int
 
     end do
 
-    ! if USESPACE
+    ! if _USE_SPACE
 #else
 
     ! This alternative uses more time but less space
@@ -2869,7 +3346,7 @@ end subroutine box_rearrange_io2comp_int
        endif
     end do
 
-    ! if USESPACE
+    ! if _USE_SPACE
 #endif
 
 
@@ -2891,6 +3368,8 @@ end subroutine box_rearrange_io2comp_int
 ! ifndef _MPISERIAL
 #endif
 
+! ifndef _USE_CREATE_FC
+#endif 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -2900,7 +3379,7 @@ end subroutine box_rearrange_io2comp_int
   !   the rearrangement
   !
 
-# 1666 "box_rearrange.F90.in"
+# 2149 "box_rearrange.F90.in"
   subroutine box_rearrange_free(Iosystem,ioDesc)
     implicit none
 
@@ -2968,7 +3447,6 @@ end subroutine box_rearrange_io2comp_int
 
 
   end subroutine box_rearrange_free
-
 
 ! _USEBOX
 #endif

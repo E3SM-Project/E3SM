@@ -8,34 +8,26 @@
 ! Any changes you make to this file may be lost
 !===================================================
 #define _FILE_ "pio_support.F90"
-!>
-!! @private
-!<
+! This module is intended for the internal use of PIO only
 module pio_support
   use pio_kinds
-  use pio_types, only : iotype_pnetcdf, iotype_netcdf, iotype_pnetcdf
   implicit none
   private
 
   include 'mpif.h'    ! _EXTERNAL
-  
 
   public :: piodie
   public :: CheckMPIreturn
   public :: pio_readdof
   public :: pio_writedof
-
-
+  public :: pio_fc_gather_int
 #ifdef NO_MPI2
   public :: MPI_TYPE_CREATE_INDEXED_BLOCK
 #endif
 
 #ifdef NO_SIZEOF
-!>
-!! @private
-!<
   public sizeof
-# 29 "pio_support.F90.in"
+# 21 "pio_support.F90.in"
   interface sizeof
      module procedure sizeof_text
      module procedure sizeof_real
@@ -50,10 +42,10 @@ module pio_support
 
   character(len=*), parameter :: modName='pio_support'
 
-# 40 "pio_support.F90.in"
+# 32 "pio_support.F90.in"
 contains
 
-# 42 "pio_support.F90.in"
+# 34 "pio_support.F90.in"
   subroutine piodie (file,line, msg, ival1, msg2, ival2, msg3, ival3)
     !-----------------------------------------------------------------------
     ! Purpose:
@@ -128,7 +120,7 @@ contains
 !      Check and prints an error message
 !  if an error occured in a MPI subroutine.
 !=============================================
-# 116 "pio_support.F90.in"
+# 108 "pio_support.F90.in"
   subroutine CheckMPIreturn(locmesg, errcode, file, line)
 
      character(len=*), intent(in) :: locmesg
@@ -140,6 +132,7 @@ contains
      integer(i4) :: errorlen
 
      integer(i4) :: ierr
+#ifdef USEMPIIO
 
      if (errcode .ne. MPI_SUCCESS) then
         call MPI_Error_String(errcode,errorstring,errorlen,ierr)
@@ -148,10 +141,10 @@ contains
            call piodie(file,line)
         endif
      end if
-
+#endif
   end subroutine CheckMPIreturn
 
-# 138 "pio_support.F90.in"
+# 131 "pio_support.F90.in"
   subroutine pio_writedof (file, DOF, comm, punit)
     !-----------------------------------------------------------------------
     ! Purpose:
@@ -177,11 +170,16 @@ contains
     integer,optional,intent(in) :: punit
 
     character(len=*), parameter :: subName=modName//'::pio_writedof'
-    integer ierr, myrank, npes, sdof, m, n, unit
+    integer ierr, myrank, npes, sdof, sdof_tmp(1), m, n, unit
     integer, pointer :: wdof(:)
     integer, pointer :: sdof1d(:)
     integer          :: status(MPI_STATUS_SIZE)
     integer, parameter :: masterproc = 0
+#ifdef _USE_FLOW_CONTROL
+    integer :: &
+      rcv_request    ,&! request id
+      hs = 1           ! MPI handshaking variable
+#endif
 
     unit = 81
     if (present(punit)) then
@@ -196,8 +194,9 @@ contains
 
     allocate(sdof1d(0:npes-1))
     sdof1d = -1
-    call MPI_GATHER(sdof,1,MPI_INTEGER,sdof1d,1,MPI_INTEGER,masterproc,comm,ierr)
-    if (ierr /= MPI_SUCCESS) call piodie(_FILE_,__LINE__,' pio_writedof mpi_gather')
+    sdof_tmp(1) = sdof
+    call pio_fc_gather_int(sdof_tmp, 1, MPI_INTEGER, &
+       sdof1d, 1, MPI_INTEGER,masterproc,comm)
 
     if (myrank == masterproc) then
        write(6,*) subName,': writing file ',trim(file),' unit=',unit
@@ -213,12 +212,25 @@ contains
           wdof = dof
        else
           if (myrank == n .and. sdof > 0) then
+#ifdef _USE_FLOW_CONTROL
+             call MPI_RECV(hs,1,MPI_INTEGER,masterproc,n,comm,status,ierr)
+             if (ierr /= MPI_SUCCESS) call piodie(_FILE_,__LINE__,' pio_writedof mpi_recv')
+#endif
              call MPI_SEND(dof,sdof,MPI_INTEGER,masterproc,n,comm,status,ierr)
              if (ierr /= MPI_SUCCESS) call piodie(_FILE_,__LINE__,' pio_writedof mpi_send')
           endif
           if (myrank == masterproc .and. sdof1d(n) > 0) then
+#ifdef _USE_FLOW_CONTROL
+             call MPI_IRECV(wdof,sdof1d(n),MPI_INTEGER,n,n,comm,rcv_request,ierr)
+             if (ierr /= MPI_SUCCESS) call piodie(_FILE_,__LINE__,' pio_writedof mpi_irecv')
+             call MPI_SEND(hs,1,MPI_INTEGER,n,n,comm,status,ierr)
+             if (ierr /= MPI_SUCCESS) call piodie(_FILE_,__LINE__,' pio_writedof mpi_send')
+             call MPI_WAIT(rcv_request,status,ierr)
+             if (ierr /= MPI_SUCCESS) call piodie(_FILE_,__LINE__,' pio_writedof mpi_wait')
+#else
              call MPI_RECV(wdof,sdof1d(n),MPI_INTEGER,n,n,comm,status,ierr)
              if (ierr /= MPI_SUCCESS) call piodie(_FILE_,__LINE__,' pio_writedof mpi_recv')
+#endif
           endif
        endif
        if (myrank == masterproc) then
@@ -238,7 +250,7 @@ contains
 
   end subroutine pio_writedof
 
-# 224 "pio_support.F90.in"
+# 236 "pio_support.F90.in"
   subroutine pio_readdof (file, DOF, comm, punit)
     !-----------------------------------------------------------------------
     ! Purpose:
@@ -330,7 +342,7 @@ contains
 
 #ifdef NO_MPI2
 
-# 315 "pio_support.F90.in"
+# 327 "pio_support.F90.in"
   subroutine MPI_TYPE_CREATE_INDEXED_BLOCK(count, blen, disp, oldtype, newtype, ierr)
     integer, intent(in)  :: count
     integer, intent(in)  :: blen
@@ -349,7 +361,7 @@ contains
 #endif
 #ifdef NO_SIZEOF
 
-# 333 "pio_support.F90.in"
+# 345 "pio_support.F90.in"
   integer function sizeof_text(val) result(i)
     implicit none
     character(len=*),intent(in) :: val
@@ -365,7 +377,7 @@ contains
 #endif
   end function sizeof_text
 
-# 333 "pio_support.F90.in"
+# 345 "pio_support.F90.in"
   integer function sizeof_real(val) result(i)
     implicit none
     real(r4),intent(in) :: val
@@ -381,7 +393,7 @@ contains
 #endif
   end function sizeof_real
 
-# 333 "pio_support.F90.in"
+# 345 "pio_support.F90.in"
   integer function sizeof_double(val) result(i)
     implicit none
     real(r8),intent(in) :: val
@@ -397,7 +409,7 @@ contains
 #endif
   end function sizeof_double
 
-# 333 "pio_support.F90.in"
+# 345 "pio_support.F90.in"
   integer function sizeof_int(val) result(i)
     implicit none
     integer(i4),intent(in) :: val
@@ -414,6 +426,169 @@ contains
   end function sizeof_int
 #endif
 
+# 361 "pio_support.F90.in"
+   subroutine pio_fc_gather_int ( sendbuf, sendcnt, sendtype, &
+                                  recvbuf, recvcnt, recvtype, &
+                                  root, comm, flow_cntl )
 
+!----------------------------------------------------------------------- 
+! 
+!> Purpose: 
+!!   Gather collective with additional flow control, so as to 
+!!   be more robust when used with high process counts. 
+!!
+!! Method: 
+!!   If flow_cntl optional parameter 
+!!     < 0: use MPI_Gather
+!!     >= 0: use point-to-point with handshaking messages and 
+!!           preposting receive requests up to 
+!!           max(min(1,flow_cntl),max_gather_block_size) 
+!!           ahead if optional flow_cntl parameter is present.
+!!           Otherwise, fc_gather_flow_cntl is used in its place.
+!!     Default value is 64.
+!! 
+!! Author of original version:  P. Worley
+!! Ported from CAM: P. Worley, Jan 2010
+!< 
+!-----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+   implicit none
+
+!---------------------------Parameters ---------------------------------
+!
+   integer, parameter :: max_gather_block_size = 64
+
+!---------------------------Input arguments--------------------------
+!
+   integer, intent(in)  :: sendbuf(*)       ! outgoing message buffer
+   integer, intent(in)  :: sendcnt          ! size of send buffer
+   integer, intent(in)  :: sendtype         ! MPI type of send buffer
+   integer, intent(in)  :: recvcnt          ! size of receive buffer
+   integer, intent(in)  :: recvtype         ! MPI type of receive buffer
+   integer, intent(in)  :: root             ! gather destination
+   integer, intent(in)  :: comm             ! MPI communicator
+   integer,optional, intent(in):: flow_cntl ! flow control variable
+
+!---------------------------Output arguments--------------------------
+!
+   integer, intent(out) :: recvbuf(*)       ! incoming message buffer
+
+#ifndef _MPISERIAL
+!
+!---------------------------Local workspace---------------------------------
+!
+   character(len=*), parameter :: subName=modName//'::pio_fc_gather_int'
+
+   logical :: fc_gather                     ! use explicit flow control?
+   integer :: hs                            ! handshake variable
+   integer :: gather_block_size             ! number of preposted receive requests
+
+   integer :: nprocs                        ! size of communicator
+   integer :: mytask                        ! MPI task id with communicator
+   integer :: mtag                          ! MPI message tag
+   integer :: p, i                          ! loop indices
+   integer :: displs                        ! offset into receive buffer
+   integer :: count, preposts, head, tail   ! variables controlling recv-ahead logic
+
+   integer :: rcvid(max_gather_block_size)  ! receive request ids
+
+   integer :: ier                           ! return error status    
+   integer :: status(MPI_STATUS_SIZE)       ! MPI status 
+
+!
+!-------------------------------------------------------------------------------------
+!
+   if ( present(flow_cntl) ) then
+      if (flow_cntl >= 0) then
+         gather_block_size = min(max(1,flow_cntl),max_gather_block_size)
+         fc_gather = .true.
+      else
+         fc_gather = .false.
+      endif
+   else
+#ifdef _USE_FLOW_CONTROL
+      gather_block_size = max(1,max_gather_block_size)
+      fc_gather = .true.
+#else
+      fc_gather = .false.
+#endif
+   endif
+
+   if (fc_gather) then
+ 
+      ! Determine task id and size of communicator
+      call mpi_comm_rank (comm, mytask, ier)
+      call mpi_comm_size (comm, nprocs, ier)
+
+      ! Initialize tag and hs variable
+#ifdef _NO_PIO_SWAPM_TAG_OFFSET
+      mtag = 0
+#else
+      mtag = 2*nprocs
+#endif
+      hs = 1
+
+      if (root .eq. mytask) then
+
+! prepost gather_block_size irecvs, and start receiving data
+         preposts = min(nprocs-1, gather_block_size)
+         head = 0
+         count = 0
+         do p=0, nprocs-1
+            if (p .ne. root) then
+               if (recvcnt > 0) then
+                  count = count + 1
+                  if (count > preposts) then
+                     tail = mod(head,preposts) + 1
+                     call mpi_wait (rcvid(tail), status, ier)
+                  end if
+                  head = mod(head,preposts) + 1
+                  displs = p*recvcnt
+                  call mpi_irecv ( recvbuf(displs+1), recvcnt, &
+                                   recvtype, p, mtag, comm, rcvid(head), &
+                                   ier )
+                  call mpi_send ( hs, 1, recvtype, p, mtag, comm, ier )
+               end if
+            end if
+         end do
+
+! copy local data
+         displs = mytask*recvcnt
+         do i=1,sendcnt
+            recvbuf(displs+i) = sendbuf(i)
+         enddo
+
+! wait for final data
+         do i=1,min(count,preposts)
+            call mpi_wait (rcvid(i), status, ier)
+         enddo
+
+      else
+
+         if (sendcnt > 0) then
+            call mpi_recv  ( hs, 1, sendtype, root, mtag, comm, &
+                             status, ier )
+            call mpi_rsend ( sendbuf, sendcnt, sendtype, root, mtag, &
+                             comm, ier )
+         end if
+
+      endif
+      call CheckMPIReturn(subName,ier)
+
+   else
+ 
+      call mpi_gather (sendbuf, sendcnt, sendtype, &
+                       recvbuf, recvcnt, recvtype, &
+                       root, comm, ier)
+      call CheckMPIReturn(subName,ier)
+
+   endif
+
+#endif
+
+   return
+
+   end subroutine pio_fc_gather_int
 
 end module pio_support
