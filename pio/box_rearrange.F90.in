@@ -1080,7 +1080,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
   subroutine compute_counts(Iosystem, ioDesc, ndof, niodof)
 
     type (Iosystem_desc_t), intent(in) :: Iosystem
-    type (IO_desc_t),intent(in) :: ioDesc
+    type (IO_desc_t),intent(inout) :: ioDesc
 
     integer, intent(in) :: ndof
     integer, intent(in) :: niodof
