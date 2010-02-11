@@ -61,30 +61,46 @@ module pionfget_mod
      module procedure get_var_3d_int, get_var_vdesc_3d_int
      module procedure get_var_4d_int, get_var_vdesc_4d_int
      module procedure get_var_5d_int, get_var_vdesc_5d_int
-     !  DIMS 1,2,3
+     !  DIMS 1,2,3,4,5
      module procedure get_vara_1d_text, get_vara_vdesc_1d_text
-     !  DIMS 1,2,3
+     !  DIMS 1,2,3,4,5
      module procedure get_vara_2d_text, get_vara_vdesc_2d_text
-     !  DIMS 1,2,3
+     !  DIMS 1,2,3,4,5
      module procedure get_vara_3d_text, get_vara_vdesc_3d_text
-     !  DIMS 1,2,3
+     !  DIMS 1,2,3,4,5
+     module procedure get_vara_4d_text, get_vara_vdesc_4d_text
+     !  DIMS 1,2,3,4,5
+     module procedure get_vara_5d_text, get_vara_vdesc_5d_text
+     !  DIMS 1,2,3,4,5
      module procedure get_vara_1d_real, get_vara_vdesc_1d_real
-     !  DIMS 1,2,3
+     !  DIMS 1,2,3,4,5
      module procedure get_vara_2d_real, get_vara_vdesc_2d_real
-     !  DIMS 1,2,3
+     !  DIMS 1,2,3,4,5
      module procedure get_vara_3d_real, get_vara_vdesc_3d_real
-     !  DIMS 1,2,3
+     !  DIMS 1,2,3,4,5
+     module procedure get_vara_4d_real, get_vara_vdesc_4d_real
+     !  DIMS 1,2,3,4,5
+     module procedure get_vara_5d_real, get_vara_vdesc_5d_real
+     !  DIMS 1,2,3,4,5
      module procedure get_vara_1d_double, get_vara_vdesc_1d_double
-     !  DIMS 1,2,3
+     !  DIMS 1,2,3,4,5
      module procedure get_vara_2d_double, get_vara_vdesc_2d_double
-     !  DIMS 1,2,3
+     !  DIMS 1,2,3,4,5
      module procedure get_vara_3d_double, get_vara_vdesc_3d_double
-     !  DIMS 1,2,3
+     !  DIMS 1,2,3,4,5
+     module procedure get_vara_4d_double, get_vara_vdesc_4d_double
+     !  DIMS 1,2,3,4,5
+     module procedure get_vara_5d_double, get_vara_vdesc_5d_double
+     !  DIMS 1,2,3,4,5
      module procedure get_vara_1d_int, get_vara_vdesc_1d_int
-     !  DIMS 1,2,3
+     !  DIMS 1,2,3,4,5
      module procedure get_vara_2d_int, get_vara_vdesc_2d_int
-     !  DIMS 1,2,3
+     !  DIMS 1,2,3,4,5
      module procedure get_vara_3d_int, get_vara_vdesc_3d_int
+     !  DIMS 1,2,3,4,5
+     module procedure get_vara_4d_int, get_vara_vdesc_4d_int
+     !  DIMS 1,2,3,4,5
+     module procedure get_vara_5d_int, get_vara_vdesc_5d_int
      module procedure get_var1_text, get_var1_vdesc_text
      module procedure get_var1_real, get_var1_vdesc_real
      module procedure get_var1_double, get_var1_vdesc_double
@@ -493,7 +509,7 @@ CONTAINS
   end function get_var1_vdesc_int
 
 
-! DIMS 1,2,3
+! DIMS 1,2,3,4,5
 !>
 !! @public
 !! @ingroup PIO_get_var
@@ -556,7 +572,7 @@ CONTAINS
   end function get_vara_1d_text
 
 
-! DIMS 1,2,3
+! DIMS 1,2,3,4,5
 !>
 !! @public
 !! @ingroup PIO_get_var
@@ -619,7 +635,7 @@ CONTAINS
   end function get_vara_2d_text
 
 
-! DIMS 1,2,3
+! DIMS 1,2,3,4,5
 !>
 !! @public
 !! @ingroup PIO_get_var
@@ -682,7 +698,133 @@ CONTAINS
   end function get_vara_3d_text
 
 
-! DIMS 1,2,3
+! DIMS 1,2,3,4,5
+!>
+!! @public
+!! @ingroup PIO_get_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid : The netcdf variable identifier
+!! @param start :
+!! @param count :
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+# 151 "pionfget_mod.F90.in"
+  integer function get_vara_4d_text (File,varid, start, count, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid, start(:), count(:)
+    character(len=*), intent(out) :: ival(:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_vara_4d_text'
+    integer :: iotype, mpierr, i
+    integer(kind=PIO_OFFSET) :: isize
+
+#ifdef TIMING
+    call t_startf("pio_get_vara_4d_text")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1
+    do i=1,size(count)
+       isize=isize*count(i)
+    end do
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
+          ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
+               int(count,kind=PIO_OFFSET), ival, isize, MPI_CHARACTER)
+#endif
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+          ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
+       case(iotype_netcdf)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
+          end if
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,_FILE_,__LINE__)
+    if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
+       call MPI_Bcast(ival,int(isize), MPI_CHARACTER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+
+#ifdef TIMING
+    call t_stopf("pio_get_vara_4d_text")
+#endif
+  end function get_vara_4d_text
+
+
+! DIMS 1,2,3,4,5
+!>
+!! @public
+!! @ingroup PIO_get_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid : The netcdf variable identifier
+!! @param start :
+!! @param count :
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+# 151 "pionfget_mod.F90.in"
+  integer function get_vara_5d_text (File,varid, start, count, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid, start(:), count(:)
+    character(len=*), intent(out) :: ival(:,:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_vara_5d_text'
+    integer :: iotype, mpierr, i
+    integer(kind=PIO_OFFSET) :: isize
+
+#ifdef TIMING
+    call t_startf("pio_get_vara_5d_text")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1
+    do i=1,size(count)
+       isize=isize*count(i)
+    end do
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
+          ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
+               int(count,kind=PIO_OFFSET), ival, isize, MPI_CHARACTER)
+#endif
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+          ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
+       case(iotype_netcdf)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
+          end if
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,_FILE_,__LINE__)
+    if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
+       call MPI_Bcast(ival,int(isize), MPI_CHARACTER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+
+#ifdef TIMING
+    call t_stopf("pio_get_vara_5d_text")
+#endif
+  end function get_vara_5d_text
+
+
+! DIMS 1,2,3,4,5
 !>
 !! @public
 !! @ingroup PIO_get_var
@@ -745,7 +887,7 @@ CONTAINS
   end function get_vara_1d_real
 
 
-! DIMS 1,2,3
+! DIMS 1,2,3,4,5
 !>
 !! @public
 !! @ingroup PIO_get_var
@@ -808,7 +950,7 @@ CONTAINS
   end function get_vara_2d_real
 
 
-! DIMS 1,2,3
+! DIMS 1,2,3,4,5
 !>
 !! @public
 !! @ingroup PIO_get_var
@@ -871,7 +1013,133 @@ CONTAINS
   end function get_vara_3d_real
 
 
-! DIMS 1,2,3
+! DIMS 1,2,3,4,5
+!>
+!! @public
+!! @ingroup PIO_get_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid : The netcdf variable identifier
+!! @param start :
+!! @param count :
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+# 151 "pionfget_mod.F90.in"
+  integer function get_vara_4d_real (File,varid, start, count, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid, start(:), count(:)
+    real(r4), intent(out) :: ival(:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_vara_4d_real'
+    integer :: iotype, mpierr, i
+    integer(kind=PIO_OFFSET) :: isize
+
+#ifdef TIMING
+    call t_startf("pio_get_vara_4d_real")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1
+    do i=1,size(count)
+       isize=isize*count(i)
+    end do
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
+          ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
+               int(count,kind=PIO_OFFSET), ival, isize, MPI_REAL4)
+#endif
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+          ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
+       case(iotype_netcdf)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
+          end if
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,_FILE_,__LINE__)
+    if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
+       call MPI_Bcast(ival,int(isize), MPI_REAL4 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+
+#ifdef TIMING
+    call t_stopf("pio_get_vara_4d_real")
+#endif
+  end function get_vara_4d_real
+
+
+! DIMS 1,2,3,4,5
+!>
+!! @public
+!! @ingroup PIO_get_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid : The netcdf variable identifier
+!! @param start :
+!! @param count :
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+# 151 "pionfget_mod.F90.in"
+  integer function get_vara_5d_real (File,varid, start, count, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid, start(:), count(:)
+    real(r4), intent(out) :: ival(:,:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_vara_5d_real'
+    integer :: iotype, mpierr, i
+    integer(kind=PIO_OFFSET) :: isize
+
+#ifdef TIMING
+    call t_startf("pio_get_vara_5d_real")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1
+    do i=1,size(count)
+       isize=isize*count(i)
+    end do
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
+          ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
+               int(count,kind=PIO_OFFSET), ival, isize, MPI_REAL4)
+#endif
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+          ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
+       case(iotype_netcdf)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
+          end if
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,_FILE_,__LINE__)
+    if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
+       call MPI_Bcast(ival,int(isize), MPI_REAL4 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+
+#ifdef TIMING
+    call t_stopf("pio_get_vara_5d_real")
+#endif
+  end function get_vara_5d_real
+
+
+! DIMS 1,2,3,4,5
 !>
 !! @public
 !! @ingroup PIO_get_var
@@ -934,7 +1202,7 @@ CONTAINS
   end function get_vara_1d_double
 
 
-! DIMS 1,2,3
+! DIMS 1,2,3,4,5
 !>
 !! @public
 !! @ingroup PIO_get_var
@@ -997,7 +1265,7 @@ CONTAINS
   end function get_vara_2d_double
 
 
-! DIMS 1,2,3
+! DIMS 1,2,3,4,5
 !>
 !! @public
 !! @ingroup PIO_get_var
@@ -1060,7 +1328,133 @@ CONTAINS
   end function get_vara_3d_double
 
 
-! DIMS 1,2,3
+! DIMS 1,2,3,4,5
+!>
+!! @public
+!! @ingroup PIO_get_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid : The netcdf variable identifier
+!! @param start :
+!! @param count :
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+# 151 "pionfget_mod.F90.in"
+  integer function get_vara_4d_double (File,varid, start, count, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid, start(:), count(:)
+    real(r8), intent(out) :: ival(:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_vara_4d_double'
+    integer :: iotype, mpierr, i
+    integer(kind=PIO_OFFSET) :: isize
+
+#ifdef TIMING
+    call t_startf("pio_get_vara_4d_double")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1
+    do i=1,size(count)
+       isize=isize*count(i)
+    end do
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
+          ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
+               int(count,kind=PIO_OFFSET), ival, isize, MPI_REAL8)
+#endif
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+          ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
+       case(iotype_netcdf)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
+          end if
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,_FILE_,__LINE__)
+    if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
+       call MPI_Bcast(ival,int(isize), MPI_REAL8 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+
+#ifdef TIMING
+    call t_stopf("pio_get_vara_4d_double")
+#endif
+  end function get_vara_4d_double
+
+
+! DIMS 1,2,3,4,5
+!>
+!! @public
+!! @ingroup PIO_get_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid : The netcdf variable identifier
+!! @param start :
+!! @param count :
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+# 151 "pionfget_mod.F90.in"
+  integer function get_vara_5d_double (File,varid, start, count, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid, start(:), count(:)
+    real(r8), intent(out) :: ival(:,:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_vara_5d_double'
+    integer :: iotype, mpierr, i
+    integer(kind=PIO_OFFSET) :: isize
+
+#ifdef TIMING
+    call t_startf("pio_get_vara_5d_double")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1
+    do i=1,size(count)
+       isize=isize*count(i)
+    end do
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
+          ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
+               int(count,kind=PIO_OFFSET), ival, isize, MPI_REAL8)
+#endif
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+          ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
+       case(iotype_netcdf)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
+          end if
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,_FILE_,__LINE__)
+    if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
+       call MPI_Bcast(ival,int(isize), MPI_REAL8 , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+
+#ifdef TIMING
+    call t_stopf("pio_get_vara_5d_double")
+#endif
+  end function get_vara_5d_double
+
+
+! DIMS 1,2,3,4,5
 !>
 !! @public
 !! @ingroup PIO_get_var
@@ -1123,7 +1517,7 @@ CONTAINS
   end function get_vara_1d_int
 
 
-! DIMS 1,2,3
+! DIMS 1,2,3,4,5
 !>
 !! @public
 !! @ingroup PIO_get_var
@@ -1186,7 +1580,7 @@ CONTAINS
   end function get_vara_2d_int
 
 
-! DIMS 1,2,3
+! DIMS 1,2,3,4,5
 !>
 !! @public
 !! @ingroup PIO_get_var
@@ -1248,7 +1642,133 @@ CONTAINS
 #endif
   end function get_vara_3d_int
 
-! DIMS 1,2,3
+
+! DIMS 1,2,3,4,5
+!>
+!! @public
+!! @ingroup PIO_get_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid : The netcdf variable identifier
+!! @param start :
+!! @param count :
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+# 151 "pionfget_mod.F90.in"
+  integer function get_vara_4d_int (File,varid, start, count, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid, start(:), count(:)
+    integer(i4), intent(out) :: ival(:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_vara_4d_int'
+    integer :: iotype, mpierr, i
+    integer(kind=PIO_OFFSET) :: isize
+
+#ifdef TIMING
+    call t_startf("pio_get_vara_4d_int")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1
+    do i=1,size(count)
+       isize=isize*count(i)
+    end do
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
+          ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
+               int(count,kind=PIO_OFFSET), ival, isize, MPI_INTEGER)
+#endif
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+          ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
+       case(iotype_netcdf)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
+          end if
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,_FILE_,__LINE__)
+    if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
+       call MPI_Bcast(ival,int(isize), MPI_INTEGER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+
+#ifdef TIMING
+    call t_stopf("pio_get_vara_4d_int")
+#endif
+  end function get_vara_4d_int
+
+
+! DIMS 1,2,3,4,5
+!>
+!! @public
+!! @ingroup PIO_get_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param varid : The netcdf variable identifier
+!! @param start :
+!! @param count :
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+# 151 "pionfget_mod.F90.in"
+  integer function get_vara_5d_int (File,varid, start, count, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid, start(:), count(:)
+    integer(i4), intent(out) :: ival(:,:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_vara_5d_int'
+    integer :: iotype, mpierr, i
+    integer(kind=PIO_OFFSET) :: isize
+
+#ifdef TIMING
+    call t_startf("pio_get_vara_5d_int")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1
+    do i=1,size(count)
+       isize=isize*count(i)
+    end do
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(iotype_pnetcdf)
+          ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
+               int(count,kind=PIO_OFFSET), ival, isize, MPI_INTEGER)
+#endif
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+          ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
+       case(iotype_netcdf)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
+          end if
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,_FILE_,__LINE__)
+    if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
+       call MPI_Bcast(ival,int(isize), MPI_INTEGER , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+
+#ifdef TIMING
+    call t_stopf("pio_get_vara_5d_int")
+#endif
+  end function get_vara_5d_int
+
+! DIMS 1,2,3,4,5
 !>
 !! @public
 !! @ingroup PIO_get_var
@@ -1274,7 +1794,7 @@ CONTAINS
 
   end function get_vara_vdesc_1d_text
 
-! DIMS 1,2,3
+! DIMS 1,2,3,4,5
 !>
 !! @public
 !! @ingroup PIO_get_var
@@ -1300,7 +1820,7 @@ CONTAINS
 
   end function get_vara_vdesc_2d_text
 
-! DIMS 1,2,3
+! DIMS 1,2,3,4,5
 !>
 !! @public
 !! @ingroup PIO_get_var
@@ -1326,7 +1846,59 @@ CONTAINS
 
   end function get_vara_vdesc_3d_text
 
-! DIMS 1,2,3
+! DIMS 1,2,3,4,5
+!>
+!! @public
+!! @ingroup PIO_get_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param vardesc @copydoc var_desc_t
+!! @param start :
+!! @param count :
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+# 212 "pionfget_mod.F90.in"
+  integer function get_vara_vdesc_4d_text (File,vardesc, start, count, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    type(var_desc_t), intent(in) :: vardesc
+    integer, intent(in) :: start(:), count(:)
+    character(len=*), intent(out) :: ival(:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_vara_vdesc_4d_text'
+
+    ierr = get_vara_4d_text (File, vardesc%varid, start, count, ival)
+
+  end function get_vara_vdesc_4d_text
+
+! DIMS 1,2,3,4,5
+!>
+!! @public
+!! @ingroup PIO_get_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param vardesc @copydoc var_desc_t
+!! @param start :
+!! @param count :
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+# 212 "pionfget_mod.F90.in"
+  integer function get_vara_vdesc_5d_text (File,vardesc, start, count, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    type(var_desc_t), intent(in) :: vardesc
+    integer, intent(in) :: start(:), count(:)
+    character(len=*), intent(out) :: ival(:,:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_vara_vdesc_5d_text'
+
+    ierr = get_vara_5d_text (File, vardesc%varid, start, count, ival)
+
+  end function get_vara_vdesc_5d_text
+
+! DIMS 1,2,3,4,5
 !>
 !! @public
 !! @ingroup PIO_get_var
@@ -1352,7 +1924,7 @@ CONTAINS
 
   end function get_vara_vdesc_1d_real
 
-! DIMS 1,2,3
+! DIMS 1,2,3,4,5
 !>
 !! @public
 !! @ingroup PIO_get_var
@@ -1378,7 +1950,7 @@ CONTAINS
 
   end function get_vara_vdesc_2d_real
 
-! DIMS 1,2,3
+! DIMS 1,2,3,4,5
 !>
 !! @public
 !! @ingroup PIO_get_var
@@ -1404,7 +1976,59 @@ CONTAINS
 
   end function get_vara_vdesc_3d_real
 
-! DIMS 1,2,3
+! DIMS 1,2,3,4,5
+!>
+!! @public
+!! @ingroup PIO_get_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param vardesc @copydoc var_desc_t
+!! @param start :
+!! @param count :
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+# 212 "pionfget_mod.F90.in"
+  integer function get_vara_vdesc_4d_real (File,vardesc, start, count, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    type(var_desc_t), intent(in) :: vardesc
+    integer, intent(in) :: start(:), count(:)
+    real(r4), intent(out) :: ival(:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_vara_vdesc_4d_real'
+
+    ierr = get_vara_4d_real (File, vardesc%varid, start, count, ival)
+
+  end function get_vara_vdesc_4d_real
+
+! DIMS 1,2,3,4,5
+!>
+!! @public
+!! @ingroup PIO_get_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param vardesc @copydoc var_desc_t
+!! @param start :
+!! @param count :
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+# 212 "pionfget_mod.F90.in"
+  integer function get_vara_vdesc_5d_real (File,vardesc, start, count, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    type(var_desc_t), intent(in) :: vardesc
+    integer, intent(in) :: start(:), count(:)
+    real(r4), intent(out) :: ival(:,:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_vara_vdesc_5d_real'
+
+    ierr = get_vara_5d_real (File, vardesc%varid, start, count, ival)
+
+  end function get_vara_vdesc_5d_real
+
+! DIMS 1,2,3,4,5
 !>
 !! @public
 !! @ingroup PIO_get_var
@@ -1430,7 +2054,7 @@ CONTAINS
 
   end function get_vara_vdesc_1d_double
 
-! DIMS 1,2,3
+! DIMS 1,2,3,4,5
 !>
 !! @public
 !! @ingroup PIO_get_var
@@ -1456,7 +2080,7 @@ CONTAINS
 
   end function get_vara_vdesc_2d_double
 
-! DIMS 1,2,3
+! DIMS 1,2,3,4,5
 !>
 !! @public
 !! @ingroup PIO_get_var
@@ -1482,7 +2106,59 @@ CONTAINS
 
   end function get_vara_vdesc_3d_double
 
-! DIMS 1,2,3
+! DIMS 1,2,3,4,5
+!>
+!! @public
+!! @ingroup PIO_get_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param vardesc @copydoc var_desc_t
+!! @param start :
+!! @param count :
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+# 212 "pionfget_mod.F90.in"
+  integer function get_vara_vdesc_4d_double (File,vardesc, start, count, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    type(var_desc_t), intent(in) :: vardesc
+    integer, intent(in) :: start(:), count(:)
+    real(r8), intent(out) :: ival(:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_vara_vdesc_4d_double'
+
+    ierr = get_vara_4d_double (File, vardesc%varid, start, count, ival)
+
+  end function get_vara_vdesc_4d_double
+
+! DIMS 1,2,3,4,5
+!>
+!! @public
+!! @ingroup PIO_get_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param vardesc @copydoc var_desc_t
+!! @param start :
+!! @param count :
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+# 212 "pionfget_mod.F90.in"
+  integer function get_vara_vdesc_5d_double (File,vardesc, start, count, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    type(var_desc_t), intent(in) :: vardesc
+    integer, intent(in) :: start(:), count(:)
+    real(r8), intent(out) :: ival(:,:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_vara_vdesc_5d_double'
+
+    ierr = get_vara_5d_double (File, vardesc%varid, start, count, ival)
+
+  end function get_vara_vdesc_5d_double
+
+! DIMS 1,2,3,4,5
 !>
 !! @public
 !! @ingroup PIO_get_var
@@ -1508,7 +2184,7 @@ CONTAINS
 
   end function get_vara_vdesc_1d_int
 
-! DIMS 1,2,3
+! DIMS 1,2,3,4,5
 !>
 !! @public
 !! @ingroup PIO_get_var
@@ -1534,7 +2210,7 @@ CONTAINS
 
   end function get_vara_vdesc_2d_int
 
-! DIMS 1,2,3
+! DIMS 1,2,3,4,5
 !>
 !! @public
 !! @ingroup PIO_get_var
@@ -1559,6 +2235,58 @@ CONTAINS
     ierr = get_vara_3d_int (File, vardesc%varid, start, count, ival)
 
   end function get_vara_vdesc_3d_int
+
+! DIMS 1,2,3,4,5
+!>
+!! @public
+!! @ingroup PIO_get_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param vardesc @copydoc var_desc_t
+!! @param start :
+!! @param count :
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+# 212 "pionfget_mod.F90.in"
+  integer function get_vara_vdesc_4d_int (File,vardesc, start, count, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    type(var_desc_t), intent(in) :: vardesc
+    integer, intent(in) :: start(:), count(:)
+    integer(i4), intent(out) :: ival(:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_vara_vdesc_4d_int'
+
+    ierr = get_vara_4d_int (File, vardesc%varid, start, count, ival)
+
+  end function get_vara_vdesc_4d_int
+
+! DIMS 1,2,3,4,5
+!>
+!! @public
+!! @ingroup PIO_get_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param vardesc @copydoc var_desc_t
+!! @param start :
+!! @param count :
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+# 212 "pionfget_mod.F90.in"
+  integer function get_vara_vdesc_5d_int (File,vardesc, start, count, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    type(var_desc_t), intent(in) :: vardesc
+    integer, intent(in) :: start(:), count(:)
+    integer(i4), intent(out) :: ival(:,:,:,:,:)
+
+    character(len=*), parameter :: subName=modName//'::get_vara_vdesc_5d_int'
+
+    ierr = get_vara_5d_int (File, vardesc%varid, start, count, ival)
+
+  end function get_vara_vdesc_5d_int
 
 !>
 !! @public
