@@ -91,12 +91,12 @@
   ENV_PNETCDF_PATH="$PNETCDF_DIR"
 
   workdir = "/tmp/work/${USER}/testpio"
-  run = "aprun -n 16 "
+  run = "aprun -n 12 "
   submit = "qsub "
   conopts = " --disable-mct --enable-filesystem-hints=lustre"
   preamble="#PBS -N testpio_suite
 #PBS -q batch
-#PBS -l size=16
+#PBS -l size=12
 #PBS -l walltime=00:50:00
 #PBS -j oe
 #PBS -V"
