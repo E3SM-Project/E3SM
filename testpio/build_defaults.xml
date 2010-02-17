@@ -86,7 +86,7 @@
   MPICC = "cc -L$LIBSCI_BASE_DIR/pgi/lib"
   F90 = "pgf90"
   CC = "pgcc"
-
+  FFLAGS = "-D_USE_FLOW_CONTROL"
   ENV_NETCDF_PATH="$NETCDF_DIR"
   ENV_PNETCDF_PATH="$PNETCDF_DIR"
 
