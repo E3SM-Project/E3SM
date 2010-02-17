@@ -3545,9 +3545,9 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 #if (100 == TYPETEXT)
-    integer(kind=PIO_OFFSET) :: pstart(1+1), pcount(1+1)
+    integer(kind=PIO_OFFSET) :: pstart(1+2), pcount(1+2)
 #else
-    integer(kind=PIO_OFFSET) :: pstart(1), pcount(1)
+    integer(kind=PIO_OFFSET) :: pstart(1+1), pcount(1+1)
 #endif
     character(len=*), intent(in) :: ival(:)
     integer :: iotype, i
@@ -3559,8 +3559,8 @@ contains
     iotype = File%iotype 
     if(File%iosystem%IOProc) then
        if(File%iosystem%io_rank==0) then
-          pstart = start	
-          pcount = count
+          pstart(1:size(start)) = start	
+          pcount(1:size(count)) = count
        else
           pstart=1 ! avoids an unessasary pnetcdf error 
           pcount=0
@@ -3572,12 +3572,12 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_text_all (File%fh, varid, pstart, &
-               pcount, ival, len, MPI_CHARACTER)
+          ierr = nfmpi_put_vara_text_all (File%fh, varid, pstart(1:size(start)), &
+               pcount(1:size(count)), ival, len, MPI_CHARACTER)
 #endif
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p)
-          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart(1:size(start))), count=int(pcount(1:size(count))))
        case(iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
@@ -3614,9 +3614,9 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 #if (100 == TYPETEXT)
-    integer(kind=PIO_OFFSET) :: pstart(2+1), pcount(2+1)
+    integer(kind=PIO_OFFSET) :: pstart(2+2), pcount(2+2)
 #else
-    integer(kind=PIO_OFFSET) :: pstart(2), pcount(2)
+    integer(kind=PIO_OFFSET) :: pstart(2+1), pcount(2+1)
 #endif
     character(len=*), intent(in) :: ival(:,:)
     integer :: iotype, i
@@ -3628,8 +3628,8 @@ contains
     iotype = File%iotype 
     if(File%iosystem%IOProc) then
        if(File%iosystem%io_rank==0) then
-          pstart = start	
-          pcount = count
+          pstart(1:size(start)) = start	
+          pcount(1:size(count)) = count
        else
           pstart=1 ! avoids an unessasary pnetcdf error 
           pcount=0
@@ -3641,12 +3641,12 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_text_all (File%fh, varid, pstart, &
-               pcount, ival, len, MPI_CHARACTER)
+          ierr = nfmpi_put_vara_text_all (File%fh, varid, pstart(1:size(start)), &
+               pcount(1:size(count)), ival, len, MPI_CHARACTER)
 #endif
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p)
-          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart(1:size(start))), count=int(pcount(1:size(count))))
        case(iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
@@ -3683,9 +3683,9 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 #if (100 == TYPETEXT)
-    integer(kind=PIO_OFFSET) :: pstart(3+1), pcount(3+1)
+    integer(kind=PIO_OFFSET) :: pstart(3+2), pcount(3+2)
 #else
-    integer(kind=PIO_OFFSET) :: pstart(3), pcount(3)
+    integer(kind=PIO_OFFSET) :: pstart(3+1), pcount(3+1)
 #endif
     character(len=*), intent(in) :: ival(:,:,:)
     integer :: iotype, i
@@ -3697,8 +3697,8 @@ contains
     iotype = File%iotype 
     if(File%iosystem%IOProc) then
        if(File%iosystem%io_rank==0) then
-          pstart = start	
-          pcount = count
+          pstart(1:size(start)) = start	
+          pcount(1:size(count)) = count
        else
           pstart=1 ! avoids an unessasary pnetcdf error 
           pcount=0
@@ -3710,12 +3710,12 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_text_all (File%fh, varid, pstart, &
-               pcount, ival, len, MPI_CHARACTER)
+          ierr = nfmpi_put_vara_text_all (File%fh, varid, pstart(1:size(start)), &
+               pcount(1:size(count)), ival, len, MPI_CHARACTER)
 #endif
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p)
-          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart(1:size(start))), count=int(pcount(1:size(count))))
        case(iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
@@ -3752,9 +3752,9 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 #if (100 == TYPETEXT)
-    integer(kind=PIO_OFFSET) :: pstart(4+1), pcount(4+1)
+    integer(kind=PIO_OFFSET) :: pstart(4+2), pcount(4+2)
 #else
-    integer(kind=PIO_OFFSET) :: pstart(4), pcount(4)
+    integer(kind=PIO_OFFSET) :: pstart(4+1), pcount(4+1)
 #endif
     character(len=*), intent(in) :: ival(:,:,:,:)
     integer :: iotype, i
@@ -3766,8 +3766,8 @@ contains
     iotype = File%iotype 
     if(File%iosystem%IOProc) then
        if(File%iosystem%io_rank==0) then
-          pstart = start	
-          pcount = count
+          pstart(1:size(start)) = start	
+          pcount(1:size(count)) = count
        else
           pstart=1 ! avoids an unessasary pnetcdf error 
           pcount=0
@@ -3779,12 +3779,12 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_text_all (File%fh, varid, pstart, &
-               pcount, ival, len, MPI_CHARACTER)
+          ierr = nfmpi_put_vara_text_all (File%fh, varid, pstart(1:size(start)), &
+               pcount(1:size(count)), ival, len, MPI_CHARACTER)
 #endif
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p)
-          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart(1:size(start))), count=int(pcount(1:size(count))))
        case(iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
@@ -3821,9 +3821,9 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 #if (100 == TYPETEXT)
-    integer(kind=PIO_OFFSET) :: pstart(5+1), pcount(5+1)
+    integer(kind=PIO_OFFSET) :: pstart(5+2), pcount(5+2)
 #else
-    integer(kind=PIO_OFFSET) :: pstart(5), pcount(5)
+    integer(kind=PIO_OFFSET) :: pstart(5+1), pcount(5+1)
 #endif
     character(len=*), intent(in) :: ival(:,:,:,:,:)
     integer :: iotype, i
@@ -3835,8 +3835,8 @@ contains
     iotype = File%iotype 
     if(File%iosystem%IOProc) then
        if(File%iosystem%io_rank==0) then
-          pstart = start	
-          pcount = count
+          pstart(1:size(start)) = start	
+          pcount(1:size(count)) = count
        else
           pstart=1 ! avoids an unessasary pnetcdf error 
           pcount=0
@@ -3848,12 +3848,12 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_text_all (File%fh, varid, pstart, &
-               pcount, ival, len, MPI_CHARACTER)
+          ierr = nfmpi_put_vara_text_all (File%fh, varid, pstart(1:size(start)), &
+               pcount(1:size(count)), ival, len, MPI_CHARACTER)
 #endif
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p)
-          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart(1:size(start))), count=int(pcount(1:size(count))))
        case(iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
@@ -3890,9 +3890,9 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 #if (101 == TYPETEXT)
-    integer(kind=PIO_OFFSET) :: pstart(1+1), pcount(1+1)
+    integer(kind=PIO_OFFSET) :: pstart(1+2), pcount(1+2)
 #else
-    integer(kind=PIO_OFFSET) :: pstart(1), pcount(1)
+    integer(kind=PIO_OFFSET) :: pstart(1+1), pcount(1+1)
 #endif
     real(r4), intent(in) :: ival(:)
     integer :: iotype, i
@@ -3904,8 +3904,8 @@ contains
     iotype = File%iotype 
     if(File%iosystem%IOProc) then
        if(File%iosystem%io_rank==0) then
-          pstart = start	
-          pcount = count
+          pstart(1:size(start)) = start	
+          pcount(1:size(count)) = count
        else
           pstart=1 ! avoids an unessasary pnetcdf error 
           pcount=0
@@ -3917,12 +3917,12 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_real_all (File%fh, varid, pstart, &
-               pcount, ival, len, MPI_REAL4)
+          ierr = nfmpi_put_vara_real_all (File%fh, varid, pstart(1:size(start)), &
+               pcount(1:size(count)), ival, len, MPI_REAL4)
 #endif
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p)
-          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart(1:size(start))), count=int(pcount(1:size(count))))
        case(iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
@@ -3959,9 +3959,9 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 #if (101 == TYPETEXT)
-    integer(kind=PIO_OFFSET) :: pstart(2+1), pcount(2+1)
+    integer(kind=PIO_OFFSET) :: pstart(2+2), pcount(2+2)
 #else
-    integer(kind=PIO_OFFSET) :: pstart(2), pcount(2)
+    integer(kind=PIO_OFFSET) :: pstart(2+1), pcount(2+1)
 #endif
     real(r4), intent(in) :: ival(:,:)
     integer :: iotype, i
@@ -3973,8 +3973,8 @@ contains
     iotype = File%iotype 
     if(File%iosystem%IOProc) then
        if(File%iosystem%io_rank==0) then
-          pstart = start	
-          pcount = count
+          pstart(1:size(start)) = start	
+          pcount(1:size(count)) = count
        else
           pstart=1 ! avoids an unessasary pnetcdf error 
           pcount=0
@@ -3986,12 +3986,12 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_real_all (File%fh, varid, pstart, &
-               pcount, ival, len, MPI_REAL4)
+          ierr = nfmpi_put_vara_real_all (File%fh, varid, pstart(1:size(start)), &
+               pcount(1:size(count)), ival, len, MPI_REAL4)
 #endif
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p)
-          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart(1:size(start))), count=int(pcount(1:size(count))))
        case(iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
@@ -4028,9 +4028,9 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 #if (101 == TYPETEXT)
-    integer(kind=PIO_OFFSET) :: pstart(3+1), pcount(3+1)
+    integer(kind=PIO_OFFSET) :: pstart(3+2), pcount(3+2)
 #else
-    integer(kind=PIO_OFFSET) :: pstart(3), pcount(3)
+    integer(kind=PIO_OFFSET) :: pstart(3+1), pcount(3+1)
 #endif
     real(r4), intent(in) :: ival(:,:,:)
     integer :: iotype, i
@@ -4042,8 +4042,8 @@ contains
     iotype = File%iotype 
     if(File%iosystem%IOProc) then
        if(File%iosystem%io_rank==0) then
-          pstart = start	
-          pcount = count
+          pstart(1:size(start)) = start	
+          pcount(1:size(count)) = count
        else
           pstart=1 ! avoids an unessasary pnetcdf error 
           pcount=0
@@ -4055,12 +4055,12 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_real_all (File%fh, varid, pstart, &
-               pcount, ival, len, MPI_REAL4)
+          ierr = nfmpi_put_vara_real_all (File%fh, varid, pstart(1:size(start)), &
+               pcount(1:size(count)), ival, len, MPI_REAL4)
 #endif
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p)
-          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart(1:size(start))), count=int(pcount(1:size(count))))
        case(iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
@@ -4097,9 +4097,9 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 #if (101 == TYPETEXT)
-    integer(kind=PIO_OFFSET) :: pstart(4+1), pcount(4+1)
+    integer(kind=PIO_OFFSET) :: pstart(4+2), pcount(4+2)
 #else
-    integer(kind=PIO_OFFSET) :: pstart(4), pcount(4)
+    integer(kind=PIO_OFFSET) :: pstart(4+1), pcount(4+1)
 #endif
     real(r4), intent(in) :: ival(:,:,:,:)
     integer :: iotype, i
@@ -4111,8 +4111,8 @@ contains
     iotype = File%iotype 
     if(File%iosystem%IOProc) then
        if(File%iosystem%io_rank==0) then
-          pstart = start	
-          pcount = count
+          pstart(1:size(start)) = start	
+          pcount(1:size(count)) = count
        else
           pstart=1 ! avoids an unessasary pnetcdf error 
           pcount=0
@@ -4124,12 +4124,12 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_real_all (File%fh, varid, pstart, &
-               pcount, ival, len, MPI_REAL4)
+          ierr = nfmpi_put_vara_real_all (File%fh, varid, pstart(1:size(start)), &
+               pcount(1:size(count)), ival, len, MPI_REAL4)
 #endif
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p)
-          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart(1:size(start))), count=int(pcount(1:size(count))))
        case(iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
@@ -4166,9 +4166,9 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 #if (101 == TYPETEXT)
-    integer(kind=PIO_OFFSET) :: pstart(5+1), pcount(5+1)
+    integer(kind=PIO_OFFSET) :: pstart(5+2), pcount(5+2)
 #else
-    integer(kind=PIO_OFFSET) :: pstart(5), pcount(5)
+    integer(kind=PIO_OFFSET) :: pstart(5+1), pcount(5+1)
 #endif
     real(r4), intent(in) :: ival(:,:,:,:,:)
     integer :: iotype, i
@@ -4180,8 +4180,8 @@ contains
     iotype = File%iotype 
     if(File%iosystem%IOProc) then
        if(File%iosystem%io_rank==0) then
-          pstart = start	
-          pcount = count
+          pstart(1:size(start)) = start	
+          pcount(1:size(count)) = count
        else
           pstart=1 ! avoids an unessasary pnetcdf error 
           pcount=0
@@ -4193,12 +4193,12 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_real_all (File%fh, varid, pstart, &
-               pcount, ival, len, MPI_REAL4)
+          ierr = nfmpi_put_vara_real_all (File%fh, varid, pstart(1:size(start)), &
+               pcount(1:size(count)), ival, len, MPI_REAL4)
 #endif
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p)
-          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart(1:size(start))), count=int(pcount(1:size(count))))
        case(iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
@@ -4235,9 +4235,9 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 #if (102 == TYPETEXT)
-    integer(kind=PIO_OFFSET) :: pstart(1+1), pcount(1+1)
+    integer(kind=PIO_OFFSET) :: pstart(1+2), pcount(1+2)
 #else
-    integer(kind=PIO_OFFSET) :: pstart(1), pcount(1)
+    integer(kind=PIO_OFFSET) :: pstart(1+1), pcount(1+1)
 #endif
     real(r8), intent(in) :: ival(:)
     integer :: iotype, i
@@ -4249,8 +4249,8 @@ contains
     iotype = File%iotype 
     if(File%iosystem%IOProc) then
        if(File%iosystem%io_rank==0) then
-          pstart = start	
-          pcount = count
+          pstart(1:size(start)) = start	
+          pcount(1:size(count)) = count
        else
           pstart=1 ! avoids an unessasary pnetcdf error 
           pcount=0
@@ -4262,12 +4262,12 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_double_all (File%fh, varid, pstart, &
-               pcount, ival, len, MPI_REAL8)
+          ierr = nfmpi_put_vara_double_all (File%fh, varid, pstart(1:size(start)), &
+               pcount(1:size(count)), ival, len, MPI_REAL8)
 #endif
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p)
-          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart(1:size(start))), count=int(pcount(1:size(count))))
        case(iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
@@ -4304,9 +4304,9 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 #if (102 == TYPETEXT)
-    integer(kind=PIO_OFFSET) :: pstart(2+1), pcount(2+1)
+    integer(kind=PIO_OFFSET) :: pstart(2+2), pcount(2+2)
 #else
-    integer(kind=PIO_OFFSET) :: pstart(2), pcount(2)
+    integer(kind=PIO_OFFSET) :: pstart(2+1), pcount(2+1)
 #endif
     real(r8), intent(in) :: ival(:,:)
     integer :: iotype, i
@@ -4318,8 +4318,8 @@ contains
     iotype = File%iotype 
     if(File%iosystem%IOProc) then
        if(File%iosystem%io_rank==0) then
-          pstart = start	
-          pcount = count
+          pstart(1:size(start)) = start	
+          pcount(1:size(count)) = count
        else
           pstart=1 ! avoids an unessasary pnetcdf error 
           pcount=0
@@ -4331,12 +4331,12 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_double_all (File%fh, varid, pstart, &
-               pcount, ival, len, MPI_REAL8)
+          ierr = nfmpi_put_vara_double_all (File%fh, varid, pstart(1:size(start)), &
+               pcount(1:size(count)), ival, len, MPI_REAL8)
 #endif
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p)
-          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart(1:size(start))), count=int(pcount(1:size(count))))
        case(iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
@@ -4373,9 +4373,9 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 #if (102 == TYPETEXT)
-    integer(kind=PIO_OFFSET) :: pstart(3+1), pcount(3+1)
+    integer(kind=PIO_OFFSET) :: pstart(3+2), pcount(3+2)
 #else
-    integer(kind=PIO_OFFSET) :: pstart(3), pcount(3)
+    integer(kind=PIO_OFFSET) :: pstart(3+1), pcount(3+1)
 #endif
     real(r8), intent(in) :: ival(:,:,:)
     integer :: iotype, i
@@ -4387,8 +4387,8 @@ contains
     iotype = File%iotype 
     if(File%iosystem%IOProc) then
        if(File%iosystem%io_rank==0) then
-          pstart = start	
-          pcount = count
+          pstart(1:size(start)) = start	
+          pcount(1:size(count)) = count
        else
           pstart=1 ! avoids an unessasary pnetcdf error 
           pcount=0
@@ -4400,12 +4400,12 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_double_all (File%fh, varid, pstart, &
-               pcount, ival, len, MPI_REAL8)
+          ierr = nfmpi_put_vara_double_all (File%fh, varid, pstart(1:size(start)), &
+               pcount(1:size(count)), ival, len, MPI_REAL8)
 #endif
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p)
-          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart(1:size(start))), count=int(pcount(1:size(count))))
        case(iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
@@ -4442,9 +4442,9 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 #if (102 == TYPETEXT)
-    integer(kind=PIO_OFFSET) :: pstart(4+1), pcount(4+1)
+    integer(kind=PIO_OFFSET) :: pstart(4+2), pcount(4+2)
 #else
-    integer(kind=PIO_OFFSET) :: pstart(4), pcount(4)
+    integer(kind=PIO_OFFSET) :: pstart(4+1), pcount(4+1)
 #endif
     real(r8), intent(in) :: ival(:,:,:,:)
     integer :: iotype, i
@@ -4456,8 +4456,8 @@ contains
     iotype = File%iotype 
     if(File%iosystem%IOProc) then
        if(File%iosystem%io_rank==0) then
-          pstart = start	
-          pcount = count
+          pstart(1:size(start)) = start	
+          pcount(1:size(count)) = count
        else
           pstart=1 ! avoids an unessasary pnetcdf error 
           pcount=0
@@ -4469,12 +4469,12 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_double_all (File%fh, varid, pstart, &
-               pcount, ival, len, MPI_REAL8)
+          ierr = nfmpi_put_vara_double_all (File%fh, varid, pstart(1:size(start)), &
+               pcount(1:size(count)), ival, len, MPI_REAL8)
 #endif
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p)
-          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart(1:size(start))), count=int(pcount(1:size(count))))
        case(iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
@@ -4511,9 +4511,9 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 #if (102 == TYPETEXT)
-    integer(kind=PIO_OFFSET) :: pstart(5+1), pcount(5+1)
+    integer(kind=PIO_OFFSET) :: pstart(5+2), pcount(5+2)
 #else
-    integer(kind=PIO_OFFSET) :: pstart(5), pcount(5)
+    integer(kind=PIO_OFFSET) :: pstart(5+1), pcount(5+1)
 #endif
     real(r8), intent(in) :: ival(:,:,:,:,:)
     integer :: iotype, i
@@ -4525,8 +4525,8 @@ contains
     iotype = File%iotype 
     if(File%iosystem%IOProc) then
        if(File%iosystem%io_rank==0) then
-          pstart = start	
-          pcount = count
+          pstart(1:size(start)) = start	
+          pcount(1:size(count)) = count
        else
           pstart=1 ! avoids an unessasary pnetcdf error 
           pcount=0
@@ -4538,12 +4538,12 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_double_all (File%fh, varid, pstart, &
-               pcount, ival, len, MPI_REAL8)
+          ierr = nfmpi_put_vara_double_all (File%fh, varid, pstart(1:size(start)), &
+               pcount(1:size(count)), ival, len, MPI_REAL8)
 #endif
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p)
-          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart(1:size(start))), count=int(pcount(1:size(count))))
        case(iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
@@ -4580,9 +4580,9 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 #if (103 == TYPETEXT)
-    integer(kind=PIO_OFFSET) :: pstart(1+1), pcount(1+1)
+    integer(kind=PIO_OFFSET) :: pstart(1+2), pcount(1+2)
 #else
-    integer(kind=PIO_OFFSET) :: pstart(1), pcount(1)
+    integer(kind=PIO_OFFSET) :: pstart(1+1), pcount(1+1)
 #endif
     integer(i4), intent(in) :: ival(:)
     integer :: iotype, i
@@ -4594,8 +4594,8 @@ contains
     iotype = File%iotype 
     if(File%iosystem%IOProc) then
        if(File%iosystem%io_rank==0) then
-          pstart = start	
-          pcount = count
+          pstart(1:size(start)) = start	
+          pcount(1:size(count)) = count
        else
           pstart=1 ! avoids an unessasary pnetcdf error 
           pcount=0
@@ -4607,12 +4607,12 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_int_all (File%fh, varid, pstart, &
-               pcount, ival, len, MPI_INTEGER)
+          ierr = nfmpi_put_vara_int_all (File%fh, varid, pstart(1:size(start)), &
+               pcount(1:size(count)), ival, len, MPI_INTEGER)
 #endif
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p)
-          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart(1:size(start))), count=int(pcount(1:size(count))))
        case(iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
@@ -4649,9 +4649,9 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 #if (103 == TYPETEXT)
-    integer(kind=PIO_OFFSET) :: pstart(2+1), pcount(2+1)
+    integer(kind=PIO_OFFSET) :: pstart(2+2), pcount(2+2)
 #else
-    integer(kind=PIO_OFFSET) :: pstart(2), pcount(2)
+    integer(kind=PIO_OFFSET) :: pstart(2+1), pcount(2+1)
 #endif
     integer(i4), intent(in) :: ival(:,:)
     integer :: iotype, i
@@ -4663,8 +4663,8 @@ contains
     iotype = File%iotype 
     if(File%iosystem%IOProc) then
        if(File%iosystem%io_rank==0) then
-          pstart = start	
-          pcount = count
+          pstart(1:size(start)) = start	
+          pcount(1:size(count)) = count
        else
           pstart=1 ! avoids an unessasary pnetcdf error 
           pcount=0
@@ -4676,12 +4676,12 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_int_all (File%fh, varid, pstart, &
-               pcount, ival, len, MPI_INTEGER)
+          ierr = nfmpi_put_vara_int_all (File%fh, varid, pstart(1:size(start)), &
+               pcount(1:size(count)), ival, len, MPI_INTEGER)
 #endif
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p)
-          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart(1:size(start))), count=int(pcount(1:size(count))))
        case(iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
@@ -4718,9 +4718,9 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 #if (103 == TYPETEXT)
-    integer(kind=PIO_OFFSET) :: pstart(3+1), pcount(3+1)
+    integer(kind=PIO_OFFSET) :: pstart(3+2), pcount(3+2)
 #else
-    integer(kind=PIO_OFFSET) :: pstart(3), pcount(3)
+    integer(kind=PIO_OFFSET) :: pstart(3+1), pcount(3+1)
 #endif
     integer(i4), intent(in) :: ival(:,:,:)
     integer :: iotype, i
@@ -4732,8 +4732,8 @@ contains
     iotype = File%iotype 
     if(File%iosystem%IOProc) then
        if(File%iosystem%io_rank==0) then
-          pstart = start	
-          pcount = count
+          pstart(1:size(start)) = start	
+          pcount(1:size(count)) = count
        else
           pstart=1 ! avoids an unessasary pnetcdf error 
           pcount=0
@@ -4745,12 +4745,12 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_int_all (File%fh, varid, pstart, &
-               pcount, ival, len, MPI_INTEGER)
+          ierr = nfmpi_put_vara_int_all (File%fh, varid, pstart(1:size(start)), &
+               pcount(1:size(count)), ival, len, MPI_INTEGER)
 #endif
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p)
-          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart(1:size(start))), count=int(pcount(1:size(count))))
        case(iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
@@ -4787,9 +4787,9 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 #if (103 == TYPETEXT)
-    integer(kind=PIO_OFFSET) :: pstart(4+1), pcount(4+1)
+    integer(kind=PIO_OFFSET) :: pstart(4+2), pcount(4+2)
 #else
-    integer(kind=PIO_OFFSET) :: pstart(4), pcount(4)
+    integer(kind=PIO_OFFSET) :: pstart(4+1), pcount(4+1)
 #endif
     integer(i4), intent(in) :: ival(:,:,:,:)
     integer :: iotype, i
@@ -4801,8 +4801,8 @@ contains
     iotype = File%iotype 
     if(File%iosystem%IOProc) then
        if(File%iosystem%io_rank==0) then
-          pstart = start	
-          pcount = count
+          pstart(1:size(start)) = start	
+          pcount(1:size(count)) = count
        else
           pstart=1 ! avoids an unessasary pnetcdf error 
           pcount=0
@@ -4814,12 +4814,12 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_int_all (File%fh, varid, pstart, &
-               pcount, ival, len, MPI_INTEGER)
+          ierr = nfmpi_put_vara_int_all (File%fh, varid, pstart(1:size(start)), &
+               pcount(1:size(count)), ival, len, MPI_INTEGER)
 #endif
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p)
-          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart(1:size(start))), count=int(pcount(1:size(count))))
        case(iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
@@ -4856,9 +4856,9 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 #if (103 == TYPETEXT)
-    integer(kind=PIO_OFFSET) :: pstart(5+1), pcount(5+1)
+    integer(kind=PIO_OFFSET) :: pstart(5+2), pcount(5+2)
 #else
-    integer(kind=PIO_OFFSET) :: pstart(5), pcount(5)
+    integer(kind=PIO_OFFSET) :: pstart(5+1), pcount(5+1)
 #endif
     integer(i4), intent(in) :: ival(:,:,:,:,:)
     integer :: iotype, i
@@ -4870,8 +4870,8 @@ contains
     iotype = File%iotype 
     if(File%iosystem%IOProc) then
        if(File%iosystem%io_rank==0) then
-          pstart = start	
-          pcount = count
+          pstart(1:size(start)) = start	
+          pcount(1:size(count)) = count
        else
           pstart=1 ! avoids an unessasary pnetcdf error 
           pcount=0
@@ -4883,12 +4883,12 @@ contains
           do i=2,size(count)
              len=len*count(i)
           end do
-          ierr = nfmpi_put_vara_int_all (File%fh, varid, pstart, &
-               pcount, ival, len, MPI_INTEGER)
+          ierr = nfmpi_put_vara_int_all (File%fh, varid, pstart(1:size(start)), &
+               pcount(1:size(count)), ival, len, MPI_INTEGER)
 #endif
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p)
-          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart(1:size(start))), count=int(pcount(1:size(count))))
        case(iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then

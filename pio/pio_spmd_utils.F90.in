@@ -10,6 +10,7 @@
 !
 !  20090508  Initial version (based on spmd_utils in CAM) - P. Worley
 !
+
 module pio_spmd_utils
 
   use pio_kinds
@@ -20,9 +21,6 @@ module pio_spmd_utils
   private
   include 'mpif.h'  ! _EXTERNAL
 
-!>
-!! @private
-!<
   public :: pio_swapm
 
   interface pio_swapm
@@ -62,6 +60,10 @@ contains
      ceil2=p
      return
   end function ceil2
+
+!
+!========================================================================
+!
 
    subroutine pio_swapm_{TYPE} ( nprocs, mytask,   &
       sndbuf, sbuf_siz, sndlths, sdispls, stypes,  &
@@ -109,13 +111,16 @@ contains
                                                !  should be placed
    integer, intent(in)   :: rtypes(0:nprocs-1) ! MPI data types
    {VTYPE}, intent(in)   :: sndbuf(sbuf_siz)   ! outgoing message buffer
-   {VTYPE}, intent(out)  :: rcvbuf(rbuf_siz)   ! incoming message buffer
 
    integer, intent(in)   :: comm               ! MPI communicator
    logical, intent(in)   :: comm_hs            ! handshaking protocol?
    logical, intent(in)   :: comm_isend         ! nonblocking send protocol?
    integer, intent(in)   :: comm_maxreq        ! maximum number of outstanding 
                                                !  nonblocking requests
+
+!---------------------------Output arguments--------------------------
+!
+   {VTYPE}, intent(out)  :: rcvbuf(rbuf_siz)   ! incoming message buffer
 
 #ifndef _MPISERIAL
 !
@@ -224,6 +229,9 @@ contains
 !  (1) handshaking + blocking sends
    if ((handshake) .and. (sendd)) then
 
+      ! Initialize hs variable
+      hs = 1
+
       ! Post initial handshake receive requests
       do istep=1,maxreq
          p = swapids(istep)
@@ -319,6 +327,9 @@ contains
 
 !  (2) handshaking + nonblocking sends
    elseif ((handshake) .and. (.not. sendd)) then
+
+      ! Initialize hs variable
+      hs = 1
 
       ! Post initial handshake receive requests
       do istep=1,maxreq
@@ -576,5 +587,9 @@ contains
    return
 
    end subroutine pio_swapm_{TYPE}
+
+!
+!========================================================================
+!
 
 end module pio_spmd_utils

@@ -25,7 +25,7 @@ endif
 include Makefile.$(PIOARCH)
 export PIOARCH
 
-SRCS_C = 
+SRCS_C = pnetcdfversion.c
 
 SRCS_F90 =  pio.F90 \
             pio_kinds.F90  \

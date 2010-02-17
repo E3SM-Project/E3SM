@@ -7,11 +7,8 @@ module ionf_mod
 
   use pio_kinds, only: i4,r4,r8,pio_offset
   use pio_types
-#ifndef _PNETCDF
   use pio_utils, only: bad_iotype, check_netcdf
-#else
-  use pio_utils, only: bad_iotype, check_netcdf, pnetcdf_version_check
-#endif
+
   use pio_support, only : Debug, DebugIO, piodie   
 #ifdef _NETCDF
   use netcdf            ! _EXTERNAL
@@ -31,7 +28,7 @@ module ionf_mod
    public :: open_nf 
    public :: close_nf 
    public :: sync_nf 
-
+   integer, external :: pnetcdf_version_check
 contains 
 
 
@@ -58,7 +55,10 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(PIO_iotype_pnetcdf)
-          call pnetcdf_version_check()
+          if(pnetcdf_version_check()<=0) then
+             call piodie(__FILE__,__LINE__,'parallel netcdf version 1.1 or newer is required')
+          end if
+          
           ierr  = nfmpi_create(File%iosystem%IO_comm,fname,nmode ,File%iosystem%info,File%fh)
 ! Set default to NOFILL for performance.  
 !   pnetcdf is nofill by default and doesn't support a fill mode
@@ -149,7 +149,9 @@ contains
 #endif
 #ifdef _PNETCDF
        if(iotype==PIO_iotype_pnetcdf) then
-          call pnetcdf_version_check()
+          if(pnetcdf_version_check()<=0) then
+             call piodie(__FILE__,__LINE__,'parallel netcdf version 1.1 or newer is required')
+          end if
           if(present(mode)) then
              amode = mode
           else

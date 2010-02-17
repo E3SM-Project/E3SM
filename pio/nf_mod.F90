@@ -10,9 +10,7 @@ module nf_mod
 
   use pio_support, only : Debug, DebugIO, piodie   
   use pio_utils, only : bad_iotype, check_netcdf
-#ifdef _PNETCDF
-  use pio_utils, only : pnetcdf_version_check
-#endif
+
 #ifdef _NETCDF
   use netcdf            ! _EXTERNAL
 #endif
@@ -39,9 +37,6 @@ module nf_mod
        pio_inq_varndims,   &
        pio_inq_vardimid,   &
        pio_inq_varnatts,   &
-#ifdef _PNETCDF
-       pnetcdf_version_check, &
-#endif
        pio_inquire_variable
 !>
 !! \defgroup PIO_def_var

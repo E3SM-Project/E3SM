@@ -1,6 +1,86 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_0_9
+Originator(s): Jim, Pat Worley
+Date:
+One-line Summary: handshaking for cray
+
+List all subroutines eliminated: 
+
+List all subroutines added and what they do:  pnetcdf_version_check
+	 check that the pnetcdf version is new enough for pio
+
+List all existing files that have been modified, and describe the changes:
+
+  pio_spmd_utils.F90.in
+        - Minor clean-up.
+
+  pio_support.F90.in
+    - Introduced of a new routine PIO_FC_GATHER_INT
+    - Replaced call to MPI_GATHER in pio_writedof with a call to PIO_FC_GATHER_INT
+    - Added handshaking messages to point-to-point gather-like operation in pio_writedof, enabled by the CPP flag _USE_FLOW_CONTROL. Without this flag, the original logic is executed.
+
+	I do not know if the original MPI_GATHER call was causing
+	problems, but gathers have become a red flag to me. If the CPP
+	flag _USE_FLOW_CONTROL is not defined, then PIO_FC_GATHER_INT
+	defaults to a call to MPI_GATHER. Defining _USE_FLOW_CONTROL
+	enables the point-to-point implementation with flow control. I
+	originally put this new routine in pio_spmd_utils, but circular
+	module dependencies forced me to put it here.
+
+   box_rearrange.F90.in
+
+     - Added the following to the module preamble:
+
+#ifdef _USE_FLOW_CONTROL
+#define _USE_COMP2IO_FC 1
+#define _USE_IO2COMP_FC 1
+#define _USE_CREATE_FC 1
+#endif
+
+     - Minor clean-ups: renamed USESPACE to be _USE_SPACE, introduced more consistent spacing in subroutine calls, assignments, etc.
+
+     - Introduced replacement implementations of the routines BOX_REARRANGE_CREATE and COMPUTE_COUNTS when _USE_FLOW_CONTROL is defined.
+
+        The new BOX_REARRANGE_CREATE uses PIO_FC_GATHER_INT. The new
+	COMPUTE_COUNTS uses SWAPM. The memory requirements are similar to
+	the USESPACE branch in the original code, which is the default as
+	far as I can tell. (The comments are a little confusing.) The
+	performance of the MPI communication logic should be reasonable in
+	the new implementations. Any extra cost will come from the memory
+	requirements (allocate/assignment/deallocate). Since this is
+	similar to what is used in USESPACE, I doubt that we will notice
+	any difference.
+     
+	
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: Jim
+
+Summary of pre-tag testing:
+                          bluefire 107 tests PASS, 0 tests FAIL
+			  jaguarpf 74 tests PASS, 0 tests FAIL
+	                  edinburgh (intel compiler)  22 tests PASS, 0 tests FAIL
+	                  edinburgh (lahey compiler)  22 tests PASS, 0 tests FAIL
+	                  frost 74 tests PASS, 0 tests FAIL
+	Regression tests:
+
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_0_8
 Originator(s): Jim
 Date: 02-02-10

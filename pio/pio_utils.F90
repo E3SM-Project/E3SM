@@ -21,7 +21,7 @@ module pio_utils
 
   public :: check_netcdf 
   public :: bad_iotype 
-#ifdef _PNETCDF
+#ifdef _PNETCDF_OLD
   public :: pnetcdf_version_check
 #endif
   
@@ -100,7 +100,7 @@ contains
 
   end subroutine bad_iotype
 
-#ifdef _PNETCDF
+#ifdef _PNETCDF_OLD
   subroutine pnetcdf_version_check()
     character(len=80) :: version
     integer :: dot1, dot2, s
