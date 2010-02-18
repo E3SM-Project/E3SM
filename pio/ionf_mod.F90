@@ -21,6 +21,7 @@ module ionf_mod
   include 'mpif.h'      ! _EXTERNAL
 #ifdef _PNETCDF
 #include <pnetcdf.inc>   /* _EXTERNAL */
+   integer, external :: pnetcdf_version_check
 #endif
  
 
@@ -28,7 +29,7 @@ module ionf_mod
    public :: open_nf 
    public :: close_nf 
    public :: sync_nf 
-   integer, external :: pnetcdf_version_check
+
 contains 
 
 
