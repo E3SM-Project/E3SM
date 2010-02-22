@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 
 <testpioconfig>
+
 <frost
   NETCDF_PATH="/contrib/bgl/netcdf" 
   PNETCDF_PATH="/contrib/bgl/parallel-netcdf-1.1.0" 
@@ -9,12 +10,14 @@
   F90 = "blrts_xlf90"
   FC = "blrts_xlf90"
   CC = "blrts_xlc"
-  FFLAGS = "-qextname=flush -g -qfullpath"
-  conopts = "--disable-mct  --enable-mpiio --build=powerpc-bgp-linux --host=powerpc64-suse-linux"
+  FFLAGS = "-qextname=flush -g -qfullpath -WF,-DBGL"
+  ALLCFLAGS = "-DBGL"
+  conopts = "--disable-mct  --enable-mpiio --enable-timing --build=powerpc-bgp-linux --host=powerpc64-suse-linux"
   workdir = "/ptmp/${USER}/testpio"
-  run = "cqsub -n32 -t 00:50:00 -q debug "
+  run = "cqsub -n32 -m vn -t 00:50:00 -q default "
   submit ="perl "
  />
+
 <bluefire
   NETCDF_PATH="/usr/local/" 
   PNETCDF_PATH="/contrib/parallel-netcdf-1.1.0" 

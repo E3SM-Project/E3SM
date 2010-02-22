@@ -20,13 +20,14 @@
    test = .true.
 
    my_task = 0
-   num_tasks = 25
-   gdims(1) = 500
-   gdims(2) = 200
-   gdims(3) = 1
+   num_tasks = 192
+   gdims(1) = 3600
+   gdims(2) = 2400
+   gdims(3) = 40 
 
-   call gdecomp_read_nml(gdecomp,fin,'comp',my_task)
-   call gdecomp_DOF(gdecomp,my_task,compDOF,startcomp,cntcomp,test=test,write_decomp=.true.)
+!   call gdecomp_read_nml(gdecomp,fin,'comp',my_task)
+!   print  *,'after gdecomp_read_nml'
+!   call gdecomp_DOF(gdecomp,my_task,compDOF,startcomp,cntcomp,test=test,write_decomp=.false.)
 
    call gdecomp_read_nml(gdecomp,fin,'io',my_task)
    call gdecomp_DOF(gdecomp,my_task,ioDOF,startio,cntio,test=test,write_decomp=.true.)

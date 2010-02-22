@@ -1,6 +1,5 @@
 #define _file_ "piolib_mod.f90"
 #define debug_rearr 0
-
 module piolib_mod
   !--------------
   use pio_kinds
@@ -48,6 +47,7 @@ module piolib_mod
        PIO_freedecomp,     &
        PIO_setnumagg,     &
        PIO_dupiodesc,     &
+       PIO_getnumiotasks, &
        PIO_set_hint
 
 
@@ -191,6 +191,16 @@ module piolib_mod
   end interface
 
 !> 
+!! @defgroup PIO_getnumiotasks PIO_getnumiotasks
+!!  returns the actual number of IO-tasks used.  PIO 
+!!  will reset the total number of IO-tasks if certain 
+!!  conditions are meet
+!<
+  interface PIO_getnumiotasks
+     module procedure getnumiotasks
+  end interface
+
+!> 
 !!  @defgroup PIO_setdebuglevel PIO_setdebuglevel
 !!  sets the level of debug information that pio will generate.
 !<
@@ -222,6 +232,7 @@ module piolib_mod
   !eoc
   !***********************************************************************
 
+  private :: nextlarger
 
 contains
 
@@ -862,7 +873,7 @@ contains
           call piodie( _file_,__LINE__, &
                'both optional parameters start and count must be provided')
        else
-          call getiostartandcount(ndims, dims, iosystem%num_iotasks, iosystem%io_rank, iodesc%start, iodesc%count)
+          call getiostartandcount(iosystem%num_tasks, ndims, dims, iosystem%num_iotasks, iosystem%io_rank, iosystem%io_comm, iodesc%start, iodesc%count)
 
        end if
        iosize=1
@@ -871,6 +882,10 @@ contains
        end do
        call mpi_allreduce(iosize, iodesc%maxiobuflen, 1, mpi_integer, mpi_max, iosystem%io_comm, ierr)
        call checkmpireturn('mpi_allreduce in initdecomp',ierr)
+
+       if (Iosystem%comp_rank == Iosystem%iomaster) then
+         print *,'after getiostartandcount: count is: ',iodesc%count
+       endif
 
 
        lenblocks=iodesc%count(1)
@@ -981,31 +996,49 @@ contains
 
   end subroutine PIO_initdecomp_dof
 
-  subroutine getiostartandcount(ndims, gdims, num_io_procs, iorank, start, count)
+  subroutine getiostartandcount(ntasks, ndims, gdims, num_io_procs, iorank, iocomm, start, count)
 
     implicit none
 
+    integer, intent(in) :: ntasks
     integer, intent(in) :: ndims, gdims(ndims), num_io_procs
 
+    integer, intent(in) :: iocomm
     integer(kind=PIO_offset), intent(out) :: start(ndims), count(ndims)   ! start and count arrays 
 
-
+    integer :: ierr
     integer :: n,m
     integer :: use_io_procs,iorank, sdims, cnt
     logical :: done
     integer :: xiam, xpes, ps, pe, ds, de, ns, pe1, ps1
     integer :: size,tsize
+    integer :: it
+    real(r8) :: fanfactor, fanlimit
+    real(r8) :: rtmp
+    integer :: testvalue
+    integer :: ierr
     integer, parameter :: minblocksize=16        ! minimum block size on a task
+    integer, parameter :: maxit=10               ! maximum number of times to iterate on the fanin/out limiter  (Probably want a better solution)
+    logical, parameter :: verbose = .true.
+    integer,allocatable :: pes_per_dim(:), step(:)
+    integer,allocatable :: bsize(:),nblocks(:),fblocks(:)
+   
 
     tsize=1
     do n=1,ndims
        tsize=tsize*gdims(n)
     end do
+    allocate(pes_per_dim(ndims))
+    allocate(step(ndims))
+    allocate(bsize(ndims))
+    allocate(nblocks(ndims))
+    allocate(fblocks(ndims))
 
     use_io_procs=num_io_procs
     do while(tsize/minblocksize < use_io_procs .and. use_io_procs>1)
        use_io_procs=use_io_procs-1
     end do
+    if((iorank == 0) .and. (verbose)) print *,'getiostartandcount: use_io_procs: ',use_io_procs
 
     start = 1
     count = 0
@@ -1018,6 +1051,7 @@ contains
     cnt = 1
     sdims = ndims
     do while (cnt < use_io_procs .and. sdims > 0)
+!       cnt = cnt * ceiling(dble(gdims(sdims))/dble(minblocksize))
        cnt = cnt * gdims(sdims)
        sdims = sdims - 1
     enddo
@@ -1029,29 +1063,41 @@ contains
     do m = 1,sdims
        start(m) = 1
        count(m) = gdims(m)
+       bsize(m) = gdims(m)
+       nblocks(m) = 1
+       fblocks(m) = 1
     enddo
+    if((iorank == 0) .and. (verbose)) print *,'getiostartandcount: sdims: ',sdims
+    if((iorank == 0) .and. (verbose)) print *,'getiostartandcount: count: ',count
+    fanfactor=dble(ntasks)
 
+
+    it = 1
+    step(:) = 1
+    fanlimit = 50.00
+do while (fanfactor > fanlimit .and. it < maxit ) 
     xpes = use_io_procs
     xiam = iorank   ! goes from 0 to xpes-1
     do m = ndims, sdims+1, -1
        if(xpes >= gdims(m)) then
-
           ps = -1
           ns = 1
-          do while (ps < 0 .and. ns <= gdims(m))
-             ps1 = int((dble(xpes)*dble(ns-1))/dble(gdims(m)))
-             pe1 = int((dble(xpes)*dble(ns  ))/dble(gdims(m))) - 1
+          do while (ps < 0 .and. ns <= gdims(m) )
+             ps1 = int((dble(xpes)*dble((ns-1)*step(m)))/dble(gdims(m)))
+             pe1 = int((dble(xpes)*dble(ns*step(m)  ))/dble(gdims(m))) - 1
              if (xiam >= ps1 .and. xiam <= pe1) then
                 ps = ps1
                 pe = pe1
-                start(m) = ns
-                count(m) = 1
+                start(m) = (ns-1)*step(m) + 1
+                count(m) = step(m)
              end if
              ns = ns+1
           end do
           xpes = pe - ps + 1
           xiam = xiam - ps
-       !     write(6,*) 'tcx1 ',n,m,start(n,m),count(n,m),iorank
+!          write(6,*) 'tcx1 ',iorank,m,start(m),count(m)
+          step(m)=nextlarger(step(m),gdims(m))
+	  if(step(m) == gdims(m)) fanlimit = fanlimit + 10.0
        else
           if (m /= sdims+1) then
              call piodie( _file_,__LINE__, &
@@ -1070,13 +1116,43 @@ contains
        endif
 
     enddo
+    do m=1,ndims
+       pes_per_dim(m) = gdims(m)/count(m)
+    enddo
+    ! -----------------------------------------------
+    ! note this caculation assumes that the the first 
+    ! two horizontal dimensions are decomposed,
+    ! -----------------------------------------------
+    fanfactor = ntasks/(pes_per_dim(1)*pes_per_dim(2))
+    call mpi_allreduce(fanfactor,rtmp,1,MPI_REAL8,MPI_MAX,iocomm,ierr)
+    fanfactor=rtmp
+    if((iorank == 0) .and. verbose) print *,'getiostartandcount: pes_per_dim is: ',pes_per_dim
+    if((iorank == 0) .and. verbose) print *,'getiostartandcount: fan factor is: ',fanfactor
+    it=it+1
+enddo
+   deallocate(step)
+   deallocate(pes_per_dim)
+   deallocate(bsize,nblocks,fblocks)
+!   stop 'end of getiostartandcount'
 
   end subroutine getiostartandcount
 
+  integer function nextlarger(current,value) result(res)
 
+  integer :: current,value,rem
+  !-----------------------------------------
+  ! This function finds a value res that is
+  !  larger than current that divides value evenly
+  !-----------------------------------------
+  res=current
+  rem = 1
+  do while ((rem .ne. 0) .and. (res .lt. value))
+     res = res + 1
+     rem = MOD(value,res)
+!     print *,'res,rem: ',res,rem
+  enddo
 
-
-
+  end function nextlarger
 
   !************************************
   ! dupiodesc2
@@ -1203,13 +1279,18 @@ contains
     integer(i4) :: length
     integer(i4) :: ngseg,io_rank,i,lbase, io_comm,ierr 
     integer(i4) :: lstride
-    integer(i4), pointer :: ioranks(:)
+    integer(i4), pointer :: iotmp(:),iotmp2(:)
 
     character(len=5) :: cb_nodes
     logical(log_kind), parameter :: check = .true.
     logical(log_kind) :: usehints
 
+     integer(i4) :: j
+
     integer(i4) :: mpi_group_world, mpi_group_io
+ 
+    integer(i4) :: iotask
+    integer(i4) :: rearrFlag
 
 #ifdef timing
     call t_startf("PIO_init")
@@ -1250,7 +1331,6 @@ contains
     endif
     iosystem%iomaster=lbase
 
-    iosystem%num_iotasks = n_iotasks
     if(debug) print *,'init: iosystem%num_tasks,n_iotasks,num_aggregator: ',iosystem%num_tasks,n_iotasks,num_aggregator
 
     ! --------------------------
@@ -1264,23 +1344,75 @@ contains
        call piodie(_file_,__LINE__,'not enough procs for the stride')
     endif
 
-    call alloc_check(ioranks,n_iotasks,'init:n_ioranks')
+
+
     iosystem%ioproc = .false.
-    do i=1,n_iotasks
-       ioranks(i)=(lbase + (i-1)*lstride)
 
-       if (ioranks(i)>=iosystem%num_tasks) then
-          call piodie( _file_,__LINE__, &
-               'tried to assign io processor beyond max rank ',&
-               ioranks(i), &
-               ' num_tasks=',iosystem%num_tasks )
+#if defined(BGL) || defined(BGP)
+
+    call alloc_check(iotmp,iosystem%num_tasks,'init:num_tasks')
+    call alloc_check(iotmp2,iosystem%num_tasks,'init:num_tasks')
+    !---------------------------------------------------
+    ! Note for Blue Gene n_iotasks get overwritten in 
+    ! determineiotasks   
+    !
+    ! Entry: it is the number of IO-clients per IO-node
+    ! Exit:  is is the total number of IO-tasks
+    !---------------------------------------------------
+    if (rearr == PIO_rearr_none) then
+      rearrFlag = 0
+    else
+      rearrFlag = 1
+    endif
+    call determineiotasks(comp_comm,n_iotasks,lbase,lstride,rearrFlag,iotask)
+
+
+    iotmp(:)=0
+    if(iotask==1) then 
+	iosystem%ioproc = .true.
+        iotmp(comp_rank+1) = 1
+    endif
+    iotmp2(:)=0 
+    call MPI_allreduce(iotmp,iotmp2,iosystem%num_tasks,MPI_INTEGER,MPI_SUM,comp_comm,ierr)
+   
+    n_iotasks=SUM(iotmp2)
+    iosystem%num_iotasks =n_iotasks
+    call alloc_check(iosystem%ioranks,n_iotasks,'init:n_ioranks')
+    j=1
+    do i=1,iosystem%num_tasks
+       if(iotmp2(i) == 1) then 
+          iosystem%ioranks(j) = i-1
+	  j=j+1
        endif
-
-       if(comp_rank == ioranks(i))  iosystem%ioproc = .true.
     enddo
+    call dealloc_check(iotmp)
+    call dealloc_check(iotmp2)
+    iosystem%io_stride=4  !JMD hardcode this for now.
+    iotask = 0
+    if(iosystem%ioproc) then 
+	iotask = 1
+    endif
+    call identity(comp_comm,iotask)
 
-    ! rml stride looks like it was never set before
-    iosystem%io_stride=lstride       ! rml fix
+#else
+
+    iosystem%num_iotasks = n_iotasks
+    call alloc_check(iosystem%ioranks,n_iotasks,'init:n_ioranks')
+
+     do i=1,n_iotasks
+       iosystem%ioranks(i)=(lbase + (i-1)*lstride)
+ 
+       if (iosystem%ioranks(i)>=iosystem%num_tasks) then
+           call piodie( _file_,__LINE__, &
+                'tried to assign io processor beyond max rank ',&
+               iosystem%ioranks(i), &
+                ' num_tasks=',iosystem%num_tasks )
+        endif
+ 
+       if(comp_rank == iosystem%ioranks(i))  iosystem%ioproc = .true.
+     enddo
+#endif
+
 
     iosystem%io_rank=0
 
@@ -1291,10 +1423,10 @@ contains
     call mpi_comm_group(comp_comm,mpi_group_world,ierr)
     if(check) call checkmpireturn('init: after call to comm_group: ',ierr)
 
-    call mpi_group_incl(mpi_group_world,n_iotasks,ioranks,mpi_group_io,ierr)
+    call mpi_group_incl(mpi_group_world,n_iotasks,iosystem%ioranks,mpi_group_io,ierr)
     if(check) call checkmpireturn('init: after call to group_range_incl: ',ierr)
 
-    call dealloc_check(ioranks)
+!    call dealloc_check(ioranks)
 
 
     call mpi_comm_create(comp_comm,mpi_group_io,iosystem%io_comm,ierr)
@@ -1318,11 +1450,12 @@ contains
        iosystem%userearranger= .true.
     endif
 
-
-#if defined(usempiio) || defined(_pnetcdf)
+    
+#if defined(USEMPIIO) || defined(_PNETCDF)
 
     call mpi_info_create(iosystem%info,ierr)
     ! turn on mpi-io aggregation 
+    print *,'PIO_init: before call to setnumagg'
     if(num_aggregator .gt. 0) then 
        call setnumagg(iosystem,num_aggregator)  ! let mpi-io do aggregation
        usehints = .true.
@@ -1368,7 +1501,7 @@ contains
     character(len=*), intent(in) :: hint, hintval
     
     integer :: ierr
-#if defined(usempiio) || defined(_pnetcdf)    
+#if defined(USEMPIIO) || defined(_PNETCDF)    
     call mpi_info_set(iosystem%info,hint,hintval,ierr)
     call checkmpireturn('PIO_set_hint',ierr)
     usehints = .true.
@@ -1416,12 +1549,13 @@ contains
     character(len=5) :: cb_nodes
     integer(i4) :: ierr
     logical(log_kind), parameter ::  check = .true.
-#if defined(usempiio) || defined(_pnetcdf)
+#if defined(USEMPIIO) || defined(_PNETCDF)
     write(cb_nodes,('(i5)')) numagg
     call mpi_info_create(iosystem%info,ierr)    
     if(check) call checkmpireturn('setnumagg: after call to mpi_info_create: ',ierr)
 
-#ifdef _bgl
+#if defined(BGL) || defined(BGP)
+    print *,'setnumagg: before hint call for bgl_cb_nodes'
     call mpi_info_set(iosystem%info,'bgl_cb_nodes',trim(adjustl(cb_nodes)),ierr)
 #else
     call mpi_info_set(iosystem%info,'cb_nodes',trim(adjustl(cb_nodes)),ierr)
@@ -1429,6 +1563,19 @@ contains
 #endif
   end subroutine setnumagg
 
+
+!>
+!! @public
+!! @ingroup PIO_getnumiotasks
+!! @brief This returns the number of IO-tasks that PIO is using 
+!! @param iosystem : a defined pio system descriptor, see PIO_types
+!! @param numiotasks : the number of IO-tasks
+!<
+   subroutine getnumiotasks(iosystem,numiotasks)
+       type (iosystem_desc_t), intent(in) :: iosystem
+       integer(i4), intent(out) :: numiotasks
+       numiotasks = iosystem%num_iotasks
+   end subroutine getnumiotasks
 
 
 
@@ -1656,7 +1803,7 @@ contains
     else
        file%iotype = iotype 
     end if
-#if defined(usempiio) || defined(_pnetcdf)
+#if defined(USEMPIIO) || defined(_PNETCDF)
     if ( (file%iotype==iotype_pbinary .or. file%iotype==iotype_direct_pbinary) &
          .and. (.not. iosystem%userearranger) ) then
        write(rd_buffer,('(i9)')) 16*1024*1024
@@ -1739,7 +1886,7 @@ contains
     else
        file%iotype = iotype 
     end if
-#if defined(usempiio) || defined(_pnetcdf)
+#if defined(USEMPIIO) || defined(_PNETCDF)
     if ( (file%iotype==iotype_pbinary .or. file%iotype==iotype_direct_pbinary) &
          .and. (.not. iosystem%userearranger) ) then
        write(rd_buffer,('(i9)')) 16*1024*1024

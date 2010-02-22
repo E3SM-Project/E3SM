@@ -3,6 +3,7 @@ module namelist_mod
     use kinds_mod
 
 ! Modules from PIO package that are used by this application
+
     use pio_support, only : piodie, CheckMPIReturn ! _EXTERNAL
 
     implicit none

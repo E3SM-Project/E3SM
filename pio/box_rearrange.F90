@@ -1968,7 +1968,9 @@ end subroutine box_rearrange_io2comp_int
     integer ioprocindex
 
 
-    find_io_comprank=Iosystem%iomaster+(ioprocindex-1)*Iosystem%io_stride
+
+!    find_io_comprank=Iosystem%iomaster+(ioprocindex-1)*Iosystem%io_stride
+   find_io_comprank=iosystem%ioranks(ioprocindex)
 
   end function find_io_comprank
 
@@ -2354,11 +2356,11 @@ end subroutine box_rearrange_io2comp_int
 #if 0
        print *,Iosystem%comp_rank,': ',nsends(i),' sends to ',i
 #endif
+       root=find_io_comprank(Iosystem,i)
        call MPI_REDUCE( nsends(i),ioDesc%nrecvs,1,MPI_INTEGER, &
             MPI_SUM,root,Iosystem%comp_comm,ierror )
        call CheckMPIReturn(subName,ierror)
 
-       root=root+Iosystem%io_stride
     end do
 
 #if DEBUG

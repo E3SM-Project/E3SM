@@ -398,10 +398,11 @@ contains
 
    selectcase (trim(gdecomp%grddecomp))
       case default
-	 print *,'gdecomp_DOF: grdecomp is:',gdecomp%grddecomp
          call calcdecomp(gdecomp%grddecomp,npesx,gsiz,bsiz,ierr)
+!DBG	 print *,'gdecomp_DOF: grdecomp is:',gdecomp%grddecomp
    end select
 !DBG   print *,'IAM: ',my_task,'gdecomp_DOF: point #5 bsiz:',bsiz
+!DBG   stop "after call to gdecomp_print"
 
    ! --- sort and arrange blocks ---
 
@@ -794,6 +795,7 @@ contains
 
    option = ''
 
+!DBG   print *,'calcdecomp: type: ',trim(type),' npes: ',npes
    selectcase (trim(type))
 
       case ('x')
