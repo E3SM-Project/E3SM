@@ -532,7 +532,9 @@ if(writePhase) then
      ! Code specifically for netCDF files 
      !---------------------------
      if(iotype == iotype_pnetcdf .or. & 
-          iotype == iotype_netcdf ) then
+          iotype == iotype_netcdf .or. &
+          iotype == PIO_iotype_netcdf4p .or. &
+          iotype == PIO_iotype_netcdf4c) then
 
         if(TestR8) then 
            !-----------------------------------

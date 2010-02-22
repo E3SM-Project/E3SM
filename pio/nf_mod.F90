@@ -10,9 +10,7 @@ module nf_mod
 
   use pio_support, only : Debug, DebugIO, piodie   
   use pio_utils, only : bad_iotype, check_netcdf
-#ifdef _PNETCDF
-  use pio_utils, only : pnetcdf_version_check
-#endif
+
 #ifdef _NETCDF
   use netcdf            ! _EXTERNAL
 #endif
@@ -39,9 +37,6 @@ module nf_mod
        pio_inq_varndims,   &
        pio_inq_vardimid,   &
        pio_inq_varnatts,   &
-#ifdef _PNETCDF
-       pnetcdf_version_check, &
-#endif
        pio_inquire_variable
 !>
 !! \defgroup PIO_def_var
@@ -214,8 +209,10 @@ contains
 #endif
 
 #ifdef _NETCDF
+       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+          ierr=nf90_inquire( File%fh,vals(1),vals(2), &
+               vals(3),vals(4))
        case(iotype_netcdf)
-
           if (File%iosystem%io_rank==0) then
              ierr=nf90_inquire( File%fh,vals(1),vals(2), &
                   vals(3),vals(4))
@@ -299,6 +296,9 @@ contains
 #endif
 
 #ifdef _NETCDF
+       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+          ierr=nf90_inquire_attribute( File%fh,varid,name, &
+               xtype=xtype,len=len)          
        case(iotype_netcdf)
 
           if (File%iosystem%io_rank==0) then
@@ -394,6 +394,9 @@ contains
 #endif
 
 #ifdef _NETCDF
+       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+             ierr=nf90_inquire_attribute( File%fh,varid,name, &
+                  len=len)
        case(iotype_netcdf)
           if (File%iosystem%io_rank==0) then
              ierr=nf90_inquire_attribute( File%fh,varid,name, &
@@ -478,7 +481,9 @@ contains
 
 #endif
 
-#ifdef _NETCDF
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+          ierr=nf90_inq_attname(File%fh,varid,attnum,name)
        case(iotype_netcdf)
           if (File%iosystem%io_rank==0) then
              ierr=nf90_inq_attname(File%fh,varid,attnum,name)
@@ -557,7 +562,9 @@ contains
           ierr=nfmpi_inq_varid(File%fh,name,varid)
 #endif
 
-#ifdef _NETCDF
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+             ierr=nf90_inq_varid(File%fh,name,varid)
        case(iotype_netcdf)
           if (File%iosystem%io_rank==0) then
              ierr=nf90_inq_varid(File%fh,name,varid)
@@ -652,7 +659,9 @@ contains
 
 #endif
 
-#ifdef _NETCDF
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+          ierr=nf90_inquire_variable(File%fh,varid,name=name)
        case(iotype_netcdf)
           if (File%iosystem%io_rank==0) then
              ierr=nf90_inquire_variable(File%fh,varid,name=name)
@@ -710,9 +719,10 @@ contains
           ierr=nfmpi_inq_varndims(File%fh,varid,ndims)
 #endif
 
-#ifdef _NETCDF
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+          ierr=nf90_inquire_variable(File%fh,varid,ndims=ndims)
        case(iotype_netcdf)
-
           if (File%iosystem%io_rank==0) then
              ierr=nf90_inquire_variable(File%fh,varid,ndims=ndims)
           endif
@@ -787,9 +797,10 @@ contains
           ierr=nfmpi_inq_vartype(File%fh,varid,type)
 #endif
 
-#ifdef _NETCDF
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+          ierr=nf90_inquire_variable(File%fh,varid,xtype=type)
        case(iotype_netcdf)
-
           if (File%iosystem%io_rank==0) then
              ierr=nf90_inquire_variable(File%fh,varid,xtype=type)
           endif
@@ -864,7 +875,9 @@ contains
           ierr=nfmpi_inq_vardimid(File%fh,varid,dimids)
 #endif
 
-#ifdef _NETCDF
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+          ierr=nf90_inquire_variable(File%fh,varid,dimids=dimids)
        case(iotype_netcdf)
           if (File%iosystem%io_rank==0) then
              ierr=nf90_inquire_variable(File%fh,varid,dimids=dimids)
@@ -941,7 +954,9 @@ contains
           ierr=nfmpi_inq_varnatts(File%fh,varid,natts)
 #endif
 
-#ifdef _NETCDF
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+          ierr=nf90_inquire_variable(File%fh,varid,nAtts=natts)
        case(iotype_netcdf)
           if (File%iosystem%io_rank==0) then
              ierr=nf90_inquire_variable(File%fh,varid,nAtts=natts)
@@ -1019,6 +1034,8 @@ contains
 #endif
 
 #ifdef _NETCDF
+       case (pio_iotype_netcdf4c, pio_iotype_netcdf4p)
+             ierr=nf90_inq_dimid(File%fh,name,dimid)
        case(iotype_netcdf)
           if (File%iosystem%io_rank==0) then
              ierr=nf90_inq_dimid(File%fh,name,dimid)
@@ -1077,7 +1094,9 @@ contains
           ierr=nfmpi_inq_dimname(File%fh,dimid,dimname)
 #endif
 
-#ifdef _NETCDF
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+          ierr=nf90_inquire_dimension(File%fh,dimid,name=dimname)
        case(iotype_netcdf)
 
           if (File%iosystem%io_rank==0) then
@@ -1133,15 +1152,14 @@ contains
 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
-
           ierr=nfmpi_inq_dimlen(File%fh,dimid,clen)
           dimlen = INT(clen,kind=i4)
 #endif
 
-#ifdef _NETCDF
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+          ierr=nf90_inquire_dimension(File%fh,dimid,len=dimlen)
        case(iotype_netcdf)
-
-
           if (File%iosystem%io_rank==0) then
              ierr=nf90_inquire_dimension(File%fh,dimid,len=dimlen)
           endif
@@ -1161,6 +1179,7 @@ contains
        call MPI_BCAST(dimlen,1,MPI_INTEGER,File%iosystem%IOMaster,File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn('nf_mod',mpierr)
     end if
+
 
   end function pio_inq_dimlen
 
@@ -1187,22 +1206,18 @@ contains
 
     if(File%iosystem%IOproc) then
        select case(iotype)
-
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
-
           ierr=nfmpi_enddef(File%fh)
 #endif
 
 #ifdef _NETCDF
-       case(iotype_netcdf)
-
-
-
+       case(iotype_netcdf, pio_iotype_netcdf4c)
           if (File%iosystem%io_rank==0) then
              ierr=nf90_enddef(File%fh)
           endif
-
+       case(PIO_iotype_netcdf4p)
+          ierr=nf90_enddef(File%fh)
 #endif
 
        case default
@@ -1246,11 +1261,10 @@ contains
           ierr=nfmpi_redef(File%fh)
 #endif
 
-#ifdef _NETCDF
-       case(iotype_netcdf)
-
-
-
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p)
+             ierr=nf90_redef(File%fh)
+       case(iotype_netcdf, pio_iotype_netcdf4c)
           if (File%iosystem%io_rank==0) then
              ierr=nf90_redef(File%fh)
           endif
@@ -1302,18 +1316,16 @@ contains
           ierr=nfmpi_def_dim(File%fh,name,clen,dimid)
 #endif
 
-#ifdef _NETCDF
-       case(iotype_netcdf)
-
-
-
+#ifdef  _NETCDF
+       case(PIO_iotype_netcdf4p)
+          ierr=nf90_def_dim(ncid=File%fh,name=name,len=len,dimid=dimid)
+       case(iotype_netcdf,PIO_iotype_netcdf4c)
           if (File%iosystem%io_rank==0) then
              ierr=nf90_def_dim(ncid=File%fh,name=name,len=len,dimid=dimid)
           endif
           if(File%iosystem%num_tasks==File%iosystem%num_iotasks) then
              call MPI_BCAST(dimid, 1, MPI_INTEGER, 0, File%iosystem%IO_Comm, ierr)
           end if
-
 #endif
        case default
           call bad_iotype(iotype,_FILE_,__LINE__)
@@ -1382,32 +1394,36 @@ contains
     vardesc%type = type
 
     if(File%iosystem%IOproc) then
+       len = SIZE(dimids)
        select case(iotype)
-
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
-
-          len = SIZE(dimids)
           ierr=nfmpi_def_var(File%fh,name,type,len,dimids,vardesc%varid)
 #endif
 
 #ifdef _NETCDF
-       case(iotype_netcdf)
-
-
-
+       case(pio_iotype_netcdf4p)
+          ierr=nf90_def_var( ncid=File%fh,name=name,xtype=type, &
+               dimids=dimids,varid=vardesc%varid)
+       case(iotype_netcdf,pio_iotype_netcdf4c)
           ! assuming type valid for both pnetcdf and netcdf
-
           if (File%iosystem%io_rank==0) then
              ierr=nf90_def_var( ncid=File%fh,name=name,xtype=type, &
                   dimids=dimids,varid=vardesc%varid)
              if (Debug) print *, '0: def_var fh=',File%fh, &
                   'name=',name,' id=',vardesc%varid
+#ifdef _NETCDF4
+             if(iotype==pio_iotype_netcdf4c) then
+                if(len>0 .and. ierr==PIO_NOERR) then
+                   ierr = nf90_def_var_deflate(File%fh,vardesc%varid,0,1,1)
+                end if
+             endif
+#endif
+
           endif
           if(File%iosystem%num_tasks==File%iosystem%num_iotasks) then
              call MPI_BCAST(vardesc%varid, 1, MPI_INTEGER, 0, File%iosystem%IO_Comm, ierr)
           end if
-
 #endif
 
        case default
@@ -1452,13 +1468,14 @@ contains
                outfile%fh, outvarid)
 #endif
 #ifdef _NETCDF
-       case(iotype_netcdf)
-
-
+       case(iotype_netcdf,PIO_iotype_netcdf4c)
           if (inFile%iosystem%io_rank==0) then
              ierr = nf90_copy_att(infile%fh,invarid,name,&
                   outfile%fh,outvarid)     
           end if
+       case(PIO_iotype_netcdf4p)
+          ierr = nf90_copy_att(infile%fh,invarid,name,&
+               outfile%fh,outvarid)     
 #endif    
        end select
     end if

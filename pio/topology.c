@@ -7,7 +7,6 @@
 #include "mpi.h"
 #include <bglpersonality.h>
 #include "rts.h"
-#include "bginfo.h"
 
 int rank;
 int np;

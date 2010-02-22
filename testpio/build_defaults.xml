@@ -4,7 +4,7 @@
 
 <frost
   NETCDF_PATH="/contrib/bgl/netcdf" 
-  PNETCDF_PATH="/contrib/bgl/parallel-netcdf-1.1.0" 
+  PNETCDF_PATH="/contrib/bgl/parallel-netcdf-1.1.1" 
   MPI_INC="-I/bgl/BlueLight/ppcfloor/bglsys/include" 
   MPI_LIB="-L/bgl/BlueLight/ppcfloor/bglsys/lib -lmpich.rts -lmsglayer.rts -lrts.rts -ldevices.rts"
   F90 = "blrts_xlf90"
@@ -19,13 +19,13 @@
  />
 
 <bluefire
-  NETCDF_PATH="/usr/local/" 
-  PNETCDF_PATH="/contrib/parallel-netcdf-1.1.0" 
-  FFLAGS = "-g -qfullpath -WF,-D_USE_COMP2IO_FC,-D_USE_IO2COMP_FC"
+  NETCDF_PATH="/contrib/netcdf-4.1-snapshot2010012908/" 
+  PNETCDF_PATH="/contrib/parallel-netcdf-1.1.1svn" 
+  FFLAGS = "-g -qfullpath "
   ENV_PREATTACH_PROCESSOR_LIST="AUTO_SELECT"
   ENV_MP_EAGER_LIMIT="0"
   MPIF90 = "mpxlf2003_r"
-  conopts = "--disable-mct --enable-filesystem-hints=gpfs  "
+  conopts = "--disable-mct --enable-filesystem-hints=gpfs "
   workdir = "/ptmp/${USER}/testpio"
   submit = "bsub < "
   run = "mpirun.lsf"
@@ -40,7 +40,7 @@
 #BSUB -W 1:50"
 
 />
-<dublin
+<edinburgh
   ADDENV_PATH = "/usr/local/mpich-lf95/bin"
   ADDENV_LD_LIBRARY_PATH = "/usr/local/lf95/lib64"
   ENV_P4_GLOBMEMSIZE="518400000"
@@ -62,7 +62,7 @@
 "
   testsuites = "snet mpiio"
 />  
-<dublin_intel
+<edinburgh_intel
   ADDENV_PATH = "/usr/local/mpich-1.2.7p1-intel-3.2.02/bin:/usr/local/intel-cluster-3.2.02/fc/11.0.074/bin/intel64/:/usr/local/intel-cluster-3.2.02/cc/11.0.074/bin/intel64"
   ENV_P4_GLOBMEMSIZE="518400000"
   MPIF90 = "mpif90"
@@ -89,17 +89,17 @@
   MPICC = "cc -L$LIBSCI_BASE_DIR/pgi/lib"
   F90 = "pgf90"
   CC = "pgcc"
-
+  FFLAGS = "-D_USE_FLOW_CONTROL"
   ENV_NETCDF_PATH="$NETCDF_DIR"
   ENV_PNETCDF_PATH="$PNETCDF_DIR"
 
   workdir = "/tmp/work/${USER}/testpio"
-  run = "aprun -n 16 "
+  run = "aprun -n 12 "
   submit = "qsub "
   conopts = " --disable-mct --enable-filesystem-hints=lustre"
   preamble="#PBS -N testpio_suite
 #PBS -q batch
-#PBS -l size=16
+#PBS -l size=12
 #PBS -l walltime=00:50:00
 #PBS -j oe
 #PBS -V"

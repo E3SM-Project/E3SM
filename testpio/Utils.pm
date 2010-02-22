@@ -21,6 +21,8 @@ sub host{
 	$host = "jaguar";
     }elsif($host =~ /^ath/ or $host =~ /^log/){
 	$host = "athena";
+    }elsif($host =~ /^kra/){
+	$host = "kraken";
     }elsif($host =~ /(\w+)\./){
 	$host = $1;
     }
@@ -32,7 +34,8 @@ sub loadmodules{
 
     my $modpath = {bluefire => "/contrib/Modules/3.2.6/",
 		   jaguar  => "/opt/modules/default/",
-		   athena => "/opt/modules/default/"};
+		   athena => "/opt/modules/default/",
+		   kraken => "/opt/modules/default/"};
 
     return unless(defined $modpath->{$host});
 
@@ -73,9 +76,9 @@ sub loadmodules{
 	module(" load PrgEnv-pgi Base-opts");
 	module(" load xtpe-barcelona");
 	module(" load torque moab");
-	module(" switch pgi pgi/7.1.6");
+#	module(" switch pgi pgi/7.1.6");
 	module(" load netcdf/3.6.2");      
-	module(" load p-netcdf/1.0.3");
+	module(" load p-netcdf/1.1.1");
 	module(" swap xt-asyncpe xt-asyncpe/1.0c");
 	module(" load xt-binutils-quadcore/2.0.1");
         module("list");
@@ -91,6 +94,17 @@ sub loadmodules{
 	module(" load p-netcdf/1.0.3");
 	module(" swap xt-asyncpe xt-asyncpe/1.0c");
 	module(" swap xt-binutils-quadcore xt-binutils-quadcore/2.0.1");
+    }elsif($host eq "kraken"){
+#	require "/opt/modules/default/init/perl";
+	module(" purge");
+	module(" load PrgEnv-pgi Base-opts");
+	module(" load xtpe-quadcore");
+	module(" load torque moab");
+        module(" load xt-mpt");
+	module(" switch pgi pgi/9.0.3");
+	module(" load netcdf/3.6.2");      
+	module(" load p-netcdf/1.1.1");
+	module(" swap xt-asyncpe xt-asyncpe/1.0c");
     }
 }
 

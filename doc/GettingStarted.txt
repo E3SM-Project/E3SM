@@ -37,10 +37,12 @@ used for output of any non-decomposed data.  This call initializes an
 IO system type structure that will be used in subsequent file and
 decomposition functions.
 
-You can then open a file for reading or writing with a call to
-\ref PIO_createfile or \ref PIO_openfile. In this call you will
-specify the file type (netcdf, pnetcdf, or binary) along with the file
-name and optionally the netcdf mode.  
+You can then open a file for reading or writing with a call to \ref
+PIO_createfile or \ref PIO_openfile. In this call you will specify the
+file type: pio_iotype_netcdf, pio_iotype_pnetcdf, or
+pio_iotype_binary, or the new \ref netcdf4 types pio_iotype_netcdf4c,
+pio_iotype_netcdf4p; along with the file name and optionally the
+netcdf mode.
 
 To read or write decomposed data you must first describe the mapping
 between the organization of data in the file and that in the

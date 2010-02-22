@@ -172,13 +172,17 @@ module pio_types
 !!   - PIO_iotype_binary : serial read/write of binary files using 'base_node'
 !!   - PIO_iotype_pnetcdf : parallel read/write of pNetCDF files (netcdf3)
 !!   - PIO_iotype_netcdf : serial read/write of NetCDF files using 'base_node' (netcdf3)
+!!   - PIO_iotype_netcdf4c : parallel read/serial write of NetCDF4 (HDF5) files with data compression
+!!   - PIO_iotype_netcdf4p : parallel read/write of NETCDF4 (HDF5) files 
 !>
     integer(i4), public, parameter ::  &
         PIO_iotype_pbinary = 1, &! use MPI-IO with data types to read/write C like binary files
         PIO_iotype_direct_pbinary = 2,  & !use MPI-IO with data types to read/write direct access binary files
         PIO_iotype_binary  = 4, &   ! serial read/write of binary files using 'base_node'
         PIO_iotype_pnetcdf = 5, &   ! parallel read/write of pNetCDF files
-        PIO_iotype_netcdf  = 6      ! serial read/write of NetCDF file using 'base_node'
+        PIO_iotype_netcdf  = 6, &   ! serial read/write of NetCDF file using 'base_node'
+        PIO_iotype_netcdf4c = 7, &  ! netcdf4 (hdf5 format) file opened for compression (serial write access only)   
+        PIO_iotype_netcdf4p = 8     ! netcdf4 (hdf5 format) file opened in parallel (all netcdf4 files for read will be opened this way)
 
     integer(i4), public, parameter ::                       &
         iotype_pbinary = PIO_iotype_pbinary,                &

@@ -1,4 +1,4 @@
-#define _file_ "piolib_mod.f90"
+#define _FILE_ "piolib_mod.f90"
 #define debug_rearr 0
 module piolib_mod
   !--------------
@@ -17,7 +17,7 @@ module piolib_mod
   use pio_mpi_utils, only : PIO_type_to_mpi_type 
   use iompi_mod
   use rearrange
-#ifdef timing
+#ifdef TIMING
   use perf_mod, only : t_startf, t_stopf     ! _EXTERNAL
 #endif
 
@@ -51,7 +51,7 @@ module piolib_mod
        PIO_set_hint
 
 
-#ifdef memchk
+#ifdef MEMCHK
 !> this is an internal variable for memory leak debugging 
 !! it is used when macro memchk is defined and it causes each task to print the 
 !! memory resident set size anytime it changes within pio.
@@ -331,7 +331,7 @@ contains
     iosystem%error_handling=method
 
     if(method > PIO_internal_error .or. method < PIO_return_error) then
-       call piodie(_file_,__LINE__,'invalid error handling method requested')
+       call piodie(_FILE_,__LINE__,'invalid error handling method requested')
     end if
   end subroutine seterrorhandlingi
 
@@ -586,9 +586,9 @@ contains
     call dupiodesc2(iodesc%write,tmp%write)
 
     if(debug) then
-       print *, _file_,__LINE__,iodesc%read%filetype,iodesc%read%elemtype,&
+       print *, _FILE_,__LINE__,iodesc%read%filetype,iodesc%read%elemtype,&
             iodesc%read%n_elemtype,iodesc%read%n_words   
-       print *, _file_,__LINE__,iodesc%write%filetype,iodesc%write%elemtype,&
+       print *, _FILE_,__LINE__,iodesc%write%filetype,iodesc%write%elemtype,&
             iodesc%write%n_elemtype,iodesc%write%n_words
     end if
 
@@ -634,7 +634,7 @@ contains
     logical(log_kind) ::  userearranger
     logical, parameter :: check = .true.
     integer(i4) :: ndisp
-#ifdef memchk
+#ifdef MEMCHK
     integer :: msize, rss, mshare, mtext, mstack
 #endif
 
@@ -645,14 +645,14 @@ contains
     ! (decompmap_t) to something basic for
     ! testing.
     !-------------------------------------------
-#ifdef timing
+#ifdef TIMING
     call t_startf("PIO_initdecomp")
 #endif
-#ifdef memchk	
+#ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
-       print *,_file_,__LINE__,'mem=',rss
+       print *,_FILE_,__LINE__,'mem=',rss
     end if
 #endif
     userearranger = iosystem%userearranger
@@ -674,11 +674,11 @@ contains
     end if
     call alloc_check(displace,ndisp)
 
-#ifdef memchk	
+#ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
-       print *,_file_,__LINE__,'mem=',rss
+       print *,_FILE_,__LINE__,'mem=',rss
     end if
 #endif
 
@@ -693,11 +693,11 @@ contains
        if(debug) print *,'PIO_initdecomp: calcdisplace',ndisp,size(iodof),lenblocks
        call calcdisplace(lenblocks,iodof,displace)
     end if
-#ifdef memchk	
+#ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
-       print *,_file_,__LINE__,'mem=',rss
+       print *,_FILE_,__LINE__,'mem=',rss
     end if
 #endif
 
@@ -714,11 +714,11 @@ contains
     if(userearranger) then 
        call rearrange_create(iosystem,compdof,iodof,iodesc)
     endif
-#ifdef memchk	
+#ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
-       print *,_file_,__LINE__,'mem=',rss
+       print *,_FILE_,__LINE__,'mem=',rss
     end if
 #endif
 
@@ -737,30 +737,30 @@ contains
 
        if(debug) print *,'initdecomp: at the end of subroutine',iodesc%write%n_elemtype,iodesc%write%n_words
     endif
-#ifdef memchk	
+#ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
-       print *,_file_,__LINE__,'mem=',rss
+       print *,_FILE_,__LINE__,'mem=',rss
     end if
 #endif
     call dupiodesc2(iodesc%write,iodesc%read)
     if(debug) then
-       print *, _file_,__LINE__,iodesc%read%filetype,iodesc%read%elemtype,&
+       print *, _FILE_,__LINE__,iodesc%read%filetype,iodesc%read%elemtype,&
             iodesc%read%n_elemtype,iodesc%read%n_words   
-       print *, _file_,__LINE__,iodesc%write%filetype,iodesc%write%elemtype,&
+       print *, _FILE_,__LINE__,iodesc%write%filetype,iodesc%write%elemtype,&
             iodesc%write%n_elemtype,iodesc%write%n_words
     end if
     call dealloc_check(displace)
 
-#ifdef memchk	
+#ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
-       print *,_file_,__LINE__,'mem=',rss
+       print *,_FILE_,__LINE__,'mem=',rss
     end if
 #endif
-#ifdef timing
+#ifdef TIMING
     call t_stopf("PIO_initdecomp")
 #endif
   end subroutine initdecomp_1dof_nf
@@ -810,18 +810,18 @@ contains
     integer(i4) :: ndisp
     integer(i4) :: iosize               ! rml
 
-#ifdef memchk
+#ifdef MEMCHK
     integer :: msize, rss, mshare, mtext, mstack
 #endif
 
     integer ierror
 
     if(minval(dims)<=0) then
-       print *,_file_,__LINE__,dims
-       call piodie(_file_,__LINE__,'bad value in dims argument')
+       print *,_FILE_,__LINE__,dims
+       call piodie(_FILE_,__LINE__,'bad value in dims argument')
     end if
 
-#ifdef timing
+#ifdef TIMING
     call t_startf("PIO_initdecomp_dof")
 #endif
     if (iosystem%comp_rank == 0 .and. debug) &
@@ -834,11 +834,11 @@ contains
     ! (decompmap_t) to something basic for
     ! testing.
     !-------------------------------------------
-#ifdef memchk	
+#ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
-       print *,_file_,__LINE__,'mem=',rss
+       print *,_FILE_,__LINE__,'mem=',rss
     end if
 #endif
     userearranger = iosystem%userearranger
@@ -870,7 +870,7 @@ contains
           iodesc%start = iostart
           iodesc%count = iocount
        else if(present(iostart) .or. present(iocount)) then
-          call piodie( _file_,__LINE__, &
+          call piodie( _FILE_,__LINE__, &
                'both optional parameters start and count must be provided')
        else
           call getiostartandcount(iosystem%num_tasks, ndims, dims, iosystem%num_iotasks, iosystem%io_rank, iosystem%io_comm, iodesc%start, iodesc%count)
@@ -919,11 +919,11 @@ contains
     endif
 
 
-#ifdef memchk	
+#ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
-       print *,_file_,__LINE__,'mem=',rss
+       print *,_FILE_,__LINE__,'mem=',rss
     end if
 #endif
     if(debug) print *,'iam: ',iosystem%io_rank, &
@@ -933,11 +933,11 @@ contains
        call rearrange_create( iosystem,compdof,dims,ndims,iodesc)
     endif
 
-#ifdef memchk	
+#ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
-       print *,_file_,__LINE__,'mem=',rss
+       print *,_FILE_,__LINE__,'mem=',rss
     end if
 #endif
 
@@ -962,20 +962,20 @@ contains
        iodesc%write%filetype = mpi_datatype_null
     endif
 
-#ifdef memchk	
+#ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
-       print *,_file_,__LINE__,'mem=',rss
+       print *,_FILE_,__LINE__,'mem=',rss
     end if
 #endif
 
     call dupiodesc2(iodesc%write,iodesc%read)
 
     if(debug) then
-       print *, _file_,__LINE__,iodesc%read%filetype,iodesc%read%elemtype,&
+       print *, _FILE_,__LINE__,iodesc%read%filetype,iodesc%read%elemtype,&
             iodesc%read%n_elemtype,iodesc%read%n_words   
-       print *, _file_,__LINE__,iodesc%write%filetype,iodesc%write%elemtype,&
+       print *, _FILE_,__LINE__,iodesc%write%filetype,iodesc%write%elemtype,&
             iodesc%write%n_elemtype,iodesc%write%n_words
     end if
 
@@ -983,14 +983,14 @@ contains
        call dealloc_check(displace)
     endif
 
-#ifdef memchk	
+#ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
-       print *,_file_,__LINE__,'mem=',rss
+       print *,_FILE_,__LINE__,'mem=',rss
     end if
 #endif
-#ifdef timing
+#ifdef TIMING
     call t_stopf("PIO_initdecomp_dof")
 #endif
 
@@ -1056,7 +1056,7 @@ contains
        sdims = sdims - 1
     enddo
     if (sdims < 0) then
-       call piodie( _file_,__LINE__, &
+       call piodie( _FILE_,__LINE__, &
             'error in sdims',sdims)
     endif
 
@@ -1100,7 +1100,7 @@ do while (fanfactor > fanlimit .and. it < maxit )
 	  if(step(m) == gdims(m)) fanlimit = fanlimit + 10.0
        else
           if (m /= sdims+1) then
-             call piodie( _file_,__LINE__, &
+             call piodie( _FILE_,__LINE__, &
                   'm /= sdims+1',ival1=m,ival2=sdims)
           endif
           ds = int((dble(gdims(m))*dble(xiam  ))/dble(xpes)) + 1
@@ -1111,7 +1111,7 @@ do while (fanfactor > fanlimit .and. it < maxit )
 
        if (start(m) < 1 .or. count(m) < 1) then
           print *, 'start =',start, ' count=',count
-          call piodie( _file_,__LINE__, &
+          call piodie( _FILE_,__LINE__, &
                'start or count failed to converge')
        endif
 
@@ -1182,7 +1182,7 @@ enddo
 
 
   subroutine genindexedblock(lenblocks,basetype,elemtype,filetype,displace)
-#ifdef no_mpi2
+#ifdef NO_MPI2
     use pio_support, only : mpi_type_create_indexed_block
 #endif
     integer(i4), intent(in) :: lenblocks     ! length of blocks
@@ -1223,17 +1223,16 @@ enddo
     end select
 
 
-#ifdef _mpiserial
+#ifdef _MPISERIAL
     ! when compiling w/mpiserial for snetcdf output, these fields are not used
     elemtype=0
     filetype=0
-    ! _mpiserial
+    ! _MPISERIAL
 #else
     if(lenblocks<1) then
        elemtype = lbasetype
        filetype = lbasetype
     else
-
        call mpi_type_contiguous(lenblocks,lbasetype,elemtype,ierr)
        if(check) call checkmpireturn('genindexedblock: after call to type_contiguous: ',ierr)
        call mpi_type_commit(elemtype,ierr)
@@ -1244,7 +1243,7 @@ enddo
        if(check) call checkmpireturn('genindexedblock: after call to type_commit: ',ierr)
        call mpi_type_get_envelope(elemtype, nints, nadds, ndtypes, comb, ierr)
     end if
-    ! _mpiserial
+    ! _MPISERIAL
 #endif
 
   end subroutine genindexedblock
@@ -1263,9 +1262,6 @@ enddo
 !! @param base @em optional argument can be used to offset the first io task - default base is task 1.
 !<
   subroutine init(comp_rank, comp_comm, num_iotasks, num_aggregator, stride,  rearr, iosystem,base)
-#ifdef _PNETCDF
-    use nf_mod, only : pnetcdf_version_check
-#endif
     integer(i4), intent(in) :: comp_rank
     integer(i4), intent(in) :: comp_comm
     integer(i4), intent(in) :: num_iotasks 
@@ -1283,7 +1279,6 @@ enddo
 
     character(len=5) :: cb_nodes
     logical(log_kind), parameter :: check = .true.
-    logical(log_kind) :: usehints
 
      integer(i4) :: j
 
@@ -1292,7 +1287,7 @@ enddo
     integer(i4) :: iotask
     integer(i4) :: rearrFlag
 
-#ifdef timing
+#ifdef TIMING
     call t_startf("PIO_init")
 #endif
     iosystem%error_handling = PIO_internal_error
@@ -1300,10 +1295,6 @@ enddo
     iosystem%comp_rank = comp_rank
     iosystem%rearr = rearr
 
-#ifdef _PNETCDF
-    call pnetcdf_version_check()
-#endif
-    
     call mpi_comm_size(comp_comm,iosystem%num_tasks,ierr)
     if(check) call checkmpireturn('init: after call to comm_size: ',ierr)
     ! ---------------------------------------
@@ -1340,11 +1331,9 @@ enddo
     lstride = stride
 
     if (lbase+(n_iotasks-1)*lstride >= iosystem%num_tasks) then
-       print *,_file_,__LINE__,lbase,n_iotasks,lstride,iosystem%num_tasks
-       call piodie(_file_,__LINE__,'not enough procs for the stride')
+       print *,_FILE_,__LINE__,lbase,n_iotasks,lstride,iosystem%num_tasks
+       call piodie(_FILE_,__LINE__,'not enough procs for the stride')
     endif
-
-
 
     iosystem%ioproc = .false.
 
@@ -1442,8 +1431,6 @@ enddo
 
     if(debug) print *,'init: iam: ',comp_rank,' before allocate(status): n_iotasks: ',n_iotasks
 
-    usehints = .false.
-
     if (rearr == PIO_rearr_none) then
        iosystem%userearranger= .false.
     else
@@ -1451,26 +1438,25 @@ enddo
     endif
 
     
-#if defined(USEMPIIO) || defined(_PNETCDF)
-
+#if defined(USEMPIIO) || defined(_PNETCDF) || defined(_NETCDF4)
     call mpi_info_create(iosystem%info,ierr)
     ! turn on mpi-io aggregation 
     print *,'PIO_init: before call to setnumagg'
     if(num_aggregator .gt. 0) then 
        call setnumagg(iosystem,num_aggregator)  ! let mpi-io do aggregation
-       usehints = .true.
+    else
+       iosystem%info = mpi_info_null
     endif
 
-#ifdef PIO_gpfs_hints
+#ifdef PIO_GPFS_HINTS
     call PIO_set_hint(iosystem,"ibm_largeblock_io","true")
 #endif
-#ifdef PIO_lustre_hints
+#ifdef PIO_LUSTRE_HINTS
     call PIO_set_hint(iosystem, 'romio_ds_read','disable')
     call PIO_set_hint(iosystem,'romio_ds_write','disable')
 #endif
 
 #endif
-    if(.not. usehints) iosystem%info = mpi_info_null
 
     if(debug) print *,'iam: ',iosystem%io_rank,__LINE__,'init: userearranger: ',iosystem%userearranger
 
@@ -1481,7 +1467,7 @@ enddo
     if (iosystem%userearranger) then
        call rearrange_init(iosystem)
     endif
-#ifdef timing
+#ifdef TIMING
     call t_stopf("PIO_init")
 #endif
   end subroutine init
@@ -1501,10 +1487,11 @@ enddo
     character(len=*), intent(in) :: hint, hintval
     
     integer :: ierr
-#if defined(USEMPIIO) || defined(_PNETCDF)    
-    call mpi_info_set(iosystem%info,hint,hintval,ierr)
-    call checkmpireturn('PIO_set_hint',ierr)
-    usehints = .true.
+#if defined(USEMPIIO) || defined(_PNETCDF) || defined(_NETCDF4)
+    if(iosystem%info /= mpi_info_null) then
+       call mpi_info_set(iosystem%info,hint,hintval,ierr)
+       call checkmpireturn('PIO_set_hint',ierr)
+    end if
 #endif
   end subroutine PIO_set_hint
 
@@ -1520,7 +1507,7 @@ enddo
   subroutine finalize(iosystem,ierr)
      type (iosystem_desc_t), intent(inout) :: iosystem 
      integer(i4), intent(out) :: ierr
-#ifndef _mpiserial
+#ifndef _MPISERIAL
      if(iosystem%info .ne. mpi_info_null) then 
         call mpi_info_free(iosystem%info,ierr) 
      endif
@@ -1554,8 +1541,7 @@ enddo
     call mpi_info_create(iosystem%info,ierr)    
     if(check) call checkmpireturn('setnumagg: after call to mpi_info_create: ',ierr)
 
-#if defined(BGL) || defined(BGP)
-    print *,'setnumagg: before hint call for bgl_cb_nodes'
+#if defined (BGL) || defined (BGP)
     call mpi_info_set(iosystem%info,'bgl_cb_nodes',trim(adjustl(cb_nodes)),ierr)
 #else
     call mpi_info_set(iosystem%info,'cb_nodes',trim(adjustl(cb_nodes)),ierr)
@@ -1623,18 +1609,7 @@ enddo
     call dupiodesc2(src%read, dest%read)
     call dupiodesc2(src%write, dest%write)
     !dbg    print *,'after dupiodesc2'
-#ifdef _usemct
-    !dbg    print *, _file_,__LINE__, 'this function is broken'
-    dest%lsize_comp = src%lsize_comp
-    dest%lsize_io = src%lsize_io
 
-    if(associated(src%compdof_index)) then
-       n = size(src%compdof_index)
-       allocate(dest%compdof_index(n))
-       dest%compdof_index(:) = src%compdof_index(:)
-    endif
-
-#endif
     dest%basetype = src%basetype
 
     if(associated(src%dest_ioproc)) then 
@@ -1775,7 +1750,7 @@ enddo
     logical, parameter :: check = .true.
     character(len=9) :: rd_buffer
 
-#ifdef timing
+#ifdef TIMING
     call t_startf("PIO_createfile")
 #endif
 
@@ -1794,16 +1769,8 @@ enddo
     ! set some iotype specific stuff
     !--------------------------------
 
-    if(iosystem%num_iotasks.eq.1.and.iotype.eq.iotype_pnetcdf) then	
-#if defined(_netcdf)
-       file%iotype=iotype_netcdf
-#else
-       file%iotype = iotype 
-#endif
-    else
-       file%iotype = iotype 
-    end if
-#if defined(USEMPIIO) || defined(_PNETCDF)
+    file%iotype = iotype 
+#if defined(USEMPIIO) 
     if ( (file%iotype==iotype_pbinary .or. file%iotype==iotype_direct_pbinary) &
          .and. (.not. iosystem%userearranger) ) then
        write(rd_buffer,('(i9)')) 16*1024*1024
@@ -1818,16 +1785,17 @@ enddo
           print *, 'warning, the mode argument is currently ignored for binary file operations'
        end if
        ierr = create_mpiio(file,fname)
-    case( iotype_pnetcdf, iotype_netcdf)
+    case( iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c)
        ierr = create_nf(file,fname, amode)	
-       if(debug .and. iosystem%io_rank==0)print *,_file_,__LINE__,' open: ', fname, file%fh
+       if(debug .and. iosystem%io_rank==0)print *,_FILE_,__LINE__,' open: ', fname, file%fh
     case(iotype_binary)
        print *,'createfile: io type not supported'
     end select
 
+    if(debug .and. file%iosystem%io_rank==0) print *,_FILE_,__LINE__,'open: ',file%fh, fname
 
-    if(debug) print *, _file_,__LINE__,'createfile complete', amode
-#ifdef timing
+
+#ifdef TIMING
     call t_stopf("PIO_createfile")
 #endif
   end function createfile
@@ -1863,7 +1831,7 @@ enddo
     logical, parameter :: check = .true.
     character(len=9) :: rd_buffer
 
-#ifdef timing
+#ifdef TIMING
     call t_startf("PIO_openfile")
 #endif
 
@@ -1878,7 +1846,7 @@ enddo
     !--------------------------------
 
     if(iosystem%num_iotasks.eq.1.and.iotype.eq.iotype_pnetcdf) then	
-#if defined(_netcdf)
+#if defined(_NETCDF)
        file%iotype=iotype_netcdf
 #else
        file%iotype = iotype 
@@ -1886,7 +1854,7 @@ enddo
     else
        file%iotype = iotype 
     end if
-#if defined(USEMPIIO) || defined(_PNETCDF)
+#if defined(USEMPIIO)
     if ( (file%iotype==iotype_pbinary .or. file%iotype==iotype_direct_pbinary) &
          .and. (.not. iosystem%userearranger) ) then
        write(rd_buffer,('(i9)')) 16*1024*1024
@@ -1899,18 +1867,19 @@ enddo
           print *, 'warning, the mode argument is currently ignored for binary file operations'
        end if
        ierr = open_mpiio(file,fname)
-    case( iotype_pnetcdf, iotype_netcdf)
+    case( iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
        if(present(mode)) then
           ierr = open_nf(file,fname,mode)
        else
           ierr = open_nf(file,fname)
        end if
-       if(debug .and. iosystem%io_rank==0)print *,_file_,__LINE__,' open: ', fname, file%fh
+       if(debug .and. iosystem%io_rank==0)print *,_FILE_,__LINE__,' open: ', fname, file%fh
     case(iotype_binary)   ! appears to be a no-op
 
     end select
+    if(Debug .and. file%iosystem%io_rank==0) print *,_FILE_,__LINE__,'open: ',file%fh, fname
 
-#ifdef timing
+#ifdef TIMING
     call t_stopf("PIO_openfile")
 #endif
 
@@ -1952,7 +1921,7 @@ enddo
 
     call rearrange_free(ios,iodesc)
 
-#ifndef _mpiserial
+#ifndef _MPISERIAL
     if(ios%ioproc) then
 !       if(debug) print *,__FILE__,__LINE__,iodesc%write%n_elemtype,iodesc%write%n_words,iodesc%write%elemtype,iodesc%write%filetype
 
@@ -2020,20 +1989,20 @@ enddo
     integer :: iotype 
     logical, parameter :: check = .true.
 
-#ifdef timing
+#ifdef TIMING
     call t_startf("PIO_closefile")
 #endif
-    if(debug) print *,_file_,__LINE__,'close: ',file%fh
+    if(debug .and. file%iosystem%io_rank==0) print *,_FILE_,__LINE__,'close: ',file%fh
     iotype = file%iotype 
     select case(iotype)
     case(iotype_pbinary, iotype_direct_pbinary)
        ierr = close_mpiio(file)
-    case( iotype_pnetcdf, iotype_netcdf)
+    case( iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c)
        ierr = close_nf(file)
     case(iotype_binary)
        print *,'closefile: io type not supported'
     end select
-#ifdef timing
+#ifdef TIMING
     call t_stopf("PIO_closefile")
 #endif
 
@@ -2103,7 +2072,7 @@ enddo
     do i=1,numblocks-1	
        if(displace(i+1) .lt. displace(i)) then
           print *,'calcdisplace: error with displacement arrays',i,displace(i:i+1),numblocks,size(dof),dof(numblocks)
-          call piodie( _file_,__LINE__)
+          call piodie( _FILE_,__LINE__)
        endif
     enddo
 
@@ -2145,7 +2114,7 @@ enddo
 
 
     if (ndisp/=iosize) then
-       call piodie(_file_,__LINE__,'ndisp=',ndisp,' /= iosize=',iosize)
+       call piodie(_FILE_,__LINE__,'ndisp=',ndisp,' /= iosize=',iosize)
     endif
 
     do i=1,ndim
@@ -2192,7 +2161,7 @@ enddo
              else
                 myloc(idim)=start(idim)
                 idim=idim+1
-                if (idim>ndim) call piodie(_file_,__LINE__,'dim overflow')
+                if (idim>ndim) call piodie(_FILE_,__LINE__,'dim overflow')
              endif
           end do
        endif
@@ -2203,7 +2172,7 @@ enddo
        if (myloc(i) /= ub(i)) then
           print *,'myloc=',myloc
           print *,'ub=',ub
-          call piodie( _file_,__LINE__,'myloc/=ub')
+          call piodie( _FILE_,__LINE__,'myloc/=ub')
        endif
     end do
 
@@ -2212,7 +2181,7 @@ enddo
 
     do i=1,ndisp-1	
        if(displace(i) .gt. displace(i+1)) then
-          call piodie(_file_,__LINE__,'displace is not increasing')
+          call piodie(_FILE_,__LINE__,'displace is not increasing')
        endif
     enddo
 

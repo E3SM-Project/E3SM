@@ -5,11 +5,11 @@
 
 FC		= 
 MPIF90          = mpxlf90_r
-FFLAGS		=     -WF,-DAIX -WF,-DSEQ_ -WF,-DFORTRAN_SAME  -q64 -g -qfullpath -qmaxmem=-1 -qarch=auto -qsigtrap=xl__trcedump  -O2 -qstrict -Q   -WF,-DSYSAIX,-DAIX,-DCPRXLF
+FFLAGS		=     -g -qfullpath -q64 -qmaxmem=-1   -qsigtrap=xl__trcedump  -O2 -qstrict -Q -WF,-DSYSAIX,-DAIX,-DCPRXLF
 
-FOPTS           = -WF,-DSPMD,-DUSEMPIIO,-D_NETCDF,-D_PNETCDF,-D_NOUSEMCT,-D_USEBOX
+FOPTS           = -WF,-DSPMD,-DUSEMPIIO,-D_NETCDF,-D_PNETCDF,-D_NOUSEMCT,-D_USEBOX,-DPIO_GPFS_HINTS
 
-INCLUDES        =  -I/usr/local/include -I/contrib/pnetcdf/include
+INCLUDES        =  -I/contrib/netcdf-4.1-snapshot2010012908//include -I/contrib/parallel-netcdf-1.1.1svn/include
 
 # INCLUDE FLAG FOR LOCATING MODULES (-I, -M, or -p)
 MODINC         = -I
@@ -30,17 +30,17 @@ CPPFLAGS	= -P -C -N -traditional
 CC		= xlc_r
 MPICC           = mpcc_r
 CFLAGS          = -DFORTRAN_SAME -DSYSAIX -DAIX -DCPRXLF
-COPTS           =  -DSPMD -DUSEMPIIO -D_NETCDF -D_PNETCDF -D_NOUSEMCT -D_USEBOX 
+COPTS           =  -DSPMD -DUSEMPIIO -D_NETCDF -D_PNETCDF -D_NOUSEMCT -D_USEBOX -DPIO_GPFS_HINTS 
 
 
 # Linking
 
-LDLIBS =   -L/usr/local/lib -lnetcdf -L/contrib/pnetcdf/lib -lpnetcdf 
+LDLIBS =   -L/contrib/netcdf-4.1-snapshot2010012908//lib -lnetcdf -L/contrib/parallel-netcdf-1.1.1svn/lib -lpnetcdf 
 
 
 # DIRECTORIES
 
-PIO_PATH       =
+PIO_PATH       = 
 
 PREFIX         = /usr/local
 INSTALL_INC    = /usr/local/include
