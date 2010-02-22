@@ -1068,12 +1068,11 @@ contains
     enddo
     if((iorank == 0) .and. (verbose)) print *,'getiostartandcount: sdims: ',sdims
     if((iorank == 0) .and. (verbose)) print *,'getiostartandcount: count: ',count
-    fanfactor=dble(ntasks)
 
-
+    fanlimit  = 50.00
+    fanfactor = fanlimit + 1.0  !we want at least one trip through the do while loop  
     it = 1
     step(:) = 1
-    fanlimit = 50.00
 do while (fanfactor > fanlimit .and. it < maxit ) 
     xpes = use_io_procs
     xiam = iorank   ! goes from 0 to xpes-1
