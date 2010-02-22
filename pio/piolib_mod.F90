@@ -1016,7 +1016,6 @@ contains
     real(r8) :: fanfactor, fanlimit
     real(r8) :: rtmp
     integer :: testvalue
-    integer :: ierr
     integer, parameter :: minblocksize=16        ! minimum block size on a task
     integer, parameter :: maxit=10               ! maximum number of times to iterate on the fanin/out limiter  (Probably want a better solution)
     logical, parameter :: verbose = .true.
@@ -1392,7 +1391,7 @@ enddo
        iosystem%ioranks(i)=(lbase + (i-1)*lstride)
  
        if (iosystem%ioranks(i)>=iosystem%num_tasks) then
-           call piodie( _file_,__LINE__, &
+           call piodie( _FILE_,__LINE__, &
                 'tried to assign io processor beyond max rank ',&
                iosystem%ioranks(i), &
                 ' num_tasks=',iosystem%num_tasks )
