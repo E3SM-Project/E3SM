@@ -120,7 +120,6 @@ my $enablenetcdf4;
 if($host eq "bluefire"){
     print F "#BSUB -R \"span[ptile=64]\"\n";
     print F "#BSUB -P $project\n";
-    $enablenetcdf4="--enable-netcdf4";
 }
 
 my @env;
@@ -134,9 +133,13 @@ foreach(keys %attributes){
     }elsif(/ENV_(.*)/){
         print "set $1 $attributes{$_}\n";
 	print F "\$ENV{$1}=\"$attributes{$_}\"\;\n";
-    }	
-    
+    }elsif(/NETCDF_PATH/){
+	if($attributes{NETCDF_PATH} =~ /netcdf-4/){
+	    $enablenetcdf4="--enable-netcdf4";
+	}
+    }
 }
+
 
 print F << "EOF";
 use strict;

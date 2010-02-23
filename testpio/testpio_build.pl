@@ -60,7 +60,7 @@ print "------------------------------------------------------------------\n";
 print `env`;
 print "------------------------------------------------------------------\n\n";
 
-my $syscmd = "./configure $conopts @env ";
+my $syscmd = "$ENV{CONFIG_SHELL} ./configure $conopts @env ";
 
 print "Building for $host using $syscmd\n";
 
