@@ -39,6 +39,7 @@ program testpio
   integer(i4) :: indx
   integer(i4) :: mode
 
+  integer(i4) :: ip,numPhases 
   character(len=*), parameter :: TestR8CaseName = 'r8_test'
   character(len=*), parameter :: TestR4CaseName = 'r4_test'
   character(len=*), parameter :: TestI4CaseName  = 'i4_test'
@@ -80,6 +81,10 @@ program testpio
        TestR4    = .false.,  &
        TestInt   = .false.,  &
        TestCombo = .false.
+
+  logical :: writePhase, readPhase
+  logical, parameter :: splitPhase = .true.
+  integer :: numPhase
 
   real(r8) :: lsum,lsum2,gsum
   real(r8) :: st,et  ! start/end times for timing
@@ -355,17 +360,17 @@ program testpio
   if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #10'
 
 
-  call alloc_check(test_r8rd,lLength,'testpio:test_r8rd')
-  call alloc_check(test_i4rd,lLength,'testpio:test_i4rd')
-  call alloc_check(test_r4rd,lLength,'testpio:test_r4rd')
+  if(TestR8 .or. TestCombo)  call alloc_check(test_r8rd,lLength,'testpio:test_r8rd')
+  if(TestInt .or. TestCombo) call alloc_check(test_i4rd,lLength,'testpio:test_i4rd')
+  if(TestR4 .or. TestCombo)  call alloc_check(test_r4rd,lLength,'testpio:test_r4rd')
 
-  call alloc_check(diff_r8,lLength,'testpio:diff_r8 ')
-  call alloc_check(diff_r4,lLength,'testpio:diff_r4 ')
-  call alloc_check(diff_i4,lLength,'testpio:diff_i4 ')
+!  call alloc_check(diff_r8,lLength,'testpio:diff_r8 ')
+!  call alloc_check(diff_r4,lLength,'testpio:diff_r4 ')
+!  call alloc_check(diff_i4,lLength,'testpio:diff_i4 ')
 
-  test_r8rd(:) = 1000.00
-  test_r4rd(:) = 1000.00
-  test_i4rd(:) = 1000
+  if(TestR8 .or. TestCombo) test_r8rd(:) = 1000.00
+  if(TestR4 .or. TestCombo) test_r4rd(:) = 1000.00
+  if(TestInt .or. TestCombo) test_i4rd(:) = 1000
 
   if(Debug) then
      write(*,'(a,2(a,i8))') myname,':: Before call to OpenFile().  comp_rank=',piosys%comp_rank, &
@@ -384,6 +389,25 @@ program testpio
   call alloc_check(gdt_read_i4, maxiter, ' testpio:gdt_read_i4 ')
   if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #11'
 
+  if(splitPhase) then 
+    numPhases = 2
+  else
+    numPhases = 1
+  endif
+  do ip=1,numPhases
+     if(numPhases == 1) then 
+        readPhase = .true.
+        writePhase = .true.
+     else
+        if(ip == 1) then 
+	   writePhase = .true.
+	   readPhase = .false.
+	else
+	   writePhase = .false.
+	   readPhase = .true.
+        endif
+     endif
+     if(log_master_task) print *,'{write,read}Phase:  ',writePhase,readPhase
   do it=1,maxiter
 
      !-------------------------------------------------------
@@ -395,38 +419,38 @@ program testpio
 
         if (trim(iodof_input) == 'namelist') then
            if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #7'
-           call PIO_initDecomp(PIOSYS,PIO_double,  gDims3D,compDOF,IOdesc_r8,startpio,countpio)
-           call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,IOdesc_r4,startpio,countpio)
-           call PIO_initDecomp(PIOSYS,PIO_int,     gDims3D,compDOF,IOdesc_i4,startpio,countpio)
+           if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double,  gDims3D,compDOF,IOdesc_r8,startpio,countpio)
+           if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,IOdesc_r4,startpio,countpio)
+           if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,     gDims3D,compDOF,IOdesc_i4,startpio,countpio)
            if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8'
         else
-           call PIO_initDecomp(PIOSYS,PIO_double,  gDims3D,compDOF,IOdesc_r8)
-           call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,IOdesc_r4)
-           call PIO_initDecomp(PIOSYS,PIO_int,     gDims3D,compDOF,IOdesc_i4)
+           if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double,  gDims3D,compDOF,IOdesc_r8)
+           if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,IOdesc_r4)
+           if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,     gDims3D,compDOF,IOdesc_i4)
         endif
      else
         if(iofmtd.eq.'nc') then ! netCDF
            if (num_iodofs == 1) then
-              call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOF,startpio,countpio,IOdesc_r8)
-              call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,compDOF,ioDOF,startpio,countpio,IOdesc_r4)
-              call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,compDOF,ioDOF,startpio,countpio,IOdesc_i4)
+              if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOF,startpio,countpio,IOdesc_r8)
+              if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,compDOF,ioDOF,startpio,countpio,IOdesc_r4)
+              if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,compDOF,ioDOF,startpio,countpio,IOdesc_i4)
            elseif (num_iodofs == 2) then
-              call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,startpio,countpio,IOdesc_r8)
-              call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,startpio,countpio,IOdesc_r4)
-              call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,startpio,countpio,IOdesc_i4)
+              if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,startpio,countpio,IOdesc_r8)
+              if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,startpio,countpio,IOdesc_r4)
+              if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,startpio,countpio,IOdesc_i4)
            else
               call piodie(__FILE__,__LINE__,' num_iodofs not 1 or 2')
            endif
         else
            ! tcraig: there are cases where lenblocks is not valid here like different size IO blocks
            if (num_iodofs == 1) then
-              call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOF,IOdesc_r8)
-              call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,compDOF,ioDOF,IOdesc_r4)
-              call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,compDOF,ioDOF,IOdesc_i4)
+              if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOF,IOdesc_r8)
+              if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,compDOF,ioDOF,IOdesc_r4)
+              if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,compDOF,ioDOF,IOdesc_i4)
            elseif (num_iodofs == 2) then
-              call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,IOdesc_r8)
-              call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,IOdesc_r4)
-              call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,IOdesc_i4)
+              if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,IOdesc_r8)
+              if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,IOdesc_r4)
+              if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,IOdesc_i4)
            else
               call piodie(__FILE__,__LINE__,' num_iodofs not 1 or 2')
            endif
@@ -439,11 +463,7 @@ program testpio
              ' io_rank=',piosys%io_rank
      endif
 
-
-
-
-
-
+     call PIO_getnumiotasks(PIOSYS,num_iotasks)
      !------------
      ! Open file{s} 
      !------------
@@ -463,6 +483,7 @@ program testpio
      mode = 0
 #endif
 
+if(writePhase) then 
      if(TestCombo) then
         if(Debug) write(*,'(2a,i8)') myname,':: Combination Test:  Creating File...it=',it
         ierr = PIO_CreateFile(PIOSYS,File,iotype,trim(fname), mode)
@@ -676,9 +697,11 @@ program testpio
              ' io_rank=',piosys%io_rank
      endif
 
+endif
      call MPI_Barrier(MPI_COMM_WORLD,ierr)
      call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
 
+if (readPhase) then 
      !-------------------------------------
      ! Open the file back up and check data
      !-------------------------------------
@@ -811,13 +834,13 @@ program testpio
 
      if(Debug) then
         write(*,*) myname,':: my_task=',my_task,'test_r8wr= ',test_r8wr
-        write(*,*) myname,':: my_task=',my_task,'test_r8rd= ',test_r8rd
+        if(TestR8 .or. TestCombo) write(*,*) myname,':: my_task=',my_task,'test_r8rd= ',test_r8rd
      endif
 
      !-----------------------------
      ! Perform correctness testing 
      !-----------------------------
-     if( TestR8) then
+     if(TestR8) then
         call checkpattern(fname_r8,test_r8wr,test_r8rd,lLength,iostat)
         call check_pioerr(iostat,__FILE__,__LINE__,' checkpattern r8 test')
      endif
@@ -876,44 +899,35 @@ program testpio
      ! Print out the performance measurements 
      !---------------------------------------
      call MPI_Barrier(MPI_COMM_WORLD,ierr)
+endif
 
      if(TestR8) then
         ! Maximum read/write times
-        call GetMaxTime(dt_write_r8, gdt_write_r8(it), MPI_COMM_WORLD, ierr)
-        call GetMaxTime(dt_read_r8, gdt_read_r8(it), MPI_COMM_WORLD, ierr)
-        ! Write out report for this time trial to stdout from the root
-        !     if(piosys%io_rank==0) then 
-        !	call WriteStats(TestR8CaseName, fname_r8, Iodesc_r8, it, gdt_read_r8(it), gdt_write_r8(it))
-        !     endif
+        if(readPhase)  call GetMaxTime(dt_read_r8, gdt_read_r8(it), MPI_COMM_WORLD, ierr)
+        if(writePhase) call GetMaxTime(dt_write_r8, gdt_write_r8(it), MPI_COMM_WORLD, ierr)
      endif
 
      if(TestR4) then
         ! Maximum read/write times
-        call GetMaxTime(dt_read_r4, gdt_read_r4(it), MPI_COMM_WORLD, ierr)
-        call GetMaxTime(dt_write_r4, gdt_write_r4(it), MPI_COMM_WORLD, ierr)
-        ! Write out report for this time trial to stdout from the root
-        !     if(piosys%io_rank==0) then 
-        !	call WriteStats(TestR4CaseName, fname_r4, Iodesc_r4, it, gdt_read_r4(it), gdt_write_r4(it))
-        !     endif
+        if(readPhase)  call GetMaxTime(dt_read_r4, gdt_read_r4(it), MPI_COMM_WORLD, ierr)
+        if(writePhase) call GetMaxTime(dt_write_r4, gdt_write_r4(it), MPI_COMM_WORLD, ierr)
      endif
 
      if(TestInt) then
         ! Maximum read/write times
-        call GetMaxTime(dt_read_i4, gdt_read_i4(it), MPI_COMM_WORLD, ierr)
-        call GetMaxTime(dt_write_i4, gdt_write_i4(it), MPI_COMM_WORLD, ierr)
-        ! Write out report for this time trial to stdout from the root
-        !     if(piosys%io_rank==0) then 
-        !	call WriteStats(TestI4CaseName, fname_i4, Iodesc_i4, it, gdt_read_i4(it), gdt_write_i4(it))
-        !     endif
+        if(readPhase)  call GetMaxTime(dt_read_i4, gdt_read_i4(it), MPI_COMM_WORLD, ierr)
+        if(writePhase) call GetMaxTime(dt_write_i4, gdt_write_i4(it), MPI_COMM_WORLD, ierr)
      endif
 
-     glenr8=iodesc_r8%glen
-     glenr4=iodesc_r4%glen
-     gleni4=iodesc_i4%glen
-     call pio_freedecomp(PIOSYS, iodesc_r8)
-     call pio_freedecomp(PIOSYS, iodesc_r4)
-     call pio_freedecomp(PIOSYS, iodesc_i4)
+
+     if(TestR8 .or. TestCombo) glenr8=iodesc_r8%glen
+     if(TestR4 .or. TestCombo) glenr4=iodesc_r4%glen
+     if(TestInt .or. TestCombo) gleni4=iodesc_i4%glen
+     if(TestR8 .or. TestCombo) call pio_freedecomp(PIOSYS, iodesc_r8)
+     if(TestInt .or. TestCombo) call pio_freedecomp(PIOSYS, iodesc_r4)
+     if(TestR4 .or. TestCombo) call pio_freedecomp(PIOSYS, iodesc_i4)
   enddo ! do it=1,maxiter
+  enddo ! do ip=1,numphase
 
   !--------------------------------
   ! Clean up initialization memory 
@@ -957,7 +971,8 @@ program testpio
      do n = 0,nprocs-1
         write(*,'(2a,i8,a,2f10.2)') myname,' my_task=',n,' : (hw, usage) memory (MB) = ',gmem(1,n)*mb_blk,gmem(2,n)*mb_blk
      enddo
-     indx = MAXLOC(gmem(1,:),dim=1) - 1 ! offset the location of the maximum memory usage by one
+!     indx = MAXLOC(gmem(1,:),dim=1) - 1 ! offset the location of the maximum memory usage by one
+     indx = MAXLOC(gmem(2,:),dim=1) - 1
      write(*,'(2a,i8,a,2f10.2)') myname,' my_task=',indx,' : (hw, usage) MAX memory (MB) = ',gmem(1,indx)*mb_blk,gmem(2,indx)*mb_blk
   endif
   deallocate(lmem,gmem)

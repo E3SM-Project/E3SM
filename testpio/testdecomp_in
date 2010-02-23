@@ -1,14 +1,14 @@
 &compdof_nml
   nxg = 3600
   nyg = 2400
-  nzg =  42
-  npes = 64
+  nzg =  40
+  npes = 2000
   nblksppe = 1
   grdorder = 'xyz'
-  grddecomp = 'xy'
-  gdx = 0
-  gdy = 0
-  gdz = 0
+  grddecomp = 'yze'
+  gdx = 90
+  gdy = 96
+  gdz = 40
   blkorder = 'xyz'
   blkdecomp1 = 'xy'
   blkdecomp2 = ''
@@ -19,14 +19,14 @@
 &iodof_nml
   nxg = 3600
   nyg = 2400
-  nzg =  42
-  npes = 64
+  nzg =  40
+  npes = 192
   nblksppe = 1
-  grdorder = 'xyz'
-  grddecomp = 'xy'
-  gdx = 192
-  gdy = 192
-  gdz = 30
+  grdorder = 'xy'
+  grddecomp = 'yze'
+  gdx = 3600
+  gdy = 25
+  gdz = 20
   blkorder = 'xyz'
   blkdecomp1 = 'xy'
   blkdecomp2 = ''

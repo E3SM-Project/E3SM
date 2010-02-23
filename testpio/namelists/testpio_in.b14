@@ -1,0 +1,54 @@
+&io_nml
+  casename    = 'b14:bin:box:stride=10'
+  nx_global   = 3600
+  ny_global   = 2400
+  nz_global   = 1
+  iofmt       = 'bin'
+  rearr       = 'box'
+  nprocsIO    = -1
+  stride      = 16
+  base        = 0
+  maxiter     = 10
+  dir         = './none/'
+  num_aggregator = 5
+  DebugLevel  = 0
+  compdof_input = 'namelist'
+  compdof_output = 'none'
+  iodof_input = 'namelist'
+/
+&compdof_nml
+  nblksppe = 1
+  grdorder = 'xyz'
+  grddecomp = 'setblk'
+  gdx = 225
+  gdy = 75
+  gdz = 1
+  blkorder = 'xyz'
+  blkdecomp1 = 'xy'
+  blkdecomp2 = ''
+  bdx = 0
+  bdy = 0
+  bdz = 0
+/
+&iodof_nml
+  nblksppe = 1
+  grdorder = 'xyz'
+  grddecomp = 'setblk'
+  gdx = 3600
+  gdy = 75
+  gdz = 1
+  blkorder = 'xyz'
+  blkdecomp1 = 'yz'
+  blkdecomp2 = ''
+  bdx = 0
+  bdy = 0
+  bdz = 0
+/
+&prof_inparm
+  profile_disable = .false.
+  profile_barrier = .true.
+  profile_single_file = .false.
+  profile_depth_limit = 10
+  profile_detail_limit = 0
+/
+EOF

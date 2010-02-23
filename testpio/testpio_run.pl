@@ -11,7 +11,7 @@ my $result = GetOptions("suites=s@"=>\$suites,"retry"=>\$retry,"host=s"=>\$host,
 
 usage() if($help);
 sub usage{
-    print "--suites : Test only the listed suites (all, snet, pnet, mpiio, ant)\n";
+    print "--suites : Test only the listed suites (all, snet, pnet, mpiio, ant, bench)\n";
     print "--retry  : Do not repeat tests that have already passed\n";
     print "--host   : Force a hostname for testing\n";
     print "--help   : Print this message\n";
@@ -28,7 +28,7 @@ my @valid_env = qw(NETCDF_PATH PNETCDF_PATH MPI_LIB MPI_INC F90 FC CC FFLAGS
                    MPICC MPIF90 LDLIBS);
 
 
-my @testsuites = qw(all snet pnet mpiio ant);
+my @testsuites = qw(all snet pnet mpiio ant bench);
 
 
 
@@ -120,6 +120,7 @@ my $enablenetcdf4;
 if($host eq "bluefire"){
     print F "#BSUB -R \"span[ptile=64]\"\n";
     print F "#BSUB -P $project\n";
+    $enablenetcdf4="--enable-netcdf4";
 }
 
 my @env;
@@ -133,13 +134,9 @@ foreach(keys %attributes){
     }elsif(/ENV_(.*)/){
         print "set $1 $attributes{$_}\n";
 	print F "\$ENV{$1}=\"$attributes{$_}\"\;\n";
-    }elsif(/NETCDF_PATH/){
-	if($attributes{NETCDF_PATH} =~ /netcdf-4/){
-	    $enablenetcdf4="--enable-netcdf4";
-	}
-    }
+    }	
+    
 }
-
 
 print F << "EOF";
 use strict;
@@ -161,7 +158,8 @@ my \$confopts = {all=>" --enable-pnetcdf --enable-mpiio --enable-netcdf --enable
 		snet=>"--disable-pnetcdf --disable-mpiio --enable-netcdf --enable-timing $enablenetcdf4",
 		pnet=>"--enable-pnetcdf --disable-mpiio --disable-netcdf --enable-timing",
 		ant=>"--enable-pnetcdf --enable-mpiio --enable-netcdf --disable-timing $enablenetcdf4",
-		mpiio=>"--disable-pnetcdf --enable-mpiio --disable-netcdf --enable-timing"
+		mpiio=>"--disable-pnetcdf --enable-mpiio --disable-netcdf --enable-timing",
+		bench=>"--enable-pnetcdf --enable-mpiio --enable-netcdf --enable-timing"
 	    };
 
 my \$testlist = {all=>["sn01","sn02","sn03","sb01","sb02","sb03","sb04","sb05","sb06","sb07","sb08",
@@ -171,7 +169,8 @@ my \$testlist = {all=>["sn01","sn02","sn03","sb01","sb02","sb03","sb04","sb05","
 		snet=>["sn01","sn02","sn03","sb01","sb02","sb03","sb04","sb05","sb06","sb07","sb08"],
 		pnet=>["pn01","pn02","pn03","pb01","pb02","pb03","pb04","pb05","pb06","pb07","pb08"],
 		ant=>["sn02","sb02","pn02","pb02","bn02","bb02"],
-		mpiio=>["bn01","bn02","bn03","bb01","bb02","bb03","bb04","bb05","bb06","bb07","bb08"]
+		mpiio=>["bn01","bn02","bn03","bb01","bb02","bb03","bb04","bb05","bb06","bb07","bb08"],
+		bench=>["b14"]
 	    };
 
 

@@ -10,7 +10,7 @@ my $result = GetOptions("host=s"=>\$host,"conopts=s@"=>\@conopts);
 my $cfgdir = `pwd`;
 chomp $cfgdir;
 my $clean = 'yes';
-my @valid_env = qw(NETCDF_PATH PNETCDF_PATH MPI_LIB MPI_INC F90 FC CC FFLAGS
+my @valid_env = qw(NETCDF_PATH PNETCDF_PATH MPI_LIB MPI_INC F90 FC CC ALLCFLAGS FFLAGS
                    MPICC MPIF90 LDLIBS);
 
 
@@ -60,7 +60,7 @@ print "------------------------------------------------------------------\n";
 print `env`;
 print "------------------------------------------------------------------\n\n";
 
-my $syscmd = "$ENV{CONFIG_SHELL} ./configure $conopts @env ";
+my $syscmd = "./configure $conopts @env ";
 
 print "Building for $host using $syscmd\n";
 

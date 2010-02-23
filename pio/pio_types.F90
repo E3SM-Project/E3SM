@@ -51,6 +51,7 @@ module pio_types
         integer(i4)              :: rearr         ! type of rearranger
                                                   ! e.g. rearr_{none,mct,box}
 	integer(i4)              :: error_handling ! how pio handles errors
+        integer(i4),pointer      :: ioranks(:)         ! the computational ranks for the IO tasks
 
 	! This holds the IODESC
     end type

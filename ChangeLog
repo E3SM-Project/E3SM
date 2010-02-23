@@ -1,6 +1,125 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_0_10
+Originator(s): Jim, John
+Date:
+One-line Summary: Blue Gene specific optimization
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do: 
+   
+     PIO_getnumiotasks: This returns the actual number of IO tasks 
+	 used by PIO.
+    
+     nextlarger: Calculates the next larger value which even divides an input arguement.
+
+
+     determineiotasks:  A special routine only for Blue Gene which will load balance 
+	io-tasks accross IO-nodes
+
+     identity:	A Blue Gene specific routine which prints out node identity
+      
+List all existing files that have been modified, and describe the changes:
+
+    pio/configure
+
+	Added CFLAGS to configure 
+   
+    pio/pio_types.F90
+	
+	Moved ioranks array into type declaration.  This is a 
+	necessary generalization because we no longer have even 
+	strides for the IO ranks.  
+
+    pio/piolib_mod.F90
+
+        getiostartandcount has been generallized the provide more 
+	functionality including:
+
+	   - Block decomposition in the z-dimension 
+	   - A fan-in/out limiter for the decomposition creation loop   	
+       
+        PIO_inidecomp_dof has been modified to call determineiotasks 
+	if on a Blue Gene system 
+
+	add BGP and BGL ifdef
+
+    pio/Makefile 
+
+	Includes the Blue Gene specific topology.c file
+
+    pio/box_rearrange.F90.in
+
+	Removed assumption about a fixed io-stride in the box rearranger
+
+    pio/pio.F90
+
+	exported public PIO_getnumiotasks subroutine 
+	
+
+    testpio/testpio_build.pl
+
+	Exported ALLCFLAGS
+
+
+    testpio/tstpio.F90
+
+	Added test which only allocates arrays if they are used by the code.  
+	
+	Added the option to do 2-phase pass to measure performance.  The 
+	first phase writes out all files, while the second phase will read all 
+	files.  This 2-phase approach does a better job of filtering out the 
+	impact of read-caching on performance measurements. 
+
+	Fixed the diagnostic which prints out the location of the maximum memory usage
+
+     testpio/testpio_run.pl 
+
+	Added the new testsuite 'bench'
+
+     testpio/build_defaults.xml 
+
+	updated the version of pnetcdf on frost
+
+     testpio/Utils.pm
+
+	Added some module commands for kraken
+
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+	Blue Gene specific optimizations that balance the number of io-tasks to io-nodes. 
+
+	Added test which only allocates arrays if they are used by the code.  
+
+	Added the option to do 2-phase pass to measure performance.  The 
+	first phase writes out all files, while the second phase will read all 
+	files.  This 2-phase approach does a better job of filtering out the 
+	impact of read-caching on performance measurements. 
+
+Code reviewed by: John
+
+Summary of pre-tag testing:
+             frost 77 tests PASS, 0 tests FAIL
+        Regression tests:
+
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_0_9
 Originator(s): Jim, Pat Worley
 Date:

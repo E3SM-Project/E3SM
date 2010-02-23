@@ -1,27 +1,29 @@
 <?xml version="1.0"?>
 
 <testpioconfig>
+
 <frost
   NETCDF_PATH="/contrib/bgl/netcdf" 
-  PNETCDF_PATH="/contrib/bgl/parallel-netcdf-1.1.0" 
+  PNETCDF_PATH="/contrib/bgl/parallel-netcdf-1.1.1" 
   MPI_INC="-I/bgl/BlueLight/ppcfloor/bglsys/include" 
   MPI_LIB="-L/bgl/BlueLight/ppcfloor/bglsys/lib -lmpich.rts -lmsglayer.rts -lrts.rts -ldevices.rts"
   F90 = "blrts_xlf90"
   FC = "blrts_xlf90"
   CC = "blrts_xlc"
-  FFLAGS = "-qextname=flush -g -qfullpath"
-  conopts = "--disable-mct  --enable-mpiio --build=powerpc-bgp-linux --host=powerpc64-suse-linux"
+  FFLAGS = "-qextname=flush -g -qfullpath -WF,-DBGL"
+  ALLCFLAGS = "-DBGL"
+  conopts = "--disable-mct  --enable-mpiio --enable-timing --build=powerpc-bgp-linux --host=powerpc64-suse-linux"
   workdir = "/ptmp/${USER}/testpio"
-  run = "cqsub -n32 -t 00:50:00 -q debug "
+  run = "cqsub -n32 -m vn -t 00:50:00 -q default "
   submit ="perl "
  />
+
 <bluefire
   NETCDF_PATH="/contrib/netcdf-4.1-snapshot2010012908/" 
   PNETCDF_PATH="/contrib/parallel-netcdf-1.1.1svn" 
   FFLAGS = "-g -qfullpath "
   ENV_PREATTACH_PROCESSOR_LIST="AUTO_SELECT"
   ENV_MP_EAGER_LIMIT="0"
-  ENV_CONFIG_SHELL="/usr/local/bin/bash"
   MPIF90 = "mpxlf2003_r"
   conopts = "--disable-mct --enable-filesystem-hints=gpfs "
   workdir = "/ptmp/${USER}/testpio"

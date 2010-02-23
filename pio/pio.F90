@@ -8,7 +8,7 @@ module pio
        pio_openfile, pio_closefile, pio_createfile, pio_setdebuglevel, &
        pio_seterrorhandling, pio_setframe, pio_init, pio_get_local_array_size, &
        pio_freedecomp, pio_syncfile,pio_numtowrite,pio_numtoread,pio_setiotype, &
-       pio_dupiodesc, pio_finalize, pio_set_hint
+       pio_dupiodesc, pio_finalize, pio_set_hint, pio_getnumiotasks
 
   use pio_types, only : io_desc_t, file_desc_t, var_desc_t, iosystem_desc_t, &
 	pio_int, pio_real, pio_double, pio_noerr, iotype_netcdf, &
