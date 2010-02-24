@@ -35,7 +35,6 @@
 #ifdef _USE_FLOW_CONTROL
 #define _USE_COMP2IO_FC 1
 #define _USE_IO2COMP_FC 1
-#define _USE_CREATE_FC 1
 #endif  
 
 !

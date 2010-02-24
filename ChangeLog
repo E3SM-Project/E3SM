@@ -1,6 +1,17 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_0_12
+Originator(s): jim
+Date: 02-24-2010
+One-line Summary: one line fix in piolib_mod.F90 for 1d decomps 
+
+
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_0_11   (No changelog entry was made for pio1_0_10)
 Originator(s): Jim, John
 Date: 02-24-2010
