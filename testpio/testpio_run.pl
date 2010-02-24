@@ -120,7 +120,6 @@ my $enablenetcdf4;
 if($host eq "bluefire"){
     print F "#BSUB -R \"span[ptile=64]\"\n";
     print F "#BSUB -P $project\n";
-    $enablenetcdf4="--enable-netcdf4";
 }
 
 my @env;
@@ -134,8 +133,11 @@ foreach(keys %attributes){
     }elsif(/ENV_(.*)/){
         print "set $1 $attributes{$_}\n";
 	print F "\$ENV{$1}=\"$attributes{$_}\"\;\n";
-    }	
-    
+    }elsif(/NETCDF_PATH/){
+	if($attributes{NETCDF_PATH} =~ /netcdf-4/){
+	    $enablenetcdf4="--enable-netcdf4";
+	}
+    }
 }
 
 print F << "EOF";
@@ -159,7 +161,7 @@ my \$confopts = {all=>" --enable-pnetcdf --enable-mpiio --enable-netcdf --enable
 		pnet=>"--enable-pnetcdf --disable-mpiio --disable-netcdf --enable-timing",
 		ant=>"--enable-pnetcdf --enable-mpiio --enable-netcdf --disable-timing $enablenetcdf4",
 		mpiio=>"--disable-pnetcdf --enable-mpiio --disable-netcdf --enable-timing",
-		bench=>"--enable-pnetcdf --enable-mpiio --enable-netcdf --enable-timing"
+		bench=>"--enable-pnetcdf --enable-mpiio --enable-netcdf --enable-timing $enablenetcdf4"
 	    };
 
 my \$testlist = {all=>["sn01","sn02","sn03","sb01","sb02","sb03","sb04","sb05","sb06","sb07","sb08",
