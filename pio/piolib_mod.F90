@@ -1021,7 +1021,7 @@ contains
     logical, parameter :: verbose = .false.
     integer,allocatable :: pes_per_dim(:), step(:)
     integer,allocatable :: bsize(:),nblocks(:),fblocks(:)
-   
+
 
     tsize=1
     do n=1,ndims
@@ -1050,7 +1050,7 @@ contains
     cnt = 1
     sdims = ndims
     do while (cnt < use_io_procs .and. sdims > 0)
-!       cnt = cnt * ceiling(dble(gdims(sdims))/dble(minblocksize))
+       !       cnt = cnt * ceiling(dble(gdims(sdims))/dble(minblocksize))
        cnt = cnt * gdims(sdims)
        sdims = sdims - 1
     enddo
@@ -1073,65 +1073,70 @@ contains
     fanfactor = fanlimit + 1.0  !we want at least one trip through the do while loop  
     it = 1
     step(:) = 1
-do while (fanfactor > fanlimit .and. it < maxit ) 
-    xpes = use_io_procs
-    xiam = iorank   ! goes from 0 to xpes-1
-    do m = ndims, sdims+1, -1
-       if(xpes >= gdims(m)) then
-          ps = -1
-          ns = 1
-          do while (ps < 0 .and. ns <= gdims(m) )
-             ps1 = int((dble(xpes)*dble((ns-1)*step(m)))/dble(gdims(m)))
-             pe1 = int((dble(xpes)*dble(ns*step(m)  ))/dble(gdims(m))) - 1
-             if (xiam >= ps1 .and. xiam <= pe1) then
-                ps = ps1
-                pe = pe1
-                start(m) = (ns-1)*step(m) + 1
-                count(m) = step(m)
-             end if
-             ns = ns+1
-          end do
-          xpes = pe - ps + 1
-          xiam = xiam - ps
-!          write(6,*) 'tcx1 ',iorank,m,start(m),count(m)
-          step(m)=nextlarger(step(m),gdims(m))
-	  if(step(m) == gdims(m)) fanlimit = fanlimit + 10.0
-       else
-          if (m /= sdims+1) then
+    do while (fanfactor > fanlimit .and. it < maxit ) 
+       xpes = use_io_procs
+       xiam = iorank   ! goes from 0 to xpes-1
+       do m = ndims, sdims+1, -1
+          if(xpes >= gdims(m)) then
+             ps = -1
+             ns = 1
+             do while (ps < 0 .and. ns <= gdims(m) )
+                ps1 = int((dble(xpes)*dble((ns-1)*step(m)))/dble(gdims(m)))
+                pe1 = int((dble(xpes)*dble(ns*step(m)  ))/dble(gdims(m))) - 1
+                if (xiam >= ps1 .and. xiam <= pe1) then
+                   ps = ps1
+                   pe = pe1
+                   start(m) = (ns-1)*step(m) + 1
+                   count(m) = step(m)
+                end if
+                ns = ns+1
+             end do
+             xpes = pe - ps + 1
+             xiam = xiam - ps
+             !          write(6,*) 'tcx1 ',iorank,m,start(m),count(m)
+             step(m)=nextlarger(step(m),gdims(m))
+             if(step(m) == gdims(m)) fanlimit = fanlimit + 10.0
+          else
+             if (m /= sdims+1) then
+                call piodie( _FILE_,__LINE__, &
+                     'm /= sdims+1',ival1=m,ival2=sdims)
+             endif
+             ds = int((dble(gdims(m))*dble(xiam  ))/dble(xpes)) + 1
+             de = int((dble(gdims(m))*dble(xiam+1))/dble(xpes))
+             start(m) = ds
+             count(m) = de-ds+1
+          end if
+
+          if (start(m) < 1 .or. count(m) < 1) then
+             print *, 'start =',start, ' count=',count
              call piodie( _FILE_,__LINE__, &
-                  'm /= sdims+1',ival1=m,ival2=sdims)
+                  'start or count failed to converge')
           endif
-          ds = int((dble(gdims(m))*dble(xiam  ))/dble(xpes)) + 1
-          de = int((dble(gdims(m))*dble(xiam+1))/dble(xpes))
-          start(m) = ds
-          count(m) = de-ds+1
+
+       enddo
+       do m=1,ndims
+          pes_per_dim(m) = gdims(m)/count(m)
+       enddo
+       ! -----------------------------------------------
+       ! note this caculation assumes that the the first 
+       ! two horizontal dimensions are decomposed,
+       ! -----------------------------------------------
+       if(ndims==1) then
+          fanfactor = ntasks/pes_per_dim(1)
+       else
+          fanfactor = ntasks/(pes_per_dim(1)*pes_per_dim(2))
        end if
 
-       if (start(m) < 1 .or. count(m) < 1) then
-          print *, 'start =',start, ' count=',count
-          call piodie( _FILE_,__LINE__, &
-               'start or count failed to converge')
-       endif
-
+       call mpi_allreduce(fanfactor,rtmp,1,MPI_REAL8,MPI_MAX,iocomm,ierr)
+       fanfactor=rtmp
+       if((iorank == 0) .and. verbose) print *,'getiostartandcount: pes_per_dim is: ',pes_per_dim
+       if((iorank == 0) .and. verbose) print *,'getiostartandcount: fan factor is: ',fanfactor
+       it=it+1
     enddo
-    do m=1,ndims
-       pes_per_dim(m) = gdims(m)/count(m)
-    enddo
-    ! -----------------------------------------------
-    ! note this caculation assumes that the the first 
-    ! two horizontal dimensions are decomposed,
-    ! -----------------------------------------------
-    fanfactor = ntasks/(pes_per_dim(1)*pes_per_dim(2))
-    call mpi_allreduce(fanfactor,rtmp,1,MPI_REAL8,MPI_MAX,iocomm,ierr)
-    fanfactor=rtmp
-    if((iorank == 0) .and. verbose) print *,'getiostartandcount: pes_per_dim is: ',pes_per_dim
-    if((iorank == 0) .and. verbose) print *,'getiostartandcount: fan factor is: ',fanfactor
-    it=it+1
-enddo
-   deallocate(step)
-   deallocate(pes_per_dim)
-   deallocate(bsize,nblocks,fblocks)
-!   stop 'end of getiostartandcount'
+    deallocate(step)
+    deallocate(pes_per_dim)
+    deallocate(bsize,nblocks,fblocks)
+    !   stop 'end of getiostartandcount'
 
   end subroutine getiostartandcount
 
