@@ -199,11 +199,11 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
     num_iotasks = -1
     if (nprocsIO > 0) then
        num_iotasks=nprocsIO
-       if (stride <= 0) then
+       if (stride <= 0 .or. stride>nprocs) then
           stride = (nprocs-base)/num_iotasks
        endif
     elseif (nprocsIO <= 0) then
-       if (stride <= 0) then
+       if (stride <= 0 .or. stride>nprocs) then
           num_iotasks = nprocs
           stride = 1
           base=0

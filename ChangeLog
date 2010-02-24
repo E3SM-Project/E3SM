@@ -1,13 +1,15 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
-Tag name: pio1_0_10
+Tag name: pio1_0_11   (No changelog entry was made for pio1_0_10)
 Originator(s): Jim, John
-Date:
-One-line Summary: Blue Gene specific optimization
+Date: 02-24-2010
+One-line Summary: Blue Gene specific optimization 
 
 List all subroutines eliminated:
-
+     Removed the Makefile.conf.bluefire and changed testpio_run.pl so that configure is 
+     run using the bash shell on bluefire.  (ksh is slow)
+	
 List all subroutines added and what they do: 
    
      PIO_getnumiotasks: This returns the actual number of IO tasks 
@@ -23,9 +25,9 @@ List all subroutines added and what they do:
       
 List all existing files that have been modified, and describe the changes:
 
-    pio/configure
+    pio/configure.ac
 
-	Added CFLAGS to configure 
+	Added CFLAGS to configure stdout 
    
     pio/pio_types.F90
 	
@@ -109,10 +111,14 @@ Describe any substantial timing or memory changes:
 	files.  This 2-phase approach does a better job of filtering out the 
 	impact of read-caching on performance measurements. 
 
-Code reviewed by: John
+Code reviewed by: John, Jim
 
 Summary of pre-tag testing:
-             frost 77 tests PASS, 0 tests FAIL
+	     bluefire 119 tests PASS, 0 tests FAIL
+	     edinburgh 22 tests PASS, 0 tests FAIL 
+	     edinburgh_intel 22 tests PASS, 0 tests FAIL
+             frost 75 tests PASS, 0 tests FAIL
+	     jaguar 75 tests PASS, 0 tests FAIL
         Regression tests:
 
 
