@@ -2,13 +2,41 @@
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
 Tag name: pio1_0_12
-Originator(s): jim
-Date: 02-24-2010
-One-line Summary: one line fix in piolib_mod.F90 for 1d decomps 
+Originator(s): Jim, John
+Date: 02-35-2010
+One-line Summary: bug fixes based on cam tests (future tags should be made after running cam regression)
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+	piolib_mod : corrected assumptions about number of decomp dimensions and number of tasks in io.
+	
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
 
 
+
+Code reviewed by: Jim
+
+Summary of pre-tag testing:
+         
+  Regression tests:
+       all cam pretag tests on bluefire, edinburgh and calgary.
 
 ===============================================================
+
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 

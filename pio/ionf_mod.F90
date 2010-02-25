@@ -43,7 +43,7 @@ contains
     character(len=*), intent(in)      :: fname
     integer(i4),  intent(in) :: amode
     integer(i4) :: iotype, mpierr
-    integer :: nmode
+    integer :: nmode, tmpfh
 
     
     nmode=amode
@@ -115,6 +115,10 @@ contains
 
        end select
     end if
+    tmpfh = file%fh
+    call mpi_bcast(tmpfh,1,mpi_integer, file%iosystem%iomaster, file%iosystem%comp_comm, mpierr)
+    if(file%fh<0) file%fh=-tmpfh
+
     call check_netcdf(File, ierr,_FILE_,__LINE__)
 
   end function create_nf
@@ -131,6 +135,7 @@ contains
     character(len=*), intent(in)      :: fname
     integer(i4), optional, intent(in) :: mode
     integer(i4) :: iotype, amode , mpierr, ier2
+    integer :: tmpfh
 
     ierr=PIO_noerr
     File%fh=-1
@@ -195,6 +200,10 @@ contains
        end if
 #endif
     end if
+
+    tmpfh = file%fh
+    call mpi_bcast(tmpfh,1,mpi_integer, file%iosystem%iomaster, file%iosystem%comp_comm, mpierr)
+    if(file%fh<0) file%fh=-tmpfh
 
     call check_netcdf(File, ierr,_FILE_,__LINE__)
 

@@ -874,7 +874,6 @@ contains
                'both optional parameters start and count must be provided')
        else
           call getiostartandcount(iosystem%num_tasks, ndims, dims, iosystem%num_iotasks, iosystem%io_rank, iosystem%io_comm, iodesc%start, iodesc%count)
-
        end if
        iosize=1
        do i=1,ndims
@@ -883,9 +882,9 @@ contains
        call mpi_allreduce(iosize, iodesc%maxiobuflen, 1, mpi_integer, mpi_max, iosystem%io_comm, ierr)
        call checkmpireturn('mpi_allreduce in initdecomp',ierr)
 
-       if (Iosystem%comp_rank == Iosystem%iomaster) then
-         print *,'after getiostartandcount: count is: ',iodesc%count
-       endif
+       print *,'IAM: ',iosystem%comp_rank,' after getiostartandcount: count is: ',iodesc%count
+!       if (Iosystem%comp_rank == Iosystem%iomaster) then
+!       endif
 
 
        lenblocks=iodesc%count(1)
@@ -1037,13 +1036,13 @@ contains
     do while(tsize/minblocksize < use_io_procs .and. use_io_procs>1)
        use_io_procs=use_io_procs-1
     end do
-    if((iorank == 0) .and. (verbose)) print *,'getiostartandcount: use_io_procs: ',use_io_procs
+    if(verbose) print *,'iorank: ',iorank,' getiostartandcount: use_io_procs: ',use_io_procs
 
     start = 1
     count = 0
 
 
-    if(iorank>=use_io_procs) return 
+!!    if(iorank>=use_io_procs) return 
 
     !-----------------
 
@@ -1066,8 +1065,8 @@ contains
        nblocks(m) = 1
        fblocks(m) = 1
     enddo
-    if((iorank == 0) .and. (verbose)) print *,'getiostartandcount: sdims: ',sdims
-    if((iorank == 0) .and. (verbose)) print *,'getiostartandcount: count: ',count
+    if(verbose) print *,'iorank: ',iorank, ' getiostartandcount: sdims: ',sdims
+    if(verbose) print *,'iorank: ',iorank, ' getiostartandcount: count: ',count
 
     fanlimit  = 50.00
     fanfactor = fanlimit + 1.0  !we want at least one trip through the do while loop  
@@ -1129,14 +1128,19 @@ contains
 
        call mpi_allreduce(fanfactor,rtmp,1,MPI_REAL8,MPI_MAX,iocomm,ierr)
        fanfactor=rtmp
-       if((iorank == 0) .and. verbose) print *,'getiostartandcount: pes_per_dim is: ',pes_per_dim
-       if((iorank == 0) .and. verbose) print *,'getiostartandcount: fan factor is: ',fanfactor
+       if(verbose) print *,'iorank: ',iorank,'getiostartandcount: pes_per_dim is: ',pes_per_dim
+       if(verbose) print *,'iorank: ',iorank,' getiostartandcount: fan factor is: ',fanfactor
        it=it+1
     enddo
     deallocate(step)
     deallocate(pes_per_dim)
     deallocate(bsize,nblocks,fblocks)
     !   stop 'end of getiostartandcount'
+
+    if(iorank>=use_io_procs) then 
+	start = 1
+        count = 0 
+    endif
 
   end subroutine getiostartandcount
 
