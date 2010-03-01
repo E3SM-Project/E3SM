@@ -95,6 +95,7 @@
  integer :: status(MP_STATUS_SIZE)
  integer :: ier ! MPI error code
 
+ signal = 1
  if ( present(flow_cntl) ) then
     if (flow_cntl >= 0) then
        gather_block_size = min(max(1,flow_cntl),max_gather_block_size)
@@ -236,6 +237,7 @@
  integer :: status(MP_STATUS_SIZE)
  integer :: ier ! MPI error code
 
+ signal = 1.0
  if ( present(flow_cntl) ) then
     if (flow_cntl >= 0) then
        gather_block_size = min(max(1,flow_cntl),max_gather_block_size)
@@ -377,6 +379,7 @@
  integer :: status(MP_STATUS_SIZE)
  integer :: ier ! MPI error code
 
+ signal = 1
  if ( present(flow_cntl) ) then
     if (flow_cntl >= 0) then
        gather_block_size = min(max(1,flow_cntl),max_gather_block_size)
@@ -519,6 +522,7 @@
  integer :: status(MP_STATUS_SIZE)
  integer :: ier ! MPI error code
 
+ signal = 1.0
  if ( present(flow_cntl) ) then
     if (flow_cntl >= 0) then
        gather_block_size = min(max(1,flow_cntl),max_gather_block_size)
