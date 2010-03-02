@@ -76,7 +76,6 @@ contains
 
     ierr = pio_inq_varndims(File, vardesc, ndims)
 
-
     if (File%iosystem%IOproc) then
        select case (iotype) 
 #ifdef _PNETCDF
@@ -151,11 +150,11 @@ contains
              do i=1,File%iosystem%num_iotasks-1
                 if (Debug) print *, subName,': 0: reading netcdf for ',i
 
-                call MPI_RECV( temp_start, size(temp_start), MPI_INTEGER, &
+                call MPI_RECV( temp_start, ndims, MPI_INTEGER, &
                      i,i,File%iosystem%IO_comm,status,mpierr)
                 call CheckMPIReturn('read_nfdarray_real',mpierr)
 
-                call MPI_RECV( temp_count, size(temp_count), MPI_INTEGER, &
+                call MPI_RECV( temp_count, ndims, MPI_INTEGER, &
                      i,i,File%iosystem%IO_comm,status,mpierr)
                 call CheckMPIReturn('read_nfdarray_real',mpierr)
 
@@ -253,7 +252,6 @@ contains
 
     ierr = pio_inq_varndims(File, vardesc, ndims)
 
-
     if (File%iosystem%IOproc) then
        select case (iotype) 
 #ifdef _PNETCDF
@@ -328,11 +326,11 @@ contains
              do i=1,File%iosystem%num_iotasks-1
                 if (Debug) print *, subName,': 0: reading netcdf for ',i
 
-                call MPI_RECV( temp_start, size(temp_start), MPI_INTEGER, &
+                call MPI_RECV( temp_start, ndims, MPI_INTEGER, &
                      i,i,File%iosystem%IO_comm,status,mpierr)
                 call CheckMPIReturn('read_nfdarray_double',mpierr)
 
-                call MPI_RECV( temp_count, size(temp_count), MPI_INTEGER, &
+                call MPI_RECV( temp_count, ndims, MPI_INTEGER, &
                      i,i,File%iosystem%IO_comm,status,mpierr)
                 call CheckMPIReturn('read_nfdarray_double',mpierr)
 
@@ -430,7 +428,6 @@ contains
 
     ierr = pio_inq_varndims(File, vardesc, ndims)
 
-
     if (File%iosystem%IOproc) then
        select case (iotype) 
 #ifdef _PNETCDF
@@ -505,11 +502,11 @@ contains
              do i=1,File%iosystem%num_iotasks-1
                 if (Debug) print *, subName,': 0: reading netcdf for ',i
 
-                call MPI_RECV( temp_start, size(temp_start), MPI_INTEGER, &
+                call MPI_RECV( temp_start, ndims, MPI_INTEGER, &
                      i,i,File%iosystem%IO_comm,status,mpierr)
                 call CheckMPIReturn('read_nfdarray_int',mpierr)
 
-                call MPI_RECV( temp_count, size(temp_count), MPI_INTEGER, &
+                call MPI_RECV( temp_count, ndims, MPI_INTEGER, &
                      i,i,File%iosystem%IO_comm,status,mpierr)
                 call CheckMPIReturn('read_nfdarray_int',mpierr)
 

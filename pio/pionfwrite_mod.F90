@@ -73,7 +73,7 @@ contains
     iotype = File%iotype
 
     ierr = pio_inq_varndims(File, vardesc, ndims)
-
+    print *,__FILE__,__LINE__,ndims	
     ierr=PIO_noerr
 	
     if(file%iosystem%ioproc) then
@@ -145,11 +145,11 @@ contains
                   0,File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
              call CheckMPIReturn(subName, mpierr)
 
-             call MPI_SEND( temp_start,size(start),MPI_INTEGER, &
+             call MPI_SEND( temp_start,ndims,MPI_INTEGER, &
                   0,File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
              call CheckMPIReturn(subName, mpierr)
 
-             call MPI_SEND( temp_count,size(count),MPI_INTEGER, &
+             call MPI_SEND( temp_count,ndims,MPI_INTEGER, &
                   0,2*File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
              call CheckMPIReturn(subName, mpierr)
 
@@ -289,7 +289,7 @@ contains
     iotype = File%iotype
 
     ierr = pio_inq_varndims(File, vardesc, ndims)
-
+    print *,__FILE__,__LINE__,ndims	
     ierr=PIO_noerr
 	
     if(file%iosystem%ioproc) then
@@ -361,11 +361,11 @@ contains
                   0,File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
              call CheckMPIReturn(subName, mpierr)
 
-             call MPI_SEND( temp_start,size(start),MPI_INTEGER, &
+             call MPI_SEND( temp_start,ndims,MPI_INTEGER, &
                   0,File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
              call CheckMPIReturn(subName, mpierr)
 
-             call MPI_SEND( temp_count,size(count),MPI_INTEGER, &
+             call MPI_SEND( temp_count,ndims,MPI_INTEGER, &
                   0,2*File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
              call CheckMPIReturn(subName, mpierr)
 
@@ -505,7 +505,7 @@ contains
     iotype = File%iotype
 
     ierr = pio_inq_varndims(File, vardesc, ndims)
-
+    print *,__FILE__,__LINE__,ndims	
     ierr=PIO_noerr
 	
     if(file%iosystem%ioproc) then
@@ -577,11 +577,11 @@ contains
                   0,File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
              call CheckMPIReturn(subName, mpierr)
 
-             call MPI_SEND( temp_start,size(start),MPI_INTEGER, &
+             call MPI_SEND( temp_start,ndims,MPI_INTEGER, &
                   0,File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
              call CheckMPIReturn(subName, mpierr)
 
-             call MPI_SEND( temp_count,size(count),MPI_INTEGER, &
+             call MPI_SEND( temp_count,ndims,MPI_INTEGER, &
                   0,2*File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
              call CheckMPIReturn(subName, mpierr)
 

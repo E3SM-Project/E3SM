@@ -882,9 +882,7 @@ contains
        call mpi_allreduce(iosize, iodesc%maxiobuflen, 1, mpi_integer, mpi_max, iosystem%io_comm, ierr)
        call checkmpireturn('mpi_allreduce in initdecomp',ierr)
 
-       print *,'IAM: ',iosystem%comp_rank,' after getiostartandcount: count is: ',iodesc%count
-!       if (Iosystem%comp_rank == Iosystem%iomaster) then
-!       endif
+        if(debug) print *,'IAM: ',iosystem%comp_rank,' after getiostartandcount: count is: ',iodesc%count
 
 
        lenblocks=iodesc%count(1)
