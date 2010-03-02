@@ -1,6 +1,53 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_0_13
+Originator(s): Jim
+Date: 3-2-2010
+One-line Summary: fix bug in internal start and count array lengths
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+    pionfread_mod.F90.in
+    pionfwrite_mod.F90.in
+    pionfput_mod.F90.in
+	internal start and count arrays were dependent on the lengths of
+	the start and count arrays passed in.  They should instead be dependent
+	on the number of dimensions of the variable being read or written.
+	
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+
+Code reviewed by: self
+
+Summary of pre-tag testing:
+
+  Regression tests:
+	     bluefire 119 tests PASS, 0 tests FAIL
+	     edinburgh 22 tests PASS, 0 tests FAIL 
+	     edinburgh_intel 22 tests PASS, 0 tests FAIL
+             frost 75 tests PASS, 0 tests FAIL
+	     jaguar 75 tests PASS, 0 tests FAIL
+             all cam pretag tests on bluefire
+
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_0_12
 Originator(s): Jim, John
 Date: 02-35-2010
