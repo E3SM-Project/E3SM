@@ -121,10 +121,10 @@ contains
           endif
 
           call alloc_check(temp_start,ndims)
-          temp_start=start
+          temp_start=start(1:ndims)
 
           call alloc_check(temp_count,ndims)
-          temp_count=count
+          temp_count=count(1:ndims)
 
           ! Every i/o proc send data to root
 
@@ -336,10 +336,10 @@ contains
           endif
 
           call alloc_check(temp_start,ndims)
-          temp_start=start
+          temp_start=start(1:ndims)
 
           call alloc_check(temp_count,ndims)
-          temp_count=count
+          temp_count=count(1:ndims)
 
           ! Every i/o proc send data to root
 
@@ -551,10 +551,10 @@ contains
           endif
 
           call alloc_check(temp_start,ndims)
-          temp_start=start
+          temp_start=start(1:ndims)
 
           call alloc_check(temp_count,ndims)
-          temp_count=count
+          temp_count=count(1:ndims)
 
           ! Every i/o proc send data to root
 
