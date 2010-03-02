@@ -64,14 +64,16 @@ contains
     integer iobuf_size, max_iobuf_size
     real(r4) , pointer :: temp_iobuf(:)
     integer, pointer :: temp_start(:), temp_count(:)
-    integer start_size, count_size
-    integer i
+    integer i, ndims
     integer :: fh, vid, oldval
 
 #ifdef TIMING
     call t_startf("pio_write_nfdarray_real")
 #endif
     iotype = File%iotype
+
+    ierr = pio_inq_varndims(File, vardesc, ndims)
+
     ierr=PIO_noerr
 	
     if(file%iosystem%ioproc) then
@@ -119,12 +121,10 @@ contains
              end if
           endif
 
-          start_size=size(start)
-          call alloc_check(temp_start,start_size)
+          call alloc_check(temp_start,ndims)
           temp_start=start
 
-          count_size=size(count)
-          call alloc_check(temp_count,count_size)
+          call alloc_check(temp_count,ndims)
           temp_count=count
 
           ! Every i/o proc send data to root
@@ -137,7 +137,7 @@ contains
              call CheckMPIReturn(subName, mpierr)
 
              if (Debug) print *, subName,': File%iosystem%comp_rank:',File%iosystem%comp_rank, &
-                  ': relaying IOBUF for write size=',size(IOBUF), temp_start,temp_count, start_size, count_size, i
+                  ': relaying IOBUF for write size=',size(IOBUF), temp_start,temp_count, i
 
 
              call MPI_SEND( temp_IOBUF,max_iobuf_size, &
@@ -163,7 +163,7 @@ contains
              ierr=nf90_put_var( fh, vid,IOBUF,temp_start,temp_count)
              if(Debug) print *, subname,__LINE__,fh,vid, ierr
              if(ierr==pio_noerr) then
-                if (Debug) print *, subName,': 0: done writing for self',start_size
+                if (Debug) print *, subName,': 0: done writing for self',ndims
 
                 do i=1,File%iosystem%num_iotasks-1
 
@@ -178,16 +178,16 @@ contains
                         MPI_REAL4, &
                         i,i,File%iosystem%IO_comm,status,mpierr)
                    call CheckMPIReturn(subName,mpierr)
-                   if(Debug) print *,subName, ' 2 receiving from ',i, start_size
+                   if(Debug) print *,subName, ' 2 receiving from ',i, ndims
 
                    call MPI_RECV( temp_start, &
-                        start_size, MPI_INTEGER,  &
+                        ndims, MPI_INTEGER,  &
                         i,File%iosystem%num_iotasks+i,File%iosystem%IO_comm,status,mpierr)
                    call CheckMPIReturn(subName,mpierr)
-                   if(Debug) print *,subName, ' 3 receiving from ',i, count_size
+                   if(Debug) print *,subName, ' 3 receiving from ',i,ndims
 
                    call MPI_RECV( temp_count, &
-                        count_size, MPI_INTEGER,  &
+                        ndims, MPI_INTEGER,  &
                         i,2*File%iosystem%num_iotasks+i,File%iosystem%IO_comm,status,mpierr)
                    call CheckMPIReturn(subName,mpierr)
 
@@ -280,14 +280,16 @@ contains
     integer iobuf_size, max_iobuf_size
     integer(i4) , pointer :: temp_iobuf(:)
     integer, pointer :: temp_start(:), temp_count(:)
-    integer start_size, count_size
-    integer i
+    integer i, ndims
     integer :: fh, vid, oldval
 
 #ifdef TIMING
     call t_startf("pio_write_nfdarray_int")
 #endif
     iotype = File%iotype
+
+    ierr = pio_inq_varndims(File, vardesc, ndims)
+
     ierr=PIO_noerr
 	
     if(file%iosystem%ioproc) then
@@ -335,12 +337,10 @@ contains
              end if
           endif
 
-          start_size=size(start)
-          call alloc_check(temp_start,start_size)
+          call alloc_check(temp_start,ndims)
           temp_start=start
 
-          count_size=size(count)
-          call alloc_check(temp_count,count_size)
+          call alloc_check(temp_count,ndims)
           temp_count=count
 
           ! Every i/o proc send data to root
@@ -353,7 +353,7 @@ contains
              call CheckMPIReturn(subName, mpierr)
 
              if (Debug) print *, subName,': File%iosystem%comp_rank:',File%iosystem%comp_rank, &
-                  ': relaying IOBUF for write size=',size(IOBUF), temp_start,temp_count, start_size, count_size, i
+                  ': relaying IOBUF for write size=',size(IOBUF), temp_start,temp_count, i
 
 
              call MPI_SEND( temp_IOBUF,max_iobuf_size, &
@@ -379,7 +379,7 @@ contains
              ierr=nf90_put_var( fh, vid,IOBUF,temp_start,temp_count)
              if(Debug) print *, subname,__LINE__,fh,vid, ierr
              if(ierr==pio_noerr) then
-                if (Debug) print *, subName,': 0: done writing for self',start_size
+                if (Debug) print *, subName,': 0: done writing for self',ndims
 
                 do i=1,File%iosystem%num_iotasks-1
 
@@ -394,16 +394,16 @@ contains
                         MPI_INTEGER, &
                         i,i,File%iosystem%IO_comm,status,mpierr)
                    call CheckMPIReturn(subName,mpierr)
-                   if(Debug) print *,subName, ' 2 receiving from ',i, start_size
+                   if(Debug) print *,subName, ' 2 receiving from ',i, ndims
 
                    call MPI_RECV( temp_start, &
-                        start_size, MPI_INTEGER,  &
+                        ndims, MPI_INTEGER,  &
                         i,File%iosystem%num_iotasks+i,File%iosystem%IO_comm,status,mpierr)
                    call CheckMPIReturn(subName,mpierr)
-                   if(Debug) print *,subName, ' 3 receiving from ',i, count_size
+                   if(Debug) print *,subName, ' 3 receiving from ',i,ndims
 
                    call MPI_RECV( temp_count, &
-                        count_size, MPI_INTEGER,  &
+                        ndims, MPI_INTEGER,  &
                         i,2*File%iosystem%num_iotasks+i,File%iosystem%IO_comm,status,mpierr)
                    call CheckMPIReturn(subName,mpierr)
 
@@ -496,14 +496,16 @@ contains
     integer iobuf_size, max_iobuf_size
     real(r8) , pointer :: temp_iobuf(:)
     integer, pointer :: temp_start(:), temp_count(:)
-    integer start_size, count_size
-    integer i
+    integer i, ndims
     integer :: fh, vid, oldval
 
 #ifdef TIMING
     call t_startf("pio_write_nfdarray_double")
 #endif
     iotype = File%iotype
+
+    ierr = pio_inq_varndims(File, vardesc, ndims)
+
     ierr=PIO_noerr
 	
     if(file%iosystem%ioproc) then
@@ -551,12 +553,10 @@ contains
              end if
           endif
 
-          start_size=size(start)
-          call alloc_check(temp_start,start_size)
+          call alloc_check(temp_start,ndims)
           temp_start=start
 
-          count_size=size(count)
-          call alloc_check(temp_count,count_size)
+          call alloc_check(temp_count,ndims)
           temp_count=count
 
           ! Every i/o proc send data to root
@@ -569,7 +569,7 @@ contains
              call CheckMPIReturn(subName, mpierr)
 
              if (Debug) print *, subName,': File%iosystem%comp_rank:',File%iosystem%comp_rank, &
-                  ': relaying IOBUF for write size=',size(IOBUF), temp_start,temp_count, start_size, count_size, i
+                  ': relaying IOBUF for write size=',size(IOBUF), temp_start,temp_count, i
 
 
              call MPI_SEND( temp_IOBUF,max_iobuf_size, &
@@ -595,7 +595,7 @@ contains
              ierr=nf90_put_var( fh, vid,IOBUF,temp_start,temp_count)
              if(Debug) print *, subname,__LINE__,fh,vid, ierr
              if(ierr==pio_noerr) then
-                if (Debug) print *, subName,': 0: done writing for self',start_size
+                if (Debug) print *, subName,': 0: done writing for self',ndims
 
                 do i=1,File%iosystem%num_iotasks-1
 
@@ -610,16 +610,16 @@ contains
                         MPI_REAL8, &
                         i,i,File%iosystem%IO_comm,status,mpierr)
                    call CheckMPIReturn(subName,mpierr)
-                   if(Debug) print *,subName, ' 2 receiving from ',i, start_size
+                   if(Debug) print *,subName, ' 2 receiving from ',i, ndims
 
                    call MPI_RECV( temp_start, &
-                        start_size, MPI_INTEGER,  &
+                        ndims, MPI_INTEGER,  &
                         i,File%iosystem%num_iotasks+i,File%iosystem%IO_comm,status,mpierr)
                    call CheckMPIReturn(subName,mpierr)
-                   if(Debug) print *,subName, ' 3 receiving from ',i, count_size
+                   if(Debug) print *,subName, ' 3 receiving from ',i,ndims
 
                    call MPI_RECV( temp_count, &
-                        count_size, MPI_INTEGER,  &
+                        ndims, MPI_INTEGER,  &
                         i,2*File%iosystem%num_iotasks+i,File%iosystem%IO_comm,status,mpierr)
                    call CheckMPIReturn(subName,mpierr)
 

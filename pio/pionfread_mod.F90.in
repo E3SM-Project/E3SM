@@ -54,8 +54,7 @@ contains
     integer :: iobuf_size, max_iobuf_size
     integer :: status(MPI_STATUS_SIZE)
     integer, pointer :: temp_start(:), temp_count(:)
-    integer :: start_size, count_size
-    integer :: i, mpierr
+    integer :: i, mpierr, ndims
 
 #ifdef TIMING
     call t_startf("pio_read_nfdarray_{TYPE}")
@@ -63,9 +62,12 @@ contains
     iotype = File%iotype
     ierr=PIO_noerr
 
+
+    ierr = pio_inq_varndims(File, vardesc, ndims)
+
+
     if (File%iosystem%IOproc) then
        select case (iotype) 
-
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
           if(DebugIO) print *,_FILE_,__LINE__, &
@@ -101,23 +103,20 @@ contains
           endif
 
           ! create temporaries of size int (netcdf limitation)
-          start_size=size(start)
-          call alloc_check(temp_start,start_size)
-
-          count_size=size(count)
-          call alloc_check(temp_count,count_size)
+          call alloc_check(temp_start, ndims)
+          call alloc_check(temp_count, ndims)
 
           if (File%iosystem%io_rank>0) then
-             temp_start=start
-             temp_count=count
+             temp_start=start(1:ndims)
+             temp_count=count(1:ndims)
 
              if (Debug) print *, File%iosystem%comp_rank,': waiting to receive IOBUF', start, count
 
-             call MPI_SEND( temp_start,start_size,MPI_INTEGER, &
+             call MPI_SEND( temp_start,ndims,MPI_INTEGER, &
                   0,File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
              call checkmpireturn(subName, mpierr)
 
-             call MPI_SEND( temp_count,count_size,MPI_INTEGER, &
+             call MPI_SEND( temp_count,ndims,MPI_INTEGER, &
                   0,File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
              call checkmpireturn(subName, mpierr)
 
@@ -168,8 +167,8 @@ contains
 
              if (Debug) print *, subName,': 0: reading netcdf for self', start, count
 
-             temp_start=start
-             temp_count=count
+             temp_start=start(1:ndims)
+             temp_count=count(1:ndims)
 
              ierr=nf90_get_var( File%fh, varDesc%varid, &
                   IOBUF, temp_start, temp_count )
