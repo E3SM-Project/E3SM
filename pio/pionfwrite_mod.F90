@@ -73,7 +73,6 @@ contains
     iotype = File%iotype
 
     ierr = pio_inq_varndims(File, vardesc, ndims)
-    print *,__FILE__,__LINE__,ndims	
     ierr=PIO_noerr
 	
     if(file%iosystem%ioproc) then
@@ -289,7 +288,6 @@ contains
     iotype = File%iotype
 
     ierr = pio_inq_varndims(File, vardesc, ndims)
-    print *,__FILE__,__LINE__,ndims	
     ierr=PIO_noerr
 	
     if(file%iosystem%ioproc) then
@@ -505,7 +503,6 @@ contains
     iotype = File%iotype
 
     ierr = pio_inq_varndims(File, vardesc, ndims)
-    print *,__FILE__,__LINE__,ndims	
     ierr=PIO_noerr
 	
     if(file%iosystem%ioproc) then
