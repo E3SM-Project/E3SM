@@ -33,9 +33,9 @@ contains
 !<
 # 24 "pionfread_mod.F90.in"
   integer function read_nfdarray_real (File,IOBUF,varDesc,IODesc, start,count) result(ierr)
-    use pio_types
-    use pio_kinds
-    use nf_mod
+    use pio_types, only : file_desc_t, var_desc_t, io_desc_t, pio_real, pio_double, pio_int, &
+	pio_noerr, pio_iotype_netcdf4p, pio_iotype_netcdf4c, pio_iotype_pnetcdf, pio_iotype_netcdf
+    use pio_kinds, only : pio_offset, i4, r4, r8
     use pio_utils, only : check_netcdf, bad_iotype 
     use pio_support, only : Debug, DebugIO, piodie, checkmpireturn
     use alloc_mod, only: alloc_check
@@ -65,7 +65,7 @@ contains
     integer :: iobuf_size, max_iobuf_size
     integer :: status(MPI_STATUS_SIZE)
     integer, pointer :: temp_start(:), temp_count(:)
-    integer :: i, mpierr, ndims
+    integer :: i, mpierr, ndims, sdims
 
 #ifdef TIMING
     call t_startf("pio_read_nfdarray_real")
@@ -74,12 +74,11 @@ contains
     ierr=PIO_noerr
 
 
-    ierr = pio_inq_varndims(File, vardesc, ndims)
-
+    ndims = size(start)
     if (File%iosystem%IOproc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           if(DebugIO) print *,_FILE_,__LINE__, &
                '  IAM: ',File%iosystem%io_rank
 
@@ -99,7 +98,7 @@ contains
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)	
 ! all reads can be parallel in netcdf4 format
           ierr= nf90_get_var(File%fh, vardesc%varid, iobuf, start=int(start),count=int(count))
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           iobuf_size=size(IOBUF)
           call MPI_REDUCE( iobuf_size,max_iobuf_size, &
                1,MPI_INTEGER,MPI_MAX,0,File%iosystem%IO_comm,mpierr )
@@ -113,9 +112,11 @@ contains
           endif
 
           ! create temporaries of size int (netcdf limitation)
+	 
           call alloc_check(temp_start, ndims)
           call alloc_check(temp_count, ndims)
-
+	  temp_start=1
+	  temp_count=1
           if (File%iosystem%io_rank>0) then
              temp_start=start(1:ndims)
              temp_count=count(1:ndims)
@@ -175,7 +176,7 @@ contains
 
              ! Read root data last
 
-             if (Debug) print *, subName,': 0: reading netcdf for self', start, count
+             if (Debug) print *, subName,': 0: reading netcdf for self', vardesc%varid, ndims, start, count
 
              temp_start=start(1:ndims)
              temp_count=count(1:ndims)
@@ -209,9 +210,9 @@ contains
 !<
 # 24 "pionfread_mod.F90.in"
   integer function read_nfdarray_double (File,IOBUF,varDesc,IODesc, start,count) result(ierr)
-    use pio_types
-    use pio_kinds
-    use nf_mod
+    use pio_types, only : file_desc_t, var_desc_t, io_desc_t, pio_real, pio_double, pio_int, &
+	pio_noerr, pio_iotype_netcdf4p, pio_iotype_netcdf4c, pio_iotype_pnetcdf, pio_iotype_netcdf
+    use pio_kinds, only : pio_offset, i4, r4, r8
     use pio_utils, only : check_netcdf, bad_iotype 
     use pio_support, only : Debug, DebugIO, piodie, checkmpireturn
     use alloc_mod, only: alloc_check
@@ -241,7 +242,7 @@ contains
     integer :: iobuf_size, max_iobuf_size
     integer :: status(MPI_STATUS_SIZE)
     integer, pointer :: temp_start(:), temp_count(:)
-    integer :: i, mpierr, ndims
+    integer :: i, mpierr, ndims, sdims
 
 #ifdef TIMING
     call t_startf("pio_read_nfdarray_double")
@@ -250,12 +251,11 @@ contains
     ierr=PIO_noerr
 
 
-    ierr = pio_inq_varndims(File, vardesc, ndims)
-
+    ndims = size(start)
     if (File%iosystem%IOproc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           if(DebugIO) print *,_FILE_,__LINE__, &
                '  IAM: ',File%iosystem%io_rank
 
@@ -275,7 +275,7 @@ contains
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)	
 ! all reads can be parallel in netcdf4 format
           ierr= nf90_get_var(File%fh, vardesc%varid, iobuf, start=int(start),count=int(count))
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           iobuf_size=size(IOBUF)
           call MPI_REDUCE( iobuf_size,max_iobuf_size, &
                1,MPI_INTEGER,MPI_MAX,0,File%iosystem%IO_comm,mpierr )
@@ -289,9 +289,11 @@ contains
           endif
 
           ! create temporaries of size int (netcdf limitation)
+	 
           call alloc_check(temp_start, ndims)
           call alloc_check(temp_count, ndims)
-
+	  temp_start=1
+	  temp_count=1
           if (File%iosystem%io_rank>0) then
              temp_start=start(1:ndims)
              temp_count=count(1:ndims)
@@ -351,7 +353,7 @@ contains
 
              ! Read root data last
 
-             if (Debug) print *, subName,': 0: reading netcdf for self', start, count
+             if (Debug) print *, subName,': 0: reading netcdf for self', vardesc%varid, ndims, start, count
 
              temp_start=start(1:ndims)
              temp_count=count(1:ndims)
@@ -385,9 +387,9 @@ contains
 !<
 # 24 "pionfread_mod.F90.in"
   integer function read_nfdarray_int (File,IOBUF,varDesc,IODesc, start,count) result(ierr)
-    use pio_types
-    use pio_kinds
-    use nf_mod
+    use pio_types, only : file_desc_t, var_desc_t, io_desc_t, pio_real, pio_double, pio_int, &
+	pio_noerr, pio_iotype_netcdf4p, pio_iotype_netcdf4c, pio_iotype_pnetcdf, pio_iotype_netcdf
+    use pio_kinds, only : pio_offset, i4, r4, r8
     use pio_utils, only : check_netcdf, bad_iotype 
     use pio_support, only : Debug, DebugIO, piodie, checkmpireturn
     use alloc_mod, only: alloc_check
@@ -417,7 +419,7 @@ contains
     integer :: iobuf_size, max_iobuf_size
     integer :: status(MPI_STATUS_SIZE)
     integer, pointer :: temp_start(:), temp_count(:)
-    integer :: i, mpierr, ndims
+    integer :: i, mpierr, ndims, sdims
 
 #ifdef TIMING
     call t_startf("pio_read_nfdarray_int")
@@ -426,12 +428,11 @@ contains
     ierr=PIO_noerr
 
 
-    ierr = pio_inq_varndims(File, vardesc, ndims)
-
+    ndims = size(start)
     if (File%iosystem%IOproc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           if(DebugIO) print *,_FILE_,__LINE__, &
                '  IAM: ',File%iosystem%io_rank
 
@@ -451,7 +452,7 @@ contains
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)	
 ! all reads can be parallel in netcdf4 format
           ierr= nf90_get_var(File%fh, vardesc%varid, iobuf, start=int(start),count=int(count))
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           iobuf_size=size(IOBUF)
           call MPI_REDUCE( iobuf_size,max_iobuf_size, &
                1,MPI_INTEGER,MPI_MAX,0,File%iosystem%IO_comm,mpierr )
@@ -465,9 +466,11 @@ contains
           endif
 
           ! create temporaries of size int (netcdf limitation)
+	 
           call alloc_check(temp_start, ndims)
           call alloc_check(temp_count, ndims)
-
+	  temp_start=1
+	  temp_count=1
           if (File%iosystem%io_rank>0) then
              temp_start=start(1:ndims)
              temp_count=count(1:ndims)
@@ -527,7 +530,7 @@ contains
 
              ! Read root data last
 
-             if (Debug) print *, subName,': 0: reading netcdf for self', start, count
+             if (Debug) print *, subName,': 0: reading netcdf for self', vardesc%varid, ndims, start, count
 
              temp_start=start(1:ndims)
              temp_count=count(1:ndims)
