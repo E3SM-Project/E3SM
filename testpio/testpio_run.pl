@@ -42,9 +42,10 @@ require XML::Lite;
 require Utils;
 
 $host = Utils->host() unless(defined $host);
-Utils->loadmodules("$host");
-
 print "host = $host\n";
+Utils->loadmodules("$host");
+print "host = $host\n";
+
 
 my $xml = XML::Lite->new( "build_defaults.xml" );
 

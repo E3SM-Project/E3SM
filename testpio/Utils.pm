@@ -25,7 +25,6 @@ sub host{
     }elsif($host =~ /(\w+)\./){
 	$host = $1;
     }
-    print "host: $host\n";
 #HOST SPECIFIC END
 }
 
