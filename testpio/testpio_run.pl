@@ -3,10 +3,12 @@ use strict;
 use Cwd;
 use Getopt::Long;
 
+my $projectInfo;
 my $suites;
 my $retry=0;
 my $help=0;
 my $host;
+my $enablenetcdf4;
 my $result = GetOptions("suites=s@"=>\$suites,"retry"=>\$retry,"host=s"=>\$host,"help"=>\$help);
 
 usage() if($help);
@@ -28,7 +30,7 @@ my @valid_env = qw(NETCDF_PATH PNETCDF_PATH MPI_LIB MPI_INC F90 FC CC FFLAGS
                    MPICC MPIF90 LDLIBS);
 
 
-my @testsuites = qw(all snet pnet mpiio ant bench);
+my @testsuites = qw(all snet pnet mpiio ant);
 
 
 
@@ -101,31 +103,10 @@ open(F,">$script");
 print F "#!/usr/bin/perl\n";
 print F "$attributes{preamble}\n";
 
-# get a valid project number for this user
-my $project;
-#HOST SPECIFIC START
-if($host eq "bluefire" or $host eq "frost"){
-    open(G,"/etc/project.ncar");
-    foreach(<G>){
-	if($_ =~ /^$user:(\d+),?/){
-	    $project = $1;
-	    last;
-	}
-    }
-    close(G);
-}elsif($host eq "jaguar"){
-    $project = `/sw/xt5/bin/showproj -s jaguar | tail -1`;
-    print F "#PBS -A $project\n";
-}elsif($host eq "athena"){
-#    $project = `showproj -s athena | tail -1`;
-    print F "##PBS -A $project\n";
-}
-my $enablenetcdf4;
-if($host eq "bluefire"){
-    print F "#BSUB -R \"span[ptile=64]\"\n";
-    print F "#BSUB -P $project\n";
-}
-#HOST SPECIFIC END
+
+# Create a valid project string for this user
+$projectInfo = Utils->projectInfo("$host","$user");
+print F $projectInfo;
 
 my @env;
 foreach(keys %attributes){
@@ -165,9 +146,7 @@ my \$confopts = {all=>" --enable-pnetcdf --enable-mpiio --enable-netcdf --enable
 		snet=>"--disable-pnetcdf --disable-mpiio --enable-netcdf --enable-timing $enablenetcdf4",
 		pnet=>"--enable-pnetcdf --disable-mpiio --disable-netcdf --enable-timing",
 		ant=>"--enable-pnetcdf --enable-mpiio --enable-netcdf --disable-timing $enablenetcdf4",
-		mpiio=>"--disable-pnetcdf --enable-mpiio --disable-netcdf --enable-timing",
-		bench=>"--enable-pnetcdf --enable-mpiio --enable-netcdf --enable-timing $enablenetcdf4"
-	    };
+		mpiio=>"--disable-pnetcdf --enable-mpiio --disable-netcdf --enable-timing"};
 
 my \$testlist = {all=>["sn01","sn02","sn03","sb01","sb02","sb03","sb04","sb05","sb06","sb07","sb08",
                       "pn01","pn02","pn03","pb01","pb02","pb03","pb04","pb05","pb06","pb07","pb08",
