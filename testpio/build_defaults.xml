@@ -38,8 +38,8 @@
 #BSUB -e testpio.%J.stderr
 #BSUB -J testpio_suite
 #BSUB -W 1:50"
-
 />
+
 <edinburgh
   ADDENV_PATH = "/usr/local/mpich-lf95/bin"
   ADDENV_LD_LIBRARY_PATH = "/usr/local/lf95/lib64"
@@ -92,7 +92,6 @@
   FFLAGS = "-D_USE_FLOW_CONTROL"
   ENV_NETCDF_PATH="$NETCDF_DIR"
   ENV_PNETCDF_PATH="$PNETCDF_DIR"
-
   workdir = "/tmp/work/${USER}/testpio"
   run = "aprun -n 12 "
   submit = "qsub "
@@ -103,12 +102,16 @@
 #PBS -l walltime=00:50:00
 #PBS -j oe
 #PBS -V"
-
 />
+
 <athena
-  MPIF90=ftn
-  NETCDF_PATH = "${NETCDF_DIR}"
-  PNETCDF_PATH = "${PNETCDF_DIR}"
+  MPIF90 = "ftn"
+  MPICC =  "cc"
+  F90 = "pgf90"
+  CC = "pgcc"
+  FFLAGS = "-D_USE_FLOW_CONTROL"
+  NETCDF_PATH = "$NETCDF_DIR"
+  PNETCDF_PATH = "$PNETCDF_DIR"
   workdir = "/lustre/scratch/${USER}/testpio"
   run = "aprun -n 16 "
   submit = "qsub "
@@ -117,6 +120,24 @@
 #PBS -q batch
 #PBS -l size=16
 #PBS -l walltime=00:50:00
+#PBS -j oe
+#PBS -V"
+/>
+<kraken
+  MPIF90 = "ftn -L$LIBSCI_BASE_DIR/pgi/lib"
+  MPICC  = "cc -L$LIBSCI_BASE_DIR/pgi/lib"
+  F90    = "pgf90" 
+  CC     = "pgcc" 
+  FFLAGS = "-D_USE_FLOW_CONTROL"
+  NETCDF_PATH = "$NETCDF_DIR"
+  PNETCDF_PATH = "$PNETCDF_DIR"
+  workdir = "/lustre/scratch/${USER}/testpio"
+  run = "aprun -n 32 "
+  submit = "qsub "
+  conopts = " --disable-mct --enable-filesystem-hints=lustre"
+  preamble="#PBS -N testpio_suite
+#PBS -l size=36
+#PBS -l walltime=01:50:00
 #PBS -j oe
 #PBS -V"
 />

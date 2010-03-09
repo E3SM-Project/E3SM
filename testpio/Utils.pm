@@ -25,6 +25,7 @@ sub host{
     }elsif($host =~ /(\w+)\./){
 	$host = $1;
     }
+    print "host: $host\n";
 #HOST SPECIFIC END
 }
 
@@ -124,16 +125,9 @@ sub loadmodules{
 	module(" swap xt-asyncpe xt-asyncpe/1.0c");
 	module(" swap xt-binutils-quadcore xt-binutils-quadcore/2.0.1");
     }elsif($host eq "kraken"){
-#	require "/opt/modules/default/init/perl";
-	module(" purge");
-	module(" load PrgEnv-pgi Base-opts");
-	module(" load xtpe-quadcore");
-	module(" load torque moab");
-        module(" load xt-mpt");
-	module(" switch pgi pgi/9.0.3");
+	require "/opt/modules/default/init/perl";
 	module(" load netcdf/3.6.2");      
 	module(" load p-netcdf/1.1.1");
-	module(" swap xt-asyncpe xt-asyncpe/1.0c");
     }
 #HOST SPECIFIC END
 }

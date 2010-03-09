@@ -76,10 +76,12 @@ if(defined $suites){
 
 my $workdir = $attributes{workdir};
 
+print "preamble: $attributes{preamble}\n";
+
 if(-d $workdir){
     print "Using existing directory $workdir\n";
 }else{
-    print "Creating directory $workdir\n";
+    print "Creating directory: ($workdir)\n";
     mkdir $workdir or die "Could not create directory"
 }
 
