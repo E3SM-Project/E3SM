@@ -10,12 +10,12 @@
   F90 = "blrts_xlf90"
   FC = "blrts_xlf90"
   CC = "blrts_xlc"
-  FFLAGS = "-qextname=flush -g -qfullpath -WF,-DBGL"
+  FFLAGS = "-qextname=flush -g -qfullpath -WF,-DBGL -WF,-D_USE_FLOW_CONTROL"
   ALLCFLAGS = "-DBGL"
   conopts = "--disable-mct  --enable-mpiio --enable-timing --build=powerpc-bgp-linux --host=powerpc64-suse-linux"
   workdir = "/ptmp/${USER}/testpio"
-  run = "cqsub -n32 -m vn -t 00:50:00 -q default "
-  submit ="perl "
+  run = "cobalt-mpirun -mode vn -nofree --stdout"
+  submit ="cqsub -n 32 -m script -t 01:00:00 -q default "
  />
 
 <bluefire

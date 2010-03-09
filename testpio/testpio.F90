@@ -197,10 +197,12 @@ program testpio
   ! Checks
   !-------------------------------------
 
+#if !defined(BGL) | !defined(BGL)
   if (num_iotasks <= 0) then
      write(*,*) trim(myname),' ERROR: ioprocs invalid num_iotasks=',num_iotasks
      call piodie(__FILE__,__LINE__)
   endif
+#endif
 
   ! ----------------------------------------------------------------
   ! if stride is and num_iotasks is incompatible than reset stride
@@ -334,42 +336,60 @@ program testpio
   ! allocate and set test arrays 
   !----------------------
 
-  call alloc_check(test_r8wr,lLength,'testpio:test_r8wr')
-  call alloc_check(test_i4wr,lLength,'testpio:test_i4wr')
-  call alloc_check(test_i4i ,lLength,'testpio:test_i4i ')
-  call alloc_check(test_i4j ,lLength,'testpio:test_i4j ')
-  call alloc_check(test_i4k ,lLength,'testpio:test_i4k ')
-  call alloc_check(test_i4m ,lLength,'testpio:test_i4m ')
-  call alloc_check(test_r4wr,lLength,'testpio:test_r4wr' )
-  call alloc_check(test_i4dof,lLength,'testpio:test_i4dof')
+  if(TestR8 .or. TestCombo) then 
+     call alloc_check(test_r8wr,lLength,'testpio:test_r8wr')
+  endif
+  if(TestR4 .or. TestCombo) then 
+     call alloc_check(test_r4wr,lLength,'testpio:test_r4wr' )
+  endif
+  if(TestInt .or. TestCombo) then 
+     call alloc_check(test_i4wr,lLength,'testpio:test_i4wr')
+  endif
+  if(TestInt) then 
+    call alloc_check(test_i4i ,lLength,'testpio:test_i4i ')
+    call alloc_check(test_i4j ,lLength,'testpio:test_i4j ')
+    call alloc_check(test_i4k ,lLength,'testpio:test_i4k ')
+    call alloc_check(test_i4m ,lLength,'testpio:test_i4m ')
+    call alloc_check(test_i4dof,lLength,'testpio:test_i4dof')
+  endif
 
   do n = 1,lLength
      call c1dto3d(compdof(n),gDims3D(1),gDims3D(2),gDims3D(3),i1,j1,k1)
-     test_i4dof(n) = compdof(n)
-     test_i4i(n) = i1
-     test_i4j(n) = j1
-     test_i4k(n) = k1
-     test_i4m(n) = my_task
-     test_r8wr(n) = 10.0_r8*cos(20.*real(i1,kind=r8)/real(gDims3D(1),kind=r8))* &
+     if(TestInt) then 
+	test_i4dof(n) = compdof(n)
+        test_i4i(n) = i1
+        test_i4j(n) = j1
+        test_i4k(n) = k1
+        test_i4m(n) = my_task
+     endif
+     if(TestR8 .or. TestCombo) then 
+         test_r8wr(n) = 10.0_r8*cos(20.*real(i1,kind=r8)/real(gDims3D(1),kind=r8))* &
           cos(10.*real(j1,kind=r8)/real(gDims3D(2),kind=r8))* &
           (1.0+1.0*real(j1,kind=r8)/real(gDims3D(2),kind=r8))* &
           cos(25.*real(k1,kind=r8)/real(gDims3D(3),kind=r8))
-     test_r4wr(n) = test_r8wr(n)
-     test_i4wr(n) = nint(test_r8wr(n)*1000.0_r8)
+     endif
+     if(TestR4 .or. TestCombo) then 
+         test_r4wr(n) = 10.0_r4*cos(20.*real(i1,kind=r4)/real(gDims3D(1),kind=r4))* &
+          cos(10.*real(j1,kind=r4)/real(gDims3D(2),kind=r4))* &
+          (1.0+1.0*real(j1,kind=r4)/real(gDims3D(2),kind=r4))* &
+          cos(25.*real(k1,kind=r4)/real(gDims3D(3),kind=r4))
+     endif
+     if(TestInt .or. TestCombo) then 
+         test_i4wr(n) = nint(10.0_r8*cos(20.*real(i1,kind=r8)/real(gDims3D(1),kind=r8))* &
+          cos(10.*real(j1,kind=r8)/real(gDims3D(2),kind=r8))* &
+          (1.0+1.0*real(j1,kind=r8)/real(gDims3D(2),kind=r8))* &
+          cos(25.*real(k1,kind=r8)/real(gDims3D(3),kind=r8))*1000.0_r8)
+     endif
   enddo
   if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #10'
 
 
-  if(TestR8 .or. TestCombo)  call alloc_check(test_r8rd,lLength,'testpio:test_r8rd')
+  if(TestR8  .or. TestCombo)  call alloc_check(test_r8rd,lLength,'testpio:test_r8rd')
   if(TestInt .or. TestCombo) call alloc_check(test_i4rd,lLength,'testpio:test_i4rd')
-  if(TestR4 .or. TestCombo)  call alloc_check(test_r4rd,lLength,'testpio:test_r4rd')
+  if(TestR4  .or. TestCombo)  call alloc_check(test_r4rd,lLength,'testpio:test_r4rd')
 
-!  call alloc_check(diff_r8,lLength,'testpio:diff_r8 ')
-!  call alloc_check(diff_r4,lLength,'testpio:diff_r4 ')
-!  call alloc_check(diff_i4,lLength,'testpio:diff_i4 ')
-
-  if(TestR8 .or. TestCombo) test_r8rd(:) = 1000.00
-  if(TestR4 .or. TestCombo) test_r4rd(:) = 1000.00
+  if(TestR8  .or. TestCombo) test_r8rd(:) = 1000.00
+  if(TestR4  .or. TestCombo) test_r4rd(:) = 1000.00
   if(TestInt .or. TestCombo) test_i4rd(:) = 1000
 
   if(Debug) then

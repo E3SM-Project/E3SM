@@ -9,10 +9,9 @@ BEGIN {
 # non-exported package globals go here
 use vars      qw();
 
-
 sub host{
     my $host = `hostname`;
-
+#HOST SPECIFIC START
     if($host =~ /^fr\d+en/){
 	$host = "frost";
     }elsif($host =~ /^be\d+en/){
@@ -26,16 +25,45 @@ sub host{
     }elsif($host =~ /(\w+)\./){
 	$host = $1;
     }
+#HOST SPECIFIC END
+}
+
+sub projectInfo{
+   my ($mod,$host,$user) = @_;
+   my $projectInfo;
+   my $project;
+#HOST SPECIFIC START
+   if($host eq "bluefire" or $host eq "frost"){
+      open(G,"/etc/project.ncar");
+      foreach(<G>){
+         if($_ =~ /^$user:(\d+),?/){
+            $project = $1;
+            last;
+         }
+      }
+      close(G);
+      if($host eq "bluefire") {
+        $projectInfo = "#BSUB -R \"span[ptile=64]\"\n#BSUB -P $project\n";
+      }
+   }elsif($host eq "jaguar"){
+     $project = `/sw/xt5/bin/showproj -s jaguar | tail -1`;
+     $projectInfo ="#PBS -A $project\n";
+   }elsif($host eq "athena" or $host eq "kraken"){
+#    $project = `showproj -s athena | tail -1`;
+     $projectInfo ="##PBS -A $project\n";
+   }
+#HOST SPECIFIC END
 }
 
 sub loadmodules{
     my ($mod,$host) = @_;
-    print "host = $host\n";
 
+#HOST SPECIFIC START
     my $modpath = {bluefire => "/contrib/Modules/3.2.6/",
 		   jaguar  => "/opt/modules/default/",
 		   athena => "/opt/modules/default/",
 		   kraken => "/opt/modules/default/"};
+#HOST SPECIFIC END
 
     return unless(defined $modpath->{$host});
 
@@ -67,6 +95,7 @@ sub loadmodules{
 
 
     
+#HOST SPECIFIC START
     if($host eq "bluefire"){
 #	module("load xlf12");
 #        module("list");
@@ -106,6 +135,7 @@ sub loadmodules{
 	module(" load p-netcdf/1.1.1");
 	module(" swap xt-asyncpe xt-asyncpe/1.0c");
     }
+#HOST SPECIFIC END
 }
 
 

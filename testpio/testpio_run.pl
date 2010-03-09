@@ -100,6 +100,7 @@ print F "$attributes{preamble}\n";
 
 # get a valid project number for this user
 my $project;
+#HOST SPECIFIC START
 if($host eq "bluefire" or $host eq "frost"){
     open(G,"/etc/project.ncar");
     foreach(<G>){
@@ -121,6 +122,7 @@ if($host eq "bluefire"){
     print F "#BSUB -R \"span[ptile=64]\"\n";
     print F "#BSUB -P $project\n";
 }
+#HOST SPECIFIC END
 
 my @env;
 foreach(keys %attributes){
@@ -218,15 +220,11 @@ foreach \$suite (qw(@testsuites)){
 	    chmod 0755,"testpio";
 	    symlink("$tstdir/namelists/testpio_in.\$test","testpio_in");
 	    mkdir "none" unless(-d "none");
-	    my \$log = "testpio.out.$date";
-	    
+	    my \$log = "\$casedir/testpio.out.$date";
+#HOST SPECIFIC START
 	    if("$host" eq "frost"){
-		open(JC, "\$run -p $project -o \$log ./testpio < testpio_in |");
-		my \$rv = <JC>;
-		close(JC);
-		chomp \$rv;
-		my \$rv2 = system("cqwait \$rv");
-		print "Job \$rv complete\\n";
+	       system("\$run \$log testpio ");
+#HOST SPECIFIC END
 	    }else{
 		system("\$run ./testpio 1> \$log 2>&1");
 	    }
@@ -254,5 +252,6 @@ foreach \$suite (qw(@testsuites)){
 print "test complete on $host \$passcnt tests PASS, \$failcnt tests FAIL\\n";
 EOF
 close(F);
+chmod 0755, $script;
 my $submit = $attributes{submit};
 exec("$submit $script");

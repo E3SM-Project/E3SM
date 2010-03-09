@@ -203,6 +203,10 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
           stride = (nprocs-base)/num_iotasks
        endif
     elseif (nprocsIO <= 0) then
+#if defined(BGL) | defined(BGP)
+       ! A negative value for num_iotasks has a special meaning on Blue Gene
+       num_iotasks = nprocsIO
+#else
        if (stride <= 0 .or. stride>nprocs) then
           num_iotasks = nprocs
           stride = 1
@@ -210,6 +214,7 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
        else
           num_iotasks = (nprocs-base)/stride
        endif
+#endif
     endif
 
     !------------------------------------------------
