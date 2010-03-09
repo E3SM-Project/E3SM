@@ -11,7 +11,7 @@ my $result = GetOptions("suites=s@"=>\$suites,"retry"=>\$retry,"host=s"=>\$host,
 
 usage() if($help);
 sub usage{
-    print "--suites : Test only the listed suites (all, snet, pnet, mpiio, ant, bench)\n";
+    print "--suites : Test only the listed suites (all, snet, pnet, mpiio, ant)\n";
     print "--retry  : Do not repeat tests that have already passed\n";
     print "--host   : Force a hostname for testing\n";
     print "--help   : Print this message\n";
@@ -173,9 +173,7 @@ my \$testlist = {all=>["sn01","sn02","sn03","sb01","sb02","sb03","sb04","sb05","
 		snet=>["sn01","sn02","sn03","sb01","sb02","sb03","sb04","sb05","sb06","sb07","sb08"],
 		pnet=>["pn01","pn02","pn03","pb01","pb02","pb03","pb04","pb05","pb06","pb07","pb08"],
 		ant=>["sn02","sb02","pn02","pb02","bn02","bb02"],
-		mpiio=>["bn01","bn02","bn03","bb01","bb02","bb03","bb04","bb05","bb06","bb07","bb08"],
-		bench=>["b14"]
-	    };
+		mpiio=>["bn01","bn02","bn03","bb01","bb02","bb03","bb04","bb05","bb06","bb07","bb08"]};
 
 
 my \@netcdf4tests = ("n4n01","n4n02","n4n03","n4b01","n4b02","n4b03","n4b04","n4b05","n4b06","n4b07","n4b08");
