@@ -1,6 +1,66 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_0_16
+Originator(s): John
+Date: 03-10-2010
+One-line Summary: Updates to testing infrastructure
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+   - Added file config_bench.xml which describes several different
+     benchmarks which can be run.
+   - Added fine testpio_bench.pl which executes a benchmark using
+     a single command.
+
+List all existing files that have been modified, and describe the changes:
+
+   - Minor cleanup of memory usage in testpio
+   - Moved some host specific code into Utils.pm
+   - Marked code in the perl scripts that are host specific
+   - Allowed the use of negative numIOprocs in namelist for BGL
+   - Removed the b14 benchmark.  This was only added as experimental 
+     code and it exceeds memory on Blue Genel/L when running on 
+     64 MPI tasks.
+   - Removed the 'bench' testsuite.  This was only added as 
+     experimental code.
+   - Added support for Kraken in PIO testsuite
+   - Added script support in tesetpio_run.pl on Frost.
+   - Turned on flow-control as default mode on frost
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+   - Minor cleanup of memory usage in testpio
+
+Code reviewed by: self
+
+Summary of pre-tag testing:
+
+  Regression tests:
+             bluefire 107 tests PASS, 0 tests FAIL  **
+             frost 74 tests PASS, 0 tests FAIL      **
+             kraken 74 tests PASS, 0 tests FAIL     
+             CAM regression
+             ccsm pretags
+
+  ** Note that reduction in the number of tests is the result of removing the 'bench' testsuite
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_0_15
 Originator(s): Jim
 Date: 03-03-2010
