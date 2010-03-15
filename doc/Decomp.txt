@@ -24,7 +24,7 @@ first and then progress to the most complex and flexible interface.
 
 \section decomp_bc Block-cyclic interface
 
-The simplest inteface assumes that your arrays are decomposed in a block-cyclic 
+The simplest interface assumes that your arrays are decomposed in a block-cyclic 
 structure and can be described simply using a start-count type approach. 
 A simple block-cyclic decomposition for a 1-dimension (1D)  array is illustrated in Figure 3.1. 
 Note that contigious layout of the data in memory can be easily mapped to a contigious 
@@ -43,9 +43,9 @@ indicates that this is a decomposition for a 8-byte real.  For a list of support
 
 \verbinclude simple-bc
 
-\section rearr Controling IO decomposition
+\section rearr Controlling IO decomposition
 
-The above example represents the simplest way to initialize and use PIO to write out and read distributed arrays.  PIO however provides some additnnoal features that allows greater control over the IO process.  In particular, it provides the ability to define an IO decomposition. Note that a user defined IO decomposition is optional.  If one is not provided and rearrangement is necessary, PIO will internally compute a IO decomposition.  We describe the reason a IO decomposition my be necessary in Sectiom \ref decomp_dof.   This flexibility provides the ability define an intermediate decomposition that is unique from the computational decomposition.  This IO decomposition could be constructed as to maximize the write or read performance to the disk subsystem.  We extend the
+The above example represents the simplest way to initialize and use PIO to write out and read distributed arrays.  PIO however provides some additional features that allows greater control over the IO process.  In particular, it provides the ability to define an IO decomposition. Note that a user defined IO decomposition is optional.  If one is not provided and rearrangement is necessary, PIO will internally compute a IO decomposition.  We describe the reason a IO decomposition my be necessary in Sectiom \ref decomp_dof.   This flexibility provides the ability define an intermediate decomposition that is unique from the computational decomposition.  This IO decomposition could be constructed as to maximize the write or read performance to the disk subsystem.  We extend the
 simple example in Figure 1 to include an IO decomposition in Figure 1b.  
 
 \image html block-cyclic-rearr.png "Figure 1b: Block cyclic decomposition with rearrangement"
