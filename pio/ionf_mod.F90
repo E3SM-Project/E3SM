@@ -140,7 +140,8 @@ contains
     ierr=PIO_noerr
     File%fh=-1
     if(file%iosystem%ioproc) then
-       call check_file_type(File, fname)
+!       This subroutine seems to break pgi compiler for large files.
+!       call check_file_type(File, fname)
        iotype = File%iotype 
 #ifdef _NETCDF
        if(present(mode)) then
@@ -168,8 +169,9 @@ contains
 #ifdef _NETCDF
 #ifdef _NETCDF4
           if(ierr /= PIO_NOERR) then    ! try hdf5 format
-             File%iotype = pio_iotype_netcdf4c
-             iotype = pio_iotype_netcdf4c
+             if(Debug) print *, 'try netcdf4 format'
+             File%iotype = pio_iotype_netcdf4p
+             iotype = pio_iotype_netcdf4p
           end if
 #endif
 #endif
@@ -300,18 +302,18 @@ contains
                      FORM='UNFORMATTED',STATUS='OLD',err=100)
 ! Read the first 4 bytes and look for the CDF or HDF stamp
                 read (fh,rec=1,err=101) magic
-
                 close(fh)
                 exit
              endif
           end do
+!          print *,__FILE__,__LINE__, magic
           if(magic(1:3) .eq. 'CDF') then
              ! No need to do anything here
           else if(magic(2:4).eq.'HDF') then
 #ifdef _NETCDF4
              if(File%iotype /= PIO_IOTYPE_NETCDF4C .and. &
                   File%iotype /= PIO_IOTYPE_NETCDF4P) then
-                if(debug) print *,'Changing file type to netcdf4p'
+                print *,'Changing file type to netcdf4p'
                 File%iotype=pio_iotype_netcdf4c
              end if
 #else
@@ -331,7 +333,7 @@ contains
 
                 if(magic(2:4).eq.'HDF') then
                    if(debug) print *,'Changing file type to netcdf4p'
-                   File%iotype=pio_iotype_netcdf4c
+                   File%iotype=pio_iotype_netcdf4p
                    exit
                 end if
                 i=i*2
