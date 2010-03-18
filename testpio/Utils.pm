@@ -68,7 +68,7 @@ sub preambleResource{
   }elsif($host eq "frost"){
      $preambleResource = "";
   }elsif($host eq "edinburgh"){
-     $nodes = $corespernode*ceil($pecount/$corespernode);
+     $nodes = ceil($pecount/$corespernode);
      $preambleResource = "#PBS -l nodes=$nodes:ppn=$corespernode\n"; 
   }elsif($host eq "athena"){
      my $pecnt = $corespernode*ceil($pecount/$corespernode);
