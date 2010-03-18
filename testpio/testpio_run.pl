@@ -147,7 +147,6 @@ use lib "$cfgdir";
 use File::Copy;
 use POSIX qw(ceil);
 
-chmod 0755,"$cfgdir/Utils.pm";
 use Utils;
 
 chdir ("$cfgdir");

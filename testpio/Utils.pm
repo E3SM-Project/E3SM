@@ -88,11 +88,14 @@ sub runString{
     $runString = "$run $exename 1> $log 2>&1";
   }elsif($host eq "frost") {
     $runString = "$run $log $exename";
-  }elsif($host eq "kraken" or $host eq "jaguar" or $host eq "athena"){
-    $runString = "$run -n $pecount $exename 1> $log 2>&1";
   }elsif($host eq "columbia"){
     $runString = "$run -np $pecount $exename 1> $log 2>&1";
+#  } elsif($host eq "kraken" or $host eq "jaguar" or $host eq "athena"){
+# make this default
+  }else{
+   $runString = "$run -n $pecount $exename 1> $log 2>&1";
   }
+
 }
 
 sub submitString{
