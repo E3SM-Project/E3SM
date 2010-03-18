@@ -3,20 +3,25 @@ use strict;
 use Cwd;
 use Getopt::Long;
 
+my $preambleResource;
 my $projectInfo;
 my $suites;
 my $retry=0;
 my $help=0;
 my $host;
+my $debug=0;
+my $pecount=16;
 my $enablenetcdf4;
-my $result = GetOptions("suites=s@"=>\$suites,"retry"=>\$retry,"host=s"=>\$host,"help"=>\$help);
+my $result = GetOptions("suites=s@"=>\$suites,"retry"=>\$retry,"host=s"=>\$host,"pecount=i"=>\$pecount,"help"=>\$help,"debug"=>\$debug);
 
 usage() if($help);
 sub usage{
     print "--suites : Test only the listed suites (all, snet, pnet, mpiio, ant)\n";
     print "--retry  : Do not repeat tests that have already passed\n";
     print "--host   : Force a hostname for testing\n";
+    print "--pecount : Select the processor count on which to run tests\n";
     print "--help   : Print this message\n";
+    print "--debug  : Generate the runscript but do not submit it\n";
     exit;
 }
 
@@ -80,6 +85,7 @@ if(defined $suites){
 my $workdir = $attributes{workdir};
 
 print "preamble: $attributes{preamble}\n";
+my $corespernode = $attributes{corespernode};
 
 if(-d $workdir){
     print "Using existing directory $workdir\n";
@@ -101,6 +107,8 @@ my $script  = "$testpiodir/testpio.sub.$date";
 
 open(F,">$script");
 print F "#!/usr/bin/perl\n";
+$preambleResource = Utils->preambleResource("$host","$pecount","$corespernode");
+print F $preambleResource;
 print F "$attributes{preamble}\n";
 
 
@@ -126,9 +134,21 @@ foreach(keys %attributes){
     }
 }
 
+my $run = $attributes{run};
+my $exename = "./testpio";
+my $log     = "testpio.log.lid";
+my $foo= Utils->runString($host,$pecount,$run,$exename,$log);
+
+print "EXEC command: ($foo)\n";
+
 print F << "EOF";
 use strict;
+use lib "$cfgdir";
 use File::Copy;
+use POSIX qw(ceil);
+
+chmod 0755,"$cfgdir/Utils.pm";
+use Utils;
 
 chdir ("$cfgdir");
 
@@ -160,12 +180,15 @@ my \$testlist = {all=>["sn01","sn02","sn03","sb01","sb02","sb03","sb04","sb05","
 
 my \@netcdf4tests = ("n4n01","n4n02","n4n03","n4b01","n4b02","n4b03","n4b04","n4b05","n4b06","n4b07","n4b08");
 
+#my \$pecnt = $corespernode*ceil($pecount/$corespernode);
 
 unlink("$workdir/wr01.dof.txt") if(-e "$workdir/wr01.dof.txt");
 my \$suite;
 my \$passcnt=0;
 my \$failcnt=0;
-
+my \$host   = "$host";
+my \$pecount = $pecount;
+my \$run     = "$attributes{run}";
 
 foreach \$suite (qw(@testsuites)){
     my \$confopts = \$confopts->{\$suite};
@@ -177,7 +200,6 @@ foreach \$suite (qw(@testsuites)){
     unlink("../pio/Makefile.conf");
     system("perl ./testpio_build.pl --conopts=\\"\$confopts\\" --host=$host");
     my \$test;
-    my \$run = "$attributes{run}";
     if(-e "../pio/Makefile.conf" && -e "testpio"){
 	foreach \$test (\@testlist){
 	    my \$casedir = "$workdir/\$suite.\$test";
@@ -196,18 +218,15 @@ foreach \$suite (qw(@testsuites)){
 	    }
 
 	    unlink("testpio") if(-e "testpio");
-	    copy("$tstdir/testpio","testpio");
-	    chmod 0755,"testpio";
+	    copy("$tstdir/testpio","testpio");  chmod 0755,"testpio";
 	    symlink("$tstdir/namelists/testpio_in.\$test","testpio_in");
 	    mkdir "none" unless(-d "none");
+            my \$exename = "./testpio";
 	    my \$log = "\$casedir/testpio.out.$date";
-#HOST SPECIFIC START
-	    if("$host" eq "frost"){
-	       system("\$run \$log testpio ");
-#HOST SPECIFIC END
-	    }else{
-		system("\$run ./testpio 1> \$log 2>&1");
-	    }
+            my \$sysstr =  Utils->runString(\$host,\$pecount,\$run,\$exename,\$log);
+            # Utils->runString($host,$pecount,$run,$exename,$log);
+            # print "value for foo is (\$foo)\\n";
+            system(\$sysstr);
 	    open(LOG,\$log);
 	    my \@logout = <LOG>;
 	    close(LOG);
@@ -233,5 +252,9 @@ print "test complete on $host \$passcnt tests PASS, \$failcnt tests FAIL\\n";
 EOF
 close(F);
 chmod 0755, $script;
-my $submit = $attributes{submit};
-exec("$submit $script");
+my $subsys = Utils->submitString($host,$pecount,$corespernode,$attributes{submit},$script);
+if($debug) {
+   print "Created script ($script)\n";
+}else{
+  exec($subsys);
+}

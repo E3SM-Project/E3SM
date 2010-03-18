@@ -4,7 +4,10 @@ use Cwd;
 use Getopt::Long;
 use File::Copy;
 
+my $preambleResource;
 my $projectInfo;
+my $project;
+my $nodecount;
 my $suites;
 my $retry=0;
 my $help=0;
@@ -215,6 +218,7 @@ if ($found) {
   exit(-1);
 }
 
+my $corespernode = $attributes{corespernode};
 
 my $srcdir = "$workdir/src";
 my $tstdir = "$srcdir/testpio";
@@ -229,6 +233,8 @@ my $script  = "$testpiodir/testpio.sub.$date";
 
 open(F,">$script");
 print F "#!/usr/bin/perl\n";
+$preambleResource = Utils->preambleResource("$host","$pecount","$corespernode");
+print F $preambleResource;
 print F "$attributes{preamble}\n";
 
 # Create a valid project string for this user
@@ -250,11 +256,20 @@ foreach(keys %attributes){
     
 }
 
-print F << "EOF";
+my $run = $attributes{run};
+my $exename = "./testpio";
+my $log     = "testpio.log.lid";
+my $foo= Utils->runString($host,$pecount,$run,$exename,$log);
 
-exit(-1);
+print "EXEC command: ($foo)\n";
+
+print F << "EOF";
 use strict;
 use File::Copy;
+use POSIX qw(ceil);
+
+chmod 0755,"$cfgdir/Utils.pm";
+use Utils;
 
 chdir ("$cfgdir");
 
@@ -277,15 +292,17 @@ unlink("$workdir/wr01.dof.txt") if(-e "$workdir/wr01.dof.txt");
 my \$suite;
 my \$passcnt=0;
 my \$failcnt=0;
-
+my \$host   = "$host";
+my \$pecount = $pecount;
+my \$run     = "$attributes{run}";
 
 foreach \$suite (qw(@testsuites)){
     my \$confopts = \$confopts->{\$suite};
 #    my \@testlist = \@{\$testlist->{\$suite}};
     my \@testlist = \"$suffix";
 #    unlink("../pio/Makefile.conf");
+#    May want to uncomment this system call so that testpio gets build 
 #    system("perl ./testpio_build.pl --conopts=\\"\$confopts\\" --host=$host");
-#    system("./testpio_build.pl --host=$host");
     copy("testpio","$tstdir");     # copy executable into test directory
     copy("testpio_in","$tstdir"); # copy the namelist file into test directory
     
@@ -314,25 +331,12 @@ foreach \$suite (qw(@testsuites)){
 	    chmod 0755,"testpio";
 #	    symlink("$tstdir/namelists/testpio_in.\$test","testpio_in");
 #	    symlink("$tstdir/testpio_in.\$test","testpio_in");
-	    symlink("$cfgdir/testpio_in.\$test","testpio_in");
+	    symlink("$tstdir/testpio_in.\$test","testpio_in");
 	    mkdir "none" unless(-d "none");
-	    my \$log = "testpio.out.$date";
-	    
-	    #HOST SPECIFIC START
-	    if("$host" eq "frost"){
-                my $nodecount = $pecount/2;
-                #my $nodecount = $pecount;
-#		open(JC, "\$run -n $nodecount -p $project -o \$log ./testpio < testpio_in |");
-		open(JC, "\$run -n $nodecount -o \$log ./testpio < testpio_in |");
-		my \$rv = <JC>;
-		close(JC);
-		chomp \$rv;
-		my \$rv2 = system("cqwait \$rv");
-		print "Job \$rv complete\\n";
-	    #HOST SPECIFIC END
-	    }else{
-		system("\$run ./testpio 1> \$log 2>&1");
-	    }
+	    my \$exename = "./testpio";
+	    my \$log = "\$casedir/testpio.out.$date";
+            my \$sysstr =  Utils->runString(\$host,\$pecount,\$run,\$exename,\$log);
+	    system(\$sysstr);
 	    open(LOG,\$log);
 	    my \@logout = <LOG>;
 	    close(LOG);
@@ -357,8 +361,9 @@ foreach \$suite (qw(@testsuites)){
 print "test complete on $host \$passcnt tests PASS, \$failcnt tests FAIL\\n";
 EOF
 close(F);
-my $submit = $attributes{submit};
-exec("$submit $script");
+chmod 0755, $script;
+my $subsys = Utils->submitString($host,$pecount,$corespernode,$attributes{submit},$script);
+exec("$subsys");
 
 sub gen_compdof_nml{
   print F "&compdof_nml\n";
@@ -383,7 +388,7 @@ sub gen_prof_inparm {
   print F "/\n";
 }
 sub gen_io_nml {
-  print F "&io-nml\n";
+  print F "&io_nml\n";
   print F "casename       = '$suffix'\n";
   print F "nx_global      = $configuration{'nx_global'}\n";
   print F "ny_global      = $configuration{'ny_global'}\n";

@@ -8,6 +8,7 @@ BEGIN {
 } # end BEGIN
 # non-exported package globals go here
 use vars      qw();
+use POSIX qw(ceil);
 
 sub host{
     my $host = `hostname`;
@@ -51,8 +52,59 @@ sub projectInfo{
    }elsif($host eq "athena" or $host eq "kraken"){
 #    $project = `showproj -s athena | tail -1`;
      $projectInfo ="##PBS -A $project\n";
+   }elsif($host eq "columbia"){
+     $project = "";
+     $projectInfo ="##PBS -W group_list=$project\n";
    }
 #HOST SPECIFIC END
+}
+
+sub preambleResource{
+  my ($mod,$host,$pecount,$corespernode) = @_;
+  my $nodes;
+  my $preambleResource;
+  if($host eq "bluefire") {
+     $preambleResource = "#BSUB -n $pecount\n";
+  }elsif($host eq "frost"){
+     $preambleResource = "";
+  }elsif($host eq "edinburgh"){
+     $nodes = $corespernode*ceil($pecount/$corespernode);
+     $preambleResource = "#PBS -l nodes=$nodes:ppn=$corespernode\n"; 
+  }elsif($host eq "athena"){
+     my $pecnt = $corespernode*ceil($pecount/$corespernode);
+     $preambleResource = "#PBS -l size=$pecnt\n"; 
+  }elsif($host eq "jaguar" or $host eq "kraken"){
+     my $pecnt = $corespernode*ceil($pecount/$corespernode);
+     $preambleResource = "#PBS -l size=$pecnt\n"; 
+  }elsif($host eq "columbia"){
+     $preambleResource = "#PBS -l ncpus=$pecount\n"; 
+  }
+}
+
+sub runString{
+  my ($mod,$host,$pecount,$run,$exename,$log)=@_;
+  my $runString;
+  if($host eq "bluefire") {
+    $runString = "$run $exename 1> $log 2>&1";
+  }elsif($host eq "frost") {
+    $runString = "$run $log $exename";
+  }elsif($host eq "kraken" or $host eq "jaguar" or $host eq "athena"){
+    $runString = "$run -n $pecount $exename 1> $log 2>&1";
+  }elsif($host eq "columbia"){
+    $runString = "$run -np $pecount $exename 1> $log 2>&1";
+  }
+}
+
+sub submitString{
+   my ($mod,$host,$pecount,$corespernode,$submit,$script)=@_;
+   my $submitString;
+   my $nodecnt;
+   if($host eq "frost"){
+      $nodecnt=$pecount/$corespernode;
+      $submitString = "$submit -n $nodecnt $script";
+   }else{
+      $submitString = "$submit $script";
+   }
 }
 
 sub loadmodules{
@@ -62,7 +114,8 @@ sub loadmodules{
     my $modpath = {bluefire => "/contrib/Modules/3.2.6/",
 		   jaguar  => "/opt/modules/default/",
 		   athena => "/opt/modules/default/",
-		   kraken => "/opt/modules/default/"};
+		   kraken => "/opt/modules/default/",
+                   columbia => "/usr/share/modules/"};
 #HOST SPECIFIC END
 
     return unless(defined $modpath->{$host});
@@ -120,13 +173,16 @@ sub loadmodules{
         module(" load xt-mpt");
 	module(" switch pgi pgi/7.1.6");
 	module(" load netcdf/3.6.2");      
-	module(" load p-netcdf/1.0.3");
+	module(" load p-netcdf/1.1.1");
 	module(" swap xt-asyncpe xt-asyncpe/1.0c");
 	module(" swap xt-binutils-quadcore xt-binutils-quadcore/2.0.1");
     }elsif($host eq "kraken"){
 	require "/opt/modules/default/init/perl";
 	module(" load netcdf/3.6.2");      
 	module(" load p-netcdf/1.1.1");
+    }elsif($host eq "columbia"){
+        module(" load pd-netcdf.3.6.2");
+!        module(" load pd-pnetcdf.1.1.1");
     }
 #HOST SPECIFIC END
 }

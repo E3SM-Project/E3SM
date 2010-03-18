@@ -15,7 +15,8 @@
   conopts = "--disable-mct  --enable-mpiio --enable-timing --build=powerpc-bgp-linux --host=powerpc64-suse-linux"
   workdir = "/ptmp/${USER}/testpio"
   run = "cobalt-mpirun -mode vn -nofree --stdout"
-  submit ="cqsub -n 32 -m script -t 01:00:00 -q default "
+  submit ="cqsub -m script -t 01:00:00 -q default"
+  corespernode="2"
  />
 
 <bluefire
@@ -27,9 +28,10 @@
   MPIF90 = "mpxlf2003_r"
   conopts = "--disable-mct --enable-filesystem-hints=gpfs "
   workdir = "/ptmp/${USER}/testpio"
-  submit = "bsub < "
+  submit = "bsub <"
   run = "mpirun.lsf"
-  preamble = "#BSUB -n 16
+  corespernode="32"
+  preamble = "
 #BSUB -q premium
 #BSUB -N
 #BSUB -x
@@ -50,12 +52,13 @@
   CC = "gcc"
   NETCDF_PATH="/usr/local/netcdf-3.6.3-gcc-4.1.2-lf95-8.0_x86_64" 
   FFLAGS = "-g  --chk a,e,s,u --pca --trace --trap "
-  submit="qsub "
-  run="/usr/local/bin/mpiexec "
+  submit="qsub"
+  run="/usr/local/bin/mpiexec"
   conopts = "--disable-mct "
   workdir = "/scratch/cluster/${USER}/testpio"
-  preamble = "#PBS -q medium
-#PBS -l nodes=1:ppn=16
+  corespernode="16"
+  preamble = "
+#PBS -q medium
 #PBS -N testpiob
 #PBS -j oe
 #PBS -V
@@ -71,12 +74,13 @@
   CC = "icc"
   NETCDF_PATH="/usr/local/netcdf-3.6.3-intel-3.2.02" 
   FFLAGS = "-g "
-  submit="qsub "
-  run="/usr/local/bin/mpiexec "
+  submit="qsub"
+  run="/usr/local/bin/mpiexec"
   conopts = "--disable-mct "
   workdir = "/scratch/cluster/${USER}/testpio"
-  preamble = "#PBS -q medium
-#PBS -l nodes=1:ppn=16
+  corespernode="16"
+  preamble = "
+#PBS -q medium
 #PBS -N testpiob
 #PBS -j oe
 #PBS -V"
@@ -93,12 +97,13 @@
   ENV_NETCDF_PATH="$NETCDF_DIR"
   ENV_PNETCDF_PATH="$PNETCDF_DIR"
   workdir = "/tmp/work/${USER}/testpio"
-  run = "aprun -n 12 "
-  submit = "qsub "
+  run = "aprun"
+  submit = "qsub"
   conopts = " --disable-mct --enable-filesystem-hints=lustre"
-  preamble="#PBS -N testpio_suite
+  corespernode="12"
+  preamble="
+#PBS -N testpio_suite
 #PBS -q batch
-#PBS -l size=12
 #PBS -l walltime=00:50:00
 #PBS -j oe
 #PBS -V"
@@ -113,16 +118,18 @@
   NETCDF_PATH = "$NETCDF_DIR"
   PNETCDF_PATH = "$PNETCDF_DIR"
   workdir = "/lustre/scratch/${USER}/testpio"
-  run = "aprun -n 16 "
-  submit = "qsub "
+  run = "aprun"
+  submit = "qsub"
   conopts = " --disable-mct --enable-filesystem-hints=lustre"
-  preamble="#PBS -N testpio_suite
+  corespernode="8"
+  preamble="
+#PBS -N testpio_suite
 #PBS -q batch
-#PBS -l size=16
 #PBS -l walltime=00:50:00
 #PBS -j oe
 #PBS -V"
 />
+
 <kraken
   MPIF90 = "ftn -L$LIBSCI_BASE_DIR/pgi/lib"
   MPICC  = "cc -L$LIBSCI_BASE_DIR/pgi/lib"
@@ -132,14 +139,39 @@
   NETCDF_PATH = "$NETCDF_DIR"
   PNETCDF_PATH = "$PNETCDF_DIR"
   workdir = "/lustre/scratch/${USER}/testpio"
-  run = "aprun -n 32 "
-  submit = "qsub "
+  run = "aprun"
+  submit = "qsub"
   conopts = " --disable-mct --enable-filesystem-hints=lustre"
-  preamble="#PBS -N testpio_suite
-#PBS -l size=36
-#PBS -l walltime=01:50:00
+  corespernode = "12"
+  preamble="
+#PBS -N testpio_suite
+#PBS -l walltime=00:50:00
 #PBS -j oe
 #PBS -V"
 />
+
+<columbia
+  MPIF90 = "mpif90"
+  MPICC  = "mpicc"
+  F90    = "ifort" 
+  CC     = "icc" 
+  FFLAGS = "-D_USE_FLOW_CONTROL"
+  NETCDF_PATH = "$NETCDF_DIR"
+  PNETCDF_PATH = "$PNETCDF_DIR"
+  workdir = "/nobackup1/${USER}/testpio"
+  run = "mpirun"
+  submit = "qsub"
+  conopts = " --disable-mct --disable-pnetcdf"
+  corespernode = "512"
+  preamble="
+#PBS -N testpio_suite
+#PBS -q normal
+#PBS -l walltime=00:50:00
+#PBS -l mem=100GB
+#PBS -j oe"
+  testsuites = "snet mpiio"
+/>
+
+
 </testpioconfig>
 
