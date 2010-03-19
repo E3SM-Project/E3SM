@@ -34,7 +34,7 @@ sub projectInfo{
    my $projectInfo;
    my $project;
 #HOST SPECIFIC START
-   if($host eq "bluefire" or $host eq "frost"){
+   if($host =~ "bluefire" or $host =~ "frost"){
       open(G,"/etc/project.ncar");
       foreach(<G>){
          if($_ =~ /^$user:(\d+),?/){
@@ -43,16 +43,16 @@ sub projectInfo{
          }
       }
       close(G);
-      if($host eq "bluefire") {
+      if($host =~ "bluefire") {
         $projectInfo = "#BSUB -R \"span[ptile=64]\"\n#BSUB -P $project\n";
       }
-   }elsif($host eq "jaguar"){
+   }elsif($host =~ "jaguar"){
      $project = `/sw/xt5/bin/showproj -s jaguar | tail -1`;
      $projectInfo ="#PBS -A $project\n";
-   }elsif($host eq "athena" or $host eq "kraken"){
+   }elsif($host =~ "athena" or $host =~ "kraken"){
 #    $project = `showproj -s athena | tail -1`;
      $projectInfo ="##PBS -A $project\n";
-   }elsif($host eq "columbia"){
+   }elsif($host =~ "columbia"){
      $project = "";
      $projectInfo ="##PBS -W group_list=$project\n";
    }
@@ -63,20 +63,20 @@ sub preambleResource{
   my ($mod,$host,$pecount,$corespernode) = @_;
   my $nodes;
   my $preambleResource;
-  if($host eq "bluefire") {
+  if($host =~ "bluefire") {
      $preambleResource = "#BSUB -n $pecount\n";
-  }elsif($host eq "frost"){
+  }elsif($host =~ "frost"){
      $preambleResource = "";
-  }elsif($host eq "edinburgh"){
+  }elsif($host =~ "edinburgh"){
      $nodes = ceil($pecount/$corespernode);
      $preambleResource = "#PBS -l nodes=$nodes:ppn=$corespernode\n"; 
-  }elsif($host eq "athena"){
+  }elsif($host =~ "athena"){
      my $pecnt = $corespernode*ceil($pecount/$corespernode);
      $preambleResource = "#PBS -l size=$pecnt\n"; 
-  }elsif($host eq "jaguar" or $host eq "kraken"){
+  }elsif($host =~ "jaguar" or $host =~ "kraken"){
      my $pecnt = $corespernode*ceil($pecount/$corespernode);
      $preambleResource = "#PBS -l size=$pecnt\n"; 
-  }elsif($host eq "columbia"){
+  }elsif($host =~ "columbia"){
      $preambleResource = "#PBS -l ncpus=$pecount\n"; 
   }
 }
@@ -84,13 +84,13 @@ sub preambleResource{
 sub runString{
   my ($mod,$host,$pecount,$run,$exename,$log)=@_;
   my $runString;
-  if($host eq "bluefire") {
+  if($host =~ "bluefire") {
     $runString = "$run $exename 1> $log 2>&1";
-  }elsif($host eq "frost") {
+  }elsif($host =~ "frost") {
     $runString = "$run $log $exename";
-  }elsif($host eq "columbia"){
+  }elsif($host =~ "columbia"){
     $runString = "$run -np $pecount $exename 1> $log 2>&1";
-#  } elsif($host eq "kraken" or $host eq "jaguar" or $host eq "athena"){
+#  } elsif($host =~ "kraken" or $host =~ "jaguar" or $host =~ "athena"){
 # make this default
   }else{
    $runString = "$run -n $pecount $exename 1> $log 2>&1";
@@ -102,7 +102,7 @@ sub submitString{
    my ($mod,$host,$pecount,$corespernode,$submit,$script)=@_;
    my $submitString;
    my $nodecnt;
-   if($host eq "frost"){
+   if($host =~ "frost"){
       $nodecnt=$pecount/$corespernode;
       $submitString = "$submit -n $nodecnt $script";
    }else{
@@ -152,10 +152,10 @@ sub loadmodules{
 
     
 #HOST SPECIFIC START
-    if($host eq "bluefire"){
+    if($host =~ "bluefire"){
 #	module("load xlf12");
 #        module("list");
-    }elsif($host eq "jaguar"){
+    }elsif($host =~ "jaguar"){
 #	require "/opt/modules/default/init/perl";
 	module(" purge");
 	module(" load PrgEnv-pgi Base-opts");
@@ -167,7 +167,7 @@ sub loadmodules{
 	module(" swap xt-asyncpe xt-asyncpe/1.0c");
 	module(" load xt-binutils-quadcore/2.0.1");
         module("list");
-    }elsif($host eq "athena"){
+    }elsif($host =~ "athena"){
 #	require "/opt/modules/default/init/perl";
 	module(" purge");
 	module(" load PrgEnv-pgi Base-opts");
@@ -179,11 +179,11 @@ sub loadmodules{
 	module(" load p-netcdf/1.1.1");
 	module(" swap xt-asyncpe xt-asyncpe/1.0c");
 	module(" swap xt-binutils-quadcore xt-binutils-quadcore/2.0.1");
-    }elsif($host eq "kraken"){
+    }elsif($host =~ "kraken"){
 	require "/opt/modules/default/init/perl";
 	module(" load netcdf/3.6.2");      
 	module(" load p-netcdf/1.1.1");
-    }elsif($host eq "columbia"){
+    }elsif($host =~ "columbia"){
         module(" load pd-netcdf.3.6.2");
 !        module(" load pd-pnetcdf.1.1.1");
     }
