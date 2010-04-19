@@ -3,10 +3,42 @@
 #include <string.h>
 
 #if defined(BGL) || defined(BGP)
+#include <mpi.h>
 
-#include "mpi.h"
+#ifdef BGL 
 #include <bglpersonality.h>
-#include "rts.h"
+#include <rts.h>
+
+#define   get_personality                rts_get_personality
+#define   get_processor_id               rts_get_processor_id
+#define   Personality                    BGLPersonality
+#define   Personality_getLocationString  BGLPersonality_getLocationString
+#define   Personality_numIONodes         BGLPersonality_numIONodes
+#define   Personality_numPsets           BGLPersonality_numPsets
+#define   Personality_numNodesInPset     BGLPersonality_numNodesInPset
+#define   Personality_rankInPset         BGLPersonality_rankInPset
+#define   Personality_psetNum            BGLPersonality_psetNum
+
+
+#else
+#include <spi/kernel_interface.h>
+#include <common/bgp_personality.h>
+#include <common/bgp_personality_inlines.h>
+
+#define   get_personality                Kernel_GetPersonality
+#define   get_processor_id               Kernel_PhysicalProcessorID
+#define   Personality                    _BGP_Personality_t
+#define   Personality_getLocationString  BGP_Personality_getLocationString
+#define   Personality_numIONodes         BGP_Personality_numIONodes
+#define   Personality_numNodesInPset     BGP_Personality_psetSize
+#define   Personality_rankInPset         BGP_Personality_rankInPset
+#define   Personality_psetNum            BGP_Personality_psetNum
+
+
+#endif
+
+
+
 
 int rank;
 int np;
@@ -23,17 +55,22 @@ void identity(MPI_Fint *comm, int *iotask){
    MPI_Get_processor_name(my_name, &my_name_len);
 
    /*  Get the personality  */
-   BGLPersonality pers;
+   Personality pers;
    char message[100];
 
-   rts_get_personality(&pers, sizeof(pers));
-   BGLPersonality_getLocationString(&pers, message);
+   get_personality (&pers, sizeof(pers));
+   Personality_getLocationString (&pers, message);
     
    int numIONodes,numPsets,numNodesInPset,rankInPset;
-   numIONodes = BGLPersonality_numIONodes(&pers);
-   numPsets = BGLPersonality_numPsets(&pers);
-   numNodesInPset = BGLPersonality_numNodesInPset(&pers);
-   rankInPset = BGLPersonality_rankInPset(&pers);
+   numIONodes = Personality_numIONodes (&pers);
+   numNodesInPset = Personality_numNodesInPset (&pers);
+   rankInPset = Personality_rankInPset (&pers);
+
+#ifdef BGL
+   numPsets = Personality_numPsets (&pers);
+#else
+   numPsets = BGP_Personality_numComputeNodes(&pers)/numNodesInPset;
+#endif
     
 /*
    if(rank == 0) { printf("number of IO nodes in block: %i \n",numIONodes);}
@@ -43,7 +80,7 @@ void identity(MPI_Fint *comm, int *iotask){
 */
 
    int psetNum;
-   psetNum = BGLPersonality_psetNum(&pers);
+   psetNum = Personality_psetNum (&pers);
    if((*iotask)>0) {
       printf( "%04i (%-50s %s) %i yes\n", rank, my_name, message, psetNum );
    } else {
@@ -56,14 +93,14 @@ void determineiotasks(MPI_Fint *comm, int *numiotasks,int *base, int *stride, in
 
 /*  Some concepts:
 
-     processor set: 	A group of processors on the Blue Gene system which have 
-			one or more IO processor (Pset)
+     processor set:     A group of processors on the Blue Gene system which have 
+                        one or more IO processor (Pset)
 
-     IO-node:		A special Blue Gene node dedicated to performing IO.  There 
-			are one or more per processor set
+     IO-node:           A special Blue Gene node dedicated to performing IO.  There 
+                        are one or more per processor set
 
-     IO-client:		This is software concept.  This refers to the MPI task 
-			which performs IO for the PIO library 
+     IO-client:         This is software concept.  This refers to the MPI task 
+                        which performs IO for the PIO library 
 */
    int psetNum;                                 
    int coreId;
@@ -75,21 +112,21 @@ void determineiotasks(MPI_Fint *comm, int *numiotasks,int *base, int *stride, in
    MPI_Get_processor_name(my_name, &my_name_len);
 
    /*  Get the personality  */
-   BGLPersonality pers;
+   Personality pers;
    char message[100];
 
 if((*rearr) > 0) {
-   rts_get_personality(&pers, sizeof(pers));
+   get_personality (&pers, sizeof(pers));
 
    int numIONodes,numPsets,numNodesInPset,rankInPset;
    int numiotasks_per_node,remainder,numIONodes_per_pset;
    int lstride;
 
    /* total number of IO-nodes */
-   numIONodes = BGLPersonality_numIONodes(&pers);
+   numIONodes = Personality_numIONodes (&pers);
 
    /* Number of computational nodes in processor set */
-   numNodesInPset = BGLPersonality_numNodesInPset(&pers);
+   numNodesInPset = Personality_numNodesInPset (&pers);
 
    
    if((*numiotasks) < 0 ) { 
@@ -117,7 +154,7 @@ if((*rearr) > 0) {
    /* number of IO nodes with a larger number of io-client per io-node */
    if(remainder > 0) {
        if(rank ==0) {printf("Unbalanced IO-configuration: %i IO-nodes have %i IO-clients : %i IO-nodes have %i IO-clients \n",
-		remainder, numiotasks_per_node+1, numIONodes-remainder,numiotasks_per_node);}
+                remainder, numiotasks_per_node+1, numIONodes-remainder,numiotasks_per_node);}
        lstride = floor((float)numNodesInPset/(float)(numiotasks_per_node+1));
    } else {
        if(rank == 0) {printf("Balanced IO-configuration: %i IO-nodes have %i IO-clients\n",numIONodes-remainder, numiotasks_per_node);}
@@ -125,7 +162,11 @@ if((*rearr) > 0) {
    }
   
    /* Number of processor sets */
-   numPsets = BGLPersonality_numPsets(&pers);
+#ifdef BGL
+   numPsets = Personality_numPsets (&pers);
+#else
+   numPsets = BGP_Personality_numComputeNodes(&pers)/numNodesInPset;
+#endif
  
    /* number of IO nodes in processor set (I need to add
       code to deal with the case where numIONodes_per_pset != 1 works 
@@ -133,13 +174,13 @@ if((*rearr) > 0) {
    numIONodes_per_pset = numIONodes/numPsets;
 
   /* Determine which core on node....  I don't want to put more than one io-task per node */
-   coreId = rts_get_processor_id();
+   coreId = get_processor_id ();
 
    /* What is the rank of this node in the processor set */
-   rankInPset = BGLPersonality_rankInPset(&pers);
+   rankInPset = Personality_rankInPset (&pers);
 
    /* determine the processor set that this node belongs to */
-   psetNum = BGLPersonality_psetNum(&pers);
+   psetNum = Personality_psetNum (&pers);
 
 /* printf("Pset #: %i has %i nodes in Pset\n",psetNum,numNodesInPset); */
 
@@ -152,13 +193,13 @@ if((*rearr) > 0) {
        /* mark tasks that will be IO-tasks  or IO-clients */
        if((iam % lstride == 0) && (coreId == 0) ) {  /* only io tasks indicated by stride and coreId = 0 */
            if((iam/lstride) < numiotasks_per_node) { 
-	      /* only set the first (numiotasks_per_node - 1) tasks */
+              /* only set the first (numiotasks_per_node - 1) tasks */
               (*iamIOtask) = 1;
            } else if ((iam/lstride) == numiotasks_per_node) {
-	      /*  If there is an uneven number of io-clients to io-nodes 
-	          allocate the first remainder - 1 processor sets to 
-	          have a total of numiotasks_per_node */
-	      if(psetNum < remainder) {(*iamIOtask) = 1;};   
+              /*  If there is an uneven number of io-clients to io-nodes 
+                  allocate the first remainder - 1 processor sets to 
+                  have a total of numiotasks_per_node */
+              if(psetNum < remainder) {(*iamIOtask) = 1;};   
            }
        }
    }
