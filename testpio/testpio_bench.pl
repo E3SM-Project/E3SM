@@ -74,12 +74,11 @@ my @valid_env = qw(NETCDF_PATH PNETCDF_PATH MPI_LIB MPI_INC F90 FC CC ALLCFLAGS 
 my @testsuites = qw(bench);
 
 # The XML::Lite module is required to parse the XML configuration files.
-(-f "$cfgdir/../perl5lib/XML/Lite.pm")  or  die <<"EOF";
-** Cannot find perl module \"XML/Lite.pm\" in directory \"$cfgdir/perl5lib\" **
+(-f "$cfgdir/../testpio/perl5lib/XML/Lite.pm")  or  die <<"EOF";
+** Cannot find perl module \"XML/Lite.pm\" in directory \"$cfgdir/../testpio/perl5lib\" **
 EOF
 
-unshift @INC, "$cfgdir/../testpio";
-unshift @INC, "$cfgdir/../testpio/perl5lib";
+unshift @INC, "$cfgdir/../testpio","$cfgdir/../testpio/perl5lib";
 require XML::Lite;
 require Utils;
 

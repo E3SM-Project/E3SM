@@ -36,13 +36,25 @@ SRCS_F90= kinds_mod.F90 \
 SRCS2_C=
 SRCS2_F90= kinds_mod.F90 \
            gdecomp_mod.F90 \
-	   testdecomp.F90 
+           namelist_mod.F90 \
+           utils_mod.F90 \
+	   testfiletype.F90 
+
+SRCS3_F90= tst_pio.F90 \
+	   kinds_mod.F90 \
+           namelist_mod.F90 \
+           utils_mod.F90
+
+SRCS3_C=
 
 OBJS=  $(SRCS_C:.c=.o) \
        $(SRCS_F90:.F90=.o)
 
 OBJS2=  $(SRCS2_C:.c=.o) \
        $(SRCS2_F90:.F90=.o)
+
+OBJS3=  $(SRCS3_C:.c=.o) \
+       $(SRCS3_F90:.F90=.o)
 
 # File foo.DEPSUF will contain make dependency for foo.F90
 DEPENDS := $(SRCS_F90:.F90=$(DEPSUF))
@@ -53,12 +65,14 @@ DEPENDS := $(SRCS_F90:.F90=$(DEPSUF))
 #
 
 EXE=testpio
-EXE2=testdecomp
+EXE2=testfiletype
+EXE3=tst_pio
 LEVEL=0
 
 all: depends
 	$(MAKE) -f Makefile LEVEL=1 $(EXE)
 	$(MAKE) -f Makefile LEVEL=1 $(EXE2)
+	$(MAKE) -f Makefile LEVEL=1 $(EXE3)
 
 depends: $(DEPENDS)
 	@echo "Done updating dependencies"
@@ -78,6 +92,9 @@ $(EXE): $(OBJS) $(PIOLIBA)
 
 $(EXE2): $(OBJS2) $(PIOLIBA)
 	$(MPIF90) $(FFLAGS) -o $@ $(OBJS2) $(PIOLIB) $(LDLIBS)
+
+$(EXE3): $(OBJS3) $(PIOLIBA)
+	$(MPIF90) $(FFLAGS) -o $@ $(OBJS3) $(PIOLIB) $(LDLIBS)
 
 #
 # Suffix rules

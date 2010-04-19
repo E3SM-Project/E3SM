@@ -40,11 +40,11 @@ my @testsuites = qw(all snet pnet mpiio ant);
 
 
 # The XML::Lite module is required to parse the XML configuration files.
-(-f "$cfgdir/perl5lib/XML/Lite.pm")  or  die <<"EOF";
-** Cannot find perl module \"XML/Lite.pm\" in directory \"$cfgdir/perl5lib\" **
+(-f "$cfgdir/../testpio/perl5lib/XML/Lite.pm")  or  die <<"EOF";
+** Cannot find perl module \"XML/Lite.pm\" in directory \"$cfgdir/../testpio/perl5lib\" **
 EOF
 
-unshift @INC, "$cfgdir/../perl5lib";
+unshift @INC, "$cfgdir/../testpio/perl5lib";
 require XML::Lite;
 require Utils;
 
