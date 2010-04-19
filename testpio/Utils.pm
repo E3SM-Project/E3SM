@@ -87,7 +87,7 @@ sub runString{
   if($host =~ "bluefire") {
     $runString = "$run $exename 1> $log 2>&1";
   }elsif($host =~ "frost") {
-    $runString = "$run $log $exename";
+    $runString = "$run $log -np $pecount $exename";
   }elsif($host =~ "columbia"){
     $runString = "$run -np $pecount $exename 1> $log 2>&1";
 #  } elsif($host =~ "kraken" or $host =~ "jaguar" or $host =~ "athena"){

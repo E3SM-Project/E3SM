@@ -44,7 +44,7 @@ my @testsuites = qw(all snet pnet mpiio ant);
 ** Cannot find perl module \"XML/Lite.pm\" in directory \"$cfgdir/perl5lib\" **
 EOF
 
-unshift @INC, "$cfgdir/perl5lib";
+unshift @INC, "$cfgdir/../perl5lib";
 require XML::Lite;
 require Utils;
 

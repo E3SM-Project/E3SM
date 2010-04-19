@@ -2116,6 +2116,7 @@ contains
     ndisp=size(displace)
 
     if (iosize<1 .or. ndisp<1) return
+!FIX suggested by M.Taylor    if (count(1).eq.0) return 
 
 
     if (ndisp/=iosize) then

@@ -15,7 +15,7 @@
   conopts = "--disable-mct  --enable-mpiio --enable-timing --build=powerpc-bgp-linux --host=powerpc64-suse-linux"
   workdir = "/ptmp/${USER}/testpio"
   run = "cobalt-mpirun -mode vn -nofree --stdout"
-  submit ="cqsub -m script -t 01:00:00 -q default"
+  submit ="cqsub -m script -t 01:00:00 -q default "
   corespernode="2"
  />
 

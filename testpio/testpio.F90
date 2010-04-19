@@ -785,12 +785,15 @@ if (readPhase) then
 #ifdef TIMING
         call t_startf('testpio_read')
 #endif
-        call PIO_read_darray(File_r8,vard_r8(1),iodesc_r8,test_r8rd,iostat)
+	do ivar=1,nvars
+          call PIO_read_darray(File_r8,vard_r8(ivar),iodesc_r8,test_r8rd,iostat)
+          call check_pioerr(iostat,__FILE__,__LINE__,' r8 read_darray')
+        enddo
 #ifdef TIMING
         call t_stopf('testpio_read')
 #endif
         et = MPI_Wtime()
-        dt_read_r8 = dt_read_r8 + et - st        
+        dt_read_r8 = dt_read_r8 + (et - st)/nvars        
         call check_pioerr(iostat,__FILE__,__LINE__,' r8 read_darray')
      endif
 
@@ -802,12 +805,15 @@ if (readPhase) then
 #ifdef TIMING
         call t_startf('testpio_read')
 #endif
-        call PIO_read_darray(File_r4,vard_r4(1),iodesc_r4,test_r4rd,iostat)
+	do ivar=1,nvars
+           call PIO_read_darray(File_r4,vard_r4(ivar),iodesc_r4,test_r4rd,iostat)
+           call check_pioerr(iostat,__FILE__,__LINE__,' r4 read_darray')
+        enddo
 #ifdef TIMING
         call t_stopf('testpio_read')
 #endif
         et = MPI_Wtime()
-        dt_read_r4 = dt_read_r4 + et - st
+        dt_read_r4 = dt_read_r4 + (et - st)/nvars
         call check_pioerr(iostat,__FILE__,__LINE__,' r4 read_darray')
      endif
 

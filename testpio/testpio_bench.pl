@@ -20,8 +20,11 @@ my $numIO;
 my $stride;
 my $maxiter;
 my $dir;
+my $debug=0;
 my $numagg;
+my $numvars;
 my $iodecomp;
+my $logfile;
 my $result = GetOptions("suites=s@"=>\$suites,
                         "retry"=>\$retry,
                         "host=s"=>\$host,
@@ -34,7 +37,10 @@ my $result = GetOptions("suites=s@"=>\$suites,
  			"maxiter=i"=>\$maxiter,
                         "dir=s"=>\$dir,
                         "numagg=i"=>\$numagg,
+			"numvars=i"=>\$numvars,
                         "decomp=s"=>\$iodecomp,
+			"debug"=>\$debug,
+		        "log=s"=>\$logfile,
 		        "help"=>\$help);
 
 usage() if($help);
@@ -51,8 +57,11 @@ sub usage{
     print "--maxiter               : Sets the number of files to write\n";
     print "--dir                   : Sets the subdirectory for which to write files \n";
     print "--numagg                : Sets the number of MPI-IO aggregators to use \n";
+    print "--numvars               : Sets the number of variables to write to each file \n";
     print "--decomp                : Sets the form of the IO-decomposition (x,y,z,xy,xye,xz,xze,yz,yze,xyz,xyze,setblk,cont1d,cont1dm)\n";
     print "--help                  : Print this message\n";
+    print "--debug		   : Generate the runscript but do not submit it\n";
+    print "--log                   : Manually sets the log output file for the benchmark\n";
     exit;
 }
 
@@ -65,18 +74,19 @@ my @valid_env = qw(NETCDF_PATH PNETCDF_PATH MPI_LIB MPI_INC F90 FC CC ALLCFLAGS 
 my @testsuites = qw(bench);
 
 # The XML::Lite module is required to parse the XML configuration files.
-(-f "$cfgdir/perl5lib/XML/Lite.pm")  or  die <<"EOF";
+(-f "$cfgdir/../perl5lib/XML/Lite.pm")  or  die <<"EOF";
 ** Cannot find perl module \"XML/Lite.pm\" in directory \"$cfgdir/perl5lib\" **
 EOF
 
-unshift @INC, "$cfgdir/perl5lib";
+unshift @INC, "$cfgdir/../testpio";
+unshift @INC, "$cfgdir/../testpio/perl5lib";
 require XML::Lite;
 require Utils;
 
 $host = Utils->host() unless(defined $host);
 Utils->loadmodules("$host");
 
-my $xml = XML::Lite->new( "build_defaults.xml" );
+my $xml = XML::Lite->new( "$cfgdir/../testpio/build_defaults.xml" );
 
 my $root = $xml->root_element();
 my $settings = $xml->elements_by_name($host);
@@ -114,7 +124,7 @@ if(-d $workdir){
     mkdir $workdir or die "Could not create directory"
 }
 
-my $config = XML::Lite->new("config_bench.xml");
+my $config = XML::Lite->new("$cfgdir/../testpio/config_bench.xml");
 my $elm = $config->root_element();
 print "pecount is $pecount\n";
 
@@ -132,22 +142,23 @@ my %configuration = ( ldx => 0,
                       rearr => 'box',
                       numprocsIO => -10,
    		      stride => -1,
-                      maxiter => 5,
+                      maxiter => 10,
                       dir => './none/',
 		      iodecomp => 'yze',
-                      numagg => -1);
+                      numagg => -1,
+                      numvars => 10);
 
 #-------------------------------------------------
 # Modify the configuration based on arguments
 #-------------------------------------------------
 if (defined $iofmt)   {$configuration{'iofmt'} = $iofmt;}
 if (defined $rearr)   {$configuration{'rearr'} = $rearr;}
-if (defined $numIO)   {$configuration{'numIOtasks'} = $numIO;}
+if (defined $numIO)   {$configuration{'numprocsIO'} = $numIO;}
 if (defined $stride)  {$configuration{'stride'} = $stride;}
 if (defined $maxiter) {$configuration{'maxiter'} = $maxiter;}
+if (defined $numvars) {$configuration{'numvars'} = $numvars;}
 if (defined $dir)     {$configuration{'dir'} = $dir;}
 if (defined $numagg)  {$configuration{'numagg'} = $numagg;}
-
 
 # See if you can find the general benchmark description first
 my @blist = $config->elements_by_name("BenchConfig");
@@ -200,9 +211,11 @@ printf "testname: %s\n",$testname;
 if (defined $iodecomp) {$configuration{'iodecomp'} = $iodecomp;}
 
 #print "ldx: $configuration{'ldx'} ldy: $ldy ldz: $ldz\n";
+my $outfile;
 if ($found) {
   print "ldx: $configuration{'ldx'} ldy: $configuration{'ldy'} ldz: $configuration{'ldz'}\n";
-  my $outfile = "testpio_in." . $suffix;
+  $outfile = "$cfgdir/testpio_in." . $suffix;
+  unlink("$outfile") if(-e "$outfile");
 
   open(F,"+> $outfile");
   gen_io_nml();       # Generate the io_nml namelist
@@ -222,6 +235,7 @@ my $corespernode = $attributes{corespernode};
 
 my $srcdir = "$workdir/src";
 my $tstdir = "$srcdir/testpio";
+copy("$outfile","$tstdir");
 my $testpiodir = cwd();
 my $piodir = "$testpiodir/..";
 my $date = `date +%y%m%d-%H%M%S`;
@@ -256,9 +270,17 @@ foreach(keys %attributes){
     
 }
 
+my $log;
+my $setlogfile;
 my $run = $attributes{run};
 my $exename = "./testpio";
-my $log     = "testpio.log.lid";
+if($logfile) {
+  $log = "$logfile";
+  $setlogfile = 1
+} else {
+  $log = "$cfgdir/testpio.log.lid";
+  $setlogfile = 2
+}
 my $foo= Utils->runString($host,$pecount,$run,$exename,$log);
 
 print "EXEC command: ($foo)\n";
@@ -267,21 +289,22 @@ print F << "EOF";
 use strict;
 use File::Copy;
 use POSIX qw(ceil);
+unshift \@INC, "$cfgdir/../testpio";
 
-chmod 0755,"$cfgdir/Utils.pm";
+chmod 0755,"$cfgdir/../testpio/Utils.pm";
 use Utils;
 
 chdir ("$cfgdir");
 
 mkdir "$srcdir" if(! -d "$srcdir");
 
-my \$rc = 0xffff & system("rsync -rp $piodir $srcdir");
-if(\$rc != 0) {
-    system("cp -fr $piodir/pio $srcdir");
-    system("cp -fr $piodir/mct $srcdir");
-    system("cp -fr $piodir/timing $srcdir");
-    system("cp -fr $piodir/testpio $srcdir");
-}
+#my \$rc = 0xffff & system("rsync -rp $piodir $srcdir");
+#if(\$rc != 0) {
+#    system("cp -fr $piodir/pio $srcdir");
+#    system("cp -fr $piodir/mct $srcdir");
+#    system("cp -fr $piodir/timing $srcdir");
+#    system("cp -fr $piodir/testpio $srcdir");
+#}
 
 #my \$confopts = {bench=>"--enable-pnetcdf --enable-mpiio --enable-netcdf --enable-timing"};
 my \$confopts = {bench=>""};
@@ -304,7 +327,7 @@ foreach \$suite (qw(@testsuites)){
 #    May want to uncomment this system call so that testpio gets build 
 #    system("perl ./testpio_build.pl --conopts=\\"\$confopts\\" --host=$host");
     copy("testpio","$tstdir");     # copy executable into test directory
-    copy("testpio_in","$tstdir"); # copy the namelist file into test directory
+#    copy("testpio_in","$tstdir"); # copy the namelist file into test directory
     
     chdir ("$tstdir");
     my \$test;
@@ -334,7 +357,13 @@ foreach \$suite (qw(@testsuites)){
 	    symlink("$tstdir/testpio_in.\$test","testpio_in");
 	    mkdir "none" unless(-d "none");
 	    my \$exename = "./testpio";
-	    my \$log = "\$casedir/testpio.out.$date";
+            my \$log;
+            if($setlogfile) {
+                \$log = "$logfile";
+		unlink("\$log") if(-e "\$log");
+            } else {
+	        \$log = "\$casedir/testpio.out.$date";
+            }
             my \$sysstr =  Utils->runString(\$host,\$pecount,\$run,\$exename,\$log);
 	    system(\$sysstr);
 	    open(LOG,\$log);
@@ -363,7 +392,20 @@ EOF
 close(F);
 chmod 0755, $script;
 my $subsys = Utils->submitString($host,$pecount,$corespernode,$attributes{submit},$script);
-exec("$subsys");
+print "submit: ($subsys)\n";
+if($debug) {
+    print "Created script ($script)\n";
+} else {
+#    exec("$subsys");
+    my @foo2 = `$subsys`;
+    my $jobid;
+    foreach my $i (@foo2) {
+     ($jobid) = ($i =~/([0-9]+)/);
+#     print "jobid: ($jobid)\n";
+    }
+    exec("cqwait $jobid");
+}
+
 
 sub gen_compdof_nml{
   print F "&compdof_nml\n";
@@ -393,6 +435,7 @@ sub gen_io_nml {
   print F "nx_global      = $configuration{'nx_global'}\n";
   print F "ny_global      = $configuration{'ny_global'}\n";
   print F "nz_global      = $configuration{'nz_global'}\n";
+  print F "nvars        = $configuration{'numvars'}\n";
   print F "iofmt          = '$configuration{'iofmt'}'\n";
   print F "rearr          = '$configuration{'rearr'}'\n";
   print F "nprocsIO       = $configuration{'numprocsIO'}\n";

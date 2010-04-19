@@ -1,6 +1,8 @@
 <Config>
 
 <BenchConfig bench_name="POPA1|POPA2" nx_global="3600" ny_global="2400"  nz_global="20"  </BenchConfig>
+<BenchConfig bench_name="POPC" nx_global="3600" ny_global="2400"  nz_global="1"  </BenchConfig>
+<BenchConfig bench_name="POPD" nx_global="3600" ny_global="2400"  nz_global="10"  </BenchConfig>
 <BenchConfig bench_name="POPB"        nx_global="320"  ny_global="384"   nz_global="60"  </BenchConfig>
 <BenchConfig bench_name="WRFB"        nx_global="900"  ny_global="900"   nz_global="101" </BenchConfig>
 <BenchConfig bench_name="CAM05"       nx_global="576"  ny_global="384"   nz_global="26"  </BenchConfig>
@@ -75,6 +77,88 @@
 
 <CompConfig nprocs="8000" bench_name = "POPA1|POPA2|POPA3"
    <ldx>45</ldx> <ldy>24</ldy> <ldz>20</ldz>
+</CompConfig>
+
+<!--               POPC benchmark                                   -->
+<CompConfig nprocs="64" bench_name="POPC"
+   <ldx>450</ldx> <ldy>300</ldy> <ldz>1</ldz>
+</CompConfig>
+
+<CompConfig nprocs="128" bench_name="POPC"
+   <ldx>225</ldx> <ldy>300</ldy> <ldz>1</ldz>
+</CompConfig>
+
+<CompConfig nprocs="256" bench_name = "POPC"
+   <ldx>225</ldx> <ldy>150</ldy> <ldz>1</ldz>
+</CompConfig>
+
+<CompConfig nprocs="512" bench_name = "POPC"
+   <ldx>225</ldx> <ldy>75</ldy> <ldz>1</ldz>
+</CompConfig>
+
+<CompConfig nprocs="800" bench_name = "POPC"
+   <ldx>90</ldx> <ldy>120</ldy> <ldz>1</ldz>
+</CompConfig>
+
+<CompConfig nprocs="1000" bench_name = "POPC"
+   <ldx>90</ldx> <ldy>96</ldy> <ldz>1</ldz>
+</CompConfig>
+
+<CompConfig nprocs="1600" bench_name = "POPC"
+   <ldx>90</ldx> <ldy>60</ldy> <ldz>1</ldz>
+</CompConfig>
+
+<CompConfig nprocs="2000" bench_name = "POPC"
+   <ldx>90</ldx> <ldy>48</ldy> <ldz>1</ldz>
+</CompConfig>
+
+<CompConfig nprocs="4000" bench_name = "POPC"
+   <ldx>45</ldx> <ldy>48</ldy> <ldz>1</ldz>
+</CompConfig>
+
+<CompConfig nprocs="8000" bench_name = "POPC"
+   <ldx>45</ldx> <ldy>24</ldy> <ldz>1</ldz>
+</CompConfig>
+
+<!--               POPD benchmark                                   -->
+<CompConfig nprocs="64" bench_name="POPD"
+   <ldx>450</ldx> <ldy>300</ldy> <ldz>10</ldz>
+</CompConfig>
+
+<CompConfig nprocs="128" bench_name="POPD"
+   <ldx>225</ldx> <ldy>300</ldy> <ldz>10</ldz>
+</CompConfig>
+
+<CompConfig nprocs="256" bench_name = "POPD"
+   <ldx>225</ldx> <ldy>150</ldy> <ldz>10</ldz>
+</CompConfig>
+
+<CompConfig nprocs="512" bench_name = "POPD"
+   <ldx>225</ldx> <ldy>75</ldy> <ldz>10</ldz>
+</CompConfig>
+
+<CompConfig nprocs="800" bench_name = "POPD"
+   <ldx>90</ldx> <ldy>120</ldy> <ldz>10</ldz>
+</CompConfig>
+
+<CompConfig nprocs="1000" bench_name = "POPD"
+   <ldx>90</ldx> <ldy>96</ldy> <ldz>10</ldz>
+</CompConfig>
+
+<CompConfig nprocs="1600" bench_name = "POPD"
+   <ldx>90</ldx> <ldy>60</ldy> <ldz>10</ldz>
+</CompConfig>
+
+<CompConfig nprocs="2000" bench_name = "POPD"
+   <ldx>90</ldx> <ldy>48</ldy> <ldz>10</ldz>
+</CompConfig>
+
+<CompConfig nprocs="4000" bench_name = "POPD"
+   <ldx>45</ldx> <ldy>48</ldy> <ldz>10</ldz>
+</CompConfig>
+
+<CompConfig nprocs="8000" bench_name = "POPD"
+   <ldx>45</ldx> <ldy>24</ldy> <ldz>10</ldz>
 </CompConfig>
 
 </Config>
