@@ -1,5 +1,5 @@
 /*
-** $Id: gptl.h.havempi,v 1.3 2009/04/02 20:21:52 rosinski Exp $
+** $Id: gptl.h,v 1.56 2010/02/18 04:23:08 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -8,24 +8,6 @@
 
 #ifndef GPTL_H
 #define GPTL_H
-
-#ifndef NO_GETTIMEOFDAY
-#define HAVE_GETTIMEOFDAY
-#endif
-
-#ifdef SPMD
-#define HAVE_MPI
-#endif
-
-#ifdef HAVE_MPI
-#include <mpi.h>
-#endif
-
-#ifdef _OPENMP
-#ifndef THREADED_PTHREADS
-#define THREADED_OMP
-#endif
-#endif
 
 /*
 ** Options settable by a call to GPTLsetoption() (default in parens)
@@ -36,6 +18,7 @@
 */
 
 typedef enum {
+  GPTLsync_mpi       = 0,  /* Synchronize before certain MPI calls (PMPI-mode only) */
   GPTLwall           = 1,  /* Collect wallclock stats (true) */
   GPTLcpu            = 2,  /* Collect CPU stats (false)*/
   GPTLabort_on_error = 3,  /* Abort on failure (false) */
@@ -107,16 +90,14 @@ extern int GPTLstart (const char *);
 extern int GPTLstop (const char *);
 extern int GPTLstamp (double *, double *, double *);
 extern int GPTLpr (const int);
-extern int GPTLpr_file (const int, const char *);
-#ifdef HAVE_MPI
-extern int GPTLpr_summary (MPI_Comm comm);
-extern int GPTLpr_summary_file (MPI_Comm, const int, const char *);
-extern int GPTLbarrier (MPI_Comm comm, const char *);
-#else
-extern int GPTLpr_summary (int);
-extern int GPTLpr_summary_file (int, const int, const char *);
-extern int GPTLbarrier (int, const char *);
-#endif
+extern int GPTLpr_file (const char *);
+
+/*
+** Use K&R prototype for these 2 because they require MPI
+*/
+extern int GPTLpr_summary ();
+extern int GPTLbarrier ();
+
 extern int GPTLreset (void);
 extern int GPTLfinalize (void);
 extern int GPTLget_memusage (int *, int *, int *, int *, int *);
@@ -131,7 +112,7 @@ extern int GPTLget_wallclock (const char *, int, double *);
 extern int GPTLget_eventvalue (const char *, const char *, int, double *);
 extern int GPTLget_nregions (int, int *);
 extern int GPTLget_regionname (int, int, char *, int);
-extern int GPTL_PAPIlibraryinit ();
+extern int GPTL_PAPIlibraryinit (void);
 extern int GPTLevent_name_to_code (const char *, int *);
 extern int GPTLevent_code_to_name (const int, char *);
 

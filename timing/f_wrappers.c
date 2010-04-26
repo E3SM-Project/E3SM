@@ -1,14 +1,19 @@
 /*
-** $Id: f_wrappers.c,v 1.45 2009/04/02 20:21:52 rosinski Exp $
+** $Id: f_wrappers.c,v 1.53 2010/04/01 15:35:32 rosinski Exp $
 **
 ** Author: Jim Rosinski
 ** 
 ** Fortran wrappers for timing library routines
 */
 
+#ifdef HAVE_MPI
+#include <mpi.h>
+#endif
+
 #include <string.h>
 #include <stdlib.h>
-#include "private.h" /* MAX_CHARS, bool, gptl (function prototypes and HAVE_MPI logic) */
+#include "private.h" /* MAX_CHARS, bool */
+#include "gptl.h"    /* function prototypes */
 
 #if ( defined FORTRANCAPS )
 
@@ -17,8 +22,6 @@
 #define gptlpr GPTLPR
 #define gptlpr_file GPTLPR_FILE
 #define gptlpr_summary GPTLPR_SUMMARY
-#define gptlpr_summary_FILE GPTLPR_SUMMARY_FILE
-#define gptlbarrier GPTLBARRIER
 #define gptlreset GPTLRESET
 #define gptlstamp GPTLSTAMP
 #define gptlstart GPTLSTART
@@ -46,8 +49,6 @@
 #define gptlpr gptlpr_
 #define gptlpr_file gptlpr_file_
 #define gptlpr_summary gptlpr_summary_
-#define gptlpr_summary_file gptlpr_summary_file_
-#define gptlbarrier gptlbarrier_
 #define gptlreset gptlreset_
 #define gptlstamp gptlstamp_
 #define gptlstart gptlstart_
@@ -75,8 +76,6 @@
 #define gptlpr gptlpr_
 #define gptlpr_file gptlpr_file__
 #define gptlpr_summary gptlpr_summary__
-#define gptlpr_summary_file gptlpr_summary_file__
-#define gptlbarrier gptlbarrier_
 #define gptlreset gptlreset_
 #define gptlstamp gptlstamp_
 #define gptlstart gptlstart_
@@ -99,12 +98,56 @@
 
 #endif
 
-int gptlinitialize ()
+/*
+** Local function prototypes
+*/
+
+int gptlinitialize (void);
+int gptlfinalize (void);
+int gptlpr (int *procid);
+int gptlpr_file (char *file, int nc1);
+#ifdef HAVE_MPI
+int gptlpr_summary (int *fcomm);
+int gptlbarrier (int *fcomm, char *name, int nc1);
+#else
+int gptlpr_summary (void);
+int gptlbarrier (void);
+#endif
+int gptlreset (void);
+int gptlstamp (double *wall, double *usr, double *sys);
+int gptlstart (char *name, int nc1);
+int gptlstop (char *name, int nc1);
+int gptlsetoption (int *option, int *val);
+int gptlenable (void);
+int gptldisable (void);
+int gptlsetutr (int *option);
+int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclock, 
+		      double *usr, double *sys, long long *papicounters_out, int *maxcounters, 
+		      int nc);
+int gptlquerycounters (const char *name, int *t, long long *papicounters_out, int nc);
+int gptlget_wallclock (const char *name, int *t, double *value, int nc);
+int gptlget_eventvalue (const char *timername, const char *eventname, int *t, double *value, 
+			int nc1, int nc2);
+int gptlget_nregions (int *t, int *nregions);
+int gptlget_regionname (int *t, int *region, char *name, int nc);
+int gptlget_memusage (int *size, int *rss, int *share, int *text, int *datastack);
+int gptlprint_memusage (const char *str, int nc);
+#ifdef HAVE_PAPI
+int gptl_papilibraryinit (void);
+int gptlevent_name_to_code (const char *str, int *code, int nc);
+int gptlevent_code_to_name (int *code, char *str, int nc);
+#endif
+
+/*
+** Fortran wrapper functions start here
+*/
+
+int gptlinitialize (void)
 {
   return GPTLinitialize ();
 }
 
-int gptlfinalize ()
+int gptlfinalize (void)
 {
   return GPTLfinalize ();
 }
@@ -114,7 +157,7 @@ int gptlpr (int *procid)
   return GPTLpr (*procid);
 }
 
-int gptlpr_file (int *mode, char *file, int nc1)
+int gptlpr_file (char *file, int nc1)
 {
   char *locfile;
   int ret;
@@ -124,14 +167,15 @@ int gptlpr_file (int *mode, char *file, int nc1)
 
   snprintf (locfile, nc1+1, "%s", file);
 
-  ret = GPTLpr_file (*mode, locfile);
+  ret = GPTLpr_file (locfile);
   free (locfile);
   return ret;
 }
+
+#ifdef HAVE_MPI
 
 int gptlpr_summary (int *fcomm)
 {
-#ifdef HAVE_MPI
   MPI_Comm ccomm;
 #ifdef HAVE_COMM_F2C
   ccomm = MPI_Comm_f2c (*fcomm);
@@ -139,65 +183,45 @@ int gptlpr_summary (int *fcomm)
   /* Punt and try just casting the Fortran communicator */
   ccomm = (MPI_Comm) *fcomm;
 #endif
-#else
-  int ccomm = 0;
-#endif 
-
   return GPTLpr_summary (ccomm);
-}
-
-int gptlpr_summary_file (int *fcomm, int *mode, char *file, int nc1)
-{
-  char *locfile;
-  int ret;
-
-#ifdef HAVE_MPI
-  MPI_Comm ccomm;
-#ifdef HAVE_COMM_F2C
-  ccomm = MPI_Comm_f2c (*fcomm);
-#else
-  /* Punt and try just casting the Fortran communicator */
-  ccomm = (MPI_Comm) *fcomm;
-#endif
-#else
-  int ccomm = 0;
-#endif 
-
-  if ( ! (locfile = (char *) malloc (nc1+1)))
-    return GPTLerror ("gptlpr_summary: malloc error\n");
-
-  snprintf (locfile, nc1+1, "%s", file);
-
-  ret = GPTLpr_summary_file (ccomm, *mode, locfile);
-  free (locfile);
-  return ret;
 }
 
 int gptlbarrier (int *fcomm, char *name, int nc1)
 {
+  MPI_Comm ccomm;
   char cname[MAX_CHARS+1];
   int numchars;
-#ifdef HAVE_MPI
-  MPI_Comm ccomm;
+
+  numchars = MIN (nc1, MAX_CHARS);
+  strncpy (cname, name, numchars);
+  cname[numchars] = '\0';
 #ifdef HAVE_COMM_F2C
   ccomm = MPI_Comm_f2c (*fcomm);
 #else
   /* Punt and try just casting the Fortran communicator */
   ccomm = (MPI_Comm) *fcomm;
 #endif
-#else
-  int ccomm = 0;
-#endif 
-
-  numchars = MIN (nc1, MAX_CHARS);
-  strncpy (cname, name, numchars);
-  cname[numchars] = '\0';
   return GPTLbarrier (ccomm, cname);
 }
 
-int gptlreset ()
+#else
+
+int gptlpr_summary (void)
 {
-  return GPTLreset();
+  return GPTLerror ("gptlpr_summary: Need to build GPTL with #define HAVE_MPI to call this routine\n");
+}
+
+int gptlbarrier (void)
+{
+  return GPTLerror ("gptlbarrier: Need to build GPTL with #define HAVE_MPI to call this routine\n");
+}
+
+#endif
+
+
+int gptlreset (void)
+{
+  return GPTLreset ();
 }
 
 int gptlstamp (double *wall, double *usr, double *sys)
@@ -232,12 +256,12 @@ int gptlsetoption (int *option, int *val)
   return GPTLsetoption (*option, *val);
 }
 
-int gptlenable ()
+int gptlenable (void)
 {
   return GPTLenable ();
 }
 
-int gptldisable ()
+int gptldisable (void)
 {
   return GPTLdisable ();
 }
@@ -326,14 +350,13 @@ int gptlprint_memusage (const char *str, int nc)
   return GPTLprint_memusage (cname);
 }
 
-void gptl_papilibraryinit ()
-{
-  (void) GPTL_PAPIlibraryinit ();
-  return;
-}
-
 #ifdef HAVE_PAPI
 #include <papi.h>
+
+int gptl_papilibraryinit (void)
+{
+  return GPTL_PAPIlibraryinit ();;
+}
 
 int gptlevent_name_to_code (const char *str, int *code, int nc)
 {
@@ -364,14 +387,5 @@ int gptlevent_code_to_name (int *code, char *str, int nc)
   }
   return 0;
 }
-#else
-int gptlevent_name_to_code (const char *str, int *code, int nc)
-{
-  return GPTLevent_name_to_code (str, code);
-}
-
-int gptlevent_code_to_name (const int *code, char *str, int nc)
-{
-  return GPTLevent_code_to_name (*code, str);
-}
 #endif
+

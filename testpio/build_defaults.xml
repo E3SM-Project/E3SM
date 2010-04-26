@@ -21,11 +21,12 @@
 
 <bluefire
   NETCDF_PATH="/contrib/netcdf-4.1-snapshot2010012908/" 
-  PNETCDF_PATH="/contrib/parallel-netcdf-1.1.1svn" 
+  PNETCDF_PATH="/contrib/parallel-netcdf-1.1.1.svn810" 
   FFLAGS = "-g -qfullpath "
   ENV_PREATTACH_PROCESSOR_LIST="AUTO_SELECT"
   ENV_MP_EAGER_LIMIT="0"
   MPIF90 = "mpxlf2003_r"
+  CC = "xlc_r"
   conopts = "--disable-mct --enable-filesystem-hints=gpfs "
   workdir = "/ptmp/${USER}/testpio"
   submit = "bsub <"

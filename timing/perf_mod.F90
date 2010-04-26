@@ -947,7 +947,7 @@ contains
  100        format(/,"***** GLOBAL STATISTICS (",I6," MPI TASKS) *****",/)
             close( unitn )
 
-            ierr = GPTLpr_summary_file(mpicom2, 0, trim(fname))
+            ierr = GPTLpr_summary(mpicom2)
          endif
 
          if (me .le. max_outpe) then
@@ -967,7 +967,7 @@ contains
       else
 
          if (glb_stats) then
-            ierr = GPTLpr_summary_file(mpicom2, 0, trim(fname))
+            ierr = GPTLpr_summary(mpicom2)
          endif
 
          call mpi_recv (signal, 1, mpi_integer, me-1, me-1, mpicom2, status, ierr)
@@ -1007,7 +1007,7 @@ contains
             close( unitn )
          endif
 
-         ierr = GPTLpr_summary_file(mpicom2, 0, trim(fname))
+         ierr = GPTLpr_summary(mpicom2)
          fname(str_length+1:str_length+6) = '      '
       endif
 
@@ -1267,7 +1267,7 @@ contains
 !pw              papi_ctr4_str = "PAPI_FP_INS"
               papi_ctr1_str = "PAPI_FP_OPS"
           endif
-
+#ifdef HAVE_PAPI
           if (papi_ctr1_str(1:11) /= "PAPI_NO_CTR") then
              ierr = gptlevent_name_to_code(trim(papi_ctr1_str), papi_ctr1_id)
           endif
@@ -1280,7 +1280,7 @@ contains
           if (papi_ctr4_str(1:11) /= "PAPI_NO_CTR") then
              ierr = gptlevent_name_to_code(trim(papi_ctr4_str), papi_ctr4_id)
           endif
-
+#endif
        endif
        ! This logic assumes that there will be only one MasterTask
        ! per communicator, and that this MasterTask is process 0.

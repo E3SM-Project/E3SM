@@ -1,19 +1,20 @@
 /*
-** $Id: gptl_papi.c,v 1.69 2009/04/29 22:17:01 rosinski Exp $
+** $Id: gptl_papi.c,v 1.76 2010/02/17 23:59:54 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
 ** Contains routines which interface to PAPI library
 */
  
+#include "gptl.h"
+#include "private.h"
+
 #ifdef HAVE_PAPI
 
 #include <papi.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
-#include "private.h"
 
 #if ( defined THREADED_OMP )
 #include <omp.h>
@@ -693,14 +694,13 @@ int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
   int ret;       /* return code */
   int n;         /* loop index */
   int t;         /* thread index */
-  int *rc;       /* array of return codes from GPTLcreate_and_start_events */
-  bool badret;   /* true if any bad return codes were found */
 
   verbose = verbose_flag;
 
-  /* 
-  ** Ensure that PAPI_library_init has already been called.
-  */
+  if (maxthreads < 1)
+    return GPTLerror ("GPTL_PAPIinitialize: maxthreads = %d\n", maxthreads);
+
+  /* Ensure that PAPI_library_init has already been called */
 
   if ((ret = GPTL_PAPIlibraryinit ()) < 0)
     return GPTLerror ("GPTL_PAPIinitialize: GPTL_PAPIlibraryinit failure\n");
@@ -725,31 +725,6 @@ int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
     papicounters[t] = (long_long *) GPTLallocate (MAX_AUX * sizeof (long_long));
   }
 
-  /* 
-  ** Event starting must be within a threaded loop. 
-  ** For THREADED_PTHREADS case, GPTLcreate_and_start_events is called from
-  ** get_thread_num() when a new thread is encountered.
-  */
-
-#if ( ! defined THREADED_PTHREADS )
-  if (npapievents > 0) {
-    rc = (int *) GPTLallocate (maxthreads * sizeof (int));
-#pragma omp parallel for private (t)
-    for (t = 0; t < maxthreads; t++)
-      rc[t] = GPTLcreate_and_start_events (t);
-
-    badret = false;
-
-    for (t = 0; t < maxthreads; t++)
-      if (rc[t] < 0)
-	badret = true;    
-
-    free (rc);
-    if (badret)
-      return -1;
-  }
-#endif
-
   *nevents_out = nevents;
   for (n = 0; n < nevents; ++n) {
     pr_event_out[n].counter = pr_event[n].event.counter;
@@ -764,7 +739,8 @@ int GPTL_PAPIinitialize (const int maxthreads,     /* number of threads */
 /*
 ** GPTLcreate_and_start_events: Create and start the PAPI eventset.
 **   Threaded routine to create the "event set" (PAPI terminology) and start
-**   the counters. This is only done once, and is called from GPTL_PAPIinitialize 
+**   the counters. This is only done once, and is called from get_thread_num
+**   for the first time for the thread.
 ** 
 ** Input args: 
 **   t: thread number
@@ -781,8 +757,11 @@ int GPTLcreate_and_start_events (const int t)  /* thread number */
   /* Create the event set */
 
   if ((ret = PAPI_create_eventset (&EventSet[t])) != PAPI_OK)
-    return GPTLerror ("GPTLcreate_and_start_events: failure creating eventset: %s\n", 
-		      PAPI_strerror (ret));
+    return GPTLerror ("GPTLcreate_and_start_events: thread %d failure creating eventset: %s\n", 
+		      t, PAPI_strerror (ret));
+
+  if (verbose)
+    printf ("GPTLcreate_and_start_events: successfully created eventset for thread %d\n", t);
 
   /* Add requested events to the event set */
 
@@ -1089,10 +1068,14 @@ void GPTL_PAPIadd (Papistats *auxout,      /* output struct */
 
 void GPTL_PAPIfinalize (int maxthreads)
 {
-  int t;
+  int t;   /* thread index */
+  int ret; /* return code */
 
   for (t = 0; t < maxthreads; t++) {
+    ret = PAPI_stop (EventSet[t], papicounters[t]);
     free (papicounters[t]);
+    ret = PAPI_cleanup_eventset (EventSet[t]);
+    ret = PAPI_destroy_eventset (&EventSet[t]);
   }
 
   free (EventSet);
@@ -1296,22 +1279,17 @@ int GPTLget_npapievents (void)
 }
 
 #else
-#include "private.h"
+
 /*
 ** "Should not be called" entry points for public routines
 */
-
-int GPTL_PAPIlibraryinit ()
-{
-  return GPTLerror ("GPTL_PAPIlibraryinit: PAPI not enabled\n");
-}
 
 int GPTLevent_name_to_code (const char *name, int *code)
 {
   return GPTLerror ("GPTLevent_name_to_code: PAPI not enabled\n");
 }
 
-int GPTLevent_code_to_name (const int code, char *name)
+int GPTLevent_code_to_name (int code, char *name)
 {
   return GPTLerror ("GPTLevent_code_to_name: PAPI not enabled\n");
 }

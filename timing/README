@@ -5,10 +5,16 @@ GPTL is the "General Purpose Timing Library". It can be used to manually
 instrument application codes with an arbitrary set of "regions" (or "timers")
 over which statistics such as wallclock time and CPU time are gathered and
 subsequently printed. If the target application is built with the GNU
-compilers (gcc or gfortran) or Pathscale (pathcc or pathf95), GPTL can also be
-used to automatically instrument regions which are defined by function entry
-and exit points. This is an easy way to generate a dynamic call tree. See
-Auto-Instrumentation below for a description of how to use this feature.
+compilers (gcc or gfortran), Pathscale (pathcc or pathf95), or PGI compilers,
+GPTL can also be used to automatically instrument regions which are defined
+by function entry and exit points. This is an easy way to generate a dynamic
+call tree. See Auto-Instrumentation below for a description of how to use
+this feature.
+
+Similar to compiler-generated auto-instrumentation, GPTL can intercept and
+auto-profile MPI calls made by the application if the target MPI library
+supports the PMPI profiling layer. In this case an estimate of bytes
+transferred by each MPI call is presented in the printed output.
 
 If the PAPI library is installed (http://icl.cs.utk.edu/papi), GPTL
 also provides a convenient mechanism to access all available PAPI events. In
@@ -94,8 +100,8 @@ the application to be profiled is built with either the GNU or Pathscale
 compilers, you might find it convenient to use the auto-instrumentation
 feature of GPTL. Here's how:
 
-1) Add the flag -finstrument-functions when compiling the routines you'd like
-to profile.
+1) Add the flag -finstrument-functions (-Minstrument:functions under PGI)
+when compiling the routines you'd like to profile.
 
 2) Add calls to GPTLsetoption() (if desired), and GPTLinitialize() to the main
 program before any other routines are invoked.
@@ -127,6 +133,9 @@ these routines.
 Running hex2name.pl converts the function addresses back to human-readable
 function names. It uses the UNIX "nm" utility to do this.
 
+When using MPI auto-profiling, steps 2) and 3) above can be omitted. In this
+case GPTL auto-generates calls to GPTLinitialize and GPTLpr from MPI_Init and
+MPI_finalize, respectively.
 
 Multi-processor instrumented codes 
 ----------------------------------

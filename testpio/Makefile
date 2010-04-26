@@ -69,6 +69,9 @@ EXE2=testfiletype
 EXE3=tst_pio
 LEVEL=0
 
+default: depends
+	$(MAKE) -f Makefile LEVEL=1 $(EXE)
+
 all: depends
 	$(MAKE) -f Makefile LEVEL=1 $(EXE)
 	$(MAKE) -f Makefile LEVEL=1 $(EXE2)

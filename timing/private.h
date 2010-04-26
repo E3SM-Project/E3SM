@@ -1,5 +1,5 @@
 /*
-** $Id: private.h,v 1.65 2009/04/29 22:17:01 rosinski Exp $
+** $Id: private.h,v 1.72 2009/12/29 02:03:53 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
@@ -8,7 +8,6 @@
 
 #include <stdio.h>
 #include <sys/time.h>
-#include "gptl.h"
 
 #ifndef MIN
 #define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
@@ -75,6 +74,9 @@ typedef struct {
 
 typedef struct TIMER {
   char name[MAX_CHARS+1];   /* timer name (user input) */
+#ifdef ENABLE_PMPI
+  double nbytes;            /* number of bytes for MPI call */
+#endif
 #ifdef HAVE_PAPI
   Papistats aux;            /* PAPI stats  */
 #endif 
@@ -107,9 +109,21 @@ extern void GPTLset_abort_on_error (bool val); /* set flag to abort on error */
 extern void *GPTLallocate (const int);         /* malloc wrapper */
 extern int threadinit (int *, int *);          /* initialize threading environment */
 extern void threadfinalize (void);             /* finalize threading environment */
-#if ( defined THREADED_PTHREADS )
-extern int get_thread_num (int *, int *);      /* determine thread number */
-extern void print_threadmapping (int, FILE *); /* print mapping of pthread ids */
+extern void print_threadmapping (int, FILE *); /* print mapping of thread ids */
+extern int get_thread_num (int *, int *);      /* get 0-based thread number */
+
+extern int GPTLstart_instr (void *);
+extern int GPTLstop_instr (void *);
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern void __cyg_profile_func_enter (void *, void *);
+extern void __cyg_profile_func_exit (void *, void *);
+
+#ifdef __cplusplus
+};
 #endif
 
 /* 
@@ -132,4 +146,11 @@ extern void GPTL_PAPIprintenabled (FILE *);
 extern void read_counters100 (void);
 extern int GPTLget_npapievents (void);
 extern int GPTLcreate_and_start_events (const int);
+#endif
+
+#ifdef ENABLE_PMPI
+extern Timer *GPTLgetentry (char *);
+extern int GPTLpmpi_setoption (const int, const int);
+extern int GPTLis_initialized (void);
+extern int GPTLpr_has_been_called (void);
 #endif

@@ -345,7 +345,7 @@ m4_copy([AC_LANG_PROGRAM(Fortran 90)], [AC_LANG_PROGRAM(Fortran 95)])
 
 # AC_LANG_CALL(Fortran 95)(PROLOGUE, FUNCTION)
 # --------------------------------------------
-m4_copy([AC_LANG_CALL(Fortran 90)], [AC_LANG_CALL(Fortran 90)])
+m4_copy([AC_LANG_CALL(Fortran 90)], [AC_LANG_CALL(Fortran 95)])
 
 
 ## -------------------------------------------- ##
