@@ -154,11 +154,25 @@ contains
     call t_startf("pio_put_var_{DIMS}d_{TYPE}")
 #endif 
     ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+
+#ifdef _PNETCDF
+#if(({DIMS}>0) && ({ITYPE} != TYPETEXT))
+    if(iotype == iotype_pnetcdf) then
+       do i=1,{DIMS}
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_{DIMS}d_{TYPE} (File, varid, start, count, ival)
+       return
+    end if
+#endif
+#endif
     if(File%iosystem%IOProc) then
-       iotype = File%iotype 
-       start = 1
-       count = 0
-       is=0       
        if(File%iosystem%io_rank==0) then
 #if({ITYPE}== TYPETEXT)
     	  count(1)=len(ival)
@@ -181,8 +195,9 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-          ierr = put_vara_{DIMS}d_{TYPE} (File, varid, start, count, ival)
+!#else
+          ! this wont work because put_vara is collective
+!          ierr = put_vara_{DIMS}d_{TYPE} (File, varid, start, count, ival)
 #endif
 #endif
 #ifdef _NETCDF
@@ -278,7 +293,7 @@ contains
 #endif 
     ierr=0
     iotype = File%iotype 
-
+  
     ierr = pio_inq_varndims(File, varid, ndims)
     
     if(File%iosystem%IOProc) then
