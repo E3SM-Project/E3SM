@@ -43,6 +43,54 @@
 #BSUB -W 1:50"
 />
 
+<aum
+  ADDENV_PATH = ""
+  ADDENV_LD_LIBRARY_PATH = ""
+  ENV_P4_GLOBMEMSIZE="518400000"
+  MPIF90 = "mpif90"
+  MPICC = "mpicc"
+  F90 = "gfortran"
+  CC = "gcc"
+  NETCDF_PATH="" 
+  FFLAGS = "-g --free-line-length-none "
+  submit="qsub"
+  run="mpirun"
+  conopts = "--disable-mct --disable-netcdf --disable-pnetcdf"
+  workdir = "/scratch/${USER}/testpio"
+  corespernode="8"
+  preamble = "
+#PBS -l walltime=01:00:00
+#PBS -N testpiob
+#PBS -j oe
+#PBS -V
+"
+  testsuites = "mpiio"
+/>  
+
+<cyberstar
+  ADDENV_PATH = ""
+  ADDENV_LD_LIBRARY_PATH = ""
+  ENV_P4_GLOBMEMSIZE="518400000"
+  MPIF90 = "mpif90"
+  MPICC = "mpicc"
+  F90 = "pgf90"
+  CC = "gcc"
+  NETCDF_PATH="" 
+  FFLAGS = "-g"
+  submit="qsub"
+  run="mpirun"
+  conopts = "--disable-mct --disable-pnetcdf"
+  workdir = "/gpfs/scratch/${USER}/testpio"
+  corespernode="8"
+  preamble = "
+#PBS -l walltime=01:00:00
+#PBS -N testpiob
+#PBS -j oe
+#PBS -V
+"
+  testsuites = "mpiio"
+/>  
+
 <edinburgh
   ADDENV_PATH = "/usr/local/mpich-lf95/bin"
   ADDENV_LD_LIBRARY_PATH = "/usr/local/lf95/lib64"

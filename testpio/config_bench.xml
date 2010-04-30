@@ -80,6 +80,18 @@
 </CompConfig>
 
 <!--               POPC benchmark                                   -->
+<CompConfig nprocs="8" bench_name="POPC"
+   <ldx>900</ldx> <ldy>1200</ldy> <ldz>1</ldz>
+</CompConfig>
+
+<CompConfig nprocs="16" bench_name="POPC"
+   <ldx>900</ldx> <ldy>600</ldy> <ldz>1</ldz>
+</CompConfig>
+
+<CompConfig nprocs="32" bench_name="POPC"
+   <ldx>450</ldx> <ldy>600</ldy> <ldz>1</ldz>
+</CompConfig>
+
 <CompConfig nprocs="64" bench_name="POPC"
    <ldx>450</ldx> <ldy>300</ldy> <ldz>1</ldz>
 </CompConfig>
