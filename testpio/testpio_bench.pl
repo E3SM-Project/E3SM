@@ -24,7 +24,7 @@ my $debug=0;
 my $numagg;
 my $numvars;
 my $iodecomp;
-my $logfile;
+my $logfile = 'testpio.out';
 my $result = GetOptions("suites=s@"=>\$suites,
                         "retry"=>\$retry,
                         "host=s"=>\$host,
@@ -277,7 +277,7 @@ if($logfile) {
   $log = "$logfile";
   $setlogfile = 1
 } else {
-  $log = "$cfgdir/testpio.log.lid";
+  $log = "$cfgdir/testpio.log.";
   $setlogfile = 2
 }
 my $foo= Utils->runString($host,$pecount,$run,$exename,$log);
@@ -286,24 +286,25 @@ print "EXEC command: ($foo)\n";
 
 print F << "EOF";
 use strict;
+use lib "$cfgdir";
 use File::Copy;
 use POSIX qw(ceil);
-unshift \@INC, "$cfgdir/../testpio";
+#unshift \@INC, "$cfgdir/../testpio";
 
-chmod 0755,"$cfgdir/../testpio/Utils.pm";
+#chmod 0755,"$cfgdir/../testpio/Utils.pm";
 use Utils;
 
 chdir ("$cfgdir");
 
 mkdir "$srcdir" if(! -d "$srcdir");
 
-#my \$rc = 0xffff & system("rsync -rp $piodir $srcdir");
-#if(\$rc != 0) {
-#    system("cp -fr $piodir/pio $srcdir");
-#    system("cp -fr $piodir/mct $srcdir");
-#    system("cp -fr $piodir/timing $srcdir");
-#    system("cp -fr $piodir/testpio $srcdir");
-#}
+my \$rc = 0xffff & system("rsync -rp $piodir $srcdir");
+if(\$rc != 0) {
+    system("cp -fr $piodir/pio $srcdir");
+    system("cp -fr $piodir/mct $srcdir");
+    system("cp -fr $piodir/timing $srcdir");
+    system("cp -fr $piodir/testpio $srcdir");
+}
 
 #my \$confopts = {bench=>"--enable-pnetcdf --enable-mpiio --enable-netcdf --enable-timing"};
 my \$confopts = {bench=>""};
