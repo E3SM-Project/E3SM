@@ -109,7 +109,7 @@ sub submitString{
    my $submitString;
    my $nodecnt;
    if($host =~ "frost"){
-      $nodecnt=$pecount/$corespernode;
+      $nodecnt=ceil($pecount/$corespernode);
       $submitString = "$submit -n $nodecnt $script";
    }else{
       $submitString = "$submit $script";
