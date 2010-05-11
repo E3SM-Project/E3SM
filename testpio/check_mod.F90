@@ -32,8 +32,8 @@ subroutine check_1D_r8(fname,wr_array,rd_array,len,iostat)
     integer(i4),optional :: iostat
 
     real(r8),pointer :: diff(:)
-    real(r8) :: lsum,gsum
-    integer(i4) :: ierr,cbad,rank
+    real(r8) :: lsum,gsum, maxbad
+    integer(i4) :: ierr,cbad,rank, maxbadloc(1)
 
     if(present(iostat)) iostat = PIO_noerr
    
@@ -42,6 +42,8 @@ subroutine check_1D_r8(fname,wr_array,rd_array,len,iostat)
     if(len>0) then
        diff = abs(wr_array - rd_array)
        cbad = COUNT(diff > 1.0d-299)
+       maxbad = maxval(diff)
+       maxbadloc = maxloc(diff)
        lsum = SUM(diff)
     else
        lsum = 0
@@ -52,7 +54,7 @@ subroutine check_1D_r8(fname,wr_array,rd_array,len,iostat)
     if(lsum > 1.0d-80) then ! There is a discrepency between read + write data
        call MPI_COMM_rank(MPI_COMM_WORLD,rank,ierr)
        call CheckMPIReturn('Call to MPI_COMM_RANK()',ierr,__FILE__,__LINE__)
-       print *,'IAM: ', rank, 'File: ',TRIM(fname),' Error detected for correctness test(1D,R8): ',lsum,' # bad: ',cbad, ' gsum:', gsum
+       print *,'IAM: ', rank, 'File: ',TRIM(fname),' Error detected for correctness test(1D,R8): ',lsum,' # bad: ',cbad, ' gsum:', gsum, 'max ',maxbad,' loc ',maxbadloc, wr_array(maxbadloc), rd_array(maxbadloc)
        if(present(iostat)) iostat = -20
     endif
     call dealloc_check(diff)	

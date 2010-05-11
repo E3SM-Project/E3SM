@@ -25,6 +25,8 @@ my $numagg;
 my $numvars;
 my $iodecomp;
 my $logfile = 'testpio.out';
+my $enablenetcdf4;
+
 my $result = GetOptions("suites=s@"=>\$suites,
                         "retry"=>\$retry,
                         "host=s"=>\$host,
@@ -93,17 +95,16 @@ my %attributes = $settings->get_attributes;
 
 
 foreach(keys %attributes){
-    if($attributes{$_} =~  /\$\{?(\w+)\}?/){
-	my $envvar = $ENV{$1};
-	$attributes{$_}=~ s/\$\{?$1\}?/$envvar/
-    }
-#    if(/ADDENV_(.*)/){
-#	print F "\$ENV{$1}=\"$attributes{$_}:\$ENV{$1}\n\"";
-#    }elsif(/ENV_(.*)/){
-#        print "set $1 $attributes{$_}\n";
-#	print F "\$ENV{$1}=\"$attributes{$_}\n\"";
-#    }	
-    
+    if(/ADDENV_(.*)/){
+	print F "\$ENV{$1}=\"$attributes{$_}:\$ENV{$1}\"\;\n";
+    }elsif(/ENV_(.*)/){
+        print "set $1 $attributes{$_}\n";
+	print F "\$ENV{$1}=\"$attributes{$_}\"\;\n";
+    }elsif(/NETCDF_PATH/){
+	if($attributes{NETCDF_PATH} =~ /netcdf-4/){
+	    $enablenetcdf4="--enable-netcdf4";
+	}
+    }    
 }
 
 if(defined $suites){
@@ -115,6 +116,8 @@ if(defined $suites){
 
 
 my $workdir = $attributes{workdir};
+
+$workdir =~ s/\${(.*)}/$ENV{$1}/;
 
 if(-d $workdir){
     print "Using existing directory $workdir\n";
@@ -270,15 +273,12 @@ foreach(keys %attributes){
 }
 
 my $log;
-my $setlogfile;
 my $run = $attributes{run};
 my $exename = "./testpio";
 if($logfile) {
   $log = "$logfile";
-  $setlogfile = 1
 } else {
   $log = "$cfgdir/testpio.log.";
-  $setlogfile = 2
 }
 my $foo= Utils->runString($host,$pecount,$run,$exename,$log);
 
@@ -306,8 +306,8 @@ if(\$rc != 0) {
     system("cp -fr $piodir/testpio $srcdir");
 }
 
-#my \$confopts = {bench=>"--enable-pnetcdf --enable-mpiio --enable-netcdf --enable-timing"};
-my \$confopts = {bench=>""};
+my \$confopts = {bench=>"--enable-pnetcdf --enable-mpiio --enable-netcdf --enable-timing $enablenetcdf4"};
+#my \$confopts = {bench=>""};
 
 my \$testlist = {bench=>["generated"]};
 
@@ -325,7 +325,7 @@ foreach \$suite (qw(@testsuites)){
     my \@testlist = \"$suffix";
 #    unlink("../pio/Makefile.conf");
 #    May want to uncomment this system call so that testpio gets build 
-#    system("perl ./testpio_build.pl --conopts=\\"\$confopts\\" --host=$host");
+    system("perl ./testpio_build.pl --conopts=\\"\$confopts\\" --host=$host");
     copy("testpio","$tstdir");     # copy executable into test directory
 #    copy("testpio_in","$tstdir"); # copy the namelist file into test directory
     
@@ -358,12 +358,8 @@ foreach \$suite (qw(@testsuites)){
 	    mkdir "none" unless(-d "none");
 	    my \$exename = "./testpio";
             my \$log;
-            if($setlogfile) {
-                \$log = "$logfile";
-		unlink("\$log") if(-e "\$log");
-            } else {
-	        \$log = "\$casedir/testpio.out.$date";
-            }
+            \$log = "$logfile";
+	    unlink("\$log") if(-e "\$log");
             my \$sysstr =  Utils->runString(\$host,\$pecount,\$run,\$exename,\$log);
 	    system(\$sysstr);
 	    open(LOG,\$log);
