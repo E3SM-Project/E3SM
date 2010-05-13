@@ -2,9 +2,10 @@
 #include <stdio.h>
 #include <string.h>
 
+
 #if defined(BGL) || defined(BGP)
 #include <mpi.h>
-
+#include <math.h>
 #ifdef BGL 
 #include <bglpersonality.h>
 #include <rts.h>
@@ -37,7 +38,7 @@
 
 #endif
 
-
+#define min(a,b) a<b?a:b
 
 
 int rank;
@@ -155,10 +156,12 @@ if((*rearr) > 0) {
    if(remainder > 0) {
        if(rank ==0) {printf("Unbalanced IO-configuration: %i IO-nodes have %i IO-clients : %i IO-nodes have %i IO-clients \n",
                 remainder, numiotasks_per_node+1, numIONodes-remainder,numiotasks_per_node);}
-       lstride = floor((float)numNodesInPset/(float)(numiotasks_per_node+1));
+       lstride = min(np,floor((float)numNodesInPset/(float)(numiotasks_per_node+1)));
    } else {
-       if(rank == 0) {printf("Balanced IO-configuration: %i IO-nodes have %i IO-clients\n",numIONodes-remainder, numiotasks_per_node);}
-       lstride = floor((float)numNodesInPset/(float)numiotasks_per_node);
+       if(rank == 0) {
+	   printf("Balanced IO-configuration: %i IO-nodes have %i IO-clients\n",numIONodes-remainder, numiotasks_per_node);
+       }
+       lstride = min(np,floor((float)numNodesInPset/(float)numiotasks_per_node));
    }
   
    /* Number of processor sets */
@@ -186,11 +189,17 @@ if((*rearr) > 0) {
 
    (*iamIOtask) = 0;   /* initialize to zero */
 
+   if((*stride) == np && (*base)==rank){
+       (*iamIOtask) = 1;
+   }
+
+
    if((*stride) == 1) (*base) = 0;  /* Reset the base to 0 if we are using all tasks */
    /* start stridding MPI tasks from base task */ 
    iam = rankInPset-(*base);
    if (iam >= 0)  {
        /* mark tasks that will be IO-tasks  or IO-clients */
+       printf("iam = %d lstride = %d coreID = %d\n",iam,lstride,coreId);
        if((iam % lstride == 0) && (coreId == 0) ) {  /* only io tasks indicated by stride and coreId = 0 */
            if((iam/lstride) < numiotasks_per_node) { 
               /* only set the first (numiotasks_per_node - 1) tasks */

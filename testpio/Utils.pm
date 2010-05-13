@@ -11,9 +11,12 @@ use vars      qw();
 use POSIX qw(ceil);
 
 sub host{
-    my $host = `hostname`;
+    my $host = `hostname -f`;
+    $host = `hostname` if($?);
 #HOST SPECIFIC START
-    if($host =~ /^fr\d+en/){
+    if($host =~ /intrepid/){
+	$host = "intrepid";
+    }elsif($host =~ /^fr\d+en/){
 	$host = "frost";
     }elsif($host =~ /^be\d+en/){
 	$host = "bluefire";
@@ -92,7 +95,7 @@ sub runString{
   my $runString;
   if($host =~ "bluefire") {
     $runString = "$run $exename 1> $log 2>&1";
-  }elsif($host =~ "frost") {
+  }elsif($host eq "frost" or $host eq "intrepid" ) {
     $runString = "$run $log -np $pecount $exename";
   }elsif($host =~ "columbia"){
     $runString = "$run -np $pecount $exename 1> $log 2>&1";

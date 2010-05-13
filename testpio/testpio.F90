@@ -1,3 +1,9 @@
+#ifdef BGP
+#define BGx
+#endif
+#ifdef BGL
+#define BGx
+#endif
 !>
 !! @file testpio.F90
 !! An example of how PIO can be used
@@ -197,7 +203,7 @@ program testpio
   ! Checks
   !-------------------------------------
 
-#if !defined(BGL) | !defined(BGL)
+#if !defined(BGx) 
   if (num_iotasks <= 0) then
      write(*,*) trim(myname),' ERROR: ioprocs invalid num_iotasks=',num_iotasks
      call piodie(__FILE__,__LINE__)

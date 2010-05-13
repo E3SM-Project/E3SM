@@ -19,6 +19,27 @@
   corespernode="2"
  />
 
+<intrepid
+  ENV_XLF_USR_CONFIG="/soft/apps/ibmcmp-jan2010/xlf/bg/11.1/etc/xlf.cfg"
+  ENV_XLC_USR_CONFIG="/soft/apps/ibmcmp-jan2010/vacpp/bg/9.0/etc/vac.cfg"
+  ENV_IBMCMP_INCLUDE="/soft/apps/ibmcmp-jan2010/vac/bg/9.0/include:/soft/apps/ibmcmp-jan2010/vacpp/bg/9.0/include:/soft/apps/ibmcmp-jan2010/xlf/bg/11.1/include:/soft/apps/ibmcmp-jan2010/xlmass/bg/4.4/include:/soft/apps/ibmcmp-jan2010/xlsmp/bg/1.7/include"
+  ENV_XNLSPATH="/usr/X11R6/lib/X11/nls"
+  ADDENV_PATH="/soft/apps/darshan/bin/:/soft/apps/ibmcmp-jan2010/xlf/bg/11.1/bin/:/soft/apps/ibmcmp-jan2010/vac/bg/9.0/bin/"
+  NETCDF_PATH="/soft/apps/current/netcdf-3.6.2" 
+  PNETCDF_PATH="/soft/apps/current/pnetcdf-1.1.1-xl" 
+  MPIF90 = "mpixlf90"
+  F90 = "mpixlf90"
+  FC = "mpixlf90"
+  CC = "mpixlc"
+  FFLAGS = "-qarch=450 -qextname=flush -g -qfullpath -WF,-DBGP -WF,-D_USE_FLOW_CONTROL"
+  ALLCFLAGS = "-DBGP -g -qfullpath -I/bgsys/drivers/ppcfloor/comm/include -I/bgsys/drivers/ppcfloor/arch/include"
+  conopts = "--disable-mct  --enable-mpiio --enable-timing --build=powerpc-bgp-linux --host=powerpc64-suse-linux"
+  workdir = "/gpfs/home/${USER}/testpio"
+  run = "cobalt-mpirun -mode vn -nofree --stdout "
+  submit ="qsub -ACCESDev --mode script -t 01:00:00 -q prod-devel -n 16"
+  corespernode="4"
+ />
+
 <bluefire
   NETCDF_PATH="/contrib/netcdf-4.1.1-mpi/" 
   PNETCDF_PATH="/contrib/parallel-netcdf-1.1.1.svn811" 
@@ -220,6 +241,10 @@
 #PBS -j oe"
   testsuites = "snet mpiio"
 />
+
+
+
+
 
 
 </testpioconfig>
