@@ -251,7 +251,7 @@ if test "$USE_MPISERIAL" = "yes"
     MPI_INC="-I$MPI_PATH" 
   fi
 else
-  PDEFS="$PDEFS -DSPMD"
+  PDEFS="$PDEFS -DSPMD -DHAVE_MPI"
   ACX_MPI()
 fi
 
@@ -1123,7 +1123,7 @@ echo Output Variables: {CC=$CC} \
 {PDEFS=$PDEFS} \
 {PDEFSF=$PDEFSF} \
 {PINCS=$PINCS} \
-{PLIBS=$PLIBS} \
+{LDLIBS=$LDLIBS} \
 {DEBUG=$DEBUG}
 
 echo
