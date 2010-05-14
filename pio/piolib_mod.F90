@@ -1783,7 +1783,12 @@ contains
     endif
 #endif
 
-
+#ifndef _NETCDF4
+    if(file%iotype==pio_iotype_netcdf4p .or. file%iotype==pio_iotype_netcdf4c) then
+       print *, 'WARNING: PIO was not built with NETCDF 4 support changing iotype to netcdf'
+       file%iotype = pio_iotype_netcdf
+    end if
+#endif
     select case(iotype)
     case(iotype_pbinary, iotype_direct_pbinary)
        if(present(amode_in)) then
@@ -1865,6 +1870,12 @@ contains
        write(rd_buffer,('(i9)')) 16*1024*1024
        call mpi_info_set(iosystem%info,'cb_buffer_size',trim(adjustl(rd_buffer)),ierr)
     endif
+#endif
+#ifndef _NETCDF4
+    if(file%iotype==pio_iotype_netcdf4p .or. file%iotype==pio_iotype_netcdf4c) then
+       print *, 'WARNING: PIO was not built with NETCDF 4 support changing iotype to netcdf'
+       file%iotype = pio_iotype_netcdf
+    end if
 #endif
     select case(iotype)
     case(iotype_pbinary, iotype_direct_pbinary)
