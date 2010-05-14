@@ -70,15 +70,16 @@ void identity(MPI_Fint *comm, int *iotask){
 #ifdef BGL
    numPsets = Personality_numPsets (&pers);
 #else
+   rankInPset --;
    numPsets = BGP_Personality_numComputeNodes(&pers)/numNodesInPset;
 #endif
     
-/*
+
    if(rank == 0) { printf("number of IO nodes in block: %i \n",numIONodes);}
    if(rank == 0) { printf("number of Psets in block : %i \n",numPsets);}
    if(rank == 0) { printf("number of compute nodes in Pset: %i \n",numNodesInPset);}
    printf("MPI task %i is rank %i in Pset \n",rank, rankInPset);
-*/
+
 
    int psetNum;
    psetNum = Personality_psetNum (&pers);
@@ -181,7 +182,9 @@ if((*rearr) > 0) {
 
    /* What is the rank of this node in the processor set */
    rankInPset = Personality_rankInPset (&pers);
-
+#ifdef BGP
+   rankInPset--;
+#endif
    /* determine the processor set that this node belongs to */
    psetNum = Personality_psetNum (&pers);
 
@@ -199,7 +202,7 @@ if((*rearr) > 0) {
    iam = rankInPset-(*base);
    if (iam >= 0)  {
        /* mark tasks that will be IO-tasks  or IO-clients */
-       printf("iam = %d lstride = %d coreID = %d\n",iam,lstride,coreId);
+/*       printf("iam = %d lstride = %d coreID = %d\n",iam,lstride,coreId);*/
        if((iam % lstride == 0) && (coreId == 0) ) {  /* only io tasks indicated by stride and coreId = 0 */
            if((iam/lstride) < numiotasks_per_node) { 
               /* only set the first (numiotasks_per_node - 1) tasks */

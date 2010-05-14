@@ -1279,7 +1279,7 @@ contains
     integer(i4) :: n_iotasks
     integer(i4) :: length
     integer(i4) :: ngseg,io_rank,i,lbase, io_comm,ierr 
-    integer(i4) :: lstride
+    integer(i4) :: lstride, itmp
     integer(i4), pointer :: iotmp(:),iotmp2(:)
 
     character(len=5) :: cb_nodes
@@ -1342,7 +1342,8 @@ contains
 
     iosystem%ioproc = .false.
 
-#if defined(BGL) || defined(BGP)
+#if defined(BGL) 
+!|| defined(BGP)
 
     call alloc_check(iotmp,iosystem%num_tasks,'init:num_tasks')
     call alloc_check(iotmp2,iosystem%num_tasks,'init:num_tasks')
@@ -1386,7 +1387,7 @@ contains
     if(iosystem%ioproc) then 
 	iotask = 1
     endif
-!verbose    call identity(comp_comm,iotask)
+    if(debug) call identity(comp_comm,iotask)
 
 #else
 
@@ -1429,8 +1430,24 @@ contains
     if(iosystem%ioproc) call mpi_comm_rank(iosystem%io_comm,iosystem%io_rank,ierr)
     if(check) call checkmpireturn('init: after call to comm_rank: ',ierr)
 
+#if defined(BGL) 
+!|| defined(BGP)
+!  base may not be an io node - correct this
+   if(iosystem%io_rank==0) then
+     itmp = iosystem%comp_rank
+   else 
+     itmp = -1
+   endif
+   call mpi_allreduce(itmp, lbase, 1, MPI_INTEGER, MPI_MAX, iosystem%comp_comm, ierr)
+   iosystem%iomaster = lbase
 
-    if(debug) print *,'init: iam: ',comp_rank,'io processor: ',iosystem%ioproc, 'io rank ',iosystem%io_rank
+#endif
+    
+
+
+
+    if(debug) print *,'init: iam: ',comp_rank,'io processor: ',iosystem%ioproc, 'io rank ',&
+          iosystem%io_rank, iosystem%iomaster		  
 
 
 

@@ -38,6 +38,7 @@
   run = "cobalt-mpirun -mode vn -nofree --stdout "
   submit ="qsub -ACCESDev --mode script -t 01:00:00 -q prod-devel -n 16"
   corespernode="4"
+  pecount="64"
  />
 
 <bluefire
