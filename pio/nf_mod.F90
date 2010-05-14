@@ -569,6 +569,9 @@ contains
           if (File%iosystem%io_rank==0) then
              ierr=nf90_inq_varid(File%fh,name,varid)
           endif
+          if(File%iosystem%num_tasks==File%iosystem%num_iotasks) then
+             call MPI_BCAST(varid,1,MPI_INTEGER,0,File%iosystem%IO_comm,ierr2)
+          end if
 #endif
 
        case default
@@ -578,11 +581,10 @@ contains
     endif
     call check_netcdf(File, ierr,_FILE_,__LINE__)
 
-    if(iotype.eq.iotype_netcdf .or. File%iosystem%num_tasks>File%iosystem%num_iotasks) then
+    if(File%iosystem%num_tasks>File%iosystem%num_iotasks) then
        call MPI_BCAST(varid,1,MPI_INTEGER,File%iosystem%IOMaster,File%iosystem%Comp_comm,ierr2)
-       call CheckMPIReturn('inq_varid',ierr2)
     end if
-
+    call MPI_BCAST(ierr,1,MPI_INTEGER,File%iosystem%IOMaster,File%iosystem%Comp_comm,ierr2)
   end function inq_varid_vid
 
 !> 
@@ -1006,6 +1008,7 @@ contains
 !! @param dimid : The netcdf dimension id.
 !! @retval ierr @copydoc error_return
 !!
+!! Note that we do not want internal error checking for this funtion.
 !>
   integer function pio_inq_dimid(File,name,dimid) result(ierr)
 
@@ -1021,7 +1024,7 @@ contains
 
     iotype = File%iotype
     ierr=PIO_noerr
-   
+
     if(File%iosystem%IOproc) then
        select case(iotype)
 
@@ -1048,8 +1051,9 @@ contains
 
        end select
     endif
-    call check_netcdf(File, ierr,_FILE_,__LINE__)
 
+    call check_netcdf(File, ierr,_FILE_,__LINE__)
+    if(Debug) print *,__FILE__,__LINE__,file%fh, name, dimid
     if(File%iosystem%num_tasks>File%iosystem%num_iotasks) then
        call MPI_BCAST(dimid,1,MPI_INTEGER,File%iosystem%IOMaster,File%iosystem%Comp_comm, mpierr)
        call CheckMPIReturn('nf_mod',mpierr)
@@ -1142,7 +1146,7 @@ contains
 
     iotype = File%iotype
     ierr=PIO_noerr
-    dimlen = -1
+
     if(File%iosystem%IOproc) then
        select case(iotype)
 

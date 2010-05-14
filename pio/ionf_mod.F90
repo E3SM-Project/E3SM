@@ -114,6 +114,7 @@ contains
           call bad_iotype(iotype,_FILE_,__LINE__)
 
        end select
+       if(Debug) print *,__FILE__,__LINE__,file%fh,ierr
     end if
     tmpfh = file%fh
     call mpi_bcast(tmpfh,1,mpi_integer, file%iosystem%iomaster, file%iosystem%comp_comm, mpierr)
@@ -175,7 +176,6 @@ contains
           end if
 #endif
 #endif
-          if(Debug) print *, _FILE_,__LINE__,'CFILE open ',file%fh
        end if
 #endif
 
@@ -207,6 +207,8 @@ contains
     call mpi_bcast(tmpfh,1,mpi_integer, file%iosystem%iomaster, file%iosystem%comp_comm, mpierr)
     if(file%fh<0) file%fh=-tmpfh
 
+    if(Debug) print *, _FILE_,__LINE__,'CFILE open ',file%fh
+      
     call check_netcdf(File, ierr,_FILE_,__LINE__)
 
   end function open_nf
@@ -235,7 +237,11 @@ contains
        case(PIO_iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
           if (File%fh>0) then
              ierr= nf90_sync(File%fh)
-             ierr= nf90_close(File%fh)
+             if(ierr==PIO_NOERR) then
+                ierr= nf90_close(File%fh)
+             else
+                if(Debug) print *,__FILE__,__LINE__,ierr
+             end if
           endif
 #endif
        case default
