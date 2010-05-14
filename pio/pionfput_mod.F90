@@ -507,11 +507,25 @@ contains
     call t_startf("pio_put_var_0d_text")
 #endif 
     ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+
+#ifdef _PNETCDF
+#if((0>0) && (100 != TYPETEXT))
+    if(iotype == iotype_pnetcdf) then
+       do i=1,0
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_0d_text (File, varid, start, count, ival)
+       return
+    end if
+#endif
+#endif
     if(File%iosystem%IOProc) then
-       iotype = File%iotype 
-       start = 1
-       count = 0
-       is=0       
        if(File%iosystem%io_rank==0) then
 #if(100== TYPETEXT)
     	  count(1)=len(ival)
@@ -534,8 +548,9 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-          ierr = put_vara_0d_text (File, varid, start, count, ival)
+!#else
+          ! this wont work because put_vara is collective
+!          ierr = put_vara_0d_text (File, varid, start, count, ival)
 #endif
 #endif
 #ifdef _NETCDF
@@ -544,7 +559,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 194 "pionfput_mod.F90.in"
+# 209 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (File%iosystem%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -564,7 +579,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 213 "pionfput_mod.F90.in"
+# 228 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -613,11 +628,25 @@ contains
     call t_startf("pio_put_var_1d_text")
 #endif 
     ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+
+#ifdef _PNETCDF
+#if((1>0) && (100 != TYPETEXT))
+    if(iotype == iotype_pnetcdf) then
+       do i=1,1
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_1d_text (File, varid, start, count, ival)
+       return
+    end if
+#endif
+#endif
     if(File%iosystem%IOProc) then
-       iotype = File%iotype 
-       start = 1
-       count = 0
-       is=0       
        if(File%iosystem%io_rank==0) then
 #if(100== TYPETEXT)
     	  count(1)=len(ival)
@@ -640,8 +669,9 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-          ierr = put_vara_1d_text (File, varid, start, count, ival)
+!#else
+          ! this wont work because put_vara is collective
+!          ierr = put_vara_1d_text (File, varid, start, count, ival)
 #endif
 #endif
 #ifdef _NETCDF
@@ -650,7 +680,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 194 "pionfput_mod.F90.in"
+# 209 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (File%iosystem%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -670,7 +700,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 213 "pionfput_mod.F90.in"
+# 228 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -719,11 +749,25 @@ contains
     call t_startf("pio_put_var_2d_text")
 #endif 
     ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+
+#ifdef _PNETCDF
+#if((2>0) && (100 != TYPETEXT))
+    if(iotype == iotype_pnetcdf) then
+       do i=1,2
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_2d_text (File, varid, start, count, ival)
+       return
+    end if
+#endif
+#endif
     if(File%iosystem%IOProc) then
-       iotype = File%iotype 
-       start = 1
-       count = 0
-       is=0       
        if(File%iosystem%io_rank==0) then
 #if(100== TYPETEXT)
     	  count(1)=len(ival)
@@ -746,8 +790,9 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-          ierr = put_vara_2d_text (File, varid, start, count, ival)
+!#else
+          ! this wont work because put_vara is collective
+!          ierr = put_vara_2d_text (File, varid, start, count, ival)
 #endif
 #endif
 #ifdef _NETCDF
@@ -756,7 +801,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 194 "pionfput_mod.F90.in"
+# 209 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (File%iosystem%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -776,7 +821,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 213 "pionfput_mod.F90.in"
+# 228 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -825,11 +870,25 @@ contains
     call t_startf("pio_put_var_3d_text")
 #endif 
     ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+
+#ifdef _PNETCDF
+#if((3>0) && (100 != TYPETEXT))
+    if(iotype == iotype_pnetcdf) then
+       do i=1,3
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_3d_text (File, varid, start, count, ival)
+       return
+    end if
+#endif
+#endif
     if(File%iosystem%IOProc) then
-       iotype = File%iotype 
-       start = 1
-       count = 0
-       is=0       
        if(File%iosystem%io_rank==0) then
 #if(100== TYPETEXT)
     	  count(1)=len(ival)
@@ -852,8 +911,9 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-          ierr = put_vara_3d_text (File, varid, start, count, ival)
+!#else
+          ! this wont work because put_vara is collective
+!          ierr = put_vara_3d_text (File, varid, start, count, ival)
 #endif
 #endif
 #ifdef _NETCDF
@@ -862,7 +922,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 194 "pionfput_mod.F90.in"
+# 209 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (File%iosystem%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -882,7 +942,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 213 "pionfput_mod.F90.in"
+# 228 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -931,11 +991,25 @@ contains
     call t_startf("pio_put_var_4d_text")
 #endif 
     ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+
+#ifdef _PNETCDF
+#if((4>0) && (100 != TYPETEXT))
+    if(iotype == iotype_pnetcdf) then
+       do i=1,4
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_4d_text (File, varid, start, count, ival)
+       return
+    end if
+#endif
+#endif
     if(File%iosystem%IOProc) then
-       iotype = File%iotype 
-       start = 1
-       count = 0
-       is=0       
        if(File%iosystem%io_rank==0) then
 #if(100== TYPETEXT)
     	  count(1)=len(ival)
@@ -958,8 +1032,9 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-          ierr = put_vara_4d_text (File, varid, start, count, ival)
+!#else
+          ! this wont work because put_vara is collective
+!          ierr = put_vara_4d_text (File, varid, start, count, ival)
 #endif
 #endif
 #ifdef _NETCDF
@@ -968,7 +1043,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 194 "pionfput_mod.F90.in"
+# 209 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (File%iosystem%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -988,7 +1063,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 213 "pionfput_mod.F90.in"
+# 228 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1037,11 +1112,25 @@ contains
     call t_startf("pio_put_var_5d_text")
 #endif 
     ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+
+#ifdef _PNETCDF
+#if((5>0) && (100 != TYPETEXT))
+    if(iotype == iotype_pnetcdf) then
+       do i=1,5
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_5d_text (File, varid, start, count, ival)
+       return
+    end if
+#endif
+#endif
     if(File%iosystem%IOProc) then
-       iotype = File%iotype 
-       start = 1
-       count = 0
-       is=0       
        if(File%iosystem%io_rank==0) then
 #if(100== TYPETEXT)
     	  count(1)=len(ival)
@@ -1064,8 +1153,9 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-          ierr = put_vara_5d_text (File, varid, start, count, ival)
+!#else
+          ! this wont work because put_vara is collective
+!          ierr = put_vara_5d_text (File, varid, start, count, ival)
 #endif
 #endif
 #ifdef _NETCDF
@@ -1074,7 +1164,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 194 "pionfput_mod.F90.in"
+# 209 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (File%iosystem%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -1094,7 +1184,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 213 "pionfput_mod.F90.in"
+# 228 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1143,11 +1233,25 @@ contains
     call t_startf("pio_put_var_0d_real")
 #endif 
     ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+
+#ifdef _PNETCDF
+#if((0>0) && (101 != TYPETEXT))
+    if(iotype == iotype_pnetcdf) then
+       do i=1,0
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_0d_real (File, varid, start, count, ival)
+       return
+    end if
+#endif
+#endif
     if(File%iosystem%IOProc) then
-       iotype = File%iotype 
-       start = 1
-       count = 0
-       is=0       
        if(File%iosystem%io_rank==0) then
 #if(101== TYPETEXT)
     	  count(1)=len(ival)
@@ -1170,8 +1274,9 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-          ierr = put_vara_0d_real (File, varid, start, count, ival)
+!#else
+          ! this wont work because put_vara is collective
+!          ierr = put_vara_0d_real (File, varid, start, count, ival)
 #endif
 #endif
 #ifdef _NETCDF
@@ -1180,7 +1285,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 194 "pionfput_mod.F90.in"
+# 209 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (File%iosystem%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -1200,7 +1305,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 213 "pionfput_mod.F90.in"
+# 228 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1249,11 +1354,25 @@ contains
     call t_startf("pio_put_var_1d_real")
 #endif 
     ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+
+#ifdef _PNETCDF
+#if((1>0) && (101 != TYPETEXT))
+    if(iotype == iotype_pnetcdf) then
+       do i=1,1
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_1d_real (File, varid, start, count, ival)
+       return
+    end if
+#endif
+#endif
     if(File%iosystem%IOProc) then
-       iotype = File%iotype 
-       start = 1
-       count = 0
-       is=0       
        if(File%iosystem%io_rank==0) then
 #if(101== TYPETEXT)
     	  count(1)=len(ival)
@@ -1276,8 +1395,9 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-          ierr = put_vara_1d_real (File, varid, start, count, ival)
+!#else
+          ! this wont work because put_vara is collective
+!          ierr = put_vara_1d_real (File, varid, start, count, ival)
 #endif
 #endif
 #ifdef _NETCDF
@@ -1286,7 +1406,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 194 "pionfput_mod.F90.in"
+# 209 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (File%iosystem%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -1306,7 +1426,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 213 "pionfput_mod.F90.in"
+# 228 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1355,11 +1475,25 @@ contains
     call t_startf("pio_put_var_2d_real")
 #endif 
     ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+
+#ifdef _PNETCDF
+#if((2>0) && (101 != TYPETEXT))
+    if(iotype == iotype_pnetcdf) then
+       do i=1,2
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_2d_real (File, varid, start, count, ival)
+       return
+    end if
+#endif
+#endif
     if(File%iosystem%IOProc) then
-       iotype = File%iotype 
-       start = 1
-       count = 0
-       is=0       
        if(File%iosystem%io_rank==0) then
 #if(101== TYPETEXT)
     	  count(1)=len(ival)
@@ -1382,8 +1516,9 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-          ierr = put_vara_2d_real (File, varid, start, count, ival)
+!#else
+          ! this wont work because put_vara is collective
+!          ierr = put_vara_2d_real (File, varid, start, count, ival)
 #endif
 #endif
 #ifdef _NETCDF
@@ -1392,7 +1527,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 194 "pionfput_mod.F90.in"
+# 209 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (File%iosystem%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -1412,7 +1547,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 213 "pionfput_mod.F90.in"
+# 228 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1461,11 +1596,25 @@ contains
     call t_startf("pio_put_var_3d_real")
 #endif 
     ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+
+#ifdef _PNETCDF
+#if((3>0) && (101 != TYPETEXT))
+    if(iotype == iotype_pnetcdf) then
+       do i=1,3
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_3d_real (File, varid, start, count, ival)
+       return
+    end if
+#endif
+#endif
     if(File%iosystem%IOProc) then
-       iotype = File%iotype 
-       start = 1
-       count = 0
-       is=0       
        if(File%iosystem%io_rank==0) then
 #if(101== TYPETEXT)
     	  count(1)=len(ival)
@@ -1488,8 +1637,9 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-          ierr = put_vara_3d_real (File, varid, start, count, ival)
+!#else
+          ! this wont work because put_vara is collective
+!          ierr = put_vara_3d_real (File, varid, start, count, ival)
 #endif
 #endif
 #ifdef _NETCDF
@@ -1498,7 +1648,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 194 "pionfput_mod.F90.in"
+# 209 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (File%iosystem%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -1518,7 +1668,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 213 "pionfput_mod.F90.in"
+# 228 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1567,11 +1717,25 @@ contains
     call t_startf("pio_put_var_4d_real")
 #endif 
     ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+
+#ifdef _PNETCDF
+#if((4>0) && (101 != TYPETEXT))
+    if(iotype == iotype_pnetcdf) then
+       do i=1,4
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_4d_real (File, varid, start, count, ival)
+       return
+    end if
+#endif
+#endif
     if(File%iosystem%IOProc) then
-       iotype = File%iotype 
-       start = 1
-       count = 0
-       is=0       
        if(File%iosystem%io_rank==0) then
 #if(101== TYPETEXT)
     	  count(1)=len(ival)
@@ -1594,8 +1758,9 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-          ierr = put_vara_4d_real (File, varid, start, count, ival)
+!#else
+          ! this wont work because put_vara is collective
+!          ierr = put_vara_4d_real (File, varid, start, count, ival)
 #endif
 #endif
 #ifdef _NETCDF
@@ -1604,7 +1769,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 194 "pionfput_mod.F90.in"
+# 209 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (File%iosystem%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -1624,7 +1789,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 213 "pionfput_mod.F90.in"
+# 228 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1673,11 +1838,25 @@ contains
     call t_startf("pio_put_var_5d_real")
 #endif 
     ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+
+#ifdef _PNETCDF
+#if((5>0) && (101 != TYPETEXT))
+    if(iotype == iotype_pnetcdf) then
+       do i=1,5
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_5d_real (File, varid, start, count, ival)
+       return
+    end if
+#endif
+#endif
     if(File%iosystem%IOProc) then
-       iotype = File%iotype 
-       start = 1
-       count = 0
-       is=0       
        if(File%iosystem%io_rank==0) then
 #if(101== TYPETEXT)
     	  count(1)=len(ival)
@@ -1700,8 +1879,9 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-          ierr = put_vara_5d_real (File, varid, start, count, ival)
+!#else
+          ! this wont work because put_vara is collective
+!          ierr = put_vara_5d_real (File, varid, start, count, ival)
 #endif
 #endif
 #ifdef _NETCDF
@@ -1710,7 +1890,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 194 "pionfput_mod.F90.in"
+# 209 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (File%iosystem%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -1730,7 +1910,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 213 "pionfput_mod.F90.in"
+# 228 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1779,11 +1959,25 @@ contains
     call t_startf("pio_put_var_0d_double")
 #endif 
     ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+
+#ifdef _PNETCDF
+#if((0>0) && (102 != TYPETEXT))
+    if(iotype == iotype_pnetcdf) then
+       do i=1,0
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_0d_double (File, varid, start, count, ival)
+       return
+    end if
+#endif
+#endif
     if(File%iosystem%IOProc) then
-       iotype = File%iotype 
-       start = 1
-       count = 0
-       is=0       
        if(File%iosystem%io_rank==0) then
 #if(102== TYPETEXT)
     	  count(1)=len(ival)
@@ -1806,8 +2000,9 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-          ierr = put_vara_0d_double (File, varid, start, count, ival)
+!#else
+          ! this wont work because put_vara is collective
+!          ierr = put_vara_0d_double (File, varid, start, count, ival)
 #endif
 #endif
 #ifdef _NETCDF
@@ -1816,7 +2011,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 194 "pionfput_mod.F90.in"
+# 209 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (File%iosystem%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -1836,7 +2031,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 213 "pionfput_mod.F90.in"
+# 228 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1885,11 +2080,25 @@ contains
     call t_startf("pio_put_var_1d_double")
 #endif 
     ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+
+#ifdef _PNETCDF
+#if((1>0) && (102 != TYPETEXT))
+    if(iotype == iotype_pnetcdf) then
+       do i=1,1
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_1d_double (File, varid, start, count, ival)
+       return
+    end if
+#endif
+#endif
     if(File%iosystem%IOProc) then
-       iotype = File%iotype 
-       start = 1
-       count = 0
-       is=0       
        if(File%iosystem%io_rank==0) then
 #if(102== TYPETEXT)
     	  count(1)=len(ival)
@@ -1912,8 +2121,9 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-          ierr = put_vara_1d_double (File, varid, start, count, ival)
+!#else
+          ! this wont work because put_vara is collective
+!          ierr = put_vara_1d_double (File, varid, start, count, ival)
 #endif
 #endif
 #ifdef _NETCDF
@@ -1922,7 +2132,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 194 "pionfput_mod.F90.in"
+# 209 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (File%iosystem%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -1942,7 +2152,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 213 "pionfput_mod.F90.in"
+# 228 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1991,11 +2201,25 @@ contains
     call t_startf("pio_put_var_2d_double")
 #endif 
     ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+
+#ifdef _PNETCDF
+#if((2>0) && (102 != TYPETEXT))
+    if(iotype == iotype_pnetcdf) then
+       do i=1,2
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_2d_double (File, varid, start, count, ival)
+       return
+    end if
+#endif
+#endif
     if(File%iosystem%IOProc) then
-       iotype = File%iotype 
-       start = 1
-       count = 0
-       is=0       
        if(File%iosystem%io_rank==0) then
 #if(102== TYPETEXT)
     	  count(1)=len(ival)
@@ -2018,8 +2242,9 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-          ierr = put_vara_2d_double (File, varid, start, count, ival)
+!#else
+          ! this wont work because put_vara is collective
+!          ierr = put_vara_2d_double (File, varid, start, count, ival)
 #endif
 #endif
 #ifdef _NETCDF
@@ -2028,7 +2253,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 194 "pionfput_mod.F90.in"
+# 209 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (File%iosystem%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -2048,7 +2273,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 213 "pionfput_mod.F90.in"
+# 228 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -2097,11 +2322,25 @@ contains
     call t_startf("pio_put_var_3d_double")
 #endif 
     ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+
+#ifdef _PNETCDF
+#if((3>0) && (102 != TYPETEXT))
+    if(iotype == iotype_pnetcdf) then
+       do i=1,3
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_3d_double (File, varid, start, count, ival)
+       return
+    end if
+#endif
+#endif
     if(File%iosystem%IOProc) then
-       iotype = File%iotype 
-       start = 1
-       count = 0
-       is=0       
        if(File%iosystem%io_rank==0) then
 #if(102== TYPETEXT)
     	  count(1)=len(ival)
@@ -2124,8 +2363,9 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-          ierr = put_vara_3d_double (File, varid, start, count, ival)
+!#else
+          ! this wont work because put_vara is collective
+!          ierr = put_vara_3d_double (File, varid, start, count, ival)
 #endif
 #endif
 #ifdef _NETCDF
@@ -2134,7 +2374,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 194 "pionfput_mod.F90.in"
+# 209 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (File%iosystem%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -2154,7 +2394,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 213 "pionfput_mod.F90.in"
+# 228 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -2203,11 +2443,25 @@ contains
     call t_startf("pio_put_var_4d_double")
 #endif 
     ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+
+#ifdef _PNETCDF
+#if((4>0) && (102 != TYPETEXT))
+    if(iotype == iotype_pnetcdf) then
+       do i=1,4
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_4d_double (File, varid, start, count, ival)
+       return
+    end if
+#endif
+#endif
     if(File%iosystem%IOProc) then
-       iotype = File%iotype 
-       start = 1
-       count = 0
-       is=0       
        if(File%iosystem%io_rank==0) then
 #if(102== TYPETEXT)
     	  count(1)=len(ival)
@@ -2230,8 +2484,9 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-          ierr = put_vara_4d_double (File, varid, start, count, ival)
+!#else
+          ! this wont work because put_vara is collective
+!          ierr = put_vara_4d_double (File, varid, start, count, ival)
 #endif
 #endif
 #ifdef _NETCDF
@@ -2240,7 +2495,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 194 "pionfput_mod.F90.in"
+# 209 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (File%iosystem%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -2260,7 +2515,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 213 "pionfput_mod.F90.in"
+# 228 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -2309,11 +2564,25 @@ contains
     call t_startf("pio_put_var_5d_double")
 #endif 
     ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+
+#ifdef _PNETCDF
+#if((5>0) && (102 != TYPETEXT))
+    if(iotype == iotype_pnetcdf) then
+       do i=1,5
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_5d_double (File, varid, start, count, ival)
+       return
+    end if
+#endif
+#endif
     if(File%iosystem%IOProc) then
-       iotype = File%iotype 
-       start = 1
-       count = 0
-       is=0       
        if(File%iosystem%io_rank==0) then
 #if(102== TYPETEXT)
     	  count(1)=len(ival)
@@ -2336,8 +2605,9 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-          ierr = put_vara_5d_double (File, varid, start, count, ival)
+!#else
+          ! this wont work because put_vara is collective
+!          ierr = put_vara_5d_double (File, varid, start, count, ival)
 #endif
 #endif
 #ifdef _NETCDF
@@ -2346,7 +2616,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 194 "pionfput_mod.F90.in"
+# 209 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (File%iosystem%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -2366,7 +2636,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 213 "pionfput_mod.F90.in"
+# 228 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -2415,11 +2685,25 @@ contains
     call t_startf("pio_put_var_0d_int")
 #endif 
     ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+
+#ifdef _PNETCDF
+#if((0>0) && (103 != TYPETEXT))
+    if(iotype == iotype_pnetcdf) then
+       do i=1,0
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_0d_int (File, varid, start, count, ival)
+       return
+    end if
+#endif
+#endif
     if(File%iosystem%IOProc) then
-       iotype = File%iotype 
-       start = 1
-       count = 0
-       is=0       
        if(File%iosystem%io_rank==0) then
 #if(103== TYPETEXT)
     	  count(1)=len(ival)
@@ -2442,8 +2726,9 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-          ierr = put_vara_0d_int (File, varid, start, count, ival)
+!#else
+          ! this wont work because put_vara is collective
+!          ierr = put_vara_0d_int (File, varid, start, count, ival)
 #endif
 #endif
 #ifdef _NETCDF
@@ -2452,7 +2737,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 194 "pionfput_mod.F90.in"
+# 209 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (File%iosystem%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -2472,7 +2757,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 213 "pionfput_mod.F90.in"
+# 228 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -2521,11 +2806,25 @@ contains
     call t_startf("pio_put_var_1d_int")
 #endif 
     ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+
+#ifdef _PNETCDF
+#if((1>0) && (103 != TYPETEXT))
+    if(iotype == iotype_pnetcdf) then
+       do i=1,1
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_1d_int (File, varid, start, count, ival)
+       return
+    end if
+#endif
+#endif
     if(File%iosystem%IOProc) then
-       iotype = File%iotype 
-       start = 1
-       count = 0
-       is=0       
        if(File%iosystem%io_rank==0) then
 #if(103== TYPETEXT)
     	  count(1)=len(ival)
@@ -2548,8 +2847,9 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-          ierr = put_vara_1d_int (File, varid, start, count, ival)
+!#else
+          ! this wont work because put_vara is collective
+!          ierr = put_vara_1d_int (File, varid, start, count, ival)
 #endif
 #endif
 #ifdef _NETCDF
@@ -2558,7 +2858,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 194 "pionfput_mod.F90.in"
+# 209 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (File%iosystem%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -2578,7 +2878,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 213 "pionfput_mod.F90.in"
+# 228 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -2627,11 +2927,25 @@ contains
     call t_startf("pio_put_var_2d_int")
 #endif 
     ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+
+#ifdef _PNETCDF
+#if((2>0) && (103 != TYPETEXT))
+    if(iotype == iotype_pnetcdf) then
+       do i=1,2
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_2d_int (File, varid, start, count, ival)
+       return
+    end if
+#endif
+#endif
     if(File%iosystem%IOProc) then
-       iotype = File%iotype 
-       start = 1
-       count = 0
-       is=0       
        if(File%iosystem%io_rank==0) then
 #if(103== TYPETEXT)
     	  count(1)=len(ival)
@@ -2654,8 +2968,9 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-          ierr = put_vara_2d_int (File, varid, start, count, ival)
+!#else
+          ! this wont work because put_vara is collective
+!          ierr = put_vara_2d_int (File, varid, start, count, ival)
 #endif
 #endif
 #ifdef _NETCDF
@@ -2664,7 +2979,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 194 "pionfput_mod.F90.in"
+# 209 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (File%iosystem%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -2684,7 +2999,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 213 "pionfput_mod.F90.in"
+# 228 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -2733,11 +3048,25 @@ contains
     call t_startf("pio_put_var_3d_int")
 #endif 
     ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+
+#ifdef _PNETCDF
+#if((3>0) && (103 != TYPETEXT))
+    if(iotype == iotype_pnetcdf) then
+       do i=1,3
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_3d_int (File, varid, start, count, ival)
+       return
+    end if
+#endif
+#endif
     if(File%iosystem%IOProc) then
-       iotype = File%iotype 
-       start = 1
-       count = 0
-       is=0       
        if(File%iosystem%io_rank==0) then
 #if(103== TYPETEXT)
     	  count(1)=len(ival)
@@ -2760,8 +3089,9 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-          ierr = put_vara_3d_int (File, varid, start, count, ival)
+!#else
+          ! this wont work because put_vara is collective
+!          ierr = put_vara_3d_int (File, varid, start, count, ival)
 #endif
 #endif
 #ifdef _NETCDF
@@ -2770,7 +3100,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 194 "pionfput_mod.F90.in"
+# 209 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (File%iosystem%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -2790,7 +3120,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 213 "pionfput_mod.F90.in"
+# 228 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -2839,11 +3169,25 @@ contains
     call t_startf("pio_put_var_4d_int")
 #endif 
     ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+
+#ifdef _PNETCDF
+#if((4>0) && (103 != TYPETEXT))
+    if(iotype == iotype_pnetcdf) then
+       do i=1,4
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_4d_int (File, varid, start, count, ival)
+       return
+    end if
+#endif
+#endif
     if(File%iosystem%IOProc) then
-       iotype = File%iotype 
-       start = 1
-       count = 0
-       is=0       
        if(File%iosystem%io_rank==0) then
 #if(103== TYPETEXT)
     	  count(1)=len(ival)
@@ -2866,8 +3210,9 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-          ierr = put_vara_4d_int (File, varid, start, count, ival)
+!#else
+          ! this wont work because put_vara is collective
+!          ierr = put_vara_4d_int (File, varid, start, count, ival)
 #endif
 #endif
 #ifdef _NETCDF
@@ -2876,7 +3221,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 194 "pionfput_mod.F90.in"
+# 209 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (File%iosystem%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -2896,7 +3241,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 213 "pionfput_mod.F90.in"
+# 228 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -2945,11 +3290,25 @@ contains
     call t_startf("pio_put_var_5d_int")
 #endif 
     ierr=PIO_NOERR
+
+    iotype = File%iotype 
+    start = 1
+    count = 0
+    is=0       
+
+
+#ifdef _PNETCDF
+#if((5>0) && (103 != TYPETEXT))
+    if(iotype == iotype_pnetcdf) then
+       do i=1,5
+          count(i) = size(ival,i)
+       end do
+       ierr = put_vara_5d_int (File, varid, start, count, ival)
+       return
+    end if
+#endif
+#endif
     if(File%iosystem%IOProc) then
-       iotype = File%iotype 
-       start = 1
-       count = 0
-       is=0       
        if(File%iosystem%io_rank==0) then
 #if(103== TYPETEXT)
     	  count(1)=len(ival)
@@ -2972,8 +3331,9 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-          ierr = put_vara_5d_int (File, varid, start, count, ival)
+!#else
+          ! this wont work because put_vara is collective
+!          ierr = put_vara_5d_int (File, varid, start, count, ival)
 #endif
 #endif
 #ifdef _NETCDF
@@ -2982,7 +3342,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 194 "pionfput_mod.F90.in"
+# 209 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (File%iosystem%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -3002,7 +3362,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 213 "pionfput_mod.F90.in"
+# 228 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -3034,7 +3394,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 244 "pionfput_mod.F90.in"
+# 259 "pionfput_mod.F90.in"
   integer function put_var_vdesc_0d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3055,7 +3415,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 244 "pionfput_mod.F90.in"
+# 259 "pionfput_mod.F90.in"
   integer function put_var_vdesc_1d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3076,7 +3436,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 244 "pionfput_mod.F90.in"
+# 259 "pionfput_mod.F90.in"
   integer function put_var_vdesc_2d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3097,7 +3457,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 244 "pionfput_mod.F90.in"
+# 259 "pionfput_mod.F90.in"
   integer function put_var_vdesc_3d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3118,7 +3478,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 244 "pionfput_mod.F90.in"
+# 259 "pionfput_mod.F90.in"
   integer function put_var_vdesc_4d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3139,7 +3499,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 244 "pionfput_mod.F90.in"
+# 259 "pionfput_mod.F90.in"
   integer function put_var_vdesc_5d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3160,7 +3520,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 244 "pionfput_mod.F90.in"
+# 259 "pionfput_mod.F90.in"
   integer function put_var_vdesc_0d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3181,7 +3541,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 244 "pionfput_mod.F90.in"
+# 259 "pionfput_mod.F90.in"
   integer function put_var_vdesc_1d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3202,7 +3562,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 244 "pionfput_mod.F90.in"
+# 259 "pionfput_mod.F90.in"
   integer function put_var_vdesc_2d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3223,7 +3583,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 244 "pionfput_mod.F90.in"
+# 259 "pionfput_mod.F90.in"
   integer function put_var_vdesc_3d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3244,7 +3604,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 244 "pionfput_mod.F90.in"
+# 259 "pionfput_mod.F90.in"
   integer function put_var_vdesc_4d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3265,7 +3625,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 244 "pionfput_mod.F90.in"
+# 259 "pionfput_mod.F90.in"
   integer function put_var_vdesc_5d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3286,7 +3646,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 244 "pionfput_mod.F90.in"
+# 259 "pionfput_mod.F90.in"
   integer function put_var_vdesc_0d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3307,7 +3667,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 244 "pionfput_mod.F90.in"
+# 259 "pionfput_mod.F90.in"
   integer function put_var_vdesc_1d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3328,7 +3688,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 244 "pionfput_mod.F90.in"
+# 259 "pionfput_mod.F90.in"
   integer function put_var_vdesc_2d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3349,7 +3709,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 244 "pionfput_mod.F90.in"
+# 259 "pionfput_mod.F90.in"
   integer function put_var_vdesc_3d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3370,7 +3730,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 244 "pionfput_mod.F90.in"
+# 259 "pionfput_mod.F90.in"
   integer function put_var_vdesc_4d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3391,7 +3751,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 244 "pionfput_mod.F90.in"
+# 259 "pionfput_mod.F90.in"
   integer function put_var_vdesc_5d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3412,7 +3772,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 244 "pionfput_mod.F90.in"
+# 259 "pionfput_mod.F90.in"
   integer function put_var_vdesc_0d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3433,7 +3793,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 244 "pionfput_mod.F90.in"
+# 259 "pionfput_mod.F90.in"
   integer function put_var_vdesc_1d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3454,7 +3814,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 244 "pionfput_mod.F90.in"
+# 259 "pionfput_mod.F90.in"
   integer function put_var_vdesc_2d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3475,7 +3835,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 244 "pionfput_mod.F90.in"
+# 259 "pionfput_mod.F90.in"
   integer function put_var_vdesc_3d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3496,7 +3856,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 244 "pionfput_mod.F90.in"
+# 259 "pionfput_mod.F90.in"
   integer function put_var_vdesc_4d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3517,7 +3877,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 244 "pionfput_mod.F90.in"
+# 259 "pionfput_mod.F90.in"
   integer function put_var_vdesc_5d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3540,7 +3900,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 266 "pionfput_mod.F90.in"
+# 281 "pionfput_mod.F90.in"
   integer function put_vara_1d_text (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -3556,7 +3916,7 @@ contains
 #endif 
     ierr=0
     iotype = File%iotype 
-
+  
     ierr = pio_inq_varndims(File, varid, ndims)
     
     if(File%iosystem%IOProc) then
@@ -3613,7 +3973,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 266 "pionfput_mod.F90.in"
+# 281 "pionfput_mod.F90.in"
   integer function put_vara_2d_text (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -3629,7 +3989,7 @@ contains
 #endif 
     ierr=0
     iotype = File%iotype 
-
+  
     ierr = pio_inq_varndims(File, varid, ndims)
     
     if(File%iosystem%IOProc) then
@@ -3686,7 +4046,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 266 "pionfput_mod.F90.in"
+# 281 "pionfput_mod.F90.in"
   integer function put_vara_3d_text (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -3702,7 +4062,7 @@ contains
 #endif 
     ierr=0
     iotype = File%iotype 
-
+  
     ierr = pio_inq_varndims(File, varid, ndims)
     
     if(File%iosystem%IOProc) then
@@ -3759,7 +4119,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 266 "pionfput_mod.F90.in"
+# 281 "pionfput_mod.F90.in"
   integer function put_vara_4d_text (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -3775,7 +4135,7 @@ contains
 #endif 
     ierr=0
     iotype = File%iotype 
-
+  
     ierr = pio_inq_varndims(File, varid, ndims)
     
     if(File%iosystem%IOProc) then
@@ -3832,7 +4192,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 266 "pionfput_mod.F90.in"
+# 281 "pionfput_mod.F90.in"
   integer function put_vara_5d_text (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -3848,7 +4208,7 @@ contains
 #endif 
     ierr=0
     iotype = File%iotype 
-
+  
     ierr = pio_inq_varndims(File, varid, ndims)
     
     if(File%iosystem%IOProc) then
@@ -3905,7 +4265,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 266 "pionfput_mod.F90.in"
+# 281 "pionfput_mod.F90.in"
   integer function put_vara_1d_real (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -3921,7 +4281,7 @@ contains
 #endif 
     ierr=0
     iotype = File%iotype 
-
+  
     ierr = pio_inq_varndims(File, varid, ndims)
     
     if(File%iosystem%IOProc) then
@@ -3978,7 +4338,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 266 "pionfput_mod.F90.in"
+# 281 "pionfput_mod.F90.in"
   integer function put_vara_2d_real (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -3994,7 +4354,7 @@ contains
 #endif 
     ierr=0
     iotype = File%iotype 
-
+  
     ierr = pio_inq_varndims(File, varid, ndims)
     
     if(File%iosystem%IOProc) then
@@ -4051,7 +4411,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 266 "pionfput_mod.F90.in"
+# 281 "pionfput_mod.F90.in"
   integer function put_vara_3d_real (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4067,7 +4427,7 @@ contains
 #endif 
     ierr=0
     iotype = File%iotype 
-
+  
     ierr = pio_inq_varndims(File, varid, ndims)
     
     if(File%iosystem%IOProc) then
@@ -4124,7 +4484,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 266 "pionfput_mod.F90.in"
+# 281 "pionfput_mod.F90.in"
   integer function put_vara_4d_real (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4140,7 +4500,7 @@ contains
 #endif 
     ierr=0
     iotype = File%iotype 
-
+  
     ierr = pio_inq_varndims(File, varid, ndims)
     
     if(File%iosystem%IOProc) then
@@ -4197,7 +4557,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 266 "pionfput_mod.F90.in"
+# 281 "pionfput_mod.F90.in"
   integer function put_vara_5d_real (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4213,7 +4573,7 @@ contains
 #endif 
     ierr=0
     iotype = File%iotype 
-
+  
     ierr = pio_inq_varndims(File, varid, ndims)
     
     if(File%iosystem%IOProc) then
@@ -4270,7 +4630,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 266 "pionfput_mod.F90.in"
+# 281 "pionfput_mod.F90.in"
   integer function put_vara_1d_double (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4286,7 +4646,7 @@ contains
 #endif 
     ierr=0
     iotype = File%iotype 
-
+  
     ierr = pio_inq_varndims(File, varid, ndims)
     
     if(File%iosystem%IOProc) then
@@ -4343,7 +4703,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 266 "pionfput_mod.F90.in"
+# 281 "pionfput_mod.F90.in"
   integer function put_vara_2d_double (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4359,7 +4719,7 @@ contains
 #endif 
     ierr=0
     iotype = File%iotype 
-
+  
     ierr = pio_inq_varndims(File, varid, ndims)
     
     if(File%iosystem%IOProc) then
@@ -4416,7 +4776,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 266 "pionfput_mod.F90.in"
+# 281 "pionfput_mod.F90.in"
   integer function put_vara_3d_double (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4432,7 +4792,7 @@ contains
 #endif 
     ierr=0
     iotype = File%iotype 
-
+  
     ierr = pio_inq_varndims(File, varid, ndims)
     
     if(File%iosystem%IOProc) then
@@ -4489,7 +4849,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 266 "pionfput_mod.F90.in"
+# 281 "pionfput_mod.F90.in"
   integer function put_vara_4d_double (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4505,7 +4865,7 @@ contains
 #endif 
     ierr=0
     iotype = File%iotype 
-
+  
     ierr = pio_inq_varndims(File, varid, ndims)
     
     if(File%iosystem%IOProc) then
@@ -4562,7 +4922,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 266 "pionfput_mod.F90.in"
+# 281 "pionfput_mod.F90.in"
   integer function put_vara_5d_double (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4578,7 +4938,7 @@ contains
 #endif 
     ierr=0
     iotype = File%iotype 
-
+  
     ierr = pio_inq_varndims(File, varid, ndims)
     
     if(File%iosystem%IOProc) then
@@ -4635,7 +4995,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 266 "pionfput_mod.F90.in"
+# 281 "pionfput_mod.F90.in"
   integer function put_vara_1d_int (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4651,7 +5011,7 @@ contains
 #endif 
     ierr=0
     iotype = File%iotype 
-
+  
     ierr = pio_inq_varndims(File, varid, ndims)
     
     if(File%iosystem%IOProc) then
@@ -4708,7 +5068,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 266 "pionfput_mod.F90.in"
+# 281 "pionfput_mod.F90.in"
   integer function put_vara_2d_int (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4724,7 +5084,7 @@ contains
 #endif 
     ierr=0
     iotype = File%iotype 
-
+  
     ierr = pio_inq_varndims(File, varid, ndims)
     
     if(File%iosystem%IOProc) then
@@ -4781,7 +5141,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 266 "pionfput_mod.F90.in"
+# 281 "pionfput_mod.F90.in"
   integer function put_vara_3d_int (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4797,7 +5157,7 @@ contains
 #endif 
     ierr=0
     iotype = File%iotype 
-
+  
     ierr = pio_inq_varndims(File, varid, ndims)
     
     if(File%iosystem%IOProc) then
@@ -4854,7 +5214,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 266 "pionfput_mod.F90.in"
+# 281 "pionfput_mod.F90.in"
   integer function put_vara_4d_int (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4870,7 +5230,7 @@ contains
 #endif 
     ierr=0
     iotype = File%iotype 
-
+  
     ierr = pio_inq_varndims(File, varid, ndims)
     
     if(File%iosystem%IOProc) then
@@ -4927,7 +5287,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 266 "pionfput_mod.F90.in"
+# 281 "pionfput_mod.F90.in"
   integer function put_vara_5d_int (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4943,7 +5303,7 @@ contains
 #endif 
     ierr=0
     iotype = File%iotype 
-
+  
     ierr = pio_inq_varndims(File, varid, ndims)
     
     if(File%iosystem%IOProc) then
@@ -5000,7 +5360,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 338 "pionfput_mod.F90.in"
+# 353 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5025,7 +5385,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 338 "pionfput_mod.F90.in"
+# 353 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5050,7 +5410,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 338 "pionfput_mod.F90.in"
+# 353 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5075,7 +5435,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 338 "pionfput_mod.F90.in"
+# 353 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5100,7 +5460,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 338 "pionfput_mod.F90.in"
+# 353 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5125,7 +5485,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 338 "pionfput_mod.F90.in"
+# 353 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5150,7 +5510,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 338 "pionfput_mod.F90.in"
+# 353 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5175,7 +5535,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 338 "pionfput_mod.F90.in"
+# 353 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5200,7 +5560,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 338 "pionfput_mod.F90.in"
+# 353 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5225,7 +5585,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 338 "pionfput_mod.F90.in"
+# 353 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5250,7 +5610,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 338 "pionfput_mod.F90.in"
+# 353 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5275,7 +5635,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 338 "pionfput_mod.F90.in"
+# 353 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5300,7 +5660,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 338 "pionfput_mod.F90.in"
+# 353 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5325,7 +5685,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 338 "pionfput_mod.F90.in"
+# 353 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5350,7 +5710,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 338 "pionfput_mod.F90.in"
+# 353 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5375,7 +5735,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 338 "pionfput_mod.F90.in"
+# 353 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5400,7 +5760,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 338 "pionfput_mod.F90.in"
+# 353 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5425,7 +5785,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 338 "pionfput_mod.F90.in"
+# 353 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5450,7 +5810,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 338 "pionfput_mod.F90.in"
+# 353 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5475,7 +5835,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 338 "pionfput_mod.F90.in"
+# 353 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
