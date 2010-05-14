@@ -961,7 +961,7 @@ contains
  101        format(/,"************ PROCESS ",I6," (",I6,") ************",/)
             close( unitn )
 
-            ierr = GPTLpr_file(0, trim(fname))
+            ierr = GPTLpr_file(trim(fname))
          endif
 
       else
@@ -981,7 +981,7 @@ contains
             write( unitn, 101) me, gme
             close( unitn )
 
-            ierr = GPTLpr_file(0, trim(fname))
+            ierr = GPTLpr_file(trim(fname))
          endif
 
       endif
@@ -1046,7 +1046,7 @@ contains
          write( unitn, 101) me, gme
          close( unitn )
 
-         ierr = GPTLpr_file(0, trim(fname))
+         ierr = GPTLpr_file(trim(fname))
       endif
 
    endif
