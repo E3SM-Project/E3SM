@@ -86,6 +86,8 @@ my $workdir = $attributes{workdir};
 
 print "preamble: $attributes{preamble}\n";
 my $corespernode = $attributes{corespernode};
+$pecount = $attributes{pecount} if(defined $attributes{pecount});
+
 
 if(-d $workdir){
     print "Using existing directory $workdir\n";
