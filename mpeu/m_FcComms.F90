@@ -41,7 +41,7 @@
 !
 ! !DESCRIPTION:
 ! This routine gathers a {\em distributed} array of type {\em integer} 
-! to the {\tt root} process. Explicit handshaking messages are uesd
+! to the {\tt root} process. Explicit handshaking messages are used
 ! to control the number of processes communicating with the root
 ! at any one time.
 !
@@ -49,9 +49,9 @@
 !    < 0 : use MPI_Gather
 !    >= 0: use point-to-point with handshaking messages and 
 !          preposting receive requests up to 
-!          max(min(1,flow_cntl),max_gather_block_size) 
+!          min(max(1,flow_cntl),max_gather_block_size) 
 !          ahead if optional flow_cntl parameter is present.
-!          Otherwise, fc_gather_flow_cntl is used in its place.
+!          Otherwise, max_gather_block_size is used in its place.
 !    Default value is max_gather_block_size.
 ! !INTERFACE:
 !
@@ -182,7 +182,7 @@
 !
 ! !DESCRIPTION:
 ! This routine gathers a {\em distributed} array of type {\em FP} to
-! the {\tt root} process. Explicit handshaking messages are uesd
+! the {\tt root} process. Explicit handshaking messages are used
 ! to control the number of processes communicating with the root
 ! at any one time.
 !
@@ -190,9 +190,9 @@
 !    < 0 : use MPI_Gather
 !    >= 0: use point-to-point with handshaking messages and 
 !          preposting receive requests up to 
-!          max(min(1,flow_cntl),max_gather_block_size) 
+!          min(max(1,flow_cntl),max_gather_block_size) 
 !          ahead if optional flow_cntl parameter is present.
-!          Otherwise, fc_gather_flow_cntl is used in its place.
+!          Otherwise, max_gather_block_size is used in its place.
 !    Default value is max_gather_block_size.
 ! !INTERFACE:
 !
@@ -324,7 +324,7 @@
 !
 ! !DESCRIPTION:
 ! This routine gathers a {\em distributed} array of type {\em integer} 
-! to the {\tt root} process. Explicit handshaking messages are uesd
+! to the {\tt root} process. Explicit handshaking messages are used
 ! to control the number of processes communicating with the root
 ! at any one time.
 !
@@ -332,9 +332,9 @@
 !    < 0 : use MPI_Gatherv
 !    >= 0: use point-to-point with handshaking messages and 
 !          preposting receive requests up to 
-!          max(min(1,flow_cntl),max_gather_block_size) 
+!          min(max(1,flow_cntl),max_gather_block_size) 
 !          ahead if optional flow_cntl parameter is present.
-!          Otherwise, fc_gather_flow_cntl is used in its place.
+!          Otherwise, max_gather_block_size is used in its place.
 !    Default value is max_gather_block_size.
 ! !INTERFACE:
 !
@@ -466,7 +466,7 @@
 !
 ! !DESCRIPTION:
 ! This routine gathers a {\em distributed} array of type {\em FP} to
-! the {\tt root} process. Explicit handshaking messages are uesd
+! the {\tt root} process. Explicit handshaking messages are used
 ! to control the number of processes communicating with the root
 ! at any one time.
 !
@@ -474,9 +474,9 @@
 !    < 0 : use MPI_Gatherv
 !    >= 0: use point-to-point with handshaking messages and 
 !          preposting receive requests up to 
-!          max(min(1,flow_cntl),max_gather_block_size) 
+!          min(max(1,flow_cntl),max_gather_block_size) 
 !          ahead if optional flow_cntl parameter is present.
-!          Otherwise, fc_gather_flow_cntl is used in its place.
+!          Otherwise, max_gather_block_size is used in its place.
 !    Default value is max_gather_block_size.
 ! !INTERFACE:
 !
