@@ -25,7 +25,7 @@
 ! !DEFINED PARAMETERS:
 
    integer, parameter, public ::          &
-      char_len  = 100                    ,&
+      char_len  = 360                    ,&
       log_kind  = kind(.true.)           ,&
       int_kind  = kind(1)                ,&
       i4        = selected_int_kind(6)   ,&
