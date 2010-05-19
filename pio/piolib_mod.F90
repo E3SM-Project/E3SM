@@ -1808,8 +1808,8 @@ contains
 
     file%iotype = iotype 
 
-    call mpi_bcast(amode, 1, mpi_integer, 0, file%iosystem%comp_comm, ierr)
-    call mpi_bcast(file%iotype, 1, mpi_integer, 0, file%iosystem%comp_comm, ierr)
+    call mpi_bcast(amode, 1, MPI_INTEGER, 0, iosystem%comp_comm, ierr)
+    call mpi_bcast(file%iotype, 1, MPI_INTEGER, 0, iosystem%comp_comm, ierr)
 
     if(len(fname) > char_len) then
        print *,'Length of filename exceeds compile time max, increase char_len in pio_kinds and recompile'
@@ -1817,7 +1817,7 @@ contains
     end if
 
     myfname = fname
-    call mpi_bcast(myfname, len(fname), mpi_character, 0, file%iosystem%comp_comm, ierr)
+    call mpi_bcast(myfname, len(fname), mpi_character, 0, iosystem%comp_comm, ierr)
 
     file%iosystem => iosystem
 
@@ -1933,14 +1933,14 @@ contains
        file%iotype = pio_iotype_netcdf
     end if
 #endif
-    call mpi_bcast(amode, 1, mpi_integer, 0, file%iosystem%comp_comm, ierr)
-    call mpi_bcast(file%iotype, 1, mpi_integer, 0, file%iosystem%comp_comm, ierr)
+    call mpi_bcast(amode, 1, MPI_INTEGER, 0, iosystem%comp_comm, ierr)
+    call mpi_bcast(file%iotype, 1, MPI_INTEGER, 0, iosystem%comp_comm, ierr)
     if(len(fname) > char_len) then
        print *,'Length of filename exceeds compile time max, increase char_len in pio_kinds and recompile'
        call piodie( _FILE_,__LINE__)
     end if
     myfname = fname
-    call mpi_bcast(myfname, len(fname), mpi_character, 0, file%iosystem%comp_comm, ierr)
+    call mpi_bcast(myfname, len(fname), mpi_character, 0, iosystem%comp_comm, ierr)
 
     select case(iotype)
     case(iotype_pbinary, iotype_direct_pbinary)
