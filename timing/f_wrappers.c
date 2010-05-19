@@ -68,6 +68,10 @@
 #define gptl_papilibraryinit gptl_papilibraryinit_
 #define gptlevent_name_to_code gptlevent_name_to_code_
 #define gptlevent_code_to_name gptlevent_code_to_name_
+#define gptlbarrier gptlbarrier_
+#define gptl_papilibraryinit gptl_papilibraryinit_
+#define gptlevent_name_to_code gptlevent_name_to_code_
+#define gptlevent_code_to_name gptlevent_code_to_name_
 
 #elif ( defined FORTRANDOUBLEUNDERSCORE )
 

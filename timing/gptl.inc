@@ -111,10 +111,11 @@
       integer gptlget_eventvalue
       integer gptlget_nregions
       integer gptlget_regionname
+#ifdef HAVE_PAPI
       integer gptl_papilibraryinit
       integer gptlevent_name_to_code
       integer gptlevent_code_to_name
-
+#endif
       external gptlsetoption
       external gptlinitialize
       external gptlstart
@@ -137,6 +138,8 @@
       external gptlget_eventvalue
       external gptlget_nregions
       external gptlget_regionname
+#ifdef HAVE_PAPI
       external gptl_papilibraryinit
       external gptlevent_name_to_code
       external gptlevent_code_to_name
+#endif
