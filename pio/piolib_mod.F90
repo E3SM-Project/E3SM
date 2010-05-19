@@ -1,5 +1,13 @@
 #define _FILE_ "piolib_mod.f90"
 #define debug_rearr 0
+#ifdef BGP
+#define BGx
+#endif
+#ifdef BGL
+#define BGx
+#endif
+
+
 module piolib_mod
   !--------------
   use pio_kinds
@@ -1355,8 +1363,7 @@ contains
 
     iosystem%ioproc = .false.
 
-#if defined(BGL) 
-!|| defined(BGP)
+#ifdef BGx
 
     call alloc_check(iotmp,iosystem%num_tasks,'init:num_tasks')
     call alloc_check(iotmp2,iosystem%num_tasks,'init:num_tasks')
@@ -1443,8 +1450,7 @@ contains
     if(iosystem%ioproc) call mpi_comm_rank(iosystem%io_comm,iosystem%io_rank,ierr)
     if(check) call checkmpireturn('init: after call to comm_rank: ',ierr)
 
-#if defined(BGL) 
-!|| defined(BGP)
+#ifdef BGx 
 !  base may not be an io node - correct this
    if(iosystem%io_rank==0) then
      itmp = iosystem%comp_rank
@@ -1577,8 +1583,7 @@ contains
     write(cb_nodes,('(i5)')) numagg
     call mpi_info_create(iosystem%info,ierr)    
     if(check) call checkmpireturn('setnumagg: after call to mpi_info_create: ',ierr)
-
-#if defined (BGL) || defined (BGP)
+#ifdef BGx
     call mpi_info_set(iosystem%info,'bgl_cb_nodes',trim(adjustl(cb_nodes)),ierr)
 #else
     call mpi_info_set(iosystem%info,'cb_nodes',trim(adjustl(cb_nodes)),ierr)

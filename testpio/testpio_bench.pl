@@ -399,7 +399,7 @@ if($debug) {
      ($jobid) = ($i =~/([0-9]+)/);
 #     print "jobid: ($jobid)\n";
     }
-    exec("cqwait $jobid");
+#    exec("cqwait $jobid");
 }
 
 
