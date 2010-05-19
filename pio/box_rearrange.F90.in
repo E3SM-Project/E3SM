@@ -926,6 +926,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
              print *, subName,':: ERROR: no destination found for compdof=', compdof(i)
              print *, subName,':: INFO: gsize=', gsize
+             print *, subName,':: INFO: nioproc',nioproc,' ioproc ',ioproc,' ioindex ',ioindex
 
              do j=1,nioproc
                 print *, subName, ':: INFO io ', j, ' start=', start(:,j), ' count=', count(:,j)
@@ -1028,7 +1029,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     call CheckMPIReturn(subName, ierror)
 
 #if DEBUG
-    if (Iosystem%comp_rank==0) then
+    if (debug .and. Iosystem%comp_rank==0) then
        do i=1,Iosystem%num_iotasks
           print *, subName,':: comp_rank=', Iosystem%comp_rank, ': io ', &
              i, ' start=',start(:,i), ' count=', count(:,i)

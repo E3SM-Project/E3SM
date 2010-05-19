@@ -2155,6 +2155,8 @@ end subroutine box_rearrange_io2comp_int
 
              print *, subName,':: ERROR: no destination found for compdof=', compdof(i)
              print *, subName,':: INFO: gsize=', gsize
+             print *, subName,':: INFO: nioproc',nioproc,' ioproc ',ioproc,' ioindex ',ioindex
+
              do j=1,nioproc
                 print *, subName, ':: INFO io ', j, ' start=', start(:,j), ' count=', count(:,j)
              end do
@@ -2191,7 +2193,7 @@ end subroutine box_rearrange_io2comp_int
   ! this space should be freed in box_rearrange_free
   !
 
-# 965 "box_rearrange.F90.in"
+# 967 "box_rearrange.F90.in"
   subroutine box_rearrange_create(Iosystem, compdof, gsize, ndim, &
                                   nioproc, ioDesc)
     implicit none
@@ -2257,7 +2259,7 @@ end subroutine box_rearrange_io2comp_int
     call CheckMPIReturn(subName, ierror)
 
 #if DEBUG
-    if (Iosystem%comp_rank==0) then
+    if (debug .and. Iosystem%comp_rank==0) then
        do i=1,Iosystem%num_iotasks
           print *, subName,':: comp_rank=', Iosystem%comp_rank, ': io ', &
              i, ' start=',start(:,i), ' count=', count(:,i)
@@ -2305,7 +2307,7 @@ end subroutine box_rearrange_io2comp_int
 
 #ifndef _MPISERIAL
 
-# 1078 "box_rearrange.F90.in"
+# 1080 "box_rearrange.F90.in"
   subroutine compute_counts(Iosystem, ioDesc, ndof, niodof)
 
     type (Iosystem_desc_t), intent(in) :: Iosystem
@@ -2695,7 +2697,7 @@ end subroutine box_rearrange_io2comp_int
   !
 
 
-# 1467 "box_rearrange.F90.in"
+# 1469 "box_rearrange.F90.in"
   subroutine box_rearrange_create( Iosystem,compdof,gsize,ndim,nioproc,ioDesc)
     implicit none
 
@@ -2758,7 +2760,7 @@ end subroutine box_rearrange_io2comp_int
        ! note that index in start,count is the io_rank not comp_rank
     endif
 
-    if(debug) print *, subName,' iomaster: ',iosystem%iomaster, ndim, Iosystem%num_iotasks
+
 
     call MPI_BCAST( start,ndim*Iosystem%num_iotasks,MPI_INTEGER, &    ! buf, cnt
          Iosystem%iomaster, Iosystem%comp_comm,ierror )
@@ -2768,14 +2770,14 @@ end subroutine box_rearrange_io2comp_int
          Iosystem%iomaster, Iosystem%comp_comm,ierror )
     call CheckMPIReturn(subName,ierror)
 
-
-    if (debug .and. Iosystem%io_rank>=0) then
+#if DEBUG
+    if (Iosystem%comp_rank==0) then
        do i=1,Iosystem%num_iotasks
           print *, subName,':: comp_rank=',Iosystem%comp_rank,': io ',i,' start=',start(:,i), &
                ' count=',count(:,i)
        end do
     endif
-
+#endif
 
 
 !!!!!!!
@@ -2889,7 +2891,7 @@ end subroutine box_rearrange_io2comp_int
 
 #ifndef _MPISERIAL
 
-# 1660 "box_rearrange.F90.in"
+# 1662 "box_rearrange.F90.in"
   subroutine compute_counts( Iosystem,ioDesc,ndof,niodof )
 
     type (Iosystem_desc_t), intent(in) :: Iosystem
@@ -3377,7 +3379,7 @@ end subroutine box_rearrange_io2comp_int
   !   the rearrangement
   !
 
-# 2147 "box_rearrange.F90.in"
+# 2149 "box_rearrange.F90.in"
   subroutine box_rearrange_free(Iosystem,ioDesc)
     implicit none
 

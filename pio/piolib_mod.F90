@@ -1778,7 +1778,7 @@ contains
     type (iosystem_desc_t), intent(inout), target :: iosystem
     type (file_desc_t), intent(out) :: file
     integer, intent(in) :: iotype
-    character(len=*), intent(inout)  :: fname
+    character(len=*), intent(in)  :: fname
     integer, optional, intent(in) :: amode_in
     ! ===================
     !  local variables
@@ -1786,7 +1786,7 @@ contains
     integer    :: amode
     logical, parameter :: check = .true.
     character(len=9) :: rd_buffer
-
+    character(len=char_len)  :: myfname
 #ifdef TIMING
     call t_startf("PIO_createfile")
 #endif
@@ -1805,7 +1805,14 @@ contains
 
     call mpi_bcast(amode, 1, mpi_integer, 0, file%iosystem%comp_comm, ierr)
     call mpi_bcast(file%iotype, 1, mpi_integer, 0, file%iosystem%comp_comm, ierr)
-    call mpi_bcast(fname, len(fname), mpi_character, 0, file%iosystem%comp_comm, ierr)
+
+    if(len(fname) > char_len) then
+       print *,'Length of filename exceeds compile time max, increase char_len in pio_kinds and recompile'
+       call piodie( _FILE_,__LINE__)
+    end if
+
+    myfname = fname
+    call mpi_bcast(myfname, len(fname), mpi_character, 0, file%iosystem%comp_comm, ierr)
 
     file%iosystem => iosystem
 
@@ -1832,15 +1839,15 @@ contains
        if(present(amode_in)) then
           print *, 'warning, the mode argument is currently ignored for binary file operations'
        end if
-       ierr = create_mpiio(file,fname)
+       ierr = create_mpiio(file,myfname)
     case( iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-       ierr = create_nf(file,fname, amode)	
-       if(debug .and. iosystem%io_rank==0)print *,_FILE_,__LINE__,' open: ', fname, file%fh
+       ierr = create_nf(file,myfname, amode)	
+       if(debug .and. iosystem%io_rank==0)print *,_FILE_,__LINE__,' open: ', myfname, file%fh
     case(iotype_binary)
        print *,'createfile: io type not supported'
     end select
 
-    if(debug .and. file%iosystem%io_rank==0) print *,_FILE_,__LINE__,'open: ',file%fh, fname
+    if(debug .and. file%iosystem%io_rank==0) print *,_FILE_,__LINE__,'open: ',file%fh, myfname
 
 
 #ifdef TIMING
@@ -1870,7 +1877,7 @@ contains
     type (iosystem_desc_t), intent(inout), target :: iosystem
     type (file_desc_t), intent(out) :: file
     integer, intent(in) :: iotype
-    character(len=*), intent(inout)  :: fname
+    character(len=*), intent(in)  :: fname
     integer, optional, intent(in) :: mode
     ! ===================
     !  local variables
@@ -1878,7 +1885,7 @@ contains
     integer    :: amode
     logical, parameter :: check = .true.
     character(len=9) :: rd_buffer
-
+    character(len=char_len) :: myfname
 #ifdef TIMING
     call t_startf("PIO_openfile")
 #endif
@@ -1923,21 +1930,26 @@ contains
 #endif
     call mpi_bcast(amode, 1, mpi_integer, 0, file%iosystem%comp_comm, ierr)
     call mpi_bcast(file%iotype, 1, mpi_integer, 0, file%iosystem%comp_comm, ierr)
-    call mpi_bcast(fname, len(fname), mpi_character, 0, file%iosystem%comp_comm, ierr)
+    if(len(fname) > char_len) then
+       print *,'Length of filename exceeds compile time max, increase char_len in pio_kinds and recompile'
+       call piodie( _FILE_,__LINE__)
+    end if
+    myfname = fname
+    call mpi_bcast(myfname, len(fname), mpi_character, 0, file%iosystem%comp_comm, ierr)
 
     select case(iotype)
     case(iotype_pbinary, iotype_direct_pbinary)
        if(amode /=0) then
           print *, 'warning, the mode argument is currently ignored for binary file operations'
        end if
-       ierr = open_mpiio(file,fname)
+       ierr = open_mpiio(file,myfname)
     case( iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
-       ierr = open_nf(file,fname,amode)
-       if(debug .and. iosystem%io_rank==0)print *,_FILE_,__LINE__,' open: ', fname, file%fh
+       ierr = open_nf(file,myfname,amode)
+       if(debug .and. iosystem%io_rank==0)print *,_FILE_,__LINE__,' open: ', myfname, file%fh
     case(iotype_binary)   ! appears to be a no-op
 
     end select
-    if(Debug .and. file%iosystem%io_rank==0) print *,_FILE_,__LINE__,'open: ',file%fh, fname
+    if(Debug .and. file%iosystem%io_rank==0) print *,_FILE_,__LINE__,'open: ',file%fh, myfname
 
 #ifdef TIMING
     call t_stopf("PIO_openfile")
