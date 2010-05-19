@@ -36,7 +36,7 @@
   conopts = "--disable-mct  --enable-mpiio --enable-timing --build=powerpc-bgp-linux --host=powerpc64-suse-linux"
   workdir = "/gpfs/home/${USER}/testpio"
   run = "cobalt-mpirun -mode vn -nofree --stdout "
-  submit ="qsub -ACCESDev --mode script -t 02:00:00 -q prod-devel -n 64"
+  submit ="qsub -ACCESDev --mode script -t 01:00:00 -q prod-devel -n 64"
   corespernode="4"
   pecount="64"
  />
