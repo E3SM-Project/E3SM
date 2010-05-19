@@ -1402,14 +1402,25 @@ contains
 #endif
 
 #ifdef _NETCDF
+#ifdef _NETCDF4
        case(pio_iotype_netcdf4p)
           ierr=nf90_def_var( ncid=File%fh,name=name,xtype=type, &
-               dimids=dimids,varid=vardesc%varid)
+               dimids=dimids,varid=vardesc%varid, cache_size=0)
+#endif
        case(iotype_netcdf,pio_iotype_netcdf4c)
           ! assuming type valid for both pnetcdf and netcdf
           if (File%iosystem%io_rank==0) then
-             ierr=nf90_def_var( ncid=File%fh,name=name,xtype=type, &
-                  dimids=dimids,varid=vardesc%varid)
+#ifdef _NETCDF4
+             if(iotype==pio_iotype_netcdf4c) then
+                ierr=nf90_def_var( ncid=File%fh,name=name,xtype=type, &
+                     dimids=dimids,varid=vardesc%varid,cache_size=0)
+             else
+#endif
+                ierr=nf90_def_var( ncid=File%fh,name=name,xtype=type, &
+                     dimids=dimids,varid=vardesc%varid)
+#ifdef _NETCDF4
+             end if
+#endif
              if (Debug) print *, '0: def_var fh=',File%fh, &
                   'name=',name,' id=',vardesc%varid
 #ifdef _NETCDF4

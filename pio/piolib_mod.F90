@@ -1256,7 +1256,8 @@ contains
 !! @public
 !! @ingroup PIO_init
 !! @brief initialize the pio subsystem.
-!! @details  This is a collective call which expects the following parameters:
+!! @details  This is a collective call.  Input parameters are read on comp_rank=0
+!!   values on other tasks are ignored.
 !! @param comp_rank mpi rank of each participating task,
 !! @param comp_comm the mpi communicator which defines the collective.
 !! @param num_iotasks the number of iotasks to define.
@@ -1300,6 +1301,7 @@ contains
     iosystem%comp_rank = comp_rank
     iosystem%rearr = rearr
 
+
     call mpi_comm_size(comp_comm,iosystem%num_tasks,ierr)
     if(check) call checkmpireturn('init: after call to comm_size: ',ierr)
     ! ---------------------------------------
@@ -1325,7 +1327,6 @@ contains
     if (present(base)) then
        if(base>=0 .and. base<iosystem%num_tasks) lbase = base
     endif
-    iosystem%iomaster=lbase
 
     if(debug) print *,'init: iosystem%num_tasks,n_iotasks,num_aggregator: ',iosystem%num_tasks,n_iotasks,num_aggregator
 
@@ -1334,11 +1335,23 @@ contains
     ! nodes and set ioproc
     ! --------------------------
     lstride = stride
+! Check sanity of input arguments
+    
+    call mpi_bcast(iosystem%rearr, 1, mpi_integer, 0, iosystem%comp_comm, ierr)
+    call mpi_bcast(n_iotasks, 1, mpi_integer, 0, iosystem%comp_comm, ierr)
+    call mpi_bcast(lstride, 1, mpi_integer, 0, iosystem%comp_comm, ierr)
+    call mpi_bcast(lbase, 1, mpi_integer, 0, iosystem%comp_comm, ierr)
 
     if (lbase+(n_iotasks-1)*lstride >= iosystem%num_tasks) then
        print *,_FILE_,__LINE__,lbase,n_iotasks,lstride,iosystem%num_tasks
        call piodie(_FILE_,__LINE__,'not enough procs for the stride')
     endif
+
+
+
+
+
+    iosystem%iomaster=lbase
 
     iosystem%ioproc = .false.
 
@@ -1464,8 +1477,10 @@ contains
     call mpi_info_create(iosystem%info,ierr)
     ! turn on mpi-io aggregation 
 !DBG    print *,'PIO_init: before call to setnumagg'
-    if(num_aggregator .gt. 0) then 
-       call setnumagg(iosystem,num_aggregator)  ! let mpi-io do aggregation
+    itmp = num_aggregator
+    call mpi_bcast(itmp, 1, mpi_integer, 0, iosystem%comp_comm, ierr)
+    if(itmp .gt. 0) then 
+       call setnumagg(iosystem,itmp)  ! let mpi-io do aggregation
     else
        iosystem%info = mpi_info_null
     endif
@@ -1751,7 +1766,7 @@ contains
 !! @public
 !! @ingroup PIO_createfile 
 !! @brief create a file using pio
-!! @details
+!! @details  Input parameters are read on comp task 0 and ignored elsewhere
 !! @param iosystem : a defined pio system descriptor created by a call to @ref PIO_init (see PIO_types)
 !! @param file	:  the returned file descriptor
 !! @param iotype : @copydoc PIO_iotype
@@ -1763,7 +1778,7 @@ contains
     type (iosystem_desc_t), intent(inout), target :: iosystem
     type (file_desc_t), intent(out) :: file
     integer, intent(in) :: iotype
-    character(len=*), intent(in)  :: fname
+    character(len=*), intent(inout)  :: fname
     integer, optional, intent(in) :: amode_in
     ! ===================
     !  local variables
@@ -1778,6 +1793,7 @@ contains
 
     if(debug) print *,'createfile: {comp,io}_rank:',iosystem%comp_rank,iosystem%io_rank,'io proc: ',iosystem%ioproc
     ierr=PIO_noerr
+    
 
     if(present(amode_in)) then
        amode = amode_in
@@ -1785,13 +1801,18 @@ contains
        amode = 0
     end if
 
+    file%iotype = iotype 
+
+    call mpi_bcast(amode, 1, mpi_integer, 0, file%iosystem%comp_comm, ierr)
+    call mpi_bcast(file%iotype, 1, mpi_integer, 0, file%iosystem%comp_comm, ierr)
+    call mpi_bcast(fname, len(fname), mpi_character, 0, file%iosystem%comp_comm, ierr)
+
     file%iosystem => iosystem
 
     !--------------------------------
     ! set some iotype specific stuff
     !--------------------------------
 
-    file%iotype = iotype 
 #if defined(USEMPIIO) 
     if ( (file%iotype==iotype_pbinary .or. file%iotype==iotype_direct_pbinary) &
          .and. (.not. iosystem%userearranger) ) then
@@ -1831,7 +1852,7 @@ contains
 !! @public
 !! @ingroup PIO_openfile 
 !! @brief open an existing file using pio
-!! @details
+!! @details  Input parameters are read on comp task 0 and ignored elsewhere.
 !! @param iosystem : a defined pio system descriptor created by a call to @ref PIO_init (see PIO_types)
 !! @param file	:  the returned file descriptor
 !! @param iotype : @copydoc PIO_iotype
@@ -1849,7 +1870,7 @@ contains
     type (iosystem_desc_t), intent(inout), target :: iosystem
     type (file_desc_t), intent(out) :: file
     integer, intent(in) :: iotype
-    character(len=*), intent(in)  :: fname
+    character(len=*), intent(inout)  :: fname
     integer, optional, intent(in) :: mode
     ! ===================
     !  local variables
@@ -1867,6 +1888,12 @@ contains
     ierr=PIO_noerr
 
     file%iosystem => iosystem
+
+    if(present(mode)) then
+       amode = mode
+    else	
+       amode = 0
+    end if
 
     !--------------------------------
     ! set some iotype specific stuff
@@ -1894,18 +1921,18 @@ contains
        file%iotype = pio_iotype_netcdf
     end if
 #endif
+    call mpi_bcast(amode, 1, mpi_integer, 0, file%iosystem%comp_comm, ierr)
+    call mpi_bcast(file%iotype, 1, mpi_integer, 0, file%iosystem%comp_comm, ierr)
+    call mpi_bcast(fname, len(fname), mpi_character, 0, file%iosystem%comp_comm, ierr)
+
     select case(iotype)
     case(iotype_pbinary, iotype_direct_pbinary)
-       if(present(mode)) then
+       if(amode /=0) then
           print *, 'warning, the mode argument is currently ignored for binary file operations'
        end if
        ierr = open_mpiio(file,fname)
     case( iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
-       if(present(mode)) then
-          ierr = open_nf(file,fname,mode)
-       else
-          ierr = open_nf(file,fname)
-       end if
+       ierr = open_nf(file,fname,amode)
        if(debug .and. iosystem%io_rank==0)print *,_FILE_,__LINE__,' open: ', fname, file%fh
     case(iotype_binary)   ! appears to be a no-op
 
