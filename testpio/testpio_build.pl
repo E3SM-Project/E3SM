@@ -67,7 +67,6 @@ print "Building for $host using $syscmd\n";
 system($syscmd);
 
 chdir('../timing');
-symlink('../testpio/Makefile.timing','./Makefile');
 my $dir;
 foreach $dir (qw(timing pio testpio)){
     chdir("$cfgdir/../$dir") or die "Cannot cd to $cfgdir/../$dir: $!\n";;

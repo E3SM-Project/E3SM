@@ -1,3 +1,73 @@
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
+Tag name: pio1_1_0
+Originator(s): Jim
+Date: 05-20-2010
+One-line Summary: code cleanup, improved netcdf4 performance 
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+   updated optional timing library
+   testpio.F90
+   piolib_mod.F90
+   topology.c
+   namelist_mod.F90
+	added BGP optimizations
+   build_defaults.xml
+   Utils.pm
+   testpio_run.pl
+   testpio_bench.pl
+	added support for intrepid bgp platform
+   check_mod.F90
+	improved error message
+   configure.ac
+	added HAVE_MPI flag needed by timing
+   pionfput_mod.F90.in 
+	fixed a bug that created a potential race
+	condition in the pnetcdf interface
+   piolib_mod.F90
+	Explicitly read input arguments on task 0 and ignore 
+	others in pio_init, pio_openfile and pio_createfile
+	calls.
+   pio_kinds.F90
+	Increase default string length
+   box_rearrange.F90.in	
+        Moved stdout info to debug mode only
+   ionf_mod.F90
+	Improved error handling
+   
+  
+
+	
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: self
+
+Summary of pre-tag testing:
+
+  Regression tests:
+	bluefire 107 tests PASS, 0 tests FAIL
+	edinburgh 22 tests PASS, 0 tests FAIL 
+	edinburgh_intel 22 tests PASS, 0 tests FAIL
+	intrepid 
+	jaguarpf 
+
+
+===============================================================
 
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***

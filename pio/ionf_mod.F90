@@ -45,7 +45,6 @@ contains
     integer(i4) :: iotype, mpierr
     integer :: nmode, tmpfh
 
-    
     nmode=amode
     if(Debug) print *, 'Create file ', fname, 'with amode ',nmode
     ierr=PIO_noerr
@@ -77,11 +76,14 @@ contains
 #ifdef _MPISERIAL
           ierr = nf90_create(fname, nmode , File%fh)
 #else
-          ierr = nf90_create_par(fname, nmode, File%iosystem%io_comm, File%iosystem%info, File%fh)
+          ierr = nf90_create(fname, nmode, File%fh, &
+               comm=File%iosystem%io_comm, info=File%iosystem%info,cache_size=0 )
+          call check_netcdf(File, ierr,_FILE_,__LINE__)
+
+          call check_netcdf(File, ierr,_FILE_,__LINE__)
 #endif
 ! Set default to NOFILL for performance.  
-          if(ierr==NF90_NOERR) &
-               ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
+          ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
           call check_netcdf(File, ierr,_FILE_,__LINE__)
        case(PIO_iotype_netcdf4c)
           if(iand(PIO_64BIT_OFFSET,amode)==PIO_64BIT_OFFSET) then
@@ -94,7 +96,8 @@ contains
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
              ! Stores the ncid in File%fh
-             ierr = nf90_create(fname, nmode , File%fh)
+             ierr = nf90_create(fname, amode, File%fh, &
+                  info=File%iosystem%info,cache_size=0 )
 ! Set default to NOFILL for performance.  
              if(ierr==NF90_NOERR) &
                   ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
@@ -137,6 +140,7 @@ contains
     integer(i4), optional, intent(in) :: mode
     integer(i4) :: iotype, amode , mpierr, ier2
     integer :: tmpfh
+
 
     ierr=PIO_noerr
     File%fh=-1
@@ -185,7 +189,13 @@ contains
 #ifdef _MPISERIAL
            ierr = nf90_open(fname,amode,File%fh)           
 #else
-           ierr = nf90_open_par(fname, amode, File%iosystem%io_comm, File%iosystem%info, File%fh)
+           ierr = nf90_open(fname, ior(amode,NF90_NETCDF4), File%fh, &
+                comm=File%iosystem%io_comm, info=File%iosystem%info,cache_size=0 )
+           print *,__FILE__,__LINE__,ierr
+           if(ierr==nf90_enotnc4 .or. ierr==nf90_einval) then
+              ierr = nf90_open(fname, amode, File%fh,info=File%iosystem%info)
+              print *,__FILE__,__LINE__,ierr
+           end if
 #endif
         end if
 #endif
