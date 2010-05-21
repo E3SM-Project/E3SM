@@ -272,17 +272,12 @@ foreach(keys %attributes){
     
 }
 
-my $log;
+
 my $run = $attributes{run};
 my $exename = "./testpio";
-if($logfile) {
-  $log = "$logfile";
-} else {
-  $log = "$cfgdir/testpio.log.";
-}
-my $foo= Utils->runString($host,$pecount,$run,$exename,$log);
 
-print "EXEC command: ($foo)\n";
+#my $foo= Utils->runString($host,$pecount,$run,$exename,$log);
+#print "EXEC command: ($foo)\n";
 
 print F << "EOF";
 use strict;
@@ -300,6 +295,7 @@ mkdir "$srcdir" if(! -d "$srcdir");
 
 my \$rc = 0xffff & system("rsync -rp $piodir $srcdir");
 if(\$rc != 0) {
+    print "rsync failed with \$rc, copying files\n";
     system("cp -fr $piodir/pio $srcdir");
     system("cp -fr $piodir/mct $srcdir");
     system("cp -fr $piodir/timing $srcdir");
@@ -324,14 +320,14 @@ foreach \$suite (qw(@testsuites)){
 #    my \@testlist = \@{\$testlist->{\$suite}};
     my \@testlist = \"$suffix";
 #    unlink("../pio/Makefile.conf");
-#    May want to uncomment this system call so that testpio gets build 
-    system("perl ./testpio_build.pl --conopts=\\"\$confopts\\" --host=$host");
-    copy("testpio","$tstdir");     # copy executable into test directory
 #    copy("testpio_in","$tstdir"); # copy the namelist file into test directory
     
     chdir ("$tstdir");
     my \$test;
     my \$run = "$attributes{run}";
+    unless(-e "$tstdir/testpio"){
+      system("perl ./testpio_build.pl --conopts=\\"\$confopts\\" --host=$host");
+    }
     if(-e "../pio/Makefile.conf" && -e "testpio"){
 	foreach \$test (\@testlist){
 	    my \$casedir = "$workdir/\$suite.\$test";
@@ -350,17 +346,20 @@ foreach \$suite (qw(@testsuites)){
 	    }
 
 	    unlink("testpio") if(-e "testpio");
+
 	    copy("$tstdir/testpio","testpio");
+
+
 	    chmod 0755,"testpio";
 #	    symlink("$tstdir/namelists/testpio_in.\$test","testpio_in");
 #	    symlink("$tstdir/testpio_in.\$test","testpio_in");
 	    symlink("$tstdir/testpio_in.\$test","testpio_in");
 	    mkdir "none" unless(-d "none");
 	    my \$exename = "./testpio";
-            my \$log;
-            \$log = "$logfile";
+            my \$log = "\$casedir/$logfile";
 	    unlink("\$log") if(-e "\$log");
             my \$sysstr =  Utils->runString(\$host,\$pecount,\$run,\$exename,\$log);
+            print "Running \$sysstr\n";
 	    system(\$sysstr);
 	    open(LOG,\$log);
 	    my \@logout = <LOG>;

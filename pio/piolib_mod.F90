@@ -7,7 +7,6 @@
 #define BGx
 #endif
 
-
 module piolib_mod
   !--------------
   use pio_kinds
@@ -1407,7 +1406,7 @@ contains
     if(iosystem%ioproc) then 
 	iotask = 1
     endif
-    if(debug) call identity(comp_comm,iotask)
+    call identity(comp_comm,iotask)
 
 #else
 
@@ -1580,15 +1579,17 @@ contains
     integer(i4) :: ierr
     logical(log_kind), parameter ::  check = .true.
 #if defined(USEMPIIO) || defined(_PNETCDF)
-    write(cb_nodes,('(i5)')) numagg
-    call mpi_info_create(iosystem%info,ierr)    
-    if(check) call checkmpireturn('setnumagg: after call to mpi_info_create: ',ierr)
+    if(numagg>0) then
+       write(cb_nodes,('(i5)')) numagg
+       call mpi_info_create(iosystem%info,ierr)    
+       if(check) call checkmpireturn('setnumagg: after call to mpi_info_create:',ierr)
 #ifdef BGx
-    call mpi_info_set(iosystem%info,'bgl_cb_nodes',trim(adjustl(cb_nodes)),ierr)
+       call mpi_info_set(iosystem%info,'bgl_nodes_pset',trim(adjustl(cb_nodes)),ierr)
 #else
-    call mpi_info_set(iosystem%info,'cb_nodes',trim(adjustl(cb_nodes)),ierr)
+       call mpi_info_set(iosystem%info,'cb_nodes',trim(adjustl(cb_nodes)),ierr)
 #endif
 #endif
+    end if
   end subroutine setnumagg
 
 
