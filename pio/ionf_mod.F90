@@ -21,7 +21,6 @@ module ionf_mod
   include 'mpif.h'      ! _EXTERNAL
 #ifdef _PNETCDF
 #include <pnetcdf.inc>   /* _EXTERNAL */
-   integer, external :: pnetcdf_version_check
 #endif
  
 
@@ -55,10 +54,6 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(PIO_iotype_pnetcdf)
-          if(pnetcdf_version_check()<=0) then
-             call piodie(__FILE__,__LINE__,'parallel netcdf version 1.1 or newer is required')
-          end if
-          
           ierr  = nfmpi_create(File%iosystem%IO_comm,fname,nmode ,File%iosystem%info,File%fh)
 ! Set default to NOFILL for performance.  
 !   pnetcdf is nofill by default and doesn't support a fill mode
@@ -161,9 +156,6 @@ contains
 #endif
 #ifdef _PNETCDF
        if(iotype==PIO_iotype_pnetcdf) then
-          if(pnetcdf_version_check()<=0) then
-             call piodie(__FILE__,__LINE__,'parallel netcdf version 1.1 or newer is required')
-          end if
           if(present(mode)) then
              amode = mode
           else

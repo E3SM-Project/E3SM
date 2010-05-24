@@ -3,6 +3,7 @@ use strict;
 use Cwd;
 use Getopt::Long;
 
+my $twopass;
 my $preambleResource;
 my $projectInfo;
 my $suites;
@@ -12,16 +13,18 @@ my $host;
 my $debug=0;
 my $pecount=16;
 my $enablenetcdf4;
-my $result = GetOptions("suites=s@"=>\$suites,"retry"=>\$retry,"host=s"=>\$host,"pecount=i"=>\$pecount,"help"=>\$help,"debug"=>\$debug);
+my $result = GetOptions("suites=s@"=>\$suites,"retry"=>\$retry,"host=s"=>\$host,"pecount=i"=>\$pecount,"help"=>\$help,
+                        "twopass"=>\$twopass,"debug"=>\$debug);
 
 usage() if($help);
 sub usage{
-    print "--suites : Test only the listed suites (all, snet, pnet, mpiio, ant)\n";
-    print "--retry  : Do not repeat tests that have already passed\n";
-    print "--host   : Force a hostname for testing\n";
+    print "--debug   : Generate the runscript but do not submit it\n";
+    print "--help    : Print this message\n";
+    print "--host    : Force a hostname for testing\n";
     print "--pecount : Select the processor count on which to run tests\n";
-    print "--help   : Print this message\n";
-    print "--debug  : Generate the runscript but do not submit it\n";
+    print "--retry   : Do not repeat tests that have already passed\n";
+    print "--suites  : Test only the listed suites (all, snet, pnet, mpiio, ant)\n";
+    print "--twopass : Run in two passes - first builds on login node, second submits (required on some systems)\n";
     exit;
 }
 
@@ -52,6 +55,11 @@ $host = Utils->host() unless(defined $host);
 print "host = $host\n";
 Utils->loadmodules("$host");
 print "host = $host\n";
+
+if($host eq "jaguar"){
+    print "Using twopass run method\n";
+    $twopass = 1;
+}
 
 
 my $xml = XML::Lite->new( "build_defaults.xml" );
@@ -152,6 +160,8 @@ use POSIX qw(ceil);
 use Utils;
 
 chdir ("$cfgdir");
+my \$thispass = shift;
+\$thispass = 2 unless(defined \$thispass);
 
 mkdir "$srcdir" if(! -d "$srcdir");
 
@@ -198,10 +208,15 @@ foreach \$suite (qw(@testsuites)){
 	push(\@testlist,\@netcdf4tests);
     }
     chdir ("$tstdir");
-    unlink("../pio/Makefile.conf");
-    system("perl ./testpio_build.pl --conopts=\\"\$confopts\\" --host=$host");
+    unless($twopass && \$thispass==2){
+	unlink("../pio/Makefile.conf");
+	system("perl ./testpio_build.pl --conopts=\\"\$confopts\\" --host=$host");
+    }
     my \$test;
-    if(-e "../pio/Makefile.conf" && -e "testpio"){
+
+    if($twopass && \$thispass==1 && -e "testpio") {
+	rename("testpio","testpio.\$suite");
+    }elsif(($twopass && \$thispass==2 && -e "testpio.\$suite")  or  (-e "../pio/Makefile.conf" && -e "testpio")){
 	foreach \$test (\@testlist){
 	    my \$casedir = "$workdir/\$suite.\$test";
 	    mkdir \$casedir unless(-d \$casedir);
@@ -219,7 +234,12 @@ foreach \$suite (qw(@testsuites)){
 	    }
 
 	    unlink("testpio") if(-e "testpio");
-	    copy("$tstdir/testpio","testpio");  chmod 0755,"testpio";
+            if($twopass){
+		copy("$tstdir/testpio.\$suite","testpio");  
+            }else{
+		copy("$tstdir/testpio","testpio");  
+	    }
+	    chmod 0755,"testpio";
 	    symlink("$tstdir/namelists/testpio_in.\$test","testpio_in");
 	    mkdir "none" unless(-d "none");
             my \$exename = "./testpio";
@@ -249,13 +269,25 @@ foreach \$suite (qw(@testsuites)){
 	print "suite \$suite FAILED to configure or build\\n";	
     }
 }
+if($twopass && \$thispass==1){
+    chdir("$cfgdir");
+    my \$subsys = Utils->submitString("$host",$pecount,$corespernode,"$attributes{submit}","$script");
+    if($debug) {
+	print "Run ($script) second pass with \$subsys\n";
+    }else{
+	exec(\$subsys);
+    }   
+}
+
 print "test complete on $host \$passcnt tests PASS, \$failcnt tests FAIL\\n";
 EOF
 close(F);
 chmod 0755, $script;
 my $subsys = Utils->submitString($host,$pecount,$corespernode,$attributes{submit},$script);
 if($debug) {
-   print "Created script ($script)\n";
+    print "Created script ($script)\n";
+}elsif($twopass){
+    exec("$script 1");
 }else{
-  exec($subsys);
+    exec($subsys);
 }

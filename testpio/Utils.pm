@@ -173,11 +173,12 @@ sub loadmodules{
 	module(" load PrgEnv-pgi Base-opts");
 	module(" load xtpe-barcelona");
 	module(" load torque moab");
-#	module(" switch pgi pgi/7.1.6");
+	module(" switch pgi pgi/9.0.4");
 	module(" load netcdf/3.6.2");      
 	module(" load p-netcdf/1.1.1");
 	module(" swap xt-asyncpe xt-asyncpe/1.0c");
-	module(" load xt-binutils-quadcore/2.0.1");
+#	module(" load xt-binutils-quadcore/2.0.1");
+        
         module("list");
     }elsif($host =~ "athena"){
 #	require "/opt/modules/default/init/perl";
