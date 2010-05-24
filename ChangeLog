@@ -22,6 +22,10 @@ List all existing files that have been modified, and describe the changes:
    testpio_run.pl
    testpio_bench.pl
 	added support for intrepid bgp platform
+
+   testpio_run.pl
+	added -twopass option to allow for compiling on the
+	front end before submitting.  Default on Jaguar.
    check_mod.F90
 	improved error message
    configure.ac
