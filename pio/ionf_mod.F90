@@ -72,9 +72,7 @@ contains
           ierr = nf90_create(fname, nmode , File%fh)
 #else
           ierr = nf90_create(fname, nmode, File%fh, &
-               comm=File%iosystem%io_comm, info=File%iosystem%info,cache_size=0 )
-          call check_netcdf(File, ierr,_FILE_,__LINE__)
-
+               comm=File%iosystem%io_comm, info=File%iosystem%info,cache_size=10 )
           call check_netcdf(File, ierr,_FILE_,__LINE__)
 #endif
 ! Set default to NOFILL for performance.  
@@ -92,7 +90,7 @@ contains
           if (File%iosystem%io_rank == 0) then
              ! Stores the ncid in File%fh
              ierr = nf90_create(fname, amode, File%fh, &
-                  info=File%iosystem%info,cache_size=0 )
+                  info=File%iosystem%info,cache_size=10 )
 ! Set default to NOFILL for performance.  
              if(ierr==NF90_NOERR) &
                   ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
@@ -182,7 +180,7 @@ contains
            ierr = nf90_open(fname,amode,File%fh)           
 #else
            ierr = nf90_open(fname, ior(amode,NF90_NETCDF4), File%fh, &
-                comm=File%iosystem%io_comm, info=File%iosystem%info,cache_size=0 )
+                comm=File%iosystem%io_comm, info=File%iosystem%info,cache_size=10 )
            print *,__FILE__,__LINE__,ierr
            if(ierr==nf90_enotnc4 .or. ierr==nf90_einval) then
               ierr = nf90_open(fname, amode, File%fh,info=File%iosystem%info)

@@ -3,7 +3,7 @@ use strict;
 use Cwd;
 use Getopt::Long;
 
-my $twopass;
+my $twopass=0;
 my $preambleResource;
 my $projectInfo;
 my $suites;
