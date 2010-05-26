@@ -1588,8 +1588,9 @@ contains
 #else
        call mpi_info_set(iosystem%info,'cb_nodes',trim(adjustl(cb_nodes)),ierr)
 #endif
-#endif
     end if
+#endif
+
   end subroutine setnumagg
 
 
