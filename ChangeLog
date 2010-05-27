@@ -1,6 +1,44 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_1_1
+Originator(s): Jim
+Date: 05-26-2010
+One-line Summary: fix for mpi-serial build
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+  piolib_mod.F90 correct #enddef placement.
+	
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+  updated jaguar modules
+Describe any substantial timing or memory changes:
+
+
+
+Code reviewed by: self
+
+Summary of pre-tag testing:  
+  Regression tests:  intrepid   68 of 68 pass
+         	     bluefire 107 tests PASS, 0 tests FAIL
+        	     jaguar 74 tests PASS, 0 tests FAIL
+                     ccsm regregression on bluefire
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_1_0
 Originator(s): Jim
 Date: 05-20-2010
