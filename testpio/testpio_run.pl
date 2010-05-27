@@ -56,10 +56,10 @@ print "host = $host\n";
 Utils->loadmodules("$host");
 print "host = $host\n";
 
-if($host eq "jaguar"){
-    print "Using twopass run method\n";
-    $twopass = 1;
-}
+#if($host eq "jaguar"){
+#    print "Using twopass run method\n";
+#    $twopass = 1;
+#}
 
 
 my $xml = XML::Lite->new( "build_defaults.xml" );
