@@ -37,6 +37,7 @@ module pio_types
 	sequence
 #endif
         integer(i4)              :: IO_comm            ! The IO communicator
+        integer(i4)              :: intercomm          ! the intercomm (may be MPI_COMM_NULL)
         integer(i4)              :: comp_comm          ! The Compute communicator
         integer(i4)              :: num_tasks        ! total number of tasks
         integer(i4)              :: num_iotasks        ! total number of IO tasks
@@ -46,6 +47,7 @@ module pio_types
 !
         integer(i4)              :: Info               ! MPI-IO info structure
         integer(i4)              :: IOMaster           ! The comp_rank of the io_rank 0
+        integer(i4)              :: compMaster           ! The comp_rank of the io_rank 0
         logical(log_kind)        :: IOproc             ! .true. if an IO processor
         logical(log_kind)        :: UseRearranger      ! .true. if data rearrangement is necessary
         integer(i4)              :: rearr         ! type of rearranger

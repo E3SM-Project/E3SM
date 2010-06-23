@@ -62,8 +62,13 @@ contains
              call piodie(filestr,line,trim(nf90_strerror(status)))
           end if
        else if(file%iosystem%error_handling==PIO_BCAST_ERROR) then
-          call MPI_BCAST(status,1,MPI_INTEGER,file%iosystem%iomaster,File%iosystem%comp_comm, mpierr)
-          call CheckMPIReturn('nf_mod',mpierr)
+          if(file%iosystem%intercomm == MPI_COMM_NULL) then
+             call MPI_BCAST(status,1,MPI_INTEGER,file%iosystem%iomaster,File%iosystem%comp_comm, mpierr)
+             call CheckMPIReturn('nf_mod',mpierr)
+          else
+             call MPI_BCAST(status,1,MPI_INTEGER,file%iosystem%iomaster,File%iosystem%intercomm, mpierr)
+             call CheckMPIReturn('nf_mod',mpierr)
+          end if
        end if
 #endif
     end select

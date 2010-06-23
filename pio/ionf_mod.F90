@@ -113,7 +113,13 @@ contains
        if(Debug) print *,__FILE__,__LINE__,file%fh,ierr
     end if
     tmpfh = file%fh
-    call mpi_bcast(tmpfh,1,mpi_integer, file%iosystem%iomaster, file%iosystem%comp_comm, mpierr)
+
+    if(file%iosystem%intercomm==MPI_COMM_NULL) then
+       call mpi_bcast(tmpfh,1,mpi_integer, file%iosystem%iomaster, file%iosystem%comp_comm, mpierr)
+    else
+       print *,__FILE__,__LINE__,file%fh,file%iosystem%io_comm
+       call mpi_bcast(tmpfh,1,mpi_integer, 0, file%iosystem%io_comm, mpierr)
+    end if
     if(file%fh<0) file%fh=-tmpfh
 
     call check_netcdf(File, ierr,_FILE_,__LINE__)

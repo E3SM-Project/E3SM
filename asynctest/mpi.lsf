@@ -1,0 +1,49 @@
+#!/bin/ksh
+#
+#BSUB -P 43310039
+#BSUB -n 64
+##BSUB -n 512
+#BSUB -R "span[ptile=64]" 
+#BSUB -o work.%J.out   # ouput filename
+#BSUB -e work.%J.err   # error filename
+#BSUB -J work               # job name
+#BSUB -W 0:28
+#BSUB -q premium                 # queue
+##bsub -a tv           #use totalview debugger
+
+
+export TARGET_CPU_LIST="-1"
+
+export MP_RC_USE_LMC=yes
+
+export LAPI_DEBUG_ENABLE_AFFINITY=YES 
+export LAPI_DEBUG_BINDPROC_AFFINITY=YES 
+export LAPI_DEBUG_MTU_4K=YES
+export MP_SYNC_QP=YES
+export MP_RFIFO_SIZE=16777216
+export MP_SHM_ATTACH_THRESH=500000 # default is better sometimes
+export MP_EUIDEVELOP=min 
+export MP_LABELIO=yes
+
+export MP_SINGLE_THREAD=NO #do NOT use if more than one application 
+                            #(including OpenMP) thread is making comm. calls
+
+export OMP_NUM_THREADS=1
+export XLSMPOPTS=stack=256000000
+export MP_PULSE=0
+#export MP_SHMCC_EXCLUDE_LIST=all   #experiment both with setting and 
+                                   #not setting MP_SHMCC_EXCLUDE_LIST
+export MP_USE_BULK_XFER=yes
+#export MP_BUFFER_MEM=512M
+
+#export MP_FIFO_MTU=4K
+#export MP_RDMA_MTU=4K
+export MP_BULK_MIN_MSG_SIZE=64k
+export MP_RC_MAX_QP=8192
+export LAPI_DEBUG_RC_DREG_THRESHOLD=1000000
+export LAPI_DEBUG_QP_NOTIFICATION=no
+export LAPI_DEBUG_RC_INIT_SETUP=no	#try both = yes and = no
+
+
+mpirun.lsf hybrid_launch pioasync
+

@@ -36,7 +36,8 @@ SRCS_F90 =  pio.F90 \
 	    pio_mpi_utils.F90 \
             pio_nf_utils.F90 \
 	    pio_utils.F90 \
-            pio_quicksort.F90 
+            pio_quicksort.F90 \
+            pio_msg_mod.F90
            
 
 TEMPLATES_F90 = pionfatt_mod.F90.in \

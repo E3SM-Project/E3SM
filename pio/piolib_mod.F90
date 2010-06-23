@@ -27,6 +27,7 @@ module piolib_mod
 #ifdef TIMING
   use perf_mod, only : t_startf, t_stopf     ! _EXTERNAL
 #endif
+  use pio_msg_mod
 
   implicit none
   private
@@ -131,7 +132,9 @@ module piolib_mod
 !! initializes the pio subsystem
 !<
   interface PIO_init
-     module procedure init
+     module procedure init_intracom
+     module procedure init_intercom
+     
   end interface
 
 !> 
@@ -372,9 +375,9 @@ contains
     integer (kind=PIO_OFFSET),optional    :: iostart(:)  
     integer (kind=PIO_OFFSET),optional    :: iocount(:)    
 
-!    character(len=*), parameter :: subName=modName//'::PIO_initdecomp_bc'
+!    character(len=*), parameter :: '::PIO_initdecomp_bc'
 
-!    call piodie(subname,__LINE__,'subroutine not yet implemented')
+    call piodie(__FILE__,__LINE__,'subroutine not yet implemented')
 
   end subroutine PIO_initdecomp_bc
 
@@ -1274,7 +1277,7 @@ contains
 !! @param iosystem a derived type which can be used in subsequent pio operations (defined in PIO_types).
 !! @param base @em optional argument can be used to offset the first io task - default base is task 1.
 !<
-  subroutine init(comp_rank, comp_comm, num_iotasks, num_aggregator, stride,  rearr, iosystem,base)
+  subroutine init_intracom(comp_rank, comp_comm, num_iotasks, num_aggregator, stride,  rearr, iosystem,base)
     integer(i4), intent(in) :: comp_rank
     integer(i4), intent(in) :: comp_comm
     integer(i4), intent(in) :: num_iotasks 
@@ -1307,7 +1310,7 @@ contains
     iosystem%comp_comm = comp_comm
     iosystem%comp_rank = comp_rank
     iosystem%rearr = rearr
-
+    iosystem%intercomm = MPI_COMM_NULL
 
     call mpi_comm_size(comp_comm,iosystem%num_tasks,ierr)
     if(check) call checkmpireturn('init: after call to comm_size: ',ierr)
@@ -1457,8 +1460,7 @@ contains
      itmp = -1
    endif
    call mpi_allreduce(itmp, lbase, 1, MPI_INTEGER, MPI_MAX, iosystem%comp_comm, ierr)
-   iosystem%iomaster = lbase
-
+   iosystem%iomaster = max(0,lbase)
 #endif
     
 
@@ -1505,6 +1507,93 @@ contains
     !---------------------------------
     ! initialize the rearranger system 
     !---------------------------------
+    
+    if (iosystem%userearranger) then
+       call rearrange_init(iosystem)
+    endif
+#ifdef TIMING
+    call t_stopf("PIO_init")
+#endif
+  end subroutine init_intracom
+
+
+!> 
+!! @public
+!! @ingroup PIO_init
+!! @brief initialize the pio subsystem.
+!! @details  This is a collective call.  Input parameters are read on comp_rank=0
+!!   values on other tasks are ignored.
+!! @param comp_rank mpi rank of each participating task,
+!! @param comp_comm the mpi communicator which defines the collective.
+!! @param num_iotasks the number of iotasks to define.
+!! @param num_aggregator the mpi aggregator count
+!! @param stride the stride in the mpi rank between io tasks.
+!! @param rearr @copydoc PIO_rearr_method
+!! @param iosystem a derived type which can be used in subsequent pio operations (defined in PIO_types).
+!! @param base @em optional argument can be used to offset the first io task - default base is task 1.
+!<
+  subroutine init_intercom(comp_comm, io_comm, intercomm, iosystem)
+    integer(i4), intent(in) :: comp_comm   !  The compute communicator
+    integer(i4), intent(in) :: io_comm     !  The io communicator
+    integer(i4), intent(in) :: intercomm       !  A communicator which includes both, maybe an intercomm
+
+    type (iosystem_desc_t), intent(out)  :: iosystem  ! io descriptor to initalize
+
+    integer :: ierr, is_inter
+    logical, parameter :: check=.true.
+
+#ifdef TIMING
+    call t_startf("PIO_init")
+#endif
+    iosystem%error_handling = PIO_internal_error
+    iosystem%comp_comm = comp_comm
+    iosystem%io_comm = io_comm
+    iosystem%comp_rank= -1
+    iosystem%io_rank  = -1
+    iosystem%io_stride = 1
+    
+    call mpi_comm_test_inter(intercomm, is_inter, ierr)
+    if(check) call checkmpireturn('init: after call to comm_test_inter: ',ierr)
+
+    if(is_inter==1) then
+       iosystem%intercomm=intercomm
+       iosystem%userearranger = .true.
+       iosystem%rearr = PIO_rearr_box
+       if(comp_comm /= MPI_COMM_NULL) then
+          call mpi_comm_rank(comp_comm, iosystem%comp_rank, ierr)
+          if(check) call checkmpireturn('init: after call to comm_rank: ',ierr)
+          call mpi_comm_size(comp_comm, iosystem%num_tasks, ierr)
+          if(check) call checkmpireturn('init: after call to comm_size: ',ierr)
+          iosystem%iomaster = 0
+          iosystem%ioproc = .false.
+          if(iosystem%comp_rank==0) then
+             iosystem%compmaster = MPI_ROOT
+          else
+             iosystem%compmaster = MPI_PROC_NULL
+          end if
+       else
+          call mpi_comm_rank(io_comm, iosystem%io_rank, ierr)
+          if(check) call checkmpireturn('init: after call to comm_rank: ',ierr)
+          call mpi_comm_size(io_comm, iosystem%num_iotasks, ierr)
+          if(check) call checkmpireturn('init: after call to comm_size: ',ierr)
+          if(iosystem%io_rank==0) then
+             iosystem%iomaster = MPI_ROOT
+          else
+             iosystem%iomaster = MPI_PROC_NULL
+          end if
+          iosystem%ioproc = .true.
+          iosystem%compmaster = 0
+          call pio_msg_handler(iosystem) 
+       end if
+    else
+! not yet supported
+       call piodie(__FILE__,__LINE__,'subroutine not yet implemented')
+       
+    end if
+    
+    !---------------------------------
+    ! initialize the rearranger system 
+    !---------------------------------
 
     if (iosystem%userearranger) then
        call rearrange_init(iosystem)
@@ -1512,7 +1601,10 @@ contains
 #ifdef TIMING
     call t_stopf("PIO_init")
 #endif
-  end subroutine init
+    
+
+  end subroutine init_intercom
+
 
 !> 
 !! @public
@@ -1781,26 +1873,35 @@ contains
 !! @param amode_in : the creation mode flag. the following flags are available: PIO_clobber, PIO_noclobber. 
 !! @retval ierr @copydoc error_return
 !<
-  integer function createfile(iosystem, file,iotype, fname, amode_in) result(ierr)
+  integer function createfile(iosystem, file,iotype, fname, amode_in, callback) result(ierr)
     type (iosystem_desc_t), intent(inout), target :: iosystem
     type (file_desc_t), intent(out) :: file
     integer, intent(in) :: iotype
     character(len=*), intent(in)  :: fname
     integer, optional, intent(in) :: amode_in
+    integer, optional, intent(in) :: callback
+    
     ! ===================
     !  local variables
     ! ===================
+    logical :: iscallback
     integer    :: amode
+    integer :: msg
     logical, parameter :: check = .true.
     character(len=9) :: rd_buffer
     character(len=char_len)  :: myfname
 #ifdef TIMING
     call t_startf("PIO_createfile")
 #endif
-
+    print *,__FILE__,__LINE__,fname
     if(debug) print *,'createfile: {comp,io}_rank:',iosystem%comp_rank,iosystem%io_rank,'io proc: ',iosystem%ioproc
     ierr=PIO_noerr
     
+    if(present(callback)) then
+       iscallback = .true.
+    else
+       iscallback = .false.
+    end if
 
     if(present(amode_in)) then
        amode = amode_in
@@ -1809,17 +1910,18 @@ contains
     end if
 
     file%iotype = iotype 
-
-    call mpi_bcast(amode, 1, MPI_INTEGER, 0, iosystem%comp_comm, ierr)
-    call mpi_bcast(file%iotype, 1, MPI_INTEGER, 0, iosystem%comp_comm, ierr)
-
-    if(len(fname) > char_len) then
-       print *,'Length of filename exceeds compile time max, increase char_len in pio_kinds and recompile'
-       call piodie( _FILE_,__LINE__)
-    end if
-
     myfname = fname
-    call mpi_bcast(myfname, len(fname), mpi_character, 0, iosystem%comp_comm, ierr)
+    if(.not. iscallback) then
+       call mpi_bcast(amode, 1, MPI_INTEGER, 0, iosystem%comp_comm, ierr)
+       call mpi_bcast(file%iotype, 1, MPI_INTEGER, 0, iosystem%comp_comm, ierr)
+
+       if(len(fname) > char_len) then
+          print *,'Length of filename exceeds compile time max, increase char_len in pio_kinds and recompile', len(fname), char_len
+          call piodie( _FILE_,__LINE__)
+       end if
+
+       call mpi_bcast(myfname, len(fname), mpi_character, 0, iosystem%comp_comm, ierr)
+    end if
 
     file%iosystem => iosystem
 
@@ -1841,21 +1943,46 @@ contains
        file%iotype = pio_iotype_netcdf
     end if
 #endif
-    select case(iotype)
-    case(iotype_pbinary, iotype_direct_pbinary)
-       if(present(amode_in)) then
-          print *, 'warning, the mode argument is currently ignored for binary file operations'
+
+    if(iosystem%intercomm /= MPI_COMM_NULL .and. .not. present(callback)) then
+       print *,__FILE__,__LINE__, iosystem%intercomm
+       msg = PIO_MSG_CREATE_FILE
+       call mpi_bcast(msg, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+       print *,__FILE__,__LINE__, msg
+
+       call mpi_bcast(myfname, char_len, mpi_character, iosystem%compmaster, iosystem%intercomm, ierr)
+       call mpi_bcast(iotype, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+       call mpi_bcast(amode, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+
+       if(iosystem%error_handling==PIO_BCAST_ERROR) then
+          call mpi_bcast(ierr, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)       
+          print *,__FILE__,__LINE__, ierr
        end if
-       ierr = create_mpiio(file,myfname)
-    case( iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-       ierr = create_nf(file,myfname, amode)	
-       if(debug .and. iosystem%io_rank==0)print *,_FILE_,__LINE__,' open: ', myfname, file%fh
-    case(iotype_binary)
-       print *,'createfile: io type not supported'
-    end select
 
-    if(debug .and. file%iosystem%io_rank==0) print *,_FILE_,__LINE__,'open: ',file%fh, myfname
 
+       call mpi_bcast(file%fh, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)
+       file%fh = -file%fh
+       print *,__FILE__,__LINE__, file%fh
+
+
+    else
+       select case(iotype)
+       case(iotype_pbinary, iotype_direct_pbinary)
+          if(present(amode_in)) then
+             print *, 'warning, the mode argument is currently ignored for binary file operations'
+          end if
+          ierr = create_mpiio(file,myfname)
+       case( iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+          print *,__FILE__,__LINE__
+          ierr = create_nf(file,myfname, amode)	
+          if(debug .and. iosystem%io_rank==0)print *,_FILE_,__LINE__,' open: ', myfname, file%fh
+       case(iotype_binary)
+          print *,'createfile: io type not supported'
+       end select
+       
+
+       if(debug .and. file%iosystem%io_rank==0) print *,_FILE_,__LINE__,'open: ',file%fh, myfname
+    end if
 
 #ifdef TIMING
     call t_stopf("PIO_createfile")
