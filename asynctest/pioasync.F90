@@ -10,8 +10,8 @@ program pioasync
   integer :: pelist(3,1), val, ioroot
 
   integer :: mpi_comm_compute, mpi_comm_io, mpi_icomm_cio
-  type(iosystem_desc_t) :: iosystem
 
+  type(iosystem_desc_t) :: iosystem
 
   call mpi_init(ierr)
   call CheckMPIReturn('Call to MPI_INIT()',ierr,__FILE__,__LINE__)
@@ -142,11 +142,35 @@ subroutine piotest(iosystem)
   type(file_desc_t) :: file
   character(len=20) :: fname='afilename.nc'
   integer :: ierr, msg=999
+  type(var_desc_t) :: varid
+  integer :: dimid(2), gsiz(2)
 
   ierr= pio_createfile(iosystem, file, pio_iotype_netcdf, fname)
 
-  print *,__FILE__,__LINE__, iosystem%compmaster, iosystem%intercomm
+  gsiz(1) = 100
+  gsiz(2) = 250
+  print *, __FILE__,__LINE__
+  ierr= pio_def_dim(file, 'dim1', gsiz(1), dimid(1)) 
+  print *, __FILE__,__LINE__
 
+  ierr= pio_def_dim(file, 'dim2', gsiz(2), dimid(2)) 
+  print *, __FILE__,__LINE__, dimid
+
+  ierr = pio_def_var(file, 'var1', pio_double, dimid, varid)
+  print *, __FILE__,__LINE__
+
+  ierr = pio_enddef(file)
+  print *, __FILE__,__LINE__
+
+
+
+
+
+
+
+
+  call pio_closefile(file)
+  print *, __FILE__,__LINE__
 
   call mpi_bcast(msg, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
 

@@ -5,7 +5,7 @@ module utils_mod
   implicit none
   private
 
-  public :: WriteHeader
+  public :: WriteHeader, split_comm
 
 contains
 
@@ -91,5 +91,59 @@ subroutine ReadHeader(File,nx,ny,nz,dimid_x,dimid_y,dimid_z)
        endif
 
 end subroutine ReadHeader
+
+subroutine split_comm(initial_comm, nprocs, num_iotasks, stride, base, mpi_comm_compute, mpi_comm_io, intercomm)
+  use mpi   !_EXTERNAL
+  use pio_support !_EXTERNAL
+  integer, intent(in) :: initial_comm, nprocs, num_iotasks, stride, base
+  integer, intent(out) :: mpi_comm_compute, mpi_comm_io, intercomm
+
+  integer :: ierr
+  integer :: pelist(3,1), mpigrp_init, mpigrp_io, mpigrp_compute
+
+
+  mpi_comm_compute = MPI_COMM_NULL
+  mpi_comm_io = MPI_COMM_NULL
+
+  pelist(3,1) = base
+  pelist(2,1) = min(nprocs-1,num_iotasks*stride)
+  pelist(3,1) = stride
+
+  call mpi_comm_group(initial_comm, mpigrp_init, ierr)
+
+  call mpi_group_range_incl(mpigrp_init, 1, pelist, mpigrp_io, ierr)
+
+  call mpi_group_range_excl(mpigrp_init, 1, pelist, mpigrp_compute, ierr)
+
+  print *,__FILE__,__LINE__,mpigrp_io, mpigrp_compute
+  
+  call mpi_comm_create(initial_comm, mpigrp_compute, mpi_comm_compute, ierr)
+
+  call mpi_comm_create(initial_comm, mpigrp_io, mpi_comm_io, ierr)
+
+  print *,__FILE__,__LINE__,mpi_comm_compute,mpi_comm_io
+  if(mpi_comm_compute/=MPI_COMM_NULL) then
+     call mpi_intercomm_create(mpi_comm_compute, 0, initial_comm, base, 1, intercomm, ierr)
+  else if(mpi_comm_io/=MPI_COMM_NULL) then
+     if(base==0) then
+        if(stride>1) then
+           call mpi_intercomm_create(mpi_comm_io, 0, initial_comm, 1, 1, intercomm, ierr)
+        else
+           call mpi_intercomm_create(mpi_comm_io, 0, initial_comm, num_iotasks, 1, intercomm, ierr)
+        end if
+     else
+        call mpi_intercomm_create(mpi_comm_io, 0, initial_comm, 0, 1, intercomm, ierr)
+     end if
+  else
+    call piodie(__FILE__,__LINE__)
+  end if
+  print *,__FILE__,__LINE__,mpi_comm_compute,mpi_comm_io, intercomm
+
+
+
+end subroutine split_comm
+
+
+
 
 end module utils_mod

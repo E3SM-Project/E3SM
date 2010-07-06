@@ -128,6 +128,7 @@ program testpio
 
   character(len=80) :: fname, fname_r8,fname_r4,fname_i4
   logical, parameter :: Debug = .FALSE.
+  integer :: mpi_comm_compute, mpi_comm_io, mpi_icomm_cio
 
   character(len=3) :: citer
 
@@ -227,9 +228,17 @@ program testpio
 
   if(Debug)    print *,'testpio: before call to PIO_init'
 
-  call PIO_init(my_task, MPI_COMM_WORLD, num_iotasks, num_aggregator, stride, &
-       rearr_type, PIOSYS, base)
+  if(async) then
+!     print *,__FILE__,__LINE__,nprocs, num_iotasks, stride, base
+     call split_comm(mpi_comm_world,nprocs, num_iotasks, stride, base, &
+          mpi_comm_compute, mpi_comm_io, mpi_icomm_cio)
+     call PIO_init(mpi_comm_compute, mpi_comm_io, mpi_icomm_cio, PIOSYS)
+  else
+     mpi_comm_compute = mpi_comm_world
 
+     call PIO_init(my_task, MPI_COMM_COMPUTE, num_iotasks, num_aggregator, stride, &
+          rearr_type, PIOSYS, base)
+  end if
   if(Debug)    print *,'testpio: after call to PIO_init'
 
   gDims3D(1) = nx_global
@@ -248,7 +257,7 @@ program testpio
      call gdecomp_DOF(gdecomp,PIOSYS%comp_rank,compDOF,start,count)
      if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #3'
   else
-     call pio_readdof(trim(compdof_input),compDOF,MPI_COMM_WORLD,75)
+     call pio_readdof(trim(compdof_input),compDOF,MPI_COMM_COMPUTE,75)
      sdof = size(compDOF)
      start = gDims3D(1:3)   ! min tmp
      count = 0         ! max tmp
@@ -275,15 +284,15 @@ program testpio
   startCOMP(1:3) = start(1:3)
   countCOMP(1:3) = count(1:3)
   if (trim(compdof_output) /= 'none') then
-     call pio_writedof(trim(compdof_output),compDOF,MPI_COMM_WORLD,75)
+     call pio_writedof(trim(compdof_output),compDOF,MPI_COMM_COMPUTE,75)
   endif
 
   sdof = size(compDOF)
-  call MPI_REDUCE(sdof,sdof_sum,1,MPI_INTEGER,MPI_SUM,master_task,MPI_COMM_WORLD,ierr)
+  call MPI_REDUCE(sdof,sdof_sum,1,MPI_INTEGER,MPI_SUM,master_task,MPI_COMM_COMPUTE,ierr)
   call CheckMPIReturn('Call to MPI_REDUCE SUM',ierr,__FILE__,__LINE__)
-  call MPI_REDUCE(sdof,sdof_min,1,MPI_INTEGER,MPI_MIN,master_task,MPI_COMM_WORLD,ierr)
+  call MPI_REDUCE(sdof,sdof_min,1,MPI_INTEGER,MPI_MIN,master_task,MPI_COMM_COMPUTE,ierr)
   call CheckMPIReturn('Call to MPI_REDUCE MIN',ierr,__FILE__,__LINE__)
-  call MPI_REDUCE(sdof,sdof_max,1,MPI_INTEGER,MPI_MAX,master_task,MPI_COMM_WORLD,ierr)
+  call MPI_REDUCE(sdof,sdof_max,1,MPI_INTEGER,MPI_MAX,master_task,MPI_COMM_COMPUTE,ierr)
   call CheckMPIReturn('Call to MPI_REDUCE MAX',ierr,__FILE__,__LINE__)
   if (my_task == master_task) then
      write(6,*) trim(myname),' total nprocs = ',nprocs
@@ -643,16 +652,18 @@ if(writePhase) then
 
      if(TestR8) then
         dt_write_r8 = 0.
-        call MPI_Barrier(MPI_COMM_WORLD,ierr)
+        call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
         call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
         st = MPI_Wtime()
 #ifdef TIMING
         call t_startf('testpio_write')
 #endif
         do ivar=1,nvars
+           print *,__FILE__,__LINE__,ivar
            call PIO_write_darray(File_r8,vard_r8(ivar), iodesc_r8, test_r8wr, iostat)
            call check_pioerr(iostat,__FILE__,__LINE__,' r8 write_darray')
         end do
+        print *,__FILE__,__LINE__
 #ifdef TIMING
         call t_stopf('testpio_write')
 #endif
@@ -663,7 +674,7 @@ if(writePhase) then
 
      if(TestR4) then
         dt_write_r4 = 0.
-        call MPI_Barrier(MPI_COMM_WORLD,ierr)
+        call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
         call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
         st = MPI_Wtime()
 #ifdef TIMING
@@ -683,7 +694,7 @@ if(writePhase) then
 
      if(TestInt) then 
         dt_write_i4 = 0.
-        call MPI_Barrier(MPI_COMM_WORLD,ierr)
+        call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
         call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
         st = MPI_Wtime()
 #ifdef TIMING
@@ -725,7 +736,7 @@ if(writePhase) then
      endif
 
 endif
-     call MPI_Barrier(MPI_COMM_WORLD,ierr)
+     call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
      call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
 
 if (readPhase) then 
@@ -786,7 +797,7 @@ if (readPhase) then
      !-------------------------
      if(TestR8) then 
         dt_read_r8 = 0.
-        call MPI_Barrier(MPI_COMM_WORLD,ierr)
+        call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
         call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
         st = MPI_Wtime()
 #ifdef TIMING
@@ -806,7 +817,7 @@ if (readPhase) then
 
      if(TestR4) then
         dt_read_r4 = 0.
-        call MPI_Barrier(MPI_COMM_WORLD,ierr)
+        call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
         call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
         st = MPI_Wtime()
 #ifdef TIMING
@@ -826,7 +837,7 @@ if (readPhase) then
 
      if(TestInt) then
         dt_read_i4 = 0.
-        call MPI_Barrier(MPI_COMM_WORLD,ierr)
+        call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
         call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
         st = MPI_Wtime()
 #ifdef TIMING
@@ -862,7 +873,7 @@ if (readPhase) then
      if(TestR4) call PIO_CloseFile(File_r4)
      if(TestInt) call PIO_CloseFile(File_i4)
 
-     call MPI_Barrier(MPI_COMM_WORLD,ierr)
+     call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
      call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
 
      if(Debug) then
@@ -931,25 +942,25 @@ if (readPhase) then
      !---------------------------------------
      ! Print out the performance measurements 
      !---------------------------------------
-     call MPI_Barrier(MPI_COMM_WORLD,ierr)
+     call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
 endif
 
      if(TestR8) then
         ! Maximum read/write times
-        if(readPhase)  call GetMaxTime(dt_read_r8, gdt_read_r8(it), MPI_COMM_WORLD, ierr)
-        if(writePhase) call GetMaxTime(dt_write_r8, gdt_write_r8(it), MPI_COMM_WORLD, ierr)
+        if(readPhase)  call GetMaxTime(dt_read_r8, gdt_read_r8(it), MPI_COMM_COMPUTE, ierr)
+        if(writePhase) call GetMaxTime(dt_write_r8, gdt_write_r8(it), MPI_COMM_COMPUTE, ierr)
      endif
 
      if(TestR4) then
         ! Maximum read/write times
-        if(readPhase)  call GetMaxTime(dt_read_r4, gdt_read_r4(it), MPI_COMM_WORLD, ierr)
-        if(writePhase) call GetMaxTime(dt_write_r4, gdt_write_r4(it), MPI_COMM_WORLD, ierr)
+        if(readPhase)  call GetMaxTime(dt_read_r4, gdt_read_r4(it), MPI_COMM_COMPUTE, ierr)
+        if(writePhase) call GetMaxTime(dt_write_r4, gdt_write_r4(it), MPI_COMM_COMPUTE, ierr)
      endif
 
      if(TestInt) then
         ! Maximum read/write times
-        if(readPhase)  call GetMaxTime(dt_read_i4, gdt_read_i4(it), MPI_COMM_WORLD, ierr)
-        if(writePhase) call GetMaxTime(dt_write_i4, gdt_write_i4(it), MPI_COMM_WORLD, ierr)
+        if(readPhase)  call GetMaxTime(dt_read_i4, gdt_read_i4(it), MPI_COMM_COMPUTE, ierr)
+        if(writePhase) call GetMaxTime(dt_write_i4, gdt_write_i4(it), MPI_COMM_COMPUTE, ierr)
      endif
 
 
@@ -993,13 +1004,13 @@ endif
 
 #ifdef TIMING
   call t_stopf('testpio_total')
-  call t_prf('timing.testpio',MPI_COMM_WORLD)
+  call t_prf('timing.testpio',MPI_COMM_COMPUTE)
   call t_finalizef()
   call get_memusage(msize,mrss)
   allocate(lmem(2),gmem(2,0:nprocs-1))
   lmem(1) = msize
   lmem(2) = mrss
-  call mpi_gather(lmem,2,MPI_INTEGER,gmem,2,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
+  call mpi_gather(lmem,2,MPI_INTEGER,gmem,2,MPI_INTEGER,0,MPI_COMM_COMPUTE,ierr)
   if (my_task == master_task) then
      do n = 0,nprocs-1
         write(*,'(2a,i8,a,2f10.2)') myname,' my_task=',n,' : (hw, usage) memory (MB) = ',gmem(1,n)*mb_blk,gmem(2,n)*mb_blk
@@ -1011,7 +1022,7 @@ endif
   deallocate(lmem,gmem)
 #endif
 
-  call MPI_Barrier(MPI_COMM_WORLD,ierr)
+  call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
   if (my_task == master_task) then
      print *,' '
      print *,'testpio completed successfully'

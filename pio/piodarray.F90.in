@@ -57,8 +57,9 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-  subroutine write_darray_1d_{TYPE} (File,varDesc,ioDesc, array, iostat, fillval)
-
+  subroutine write_darray_1d_{TYPE} (File,varDesc,ioDesc, array, iostat, fillval, callback)
+    use mpi, only : mpi_comm_null, mpi_integer, {MPITYPE}  !_EXTERNAL
+    use pio_msg_mod, only : pio_msg_writedarray
     ! !DESCRIPTION:
     !  Writes a 2-d slab of TYPE to a netcdf file.
     !
@@ -80,28 +81,55 @@ contains
          array                 ! array to be written
 
     {VTYPE}, optional, intent(in) :: fillval    ! rearrange receiver fill value
+    integer, optional, intent(in) :: callback	
+    type(iosystem_desc_t), pointer :: ios
 
     integer(i4), intent(out) :: iostat
+    integer :: msg, ierr
 
     character(len=*), parameter :: subName=modName//'::write_darray_{TYPE}'
+       print *,__FILE__,__LINE__
+    ios => file%iosystem
+    if(ios%intercomm/=MPI_COMM_NULL .and. .not. present(callback)) then
+       msg = PIO_MSG_WRITEDARRAY
 
-    select case(File%iotype)
-    case(iotype_pbinary, iotype_direct_pbinary)
-       if (present(fillval)) then
-          call write_darray_bin_{TYPE}(File,varDesc,iodesc, array, iostat, fillval)
+       print *,__FILE__,__LINE__
+       call mpi_bcast(msg, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(vardesc%varid, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(vardesc%rec, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(iodesc%async_id, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast({MPITYPE}, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       print *,__FILE__,__LINE__, {MPITYPE}
+       
+       if(present(fillval)) then
+          call mpi_bcast(1, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+          call mpi_bcast(fillval, 1, {MPITYPE}, ios%compmaster, ios%intercomm, ierr)
        else
-          call write_darray_bin_{TYPE}(File,varDesc,iodesc, array, iostat)
-       endif
-    case(iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
-       if (present(fillval)) then
-          call write_darray_nf_{TYPE}(File,varDesc,iodesc, array, iostat, fillval)
-       else
-          call write_darray_nf_{TYPE}(File,varDesc,iodesc, array, iostat)
-       endif
-    case(iotype_binary)
-       print *, subName,': IO type not supported'
-    end select
+          call mpi_bcast(0, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       end if
+       print *,__FILE__,__LINE__
+    endif
 
+       print *,__FILE__,__LINE__
+
+       select case(File%iotype)
+       case(iotype_pbinary, iotype_direct_pbinary)
+          if (present(fillval)) then
+             call write_darray_bin_{TYPE}(File,varDesc,iodesc, array, iostat, fillval)
+          else
+             call write_darray_bin_{TYPE}(File,varDesc,iodesc, array, iostat)
+          endif
+       case(iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
+          if (present(fillval)) then
+             call write_darray_nf_{TYPE}(File,varDesc,iodesc, array, iostat, fillval)
+          else
+             call write_darray_nf_{TYPE}(File,varDesc,iodesc, array, iostat)
+          endif
+       case(iotype_binary)
+          print *, subName,': IO type not supported'
+       end select
+    
   end subroutine write_darray_1d_{TYPE}
 
 ! TYPE real,int,double

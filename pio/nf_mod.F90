@@ -15,7 +15,7 @@ module nf_mod
   use netcdf            ! _EXTERNAL
 #endif
   use pio_support, only : CheckMPIReturn
-
+  use pio_msg_mod
   implicit none
   private
 
@@ -726,8 +726,7 @@ contains
           if (File%iosystem%io_rank==0) then
              ierr=nf90_inquire_variable(File%fh,varid,ndims=ndims)
           endif
-
-          if(File%iosystem%num_tasks==File%iosystem%num_iotasks) then
+          if(File%iosystem%num_tasks==File%iosystem%num_iotasks .or. File%iosystem%intercomm/=MPI_COMM_NULL) then
              call MPI_BCAST(ndims,1,MPI_INTEGER,0,File%iosystem%IO_comm, mpierr)
              call CheckMPIReturn('nf_mod',mpierr)
           end if
@@ -739,10 +738,12 @@ contains
        end select
     endif
     call check_netcdf(File,ierr,_FILE_,__LINE__)
-    if(File%iosystem%num_tasks>File%iosystem%num_iotasks) then
+    if(File%iosystem%intercomm/=MPI_COMM_NULL) then
+       call MPI_BCAST(ndims,1,mpi_integer,file%iosystem%iomaster,file%iosystem%intercomm, mpierr)
+    else if(File%iosystem%num_tasks>File%iosystem%num_iotasks) then
        call MPI_BCAST(ndims,1,MPI_INTEGER,File%iosystem%IOMaster,File%iosystem%Comp_comm, mpierr)
-       call CheckMPIReturn('nf_mod',mpierr)
     end if
+    call CheckMPIReturn('nf_mod',mpierr)
   end function inq_varndims_vid
 
 !>
@@ -1191,20 +1192,30 @@ contains
 !! @param File @copydoc file_desc_t
 !! @retval ierr @copydoc error_return
 !<
-  integer function PIO_enddef(File) result(ierr)
+  integer function PIO_enddef(File, callback) result(ierr)
     type (File_desc_t), intent(inout) :: File
+    integer, intent(in), optional :: callback
+
+    type (iosystem_desc_t), pointer :: ios
 
     !------------------
     ! Local variables
     !------------------
     integer :: iotype, mpierr
     logical, parameter :: Check = .TRUE.
+    integer :: msg = PIO_MSG_ENDDEF
 
     iotype = File%iotype
 
     ierr=PIO_noerr
 
-    if(File%iosystem%IOproc) then
+    ios => file%iosystem
+
+    if(ios%intercomm /= MPI_COMM_NULL .and. .not. present(callback)) then
+       call mpi_bcast(msg, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+
+    else if(ios%IOproc) then
        select case(iotype)
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
@@ -1289,24 +1300,38 @@ contains
 !! @param len :  The size of the dimension
 !! @param dimid : The dimension identifier
 !<
-  integer function PIO_def_dim(File,name,len,dimid) result(ierr)
+  integer function PIO_def_dim(File,name,len,dimid, callback) result(ierr)
 
     type (File_desc_t), intent(in)  :: File
     character(len=*), intent(in)    :: name
     integer(i4), intent(in)         :: len
     integer(i4), intent(out)        :: dimid
+    integer(i4), optional           :: callback
 
     !------------------
     ! Local variables
     !------------------
+    type(iosystem_desc_t), pointer :: ios
     integer :: iotype, mpierr
     integer(kind=PIO_Offset)  :: clen
+    integer :: msg = PIO_MSG_DEF_DIM
 
     iotype = File%iotype
 
     ierr=PIO_noerr
+    ios => file%iosystem
+    if(ios%intercomm /= MPI_COMM_NULL .and. .not. present(callback)) then
+       call mpi_bcast(msg, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(len, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(len_trim(name), 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(name, len_trim(name), mpi_character, ios%compmaster, ios%intercomm, ierr)
 
-    if(File%iosystem%IOproc) then
+
+       call mpi_bcast(dimid, 1, mpi_integer, ios%iomaster, ios%intercomm, ierr)
+
+       
+    else if(ios%IOproc) then
        select case(iotype)
 
 #ifdef _PNETCDF
@@ -1333,8 +1358,10 @@ contains
        end select
     endif
     call check_netcdf(File, ierr,_FILE_,__LINE__)
-    if(File%iosystem%num_tasks>File%iosystem%num_iotasks) then
-       call MPI_BCAST(dimid, 1, MPI_INTEGER, File%iosystem%IOMaster, File%iosystem%Comp_Comm, ierr)
+    if(ios%intercomm /= MPI_COMM_NULL) then
+       call mpi_bcast(dimid, 1, mpi_integer, ios%iomaster, ios%intercomm, ierr)
+    else if(ios%num_tasks > ios%num_iotasks) then
+       call MPI_BCAST(dimid, 1, MPI_INTEGER, ios%IOMaster, ios%Comp_Comm, ierr)
     end if
   end function PIO_def_dim
 
@@ -1373,27 +1400,50 @@ contains
 !! @param vardesc @copydoc var_desc_t
 !! @retval ierr @copydoc error_return
 !<
-  integer function def_var_md(File,name,type,dimids,vardesc) result(ierr)
+  integer function def_var_md(File,name,type,dimids,vardesc, callback) result(ierr)
 
     type (File_desc_t), intent(in)  :: File
     character(len=*), intent(in)    :: name
     integer, intent(in)             :: type
     integer, intent(in)             :: dimids(:)
-    type (Var_desc_t), intent(inout) :: vardesc
+    integer, intent(in), optional   :: callback
 
+    type (Var_desc_t), intent(inout) :: vardesc
+    type(iosystem_desc_t), pointer :: ios
     !------------------
     ! Local variables
     !------------------
     integer :: iotype, mpierr,len
+    integer :: msg = PIO_MSG_DEF_VAR
 
+    print *,__FILE__,__LINE__
     iotype = File%iotype
+    print *,__FILE__,__LINE__
 
     ierr=PIO_noerr
+    print *,__FILE__,__LINE__
     vardesc%rec=-1
+    print *,__FILE__,__LINE__
 
     vardesc%type = type
+    print *,__FILE__,__LINE__
 
-    if(File%iosystem%IOproc) then
+    ios => file%iosystem
+    print *,__FILE__,__LINE__, ios%intercomm, mpi_comm_null
+    if(ios%intercomm /= MPI_COMM_NULL .and. .not. present(callback)) then
+       call mpi_bcast(msg, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(type, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(len_trim(name), 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(name, len_trim(name), mpi_character, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(size(dimids), 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(dimids, size(dimids), mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(vardesc%varid, 1, mpi_integer, ios%iomaster, ios%intercomm, ierr)
+
+       print *,__FILE__,__LINE__
+
+       
+    else if(ios%IOproc) then
        len = SIZE(dimids)
        select case(iotype)
 #ifdef _PNETCDF
@@ -1423,7 +1473,7 @@ contains
 #endif
 
           endif
-          if(File%iosystem%num_tasks==File%iosystem%num_iotasks) then
+          if(ios%num_tasks== ios%num_iotasks) then
              call MPI_BCAST(vardesc%varid, 1, MPI_INTEGER, 0, File%iosystem%IO_Comm, ierr)
           end if
 #endif
@@ -1434,7 +1484,7 @@ contains
        end select
     endif
     call check_netcdf(File, ierr,_FILE_,__LINE__)
-    if(File%iosystem%num_tasks>File%iosystem%num_iotasks) then
+    if(ios%num_tasks> ios%num_iotasks) then
        call MPI_BCAST(vardesc%varid, 1, MPI_INTEGER, File%iosystem%IOMaster, File%iosystem%Comp_Comm, ierr)
     end if
   end function def_var_md

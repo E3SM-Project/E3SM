@@ -796,12 +796,13 @@ contains
 !! @param iostart   The start index for the block-cyclic io decomposition
 !! @param iocount   The count for the block-cyclic io decomposition
 !<
-  subroutine PIO_initdecomp_dof(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount)
+  subroutine PIO_initdecomp_dof(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount, callback)
     type (iosystem_desc_t), intent(inout) :: iosystem
     integer(i4), intent(in)           :: basepiotype
     integer(i4), intent(in)           :: dims(:)
     integer (i4), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
-    integer (kind=PIO_offset), optional :: iostart(:), iocount(:)    
+    integer (kind=PIO_offset), optional :: iostart(:), iocount(:)
+    integer(i4), optional :: callback
     type (io_desc_t), intent(out)     :: iodesc
 
     integer(i4) :: length,n_iotasks
@@ -819,26 +820,43 @@ contains
     logical, parameter :: check = .true.
     integer(i4) :: ndisp
     integer(i4) :: iosize               ! rml
-
+    integer(i4) :: msg
 #ifdef MEMCHK
     integer :: msize, rss, mshare, mtext, mstack
 #endif
 
     integer ierror
 
+
+#ifdef TIMING
+    call t_startf("PIO_initdecomp_dof")
+#endif
+    print *,__FILE__,__LINE__
+    if(iosystem%intercomm /= MPI_COMM_NULL .and. .not. present(callback)) then
+       msg = PIO_MSG_INITDECOMP_DOF
+
+       print *,__FILE__,__LINE__
+       call mpi_bcast(msg, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+
+       call mpi_bcast(basepiotype, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+       call mpi_bcast(size(dims), 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+       call mpi_bcast(dims, size(dims), mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+
+       print *,__FILE__,__LINE__
+       call mpi_bcast(iodesc%async_id, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)  
+       print *,__FILE__,__LINE__, iodesc%async_id
+    endif
+
     if(minval(dims)<=0) then
        print *,_FILE_,__LINE__,dims
        call piodie(_FILE_,__LINE__,'bad value in dims argument')
     end if
 
-#ifdef TIMING
-    call t_startf("PIO_initdecomp_dof")
-#endif
     if (iosystem%comp_rank == 0 .and. debug) &
          print *,iosystem%comp_rank,': invoking PIO_initdecomp_dof'
 
     piotype=PIO_type_to_mpi_type(basepiotype)
-
+       
     !-------------------------------------------
     ! for testing purposes set the iomap
     ! (decompmap_t) to something basic for
@@ -859,20 +877,20 @@ contains
     !---------------------
     ! total global size
     !---------------------
-
+    
     glength=1
     do i=1,ndims
        glength = glength*dims(i)
     enddo
-
+       
 
     ! remember iocount() is only defined on io procs
     call alloc_check(iodesc%start,ndims)
     call alloc_check(iodesc%count,ndims)
     iodesc%basetype=piotype
-
+       
     iodesc%compsize=size(compdof)
-
+       
     iodesc%start=0
     iodesc%count=0
     if (iosystem%ioproc) then
@@ -892,7 +910,7 @@ contains
        call mpi_allreduce(iosize, iodesc%maxiobuflen, 1, mpi_integer, mpi_max, iosystem%io_comm, ierr)
        call checkmpireturn('mpi_allreduce in initdecomp',ierr)
 
-        if(debug) print *,'IAM: ',iosystem%comp_rank,' after getiostartandcount: count is: ',iodesc%count
+       if(debug) print *,'IAM: ',iosystem%comp_rank,' after getiostartandcount: count is: ',iodesc%count
 
 
        lenblocks=iodesc%count(1)
@@ -904,7 +922,7 @@ contains
           ndisp=0
        end if
        call alloc_check(displace,ndisp)
-
+       
        !--------------------------------------------
        ! calculate mpi data structure displacements 
        !--------------------------------------------
@@ -912,7 +930,7 @@ contains
        if(debug) print *,'PIO_initdecomp: calcdisplace', &
             ndisp,iosize,lenblocks, iodesc%start, iodesc%count
        call calcdisplace_box(dims,iodesc%start,iodesc%count,ndims,displace)
-
+          
        n_iotasks = iosystem%num_iotasks
        length = iosize                      ! rml
 
@@ -933,7 +951,7 @@ contains
        print *,_FILE_,__LINE__,'mem=',rss
     end if
 #endif
-    if(debug) print *,'iam: ',iosystem%io_rank, &
+    if(debug) print *,__FILE__,__LINE__,'iam: ',iosystem%io_rank, &
          'initdecomp: userearranger: ',userearranger, glength
 
     if(userearranger) then 
@@ -947,9 +965,7 @@ contains
        print *,_FILE_,__LINE__,'mem=',rss
     end if
 #endif
-
-
-
+    
     !---------------------------------------------
     !  the setup for the mpi-io type information 
     !---------------------------------------------
@@ -960,7 +976,7 @@ contains
        iodesc%write%n_elemtype = ndisp
        iodesc%write%n_words    = iodesc%write%n_elemtype*lenblocks
        call genindexedblock(lenblocks,piotype,iodesc%write%elemtype,iodesc%write%filetype,displace)
-
+       
        if(debug) print *,__FILE__,__LINE__,iodesc%write%n_elemtype,iodesc%write%n_words,iodesc%write%elemtype,iodesc%write%filetype
     else
        iodesc%write%n_elemtype=0
@@ -968,7 +984,7 @@ contains
        iodesc%write%elemtype = mpi_datatype_null
        iodesc%write%filetype = mpi_datatype_null
     endif
-
+    
 #ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
@@ -978,14 +994,14 @@ contains
 #endif
 
     call dupiodesc2(iodesc%write,iodesc%read)
-
+    
     if(debug) then
        print *, _FILE_,__LINE__,iodesc%read%filetype,iodesc%read%elemtype,&
             iodesc%read%n_elemtype,iodesc%read%n_words   
        print *, _FILE_,__LINE__,iodesc%write%filetype,iodesc%write%elemtype,&
             iodesc%write%n_elemtype,iodesc%write%n_words
     end if
-
+    
     if (iosystem%ioproc) then
        call dealloc_check(displace)
     endif
@@ -1571,6 +1587,7 @@ contains
           else
              iosystem%compmaster = MPI_PROC_NULL
           end if
+          call mpi_bcast(iosystem%num_iotasks, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)
        else
           call mpi_comm_rank(io_comm, iosystem%io_rank, ierr)
           if(check) call checkmpireturn('init: after call to comm_rank: ',ierr)
@@ -1583,7 +1600,13 @@ contains
           end if
           iosystem%ioproc = .true.
           iosystem%compmaster = 0
+
+          call mpi_bcast(iosystem%num_iotasks, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)
+
+          call pio_msg_handler_init()
           call pio_msg_handler(iosystem) 
+
+
        end if
     else
 ! not yet supported

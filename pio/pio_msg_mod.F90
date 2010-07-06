@@ -3,12 +3,40 @@ module pio_msg_mod
   use pio_types
 ! PIO ASYNC MESSAGE TAGS
    integer, parameter, public :: pio_msg_create_file = 300
-   integer, parameter, public :: pio_msg_exit = 999
+   integer, parameter, public :: pio_msg_def_dim = 301
+   integer, parameter, public :: pio_msg_def_var = 302
+   integer, parameter, public :: pio_msg_enddef = 303
+   integer, parameter, public :: pio_msg_initdecomp_dof = 304
+   integer, parameter, public :: pio_msg_writedarray = 305
 
+   integer, parameter, public :: pio_msg_exit = 999   
+   
+   type :: file_desc_list
+      type(file_desc_t), pointer :: file
+      type(file_desc_list), pointer :: next
+   end type file_desc_list
 
+   type(file_desc_list), target :: top_file
 
+   type :: io_desc_list
+      type(io_desc_t), pointer :: iodesc
+      type(io_desc_list), pointer :: next
+   end type io_desc_list
+
+   type(io_desc_list), target :: top_iodesc
+   
 
 contains
+
+  subroutine pio_msg_handler_init
+    
+    nullify(top_file%file)
+    nullify(top_file%next)
+    nullify(top_iodesc%iodesc)
+    nullify(top_iodesc%next)
+
+  end subroutine pio_msg_handler_init
+
 
   subroutine pio_msg_handler(iosystem)
     use pio_types
@@ -23,7 +51,17 @@ contains
        print *,__FILE__,__LINE__,msg
        select case(msg) 
        case (PIO_MSG_CREATE_FILE)
-          call create_file_handler(iosystem, ierr)
+          call create_file_handler(iosystem)
+       case (PIO_MSG_DEF_DIM)
+          call def_dim_handler(iosystem)
+       case (PIO_MSG_DEF_VAR)
+          call def_var_handler(iosystem)
+       case (PIO_MSG_ENDDEF)
+          call enddef_handler(iosystem)
+       case (PIO_MSG_INITDECOMP_DOF)
+          call initdecomp_dof_handler(iosystem)
+       case (PIO_MSG_WRITEDARRAY)
+          call writedarray_handler(iosystem)
        case (PIO_MSG_EXIT)
           print *,'Exiting'
        case default
@@ -37,32 +75,92 @@ contains
 
   end subroutine pio_msg_handler
 
+
+  subroutine add_to_file_list(file)
+    type(file_desc_t), pointer :: file
+    type(file_desc_list), pointer :: list_item
+
+    list_item=> top_file
+
+    if(associated(list_item%file)) then
+       do while(associated(list_item%file) .and. associated(list_item%next))
+          list_item => list_item%next
+       end do
+       if(associated(list_item%file)) then
+          allocate(list_item%next)
+          list_item=>list_item%next
+          nullify(list_item%next)
+       end if
+    end if
+    list_item%file => file
+
+  end subroutine add_to_file_list
+
+
+  subroutine add_to_iodesc_list(iodesc)
+    type(io_desc_t), pointer :: iodesc
+    type(io_desc_list), pointer :: list_item
+    integer :: id
+
+    list_item=> top_iodesc
+
+    id = 0
+    if(associated(list_item%iodesc)) then
+       do while(associated(list_item%iodesc) .and. associated(list_item%next))
+          list_item => list_item%next
+       end do
+       if(associated(list_item%iodesc)) then
+          id = max(id, list_item%iodesc%async_id+1)
+          allocate(list_item%next)
+          list_item=>list_item%next
+          nullify(list_item%next)
+       end if
+    end if
+    iodesc%async_id=id
+    list_item%iodesc => iodesc
+
+  end subroutine add_to_iodesc_list
+
+  function lookupfile(fh) result(file)
+    type(file_desc_t), pointer :: file
+    integer, intent(in) :: fh
+    type(file_desc_list), pointer :: list_item
+
+    integer :: fh1
+
+    fh1 = abs(fh)
+
+    list_item=> top_file
+    
+    do while(associated(list_item%file) )
+       if(abs(list_item%file%fh) == fh1) then
+          file => list_item%file
+          exit
+       end if
+       list_item=>list_item%next
+    end do
+
+
+  end function lookupfile
+
+  function lookupiodesc(async_id) result(iodesc)
+    type(io_desc_t), pointer :: iodesc
+    integer, intent(in) :: async_id
+    type(io_desc_list), pointer :: list_item
+
+
+    list_item=> top_iodesc
+    
+    do while(associated(list_item%iodesc) )
+       if(abs(list_item%iodesc%async_id) == async_id) then
+          iodesc => list_item%iodesc
+          exit
+       end if
+       list_item=>list_item%next
+    end do
+
+
+  end function lookupiodesc
+
 end module pio_msg_mod
-
-subroutine create_file_handler(iosystem, ierr)
-  use mpi !_EXTERNAL
-  use pio
-  use pio_kinds
-  implicit none
-  type(iosystem_desc_t) :: iosystem
-  integer :: ierr
-  integer :: iotype, amode
-  
-  character(len=char_len) :: fname
-  type(file_desc_t) :: file
-  
-  call mpi_bcast(fname, char_len, mpi_character, iosystem%compmaster, iosystem%intercomm, ierr)
-  call mpi_bcast(iotype, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
-  
-  call mpi_bcast(amode, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
-  
-  ierr= pio_createfile(iosystem, file, iotype, trim(fname), amode, 1)
-
-  print *,__FILE__,__LINE__, file%fh
-
-  call mpi_bcast(file%fh, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)
-
-
-end subroutine create_file_handler
-
 

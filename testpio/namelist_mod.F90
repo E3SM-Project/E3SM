@@ -17,7 +17,8 @@ module namelist_mod
 
     public :: broadcast_namelist
     public :: readtestpio_namelist
-
+    
+    logical, public :: async
     integer(i4), public :: nx_global,ny_global,nz_global
     integer(i4), public :: rearr_type
     integer(i4), public :: num_iotasks
@@ -46,6 +47,7 @@ module namelist_mod
 ! Variables whose values are derived form items in namelist io_nml:
 
     namelist /io_nml/  	&
+        async,          &
 	stride,  	&
         base,           &
         num_aggregator, &
@@ -87,6 +89,7 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
     ! set default values for namelist io_nml variables 
     !-------------------------------------------------
 
+    async = .false.
     DebugLevel=2
     stride = 0
     base = 0
@@ -135,6 +138,7 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
 
     string = 'namelist_input'
     write(*,*) ' '
+    write(*,*) trim(string),' async      = ',async
     write(*,*) trim(string),' casename   = ',trim(casename)
     write(*,*) trim(string),' nx_global  = ',nx_global
     write(*,*) trim(string),' ny_global  = ',ny_global
@@ -253,86 +257,102 @@ end subroutine ReadTestPIO_Namelist
 
 subroutine Broadcast_Namelist(caller, myID, root, comm, ierror)
 
-      use pio ! _EXTERNAL
+  use pio ! _EXTERNAL
 
-      implicit none
+  implicit none
 
-      include 'mpif.h' ! _EXTERNAL
+  include 'mpif.h' ! _EXTERNAL
 
-    character(len=*), intent(IN) :: caller
-    integer(i4),      intent(IN)  :: myID
-    integer(i4),      intent(IN)  :: root
-    integer(i4),      intent(IN)  :: comm
+  character(len=*), intent(IN) :: caller
+  integer(i4),      intent(IN)  :: myID
+  integer(i4),      intent(IN)  :: root
+  integer(i4),      intent(IN)  :: comm
 
-    integer(i4),      intent(OUT) :: ierror
+  integer(i4),      intent(OUT) :: ierror, itmp
 
-    character(len=*), parameter :: myname_=myname//'Broadcast_Namelist'
+  character(len=*), parameter :: myname_=myname//'Broadcast_Namelist'
 
-      !------------------------------------------
-      ! broadcast namelist info to all processors 
-      !------------------------------------------
+  !------------------------------------------
+  ! broadcast namelist info to all processors 
+  !------------------------------------------
 
-        call MPI_Bcast(num_iotasks, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
-        call CheckMPIReturn('Call to MPI_Bcast(num_iotasks)',ierror,__FILE__,__LINE__)
+  if(async) then
+     itmp=1
+  else
+     itmp=0
+  end if
 
-        call MPI_Bcast(num_iodofs, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
-        call CheckMPIReturn('Call to MPI_Bcast(num_iodofs)',ierror,__FILE__,__LINE__)
+  call MPI_Bcast(itmp, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(async)',ierror,__FILE__,__LINE__)
 
-        call MPI_Bcast(num_aggregator, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
-        call CheckMPIReturn('Call to MPI_Bcast(num_aggregator)',ierror,__FILE__,__LINE__)
+  if(itmp==1) then
+     async=.true.
+  else
+     async=.false.
+  end if
 
-        call MPI_Bcast(stride, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
-        call CheckMPIReturn('Call to MPI_Bcast(stride)',ierror,__FILE__,__LINE__)
 
-        call MPI_Bcast(base, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
-        call CheckMPIReturn('Call to MPI_Bcast(base)',ierror,__FILE__,__LINE__)
+  call MPI_Bcast(num_iotasks, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(num_iotasks)',ierror,__FILE__,__LINE__)
 
-        call MPI_Bcast(nx_global, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
-        call CheckMPIReturn('Call to MPI_Bcast(nx_global)',ierror,__FILE__,__LINE__)
+  call MPI_Bcast(num_iodofs, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(num_iodofs)',ierror,__FILE__,__LINE__)
 
-        call MPI_Bcast(ny_global, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
-        call CheckMPIReturn('Call to MPI_Bcast(ny_global)',ierror,__FILE__,__LINE__)
+  call MPI_Bcast(num_aggregator, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(num_aggregator)',ierror,__FILE__,__LINE__)
 
-        call MPI_Bcast(nz_global, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
-        call CheckMPIReturn('Call to MPI_Bcast(nz_global)',ierror,__FILE__,__LINE__)
+  call MPI_Bcast(stride, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(stride)',ierror,__FILE__,__LINE__)
 
-        call MPI_Bcast(nvars, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
-        call CheckMPIReturn('Call to MPI_Bcast(nvars)',ierror,__FILE__,__LINE__)
-        call MPI_Bcast(iotype, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
-        call CheckMPIReturn('Call to MPI_Bcast(iotype)',ierror,__FILE__,__LINE__)
+  call MPI_Bcast(base, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(base)',ierror,__FILE__,__LINE__)
 
-        call MPI_Bcast(ioFMTd, 4, MPI_CHARACTER, root, MPI_COMM_WORLD, ierror)
-        call CheckMPIReturn('Call to MPI_Bcast(ioFMTd)',ierror,__FILE__,__LINE__)
+  call MPI_Bcast(nx_global, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(nx_global)',ierror,__FILE__,__LINE__)
 
-        call MPI_Bcast(rearr, 8, MPI_CHARACTER, root, MPI_COMM_WORLD, ierror)
-        call CheckMPIReturn('Call to MPI_Bcast(rearr)',ierror,__FILE__,__LINE__)
+  call MPI_Bcast(ny_global, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(ny_global)',ierror,__FILE__,__LINE__)
 
-        call MPI_Bcast(rearr_type, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
-        call CheckMPIReturn('Call to MPI_Bcast(rearr_type)',ierror,__FILE__,__LINE__)
+  call MPI_Bcast(nz_global, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(nz_global)',ierror,__FILE__,__LINE__)
 
-        call MPI_Bcast(dir, 80, MPI_CHARACTER, root, MPI_COMM_WORLD, ierror)
-        call CheckMPIReturn('Call to MPI_Bcast(dir)',ierror,__FILE__,__LINE__)
+  call MPI_Bcast(nvars, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(nvars)',ierror,__FILE__,__LINE__)
+  call MPI_Bcast(iotype, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(iotype)',ierror,__FILE__,__LINE__)
 
-        call MPI_Bcast(compdof_input, 80, MPI_CHARACTER, root, MPI_COMM_WORLD, ierror)
-        call CheckMPIReturn('Call to MPI_Bcast(compdof_input)',ierror,__FILE__,__LINE__)
+  call MPI_Bcast(ioFMTd, 4, MPI_CHARACTER, root, MPI_COMM_WORLD, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(ioFMTd)',ierror,__FILE__,__LINE__)
 
-        call MPI_Bcast(compdof_output, 80, MPI_CHARACTER, root, MPI_COMM_WORLD, ierror)
-        call CheckMPIReturn('Call to MPI_Bcast(compdof_output)',ierror,__FILE__,__LINE__)
+  call MPI_Bcast(rearr, 8, MPI_CHARACTER, root, MPI_COMM_WORLD, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(rearr)',ierror,__FILE__,__LINE__)
 
-        call MPI_Bcast(iodof_input, 80, MPI_CHARACTER, root, MPI_COMM_WORLD, ierror)
-        call CheckMPIReturn('Call to MPI_Bcast(iodof_input)',ierror,__FILE__,__LINE__)
+  call MPI_Bcast(rearr_type, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(rearr_type)',ierror,__FILE__,__LINE__)
 
-        call MPI_Bcast(casename, 256, MPI_CHARACTER, root, MPI_COMM_WORLD, ierror)
-        call CheckMPIReturn('Call to MPI_Bcast(casename)',ierror,__FILE__,__LINE__)
-        
-        call MPI_Bcast(DebugLevel, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
-        call CheckMPIReturn('Call to MPI_Bcast(DebugLevel)',ierror,__FILE__,__LINE__)
+  call MPI_Bcast(dir, 80, MPI_CHARACTER, root, MPI_COMM_WORLD, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(dir)',ierror,__FILE__,__LINE__)
 
-        call MPI_Bcast(maxiter, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
-        call CheckMPIReturn('Call to MPI_Bcast(maxiter)',ierror,__FILE__,__LINE__)
+  call MPI_Bcast(compdof_input, 80, MPI_CHARACTER, root, MPI_COMM_WORLD, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(compdof_input)',ierror,__FILE__,__LINE__)
 
-        call MPI_Bcast(nprocsIO, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
-        call CheckMPIReturn('Call to MPI_Bcast(nprocsIO)',ierror,__FILE__,__LINE__)
+  call MPI_Bcast(compdof_output, 80, MPI_CHARACTER, root, MPI_COMM_WORLD, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(compdof_output)',ierror,__FILE__,__LINE__)
+
+  call MPI_Bcast(iodof_input, 80, MPI_CHARACTER, root, MPI_COMM_WORLD, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(iodof_input)',ierror,__FILE__,__LINE__)
+
+  call MPI_Bcast(casename, 256, MPI_CHARACTER, root, MPI_COMM_WORLD, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(casename)',ierror,__FILE__,__LINE__)
+
+  call MPI_Bcast(DebugLevel, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(DebugLevel)',ierror,__FILE__,__LINE__)
+
+  call MPI_Bcast(maxiter, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(maxiter)',ierror,__FILE__,__LINE__)
+
+  call MPI_Bcast(nprocsIO, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(nprocsIO)',ierror,__FILE__,__LINE__)
 
 end subroutine Broadcast_Namelist
 

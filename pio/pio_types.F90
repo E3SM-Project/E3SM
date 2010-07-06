@@ -138,7 +138,7 @@ module pio_types
         integer,pointer :: stype(:)   ! stype(num_iotasks)=mpi type for sends
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        
+        integer(i4) :: async_id
 
 
         type (DecompMap_t)  :: IOmap      ! IO decomposition map

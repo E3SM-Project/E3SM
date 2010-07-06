@@ -70,10 +70,13 @@ contains
 #ifdef TIMING
     call t_startf("pio_write_nfdarray_real")
 #endif
+
     iotype = File%iotype
 
     ierr = pio_inq_varndims(File, vardesc, ndims)
     ierr=PIO_noerr
+	print *,__FILE__,__LINE__,ndims	
+
 	
     if(file%iosystem%ioproc) then
        select case (iotype) 
@@ -119,7 +122,7 @@ contains
                 end if
              end if
           endif
-
+	  print *, __FILE__,__LINE__,ndims
           call alloc_check(temp_start,ndims)
           temp_start=start(1:ndims)
 
@@ -142,18 +145,21 @@ contains
              call MPI_SEND( temp_IOBUF,max_iobuf_size, &
                   MPI_REAL4, &
                   0,File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
+	print *,__FILE__,__LINE__,mpierr
              call CheckMPIReturn(subName, mpierr)
 
              call MPI_SEND( temp_start,ndims,MPI_INTEGER, &
                   0,File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
+	print *,__FILE__,__LINE__,mpierr
              call CheckMPIReturn(subName, mpierr)
 
              call MPI_SEND( temp_count,ndims,MPI_INTEGER, &
                   0,2*File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
+	print *,__FILE__,__LINE__,mpierr
              call CheckMPIReturn(subName, mpierr)
 
           endif
-
+	print *,__FILE__,__LINE__,File%iosystem%io_rank
           if (File%iosystem%io_rank==0) then 
              if (Debug) print *, subName,': 0: writing netcdf for self ', &
                   'fh=',File%fh,' varid=',varDesc%varid, temp_start, temp_count, size(iobuf)
@@ -233,8 +239,8 @@ contains
 #ifdef TIMING
     call t_stopf("pio_write_nfdarray_real")
 #endif
-  call mpi_barrier(file%iosystem%comp_comm, mpierr)
-  call CheckMPIReturn(subName,mpierr)
+!  call mpi_barrier(file%iosystem%comp_comm, mpierr)
+!  call CheckMPIReturn(subName,mpierr)
 
   end function WRITE_NFDARRAY_real
   ! note: IOBUF may actually point to the original data
@@ -285,10 +291,13 @@ contains
 #ifdef TIMING
     call t_startf("pio_write_nfdarray_int")
 #endif
+
     iotype = File%iotype
 
     ierr = pio_inq_varndims(File, vardesc, ndims)
     ierr=PIO_noerr
+	print *,__FILE__,__LINE__,ndims	
+
 	
     if(file%iosystem%ioproc) then
        select case (iotype) 
@@ -334,7 +343,7 @@ contains
                 end if
              end if
           endif
-
+	  print *, __FILE__,__LINE__,ndims
           call alloc_check(temp_start,ndims)
           temp_start=start(1:ndims)
 
@@ -357,18 +366,21 @@ contains
              call MPI_SEND( temp_IOBUF,max_iobuf_size, &
                   MPI_INTEGER, &
                   0,File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
+	print *,__FILE__,__LINE__,mpierr
              call CheckMPIReturn(subName, mpierr)
 
              call MPI_SEND( temp_start,ndims,MPI_INTEGER, &
                   0,File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
+	print *,__FILE__,__LINE__,mpierr
              call CheckMPIReturn(subName, mpierr)
 
              call MPI_SEND( temp_count,ndims,MPI_INTEGER, &
                   0,2*File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
+	print *,__FILE__,__LINE__,mpierr
              call CheckMPIReturn(subName, mpierr)
 
           endif
-
+	print *,__FILE__,__LINE__,File%iosystem%io_rank
           if (File%iosystem%io_rank==0) then 
              if (Debug) print *, subName,': 0: writing netcdf for self ', &
                   'fh=',File%fh,' varid=',varDesc%varid, temp_start, temp_count, size(iobuf)
@@ -448,8 +460,8 @@ contains
 #ifdef TIMING
     call t_stopf("pio_write_nfdarray_int")
 #endif
-  call mpi_barrier(file%iosystem%comp_comm, mpierr)
-  call CheckMPIReturn(subName,mpierr)
+!  call mpi_barrier(file%iosystem%comp_comm, mpierr)
+!  call CheckMPIReturn(subName,mpierr)
 
   end function WRITE_NFDARRAY_int
   ! note: IOBUF may actually point to the original data
@@ -500,10 +512,13 @@ contains
 #ifdef TIMING
     call t_startf("pio_write_nfdarray_double")
 #endif
+
     iotype = File%iotype
 
     ierr = pio_inq_varndims(File, vardesc, ndims)
     ierr=PIO_noerr
+	print *,__FILE__,__LINE__,ndims	
+
 	
     if(file%iosystem%ioproc) then
        select case (iotype) 
@@ -549,7 +564,7 @@ contains
                 end if
              end if
           endif
-
+	  print *, __FILE__,__LINE__,ndims
           call alloc_check(temp_start,ndims)
           temp_start=start(1:ndims)
 
@@ -572,18 +587,21 @@ contains
              call MPI_SEND( temp_IOBUF,max_iobuf_size, &
                   MPI_REAL8, &
                   0,File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
+	print *,__FILE__,__LINE__,mpierr
              call CheckMPIReturn(subName, mpierr)
 
              call MPI_SEND( temp_start,ndims,MPI_INTEGER, &
                   0,File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
+	print *,__FILE__,__LINE__,mpierr
              call CheckMPIReturn(subName, mpierr)
 
              call MPI_SEND( temp_count,ndims,MPI_INTEGER, &
                   0,2*File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
+	print *,__FILE__,__LINE__,mpierr
              call CheckMPIReturn(subName, mpierr)
 
           endif
-
+	print *,__FILE__,__LINE__,File%iosystem%io_rank
           if (File%iosystem%io_rank==0) then 
              if (Debug) print *, subName,': 0: writing netcdf for self ', &
                   'fh=',File%fh,' varid=',varDesc%varid, temp_start, temp_count, size(iobuf)
@@ -663,8 +681,8 @@ contains
 #ifdef TIMING
     call t_stopf("pio_write_nfdarray_double")
 #endif
-  call mpi_barrier(file%iosystem%comp_comm, mpierr)
-  call CheckMPIReturn(subName,mpierr)
+!  call mpi_barrier(file%iosystem%comp_comm, mpierr)
+!  call CheckMPIReturn(subName,mpierr)
 
   end function WRITE_NFDARRAY_double
 
