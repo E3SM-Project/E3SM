@@ -1429,7 +1429,7 @@ contains
     print *,__FILE__,__LINE__
 
     ios => file%iosystem
-    print *,__FILE__,__LINE__, ios%intercomm, mpi_comm_null
+
     if(ios%intercomm /= MPI_COMM_NULL .and. .not. present(callback)) then
        call mpi_bcast(msg, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
@@ -1439,10 +1439,6 @@ contains
        call mpi_bcast(size(dimids), 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast(dimids, size(dimids), mpi_integer, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast(vardesc%varid, 1, mpi_integer, ios%iomaster, ios%intercomm, ierr)
-
-       print *,__FILE__,__LINE__
-
-       
     else if(ios%IOproc) then
        len = SIZE(dimids)
        select case(iotype)
@@ -1484,7 +1480,7 @@ contains
        end select
     endif
     call check_netcdf(File, ierr,_FILE_,__LINE__)
-    if(ios%num_tasks> ios%num_iotasks) then
+    if(ios%intercomm == MPI_COMM_NULL .and. ios%num_tasks> ios%num_iotasks) then  
        call MPI_BCAST(vardesc%varid, 1, MPI_INTEGER, File%iosystem%IOMaster, File%iosystem%Comp_Comm, ierr)
     end if
   end function def_var_md

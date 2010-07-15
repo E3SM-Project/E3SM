@@ -37,8 +37,10 @@ module pio_types
 	sequence
 #endif
         integer(i4)              :: IO_comm            ! The IO communicator
-        integer(i4)              :: intercomm          ! the intercomm (may be MPI_COMM_NULL)
         integer(i4)              :: comp_comm          ! The Compute communicator
+        integer(i4)              :: intercomm          ! the intercomm (may be MPI_COMM_NULL)
+        
+        integer(i4)              :: my_comm          ! either comp_comm or intercomm
         integer(i4)              :: num_tasks        ! total number of tasks
         integer(i4)              :: num_iotasks        ! total number of IO tasks
         integer(i4)              :: io_stride          ! stride between IO tasks

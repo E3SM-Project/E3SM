@@ -222,7 +222,7 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
           stride = 1
           base=0
        else
-          num_iotasks = (nprocs-base)/stride
+          num_iotasks = max(1,(nprocs-base)/stride)
        endif
 #endif
     endif

@@ -17,6 +17,7 @@ module piodarray
   use perf_mod, only : t_startf, t_stopf   !_EXTERNAL
 #endif
   implicit none
+  include 'mpif.h'            !_EXTERNAL
   private
   public :: pio_read_darray, pio_write_darray
   
@@ -24,7 +25,7 @@ module piodarray
 !! @defgroup PIO_write_darray PIO_write_darray
 !! @brief The overloaded PIO_write_darray writes a distributed array to disk.
 !<
-# 23 "piodarray.F90.in"
+# 24 "piodarray.F90.in"
   interface PIO_write_darray
 ! TYPE real,int,double
 ! DIMS 1,2,3,4,5
@@ -76,10 +77,10 @@ module piodarray
 
 !> 
 !! @defgroup PIO_read_darray PIO_read_darray
-# 32 "piodarray.F90.in"
+# 33 "piodarray.F90.in"
 !! @brief The overloaded PIO_read_darray function reads a distributed array from disk.
 !<
-# 34 "piodarray.F90.in"
+# 35 "piodarray.F90.in"
   interface PIO_read_darray
 ! TYPE real,int,double
 ! DIMS 1,2,3,4,5
@@ -133,7 +134,7 @@ module piodarray
 !<
   character(len=*), parameter, private  :: modName='piodarray'
 
-# 45 "piodarray.F90.in"
+# 46 "piodarray.F90.in"
 contains
 
 ! TYPE real,int,double
@@ -149,9 +150,8 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 60 "piodarray.F90.in"
+# 61 "piodarray.F90.in"
   subroutine write_darray_1d_real (File,varDesc,ioDesc, array, iostat, fillval, callback)
-    use mpi, only : mpi_comm_null, mpi_integer, MPI_REAL4  !_EXTERNAL
     use pio_msg_mod, only : pio_msg_writedarray
     ! !DESCRIPTION:
     !  Writes a 2-d slab of TYPE to a netcdf file.
@@ -238,9 +238,8 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 60 "piodarray.F90.in"
+# 61 "piodarray.F90.in"
   subroutine write_darray_1d_int (File,varDesc,ioDesc, array, iostat, fillval, callback)
-    use mpi, only : mpi_comm_null, mpi_integer, MPI_INTEGER  !_EXTERNAL
     use pio_msg_mod, only : pio_msg_writedarray
     ! !DESCRIPTION:
     !  Writes a 2-d slab of TYPE to a netcdf file.
@@ -327,9 +326,8 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 60 "piodarray.F90.in"
+# 61 "piodarray.F90.in"
   subroutine write_darray_1d_double (File,varDesc,ioDesc, array, iostat, fillval, callback)
-    use mpi, only : mpi_comm_null, mpi_integer, MPI_REAL8  !_EXTERNAL
     use pio_msg_mod, only : pio_msg_writedarray
     ! !DESCRIPTION:
     !  Writes a 2-d slab of TYPE to a netcdf file.
@@ -980,7 +978,8 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
 # 192 "piodarray.F90.in"
-  subroutine read_darray_1d_real (File,varDesc, ioDesc, array, iostat)
+  subroutine read_darray_1d_real (File,varDesc, ioDesc, array, iostat, callback)
+    use pio_msg_mod, only : pio_msg_readdarray
     ! !DESCRIPTION:
     !  Reads a 2-d slab of TYPE to a netcdf file.
     !
@@ -1003,9 +1002,33 @@ contains
 
     integer(i4), intent(out) :: iostat
 
-    character(len=*), parameter :: subName=modName//'::read_darray_real'
+    integer(i4), optional, intent(in) :: callback
 
+    character(len=*), parameter :: subName=modName//'::read_darray_real'
+	
+    type(iosystem_desc_t), pointer :: ios
+    integer :: ierr, msg
+
+
+    print *,__FILE__,__LINE__,size(array)
     array = 0	
+    ios => File%iosystem
+
+
+
+    if(ios%intercomm/=MPI_COMM_NULL .and. .not. present(callback)) then
+       msg = PIO_MSG_READDARRAY
+
+       print *,__FILE__,__LINE__
+       call mpi_bcast(msg, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(vardesc%varid, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(vardesc%rec, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(iodesc%async_id, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(MPI_REAL4, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       print *,__FILE__,__LINE__, MPI_REAL4       
+    endif
+
     select case(File%iotype)
     case(iotype_pbinary, iotype_direct_pbinary)
        call read_darray_bin_real (File,varDesc,iodesc,array, iostat)
@@ -1030,7 +1053,8 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
 # 192 "piodarray.F90.in"
-  subroutine read_darray_1d_int (File,varDesc, ioDesc, array, iostat)
+  subroutine read_darray_1d_int (File,varDesc, ioDesc, array, iostat, callback)
+    use pio_msg_mod, only : pio_msg_readdarray
     ! !DESCRIPTION:
     !  Reads a 2-d slab of TYPE to a netcdf file.
     !
@@ -1053,9 +1077,33 @@ contains
 
     integer(i4), intent(out) :: iostat
 
-    character(len=*), parameter :: subName=modName//'::read_darray_int'
+    integer(i4), optional, intent(in) :: callback
 
+    character(len=*), parameter :: subName=modName//'::read_darray_int'
+	
+    type(iosystem_desc_t), pointer :: ios
+    integer :: ierr, msg
+
+
+    print *,__FILE__,__LINE__,size(array)
     array = 0	
+    ios => File%iosystem
+
+
+
+    if(ios%intercomm/=MPI_COMM_NULL .and. .not. present(callback)) then
+       msg = PIO_MSG_READDARRAY
+
+       print *,__FILE__,__LINE__
+       call mpi_bcast(msg, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(vardesc%varid, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(vardesc%rec, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(iodesc%async_id, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(MPI_INTEGER, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       print *,__FILE__,__LINE__, MPI_INTEGER       
+    endif
+
     select case(File%iotype)
     case(iotype_pbinary, iotype_direct_pbinary)
        call read_darray_bin_int (File,varDesc,iodesc,array, iostat)
@@ -1080,7 +1128,8 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
 # 192 "piodarray.F90.in"
-  subroutine read_darray_1d_double (File,varDesc, ioDesc, array, iostat)
+  subroutine read_darray_1d_double (File,varDesc, ioDesc, array, iostat, callback)
+    use pio_msg_mod, only : pio_msg_readdarray
     ! !DESCRIPTION:
     !  Reads a 2-d slab of TYPE to a netcdf file.
     !
@@ -1103,9 +1152,33 @@ contains
 
     integer(i4), intent(out) :: iostat
 
-    character(len=*), parameter :: subName=modName//'::read_darray_double'
+    integer(i4), optional, intent(in) :: callback
 
+    character(len=*), parameter :: subName=modName//'::read_darray_double'
+	
+    type(iosystem_desc_t), pointer :: ios
+    integer :: ierr, msg
+
+
+    print *,__FILE__,__LINE__,size(array)
     array = 0	
+    ios => File%iosystem
+
+
+
+    if(ios%intercomm/=MPI_COMM_NULL .and. .not. present(callback)) then
+       msg = PIO_MSG_READDARRAY
+
+       print *,__FILE__,__LINE__
+       call mpi_bcast(msg, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(vardesc%varid, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(vardesc%rec, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(iodesc%async_id, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(MPI_REAL8, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       print *,__FILE__,__LINE__, MPI_REAL8       
+    endif
+
     select case(File%iotype)
     case(iotype_pbinary, iotype_direct_pbinary)
        call read_darray_bin_double (File,varDesc,iodesc,array, iostat)
@@ -1130,7 +1203,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 242 "piodarray.F90.in"
+# 267 "piodarray.F90.in"
   subroutine read_darray_2d_real (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1169,7 +1242,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 242 "piodarray.F90.in"
+# 267 "piodarray.F90.in"
   subroutine read_darray_3d_real (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1208,7 +1281,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 242 "piodarray.F90.in"
+# 267 "piodarray.F90.in"
   subroutine read_darray_4d_real (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1247,7 +1320,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 242 "piodarray.F90.in"
+# 267 "piodarray.F90.in"
   subroutine read_darray_5d_real (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1286,7 +1359,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 242 "piodarray.F90.in"
+# 267 "piodarray.F90.in"
   subroutine read_darray_2d_int (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1325,7 +1398,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 242 "piodarray.F90.in"
+# 267 "piodarray.F90.in"
   subroutine read_darray_3d_int (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1364,7 +1437,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 242 "piodarray.F90.in"
+# 267 "piodarray.F90.in"
   subroutine read_darray_4d_int (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1403,7 +1476,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 242 "piodarray.F90.in"
+# 267 "piodarray.F90.in"
   subroutine read_darray_5d_int (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1442,7 +1515,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 242 "piodarray.F90.in"
+# 267 "piodarray.F90.in"
   subroutine read_darray_2d_double (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1481,7 +1554,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 242 "piodarray.F90.in"
+# 267 "piodarray.F90.in"
   subroutine read_darray_3d_double (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1520,7 +1593,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 242 "piodarray.F90.in"
+# 267 "piodarray.F90.in"
   subroutine read_darray_4d_double (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1559,7 +1632,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 242 "piodarray.F90.in"
+# 267 "piodarray.F90.in"
   subroutine read_darray_5d_double (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1597,7 +1670,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<
-# 279 "piodarray.F90.in"
+# 304 "piodarray.F90.in"
   subroutine write_darray_nf_real (File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -1707,7 +1780,12 @@ contains
        ! Rearrange data from comp->io decomp
        !------------------------------------
        ! "array" is comp data
+	print *,__FILE__,__LINE__,minval(array),maxval(array)
        call rearrange_comp2io(File%iosystem,iodesc, array, iobuf)
+       if(ioproc .and. minval(iobuf) == maxval(iobuf)) then
+         call piodie(__FILE__,__LINE__)  
+       endif
+	print *,__FILE__,__LINE__,minval(iobuf),maxval(iobuf)
 
 #if DEBUG_REARR
        call alloc_check(array2,size(array),'array2')
@@ -1826,7 +1904,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<
-# 279 "piodarray.F90.in"
+# 304 "piodarray.F90.in"
   subroutine write_darray_nf_int (File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -1936,7 +2014,12 @@ contains
        ! Rearrange data from comp->io decomp
        !------------------------------------
        ! "array" is comp data
+	print *,__FILE__,__LINE__,minval(array),maxval(array)
        call rearrange_comp2io(File%iosystem,iodesc, array, iobuf)
+       if(ioproc .and. minval(iobuf) == maxval(iobuf)) then
+         call piodie(__FILE__,__LINE__)  
+       endif
+	print *,__FILE__,__LINE__,minval(iobuf),maxval(iobuf)
 
 #if DEBUG_REARR
        call alloc_check(array2,size(array),'array2')
@@ -2055,7 +2138,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<
-# 279 "piodarray.F90.in"
+# 304 "piodarray.F90.in"
   subroutine write_darray_nf_double (File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -2165,7 +2248,12 @@ contains
        ! Rearrange data from comp->io decomp
        !------------------------------------
        ! "array" is comp data
+	print *,__FILE__,__LINE__,minval(array),maxval(array)
        call rearrange_comp2io(File%iosystem,iodesc, array, iobuf)
+       if(ioproc .and. minval(iobuf) == maxval(iobuf)) then
+         call piodie(__FILE__,__LINE__)  
+       endif
+	print *,__FILE__,__LINE__,minval(iobuf),maxval(iobuf)
 
 #if DEBUG_REARR
        call alloc_check(array2,size(array),'array2')
@@ -2284,7 +2372,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 507 "piodarray.F90.in"
+# 537 "piodarray.F90.in"
   subroutine write_darray_bin_real(File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -2475,7 +2563,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 507 "piodarray.F90.in"
+# 537 "piodarray.F90.in"
   subroutine write_darray_bin_int(File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -2666,7 +2754,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 507 "piodarray.F90.in"
+# 537 "piodarray.F90.in"
   subroutine write_darray_bin_double(File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -2857,7 +2945,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 697 "piodarray.F90.in"
+# 727 "piodarray.F90.in"
   subroutine read_darray_nf_real (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -2932,6 +3020,9 @@ contains
     offset = iodesc%IOmap%start
     len    = iodesc%IOmap%length
 
+    print *,__FILE__,__LINE__
+
+
     if (IOproc) then
 
        !-----------------------------
@@ -3009,7 +3100,9 @@ contains
        !------------------------------------
 
        ! "array" is comp data
+       print *,__FILE__,__LINE__
        call rearrange_io2comp(File%iosystem,iodesc,IOBUF,array) 
+       print *,__FILE__,__LINE__
 
 
 #if DEBUG_REARR
@@ -3064,7 +3157,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 697 "piodarray.F90.in"
+# 727 "piodarray.F90.in"
   subroutine read_darray_nf_int (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -3139,6 +3232,9 @@ contains
     offset = iodesc%IOmap%start
     len    = iodesc%IOmap%length
 
+    print *,__FILE__,__LINE__
+
+
     if (IOproc) then
 
        !-----------------------------
@@ -3216,7 +3312,9 @@ contains
        !------------------------------------
 
        ! "array" is comp data
+       print *,__FILE__,__LINE__
        call rearrange_io2comp(File%iosystem,iodesc,IOBUF,array) 
+       print *,__FILE__,__LINE__
 
 
 #if DEBUG_REARR
@@ -3271,7 +3369,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 697 "piodarray.F90.in"
+# 727 "piodarray.F90.in"
   subroutine read_darray_nf_double (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -3346,6 +3444,9 @@ contains
     offset = iodesc%IOmap%start
     len    = iodesc%IOmap%length
 
+    print *,__FILE__,__LINE__
+
+
     if (IOproc) then
 
        !-----------------------------
@@ -3423,7 +3524,9 @@ contains
        !------------------------------------
 
        ! "array" is comp data
+       print *,__FILE__,__LINE__
        call rearrange_io2comp(File%iosystem,iodesc,IOBUF,array) 
+       print *,__FILE__,__LINE__
 
 
 #if DEBUG_REARR
@@ -3478,7 +3581,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 903 "piodarray.F90.in"
+# 938 "piodarray.F90.in"
   subroutine read_darray_bin_real (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -3652,7 +3755,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 903 "piodarray.F90.in"
+# 938 "piodarray.F90.in"
   subroutine read_darray_bin_int (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -3826,7 +3929,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 903 "piodarray.F90.in"
+# 938 "piodarray.F90.in"
   subroutine read_darray_bin_double (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:

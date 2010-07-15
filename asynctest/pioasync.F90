@@ -5,6 +5,90 @@ program pioasync
 
   implicit none
 
+
+  character(len=256) :: w1
+  character(len=256) :: r1
+  character(len=256) :: r2
+  character(len=256) :: r3
+
+  integer :: rcode
+  
+  type(file_desc_t) :: pioid
+  
+
+
+  call mpi_init(rcode)
+
+  call MPI_COMM_RANK(MPI_COMM_WORLD,my_task(1),ierr)
+  call CheckMPIReturn('Call to MPI_COMM_RANK()',ierr,__FILE__,__LINE__)
+  call MPI_COMM_SIZE(MPI_COMM_WORLD,nprocs(1),ierr)
+  call CheckMPIReturn('Call to MPI_COMM_SIZE()',ierr,__FILE__,__LINE__)
+
+
+w1 = 'abcdef'
+
+! write cdata1, cdata2, cdata3.
+
+
+
+
+!--- write w1 as length 256
+lnx = len(w1)
+rcode = pio_def_dim(pioid,'string1',lnx,dimid(1))
+rcode = pio_def_var(pioid,'cdata1',PIO_CHAR,dimid,varid)
+rcode = pio_put_var(pioid,varid,w1)
+
+!--- write trim(w1) as length 256
+lnx = len(w1)
+rcode = pio_def_dim(pioid,'string2',lnx,dimid(1))
+rcode = pio_def_var(pioid,'cdata2',PIO_CHAR,dimid,varid)
+rcode = pio_put_var(pioid,varid,trim(w1))
+
+!--- write trim(w1) as length 6
+lnx = len_trim(w1)
+rcode = pio_def_dim(cpl_io_file,'string3',lnx,dimid(1))
+rcode = pio_def_var(cpl_io_file,'cdata3',PIO_CHAR,dimid,varid)
+rcode = pio_put_var(cpl_io_file,varid,trim(w1))
+
+! read them back
+
+!--- this one is ok
+rcode = pio_inq_varid(pioid,'cdata1',varid)
+rcode = pio_get_var(pioid,varid,r1)
+
+!--- this one is ok
+rcode = pio_inq_varid(pioid,'cdata2',varid)
+rcode = pio_get_var(pioid,varid,r2)
+
+!--- this one fails
+! rcode = pio_inq_varid(pioid,'cdata3',varid)
+! rcode = pio_get_var(pioid,varid,r3)
+
+! next compare
+
+write(6,*) 'w1:',trim(w1),':'
+write(6,*) 'r1:',trim(r1),':'
+write(6,*) 'r2:',trim(r2),':'
+! write(6,*) 'r3:',trim(r3),':'
+
+! this one seems ok
+if (trim(w1) == trim(r1)) then
+ write(6,*) 'w1=r1 '
+endif
+
+! this one doesn't even though i can't physically see a difference when writing them directly
+if (trim(w1) == trim(r2)) then
+ write(6,*) 'w1=r2 '
+endif
+
+write(6,*) 'end'
+
+
+#ifdef OLD
+
+
+
+
   integer :: ierr, my_task(3), nprocs(3)
   integer :: mpigrp_world, mpigrp_compute, mpigrp_io
   integer :: pelist(3,1), val, ioroot
@@ -127,7 +211,7 @@ program pioasync
 
   call piotest(iosystem)
 
-
+#endif
 
   call mpi_finalize(ierr)
 

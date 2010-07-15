@@ -114,12 +114,8 @@ contains
     end if
     tmpfh = file%fh
 
-    if(file%iosystem%intercomm==MPI_COMM_NULL) then
-       call mpi_bcast(tmpfh,1,mpi_integer, file%iosystem%iomaster, file%iosystem%comp_comm, mpierr)
-    else
-       print *,__FILE__,__LINE__,file%fh,file%iosystem%io_comm
-       call mpi_bcast(tmpfh,1,mpi_integer, 0, file%iosystem%io_comm, mpierr)
-    end if
+    call mpi_bcast(tmpfh,1,mpi_integer, file%iosystem%iomaster, file%iosystem%my_comm, mpierr)
+
     if(file%fh<0) file%fh=-tmpfh
 
     call check_netcdf(File, ierr,_FILE_,__LINE__)
@@ -200,6 +196,9 @@ contains
           if (File%iosystem%io_rank == 0) then
              ! Stores the ncid in File%fh
              ierr = nf90_open(fname,amode,File%fh)
+
+    print *, _FILE_,__LINE__,'CFILE open ',fname, amode, file%fh, ierr
+
              ! Set default to NOFILL for performance.  
              if(ierr .eq. NF90_NOERR .and. iand(amode, NF90_WRITE) > 0) then
                 ierr = nf90_set_fill(File%fh, NF90_NOFILL, ier2)
@@ -210,10 +209,10 @@ contains
     end if
 
     tmpfh = file%fh
-    call mpi_bcast(tmpfh,1,mpi_integer, file%iosystem%iomaster, file%iosystem%comp_comm, mpierr)
+    call mpi_bcast(tmpfh,1,mpi_integer, file%iosystem%iomaster, file%iosystem%my_comm, mpierr)
+
     if(file%fh<0) file%fh=-tmpfh
 
-    if(Debug) print *, _FILE_,__LINE__,'CFILE open ',file%fh
       
     call check_netcdf(File, ierr,_FILE_,__LINE__)
 

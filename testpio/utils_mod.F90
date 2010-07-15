@@ -105,7 +105,7 @@ subroutine split_comm(initial_comm, nprocs, num_iotasks, stride, base, mpi_comm_
   mpi_comm_compute = MPI_COMM_NULL
   mpi_comm_io = MPI_COMM_NULL
 
-  pelist(3,1) = base
+  pelist(1,1) = base
   pelist(2,1) = min(nprocs-1,num_iotasks*stride)
   pelist(3,1) = stride
 

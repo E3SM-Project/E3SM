@@ -73,9 +73,12 @@ contains
 
     iotype = File%iotype
 
+    print *,__FILE__,__LINE__
+
     ierr = pio_inq_varndims(File, vardesc, ndims)
     ierr=PIO_noerr
-	print *,__FILE__,__LINE__,ndims	
+
+    print *,__FILE__,__LINE__,ndims	
 
 	
     if(file%iosystem%ioproc) then
@@ -162,7 +165,7 @@ contains
 	print *,__FILE__,__LINE__,File%iosystem%io_rank
           if (File%iosystem%io_rank==0) then 
              if (Debug) print *, subName,': 0: writing netcdf for self ', &
-                  'fh=',File%fh,' varid=',varDesc%varid, temp_start, temp_count, size(iobuf)
+                  'fh=',File%fh,' varid=',varDesc%varid, temp_start, temp_count, minval(iobuf),maxval(iobuf)
              fh = file%fh
              vid = vardesc%varid
              ierr=nf90_put_var( fh, vid,IOBUF,temp_start,temp_count)
@@ -196,7 +199,7 @@ contains
                         i,2*File%iosystem%num_iotasks+i,File%iosystem%IO_comm,status,mpierr)
                    call CheckMPIReturn(subName,mpierr)
 
-                   if (Debug) print *, subName,': 0: writing netcdf for ',i, temp_start,temp_count
+                   if (Debug) print *, subName,': 0: writing netcdf for ',i, temp_start,temp_count,minval(temp_iobuf),maxval(temp_iobuf)
 	           if(sum(temp_count)>0) then
 
 #ifdef TIMING
@@ -294,9 +297,12 @@ contains
 
     iotype = File%iotype
 
+    print *,__FILE__,__LINE__
+
     ierr = pio_inq_varndims(File, vardesc, ndims)
     ierr=PIO_noerr
-	print *,__FILE__,__LINE__,ndims	
+
+    print *,__FILE__,__LINE__,ndims	
 
 	
     if(file%iosystem%ioproc) then
@@ -383,7 +389,7 @@ contains
 	print *,__FILE__,__LINE__,File%iosystem%io_rank
           if (File%iosystem%io_rank==0) then 
              if (Debug) print *, subName,': 0: writing netcdf for self ', &
-                  'fh=',File%fh,' varid=',varDesc%varid, temp_start, temp_count, size(iobuf)
+                  'fh=',File%fh,' varid=',varDesc%varid, temp_start, temp_count, minval(iobuf),maxval(iobuf)
              fh = file%fh
              vid = vardesc%varid
              ierr=nf90_put_var( fh, vid,IOBUF,temp_start,temp_count)
@@ -417,7 +423,7 @@ contains
                         i,2*File%iosystem%num_iotasks+i,File%iosystem%IO_comm,status,mpierr)
                    call CheckMPIReturn(subName,mpierr)
 
-                   if (Debug) print *, subName,': 0: writing netcdf for ',i, temp_start,temp_count
+                   if (Debug) print *, subName,': 0: writing netcdf for ',i, temp_start,temp_count,minval(temp_iobuf),maxval(temp_iobuf)
 	           if(sum(temp_count)>0) then
 
 #ifdef TIMING
@@ -515,9 +521,12 @@ contains
 
     iotype = File%iotype
 
+    print *,__FILE__,__LINE__
+
     ierr = pio_inq_varndims(File, vardesc, ndims)
     ierr=PIO_noerr
-	print *,__FILE__,__LINE__,ndims	
+
+    print *,__FILE__,__LINE__,ndims	
 
 	
     if(file%iosystem%ioproc) then
@@ -604,7 +613,7 @@ contains
 	print *,__FILE__,__LINE__,File%iosystem%io_rank
           if (File%iosystem%io_rank==0) then 
              if (Debug) print *, subName,': 0: writing netcdf for self ', &
-                  'fh=',File%fh,' varid=',varDesc%varid, temp_start, temp_count, size(iobuf)
+                  'fh=',File%fh,' varid=',varDesc%varid, temp_start, temp_count, minval(iobuf),maxval(iobuf)
              fh = file%fh
              vid = vardesc%varid
              ierr=nf90_put_var( fh, vid,IOBUF,temp_start,temp_count)
@@ -638,7 +647,7 @@ contains
                         i,2*File%iosystem%num_iotasks+i,File%iosystem%IO_comm,status,mpierr)
                    call CheckMPIReturn(subName,mpierr)
 
-                   if (Debug) print *, subName,': 0: writing netcdf for ',i, temp_start,temp_count
+                   if (Debug) print *, subName,': 0: writing netcdf for ',i, temp_start,temp_count,minval(temp_iobuf),maxval(temp_iobuf)
 	           if(sum(temp_count)>0) then
 
 #ifdef TIMING

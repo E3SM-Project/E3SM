@@ -1,13 +1,17 @@
 module pio_msg_mod
   use pio_kinds
   use pio_types
+  use pio_support, only : piodie, Debug=>DebugAsync
 ! PIO ASYNC MESSAGE TAGS
    integer, parameter, public :: pio_msg_create_file = 300
-   integer, parameter, public :: pio_msg_def_dim = 301
-   integer, parameter, public :: pio_msg_def_var = 302
-   integer, parameter, public :: pio_msg_enddef = 303
-   integer, parameter, public :: pio_msg_initdecomp_dof = 304
-   integer, parameter, public :: pio_msg_writedarray = 305
+   integer, parameter, public :: pio_msg_open_file = 301
+   integer, parameter, public :: pio_msg_close_file = 302
+   integer, parameter, public :: pio_msg_def_dim = 310
+   integer, parameter, public :: pio_msg_def_var = 312
+   integer, parameter, public :: pio_msg_enddef = 313
+   integer, parameter, public :: pio_msg_initdecomp_dof = 314
+   integer, parameter, public :: pio_msg_writedarray = 320
+   integer, parameter, public :: pio_msg_readdarray = 325
 
    integer, parameter, public :: pio_msg_exit = 999   
    
@@ -46,12 +50,16 @@ contains
     integer :: msg = 0, ierr
 
     do while(msg /= pio_msg_exit)
-       print *,__FILE__,__LINE__, iosystem%intercomm
+       if(Debug) print *,__FILE__,__LINE__, iosystem%intercomm
        call mpi_bcast(msg, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
-       print *,__FILE__,__LINE__,msg
+       if(Debug) print *,__FILE__,__LINE__,msg
        select case(msg) 
        case (PIO_MSG_CREATE_FILE)
           call create_file_handler(iosystem)
+       case (PIO_MSG_OPEN_FILE)
+          call open_file_handler(iosystem)
+       case (PIO_MSG_CLOSE_FILE)
+          call close_file_handler(iosystem)
        case (PIO_MSG_DEF_DIM)
           call def_dim_handler(iosystem)
        case (PIO_MSG_DEF_VAR)
@@ -62,14 +70,17 @@ contains
           call initdecomp_dof_handler(iosystem)
        case (PIO_MSG_WRITEDARRAY)
           call writedarray_handler(iosystem)
+       case (PIO_MSG_READDARRAY)
+          call readdarray_handler(iosystem)
        case (PIO_MSG_EXIT)
-          print *,'Exiting'
+          call finalize_handler(iosystem)
+          if(Debug) print *,'Exiting'
        case default
-          print *, 'Got unrecognized message ', msg, ierr
+          if(Debug) print *, 'Got unrecognized message ', msg, ierr
        end select   
     end do
 
-    print *,__FILE__,__LINE__
+    if(Debug) print *,__FILE__,__LINE__
     call mpi_finalize(ierr)
     stop
 
@@ -84,6 +95,7 @@ contains
 
     if(associated(list_item%file)) then
        do while(associated(list_item%file) .and. associated(list_item%next))
+       if(Debug) print *,__FILE__,__LINE__,list_item%file%fh
           list_item => list_item%next
        end do
        if(associated(list_item%file)) then
@@ -92,6 +104,7 @@ contains
           nullify(list_item%next)
        end if
     end if
+    if(Debug) print *,__FILE__,__LINE__,file%fh
     list_item%file => file
 
   end subroutine add_to_file_list
@@ -120,6 +133,36 @@ contains
     list_item%iodesc => iodesc
 
   end subroutine add_to_iodesc_list
+
+
+  subroutine list_delete_file(fh)
+    integer, intent(in) :: fh
+    type(file_desc_list), pointer :: list_item
+    integer :: fh1
+
+    fh1 = abs(fh)
+
+    list_item=> top_file
+
+    do while(associated(list_item%file) )
+       if(Debug) print *,__FILE__,__LINE__,list_item%file%fh,fh1
+       if(abs(list_item%file%fh) == fh1) then
+          nullify(list_item%file)
+          exit
+       end if
+       if(associated(list_item%next)) then
+          list_item=>list_item%next
+       else
+          call piodie(__FILE__,__LINE__)
+       end if
+    end do
+
+
+
+
+  end subroutine list_delete_file
+
+
 
   function lookupfile(fh) result(file)
     type(file_desc_t), pointer :: file
