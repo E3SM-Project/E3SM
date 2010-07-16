@@ -58,7 +58,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-  subroutine write_darray_1d_{TYPE} (File,varDesc,ioDesc, array, iostat, fillval, callback)
+  subroutine write_darray_1d_{TYPE} (File,varDesc,ioDesc, array, iostat, fillval)
     use pio_msg_mod, only : pio_msg_writedarray
     ! !DESCRIPTION:
     !  Writes a 2-d slab of TYPE to a netcdf file.
@@ -81,26 +81,26 @@ contains
          array                 ! array to be written
 
     {VTYPE}, optional, intent(in) :: fillval    ! rearrange receiver fill value
-    integer, optional, intent(in) :: callback	
     type(iosystem_desc_t), pointer :: ios
 
     integer(i4), intent(out) :: iostat
     integer :: msg, ierr
 
     character(len=*), parameter :: subName=modName//'::write_darray_{TYPE}'
-       print *,__FILE__,__LINE__
+
     ios => file%iosystem
-    if(ios%intercomm/=MPI_COMM_NULL .and. .not. present(callback)) then
+    if(ios%async_interface .and. .not. ios%ioproc) then
        msg = PIO_MSG_WRITEDARRAY
 
-       print *,__FILE__,__LINE__
+       if(debugasync) print *,__FILE__,__LINE__
        call mpi_bcast(msg, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast(vardesc%varid, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast(vardesc%rec, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(vardesc%ndims, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast(iodesc%async_id, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast({MPITYPE}, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-       print *,__FILE__,__LINE__, {MPITYPE}
+       if(debugasync) print *,__FILE__,__LINE__, {MPITYPE}
        
        if(present(fillval)) then
           call mpi_bcast(1, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
@@ -108,10 +108,8 @@ contains
        else
           call mpi_bcast(0, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        end if
-       print *,__FILE__,__LINE__
+       if(debugasync) print *,__FILE__,__LINE__
     endif
-
-       print *,__FILE__,__LINE__
 
        select case(File%iotype)
        case(iotype_pbinary, iotype_direct_pbinary)
@@ -189,7 +187,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-  subroutine read_darray_1d_{TYPE} (File,varDesc, ioDesc, array, iostat, callback)
+  subroutine read_darray_1d_{TYPE} (File,varDesc, ioDesc, array, iostat)
     use pio_msg_mod, only : pio_msg_readdarray
     ! !DESCRIPTION:
     !  Reads a 2-d slab of TYPE to a netcdf file.
@@ -213,8 +211,6 @@ contains
 
     integer(i4), intent(out) :: iostat
 
-    integer(i4), optional, intent(in) :: callback
-
     character(len=*), parameter :: subName=modName//'::read_darray_{TYPE}'
 	
     type(iosystem_desc_t), pointer :: ios
@@ -227,17 +223,17 @@ contains
 
 
 
-    if(ios%intercomm/=MPI_COMM_NULL .and. .not. present(callback)) then
+    if(ios%async_interface .and. .not. ios%ioproc) then
        msg = PIO_MSG_READDARRAY
 
-       print *,__FILE__,__LINE__
+       if(DebugAsync) print *,__FILE__,__LINE__
        call mpi_bcast(msg, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast(vardesc%varid, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast(vardesc%rec, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast(iodesc%async_id, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast({MPITYPE}, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-       print *,__FILE__,__LINE__, {MPITYPE}       
+       if(DebugAsync) print *,__FILE__,__LINE__, {MPITYPE}       
     endif
 
     select case(File%iotype)
@@ -415,13 +411,13 @@ contains
        if(ioproc .and. minval(iobuf) == maxval(iobuf)) then
          call piodie(__FILE__,__LINE__)  
        endif
-	print *,__FILE__,__LINE__,minval(iobuf),maxval(iobuf)
+	if(Debug) print *,__FILE__,__LINE__,minval(iobuf),maxval(iobuf)
 
 #if DEBUG_REARR
        call alloc_check(array2,size(array),'array2')
 
        call rearrange_io2comp(File%iosystem,iodesc,IOBUF,array2)
-
+	
        do i=1,size(array)
           if (array(i) /= array2(i)) then
              print *, subName,': error: write ping-pong test failed on index',i
@@ -447,7 +443,6 @@ contains
 #endif
 
     if (IOproc) then
-
        !----------------------------------------------
        ! write the global 2-d slice from IO processors
        !----------------------------------------------
@@ -496,6 +491,7 @@ contains
        call alloc_check(start, 0)
        call alloc_check(count, 0)
     endif
+	print *,__FILE__,__LINE__
 #ifdef TIMING
     call t_startf("pio_write_nf")
 #endif
@@ -517,6 +513,7 @@ contains
 
     !-----------------------------------------------------------------------
     !EOC
+	print *,__FILE__,__LINE__
 #ifdef TIMING
     call t_stopf("pio_write_darray")
 #endif
@@ -797,8 +794,6 @@ contains
     glen   = iodesc%glen
     offset = iodesc%IOmap%start
     len    = iodesc%IOmap%length
-
-    print *,__FILE__,__LINE__
 
 
     if (IOproc) then

@@ -15,7 +15,7 @@ module piolib_mod
   !--------------
   use alloc_mod
   !--------------
-  use pio_support, only : piodie, debug, debugio, checkmpireturn
+  use pio_support, only : piodie, debug, debugio, debugasync, checkmpireturn
   !
   use ionf_mod, only : create_nf, open_nf,close_nf, sync_nf
   use pionfread_mod, only : read_nf
@@ -34,6 +34,12 @@ module piolib_mod
   save
 
   include 'mpif.h'    ! _EXTERNAL
+
+#if defined CPRLAHEY
+	! this is a bug in file mpif.h on edinburgh
+	integer, parameter :: MPI_ROOT=-3
+#endif
+
 
   ! !public member functions:
 
@@ -813,13 +819,12 @@ contains
 !! @param iostart   The start index for the block-cyclic io decomposition
 !! @param iocount   The count for the block-cyclic io decomposition
 !<
-  subroutine PIO_initdecomp_dof(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount, callback)
+  subroutine PIO_initdecomp_dof(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount)
     type (iosystem_desc_t), intent(inout) :: iosystem
     integer(i4), intent(in)           :: basepiotype
     integer(i4), intent(in)           :: dims(:)
     integer (i4), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
     integer (kind=PIO_offset), optional :: iostart(:), iocount(:)
-    integer(i4), optional :: callback
     type (io_desc_t), intent(out)     :: iodesc
 
     integer(i4) :: length,n_iotasks
@@ -849,20 +854,20 @@ contains
 #ifdef TIMING
     call t_startf("PIO_initdecomp_dof")
 #endif
-
-    if(iosystem%intercomm /= MPI_COMM_NULL .and. .not. present(callback)) then
+print *,__FILE__,__LINE__, iosystem%async_interface ,iosystem%ioproc
+    if(iosystem%async_interface .and. .not. iosystem%ioproc) then
        msg = PIO_MSG_INITDECOMP_DOF
        is_async=.true.
-       print *,__FILE__,__LINE__
+       if(DebugAsync) print*,__FILE__,__LINE__
        call mpi_bcast(msg, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
 
        call mpi_bcast(basepiotype, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
        call mpi_bcast(size(dims), 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
        call mpi_bcast(dims, size(dims), mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
 
-       print *,__FILE__,__LINE__
+       if(DebugAsync) print*,__FILE__,__LINE__
        call mpi_bcast(iodesc%async_id, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)  
-       print *,__FILE__,__LINE__, iodesc%async_id
+       if(DebugAsync) print*,__FILE__,__LINE__, iodesc%async_id
     endif
 
     if(minval(dims)<=0) then
@@ -873,7 +878,7 @@ contains
     if (iosystem%comp_rank == 0 .and. debug) &
          print *,iosystem%comp_rank,': invoking PIO_initdecomp_dof'
 
-    print *,__FILE__,__LINE__
+    if(DebugAsync) print*,__FILE__,__LINE__
     piotype=PIO_type_to_mpi_type(basepiotype)
        
     !-------------------------------------------
@@ -912,7 +917,7 @@ contains
        
     iodesc%start=0
     iodesc%count=0
-    print *,__FILE__,__LINE__, iosystem%num_tasks, iosystem%num_iotasks, iosystem%io_rank, iosystem%io_comm
+    if(DebugAsync) print*,__FILE__,__LINE__, iosystem%num_tasks, iosystem%num_iotasks, iosystem%io_rank, iosystem%io_comm
 
     if (iosystem%ioproc) then
        if(present(iostart) .and. present(iocount)) then
@@ -963,7 +968,7 @@ contains
        iodesc%iomap%length = length
        iodesc%glen = glength
     endif
-    print *,__FILE__,__LINE__
+    if(DebugAsync) print*,__FILE__,__LINE__
 
 #ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
@@ -976,10 +981,10 @@ contains
          'initdecomp: userearranger: ',userearranger, glength
 
     if(userearranger) then 
-       print *,__FILE__,__LINE__
+       if(DebugAsync) print*,__FILE__,__LINE__
        call rearrange_create( iosystem,compdof,dims,ndims,iodesc)
     endif
-    print *,__FILE__,__LINE__
+    if(DebugAsync) print*,__FILE__,__LINE__
 #ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
@@ -1017,12 +1022,12 @@ contains
 
     call dupiodesc2(iodesc%write,iodesc%read)
     
-    if(debug) then
-       print *, _FILE_,__LINE__,iodesc%read%filetype,iodesc%read%elemtype,&
-            iodesc%read%n_elemtype,iodesc%read%n_words   
-       print *, _FILE_,__LINE__,iodesc%write%filetype,iodesc%write%elemtype,&
-            iodesc%write%n_elemtype,iodesc%write%n_words
-    end if
+!    if(debug) then
+!       print*, _FILE_,__LINE__,iodesc%read%filetype,iodesc%read%elemtype,&
+!            iodesc%read%n_elemtype,iodesc%read%n_words   
+!       print *, _FILE_,__LINE__,iodesc%write%filetype,iodesc%write%elemtype,&
+!            iodesc%write%n_elemtype,iodesc%write%n_words
+!    end if
     
     if (iosystem%ioproc) then
        call dealloc_check(displace)
@@ -1172,10 +1177,8 @@ contains
        else
           fanfactor = ntasks/(pes_per_dim(1)*pes_per_dim(2))
        end if
-       print *,__FILE__,__LINE__,fanfactor, pes_per_dim, gdims, count
        call mpi_allreduce(fanfactor,rtmp,1,MPI_REAL8,MPI_MAX,iocomm,ierr)
        fanfactor=rtmp
-       print *,__FILE__,__LINE__,fanfactor
        if(verbose) print *,'iorank: ',iorank,'getiostartandcount: pes_per_dim is: ',pes_per_dim
        if(verbose) print *,'iorank: ',iorank,' getiostartandcount: fan factor is: ',fanfactor
        it=it+1
@@ -1352,6 +1355,7 @@ contains
     iosystem%rearr = rearr
     iosystem%intercomm = MPI_COMM_NULL
     iosystem%my_comm = comp_comm
+    iosystem%async_interface = .false.
 
     call mpi_comm_size(comp_comm,iosystem%num_tasks,ierr)
 
@@ -1594,7 +1598,8 @@ contains
     iosystem%comp_rank= -1
     iosystem%io_rank  = -1
     iosystem%io_stride = 1
-    
+    iosystem%async_interface = .true.
+
     call mpi_comm_test_inter(intercomm, is_inter, ierr)
     if(check) call checkmpireturn('init: after call to comm_test_inter: ',ierr)
 
@@ -1688,14 +1693,13 @@ contains
 !! @param iosystem : @copydoc io_desc_t
 !! @retval ierr @copydoc  error_return
 !<
-  subroutine finalize(iosystem,ierr, callback)
+  subroutine finalize(iosystem,ierr)
      type (iosystem_desc_t), intent(inout) :: iosystem 
      integer(i4), intent(out) :: ierr
-     integer(i4), intent(in), optional :: callback
      
      integer :: msg
 
-     if(iosystem%intercomm/=MPI_COMM_NULL .and. .not. present(callback)) then
+     if(iosystem%async_interface .and. .not. iosystem%ioproc) then
        msg = PIO_MSG_EXIT
        call mpi_bcast(msg, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
      end if
@@ -1932,13 +1936,12 @@ contains
 !! @param amode_in : the creation mode flag. the following flags are available: PIO_clobber, PIO_noclobber. 
 !! @retval ierr @copydoc error_return
 !<
-  integer function createfile(iosystem, file,iotype, fname, amode_in, callback) result(ierr)
+  integer function createfile(iosystem, file,iotype, fname, amode_in) result(ierr)
     type (iosystem_desc_t), intent(inout), target :: iosystem
     type (file_desc_t), intent(out) :: file
     integer, intent(in) :: iotype
     character(len=*), intent(in)  :: fname
     integer, optional, intent(in) :: amode_in
-    integer, optional, intent(in) :: callback
     
     ! ===================
     !  local variables
@@ -1952,15 +1955,10 @@ contains
 #ifdef TIMING
     call t_startf("PIO_createfile")
 #endif
-    print *,__FILE__,__LINE__,fname
+
     if(debug) print *,'createfile: {comp,io}_rank:',iosystem%comp_rank,iosystem%io_rank,'io proc: ',iosystem%ioproc
     ierr=PIO_noerr
     
-    if(present(callback)) then
-       iscallback = .true.
-    else
-       iscallback = .false.
-    end if
 
     if(present(amode_in)) then
        amode = amode_in
@@ -1970,7 +1968,8 @@ contains
 
     file%iotype = iotype 
     myfname = fname
-    if(.not. iscallback) then
+
+    if(.not. (iosystem%async_interface .and. iosystem%ioproc)) then
        call mpi_bcast(amode, 1, MPI_INTEGER, 0, iosystem%comp_comm, ierr)
        call mpi_bcast(file%iotype, 1, MPI_INTEGER, 0, iosystem%comp_comm, ierr)
 
@@ -2003,11 +2002,11 @@ contains
     end if
 #endif
 
-    if(iosystem%intercomm /= MPI_COMM_NULL .and. .not. present(callback)) then
-       print *,__FILE__,__LINE__, iosystem%intercomm
+    if(iosystem%async_interface .and. .not. iosystem%ioproc) then
+       if(debugasync) print *,__FILE__,__LINE__, iosystem%intercomm
        msg = PIO_MSG_CREATE_FILE
        call mpi_bcast(msg, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
-       print *,__FILE__,__LINE__, msg
+       if(debugasync) print *,__FILE__,__LINE__, msg
 
        call mpi_bcast(myfname, char_len, mpi_character, iosystem%compmaster, iosystem%intercomm, ierr)
        call mpi_bcast(iotype, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
@@ -2015,13 +2014,13 @@ contains
 
        if(iosystem%error_handling==PIO_BCAST_ERROR) then
           call mpi_bcast(ierr, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)       
-          print *,__FILE__,__LINE__, ierr
+          if(debugasync) print *,__FILE__,__LINE__, ierr
        end if
 
 
        call mpi_bcast(file%fh, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)
        file%fh = -file%fh
-       print *,__FILE__,__LINE__, file%fh
+       if(debugasync) print *,__FILE__,__LINE__, file%fh
 
 
     else
@@ -2032,7 +2031,6 @@ contains
           end if
           ierr = create_mpiio(file,myfname)
        case( iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-          print *,__FILE__,__LINE__
           ierr = create_nf(file,myfname, amode)	
           if(debug .and. iosystem%io_rank==0)print *,_FILE_,__LINE__,' open: ', myfname, file%fh
        case(iotype_binary)
@@ -2066,13 +2064,13 @@ contains
 !! variables, and attributes, or deleting attributes.) 
 !! @retval ierr @copydoc error_return
 !<
-  integer function PIO_openfile(iosystem, file, iotype, fname,mode, callback) result(ierr)
+  integer function PIO_openfile(iosystem, file, iotype, fname,mode) result(ierr)
     type (iosystem_desc_t), intent(inout), target :: iosystem
     type (file_desc_t), intent(out) :: file
     integer, intent(in) :: iotype
     character(len=*), intent(in)  :: fname
     integer, optional, intent(in) :: mode
-    integer, optional, intent(in) :: callback
+
     ! ===================
     !  local variables
     ! ================
@@ -2086,12 +2084,12 @@ contains
     call t_startf("PIO_openfile")
 #endif
 
-    if(iosystem%ioproc .and. present(callback)) then
+    if(iosystem%ioproc .and. iosystem%async_interface) then
        is_callback=.true.
     end if
 
 
-    print *,'PIO_openfile: {comp,io}_rank:',iosystem%comp_rank,iosystem%io_rank,'io proc: ',iosystem%ioproc, is_callback
+    if(Debug .or. Debugasync) print *,'PIO_openfile: {comp,io}_rank:',iosystem%comp_rank,iosystem%io_rank,'io proc: ',iosystem%ioproc, is_callback
 
     ierr=PIO_noerr
 
@@ -2139,12 +2137,11 @@ contains
           print *,'Length of filename exceeds compile time max, increase char_len in pio_kinds and recompile'
           call piodie( _FILE_,__LINE__)
        end if
-    print *,__FILE__,__LINE__,myfname
+
        call mpi_bcast(myfname, len(fname), mpi_character, 0, iosystem%comp_comm, ierr)
     end if
-    print *,__FILE__,__LINE__, iosystem%intercomm 
-    if(iosystem%intercomm /= MPI_COMM_NULL .and. .not. is_callback) then
-    print *,__FILE__,__LINE__,myfname
+
+    if(iosystem%async_interface .and. .not. is_callback) then
        msg = PIO_MSG_OPEN_FILE
        call mpi_bcast(msg, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
        
@@ -2154,15 +2151,11 @@ contains
 
        if(iosystem%error_handling==PIO_BCAST_ERROR) then
           call mpi_bcast(ierr, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)       
-          print *,__FILE__,__LINE__, ierr
        end if
-       print *,__FILE__,__LINE__, file%fh
 
        call mpi_bcast(file%fh, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)
        file%fh = -file%fh
-       print *,__FILE__,__LINE__, file%fh
     else
-    print *,__FILE__,__LINE__, myfname
 
        select case(iotype)
        case(iotype_pbinary, iotype_direct_pbinary)
@@ -2280,10 +2273,9 @@ contains
 !! @details
 !! @param file @copydoc file_desc_t
 !< 
-  subroutine closefile(file, callback)
+  subroutine closefile(file)
 
     type (file_desc_t),intent(inout)   :: file
-    integer, optional, intent(in) :: callback
 
     integer :: ierr, msg
     integer :: iotype 
@@ -2292,7 +2284,7 @@ contains
 #ifdef TIMING
     call t_startf("PIO_closefile")
 #endif
-    if(file%iosystem%intercomm/=MPI_COMM_NULL .and. .not. present(callback)) then
+    if(file%iosystem%async_interface .and. .not. file%iosystem%ioproc) then
        msg = PIO_MSG_CLOSE_FILE
        call mpi_bcast(msg, 1, mpi_integer, file%iosystem%compmaster, file%iosystem%intercomm, ierr)
        call mpi_bcast(file%fh, 1, mpi_integer, file%iosystem%compmaster, file%iosystem%intercomm, ierr)

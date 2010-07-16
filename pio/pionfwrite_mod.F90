@@ -72,13 +72,12 @@ contains
 #endif
 
     iotype = File%iotype
+!    Can't do this with async it creates and endless callback situation.
+!    ierr = pio_inq_varndims(File, vardesc, ndims)
 
-    print *,__FILE__,__LINE__
-
-    ierr = pio_inq_varndims(File, vardesc, ndims)
     ierr=PIO_noerr
-
-    print *,__FILE__,__LINE__,ndims	
+    ndims  = vardesc%ndims
+    Print *,__FILE__,__LINE__,vardesc%ndims	
 
 	
     if(file%iosystem%ioproc) then
@@ -296,13 +295,12 @@ contains
 #endif
 
     iotype = File%iotype
+!    Can't do this with async it creates and endless callback situation.
+!    ierr = pio_inq_varndims(File, vardesc, ndims)
 
-    print *,__FILE__,__LINE__
-
-    ierr = pio_inq_varndims(File, vardesc, ndims)
     ierr=PIO_noerr
-
-    print *,__FILE__,__LINE__,ndims	
+    ndims  = vardesc%ndims
+    Print *,__FILE__,__LINE__,vardesc%ndims	
 
 	
     if(file%iosystem%ioproc) then
@@ -520,13 +518,12 @@ contains
 #endif
 
     iotype = File%iotype
+!    Can't do this with async it creates and endless callback situation.
+!    ierr = pio_inq_varndims(File, vardesc, ndims)
 
-    print *,__FILE__,__LINE__
-
-    ierr = pio_inq_varndims(File, vardesc, ndims)
     ierr=PIO_noerr
-
-    print *,__FILE__,__LINE__,ndims	
+    ndims  = vardesc%ndims
+    Print *,__FILE__,__LINE__,vardesc%ndims	
 
 	
     if(file%iosystem%ioproc) then

@@ -52,6 +52,7 @@ module pio_types
         integer(i4)              :: compMaster           ! The comp_rank of the io_rank 0
         logical(log_kind)        :: IOproc             ! .true. if an IO processor
         logical(log_kind)        :: UseRearranger      ! .true. if data rearrangement is necessary
+        logical(log_kind)        :: async_interface    ! .true. if using the async interface model
         integer(i4)              :: rearr         ! type of rearranger
                                                   ! e.g. rearr_{none,mct,box}
 	integer(i4)              :: error_handling ! how pio handles errors
@@ -162,8 +163,9 @@ module pio_types
 #endif	
         integer(i4)     :: varID
         integer(i4)     :: rec   ! This is a record number or pointer into the unlim dimension of the	    
-	integer(i4)     :: type
                                  ! netcdf file
+	integer(i4)     :: type
+        integer(i4)     :: ndims ! number of dimensions as defined on the netcdf file.
     end type 
 
 !>

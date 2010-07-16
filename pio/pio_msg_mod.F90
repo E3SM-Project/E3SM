@@ -1,7 +1,15 @@
 module pio_msg_mod
   use pio_kinds
   use pio_types
-  use pio_support, only : piodie, Debug=>DebugAsync
+  use pio_support, only : piodie, DebugAsync
+
+  implicit none
+  private
+  public :: pio_msg_handler_init, pio_msg_handler
+
+
+  public :: add_to_file_list, lookupfile, delete_from_file_list, lookupiodesc, add_to_iodesc_list
+
 ! PIO ASYNC MESSAGE TAGS
    integer, parameter, public :: pio_msg_create_file = 300
    integer, parameter, public :: pio_msg_open_file = 301
@@ -12,6 +20,25 @@ module pio_msg_mod
    integer, parameter, public :: pio_msg_initdecomp_dof = 314
    integer, parameter, public :: pio_msg_writedarray = 320
    integer, parameter, public :: pio_msg_readdarray = 325
+   integer, parameter, public :: pio_msg_inquire = 330
+   integer, parameter, public :: pio_msg_inqatt = 331
+   integer, parameter, public :: pio_msg_inqattname = 332
+   integer, parameter, public :: pio_msg_inq_varid = 333
+   integer, parameter, public :: pio_msg_inq_varname = 334
+   integer, parameter, public :: pio_msg_inq_vardimid = 335
+   integer, parameter, public :: pio_msg_inq_varnatts = 336
+   integer, parameter, public :: pio_msg_inq_varndims = 337
+   integer, parameter, public :: pio_msg_inq_vartype = 338
+   integer, parameter, public :: pio_msg_inq_dimid = 339
+   integer, parameter, public :: pio_msg_inq_dimlen = 340
+   integer, parameter, public :: pio_msg_inq_dimname = 341
+   integer, parameter, public :: pio_msg_inqattlen = 342
+   
+   
+
+
+
+   
 
    integer, parameter, public :: pio_msg_exit = 999   
    
@@ -44,15 +71,18 @@ contains
 
   subroutine pio_msg_handler(iosystem)
     use pio_types
-    use mpi ! _EXTERNAL
+
     implicit none
+
     type(iosystem_desc_t) :: iosystem
     integer :: msg = 0, ierr
+    include 'mpif.h' !_EXTERNAL
+ 
 
     do while(msg /= pio_msg_exit)
-       if(Debug) print *,__FILE__,__LINE__, iosystem%intercomm
+       if(Debugasync) print *,__FILE__,__LINE__, iosystem%intercomm
        call mpi_bcast(msg, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
-       if(Debug) print *,__FILE__,__LINE__,msg
+       if(Debugasync) print *,__FILE__,__LINE__,msg
        select case(msg) 
        case (PIO_MSG_CREATE_FILE)
           call create_file_handler(iosystem)
@@ -72,15 +102,19 @@ contains
           call writedarray_handler(iosystem)
        case (PIO_MSG_READDARRAY)
           call readdarray_handler(iosystem)
+       case (PIO_MSG_INQ_VARNDIMS)
+          call inq_varndims_handler(iosystem)
+       case (PIO_MSG_INQ_VARID)
+          call inq_varid_handler(iosystem)
        case (PIO_MSG_EXIT)
           call finalize_handler(iosystem)
-          if(Debug) print *,'Exiting'
+          if(Debugasync) print *,'Exiting'
        case default
-          if(Debug) print *, 'Got unrecognized message ', msg, ierr
+          if(Debugasync) print *, 'Got unrecognized message ', msg, ierr
        end select   
     end do
 
-    if(Debug) print *,__FILE__,__LINE__
+    if(Debugasync) print *,__FILE__,__LINE__
     call mpi_finalize(ierr)
     stop
 
@@ -95,7 +129,7 @@ contains
 
     if(associated(list_item%file)) then
        do while(associated(list_item%file) .and. associated(list_item%next))
-       if(Debug) print *,__FILE__,__LINE__,list_item%file%fh
+       if(Debugasync) print *,__FILE__,__LINE__,list_item%file%fh
           list_item => list_item%next
        end do
        if(associated(list_item%file)) then
@@ -104,7 +138,7 @@ contains
           nullify(list_item%next)
        end if
     end if
-    if(Debug) print *,__FILE__,__LINE__,file%fh
+    if(Debugasync) print *,__FILE__,__LINE__,file%fh
     list_item%file => file
 
   end subroutine add_to_file_list
@@ -135,7 +169,7 @@ contains
   end subroutine add_to_iodesc_list
 
 
-  subroutine list_delete_file(fh)
+  subroutine delete_from_file_list(fh)
     integer, intent(in) :: fh
     type(file_desc_list), pointer :: list_item
     integer :: fh1
@@ -145,7 +179,7 @@ contains
     list_item=> top_file
 
     do while(associated(list_item%file) )
-       if(Debug) print *,__FILE__,__LINE__,list_item%file%fh,fh1
+       if(Debugasync) print *,__FILE__,__LINE__,list_item%file%fh,fh1
        if(abs(list_item%file%fh) == fh1) then
           nullify(list_item%file)
           exit
@@ -160,7 +194,7 @@ contains
 
 
 
-  end subroutine list_delete_file
+  end subroutine delete_from_file_list
 
 
 
@@ -170,7 +204,7 @@ contains
     type(file_desc_list), pointer :: list_item
 
     integer :: fh1
-
+    
     fh1 = abs(fh)
 
     list_item=> top_file
