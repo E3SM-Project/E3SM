@@ -93,14 +93,14 @@ subroutine ReadHeader(File,nx,ny,nz,dimid_x,dimid_y,dimid_z)
 end subroutine ReadHeader
 
 subroutine split_comm(initial_comm, nprocs, num_iotasks, stride, base, mpi_comm_compute, mpi_comm_io, intercomm)
-  use mpi   !_EXTERNAL
   use pio_support !_EXTERNAL
   integer, intent(in) :: initial_comm, nprocs, num_iotasks, stride, base
   integer, intent(out) :: mpi_comm_compute, mpi_comm_io, intercomm
 
   integer :: ierr
   integer :: pelist(3,1), mpigrp_init, mpigrp_io, mpigrp_compute
-
+  implicit none
+  include 'mpif.h'
 
   mpi_comm_compute = MPI_COMM_NULL
   mpi_comm_io = MPI_COMM_NULL
