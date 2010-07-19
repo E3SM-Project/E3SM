@@ -1,10 +1,11 @@
 subroutine create_file_handler(iosystem)
-  use mpi !_EXTERNAL
   use pio, only : iosystem_desc_t, file_desc_t, pio_createfile
   use pio_kinds, only : char_len
   use pio_msg_mod, only : add_to_file_list
   use pio_support, only : debugAsync
   implicit none
+  include 'mpif.h' !_EXTERNAL
+
   type(iosystem_desc_t) :: iosystem
 
   integer :: ierr
@@ -28,13 +29,14 @@ subroutine create_file_handler(iosystem)
 end subroutine create_file_handler
 
 subroutine open_file_handler(iosystem)
-  use mpi !_EXTERNAL
   use pio
   use piolib_mod
   use pio_kinds
   use pio_msg_mod
   use pio_support, only : debugAsync
   implicit none
+  include 'mpif.h' !_EXTERNAL
+
   type(iosystem_desc_t) :: iosystem
 
   integer :: ierr
@@ -58,12 +60,12 @@ subroutine open_file_handler(iosystem)
 end subroutine open_file_handler
 
 subroutine def_dim_handler(iosystem)
-  use mpi !_EXTERNAL
   use pio
   use pio_kinds
   use pio_msg_mod
   use pio_support, only : debugAsync
   implicit none
+  include 'mpif.h' !_EXTERNAL
 
   type(iosystem_desc_t) :: iosystem
   type(file_desc_t), pointer :: file
@@ -95,12 +97,12 @@ subroutine def_dim_handler(iosystem)
 end subroutine def_dim_handler
 
 subroutine def_var_handler(iosystem)
-  use mpi !_EXTERNAL
   use pio
   use pio_kinds
   use pio_msg_mod
   use pio_support, only : debugAsync
   implicit none
+  include 'mpif.h' !_EXTERNAL
 
   type(iosystem_desc_t) :: iosystem
   type(file_desc_t), pointer :: file
@@ -135,7 +137,9 @@ end subroutine def_var_handler
 subroutine enddef_handler(iosystem)
   use pio
   use pio_msg_mod
-  use mpi ! _EXTERNAL
+  implicit none
+  include 'mpif.h' !_EXTERNAL
+
   type(iosystem_desc_t) :: iosystem
   type(file_desc_t), pointer :: file
 
@@ -151,12 +155,13 @@ subroutine enddef_handler(iosystem)
 end subroutine enddef_handler
 
 subroutine initdecomp_dof_handler(iosystem)
-  use mpi !_EXTERNAL
+
   use pio
   use pio_kinds
   use pio_msg_mod
   use pio_support, only : debugAsync
   implicit none
+  include 'mpif.h' !_EXTERNAL
 
   type(iosystem_desc_t) :: iosystem
 
@@ -184,12 +189,12 @@ subroutine initdecomp_dof_handler(iosystem)
 end subroutine initdecomp_dof_handler
 
 subroutine writedarray_handler(iosystem)
-  use mpi !_EXTERNAL
   use pio
   use pio_kinds
   use pio_msg_mod
   use pio_support, only : debugAsync
   implicit none
+  include 'mpif.h' !_EXTERNAL
 
   type(iosystem_desc_t) :: iosystem
   type(file_desc_t), pointer :: file
@@ -245,12 +250,12 @@ end subroutine writedarray_handler
 
 
 subroutine readdarray_handler(iosystem)
-  use mpi !_EXTERNAL
   use pio
   use pio_kinds
   use pio_msg_mod
   use pio_support, only : debugAsync
   implicit none
+  include 'mpif.h' !_EXTERNAL
 
   type(iosystem_desc_t) :: iosystem
   type(file_desc_t), pointer :: file
@@ -289,9 +294,11 @@ end subroutine readdarray_handler
 subroutine close_file_handler(iosystem)
   use pio, only: iosystem_desc_t, file_desc_t, pio_closefile
   use pio_msg_mod, only: lookupfile, delete_from_file_list
-  use mpi !_EXTERNAL
   use pio_support, only : debugAsync
   implicit none
+  include 'mpif.h' !_EXTERNAL
+
+
   type(iosystem_desc_t) :: iosystem
   type(file_desc_t), pointer :: file
   integer :: fh, ierr
@@ -308,11 +315,13 @@ end subroutine close_file_handler
 
 subroutine inq_varndims_handler(iosystem)
   use pio, only: iosystem_desc_t, file_desc_t, pio_inq_varndims
-  use mpi !_EXTERNAL
   use pio_msg_mod, only : lookupfile
   use pio_support, only : debugAsync
   
   implicit none
+  include 'mpif.h' !_EXTERNAL
+
+
   type(iosystem_desc_t) :: iosystem
   type(file_desc_t), pointer :: file
   integer :: fh, ierr, varid, ndims
@@ -331,11 +340,12 @@ end subroutine inq_varndims_handler
 
 subroutine inq_varid_handler(iosystem)
   use pio, only: iosystem_desc_t, file_desc_t, pio_inq_varid, pio_max_name
-  use mpi !_EXTERNAL
   use pio_msg_mod, only : lookupfile
   use pio_support, only : debugAsync
   
   implicit none
+  include 'mpif.h' !_EXTERNAL
+
   type(iosystem_desc_t) :: iosystem
   type(file_desc_t), pointer :: file
   integer :: fh, ierr, nlen, varid
