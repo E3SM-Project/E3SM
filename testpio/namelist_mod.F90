@@ -268,9 +268,10 @@ subroutine Broadcast_Namelist(caller, myID, root, comm, ierror)
   integer(i4),      intent(IN)  :: root
   integer(i4),      intent(IN)  :: comm
 
-  integer(i4),      intent(OUT) :: ierror, itmp
+  integer(i4),      intent(OUT) :: ierror
 
   character(len=*), parameter :: myname_=myname//'Broadcast_Namelist'
+  integer(i4) :: itmp
 
   !------------------------------------------
   ! broadcast namelist info to all processors 
