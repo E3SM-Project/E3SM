@@ -100,7 +100,7 @@ subroutine split_comm(initial_comm, nprocs, num_iotasks, stride, base, mpi_comm_
   integer :: ierr
   integer :: pelist(3,1), mpigrp_init, mpigrp_io, mpigrp_compute
   implicit none
-  include 'mpif.h'
+  include 'mpif.h' !_EXTERNAL
 
   mpi_comm_compute = MPI_COMM_NULL
   mpi_comm_io = MPI_COMM_NULL
