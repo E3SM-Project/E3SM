@@ -182,7 +182,7 @@ my \$confopts = {all=>" --enable-pnetcdf --enable-mpiio --enable-netcdf --enable
 my \$testlist = {all=>["sn01","sn02","sn03","sb01","sb02","sb03","sb04","sb05","sb06","sb07","sb08",
                       "pn01","pn02","pn03","pb01","pb02","pb03","pb04","pb05","pb06","pb07","pb08",
                       "bn01","bn02","bn03","bb01","bb02","bb03","bb04","bb05","bb06","bb07","bb08",
-                      "wr01","rd01"],
+                      "wr01","rd01","apb05","asb01","asb04"],
 		snet=>["sn01","sn02","sn03","sb01","sb02","sb03","sb04","sb05","sb06","sb07","sb08"],
 		pnet=>["pn01","pn02","pn03","pb01","pb02","pb03","pb04","pb05","pb06","pb07","pb08"],
 		ant=>["sn02","sb02","pn02","pb02","bn02","bb02"],

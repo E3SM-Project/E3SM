@@ -446,8 +446,6 @@ subroutine box_rearrange_comp2io_real (IOsystem, ioDesc, s1, src, s2, &
   integer,pointer :: sreq(:)
   integer,pointer :: rreq(:)      ! receive requests
 
-  logical :: is_async=.false.
-
 
   ! begin
   if ( present( comm_option ) ) then
@@ -676,8 +674,6 @@ subroutine box_rearrange_comp2io_double (IOsystem, ioDesc, s1, src, s2, &
   integer,pointer :: a2a_recvtypes(:)
   integer,pointer :: sreq(:)
   integer,pointer :: rreq(:)      ! receive requests
-
-  logical :: is_async=.false.
 
 
   ! begin
@@ -908,8 +904,6 @@ subroutine box_rearrange_comp2io_int (IOsystem, ioDesc, s1, src, s2, &
   integer,pointer :: sreq(:)
   integer,pointer :: rreq(:)      ! receive requests
 
-  logical :: is_async=.false.
-
 
   ! begin
   if ( present( comm_option ) ) then
@@ -1098,7 +1092,7 @@ end subroutine box_rearrange_comp2io_int
 !  rearrange from the io decomposition to the comp decomposition
 !
 ! TYPE real,double,int
-# 452 "box_rearrange.F90.in"
+# 450 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_real (IOsystem, ioDesc, s1, iobuf, &
    s2, compbuf, comm_option, fc_options)
   implicit none
@@ -1169,7 +1163,7 @@ end subroutine box_rearrange_io2comp_real
 !  rearrange from the io decomposition to the comp decomposition
 !
 ! TYPE real,double,int
-# 452 "box_rearrange.F90.in"
+# 450 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_double (IOsystem, ioDesc, s1, iobuf, &
    s2, compbuf, comm_option, fc_options)
   implicit none
@@ -1240,7 +1234,7 @@ end subroutine box_rearrange_io2comp_double
 !  rearrange from the io decomposition to the comp decomposition
 !
 ! TYPE real,double,int
-# 452 "box_rearrange.F90.in"
+# 450 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_int (IOsystem, ioDesc, s1, iobuf, &
    s2, compbuf, comm_option, fc_options)
   implicit none
@@ -1305,7 +1299,7 @@ subroutine box_rearrange_io2comp_int (IOsystem, ioDesc, s1, iobuf, &
 end subroutine box_rearrange_io2comp_int
 #else /* not _MPISERIAL */
 ! TYPE real,double,int
-# 516 "box_rearrange.F90.in"
+# 514 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -1524,7 +1518,7 @@ subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
 
 end subroutine box_rearrange_io2comp_real
 ! TYPE real,double,int
-# 516 "box_rearrange.F90.in"
+# 514 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -1743,7 +1737,7 @@ subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
 
 end subroutine box_rearrange_io2comp_double
 ! TYPE real,double,int
-# 516 "box_rearrange.F90.in"
+# 514 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -1970,15 +1964,14 @@ end subroutine box_rearrange_io2comp_int
   !   find the rank in comp_comm of the ith io processor
   !
 
-# 742 "box_rearrange.F90.in"
+# 740 "box_rearrange.F90.in"
   integer function find_io_comprank( Iosystem, ioprocindex )
     implicit none
 
     type (Iosystem_desc_t), intent(in) :: Iosystem
     integer ioprocindex
 
-!    find_io_comprank=Iosystem%iomaster+(ioprocindex-1)*Iosystem%io_stride
-    if(iosystem%intercomm/=MPI_COMM_NULL) then
+    if(iosystem%async_interface) then
        find_io_comprank=ioprocindex-1
     else
        find_io_comprank=iosystem%ioranks(ioprocindex)
@@ -1993,7 +1986,7 @@ end subroutine box_rearrange_io2comp_int
   !   find global xyz coordinates given a global index
   !
 
-# 764 "box_rearrange.F90.in"
+# 761 "box_rearrange.F90.in"
   subroutine gindex_to_coord( gindex, gstride, ndim, gcoord )
     implicit none
     integer,intent(in) :: gindex           ! 0-based global index
@@ -2030,7 +2023,7 @@ end subroutine box_rearrange_io2comp_int
   !   and 1-based index for that ioproc's iobuf          '
   !
 
-# 800 "box_rearrange.F90.in"
+# 797 "box_rearrange.F90.in"
   logical function find_ioproc( gcoord, lb, ub, lstride, ndim, nioproc, &
        io_proc, io_index )
     implicit none
@@ -2102,7 +2095,7 @@ end subroutine box_rearrange_io2comp_int
   !
   !
 
-# 871 "box_rearrange.F90.in"
+# 868 "box_rearrange.F90.in"
   subroutine compute_dest(compdof, start, count, gsize, ndim, nioproc, &
                           dest_ioproc, dest_ioindex                    )
     implicit none
@@ -2214,7 +2207,7 @@ end subroutine box_rearrange_io2comp_int
   ! this space should be freed in box_rearrange_free
   !
 
-# 982 "box_rearrange.F90.in"
+# 979 "box_rearrange.F90.in"
   subroutine box_rearrange_create(Iosystem, compdof, gsize, ndim, &
                                   nioproc, ioDesc)
     implicit none
@@ -2328,7 +2321,7 @@ end subroutine box_rearrange_io2comp_int
 
 #ifndef _MPISERIAL
 
-# 1095 "box_rearrange.F90.in"
+# 1092 "box_rearrange.F90.in"
   subroutine compute_counts(Iosystem, ioDesc, ndof, niodof)
 
     type (Iosystem_desc_t), intent(in) :: Iosystem
@@ -2718,7 +2711,7 @@ end subroutine box_rearrange_io2comp_int
   !
 
 
-# 1484 "box_rearrange.F90.in"
+# 1481 "box_rearrange.F90.in"
   subroutine box_rearrange_create( Iosystem,compdof,gsize,ndim,nioproc,ioDesc)
     implicit none
 
@@ -2744,7 +2737,6 @@ end subroutine box_rearrange_io2comp_int
     integer :: nrecvs
     integer :: niodof
     integer :: num_iotasks
-    logical :: is_async=.false.
 !!!!!!
 
     ndof=size(compdof)
@@ -2781,7 +2773,6 @@ end subroutine box_rearrange_io2comp_int
        end if
        ! note that index in start,count is the io_rank not comp_rank
     endif
-    print *,__FILE__,__LINE__
 
     call MPI_BCAST( start,ndim*Iosystem%num_iotasks,MPI_INTEGER, &    ! buf, cnt
          iosystem%iomaster, Iosystem%my_comm,ierror )
@@ -2791,7 +2782,6 @@ end subroutine box_rearrange_io2comp_int
          iosystem%iomaster, Iosystem%my_comm,ierror )
     call CheckMPIReturn(subName,ierror)
 
-print *,__FILE__,__LINE__
 #if DEBUG
     if (Iosystem%comp_rank==0) then
        do i=1,Iosystem%num_iotasks
@@ -2850,54 +2840,43 @@ print *,__FILE__,__LINE__
     ioDesc%nrecvs=0      ! this will only be overridden on io procs
     root=Iosystem%iomaster
     do i=1,Iosystem%num_iotasks
-!#if 0
+#if 0
        if(iosystem%comp_rank>=0) print *,Iosystem%comp_rank,': ',nsends(i),' sends to ',i
-!#endif
+#endif
+       root = find_io_comprank(ioSystem,i) 
        if(iosystem%async_interface) then
-	  print *,__FILE__,__LINE__,iosystem%io_rank,i-1
-          root = find_io_comprank(ioSystem,i) 
           if(iosystem%io_rank==root) then
-             print *,__FILE__,__LINE__
              call MPI_REDUCE( nsends(i),ioDesc%nrecvs,1,MPI_INTEGER, &
                   MPI_SUM,MPI_ROOT,Iosystem%intercomm,ierror )
-             print *,__FILE__,__LINE__, iodesc%nrecvs
           else if(iosystem%io_rank>=0) then
-             print *,__FILE__,__LINE__
              call MPI_REDUCE( nsends(i),ioDesc%nrecvs,1,MPI_INTEGER, &
                   MPI_SUM,MPI_PROC_NULL,Iosystem%intercomm,ierror )
-             print *,__FILE__,__LINE__
           else
-             print *,__FILE__,__LINE__
              call MPI_REDUCE( nsends(i),ioDesc%nrecvs,1,MPI_INTEGER, &
                   MPI_SUM, root  ,Iosystem%intercomm,ierror )
-
           end if
-
-
        else
           call MPI_REDUCE( nsends(i),ioDesc%nrecvs,1,MPI_INTEGER, &
                MPI_SUM,root,Iosystem%comp_comm,ierror )
           call CheckMPIReturn(subName,ierror)
        end if
-!#if DEBUG
+#if DEBUG
     if (Iosystem%IO_rank==i-1) &
          print *,Iosystem%io_rank,': nrecvs=',ioDesc%nrecvs
-!#endif
+#endif
     end do
 
-    print *,__FILE__,__LINE__
     ! Consistency check - collect totals to io root for a check
     call MPI_REDUCE( nsends_total,nsends_global,1,MPI_INTEGER, &
          MPI_SUM,Iosystem%iomaster,Iosystem%my_comm,ierror )
     call CheckMPIReturn(subName,ierror)
 
-    print *,__FILE__,__LINE__
     if (Iosystem%IOproc) then
        call MPI_REDUCE( ioDesc%nrecvs,nrecvs_global,1,MPI_INTEGER, &
             MPI_SUM,0,Iosystem%IO_comm,ierror )
        call CheckMPIReturn(subName,ierror)
     end if
-    if (.not.is_async .and. Iosystem%comp_rank == Iosystem%iomaster) then
+    if (.not.iosystem%async_interface .and. Iosystem%comp_rank == Iosystem%iomaster) then
        if (Iosystem%io_rank/=0) then
           call piodie( _FILE_,__LINE__,'Iosystem%iomaster rank ',Iosystem%iomaster, &
                'has nonzero io_rank ',Iosystem%io_rank)
@@ -2918,13 +2897,10 @@ print *,__FILE__,__LINE__
        niodof=niodof*ioDesc%count(i)
     end do
 
-
-    print *,__FILE__,__LINE__
-    call compute_counts(Iosystem,ioDesc,ndof,niodof, is_async)
+    call compute_counts(Iosystem,ioDesc,ndof,niodof)
 
 ! not _MPISERIAL
 #endif
-    print *,__FILE__,__LINE__
   end subroutine box_rearrange_create
 
 
@@ -2935,12 +2911,11 @@ print *,__FILE__,__LINE__
 
 #ifndef _MPISERIAL
 
-# 1700 "box_rearrange.F90.in"
-  subroutine compute_counts( Iosystem,ioDesc,ndof,niodof, is_async )
+# 1680 "box_rearrange.F90.in"
+  subroutine compute_counts( Iosystem,ioDesc,ndof,niodof )
 
     type (Iosystem_desc_t), intent(in) :: Iosystem
     type (IO_desc_t),intent(in) :: ioDesc
-    logical, intent(in) :: is_async
     integer :: ndof
     integer :: niodof
 
@@ -3106,7 +3081,6 @@ print *,__FILE__,__LINE__
 
        pos=1
        do i=1,nrecvs
-          print *,__FILE__,__LINE__,i,nrecvs
           call MPI_WAIT( rreq(i), status, ierror )
           call CheckMPIReturn(subName,ierror)
           rfrom(i)=status(MPI_SOURCE)
@@ -3423,7 +3397,7 @@ print *,__FILE__,__LINE__
   !   the rearrangement
   !
 
-# 2187 "box_rearrange.F90.in"
+# 2165 "box_rearrange.F90.in"
   subroutine box_rearrange_free(Iosystem,ioDesc)
     implicit none
 

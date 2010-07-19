@@ -854,7 +854,6 @@ contains
 #ifdef TIMING
     call t_startf("PIO_initdecomp_dof")
 #endif
-print *,__FILE__,__LINE__, iosystem%async_interface ,iosystem%ioproc
     if(iosystem%async_interface .and. .not. iosystem%ioproc) then
        msg = PIO_MSG_INITDECOMP_DOF
        is_async=.true.

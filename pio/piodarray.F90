@@ -1002,11 +1002,8 @@ contains
     integer :: ierr, msg
 
 
-    print *,__FILE__,__LINE__,size(array)
     array = 0	
     ios => File%iosystem
-
-
 
     if(ios%async_interface .and. .not. ios%ioproc) then
        msg = PIO_MSG_READDARRAY
@@ -1075,11 +1072,8 @@ contains
     integer :: ierr, msg
 
 
-    print *,__FILE__,__LINE__,size(array)
     array = 0	
     ios => File%iosystem
-
-
 
     if(ios%async_interface .and. .not. ios%ioproc) then
        msg = PIO_MSG_READDARRAY
@@ -1148,11 +1142,8 @@ contains
     integer :: ierr, msg
 
 
-    print *,__FILE__,__LINE__,size(array)
     array = 0	
     ios => File%iosystem
-
-
 
     if(ios%async_interface .and. .not. ios%ioproc) then
        msg = PIO_MSG_READDARRAY
@@ -1191,7 +1182,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 263 "piodarray.F90.in"
+# 260 "piodarray.F90.in"
   subroutine read_darray_2d_real (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1230,7 +1221,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 263 "piodarray.F90.in"
+# 260 "piodarray.F90.in"
   subroutine read_darray_3d_real (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1269,7 +1260,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 263 "piodarray.F90.in"
+# 260 "piodarray.F90.in"
   subroutine read_darray_4d_real (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1308,7 +1299,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 263 "piodarray.F90.in"
+# 260 "piodarray.F90.in"
   subroutine read_darray_5d_real (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1347,7 +1338,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 263 "piodarray.F90.in"
+# 260 "piodarray.F90.in"
   subroutine read_darray_2d_int (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1386,7 +1377,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 263 "piodarray.F90.in"
+# 260 "piodarray.F90.in"
   subroutine read_darray_3d_int (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1425,7 +1416,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 263 "piodarray.F90.in"
+# 260 "piodarray.F90.in"
   subroutine read_darray_4d_int (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1464,7 +1455,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 263 "piodarray.F90.in"
+# 260 "piodarray.F90.in"
   subroutine read_darray_5d_int (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1503,7 +1494,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 263 "piodarray.F90.in"
+# 260 "piodarray.F90.in"
   subroutine read_darray_2d_double (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1542,7 +1533,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 263 "piodarray.F90.in"
+# 260 "piodarray.F90.in"
   subroutine read_darray_3d_double (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1581,7 +1572,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 263 "piodarray.F90.in"
+# 260 "piodarray.F90.in"
   subroutine read_darray_4d_double (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1620,7 +1611,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 263 "piodarray.F90.in"
+# 260 "piodarray.F90.in"
   subroutine read_darray_5d_double (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1658,7 +1649,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<
-# 300 "piodarray.F90.in"
+# 297 "piodarray.F90.in"
   subroutine write_darray_nf_real (File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -1768,7 +1759,7 @@ contains
        ! Rearrange data from comp->io decomp
        !------------------------------------
        ! "array" is comp data
-	print *,__FILE__,__LINE__,minval(array),maxval(array)
+
        call rearrange_comp2io(File%iosystem,iodesc, array, iobuf)
        if(ioproc .and. minval(iobuf) == maxval(iobuf)) then
          call piodie(__FILE__,__LINE__)  
@@ -1853,7 +1844,7 @@ contains
        call alloc_check(start, 0)
        call alloc_check(count, 0)
     endif
-	print *,__FILE__,__LINE__
+
 #ifdef TIMING
     call t_startf("pio_write_nf")
 #endif
@@ -1875,7 +1866,6 @@ contains
 
     !-----------------------------------------------------------------------
     !EOC
-	print *,__FILE__,__LINE__
 #ifdef TIMING
     call t_stopf("pio_write_darray")
 #endif
@@ -1893,7 +1883,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<
-# 300 "piodarray.F90.in"
+# 297 "piodarray.F90.in"
   subroutine write_darray_nf_int (File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -2003,7 +1993,7 @@ contains
        ! Rearrange data from comp->io decomp
        !------------------------------------
        ! "array" is comp data
-	print *,__FILE__,__LINE__,minval(array),maxval(array)
+
        call rearrange_comp2io(File%iosystem,iodesc, array, iobuf)
        if(ioproc .and. minval(iobuf) == maxval(iobuf)) then
          call piodie(__FILE__,__LINE__)  
@@ -2088,7 +2078,7 @@ contains
        call alloc_check(start, 0)
        call alloc_check(count, 0)
     endif
-	print *,__FILE__,__LINE__
+
 #ifdef TIMING
     call t_startf("pio_write_nf")
 #endif
@@ -2110,7 +2100,6 @@ contains
 
     !-----------------------------------------------------------------------
     !EOC
-	print *,__FILE__,__LINE__
 #ifdef TIMING
     call t_stopf("pio_write_darray")
 #endif
@@ -2128,7 +2117,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<
-# 300 "piodarray.F90.in"
+# 297 "piodarray.F90.in"
   subroutine write_darray_nf_double (File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -2238,7 +2227,7 @@ contains
        ! Rearrange data from comp->io decomp
        !------------------------------------
        ! "array" is comp data
-	print *,__FILE__,__LINE__,minval(array),maxval(array)
+
        call rearrange_comp2io(File%iosystem,iodesc, array, iobuf)
        if(ioproc .and. minval(iobuf) == maxval(iobuf)) then
          call piodie(__FILE__,__LINE__)  
@@ -2323,7 +2312,7 @@ contains
        call alloc_check(start, 0)
        call alloc_check(count, 0)
     endif
-	print *,__FILE__,__LINE__
+
 #ifdef TIMING
     call t_startf("pio_write_nf")
 #endif
@@ -2345,7 +2334,6 @@ contains
 
     !-----------------------------------------------------------------------
     !EOC
-	print *,__FILE__,__LINE__
 #ifdef TIMING
     call t_stopf("pio_write_darray")
 #endif
@@ -2363,7 +2351,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 534 "piodarray.F90.in"
+# 530 "piodarray.F90.in"
   subroutine write_darray_bin_real(File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -2554,7 +2542,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 534 "piodarray.F90.in"
+# 530 "piodarray.F90.in"
   subroutine write_darray_bin_int(File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -2745,7 +2733,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 534 "piodarray.F90.in"
+# 530 "piodarray.F90.in"
   subroutine write_darray_bin_double(File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -2936,7 +2924,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 724 "piodarray.F90.in"
+# 720 "piodarray.F90.in"
   subroutine read_darray_nf_real (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -3089,10 +3077,7 @@ contains
        !------------------------------------
 
        ! "array" is comp data
-       print *,__FILE__,__LINE__
        call rearrange_io2comp(File%iosystem,iodesc,IOBUF,array) 
-       print *,__FILE__,__LINE__
-
 
 #if DEBUG_REARR
        call alloc_check(iobuf2,size(IOBUF),'iobuf2')
@@ -3146,7 +3131,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 724 "piodarray.F90.in"
+# 720 "piodarray.F90.in"
   subroutine read_darray_nf_int (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -3299,10 +3284,7 @@ contains
        !------------------------------------
 
        ! "array" is comp data
-       print *,__FILE__,__LINE__
        call rearrange_io2comp(File%iosystem,iodesc,IOBUF,array) 
-       print *,__FILE__,__LINE__
-
 
 #if DEBUG_REARR
        call alloc_check(iobuf2,size(IOBUF),'iobuf2')
@@ -3356,7 +3338,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 724 "piodarray.F90.in"
+# 720 "piodarray.F90.in"
   subroutine read_darray_nf_double (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -3509,10 +3491,7 @@ contains
        !------------------------------------
 
        ! "array" is comp data
-       print *,__FILE__,__LINE__
        call rearrange_io2comp(File%iosystem,iodesc,IOBUF,array) 
-       print *,__FILE__,__LINE__
-
 
 #if DEBUG_REARR
        call alloc_check(iobuf2,size(IOBUF),'iobuf2')
@@ -3566,7 +3545,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 933 "piodarray.F90.in"
+# 926 "piodarray.F90.in"
   subroutine read_darray_bin_real (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -3740,7 +3719,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 933 "piodarray.F90.in"
+# 926 "piodarray.F90.in"
   subroutine read_darray_bin_int (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -3914,7 +3893,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 933 "piodarray.F90.in"
+# 926 "piodarray.F90.in"
   subroutine read_darray_bin_double (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:

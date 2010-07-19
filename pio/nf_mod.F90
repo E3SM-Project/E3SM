@@ -633,11 +633,9 @@ contains
        end select
     endif
     call check_netcdf(File, ierr,_FILE_,__LINE__)
-
     if(ios%async_interface.or.ios%num_tasks>ios%num_iotasks) then
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%IOMaster,ios%my_comm,ierr2)
     end if
-
 
   end function inq_varid_vid
 
@@ -780,13 +778,9 @@ contains
 
     if(ios%async_interface .and. .not. ios%ioproc ) then
        msg=PIO_MSG_INQ_VARNDIMS
-       print *,__FILE__,__LINE__,msg
        call MPI_BCAST(msg,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       print *,__FILE__,__LINE__,file%fh
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       print *,__FILE__,__LINE__,varid
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       print *,__FILE__,__LINE__
     end if
 
     if(ios%IOproc) then
@@ -818,11 +812,9 @@ contains
     call check_netcdf(File,ierr,_FILE_,__LINE__)
 
     if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
-       print *,__FILE__,__LINE__
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%IOMaster,ios%my_comm, mpierr)
-       print *,__FILE__,__LINE__
+       call CheckMPIReturn('nf_mod',mpierr)
     end if
-    call CheckMPIReturn('nf_mod',mpierr)
   end function inq_varndims_vid
 
 !>
@@ -1552,7 +1544,7 @@ contains
     !------------------
     ! Local variables
     !------------------
-    integer :: iotype, mpierr, len
+    integer :: iotype, mpierr
     integer :: msg = PIO_MSG_DEF_VAR
 
     if(DebugAsync) print *,__FILE__,__LINE__
@@ -1580,7 +1572,7 @@ contains
        select case(iotype)
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
-          ierr=nfmpi_def_var(File%fh,name,type,len,dimids,vardesc%varid)
+          ierr=nfmpi_def_var(File%fh,name,type,vardesc%ndims,dimids,vardesc%varid)
           
 #endif
 
@@ -1599,7 +1591,7 @@ contains
                   'name=',name,' id=',vardesc%varid
 #ifdef _NETCDF4
              if(iotype==pio_iotype_netcdf4c) then
-                if(len>0 .and. ierr==PIO_NOERR) then
+                if(vardesc%ndims>0 .and. ierr==PIO_NOERR) then
                    ierr = nf90_def_var_deflate(File%fh,vardesc%varid,0,1,1)
                 end if
              endif

@@ -259,8 +259,6 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, s2, &
   integer,pointer :: sreq(:)
   integer,pointer :: rreq(:)      ! receive requests
 
-  logical :: is_async=.false.
-
 
   ! begin
   if ( present( comm_option ) ) then
@@ -745,8 +743,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     type (Iosystem_desc_t), intent(in) :: Iosystem
     integer ioprocindex
 
-!    find_io_comprank=Iosystem%iomaster+(ioprocindex-1)*Iosystem%io_stride
-    if(iosystem%intercomm/=MPI_COMM_NULL) then
+    if(iosystem%async_interface) then
        find_io_comprank=ioprocindex-1
     else
        find_io_comprank=iosystem%ioranks(ioprocindex)
@@ -1506,7 +1503,6 @@ end subroutine box_rearrange_io2comp_{TYPE}
     integer :: nrecvs
     integer :: niodof
     integer :: num_iotasks
-    logical :: is_async=.false.
 !!!!!!
 
     ndof=size(compdof)
@@ -1543,7 +1539,6 @@ end subroutine box_rearrange_io2comp_{TYPE}
        end if
        ! note that index in start,count is the io_rank not comp_rank
     endif
-    print *,__FILE__,__LINE__
 
     call MPI_BCAST( start,ndim*Iosystem%num_iotasks,MPI_INTEGER, &    ! buf, cnt
          iosystem%iomaster, Iosystem%my_comm,ierror )
@@ -1553,7 +1548,6 @@ end subroutine box_rearrange_io2comp_{TYPE}
          iosystem%iomaster, Iosystem%my_comm,ierror )
     call CheckMPIReturn(subName,ierror)
 
-print *,__FILE__,__LINE__
 #if DEBUG
     if (Iosystem%comp_rank==0) then
        do i=1,Iosystem%num_iotasks
@@ -1612,54 +1606,43 @@ print *,__FILE__,__LINE__
     ioDesc%nrecvs=0      ! this will only be overridden on io procs
     root=Iosystem%iomaster
     do i=1,Iosystem%num_iotasks
-!#if 0
+#if 0
        if(iosystem%comp_rank>=0) print *,Iosystem%comp_rank,': ',nsends(i),' sends to ',i
-!#endif
+#endif
+       root = find_io_comprank(ioSystem,i) 
        if(iosystem%async_interface) then
-	  print *,__FILE__,__LINE__,iosystem%io_rank,i-1
-          root = find_io_comprank(ioSystem,i) 
           if(iosystem%io_rank==root) then
-             print *,__FILE__,__LINE__
              call MPI_REDUCE( nsends(i),ioDesc%nrecvs,1,MPI_INTEGER, &
                   MPI_SUM,MPI_ROOT,Iosystem%intercomm,ierror )
-             print *,__FILE__,__LINE__, iodesc%nrecvs
           else if(iosystem%io_rank>=0) then
-             print *,__FILE__,__LINE__
              call MPI_REDUCE( nsends(i),ioDesc%nrecvs,1,MPI_INTEGER, &
                   MPI_SUM,MPI_PROC_NULL,Iosystem%intercomm,ierror )
-             print *,__FILE__,__LINE__
           else
-             print *,__FILE__,__LINE__
              call MPI_REDUCE( nsends(i),ioDesc%nrecvs,1,MPI_INTEGER, &
                   MPI_SUM, root  ,Iosystem%intercomm,ierror )
-
           end if
-
-
        else
           call MPI_REDUCE( nsends(i),ioDesc%nrecvs,1,MPI_INTEGER, &
                MPI_SUM,root,Iosystem%comp_comm,ierror )
           call CheckMPIReturn(subName,ierror)
        end if
-!#if DEBUG
+#if DEBUG
     if (Iosystem%IO_rank==i-1) &
          print *,Iosystem%io_rank,': nrecvs=',ioDesc%nrecvs
-!#endif
+#endif
     end do
 
-    print *,__FILE__,__LINE__
     ! Consistency check - collect totals to io root for a check
     call MPI_REDUCE( nsends_total,nsends_global,1,MPI_INTEGER, &
          MPI_SUM,Iosystem%iomaster,Iosystem%my_comm,ierror )
     call CheckMPIReturn(subName,ierror)
 
-    print *,__FILE__,__LINE__
     if (Iosystem%IOproc) then
        call MPI_REDUCE( ioDesc%nrecvs,nrecvs_global,1,MPI_INTEGER, &
             MPI_SUM,0,Iosystem%IO_comm,ierror )
        call CheckMPIReturn(subName,ierror)
     end if
-    if (.not.is_async .and. Iosystem%comp_rank == Iosystem%iomaster) then
+    if (.not.iosystem%async_interface .and. Iosystem%comp_rank == Iosystem%iomaster) then
        if (Iosystem%io_rank/=0) then
           call piodie( _FILE_,__LINE__,'Iosystem%iomaster rank ',Iosystem%iomaster, &
                'has nonzero io_rank ',Iosystem%io_rank)
@@ -1680,13 +1663,10 @@ print *,__FILE__,__LINE__
        niodof=niodof*ioDesc%count(i)
     end do
 
-
-    print *,__FILE__,__LINE__
-    call compute_counts(Iosystem,ioDesc,ndof,niodof, is_async)
+    call compute_counts(Iosystem,ioDesc,ndof,niodof)
 
 ! not _MPISERIAL
 #endif
-    print *,__FILE__,__LINE__
   end subroutine box_rearrange_create
 
 
@@ -1697,11 +1677,10 @@ print *,__FILE__,__LINE__
 
 #ifndef _MPISERIAL
 
-  subroutine compute_counts( Iosystem,ioDesc,ndof,niodof, is_async )
+  subroutine compute_counts( Iosystem,ioDesc,ndof,niodof )
 
     type (Iosystem_desc_t), intent(in) :: Iosystem
     type (IO_desc_t),intent(in) :: ioDesc
-    logical, intent(in) :: is_async
     integer :: ndof
     integer :: niodof
 
@@ -1867,7 +1846,6 @@ print *,__FILE__,__LINE__
 
        pos=1
        do i=1,nrecvs
-          print *,__FILE__,__LINE__,i,nrecvs
           call MPI_WAIT( rreq(i), status, ierror )
           call CheckMPIReturn(subName,ierror)
           rfrom(i)=status(MPI_SOURCE)

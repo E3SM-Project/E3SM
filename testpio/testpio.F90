@@ -767,6 +767,8 @@ program testpio
               write(*,'(2a,i8)') myname,':: After calls to PIO_OpenFile.  my_task=',my_task
            endif
            
+           if(Debug) print *,__FILE__,__LINE__
+
            if(iotype == iotype_pnetcdf .or. &
                 iotype == iotype_netcdf ) then
               do ivar=1,nvars
@@ -786,7 +788,7 @@ program testpio
               endif
 
            endif ! if((iotype == iotype_pnetcdf) .or (iotype == iotype_netcdf))...
-
+           if(Debug) print *,__FILE__,__LINE__
            do ivar=1,nvars
               call PIO_SetFrame(vard_r8(ivar),one)
               call PIO_SetFrame(vard_r4(ivar),one)
@@ -807,10 +809,12 @@ program testpio
 #ifdef TIMING
               call t_startf('testpio_read')
 #endif
+           if(Debug) print *,__FILE__,__LINE__
               do ivar=1,nvars
                  call PIO_read_darray(File_r8,vard_r8(ivar),iodesc_r8,test_r8rd,iostat)
                  call check_pioerr(iostat,__FILE__,__LINE__,' r8 read_darray')
               enddo
+           if(Debug) print *,__FILE__,__LINE__
 #ifdef TIMING
               call t_stopf('testpio_read')
 #endif

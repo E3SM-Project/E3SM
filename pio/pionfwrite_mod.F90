@@ -77,8 +77,6 @@ contains
 
     ierr=PIO_noerr
     ndims  = vardesc%ndims
-    Print *,__FILE__,__LINE__,vardesc%ndims	
-
 	
     if(file%iosystem%ioproc) then
        select case (iotype) 
@@ -124,7 +122,7 @@ contains
                 end if
              end if
           endif
-	  print *, __FILE__,__LINE__,ndims
+
           call alloc_check(temp_start,ndims)
           temp_start=start(1:ndims)
 
@@ -147,21 +145,19 @@ contains
              call MPI_SEND( temp_IOBUF,max_iobuf_size, &
                   MPI_REAL4, &
                   0,File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
-	print *,__FILE__,__LINE__,mpierr
              call CheckMPIReturn(subName, mpierr)
 
              call MPI_SEND( temp_start,ndims,MPI_INTEGER, &
                   0,File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
-	print *,__FILE__,__LINE__,mpierr
              call CheckMPIReturn(subName, mpierr)
 
              call MPI_SEND( temp_count,ndims,MPI_INTEGER, &
                   0,2*File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
-	print *,__FILE__,__LINE__,mpierr
+
              call CheckMPIReturn(subName, mpierr)
 
           endif
-	print *,__FILE__,__LINE__,File%iosystem%io_rank
+
           if (File%iosystem%io_rank==0) then 
              if (Debug) print *, subName,': 0: writing netcdf for self ', &
                   'fh=',File%fh,' varid=',varDesc%varid, temp_start, temp_count, minval(iobuf),maxval(iobuf)
@@ -300,8 +296,6 @@ contains
 
     ierr=PIO_noerr
     ndims  = vardesc%ndims
-    Print *,__FILE__,__LINE__,vardesc%ndims	
-
 	
     if(file%iosystem%ioproc) then
        select case (iotype) 
@@ -347,7 +341,7 @@ contains
                 end if
              end if
           endif
-	  print *, __FILE__,__LINE__,ndims
+
           call alloc_check(temp_start,ndims)
           temp_start=start(1:ndims)
 
@@ -370,21 +364,19 @@ contains
              call MPI_SEND( temp_IOBUF,max_iobuf_size, &
                   MPI_INTEGER, &
                   0,File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
-	print *,__FILE__,__LINE__,mpierr
              call CheckMPIReturn(subName, mpierr)
 
              call MPI_SEND( temp_start,ndims,MPI_INTEGER, &
                   0,File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
-	print *,__FILE__,__LINE__,mpierr
              call CheckMPIReturn(subName, mpierr)
 
              call MPI_SEND( temp_count,ndims,MPI_INTEGER, &
                   0,2*File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
-	print *,__FILE__,__LINE__,mpierr
+
              call CheckMPIReturn(subName, mpierr)
 
           endif
-	print *,__FILE__,__LINE__,File%iosystem%io_rank
+
           if (File%iosystem%io_rank==0) then 
              if (Debug) print *, subName,': 0: writing netcdf for self ', &
                   'fh=',File%fh,' varid=',varDesc%varid, temp_start, temp_count, minval(iobuf),maxval(iobuf)
@@ -523,8 +515,6 @@ contains
 
     ierr=PIO_noerr
     ndims  = vardesc%ndims
-    Print *,__FILE__,__LINE__,vardesc%ndims	
-
 	
     if(file%iosystem%ioproc) then
        select case (iotype) 
@@ -570,7 +560,7 @@ contains
                 end if
              end if
           endif
-	  print *, __FILE__,__LINE__,ndims
+
           call alloc_check(temp_start,ndims)
           temp_start=start(1:ndims)
 
@@ -593,21 +583,19 @@ contains
              call MPI_SEND( temp_IOBUF,max_iobuf_size, &
                   MPI_REAL8, &
                   0,File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
-	print *,__FILE__,__LINE__,mpierr
              call CheckMPIReturn(subName, mpierr)
 
              call MPI_SEND( temp_start,ndims,MPI_INTEGER, &
                   0,File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
-	print *,__FILE__,__LINE__,mpierr
              call CheckMPIReturn(subName, mpierr)
 
              call MPI_SEND( temp_count,ndims,MPI_INTEGER, &
                   0,2*File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
-	print *,__FILE__,__LINE__,mpierr
+
              call CheckMPIReturn(subName, mpierr)
 
           endif
-	print *,__FILE__,__LINE__,File%iosystem%io_rank
+
           if (File%iosystem%io_rank==0) then 
              if (Debug) print *, subName,': 0: writing netcdf for self ', &
                   'fh=',File%fh,' varid=',varDesc%varid, temp_start, temp_count, minval(iobuf),maxval(iobuf)

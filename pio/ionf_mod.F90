@@ -196,9 +196,6 @@ contains
           if (File%iosystem%io_rank == 0) then
              ! Stores the ncid in File%fh
              ierr = nf90_open(fname,amode,File%fh)
-
-    print *, _FILE_,__LINE__,'CFILE open ',fname, amode, file%fh, ierr
-
              ! Set default to NOFILL for performance.  
              if(ierr .eq. NF90_NOERR .and. iand(amode, NF90_WRITE) > 0) then
                 ierr = nf90_set_fill(File%fh, NF90_NOFILL, ier2)

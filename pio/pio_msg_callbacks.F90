@@ -318,9 +318,9 @@ subroutine inq_varndims_handler(iosystem)
   integer :: fh, ierr, varid, ndims
 
   call mpi_bcast(fh, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
-  print *,__FILE__,__LINE__,fh
+  if(Debugasync) print *,__FILE__,__LINE__,fh
   call mpi_bcast(varid, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
-  print *,__FILE__,__LINE__,varid
+  if(Debugasync) print *,__FILE__,__LINE__,varid
   file=> lookupfile(fh)
 
   ierr =  pio_inq_varndims(file, varid, ndims)
@@ -342,10 +342,10 @@ subroutine inq_varid_handler(iosystem)
   character(len=PIO_MAX_NAME) :: name
 
   call mpi_bcast(fh, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
-  print *,__FILE__,__LINE__,fh
+  if(Debugasync) print *,__FILE__,__LINE__,fh
   call mpi_bcast(nlen, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
   call mpi_bcast(name(1:nlen), nlen, mpi_character, iosystem%compmaster, iosystem%intercomm, ierr)
-  print *,__FILE__,__LINE__,name(1:nlen)
+  if(Debugasync) print *,__FILE__,__LINE__,name(1:nlen)
   file=> lookupfile(fh)
 
   ierr =  pio_inq_varid(file, name(1:nlen), varid)
