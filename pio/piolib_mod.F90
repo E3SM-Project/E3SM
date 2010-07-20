@@ -1584,7 +1584,8 @@ contains
 
     type (iosystem_desc_t), intent(out)  :: iosystem  ! io descriptor to initalize
 
-    integer :: ierr, is_inter
+    integer :: ierr
+    logical :: is_inter
     logical, parameter :: check=.true.
 
 #ifdef TIMING
@@ -1602,7 +1603,7 @@ contains
     call mpi_comm_test_inter(intercomm, is_inter, ierr)
     if(check) call checkmpireturn('init: after call to comm_test_inter: ',ierr)
 
-    if(is_inter==1) then
+    if(is_inter) then
        iosystem%intercomm=intercomm
        iosystem%userearranger = .true.
        iosystem%rearr = PIO_rearr_box

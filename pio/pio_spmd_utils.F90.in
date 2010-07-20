@@ -14,7 +14,7 @@
 module pio_spmd_utils
 
   use pio_kinds
-  use pio_support, only: CheckMPIReturn
+  use pio_support, only: CheckMPIReturn, Debugasync
 
   implicit none
 
@@ -152,6 +152,9 @@ contains
 
    integer :: ier                              ! return error status    
    integer :: status(MPI_STATUS_SIZE)          ! MPI status 
+
+   logical :: is_intercomm
+
 !
 !-------------------------------------------------------------------------------------
 !
@@ -161,8 +164,11 @@ contains
    offset_t = nprocs
 #endif
 !
+   call mpi_comm_test_inter(comm, is_intercomm, ier)
+
    ! if necessary, send to self
-   if (sndlths(mytask) > 0) then
+   if (.not. is_intercomm .and. (sndlths(mytask) > 0)) then
+      if(Debugasync) print *,__FILE__,__LINE__,mytask,sndlths(mytask)
       tag = mytask + offset_t
 
       offset_r = rdispls(mytask)+1
