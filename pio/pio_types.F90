@@ -36,6 +36,8 @@ module pio_types
 #ifdef SEQUENCE
 	sequence
 #endif
+        
+        integer(i4)              :: union_comm         ! The intracomm union of comp and io communicators (for async only)
         integer(i4)              :: IO_comm            ! The IO communicator
         integer(i4)              :: comp_comm          ! The Compute communicator
         integer(i4)              :: intercomm          ! the intercomm (may be MPI_COMM_NULL)

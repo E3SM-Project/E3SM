@@ -1349,6 +1349,7 @@ contains
     call t_startf("PIO_init")
 #endif
     iosystem%error_handling = PIO_internal_error
+    iosystem%union_comm = comp_comm
     iosystem%comp_comm = comp_comm
     iosystem%comp_rank = comp_rank
     iosystem%rearr = rearr
@@ -1577,10 +1578,11 @@ contains
 !! @param iosystem a derived type which can be used in subsequent pio operations (defined in PIO_types).
 !! @param base @em optional argument can be used to offset the first io task - default base is task 1.
 !<
-  subroutine init_intercom(comp_comm, io_comm, intercomm, iosystem)
-    integer(i4), intent(in) :: comp_comm   !  The compute communicator
-    integer(i4), intent(in) :: io_comm     !  The io communicator
-    integer(i4), intent(in) :: intercomm       !  A communicator which includes both, maybe an intercomm
+  subroutine init_intercom(union_comm, comp_comm, io_comm, intercomm, iosystem)
+    integer, intent(in) :: union_comm   !  The intra communicator which contains both io and comp
+    integer, intent(in) :: comp_comm   !  The compute communicator
+    integer, intent(in) :: io_comm     !  The io communicator
+    integer, intent(in) :: intercomm       !  The inter communicator which includes both
 
     type (iosystem_desc_t), intent(out)  :: iosystem  ! io descriptor to initalize
 
@@ -1588,12 +1590,17 @@ contains
     logical :: is_inter
     logical, parameter :: check=.true.
 
+    integer :: total_tasks
+    integer :: total_rank, i, j
+    integer(i4), pointer :: iotmp(:), iotmp2(:)
+
 #ifdef TIMING
     call t_startf("PIO_init")
 #endif
     iosystem%error_handling = PIO_internal_error
     iosystem%comp_comm = comp_comm
     iosystem%io_comm = io_comm
+    iosystem%union_comm = union_comm
     iosystem%info = mpi_info_null
     iosystem%comp_rank= -1
     iosystem%io_rank  = -1
@@ -1609,6 +1616,15 @@ contains
        iosystem%rearr = PIO_rearr_box
        iosystem%my_comm = intercomm
 
+
+       call mpi_comm_rank(union_comm, total_rank, ierr)
+       if(check) call checkmpireturn('init: after call to comm_rank: ',ierr)
+       call mpi_comm_size(union_comm, total_tasks, ierr)
+       if(check) call checkmpireturn('init: after call to comm_size: ',ierr)
+
+       call alloc_check(iotmp,total_tasks,'init:iotmp')
+       iotmp(:)=0
+       
        if(comp_comm /= MPI_COMM_NULL) then
           call mpi_comm_rank(comp_comm, iosystem%comp_rank, ierr)
           if(check) call checkmpireturn('init: after call to comm_rank: ',ierr)
@@ -1623,6 +1639,7 @@ contains
           end if
           call mpi_bcast(iosystem%num_tasks, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
           call mpi_bcast(iosystem%num_iotasks, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)
+          iotmp(total_rank+1)=0
        else
           call mpi_comm_rank(io_comm, iosystem%io_rank, ierr)
           if(check) call checkmpireturn('init: after call to comm_rank: ',ierr)
@@ -1639,7 +1656,7 @@ contains
           call mpi_bcast(iosystem%num_tasks, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
           call mpi_bcast(iosystem%num_iotasks, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)
           call pio_msg_handler_init()
-          call pio_msg_handler(iosystem) 
+          iotmp(total_rank+1)=1
        end if
     else
 ! not yet supported
@@ -1647,6 +1664,26 @@ contains
        
     end if
     
+
+    call alloc_check(iosystem%ioranks, iosystem%num_iotasks,'init:n_ioranks')
+    call alloc_check(iotmp2,total_tasks,'init:iotmp')
+
+    if(Debugasync) print *,__FILE__,__LINE__,iotmp
+    iotmp2(:)=0 
+    call MPI_allreduce(iotmp,iotmp2,total_tasks,MPI_INTEGER,MPI_SUM,union_comm,ierr)
+
+    if(Debugasync) print *,__FILE__,__LINE__,iotmp2
+    j=1
+    do i=1,total_tasks
+       if(iotmp2(i) == 1) then 
+          iosystem%ioranks(j) = i-1
+	  j=j+1
+       endif
+    enddo
+    call dealloc_check(iotmp)
+    call dealloc_check(iotmp2)
+
+    if(Debugasync) print *,__FILE__,__LINE__,iosystem%ioranks
     !---------------------------------
     ! initialize the rearranger system 
     !---------------------------------
@@ -1654,6 +1691,11 @@ contains
     if (iosystem%userearranger) then
        call rearrange_init(iosystem)
     endif
+
+    ! This routine does not return
+    if(iosystem%ioproc) call pio_msg_handler(iosystem) 
+
+
 #ifdef TIMING
     call t_stopf("PIO_init")
 #endif

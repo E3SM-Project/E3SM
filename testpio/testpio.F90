@@ -231,7 +231,7 @@ program testpio
   if(async) then
      call split_comm(mpi_comm_world,nprocs, num_iotasks, stride, base, &
           mpi_comm_compute, mpi_comm_io, mpi_icomm_cio)
-     call PIO_init(mpi_comm_compute, mpi_comm_io, mpi_icomm_cio, PIOSYS)
+     call PIO_init(mpi_comm_world, mpi_comm_compute, mpi_comm_io, mpi_icomm_cio, PIOSYS)
 
      call MPI_COMM_RANK(MPI_COMM_COMPUTE,my_task,ierr)
      
@@ -981,10 +981,6 @@ program testpio
      enddo ! do it=1,maxiter
 
   enddo ! do ip=1,numphase
-
-! remove these
-!  call PIO_finalize(PIOSYS,ierr)
-!  call MPI_Finalize(ierr)
 
 
   !--------------------------------
