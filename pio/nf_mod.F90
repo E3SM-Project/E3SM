@@ -1456,13 +1456,11 @@ contains
     ios => file%iosystem
     if(ios%async_interface .and. .not. ios%ioproc) then
        call mpi_bcast(msg, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       if(Debugasync) print *,__FILE__,__LINE__,file%fh
        call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast(len, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast(len_trim(name), 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast(name, len_trim(name), mpi_character, ios%compmaster, ios%intercomm, ierr)
-
-
-       call mpi_bcast(dimid, 1, mpi_integer, ios%iomaster, ios%intercomm, ierr)
 
        
     else if(ios%IOproc) then
@@ -1495,7 +1493,9 @@ contains
     if(ios%async_interface .or. ios%num_tasks > ios%num_iotasks) then
        call MPI_BCAST(dimid, 1, MPI_INTEGER, ios%IOMaster, ios%my_Comm, ierr)
     end if
-  end function PIO_def_dim
+    if(debugasync) print *,__FILE__,__LINE__,dimid
+  end function PIO_def_dim    
+
 
 !> 
 !! @public 

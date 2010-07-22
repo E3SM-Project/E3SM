@@ -2902,16 +2902,16 @@ end subroutine box_rearrange_io2comp_int
 
        root = find_io_comprank(ioSystem,i) 
 
-       if(iosystem%comp_rank>=0) print *,Iosystem%comp_rank,': ',nsends(i),' sends to ',i,root
+!       if(iosystem%comp_rank>=0) print *,Iosystem%comp_rank,': ',nsends(i),' sends to ',i,root
 
        call MPI_REDUCE( nsends(i),ioDesc%nrecvs,1,MPI_INTEGER, &
             MPI_SUM,root,iosystem%union_comm,ierror )
        call CheckMPIReturn(subName,ierror)
        
-!#if DEBUG
+#if DEBUG
        if (iodesc%nrecvs>0) &
             print *,__FILE__,__LINE__,Iosystem%io_rank,': nrecvs=',ioDesc%nrecvs
-!#endif
+#endif
     end do
 
     ! Consistency check - collect totals to io root for a check

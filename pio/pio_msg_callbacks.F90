@@ -24,7 +24,7 @@ subroutine create_file_handler(iosystem)
   ierr= pio_createfile(iosystem, file, iotype, trim(fname), amode )
 
   call add_to_file_list(file)
-
+  if(Debugasync) print *,__FILE__,__LINE__,file%fh
 
 end subroutine create_file_handler
 
@@ -56,6 +56,7 @@ subroutine open_file_handler(iosystem)
   ierr= pio_openfile(iosystem, file, iotype, trim(fname), amode)
 
   call add_to_file_list(file)
+  if(Debugasync) print *,__FILE__,__LINE__,file%fh
 
 end subroutine open_file_handler
 
@@ -89,11 +90,9 @@ subroutine def_dim_handler(iosystem)
 
   if(debugAsync) print *, __FILE__,__LINE__,file%fh, fh
 
-  
   ierr = pio_def_dim(file, dimname(1:clen), len, dimid)
-  
-  call mpi_bcast(dimid, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)
 
+  
 end subroutine def_dim_handler
 
 subroutine def_var_handler(iosystem)

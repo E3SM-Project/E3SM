@@ -210,6 +210,7 @@ contains
     list_item=> top_file
     
     do while(associated(list_item%file) )
+       if(DebugAsync) print *,__FILE__,__LINE__,fh1,list_item%file%fh
        if(abs(list_item%file%fh) == fh1) then
           file => list_item%file
           exit
