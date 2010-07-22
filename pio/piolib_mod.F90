@@ -1319,7 +1319,7 @@ contains
 !! @param iosystem a derived type which can be used in subsequent pio operations (defined in PIO_types).
 !! @param base @em optional argument can be used to offset the first io task - default base is task 1.
 !<
-  subroutine init_intracom(comp_rank, comp_comm, num_iotasks, num_aggregator, stride,  rearr, iosystem,base)
+  subroutine init_intracom(comp_rank, comp_comm, num_iotasks, num_aggregator, stride,  rearr, iosystem,base, async, mpi_comm_compute)
     integer(i4), intent(in) :: comp_rank
     integer(i4), intent(in) :: comp_comm
     integer(i4), intent(in) :: num_iotasks 
@@ -1328,6 +1328,8 @@ contains
     integer(i4), intent(in) :: rearr
     type (iosystem_desc_t), intent(out)  :: iosystem  ! io descriptor to initalize
     integer(i4), intent(in),optional :: base
+    logical, intent(in), optional :: async 
+    integer, intent(out), optional :: mpi_comm_compute
 
     integer(i4) :: n_iotasks
     integer(i4) :: length
@@ -1335,19 +1337,30 @@ contains
     integer(i4) :: lstride, itmp
     integer(i4), pointer :: iotmp(:),iotmp2(:)
 
+    integer :: mpi_comm_io, intercomm, mpigrp_io, mpigrp_compute
+
     character(len=5) :: cb_nodes
     logical(log_kind), parameter :: check = .true.
+    logical :: async_setup = .false.
 
-     integer(i4) :: j
+    integer(i4) :: j
 
     integer(i4) :: mpi_group_world, mpi_group_io
- 
+
     integer(i4) :: iotask
     integer(i4) :: rearrFlag
 
 #ifdef TIMING
     call t_startf("PIO_init")
 #endif
+
+    if(present(async)) then
+       if(.not. present(mpi_comm_compute)) then
+          call piodie(__FILE__,__LINE__,'If async argument is present mpi_comm_compute arguement is required')
+       end if
+       async_setup = async
+    end if
+
     iosystem%error_handling = PIO_internal_error
     iosystem%union_comm = comp_comm
     iosystem%comp_comm = comp_comm
@@ -1358,6 +1371,9 @@ contains
     iosystem%async_interface = .false.
 
     call mpi_comm_size(comp_comm,iosystem%num_tasks,ierr)
+
+    iosystem%num_comptasks = iosystem%num_tasks
+    iosystem%union_rank = comp_rank
 
     if(check) call checkmpireturn('init: after call to comm_size: ',ierr)
     ! ---------------------------------------
@@ -1391,8 +1407,8 @@ contains
     ! nodes and set ioproc
     ! --------------------------
     lstride = stride
-! Check sanity of input arguments
-    
+    ! Check sanity of input arguments
+
     call mpi_bcast(iosystem%rearr, 1, mpi_integer, 0, iosystem%comp_comm, ierr)
     call mpi_bcast(n_iotasks, 1, mpi_integer, 0, iosystem%comp_comm, ierr)
     call mpi_bcast(lstride, 1, mpi_integer, 0, iosystem%comp_comm, ierr)
@@ -1402,10 +1418,6 @@ contains
        print *,_FILE_,__LINE__,lbase,n_iotasks,lstride,iosystem%num_tasks
        call piodie(_FILE_,__LINE__,'not enough procs for the stride')
     endif
-
-
-
-
 
     iosystem%iomaster=lbase
 
@@ -1423,21 +1435,21 @@ contains
     ! Exit:  is is the total number of IO-tasks
     !---------------------------------------------------
     if (rearr == PIO_rearr_none) then
-      rearrFlag = 0
+       rearrFlag = 0
     else
-      rearrFlag = 1
+       rearrFlag = 1
     endif
     call determineiotasks(comp_comm,n_iotasks,lbase,lstride,rearrFlag,iotask)
 
 
     iotmp(:)=0
     if(iotask==1) then 
-	iosystem%ioproc = .true.
-        iotmp(comp_rank+1) = 1
+       iosystem%ioproc = .true.
+       iotmp(comp_rank+1) = 1
     endif
     iotmp2(:)=0 
     call MPI_allreduce(iotmp,iotmp2,iosystem%num_tasks,MPI_INTEGER,MPI_SUM,comp_comm,ierr)
-   
+
     n_iotasks=SUM(iotmp2)
     iosystem%num_iotasks =n_iotasks
     call alloc_check(iosystem%ioranks,n_iotasks,'init:n_ioranks')
@@ -1450,10 +1462,9 @@ contains
     enddo
     call dealloc_check(iotmp)
     call dealloc_check(iotmp2)
-    iosystem%io_stride=4  !JMD hardcode this for now.
     iotask = 0
     if(iosystem%ioproc) then 
-	iotask = 1
+       iotask = 1
     endif
     call identity(comp_comm,iotask)
 
@@ -1462,59 +1473,24 @@ contains
     iosystem%num_iotasks = n_iotasks
     call alloc_check(iosystem%ioranks,n_iotasks,'init:n_ioranks')
 
-     do i=1,n_iotasks
+    do i=1,n_iotasks
        iosystem%ioranks(i)=(lbase + (i-1)*lstride)
- 
+
        if (iosystem%ioranks(i)>=iosystem%num_tasks) then
-           call piodie( _FILE_,__LINE__, &
-                'tried to assign io processor beyond max rank ',&
+          call piodie( _FILE_,__LINE__, &
+               'tried to assign io processor beyond max rank ',&
                iosystem%ioranks(i), &
-                ' num_tasks=',iosystem%num_tasks )
-        endif
- 
+               ' num_tasks=',iosystem%num_tasks )
+       endif
+
        if(comp_rank == iosystem%ioranks(i))  iosystem%ioproc = .true.
-     enddo
+    enddo
 #endif
 
-
-    iosystem%io_rank=0
-
-    !-----------------------
-    ! setup io_comm and io_rank
-    !-----------------------
-    iosystem%io_rank=-1
-    call mpi_comm_group(comp_comm,mpi_group_world,ierr)
-    if(check) call checkmpireturn('init: after call to comm_group: ',ierr)
-
-    call mpi_group_incl(mpi_group_world,n_iotasks,iosystem%ioranks,mpi_group_io,ierr)
-    if(check) call checkmpireturn('init: after call to group_range_incl: ',ierr)
-
-!    call dealloc_check(ioranks)
-
-
-    call mpi_comm_create(comp_comm,mpi_group_io,iosystem%io_comm,ierr)
-    if(check) call checkmpireturn('init: after call to comm_create: ',ierr)
-
-    if(iosystem%ioproc) call mpi_comm_rank(iosystem%io_comm,iosystem%io_rank,ierr)
-    if(check) call checkmpireturn('init: after call to comm_rank: ',ierr)
-
-#ifdef BGx 
-!  base may not be an io node - correct this
-   if(iosystem%io_rank==0) then
-     itmp = iosystem%comp_rank
-   else 
-     itmp = -1
-   endif
-   call mpi_allreduce(itmp, lbase, 1, MPI_INTEGER, MPI_MAX, iosystem%comp_comm, ierr)
-   iosystem%iomaster = max(0,lbase)
-#endif
-    
-
-
+    iosystem%iomaster = iosystem%ioranks(1)
 
     if(debug) print *,'init: iam: ',comp_rank,'io processor: ',iosystem%ioproc, 'io rank ',&
-          iosystem%io_rank, iosystem%iomaster		  
-
+         iosystem%io_rank, iosystem%iomaster		  
 
 
     if(debug) print *,'init: iam: ',comp_rank,' before allocate(status): n_iotasks: ',n_iotasks
@@ -1525,11 +1501,11 @@ contains
        iosystem%userearranger= .true.
     endif
 
-    
+
 #if defined(USEMPIIO) || defined(_PNETCDF) || defined(_NETCDF4)
     call mpi_info_create(iosystem%info,ierr)
     ! turn on mpi-io aggregation 
-!DBG    print *,'PIO_init: before call to setnumagg'
+    !DBG    print *,'PIO_init: before call to setnumagg'
     itmp = num_aggregator
     call mpi_bcast(itmp, 1, mpi_integer, 0, iosystem%comp_comm, ierr)
     if(itmp .gt. 0) then 
@@ -1553,10 +1529,56 @@ contains
     !---------------------------------
     ! initialize the rearranger system 
     !---------------------------------
-    
+
     if (iosystem%userearranger) then
        call rearrange_init(iosystem)
     endif
+
+    iosystem%io_rank=-1
+    call mpi_comm_group(comp_comm,mpi_group_world,ierr)
+    if(check) call checkmpireturn('init: after call to comm_group: ',ierr)
+
+    call mpi_group_incl(mpi_group_world,n_iotasks,iosystem%ioranks,mpi_group_io,ierr)
+    if(check) call checkmpireturn('init: after call to group_range_incl: ',ierr)
+
+
+    if(async_setup) then
+       call mpi_group_excl(mpi_group_world, n_iotasks, iosystem%ioranks, mpigrp_compute, ierr)
+       if(check) call checkmpireturn('init: after call to group_range_excl: ',ierr)
+
+       call mpi_comm_create(comp_comm, mpigrp_compute, mpi_comm_compute, ierr)
+       call mpi_comm_create(comp_comm, mpigrp_io, mpi_comm_io, ierr)
+       if(mpi_comm_compute/=MPI_COMM_NULL) then
+          call mpi_intercomm_create(mpi_comm_compute, 0, comp_comm, iosystem%iomaster, 1, intercomm, ierr)
+       else
+          do i=1,n_iotasks
+             if(iosystem%ioranks(i)>i-1) then
+                iosystem%compmaster=i-1
+                exit
+             end if
+          end do
+          call mpi_intercomm_create(mpi_comm_io, 0, comp_comm,iosystem%compmaster , 1, intercomm, ierr)
+       end if
+       call init_intercom(comp_comm, mpi_comm_compute, mpi_comm_io, intercomm, iosystem)
+       
+
+    else
+       !-----------------------
+       ! setup io_comm and io_rank
+       !-----------------------
+
+       call mpi_comm_create(comp_comm,mpi_group_io,iosystem%io_comm,ierr)
+       if(check) call checkmpireturn('init: after call to comm_create: ',ierr)
+
+       if(iosystem%ioproc) call mpi_comm_rank(iosystem%io_comm,iosystem%io_rank,ierr)
+       if(check) call checkmpireturn('init: after call to comm_rank: ',ierr)
+
+    end if
+
+
+
+
+
 #ifdef TIMING
     call t_stopf("PIO_init")
 #endif
@@ -1604,7 +1626,6 @@ contains
     iosystem%info = mpi_info_null
     iosystem%comp_rank= -1
     iosystem%io_rank  = -1
-    iosystem%io_stride = 1
     iosystem%async_interface = .true.
 
     call mpi_comm_test_inter(intercomm, is_inter, ierr)
@@ -1617,9 +1638,9 @@ contains
        iosystem%my_comm = intercomm
 
 
-       call mpi_comm_rank(union_comm, total_rank, ierr)
+       call mpi_comm_rank(union_comm, iosystem%union_rank, ierr)
        if(check) call checkmpireturn('init: after call to comm_rank: ',ierr)
-       call mpi_comm_size(union_comm, total_tasks, ierr)
+       call mpi_comm_size(union_comm, iosystem%num_tasks, ierr)
        if(check) call checkmpireturn('init: after call to comm_size: ',ierr)
 
        call alloc_check(iotmp,total_tasks,'init:iotmp')
@@ -1628,7 +1649,7 @@ contains
        if(comp_comm /= MPI_COMM_NULL) then
           call mpi_comm_rank(comp_comm, iosystem%comp_rank, ierr)
           if(check) call checkmpireturn('init: after call to comm_rank: ',ierr)
-          call mpi_comm_size(comp_comm, iosystem%num_tasks, ierr)
+          call mpi_comm_size(comp_comm, iosystem%num_comptasks, ierr)
           if(check) call checkmpireturn('init: after call to comm_size: ',ierr)
           iosystem%iomaster = 0
           iosystem%ioproc = .false.
@@ -1637,7 +1658,7 @@ contains
           else
              iosystem%compmaster = MPI_PROC_NULL
           end if
-          call mpi_bcast(iosystem%num_tasks, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+          call mpi_bcast(iosystem%num_comptasks, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
           call mpi_bcast(iosystem%num_iotasks, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)
           iotmp(total_rank+1)=0
        else
@@ -1653,7 +1674,7 @@ contains
           iosystem%ioproc = .true.
           iosystem%compmaster = 0
 
-          call mpi_bcast(iosystem%num_tasks, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+          call mpi_bcast(iosystem%num_comptasks, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
           call mpi_bcast(iosystem%num_iotasks, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)
           call pio_msg_handler_init()
           iotmp(total_rank+1)=1
@@ -1666,15 +1687,15 @@ contains
     
 
     call alloc_check(iosystem%ioranks, iosystem%num_iotasks,'init:n_ioranks')
-    call alloc_check(iotmp2,total_tasks,'init:iotmp')
+    call alloc_check(iotmp2,iosystem%num_tasks,'init:iotmp')
 
     if(Debugasync) print *,__FILE__,__LINE__,iotmp
     iotmp2(:)=0 
-    call MPI_allreduce(iotmp,iotmp2,total_tasks,MPI_INTEGER,MPI_SUM,union_comm,ierr)
+    call MPI_allreduce(iotmp,iotmp2,iosystem%num_tasks,MPI_INTEGER,MPI_SUM,union_comm,ierr)
 
     if(Debugasync) print *,__FILE__,__LINE__,iotmp2
     j=1
-    do i=1,total_tasks
+    do i=1,iosystem%num_tasks
        if(iotmp2(i) == 1) then 
           iosystem%ioranks(j) = i-1
 	  j=j+1
@@ -2528,6 +2549,54 @@ contains
     enddo
 
   end subroutine calcdisplace_box
+
+  subroutine split_comm(initial_comm, nprocs, num_iotasks, stride, base, mpi_comm_compute, mpi_comm_io, intercomm)
+    use pio_support, only : piodie
+    implicit none
+
+    integer, intent(in) :: initial_comm, nprocs, num_iotasks, stride, base
+    integer, intent(out) :: mpi_comm_compute, mpi_comm_io, intercomm
+
+    integer :: ierr
+    integer :: pelist(3,1), mpigrp_init, mpigrp_io, mpigrp_compute
+    include 'mpif.h' !_EXTERNAL
+
+    mpi_comm_compute = MPI_COMM_NULL
+    mpi_comm_io = MPI_COMM_NULL
+
+    pelist(1,1) = base
+    pelist(2,1) = min(nprocs-1,num_iotasks*stride)
+    pelist(3,1) = stride
+
+    call mpi_comm_group(initial_comm, mpigrp_init, ierr)
+
+    call mpi_group_range_incl(mpigrp_init, 1, pelist, mpigrp_io, ierr)
+
+    call mpi_group_range_excl(mpigrp_init, 1, pelist, mpigrp_compute, ierr)
+
+    call mpi_comm_create(initial_comm, mpigrp_compute, mpi_comm_compute, ierr)
+
+    call mpi_comm_create(initial_comm, mpigrp_io, mpi_comm_io, ierr)
+
+    if(mpi_comm_compute/=MPI_COMM_NULL) then
+       call mpi_intercomm_create(mpi_comm_compute, 0, initial_comm, base, 1, intercomm, ierr)
+    else if(mpi_comm_io/=MPI_COMM_NULL) then
+       if(base==0) then
+          if(stride>1) then
+             call mpi_intercomm_create(mpi_comm_io, 0, initial_comm, 1, 1, intercomm, ierr)
+          else
+             call mpi_intercomm_create(mpi_comm_io, 0, initial_comm, num_iotasks, 1, intercomm, ierr)
+          end if
+       else
+          call mpi_intercomm_create(mpi_comm_io, 0, initial_comm, 0, 1, intercomm, ierr)
+       end if
+    else
+       call piodie(__FILE__,__LINE__)
+    end if
+
+  end subroutine split_comm
+
+
 
 
 

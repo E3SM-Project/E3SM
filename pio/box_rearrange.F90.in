@@ -291,17 +291,10 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, s2, &
   niodof = size(dest)
   nrecvs = ioDesc%nrecvs             ! number of distinct senders to the ioproc
 
-  if(iosystem%async_interface) then
-     call MPI_COMM_RANK(iosystem%union_comm,myrank,ierror)
-     call MPI_COMM_SIZE(iosystem%union_comm,nprocs,ierror)
-     working_comm = iosystem%union_comm
-  else	
-     myrank      = Iosystem%comp_rank
-     nprocs   = IOsystem%num_tasks
-     working_comm = iosystem%comp_comm
-  end if
-
-  num_iotasks = IOsystem%num_iotasks
+  myrank = iosystem%union_rank
+  num_tasks   = IOsystem%num_tasks	
+  working_comm = iosystem%union_comm
+  num_iotasks = Iosystem%num_iotasks
 
   if (size(src) > 0 .and. size(src)<ndof) &
     call piodie( _FILE_,__LINE__, &
@@ -600,8 +593,8 @@ subroutine box_rearrange_io2comp_{TYPE} (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
   niodof = size(iobuf)
   nrecvs = ioDesc%nrecvs             ! number of distinct senders to the ioproc
   if(iosystem%async_interface) then
-     call MPI_COMM_RANK(iosystem%union_comm,myrank,ierror)
-     call MPI_COMM_SIZE(iosystem%union_comm,nprocs,ierror)
+     myrank = iosystem%union_rank
+     nprocs = iosystem%num_tasks
      working_comm = iosystem%union_comm
   else	
      myrank      = Iosystem%comp_rank
@@ -1165,16 +1158,9 @@ end subroutine box_rearrange_io2comp_{TYPE}
     ! comp procs tell io procs how many items they will send
 
     ! init
-    if(iosystem%async_interface) then
-       call MPI_COMM_RANK(iosystem%union_comm,myrank,ierr)
-       call MPI_COMM_SIZE(iosystem%union_comm,num_tasks,ierr)
-       working_comm = iosystem%union_comm
-    else	
-       myrank      = Iosystem%comp_rank
-       num_tasks   = IOsystem%num_tasks
-       working_comm = iosystem%comp_comm
-    end if
-
+    myrank = iosystem%union_rank
+    num_tasks   = IOsystem%num_tasks	
+    working_comm = iosystem%union_comm
     num_iotasks = Iosystem%num_iotasks
     !need to cache
     call alloc_check(ioDesc%scount, num_iotasks, 'scount buffer')
@@ -2358,7 +2344,6 @@ end module box_rearrange
   Iosystem%num_iotasks=mysize/2
   Iosystem%IOproc= (mod(myrank,2).eq.0)
   Iosystem%io_rank= -1
-  Iosystem%io_stride=2
 
   if (Iosystem%IOproc) then
     color=1
@@ -2446,7 +2431,6 @@ end module box_rearrange
   Iosystem%num_iotasks=mysize/2
   Iosystem%IOproc= (mod(myrank,2).eq.0)
   Iosystem%io_rank= -1
-  Iosystem%io_stride=2
 
   if (Iosystem%IOproc) then
     color=1

@@ -43,15 +43,17 @@ module pio_types
         integer(i4)              :: intercomm          ! the intercomm (may be MPI_COMM_NULL)
         
         integer(i4)              :: my_comm          ! either comp_comm or intercomm
-        integer(i4)              :: num_tasks        ! total number of tasks
+        integer(i4)              :: num_tasks        !  number of tasks
         integer(i4)              :: num_iotasks        ! total number of IO tasks
-        integer(i4)              :: io_stride          ! stride between IO tasks
+        integer(i4)              :: num_comptasks
+
+        integer(i4)              :: union_rank
         integer(i4)              :: comp_rank          ! the computational rank
         integer(i4)              :: io_rank            ! the io rank if io_rank = -1 not an IO processor
 !
         integer(i4)              :: Info               ! MPI-IO info structure
         integer(i4)              :: IOMaster           ! The comp_rank of the io_rank 0
-        integer(i4)              :: compMaster           ! The comp_rank of the io_rank 0
+        integer(i4)              :: compMaster           ! The union_rank of the comp_rank 0
         logical(log_kind)        :: IOproc             ! .true. if an IO processor
         logical(log_kind)        :: UseRearranger      ! .true. if data rearrangement is necessary
         logical(log_kind)        :: async_interface    ! .true. if using the async interface model

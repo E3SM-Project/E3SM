@@ -479,8 +479,8 @@ subroutine box_rearrange_comp2io_real (IOsystem, ioDesc, s1, src, s2, &
   nrecvs = ioDesc%nrecvs             ! number of distinct senders to the ioproc
 
   if(iosystem%async_interface) then
-     call MPI_COMM_RANK(iosystem%union_comm,myrank,ierror)
-     call MPI_COMM_SIZE(iosystem%union_comm,nprocs,ierror)
+     myrank = iosystem%union_rank	
+     nprocs = iosystem%num_tasks     
      working_comm = iosystem%union_comm
   else	
      myrank      = Iosystem%comp_rank
@@ -717,8 +717,8 @@ subroutine box_rearrange_comp2io_double (IOsystem, ioDesc, s1, src, s2, &
   nrecvs = ioDesc%nrecvs             ! number of distinct senders to the ioproc
 
   if(iosystem%async_interface) then
-     call MPI_COMM_RANK(iosystem%union_comm,myrank,ierror)
-     call MPI_COMM_SIZE(iosystem%union_comm,nprocs,ierror)
+     myrank = iosystem%union_rank	
+     nprocs = iosystem%num_tasks     
      working_comm = iosystem%union_comm
   else	
      myrank      = Iosystem%comp_rank
@@ -955,8 +955,8 @@ subroutine box_rearrange_comp2io_int (IOsystem, ioDesc, s1, src, s2, &
   nrecvs = ioDesc%nrecvs             ! number of distinct senders to the ioproc
 
   if(iosystem%async_interface) then
-     call MPI_COMM_RANK(iosystem%union_comm,myrank,ierror)
-     call MPI_COMM_SIZE(iosystem%union_comm,nprocs,ierror)
+     myrank = iosystem%union_rank	
+     nprocs = iosystem%num_tasks     
      working_comm = iosystem%union_comm
   else	
      myrank      = Iosystem%comp_rank
