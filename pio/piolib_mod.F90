@@ -1419,8 +1419,6 @@ contains
        call piodie(_FILE_,__LINE__,'not enough procs for the stride')
     endif
 
-    iosystem%iomaster=lbase
-
     iosystem%ioproc = .false.
 
 #ifdef BGx
@@ -1612,9 +1610,9 @@ contains
     logical :: is_inter
     logical, parameter :: check=.true.
 
-    integer :: total_tasks
-    integer :: total_rank, i, j
-    integer(i4), pointer :: iotmp(:), iotmp2(:)
+
+    integer :: i, j
+    integer(i4), pointer :: iotmp(:)
 
 #ifdef TIMING
     call t_startf("PIO_init")
@@ -1643,8 +1641,6 @@ contains
        call mpi_comm_size(union_comm, iosystem%num_tasks, ierr)
        if(check) call checkmpireturn('init: after call to comm_size: ',ierr)
 
-       call alloc_check(iotmp,total_tasks,'init:iotmp')
-       iotmp(:)=0
        
        if(comp_comm /= MPI_COMM_NULL) then
           call mpi_comm_rank(comp_comm, iosystem%comp_rank, ierr)
@@ -1660,11 +1656,13 @@ contains
           end if
           call mpi_bcast(iosystem%num_comptasks, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
           call mpi_bcast(iosystem%num_iotasks, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)
-          iotmp(total_rank+1)=0
+          call alloc_check(iotmp,iosystem%num_iotasks,'init:iotmp')
+          iotmp(:)=0
        else
           call mpi_comm_rank(io_comm, iosystem%io_rank, ierr)
           if(check) call checkmpireturn('init: after call to comm_rank: ',ierr)
           call mpi_comm_size(io_comm, iosystem%num_iotasks, ierr)
+
           if(check) call checkmpireturn('init: after call to comm_size: ',ierr)
           if(iosystem%io_rank==0) then
              iosystem%iomaster = MPI_ROOT
@@ -1677,7 +1675,9 @@ contains
           call mpi_bcast(iosystem%num_comptasks, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
           call mpi_bcast(iosystem%num_iotasks, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)
           call pio_msg_handler_init()
-          iotmp(total_rank+1)=1
+          call alloc_check(iotmp,iosystem%num_iotasks,'init:iotmp')
+          iotmp(:) = 0
+          iotmp( iosystem%io_rank+1)=iosystem%union_rank
        end if
     else
 ! not yet supported
@@ -1687,24 +1687,12 @@ contains
     
 
     call alloc_check(iosystem%ioranks, iosystem%num_iotasks,'init:n_ioranks')
-    call alloc_check(iotmp2,iosystem%num_tasks,'init:iotmp')
-
     if(Debugasync) print *,__FILE__,__LINE__,iotmp
-    iotmp2(:)=0 
-    call MPI_allreduce(iotmp,iotmp2,iosystem%num_tasks,MPI_INTEGER,MPI_SUM,union_comm,ierr)
-
-    if(Debugasync) print *,__FILE__,__LINE__,iotmp2
-    j=1
-    do i=1,iosystem%num_tasks
-       if(iotmp2(i) == 1) then 
-          iosystem%ioranks(j) = i-1
-	  j=j+1
-       endif
-    enddo
-    call dealloc_check(iotmp)
-    call dealloc_check(iotmp2)
+    call MPI_allreduce(iotmp,iosystem%ioranks,iosystem%num_iotasks,MPI_INTEGER,MPI_MAX,union_comm,ierr)
 
     if(Debugasync) print *,__FILE__,__LINE__,iosystem%ioranks
+    call dealloc_check(iotmp)
+
     !---------------------------------
     ! initialize the rearranger system 
     !---------------------------------
