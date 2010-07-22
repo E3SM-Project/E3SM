@@ -405,9 +405,7 @@ contains
        ! "array" is comp data
 
        call rearrange_comp2io(File%iosystem,iodesc, array, iobuf)
-       if(ioproc .and. minval(iobuf) == maxval(iobuf)) then
-         call piodie(__FILE__,__LINE__)  
-       endif
+
 	if(Debug) print *,__FILE__,__LINE__,minval(iobuf),maxval(iobuf)
 
 #if DEBUG_REARR
