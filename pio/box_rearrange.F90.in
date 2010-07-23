@@ -282,7 +282,7 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, s2, &
   ndof   = size(ioDesc%dest_ioindex)
   niodof = size(dest)
   nrecvs = ioDesc%nrecvs             ! number of distinct senders to the ioproc
-  myrank = IOsystem%comp_rank
+  myrank = IOsystem%union_rank
   nprocs = IOsystem%num_tasks
   num_iotasks = IOsystem%num_iotasks
 
@@ -581,7 +581,7 @@ subroutine box_rearrange_io2comp_{TYPE} (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
   ndof   = size(iodesc%dest_ioindex)
   niodof = size(iobuf)
   nrecvs = ioDesc%nrecvs             ! number of distinct senders to the ioproc
-  myrank = IOsystem%comp_rank
+  myrank = IOsystem%union_rank
   nprocs = IOsystem%num_tasks
   num_iotasks = IOsystem%num_iotasks
 

@@ -44,7 +44,7 @@
 <bluefire
   NETCDF_PATH="/contrib/netcdf-4.1.1-mpi" 
   PNETCDF_PATH="/contrib/parallel-netcdf-1.1.1.svn821" 
-  FFLAGS = "-g -qfullpath "
+  FFLAGS = "-g -qfullpath -WF,-D_USE_FLOW_CONTROL"
   CFLAGS = "-g -qfullpath "
   ENV_PREATTACH_PROCESSOR_LIST="AUTO_SELECT"
   ENV_MP_EAGER_LIMIT="0"
