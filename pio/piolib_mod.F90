@@ -1337,7 +1337,7 @@ contains
     integer(i4) :: lstride, itmp
     integer(i4), pointer :: iotmp(:),iotmp2(:)
 
-    integer :: mpi_comm_io, intercomm, mpigrp_io, mpigrp_compute
+    integer :: mpi_comm_io, intercomm
 
     character(len=5) :: cb_nodes
     logical(log_kind), parameter :: check = .true.
@@ -1345,7 +1345,7 @@ contains
 
     integer(i4) :: j
 
-    integer(i4) :: mpi_group_world, mpi_group_io
+    integer(i4) :: mpi_group_world, mpi_group_io, mpi_group_compute
 
     integer(i4) :: iotask
     integer(i4) :: rearrFlag
@@ -1539,13 +1539,18 @@ contains
     call mpi_group_incl(mpi_group_world,n_iotasks,iosystem%ioranks,mpi_group_io,ierr)
     if(check) call checkmpireturn('init: after call to group_range_incl: ',ierr)
 
+    if(DebugAsync) print *,__FILE__,__LINE__,'n: ',n_iotasks, ' r: ',iosystem%ioranks, ' g: ',mpi_group_io
 
     if(async_setup) then
-       call mpi_group_excl(mpi_group_world, n_iotasks, iosystem%ioranks, mpigrp_compute, ierr)
+       call mpi_group_excl(mpi_group_world, n_iotasks, iosystem%ioranks, mpi_group_compute, ierr)
        if(check) call checkmpireturn('init: after call to group_range_excl: ',ierr)
 
-       call mpi_comm_create(comp_comm, mpigrp_compute, mpi_comm_compute, ierr)
-       call mpi_comm_create(comp_comm, mpigrp_io, mpi_comm_io, ierr)
+       call mpi_comm_create(comp_comm, mpi_group_compute, mpi_comm_compute, ierr)
+       if(check) call checkmpireturn('init: after call to comm_create group: ',ierr)
+
+       call mpi_comm_create(comp_comm, mpi_group_io, mpi_comm_io, ierr)
+       if(check) call checkmpireturn('init: after call to comm_create io: ',ierr)
+
        if(mpi_comm_compute/=MPI_COMM_NULL) then
           call mpi_intercomm_create(mpi_comm_compute, 0, comp_comm, iosystem%iomaster, 1, intercomm, ierr)
        else
@@ -1554,7 +1559,9 @@ contains
                 iosystem%compmaster=i-1
                 exit
              end if
+	     iosystem%compmaster=i
           end do
+	if(DebugAsync) print *,__FILE__,__LINE__,iosystem%compmaster
           call mpi_intercomm_create(mpi_comm_io, 0, comp_comm,iosystem%compmaster , 1, intercomm, ierr)
        end if
        call init_intercom(comp_comm, mpi_comm_compute, mpi_comm_io, intercomm, iosystem)
@@ -2537,55 +2544,6 @@ contains
     enddo
 
   end subroutine calcdisplace_box
-
-  subroutine split_comm(initial_comm, nprocs, num_iotasks, stride, base, mpi_comm_compute, mpi_comm_io, intercomm)
-    use pio_support, only : piodie
-    implicit none
-
-    integer, intent(in) :: initial_comm, nprocs, num_iotasks, stride, base
-    integer, intent(out) :: mpi_comm_compute, mpi_comm_io, intercomm
-
-    integer :: ierr
-    integer :: pelist(3,1), mpigrp_init, mpigrp_io, mpigrp_compute
-    include 'mpif.h' !_EXTERNAL
-
-    mpi_comm_compute = MPI_COMM_NULL
-    mpi_comm_io = MPI_COMM_NULL
-
-    pelist(1,1) = base
-    pelist(2,1) = min(nprocs-1,num_iotasks*stride)
-    pelist(3,1) = stride
-
-    call mpi_comm_group(initial_comm, mpigrp_init, ierr)
-
-    call mpi_group_range_incl(mpigrp_init, 1, pelist, mpigrp_io, ierr)
-
-    call mpi_group_range_excl(mpigrp_init, 1, pelist, mpigrp_compute, ierr)
-
-    call mpi_comm_create(initial_comm, mpigrp_compute, mpi_comm_compute, ierr)
-
-    call mpi_comm_create(initial_comm, mpigrp_io, mpi_comm_io, ierr)
-
-    if(mpi_comm_compute/=MPI_COMM_NULL) then
-       call mpi_intercomm_create(mpi_comm_compute, 0, initial_comm, base, 1, intercomm, ierr)
-    else if(mpi_comm_io/=MPI_COMM_NULL) then
-       if(base==0) then
-          if(stride>1) then
-             call mpi_intercomm_create(mpi_comm_io, 0, initial_comm, 1, 1, intercomm, ierr)
-          else
-             call mpi_intercomm_create(mpi_comm_io, 0, initial_comm, num_iotasks, 1, intercomm, ierr)
-          end if
-       else
-          call mpi_intercomm_create(mpi_comm_io, 0, initial_comm, 0, 1, intercomm, ierr)
-       end if
-    else
-       call piodie(__FILE__,__LINE__)
-    end if
-
-  end subroutine split_comm
-
-
-
 
 
 end module piolib_mod
