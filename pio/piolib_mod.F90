@@ -1081,7 +1081,8 @@ contains
        xpes = use_io_procs
        xiam = iorank   ! goes from 0 to xpes-1
        do m = ndims, sdims+1, -1
-          if(xpes >= gdims(m)) then
+!          if(xpes >= gdims(m)) then
+          if(xpes > gdims(m)) then
              ps = -1
              ns = 1
              do while (ps < 0 .and. ns <= gdims(m) )
