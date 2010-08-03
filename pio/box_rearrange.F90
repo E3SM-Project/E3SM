@@ -2762,11 +2762,11 @@ end subroutine box_rearrange_io2comp_int
 
 
     call MPI_BCAST( start,ndim*Iosystem%num_iotasks,MPI_INTEGER, &    ! buf, cnt
-         Iosystem%ioranks(1), Iosystem%union_comm,ierror )
+         Iosystem%ioroot, Iosystem%union_comm,ierror )
     call CheckMPIReturn(subName,ierror)
 
     call MPI_BCAST( count,ndim*Iosystem%num_iotasks,MPI_INTEGER, &    ! buf, cnt
-         Iosystem%ioranks(1), Iosystem%union_comm,ierror )
+         Iosystem%ioroot, Iosystem%union_comm,ierror )
     call CheckMPIReturn(subName,ierror)
 
 #if DEBUG
@@ -2823,14 +2823,14 @@ end subroutine box_rearrange_io2comp_int
     print *,Iosystem%comp_rank,': nsends()=',nsends
 #endif
 
-    ! Note that rank of root is 0-based and nsends() is 1-based
     ioDesc%nrecvs=0      ! this will only be overridden on io procs
-    root=Iosystem%ioranks(1)
+
     do i=1,Iosystem%num_iotasks
-#if 0
-       print *,Iosystem%comp_rank,': ',nsends(i),' sends to ',i
-#endif
        root = find_io_comprank(ioSystem,i) 
+
+       print *,__FILE__,__LINE__,Iosystem%comp_rank,': ',nsends(i),' sends to ',i, root, iosystem%ioranks
+
+
        call MPI_REDUCE( nsends(i),ioDesc%nrecvs,1,MPI_INTEGER, &
             MPI_SUM,root,Iosystem%union_comm,ierror )
        call CheckMPIReturn(subName,ierror)

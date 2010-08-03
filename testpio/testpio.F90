@@ -52,6 +52,7 @@ program testpio
   character(len=*), parameter :: TestComboCaseName = 'combo_test'
 
   type (iosystem_desc_t) :: PIOSYS
+  type (iosystem_desc_t) :: piosystems(1)
   type (File_desc_t)  :: File, File_r8,File_r4,File_i4
   type (Var_desc_t)   :: vard_i4, &
        vard_r8c,vard_r4c,vard_i4c, &
@@ -235,9 +236,12 @@ program testpio
 #else
      call split_comm(mpi_comm_world,nprocs, num_iotasks, stride, base, &
           mpi_comm_compute, mpi_comm_io, mpi_icomm_cio)
-     call PIO_init(mpi_comm_world, mpi_comm_compute, mpi_comm_io, mpi_icomm_cio, PIOSYS)
+     call PIO_init(1, (/mpi_comm_world/), (/mpi_comm_compute/), mpi_comm_io, PIOSYSTEMS)
+     PIOSYS = PIOSYSTEMS(1)
+     piosys%ioranks=>piosystems(1)%ioranks
 #endif
      call MPI_COMM_RANK(MPI_COMM_COMPUTE,my_task,ierr)
+     call MPI_COMM_SIZE(MPI_COMM_COMPUTE,nprocs,ierr)
      
 
   else

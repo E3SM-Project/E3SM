@@ -34,12 +34,6 @@ module pio_msg_mod
    integer, parameter, public :: pio_msg_inq_dimname = 341
    integer, parameter, public :: pio_msg_inqattlen = 342
    
-   
-
-
-
-   
-
    integer, parameter, public :: pio_msg_exit = 999   
    
    type :: file_desc_list
@@ -55,11 +49,17 @@ module pio_msg_mod
    end type io_desc_list
 
    type(io_desc_list), target :: top_iodesc
-   
+
+   integer :: io_comm, iorank
+
 
 contains
 
-  subroutine pio_msg_handler_init
+  subroutine pio_msg_handler_init(io_comm_in, io_rank_in)
+    integer, intent(in) :: io_comm_in, io_rank_in
+
+    io_comm = io_comm_in
+    iorank = io_rank_in
     
     nullify(top_file%file)
     nullify(top_file%next)
@@ -69,50 +69,83 @@ contains
   end subroutine pio_msg_handler_init
 
 
-  subroutine pio_msg_handler(iosystem)
+  subroutine pio_msg_handler(numcomps, iosystem)
     use pio_types
+#ifdef TIMING
+    use perf_mod        ! _EXTERNAL
+#endif
 
     implicit none
-
-    type(iosystem_desc_t) :: iosystem
+    integer, intent(in) :: numcomps
+    type(iosystem_desc_t), target :: iosystem(numcomps)
+    type(iosystem_desc_t), pointer :: ios
     integer :: msg = 0, ierr
     include 'mpif.h' !_EXTERNAL
  
+    integer :: status(MPI_STATUS_SIZE)
+    integer :: req(numcomps)
+    integer :: index
 
+#ifdef TIMING    
+    call t_startf('pio_msg_mod')
+#endif
     do while(msg /= pio_msg_exit)
-       if(Debugasync) print *,__FILE__,__LINE__, iosystem%intercomm
-       call mpi_bcast(msg, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+       if(iorank==0) then
+          do index=1,numcomps
+             ios=>iosystem(index)
+             if(ios%io_rank==0) then
+                call mpi_irecv(msg, 1, mpi_integer, ios%comproot, 1, ios%union_comm, req(index), ierr)       
+             end if
+          enddo
+          if(Debugasync) print *,__FILE__,__LINE__, ' waiting'
+          call mpi_waitany(numcomps, req, index, status, ierr)
+          if(Debugasync) print *,__FILE__,__LINE__, ' recieved on ', index
+       end if
+
+       call mpi_bcast(index, 1, mpi_integer, 0, io_comm, ierr)
+       ios => iosystem(index)
+
+       if(Debugasync) print *,__FILE__,__LINE__, ios%intercomm
+       call mpi_bcast(msg, 1, mpi_integer, 0, io_comm, ierr)
        if(Debugasync) print *,__FILE__,__LINE__,msg
+
+
        select case(msg) 
        case (PIO_MSG_CREATE_FILE)
-          call create_file_handler(iosystem)
+          call create_file_handler(ios)
        case (PIO_MSG_OPEN_FILE)
-          call open_file_handler(iosystem)
+          call open_file_handler(ios)
        case (PIO_MSG_CLOSE_FILE)
-          call close_file_handler(iosystem)
+          call close_file_handler(ios)
        case (PIO_MSG_DEF_DIM)
-          call def_dim_handler(iosystem)
+          call def_dim_handler(ios)
        case (PIO_MSG_DEF_VAR)
-          call def_var_handler(iosystem)
+          call def_var_handler(ios)
        case (PIO_MSG_ENDDEF)
-          call enddef_handler(iosystem)
+          call enddef_handler(ios)
        case (PIO_MSG_INITDECOMP_DOF)
-          call initdecomp_dof_handler(iosystem)
+          call initdecomp_dof_handler(ios)
        case (PIO_MSG_WRITEDARRAY)
-          call writedarray_handler(iosystem)
+          call writedarray_handler(ios)
        case (PIO_MSG_READDARRAY)
-          call readdarray_handler(iosystem)
+          call readdarray_handler(ios)
        case (PIO_MSG_INQ_VARNDIMS)
-          call inq_varndims_handler(iosystem)
+          call inq_varndims_handler(ios)
        case (PIO_MSG_INQ_VARID)
-          call inq_varid_handler(iosystem)
+          call inq_varid_handler(ios)
        case (PIO_MSG_EXIT)
-          call finalize_handler(iosystem)
+          call finalize_handler(ios)
           if(Debugasync) print *,'Exiting'
        case default
           if(Debugasync) print *, 'Got unrecognized message ', msg, ierr
        end select   
     end do
+
+#ifdef TIMING
+    call t_stopf('pio_msg_mod')
+    call t_finalizef()
+#endif
+
 
     if(Debugasync) print *,__FILE__,__LINE__
     call mpi_finalize(ierr)

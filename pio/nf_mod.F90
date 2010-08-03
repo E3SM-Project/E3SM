@@ -203,7 +203,7 @@ contains
 
     if(ios%async_interface .and. .not. ios%ioproc ) then
        msg=PIO_MSG_INQUIRE
-       call mpi_bcast(msg, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioranks(1), 1, ios%union_comm, ierr)
        call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
     end if
 
@@ -298,7 +298,7 @@ contains
 
     if(ios%async_interface .and. .not. ios%ioproc ) then
        msg=PIO_MSG_INQATT
-       call MPI_BCAST(msg,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioranks(1), 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(len(name),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
@@ -408,7 +408,7 @@ contains
 
     if(ios%async_interface .and. .not. ios%ioproc ) then
        msg=PIO_MSG_INQATTLEN
-       call MPI_BCAST(msg,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioranks(1), 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(len(name),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
@@ -508,7 +508,7 @@ contains
     ierr=PIO_noerr
     if(ios%async_interface .and. .not. ios%ioproc ) then
        msg=PIO_MSG_INQATTNAME
-       call MPI_BCAST(msg,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioranks(1), 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(attnum,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
@@ -601,7 +601,7 @@ contains
 
     if(ios%async_interface .and. .not. ios%ioproc ) then
        msg=PIO_MSG_INQ_VARID
-       call MPI_BCAST(msg,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioranks(1), 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(len(name),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(name,len(name),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
@@ -708,7 +708,7 @@ contains
 
     if(ios%async_interface .and. .not. ios%ioproc ) then
        msg=PIO_MSG_INQ_VARNAME
-       call MPI_BCAST(msg,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioranks(1), 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     end if
@@ -778,7 +778,7 @@ contains
 
     if(ios%async_interface .and. .not. ios%ioproc ) then
        msg=PIO_MSG_INQ_VARNDIMS
-       call MPI_BCAST(msg,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioranks(1), 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     end if
@@ -866,7 +866,7 @@ contains
 
     if(ios%async_interface .and. .not. ios%ioproc ) then
        msg=PIO_MSG_INQ_VARTYPE
-       call MPI_BCAST(msg,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioranks(1), 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     end if
@@ -957,7 +957,7 @@ contains
 
     if(ios%async_interface .and. .not. ios%ioproc ) then
        msg=PIO_MSG_INQ_VARDIMID
-       call MPI_BCAST(msg,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioranks(1), 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(size_dimids,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
@@ -1047,7 +1047,7 @@ contains
 
     if(ios%async_interface .and. .not. ios%ioproc ) then
        msg=PIO_MSG_INQ_VARNATTS
-       call MPI_BCAST(msg,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioranks(1), 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     end if
@@ -1136,7 +1136,7 @@ contains
 
     if(ios%async_interface .and. .not. ios%ioproc ) then
        msg=PIO_MSG_INQ_DIMID
-       call MPI_BCAST(msg,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioranks(1), 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(len(name),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(name,len(name),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
@@ -1208,7 +1208,7 @@ contains
 
     if(ios%async_interface .and. .not. ios%ioproc ) then
        msg=PIO_MSG_INQ_DIMNAME
-       call MPI_BCAST(msg,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioranks(1), 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ldn,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     end if
@@ -1278,7 +1278,7 @@ contains
 
     if(ios%async_interface .and. .not. ios%ioproc ) then
        msg=PIO_MSG_INQ_DIMLEN
-       call MPI_BCAST(msg,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioranks(1), 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(dimid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     end if
@@ -1345,7 +1345,7 @@ contains
     ios => file%iosystem
 
     if(ios%async_interface .and. .not. ios%ioproc) then
-       call mpi_bcast(msg, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioranks(1), 1, ios%union_comm, ierr)
        call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
 
     else if(ios%IOproc) then
@@ -1455,7 +1455,7 @@ contains
     ierr=PIO_noerr
     ios => file%iosystem
     if(ios%async_interface .and. .not. ios%ioproc) then
-       call mpi_bcast(msg, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioranks(1), 1, ios%union_comm, ierr)
        if(Debugasync) print *,__FILE__,__LINE__,file%fh
        call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast(len, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
@@ -1560,7 +1560,7 @@ contains
     ios => file%iosystem
 
     if(ios%async_interface .and. .not. ios%ioproc) then
-       call mpi_bcast(msg, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioranks(1), 1, ios%union_comm, ierr)
        call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast(type, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast(len_trim(name), 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
@@ -1610,7 +1610,7 @@ contains
     endif
     call check_netcdf(File, ierr,_FILE_,__LINE__)
     if(ios%async_interface  .or. ios%num_tasks> ios%num_iotasks) then  
-       call MPI_BCAST(vardesc%varid, 1, MPI_INTEGER, ios%IOMaster, ios%my_Comm, ierr)
+       call MPI_BCAST(vardesc%varid, 1, MPI_INTEGER, ios%Iomaster, ios%my_Comm, ierr)
     end if
   end function def_var_md
 

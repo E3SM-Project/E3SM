@@ -857,10 +857,15 @@ contains
     if(iosystem%async_interface .and. .not. iosystem%ioproc) then
        msg = PIO_MSG_INITDECOMP_DOF
        is_async=.true.
-       if(DebugAsync) print*,__FILE__,__LINE__
-       call mpi_bcast(msg, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+       if(DebugAsync) print*,__FILE__,__LINE__, iosystem%ioranks
+       if(iosystem%comp_rank==0) then
+          call mpi_send(msg, 1, mpi_integer, iosystem%ioroot, 1, iosystem%union_comm, ierr)
+       end if
+       if(DebugAsync) print*,__FILE__,__LINE__, ierr, iosystem%ioroot, iosystem%comp_rank
 
        call mpi_bcast(basepiotype, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+       if(DebugAsync) print*,__FILE__,__LINE__
+
        call mpi_bcast(size(dims), 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
        call mpi_bcast(dims, size(dims), mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
 
@@ -916,7 +921,7 @@ contains
        
     iodesc%start=0
     iodesc%count=0
-    if(DebugAsync) print*,__FILE__,__LINE__, iosystem%num_tasks, iosystem%num_iotasks, iosystem%io_rank, iosystem%io_comm
+    if(DebugAsync) print*,__FILE__,__LINE__, iosystem%num_tasks, iosystem%num_iotasks, iosystem%io_rank, iosystem%io_comm, iosystem%ioranks
 
     if (iosystem%ioproc) then
        if(present(iostart) .and. present(iocount)) then
@@ -1564,7 +1569,7 @@ contains
 	if(DebugAsync) print *,__FILE__,__LINE__,iosystem%compmaster
           call mpi_intercomm_create(mpi_comm_io, 0, comp_comm,iosystem%compmaster , 1, intercomm, ierr)
        end if
-       call init_intercom(comp_comm, mpi_comm_compute, mpi_comm_io, intercomm, iosystem)
+!       call init_intercom(1, (/comp_comm/), (/mpi_comm_compute/), mpi_comm_io, (/intercomm/), (/iosystem/))
        
 
     else
@@ -1605,113 +1610,141 @@ contains
 !! @param iosystem a derived type which can be used in subsequent pio operations (defined in PIO_types).
 !! @param base @em optional argument can be used to offset the first io task - default base is task 1.
 !<
-  subroutine init_intercom(union_comm, comp_comm, io_comm, intercomm, iosystem)
-    integer, intent(in) :: union_comm   !  The intra communicator which contains both io and comp
-    integer, intent(in) :: comp_comm   !  The compute communicator
+  subroutine init_intercom(numcomps, union_comm, comp_comm, io_comm, iosystem)
+    integer, intent(in) :: numcomps
+    integer, intent(in) :: union_comm(numcomps)   !  The intra communicator which contains both io and comp
+    integer, intent(in) :: comp_comm(numcomps)   !  The compute communicator
     integer, intent(in) :: io_comm     !  The io communicator
-    integer, intent(in) :: intercomm       !  The inter communicator which includes both
 
-    type (iosystem_desc_t), intent(out)  :: iosystem  ! io descriptor to initalize
+    type (iosystem_desc_t), intent(out)  :: iosystem(numcomps)  ! io descriptor to initalize
 
     integer :: ierr
     logical :: is_inter
     logical, parameter :: check=.true.
 
-
-    integer :: i, j
+    integer :: i, j, intercomm
     integer(i4), pointer :: iotmp(:)
 
 #ifdef TIMING
     call t_startf("PIO_init")
 #endif
-    iosystem%error_handling = PIO_internal_error
-    iosystem%comp_comm = comp_comm
-    iosystem%io_comm = io_comm
-    iosystem%union_comm = union_comm
-    iosystem%info = mpi_info_null
-    iosystem%comp_rank= -1
-    iosystem%io_rank  = -1
-    iosystem%async_interface = .true.
-
-    call mpi_comm_test_inter(intercomm, is_inter, ierr)
-    if(check) call checkmpireturn('init: after call to comm_test_inter: ',ierr)
-
-    if(is_inter) then
-       iosystem%intercomm=intercomm
-       iosystem%userearranger = .true.
-       iosystem%rearr = PIO_rearr_box
-       iosystem%my_comm = intercomm
 
 
-       call mpi_comm_rank(union_comm, iosystem%union_rank, ierr)
-       if(check) call checkmpireturn('init: after call to comm_rank: ',ierr)
-       call mpi_comm_size(union_comm, iosystem%num_tasks, ierr)
-       if(check) call checkmpireturn('init: after call to comm_size: ',ierr)
+    do i=1,numcomps
+       iosystem(i)%error_handling = PIO_internal_error
+       iosystem(i)%comp_comm = comp_comm(i)
+       iosystem(i)%io_comm = io_comm
+       iosystem(i)%union_comm = union_comm(i)
+       iosystem(i)%info = mpi_info_null
+       iosystem(i)%comp_rank= -1
+       iosystem(i)%io_rank  = -1
+       iosystem(i)%async_interface = .true.
+       iosystem(i)%comproot = -1
+       iosystem(i)%ioroot = -1
 
-       
-       if(comp_comm /= MPI_COMM_NULL) then
-          call mpi_comm_rank(comp_comm, iosystem%comp_rank, ierr)
+       if(union_comm(i) /= MPI_COMM_NULL) then
+          call mpi_comm_rank(union_comm(i), iosystem(i)%union_rank, ierr)
           if(check) call checkmpireturn('init: after call to comm_rank: ',ierr)
-          call mpi_comm_size(comp_comm, iosystem%num_comptasks, ierr)
+          call mpi_comm_size(union_comm(i), iosystem(i)%num_tasks, ierr)
           if(check) call checkmpireturn('init: after call to comm_size: ',ierr)
-          iosystem%iomaster = 0
-          iosystem%ioproc = .false.
-          if(iosystem%comp_rank==0) then
-             iosystem%compmaster = MPI_ROOT
-          else
-             iosystem%compmaster = MPI_PROC_NULL
-          end if
-          call mpi_bcast(iosystem%num_comptasks, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
-          call mpi_bcast(iosystem%num_iotasks, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)
-          call alloc_check(iotmp,iosystem%num_iotasks,'init:iotmp')
-          iotmp(:)=0
-       else
-          call mpi_comm_rank(io_comm, iosystem%io_rank, ierr)
-          if(check) call checkmpireturn('init: after call to comm_rank: ',ierr)
-          call mpi_comm_size(io_comm, iosystem%num_iotasks, ierr)
+             
+          if(io_comm /= MPI_COMM_NULL) then
+             call mpi_comm_rank(io_comm, iosystem(i)%io_rank, ierr)
+             if(check) call checkmpireturn('init: after call to comm_rank: ',ierr)
 
-          if(check) call checkmpireturn('init: after call to comm_size: ',ierr)
-          if(iosystem%io_rank==0) then
-             iosystem%iomaster = MPI_ROOT
-          else
-             iosystem%iomaster = MPI_PROC_NULL
-          end if
-          iosystem%ioproc = .true.
-          iosystem%compmaster = 0
+             call mpi_comm_size(io_comm, iosystem(i)%num_iotasks, ierr)
+             if(check) call checkmpireturn('init: after call to comm_size: ',ierr)
 
-          call mpi_bcast(iosystem%num_comptasks, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
-          call mpi_bcast(iosystem%num_iotasks, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)
-          call pio_msg_handler_init()
-          call alloc_check(iotmp,iosystem%num_iotasks,'init:iotmp')
-          iotmp(:) = 0
-          iotmp( iosystem%io_rank+1)=iosystem%union_rank
+             if(iosystem(i)%io_rank==0) then
+                iosystem(i)%iomaster = MPI_ROOT
+                iosystem(i)%ioroot = iosystem(i)%union_rank
+             else
+                iosystem(i)%iomaster = MPI_PROC_NULL
+             end if
+             iosystem(i)%ioproc = .true.
+             iosystem(i)%compmaster = 0
+
+             call pio_msg_handler_init(io_comm, iosystem(i)%io_rank)
+          end if
+
+
+          if(comp_comm(i) /= MPI_COMM_NULL) then
+             call mpi_comm_rank(comp_comm(i), iosystem(i)%comp_rank, ierr)
+             if(check) call checkmpireturn('init: after call to comm_rank: ',ierr)
+             call mpi_comm_size(comp_comm(i), iosystem(i)%num_comptasks, ierr)
+             if(check) call checkmpireturn('init: after call to comm_size: ',ierr)
+
+             iosystem(i)%iomaster = 0
+             iosystem(i)%ioproc = .false.
+             if(iosystem(i)%comp_rank==0) then
+                iosystem(i)%compmaster = MPI_ROOT
+                iosystem(i)%comproot = iosystem(i)%union_rank
+             else
+                iosystem(i)%compmaster = MPI_PROC_NULL
+             end if
+
+          end if
+
+          iosystem(i)%userearranger = .true.
+          iosystem(i)%rearr = PIO_rearr_box
+          
+          if(Debugasync) print *,__FILE__,__LINE__
+          
+          call MPI_allreduce(iosystem(i)%comproot, j, 1, MPI_INTEGER, MPI_MAX,union_comm(i),ierr)
+          iosystem%comproot=j
+          call MPI_allreduce(iosystem(i)%ioroot, j, 1, MPI_INTEGER, MPI_MAX,union_comm(i),ierr)
+          iosystem%ioroot=j
+
+          if(Debugasync) print *,__FILE__,__LINE__, i, iosystem(i)%comproot, iosystem(i)%ioroot
+          !---------------------------------
+          ! initialize the rearranger system 
+          !---------------------------------
+
+          if(io_comm/=MPI_COMM_NULL) then
+             call mpi_intercomm_create(io_comm, 0, union_comm(i), iosystem(i)%comproot, 1 , intercomm, ierr)
+
+             call mpi_bcast(iosystem(i)%num_comptasks, 1, mpi_integer, iosystem(i)%compmaster,intercomm, ierr)
+             call mpi_bcast(iosystem(i)%num_iotasks, 1, mpi_integer, iosystem(i)%iomaster, intercomm, ierr)
+             call alloc_check(iotmp,iosystem(i)%num_iotasks,'init:iotmp')
+             iotmp(:) = 0
+             iotmp( iosystem(i)%io_rank+1)=iosystem(i)%union_rank
+
+          end if
+          if(comp_comm(i)/=MPI_COMM_NULL) then
+             call mpi_intercomm_create(comp_comm(i), 0, union_comm(i), iosystem(i)%ioroot, 1 , intercomm, ierr)
+             call mpi_bcast(iosystem(i)%num_comptasks, 1, mpi_integer, iosystem(i)%compmaster, intercomm, ierr)
+             call mpi_bcast(iosystem(i)%num_iotasks, 1, mpi_integer, iosystem(i)%iomaster, intercomm, ierr)
+             call alloc_check(iotmp,iosystem(i)%num_iotasks,'init:iotmp')
+             iotmp(:)=0
+
+          end if
+
+          iosystem(i)%my_comm = intercomm
+          iosystem(i)%intercomm=intercomm
+
+          call alloc_check(iosystem(i)%ioranks, iosystem(i)%num_iotasks,'init:n_ioranks')
+          if(Debugasync) print *,__FILE__,__LINE__,iotmp
+          call MPI_allreduce(iotmp,iosystem(i)%ioranks,iosystem(i)%num_iotasks,MPI_INTEGER,MPI_MAX,union_comm,ierr)
+          
+          if(Debugasync) print *,__FILE__,__LINE__,iosystem(i)%ioranks
+          call dealloc_check(iotmp)
+
+
+
+          
+          if (iosystem(i)%userearranger) then
+             call rearrange_init(iosystem(i))
+          endif
        end if
-    else
-! not yet supported
-       call piodie(__FILE__,__LINE__,'subroutine not yet implemented')
-       
-    end if
     
+    end do
 
-    call alloc_check(iosystem%ioranks, iosystem%num_iotasks,'init:n_ioranks')
-    if(Debugasync) print *,__FILE__,__LINE__,iotmp
-    call MPI_allreduce(iotmp,iosystem%ioranks,iosystem%num_iotasks,MPI_INTEGER,MPI_MAX,union_comm,ierr)
-
-    if(Debugasync) print *,__FILE__,__LINE__,iosystem%ioranks
-    call dealloc_check(iotmp)
-
-    !---------------------------------
-    ! initialize the rearranger system 
-    !---------------------------------
-
-    if (iosystem%userearranger) then
-       call rearrange_init(iosystem)
-    endif
+    if(DebugAsync) print*,__FILE__,__LINE__, iosystem(1)%ioranks
 
     ! This routine does not return
-    if(iosystem%ioproc) call pio_msg_handler(iosystem) 
-
-
+    if(io_comm /= MPI_COMM_NULL) call pio_msg_handler(numcomps,iosystem) 
+    
+    if(DebugAsync) print*,__FILE__,__LINE__, iosystem(1)%ioranks
 #ifdef TIMING
     call t_stopf("PIO_init")
 #endif
@@ -1757,9 +1790,9 @@ contains
      
      integer :: msg
 
-     if(iosystem%async_interface .and. .not. iosystem%ioproc) then
+     if(iosystem%async_interface .and. iosystem%comp_rank==0) then
        msg = PIO_MSG_EXIT
-       call mpi_bcast(msg, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+       call mpi_send(msg, 1, mpi_integer, iosystem%ioroot, 1, iosystem%union_comm, ierr)
      end if
 
 #ifndef _MPISERIAL
@@ -2063,8 +2096,10 @@ contains
     if(iosystem%async_interface .and. .not. iosystem%ioproc) then
        if(debugasync) print *,__FILE__,__LINE__, iosystem%intercomm
        msg = PIO_MSG_CREATE_FILE
-       call mpi_bcast(msg, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
-       if(debugasync) print *,__FILE__,__LINE__, msg
+       if(iosystem%comp_rank==0) then
+          call mpi_send(msg, 1, mpi_integer, iosystem%ioroot, 1, iosystem%union_comm, ierr)
+          if(debugasync) print *,__FILE__,__LINE__, msg
+       end if
 
        call mpi_bcast(myfname, char_len, mpi_character, iosystem%compmaster, iosystem%intercomm, ierr)
        call mpi_bcast(iotype, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
@@ -2201,7 +2236,9 @@ contains
 
     if(iosystem%async_interface .and. .not. is_callback) then
        msg = PIO_MSG_OPEN_FILE
-       call mpi_bcast(msg, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+       if(iosystem%comp_rank==0) then
+          call mpi_send(msg, 1, mpi_integer, iosystem%ioroot, 1, iosystem%union_comm, ierr)
+       end if
        
        call mpi_bcast(myfname, char_len, mpi_character, iosystem%compmaster, iosystem%intercomm, ierr)
        call mpi_bcast(iotype, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
@@ -2344,7 +2381,9 @@ contains
 #endif
     if(file%iosystem%async_interface .and. .not. file%iosystem%ioproc) then
        msg = PIO_MSG_CLOSE_FILE
-       call mpi_bcast(msg, 1, mpi_integer, file%iosystem%compmaster, file%iosystem%intercomm, ierr)
+       if(file%iosystem%comp_rank==0) then
+          call mpi_send(msg, 1, mpi_integer, file%iosystem%ioroot, 1, file%iosystem%union_comm, ierr)
+       end if
        call mpi_bcast(file%fh, 1, mpi_integer, file%iosystem%compmaster, file%iosystem%intercomm, ierr)
     else
        if(debug .and. file%iosystem%io_rank==0) print *,_FILE_,__LINE__,'close: ',file%fh

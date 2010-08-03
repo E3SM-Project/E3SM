@@ -52,8 +52,15 @@ module pio_types
         integer(i4)              :: io_rank            ! the io rank if io_rank = -1 not an IO processor
 !
         integer(i4)              :: Info               ! MPI-IO info structure
-        integer(i4)              :: IOMaster           ! The comp_rank of the io_rank 0
-        integer(i4)              :: compMaster           ! The union_rank of the comp_rank 0
+        
+! rank of the io and comp roots in the intercomm
+        integer(i4)              :: IOMaster           ! The intercom of the io_rank 0
+        integer(i4)              :: compMaster           ! The intercom of the comp_rank 0
+
+! rank of the io and comp roots in the union_comm
+        integer(i4)              :: IOroot           ! The union_rank of the io_rank 0
+        integer(i4)              :: comproot           ! The union_rank of the comp_rank 0
+
         logical(log_kind)        :: IOproc             ! .true. if an IO processor
         logical(log_kind)        :: UseRearranger      ! .true. if data rearrangement is necessary
         logical(log_kind)        :: async_interface    ! .true. if using the async interface model
@@ -64,6 +71,16 @@ module pio_types
 
 	! This holds the IODESC
     end type
+
+    type iosystem_list_t
+       type(iosystem_desc_t), pointer :: this_iosystem
+    end type iosystem_list_t
+
+
+    integer, parameter :: MAX_IO_SYSTEMS=6
+    type(iosystem_list_t) :: iosystems(MAX_IO_SYSTEMS)
+
+
     
 !> 
 !! @public
