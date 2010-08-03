@@ -2828,9 +2828,6 @@ end subroutine box_rearrange_io2comp_int
     do i=1,Iosystem%num_iotasks
        root = find_io_comprank(ioSystem,i) 
 
-       print *,__FILE__,__LINE__,Iosystem%comp_rank,': ',nsends(i),' sends to ',i, root, iosystem%ioranks
-
-
        call MPI_REDUCE( nsends(i),ioDesc%nrecvs,1,MPI_INTEGER, &
             MPI_SUM,root,Iosystem%union_comm,ierror )
        call CheckMPIReturn(subName,ierror)
@@ -2890,7 +2887,7 @@ end subroutine box_rearrange_io2comp_int
 
 #ifndef _MPISERIAL
 
-# 1661 "box_rearrange.F90.in"
+# 1658 "box_rearrange.F90.in"
   subroutine compute_counts( Iosystem,ioDesc,ndof,niodof )
 
     type (Iosystem_desc_t), intent(in) :: Iosystem
@@ -3378,7 +3375,7 @@ end subroutine box_rearrange_io2comp_int
   !   the rearrangement
   !
 
-# 2148 "box_rearrange.F90.in"
+# 2145 "box_rearrange.F90.in"
   subroutine box_rearrange_free(Iosystem,ioDesc)
     implicit none
 
