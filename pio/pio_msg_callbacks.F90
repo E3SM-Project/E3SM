@@ -363,6 +363,90 @@ subroutine inq_varid_handler(iosystem)
 
 end subroutine inq_varid_handler
 
+subroutine inq_dimid_handler(iosystem)
+  use pio, only: iosystem_desc_t, file_desc_t, pio_inq_dimid, pio_max_name
+  use pio_msg_mod, only : lookupfile
+  use pio_support, only : debugAsync
+  
+  implicit none
+  include 'mpif.h' !_EXTERNAL
+
+  type(iosystem_desc_t) :: iosystem
+  type(file_desc_t), pointer :: file
+  integer :: fh, ierr, nlen, dimid
+  character(len=PIO_MAX_NAME) :: name
+
+  call mpi_bcast(fh, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+  if(Debugasync) print *,__FILE__,__LINE__,fh
+  call mpi_bcast(nlen, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+  call mpi_bcast(name(1:nlen), nlen, mpi_character, iosystem%compmaster, iosystem%intercomm, ierr)
+  if(Debugasync) print *,__FILE__,__LINE__,name(1:nlen)
+  file=> lookupfile(fh)
+
+  ierr =  pio_inq_dimid(file, name(1:nlen), dimid)
+
+
+
+end subroutine inq_dimid_handler
+
+subroutine inq_vardimid_handler(iosystem)
+  use pio, only: iosystem_desc_t, file_desc_t, pio_inq_vardimid
+  use pio_msg_mod, only : lookupfile
+  use pio_support, only : debugAsync
+  
+  implicit none
+  include 'mpif.h' !_EXTERNAL
+
+  type(iosystem_desc_t) :: iosystem
+  type(file_desc_t), pointer :: file
+  integer :: fh, ierr, size_dimids, varid
+  integer, allocatable :: dimids(:)
+
+  call mpi_bcast(fh, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+  if(Debugasync) print *,__FILE__,__LINE__,fh
+  call mpi_bcast(varid, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+  call mpi_bcast(size_dimids, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+  file=> lookupfile(fh)
+  allocate(dimids(size_dimids))
+  ierr =  pio_inq_vardimid(file, varid, dimids)
+  deallocate(dimids)
+end subroutine inq_vardimid_handler
+
+subroutine inq_dimlen_handler(iosystem)
+  use pio, only: iosystem_desc_t, file_desc_t, pio_inq_dimlen
+  use pio_msg_mod, only : lookupfile
+  use pio_support, only : debugAsync
+  
+  implicit none
+  include 'mpif.h' !_EXTERNAL
+
+  type(iosystem_desc_t) :: iosystem
+  type(file_desc_t), pointer :: file
+  integer :: fh, ierr, dimlen, dimid
+
+  call mpi_bcast(fh, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+  if(Debugasync) print *,__FILE__,__LINE__,fh
+  call mpi_bcast(dimid, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+  file=> lookupfile(fh)
+
+  ierr =  pio_inq_dimlen(file, dimid, dimlen)
+end subroutine inq_dimlen_handler
+
+subroutine seterrorhandling_handler(ios)
+  use pio, only : iosystem_desc_t, pio_seterrorhandling
+  implicit none
+  include 'mpif.h' !_EXTERNAL
+  type(iosystem_desc_t), intent(inout) :: ios
+  integer :: method, ierr
+
+  call mpi_bcast(method, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+  
+  call pio_seterrorhandling(ios, method)
+
+end subroutine seterrorhandling_handler
+
+
+
 subroutine finalize_handler(iosystem)
   use pio, only : iosystem_desc_t, pio_finalize
   use pio_support, only : debugAsync

@@ -33,8 +33,17 @@ module pio_msg_mod
    integer, parameter, public :: pio_msg_inq_dimlen = 340
    integer, parameter, public :: pio_msg_inq_dimname = 341
    integer, parameter, public :: pio_msg_inqattlen = 342
-   
+   integer, parameter, public :: pio_msg_seterrorhandling = 350
+   integer, parameter, public :: pio_msg_getvar1 = 360
+   integer, parameter, public :: pio_msg_getvar_0d = 361
+   integer, parameter, public :: pio_msg_getvar_1d = 362
+   integer, parameter, public :: pio_msg_getvar_2d = 363
+   integer, parameter, public :: pio_msg_getvar_3d = 364
+   integer, parameter, public :: pio_msg_getvar_4d = 365
+   integer, parameter, public :: pio_msg_getvar_5d = 366
+
    integer, parameter, public :: pio_msg_exit = 999   
+
    
    type :: file_desc_list
       type(file_desc_t), pointer :: file
@@ -131,8 +140,20 @@ contains
           call readdarray_handler(ios)
        case (PIO_MSG_INQ_VARNDIMS)
           call inq_varndims_handler(ios)
+       case (PIO_MSG_INQ_VARDIMID)
+          call inq_vardimid_handler(ios)
        case (PIO_MSG_INQ_VARID)
           call inq_varid_handler(ios)
+       case (PIO_MSG_INQ_DIMID)
+          call inq_dimid_handler(ios)
+       case (PIO_MSG_INQ_DIMLEN)
+          call inq_dimlen_handler(ios)
+       case (PIO_MSG_SETERRORHANDLING)
+          call seterrorhandling_handler(ios)
+       case (PIO_MSG_GETVAR1)
+          call getvar1_handler(ios)
+       case (PIO_MSG_GETVAR_0d)
+          call getvar_0d_handler(ios)
        case (PIO_MSG_EXIT)
           call finalize_handler(ios)
           if(Debugasync) print *,'Exiting'

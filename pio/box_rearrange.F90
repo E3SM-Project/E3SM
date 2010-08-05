@@ -2759,8 +2759,6 @@ end subroutine box_rearrange_io2comp_int
        ! note that index in start,count is the io_rank not comp_rank
     endif
 
-
-
     call MPI_BCAST( start,ndim*Iosystem%num_iotasks,MPI_INTEGER, &    ! buf, cnt
          Iosystem%ioroot, Iosystem%union_comm,ierror )
     call CheckMPIReturn(subName,ierror)
@@ -2887,7 +2885,7 @@ end subroutine box_rearrange_io2comp_int
 
 #ifndef _MPISERIAL
 
-# 1658 "box_rearrange.F90.in"
+# 1656 "box_rearrange.F90.in"
   subroutine compute_counts( Iosystem,ioDesc,ndof,niodof )
 
     type (Iosystem_desc_t), intent(in) :: Iosystem
@@ -3375,7 +3373,7 @@ end subroutine box_rearrange_io2comp_int
   !   the rearrangement
   !
 
-# 2145 "box_rearrange.F90.in"
+# 2143 "box_rearrange.F90.in"
   subroutine box_rearrange_free(Iosystem,ioDesc)
     implicit none
 

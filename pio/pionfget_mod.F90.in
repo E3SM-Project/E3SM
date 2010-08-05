@@ -49,17 +49,19 @@ CONTAINS
 !! @retval ierr @copydoc error_return
 !<
   integer function get_var1_{TYPE} (File,varid, index, ival) result(ierr)
+    use pio_msg_mod, only : pio_msg_getvar1
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, index(:)
     {VTYPE}, intent(out) :: ival
-
+    type(iosystem_desc_t), pointer :: ios
     character(len=*), parameter :: subName=modName//'::get_var1_{TYPE}'
-    integer :: iotype, mpierr, ilen
+    integer :: iotype, mpierr, ilen, msg
 #ifdef TIMING
     call t_startf("pio_get_var1_{TYPE}")
 #endif
     ierr=0
     iotype = File%iotype 
+    ios => File%iosystem
     if(Debug) print *,_FILE_,__LINE__,index
 
 #if ({ITYPE} == TYPETEXT)
@@ -68,6 +70,20 @@ CONTAINS
 #else
     ilen=1
 #endif	
+    
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_GETVAR1
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(size(index),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(index,size(index),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST({ITYPE},1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       if({ITYPE} == TYPETEXT) then
+          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       end if
+    endif
+
 
     if(File%iosystem%IOProc) then
        select case (iotype) 
@@ -103,7 +119,7 @@ CONTAINS
     ilen=1
 #endif	
 
-    call MPI_Bcast(ival, ilen, {MPITYPE} , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+    call MPI_Bcast(ival, ilen, {MPITYPE} , File%iosystem%IOMaster, File%iosystem%MY_comm, mpierr)
     call CheckMPIReturn(subName, mpierr)
 
 #ifdef TIMING
@@ -232,12 +248,17 @@ CONTAINS
 !! @retval ierr @copydoc error_return
 !<
   integer function get_var_{DIMS}d_{TYPE} (File,varid, ival) result(ierr)
+    use pio_msg_mod, only : pio_msg_getvar_{DIMS}d
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     {VTYPE}, intent(out) :: ival{DIMSTR}
-
+    type(iosystem_desc_t), pointer :: ios
     character(len=*), parameter :: subName=modName//'::get_var_{DIMS}d_{TYPE}'
-    integer :: iotype, mpierr
+    integer :: iotype, mpierr, msg, ilen
+#if ({DIMS} > 0)
+    integer :: dims({DIMS})
+    integer :: i
+#endif
     integer(kind=PIO_OFFSET) :: isize
 
 #ifdef TIMING
@@ -250,9 +271,36 @@ CONTAINS
     isize= size(ival)
 #endif
 #if ({ITYPE} == TYPETEXT)
-    isize = isize*len(ival)	
+    ilen = len(ival)	
+    isize = isize*ilen
     ival{DIMSTR} = ' '
 #endif
+    ios=>File%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_GETVAR_{DIMS}d
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST({ITYPE},1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#if ({DIMS} > 0)
+       do i=1,{DIMS}
+          dims(i)=size(ival,i)
+       end do
+       call MPI_BCAST(dims,{DIMS},MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+#if({ITYPE} == TYPETEXT) 
+          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+
+
+    endif
+
+
+
+
+
+
+
 
     if(File%iosystem%IOProc) then
        select case (iotype) 
