@@ -4726,15 +4726,13 @@ contains
 #endif
 #if(100 == TYPETEXT) 
        ilen = len(ival)
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
     endif
 
     if(ios%async_interface ) then    
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,ilen*size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-
-       print *,__FILE__,__LINE__,ilen,size(ival), ival
     end if
 
 
@@ -4835,15 +4833,13 @@ contains
 #endif
 #if(100 == TYPETEXT) 
        ilen = len(ival)
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
     endif
 
     if(ios%async_interface ) then    
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,ilen*size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-
-       print *,__FILE__,__LINE__,ilen,size(ival), ival
     end if
 
 
@@ -4944,15 +4940,13 @@ contains
 #endif
 #if(100 == TYPETEXT) 
        ilen = len(ival)
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
     endif
 
     if(ios%async_interface ) then    
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,ilen*size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-
-       print *,__FILE__,__LINE__,ilen,size(ival), ival
     end if
 
 
@@ -5053,15 +5047,13 @@ contains
 #endif
 #if(100 == TYPETEXT) 
        ilen = len(ival)
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
     endif
 
     if(ios%async_interface ) then    
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,ilen*size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-
-       print *,__FILE__,__LINE__,ilen,size(ival), ival
     end if
 
 
@@ -5162,15 +5154,13 @@ contains
 #endif
 #if(100 == TYPETEXT) 
        ilen = len(ival)
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
     endif
 
     if(ios%async_interface ) then    
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,ilen*size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-
-       print *,__FILE__,__LINE__,ilen,size(ival), ival
     end if
 
 
@@ -5271,15 +5261,13 @@ contains
 #endif
 #if(101 == TYPETEXT) 
        ilen = len(ival)
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
     endif
 
     if(ios%async_interface ) then    
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,ilen*size(ival),MPI_REAL4,ios%CompMaster, ios%my_comm , mpierr)
-
-       print *,__FILE__,__LINE__,ilen,size(ival), ival
     end if
 
 
@@ -5380,15 +5368,13 @@ contains
 #endif
 #if(101 == TYPETEXT) 
        ilen = len(ival)
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
     endif
 
     if(ios%async_interface ) then    
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,ilen*size(ival),MPI_REAL4,ios%CompMaster, ios%my_comm , mpierr)
-
-       print *,__FILE__,__LINE__,ilen,size(ival), ival
     end if
 
 
@@ -5489,15 +5475,13 @@ contains
 #endif
 #if(101 == TYPETEXT) 
        ilen = len(ival)
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
     endif
 
     if(ios%async_interface ) then    
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,ilen*size(ival),MPI_REAL4,ios%CompMaster, ios%my_comm , mpierr)
-
-       print *,__FILE__,__LINE__,ilen,size(ival), ival
     end if
 
 
@@ -5598,15 +5582,13 @@ contains
 #endif
 #if(101 == TYPETEXT) 
        ilen = len(ival)
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
     endif
 
     if(ios%async_interface ) then    
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,ilen*size(ival),MPI_REAL4,ios%CompMaster, ios%my_comm , mpierr)
-
-       print *,__FILE__,__LINE__,ilen,size(ival), ival
     end if
 
 
@@ -5707,15 +5689,13 @@ contains
 #endif
 #if(101 == TYPETEXT) 
        ilen = len(ival)
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
     endif
 
     if(ios%async_interface ) then    
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,ilen*size(ival),MPI_REAL4,ios%CompMaster, ios%my_comm , mpierr)
-
-       print *,__FILE__,__LINE__,ilen,size(ival), ival
     end if
 
 
@@ -5816,15 +5796,13 @@ contains
 #endif
 #if(102 == TYPETEXT) 
        ilen = len(ival)
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
     endif
 
     if(ios%async_interface ) then    
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,ilen*size(ival),MPI_REAL8,ios%CompMaster, ios%my_comm , mpierr)
-
-       print *,__FILE__,__LINE__,ilen,size(ival), ival
     end if
 
 
@@ -5925,15 +5903,13 @@ contains
 #endif
 #if(102 == TYPETEXT) 
        ilen = len(ival)
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
     endif
 
     if(ios%async_interface ) then    
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,ilen*size(ival),MPI_REAL8,ios%CompMaster, ios%my_comm , mpierr)
-
-       print *,__FILE__,__LINE__,ilen,size(ival), ival
     end if
 
 
@@ -6034,15 +6010,13 @@ contains
 #endif
 #if(102 == TYPETEXT) 
        ilen = len(ival)
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
     endif
 
     if(ios%async_interface ) then    
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,ilen*size(ival),MPI_REAL8,ios%CompMaster, ios%my_comm , mpierr)
-
-       print *,__FILE__,__LINE__,ilen,size(ival), ival
     end if
 
 
@@ -6143,15 +6117,13 @@ contains
 #endif
 #if(102 == TYPETEXT) 
        ilen = len(ival)
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
     endif
 
     if(ios%async_interface ) then    
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,ilen*size(ival),MPI_REAL8,ios%CompMaster, ios%my_comm , mpierr)
-
-       print *,__FILE__,__LINE__,ilen,size(ival), ival
     end if
 
 
@@ -6252,15 +6224,13 @@ contains
 #endif
 #if(102 == TYPETEXT) 
        ilen = len(ival)
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
     endif
 
     if(ios%async_interface ) then    
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,ilen*size(ival),MPI_REAL8,ios%CompMaster, ios%my_comm , mpierr)
-
-       print *,__FILE__,__LINE__,ilen,size(ival), ival
     end if
 
 
@@ -6361,15 +6331,13 @@ contains
 #endif
 #if(103 == TYPETEXT) 
        ilen = len(ival)
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
     endif
 
     if(ios%async_interface ) then    
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,ilen*size(ival),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       print *,__FILE__,__LINE__,ilen,size(ival), ival
     end if
 
 
@@ -6470,15 +6438,13 @@ contains
 #endif
 #if(103 == TYPETEXT) 
        ilen = len(ival)
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
     endif
 
     if(ios%async_interface ) then    
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,ilen*size(ival),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       print *,__FILE__,__LINE__,ilen,size(ival), ival
     end if
 
 
@@ -6579,15 +6545,13 @@ contains
 #endif
 #if(103 == TYPETEXT) 
        ilen = len(ival)
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
     endif
 
     if(ios%async_interface ) then    
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,ilen*size(ival),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       print *,__FILE__,__LINE__,ilen,size(ival), ival
     end if
 
 
@@ -6688,15 +6652,13 @@ contains
 #endif
 #if(103 == TYPETEXT) 
        ilen = len(ival)
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
     endif
 
     if(ios%async_interface ) then    
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,ilen*size(ival),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       print *,__FILE__,__LINE__,ilen,size(ival), ival
     end if
 
 
@@ -6797,15 +6759,13 @@ contains
 #endif
 #if(103 == TYPETEXT) 
        ilen = len(ival)
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
     endif
 
     if(ios%async_interface ) then    
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,ilen*size(ival),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       print *,__FILE__,__LINE__,ilen,size(ival), ival
     end if
 
 
@@ -6864,7 +6824,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 441 "pionfput_mod.F90.in"
+# 439 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6889,7 +6849,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 441 "pionfput_mod.F90.in"
+# 439 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6914,7 +6874,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 441 "pionfput_mod.F90.in"
+# 439 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6939,7 +6899,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 441 "pionfput_mod.F90.in"
+# 439 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6964,7 +6924,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 441 "pionfput_mod.F90.in"
+# 439 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6989,7 +6949,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 441 "pionfput_mod.F90.in"
+# 439 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -7014,7 +6974,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 441 "pionfput_mod.F90.in"
+# 439 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -7039,7 +6999,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 441 "pionfput_mod.F90.in"
+# 439 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -7064,7 +7024,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 441 "pionfput_mod.F90.in"
+# 439 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -7089,7 +7049,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 441 "pionfput_mod.F90.in"
+# 439 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -7114,7 +7074,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 441 "pionfput_mod.F90.in"
+# 439 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -7139,7 +7099,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 441 "pionfput_mod.F90.in"
+# 439 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -7164,7 +7124,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 441 "pionfput_mod.F90.in"
+# 439 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -7189,7 +7149,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 441 "pionfput_mod.F90.in"
+# 439 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -7214,7 +7174,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 441 "pionfput_mod.F90.in"
+# 439 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -7239,7 +7199,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 441 "pionfput_mod.F90.in"
+# 439 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -7264,7 +7224,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 441 "pionfput_mod.F90.in"
+# 439 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -7289,7 +7249,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 441 "pionfput_mod.F90.in"
+# 439 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -7314,7 +7274,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 441 "pionfput_mod.F90.in"
+# 439 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -7339,7 +7299,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 441 "pionfput_mod.F90.in"
+# 439 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
