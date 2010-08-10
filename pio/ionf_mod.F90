@@ -73,11 +73,9 @@ contains
 #else
           ierr = nf90_create(fname, nmode, File%fh, &
                comm=File%iosystem%io_comm, info=File%iosystem%info,cache_size=10 )
-          call check_netcdf(File, ierr,_FILE_,__LINE__)
 #endif
 ! Set default to NOFILL for performance.  
-          ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
-          call check_netcdf(File, ierr,_FILE_,__LINE__)
+          if(ierr==PIO_NOERR) ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
        case(PIO_iotype_netcdf4c)
           if(iand(PIO_64BIT_OFFSET,amode)==PIO_64BIT_OFFSET) then
              nmode = ieor(amode,PIO_64bit_OFFSET)
@@ -92,7 +90,7 @@ contains
              ierr = nf90_create(fname, amode, File%fh, &
                   info=File%iosystem%info,cache_size=10 )
 ! Set default to NOFILL for performance.  
-             if(ierr==NF90_NOERR) &
+             if(ierr==PIO_NOERR) &
                   ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
           endif
 #endif          
@@ -116,7 +114,8 @@ contains
        if(Debug) print *,__FILE__,__LINE__,file%fh,ierr
     end if
     tmpfh = file%fh
-
+    if(Debug.or.DebugAsync) print *,__FILE__,__LINE__,file%fh,ierr
+    
     call mpi_bcast(tmpfh,1,mpi_integer, file%iosystem%iomaster, file%iosystem%my_comm, mpierr)
 
     if(.not. file%iosystem%ioproc) file%fh=-tmpfh

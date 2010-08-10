@@ -51,8 +51,8 @@ program testpio
   character(len=*), parameter :: TestI4CaseName  = 'i4_test'
   character(len=*), parameter :: TestComboCaseName = 'combo_test'
 
-  type (iosystem_desc_t) :: PIOSYS
-  type (iosystem_desc_t) :: piosystems(1)
+  type (iosystem_desc_t), pointer :: PIOSYS
+  type (iosystem_desc_t), target :: piosystems(1)
   type (File_desc_t)  :: File, File_r8,File_r4,File_i4
   type (Var_desc_t)   :: vard_i4, &
        vard_r8c,vard_r4c,vard_i4c, &
@@ -231,14 +231,15 @@ program testpio
 
   if(async) then
 #ifdef BGx
+     allocate(PIOSYS)
      call PIO_init(my_task, MPI_COMM_WORLD, num_iotasks, num_aggregator, stride, &
           rearr_type, PIOSYS, base, async=.true.,mpi_comm_compute=mpi_comm_compute)
 #else
      call split_comm(mpi_comm_world,nprocs, num_iotasks, stride, base, &
           mpi_comm_compute, mpi_comm_io, mpi_icomm_cio)
-     call PIO_init(1, (/mpi_comm_world/), (/mpi_comm_compute/), mpi_comm_io, PIOSYSTEMS)
-     PIOSYS = PIOSYSTEMS(1)
-     piosys%ioranks=>piosystems(1)%ioranks
+     call PIO_init(1, mpi_comm_world, (/mpi_comm_compute/), mpi_comm_io, PIOSYSTEMS)
+     PIOSYS => PIOSYSTEMS(1)
+
 #endif
      call MPI_COMM_RANK(MPI_COMM_COMPUTE,my_task,ierr)
      call MPI_COMM_SIZE(MPI_COMM_COMPUTE,nprocs,ierr)
@@ -246,6 +247,7 @@ program testpio
 
   else
      mpi_comm_compute = mpi_comm_world
+     allocate(PIOSYS)
 
      call PIO_init(my_task, MPI_COMM_COMPUTE, num_iotasks, num_aggregator, stride, &
           rearr_type, PIOSYS, base)

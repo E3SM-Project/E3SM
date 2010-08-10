@@ -34,6 +34,7 @@ module pio_msg_mod
    integer, parameter, public :: pio_msg_inq_dimname = 341
    integer, parameter, public :: pio_msg_inqattlen = 342
    integer, parameter, public :: pio_msg_seterrorhandling = 350
+
    integer, parameter, public :: pio_msg_getvar1 = 360
    integer, parameter, public :: pio_msg_getvar_0d = 361
    integer, parameter, public :: pio_msg_getvar_1d = 362
@@ -41,6 +42,31 @@ module pio_msg_mod
    integer, parameter, public :: pio_msg_getvar_3d = 364
    integer, parameter, public :: pio_msg_getvar_4d = 365
    integer, parameter, public :: pio_msg_getvar_5d = 366
+
+   integer, parameter, public :: pio_msg_getvara_1d = 367
+   integer, parameter, public :: pio_msg_getvara_2d = 368
+   integer, parameter, public :: pio_msg_getvara_3d = 369
+   integer, parameter, public :: pio_msg_getvara_4d = 370
+   integer, parameter, public :: pio_msg_getvara_5d = 371
+
+   integer, parameter, public :: pio_msg_putvar1 = 380
+   integer, parameter, public :: pio_msg_putvar_0d = 381
+   integer, parameter, public :: pio_msg_putvar_1d = 382
+   integer, parameter, public :: pio_msg_putvar_2d = 383
+   integer, parameter, public :: pio_msg_putvar_3d = 384
+   integer, parameter, public :: pio_msg_putvar_4d = 385
+   integer, parameter, public :: pio_msg_putvar_5d = 386
+
+   integer, parameter, public :: pio_msg_putvara_1d = 387
+   integer, parameter, public :: pio_msg_putvara_2d = 388
+   integer, parameter, public :: pio_msg_putvara_3d = 389
+   integer, parameter, public :: pio_msg_putvara_4d = 390
+   integer, parameter, public :: pio_msg_putvara_5d = 391
+
+   integer, parameter, public :: pio_msg_getatt = 400
+   integer, parameter, public :: pio_msg_getatt_1d = 401
+   integer, parameter, public :: pio_msg_putatt = 402
+   integer, parameter, public :: pio_msg_putatt_1d = 403
 
    integer, parameter, public :: pio_msg_exit = 999   
 
@@ -140,10 +166,16 @@ contains
           call readdarray_handler(ios)
        case (PIO_MSG_INQ_VARNDIMS)
           call inq_varndims_handler(ios)
+       case (PIO_MSG_INQ_VARNATTS)
+          call inq_varnatts_handler(ios)
        case (PIO_MSG_INQ_VARDIMID)
           call inq_vardimid_handler(ios)
        case (PIO_MSG_INQ_VARID)
           call inq_varid_handler(ios)
+       case (PIO_MSG_INQ_VARNAME)
+          call inq_varname_handler(ios)
+       case (PIO_MSG_INQ_VARTYPE)
+          call inq_vartype_handler(ios)
        case (PIO_MSG_INQ_DIMID)
           call inq_dimid_handler(ios)
        case (PIO_MSG_INQ_DIMLEN)
@@ -151,9 +183,64 @@ contains
        case (PIO_MSG_SETERRORHANDLING)
           call seterrorhandling_handler(ios)
        case (PIO_MSG_GETVAR1)
-          call getvar1_handler(ios)
+          call var1_handler(ios, msg)
        case (PIO_MSG_GETVAR_0d)
-          call getvar_0d_handler(ios)
+          call var_0d_handler(ios, msg)
+       case (PIO_MSG_GETVAR_1d)
+          call var_1d_handler(ios, msg)
+       case (PIO_MSG_GETVAR_2d)
+          call var_2d_handler(ios, msg)
+       case (PIO_MSG_GETVAR_3d)
+          call var_3d_handler(ios, msg)
+       case (PIO_MSG_GETVAR_4d)
+          call var_4d_handler(ios, msg)
+       case (PIO_MSG_GETVAR_5d)
+          call var_5d_handler(ios, msg)
+
+       case (PIO_MSG_GETVARA_1d)
+          call vara_1d_handler(ios, msg)
+       case (PIO_MSG_GETVARA_2d)
+          call vara_2d_handler(ios, msg)
+       case (PIO_MSG_GETVARA_3d)
+          call vara_3d_handler(ios, msg)
+       case (PIO_MSG_GETVARA_4d)
+          call vara_4d_handler(ios, msg)
+       case (PIO_MSG_GETVARA_5d)
+          call vara_5d_handler(ios, msg)
+
+       case (PIO_MSG_PUTVAR1)
+          call var1_handler(ios, msg)
+       case (PIO_MSG_PUTVAR_0d)
+          call var_0d_handler(ios, msg)
+       case (PIO_MSG_PUTVAR_1d)
+          call var_1d_handler(ios, msg)
+       case (PIO_MSG_PUTVAR_2d)
+          call var_2d_handler(ios, msg)
+       case (PIO_MSG_PUTVAR_3d)
+          call var_3d_handler(ios, msg)
+       case (PIO_MSG_PUTVAR_4d)
+          call var_4d_handler(ios, msg)
+       case (PIO_MSG_PUTVAR_5d)
+          call var_5d_handler(ios, msg)
+
+       case (PIO_MSG_PUTVARA_1d)
+          call vara_1d_handler(ios, msg)
+       case (PIO_MSG_PUTVARA_2d)
+          call vara_2d_handler(ios, msg)
+       case (PIO_MSG_PUTVARA_3d)
+          call vara_3d_handler(ios, msg)
+       case (PIO_MSG_PUTVARA_4d)
+          call vara_4d_handler(ios, msg)
+       case (PIO_MSG_PUTVARA_5d)
+          call vara_5d_handler(ios, msg)
+       case (PIO_MSG_GETATT)
+          call att_handler(ios, msg)
+       case (PIO_MSG_GETATT_1D)
+          call att_1d_handler(ios, msg)
+       case (PIO_MSG_PUTATT)
+          call att_handler(ios, msg)
+       case (PIO_MSG_PUTATT_1D)
+          call att_1d_handler(ios, msg)
        case (PIO_MSG_EXIT)
           call finalize_handler(ios)
           if(Debugasync) print *,'Exiting'
@@ -233,7 +320,6 @@ contains
     list_item=> top_file
 
     do while(associated(list_item%file) )
-       if(Debugasync) print *,__FILE__,__LINE__,list_item%file%fh,fh1
        if(abs(list_item%file%fh) == fh1) then
           nullify(list_item%file)
           exit
@@ -264,7 +350,6 @@ contains
     list_item=> top_file
     
     do while(associated(list_item%file) )
-       if(DebugAsync) print *,__FILE__,__LINE__,fh1,list_item%file%fh
        if(abs(list_item%file%fh) == fh1) then
           file => list_item%file
           exit

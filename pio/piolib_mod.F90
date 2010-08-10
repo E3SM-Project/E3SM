@@ -2147,34 +2147,22 @@ contains
        call mpi_bcast(iotype, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
        call mpi_bcast(amode, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
 
-       if(iosystem%error_handling==PIO_BCAST_ERROR) then
-          call mpi_bcast(ierr, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)       
-          if(debugasync) print *,__FILE__,__LINE__, ierr
+    end if
+    select case(iotype)
+    case(iotype_pbinary, iotype_direct_pbinary)
+       if(present(amode_in)) then
+          print *, 'warning, the mode argument is currently ignored for binary file operations'
        end if
-
-
-       call mpi_bcast(file%fh, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)
-       file%fh = -file%fh
-       if(debugasync) print *,__FILE__,__LINE__, file%fh
-
-
-    else
-       select case(iotype)
-       case(iotype_pbinary, iotype_direct_pbinary)
-          if(present(amode_in)) then
-             print *, 'warning, the mode argument is currently ignored for binary file operations'
-          end if
-          ierr = create_mpiio(file,myfname)
-       case( iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-          ierr = create_nf(file,myfname, amode)	
-          if(debug .and. iosystem%io_rank==0)print *,_FILE_,__LINE__,' open: ', myfname, file%fh
-       case(iotype_binary)
-          print *,'createfile: io type not supported'
-       end select
+       ierr = create_mpiio(file,myfname)
+    case( iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+       ierr = create_nf(file,myfname, amode)	
+       if(debug .and. iosystem%io_rank==0)print *,_FILE_,__LINE__,' open: ', myfname, file%fh
+    case(iotype_binary)
+       print *,'createfile: io type not supported'
+    end select
        
 
-       if(debug .and. file%iosystem%io_rank==0) print *,_FILE_,__LINE__,'open: ',file%fh, myfname
-    end if
+    if(debug .and. file%iosystem%io_rank==0) print *,_FILE_,__LINE__,'open: ',file%fh, myfname
 
 #ifdef TIMING
     call t_stopf("PIO_createfile")
@@ -2213,19 +2201,14 @@ contains
     logical, parameter :: check = .true.
     character(len=9) :: rd_buffer
     character(len=char_len) :: myfname
-    logical :: is_callback=.false.
 
 #ifdef TIMING
     call t_startf("PIO_openfile")
 #endif
 
-    if(iosystem%ioproc .and. iosystem%async_interface) then
-       is_callback=.true.
-    end if
 
 
-    if(Debug .or. Debugasync) print *,'PIO_openfile: {comp,io}_rank:',iosystem%comp_rank,iosystem%io_rank,'io proc: ',iosystem%ioproc, is_callback
-
+    if(Debug .or. Debugasync) print *,'PIO_openfile: {comp,io}_rank:',iosystem%comp_rank,iosystem%io_rank,'io proc: ',iosystem%ioproc
     ierr=PIO_noerr
 
     file%iosystem => iosystem
@@ -2265,7 +2248,7 @@ contains
        file%iotype = pio_iotype_netcdf
     end if
 #endif
-    if(.not. is_callback) then
+    if(.not. (iosystem%ioproc .and. iosystem%async_interface)) then
        call mpi_bcast(amode, 1, MPI_INTEGER, 0, iosystem%comp_comm, ierr)
        call mpi_bcast(file%iotype, 1, MPI_INTEGER, 0, iosystem%comp_comm, ierr)
        if(len(fname) > char_len) then
@@ -2276,7 +2259,7 @@ contains
        call mpi_bcast(myfname, len(fname), mpi_character, 0, iosystem%comp_comm, ierr)
     end if
 
-    if(iosystem%async_interface .and. .not. is_callback) then
+    if(iosystem%async_interface .and. .not. iosystem%ioproc) then
        msg = PIO_MSG_OPEN_FILE
        if(iosystem%comp_rank==0) then
           call mpi_send(msg, 1, mpi_integer, iosystem%ioroot, 1, iosystem%union_comm, ierr)
@@ -2285,29 +2268,21 @@ contains
        call mpi_bcast(myfname, char_len, mpi_character, iosystem%compmaster, iosystem%intercomm, ierr)
        call mpi_bcast(iotype, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
        call mpi_bcast(amode, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
-
-       if(iosystem%error_handling==PIO_BCAST_ERROR) then
-          call mpi_bcast(ierr, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)       
-       end if
-
-       call mpi_bcast(file%fh, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)
-       file%fh = -file%fh
-    else
-
-       select case(iotype)
-       case(iotype_pbinary, iotype_direct_pbinary)
-          if(amode /=0) then
-             print *, 'warning, the mode argument is currently ignored for binary file operations'
-          end if
-          ierr = open_mpiio(file,myfname)
-       case( iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
-          ierr = open_nf(file,myfname,amode)
-          if(debug .and. iosystem%io_rank==0)print *,_FILE_,__LINE__,' open: ', myfname, file%fh
-       case(iotype_binary)   ! appears to be a no-op
-
-       end select
-       if(Debug .and. file%iosystem%io_rank==0) print *,_FILE_,__LINE__,'open: ',file%fh, myfname
     end if
+
+    select case(iotype)
+    case(iotype_pbinary, iotype_direct_pbinary)
+       if(amode /=0) then
+          print *, 'warning, the mode argument is currently ignored for binary file operations'
+       end if
+       ierr = open_mpiio(file,myfname)
+    case( iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
+       ierr = open_nf(file,myfname,amode)
+       if(debug .and. iosystem%io_rank==0)print *,_FILE_,__LINE__,' open: ', myfname, file%fh
+    case(iotype_binary)   ! appears to be a no-op
+       
+    end select
+    if(Debug .and. file%iosystem%io_rank==0) print *,_FILE_,__LINE__,'open: ',file%fh, myfname
 #ifdef TIMING
     call t_stopf("PIO_openfile")
 #endif
@@ -2427,18 +2402,18 @@ contains
           call mpi_send(msg, 1, mpi_integer, file%iosystem%ioroot, 1, file%iosystem%union_comm, ierr)
        end if
        call mpi_bcast(file%fh, 1, mpi_integer, file%iosystem%compmaster, file%iosystem%intercomm, ierr)
-    else
-       if(debug .and. file%iosystem%io_rank==0) print *,_FILE_,__LINE__,'close: ',file%fh
-       iotype = file%iotype 
-       select case(iotype)
-       case(iotype_pbinary, iotype_direct_pbinary)
-          ierr = close_mpiio(file)
-       case( iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-          ierr = close_nf(file)
-       case(iotype_binary)
-          print *,'closefile: io type not supported'
-       end select
     end if
+
+    if(debug .and. file%iosystem%io_rank==0) print *,_FILE_,__LINE__,'close: ',file%fh
+    iotype = file%iotype 
+    select case(iotype)
+    case(iotype_pbinary, iotype_direct_pbinary)
+       ierr = close_mpiio(file)
+    case( iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+       ierr = close_nf(file)
+    case(iotype_binary)
+       print *,'closefile: io type not supported'
+    end select
 
 #ifdef TIMING
     call t_stopf("PIO_closefile")

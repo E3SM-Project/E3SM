@@ -3,7 +3,7 @@ module pionfget_mod
 #ifdef TIMING
   use perf_mod, only : t_startf, t_stopf      ! _EXTERNAL
 #endif
-
+  use pio_msg_mod
   use pio_kinds, only: i4,r4,r8,pio_offset
   use pio_types
   use pio_utils, only : check_netcdf
@@ -168,11 +168,13 @@ CONTAINS
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
     {VTYPE}, intent(out) :: ival{DIMSTR}
-
+         
     character(len=*), parameter :: subName=modName//'::get_vara_{DIMS}d_{TYPE}'
-    integer :: iotype, mpierr, i
-    integer(kind=PIO_OFFSET) :: isize
 
+    integer :: dims({DIMS})
+    integer :: iotype, mpierr, i, msg, ilen
+    integer(kind=PIO_OFFSET) :: isize
+    type(iosystem_desc_t), pointer :: ios
 #ifdef TIMING
     call t_startf("pio_get_vara_{DIMS}d_{TYPE}")
 #endif
@@ -182,6 +184,38 @@ CONTAINS
     do i=1,size(count)
        isize=isize*count(i)
     end do
+
+
+
+    ios=>File%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_GETVARA_{DIMS}d
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST({ITYPE},1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+
+       call MPI_BCAST(size(start),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(start,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(count,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+
+#if ({DIMS} > 0)
+       do i=1,{DIMS}
+          dims(i)=size(ival,i)
+       end do
+       call MPI_BCAST(dims,{DIMS},MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+#if({ITYPE} == TYPETEXT) 
+          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+
+
+    endif
+
+
+
+
+
 
     if(File%iosystem%IOProc) then
        select case (iotype) 
@@ -198,14 +232,22 @@ CONTAINS
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
           end if
+          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
+             call MPI_BCAST(ival,int(isize), {MPITYPE} ,0,ios%IO_comm, mpierr)
+             call CheckMPIReturn(subName,mpierr)
+          end if
+	  
+
 #endif
        end select
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
-    if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,int(isize), {MPITYPE} , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
+       call MPI_Bcast(ival,int(isize), {MPITYPE} , ios%IOMaster, ios%My_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
+
+
 
 #ifdef TIMING
     call t_stopf("pio_get_vara_{DIMS}d_{TYPE}")
@@ -297,11 +339,6 @@ CONTAINS
 
 
 
-
-
-
-
-
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
@@ -316,12 +353,17 @@ CONTAINS
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
           end if
+          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
+             call MPI_BCAST(ival,int(isize), {MPITYPE} ,0,ios%IO_comm, mpierr)
+             call CheckMPIReturn('nf_mod',mpierr)
+          end if
+
 #endif
        end select
     end if
     call check_netcdf(File,ierr,_FILE_,__LINE__)
-    if(iotype.eq.iotype_netcdf .or. File%iosystem%num_iotasks < File%iosystem%num_tasks) then
-       call MPI_Bcast(ival,int(isize), {MPITYPE} , File%iosystem%IOMaster, File%iosystem%Comp_comm, mpierr)
+    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
+       call MPI_Bcast(ival,int(isize), {MPITYPE} , ios%IOMaster, ios%My_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 #ifdef TIMING

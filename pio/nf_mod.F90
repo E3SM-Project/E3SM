@@ -1171,17 +1171,13 @@ contains
        end select
     endif
 
+    if(Debug .or. Debugasync) print *,__FILE__,__LINE__,file%fh, name, dimid, ios%async_interface, ios%iomaster,ios%my_comm,ios%intercomm, ierr
     call check_netcdf(File, ierr,_FILE_,__LINE__)
-    if(Debug .or. Debugasync) print *,__FILE__,__LINE__,file%fh, name, dimid, ios%async_interface, ios%iomaster,ios%my_comm,ios%intercomm
+
     if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
-
-       call mpi_barrier(mpi_comm_world,ierr)
-
-       print *,__FILE__,__LINE__,ios%iomaster, ios%my_comm
        call MPI_BCAST(dimid,1,MPI_INTEGER,ios%IOMaster,ios%My_comm, mpierr)
-       if(Debugasync) print *,__FILE__,__LINE__,dimid,mpierr
+       if(Debugasync) print *,__FILE__,__LINE__,dimid,ierr,mpierr
        call CheckMPIReturn('nf_mod',mpierr)
-
     end if
  
   end function pio_inq_dimid
@@ -1500,6 +1496,11 @@ contains
        end select
     endif
     call check_netcdf(File, ierr,_FILE_,__LINE__)
+
+    call mpi_barrier(file%iosystem%union_comm, mpierr)
+
+
+
     if(ios%async_interface .or. ios%num_tasks > ios%num_iotasks) then
        call MPI_BCAST(dimid, 1, MPI_INTEGER, ios%IOMaster, ios%my_Comm, ierr)
     end if

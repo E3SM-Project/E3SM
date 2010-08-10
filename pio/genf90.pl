@@ -103,7 +103,8 @@ foreach(@ARGV){
 	    
 	    push(@output, buildout($line));
 	}
-	if($line =~ /^\s*contains\s*!*/i){
+	if(($line =~ /^\s*contains\s*!*/i) or
+	  ($line =~ /^\s*!\s*Not a module/i)){
 	    $contains=1;
 	    next;
 	}
@@ -140,9 +141,10 @@ foreach(@ARGV){
     push(@output, $end);	
     if($itypeflag==1){
 	my $str;
-	foreach (keys %$itype){
-	    $str.="#define $itypename->{$_} $itype->{$_}\n";
-	}
+	$str.="#include \"dtypes.h\"\n";
+#	foreach (keys %$itype){
+#	    $str.="#define $itypename->{$_} $itype->{$_}\n";
+#	}
 	unshift(@output,$str);
     }
     print @output;
@@ -170,9 +172,9 @@ sub buildout{
     }else{
 	@ltypes = @types;
     }
+    
 
-
-    if($func =~ /{TYPE}/ && $func =~ /{DIMS}/){
+    if(($func =~ /{TYPE}/ && $func =~ /{DIMS}/) ){
 	my ($type, $dims);
 	foreach $type (@ltypes){
 	    foreach $dims (@ldims){
@@ -197,6 +199,26 @@ sub buildout{
 		$str =~ s/{DIMSTR}/$dimstr/g;
 		$outstr .= $str;
 	    }
+	}
+    }elsif($func =~ /{DIMS}/){
+        my $dims;
+	foreach $dims (@ldims){
+	    my $dimstr;
+	    for(my $i=1;$i<=$dims;$i++){
+		$dimstr .=':,';
+	    }
+	    if(defined $dimstr){
+		$dimstr="($dimstr";
+		chop $dimstr;
+		$dimstr.=')';
+	    }else{
+		$dimstr='';
+	    }
+		
+	    my $str = $func;
+	    $str =~ s/{DIMS}/$dims/g;
+	    $str =~ s/{DIMSTR}/$dimstr/g;
+	    $outstr .= $str;
 	}
     }elsif($func =~ /{TYPE}/){
 	my ($type);
