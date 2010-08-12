@@ -45,7 +45,7 @@ contains
     integer :: nmode, tmpfh
 
     nmode=amode
-    if(Debug) print *, 'Create file ', fname, 'with amode ',nmode
+    
     ierr=PIO_noerr
     File%fh=-1
 

@@ -10,12 +10,17 @@
 #define TYPEINT 103
 
 # 8 "pio_msg_getput_callbacks.F90.in"
-subroutine string_handler_for_var1(file, varid, index, strlen, msg)
+subroutine string_handler_for_var1(file, varid, index, ndims, strlen, msg)
   use pio, only : file_desc_t, pio_get_var, pio_put_var
+  use pio_msg_mod, only : pio_msg_getvar1
+  implicit none
   type(file_desc_t) :: file
-  integer, intent(in) :: varid, index(:), strlen, msg
+  integer, intent(in) :: varid, strlen, msg, ndims
+  integer, intent(in) :: index(ndims)
   character(len=strlen) :: str
+  integer :: ierr
 
+  print *,__FILE__,__LINE__,index,strlen,msg
   if(msg==PIO_MSG_GETVAR1) then
      ierr = pio_get_var(file, varid, index, str )  
   else
@@ -23,23 +28,7 @@ subroutine string_handler_for_var1(file, varid, index, strlen, msg)
   end if
 end subroutine string_handler_for_var1
 
-# 21 "pio_msg_getput_callbacks.F90.in"
-subroutine string_handler_for_var_0d(file, varid, strlen, msg)
-  use pio, only : file_desc_t, pio_get_var, pio_put_var
-  use pio_msg_mod, only : PIO_MSG_GETVAR_0D
-  type(file_desc_t) :: file
-  integer, intent(in) :: varid, strlen
-  character(len=strlen) :: str
-
-  if(msg==PIO_MSG_GETVAR_0D) then
-     ierr = pio_get_var(file, varid, str )  
-  else
-     ierr = pio_put_var(file, varid, str )  
-  end if
-end subroutine string_handler_for_var_0d
-  
-
-# 36 "pio_msg_getput_callbacks.F90.in"
+# 26 "pio_msg_getput_callbacks.F90.in"
 subroutine var1_handler(ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -64,36 +53,38 @@ subroutine var1_handler(ios, msg)
   call mpi_bcast(index, size_index, mpi_integer, ios%compmaster, ios%intercomm, ierr)
   call mpi_bcast(itype, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
   file=> lookupfile(fh)
-  if(msg==pio_msg_getvar1) then
-     select case(itype)
-     case (TYPETEXT)
-        call mpi_bcast(strlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-        call string_handler_for_var1(file, varid, index, strlen, msg)
-     case (TYPEREAL)
-        ierr = pio_get_var(file, varid, index, rvar)
-     case (TYPEDOUBLE)
-        ierr = pio_get_var(file, varid, index, dvar)
-     case (TYPEINT)
-        ierr = pio_get_var(file, varid, index, ivar)
-     end select
+
+
+  if(itype == TYPETEXT) then
+     call mpi_bcast(strlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+     
+     call string_handler_for_var1(file, varid, index, size_index, strlen, msg)
   else
-     select case(itype)
-     case (TYPETEXT)
-        call mpi_bcast(strlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-        call string_handler_for_var1(file, varid, index, strlen, msg)
-     case (TYPEREAL)
-        ierr = pio_put_var(file, varid, index, rvar)
-     case (TYPEDOUBLE)
-        ierr = pio_put_var(file, varid, index, dvar)
-     case (TYPEINT)
-        ierr = pio_put_var(file, varid, index, ivar)
-     end select
+     if(msg==pio_msg_getvar1) then
+        select case(itype)
+        case (TYPEREAL)
+           ierr = pio_get_var(file, varid, index, rvar)
+        case (TYPEDOUBLE)
+           ierr = pio_get_var(file, varid, index, dvar)
+        case (TYPEINT)
+           ierr = pio_get_var(file, varid, index, ivar)
+        end select
+     else
+        select case(itype)
+        case (TYPEREAL)
+           ierr = pio_put_var(file, varid, index, rvar)
+        case (TYPEDOUBLE)
+           ierr = pio_put_var(file, varid, index, dvar)
+        case (TYPEINT)
+           ierr = pio_put_var(file, varid, index, ivar)
+        end select
+     end if
   end if
   deallocate(index)
 end subroutine var1_handler
 
 ! DIMS 1,2,3,4,5
-# 89 "pio_msg_getput_callbacks.F90.in"
+# 81 "pio_msg_getput_callbacks.F90.in"
 subroutine vara_1d_handler(ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -128,6 +119,7 @@ subroutine vara_1d_handler(ios, msg)
   select case(itype)
   case (TYPETEXT)
      call mpi_bcast(strlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+	print *,__FILE__,__LINE__,strlen,dims
      call string_handler_for_vara_1d(file, varid, start, count, strlen, dims, msg)
   case (TYPEREAL)
 #if(1 == 1)
@@ -188,7 +180,7 @@ subroutine vara_1d_handler(ios, msg)
 end subroutine vara_1d_handler
 
 ! DIMS 1,2,3,4,5
-# 89 "pio_msg_getput_callbacks.F90.in"
+# 81 "pio_msg_getput_callbacks.F90.in"
 subroutine vara_2d_handler(ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -223,6 +215,7 @@ subroutine vara_2d_handler(ios, msg)
   select case(itype)
   case (TYPETEXT)
      call mpi_bcast(strlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+	print *,__FILE__,__LINE__,strlen,dims
      call string_handler_for_vara_2d(file, varid, start, count, strlen, dims, msg)
   case (TYPEREAL)
 #if(2 == 1)
@@ -283,7 +276,7 @@ subroutine vara_2d_handler(ios, msg)
 end subroutine vara_2d_handler
 
 ! DIMS 1,2,3,4,5
-# 89 "pio_msg_getput_callbacks.F90.in"
+# 81 "pio_msg_getput_callbacks.F90.in"
 subroutine vara_3d_handler(ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -318,6 +311,7 @@ subroutine vara_3d_handler(ios, msg)
   select case(itype)
   case (TYPETEXT)
      call mpi_bcast(strlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+	print *,__FILE__,__LINE__,strlen,dims
      call string_handler_for_vara_3d(file, varid, start, count, strlen, dims, msg)
   case (TYPEREAL)
 #if(3 == 1)
@@ -378,7 +372,7 @@ subroutine vara_3d_handler(ios, msg)
 end subroutine vara_3d_handler
 
 ! DIMS 1,2,3,4,5
-# 89 "pio_msg_getput_callbacks.F90.in"
+# 81 "pio_msg_getput_callbacks.F90.in"
 subroutine vara_4d_handler(ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -413,6 +407,7 @@ subroutine vara_4d_handler(ios, msg)
   select case(itype)
   case (TYPETEXT)
      call mpi_bcast(strlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+	print *,__FILE__,__LINE__,strlen,dims
      call string_handler_for_vara_4d(file, varid, start, count, strlen, dims, msg)
   case (TYPEREAL)
 #if(4 == 1)
@@ -473,7 +468,7 @@ subroutine vara_4d_handler(ios, msg)
 end subroutine vara_4d_handler
 
 ! DIMS 1,2,3,4,5
-# 89 "pio_msg_getput_callbacks.F90.in"
+# 81 "pio_msg_getput_callbacks.F90.in"
 subroutine vara_5d_handler(ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -508,6 +503,7 @@ subroutine vara_5d_handler(ios, msg)
   select case(itype)
   case (TYPETEXT)
      call mpi_bcast(strlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+	print *,__FILE__,__LINE__,strlen,dims
      call string_handler_for_vara_5d(file, varid, start, count, strlen, dims, msg)
   case (TYPEREAL)
 #if(5 == 1)
@@ -567,8 +563,24 @@ subroutine vara_5d_handler(ios, msg)
   deallocate(start,count)
 end subroutine vara_5d_handler
 
+# 175 "pio_msg_getput_callbacks.F90.in"
+subroutine string_handler_for_var_0d(file, varid, strlen, msg)
+  use pio, only : file_desc_t, pio_get_var, pio_put_var
+  use pio_msg_mod, only : PIO_MSG_GETVAR_0D
+  implicit none
+  type(file_desc_t) :: file
+  integer, intent(in) :: varid, strlen, msg
+  character(len=strlen) :: str
+  integer :: ierr
 
-# 183 "pio_msg_getput_callbacks.F90.in"
+  if(msg==PIO_MSG_GETVAR_0D) then
+     ierr = pio_get_var(file, varid, str )  
+  else
+     ierr = pio_put_var(file, varid, str )  
+  end if
+end subroutine string_handler_for_var_0d
+  
+# 191 "pio_msg_getput_callbacks.F90.in"
 subroutine var_0d_handler (ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -618,14 +630,17 @@ subroutine var_0d_handler (ios, msg)
 end subroutine var_0d_handler
 
 ! DIMS 1,2,3,4,5
-# 232 "pio_msg_getput_callbacks.F90.in"
+# 240 "pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_var_1d (file, varid, strlen, dims, msg)
   use pio, only : file_desc_t, pio_get_var, pio_put_var
+  use pio_msg_mod, only : pio_msg_getvar_1D
+  implicit none
   type(file_desc_t) :: file
   integer, intent(in) :: varid, strlen, dims(1), msg
 
   character(len=strlen), allocatable :: str(:)
-  
+  integer :: ierr  
+
 #if(1 == 1)
   allocate(str(dims(1)))
 #elif(1 == 2)
@@ -637,7 +652,7 @@ subroutine string_handler_for_var_1d (file, varid, strlen, dims, msg)
 #elif(1 == 5)
   allocate(str(dims(1),dims(2),dims(3),dims(4),dims(5)))
 #endif
-  if(msg == PIO_GETVAR_1D) then
+  if(msg == PIO_MSG_GETVAR_1D) then
      ierr = pio_get_var(file, varid, str )  
   else
      ierr = pio_put_var(file, varid, str )  
@@ -647,14 +662,17 @@ subroutine string_handler_for_var_1d (file, varid, strlen, dims, msg)
 end subroutine string_handler_for_var_1d
 
 ! DIMS 1,2,3,4,5
-# 232 "pio_msg_getput_callbacks.F90.in"
+# 240 "pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_var_2d (file, varid, strlen, dims, msg)
   use pio, only : file_desc_t, pio_get_var, pio_put_var
+  use pio_msg_mod, only : pio_msg_getvar_2D
+  implicit none
   type(file_desc_t) :: file
   integer, intent(in) :: varid, strlen, dims(2), msg
 
   character(len=strlen), allocatable :: str(:,:)
-  
+  integer :: ierr  
+
 #if(2 == 1)
   allocate(str(dims(1)))
 #elif(2 == 2)
@@ -666,7 +684,7 @@ subroutine string_handler_for_var_2d (file, varid, strlen, dims, msg)
 #elif(2 == 5)
   allocate(str(dims(1),dims(2),dims(3),dims(4),dims(5)))
 #endif
-  if(msg == PIO_GETVAR_2D) then
+  if(msg == PIO_MSG_GETVAR_2D) then
      ierr = pio_get_var(file, varid, str )  
   else
      ierr = pio_put_var(file, varid, str )  
@@ -676,14 +694,17 @@ subroutine string_handler_for_var_2d (file, varid, strlen, dims, msg)
 end subroutine string_handler_for_var_2d
 
 ! DIMS 1,2,3,4,5
-# 232 "pio_msg_getput_callbacks.F90.in"
+# 240 "pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_var_3d (file, varid, strlen, dims, msg)
   use pio, only : file_desc_t, pio_get_var, pio_put_var
+  use pio_msg_mod, only : pio_msg_getvar_3D
+  implicit none
   type(file_desc_t) :: file
   integer, intent(in) :: varid, strlen, dims(3), msg
 
   character(len=strlen), allocatable :: str(:,:,:)
-  
+  integer :: ierr  
+
 #if(3 == 1)
   allocate(str(dims(1)))
 #elif(3 == 2)
@@ -695,7 +716,7 @@ subroutine string_handler_for_var_3d (file, varid, strlen, dims, msg)
 #elif(3 == 5)
   allocate(str(dims(1),dims(2),dims(3),dims(4),dims(5)))
 #endif
-  if(msg == PIO_GETVAR_3D) then
+  if(msg == PIO_MSG_GETVAR_3D) then
      ierr = pio_get_var(file, varid, str )  
   else
      ierr = pio_put_var(file, varid, str )  
@@ -705,14 +726,17 @@ subroutine string_handler_for_var_3d (file, varid, strlen, dims, msg)
 end subroutine string_handler_for_var_3d
 
 ! DIMS 1,2,3,4,5
-# 232 "pio_msg_getput_callbacks.F90.in"
+# 240 "pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_var_4d (file, varid, strlen, dims, msg)
   use pio, only : file_desc_t, pio_get_var, pio_put_var
+  use pio_msg_mod, only : pio_msg_getvar_4D
+  implicit none
   type(file_desc_t) :: file
   integer, intent(in) :: varid, strlen, dims(4), msg
 
   character(len=strlen), allocatable :: str(:,:,:,:)
-  
+  integer :: ierr  
+
 #if(4 == 1)
   allocate(str(dims(1)))
 #elif(4 == 2)
@@ -724,7 +748,7 @@ subroutine string_handler_for_var_4d (file, varid, strlen, dims, msg)
 #elif(4 == 5)
   allocate(str(dims(1),dims(2),dims(3),dims(4),dims(5)))
 #endif
-  if(msg == PIO_GETVAR_4D) then
+  if(msg == PIO_MSG_GETVAR_4D) then
      ierr = pio_get_var(file, varid, str )  
   else
      ierr = pio_put_var(file, varid, str )  
@@ -734,14 +758,17 @@ subroutine string_handler_for_var_4d (file, varid, strlen, dims, msg)
 end subroutine string_handler_for_var_4d
 
 ! DIMS 1,2,3,4,5
-# 232 "pio_msg_getput_callbacks.F90.in"
+# 240 "pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_var_5d (file, varid, strlen, dims, msg)
   use pio, only : file_desc_t, pio_get_var, pio_put_var
+  use pio_msg_mod, only : pio_msg_getvar_5D
+  implicit none
   type(file_desc_t) :: file
   integer, intent(in) :: varid, strlen, dims(5), msg
 
   character(len=strlen), allocatable :: str(:,:,:,:,:)
-  
+  integer :: ierr  
+
 #if(5 == 1)
   allocate(str(dims(1)))
 #elif(5 == 2)
@@ -753,7 +780,7 @@ subroutine string_handler_for_var_5d (file, varid, strlen, dims, msg)
 #elif(5 == 5)
   allocate(str(dims(1),dims(2),dims(3),dims(4),dims(5)))
 #endif
-  if(msg == PIO_GETVAR_5D) then
+  if(msg == PIO_MSG_GETVAR_5D) then
      ierr = pio_get_var(file, varid, str )  
   else
      ierr = pio_put_var(file, varid, str )  
@@ -763,15 +790,19 @@ subroutine string_handler_for_var_5d (file, varid, strlen, dims, msg)
 end subroutine string_handler_for_var_5d
   
 ! DIMS 1,2,3,4,5
-# 260 "pio_msg_getput_callbacks.F90.in"
+# 271 "pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_vara_1d (file, varid, start, count, strlen, dims, msg)
   use pio_msg_mod, only : pio_msg_getvara_1d
   use pio, only : file_desc_t, pio_get_var, pio_put_var
+  implicit none
   type(file_desc_t) :: file
   integer, intent(in) :: varid, strlen, start(1), count(1), dims(1), msg
 
   character(len=strlen), allocatable :: str(:)
-  
+  integer :: ierr
+
+  print *,__FILE__,__LINE__,strlen, dims
+
 #if(1 == 1)
   allocate(str(dims(1)))
 #elif(1 == 2)
@@ -794,15 +825,19 @@ subroutine string_handler_for_vara_1d (file, varid, start, count, strlen, dims, 
 end subroutine string_handler_for_vara_1d
   
 ! DIMS 1,2,3,4,5
-# 260 "pio_msg_getput_callbacks.F90.in"
+# 271 "pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_vara_2d (file, varid, start, count, strlen, dims, msg)
   use pio_msg_mod, only : pio_msg_getvara_2d
   use pio, only : file_desc_t, pio_get_var, pio_put_var
+  implicit none
   type(file_desc_t) :: file
   integer, intent(in) :: varid, strlen, start(2), count(2), dims(2), msg
 
   character(len=strlen), allocatable :: str(:,:)
-  
+  integer :: ierr
+
+  print *,__FILE__,__LINE__,strlen, dims
+
 #if(2 == 1)
   allocate(str(dims(1)))
 #elif(2 == 2)
@@ -825,15 +860,19 @@ subroutine string_handler_for_vara_2d (file, varid, start, count, strlen, dims, 
 end subroutine string_handler_for_vara_2d
   
 ! DIMS 1,2,3,4,5
-# 260 "pio_msg_getput_callbacks.F90.in"
+# 271 "pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_vara_3d (file, varid, start, count, strlen, dims, msg)
   use pio_msg_mod, only : pio_msg_getvara_3d
   use pio, only : file_desc_t, pio_get_var, pio_put_var
+  implicit none
   type(file_desc_t) :: file
   integer, intent(in) :: varid, strlen, start(3), count(3), dims(3), msg
 
   character(len=strlen), allocatable :: str(:,:,:)
-  
+  integer :: ierr
+
+  print *,__FILE__,__LINE__,strlen, dims
+
 #if(3 == 1)
   allocate(str(dims(1)))
 #elif(3 == 2)
@@ -856,15 +895,19 @@ subroutine string_handler_for_vara_3d (file, varid, start, count, strlen, dims, 
 end subroutine string_handler_for_vara_3d
   
 ! DIMS 1,2,3,4,5
-# 260 "pio_msg_getput_callbacks.F90.in"
+# 271 "pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_vara_4d (file, varid, start, count, strlen, dims, msg)
   use pio_msg_mod, only : pio_msg_getvara_4d
   use pio, only : file_desc_t, pio_get_var, pio_put_var
+  implicit none
   type(file_desc_t) :: file
   integer, intent(in) :: varid, strlen, start(4), count(4), dims(4), msg
 
   character(len=strlen), allocatable :: str(:,:,:,:)
-  
+  integer :: ierr
+
+  print *,__FILE__,__LINE__,strlen, dims
+
 #if(4 == 1)
   allocate(str(dims(1)))
 #elif(4 == 2)
@@ -887,15 +930,19 @@ subroutine string_handler_for_vara_4d (file, varid, start, count, strlen, dims, 
 end subroutine string_handler_for_vara_4d
   
 ! DIMS 1,2,3,4,5
-# 260 "pio_msg_getput_callbacks.F90.in"
+# 271 "pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_vara_5d (file, varid, start, count, strlen, dims, msg)
   use pio_msg_mod, only : pio_msg_getvara_5d
   use pio, only : file_desc_t, pio_get_var, pio_put_var
+  implicit none
   type(file_desc_t) :: file
   integer, intent(in) :: varid, strlen, start(5), count(5), dims(5), msg
 
   character(len=strlen), allocatable :: str(:,:,:,:,:)
-  
+  integer :: ierr
+
+  print *,__FILE__,__LINE__,strlen, dims
+
 #if(5 == 1)
   allocate(str(dims(1)))
 #elif(5 == 2)
@@ -919,7 +966,7 @@ end subroutine string_handler_for_vara_5d
   
 
 ! DIMS 1,2,3,4,5
-# 291 "pio_msg_getput_callbacks.F90.in"
+# 306 "pio_msg_getput_callbacks.F90.in"
 subroutine var_1d_handler (ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -1012,7 +1059,7 @@ end subroutine var_1d_handler
   
 
 ! DIMS 1,2,3,4,5
-# 291 "pio_msg_getput_callbacks.F90.in"
+# 306 "pio_msg_getput_callbacks.F90.in"
 subroutine var_2d_handler (ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -1105,7 +1152,7 @@ end subroutine var_2d_handler
   
 
 ! DIMS 1,2,3,4,5
-# 291 "pio_msg_getput_callbacks.F90.in"
+# 306 "pio_msg_getput_callbacks.F90.in"
 subroutine var_3d_handler (ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -1198,7 +1245,7 @@ end subroutine var_3d_handler
   
 
 ! DIMS 1,2,3,4,5
-# 291 "pio_msg_getput_callbacks.F90.in"
+# 306 "pio_msg_getput_callbacks.F90.in"
 subroutine var_4d_handler (ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -1291,7 +1338,7 @@ end subroutine var_4d_handler
   
 
 ! DIMS 1,2,3,4,5
-# 291 "pio_msg_getput_callbacks.F90.in"
+# 306 "pio_msg_getput_callbacks.F90.in"
 subroutine var_5d_handler (ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset

@@ -406,8 +406,6 @@ contains
 
        call rearrange_comp2io(File%iosystem,iodesc, array, iobuf)
 
-	if(Debug) print *,__FILE__,__LINE__,minval(iobuf),maxval(iobuf)
-
 #if DEBUG_REARR
        call alloc_check(array2,size(array),'array2')
 

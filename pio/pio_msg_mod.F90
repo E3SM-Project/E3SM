@@ -124,14 +124,17 @@ contains
 #ifdef TIMING    
     call t_startf('pio_msg_mod')
 #endif
+    if(iorank==0) then
+       do index=1,numcomps
+          ios=>iosystem(index)
+          if(ios%io_rank==0) then
+             print *,__FILE__,__LINE__,ios%comproot, ios%union_comm
+             call mpi_irecv(msg, 1, mpi_integer, ios%comproot, 1, ios%union_comm, req(index), ierr)       
+          end if
+       enddo
+    end if
     do while(msg /= pio_msg_exit)
        if(iorank==0) then
-          do index=1,numcomps
-             ios=>iosystem(index)
-             if(ios%io_rank==0) then
-                call mpi_irecv(msg, 1, mpi_integer, ios%comproot, 1, ios%union_comm, req(index), ierr)       
-             end if
-          enddo
           if(Debugasync) print *,__FILE__,__LINE__, ' waiting'
           call mpi_waitany(numcomps, req, index, status, ierr)
           if(Debugasync) print *,__FILE__,__LINE__, ' recieved on ', index
@@ -247,6 +250,10 @@ contains
        case default
           if(Debugasync) print *, 'Got unrecognized message ', msg, ierr
        end select   
+       if(iorank==0) then
+          call mpi_irecv(msg, 1, mpi_integer, ios%comproot, 1, ios%union_comm, req(index), ierr)
+       end if
+
     end do
 
 #ifdef TIMING

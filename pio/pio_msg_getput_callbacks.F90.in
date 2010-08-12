@@ -5,33 +5,23 @@
 #define TYPEDOUBLE 102
 #define TYPEINT 103
 
-subroutine string_handler_for_var1(file, varid, index, strlen, msg)
+subroutine string_handler_for_var1(file, varid, index, ndims, strlen, msg)
   use pio, only : file_desc_t, pio_get_var, pio_put_var
+  use pio_msg_mod, only : pio_msg_getvar1
+  implicit none
   type(file_desc_t) :: file
-  integer, intent(in) :: varid, index(:), strlen, msg
+  integer, intent(in) :: varid, strlen, msg, ndims
+  integer, intent(in) :: index(ndims)
   character(len=strlen) :: str
+  integer :: ierr
 
+  print *,__FILE__,__LINE__,index,strlen,msg
   if(msg==PIO_MSG_GETVAR1) then
      ierr = pio_get_var(file, varid, index, str )  
   else
      ierr = pio_put_var(file, varid, index, str )  
   end if
 end subroutine string_handler_for_var1
-
-subroutine string_handler_for_var_0d(file, varid, strlen, msg)
-  use pio, only : file_desc_t, pio_get_var, pio_put_var
-  use pio_msg_mod, only : PIO_MSG_GETVAR_0D
-  type(file_desc_t) :: file
-  integer, intent(in) :: varid, strlen
-  character(len=strlen) :: str
-
-  if(msg==PIO_MSG_GETVAR_0D) then
-     ierr = pio_get_var(file, varid, str )  
-  else
-     ierr = pio_put_var(file, varid, str )  
-  end if
-end subroutine string_handler_for_var_0d
-  
 
 subroutine var1_handler(ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
@@ -57,30 +47,32 @@ subroutine var1_handler(ios, msg)
   call mpi_bcast(index, size_index, mpi_integer, ios%compmaster, ios%intercomm, ierr)
   call mpi_bcast(itype, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
   file=> lookupfile(fh)
-  if(msg==pio_msg_getvar1) then
-     select case(itype)
-     case (TYPETEXT)
-        call mpi_bcast(strlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-        call string_handler_for_var1(file, varid, index, strlen, msg)
-     case (TYPEREAL)
-        ierr = pio_get_var(file, varid, index, rvar)
-     case (TYPEDOUBLE)
-        ierr = pio_get_var(file, varid, index, dvar)
-     case (TYPEINT)
-        ierr = pio_get_var(file, varid, index, ivar)
-     end select
+
+
+  if(itype == TYPETEXT) then
+     call mpi_bcast(strlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+     
+     call string_handler_for_var1(file, varid, index, size_index, strlen, msg)
   else
-     select case(itype)
-     case (TYPETEXT)
-        call mpi_bcast(strlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-        call string_handler_for_var1(file, varid, index, strlen, msg)
-     case (TYPEREAL)
-        ierr = pio_put_var(file, varid, index, rvar)
-     case (TYPEDOUBLE)
-        ierr = pio_put_var(file, varid, index, dvar)
-     case (TYPEINT)
-        ierr = pio_put_var(file, varid, index, ivar)
-     end select
+     if(msg==pio_msg_getvar1) then
+        select case(itype)
+        case (TYPEREAL)
+           ierr = pio_get_var(file, varid, index, rvar)
+        case (TYPEDOUBLE)
+           ierr = pio_get_var(file, varid, index, dvar)
+        case (TYPEINT)
+           ierr = pio_get_var(file, varid, index, ivar)
+        end select
+     else
+        select case(itype)
+        case (TYPEREAL)
+           ierr = pio_put_var(file, varid, index, rvar)
+        case (TYPEDOUBLE)
+           ierr = pio_put_var(file, varid, index, dvar)
+        case (TYPEINT)
+           ierr = pio_put_var(file, varid, index, ivar)
+        end select
+     end if
   end if
   deallocate(index)
 end subroutine var1_handler
@@ -120,6 +112,7 @@ subroutine vara_{DIMS}d_handler(ios, msg)
   select case(itype)
   case (TYPETEXT)
      call mpi_bcast(strlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+	print *,__FILE__,__LINE__,strlen,dims
      call string_handler_for_vara_{DIMS}d(file, varid, start, count, strlen, dims, msg)
   case (TYPEREAL)
 #if({DIMS} == 1)
@@ -179,7 +172,22 @@ subroutine vara_{DIMS}d_handler(ios, msg)
   deallocate(start,count)
 end subroutine vara_{DIMS}d_handler
 
+subroutine string_handler_for_var_0d(file, varid, strlen, msg)
+  use pio, only : file_desc_t, pio_get_var, pio_put_var
+  use pio_msg_mod, only : PIO_MSG_GETVAR_0D
+  implicit none
+  type(file_desc_t) :: file
+  integer, intent(in) :: varid, strlen, msg
+  character(len=strlen) :: str
+  integer :: ierr
 
+  if(msg==PIO_MSG_GETVAR_0D) then
+     ierr = pio_get_var(file, varid, str )  
+  else
+     ierr = pio_put_var(file, varid, str )  
+  end if
+end subroutine string_handler_for_var_0d
+  
 subroutine var_0d_handler (ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -231,11 +239,14 @@ end subroutine var_0d_handler
 ! DIMS 1,2,3,4,5
 subroutine string_handler_for_var_{DIMS}d (file, varid, strlen, dims, msg)
   use pio, only : file_desc_t, pio_get_var, pio_put_var
+  use pio_msg_mod, only : pio_msg_getvar_{DIMS}D
+  implicit none
   type(file_desc_t) :: file
   integer, intent(in) :: varid, strlen, dims({DIMS}), msg
 
   character(len=strlen), allocatable :: str{DIMSTR}
-  
+  integer :: ierr  
+
 #if({DIMS} == 1)
   allocate(str(dims(1)))
 #elif({DIMS} == 2)
@@ -247,7 +258,7 @@ subroutine string_handler_for_var_{DIMS}d (file, varid, strlen, dims, msg)
 #elif({DIMS} == 5)
   allocate(str(dims(1),dims(2),dims(3),dims(4),dims(5)))
 #endif
-  if(msg == PIO_GETVAR_{DIMS}D) then
+  if(msg == PIO_MSG_GETVAR_{DIMS}D) then
      ierr = pio_get_var(file, varid, str )  
   else
      ierr = pio_put_var(file, varid, str )  
@@ -260,11 +271,15 @@ end subroutine string_handler_for_var_{DIMS}d
 subroutine string_handler_for_vara_{DIMS}d (file, varid, start, count, strlen, dims, msg)
   use pio_msg_mod, only : pio_msg_getvara_{DIMS}d
   use pio, only : file_desc_t, pio_get_var, pio_put_var
+  implicit none
   type(file_desc_t) :: file
   integer, intent(in) :: varid, strlen, start({DIMS}), count({DIMS}), dims({DIMS}), msg
 
   character(len=strlen), allocatable :: str{DIMSTR}
-  
+  integer :: ierr
+
+  print *,__FILE__,__LINE__,strlen, dims
+
 #if({DIMS} == 1)
   allocate(str(dims(1)))
 #elif({DIMS} == 2)

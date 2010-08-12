@@ -159,8 +159,6 @@ contains
           endif
 
           if (File%iosystem%io_rank==0) then 
-             if (Debug) print *, subName,': 0: writing netcdf for self ', &
-                  'fh=',File%fh,' varid=',varDesc%varid, temp_start, temp_count, minval(iobuf),maxval(iobuf)
              fh = file%fh
              vid = vardesc%varid
              ierr=nf90_put_var( fh, vid,IOBUF,temp_start,temp_count)
@@ -378,8 +376,6 @@ contains
           endif
 
           if (File%iosystem%io_rank==0) then 
-             if (Debug) print *, subName,': 0: writing netcdf for self ', &
-                  'fh=',File%fh,' varid=',varDesc%varid, temp_start, temp_count, minval(iobuf),maxval(iobuf)
              fh = file%fh
              vid = vardesc%varid
              ierr=nf90_put_var( fh, vid,IOBUF,temp_start,temp_count)
@@ -597,8 +593,6 @@ contains
           endif
 
           if (File%iosystem%io_rank==0) then 
-             if (Debug) print *, subName,': 0: writing netcdf for self ', &
-                  'fh=',File%fh,' varid=',varDesc%varid, temp_start, temp_count, minval(iobuf),maxval(iobuf)
              fh = file%fh
              vid = vardesc%varid
              ierr=nf90_put_var( fh, vid,IOBUF,temp_start,temp_count)

@@ -1367,8 +1367,6 @@ contains
     call t_startf("PIO_init")
 #endif
 
-    if(comp_rank==0) call xl__trbk()
-
     if(present(async)) then
        if(.not. present(mpi_comm_compute)) then
           call piodie(__FILE__,__LINE__,'If async argument is present mpi_comm_compute arguement is required')
@@ -1691,7 +1689,7 @@ contains
           ! create the union comm
           call mpi_intercomm_merge(iosystem(i)%intercomm, .false., iosystem(i)%union_comm, ierr)
        end if
-       if(Debugasync) print *,__FILE__,__LINE__,iosystem(i)%intercomm, iosystem(i)%union_comm
+       if(Debugasync) print *,__FILE__,__LINE__,i, iosystem(i)%intercomm, iosystem(i)%union_comm
 
        if(iosystem(i)%union_comm /= MPI_COMM_NULL) then
           call mpi_comm_rank(iosystem(i)%union_comm, iosystem(i)%union_rank, ierr)
@@ -2089,7 +2087,7 @@ contains
     call t_startf("PIO_createfile")
 #endif
 
-    if(debug) print *,'createfile: {comp,io}_rank:',iosystem%comp_rank,iosystem%io_rank,'io proc: ',iosystem%ioproc
+    if(debug.or.debugasync) print *,'createfile: {comp,io}_rank:',iosystem%comp_rank,iosystem%io_rank,'io proc: ',iosystem%ioproc, iosystem%async_interface
     ierr=PIO_noerr
     
 
@@ -2134,13 +2132,10 @@ contains
        file%iotype = pio_iotype_netcdf
     end if
 #endif
-
     if(iosystem%async_interface .and. .not. iosystem%ioproc) then
-       if(debugasync) print *,__FILE__,__LINE__, iosystem%intercomm
        msg = PIO_MSG_CREATE_FILE
        if(iosystem%comp_rank==0) then
           call mpi_send(msg, 1, mpi_integer, iosystem%ioroot, 1, iosystem%union_comm, ierr)
-          if(debugasync) print *,__FILE__,__LINE__, msg
        end if
 
        call mpi_bcast(myfname, char_len, mpi_character, iosystem%compmaster, iosystem%intercomm, ierr)

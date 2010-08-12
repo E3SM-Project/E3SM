@@ -80,9 +80,10 @@ contains
        call MPI_BCAST(size(index),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(index,size(index),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST({ITYPE},1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       if({ITYPE} == TYPETEXT) then
+#if({ITYPE} == TYPETEXT) 
+          ilen = len(ival)
           call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       end if
+#endif
     endif
 
     if(ios%async_interface) then

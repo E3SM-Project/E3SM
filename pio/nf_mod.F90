@@ -1558,9 +1558,7 @@ contains
     integer :: iotype, mpierr
     integer :: msg = PIO_MSG_DEF_VAR
 
-    if(DebugAsync) print *,__FILE__,__LINE__
     iotype = File%iotype
-
 
     ierr=PIO_noerr
     vardesc%rec=-1
