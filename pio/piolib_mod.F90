@@ -62,8 +62,8 @@ module piolib_mod
        PIO_setnumagg,     &
        PIO_dupiodesc,     &
        PIO_getnumiotasks, &
-       PIO_set_hint
-
+       PIO_set_hint,      &
+       PIO_FILE_IS_OPEN
 
 #ifdef MEMCHK
 !> this is an internal variable for memory leak debugging 
@@ -251,6 +251,12 @@ module piolib_mod
   private :: nextlarger
 
 contains
+
+  logical function PIO_FILE_IS_OPEN(File)
+    type(file_desc_t), intent(in) :: file
+    pio_file_is_open = file%file_is_open
+  end function PIO_FILE_IS_OPEN
+
 
 !> 
 !! @public 
@@ -1741,7 +1747,6 @@ contains
           if(io_comm/=MPI_COMM_NULL) then
              call mpi_bcast(iosystem(i)%num_comptasks, 1, mpi_integer, iosystem(i)%compmaster,iosystem(i)%intercomm, ierr)
 
-       print *,__FILE__,__LINE__,iosystem(i)%iomaster, iosystem(i)%intercomm
              call mpi_bcast(iosystem(i)%num_iotasks, 1, mpi_integer, iosystem(i)%iomaster, iosystem(i)%intercomm, ierr)
 
              call alloc_check(iotmp,iosystem(i)%num_iotasks,'init:iotmp')
@@ -1752,7 +1757,6 @@ contains
           if(comp_comms(i)/=MPI_COMM_NULL) then
              call mpi_bcast(iosystem(i)%num_comptasks, 1, mpi_integer, iosystem(i)%compmaster, iosystem(i)%intercomm, ierr)
 
-       print *,__FILE__,__LINE__,iosystem(i)%iomaster, iosystem(i)%intercomm
              call mpi_bcast(iosystem(i)%num_iotasks, 1, mpi_integer, iosystem(i)%iomaster, iosystem(i)%intercomm, ierr)
 
              call alloc_check(iotmp,iosystem(i)%num_iotasks,'init:iotmp')
@@ -2155,7 +2159,7 @@ contains
     case(iotype_binary)
        print *,'createfile: io type not supported'
     end select
-       
+    if(ierr==0) file%file_is_open=.true.
 
     if(debug .and. file%iosystem%io_rank==0) print *,_FILE_,__LINE__,'open: ',file%fh, myfname
 
@@ -2278,6 +2282,7 @@ contains
        
     end select
     if(Debug .and. file%iosystem%io_rank==0) print *,_FILE_,__LINE__,'open: ',file%fh, myfname
+    if(ierr==0) file%file_is_open=.true.
 #ifdef TIMING
     call t_stopf("PIO_openfile")
 #endif
@@ -2409,6 +2414,7 @@ contains
     case(iotype_binary)
        print *,'closefile: io type not supported'
     end select
+    if(ierr==0) file%file_is_open=.false.
 
 #ifdef TIMING
     call t_stopf("PIO_closefile")

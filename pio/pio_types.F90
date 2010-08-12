@@ -81,7 +81,7 @@ module pio_types
     type(iosystem_list_t) :: iosystems(MAX_IO_SYSTEMS)
 
 
-    
+     
 !> 
 !! @public
 !! @struct file_desc_t file_desc_t
@@ -91,7 +91,8 @@ module pio_types
        type(iosystem_desc_t), pointer :: iosystem
        integer(i4) :: fh
        integer(kind=PIO_OFFSET) :: offset             ! offset into file
-       integer(i4)              :: iotype             ! Type of IO to perform see parameter statement below    
+       integer(i4)              :: iotype             ! Type of IO to perform see parameter statement below     
+       logical                  :: file_is_open
     end type File_desc_t
 
 

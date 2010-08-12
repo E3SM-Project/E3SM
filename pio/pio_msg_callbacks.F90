@@ -339,6 +339,91 @@ subroutine inq_varndims_handler(iosystem)
 
 end subroutine inq_varndims_handler
 
+subroutine inq_att_handler(iosystem)
+  use pio, only: iosystem_desc_t, file_desc_t, pio_inq_att, pio_max_name
+  use pio_msg_mod, only : lookupfile
+  use pio_support, only : debugAsync
+  
+  implicit none
+  include 'mpif.h' !_EXTERNAL
+
+
+  type(iosystem_desc_t) :: iosystem
+  type(file_desc_t), pointer :: file
+  integer :: fh, ierr, namelen, xtype, alen, varid
+  character(len=PIO_MAX_NAME) :: name
+
+  call mpi_bcast(fh, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+  if(Debugasync) print *,__FILE__,__LINE__,fh
+  call mpi_bcast(varid, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+  if(Debugasync) print *,__FILE__,__LINE__,varid
+  call mpi_bcast(namelen, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+  if(Debugasync) print *,__FILE__,__LINE__,varid
+  call mpi_bcast(name, namelen, mpi_character, iosystem%compmaster, iosystem%intercomm, ierr)
+  if(Debugasync) print *,__FILE__,__LINE__,varid
+  file=> lookupfile(fh)
+
+  ierr =  pio_inq_att(file, varid, name(1:namelen),xtype, alen)
+
+end subroutine inq_att_handler
+
+subroutine inq_attname_handler(iosystem)
+  use pio, only: iosystem_desc_t, file_desc_t, pio_inq_attname, pio_max_name
+  use pio_msg_mod, only : lookupfile
+  use pio_support, only : debugAsync
+  
+  implicit none
+  include 'mpif.h' !_EXTERNAL
+
+
+  type(iosystem_desc_t) :: iosystem
+  type(file_desc_t), pointer :: file
+  integer :: fh, ierr,varid, attnum
+  character(len=PIO_MAX_NAME) :: name
+
+  call mpi_bcast(fh, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+  if(Debugasync) print *,__FILE__,__LINE__,fh
+  call mpi_bcast(varid, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+  if(Debugasync) print *,__FILE__,__LINE__,varid
+  call mpi_bcast(attnum, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+  if(Debugasync) print *,__FILE__,__LINE__,varid
+
+  file=> lookupfile(fh)
+
+  ierr =  pio_inq_attname(file, varid, attnum, name)
+
+end subroutine inq_attname_handler
+
+subroutine inq_attlen_handler(iosystem)
+  use pio, only: iosystem_desc_t, file_desc_t, pio_inq_attlen, pio_max_name
+  use pio_msg_mod, only : lookupfile
+  use pio_support, only : debugAsync
+  
+  implicit none
+  include 'mpif.h' !_EXTERNAL
+
+
+  type(iosystem_desc_t) :: iosystem
+  type(file_desc_t), pointer :: file
+  integer :: fh, ierr,varid, alen, namelen
+  character(len=PIO_MAX_NAME) :: name
+
+  call mpi_bcast(fh, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+  if(Debugasync) print *,__FILE__,__LINE__,fh
+  call mpi_bcast(varid, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+  if(Debugasync) print *,__FILE__,__LINE__,varid
+  call mpi_bcast(namelen, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+  if(Debugasync) print *,__FILE__,__LINE__,varid
+  call mpi_bcast(name, namelen, mpi_character, iosystem%compmaster, iosystem%intercomm, ierr)
+  if(Debugasync) print *,__FILE__,__LINE__,varid
+
+  file=> lookupfile(fh)
+
+  ierr =  pio_inq_attlen(file, varid, name(1:namelen), alen)
+
+end subroutine inq_attlen_handler
+
+
 subroutine inq_varnatts_handler(iosystem)
   use pio, only: iosystem_desc_t, file_desc_t, pio_inq_varnatts
   use pio_msg_mod, only : lookupfile

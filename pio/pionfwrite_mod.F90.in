@@ -151,7 +151,6 @@ contains
              fh = file%fh
              vid = vardesc%varid
              ierr=nf90_put_var( fh, vid,IOBUF,temp_start,temp_count)
-             if(Debug) print *, subname,__LINE__,fh,vid, ierr
              if(ierr==pio_noerr) then
                 if (Debug) print *, subName,': 0: done writing for self',ndims
 
@@ -181,7 +180,6 @@ contains
                         i,2*File%iosystem%num_iotasks+i,File%iosystem%IO_comm,status,mpierr)
                    call CheckMPIReturn(subName,mpierr)
 
-                   if (Debug) print *, subName,': 0: writing netcdf for ',i, temp_start,temp_count,minval(temp_iobuf),maxval(temp_iobuf)
 	           if(sum(temp_count)>0) then
 
 #ifdef TIMING

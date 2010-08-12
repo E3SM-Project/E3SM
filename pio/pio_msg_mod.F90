@@ -128,7 +128,6 @@ contains
        do index=1,numcomps
           ios=>iosystem(index)
           if(ios%io_rank==0) then
-             print *,__FILE__,__LINE__,ios%comproot, ios%union_comm
              call mpi_irecv(msg, 1, mpi_integer, ios%comproot, 1, ios%union_comm, req(index), ierr)       
           end if
        enddo
@@ -244,11 +243,21 @@ contains
           call att_handler(ios, msg)
        case (PIO_MSG_PUTATT_1D)
           call att_1d_handler(ios, msg)
+
+       case(PIO_MSG_INQATT)
+          call inq_att_handler(ios)
+       case(PIO_MSG_INQATTNAME)
+          call inq_attname_handler(ios)
+       case(PIO_MSG_INQATTLEN)
+          call inq_attlen_handler(ios)
+          
+
+
        case (PIO_MSG_EXIT)
           call finalize_handler(ios)
-          if(Debugasync) print *,'Exiting'
+          print *,'PIO Exiting'
        case default
-          if(Debugasync) print *, 'Got unrecognized message ', msg, ierr
+          print *, 'PIO Got unrecognized message ', msg, ierr
        end select   
        if(iorank==0) then
           call mpi_irecv(msg, 1, mpi_integer, ios%comproot, 1, ios%union_comm, req(index), ierr)

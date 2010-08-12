@@ -15,7 +15,6 @@ subroutine string_handler_for_var1(file, varid, index, ndims, strlen, msg)
   character(len=strlen) :: str
   integer :: ierr
 
-  print *,__FILE__,__LINE__,index,strlen,msg
   if(msg==PIO_MSG_GETVAR1) then
      ierr = pio_get_var(file, varid, index, str )  
   else
@@ -112,7 +111,6 @@ subroutine vara_{DIMS}d_handler(ios, msg)
   select case(itype)
   case (TYPETEXT)
      call mpi_bcast(strlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-	print *,__FILE__,__LINE__,strlen,dims
      call string_handler_for_vara_{DIMS}d(file, varid, start, count, strlen, dims, msg)
   case (TYPEREAL)
 #if({DIMS} == 1)
@@ -277,8 +275,6 @@ subroutine string_handler_for_vara_{DIMS}d (file, varid, start, count, strlen, d
 
   character(len=strlen), allocatable :: str{DIMSTR}
   integer :: ierr
-
-  print *,__FILE__,__LINE__,strlen, dims
 
 #if({DIMS} == 1)
   allocate(str(dims(1)))

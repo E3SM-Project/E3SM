@@ -20,7 +20,6 @@ subroutine string_handler_for_var1(file, varid, index, ndims, strlen, msg)
   character(len=strlen) :: str
   integer :: ierr
 
-  print *,__FILE__,__LINE__,index,strlen,msg
   if(msg==PIO_MSG_GETVAR1) then
      ierr = pio_get_var(file, varid, index, str )  
   else
@@ -28,7 +27,7 @@ subroutine string_handler_for_var1(file, varid, index, ndims, strlen, msg)
   end if
 end subroutine string_handler_for_var1
 
-# 26 "pio_msg_getput_callbacks.F90.in"
+# 25 "pio_msg_getput_callbacks.F90.in"
 subroutine var1_handler(ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -84,7 +83,7 @@ subroutine var1_handler(ios, msg)
 end subroutine var1_handler
 
 ! DIMS 1,2,3,4,5
-# 81 "pio_msg_getput_callbacks.F90.in"
+# 80 "pio_msg_getput_callbacks.F90.in"
 subroutine vara_1d_handler(ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -119,7 +118,6 @@ subroutine vara_1d_handler(ios, msg)
   select case(itype)
   case (TYPETEXT)
      call mpi_bcast(strlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-	print *,__FILE__,__LINE__,strlen,dims
      call string_handler_for_vara_1d(file, varid, start, count, strlen, dims, msg)
   case (TYPEREAL)
 #if(1 == 1)
@@ -180,7 +178,7 @@ subroutine vara_1d_handler(ios, msg)
 end subroutine vara_1d_handler
 
 ! DIMS 1,2,3,4,5
-# 81 "pio_msg_getput_callbacks.F90.in"
+# 80 "pio_msg_getput_callbacks.F90.in"
 subroutine vara_2d_handler(ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -215,7 +213,6 @@ subroutine vara_2d_handler(ios, msg)
   select case(itype)
   case (TYPETEXT)
      call mpi_bcast(strlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-	print *,__FILE__,__LINE__,strlen,dims
      call string_handler_for_vara_2d(file, varid, start, count, strlen, dims, msg)
   case (TYPEREAL)
 #if(2 == 1)
@@ -276,7 +273,7 @@ subroutine vara_2d_handler(ios, msg)
 end subroutine vara_2d_handler
 
 ! DIMS 1,2,3,4,5
-# 81 "pio_msg_getput_callbacks.F90.in"
+# 80 "pio_msg_getput_callbacks.F90.in"
 subroutine vara_3d_handler(ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -311,7 +308,6 @@ subroutine vara_3d_handler(ios, msg)
   select case(itype)
   case (TYPETEXT)
      call mpi_bcast(strlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-	print *,__FILE__,__LINE__,strlen,dims
      call string_handler_for_vara_3d(file, varid, start, count, strlen, dims, msg)
   case (TYPEREAL)
 #if(3 == 1)
@@ -372,7 +368,7 @@ subroutine vara_3d_handler(ios, msg)
 end subroutine vara_3d_handler
 
 ! DIMS 1,2,3,4,5
-# 81 "pio_msg_getput_callbacks.F90.in"
+# 80 "pio_msg_getput_callbacks.F90.in"
 subroutine vara_4d_handler(ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -407,7 +403,6 @@ subroutine vara_4d_handler(ios, msg)
   select case(itype)
   case (TYPETEXT)
      call mpi_bcast(strlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-	print *,__FILE__,__LINE__,strlen,dims
      call string_handler_for_vara_4d(file, varid, start, count, strlen, dims, msg)
   case (TYPEREAL)
 #if(4 == 1)
@@ -468,7 +463,7 @@ subroutine vara_4d_handler(ios, msg)
 end subroutine vara_4d_handler
 
 ! DIMS 1,2,3,4,5
-# 81 "pio_msg_getput_callbacks.F90.in"
+# 80 "pio_msg_getput_callbacks.F90.in"
 subroutine vara_5d_handler(ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -503,7 +498,6 @@ subroutine vara_5d_handler(ios, msg)
   select case(itype)
   case (TYPETEXT)
      call mpi_bcast(strlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-	print *,__FILE__,__LINE__,strlen,dims
      call string_handler_for_vara_5d(file, varid, start, count, strlen, dims, msg)
   case (TYPEREAL)
 #if(5 == 1)
@@ -563,7 +557,7 @@ subroutine vara_5d_handler(ios, msg)
   deallocate(start,count)
 end subroutine vara_5d_handler
 
-# 175 "pio_msg_getput_callbacks.F90.in"
+# 173 "pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_var_0d(file, varid, strlen, msg)
   use pio, only : file_desc_t, pio_get_var, pio_put_var
   use pio_msg_mod, only : PIO_MSG_GETVAR_0D
@@ -580,7 +574,7 @@ subroutine string_handler_for_var_0d(file, varid, strlen, msg)
   end if
 end subroutine string_handler_for_var_0d
   
-# 191 "pio_msg_getput_callbacks.F90.in"
+# 189 "pio_msg_getput_callbacks.F90.in"
 subroutine var_0d_handler (ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -630,7 +624,7 @@ subroutine var_0d_handler (ios, msg)
 end subroutine var_0d_handler
 
 ! DIMS 1,2,3,4,5
-# 240 "pio_msg_getput_callbacks.F90.in"
+# 238 "pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_var_1d (file, varid, strlen, dims, msg)
   use pio, only : file_desc_t, pio_get_var, pio_put_var
   use pio_msg_mod, only : pio_msg_getvar_1D
@@ -662,7 +656,7 @@ subroutine string_handler_for_var_1d (file, varid, strlen, dims, msg)
 end subroutine string_handler_for_var_1d
 
 ! DIMS 1,2,3,4,5
-# 240 "pio_msg_getput_callbacks.F90.in"
+# 238 "pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_var_2d (file, varid, strlen, dims, msg)
   use pio, only : file_desc_t, pio_get_var, pio_put_var
   use pio_msg_mod, only : pio_msg_getvar_2D
@@ -694,7 +688,7 @@ subroutine string_handler_for_var_2d (file, varid, strlen, dims, msg)
 end subroutine string_handler_for_var_2d
 
 ! DIMS 1,2,3,4,5
-# 240 "pio_msg_getput_callbacks.F90.in"
+# 238 "pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_var_3d (file, varid, strlen, dims, msg)
   use pio, only : file_desc_t, pio_get_var, pio_put_var
   use pio_msg_mod, only : pio_msg_getvar_3D
@@ -726,7 +720,7 @@ subroutine string_handler_for_var_3d (file, varid, strlen, dims, msg)
 end subroutine string_handler_for_var_3d
 
 ! DIMS 1,2,3,4,5
-# 240 "pio_msg_getput_callbacks.F90.in"
+# 238 "pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_var_4d (file, varid, strlen, dims, msg)
   use pio, only : file_desc_t, pio_get_var, pio_put_var
   use pio_msg_mod, only : pio_msg_getvar_4D
@@ -758,7 +752,7 @@ subroutine string_handler_for_var_4d (file, varid, strlen, dims, msg)
 end subroutine string_handler_for_var_4d
 
 ! DIMS 1,2,3,4,5
-# 240 "pio_msg_getput_callbacks.F90.in"
+# 238 "pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_var_5d (file, varid, strlen, dims, msg)
   use pio, only : file_desc_t, pio_get_var, pio_put_var
   use pio_msg_mod, only : pio_msg_getvar_5D
@@ -790,7 +784,7 @@ subroutine string_handler_for_var_5d (file, varid, strlen, dims, msg)
 end subroutine string_handler_for_var_5d
   
 ! DIMS 1,2,3,4,5
-# 271 "pio_msg_getput_callbacks.F90.in"
+# 269 "pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_vara_1d (file, varid, start, count, strlen, dims, msg)
   use pio_msg_mod, only : pio_msg_getvara_1d
   use pio, only : file_desc_t, pio_get_var, pio_put_var
@@ -800,8 +794,6 @@ subroutine string_handler_for_vara_1d (file, varid, start, count, strlen, dims, 
 
   character(len=strlen), allocatable :: str(:)
   integer :: ierr
-
-  print *,__FILE__,__LINE__,strlen, dims
 
 #if(1 == 1)
   allocate(str(dims(1)))
@@ -825,7 +817,7 @@ subroutine string_handler_for_vara_1d (file, varid, start, count, strlen, dims, 
 end subroutine string_handler_for_vara_1d
   
 ! DIMS 1,2,3,4,5
-# 271 "pio_msg_getput_callbacks.F90.in"
+# 269 "pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_vara_2d (file, varid, start, count, strlen, dims, msg)
   use pio_msg_mod, only : pio_msg_getvara_2d
   use pio, only : file_desc_t, pio_get_var, pio_put_var
@@ -835,8 +827,6 @@ subroutine string_handler_for_vara_2d (file, varid, start, count, strlen, dims, 
 
   character(len=strlen), allocatable :: str(:,:)
   integer :: ierr
-
-  print *,__FILE__,__LINE__,strlen, dims
 
 #if(2 == 1)
   allocate(str(dims(1)))
@@ -860,7 +850,7 @@ subroutine string_handler_for_vara_2d (file, varid, start, count, strlen, dims, 
 end subroutine string_handler_for_vara_2d
   
 ! DIMS 1,2,3,4,5
-# 271 "pio_msg_getput_callbacks.F90.in"
+# 269 "pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_vara_3d (file, varid, start, count, strlen, dims, msg)
   use pio_msg_mod, only : pio_msg_getvara_3d
   use pio, only : file_desc_t, pio_get_var, pio_put_var
@@ -870,8 +860,6 @@ subroutine string_handler_for_vara_3d (file, varid, start, count, strlen, dims, 
 
   character(len=strlen), allocatable :: str(:,:,:)
   integer :: ierr
-
-  print *,__FILE__,__LINE__,strlen, dims
 
 #if(3 == 1)
   allocate(str(dims(1)))
@@ -895,7 +883,7 @@ subroutine string_handler_for_vara_3d (file, varid, start, count, strlen, dims, 
 end subroutine string_handler_for_vara_3d
   
 ! DIMS 1,2,3,4,5
-# 271 "pio_msg_getput_callbacks.F90.in"
+# 269 "pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_vara_4d (file, varid, start, count, strlen, dims, msg)
   use pio_msg_mod, only : pio_msg_getvara_4d
   use pio, only : file_desc_t, pio_get_var, pio_put_var
@@ -905,8 +893,6 @@ subroutine string_handler_for_vara_4d (file, varid, start, count, strlen, dims, 
 
   character(len=strlen), allocatable :: str(:,:,:,:)
   integer :: ierr
-
-  print *,__FILE__,__LINE__,strlen, dims
 
 #if(4 == 1)
   allocate(str(dims(1)))
@@ -930,7 +916,7 @@ subroutine string_handler_for_vara_4d (file, varid, start, count, strlen, dims, 
 end subroutine string_handler_for_vara_4d
   
 ! DIMS 1,2,3,4,5
-# 271 "pio_msg_getput_callbacks.F90.in"
+# 269 "pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_vara_5d (file, varid, start, count, strlen, dims, msg)
   use pio_msg_mod, only : pio_msg_getvara_5d
   use pio, only : file_desc_t, pio_get_var, pio_put_var
@@ -940,8 +926,6 @@ subroutine string_handler_for_vara_5d (file, varid, start, count, strlen, dims, 
 
   character(len=strlen), allocatable :: str(:,:,:,:,:)
   integer :: ierr
-
-  print *,__FILE__,__LINE__,strlen, dims
 
 #if(5 == 1)
   allocate(str(dims(1)))
@@ -966,7 +950,7 @@ end subroutine string_handler_for_vara_5d
   
 
 ! DIMS 1,2,3,4,5
-# 306 "pio_msg_getput_callbacks.F90.in"
+# 302 "pio_msg_getput_callbacks.F90.in"
 subroutine var_1d_handler (ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -1059,7 +1043,7 @@ end subroutine var_1d_handler
   
 
 ! DIMS 1,2,3,4,5
-# 306 "pio_msg_getput_callbacks.F90.in"
+# 302 "pio_msg_getput_callbacks.F90.in"
 subroutine var_2d_handler (ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -1152,7 +1136,7 @@ end subroutine var_2d_handler
   
 
 ! DIMS 1,2,3,4,5
-# 306 "pio_msg_getput_callbacks.F90.in"
+# 302 "pio_msg_getput_callbacks.F90.in"
 subroutine var_3d_handler (ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -1245,7 +1229,7 @@ end subroutine var_3d_handler
   
 
 ! DIMS 1,2,3,4,5
-# 306 "pio_msg_getput_callbacks.F90.in"
+# 302 "pio_msg_getput_callbacks.F90.in"
 subroutine var_4d_handler (ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -1338,7 +1322,7 @@ end subroutine var_4d_handler
   
 
 ! DIMS 1,2,3,4,5
-# 306 "pio_msg_getput_callbacks.F90.in"
+# 302 "pio_msg_getput_callbacks.F90.in"
 subroutine var_5d_handler (ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
