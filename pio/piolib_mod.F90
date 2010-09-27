@@ -1021,7 +1021,7 @@ contains
     real(r8) :: rtmp
     integer :: testvalue
     integer, parameter :: minblocksize=16        ! minimum block size on a task
-    integer, parameter :: maxit=10               ! maximum number of times to iterate on the fanin/out limiter  (Probably want a better solution)
+    integer, parameter :: maxit=1               ! maximum number of times to iterate on the fanin/out limiter  (Probably want a better solution)
     logical, parameter :: verbose = .false.
     integer,allocatable :: pes_per_dim(:), step(:)
     integer,allocatable :: bsize(:),nblocks(:),fblocks(:)
@@ -1075,7 +1075,8 @@ contains
 
     fanlimit  = 50.00
     fanfactor = fanlimit + 1.0  !we want at least one trip through the do while loop  
-    it = 1
+
+    it = 0
     step(:) = 1
     do while (fanfactor > fanlimit .and. it < maxit ) 
        xpes = use_io_procs
@@ -2183,15 +2184,15 @@ contains
        gstride(i)=gsize(i)*gstride(i-1)
     end do
 
-    iosize=1
+    iosize=min(count(1),1)
     do i=2,ndim
        iosize=iosize*count(i)
     end do
 
     ndisp=size(displace)
 
-    if (iosize<1 .or. ndisp<1) return
-!FIX suggested by M.Taylor    if (count(1).eq.0) return 
+    if (iosize<1 .or. ndisp<1 ) return
+
 
 
     if (ndisp/=iosize) then
