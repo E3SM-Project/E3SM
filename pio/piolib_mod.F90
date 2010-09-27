@@ -2184,7 +2184,7 @@ contains
        gstride(i)=gsize(i)*gstride(i-1)
     end do
 
-    iosize=min(count(1),1)
+    iosize=min(int(count(1)),1)
     do i=2,ndim
        iosize=iosize*count(i)
     end do
