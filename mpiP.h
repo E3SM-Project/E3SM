@@ -7,13 +7,11 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "listops.h"
 #include "mpi.h"
 
-#ifdef SYSDARWIN
-#include "string.h"
-#endif
 
 
 /*

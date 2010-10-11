@@ -373,6 +373,28 @@ int MPI_Alltoallv(void *sendbuf, int *sendcounts,
 
 /*********/
 
+
+FORT_NAME( mpi_op_create , MPI_OP_CREATE )
+  ( void *function, int *commute, int *op, int *ierror )
+{
+  *ierror=MPI_Op_create(function,*commute,op);
+}
+
+
+
+int MPI_Op_create(MPI_User_function *function, int commute, MPI_Op *op)
+{
+  *op=MPI_OP_NULL;
+
+  return(MPI_SUCCESS);
+
+}
+
+
+
+
+/*********/
+
 MPI_Op MPI_Op_f2c(MPI_Fint op)
 {
   return(op);

@@ -17,6 +17,9 @@
 
         integer temp,position
 
+	external my_op_func
+	integer myop
+
 
         print *, 'Time=',mpi_wtime()
 
@@ -122,6 +125,8 @@
         end do
 
 !
+	print *,"Creating op"
+	call mpi_op_create(my_op_func,.TRUE.,myop,ier)
 
 
 	call mpi_finalize(ier)
@@ -132,4 +137,16 @@
 	end do
 
  	end
+
+
+
+
+	function my_op_func(invec,inoutvec,len,type)
+	integer invec(len),inoutvec(len)
+	integer len,type
+
+	return
+	end function my_op_func
+
+
 
