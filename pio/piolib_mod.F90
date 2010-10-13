@@ -1488,8 +1488,6 @@ contains
     call mpi_bcast(itmp, 1, mpi_integer, 0, iosystem%comp_comm, ierr)
     if(itmp .gt. 0) then 
        call setnumagg(iosystem,itmp)  ! let mpi-io do aggregation
-    else
-       iosystem%info = mpi_info_null
     endif
 
 #ifdef PIO_GPFS_HINTS

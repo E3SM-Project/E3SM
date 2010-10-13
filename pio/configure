@@ -6185,6 +6185,10 @@ ac_link='$F90 -o conftest$ac_exeext $F90FLAGS $LD90FLAGS $LDFLAGS conftest.$ac_e
 ac_compiler_gnu=$ac_cv_f90_compiler_gnu
 
 
+if test -z "$MPIF90"; then
+  MPIF90=$F90
+fi
+
 # CHECK MPI BY DEFAULT
 if test "$USE_MPISERIAL" = "yes"; then
   USE_PNETCDF="no"
@@ -6628,7 +6632,7 @@ _ACEOF
 # 1 to this macro) to the Fortran 90 compiler in order to get "version" output
 ac_save_F90FLAGS=$F90FLAGS
 F90FLAGS="$F90FLAGS $ac_version"
-(eval echo $as_me:6631: \"$ac_link\") >&5
+(eval echo $as_me:6635: \"$ac_link\") >&5
 ac_f90_version_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 echo "$ac_f90_version_output" >&5
 F90FLAGS=$ac_save_F90FLAGS
