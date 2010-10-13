@@ -68,6 +68,7 @@ module pio_msg_mod
    integer, parameter, public :: pio_msg_putatt = 402
    integer, parameter, public :: pio_msg_putatt_1d = 403
 
+   integer, parameter, public :: PIO_MSG_SYNC_FILE = 500
    integer, parameter, public :: pio_msg_exit = 999   
 
    
@@ -142,7 +143,7 @@ contains
        call mpi_bcast(index, 1, mpi_integer, 0, io_comm, ierr)
        ios => iosystem(index)
 
-       if(Debugasync) print *,__FILE__,__LINE__, ios%intercomm
+       if(Debugasync) print *,__FILE__,__LINE__, index, ios%intercomm
        call mpi_bcast(msg, 1, mpi_integer, 0, io_comm, ierr)
        if(Debugasync) print *,__FILE__,__LINE__,msg
 
@@ -244,14 +245,19 @@ contains
        case (PIO_MSG_PUTATT_1D)
           call att_1d_handler(ios, msg)
 
+       case(PIO_MSG_INQUIRE)
+          call inquire_handler(ios)
        case(PIO_MSG_INQATT)
           call inq_att_handler(ios)
        case(PIO_MSG_INQATTNAME)
           call inq_attname_handler(ios)
        case(PIO_MSG_INQATTLEN)
           call inq_attlen_handler(ios)
+       case(PIO_MSG_INQ_DIMNAME)
+          call inq_dimname_handler(ios)
           
-
+       case(PIO_MSG_SYNC_FILE)
+          call sync_file_handler(ios)
 
        case (PIO_MSG_EXIT)
           call finalize_handler(ios)

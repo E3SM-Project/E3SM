@@ -339,6 +339,32 @@ subroutine inq_varndims_handler(iosystem)
 
 end subroutine inq_varndims_handler
 
+
+subroutine sync_file_handler(iosystem)
+  use pio, only: iosystem_desc_t, file_desc_t, pio_syncfile
+  use pio_msg_mod, only : lookupfile
+  use pio_support, only : debugAsync
+  
+  implicit none
+  include 'mpif.h' !_EXTERNAL
+
+
+  type(iosystem_desc_t) :: iosystem
+  type(file_desc_t), pointer :: file
+  integer :: fh, ierr, varid, ndims
+
+  call mpi_bcast(fh, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+  if(Debugasync) print *,__FILE__,__LINE__,fh
+  file=> lookupfile(fh)
+
+  call pio_syncfile(file)
+
+
+
+end subroutine sync_file_handler
+
+
+
 subroutine inq_att_handler(iosystem)
   use pio, only: iosystem_desc_t, file_desc_t, pio_inq_att, pio_max_name
   use pio_msg_mod, only : lookupfile
@@ -500,9 +526,22 @@ subroutine inq_varid_handler(iosystem)
 
 end subroutine inq_varid_handler
 
+subroutine inq_varname_internal(file, varid, namelen)
+  use pio, only : file_desc_t, pio_inq_varname
+  use pio_support, only : debugAsync
+
+  type(file_desc_t) :: file
+  integer, intent(in) ::  varid, namelen
+  character(len=namelen) :: name  
+  integer :: ierr
+
+  if(Debugasync) print *,__FILE__,__LINE__,varid
+  ierr =  pio_inq_varname(file, varid, name)
+
+end subroutine inq_varname_internal
 
 subroutine inq_varname_handler(iosystem)
-  use pio, only: iosystem_desc_t, file_desc_t, pio_inq_varname, pio_max_name
+  use pio, only: iosystem_desc_t, file_desc_t
   use pio_msg_mod, only : lookupfile
   use pio_support, only : debugAsync
   
@@ -511,19 +550,63 @@ subroutine inq_varname_handler(iosystem)
 
   type(iosystem_desc_t) :: iosystem
   type(file_desc_t), pointer :: file
-  integer :: fh, ierr, varid
-  character(len=PIO_MAX_NAME) :: name
+  integer :: fh, varid, namelen, ierr
+
 
   call mpi_bcast(fh, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
   if(Debugasync) print *,__FILE__,__LINE__,fh
   call mpi_bcast(varid, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+  call mpi_bcast(namelen, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+
   file=> lookupfile(fh)
 
-  ierr =  pio_inq_varname(file, varid, name)
-
+  call inq_varname_internal(file, varid, namelen)
 
 
 end subroutine inq_varname_handler
+
+subroutine inq_dimname_internal(file, dimid, namelen)
+  use pio, only : file_desc_t, pio_inq_dimname
+  use pio_support, only : debugAsync
+
+  type(file_desc_t) :: file
+  integer, intent(in) ::  dimid, namelen
+  character(len=namelen) :: name  
+  integer :: ierr
+
+  if(Debugasync) print *,__FILE__,__LINE__,dimid
+  ierr =  pio_inq_dimname(file, dimid, name)
+
+end subroutine inq_dimname_internal
+
+subroutine inq_dimname_handler(iosystem)
+  use pio, only: iosystem_desc_t, file_desc_t
+  use pio_msg_mod, only : lookupfile
+  use pio_support, only : debugAsync
+  
+  implicit none
+  include 'mpif.h' !_EXTERNAL
+
+  type(iosystem_desc_t) :: iosystem
+  type(file_desc_t), pointer :: file
+  integer :: fh, dimid, namelen, ierr
+
+
+  call mpi_bcast(fh, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+  if(Debugasync) print *,__FILE__,__LINE__,fh
+  call mpi_bcast(dimid, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+  call mpi_bcast(namelen, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+
+  file=> lookupfile(fh)
+
+  call inq_dimname_internal(file, dimid, namelen)
+
+
+end subroutine inq_dimname_handler
+
+
+
+
 
 subroutine inq_dimid_handler(iosystem)
   use pio, only: iosystem_desc_t, file_desc_t, pio_inq_dimid, pio_max_name
@@ -594,6 +677,25 @@ subroutine inq_dimlen_handler(iosystem)
   ierr =  pio_inq_dimlen(file, dimid, dimlen)
 end subroutine inq_dimlen_handler
 
+subroutine inquire_handler(iosystem)
+  use pio, only: iosystem_desc_t, file_desc_t, pio_inquire
+  use pio_msg_mod, only : lookupfile
+  use pio_support, only : debugAsync
+  
+  implicit none
+  include 'mpif.h' !_EXTERNAL
+
+  type(iosystem_desc_t) :: iosystem
+  type(file_desc_t), pointer :: file
+  integer :: fh, ierr, nDimensions,nVariables,nAttributes,unlimitedDimID
+
+  call mpi_bcast(fh, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+  if(Debugasync) print *,__FILE__,__LINE__,fh
+  file=> lookupfile(fh)
+
+  ierr =  pio_inquire(file,nDimensions,nVariables,nAttributes,unlimitedDimID)
+end subroutine inquire_handler
+
 subroutine seterrorhandling_handler(ios)
   use pio, only : iosystem_desc_t, pio_seterrorhandling
   implicit none
@@ -610,12 +712,15 @@ end subroutine seterrorhandling_handler
 subroutine string_handler_for_att(file, varid, name, strlen, msg)
   use pio_msg_mod, only : pio_msg_getatt
   use pio, only : file_desc_t, pio_get_att, pio_put_att
+  use pio_support, only : debugasync
   type(file_desc_t) :: file
   integer, intent(in) :: varid, strlen, msg
   character(len=*) :: name
   character(len=strlen) :: str
   if(msg==PIO_MSG_GETATT) then
+     if(Debugasync) print *,__FILE__,__LINE__, varid, name
      ierr = pio_get_att(file, varid, name, str )  
+     if(Debugasync) print *,__FILE__,__LINE__, str
   else
      ierr = pio_put_att(file, varid, name, str )  
   end if
@@ -638,18 +743,22 @@ subroutine att_handler(ios, msg)
   real(r4) :: rvar
   real(r8) :: dvar
   integer(i4) :: ivar
+
+  if(Debugasync) print *,__FILE__,__LINE__
   
   call mpi_bcast(fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
   call mpi_bcast(varid, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
   call mpi_bcast(itype, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
   call mpi_bcast(nlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
   call mpi_bcast(name(1:nlen), nlen, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+  if(Debugasync) print *,__FILE__,__LINE__, itype,nlen
 
   file=> lookupfile(fh)
   
   select case(itype)
   case (TYPETEXT)
      call mpi_bcast(strlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       if(Debugasync) print *,__FILE__,__LINE__, strlen,nlen
      call string_handler_for_att (file, varid, name(1:nlen), strlen, msg)
   case (TYPEREAL)
      if(msg==PIO_MSG_GETATT) then

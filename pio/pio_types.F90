@@ -92,7 +92,7 @@ module pio_types
        integer(i4) :: fh
        integer(kind=PIO_OFFSET) :: offset             ! offset into file
        integer(i4)              :: iotype             ! Type of IO to perform see parameter statement below     
-       logical                  :: file_is_open
+       logical                  :: file_is_open = .false.
     end type File_desc_t
 
 

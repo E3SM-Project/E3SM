@@ -39,7 +39,7 @@ contains
     use pio_support, only : Debug, DebugIO, piodie, checkmpireturn 
 
 #ifdef _NETCDF
-    use netcdf, only : nf90_put_var  !_EXTERNAL
+    use netcdf, only : nf90_put_var, nf90_inquire_variable  !_EXTERNAL
 #endif
 #ifdef TIMING
     use perf_mod, only : t_startf, t_stopf  !_EXTERNAL
@@ -70,15 +70,10 @@ contains
 #ifdef TIMING
     call t_startf("pio_write_nfdarray_real")
 #endif
-
-    iotype = File%iotype
-!    Can't do this with async it creates and endless callback situation.
-!    ierr = pio_inq_varndims(File, vardesc, ndims)
-
-    ierr=PIO_noerr
-    ndims  = vardesc%ndims
-	
+    ierr = PIO_NOERR
     if(file%iosystem%ioproc) then
+       iotype = File%iotype
+
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
@@ -122,12 +117,17 @@ contains
                 end if
              end if
           endif
-
+	
+          if(File%iosystem%io_rank==0) then
+             ierr=nf90_inquire_variable(File%fh,vardesc%varid,ndims=ndims)	
+          end if
+          call MPI_BCAST(ndims,1,MPI_INTEGER,0,file%iosystem%io_comm,ierr)
+          
           call alloc_check(temp_start,ndims)
-          temp_start=start(1:ndims)
+          temp_start=int(start(1:ndims))
 
           call alloc_check(temp_count,ndims)
-          temp_count=count(1:ndims)
+          temp_count=int(count(1:ndims))
 
           ! Every i/o proc send data to root
 
@@ -254,7 +254,7 @@ contains
     use pio_support, only : Debug, DebugIO, piodie, checkmpireturn 
 
 #ifdef _NETCDF
-    use netcdf, only : nf90_put_var  !_EXTERNAL
+    use netcdf, only : nf90_put_var, nf90_inquire_variable  !_EXTERNAL
 #endif
 #ifdef TIMING
     use perf_mod, only : t_startf, t_stopf  !_EXTERNAL
@@ -285,15 +285,10 @@ contains
 #ifdef TIMING
     call t_startf("pio_write_nfdarray_int")
 #endif
-
-    iotype = File%iotype
-!    Can't do this with async it creates and endless callback situation.
-!    ierr = pio_inq_varndims(File, vardesc, ndims)
-
-    ierr=PIO_noerr
-    ndims  = vardesc%ndims
-	
+    ierr = PIO_NOERR
     if(file%iosystem%ioproc) then
+       iotype = File%iotype
+
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
@@ -337,12 +332,17 @@ contains
                 end if
              end if
           endif
-
+	
+          if(File%iosystem%io_rank==0) then
+             ierr=nf90_inquire_variable(File%fh,vardesc%varid,ndims=ndims)	
+          end if
+          call MPI_BCAST(ndims,1,MPI_INTEGER,0,file%iosystem%io_comm,ierr)
+          
           call alloc_check(temp_start,ndims)
-          temp_start=start(1:ndims)
+          temp_start=int(start(1:ndims))
 
           call alloc_check(temp_count,ndims)
-          temp_count=count(1:ndims)
+          temp_count=int(count(1:ndims))
 
           ! Every i/o proc send data to root
 
@@ -469,7 +469,7 @@ contains
     use pio_support, only : Debug, DebugIO, piodie, checkmpireturn 
 
 #ifdef _NETCDF
-    use netcdf, only : nf90_put_var  !_EXTERNAL
+    use netcdf, only : nf90_put_var, nf90_inquire_variable  !_EXTERNAL
 #endif
 #ifdef TIMING
     use perf_mod, only : t_startf, t_stopf  !_EXTERNAL
@@ -500,15 +500,10 @@ contains
 #ifdef TIMING
     call t_startf("pio_write_nfdarray_double")
 #endif
-
-    iotype = File%iotype
-!    Can't do this with async it creates and endless callback situation.
-!    ierr = pio_inq_varndims(File, vardesc, ndims)
-
-    ierr=PIO_noerr
-    ndims  = vardesc%ndims
-	
+    ierr = PIO_NOERR
     if(file%iosystem%ioproc) then
+       iotype = File%iotype
+
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
@@ -552,12 +547,17 @@ contains
                 end if
              end if
           endif
-
+	
+          if(File%iosystem%io_rank==0) then
+             ierr=nf90_inquire_variable(File%fh,vardesc%varid,ndims=ndims)	
+          end if
+          call MPI_BCAST(ndims,1,MPI_INTEGER,0,file%iosystem%io_comm,ierr)
+          
           call alloc_check(temp_start,ndims)
-          temp_start=start(1:ndims)
+          temp_start=int(start(1:ndims))
 
           call alloc_check(temp_count,ndims)
-          temp_count=count(1:ndims)
+          temp_count=int(count(1:ndims))
 
           ! Every i/o proc send data to root
 

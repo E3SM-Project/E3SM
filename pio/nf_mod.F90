@@ -328,7 +328,7 @@ contains
                   xtype=xtype,len=alen)
           endif
 
-          if(ios%num_tasks==ios%num_iotasks) then
+          if(.not.ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
              call MPI_BCAST(xtype,1,MPI_INTEGER,0,ios%IO_comm, mpierr)
              call CheckMPIReturn('nf_mod',mpierr)
              call MPI_BCAST(alen,1,MPI_INTEGER,0,ios%IO_comm, mpierr)
@@ -435,7 +435,7 @@ contains
                   len=alen)
           endif
 
-          if(ios%num_tasks==ios%num_iotasks) then
+          if(.not.ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
              call MPI_BCAST(alen,1,MPI_INTEGER,0,ios%IO_comm, mpierr)
              call CheckMPIReturn('nf_mod',mpierr)
           end if
@@ -530,7 +530,7 @@ contains
           if (ios%io_rank==0) then
              ierr=nf90_inq_attname(File%fh,varid,attnum,name)
           endif
-          if(ios%num_tasks==ios%num_iotasks) then
+          if(.not.ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
              call MPI_BCAST(name,len(name),MPI_CHARACTER,0,ios%IO_comm, mpierr)
              call CheckMPIReturn('nf_mod',mpierr)
           end if
@@ -622,7 +622,7 @@ contains
           if (ios%io_rank==0) then
              ierr=nf90_inq_varid(File%fh,name,varid)
           endif
-          if(ios%num_tasks==ios%num_iotasks) then
+          if(.not.ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
              call MPI_BCAST(varid,1,MPI_INTEGER,0,ios%IO_comm,ierr2)
           end if
 #endif
@@ -714,7 +714,9 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(len(name),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     end if
+
     if(ios%IOproc) then
        select case(iotype)
 
@@ -731,8 +733,7 @@ contains
           if (ios%io_rank==0) then
              ierr=nf90_inquire_variable(File%fh,varid,name=name)
           endif
-
-          if(ios%num_tasks==ios%num_iotasks) then
+          if(.not.ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
              call MPI_BCAST(name,len(name),MPI_CHARACTER,0,ios%IO_comm, mpierr)
              call CheckMPIReturn('nf_mod',mpierr)
           end if
@@ -745,10 +746,11 @@ contains
        end select
     endif
     call check_netcdf(File, ierr,_FILE_,__LINE__)
-    if(ios%async_interface.or.ios%num_tasks>ios%num_iotasks) then
+    if(ios%async_interface.or.ios%num_tasks>=ios%num_iotasks) then
        call MPI_BCAST(name,len(name),MPI_CHARACTER,ios%IOMaster,ios%my_comm, mpierr)
        call CheckMPIReturn('nf_mod',mpierr)
     end if
+
   end function inq_varname_vid
 
 !>
@@ -785,7 +787,7 @@ contains
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     end if
-
+    
     if(ios%IOproc) then
        select case(iotype)
 
@@ -801,7 +803,7 @@ contains
           if (ios%io_rank==0) then
              ierr=nf90_inquire_variable(File%fh,varid,ndims=ndims)
           endif
-          if(ios%num_tasks==ios%num_iotasks .or. ios%async_interface) then
+          if(.not.ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
              call MPI_BCAST(ndims,1,MPI_INTEGER,0,ios%IO_comm, mpierr)
              call CheckMPIReturn('nf_mod',mpierr)
           end if
@@ -890,7 +892,7 @@ contains
              ierr=nf90_inquire_variable(File%fh,varid,xtype=type)
           endif
 
-          if(ios%num_tasks==ios%num_iotasks) then
+          if(.not.ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
              call MPI_BCAST(type,1,MPI_INTEGER,0,ios%IO_comm, mpierr)
              call CheckMPIReturn('nf_mod',mpierr)
           end if
@@ -982,7 +984,7 @@ contains
              ierr=nf90_inquire_variable(File%fh,varid,dimids=dimids)
           endif
 
-          if(ios%num_tasks==ios%num_iotasks) then
+          if(.not.ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
              call MPI_BCAST(dimids,size(dimids),MPI_INTEGER,0,ios%IO_comm, mpierr)
              call CheckMPIReturn('nf_mod',mpierr)
           end if
@@ -1215,6 +1217,7 @@ contains
        msg=PIO_MSG_INQ_DIMNAME
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(dimid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ldn,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     end if
 
@@ -1234,8 +1237,8 @@ contains
           if (ios%io_rank==0) then
              ierr=nf90_inquire_dimension(File%fh,dimid,name=dimname)
           endif
-          if(ios%num_tasks==ios%num_iotasks) then
-             call MPI_BCAST(dimname,len(dimname),MPI_CHARACTER,0,ios%IO_comm, mpierr)
+          if(.not.ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
+             call MPI_BCAST(dimname,ldn,MPI_CHARACTER,0,ios%IO_comm, mpierr)
              call CheckMPIReturn('nf_mod',mpierr)
           end if
 #endif
@@ -1305,7 +1308,7 @@ contains
           if (ios%io_rank==0) then
              ierr=nf90_inquire_dimension(File%fh,dimid,len=dimlen)
           endif
-          if(ios%num_tasks==ios%num_iotasks) then
+          if(.not.ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
              call MPI_BCAST(dimlen,1,MPI_INTEGER,0,ios%IO_comm, mpierr)
              call CheckMPIReturn('nf_mod',mpierr)
           end if
@@ -1486,7 +1489,7 @@ contains
           if (ios%io_rank==0) then
              ierr=nf90_def_dim(ncid=File%fh,name=name,len=len,dimid=dimid)
           endif
-          if(ios%num_tasks==ios%num_iotasks) then
+          if(.not.ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
              call MPI_BCAST(dimid, 1, MPI_INTEGER, 0, ios%IO_Comm, ierr)
           end if
 #endif
@@ -1496,10 +1499,6 @@ contains
        end select
     endif
     call check_netcdf(File, ierr,_FILE_,__LINE__)
-
-    call mpi_barrier(file%iosystem%union_comm, mpierr)
-
-
 
     if(ios%async_interface .or. ios%num_tasks > ios%num_iotasks) then
        call MPI_BCAST(dimid, 1, MPI_INTEGER, ios%IOMaster, ios%my_Comm, ierr)
@@ -1607,7 +1606,7 @@ contains
 #endif
 
           endif
-          if(ios%num_tasks== ios%num_iotasks) then
+          if(.not.ios%async_interface.and.ios%num_tasks==ios%num_iotasks) then
              call MPI_BCAST(vardesc%varid, 1, MPI_INTEGER, 0, ios%IO_Comm, ierr)
           end if
 #endif

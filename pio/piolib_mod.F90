@@ -1086,7 +1086,7 @@ contains
     real(r8) :: rtmp
     integer :: testvalue
     integer, parameter :: minblocksize=16        ! minimum block size on a task
-    integer, parameter :: maxit=10               ! maximum number of times to iterate on the fanin/out limiter  (Probably want a better solution)
+    integer, parameter :: maxit=1               ! maximum number of times to iterate on the fanin/out limiter  (Probably want a better solution)
     logical, parameter :: verbose = .false.
     integer,allocatable :: pes_per_dim(:), step(:)
     integer,allocatable :: bsize(:),nblocks(:),fblocks(:)
@@ -1140,7 +1140,7 @@ contains
 
     fanlimit  = 50.00
     fanfactor = fanlimit + 1.0  !we want at least one trip through the do while loop  
-    it = 1
+    it = 0
     step(:) = 1
     do while (fanfactor > fanlimit .and. it < maxit ) 
        xpes = use_io_procs
@@ -1326,9 +1326,10 @@ contains
 !> 
 !! @public
 !! @ingroup PIO_init
-!! @brief initialize the pio subsystem.
+!! @brief initialize the pio subsystem. 
 !! @details  This is a collective call.  Input parameters are read on comp_rank=0
-!!   values on other tasks are ignored.
+!!   values on other tasks are ignored.  This variation of PIO_init locates the IO tasks on a subset 
+!!   of the compute tasks.
 !! @param comp_rank mpi rank of each participating task,
 !! @param comp_comm the mpi communicator which defines the collective.
 !! @param num_iotasks the number of iotasks to define.
@@ -1527,8 +1528,6 @@ contains
     call mpi_bcast(itmp, 1, mpi_integer, 0, iosystem%comp_comm, ierr)
     if(itmp .gt. 0) then 
        call setnumagg(iosystem,itmp)  ! let mpi-io do aggregation
-    else
-       iosystem%info = mpi_info_null
     endif
 
 #ifdef PIO_GPFS_HINTS
@@ -1612,25 +1611,24 @@ contains
 !> 
 !! @public
 !! @ingroup PIO_init
-!! @brief initialize the pio subsystem.
+!! @brief Initialize the pio subsystem.
 !! @details  This is a collective call.  Input parameters are read on comp_rank=0
-!!   values on other tasks are ignored.
-!! @param comp_rank mpi rank of each participating task,
-!! @param comp_comm the mpi communicator which defines the collective.
-!! @param num_iotasks the number of iotasks to define.
-!! @param num_aggregator the mpi aggregator count
-!! @param stride the stride in the mpi rank between io tasks.
-!! @param rearr @copydoc PIO_rearr_method
+!!   values on other tasks are ignored.  This variation of PIO_init sets up a distinct set of tasks
+!!   to handle IO, these tasks do not return from this call.  Instead they go to an internal loop 
+!!   and wait to receive further instructions from the computational tasks 
+!! @param component_count The number of computational components to associate with this IO component
+!! @param peer_comm  The communicator from which all other communicator arguments are derived
+!! @param comp_comms The computational communicator for each of the computational components
+!! @param io_comm    The io communicator 
 !! @param iosystem a derived type which can be used in subsequent pio operations (defined in PIO_types).
-!! @param base @em optional argument can be used to offset the first io task - default base is task 1.
 !<
-  subroutine init_intercom(numcomps, peer_comm, comp_comms, io_comm, iosystem)
-    integer, intent(in) :: numcomps
+  subroutine init_intercom(component_count, peer_comm, comp_comms, io_comm, iosystem)
+    integer, intent(in) :: component_count
     integer, intent(in) :: peer_comm
-    integer, intent(in) :: comp_comms(numcomps)   !  The compute communicator
+    integer, intent(in) :: comp_comms(component_count)   !  The compute communicator
     integer, intent(in) :: io_comm     !  The io communicator
 
-    type (iosystem_desc_t), intent(out)  :: iosystem(numcomps)  ! io descriptor to initalize
+    type (iosystem_desc_t), intent(out)  :: iosystem(component_count)  ! io descriptor to initalize
 
     integer :: ierr
     logical :: is_inter
@@ -1644,7 +1642,7 @@ contains
 #endif
 
 
-    do i=1,numcomps
+    do i=1,component_count
        iosystem(i)%error_handling = PIO_internal_error
        iosystem(i)%comp_comm = comp_comms(i)
        iosystem(i)%io_comm = io_comm
@@ -1786,7 +1784,7 @@ contains
     if(DebugAsync) print*,__FILE__,__LINE__, iosystem(1)%ioranks
 
     ! This routine does not return
-    if(io_comm /= MPI_COMM_NULL) call pio_msg_handler(numcomps,iosystem) 
+    if(io_comm /= MPI_COMM_NULL) call pio_msg_handler(component_count,iosystem) 
     
     if(DebugAsync) print*,__FILE__,__LINE__, iosystem(1)%ioranks
 #ifdef TIMING
@@ -1794,6 +1792,64 @@ contains
 #endif
 
   end subroutine init_intercom
+
+!>
+!! @public
+!! @defgroup PIO_recommend_iotasks
+!! @brief Recommend a subset of tasks in comm to use as IO tasks
+!! @details  This subroutine will give PIO's best recommendation for the number and
+!!    location of iotasks for a given system there is no requirement to follow this recommendation.
+!!    Using the recommendation requires that PIO_BOX_RERRANGE be used
+!! @param A communicator of mpi tasks to choose from
+!! @param miniotasks \em optional The minimum number of IO tasks the caller desires
+!! @param maxiotasks \em optional The maximum number of IO tasks the caller desires
+!! @param iotask if true pio recommends that this task be used as an iotask
+
+  subroutine pio_recommend_iotasks(comm, ioproc, numiotasks, miniotasks, maxiotasks )
+    integer, intent(in) :: comm
+    logical, intent(out) :: ioproc
+    integer, intent(out) :: numiotasks
+    integer, optional, intent(in) :: miniotasks, maxiotasks
+
+    integer :: num_tasks, ierr, iotask, iotasks, iam
+
+    integer(i4), pointer :: iotmp(:),iotmp2(:)
+
+    call mpi_comm_size(comm,num_tasks,ierr)
+    call mpi_comm_rank(comm,iam,ierr)
+
+#ifdef BGx    
+    call alloc_check(iotmp,num_tasks,'init:num_tasks')
+    call alloc_check(iotmp2,num_tasks,'init:num_tasks')
+    !---------------------------------------------------
+    ! Note for Blue Gene n_iotasks get overwritten in 
+    ! determineiotasks   
+    !
+    ! Entry: it is the number of IO-clients per IO-node
+    ! Exit:  is is the total number of IO-tasks
+    !---------------------------------------------------
+
+    numiotasks=-(miniotasks+maxiotasks)/2
+    call determineiotasks(comm,numiotasks,1,0,1,iotask)
+
+    iotmp(:)=0
+    if(iotask==1) then 
+       ioproc = .true.
+       iotmp(iam+1) = 1
+    endif
+    iotmp2(:)=0 
+    call MPI_allreduce(iotmp,iotmp2,num_tasks,MPI_INTEGER,MPI_SUM,comm,ierr)
+
+    numiotasks=SUM(iotmp2)
+
+    call dealloc_check(iotmp)
+    call dealloc_check(iotmp2)
+
+    call identity(comm,iotask)
+#endif
+
+
+  end subroutine pio_recommend_iotasks
 
 
 !> 
@@ -2298,8 +2354,20 @@ contains
 !<
   subroutine syncfile(file)
     implicit none
-    type (file_desc_t) :: file
-    integer :: ierr
+    type (file_desc_t), target :: file
+    integer :: ierr, msg
+    type(iosystem_desc_t), pointer :: ios
+     
+ 
+    ios => file%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc) then
+       msg = PIO_MSG_SYNC_FILE
+       if(ios%comp_rank==0) then
+          call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       end if
+      
+       call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+    end if
 
     select case(file%iotype)
     case( iotype_pnetcdf, iotype_netcdf)
@@ -2517,7 +2585,7 @@ contains
        gstride(i)=gsize(i)*gstride(i-1)
     end do
 
-    iosize=1
+    iosize=min(int(count(1)),1)
     do i=2,ndim
        iosize=iosize*count(i)
     end do
@@ -2525,8 +2593,6 @@ contains
     ndisp=size(displace)
 
     if (iosize<1 .or. ndisp<1) return
-!FIX suggested by M.Taylor    if (count(1).eq.0) return 
-
 
     if (ndisp/=iosize) then
        call piodie(_FILE_,__LINE__,'ndisp=',ndisp,' /= iosize=',iosize)
