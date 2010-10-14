@@ -105,7 +105,6 @@ int MPI_Send(void* buf, int count, MPI_Datatype datatype,
 {
   MPI_Request request;
   MPI_Status status;
-  int flag;
 
 #ifdef INFO
   fflush(stdout);
@@ -161,7 +160,46 @@ int MPI_Rsend(void* buf, int count, MPI_Datatype datatype,
 
 
 
+/*********/
 
+
+
+FORT_NAME( mpi_irsend , MPI_IRSEND )(void *buf, int *count, int *datatype,
+   int *dest, int *tag, int *comm, int *req, int *ierror)
+{
+
+  *ierror=MPI_Irsend(buf,*count,*datatype,*dest,*tag,
+		    *comm, (void *)req);
+
+}
+
+
+
+int MPI_Irsend(void *buf, int count, MPI_Datatype datatype,
+	       int dest, int tag, MPI_Comm comm, MPI_Request *request)
+{
+  MPI_Status status;
+  Req *req;
+
+
+  MPI_Isend(buf,count,datatype,dest,tag,comm,request);
+
+  /* Ready mode implied a receive must already be posted,
+   * so the Isend should have completed already.
+   * Can't use MPI_Test here for the error check because
+   * it would clear the request prematurely.
+   */
+
+  req=mpi_handle_to_ptr(*request);
+  if ( !req->complete )
+    {
+      fprintf(stderr,"MPI_Irsend: no matching receive found\n");
+      abort();
+    }
+
+
+  return(MPI_SUCCESS);
+}
 
 
 
