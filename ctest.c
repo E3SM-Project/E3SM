@@ -70,8 +70,8 @@ main(int argc, char *argv[])
       sbuf[2*i]=10*i;
       sbuf[2*i+1]=10*i+1;
       tag=100+(4-i);
-      printf("COMWORLD Post isend %d tag %d\n",sbuf[i],tag);
-      MPI_Isend(&sbuf[2*i],1,MPI_2INT,0,tag,MPI_COMM_WORLD,&sreq[i]);
+      printf("COMWORLD Post irsend %d tag %d\n",sbuf[i],tag);
+      MPI_Irsend(&sbuf[2*i],1,MPI_2INT,0,tag,MPI_COMM_WORLD,&sreq[i]);
     }
 
 
