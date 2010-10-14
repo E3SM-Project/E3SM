@@ -295,13 +295,13 @@ contains
     ios => File%iosystem
     iotype = File%iotype
     ierr=PIO_noerr
+    nlen = len(name)
 
     if(ios%async_interface) then
        if(.not. ios%ioproc ) then
           msg=PIO_MSG_INQ_ATT
           if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
           call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-          nlen = len(name)
        end if
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(nlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
@@ -408,13 +408,13 @@ contains
 
     iotype = File%iotype
     ierr=PIO_noerr
+    nlen = len(name)
 
     if(ios%async_interface) then
        if(.not. ios%ioproc ) then
           msg=PIO_MSG_INQ_ATTLEN
           if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
           call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-          nlen = len(name)
        end if
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(nlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
@@ -606,13 +606,13 @@ contains
 
     iotype = File%iotype
     ierr=PIO_noerr
+    nlen = len(name)
 
     if(ios%async_interface) then
        if( .not. ios%ioproc ) then
           msg=PIO_MSG_INQ_VARID
           if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
           call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-          nlen = len(name)
        end if
        
        call MPI_BCAST(nlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
@@ -1601,12 +1601,12 @@ contains
     vardesc%type = type
 
     ios => file%iosystem
+    nlen = len_trim(name)
 
     if(ios%async_interface) then
        if( .not. ios%ioproc) then
           if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
           call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-          nlen = len_trim(name)
        end if
        call mpi_bcast(type, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        
