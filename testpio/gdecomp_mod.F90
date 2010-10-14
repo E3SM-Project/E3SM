@@ -1,4 +1,3 @@
-
 module gdecomp_mod
 
    use kinds_mod

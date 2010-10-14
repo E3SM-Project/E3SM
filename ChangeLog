@@ -1,6 +1,119 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_2_0
+Originator(s):  Jim
+Date: 10-14-2010
+One-line Summary: Support for disjoint IO tasks
+
+List all subroutines eliminated: 
+
+List all subroutines added and what they do:
+A  +            -   pio_msg_callbacks.F90
+A  +            -   pio_msg_getput_callbacks.F90.in
+      The subroutines in these files are the interface between the disjoint io tasks
+	and the pio functions, to avoid circular dependencies they are not written in
+	module form.   Each subroutine collects the input arguments from the compute
+	tasks and calls the requested function.  Communication of function outputs back to the 
+	compute tasks happens within the function so no post call clean up is required.
+	
+A  +            -   pio_msg_mod.F90
+       This module contains the loop in which the disjoint io tasks wait for requests from 
+	compute tasks.  Multiple compute communicators with distinct iosystem descripters are
+	supported.   
+
+	
+A  +            -   dtypes.h
+	Move type macros to an include file to be shared by multiple pio internal files
+
+
+List all existing files that have been modified, and describe the changes:
+    pionfwrite_mod.F90.in
+    piodarray.F90
+    pio_utils.F90
+    pionfput_mod.F90.in
+    pio_types.F90
+    piolib_mod.F90
+    pionfget_mod.F90.in
+    Makefile
+    pio_support.F90
+    box_rearrange.F90.in
+    pio.F90
+    pio_support.F90.in
+    pionfatt_mod.F90.in
+    ionf_mod.F90
+    piodarray.F90.in
+    nf_mod.F90
+    genf90.pl
+    mct_rearrange.F90
+
+      Add support for disjoint io tasks.   Add tests for disjoint tasks to testsuite.
+      Improve support for netcdf4.  	
+
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:   Added new files to build 
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by:  Jim
+
+Summary of pre-tag testing:
+
+  Regression tests:
+
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
+Tag name: pio1_1_2
+Originator(s):  Jim
+Date:  9-27-2010
+One-line Summary: getiostartandcount fix
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+     piolib_mod.F90: removed fanning functionality in getiostartandcount
+	this feature was not robust and was failing to converge in a number of cases.
+        Fixed a case which allowed division by 0 if count(1)==0.
+	
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+
+Code reviewed by: self, Tony
+
+Summary of pre-tag testing:
+
+  Regression tests:
+                     bluefire 107 tests PASS, 0 tests FAIL
+        	     jaguar 74 tests PASS, 0 tests FAIL
+		     edinburg 22 tests PASS, 0 tests FAIL
+	
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_1_1
 Originator(s): Jim
 Date: 05-26-2010

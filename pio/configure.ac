@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 
-AC_INIT(PIO, 1.0)
+AC_INIT(PIO, 1.2.0)
 
 
 #

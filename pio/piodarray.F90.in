@@ -13,6 +13,7 @@ module piodarray
   use perf_mod, only : t_startf, t_stopf   !_EXTERNAL
 #endif
   implicit none
+  include 'mpif.h'            !_EXTERNAL
   private
   public :: pio_read_darray, pio_write_darray
   
@@ -58,7 +59,7 @@ contains
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
   subroutine write_darray_1d_{TYPE} (File,varDesc,ioDesc, array, iostat, fillval)
-
+    use pio_msg_mod, only : pio_msg_writedarray
     ! !DESCRIPTION:
     !  Writes a 2-d slab of TYPE to a netcdf file.
     !
@@ -80,28 +81,53 @@ contains
          array                 ! array to be written
 
     {VTYPE}, optional, intent(in) :: fillval    ! rearrange receiver fill value
+    type(iosystem_desc_t), pointer :: ios
 
     integer(i4), intent(out) :: iostat
+    integer :: msg, ierr
 
     character(len=*), parameter :: subName=modName//'::write_darray_{TYPE}'
 
-    select case(File%iotype)
-    case(iotype_pbinary, iotype_direct_pbinary)
-       if (present(fillval)) then
-          call write_darray_bin_{TYPE}(File,varDesc,iodesc, array, iostat, fillval)
-       else
-          call write_darray_bin_{TYPE}(File,varDesc,iodesc, array, iostat)
-       endif
-    case(iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
-       if (present(fillval)) then
-          call write_darray_nf_{TYPE}(File,varDesc,iodesc, array, iostat, fillval)
-       else
-          call write_darray_nf_{TYPE}(File,varDesc,iodesc, array, iostat)
-       endif
-    case(iotype_binary)
-       print *, subName,': IO type not supported'
-    end select
+    ios => file%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc) then
+       msg = PIO_MSG_WRITEDARRAY
 
+       if(debugasync) print *,__FILE__,__LINE__
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(vardesc%varid, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(vardesc%rec, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(vardesc%ndims, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(iodesc%async_id, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast({MPITYPE}, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       if(debugasync) print *,__FILE__,__LINE__, {MPITYPE}
+       
+       if(present(fillval)) then
+          call mpi_bcast(1, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+          call mpi_bcast(fillval, 1, {MPITYPE}, ios%compmaster, ios%intercomm, ierr)
+       else
+          call mpi_bcast(0, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       end if
+       if(debugasync) print *,__FILE__,__LINE__
+    endif
+
+       select case(File%iotype)
+       case(iotype_pbinary, iotype_direct_pbinary)
+          if (present(fillval)) then
+             call write_darray_bin_{TYPE}(File,varDesc,iodesc, array, iostat, fillval)
+          else
+             call write_darray_bin_{TYPE}(File,varDesc,iodesc, array, iostat)
+          endif
+       case(iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
+          if (present(fillval)) then
+             call write_darray_nf_{TYPE}(File,varDesc,iodesc, array, iostat, fillval)
+          else
+             call write_darray_nf_{TYPE}(File,varDesc,iodesc, array, iostat)
+          endif
+       case(iotype_binary)
+          print *, subName,': IO type not supported'
+       end select
+    
   end subroutine write_darray_1d_{TYPE}
 
 ! TYPE real,int,double
@@ -162,6 +188,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
   subroutine read_darray_1d_{TYPE} (File,varDesc, ioDesc, array, iostat)
+    use pio_msg_mod, only : pio_msg_readdarray
     ! !DESCRIPTION:
     !  Reads a 2-d slab of TYPE to a netcdf file.
     !
@@ -185,8 +212,27 @@ contains
     integer(i4), intent(out) :: iostat
 
     character(len=*), parameter :: subName=modName//'::read_darray_{TYPE}'
+	
+    type(iosystem_desc_t), pointer :: ios
+    integer :: ierr, msg
+
 
     array = 0	
+    ios => File%iosystem
+
+    if(ios%async_interface .and. .not. ios%ioproc) then
+       msg = PIO_MSG_READDARRAY
+
+       if(DebugAsync) print *,__FILE__,__LINE__
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(vardesc%varid, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(vardesc%rec, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(iodesc%async_id, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast({MPITYPE}, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       if(DebugAsync) print *,__FILE__,__LINE__, {MPITYPE}       
+    endif
+
     select case(File%iotype)
     case(iotype_pbinary, iotype_direct_pbinary)
        call read_darray_bin_{TYPE} (File,varDesc,iodesc,array, iostat)
@@ -357,13 +403,14 @@ contains
        ! Rearrange data from comp->io decomp
        !------------------------------------
        ! "array" is comp data
+
        call rearrange_comp2io(File%iosystem,iodesc, array, iobuf)
 
 #if DEBUG_REARR
        call alloc_check(array2,size(array),'array2')
 
        call rearrange_io2comp(File%iosystem,iodesc,IOBUF,array2)
-
+	
        do i=1,size(array)
           if (array(i) /= array2(i)) then
              print *, subName,': error: write ping-pong test failed on index',i
@@ -389,7 +436,6 @@ contains
 #endif
 
     if (IOproc) then
-
        !----------------------------------------------
        ! write the global 2-d slice from IO processors
        !----------------------------------------------
@@ -438,6 +484,7 @@ contains
        call alloc_check(start, 0)
        call alloc_check(count, 0)
     endif
+
 #ifdef TIMING
     call t_startf("pio_write_nf")
 #endif
@@ -740,6 +787,7 @@ contains
     offset = iodesc%IOmap%start
     len    = iodesc%IOmap%length
 
+
     if (IOproc) then
 
        !-----------------------------
@@ -818,7 +866,6 @@ contains
 
        ! "array" is comp data
        call rearrange_io2comp(File%iosystem,iodesc,IOBUF,array) 
-
 
 #if DEBUG_REARR
        call alloc_check(iobuf2,size(IOBUF),'iobuf2')

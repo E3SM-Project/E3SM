@@ -36,7 +36,9 @@ SRCS_F90 =  pio.F90 \
 	    pio_mpi_utils.F90 \
             pio_nf_utils.F90 \
 	    pio_utils.F90 \
-            pio_quicksort.F90 
+            pio_quicksort.F90 \
+            pio_msg_mod.F90 \
+	    pio_msg_callbacks.F90
            
 
 TEMPLATES_F90 = pionfatt_mod.F90.in \
@@ -51,7 +53,8 @@ TEMPLATES_F90 = pionfatt_mod.F90.in \
 	        mct_rearrange.F90.in \
 	        iompi_mod.F90.in  \
 	        piodarray.F90.in \
-	        pio_spmd_utils.F90.in
+	        pio_spmd_utils.F90.in \
+	        pio_msg_getput_callbacks.F90.in
 
 TEMPSRCF90 = $(TEMPLATES_F90:.in=)
 SRCS_F90 += $(TEMPSRCF90)

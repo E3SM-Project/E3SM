@@ -3,9 +3,9 @@ module pionfatt_mod
   use pio_kinds, only : r4, r8, i4
   use pio_types, only : iotype_netcdf, iotype_pnetcdf, pio_noerr
   use pio_types, only : pio_iotype_netcdf4p, pio_iotype_netcdf4c
-  use pio_types, only : file_desc_t, var_desc_t
+  use pio_types, only : file_desc_t, var_desc_t, iosystem_desc_t
   use pio_kinds, only : pio_offset
-  use pio_support, only : piodie, checkmpireturn
+  use pio_support, only : piodie, checkmpireturn, debug, debugasync
   use pio_utils, only : check_netcdf, bad_iotype
 
 #ifdef _NETCDF
@@ -68,11 +68,13 @@ contains
 !! @retval ierr @copydoc error_return
 !<
   integer function put_att_{TYPE} (File, varid, name, value) result(ierr)
-    type (File_desc_t), intent(inout) :: File
+    use pio_msg_mod, only : pio_msg_putatt
+    type (File_desc_t), intent(inout) , target :: File
     integer, intent(in) :: varid
     character(len=*), intent(in) :: name
     {VTYPE}, intent(in) :: value
-
+    
+    type(iosystem_desc_t), pointer :: ios
 #if ({ITYPE} != TYPETEXT)
 #ifdef DEBUG
     {VTYPE} :: chkval
@@ -82,23 +84,47 @@ contains
     ! Local variables
     !------------------
     character(len=*), parameter :: subName=modName//'::put_att_{TYPE}'
-    integer :: iotype, mpierr
-    integer(kind=PIO_Offset) ::  clen=1
+    integer :: iotype, mpierr, msg
+    integer ::  clen=1
 
     iotype = File%iotype
     ierr=PIO_noerr
-    if(File%iosystem%IOproc) then
+
+#if ({ITYPE} == TYPETEXT)
+    clen = len(value)
+#else
+    clen = 1
+#endif
+    ios => file%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_PUTATT
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST({ITYPE},1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(len(name),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(name,len(name),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
+#if ({ITYPE} == TYPETEXT)	
+       call MPI_BCAST(clen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)	
+#endif
+    end if
+
+    if(ios%async_interface) then
+       call MPI_BCAST(value, clen, {MPITYPE}, ios%compmaster, ios%my_comm, mpierr)
+    end if
+	
+    if(Ios%IOproc) then
        select case(iotype)
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
 #if ({ITYPE} == TYPETEXT)
           clen = len(value)
-          ierr= nfmpi_put_att_text (File%fh,varid,name,clen,value)
+          ierr= nfmpi_put_att_text (File%fh,varid,name,int(clen,kind=PIO_OFFSET),value)
 #else
 
 #ifdef DEBUG
           print *, _FILE_,__LINE__,value
-          call MPI_ALLREDUCE(value, chkval, 1, {MPITYPE}, MPI_MAX ,File%iosystem%io_comm, mpierr)
+          call MPI_ALLREDUCE(value, chkval, 1, {MPITYPE}, MPI_MAX ,Ios%io_comm, mpierr)
           call CheckMPIReturn(subName, mpierr)
           if(chkval /= value) then
              print *,_FILE_,__LINE__,chkval,value, mpierr
@@ -106,13 +132,13 @@ contains
           end if
 #endif             
 #undef DEBUG
-          ierr= nfmpi_put_att_{TYPE} (File%fh,varid,name, nf_{TYPE} , clen,value)
+          ierr= nfmpi_put_att_{TYPE} (File%fh,varid,name, nf_{TYPE} , int(clen,kind=PIO_OFFSET),value)
 #endif
 #endif
 
 #ifdef _NETCDF
        case(iotype_netcdf,PIO_iotype_netcdf4c)
-          if (File%iosystem%io_rank==0) then
+          if (Ios%io_rank==0) then
              ierr=nf90_put_att(File%fh,varid,name,value)
           endif
        case(PIO_iotype_netcdf4p)
@@ -141,11 +167,13 @@ contains
 !! @retval ierr @copydoc error_return
 !<
   integer function put_att_1d_{TYPE} (File, varid, name, value) result(ierr)
-    type (File_desc_t), intent(inout) :: File
+    use pio_msg_mod, only : pio_msg_putatt_1D
+    type (File_desc_t), intent(inout) , target :: File
     integer, intent(in) :: varid
     character(len=*), intent(in) :: name
     {VTYPE}, intent(in) :: value(:)
-
+    type(iosystem_desc_t), pointer :: ios
+	
 #ifdef DEBUG
     {VTYPE} :: chkval
 #endif
@@ -154,20 +182,41 @@ contains
     !------------------
 
     character(len=*), parameter :: subName=modName//'::put_att_1d_{TYPE}'
-    integer :: iotype, mpierr
-    integer(kind=PIO_Offset) ::  clen
+    integer :: iotype, mpierr, msg
+    integer ::  clen
 
     iotype = File%iotype
     ierr=PIO_noerr
     clen = size(value)
 
-    if(File%iosystem%IOproc) then
+    ios => file%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_PUTATT_1D
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST({ITYPE},1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(len(name),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(name,len(name),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(clen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)	
+    end if
+    
+    call mpi_barrier(ios%union_comm, mpierr)
+
+    if(ios%async_interface) then
+       call MPI_BCAST(value, clen, {MPITYPE}, ios%compmaster, ios%my_comm, mpierr)
+    end if
+
+    if(Debug.or.DebugAsync) print *,__FILE__,__LINE__,clen,value
+
+
+    if(Ios%IOproc) then
        select case(iotype)
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
 #ifdef DEBUG
           print *, _FILE_,__LINE__,value
-          call MPI_ALLREDUCE(value, chkval, 1, {MPITYPE}, MPI_MAX ,File%iosystem%io_comm, mpierr)
+          call MPI_ALLREDUCE(value, chkval, 1, {MPITYPE}, MPI_MAX ,Ios%io_comm, mpierr)
           call CheckMPIReturn(subName, mpierr)
           if(chkval /= value) then
              print *,_FILE_,__LINE__,chkval,value, mpierr
@@ -175,11 +224,11 @@ contains
           end if
 #endif             
 #undef DEBUG
-          ierr= nfmpi_put_att_{TYPE} (File%fh,varid,name, nf_{TYPE} , clen,value)
+          ierr= nfmpi_put_att_{TYPE} (File%fh,varid,name, nf_{TYPE} , int(clen,kind=PIO_OFFSET),value)
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf, PIO_iotype_netcdf4c)
-          if (File%iosystem%io_rank==0) then
+          if (Ios%io_rank==0) then
              ierr=nf90_put_att(File%fh,varid,name,value)
           endif
        case(pio_iotype_netcdf4p)
@@ -207,7 +256,7 @@ contains
 !<
   integer function put_att_desc_{TYPE} (File,varDesc,name,value) result(ierr)
 
-    type (File_desc_t), intent(inout) :: File
+    type (File_desc_t), intent(inout) , target :: File
     type (VAR_desc_t), intent(in)     :: varDesc
     character(len=*), intent(in)      :: name
     {VTYPE}, intent(in)      :: value
@@ -230,7 +279,7 @@ contains
 !<
   integer function put_att_desc_1d_{TYPE} (File,varDesc,name,value) result(ierr)
 
-    type (File_desc_t), intent(inout) :: File
+    type (File_desc_t), intent(inout) , target :: File
     type (VAR_desc_t), intent(in)     :: varDesc
     character(len=*), intent(in)      :: name
     {VTYPE}, intent(in)      :: value(:)
@@ -255,7 +304,7 @@ contains
 !<
   integer function get_att_desc_{TYPE} (File,varDesc,name,value) result(ierr)
 
-    type (File_desc_t), intent(inout) :: File
+    type (File_desc_t), intent(inout) , target :: File
     type (VAR_desc_t), intent(in)     :: varDesc
     character(len=*), intent(in)      :: name
     {VTYPE}, intent(out)      :: value
@@ -280,7 +329,7 @@ contains
 !<
   integer function get_att_desc_1d_{TYPE} (File,varDesc,name,value) result(ierr)
 
-    type (File_desc_t), intent(inout) :: File
+    type (File_desc_t), intent(inout) , target :: File
     type (VAR_desc_t), intent(in)     :: varDesc
     character(len=*), intent(in)      :: name
     {VTYPE}, intent(out)      :: value(:)
@@ -303,17 +352,17 @@ contains
 !! @retval ierr @copydoc error_return
 !<
   integer function get_att_{TYPE} (File,varid,name,value) result(ierr)
-
-    type (File_desc_t), intent(in) :: File
+    use pio_msg_mod, only : pio_msg_getatt	
+    type (File_desc_t), intent(in) , target :: File
     integer(i4), intent(in)        :: varid
     character(len=*), intent(in)   :: name
     {VTYPE}, intent(out)          :: value
-
+    type(iosystem_desc_t), pointer :: ios
     !------------------
     ! Local variables
     !------------------
     character(len=*), parameter :: subName=modName//'::get_att_{TYPE}'
-    integer :: iotype, mpierr
+    integer :: iotype, mpierr, msg
     integer :: clen=1
 
     iotype = File%iotype
@@ -322,7 +371,22 @@ contains
     clen = len(value)
     value = ' '
 #endif
-    if(File%iosystem%IOproc) then
+    ios => file%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_GETATT
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST({ITYPE},1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(len(name),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(name,len(name),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
+#if ({ITYPE} == TYPETEXT)	
+       call MPI_BCAST(clen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)	
+#endif
+    end if
+
+
+    if(Ios%IOproc) then
        select case(iotype)
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
@@ -331,12 +395,11 @@ contains
 
 #ifdef _NETCDF
        case(iotype_netcdf)
-          if (File%iosystem%io_rank==0) then
+          if (Ios%io_rank==0) then
              ierr=nf90_get_att(File%fh,varid,name,value)
           endif
-          if(File%iosystem%num_tasks==File%iosystem%num_iotasks) then
-
-             call MPI_BCAST(value,clen ,{MPITYPE} ,0,File%iosystem%IO_comm, mpierr)
+          if(Ios%num_tasks==Ios%num_iotasks) then
+             call MPI_BCAST(value,clen ,{MPITYPE} ,0,Ios%IO_comm, mpierr)
              call CheckMPIReturn(subName, mpierr)
           end if
        case(PIO_iotype_netcdf4p,PIO_iotype_netcdf4c)
@@ -349,8 +412,8 @@ contains
        end select
     endif
     call check_netcdf(File, ierr,_FILE_,__LINE__)
-    if(File%iosystem%num_tasks>File%iosystem%num_iotasks) then
-       call MPI_BCAST(value, clen, {MPITYPE},File%iosystem%iomaster,File%iosystem%comp_comm, mpierr)
+    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
+       call MPI_BCAST(value, clen, {MPITYPE},Ios%iomaster,Ios%my_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
   end function get_att_{TYPE}
@@ -368,23 +431,40 @@ contains
 !! @retval ierr @copydoc error_return
 !<
   integer function get_att_1d_{TYPE} (File,varid,name,value) result(ierr)
+    use pio_msg_mod, only : pio_msg_getatt_1d
 
-    type (File_desc_t), intent(in) :: File
+    type (File_desc_t), intent(in) , target :: File
     integer(i4), intent(in)        :: varid
     character(len=*), intent(in)   :: name
     {VTYPE}, intent(out)          :: value(:)
-
+    type(iosystem_desc_t), pointer :: ios
     !------------------
     ! Local variables
     !------------------
     character(len=*), parameter :: subName=modName//'::get_att_1d_{TYPE}'
-    integer :: iotype, mpierr
+    integer :: iotype, mpierr, msg
     integer :: clen
 
     iotype = File%iotype
     ierr=PIO_noerr
     clen = size(value)
-    if(File%iosystem%IOproc) then
+
+    ios => file%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_GETATT_1D
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST({ITYPE},1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(len(name),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(name,len(name),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(clen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+    end if
+
+
+
+
+    if(Ios%IOproc) then
        select case(iotype)
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
@@ -392,11 +472,11 @@ contains
 #endif
 #ifdef _NETCDF
        case(iotype_netcdf)
-          if (File%iosystem%io_rank==0) then
+          if (Ios%io_rank==0) then
              ierr=nf90_get_att(File%fh,varid,name,value)
           endif
-          if(File%iosystem%num_tasks==File%iosystem%num_iotasks) then
-             call MPI_BCAST(value,clen ,{MPITYPE} ,0,File%iosystem%IO_comm, mpierr)
+          if(Ios%num_tasks==Ios%num_iotasks) then
+             call MPI_BCAST(value,clen ,{MPITYPE} ,0,Ios%IO_comm, mpierr)
              call CheckMPIReturn(subName, mpierr)
           end if
        case(PIO_iotype_netcdf4p,PIO_iotype_netcdf4c)
@@ -409,8 +489,8 @@ contains
        end select
     endif
     call check_netcdf(File, ierr,_FILE_,__LINE__)
-    if(File%iosystem%num_tasks>File%iosystem%num_iotasks) then
-       call MPI_BCAST(value, clen, {MPITYPE},File%iosystem%iomaster,File%iosystem%comp_comm, mpierr)
+    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
+       call MPI_BCAST(value, clen, {MPITYPE},Ios%iomaster,Ios%my_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
 

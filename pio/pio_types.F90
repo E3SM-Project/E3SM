@@ -36,18 +36,34 @@ module pio_types
 #ifdef SEQUENCE
 	sequence
 #endif
+        
+        integer(i4)              :: union_comm         ! The intracomm union of comp and io communicators (for async only)
         integer(i4)              :: IO_comm            ! The IO communicator
         integer(i4)              :: comp_comm          ! The Compute communicator
-        integer(i4)              :: num_tasks        ! total number of tasks
+        integer(i4)              :: intercomm          ! the intercomm (may be MPI_COMM_NULL)
+        
+        integer(i4)              :: my_comm          ! either comp_comm or intercomm
+        integer(i4)              :: num_tasks        !  number of tasks
         integer(i4)              :: num_iotasks        ! total number of IO tasks
-        integer(i4)              :: io_stride          ! stride between IO tasks
+        integer(i4)              :: num_comptasks
+
+        integer(i4)              :: union_rank
         integer(i4)              :: comp_rank          ! the computational rank
         integer(i4)              :: io_rank            ! the io rank if io_rank = -1 not an IO processor
 !
         integer(i4)              :: Info               ! MPI-IO info structure
-        integer(i4)              :: IOMaster           ! The comp_rank of the io_rank 0
+        
+! rank of the io and comp roots in the intercomm
+        integer(i4)              :: IOMaster           ! The intercom of the io_rank 0
+        integer(i4)              :: compMaster           ! The intercom of the comp_rank 0
+
+! rank of the io and comp roots in the union_comm
+        integer(i4)              :: IOroot           ! The union_rank of the io_rank 0
+        integer(i4)              :: comproot           ! The union_rank of the comp_rank 0
+
         logical(log_kind)        :: IOproc             ! .true. if an IO processor
         logical(log_kind)        :: UseRearranger      ! .true. if data rearrangement is necessary
+        logical(log_kind)        :: async_interface    ! .true. if using the async interface model
         integer(i4)              :: rearr         ! type of rearranger
                                                   ! e.g. rearr_{none,mct,box}
 	integer(i4)              :: error_handling ! how pio handles errors
@@ -55,7 +71,17 @@ module pio_types
 
 	! This holds the IODESC
     end type
-    
+
+    type iosystem_list_t
+       type(iosystem_desc_t), pointer :: this_iosystem
+    end type iosystem_list_t
+
+
+    integer, parameter :: MAX_IO_SYSTEMS=6
+    type(iosystem_list_t) :: iosystems(MAX_IO_SYSTEMS)
+
+
+     
 !> 
 !! @public
 !! @struct file_desc_t file_desc_t
@@ -65,7 +91,8 @@ module pio_types
        type(iosystem_desc_t), pointer :: iosystem
        integer(i4) :: fh
        integer(kind=PIO_OFFSET) :: offset             ! offset into file
-       integer(i4)              :: iotype             ! Type of IO to perform see parameter statement below    
+       integer(i4)              :: iotype             ! Type of IO to perform see parameter statement below     
+       logical                  :: file_is_open = .false.
     end type File_desc_t
 
 
@@ -136,7 +163,7 @@ module pio_types
         integer,pointer :: stype(:)   ! stype(num_iotasks)=mpi type for sends
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        
+        integer(i4) :: async_id
 
 
         type (DecompMap_t)  :: IOmap      ! IO decomposition map
@@ -158,8 +185,9 @@ module pio_types
 #endif	
         integer(i4)     :: varID
         integer(i4)     :: rec   ! This is a record number or pointer into the unlim dimension of the	    
-	integer(i4)     :: type
                                  ! netcdf file
+	integer(i4)     :: type
+        integer(i4)     :: ndims ! number of dimensions as defined on the netcdf file.
     end type 
 
 !>

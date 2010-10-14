@@ -10,7 +10,7 @@
   F90 = "blrts_xlf90"
   FC = "blrts_xlf90"
   CC = "blrts_xlc"
-  FFLAGS = "-qextname=flush -g -qfullpath -WF,-DBGL -WF,-D_USE_FLOW_CONTROL"
+  FFLAGS = "-qextname=flush -g -qfullpath -WF,-DBGL,-D_USE_FLOW_CONTROL "
   ALLCFLAGS = "-DBGL"
   conopts = "--disable-mct  --enable-mpiio --enable-timing --build=powerpc-bgp-linux --host=powerpc64-suse-linux"
   workdir = "/ptmp/${USER}/testpio"
@@ -42,7 +42,7 @@
  />
 
 <bluefire
-  NETCDF_PATH="/contrib/netcdf-4.1.1-mpi" 
+  NETCDF_PATH="/blhome/jedwards/netcdf-4/" 
   PNETCDF_PATH="/contrib/parallel-netcdf-1.1.1.svn821" 
   FFLAGS = "-g -qfullpath "
   CFLAGS = "-g -qfullpath "
@@ -64,7 +64,7 @@
 #BSUB -o testpio.%J.stdout
 #BSUB -e testpio.%J.stderr
 #BSUB -J testpio_suite
-#BSUB -W 1:50"
+#BSUB -W 3:00"
 />
 
 <aum

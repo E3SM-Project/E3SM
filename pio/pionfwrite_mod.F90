@@ -39,7 +39,7 @@ contains
     use pio_support, only : Debug, DebugIO, piodie, checkmpireturn 
 
 #ifdef _NETCDF
-    use netcdf, only : nf90_put_var  !_EXTERNAL
+    use netcdf, only : nf90_put_var, nf90_inquire_variable  !_EXTERNAL
 #endif
 #ifdef TIMING
     use perf_mod, only : t_startf, t_stopf  !_EXTERNAL
@@ -70,12 +70,10 @@ contains
 #ifdef TIMING
     call t_startf("pio_write_nfdarray_real")
 #endif
-    iotype = File%iotype
-
-    ierr = pio_inq_varndims(File, vardesc, ndims)
-    ierr=PIO_noerr
-	
+    ierr = PIO_NOERR
     if(file%iosystem%ioproc) then
+       iotype = File%iotype
+
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
@@ -119,12 +117,17 @@ contains
                 end if
              end if
           endif
-
+	
+          if(File%iosystem%io_rank==0) then
+             ierr=nf90_inquire_variable(File%fh,vardesc%varid,ndims=ndims)	
+          end if
+          call MPI_BCAST(ndims,1,MPI_INTEGER,0,file%iosystem%io_comm,ierr)
+          
           call alloc_check(temp_start,ndims)
-          temp_start=start(1:ndims)
+          temp_start=int(start(1:ndims))
 
           call alloc_check(temp_count,ndims)
-          temp_count=count(1:ndims)
+          temp_count=int(count(1:ndims))
 
           ! Every i/o proc send data to root
 
@@ -150,17 +153,15 @@ contains
 
              call MPI_SEND( temp_count,ndims,MPI_INTEGER, &
                   0,2*File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
+
              call CheckMPIReturn(subName, mpierr)
 
           endif
 
           if (File%iosystem%io_rank==0) then 
-             if (Debug) print *, subName,': 0: writing netcdf for self ', &
-                  'fh=',File%fh,' varid=',varDesc%varid, temp_start, temp_count, size(iobuf)
              fh = file%fh
              vid = vardesc%varid
              ierr=nf90_put_var( fh, vid,IOBUF,temp_start,temp_count)
-             if(Debug) print *, subname,__LINE__,fh,vid, ierr
              if(ierr==pio_noerr) then
                 if (Debug) print *, subName,': 0: done writing for self',ndims
 
@@ -190,7 +191,6 @@ contains
                         i,2*File%iosystem%num_iotasks+i,File%iosystem%IO_comm,status,mpierr)
                    call CheckMPIReturn(subName,mpierr)
 
-                   if (Debug) print *, subName,': 0: writing netcdf for ',i, temp_start,temp_count
 	           if(sum(temp_count)>0) then
 
 #ifdef TIMING
@@ -233,8 +233,8 @@ contains
 #ifdef TIMING
     call t_stopf("pio_write_nfdarray_real")
 #endif
-  call mpi_barrier(file%iosystem%comp_comm, mpierr)
-  call CheckMPIReturn(subName,mpierr)
+!  call mpi_barrier(file%iosystem%comp_comm, mpierr)
+!  call CheckMPIReturn(subName,mpierr)
 
   end function WRITE_NFDARRAY_real
   ! note: IOBUF may actually point to the original data
@@ -254,7 +254,7 @@ contains
     use pio_support, only : Debug, DebugIO, piodie, checkmpireturn 
 
 #ifdef _NETCDF
-    use netcdf, only : nf90_put_var  !_EXTERNAL
+    use netcdf, only : nf90_put_var, nf90_inquire_variable  !_EXTERNAL
 #endif
 #ifdef TIMING
     use perf_mod, only : t_startf, t_stopf  !_EXTERNAL
@@ -285,12 +285,10 @@ contains
 #ifdef TIMING
     call t_startf("pio_write_nfdarray_int")
 #endif
-    iotype = File%iotype
-
-    ierr = pio_inq_varndims(File, vardesc, ndims)
-    ierr=PIO_noerr
-	
+    ierr = PIO_NOERR
     if(file%iosystem%ioproc) then
+       iotype = File%iotype
+
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
@@ -334,12 +332,17 @@ contains
                 end if
              end if
           endif
-
+	
+          if(File%iosystem%io_rank==0) then
+             ierr=nf90_inquire_variable(File%fh,vardesc%varid,ndims=ndims)	
+          end if
+          call MPI_BCAST(ndims,1,MPI_INTEGER,0,file%iosystem%io_comm,ierr)
+          
           call alloc_check(temp_start,ndims)
-          temp_start=start(1:ndims)
+          temp_start=int(start(1:ndims))
 
           call alloc_check(temp_count,ndims)
-          temp_count=count(1:ndims)
+          temp_count=int(count(1:ndims))
 
           ! Every i/o proc send data to root
 
@@ -365,17 +368,15 @@ contains
 
              call MPI_SEND( temp_count,ndims,MPI_INTEGER, &
                   0,2*File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
+
              call CheckMPIReturn(subName, mpierr)
 
           endif
 
           if (File%iosystem%io_rank==0) then 
-             if (Debug) print *, subName,': 0: writing netcdf for self ', &
-                  'fh=',File%fh,' varid=',varDesc%varid, temp_start, temp_count, size(iobuf)
              fh = file%fh
              vid = vardesc%varid
              ierr=nf90_put_var( fh, vid,IOBUF,temp_start,temp_count)
-             if(Debug) print *, subname,__LINE__,fh,vid, ierr
              if(ierr==pio_noerr) then
                 if (Debug) print *, subName,': 0: done writing for self',ndims
 
@@ -405,7 +406,6 @@ contains
                         i,2*File%iosystem%num_iotasks+i,File%iosystem%IO_comm,status,mpierr)
                    call CheckMPIReturn(subName,mpierr)
 
-                   if (Debug) print *, subName,': 0: writing netcdf for ',i, temp_start,temp_count
 	           if(sum(temp_count)>0) then
 
 #ifdef TIMING
@@ -448,8 +448,8 @@ contains
 #ifdef TIMING
     call t_stopf("pio_write_nfdarray_int")
 #endif
-  call mpi_barrier(file%iosystem%comp_comm, mpierr)
-  call CheckMPIReturn(subName,mpierr)
+!  call mpi_barrier(file%iosystem%comp_comm, mpierr)
+!  call CheckMPIReturn(subName,mpierr)
 
   end function WRITE_NFDARRAY_int
   ! note: IOBUF may actually point to the original data
@@ -469,7 +469,7 @@ contains
     use pio_support, only : Debug, DebugIO, piodie, checkmpireturn 
 
 #ifdef _NETCDF
-    use netcdf, only : nf90_put_var  !_EXTERNAL
+    use netcdf, only : nf90_put_var, nf90_inquire_variable  !_EXTERNAL
 #endif
 #ifdef TIMING
     use perf_mod, only : t_startf, t_stopf  !_EXTERNAL
@@ -500,12 +500,10 @@ contains
 #ifdef TIMING
     call t_startf("pio_write_nfdarray_double")
 #endif
-    iotype = File%iotype
-
-    ierr = pio_inq_varndims(File, vardesc, ndims)
-    ierr=PIO_noerr
-	
+    ierr = PIO_NOERR
     if(file%iosystem%ioproc) then
+       iotype = File%iotype
+
        select case (iotype) 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
@@ -549,12 +547,17 @@ contains
                 end if
              end if
           endif
-
+	
+          if(File%iosystem%io_rank==0) then
+             ierr=nf90_inquire_variable(File%fh,vardesc%varid,ndims=ndims)	
+          end if
+          call MPI_BCAST(ndims,1,MPI_INTEGER,0,file%iosystem%io_comm,ierr)
+          
           call alloc_check(temp_start,ndims)
-          temp_start=start(1:ndims)
+          temp_start=int(start(1:ndims))
 
           call alloc_check(temp_count,ndims)
-          temp_count=count(1:ndims)
+          temp_count=int(count(1:ndims))
 
           ! Every i/o proc send data to root
 
@@ -580,17 +583,15 @@ contains
 
              call MPI_SEND( temp_count,ndims,MPI_INTEGER, &
                   0,2*File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
+
              call CheckMPIReturn(subName, mpierr)
 
           endif
 
           if (File%iosystem%io_rank==0) then 
-             if (Debug) print *, subName,': 0: writing netcdf for self ', &
-                  'fh=',File%fh,' varid=',varDesc%varid, temp_start, temp_count, size(iobuf)
              fh = file%fh
              vid = vardesc%varid
              ierr=nf90_put_var( fh, vid,IOBUF,temp_start,temp_count)
-             if(Debug) print *, subname,__LINE__,fh,vid, ierr
              if(ierr==pio_noerr) then
                 if (Debug) print *, subName,': 0: done writing for self',ndims
 
@@ -620,7 +621,6 @@ contains
                         i,2*File%iosystem%num_iotasks+i,File%iosystem%IO_comm,status,mpierr)
                    call CheckMPIReturn(subName,mpierr)
 
-                   if (Debug) print *, subName,': 0: writing netcdf for ',i, temp_start,temp_count
 	           if(sum(temp_count)>0) then
 
 #ifdef TIMING
@@ -663,8 +663,8 @@ contains
 #ifdef TIMING
     call t_stopf("pio_write_nfdarray_double")
 #endif
-  call mpi_barrier(file%iosystem%comp_comm, mpierr)
-  call CheckMPIReturn(subName,mpierr)
+!  call mpi_barrier(file%iosystem%comp_comm, mpierr)
+!  call CheckMPIReturn(subName,mpierr)
 
   end function WRITE_NFDARRAY_double
 

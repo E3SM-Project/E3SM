@@ -469,7 +469,7 @@ subroutine box_rearrange_comp2io_real (IOsystem, ioDesc, s1, src, s2, &
   ndof   = size(ioDesc%dest_ioindex)
   niodof = size(dest)
   nrecvs = ioDesc%nrecvs             ! number of distinct senders to the ioproc
-  myrank = IOsystem%comp_rank
+  myrank = IOsystem%union_rank
   nprocs = IOsystem%num_tasks
   num_iotasks = IOsystem%num_iotasks
 
@@ -526,14 +526,14 @@ subroutine box_rearrange_comp2io_real (IOsystem, ioDesc, s1, src, s2, &
 
       call MPI_ALLTOALLW(src,  a2a_sendcounts, a2a_displs, a2a_sendtypes, &
                          dest, a2a_recvcounts, a2a_displs, a2a_recvtypes, &
-                         IOsystem%comp_comm, ierror                       )
+                         IOsystem%union_comm, ierror                       )
       call CheckMPIReturn('box_rearrange', ierror)
     else
 #endif
       call pio_swapm( nprocs, myrank,                            &
         src,  ndof,   a2a_sendcounts, a2a_displs, a2a_sendtypes, &
         dest, niodof, a2a_recvcounts, a2a_displs, a2a_recvtypes, &
-        IOsystem%comp_comm, pio_hs, pio_isend, pio_maxreq        )
+        IOsystem%union_comm, pio_hs, pio_isend, pio_maxreq        )
 #ifdef _USE_ALLTOALLW
     endif
 #endif
@@ -566,7 +566,7 @@ subroutine box_rearrange_comp2io_real (IOsystem, ioDesc, s1, src, s2, &
 
         call MPI_ISEND( src, 1, stype(i),    &                 ! buf, count, type
                         io_comprank,TAG2,    &                 ! destination,tag
-                        IOsystem%comp_comm,sreq(i),ierror )
+                        IOsystem%union_comm,sreq(i),ierror )
         call CheckMPIReturn('box_rearrange',ierror)
       endif
 
@@ -580,7 +580,7 @@ subroutine box_rearrange_comp2io_real (IOsystem, ioDesc, s1, src, s2, &
 
         call MPI_IRECV( dest,1, rtype(i), &             ! buf, count, type
                         rfrom(i), TAG2, &               ! source, tag
-                        IOsystem%comp_comm,rreq(i),ierror )        
+                        IOsystem%union_comm,rreq(i),ierror )        
         call CheckMPIReturn('box_rearrange',ierror)
       end do
 
@@ -608,7 +608,7 @@ subroutine box_rearrange_comp2io_real (IOsystem, ioDesc, s1, src, s2, &
     call dealloc_check(sreq, 'send requests')
 
 #if DEBUG_BARRIER
-    call MPI_BARRIER(IOsystem%comp_comm,ierror)
+    call MPI_BARRIER(IOsystem%union_comm,ierror)
     call CheckMPIReturn(subName,ierror)
     if (myrank==0) print *,'BARRIER - end of comp2io'
 #endif
@@ -697,7 +697,7 @@ subroutine box_rearrange_comp2io_double (IOsystem, ioDesc, s1, src, s2, &
   ndof   = size(ioDesc%dest_ioindex)
   niodof = size(dest)
   nrecvs = ioDesc%nrecvs             ! number of distinct senders to the ioproc
-  myrank = IOsystem%comp_rank
+  myrank = IOsystem%union_rank
   nprocs = IOsystem%num_tasks
   num_iotasks = IOsystem%num_iotasks
 
@@ -754,14 +754,14 @@ subroutine box_rearrange_comp2io_double (IOsystem, ioDesc, s1, src, s2, &
 
       call MPI_ALLTOALLW(src,  a2a_sendcounts, a2a_displs, a2a_sendtypes, &
                          dest, a2a_recvcounts, a2a_displs, a2a_recvtypes, &
-                         IOsystem%comp_comm, ierror                       )
+                         IOsystem%union_comm, ierror                       )
       call CheckMPIReturn('box_rearrange', ierror)
     else
 #endif
       call pio_swapm( nprocs, myrank,                            &
         src,  ndof,   a2a_sendcounts, a2a_displs, a2a_sendtypes, &
         dest, niodof, a2a_recvcounts, a2a_displs, a2a_recvtypes, &
-        IOsystem%comp_comm, pio_hs, pio_isend, pio_maxreq        )
+        IOsystem%union_comm, pio_hs, pio_isend, pio_maxreq        )
 #ifdef _USE_ALLTOALLW
     endif
 #endif
@@ -794,7 +794,7 @@ subroutine box_rearrange_comp2io_double (IOsystem, ioDesc, s1, src, s2, &
 
         call MPI_ISEND( src, 1, stype(i),    &                 ! buf, count, type
                         io_comprank,TAG2,    &                 ! destination,tag
-                        IOsystem%comp_comm,sreq(i),ierror )
+                        IOsystem%union_comm,sreq(i),ierror )
         call CheckMPIReturn('box_rearrange',ierror)
       endif
 
@@ -808,7 +808,7 @@ subroutine box_rearrange_comp2io_double (IOsystem, ioDesc, s1, src, s2, &
 
         call MPI_IRECV( dest,1, rtype(i), &             ! buf, count, type
                         rfrom(i), TAG2, &               ! source, tag
-                        IOsystem%comp_comm,rreq(i),ierror )        
+                        IOsystem%union_comm,rreq(i),ierror )        
         call CheckMPIReturn('box_rearrange',ierror)
       end do
 
@@ -836,7 +836,7 @@ subroutine box_rearrange_comp2io_double (IOsystem, ioDesc, s1, src, s2, &
     call dealloc_check(sreq, 'send requests')
 
 #if DEBUG_BARRIER
-    call MPI_BARRIER(IOsystem%comp_comm,ierror)
+    call MPI_BARRIER(IOsystem%union_comm,ierror)
     call CheckMPIReturn(subName,ierror)
     if (myrank==0) print *,'BARRIER - end of comp2io'
 #endif
@@ -925,7 +925,7 @@ subroutine box_rearrange_comp2io_int (IOsystem, ioDesc, s1, src, s2, &
   ndof   = size(ioDesc%dest_ioindex)
   niodof = size(dest)
   nrecvs = ioDesc%nrecvs             ! number of distinct senders to the ioproc
-  myrank = IOsystem%comp_rank
+  myrank = IOsystem%union_rank
   nprocs = IOsystem%num_tasks
   num_iotasks = IOsystem%num_iotasks
 
@@ -982,14 +982,14 @@ subroutine box_rearrange_comp2io_int (IOsystem, ioDesc, s1, src, s2, &
 
       call MPI_ALLTOALLW(src,  a2a_sendcounts, a2a_displs, a2a_sendtypes, &
                          dest, a2a_recvcounts, a2a_displs, a2a_recvtypes, &
-                         IOsystem%comp_comm, ierror                       )
+                         IOsystem%union_comm, ierror                       )
       call CheckMPIReturn('box_rearrange', ierror)
     else
 #endif
       call pio_swapm( nprocs, myrank,                            &
         src,  ndof,   a2a_sendcounts, a2a_displs, a2a_sendtypes, &
         dest, niodof, a2a_recvcounts, a2a_displs, a2a_recvtypes, &
-        IOsystem%comp_comm, pio_hs, pio_isend, pio_maxreq        )
+        IOsystem%union_comm, pio_hs, pio_isend, pio_maxreq        )
 #ifdef _USE_ALLTOALLW
     endif
 #endif
@@ -1022,7 +1022,7 @@ subroutine box_rearrange_comp2io_int (IOsystem, ioDesc, s1, src, s2, &
 
         call MPI_ISEND( src, 1, stype(i),    &                 ! buf, count, type
                         io_comprank,TAG2,    &                 ! destination,tag
-                        IOsystem%comp_comm,sreq(i),ierror )
+                        IOsystem%union_comm,sreq(i),ierror )
         call CheckMPIReturn('box_rearrange',ierror)
       endif
 
@@ -1036,7 +1036,7 @@ subroutine box_rearrange_comp2io_int (IOsystem, ioDesc, s1, src, s2, &
 
         call MPI_IRECV( dest,1, rtype(i), &             ! buf, count, type
                         rfrom(i), TAG2, &               ! source, tag
-                        IOsystem%comp_comm,rreq(i),ierror )        
+                        IOsystem%union_comm,rreq(i),ierror )        
         call CheckMPIReturn('box_rearrange',ierror)
       end do
 
@@ -1064,7 +1064,7 @@ subroutine box_rearrange_comp2io_int (IOsystem, ioDesc, s1, src, s2, &
     call dealloc_check(sreq, 'send requests')
 
 #if DEBUG_BARRIER
-    call MPI_BARRIER(IOsystem%comp_comm,ierror)
+    call MPI_BARRIER(IOsystem%union_comm,ierror)
     call CheckMPIReturn(subName,ierror)
     if (myrank==0) print *,'BARRIER - end of comp2io'
 #endif
@@ -1368,7 +1368,7 @@ subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
   ndof   = size(iodesc%dest_ioindex)
   niodof = size(iobuf)
   nrecvs = ioDesc%nrecvs             ! number of distinct senders to the ioproc
-  myrank = IOsystem%comp_rank
+  myrank = IOsystem%union_rank
   nprocs = IOsystem%num_tasks
   num_iotasks = IOsystem%num_iotasks
 
@@ -1425,14 +1425,14 @@ subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
     if (pio_option == COLLECTIVE) then
       call MPI_ALLTOALLW(iobuf,   a2a_sendcounts, a2a_displs, a2a_sendtypes, &
                          compbuf, a2a_recvcounts, a2a_displs, a2a_recvtypes, &
-                         IOsystem%comp_comm, ierror                          )
+                         IOsystem%union_comm, ierror                          )
       call CheckMPIReturn(subName, ierror)
     else
 #endif
       call pio_swapm( nprocs, myrank,                               &
         iobuf,   niodof, a2a_sendcounts, a2a_displs, a2a_sendtypes, &
         compbuf, ndof,   a2a_recvcounts, a2a_displs, a2a_recvtypes, &
-        IOsystem%comp_comm, pio_hs, pio_isend, pio_maxreq           )
+        IOsystem%union_comm, pio_hs, pio_isend, pio_maxreq           )
 #ifdef _USE_ALLTOALLW
     endif
 #endif
@@ -1458,7 +1458,7 @@ subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
 
         call MPI_IRECV( compbuf, 1, stype(i), &                ! buf, count, type
                         io_comprank,TAG2,    &                 ! destination,tag
-                        IOsystem%comp_comm,rreq(i),ierror )
+                        IOsystem%union_comm,rreq(i),ierror )
         call CheckMPIReturn(subName,ierror)
       endif
 
@@ -1475,7 +1475,7 @@ subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
 
         call MPI_ISEND( iobuf,1, rtype(i), &                ! buf, count, type
                         rfrom(i), TAG2, &                   ! dest, tag
-                        IOsystem%comp_comm,sreq(i),ierror )        
+                        IOsystem%union_comm,sreq(i),ierror )        
         call CheckMPIReturn(subName,ierror)
 
       end do
@@ -1587,7 +1587,7 @@ subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
   ndof   = size(iodesc%dest_ioindex)
   niodof = size(iobuf)
   nrecvs = ioDesc%nrecvs             ! number of distinct senders to the ioproc
-  myrank = IOsystem%comp_rank
+  myrank = IOsystem%union_rank
   nprocs = IOsystem%num_tasks
   num_iotasks = IOsystem%num_iotasks
 
@@ -1644,14 +1644,14 @@ subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
     if (pio_option == COLLECTIVE) then
       call MPI_ALLTOALLW(iobuf,   a2a_sendcounts, a2a_displs, a2a_sendtypes, &
                          compbuf, a2a_recvcounts, a2a_displs, a2a_recvtypes, &
-                         IOsystem%comp_comm, ierror                          )
+                         IOsystem%union_comm, ierror                          )
       call CheckMPIReturn(subName, ierror)
     else
 #endif
       call pio_swapm( nprocs, myrank,                               &
         iobuf,   niodof, a2a_sendcounts, a2a_displs, a2a_sendtypes, &
         compbuf, ndof,   a2a_recvcounts, a2a_displs, a2a_recvtypes, &
-        IOsystem%comp_comm, pio_hs, pio_isend, pio_maxreq           )
+        IOsystem%union_comm, pio_hs, pio_isend, pio_maxreq           )
 #ifdef _USE_ALLTOALLW
     endif
 #endif
@@ -1677,7 +1677,7 @@ subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
 
         call MPI_IRECV( compbuf, 1, stype(i), &                ! buf, count, type
                         io_comprank,TAG2,    &                 ! destination,tag
-                        IOsystem%comp_comm,rreq(i),ierror )
+                        IOsystem%union_comm,rreq(i),ierror )
         call CheckMPIReturn(subName,ierror)
       endif
 
@@ -1694,7 +1694,7 @@ subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
 
         call MPI_ISEND( iobuf,1, rtype(i), &                ! buf, count, type
                         rfrom(i), TAG2, &                   ! dest, tag
-                        IOsystem%comp_comm,sreq(i),ierror )        
+                        IOsystem%union_comm,sreq(i),ierror )        
         call CheckMPIReturn(subName,ierror)
 
       end do
@@ -1806,7 +1806,7 @@ subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
   ndof   = size(iodesc%dest_ioindex)
   niodof = size(iobuf)
   nrecvs = ioDesc%nrecvs             ! number of distinct senders to the ioproc
-  myrank = IOsystem%comp_rank
+  myrank = IOsystem%union_rank
   nprocs = IOsystem%num_tasks
   num_iotasks = IOsystem%num_iotasks
 
@@ -1863,14 +1863,14 @@ subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
     if (pio_option == COLLECTIVE) then
       call MPI_ALLTOALLW(iobuf,   a2a_sendcounts, a2a_displs, a2a_sendtypes, &
                          compbuf, a2a_recvcounts, a2a_displs, a2a_recvtypes, &
-                         IOsystem%comp_comm, ierror                          )
+                         IOsystem%union_comm, ierror                          )
       call CheckMPIReturn(subName, ierror)
     else
 #endif
       call pio_swapm( nprocs, myrank,                               &
         iobuf,   niodof, a2a_sendcounts, a2a_displs, a2a_sendtypes, &
         compbuf, ndof,   a2a_recvcounts, a2a_displs, a2a_recvtypes, &
-        IOsystem%comp_comm, pio_hs, pio_isend, pio_maxreq           )
+        IOsystem%union_comm, pio_hs, pio_isend, pio_maxreq           )
 #ifdef _USE_ALLTOALLW
     endif
 #endif
@@ -1896,7 +1896,7 @@ subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
 
         call MPI_IRECV( compbuf, 1, stype(i), &                ! buf, count, type
                         io_comprank,TAG2,    &                 ! destination,tag
-                        IOsystem%comp_comm,rreq(i),ierror )
+                        IOsystem%union_comm,rreq(i),ierror )
         call CheckMPIReturn(subName,ierror)
       endif
 
@@ -1913,7 +1913,7 @@ subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
 
         call MPI_ISEND( iobuf,1, rtype(i), &                ! buf, count, type
                         rfrom(i), TAG2, &                   ! dest, tag
-                        IOsystem%comp_comm,sreq(i),ierror )        
+                        IOsystem%union_comm,sreq(i),ierror )        
         call CheckMPIReturn(subName,ierror)
 
       end do
@@ -1951,7 +1951,7 @@ end subroutine box_rearrange_io2comp_int
   !
   ! io_comprank
   ! 
-  !   find the rank in comp_comm of the ith io processor
+  !   find the rank in union_comm of the ith io processor
   !
 
 # 732 "box_rearrange.F90.in"
@@ -1961,7 +1961,6 @@ end subroutine box_rearrange_io2comp_int
     type (Iosystem_desc_t), intent(in) :: Iosystem
     integer ioprocindex
 
-!    find_io_comprank=Iosystem%iomaster+(ioprocindex-1)*Iosystem%io_stride
     find_io_comprank=iosystem%ioranks(ioprocindex)
   end function find_io_comprank
 
@@ -1972,7 +1971,7 @@ end subroutine box_rearrange_io2comp_int
   !   find global xyz coordinates given a global index
   !
 
-# 749 "box_rearrange.F90.in"
+# 748 "box_rearrange.F90.in"
   subroutine gindex_to_coord( gindex, gstride, ndim, gcoord )
     implicit none
     integer,intent(in) :: gindex           ! 0-based global index
@@ -2009,7 +2008,7 @@ end subroutine box_rearrange_io2comp_int
   !   and 1-based index for that ioproc's iobuf          '
   !
 
-# 785 "box_rearrange.F90.in"
+# 784 "box_rearrange.F90.in"
   logical function find_ioproc( gcoord, lb, ub, lstride, ndim, nioproc, &
        io_proc, io_index )
     implicit none
@@ -2081,7 +2080,7 @@ end subroutine box_rearrange_io2comp_int
   !
   !
 
-# 856 "box_rearrange.F90.in"
+# 855 "box_rearrange.F90.in"
   subroutine compute_dest(compdof, start, count, gsize, ndim, nioproc, &
                           dest_ioproc, dest_ioindex                    )
     implicit none
@@ -2193,7 +2192,7 @@ end subroutine box_rearrange_io2comp_int
   ! this space should be freed in box_rearrange_free
   !
 
-# 967 "box_rearrange.F90.in"
+# 966 "box_rearrange.F90.in"
   subroutine box_rearrange_create(Iosystem, compdof, gsize, ndim, &
                                   nioproc, ioDesc)
     implicit none
@@ -2251,11 +2250,11 @@ end subroutine box_rearrange_io2comp_int
     endif
 
     call MPI_BCAST(start, ndim*Iosystem%num_iotasks, MPI_INTEGER,   & ! buf, cnt
-                   Iosystem%iomaster, Iosystem%comp_comm, ierror    )
+                   Iosystem%ioranks(1), Iosystem%union_comm, ierror    )
     call CheckMPIReturn(subName, ierror)
 
     call MPI_BCAST(count, ndim*Iosystem%num_iotasks, MPI_INTEGER,   & ! buf, cnt
-                   Iosystem%iomaster, Iosystem%comp_comm, ierror    )
+                   Iosystem%ioranks(1), Iosystem%union_comm, ierror    )
     call CheckMPIReturn(subName, ierror)
 
 #if DEBUG
@@ -2307,7 +2306,7 @@ end subroutine box_rearrange_io2comp_int
 
 #ifndef _MPISERIAL
 
-# 1080 "box_rearrange.F90.in"
+# 1079 "box_rearrange.F90.in"
   subroutine compute_counts(Iosystem, ioDesc, ndof, niodof)
 
     type (Iosystem_desc_t), intent(in) :: Iosystem
@@ -2367,7 +2366,7 @@ end subroutine box_rearrange_io2comp_int
     ! comp procs tell io procs how many items they will send
 
     ! init
-    myrank      = Iosystem%comp_rank
+    myrank      = Iosystem%union_rank
     num_tasks   = IOsystem%num_tasks
     num_iotasks = Iosystem%num_iotasks
 
@@ -2409,7 +2408,7 @@ end subroutine box_rearrange_io2comp_int
     send_displs = 0
 
     do i=1,num_iotasks
-       ! go from 1-based io rank to 0-based rank in comp_comm
+       ! go from 1-based io rank to 0-based rank in union_comm
        io_comprank = find_io_comprank(IOsystem,i) + 1  ! arrays are 1-based
        send_counts(io_comprank) = 1
        send_displs(io_comprank) = i-1
@@ -2459,7 +2458,7 @@ end subroutine box_rearrange_io2comp_int
     call pio_swapm( num_tasks, myrank,                           &
       scount,   num_iotasks, send_counts, send_displs, sr_types, &
       recv_buf, rbuf_size,   recv_counts, recv_displs, sr_types, &
-      IOsystem%comp_comm, pio_hs, pio_isend, pio_maxreq          )
+      IOsystem%union_comm, pio_hs, pio_isend, pio_maxreq          )
 
     ! determine nrecvs, rcount, and rfrom
     nrecvs = 0
@@ -2543,7 +2542,7 @@ end subroutine box_rearrange_io2comp_int
     send_counts = 0
     send_displs = 0
     do i=1,num_iotasks
-       ! go from 1-based io rank to 0-based rank in comp_comm
+       ! go from 1-based io rank to 0-based rank in union_comm
        io_comprank = find_io_comprank(IOsystem,i) + 1  ! arrays are 1-based
        send_counts(io_comprank) = scount(i)
        send_displs(io_comprank) = spos(i)-1
@@ -2593,7 +2592,7 @@ end subroutine box_rearrange_io2comp_int
     call pio_swapm( num_tasks, myrank,                         &
       s2rindex, ndof,      send_counts, send_displs, sr_types, &
       rindex,   rbuf_size, recv_counts, recv_displs, sr_types, &
-      IOsystem%comp_comm, pio_hs, pio_isend, pio_maxreq        )
+      IOsystem%union_comm, pio_hs, pio_isend, pio_maxreq        )
 
    call dealloc_check(s2rindex,    's2rindex temp')
    call dealloc_check(sr_types,    'sr_types temp')
@@ -2697,7 +2696,7 @@ end subroutine box_rearrange_io2comp_int
   !
 
 
-# 1469 "box_rearrange.F90.in"
+# 1468 "box_rearrange.F90.in"
   subroutine box_rearrange_create( Iosystem,compdof,gsize,ndim,nioproc,ioDesc)
     implicit none
 
@@ -2760,14 +2759,12 @@ end subroutine box_rearrange_io2comp_int
        ! note that index in start,count is the io_rank not comp_rank
     endif
 
-
-
     call MPI_BCAST( start,ndim*Iosystem%num_iotasks,MPI_INTEGER, &    ! buf, cnt
-         Iosystem%iomaster, Iosystem%comp_comm,ierror )
+         Iosystem%ioroot, Iosystem%union_comm,ierror )
     call CheckMPIReturn(subName,ierror)
 
     call MPI_BCAST( count,ndim*Iosystem%num_iotasks,MPI_INTEGER, &    ! buf, cnt
-         Iosystem%iomaster, Iosystem%comp_comm,ierror )
+         Iosystem%ioroot, Iosystem%union_comm,ierror )
     call CheckMPIReturn(subName,ierror)
 
 #if DEBUG
@@ -2824,16 +2821,13 @@ end subroutine box_rearrange_io2comp_int
     print *,Iosystem%comp_rank,': nsends()=',nsends
 #endif
 
-    ! Note that rank of root is 0-based and nsends() is 1-based
     ioDesc%nrecvs=0      ! this will only be overridden on io procs
-    root=Iosystem%iomaster
+
     do i=1,Iosystem%num_iotasks
-#if 0
-       print *,Iosystem%comp_rank,': ',nsends(i),' sends to ',i
-#endif
        root = find_io_comprank(ioSystem,i) 
+
        call MPI_REDUCE( nsends(i),ioDesc%nrecvs,1,MPI_INTEGER, &
-            MPI_SUM,root,Iosystem%comp_comm,ierror )
+            MPI_SUM,root,Iosystem%union_comm,ierror )
        call CheckMPIReturn(subName,ierror)
 
     end do
@@ -2846,7 +2840,7 @@ end subroutine box_rearrange_io2comp_int
     ! Consistency check - collect totals to io root for a check
 
     call MPI_REDUCE( nsends_total,nsends_global,1,MPI_INTEGER, &
-         MPI_SUM,Iosystem%iomaster,Iosystem%comp_comm,ierror )
+         MPI_SUM,Iosystem%ioranks(1),Iosystem%union_comm,ierror )
     call CheckMPIReturn(subName,ierror)
 
     if (Iosystem%IOproc) &
@@ -2854,7 +2848,7 @@ end subroutine box_rearrange_io2comp_int
          MPI_SUM,0,Iosystem%IO_comm,ierror )
          call CheckMPIReturn(subName,ierror)
 
-    if (Iosystem%comp_rank == Iosystem%iomaster) then
+    if (Iosystem%union_rank == Iosystem%ioranks(1)) then
        if (Iosystem%io_rank/=0) then
           call piodie( _FILE_,__LINE__,'Iosystem%iomaster rank ',Iosystem%iomaster, &
                'has nonzero io_rank ',Iosystem%io_rank)
@@ -2891,7 +2885,7 @@ end subroutine box_rearrange_io2comp_int
 
 #ifndef _MPISERIAL
 
-# 1662 "box_rearrange.F90.in"
+# 1656 "box_rearrange.F90.in"
   subroutine compute_counts( Iosystem,ioDesc,ndof,niodof )
 
     type (Iosystem_desc_t), intent(in) :: Iosystem
@@ -2972,7 +2966,7 @@ end subroutine box_rearrange_io2comp_int
 
 
 #if DEBUG_BARRIER
-    call MPI_BARRIER(Iosystem%comp_comm,ierror)
+    call MPI_BARRIER(Iosystem%union_comm,ierror)
     call CheckMPIReturn(subName,ierror)
     if (myrank==0) print *,'BARRIER - start of phase 1'
 #endif
@@ -2989,7 +2983,7 @@ end subroutine box_rearrange_io2comp_int
        do i=1,nrecvs
           call MPI_IRECV( rcount(i),1,MPI_INTEGER, &       ! buf,count,type
                MPI_ANY_SOURCE,TAG0, &           ! source, tag
-               Iosystem%comp_comm,rreq(i),ierror)
+               Iosystem%union_comm,rreq(i),ierror)
           call CheckMPIReturn(subName,ierror)
        end do
     endif
@@ -3024,12 +3018,12 @@ end subroutine box_rearrange_io2comp_int
     do i=1,num_iotasks
        if (scount(i) /= 0) then
 
-          ! go from 1-based io rank to 0-based rank in comp_comm
+          ! go from 1-based io rank to 0-based rank in union_comm
           io_comprank=find_io_comprank(Iosystem,i)
 
           call MPI_ISEND( scount(i),1,MPI_INTEGER, &       ! buf,count,type
                io_comprank,TAG0,  &             ! destination,tag
-               Iosystem%comp_comm,sreq,ierror )
+               Iosystem%union_comm,sreq,ierror )
           call CheckMPIReturn(subName,ierror)
 
           call MPI_REQUEST_FREE(sreq,ierror)
@@ -3039,7 +3033,7 @@ end subroutine box_rearrange_io2comp_int
     end do
 
 #if DEBUG_BARRIER
-    call MPI_BARRIER(Iosystem%comp_comm,ierror)
+    call MPI_BARRIER(Iosystem%union_comm,ierror)
     call CheckMPIReturn(subName,ierror)
     if (myrank==0) print *,'BARRIER - end of phase 1'
 #endif
@@ -3085,7 +3079,7 @@ end subroutine box_rearrange_io2comp_int
           call MPI_IRECV( rindex(pos),rcount(i), &        ! buf, count
                MPI_INTEGER, &                     ! type
                rfrom(i), TAG1, &        ! source, tag
-               IOsystem%comp_comm,rreq(i),ierror )        
+               IOsystem%union_comm,rreq(i),ierror )        
           call CheckMPIReturn(subName,ierror)
 
           pos=pos+rcount(i)
@@ -3161,7 +3155,7 @@ end subroutine box_rearrange_io2comp_int
 
           call MPI_ISEND( ioDesc%dest_ioindex, 1, sendtype, &    ! buf, count, type
                io_comprank,TAG1,    &                 ! destination,tag
-               Iosystem%comp_comm,sreq,ierror )
+               Iosystem%union_comm,sreq,ierror )
           call CheckMPIReturn(subName,ierror)
 
           call MPI_TYPE_FREE(sendtype, ierror)
@@ -3218,7 +3212,7 @@ end subroutine box_rearrange_io2comp_int
 #endif
           call MPI_ISEND( ioDesc%dest_ioindex, 1, sendtype, &    ! buf, count, type
                io_comprank,TAG1,    &                 ! destination,tag
-               Iosystem%comp_comm,sreq,ierror )
+               Iosystem%union_comm,sreq,ierror )
           call CheckMPIReturn(subName,ierror)
 
           call MPI_TYPE_FREE(sendtype, ierror)
@@ -3234,7 +3228,7 @@ end subroutine box_rearrange_io2comp_int
 
 
 #if DEBUG_BARRIER
-    call MPI_BARRIER(Iosystem%comp_comm,ierror)
+    call MPI_BARRIER(Iosystem%union_comm,ierror)
     call CheckMPIReturn(subName,ierror)
     if (myrank==0) print *,'BARRIER - end of phase 2'
 #endif
@@ -3379,7 +3373,7 @@ end subroutine box_rearrange_io2comp_int
   !   the rearrangement
   !
 
-# 2149 "box_rearrange.F90.in"
+# 2143 "box_rearrange.F90.in"
   subroutine box_rearrange_free(Iosystem,ioDesc)
     implicit none
 

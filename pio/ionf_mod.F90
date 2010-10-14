@@ -9,7 +9,7 @@ module ionf_mod
   use pio_types
   use pio_utils, only: bad_iotype, check_netcdf
 
-  use pio_support, only : Debug, DebugIO, piodie   
+  use pio_support, only : Debug, DebugIO, piodie, DebugAsync   
 #ifdef _NETCDF
   use netcdf            ! _EXTERNAL
 #endif
@@ -45,7 +45,7 @@ contains
     integer :: nmode, tmpfh
 
     nmode=amode
-    if(Debug) print *, 'Create file ', fname, 'with amode ',nmode
+    
     ierr=PIO_noerr
     File%fh=-1
 
@@ -62,22 +62,24 @@ contains
 #ifdef _NETCDF
 #ifdef _NETCDF4
        case(PIO_iotype_netcdf4p)
+!         The 64 bit option is not compatable with hdf5 format files
+
           if(iand(PIO_64BIT_OFFSET,amode)==PIO_64BIT_OFFSET) then
              nmode = ieor(amode,PIO_64bit_OFFSET)
           else
              nmode=amode
           end if
+
           nmode = ior(nmode,NF90_NETCDF4)
 #ifdef _MPISERIAL
           ierr = nf90_create(fname, nmode , File%fh)
 #else
+          nmode = ior(nmode,NF90_MPIIO)
           ierr = nf90_create(fname, nmode, File%fh, &
-               comm=File%iosystem%io_comm, info=File%iosystem%info,cache_size=10 )
-          call check_netcdf(File, ierr,_FILE_,__LINE__)
+               comm=File%iosystem%io_comm, info=File%iosystem%info)
 #endif
 ! Set default to NOFILL for performance.  
-          ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
-          call check_netcdf(File, ierr,_FILE_,__LINE__)
+          if(ierr==PIO_NOERR) ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
        case(PIO_iotype_netcdf4c)
           if(iand(PIO_64BIT_OFFSET,amode)==PIO_64BIT_OFFSET) then
              nmode = ieor(amode,PIO_64bit_OFFSET)
@@ -90,9 +92,9 @@ contains
           if (File%iosystem%io_rank == 0) then
              ! Stores the ncid in File%fh
              ierr = nf90_create(fname, amode, File%fh, &
-                  info=File%iosystem%info,cache_size=10 )
+                  info=File%iosystem%info )
 ! Set default to NOFILL for performance.  
-             if(ierr==NF90_NOERR) &
+             if(ierr==PIO_NOERR) &
                   ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
           endif
 #endif          
@@ -101,10 +103,13 @@ contains
           if (File%iosystem%io_rank == 0) then
              ! Stores the ncid in File%fh
              ierr = nf90_create(fname, nmode , File%fh)
+             if(Debug .or. Debugasync) print *,__FILE__,__LINE__,file%fh, ierr
 ! Set default to NOFILL for performance.  
              if(ierr==NF90_NOERR) &
                   ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
           endif
+          call mpi_bcast(file%fh,1,mpi_integer, 0, file%iosystem%io_comm, mpierr)
+          if(File%iosystem%io_rank > 0) File%fh=-File%fh
 #endif
        case default
           call bad_iotype(iotype,_FILE_,__LINE__)
@@ -113,9 +118,12 @@ contains
        if(Debug) print *,__FILE__,__LINE__,file%fh,ierr
     end if
     tmpfh = file%fh
-    call mpi_bcast(tmpfh,1,mpi_integer, file%iosystem%iomaster, file%iosystem%comp_comm, mpierr)
-    if(file%fh<0) file%fh=-tmpfh
+    if(Debug.or.DebugAsync) print *,__FILE__,__LINE__,file%fh,ierr
+    
+    call mpi_bcast(tmpfh,1,mpi_integer, file%iosystem%iomaster, file%iosystem%my_comm, mpierr)
 
+    if(.not. file%iosystem%ioproc) file%fh=-tmpfh
+    
     call check_netcdf(File, ierr,_FILE_,__LINE__)
 
   end function create_nf
@@ -179,8 +187,8 @@ contains
 #ifdef _MPISERIAL
            ierr = nf90_open(fname,amode,File%fh)           
 #else
-           ierr = nf90_open(fname, ior(amode,NF90_NETCDF4), File%fh, &
-                comm=File%iosystem%io_comm, info=File%iosystem%info,cache_size=10 )
+           ierr = nf90_open(fname,  ior(amode,ior(NF90_NETCDF4,NF90_MPIIO)), File%fh, &
+                comm=File%iosystem%io_comm, info=File%iosystem%info)
            if(ierr==nf90_enotnc4 .or. ierr==nf90_einval) then
               ierr = nf90_open(fname, amode, File%fh,info=File%iosystem%info)
               print *,__FILE__,__LINE__,ierr
@@ -193,20 +201,22 @@ contains
           if (File%iosystem%io_rank == 0) then
              ! Stores the ncid in File%fh
              ierr = nf90_open(fname,amode,File%fh)
+             if(Debug .or. Debugasync) print *,__FILE__,__LINE__,file%fh, ierr
              ! Set default to NOFILL for performance.  
              if(ierr .eq. NF90_NOERR .and. iand(amode, NF90_WRITE) > 0) then
                 ierr = nf90_set_fill(File%fh, NF90_NOFILL, ier2)
              end if
           endif
+          call mpi_bcast(file%fh,1,mpi_integer, 0, file%iosystem%io_comm, mpierr)
+          if(File%iosystem%io_rank > 0) File%fh=-File%fh
        end if
 #endif
     end if
 
     tmpfh = file%fh
-    call mpi_bcast(tmpfh,1,mpi_integer, file%iosystem%iomaster, file%iosystem%comp_comm, mpierr)
-    if(file%fh<0) file%fh=-tmpfh
+    call mpi_bcast(tmpfh,1,mpi_integer, file%iosystem%iomaster, file%iosystem%my_comm, mpierr)
 
-    if(Debug) print *, _FILE_,__LINE__,'CFILE open ',file%fh
+    if(.not. file%iosystem%ioproc) file%fh=-tmpfh
       
     call check_netcdf(File, ierr,_FILE_,__LINE__)
 

@@ -51,7 +51,8 @@ program testpio
   character(len=*), parameter :: TestI4CaseName  = 'i4_test'
   character(len=*), parameter :: TestComboCaseName = 'combo_test'
 
-  type (iosystem_desc_t) :: PIOSYS
+  type (iosystem_desc_t), pointer :: PIOSYS
+  type (iosystem_desc_t), target :: piosystems(1)
   type (File_desc_t)  :: File, File_r8,File_r4,File_i4
   type (Var_desc_t)   :: vard_i4, &
        vard_r8c,vard_r4c,vard_i4c, &
@@ -127,7 +128,8 @@ program testpio
   integer(kind=PIO_OFFSET) :: startpio(3), countpio(3)
 
   character(len=80) :: fname, fname_r8,fname_r4,fname_i4
-  logical, parameter :: Debug = .FALSE.
+  logical, parameter :: Debug = .false.
+  integer :: mpi_comm_compute, mpi_comm_io, mpi_icomm_cio
 
   character(len=3) :: citer
 
@@ -135,6 +137,7 @@ program testpio
 
   call MPI_INIT(ierr)
   call CheckMPIReturn('Call to MPI_INIT()',ierr,__FILE__,__LINE__)
+  
 
   !    call enable_abort_on_exit
 
@@ -226,10 +229,30 @@ program testpio
 
   if(Debug)    print *,'testpio: before call to PIO_init'
 
-  call PIO_init(my_task, MPI_COMM_WORLD, num_iotasks, num_aggregator, stride, &
-       rearr_type, PIOSYS, base)
+  if(async) then
+#ifdef BGx
+     allocate(PIOSYS)
+     call PIO_init(my_task, MPI_COMM_WORLD, num_iotasks, num_aggregator, stride, &
+          rearr_type, PIOSYS, base, async=.true.,mpi_comm_compute=mpi_comm_compute)
+#else
+     call split_comm(mpi_comm_world,nprocs, num_iotasks, stride, base, &
+          mpi_comm_compute, mpi_comm_io, mpi_icomm_cio)
+     call PIO_init(1, mpi_comm_world, (/mpi_comm_compute/), mpi_comm_io, PIOSYSTEMS)
+     PIOSYS => PIOSYSTEMS(1)
 
-  if(Debug)    print *,'testpio: after call to PIO_init'
+#endif
+     call MPI_COMM_RANK(MPI_COMM_COMPUTE,my_task,ierr)
+     call MPI_COMM_SIZE(MPI_COMM_COMPUTE,nprocs,ierr)
+     
+
+  else
+     mpi_comm_compute = mpi_comm_world
+     allocate(PIOSYS)
+
+     call PIO_init(my_task, MPI_COMM_COMPUTE, num_iotasks, num_aggregator, stride, &
+          rearr_type, PIOSYS, base)
+  end if
+  if(Debug)    print *,'testpio: after call to PIO_init', piosys%num_tasks,piosys%io_comm
 
   gDims3D(1) = nx_global
   gDims3D(2) = ny_global
@@ -247,7 +270,7 @@ program testpio
      call gdecomp_DOF(gdecomp,PIOSYS%comp_rank,compDOF,start,count)
      if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #3'
   else
-     call pio_readdof(trim(compdof_input),compDOF,MPI_COMM_WORLD,75)
+     call pio_readdof(trim(compdof_input),compDOF,MPI_COMM_COMPUTE,75)
      sdof = size(compDOF)
      start = gDims3D(1:3)   ! min tmp
      count = 0         ! max tmp
@@ -274,15 +297,15 @@ program testpio
   startCOMP(1:3) = start(1:3)
   countCOMP(1:3) = count(1:3)
   if (trim(compdof_output) /= 'none') then
-     call pio_writedof(trim(compdof_output),compDOF,MPI_COMM_WORLD,75)
+     call pio_writedof(trim(compdof_output),compDOF,MPI_COMM_COMPUTE,75)
   endif
 
   sdof = size(compDOF)
-  call MPI_REDUCE(sdof,sdof_sum,1,MPI_INTEGER,MPI_SUM,master_task,MPI_COMM_WORLD,ierr)
+  call MPI_REDUCE(sdof,sdof_sum,1,MPI_INTEGER,MPI_SUM,master_task,MPI_COMM_COMPUTE,ierr)
   call CheckMPIReturn('Call to MPI_REDUCE SUM',ierr,__FILE__,__LINE__)
-  call MPI_REDUCE(sdof,sdof_min,1,MPI_INTEGER,MPI_MIN,master_task,MPI_COMM_WORLD,ierr)
+  call MPI_REDUCE(sdof,sdof_min,1,MPI_INTEGER,MPI_MIN,master_task,MPI_COMM_COMPUTE,ierr)
   call CheckMPIReturn('Call to MPI_REDUCE MIN',ierr,__FILE__,__LINE__)
-  call MPI_REDUCE(sdof,sdof_max,1,MPI_INTEGER,MPI_MAX,master_task,MPI_COMM_WORLD,ierr)
+  call MPI_REDUCE(sdof,sdof_max,1,MPI_INTEGER,MPI_MAX,master_task,MPI_COMM_COMPUTE,ierr)
   call CheckMPIReturn('Call to MPI_REDUCE MAX',ierr,__FILE__,__LINE__)
   if (my_task == master_task) then
      write(6,*) trim(myname),' total nprocs = ',nprocs
@@ -434,532 +457,541 @@ program testpio
         endif
      endif
      if(log_master_task) print *,'{write,read}Phase:  ',writePhase,readPhase
-  do it=1,maxiter
+     do it=1,maxiter
 
      !-------------------------------------------------------
      ! Explain the distributed array decomposition to PIOlib
      !-------------------------------------------------------
 
-     if (trim(rearr) == 'box') then
-        !JMD print *,__FILE__,__LINE__,gdims3d,minval(compdof),maxval(compdof)
-
-        if (trim(iodof_input) == 'namelist') then
-           if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #7'
-           if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double,  gDims3D,compDOF,IOdesc_r8,startpio,countpio)
-           if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,IOdesc_r4,startpio,countpio)
-           if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,     gDims3D,compDOF,IOdesc_i4,startpio,countpio)
-           if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8'
-        else
-           if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double,  gDims3D,compDOF,IOdesc_r8)
-           if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,IOdesc_r4)
-           if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,     gDims3D,compDOF,IOdesc_i4)
-        endif
-     else
-        if(iofmtd.eq.'nc') then ! netCDF
-           if (num_iodofs == 1) then
-              if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOF,startpio,countpio,IOdesc_r8)
-              if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,compDOF,ioDOF,startpio,countpio,IOdesc_r4)
-              if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,compDOF,ioDOF,startpio,countpio,IOdesc_i4)
-           elseif (num_iodofs == 2) then
-              if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,startpio,countpio,IOdesc_r8)
-              if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,startpio,countpio,IOdesc_r4)
-              if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,startpio,countpio,IOdesc_i4)
+        if (trim(rearr) == 'box') then
+           !JMD print *,__FILE__,__LINE__,gdims3d,minval(compdof),maxval(compdof)
+           
+           if (trim(iodof_input) == 'namelist') then
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #7'
+              if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double,  gDims3D,compDOF,IOdesc_r8,startpio,countpio)
+              if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,IOdesc_r4,startpio,countpio)
+              if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,     gDims3D,compDOF,IOdesc_i4,startpio,countpio)
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8'
            else
-              call piodie(__FILE__,__LINE__,' num_iodofs not 1 or 2')
+              if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double,  gDims3D,compDOF,IOdesc_r8)
+              if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,IOdesc_r4)
+              if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,     gDims3D,compDOF,IOdesc_i4)
            endif
         else
-           ! tcraig: there are cases where lenblocks is not valid here like different size IO blocks
-           if (num_iodofs == 1) then
-              if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOF,IOdesc_r8)
-              if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,compDOF,ioDOF,IOdesc_r4)
-              if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,compDOF,ioDOF,IOdesc_i4)
-           elseif (num_iodofs == 2) then
-              if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,IOdesc_r8)
-              if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,IOdesc_r4)
-              if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,IOdesc_i4)
+           if(iofmtd.eq.'nc') then ! netCDF
+              if (num_iodofs == 1) then
+                 if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOF,startpio,countpio,IOdesc_r8)
+                 if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,compDOF,ioDOF,startpio,countpio,IOdesc_r4)
+                 if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,compDOF,ioDOF,startpio,countpio,IOdesc_i4)
+              elseif (num_iodofs == 2) then
+                 if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,startpio,countpio,IOdesc_r8)
+                 if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,startpio,countpio,IOdesc_r4)
+                 if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,startpio,countpio,IOdesc_i4)
+              else
+                 call piodie(__FILE__,__LINE__,' num_iodofs not 1 or 2')
+              endif
            else
-              call piodie(__FILE__,__LINE__,' num_iodofs not 1 or 2')
+              ! tcraig: there are cases where lenblocks is not valid here like different size IO blocks
+              if (num_iodofs == 1) then
+                 if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOF,IOdesc_r8)
+                 if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,compDOF,ioDOF,IOdesc_r4)
+                 if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,compDOF,ioDOF,IOdesc_i4)
+              elseif (num_iodofs == 2) then
+                 if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,IOdesc_r8)
+                 if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,IOdesc_r4)
+                 if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,IOdesc_i4)
+              else
+                 call piodie(__FILE__,__LINE__,' num_iodofs not 1 or 2')
+              endif
            endif
         endif
-     endif
-     if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #9'
+        if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #9'
+        
+        if(Debug) then
+           write(*,'(a,2(a,i8))') myname,':: After call to initDecomp.  comp_rank=',piosys%comp_rank, &
+                ' io_rank=',piosys%io_rank
+        endif
 
-     if(Debug) then
-        write(*,'(a,2(a,i8))') myname,':: After call to initDecomp.  comp_rank=',piosys%comp_rank, &
-             ' io_rank=',piosys%io_rank
-     endif
-
-     call PIO_getnumiotasks(PIOSYS,num_iotasks)
-     !------------
-     ! Open file{s} 
-     !------------
-     write(citer,'(i3.3)') it
-
-     fname    = TRIM(dir)//'foo.'//citer//TRIM(Iofmtd)
-     fname_r8 = TRIM(dir)//'foo.r8.'//citer//TRIM(Iofmtd)
-     fname_r4 = TRIM(dir)//'foo.r4.'//citer//TRIM(Iofmtd)
-     fname_i4 = TRIM(dir)//'foo.i4.'//citer//TRIM(Iofmtd)
-     !   print *, __FILE__,__LINE__,'>',fname,'<'
-     !   print *, __FILE__,__LINE__,'>',fname_r8,'<'
-     !   print *, __FILE__,__LINE__,'>',fname_i4,'<'
-     !   print *, __FILE__,__LINE__,'>',fname_r4,'<'
+        call PIO_getnumiotasks(PIOSYS,num_iotasks)
+        !------------
+        ! Open file{s} 
+        !------------
+        write(citer,'(i3.3)') it
+        
+        fname    = TRIM(dir)//'foo.'//citer//TRIM(Iofmtd)
+        fname_r8 = TRIM(dir)//'foo.r8.'//citer//TRIM(Iofmtd)
+        fname_r4 = TRIM(dir)//'foo.r4.'//citer//TRIM(Iofmtd)
+        fname_i4 = TRIM(dir)//'foo.i4.'//citer//TRIM(Iofmtd)
+        !   print *, __FILE__,__LINE__,'>',fname,'<'
+        !   print *, __FILE__,__LINE__,'>',fname_r8,'<'
+        !   print *, __FILE__,__LINE__,'>',fname_i4,'<'
+        !   print *, __FILE__,__LINE__,'>',fname_r4,'<'
 #if defined(_NETCDF) || defined(_PNETCDF)
-     mode = pio_64bit_offset
+        mode = pio_64bit_offset
 #else
-     mode = 0
+        mode = 0
 #endif
 
-if(writePhase) then 
-     if(TestCombo) then
-        if(Debug) write(*,'(2a,i8)') myname,':: Combination Test:  Creating File...it=',it
-        ierr = PIO_CreateFile(PIOSYS,File,iotype,trim(fname), mode)
-        call check_pioerr(ierr,__FILE__,__LINE__,' combo createfile')
-     endif
+        if(writePhase) then 
+           if(TestCombo) then
+              if(Debug) write(*,'(2a,i8)') myname,':: Combination Test:  Creating File...it=',it
+              ierr = PIO_CreateFile(PIOSYS,File,iotype,trim(fname), mode)
+              call check_pioerr(ierr,__FILE__,__LINE__,' combo createfile')
+           endif
 
-     if(TestR8) then
-        if (Debug) write(*,'(2a,i8)') myname,':: REAL*8 Test:  Creating File...it=',it
-        ierr = PIO_CreateFile(PIOSYS,File_r8,iotype,trim(fname_r8), mode)
-        call check_pioerr(ierr,__FILE__,__LINE__,' r8 createfile')
-     endif
+           if(TestR8) then
+              if (Debug) write(*,'(2a,i8)') myname,':: REAL*8 Test:  Creating File...it=',it
+              ierr = PIO_CreateFile(PIOSYS,File_r8,iotype,trim(fname_r8), mode)
+              call check_pioerr(ierr,__FILE__,__LINE__,' r8 createfile')
+           endif
 
-     if(TestR4) then
-        if(Debug) write(*,'(2a,i8)') myname,':: REAL*4 Test:  Creating File...,it=',it
-        ierr = PIO_CreateFile(PIOSYS,File_r4,iotype,trim(fname_r4), mode)
-        call check_pioerr(ierr,__FILE__,__LINE__,' r4 createfile')
-     endif
+           if(TestR4) then
+              if(Debug) write(*,'(2a,i8)') myname,':: REAL*4 Test:  Creating File...,it=',it
+              ierr = PIO_CreateFile(PIOSYS,File_r4,iotype,trim(fname_r4), mode)
+              call check_pioerr(ierr,__FILE__,__LINE__,' r4 createfile')
+           endif
 
-     if(TestInt) then
-        if(Debug) write(*,'(2a,i8)') myname,':: INTEGER*4 Test:  Creating File...,it=',it
-        ierr = PIO_CreateFile(PIOSYS,File_i4,iotype,trim(fname_i4), mode)
-        call check_pioerr(ierr,__FILE__,__LINE__,' i4 createfile')
-     endif
+           if(TestInt) then
+              if(Debug) write(*,'(2a,i8)') myname,':: INTEGER*4 Test:  Creating File...,it=',it
+              ierr = PIO_CreateFile(PIOSYS,File_i4,iotype,trim(fname_i4), mode)
+              call check_pioerr(ierr,__FILE__,__LINE__,' i4 createfile')
+           endif
 
-     ! Set Frame to '1' in the PIO descriptor file
-
-     allocate(vard_r8(nvars), vard_r4(nvars))
-
-     one = 1
-     do ivar=1,nvars
-        call PIO_SetFrame(vard_r8(ivar),one)
-        call PIO_SetFrame(vard_r4(ivar),one)
-     end do
-
-     call PIO_SetFrame(vard_i4,one)
-     call PIO_SetFrame(vard_r8c,one)
-     call PIO_SetFrame(vard_r4c,one)
-     call PIO_SetFrame(vard_i4c,one)
-     call PIO_SetFrame(vard_i4i,one)
-     call PIO_SetFrame(vard_i4j,one)
-     call PIO_SetFrame(vard_i4k,one)
-     call PIO_SetFrame(vard_i4m,one)
-     call PIO_SetFrame(vard_i4dof,one)
-
-     !---------------------------
-     ! Code specifically for netCDF files 
-     !---------------------------
-     if(iotype == iotype_pnetcdf .or. & 
-          iotype == iotype_netcdf .or. &
-          iotype == PIO_iotype_netcdf4p .or. &
-          iotype == PIO_iotype_netcdf4c) then
-
-        if(TestR8) then 
-           !-----------------------------------
-           ! for the single record real*8 file 
-           !-----------------------------------
-           call WriteHeader(File_r8,nx_global,ny_global,nz_global,dimid_x,dimid_y,dimid_z)
-
-           do ivar = 1, nvars
-              write(varname,'(a,i5.5)') 'field',ivar
-              iostat = PIO_def_var(File_r8,varname,PIO_double,(/dimid_x,dimid_y,dimid_z/),vard_r8(ivar))
-              call check_pioerr(iostat,__FILE__,__LINE__,' r8 defvar')
+           ! Set Frame to '1' in the PIO descriptor file
+           
+           allocate(vard_r8(nvars), vard_r4(nvars))
+           
+           one = 1
+           do ivar=1,nvars
+              call PIO_SetFrame(vard_r8(ivar),one)
+              call PIO_SetFrame(vard_r4(ivar),one)
            end do
-           iostat = PIO_enddef(File_r8)
-           call check_pioerr(iostat,__FILE__,__LINE__,' r8 enddef')
+
+           call PIO_SetFrame(vard_i4,one)
+           call PIO_SetFrame(vard_r8c,one)
+           call PIO_SetFrame(vard_r4c,one)
+           call PIO_SetFrame(vard_i4c,one)
+           call PIO_SetFrame(vard_i4i,one)
+           call PIO_SetFrame(vard_i4j,one)
+           call PIO_SetFrame(vard_i4k,one)
+           call PIO_SetFrame(vard_i4m,one)
+           call PIO_SetFrame(vard_i4dof,one)
+
+           !---------------------------
+           ! Code specifically for netCDF files 
+           !---------------------------
+           if(iotype == iotype_pnetcdf .or. & 
+                iotype == iotype_netcdf .or. &
+                iotype == PIO_iotype_netcdf4p .or. &
+                iotype == PIO_iotype_netcdf4c) then
+
+              if(TestR8) then 
+                 !-----------------------------------
+                 ! for the single record real*8 file 
+                 !-----------------------------------
+                 call WriteHeader(File_r8,nx_global,ny_global,nz_global,dimid_x,dimid_y,dimid_z)
+
+                 do ivar = 1, nvars
+                    write(varname,'(a,i5.5)') 'field',ivar
+                    iostat = PIO_def_var(File_r8,varname,PIO_double,(/dimid_x,dimid_y,dimid_z/),vard_r8(ivar))
+                    call check_pioerr(iostat,__FILE__,__LINE__,' r8 defvar')
+                 end do
+                 iostat = PIO_enddef(File_r8)
+                 call check_pioerr(iostat,__FILE__,__LINE__,' r8 enddef')
+              endif
+
+              if(TestR4) then 
+                 !-----------------------------------
+                 ! for the single record real*4 file 
+                 !-----------------------------------
+                 call WriteHeader(File_r4,nx_global,ny_global,nz_global,dimid_x,dimid_y,dimid_z)
+
+                 do ivar = 1, nvars
+                    write(varname,'(a,i5.5)') 'field',ivar
+                    iostat = PIO_def_var(File_r4,varname,PIO_real,(/dimid_x,dimid_y,dimid_z/),vard_r4(ivar))
+                    call check_pioerr(iostat,__FILE__,__LINE__,' r4 defvar')
+                 end do
+                 iostat = PIO_enddef(File_r4)
+                 call check_pioerr(iostat,__FILE__,__LINE__,' i4 enddef')
+              endif
+
+              if(TestInt) then 
+                 !-----------------------------------
+                 ! for the single record integer file 
+                 !-----------------------------------
+                 call WriteHeader(File_i4,nx_global,ny_global,nz_global,dimid_x,dimid_y,dimid_z)
+                 
+                 iostat = PIO_def_var(File_i4,'field',PIO_int,(/dimid_x,dimid_y,dimid_z/),vard_i4)
+                 call check_pioerr(iostat,__FILE__,__LINE__,' i4 defvar')
+                 iostat = PIO_def_var(File_i4,'fi',PIO_int,(/dimid_x,dimid_y,dimid_z/),vard_i4i)
+                 call check_pioerr(iostat,__FILE__,__LINE__,' i4i defvar')
+                 iostat = PIO_def_var(File_i4,'fj',PIO_int,(/dimid_x,dimid_y,dimid_z/),vard_i4j)
+                 call check_pioerr(iostat,__FILE__,__LINE__,' i4j defvar')
+                 iostat = PIO_def_var(File_i4,'fk',PIO_int,(/dimid_x,dimid_y,dimid_z/),vard_i4k)
+                 call check_pioerr(iostat,__FILE__,__LINE__,' i4k defvar')
+                 iostat = PIO_def_var(File_i4,'my_task',PIO_int,(/dimid_x,dimid_y,dimid_z/),vard_i4m)
+                 call check_pioerr(iostat,__FILE__,__LINE__,' i4m defvar')
+                 iostat = PIO_def_var(File_i4,'fdof',PIO_int,(/dimid_x,dimid_y,dimid_z/),vard_i4dof)
+                 call check_pioerr(iostat,__FILE__,__LINE__,' i4dof defvar')
+                 iostat = PIO_enddef(File_i4)
+                 call check_pioerr(iostat,__FILE__,__LINE__,' i4 enddef')
+              endif
+        
+              if(TestCombo) then 
+                 !-----------------------------------
+                 ! for the multi record file 
+                 !-----------------------------------
+                 call WriteHeader(File,nx_global,ny_global,nz_global,dimid_x,dimid_y,dimid_z)
+                 iostat = PIO_def_var(File,'field_r8',PIO_double,(/dimid_x,dimid_y,dimid_z/),vard_r8c)
+                 call check_pioerr(iostat,__FILE__,__LINE__,' combo r8 defvar')
+                 iostat = PIO_def_var(File,'field_r4',PIO_real,(/dimid_x,dimid_y,dimid_z/),vard_r4c)
+                 call check_pioerr(iostat,__FILE__,__LINE__,' combo r4 defvar')
+                 iostat = PIO_def_var(File,'field_i4',PIO_int,(/dimid_x,dimid_y,dimid_z/),vard_i4c)
+                 call check_pioerr(iostat,__FILE__,__LINE__,' combo i4 defvar')
+                 iostat = PIO_enddef(File)
+                 call check_pioerr(iostat,__FILE__,__LINE__,' combo enddef')
+              endif
+
+           endif ! if(iotype == iotype_pnetcdf .or. iotype == iotype_netcdf ) then
+
+           if(Debug) then
+              write(*,'(a,2(a,i8))') myname,':: After call to OpenFile.  comp_rank=',piosys%comp_rank, &
+                   ' io_rank=',piosys%io_rank
+           endif
+
+           !-------------------------
+           ! Time the parallel write 
+           !-------------------------
+
+           if(TestR8) then
+              dt_write_r8 = 0.
+              call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
+              call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
+              st = MPI_Wtime()
+#ifdef TIMING
+              call t_startf('testpio_write')
+#endif
+              do ivar=1,nvars
+                 call PIO_write_darray(File_r8,vard_r8(ivar), iodesc_r8, test_r8wr, iostat)
+                 call check_pioerr(iostat,__FILE__,__LINE__,' r8 write_darray')
+              end do
+#ifdef TIMING
+              call t_stopf('testpio_write')
+#endif
+              et = MPI_Wtime()
+              dt_write_r8 = dt_write_r8 + (et - st)/nvars
+              call PIO_CloseFile(File_r8)
+           endif
+
+           if(TestR4) then
+              dt_write_r4 = 0.
+              call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
+              call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
+              st = MPI_Wtime()
+#ifdef TIMING
+              call t_startf('testpio_write')
+#endif
+              do ivar=1,nvars
+                 call PIO_write_darray(File_r4,vard_r4(ivar),iodesc_r4, test_r4wr,iostat)
+                 call check_pioerr(iostat,__FILE__,__LINE__,' r4 write_darray')
+              end do
+#ifdef TIMING
+              call t_stopf('testpio_write')
+#endif
+              et = MPI_Wtime()
+              dt_write_r4 = dt_write_r4 + (et - st)/nvars
+              call PIO_CloseFile(File_r4)
+           endif
+
+           if(TestInt) then 
+              dt_write_i4 = 0.
+              call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
+              call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
+              st = MPI_Wtime()
+#ifdef TIMING
+              call t_startf('testpio_write')
+#endif
+              call PIO_write_darray(File_i4,vard_i4,iodesc_i4,test_i4wr,iostat)
+#ifdef TIMING
+              call t_stopf('testpio_write')
+#endif
+              et = MPI_Wtime()
+              dt_write_i4 = dt_write_i4 + et - st
+              call check_pioerr(iostat,__FILE__,__LINE__,' i4 write_darray')
+              call PIO_write_darray(File_i4,vard_i4i,iodesc_i4,test_i4i,iostat)
+              call check_pioerr(iostat,__FILE__,__LINE__,' i4i write_darray')
+              call PIO_write_darray(File_i4,vard_i4j,iodesc_i4,test_i4j,iostat)
+              call check_pioerr(iostat,__FILE__,__LINE__,' i4j write_darray')
+              call PIO_write_darray(File_i4,vard_i4k,iodesc_i4,test_i4k,iostat)
+              call check_pioerr(iostat,__FILE__,__LINE__,' i4k write_darray')
+              call PIO_write_darray(File_i4,vard_i4m,iodesc_i4,test_i4m,iostat)
+              call check_pioerr(iostat,__FILE__,__LINE__,' i4m write_darray')
+              call PIO_write_darray(File_i4,vard_i4dof,iodesc_i4,test_i4dof,iostat)
+              call check_pioerr(iostat,__FILE__,__LINE__,' i4dof write_darray')
+              call PIO_CloseFile(File_i4) 
+           endif
+
+           if(TestCombo) then 
+              call PIO_write_darray(File,vard_r8c,iodesc_r8,test_r8wr,iostat)
+              call check_pioerr(iostat,__FILE__,__LINE__,' combo r8 write_darray')
+              call PIO_write_darray(File,vard_r4c,iodesc_r4, test_r4wr,iostat)
+              call check_pioerr(iostat,__FILE__,__LINE__,' combo r4 write_darray')
+              call PIO_write_darray(File,vard_i4c,iodesc_i4, test_i4wr,iostat)
+              call check_pioerr(iostat,__FILE__,__LINE__,' combo i4 write_darray')
+              call PIO_CloseFile(File)
+           endif
+
+           if(Debug) then
+              write(*,'(a,2(a,i8))') myname,':: After calls to PIO_write_darray.  comp_rank=',piosys%comp_rank, & 
+                   ' io_rank=',piosys%io_rank,piosys%io_comm
+              
+           endif
+
         endif
-
-        if(TestR4) then 
-           !-----------------------------------
-           ! for the single record real*4 file 
-           !-----------------------------------
-           call WriteHeader(File_r4,nx_global,ny_global,nz_global,dimid_x,dimid_y,dimid_z)
-
-           do ivar = 1, nvars
-              write(varname,'(a,i5.5)') 'field',ivar
-              iostat = PIO_def_var(File_r4,varname,PIO_real,(/dimid_x,dimid_y,dimid_z/),vard_r4(ivar))
-              call check_pioerr(iostat,__FILE__,__LINE__,' r4 defvar')
-           end do
-           iostat = PIO_enddef(File_r4)
-           call check_pioerr(iostat,__FILE__,__LINE__,' i4 enddef')
-        endif
-
-        if(TestInt) then 
-           !-----------------------------------
-           ! for the single record integer file 
-           !-----------------------------------
-           call WriteHeader(File_i4,nx_global,ny_global,nz_global,dimid_x,dimid_y,dimid_z)
-
-           iostat = PIO_def_var(File_i4,'field',PIO_int,(/dimid_x,dimid_y,dimid_z/),vard_i4)
-           call check_pioerr(iostat,__FILE__,__LINE__,' i4 defvar')
-           iostat = PIO_def_var(File_i4,'fi',PIO_int,(/dimid_x,dimid_y,dimid_z/),vard_i4i)
-           call check_pioerr(iostat,__FILE__,__LINE__,' i4i defvar')
-           iostat = PIO_def_var(File_i4,'fj',PIO_int,(/dimid_x,dimid_y,dimid_z/),vard_i4j)
-           call check_pioerr(iostat,__FILE__,__LINE__,' i4j defvar')
-           iostat = PIO_def_var(File_i4,'fk',PIO_int,(/dimid_x,dimid_y,dimid_z/),vard_i4k)
-           call check_pioerr(iostat,__FILE__,__LINE__,' i4k defvar')
-           iostat = PIO_def_var(File_i4,'my_task',PIO_int,(/dimid_x,dimid_y,dimid_z/),vard_i4m)
-           call check_pioerr(iostat,__FILE__,__LINE__,' i4m defvar')
-           iostat = PIO_def_var(File_i4,'fdof',PIO_int,(/dimid_x,dimid_y,dimid_z/),vard_i4dof)
-           call check_pioerr(iostat,__FILE__,__LINE__,' i4dof defvar')
-           iostat = PIO_enddef(File_i4)
-           call check_pioerr(iostat,__FILE__,__LINE__,' i4 enddef')
-        endif
-
-        if(TestCombo) then 
-           !-----------------------------------
-           ! for the multi record file 
-           !-----------------------------------
-           call WriteHeader(File,nx_global,ny_global,nz_global,dimid_x,dimid_y,dimid_z)
-           iostat = PIO_def_var(File,'field_r8',PIO_double,(/dimid_x,dimid_y,dimid_z/),vard_r8c)
-           call check_pioerr(iostat,__FILE__,__LINE__,' combo r8 defvar')
-           iostat = PIO_def_var(File,'field_r4',PIO_real,(/dimid_x,dimid_y,dimid_z/),vard_r4c)
-           call check_pioerr(iostat,__FILE__,__LINE__,' combo r4 defvar')
-           iostat = PIO_def_var(File,'field_i4',PIO_int,(/dimid_x,dimid_y,dimid_z/),vard_i4c)
-           call check_pioerr(iostat,__FILE__,__LINE__,' combo i4 defvar')
-           iostat = PIO_enddef(File)
-           call check_pioerr(iostat,__FILE__,__LINE__,' combo enddef')
-        endif
-
-     endif ! if(iotype == iotype_pnetcdf .or. iotype == iotype_netcdf ) then
-
-     if(Debug) then
-        write(*,'(a,2(a,i8))') myname,':: After call to OpenFile.  comp_rank=',piosys%comp_rank, &
-             ' io_rank=',piosys%io_rank
-     endif
-
-     !-------------------------
-     ! Time the parallel write 
-     !-------------------------
-
-     if(TestR8) then
-        dt_write_r8 = 0.
-        call MPI_Barrier(MPI_COMM_WORLD,ierr)
+        call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
         call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
-        st = MPI_Wtime()
-#ifdef TIMING
-        call t_startf('testpio_write')
-#endif
-        do ivar=1,nvars
-           call PIO_write_darray(File_r8,vard_r8(ivar), iodesc_r8, test_r8wr, iostat)
-           call check_pioerr(iostat,__FILE__,__LINE__,' r8 write_darray')
-        end do
-#ifdef TIMING
-        call t_stopf('testpio_write')
-#endif
-        et = MPI_Wtime()
-        dt_write_r8 = dt_write_r8 + (et - st)/nvars
-        call PIO_CloseFile(File_r8)
-     endif
 
-     if(TestR4) then
-        dt_write_r4 = 0.
-        call MPI_Barrier(MPI_COMM_WORLD,ierr)
-        call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
-        st = MPI_Wtime()
-#ifdef TIMING
-        call t_startf('testpio_write')
-#endif
-        do ivar=1,nvars
-           call PIO_write_darray(File_r4,vard_r4(ivar),iodesc_r4, test_r4wr,iostat)
-           call check_pioerr(iostat,__FILE__,__LINE__,' r4 write_darray')
-        end do
-#ifdef TIMING
-        call t_stopf('testpio_write')
-#endif
-        et = MPI_Wtime()
-        dt_write_r4 = dt_write_r4 + (et - st)/nvars
-        call PIO_CloseFile(File_r4)
-     endif
 
-     if(TestInt) then 
-        dt_write_i4 = 0.
-        call MPI_Barrier(MPI_COMM_WORLD,ierr)
-        call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
-        st = MPI_Wtime()
-#ifdef TIMING
-        call t_startf('testpio_write')
-#endif
-        call PIO_write_darray(File_i4,vard_i4,iodesc_i4,test_i4wr,iostat)
-#ifdef TIMING
-        call t_stopf('testpio_write')
-#endif
-        et = MPI_Wtime()
-        dt_write_i4 = dt_write_i4 + et - st
-        call check_pioerr(iostat,__FILE__,__LINE__,' i4 write_darray')
-        call PIO_write_darray(File_i4,vard_i4i,iodesc_i4,test_i4i,iostat)
-        call check_pioerr(iostat,__FILE__,__LINE__,' i4i write_darray')
-        call PIO_write_darray(File_i4,vard_i4j,iodesc_i4,test_i4j,iostat)
-        call check_pioerr(iostat,__FILE__,__LINE__,' i4j write_darray')
-        call PIO_write_darray(File_i4,vard_i4k,iodesc_i4,test_i4k,iostat)
-        call check_pioerr(iostat,__FILE__,__LINE__,' i4k write_darray')
-        call PIO_write_darray(File_i4,vard_i4m,iodesc_i4,test_i4m,iostat)
-        call check_pioerr(iostat,__FILE__,__LINE__,' i4m write_darray')
-        call PIO_write_darray(File_i4,vard_i4dof,iodesc_i4,test_i4dof,iostat)
-        call check_pioerr(iostat,__FILE__,__LINE__,' i4dof write_darray')
-        call PIO_CloseFile(File_i4) 
-     endif
-
-     if(TestCombo) then 
-        call PIO_write_darray(File,vard_r8c,iodesc_r8,test_r8wr,iostat)
-        call check_pioerr(iostat,__FILE__,__LINE__,' combo r8 write_darray')
-        call PIO_write_darray(File,vard_r4c,iodesc_r4, test_r4wr,iostat)
-        call check_pioerr(iostat,__FILE__,__LINE__,' combo r4 write_darray')
-        call PIO_write_darray(File,vard_i4c,iodesc_i4, test_i4wr,iostat)
-        call check_pioerr(iostat,__FILE__,__LINE__,' combo i4 write_darray')
-        call PIO_CloseFile(File)
-     endif
-
-     if(Debug) then
-        write(*,'(a,2(a,i8))') myname,':: After calls to PIO_write_darray.  comp_rank=',piosys%comp_rank, & 
-             ' io_rank=',piosys%io_rank
-     endif
-
-endif
-     call MPI_Barrier(MPI_COMM_WORLD,ierr)
-     call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
-
-if (readPhase) then 
-     !-------------------------------------
-     ! Open the file back up and check data
-     !-------------------------------------
-
-     if(TestR8) then 
-        ierr = PIO_OpenFile(PIOSYS, File_r8, iotype, fname_r8)
-        call check_pioerr(ierr,__FILE__,__LINE__,' r8 openfile')
-     endif
-
-     if(TestR4) then 
-        ierr = PIO_OpenFile(PIOSYS,File_r4,iotype, fname_r4)
-        call check_pioerr(ierr,__FILE__,__LINE__,' r4 openfile')
-     endif
-
-     if(TestInt) then
-        ierr = PIO_OpenFile(PIOSYS,File_i4,iotype, fname_i4)
-        call check_pioerr(ierr,__FILE__,__LINE__,' int openfile')
-     endif
-
-     !   if(TestCombo) ierr = PIO_OpenFile(PIOSYS,File,iotype,fname)
-     if(Debug) then
-        write(*,'(2a,i8)') myname,':: After calls to PIO_OpenFile.  my_task=',my_task
-     endif
-
-     if(iotype == iotype_pnetcdf .or. &
-          iotype == iotype_netcdf ) then
-        do ivar=1,nvars
+        if (readPhase) then 
+           !-------------------------------------
+           ! Open the file back up and check data
+           !-------------------------------------
+           
            if(TestR8) then 
-              iostat = PIO_inq_varid(File_r8,'field00001',vard_r8(ivar))
-              call check_pioerr(iostat,__FILE__,__LINE__,' r8 inq_varid')
+              ierr = PIO_OpenFile(PIOSYS, File_r8, iotype, fname_r8)
+              call check_pioerr(ierr,__FILE__,__LINE__,' r8 openfile')
            endif
-
+           
            if(TestR4) then 
-              iostat = PIO_inq_varid(File_r4,'field00001',vard_r4(ivar))
-              call check_pioerr(iostat,__FILE__,__LINE__,' r4 inq_varid')
+              ierr = PIO_OpenFile(PIOSYS,File_r4,iotype, fname_r4)
+              call check_pioerr(ierr,__FILE__,__LINE__,' r4 openfile')
            endif
-        end do
-        if(TestInt) then 
-           iostat = PIO_inq_varid(File_i4,'field',vard_i4)
-           call check_pioerr(iostat,__FILE__,__LINE__,' i4 inq_varid')
-        endif
 
-     endif ! if((iotype == iotype_pnetcdf) .or (iotype == iotype_netcdf))...
-     do ivar=1,nvars
-        call PIO_SetFrame(vard_r8(ivar),one)
-        call PIO_SetFrame(vard_r4(ivar),one)
-     end do
-     call PIO_SetFrame(vard_i4,one)
-     call PIO_SetFrame(vard_r8c,one)
-     call PIO_SetFrame(vard_r4c,one)
-     call PIO_SetFrame(vard_i4c,one)
+           if(TestInt) then
+              ierr = PIO_OpenFile(PIOSYS,File_i4,iotype, fname_i4)
+              call check_pioerr(ierr,__FILE__,__LINE__,' int openfile')
+           endif
 
-     !-------------------------
-     ! Time the parallel  read
-     !-------------------------
-     if(TestR8) then 
-        dt_read_r8 = 0.
-        call MPI_Barrier(MPI_COMM_WORLD,ierr)
-        call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
-        st = MPI_Wtime()
-#ifdef TIMING
-        call t_startf('testpio_read')
-#endif
-	do ivar=1,nvars
-          call PIO_read_darray(File_r8,vard_r8(ivar),iodesc_r8,test_r8rd,iostat)
-          call check_pioerr(iostat,__FILE__,__LINE__,' r8 read_darray')
-        enddo
-#ifdef TIMING
-        call t_stopf('testpio_read')
-#endif
-        et = MPI_Wtime()
-        dt_read_r8 = dt_read_r8 + (et - st)/nvars        
-        call check_pioerr(iostat,__FILE__,__LINE__,' r8 read_darray')
-     endif
+           !   if(TestCombo) ierr = PIO_OpenFile(PIOSYS,File,iotype,fname)
+           if(Debug) then
+              write(*,'(2a,i8)') myname,':: After calls to PIO_OpenFile.  my_task=',my_task
+           endif
+           
+           if(Debug) print *,__FILE__,__LINE__
 
-     if(TestR4) then
-        dt_read_r4 = 0.
-        call MPI_Barrier(MPI_COMM_WORLD,ierr)
-        call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
-        st = MPI_Wtime()
-#ifdef TIMING
-        call t_startf('testpio_read')
-#endif
-	do ivar=1,nvars
-           call PIO_read_darray(File_r4,vard_r4(ivar),iodesc_r4,test_r4rd,iostat)
-           call check_pioerr(iostat,__FILE__,__LINE__,' r4 read_darray')
-        enddo
-#ifdef TIMING
-        call t_stopf('testpio_read')
-#endif
-        et = MPI_Wtime()
-        dt_read_r4 = dt_read_r4 + (et - st)/nvars
-        call check_pioerr(iostat,__FILE__,__LINE__,' r4 read_darray')
-     endif
+           if(iotype == iotype_pnetcdf .or. &
+                iotype == iotype_netcdf ) then
+              do ivar=1,nvars
+                 if(TestR8) then 
+                    iostat = PIO_inq_varid(File_r8,'field00001',vard_r8(ivar))
+                    call check_pioerr(iostat,__FILE__,__LINE__,' r8 inq_varid')
+                 endif
 
-     if(TestInt) then
-        dt_read_i4 = 0.
-        call MPI_Barrier(MPI_COMM_WORLD,ierr)
-        call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
-        st = MPI_Wtime()
-#ifdef TIMING
-        call t_startf('testpio_read')
-#endif
-        call PIO_read_darray(File_i4,vard_i4,iodesc_i4, test_i4rd,iostat)
-#ifdef TIMING
-        call t_stopf('testpio_read')
-#endif
-        et = MPI_Wtime()
-        dt_read_i4 = dt_read_i4 + et - st
-        call check_pioerr(iostat,__FILE__,__LINE__,' i4 read_darray')
-     endif
+                 if(TestR4) then 
+                    iostat = PIO_inq_varid(File_r4,'field00001',vard_r4(ivar))
+                    call check_pioerr(iostat,__FILE__,__LINE__,' r4 inq_varid')
+                 endif
+              end do
+              if(TestInt) then 
+                 iostat = PIO_inq_varid(File_i4,'field',vard_i4)
+                 call check_pioerr(iostat,__FILE__,__LINE__,' i4 inq_varid')
+              endif
 
-     !-------------------------------
-     ! Print the maximum memory usage 
-     !-------------------------------
-     call alloc_print_usage(0,'testpio: after calls to PIO_read_darray')
+           endif ! if((iotype == iotype_pnetcdf) .or (iotype == iotype_netcdf))...
+           if(Debug) print *,__FILE__,__LINE__
+           do ivar=1,nvars
+              call PIO_SetFrame(vard_r8(ivar),one)
+              call PIO_SetFrame(vard_r4(ivar),one)
+           end do
+           call PIO_SetFrame(vard_i4,one)
+           call PIO_SetFrame(vard_r8c,one)
+           call PIO_SetFrame(vard_r4c,one)
+           call PIO_SetFrame(vard_i4c,one)
+
+           !-------------------------
+           ! Time the parallel  read
+           !-------------------------
+           if(TestR8) then 
+              dt_read_r8 = 0.
+              call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
+              call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
+              st = MPI_Wtime()
+#ifdef TIMING
+              call t_startf('testpio_read')
+#endif
+           if(Debug) print *,__FILE__,__LINE__
+              do ivar=1,nvars
+                 call PIO_read_darray(File_r8,vard_r8(ivar),iodesc_r8,test_r8rd,iostat)
+                 call check_pioerr(iostat,__FILE__,__LINE__,' r8 read_darray')
+              enddo
+           if(Debug) print *,__FILE__,__LINE__
+#ifdef TIMING
+              call t_stopf('testpio_read')
+#endif
+              et = MPI_Wtime()
+              dt_read_r8 = dt_read_r8 + (et - st)/nvars        
+              call check_pioerr(iostat,__FILE__,__LINE__,' r8 read_darray')
+           endif
+
+           if(TestR4) then
+              dt_read_r4 = 0.
+              call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
+              call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
+              st = MPI_Wtime()
+#ifdef TIMING
+              call t_startf('testpio_read')
+#endif
+              do ivar=1,nvars
+                 call PIO_read_darray(File_r4,vard_r4(ivar),iodesc_r4,test_r4rd,iostat)
+                 call check_pioerr(iostat,__FILE__,__LINE__,' r4 read_darray')
+              enddo
+#ifdef TIMING
+              call t_stopf('testpio_read')
+#endif
+              et = MPI_Wtime()
+              dt_read_r4 = dt_read_r4 + (et - st)/nvars
+              call check_pioerr(iostat,__FILE__,__LINE__,' r4 read_darray')
+           endif
+
+           if(TestInt) then
+              dt_read_i4 = 0.
+              call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
+              call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
+              st = MPI_Wtime()
+#ifdef TIMING
+              call t_startf('testpio_read')
+#endif
+              call PIO_read_darray(File_i4,vard_i4,iodesc_i4, test_i4rd,iostat)
+#ifdef TIMING
+              call t_stopf('testpio_read')
+#endif
+              et = MPI_Wtime()
+              dt_read_i4 = dt_read_i4 + et - st
+              call check_pioerr(iostat,__FILE__,__LINE__,' i4 read_darray')
+           endif
+
+           !-------------------------------
+           ! Print the maximum memory usage 
+           !-------------------------------
+           call alloc_print_usage(0,'testpio: after calls to PIO_read_darray')
 
 #ifdef TESTMEM
-     stop 
+           stop 
 #endif
 
-     if(Debug) then
-        write(*,'(a,2(a,i8))') myname,':: After PIO_read_darray tests, my_task=', &
-             my_task,', it=',it
-     endif
+           if(Debug) then
+              write(*,'(a,2(a,i8))') myname,':: After PIO_read_darray tests, my_task=', &
+                   my_task,', it=',it
+           endif
 
      !-------------------
      ! close the file up 
      !-------------------
-     if(TestR8) call PIO_CloseFile(File_r8)
-     if(TestR4) call PIO_CloseFile(File_r4)
-     if(TestInt) call PIO_CloseFile(File_i4)
+           if(TestR8) call PIO_CloseFile(File_r8)
+           if(TestR4) call PIO_CloseFile(File_r4)
+           if(TestInt) call PIO_CloseFile(File_i4)
 
-     call MPI_Barrier(MPI_COMM_WORLD,ierr)
-     call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
+           call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
+           call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
 
-     if(Debug) then
-        write(*,*) myname,':: my_task=',my_task,'test_r8wr= ',test_r8wr
-        if(TestR8 .or. TestCombo) write(*,*) myname,':: my_task=',my_task,'test_r8rd= ',test_r8rd
-     endif
+!           if(Debug) then
+!              write(*,*) myname,':: my_task=',my_task,'test_r8wr= ',test_r8wr
+!              if(TestR8 .or. TestCombo) write(*,*) myname,':: my_task=',my_task,'test_r8rd= ',test_r8rd
+!           endif
 
      !-----------------------------
      ! Perform correctness testing 
      !-----------------------------
-     if(TestR8) then
-        call checkpattern(fname_r8,test_r8wr,test_r8rd,lLength,iostat)
-        call check_pioerr(iostat,__FILE__,__LINE__,' checkpattern r8 test')
-     endif
+           if(TestR8) then
+              call checkpattern(mpi_comm_compute, fname_r8,test_r8wr,test_r8rd,lLength,iostat)
+              call check_pioerr(iostat,__FILE__,__LINE__,' checkpattern r8 test')
+           endif
      
-     if( TestR4) then
-        call checkpattern(fname_r4,test_r4wr,test_r4rd,lLength,iostat)
-        call check_pioerr(iostat,__FILE__,__LINE__,' checkpattern r4 test')
-     endif
+           if( TestR4) then
+              call checkpattern(mpi_comm_compute, fname_r4,test_r4wr,test_r4rd,lLength,iostat)
+              call check_pioerr(iostat,__FILE__,__LINE__,' checkpattern r4 test')
+           endif
 
-     if(TestInt) then
-        call checkpattern(fname_i4, test_i4wr,test_i4rd,lLength,iostat)
-        call check_pioerr(iostat,__FILE__,__LINE__,' checkpattern i4 test')
-     endif
+           if(TestInt) then
+              call checkpattern(mpi_comm_compute, fname_i4, test_i4wr,test_i4rd,lLength,iostat)
+              call check_pioerr(iostat,__FILE__,__LINE__,' checkpattern i4 test')
+           endif
 
-     if(TestCombo) then 
+           if(TestCombo) then 
 
-        !-------------------------------------
-        !  Open up and read the combined file 
-        !-------------------------------------
+              !-------------------------------------
+              !  Open up and read the combined file 
+              !-------------------------------------
+              
+              ierr = PIO_OpenFile(PIOSYS,File,iotype,fname)
+              call check_pioerr(ierr,__FILE__,__LINE__,' combo test read openfile')
+              
+              if(iofmtd(1:2).eq.'nc') then
+                 iostat = PIO_inq_varid(File,'field_r8',vard_r8c)
+                 call check_pioerr(iostat,__FILE__,__LINE__,' combo test r8 inq_varid')
+                 iostat = PIO_inq_varid(File,'field_r4',vard_r4c)
+                 call check_pioerr(iostat,__FILE__,__LINE__,' combo test r4 inq_varid')
+                 iostat = PIO_inq_varid(File,'field_i4',vard_i4c)
+                 call check_pioerr(iostat,__FILE__,__LINE__,' combo test i4 inq_varid')
+              endif
            
-        ierr = PIO_OpenFile(PIOSYS,File,iotype,fname)
-        call check_pioerr(ierr,__FILE__,__LINE__,' combo test read openfile')
-           
-        if(iofmtd(1:2).eq.'nc') then
-           iostat = PIO_inq_varid(File,'field_r8',vard_r8c)
-           call check_pioerr(iostat,__FILE__,__LINE__,' combo test r8 inq_varid')
-           iostat = PIO_inq_varid(File,'field_r4',vard_r4c)
-           call check_pioerr(iostat,__FILE__,__LINE__,' combo test r4 inq_varid')
-           iostat = PIO_inq_varid(File,'field_i4',vard_i4c)
-           call check_pioerr(iostat,__FILE__,__LINE__,' combo test i4 inq_varid')
-        endif
-           
-        call PIO_read_darray(File,vard_r8c,iodesc_r8,test_r8rd,iostat)
-        call check_pioerr(iostat,__FILE__,__LINE__,' combo test r4 pio_read_darray')
-        call PIO_read_darray(File,vard_r4c,iodesc_r4,test_r4rd,iostat)
-        call check_pioerr(iostat,__FILE__,__LINE__,' combo test r4 pio_read_darray')
-        call PIO_read_darray(File,vard_i4c,iodesc_i4,test_i4rd,iostat)
-        call check_pioerr(iostat,__FILE__,__LINE__,' combo test i4 pio_read_darray')
+              call PIO_read_darray(File,vard_r8c,iodesc_r8,test_r8rd,iostat)
+              call check_pioerr(iostat,__FILE__,__LINE__,' combo test r4 pio_read_darray')
+              call PIO_read_darray(File,vard_r4c,iodesc_r4,test_r4rd,iostat)
+              call check_pioerr(iostat,__FILE__,__LINE__,' combo test r4 pio_read_darray')
+              call PIO_read_darray(File,vard_i4c,iodesc_i4,test_i4rd,iostat)
+              call check_pioerr(iostat,__FILE__,__LINE__,' combo test i4 pio_read_darray')
 
-        call PIO_CloseFile(File)
+              call PIO_CloseFile(File)
            
-        !-----------------------------
-        ! Check the combined file 
-        !-----------------------------
-        call checkpattern(fname,test_r8wr,test_r8rd,lLength,iostat)
-        call check_pioerr(iostat,__FILE__,__LINE__,' checkpattern test_r8 ')
+              !-----------------------------
+              ! Check the combined file 
+              !-----------------------------
+              call checkpattern(mpi_comm_compute, fname,test_r8wr,test_r8rd,lLength,iostat)
+              call check_pioerr(iostat,__FILE__,__LINE__,' checkpattern test_r8 ')
+              
+              call checkpattern(mpi_comm_compute, fname,test_r4wr,test_r4rd,lLength,iostat)
+              call check_pioerr(iostat,__FILE__,__LINE__,' checkpattern test_r4 ')
         
-        call checkpattern(fname,test_r4wr,test_r4rd,lLength,iostat)
-        call check_pioerr(iostat,__FILE__,__LINE__,' checkpattern test_r4 ')
-        
-        call checkpattern(fname,test_i4wr,test_i4rd,lLength,iostat)
-        call check_pioerr(iostat,__FILE__,__LINE__,' checkpattern test_i4 ')
-
-     endif
+              call checkpattern(mpi_comm_compute, fname,test_i4wr,test_i4rd,lLength,iostat)
+              call check_pioerr(iostat,__FILE__,__LINE__,' checkpattern test_i4 ')
+              
+           endif
      !---------------------------------------
      ! Print out the performance measurements 
      !---------------------------------------
-     call MPI_Barrier(MPI_COMM_WORLD,ierr)
-endif
+           call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
+        endif
 
-     if(TestR8) then
-        ! Maximum read/write times
-        if(readPhase)  call GetMaxTime(dt_read_r8, gdt_read_r8(it), MPI_COMM_WORLD, ierr)
-        if(writePhase) call GetMaxTime(dt_write_r8, gdt_write_r8(it), MPI_COMM_WORLD, ierr)
-     endif
+        if(TestR8) then
+           ! Maximum read/write times
+           if(readPhase)  call GetMaxTime(dt_read_r8, gdt_read_r8(it), MPI_COMM_COMPUTE, ierr)
+           if(writePhase) call GetMaxTime(dt_write_r8, gdt_write_r8(it), MPI_COMM_COMPUTE, ierr)
+        endif
 
-     if(TestR4) then
-        ! Maximum read/write times
-        if(readPhase)  call GetMaxTime(dt_read_r4, gdt_read_r4(it), MPI_COMM_WORLD, ierr)
-        if(writePhase) call GetMaxTime(dt_write_r4, gdt_write_r4(it), MPI_COMM_WORLD, ierr)
-     endif
+        if(TestR4) then
+           ! Maximum read/write times
+           if(readPhase)  call GetMaxTime(dt_read_r4, gdt_read_r4(it), MPI_COMM_COMPUTE, ierr)
+           if(writePhase) call GetMaxTime(dt_write_r4, gdt_write_r4(it), MPI_COMM_COMPUTE, ierr)
+        endif
+        
+        if(TestInt) then
+           ! Maximum read/write times
+           if(readPhase)  call GetMaxTime(dt_read_i4, gdt_read_i4(it), MPI_COMM_COMPUTE, ierr)
+           if(writePhase) call GetMaxTime(dt_write_i4, gdt_write_i4(it), MPI_COMM_COMPUTE, ierr)
+        endif
 
-     if(TestInt) then
-        ! Maximum read/write times
-        if(readPhase)  call GetMaxTime(dt_read_i4, gdt_read_i4(it), MPI_COMM_WORLD, ierr)
-        if(writePhase) call GetMaxTime(dt_write_i4, gdt_write_i4(it), MPI_COMM_WORLD, ierr)
-     endif
 
+        if(TestR8 .or. TestCombo) glenr8=iodesc_r8%glen
+        if(TestR4 .or. TestCombo) glenr4=iodesc_r4%glen
+        if(TestInt .or. TestCombo) gleni4=iodesc_i4%glen
+        if(TestR8 .or. TestCombo) call pio_freedecomp(PIOSYS, iodesc_r8)
+        if(TestInt .or. TestCombo) call pio_freedecomp(PIOSYS, iodesc_r4)
+        if(TestR4 .or. TestCombo) call pio_freedecomp(PIOSYS, iodesc_i4)
+     enddo ! do it=1,maxiter
 
-     if(TestR8 .or. TestCombo) glenr8=iodesc_r8%glen
-     if(TestR4 .or. TestCombo) glenr4=iodesc_r4%glen
-     if(TestInt .or. TestCombo) gleni4=iodesc_i4%glen
-     if(TestR8 .or. TestCombo) call pio_freedecomp(PIOSYS, iodesc_r8)
-     if(TestInt .or. TestCombo) call pio_freedecomp(PIOSYS, iodesc_r4)
-     if(TestR4 .or. TestCombo) call pio_freedecomp(PIOSYS, iodesc_i4)
-  enddo ! do it=1,maxiter
   enddo ! do ip=1,numphase
+
 
   !--------------------------------
   ! Clean up initialization memory 
@@ -992,13 +1024,13 @@ endif
 
 #ifdef TIMING
   call t_stopf('testpio_total')
-  call t_prf('timing.testpio',MPI_COMM_WORLD)
+  call t_prf('timing.testpio',MPI_COMM_COMPUTE)
   call t_finalizef()
   call get_memusage(msize,mrss)
   allocate(lmem(2),gmem(2,0:nprocs-1))
   lmem(1) = msize
   lmem(2) = mrss
-  call mpi_gather(lmem,2,MPI_INTEGER,gmem,2,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
+  call mpi_gather(lmem,2,MPI_INTEGER,gmem,2,MPI_INTEGER,0,MPI_COMM_COMPUTE,ierr)
   if (my_task == master_task) then
      do n = 0,nprocs-1
         write(*,'(2a,i8,a,2f10.2)') myname,' my_task=',n,' : (hw, usage) memory (MB) = ',gmem(1,n)*mb_blk,gmem(2,n)*mb_blk
@@ -1010,7 +1042,8 @@ endif
   deallocate(lmem,gmem)
 #endif
 
-  call MPI_Barrier(MPI_COMM_WORLD,ierr)
+  call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
+
   if (my_task == master_task) then
      print *,' '
      print *,'testpio completed successfully'
