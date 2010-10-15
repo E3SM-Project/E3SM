@@ -1488,7 +1488,7 @@ contains
     ! Local variables
     !------------------
     type(iosystem_desc_t), pointer :: ios
-    integer :: iotype, mpierr
+    integer :: iotype, mpierr, nlen
     integer(kind=PIO_Offset)  :: clen
     integer :: msg = PIO_MSG_DEF_DIM
 
@@ -1496,6 +1496,7 @@ contains
 
     ierr=PIO_noerr
     ios => file%iosystem
+    nlen = len_trim(name)
     if(ios%async_interface) then
        if( .not. ios%ioproc) then
           if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
@@ -1503,8 +1504,8 @@ contains
           call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        end if
        call mpi_bcast(len, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-       call mpi_bcast(len_trim(name), 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-       call mpi_bcast(name, len_trim(name), mpi_character, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(nlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       call mpi_bcast(name, nlen, mpi_character, ios%compmaster, ios%intercomm, ierr)
     end if
        
     if(ios%IOproc) then
@@ -1514,15 +1515,15 @@ contains
        case(iotype_pnetcdf)
 
           clen = len
-          ierr=nfmpi_def_dim(File%fh,name,clen,dimid)
+          ierr=nfmpi_def_dim(File%fh,name(1:nlen),clen,dimid)
 #endif
 
 #ifdef  _NETCDF
        case(PIO_iotype_netcdf4p)
-          ierr=nf90_def_dim(ncid=File%fh,name=name,len=len,dimid=dimid)
+          ierr=nf90_def_dim(ncid=File%fh,name=name(1:nlen),len=len,dimid=dimid)
        case(iotype_netcdf,PIO_iotype_netcdf4c)
           if (ios%io_rank==0) then
-             ierr=nf90_def_dim(ncid=File%fh,name=name,len=len,dimid=dimid)
+             ierr=nf90_def_dim(ncid=File%fh,name=name(1:nlen),len=len,dimid=dimid)
           endif
           if(.not.ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
              call MPI_BCAST(dimid, 1, MPI_INTEGER, 0, ios%IO_Comm, ierr)
