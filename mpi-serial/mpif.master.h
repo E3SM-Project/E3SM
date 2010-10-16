@@ -247,12 +247,20 @@
 ! Kinds
 !
 
-        integer, parameter :: MPI_OFFSET_KIND=selected_int_kind(13)
+	INTEGER MPI_OFFSET_KIND
+	PARAMETER (MPI_OFFSET_KIND=selected_int_kind(13))
 
-        integer, parameter :: MPI_INFO_NULL=0
+	INTEGER MPI_INFO_NULL
+	PARAMETER (MPI_INFO_NULL=0)
+
+	INTEGER MPI_MODE_RDONLY
+	PARAMETER (MPI_MODE_RDONLY=0)
+
+        INTEGER MPI_MODE_CREATE
+        PARAMETER (MPI_MODE_CREATE=1)
+
+        INTEGER MPI_MODE_RDWR
+        PARAMETER (MPI_MODE_RDWR=2)
 
 
-        integer, parameter :: MPI_MODE_RDONLY=0
-        integer, parameter :: MPI_MODE_CREATE=1
-        integer, parameter :: MPI_MODE_RDWR=2
 
