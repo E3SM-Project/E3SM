@@ -72,6 +72,7 @@ typedef int MPI_Datatype;
 
 /* The type's value is its size in bytes */
 
+#define MPI_DATATYPE_NULL  (0)
 #define MPI_BYTE           (sizeof(char))
 #define MPI_CHAR           (sizeof(char))
 #define MPI_UNSIGNED_CHAR  (sizeof(unsigned char))
