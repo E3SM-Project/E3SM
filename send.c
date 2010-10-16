@@ -203,3 +203,41 @@ int MPI_Irsend(void *buf, int count, MPI_Datatype datatype,
 
 
 
+
+/*********/
+
+
+FORT_NAME(mpi_sendrecv, MPI_SENDRECV) (
+     void *sendbuf, int *sendcount, int *sendtype, int *dest, int *sendtag,
+     void *recvbuf, int *recvcount, int *recvtype, int *source, int *recvtag,
+     int *comm, int *status,
+     int *ierror)
+{
+  *ierror=MPI_Sendrecv(sendbuf, *sendcount, *sendtype, *dest, *sendtag,
+		       recvbuf, *recvcount, *recvtype, *source, *recvtag,
+		       *comm, (MPI_Status *)status);
+}
+
+
+
+int MPI_Sendrecv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
+		 int dest, int sendtag,
+		 void *recvbuf, int recvcount, MPI_Datatype recvtype,
+		 int source, int recvtag,
+		 MPI_Comm comm, MPI_Status *status)
+{
+  MPI_Request request;
+
+
+  MPI_Irecv(recvbuf, recvcount, recvtype, source, recvtag, comm, &request);
+
+  MPI_Send(sendbuf, sendcount, sendtype, dest, sendtag, comm);
+
+  MPI_Wait(&request,status);
+
+
+  return(MPI_SUCCESS);
+}
+
+
+
