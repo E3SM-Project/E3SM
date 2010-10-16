@@ -11,7 +11,7 @@ main(int argc, char *argv[])
   MPI_Request sreq[10], sreq2[10], rreq[10], rreq2[10];
   int sbuf[10],sbuf2[10],rbuf[10],rbuf2[10];
   int tag;
-  MPI_Status status[10];
+  MPI_Status status[10], sr_status;
   int i,j;
   MPI_Comm comm2;
   int flag;
@@ -128,6 +128,30 @@ main(int argc, char *argv[])
       MPI_Unpack(rbuf,20,&position,&temp,1,MPI_INT,MPI_COMM_WORLD);
       printf("%d\n",temp);
     }
+
+
+  /*
+   * sendrecv
+   */
+
+
+  sbuf[0]=42;
+  rbuf[0]=0;
+  sr_status.MPI_SOURCE= -1;
+  sr_status.MPI_TAG= -1;
+
+  MPI_Sendrecv(sbuf,1,MPI_INT,0,127,
+	       rbuf,1,MPI_INT,MPI_ANY_SOURCE,MPI_ANY_TAG,
+	       MPI_COMM_WORLD,&sr_status);
+
+  printf("Done with MPI_Sendrecv, rbuf=%d  source=%d  tag=%d\n",
+	 rbuf[0],sr_status.MPI_SOURCE,sr_status.MPI_TAG);
+
+
+  /*
+   * Finish up
+   */
+
 
   MPI_Finalize();
 
