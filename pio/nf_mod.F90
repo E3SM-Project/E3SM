@@ -276,14 +276,14 @@ contains
 !! @param len : The length of the attribute 
 !! @retval ierr @copydoc error_return
 !>
-  integer function inq_att_vid(File,varid,name,xtype,alen) result(ierr)
+  integer function inq_att_vid(File,varid,name,xtype,len) result(ierr)
 
 
     type (File_desc_t), intent(inout) :: File
     integer(i4), intent(in)           :: varid
     character(len=*), intent(in)      :: name
     integer, intent(out)              :: xtype
-    integer, intent(out)              :: alen !Attribute length
+    integer, intent(out)              :: len !Attribute length
 
     !------------------
     ! Local variables
@@ -295,7 +295,7 @@ contains
     ios => File%iosystem
     iotype = File%iotype
     ierr=PIO_noerr
-    nlen = len(name)
+    nlen = len_trim(name)
 
     if(ios%async_interface) then
        if(.not. ios%ioproc ) then
@@ -323,18 +323,18 @@ contains
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr=nf90_inquire_attribute( File%fh,varid,name(1:nlen), &
-               xtype=xtype,len=alen)          
+               xtype=xtype,len=len)          
        case(iotype_netcdf)
 
           if (ios%io_rank==0) then
              ierr=nf90_inquire_attribute( File%fh,varid,name(1:nlen), &
-                  xtype=xtype,len=alen)
+                  xtype=xtype,len=len)
           endif
 
           if(.not.ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
              call MPI_BCAST(xtype,1,MPI_INTEGER,0,ios%IO_comm, mpierr)
              call CheckMPIReturn('nf_mod',mpierr)
-             call MPI_BCAST(alen,1,MPI_INTEGER,0,ios%IO_comm, mpierr)
+             call MPI_BCAST(len,1,MPI_INTEGER,0,ios%IO_comm, mpierr)
              call CheckMPIReturn('nf_mod',mpierr)
           end if
 #endif
@@ -348,7 +348,7 @@ contains
     if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
        call MPI_BCAST(xtype,1,MPI_INTEGER,ios%IOMaster, ios%my_comm , mpierr)
        call CheckMPIReturn('nf_mod',mpierr)
-       call MPI_BCAST(alen,1,MPI_INTEGER,ios%IOMaster, ios%my_comm  , mpierr)
+       call MPI_BCAST(len,1,MPI_INTEGER,ios%IOMaster, ios%my_comm  , mpierr)
        call CheckMPIReturn('nf_mod',mpierr)
     end if
   end function inq_att_vid
@@ -389,12 +389,12 @@ contains
 !! @param len : Length of attribute
 !! @retval ierr @copydoc error_return
 !>
-  integer function inq_attlen_vid(File,varid,name,alen) result(ierr)
+  integer function inq_attlen_vid(File,varid,name,len) result(ierr)
 
     type (File_desc_t), intent(inout) :: File
     integer(i4), intent(in)            :: varid
     character(len=*), intent(in)      :: name
-    integer, intent(out)              :: alen !Attribute length
+    integer, intent(out)              :: len !Attribute length
 
 
     !------------------
@@ -408,7 +408,7 @@ contains
 
     iotype = File%iotype
     ierr=PIO_noerr
-    nlen = len(name)
+    nlen = len_trim(name)
 
     if(ios%async_interface) then
        if(.not. ios%ioproc ) then
@@ -428,21 +428,21 @@ contains
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
           ierr=nfmpi_inq_attlen(File%fh,varid,name(1:nlen),clen)
-          alen = INT(clen,kind=i4)
+          len = INT(clen,kind=i4)
 #endif
 
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr=nf90_inquire_attribute( File%fh,varid,name(1:nlen), &
-                  len=alen)
+                  len=len)
        case(iotype_netcdf)
           if (ios%io_rank==0) then
              ierr=nf90_inquire_attribute( File%fh,varid,name(1:nlen), &
-                  len=alen)
+                  len=len)
           endif
 
           if(.not.ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
-             call MPI_BCAST(alen,1,MPI_INTEGER,0,ios%IO_comm, mpierr)
+             call MPI_BCAST(len,1,MPI_INTEGER,0,ios%IO_comm, mpierr)
              call CheckMPIReturn('nf_mod',mpierr)
           end if
 
@@ -455,7 +455,7 @@ contains
     endif
     call check_netcdf(File, ierr,_FILE_,__LINE__)
     if(ios%async_interface.or.ios%num_tasks>ios%num_iotasks) then
-       call MPI_BCAST(alen,1,MPI_INTEGER,ios%IOMaster,ios%my_comm, mpierr)
+       call MPI_BCAST(len,1,MPI_INTEGER,ios%IOMaster,ios%my_comm, mpierr)
        call CheckMPIReturn('nf_mod',mpierr)
     end if
 
@@ -539,7 +539,7 @@ contains
              ierr=nf90_inq_attname(File%fh,varid,attnum,name)
           endif
           if(.not.ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
-             call MPI_BCAST(name,len(name),MPI_CHARACTER,0,ios%IO_comm, mpierr)
+             call MPI_BCAST(name,len_trim(name),MPI_CHARACTER,0,ios%IO_comm, mpierr)
              call CheckMPIReturn('nf_mod',mpierr)
           end if
 
@@ -552,7 +552,7 @@ contains
     endif
     call check_netcdf(File, ierr,_FILE_,__LINE__)
     if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
-       call MPI_BCAST(name,len(name),MPI_CHARACTER,ios%IOMaster,ios%my_comm, mpierr)
+       call MPI_BCAST(name,len_trim(name),MPI_CHARACTER,ios%IOMaster,ios%my_comm, mpierr)
        call CheckMPIReturn('nf_mod',mpierr)
     end if
 
@@ -606,7 +606,7 @@ contains
 
     iotype = File%iotype
     ierr=PIO_noerr
-    nlen = len(name)
+    nlen = len_trim(name)
 
     if(ios%async_interface) then
        if( .not. ios%ioproc ) then
@@ -713,14 +713,14 @@ contains
     !------------------
     ! Local variables
     !------------------
-    integer :: iotype, mpierr, msg
+    integer :: iotype, mpierr, msg, nlen
 
     type(iosystem_desc_t), pointer :: ios
 
     ios => File%iosystem
     iotype = File%iotype
     ierr=PIO_noerr
-
+    nlen = len(name)
     if(ios%async_interface) then
        if(.not. ios%ioproc ) then
           msg=PIO_MSG_INQ_VARNAME
@@ -728,7 +728,7 @@ contains
           call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        end if
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(len(name),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(nlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     end if
 
     if(ios%IOproc) then
@@ -736,19 +736,19 @@ contains
 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
-          ierr=nfmpi_inq_varname(File%fh,varid,name)
+          ierr=nfmpi_inq_varname(File%fh,varid,name(1:nlen))
 
 #endif
 
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-          ierr=nf90_inquire_variable(File%fh,varid,name=name)
+          ierr=nf90_inquire_variable(File%fh,varid,name=name(1:nlen))
        case(iotype_netcdf)
           if (ios%io_rank==0) then
-             ierr=nf90_inquire_variable(File%fh,varid,name=name)
+             ierr=nf90_inquire_variable(File%fh,varid,name=name(1:nlen))
           endif
           if(.not.ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
-             call MPI_BCAST(name,len(name),MPI_CHARACTER,0,ios%IO_comm, mpierr)
+             call MPI_BCAST(name,nlen,MPI_CHARACTER,0,ios%IO_comm, mpierr)
              call CheckMPIReturn('nf_mod',mpierr)
           end if
 
@@ -761,7 +761,7 @@ contains
     endif
     call check_netcdf(File, ierr,_FILE_,__LINE__)
     if(ios%async_interface.or.ios%num_tasks>=ios%num_iotasks) then
-       call MPI_BCAST(name,len(name),MPI_CHARACTER,ios%IOMaster,ios%my_comm, mpierr)
+       call MPI_BCAST(name,nlen,MPI_CHARACTER,ios%IOMaster,ios%my_comm, mpierr)
        call CheckMPIReturn('nf_mod',mpierr)
     end if
 
@@ -1153,7 +1153,7 @@ contains
     !------------------
     ! Local variables
     !------------------
-    integer :: iotype, mpierr, msg
+    integer :: iotype, mpierr, msg, nlen
     type(iosystem_desc_t), pointer :: ios
 
     ios => File%iosystem
@@ -1161,14 +1161,15 @@ contains
     iotype = File%iotype
     ierr=PIO_noerr
     dimid=-1
+    nlen = len(name)
     if(ios%async_interface) then
        if(.not. ios%ioproc ) then
           msg=PIO_MSG_INQ_DIMID
           if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
           call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        end if
-       call MPI_BCAST(len(name),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(name,len(name),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(nlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(name,nlen,MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
     end if
     if(ios%IOproc) then
        select case(iotype)
