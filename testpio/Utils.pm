@@ -26,6 +26,8 @@ sub host{
 	$host = "athena";
     }elsif($host =~ /^kra/){
 	$host = "kraken";
+    }elsif($host =~ /^lyn/){
+        $host = "lynx";
     }elsif($host =~ /(\w+)\./){
 	$host = $1;
     }
@@ -79,6 +81,9 @@ sub preambleResource{
   }elsif($host =~ "cyberstar" ){
      $nodes = ceil($pecount/$corespernode);
      $preambleResource = "#PBS -l nodes=$nodes:nehalem:ppn=$corespernode\n"; 
+  }elsif($host =~ "lynx"){
+     my $pecnt = $corespernode*ceil($pecount/$corespernode);
+     $preambleResource = "#PBS -l mppwidth=$pecnt\n"; 
   }elsif($host =~ "athena"){
      my $pecnt = $corespernode*ceil($pecount/$corespernode);
      $preambleResource = "#PBS -l size=$pecnt\n"; 
