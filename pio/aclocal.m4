@@ -31,7 +31,7 @@ AC_LANG_CASE([C], [
 [Fortran 90], [
 	AC_REQUIRE([AC_PROG_F90])
 	AC_ARG_VAR(MPIF90,[MPI Fortran compiler command])
-	AC_CHECK_PROGS(MPIF90, mpxlf90_r mpxlf90 mpxlf95 mpif90 mpifrt mpf90, $F90)
+	AC_CHECK_PROGS(MPIF90, mpxlf90_r mpxlf90 mpxlf95 mpipgf90 mpif90 mpifrt mpf90, $F90)
 	acx_mpi_save_F90="$F90"
 	F90="$MPIF90"
 	AC_SUBST(MPIF90)

@@ -337,9 +337,9 @@ AC_PROG_F90
 
 AC_LANG_PUSH(Fortran 90)
 
-if test -z "$MPIF90"; then
-  MPIF90=$F90
-fi
+#if test -z "$MPIF90"; then
+#  MPIF90=$F90
+#fi
 
 # CHECK MPI BY DEFAULT
 if test "$USE_MPISERIAL" = "yes"; then
