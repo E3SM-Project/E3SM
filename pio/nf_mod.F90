@@ -317,7 +317,7 @@ contains
        case(iotype_pnetcdf)
           ierr=nfmpi_inq_att(File%fh,varid,name(1:nlen),xtype,clen)
 
-          alen = INT(clen,kind=i4)
+          len = INT(clen,kind=i4)
 #endif
 
 #ifdef _NETCDF
