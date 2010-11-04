@@ -1119,7 +1119,7 @@ contains
 
 
 
-    if(gny > 1 .and npr_yz(1)*npr_yz(2)/=ntasks) then
+    if(gny > 1 .and. npr_yz(1)*npr_yz(2)/=ntasks) then
        call piodie(__FILE__,__LINE__,&
             'npr_yz(1)*npr_yz(2) must equal ntasks')
     end if
