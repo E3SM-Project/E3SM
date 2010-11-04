@@ -35,7 +35,7 @@ module piolib_mod
 
   include 'mpif.h'    ! _EXTERNAL
 
-#ifndef MPI_ROOT
+#if defined NEED_MPI_ROOT
 	! this is a bug in file mpif.h on edinburgh
 	integer, parameter :: MPI_ROOT=-3
 #endif
