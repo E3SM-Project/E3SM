@@ -30,7 +30,7 @@ module namelist_mod
     integer(i4), public :: iotype
     integer(i4), public :: num_iodofs
     integer(i4), public :: nvars
-    integer(i4), public :: npr_xy(4)   ! To simulate cam fv decompositions
+    integer(i4), public :: npr_yz(4)   ! To simulate cam fv decompositions
 
     character(len=80), public :: compdof_input
     character(len=80), public :: iodof_input 
