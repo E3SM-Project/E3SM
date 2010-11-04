@@ -35,7 +35,7 @@ my $cfgdir = `pwd`;
 chomp $cfgdir;
 my $clean = 'yes';
 my @valid_env = qw(NETCDF_PATH PNETCDF_PATH MPI_LIB MPI_INC F90 FC CC FFLAGS
-                   MPICC MPIF90 LDLIBS);
+                   MPICC MPIF90 LDLIBS MACHDEFS);
 
 
 my @testsuites = qw(all snet pnet mpiio ant);
