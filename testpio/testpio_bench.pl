@@ -359,7 +359,7 @@ foreach \$suite (qw(@testsuites)){
             my \$log = "\$casedir/$logfile";
 	    unlink("\$log") if(-e "\$log");
             my \$sysstr =  Utils->runString(\$host,\$pecount,\$run,\$exename,\$log);
-            print "Running \$sysstr\n";
+            print "Running \$sysstr\\n";
 	    system(\$sysstr);
 	    open(LOG,\$log);
 	    my \@logout = <LOG>;

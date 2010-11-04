@@ -28,7 +28,7 @@ program testpio
 
   ! Modules from testpio suite that are used by this application
 
-  use gdecomp_mod, only: gdecomp_type, gdecomp_DOF, gdecomp_read_nml
+  use gdecomp_mod, only: gdecomp_type, gdecomp_DOF, gdecomp_read_nml, camlike_decomp_generator
   use alloc_mod       ! _EXTERNAL
   use check_mod
   use namelist_mod
@@ -263,10 +263,14 @@ program testpio
   !-----------------------------------------
 
   startCOMP = 0
-  if (trim(compdof_input) == 'namelist') then
+
+  if(index(casename,'CAM')==1) then
+     call camlike_decomp_generator(gdims3d(1),gdims3d(2),gdims3d(3),my_task,nprocs,npr_yz,compDOF)
+  else  if (trim(compdof_input) == 'namelist') then
      if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #1'
      call gdecomp_read_nml(gdecomp,nml_filename,'comp',PIOSYS%comp_rank,PIOSYS%num_tasks,gDims3D(1:3))
      if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #2'
+
      call gdecomp_DOF(gdecomp,PIOSYS%comp_rank,compDOF,start,count)
      if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #3'
   else

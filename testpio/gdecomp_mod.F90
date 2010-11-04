@@ -14,6 +14,7 @@ module gdecomp_mod
    public :: gdecomp_set
    public :: gdecomp_print
    public :: gdecomp_DOF
+   public :: camlike_decomp_generator
 
    type :: gdecomp_type
       private
@@ -215,6 +216,7 @@ contains
    blkorder='xyz'
    blkdecomp1='xy'
    blkdecomp2=''
+
    if (trim(nml_var) == 'comp') then
       open(10,file=nml_file,status='old')
       read(10,nml=compdof_nml)
@@ -1100,11 +1102,159 @@ contains
    else
       write(6,*) 'piodie in file=',trim(file),' line=',line
    endif
-
+   stop
    end subroutine piodie
 #endif
 !==================================================================
 !==================================================================
+
+
+  subroutine camlike_decomp_generator(gnx, gny, gnz, myid, ntasks, npr_yz, dof)
+    integer, intent(in) :: gnx, gny, gnz, myid, ntasks, npr_yz(4)
+    integer, pointer :: dof(:), tdof(:), tchk(:) 
+    real, pointer :: rdof(:)
+
+
+    integer :: dofsize, tdofsize, twodsize, i, j, spnt
+
+
+
+    if(gny > 1 .and npr_yz(1)*npr_yz(2)/=ntasks) then
+       call piodie(__FILE__,__LINE__,&
+            'npr_yz(1)*npr_yz(2) must equal ntasks')
+    end if
+
+
+
+
+
+    twodsize=gnx*gny
+    dofsize = twodsize/npr_yz(1)
+    !  print *,myid, dofsize
+
+
+
+    spnt=dofsize*myid+1
+
+    if( mod(twodsize,npr_yz(1))>=(npr_yz(1)-myid)) then
+       dofsize=dofsize+1
+       spnt=spnt+mod(twodsize,npr_yz(1))-(npr_yz(1)-myid)
+    end if
+
+    !  call mpi_allreduce(dofsize, tdofsize, 1, mpi_integer, mpi_sum, mpi_comm_world, ierr)
+    !  print *, myid, dofsize, spnt, tdofsize, twodsize, mod(twodsize,npr_yz(1)), npr_yz(1)-myid
+
+
+
+
+
+
+
+    allocate(dof(dofsize*gnz))
+
+    allocate(rdof(twodsize), tdof(twodsize))
+
+    call random_number(rdof)
+
+    tdof = int(twodsize*rdof)+1
+
+    deallocate(rdof)
+    allocate(tchk(twodsize))
+    tchk=0
+
+    do i=1,twodsize
+       if((tchk(tdof(i)))==0) then
+          tchk(tdof(i))=1
+       else
+          do j=tdof(i),twodsize
+             if(tchk(j)==0) then
+                tdof(i)=j
+                tchk(j)=1
+                exit
+             end if
+          end do
+          if(tdof(i)/=j) then
+             do j=1,tdof(i)-1
+                if(tchk(j)==0) then
+                   tdof(i)=j
+                   tchk(j)=1
+                   exit
+                end if
+             end do
+          end if
+       end if
+    end do
+    deallocate(tchk)
+    !  print *, tdof, sum(tchk)
+
+
+    do j=1,gnz
+       do i=1,dofsize
+          dof(i+(j-1)*dofsize) = tdof(spnt+i-1)+(j-1)*twodsize
+       end do
+    end do
+
+    CALL qsRecursive(1, dofsize, dof) !kicks off the recursive 
+
+    deallocate(tdof)
+
+
+  end subroutine camlike_decomp_generator
+
+
+
+
+
+  RECURSIVE SUBROUTINE qsRecursive (lo, hi, list)
+    !This is the actualy recursive portion of the quicksort
+    INTEGER :: pivotPoint
+    INTEGER, INTENT(IN) :: lo
+    INTEGER, INTENT(IN) :: hi
+    integer, INTENT(INOUT), DIMENSION(*) :: list
+    pivotPoint = qsPartition(lo, hi, list); !basically all we do is find the pivot point, adjust elements, then call it again
+    IF (lo < pivotPoint) CALL qsRecursive(lo, pivotPoint -1, list)
+    IF (pivotPoint < hi) CALL qsRecursive(pivotPoint + 1, hi, list)
+
+  END SUBROUTINE qsRecursive
+
+
+
+  integer FUNCTION qsPartition (loin, hiin, list)
+    !The partition portios of the Quick Sort is the must involved part
+    integer, INTENT(INOUT), DIMENSION(*) :: list
+    INTEGER, INTENT(IN) :: loin
+    INTEGER:: lo !variable so we can manipulate the hi and lo values without changing things elsewhere in the program by reference
+    INTEGER, INTENT(IN) :: hiin
+    INTEGER:: hi !variable so we can manipulate the hi and lo values without changing things elsewhere in the program by reference
+    integer::pivot !the temp location for the pivitoal element to which everything will be compaired
+    hi = hiin
+    lo = loin
+    pivot = list(lo)
+    DO
+       IF (lo >= hi) EXIT !exit the loop when done
+       DO !move in from the right
+          IF ((pivot > list(hi)) .OR. (lo >= hi)) EXIT
+          hi = hi - 1
+       END DO
+       IF (hi /= lo) then !move the entry indexed by hi to left side of partition
+          list(lo) = list(hi) 
+          lo = lo + 1
+       END IF
+       DO !move in from the left
+          IF ((list(lo) > pivot) .OR. (lo >= hi)) EXIT
+          lo = lo + 1
+       END DO
+       IF (hi /= lo) then !move the entry indexed by hi to left side of partition
+          list(hi) = list(lo) 
+          hi = hi - 1
+       END IF
+    END DO
+    list(hi) = pivot !put the pivot element back when we're done
+    qsPartition = hi !return the correct position of the pivot element
+  END FUNCTION qsPartition
+
+
+
 !==================================================================
 
 end module gdecomp_mod

@@ -30,6 +30,8 @@ module namelist_mod
     integer(i4), public :: iotype
     integer(i4), public :: num_iodofs
     integer(i4), public :: nvars
+    integer(i4), public :: npr_xy(4)   ! To simulate cam fv decompositions
+
     character(len=80), public :: compdof_input
     character(len=80), public :: iodof_input 
     character(len=80), public :: compdof_output
@@ -65,7 +67,8 @@ module namelist_mod
         compdof_input,  &
         compdof_output, &
         iodof_input,    &
-	DebugLevel
+	DebugLevel,     &
+        npr_yz
 
 contains
 
@@ -104,6 +107,8 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
     iodof_input = 'internal'
     compdof_output = 'none'
     nvars = 10
+
+    npr_yz = (/nprocs,1,1,nprocs/)
 
     ioFMT = 'bin'
     dir   = './'
@@ -153,6 +158,8 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
     write(*,*) trim(string),' num_iodofs = ',num_iodofs
     write(*,*) trim(string),' maxiter    = ',maxiter
     write(*,*) trim(string),' dir        = ',trim(dir)
+    write(*,*) trim(string),' npr_yz     = ',npr_yz
+    write(*,*) trim(string),' DebugLevel = ',DebugLevel
     write(*,*) trim(string),' DebugLevel = ',DebugLevel
     write(*,*) trim(string),' compdof_input  = ',trim(compdof_input)
     write(*,*) trim(string),' compdof_output = ',trim(compdof_output)
@@ -354,6 +361,9 @@ subroutine Broadcast_Namelist(caller, myID, root, comm, ierror)
 
   call MPI_Bcast(nprocsIO, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(nprocsIO)',ierror,__FILE__,__LINE__)
+
+  call MPI_Bcast(npr_yz, 4, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(npr_yz)',ierror,__FILE__,__LINE__)
 
 end subroutine Broadcast_Namelist
 

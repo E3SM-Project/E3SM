@@ -140,13 +140,16 @@ Describe any substantial timing or memory changes:
 
 
 
-Code reviewed by: self
+Code reviewed by: Jim
 
 Summary of pre-tag testing:  
-  Regression tests:  intrepid   68 of 68 pass
-         	     bluefire 107 tests PASS, 0 tests FAIL
-        	     jaguar 74 tests PASS, 0 tests FAIL
-                     ccsm regregression on bluefire
+  Regression tests:  bluefire 107 tests PASS, 0 tests FAIL
+        	     jaguar 80 tests PASS, 0 tests FAIL
+		     test complete on edinburgh 22 tests PASS, 2 tests FAIL
+     	                snet asb01    FAIL 
+                        snet asb04    FAIL 
+                        These are expected failures due to mpich not 
+	                      supporting MPI-2 intercommunicators
 
 ===============================================================
 ===============================================================

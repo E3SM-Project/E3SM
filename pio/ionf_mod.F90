@@ -118,11 +118,12 @@ contains
        if(Debug) print *,__FILE__,__LINE__,file%fh,ierr
     end if
     tmpfh = file%fh
-    if(Debug.or.DebugAsync) print *,__FILE__,__LINE__,file%fh,ierr
     
     call mpi_bcast(tmpfh,1,mpi_integer, file%iosystem%iomaster, file%iosystem%my_comm, mpierr)
-
+    
     if(.not. file%iosystem%ioproc) file%fh=-tmpfh
+
+    if(Debug.or.DebugAsync) print *,__FILE__,__LINE__,file%fh,ierr
     
     call check_netcdf(File, ierr,_FILE_,__LINE__)
 
@@ -191,7 +192,6 @@ contains
                 comm=File%iosystem%io_comm, info=File%iosystem%info)
            if(ierr==nf90_enotnc4 .or. ierr==nf90_einval) then
               ierr = nf90_open(fname, amode, File%fh,info=File%iosystem%info)
-              print *,__FILE__,__LINE__,ierr
            end if
 #endif
         end if
@@ -321,7 +321,6 @@ contains
                 exit
              endif
           end do
-!          print *,__FILE__,__LINE__, magic
           if(magic(1:3) .eq. 'CDF') then
              ! No need to do anything here
           else if(magic(2:4).eq.'HDF') then

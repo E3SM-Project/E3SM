@@ -35,7 +35,7 @@ module piolib_mod
 
   include 'mpif.h'    ! _EXTERNAL
 
-#if defined NEED_MPI_ROOT
+#ifndef MPI_ROOT
 	! this is a bug in file mpif.h on edinburgh
 	integer, parameter :: MPI_ROOT=-3
 #endif
@@ -1087,7 +1087,6 @@ contains
     integer :: testvalue
     integer, parameter :: minblocksize=16        ! minimum block size on a task
     integer, parameter :: maxit=1               ! maximum number of times to iterate on the fanin/out limiter  (Probably want a better solution)
-    logical, parameter :: verbose = .false.
     integer,allocatable :: pes_per_dim(:), step(:)
     integer,allocatable :: bsize(:),nblocks(:),fblocks(:)
 
@@ -1106,7 +1105,7 @@ contains
     do while(tsize/minblocksize < use_io_procs .and. use_io_procs>1)
        use_io_procs=use_io_procs-1
     end do
-    if(verbose) print *,'iorank: ',iorank,' getiostartandcount: use_io_procs: ',use_io_procs
+    if(Debug) print *,'iorank: ',iorank,' getiostartandcount: use_io_procs: ',use_io_procs
 
     start = 1
     count = 0
@@ -1135,8 +1134,8 @@ contains
        nblocks(m) = 1
        fblocks(m) = 1
     enddo
-    if(verbose) print *,'iorank: ',iorank, ' getiostartandcount: sdims: ',sdims
-    if(verbose) print *,'iorank: ',iorank, ' getiostartandcount: count: ',count
+    if(Debug) print *,'iorank: ',iorank, ' getiostartandcount: sdims: ',sdims
+    if(Debug) print *,'iorank: ',iorank, ' getiostartandcount: count: ',count
 
     fanlimit  = 50.00
     fanfactor = fanlimit + 1.0  !we want at least one trip through the do while loop  
@@ -1199,8 +1198,8 @@ contains
        end if
        call mpi_allreduce(fanfactor,rtmp,1,MPI_REAL8,MPI_MAX,iocomm,ierr)
        fanfactor=rtmp
-       if(verbose) print *,'iorank: ',iorank,'getiostartandcount: pes_per_dim is: ',pes_per_dim
-       if(verbose) print *,'iorank: ',iorank,' getiostartandcount: fan factor is: ',fanfactor
+       if(Debug) print *,'iorank: ',iorank,'getiostartandcount: pes_per_dim is: ',pes_per_dim
+       if(Debug) print *,'iorank: ',iorank,' getiostartandcount: fan factor is: ',fanfactor
        it=it+1
     enddo
     deallocate(step)
@@ -2149,7 +2148,7 @@ contains
     call t_startf("PIO_createfile")
 #endif
 
-    if(debug.or.debugasync) print *,'createfile: {comp,io}_rank:',iosystem%comp_rank,iosystem%io_rank,'io proc: ',iosystem%ioproc, iosystem%async_interface
+    if(debug.or.debugasync) print *,'createfile: {comp,io}_rank:',iosystem%comp_rank,iosystem%io_rank,'io proc: ',iosystem%ioproc, iosystem%async_interface, iotype
     ierr=PIO_noerr
     
 
