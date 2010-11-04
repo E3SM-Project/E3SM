@@ -243,7 +243,6 @@ program testpio
 #endif
      call MPI_COMM_RANK(MPI_COMM_COMPUTE,my_task,ierr)
      call MPI_COMM_SIZE(MPI_COMM_COMPUTE,nprocs,ierr)
-     
 
   else
      mpi_comm_compute = mpi_comm_world
