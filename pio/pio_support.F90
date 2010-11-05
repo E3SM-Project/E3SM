@@ -43,7 +43,7 @@ module pio_support
 contains
 
 # 35 "pio_support.F90.in"
-  subroutine piodie (file,line, msg, ival1, msg2, ival2, msg3, ival3)
+  subroutine piodie (file,line, msg, ival1, msg2, ival2, msg3, ival3, mpirank)
     !-----------------------------------------------------------------------
     ! Purpose:
     !
@@ -65,15 +65,12 @@ contains
     character(len=*), intent(in) :: file
     integer,intent(in) :: line
     character(len=*), intent(in), optional :: msg,msg2,msg3
-    integer,intent(in),optional :: ival1,ival2,ival3
+    integer,intent(in),optional :: ival1,ival2,ival3, mpirank
 
     character(len=*), parameter :: subName=modName//'::pio_die'
-    integer ierr, myrank
-
-    call MPI_COMM_RANK(MPI_COMM_WORLD,myrank,ierr)
-    if(ierr /= MPI_SUCCESS) then
-      print *, subName,':: Error in call to MPI_COMM_RANK, ierr=',ierr
-    endif
+    integer ierr, myrank=-1
+    
+    if(present(mpirank)) myrank=mpirank
 
     if (present(ival3)) then
        write(6,*) subName,':: myrank=',myrank,': ERROR: ',file,':',line,': ', &
@@ -117,7 +114,7 @@ contains
 !      Check and prints an error message
 !  if an error occured in a MPI subroutine.
 !=============================================
-# 109 "pio_support.F90.in"
+# 106 "pio_support.F90.in"
   subroutine CheckMPIreturn(locmesg, errcode, file, line)
 
      character(len=*), intent(in) :: locmesg
@@ -141,7 +138,7 @@ contains
 #endif
   end subroutine CheckMPIreturn
 
-# 132 "pio_support.F90.in"
+# 129 "pio_support.F90.in"
   subroutine pio_writedof (file, DOF, comm, punit)
     !-----------------------------------------------------------------------
     ! Purpose:
@@ -247,7 +244,7 @@ contains
 
   end subroutine pio_writedof
 
-# 237 "pio_support.F90.in"
+# 234 "pio_support.F90.in"
   subroutine pio_readdof (file, DOF, comm, punit)
     !-----------------------------------------------------------------------
     ! Purpose:
@@ -339,7 +336,7 @@ contains
 
 #ifdef NO_MPI2
 
-# 328 "pio_support.F90.in"
+# 325 "pio_support.F90.in"
   subroutine MPI_TYPE_CREATE_INDEXED_BLOCK(count, blen, disp, oldtype, newtype, ierr)
     integer, intent(in)  :: count
     integer, intent(in)  :: blen
@@ -358,7 +355,7 @@ contains
 #endif
 #ifdef NO_SIZEOF
 
-# 346 "pio_support.F90.in"
+# 343 "pio_support.F90.in"
   integer function sizeof_text(val) result(i)
     implicit none
     character(len=*),intent(in) :: val
@@ -374,7 +371,7 @@ contains
 #endif
   end function sizeof_text
 
-# 346 "pio_support.F90.in"
+# 343 "pio_support.F90.in"
   integer function sizeof_real(val) result(i)
     implicit none
     real(r4),intent(in) :: val
@@ -390,7 +387,7 @@ contains
 #endif
   end function sizeof_real
 
-# 346 "pio_support.F90.in"
+# 343 "pio_support.F90.in"
   integer function sizeof_double(val) result(i)
     implicit none
     real(r8),intent(in) :: val
@@ -406,7 +403,7 @@ contains
 #endif
   end function sizeof_double
 
-# 346 "pio_support.F90.in"
+# 343 "pio_support.F90.in"
   integer function sizeof_int(val) result(i)
     implicit none
     integer(i4),intent(in) :: val
@@ -423,7 +420,7 @@ contains
   end function sizeof_int
 #endif
 
-# 362 "pio_support.F90.in"
+# 359 "pio_support.F90.in"
    subroutine pio_fc_gather_int ( sendbuf, sendcnt, sendtype, &
                                   recvbuf, recvcnt, recvtype, &
                                   root, comm, flow_cntl )

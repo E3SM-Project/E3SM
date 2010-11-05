@@ -32,7 +32,7 @@ module pio_support
 
 contains
 
-  subroutine piodie (file,line, msg, ival1, msg2, ival2, msg3, ival3)
+  subroutine piodie (file,line, msg, ival1, msg2, ival2, msg3, ival3, mpirank)
     !-----------------------------------------------------------------------
     ! Purpose:
     !
@@ -54,15 +54,12 @@ contains
     character(len=*), intent(in) :: file
     integer,intent(in) :: line
     character(len=*), intent(in), optional :: msg,msg2,msg3
-    integer,intent(in),optional :: ival1,ival2,ival3
+    integer,intent(in),optional :: ival1,ival2,ival3, mpirank
 
     character(len=*), parameter :: subName=modName//'::pio_die'
-    integer ierr, myrank
-
-    call MPI_COMM_RANK(MPI_COMM_WORLD,myrank,ierr)
-    if(ierr /= MPI_SUCCESS) then
-      print *, subName,':: Error in call to MPI_COMM_RANK, ierr=',ierr
-    endif
+    integer ierr, myrank=-1
+    
+    if(present(mpirank)) myrank=mpirank
 
     if (present(ival3)) then
        write(6,*) subName,':: myrank=',myrank,': ERROR: ',file,':',line,': ', &

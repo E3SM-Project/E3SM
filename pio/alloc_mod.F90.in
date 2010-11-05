@@ -78,14 +78,11 @@ contains
       allocate(data(varlen),stat=ierr)
     endif
     if (ierr /= 0) then
-       call MPI_COMM_rank(MPI_COMM_WORLD,rank,ierror)
-       call CheckMPIReturn(subName,ierror)
        if (present(msg)) then
           call piodie('alloc_check_1d_{TYPE}',__LINE__,'allocate failed on task:',&
-            rank,msg2=msg)
+            msg2=msg)
        else
-          call piodie('alloc_check_1d_{TYPE}',__LINE__,'allocate failed on task:',&
-            rank)
+          call piodie('alloc_check_1d_{TYPE}',__LINE__,'allocate failed on task:')
        endif
     endif
 
@@ -104,14 +101,11 @@ contains
     allocate(data(size1,size2),stat=ierr)
 
     if (ierr /= 0) then
-       call MPI_COMM_rank(MPI_COMM_WORLD,rank,ierror)
-       call CheckMPIReturn(subName,ierror)
        if (present(msg)) then
           call piodie('alloc_check_2d_{TYPE}',__LINE__,'allocate failed on task:',&
-            rank,msg2=msg)
+            msg2=msg)
        else
-          call piodie('alloc_check_2d_{TYPE}',__LINE__,'allocate failed on task:',&
-            rank)
+          call piodie('alloc_check_2d_{TYPE}',__LINE__,'allocate failed on task:')
        endif
     endif
 
@@ -132,14 +126,12 @@ contains
     deallocate(data,stat=ierr)
 
     if (ierr /= 0) then
-       call MPI_COMM_rank(MPI_COMM_WORLD,rank,ierror)
-       call CheckMPIReturn(subName,ierror)
        if (present(msg)) then
           call piodie('dealloc_check_{DIMS}d_{TYPE}',__LINE__, &
-               ': deallocate failed on task:',rank, msg2=msg)
+               ': deallocate failed on task:',msg2=msg)
        else
           call piodie('dealloc_check_{DIMS}d_{TYPE}',__LINE__, &
-               ': deallocate failed on task:',rank)
+               ': deallocate failed on task:')
        endif
 
     endif
@@ -158,14 +150,11 @@ contains
   allocate(data,stat=ierr)
 
   if (ierr /= 0) then
-     call MPI_COMM_rank(MPI_COMM_WORLD,rank,ierror)
-     call CheckMPIReturn(subName,ierror)
      if (present(msg)) then
         call piodie('alloc_check_0d_{TYPE}',__LINE__,'allocate failed on task:',&
-             rank,msg2=msg)
+             msg2=msg)
      else
-        call piodie('alloc_check_0d_{TYPE}',__LINE__,'allocate failed on task:',&
-             rank)
+        call piodie('alloc_check_0d_{TYPE}',__LINE__,'allocate failed on task:')
      endif
 
   endif
@@ -187,14 +176,12 @@ subroutine dealloc_check_0d_{TYPE} (data,msg)
   deallocate(data,stat=ierr)
 
   if (ierr /= 0) then
-    call MPI_COMM_rank(MPI_COMM_WORLD,rank,ierror)
-    call CheckMPIReturn(subName,ierror)
        if (present(msg)) then
           call piodie('dealloc_check_0d_{TYPE}',__LINE__, &
-               ': deallocate failed on task:',rank, msg2=msg)
+               ': deallocate failed on task:',msg2=msg)
        else
           call piodie('dealloc_check_0d_{TYPE}',__LINE__, &
-               ': deallocate failed on task:',rank)
+               ': deallocate failed on task:')
        endif
 
   endif

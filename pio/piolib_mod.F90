@@ -1061,7 +1061,6 @@ contains
 #ifdef TIMING
     call t_stopf("PIO_initdecomp_dof")
 #endif
-    call mpi_barrier(mpi_comm_world,ierr)
 
   end subroutine PIO_initdecomp_dof
 
