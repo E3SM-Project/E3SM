@@ -21,7 +21,7 @@ static int initialized=0;
 FORT_NAME( mpi_init_fort , MPI_INIT_FORT)
                           (int *f_MPI_COMM_WORLD,
                            int *f_MPI_ANY_SOURCE, int *f_MPI_ANY_TAG,
-			   int *f_MPI_PROC_NULL,
+			   int *f_MPI_PROC_NULL, int *f_MPI_ROOT,
                            int *f_MPI_COMM_NULL, int *f_MPI_REQUEST_NULL,
 			   int *f_MPI_GROUP_NULL, int *f_MPI_GROUP_EMPTY,
 			   int *f_MPI_UNDEFINED,
@@ -114,6 +114,7 @@ FORT_NAME( mpi_init_fort , MPI_INIT_FORT)
   verify_eq(MPI_ANY_SOURCE);
   verify_eq(MPI_ANY_TAG);
   verify_eq(MPI_PROC_NULL);
+  verify_eq(MPI_ROOT);
   verify_eq(MPI_COMM_NULL);
   verify_eq(MPI_REQUEST_NULL);
   verify_eq(MPI_GROUP_NULL);

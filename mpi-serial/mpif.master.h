@@ -29,8 +29,8 @@
 	integer MPI_ANY_SOURCE, MPI_ANY_TAG
         parameter (mpi_any_source=-1, mpi_any_tag= -1)
 
-	integer MPI_PROC_NULL
-        parameter (MPI_PROC_NULL=-2)
+        integer MPI_PROC_NULL, MPI_ROOT
+        parameter (MPI_PROC_NULL=-2, MPI_ROOT=-3)
 
         integer MPI_COMM_NULL, MPI_REQUEST_NULL
         parameter (MPI_COMM_NULL=0, MPI_REQUEST_NULL=0)
