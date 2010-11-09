@@ -34,6 +34,9 @@ FORT_NAME( mpi_bcast , MPI_BCAST )(void *buffer, int *count, int *datatype,
 int MPI_Bcast(void* buffer, int count, MPI_Datatype datatype,
 	      int root, MPI_Comm comm )
 {
+  if (root==MPI_ROOT)
+    return(MPI_SUCCESS);
+
   if (root!=0)
     {
       fprintf(stderr,"MPI_Bcast: bad root = %d\n",root);
@@ -63,6 +66,9 @@ int MPI_Gather(void* sendbuf, int sendcount, MPI_Datatype sendtype,
 	       void* recvbuf, int recvcount, MPI_Datatype recvtype,
 	       int root, MPI_Comm comm)
 {
+  if (root==MPI_ROOT)
+    return(MPI_SUCCESS);
+
   if (root!=0)
     {
       fprintf(stderr,"MPI_Gather: bad root = %d\n",root);
@@ -94,6 +100,9 @@ int MPI_Gatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
 		MPI_Datatype recvtype, int root, MPI_Comm comm)
 {
   int offset;
+
+  if (root==MPI_ROOT)
+    return(MPI_SUCCESS);
 
   if (root!=0)
     {
@@ -181,6 +190,8 @@ int MPI_Scatter( void* sendbuf, int sendcount, MPI_Datatype sendtype,
                  void* recvbuf, int recvcount, MPI_Datatype recvtype,
                  int root, MPI_Comm comm)
 {
+  if (root==MPI_ROOT)
+    return(MPI_SUCCESS);
 
   if (root!=0)
     {
@@ -216,6 +227,9 @@ int MPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
 {
   int offset;
 
+  if (root==MPI_ROOT)
+    return(MPI_SUCCESS);
+
   if (root!=0)
     {
       fprintf(stderr,"MPI_Scatterv: bad root = %d\n",root);
@@ -248,6 +262,9 @@ int MPI_Reduce(void* sendbuf, void* recvbuf, int count,
 	       MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm)
 
 {
+  if (root==MPI_ROOT)
+    return(MPI_SUCCESS);
+
   if (root!=0)
     {
       fprintf(stderr,"MPI_Reduce: bad root = %d\n",root);
