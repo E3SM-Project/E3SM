@@ -48,7 +48,7 @@ int MPI_Isend(void *buf, int count, MPI_Datatype datatype,
 	 mycomm->num,tag,count,datatype);
 #endif
 
-  if (dest!=0)
+  if (dest!=0 && dest!=MPI_PROC_NULL)
     {
       fprintf(stderr,"MPI_Isend: send to %d\n",dest);
       abort();
@@ -56,6 +56,12 @@ int MPI_Isend(void *buf, int count, MPI_Datatype datatype,
 
   mpi_alloc_handle(request,(void **) &sreq);
 
+
+  if (dest==MPI_PROC_NULL)
+    {
+      sreq->complete=1;
+      return(MPI_SUCCESS);
+    }
 
   if ( match=AP_list_search_func(mycomm->recvlist,mpi_match_recv,&tag) )
     {

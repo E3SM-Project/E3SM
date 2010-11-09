@@ -149,6 +149,16 @@ main(int argc, char *argv[])
 
 
   /*
+   * Send to nowhere
+   */
+
+
+  printf("Send to MPI_PROC_NULL\n"); 
+  MPI_Send(sbuf, 1, MPI_INT, MPI_PROC_NULL, 77, MPI_COMM_WORLD);
+  
+
+
+  /*
    * Finish up
    */
 
