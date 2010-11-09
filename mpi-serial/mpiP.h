@@ -78,6 +78,7 @@ typedef struct
   pListitem listitem;        /* to allow Req to be removed from list */
 
   int *buf;
+  int source;
   int tag;
   int complete;
 

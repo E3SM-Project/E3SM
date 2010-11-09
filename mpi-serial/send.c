@@ -70,6 +70,7 @@ int MPI_Isend(void *buf, int count, MPI_Datatype datatype,
 
       memcpy(rreq->buf,buf,count * datatype);
       rreq->complete=1;
+      rreq->source=0;
       rreq->tag=tag;                    /* in case rreq->tag was MPI_ANY_TAG */
 
       sreq->complete=1;

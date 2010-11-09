@@ -155,6 +155,12 @@ main(int argc, char *argv[])
 
   printf("Send to MPI_PROC_NULL\n"); 
   MPI_Send(sbuf, 1, MPI_INT, MPI_PROC_NULL, 77, MPI_COMM_WORLD);
+
+
+  printf("Receive from MPI_PROC_NULL\n"); 
+  MPI_Recv(rbuf, 1, MPI_INT, MPI_PROC_NULL, 78, MPI_COMM_WORLD, status);
+  printf("  status: source=%d  tag=%d\n",
+	 status[0].MPI_SOURCE,status[0].MPI_TAG);
   
 
 

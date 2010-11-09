@@ -53,13 +53,22 @@ int MPI_Irecv(void *buf, int count, MPI_Datatype datatype,
 #endif
 
 
-  if (source!=0 && source!=MPI_ANY_SOURCE)
+  if (source!=0 && source!=MPI_ANY_SOURCE && source!=MPI_PROC_NULL)
     {
       fprintf(stderr,"MPI_Irecv: bad source %d\n",source);
       abort();
     }
 
   mpi_alloc_handle(request,(void **)&rreq);
+
+  if (source==MPI_PROC_NULL)
+    {
+      rreq->complete=1;
+      rreq->source=MPI_PROC_NULL;
+      rreq->tag=MPI_ANY_TAG;
+
+      return(MPI_SUCCESS);
+    }
 
 
   if ( match=AP_list_search_func(mycomm->sendlist,mpi_match_send,&tag) )
@@ -69,6 +78,7 @@ int MPI_Irecv(void *buf, int count, MPI_Datatype datatype,
 
       memcpy(buf,sreq->buf,count * datatype);
       rreq->complete=1;
+      rreq->source=0;
       rreq->tag=sreq->tag;                   /* in case tag was MPI_ANY_TAG */
 
       sreq->complete=1;

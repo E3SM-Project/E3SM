@@ -34,7 +34,7 @@ int MPI_Test(MPI_Request *request, int *flag, MPI_Status *status)
 
   if (*flag)
     {
-      status->MPI_SOURCE= 0;
+      status->MPI_SOURCE= req->source;
       status->MPI_TAG= req->tag;
 
       mpi_free_handle(*request);
