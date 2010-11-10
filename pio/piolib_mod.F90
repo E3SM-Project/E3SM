@@ -35,12 +35,6 @@ module piolib_mod
 
   include 'mpif.h'    ! _EXTERNAL
 
-#if defined NEED_MPI_ROOT
-	! this is a bug in file mpif.h on edinburgh
-	integer, parameter :: MPI_ROOT=-3
-#endif
-
-
   ! !public member functions:
 
   public :: PIO_init,     &
@@ -1640,8 +1634,9 @@ contains
 #ifdef TIMING
     call t_startf("PIO_init")
 #endif
-
-
+#ifdef NO_MPI2
+    call piodie( _FILE_,__LINE__,'The PIO asyn interface requires an MPI2 complient MPI library	')
+#else 
     do i=1,component_count
        iosystem(i)%error_handling = PIO_internal_error
        iosystem(i)%comp_comm = comp_comms(i)
@@ -1790,7 +1785,7 @@ contains
 #ifdef TIMING
     call t_stopf("PIO_init")
 #endif
-
+#endif
   end subroutine init_intercom
 
 !>

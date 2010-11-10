@@ -68,7 +68,7 @@ contains
     integer,intent(in),optional :: ival1,ival2,ival3, mpirank
 
     character(len=*), parameter :: subName=modName//'::pio_die'
-    integer ierr, myrank=-1
+    integer :: ierr, myrank=-1
     
     if(present(mpirank)) myrank=mpirank
 
