@@ -1,6 +1,52 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_2_2
+Originator(s): Jim
+Date: 11-11-2010
+One-line Summary: minor bug fixes
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+   nf_mod.F90 : modified pio_def_var to avoid a bounds check error from
+	 the pgi compiler
+   piolib_mod.F90 : Removed NEED_MPI_ROOT ifdef and replaced with
+	NO_MPI2 and MPISERIAL wrappers
+   pio_support.F90 : fixed bug in variable declaration (missing ::)
+   
+	
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+
+
+Code reviewed by: self
+
+Summary of pre-tag testing: cam stand alone and cesm tests
+
+  Regression tests:
+           Edinburgh (lahey) 22 tests pass 2 fail (expected async tests)
+	   Bluefire         107 tests pass
+	   Jaguarpf          70 tests pass
+	   frost             74 tests pass 6 fail (expected async tests)
+
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_2_1
 Originator(s): Jim, Pat Worley
 Date: 11-04-2010
