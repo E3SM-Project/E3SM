@@ -1634,8 +1634,8 @@ contains
 #ifdef TIMING
     call t_startf("PIO_init")
 #endif
-#ifdef NO_MPI2
-    call piodie( _FILE_,__LINE__,'The PIO asyn interface requires an MPI2 complient MPI library	')
+#if defined(NO_MPI2) || defined(_MPISERIAL)
+    call piodie( _FILE_,__LINE__,'The PIO async interface requires an MPI2 complient MPI library')
 #else 
     do i=1,component_count
        iosystem(i)%error_handling = PIO_internal_error
