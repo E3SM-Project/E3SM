@@ -1561,9 +1561,9 @@ contains
     character(len=*), intent(in)    :: name
     integer, intent(in)             :: type
     type (Var_desc_t), intent(inout) :: vardesc
-    integer :: len=0, dimids(1)
+    integer :: dimids(0)
 
-    ierr = def_var_md(File,name,type,dimids(1:len),vardesc)
+    ierr = def_var_md(File,name,type,dimids,vardesc)
 
   end function def_var_0d
 
@@ -1621,21 +1621,34 @@ contains
        select case(iotype)
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
-          ierr=nfmpi_def_var(File%fh,name(1:nlen),type,vardesc%ndims,dimids(1:vardesc%ndims),vardesc%varid)
-          
+          if(vardesc%ndims==0) then
+             ierr=nfmpi_def_var(File%fh,name(1:nlen),type,vardesc%ndims,dimids,vardesc%varid)
+          else
+             ierr=nfmpi_def_var(File%fh,name(1:nlen),type,vardesc%ndims,dimids(1:vardesc%ndims),vardesc%varid)
+          end if
 #endif
 
 #ifdef _NETCDF
 #ifdef _NETCDF4
        case(pio_iotype_netcdf4p)
-          ierr=nf90_def_var( ncid=File%fh,name=name(1:nlen),xtype=type, &
-               dimids=dimids(1:vardesc%ndims),varid=vardesc%varid)
+          if(vardesc%ndims==0) then
+             ierr=nf90_def_var( ncid=File%fh,name=name(1:nlen),xtype=type, &
+                  varid=vardesc%varid)
+          else
+             ierr=nf90_def_var( ncid=File%fh,name=name(1:nlen),xtype=type, &
+                  dimids=dimids(1:vardesc%ndims),varid=vardesc%varid)
+          endif
 #endif
        case(iotype_netcdf,pio_iotype_netcdf4c)
           ! assuming type valid for both pnetcdf and netcdf
           if (ios%io_rank==0) then
-             ierr=nf90_def_var( ncid=File%fh,name=name(1:nlen),xtype=type, &
-                  dimids=dimids(1:vardesc%ndims),varid=vardesc%varid)
+             if(vardesc%ndims==0) then
+                ierr=nf90_def_var( ncid=File%fh,name=name(1:nlen),xtype=type, &
+                     varid=vardesc%varid)
+             else
+                ierr=nf90_def_var( ncid=File%fh,name=name(1:nlen),xtype=type, &
+                     dimids=dimids(1:vardesc%ndims),varid=vardesc%varid)
+             end if
              if (Debug) print *, '0: def_var fh=',File%fh, &
                   'name=',name(1:nlen),' id=',vardesc%varid
 #ifdef _NETCDF4
