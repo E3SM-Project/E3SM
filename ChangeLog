@@ -1,6 +1,46 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_2_3
+Originator(s): Jim
+Date:11-12-2010
+One-line Summary: bug fix in get_attname
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+    Added an internal variable of PIO_MAX_NAME length to get att names
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+
+
+Code reviewed by: Jim
+
+Summary of pre-tag testing:  cesm1_0_beta11 pretag testing on bluefire
+
+  Regression tests:
+           Edinburgh (lahey) 22 tests pass 2 fail (expected async tests)
+	   Bluefire         107 tests pass
+	   Jaguarpf          70 tests pass
+
+
+===============================================================
+
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_2_2
 Originator(s): Jim
 Date: 11-11-2010
