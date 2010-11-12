@@ -507,6 +507,7 @@ contains
     !------------------
     integer :: iotype, mpierr, msg
     type(iosystem_desc_t), pointer :: ios
+    character(len=PIO_MAX_NAME) :: tmpname
 
     ios => File%iosystem
 
@@ -527,19 +528,20 @@ contains
 
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
-          ierr=nfmpi_inq_attname(File%fh,varid,attnum,name)
+          ierr=nfmpi_inq_attname(File%fh,varid,attnum,tmpname)
 
 #endif
 
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-          ierr=nf90_inq_attname(File%fh,varid,attnum,name)
+          ierr=nf90_inq_attname(File%fh,varid,attnum,tmpname)
        case(iotype_netcdf)
           if (ios%io_rank==0) then
-             ierr=nf90_inq_attname(File%fh,varid,attnum,name)
+             ierr=nf90_inq_attname(File%fh,varid,attnum,tmpname)
+             if(Debug) print *,__FILE__,__LINE__,name
           endif
           if(.not.ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
-             call MPI_BCAST(name,len_trim(name),MPI_CHARACTER,0,ios%IO_comm, mpierr)
+             call MPI_BCAST(tmpname,PIO_MAX_NAME,MPI_CHARACTER,0,ios%IO_comm, mpierr)
              call CheckMPIReturn('nf_mod',mpierr)
           end if
 
@@ -552,10 +554,10 @@ contains
     endif
     call check_netcdf(File, ierr,_FILE_,__LINE__)
     if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
-       call MPI_BCAST(name,len_trim(name),MPI_CHARACTER,ios%IOMaster,ios%my_comm, mpierr)
+       call MPI_BCAST(tmpname,PIO_MAX_NAME,MPI_CHARACTER,ios%IOMaster,ios%my_comm, mpierr)
        call CheckMPIReturn('nf_mod',mpierr)
     end if
-
+    name = tmpname(1:len_trim(tmpname))
   end function inq_attname_vid
 
 !> 
