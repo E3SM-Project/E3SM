@@ -1333,7 +1333,7 @@ contains
 !! @param iosystem a derived type which can be used in subsequent pio operations (defined in PIO_types).
 !! @param base @em optional argument can be used to offset the first io task - default base is task 1.
 !<
-  subroutine init_intracom(comp_rank, comp_comm, num_iotasks, num_aggregator, stride,  rearr, iosystem,base, async, mpi_comm_compute)
+  subroutine init_intracom(comp_rank, comp_comm, num_iotasks, num_aggregator, stride,  rearr, iosystem,base)
     integer(i4), intent(in) :: comp_rank
     integer(i4), intent(in) :: comp_comm
     integer(i4), intent(in) :: num_iotasks 
@@ -1342,8 +1342,6 @@ contains
     integer(i4), intent(in) :: rearr
     type (iosystem_desc_t), intent(out)  :: iosystem  ! io descriptor to initalize
     integer(i4), intent(in),optional :: base
-    logical, intent(in), optional :: async 
-    integer, intent(out), optional :: mpi_comm_compute
 
     integer(i4) :: n_iotasks
     integer(i4) :: length
@@ -1367,13 +1365,6 @@ contains
 #ifdef TIMING
     call t_startf("PIO_init")
 #endif
-
-    if(present(async)) then
-       if(.not. present(mpi_comm_compute)) then
-          call piodie(__FILE__,__LINE__,'If async argument is present mpi_comm_compute arguement is required')
-       end if
-       async_setup = async
-    end if
 
     iosystem%error_handling = PIO_internal_error
     iosystem%union_comm = comp_comm
@@ -1553,48 +1544,15 @@ contains
 
     if(DebugAsync) print *,__FILE__,__LINE__,'n: ',n_iotasks, ' r: ',iosystem%ioranks, ' g: ',mpi_group_io
 
-    if(async_setup) then
-       call mpi_group_excl(mpi_group_world, n_iotasks, iosystem%ioranks, mpi_group_compute, ierr)
-       if(check) call checkmpireturn('init: after call to group_range_excl: ',ierr)
+    !-----------------------
+    ! setup io_comm and io_rank
+    !-----------------------
 
-       call mpi_comm_create(comp_comm, mpi_group_compute, mpi_comm_compute, ierr)
-       if(check) call checkmpireturn('init: after call to comm_create group: ',ierr)
-
-       call mpi_comm_create(comp_comm, mpi_group_io, mpi_comm_io, ierr)
-       if(check) call checkmpireturn('init: after call to comm_create io: ',ierr)
-
-       if(mpi_comm_compute/=MPI_COMM_NULL) then
-          call mpi_intercomm_create(mpi_comm_compute, 0, comp_comm, iosystem%iomaster, 1, intercomm, ierr)
-       else
-          do i=1,n_iotasks
-             if(iosystem%ioranks(i)>i-1) then
-                iosystem%compmaster=i-1
-                exit
-             end if
-	     iosystem%compmaster=i
-          end do
-	if(DebugAsync) print *,__FILE__,__LINE__,iosystem%compmaster
-          call mpi_intercomm_create(mpi_comm_io, 0, comp_comm,iosystem%compmaster , 1, intercomm, ierr)
-       end if
-!       call init_intercom(1, (/comp_comm/), (/mpi_comm_compute/), mpi_comm_io, (/intercomm/), (/iosystem/))
-       
-
-    else
-       !-----------------------
-       ! setup io_comm and io_rank
-       !-----------------------
-
-       call mpi_comm_create(comp_comm,mpi_group_io,iosystem%io_comm,ierr)
-       if(check) call checkmpireturn('init: after call to comm_create: ',ierr)
-
-       if(iosystem%ioproc) call mpi_comm_rank(iosystem%io_comm,iosystem%io_rank,ierr)
-       if(check) call checkmpireturn('init: after call to comm_rank: ',ierr)
-
-    end if
-
-
-
-
+    call mpi_comm_create(comp_comm,mpi_group_io,iosystem%io_comm,ierr)
+    if(check) call checkmpireturn('init: after call to comm_create: ',ierr)
+    
+    if(iosystem%ioproc) call mpi_comm_rank(iosystem%io_comm,iosystem%io_rank,ierr)
+    if(check) call checkmpireturn('init: after call to comm_rank: ',ierr)
 
 #ifdef TIMING
     call t_stopf("PIO_init")

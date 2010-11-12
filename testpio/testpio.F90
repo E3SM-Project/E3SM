@@ -231,9 +231,10 @@ program testpio
 
   if(async) then
 #ifdef BGx
-     allocate(PIOSYS)
-     call PIO_init(my_task, MPI_COMM_WORLD, num_iotasks, num_aggregator, stride, &
-          rearr_type, PIOSYS, base, async=.true.,mpi_comm_compute=mpi_comm_compute)
+	call piodie(__FILE__,__LINE__,'async option not currently supported')
+!     allocate(PIOSYS)
+!     call PIO_init(my_task, MPI_COMM_WORLD, num_iotasks, num_aggregator, stride, &
+!          rearr_type, PIOSYS, base, async=.true.,mpi_comm_compute=mpi_comm_compute)
 #else
      call split_comm(mpi_comm_world,nprocs, num_iotasks, stride, base, &
           mpi_comm_compute, mpi_comm_io, mpi_icomm_cio)
