@@ -102,7 +102,7 @@ subroutine split_comm(initial_comm, nprocs, num_iotasks, stride, base, mpi_comm_
   integer :: ierr
   integer :: pelist(3,1), mpigrp_init, mpigrp_io, mpigrp_compute
   include 'mpif.h' !_EXTERNAL
-
+#ifndef _MPISERIAL
   mpi_comm_compute = MPI_COMM_NULL
   mpi_comm_io = MPI_COMM_NULL
 
@@ -135,7 +135,7 @@ subroutine split_comm(initial_comm, nprocs, num_iotasks, stride, base, mpi_comm_
   else
     call piodie(__FILE__,__LINE__)
   end if
-
+#endif
 end subroutine split_comm
 
 

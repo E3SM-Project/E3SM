@@ -348,9 +348,9 @@ contains
     integer :: dblens(count)
 
     dblens = blen
-
+#ifndef _MPISERIAL
     call mpi_type_indexed(count, dblens, disp, oldtype, newtype, ierr)
-
+#endif
   end subroutine MPI_TYPE_CREATE_INDEXED_BLOCK
 #endif
 #ifdef NO_SIZEOF

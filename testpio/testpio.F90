@@ -1071,9 +1071,11 @@ contains
     integer(i4), intent(IN)  :: comm
     integer(i4), intent(OUT) :: ierror
     real(r8) :: local_temp
-
+#ifdef _MPISERIAL
+    local_temp = dtlocal
+#else
     local_temp = max(dtlocal, MPI_Wtick())
-
+#endif
     call MPI_Allreduce(Local_temp, gdtMax, 1,MPI_DOUBLE_PRECISION, MPI_MAX, comm, ierror)
 
     call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierror,__FILE__,__LINE__)
