@@ -1,11 +1,6 @@
 #define _FILE_ "pio_mpi_utils.F90"
 module pio_mpi_utils
   
-
-  use pio_support, only : piodie
-  use pio_types, only : PIO_char, PIO_int, PIO_double, PIO_real
-   
-
   implicit none
   private
   
@@ -14,7 +9,11 @@ module pio_mpi_utils
 contains
 
   integer function pio_type_to_mpi_type(ptype) result(mtype)
-    use pio_support
+
+    use pio_support, only : piodie
+    use pio_types, only : PIO_char, PIO_int, PIO_double, PIO_real
+   
+
     implicit none
     include 'mpif.h'            ! _EXTERNAL
     integer, intent(in):: ptype
