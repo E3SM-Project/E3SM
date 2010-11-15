@@ -6,8 +6,6 @@ module alloc_mod
   implicit none
   private
 
-  include 'mpif.h'        ! _EXTERNAL
-
 !>
 !! @private
 !! PIO internal memory allocation check routines.  
@@ -194,6 +192,7 @@ end subroutine dealloc_check_0d_{TYPE}
 !! PIO internal memory allocation check routines.  
 !<
   subroutine alloc_print_usage(rank,msg)
+  include 'mpif.h'        ! _EXTERNAL
 
     integer, intent(in) :: rank
     character(len=*), intent(in), optional :: msg

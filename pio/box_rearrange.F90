@@ -87,7 +87,7 @@ module box_rearrange
 
 #ifdef _USEBOX
   use pio_kinds
-  use pio_types
+  use pio_types, only : io_desc_t, iosystem_desc_t
 #ifdef NO_MPI2
   use pio_support, only : MPI_TYPE_CREATE_INDEXED_BLOCK, piodie, &
                           Debug, DebugIO, CheckMPIReturn, pio_fc_gather_int

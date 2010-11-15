@@ -5,7 +5,10 @@ module pionfget_mod
 #endif
   use pio_msg_mod
   use pio_kinds, only: i4,r4,r8,pio_offset
-  use pio_types
+  use pio_types, only : file_desc_t, iosystem_desc_t, var_desc_t, &
+	pio_iotype_pbinary, pio_iotype_binary, pio_iotype_direct_pbinary, &
+	pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c, &
+	pio_noerr
   use pio_utils, only : check_netcdf
   use pio_support, only : Debug, DebugIO, piodie, CheckMPIReturn
 #ifdef _NETCDF
@@ -88,7 +91,7 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_begin_indep_data(File%fh)
           ! Only io proc 0 will do reading
           if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
@@ -103,7 +106,7 @@ CONTAINS
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr = nf90_get_var(File%fh, varid, ival, start=index)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=index)
@@ -220,14 +223,14 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
                int(count,kind=PIO_OFFSET), ival, isize, {MPITYPE})
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
@@ -342,13 +345,13 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, {MPITYPE})
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)

@@ -10,7 +10,10 @@ module pionfget_mod
 #endif
   use pio_msg_mod
   use pio_kinds, only: i4,r4,r8,pio_offset
-  use pio_types
+  use pio_types, only : file_desc_t, iosystem_desc_t, var_desc_t, &
+	pio_iotype_pbinary, pio_iotype_binary, pio_iotype_direct_pbinary, &
+	pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c, &
+	pio_noerr
   use pio_utils, only : check_netcdf
   use pio_support, only : Debug, DebugIO, piodie, CheckMPIReturn
 #ifdef _NETCDF
@@ -31,7 +34,7 @@ module pionfget_mod
 !!  root IO task and broadcast in its entirety to all tasks.  
 !<
   public :: get_var
-# 29 "pionfget_mod.F90.in"
+# 32 "pionfget_mod.F90.in"
   interface get_var
      module procedure get_var_0d_text, get_var_vdesc_0d_text
      module procedure get_var_1d_text, get_var_vdesc_1d_text
@@ -105,7 +108,7 @@ module pionfget_mod
 
  character(len=*), parameter :: modName='pionfget_mod'
 
-# 38 "pionfget_mod.F90.in"
+# 41 "pionfget_mod.F90.in"
 CONTAINS
 
 !>
@@ -119,7 +122,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 51 "pionfget_mod.F90.in"
+# 54 "pionfget_mod.F90.in"
   integer function get_var1_text (File,varid, index, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar1
     type (File_desc_t), intent(in) :: File
@@ -160,7 +163,7 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_begin_indep_data(File%fh)
           ! Only io proc 0 will do reading
           if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
@@ -175,7 +178,7 @@ CONTAINS
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr = nf90_get_var(File%fh, varid, ival, start=index)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=index)
@@ -210,7 +213,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 51 "pionfget_mod.F90.in"
+# 54 "pionfget_mod.F90.in"
   integer function get_var1_real (File,varid, index, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar1
     type (File_desc_t), intent(in) :: File
@@ -251,7 +254,7 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_begin_indep_data(File%fh)
           ! Only io proc 0 will do reading
           if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
@@ -266,7 +269,7 @@ CONTAINS
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr = nf90_get_var(File%fh, varid, ival, start=index)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=index)
@@ -301,7 +304,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 51 "pionfget_mod.F90.in"
+# 54 "pionfget_mod.F90.in"
   integer function get_var1_double (File,varid, index, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar1
     type (File_desc_t), intent(in) :: File
@@ -342,7 +345,7 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_begin_indep_data(File%fh)
           ! Only io proc 0 will do reading
           if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
@@ -357,7 +360,7 @@ CONTAINS
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr = nf90_get_var(File%fh, varid, ival, start=index)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=index)
@@ -392,7 +395,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 51 "pionfget_mod.F90.in"
+# 54 "pionfget_mod.F90.in"
   integer function get_var1_int (File,varid, index, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar1
     type (File_desc_t), intent(in) :: File
@@ -433,7 +436,7 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_begin_indep_data(File%fh)
           ! Only io proc 0 will do reading
           if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
@@ -448,7 +451,7 @@ CONTAINS
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr = nf90_get_var(File%fh, varid, ival, start=index)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=index)
@@ -483,7 +486,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 141 "pionfget_mod.F90.in"
+# 144 "pionfget_mod.F90.in"
   integer function get_var1_vdesc_text (File,vardesc, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -507,7 +510,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 141 "pionfget_mod.F90.in"
+# 144 "pionfget_mod.F90.in"
   integer function get_var1_vdesc_real (File,vardesc, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -531,7 +534,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 141 "pionfget_mod.F90.in"
+# 144 "pionfget_mod.F90.in"
   integer function get_var1_vdesc_double (File,vardesc, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -555,7 +558,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 141 "pionfget_mod.F90.in"
+# 144 "pionfget_mod.F90.in"
   integer function get_var1_vdesc_int (File,vardesc, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -582,7 +585,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 167 "pionfget_mod.F90.in"
+# 170 "pionfget_mod.F90.in"
   integer function get_vara_1d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -639,14 +642,14 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
                int(count,kind=PIO_OFFSET), ival, isize, MPI_CHARACTER)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
@@ -687,7 +690,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 167 "pionfget_mod.F90.in"
+# 170 "pionfget_mod.F90.in"
   integer function get_vara_2d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -744,14 +747,14 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
                int(count,kind=PIO_OFFSET), ival, isize, MPI_CHARACTER)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
@@ -792,7 +795,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 167 "pionfget_mod.F90.in"
+# 170 "pionfget_mod.F90.in"
   integer function get_vara_3d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -849,14 +852,14 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
                int(count,kind=PIO_OFFSET), ival, isize, MPI_CHARACTER)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
@@ -897,7 +900,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 167 "pionfget_mod.F90.in"
+# 170 "pionfget_mod.F90.in"
   integer function get_vara_4d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -954,14 +957,14 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
                int(count,kind=PIO_OFFSET), ival, isize, MPI_CHARACTER)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
@@ -1002,7 +1005,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 167 "pionfget_mod.F90.in"
+# 170 "pionfget_mod.F90.in"
   integer function get_vara_5d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -1059,14 +1062,14 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
                int(count,kind=PIO_OFFSET), ival, isize, MPI_CHARACTER)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
@@ -1107,7 +1110,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 167 "pionfget_mod.F90.in"
+# 170 "pionfget_mod.F90.in"
   integer function get_vara_1d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -1164,14 +1167,14 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
                int(count,kind=PIO_OFFSET), ival, isize, MPI_REAL4)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
@@ -1212,7 +1215,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 167 "pionfget_mod.F90.in"
+# 170 "pionfget_mod.F90.in"
   integer function get_vara_2d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -1269,14 +1272,14 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
                int(count,kind=PIO_OFFSET), ival, isize, MPI_REAL4)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
@@ -1317,7 +1320,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 167 "pionfget_mod.F90.in"
+# 170 "pionfget_mod.F90.in"
   integer function get_vara_3d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -1374,14 +1377,14 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
                int(count,kind=PIO_OFFSET), ival, isize, MPI_REAL4)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
@@ -1422,7 +1425,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 167 "pionfget_mod.F90.in"
+# 170 "pionfget_mod.F90.in"
   integer function get_vara_4d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -1479,14 +1482,14 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
                int(count,kind=PIO_OFFSET), ival, isize, MPI_REAL4)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
@@ -1527,7 +1530,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 167 "pionfget_mod.F90.in"
+# 170 "pionfget_mod.F90.in"
   integer function get_vara_5d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -1584,14 +1587,14 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
                int(count,kind=PIO_OFFSET), ival, isize, MPI_REAL4)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
@@ -1632,7 +1635,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 167 "pionfget_mod.F90.in"
+# 170 "pionfget_mod.F90.in"
   integer function get_vara_1d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -1689,14 +1692,14 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
                int(count,kind=PIO_OFFSET), ival, isize, MPI_REAL8)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
@@ -1737,7 +1740,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 167 "pionfget_mod.F90.in"
+# 170 "pionfget_mod.F90.in"
   integer function get_vara_2d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -1794,14 +1797,14 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
                int(count,kind=PIO_OFFSET), ival, isize, MPI_REAL8)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
@@ -1842,7 +1845,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 167 "pionfget_mod.F90.in"
+# 170 "pionfget_mod.F90.in"
   integer function get_vara_3d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -1899,14 +1902,14 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
                int(count,kind=PIO_OFFSET), ival, isize, MPI_REAL8)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
@@ -1947,7 +1950,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 167 "pionfget_mod.F90.in"
+# 170 "pionfget_mod.F90.in"
   integer function get_vara_4d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2004,14 +2007,14 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
                int(count,kind=PIO_OFFSET), ival, isize, MPI_REAL8)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
@@ -2052,7 +2055,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 167 "pionfget_mod.F90.in"
+# 170 "pionfget_mod.F90.in"
   integer function get_vara_5d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2109,14 +2112,14 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
                int(count,kind=PIO_OFFSET), ival, isize, MPI_REAL8)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
@@ -2157,7 +2160,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 167 "pionfget_mod.F90.in"
+# 170 "pionfget_mod.F90.in"
   integer function get_vara_1d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2214,14 +2217,14 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
                int(count,kind=PIO_OFFSET), ival, isize, MPI_INTEGER)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
@@ -2262,7 +2265,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 167 "pionfget_mod.F90.in"
+# 170 "pionfget_mod.F90.in"
   integer function get_vara_2d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2319,14 +2322,14 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
                int(count,kind=PIO_OFFSET), ival, isize, MPI_INTEGER)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
@@ -2367,7 +2370,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 167 "pionfget_mod.F90.in"
+# 170 "pionfget_mod.F90.in"
   integer function get_vara_3d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2424,14 +2427,14 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
                int(count,kind=PIO_OFFSET), ival, isize, MPI_INTEGER)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
@@ -2472,7 +2475,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 167 "pionfget_mod.F90.in"
+# 170 "pionfget_mod.F90.in"
   integer function get_vara_4d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2529,14 +2532,14 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
                int(count,kind=PIO_OFFSET), ival, isize, MPI_INTEGER)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
@@ -2577,7 +2580,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 167 "pionfget_mod.F90.in"
+# 170 "pionfget_mod.F90.in"
   integer function get_vara_5d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2634,14 +2637,14 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_vara_all (File%fh, varid, int(start,kind=PIO_OFFSET), &
                int(count,kind=PIO_OFFSET), ival, isize, MPI_INTEGER)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
@@ -2681,7 +2684,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 270 "pionfget_mod.F90.in"
+# 273 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_1d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -2707,7 +2710,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 270 "pionfget_mod.F90.in"
+# 273 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_2d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -2733,7 +2736,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 270 "pionfget_mod.F90.in"
+# 273 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_3d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -2759,7 +2762,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 270 "pionfget_mod.F90.in"
+# 273 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_4d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -2785,7 +2788,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 270 "pionfget_mod.F90.in"
+# 273 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_5d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -2811,7 +2814,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 270 "pionfget_mod.F90.in"
+# 273 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_1d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -2837,7 +2840,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 270 "pionfget_mod.F90.in"
+# 273 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_2d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -2863,7 +2866,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 270 "pionfget_mod.F90.in"
+# 273 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_3d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -2889,7 +2892,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 270 "pionfget_mod.F90.in"
+# 273 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_4d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -2915,7 +2918,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 270 "pionfget_mod.F90.in"
+# 273 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_5d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -2941,7 +2944,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 270 "pionfget_mod.F90.in"
+# 273 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_1d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -2967,7 +2970,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 270 "pionfget_mod.F90.in"
+# 273 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_2d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -2993,7 +2996,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 270 "pionfget_mod.F90.in"
+# 273 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_3d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3019,7 +3022,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 270 "pionfget_mod.F90.in"
+# 273 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_4d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3045,7 +3048,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 270 "pionfget_mod.F90.in"
+# 273 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_5d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3071,7 +3074,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 270 "pionfget_mod.F90.in"
+# 273 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_1d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3097,7 +3100,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 270 "pionfget_mod.F90.in"
+# 273 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_2d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3123,7 +3126,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 270 "pionfget_mod.F90.in"
+# 273 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_3d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3149,7 +3152,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 270 "pionfget_mod.F90.in"
+# 273 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_4d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3175,7 +3178,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 270 "pionfget_mod.F90.in"
+# 273 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_5d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3198,7 +3201,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "pionfget_mod.F90.in"
+# 295 "pionfget_mod.F90.in"
   integer function get_var_0d_text (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_0d
     type (File_desc_t), intent(in) :: File
@@ -3252,13 +3255,13 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_CHARACTER)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -3291,7 +3294,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "pionfget_mod.F90.in"
+# 295 "pionfget_mod.F90.in"
   integer function get_var_1d_text (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_1d
     type (File_desc_t), intent(in) :: File
@@ -3345,13 +3348,13 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_CHARACTER)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -3384,7 +3387,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "pionfget_mod.F90.in"
+# 295 "pionfget_mod.F90.in"
   integer function get_var_2d_text (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_2d
     type (File_desc_t), intent(in) :: File
@@ -3438,13 +3441,13 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_CHARACTER)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -3477,7 +3480,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "pionfget_mod.F90.in"
+# 295 "pionfget_mod.F90.in"
   integer function get_var_3d_text (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_3d
     type (File_desc_t), intent(in) :: File
@@ -3531,13 +3534,13 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_CHARACTER)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -3570,7 +3573,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "pionfget_mod.F90.in"
+# 295 "pionfget_mod.F90.in"
   integer function get_var_4d_text (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_4d
     type (File_desc_t), intent(in) :: File
@@ -3624,13 +3627,13 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_CHARACTER)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -3663,7 +3666,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "pionfget_mod.F90.in"
+# 295 "pionfget_mod.F90.in"
   integer function get_var_5d_text (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_5d
     type (File_desc_t), intent(in) :: File
@@ -3717,13 +3720,13 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_CHARACTER)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -3756,7 +3759,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "pionfget_mod.F90.in"
+# 295 "pionfget_mod.F90.in"
   integer function get_var_0d_real (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_0d
     type (File_desc_t), intent(in) :: File
@@ -3810,13 +3813,13 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL4)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -3849,7 +3852,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "pionfget_mod.F90.in"
+# 295 "pionfget_mod.F90.in"
   integer function get_var_1d_real (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_1d
     type (File_desc_t), intent(in) :: File
@@ -3903,13 +3906,13 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL4)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -3942,7 +3945,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "pionfget_mod.F90.in"
+# 295 "pionfget_mod.F90.in"
   integer function get_var_2d_real (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_2d
     type (File_desc_t), intent(in) :: File
@@ -3996,13 +3999,13 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL4)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -4035,7 +4038,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "pionfget_mod.F90.in"
+# 295 "pionfget_mod.F90.in"
   integer function get_var_3d_real (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_3d
     type (File_desc_t), intent(in) :: File
@@ -4089,13 +4092,13 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL4)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -4128,7 +4131,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "pionfget_mod.F90.in"
+# 295 "pionfget_mod.F90.in"
   integer function get_var_4d_real (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_4d
     type (File_desc_t), intent(in) :: File
@@ -4182,13 +4185,13 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL4)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -4221,7 +4224,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "pionfget_mod.F90.in"
+# 295 "pionfget_mod.F90.in"
   integer function get_var_5d_real (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_5d
     type (File_desc_t), intent(in) :: File
@@ -4275,13 +4278,13 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL4)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -4314,7 +4317,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "pionfget_mod.F90.in"
+# 295 "pionfget_mod.F90.in"
   integer function get_var_0d_double (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_0d
     type (File_desc_t), intent(in) :: File
@@ -4368,13 +4371,13 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL8)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -4407,7 +4410,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "pionfget_mod.F90.in"
+# 295 "pionfget_mod.F90.in"
   integer function get_var_1d_double (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_1d
     type (File_desc_t), intent(in) :: File
@@ -4461,13 +4464,13 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL8)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -4500,7 +4503,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "pionfget_mod.F90.in"
+# 295 "pionfget_mod.F90.in"
   integer function get_var_2d_double (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_2d
     type (File_desc_t), intent(in) :: File
@@ -4554,13 +4557,13 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL8)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -4593,7 +4596,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "pionfget_mod.F90.in"
+# 295 "pionfget_mod.F90.in"
   integer function get_var_3d_double (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_3d
     type (File_desc_t), intent(in) :: File
@@ -4647,13 +4650,13 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL8)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -4686,7 +4689,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "pionfget_mod.F90.in"
+# 295 "pionfget_mod.F90.in"
   integer function get_var_4d_double (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_4d
     type (File_desc_t), intent(in) :: File
@@ -4740,13 +4743,13 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL8)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -4779,7 +4782,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "pionfget_mod.F90.in"
+# 295 "pionfget_mod.F90.in"
   integer function get_var_5d_double (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_5d
     type (File_desc_t), intent(in) :: File
@@ -4833,13 +4836,13 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL8)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -4872,7 +4875,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "pionfget_mod.F90.in"
+# 295 "pionfget_mod.F90.in"
   integer function get_var_0d_int (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_0d
     type (File_desc_t), intent(in) :: File
@@ -4926,13 +4929,13 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_INTEGER)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -4965,7 +4968,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "pionfget_mod.F90.in"
+# 295 "pionfget_mod.F90.in"
   integer function get_var_1d_int (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_1d
     type (File_desc_t), intent(in) :: File
@@ -5019,13 +5022,13 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_INTEGER)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -5058,7 +5061,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "pionfget_mod.F90.in"
+# 295 "pionfget_mod.F90.in"
   integer function get_var_2d_int (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_2d
     type (File_desc_t), intent(in) :: File
@@ -5112,13 +5115,13 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_INTEGER)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -5151,7 +5154,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "pionfget_mod.F90.in"
+# 295 "pionfget_mod.F90.in"
   integer function get_var_3d_int (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_3d
     type (File_desc_t), intent(in) :: File
@@ -5205,13 +5208,13 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_INTEGER)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -5244,7 +5247,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "pionfget_mod.F90.in"
+# 295 "pionfget_mod.F90.in"
   integer function get_var_4d_int (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_4d
     type (File_desc_t), intent(in) :: File
@@ -5298,13 +5301,13 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_INTEGER)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -5337,7 +5340,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "pionfget_mod.F90.in"
+# 295 "pionfget_mod.F90.in"
   integer function get_var_5d_int (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_5d
     type (File_desc_t), intent(in) :: File
@@ -5391,13 +5394,13 @@ CONTAINS
     if(File%iosystem%IOProc) then
        select case (iotype) 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_INTEGER)
 #endif
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -5430,7 +5433,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 384 "pionfget_mod.F90.in"
+# 387 "pionfget_mod.F90.in"
   integer function get_var_vdesc_0d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5452,7 +5455,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 384 "pionfget_mod.F90.in"
+# 387 "pionfget_mod.F90.in"
   integer function get_var_vdesc_1d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5474,7 +5477,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 384 "pionfget_mod.F90.in"
+# 387 "pionfget_mod.F90.in"
   integer function get_var_vdesc_2d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5496,7 +5499,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 384 "pionfget_mod.F90.in"
+# 387 "pionfget_mod.F90.in"
   integer function get_var_vdesc_3d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5518,7 +5521,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 384 "pionfget_mod.F90.in"
+# 387 "pionfget_mod.F90.in"
   integer function get_var_vdesc_4d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5540,7 +5543,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 384 "pionfget_mod.F90.in"
+# 387 "pionfget_mod.F90.in"
   integer function get_var_vdesc_5d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5562,7 +5565,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 384 "pionfget_mod.F90.in"
+# 387 "pionfget_mod.F90.in"
   integer function get_var_vdesc_0d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5584,7 +5587,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 384 "pionfget_mod.F90.in"
+# 387 "pionfget_mod.F90.in"
   integer function get_var_vdesc_1d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5606,7 +5609,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 384 "pionfget_mod.F90.in"
+# 387 "pionfget_mod.F90.in"
   integer function get_var_vdesc_2d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5628,7 +5631,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 384 "pionfget_mod.F90.in"
+# 387 "pionfget_mod.F90.in"
   integer function get_var_vdesc_3d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5650,7 +5653,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 384 "pionfget_mod.F90.in"
+# 387 "pionfget_mod.F90.in"
   integer function get_var_vdesc_4d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5672,7 +5675,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 384 "pionfget_mod.F90.in"
+# 387 "pionfget_mod.F90.in"
   integer function get_var_vdesc_5d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5694,7 +5697,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 384 "pionfget_mod.F90.in"
+# 387 "pionfget_mod.F90.in"
   integer function get_var_vdesc_0d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5716,7 +5719,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 384 "pionfget_mod.F90.in"
+# 387 "pionfget_mod.F90.in"
   integer function get_var_vdesc_1d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5738,7 +5741,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 384 "pionfget_mod.F90.in"
+# 387 "pionfget_mod.F90.in"
   integer function get_var_vdesc_2d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5760,7 +5763,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 384 "pionfget_mod.F90.in"
+# 387 "pionfget_mod.F90.in"
   integer function get_var_vdesc_3d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5782,7 +5785,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 384 "pionfget_mod.F90.in"
+# 387 "pionfget_mod.F90.in"
   integer function get_var_vdesc_4d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5804,7 +5807,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 384 "pionfget_mod.F90.in"
+# 387 "pionfget_mod.F90.in"
   integer function get_var_vdesc_5d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5826,7 +5829,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 384 "pionfget_mod.F90.in"
+# 387 "pionfget_mod.F90.in"
   integer function get_var_vdesc_0d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5848,7 +5851,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 384 "pionfget_mod.F90.in"
+# 387 "pionfget_mod.F90.in"
   integer function get_var_vdesc_1d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5870,7 +5873,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 384 "pionfget_mod.F90.in"
+# 387 "pionfget_mod.F90.in"
   integer function get_var_vdesc_2d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5892,7 +5895,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 384 "pionfget_mod.F90.in"
+# 387 "pionfget_mod.F90.in"
   integer function get_var_vdesc_3d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5914,7 +5917,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 384 "pionfget_mod.F90.in"
+# 387 "pionfget_mod.F90.in"
   integer function get_var_vdesc_4d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5936,7 +5939,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 384 "pionfget_mod.F90.in"
+# 387 "pionfget_mod.F90.in"
   integer function get_var_vdesc_5d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc

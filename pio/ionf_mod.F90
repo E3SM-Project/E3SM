@@ -18,7 +18,6 @@ module ionf_mod
   implicit none
   private
 
-  include 'mpif.h'      ! _EXTERNAL
 #ifdef _PNETCDF
 #include <pnetcdf.inc>   /* _EXTERNAL */
 #endif
@@ -37,6 +36,7 @@ contains
   !
 
   integer function create_nf(File,fname, amode) result(ierr)
+    include 'mpif.h'      ! _EXTERNAL
 
     type (File_desc_t), intent(inout) :: File
     character(len=*), intent(in)      :: fname
@@ -136,6 +136,7 @@ contains
   ! 
 
   integer function open_nf(File,fname, mode) result(ierr)
+    include 'mpif.h'      ! _EXTERNAL
 
     type (File_desc_t), intent(inout) :: File
     character(len=*), intent(in)      :: fname
@@ -230,7 +231,6 @@ contains
 
 
   integer function close_nf(File) result(ierr)
-
     type (File_desc_t), intent(inout) :: File
 
     ierr=PIO_noerr
@@ -294,6 +294,9 @@ contains
   end function sync_nf
 
   subroutine check_file_type(File, filename) 
+    include 'mpif.h'      ! _EXTERNAL
+
+
     type (File_desc_t), intent(inout) :: File
     character(len=*), intent(in) :: filename
     character(len=4) :: magic

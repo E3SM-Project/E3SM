@@ -108,7 +108,7 @@ contains
 
 
   subroutine pio_msg_handler(numcomps, iosystem)
-    use pio_types
+!    use pio_types, only : 
 #ifdef TIMING
     use perf_mod        ! _EXTERNAL
 #endif
@@ -118,7 +118,7 @@ contains
     type(iosystem_desc_t), target :: iosystem(numcomps)
     type(iosystem_desc_t), pointer :: ios
     integer :: msg = 0, ierr
-    include 'mpif.h' !_EXTERNAL
+    include 'mpif.h' ! _EXTERNAL
  
     integer :: status(MPI_STATUS_SIZE)
     integer :: req(numcomps)

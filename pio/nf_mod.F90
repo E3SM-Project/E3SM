@@ -7,7 +7,8 @@ module nf_mod
   use alloc_mod
 
   use pio_kinds, only: i4,r4,r8,pio_offset
-  use pio_types
+  use pio_types, only: file_desc_t, iosystem_desc_t, var_desc_t, pio_noerr, pio_iotype_netcdf, &
+	pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c, pio_max_name
 
   use pio_support, only : Debug, DebugIO, DebugAsync, piodie   
   use pio_utils, only : bad_iotype, check_netcdf
@@ -19,8 +20,7 @@ module nf_mod
   use pio_msg_mod
   implicit none
   private
-
-  include 'mpif.h'      ! _EXTERNAL
+  include 'mpif.h' ! _EXTERNAL
 #ifdef _PNETCDF
 #include <pnetcdf.inc>   /* _EXTERNAL */
 #endif
@@ -213,7 +213,7 @@ contains
        select case(iotype)
           
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr=nfmpi_inq( File%fh,vals(1),vals(2), &
                vals(3),vals(4))
 
@@ -223,7 +223,7 @@ contains
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr=nf90_inquire( File%fh,vals(1),vals(2), &
                vals(3),vals(4))
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           if (ios%io_rank==0) then
              ierr=nf90_inquire( File%fh,vals(1),vals(2), &
                   vals(3),vals(4))
@@ -324,7 +324,7 @@ contains
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr=nf90_inquire_attribute( File%fh,varid,name(1:nlen), &
                xtype=xtype,len=len)          
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
 
           if (ios%io_rank==0) then
              ierr=nf90_inquire_attribute( File%fh,varid,name(1:nlen), &
@@ -435,7 +435,7 @@ contains
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr=nf90_inquire_attribute( File%fh,varid,name(1:nlen), &
                   len=len)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           if (ios%io_rank==0) then
              ierr=nf90_inquire_attribute( File%fh,varid,name(1:nlen), &
                   len=len)
@@ -535,7 +535,7 @@ contains
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr=nf90_inq_attname(File%fh,varid,attnum,tmpname)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           if (ios%io_rank==0) then
              ierr=nf90_inq_attname(File%fh,varid,attnum,tmpname)
              if(Debug) print *,__FILE__,__LINE__,name
@@ -632,7 +632,7 @@ contains
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
              ierr=nf90_inq_varid(File%fh,name(1:nlen),varid)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           if (ios%io_rank==0) then
              ierr=nf90_inq_varid(File%fh,name(1:nlen),varid)
           endif
@@ -745,7 +745,7 @@ contains
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr=nf90_inquire_variable(File%fh,varid,name=name(1:nlen))
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           if (ios%io_rank==0) then
              ierr=nf90_inquire_variable(File%fh,varid,name=name(1:nlen))
           endif
@@ -817,7 +817,7 @@ contains
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr=nf90_inquire_variable(File%fh,varid,ndims=ndims)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           if (ios%io_rank==0) then
              ierr=nf90_inquire_variable(File%fh,varid,ndims=ndims)
           endif
@@ -907,7 +907,7 @@ contains
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr=nf90_inquire_variable(File%fh,varid,xtype=type)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           if (ios%io_rank==0) then
              ierr=nf90_inquire_variable(File%fh,varid,xtype=type)
           endif
@@ -1001,7 +1001,7 @@ contains
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr=nf90_inquire_variable(File%fh,varid,dimids=dimids)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           if (ios%io_rank==0) then
              ierr=nf90_inquire_variable(File%fh,varid,dimids=dimids)
           endif
@@ -1092,7 +1092,7 @@ contains
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr=nf90_inquire_variable(File%fh,varid,nAtts=natts)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           if (ios%io_rank==0) then
              ierr=nf90_inquire_variable(File%fh,varid,nAtts=natts)
           endif
@@ -1184,7 +1184,7 @@ contains
 #ifdef _NETCDF
        case (pio_iotype_netcdf4c, pio_iotype_netcdf4p)
              ierr=nf90_inq_dimid(File%fh,name,dimid)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           if (ios%io_rank==0) then
              ierr=nf90_inq_dimid(File%fh,name,dimid)
           endif
@@ -1261,7 +1261,7 @@ contains
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr=nf90_inquire_dimension(File%fh,dimid,name=dimname(1:ldn))
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
 
           if (ios%io_rank==0) then
              ierr=nf90_inquire_dimension(File%fh,dimid,name=dimname(1:ldn))
@@ -1335,7 +1335,7 @@ contains
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
           ierr=nf90_inquire_dimension(File%fh,dimid,len=dimlen)
-       case(iotype_netcdf)
+       case(pio_iotype_netcdf)
           if (ios%io_rank==0) then
              ierr=nf90_inquire_dimension(File%fh,dimid,len=dimlen)
           endif
@@ -1396,7 +1396,7 @@ contains
 #endif
 
 #ifdef _NETCDF
-       case(iotype_netcdf, pio_iotype_netcdf4c)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
           if (ios%io_rank==0) then
              ierr=nf90_enddef(File%fh)
           endif
@@ -1455,7 +1455,7 @@ contains
 #ifdef  _NETCDF
        case(pio_iotype_netcdf4p)
              ierr=nf90_redef(File%fh)
-       case(iotype_netcdf, pio_iotype_netcdf4c)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
           if (ios%io_rank==0) then
              ierr=nf90_redef(File%fh)
           endif
@@ -1524,7 +1524,7 @@ contains
 #ifdef  _NETCDF
        case(PIO_iotype_netcdf4p)
           ierr=nf90_def_dim(ncid=File%fh,name=name(1:nlen),len=len,dimid=dimid)
-       case(iotype_netcdf,PIO_iotype_netcdf4c)
+       case(pio_iotype_netcdf,PIO_iotype_netcdf4c)
           if (ios%io_rank==0) then
              ierr=nf90_def_dim(ncid=File%fh,name=name(1:nlen),len=len,dimid=dimid)
           endif
@@ -1641,7 +1641,7 @@ contains
                   dimids=dimids(1:vardesc%ndims),varid=vardesc%varid)
           endif
 #endif
-       case(iotype_netcdf,pio_iotype_netcdf4c)
+       case(pio_iotype_netcdf,pio_iotype_netcdf4c)
           ! assuming type valid for both pnetcdf and netcdf
           if (ios%io_rank==0) then
              if(vardesc%ndims==0) then
@@ -1712,7 +1712,7 @@ contains
                outfile%fh, outvarid)
 #endif
 #ifdef _NETCDF
-       case(iotype_netcdf,PIO_iotype_netcdf4c)
+       case(pio_iotype_netcdf,PIO_iotype_netcdf4c)
           if (ios%io_rank==0) then
              ierr = nf90_copy_att(infile%fh,invarid,name,&
                   outfile%fh,outvarid)     

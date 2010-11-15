@@ -11,7 +11,10 @@ module piolib_mod
   !--------------
   use pio_kinds
   !--------------
-  use pio_types
+  use pio_types, only : file_desc_t, iosystem_desc_t, var_desc_t, io_desc_t, &
+	pio_iotype_pbinary, pio_iotype_binary, pio_iotype_direct_pbinary, &
+	pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c, &
+        pio_noerr
   !--------------
   use alloc_mod
   !--------------
@@ -358,6 +361,7 @@ contains
 !! @copydoc PIO_error_method
 !<
   subroutine seterrorhandlingi(ios, method)
+    use pio_types, only : pio_internal_error, pio_return_error
     use pio_msg_mod, only : pio_msg_seterrorhandling
     type(iosystem_desc_t), intent(inout) :: ios
     integer, intent(in) :: method
@@ -1229,6 +1233,7 @@ contains
   !
 
   subroutine dupiodesc2(src, dest)
+    use pio_types, only : io_desc2_t
     type(io_desc2_t), intent(in) :: src
     type(io_desc2_t), intent(out) :: dest
 
@@ -1252,6 +1257,7 @@ contains
 
 
   subroutine genindexedblock(lenblocks,basetype,elemtype,filetype,displace)
+    use pio_types, only : pio_double, pio_int, pio_real, pio_char
 #ifdef NO_MPI2
     use pio_support, only : mpi_type_create_indexed_block
 #endif
@@ -1334,6 +1340,7 @@ contains
 !! @param base @em optional argument can be used to offset the first io task - default base is task 1.
 !<
   subroutine init_intracom(comp_rank, comp_comm, num_iotasks, num_aggregator, stride,  rearr, iosystem,base)
+    use pio_types, only : pio_internal_error, pio_rearr_none
     integer(i4), intent(in) :: comp_rank
     integer(i4), intent(in) :: comp_comm
     integer(i4), intent(in) :: num_iotasks 
@@ -2007,7 +2014,7 @@ contains
   !=============================================
 
   subroutine copy_decompmap(src,dest)
-
+    use pio_types, only : decompmap_t
     type (decompmap_t), intent(in) :: src
     type (decompmap_t), intent(inout) :: dest
 
@@ -2132,7 +2139,7 @@ contains
     !--------------------------------
 
 #if defined(USEMPIIO) 
-    if ( (file%iotype==iotype_pbinary .or. file%iotype==iotype_direct_pbinary) &
+    if ( (file%iotype==pio_iotype_pbinary .or. file%iotype==pio_iotype_direct_pbinary) &
          .and. (.not. iosystem%userearranger) ) then
        write(rd_buffer,('(i9)')) 16*1024*1024
        call mpi_info_set(iosystem%info,'cb_buffer_size',trim(adjustl(rd_buffer)),ierr)
@@ -2157,15 +2164,15 @@ contains
 
     end if
     select case(iotype)
-    case(iotype_pbinary, iotype_direct_pbinary)
+    case(pio_iotype_pbinary, pio_iotype_direct_pbinary)
        if(present(amode_in)) then
           print *, 'warning, the mode argument is currently ignored for binary file operations'
        end if
        ierr = create_mpiio(file,myfname)
-    case( iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+    case( pio_iotype_pnetcdf, pio_iotype_netcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c)
        ierr = create_nf(file,myfname, amode)	
        if(debug .and. iosystem%io_rank==0)print *,_FILE_,__LINE__,' open: ', myfname, file%fh
-    case(iotype_binary)
+    case(pio_iotype_binary)
        print *,'createfile: io type not supported'
     end select
     if(ierr==0) file%file_is_open=.true.
@@ -2230,9 +2237,9 @@ contains
     ! set some iotype specific stuff
     !--------------------------------
 
-    if(iosystem%num_iotasks.eq.1.and.iotype.eq.iotype_pnetcdf) then	
+    if(iosystem%num_iotasks.eq.1.and.iotype.eq.pio_iotype_pnetcdf) then	
 #if defined(_NETCDF)
-       file%iotype=iotype_netcdf
+       file%iotype=pio_iotype_netcdf
 #else
        file%iotype = iotype 
 #endif       
@@ -2244,7 +2251,7 @@ contains
     myfname = fname
 
 #if defined(USEMPIIO)
-    if ( (file%iotype==iotype_pbinary .or. file%iotype==iotype_direct_pbinary) &
+    if ( (file%iotype==pio_iotype_pbinary .or. file%iotype==pio_iotype_direct_pbinary) &
          .and. (.not. iosystem%userearranger) ) then
        write(rd_buffer,('(i9)')) 16*1024*1024
        call mpi_info_set(iosystem%info,'cb_buffer_size',trim(adjustl(rd_buffer)),ierr)
@@ -2279,15 +2286,15 @@ contains
     end if
 
     select case(iotype)
-    case(iotype_pbinary, iotype_direct_pbinary)
+    case(pio_iotype_pbinary, pio_iotype_direct_pbinary)
        if(amode /=0) then
           print *, 'warning, the mode argument is currently ignored for binary file operations'
        end if
        ierr = open_mpiio(file,myfname)
-    case( iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
+    case( pio_iotype_pnetcdf, pio_iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
        ierr = open_nf(file,myfname,amode)
        if(debug .and. iosystem%io_rank==0)print *,_FILE_,__LINE__,' open: ', myfname, file%fh
-    case(iotype_binary)   ! appears to be a no-op
+    case(pio_iotype_binary)   ! appears to be a no-op
        
     end select
     if(Debug .and. file%iosystem%io_rank==0) print *,_FILE_,__LINE__,'open: ',file%fh, myfname
@@ -2323,10 +2330,10 @@ contains
     end if
 
     select case(file%iotype)
-    case( iotype_pnetcdf, iotype_netcdf)
+    case( pio_iotype_pnetcdf, pio_iotype_netcdf)
        ierr = sync_nf(file)
-    case(iotype_pbinary, iotype_direct_pbinary)
-    case(iotype_binary) 
+    case(pio_iotype_pbinary, pio_iotype_direct_pbinary)
+    case(pio_iotype_binary) 
     end select
   end subroutine syncfile
 !> 
@@ -2428,11 +2435,11 @@ contains
     if(debug .and. file%iosystem%io_rank==0) print *,_FILE_,__LINE__,'close: ',file%fh
     iotype = file%iotype 
     select case(iotype)
-    case(iotype_pbinary, iotype_direct_pbinary)
+    case(pio_iotype_pbinary, pio_iotype_direct_pbinary)
        ierr = close_mpiio(file)
-    case( iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+    case( pio_iotype_pnetcdf, pio_iotype_netcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c)
        ierr = close_nf(file)
-    case(iotype_binary)
+    case(pio_iotype_binary)
        print *,'closefile: io type not supported'
     end select
     if(ierr==0) file%file_is_open=.false.

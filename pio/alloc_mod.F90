@@ -10,8 +10,6 @@ module alloc_mod
   implicit none
   private
 
-  include 'mpif.h'        ! _EXTERNAL
-
 !>
 !! @private
 !! PIO internal memory allocation check routines.  
@@ -23,7 +21,7 @@ module alloc_mod
 !<
   public:: dealloc_check 
 
-# 22 "alloc_mod.F90.in"
+# 20 "alloc_mod.F90.in"
   interface alloc_check
      ! TYPE long,int,real,double ! DIMS 1,2
      module procedure alloc_check_1d_long 
@@ -52,7 +50,7 @@ module alloc_mod
  end interface
 
 
-# 30 "alloc_mod.F90.in"
+# 28 "alloc_mod.F90.in"
   interface dealloc_check
      ! TYPE long,int,real,double ! DIMS 1,2
      module procedure dealloc_check_1d_long
@@ -101,7 +99,7 @@ module alloc_mod
 
   character(len=*), parameter :: modName='pio::alloc_mod'
 
-# 58 "alloc_mod.F90.in"
+# 56 "alloc_mod.F90.in"
 contains
 
   !
@@ -109,7 +107,7 @@ contains
   !
 
   ! TYPE long,int,real,double 
-# 65 "alloc_mod.F90.in"
+# 63 "alloc_mod.F90.in"
   subroutine alloc_check_1d_long (data,varlen,msg)
 
     integer(kind=PIO_OFFSET), pointer :: data(:)
@@ -141,7 +139,7 @@ contains
   !
 
   ! TYPE long,int,real,double 
-# 65 "alloc_mod.F90.in"
+# 63 "alloc_mod.F90.in"
   subroutine alloc_check_1d_int (data,varlen,msg)
 
     integer(i4), pointer :: data(:)
@@ -173,7 +171,7 @@ contains
   !
 
   ! TYPE long,int,real,double 
-# 65 "alloc_mod.F90.in"
+# 63 "alloc_mod.F90.in"
   subroutine alloc_check_1d_real (data,varlen,msg)
 
     real(r4), pointer :: data(:)
@@ -205,7 +203,7 @@ contains
   !
 
   ! TYPE long,int,real,double 
-# 65 "alloc_mod.F90.in"
+# 63 "alloc_mod.F90.in"
   subroutine alloc_check_1d_double (data,varlen,msg)
 
     real(r8), pointer :: data(:)
@@ -233,7 +231,7 @@ contains
   end subroutine alloc_check_1d_double
 
   ! TYPE long,int,real,double 
-# 92 "alloc_mod.F90.in"
+# 90 "alloc_mod.F90.in"
   subroutine alloc_check_2d_long (data,size1, size2,msg)
 
     integer(kind=PIO_OFFSET), pointer :: data(:,:)
@@ -257,7 +255,7 @@ contains
   end subroutine alloc_check_2d_long
 
   ! TYPE long,int,real,double 
-# 92 "alloc_mod.F90.in"
+# 90 "alloc_mod.F90.in"
   subroutine alloc_check_2d_int (data,size1, size2,msg)
 
     integer(i4), pointer :: data(:,:)
@@ -281,7 +279,7 @@ contains
   end subroutine alloc_check_2d_int
 
   ! TYPE long,int,real,double 
-# 92 "alloc_mod.F90.in"
+# 90 "alloc_mod.F90.in"
   subroutine alloc_check_2d_real (data,size1, size2,msg)
 
     real(r4), pointer :: data(:,:)
@@ -305,7 +303,7 @@ contains
   end subroutine alloc_check_2d_real
 
   ! TYPE long,int,real,double 
-# 92 "alloc_mod.F90.in"
+# 90 "alloc_mod.F90.in"
   subroutine alloc_check_2d_double (data,size1, size2,msg)
 
     real(r8), pointer :: data(:,:)
@@ -332,7 +330,7 @@ contains
   !
   !
   ! TYPE long,int,real,double ! DIMS 1,2
-# 118 "alloc_mod.F90.in"
+# 116 "alloc_mod.F90.in"
   subroutine dealloc_check_1d_long (data,msg)
 
     integer(kind=PIO_OFFSET), pointer :: data(:)
@@ -360,7 +358,7 @@ contains
   !
   !
   ! TYPE long,int,real,double ! DIMS 1,2
-# 118 "alloc_mod.F90.in"
+# 116 "alloc_mod.F90.in"
   subroutine dealloc_check_2d_long (data,msg)
 
     integer(kind=PIO_OFFSET), pointer :: data(:,:)
@@ -388,7 +386,7 @@ contains
   !
   !
   ! TYPE long,int,real,double ! DIMS 1,2
-# 118 "alloc_mod.F90.in"
+# 116 "alloc_mod.F90.in"
   subroutine dealloc_check_1d_int (data,msg)
 
     integer(i4), pointer :: data(:)
@@ -416,7 +414,7 @@ contains
   !
   !
   ! TYPE long,int,real,double ! DIMS 1,2
-# 118 "alloc_mod.F90.in"
+# 116 "alloc_mod.F90.in"
   subroutine dealloc_check_2d_int (data,msg)
 
     integer(i4), pointer :: data(:,:)
@@ -444,7 +442,7 @@ contains
   !
   !
   ! TYPE long,int,real,double ! DIMS 1,2
-# 118 "alloc_mod.F90.in"
+# 116 "alloc_mod.F90.in"
   subroutine dealloc_check_1d_real (data,msg)
 
     real(r4), pointer :: data(:)
@@ -472,7 +470,7 @@ contains
   !
   !
   ! TYPE long,int,real,double ! DIMS 1,2
-# 118 "alloc_mod.F90.in"
+# 116 "alloc_mod.F90.in"
   subroutine dealloc_check_2d_real (data,msg)
 
     real(r4), pointer :: data(:,:)
@@ -500,7 +498,7 @@ contains
   !
   !
   ! TYPE long,int,real,double ! DIMS 1,2
-# 118 "alloc_mod.F90.in"
+# 116 "alloc_mod.F90.in"
   subroutine dealloc_check_1d_double (data,msg)
 
     real(r8), pointer :: data(:)
@@ -528,7 +526,7 @@ contains
   !
   !
   ! TYPE long,int,real,double ! DIMS 1,2
-# 118 "alloc_mod.F90.in"
+# 116 "alloc_mod.F90.in"
   subroutine dealloc_check_2d_double (data,msg)
 
     real(r8), pointer :: data(:,:)
@@ -553,7 +551,7 @@ contains
   end subroutine dealloc_check_2d_double
 
 ! TYPE long,int,real,double
-# 142 "alloc_mod.F90.in"
+# 140 "alloc_mod.F90.in"
   subroutine alloc_check_0d_long(data,msg)
 
   integer(kind=PIO_OFFSET), pointer :: data
@@ -577,7 +575,7 @@ contains
 end subroutine alloc_check_0d_long
 
 ! TYPE long,int,real,double
-# 142 "alloc_mod.F90.in"
+# 140 "alloc_mod.F90.in"
   subroutine alloc_check_0d_int(data,msg)
 
   integer(i4), pointer :: data
@@ -601,7 +599,7 @@ end subroutine alloc_check_0d_long
 end subroutine alloc_check_0d_int
 
 ! TYPE long,int,real,double
-# 142 "alloc_mod.F90.in"
+# 140 "alloc_mod.F90.in"
   subroutine alloc_check_0d_real(data,msg)
 
   real(r4), pointer :: data
@@ -625,7 +623,7 @@ end subroutine alloc_check_0d_int
 end subroutine alloc_check_0d_real
 
 ! TYPE long,int,real,double
-# 142 "alloc_mod.F90.in"
+# 140 "alloc_mod.F90.in"
   subroutine alloc_check_0d_double(data,msg)
 
   real(r8), pointer :: data
@@ -652,7 +650,7 @@ end subroutine alloc_check_0d_double
 
 
 ! TYPE long,int,real,double
-# 168 "alloc_mod.F90.in"
+# 166 "alloc_mod.F90.in"
 subroutine dealloc_check_0d_long (data,msg)
 
   integer(kind=PIO_OFFSET), pointer :: data
@@ -680,7 +678,7 @@ end subroutine dealloc_check_0d_long
 
 
 ! TYPE long,int,real,double
-# 168 "alloc_mod.F90.in"
+# 166 "alloc_mod.F90.in"
 subroutine dealloc_check_0d_int (data,msg)
 
   integer(i4), pointer :: data
@@ -708,7 +706,7 @@ end subroutine dealloc_check_0d_int
 
 
 ! TYPE long,int,real,double
-# 168 "alloc_mod.F90.in"
+# 166 "alloc_mod.F90.in"
 subroutine dealloc_check_0d_real (data,msg)
 
   real(r4), pointer :: data
@@ -736,7 +734,7 @@ end subroutine dealloc_check_0d_real
 
 
 ! TYPE long,int,real,double
-# 168 "alloc_mod.F90.in"
+# 166 "alloc_mod.F90.in"
 subroutine dealloc_check_0d_double (data,msg)
 
   real(r8), pointer :: data
@@ -765,8 +763,9 @@ end subroutine dealloc_check_0d_double
 !! @fn alloc_print_usage
 !! PIO internal memory allocation check routines.  
 !<
-# 196 "alloc_mod.F90.in"
+# 194 "alloc_mod.F90.in"
   subroutine alloc_print_usage(rank,msg)
+  include 'mpif.h'        ! _EXTERNAL
 
     integer, intent(in) :: rank
     character(len=*), intent(in), optional :: msg
@@ -810,7 +809,7 @@ end subroutine dealloc_check_0d_double
 
 
 
-# 240 "alloc_mod.F90.in"
+# 239 "alloc_mod.F90.in"
   subroutine alloc_trace_on(rank,msg)
 
     integer, intent(in) :: rank
@@ -841,7 +840,7 @@ end subroutine dealloc_check_0d_double
 
 
 
-# 270 "alloc_mod.F90.in"
+# 269 "alloc_mod.F90.in"
   subroutine alloc_trace_off(rank,msg)
 
     integer, intent(in) :: rank

@@ -1,6 +1,4 @@
 #include "dtypes.h"
-
-
 subroutine pio_callback_handler(iosystem, msg)
   use pio
   use pio_msg_mod
@@ -197,7 +195,7 @@ subroutine writedarray_handler(iosystem)
 
   file=> lookupfile(fh)
   iodesc => lookupiodesc(iod_id)
-
+#ifndef _MPISERIAL
   select case(type)
   case(mpi_integer)
      if(fillv==1) then
@@ -221,7 +219,7 @@ subroutine writedarray_handler(iosystem)
         call pio_write_darray(file, v, iodesc, adouble, ierr)
      end if
   end select
-
+#endif
 
 end subroutine writedarray_handler
 
@@ -255,7 +253,7 @@ subroutine readdarray_handler(iosystem)
 
   file=> lookupfile(fh)
   iodesc => lookupiodesc(iod_id)
-
+#ifndef _MPISERIAL
   select case(type)
   case(mpi_integer)
      call pio_read_darray(file, v, iodesc, aint, ierr)
@@ -264,7 +262,7 @@ subroutine readdarray_handler(iosystem)
   case(mpi_real8)
      call pio_read_darray(file, v, iodesc, adouble, ierr)
   end select
-
+#endif
 
 end subroutine readdarray_handler
 

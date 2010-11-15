@@ -1,7 +1,9 @@
 #define _FILE_ 'piodarray'
 
 module piodarray
-  use pio_types
+  use pio_types, only : file_desc_t, io_desc_t, var_desc_t, pio_noerr, iosystem_desc_t, &
+	pio_iotype_pbinary, pio_iotype_binary, pio_iotype_direct_pbinary, &
+	pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c
   use pio_kinds
   use pio_support
   use pionfwrite_mod, only : write_nf
@@ -112,19 +114,19 @@ contains
     endif
 
        select case(File%iotype)
-       case(iotype_pbinary, iotype_direct_pbinary)
+       case(pio_iotype_pbinary, pio_iotype_direct_pbinary)
           if (present(fillval)) then
              call write_darray_bin_{TYPE}(File,varDesc,iodesc, array, iostat, fillval)
           else
              call write_darray_bin_{TYPE}(File,varDesc,iodesc, array, iostat)
           endif
-       case(iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
+       case(pio_iotype_pnetcdf, pio_iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
           if (present(fillval)) then
              call write_darray_nf_{TYPE}(File,varDesc,iodesc, array, iostat, fillval)
           else
              call write_darray_nf_{TYPE}(File,varDesc,iodesc, array, iostat)
           endif
-       case(iotype_binary)
+       case(pio_iotype_binary)
           print *, subName,': IO type not supported'
        end select
     
@@ -234,11 +236,11 @@ contains
     endif
 
     select case(File%iotype)
-    case(iotype_pbinary, iotype_direct_pbinary)
+    case(pio_iotype_pbinary, pio_iotype_direct_pbinary)
        call read_darray_bin_{TYPE} (File,varDesc,iodesc,array, iostat)
-    case(iotype_pnetcdf, iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
+    case(pio_iotype_pnetcdf, pio_iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
        call read_darray_nf_{TYPE} (File,varDesc,iodesc,array, iostat)
-    case(iotype_binary)
+    case(pio_iotype_binary)
        print *, subName,': IO type not supported'
     end select
 
@@ -794,7 +796,7 @@ contains
        ! allocate temporary IO buffer 
        !-----------------------------
        if(userearranger) then
-          if(File%iotype == iotype_netcdf .and. file%iosystem%io_rank==0) then	
+          if(File%iotype == pio_iotype_netcdf .and. file%iosystem%io_rank==0) then	
              call alloc_check(IOBUF,iodesc%maxiobuflen,' TYPE :IOBUF')
           else
              call alloc_check(IOBUF,len,' TYPE :IOBUF')
@@ -1008,7 +1010,7 @@ contains
        !----------------------------------------------
        ! read the global 2-d slice to IO processors
        !----------------------------------------------
-       if(iotype.eq.iotype_binary) then
+       if(iotype.eq.pio_iotype_binary) then
           print *, subName,': TYPE : IO type not supported'
           iostat =-1
           return
