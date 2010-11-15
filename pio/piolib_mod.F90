@@ -1511,9 +1511,10 @@ contains
        iosystem%userearranger= .true.
     endif
 
-
 #if defined(USEMPIIO) || defined(_PNETCDF) || defined(_NETCDF4)
+#ifndef _MPISERIAL
     call mpi_info_create(iosystem%info,ierr)
+#endif
     ! turn on mpi-io aggregation 
     !DBG    print *,'PIO_init: before call to setnumagg'
     itmp = num_aggregator
@@ -1529,7 +1530,6 @@ contains
     call PIO_set_hint(iosystem, 'romio_ds_read','disable')
     call PIO_set_hint(iosystem,'romio_ds_write','disable')
 #endif
-
 #endif
 
     if(debug) print *,'iam: ',iosystem%io_rank,__LINE__,'init: userearranger: ',iosystem%userearranger
@@ -1830,7 +1830,9 @@ contains
     integer :: ierr
 #if defined(USEMPIIO) || defined(_PNETCDF) || defined(_NETCDF4)
     if(iosystem%info /= mpi_info_null) then
+#ifndef _MPISERIAL
        call mpi_info_set(iosystem%info,hint,hintval,ierr)
+#endif
        call checkmpireturn('PIO_set_hint',ierr)
     end if
 #endif
