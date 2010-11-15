@@ -1582,6 +1582,7 @@ contains
 !! @param iosystem a derived type which can be used in subsequent pio operations (defined in PIO_types).
 !<
   subroutine init_intercom(component_count, peer_comm, comp_comms, io_comm, iosystem)
+    use pio_types, only : pio_internal_error, pio_rearr_box
     integer, intent(in) :: component_count
     integer, intent(in) :: peer_comm
     integer, intent(in) :: comp_comms(component_count)   !  The compute communicator

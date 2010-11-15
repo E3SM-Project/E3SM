@@ -314,7 +314,7 @@ contains
        select case(iotype)
 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr=nfmpi_inq_att(File%fh,varid,name(1:nlen),xtype,clen)
 
           len = INT(clen,kind=i4)
@@ -426,7 +426,7 @@ contains
        select case(iotype)
 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr=nfmpi_inq_attlen(File%fh,varid,name(1:nlen),clen)
           len = INT(clen,kind=i4)
 #endif
@@ -527,7 +527,7 @@ contains
        select case(iotype)
 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr=nfmpi_inq_attname(File%fh,varid,attnum,tmpname)
 
 #endif
@@ -625,7 +625,7 @@ contains
        select case(iotype)
 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr=nfmpi_inq_varid(File%fh,name(1:nlen),varid)
 #endif
 
@@ -737,7 +737,7 @@ contains
        select case(iotype)
 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr=nfmpi_inq_varname(File%fh,varid,name(1:nlen))
 
 #endif
@@ -810,7 +810,7 @@ contains
        select case(iotype)
 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr=nfmpi_inq_varndims(File%fh,varid,ndims)
 #endif
 
@@ -900,7 +900,7 @@ contains
        select case(iotype)
 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr=nfmpi_inq_vartype(File%fh,varid,type)
 #endif
 
@@ -994,7 +994,7 @@ contains
        select case(iotype)
 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr=nfmpi_inq_vardimid(File%fh,varid,dimids)
 #endif
 
@@ -1085,7 +1085,7 @@ contains
        select case(iotype)
 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr=nfmpi_inq_varnatts(File%fh,varid,natts)
 #endif
 
@@ -1177,7 +1177,7 @@ contains
        select case(iotype)
 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr=nfmpi_inq_dimid(File%fh,name,dimid)
 #endif
 
@@ -1254,7 +1254,7 @@ contains
        select case(iotype)
 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr=nfmpi_inq_dimname(File%fh,dimid,dimname(1:ldn))
 #endif
 
@@ -1327,7 +1327,7 @@ contains
        select case(iotype)
 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr=nfmpi_inq_dimlen(File%fh,dimid,clen)
           dimlen = INT(clen,kind=i4)
 #endif
@@ -1391,7 +1391,7 @@ contains
     if(ios%IOproc) then
        select case(iotype)
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           ierr=nfmpi_enddef(File%fh)
 #endif
 
@@ -1447,7 +1447,7 @@ contains
        select case(iotype)
 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
 
           ierr=nfmpi_redef(File%fh)
 #endif
@@ -1515,7 +1515,7 @@ contains
        select case(iotype)
 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
 
           clen = len
           ierr=nfmpi_def_dim(File%fh,name(1:nlen),clen,dimid)
@@ -1622,7 +1622,7 @@ contains
     if(ios%IOproc) then
        select case(iotype)
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
           if(vardesc%ndims==0) then
              ierr=nfmpi_def_var(File%fh,name(1:nlen),type,vardesc%ndims,dimids,vardesc%varid)
           else
@@ -1706,7 +1706,7 @@ contains
        select case(iotype)
 
 #ifdef _PNETCDF
-       case(iotype_pnetcdf)
+       case(pio_iotype_pnetcdf)
 
           ierr = nfmpi_copy_att(infile%fh, invarid, name, &
                outfile%fh, outvarid)
