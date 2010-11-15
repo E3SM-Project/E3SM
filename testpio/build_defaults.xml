@@ -186,6 +186,25 @@
   testsuites = "snet mpiio"
 />  
 
+<mirage1
+  MCT_PATH="/glade/home/jedwards/src/MCT2_7_0_100228-mpiserial101109_tag02/"
+  MPIF90 = "ifort"
+  MPICC = "icc"
+  F90 = "ifort"
+  CC = "icc"
+  NETCDF_PATH="/fs/local/apps/netcdf-3.6.2/" 
+  FFLAGS = "-g "
+  submit=""
+  run=""
+  conopts = "--disable-mct --enable-mpiserial --disable-mpi2 "
+  workdir = "/ptmp/${USER}/testpio"
+  corespernode="1"
+  preamble = ""
+  testsuites = "snet "
+/>  
+
+
+
 
 <jaguar
   MPIF90 = "ftn -L$LIBSCI_BASE_DIR/pgi/lib"

@@ -147,7 +147,11 @@ foreach(keys %attributes){
 my $run = $attributes{run};
 my $exename = "./testpio";
 my $log     = "testpio.log.lid";
-my $foo= Utils->runString($host,$pecount,$run,$exename,$log);
+my $foo;
+
+Utils->runString($host,$pecount,$run,$exename,$log)
+    if($run ne "");
+
 
 print "EXEC command: ($foo)\n";
 
@@ -244,7 +248,12 @@ foreach \$suite (qw(@testsuites)){
 	    mkdir "none" unless(-d "none");
             my \$exename = "./testpio";
 	    my \$log = "\$casedir/testpio.out.$date";
-            my \$sysstr =  Utils->runString(\$host,\$pecount,\$run,\$exename,\$log);
+	    my \$sysstr;
+            if (\$run ne ""){
+		\$sysstr =  Utils->runString(\$host,\$pecount,\$run,\$exename,\$log);
+            }else{
+		\$sysstr = "\$exename > \$log";
+	    }
             # Utils->runString($host,$pecount,$run,$exename,$log);
             # print "value for foo is (\$foo)\\n";
             system(\$sysstr);
