@@ -56,7 +56,6 @@ module piolib_mod
        PIO_seterrorhandling, &
        PIO_get_local_array_size, &
        PIO_freedecomp,     &
-       PIO_setnumagg,     &
        PIO_dupiodesc,     &
        PIO_getnumiotasks, &
        PIO_set_hint,      &
@@ -194,14 +193,6 @@ module piolib_mod
      module procedure numtowrite
   end interface
 
-!> 
-!! @defgroup PIO_setnumagg PIO_setnumagg
-!!  uses the mpi-io hint functionality to set the number of 
-!!  aggregators to use.  is ignored if mpi-io is not enabled.
-!<
-  interface PIO_setnumagg
-     module procedure setnumagg
-  end interface
 
 !> 
 !! @defgroup PIO_getnumiotasks PIO_getnumiotasks
@@ -1381,7 +1372,9 @@ contains
     iosystem%intercomm = MPI_COMM_NULL
     iosystem%my_comm = comp_comm
     iosystem%async_interface = .false.
-
+#ifndef _MPISERIAL
+    iosystem%info = mpi_info_null
+#endif
     call mpi_comm_size(comp_comm,iosystem%num_tasks,ierr)
 
     iosystem%num_comptasks = iosystem%num_tasks
@@ -1520,15 +1513,23 @@ contains
     itmp = num_aggregator
     call mpi_bcast(itmp, 1, mpi_integer, 0, iosystem%comp_comm, ierr)
     if(itmp .gt. 0) then 
-       call setnumagg(iosystem,itmp)  ! let mpi-io do aggregation
+       write(cb_nodes,('(i5)')) itmp
+#ifdef BGx
+       call PIO_set_hint(iosystem,"bgl_nodes_pset",trim(adjustl(cb_nodes)))
+#else
+       call PIO_set_hint(iosystem,"cb_nodes",trim(adjustl(cb_nodes)))
+#endif       
+       if(iosystem%io_rank==0) print *,'Setting number of io aggregators to ',cb_nodes
     endif
 
 #ifdef PIO_GPFS_HINTS
     call PIO_set_hint(iosystem,"ibm_largeblock_io","true")
+    if(iosystem%io_rank==0) print *,'Setting ibm_largeblock_io'
 #endif
 #ifdef PIO_LUSTRE_HINTS
-    call PIO_set_hint(iosystem, 'romio_ds_read','disable')
-    call PIO_set_hint(iosystem,'romio_ds_write','disable')
+    call PIO_set_hint(iosystem, 'romio_ds_read','disable') 
+    call PIO_set_hint(iosystem,'romio_ds_write','disable') 
+    if(iosystem%io_rank==0) print *,'Setting romio_ds_read and romio_ds_write to disable'
 #endif
 #endif
 
@@ -1869,38 +1870,6 @@ contains
      ierr = 0
 
   end subroutine finalize
-
-!> 
-!! @public 
-!! @ingroup PIO_setnumagg
-!! @brief this sets the number of mpi-io aggregators by setting mpi-io hints.  
-!!  note that the mpi-io layer is free to ignore any hints passed to it.  
-!! @details
-!!  this is a collective call with the following parameters:
-!! @param iosystem : a defined pio system descriptor, see PIO_types
-!! @param numagg : the number of aggregators
-!<
-  subroutine setnumagg(iosystem,numagg)
-    type (iosystem_desc_t), intent(inout) :: iosystem
-    integer(i4), intent(in)  :: numagg
-
-    character(len=5) :: cb_nodes
-    integer(i4) :: ierr
-    logical(log_kind), parameter ::  check = .true.
-#if defined(USEMPIIO) || defined(_PNETCDF)
-    if(numagg>0) then
-       write(cb_nodes,('(i5)')) numagg
-       call mpi_info_create(iosystem%info,ierr)    
-       if(check) call checkmpireturn('setnumagg: after call to mpi_info_create:',ierr)
-#ifdef BGx
-       call mpi_info_set(iosystem%info,'bgl_nodes_pset',trim(adjustl(cb_nodes)),ierr)
-#else
-       call mpi_info_set(iosystem%info,'cb_nodes',trim(adjustl(cb_nodes)),ierr)
-#endif
-    end if
-#endif
-
-  end subroutine setnumagg
 
 
 !>
