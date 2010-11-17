@@ -1,6 +1,48 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name:pio1_2_5
+Originator(s): Jim
+Date: 11-17-2010
+One-line Summary: Fixed problems with single task (mpi-serial) runs.
+                  Improved lynx port
+	
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+  pio/piolib_mod.F90  force rearranger to none when total tasks = 1
+  testpio/Utils.pm    added module support for lynx
+  
+	
+List all component tags that were used to create pio tag:
+    MCT2_7_0_100228-mpiserial101109_tag02
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+
+Code reviewed by: Jim
+
+Summary of pre-tag testing:
+
+  Regression tests:   lynx      80 PASS 0  FAIL
+	              bluefire  107 PASS, 0 FAIL
+	              frost     74 PASS, 6 FAIL   (expected failures) 
+	              edinburgh 22 PASS, 2 FAIL   (expected failures) 
+
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_2_4
 Originator(s): Jim
 Date: 11-15-2010
