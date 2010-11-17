@@ -1368,7 +1368,6 @@ contains
     iosystem%union_comm = comp_comm
     iosystem%comp_comm = comp_comm
     iosystem%comp_rank = comp_rank
-    iosystem%rearr = rearr
     iosystem%intercomm = MPI_COMM_NULL
     iosystem%my_comm = comp_comm
     iosystem%async_interface = .false.
@@ -1379,6 +1378,11 @@ contains
 
     iosystem%num_comptasks = iosystem%num_tasks
     iosystem%union_rank = comp_rank
+    if(iosystem%num_tasks>1) then
+       iosystem%rearr = rearr
+    else
+       iosystem%rearr = pio_rearr_none
+    endif
 
     if(check) call checkmpireturn('init: after call to comm_size: ',ierr)
     ! ---------------------------------------
@@ -1437,7 +1441,7 @@ contains
     ! Entry: it is the number of IO-clients per IO-node
     ! Exit:  is is the total number of IO-tasks
     !---------------------------------------------------
-    if (rearr == PIO_rearr_none) then
+    if (iosystem%rearr == PIO_rearr_none) then
        rearrFlag = 0
     else
        rearrFlag = 1
@@ -1498,7 +1502,7 @@ contains
 
     if(debug) print *,'init: iam: ',comp_rank,' before allocate(status): n_iotasks: ',n_iotasks
 
-    if (rearr == PIO_rearr_none) then
+    if (iosystem%rearr == PIO_rearr_none) then
        iosystem%userearranger= .false.
     else
        iosystem%userearranger= .true.

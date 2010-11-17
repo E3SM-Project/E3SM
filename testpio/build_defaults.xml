@@ -302,7 +302,7 @@
   run = "aprun"
   corespernode = "12"
   submit = "qsub "
-  conopts = " --disable-mct --enable-filesystem-hints=lustre"
+  conopts = " --disable-mct --enable-filesystem-hints=lustre "
   preamble="
 #PBS -N testpio_suite
 #PBS -l walltime=01:50:00
