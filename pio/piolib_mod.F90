@@ -1461,10 +1461,12 @@ contains
     iosystem%num_iotasks =n_iotasks
     call alloc_check(iosystem%ioranks,n_iotasks,'init:n_ioranks')
     j=1
+    iosystem%iomaster=-1
     do i=1,iosystem%num_tasks
        if(iotmp2(i) == 1) then 
           iosystem%ioranks(j) = i-1
 	  j=j+1
+	  if(iosystem%iomaster<0) iosystem%iomaster=i-1
        endif
     enddo
     call dealloc_check(iotmp)
