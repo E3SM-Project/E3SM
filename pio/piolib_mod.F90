@@ -1597,7 +1597,9 @@ contains
 
     integer :: i, j, iam, io_leader, comp_leader
     integer(i4), pointer :: iotmp(:)
-
+    character(len=5) :: cb_nodes
+    integer :: itmp
+    
 #ifdef TIMING
     call t_startf("PIO_init")
 #endif
@@ -1745,9 +1747,9 @@ contains
 #ifndef _MPISERIAL
        ! turn on mpi-io aggregation 
        !DBG    print *,'PIO_init: before call to setnumagg'
-       itmp = num_aggregator
-       call mpi_bcast(itmp, 1, mpi_integer, 0, iosystem%union_comm, ierr)
-       call mpi_info_create(iosystem(i)%info,ierr)
+!       itmp = num_aggregator
+!       call mpi_bcast(itmp, 1, mpi_integer, 0, iosystem%union_comm, ierr)
+!       call mpi_info_create(iosystem(i)%info,ierr)
        if(itmp .gt. 0) then 
           write(cb_nodes,('(i5)')) itmp
 #ifdef BGx
@@ -1860,7 +1862,7 @@ contains
     if(iosystem%ioproc) then
 #ifndef _MPISERIAL
        call mpi_info_set(iosystem%info,hint,hintval,ierr)
-       if(iosystem%io_rank==0 || Debug) print *,'Setting mpi info: ',hint,'=',hintval
+       if(iosystem%io_rank==0 .or. Debug) print *,'Setting mpi info: ',hint,'=',hintval
 #endif
        call checkmpireturn('PIO_set_hint',ierr)
     end if
