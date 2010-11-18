@@ -33,7 +33,7 @@ contains
   integer function write_nfdarray_real (File,IOBUF,varDesc,iodesc,start,count) result(ierr)
     use nf_mod
     use pio_types, only : io_desc_t, var_desc_t, file_desc_t, iosystem_desc_t, pio_noerr, &
-	pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c
+	pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c, pio_max_var_dims
     use pio_kinds
     use pio_utils, only : check_netcdf, bad_iotype
     use alloc_mod, only: alloc_check
@@ -64,7 +64,7 @@ contains
     integer :: status(MPI_STATUS_SIZE)
     integer iobuf_size, max_iobuf_size
     real(r4) , pointer :: temp_iobuf(:)
-    integer, pointer :: temp_start(:), temp_count(:)
+    integer, dimension(PIO_MAX_VAR_DIMS) :: temp_start, temp_count
     integer i, ndims
     integer :: fh, vid, oldval
 
@@ -124,11 +124,9 @@ contains
           end if
           call MPI_BCAST(ndims,1,MPI_INTEGER,0,file%iosystem%io_comm,ierr)
           
-          call alloc_check(temp_start,ndims)
-          temp_start=int(start(1:ndims))
+          temp_start(1:ndims)=int(start(1:ndims))
 
-          call alloc_check(temp_count,ndims)
-          temp_count=int(count(1:ndims))
+          temp_count(1:ndims)=int(count(1:ndims))
 
           ! Every i/o proc send data to root
 
@@ -162,7 +160,7 @@ contains
           if (File%iosystem%io_rank==0) then 
              fh = file%fh
              vid = vardesc%varid
-             ierr=nf90_put_var( fh, vid,IOBUF,temp_start,temp_count)
+             ierr=nf90_put_var( fh, vid,IOBUF,temp_start(1:ndims),temp_count(1:ndims))
              if(ierr==pio_noerr) then
                 if (Debug) print *, subName,': 0: done writing for self',ndims
 
@@ -192,13 +190,13 @@ contains
                         i,2*File%iosystem%num_iotasks+i,File%iosystem%IO_comm,status,mpierr)
                    call CheckMPIReturn(subName,mpierr)
 
-	           if(sum(temp_count)>0) then
+	           if(sum(temp_count(1:ndims))>0) then
 
 #ifdef TIMING
                       call t_startf("nc_put_var2")
 #endif
                       ierr=nf90_put_var( fh,vid,	&
-                           temp_iobuf,temp_start,temp_count)
+                           temp_iobuf,temp_start(1:ndims),temp_count(1:ndims))
                       if(Debug) print *, subname,__LINE__,i,fh,vid, ierr
 #ifdef TIMING
                       call t_stopf("nc_put_var2")
@@ -212,9 +210,6 @@ contains
                 end do ! i=1,File%iosystem%num_iotasks-1
              end if ! ierr==pio_noerr
           endif  ! File%iosystem%io_rank==0
-
-          deallocate(temp_start)
-          deallocate(temp_count)
 
           if (File%iosystem%num_iotasks>1) then
              if(File%iosystem%io_rank==0 .or. iobuf_size<max_iobuf_size) then
@@ -249,7 +244,7 @@ contains
   integer function write_nfdarray_int (File,IOBUF,varDesc,iodesc,start,count) result(ierr)
     use nf_mod
     use pio_types, only : io_desc_t, var_desc_t, file_desc_t, iosystem_desc_t, pio_noerr, &
-	pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c
+	pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c, pio_max_var_dims
     use pio_kinds
     use pio_utils, only : check_netcdf, bad_iotype
     use alloc_mod, only: alloc_check
@@ -280,7 +275,7 @@ contains
     integer :: status(MPI_STATUS_SIZE)
     integer iobuf_size, max_iobuf_size
     integer(i4) , pointer :: temp_iobuf(:)
-    integer, pointer :: temp_start(:), temp_count(:)
+    integer, dimension(PIO_MAX_VAR_DIMS) :: temp_start, temp_count
     integer i, ndims
     integer :: fh, vid, oldval
 
@@ -340,11 +335,9 @@ contains
           end if
           call MPI_BCAST(ndims,1,MPI_INTEGER,0,file%iosystem%io_comm,ierr)
           
-          call alloc_check(temp_start,ndims)
-          temp_start=int(start(1:ndims))
+          temp_start(1:ndims)=int(start(1:ndims))
 
-          call alloc_check(temp_count,ndims)
-          temp_count=int(count(1:ndims))
+          temp_count(1:ndims)=int(count(1:ndims))
 
           ! Every i/o proc send data to root
 
@@ -378,7 +371,7 @@ contains
           if (File%iosystem%io_rank==0) then 
              fh = file%fh
              vid = vardesc%varid
-             ierr=nf90_put_var( fh, vid,IOBUF,temp_start,temp_count)
+             ierr=nf90_put_var( fh, vid,IOBUF,temp_start(1:ndims),temp_count(1:ndims))
              if(ierr==pio_noerr) then
                 if (Debug) print *, subName,': 0: done writing for self',ndims
 
@@ -408,13 +401,13 @@ contains
                         i,2*File%iosystem%num_iotasks+i,File%iosystem%IO_comm,status,mpierr)
                    call CheckMPIReturn(subName,mpierr)
 
-	           if(sum(temp_count)>0) then
+	           if(sum(temp_count(1:ndims))>0) then
 
 #ifdef TIMING
                       call t_startf("nc_put_var2")
 #endif
                       ierr=nf90_put_var( fh,vid,	&
-                           temp_iobuf,temp_start,temp_count)
+                           temp_iobuf,temp_start(1:ndims),temp_count(1:ndims))
                       if(Debug) print *, subname,__LINE__,i,fh,vid, ierr
 #ifdef TIMING
                       call t_stopf("nc_put_var2")
@@ -428,9 +421,6 @@ contains
                 end do ! i=1,File%iosystem%num_iotasks-1
              end if ! ierr==pio_noerr
           endif  ! File%iosystem%io_rank==0
-
-          deallocate(temp_start)
-          deallocate(temp_count)
 
           if (File%iosystem%num_iotasks>1) then
              if(File%iosystem%io_rank==0 .or. iobuf_size<max_iobuf_size) then
@@ -465,7 +455,7 @@ contains
   integer function write_nfdarray_double (File,IOBUF,varDesc,iodesc,start,count) result(ierr)
     use nf_mod
     use pio_types, only : io_desc_t, var_desc_t, file_desc_t, iosystem_desc_t, pio_noerr, &
-	pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c
+	pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c, pio_max_var_dims
     use pio_kinds
     use pio_utils, only : check_netcdf, bad_iotype
     use alloc_mod, only: alloc_check
@@ -496,7 +486,7 @@ contains
     integer :: status(MPI_STATUS_SIZE)
     integer iobuf_size, max_iobuf_size
     real(r8) , pointer :: temp_iobuf(:)
-    integer, pointer :: temp_start(:), temp_count(:)
+    integer, dimension(PIO_MAX_VAR_DIMS) :: temp_start, temp_count
     integer i, ndims
     integer :: fh, vid, oldval
 
@@ -556,11 +546,9 @@ contains
           end if
           call MPI_BCAST(ndims,1,MPI_INTEGER,0,file%iosystem%io_comm,ierr)
           
-          call alloc_check(temp_start,ndims)
-          temp_start=int(start(1:ndims))
+          temp_start(1:ndims)=int(start(1:ndims))
 
-          call alloc_check(temp_count,ndims)
-          temp_count=int(count(1:ndims))
+          temp_count(1:ndims)=int(count(1:ndims))
 
           ! Every i/o proc send data to root
 
@@ -594,7 +582,7 @@ contains
           if (File%iosystem%io_rank==0) then 
              fh = file%fh
              vid = vardesc%varid
-             ierr=nf90_put_var( fh, vid,IOBUF,temp_start,temp_count)
+             ierr=nf90_put_var( fh, vid,IOBUF,temp_start(1:ndims),temp_count(1:ndims))
              if(ierr==pio_noerr) then
                 if (Debug) print *, subName,': 0: done writing for self',ndims
 
@@ -624,13 +612,13 @@ contains
                         i,2*File%iosystem%num_iotasks+i,File%iosystem%IO_comm,status,mpierr)
                    call CheckMPIReturn(subName,mpierr)
 
-	           if(sum(temp_count)>0) then
+	           if(sum(temp_count(1:ndims))>0) then
 
 #ifdef TIMING
                       call t_startf("nc_put_var2")
 #endif
                       ierr=nf90_put_var( fh,vid,	&
-                           temp_iobuf,temp_start,temp_count)
+                           temp_iobuf,temp_start(1:ndims),temp_count(1:ndims))
                       if(Debug) print *, subname,__LINE__,i,fh,vid, ierr
 #ifdef TIMING
                       call t_stopf("nc_put_var2")
@@ -644,9 +632,6 @@ contains
                 end do ! i=1,File%iosystem%num_iotasks-1
              end if ! ierr==pio_noerr
           endif  ! File%iosystem%io_rank==0
-
-          deallocate(temp_start)
-          deallocate(temp_count)
 
           if (File%iosystem%num_iotasks>1) then
              if(File%iosystem%io_rank==0 .or. iobuf_size<max_iobuf_size) then

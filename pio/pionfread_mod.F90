@@ -34,7 +34,8 @@ contains
 # 24 "pionfread_mod.F90.in"
   integer function read_nfdarray_real (File,IOBUF,varDesc,IODesc, start,count) result(ierr)
     use pio_types, only : file_desc_t, var_desc_t, io_desc_t, pio_real, pio_double, pio_int, &
-	pio_noerr, pio_iotype_netcdf4p, pio_iotype_netcdf4c, pio_iotype_pnetcdf, pio_iotype_netcdf
+	pio_noerr, pio_iotype_netcdf4p, pio_iotype_netcdf4c, pio_iotype_pnetcdf, pio_iotype_netcdf, &
+	pio_max_var_dims
     use pio_kinds, only : pio_offset, i4, r4, r8
     use pio_utils, only : check_netcdf, bad_iotype 
     use pio_support, only : Debug, DebugIO, piodie, checkmpireturn
@@ -64,7 +65,7 @@ contains
 
     integer :: iobuf_size, max_iobuf_size
     integer :: status(MPI_STATUS_SIZE)
-    integer, pointer :: temp_start(:), temp_count(:)
+    integer, dimension(PIO_MAX_VAR_DIMS) :: temp_start, temp_count
     integer :: i, mpierr, ndims, sdims
 
 #ifdef TIMING
@@ -113,13 +114,11 @@ contains
 
           ! create temporaries of size int (netcdf limitation)
 	 
-          call alloc_check(temp_start, ndims)
-          call alloc_check(temp_count, ndims)
 	  temp_start=1
 	  temp_count=1
           if (File%iosystem%io_rank>0) then
-             temp_start=start(1:ndims)
-             temp_count=count(1:ndims)
+             temp_start(1:ndims)=start(1:ndims)
+             temp_count(1:ndims)=count(1:ndims)
 
              if (Debug) print *, File%iosystem%comp_rank,': waiting to receive IOBUF', start, count
 
@@ -164,7 +163,7 @@ contains
                 call CheckMPIReturn('read_nfdarray_real',mpierr)
 
                 ierr=nf90_get_var( File%fh, varDesc%varid, &
-                     IOBUF, temp_start, temp_count )
+                     IOBUF, temp_start(1:ndims), temp_count(1:ndims) )
 
                 call MPI_SEND( IOBUF,iobuf_size, &
                      MPI_REAL4, &
@@ -178,17 +177,15 @@ contains
 
              if (Debug) print *, subName,': 0: reading netcdf for self', vardesc%varid, ndims, start, count
 
-             temp_start=start(1:ndims)
-             temp_count=count(1:ndims)
+             temp_start(1:ndims)=start(1:ndims)
+             temp_count(1:ndims)=count(1:ndims)
 
              ierr=nf90_get_var( File%fh, varDesc%varid, &
-                  IOBUF, temp_start, temp_count )
+                  IOBUF, temp_start(1:ndims), temp_count(1:ndims) )
 
              if (Debug) print *, subName,': 0: done reading netcdf for self'
 
           endif ! File%iosystem%io_rank==0
-          deallocate(temp_start)
-          deallocate(temp_count)
 
 #endif
 
@@ -211,7 +208,8 @@ contains
 # 24 "pionfread_mod.F90.in"
   integer function read_nfdarray_double (File,IOBUF,varDesc,IODesc, start,count) result(ierr)
     use pio_types, only : file_desc_t, var_desc_t, io_desc_t, pio_real, pio_double, pio_int, &
-	pio_noerr, pio_iotype_netcdf4p, pio_iotype_netcdf4c, pio_iotype_pnetcdf, pio_iotype_netcdf
+	pio_noerr, pio_iotype_netcdf4p, pio_iotype_netcdf4c, pio_iotype_pnetcdf, pio_iotype_netcdf, &
+	pio_max_var_dims
     use pio_kinds, only : pio_offset, i4, r4, r8
     use pio_utils, only : check_netcdf, bad_iotype 
     use pio_support, only : Debug, DebugIO, piodie, checkmpireturn
@@ -241,7 +239,7 @@ contains
 
     integer :: iobuf_size, max_iobuf_size
     integer :: status(MPI_STATUS_SIZE)
-    integer, pointer :: temp_start(:), temp_count(:)
+    integer, dimension(PIO_MAX_VAR_DIMS) :: temp_start, temp_count
     integer :: i, mpierr, ndims, sdims
 
 #ifdef TIMING
@@ -290,13 +288,11 @@ contains
 
           ! create temporaries of size int (netcdf limitation)
 	 
-          call alloc_check(temp_start, ndims)
-          call alloc_check(temp_count, ndims)
 	  temp_start=1
 	  temp_count=1
           if (File%iosystem%io_rank>0) then
-             temp_start=start(1:ndims)
-             temp_count=count(1:ndims)
+             temp_start(1:ndims)=start(1:ndims)
+             temp_count(1:ndims)=count(1:ndims)
 
              if (Debug) print *, File%iosystem%comp_rank,': waiting to receive IOBUF', start, count
 
@@ -341,7 +337,7 @@ contains
                 call CheckMPIReturn('read_nfdarray_double',mpierr)
 
                 ierr=nf90_get_var( File%fh, varDesc%varid, &
-                     IOBUF, temp_start, temp_count )
+                     IOBUF, temp_start(1:ndims), temp_count(1:ndims) )
 
                 call MPI_SEND( IOBUF,iobuf_size, &
                      MPI_REAL8, &
@@ -355,17 +351,15 @@ contains
 
              if (Debug) print *, subName,': 0: reading netcdf for self', vardesc%varid, ndims, start, count
 
-             temp_start=start(1:ndims)
-             temp_count=count(1:ndims)
+             temp_start(1:ndims)=start(1:ndims)
+             temp_count(1:ndims)=count(1:ndims)
 
              ierr=nf90_get_var( File%fh, varDesc%varid, &
-                  IOBUF, temp_start, temp_count )
+                  IOBUF, temp_start(1:ndims), temp_count(1:ndims) )
 
              if (Debug) print *, subName,': 0: done reading netcdf for self'
 
           endif ! File%iosystem%io_rank==0
-          deallocate(temp_start)
-          deallocate(temp_count)
 
 #endif
 
@@ -388,7 +382,8 @@ contains
 # 24 "pionfread_mod.F90.in"
   integer function read_nfdarray_int (File,IOBUF,varDesc,IODesc, start,count) result(ierr)
     use pio_types, only : file_desc_t, var_desc_t, io_desc_t, pio_real, pio_double, pio_int, &
-	pio_noerr, pio_iotype_netcdf4p, pio_iotype_netcdf4c, pio_iotype_pnetcdf, pio_iotype_netcdf
+	pio_noerr, pio_iotype_netcdf4p, pio_iotype_netcdf4c, pio_iotype_pnetcdf, pio_iotype_netcdf, &
+	pio_max_var_dims
     use pio_kinds, only : pio_offset, i4, r4, r8
     use pio_utils, only : check_netcdf, bad_iotype 
     use pio_support, only : Debug, DebugIO, piodie, checkmpireturn
@@ -418,7 +413,7 @@ contains
 
     integer :: iobuf_size, max_iobuf_size
     integer :: status(MPI_STATUS_SIZE)
-    integer, pointer :: temp_start(:), temp_count(:)
+    integer, dimension(PIO_MAX_VAR_DIMS) :: temp_start, temp_count
     integer :: i, mpierr, ndims, sdims
 
 #ifdef TIMING
@@ -467,13 +462,11 @@ contains
 
           ! create temporaries of size int (netcdf limitation)
 	 
-          call alloc_check(temp_start, ndims)
-          call alloc_check(temp_count, ndims)
 	  temp_start=1
 	  temp_count=1
           if (File%iosystem%io_rank>0) then
-             temp_start=start(1:ndims)
-             temp_count=count(1:ndims)
+             temp_start(1:ndims)=start(1:ndims)
+             temp_count(1:ndims)=count(1:ndims)
 
              if (Debug) print *, File%iosystem%comp_rank,': waiting to receive IOBUF', start, count
 
@@ -518,7 +511,7 @@ contains
                 call CheckMPIReturn('read_nfdarray_int',mpierr)
 
                 ierr=nf90_get_var( File%fh, varDesc%varid, &
-                     IOBUF, temp_start, temp_count )
+                     IOBUF, temp_start(1:ndims), temp_count(1:ndims) )
 
                 call MPI_SEND( IOBUF,iobuf_size, &
                      MPI_INTEGER, &
@@ -532,17 +525,15 @@ contains
 
              if (Debug) print *, subName,': 0: reading netcdf for self', vardesc%varid, ndims, start, count
 
-             temp_start=start(1:ndims)
-             temp_count=count(1:ndims)
+             temp_start(1:ndims)=start(1:ndims)
+             temp_count(1:ndims)=count(1:ndims)
 
              ierr=nf90_get_var( File%fh, varDesc%varid, &
-                  IOBUF, temp_start, temp_count )
+                  IOBUF, temp_start(1:ndims), temp_count(1:ndims) )
 
              if (Debug) print *, subName,': 0: done reading netcdf for self'
 
           endif ! File%iosystem%io_rank==0
-          deallocate(temp_start)
-          deallocate(temp_count)
 
 #endif
 
