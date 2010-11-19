@@ -1,6 +1,44 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_2_6
+Originator(s): Jim
+Date: 11-19-2010
+One-line Summary: Fix problems with single task run, cleanup mpi_info_set calls
+	make start and count args static 
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: Jim
+
+Summary of pre-tag testing:   cam pretag testing on bluefire and edinburgh(PGI) all pass
+
+  Regression tests:  bluefire (AIX) 113 PASS, 0 FAIL
+	             edinburgh (lahey) 22 pass 2 fail (expected)
+	             lynx (pgi) 80 pass, 0 Fail
+	             frost (BGL) 74 pass, 6 fail (expected)
+
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name:pio1_2_5
 Originator(s): Jim
 Date: 11-17-2010
