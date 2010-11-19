@@ -1745,19 +1745,19 @@ contains
     
 #if defined(USEMPIIO) || defined(_PNETCDF) || defined(_NETCDF4)
 #ifndef _MPISERIAL
+       call mpi_info_create(iosystem(i)%info,ierr)
        ! turn on mpi-io aggregation 
        !DBG    print *,'PIO_init: before call to setnumagg'
 !       itmp = num_aggregator
 !       call mpi_bcast(itmp, 1, mpi_integer, 0, iosystem%union_comm, ierr)
-!       call mpi_info_create(iosystem(i)%info,ierr)
-       if(itmp .gt. 0) then 
-          write(cb_nodes,('(i5)')) itmp
-#ifdef BGx
-          call PIO_set_hint(iosystem(i),"bgl_nodes_pset",trim(adjustl(cb_nodes)))
-#else
-          call PIO_set_hint(iosystem(i),"cb_nodes",trim(adjustl(cb_nodes)))
-#endif       
-       endif
+!       if(itmp .gt. 0) then 
+!          write(cb_nodes,('(i5)')) itmp
+!#ifdef BGx
+!          call PIO_set_hint(iosystem(i),"bgl_nodes_pset",trim(adjustl(cb_nodes)))
+!#else
+!          call PIO_set_hint(iosystem(i),"cb_nodes",trim(adjustl(cb_nodes)))
+!#endif       
+!       endif
 
 #ifdef PIO_GPFS_HINTS
        call PIO_set_hint(iosystem(i),"ibm_largeblock_io","true")
@@ -1859,13 +1859,15 @@ contains
     
     integer :: ierr
 #if defined(USEMPIIO) || defined(_PNETCDF) || defined(_NETCDF4)
-    if(iosystem%ioproc) then
 #ifndef _MPISERIAL
-       call mpi_info_set(iosystem%info,hint,hintval,ierr)
+    if(iosystem%ioproc) then
        if(iosystem%io_rank==0 .or. Debug) print *,'Setting mpi info: ',hint,'=',hintval
-#endif
+       call mpi_info_set(iosystem%info,hint,hintval,ierr)
        call checkmpireturn('PIO_set_hint',ierr)
+    else
+       iosystem%info=mpi_info_null
     end if
+#endif
 #endif
   end subroutine PIO_set_hint
 
