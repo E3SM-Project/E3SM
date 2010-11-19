@@ -1506,7 +1506,6 @@ contains
        iosystem%userearranger= .true.
     endif
 
-#if defined(USEMPIIO) || defined(_PNETCDF) || defined(_NETCDF4)
 #ifndef _MPISERIAL
     call mpi_info_create(iosystem%info,ierr)
 #endif
@@ -1559,7 +1558,6 @@ contains
 #ifdef PIO_LUSTRE_HINTS
     call PIO_set_hint(iosystem, 'romio_ds_read','disable') 
     call PIO_set_hint(iosystem,'romio_ds_write','disable') 
-#endif
 #endif
 
 #ifdef TIMING
