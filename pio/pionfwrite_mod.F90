@@ -138,7 +138,7 @@ contains
              call CheckMPIReturn(subName, mpierr)
 
              if (Debug) print *, subName,': File%iosystem%comp_rank:',File%iosystem%comp_rank, &
-                  ': relaying IOBUF for write size=',size(IOBUF), temp_start,temp_count, i
+                  ': relaying IOBUF for write size=',size(IOBUF), temp_start(1:ndims),temp_count(1:ndims), i
 
 
              call MPI_SEND( temp_IOBUF,max_iobuf_size, &
@@ -349,7 +349,7 @@ contains
              call CheckMPIReturn(subName, mpierr)
 
              if (Debug) print *, subName,': File%iosystem%comp_rank:',File%iosystem%comp_rank, &
-                  ': relaying IOBUF for write size=',size(IOBUF), temp_start,temp_count, i
+                  ': relaying IOBUF for write size=',size(IOBUF), temp_start(1:ndims),temp_count(1:ndims), i
 
 
              call MPI_SEND( temp_IOBUF,max_iobuf_size, &
@@ -560,7 +560,7 @@ contains
              call CheckMPIReturn(subName, mpierr)
 
              if (Debug) print *, subName,': File%iosystem%comp_rank:',File%iosystem%comp_rank, &
-                  ': relaying IOBUF for write size=',size(IOBUF), temp_start,temp_count, i
+                  ': relaying IOBUF for write size=',size(IOBUF), temp_start(1:ndims),temp_count(1:ndims), i
 
 
              call MPI_SEND( temp_IOBUF,max_iobuf_size, &

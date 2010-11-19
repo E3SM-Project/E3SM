@@ -2989,7 +2989,8 @@ contains
     glen   = iodesc%glen
     offset = iodesc%IOmap%start
     len    = iodesc%IOmap%length
-
+    start=0
+    count=0
 
     if (IOproc) then
 
@@ -3031,6 +3032,7 @@ contains
           count(1:ndims)=iodesc%count
        end if
     else 
+       ndims=1	
        if(userearranger) then
           call alloc_check(IOBUF,0,'IOBUF')
        end if
@@ -3185,7 +3187,8 @@ contains
     glen   = iodesc%glen
     offset = iodesc%IOmap%start
     len    = iodesc%IOmap%length
-
+    start=0
+    count=0
 
     if (IOproc) then
 
@@ -3227,6 +3230,7 @@ contains
           count(1:ndims)=iodesc%count
        end if
     else 
+       ndims=1	
        if(userearranger) then
           call alloc_check(IOBUF,0,'IOBUF')
        end if
@@ -3381,7 +3385,8 @@ contains
     glen   = iodesc%glen
     offset = iodesc%IOmap%start
     len    = iodesc%IOmap%length
-
+    start=0
+    count=0
 
     if (IOproc) then
 
@@ -3423,6 +3428,7 @@ contains
           count(1:ndims)=iodesc%count
        end if
     else 
+       ndims=1	
        if(userearranger) then
           call alloc_check(IOBUF,0,'IOBUF')
        end if
@@ -3503,7 +3509,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 914 "piodarray.F90.in"
+# 916 "piodarray.F90.in"
   subroutine read_darray_bin_real (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -3677,7 +3683,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 914 "piodarray.F90.in"
+# 916 "piodarray.F90.in"
   subroutine read_darray_bin_int (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -3851,7 +3857,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 914 "piodarray.F90.in"
+# 916 "piodarray.F90.in"
   subroutine read_darray_bin_double (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
