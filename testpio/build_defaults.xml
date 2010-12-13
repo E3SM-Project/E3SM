@@ -310,11 +310,25 @@
 #PBS -V"
 />
 
-
-
-
-
-
+<hopper
+  MPIF90 = "ftn -L$LIBSCI_BASE_DIR/pgi/lib"
+  MPICC  = "cc -L$LIBSCI_BASE_DIR/pgi/lib"
+  F90    = "pgf90"
+  CC     = "pgcc"
+  FFLAGS = "-D_USE_FLOW_CONTROL"
+  NETCDF_PATH = "$CRAY_NETCDF_DIR/netcdf-pgi"
+  PNETCDF_PATH = "/contrib/pnetcdf-pgi/"
+  workdir = "/scratch/scratchdirs/${USER}/testpio"
+  run = "aprun"
+  corespernode = "24"
+  submit = "qsub "
+  conopts = " --disable-mct --enable-filesystem-hints=lustre "
+  preamble="
+#PBS -N testpio_suite
+#PBS -l walltime=01:50:00
+#PBS -j oe
+#PBS -V"
+/>
 
 </testpioconfig>
 

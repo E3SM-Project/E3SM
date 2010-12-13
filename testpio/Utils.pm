@@ -28,6 +28,8 @@ sub host{
 	$host = "kraken";
     }elsif($host =~ /^lynx/){
         $host = "lynx";
+    }elsif($host =~ /^hopp/){
+	$host = "hopper";
     }elsif($host =~ /(\w+)\./){
 	$host = $1;
     }
@@ -135,6 +137,7 @@ sub loadmodules{
 		   jaguar  => "/opt/modules/default/",
 		   athena => "/opt/modules/default/",
 		   kraken => "/opt/modules/default/",
+                   hopper => "opt/modules/default/",
 		   lynx => "/opt/modules/default/",
                    columbia => "/usr/share/modules/"};
 #HOST SPECIFIC END
@@ -203,6 +206,11 @@ sub loadmodules{
 	require "/opt/modules/default/init/perl";
 	module(" load netcdf/3.6.2");      
 	module(" load p-netcdf/1.1.1");
+    }elsif($host =~ "hopper"){
+	require "/opt/modules/default/init/perl";
+	module(" load netcdf/3.6.2");      
+	module(" load p-netcdf/1.1.1");
+        module("list");
     }elsif($host =~ "columbia"){
         module(" load pd-netcdf.3.6.2");
 !        module(" load pd-pnetcdf.1.1.1");
