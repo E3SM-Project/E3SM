@@ -126,6 +126,7 @@ program testpio
        start(3), count(3)
   integer(i4) :: lenblocks, glenr8, glenr4, gleni4
   integer(kind=PIO_OFFSET) :: startpio(3), countpio(3)
+  character(len=9) :: rd_buffer
 
   character(len=80) :: fname, fname_r8,fname_r4,fname_i4
   logical, parameter :: Debug = .false.
@@ -261,6 +262,12 @@ program testpio
   !-----------------------------------------
   ! Compute compDOF based on namelist input
   !-----------------------------------------
+  write(rd_buffer,('(i9)')) 64*1024*1024
+  call PIO_set_hint(PIOSYS,'cb_buffer_size',trim(adjustl(rd_buffer)))
+  call PIO_set_hint(PIOSYS,'romio_cb_write','enable')
+  call PIO_set_hint(PIOSYS,'direct_io','true')
+  call PIO_set_hint(PIOSYS,'romio_cb_read','disable')
+
 
   startCOMP = 0
 

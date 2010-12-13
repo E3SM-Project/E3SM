@@ -20,6 +20,7 @@ module piolib_mod
   !--------------
   use pio_support, only : piodie, debug, debugio, debugasync, checkmpireturn
   !
+  use calcdecomp, only : CalcStartandCount
   use ionf_mod, only : create_nf, open_nf,close_nf, sync_nf
   use pionfread_mod, only : read_nf
   use pionfwrite_mod, only : write_nf
@@ -934,7 +935,8 @@ contains
           call piodie( _FILE_,__LINE__, &
                'both optional parameters start and count must be provided')
        else
-          call getiostartandcount(iosystem%num_tasks, ndims, dims, iosystem%num_iotasks, iosystem%io_rank, iosystem%io_comm, iodesc%start, iodesc%count)
+!          call getiostartandcount(iosystem%num_tasks, ndims, dims, iosystem%num_iotasks, iosystem%io_rank, iosystem%io_comm, iodesc%start, iodesc%count)
+           call CalcStartandCount(iosystem%num_tasks,basepiotype,ndims,dims,iosystem%num_iotasks,iosystem%io_rank,iodesc%start,iodesc%count)
        end if
        iosize=1
        do i=1,ndims
@@ -943,7 +945,7 @@ contains
        call mpi_allreduce(iosize, iodesc%maxiobuflen, 1, mpi_integer, mpi_max, iosystem%io_comm, ierr)
        call checkmpireturn('mpi_allreduce in initdecomp',ierr)
 
-       if(debug) print *,'IAM: ',iosystem%comp_rank,' after getiostartandcount: count is: ',iodesc%count
+       print *,'IAM: ',iosystem%comp_rank,' after getiostartandcount: count is: ',iodesc%count
 
 
        lenblocks=iodesc%count(1)
@@ -1074,9 +1076,11 @@ contains
     real(r8) :: rtmp
     integer :: testvalue
     integer, parameter :: minblocksize=16        ! minimum block size on a task
-    integer, parameter :: maxit=1               ! maximum number of times to iterate on the fanin/out limiter  (Probably want a better solution)
+!    integer, parameter :: maxit=1               ! maximum number of times to iterate on the fanin/out limiter  (Probably want a better solution)
+    integer, parameter :: maxit=40               ! maximum number of times to iterate on the fanin/out limiter  (Probably want a better solution)
     integer,allocatable :: pes_per_dim(:), step(:)
     integer,allocatable :: bsize(:),nblocks(:),fblocks(:)
+    logical,parameter :: Debug=.true.
 
 
     tsize=1
@@ -1125,17 +1129,23 @@ contains
     if(Debug) print *,'iorank: ',iorank, ' getiostartandcount: sdims: ',sdims
     if(Debug) print *,'iorank: ',iorank, ' getiostartandcount: count: ',count
 
-    fanlimit  = 50.00
+    fanlimit  = 16.00
     fanfactor = fanlimit + 1.0  !we want at least one trip through the do while loop  
 
     it = 0
+!    it = 1
     step(:) = 1
     do while (fanfactor > fanlimit .and. it < maxit ) 
        xpes = use_io_procs
        xiam = iorank   ! goes from 0 to xpes-1
        do m = ndims, sdims+1, -1
-!          if(xpes >= gdims(m)) then
-          if(xpes > gdims(m)) then
+!       start(ndims) = 1
+!       count(ndims) = gdims(ndims)
+!       do m = ndims-1, sdims+1, -1  ! hack this so that it decompses the y dimension
+!          if(xpes > gdims(m)) then
+          print *,'xpes: ',xpes 
+!          if(xpes > 1) then   ! always enter here
+          if(xpes >= gdims(m)) then
              ps = -1
              ns = 1
              do while (ps < 0 .and. ns <= gdims(m) )
@@ -1151,8 +1161,9 @@ contains
              end do
              xpes = pe - ps + 1
              xiam = xiam - ps
-             !          write(6,*) 'tcx1 ',iorank,m,start(m),count(m)
              step(m)=nextlarger(step(m),gdims(m))
+		 write(6,*) 'tcx1 m,start(m),count(m),step(m): ',m,start(m),count(m),step(m)
+                 if(iorank == 0)  write(6,*) 'count: ',count(1:ndims)
              if(step(m) == gdims(m)) fanlimit = fanlimit + 10.0
           else
              if (m /= sdims+1) then
@@ -1186,14 +1197,30 @@ contains
        end if
        call mpi_allreduce(fanfactor,rtmp,1,MPI_REAL8,MPI_MAX,iocomm,ierr)
        fanfactor=rtmp
-       if(Debug) print *,'iorank: ',iorank,'getiostartandcount: pes_per_dim is: ',pes_per_dim
-       if(Debug) print *,'iorank: ',iorank,' getiostartandcount: fan factor is: ',fanfactor
+       if(Debug) write(*,*) 'iorank: ',iorank,'getiostartandcount: pes_per_dim is: ',pes_per_dim
+       if(Debug) write(*,*) 'iorank: ',iorank,' getiostartandcount: fan factor is: ',fanfactor
        it=it+1
     enddo
-    deallocate(step)
     deallocate(pes_per_dim)
     deallocate(bsize,nblocks,fblocks)
     !   stop 'end of getiostartandcount'
+
+#if 0
+! ------------------------------------------
+!  Hard code a decomposition for testing
+! ------------------------------------------
+    count(1) = gdims(1)
+    start(1) = 1
+
+    count(2) = gdims(2)/use_io_procs
+    start(2) = iorank*count(2)+1
+     
+    count(3) = gdims(3)
+    start(3) = 1
+#endif
+    
+
+    deallocate(step)
 
     if(iorank>=use_io_procs) then 
 	start = 1

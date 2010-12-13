@@ -283,6 +283,7 @@ print F << "EOF";
 use strict;
 use lib "$cfgdir";
 use File::Copy;
+use File::Path;
 use POSIX qw(ceil);
 #unshift \@INC, "$cfgdir/../testpio";
 
@@ -290,6 +291,12 @@ use POSIX qw(ceil);
 use Utils;
 
 chdir ("$cfgdir");
+
+\$ENV{'MPICH_ENV_DISPLAY'} = '1';  # this displays all  the MPICH environment variables
+\$ENV{'MPICH_MPIIO_XSTATS'} = '1'; # this outputs MPIIO statistics
+\$ENV{'MPICH_MPIIO_HINTS_DISPLAY'} = '1'; # output MPIIO hints
+\$ENV{'MPICH_MPIIO_CB_ALIGN'} = '2'; # Do not allign to lustre stripes
+
 
 mkdir "$srcdir" if(! -d "$srcdir");
 
@@ -354,10 +361,14 @@ foreach \$suite (qw(@testsuites)){
 #	    symlink("$tstdir/namelists/testpio_in.\$test","testpio_in");
 #	    symlink("$tstdir/testpio_in.\$test","testpio_in");
 	    symlink("$tstdir/testpio_in.\$test","testpio_in");
+            rmtree "none" unless(! -d "none");
 	    mkdir "none" unless(-d "none");
 	    my \$exename = "./testpio";
             my \$log = "\$casedir/$logfile";
 	    unlink("\$log") if(-e "\$log");
+            my \$setstr = "lfs setstripe none -s 1m -c 4";
+            system(\$setstr);
+
             my \$sysstr =  Utils->runString(\$host,\$pecount,\$run,\$exename,\$log);
             print "Running \$sysstr\\n";
 	    system(\$sysstr);
