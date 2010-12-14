@@ -1,12 +1,12 @@
 module calcdecomp
-  use pio_kinds, only: r4,r8,i4,i8, PIO_offset
+  use pio_kinds, only: i4, r4,r8,i4,i8, PIO_offset
   use pio_types, only: PIO_int, PIO_real, PIO_double
 
  public :: CalcStartandCount
 
 contains 
 
-  subroutine CalcStartandCount(numtask,basetype,ndims,gdims,numiotasks,iorank,start,count)
+  subroutine CalcStartandCount(numtask,basetype,ndims,gdims,numiotasks,iorank,start,count,numaiotasks)
 
     implicit none 
 
@@ -19,6 +19,7 @@ contains
     integer :: iorank
     integer(kind=PIO_Offset) :: start(:)
     integer(kind=PIO_Offset) :: count(:)
+    integer(i4) :: numaiotasks
     
     logical, allocatable :: decompose_dim(:)
     integer, allocatable :: npes_per_dim(:)
@@ -30,8 +31,8 @@ contains
     integer :: idim
     integer :: totActive
 
-    integer :: minbytes = (1024-128)*1024      ! minimum number of contigous blocks in bytes to put on a IO task
-    integer :: maxbytes = (1024+128)*1024   ! maximum length of contigous block in bytes to put on a IO task
+    integer :: minbytes = (1024-256)*1024      ! minimum number of contigous blocks in bytes to put on a IO task
+    integer :: maxbytes = (1024+256)*1024   ! maximum length of contigous block in bytes to put on a IO task
     integer :: maxiter = 10
     integer(kind=PIO_offset) :: nbytes
     logical :: finished_block
@@ -305,6 +306,7 @@ contains
 !   print *,'count: ',count
 !  stop 'point #9'
   
+  numaiotasks=totActive
   iorank=iorank-1
   end subroutine CalcStartandCount
   

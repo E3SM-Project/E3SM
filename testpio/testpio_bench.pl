@@ -366,7 +366,7 @@ foreach \$suite (qw(@testsuites)){
 	    my \$exename = "./testpio";
             my \$log = "\$casedir/$logfile";
 	    unlink("\$log") if(-e "\$log");
-            my \$setstr = "lfs setstripe none -s 1m -c 6";
+            my \$setstr = "lfs setstripe none -s 1m -c 32";
             system(\$setstr);
 
             my \$sysstr =  Utils->runString(\$host,\$pecount,\$run,\$exename,\$log);

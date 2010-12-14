@@ -14,7 +14,7 @@ module piolib_mod
   use pio_types, only : file_desc_t, iosystem_desc_t, var_desc_t, io_desc_t, &
 	pio_iotype_pbinary, pio_iotype_binary, pio_iotype_direct_pbinary, &
 	pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c, &
-        pio_noerr
+        pio_noerr, pio_num_ost
   !--------------
   use alloc_mod
   !--------------
@@ -60,6 +60,8 @@ module piolib_mod
        PIO_dupiodesc,     &
        PIO_getnumiotasks, &
        PIO_set_hint,      &
+       PIO_getnum_OST,    &
+       PIO_setnum_OST,    &
        PIO_FILE_IS_OPEN
 
 #ifdef MEMCHK
@@ -936,7 +938,8 @@ contains
                'both optional parameters start and count must be provided')
        else
 !          call getiostartandcount(iosystem%num_tasks, ndims, dims, iosystem%num_iotasks, iosystem%io_rank, iosystem%io_comm, iodesc%start, iodesc%count)
-           call CalcStartandCount(iosystem%num_tasks,basepiotype,ndims,dims,iosystem%num_iotasks,iosystem%io_rank,iodesc%start,iodesc%count)
+           call CalcStartandCount(iosystem%num_tasks,basepiotype,ndims,dims,iosystem%num_iotasks, &
+					iosystem%io_rank,iodesc%start,iodesc%count,iosystem%num_aiotasks)
        end if
        iosize=1
        do i=1,ndims
@@ -1398,6 +1401,7 @@ contains
     iosystem%intercomm = MPI_COMM_NULL
     iosystem%my_comm = comp_comm
     iosystem%async_interface = .false.
+    iosystem%numOST = PIO_num_OST
 #ifndef _MPISERIAL
     iosystem%info = mpi_info_null
 #endif
@@ -1643,6 +1647,7 @@ contains
        iosystem(i)%ioroot = MPI_PROC_NULL
        iosystem(i)%compmaster= MPI_PROC_NULL
        iosystem(i)%iomaster = MPI_PROC_NULL 
+       iosystem(i)%numOST = PIO_num_OST
 
 
        if(io_comm/=MPI_COMM_NULL) then
@@ -2131,6 +2136,8 @@ contains
     integer :: msg
     logical, parameter :: check = .true.
     character(len=9) :: rd_buffer
+    character(len=4) :: stripestr
+    character(len=9) :: stripestr2
     character(len=char_len)  :: myfname
 #ifdef TIMING
     call t_startf("PIO_createfile")
@@ -2174,6 +2181,12 @@ contains
        call PIO_set_hint(iosystem, "cb_buffer_size",trim(adjustl(rd_buffer)))
     endif
 #endif
+#ifdef PIO_LUSTRE_HINTS
+    write(stripestr,('(i3)')) min(iosystem%num_aiotasks,iosystem%numOST)
+    call PIO_set_hint(iosystem,"striping_factor",trim(adjustl(stripestr)))
+    write(stripestr2,('(i9)')) 1*1024*1024
+    call PIO_set_hint(iosystem,"striping_unit",trim(adjustl(stripestr2)))
+#endif
 
 #ifndef _NETCDF4
     if(file%iotype==pio_iotype_netcdf4p .or. file%iotype==pio_iotype_netcdf4c) then
@@ -2212,6 +2225,35 @@ contains
     call t_stopf("PIO_createfile")
 #endif
   end function createfile
+!>
+!! @public
+!! @defgroup PIO_setnum_OST PIO_setnum_OST
+!! @brief Sets the default number of Lustre Object Storage Targets (OST)
+!! @details  When PIO is used on a Lustre filesystem, this subroutine sets the 
+!!           default number Object Storage targets (OST) to use. PIO 
+!!           will use min(num_aiotasks,numOST) where num_aiotasks the the
+!!           actual number of active iotasks
+!! @param iosystem : a defined pio system descriptor created by a call to @ref PIO_init (see PIO_types)
+!! @param numOST : The number of OST to use by default 
+!< 
+  subroutine PIO_setnum_OST(iosystem,numOST)
+     type (iosystem_desc_t), intent(inout), target :: iosystem
+     integer(i4) :: numOST
+     iosystem%numOST = numOST
+  end subroutine PIO_setnum_OST
+!>
+!! @public 
+!! @defgroup PIO_getnum_OST PIO_getnum_OST
+!! @brief Sets the default number of Lustre Object Storage Targets (OST)
+!! @details  When PIO is used on a Lustre filesystem, this subroutine gets the 
+!!           default number Object Storage targets (OST) to use.
+!! @param iosystem : a defined pio system descriptor created by a call to @ref PIO_init (see PIO_types)
+!! @retval numOST : The number of OST to use.
+!< 
+  integer function PIO_getnum_OST(iosystem) result(numOST)
+     type (iosystem_desc_t), intent(inout), target :: iosystem
+     numOST = iosystem%numOST
+  end function PIO_getnum_OST
 
 !> 
 !! @public
@@ -2292,6 +2334,7 @@ contains
        file%iotype = pio_iotype_netcdf
     end if
 #endif
+
     if(.not. (iosystem%ioproc .and. iosystem%async_interface)) then
        call mpi_bcast(amode, 1, MPI_INTEGER, 0, iosystem%comp_comm, ierr)
        call mpi_bcast(file%iotype, 1, MPI_INTEGER, 0, iosystem%comp_comm, ierr)

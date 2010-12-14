@@ -45,6 +45,8 @@ module pio_types
         integer(i4)              :: my_comm          ! either comp_comm or intercomm
         integer(i4)              :: num_tasks        !  number of tasks
         integer(i4)              :: num_iotasks        ! total number of IO tasks
+        integer(i4)              :: num_aiotasks       ! total number of active IO tasks
+        integer(i4)              :: numOST             ! number of OST to use
         integer(i4)              :: num_comptasks
 
         integer(i4)              :: union_rank
@@ -286,6 +288,7 @@ module pio_types
    integer, public, parameter :: PIO_MAX_NAME = nf_max_name
    integer, public, parameter :: PIO_MAX_VAR_DIMS = nf_max_var_dims
    integer, public, parameter :: PIO_64BIT_OFFSET = nf_64bit_offset
+   integer, public, parameter :: PIO_num_OST = 32 
 #else
 #ifdef _NETCDF
    integer, public, parameter :: PIO_global = nf90_global
@@ -303,6 +306,7 @@ module pio_types
    integer, public, parameter :: PIO_MAX_NAME = nf90_max_name
    integer, public, parameter :: PIO_MAX_VAR_DIMS = nf90_max_var_dims
    integer, public, parameter :: PIO_64BIT_OFFSET = nf90_64bit_offset
+   integer, public, parameter :: PIO_num_OST = 32 
 #else
    integer, public, parameter :: PIO_global = 0
    integer, public, parameter :: PIO_double = 6
@@ -317,6 +321,7 @@ module pio_types
    integer, public, parameter :: PIO_WRITE = 20
    integer, public, parameter :: PIO_NOWRITE = 21
    integer, public, parameter :: PIO_64BIT_OFFSET = 0
+   integer, public, parameter :: PIO_num_OST = 32 
 #endif
 #endif
 ! should be defined in the mct mpiserial library.

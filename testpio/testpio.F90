@@ -529,10 +529,10 @@ program testpio
         !------------
         write(citer,'(i3.3)') it
         
-        fname    = TRIM(dir)//'foo.'//citer//TRIM(Iofmtd)
-        fname_r8 = TRIM(dir)//'foo.r8.'//citer//TRIM(Iofmtd)
-        fname_r4 = TRIM(dir)//'foo.r4.'//citer//TRIM(Iofmtd)
-        fname_i4 = TRIM(dir)//'foo.i4.'//citer//TRIM(Iofmtd)
+        fname    = TRIM(dir)//'foo.'//citer//'.'//TRIM(Iofmtd)
+        fname_r8 = TRIM(dir)//'foo.r8.'//citer//'.'//TRIM(Iofmtd)
+        fname_r4 = TRIM(dir)//'foo.r4.'//citer//'.'//TRIM(Iofmtd)
+        fname_i4 = TRIM(dir)//'foo.i4.'//citer//'.'//TRIM(Iofmtd)
         !   print *, __FILE__,__LINE__,'>',fname,'<'
         !   print *, __FILE__,__LINE__,'>',fname_r8,'<'
         !   print *, __FILE__,__LINE__,'>',fname_i4,'<'

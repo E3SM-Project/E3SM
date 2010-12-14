@@ -13,6 +13,12 @@
    <ldx>256</ldx> <ldy>256</ldy> <ldz>256</ldz> 
 </CompConfig>
 
+<!--   POPB benchmark -->
+
+<CompConfig nprocs="160" bench_name="POPB"
+   <ldx>32</ldx> <ldy>24</ldy> <ldz>60</ldz> 
+</CompConfig>
+
 
 <!--               WRFB benchmark                                  --> 
 
@@ -55,6 +61,10 @@
 
 <CompConfig nprocs="256" bench_name="CAM05"
    <ldx>576</ldx> <ldy>3</ldy> <ldz>13</ldz>
+</CompConfig>
+
+<CompConfig nprocs="416" bench_name="CAM05"
+   <ldx>576</ldx> <ldy>12</ldy> <ldz>2</ldz>
 </CompConfig>
 
 <CompConfig nprocs="832" bench_name="CAM05"
