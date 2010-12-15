@@ -14,13 +14,28 @@
 </CompConfig>
 
 <!--   POPB benchmark -->
+<CompConfig nprocs="80" bench_name="POPB"
+   <ldx>32</ldx> <ldy>48</ldy> <ldz>60</ldz> 
+</CompConfig>
 
 <CompConfig nprocs="160" bench_name="POPB"
    <ldx>32</ldx> <ldy>24</ldy> <ldz>60</ldz> 
 </CompConfig>
 
+<CompConfig nprocs="320" bench_name="POPB"
+   <ldx>16</ldx> <ldy>24</ldy> <ldz>60</ldz> 
+</CompConfig>
+
+<CompConfig nprocs="640" bench_name="POPB"
+   <ldx>16</ldx> <ldy>12</ldy> <ldz>60</ldz> 
+</CompConfig>
+
 
 <!--               WRFB benchmark                                  --> 
+
+<CompConfig nprocs="125" bench_name="WRFB"
+   <ldx>90</ldx> <ldy>72</ldy> <ldz>100</ldz> 
+</CompConfig>
 
 <CompConfig nprocs="250" bench_name="WRFB"
    <ldx>90</ldx> <ldy>36</ldy> <ldz>100</ldz> 
