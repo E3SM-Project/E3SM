@@ -948,7 +948,7 @@ contains
        call mpi_allreduce(iosize, iodesc%maxiobuflen, 1, mpi_integer, mpi_max, iosystem%io_comm, ierr)
        call checkmpireturn('mpi_allreduce in initdecomp',ierr)
 
-       print *,'IAM: ',iosystem%comp_rank,' after getiostartandcount: count is: ',iodesc%count
+!       print *,'IAM: ',iosystem%comp_rank,' after getiostartandcount: count is: ',iodesc%count
 
 
        lenblocks=iodesc%count(1)
@@ -2184,7 +2184,7 @@ contains
 #ifdef PIO_LUSTRE_HINTS
     write(stripestr,('(i3)')) min(iosystem%num_aiotasks,iosystem%numOST)
     call PIO_set_hint(iosystem,"striping_factor",trim(adjustl(stripestr)))
-    write(stripestr2,('(i9)')) 1*1024*1024
+    write(stripestr2,('(i9)')) 1024*1024
     call PIO_set_hint(iosystem,"striping_unit",trim(adjustl(stripestr2)))
 #endif
 

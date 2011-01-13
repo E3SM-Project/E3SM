@@ -263,10 +263,9 @@ program testpio
   ! Compute compDOF based on namelist input
   !-----------------------------------------
   write(rd_buffer,('(i9)')) 64*1024*1024
-  call PIO_set_hint(PIOSYS,'cb_buffer_size',trim(adjustl(rd_buffer)))
-  call PIO_set_hint(PIOSYS,'romio_cb_write','enable')
-  call PIO_set_hint(PIOSYS,'direct_io','true')
-  call PIO_set_hint(PIOSYS,'romio_cb_read','disable')
+!  call PIO_set_hint(PIOSYS,'cb_buffer_size',trim(adjustl(rd_buffer)))
+!  call PIO_set_hint(PIOSYS,'romio_cb_write','enable')
+!  call PIO_set_hint(PIOSYS,'romio_cb_read','disable')
 
 
   startCOMP = 0

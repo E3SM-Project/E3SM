@@ -31,11 +31,13 @@ contains
     integer :: idim
     integer :: totActive
 
-    integer :: minbytes = (1024-256)*1024      ! minimum number of contigous blocks in bytes to put on a IO task
-    integer :: maxbytes = (1024+256)*1024   ! maximum length of contigous block in bytes to put on a IO task
-    integer :: maxiter = 10
-    integer(kind=PIO_offset) :: nbytes
+    integer :: minbytes = ((32*64)-256)*1024      ! minimum number of contigous blocks in bytes to put on a IO task
+    integer :: maxbytes = ((32*64)+128)*1024   ! maximum length of contigous block in bytes to put on a IO task
+    integer :: maxiter = 20
+    integer(kind=PIO_offset) :: nbytes, totalSize
+    integer :: numOPS
     logical :: finished_block
+    integer :: blocksize
     logical, parameter :: verbose = .false.
     integer :: itmp,itmp_pes
     logical :: firstdim
@@ -44,14 +46,10 @@ contains
     logical :: ltest,ltest0,ltest1
 
     iorank = iorank+1 
-    print *,'numtask: ',numtask
-    print *,'gdims: ',gdims
-    print *,'numiotasks: ',numiotasks
-    print *,'iorank: ',iorank
 !    print *,'point #1'
 !     print *,'gdims: ',gdims
-    print *,'basetype: ',basetype
-    print *,'PIO_double: ',PIO_double
+!    print *,'basetype: ',basetype
+!    print *,'PIO_double: ',PIO_double
      select case(basetype)
 	case(PIO_int)
 	    basesize = 4
@@ -60,9 +58,6 @@ contains
         case(PIO_double)
            basesize = 8
     end select
-    ! KLUDGE this for now 
-!    basesize=8
-
 
     allocate(decompose_dim(ndims))
     allocate(npes_per_dim(ndims))
@@ -89,6 +84,7 @@ contains
 !	   if(verbose) print *,'Need to decompse dimension #:',n
        endif
     enddo
+    totalSize=nbytes
     nbytes = basesize
     count = gdims
     npes_per_dim(:) = 1 
@@ -97,6 +93,7 @@ contains
     n = 1
     totActive = 1
     finished_block=.false.  ! indicates if we have finished contigous block
+    blocksize=-1
     do n=1,ndims
 !       print *,'n: ',n
        if(decompose_dim(n)) then 
@@ -182,6 +179,9 @@ contains
           !-------------------------------------
           finished_block = .true.
 	  idim = n
+          if(blocksize<0) then 
+             blocksize=nbtmp
+          endif
           !---------------------------------------------
           ! calculate the number of total active iotasks
           !---------------------------------------------
@@ -195,13 +195,17 @@ contains
        endif
 !     print *,''
     enddo
-    print *,'point #4: totActive',totActive
-    print *,'decompse_dim: ',decompose_dim
-    print *,'basesize: ',basesize
-    print *,'count: ',count
-!    stop 'point #4'
+    if(iorank == 1) then 
+       numOPS = NINT(real(totalSize,kind=8)/real(totActive*blocksize,kind=8))
+       write(*,101) 'PIO: calcdecomp: IO tasks:= ',totActive,' # of ops:= ', numOPS,' size:= ',blocksize
+       write(*,100) 'PIO: calcdecomp: global dimensions: ',gdims
+       write(*,*) 'PIO: calcdecomp: decompse dimensions: ',decompose_dim
+       write(*,100) 'PIO: calcdecomp: count: ',count
+    endif
+ 100 format (a,6(i8))
+ 101 format (a,i4,a,i3,a,i10)
 
-!    print *,'count: ',count
+
     !----------------------------------------
     ! correct decompose_dim variable based on
     ! limitations imposed by numiotask value

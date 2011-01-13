@@ -14,6 +14,10 @@
 </CompConfig>
 
 <!--   POPB benchmark -->
+<CompConfig nprocs="24" bench_name="POPB"
+   <ldx>80</ldx> <ldy>48</ldy> <ldz>60</ldz> 
+</CompConfig>
+
 <CompConfig nprocs="80" bench_name="POPB"
    <ldx>32</ldx> <ldy>48</ldy> <ldz>60</ldz> 
 </CompConfig>

@@ -259,7 +259,7 @@
   workdir = "/lustre/scratch/${USER}/testpio"
   run = "aprun"
   submit = "qsub"
-  conopts = " --disable-mct --enable-filesystem-hints=lustre"
+  conopts = " --disable-mct --enable-timing --enable-filesystem-hints=lustre"
   corespernode = "12"
   preamble="
 #PBS -N testpio_suite
