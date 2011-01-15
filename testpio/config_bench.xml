@@ -69,6 +69,14 @@
    <ldx>20</ldx> <ldy>20</ldy> <ldz>100</ldz> 
 </CompConfig>
 
+<CompConfig nprocs="8100" bench_name="WRFB"
+   <ldx>10</ldx> <ldy>20</ldy> <ldz>100</ldz>
+</CompConfig>
+
+<CompConfig nprocs="16200" bench_name="WRFB"
+   <ldx>10</ldx> <ldy>10</ldy> <ldz>100</ldz>
+</CompConfig>
+
 <!--               CAM05 benchmark                                  --> 
 <CompConfig nprocs="64" bench_name="CAM05"
    <ldx>576</ldx> <ldy>6</ldy> <ldz>26</ldz>

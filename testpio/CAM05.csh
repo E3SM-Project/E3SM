@@ -7,3 +7,4 @@ set host = 'kraken'
 ./testpio_bench.pl --maxiter 10 --iofmt pnc --pecount 256 --bench CAM05 --numIO 40  --log ${host}.0256.pnc.iotask_40.log.${id}
 ./testpio_bench.pl --maxiter 10 --iofmt pnc --pecount 416 --bench CAM05 --numIO 70  --log ${host}.0416.pnc.iotask_70.log.${id}
 ./testpio_bench.pl --maxiter 10 --iofmt pnc --pecount 832 --bench CAM05 --numIO 140 --log ${host}.0832.pnc.iotask_140.log.${id}
+# ./testpio_bench.pl --maxiter 10 --iofmt pnc --pecount 1664 --bench CAM05 --numIO 280 --log ${host}.1664.pnc.iotask_280.log.${id}
