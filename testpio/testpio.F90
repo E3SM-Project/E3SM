@@ -88,6 +88,7 @@ program testpio
        TestR4    = .false.,  &
        TestInt   = .false.,  &
        TestCombo = .false.
+  logical, parameter :: CheckArrays = .false.  ! turn off the array check for maximum memory usage testing
 
   logical :: writePhase, readPhase
   logical, parameter :: splitPhase = .true.
@@ -187,7 +188,7 @@ program testpio
      write(*,*) myname,' 8 MB memory dealloc in MB is ',(mrss1-mrss2)*mb_blk
      write(*,*) myname,' Memory block size conversion in bytes is ',mb_blk*1024_r8*1024.0_r8
   endif
-
+  deallocate(mem_tmp)
 #endif
 
   !----------------------------------------------------------------
@@ -912,22 +913,22 @@ program testpio
      !-----------------------------
      ! Perform correctness testing 
      !-----------------------------
-           if(TestR8) then
+           if(TestR8 .and. CheckArrays) then
               call checkpattern(mpi_comm_compute, fname_r8,test_r8wr,test_r8rd,lLength,iostat)
               call check_pioerr(iostat,__FILE__,__LINE__,' checkpattern r8 test')
            endif
      
-           if( TestR4) then
+           if( TestR4 .and. CheckArrays) then
               call checkpattern(mpi_comm_compute, fname_r4,test_r4wr,test_r4rd,lLength,iostat)
               call check_pioerr(iostat,__FILE__,__LINE__,' checkpattern r4 test')
            endif
 
-           if(TestInt) then
+           if(TestInt .and. CheckArrays) then
               call checkpattern(mpi_comm_compute, fname_i4, test_i4wr,test_i4rd,lLength,iostat)
               call check_pioerr(iostat,__FILE__,__LINE__,' checkpattern i4 test')
            endif
 
-           if(TestCombo) then 
+           if(TestCombo .and. CheckArrays) then 
 
               !-------------------------------------
               !  Open up and read the combined file 

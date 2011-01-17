@@ -57,7 +57,8 @@ sub projectInfo{
      $project = `/sw/xt5/bin/showproj -s jaguar | tail -1`;
      $projectInfo ="#PBS -A $project\n";
    }elsif($host =~ "athena" or $host =~ "kraken"){
-#    $project = `showproj -s athena | tail -1`;
+     $projectInfo ="##PBS -A $project\n";
+   }elsif($host =~ "hopper"){
      $projectInfo ="##PBS -A $project\n";
    }elsif($host =~ "columbia"){
      $project = "";
@@ -83,7 +84,7 @@ sub preambleResource{
   }elsif($host =~ "cyberstar" ){
      $nodes = ceil($pecount/$corespernode);
      $preambleResource = "#PBS -l nodes=$nodes:nehalem:ppn=$corespernode\n"; 
-  }elsif($host =~ "lynx"){
+  }elsif($host =~ "lynx" or $host =~ "hopper"){
      my $pecnt = $corespernode*ceil($pecount/$corespernode);
      $preambleResource = "#PBS -l mppwidth=$pecnt\n"; 
   }elsif($host =~ "athena"){
@@ -209,7 +210,7 @@ sub loadmodules{
     }elsif($host =~ "hopper"){
 	require "/opt/modules/default/init/perl";
 	module(" load netcdf/3.6.2");      
-	module(" load p-netcdf/1.1.1");
+	module(" load pnetcdf/1.2.0");
         module("list");
     }elsif($host =~ "columbia"){
         module(" load pd-netcdf.3.6.2");
