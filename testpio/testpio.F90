@@ -84,8 +84,8 @@ program testpio
   real(r4),   pointer :: test_r4wr(:),test_r4rd(:),diff_r4(:)
   real(r8),   pointer :: test_r8wr(:),test_r8rd(:),diff_r8(:)
 
-  logical :: TestR8    = .true.,   &
-       TestR4    = .false.,  &
+  logical :: TestR8    = .false.,   &
+       TestR4    = .true.,  &
        TestInt   = .false.,  &
        TestCombo = .false.
   logical, parameter :: CheckArrays = .false.  ! turn off the array check for maximum memory usage testing
@@ -188,7 +188,6 @@ program testpio
      write(*,*) myname,' 8 MB memory dealloc in MB is ',(mrss1-mrss2)*mb_blk
      write(*,*) myname,' Memory block size conversion in bytes is ',mb_blk*1024_r8*1024.0_r8
   endif
-  deallocate(mem_tmp)
 #endif
 
   !----------------------------------------------------------------
@@ -480,37 +479,59 @@ program testpio
            if (trim(iodof_input) == 'namelist') then
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #7'
               if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double,  gDims3D,compDOF,IOdesc_r8,startpio,countpio)
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #7.1'
               if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,IOdesc_r4,startpio,countpio)
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #7.2'
               if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,     gDims3D,compDOF,IOdesc_i4,startpio,countpio)
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8'
            else
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.1'
               if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double,  gDims3D,compDOF,IOdesc_r8)
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.2'
               if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,IOdesc_r4)
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.3'
               if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,     gDims3D,compDOF,IOdesc_i4)
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.4'
            endif
         else
            if(iofmtd.eq.'nc') then ! netCDF
               if (num_iodofs == 1) then
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.5'
                  if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOF,startpio,countpio,IOdesc_r8)
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.6'
                  if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,compDOF,ioDOF,startpio,countpio,IOdesc_r4)
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.7'
                  if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,compDOF,ioDOF,startpio,countpio,IOdesc_i4)
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.8'
               elseif (num_iodofs == 2) then
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.9'
                  if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,startpio,countpio,IOdesc_r8)
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.10'
                  if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,startpio,countpio,IOdesc_r4)
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.11'
                  if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,startpio,countpio,IOdesc_i4)
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.12'
               else
                  call piodie(__FILE__,__LINE__,' num_iodofs not 1 or 2')
               endif
            else
               ! tcraig: there are cases where lenblocks is not valid here like different size IO blocks
               if (num_iodofs == 1) then
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.13'
                  if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOF,IOdesc_r8)
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.14'
                  if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,compDOF,ioDOF,IOdesc_r4)
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.15'
                  if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,compDOF,ioDOF,IOdesc_i4)
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.16'
               elseif (num_iodofs == 2) then
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.17'
                  if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,IOdesc_r8)
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.18'
                  if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,IOdesc_r4)
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.19'
                  if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,IOdesc_i4)
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.20'
               else
                  call piodie(__FILE__,__LINE__,' num_iodofs not 1 or 2')
               endif
@@ -676,12 +697,16 @@ program testpio
 
            if(TestR8) then
               dt_write_r8 = 0.
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #9.0.1'
               call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #9.0.2'
               call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #9.0.3'
               st = MPI_Wtime()
 #ifdef TIMING
               call t_startf('testpio_write')
 #endif
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #9.0.4'
               do ivar=1,nvars
                  call PIO_write_darray(File_r8,vard_r8(ivar), iodesc_r8, test_r8wr, iostat)
                  call check_pioerr(iostat,__FILE__,__LINE__,' r8 write_darray')
@@ -689,9 +714,11 @@ program testpio
 #ifdef TIMING
               call t_stopf('testpio_write')
 #endif
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #9.1'
               et = MPI_Wtime()
               dt_write_r8 = dt_write_r8 + (et - st)/nvars
               call PIO_CloseFile(File_r8)
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #9.2'
            endif
 
            if(TestR4) then
@@ -713,6 +740,7 @@ program testpio
               dt_write_r4 = dt_write_r4 + (et - st)/nvars
               call PIO_CloseFile(File_r4)
            endif
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #13'
 
            if(TestInt) then 
               dt_write_i4 = 0.
@@ -761,6 +789,7 @@ program testpio
         endif
         call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
         call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #14'
 
 
         if (readPhase) then 
@@ -772,11 +801,13 @@ program testpio
               ierr = PIO_OpenFile(PIOSYS, File_r8, iotype, fname_r8)
               call check_pioerr(ierr,__FILE__,__LINE__,' r8 openfile')
            endif
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #15'
            
            if(TestR4) then 
               ierr = PIO_OpenFile(PIOSYS,File_r4,iotype, fname_r4)
               call check_pioerr(ierr,__FILE__,__LINE__,' r4 openfile')
            endif
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #16'
 
            if(TestInt) then
               ierr = PIO_OpenFile(PIOSYS,File_i4,iotype, fname_i4)
@@ -809,6 +840,7 @@ program testpio
               endif
 
            endif ! if((iotype == iotype_pnetcdf) .or (iotype == iotype_netcdf))...
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #17'
            if(Debug) print *,__FILE__,__LINE__
            do ivar=1,nvars
               call PIO_SetFrame(vard_r8(ivar),one)
@@ -818,6 +850,7 @@ program testpio
            call PIO_SetFrame(vard_r8c,one)
            call PIO_SetFrame(vard_r4c,one)
            call PIO_SetFrame(vard_i4c,one)
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #18'
 
            !-------------------------
            ! Time the parallel  read
@@ -856,6 +889,7 @@ program testpio
                  call PIO_read_darray(File_r4,vard_r4(ivar),iodesc_r4,test_r4rd,iostat)
                  call check_pioerr(iostat,__FILE__,__LINE__,' r4 read_darray')
               enddo
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #19'
 #ifdef TIMING
               call t_stopf('testpio_read')
 #endif
@@ -901,6 +935,7 @@ program testpio
            if(TestR8) call PIO_CloseFile(File_r8)
            if(TestR4) call PIO_CloseFile(File_r4)
            if(TestInt) call PIO_CloseFile(File_i4)
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #20'
 
            call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
            call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
@@ -927,6 +962,7 @@ program testpio
               call checkpattern(mpi_comm_compute, fname_i4, test_i4wr,test_i4rd,lLength,iostat)
               call check_pioerr(iostat,__FILE__,__LINE__,' checkpattern i4 test')
            endif
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #21'
 
            if(TestCombo .and. CheckArrays) then 
 
@@ -953,6 +989,7 @@ program testpio
               call PIO_read_darray(File,vard_i4c,iodesc_i4,test_i4rd,iostat)
               call check_pioerr(iostat,__FILE__,__LINE__,' combo test i4 pio_read_darray')
 
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #22'
               call PIO_CloseFile(File)
            
               !-----------------------------
@@ -974,6 +1011,7 @@ program testpio
            call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
         endif
 
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #23'
         if(TestR8) then
            ! Maximum read/write times
            if(readPhase)  call GetMaxTime(dt_read_r8, gdt_read_r8(it), MPI_COMM_COMPUTE, ierr)
@@ -985,6 +1023,7 @@ program testpio
            if(readPhase)  call GetMaxTime(dt_read_r4, gdt_read_r4(it), MPI_COMM_COMPUTE, ierr)
            if(writePhase) call GetMaxTime(dt_write_r4, gdt_write_r4(it), MPI_COMM_COMPUTE, ierr)
         endif
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #24'
         
         if(TestInt) then
            ! Maximum read/write times
@@ -997,9 +1036,10 @@ program testpio
         if(TestR4 .or. TestCombo) glenr4=iodesc_r4%glen
         if(TestInt .or. TestCombo) gleni4=iodesc_i4%glen
         if(TestR8 .or. TestCombo) call pio_freedecomp(PIOSYS, iodesc_r8)
-        if(TestInt .or. TestCombo) call pio_freedecomp(PIOSYS, iodesc_r4)
-        if(TestR4 .or. TestCombo) call pio_freedecomp(PIOSYS, iodesc_i4)
+        if(TestR4 .or. TestCombo) call pio_freedecomp(PIOSYS, iodesc_r4)
+        if(TestInt .or. TestCombo) call pio_freedecomp(PIOSYS, iodesc_i4)
      enddo ! do it=1,maxiter
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #25'
 
   enddo ! do ip=1,numphase
 
@@ -1017,6 +1057,7 @@ program testpio
   ! Print summary bandwidth statistics 
   !----------------------------------
 
+              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #26'
   if(TestR8 .and. (piosys%io_rank == 0) ) then
      call WriteTimeTrialsStats(casename,TestR8CaseName, fname_r8, glenr8, gdt_read_r8, gdt_write_r8, maxiter) 
   endif

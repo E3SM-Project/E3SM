@@ -69,8 +69,8 @@
 !
 
 ! NOTE: code change caching is allocating anyway so do not shut off
-#define _USE_SPACE 1
-!#undef _USE_SPACE
+!#define _USE_SPACE 1
+#undef _USE_SPACE
 
 !
 ! arbitrary mpi message tags used for the rearrange

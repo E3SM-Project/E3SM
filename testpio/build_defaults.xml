@@ -253,7 +253,6 @@
   MPICC  = "cc -L$LIBSCI_BASE_DIR/pgi/lib"
   F90    = "pgf90" 
   CC     = "pgcc" 
-  FFLAGS = "-D_USE_FLOW_CONTROL"
   NETCDF_PATH = "$NETCDF_DIR"
   PNETCDF_PATH = "$PNETCDF_DIR"
   workdir = "/lustre/scratch/${USER}/testpio"
@@ -263,7 +262,7 @@
   corespernode = "12"
   preamble="
 #PBS -N testpio_suite
-#PBS -l walltime=00:50:00
+#PBS -l walltime=02:00:00
 #PBS -j oe
 #PBS -V"
 />

@@ -288,7 +288,7 @@ module pio_types
    integer, public, parameter :: PIO_MAX_NAME = nf_max_name
    integer, public, parameter :: PIO_MAX_VAR_DIMS = nf_max_var_dims
    integer, public, parameter :: PIO_64BIT_OFFSET = nf_64bit_offset
-   integer, public, parameter :: PIO_num_OST = 32 
+   integer, public, parameter :: PIO_num_OST =  16
 #else
 #ifdef _NETCDF
    integer, public, parameter :: PIO_global = nf90_global

@@ -31,13 +31,14 @@ contains
     integer :: idim
     integer :: totActive
 
-    integer :: minbytes = ((32*64)-256)*1024      ! minimum number of contigous blocks in bytes to put on a IO task
-    integer :: maxbytes = ((32*64)+128)*1024   ! maximum length of contigous block in bytes to put on a IO task
+    integer, parameter :: stripeSize = 1024*1024
+    integer :: minbytes = stripeSize-256   ! minimum number of contigous blocks in bytes to put on a IO task
+    integer :: maxbytes = stripeSize+256   ! maximum length of contigous block in bytes to put on a IO task
     integer :: maxiter = 20
     integer(kind=PIO_offset) :: nbytes, totalSize
     integer :: numOPS
     logical :: finished_block
-    integer :: blocksize
+    integer(i8) :: blocksize
     logical, parameter :: verbose = .false.
     integer :: itmp,itmp_pes
     logical :: firstdim
@@ -201,9 +202,10 @@ contains
        write(*,100) 'PIO: calcdecomp: global dimensions: ',gdims
        write(*,*) 'PIO: calcdecomp: decompse dimensions: ',decompose_dim
        write(*,100) 'PIO: calcdecomp: count: ',count
+       write(*,100) 'PIO: calcdecomp: start: ',start
     endif
  100 format (a,6(i8))
- 101 format (a,i4,a,i3,a,i10)
+ 101 format (a,i4,a,i5,a,i10)
 
 
     !----------------------------------------

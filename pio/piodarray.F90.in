@@ -358,6 +358,7 @@ contains
 #ifdef TIMING
     call t_startf("pio_write_darray")
 #endif
+    if(Debug) print *,_FILE_,__LINE__,' NAME : IAM: ',File%iosystem%comp_rank,' UseRearranger: ',UseRearranger, glen, offset, len   
     ! -----------------------------------------------------
     ! pull information from file_desc_t data structure
     ! -----------------------------------------------------
@@ -586,6 +587,7 @@ contains
 #ifdef TIMING
     call t_startf("pio_write_darray")
 #endif
+    if(Debug) print *, _FILE_,__LINE__,iodesc%Write%elemTYPE, iodesc%Write%fileTYPE
     ! -----------------------------------------------------
     ! pull information from file_desc_t data structure
     ! -----------------------------------------------------

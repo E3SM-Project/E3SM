@@ -477,7 +477,9 @@ contains
     integer (i4) ::  ndispr,ndispw
     integer (i4) :: lengthr, lengthw
     integer (i4), pointer :: displacer(:),displacew(:)
+    logical, parameter :: Debug = .true.
 
+    if(Debug)       print *,'iam: ',iosystem%comp_rank,'initdecomp_2dof_bin: point #1'
     basetype=PIO_type_to_mpi_type(basepiotype)
 
     !-------------------------------------------
@@ -673,11 +675,13 @@ contains
     logical(log_kind) ::  userearranger
     logical, parameter :: check = .true.
     integer(i4) :: ndisp
+    logical, parameter :: Debug = .true.
 #ifdef MEMCHK
     integer :: msize, rss, mshare, mtext, mstack
 #endif
 
     piotype=PIO_type_to_mpi_type(basepiotype)
+    if(Debug)       print *,'iam: ',iosystem%comp_rank,'initdecomp_1dof_nf: point #1'
 
     !-------------------------------------------
     ! for testing purposes set the iomap
@@ -850,6 +854,7 @@ contains
     integer(i4) :: iosize               ! rml
     integer(i4) :: msg
     logical :: is_async=.false.
+    logical, parameter :: Debug = .false.
 #ifdef MEMCHK
     integer :: msize, rss, mshare, mtext, mstack
 #endif
@@ -857,6 +862,7 @@ contains
     integer ierror
 
 
+    if(Debug)       print *,'iam: ',iosystem%comp_rank,'PIO_initdecomp_dof: point #1'
 #ifdef TIMING
     call t_startf("PIO_initdecomp_dof")
 #endif
@@ -903,6 +909,7 @@ contains
        print *,_FILE_,__LINE__,'mem=',rss
     end if
 #endif
+    iosystem%num_aiotasks = iosystem%num_iotasks
     userearranger = iosystem%userearranger
     !---------------------
     ! number of dimensions
@@ -1590,6 +1597,7 @@ contains
     call PIO_set_hint(iosystem, 'romio_ds_read','disable') 
     call PIO_set_hint(iosystem,'romio_ds_write','disable') 
 #endif
+    iosystem%num_aiotasks = iosystem%num_iotasks
 
 #ifdef TIMING
     call t_stopf("PIO_init")
@@ -1802,6 +1810,7 @@ contains
 
     if(DebugAsync) print*,__FILE__,__LINE__, iosystem(1)%ioranks
 
+    iosystem%num_aiotasks = iosystem%num_iotasks
 
 
     ! This routine does not return
