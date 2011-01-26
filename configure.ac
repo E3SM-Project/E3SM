@@ -1,5 +1,5 @@
 #                                               -*- Autoconf -*-
-# Process this file with autoconf to produce a configure script.
+# Process this file with autoconf 2.59 to produce a configure script.
 
 AC_INIT(MCT, 2.0)
 
@@ -13,6 +13,12 @@ AC_ARG_ENABLE(mpiserial,
 AC_HELP_STRING([--enable-mpiserial],
 [Use the included MPI replacement library for single processor]),
 [DONOTCHECKMPI="DONOTCHECKMPI"]
+)
+
+AC_ARG_ENABLE(debugging,
+AC_HELP_STRING([--enable-debugging],
+[Use the debugging flag and disable the optimization flag]),
+[DEBUGGING="ENABLED"]
 )
 
 AC_ARG_ENABLE(selectedrealkind,
@@ -42,6 +48,7 @@ AC_ARG_VAR(FC,The Fortran compiler)
 AC_ARG_VAR(FCFLAGS,User-defined Fortran compiler flags)
 AC_ARG_VAR(ALLCFLAGS,Customized C source compilation flags)
 AC_ARG_VAR(OPT,Fortran compiler flag for optimization level) 
+AC_ARG_VAR(DEBUG,Fortran compiler flag for generating symbolic debugging information) 
 AC_ARG_VAR(REAL8,[Fortran compiler flag for setting the default REAL size to REAL(KIND=8)])
 AC_ARG_VAR(BIT64,Fortran compiler flag for generating 64-bit objects)
 AC_ARG_VAR(ENDIAN,Fortran compiler flag for converting big-endian to little-endian)
@@ -385,6 +392,9 @@ if echo $F90 | grep xlf90 >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT="-O2"
    fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-qdbg"
+   fi
    if test -z "$F90FLAGS"; then
       if test "$ac_cv_f90_fpp_compiler" = "yes"; then
          F90FLAGS="-qarch=auto -qsuffix=f=F90:cpp=F90"
@@ -412,6 +422,9 @@ if echo $F90 | grep pgf90 >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT="-O2"
    fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
+   fi
 fi
 
 if echo $F90 | grep ftn >/dev/null 2>&1; then
@@ -431,6 +444,9 @@ if echo $F90 | grep ftn >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT="-O2"
    fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
+   fi
  else
    echo "Fortran Compiler is Cray"
    CPRDEF="CRAY" 
@@ -442,6 +458,9 @@ if echo $F90 | grep ftn >/dev/null 2>&1; then
    fi
    if test -z "$OPT"; then
       OPT="-Oscalar3 -Ovector1 -Ostream1"
+   fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
    fi
  fi
 fi
@@ -469,6 +488,9 @@ fi
 if echo $F90 | grep lf95 >/dev/null 2>&1; then
    echo "Fortran Compiler is Lahey"
    CPRDEF="LAHEY"
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
+   fi
 fi
 
 if echo $F90 | grep ifc >/dev/null 2>&1; then
@@ -484,6 +506,9 @@ if echo $F90 | grep ifc >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT="-O2"
    fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
+   fi
 fi
 
 if echo $F90 | grep efc >/dev/null 2>&1; then
@@ -498,6 +523,9 @@ if echo $F90 | grep efc >/dev/null 2>&1; then
    fi
    if test -z "$OPT"; then
       OPT="-O2"
+   fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
    fi
 fi
 
@@ -516,6 +544,9 @@ if echo $F90 | grep ifort >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT="-O2"
    fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
+   fi
 fi
 
 if echo $F90 | grep pathf90 >/dev/null 2>&1; then
@@ -529,6 +560,9 @@ if echo $F90 | grep pathf90 >/dev/null 2>&1; then
    fi
    if test -z "$OPT"; then
       OPT="-O2"
+   fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
    fi
 fi
 
@@ -551,6 +585,9 @@ if echo $f90_version | grep -i nag >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT="-O2"
    fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
+   fi
 fi
 
 if echo $f90_version | grep -i absoft >/dev/null 2>&1; then
@@ -564,6 +601,9 @@ if echo $f90_version | grep -i absoft >/dev/null 2>&1; then
    fi
    if test -z "$OPT"; then
       OPT="-O2"
+   fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
    fi
 fi
 
@@ -582,6 +622,9 @@ if echo $f90_version | grep -i mipspro >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT="-O3"
    fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
+   fi
    if test -z "$REAL8"; then
       REAL8="-r8"
    fi
@@ -596,6 +639,9 @@ if echo $f90_version | grep -i compaq >/dev/null 2>&1; then
    MPILIBS="$MPILIBS -lelan"
    if test -z "$OPT"; then
       OPT="-fast"
+   fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
    fi
    if test -z "$REAL8"; then
       REAL8="-real_size 64"
@@ -614,6 +660,9 @@ if echo $f90_version | grep HP >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT="-fast"
    fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
+   fi
    if test -z "$REAL8"; then
       REAL8="-real_size 64"
    fi
@@ -631,11 +680,21 @@ if echo $f90_version | grep -i sx >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT="-Chopt"
    fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
+   fi
 fi
 
 if test -z "$CPRDEF"; then
    AC_MSG_WARN([UNKNOWN FORTRAN 90 COMPILER])
    CPRDEF="UNKNOWNCPR"
+fi
+
+# IF DEBUGGING ENABLED, DISABLE OPTIMIZATION FLAG
+if test "$DEBUGGING" = "ENABLED"; then
+	OPT=""
+else
+	DEBUG=""
 fi
 
 # SET THE PREPROCESSOR DEFINE FLAGS
@@ -692,7 +751,7 @@ echo
 echo Output Variables: {CC=$CC} {ALLCFLAGS=$ALLCFLAGS} \
 {FPP=$FPP} {FPPFLAGS=$FPPFLAGS} {FC=$FC} \
 {F90=$F90} {FCFLAGS=$FCFLAGS} {F90FLAGS=$F90FLAGS} \
-{MACHDEFS=$MACHDEFS} {OPT=$OPT} {REAL8=$REAL8} \
+{MACHDEFS=$MACHDEFS} {OPT=$OPT} {DEBUG=$DEBUG} {REAL8=$REAL8} \
 {BIT64=$BIT64} {ENDIAN=$ENDIAN} {MPIF90=$MPIF90} \
 {MPILIBS=$MPILIBS} {MPIHEADER=$MPIHEADER}  \
 {INCLUDEFLAG=$INCLUDEFLAG} {INCLUDEPATH=$INCLUDEPATH} \

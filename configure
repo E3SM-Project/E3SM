@@ -271,7 +271,7 @@ PACKAGE_VERSION='2.0'
 PACKAGE_STRING='MCT 2.0'
 PACKAGE_BUGREPORT=''
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS MPILIBS MPIHEADER FPP FPPFLAGS MACHDEFS FC FCFLAGS ALLCFLAGS OPT REAL8 BIT64 ENDIAN INCLUDEFLAG INCLUDEPATH AR BABELROOT COMPILER_ROOT FORT_SIZE PYTHON PYTHONOPTS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT F90 F90FLAGS F90SUFFIX ac_ct_F90 MPIF90 MPISERPATH F90RULE F90RULECPP CRULE LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS MPILIBS MPIHEADER FPP FPPFLAGS MACHDEFS FC FCFLAGS ALLCFLAGS OPT DEBUG REAL8 BIT64 ENDIAN INCLUDEFLAG INCLUDEPATH AR BABELROOT COMPILER_ROOT FORT_SIZE PYTHON PYTHONOPTS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT F90 F90FLAGS F90SUFFIX ac_ct_F90 MPIF90 MPISERPATH F90RULE F90RULECPP CRULE LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -748,6 +748,10 @@ ac_env_OPT_set=${OPT+set}
 ac_env_OPT_value=$OPT
 ac_cv_env_OPT_set=${OPT+set}
 ac_cv_env_OPT_value=$OPT
+ac_env_DEBUG_set=${DEBUG+set}
+ac_env_DEBUG_value=$DEBUG
+ac_cv_env_DEBUG_set=${DEBUG+set}
+ac_cv_env_DEBUG_value=$DEBUG
 ac_env_REAL8_set=${REAL8+set}
 ac_env_REAL8_value=$REAL8
 ac_cv_env_REAL8_set=${REAL8+set}
@@ -890,6 +894,8 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-mpiserial      Use the included MPI replacement library for single
                           processor
+  --enable-debugging      Use the debugging flag and disable the optimization
+                          flag
   --enable-selectedrealkind
                           define single precision and double precision numbers
                           using the selected_real_kind function. Default uses
@@ -908,6 +914,8 @@ Some influential environment variables:
   FCFLAGS     User-defined Fortran compiler flags
   ALLCFLAGS   Customized C source compilation flags
   OPT         Fortran compiler flag for optimization level
+  DEBUG       Fortran compiler flag for generating symbolic debugging
+              information
   REAL8       Fortran compiler flag for setting the default REAL size to
               REAL(KIND=8)
   BIT64       Fortran compiler flag for generating 64-bit objects
@@ -1394,6 +1402,13 @@ if test "${enable_mpiserial+set}" = set; then
 
 fi;
 
+# Check whether --enable-debugging or --disable-debugging was given.
+if test "${enable_debugging+set}" = set; then
+  enableval="$enable_debugging"
+  DEBUGGING="ENABLED"
+
+fi;
+
 # Check whether --enable-selectedrealkind or --disable-selectedrealkind was given.
 if test "${enable_selectedrealkind+set}" = set; then
   enableval="$enable_selectedrealkind"
@@ -1416,6 +1431,7 @@ fi;
 
 
 # DECLARE THE FOLLOWING PRECIOUS VARIABLES
+
 
 
 
@@ -2366,7 +2382,7 @@ echo "$as_me: FORTRAN 90 FILENAME EXTENSION HAS BEEN SET TO .$F90SUFFIX" >&6;}
 fi
 
 # Provide some information about the compiler.
-echo "$as_me:2369:" \
+echo "$as_me:2385:" \
      "checking for Fortran 90 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -2878,7 +2894,7 @@ _ACEOF
 # 1 to this macro) to the Fortran 90 compiler in order to get "version" output
 ac_save_F90FLAGS=$F90FLAGS
 F90FLAGS="$F90FLAGS $ac_version"
-(eval echo $as_me:2881: \"$ac_link\") >&5
+(eval echo $as_me:2897: \"$ac_link\") >&5
 ac_f90_version_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 echo "$ac_f90_version_output" >&5
 F90FLAGS=$ac_save_F90FLAGS
@@ -3743,6 +3759,9 @@ if echo $F90 | grep xlf90 >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT="-O2"
    fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-qdbg"
+   fi
    if test -z "$F90FLAGS"; then
       if test "$ac_cv_f90_fpp_compiler" = "yes"; then
          F90FLAGS="-qarch=auto -qsuffix=f=F90:cpp=F90"
@@ -3770,6 +3789,9 @@ if echo $F90 | grep pgf90 >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT="-O2"
    fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
+   fi
 fi
 
 if echo $F90 | grep ftn >/dev/null 2>&1; then
@@ -3789,6 +3811,9 @@ if echo $F90 | grep ftn >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT="-O2"
    fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
+   fi
  else
    echo "Fortran Compiler is Cray"
    CPRDEF="CRAY"
@@ -3800,6 +3825,9 @@ if echo $F90 | grep ftn >/dev/null 2>&1; then
    fi
    if test -z "$OPT"; then
       OPT="-Oscalar3 -Ovector1 -Ostream1"
+   fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
    fi
  fi
 fi
@@ -3827,6 +3855,9 @@ fi
 if echo $F90 | grep lf95 >/dev/null 2>&1; then
    echo "Fortran Compiler is Lahey"
    CPRDEF="LAHEY"
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
+   fi
 fi
 
 if echo $F90 | grep ifc >/dev/null 2>&1; then
@@ -3842,6 +3873,9 @@ if echo $F90 | grep ifc >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT="-O2"
    fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
+   fi
 fi
 
 if echo $F90 | grep efc >/dev/null 2>&1; then
@@ -3856,6 +3890,9 @@ if echo $F90 | grep efc >/dev/null 2>&1; then
    fi
    if test -z "$OPT"; then
       OPT="-O2"
+   fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
    fi
 fi
 
@@ -3874,6 +3911,9 @@ if echo $F90 | grep ifort >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT="-O2"
    fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
+   fi
 fi
 
 if echo $F90 | grep pathf90 >/dev/null 2>&1; then
@@ -3887,6 +3927,9 @@ if echo $F90 | grep pathf90 >/dev/null 2>&1; then
    fi
    if test -z "$OPT"; then
       OPT="-O2"
+   fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
    fi
 fi
 
@@ -3909,6 +3952,9 @@ if echo $f90_version | grep -i nag >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT="-O2"
    fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
+   fi
 fi
 
 if echo $f90_version | grep -i absoft >/dev/null 2>&1; then
@@ -3922,6 +3968,9 @@ if echo $f90_version | grep -i absoft >/dev/null 2>&1; then
    fi
    if test -z "$OPT"; then
       OPT="-O2"
+   fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
    fi
 fi
 
@@ -3940,6 +3989,9 @@ if echo $f90_version | grep -i mipspro >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT="-O3"
    fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
+   fi
    if test -z "$REAL8"; then
       REAL8="-r8"
    fi
@@ -3954,6 +4006,9 @@ if echo $f90_version | grep -i compaq >/dev/null 2>&1; then
    MPILIBS="$MPILIBS -lelan"
    if test -z "$OPT"; then
       OPT="-fast"
+   fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
    fi
    if test -z "$REAL8"; then
       REAL8="-real_size 64"
@@ -3972,6 +4027,9 @@ if echo $f90_version | grep HP >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT="-fast"
    fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
+   fi
    if test -z "$REAL8"; then
       REAL8="-real_size 64"
    fi
@@ -3989,12 +4047,22 @@ if echo $f90_version | grep -i sx >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT="-Chopt"
    fi
+   if test -z "$DEBUG"; then
+	  DEBUG="-g"
+   fi
 fi
 
 if test -z "$CPRDEF"; then
    { echo "$as_me:$LINENO: WARNING: UNKNOWN FORTRAN 90 COMPILER" >&5
 echo "$as_me: WARNING: UNKNOWN FORTRAN 90 COMPILER" >&2;}
    CPRDEF="UNKNOWNCPR"
+fi
+
+# IF DEBUGGING ENABLED, DISABLE OPTIMIZATION FLAG
+if test "$DEBUGGING" = "ENABLED"; then
+	OPT=""
+else
+	DEBUG=""
 fi
 
 # SET THE PREPROCESSOR DEFINE FLAGS
@@ -4052,7 +4120,7 @@ echo
 echo Output Variables: {CC=$CC} {ALLCFLAGS=$ALLCFLAGS} \
 {FPP=$FPP} {FPPFLAGS=$FPPFLAGS} {FC=$FC} \
 {F90=$F90} {FCFLAGS=$FCFLAGS} {F90FLAGS=$F90FLAGS} \
-{MACHDEFS=$MACHDEFS} {OPT=$OPT} {REAL8=$REAL8} \
+{MACHDEFS=$MACHDEFS} {OPT=$OPT} {DEBUG=$DEBUG} {REAL8=$REAL8} \
 {BIT64=$BIT64} {ENDIAN=$ENDIAN} {MPIF90=$MPIF90} \
 {MPILIBS=$MPILIBS} {MPIHEADER=$MPIHEADER}  \
 {INCLUDEFLAG=$INCLUDEFLAG} {INCLUDEPATH=$INCLUDEPATH} \
@@ -4703,6 +4771,7 @@ s,@FC@,$FC,;t t
 s,@FCFLAGS@,$FCFLAGS,;t t
 s,@ALLCFLAGS@,$ALLCFLAGS,;t t
 s,@OPT@,$OPT,;t t
+s,@DEBUG@,$DEBUG,;t t
 s,@REAL8@,$REAL8,;t t
 s,@BIT64@,$BIT64,;t t
 s,@ENDIAN@,$ENDIAN,;t t
