@@ -1098,8 +1098,6 @@ contains
     count = 0
 
 
-    if(iorank>=use_io_procs) return 
-
     !-----------------
 
     cnt = 1
