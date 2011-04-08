@@ -34,7 +34,6 @@ module piolib_mod
 
   implicit none
   private
-  save
 
   include 'mpif.h'    ! _EXTERNAL
 
@@ -1099,7 +1098,7 @@ contains
     count = 0
 
 
-!!    if(iorank>=use_io_procs) return 
+    if(iorank>=use_io_procs) return 
 
     !-----------------
 

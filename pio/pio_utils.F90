@@ -5,7 +5,7 @@ module pio_utils
   use pio_types, only : PIO_iotype_netcdf4p, pio_iotype_netcdf4c
   use pio_types, only : PIO_bcast_error 
   use pio_kinds, only : i4, r4, r8
-  use pio_support, only : checkmpireturn, piodie
+  use pio_support, only : checkmpireturn, piodie, Debug
 
 #ifdef _NETCDF
   use netcdf            ! _EXTERNAL
@@ -43,7 +43,7 @@ contains
 !
     iotype = file%iotype
     
-    call mpi_barrier(file%iosystem%union_comm, mpierr)
+    if(Debug) call mpi_barrier(file%iosystem%union_comm, mpierr)
 
     select case(iotype)
     case(iotype_pnetcdf)

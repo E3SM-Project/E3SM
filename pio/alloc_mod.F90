@@ -110,7 +110,7 @@ contains
 # 63 "alloc_mod.F90.in"
   subroutine alloc_check_1d_long (data,varlen,msg)
 
-    integer(kind=PIO_OFFSET), pointer :: data(:)
+    integer(i8), pointer :: data(:)
     integer, intent(in) :: varlen
     character(len=*), intent(in), optional:: msg
 
@@ -234,7 +234,7 @@ contains
 # 90 "alloc_mod.F90.in"
   subroutine alloc_check_2d_long (data,size1, size2,msg)
 
-    integer(kind=PIO_OFFSET), pointer :: data(:,:)
+    integer(i8), pointer :: data(:,:)
     integer, intent(in) :: size1, size2
     character(len=*), intent(in), optional:: msg
 
@@ -333,7 +333,7 @@ contains
 # 116 "alloc_mod.F90.in"
   subroutine dealloc_check_1d_long (data,msg)
 
-    integer(kind=PIO_OFFSET), pointer :: data(:)
+    integer(i8), pointer :: data(:)
     character(len=*), intent(in), optional:: msg
 
     character(len=*), parameter :: subName=modName//'::dealloc_check_1d_long'
@@ -361,7 +361,7 @@ contains
 # 116 "alloc_mod.F90.in"
   subroutine dealloc_check_2d_long (data,msg)
 
-    integer(kind=PIO_OFFSET), pointer :: data(:,:)
+    integer(i8), pointer :: data(:,:)
     character(len=*), intent(in), optional:: msg
 
     character(len=*), parameter :: subName=modName//'::dealloc_check_2d_long'
@@ -554,7 +554,7 @@ contains
 # 140 "alloc_mod.F90.in"
   subroutine alloc_check_0d_long(data,msg)
 
-  integer(kind=PIO_OFFSET), pointer :: data
+  integer(i8), pointer :: data
   character(len=*), intent(in), optional:: msg
 
   character(len=*), parameter :: subName=modName//'::alloc_check_0d_long'
@@ -653,7 +653,7 @@ end subroutine alloc_check_0d_double
 # 166 "alloc_mod.F90.in"
 subroutine dealloc_check_0d_long (data,msg)
 
-  integer(kind=PIO_OFFSET), pointer :: data
+  integer(i8), pointer :: data
   character(len=*), intent(in), optional:: msg
 
   character(len=*), parameter :: subName=modName//'::dealloc_check_0d_long'

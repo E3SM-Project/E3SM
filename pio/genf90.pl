@@ -9,7 +9,7 @@ my $vtype = {'text' => 'character(len=*)',
 	     'real' => 'real(r4)', 
 	     'double' => 'real(r8)',
 	     'int'    => 'integer(i4)',
-	     'long'   => 'integer(kind=PIO_OFFSET)'};
+	     'long'   => 'integer(i8)'};
 my $itype = {'text' => 100, 
 	     'real' => 101, 
 	     'double' => 102,
