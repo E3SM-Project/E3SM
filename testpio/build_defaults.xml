@@ -43,9 +43,9 @@
  />
 
 <bluefire
-  NETCDF_PATH="/blhome/jedwards/netcdf-4/" 
-  PNETCDF_PATH="/contrib/parallel-netcdf-1.1.1.svn821" 
-  FFLAGS = "-g -qfullpath -O3 -WF,-DASYNC_PNETCDF "
+  NETCDF_PATH="/contrib/netcdf-3.6.2" 
+  PNETCDF_PATH="/contrib/parallel-netcdf-1.2.0-svn913" 
+  FFLAGS = "-g -qfullpath -O3 -WF,-DASYNC_PNETCDF"
   CFLAGS = "-g -qfullpath -O3"
   ENV_PREATTACH_L2CACHE_LIST="AUTO_SELECT"
   ENV_MP_EAGER_LIMIT="0"
