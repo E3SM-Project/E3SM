@@ -40,14 +40,18 @@ sub projectInfo{
    my $project;
 #HOST SPECIFIC START
    if($host =~ "bluefire" or $host =~ "frost"){
-      open(G,"/etc/project.ncar");
-      foreach(<G>){
-         if($_ =~ /^$user:(\d+),?/){
-            $project = $1;
-            last;
-         }
-      }
-      close(G);
+       if(defined $ENV{USE_PROJECT}){
+	   $project=$ENV{USE_PROJECT};
+       }else{
+	   open(G,"/etc/project.ncar");
+	   foreach(<G>){
+	       if($_ =~ /^$user:(\d+),?/){
+		   $project = $1;
+		   last;
+	       }
+	   }
+	   close(G);
+       }
       if($host =~ "bluefire") {
         $projectInfo = "#BSUB -R \"span[ptile=64]\"\n#BSUB -P $project\n";
       }
