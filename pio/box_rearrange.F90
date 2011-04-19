@@ -2709,7 +2709,7 @@ end subroutine box_rearrange_io2comp_int
     enddo
     blocksize = gcd(bsizeT(1:ii-1))
     deallocate(bsizeT)
-    print *,'GCD calculated for send loop blocksize: ',blocksize
+!    print *,'GCD calculated for send loop blocksize: ',blocksize
     call MPI_TYPE_CONTIGUOUS(blocksize,ioDesc%baseTYPE,newTYPEs,ierror)
     call CheckMPIReturn(subName,ierror)
     call MPI_TYPE_COMMIT(newTYPEs,ierror)
@@ -3368,7 +3368,7 @@ end subroutine box_rearrange_io2comp_int
           pos = pos + rcount(i)
        enddo
        blocksize = gcd(bsizeT(1:ii-1))
-       print *,'gcd: receive block lengths: ', bsizeT(1:ii-1)
+!       print *,'gcd: receive block lengths: ', bsizeT(1:ii-1)
        deallocate(bsizeT)
 !       print *,'GCD calculated for receive loop blocksize: ',blocksize
        call MPI_TYPE_CONTIGUOUS(blocksize,ioDesc%baseTYPE,newTYPEr,ierror)
@@ -3431,7 +3431,7 @@ end subroutine box_rearrange_io2comp_int
     enddo
     blocksize = gcd(bsizeT(1:ii-1))
     deallocate(bsizeT)
-    print *,'GCD calculated for send loop blocksize: ',blocksize
+!    print *,'GCD calculated for send loop blocksize: ',blocksize
     call MPI_TYPE_CONTIGUOUS(blocksize,ioDesc%baseTYPE,newTYPEs,ierror)
     call CheckMPIReturn(subName,ierror)
     call MPI_TYPE_COMMIT(newTYPEs,ierror)

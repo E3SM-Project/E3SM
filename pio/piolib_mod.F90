@@ -1162,24 +1162,28 @@ contains
              count(m) = de-ds+1
           end if
 
-          if (start(m) < 1 .or. count(m) < 1) then
+          if (start(m) < 1 .or. count(m) < 1 .and. iorank<use_io_procs) then
              print *, 'start =',start, ' count=',count
              call piodie( _FILE_,__LINE__, &
                   'start or count failed to converge')
           endif
 
        enddo
-       do m=1,ndims
-          pes_per_dim(m) = gdims(m)/count(m)
-       enddo
-       ! -----------------------------------------------
-       ! note this caculation assumes that the the first 
-       ! two horizontal dimensions are decomposed,
-       ! -----------------------------------------------
-       if(ndims==1) then
-          fanfactor = ntasks/pes_per_dim(1)
+       if(iorank<use_io_procs) then
+          do m=1,ndims
+             pes_per_dim(m) = gdims(m)/count(m)
+          enddo
+          ! -----------------------------------------------
+          ! note this caculation assumes that the the first 
+          ! two horizontal dimensions are decomposed,
+          ! -----------------------------------------------
+          if(ndims==1) then
+             fanfactor = ntasks/pes_per_dim(1)
+          else
+             fanfactor = ntasks/(pes_per_dim(1)*pes_per_dim(2))
+          end if
        else
-          fanfactor = ntasks/(pes_per_dim(1)*pes_per_dim(2))
+          fanfactor = 0
        end if
        call mpi_allreduce(fanfactor,rtmp,1,MPI_REAL8,MPI_MAX,iocomm,ierr)
        fanfactor=rtmp
@@ -1191,7 +1195,7 @@ contains
     deallocate(pes_per_dim)
     deallocate(bsize,nblocks,fblocks)
     !   stop 'end of getiostartandcount'
-
+    ! This should already be the case.
     if(iorank>=use_io_procs) then 
 	start = 1
         count = 0 
