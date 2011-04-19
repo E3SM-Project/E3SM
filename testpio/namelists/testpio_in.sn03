@@ -10,7 +10,7 @@
   maxiter     = 10
   dir         = './none/'
   num_aggregator = 1
-  DebugLevel  = 0
+  DebugLevel  = 1
   compdof_input = 'namelist'
   compdof_output = 'none'
 /

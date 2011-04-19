@@ -3233,50 +3233,14 @@ end subroutine box_rearrange_io2comp_int
 
     ! construct a type to send a sparse subset of dest_ioindex()
 
-#if 0
-    pos=1
-    allocate(bsizeT(num_iotasks))
-    ii = 1
-    do i=1,num_iotasks
-       if (scount(i) /= 0) then 
-          call GCDblocksize(srcindex(pos:pos+scount(i)-1),blocksize)
-          bsizeT(ii)=blocksize
-          pos = pos + scount(i)
-          ii = ii+1
-       endif
-    enddo
-    blocksize = gcd(bsizeT(1:ii-1))
-    deallocate(bsizeT)
-    print *,'GCD calculated for send loop blocksize: 2016)',blocksize
-    call MPI_TYPE_CONTIGUOUS(blocksize,sendtype,newTYPEs,ierror)
-    call CheckMPIReturn(subName,ierror)
-    call MPI_TYPE_COMMIT(newTYPEs,ierror)
-    call CheckMPIReturn(subName,ierror)
-#endif
-
-
     pos=1
     do i=1,num_iotasks
        if (scount(i) /= 0) then
 
    
-#if 0
-          len = scount(i)/blocksize
-          allocate(displace(len))
-          if(blocksize == 1) then 
-              displace(:) = srcindex(pos:pos+scount(i)-1)
-          else
-              srcindex(pos:pos+scount(i)-1) = srcindex(pos:pos+scount(i)-1)+1
-              call calcdisplace(blocksize,srcindex(pos:pos+scount(i)-1),displace)
-           endif
-           call MPI_TYPE_CREATE_INDEXED_BLOCK( &
-               len, 1, displace, &             ! count, blen, disp
-               newTYPEs, stype(i), ierror )            ! oldtype, newtype
-#else
            call MPI_TYPE_CREATE_INDEXED_BLOCK( &
                scount(i), 1, srcindex(pos:pos+scount(i)-1), &             ! count, blen, disp
                MPI_INTEGER, sendtype, ierror )            ! oldtype, newtype
-#endif
           call CheckMPIReturn(subName,ierror)
           call MPI_TYPE_COMMIT(sendtype, ierror)
           call CheckMPIReturn(subName,ierror)
@@ -3293,11 +3257,7 @@ end subroutine box_rearrange_io2comp_int
                Iosystem%union_comm,sreq,ierror )
           call CheckMPIReturn(subName,ierror)
 
-#if 0
-          call MPI_TYPE_FREE(stype(i), ierror)
-#else
           call MPI_TYPE_FREE(sendtype, ierror)
-#endif
           call CheckMPIReturn(subName,ierror)
           call MPI_REQUEST_FREE(sreq,ierror)
           call CheckMPIReturn(subName,ierror)
@@ -3306,9 +3266,6 @@ end subroutine box_rearrange_io2comp_int
        endif
     end do
 
-#if 0
-    call MPI_TYPE_FREE(newTYPEs,ierror)
-#endif
     call dealloc_check(spos,'spos')
 
     ! _USE_SPACE
@@ -3573,7 +3530,7 @@ end subroutine box_rearrange_io2comp_int
   !   the rearrangement
   !
 
-# 2343 "box_rearrange.F90.in"
+# 2300 "box_rearrange.F90.in"
   subroutine box_rearrange_free(Iosystem,ioDesc)
     implicit none
 
