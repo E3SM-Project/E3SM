@@ -30,15 +30,15 @@ CONTAINS
        dis = dis/lenblocks   
        displace(i) = dis
     enddo
-    if (numblocks > 1) then
-       do i=1,numblocks-1	
-          if(displace(i+1) .lt. displace(i)) then
-             print *,'calcdisplace: monotonic error: displace(i:i+1)',displace(i:i+1)
-             print *,'calcdisplace: monotonic error: i,lenblocks,numblocks,size(dof): ',i,lenblocks,numblocks,size(dof)
-             !         call piodie( _FILE_,__LINE__)
-          endif
-       enddo
-    endif
+!    if (numblocks > 1) then
+!       do i=1,numblocks-1	
+!          if(displace(i+1) .lt. displace(i)) then
+!             print *,'calcdisplace: monotonic error: displace(i:i+1)',displace(i:i+1)
+!             print *,'calcdisplace: monotonic error: i,lenblocks,numblocks,size(dof): ',i,lenblocks,numblocks,size(dof)
+!             !         call piodie( _FILE_,__LINE__)
+!          endif
+!       enddo
+!    endif
 
   end subroutine calcdisplace
 
