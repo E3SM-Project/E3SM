@@ -1,4 +1,4 @@
-#define _FILE_ "ionf_mod.F90"
+#define __PIO_FILE__ "ionf_mod.F90"
 module ionf_mod
 #ifdef TIMING
   use perf_mod, only : t_startf, t_stopf      ! _EXTERNAL
@@ -103,7 +103,7 @@ contains
           if (File%iosystem%io_rank == 0) then
              ! Stores the ncid in File%fh
              ierr = nf90_create(fname, nmode , File%fh)
-             if(Debug .or. Debugasync) print *,__FILE__,__LINE__,file%fh, ierr
+             if(Debug .or. Debugasync) print *,__PIO_FILE__,__LINE__,file%fh, ierr
 ! Set default to NOFILL for performance.  
              if(ierr==NF90_NOERR) &
                   ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
@@ -112,10 +112,10 @@ contains
           if(File%iosystem%io_rank > 0) File%fh=-File%fh
 #endif
        case default
-          call bad_iotype(iotype,_FILE_,__LINE__)
+          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
 
        end select
-       if(Debug) print *,__FILE__,__LINE__,file%fh,ierr
+       if(Debug) print *,__PIO_FILE__,__LINE__,file%fh,ierr
     end if
     tmpfh = file%fh
     
@@ -123,9 +123,9 @@ contains
     
     if(.not. file%iosystem%ioproc) file%fh=-tmpfh
 
-    if(Debug.or.DebugAsync) print *,__FILE__,__LINE__,file%fh,ierr
+    if(Debug.or.DebugAsync) print *,__PIO_FILE__,__LINE__,file%fh,ierr
     
-    call check_netcdf(File, ierr,_FILE_,__LINE__)
+    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
 
   end function create_nf
 
@@ -202,7 +202,7 @@ contains
           if (File%iosystem%io_rank == 0) then
              ! Stores the ncid in File%fh
              ierr = nf90_open(fname,amode,File%fh)
-             if(Debug .or. Debugasync) print *,__FILE__,__LINE__,file%fh, ierr
+             if(Debug .or. Debugasync) print *,__PIO_FILE__,__LINE__,file%fh, ierr
              ! Set default to NOFILL for performance.  
              if(ierr .eq. NF90_NOERR .and. iand(amode, NF90_WRITE) > 0) then
                 ierr = nf90_set_fill(File%fh, NF90_NOFILL, ier2)
@@ -219,7 +219,7 @@ contains
 
     if(.not. file%iosystem%ioproc) file%fh=-tmpfh
       
-    call check_netcdf(File, ierr,_FILE_,__LINE__)
+    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
 
   end function open_nf
 
@@ -236,7 +236,7 @@ contains
     ierr=PIO_noerr
 
     if(File%iosystem%IOproc) then
-       if(Debug) print *,_FILE_,__LINE__,'CFILE closing : ',file%fh
+       if(Debug) print *,__PIO_FILE__,__LINE__,'CFILE closing : ',file%fh
        select case (File%iotype) 
 #ifdef _PNETCDF
        case(PIO_iotype_pnetcdf)
@@ -249,16 +249,16 @@ contains
              if(ierr==PIO_NOERR) then
                 ierr= nf90_close(File%fh)
              else
-                if(Debug) print *,__FILE__,__LINE__,ierr
+                if(Debug) print *,__PIO_FILE__,__LINE__,ierr
              end if
           endif
 #endif
        case default
-          call bad_iotype(File%iotype,_FILE_,__LINE__)
+          call bad_iotype(File%iotype,__PIO_FILE__,__LINE__)
        end select
     end if
     file%fh=-1
-    call check_netcdf(File, ierr,_FILE_,__LINE__)
+    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
   end function close_nf
 
 
@@ -274,7 +274,7 @@ contains
     ierr=PIO_noerr
 
     if(File%iosystem%IOproc) then
-       if(Debug) print *,_FILE_,__LINE__,'CFILE syncing : ',file%fh
+       if(Debug) print *,__PIO_FILE__,__LINE__,'CFILE syncing : ',file%fh
        select case (File%iotype) 
 #ifdef _PNETCDF
        case(PIO_iotype_pnetcdf)
@@ -287,10 +287,10 @@ contains
           endif
 #endif
        case default
-          call bad_iotype(File%iotype,_FILE_,__LINE__)
+          call bad_iotype(File%iotype,__PIO_FILE__,__LINE__)
        end select
     end if
-    call check_netcdf(File, ierr,_FILE_,__LINE__)
+    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
   end function sync_nf
 
   subroutine check_file_type(File, filename) 
@@ -334,7 +334,7 @@ contains
                 File%iotype=pio_iotype_netcdf4c
              end if
 #else
-             call piodie(__FILE__,__LINE__,'You must link with the netcdf4 ',0,&
+             call piodie(__PIO_FILE__,__LINE__,'You must link with the netcdf4 ',0,&
                   'library built with hdf5 support to read this file',0,filename)
 #endif       
           else 
@@ -356,7 +356,7 @@ contains
                 i=i*2
              end do
              close(fh)
-             if(eof<0) call piodie(__FILE__,__LINE__,'Unrecognized file format ',0,filename)             
+             if(eof<0) call piodie(__PIO_FILE__,__LINE__,'Unrecognized file format ',0,filename)             
           end if
 
        end if
@@ -365,8 +365,8 @@ contains
        call CheckMPIReturn('nf_mod',mpierr)
     end if
     return
-100 call piodie(__FILE__,__LINE__,'File open error ',0,filename)
-101 call piodie(__FILE__,__LINE__,'File read error ',0,filename)
+100 call piodie(__PIO_FILE__,__LINE__,'File open error ',0,filename)
+101 call piodie(__PIO_FILE__,__LINE__,'File read error ',0,filename)
 
 
 

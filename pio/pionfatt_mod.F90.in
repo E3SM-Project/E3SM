@@ -1,4 +1,4 @@
-#define _FILE_ "pionfatt_mod.F90"
+#define __PIO_FILE__ "pionfatt_mod.F90"
 module pionfatt_mod
   use pio_kinds, only : r4, r8, i4
   use pio_types, only : iotype_netcdf, iotype_pnetcdf, pio_noerr
@@ -123,12 +123,12 @@ contains
 #else
 
 #ifdef DEBUG
-          print *, _FILE_,__LINE__,value
+          print *, __PIO_FILE__,__LINE__,value
           call MPI_ALLREDUCE(value, chkval, 1, {MPITYPE}, MPI_MAX ,Ios%io_comm, mpierr)
           call CheckMPIReturn(subName, mpierr)
           if(chkval /= value) then
-             print *,_FILE_,__LINE__,chkval,value, mpierr
-             call piodie(_FILE_,__LINE__,'attributes do not match')
+             print *,__PIO_FILE__,__LINE__,chkval,value, mpierr
+             call piodie(__PIO_FILE__,__LINE__,'attributes do not match')
           end if
 #endif             
 #undef DEBUG
@@ -146,11 +146,11 @@ contains
 #endif
 
        case default
-          call bad_iotype(iotype,_FILE_,__LINE__)
+          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
 
        end select
     endif
-    call check_netcdf(File, ierr,_FILE_,__LINE__)
+    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
   end function put_att_{TYPE}
 
 !pl The next line is needed by genf90.pl, do not remove it.
@@ -207,7 +207,7 @@ contains
        call MPI_BCAST(value, clen, {MPITYPE}, ios%compmaster, ios%my_comm, mpierr)
     end if
 
-    if(Debug.or.DebugAsync) print *,__FILE__,__LINE__,clen,value
+    if(Debug.or.DebugAsync) print *,__PIO_FILE__,__LINE__,clen,value
 
 
     if(Ios%IOproc) then
@@ -215,12 +215,12 @@ contains
 #ifdef _PNETCDF
        case(iotype_pnetcdf)
 #ifdef DEBUG
-          print *, _FILE_,__LINE__,value
+          print *, __PIO_FILE__,__LINE__,value
           call MPI_ALLREDUCE(value, chkval, 1, {MPITYPE}, MPI_MAX ,Ios%io_comm, mpierr)
           call CheckMPIReturn(subName, mpierr)
           if(chkval /= value) then
-             print *,_FILE_,__LINE__,chkval,value, mpierr
-             call piodie(_FILE_,__LINE__,'attributes do not match')
+             print *,__PIO_FILE__,__LINE__,chkval,value, mpierr
+             call piodie(__PIO_FILE__,__LINE__,'attributes do not match')
           end if
 #endif             
 #undef DEBUG
@@ -236,11 +236,11 @@ contains
 #endif
 
        case default
-          call bad_iotype(iotype,_FILE_,__LINE__)
+          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
 
        end select
     endif
-    call check_netcdf(File, ierr,_FILE_,__LINE__)
+    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
   end function put_att_1d_{TYPE}
 
 !>
@@ -407,11 +407,11 @@ contains
 #endif
 
        case default
-          call bad_iotype(iotype,_FILE_,__LINE__)
+          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
 
        end select
     endif
-    call check_netcdf(File, ierr,_FILE_,__LINE__)
+    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
     if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
        call MPI_BCAST(value, clen, {MPITYPE},Ios%iomaster,Ios%my_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
@@ -484,11 +484,11 @@ contains
 #endif
 
        case default
-          call bad_iotype(iotype,_FILE_,__LINE__)
+          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
 
        end select
     endif
-    call check_netcdf(File, ierr,_FILE_,__LINE__)
+    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
     if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
        call MPI_BCAST(value, clen, {MPITYPE},Ios%iomaster,Ios%my_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)

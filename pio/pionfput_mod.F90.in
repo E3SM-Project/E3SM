@@ -1,4 +1,4 @@
-#define _FILE_ "pionfput_mod.F90"
+#define __PIO_FILE__ "pionfput_mod.F90"
 module pionfput_mod
   !pl  This file is input to the perl program genf90.pl which generates  
   !pl  f90 code for various datatypes and dimensions.
@@ -73,7 +73,7 @@ contains
 #endif 
     ierr=0
     iotype = File%iotype 
-    if(debug) print *,_FILE_,__LINE__,ival,iotype, index
+    if(debug) print *,__PIO_FILE__,__LINE__,ival,iotype, index
 
     ios=>File%iosystem
     if(ios%async_interface .and. .not. ios%ioproc ) then
@@ -123,12 +123,12 @@ contains
           end if
 #endif
        case default
-          print *,_FILE_,__LINE__,iotype
-          call piodie(_FILE_,__LINE__,"bad iotype specified")
+          print *,__PIO_FILE__,__LINE__,iotype
+          call piodie(__PIO_FILE__,__LINE__,"bad iotype specified")
        end select
        deallocate(count)
     end if
-    call check_netcdf(File,ierr,_FILE_,__LINE__)
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
 
 #ifdef TIMING
     call t_stopf("pio_put_var1_{TYPE}")
@@ -290,13 +290,13 @@ contains
           end if
 #endif
        case default
-          print *,_FILE_,__LINE__,iotype
-          call piodie(_FILE_,__LINE__,"bad iotype specified" )
+          print *,__PIO_FILE__,__LINE__,iotype
+          call piodie(__PIO_FILE__,__LINE__,"bad iotype specified" )
 
        end select
     end if
 
-    call check_netcdf(File,ierr,_FILE_,__LINE__)
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
 #ifdef TIMING
     call t_stopf("pio_put_var_{DIMS}d_{TYPE}")
 #endif 
@@ -416,12 +416,12 @@ contains
           end if
 #endif
        case default
-          print *,_FILE_,__LINE__,iotype
-          call piodie(_FILE_,__LINE__,"bad iotype specified")
+          print *,__PIO_FILE__,__LINE__,iotype
+          call piodie(__PIO_FILE__,__LINE__,"bad iotype specified")
        end select
        deallocate(pstart, pcount)
     end if
-    call check_netcdf(File, ierr,_FILE_,__LINE__)
+    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
 
 #ifdef TIMING
     call t_stopf("pio_put_vara_{DIMS}d_{TYPE}")

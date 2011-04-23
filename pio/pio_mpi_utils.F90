@@ -1,4 +1,4 @@
-#define _FILE_ "pio_mpi_utils.F90"
+#define __PIO_FILE__ "pio_mpi_utils.F90"
 module pio_mpi_utils
   
   implicit none
@@ -28,7 +28,7 @@ contains
       case (PIO_char)
          mtype=MPI_CHARACTER
       case default
-         call piodie( _FILE_,__LINE__, &
+         call piodie( __PIO_FILE__,__LINE__, &
                       'Could not convert pio type=',ptype,' to an mpi type')
     end select
 

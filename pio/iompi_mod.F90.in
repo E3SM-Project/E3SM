@@ -1,4 +1,4 @@
-#define _FILE_ "iompi_mod.F90"
+#define __PIO_FILE__ "iompi_mod.F90"
 module iompi_mod
 
 
@@ -65,7 +65,7 @@ contains
            File%offset = 0
         end select
 #else
-        call piodie(_FILE_,__LINE__,'PIO was not built with -DUSEMPIIO')
+        call piodie(__PIO_FILE__,__LINE__,'PIO was not built with -DUSEMPIIO')
 #endif
      end if
  end function close_mpiio
@@ -107,7 +107,7 @@ contains
         if(Check) call CheckMPIreturn('create_mpiio: after call to MPI_BCAST: ',ierrl)
      end if
 #else
-     call piodie(_FILE_,__LINE__,'PIO was not built with -DUSEMPIIO')
+     call piodie(__PIO_FILE__,__LINE__,'PIO was not built with -DUSEMPIIO')
      ierr=0
 #endif
  end function create_mpiio
@@ -149,7 +149,7 @@ contains
      end if
 
 #else
-     call piodie(_FILE_,__LINE__,'PIO was not built with -DUSEMPIIO')
+     call piodie(__PIO_FILE__,__LINE__,'PIO was not built with -DUSEMPIIO')
      ierr=0
 #endif
  end function open_mpiio
@@ -196,12 +196,12 @@ contains
      !-------------------------------------
      ! Set file view for distributed array
      !-------------------------------------
-     if(Debug) print *,_FILE_,__LINE__,' inside write_mpiio_{TYPE} offset: ',File%offset
+     if(Debug) print *,__PIO_FILE__,__LINE__,' inside write_mpiio_{TYPE} offset: ',File%offset
      call MPI_File_set_view(File%fh,File%offset, iodesc%Write%elemTYPE, iodesc%Write%fileTYPE, 'native',File%iosystem%info,ierr)
 
      if(Check.and.ierr/=MPI_SUCCESS) then
 	call CheckMPIreturn('write_mpiio_{TYPE} after call to file_set_view: ',ierr)
-	call piodie(_FILE_,__LINE__)
+	call piodie(__PIO_FILE__,__LINE__)
      end if
      !-----------------------------
      ! Write out distributed array
@@ -210,14 +210,14 @@ contains
      call MPI_file_write_all(File%fh,IOBUF,iodesc%Write%n_elemTYPE,iodesc%Write%elemTYPE,fstatus,ierr)
      if(Check.and.ierr/=MPI_SUCCESS) then
         call CheckMPIreturn('write_mpiio_{TYPE}: after call to file_write_all: ',ierr)
-        call piodie(_FILE_,__LINE__)
+        call piodie(__PIO_FILE__,__LINE__)
      end if
      !-----------------------------------
      ! increment the file  offset pointer
      !-----------------------------------
      File%Offset = File%Offset + reclen
 #else
-     call piodie(_FILE_,__LINE__,'PIO was not built with -DUSEMPIIO')
+     call piodie(__PIO_FILE__,__LINE__,'PIO was not built with -DUSEMPIIO')
      ierr=0
 #endif
 #ifdef TIMING
@@ -264,10 +264,10 @@ contains
      !-------------------------------------
      ! Set file view for distributed array
      !-------------------------------------
-     if(Debug) print *,_FILE_,__LINE__,'IAM: ',File%iosystem%io_rank,' before set_view iodesc%Read%fileTYPE: ',iodesc%Read%FileTYPE
+     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,' before set_view iodesc%Read%fileTYPE: ',iodesc%Read%FileTYPE
      call MPI_File_set_view(File%fh,File%offset, iodesc%Read%elemTYPE, iodesc%Read%fileType, 'native',File%iosystem%info,ierr)
      if(Check) call CheckMPIreturn('read_mpiio_{TYPE}: after call to file_set_view: ',ierr)
-!DBG     if(Debug) print *,_FILE_,__LINE__,'IAM: ',File%iosystem%io_rank,' after set_view IODesc%Read%fileTYPE: ',iodesc%Read%fileTYPE
+!DBG     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,' after set_view IODesc%Read%fileTYPE: ',iodesc%Read%fileTYPE
 
      !-----------------------------
      ! Read out distributed array
@@ -275,8 +275,8 @@ contains
      call MPI_file_read_all(File%fh,IOBUF,iodesc%Read%n_elemTYPE,iodesc%Read%elemTYPE,fstatus,ierr)
      if(Check) call CheckMPIreturn('read_mpiio_{TYPE}: after call to file_read_all: ',ierr)
      if(Debug) call MPI_get_count(fstatus,iodesc%Read%elemTYPE,cnt,ierr)
-     if(Debug) print *,_FILE_,__LINE__,'IAM: ',File%iosystem%io_rank,'read_mpiio_{TYPE}: cnt is: ',iodesc%Read%n_elemTYPE, cnt
-     if(Debug) print *,_FILE_,__LINE__,'IAM: ',File%iosystem%io_rank,'read_mpio_{TYPE}: reclen is: ',reclen
+     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,'read_mpiio_{TYPE}: cnt is: ',iodesc%Read%n_elemTYPE, cnt
+     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,'read_mpio_{TYPE}: reclen is: ',reclen
 
 
      !-----------------------------------
@@ -284,7 +284,7 @@ contains
      !-----------------------------------
      File%Offset = File%Offset + reclen
 #else
-     call piodie(_FILE_,__LINE__,'PIO was not built with -DUSEMPIIO')
+     call piodie(__PIO_FILE__,__LINE__,'PIO was not built with -DUSEMPIIO')
      ierr=0
 #endif
 #ifdef TIMING
@@ -327,7 +327,7 @@ contains
      endif
      File%offset = File%offset+i4
 #else
-     call piodie(_FILE_,__LINE__,'PIO was not built with -DUSEMPIIO')
+     call piodie(__PIO_FILE__,__LINE__,'PIO was not built with -DUSEMPIIO')
 #endif
 
  end subroutine Write_FORTRAN_CntrlWord
@@ -363,7 +363,7 @@ contains
 
      if(Debug) print *, subName,':: reclen ',reclen
 #else
-     call piodie(_FILE_,__LINE__,'PIO was not built with -DUSEMPIIO')
+     call piodie(__PIO_FILE__,__LINE__,'PIO was not built with -DUSEMPIIO')
 #endif
  end subroutine Read_FORTRAN_CntrlWord
 

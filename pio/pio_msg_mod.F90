@@ -1,3 +1,4 @@
+#define __PIO_FILE__ "pio_msg_mod.F90"
 module pio_msg_mod
   use pio_kinds
   use pio_types
@@ -137,17 +138,17 @@ contains
     end if
     do while(msg /= pio_msg_exit)
        if(iorank==0) then
-          if(Debugasync) print *,__FILE__,__LINE__, ' waiting'
+          if(Debugasync) print *,__PIO_FILE__,__LINE__, ' waiting'
           call mpi_waitany(numcomps, req, index, status, ierr)
-          if(Debugasync) print *,__FILE__,__LINE__, ' recieved on ', index
+          if(Debugasync) print *,__PIO_FILE__,__LINE__, ' recieved on ', index
        end if
 
        call mpi_bcast(index, 1, mpi_integer, 0, io_comm, ierr)
        ios => iosystem(index)
 
-       if(Debugasync) print *,__FILE__,__LINE__, index, ios%intercomm
+       if(Debugasync) print *,__PIO_FILE__,__LINE__, index, ios%intercomm
        call mpi_bcast(msg, 1, mpi_integer, 0, io_comm, ierr)
-       if(Debugasync) print *,__FILE__,__LINE__,msg
+       if(Debugasync) print *,__PIO_FILE__,__LINE__,msg
 
 
        select case(msg) 
@@ -239,7 +240,7 @@ contains
 #endif
 
 
-    if(Debugasync) print *,__FILE__,__LINE__
+    if(Debugasync) print *,__PIO_FILE__,__LINE__
     call mpi_finalize(ierr)
     stop
 
@@ -254,7 +255,7 @@ contains
 
     if(associated(list_item%file)) then
        do while(associated(list_item%file) .and. associated(list_item%next))
-       if(Debugasync) print *,__FILE__,__LINE__,list_item%file%fh
+       if(Debugasync) print *,__PIO_FILE__,__LINE__,list_item%file%fh
           list_item => list_item%next
        end do
        if(associated(list_item%file)) then
@@ -263,7 +264,7 @@ contains
           nullify(list_item%next)
        end if
     end if
-    if(Debugasync) print *,__FILE__,__LINE__,file%fh
+    if(Debugasync) print *,__PIO_FILE__,__LINE__,file%fh
     list_item%file => file
 
   end subroutine add_to_file_list
@@ -311,7 +312,7 @@ contains
        if(associated(list_item%next)) then
           list_item=>list_item%next
        else
-          call piodie(__FILE__,__LINE__)
+          call piodie(__PIO_FILE__,__LINE__)
        end if
     end do
 

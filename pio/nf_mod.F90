@@ -1,4 +1,4 @@
-#define _FILE_ "nf_mod.F90"
+#define __PIO_FILE__ "nf_mod.F90"
 module nf_mod
 
 #ifdef TIMING
@@ -237,12 +237,12 @@ contains
 #endif
 
        case default
-          call bad_iotype(iotype,_FILE_,__LINE__)
+          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
           
        end select
     endif
 
-    call check_netcdf(File, ierr, _FILE_,__LINE__)
+    call check_netcdf(File, ierr, __PIO_FILE__,__LINE__)
 
     if(file%iosystem%async_interface .or. ios%num_tasks>ios%num_iotasks) then
        call MPI_BCAST(vals,4,MPI_INTEGER,ios%IOMaster, ios%my_comm, mpierr)
@@ -340,11 +340,11 @@ contains
 #endif
 
        case default
-          call bad_iotype(iotype,_FILE_,__LINE__)
+          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
 
        end select
     endif
-    call check_netcdf(File, ierr,_FILE_,__LINE__)
+    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
     if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
        call MPI_BCAST(xtype,1,MPI_INTEGER,ios%IOMaster, ios%my_comm , mpierr)
        call CheckMPIReturn('nf_mod',mpierr)
@@ -449,11 +449,11 @@ contains
 #endif
 
        case default
-          call bad_iotype(iotype,_FILE_,__LINE__)
+          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
 
        end select
     endif
-    call check_netcdf(File, ierr,_FILE_,__LINE__)
+    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
     if(ios%async_interface.or.ios%num_tasks>ios%num_iotasks) then
        call MPI_BCAST(len,1,MPI_INTEGER,ios%IOMaster,ios%my_comm, mpierr)
        call CheckMPIReturn('nf_mod',mpierr)
@@ -538,7 +538,7 @@ contains
        case(pio_iotype_netcdf)
           if (ios%io_rank==0) then
              ierr=nf90_inq_attname(File%fh,varid,attnum,tmpname)
-             if(Debug) print *,__FILE__,__LINE__,name
+             if(Debug) print *,__PIO_FILE__,__LINE__,name
           endif
           if(.not.ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
              call MPI_BCAST(tmpname,PIO_MAX_NAME,MPI_CHARACTER,0,ios%IO_comm, mpierr)
@@ -548,11 +548,11 @@ contains
 #endif
 
        case default
-          call bad_iotype(iotype,_FILE_,__LINE__)
+          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
 
        end select
     endif
-    call check_netcdf(File, ierr,_FILE_,__LINE__)
+    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
     if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
        call MPI_BCAST(tmpname,PIO_MAX_NAME,MPI_CHARACTER,ios%IOMaster,ios%my_comm, mpierr)
        call CheckMPIReturn('nf_mod',mpierr)
@@ -642,12 +642,12 @@ contains
 #endif
 
        case default
-          call bad_iotype(iotype,_FILE_,__LINE__)
+          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
 
        end select
     endif
 
-    call check_netcdf(File, ierr,_FILE_,__LINE__)
+    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
     if(ios%async_interface.or.ios%num_tasks>ios%num_iotasks) then
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%IOMaster,ios%my_comm,ierr2)
     end if
@@ -757,11 +757,11 @@ contains
 #endif
 
        case default
-          call bad_iotype(iotype,_FILE_,__LINE__)
+          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
 
        end select
     endif
-    call check_netcdf(File, ierr,_FILE_,__LINE__)
+    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
     if(ios%async_interface.or.ios%num_tasks>=ios%num_iotasks) then
        call MPI_BCAST(name,nlen,MPI_CHARACTER,ios%IOMaster,ios%my_comm, mpierr)
        call CheckMPIReturn('nf_mod',mpierr)
@@ -828,11 +828,11 @@ contains
 #endif
 
        case default
-          call bad_iotype(iotype,_FILE_,__LINE__)
+          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
 
        end select
     endif
-    call check_netcdf(File,ierr,_FILE_,__LINE__)
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
 
     if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%IOMaster,ios%my_comm, mpierr)
@@ -919,11 +919,11 @@ contains
 #endif
 
        case default
-          call bad_iotype(iotype,_FILE_,__LINE__)
+          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
 
        end select
     endif
-    call check_netcdf(File,ierr,_FILE_,__LINE__)
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
     if(file%iosystem%async_interface .or. ios%num_tasks>ios%num_iotasks) then
        call MPI_BCAST(type,1,MPI_INTEGER,ios%IOMaster,ios%my_comm, mpierr)
        call CheckMPIReturn('nf_mod',mpierr)
@@ -1013,11 +1013,11 @@ contains
 #endif
 
        case default
-          call bad_iotype(iotype,_FILE_,__LINE__)
+          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
 
        end select
     endif
-    call check_netcdf(File,ierr,_FILE_,__LINE__)
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
     if(ios%num_tasks>ios%num_iotasks) then
        call MPI_BCAST(dimids,size_dimids,MPI_INTEGER,ios%IOMaster,ios%My_comm, mpierr)
        call CheckMPIReturn('nf_mod',mpierr)
@@ -1102,11 +1102,11 @@ contains
 #endif
 
        case default
-          call bad_iotype(iotype,_FILE_,__LINE__)
+          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
 
        end select
     endif
-    call check_netcdf(File, ierr,_FILE_,__LINE__)
+    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
     if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
        call MPI_BCAST(natts,1,MPI_INTEGER,ios%IOMaster,ios%My_comm, mpierr)
        call CheckMPIReturn('nf_mod',mpierr)
@@ -1195,17 +1195,19 @@ contains
 #endif
 
        case default
-          call bad_iotype(iotype,_FILE_,__LINE__)
+          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
 
        end select
     endif
 
-    if(Debug .or. Debugasync) print *,__FILE__,__LINE__,file%fh, name, dimid, ios%async_interface, ios%iomaster,ios%my_comm,ios%intercomm, ierr
-    call check_netcdf(File, ierr,_FILE_,__LINE__)
+    if(Debug .or. Debugasync) print *,__PIO_FILE__,__LINE__,file%fh, &
+      name, dimid, ios%async_interface, ios%iomaster, &
+      ios%my_comm,ios%intercomm, ierr
+    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
 
     if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
        call MPI_BCAST(dimid,1,MPI_INTEGER,ios%IOMaster,ios%My_comm, mpierr)
-       if(Debugasync) print *,__FILE__,__LINE__,dimid,ierr,mpierr
+       if(Debugasync) print *,__PIO_FILE__,__LINE__,dimid,ierr,mpierr
        call CheckMPIReturn('nf_mod',mpierr)
     end if
  
@@ -1273,11 +1275,11 @@ contains
 #endif
 
        case default
-          call bad_iotype(iotype,_FILE_,__LINE__)
+          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
 
        end select
     endif
-    call check_netcdf(File, ierr,_FILE_,__LINE__)
+    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
     if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
        call MPI_BCAST(dimname,ldn,MPI_CHARACTER,ios%IOMaster,ios%My_comm, mpierr)
        call CheckMPIReturn('nf_mod',mpierr)
@@ -1316,7 +1318,7 @@ contains
     if(ios%async_interface) then
        if(.not. ios%ioproc ) then
           msg=PIO_MSG_INQ_DIMLEN
-          if(debugasync) print *,__FILE__,__LINE__,msg
+          if(debugasync) print *,__PIO_FILE__,__LINE__,msg
           if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
           call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        end if
@@ -1346,11 +1348,11 @@ contains
 #endif
 
        case default
-          call bad_iotype(iotype,_FILE_,__LINE__)
+          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
 
        end select
     endif
-    call check_netcdf(File, ierr,_FILE_,__LINE__)
+    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
     if(file%iosystem%async_interface .or. ios%num_tasks>ios%num_iotasks) then
        call MPI_BCAST(dimlen,1,MPI_INTEGER,ios%IOMaster,ios%My_comm, mpierr)
        call CheckMPIReturn('nf_mod',mpierr)
@@ -1405,11 +1407,11 @@ contains
 #endif
 
        case default
-          call bad_iotype(iotype,_FILE_,__LINE__)
+          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
 
        end select
     endif
-    call check_netcdf(File, ierr,_FILE_,__LINE__)
+    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
   end function PIO_enddef
 
 !> 
@@ -1463,11 +1465,11 @@ contains
 #endif
 
        case default
-          call bad_iotype(iotype,_FILE_,__LINE__)
+          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
 
        end select
     endif
-    call check_netcdf(File, ierr,_FILE_,__LINE__)
+    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
   end function PIO_redef
 
 !> 
@@ -1503,7 +1505,7 @@ contains
     if(ios%async_interface) then
        if( .not. ios%ioproc) then
           if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-          if(Debugasync) print *,__FILE__,__LINE__,file%fh
+          if(Debugasync) print *,__PIO_FILE__,__LINE__,file%fh
           call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        end if
        call mpi_bcast(len, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
@@ -1533,16 +1535,16 @@ contains
           end if
 #endif
        case default
-          call bad_iotype(iotype,_FILE_,__LINE__)
+          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
 
        end select
     endif
-    call check_netcdf(File, ierr,_FILE_,__LINE__)
+    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
 
     if(ios%async_interface .or. ios%num_tasks > ios%num_iotasks) then
        call MPI_BCAST(dimid, 1, MPI_INTEGER, ios%IOMaster, ios%my_Comm, ierr)
     end if
-    if(debugasync) print *,__FILE__,__LINE__,dimid
+    if(debugasync) print *,__PIO_FILE__,__LINE__,dimid
   end function PIO_def_dim    
 
 
@@ -1668,11 +1670,11 @@ contains
 #endif
 
        case default
-          call bad_iotype(iotype,_FILE_,__LINE__)
+          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
 
        end select
     endif
-    call check_netcdf(File, ierr,_FILE_,__LINE__)
+    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
     if(ios%async_interface  .or. ios%num_tasks> ios%num_iotasks) then  
        call MPI_BCAST(vardesc%varid, 1, MPI_INTEGER, ios%Iomaster, ios%my_Comm, ierr)
     end if
@@ -1723,7 +1725,7 @@ contains
 #endif    
        end select
     end if
-    call check_netcdf(outFile, ierr,_FILE_,__LINE__)
+    call check_netcdf(outFile, ierr,__PIO_FILE__,__LINE__)
   end function pio_copy_att
 
 

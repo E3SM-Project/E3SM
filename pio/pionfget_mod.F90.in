@@ -1,4 +1,4 @@
-#define _FILE_ "pionfget_mod.F90"
+#define __PIO_FILE__ "pionfget_mod.F90"
 module pionfget_mod
 #ifdef TIMING
   use perf_mod, only : t_startf, t_stopf      ! _EXTERNAL
@@ -65,7 +65,7 @@ CONTAINS
     ierr=0
     iotype = File%iotype 
     ios => File%iosystem
-    if(Debug) print *,_FILE_,__LINE__,index
+    if(Debug) print *,__PIO_FILE__,__LINE__,index
 
 #if ({ITYPE} == TYPETEXT)
     ilen = len(ival)
@@ -96,7 +96,7 @@ CONTAINS
           ! Only io proc 0 will do reading
           if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
              ierr = nfmpi_get_var1_{TYPE} (File%fh, varid, int(index,kind=PIO_OFFSET), ival)
-             if(ierr/=PIO_NOERR) print *, _FILE_,__LINE__,index, ival
+             if(ierr/=PIO_NOERR) print *, __PIO_FILE__,__LINE__,index, ival
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
@@ -110,12 +110,12 @@ CONTAINS
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=index)
-             if(ierr/=PIO_NOERR) print *,_FILE_,__LINE__,index, ival
+             if(ierr/=PIO_NOERR) print *,__PIO_FILE__,__LINE__,index, ival
           end if
 #endif
        end select
     end if
-    call check_netcdf(File,ierr,_FILE_,__LINE__)
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
 #if ({ITYPE} == TYPETEXT)
     ilen = len(ival)
 #else
@@ -244,7 +244,7 @@ CONTAINS
 #endif
        end select
     end if
-    call check_netcdf(File,ierr,_FILE_,__LINE__)
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
     if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
        call MPI_Bcast(ival,int(isize), {MPITYPE} , ios%IOMaster, ios%My_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
@@ -364,7 +364,7 @@ CONTAINS
 #endif
        end select
     end if
-    call check_netcdf(File,ierr,_FILE_,__LINE__)
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
     if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
        call MPI_Bcast(ival,int(isize), {MPITYPE} , ios%IOMaster, ios%My_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)

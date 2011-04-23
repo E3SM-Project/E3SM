@@ -1,4 +1,5 @@
 #include "dtypes.h"
+#define __PIO_FILE__ "pio_msg_callbacks.F90"
 subroutine pio_callback_handler(iosystem, msg)
   use pio
   use pio_msg_mod
@@ -64,7 +65,7 @@ subroutine pio_callback_handler(iosystem, msg)
      call pio_syncfile(file)
   case default
      print *, 'PIO Got unrecognized message ', msg, ierr
-     call piodie(__FILE__,__LINE__)  
+     call piodie(__PIO_FILE__,__LINE__)  
   end select
 
 end subroutine pio_callback_handler
@@ -95,7 +96,7 @@ subroutine create_file_handler(iosystem)
   ierr= pio_createfile(iosystem, file, iotype, trim(fname), amode )
 
   call add_to_file_list(file)
-  if(Debugasync) print *,__FILE__,__LINE__,file%fh
+  if(Debugasync) print *,__PIO_FILE__,__LINE__,file%fh
 
 end subroutine create_file_handler
 
@@ -127,7 +128,7 @@ subroutine open_file_handler(iosystem)
   ierr= pio_openfile(iosystem, file, iotype, trim(fname), amode)
 
   call add_to_file_list(file)
-  if(Debugasync) print *,__FILE__,__LINE__,file%fh
+  if(Debugasync) print *,__PIO_FILE__,__LINE__,file%fh
 
 end subroutine open_file_handler
 
@@ -288,9 +289,9 @@ subroutine string_handler_for_att(file, varid, name, strlen, msg)
   character(len=*) :: name
   character(len=strlen) :: str
   if(msg==PIO_MSG_GETATT) then
-     if(Debugasync) print *,__FILE__,__LINE__, varid, name
+     if(Debugasync) print *,__PIO_FILE__,__LINE__, varid, name
      ierr = pio_get_att(file, varid, name, str )  
-     if(Debugasync) print *,__FILE__,__LINE__, str
+     if(Debugasync) print *,__PIO_FILE__,__LINE__, str
   else
      ierr = pio_put_att(file, varid, name, str )  
   end if
@@ -314,21 +315,21 @@ subroutine att_handler(ios, msg)
   real(r8) :: dvar
   integer(i4) :: ivar
 
-  if(Debugasync) print *,__FILE__,__LINE__
+  if(Debugasync) print *,__PIO_FILE__,__LINE__
   
   call mpi_bcast(fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
   call mpi_bcast(varid, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
   call mpi_bcast(itype, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
   call mpi_bcast(nlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
   call mpi_bcast(name(1:nlen), nlen, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-  if(Debugasync) print *,__FILE__,__LINE__, itype,nlen
+  if(Debugasync) print *,__PIO_FILE__,__LINE__, itype,nlen
 
   file=> lookupfile(fh)
   
   select case(itype)
   case (TYPETEXT)
      call mpi_bcast(strlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-       if(Debugasync) print *,__FILE__,__LINE__, strlen,nlen
+       if(Debugasync) print *,__PIO_FILE__,__LINE__, strlen,nlen
      call string_handler_for_att (file, varid, name(1:nlen), strlen, msg)
   case (TYPEREAL)
      if(msg==PIO_MSG_GETATT) then

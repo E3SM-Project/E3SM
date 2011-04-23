@@ -1,4 +1,4 @@
-#define _FILE_ "rearrange.F90"
+#define __PIO_FILE__ "rearrange.F90"
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !  Module rearrange
@@ -91,7 +91,7 @@ contains
 #ifdef _USEMCT
         call mct_rearrange_comp2io(Iosystem,iodesc,compbuf,iobuf)
 #else
-        call die_nomct( _FILE_,__LINE__)
+        call die_nomct( __PIO_FILE__,__LINE__)
 #endif
 
 #ifdef _USEBOX
@@ -100,7 +100,7 @@ contains
 #endif
 
       case default
-        call piodie(_FILE_,__LINE__,'Unrecognized rearranger:',Iosystem%rearr)
+        call piodie(__PIO_FILE__,__LINE__,'Unrecognized rearranger:',Iosystem%rearr)
 
     end select
 
@@ -136,7 +136,7 @@ contains
 #ifdef _USEMCT
        call mct_rearrange_io2comp(Iosystem,iodesc,iobuf,compbuf) 
 #else
-        call die_nomct( _FILE_,__LINE__)
+        call die_nomct( __PIO_FILE__,__LINE__)
 #endif
 
 #ifdef _USEBOX
@@ -145,7 +145,7 @@ contains
 #endif
 
       case default
-        call piodie(_FILE_,__LINE__,'Unrecognized rearranger:',Iosystem%rearr)
+        call piodie(__PIO_FILE__,__LINE__,'Unrecognized rearranger:',Iosystem%rearr)
 
     end select
 
@@ -194,7 +194,7 @@ contains
 #ifdef _USEMCT
         call mct_rearrange_init(Iosystem)        ! mctrearrange
 #else
-        call die_nomct(_FILE_,__LINE__)
+        call die_nomct(__PIO_FILE__,__LINE__)
 #endif
 
 #ifdef _USEBOX
@@ -203,7 +203,7 @@ contains
 #endif
 
       case default
-        call piodie(_FILE_,__LINE__,'Unrecognized rearranger:',Iosystem%rearr)
+        call piodie(__PIO_FILE__,__LINE__,'Unrecognized rearranger:',Iosystem%rearr)
 
 
     end select
@@ -235,7 +235,7 @@ contains
 #endif
 
     if (Iosystem%rearr /= PIO_rearr_mct) then
-      call piodie( _FILE_,__LINE__, &
+      call piodie( __PIO_FILE__,__LINE__, &
            'rearrange_create called with args for mct but rearranger type is not mct, Iosystem%rearr='&
 	, Iosystem%rearr)
     endif
@@ -243,7 +243,7 @@ contains
 #ifdef _USEMCT
     call mct_rearrange_create(Iosystem,compDOF,ioDOF,ioDesc)
 #else
-    call die_nomct( _FILE_,__LINE__)
+    call die_nomct( __PIO_FILE__,__LINE__)
 #endif
 
 
@@ -280,7 +280,7 @@ contains
 #endif
 
     if (Iosystem%rearr /= PIO_rearr_box) then
-      call piodie( _FILE_,__LINE__, &
+      call piodie( __PIO_FILE__,__LINE__, &
            'rearrange_create called with args for box but rearranger type is not box, Iosystem%rearr=',&
            Iosystem%rearr)
     endif
@@ -288,7 +288,7 @@ contains
 #ifdef _USEBOX
     call box_rearrange_create( Iosystem,compDOF,dims,ndims,Iosystem%num_iotasks,ioDesc)
 #else
-    call piodie( _FILE_,__LINE__,'pio not build with _USEBOX' )
+    call piodie( __PIO_FILE__,__LINE__,'pio not build with _USEBOX' )
 #endif
 
 #ifdef TIMING
@@ -320,7 +320,7 @@ contains
 #ifdef _USEMCT
         call mct_rearrange_free(ioDesc)    ! mctrearrange
 #else
-        call die_nomct( _FILE_,__LINE__)
+        call die_nomct( __PIO_FILE__,__LINE__)
 #endif
 
 #ifdef _USEBOX
@@ -333,7 +333,7 @@ contains
         ! do nothing 
 
       case default
-        call piodie(_FILE_,__LINE__,'Unrecognized rearranger:',Iosystem%rearr)
+        call piodie(__PIO_FILE__,__LINE__,'Unrecognized rearranger:',Iosystem%rearr)
 
     end select
 

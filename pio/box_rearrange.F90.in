@@ -1,4 +1,4 @@
-#define _FILE_ "box_rearrange.F90"
+#define __PIO_FILE__ "box_rearrange.F90"
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !  Module box_rearrange
@@ -171,12 +171,12 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, s2, &
   num_iotasks = IOsystem%num_iotasks
 
   if (num_tasks /= 1 .or. num_iotasks /= 1) &
-    call piodie( _FILE_,__LINE__, &
+    call piodie( __PIO_FILE__,__LINE__, &
                  'built with -D_MPISERIAL but num_tasks=', num_tasks, &
                  'num_iotasks=', num_iotasks )
 
   if (size(src)>0 .and. size(src)< ndof) &
-    call piodie( _FILE_,__LINE__, &
+    call piodie( __PIO_FILE__,__LINE__, &
                  'box_rearrange_comp2io: size(compbuf)=', size(src), &
                  ' not equal to size(compdof)=', ndof )
 
@@ -186,12 +186,12 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, s2, &
 
     if (ioproc /= -1 ) then  ! ignore sender hole
       if (ioproc /= 1) &     ! ioproc is 1-based
-        call piodie( _FILE_,__LINE__, &
+        call piodie( __PIO_FILE__,__LINE__, &
                      'box_rearrange_comp2io: i=', i, &
                      'dest_ioproc(i)=', ioproc )
 
       if ( ioindex<0 .or. ioindex>=niodof ) &
-        call piodie( _FILE_,__LINE__, &
+        call piodie( __PIO_FILE__,__LINE__, &
                      'box_rearrange_comp2io: i=', i, &
                      'dest_ioindex(i) out of range=', ioindex )
 
@@ -288,7 +288,7 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, s2, &
   num_iotasks = IOsystem%num_iotasks
 
   if (size(src) > 0 .and. size(src)<ndof) &
-    call piodie( _FILE_,__LINE__, &
+    call piodie( __PIO_FILE__,__LINE__, &
                  'box_rearrange_comp2io: size(compbuf)=', size(src), &
                  ' not equal to size(compdof)=', ndof)
 
@@ -376,7 +376,7 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, s2, &
         ! go from 1-based io rank to 0-based comprank
         io_comprank=find_io_comprank(IOsystem,i)
 
-        if(Debug) print *, _FILE_,__LINE__,myrank,': send posted dest=',io_comprank,' count=',scount(i), stype(i)
+        if(Debug) print *, __PIO_FILE__,__LINE__,myrank,': send posted dest=',io_comprank,' count=',scount(i), stype(i)
 
         call MPI_ISEND( src, 1, stype(i),    &                 ! buf, count, type
                         io_comprank,TAG2,    &                 ! destination,tag
@@ -472,12 +472,12 @@ subroutine box_rearrange_io2comp_{TYPE} (IOsystem, ioDesc, s1, iobuf, &
   num_iotasks = IOsystem%num_iotasks
 
   if (num_tasks /= 1 .or. num_iotasks /= 1) &
-    call piodie( _FILE_,__LINE__, &
+    call piodie( __PIO_FILE__,__LINE__, &
                  'built with -D_MPISERIAL but num_tasks=', num_tasks, &
                  'num_iotasks=', num_iotasks )
 
   if (size(compbuf) > 0 .and. size(compbuf)<ndof) &
-    call piodie( _FILE_,__LINE__, &
+    call piodie( __PIO_FILE__,__LINE__, &
                  'box_rearrange_io2comp: size(compbuf)=', size(compbuf), &
                  ' not equal to size(compdof)=', ndof)
 
@@ -487,11 +487,11 @@ subroutine box_rearrange_io2comp_{TYPE} (IOsystem, ioDesc, s1, iobuf, &
 
     if (ioproc /= -1 ) then  ! ignore sender hole
       if (ioproc /= 1) &
-        call piodie( _FILE_,__LINE__, &
+        call piodie( __PIO_FILE__,__LINE__, &
                      'box_rearrange_io2comp: i=',i,'dest_ioproc(i)=', ioproc )
 
       if ( ioindex<0 .or. ioindex>=niodof ) &
-        call piodie( _FILE_,__LINE__, &
+        call piodie( __PIO_FILE__,__LINE__, &
                      'box_rearrange_io2comp: i=',i, &
                      'dest_ioindex(i) out of range=', ioindex )
 
@@ -587,7 +587,7 @@ subroutine box_rearrange_io2comp_{TYPE} (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
   num_iotasks = IOsystem%num_iotasks
 
   if (size(compbuf) > 0 .and. size(compbuf)<ndof) &
-    call piodie( _FILE_,__LINE__, &
+    call piodie( __PIO_FILE__,__LINE__, &
                  'box_rearrange_io2comp: size(compbuf)=', size(compbuf), &
                  ' not equal to size(compdof)=', ndof)
 
@@ -815,7 +815,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
        ! gcoord matches this box
        if (found) then
-          call piodie(_FILE_,__LINE__, 'multiple matches')
+          call piodie(__PIO_FILE__,__LINE__, 'multiple matches')
        endif
 
        found = .true.
@@ -904,7 +904,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
     ndof=size(compdof)
 
-    if(Debug) print *,_FILE_,__LINE__,minval(compdof), maxval(compdof)
+    if(Debug) print *,__PIO_FILE__,__LINE__,minval(compdof), maxval(compdof)
     do i=1,ndof
        ! Compute global coordinates for compdof(i)
 
@@ -937,7 +937,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
              end do
 
              print *, subName, ':: INFO dof ', i, ' index=', gindex, ' gcoord=', gcoord
-             call piodie( _FILE_,__LINE__, 'quitting' )
+             call piodie( __PIO_FILE__,__LINE__, 'quitting' )
           endif
 
           dest_ioproc(i)  = ioproc
@@ -995,8 +995,8 @@ end subroutine box_rearrange_io2comp_{TYPE}
     ! Gather iodesc%start,iodesc%count from IO procs to root IO proc
     ! then broadcast to all procs
     if(ndim.ne.size(iodesc%start)) then
-       print *,_FILE_,__LINE__,ndim, size(iodesc%start)
-       call piodie(_FILE_,__LINE__,'bad ndim size',ndim)
+       print *,__PIO_FILE__,__LINE__,ndim, size(iodesc%start)
+       call piodie(__PIO_FILE__,__LINE__,'bad ndim size',ndim)
     end if
 
     start = 0
@@ -1012,9 +1012,9 @@ end subroutine box_rearrange_io2comp_{TYPE}
                               0, Iosystem%IO_comm                   )
 
        if(Debug) then
-          print *, _FILE_,__LINE__,iodesc%start, iodesc%count
+          print *, __PIO_FILE__,__LINE__,iodesc%start, iodesc%count
           if(iosystem%io_rank==0) &
-             print *,_FILE_,__LINE__,ndim,(i,' :', &
+             print *,__PIO_FILE__,__LINE__,ndim,(i,' :', &
                 start(:,i), count(:,i),i=1,iosystem%num_iotasks)
        end if
        ! note that index in start,count is the io_rank not comp_rank
@@ -1049,7 +1049,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 !       will NOT be allocated in this build
 
     if (Iosystem%num_tasks /= 1 .or. Iosystem%num_iotasks /= 1) then
-      call piodie( _FILE_,__LINE__, &
+      call piodie( __PIO_FILE__,__LINE__, &
                    'pio was built with -D_MPISERIAL but tasks=', &
                    Iosystem%num_tasks, &
                    'iotasks=', Iosystem%num_iotasks)
@@ -1163,7 +1163,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
        if (iorank /= -1) then                       ! not a sender hole
           if (iorank<1 .or. iorank>num_iotasks) &
-               call piodie(_FILE_,__LINE__,'io destination out of range',iorank)
+               call piodie(__PIO_FILE__,__LINE__,'io destination out of range',iorank)
           scount(iorank) = scount(iorank) + 1
        endif
 
@@ -1295,7 +1295,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
        spos(i)=spos(i-1)+scount(i-1)
 
        if (scount(i)/=0 .and. spos(i) > ndof) & 
-            call piodie(_FILE_,__LINE__,'spos=',spos(i),'> ndof=',ndof)
+            call piodie(__PIO_FILE__,__LINE__,'spos=',spos(i),'> ndof=',ndof)
     end do
 
     call alloc_check(tempcount, num_iotasks, 'tempcount')
@@ -1310,7 +1310,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
           tempcount(iorank) = tempcount(iorank) + 1
 
           if (tempcount(iorank) > scount(iorank)) &
-               call piodie(_FILE_,__LINE__,'tempcount>scount')
+               call piodie(__PIO_FILE__,__LINE__,'tempcount>scount')
        endif
     end do
     call dealloc_check(tempcount, 'tempcount')
@@ -1589,8 +1589,8 @@ end subroutine box_rearrange_io2comp_{TYPE}
     ! Gather iodesc%start,iodesc%count from IO procs to root IO proc
     ! then broadcast to all procs
     if(ndim.ne.size(iodesc%start)) then
-       print *,_FILE_,__LINE__,ndim, size(iodesc%start)
-       call piodie(_FILE_,__LINE__,'bad ndim size',ndim)
+       print *,__PIO_FILE__,__LINE__,ndim, size(iodesc%start)
+       call piodie(__PIO_FILE__,__LINE__,'bad ndim size',ndim)
     end if
 
 
@@ -1608,8 +1608,8 @@ end subroutine box_rearrange_io2comp_{TYPE}
             0,Iosystem%IO_comm,ierror )
        call CheckMPIReturn(subName,ierror)
        if(Debug) then
-          print *, _FILE_,__LINE__,iodesc%start, iodesc%count
-          if(iosystem%io_rank==0) print *,_FILE_,__LINE__,ndim,(i,' :',start(:,i), count(:,i),i=1,iosystem%num_iotasks)
+          print *, __PIO_FILE__,__LINE__,iodesc%start, iodesc%count
+          if(iosystem%io_rank==0) print *,__PIO_FILE__,__LINE__,ndim,(i,' :',start(:,i), count(:,i),i=1,iosystem%num_iotasks)
        end if
        ! note that index in start,count is the io_rank not comp_rank
     endif
@@ -1645,7 +1645,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 !       will NOT be allocated in this build
 
     if (Iosystem%num_tasks /= 1 .or. Iosystem%num_iotasks /= 1) then
-      call piodie( _FILE_,__LINE__, &
+      call piodie( __PIO_FILE__,__LINE__, &
                    'pio was built with -D_MPISERIAL but tasks=', &
                    Iosystem%num_tasks, &
                    'iotasks=', Iosystem%num_iotasks)
@@ -1705,11 +1705,11 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
     if (Iosystem%union_rank == Iosystem%ioranks(1)) then
        if (Iosystem%io_rank/=0) then
-          call piodie( _FILE_,__LINE__,'Iosystem%iomaster rank ',Iosystem%iomaster, &
+          call piodie( __PIO_FILE__,__LINE__,'Iosystem%iomaster rank ',Iosystem%iomaster, &
                'has nonzero io_rank ',Iosystem%io_rank)
        endif
        if (nsends_global /= nrecvs_global ) &
-            call piodie( _FILE_,__LINE__,'nsends_global=',nsends_global, &
+            call piodie( __PIO_FILE__,__LINE__,'nsends_global=',nsends_global, &
             '!= nrecvs_global=',nrecvs_global )
     endif
 
@@ -1864,7 +1864,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
        if (iorank /= -1) then                       ! not a sender hole
           if (iorank<1 .or. iorank>num_iotasks) &
-               call piodie(_FILE_,__LINE__,'io destination out of range',iorank)
+               call piodie(__PIO_FILE__,__LINE__,'io destination out of range',iorank)
 
           scount(iorank) = scount(iorank) + 1
 
@@ -1935,7 +1935,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 #endif
 
           if ( (pos+rcount(i)-1) > niodof) then
-             call piodie( _FILE_,__LINE__, &
+             call piodie( __PIO_FILE__,__LINE__, &
                   'more indices received on this io proc.  size of iodof box=',&
                   pos+rcount(i)-1, &
                   'niodof=',niodof)
@@ -1975,7 +1975,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
        spos(i)=spos(i-1)+scount(i-1)
 
        if (scount(i)/=0 .and. spos(i) > ndof) & 
-            call piodie(_FILE_,__LINE__,'spos=',spos(i),'> ndof=',ndof)
+            call piodie(__PIO_FILE__,__LINE__,'spos=',spos(i),'> ndof=',ndof)
     end do
 
     ! srcindex() contains blocks of indices in the src array
@@ -1991,7 +1991,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
           tempcount(iorank) = tempcount(iorank) + 1
 
           if (tempcount(iorank) > scount(iorank)) &
-               call piodie(_FILE_,__LINE__,'tempcount>scount')
+               call piodie(__PIO_FILE__,__LINE__,'tempcount>scount')
        endif
 
     end do
@@ -2058,8 +2058,8 @@ end subroutine box_rearrange_io2comp_{TYPE}
              endif
           end do loop1
 
-          if (count/=scount(i)) call piodie(_FILE_,__LINE__,'count/=scount(i)')
-          if (count>max_scount) call piodie(_FILE_,__LINE__,'count>max_scount')
+          if (count/=scount(i)) call piodie(__PIO_FILE__,__LINE__,'count/=scount(i)')
+          if (count>max_scount) call piodie(__PIO_FILE__,__LINE__,'count>max_scount')
 
           call MPI_TYPE_CREATE_INDEXED_BLOCK( &
                scount(i), 1, srcindex, &                  ! count, blen, disp
@@ -2251,8 +2251,8 @@ end subroutine box_rearrange_io2comp_{TYPE}
              endif
           end do loop2
 
-          if (count/=scount(i)) call piodie(_FILE_,__LINE__,'count/=scount(i)')
-          if (count>max_scount) call piodie(_FILE_,__LINE__,'count>max_scount')
+          if (count/=scount(i)) call piodie(__PIO_FILE__,__LINE__,'count/=scount(i)')
+          if (count>max_scount) call piodie(__PIO_FILE__,__LINE__,'count>max_scount')
 
           call MPI_TYPE_CREATE_INDEXED_BLOCK( &
                scount(i), 1, srcindex, &                  ! count, blen, disp

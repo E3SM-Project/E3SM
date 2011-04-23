@@ -7,7 +7,7 @@
 
 ! Enable/disable sorting of dofs before creating GSMap
 #define SORT 1
-#define _FILE_ "mct_rearrange.inc"
+#define __PIO_FILE__ "mct_rearrange.inc"
 module mct_rearrange
 
      use pio_kinds
@@ -276,7 +276,7 @@ subroutine mct_rearrange_int ( lsize_source, source_array, &
    if (lsize_source /= size(source_array)) then
 !     print *,'ERROR: rearrange: mismatch in source array size'
 !     print *,'       lsize_source',lsize_source,' size(source_array)',size(source_array)
-     call piodie(_FILE_,__LINE__)
+     call piodie(__PIO_FILE__,__LINE__)
    endif
 
    call MCT_Attr_init(av_source, TEMPLATE_LIST="field1", lsize=lsize_source)
@@ -300,7 +300,7 @@ subroutine mct_rearrange_int ( lsize_source, source_array, &
    if (lsize_dest /= size(dest_array)) then
 !     print *,'ERROR: rearrange: mismatch in dest array size'
 !     print *,'       lsize_dest',lsize_dest,' size(source_dest)',size(dest_array)
-     call piodie(_FILE_,__LINE__)
+     call piodie(__PIO_FILE__,__LINE__)
    endif
 
    call MCT_Attr_init(av_dest, TEMPLATE_LIST="field1", lsize=lsize_dest)
@@ -379,7 +379,7 @@ subroutine mct_rearrange_real ( lsize_source, source_array, &
    if (lsize_source /= size(source_array)) then
 !     print *,'ERROR: rearrange: mismatch in source array size'
 !     print *,'       lsize_source',lsize_source,' size(source_array)',size(source_array)
-     call piodie(_FILE_,__LINE__)
+     call piodie(__PIO_FILE__,__LINE__)
    endif
 
    call MCT_Attr_init(av_source, TEMPLATE_LIST="field1", lsize=lsize_source)
@@ -403,7 +403,7 @@ subroutine mct_rearrange_real ( lsize_source, source_array, &
    if (lsize_dest /= size(dest_array)) then
 !     print *,'ERROR: rearrange: mismatch in dest array size'
 !     print *,'       lsize_dest',lsize_dest,' size(source_dest)',size(dest_array)
-     call piodie(_FILE_,__LINE__)
+     call piodie(__PIO_FILE__,__LINE__)
    endif
 
    call MCT_Attr_init(av_dest, TEMPLATE_LIST="field1", lsize=lsize_dest)
@@ -482,7 +482,7 @@ subroutine mct_rearrange_double ( lsize_source, source_array, &
    if (lsize_source /= size(source_array)) then
 !     print *,'ERROR: rearrange: mismatch in source array size'
 !     print *,'       lsize_source',lsize_source,' size(source_array)',size(source_array)
-     call piodie(_FILE_,__LINE__)
+     call piodie(__PIO_FILE__,__LINE__)
    endif
 
    call MCT_Attr_init(av_source, TEMPLATE_LIST="field1", lsize=lsize_source)
@@ -506,7 +506,7 @@ subroutine mct_rearrange_double ( lsize_source, source_array, &
    if (lsize_dest /= size(dest_array)) then
 !     print *,'ERROR: rearrange: mismatch in dest array size'
 !     print *,'       lsize_dest',lsize_dest,' size(source_dest)',size(dest_array)
-     call piodie(_FILE_,__LINE__)
+     call piodie(__PIO_FILE__,__LINE__)
    endif
 
    call MCT_Attr_init(av_dest, TEMPLATE_LIST="field1", lsize=lsize_dest)
