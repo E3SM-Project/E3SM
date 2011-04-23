@@ -61,7 +61,7 @@ sub projectInfo{
    }elsif($host =~ "athena" or $host =~ "kraken"){
 #    $project = `showproj -s athena | tail -1`;
      $projectInfo ="##PBS -A $project\n";
-   }elsif($host =~ "columbia"){
+   }elsif($host =~ "columbia" or $host =~ "pleiades"){
      $project = "";
      $projectInfo ="##PBS -W group_list=$project\n";
    }
@@ -94,7 +94,7 @@ sub preambleResource{
   }elsif($host =~ "jaguar" or $host =~ "kraken"){
      my $pecnt = $corespernode*ceil($pecount/$corespernode);
      $preambleResource = "#PBS -l size=$pecnt\n"; 
-  }elsif($host =~ "columbia"){
+  }elsif($host =~ "columbia" or $host =~ "pleiades"){
      $preambleResource = "#PBS -l ncpus=$pecount\n"; 
   }
 }
@@ -109,7 +109,7 @@ sub runString{
     #$runString = "$run -np $pecount $exename";
   }elsif($host eq "intrepid") {
     $runString = "$run $log -np $pecount $exename ";
-  }elsif($host =~ "columbia"){
+  }elsif($host =~ "columbia" or $host =~ "pleiades"){
     $runString = "$run -np $pecount $exename 1> $log 2>&1";
 #  } elsif($host =~ "kraken" or $host =~ "jaguar" or $host =~ "athena"){
 # make this default
@@ -140,6 +140,7 @@ sub loadmodules{
 		   athena => "/opt/modules/default/",
 		   kraken => "/opt/modules/default/",
 		   lynx => "/opt/modules/default/",
+		   pleiades => "/usr",
                    columbia => "/usr/share/modules/"};
 #HOST SPECIFIC END
 
@@ -207,6 +208,8 @@ sub loadmodules{
 	require "/opt/modules/default/init/perl";
 	module(" load netcdf/3.6.2");      
 	module(" load p-netcdf/1.1.1");
+    }elsif($host =~ "pleiades"){
+        module(" load netcdf/4.0-i10.1");
     }elsif($host =~ "columbia"){
         module(" load pd-netcdf.3.6.2");
 !        module(" load pd-pnetcdf.1.1.1");

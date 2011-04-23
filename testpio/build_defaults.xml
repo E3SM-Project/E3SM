@@ -292,6 +292,28 @@
   testsuites = "snet mpiio"
 />
 
+<pleiades
+  MPIF90 = "ifort"
+  MPICC  = "icc"
+  F90    = "ifort"
+  CC     = "icc"
+  FFLAGS = "-D_USE_FLOW_CONTROL"
+  LDLIBS = "-lmpi"
+  NETCDF_PATH = "$NETCDF_DIR"
+  PNETCDF_PATH = "$PNETCDF_DIR"
+  workdir = "/nobackup/${USER}/TESTPIO/testpio"
+  run = "mpiexec"
+  submit = "qsub"
+  conopts = " --disable-mct --disable-pnetcdf"
+  corespernode = "8"
+  preamble="
+#PBS -N testpio_suite
+#PBS -q normal
+#PBS -l walltime=00:50:00
+#PBS -j oe"
+  testsuites = "snet mpiio"
+/>
+
 <lynx
   MPIF90 = "ftn -L$LIBSCI_BASE_DIR/pgi/lib"
   MPICC  = "cc -L$LIBSCI_BASE_DIR/pgi/lib"
