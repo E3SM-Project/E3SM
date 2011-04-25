@@ -1730,7 +1730,8 @@ contains
     offset     = iodesc%IOmap%start
     len        = iodesc%IOmap%length
 
-    if(Debug) print *,__PIO_FILE__,__LINE__,' NAME : IAM: ',File%iosystem%comp_rank,' UseRearranger: ',UseRearranger, glen, offset, len   
+    if(Debug) print *,__PIO_FILE__,__LINE__,' NAME : IAM: ', &
+    File%iosystem%comp_rank,' UseRearranger: ',UseRearranger, glen, offset, len
 #ifdef TIMING
     call t_startf("pio_rearrange_write")
 #endif
@@ -1819,7 +1820,8 @@ contains
           count(1:ndims-1)=iodesc%count
           start(ndims:ndims)=vardesc%rec
           count(ndims:ndims)=1
-          if(Debug) print *, __PIO_FILE__,__LINE__,'start:',start,' count:',count,' ndims:',ndims, minval(iobuf),maxval(iobuf)
+          if(Debug) print *, __PIO_FILE__,__LINE__,'start:',start,' &
+           count:',count,' ndims:',ndims, minval(iobuf),maxval(iobuf)
           ! this is a timedependent single value
        else if(vardesc%rec>=0) then
           call alloc_check(start,1)
@@ -1960,7 +1962,8 @@ contains
     offset     = iodesc%IOmap%start
     len        = iodesc%IOmap%length
 
-    if(Debug) print *,__PIO_FILE__,__LINE__,' NAME : IAM: ',File%iosystem%comp_rank,' UseRearranger: ',UseRearranger, glen, offset, len   
+    if(Debug) print *,__PIO_FILE__,__LINE__,' NAME : IAM: ', &
+    File%iosystem%comp_rank,' UseRearranger: ',UseRearranger, glen, offset, len
 #ifdef TIMING
     call t_startf("pio_rearrange_write")
 #endif
@@ -2049,7 +2052,8 @@ contains
           count(1:ndims-1)=iodesc%count
           start(ndims:ndims)=vardesc%rec
           count(ndims:ndims)=1
-          if(Debug) print *, __PIO_FILE__,__LINE__,'start:',start,' count:',count,' ndims:',ndims, minval(iobuf),maxval(iobuf)
+          if(Debug) print *, __PIO_FILE__,__LINE__,'start:',start,' &
+           count:',count,' ndims:',ndims, minval(iobuf),maxval(iobuf)
           ! this is a timedependent single value
        else if(vardesc%rec>=0) then
           call alloc_check(start,1)
@@ -2190,7 +2194,8 @@ contains
     offset     = iodesc%IOmap%start
     len        = iodesc%IOmap%length
 
-    if(Debug) print *,__PIO_FILE__,__LINE__,' NAME : IAM: ',File%iosystem%comp_rank,' UseRearranger: ',UseRearranger, glen, offset, len   
+    if(Debug) print *,__PIO_FILE__,__LINE__,' NAME : IAM: ', &
+    File%iosystem%comp_rank,' UseRearranger: ',UseRearranger, glen, offset, len
 #ifdef TIMING
     call t_startf("pio_rearrange_write")
 #endif
@@ -2279,7 +2284,8 @@ contains
           count(1:ndims-1)=iodesc%count
           start(ndims:ndims)=vardesc%rec
           count(ndims:ndims)=1
-          if(Debug) print *, __PIO_FILE__,__LINE__,'start:',start,' count:',count,' ndims:',ndims, minval(iobuf),maxval(iobuf)
+          if(Debug) print *, __PIO_FILE__,__LINE__,'start:',start,' &
+           count:',count,' ndims:',ndims, minval(iobuf),maxval(iobuf)
           ! this is a timedependent single value
        else if(vardesc%rec>=0) then
           call alloc_check(start,1)
@@ -2342,7 +2348,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 529 "piodarray.F90.in"
+# 531 "piodarray.F90.in"
   subroutine write_darray_bin_real(File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -2533,7 +2539,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 529 "piodarray.F90.in"
+# 531 "piodarray.F90.in"
   subroutine write_darray_bin_int(File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -2724,7 +2730,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 529 "piodarray.F90.in"
+# 531 "piodarray.F90.in"
   subroutine write_darray_bin_double(File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -2915,7 +2921,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 719 "piodarray.F90.in"
+# 721 "piodarray.F90.in"
   subroutine read_darray_nf_real (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -3113,7 +3119,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 719 "piodarray.F90.in"
+# 721 "piodarray.F90.in"
   subroutine read_darray_nf_int (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -3311,7 +3317,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 719 "piodarray.F90.in"
+# 721 "piodarray.F90.in"
   subroutine read_darray_nf_double (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -3509,7 +3515,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 916 "piodarray.F90.in"
+# 918 "piodarray.F90.in"
   subroutine read_darray_bin_real (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -3683,7 +3689,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 916 "piodarray.F90.in"
+# 918 "piodarray.F90.in"
   subroutine read_darray_bin_int (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -3857,7 +3863,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 916 "piodarray.F90.in"
+# 918 "piodarray.F90.in"
   subroutine read_darray_bin_double (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:

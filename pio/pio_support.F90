@@ -210,14 +210,14 @@ contains
              call MPI_RECV(hs,1,MPI_INTEGER,masterproc,n,comm,status,ierr)
              if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_writedof mpi_recv')
 #endif
-             call MPI_SEND(dof,sdof,MPI_INTEGER,masterproc,n,comm,status,ierr)
+             call MPI_SEND(dof,sdof,MPI_INTEGER,masterproc,n,comm,ierr)
              if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_writedof mpi_send')
           endif
           if (myrank == masterproc .and. sdof1d(n) > 0) then
 #ifdef _USE_FLOW_CONTROL
              call MPI_IRECV(wdof,sdof1d(n),MPI_INTEGER,n,n,comm,rcv_request,ierr)
              if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_writedof mpi_irecv')
-             call MPI_SEND(hs,1,MPI_INTEGER,n,n,comm,status,ierr)
+             call MPI_SEND(hs,1,MPI_INTEGER,n,n,comm,ierr)
              if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_writedof mpi_send')
              call MPI_WAIT(rcv_request,status,ierr)
              if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_writedof mpi_wait')
@@ -311,10 +311,10 @@ contains
              allocate(dof(sdof))
              dof = wdof
           else
-             call MPI_SEND(sdof,1,MPI_INTEGER,n,n,comm,status,ierr)
+             call MPI_SEND(sdof,1,MPI_INTEGER,n,n,comm,ierr)
              if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_readdof mpi_send1')
              if (sdof > 0) then
-                call MPI_SEND(wdof,sdof,MPI_INTEGER,n,npes+n,comm,status,ierr)
+                call MPI_SEND(wdof,sdof,MPI_INTEGER,n,npes+n,comm,ierr)
                 if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_readdof mpi_send2')
              endif
           endif
