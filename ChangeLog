@@ -1,6 +1,52 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_2_8 
+Originator(s): Edwards, Dennis, Cheung
+Date: 04-25-2011
+One-line Summary: Documentation in Changelog - fix bad mpi_send calls in pio_support
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+   caclcdisplace_mod.F90 was added in pio1_2_7 to make fewer larger mpiio data structures reducing the memory used by PIO
+	
+List all existing files that have been modified, and describe the changes:
+   alloc_mod.F90 long datatype changed from PIO_OFFSET to i8 (PIO_OFFSET may be i4 on some platforms)
+   all files : __FILE__ was replaced by __PIO_FILE__ to prevent some compilers from complaining about over long lines
+	removed global save statements from all modules.
+   pio_utils mpi_barrier only needs to be called in debug mode
+   pio_support.F90.in : MPI_SEND calls had a status argument that shouldnt have been there
+   genf90.pl  : added support for directives in derived type blocks 
+	
+	
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+
+
+Code reviewed by: Edwards
+
+Summary of pre-tag testing:  	
+
+  Regression tests:  bluefire 80 tests PASS, 0 tests FAIL
+                     edinburgh (lahey) 22 pass 2 fail (expected)
+                     lynx (pgi) 80 pass, 0 Fail
+  
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_2_7
 Originator(s): John Dennis
 Date: 04-25-2011
