@@ -1,7 +1,6 @@
 MODULE calcdisplace_mod
 
   use pio_kinds, only: i4
-  use pio_support, only : piodie
 
   private
   public :: GCDblocksize,gcd
@@ -50,7 +49,8 @@ CONTAINS
 
     ! Locals
     integer(i4),dimension(:),allocatable   :: del_arr,loc_arr,blk_len
-    integer(i4) :: i,j,k,n,numblks,numtimes,tloc
+    integer(i4),dimension(:),allocatable :: gaps
+    integer(i4) :: i,j,k,n,numblks,numtimes,tloc,bsizeg,ii
 
 
     n = size(arr_in)
@@ -67,14 +67,17 @@ CONTAINS
 
 
     end do
+!    print *,'del_arr: ',del_arr
 
-    numblks  = count( del_arr /= 1) + 1   ! the number of contiguous blocks.
     numtimes = count( del_arr /= 1) 
+    numblks  = numtimes + 1   ! the number of contiguous blocks.
+     
 
     if ( numtimes == 0 ) then    ! new logic to account for the case that there is only
        allocate(loc_arr(numblks))  ! one contigious block in which case numtimes=0 and the 
     else                         ! error from the assignment in line 87 goes away
        allocate(loc_arr(numtimes))
+       allocate(gaps(numtimes))
     end if
     loc_arr = 1
 
@@ -91,6 +94,16 @@ CONTAINS
        loc_arr(j) = tloc
 
     end do
+    
+    if(numtimes>0) then 
+       ii=1
+       do i=1,n-1
+         if(del_arr(i) .gt. 1) then
+            gaps(ii) = del_arr(i) -1
+	    ii=ii+1
+         endif
+       enddo
+    endif
 
     allocate(blk_len(numblks))
     blk_len(1) = loc_arr(1)
@@ -106,6 +119,11 @@ CONTAINS
 
 
     bsize = gcd_array(blk_len) ! call to compute the gcd of the blk_len array.    
+    if(numtimes>0) then 
+       bsizeg = gcd_array(gaps(1:numtimes)) 
+       bsize = gcd_pair(bsize,bsizeg)
+       deallocate(gaps)
+    endif
     deallocate(del_arr,loc_arr,blk_len)
 
   end SUBROUTINE GCDblocksize
