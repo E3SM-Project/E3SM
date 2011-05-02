@@ -464,8 +464,8 @@ contains
           count(1:ndims-1)=iodesc%count
           start(ndims:ndims)=vardesc%rec
           count(ndims:ndims)=1
-          if(Debug) print *, __PIO_FILE__,__LINE__,'start:',start,' &
-           count:',count,' ndims:',ndims, minval(iobuf),maxval(iobuf)
+          if(Debug) print *, __PIO_FILE__,__LINE__,'start:',start, &
+           ' count:',count,' ndims:',ndims, minval(iobuf),maxval(iobuf)
           ! this is a timedependent single value
        else if(vardesc%rec>=0) then
           call alloc_check(start,1)

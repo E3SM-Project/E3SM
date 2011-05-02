@@ -456,6 +456,7 @@ contains
 !! @param iodesc @copydoc iodesc_generate
 !<
   subroutine initdecomp_2dof_bin(iosystem,basepiotype,dims,lenblocks,compdof,iodofr,iodofw,iodesc)
+    use calcdisplace_mod, only : calcdisplace
     type (iosystem_desc_t), intent(in) :: iosystem
     integer(i4), intent(in)           :: basepiotype
     integer(i4)                       :: basetype
@@ -647,6 +648,7 @@ contains
 !! @param iodesc @copydoc iodesc_generate
 !<
   subroutine initdecomp_1dof_nf(iosystem,basepiotype,dims,lenblocks,compdof,iodof,start, count, iodesc)
+    use calcdisplace_mod, only : calcdisplace
     type (iosystem_desc_t), intent(in) :: iosystem
     integer(i4), intent(in)           :: basepiotype
     integer(i4), intent(in)           :: dims(:)
@@ -822,6 +824,7 @@ contains
 !! @param iocount   The count for the block-cyclic io decomposition
 !<
   subroutine PIO_initdecomp_dof(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount)
+    use calcdisplace_mod, only : calcdisplace_box
     type (iosystem_desc_t), intent(inout) :: iosystem
     integer(i4), intent(in)           :: basepiotype
     integer(i4), intent(in)           :: dims(:)
@@ -2497,144 +2500,6 @@ contains
   end subroutine read_ascii
 
 
-
-  !*****************************
-  ! calcdisplace
-  !
-
-  subroutine calcdisplace(bsize,dof,displace)
-
-    integer(i4), intent(in) :: bsize    ! length of contigious blocks of numbers
-    integer(i4), intent(in) :: dof(:)   ! degree of freedom on which to setup the displacement array
-    integer(i4), intent(inout) :: displace(:)  ! array of mpi displacments
-
-    integer :: numblocks,lenblocks,i,ii,dis
-
-    numblocks = size(displace)
-    lenblocks = bsize
-    do i=1,numblocks
-       ii = (i-1)*lenblocks+1
-       dis = dof(ii)-1
-       dis = dis/lenblocks   
-       displace(i) = dis
-    enddo
-    do i=1,numblocks-1	
-       if(displace(i+1) .lt. displace(i)) then
-          print *,'calcdisplace: error with displacement arrays',i,displace(i:i+1),numblocks,size(dof),dof(numblocks)
-          call piodie( __PIO_FILE__,__LINE__)
-       endif
-    enddo
-
-  end subroutine calcdisplace
-
-
-  subroutine calcdisplace_box(gsize,start,count,ndim,displace)
-
-    integer(i4),intent(in) :: gsize(:)   ! global size of output domain
-    integer(kind=PIO_offset),intent(in) :: start(:), count(:)
-    integer(i4), intent(in) :: ndim
-    integer(i4),intent(inout) :: displace(:)  ! mpi displacments
-
-    !!
-
-    integer ndisp
-    integer(i4) :: gstride(ndim)
-    integer i,j
-    integer iosize
-    integer(i4) :: myloc(ndim)
-    integer(i4) :: ub(ndim)
-    integer idim
-    logical done
-    integer gindex
-
-    gstride(1)=gsize(1)
-    do i=2,ndim
-       gstride(i)=gsize(i)*gstride(i-1)
-    end do
-
-    iosize=min(int(count(1)),1)
-    do i=2,ndim
-       iosize=iosize*count(i)
-    end do
-
-    ndisp=size(displace)
-
-
-    if (iosize<1 .or. ndisp<1) return
-
-    if (ndisp/=iosize) then
-       call piodie(__PIO_FILE__,__LINE__,'ndisp=',ndisp,' /= iosize=',iosize)
-    endif
-
-    do i=1,ndim
-       ub(i)=start(i)+count(i)-1
-    end do
-
-    ! skip x dimension (start of each block)
-    ! generate displacement for every 1,y,z
-    !  i.e. loop over y,z,...
-    !       compute corresponding global index
-    !       divide by lenblocks
-
-    displace(1)=1
-    myloc=start
-
-    do i=1,iosize
-       ! go from myloc() to 1-based global index
-       gindex=myloc(1)
-       do j=2,ndim
-          gindex=gindex+(myloc(j)-1)*gstride(j-1)
-       end do
-
-       ! rml
-       ! following original but is that right???
-       ! seems like the 'if' is erroneous
-
-       gindex=gindex-1
-
-       gindex=gindex/count(1)    ! gindex/lenblock
-
-       displace(i)=gindex
-
-       ! increment myloc to next position
-
-
-       idim=2                    ! dimension to increment
-       done=.false.
-
-       if (i<iosize) then
-          do while (.not. done)
-             if (myloc(idim)<ub(idim)) then
-                myloc(idim)=myloc(idim)+1
-                done=.true.
-             else
-                myloc(idim)=start(idim)
-                idim=idim+1
-                if (idim>ndim) call piodie(__PIO_FILE__,__LINE__,'dim overflow')
-             endif
-          end do
-       endif
-
-    end do
-
-    do i=2,ndim
-       if (myloc(i) /= ub(i)) then
-          print *,'myloc=',myloc
-          print *,'ub=',ub
-          call piodie( __PIO_FILE__,__LINE__,'myloc/=ub')
-       endif
-    end do
-
-
-    ! check for strictly increasing
-
-    do i=1,ndisp-1	
-       if(displace(i) .gt. displace(i+1)) then
-          call piodie(__PIO_FILE__,__LINE__,'displace is not increasing')
-       endif
-    enddo
-
-  end subroutine calcdisplace_box
 
 
 end module piolib_mod
