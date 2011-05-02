@@ -34,12 +34,6 @@ CONTAINS
        dis = dis/lenblocks   
        displace(i) = dis
     enddo
-    do i=1,numblocks-1	
-       if(displace(i+1) .lt. displace(i)) then
-          print *,'calcdisplace: error with displacement arrays',i,displace(i:i+1),numblocks,size(dof),dof(numblocks)
-          call piodie( __PIO_FILE__,__LINE__)
-       endif
-    enddo
 
   end subroutine calcdisplace
 
