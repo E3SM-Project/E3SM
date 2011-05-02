@@ -299,17 +299,17 @@ CONTAINS
     a = u
     b = v
 
-    do 
+    if(a < b) then
+       x = a
+       a = b
+       b = x
+    end if
 
+    do 
        x = mod(a,b)
        if ( x == 0 ) EXIT
-       gcd = b 
-
        a = b 
        b = x 
-
-       gcd = x 
-
     end do
 
     gcd = b 
