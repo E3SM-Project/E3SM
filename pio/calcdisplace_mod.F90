@@ -255,7 +255,7 @@ CONTAINS
     bsize=1
     n = size(ain) 
     ! First check, if an element is 1, then 1 is the gcd (i.e bsize)
-    if(n==0 .or. any(ain == 1)) return
+    if(n==0 .or. any(ain <= 1)) return
 
     allocate(gcr(n))
     gcr = 0
@@ -273,9 +273,7 @@ CONTAINS
     ! Done by calling the external function that is below.
 
     do i = 1,n
-
        gcr(i) = gcd_pair(a_min,ain(i))
-
     end do
 
     !
