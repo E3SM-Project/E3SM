@@ -1107,7 +1107,6 @@ contains
     cnt = 1
     sdims = ndims
     do while (cnt < use_io_procs .and. sdims > 0)
-       !       cnt = cnt * ceiling(dble(gdims(sdims))/dble(minblocksize))
        cnt = cnt * gdims(sdims)
        sdims = sdims - 1
     enddo
@@ -1135,7 +1134,6 @@ contains
        xpes = use_io_procs
        xiam = iorank   ! goes from 0 to xpes-1
        do m = ndims, sdims+1, -1
-!          if(xpes >= gdims(m)) then
           if(xpes > gdims(m)) then
              ps = -1
              ns = 1
@@ -1166,7 +1164,7 @@ contains
              count(m) = de-ds+1
           end if
 
-          if (start(m) < 1 .or. count(m) < 1) then
+          if ((start(m) < 1 .or. count(m) < 1) .and. iorank<use_io_procs) then
              print *, 'start =',start, ' count=',count
              call piodie( __PIO_FILE__,__LINE__, &
                   'start or count failed to converge')
@@ -1199,7 +1197,7 @@ contains
     deallocate(pes_per_dim)
     deallocate(bsize,nblocks,fblocks)
     !   stop 'end of getiostartandcount'
-
+    ! This should already be the case.
     if(iorank>=use_io_procs) then 
 	start = 1
         count = 0 
