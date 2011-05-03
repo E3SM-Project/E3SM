@@ -174,6 +174,7 @@ CONTAINS
 
 
     end do
+!    print *,'arr_in: ', arr_in
 !    print *,'del_arr: ',del_arr
 
     numtimes = count( del_arr /= 1) 
@@ -184,7 +185,7 @@ CONTAINS
        allocate(loc_arr(numblks))  ! one contigious block in which case numtimes=0 and the 
     else                         ! error from the assignment in line 87 goes away
        allocate(loc_arr(numtimes))
-       allocate(gaps(numtimes))
+       allocate(gaps(numblks))
     end if
     loc_arr = 1
 
@@ -203,7 +204,12 @@ CONTAINS
     end do
     
     if(numtimes>0) then 
-       ii=1
+       ii=2
+       if(arr_in(1)>0) then
+          gaps(1)=arr_in(1)
+       else
+          gaps(1)=maxval(del_arr)
+       end if
        do i=1,n-1
          if(del_arr(i) .gt. 1) then
             gaps(ii) = del_arr(i) -1
@@ -224,13 +230,15 @@ CONTAINS
 
     blk_len(numblks) = n - sum(blk_len(1:numblks-1)) ! computes the length of the last block
 
-
+!    print *,'loc_arr :',loc_arr
+!    print *,'blk_len :',blk_len
     bsize = gcd_array(blk_len) ! call to compute the gcd of the blk_len array.    
     if(numtimes>0) then 
-       bsizeg = gcd_array(gaps(1:numtimes)) 
+       bsizeg = gcd_array(gaps(1:numblks)) 
        bsize = gcd_pair(bsize,bsizeg)
        deallocate(gaps)
     endif
+!    print *,'bsize = ',bsize
     deallocate(del_arr,loc_arr,blk_len)
 
   end SUBROUTINE GCDblocksize
