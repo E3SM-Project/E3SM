@@ -17,14 +17,8 @@ module rearrange
   use pio_kinds
   use pio_types
   use pio_support
-
-#ifdef _USEMCT
-  use mct_rearrange
-#endif
-
-#ifdef _USEBOX
   use box_rearrange
-#endif
+
 
 #ifdef TIMING
   use perf_mod, only : t_startf, t_stopf, t_barrierf     ! _EXTERNAL
@@ -43,19 +37,18 @@ module rearrange
             rearrange_io2comp, &
             rearrange_free
 
-# 42 "rearrange.F90.in"
+# 36 "rearrange.F90.in"
   interface rearrange_init
     module procedure rearrange_init_
   end interface
 
 
-# 47 "rearrange.F90.in"
+# 41 "rearrange.F90.in"
   interface rearrange_create
-    module procedure rearrange_create_mct_,  &
-                     rearrange_create_box_
+    module procedure rearrange_create_box_
   end interface
 
-# 52 "rearrange.F90.in"
+# 45 "rearrange.F90.in"
   interface rearrange_comp2io
     ! TYPE real,double,int
     module procedure rearrange_comp2io_real
@@ -65,7 +58,7 @@ module rearrange
     module procedure rearrange_comp2io_int
   end interface
 
-# 57 "rearrange.F90.in"
+# 50 "rearrange.F90.in"
   interface rearrange_io2comp
     ! TYPE real,double,int
     module procedure rearrange_io2comp_real
@@ -75,13 +68,13 @@ module rearrange
     module procedure rearrange_io2comp_int
   end interface
 
-# 62 "rearrange.F90.in"
+# 55 "rearrange.F90.in"
   interface rearrange_free
     module procedure rearrange_free_
   end interface
 
 
-# 67 "rearrange.F90.in"
+# 60 "rearrange.F90.in"
 contains
 
 ! TYPE real,double,int
@@ -90,7 +83,7 @@ contains
 ! rearrange_comp2io_real
 !
 
-# 75 "rearrange.F90.in"
+# 68 "rearrange.F90.in"
   subroutine rearrange_comp2io_real(Iosystem,iodesc,compbuf,iobuf)
     implicit none
 
@@ -104,24 +97,8 @@ contains
     call t_startf("pio_rearrange_comp2io_real")
 #endif
 
-    select case (Iosystem%rearr)
-      case (PIO_rearr_mct)
 
-#ifdef _USEMCT
-        call mct_rearrange_comp2io(Iosystem,iodesc,compbuf,iobuf)
-#else
-        call die_nomct( __PIO_FILE__,__LINE__)
-#endif
-
-#ifdef _USEBOX
-      case (PIO_rearr_box)
-        call box_rearrange_comp2io(Iosystem,iodesc,size(compbuf), compbuf,size(iobuf), iobuf)
-#endif
-
-      case default
-        call piodie(__PIO_FILE__,__LINE__,'Unrecognized rearranger:',Iosystem%rearr)
-
-    end select
+    call box_rearrange_comp2io(Iosystem,iodesc,size(compbuf), compbuf,size(iobuf), iobuf)
 
 #ifdef TIMING
     call t_stopf("pio_rearrange_comp2io_real")
@@ -135,7 +112,7 @@ contains
 ! rearrange_comp2io_double
 !
 
-# 75 "rearrange.F90.in"
+# 68 "rearrange.F90.in"
   subroutine rearrange_comp2io_double(Iosystem,iodesc,compbuf,iobuf)
     implicit none
 
@@ -149,24 +126,8 @@ contains
     call t_startf("pio_rearrange_comp2io_double")
 #endif
 
-    select case (Iosystem%rearr)
-      case (PIO_rearr_mct)
 
-#ifdef _USEMCT
-        call mct_rearrange_comp2io(Iosystem,iodesc,compbuf,iobuf)
-#else
-        call die_nomct( __PIO_FILE__,__LINE__)
-#endif
-
-#ifdef _USEBOX
-      case (PIO_rearr_box)
-        call box_rearrange_comp2io(Iosystem,iodesc,size(compbuf), compbuf,size(iobuf), iobuf)
-#endif
-
-      case default
-        call piodie(__PIO_FILE__,__LINE__,'Unrecognized rearranger:',Iosystem%rearr)
-
-    end select
+    call box_rearrange_comp2io(Iosystem,iodesc,size(compbuf), compbuf,size(iobuf), iobuf)
 
 #ifdef TIMING
     call t_stopf("pio_rearrange_comp2io_double")
@@ -180,7 +141,7 @@ contains
 ! rearrange_comp2io_int
 !
 
-# 75 "rearrange.F90.in"
+# 68 "rearrange.F90.in"
   subroutine rearrange_comp2io_int(Iosystem,iodesc,compbuf,iobuf)
     implicit none
 
@@ -194,24 +155,8 @@ contains
     call t_startf("pio_rearrange_comp2io_int")
 #endif
 
-    select case (Iosystem%rearr)
-      case (PIO_rearr_mct)
 
-#ifdef _USEMCT
-        call mct_rearrange_comp2io(Iosystem,iodesc,compbuf,iobuf)
-#else
-        call die_nomct( __PIO_FILE__,__LINE__)
-#endif
-
-#ifdef _USEBOX
-      case (PIO_rearr_box)
-        call box_rearrange_comp2io(Iosystem,iodesc,size(compbuf), compbuf,size(iobuf), iobuf)
-#endif
-
-      case default
-        call piodie(__PIO_FILE__,__LINE__,'Unrecognized rearranger:',Iosystem%rearr)
-
-    end select
+    call box_rearrange_comp2io(Iosystem,iodesc,size(compbuf), compbuf,size(iobuf), iobuf)
 
 #ifdef TIMING
     call t_stopf("pio_rearrange_comp2io_int")
@@ -227,7 +172,7 @@ contains
 !
 ! rearrange_io2comp_real
 !
-# 121 "rearrange.F90.in"
+# 98 "rearrange.F90.in"
   subroutine rearrange_io2comp_real (Iosystem,iodesc,iobuf,compbuf)
     implicit none
 
@@ -240,24 +185,7 @@ contains
     call t_startf("pio_rearrange_io2comp_real")
 #endif
 
-    select case (Iosystem%rearr)
-      case (PIO_rearr_mct)
-
-#ifdef _USEMCT
-       call mct_rearrange_io2comp(Iosystem,iodesc,iobuf,compbuf) 
-#else
-        call die_nomct( __PIO_FILE__,__LINE__)
-#endif
-
-#ifdef _USEBOX
-      case (PIO_rearr_box)
-        call box_rearrange_io2comp(Iosystem,iodesc,size(iobuf),iobuf,size(compbuf),compbuf)
-#endif
-
-      case default
-        call piodie(__PIO_FILE__,__LINE__,'Unrecognized rearranger:',Iosystem%rearr)
-
-    end select
+    call box_rearrange_io2comp(Iosystem,iodesc,size(iobuf),iobuf,size(compbuf),compbuf)
 
 #ifdef TIMING
     call t_stopf("pio_rearrange_io2comp_real")
@@ -273,7 +201,7 @@ contains
 !
 ! rearrange_io2comp_double
 !
-# 121 "rearrange.F90.in"
+# 98 "rearrange.F90.in"
   subroutine rearrange_io2comp_double (Iosystem,iodesc,iobuf,compbuf)
     implicit none
 
@@ -286,24 +214,7 @@ contains
     call t_startf("pio_rearrange_io2comp_double")
 #endif
 
-    select case (Iosystem%rearr)
-      case (PIO_rearr_mct)
-
-#ifdef _USEMCT
-       call mct_rearrange_io2comp(Iosystem,iodesc,iobuf,compbuf) 
-#else
-        call die_nomct( __PIO_FILE__,__LINE__)
-#endif
-
-#ifdef _USEBOX
-      case (PIO_rearr_box)
-        call box_rearrange_io2comp(Iosystem,iodesc,size(iobuf),iobuf,size(compbuf),compbuf)
-#endif
-
-      case default
-        call piodie(__PIO_FILE__,__LINE__,'Unrecognized rearranger:',Iosystem%rearr)
-
-    end select
+    call box_rearrange_io2comp(Iosystem,iodesc,size(iobuf),iobuf,size(compbuf),compbuf)
 
 #ifdef TIMING
     call t_stopf("pio_rearrange_io2comp_double")
@@ -319,7 +230,7 @@ contains
 !
 ! rearrange_io2comp_int
 !
-# 121 "rearrange.F90.in"
+# 98 "rearrange.F90.in"
   subroutine rearrange_io2comp_int (Iosystem,iodesc,iobuf,compbuf)
     implicit none
 
@@ -332,49 +243,13 @@ contains
     call t_startf("pio_rearrange_io2comp_int")
 #endif
 
-    select case (Iosystem%rearr)
-      case (PIO_rearr_mct)
-
-#ifdef _USEMCT
-       call mct_rearrange_io2comp(Iosystem,iodesc,iobuf,compbuf) 
-#else
-        call die_nomct( __PIO_FILE__,__LINE__)
-#endif
-
-#ifdef _USEBOX
-      case (PIO_rearr_box)
-        call box_rearrange_io2comp(Iosystem,iodesc,size(iobuf),iobuf,size(compbuf),compbuf)
-#endif
-
-      case default
-        call piodie(__PIO_FILE__,__LINE__,'Unrecognized rearranger:',Iosystem%rearr)
-
-    end select
+    call box_rearrange_io2comp(Iosystem,iodesc,size(iobuf),iobuf,size(compbuf),compbuf)
 
 #ifdef TIMING
     call t_stopf("pio_rearrange_io2comp_int")
 #endif
 
   end subroutine rearrange_io2comp_int
-
-
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! rearrange_die
-!
-
-
-# 166 "rearrange.F90.in"
-  subroutine die_nomct(file,line)
-    character(len=*) :: file
-    integer :: line
-
-    call piodie(file,line, &
-	'the mct rearranger was specified but pio was not build with mct enabled')
-
-  end subroutine die_nomct
-
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -385,82 +260,17 @@ contains
 !
 
 
-# 185 "rearrange.F90.in"
+# 127 "rearrange.F90.in"
   subroutine rearrange_init_(Iosystem)
     implicit none
 
     type (Iosystem_desc_t), intent(inout) :: Iosystem
 
 
-    select case (Iosystem%rearr)
-      case (PIO_rearr_mct)
 
-#ifdef _USEMCT
-        call mct_rearrange_init(Iosystem)        ! mctrearrange
-#else
-        call die_nomct(__PIO_FILE__,__LINE__)
-#endif
-
-#ifdef _USEBOX
-      case (PIO_rearr_box)
         ! no general init required for box rearranger
-#endif
-
-      case default
-        call piodie(__PIO_FILE__,__LINE__,'Unrecognized rearranger:',Iosystem%rearr)
-
-
-    end select
-
 
   end subroutine rearrange_init_
-
-
-
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-!  rearrange_create_mct_
-!
-!  called from initDecomp
-!
-
-# 224 "rearrange.F90.in"
-  subroutine rearrange_create_mct_(Iosystem,compDOF,ioDOF,ioDesc)
-    implicit none
-
-    type (Iosystem_desc_t), intent(in) :: Iosystem
-    integer(i4), intent(in) :: compDOF(:)
-    integer(i4), intent(in) :: ioDOF(:)
-    type (IO_desc_t), intent(inout) :: ioDesc
-    
-
-#ifdef TIMING
-     call t_startf("pio_rearrange_create_mct")
-#endif
-
-    if (Iosystem%rearr /= PIO_rearr_mct) then
-      call piodie( __PIO_FILE__,__LINE__, &
-           'rearrange_create called with args for mct but rearranger type is not mct, Iosystem%rearr='&
-	, Iosystem%rearr)
-    endif
-
-#ifdef _USEMCT
-    call mct_rearrange_create(Iosystem,compDOF,ioDOF,ioDesc)
-#else
-    call die_nomct( __PIO_FILE__,__LINE__)
-#endif
-
-
-#ifdef TIMING
-     call t_stopf("pio_rearrange_create_mct")
-#endif
-
-
-  end subroutine rearrange_create_mct_
-
-
-
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -470,7 +280,7 @@ contains
 !
 
 
-# 268 "rearrange.F90.in"
+# 146 "rearrange.F90.in"
   subroutine rearrange_create_box_(Iosystem,compDOF, &
                                dims,ndims,ioDesc)
     implicit none
@@ -491,11 +301,9 @@ contains
            Iosystem%rearr)
     endif
 
-#ifdef _USEBOX
+
     call box_rearrange_create( Iosystem,compDOF,dims,ndims,Iosystem%num_iotasks,ioDesc)
-#else
-    call piodie( __PIO_FILE__,__LINE__,'pio not build with _USEBOX' )
-#endif
+
 
 #ifdef TIMING
      call t_stopf("pio_rearrange_create_box")
@@ -513,7 +321,7 @@ contains
 ! called from freeDecomp
 
 
-# 310 "rearrange.F90.in"
+# 186 "rearrange.F90.in"
   subroutine rearrange_free_(Iosystem,ioDesc)
     implicit none
 
@@ -522,25 +330,13 @@ contains
 
 
     select case (Iosystem%rearr)
-      case (PIO_rearr_mct)
-
-#ifdef _USEMCT
-        call mct_rearrange_free(ioDesc)    ! mctrearrange
-#else
-        call die_nomct( __PIO_FILE__,__LINE__)
-#endif
-
-#ifdef _USEBOX
-      case (PIO_rearr_box)
-        call box_rearrange_free(Iosystem,ioDesc)
-#endif
-
-
-      case (PIO_rearr_none)
+    case (PIO_rearr_box)
+       call box_rearrange_free(Iosystem,ioDesc)
+    case (PIO_rearr_none)
         ! do nothing 
 
-      case default
-        call piodie(__PIO_FILE__,__LINE__,'Unrecognized rearranger:',Iosystem%rearr)
+    case default
+       call piodie(__PIO_FILE__,__LINE__,'Unrecognized rearranger:',Iosystem%rearr)
 
     end select
 

@@ -171,11 +171,6 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
     case('none')
        rearr_type=PIO_rearr_none
        write(*,*) trim(string),' rearr_type = ','PIO_rearr_none'
-    case('mct')
-       rearr_type=PIO_rearr_mct
-       write(*,*) trim(string),' rearr_type = ','PIO_rearr_mct'
-       write(*,*) trim(caller),'->',trim(myname),':: rearr_type mct not supported '
-       call piodie(__FILE__,__LINE__)
     case('box')
        rearr_type=PIO_rearr_box
        write(*,*) trim(string),' rearr_type = ','PIO_rearr_box'

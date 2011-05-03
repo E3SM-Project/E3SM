@@ -16,7 +16,7 @@ module pio
         PIO_iotype_binary, PIO_iotype_direct_pbinary, PIO_iotype_pbinary, &
         pio_iotype_netcdf4p, pio_iotype_netcdf4c, pio_iotype_pnetcdf,pio_iotype_netcdf, &
 	pio_global, pio_char, pio_write, pio_nowrite, pio_clobber, pio_noclobber, &
-	pio_max_name, pio_max_var_dims, pio_rearr_none, pio_rearr_mct, &
+	pio_max_name, pio_max_var_dims, pio_rearr_none, &
 #if defined(_NETCDF) || defined(_PNETCDF)
 	pio_nofill, pio_unlimited, pio_64bit_offset, &
 #endif

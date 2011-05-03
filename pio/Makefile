@@ -51,7 +51,6 @@ TEMPLATES_F90 = pionfatt_mod.F90.in \
                 box_rearrange.F90.in \
                 rearrange.F90.in \
                 pio_support.F90.in \
-	        mct_rearrange.F90.in \
 	        iompi_mod.F90.in  \
 	        piodarray.F90.in \
 	        pio_spmd_utils.F90.in \
@@ -146,7 +145,6 @@ endif
 alloc_mod.o : alloc_mod.F90
 box_rearrange.o : box_rearrange.F90
 iompi_mod.o : iompi_mod.F90
-mct_rearrange.o : mct_rearrange.F90
 piodarray.o : piodarray.F90
 pionfatt_mod.o : pionfatt_mod.F90
 pionfget_mod.o : pionfget_mod.F90
@@ -159,7 +157,6 @@ rearrange.o : rearrange.F90
 alloc_mod.F90 : alloc_mod.F90.in
 box_rearrange.F90 : box_rearrange.F90.in
 iompi_mod.F90 : iompi_mod.F90.in
-mct_rearrange.F90 : mct_rearrange.F90.in
 piodarray.F90 : piodarray.F90.in
 pionfatt_mod.F90 : pionfatt_mod.F90.in
 pionfget_mod.F90 : pionfget_mod.F90.in

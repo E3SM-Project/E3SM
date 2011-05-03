@@ -47,14 +47,6 @@ AC_HELP_STRING([--enable-mpiio],
 [Enable support for MPI-IO (default auto detect)]),
 [USE_MPIIO=$enableval],[USE_MPIIO=default])
 
-AC_ARG_ENABLE(mct,
-AC_HELP_STRING([--enable-mct],[use mct (Uses MCT_PATH) (default no)]),
-[USE_MCT=$enableval],[USE_MCT=no])
-
-AC_ARG_ENABLE(box,
-AC_HELP_STRING([--enable-box],[use box rearranger (default yes)]),
-[USEBOX=$enableval],[USEBOX=yes])
-
 AC_ARG_ENABLE(debug,
 AC_HELP_STRING([--enable-debug],
 [Turn off optimization and turn on -g (same as OPT=-g)]),
@@ -445,28 +437,6 @@ if echo $F90 | grep pgf90 >/dev/null 2>&1; then
    fi
 fi
 
-if echo $F90 | grep ftn >/dev/null 2>&1; then
- if echo $f90_version | grep -i Portland >/dev/null 2>&1; then
-   echo "Fortran Compiler is Portland Group, XT3"
-   CPRDEF="PGI"
-   SYSDEF="CATAMOUNT"
-   if test -z "$REAL8"; then
-      REAL8="-r8"
-   fi
-   if test -z "$BIT64"; then
-      BIT64="-pc 64"
-   fi
-   if test -z "$ENDIAN"; then
-      ENDIAN="-byteswapio"
-   fi
- else
-   echo "Fortran Compiler is Cray"
-   CPRDEF="CRAY" 
-   if test -z "$MODINC"; then
-      MODINC="-p"
-   fi
- fi
-fi
 
 if echo $F90 | grep frt >/dev/null 2>&1; then
    echo "Fortran Compiler is UXP/V"
@@ -972,34 +942,6 @@ fi
 
 #####
 
-if test "$USE_MCT" = "yes"
-  then
-       PDEFS="$PDEFS -D_USEMCT"
-       if test -n "$MCT_PATH"
-         then echo 'using MCT_PATH from environment'
-         else MCT_PATH=`pwd`/../mct    # note: will not work for VPATH build
-              echo 'using default mct from the pio link'
-       fi
-       PDEFS="$PDEFS -D_USEMCT"
-       PINCS="$PINCS -I$MCT_PATH/mct -I$MCT_PATH/mpeu"
-       PLIBS="$PLIBS -L$MCT_PATH/mct -lmct -L$MCT_PATH/mpeu -lmpeu"
-
-       if test ! -f $MCT_PATH/mct/libmct.a
-         then AC_MSG_ERROR( [libmct.a not found in MCT_PATH/mct \
-                             check the environment variable MCT_PATH ])
-       fi
-
-
-  else
-       PDEFS="$PDEFS -D_NOUSEMCT"
-fi
-
-
-if test "$USEBOX" = "yes"
-  then PDEFS="$PDEFS -D_USEBOX"
-  else PDEFS="$PDEFS -D_NOUSEBOX"
-fi
-
 
 if test "$USE_MPI2" = "no"
   then PDEFS="$PDEFS -DNO_MPI2"
@@ -1122,8 +1064,6 @@ echo Output Variables: {CC=$CC} \
 {PNETCDF_PATH=$PNETCDF_PATH} \
 {USE_NETCDF=$USE_NETCDF} \
 {NETCDF_PATH=$NETCDF_PATH} \
-{USE_MCT=$USE_MCT} \
-{USEBOX=$USEBOX} \
 {PDEFS=$PDEFS} \
 {PDEFSF=$PDEFSF} \
 {PINCS=$PINCS} \

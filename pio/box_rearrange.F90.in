@@ -59,20 +59,6 @@
 #endif
 
 !
-! USESPACE
-! By default, use an algorithm on the senders that uses
-! very little temp space but needs to make one pass through
-! the compdof destinations for each io proc.  If _USE_SPACE
-! is nonzero, enable an alternate algorithm that makes a 
-! single pass but needs a lot of temp space to store the
-! results
-!
-
-! NOTE: code change caching is allocating anyway so do not shut off
-!#define _USE_SPACE 1
-#define _USE_SPACE 1
-
-!
 ! arbitrary mpi message tags used for the rearrange
 !
 
@@ -82,7 +68,6 @@
 
 module box_rearrange
 
-#ifdef _USEBOX
   use pio_kinds
   use pio_types, only : io_desc_t, iosystem_desc_t
 #ifdef NO_MPI2
@@ -1958,7 +1943,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     ! comp procs send the index sets
     !
 
-#ifdef _USE_SPACE
+
     ! Uses three temp arrays but
     ! computes everything in one pass.  Alternative is
     ! to make a pass per ioproc through the destinations 
@@ -2034,64 +2019,6 @@ end subroutine box_rearrange_io2comp_{TYPE}
     end do
 
     call dealloc_check(spos,'spos')
-
-    ! _USE_SPACE
-#else  
-
-    ! This alternative trades uses much less temp space
-    ! but makes one pass through the compdof for each ioproc
-    ! so that it can pull out the indices on-the-fly
-
-    call alloc_check(srcindex,max_scount,'sindex(max_scount)')
-
-    do i=1,num_iotasks                   ! send indices to ioproc i
-       if (scount(i) /= 0) then
-
-          count=0
-          loop1: do j=1,ndof               ! search for indices to ioproc i
-             iorank=ioDesc%dest_ioproc(j)       ! sender hole is -1
-             if (iorank==i) then
-                count=count+1
-                srcindex(count)=j-1              ! 0-based
-
-                if (count==scount(i)) exit loop1
-             endif
-          end do loop1
-
-          if (count/=scount(i)) call piodie(__PIO_FILE__,__LINE__,'count/=scount(i)')
-          if (count>max_scount) call piodie(__PIO_FILE__,__LINE__,'count>max_scount')
-
-          call MPI_TYPE_CREATE_INDEXED_BLOCK( &
-               scount(i), 1, srcindex, &                  ! count, blen, disp
-               MPI_INTEGER, sendtype, ierror )            ! oldtype, newtype
-          call CheckMPIReturn(subName,ierror)
- 
-          call MPI_TYPE_COMMIT(sendtype, ierror)
-          call CheckMPIReturn(subName,ierror)
-
-          ! go from 1-based io rank to 0-based comprank
-          io_comprank=find_io_comprank(Iosystem,i)
-
-
-#if DEBUG
-          print *,myrank,': send posted dest=',io_comprank,' count=',scount(i)
-#endif
-          call MPI_ISEND( ioDesc%dest_ioindex, 1, sendtype, &    ! buf, count, type
-               io_comprank,TAG1,    &                 ! destination,tag
-               Iosystem%union_comm,sreq,ierror )
-          call CheckMPIReturn(subName,ierror)
-
-          call MPI_TYPE_FREE(sendtype, ierror)
-          call CheckMPIReturn(subName,ierror)
-
-          call MPI_REQUEST_FREE(sreq,ierror)
-          call CheckMPIReturn(subName,ierror)
-
-       endif
-    end do
-
-#endif
-
 
 #if DEBUG_BARRIER
     call MPI_BARRIER(Iosystem%union_comm,ierror)
@@ -2183,7 +2110,6 @@ end subroutine box_rearrange_io2comp_{TYPE}
     ! Create the mpi types for the comp proc sends
 
 
-#ifdef _USE_SPACE
 
     pos = 1
     allocate(bsizeT(num_iotasks))
@@ -2231,42 +2157,6 @@ end subroutine box_rearrange_io2comp_{TYPE}
     end do
     
     call MPI_TYPE_FREE(newTYPEs,ierror)
-
-    ! if _USE_SPACE
-#else
-
-    ! This alternative uses more time but less space
-
-    do i=1,num_iotasks                   ! send indices to ioproc i
-       if (scount(i) /= 0) then
-
-          count=0
-          loop2: do j=1,ndof               ! search for indices to ioproc i
-             iorank=ioDesc%dest_ioproc(j)       ! sender hole is -1
-             if (iorank==i) then
-                count=count+1
-                srcindex(count)=j-1              ! 0-based
-
-                if (count==scount(i)) exit loop2
-             endif
-          end do loop2
-
-          if (count/=scount(i)) call piodie(__PIO_FILE__,__LINE__,'count/=scount(i)')
-          if (count>max_scount) call piodie(__PIO_FILE__,__LINE__,'count>max_scount')
-
-          call MPI_TYPE_CREATE_INDEXED_BLOCK( &
-               scount(i), 1, srcindex, &                  ! count, blen, disp
-               ioDesc%baseTYPE, stype(i), ierror )       ! oldtype, newtype
-          call CheckMPIReturn(subName,ierror)
-
-          call MPI_TYPE_COMMIT(stype(i), ierror)
-          call CheckMPIReturn(subName,ierror)
-       endif
-    end do
-
-    ! if _USE_SPACE
-#endif
-
 
     !
     ! clean up
@@ -2364,9 +2254,6 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
 
   end subroutine box_rearrange_free
-
-! _USEBOX
-#endif
 
 end module box_rearrange
 

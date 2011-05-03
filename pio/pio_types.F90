@@ -1,11 +1,6 @@
 #define __PIO_FILE__ "pio_types.F90"
 module pio_types
     use pio_kinds
-#ifdef _USEMCT
-! needed for MCT
-    use m_GlobalSegMap, only: GlobalSegMap      ! _EXTERNAL
-    use m_Rearranger, only: Rearranger          ! _EXTERNAL
-#endif
 
 #ifdef _NETCDF
      use netcdf                                  ! _EXTERNAL
@@ -65,7 +60,7 @@ module pio_types
         logical(log_kind)        :: UseRearranger      ! .true. if data rearrangement is necessary
         logical(log_kind)        :: async_interface    ! .true. if using the async interface model
         integer(i4)              :: rearr         ! type of rearranger
-                                                  ! e.g. rearr_{none,mct,box}
+                                                  ! e.g. rearr_{none,box}
 	integer(i4)              :: error_handling ! how pio handles errors
         integer(i4),pointer      :: ioranks(:)         ! the computational ranks for the IO tasks
 
@@ -131,17 +126,6 @@ module pio_types
         type(IO_desc2_t)    :: Write
 	integer(kind=PIO_Offset), pointer :: start(:)
 	integer(kind=PIO_Offset), pointer :: count(:)
-#ifdef _USEMCT
-        ! MCT GlobalSegMaps defined on comp_comm
-
-	integer(i4) :: lsize_comp      ! local size of GSMap for comp layout
-        integer(i4) :: lsize_io        ! local size of GSMap for IO layout
-
-        type (Rearranger) :: rearr_comp_to_io   ! mct rearranger comp->io
-        type (Rearranger) :: rearr_io_to_comp   ! mct rearranger io->comp
-
-        integer(i4), pointer :: compDOF_index(:)  ! permutation array
-#endif
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ! fields for box-based rearranger
@@ -226,12 +210,10 @@ module pio_types
 !! @brief The three choices to control rearrangement are:
 !! @details
 !!  - PIO_rearr_none : Do not use any form of rearrangement
-!!  - PIO_rearr_mct : Use MCT based rearrangement
 !!  - PIO_rearr_box : Use a PIO internal box rearrangement
 !>
     integer(i4), public, parameter :: PIO_rearr_none = 0
-    integer(i4), public, parameter :: PIO_rearr_mct =  1
-    integer(i4), public, parameter :: PIO_rearr_box =  2
+    integer(i4), public, parameter :: PIO_rearr_box =  1
 
 !> 
 !! @public

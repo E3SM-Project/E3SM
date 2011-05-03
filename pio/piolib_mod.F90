@@ -749,7 +749,9 @@ contains
 
     if(debug) print *,'iam: ',iosystem%io_rank,'initdecomp: userearranger: ',userearranger, glength
     if(userearranger) then 
-       call rearrange_create(iosystem,compdof,iodof,iodesc)
+             call piodie( __PIO_FILE__,__LINE__, &
+                  'this interface does not use rearranger')
+       
     endif
 #ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)

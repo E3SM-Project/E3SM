@@ -63,20 +63,6 @@
 #endif
 
 !
-! USESPACE
-! By default, use an algorithm on the senders that uses
-! very little temp space but needs to make one pass through
-! the compdof destinations for each io proc.  If _USE_SPACE
-! is nonzero, enable an alternate algorithm that makes a 
-! single pass but needs a lot of temp space to store the
-! results
-!
-
-! NOTE: code change caching is allocating anyway so do not shut off
-!#define _USE_SPACE 1
-#define _USE_SPACE 1
-
-!
 ! arbitrary mpi message tags used for the rearrange
 !
 
@@ -86,7 +72,6 @@
 
 module box_rearrange
 
-#ifdef _USEBOX
   use pio_kinds
   use pio_types, only : io_desc_t, iosystem_desc_t
 #ifdef NO_MPI2
@@ -108,7 +93,7 @@ module box_rearrange
        box_rearrange_comp2io, &
        box_rearrange_io2comp
 
-# 107 "box_rearrange.F90.in"
+# 92 "box_rearrange.F90.in"
   interface box_rearrange_comp2io
      ! TYPE int,real,double
      module procedure box_rearrange_comp2io_int
@@ -118,7 +103,7 @@ module box_rearrange
      module procedure box_rearrange_comp2io_double
   end interface
 
-# 112 "box_rearrange.F90.in"
+# 97 "box_rearrange.F90.in"
   interface box_rearrange_io2comp
      ! TYPE int,real,double
      module procedure box_rearrange_io2comp_int
@@ -130,7 +115,7 @@ module box_rearrange
 
   character(len=*), parameter :: modName='box_rearrange'
 
-# 119 "box_rearrange.F90.in"
+# 104 "box_rearrange.F90.in"
 contains
 #ifdef _MPISERIAL
 !
@@ -152,7 +137,7 @@ contains
 ! be more efficient overall.
 !
 ! TYPE real,double,int
-# 140 "box_rearrange.F90.in"
+# 125 "box_rearrange.F90.in"
 subroutine box_rearrange_comp2io_real (IOsystem, ioDesc, s1, src, s2, &
                                          dest, comm_option, fc_options)
   implicit none
@@ -237,7 +222,7 @@ end subroutine box_rearrange_comp2io_real
 ! be more efficient overall.
 !
 ! TYPE real,double,int
-# 140 "box_rearrange.F90.in"
+# 125 "box_rearrange.F90.in"
 subroutine box_rearrange_comp2io_double (IOsystem, ioDesc, s1, src, s2, &
                                          dest, comm_option, fc_options)
   implicit none
@@ -322,7 +307,7 @@ end subroutine box_rearrange_comp2io_double
 ! be more efficient overall.
 !
 ! TYPE real,double,int
-# 140 "box_rearrange.F90.in"
+# 125 "box_rearrange.F90.in"
 subroutine box_rearrange_comp2io_int (IOsystem, ioDesc, s1, src, s2, &
                                          dest, comm_option, fc_options)
   implicit none
@@ -390,7 +375,7 @@ subroutine box_rearrange_comp2io_int (IOsystem, ioDesc, s1, src, s2, &
 end subroutine box_rearrange_comp2io_int
 #else /* not _MPISERIAL */
 ! TYPE real,double,int
-# 207 "box_rearrange.F90.in"
+# 192 "box_rearrange.F90.in"
 subroutine box_rearrange_comp2io_real (IOsystem, ioDesc, s1, src, s2, &
                                          dest, comm_option, fc_options)
 
@@ -618,7 +603,7 @@ subroutine box_rearrange_comp2io_real (IOsystem, ioDesc, s1, src, s2, &
 
 end subroutine box_rearrange_comp2io_real
 ! TYPE real,double,int
-# 207 "box_rearrange.F90.in"
+# 192 "box_rearrange.F90.in"
 subroutine box_rearrange_comp2io_double (IOsystem, ioDesc, s1, src, s2, &
                                          dest, comm_option, fc_options)
 
@@ -846,7 +831,7 @@ subroutine box_rearrange_comp2io_double (IOsystem, ioDesc, s1, src, s2, &
 
 end subroutine box_rearrange_comp2io_double
 ! TYPE real,double,int
-# 207 "box_rearrange.F90.in"
+# 192 "box_rearrange.F90.in"
 subroutine box_rearrange_comp2io_int (IOsystem, ioDesc, s1, src, s2, &
                                          dest, comm_option, fc_options)
 
@@ -1083,7 +1068,7 @@ end subroutine box_rearrange_comp2io_int
 !  rearrange from the io decomposition to the comp decomposition
 !
 ! TYPE real,double,int
-# 443 "box_rearrange.F90.in"
+# 428 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_real (IOsystem, ioDesc, s1, iobuf, &
    s2, compbuf, comm_option, fc_options)
   implicit none
@@ -1154,7 +1139,7 @@ end subroutine box_rearrange_io2comp_real
 !  rearrange from the io decomposition to the comp decomposition
 !
 ! TYPE real,double,int
-# 443 "box_rearrange.F90.in"
+# 428 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_double (IOsystem, ioDesc, s1, iobuf, &
    s2, compbuf, comm_option, fc_options)
   implicit none
@@ -1225,7 +1210,7 @@ end subroutine box_rearrange_io2comp_double
 !  rearrange from the io decomposition to the comp decomposition
 !
 ! TYPE real,double,int
-# 443 "box_rearrange.F90.in"
+# 428 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_int (IOsystem, ioDesc, s1, iobuf, &
    s2, compbuf, comm_option, fc_options)
   implicit none
@@ -1290,7 +1275,7 @@ subroutine box_rearrange_io2comp_int (IOsystem, ioDesc, s1, iobuf, &
 end subroutine box_rearrange_io2comp_int
 #else /* not _MPISERIAL */
 ! TYPE real,double,int
-# 507 "box_rearrange.F90.in"
+# 492 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -1509,7 +1494,7 @@ subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
 
 end subroutine box_rearrange_io2comp_real
 ! TYPE real,double,int
-# 507 "box_rearrange.F90.in"
+# 492 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -1728,7 +1713,7 @@ subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
 
 end subroutine box_rearrange_io2comp_double
 ! TYPE real,double,int
-# 507 "box_rearrange.F90.in"
+# 492 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -1955,7 +1940,7 @@ end subroutine box_rearrange_io2comp_int
   !   find the rank in union_comm of the ith io processor
   !
 
-# 733 "box_rearrange.F90.in"
+# 718 "box_rearrange.F90.in"
   integer function find_io_comprank( Iosystem, ioprocindex )
     implicit none
 
@@ -1972,7 +1957,7 @@ end subroutine box_rearrange_io2comp_int
   !   find global xyz coordinates given a global index
   !
 
-# 749 "box_rearrange.F90.in"
+# 734 "box_rearrange.F90.in"
   subroutine gindex_to_coord( gindex, gstride, ndim, gcoord )
     implicit none
     integer,intent(in) :: gindex           ! 0-based global index
@@ -2009,7 +1994,7 @@ end subroutine box_rearrange_io2comp_int
   !   and 1-based index for that ioproc's iobuf          '
   !
 
-# 785 "box_rearrange.F90.in"
+# 770 "box_rearrange.F90.in"
   logical function find_ioproc( gcoord, lb, ub, lstride, ndim, nioproc, &
        io_proc, io_index )
     implicit none
@@ -2081,7 +2066,7 @@ end subroutine box_rearrange_io2comp_int
   !
   !
 
-# 856 "box_rearrange.F90.in"
+# 841 "box_rearrange.F90.in"
   subroutine compute_dest(compdof, start, count, gsize, ndim, nioproc, &
                           dest_ioproc, dest_ioindex                    )
     implicit none
@@ -2193,7 +2178,7 @@ end subroutine box_rearrange_io2comp_int
   ! this space should be freed in box_rearrange_free
   !
 
-# 967 "box_rearrange.F90.in"
+# 952 "box_rearrange.F90.in"
   subroutine box_rearrange_create(Iosystem, compdof, gsize, ndim, &
                                   nioproc, ioDesc)
     implicit none
@@ -2307,7 +2292,7 @@ end subroutine box_rearrange_io2comp_int
 
 #ifndef _MPISERIAL
 
-# 1080 "box_rearrange.F90.in"
+# 1065 "box_rearrange.F90.in"
   subroutine compute_counts(Iosystem, ioDesc, ndof, niodof)
     
     use calcdisplace_mod, only : calcdisplace,GCDblocksize,gcd
@@ -2783,7 +2768,7 @@ end subroutine box_rearrange_io2comp_int
   !
 
 
-# 1555 "box_rearrange.F90.in"
+# 1540 "box_rearrange.F90.in"
   subroutine box_rearrange_create( Iosystem,compdof,gsize,ndim,nioproc,ioDesc)
     implicit none
 
@@ -2972,7 +2957,7 @@ end subroutine box_rearrange_io2comp_int
 
 #ifndef _MPISERIAL
 
-# 1743 "box_rearrange.F90.in"
+# 1728 "box_rearrange.F90.in"
   subroutine compute_counts( Iosystem,ioDesc,ndof,niodof )
 
     use calcdisplace_mod, only : calcdisplace, GCDblocksize, gcd
@@ -3191,7 +3176,7 @@ end subroutine box_rearrange_io2comp_int
     ! comp procs send the index sets
     !
 
-#ifdef _USE_SPACE
+
     ! Uses three temp arrays but
     ! computes everything in one pass.  Alternative is
     ! to make a pass per ioproc through the destinations 
@@ -3267,64 +3252,6 @@ end subroutine box_rearrange_io2comp_int
     end do
 
     call dealloc_check(spos,'spos')
-
-    ! _USE_SPACE
-#else  
-
-    ! This alternative trades uses much less temp space
-    ! but makes one pass through the compdof for each ioproc
-    ! so that it can pull out the indices on-the-fly
-
-    call alloc_check(srcindex,max_scount,'sindex(max_scount)')
-
-    do i=1,num_iotasks                   ! send indices to ioproc i
-       if (scount(i) /= 0) then
-
-          count=0
-          loop1: do j=1,ndof               ! search for indices to ioproc i
-             iorank=ioDesc%dest_ioproc(j)       ! sender hole is -1
-             if (iorank==i) then
-                count=count+1
-                srcindex(count)=j-1              ! 0-based
-
-                if (count==scount(i)) exit loop1
-             endif
-          end do loop1
-
-          if (count/=scount(i)) call piodie(__PIO_FILE__,__LINE__,'count/=scount(i)')
-          if (count>max_scount) call piodie(__PIO_FILE__,__LINE__,'count>max_scount')
-
-          call MPI_TYPE_CREATE_INDEXED_BLOCK( &
-               scount(i), 1, srcindex, &                  ! count, blen, disp
-               MPI_INTEGER, sendtype, ierror )            ! oldtype, newtype
-          call CheckMPIReturn(subName,ierror)
- 
-          call MPI_TYPE_COMMIT(sendtype, ierror)
-          call CheckMPIReturn(subName,ierror)
-
-          ! go from 1-based io rank to 0-based comprank
-          io_comprank=find_io_comprank(Iosystem,i)
-
-
-#if DEBUG
-          print *,myrank,': send posted dest=',io_comprank,' count=',scount(i)
-#endif
-          call MPI_ISEND( ioDesc%dest_ioindex, 1, sendtype, &    ! buf, count, type
-               io_comprank,TAG1,    &                 ! destination,tag
-               Iosystem%union_comm,sreq,ierror )
-          call CheckMPIReturn(subName,ierror)
-
-          call MPI_TYPE_FREE(sendtype, ierror)
-          call CheckMPIReturn(subName,ierror)
-
-          call MPI_REQUEST_FREE(sreq,ierror)
-          call CheckMPIReturn(subName,ierror)
-
-       endif
-    end do
-
-#endif
-
 
 #if DEBUG_BARRIER
     call MPI_BARRIER(Iosystem%union_comm,ierror)
@@ -3416,7 +3343,6 @@ end subroutine box_rearrange_io2comp_int
     ! Create the mpi types for the comp proc sends
 
 
-#ifdef _USE_SPACE
 
     pos = 1
     allocate(bsizeT(num_iotasks))
@@ -3465,42 +3391,6 @@ end subroutine box_rearrange_io2comp_int
     
     call MPI_TYPE_FREE(newTYPEs,ierror)
 
-    ! if _USE_SPACE
-#else
-
-    ! This alternative uses more time but less space
-
-    do i=1,num_iotasks                   ! send indices to ioproc i
-       if (scount(i) /= 0) then
-
-          count=0
-          loop2: do j=1,ndof               ! search for indices to ioproc i
-             iorank=ioDesc%dest_ioproc(j)       ! sender hole is -1
-             if (iorank==i) then
-                count=count+1
-                srcindex(count)=j-1              ! 0-based
-
-                if (count==scount(i)) exit loop2
-             endif
-          end do loop2
-
-          if (count/=scount(i)) call piodie(__PIO_FILE__,__LINE__,'count/=scount(i)')
-          if (count>max_scount) call piodie(__PIO_FILE__,__LINE__,'count>max_scount')
-
-          call MPI_TYPE_CREATE_INDEXED_BLOCK( &
-               scount(i), 1, srcindex, &                  ! count, blen, disp
-               ioDesc%baseTYPE, stype(i), ierror )       ! oldtype, newtype
-          call CheckMPIReturn(subName,ierror)
-
-          call MPI_TYPE_COMMIT(stype(i), ierror)
-          call CheckMPIReturn(subName,ierror)
-       endif
-    end do
-
-    ! if _USE_SPACE
-#endif
-
-
     !
     ! clean up
     !
@@ -3530,7 +3420,7 @@ end subroutine box_rearrange_io2comp_int
   !   the rearrangement
   !
 
-# 2300 "box_rearrange.F90.in"
+# 2190 "box_rearrange.F90.in"
   subroutine box_rearrange_free(Iosystem,ioDesc)
     implicit none
 
@@ -3598,8 +3488,5 @@ end subroutine box_rearrange_io2comp_int
 
 
   end subroutine box_rearrange_free
-
-! _USEBOX
-#endif
 
 end module box_rearrange
