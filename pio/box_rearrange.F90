@@ -3281,7 +3281,7 @@ end subroutine box_rearrange_io2comp_int
     !
 
 
-    if (Iosystem%IOproc) then
+    if (Iosystem%IOproc .and. nrecvs>0) then
 
        pos=1
        ii = 1
