@@ -2605,41 +2605,41 @@ end subroutine box_rearrange_io2comp_int
     ! Create the mpi types for io proc receives
     !
 
-    if (Iosystem%IOproc) then
+    if (Iosystem%IOproc .and. nrecvs>0) then
  
       !need to cache
        call alloc_check(ioDesc%rtype, nrecvs, 'mpi recv types')
        rtype=>ioDesc%rtype
        pos = 1
        ii = 1
-       allocate(bsizeT(nrecvs))
-       do i=1,nrecvs
-          call GCDblocksize(rindex(pos:pos+rcount(i)-1),blocksize)
-	  if(rcount(i) > 0) then 
-             bsizeT(ii)=blocksize
-             ii = ii + 1
-	  endif
-	  pos = pos + rcount(i)
-       enddo
-       blocksize = gcd(bsizeT(1:ii-1))
-       print *,'gcd: receive block lengths: ', bsizeT(1:ii-1)
-       deallocate(bsizeT)
-!       print *,'GCD calculated for receive loop blocksize: ',blocksize
-       call MPI_TYPE_CONTIGUOUS(blocksize,ioDesc%baseTYPE,newTYPEr,ierror)
-       call CheckMPIReturn(subName,ierror)
-       call MPI_TYPE_COMMIT(newTYPEr,ierror)
-       call CheckMPIReturn(subName,ierror)
+          allocate(bsizeT(nrecvs))
+          do i=1,nrecvs
+             call GCDblocksize(rindex(pos:pos+rcount(i)-1),blocksize)
+             if(rcount(i) > 0) then 
+                bsizeT(ii)=blocksize
+                ii = ii + 1
+             endif
+             pos = pos + rcount(i)
+          enddo
+          blocksize = gcd(bsizeT(1:ii-1))
+          !       print *,'gcd: receive block lengths: ', bsizeT(1:ii-1)
+          deallocate(bsizeT)
+          !       print *,'GCD calculated for receive loop blocksize: ',blocksize
+          call MPI_TYPE_CONTIGUOUS(blocksize,ioDesc%baseTYPE,newTYPEr,ierror)
+          call CheckMPIReturn(subName,ierror)
+          call MPI_TYPE_COMMIT(newTYPEr,ierror)
+          call CheckMPIReturn(subName,ierror)
 
-       pos = 1
-       do i=1,nrecvs
+          pos = 1
+          do i=1,nrecvs
 
 #if DEBUG
 #if DEBUG_INDICES
-          print *, subName,':: myrank=',myrank,': recv indices from ',rfrom(i), &
-               ' count=',rcount(i),' value=',rindex(pos:pos+rcount(i)-1)
+             print *, subName,':: myrank=',myrank,': recv indices from ',rfrom(i), &
+                  ' count=',rcount(i),' value=',rindex(pos:pos+rcount(i)-1)
 #else
-          print *, subName,':: myrank=',myrank,': recv indices from ',rfrom(i), &
-               ' count=',rcount(i)
+             print *, subName,':: myrank=',myrank,': recv indices from ',rfrom(i), &
+                  ' count=',rcount(i)
 #endif
 #endif
 
@@ -2650,29 +2650,29 @@ end subroutine box_rearrange_io2comp_int
 !       call MPI_TYPE_COMMIT(newTYPEr,ierror)
 !       call CheckMPIReturn(subName,ierror)
 
-       len = rcount(i)/blocksize        
-       allocate(displace(len))
-       if(blocksize == 1) then 
-           displace(:) = rindex(pos:pos+rcount(i)-1)
-       else
-           rindex(pos:pos+rcount(i)-1) = rindex(pos:pos+rcount(i)-1)+1
-           call calcdisplace(blocksize,rindex(pos:pos+rcount(i)-1),displace)
-       endif
+             len = rcount(i)/blocksize        
+             allocate(displace(len))
+             if(blocksize == 1) then 
+                displace(:) = rindex(pos:pos+rcount(i)-1)
+             else
+                rindex(pos:pos+rcount(i)-1) = rindex(pos:pos+rcount(i)-1)+1
+                call calcdisplace(blocksize,rindex(pos:pos+rcount(i)-1),displace)
+             endif
 
-!DBG call alloc_print_usage(iosystem%comp_comm,80,'l2629')
-          ! need rindex to contain 0-based displacements here
-          call MPI_TYPE_CREATE_INDEXED_BLOCK( &
-               len, 1, displace, &               ! count,blen, disp
-               newTYPEr, rtype(i), ierror )       ! oldtype, newtype
-          call CheckMPIReturn(subName,ierror)
-
-          call MPI_TYPE_COMMIT(rtype(i), ierror)
-          call CheckMPIReturn(subName,ierror)
-        
-          deallocate(displace)
-          pos = pos + rcount(i)
-       end do
-    call MPI_TYPE_FREE(newTYPEr,ierror)
+             !DBG call alloc_print_usage(iosystem%comp_comm,80,'l2629')
+             ! need rindex to contain 0-based displacements here
+             call MPI_TYPE_CREATE_INDEXED_BLOCK( &
+                  len, 1, displace, &               ! count,blen, disp
+                  newTYPEr, rtype(i), ierror )       ! oldtype, newtype
+             call CheckMPIReturn(subName,ierror)
+             
+             call MPI_TYPE_COMMIT(rtype(i), ierror)
+             call CheckMPIReturn(subName,ierror)
+             
+             deallocate(displace)
+             pos = pos + rcount(i)
+          end do
+          call MPI_TYPE_FREE(newTYPEr,ierror)
     endif
     !
     ! Create the mpi types for the comp proc sends
