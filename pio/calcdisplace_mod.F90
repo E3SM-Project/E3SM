@@ -229,11 +229,11 @@ CONTAINS
     if(numtimes>0) then 
        bsizeg = gcd_array(gaps(1:numtimes)) 
        bsize = gcd_pair(bsize,bsizeg)
-       if(arr_in(1)>0) then    ! account for an initial gap
-          bsize = gcd_pair(bsize,arr_in(1))
-       end if
        deallocate(gaps)
     endif
+    if(arr_in(1)>0) then    ! account for an initial gap
+       bsize = gcd_pair(bsize,arr_in(1))
+    end if
     deallocate(del_arr,loc_arr,blk_len)
 
   end SUBROUTINE GCDblocksize
