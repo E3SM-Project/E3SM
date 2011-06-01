@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 use strict;
+use warnings;
 use Cwd;
 use Getopt::Long;
 use File::Copy;
@@ -12,7 +13,7 @@ my $suites;
 my $retry=0;
 my $help=0;
 my $host;
-my $pecount;
+my $pecount = 0;
 my $bname;
 my $iofmt;
 my $rearr;
@@ -24,8 +25,46 @@ my $debug=0;
 my $numagg;
 my $numvars;
 my $iodecomp;
-my $logfile = 'testpio.out';
+#my $logfile = 'testpio.out';
+
+my $logfile = '';
+my $logfile_date_suffix = '';  # Optional suffix to logfile date (e.g., a,b,c,etc.)
+my $logfile_name_comment = '';
+my $logfile_suffix = 'testpio.out';
+my $logfile_name_user = '';  # Overrides automated logfile construction
 my $enablenetcdf4;
+
+my $root = '';
+my $found = 0;
+my $outfile = '';
+
+my $date = '';
+my $cal_date = '';  # 2-digit year, month, day
+
+my $use_mpich_env = 1;  # Set to one for MPICH diagnostic environment settings
+my $use_cray_env = 1;   # Set to one for use of Cray MPICH extensions
+my $use_ibm_env = 1;    # Set to one for use of IBM PE extensions
+
+my $set_mpi_values = 0;  # Set to one if standard MPI settings are present
+my $mpi_cb_buffer_size = '';
+
+my $set_romio_values = 0;  # Set to one if MPICH ROMIO settings are present
+my $romio_cb_write = '';   # Use automatic, enable, or disable
+my $romio_cb_read = '';    # Use automatic, enable, or disable
+my $romio_direct_io = '';  # Use automatic, enable, or disable
+
+my $set_ibm_io_values = 0;      # Set to one if IBM PE IO settings are present
+my $ibm_io_buffer_size = '';    # user defind, kb scale.
+my $mp_io_buffer_size =  '';    # user defined, sets MP ENV variable. 
+my $ibm_io_largeblock_io = '';  # Set to "true" or "false"
+my $ibm_io_sparse_access = '';  # Set to "true" or "false"
+
+my $set_lustre_values = 0;  # Set to one if Lustre settings are present
+my $lfs_stripe_cmd = 'lfs setstripe';
+my $lfs_ost_count = -1;
+my $lfs_stripe_size = '';
+
+my $argc = $#ARGV + 2;
 
 my $result = GetOptions("suites=s@"=>\$suites,
                         "retry"=>\$retry,
@@ -43,9 +82,25 @@ my $result = GetOptions("suites=s@"=>\$suites,
                         "decomp=s"=>\$iodecomp,
 			"debug"=>\$debug,
 		        "log=s"=>\$logfile,
+                        "logfile-date-suffix=s"=>\$logfile_date_suffix,
+                        "logfile-name-comment=s"=>\$logfile_name_comment,
+                        "help"=>\$help,
+                        "mpi-env-mpich"=>\$use_mpich_env,
+                        "mpi-env-cray"=>\$use_cray_env,
+                        "mpi-env-ibm"=>\$use_ibm_env,
+                        "mpi-cb-buffer-size=s"=>\$mpi_cb_buffer_size,
+                        "romio-cb-write=s"=>\$romio_cb_write,
+                        "romio-cb-read=s"=>\$romio_cb_read,
+                        "romio-direct-io"=>\$romio_direct_io,
+                        "ibm-io-buffer-size=s"=>\$ibm_io_buffer_size,
+                        "mp-io-buffer-size=s"=>\$mp_io_buffer_size, 
+                        "ibm-io-largeblock-io=s"=>\$ibm_io_largeblock_io,
+                        "ibm-io-sparse-access=s"=>\$ibm_io_sparse_access,
+                        "lfs-ost-count=i"=>\$lfs_ost_count,
+                        "lfs-stripe-size=s"=>\$lfs_stripe_size,
 		        "help"=>\$help);
+usage() if($help || ($argc < 2));
 
-usage() if($help);
 sub usage{
     print "--suites                : Test only the listed suites (all, snet, pnet, mpiio, ant, bench)\n";
     print "--retry                 : Do not repeat tests that have already passed\n";
@@ -56,6 +111,31 @@ sub usage{
     print "--rearr                 : Selects the type of rearrangement (box,mct,none)\n";
     print "--numIOtasks (--numIO)  : Sets the number of IO tasks used by PIO\n";
     print "--stride                : Sets the stride between IO tasks, Note this is ignored on Blue Gene\n";
+    print "--mpi-env-mpich         : Adds MPICH environment settings\n";
+    print "--mpi-env-cray          : Adds Cray MPI environment settings\n";
+    print "--mpi-env-ibm           : Adds IBM (PE) MPI environment settings\n";
+    print "--mpi-cb-buffer-size=N  : Set PIO hint for cb_buffer_size (in bytes)\n";
+    print "--romio-cb-write=str    : romio_cb_write hint setting (\"automatic\",\n";
+    print "                          \"enable\", or \"disable\") -- default is\n";
+    print "                          automatic\n";
+    print "--romio-cb-read=str     : romio_cb_write hint setting (\"automatic\",\n";
+    print "                          \"enable\", or \"disable\") -- default is\n";
+    print "                          automatic\n";
+    print "--romio-direct-io=str   : romio_direct_io hint setting (\"automatic\",\n";
+    print "                          \"enable\", or \"disable\") -- default is\n";
+    print "                          automatic\n";
+    print "--ibm-io-buffer-size=N  : Sets the IBM (PE) IO buffer size --\n";
+    print "                          give number of bytes or append \"k\" or \"m\"\n";
+    print "                          to denote kilobytes or megabytes, respectively\n";
+    print "--ibm-io-largeblock-io=str\n";
+    print "                        : Set to \"true\" or \"false\"\n";
+    print "--ibm-io-sparse-access=str\n";
+    print "                        : Set to \"true\" or \"false\"\n";
+    print "--lfs-ost-count=N       : Sets the number of OSTs used for striping\n";
+    print "                          on a Lustre filesystem\n";
+    print "--lfs-stripe-size=N     : Sets the size of the stripe used in the\n";
+    print "                          Lustre file system -- stripe size must include\n";
+    print "                          units (e.g., \"128k\", \"2m\", \"4g\")\n";
     print "--maxiter               : Sets the number of files to write\n";
     print "--dir                   : Sets the subdirectory for which to write files \n";
     print "--numagg                : Sets the number of MPI-IO aggregators to use \n";
@@ -64,7 +144,96 @@ sub usage{
     print "--help                  : Print this message\n";
     print "--debug		   : Generate the runscript but do not submit it\n";
     print "--log                   : Manually sets the log output file for the benchmark\n";
+    print "--logfile-date-suffix=str\n";
+    print "                        : Suffix (e.g., a,b,c,etc.) added to date\n";
+    print "                          in logfile\n";
+    print "--logfile-name-comment=str\n";
+    print "                        : Comment string included in logfile name\n";
+    print "--mp-io-buffer-size=N   : Sets mp io buffer size.  --\n";
+    print "                          specify with either \"k\" or \"m\" for kilobytes or megabytes, respectively\n";
     exit;
+}
+
+## Get a string to describe the date
+
+$date = `date +%y%m%d-%H%M%S`;
+$cal_date = `date +%y%m%d`;
+
+chomp $date;
+chomp $cal_date;
+
+## See if standard MPI options are requested
+
+if ($mpi_cb_buffer_size ne '') {
+  $set_mpi_values = 1;  # True
+}
+
+
+## See if MPICH ROMIO options are requested
+
+if (($romio_cb_write ne '') || ($romio_cb_read ne '')
+    || ($romio_direct_io ne '')) {
+
+  if (($romio_cb_write ne '') && ($romio_cb_write ne 'automatic')
+      && ($romio_cb_write ne 'enable') && ($romio_cb_write ne 'disable')) {
+    print "\nError: Invalid romio-cb-write entry\n\n";
+    exit(-1);
+  }
+
+  if (($romio_cb_read ne '') && ($romio_cb_read ne 'automatic')
+      && ($romio_cb_read ne 'enable') && ($romio_cb_read ne 'disable')) {
+    print "\nError: Invalid romio-cb-read entry\n\n";
+    exit(-1);
+  }
+
+  if (($romio_direct_io ne '') && ($romio_direct_io ne 'automatic')
+      && ($romio_direct_io ne 'enable') && ($romio_direct_io ne 'disable')) {
+    print "\nError: Invalid romio-direct-io entry\n\n";
+    exit(-1);
+  }
+
+  $set_romio_values = 1;  # True
+}
+
+## See if IBM PE IO options are requested
+
+if (($ibm_io_buffer_size ne '') || ($ibm_io_largeblock_io ne '')
+    || ($ibm_io_sparse_access ne '')) {
+
+  if (($ibm_io_largeblock_io ne '') && ($ibm_io_largeblock_io ne 'true')
+      && ($ibm_io_largeblock_io ne 'false')) {
+    print "\nError: Invalid ibm-io-largeblock-io entry\n\n";
+    exit(-1);
+  }
+
+  if (($ibm_io_sparse_access ne '') && ($ibm_io_sparse_access ne 'true')
+      && ($ibm_io_sparse_access ne 'false')) {
+    print "\nError: Invalid ibm-io-sparse-access entry\n\n";
+    exit(-1);
+  }
+
+  $set_ibm_io_values = 1;  # True
+}
+
+## See if Lustre settings are requested
+
+if ($lfs_ost_count > 0) {
+  $set_lustre_values = 1;  # True
+
+  $lfs_stripe_cmd .= " -c " . $lfs_ost_count;
+}
+
+if ($lfs_stripe_size ne "") {
+  $set_lustre_values = 1;  # True
+
+  $lfs_stripe_cmd .= " -s " . $lfs_stripe_size;
+}
+
+
+## Append an underscore to an existing logfile name comment
+
+if ($logfile_name_comment ne '') {
+  $logfile_name_comment .= '_';
 }
 
 my $cfgdir = `pwd`;
@@ -89,17 +258,19 @@ Utils->loadmodules("$host");
 
 my $xml = XML::Lite->new( "$cfgdir/../testpio/build_defaults.xml" );
 
-my $root = $xml->root_element();
+$root = $xml->root_element();
 my $settings = $xml->elements_by_name($host);
 my %attributes = $settings->get_attributes;
 
 
 foreach(keys %attributes){
     if(/ADDENV_(.*)/){
-	print F "\$ENV{$1}=\"$attributes{$_}:\$ENV{$1}\"\;\n";
+#	print F "\$ENV{$1}=\"$attributes{$_}:\$ENV{$1}\"\;\n";
+	print "\$ENV{$1}=\"$attributes{$_}:\$ENV{$1}\"\;\n";
     }elsif(/ENV_(.*)/){
         print "set $1 $attributes{$_}\n";
-	print F "\$ENV{$1}=\"$attributes{$_}\"\;\n";
+#	print F "\$ENV{$1}=\"$attributes{$_}\"\;\n";
+	print "\$ENV{$1}=\"$attributes{$_}\"\;\n";
     }elsif(/NETCDF_PATH/){
 	if($attributes{NETCDF_PATH} =~ /netcdf-4/){
 	    $enablenetcdf4="--enable-netcdf4";
@@ -148,7 +319,18 @@ my %configuration = ( ldx => 0,
                       dir => './none/',
 		      iodecomp => 'yze',
                       numagg => -1,
-                      numvars => 10);
+                      numvars => 10,
+                      set_mpi_values => 0,
+                      mpi_cb_buffer_size => '',
+                      set_romio_values => 0,
+                      romio_cb_write => '',
+                      romio_cb_read => '',
+                      romio_direct_io => '',
+                      set_ibm_io_values => 0,
+                      mp_io_buffer_size => '',
+                      ibm_io_buffer_size => '',
+                      ibm_io_largeblock_io => '',
+                      ibm_io_sparse_access => '');
 
 #-------------------------------------------------
 # Modify the configuration based on arguments
@@ -162,10 +344,57 @@ if (defined $numvars) {$configuration{'numvars'} = $numvars;}
 if (defined $dir)     {$configuration{'dir'} = $dir;}
 if (defined $numagg)  {$configuration{'numagg'} = $numagg;}
 
+
+if (defined $set_mpi_values) {
+  $configuration{'set_mpi_values'} = $set_mpi_values;
+}
+
+if (defined $mpi_cb_buffer_size) {
+  $configuration{'mpi_cb_buffer_size'} = $mpi_cb_buffer_size;
+}
+
+if (defined $set_romio_values) {
+  $configuration{'set_romio_values'} = $set_romio_values;
+}
+
+if (defined $romio_cb_write) {
+  $configuration{'romio_cb_write'} = $romio_cb_write;
+}
+
+if (defined $romio_cb_read) {
+  $configuration{'romio_cb_read'} = $romio_cb_read;
+}
+
+if (defined $romio_direct_io) {
+  $configuration{'romio_direct_io'} = $romio_direct_io;
+}
+
+if (defined $set_ibm_io_values) {
+  $configuration{'set_ibm_io_values'} = $set_ibm_io_values;
+}
+
+if (defined $ibm_io_buffer_size) {
+  $configuration{'ibm_io_buffer_size'} = $ibm_io_buffer_size;
+}
+
+if (defined $mp_io_buffer_size)  {
+  $configuration{'mp_io_buffer_size'}  = $mp_io_buffer_size;
+}
+
+if (defined $ibm_io_largeblock_io) {
+  $configuration{'ibm_io_largeblock_io'} = $ibm_io_largeblock_io;
+}
+
+if (defined $ibm_io_sparse_access) {
+  $configuration{'ibm_io_sparse_access'} = $ibm_io_sparse_access;
+}
+
 # See if you can find the general benchmark description first
 my @blist = $config->elements_by_name("BenchConfig");
 my $bchildren = $elm->get_children();
-my $found=0;
+
+$found=0;
+
 foreach my $child (@blist) {
   my %atts = $child->get_attributes;
   my $bn = $atts{"bench_name"};
@@ -183,11 +412,12 @@ if(!$found) {
   print "nx_global: $configuration{'nx_global'} ny_global: $configuration{'ny_global'} nz_global: $configuration{'nz_global'}\n";
 }
 
-my $root = "CompConfig";
+$root = "CompConfig";
 my @list = $config->elements_by_name($root);
 my $children = $elm->get_children();
 
-my $found=0;
+$found=0;
+
 foreach my $child (@list ) {
   my %atts = $child->get_attributes;
   my $name = $child->get_name();
@@ -206,14 +436,105 @@ foreach my $child (@list ) {
      $found = 1;
   } 
 }
-my $suffix = $bname . "-" . $pecount;
-my $testname = "bench." . $suffix;
+#my $suffix = $bname . "-" . $pecount;
+my $suffix = $bname . "_PE-" . $pecount . "_IO-" . $iofmt . "-" . $numIO;
+
+## Add standard MPI values to the suffix
+
+if ($set_mpi_values != 0) {
+  $suffix .= "_MPI";
+
+  if ($mpi_cb_buffer_size ne '') { $suffix .= '-b' . $mpi_cb_buffer_size; }
+}
+
+## Add MPICH/ROMIO values to the suffix
+
+if ($set_romio_values != 0) {
+  $suffix .= "_ROMIO";
+
+  if ($romio_cb_write ne "") {
+    $suffix .= "-w";
+
+    if ($romio_cb_write eq "automatic") { $suffix .= "A"; }
+    elsif ($romio_cb_write eq "enable") { $suffix .= "E"; }
+    elsif ($romio_cb_write eq "disable") { $suffix .= "D"; }
+  }
+
+  if ($romio_cb_read ne "") {
+    $suffix .= "-r";
+
+    if ($romio_cb_read eq "automatic") { $suffix .= "A"; }
+    elsif ($romio_cb_read eq "enable") { $suffix .= "E"; }
+    elsif ($romio_cb_read eq "disable") { $suffix .= "D"; }
+  }
+
+  if ($romio_direct_io ne "") {
+    $suffix .= "-d";
+
+    if ($romio_direct_io eq "automatic") { $suffix .= "A"; }
+    elsif ($romio_direct_io eq "enable") { $suffix .= "E"; }
+    elsif ($romio_direct_io eq "disable") { $suffix .= "D"; }
+  }
+}
+
+## Add the mp io buffer size values if set:
+ if ($mp_io_buffer_size ne '') { $suffix .= "_mbs-" . $mp_io_buffer_size; }      
+
+
+## Add IBM PE IO values to the suffix
+
+if ($set_ibm_io_values != 0) {
+  $suffix .= "_IBM";
+
+  if ($ibm_io_buffer_size ne '') { $suffix .= "-b" . $ibm_io_buffer_size; }
+
+  if ($ibm_io_largeblock_io ne '') {
+    $suffix .= "-l";
+
+    if ($ibm_io_largeblock_io eq "true") { $suffix .= "T"; }
+    elsif ($ibm_io_largeblock_io eq "false") { $suffix .= "F"; }
+  }
+
+  if ($ibm_io_sparse_access ne '') {
+    $suffix .= "-s";
+
+    if ($ibm_io_sparse_access eq "true") { $suffix .= "T"; }
+    elsif ($ibm_io_sparse_access eq "false") { $suffix .= "F"; }
+  }
+
+}
+
+## Add Lustre values to the suffix
+
+if ($set_lustre_values != 0) {
+  $suffix .= "_OST";
+
+  if ($lfs_ost_count != 0) {
+    $suffix .= "-c" . $lfs_ost_count;
+  }
+
+  if ($lfs_stripe_size ne "") {
+    $suffix .= "-s". $lfs_stripe_size;
+  }
+}
+
+## Build the logfile name
+
+if ($logfile_name_user ne '') {
+  $logfile = $logfile_name_user;
+} else {
+  $logfile = $cal_date . $logfile_date_suffix . "_" . $host . "_"
+    . $logfile_name_comment . $suffix . "_" . $logfile_suffix;
+}
+
+my $testname = "bench." . $date . "." . $suffix;
+
 printf "testname: %s\n",$testname;
 
 if (defined $iodecomp) {$configuration{'iodecomp'} = $iodecomp;}
 
 #print "ldx: $configuration{'ldx'} ldy: $ldy ldz: $ldz\n";
-my $outfile;
+
 if ($found) {
   print "ldx: $configuration{'ldx'} ldy: $configuration{'ldy'} ldz: $configuration{'ldz'}\n";
   $outfile = "$cfgdir/testpio_in." . $suffix;
@@ -240,11 +561,11 @@ my $tstdir = "$srcdir/testpio";
 copy("$outfile","$tstdir");
 my $testpiodir = cwd();
 my $piodir = "$testpiodir/..";
-my $date = `date +%y%m%d-%H%M%S`;
+# my $date = `date +%y%m%d-%H%M%S`;
 my $user = $ENV{USER};
 chomp $date;
 
-my $outfile = "$testpiodir/testpio.out.$date";
+$outfile = "$testpiodir/testpio.out.$date";
 my $script  = "$testpiodir/testpio.sub.$date";
 
 open(F,">$script");
@@ -283,6 +604,7 @@ print F << "EOF";
 use strict;
 use lib "$cfgdir";
 use File::Copy;
+use File::Path;
 use POSIX qw(ceil);
 #unshift \@INC, "$cfgdir/../testpio";
 
@@ -290,6 +612,8 @@ use POSIX qw(ceil);
 use Utils;
 
 chdir ("$cfgdir");
+
+
 
 mkdir "$srcdir" if(! -d "$srcdir");
 
@@ -315,6 +639,22 @@ my \$host   = "$host";
 my \$pecount = $pecount;
 my \$run     = "$attributes{run}";
 
+if ($use_mpich_env != 0) {
+    \$ENV{'MPICH_ENV_DISPLAY'} = '1'; # this displays all the MPICH environment variables
+}
+
+if ($use_cray_env != 0) {
+    \$ENV{'MPICH_MPIIO_XSTATS'} = '1'; # this outputs MPI-IO statistics
+    \$ENV{'MPICH_MPIIO_HINTS_DISPLAY'} = '1';  # Displays hints for each file
+    \$ENV{'MPICH_MPIIO_CB_ALIGN'} = '2';  # Do not allign to lustre stripes
+}
+
+if ($use_ibm_env != 0) {                     #left set and unchanged.nothing added.
+    if ('$mp_io_buffer_size' ne '') {
+        \$ENV{'MP_IO_BUFFER_SIZE'} = "$mp_io_buffer_size";
+    }
+}
+
 foreach \$suite (qw(@testsuites)){
     my \$confopts = \$confopts->{\$suite};
 #    my \@testlist = \@{\$testlist->{\$suite}};
@@ -330,7 +670,7 @@ foreach \$suite (qw(@testsuites)){
     }
     if(-e "../pio/Makefile.conf" && -e "testpio"){
 	foreach \$test (\@testlist){
-	    my \$casedir = "$workdir/\$suite.\$test";
+	    my \$casedir = "$workdir/\$suite.$date.\$test";
 	    mkdir \$casedir unless(-d \$casedir);
 	    chdir(\$casedir) or die "Could not cd to \$casedir";
 	    print "\$suite \$test    ";
@@ -354,10 +694,17 @@ foreach \$suite (qw(@testsuites)){
 #	    symlink("$tstdir/namelists/testpio_in.\$test","testpio_in");
 #	    symlink("$tstdir/testpio_in.\$test","testpio_in");
 	    symlink("$tstdir/testpio_in.\$test","testpio_in");
+            rmtree "none" unless(! -d "none");
 	    mkdir "none" unless(-d "none");
+
+            if ($set_lustre_values != 0) {
+              system("$lfs_stripe_cmd" . " " . "none");
+            }
+
 	    my \$exename = "./testpio";
             my \$log = "\$casedir/$logfile";
 	    unlink("\$log") if(-e "\$log");
+
             my \$sysstr =  Utils->runString(\$host,\$pecount,\$run,\$exename,\$log);
             print "Running \$sysstr\\n";
 	    system(\$sysstr);
@@ -387,7 +734,13 @@ EOF
 close(F);
 chmod 0755, $script;
 my $subsys = Utils->submitString($host,$pecount,$corespernode,$attributes{submit},$script);
-print "submit: ($subsys)\n";
+
+if ($debug) {
+  print "Submission command: ($subsys)\n";
+} else {
+  print "submit: ($subsys)\n";
+}
+
 if($debug) {
     print "Created script ($script)\n";
 } else {
@@ -438,6 +791,28 @@ sub gen_io_nml {
   print F "maxiter        = $configuration{'maxiter'}\n";
   print F "dir            = '$configuration{'dir'}'\n";
   print F "num_aggregator = $configuration{'numagg'}\n";
+
+  print F "set_mpi_values = $configuration{'set_mpi_values'}\n";
+
+  if ($configuration{'set_mpi_values'} != 0) {
+    print F "mpi_cb_buffer_size = '$configuration{'mpi_cb_buffer_size'}'\n";
+  }
+
+  print F "set_romio_values = $configuration{'set_romio_values'}\n";
+
+  if ($configuration{'set_romio_values'} != 0) {
+    print F "romio_cb_write = '$configuration{'romio_cb_write'}'\n";
+    print F "romio_cb_read = '$configuration{'romio_cb_read'}'\n";
+    print F "romio_direct_io = '$configuration{'romio_direct_io'}'\n";
+  }
+
+  print F "set_ibm_io_values = $configuration{'set_ibm_io_values'}\n";
+
+  if ($configuration{'set_ibm_io_values'} != 0) {
+    print F "ibm_io_buffer_size = '$configuration{'ibm_io_buffer_size'}'\n";
+    print F "ibm_io_largeblock_io = '$configuration{'ibm_io_largeblock_io'}'\n";
+    print F "ibm_io_sparse_access = '$configuration{'ibm_io_sparse_access'}'\n";
+  }
   print F "DebugLevel  = 0\n";
   print F "compdof_input = 'namelist'\n";
   if(defined $iodecomp) {
