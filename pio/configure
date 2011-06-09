@@ -626,6 +626,7 @@ MPILIBS
 FCLIBS
 FC_DEFINE
 FCFLAGS_F
+FCFLAGS_F90
 ac_ct_FC
 FCFLAGS
 EGREP
@@ -4240,8 +4241,63 @@ ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest
 ac_compiler_gnu=$ac_cv_fc_compiler_gnu
 
 
-# How to preprocess fortran files
+ac_ext=${ac_fc_srcext-f}
+ac_compile='$FC -c $FCFLAGS $ac_fcflags_srcext conftest.$ac_ext >&5'
+ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_fc_compiler_gnu
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for Fortran flag to compile .F90 files" >&5
+$as_echo_n "checking for Fortran flag to compile .F90 files... " >&6; }
+if ${ac_cv_fc_srcext_F90+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_ext=F90
+ac_fcflags_srcext_save=$ac_fcflags_srcext
+ac_fcflags_srcext=
+ac_cv_fc_srcext_F90=unknown
+for ac_flag in none -qsuffix=f=F90 -Tf; do
+  test "x$ac_flag" != xnone && ac_fcflags_srcext="$ac_flag"
+  cat > conftest.$ac_ext <<_ACEOF
+      program main
 
+      end
+_ACEOF
+if ac_fn_fc_try_compile "$LINENO"; then :
+  ac_cv_fc_srcext_F90=$ac_flag; break
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+done
+rm -f conftest.$ac_objext conftest.F90
+ac_fcflags_srcext=$ac_fcflags_srcext_save
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_fc_srcext_F90" >&5
+$as_echo "$ac_cv_fc_srcext_F90" >&6; }
+if test "x$ac_cv_fc_srcext_F90" = xunknown; then
+  as_fn_error $? "Fortran could not compile .F90 files" "$LINENO" 5
+else
+  ac_fc_srcext=F90
+  if test "x$ac_cv_fc_srcext_F90" = xnone; then
+    ac_fcflags_srcext=""
+    FCFLAGS_F90=""
+  else
+    ac_fcflags_srcext=$ac_cv_fc_srcext_F90
+    FCFLAGS_F90=$ac_cv_fc_srcext_F90
+  fi
+
+
+fi
+ac_ext=${ac_fc_srcext-f}
+ac_compile='$FC -c $FCFLAGS $ac_fcflags_srcext conftest.$ac_ext >&5'
+ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_fc_compiler_gnu
+
+
+# When using a cache file it appears that sometimes ac_ext does not get set
+if test -z "$ac_ext"; then
+   ac_ext=".F90"
+fi
+
+# How to preprocess fortran files
 ac_ext=${ac_fc_srcext-f}
 ac_compile='$FC -c $FCFLAGS $ac_fcflags_srcext conftest.$ac_ext >&5'
 ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest.$ac_ext $LIBS >&5'
@@ -4399,7 +4455,7 @@ _ACEOF
 # 1 to this macro) to the Fortran 90 compiler in order to get "version" output
 ac_save_FCFLAGS=$FCFLAGS
 FCFLAGS="$FCFLAGS $ac_version"
-(eval echo $as_me:4402: \"$ac_link\") >&5
+(eval echo $as_me:4458: \"$ac_link\") >&5
 ac_fc_version_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 echo "$ac_fc_version_output" >&5
 FCFLAGS=$ac_save_FCFLAGS

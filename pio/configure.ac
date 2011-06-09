@@ -159,6 +159,12 @@ AC_C_BIGENDIAN
 
 AC_PROG_FC
 AC_LANG_PUSH(Fortran)
+AC_FC_SRCEXT(F90)
+
+# When using a cache file it appears that sometimes ac_ext does not get set
+if test -z "$ac_ext"; then
+   ac_ext=".F90"
+fi
 
 # How to preprocess fortran files
 AC_FC_PP_DEFINE()
