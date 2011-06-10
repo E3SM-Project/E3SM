@@ -2515,9 +2515,9 @@ fi
 
 # Check whether --enable-sizeof was given.
 if test "${enable_sizeof+set}" = set; then :
-  enableval=$enable_sizeof; USE_SIZEOF=$enableval
+  enableval=$enable_sizeof; FC_USE_SIZEOF=$enableval
 else
-  USE_SIZEOF=default
+  FC_USE_SIZEOF=default
 fi
 
 
@@ -5632,7 +5632,7 @@ _ACEOF
 fi
 
 ###########################################################################
-if test "$USE_SIZEOF" = "default"
+if test "$FC_USE_SIZEOF" = "default"
   then ac_ext=${ac_fc_srcext-f}
 ac_compile='$FC -c $FCFLAGS $ac_fcflags_srcext conftest.$ac_ext >&5'
 ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest.$ac_ext $LIBS >&5'
@@ -5645,9 +5645,9 @@ $as_echo_n "checking Fortran support for sizeof()... " >&6; }
         integer :: a,b = sizeof(a)
 _ACEOF
 if ac_fn_fc_try_compile "$LINENO"; then :
-  USE_SIZEOF="yes"
+  FC_USE_SIZEOF="yes"
 else
-  USE_SIZEOF="no"
+  FC_USE_SIZEOF="no"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
        ac_ext=c
@@ -5657,7 +5657,7 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
-       if test "$USE_SIZEOF" = "yes"
+       if test "$FC_USE_SIZEOF" = "yes"
          then { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
          else { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -5665,8 +5665,8 @@ $as_echo "no" >&6; }
        fi
 fi
 
-if test "$USE_SIZEOF" = "no"
-  then CPPPDEFS+=" -DNO_SIZEOF "
+if test "$FC_USE_SIZEOF" = "no"
+  then CPPDEFS+=" -DNO_SIZEOF "
        echo "disabling Fortran sizeof()"
 fi
 

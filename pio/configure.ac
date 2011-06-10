@@ -63,7 +63,7 @@ AC_HELP_STRING([--enable-mpi2],
 AC_ARG_ENABLE(sizeof,
 AC_HELP_STRING([--enable-sizeof],
 [Enable use of sizeof() in Fortran (default auto detect)]),
-[USE_SIZEOF=$enableval],[USE_SIZEOF=default])
+[FC_USE_SIZEOF=$enableval],[FC_USE_SIZEOF=default])
 
 AC_ARG_ENABLE(memmon,
 AC_HELP_STRING([--enable-memmon],
@@ -279,22 +279,22 @@ else
 fi
 
 ###########################################################################
-if test "$USE_SIZEOF" = "default"
+if test "$FC_USE_SIZEOF" = "default"
   then AC_LANG_PUSH(Fortran)
        AC_MSG_CHECKING([Fortran support for sizeof()])
        AC_COMPILE_IFELSE( [[
         integer :: a,b = sizeof(a)]],
-                USE_SIZEOF="yes", USE_SIZEOF="no" )
+                FC_USE_SIZEOF="yes", FC_USE_SIZEOF="no" )
        AC_LANG_POP(Fortran)
 
-       if test "$USE_SIZEOF" = "yes"
+       if test "$FC_USE_SIZEOF" = "yes"
          then AC_MSG_RESULT(yes)
          else AC_MSG_RESULT(no)
        fi
 fi
 
-if test "$USE_SIZEOF" = "no"
-  then CPPPDEFS+=" -DNO_SIZEOF "
+if test "$FC_USE_SIZEOF" = "no"
+  then CPPDEFS+=" -DNO_SIZEOF "
        echo "disabling Fortran sizeof()"
 fi
 
