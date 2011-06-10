@@ -6364,9 +6364,9 @@ fi
 
 
         if test x"$netcdf_inc_path"x != xx ; then
-           NETCDF_FCFLAGS="$ax_cv_f90_modflag$netcdf_inc_path"
+           NETCDF_FCFLAGS="$ac_cv_fc_module_flag$netcdf_inc_path"
         else
-           NETCDF_FCFLAGS="$ax_cv_f90_modflag/usr/include"
+           NETCDF_FCFLAGS="$ac_cv_fc_module_flag/usr/include"
         fi
 	FCFLAGS="$FCFLAGS $NETCDF_FCFLAGS"
         { $as_echo "$as_me:${as_lineno-$LINENO}: checking for f90 netCDF interface" >&5

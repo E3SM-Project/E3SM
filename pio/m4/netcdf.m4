@@ -158,9 +158,9 @@ NcError err_handler;
         AC_SEARCH_LIBS(NF_INQ_LIBVERS,netcdff netcdf,[acx_netcdf_ok=yes],[acx_netcdf_ok=no; AC_MSG_ERROR(cannot find netCDF fortran library)])
         AC_REQUIRE([AC_FC_MODULE_FLAG])
         if test x"$netcdf_inc_path"x != xx ; then
-           NETCDF_FCFLAGS="$ax_cv_f90_modflag$netcdf_inc_path"
+           NETCDF_FCFLAGS="$ac_cv_fc_module_flag$netcdf_inc_path"
         else
-           NETCDF_FCFLAGS="$ax_cv_f90_modflag/usr/include"
+           NETCDF_FCFLAGS="$ac_cv_fc_module_flag/usr/include"
         fi
 	FCFLAGS="$FCFLAGS $NETCDF_FCFLAGS"
         AC_MSG_CHECKING([for f90 netCDF interface])
