@@ -720,6 +720,7 @@ enable_debug
 enable_timing
 enable_mpiserial
 enable_mpi2
+enable_sizeof
 enable_memmon
 enable_stackmon
 enable_exithandler
@@ -1401,6 +1402,8 @@ Optional Features:
   --enable-timing         Turn on the gptl timing library interface
   --enable-mpiserial      Build for use with mpi-serial lib (default no)
   --enable-mpi2           Enable use of mpi2 calls (default yes)
+  --enable-sizeof         Enable use of sizeof() in Fortran (default auto
+                          detect)
   --enable-memmon         use memmon library (Must set MEMMON_PATH)
   --enable-stackmon       use stackmonitor library (Must set STACKMON_PATH)
   --enable-exithandler    use exithandler library (Must set EXITHANDLER_PATH)
@@ -2507,6 +2510,14 @@ if test "${enable_mpi2+set}" = set; then :
   enableval=$enable_mpi2; USE_MPI2=$enableval
 else
   USE_MPI2=yes
+fi
+
+
+# Check whether --enable-sizeof was given.
+if test "${enable_sizeof+set}" = set; then :
+  enableval=$enable_sizeof; USE_SIZEOF=$enableval
+else
+  USE_SIZEOF=default
 fi
 
 
@@ -4455,7 +4466,7 @@ _ACEOF
 # 1 to this macro) to the Fortran 90 compiler in order to get "version" output
 ac_save_FCFLAGS=$FCFLAGS
 FCFLAGS="$FCFLAGS $ac_version"
-(eval echo $as_me:4458: \"$ac_link\") >&5
+(eval echo $as_me:4469: \"$ac_link\") >&5
 ac_fc_version_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 echo "$ac_fc_version_output" >&5
 FCFLAGS=$ac_save_FCFLAGS

@@ -60,6 +60,11 @@ AC_HELP_STRING([--enable-mpi2],
 [Enable use of mpi2 calls (default yes)]),
 [USE_MPI2=$enableval],[USE_MPI2=yes])
 
+AC_ARG_ENABLE(sizeof,
+AC_HELP_STRING([--enable-sizeof],
+[Enable use of sizeof() in Fortran (default auto detect)]),
+[USE_SIZEOF=$enableval],[USE_SIZEOF=default])
+
 AC_ARG_ENABLE(memmon,
 AC_HELP_STRING([--enable-memmon],
 [use memmon library (Must set MEMMON_PATH)]),
