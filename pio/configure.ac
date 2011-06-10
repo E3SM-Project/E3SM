@@ -274,7 +274,26 @@ else
 fi
 
 ###########################################################################
+if test "$USE_SIZEOF" = "default"
+  then AC_LANG_PUSH(Fortran)
+       AC_MSG_CHECKING([Fortran support for sizeof()])
+       AC_COMPILE_IFELSE( [[
+        integer :: a,b = sizeof(a)]],
+                USE_SIZEOF="yes", USE_SIZEOF="no" )
+       AC_LANG_POP(Fortran)
 
+       if test "$USE_SIZEOF" = "yes"
+         then AC_MSG_RESULT(yes)
+         else AC_MSG_RESULT(no)
+       fi
+fi
+
+if test "$USE_SIZEOF" = "no"
+  then CPPPDEFS+=" -DNO_SIZEOF "
+       echo "disabling Fortran sizeof()"
+fi
+
+#####
 
 # A HACK TO FIX ACX_MPI TO GET MPI_LIB TO BE AN EMPTY STRING
 if test "$MPI_LIB" = " "; then
