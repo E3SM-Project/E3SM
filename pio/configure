@@ -6128,6 +6128,11 @@ else
 fi
 
 
+# Check for variable NETCDF_PATH in environment
+if test -d "$NETCDF_PATH"; then
+  with_netcdf=$NETCDF_PATH
+fi
+
 
 # check whether netcdf is disabled
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for netcdf" >&5
