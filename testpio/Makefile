@@ -91,13 +91,13 @@ endif
 PIOLIBA = $(PIODIR)/libpio.a
 
 $(EXE): $(OBJS) $(PIOLIBA)
-	$(MPIF90) $(FFLAGS) -o $@ $(OBJS) $(PIOLIB) $(LDLIBS)
+	$(MPIFC) $(FFLAGS) -o $@ $(OBJS) $(PIOLIB) $(LDLIBS)
 
 $(EXE2): $(OBJS2) $(PIOLIBA)
-	$(MPIF90) $(FFLAGS) -o $@ $(OBJS2) $(PIOLIB) $(LDLIBS)
+	$(MPIFC) $(FFLAGS) -o $@ $(OBJS2) $(PIOLIB) $(LDLIBS)
 
 $(EXE3): $(OBJS3) $(PIOLIBA)
-	$(MPIF90) $(FFLAGS) -o $@ $(OBJS3) $(PIOLIB) $(LDLIBS)
+	$(MPIFC) $(FFLAGS) -o $@ $(OBJS3) $(PIOLIB) $(LDLIBS)
 
 #
 # Suffix rules
@@ -122,10 +122,10 @@ SRCS_CPP= $(SRCS_F90:.F90=$(CPPSUF))
 	$(RM) $*.f90
 	$(CPP) $(CPPFLAGS) $(CFLAGS) $(COPTS) $(INCLUDES) -o $*.f90 $*.F90 
 	chmod a-w $*.f90
-	$(MPIF90) -c $(FFLAGS) $(FOPTS) $(INCLUDES) $(PIOINC) $*.f90
+	$(MPIFC) -c $(FFLAGS) $(FOPTS) $(INCLUDES) $(PIOINC) $*.f90
 else
 .F90.o:
-	$(MPIF90) -c $(FFLAGS) $(FOPTS) $(INCLUDES) $(PIOINC) $*.F90
+	$(MPIFC) -c $(FFLAGS) $(FOPTS) $(INCLUDES) $(PIOINC) $*.F90
 endif
 
 

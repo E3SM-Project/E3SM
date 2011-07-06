@@ -1100,8 +1100,6 @@ contains
     end do
     if(Debug) print *,'iorank: ',iorank,' getiostartandcount: use_io_procs: ',use_io_procs
 
-    start = 1
-    count = 0
 
 
     !-----------------
@@ -1112,20 +1110,6 @@ contains
        cnt = cnt * gdims(sdims)
        sdims = sdims - 1
     enddo
-    if (sdims < 0) then
-       call piodie( __PIO_FILE__,__LINE__, &
-            'error in sdims',sdims)
-    endif
-
-    do m = 1,sdims
-       start(m) = 1
-       count(m) = gdims(m)
-       bsize(m) = gdims(m)
-       nblocks(m) = 1
-       fblocks(m) = 1
-    enddo
-    if(Debug) print *,'iorank: ',iorank, ' getiostartandcount: sdims: ',sdims
-    if(Debug) print *,'iorank: ',iorank, ' getiostartandcount: count: ',count
 
     fanlimit  = 50.00
     fanfactor = fanlimit + 1.0  !we want at least one trip through the do while loop  
@@ -1133,6 +1117,20 @@ contains
     it = 0
     step(:) = 1
     do while (fanfactor > fanlimit .and. it < maxit ) 
+       start = 1
+       count = 0
+
+       do m = 1,sdims
+          start(m) = 1
+          count(m) = gdims(m)
+          bsize(m) = gdims(m)
+          nblocks(m) = 1
+          fblocks(m) = 1
+       enddo
+       if(Debug) print *,'iorank: ',iorank, ' getiostartandcount: sdims: ',sdims
+       if(Debug) print *,'iorank: ',iorank, ' getiostartandcount: count: ',count
+
+
        xpes = use_io_procs
        xiam = iorank   ! goes from 0 to xpes-1
        do m = ndims, sdims+1, -1
@@ -1157,9 +1155,17 @@ contains
              if(step(m) == gdims(m)) fanlimit = fanlimit + 10.0
           else
              if (m /= sdims+1) then
-                call piodie( __PIO_FILE__,__LINE__, &
-                     'm /= sdims+1',ival1=m,ival2=sdims)
-             endif
+                if(sdims<ndims) then
+                   sdims=sdims+1
+                   it=it-1     ! try again
+                else if(use_io_procs>1) then
+                   use_io_procs=use_io_procs-1
+                   it=it-1     ! try again
+                else
+                   call piodie( __PIO_FILE__,__LINE__, &
+                        'm /= sdims+1',ival1=m,ival2=sdims)
+                endif
+             end if
              ds = int((dble(gdims(m))*dble(xiam  ))/dble(xpes)) + 1
              de = int((dble(gdims(m))*dble(xiam+1))/dble(xpes))
              start(m) = ds
@@ -1168,8 +1174,16 @@ contains
 
           if ((start(m) < 1 .or. count(m) < 1) .and. iorank<use_io_procs) then
              print *, 'start =',start, ' count=',count
-             call piodie( __PIO_FILE__,__LINE__, &
-                  'start or count failed to converge')
+             if(sdims<ndims) then
+                sdims=sdims+1
+                it=it-1     ! try again
+             else if(use_io_procs>1) then
+                use_io_procs=use_io_procs-1
+                it=it-1     ! try again
+             else
+                call piodie( __PIO_FILE__,__LINE__, &
+                     'start or count failed to converge')
+             end if
           endif
 
        enddo
@@ -1195,10 +1209,13 @@ contains
        if(Debug) print *,'iorank: ',iorank,' getiostartandcount: fan factor is: ',fanfactor
        it=it+1
     enddo
+
+
+
     deallocate(step)
     deallocate(pes_per_dim)
     deallocate(bsize,nblocks,fblocks)
-    !   stop 'end of getiostartandcount'
+
     ! This should already be the case.
     if(iorank>=use_io_procs) then 
 	start = 1

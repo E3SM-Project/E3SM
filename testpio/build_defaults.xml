@@ -7,7 +7,7 @@
   PNETCDF_PATH="/contrib/bgl/parallel-netcdf-1.1.1" 
   MPI_INC="-I/bgl/BlueLight/ppcfloor/bglsys/include" 
   MPI_LIB="-L/bgl/BlueLight/ppcfloor/bglsys/lib -lmpich.rts -lmsglayer.rts -lrts.rts -ldevices.rts"
-  F90 = "blrts_xlf90"
+  FC = "blrts_xlf90"
   FC = "blrts_xlf90"
   CC = "blrts_xlc"
   FFLAGS = "-qextname=flush -g -qfullpath -WF,-DBGL,-D_USE_FLOW_CONTROL "
@@ -27,8 +27,8 @@
   ADDENV_PATH="/soft/apps/darshan/bin/:/soft/apps/ibmcmp-jan2010/xlf/bg/11.1/bin/:/soft/apps/ibmcmp-jan2010/vac/bg/9.0/bin/"
   NETCDF_PATH="/soft/apps/current/netcdf-4.1.2-beta2" 
   PNETCDF_PATH="/soft/apps/current/pnetcdf-1.1.1-xl" 
-  MPIF90 = "/soft/apps/darshan/bin/default/mpixlf90"
-  F90 = "/soft/apps/darshan/bin/default/mpixlf90"
+  MPIFC = "/soft/apps/darshan/bin/default/mpixlf90"
+  FC = "/soft/apps/darshan/bin/default/mpixlf90"
   FC = "/soft/apps/darshan/bin/default/mpixlf90"
   CC = "/soft/apps/darshan/bin/default/mpixlc"
   LDLIBS = "-lnetcdff"
@@ -50,7 +50,7 @@
   ENV_PREATTACH_L2CACHE_LIST="AUTO_SELECT"
   ENV_MP_EAGER_LIMIT="0"
   ENV_CONFIG_SHELL="/bin/bash"  
-  MPIF90 = "mpxlf2003_r"
+  MPIFC = "mpxlf2003_r"
   CC = "xlc_r"
   LDFLAGS=" "
   conopts = " --enable-timing --enable-filesystem-hints=gpfs "
@@ -74,9 +74,9 @@
   ADDENV_PATH = ""
   ADDENV_LD_LIBRARY_PATH = ""
   ENV_P4_GLOBMEMSIZE="518400000"
-  MPIF90 = "mpif90"
+  MPIFC = "mpif90"
   MPICC = "mpicc"
-  F90 = "gfortran"
+  FC = "gfortran"
   CC = "gcc"
   NETCDF_PATH="" 
   FFLAGS = "-g --free-line-length-none "
@@ -98,9 +98,9 @@
   ADDENV_PATH = ""
   ADDENV_LD_LIBRARY_PATH = ""
   ENV_P4_GLOBMEMSIZE="518400000"
-  MPIF90 = "mpif90"
+  MPIFC = "mpif90"
   MPICC = "mpicc"
-  F90 = "pgf90"
+  FC = "pgf90"
   CC = "gcc"
   NETCDF_PATH="" 
   FFLAGS = "-g"
@@ -122,9 +122,9 @@
   ADDENV_PATH = "/usr/local/mpich-lf95/bin"
   ADDENV_LD_LIBRARY_PATH = "/usr/local/lf95/lib64"
   ENV_P4_GLOBMEMSIZE="518400000"
-  MPIF90 = "mpif90"
+  MPIFC = "mpif90"
   MPICC = "mpicc"
-  F90 = "lf95"
+  FC = "lf95"
   CC = "gcc"
   NETCDF_PATH="/usr/local/netcdf-3.6.3-gcc-4.1.2-lf95-8.0_x86_64" 
   FFLAGS = "-g  --chk a,e,s,u --pca --trace --trap "
@@ -145,9 +145,9 @@
   ADDENV_PATH = "/home/jedwards/openmpi-1.4.3-gcc-lf95/bin"
   ADDENV_LD_LIBRARY_PATH = "/usr/local/lf95/lib64:/home/jedwards/openmpi-1.4.3-gcc-lf95/lib"
   ENV_P4_GLOBMEMSIZE="518400000"
-  MPIF90 = "mpif90"
+  MPIFC = "mpif90"
   MPICC = "mpicc"
-  F90 = "lf95"
+  FC = "lf95"
   CC = "gcc"
   NETCDF_PATH="/usr/local/netcdf-3.6.3-gcc-4.1.2-lf95-8.0_x86_64" 
   FFLAGS = "-g  --chk a,e,s,u --pca --trace --trap "
@@ -169,9 +169,9 @@
 <edinburgh_intel
   ADDENV_PATH = "/usr/local/mpich-1.2.7p1-intel-3.2.02/bin:/usr/local/intel-cluster-3.2.02/fc/11.0.074/bin/intel64/:/usr/local/intel-cluster-3.2.02/cc/11.0.074/bin/intel64"
   ENV_P4_GLOBMEMSIZE="518400000"
-  MPIF90 = "mpif90"
+  MPIFC = "mpif90"
   MPICC = "mpicc"
-  F90 = "ifort"
+  FC = "ifort"
   CC = "icc"
   NETCDF_PATH="/usr/local/netcdf-3.6.3-intel-3.2.02" 
   FFLAGS = "-g "
@@ -190,9 +190,9 @@
 
 <mirage1
   MCT_PATH="/glade/home/jedwards/src/MCT2_7_0_100228-mpiserial101109_tag02/"
-  MPIF90 = "ifort"
+  MPIFC = "ifort"
   MPICC = "icc"
-  F90 = "ifort"
+  FC = "ifort"
   CC = "icc"
   NETCDF_PATH="/fs/local/apps/netcdf-3.6.2/" 
   FFLAGS = "-g "
@@ -209,9 +209,9 @@
 
 
 <jaguar
-  MPIF90 = "ftn -L$LIBSCI_BASE_DIR/pgi/lib"
+  MPIFC = "ftn -L$LIBSCI_BASE_DIR/pgi/lib"
   MPICC = "cc -L$LIBSCI_BASE_DIR/pgi/lib"
-  F90 = "pgf90"
+  FC = "pgf90"
   CC = "pgcc"
   FFLAGS = "-D_USE_FLOW_CONTROL"
   ENV_NETCDF_PATH="$NETCDF_DIR"
@@ -230,9 +230,9 @@
 />
 
 <athena
-  MPIF90 = "ftn"
+  MPIFC = "ftn"
   MPICC =  "cc"
-  F90 = "pgf90"
+  FC = "pgf90"
   CC = "pgcc"
   FFLAGS = "-D_USE_FLOW_CONTROL"
   NETCDF_PATH = "$NETCDF_DIR"
@@ -251,9 +251,9 @@
 />
 
 <kraken
-  MPIF90 = "ftn -L$LIBSCI_BASE_DIR/pgi/lib"
+  MPIFC = "ftn -L$LIBSCI_BASE_DIR/pgi/lib"
   MPICC  = "cc -L$LIBSCI_BASE_DIR/pgi/lib"
-  F90    = "pgf90" 
+  FC    = "pgf90" 
   CC     = "pgcc" 
   FFLAGS = "-D_USE_FLOW_CONTROL"
   NETCDF_PATH = "$NETCDF_DIR"
@@ -271,9 +271,9 @@
 />
 
 <columbia
-  MPIF90 = "mpif90"
+  MPIFC = "mpif90"
   MPICC  = "mpicc"
-  F90    = "ifort" 
+  FC    = "ifort" 
   CC     = "icc" 
   FFLAGS = "-D_USE_FLOW_CONTROL"
   NETCDF_PATH = "$NETCDF_DIR"
@@ -293,9 +293,9 @@
 />
 
 <pleiades
-  MPIF90 = "ifort"
+  MPIFC = "ifort"
   MPICC  = "icc"
-  F90    = "ifort"
+  FC    = "ifort"
   CC     = "icc"
   FFLAGS = "-D_USE_FLOW_CONTROL"
   LDLIBS = "-lmpi"
@@ -315,13 +315,33 @@
 />
 
 <lynx
-  MPIF90 = "ftn -L$LIBSCI_BASE_DIR/pgi/lib"
-  MPICC  = "cc -L$LIBSCI_BASE_DIR/pgi/lib"
-  F90    = "pgf90"
+  MPIFC = "ftn "
+  MPICC  = "cc "
+  FC    = "pgf90"
   CC     = "pgcc"
   FFLAGS = "-D_USE_FLOW_CONTROL"
-  NETCDF_PATH = "$CRAY_NETCDF_DIR/netcdf-pgi"
-  PNETCDF_PATH = "/contrib/pnetcdf-pgi/"
+  NETCDF_PATH = "/contrib/netcdf/3.6.3/pgi"
+  PNETCDF_PATH = "/contrib/pnetcdf/1.2.0/pgi"
+  workdir = "/ptmp/${USER}/testpio"
+  run = "aprun"
+  corespernode = "12"
+  submit = "qsub "
+  conopts = "   --enable-filesystem-hints=lustre "
+  preamble="
+#PBS -N testpio_suite
+#PBS -l walltime=01:50:00
+#PBS -j oe
+#PBS -V"
+/>
+
+<lynx_gnu
+  MPIFC = "ftn "
+  MPICC  = "cc "
+  FC    = "ftn"
+  CC     = "cc"
+  FFLAGS = "-D_USE_FLOW_CONTROL -Wl,-zmuldefs "
+  NETCDF_PATH = "/contrib/netcdf/3.6.3/gnu"
+  PNETCDF_PATH = "/contrib/pnetcdf/1.2.0/gnu-4.5.1"
   workdir = "/ptmp/${USER}/testpio"
   run = "aprun"
   corespernode = "12"

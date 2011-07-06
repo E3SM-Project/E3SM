@@ -215,7 +215,7 @@ sub loadmodules{
 !        module(" load pd-pnetcdf.1.1.1");
     }elsif($host =~ "lynx"){
 	require "/opt/modules/default/init/perl";
-	module(" load netcdf");
+#	module(" load netcdf");
         module("list");
     }
 	

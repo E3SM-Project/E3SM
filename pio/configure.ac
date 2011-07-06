@@ -1,16 +1,13 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
-
-
-AC_INIT(PIO, 1.2.0)
-
-
+AC_INIT(PIO, 1.3.0)
+AC_CONFIG_MACRO_DIR([m4])
 #
 # take input from Makefile.conf.in
 # output to Makefile.conf.out
 #
 AC_CONFIG_FILES(Makefile.conf)
-
+AC_CONFIG_HEADER(config.h)
 
 #
 # configure options
@@ -21,11 +18,6 @@ AC_CONFIG_FILES(Makefile.conf)
 #   AC_HELP_STRING([--enable-myvar],[turn on myvar]),
 #   [USEMYVAR=$enableval],[USEMYVAR=default])
 #   AC_SUBST(USEMYVAR)
-
-AC_ARG_ENABLE(fpp,
-AC_HELP_STRING([--enable-fpp],[explicit preprocessing of fortran source]),
-[EXPLICIT_FPP=$enableval],[EXPLICIT_FPP=default])
-AC_SUBST(EXPLICIT_FPP)
 
 AC_ARG_ENABLE(pnetcdf,
 AC_HELP_STRING( [--enable-pnetcdf],
@@ -71,7 +63,7 @@ AC_HELP_STRING([--enable-mpi2],
 AC_ARG_ENABLE(sizeof,
 AC_HELP_STRING([--enable-sizeof],
 [Enable use of sizeof() in Fortran (default auto detect)]),
-[USE_SIZEOF=$enableval],[USE_SIZEOF=default])
+[FC_USE_SIZEOF=$enableval],[FC_USE_SIZEOF=default])
 
 AC_ARG_ENABLE(memmon,
 AC_HELP_STRING([--enable-memmon],
@@ -112,7 +104,7 @@ AC_ARG_VAR(FPPFLAGS,C-preprocessing flags for Fortran source code)
 AC_ARG_VAR(MACHDEFS,MCT compiler and OS flags)
 
 AC_ARG_VAR(FC,The Fortran compiler)
-AC_ARG_VAR(MPIF90,The MPI Fortran compiler)
+AC_ARG_VAR(MPIFC,The MPI Fortran compiler)
 
 AC_ARG_VAR(FFLAGS,User-defined Fortran compiler flags)
 AC_ARG_VAR(ALLCFLAGS,Customized C source compilation flags)
@@ -164,69 +156,62 @@ test "$osname"=NONE && osname=`uname -s`
 test "$machinename"=NONE && machinename=`uname -m`
 fullhostname=`hostname -f 2>/dev/null | sed 1q`
 
-# HARDCODE SPECIFIC MACHINES FOR EXTRAORDINARY CIRCUMSTANCES
+# CHECK FOR THE COMPILERS
 
-# CHECK IF WE ARE ON THE EARTH SIMULATOR
-ES="NO"
-if echo $osname | grep -i esos >/dev/null 2>&1; then
-   ES="YES"
-fi
-if echo $osname | grep -i hp-ux >/dev/null 2>&1; then   
-   if test "$ac_hostname" = "moon"; then 
-      ES="YES"
-      # TELLS CONFIGURE NOT TO RUN ANY TESTS THAT REQUIRE EXECUTION
-      cross_compiling="yes"
-   fi
-fi
-if test "$ES" = "YES"; then   
-   echo "Using preset configuration values for the Earth Simulator"
-   if test -z "$CC"; then
-      CC="escc"
-   fi
-   if test -z "$F90"; then
-      F90="esf90"
-   fi
-   if test -z "$MPIF90"; then
-      MPIF90="esmpif90"
-   fi
-   if test -z "$AR"; then
-      AR="esar cqs"
-   fi
-   if test -z "FPP"; then
-      FPPFLAGS=" "
-   fi
-   if test -z "$F90FLAGS"; then
-      F90FLAGS="-EP -Wf'-pvctl fullmsg -L fmtlist transform map'"
-   fi
-   if test -z "$MACHDEFS"; then
-      MACHDEFS="-DESVEC"
-   fi
+AC_PROG_CC
+# CHECK FOR BYTE ORDERING
+AC_C_BIGENDIAN
+
+AC_PROG_FC
+AC_LANG_PUSH(Fortran)
+AC_FC_SRCEXT(F90)
+
+AC_FC_FREEFORM()
+AC_FC_LINE_LENGTH(unlimited)
+
+
+# When using a cache file it appears that sometimes ac_ext does not get set
+if test -z "$ac_ext"; then
+   ac_ext=".F90"
 fi
 
-# CHECK IF WE ARE ON THE NCSA IA-64 CLUSTER TITAN
-if test "$ac_hostname" = "user02"; then
-   if echo $osname | grep -i linux >/dev/null 2>&1; then
-      if test -z "$MPI_LIB"; then
-         if test -z "$MPI_INC"; then
-            echo "Using preset MPI configuration for titan"
-	    MPI_LIB="-L/usr/local/vmi/mpich/lib/intel -lmpich -lvmi -ldl -lpthread"
-	    MPI_INC="-I/usr/local/vmi/mpich/include"
-         fi
-      fi
-   fi
-fi
+# How to preprocess fortran files
+AC_FC_PP_DEFINE()
+
+# CHECK HOW TO GET THE COMPILER VERSION.
+
+AX_FC_VERSION()
+
+fc_version="$ac_fc_version_output"
 
 
+# CHECK HOW TO NAME MANGLE C FUNCTIONS SO THAT IT CAN BE CALLED FROM FORTRAN
 
-# START TESTS
+AC_FC_WRAPPERS
 
-# CHECK FOR THE C COMPILER
-
-AC_PROG_CC(xlc_r cc)
+case $ac_cv_fc_mangling in
+  "lower case, no underscore, no extra underscore")
+  ;;
+  "lower case, no underscore, extra underscore")
+    CPPDEFS+=" -DFORTRANDOUBLEUNDERSCORE "
+  ;;
+  "lower case, underscore, no extra underscore")
+    CPPDEFS+=" -DFORTRANUNDERSCORE "
+  ;;
+  "lower case, underscore, extra underscore")
+    CPPDEFS+=" -DFORTRANDOUBLEUNDERSCORE "
+  ;;
+  "upper case, no underscore, no extra underscore")
+    CPPDEFS+=" -DFORTRANCAPS "
+  ;;
+  *)
+  AC_MSG_ERROR( No case for $ac_cv_fc_mangling)
+  ;;
+esac
 
 # CHECK MPI BY DEFAULT
 if test "$USE_MPISERIAL" = "yes"
-  then PDEFS="$PDEFS -D_MPISERIAL"
+  then CPPDEFS="$CPPDEFS -D_MPISERIAL"
        echo "building for use with mpi-serial"
   MPICC=$CC
 
@@ -242,11 +227,13 @@ if test "$USE_MPISERIAL" = "yes"
     MPI_LIB="-L$MPI_PATH -lmpi-serial"
     MPI_INC="-I$MPI_PATH" 
   fi
+  USE_PNETCDF="no"
+  MPIFC=$FC
 else
-  PDEFS="$PDEFS -DSPMD -DHAVE_MPI"
+  CPPDEFS="$CPPDEFS -DSPMD -DHAVE_MPI"
   ACX_MPI()
 fi
-
+AC_LANG_POP(Fortran)
 #
 # determine sizes
 #
@@ -316,67 +303,44 @@ else
 fi
 
 ###########################################################################
+if test "$FC_USE_SIZEOF" = "default"
+  then AC_LANG_PUSH(Fortran)
+       AC_MSG_CHECKING([Fortran support for sizeof()])
+       AC_COMPILE_IFELSE( [[
+        integer :: a,b 
+                b = sizeof(a)]],
+                FC_USE_SIZEOF="yes", FC_USE_SIZEOF="no" )
+       AC_LANG_POP(Fortran)
 
-AC_SUBST(PIO_PATH)
-
-AC_SUBST(PDEFS)
-AC_SUBST(PDEFSF)
-AC_SUBST(PINCS)
-AC_SUBST(LDLIBS)
-
-# CHECK FOR THE FORTRAN COMPILER
-AC_PROG_F90
-
-AC_LANG_PUSH(Fortran 90)
-
-#if test -z "$MPIF90"; then
-#  MPIF90=$F90
-#fi
-
-# CHECK MPI BY DEFAULT
-if test "$USE_MPISERIAL" = "yes"; then
-  USE_PNETCDF="no"
-  MPIF90=$F90
-else
-  ACX_MPI()
+       if test "$FC_USE_SIZEOF" = "yes"
+         then AC_MSG_RESULT(yes)
+         else AC_MSG_RESULT(no)
+       fi
 fi
 
-# CHECK FOR MPI LIBRARIES
-
-OLDF90FLAGS="$F90FLAGS"
-
-if test -n "MPI_INC"; then
-   F90FLAGS="$F90FLAGS $MPI_INC"
+if test "$FC_USE_SIZEOF" = "no"
+  then CPPDEFS+=" -DNO_SIZEOF "
+       echo "disabling Fortran sizeof()"
 fi
 
-
-
-F90FLAGS="$OLDF90FLAGS"
+#####
 
 # A HACK TO FIX ACX_MPI TO GET MPI_LIB TO BE AN EMPTY STRING
 if test "$MPI_LIB" = " "; then
    MPI_LIB=""
 fi
 
-# FOR SANITY, CHECK THAT FILENAME EXTENSION FOR FC IS CONSISTENT WITH F90
-OLDF90="$F90"
-F90="$MPIF90"
 
-AC_COMPILE_IFELSE(
-  [subroutine oof(); return; end], [],
-  [AC_MSG_WARN([$FC FAILED TO COMPILE FILENAME EXTENSION $ac_ext])
-  ])
-#PDEFS=""
 if test "$USE_MPIIO" = "default"
   then AC_MSG_CHECKING(MPI-IO support in MPI implementation)
        FFLAGS="$FFLAGS $MPI_INC"
-       AC_LANG_PUSH(Fortran 90)
+       AC_LANG_PUSH(Fortran)
        AC_COMPILE_IFELSE( [program mpicheck
                            include "mpif.h"
                            integer,parameter:: a = MPI_MODE_RDWR
                            end program],
                 USE_MPIIO="yes", USE_MPIIO="no" )
-       AC_LANG_POP(Fortran 90)
+       AC_LANG_POP(Fortran)
        if test "$USE_MPIIO" = "yes"
          then AC_MSG_RESULT(yes)
          else AC_MSG_RESULT(no)
@@ -386,324 +350,10 @@ fi
 
 if test "$USE_MPIIO" = "yes"
   then
-       PDEFS="$PDEFS -DUSEMPIIO"
+       CPPDEFS="$CPPDEFS -DUSEMPIIO"
 fi
 
 #####
-
-F90="$OLDF90"
-
-
-# CHECK HOW TO GET THE COMPILER VERSION.
-
-_AC_PROG_F90_VERSION
-
-f90_version="$ac_f90_version_output"
-
-
-AC_LANG_POP(Fortran 90)
-
-# CHECK FOR BYTE ORDERING
-AC_C_BIGENDIAN
-
-
-# CHECK COMPILER NAME
-if echo $F90 | grep xlf >/dev/null 2>&1; then
-   echo "Fortran Compiler is XLF"
-   CPRDEF="XLF"
-   if test -z "$F90FLAGS"; then
-      if test "$ac_cv_f90_fpp_compiler" = "yes"; then
-         F90FLAGS="-qarch=auto -qsuffix=f=F90:cpp=F90"
-      fi
-      if test "$ac_cv_f90_fpp_compiler" = "no"; then
-         if test "$ac_cv_f90_fpp_external" = "yes"; then
-	    F90FLAGS="-qarch=auto -qsuffix=f=f90"
-         fi
-      fi
-   fi
-fi
-
-if echo $F90 | grep pgf90 >/dev/null 2>&1; then
-   echo "Fortran Compiler is Portland Group"
-   CPRDEF="PGI"
-   if test -z "$REAL8"; then
-      REAL8="-r8"
-   fi
-   if test -z "$BIT64"; then
-      BIT64="-pc 64"
-   fi
-   if test -z "$ENDIAN"; then
-      ENDIAN="-byteswapio"
-   fi
-fi
-
-
-if echo $F90 | grep frt >/dev/null 2>&1; then
-   echo "Fortran Compiler is UXP/V"
-   echo "Suggested additional vectorization flags: -Wv,-s5,-t3,-noalias,-ilfunc,-md"
-   CPRDEF="FUJITSU"
-   if test -z "$F90FLAGS"; then
-      F90FLAGS="-Am -X9"
-   fi
-   if test -z "$BIT64"; then
-      BIT64="-KA64"
-   fi
-   if test -z "$REAL8"; then
-      REAL8="-Ad"
-   fi
-fi
-
-if echo $F90 | grep epcf90 >/dev/null 2>&1; then
-   echo "Everest has never tested the epcf90 compiler :("
-   CPRDEF="EPC"
-fi
-
-if echo $F90 | grep lf95 >/dev/null 2>&1; then
-   echo "Fortran Compiler is Lahey"
-   CPRDEF="LAHEY"
-fi
-
-if echo $F90 | grep ifc >/dev/null 2>&1; then
-   echo "Fortran Compiler is Intel 7.x or earlier"
-   echo "Intel ifc compiler must set the environment variable F_UFMTENDIAN=big to do endian conversion"
-   CPRDEF="INTEL"
-   if test -z "$REAL8"; then
-      REAL8="-r8"
-   fi
-   if test -z "$F90FLAGS"; then
-      F90FLAGS="-w"
-   fi
-fi
-
-if echo $F90 | grep efc >/dev/null 2>&1; then
-   echo "Fortran Compiler is Intel 7.x or earlier for IA-64"
-   echo "Intel efc compiler must set the environment variable F_UFMTENDIAN=big to do endian conversion"
-   CPRDEF="INTEL"
-   if test -z "$REAL8"; then
-      REAL8="-r8"
-   fi
-   if test -z "$F90FLAGS"; then
-      F90FLAGS="-w -ftz"
-   fi
-fi
-
-if echo $F90 | grep ifort >/dev/null 2>&1; then
-   echo "Fortran Compiler is Intel ifort"
-   CPRDEF="INTEL"
-   if test -z "$REAL8"; then
-      REAL8="-r8"
-   fi
-   if test -z "$F90FLAGS"; then
-      F90FLAGS="-w -ftz -assume byterecl"
-   fi
-   if test -z "$ENDIAN"; then
-      ENDIAN="-convert big_endian"
-   fi
-fi
-
-if echo $F90 | grep pathf90 >/dev/null 2>&1; then
-   echo "Fortran Compiler is PathScale"
-   CPRDEF="PATHSC"
-   if test -z "$REAL8"; then
-      REAL8="-r8"
-   fi
-   if test -z "$BIT64"; then
-      BIT64="-m64"
-   fi
-fi
-
-if echo $F90 | grep g95 >/dev/null 2>&1; then
-   echo "Fortran Compiler is GNU"
-   CPRDEF="GNU"
-fi
-
-if echo $f90_version | grep -i nag >/dev/null 2>&1; then
-   echo "Fortran Compiler is NAG"
-   CPRDEF="NAG"
-   if test -z "$F90FLAGS"; then
-      F90FLAGS="-dusty -kind=byte"
-   fi
-fi
-
-if echo $f90_version | grep -i absoft >/dev/null 2>&1; then
-   echo "Fortran Compiler is Absoft"
-   CPRDEF="ABSOFT"
-   if test -z "$REAL8"; then
-      REAL8="-N113"
-   fi    
-   if test -z "$MODINC"; then
-      MODINC="-p"
-   fi
-fi
-
-if echo $f90_version | grep -i workshop >/dev/null 2>&1; then
-   echo "Fortran Compiler is Workshop"
-   CPRDEF="WORKSHOP"
-   if test -z "$MODINC"; then
-      MODINC="-M"
-   fi
-fi
-
-if echo $f90_version | grep -i mipspro >/dev/null 2>&1; then
-   echo "Fortran Compiler is MIPSPro"
-   CPRDEF="MIPSPRO"
-   EXTRACFLAGS="-64"
-   if test -z "$REAL8"; then
-      REAL8="-r8"
-   fi
-   if test -z "$BIT64"; then
-      BIT64="-64"
-   fi
-fi
-
-if echo $f90_version | grep -i compaq >/dev/null 2>&1; then
-   echo "Fortran Compiler is Compaq"
-   CPRDEF="COMPAQ"
-   MPI_LIB="$MPI_LIB -lelan"
-   if test -z "$REAL8"; then
-      REAL8="-real_size 64"
-   fi
-   if test -z "$ENDIAN"; then
-      ENDIAN="-convert big_endian"
-   fi
-fi
-
-# Compaq Fortran changed its name to HP Fortran.
-# Lets support both versions for now.
-if echo $f90_version | grep HP >/dev/null 2>&1; then
-   echo "Fortran Compiler is HP"
-   CPRDEF="COMPAQ"
-   MPI_LIB="$MPI_LIB -lelan"
-   if test -z "$REAL8"; then
-      REAL8="-real_size 64"
-   fi
-   if test -z "$ENDIAN"; then
-      ENDIAN="-convert big_endian"
-   fi
-fi
-
-if echo $f90_version | grep -i sx >/dev/null 2>&1; then
-   echo "Fortran Compiler is SX"
-   CPRDEF="SX"
-   if test -z "$F90FLAGS"; then
-      F90FLAGS="-EP -Wf'-pvctl noassoc'"
-   fi
-fi
-
-if test -z "$CPRDEF"; then
-   AC_MSG_WARN([UNKNOWN FORTRAN 90 COMPILER])
-   CPRDEF="UNKNOWNCPR"
-fi
-
-
-# CHECK IF FORTRAN COMPILER CREATES MODULE FILES IN UPPERCASE OR LOWERCASE
-OLDF90="$F90"
-OLDF90FLAGS="$F90FLAGS"
-
-F90="$MPIF90" # use MPIF90, since differences may exist between MPIF90 and F90 
-if test "$F90" = "frt"; then # -Am flag needed for frt to gerate mod files
-   F90FLAGS="$F90FLAGS -Am"
-fi
-#if test "$F90" = "ftn"; then # -em flag needed for ftn to gerate mod files
-#   F90FLAGS="$F90FLAGS -em"
-#fi
-
-AC_F90_MOD_UPPERCASE
-
-# CHECK HOW TO NAME MANGLE C FUNCTIONS SO THAT IT CAN BE CALLED FROM FORTRAN
-
-AC_F90_C_NAME_MANGLING
-
-case $ac_cv_f90_mangling in
-  "lower case, underscore") 
-	 name_mangling="-DFORTRAN_UNDERSCORE_ -DFORTRANUNDERSCORE";;
-  "lower case, no underscore")
-	 name_mangling="-DFORTRAN_SAME";;
-  "upper case, no underscore")  
-	 name_mangling="-DFORTRAN_CAPS_ -DFORTRANCAPS";;
-  "lower case, double underscore") 
-	 name_mangling="-DFORTRAN_GNUF2C";;
-  *) 
-         name_mangling="-DFORTRAN_MANGLING_UNKNOWN" 
-	 AC_MSG_WARN([UNKNOWN FORTRAN 90 NAME-MANGLING SCHEME]);;
-esac
-
-F90="$OLDF90"
-
-# FPP AND FPPFLAGS ARE HARDCODED AS A LAST RESORT:
-# DO NOT USE THE GNU C PREPROCESESSOR- 
-# IT DOES NOT PROCESS FORTRAN SOURCES CORRECTLY.
-# LOOK FOR MACHINE DEPENDENT CPP.
-# THE HARCODED FPPFLAGS WORKS WITH MOST CPP COMMANDS.
-if test -z "$FPP"; then
-   AC_CHECK_PROGS(FPP,[cpp],$CPP)
-fi
-if test -z "$FPPFLAGS"; then
-   FPPFLAGS="-P -C -N -traditional"
-fi
-
-# CHECK THAT THE FORTRAN COMPILER CAN CORRECTLY PROCESS THESE DIRECTIVES
-# IF NOT, USE THE EXTERNAL C PREPROCESSOR
-OLDF90="$F90"
-F90="$MPIF90" # use MPIF90, since differences may exist between MPIF90 and F90
-
-defineflag="-Daardvark"
-if test "$CPRDEF" = "XLF"; then
-   defineflag="-WF,-Daardvark"
-fi   
-if test "$OLDF90" = "frt"; then
-   defineflag="-Wp,-Daardvark"
-fi
-
-AC_CHECK_FPP_COMPILER(
-[
-  implicit none
-#if zebra || aardvark
-  character(len=25) :: ch  ! '
-#endif
-  ch="Does this test &
-!Comment-Line
-          &work? "// &
-          "YES!"
-], [$defineflag])
-
-if test -n "$FPP"; then
-  defineflag="-Daardvark"
-AC_CHECK_FPP_EXTERNAL(
-[
-  implicit none
-#if zebra || aardvark
-  character(len=25) :: ch  ! '
-#endif
-  ch="Does this test &
-!Comment-Line
-          &work? "// &
-          "YES!"
-], [$defineflag])
-
-fi
-
-F90="$OLDF90"
-
-
-if test "$EXPLICIT_FPP" = "default"
-then
-  if test "$ac_cv_f90_fpp_compiler" = "yes" 
-  then
-     EXPLICIT_FPP="no"
-  else
-    if test "$ac_cv_f90_fpp_external" = "no"
-    then
-      EXPLICIT_FPP="no"
-      AC_MSG_WARN([FORTRAN SOURCE PREPROCESSING HAS FAILED])
-      if test -z "$FPP"; then
-        AC_MSG_WARN([TRY DEFINING CPP PATH IN CONFIGURE INVOCATION])
-      fi
-    else
-      EXPLICIT_FPP="yes"
-    fi
-  fi
-fi
 
 
 # DEFINE VARIABLES ACCORDING TO OS AND COMPILER
@@ -752,36 +402,12 @@ if test -z "$SYSDEF"; then
    SYSDEF="UNKNOWNOS"
 fi
 
+CPPFLAGS+="-DSYS$SYSDEF -DCPR$CPRDEF"
 
-# SET THE PREPROCESSOR DEFINE FLAGS
-if test -z "$MACHDEFS"; then
-   MACHDEFS="-DSYS$SYSDEF -D$SYSDEF -DCPR$CPRDEF" # DEFAULT FLAGS
-   if test "$CPRDEF" = "XLF"; then # SPECIAL XLF FLAGS
-     if test "$ac_cv_f90_fpp_compiler" = "yes"; then
-       MACHDEFS="-WF,-DSYS$SYSDEF,-D$SYSDEF,-DCPR$CPRDEF"
-     fi
-   fi
-   if test "$F90" = "frt"; then # SPECIAL FRT FLAGS
-      if test "$ac_cv_f90_fpp_compiler" = "yes"; then
-         MACHDEFS="-Wp,-DSYS$SYSDEF,-D$SYSDEF,-DCPR$CPRDEF"
-      fi
-   fi
-fi
+AC_FC_MODULE_EXTENSION
 
-if test -z "$ALLCFLAGS"; then # SET C COMPILE FLAGS
-   ALLCFLAGS="$CFLAGS $name_mangling -DSYS$SYSDEF -D$SYSDEF -DCPR$CPRDEF"
-   if test -n "$EXTRACFLAGS"; then
-      ALLCFLAGS="$ALLCFLAGS $EXTRACFLAGS"
-   fi
-fi
+AC_FC_MODULE_FLAG
 
-# SET HARDCODED VARIABLES AS A LAST RESORT
-
-
-# INCLUDE FLAG IF NOT ALREADY SET IS MOST LIKELY -I
-if test -z "$MODINC"; then
-   MODINC="-I"
-fi
 
 # ARCHIVE COMMAND SIMILAR ACROSS ALL PLATFORMS 
 if test -z "$AR"; then
@@ -809,7 +435,7 @@ fi
 # construct an xlf fortran version of the -D args if necessary
 #
 
-PINCS="$MPI_INC"
+INCLUDEPATH+="$MPI_INC"
 PLIBS=""
 
 if test "$USE_NETCDF4" = "yes"
@@ -818,17 +444,21 @@ if test "$USE_NETCDF4" = "yes"
 fi
 
 if test "$USE_NETCDF" = "yes"
-  then
+  then  
        if test -n "$NETCDF_PATH"
          then echo "using NETCDF_PATH from environment"
          else NETCDF_PATH=/usr/local/netcdf
               AC_MSG_WARN( [NETCDF_PATH not found in environment, \ 
                            defaulting to $NETCDF_PATH])
        fi             
+       AC_LANG_PUSH(Fortran)
+       ACX_NETCDF()
 
-       PDEFS="$PDEFS -D_NETCDF"
-       PINCS="$PINCS -I$NETCDF_PATH/include"
-       PLIBS="$PLIBS -L$NETCDF_PATH/lib -lnetcdf"
+       AC_LANG_POP(Fortran)
+
+       CPPDEFS+=" -D_NETCDF $NETCDF_CPPFLAGS"
+       FCFLAGS+=" $NETCDF_FCFLAGS"
+       LDLIBS+=" $NETCDF_LDFLAGS $NETCDF_LIBS "
 
        if test ! -f $NETCDF_PATH/include/netcdf.mod && \
           test ! -f $NETCDF_PATH/include/NETCDF.mod
@@ -841,18 +471,18 @@ if test "$USE_NETCDF" = "yes"
                             check the environment variable NETCDF_PATH ])
        fi
   else
-       PDEFS="$PDEFS -D_NONETCDF"
+       CPPDEFS="$CPPDEFS -D_NONETCDF"
        USE_NETCDF4="no"
 fi
 
 if test "$USE_NETCDF4" = "yes"
   then
-   PDEFS="$PDEFS -D_NETCDF4"
+   CPPDEFS="$CPPDEFS -D_NETCDF4"
    if test -e "$NETCDF_PATH/lib/pkgconfig/"
      then
      export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:$NETCDF_PATH/lib/pkgconfig/"
      PKG_CHECK_MODULES([NETCDF4], netcdf)
-     PLIBS="$PLIBS $NETCDF4_LIBS"
+     LDLIBS+=" $NETCDF4_LIBS"
    else
      # Did the user specify a location for the HDF5 library?
      AC_MSG_CHECKING([whether a location for the HDF5 library was specified])
@@ -882,17 +512,17 @@ if test "$USE_NETCDF4" = "yes"
      AC_MSG_RESULT([$SZLIBDIR])
      AC_SUBST(SZLIBDIR, [$SZLIBDIR])
 	
-     PDEFS="$PDEFS -D_NETCDF4"
+     CPPDEFS="$CPPDEFS -D_NETCDF4"
      if test -n "$HDF5DIR"
-       then PLIBS="$PLIBS -L$HDF5DIR/lib"
+       then LDLIBS+=" -L$HDF5DIR/lib"
      fi 
      if test -n "$ZLIBDIR"
-       then PLIBS="$PLIBS -L$ZLIBDIR/lib"
+       then LDLIBS+=" -L$ZLIBDIR/lib"
      fi 
      if test -n "$SZLIBDIR"
-       then PLIBS="$PLIBS -L$SZLIBDIR/lib"
+       then LDLIBS+=" -L$SZLIBDIR/lib"
      fi 
-     PLIBS="$PLIBS -lhdf5 -lz -lsz"   
+     LDLIBS+=" -lhdf5 -lz -lsz"   
    fi
 fi
 
@@ -909,33 +539,33 @@ if test ! "$USE_PNETCDF" = "no"
        fi
        USE_PNETCDF="yes"
        if test ! -f $PNETCDF_PATH/include/pnetcdf.inc
-         then AC_MSG_WARN( [pnetcdf.inc not found in PNETCDF_PATH/include \
+         then AC_MSG_WARN( [pnetcdf.inc not found in $PNETCDF_PATH/include \
                              disabling pnetcdf support ])
          USE_PNETCDF=no
        fi
 
        if test ! -f $PNETCDF_PATH/lib/libpnetcdf.a
-         then AC_MSG_WARN( [libpnetcdf.a not found in PNETCDF_PATH/lib \
+         then AC_MSG_WARN( [libpnetcdf.a not found in $PNETCDF_PATH/lib \
                              disabling pnetcdf support ])
          USE_PNETCDF=no
        fi
 fi
 if test "$USE_PNETCDF" = "yes"
   then
-        PDEFS="$PDEFS -D_PNETCDF"
-        PINCS="$PINCS -I$PNETCDF_PATH/include"
-        PLIBS="$PLIBS -L$PNETCDF_PATH/lib -lpnetcdf"
+        CPPDEFS="$CPPDEFS -D_PNETCDF"
+        INCLUDEPATH+=" -I$PNETCDF_PATH/include"
+        LDLIBS+=" -L$PNETCDF_PATH/lib -lpnetcdf"
   else
-       PDEFS="$PDEFS -D_NOPNETCDF"
+       CPPDEFS="$CPPDEFS -D_NOPNETCDF"
        USE_PNETCDF=no
 fi
 
 
 if test "$USE_TIMING" = "yes"
   then
-    PDEFS="$PDEFS -DTIMING"
-    PINCS="$PINCS -I../timing"
-    PLIBS="$PLIBS -L../timing -ltiming"
+    CPPDEFS+=" -DTIMING"
+    INCLUDEPATH+=" -I../timing"
+    LDLIBS+=" -L../timing -ltiming"
 fi
 
 
@@ -944,38 +574,18 @@ fi
 
 
 if test "$USE_MPI2" = "no"
-  then PDEFS="$PDEFS -DNO_MPI2"
+  then CPPDEFS="$CPPDEFS -DNO_MPI2"
        echo "disabling MPI-2 calls"
-fi
-
-#####
-
-if test "$USE_SIZEOF" = "default"
-  then AC_LANG_PUSH(Fortran 90)
-       AC_MSG_CHECKING([Fortran 90 support for sizeof()])
-       AC_TRY_COMPILE( [], [integer :: a,b = sizeof(a)],
-                USE_SIZEOF="yes", USE_SIZEOF="no" )
-       AC_LANG_POP(Fortran 90)
-
-       if test "$USE_SIZEOF" = "yes"
-         then AC_MSG_RESULT(yes)
-         else AC_MSG_RESULT(no)
-       fi
-fi
-
-if test "$USE_SIZEOF" = "no"
-  then PDEFS="$PDEFS -DNO_SIZEOF"
-       echo "disabling Fortran sizeof()"
 fi
 
 #####
 
 if test "$USEMEMMON" = "yes"
   then
-        PDEFS="$PDEFS -D_MEMMON"
+        CPPDEFS="$CPPDEFS -D_MEMMON"
         if test -n "$MEMMON_PATH"
-          then F90FLAGS="$F90FLAGS -qnullterm"
-               PLIBS="$PLIBS -L$MEMMON_PATH -lmemmon.rts"
+          then FCFLAGS="$FCFLAGS -qnullterm"
+               LDLIBS+=" -L$MEMMON_PATH -lmemmon.rts"
           else AC_MSG_WARN([MEMMON_PATH is not set])
        fi
 fi
@@ -983,9 +593,9 @@ fi
 
 if test "$USESTACKMON" = "yes"
   then
-       PDEFS="$PDEFS -D_STACKMON" 
+       CPPDEFS="$CPPDEFS -D_STACKMON" 
        if test -n "$STACKMON_PATH"
-         then PLIBS="$DLIBS -L$STACKMON_PATH -lstackmonitor"
+         then LDLIBS="$LDIBS -L$STACKMON_PATH -lstackmonitor"
          else AC_MSG_WARN([STACKMON_PATH is not set])
        fi
 fi
@@ -994,7 +604,7 @@ fi
 if test "$USEEXITHANDLER" = "yes"
   then
        if test -n "$EXITHANDLER_PATH"
-         then PLIBS="$PLIBS -L$EXITHANDLER_PATH -lexithandler"
+         then LDLIBS+=" -L$EXITHANDLER_PATH -lexithandler"
          else AC_MSG_WARN([EXITHANDLER_PATH is not set])
        fi
 fi
@@ -1002,31 +612,17 @@ fi
 if test "$FSHINTS" != "no"; then
   fshints_set="no"
   if test "$FSHINTS" = "gpfs"; then
-    PDEFS="$PDEFS -DPIO_GPFS_HINTS"
+    CPPDEFS="$CPPDEFS -DPIO_GPFS_HINTS"
     fshints_set="yes"
   fi
   if test "$FSHINTS" = "lustre"; then
-    PDEFS="$PDEFS -DPIO_LUSTRE_HINTS"
+    CPPDEFS="$CPPDEFS -DPIO_LUSTRE_HINTS"
     fshints_set="yes"
   fi
   if test "$fshints_set" = "no"; then
     AC_MSG_WARN([$FSHINTS is not a valid option for --enable-filesystem-hints.  Valid Options are gpfs and lustre.])
   fi 
 fi
-
-
-if test "$EXPLICIT_FPP" = "yes"; then
-   PDEFSF=""
-else
-  if test "$CPRDEF" = "XLF"
-    then PDEFSF="-WF,"`echo $PDEFS | sed 's/[ ]/,/g'`
-    else PDEFSF="$PDEFS"
-  fi
-fi
-
-LDLIBS="$LDLIBS $PLIBS $MPI_LIB"
-
-
 
 if test "$DEBUG" = "yes"
   then OPT="-g"
@@ -1039,23 +635,23 @@ PIO_PATH=`pwd`
 #############################################################################
 
 echo
-echo Temp variables: {F90=$F90} {MPIF90=$MPIF90}
+echo Temp variables: {FC=$FC} {MPIFC=$MPIFC}
 
 echo
 echo Output Variables: {CC=$CC} \
 {MPICC=$MPICC} \
 {ALLCFLAGS=$ALLCFLAGS} \
 {EXPLICIT_FPP=$EXPLICIT_FPP} {FPP=$FPP} {FPPFLAGS=$FPPFLAGS} \
-{FC=$F90} \
-{MPIF90=$MPIF90}\
+{FC=$FC} \
+{MPIFC=$MPIFC}\
 {OPT=$OPT} \
 {BIT64=$BIT64} \
 {REAL8=$REAL8} \
 {ENDIAN=$ENDIAN} \
 {FFLAGS=$FFLAGS} \
 {CFLAGS=$CFLAGS} \
-{F90FLAGS=$F90FLAGS} \
-{MACHDEFS=$MACHDEFS} \
+{FCFLAGS=$FCFLAGS} \
+{FC_DEFINE=$FC_DEFINE} \
 {MPI_INC=$MPI_INC} {MPI_LIB=$MPI_LIB} \
 {MODINC=$MODINC} {INCLUDEPATH=$INCLUDEPATH} \
 {AR=$AR} \
@@ -1064,13 +660,15 @@ echo Output Variables: {CC=$CC} \
 {PNETCDF_PATH=$PNETCDF_PATH} \
 {USE_NETCDF=$USE_NETCDF} \
 {NETCDF_PATH=$NETCDF_PATH} \
-{PDEFS=$PDEFS} \
-{PDEFSF=$PDEFSF} \
-{PINCS=$PINCS} \
+{CPPDEFS=$CPPDEFS} \
+{INCLUDEPATH=$INCLUDEPATH} \
 {LDLIBS=$LDLIBS} \
 {DEBUG=$DEBUG}
 
 echo
+AC_SUBST(PIO_PATH)
+AC_SUBST(CPPDEFS)
+AC_SUBST(LDLIBS)
 
 AC_OUTPUT
 

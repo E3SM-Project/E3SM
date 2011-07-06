@@ -4,7 +4,7 @@
 #   INCLUDES
 #   LIBS
 #   MPICC
-#   MPIF90
+#   MPIFC
 #   COPTS
 #   FOPTS
 #   CFLAGS
@@ -27,7 +27,7 @@ export PIOARCH
 
 SRCS_C = topology.c pnetcdfversion.c
 
-SRCS_F90 =  pio.F90 \
+SRCS_FC =  pio.F90 \
             pio_kinds.F90  \
             nf_mod.F90     \
             ionf_mod.F90 \
@@ -42,7 +42,7 @@ SRCS_F90 =  pio.F90 \
 	    pio_msg_callbacks.F90
            
 
-TEMPLATES_F90 = pionfatt_mod.F90.in \
+TEMPLATES_FC = pionfatt_mod.F90.in \
 	        pionfread_mod.F90.in \
                 pionfwrite_mod.F90.in \
                 pionfput_mod.F90.in \
@@ -56,17 +56,17 @@ TEMPLATES_F90 = pionfatt_mod.F90.in \
 	        pio_spmd_utils.F90.in \
 	        pio_msg_getput_callbacks.F90.in
 
-TEMPSRCF90 = $(TEMPLATES_F90:.in=)
-SRCS_F90 += $(TEMPSRCF90)
+TEMPSRCFC = $(TEMPLATES_FC:.in=)
+SRCS_FC += $(TEMPSRCFC)
 
 OBJS=  $(SRCS_C:.c=.o) \
-       $(SRCS_F90:.F90=.o)
+       $(SRCS_FC:.F90=.o)
 
 
-MODFILES := $(SRCS_F90:.F90=$(MODSUF))
+MODFILES := $(SRCS_FC:.F90=$(MODSUF))
 
 # File foo.DEPSUF will contain make dependency for foo.F90
-DEPENDS := $(SRCS_F90:.F90=$(DEPSUF))
+DEPENDS := $(SRCS_FC:.F90=$(DEPSUF))
 PERL = /usr/bin/perl
 
 LIB= libpio.a
@@ -98,25 +98,15 @@ depends: $(DEPENDS)
 	@$(AWK) -f $(FDEPENDS) -v NAME=$(basename $<) -v SUF=$(suffix $<) $< > $@
 
 
-ifeq ($(EXPLICIT_CPP),yes)
-SRCS_CPP= $(SRCS_F90:.F90=$(CPPSUF))
-.F90.o:
-	@if [ -w $*.f90 ] ; then echo "ERROR: file $*.f90 is writable - the .f90 suffix is reserved for temporary cpp output" ; exit 1; fi
-	$(RM) $*.f90
-	$(CPP) $(CPPFLAGS) $(CFLAGS) $(COPTS) $(INCLUDES) -o $*.f90 $*.F90 
-	chmod a-w $*.f90
-	$(MPIF90) -c $(FFLAGS) $(FOPTS) $(INCLUDES) $*.f90
-else
 SRCS_CPP=
 .F90.o:
-	$(MPIF90) -c $(FFLAGS) $(FOPTS) $(INCLUDES) $*.F90
-endif
+	$(MPIFC) -c $(FPPDEFS) $(FFLAGS) $(FOPTS) $(INCLUDES) $*.F90
 
 .c.o:
-	$(MPICC) -c $(CFLAGS) $(COPTS) $(INCLUDES) $*.c
+	$(MPICC) -c $(CPPDEFS) $(CFLAGS) $(COPTS) $(INCLUDES) $*.c
 
 
-$(TEMPSRCF90): $(TEMPLATE_F90)
+$(TEMPSRCFC): $(TEMPLATE_FC)
 	$(PERL) genf90.pl $@.in > $*.F90
 
 
@@ -126,13 +116,13 @@ $(LIB): $(OBJS)
 	$(AR) $(ARFLAGS) $@ $(OBJS)
 
 
-predist: predistclean $(TEMPSRCF90)
+predist: predistclean $(TEMPSRCFC)
      
 clean:
 	$(RM) $(LIB) $(OBJS) $(MODFILES) $(DEPENDS) $(SRCS_CPP)
 
 predistclean: clean
-	$(RM) $(TEMPSRCF90)
+	$(RM) $(TEMPSRCFC)
 
 #
 # Automatically generated module dependencies

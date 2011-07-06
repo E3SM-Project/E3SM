@@ -61,17 +61,17 @@ SRCS_CPP= $(SRCS_F90:.F90=$(CPPSUF))
 .F90.o:
 	@if [ -w $*.f90 ] ; then echo "ERROR: file $*.f90 is writable - the .f90 suffix is reserved for temporary cpp output" ; exit 1; fi
 	$(RM) $*.f90
-	$(CPP) $(CPPFLAGS) $(CFLAGS) $(COPTS) $(INCLUDES) -o $*.f90 $*.F90 
+	$(CPP) $(CPPDEFS) $(CFLAGS) $(COPTS) $(INCLUDES) -o $*.f90 $*.F90 
 	chmod a-w $*.f90
-	$(MPIF90) -c $(FFLAGS) $(FOPTS) $(INCLUDES) $*.f90
+	$(MPIFC) -c $(FFLAGS) $(FOPTS) $(INCLUDES) $*.f90
 else
 SRCS_CPP=
 .F90.o:
-	$(MPIF90) -c $(FFLAGS) $(FOPTS) $(INCLUDES) $*.F90
+	$(MPIFC) -c $(FFLAGS) $(FOPTS) $(INCLUDES) $*.F90
 endif
 
 .c.o:
-	$(MPICC) -c $(CFLAGS) $(COPTS) $(INCLUDES) $*.c
+	$(MPICC) -c $(CFLAGS) $(CPPDEFS) $(COPTS) $(INCLUDES) $*.c
 
 
 $(LIB): $(OBJS)
