@@ -618,7 +618,7 @@ AC_COMPILE_IFELSE([[
   [cd ..
    ac_fc_module_flag_FCFLAGS_save=$FCFLAGS
    # Flag ordering is significant for gfortran and Sun.
-   for ac_flag in -M -I '-I ' '-M ' -p '-mod ' '-module ' '-Am -I'; do
+   for ac_flag in -I '-mod ' -I '-I ' '-M ' -p '-module ' '-Am -I'; do
      # Add the flag twice to prevent matching an output flag.
      FCFLAGS="$ac_fc_module_flag_FCFLAGS_save ${ac_flag}conftest.dir ${ac_flag}conftest.dir"
      AC_COMPILE_IFELSE([[
