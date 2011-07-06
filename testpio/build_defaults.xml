@@ -170,6 +170,7 @@
 
 <edinburgh_intel
   ADDENV_PATH = "/usr/local/mpich-1.2.7p1-intel-3.2.02/bin:/usr/local/intel-cluster-3.2.02/fc/11.0.074/bin/intel64/:/usr/local/intel-cluster-3.2.02/cc/11.0.074/bin/intel64"
+  ADDENV_LD_LIBRARY_PATH="/usr/local/intel-cluster-3.2.02/fc/11.0.074/lib/intel64/"
   ENV_P4_GLOBMEMSIZE="518400000"
   MPIFC = "mpif90"
   MPICC = "mpicc"
