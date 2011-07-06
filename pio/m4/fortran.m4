@@ -593,7 +593,7 @@ AC_SUBST([FC_MODEXT])dnl
 # IBM: -Idir (-qmoddir=dir for writing)
 # Intel: -Idir -I dir (-mod dir for writing)
 # Absoft: -pdir
-# Lahey: -mod dir
+# Lahey: -Idir (-Mdir or -mod dir for writing)
 # Cray: -module dir, -p dir (-J dir for writing)
 #       -e m is needed to enable writing .mod files at all
 # Compaq: -Idir
@@ -615,17 +615,23 @@ AC_COMPILE_IFELSE([[
       write(*,'(a)') 'gotcha!'
       end subroutine
       end module]],
-  [cd ..
+  # For Lahey -M will also write module and object files to that directory
+  # make it read-only so that lahey fails over to -I   
+  [chmod -w .
+   cd ..
    ac_fc_module_flag_FCFLAGS_save=$FCFLAGS
    # Flag ordering is significant for gfortran and Sun.
-   for ac_flag in -I '-mod ' -I '-I ' '-M ' -p '-module ' '-Am -I'; do
+   for ac_flag in -M -I '-I ' '-M ' -p '-mod ' '-module ' '-Am -I'; do
      # Add the flag twice to prevent matching an output flag.
      FCFLAGS="$ac_fc_module_flag_FCFLAGS_save ${ac_flag}conftest.dir ${ac_flag}conftest.dir"
      AC_COMPILE_IFELSE([[
-      program main
+      module conftest_main
       use conftest_module
+      contains
+      subroutine conftest
       call conftest_routine
-      end program]],
+      end subroutine
+      end module]],
        [ac_cv_fc_module_flag="$ac_flag"])
      if test "$ac_cv_fc_module_flag" != unknown; then
        break
@@ -633,6 +639,7 @@ AC_COMPILE_IFELSE([[
    done
    FCFLAGS=$ac_fc_module_flag_FCFLAGS_save
 ])
+chmod +w conftest.dir
 rm -rf conftest.dir
 AC_LANG_POP([Fortran])
 ])
