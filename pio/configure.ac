@@ -26,7 +26,7 @@ AC_HELP_STRING( [--enable-pnetcdf],
 
 AC_ARG_ENABLE(netcdf,
 AC_HELP_STRING( [--enable-netcdf],
-[use serial netcdf (Uses NETCDF_PATH) (default yes)]),
+[use serial netcdf (Uses NETCDF_PATH) (default yes)]), 
 [USE_NETCDF=$enableval],[USE_NETCDF=yes])
 
 AC_ARG_ENABLE(netcdf4,
@@ -193,16 +193,16 @@ case $ac_cv_fc_mangling in
   "lower case, no underscore, no extra underscore")
   ;;
   "lower case, no underscore, extra underscore")
-    CPPDEFS+=" -DFORTRANDOUBLEUNDERSCORE "
+    CPPDEFS=" $CPPDEFS -DFORTRANDOUBLEUNDERSCORE "
   ;;
   "lower case, underscore, no extra underscore")
-    CPPDEFS+=" -DFORTRANUNDERSCORE "
+    CPPDEFS=" $CPPDEFS -DFORTRANUNDERSCORE "
   ;;
   "lower case, underscore, extra underscore")
-    CPPDEFS+=" -DFORTRANDOUBLEUNDERSCORE "
+    CPPDEFS=" $CPPDEFS -DFORTRANDOUBLEUNDERSCORE "
   ;;
   "upper case, no underscore, no extra underscore")
-    CPPDEFS+=" -DFORTRANCAPS "
+    CPPDEFS=" $CPPDEFS -DFORTRANCAPS "
   ;;
   *)
   AC_MSG_ERROR( No case for $ac_cv_fc_mangling)
@@ -319,7 +319,7 @@ if test "$FC_USE_SIZEOF" = "default"
 fi
 
 if test "$FC_USE_SIZEOF" = "no"
-  then CPPDEFS+=" -DNO_SIZEOF "
+  then CPPDEFS=" $CPPDEFS -DNO_SIZEOF "
        echo "disabling Fortran sizeof()"
 fi
 
@@ -402,7 +402,7 @@ if test -z "$SYSDEF"; then
    SYSDEF="UNKNOWNOS"
 fi
 
-CPPFLAGS+="-DSYS$SYSDEF -DCPR$CPRDEF"
+CPPDEFS=" $CPPDEFS -DSYS$SYSDEF -DCPR$CPRDEF"
 
 AC_FC_MODULE_EXTENSION
 
@@ -435,7 +435,7 @@ fi
 # construct an xlf fortran version of the -D args if necessary
 #
 
-INCLUDEPATH+="$MPI_INC"
+INCLUDEPATH=" $INCLUDEPATH$MPI_INC"
 PLIBS=""
 
 if test "$USE_NETCDF4" = "yes"
@@ -456,9 +456,9 @@ if test "$USE_NETCDF" = "yes"
 
        AC_LANG_POP(Fortran)
 
-       CPPDEFS+=" -D_NETCDF $NETCDF_CPPFLAGS"
-       FCFLAGS+=" $NETCDF_FCFLAGS"
-       LDLIBS+=" $NETCDF_LDFLAGS $NETCDF_LIBS "
+       CPPDEFS=" $CPPDEFS -D_NETCDF $NETCDF_CPPFLAGS"
+       FCFLAGS=" $FCFLAGS $NETCDF_FCFLAGS"
+       LDLIBS=" $LDLIBS $NETCDF_LDFLAGS $NETCDF_LIBS "
 
        if test ! -f $NETCDF_PATH/include/netcdf.mod && \
           test ! -f $NETCDF_PATH/include/NETCDF.mod
@@ -482,7 +482,7 @@ if test "$USE_NETCDF4" = "yes"
      then
      export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:$NETCDF_PATH/lib/pkgconfig/"
      PKG_CHECK_MODULES([NETCDF4], netcdf)
-     LDLIBS+=" $NETCDF4_LIBS"
+     LDLIBS=" $LDLIBS $NETCDF4_LIBS"
    else
      # Did the user specify a location for the HDF5 library?
      AC_MSG_CHECKING([whether a location for the HDF5 library was specified])
@@ -514,15 +514,15 @@ if test "$USE_NETCDF4" = "yes"
 	
      CPPDEFS="$CPPDEFS -D_NETCDF4"
      if test -n "$HDF5DIR"
-       then LDLIBS+=" -L$HDF5DIR/lib"
+       then LDLIBS=" $LDLIBS -L$HDF5DIR/lib"
      fi 
      if test -n "$ZLIBDIR"
-       then LDLIBS+=" -L$ZLIBDIR/lib"
+       then LDLIBS=" $LDLIBS -L$ZLIBDIR/lib"
      fi 
      if test -n "$SZLIBDIR"
-       then LDLIBS+=" -L$SZLIBDIR/lib"
+       then LDLIBS=" $LDLIBS -L$SZLIBDIR/lib"
      fi 
-     LDLIBS+=" -lhdf5 -lz -lsz"   
+     LDLIBS=" $LDLIBS -lhdf5 -lz -lsz"   
    fi
 fi
 
@@ -538,12 +538,14 @@ if test ! "$USE_PNETCDF" = "no"
                            defaulting to $PNETCDF_PATH])
        fi
        USE_PNETCDF="yes"
+       AC_MSG_CHECKING([for pnetcdf.inc in $PNETCDF_PATH/include])
        if test ! -f $PNETCDF_PATH/include/pnetcdf.inc
          then AC_MSG_WARN( [pnetcdf.inc not found in $PNETCDF_PATH/include \
                              disabling pnetcdf support ])
          USE_PNETCDF=no
        fi
 
+       AC_MSG_CHECKING([for libpnetcdf.a in $PNETCDF_PATH/lib])
        if test ! -f $PNETCDF_PATH/lib/libpnetcdf.a
          then AC_MSG_WARN( [libpnetcdf.a not found in $PNETCDF_PATH/lib \
                              disabling pnetcdf support ])
@@ -552,9 +554,10 @@ if test ! "$USE_PNETCDF" = "no"
 fi
 if test "$USE_PNETCDF" = "yes"
   then
+       AC_MSG_CHECKING([for pnetcdf])
         CPPDEFS="$CPPDEFS -D_PNETCDF"
-        INCLUDEPATH+=" -I$PNETCDF_PATH/include"
-        LDLIBS+=" -L$PNETCDF_PATH/lib -lpnetcdf"
+        INCLUDEPATH=" $INCLUDEPATH -I$PNETCDF_PATH/include"
+        LDLIBS=" $LDLIBS -L$PNETCDF_PATH/lib -lpnetcdf"
   else
        CPPDEFS="$CPPDEFS -D_NOPNETCDF"
        USE_PNETCDF=no
@@ -563,9 +566,9 @@ fi
 
 if test "$USE_TIMING" = "yes"
   then
-    CPPDEFS+=" -DTIMING"
-    INCLUDEPATH+=" -I../timing"
-    LDLIBS+=" -L../timing -ltiming"
+    CPPDEFS=" $CPPDEFS -DTIMING"
+    INCLUDEPATH=" $INCLUDEPATH -I../timing"
+    LDLIBS=" $LDLIBS -L../timing -ltiming"
 fi
 
 
@@ -585,7 +588,7 @@ if test "$USEMEMMON" = "yes"
         CPPDEFS="$CPPDEFS -D_MEMMON"
         if test -n "$MEMMON_PATH"
           then FCFLAGS="$FCFLAGS -qnullterm"
-               LDLIBS+=" -L$MEMMON_PATH -lmemmon.rts"
+               LDLIBS=" $LDLIBS -L$MEMMON_PATH -lmemmon.rts"
           else AC_MSG_WARN([MEMMON_PATH is not set])
        fi
 fi
@@ -604,7 +607,7 @@ fi
 if test "$USEEXITHANDLER" = "yes"
   then
        if test -n "$EXITHANDLER_PATH"
-         then LDLIBS+=" -L$EXITHANDLER_PATH -lexithandler"
+         then LDLIBS=" $LDLIBS -L$EXITHANDLER_PATH -lexithandler"
          else AC_MSG_WARN([EXITHANDLER_PATH is not set])
        fi
 fi
@@ -653,7 +656,7 @@ echo Output Variables: {CC=$CC} \
 {FCFLAGS=$FCFLAGS} \
 {FC_DEFINE=$FC_DEFINE} \
 {MPI_INC=$MPI_INC} {MPI_LIB=$MPI_LIB} \
-{MODINC=$MODINC} {INCLUDEPATH=$INCLUDEPATH} \
+{MODINC=$MODINC}  \
 {AR=$AR} \
 {ARFLAGS=$ARFLAGS} \
 {USE_PNETCDF=$USE_PNETCDF} \
