@@ -1,6 +1,7 @@
 module calcdecomp
   use pio_kinds, only: i4, r4,r8,i4,i8, PIO_offset
   use pio_types, only: PIO_int, PIO_real, PIO_double
+  use pio_support, only : debug
   implicit none 
 
 
@@ -38,7 +39,6 @@ contains
     integer :: numOPS
     logical :: finished_block
     integer(i8) :: blocksize
-    logical, parameter :: verbose = .false.
     integer :: itmp,itmp_pes
     logical :: firstdim
     integer :: lastdim
@@ -72,15 +72,17 @@ contains
     nbytes = basesize
     do n=1,ndims
        nbytes = nbytes*gdims(n)
-       if(verbose) print *,'n: ',n
-       if(verbose) print *,'basesize: ',basesize
-       if(verbose) print *,'gdims(n): ',gdims(n)
-       if(verbose) print *,'nbytes: ',nbytes
-       if(verbose) print *,'minbytes: ',minbytes
-       if(verbose) print *,''
+       if(debug) then
+          print *,'n: ',n
+          print *,'basesize: ',basesize
+          print *,'gdims(n): ',gdims(n)
+          print *,'nbytes: ',nbytes
+          print *,'minbytes: ',minbytes
+          print *,''
+       end if
        if(nbytes > minbytes) then 
           decompose_dim(n) = .true.
-          !	   if(verbose) print *,'Need to decompse dimension #:',n
+          !	   if(debug) print *,'Need to decompse dimension #:',n
        endif
     enddo
     totalSize=nbytes
@@ -88,7 +90,7 @@ contains
     count = gdims
     npes_per_dim(:) = 1 
     !    print *,'point #3'
-    if(verbose) print *,'npes_per_dim: ',npes_per_dim
+    if(debug) print *,'npes_per_dim: ',npes_per_dim
     n = 1
     totActive = 1
     finished_block=.false.  ! indicates if we have finished contigous block
@@ -137,11 +139,13 @@ contains
 		!------------------------------------------------
 	        count(n) = gdims(n)/itmp_pes
 	        nbtmp = nbytes*count(n)
-	        if(verbose) print *,'it: ',it
-	        if(verbose) print *,'nbtmp: ',nbtmp
-                if(verbose) print *,'nbytes: ',nbytes
-                if(verbose) print *,'maxbytes: ',maxbytes
-	        if(verbose) print *,'' 
+                if(debug) then
+                   print *,'it: ',it
+                   print *,'nbtmp: ',nbtmp
+                   print *,'nbytes: ',nbytes
+                   print *,'maxbytes: ',maxbytes
+                   print *,'' 
+                end if
                 npes_per_dim(n)=itmp_pes
                 !                print *,'npes_per_dim: ',npes_per_dim(n)
              endif
@@ -172,7 +176,7 @@ contains
 		endif
              endif
           enddo
-          if(verbose) print *,'npes_per_dim(n): ',npes_per_dim(n)
+          if(debug) print *,'npes_per_dim(n): ',npes_per_dim(n)
           !-------------------------------------
           ! we have finished the contigous block
           !-------------------------------------
@@ -192,7 +196,6 @@ contains
 	  nbytes = nbytes*gdims(n)
           totActive = totActive*npes_per_dim(n)
        endif
-       !     print *,''
     enddo
     !JMD    if(iorank == 0) then 
     !JMD       numOPS = NINT(real(totalSize,kind=8)/real(totActive*blocksize,kind=8))
@@ -215,8 +218,8 @@ contains
     enddo
     !    print *,'point #5'
     !    stop 'after point #5'
-    !    if(verbose) print *,'idim: ',idim
-    !    if(verbose) print *,'gdims: ',gdims(:)
+    !    if(debug) print *,'idim: ',idim
+    !    if(debug) print *,'gdims: ',gdims(:)
     !    print *,'Dimensions to decompose: ',decompose_dim(:)
     !    print *,'numiotasks: ',numiotasks
     !    print *,'npes_per_dim: ',npes_per_dim
@@ -309,7 +312,7 @@ contains
     !  stop 'point #9'
 
     if(present(numaiotasks)) numaiotasks=totActive
-    if(iorank == 0) then 
+    if(debug .and. iorank == 0) then 
        numOPS = NINT(real(totalSize,kind=8)/real(totActive*blocksize,kind=8))
        write(*,101) 'PIO: calcdecomp: IO tasks:= ',totActive,' # of ops:= ', numOPS,' size:= ',blocksize
        write(*,100) 'PIO: calcdecomp: global dimensions: ',gdims
@@ -342,7 +345,7 @@ contains
     do while ((rem .ne. 0) .and. (res .lt. value))
        res = res + 1
        rem = MOD(value,res)
-       !     if(verbose) print *,'res,rem: ',res,rem
+       !     if(debug) print *,'res,rem: ',res,rem
     enddo
     if(res .eq. value) then 
        res = 2*current;
