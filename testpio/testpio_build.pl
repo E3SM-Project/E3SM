@@ -10,8 +10,8 @@ my $result = GetOptions("host=s"=>\$host,"conopts=s@"=>\@conopts);
 my $cfgdir = `pwd`;
 chomp $cfgdir;
 my $clean = 'yes';
-my @valid_env = qw(NETCDF_PATH PNETCDF_PATH MPI_LIB MPI_INC  FC CC ALLCFLAGS FFLAGS
-                   MACHDEFS MPICC MPIFC LDLIBS);
+my @valid_env = qw(NETCDF_PATH PNETCDF_PATH MPI_LIB MPI_INC  FC CC CFLAGS FFLAGS
+                   MACHDEFS MPICC MPIFC LDLIBS CPPDEFS);
 
 
 # The XML::Lite module is required to parse the XML configuration files.
