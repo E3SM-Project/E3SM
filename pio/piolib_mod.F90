@@ -827,6 +827,7 @@ contains
 !<
   subroutine PIO_initdecomp_dof(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount)
     use calcdisplace_mod, only : calcdisplace_box
+    use calcdecomp, only : calcstartandcount
     type (iosystem_desc_t), intent(inout) :: iosystem
     integer(i4), intent(in)           :: basepiotype
     integer(i4), intent(in)           :: dims(:)
@@ -938,7 +939,8 @@ contains
           call piodie( __PIO_FILE__,__LINE__, &
                'both optional parameters start and count must be provided')
        else
-          call getiostartandcount(iosystem%num_tasks, ndims, dims, iosystem%num_iotasks, iosystem%io_rank, iosystem%io_comm, iodesc%start, iodesc%count)
+!          call getiostartandcount(iosystem%num_tasks, ndims, dims, iosystem%num_iotasks, iosystem%io_rank, iosystem%io_comm, iodesc%start, iodesc%count)
+          call calcstartandcount(basepiotype, ndims, dims, iosystem%num_iotasks, iosystem%io_rank, iodesc%start, iodesc%count)
        end if
        iosize=1
        do i=1,ndims

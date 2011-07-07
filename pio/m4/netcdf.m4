@@ -155,7 +155,7 @@ NcError err_handler;
         AC_SEARCH_LIBS(NF_INQ_LIBVERS,netcdff netcdf,[acx_netcdf_ok=yes],[acx_netcdf_ok=no;AC_MSG_ERROR(cannot find netCDF fortran library)])
         ],
         [Fortran],[
-        AC_SEARCH_LIBS(NF_INQ_LIBVERS,netcdff netcdf,[acx_netcdf_ok=yes],[acx_netcdf_ok=no; AC_MSG_ERROR(cannot find netCDF fortran library)])
+        AC_SEARCH_LIBS(NF_INQ_LIBVERS,netcdff netcdf,[acx_netcdf_ok=yes],[acx_netcdf_ok=no; AC_MSG_ERROR(cannot find netCDF fortran library)],[$ac_cv_fc_libs])
         AC_REQUIRE([AC_FC_MODULE_FLAG])
         if test x"$netcdf_inc_path"x != xx ; then
            NETCDF_FCFLAGS="$ac_cv_fc_module_flag$netcdf_inc_path"

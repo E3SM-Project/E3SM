@@ -25,13 +25,14 @@ endif
 include Makefile.$(PIOARCH)
 export PIOARCH
 
-SRCS_C = topology.c pnetcdfversion.c
+SRCS_C = topology.c 
 
 SRCS_FC =  pio.F90 \
             pio_kinds.F90  \
             nf_mod.F90     \
             ionf_mod.F90 \
             pio_types.F90  \
+            calcdecomp.F90 \
             piolib_mod.F90 \
 	    pio_mpi_utils.F90 \
             pio_nf_utils.F90 \
