@@ -1270,7 +1270,7 @@ contains
 
     iosystem%ioproc = .false.
 
-#ifdef BGx
+#ifdef BGxisbroken
 
     call alloc_check(iotmp,iosystem%num_tasks,'init:num_tasks')
     call alloc_check(iotmp2,iosystem%num_tasks,'init:num_tasks')
