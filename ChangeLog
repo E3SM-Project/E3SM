@@ -4,13 +4,14 @@
 Tag name: pio1_3_1
 Originator(s): Edwards
 Date: 07/06/2011
-One-line Summary: update autoconf tools, improve getiostartandcount 
+One-line Summary: update autoconf tools, remove getiostartandcount 
 
 List all subroutines eliminated:
 
 List all subroutines added and what they do:
   added m4 subdirectory with various autoconf tools
   config.h.in
+  added calcdecomp as a replacement for getiostartandcount
 	
 List all existing files that have been modified, and describe the changes:
   configure.ac, Makefile.conf.in
@@ -22,10 +23,12 @@ Describe the changes for each component above that was changed relative
 to the previous ccsm tag in this sequence (this includes description
 of new functionality and how user can use it):
 
-Bugs fixed:
+Bugs fixed: http://bugs.cgd.ucar.edu/show_bug.cgi?id=1372
 
 Describe any changes made to scripts/build system:
-
+     configure.ac was brought up to compatability with autoconf 2.63
+     a macros subdirectory was added with additional fortran and netcdf macros
+	
 Describe any substantial timing or memory changes:
 
 
@@ -34,10 +37,10 @@ Code reviewed by: self
 
 Summary of pre-tag testing:
 
-  Regression tests: bluefire
-	            lynx (pgi)
+  Regression tests: bluefire  80 pass, 0 fail
+	            lynx (pgi) 
 	            lynx_gnu
-	            edinburgh (lahey)
+	            edinburgh (pgi)  22 pass 2 fail (expected)
 	            edinburgh_intel
 	
 

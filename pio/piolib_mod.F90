@@ -940,9 +940,9 @@ contains
           call piodie( __PIO_FILE__,__LINE__, &
                'both optional parameters start and count must be provided')
        else
-!          call getiostartandcount(iosystem%num_tasks, ndims, dims, iosystem%num_iotasks, iosystem%io_rank, iosystem%io_comm, iodesc%start, iodesc%count)
           call calcstartandcount(basepiotype, ndims, dims, iosystem%num_iotasks, iosystem%io_rank,&
                  iodesc%start, iodesc%count,iosystem%num_aiotasks)
+          print *,__FILE__,__LINE__,iosystem%num_aiotasks
        end if
        iosize=1
        do i=1,ndims
@@ -1405,7 +1405,7 @@ contains
     call PIO_set_hint(iosystem,'romio_ds_write','disable') 
 #endif
     iosystem%num_aiotasks = iosystem%num_iotasks
-
+    iosystem%numost = PIO_NUM_OST
 
 #ifdef TIMING
     call t_stopf("PIO_init")
@@ -1621,7 +1621,7 @@ contains
 
 
     iosystem%num_aiotasks = iosystem%num_iotasks
-
+    iosystem%numost = PIO_NUM_OST
 
     ! This routine does not return
     if(io_comm /= MPI_COMM_NULL) call pio_msg_handler(component_count,iosystem) 
@@ -1658,7 +1658,7 @@ contains
     call mpi_comm_size(comm,num_tasks,ierr)
     call mpi_comm_rank(comm,iam,ierr)
 
-#ifdef BGx    
+#ifdef BGxisbroken    
     call alloc_check(iotmp,num_tasks,'init:num_tasks')
     call alloc_check(iotmp2,num_tasks,'init:num_tasks')
     !---------------------------------------------------
@@ -2001,7 +2001,7 @@ contains
     endif
 #endif
 #ifdef PIO_LUSTRE_HINTS
-    write(stripestr,('(i3)')) min(iosystem%num_aiotasks,iosystem%numOST)
+    write(stripestr,('(i3)')) min(iosystem%num_iotasks,iosystem%numOST)
     call PIO_set_hint(iosystem,"striping_factor",trim(adjustl(stripestr)))
     write(stripestr2,('(i9)')) 1024*1024
     call PIO_set_hint(iosystem,"striping_unit",trim(adjustl(stripestr2)))

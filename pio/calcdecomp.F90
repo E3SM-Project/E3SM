@@ -19,7 +19,7 @@ contains
     integer, intent(in) :: iorank
     integer(kind=PIO_Offset), intent(out) :: start(:)
     integer(kind=PIO_Offset), intent(out) :: count(:)
-    integer(i4),optional,intent(out) :: numaiotasks
+    integer(i4),intent(out) :: numaiotasks
 
     logical, allocatable :: decompose_dim(:)
     integer, allocatable :: npes_per_dim(:)
@@ -311,7 +311,7 @@ contains
     !   print *,'count: ',count
     !  stop 'point #9'
 
-    if(present(numaiotasks)) numaiotasks=totActive
+    numaiotasks=totActive
     if(debug .and. iorank == 0) then 
        numOPS = NINT(real(totalSize,kind=8)/real(totActive*blocksize,kind=8))
        write(*,101) 'PIO: calcdecomp: IO tasks:= ',totActive,' # of ops:= ', numOPS,' size:= ',blocksize
