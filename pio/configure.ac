@@ -585,7 +585,7 @@ fi
 
 if test "$USEMEMMON" = "yes"
   then
-        CPPDEFS="$CPPDEFS -D_MEMMON"
+        CPPDEFS="$CPPDEFS -D_TESTMEM -D_MEMMON"
         if test -n "$MEMMON_PATH"
           then FCFLAGS="$FCFLAGS -qnullterm"
                LDLIBS=" $LDLIBS -L$MEMMON_PATH -lmemmon.rts"
@@ -596,7 +596,7 @@ fi
 
 if test "$USESTACKMON" = "yes"
   then
-       CPPDEFS="$CPPDEFS -D_STACKMON" 
+       CPPDEFS="$CPPDEFS -D_TESTMEM -D_STACKMON" 
        if test -n "$STACKMON_PATH"
          then LDLIBS="$LDIBS -L$STACKMON_PATH -lstackmonitor"
          else AC_MSG_WARN([STACKMON_PATH is not set])

@@ -7,6 +7,7 @@
   PNETCDF_PATH="/contrib/bgl/parallel-netcdf-1.1.1" 
   MPI_INC="-I/bgl/BlueLight/ppcfloor/bglsys/include" 
   MPI_LIB="-L/bgl/BlueLight/ppcfloor/bglsys/lib -lmpich.rts -lmsglayer.rts -lrts.rts -ldevices.rts"
+  MEMMON_PATH="/home/dennis/memmon2"
   FC = "blrts_xlf90"
   MPIFC = "blrts_xlf90"
   CC = "blrts_xlc"
@@ -16,7 +17,7 @@
   conopts = "  --enable-mpiio --enable-timing --build=powerpc-bgp-linux --host=powerpc64-suse-linux"
   workdir = "/ptmp/${USER}/testpio"
   run = "cobalt-mpirun -mode vn -nofree --stdout"
-  submit ="cqsub -m script -t 01:00:00 -q default "
+  submit ="cqsub -m script -t 02:00:00 -q default "
   corespernode="2"
  />
 
@@ -357,12 +358,25 @@
 #PBS -j oe
 #PBS -V"
 />
-
-
-
-
-
+<hopper
+  MPIFC = "ftn "
+  MPICC  = "cc "
+  FC = "ftn"
+  CC     = "cc"
+  FFLAGS = "-D_USE_FLOW_CONTROL"
+  NETCDF_PATH = "/opt/cray/netcdf/3.6.2/netcdf-pgi/"
+  PNETCDF_PATH = "/usr/common/usg/pnetcdf/1.2.0/"
+  workdir = "/scratch/scratchdirs/${USER}/testpio"
+  run = "aprun"
+  corespernode = "24"
+  submit = "qsub "
+  conopts = " --disable-mct --enable-pnetcdf --enable-timing --enable-filesystem-hints=lustre "
+  preamble="
+#PBS -N testpio_suite
+#PBS -l walltime=00:30:00
+#PBS -j oe
+#PBS -V"
+/>
 
 
 </testpioconfig>
-

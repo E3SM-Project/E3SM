@@ -13,8 +13,33 @@
    <ldx>256</ldx> <ldy>256</ldy> <ldz>256</ldz> 
 </CompConfig>
 
+<!--   POPB benchmark -->
+<CompConfig nprocs="24" bench_name="POPB"
+   <ldx>80</ldx> <ldy>48</ldy> <ldz>60</ldz> 
+</CompConfig>
+
+<CompConfig nprocs="80" bench_name="POPB"
+   <ldx>32</ldx> <ldy>48</ldy> <ldz>60</ldz> 
+</CompConfig>
+
+<CompConfig nprocs="160" bench_name="POPB"
+   <ldx>32</ldx> <ldy>24</ldy> <ldz>60</ldz> 
+</CompConfig>
+
+<CompConfig nprocs="320" bench_name="POPB"
+   <ldx>16</ldx> <ldy>24</ldy> <ldz>60</ldz> 
+</CompConfig>
+
+<CompConfig nprocs="640" bench_name="POPB"
+   <ldx>16</ldx> <ldy>12</ldy> <ldz>60</ldz> 
+</CompConfig>
+
 
 <!--               WRFB benchmark                                  --> 
+
+<CompConfig nprocs="125" bench_name="WRFB"
+   <ldx>90</ldx> <ldy>72</ldy> <ldz>100</ldz> 
+</CompConfig>
 
 <CompConfig nprocs="250" bench_name="WRFB"
    <ldx>90</ldx> <ldy>36</ldy> <ldz>100</ldz> 
@@ -44,6 +69,14 @@
    <ldx>20</ldx> <ldy>20</ldy> <ldz>100</ldz> 
 </CompConfig>
 
+<CompConfig nprocs="8100" bench_name="WRFB"
+   <ldx>10</ldx> <ldy>20</ldy> <ldz>100</ldz>
+</CompConfig>
+
+<CompConfig nprocs="16200" bench_name="WRFB"
+   <ldx>10</ldx> <ldy>10</ldy> <ldz>100</ldz>
+</CompConfig>
+
 <!--               CAM05 benchmark                                  --> 
 <CompConfig nprocs="64" bench_name="CAM05"
    <ldx>576</ldx> <ldy>6</ldy> <ldz>26</ldz>
@@ -55,6 +88,10 @@
 
 <CompConfig nprocs="256" bench_name="CAM05"
    <ldx>576</ldx> <ldy>3</ldy> <ldz>13</ldz>
+</CompConfig>
+
+<CompConfig nprocs="416" bench_name="CAM05"
+   <ldx>576</ldx> <ldy>12</ldy> <ldz>2</ldz>
 </CompConfig>
 
 <CompConfig nprocs="832" bench_name="CAM05"

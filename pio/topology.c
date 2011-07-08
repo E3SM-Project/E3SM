@@ -59,6 +59,12 @@ void identity(MPI_Fint *comm, int *iotask){
    Personality pers;
    char message[100];
 
+   /* Number of MPI tasks per Pset */
+   int coreId;
+   int *TasksPerPset;
+   int *tmp;
+   int i,ierr;
+
    get_personality (&pers, sizeof(pers));
    Personality_getLocationString (&pers, message);
     
@@ -78,7 +84,6 @@ void identity(MPI_Fint *comm, int *iotask){
    if(rank == 0) { printf("number of IO nodes in block: %i \n",numIONodes);}
    if(rank == 0) { printf("number of Psets in block : %i \n",numPsets);}
    if(rank == 0) { printf("number of compute nodes in Pset: %i \n",numNodesInPset);}
-   printf("MPI task %i is rank %i in Pset \n",rank, rankInPset);
 
 
    int psetNum;
@@ -88,6 +93,22 @@ void identity(MPI_Fint *comm, int *iotask){
    } else {
       printf( "%04i (%-50s %s) %i --\n", rank, my_name, message, psetNum);
    }
+   printf("MPI task %6i is rank %3i in Pset: %3i \n",rank, rankInPset,psetNum);
+
+  /* Determine which core on node....  I don't want to put more than one io-task per node */
+   coreId = get_processor_id ();
+
+   TasksPerPset = malloc(numPsets*sizeof(int));
+   tmp = malloc(numPsets*sizeof(int));
+   for(i=0;i<numPsets;i++) tmp[i]=0;
+   if(coreId == 0) {tmp[psetNum]=1;}
+   ierr = MPI_Allreduce(tmp,TasksPerPset,numPsets,MPI_INT,MPI_SUM,comm2);
+   if(rank == 0) {
+     for(i=0;i<numPsets;i++) {printf("Pset: %3i has %3i nodes \n",i,TasksPerPset[i]);}
+   }
+   free(tmp);
+   free(TasksPerPset);
+
 
 }
 

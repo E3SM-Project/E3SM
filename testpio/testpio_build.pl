@@ -11,7 +11,7 @@ my $cfgdir = `pwd`;
 chomp $cfgdir;
 my $clean = 'yes';
 my @valid_env = qw(NETCDF_PATH PNETCDF_PATH MPI_LIB MPI_INC  FC CC CFLAGS FFLAGS
-                   MACHDEFS MPICC MPIFC LDLIBS CPPDEFS);
+                   MACHDEFS MPICC MPIFC LDLIBS CPPDEFS MEMMON_PATH);
 
 
 # The XML::Lite module is required to parse the XML configuration files.

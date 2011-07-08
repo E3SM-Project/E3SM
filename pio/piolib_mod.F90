@@ -14,7 +14,7 @@ module piolib_mod
   use pio_types, only : file_desc_t, iosystem_desc_t, var_desc_t, io_desc_t, &
 	pio_iotype_pbinary, pio_iotype_binary, pio_iotype_direct_pbinary, &
 	pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c, &
-        pio_noerr
+        pio_noerr, pio_num_ost
   !--------------
   use alloc_mod
   !--------------
@@ -58,6 +58,8 @@ module piolib_mod
        PIO_dupiodesc,     &
        PIO_getnumiotasks, &
        PIO_set_hint,      &
+       PIO_getnum_OST,    &
+       PIO_setnum_OST,    &
        PIO_FILE_IS_OPEN
 
 #ifdef MEMCHK
@@ -235,7 +237,6 @@ module piolib_mod
   !eoc
   !***********************************************************************
 
-  private :: nextlarger
 
 contains
 
@@ -940,7 +941,8 @@ contains
                'both optional parameters start and count must be provided')
        else
 !          call getiostartandcount(iosystem%num_tasks, ndims, dims, iosystem%num_iotasks, iosystem%io_rank, iosystem%io_comm, iodesc%start, iodesc%count)
-          call calcstartandcount(basepiotype, ndims, dims, iosystem%num_iotasks, iosystem%io_rank, iodesc%start, iodesc%count)
+          call calcstartandcount(basepiotype, ndims, dims, iosystem%num_iotasks, iosystem%io_rank,&
+                 iodesc%start, iodesc%count,iosystem%num_aiotasks)
        end if
        iosize=1
        do i=1,ndims
@@ -1060,188 +1062,6 @@ contains
 
   end subroutine PIO_initdecomp_dof
 
-  subroutine getiostartandcount(ntasks, ndims, gdims, num_io_procs, iorank, iocomm, start, count)
-
-    implicit none
-
-    integer, intent(in) :: ntasks
-    integer, intent(in) :: ndims, gdims(ndims), num_io_procs
-
-    integer, intent(in) :: iocomm
-    integer(kind=PIO_offset), intent(out) :: start(ndims), count(ndims)   ! start and count arrays 
-
-    integer :: ierr
-    integer :: n,m
-    integer :: use_io_procs,iorank, sdims, cnt
-    logical :: done
-    integer :: xiam, xpes, ps, pe, ds, de, ns, pe1, ps1
-    integer :: size,tsize
-    integer :: it
-    real(r8) :: fanfactor, fanlimit
-    real(r8) :: rtmp
-    integer :: testvalue
-    integer, parameter :: minblocksize=16        ! minimum block size on a task
-    integer, parameter :: maxit=1               ! maximum number of times to iterate on the fanin/out limiter  (Probably want a better solution)
-    integer,allocatable :: pes_per_dim(:), step(:)
-    integer,allocatable :: bsize(:),nblocks(:),fblocks(:)
-
-
-    tsize=1
-    do n=1,ndims
-       tsize=tsize*gdims(n)
-    end do
-    allocate(pes_per_dim(ndims))
-    allocate(step(ndims))
-    allocate(bsize(ndims))
-    allocate(nblocks(ndims))
-    allocate(fblocks(ndims))
-
-    use_io_procs=num_io_procs
-    do while(tsize/minblocksize < use_io_procs .and. use_io_procs>1)
-       use_io_procs=use_io_procs-1
-    end do
-    if(Debug) print *,'iorank: ',iorank,' getiostartandcount: use_io_procs: ',use_io_procs
-
-
-
-    !-----------------
-
-    cnt = 1
-    sdims = ndims
-    do while (cnt < use_io_procs .and. sdims > 0)
-       cnt = cnt * gdims(sdims)
-       sdims = sdims - 1
-    enddo
-
-    fanlimit  = 50.00
-    fanfactor = fanlimit + 1.0  !we want at least one trip through the do while loop  
-
-    it = 0
-    step(:) = 1
-    do while (fanfactor > fanlimit .and. it < maxit ) 
-       start = 1
-       count = 0
-
-       do m = 1,sdims
-          start(m) = 1
-          count(m) = gdims(m)
-          bsize(m) = gdims(m)
-          nblocks(m) = 1
-          fblocks(m) = 1
-       enddo
-       if(Debug) print *,'iorank: ',iorank, ' getiostartandcount: sdims: ',sdims
-       if(Debug) print *,'iorank: ',iorank, ' getiostartandcount: count: ',count
-
-
-       xpes = use_io_procs
-       xiam = iorank   ! goes from 0 to xpes-1
-       do m = ndims, sdims+1, -1
-          if(xpes > gdims(m)) then
-             ps = -1
-             ns = 1
-             do while (ps < 0 .and. ns <= gdims(m) )
-                ps1 = int((dble(xpes)*dble((ns-1)*step(m)))/dble(gdims(m)))
-                pe1 = int((dble(xpes)*dble(ns*step(m)  ))/dble(gdims(m))) - 1
-                if (xiam >= ps1 .and. xiam <= pe1) then
-                   ps = ps1
-                   pe = pe1
-                   start(m) = (ns-1)*step(m) + 1
-                   count(m) = step(m)
-                end if
-                ns = ns+1
-             end do
-             xpes = pe - ps + 1
-             xiam = xiam - ps
-             !          write(6,*) 'tcx1 ',iorank,m,start(m),count(m)
-             step(m)=nextlarger(step(m),gdims(m))
-             if(step(m) == gdims(m)) fanlimit = fanlimit + 10.0
-          else
-             if (m /= sdims+1) then
-                if(sdims<ndims) then
-                   sdims=sdims+1
-                   it=it-1     ! try again
-                else if(use_io_procs>1) then
-                   use_io_procs=use_io_procs-1
-                   it=it-1     ! try again
-                else
-                   call piodie( __PIO_FILE__,__LINE__, &
-                        'm /= sdims+1',ival1=m,ival2=sdims)
-                endif
-             end if
-             ds = int((dble(gdims(m))*dble(xiam  ))/dble(xpes)) + 1
-             de = int((dble(gdims(m))*dble(xiam+1))/dble(xpes))
-             start(m) = ds
-             count(m) = de-ds+1
-          end if
-
-          if ((start(m) < 1 .or. count(m) < 1) .and. iorank<use_io_procs) then
-             print *, 'start =',start, ' count=',count
-             if(sdims<ndims) then
-                sdims=sdims+1
-                it=it-1     ! try again
-             else if(use_io_procs>1) then
-                use_io_procs=use_io_procs-1
-                it=it-1     ! try again
-             else
-                call piodie( __PIO_FILE__,__LINE__, &
-                     'start or count failed to converge')
-             end if
-          endif
-
-       enddo
-       if(iorank<use_io_procs) then
-          do m=1,ndims
-             pes_per_dim(m) = gdims(m)/count(m)
-          enddo
-          ! -----------------------------------------------
-          ! note this caculation assumes that the the first
-          ! two horizontal dimensions are decomposed,
-          ! -----------------------------------------------
-          if(ndims==1) then
-             fanfactor = ntasks/pes_per_dim(1)
-          else
-             fanfactor = ntasks/(pes_per_dim(1)*pes_per_dim(2))
-          end if
-       else
-          fanfactor = 0
-       end if
-       call mpi_allreduce(fanfactor,rtmp,1,MPI_REAL8,MPI_MAX,iocomm,ierr)
-       fanfactor=rtmp
-       if(Debug) print *,'iorank: ',iorank,'getiostartandcount: pes_per_dim is: ',pes_per_dim
-       if(Debug) print *,'iorank: ',iorank,' getiostartandcount: fan factor is: ',fanfactor
-       it=it+1
-    enddo
-
-
-
-    deallocate(step)
-    deallocate(pes_per_dim)
-    deallocate(bsize,nblocks,fblocks)
-
-    ! This should already be the case.
-    if(iorank>=use_io_procs) then 
-	start = 1
-        count = 0 
-    endif
-
-  end subroutine getiostartandcount
-
-  integer function nextlarger(current,value) result(res)
-
-  integer :: current,value,rem
-  !-----------------------------------------
-  ! This function finds a value res that is
-  !  larger than current that divides value evenly
-  !-----------------------------------------
-  res=current
-  rem = 1
-  do while ((rem .ne. 0) .and. (res .lt. value))
-     res = res + 1
-     rem = MOD(value,res)
-!     print *,'res,rem: ',res,rem
-  enddo
-
-  end function nextlarger
 
   !************************************
   ! dupiodesc2
@@ -1584,6 +1404,8 @@ contains
     call PIO_set_hint(iosystem, 'romio_ds_read','disable') 
     call PIO_set_hint(iosystem,'romio_ds_write','disable') 
 #endif
+    iosystem%num_aiotasks = iosystem%num_iotasks
+
 
 #ifdef TIMING
     call t_stopf("PIO_init")
@@ -1642,6 +1464,7 @@ contains
        iosystem(i)%ioroot = MPI_PROC_NULL
        iosystem(i)%compmaster= MPI_PROC_NULL
        iosystem(i)%iomaster = MPI_PROC_NULL 
+       iosystem(i)%numOST = PIO_num_OST
 
 
        if(io_comm/=MPI_COMM_NULL) then
@@ -1796,6 +1619,8 @@ contains
 
     if(DebugAsync) print*,__PIO_FILE__,__LINE__, iosystem(1)%ioranks
 
+
+    iosystem%num_aiotasks = iosystem%num_iotasks
 
 
     ! This routine does not return
@@ -2130,6 +1955,8 @@ contains
     integer :: msg
     logical, parameter :: check = .true.
     character(len=9) :: rd_buffer
+    character(len=4) :: stripestr
+    character(len=9) :: stripestr2
     character(len=char_len)  :: myfname
 #ifdef TIMING
     call t_startf("PIO_createfile")
@@ -2173,6 +2000,12 @@ contains
        call PIO_set_hint(iosystem, "cb_buffer_size",trim(adjustl(rd_buffer)))
     endif
 #endif
+#ifdef PIO_LUSTRE_HINTS
+    write(stripestr,('(i3)')) min(iosystem%num_aiotasks,iosystem%numOST)
+    call PIO_set_hint(iosystem,"striping_factor",trim(adjustl(stripestr)))
+    write(stripestr2,('(i9)')) 1024*1024
+    call PIO_set_hint(iosystem,"striping_unit",trim(adjustl(stripestr2)))
+#endif
 
 #ifndef _NETCDF4
     if(file%iotype==pio_iotype_netcdf4p .or. file%iotype==pio_iotype_netcdf4c) then
@@ -2211,7 +2044,35 @@ contains
     call t_stopf("PIO_createfile")
 #endif
   end function createfile
-
+!>
+!! @public
+!! @defgroup PIO_setnum_OST PIO_setnum_OST
+!! @brief Sets the default number of Lustre Object Storage Targets (OST)
+!! @details  When PIO is used on a Lustre filesystem, this subroutine sets the
+!!           default number Object Storage targets (OST) to use. PIO
+!!           will use min(num_aiotasks,numOST) where num_aiotasks the the
+!!           actual number of active iotasks
+!! @param iosystem : a defined pio system descriptor created by a call to @ref PIO_init (see PIO_types)
+!! @param numOST : The number of OST to use by default
+!<
+  subroutine PIO_setnum_OST(iosystem,numOST)
+     type (iosystem_desc_t), intent(inout), target :: iosystem
+     integer(i4) :: numOST
+     iosystem%numOST = numOST
+  end subroutine PIO_setnum_OST
+!>
+!! @public
+!! @defgroup PIO_getnum_OST PIO_getnum_OST
+!! @brief Sets the default number of Lustre Object Storage Targets (OST)
+!! @details  When PIO is used on a Lustre filesystem, this subroutine gets the
+!!           default number Object Storage targets (OST) to use.
+!! @param iosystem : a defined pio system descriptor created by a call to @ref PIO_init (see PIO_types)
+!! @retval numOST : The number of OST to use.
+!<
+  integer function PIO_getnum_OST(iosystem) result(numOST)
+     type (iosystem_desc_t), intent(inout), target :: iosystem
+     numOST = iosystem%numOST
+  end function PIO_getnum_OST
 !> 
 !! @public
 !! @ingroup PIO_openfile 

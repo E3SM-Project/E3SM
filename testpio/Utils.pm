@@ -28,6 +28,8 @@ sub host{
 	$host = "kraken";
     }elsif($host =~ /^lynx/){
         $host = "lynx";
+    }elsif($host =~ /^hopp/){
+	$host = "hopper";
     }elsif($host =~ /(\w+)\./){
 	$host = $1;
     }
@@ -85,7 +87,7 @@ sub preambleResource{
   }elsif($host =~ "cyberstar" ){
      $nodes = ceil($pecount/$corespernode);
      $preambleResource = "#PBS -l nodes=$nodes:nehalem:ppn=$corespernode\n"; 
-  }elsif($host =~ "lynx"){
+  }elsif($host =~ "lynx" or $host =~ "hopper"){
      my $pecnt = $corespernode*ceil($pecount/$corespernode);
      $preambleResource = "#PBS -l mppwidth=$pecnt\n"; 
   }elsif($host =~ "athena"){
@@ -139,6 +141,7 @@ sub loadmodules{
 		   jaguar  => "/opt/modules/default/",
 		   athena => "/opt/modules/default/",
 		   kraken => "/opt/modules/default/",
+		   hopper => "/opt/modules/default/",
 		   lynx => "/opt/modules/default/",
 		   pleiades => "/usr",
                    columbia => "/usr/share/modules/"};
@@ -208,6 +211,11 @@ sub loadmodules{
 	require "/opt/modules/default/init/perl";
 	module(" load netcdf/3.6.2");      
 	module(" load p-netcdf/1.1.1");
+    }elsif($host =~ "hopper"){
+	require "/opt/modules/default/init/perl";
+	module(" load netcdf/3.6.2");      
+	module(" load pnetcdf/1.2.0");
+        module("list");
     }elsif($host =~ "pleiades"){
         module(" load netcdf/4.0-i10.1");
     }elsif($host =~ "columbia"){

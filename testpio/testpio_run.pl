@@ -247,13 +247,15 @@ foreach \$suite (qw(@testsuites)){
 	    symlink("$tstdir/namelists/testpio_in.\$test","testpio_in");
 	    mkdir "none" unless(-d "none");
             my \$exename = "./testpio";
-	    my \$log = "\$casedir/testpio.out.$date";
-	    my \$sysstr;
-            if (\$run ne ""){
-		\$sysstr =  Utils->runString(\$host,\$pecount,\$run,\$exename,\$log);
-            }else{
-		\$sysstr = "\$exename > \$log";
-	    }
+	    my \$log = "\$casedir/testpio.out";
+#	    my \$log = "\$casedir/testpio.out.$date";
+#	    my \$sysstr;
+#            if (\$run ne ""){
+#		\$sysstr =  Utils->runString(\$host,\$pecount,\$run,\$exename,\$log);
+#            }else{
+#		\$sysstr = "\$exename > \$log";
+#	    }
+            my \$sysstr =  Utils->runString(\$host,\$pecount,\$run,\$exename,\$log);
             # Utils->runString($host,$pecount,$run,$exename,$log);
             # print "value for foo is (\$foo)\\n";
             system(\$sysstr);

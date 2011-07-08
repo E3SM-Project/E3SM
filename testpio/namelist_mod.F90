@@ -17,33 +17,49 @@ module namelist_mod
 
     public :: broadcast_namelist
     public :: readtestpio_namelist
+
+    integer(kind=i4), public, parameter :: buffer_size_str_len = 20
+    integer(kind=i4), public, parameter :: true_false_str_len = 6
+    integer(kind=i4), public, parameter :: romio_str_len = 10
     
-    logical, public :: async
-    integer(i4), public :: nx_global,ny_global,nz_global
-    integer(i4), public :: rearr_type
-    integer(i4), public :: num_iotasks
-    integer(i4), public :: stride
-    integer(i4), public :: base
-    integer(i4), public :: DebugLevel
-    integer(i4), public :: maxiter
-    integer(i4), public :: num_aggregator
-    integer(i4), public :: iotype
-    integer(i4), public :: num_iodofs
-    integer(i4), public :: nvars
-    integer(i4), public :: npr_yz(4)   ! To simulate cam fv decompositions
+    logical, public, save :: async
+    integer(i4), public, save :: nx_global,ny_global,nz_global
+    integer(i4), public, save :: rearr_type
+    integer(i4), public, save :: num_iotasks
+    integer(i4), public, save :: stride
+    integer(i4), public, save :: base
+    integer(i4), public, save :: DebugLevel
+    integer(i4), public, save :: maxiter
+    integer(i4), public, save :: num_aggregator
+    integer(i4), public, save :: iotype
+    integer(i4), public, save :: num_iodofs
+    integer(i4), public, save :: nvars
+    integer(i4), public, save :: npr_yz(4)   ! To simulate cam fv decompositions
 
-    character(len=80), public :: compdof_input
-    character(len=80), public :: iodof_input 
-    character(len=80), public :: compdof_output
-    character(len=256), public :: casename
-    character(len=80), public :: dir
-    character(len=4) , public :: ioFMTd
-    character(len=8) , public :: rearr
+    integer(kind=i4), public, save :: set_mpi_values = 0 !! Set to one for true
+    character(len=buffer_size_str_len), public, save :: mpi_cb_buffer_size = ''
+    integer(kind=i4), public, save :: set_romio_values = 0 !! Set to one for true
+    character(len=romio_str_len), public, save :: romio_cb_write = ''
+    character(len=romio_str_len), public, save :: romio_cb_read = ''
+    character(len=romio_str_len), public, save :: romio_direct_io = ''
+    integer(kind=i4), public, save :: set_ibm_io_values = 0 !! Set to one for true
+    character(len=buffer_size_str_len), public, save :: ibm_io_buffer_size = ''
+    character(len=true_false_str_len), public, save :: ibm_io_largeblock_io = ''
+    character(len=true_false_str_len), public, save :: ibm_io_sparse_access = ''
 
-    integer(i4) :: nprocsIO
-    integer(i4) :: PrintRec
-    character(len=4)  :: ioFMT
-    character(len=80) :: fname1, fname2
+    
+    character(len=80), save, public :: compdof_input
+    character(len=80), save, public :: iodof_input 
+    character(len=80), save, public :: compdof_output
+    character(len=256), save, public :: casename
+    character(len=80), save, public :: dir
+    character(len=4) , save, public :: ioFMTd
+    character(len=8) , save, public :: rearr
+
+    integer(i4), save :: nprocsIO
+    integer(i4), save :: PrintRec
+    character(len=4), save  :: ioFMT
+    character(len=80), save :: fname1, fname2
     character(len=*), parameter :: myname='namelist_mod'
 
 ! Variables whose values are derived form items in namelist io_nml:
@@ -68,7 +84,17 @@ module namelist_mod
         compdof_output, &
         iodof_input,    &
 	DebugLevel,     &
-        npr_yz
+        npr_yz,         &
+        set_mpi_values,       &
+        mpi_cb_buffer_size,   &
+        set_romio_values,     &
+        romio_cb_write,       &
+        romio_cb_read,        &
+        romio_direct_io,      &
+        set_ibm_io_values,    &
+        ibm_io_buffer_size,   &
+        ibm_io_largeblock_io, &
+        ibm_io_sparse_access
 
 contains
 
@@ -109,6 +135,18 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
     nvars = 10
 
     npr_yz = (/nprocs,1,1,nprocs/)
+    set_mpi_values = 0  !! Set to one for true
+    mpi_cb_buffer_size = ''
+
+    set_romio_values = 0  !! Set to one for true
+    romio_cb_write = ''   !! Default is "automatic"
+    romio_cb_read = ''    !! Default is "automatic"
+    romio_direct_io = ''  !! Default is "automatic"
+
+    set_ibm_io_values = 0 !! Set to one for true
+    ibm_io_buffer_size = ''
+    ibm_io_largeblock_io = ''  !! Default is "false"
+    ibm_io_sparse_access = ''  !! Default is false
 
     ioFMT = 'bin'
     dir   = './'
@@ -164,6 +202,44 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
     write(*,*) trim(string),' compdof_input  = ',trim(compdof_input)
     write(*,*) trim(string),' compdof_output = ',trim(compdof_output)
     write(*,*) trim(string),' iodof_input = ',trim(iodof_input)
+    if (set_mpi_values /= 0) then
+       if (mpi_cb_buffer_size /= '') then
+          write(*,*) trim(string),' mpi_cb_buffer_size = ', &
+               trim(mpi_cb_buffer_size)
+       end if
+    end if
+
+    if (set_romio_values /= 0) then
+       if (romio_cb_write /= '') then
+          write(*,*) trim(string),' romio_cb_write = ', romio_cb_write
+       end if
+
+       if (romio_cb_read /= '') then
+          write(*,*) trim(string),' romio_cb_read = ', romio_cb_read
+       end if
+
+       if (romio_direct_io /= '') then
+          write(*,*) trim(string),' romio_direct_io = ', romio_direct_io
+       end if
+    end if
+
+    if (set_ibm_io_values /= 0) then
+       if (ibm_io_buffer_size /= '') then
+          write(*,*) trim(string),'ibm_io_buffer_size = ', &
+               trim(ibm_io_buffer_size)
+       end if
+
+       if (ibm_io_largeblock_io /= '') then
+          write(*,*) trim(string),'ibm_io_largeblock_io = ', &
+               trim(ibm_io_largeblock_io)
+       end if
+
+       if (ibm_io_sparse_access /= '') then
+          write(*,*) trim(string),'ibm_io_sparse_access = ', &
+               trim(ibm_io_sparse_access)
+       end if
+    end if
+
     write(*,*) ' '
 
     string = 'derived_input'
@@ -285,7 +361,7 @@ subroutine Broadcast_Namelist(caller, myID, root, comm, ierror)
      itmp=0
   end if
 
-  call MPI_Bcast(itmp, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call MPI_Bcast(itmp, 1, MPI_INTEGER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(async)',ierror,__FILE__,__LINE__)
 
   if(itmp==1) then
@@ -295,69 +371,118 @@ subroutine Broadcast_Namelist(caller, myID, root, comm, ierror)
   end if
 
 
-  call MPI_Bcast(num_iotasks, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call MPI_Bcast(num_iotasks, 1, MPI_INTEGER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(num_iotasks)',ierror,__FILE__,__LINE__)
 
-  call MPI_Bcast(num_iodofs, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call MPI_Bcast(num_iodofs, 1, MPI_INTEGER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(num_iodofs)',ierror,__FILE__,__LINE__)
 
-  call MPI_Bcast(num_aggregator, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call MPI_Bcast(num_aggregator, 1, MPI_INTEGER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(num_aggregator)',ierror,__FILE__,__LINE__)
 
-  call MPI_Bcast(stride, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call MPI_Bcast(stride, 1, MPI_INTEGER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(stride)',ierror,__FILE__,__LINE__)
 
-  call MPI_Bcast(base, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call MPI_Bcast(base, 1, MPI_INTEGER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(base)',ierror,__FILE__,__LINE__)
 
-  call MPI_Bcast(nx_global, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call MPI_Bcast(nx_global, 1, MPI_INTEGER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(nx_global)',ierror,__FILE__,__LINE__)
 
-  call MPI_Bcast(ny_global, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call MPI_Bcast(ny_global, 1, MPI_INTEGER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(ny_global)',ierror,__FILE__,__LINE__)
 
-  call MPI_Bcast(nz_global, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call MPI_Bcast(nz_global, 1, MPI_INTEGER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(nz_global)',ierror,__FILE__,__LINE__)
 
-  call MPI_Bcast(nvars, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call MPI_Bcast(nvars, 1, MPI_INTEGER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(nvars)',ierror,__FILE__,__LINE__)
-  call MPI_Bcast(iotype, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+
+  call MPI_Bcast(set_mpi_values, 1, MPI_INTEGER, root, comm,ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(set_mpi_values)', ierror, &
+                        __FILE__, __LINE__)
+
+  call MPI_Bcast(mpi_cb_buffer_size, buffer_size_str_len, MPI_CHARACTER, &
+                   root, comm, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(mpi_cb_buffer_size)', ierror, &
+                        __FILE__, __LINE__)
+
+  call MPI_Bcast(set_romio_values, 1, MPI_INTEGER, root, comm, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(set_romio_values)', ierror, &
+                        __FILE__, __LINE__)
+
+  call MPI_Bcast(romio_cb_write, romio_str_len, MPI_CHARACTER, root, &
+                   comm, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(romio_cb_write)', ierror, &
+                        __FILE__, __LINE__)
+
+  call MPI_Bcast(romio_cb_read, romio_str_len, MPI_CHARACTER, root, &
+                   comm, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(romio_cb_read)', ierror, &
+                        __FILE__, __LINE__)
+
+  call MPI_Bcast(romio_direct_io, romio_str_len, MPI_CHARACTER, root, &
+                   comm, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(romio_direct_io)', ierror, &
+                        __FILE__, __LINE__)
+
+  call MPI_Bcast(set_ibm_io_values, 1, MPI_INTEGER, root, comm, &
+                   ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(set_ibm_io_values)', ierror, &
+                        __FILE__, __LINE__)
+
+  call MPI_Bcast(ibm_io_buffer_size, buffer_size_str_len, MPI_CHARACTER, &
+                   root, comm, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(ibm_io_buffer_size)', ierror, &
+         __FILE__, __LINE__)
+
+  call MPI_Bcast(ibm_io_largeblock_io, true_false_str_len, MPI_CHARACTER, &
+                   root, comm, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(ibm_io_largeblock_io)', ierror, &
+                        __FILE__, __LINE__)
+
+  call MPI_Bcast(ibm_io_sparse_access, true_false_str_len, MPI_CHARACTER, &
+                   root, comm, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(ibm_io_sparse_access)', ierror, &
+                        __FILE__, __LINE__)
+
+  call MPI_Bcast(iotype, 1, MPI_INTEGER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(iotype)',ierror,__FILE__,__LINE__)
 
-  call MPI_Bcast(ioFMTd, 4, MPI_CHARACTER, root, MPI_COMM_WORLD, ierror)
+  call MPI_Bcast(ioFMTd, 4, MPI_CHARACTER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(ioFMTd)',ierror,__FILE__,__LINE__)
 
-  call MPI_Bcast(rearr, 8, MPI_CHARACTER, root, MPI_COMM_WORLD, ierror)
+  call MPI_Bcast(rearr, 8, MPI_CHARACTER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(rearr)',ierror,__FILE__,__LINE__)
 
-  call MPI_Bcast(rearr_type, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call MPI_Bcast(rearr_type, 1, MPI_INTEGER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(rearr_type)',ierror,__FILE__,__LINE__)
 
-  call MPI_Bcast(dir, 80, MPI_CHARACTER, root, MPI_COMM_WORLD, ierror)
+  call MPI_Bcast(dir, 80, MPI_CHARACTER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(dir)',ierror,__FILE__,__LINE__)
 
-  call MPI_Bcast(compdof_input, 80, MPI_CHARACTER, root, MPI_COMM_WORLD, ierror)
+  call MPI_Bcast(compdof_input, 80, MPI_CHARACTER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(compdof_input)',ierror,__FILE__,__LINE__)
 
-  call MPI_Bcast(compdof_output, 80, MPI_CHARACTER, root, MPI_COMM_WORLD, ierror)
+  call MPI_Bcast(compdof_output, 80, MPI_CHARACTER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(compdof_output)',ierror,__FILE__,__LINE__)
 
-  call MPI_Bcast(iodof_input, 80, MPI_CHARACTER, root, MPI_COMM_WORLD, ierror)
+  call MPI_Bcast(iodof_input, 80, MPI_CHARACTER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(iodof_input)',ierror,__FILE__,__LINE__)
 
-  call MPI_Bcast(casename, 256, MPI_CHARACTER, root, MPI_COMM_WORLD, ierror)
+  call MPI_Bcast(casename, 256, MPI_CHARACTER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(casename)',ierror,__FILE__,__LINE__)
 
-  call MPI_Bcast(DebugLevel, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call MPI_Bcast(DebugLevel, 1, MPI_INTEGER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(DebugLevel)',ierror,__FILE__,__LINE__)
 
-  call MPI_Bcast(maxiter, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call MPI_Bcast(maxiter, 1, MPI_INTEGER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(maxiter)',ierror,__FILE__,__LINE__)
 
-  call MPI_Bcast(nprocsIO, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call MPI_Bcast(nprocsIO, 1, MPI_INTEGER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(nprocsIO)',ierror,__FILE__,__LINE__)
 
-  call MPI_Bcast(npr_yz, 4, MPI_INTEGER, root, MPI_COMM_WORLD, ierror)
+  call MPI_Bcast(npr_yz, 4, MPI_INTEGER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(npr_yz)',ierror,__FILE__,__LINE__)
 
 end subroutine Broadcast_Namelist
