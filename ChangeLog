@@ -2,9 +2,10 @@
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
 Tag name: pio1_3_1
-Originator(s): Edwards
+Originator(s): Edwards, Dennis
 Date: 07/06/2011
-One-line Summary: update autoconf tools, remove getiostartandcount 
+One-line Summary: update autoconf tools, remove getiostartandcount,
+	 Add optimizations for lustre platform
 
 List all subroutines eliminated:
 
@@ -33,15 +34,15 @@ Describe any substantial timing or memory changes:
 
 
 
-Code reviewed by: self
+Code reviewed by: Edwards
 
 Summary of pre-tag testing:
 
-  Regression tests: bluefire  80 pass, 0 fail
-	            lynx (pgi) 
-	            lynx_gnu
+  Regression tests: bluefire         80 pass, 0 fail
+	            jaguar (pgi)     80 tests PASS, 0 tests FAIL
+	            lynx_gnu         80 tests PASS, 0 tests FAIL
 	            edinburgh (pgi)  22 pass 2 fail (expected)
-	            edinburgh_intel
+	            
 	
 
 
