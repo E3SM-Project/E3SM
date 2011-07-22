@@ -779,7 +779,7 @@ while test $[@%:@] != 1; do
 	  ;;
 	  # Ignore these flags.
 	-lang* | -lcrt*.o | -lc | -lgcc* | -lSystem | -libmil | -little \
-	  |-LANG:=* | -LIST:* | -LNO:* | -link | -list )
+	  |-LANG:=* | -LIST:* | -LNO:* | -link | -list | -lnuma )
 	  ;;
 	-lkernel32)
 	  test x"$CYGWIN" != xyes && ac_cv_[]_AC_LANG_ABBREV[]_libs="$ac_cv_[]_AC_LANG_ABBREV[]_libs $ac_arg"

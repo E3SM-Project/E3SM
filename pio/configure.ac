@@ -308,7 +308,8 @@ if test "$FC_USE_SIZEOF" = "default"
        AC_MSG_CHECKING([Fortran support for sizeof()])
        AC_COMPILE_IFELSE( [[
         integer :: a,b 
-                b = sizeof(a)]],
+        b = sizeof(a)
+        end]],
                 FC_USE_SIZEOF="yes", FC_USE_SIZEOF="no" )
        AC_LANG_POP(Fortran)
 
