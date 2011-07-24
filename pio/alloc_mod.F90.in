@@ -1,8 +1,9 @@
+#define __PIO_FILE__ "alloc_mod.F90.in"
 module alloc_mod
 
   use pio_kinds
   use pio_types
-  use pio_support, only : piodie, CheckMPIreturn
+  use pio_support, only : piodie, CheckMPIreturn, debug
   implicit none
   private
 
@@ -70,6 +71,15 @@ contains
 
     integer ierr, ierror, rank
 
+    if(debug) then
+       if(present(msg)) then
+          print *,__PIO_FILE__,__LINE__,msg,varlen
+       else
+          print *,__PIO_FILE__,__LINE__,varlen
+       end if
+    end if
+
+
     if(varlen==0) then
       allocate(data(1),stat=ierr)
     else
@@ -120,6 +130,15 @@ contains
 
     character(len=*), parameter :: subName=modName//'::dealloc_check_{DIMS}d_{TYPE}'
     integer ierr, ierror, rank
+
+    if(debug) then
+       if(present(msg)) then
+          print *,__PIO_FILE__,__LINE__,msg,size(data)
+       else
+          print *,__PIO_FILE__,__LINE__,size(data)
+       end if
+    end if
+
 
     deallocate(data,stat=ierr)
 

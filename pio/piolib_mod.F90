@@ -476,6 +476,10 @@ contains
     integer (i4) :: lengthr, lengthw
     integer (i4), pointer :: displacer(:),displacew(:)
 
+
+    nullify(iodesc%start)
+    nullify(iodesc%count)
+
     basetype=PIO_type_to_mpi_type(basepiotype)
 
     !-------------------------------------------
@@ -675,6 +679,8 @@ contains
 #ifdef MEMCHK
     integer :: msize, rss, mshare, mtext, mstack
 #endif
+    nullify(iodesc%start)
+    nullify(iodesc%count)
 
     piotype=PIO_type_to_mpi_type(basepiotype)
 
@@ -859,6 +865,8 @@ contains
 
     integer ierror
 
+    nullify(iodesc%start)
+    nullify(iodesc%count)
 
 #ifdef TIMING
     call t_startf("PIO_initdecomp_dof")
@@ -942,7 +950,6 @@ contains
        else
           call calcstartandcount(basepiotype, ndims, dims, iosystem%num_iotasks, iosystem%io_rank,&
                  iodesc%start, iodesc%count,iosystem%num_aiotasks)
-          print *,__FILE__,__LINE__,iosystem%num_aiotasks
        end if
        iosize=1
        do i=1,ndims

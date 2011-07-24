@@ -126,8 +126,8 @@ module pio_types
 #endif
         type(IO_desc2_t)    :: Read
         type(IO_desc2_t)    :: Write
-	integer(kind=PIO_Offset), pointer :: start(:)
-	integer(kind=PIO_Offset), pointer :: count(:)
+	integer(kind=PIO_Offset), pointer :: start(:) => NULL()
+	integer(kind=PIO_Offset), pointer :: count(:) => NULL()
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ! fields for box-based rearranger
@@ -135,18 +135,18 @@ module pio_types
 
         integer :: baseTYPE
 
-        integer, pointer :: dest_ioproc(:)     ! for each dof
-        integer, pointer :: dest_ioindex(:)    ! for each dof
+        integer, pointer :: dest_ioproc(:)=> NULL()     ! for each dof
+        integer, pointer :: dest_ioindex(:)=> NULL()    ! for each dof
 
 
         ! Values needed only on io procs
-        integer,pointer :: rfrom(:)   ! rfrom(nrecvs)= rank of ith sender
-        integer,pointer :: rtype(:)   ! rtype(nrecvs)=mpi types for receives
+        integer,pointer :: rfrom(:)=> NULL()   ! rfrom(nrecvs)= rank of ith sender
+        integer,pointer :: rtype(:)=> NULL()   ! rtype(nrecvs)=mpi types for receives
 
         
         ! needed on all procs
-        integer,pointer :: scount(:)  ! scount(num_iotasks)= # sends to ith ioproc
-        integer,pointer :: stype(:)   ! stype(num_iotasks)=mpi type for sends
+        integer,pointer :: scount(:)=> NULL()  ! scount(num_iotasks)= # sends to ith ioproc
+        integer,pointer :: stype(:)=> NULL()   ! stype(num_iotasks)=mpi type for sends
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         integer(i4) :: async_id
