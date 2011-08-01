@@ -284,10 +284,14 @@ subroutine string_handler_for_att(file, varid, name, strlen, msg)
   use pio_msg_mod, only : pio_msg_getatt
   use pio, only : file_desc_t, pio_get_att, pio_put_att
   use pio_support, only : debugasync
+  implicit none
+
   type(file_desc_t) :: file
   integer, intent(in) :: varid, strlen, msg
   character(len=*) :: name
   character(len=strlen) :: str
+  integer :: ierr
+
   if(msg==PIO_MSG_GETATT) then
      if(Debugasync) print *,__PIO_FILE__,__LINE__, varid, name
      ierr = pio_get_att(file, varid, name, str )  
