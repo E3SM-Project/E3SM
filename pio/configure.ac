@@ -98,16 +98,11 @@ AC_HELP_STRING([--enable-filesystem-hints],
 AC_ARG_VAR(MPI_INC,[MPI include flags])
 AC_ARG_VAR(MPI_LIB,[MPI lib flags])
 
-AC_ARG_VAR(FPP,C-preprocessor for Fortran source code)
-AC_ARG_VAR(FPPFLAGS,C-preprocessing flags for Fortran source code)
-
-AC_ARG_VAR(MACHDEFS,MCT compiler and OS flags)
-
 AC_ARG_VAR(FC,The Fortran compiler)
 AC_ARG_VAR(MPIFC,The MPI Fortran compiler)
 
 AC_ARG_VAR(FFLAGS,User-defined Fortran compiler flags)
-AC_ARG_VAR(ALLCFLAGS,Customized C source compilation flags)
+AC_ARG_VAR(CFLAGS,Customized C source compilation flags)
 
 AC_ARG_VAR(CC,The C compiler)
 AC_ARG_VAR(MPICC,The MPI C compiler)
@@ -115,16 +110,15 @@ AC_ARG_VAR(MPICC,The MPI C compiler)
 # fortran flags
 
 AC_ARG_VAR(OPT,Fortran compiler flag for optimization level) 
-
 AC_ARG_VAR(REAL8,[Fortran compiler flag for setting the default REAL size to REAL(KIND=8)])
 AC_ARG_VAR(BIT64,Fortran compiler flag for generating 64-bit objects)
 AC_ARG_VAR(ENDIAN,Fortran compiler flag for converting big-endian to little-endian)
+AC_ARG_VAR(MODINC,Fortran compiler flag for specifying module search path)
 
 # end fortran flags
 
 AC_ARG_VAR(MCT_PATH,Path to the MCT root directory)
 
-AC_ARG_VAR(MODINC,Fortran compiler flag for specifying module search path)
 AC_ARG_VAR(INCLUDEPATH,Additional library and module paths with MODINC)
 
 AC_ARG_VAR(AR,Archive command)
@@ -157,18 +151,21 @@ test "$machinename"=NONE && machinename=`uname -m`
 fullhostname=`hostname -f 2>/dev/null | sed 1q`
 
 # CHECK FOR THE COMPILERS
+AC_PROG_CC(xlc cc gcc)
+#AX_PROG_CC_MPI()
 
-AC_PROG_CC
+
 # CHECK FOR BYTE ORDERING
 AC_C_BIGENDIAN
 
 AC_PROG_FC
+#AX_PROG_FC_MPI()
+
 AC_LANG_PUSH(Fortran)
 AC_FC_SRCEXT(F90)
 
 AC_FC_FREEFORM()
 AC_FC_LINE_LENGTH(unlimited)
-
 
 # When using a cache file it appears that sometimes ac_ext does not get set
 if test -z "$ac_ext"; then
@@ -185,29 +182,6 @@ AX_FC_VERSION()
 fc_version="$ac_fc_version_output"
 
 
-# CHECK HOW TO NAME MANGLE C FUNCTIONS SO THAT IT CAN BE CALLED FROM FORTRAN
-
-AC_FC_WRAPPERS
-
-case $ac_cv_fc_mangling in
-  "lower case, no underscore, no extra underscore")
-  ;;
-  "lower case, no underscore, extra underscore")
-    CPPDEFS=" $CPPDEFS -DFORTRANDOUBLEUNDERSCORE "
-  ;;
-  "lower case, underscore, no extra underscore")
-    CPPDEFS=" $CPPDEFS -DFORTRANUNDERSCORE "
-  ;;
-  "lower case, underscore, extra underscore")
-    CPPDEFS=" $CPPDEFS -DFORTRANDOUBLEUNDERSCORE "
-  ;;
-  "upper case, no underscore, no extra underscore")
-    CPPDEFS=" $CPPDEFS -DFORTRANCAPS "
-  ;;
-  *)
-  AC_MSG_ERROR( No case for $ac_cv_fc_mangling)
-  ;;
-esac
 
 # CHECK MPI BY DEFAULT
 if test "$USE_MPISERIAL" = "yes"
@@ -233,74 +207,10 @@ else
   CPPDEFS="$CPPDEFS -DSPMD -DHAVE_MPI"
   ACX_MPI()
 fi
+
 AC_LANG_POP(Fortran)
-#
-# determine sizes
-#
-if test -n "$SIZEOF_CHAR"
-then
-  echo "Using SIZEOF_CHAR from environment = $SIZEOF_CHAR"
-else
-  if test -z "$host_alias"
-    then
-      AC_CHECK_SIZEOF([char])
-      SIZEOF_CHAR=$ac_cv_sizeof_char
-    else
-      SIZEOF_CHAR=1
-    fi
-fi
 
-if test -n "$SIZEOF_INT"
-then
-  echo "Using SIZEOF_INT from environment = $SIZEOF_INT"
-else
-  if test -z "$host_alias"
-    then
-      AC_CHECK_SIZEOF([int])
-      SIZEOF_INT=$ac_cv_sizeof_int
-    else
-      SIZEOF_INT=4
-    fi
-fi
 
-if test -n "$SIZEOF_FLOAT"
-then
-  echo "Using SIZEOF_FLOAT from environment = $SIZEOF_FLOAT"
-else
-  if test -z "$host_alias"
-    then
-      AC_CHECK_SIZEOF([float])
-      SIZEOF_FLOAT=$ac_cv_sizeof_float
-    else
-      SIZEOF_FLOAT=4
-    fi
-fi
-
-if test -n "$SIZEOF_DOUBLE"
-then
-  echo "Using SIZEOF_DOUBLE from environment = $SIZEOF_DOUBLE"
-else
-  if test -z "$host_alias"
-    then
-      AC_CHECK_SIZEOF([double])
-      SIZEOF_DOUBLE=$ac_cv_sizeof_double
-    else
-      SIZEOF_DOUBLE=8
-    fi
-fi
-
-if test -n "$SIZEOF_VOID_P"
-then
-  echo "Using SIZEOF_VOID_P from environment = $SIZEOF_VOID_P"
-else
-  if test -z "$host_alias"
-    then
-      AC_CHECK_SIZEOF([void *])
-      SIZEOF_VOID_P=$ac_cv_sizeof_void_p
-    else
-      SIZEOF_VOID_P=8
-    fi
-fi
 
 ###########################################################################
 if test "$FC_USE_SIZEOF" = "default"

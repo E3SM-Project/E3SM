@@ -13,7 +13,7 @@
 #   AR
 
 RM=/bin/rm -f
-FDEPENDS=fdepends.awk
+FDEPENDS=$(SRCDIR)/fdepends.awk
 DEPSUF = .d
 MODSUF = .mod
 CPPSUF = .f90
@@ -103,10 +103,10 @@ depends: $(DEPENDS)
 
 SRCS_CPP=
 .F90.o:
-	$(MPIFC) -c $(FPPDEFS) $(FFLAGS) $(FOPTS) $(INCLUDES) $*.F90
+	$(MPIFC) -c $(FPPDEFS) $(FFLAGS) $(FOPTS) $(INCLUDES) $<
 
 .c.o:
-	$(MPICC) -c $(CPPDEFS) $(CFLAGS) $(COPTS) $(INCLUDES) $*.c
+	$(MPICC) -c $(CPPDEFS) $(CFLAGS) $(COPTS) $(INCLUDES) $<
 
 
 $(TEMPSRCFC): $(TEMPLATE_FC)

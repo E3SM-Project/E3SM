@@ -15,7 +15,7 @@ dnl MPICC/MPICXX/MPIF77 was not found).
 dnl
 dnl If you want to compile everything with MPI, you should set:
 dnl
-dnl     CC="$MPICC" #OR# CXX="$MPICXX" #OR# F77="$MPIF77"
+dnl     CC="$MPICC" #OR# CXX="$MPICXX" #OR# F77="$MPIF77" #OR# FC="$MPIFC"
 dnl     LIBS="$MPILIBS $LIBS"
 dnl
 dnl NOTE: The above assumes that you will use $CC (or whatever) for
@@ -42,7 +42,7 @@ AC_PREREQ(2.50) dnl for AC_LANG_CASE
 AC_LANG_CASE([C], [
 	AC_REQUIRE([AC_PROG_CC])
 	AC_ARG_VAR(MPICC,[MPI C compiler command])
-	AC_CHECK_PROGS(MPICC, mpicc hcc mpxlc_r mpxlc mpcc cmpicc, $CC)
+	AC_CHECK_PROGS(MPICC, mpicc hcc mpxlc_r mpxlc mpcc cmpicc cc, $CC)
 	acx_mpi_save_CC="$CC"
 	CC="$MPICC"
 	AC_SUBST(MPICC)
@@ -50,7 +50,7 @@ AC_LANG_CASE([C], [
 [C++], [
 	AC_REQUIRE([AC_PROG_CXX])
 	AC_ARG_VAR(MPICXX,[MPI C++ compiler command])
-	AC_CHECK_PROGS(MPICXX, mpic++ mpicxx mpiCC hcp mpxlC_r mpxlC mpCC cmpic++, $CXX)
+	AC_CHECK_PROGS(MPICXX, mpic++ mpicxx mpiCC hcp mpxlC_r mpxlC mpCC cmpic++ CC, $CXX)
 	acx_mpi_save_CXX="$CXX"
 	CXX="$MPICXX"
 	AC_SUBST(MPICXX)
@@ -58,7 +58,7 @@ AC_LANG_CASE([C], [
 [Fortran 77], [
 	AC_REQUIRE([AC_PROG_F77])
 	AC_ARG_VAR(MPIF77,[MPI Fortran 77 compiler command])
-	AC_CHECK_PROGS(MPIF77, mpif77 hf77 mpxlf mpf77 mpif90 mpf90 mpxlf90 mpxlf95 mpxlf_r cmpifc cmpif90c, $F77)
+	AC_CHECK_PROGS(MPIF77, ftn mpif77 hf77 mpxlf mpf77 mpif90 mpf90 mpxlf90 mpxlf95 mpxlf_r cmpifc cmpif90c, $F77)
 	acx_mpi_save_F77="$F77"
 	F77="$MPIF77"
 	AC_SUBST(MPIF77)
@@ -66,7 +66,7 @@ AC_LANG_CASE([C], [
 [Fortran], [
 	AC_REQUIRE([AC_PROG_FC])
 	AC_ARG_VAR(MPIFC,[MPI Fortran compiler command])
-	AC_CHECK_PROGS(MPIFC, mpif90 hf90 mpxlf90 mpxlf95 mpf90 cmpifc cmpif90c, $FC)
+	AC_CHECK_PROGS(MPIFC, ftn mpif90 hf90 mpxlf90 mpxlf95 mpf90 cmpifc cmpif90c, $FC)
 	acx_mpi_save_FC="$FC"
 	FC="$MPIFC"
 	AC_SUBST(MPIFC)
