@@ -201,6 +201,7 @@ if test "$USE_MPISERIAL" = "yes"
     MPI_LIB="-L$MPI_PATH -lmpi-serial"
     MPI_INC="-I$MPI_PATH" 
   fi
+  USE_MPIIO="no"
   USE_PNETCDF="no"
   MPIFC=$FC
 else
