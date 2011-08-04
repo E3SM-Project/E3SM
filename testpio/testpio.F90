@@ -8,8 +8,11 @@
 !! @file testpio.F90
 !! An example of how PIO can be used
 !<
+#ifdef AMPI
+subroutine MPI_Main
+#else
 program testpio
-
+#endif
   ! Modules from PIO package that are used by this application
 
   use kinds_mod
@@ -1424,6 +1427,8 @@ contains
 
   end subroutine check_pioerr
   !=============================================================================
-
+#ifdef AMPI
+end subroutine
+#else
 end program testpio
-
+#endif
