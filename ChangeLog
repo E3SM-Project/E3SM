@@ -1,6 +1,64 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_3_5
+Originator(s): Edwards
+Date: 8-4-2011
+One-line Summary: update autoconf and build stuff
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+ Index: testpio/testpio.F90
+ Index: testpio/build_defaults.xml
+	  Add code to use the AMPI compiler from the NCSA CHARM++ project, this 
+	  is not working yet.
+ Index: pio/m4/acx_mpi.m4
+          Updated to work on cray systems with ftn and cc
+ Index: pio/m4/fortran.m4
+          Updated to latest autoconf 
+ Index: pio/alloc_mod.F90.in
+ Index: pio/alloc_mod.F90
+	  Added Debug code
+ Index: pio/pio_msg_callbacks.F90
+	  Added an impicit none statement	
+ Index: pio/Makefile
+ Index: pio/config.h.in
+ Index: pio/Makefile.conf.in
+ Index: pio/configure.ac
+	   Clean up and make configure and build work from other than the source directory
+ Index: pio/pio_types.F90
+	   Added null initialization for start and count variables - this is an F95 feature
+ Index: pio/piolib_mod.F90
+           Fixed some issues in start and count variables of iodesc_t structure.
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+
+
+Code reviewed by:
+
+Summary of pre-tag testing:
+
+  Regression tests: bluefire: 74 tests PASS, 6 tests FAIL(expected)  
+	            edinburgh: 20 pass 2 fail (expected)
+	            lynx : test complete on lynx 74 tests PASS, 6 tests FAIL (expected)
+
+
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_3_2
 Originator(s): Edwards
 Date: 7-24-2011
