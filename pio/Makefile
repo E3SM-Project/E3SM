@@ -42,8 +42,6 @@ SRCS_FC =  pio.F90 \
             pio_msg_mod.F90 \
 	    calcdisplace_mod.F90 \
 	    pio_msg_callbacks.F90 
-            
-           
 
 TEMPLATES_FC = pionfatt_mod.F90.in \
 	        pionfread_mod.F90.in \
@@ -110,7 +108,7 @@ SRCS_CPP=
 
 
 $(TEMPSRCFC): $(TEMPLATE_FC)
-	$(PERL) genf90.pl $@.in > $*.F90
+	$(PERL) $(SRCDIR)/genf90.pl $< > $*.F90
 
 
 
@@ -120,7 +118,7 @@ $(LIB): $(OBJS)
 
 
 predist: predistclean $(TEMPSRCFC)
-     
+
 clean:
 	$(RM) $(LIB) $(OBJS) $(MODFILES) $(DEPENDS) $(SRCS_CPP)
 

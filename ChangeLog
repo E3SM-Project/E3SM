@@ -1,6 +1,43 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_3_6
+Originator(s): Edwards
+Date: 8-4-2011
+One-line Summary: handle genf90.pl correctly
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+  pio/Makefile
+	
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+
+
+Code reviewed by: self
+
+Summary of pre-tag testing: none - testing in cesm1_1_alpha02b
+
+  Regression tests:
+
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_3_5
 Originator(s): Edwards
 Date: 8-4-2011
