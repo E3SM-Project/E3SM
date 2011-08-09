@@ -9,6 +9,8 @@ module calcdecomp
   public :: CalcStartandCount
 
 contains 
+
+
   subroutine CalcStartandCount(basetype,ndims,gdims,numiotasks,iorank,start,kount,numaiotasks)
 
 
@@ -202,7 +204,7 @@ contains
 	  decompose_dim(n) = .false.
        endif
     enddo
-
+    print *,__LINE__,decompose_dim, numaiotasks
     !-------------------------------------------
     ! figure out which is the last decompsed 
     ! dimension this gets treated specially when 
@@ -212,17 +214,16 @@ contains
     do n=1,ndims
        !---------------------------------------------------
        ! calculate the multi-dimensional iotask index (indx)
-       !---------------------------------------------------
-       if(decompose_dim(n)) then 
-          !--------------------------------------------
-          ! if a decompsed dimension calculate the indx
-          !--------------------------------------------
-          per_dim = per_dim*npes_per_dim(n)
-
-          if(iorank < numaiotasks) then 
+       !---------------------------------------------------       
+       if(iorank<numaiotasks) then
+          if(decompose_dim(n)) then 
+             !--------------------------------------------
+             ! if a decompsed dimension calculate the indx
+             !--------------------------------------------
+             per_dim = per_dim*npes_per_dim(n)
              
              start(n) = MOD((per_dim*iorank)/numaiotasks,gdims(n)) + 1
-
+                
              if((start(n)+kount(n)-1) .ne. gdims(n)) then 
                 !-------------------------------------
                 ! looks like the edges need a bit of 
@@ -231,18 +232,17 @@ contains
                 !-------------------------------------
                 kount(n) = gdims(n)-start(n)+1
              endif
-          else
+          else 
+             !---------------------------
+             ! a non-decomposed dimension
+             !---------------------------
              start(n)=1
-             kount(n)=0
-          end if
-          print *,n,per_dim,npes_per_dim(n)
+             kount(n)=gdims(n)
+          endif
        else
-          !---------------------------
-          ! a non-decomposed dimension
-          !---------------------------
           start(n)=1
-          kount(n)=gdims(n)
-       endif
+          kount(n)=0
+       end if
     enddo
 
 
@@ -268,6 +268,7 @@ contains
 
 
   end subroutine CalcStartandCount
+
 
   integer function nextsmaller(current,value) result(res)
     integer :: current, value, rem
