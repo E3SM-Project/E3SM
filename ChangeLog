@@ -1,6 +1,45 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_3_7
+Originator(s): Edwards
+Date: 8-9-2011
+One-line Summary: Update Cacldecomp.F90 
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+   Calcdecomp.F90 was generating bad start and count arrays when
+   gdims(n) was smaller than the number of io tasks.   
+   Algorythm was changed to resolve this and a unit test was added in case
+   of further issues.
+	
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: Jim
+
+Summary of pre-tag testing:
+
+  Regression tests:  bluefire   74 PASS, 6 expected failures
+	             lynx       74 PASS, 6 expected failures
+                     edinburgh  22 PASS, 2 expected failures
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_3_6
 Originator(s): Edwards
 Date: 8-4-2011
