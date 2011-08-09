@@ -1,8 +1,15 @@
 #define __PIO_FILE__ "calcdecomp.F90"
 module calcdecomp
+#ifdef TESTCALCDECOMP
+  integer, parameter :: i4=selected_int_kind(6), &
+       i8=selected_int_kind(13), pio_offset=i8, r8=selected_real_kind(13)
+  logical, parameter :: debug=.false.
+  integer, parameter :: pio_real=1,pio_int=2, pio_double=3
+#else
   use pio_kinds, only: i4, r4,r8,i4,i8, PIO_offset
   use pio_types, only: PIO_int, PIO_real, PIO_double
   use pio_support, only : debug, piodie
+#endif
   implicit none 
 
 
@@ -204,7 +211,7 @@ contains
 	  decompose_dim(n) = .false.
        endif
     enddo
-    print *,__LINE__,decompose_dim, numaiotasks
+
     !-------------------------------------------
     ! figure out which is the last decompsed 
     ! dimension this gets treated specially when 
@@ -222,9 +229,9 @@ contains
              !--------------------------------------------
              per_dim = per_dim*npes_per_dim(n)
              
-             start(n) = MOD((per_dim*iorank)/numaiotasks,gdims(n)) + 1
+             start(n) = MOD((per_dim*iorank)/numaiotasks,gdims(n))*kount(n) + 1
                 
-             if((start(n)+kount(n)-1) .ne. gdims(n)) then 
+             if((start(n)+kount(n)-1) > gdims(n)) then 
                 !-------------------------------------
                 ! looks like the edges need a bit of 
                 ! fixing up so that all values of the 
@@ -249,8 +256,11 @@ contains
     do n=1,ndims
        if((start(n)+ kount(n) -1) > gdims(n)) then
           print *,__FILE__,__LINE__,' start=',start, ' kount=',kount, ' gdims=',gdims, n
-!          call piodie(__PIO_FILE__,__LINE__,'bad start or count')
-!          stop 'bad start or count'
+#ifdef TESTCALCDECOMP
+          stop 'bad start or count'
+#else
+          call piodie(__PIO_FILE__,__LINE__,'bad start or count')
+#endif
        end if
     end do
 
@@ -302,6 +312,31 @@ contains
 
   end function nextlarger
 
-
 end module calcdecomp
 
+#ifdef TESTCALCDECOMP
+program sandctest
+  use calcdecomp
+  implicit none
+  
+  integer, parameter :: ntasks=10, ndims=3
+  integer, parameter :: gdims(ndims) = (/360,240,60/)
+  integer, parameter :: num_io_procs=4
+
+  integer :: psize, n
+
+  integer(kind=pio_offset) :: start(ndims), count(ndims)
+  integer :: iorank, numaiotasks
+
+  do iorank=0,num_io_procs-1
+     call Calcstartandcount(PIO_double, ndims, gdims, num_io_procs, iorank, start, count, numaiotasks)
+
+     psize=1
+     do n=1,ndims
+        psize=psize*count(n)
+     end do
+
+     write(*,'(i2,a,3i5,a,3i5,2i12)') iorank,' start =',start,' count=', count, product(gdims), psize
+
+  end do
+#endif
