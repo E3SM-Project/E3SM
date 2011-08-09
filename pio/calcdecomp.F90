@@ -1,15 +1,15 @@
+#define __PIO_FILE__ "calcdecomp.F90"
 module calcdecomp
   use pio_kinds, only: i4, r4,r8,i4,i8, PIO_offset
   use pio_types, only: PIO_int, PIO_real, PIO_double
-  use pio_support, only : debug
+  use pio_support, only : debug, piodie
   implicit none 
 
 
   public :: CalcStartandCount
 
 contains 
-
-  subroutine CalcStartandCount(basetype,ndims,gdims,numiotasks,iorank,start,count,numaiotasks)
+  subroutine CalcStartandCount(basetype,ndims,gdims,numiotasks,iorank,start,kount,numaiotasks)
 
 
     integer, intent(in) :: basetype 
@@ -18,7 +18,7 @@ contains
     integer, intent(in) :: numiotasks
     integer, intent(in) :: iorank
     integer(kind=PIO_Offset), intent(out) :: start(:)
-    integer(kind=PIO_Offset), intent(out) :: count(:)
+    integer(kind=PIO_Offset), intent(out) :: kount(:)
     integer(i4),intent(out) :: numaiotasks
 
     logical, allocatable :: decompose_dim(:)
@@ -29,7 +29,6 @@ contains
     integer :: it
     integer :: basesize,n
     integer :: idim
-    integer :: totActive
 
     integer, parameter :: stripeSize = 864*1024
     integer :: minbytes = stripeSize-256   ! minimum number of contigous blocks in bytes to put on a IO task
@@ -45,10 +44,6 @@ contains
     integer :: per_dim
     logical :: ltest,ltest0,ltest1
 
-    !    print *,'point #1'
-    !     print *,'gdims: ',gdims
-    !    print *,'basetype: ',basetype
-    !    print *,'PIO_double: ',PIO_double
     select case(basetype)
     case(PIO_int)
        basesize = 4
@@ -62,9 +57,9 @@ contains
     allocate(npes_per_dim(ndims))
     allocate(indx(ndims))
     start=1
-    count=0
+    kount=0
 
-    !    print *,'point #2'
+
     !-----------------------------------------------------
     ! determine which dimensions to potentiall decomposing
     !-----------------------------------------------------
@@ -87,12 +82,12 @@ contains
     enddo
     totalSize=nbytes
     nbytes = basesize
-    count = gdims
+    kount = gdims
     npes_per_dim(:) = 1 
     !    print *,'point #3'
     if(debug) print *,'npes_per_dim: ',npes_per_dim
     n = 1
-    totActive = 1
+    numaiotasks = 1
     finished_block=.false.  ! indicates if we have finished contigous block
     blocksize=-1
     do n=1,ndims
@@ -100,7 +95,7 @@ contains
        if(decompose_dim(n)) then 
 	  nbtmp = maxbytes+1  ! size of contigous block
           it=1 
-	  itmp=totActive      ! total number of active iotasks
+	  itmp=numaiotasks      ! total number of active iotasks
           if(.not. finished_block) then 
              !-------------------------------------
              ! first form a contigous block where: 
@@ -129,7 +124,7 @@ contains
              !---------------------------------------------
              ! total number of iotasks based on this decomp
              !---------------------------------------------
-             itmp = totActive*itmp_pes
+             itmp = numaiotasks*itmp_pes
              !             print *,'itmp_pes: ',itmp_pes
              !	     print *,'itmp: ',itmp
              if(itmp<=numiotasks) then 
@@ -137,8 +132,8 @@ contains
 		! if we have not exceeded our iotask count 
                 ! then set the values for count and npes_per_dim
 		!------------------------------------------------
-	        count(n) = gdims(n)/itmp_pes
-	        nbtmp = nbytes*count(n)
+	        kount(n) = gdims(n)/itmp_pes
+	        nbtmp = nbytes*kount(n)
                 if(debug) then
                    print *,'it: ',it
                    print *,'nbtmp: ',nbtmp
@@ -161,7 +156,7 @@ contains
 		ltest0 = (nbtmp < minbytes)
                 ltest = ((nbtmp > maxbytes) .or. ltest0)
              else
-                if(count(n) == 1) then 
+                if(kount(n) == 1) then 
                    !---------------------------------
 	           ! We can't decompose this dimension 
 	           ! any further so exit.
@@ -188,24 +183,15 @@ contains
           !---------------------------------------------
           ! calculate the number of total active iotasks
           !---------------------------------------------
-          totActive = totActive*npes_per_dim(n)
+          numaiotasks = numaiotasks*npes_per_dim(n)
        else
  	  !------------------------------------
 	  ! this is a non-decomposed dimension
  	  !------------------------------------
 	  nbytes = nbytes*gdims(n)
-          totActive = totActive*npes_per_dim(n)
+          numaiotasks = numaiotasks*npes_per_dim(n)
        endif
     enddo
-    !JMD    if(iorank == 0) then 
-    !JMD       numOPS = NINT(real(totalSize,kind=8)/real(totActive*blocksize,kind=8))
-    !JMD       write(*,101) 'PIO: calcdecomp: IO tasks:= ',totActive,' # of ops:= ', numOPS,' size:= ',blocksize
-    !JMD       write(*,100) 'PIO: calcdecomp: global dimensions: ',gdims
-    !JMD       write(*,*) 'PIO: calcdecomp: decompse dimensions: ',decompose_dim
-    !JMD       write(*,100) 'PIO: calcdecomp: count: ',count
-    !JMD       write(*,100) 'PIO: calcdecomp: start: ',start
-    !JMD    endif
-
 
     !----------------------------------------
     ! correct decompose_dim variable based on
@@ -216,108 +202,65 @@ contains
 	  decompose_dim(n) = .false.
        endif
     enddo
-    !    print *,'point #5'
-    !    stop 'after point #5'
-    !    if(debug) print *,'idim: ',idim
-    !    if(debug) print *,'gdims: ',gdims(:)
-    !    print *,'Dimensions to decompose: ',decompose_dim(:)
-    !    print *,'numiotasks: ',numiotasks
-    !    print *,'npes_per_dim: ',npes_per_dim
-    !    print *,'point #6'
-    !    print *,'Total number of active iotasks: ',totActive
-
-    !    stop 'point #6'
 
     !-------------------------------------------
     ! figure out which is the last decompsed 
     ! dimension this gets treated specially when 
     ! calculating multidimensional iotask index.
     !-------------------------------------------
-    lastdim = -1
-    do n=ndims,1,-1
-       if(decompose_dim(n) .and. lastdim<0) then 
-          lastdim=n
-       endif
-    enddo
-
-    !---------------------------------------------------
-    ! calculate the multi-dimensional iotask index (indx)
-    !---------------------------------------------------
     per_dim=1
     do n=1,ndims
-       if(n == lastdim) then 
-          !-------------------------------
-          ! the last decomposed dimension 
-          !-------------------------------
-          indx(n) = floor(real(iorank,kind=i8)/real(per_dim,kind=i8))+1
-       else
-          !---------------------------------
-          ! Not the last decompsed dimension
-          !---------------------------------
-          if(decompose_dim(n)) then 
-             !--------------------------------------------
-             ! if a decompsed dimension calculate the indx
-             !--------------------------------------------
-             per_dim = per_dim*npes_per_dim(n)
-             indx(n) = MOD(iorank,per_dim) + 1
-          else
-             !---------------------------
-             ! a non-decomposed dimension
-             !---------------------------
-             indx(n)=1
-          endif
-       endif
-    enddo
-    !   print *,'indx: ',indx
-    !   print *,'point #7'
-    !   stop 'point #7'
-    ! Rewrite the number of active IO tasks
+       !---------------------------------------------------
+       ! calculate the multi-dimensional iotask index (indx)
+       !---------------------------------------------------
+       if(decompose_dim(n)) then 
+          !--------------------------------------------
+          ! if a decompsed dimension calculate the indx
+          !--------------------------------------------
+          per_dim = per_dim*npes_per_dim(n)
 
-    ! print *,'totActive: ',totActive
-    !-----------------------------------------
-    ! If I am an active io task then calculate
-    ! the start index and correct the count 
-    ! if necessary
-    !-----------------------------------------
-    if(iorank < totActive) then 
-       do n=1,ndims
-          start(n) = (indx(n)-1)*count(n) + 1
-          !---------------------------------------
-          ! if I am on the edge of all the iotasks
-          ! grid check to make sure that all 
-          ! gridpoints are accounted for.  
-          !---------------------------------------
-          if(indx(n) == npes_per_dim(n)) then 
-             if((start(n)+count(n)-1) .ne. gdims(n)) then 
+          if(iorank < numaiotasks) then 
+             
+             start(n) = MOD((per_dim*iorank)/numaiotasks,gdims(n)) + 1
+
+             if((start(n)+kount(n)-1) .ne. gdims(n)) then 
                 !-------------------------------------
                 ! looks like the edges need a bit of 
                 ! fixing up so that all values of the 
                 ! array are included
                 !-------------------------------------
-                count(n) = gdims(n)-start(n)+1
+                kount(n) = gdims(n)-start(n)+1
              endif
-          endif
-       enddo
-    else 
-       !----------------
-       ! This iotask is
-       ! not active
-       !----------------
-       count=0
-    endif
-    ! stop 'point #8'
-    !    print *,'point #8'
-    !    print *,'iorank: ',iorank,' indx: ',indx
-    !   print *,'count: ',count
-    !  stop 'point #9'
+          else
+             start(n)=1
+             kount(n)=0
+          end if
+          print *,n,per_dim,npes_per_dim(n)
+       else
+          !---------------------------
+          ! a non-decomposed dimension
+          !---------------------------
+          start(n)=1
+          kount(n)=gdims(n)
+       endif
+    enddo
 
-    numaiotasks=totActive
+
+    do n=1,ndims
+       if((start(n)+ kount(n) -1) > gdims(n)) then
+          print *,__FILE__,__LINE__,' start=',start, ' kount=',kount, ' gdims=',gdims, n
+!          call piodie(__PIO_FILE__,__LINE__,'bad start or count')
+!          stop 'bad start or count'
+       end if
+    end do
+
+
     if(debug .and. iorank == 0) then 
-       numOPS = NINT(real(totalSize,kind=8)/real(totActive*blocksize,kind=8))
-       write(*,101) 'PIO: calcdecomp: IO tasks:= ',totActive,' # of ops:= ', numOPS,' size:= ',blocksize
+       numOPS = NINT(real(totalSize,kind=8)/real(numaiotasks*blocksize,kind=8))
+       write(*,101) 'PIO: calcdecomp: IO tasks:= ',numaiotasks,' # of ops:= ', numOPS,' size:= ',blocksize
        write(*,100) 'PIO: calcdecomp: global dimensions: ',gdims
        write(*,*) 'PIO: calcdecomp: decompse dimensions: ',decompose_dim
-       write(*,100) 'PIO: calcdecomp: count: ',count
+       write(*,100) 'PIO: calcdecomp: count: ',kount
        write(*,100) 'PIO: calcdecomp: start: ',start
     endif
 100 format (a,6(i8))
