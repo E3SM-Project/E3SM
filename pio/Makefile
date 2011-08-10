@@ -125,6 +125,10 @@ clean:
 predistclean: clean
 	$(RM) $(TEMPSRCFC)
 
+
+startandcount: calcdecomp.F90
+	$(FC) $(FC_DEFINE)TESTCALCDECOMP $< -o $@
+
 #
 # Automatically generated module dependencies
 #

@@ -3,7 +3,7 @@ module calcdecomp
 #ifdef TESTCALCDECOMP
   integer, parameter :: i4=selected_int_kind(6), &
        i8=selected_int_kind(13), pio_offset=i8, r8=selected_real_kind(13)
-  logical, parameter :: debug=.false.
+  logical, parameter :: debug=.true.
   integer, parameter :: pio_real=1,pio_int=2, pio_double=3
 #else
   use pio_kinds, only: i4, r4,r8,i4,i8, PIO_offset
@@ -42,6 +42,9 @@ contains
     integer, parameter :: stripeSize = 864*1024
     integer :: minbytes = stripeSize-256   ! minimum number of contigous blocks in bytes to put on a IO task
     integer :: maxbytes = stripeSize+256   ! maximum length of contigous block in bytes to put on a IO task
+
+
+
     integer :: maxiter = 20
     integer(kind=PIO_offset) :: nbytes, totalSize
     integer :: numOPS
@@ -192,14 +195,13 @@ contains
           !---------------------------------------------
           ! calculate the number of total active iotasks
           !---------------------------------------------
-          numaiotasks = numaiotasks*npes_per_dim(n)
        else
  	  !------------------------------------
 	  ! this is a non-decomposed dimension
  	  !------------------------------------
 	  nbytes = nbytes*gdims(n)
-          numaiotasks = numaiotasks*npes_per_dim(n)
        endif
+       numaiotasks = numaiotasks*npes_per_dim(n)
     enddo
 
     !----------------------------------------
@@ -231,7 +233,7 @@ contains
              
              start(n) = MOD((per_dim*iorank)/numaiotasks,gdims(n))*kount(n) + 1
                 
-             if((start(n)+kount(n)-1) > gdims(n)) then 
+             if(iorank==numaiotasks-1 .and.  (start(n)+kount(n)-1) /= gdims(n)) then 
                 !-------------------------------------
                 ! looks like the edges need a bit of 
                 ! fixing up so that all values of the 
@@ -239,6 +241,7 @@ contains
                 !-------------------------------------
                 kount(n) = gdims(n)-start(n)+1
              endif
+             
           else 
              !---------------------------
              ! a non-decomposed dimension
@@ -320,8 +323,8 @@ program sandctest
   implicit none
   
   integer, parameter :: ntasks=10, ndims=3
-  integer, parameter :: gdims(ndims) = (/360,240,60/)
-  integer, parameter :: num_io_procs=4
+  integer, parameter :: gdims(ndims) = (/360,240,5/)
+  integer, parameter :: num_io_procs=5
 
   integer :: psize, n
 
@@ -339,4 +342,5 @@ program sandctest
      write(*,'(i2,a,3i5,a,3i5,2i12)') iorank,' start =',start,' count=', count, product(gdims), psize
 
   end do
+end program sandctest
 #endif
