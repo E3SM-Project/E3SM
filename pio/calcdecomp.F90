@@ -1,6 +1,7 @@
 #define __PIO_FILE__ "calcdecomp.F90"
 module calcdecomp
 #ifdef TESTCALCDECOMP
+  implicit none 
   integer, parameter :: i4=selected_int_kind(6), &
        i8=selected_int_kind(13), pio_offset=i8, r8=selected_real_kind(13)
   logical, parameter :: debug=.false.
@@ -9,8 +10,9 @@ module calcdecomp
   use pio_kinds, only: i4, r4,r8,i4,i8, PIO_offset
   use pio_types, only: PIO_int, PIO_real, PIO_double
   use pio_support, only : debug, piodie
-#endif
   implicit none 
+#endif
+
 
 
   public :: CalcStartandCount
