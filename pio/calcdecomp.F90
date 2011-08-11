@@ -53,7 +53,7 @@ contains
     integer :: itmp,itmp_pes
     logical :: firstdim
     integer :: lastdim
-    integer :: per_dim
+    integer :: per_dim, rem
     logical :: ltest,ltest0,ltest1
 
     select case(basetype)
@@ -154,7 +154,7 @@ contains
                    print *,'' 
                 end if
                 npes_per_dim(n)=itmp_pes
-                !                print *,'npes_per_dim: ',npes_per_dim(n)
+!                               print *,'npes_per_dim: ',npes_per_dim(n)
              endif
 	     !----------------------------
              ! increment iteration counter
@@ -231,25 +231,12 @@ contains
              !--------------------------------------------
              per_dim = per_dim*npes_per_dim(n)
              
-             start(n) = MOD((per_dim*iorank)/numaiotasks*int(kount(n)),gdims(n)) + 1
-                
-             if((iorank==numaiotasks-1 .and.  (start(n)+kount(n)-1) /= gdims(n))) then 
-                !-------------------------------------
-                ! looks like the edges need a bit of 
-                ! fixing up so that all values of the 
-                ! array are included
-                !-------------------------------------
-                kount(n) = gdims(n)-start(n)+1
-             else if(start(n)==gdims(n) .and. kount(n)>1) then
-                !----------------------------------
-                ! Another edge condition to
-                ! fix
-                !----------------------------------
-                start(n)=1
-             else if(start(n)+kount(n)-1 > gdims(n)) then 
-                kount(n) = gdims(n)-start(n)+1
-             endif
-             
+             start(n) = MOD(iorank,npes_per_dim(n))*kount(n)+1
+             rem = gdims(n) - kount(n)*(mod(iorank, npes_per_dim(n))+1)
+             if(rem>0 .and. rem < kount(n)) then
+                kount(n)=kount(n)+1
+             end if
+
           else 
              !---------------------------
              ! a non-decomposed dimension
@@ -331,8 +318,8 @@ program sandctest
   use calcdecomp
   implicit none
   
-  integer, parameter :: ntasks=10, ndims=3
-  integer, parameter :: gdims(ndims) = (/576,384,17/)
+  integer, parameter :: ntasks=10, ndims=4
+  integer, parameter :: gdims(ndims) = (/576,384,2,2/)
   integer, parameter :: num_io_procs=9
 
   integer :: psize, n
