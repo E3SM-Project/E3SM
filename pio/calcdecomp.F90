@@ -233,7 +233,8 @@ contains
              
              start(n) = MOD((per_dim*iorank)/numaiotasks*int(kount(n)),gdims(n)) + 1
                 
-             if(iorank==numaiotasks-1 .and.  (start(n)+kount(n)-1) /= gdims(n)) then 
+             if((iorank==numaiotasks-1 .and.  (start(n)+kount(n)-1) /= gdims(n)) .or. &
+                  (start(n)+kount(n)-1)>gdims(n)) then 
                 !-------------------------------------
                 ! looks like the edges need a bit of 
                 ! fixing up so that all values of the 
@@ -324,8 +325,8 @@ program sandctest
   implicit none
   
   integer, parameter :: ntasks=10, ndims=3
-  integer, parameter :: gdims(ndims) = (/576,384,15/)
-  integer, parameter :: num_io_procs=15
+  integer, parameter :: gdims(ndims) = (/576,384,17/)
+  integer, parameter :: num_io_procs=9
 
   integer :: psize, n
 
@@ -339,9 +340,11 @@ program sandctest
      do n=1,ndims
         psize=psize*count(n)
      end do
-
-     write(*,'(i2,a,3i5,a,3i5,2i12)') iorank,' start =',start,' count=', count, product(gdims), psize
-
+     if(ndims==3) then
+        write(*,'(i2,a,3i5,a,3i5,2i12)') iorank,' start =',start,' count=', count, product(gdims), psize
+     else if(ndims==4) then
+        write(*,'(i2,a,4i5,a,4i5,2i12)') iorank,' start =',start,' count=', count, product(gdims), psize
+     end if
   end do
 end program sandctest
 #endif
