@@ -3,7 +3,7 @@ module calcdecomp
 #ifdef TESTCALCDECOMP
   integer, parameter :: i4=selected_int_kind(6), &
        i8=selected_int_kind(13), pio_offset=i8, r8=selected_real_kind(13)
-  logical, parameter :: debug=.true.
+  logical, parameter :: debug=.false.
   integer, parameter :: pio_real=1,pio_int=2, pio_double=3
 #else
   use pio_kinds, only: i4, r4,r8,i4,i8, PIO_offset
@@ -231,7 +231,7 @@ contains
              !--------------------------------------------
              per_dim = per_dim*npes_per_dim(n)
              
-             start(n) = MOD((per_dim*iorank)/numaiotasks,gdims(n))*kount(n) + 1
+             start(n) = MOD((per_dim*iorank)/numaiotasks*int(kount(n)),gdims(n)) + 1
                 
              if(iorank==numaiotasks-1 .and.  (start(n)+kount(n)-1) /= gdims(n)) then 
                 !-------------------------------------
@@ -258,7 +258,8 @@ contains
 
     do n=1,ndims
        if((start(n)+ kount(n) -1) > gdims(n)) then
-          print *,__FILE__,__LINE__,' start=',start, ' kount=',kount, ' gdims=',gdims, n
+          print *,__FILE__,__LINE__,' start=',start, ' kount=',kount, ' gdims=',gdims, ' numaiotasks ',&
+               numaiotasks, ' npes_per_dim ',npes_per_dim
 #ifdef TESTCALCDECOMP
           stop 'bad start or count'
 #else
@@ -323,8 +324,8 @@ program sandctest
   implicit none
   
   integer, parameter :: ntasks=10, ndims=3
-  integer, parameter :: gdims(ndims) = (/360,240,5/)
-  integer, parameter :: num_io_procs=5
+  integer, parameter :: gdims(ndims) = (/576,384,15/)
+  integer, parameter :: num_io_procs=15
 
   integer :: psize, n
 
