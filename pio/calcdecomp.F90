@@ -233,14 +233,19 @@ contains
              
              start(n) = MOD((per_dim*iorank)/numaiotasks*int(kount(n)),gdims(n)) + 1
                 
-             if((iorank==numaiotasks-1 .and.  (start(n)+kount(n)-1) /= gdims(n)) .or. &
-                  (start(n)+kount(n)-1)>gdims(n)) then 
+             if((iorank==numaiotasks-1 .and.  (start(n)+kount(n)-1) /= gdims(n))) then 
                 !-------------------------------------
                 ! looks like the edges need a bit of 
                 ! fixing up so that all values of the 
                 ! array are included
                 !-------------------------------------
                 kount(n) = gdims(n)-start(n)+1
+             else if(start(n)==gdims(n) .and. kount(n)>1) then
+                !----------------------------------
+                ! Another edge condition to
+                ! fix
+                !----------------------------------
+                start(n)=1
              endif
              
           else 
