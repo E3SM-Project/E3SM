@@ -246,6 +246,8 @@ contains
                 ! fix
                 !----------------------------------
                 start(n)=1
+             else if(start(n)+kount(n)-1 > gdims(n)) then 
+                kount(n) = gdims(n)-start(n)+1
              endif
              
           else 
