@@ -119,13 +119,15 @@ contains
 
     do while(tsize>maxblocksize .and. i>0)
        myiocnt=iocnt
-       if(extent(i)<myiocnt) then
-          dims(i)=max(2,gcd(extent(i),myiocnt))
-          myiocnt=max(2,myiocnt/dims(i))
-       else
-          dims(i)=iocnt/product(dims(i:ndims))
-       endif
-       tsize=product(extent)/product(dims)
+       if(extent(i)>1) then
+          if(extent(i)<myiocnt) then
+             dims(i)=max(2,gcd(extent(i),myiocnt))
+             myiocnt=max(2,myiocnt/dims(i))
+          else
+             dims(i)=iocnt/product(dims(i:ndims))
+          endif
+          tsize=product(extent)/product(dims)
+       end if
        !        print *,i,tsize,myiocnt,dims(i)
        i=i-1
     end do
@@ -183,7 +185,7 @@ program sandctest
 !  integer, parameter :: ndims=4
 !  integer, parameter :: gdims(ndims) = (/576,384,2,7/)
   integer, parameter :: ndims=3
-  integer, parameter :: gdims(ndims) = (/576,384,26/)
+  integer, parameter :: gdims(ndims) = (/576,384,1/)
   integer, parameter :: num_io_procs=12
 
   integer :: psize, n
