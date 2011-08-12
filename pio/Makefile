@@ -127,7 +127,7 @@ predistclean: clean
 
 
 startandcount: calcdecomp.F90
-	$(FC) $(FC_DEFINE)TESTCALCDECOMP $< -o $@
+	$(FC) $(FC_DEFINE)TESTCALCDECOMP $(FFLAGS) $< -o $@
 
 #
 # Automatically generated module dependencies

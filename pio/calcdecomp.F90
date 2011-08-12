@@ -14,13 +14,202 @@ module calcdecomp
 #endif
 
 
-
+#define REALLYOLD
   public :: CalcStartandCount
 
 contains 
+#ifdef REALLYOLD
+subroutine CalcStartandCount(basetype, ndims, gdims, num_io_procs, iorank, start, count, use_io_procs)
+    integer(i4), intent(in) :: ndims, num_io_procs, iorank, basetype
+    integer(i4), intent(in) :: gdims(ndims)
+    integer(kind=PIO_OFFSET), intent(out) :: start(ndims), count(ndims)
+    integer, intent(out) :: use_io_procs
+    integer :: i, p, dims(ndims), lb, ub, inc
+    integer :: extras, subrank
+
+    integer, parameter :: stripeSize = 864*1024
+    integer :: minbytes = stripeSize-256   ! minimum number of contigous blocks in bytes to put on a IO task
+    integer :: maxbytes = stripeSize+256   ! maximum length of contigous block in bytes to put on a IO task
+
+    integer :: minblocksize, basesize, maxiosize
 
 
-  subroutine CalcStartandCount(basetype,ndims,gdims,numiotasks,iorank,start,kount,numaiotasks)
+    select case(basetype)
+    case(PIO_int)
+       basesize = 4
+    case(PIO_real)
+       basesize = 4 
+    case(PIO_double)
+       basesize = 8
+    end select
+
+    minblocksize = minbytes/basesize
+
+    p=1
+    do i=1,ndims
+       p=p*gdims(i)
+    end do
+    use_io_procs = num_io_procs
+    do while(p/minblocksize < use_io_procs .and. use_io_procs>1)
+       use_io_procs=use_io_procs-1
+    end do
+    start(:)=1
+    count(:)=0
+    if(iorank>=use_io_procs) return 
+
+    dims(:) = 0
+
+    call outerdimfirst(use_io_procs, ndims, gdims,  minblocksize, maxbytes/basesize, dims)
+    lb=1
+    ub=ndims
+    inc=1
+
+!    print *,__LINE__,dims
+
+    count(:)=gdims(:)
+    p=1
+    maxiosize = 1
+    do i=lb,ub,inc
+       p=p*dims(i)
+       if(dims(i)>1) then
+          count(i)=gdims(i)/dims(i)
+          subrank = (p*iorank)/use_io_procs
+
+          start(i)= mod(count(i)*subrank ,count(i)*dims(i)) +1
+          
+          extras = gdims(i)-count(i)*dims(i)
+ 
+! We return the maxio size so that buffers for serial netcdf are always big enough
+          if(extras>0) then
+             maxiosize=maxiosize*(count(i)+1)
+          else
+             maxiosize=maxiosize*count(i)
+          end if
+!
+! We couldnt divide into equally sized domains, we have extras
+! So we add those to some of the io tasks
+!           
+          if(extras>0 .and. subrank >= p-extras) then
+             start(i)=start(i)+ (subrank+extras-p) 
+             count(i)=count(i)+1
+          end if
+       else
+          maxiosize=maxiosize*count(i)
+       end if
+
+    end do
+
+  end subroutine Calcstartandcount
+
+ subroutine outerdimfirst(iocnt,ndims,extent,minblocksize,maxblocksize,dims)
+     implicit none
+     integer, intent(in) :: iocnt,ndims
+     integer, intent(in) :: extent(ndims),minblocksize,maxblocksize
+     integer, intent(out) :: dims(ndims)
+
+     integer :: sub(0:ndims)
+     integer :: lextent(ndims)
+     integer :: i, p, j(1), k, tsize, myiocnt
+     logical :: done
+
+     tsize = product(extent)
+     dims = 1
+     
+     myiocnt=iocnt
+
+     i=ndims
+
+     do while(tsize>maxblocksize .and. i>0)
+        myiocnt=iocnt
+        if(extent(i)<myiocnt) then
+           dims(i)=max(2,gcd(extent(i),myiocnt))
+           myiocnt=max(2,myiocnt/dims(i))
+        else
+           dims(i)=iocnt/product(dims(i:ndims))
+       endif
+        tsize=product(extent)/product(dims)
+!        print *,i,tsize,myiocnt,dims(i)
+        i=i-1
+     end do
+
+!     print *, __LINE__,i,iocnt,myiocnt,tsize,maxblocksize,minblocksize, dims
+!     stop
+return
+
+     
+     done = .false.
+     lextent(:)=extent(:)
+     sub(ndims)=iocnt
+     dims=1
+     k=1
+     do while(.not. done)
+        p=1
+        k=k+1
+        do i=ndims,1,-1
+           dims(i) = gcd(lextent(i),sub(i))
+           p=p*dims(i)
+           sub(i-1)=sub(i)/dims(i)
+           if(p>=iocnt) exit
+        end do
+        if(i==0) then
+           j = maxloc(lextent)
+           lextent(j(1))=lextent(j(1))-1        
+        else
+          done=.true.
+        end if
+        if(k>100 .or. minval(lextent)< 1) then
+#ifndef TESTCALCDECOMP           
+           call piodie( _FILE_,__LINE__, &
+                   'OuterDimFirst: Failed to converge')
+#else
+           stop    'OuterDimFirst: Failed to converge'
+#endif
+        end if
+
+     end do
+
+   end subroutine outerdimfirst
+ recursive function gcd( a, b ) result( divisor )
+
+      ! Note that the function itself is not declared when the result
+      ! variable is present.  The type of the function is the type of 
+      ! the result variable.  Thus, only the result variable may be 
+      ! declared. 
+
+      integer divisor
+      integer, intent(in) :: a, b
+
+      integer m, n
+
+      ! Multiple statements may be written on a single source line
+      ! provided they are delimited with semicolons.
+
+      m = abs(a); n = abs(b)
+      if ( m > n ) call swap( m, n )  ! Insure that m <= n.
+
+      ! When the function invokes itself recursively, the result variable
+      ! should be used to store the result of the function.  The function
+      ! name is used to invoke the function.  Thus, the function name should
+      ! not appear on the left-hand side of an assignment statement.
+
+      if ( m == 0 ) then 
+         divisor = n
+      else
+         divisor = gcd( mod( n, m ), m )
+      end if
+
+   end function gcd
+   subroutine swap( x, y )
+     integer, intent(inout) :: x, y
+     
+     integer tmp
+
+     tmp = x; x = y; y = tmp 
+   end subroutine swap
+
+
+#else
+subroutine CalcStartandCount(basetype,ndims,gdims,numiotasks,iorank,start,kount,numaiotasks)
 
 
     integer, intent(in) :: basetype 
@@ -40,13 +229,11 @@ contains
     integer :: it
     integer :: basesize,n
     integer :: idim
+    integer :: totActive
 
     integer, parameter :: stripeSize = 864*1024
     integer :: minbytes = stripeSize-256   ! minimum number of contigous blocks in bytes to put on a IO task
     integer :: maxbytes = stripeSize+256   ! maximum length of contigous block in bytes to put on a IO task
-
-
-
     integer :: maxiter = 20
     integer(kind=PIO_offset) :: nbytes, totalSize
     integer :: numOPS
@@ -58,6 +245,10 @@ contains
     integer :: per_dim, rem
     logical :: ltest,ltest0,ltest1
 
+    !    print *,'point #1'
+    !     print *,'gdims: ',gdims
+    !    print *,'basetype: ',basetype
+    !    print *,'PIO_double: ',PIO_double
     select case(basetype)
     case(PIO_int)
        basesize = 4
@@ -73,7 +264,7 @@ contains
     start=1
     kount=0
 
-
+    !    print *,'point #2'
     !-----------------------------------------------------
     ! determine which dimensions to potentiall decomposing
     !-----------------------------------------------------
@@ -95,13 +286,55 @@ contains
        endif
     enddo
     totalSize=nbytes
+    npes_per_dim=1
+!    print *,totalsize,totalsize/minbytes,totalsize/maxbytes
+    numaiotasks=min(numiotasks,totalsize/minbytes)
+
+    do n=ndims,1,-1
+       nbytes = nbytes/min(gdims(n),numaiotasks)
+       if(nbytes>maxbytes) then
+          npes_per_dim(n)=min(gdims(n),numaiotasks)
+       else if(nbytes<minbytes) then
+          itmp=1
+          do while(nbytes<minbytes .and. itmp<min(numaiotasks,gdims(n)))
+             nbytes = nbytes*2
+             itmp=itmp+1
+          end do
+          npes_per_dim(n)=itmp
+          exit
+       end if
+       if(npes_per_dim(n)>=numaiotasks) exit
+    end do
+    per_dim=1
+    do n=ndims,1,-1
+       per_dim=per_dim*gdims(n)
+       if(npes_per_dim(n)>1) then
+          kount(n) = gdims(n)/npes_per_dim(n)
+
+          start(n) = kount(n)*MOD(iorank,npes_per_dim(n)) + 1
+          rem = gdims(n)-kount(n)*npes_per_dim(n)
+          print *,' rem = ',rem
+          if(rem>0) then
+             kount(n)=kount(n)+1
+             start(n)=start(n)+ (iorank+rem-per_dim)
+          end if
+       else
+          start(n) = 1
+          kount(n) = gdims(n)   
+       end if
+    end do
+!    print *,start,kount
+
+#ifdef DOTHIS
+
+
     nbytes = basesize
     kount = gdims
     npes_per_dim(:) = 1 
     !    print *,'point #3'
     if(debug) print *,'npes_per_dim: ',npes_per_dim
     n = 1
-    numaiotasks = 1
+    totActive = 1
     finished_block=.false.  ! indicates if we have finished contigous block
     blocksize=-1
     do n=1,ndims
@@ -109,7 +342,7 @@ contains
        if(decompose_dim(n)) then 
 	  nbtmp = maxbytes+1  ! size of contigous block
           it=1 
-	  itmp=numaiotasks      ! total number of active iotasks
+	  itmp=totActive      ! total number of active iotasks
           if(.not. finished_block) then 
              !-------------------------------------
              ! first form a contigous block where: 
@@ -138,7 +371,7 @@ contains
              !---------------------------------------------
              ! total number of iotasks based on this decomp
              !---------------------------------------------
-             itmp = numaiotasks*itmp_pes
+             itmp = totActive*itmp_pes
              !             print *,'itmp_pes: ',itmp_pes
              !	     print *,'itmp: ',itmp
              if(itmp<=numiotasks) then 
@@ -156,7 +389,7 @@ contains
                    print *,'' 
                 end if
                 npes_per_dim(n)=itmp_pes
-!                               print *,'npes_per_dim: ',npes_per_dim(n)
+                !                print *,'npes_per_dim: ',npes_per_dim(n)
              endif
 	     !----------------------------
              ! increment iteration counter
@@ -197,14 +430,24 @@ contains
           !---------------------------------------------
           ! calculate the number of total active iotasks
           !---------------------------------------------
+          totActive = totActive*npes_per_dim(n)
        else
  	  !------------------------------------
 	  ! this is a non-decomposed dimension
  	  !------------------------------------
 	  nbytes = nbytes*gdims(n)
+          totActive = totActive*npes_per_dim(n)
        endif
-       numaiotasks = numaiotasks*npes_per_dim(n)
     enddo
+    !JMD    if(iorank == 0) then 
+    !JMD       numOPS = NINT(real(totalSize,kind=8)/real(totActive*blocksize,kind=8))
+    !JMD       write(*,101) 'PIO: calcdecomp: IO tasks:= ',totActive,' # of ops:= ', numOPS,' size:= ',blocksize
+    !JMD       write(*,100) 'PIO: calcdecomp: global dimensions: ',gdims
+    !JMD       write(*,*) 'PIO: calcdecomp: decompse dimensions: ',decompose_dim
+    !JMD       write(*,100) 'PIO: calcdecomp: count: ',kount
+    !JMD       write(*,100) 'PIO: calcdecomp: start: ',start
+    !JMD    endif
+
 
     !----------------------------------------
     ! correct decompose_dim variable based on
@@ -215,60 +458,107 @@ contains
 	  decompose_dim(n) = .false.
        endif
     enddo
+    !    print *,'point #5'
+    !    stop 'after point #5'
+    !    if(debug) print *,'idim: ',idim
+    !    if(debug) print *,'gdims: ',gdims(:)
+    !    print *,'Dimensions to decompose: ',decompose_dim(:)
+    !    print *,'numiotasks: ',numiotasks
+    !    print *,'npes_per_dim: ',npes_per_dim
+    !    print *,'point #6'
+    !    print *,'Total number of active iotasks: ',totActive
+
+    !    stop 'point #6'
 
     !-------------------------------------------
     ! figure out which is the last decompsed 
     ! dimension this gets treated specially when 
     ! calculating multidimensional iotask index.
     !-------------------------------------------
+    lastdim = -1
+    do n=ndims,1,-1
+       if(decompose_dim(n) .and. lastdim<0) then 
+          lastdim=n
+       endif
+    enddo
+
+    !---------------------------------------------------
+    ! calculate the multi-dimensional iotask index (indx)
+    !---------------------------------------------------
     per_dim=1
-    do n=1,ndims
-       !---------------------------------------------------
-       ! calculate the multi-dimensional iotask index (indx)
-       !---------------------------------------------------       
-       if(iorank<numaiotasks) then
+    do n=ndims,1,-1
+!       if(n == lastdim) then 
+          !-------------------------------
+          ! the last decomposed dimension 
+          !-------------------------------
+!          indx(n) = floor(real(iorank,kind=i8)/real(per_dim,kind=i8))+1
+!       else
+          !---------------------------------
+          ! Not the last decompsed dimension
+          !---------------------------------
           if(decompose_dim(n)) then 
              !--------------------------------------------
              ! if a decompsed dimension calculate the indx
              !--------------------------------------------
              per_dim = per_dim*npes_per_dim(n)
-             
-             start(n) = MOD(iorank,npes_per_dim(n))*kount(n)+1
-             rem = gdims(n) - kount(n)*(mod(iorank, npes_per_dim(n))+1)
-             if(rem>0 .and. rem < kount(n)) then
-                kount(n)=kount(n)+1
-             end if
-
-          else 
+!             indx(n) = MOD(iorank,per_dim) + 1
+             indx(n) = (iorank*per_dim)/totactive + 1
+             print *,__LINE__,n,indx(n), per_dim, iorank/(totactive)/per_dim
+          else
              !---------------------------
              ! a non-decomposed dimension
              !---------------------------
-             start(n)=1
-             kount(n)=gdims(n)
-          endif
-       else
-          start(n)=1
-          kount(n)=0
-       end if
+             indx(n)=1
+!          endif
+       endif
     enddo
+    !   print *,'indx: ',indx
+    !   print *,'point #7'
+    !   stop 'point #7'
+    ! Rewrite the number of active IO tasks
 
+    ! print *,'totActive: ',totActive
+    !-----------------------------------------
+    ! If I am an active io task then calculate
+    ! the start index and correct the count 
+    ! if necessary
+    !-----------------------------------------
+    if(iorank < totActive) then 
+       do n=1,ndims
+          start(n) = (indx(n)-1)*kount(n) + 1
+          !---------------------------------------
+          ! if I am on the edge of all the iotasks
+          ! grid check to make sure that all 
+          ! gridpoints are accounted for.  
+          !---------------------------------------
+          if(indx(n) == npes_per_dim(n)) then 
+             if((start(n)+kount(n)-1) .ne. gdims(n)) then 
+                !-------------------------------------
+                ! looks like the edges need a bit of 
+                ! fixing up so that all values of the 
+                ! array are included
+                !-------------------------------------
+                kount(n) = gdims(n)-start(n)+1
+             endif
+          endif
+       enddo
+    else 
+       !----------------
+       ! This iotask is
+       ! not active
+       !----------------
+       kount=0
+    endif
+    ! stop 'point #8'
+    !    print *,'point #8'
+    !    print *,'iorank: ',iorank,' indx: ',indx
+    !   print *,'count: ',kount
+    !  stop 'point #9'
 
-    do n=1,ndims
-       if((start(n)+ kount(n) -1) > gdims(n)) then
-          print *,__FILE__,__LINE__,' start=',start, ' kount=',kount, ' gdims=',gdims, ' numaiotasks ',&
-               numaiotasks, ' npes_per_dim ',npes_per_dim
-#ifdef TESTCALCDECOMP
-          stop 'bad start or count'
-#else
-          call piodie(__PIO_FILE__,__LINE__,'bad start or count')
-#endif
-       end if
-    end do
-
-
+    numaiotasks=totActive
     if(debug .and. iorank == 0) then 
-       numOPS = NINT(real(totalSize,kind=8)/real(numaiotasks*blocksize,kind=8))
-       write(*,101) 'PIO: calcdecomp: IO tasks:= ',numaiotasks,' # of ops:= ', numOPS,' size:= ',blocksize
+       numOPS = NINT(real(totalSize,kind=8)/real(totActive*blocksize,kind=8))
+       write(*,101) 'PIO: calcdecomp: IO tasks:= ',totActive,' # of ops:= ', numOPS,' size:= ',blocksize
        write(*,100) 'PIO: calcdecomp: global dimensions: ',gdims
        write(*,*) 'PIO: calcdecomp: decompse dimensions: ',decompose_dim
        write(*,100) 'PIO: calcdecomp: count: ',kount
@@ -277,9 +567,8 @@ contains
 100 format (a,6(i8))
 101 format (a,i4,a,i5,a,i10)
 
-
+#endif
   end subroutine CalcStartandCount
-
 
   integer function nextsmaller(current,value) result(res)
     integer :: current, value, rem
@@ -312,7 +601,7 @@ contains
     !  stop 'end of nextlarger'
 
   end function nextlarger
-
+#endif
 end module calcdecomp
 
 #ifdef TESTCALCDECOMP
@@ -320,9 +609,11 @@ program sandctest
   use calcdecomp
   implicit none
   
-  integer, parameter :: ntasks=10, ndims=4
-  integer, parameter :: gdims(ndims) = (/576,384,2,2/)
-  integer, parameter :: num_io_procs=9
+!  integer, parameter :: ndims=4
+!  integer, parameter :: gdims(ndims) = (/576,384,2,7/)
+  integer, parameter :: ndims=3
+  integer, parameter :: gdims(ndims) = (/576,384,26/)
+  integer, parameter :: num_io_procs=12
 
   integer :: psize, n
 
