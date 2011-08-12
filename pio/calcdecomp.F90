@@ -17,10 +17,10 @@ module calcdecomp
 
 contains 
 
-  subroutine CalcStartandCount(basetype, ndims, gdims, num_io_procs, iorank, start, count, use_io_procs)
+  subroutine CalcStartandCount(basetype, ndims, gdims, num_io_procs, iorank, start, kount, use_io_procs)
     integer(i4), intent(in) :: ndims, num_io_procs, iorank, basetype
     integer(i4), intent(in) :: gdims(ndims)
-    integer(kind=PIO_OFFSET), intent(out) :: start(ndims), count(ndims)
+    integer(kind=PIO_OFFSET), intent(out) :: start(ndims), kount(ndims)
     integer, intent(out) :: use_io_procs
     integer :: i, p, dims(ndims), lb, ub, inc
     integer :: extras, subrank
@@ -52,7 +52,7 @@ contains
        use_io_procs=use_io_procs-1
     end do
     start(:)=1
-    count(:)=0
+    kount(:)=0
     if(iorank>=use_io_procs) return 
 
     dims(:) = 0
@@ -64,35 +64,35 @@ contains
 
     !    print *,__LINE__,dims
 
-    count(:)=gdims(:)
+    kount(:)=gdims(:)
     p=1
     maxiosize = 1
     do i=lb,ub,inc
        p=p*dims(i)
        if(dims(i)>1) then
-          count(i)=gdims(i)/dims(i)
+          kount(i)=gdims(i)/dims(i)
           subrank = (p*iorank)/use_io_procs
 
-          start(i)= mod(count(i)*subrank ,count(i)*dims(i)) +1
+          start(i)= mod(kount(i)*subrank ,kount(i)*dims(i)) +1
 
-          extras = gdims(i)-count(i)*dims(i)
+          extras = gdims(i)-kount(i)*dims(i)
 
           ! We return the maxio size so that buffers for serial netcdf are always big enough
-          if(extras>0) then
-             maxiosize=maxiosize*(count(i)+1)
-          else
-             maxiosize=maxiosize*count(i)
-          end if
+!          if(extras>0) then
+!             maxiosize=maxiosize*(kount(i)+1)
+!          else
+!             maxiosize=maxiosize*kount(i)
+!          end if
           !
           ! We couldnt divide into equally sized domains, we have extras
           ! So we add those to some of the io tasks
           !           
           if(extras>0 .and. subrank >= p-extras) then
              start(i)=start(i)+ (subrank+extras-p) 
-             count(i)=count(i)+1
+             kount(i)=kount(i)+1
           end if
-       else
-          maxiosize=maxiosize*count(i)
+!       else
+!          maxiosize=maxiosize*kount(i)
        end if
 
     end do
