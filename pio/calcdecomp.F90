@@ -47,10 +47,8 @@ contains
     do i=1,ndims
        p=p*gdims(i)
     end do
-    use_io_procs = num_io_procs
-    do while(p/minblocksize < use_io_procs .and. use_io_procs>1)
-       use_io_procs=use_io_procs-1
-    end do
+    use_io_procs = max(1,min(ceiling(real(p)/real(minblocksize)),num_io_procs))
+
     start(:)=1
     kount(:)=0
     if(iorank>=use_io_procs) return 
@@ -58,44 +56,42 @@ contains
     dims(:) = 0
 
     call outerdimfirst(use_io_procs, ndims, gdims,  minblocksize, maxbytes/basesize, dims)
-    lb=1
-    ub=ndims
-    inc=1
 
     !    print *,__LINE__,dims
 
     kount(:)=gdims(:)
     p=1
     maxiosize = 1
-    do i=lb,ub,inc
+    do i=1,ndims
        p=p*dims(i)
        if(dims(i)>1) then
           kount(i)=gdims(i)/dims(i)
-          subrank = (p*iorank)/use_io_procs
+          subrank = (p*iorank+1)/use_io_procs
 
           start(i)= mod(kount(i)*subrank ,kount(i)*dims(i)) +1
 
           extras = gdims(i)-kount(i)*dims(i)
 
           ! We return the maxio size so that buffers for serial netcdf are always big enough
-!          if(extras>0) then
-!             maxiosize=maxiosize*(kount(i)+1)
-!          else
-!             maxiosize=maxiosize*kount(i)
-!          end if
           !
           ! We couldnt divide into equally sized domains, we have extras
           ! So we add those to some of the io tasks
-          !           
+          !
+	  if(i==4) print *, iorank,extras,subrank,p,use_io_procs           
           if(extras>0 .and. subrank >= p-extras) then
              start(i)=start(i)+ (subrank+extras-p) 
              kount(i)=kount(i)+1
           end if
-!       else
-!          maxiosize=maxiosize*kount(i)
-       end if
+          
+          if(mod(kount(i)*(p*(iorank+1)/use_io_procs),kount(i)*dims(i))+1<start(i)) then
+             kount(i) = gdims(i)-start(i)+1
+          end if
+               
 
+       end if
     end do
+
+    
 
   end subroutine Calcstartandcount
 
@@ -183,10 +179,10 @@ program sandctest
   implicit none
   
 !  integer, parameter :: ndims=4
-!  integer, parameter :: gdims(ndims) = (/576,384,2,7/)
+!  integer, parameter :: gdims(ndims) = (/144,96,30,3/)
   integer, parameter :: ndims=3
   integer, parameter :: gdims(ndims) = (/576,384,1/)
-  integer, parameter :: num_io_procs=12
+  integer, parameter :: num_io_procs=16
 
   integer :: psize, n
 
