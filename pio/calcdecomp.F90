@@ -50,6 +50,8 @@ contains
 
     p=product(gdims)
     use_io_procs = max(1, min(int(real(p)/real(minblocksize)+0.5),num_io_procs))
+! Handle this case here, and make things easier below
+    if(use_io_procs-gdims(ndims)==1) use_io_procs=use_io_procs-1
 
 !    print *,p,use_io_procs
 
@@ -115,7 +117,7 @@ program sandctest
 !  integer, parameter :: gdims(ndims) = (/12,93,100,2/)
 !  integer, parameter :: ndims=3
 !  integer, parameter :: gdims(ndims) = (/12,95,97/)
-  integer, parameter :: num_io_procs=17
+  integer, parameter :: num_io_procs=5
   integer :: gdims(ndims)
   integer :: psize, n, i,j,k,m
   integer, parameter :: imax=100,jmax=100,kmax=100,mmax=100
