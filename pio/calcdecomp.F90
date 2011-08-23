@@ -49,7 +49,9 @@ contains
     minblocksize = minbytes/basesize
 
     p=product(gdims)
-    use_io_procs = max(1,min(ceiling(real(p)/real(minblocksize)),num_io_procs))
+    use_io_procs = max(1, min(int(real(p)/real(minblocksize)+0.5),num_io_procs))
+
+!    print *,p,use_io_procs
 
     start(:)=1
     kount(:)=0
@@ -110,7 +112,7 @@ program sandctest
   implicit none
   
   integer, parameter :: ndims=4
-!  integer, parameter :: gdims(ndims) = (/2,64,100,87/)
+!  integer, parameter :: gdims(ndims) = (/12,93,100,2/)
 !  integer, parameter :: ndims=3
 !  integer, parameter :: gdims(ndims) = (/12,95,97/)
   integer, parameter :: num_io_procs=17
