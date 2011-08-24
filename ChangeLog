@@ -1,6 +1,51 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name:  pio1_3_10
+Originator(s): Edwards
+Date: 8/23/11
+One-line Summary: A robust solution for calcdecomp.F90
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+       Calcdecomp.F90  - Added a correction for an unstanding edge
+	condition in this algorytm,  tested hopefully thoroghly
+       buildconf.xml  updated settings for netcdf on bluefire	
+
+	
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+
+
+Code reviewed by: self
+
+Summary of pre-tag testing:
+
+  Regression tests:  74 PASS, 6 expected failures
+	             lynx       74 PASS, 6 expected failures
+                    edinburgh  22 PASS, 2 expected failures
+	In addition the startandcount serial test program was run on
+	bluefire, this program should be run following any subsequent
+	changes to calcdecomp.F90
+
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_3_9
 Originator(s): Edwards
 Date: 8-12-2011
@@ -36,7 +81,7 @@ Summary of pre-tag testing:
 
   Regression tests: bluefire   74 PASS, 6 expected failures
 	             lynx       74 PASS, 6 expected failures
-                     edinburgh  22 PASS, 2 expected failures
+                    edinburgh  22 PASS, 2 expected failures
 
 
 ===============================================================
