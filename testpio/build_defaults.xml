@@ -46,13 +46,14 @@
  />
 
 <bluefire
-  NETCDF_PATH="/contrib/netcdf-3.6.2" 
+  NETCDF_PATH="/contrib/netcdf/4.1.3_seq" 
   PNETCDF_PATH="/contrib/parallel-netcdf-1.2.0-svn913" 
   FFLAGS = "-g -qfullpath -O3 -WF,-DASYNC_PNETCDF"
   CFLAGS = "-g -qfullpath -O3"
   ENV_PREATTACH_L2CACHE_LIST="AUTO_SELECT"
   ENV_MP_EAGER_LIMIT="0"
   ENV_CONFIG_SHELL="/bin/bash"  
+  ENV_LIBPATH="/contrib/zlib/lib"
   MPIFC = "mpxlf2003_r"
   CC = "xlc_r"
   MPICC="mpcc_r"
