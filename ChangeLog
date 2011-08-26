@@ -1,6 +1,51 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_3_11
+Originator(s): Jim
+Date: 8/26/2011
+One-line Summary: Further improvement of calcdecomp.F90
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+   calcdecomp.F90 : After computing the optimal number of ioprocs we
+	adjust that number down to be a multiple of the last decomposed 
+	dimension.   This appears to be very robust, avoiding the edge cases
+	that all of these recent tags have tried to address.
+	
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+
+
+Code reviewed by:
+
+Summary of pre-tag testing:
+
+  Regression tests:  74 PASS, 6 expected failures
+	             lynx       74 PASS, 6 expected failures
+                    edinburgh  22 PASS, 2 expected failures
+	In addition the startandcount serial test program was run on
+	bluefire, this program should be run following any subsequent
+	changes to calcdecomp.F90
+
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name:  pio1_3_10
 Originator(s): Edwards
 Date: 8/23/11
@@ -18,7 +63,7 @@ List all existing files that have been modified, and describe the changes:
 	
 List all component tags that were used to create pio tag:
 
-Describe the changes for each component above that was changed relative
+Describe the changes for each comdponent above that was changed relative
 to the previous ccsm tag in this sequence (this includes description
 of new functionality and how user can use it):
 
