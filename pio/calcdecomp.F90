@@ -29,7 +29,7 @@ contains
     integer(kind=PIO_OFFSET), intent(out) :: start(ndims), kount(ndims)
     integer, intent(out) :: use_io_procs
     integer :: i, p, dims(ndims), lb, ub, inc
-    integer :: extras, subrank
+    integer :: extras, subrank, tioprocs, rem
 
     integer, parameter :: stripeSize = 864*1024
     integer :: minbytes = stripeSize-256   ! minimum number of contigous blocks in bytes to put on a IO task
@@ -50,8 +50,16 @@ contains
 
     p=product(gdims)
     use_io_procs = max(1, min(int(real(p)/real(minblocksize)+0.5),num_io_procs))
+! Things work best if use_io_procs is a multiple of gdims(ndims)
+! this adjustment makes it so, increasing the blocksize a bit
+    if (gdims(ndims)<use_io_procs) then
+       do while(mod(gdims(ndims),use_io_procs)>0)
+          use_io_procs=use_io_procs-1
+       end do
+    end if
+
 ! Handle this case here, and make things easier below
-    if(use_io_procs-gdims(ndims)==1) use_io_procs=use_io_procs-1
+!    if(gdims(ndims)<use_io_procs .and. mod(use_io_procs,gdims(ndims))==1) use_io_procs=use_io_procs-1
 
 !    print *,p,use_io_procs
 
@@ -72,9 +80,10 @@ contains
              ! The current dimension cannot complete the decomposition.   Decompose this 
              ! dimension in groups then go on to decompose the next dimesion in each of those
              ! groups.
-             call computestartandcount(gdims(i),gdims(i),gdims(i)*iorank/ioprocs  , start(i),kount(i))
-             ioprocs=ioprocs/gdims(i)
-             tiorank=mod(iorank,ioprocs)
+             tioprocs=gdims(i)
+             tiorank = mod(iorank,tioprocs)
+             call computestartandcount(gdims(i),tioprocs, tiorank  , start(i),kount(i))
+             ioprocs=tioprocs
           end if
        end if
     end do
@@ -114,13 +123,13 @@ program sandctest
   implicit none
   
   integer, parameter :: ndims=4
-!  integer, parameter :: gdims(ndims) = (/12,93,100,2/)
+!  integer, parameter :: gdims(ndims) = (/66,199,10,8/)
 !  integer, parameter :: ndims=3
 !  integer, parameter :: gdims(ndims) = (/12,95,97/)
-  integer, parameter :: num_io_procs=5
+  integer, parameter :: num_io_procs=30
   integer :: gdims(ndims)
   integer :: psize, n, i,j,k,m
-  integer, parameter :: imax=100,jmax=100,kmax=100,mmax=100
+  integer, parameter :: imax=200,jmax=200,kmax=30,mmax=7
   integer(kind=pio_offset) :: start(ndims), count(ndims)
   integer :: iorank, numaiotasks, tpsize
 !#ifdef DOTHIS
@@ -128,7 +137,7 @@ program sandctest
      gdims(1)=i
      do j=1,jmax
         gdims(2)=j
-        do k=1,kmax
+        do k=20,kmax
            gdims(3)=k
            do m=1,mmax
               gdims(4)=m
