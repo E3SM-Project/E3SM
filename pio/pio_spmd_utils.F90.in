@@ -10,6 +10,15 @@
 !
 !  20090508  Initial version (based on spmd_utils in CAM) - P. Worley
 !
+! Code added as a work around for poor rsend performance on cray systems with
+! Gemini interconnect
+!
+#ifdef _NO_MPI_RSEND
+#define MPI_RSEND MPI_SEND
+#define mpi_rsend mpi_send
+#define MPI_IRSEND MPI_ISEND
+#define mpi_irsend mpi_isend
+#endif
 
 module pio_spmd_utils
 

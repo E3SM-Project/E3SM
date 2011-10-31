@@ -387,14 +387,16 @@
   MPICC  = "cc "
   FC = "ftn"
   CC     = "cc"
-  FFLAGS = "-D_USE_FLOW_CONTROL"
-  NETCDF_PATH = "/opt/cray/netcdf/3.6.2/netcdf-pgi/"
+
+  CPPDEFS = " -DFORTRANUNDERSCORE -D_NO_MPI_RSEND"
+  NETCDF_PATH = "${NETCDF_DIR}"
   PNETCDF_PATH = "/usr/common/usg/pnetcdf/1.2.0/"
-  workdir = "/scratch/scratchdirs/${USER}/testpio"
+  LDLIBS="`nc-config --flibs`"
+  workdir = "/scratch/scratchdirs/${USER}/testpio.norsend"
   run = "aprun"
   corespernode = "24"
   submit = "qsub "
-  conopts = " --disable-mct --enable-pnetcdf --enable-timing --enable-filesystem-hints=lustre "
+  conopts = " --enable-pnetcdf --enable-timing --enable-filesystem-hints=lustre "
   preamble="
 #PBS -N testpio_suite
 #PBS -l walltime=00:30:00

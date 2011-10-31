@@ -159,3 +159,6 @@ pionfread_mod.F90 : pionfread_mod.F90.in
 pionfwrite_mod.F90 : pionfwrite_mod.F90.in
 pio_support.F90 : pio_support.F90.in
 rearrange.F90 : rearrange.F90.in
+pio_spmd_utils.F90: pio_spmd_utils.F90.in
+pio_msg_getput_callbacks.F90 : pio_msg_getput_callbacks.F90.in
+

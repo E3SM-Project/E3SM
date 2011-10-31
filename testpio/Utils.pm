@@ -213,7 +213,7 @@ sub loadmodules{
 	module(" load p-netcdf/1.1.1");
     }elsif($host =~ "hopper"){
 	require "/opt/modules/default/init/perl";
-	module(" load netcdf/3.6.2");      
+	module(" load netcdf/4.1.3");      
 	module(" load pnetcdf/1.2.0");
         module("list");
     }elsif($host =~ "pleiades"){

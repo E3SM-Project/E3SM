@@ -1,6 +1,47 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_3_12
+Originator(s): Jim 
+Date:  10-31-2011
+One-line Summary:  Make flowcontrol default, add workaround for mpi_rsend bug in cray/gemini
+
+List all subroutines eliminated: none
+
+List all subroutines added and what they do: none
+
+List all existing files that have been modified, and describe the changes:
+     pio_spmd_utils.F90.in
+     pio_support.F90.in
+     box_rearrange.F90.in
+
+	Added code to replace MPI_RSEND, MPI_IRSEND with MPI_SEND and MPI_ISEND when _NO_MPI_RSEND is 
+	defined.   Made _USE_FLOW_CONTROL the default by replacing the macro with its negative _NO_FLOW_CONTROL
+	
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+
+Code reviewed by: self
+
+Summary of pre-tag testing:  Full set of pretag testing completed on hopper.
+
+  Regression tests:
+
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_3_11
 Originator(s): Jim
 Date: 8/26/2011

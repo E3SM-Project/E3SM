@@ -1,5 +1,17 @@
 #define __PIO_FILE__ "pio_support.F90"
 ! This module is intended for the internal use of PIO only
+
+!
+! Code added as a work around for poor rsend performance on cray systems with
+! Gemini interconnect
+!
+#ifdef _NO_MPI_RSEND
+#define MPI_RSEND MPI_SEND
+#define mpi_rsend mpi_send
+#define MPI_IRSEND MPI_ISEND
+#define mpi_irsend mpi_isend
+#endif
+
 module pio_support
   use pio_kinds
   implicit none
@@ -156,7 +168,7 @@ contains
     integer, pointer :: sdof1d(:)
     integer          :: status(MPI_STATUS_SIZE)
     integer, parameter :: masterproc = 0
-#ifdef _USE_FLOW_CONTROL
+#ifndef _NO_FLOW_CONTROL
     integer :: &
       rcv_request    ,&! request id
       hs = 1           ! MPI handshaking variable
@@ -193,7 +205,7 @@ contains
           wdof = dof
        else
           if (myrank == n .and. sdof > 0) then
-#ifdef _USE_FLOW_CONTROL
+#ifndef _NO_FLOW_CONTROL
              call MPI_RECV(hs,1,MPI_INTEGER,masterproc,n,comm,status,ierr)
              if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_writedof mpi_recv')
 #endif
@@ -201,7 +213,7 @@ contains
              if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_writedof mpi_send')
           endif
           if (myrank == masterproc .and. sdof1d(n) > 0) then
-#ifdef _USE_FLOW_CONTROL
+#ifndef _NO_FLOW_CONTROL
              call MPI_IRECV(wdof,sdof1d(n),MPI_INTEGER,n,n,comm,rcv_request,ierr)
              if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_writedof mpi_irecv')
              call MPI_SEND(hs,1,MPI_INTEGER,n,n,comm,ierr)
@@ -436,7 +448,7 @@ contains
          fc_gather = .false.
       endif
    else
-#ifdef _USE_FLOW_CONTROL
+#ifndef _NO_FLOW_CONTROL
       gather_block_size = max(1,max_gather_block_size)
       fc_gather = .true.
 #else

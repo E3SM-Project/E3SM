@@ -24,6 +24,7 @@
 ! cache communication pattern for rearranger in the ioDesc
 #define BOX_CACHE 1
 
+
 ! communication algorithm options
 #define COLLECTIVE 0
 #define POINT_TO_POINT 1
@@ -33,7 +34,7 @@
 #define DEF_P2P_MAXREQ 64
 
 #ifndef _MPISERIAL
-#ifdef _USE_FLOW_CONTROL
+#ifndef _NO_FLOW_CONTROL
 #define _USE_COMP2IO_FC 1
 #define _USE_IO2COMP_FC 1
 #define _USE_CREATE_FC 1
