@@ -35,8 +35,8 @@ Code reviewed by: self
 
 Summary of pre-tag testing:  Full set of pretag testing completed on hopper.
 
-  Regression tests:
-
+  Regression tests:  bluefire 74 PASS, 6 expected failures
+                      hopper  74 tests PASS, 6 tests FAIL
 
 ===============================================================
 ===============================================================
