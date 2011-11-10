@@ -139,7 +139,7 @@ foreach(keys %attributes){
 	print F "\$ENV{$1}=\"$attributes{$_}\"\;\n";
     }elsif(/NETCDF_PATH/){
 	if($attributes{NETCDF_PATH} =~ /netcdf-4/){
-	    $enablenetcdf4="--enable-netcdf4";
+#	    $enablenetcdf4="--enable-netcdf4";
 	}
     }
 }

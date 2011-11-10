@@ -22,7 +22,7 @@ sub host{
 	$host = "bluefire";
     }elsif($host =~ /^ja/ or $host =~ /^yo/){
 	$host = "jaguar";
-    }elsif($host =~ /^ath/ or $host =~ /^log/){
+    }elsif($host =~ /^ath/ ){
 	$host = "athena";
     }elsif($host =~ /^kra/){
 	$host = "kraken";
@@ -30,6 +30,12 @@ sub host{
         $host = "lynx";
     }elsif($host =~ /^hopp/){
 	$host = "hopper";
+    }elsif( $host =~ /^login/){
+	if(-d "/lustre/janus_scratch"){
+	    $host="janus";
+        }else{
+            $host = "athena";
+	}
     }elsif($host =~ /(\w+)\./){
 	$host = $1;
     }
@@ -90,7 +96,7 @@ sub preambleResource{
   }elsif($host =~ "lynx" or $host =~ "hopper"){
      my $pecnt = $corespernode*ceil($pecount/$corespernode);
      $preambleResource = "#PBS -l mppwidth=$pecnt\n"; 
-  }elsif($host =~ "athena"){
+  }elsif($host =~ "athena"  or $host =~ /janus/){
      my $pecnt = $corespernode*ceil($pecount/$corespernode);
      $preambleResource = "#PBS -l size=$pecnt\n"; 
   }elsif($host =~ "jaguar" or $host =~ "kraken"){
