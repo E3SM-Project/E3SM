@@ -87,6 +87,7 @@ MKINSTALLDIRS   = @abs_top_builddir@/mkinstalldirs
 # INSTALLATION DIRECTORIES
 abs_top_builddir= @abs_top_builddir@
 MCTPATH         = @abs_top_builddir@/mct
+MCTIMESHPATH    = @abs_top_builddir@/mct-imesh
 MPEUPATH        = @abs_top_builddir@/mpeu
 EXAMPLEPATH     = @abs_top_builddir@/examples
 MPISERPATH      = @MPISERPATH@
