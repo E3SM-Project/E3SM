@@ -1,0 +1,73 @@
+
+SHELL           = /bin/sh
+
+# SOURCE FILES
+
+SRCS_F90	= importBench.F90
+
+OBJS_ALL	= $(SRCS_F90:.F90=.o)
+
+# MACHINE AND COMPILER FLAGS
+
+include ../Makefile.conf
+
+#MCTLIBS    = -L$(MPEUPATH) -L$(MCTPATH) -lmpeu  -lmct 
+#
+#UTLDFLAGS  = $(REAL8)
+#UTCMPFLAGS = $(REAL8) $(INCFLAG)$(MPEUPATH) $(INCFLAG)$(MCTPATH)
+
+# ADDITIONAL DEFINITIONS SPECIFIC FOR UTMCT COMPILATION
+
+MCTLIBS    = -L$(MPEUPATH) -L$(MCTPATH) -lmct -lmpeu 
+UTLDFLAGS  = $(REAL8)
+UTCMPFLAGS = $(REAL8) $(INCFLAG)$(MPEUPATH) $(INCFLAG)$(MCTPATH)
+
+
+# TARGETS
+
+all: 	importBench
+
+
+importBench:    importBench.o
+	$(FC) -o $@ importBench.o $(FCFLAGS) $(UTLDFLAGS) $(MCTLIBS) $(MPILIBS)
+#	$(FC) -o $@ importBench.o $(FCFLAGS) $(UTLDFLAGS) $(MCTLIBS) $(MPILIBS)
+
+
+# ADDITIONAL FLAGS SPECIFIC FOR BENCH COMPILATION
+
+#N/A
+
+# RULES
+
+.SUFFIXES:
+.SUFFIXES: .F90 .o
+
+$(F90RULE):
+	$(FC) -c $(INCPATH) $(DEFS) $(FCFLAGS) $(F90FLAGS) $(UTCMPFLAGS) $*.F90
+
+$(F90RULECPP):
+	$(FPP) $(DEFS) $(FPPFLAGS) $*.F90 $*.f90
+	$(FC) -c $(INCPATH) $(FCFLAGS) $(F90FLAGS) $(UTCMPFLAGS) $*.f90
+	$(RM) $*.f90
+
+
+#$(F90RULE):
+#	$(FC) -c $(INCPATH) $(DEFS) $(FCFLAGS) $(F90FLAGS) $(UTCMPFLAGS) $*.F90
+#
+#$(F90RULECPP):
+#	$(FPP) $(DEFS) $(FPPFLAGS) $*.F90 $*.f90
+#	$(FC) -c $(INCPATH) $(FCFLAGS) $(F90FLAGS) $(UTCMPFLAGS) $*.f90
+#	$(RM) $*.f90
+
+clean:
+	${RM} *.o *.mod lib$(MODULE).a
+
+# DEPENDENCIES
+
+$(OBJS_ALL): $(MPEUPATH)/libmpeu.a
+$(OBJS_ALL): $(MCTPATH)/libmct.a
+
+importBench.o:	
+
+
+
