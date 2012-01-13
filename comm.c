@@ -30,7 +30,7 @@ MPI_Comm mpi_comm_new(void)
 /*********/
 
 
-FORT_NAME( mpi_comm_free , MPI_COMM_FREE )(int *comm, int *ierror)
+FC_FUNC( mpi_comm_free , MPI_COMM_FREE )(int *comm, int *ierror)
 {
   *ierror=MPI_Comm_free(comm);
 }
@@ -81,7 +81,7 @@ int MPI_Comm_free(MPI_Comm *comm)
 
 
 
-FORT_NAME( mpi_comm_size , MPI_COMM_SIZE )(int *comm, int *size, int *ierror)
+FC_FUNC( mpi_comm_size , MPI_COMM_SIZE )(int *comm, int *size, int *ierror)
 {
   *ierror=MPI_Comm_size(*comm, size);
 }
@@ -99,7 +99,7 @@ int MPI_Comm_size(MPI_Comm comm, int *size)
 /*********/
 
 
-FORT_NAME( mpi_comm_rank , MPI_COMM_RANK )(int *comm, int *rank, int *ierror)
+FC_FUNC( mpi_comm_rank , MPI_COMM_RANK )(int *comm, int *rank, int *ierror)
 {
   *ierror=MPI_Comm_rank( *comm, rank);
 }
@@ -117,7 +117,7 @@ int MPI_Comm_rank(MPI_Comm comm, int *rank)
 /*********/
 
 
-FORT_NAME( mpi_comm_dup , MPI_COMM_DUP )(int *comm, int *newcomm, int *ierror)
+FC_FUNC( mpi_comm_dup , MPI_COMM_DUP )(int *comm, int *newcomm, int *ierror)
 {
 
   *ierror=MPI_Comm_dup( *comm, newcomm);
@@ -141,7 +141,7 @@ int MPI_Comm_dup(MPI_Comm comm, MPI_Comm *newcomm)
 /*********/
 
 
-int FORT_NAME( mpi_comm_create, MPI_COMM_CREATE)
+int FC_FUNC( mpi_comm_create, MPI_COMM_CREATE)
      (int *comm, int *group, int *newcomm, int *ierror)
 {
   *ierror=MPI_Comm_create(*comm,*group,newcomm);
@@ -164,7 +164,7 @@ int MPI_Comm_create(MPI_Comm comm, MPI_Group group, MPI_Comm *newcomm)
 /*********/
 
 
-FORT_NAME( mpi_comm_split, MPI_COMM_SPLIT )
+FC_FUNC( mpi_comm_split, MPI_COMM_SPLIT )
      (int *comm, int *color, int *key, int *newcomm, int *ierror)
 {
   *ierror=MPI_Comm_split(*comm,*color,*key,newcomm);
@@ -187,7 +187,7 @@ int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm)
 /*********/
 
 
-FORT_NAME( mpi_comm_group, MPI_COMM_GROUP )
+FC_FUNC( mpi_comm_group, MPI_COMM_GROUP )
      (int *comm, int *group, int *ierror)
 {
   *ierror= MPI_Comm_group(*comm, group);

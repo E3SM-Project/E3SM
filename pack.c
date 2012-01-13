@@ -6,7 +6,7 @@
  */
 
 
-FORT_NAME( mpi_pack , MPI_PACK )
+FC_FUNC( mpi_pack , MPI_PACK )
      ( void *inbuf, int *incount, int *datatype,
        void *outbuf, int *outsize, int *position, int *comm, int *ierror)
 {
@@ -42,7 +42,7 @@ int MPI_Pack( void *inbuf, int incount, MPI_Datatype datatype,
  */
 
 
-FORT_NAME( mpi_unpack , MPI_UNPACK )
+FC_FUNC( mpi_unpack , MPI_UNPACK )
      ( void *inbuf, int *insize, int *position,
        void *outbuf, int *outcount, int *datatype,
        int *comm, int *ierror )
