@@ -1,5 +1,12 @@
+.NOTPARALLEL:
+# MACHINE AND COMPILER FLAGS
 
+include ../Makefile.conf
+
+VPATH = $(SRCDIR)/mpeu
 SHELL           = /bin/sh
+
+INCPATH += $(INCFLAG). $(INCFLAG)../
 
 # SOURCE FILES
 
@@ -38,9 +45,6 @@ SRCS_C		= get_zeits.c
 OBJS_ALL	= $(SRCS_C:.c=.o)  \
 		  $(SRCS_F90:.F90=.o)
 
-# MACHINE AND COMPILER FLAGS
-
-include ../Makefile.conf
 
 # TARGETS
 
@@ -59,16 +63,11 @@ MPEUFLAGS =
 .SUFFIXES:
 .SUFFIXES: .F90 .c .o
 
-$(CRULE):
-	$(CC) -c $(ALLCFLAGS) $*.c
+.c.o:
+	$(CC) -c $(CFLAGS) $(INCPATH) $<
 
-$(F90RULE):
-	$(FC) -c $(INCPATH) $(DEFS) $(FCFLAGS) $(F90FLAGS) $(MPEUFLAGS) $*.F90
-
-$(F90RULECPP):
-	$(FPP) $(DEFS) $(FPPFLAGS) $*.F90 $*.f90
-	$(FC) -c $(INCPATH) $(FCFLAGS) $(F90FLAGS) $(MPEUFLAGS) $*.f90
-	$(RM) $*.f90
+.F90.o:
+	$(FC) -c $(INCPATH) $(FPPDEFS) $(FCFLAGS) $(MPEUFLAGS) $<
 
 clean:
 	${RM} *.o *.mod lib$(MODULE).a
