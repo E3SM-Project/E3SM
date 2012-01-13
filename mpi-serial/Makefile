@@ -1,5 +1,8 @@
 SHELL		= /bin/sh
+###############################
+include ../Makefile.conf
 
+VPATH=$(SRCDIR)/mpi-serial
 # SOURCE FILES
 
 MODULE		= mpi-serial
@@ -23,9 +26,7 @@ OBJS_ALL	= $(SRCS_C:.c=.o) \
 		  $(SRCS_F90:.F90=.o)
 
 
-###############################
-
-include ../Makefile.conf
+INCPATH:= $(INCFLAG)$(SRCDIR)/mpi-serial $(INCFLAG). $(INCFLAG)../ $(INCPATH)
 
 #
 # The values used from Makefile.conf
@@ -44,12 +45,16 @@ include ../Makefile.conf
 
 # TARGETS
 
-default: lib
+default: lib$(MODULE).a
 
 examples: ctest ftest
 
 
 MPIFH= mpif.$(FORT_SIZE).h
+
+
+mpif.h: $(MPIFH)
+	cp -f $< $@
 
 fort.o: mpif.h
 
@@ -76,26 +81,19 @@ lib$(MODULE).a: $(OBJS_ALL)
 LIB	= lib$(MODULE).a
 
 
-
 ###############################
 #RULES
 
 .SUFFIXES:
-.SUFFIXES: .F90 .c .o
+.SUFFIXES: .F90 .c .o 
 
-$(CRULE):
-	$(CC) -c $(ALLCFLAGS) $*.c
+.c.o:
+	$(CC) -c $(INCPATH) $(CFLAGS) $<
 
-$(F90RULE):
-	$(FC) -c $(INCFLAG). $(INCPATH) $(DEFS) $(FCFLAGS) $(F90FLAGS) $(MPEUFLAGS) $*.F90
+.F90.o:
+	$(FC) -c $(INCFLAG). $(INCPATH) $(FPPDEFS) $(FCFLAGS) $(MPEUFLAGS) $<
 
-MYF90FLAGS=$(INCPATH) $(DEFS) $(FCFLAGS) $(F90FLAGS) $(MPEUFLAGS)
-
-$(F90RULECPP):
-	$(FPP) $(DEFS) $(FPPFLAGS) $*.F90 $*.f90 
-	$(FC) -c $(INCFLAG). $(INCPATH) $(FCFLAGS) $(F90FLAGS) $(MPEUFLAGS) $*.f90
-	$(RM) $*.f90
-
+MYF90FLAGS=$(INCPATH) $(DEFS) $(FCFLAGS)  $(MPEUFLAGS)
 
 clean:
 	/bin/rm -f *.o ctest ftest $(LIB) mpif.h
