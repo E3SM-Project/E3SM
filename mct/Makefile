@@ -1,6 +1,6 @@
-
+.NOTPARALLEL:
 SHELL           = /bin/sh
-
+VPATH=$(SRCDIR)/mct 
 # SOURCE FILES
 
 MODULE		= mct
@@ -56,13 +56,9 @@ MCTFLAGS = $(INCFLAG)$(MPEUPATH)
 .SUFFIXES:
 .SUFFIXES: .F90 .o
 
-$(F90RULE):
-	$(FC) -c $(INCPATH) $(DEFS) $(FCFLAGS) $(F90FLAGS) $(MCTFLAGS) $*.F90
+.F90.o:
+	$(FC) -c $(INCPATH) $(FPPDEFS) $(FCFLAGS) $(MCTFLAGS) $<
 
-$(F90RULECPP):
-	$(FPP) $(DEFS) $(FPPFLAGS) $*.F90 $*.f90
-	$(FC) -c $(INCPATH) $(FCFLAGS) $(F90FLAGS) $(MCTFLAGS) $*.f90
-	$(RM) $*.f90
 
 clean:
 	${RM} *.o *.mod lib$(MODULE).a
