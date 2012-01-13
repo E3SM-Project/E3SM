@@ -18,7 +18,7 @@ static int initialized=0;
 
 
 
-FORT_NAME( mpi_init_fort , MPI_INIT_FORT)
+FC_FUNC( mpi_init_fort , MPI_INIT_FORT)
                           (int *f_MPI_COMM_WORLD,
                            int *f_MPI_ANY_SOURCE, int *f_MPI_ANY_TAG,
 			   int *f_MPI_PROC_NULL, int *f_MPI_ROOT,
@@ -174,7 +174,7 @@ int MPI_Init(int *argc, char **argv[])
 /*********/
 
 
-FORT_NAME( mpi_finalize, MPI_FINALIZE )(int *ierror)
+FC_FUNC( mpi_finalize, MPI_FINALIZE )(int *ierror)
 {
   *ierror=MPI_Finalize();
 }
@@ -202,7 +202,7 @@ int MPI_Finalize(void)
 /*********/
 
 
-FORT_NAME( mpi_abort , MPI_ABORT )(int *comm, int *errorcode, int *ierror)
+FC_FUNC( mpi_abort , MPI_ABORT )(int *comm, int *errorcode, int *ierror)
 {
   *ierror=MPI_Abort( *comm, *errorcode);
 }
@@ -220,7 +220,7 @@ int MPI_Abort(MPI_Comm comm, int errorcode)
 
 
 
-FORT_NAME( mpi_error_string , MPI_ERROR_STRING)
+FC_FUNC( mpi_error_string , MPI_ERROR_STRING)
                              (int *errorcode, char *string,
 			      int *resultlen, int *ierror)
 {
@@ -240,7 +240,7 @@ int MPI_Error_string(int errorcode, char *string, int *resultlen)
 /*********/
 
 
-FORT_NAME( mpi_get_processor_name , MPI_GET_PROCESSOR_NAME )
+FC_FUNC( mpi_get_processor_name , MPI_GET_PROCESSOR_NAME )
                           (char *name, int *resultlen, int *ierror)
 {
   *ierror=MPI_Get_processor_name(name,resultlen);
@@ -267,7 +267,7 @@ int MPI_Get_processor_name(char *name, int *resultlen)
 /*********/
 
 
-FORT_NAME( mpi_initialized , MPI_INITIALIZED )(int *flag, int *ierror)
+FC_FUNC( mpi_initialized , MPI_INITIALIZED )(int *flag, int *ierror)
 {
   *ierror=MPI_Initialized(flag);
 }

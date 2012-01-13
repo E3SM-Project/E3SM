@@ -10,7 +10,7 @@ double MPI_Wtime(void);
 
 
 
-double FORT_NAME( mpi_wtime, MPI_WTIME )(void)
+double FC_FUNC( mpi_wtime, MPI_WTIME )(void)
 {
   return(MPI_Wtime());
 }

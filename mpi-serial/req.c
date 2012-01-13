@@ -7,7 +7,7 @@
 
 
 
-FORT_NAME( mpi_test , MPI_TEST)(int *request, int *flag, int *status,
+FC_FUNC( mpi_test , MPI_TEST)(int *request, int *flag, int *status,
 				int *ierror)
 {
   *ierror=MPI_Test( (void *)request ,flag,(MPI_Status *)status);
@@ -46,7 +46,7 @@ int MPI_Test(MPI_Request *request, int *flag, MPI_Status *status)
 
 
 
-FORT_NAME( mpi_wait , MPI_WAIT )(int *request, int *status, int *ierror)
+FC_FUNC( mpi_wait , MPI_WAIT )(int *request, int *status, int *ierror)
 {
   *ierror=MPI_Wait( (void *)request, (MPI_Status *)status );
 }
@@ -72,7 +72,7 @@ int MPI_Wait(MPI_Request *request, MPI_Status *status)
 /*********/
 
 
-FORT_NAME( mpi_waitany , MPI_WAITANY )(int *count, int *requests,
+FC_FUNC( mpi_waitany , MPI_WAITANY )(int *count, int *requests,
 				       int *index, int *status, int *ierror)
 {
 
@@ -105,7 +105,7 @@ int MPI_Waitany(int count, MPI_Request *array_of_requests,
 /*********/
 
 
-FORT_NAME( mpi_waitall , MPI_WAITALL )(int *count, int *array_of_requests,
+FC_FUNC( mpi_waitall , MPI_WAITALL )(int *count, int *array_of_requests,
 				       int *array_of_statuses, int *ierror)
 {
   *ierror=MPI_Waitall(*count, (void *)array_of_requests,
