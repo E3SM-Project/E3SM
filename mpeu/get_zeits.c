@@ -22,7 +22,7 @@
 #endif
 
 #include <time.h> /* POSIX standard says CLOCKS_PER_SEC is here */
-
+#include "config.h"
 /*
  *  CLK_TCK is obsolete - replace with CLOCKS_PER_SEC
  */
@@ -31,29 +31,11 @@
 
 
 
- /*
-  The default is FORTRAN_UNDERSCORE_, but not explicitly used.
- */
-
-#ifdef FORTRAN_CAPS_
-#  define	get_zeits_		GET_ZEITS
-#  define	get_ztick_		GET_ZTICK
-#endif
-
-#ifdef FORTRAN_SAME
-#  define	get_zeits_		get_zeits
-#  define	get_ztick_		get_ztick
-#endif
-
-#ifdef FORTRAN_GNUF2C
-#  define	get_zeits_		get_zeits__
-#  define	get_ztick_		get_ztick__
-#endif
 
  /*  Prototype: */
 
-   void get_zeits_(double *zts);
-   void get_ztick_(double *tic);
+   void FC_FUNC(get_zeits,GET_ZEITS)(double *zts);
+   void FC_FUNC(get_ztick,GET_ZTICK)(double *tic);
 
 /*!REVISION HISTORY:
 ! 	12Mar98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
@@ -62,7 +44,7 @@
 
 /*  Implementations: */
 
-void get_zeits_(zts)
+void FC_FUNC(get_zeits,GET_ZEITS)(zts)
   double *zts;
 {
 
@@ -86,7 +68,7 @@ void get_zeits_(zts)
 
 }
 
-void get_ztick_(tic)
+void FC_FUNC(get_ztick,GET_ZTICK)(tic)
   double *tic;
 {
   tic[0]=1./ZCLK_TCK;
