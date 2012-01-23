@@ -26,7 +26,7 @@ module piodarray
 !<
   interface PIO_write_darray
 ! TYPE real,int,double
-! DIMS 1,2,3,4,5
+! DIMS 1,2,3,4,5,6,7
      module procedure write_darray_{DIMS}d_{TYPE}
   end interface
 
@@ -37,7 +37,7 @@ module piodarray
 !<
   interface PIO_read_darray
 ! TYPE real,int,double
-! DIMS 1,2,3,4,5
+! DIMS 1,2,3,4,5,6,7
      module procedure read_darray_{DIMS}d_{TYPE}
   end interface
 
@@ -134,7 +134,7 @@ contains
   end subroutine write_darray_1d_{TYPE}
 
 ! TYPE real,int,double
-! DIMS 2,3,4,5
+! DIMS 2,3,4,5,6,7
 !> 
 !! @public
 !! @ingroup PIO_write_darray
@@ -248,7 +248,7 @@ contains
   end subroutine read_darray_1d_{TYPE}
  
 ! TYPE real,int,double
-! DIMS 2,3,4,5
+! DIMS 2,3,4,5,6,7
 !> 
 !! @public
 !! @ingroup PIO_read_darray
