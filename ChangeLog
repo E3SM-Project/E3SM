@@ -36,7 +36,8 @@ Code reviewed by:
 
 Summary of pre-tag testing:
 
-  Regression tests:
+  Regression tests: Lynx PGI  74 Pass, 6 expected failures
+	            Bluefire  74 pass, 6 expected failures.
 
 
 ===============================================================
