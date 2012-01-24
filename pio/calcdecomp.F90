@@ -119,7 +119,7 @@ end module calcdecomp
 
 #ifdef TESTCALCDECOMP
 program sandctest
-  use calcdecomp
+  use calcdecomp  !_EXTERNAL
   implicit none
   
   integer, parameter :: ndims=4

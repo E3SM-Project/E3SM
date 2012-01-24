@@ -16,7 +16,7 @@
 !            Community Atmosphere Model) - P. Worley
 !  20100207  added flow-control logic option to box_rearrange_create 
 !            - P. Worley
-
+!#define MEMCHK
 !#define DEBUG 0
 !#define DEBUG_INDICES 0
 !#define DEBUG_BARRIER 0
@@ -102,6 +102,11 @@ module box_rearrange
 
   character(len=*), parameter :: modName='box_rearrange'
 
+#ifdef MEMCHK
+integer :: msize, rss, mshare, mtext, mstack, lastrss=0
+#endif
+
+
 contains
 #ifdef _MPISERIAL
 !
@@ -151,7 +156,8 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, s2, &
 
   ! begin
 
-  ndof   = size(ioDesc%dest_ioindex)
+!  ndof   = size(ioDesc%dest_ioindex)
+  ndof= iodesc%ndof
   niodof = size(dest)
   num_tasks   = IOsystem%num_tasks
   num_iotasks = IOsystem%num_iotasks
@@ -452,7 +458,7 @@ subroutine box_rearrange_io2comp_{TYPE} (IOsystem, ioDesc, s1, iobuf, &
 
   ! begin
   compbuf(:) = 0
-  ndof   = size(iodesc%dest_ioindex)
+  ndof   = iodesc%ndof
   niodof = size(iobuf)
   num_tasks   = IOsystem%num_tasks
   num_iotasks = IOsystem%num_iotasks
@@ -565,7 +571,7 @@ subroutine box_rearrange_io2comp_{TYPE} (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
   endif
 
   compbuf(:) = 0
-  ndof   = size(iodesc%dest_ioindex)
+  ndof   = iodesc%ndof
   niodof = size(iobuf)
   nrecvs = ioDesc%nrecvs             ! number of distinct senders to the ioproc
   myrank = IOsystem%union_rank
@@ -952,6 +958,8 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
   subroutine box_rearrange_create(Iosystem, compdof, gsize, ndim, &
                                   nioproc, ioDesc)
+
+
     implicit none
 
     type (Iosystem_desc_t), intent(in) :: Iosystem
@@ -964,17 +972,17 @@ end subroutine box_rearrange_io2comp_{TYPE}
     character(len=*), parameter :: subName=modName//'::box_rearrange_create'
     integer :: start(ndim,nioproc)
     integer :: count(ndim,nioproc)
-    integer :: ndof
+
     integer :: ierror
     integer :: i
 
     integer :: niodof
 
 !!!!!!
-    ndof = size(compdof)
-    call alloc_check( ioDesc%dest_ioproc, ndof,          &
+    iodesc%ndof = size(compdof)
+    call alloc_check( ioDesc%dest_ioproc, iodesc%ndof,          &
                       'box_rearrange_create dest_ioproc' )
-    call alloc_check( ioDesc%dest_ioindex, ndof,         &
+    call alloc_check( ioDesc%dest_ioindex, iodesc%ndof,         &
                       'box_rearrange_create dest_ioindex')
 
 !!!!!!
@@ -987,7 +995,13 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
     start = 0
     count = 0
-
+#ifdef MEMCHK	
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
+    if(rss>lastrss) then
+       lastrss=rss
+       print *,__PIO_FILE__,__LINE__,'mem=',rss
+    end if
+#endif
     if (Iosystem%IOproc) then
        call pio_fc_gather_int(int(iodesc%start), ndim, MPI_INTEGER, & ! sendbuf, count, type
                               start, ndim, MPI_INTEGER,             & ! recvbuf, count, type
@@ -1022,7 +1036,13 @@ end subroutine box_rearrange_io2comp_{TYPE}
        end do
     endif
 #endif
-
+#ifdef MEMCHK	
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
+    if(rss>lastrss) then
+       lastrss=rss
+       print *,__PIO_FILE__,__LINE__,'mem=',rss
+    end if
+#endif
 !!!!!!!
     ! compute io dest and indices
 
@@ -1043,14 +1063,32 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
 #else 
 ! else not _MPISERIAL
+#ifdef MEMCHK	
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
+    if(rss>lastrss) then
+       lastrss=rss
+       print *,__PIO_FILE__,__LINE__,'mem=',rss
+    end if
+#endif
 
     niodof = ioDesc%count(1)
     do i=2,ndim
        niodof = niodof*ioDesc%count(i)
     end do
 
-    call compute_counts(Iosystem, ioDesc, ndof, niodof)
+    call compute_counts(Iosystem, ioDesc, niodof)
+    call dealloc_check(iodesc%dest_ioindex,'dest_ioindex')
+    nullify(iodesc%dest_ioindex)
+    call dealloc_check(iodesc%dest_ioproc,'dest_ioproc')
+    nullify(iodesc%dest_ioproc)
 
+#ifdef MEMCHK	
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
+    if(rss>lastrss) then
+       lastrss=rss
+       print *,__PIO_FILE__,__LINE__,'mem=',rss
+    end if
+#endif
 ! not _MPISERIAL
 #endif
 
@@ -1063,7 +1101,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
 #ifndef _MPISERIAL
 
-  subroutine compute_counts(Iosystem, ioDesc, ndof, niodof)
+  subroutine compute_counts(Iosystem, ioDesc, niodof)
     
     use calcdisplace_mod, only : calcdisplace,GCDblocksize,gcd
 
@@ -1071,10 +1109,11 @@ end subroutine box_rearrange_io2comp_{TYPE}
     type (Iosystem_desc_t), intent(in) :: Iosystem
     type (IO_desc_t),intent(inout) :: ioDesc
 
-    integer, intent(in) :: ndof
+
     integer, intent(in) :: niodof
 
     ! local vars
+    integer :: ndof
     character(len=*), parameter :: subName=modName//'::compute_counts'
     integer :: myrank             ! local task id
     integer :: num_tasks          ! size of comp communicator
@@ -1129,6 +1168,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     pio_hs     = DEF_P2P_HANDSHAKE
     pio_isend  = DEF_P2P_ISEND
     pio_maxreq = DEF_P2P_MAXREQ
+    ndof = iodesc%ndof
 
     ! First communication
     ! comp procs tell io procs how many items they will send
@@ -1551,7 +1591,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     character(len=*), parameter :: subName=modName//'::box_rearrange_create'
     integer :: start(ndim,nioproc)
     integer :: count(ndim,nioproc)
-    integer :: ndof
+
     integer :: ierror
     integer :: i
     integer :: nsends(nioproc)   ! nsends(nioproc)
@@ -1565,10 +1605,10 @@ end subroutine box_rearrange_io2comp_{TYPE}
     integer :: num_iotasks
 !!!!!!
 
-    ndof=size(compdof)
-    call alloc_check( ioDesc%dest_ioproc,ndof, &
+    iodesc%ndof=size(compdof)
+    call alloc_check( ioDesc%dest_ioproc,iodesc%ndof, &
          'box_rearrange_create dest_ioproc')
-    call alloc_check( ioDesc%dest_ioindex,ndof, &
+    call alloc_check( ioDesc%dest_ioindex,iodesc%ndof, &
          'box_rearrange_create dest_ioindex')
 
 !!!!!!
@@ -1645,7 +1685,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
     nsends=0
     nsends_total=0
-    do i=1,ndof
+    do i=1,iodesc%ndof
        ! change: only want to know how many distinct senders
        dest=ioDesc%dest_ioproc(i)
 
@@ -1711,7 +1751,11 @@ end subroutine box_rearrange_io2comp_{TYPE}
     end do
 
 
-    call compute_counts(Iosystem,ioDesc,ndof,niodof)
+    call compute_counts(Iosystem,ioDesc,niodof)
+    call dealloc_check(iodesc%dest_ioindex,'dest_ioindex')
+    nullify(iodesc%dest_ioindex)
+    call dealloc_check(iodesc%dest_ioproc,'dest_ioproc')
+    nullify(iodesc%dest_ioproc)
 
 ! not _MPISERIAL
 #endif
@@ -1726,7 +1770,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
 #ifndef _MPISERIAL
 
-  subroutine compute_counts( Iosystem,ioDesc,ndof,niodof )
+  subroutine compute_counts( Iosystem,ioDesc,niodof )
 
     use calcdisplace_mod, only : calcdisplace, GCDblocksize, gcd
 
@@ -1790,6 +1834,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     num_iotasks=Iosystem%num_iotasks
     nrecvs=ioDesc%nrecvs
     myrank=Iosystem%comp_rank
+    ndof = iodesc%ndof
 
     ! alloc
     if (Iosystem%IOproc) then
