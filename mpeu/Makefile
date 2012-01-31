@@ -64,7 +64,7 @@ MPEUFLAGS =
 .SUFFIXES: .F90 .c .o
 
 .c.o:
-	$(CC) -c $(CFLAGS) $(INCPATH) $<
+	$(CC) -c $(CPPDEFS) $(CFLAGS) $(INCPATH) $<
 
 .F90.o:
 	$(FC) -c $(INCPATH) $(FPPDEFS) $(FCFLAGS) $(MPEUFLAGS) $<
