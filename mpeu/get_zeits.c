@@ -17,7 +17,7 @@
 
 
 #include <sys/types.h>
-#ifndef SYSCATAMOUNT /* times is not implemented and will always fail on Catamount */ 
+#ifndef NOTIMES 
 #include <sys/times.h>
 #endif
 
@@ -48,7 +48,7 @@ void FC_FUNC(get_zeits,GET_ZEITS)(zts)
   double *zts;
 {
 
-#ifndef SYSCATAMOUNT
+#ifndef NOTIMES
   struct tms tm;
   double secs;
   secs=1./ZCLK_TCK;
