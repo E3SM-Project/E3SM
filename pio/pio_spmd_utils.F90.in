@@ -24,16 +24,20 @@ module pio_spmd_utils
 
   use pio_kinds
   use pio_support, only: CheckMPIReturn
-
+#ifndef NO_MPIMOD
+  use mpi ! _EXTERNAL
+#endif
   implicit none
 
   private
+#ifdef NO_MPIMOD
   include 'mpif.h'  ! _EXTERNAL
+#endif
 
   public :: pio_swapm
 
   interface pio_swapm
-     ! TYPE int,real,double
+     ! TYPE int,real,double,long
      module procedure pio_swapm_{TYPE}
   end interface
 
@@ -73,7 +77,7 @@ contains
 !
 !========================================================================
 !
-
+! TYPE int,real,double,long
    subroutine pio_swapm_{TYPE} ( nprocs, mytask,   &
       sndbuf, sbuf_siz, sndlths, sdispls, stypes,  &
       rcvbuf, rbuf_siz, rcvlths, rdispls, rtypes,  &

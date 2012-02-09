@@ -148,7 +148,7 @@ contains
     implicit none
 
     type (Iosystem_desc_t), intent(in) :: Iosystem
-    integer (i4), intent(in) :: compDOF(:)
+    integer (kind=pio_offset), intent(in) :: compDOF(:)
     integer, intent(in) :: dims(:)
     integer, intent(in) :: ndims
     type (IO_desc_t) :: ioDesc

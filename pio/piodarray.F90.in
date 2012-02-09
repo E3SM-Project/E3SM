@@ -15,8 +15,13 @@ module piodarray
 #ifdef TIMING
   use perf_mod, only : t_startf, t_stopf   !_EXTERNAL
 #endif
+#ifndef NO_MPIMOD
+  use mpi           !_EXTERNAL
+#endif
   implicit none
+#ifdef NO_MPIMOD
   include 'mpif.h'            !_EXTERNAL
+#endif
   private
   public :: pio_read_darray, pio_write_darray
   
@@ -338,11 +343,8 @@ contains
 
     logical (log_kind) :: IOproc     ! true if IO processor
     integer (i4) ::  len,           &! length of IO decomp segmap
-         glen,          &! global length of IO decomp in words
-         reclen,        &! global length of IO decomp in bytes
          iotype,        &! type of IO to perform
          ndims           ! number of variable dimensions
-    integer(kind=PIO_OFFSET)  :: offset   ! local offset of IO decomp
 
     logical(log_kind) :: UseRearranger
 
@@ -370,12 +372,10 @@ contains
     ! pull information out of the decomposition data structure 
     ! ---------------------------------------------------------
 
-    glen       = iodesc%glen
-    offset     = iodesc%IOmap%start
     len        = iodesc%IOmap%length
 
     if(Debug) print *,__PIO_FILE__,__LINE__,' NAME : IAM: ', &
-    File%iosystem%comp_rank,' UseRearranger: ',UseRearranger, glen, offset, len
+    File%iosystem%comp_rank,' UseRearranger: ',UseRearranger,iodesc%glen, iodesc%iomap%start, len
 #ifdef TIMING
     call t_startf("pio_rearrange_write")
 #endif
@@ -396,7 +396,7 @@ contains
           !------------------------------------------------
           !JMD	IOBUF(:) = real(File%iosystem%io_rank,kind=r8)
           if(Debug) print *, subName,': {comp,io}_rank: ',File%iosystem%comp_rank,File%iosystem%io_rank,  &
-               'offset: ',offset,'len: ',len   !,' IOBUF: ',IOBUF
+               'offset: ',iodesc%iomap%start,'len: ',len   !,' IOBUF: ',IOBUF
 
        else
           call alloc_check(IOBUF,0)
@@ -449,7 +449,7 @@ contains
           print *,__PIO_FILE__,__LINE__, &
                File%iosystem%comp_rank,': write IOBUF r8', &
                IOBUF(1:2),' ...',IOBUF(len-1:len), &
-               glen,len,offset
+               iodesc%glen,len
           ! write an ascii version
           write(10+File%iosystem%comp_rank,*) IOBUF(1:len)
           close(10+File%iosystem%comp_rank)
@@ -575,13 +575,9 @@ contains
 
     logical (log_kind) :: IOproc     ! true if IO processor
     integer (i4) ::  len,           &! length of IO decomp segmap 
-         glen,          &! global length of IO decomp in words
-         reclen,        &! global length of IO decomp in bytes
          iotype,        &! type of IO to perform
          varID           ! variable ID
     integer (i4) :: ierr
-
-    integer(kind=PIO_OFFSET)  :: offset   ! local offset of IO decomp
 
     logical(log_kind) :: UseRearranger
 
@@ -599,9 +595,7 @@ contains
     ! Pull information about the IO decomposition
     ! -------------------------------------------------
     if(Debug) print *, __PIO_FILE__,__LINE__,iodesc%Write%elemTYPE, iodesc%Write%fileTYPE
-    offset     = iodesc%IOmap%start
     len        = iodesc%IOmap%length
-    glen       = iodesc%glen
 
     ierr = pio_noerr
     if (IOproc) then       
@@ -621,7 +615,7 @@ contains
        !------------------------------------------------
        !JMD	IOBUF(:) = File%iosystem%io_rank
        if(Debug) print *, subName,': {comp,io}_rank: ',File%iosystem%comp_rank,File%iosystem%io_rank,  &
-            'offset: ',offset,'len: ',len ! ,' IOBUF: ',IOBUF
+            'offset: ',iodesc%iomap%start,'len: ',len ! ,' IOBUF: ',IOBUF
     else
        if(userearranger) call alloc_check(IOBUF,0,'write_darray_int:IOBUF')
     endif
@@ -755,15 +749,10 @@ contains
 
     logical (log_kind) :: IOproc     ! true if an IO processor
     integer (i4) ::  len,           &! local length of IO decomp 
-         glen,          &! global length of IO decomp in words
-         reclen,        &! global length of IO decomp in bytes
          iotype,        &! type of IO to perform
          ndims
     integer(pio_offset), dimension(PIO_MAX_VAR_DIMS) :: start, count
 
-
-
-    integer(kind=PIO_OFFSET)  :: offset   ! local offset of IO decomp
 
     logical(log_kind), parameter :: Debug = .FALSE.
     logical(log_kind) :: UseRearranger
@@ -788,8 +777,6 @@ contains
     ! -----------------------------------------------------
     ! Pull out information of DecompMap_t data structure
     ! -----------------------------------------------------
-    glen   = iodesc%glen
-    offset = iodesc%IOmap%start
     len    = iodesc%IOmap%length
     start=0
     count=0
@@ -849,7 +836,7 @@ contains
 #endif
 
     if(DebugIO) print *, subName,': {comp,io}_rank: ',File%iosystem%comp_rank,File%iosystem%io_rank,  &
-	 'offset: ',offset,'len: ',len !,' IOBUF: ',IOBUF
+	 'offset: ',iodesc%iomap%start,'len: ',len !,' IOBUF: ',IOBUF
 
 
 #ifdef TIMING
@@ -953,12 +940,9 @@ contains
 
     logical (log_kind) :: IOproc     ! true if an IO processor
     integer (i4) ::  len,           &! local length of IO decomp 
-         glen,          &! global length of IO decomp in words
-         reclen,        &! global length of IO decomp in bytes
          iotype          ! type of IO to perform
 
 
-    integer(kind=PIO_OFFSET)  :: offset   ! local offset of IO decomp
 
     logical(log_kind), parameter :: Debug = .FALSE.
     logical(log_kind) :: UseRearranger
@@ -985,8 +969,7 @@ contains
     ! -----------------------------------------------------
     ! Pull out information of DecompMap_t data structure
     ! -----------------------------------------------------
-    glen   = iodesc%glen
-    !    offset = iodesc%IOmap%start
+
     !    len    = iodesc%IOmap%length
     len    = iodesc%Read%n_words 
     ierr = pio_noerr

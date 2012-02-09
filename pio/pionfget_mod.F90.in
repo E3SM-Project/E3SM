@@ -14,13 +14,17 @@ module pionfget_mod
 #ifdef _NETCDF
   use netcdf            ! _EXTERNAL
 #endif
+#ifndef NO_MPIMOD
+  use mpi ! _EXTERNAL
+#endif
   implicit none
   private
 #ifdef _PNETCDF
 #include <pnetcdf.inc>  /*  _EXTERNAL */
 #endif
+#ifdef NO_MPIMOD
   include 'mpif.h'  ! _EXTERNAL
-
+#endif
 !>
 !! @defgroup PIO_get_var PIO_get_var
 !! @brief Reads netcdf metadata from a file

@@ -36,8 +36,11 @@ contains
   !
 
   integer function create_nf(File,fname, amode) result(ierr)
+#ifndef NO_MPIMOD
+    use mpi ! _EXTERNAL
+#else
     include 'mpif.h'      ! _EXTERNAL
-
+#endif
     type (File_desc_t), intent(inout) :: File
     character(len=*), intent(in)      :: fname
     integer(i4),  intent(in) :: amode
@@ -103,7 +106,7 @@ contains
           if (File%iosystem%io_rank == 0) then
              ! Stores the ncid in File%fh
              ierr = nf90_create(fname, nmode , File%fh)
-             if(Debug .or. Debugasync) print *,__PIO_FILE__,__LINE__,file%fh, ierr
+             if(Debug .or. Debugasync) print *,__PIO_FILE__,__LINE__,file%fh, ierr, nmode
 ! Set default to NOFILL for performance.  
              if(ierr==NF90_NOERR) &
                   ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
@@ -136,8 +139,11 @@ contains
   ! 
 
   integer function open_nf(File,fname, mode) result(ierr)
+#ifndef NO_MPIMOD
+    use mpi ! _EXTERNAL
+#else
     include 'mpif.h'      ! _EXTERNAL
-
+#endif
     type (File_desc_t), intent(inout) :: File
     character(len=*), intent(in)      :: fname
     integer(i4), optional, intent(in) :: mode
@@ -294,8 +300,11 @@ contains
   end function sync_nf
 
   subroutine check_file_type(File, filename) 
+#ifndef NO_MPIMOD
+    use mpi !_EXTERNAL
+#else
     include 'mpif.h'      ! _EXTERNAL
-
+#endif
 
     type (File_desc_t), intent(inout) :: File
     character(len=*), intent(in) :: filename

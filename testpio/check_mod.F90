@@ -4,12 +4,14 @@ module check_mod
   use pio_types, only : PIO_NOERR  ! _EXTERNAL
   use alloc_mod  ! _EXTERNAL
   use pio_support, only : CheckMPIReturn  ! _EXTERNAL
-
+#ifndef NO_MPIMOD
+  use mpi !_EXTERNAL
+#endif
   implicit none
   private 
-
+#ifdef NO_MPIMOD
   include 'mpif.h'    ! _EXTERNAL
-
+#endif
   public :: checkpattern 
 
   interface checkpattern

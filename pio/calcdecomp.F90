@@ -23,12 +23,14 @@ contains
 !  to be optimal for the filesystem being used.   The actual number of io tasks used is output in variable
 !  use_io_procs
 !
-  subroutine CalcStartandCount(basetype, ndims, gdims, num_io_procs, iorank, start, kount, use_io_procs)
+  subroutine CalcStartandCount(basetype, ndims, gdims, num_io_procs, iorank, start, kount, use_io_procs, innermostdecomposed)
     integer(i4), intent(in) :: ndims, num_io_procs, iorank, basetype
     integer(i4), intent(in) :: gdims(ndims)
     integer(kind=PIO_OFFSET), intent(out) :: start(ndims), kount(ndims)
     integer, intent(out) :: use_io_procs
-    integer :: i, p, dims(ndims), lb, ub, inc
+    integer, intent(out), optional :: innermostdecomposed
+    integer :: i,  dims(ndims), lb, ub, inc
+    integer(kind=pio_offset) :: p
     integer :: extras, subrank, tioprocs, rem
 
     integer, parameter :: stripeSize = 864*1024
@@ -36,6 +38,7 @@ contains
     integer :: maxbytes = stripeSize+256   ! maximum length of contigous block in bytes to put on a IO task
 
     integer :: minblocksize, basesize, maxiosize, ioprocs, tiorank
+    integer :: ldims
 
     select case(basetype)
     case(PIO_int)
@@ -50,28 +53,39 @@ contains
 
     p=product(gdims)
     use_io_procs = max(1, min(int(real(p)/real(minblocksize)+0.5),num_io_procs))
-! Things work best if use_io_procs is a multiple of gdims(ndims)
-! this adjustment makes it so, increasing the blocksize a bit
-    if (gdims(ndims)<use_io_procs) then
-       do while(mod(gdims(ndims),use_io_procs)>0)
-          use_io_procs=use_io_procs-1
-       end do
-    end if
 
-! Handle this case here, and make things easier below
-!    if(gdims(ndims)<use_io_procs .and. mod(use_io_procs,gdims(ndims))==1) use_io_procs=use_io_procs-1
 
-!    print *,p,use_io_procs
+
 
     start(:)=1
     kount(:)=0
     if(iorank>=use_io_procs) return 
+    ldims=ndims
+    p=basesize
+    do i=1,ndims
+       p=p*gdims(i)
+       if(p/use_io_procs > maxbytes) then
+          ldims=i
+          exit
+       end if
+    end do
+
+! Things work best if use_io_procs is a multiple of gdims(ndims)
+! this adjustment makes it so, potentially increasing the blocksize a bit
+    if (gdims(ldims)<use_io_procs) then
+       do while(mod(gdims(ldims),use_io_procs)>0)
+          use_io_procs=use_io_procs-1
+       end do
+    end if
+
+
 
     kount=gdims
 
     ioprocs=use_io_procs
     tiorank=iorank
-    do i=ndims,1,-1
+
+    do i=ldims,1,-1
        if(gdims(i)>1) then
           if(gdims(i)>=ioprocs) then
              call computestartandcount(gdims(i),ioprocs,tiorank,start(i),kount(i))
@@ -87,6 +101,11 @@ contains
           end if
        end if
     end do
+    if(present(innermostdecomposed)) then
+       innermostdecomposed=i
+    end if
+    if(Debug) print *,__PIO_FILE__,__LINE__,'iorank: ',iorank,'start: ',start,' kount: ',kount
+
 
   end subroutine Calcstartandcount
 
@@ -122,17 +141,17 @@ program sandctest
   use calcdecomp  !_EXTERNAL
   implicit none
   
-  integer, parameter :: ndims=4
+!  integer, parameter :: ndims=4
 !  integer, parameter :: gdims(ndims) = (/66,199,10,8/)
-!  integer, parameter :: ndims=3
-!  integer, parameter :: gdims(ndims) = (/12,95,97/)
-  integer, parameter :: num_io_procs=30
-  integer :: gdims(ndims)
+  integer, parameter :: ndims=3
+  integer, parameter :: gdims(ndims) = (/3600,2400,40/)
+  integer, parameter :: num_io_procs=8
+!  integer :: gdims(ndims)
   integer :: psize, n, i,j,k,m
   integer, parameter :: imax=200,jmax=200,kmax=30,mmax=7
   integer(kind=pio_offset) :: start(ndims), count(ndims)
   integer :: iorank, numaiotasks, tpsize
-!#ifdef DOTHIS
+#ifdef DOTHIS
   do i=1,imax
      gdims(1)=i
      do j=1,jmax
@@ -141,7 +160,7 @@ program sandctest
            gdims(3)=k
            do m=1,mmax
               gdims(4)=m
-!#endif
+#endif
               tpsize = 0
               numaiotasks=0
               do while(tpsize==0)
@@ -157,7 +176,7 @@ program sandctest
 !                                        write(*,'(i2,a,3i5,a,3i5,2i12)') iorank,' start =',start,' count=', count, product(gdims), psize
                     !                 else if(ndims==4) then
                     if(sum(count)>0) then
-                       write(*,'(i2,a,4i5,a,4i5,2i12)') iorank,' start =',start,' count=', count, product(gdims), psize
+                       write(*,'(i2,a,3i8,a,3i8,2i12)') iorank,' start =',start,' count=', count, product(gdims), psize
                        if(any(start<0)) then
                           print *, gdims
                           stop 
@@ -170,11 +189,11 @@ program sandctest
                     stop
                  end if
               end do
-!#ifdef DOTHIS
+#ifdef DOTHIS
            end do
         end do
      end do
   end do
-!#endif
+#endif
 end program sandctest
 #endif

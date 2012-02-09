@@ -149,6 +149,7 @@ sub loadmodules{
 		   kraken => "/opt/modules/default/",
 		   hopper => "/opt/modules/default/",
 		   lynx => "/opt/modules/default/",
+		   lynx_intel => "/opt/modules/default/",
 		   pleiades => "/usr",
                    columbia => "/usr/share/modules/"};
 #HOST SPECIFIC END
@@ -185,6 +186,7 @@ sub loadmodules{
     
 #HOST SPECIFIC START
     if($host =~ "bluefire"){
+	module("load netcdf/4.1.3_mpi");
 #	module("load xlf12");
 #        module("list");
     }elsif($host =~ "jaguar"){
@@ -227,9 +229,20 @@ sub loadmodules{
     }elsif($host =~ "columbia"){
         module(" load pd-netcdf.3.6.2");
 !        module(" load pd-pnetcdf.1.1.1");
+    }elsif($host =~ "lynx_intel"){
+	require "/opt/modules/default/init/perl";
+	module(" rm PrgEnv-pgi ");
+	module(" load PrgEnv-intel");
+	module(" switch intel intel/12.1.0");
+        module(" load INTEL/netcdf4/4.1.3_seq");
+        module(" load pnetcdf/1.2.0");
+	module(" list");
     }elsif($host =~ "lynx"){
 	require "/opt/modules/default/init/perl";
 #	module(" load netcdf");
+	module(" switch pgi pgi/11.10.0");
+        module(" load PGI/netcdf4/4.1.3_seq");
+        module(" load pnetcdf/1.2.0");
         module("list");
     }
 	

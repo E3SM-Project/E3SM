@@ -1,14 +1,14 @@
 &io_nml
   casename    = 'pb06:pnc:box:stride=4:3d:nblksppe=4:g_xy:go_yxz:b_xy'
-  nx_global   = 360
-  ny_global   = 240
+  nx_global   = 3600
+  ny_global   = 2400
   nz_global   = 60
   iofmt       = 'pnc'
   rearr       = 'box'
   nprocsIO    = -1
-  stride      = 4
+  stride      = -1
   base        = 0
-  maxiter     = 10
+  maxiter     = 1
   dir         = './none/'
   num_aggregator = 1
   DebugLevel  = 0

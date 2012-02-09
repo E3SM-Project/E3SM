@@ -94,6 +94,10 @@ end subroutine ReadHeader
 
 subroutine split_comm(initial_comm, nprocs, num_iotasks, stride, base, mpi_comm_compute, mpi_comm_io, intercomm)
   use pio_support !_EXTERNAL
+#ifndef NO_MPIMOD
+  use mpi !_EXTERNAL
+#endif
+
   implicit none
 
   integer, intent(in) :: initial_comm, nprocs, num_iotasks, stride, base
@@ -101,7 +105,9 @@ subroutine split_comm(initial_comm, nprocs, num_iotasks, stride, base, mpi_comm_
 
   integer :: ierr
   integer :: pelist(3,1), mpigrp_init, mpigrp_io, mpigrp_compute
+#ifdef NO_MPIMOD
   include 'mpif.h' !_EXTERNAL
+#endif
 #ifndef _MPISERIAL
   mpi_comm_compute = MPI_COMM_NULL
   mpi_comm_io = MPI_COMM_NULL

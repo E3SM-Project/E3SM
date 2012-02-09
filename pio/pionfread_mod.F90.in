@@ -35,9 +35,13 @@ contains
 #ifdef TIMING
     use perf_mod, only : t_startf, t_stopf  !_EXTERNAL
 #endif
+#ifndef NO_MPIMOD
+    use mpi   !_EXTERNAL
+#endif
     implicit none
-
+#ifdef NO_MPIMOD
     include 'mpif.h'   !_EXTERNAL
+#endif
 #ifdef _PNETCDF
 #include <pnetcdf.inc>   /* _EXTERNAL */
 #endif
@@ -80,7 +84,7 @@ contains
           ierr=nfmpi_get_vara_all( File%fh,varDesc%varid, &
                start, &
                count, &
-               IOBUF,int(iodesc%Read%n_ElemTYPE,kind=pio_offset), &
+               IOBUF,iodesc%Read%n_ElemTYPE, &
                iodesc%Read%ElemTYPE)
 #endif
 

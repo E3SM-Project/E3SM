@@ -125,7 +125,7 @@ SRCS_CPP= $(SRCS_F90:.F90=$(CPPSUF))
 	$(MPIFC) -c $(FFLAGS) $(FOPTS) $(INCLUDES) $(PIOINC) $*.f90
 else
 .F90.o:
-	$(MPIFC) -c $(FFLAGS) $(FOPTS) $(INCLUDES) $(PIOINC) $*.F90
+	$(MPIFC) -c $(FPPDEFS) $(FFLAGS) $(FOPTS) $(INCLUDES) $(PIOINC) $*.F90
 endif
 
 

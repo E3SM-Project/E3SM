@@ -12,10 +12,14 @@ contains
 
     use pio_support, only : piodie
     use pio_types, only : PIO_char, PIO_int, PIO_double, PIO_real
-   
+#ifndef NO_MPIMOD
+    use mpi, only : MPI_REAL8, MPI_REAL4, MPI_INTEGER, MPI_CHARACTER  ! _EXTERNAL
+#endif
 
     implicit none
+#ifdef NO_MPIMOD
     include 'mpif.h'            ! _EXTERNAL
+#endif
     integer, intent(in):: ptype
 
     select case(ptype)

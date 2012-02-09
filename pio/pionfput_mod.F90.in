@@ -18,6 +18,9 @@ module pionfput_mod
 #ifdef _NETCDF
   use netcdf            ! _EXTERNAL
 #endif
+#ifndef NO_MPIMOD
+  use mpi   ! _EXTERNAL
+#endif
   implicit none
   private
 #ifdef _PNETCDF
@@ -27,8 +30,9 @@ module pionfput_mod
 ! Required for netcdf bug workaround
   integer, external :: nf_put_vars_text
 #endif
+#ifdef NO_MPIMOD
   include 'mpif.h'   ! _EXTERNAL
-
+#endif
 !>
 !! @defgroup PIO_put_var PIO_put_var
 !! @brief Writes netcdf metadata to a file

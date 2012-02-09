@@ -165,7 +165,7 @@ AC_LANG_PUSH(Fortran)
 AC_FC_SRCEXT(F90)
 
 AC_FC_FREEFORM()
-AC_FC_LINE_LENGTH(unlimited)
+AC_FC_LINE_LENGTH([unlimited])
 
 # When using a cache file it appears that sometimes ac_ext does not get set
 if test -z "$ac_ext"; then
@@ -185,7 +185,7 @@ fc_version="$ac_fc_version_output"
 
 # CHECK MPI BY DEFAULT
 if test "$USE_MPISERIAL" = "yes"
-  then CPPDEFS="$CPPDEFS -D_MPISERIAL"
+  then CPPDEFS="$CPPDEFS -D_MPISERIAL -DNO_MPIMOD "
        echo "building for use with mpi-serial"
   MPICC=$CC
 
@@ -207,6 +207,16 @@ if test "$USE_MPISERIAL" = "yes"
 else
   CPPDEFS="$CPPDEFS -DSPMD -DHAVE_MPI"
   ACX_MPI()
+  # Check for mpi.mod
+  AC_LANG_PUSH(Fortran)
+  AC_FC_SRCEXT(F90)
+  AC_MSG_CHECKING([for mpi.mod])
+  OLDFC=$FC
+  FC=$MPIFC
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([],[       use mpi])],[AC_MSG_RESULT(yes)],
+    [CPPDEFS="$CPPDEFS -DNO_MPIMOD"; AC_MSG_RESULT(no)])
+  FC=$OLDFC
+
 fi
 
 AC_LANG_POP(Fortran)
@@ -364,6 +374,7 @@ if test "$USE_NETCDF" = "yes"
                            defaulting to $NETCDF_PATH])
        fi             
        AC_LANG_PUSH(Fortran)
+       AC_FC_SRCEXT(F90)
        ACX_NETCDF()
 
        AC_LANG_POP(Fortran)

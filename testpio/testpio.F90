@@ -24,22 +24,21 @@ program testpio
 #ifdef TIMING
   use perf_mod        ! _EXTERNAL
 #endif
-
-  use pio_support, only : CheckMPIReturn ! _EXTERNAL
-  use pio_support, only : piodie ! _EXTERNAL
-  use pio_support, only : pio_writedof,pio_readdof ! _EXTERNAL
-
+  use pio_support, only : piodie , checkmpireturn, pio_writedof, pio_readdof !_EXTERNAL
   ! Modules from testpio suite that are used by this application
 
   use gdecomp_mod, only: gdecomp_type, gdecomp_DOF, gdecomp_read_nml, camlike_decomp_generator
   use alloc_mod       ! _EXTERNAL
   use check_mod
   use namelist_mod
+#ifndef NO_MPIMOD
+  use mpi    ! _EXTERNAL
+#endif
 
   implicit none
-
+#ifdef NO_MPIMOD
   include 'mpif.h'    ! _EXTERNAL
-
+#endif
   ! Code name, used in debug prints and passed to called routines for flow tracing
   character(len=*), parameter :: myname='testpio'
 

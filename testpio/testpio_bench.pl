@@ -54,8 +54,7 @@ my $romio_cb_read = '';    # Use automatic, enable, or disable
 my $romio_direct_io = '';  # Use automatic, enable, or disable
 
 my $set_ibm_io_values = 0;      # Set to one if IBM PE IO settings are present
-my $ibm_io_buffer_size = '';    # user defind, kb scale.
-my $mp_io_buffer_size =  '';    # user defined, sets MP ENV variable. 
+my $ibm_io_buffer_size = '';
 my $ibm_io_largeblock_io = '';  # Set to "true" or "false"
 my $ibm_io_sparse_access = '';  # Set to "true" or "false"
 
@@ -93,7 +92,6 @@ my $result = GetOptions("suites=s@"=>\$suites,
                         "romio-cb-read=s"=>\$romio_cb_read,
                         "romio-direct-io"=>\$romio_direct_io,
                         "ibm-io-buffer-size=s"=>\$ibm_io_buffer_size,
-                        "mp-io-buffer-size=s"=>\$mp_io_buffer_size, 
                         "ibm-io-largeblock-io=s"=>\$ibm_io_largeblock_io,
                         "ibm-io-sparse-access=s"=>\$ibm_io_sparse_access,
                         "lfs-ost-count=i"=>\$lfs_ost_count,
@@ -149,8 +147,6 @@ sub usage{
     print "                          in logfile\n";
     print "--logfile-name-comment=str\n";
     print "                        : Comment string included in logfile name\n";
-    print "--mp-io-buffer-size=N   : Sets mp io buffer size.  --\n";
-    print "                          specify with either \"k\" or \"m\" for kilobytes or megabytes, respectively\n";
     exit;
 }
 
@@ -327,7 +323,6 @@ my %configuration = ( ldx => 0,
                       romio_cb_read => '',
                       romio_direct_io => '',
                       set_ibm_io_values => 0,
-                      mp_io_buffer_size => '',
                       ibm_io_buffer_size => '',
                       ibm_io_largeblock_io => '',
                       ibm_io_sparse_access => '');
@@ -343,6 +338,7 @@ if (defined $maxiter) {$configuration{'maxiter'} = $maxiter;}
 if (defined $numvars) {$configuration{'numvars'} = $numvars;}
 if (defined $dir)     {$configuration{'dir'} = $dir;}
 if (defined $numagg)  {$configuration{'numagg'} = $numagg;}
+
 
 if (defined $set_mpi_values) {
   $configuration{'set_mpi_values'} = $set_mpi_values;
@@ -374,10 +370,6 @@ if (defined $set_ibm_io_values) {
 
 if (defined $ibm_io_buffer_size) {
   $configuration{'ibm_io_buffer_size'} = $ibm_io_buffer_size;
-}
-
-if (defined $mp_io_buffer_size)  {
-  $configuration{'mp_io_buffer_size'}  = $mp_io_buffer_size;
 }
 
 if (defined $ibm_io_largeblock_io) {
@@ -476,9 +468,6 @@ if ($set_romio_values != 0) {
   }
 }
 
-## Add the mp io buffer size values if set:
- if ($mp_io_buffer_size ne '') { $suffix .= "_mbs-" . $mp_io_buffer_size; }      
-
 
 ## Add IBM PE IO values to the suffix
 
@@ -528,6 +517,116 @@ if ($logfile_name_user ne '') {
 
 my $testname = "bench." . $date . "." . $suffix;
 
+printf "testname: %s\n",$testname;
+
+if (defined $iodecomp) {$configuration{'iodecomp'} = $iodecomp;}
+
+#print "ldx: $configuration{'ldx'} ldy: $ldy ldz: $ldz\n";
+
+if ($found) {
+  print "ldx: $configuration{'ldx'} ldy: $configuration{'ldy'} ldz: $configuration{'ldz'}\n";
+  $outfile = "$cfgdir/testpio_in." . $suffix;
+  unlink("$outfile") if(-e "$outfile");
+
+  open(F,"+> $outfile");
+  gen_io_nml();       # Generate the io_nml namelist
+  gen_compdof_nml();  # Generate the compdof_nml namelist
+  if(defined $iodecomp) {
+      gen_iodof_nml();    # Generate the iodof_nml namelist
+  }
+  gen_prof_inparm();  # Generate the prof_inparm namelist
+
+  close(F);
+} else {
+  printf "Could not find configuration for benchmark: %s on %d MPI tasks \n" ,$bname, $pecount;
+  exit(-1);
+}
+
+my $corespernode = $attributes{corespernode};
+
+my $srcdir = "$workdir/src";
+my $tstdir = "$srcdir/testpio";
+copy("$outfile","$tstdir");
+my $testpiodir = cwd();
+my $piodir = "$testpiodir/..";
+# my $date = `date +%y%m%d-%H%M%S`;
+my $user = $ENV{USER};
+chomp $date;
+
+$outfile = "$testpiodir/testpio.out.$date";
+my $script  = "$testpiodir/testpio.sub.$date";
+
+open(F,">$script");
+print F "#!/usr/bin/perl\n";
+$preambleResource = Utils->preambleResource("$host","$pecount","$corespernode");
+print F $preambleResource;
+print F "$attributes{preamble}\n";
+
+# Create a valid project string for this user
+$projectInfo = Utils->projectInfo("$host","$user");
+print F $projectInfo;
+
+my @env;
+foreach(keys %attributes){
+#    if($attributes{$_} =~  /\$\{?(\w+)\}?/){
+#	my $envvar = $ENV{$1};
+#	$attributes{$_}=~ s/\$\{?$1\}?/$envvar/
+#    }
+    if(/ADDENV_(.*)/){
+	print F "\$ENV{$1}=\"$attributes{$_}:\$ENV{$1}\"\;\n";
+    }elsif(/ENV_(.*)/){
+        print "set $1 $attributes{$_}\n";
+	print F "\$ENV{$1}=\"$attributes{$_}\"\;\n";
+    }	
+    
+}
+
+
+my $run = $attributes{run};
+my $exename = "./testpio";
+
+#my $foo= Utils->runString($host,$pecount,$run,$exename,$log);
+#print "EXEC command: ($foo)\n";
+
+print F << "EOF";
+use strict;
+use lib "$cfgdir";
+use File::Copy;
+use File::Path;
+use POSIX qw(ceil);
+#unshift \@INC, "$cfgdir/../testpio";
+
+#chmod 0755,"$cfgdir/../testpio/Utils.pm";
+use Utils;
+
+chdir ("$cfgdir");
+
+
+
+mkdir "$srcdir" if(! -d "$srcdir");
+
+my \$rc = 0xffff & system("rsync -rp $piodir $srcdir");
+if(\$rc != 0) {
+    print "rsync failed with \$rc, copying files\n";
+    system("cp -fr $piodir/pio $srcdir");
+    system("cp -fr $piodir/mct $srcdir");
+    system("cp -fr $piodir/timing $srcdir");
+    system("cp -fr $piodir/testpio $srcdir");
+}
+
+my \$confopts = {bench=>"--enable-pnetcdf --enable-mpiio --enable-netcdf --enable-timing $enablenetcdf4"};
+#my \$confopts = {bench=>""};
+
+my \$testlist = {bench=>["generated"]};
+
+unlink("$workdir/wr01.dof.txt") if(-e "$workdir/wr01.dof.txt");
+my \$suite;
+my \$passcnt=0;
+my \$failcnt=0;
+my \$host   = "$host";
+my \$pecount = $pecount;
+my \$run     = "$attributes{run}";
+
 if ($use_mpich_env != 0) {
     \$ENV{'MPICH_ENV_DISPLAY'} = '1'; # this displays all the MPICH environment variables
 }
@@ -538,9 +637,9 @@ if ($use_cray_env != 0) {
     \$ENV{'MPICH_MPIIO_CB_ALIGN'} = '2';  # Do not allign to lustre stripes
 }
 
-if ($use_ibm_env != 0) {                     #left set and unchanged.nothing added.
-    if ('$mp_io_buffer_size' ne '') {
-        \$ENV{'MP_IO_BUFFER_SIZE'} = "$mp_io_buffer_size";
+if ($use_ibm_env != 0) {
+    if ('$ibm_io_buffer_size' ne '') {
+        \$ENV{'MP_IO_BUFFER_SIZE'} = "$ibm_io_buffer_size";
     }
 }
 
@@ -702,6 +801,7 @@ sub gen_io_nml {
     print F "ibm_io_largeblock_io = '$configuration{'ibm_io_largeblock_io'}'\n";
     print F "ibm_io_sparse_access = '$configuration{'ibm_io_sparse_access'}'\n";
   }
+
   print F "DebugLevel  = 0\n";
   print F "compdof_input = 'namelist'\n";
   if(defined $iodecomp) {

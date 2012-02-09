@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+/<?xml version="1.0"?>
 
 <testpioconfig>
 
@@ -70,8 +70,8 @@
  />
 
 <bluefire
-  NETCDF_PATH="/contrib/netcdf/4.1.3_seq" 
-  PNETCDF_PATH="/contrib/parallel-netcdf-1.2.0-svn913" 
+  NETCDF_PATH="$NETCDF" 
+  PNETCDF_PATH="/contrib/parallel-netcdf-1.2.0-svn961" 
   FFLAGS = "-g -qfullpath -O3 -WF,-DASYNC_PNETCDF"
   CFLAGS = "-g -qfullpath -O3"
   ENV_PREATTACH_L2CACHE_LIST="AUTO_SELECT"
@@ -82,14 +82,15 @@
   CC = "xlc_r"
   MPICC="mpcc_r"
   LDFLAGS=" "
-  conopts = " --enable-timing --enable-filesystem-hints=gpfs "
+  LDLIBS="`nc-config --flibs`"
+  conopts = " --enable-timing --enable-filesystem-hints=gpfs --enable-netcdf4 "
   workdir = "/ptmp/${USER}/testpio"
   submit = "bsub <"
   run = "mpirun.lsf "
   corespernode="32"
   pecount="64"
   preamble = "
-#BSUB -q premium
+#BSUB -q regular
 #BSUB -N
 #BSUB -x
 #BSUB -a poe
@@ -348,13 +349,33 @@
 <lynx
   MPIFC = "ftn "
   MPICC  = "cc "
-  FC    = "pgf90"
-  CC     = "pgcc"
+  FC    = "ftn"
+  CC     = "cc"
+  LDLIBS = " -L/contrib/hdf5/1.8.7_seq/hdf5-pgi//lib -lhdf5_hl -lhdf5 -lm -lcurl -L/contrib/libidn/1.19/pgi/lib -lidn -lssl -lcrypto -ldl -lz"
   CPPDEFS = "-D_USE_FLOW_CONTROL -DFORTRANUNDERSCORE"
-  NETCDF_PATH = "/contrib/netcdf/3.6.3/pgi"
-  PNETCDF_PATH = "/contrib/pnetcdf/1.2.0/pgi"
-  workdir = "/ptmp/${USER}/testpio"
+  NETCDF_PATH = "${NETCDF}"
+  workdir = "/ptmp/${USER}/testpio_i8.pgi"
   run = "aprun"
+  corespernode = "12"
+  submit = "qsub "
+  conopts = "   --enable-filesystem-hints=lustre "
+  preamble="
+#PBS -N testpio_suite
+#PBS -l walltime=01:50:00
+#PBS -j oe
+#PBS -V"
+/>
+<lynx_intel
+  MPIFC = "ftn "
+  MPICC  = "cc "
+  FC    = "ftn"
+  CC     = "cc"
+  LDLIBS = " "
+  CPPDEFS = " -DFORTRANUNDERSCORE"
+  NETCDF_PATH = "${NETCDF}"
+  LDLIBS="`$NETCDF/bin/nc-config --flibs` -lssl -lcrypto -ldl -lz -L/contrib/libidn/1.19/gnu/lib -lidn -L/opt/cray/pmi/1.0-1.0000.8160.39.1.ss/lib64 -lpmi"
+  workdir = "/ptmp/${USER}/testpio_i8.intel"
+  run = "aprun" 
   corespernode = "12"
   submit = "qsub "
   conopts = "   --enable-filesystem-hints=lustre "

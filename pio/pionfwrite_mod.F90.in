@@ -34,7 +34,13 @@ contains
 #ifdef TIMING
     use perf_mod, only : t_startf, t_stopf  !_EXTERNAL
 #endif
+#ifndef NO_MPIMOD
+    use mpi !_EXTERNAL
+#endif
+    implicit none
+#ifdef NO_MPIMOD
     include 'mpif.h'   !_EXTERNAL
+#endif
 #ifdef _PNETCDF
 #   include <pnetcdf.inc>   /* _EXTERNAL */
 #endif
@@ -72,9 +78,11 @@ contains
              call piodie(subname,__LINE__,'empty iobuf')
           end if
 #endif
+          if(file%iosystem%io_rank==0) print *,__FILE__,__LINE__,start,count,size(iobuf),iodesc%write%n_elemtype,iodesc%write%elemtype
+
           ierr=nfmpi_put_vara_all( File%fh,varDesc%varid,start, &
                count,IOBUF, &
-               int(iodesc%Write%n_ElemTYPE,kind=pio_offset), &
+               iodesc%Write%n_ElemTYPE, &
                iodesc%Write%ElemTYPE)
 
           if(Debug.or.ierr/=PIO_noerr) print *,subname,__LINE__, &

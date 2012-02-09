@@ -4,9 +4,13 @@ subroutine pio_callback_handler(iosystem, msg)
   use pio
   use pio_msg_mod
   use pio_support, only : debugAsync, piodie
+#ifndef NO_MPIMOD
+  use mpi !_EXTERNAL
+#endif
   implicit none
+#ifdef NO_MPIMOD
   include 'mpif.h' !_EXTERNAL
-
+#endif
   type(iosystem_desc_t) :: iosystem
   integer, intent(in) :: msg
 
@@ -75,9 +79,13 @@ subroutine create_file_handler(iosystem)
   use pio_kinds, only : char_len
   use pio_msg_mod, only : add_to_file_list
   use pio_support, only : debugAsync
+#ifndef NO_MPIMOD
+  use mpi !_EXTERNAL
+#endif
   implicit none
+#ifdef NO_MPIMOD
   include 'mpif.h' !_EXTERNAL
-
+#endif
   type(iosystem_desc_t) :: iosystem
 
   integer :: ierr
@@ -106,9 +114,13 @@ subroutine open_file_handler(iosystem)
   use pio_kinds
   use pio_msg_mod
   use pio_support, only : debugAsync
+#ifndef NO_MPIMOD
+  use mpi !_EXTERNAL
+#endif
   implicit none
+#ifdef NO_MPIMOD
   include 'mpif.h' !_EXTERNAL
-
+#endif
   type(iosystem_desc_t) :: iosystem
 
   integer :: ierr
@@ -138,15 +150,19 @@ subroutine initdecomp_dof_handler(iosystem)
   use pio_kinds
   use pio_msg_mod
   use pio_support, only : debugAsync
+#ifndef NO_MPIMOD
+  use mpi !_EXTERNAL
+#endif
   implicit none
+#ifdef NO_MPIMOD
   include 'mpif.h' !_EXTERNAL
-
+#endif
   type(iosystem_desc_t) :: iosystem
 
   type(io_desc_t), pointer :: iodesc
   integer :: ierr
   integer(i4) :: basepiotype, dims_size, dims(PIO_MAX_VAR_DIMS), dof_size, sandc_size
-  integer(i4) :: compdof(1)
+  integer(kind=pio_offset) :: compdof(1)
   integer(kind=pio_offset), allocatable :: iostart(:), iocount(:)
 
   call mpi_bcast(basepiotype, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
@@ -171,9 +187,13 @@ subroutine writedarray_handler(iosystem)
   use pio_kinds
   use pio_msg_mod
   use pio_support, only : debugAsync
+#ifndef NO_MPIMOD
+  use mpi !_EXTERNAL
+#endif
   implicit none
+#ifdef NO_MPIMOD
   include 'mpif.h' !_EXTERNAL
-
+#endif
   type(iosystem_desc_t) :: iosystem
   type(file_desc_t), pointer :: file
   type(var_desc_t) :: v
@@ -230,9 +250,13 @@ subroutine readdarray_handler(iosystem)
   use pio_kinds
   use pio_msg_mod
   use pio_support, only : debugAsync
+#ifndef NO_MPIMOD
+  use mpi !_EXTERNAL
+#endif
   implicit none
+#ifdef NO_MPIMOD
   include 'mpif.h' !_EXTERNAL
-
+#endif
   type(iosystem_desc_t) :: iosystem
   type(file_desc_t), pointer :: file
   type(var_desc_t) :: v
@@ -269,8 +293,13 @@ end subroutine readdarray_handler
 
 subroutine seterrorhandling_handler(ios)
   use pio, only : iosystem_desc_t, pio_seterrorhandling
+#ifndef NO_MPIMOD
+  use mpi !_EXTERNAL
+#endif
   implicit none
+#ifdef NO_MPIMOD
   include 'mpif.h' !_EXTERNAL
+#endif 
   type(iosystem_desc_t), intent(inout) :: ios
   integer :: method, ierr
 
@@ -307,8 +336,13 @@ subroutine att_handler(ios, msg)
   use pio_kinds, only : i4, r4, r8
   use pio_msg_mod, only : lookupfile, pio_msg_putatt, pio_msg_getatt
   use pio_support, only : debugAsync, piodie
+#ifndef NO_MPIMOD
+  use mpi !_EXTERNAL
+#endif
   implicit none
+#ifdef NO_MPIMOD
   include 'mpif.h' !_EXTERNAL
+#endif
   integer, intent(in) :: msg
   type(iosystem_desc_t), intent(inout) :: ios
   type(file_desc_t), pointer :: file
@@ -365,8 +399,14 @@ subroutine att_1d_handler(ios, msg)
   use pio_kinds, only : i4, r4, r8
   use pio_msg_mod, only : lookupfile, pio_msg_getatt_1d, pio_msg_putatt_1d
   use pio_support, only : debugAsync, piodie
+#ifndef NO_MPIMOD
+  use mpi !_EXTERNAL
+#endif
   implicit none
+#ifdef NO_MPIMOD
   include 'mpif.h' !_EXTERNAL
+#endif
+
   type(iosystem_desc_t), intent(inout) :: ios
   integer, intent(in) :: msg
   type(file_desc_t), pointer :: file

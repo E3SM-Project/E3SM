@@ -102,8 +102,8 @@ module pio_types
 #endif
         integer(i4)         ::  fileTYPE   ! MPI data types for file
         integer(i4)         ::  elemTYPE
-        integer(i4)         :: n_elemTYPE
         integer(i4)         :: n_words
+        integer(kind=pio_offset)         :: n_elemTYPE
     end type IO_desc2_t
 
 !>
@@ -129,6 +129,7 @@ module pio_types
 	integer(kind=PIO_Offset), pointer :: start(:) => NULL()
 	integer(kind=PIO_Offset), pointer :: count(:) => NULL()
 
+
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ! fields for box-based rearranger
         ! should put this in its own derived type later
@@ -136,7 +137,7 @@ module pio_types
         integer :: baseTYPE
 
         integer, pointer :: dest_ioproc(:)=> NULL()     ! for each dof
-        integer, pointer :: dest_ioindex(:)=> NULL()    ! for each dof
+        integer(kind=pio_offset), pointer :: dest_ioindex(:)=> NULL()    ! for each dof
 
 
         ! Values needed only on io procs
@@ -155,7 +156,7 @@ module pio_types
         type (DecompMap_t)  :: IOmap      ! IO decomposition map
         type (DecompMap_t)  :: COMPmap    ! Computational decomposition map
         integer :: nrecvs                      ! valid for io procs
-        integer(i4)         :: glen       ! global length of array in words
+        integer(kind=PIO_OFFSET)         :: glen       ! global length of array in words
 	integer(i4)         :: compsize   ! size of expected comp buffer
         integer(i4)         :: maxiobuflen   ! size of largest iobuffer
         integer(i4)         :: ndof

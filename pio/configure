@@ -4169,7 +4169,7 @@ fc_version="$ac_fc_version_output"
 
 # CHECK MPI BY DEFAULT
 if test "$USE_MPISERIAL" = "yes"
-  then CPPDEFS="$CPPDEFS -D_MPISERIAL"
+  then CPPDEFS="$CPPDEFS -D_MPISERIAL -DNO_MPIMOD "
        echo "building for use with mpi-serial"
   MPICC=$CC
 
@@ -4415,13 +4415,87 @@ $as_echo "#define HAVE_MPI 1" >>confdefs.h
         :
 fi
 
+  # Check for mpi.mod
+  ac_ext=${ac_fc_srcext-f}
+ac_compile='$FC -c $FCFLAGS $ac_fcflags_srcext conftest.$ac_ext >&5'
+ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_fc_compiler_gnu
+
+  ac_ext=${ac_fc_srcext-f}
+ac_compile='$FC -c $FCFLAGS $ac_fcflags_srcext conftest.$ac_ext >&5'
+ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_fc_compiler_gnu
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for Fortran flag to compile .F90 files" >&5
+$as_echo_n "checking for Fortran flag to compile .F90 files... " >&6; }
+if test "${ac_cv_fc_srcext_F90+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_ext=F90
+ac_fcflags_srcext_save=$ac_fcflags_srcext
+ac_fcflags_srcext=
+ac_cv_fc_srcext_F90=unknown
+for ac_flag in none -qsuffix=f=F90 -Tf; do
+  test "x$ac_flag" != xnone && ac_fcflags_srcext="$ac_flag"
+  cat > conftest.$ac_ext <<_ACEOF
+      program main
+
+      end
+_ACEOF
+if ac_fn_fc_try_compile "$LINENO"; then :
+  ac_cv_fc_srcext_F90=$ac_flag; break
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+done
+rm -f conftest.$ac_objext conftest.F90
+ac_fcflags_srcext=$ac_fcflags_srcext_save
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_fc_srcext_F90" >&5
+$as_echo "$ac_cv_fc_srcext_F90" >&6; }
+if test "x$ac_cv_fc_srcext_F90" = xunknown; then
+  as_fn_error $? "Fortran could not compile .F90 files" "$LINENO" 5
+else
+  ac_fc_srcext=F90
+  if test "x$ac_cv_fc_srcext_F90" = xnone; then
+    ac_fcflags_srcext=""
+    FCFLAGS_F90=""
+  else
+    ac_fcflags_srcext=$ac_cv_fc_srcext_F90
+    FCFLAGS_F90=$ac_cv_fc_srcext_F90
+  fi
+
+
+fi
+ac_ext=${ac_fc_srcext-f}
+ac_compile='$FC -c $FCFLAGS $ac_fcflags_srcext conftest.$ac_ext >&5'
+ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_fc_compiler_gnu
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for mpi.mod" >&5
+$as_echo_n "checking for mpi.mod... " >&6; }
+  OLDFC=$FC
+  FC=$MPIFC
+  cat > conftest.$ac_ext <<_ACEOF
+      program main
+       use mpi
+      end
+_ACEOF
+if ac_fn_fc_try_compile "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  CPPDEFS="$CPPDEFS -DNO_MPIMOD"; { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  FC=$OLDFC
+
 fi
 
-ac_ext=c
-ac_cpp='$CPP $CPPFLAGS'
-ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_c_compiler_gnu
+ac_ext=${ac_fc_srcext-f}
+ac_compile='$FC -c $FCFLAGS $ac_fcflags_srcext conftest.$ac_ext >&5'
+ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_fc_compiler_gnu
 
 
 
@@ -4447,11 +4521,10 @@ else
   FC_USE_SIZEOF="no"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-       ac_ext=c
-ac_cpp='$CPP $CPPFLAGS'
-ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_c_compiler_gnu
+       ac_ext=${ac_fc_srcext-f}
+ac_compile='$FC -c $FCFLAGS $ac_fcflags_srcext conftest.$ac_ext >&5'
+ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_fc_compiler_gnu
 
 
        if test "$FC_USE_SIZEOF" = "yes"
@@ -4496,11 +4569,10 @@ else
   USE_MPIIO="no"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-       ac_ext=c
-ac_cpp='$CPP $CPPFLAGS'
-ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_c_compiler_gnu
+       ac_ext=${ac_fc_srcext-f}
+ac_compile='$FC -c $FCFLAGS $ac_fcflags_srcext conftest.$ac_ext >&5'
+ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_fc_compiler_gnu
 
        if test "$USE_MPIIO" = "yes"
          then { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
@@ -4599,11 +4671,10 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 cd ..
 rm -rf conftest.dir
-ac_ext=c
-ac_cpp='$CPP $CPPFLAGS'
-ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_c_compiler_gnu
+ac_ext=${ac_fc_srcext-f}
+ac_compile='$FC -c $FCFLAGS $ac_fcflags_srcext conftest.$ac_ext >&5'
+ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_fc_compiler_gnu
 
 
 fi
@@ -4672,11 +4743,10 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 chmod +w conftest.dir
 rm -rf conftest.dir
-ac_ext=c
-ac_cpp='$CPP $CPPFLAGS'
-ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_c_compiler_gnu
+ac_ext=${ac_fc_srcext-f}
+ac_compile='$FC -c $FCFLAGS $ac_fcflags_srcext conftest.$ac_ext >&5'
+ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_fc_compiler_gnu
 
 
 fi
@@ -4741,6 +4811,56 @@ $as_echo "$as_me: WARNING: NETCDF_PATH not found in environment, \
                            defaulting to $NETCDF_PATH" >&2;}
        fi
        ac_ext=${ac_fc_srcext-f}
+ac_compile='$FC -c $FCFLAGS $ac_fcflags_srcext conftest.$ac_ext >&5'
+ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_fc_compiler_gnu
+
+       ac_ext=${ac_fc_srcext-f}
+ac_compile='$FC -c $FCFLAGS $ac_fcflags_srcext conftest.$ac_ext >&5'
+ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_fc_compiler_gnu
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for Fortran flag to compile .F90 files" >&5
+$as_echo_n "checking for Fortran flag to compile .F90 files... " >&6; }
+if test "${ac_cv_fc_srcext_F90+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_ext=F90
+ac_fcflags_srcext_save=$ac_fcflags_srcext
+ac_fcflags_srcext=
+ac_cv_fc_srcext_F90=unknown
+for ac_flag in none -qsuffix=f=F90 -Tf; do
+  test "x$ac_flag" != xnone && ac_fcflags_srcext="$ac_flag"
+  cat > conftest.$ac_ext <<_ACEOF
+      program main
+
+      end
+_ACEOF
+if ac_fn_fc_try_compile "$LINENO"; then :
+  ac_cv_fc_srcext_F90=$ac_flag; break
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+done
+rm -f conftest.$ac_objext conftest.F90
+ac_fcflags_srcext=$ac_fcflags_srcext_save
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_fc_srcext_F90" >&5
+$as_echo "$ac_cv_fc_srcext_F90" >&6; }
+if test "x$ac_cv_fc_srcext_F90" = xunknown; then
+  as_fn_error $? "Fortran could not compile .F90 files" "$LINENO" 5
+else
+  ac_fc_srcext=F90
+  if test "x$ac_cv_fc_srcext_F90" = xnone; then
+    ac_fcflags_srcext=""
+    FCFLAGS_F90=""
+  else
+    ac_fcflags_srcext=$ac_cv_fc_srcext_F90
+    FCFLAGS_F90=$ac_cv_fc_srcext_F90
+  fi
+
+
+fi
+ac_ext=${ac_fc_srcext-f}
 ac_compile='$FC -c $FCFLAGS $ac_fcflags_srcext conftest.$ac_ext >&5'
 ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_fc_compiler_gnu
@@ -5222,11 +5342,10 @@ else
 fi
 
 
-       ac_ext=c
-ac_cpp='$CPP $CPPFLAGS'
-ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_c_compiler_gnu
+       ac_ext=${ac_fc_srcext-f}
+ac_compile='$FC -c $FCFLAGS $ac_fcflags_srcext conftest.$ac_ext >&5'
+ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_fc_compiler_gnu
 
 
        CPPDEFS=" $CPPDEFS -D_NETCDF $NETCDF_CPPFLAGS"

@@ -69,7 +69,7 @@
 
 module box_rearrange
 
-  use pio_kinds
+  use pio_kinds, only : pio_offset, r4, r8, i4, i8
   use pio_types, only : io_desc_t, iosystem_desc_t
 #ifdef NO_MPI2
   use pio_support, only : MPI_TYPE_CREATE_INDEXED_BLOCK, piodie, &
@@ -78,12 +78,17 @@ module box_rearrange
   use pio_support, only : piodie, Debug, DebugIO, CheckMPIReturn, &
                           pio_fc_gather_int
 #endif
-  use alloc_mod
-  use pio_spmd_utils
+  use alloc_mod,      only : alloc_check, dealloc_check
+  use pio_spmd_utils, only : pio_swapm
+#ifndef NO_MPIMOD
+  use mpi ! _EXTERNAL
+#endif
   implicit none
 
   private
+#ifdef NO_MPIMOD
   include 'mpif.h'  ! _EXTERNAL
+#endif
 
   public :: box_rearrange_create, &
        box_rearrange_free, &
@@ -185,7 +190,7 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, s2, &
       if ( ioindex<0 .or. ioindex>=niodof ) &
         call piodie( __PIO_FILE__,__LINE__, &
                      'box_rearrange_comp2io: i=', i, &
-                     'dest_ioindex(i) out of range=', ioindex )
+                     'dest_ioindex(i) out of range=', int(ioindex))
 
       dest(ioindex+1) = src(i)      ! ioindex is 0-based
 
@@ -485,7 +490,7 @@ subroutine box_rearrange_io2comp_{TYPE} (IOsystem, ioDesc, s1, iobuf, &
       if ( ioindex<0 .or. ioindex>=niodof ) &
         call piodie( __PIO_FILE__,__LINE__, &
                      'box_rearrange_io2comp: i=',i, &
-                     'dest_ioindex(i) out of range=', ioindex )
+                     'dest_ioindex(i) out of range=', int(ioindex) )
 
       compbuf(i) = iobuf(ioindex+1)      ! ioindex is 0-based
 
@@ -740,11 +745,11 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
   subroutine gindex_to_coord( gindex, gstride, ndim, gcoord )
     implicit none
-    integer,intent(in) :: gindex           ! 0-based global index
+    integer(kind=pio_offset),intent(in) :: gindex           ! 0-based global index
     integer,intent(in) :: gstride(:)       ! stride for each dimension
     ! e.g. (nx,nx*ny,nx*ny*nz)
     integer,intent(in) :: ndim             ! number of dimesions e.g. 2 or 3
-    integer,intent(out) :: gcoord(:)       ! output global coords (0-based)
+    integer(kind=pio_offset),intent(out) :: gcoord(:)       ! output global coords (0-based)
 
     ! local vars
     character(len=*), parameter :: subName=modName//'::gindex_to_coord'
@@ -777,14 +782,14 @@ end subroutine box_rearrange_io2comp_{TYPE}
   logical function find_ioproc( gcoord, lb, ub, lstride, ndim, nioproc, &
        io_proc, io_index )
     implicit none
-    integer,intent(in) :: gcoord(:)
-    integer,intent(in) :: lb(ndim,nioproc)
-    integer,intent(in) :: ub(ndim,nioproc)
+    integer(kind=pio_offset),intent(in) :: gcoord(:)
+    integer(kind=pio_offset),intent(in) :: lb(ndim,nioproc)
+    integer(kind=pio_offset),intent(in) :: ub(ndim,nioproc)
     integer,intent(in) :: lstride(ndim,nioproc)
     integer,intent(in) :: ndim
     integer,intent(in) :: nioproc
     integer,intent(out) :: io_proc
-    integer,intent(out) :: io_index
+    integer(kind=pio_offset),intent(out) :: io_index
 
     character(len=*), parameter :: subName=modName//'::find_ioproc'
     integer i,j
@@ -848,7 +853,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
   subroutine compute_dest(compdof, start, count, gsize, ndim, nioproc, &
                           dest_ioproc, dest_ioindex                    )
     implicit none
-    integer, intent(in) :: compdof(:)
+    integer(kind=pio_offset), intent(in) :: compdof(:)
     integer, intent(in) :: start(:,:)       ! start(ndim,nioproc)
     integer, intent(in) :: count(:,:)       ! count(ndim,nioproc)
 
@@ -856,19 +861,20 @@ end subroutine box_rearrange_io2comp_{TYPE}
     integer, intent(in) :: ndim   
     integer, intent(in) :: nioproc
     integer, intent(out) :: dest_ioproc(:)    ! ioproc number to send to
-    integer, intent(out) :: dest_ioindex(:)     ! index in iobuf on that ioproc
+    integer(kind=PIO_OFFSET), intent(out) :: dest_ioindex(:)     ! index in iobuf on that ioproc
 
     ! local vars
     character(len=*), parameter :: subName=modName//'::compute_dest'
     integer i,j
     integer ndof
-    integer gindex
-    integer lb(ndim,nioproc)        ! 0-based lower bound of boxes
-    integer ub(ndim,nioproc)        ! 0-based upper bound of boxes
-    integer gcoord(ndim)            ! 0-based xyz coordinates
+    integer(kind=pio_offset)::  gindex
+    integer(kind=pio_offset)::  lb(ndim,nioproc)        ! 0-based lower bound of boxes
+    integer(kind=pio_offset):: ub(ndim,nioproc)        ! 0-based upper bound of boxes
+    integer(kind=pio_offset):: gcoord(ndim)            ! 0-based xyz coordinates
     integer gstride(ndim)           ! stride for each dimension
     integer lstride(ndim,nioproc)   ! stride for each dim on each ioprocs
-    integer ioproc, ioindex
+    integer ioproc
+    integer (kind=pio_offset) :: ioindex
 
     ! compute 0-based start array
 
@@ -963,7 +969,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     implicit none
 
     type (Iosystem_desc_t), intent(in) :: Iosystem
-    integer, intent(in) :: compdof(:)      ! global indices for compbuf
+    integer(kind=pio_offset), intent(in) :: compdof(:)      ! global indices for compbuf
     integer, intent(in) :: gsize(:)        ! global domain size gsize(ndim)
     integer, intent(in) :: ndim, nioproc
     type (IO_desc_t), intent(inout) :: ioDesc
@@ -980,6 +986,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
 !!!!!!
     iodesc%ndof = size(compdof)
+
     call alloc_check( ioDesc%dest_ioproc, iodesc%ndof,          &
                       'box_rearrange_create dest_ioproc' )
     call alloc_check( ioDesc%dest_ioindex, iodesc%ndof,         &
@@ -1123,13 +1130,13 @@ end subroutine box_rearrange_io2comp_{TYPE}
     integer :: io_comprank        ! i/o task id in comp communicator
     integer :: nrecvs             ! if i/o task, number of comp tasks sending 
                                   !   to/receiving from this task (cached)
-    integer :: ioindex            ! offset for data to be sent to i/o task
+    integer(kind=pio_offset) :: ioindex            ! offset for data to be sent to i/o task
     integer :: pos                ! array offset
     integer :: ierror             ! MPI error return
 
     integer,pointer :: scount(:)  ! scount(num_iotasks) is no. sends to each i/o task (cached)
-    integer,pointer :: sindex(:)  ! sindex(ndof) is blocks of src indices
-    integer,pointer :: s2rindex(:)! s2rindex(ndof) is local blocks of dest indices
+    integer(kind=pio_offset),pointer :: sindex(:)  ! sindex(ndof) is blocks of src indices
+    integer(kind=pio_offset),pointer :: s2rindex(:)! s2rindex(ndof) is local blocks of dest indices
     integer,pointer :: spos(:)    ! spos(num_iotasks) is start in sindex for each i/o task
     integer,pointer :: tempcount(:) ! used in calculating sindex and s2rindex
     integer,pointer :: stype(:)   ! MPI type used in i/o sends (cached)
@@ -1137,7 +1144,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     ! needed on ioprocs only
     integer,pointer :: rcount(:)  ! rcount(nrecvs) is no. recvs from each sender
     integer,pointer :: rfrom(:)   ! rfrom(nrecvs)  is id of each sender (cached)
-    integer,pointer :: rindex(:)  ! rindex(niodof) is blocks of dest indices
+    integer(kind=pio_offset),pointer :: rindex(:)  ! rindex(niodof) is blocks of dest indices
     integer,pointer :: rtype(:)   ! MPI type used in comp receives (cached)
 
     ! swapm alltoall communication variables
@@ -1155,10 +1162,12 @@ end subroutine box_rearrange_io2comp_{TYPE}
     integer :: pio_maxreq
 
     ! added 24MAR11
-    integer :: bsize, len, blocksize
+    integer :: bsize, len
+    integer(i4) :: blocksize
     integer,allocatable :: blk_len(:)
-    integer,allocatable :: displace(:)
-    integer,allocatable :: bsizeT(:)
+    integer(kind=pio_offset) :: i8blocksize
+    integer(kind=pio_offset),allocatable :: displace(:)
+    integer(kind=pio_offset),allocatable :: bsizeT(:)
     integer :: numblks
     integer :: newTYPEs,newTYPEr
     integer :: ii
@@ -1321,7 +1330,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
        spos(i)=spos(i-1)+scount(i-1)
 
        if (scount(i)/=0 .and. spos(i) > ndof) & 
-            call piodie(__PIO_FILE__,__LINE__,'spos=',spos(i),'> ndof=',ndof)
+            call piodie(__PIO_FILE__,__LINE__,'spos=',int(spos(i)),'> ndof=',ndof)
     end do
 
     call alloc_check(tempcount, num_iotasks, 'tempcount')
@@ -1396,7 +1405,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
        recv_displs = 0
 
     endif
-
+    sr_types = MPI_INTEGER8
     call pio_swapm( num_tasks, myrank,                         &
       s2rindex, ndof,      send_counts, send_displs, sr_types, &
       rindex,   rbuf_size, recv_counts, recv_displs, sr_types, &
@@ -1424,9 +1433,9 @@ end subroutine box_rearrange_io2comp_{TYPE}
        ii = 1
           allocate(bsizeT(nrecvs))
           do i=1,nrecvs
-             call GCDblocksize(rindex(pos:pos+rcount(i)-1),blocksize)
+             call GCDblocksize(rindex(pos:pos+rcount(i)-1),i8blocksize)
              if(rcount(i) > 0) then 
-                bsizeT(ii)=blocksize
+                bsizeT(ii)=int(i8blocksize)
                 ii = ii + 1
              endif
              pos = pos + rcount(i)
@@ -1472,7 +1481,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
              !DBG call alloc_print_usage(iosystem%comp_comm,80,'l2629')
              ! need rindex to contain 0-based displacements here
              call MPI_TYPE_CREATE_INDEXED_BLOCK( &
-                  len, 1, displace, &               ! count,blen, disp
+                  len, 1, int(displace), &               ! count,blen, disp
                   newTYPEr, rtype(i), ierror )       ! oldtype, newtype
              call CheckMPIReturn(subName,ierror)
              
@@ -1496,8 +1505,8 @@ end subroutine box_rearrange_io2comp_{TYPE}
     ii = 1
     do i=1,num_iotasks
        if(scount(i) /= 0) then 
-          call GCDblocksize(sindex(pos:pos+scount(i)-1),blocksize)
-          bsizeT(ii)=blocksize
+          call GCDblocksize(sindex(pos:pos+scount(i)-1),i8blocksize)
+          bsizeT(ii)=int(i8blocksize)
 	  pos = pos + scount(i)
 	  ii = ii+1
        endif
@@ -1522,19 +1531,19 @@ end subroutine box_rearrange_io2comp_{TYPE}
 !       call CheckMPIReturn(subName,ierror)
 
 
-       len = scount(i)/blocksize        
-       allocate(displace(len))
-       if(blocksize == 1) then 
-	  displace(:) = sindex(pos:pos+scount(i)-1)
-       else
-          sindex(pos:pos+scount(i)-1) = sindex(pos:pos+scount(i)-1)+1
-          call calcdisplace(blocksize,sindex(pos:pos+scount(i)-1),displace)
-       endif
+          len = scount(i)/blocksize        
+          allocate(displace(len))
+          if(blocksize == 1) then 
+             displace(:) = sindex(pos:pos+scount(i)-1)
+          else
+             sindex(pos:pos+scount(i)-1) = sindex(pos:pos+scount(i)-1)+1
+             call calcdisplace(blocksize,sindex(pos:pos+scount(i)-1),displace)
+          endif
           call MPI_TYPE_CREATE_INDEXED_BLOCK( &
-               len, 1, displace, &        ! count, blen, disp
+               len, 1, int(displace), &        ! count, blen, disp
                newTYPEs, stype(i), ierror )       ! oldtype, newtype
           call CheckMPIReturn(subName,ierror)
-
+          
           call MPI_TYPE_COMMIT(stype(i), ierror)
           call CheckMPIReturn(subName,ierror)
  
@@ -1582,7 +1591,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     implicit none
 
     type (Iosystem_desc_t), intent(in) :: Iosystem
-    integer, intent(in) :: compdof(:)      ! global indices for compbuf
+    integer(kind=pio_offset), intent(in) :: compdof(:)      ! global indices for compbuf
     integer, intent(in) :: gsize(:)        ! global domain size gsize(ndim)
     integer, intent(in) :: ndim, nioproc
     type (IO_desc_t), intent(inout) :: ioDesc
@@ -1782,7 +1791,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
     ! needed on ioprocs only
     integer,pointer :: rcount(:)  ! rcount(nrecvs)= # recvs from ith sender
-    integer,pointer :: rindex(:)  ! rindex(niodof)= blocks of dest indices
+    integer(kind=PIO_OFFSET),pointer :: rindex(:)  ! rindex(niodof)= blocks of dest indices
 
     integer,pointer :: rfrom(:)   ! rfrom(nrecvs)= rank of ith sender
     integer,pointer :: rreq(:)    ! rreq(nrecvs)= receive requests on ioprocs
@@ -1790,7 +1799,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
     ! needed on all procs
     integer,pointer :: scount(:)  ! scount(num_iotasks)= # sends to ith ioproc
-    integer,pointer :: srcindex(:)! srcindex(ndof)= blocks of src indices
+    integer(kind=PIO_OFFSET),pointer :: srcindex(:)! srcindex(ndof)= blocks of src indices
     integer,pointer :: stype(:)
 #ifdef NO_MPI2
     integer, pointer :: blens(:)
@@ -1807,7 +1816,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     integer :: sreq
     integer :: max_scount
     integer :: iorank
-    integer :: ioindex
+    integer(kind=pio_offset) :: ioindex
     integer :: io_comprank
     integer :: i, j
     integer :: status(MPI_STATUS_SIZE)
@@ -1815,19 +1824,21 @@ end subroutine box_rearrange_io2comp_{TYPE}
     integer :: count
     integer :: sendtype, recvtype
 
-    integer,pointer :: spos(:)      ! spos(i) = start in sindex for ith ioproc
+    integer(kind=pio_offset),pointer :: spos(:)      ! spos(i) = start in sindex for ith ioproc
     integer,pointer :: tempcount(:)
 
     integer :: basetype_mpi
 
     ! added 15APR11
-    integer :: bsize, len, blocksize
+    integer :: bsize, len
+    integer(i4) :: blocksize
+    integer(i8) :: i8blocksize
     integer,allocatable :: blk_len(:)
-    integer,allocatable :: displace(:)
-    integer,allocatable :: bsizeT(:)
+    integer(kind=PIO_OFFSET),allocatable :: displace(:), bsizeT(:)
+
     integer :: numblks
     integer :: newTYPEs,newTYPEr
-    integer :: ii
+    integer :: ii, mpioffsettype
 
     ! init
 
@@ -1835,6 +1846,12 @@ end subroutine box_rearrange_io2comp_{TYPE}
     nrecvs=ioDesc%nrecvs
     myrank=Iosystem%comp_rank
     ndof = iodesc%ndof
+
+    if(kind(rindex) == kind(i)) then
+       mpioffsettype = MPI_INTEGER
+    else
+       mpioffsettype = MPI_INTEGER8
+    end if
 
     ! alloc
     if (Iosystem%IOproc) then
@@ -1972,8 +1989,10 @@ end subroutine box_rearrange_io2comp_{TYPE}
                   'niodof=',niodof)
           endif
 
+
+
           call MPI_IRECV( rindex(pos),rcount(i), &        ! buf, count
-               MPI_INTEGER, &                     ! type
+               mpioffsettype, &                     ! type
                rfrom(i), TAG1, &        ! source, tag
                IOsystem%union_comm,rreq(i),ierror )        
           call CheckMPIReturn(subName,ierror)
@@ -2006,7 +2025,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
        spos(i)=spos(i-1)+scount(i-1)
 
        if (scount(i)/=0 .and. spos(i) > ndof) & 
-            call piodie(__PIO_FILE__,__LINE__,'spos=',spos(i),'> ndof=',ndof)
+            call piodie(__PIO_FILE__,__LINE__,'spos=',int(spos(i)),'> ndof=',ndof)
     end do
 
     ! srcindex() contains blocks of indices in the src array
@@ -2037,8 +2056,8 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
    
            call MPI_TYPE_CREATE_INDEXED_BLOCK( &
-               scount(i), 1, srcindex(pos:pos+scount(i)-1), &             ! count, blen, disp
-               MPI_INTEGER, sendtype, ierror )            ! oldtype, newtype
+               scount(i), 1, int(srcindex(pos:pos+scount(i)-1)), &             ! count, blen, disp
+               mpioffsettype, sendtype, ierror )            ! oldtype, newtype
           call CheckMPIReturn(subName,ierror)
           call MPI_TYPE_COMMIT(sendtype, ierror)
           call CheckMPIReturn(subName,ierror)
@@ -2100,9 +2119,10 @@ end subroutine box_rearrange_io2comp_{TYPE}
        ii = 1
        allocate(bsizeT(nrecvs))
        do i=1,nrecvs
-          call GCDblocksize(rindex(pos:pos+rcount(i)-1),blocksize)
+          
+          call GCDblocksize(rindex(pos:pos+rcount(i)-1),i8blocksize)
           if(rcount(i) > 0) then
-             bsizeT(ii)=blocksize
+             bsizeT(ii)=int(i8blocksize)
              ii = ii + 1
           endif
           pos = pos + rcount(i)
@@ -2139,7 +2159,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
           ! need rindex to contain 0-based displacements here
           call MPI_TYPE_CREATE_INDEXED_BLOCK( &
-               len, 1, displace, &               ! count,blen, disp
+               len, 1, int(displace), &               ! count,blen, disp
                newTYPEr, rtype(i), ierror )       ! oldtype, newtype
           call CheckMPIReturn(subName,ierror)
 
@@ -2162,8 +2182,8 @@ end subroutine box_rearrange_io2comp_{TYPE}
     ii = 1
     do i=1,num_iotasks
        if(scount(i) /= 0) then
-          call GCDblocksize(srcindex(pos:pos+scount(i)-1),blocksize)
-          bsizeT(ii)=blocksize
+          call GCDblocksize(srcindex(pos:pos+scount(i)-1),i8blocksize)
+          bsizeT(ii)=int(i8blocksize)
           pos = pos + scount(i)
           ii = ii+1
        endif
@@ -2190,7 +2210,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
           endif
 
           call MPI_TYPE_CREATE_INDEXED_BLOCK( &
-               len, 1, displace, &        ! count, blen, disp
+               len, 1, int(displace), &        ! count, blen, disp
                newTYPEs, stype(i), ierror )       ! oldtype, newtype
           call CheckMPIReturn(subName,ierror)
 

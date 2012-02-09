@@ -27,8 +27,14 @@ subroutine var1_handler(ios, msg)
   use pio_kinds, only : i4, r4, r8, pio_offset
   use pio_msg_mod, only : lookupfile, pio_msg_getvar1
   use pio_support, only : debugAsync
+#ifndef NO_MPIMOD
+  use mpi ! _EXTERNAL
+#endif
   implicit none
+#ifdef NO_MPIMOD
   include 'mpif.h' !_EXTERNAL
+#endif
+
   type(iosystem_desc_t), intent(inout) :: ios
   integer, intent(in) :: msg
   type(file_desc_t), pointer :: file
@@ -82,8 +88,14 @@ subroutine vara_{DIMS}d_handler(ios, msg)
   use pio_kinds, only : i4, r4, r8, pio_offset
   use pio_msg_mod, only : lookupfile, pio_msg_getvara_{DIMS}d
   use pio_support, only : debugAsync
+#ifndef NO_MPIMOD
+  use mpi ! _EXTERNAL
+#endif
   implicit none
+#ifdef NO_MPIMOD
   include 'mpif.h' !_EXTERNAL
+#endif
+
   type(iosystem_desc_t), intent(inout) :: ios
   integer,intent(in) :: msg
 
@@ -191,8 +203,14 @@ subroutine var_0d_handler (ios, msg)
   use pio_kinds, only : i4, r4, r8, pio_offset
   use pio_msg_mod, only : lookupfile, pio_msg_getvar_0d 
   use pio_support, only : debugAsync, piodie
+#ifndef NO_MPIMOD
+  use mpi ! _EXTERNAL
+#endif
   implicit none
+#ifdef NO_MPIMOD
   include 'mpif.h' !_EXTERNAL
+#endif
+
   type(iosystem_desc_t), intent(inout) :: ios
   integer, intent(in) ::msg
   type(file_desc_t), pointer :: file
@@ -304,8 +322,14 @@ subroutine var_{DIMS}d_handler (ios, msg)
   use pio_kinds, only : i4, r4, r8, pio_offset
   use pio_msg_mod, only : lookupfile, pio_msg_getvar_{DIMS}d
   use pio_support, only : debugAsync
+#ifndef NO_MPIMOD
+  use mpi ! _EXTERNAL
+#endif
   implicit none
+#ifdef NO_MPIMOD
   include 'mpif.h' !_EXTERNAL
+#endif
+
   type(iosystem_desc_t), intent(inout) :: ios
   integer, intent(in) :: msg
 

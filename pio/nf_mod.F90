@@ -18,9 +18,15 @@ module nf_mod
 #endif
   use pio_support, only : CheckMPIReturn
   use pio_msg_mod
+#ifndef NO_MPIMOD
+  use mpi ! _EXTERNAL
+#endif
+
   implicit none
   private
+#ifdef NO_MPIMOD
   include 'mpif.h' ! _EXTERNAL
+#endif
 #ifdef _PNETCDF
 #include <pnetcdf.inc>   /* _EXTERNAL */
 #endif
@@ -833,6 +839,8 @@ contains
        end select
     endif
     call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
+
+
 
     if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%IOMaster,ios%my_comm, mpierr)

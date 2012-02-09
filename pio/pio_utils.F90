@@ -10,11 +10,14 @@ module pio_utils
 #ifdef _NETCDF
   use netcdf            ! _EXTERNAL
 #endif
-
+#ifndef NO_MPIMOD
+  use mpi !_EXTERNAL
+#endif
   implicit none
   private
-
+#ifdef NO_MPIMOD
   include 'mpif.h'      ! _EXTERNAL
+#endif
 #ifdef _PNETCDF
 #include <pnetcdf.inc>   /* _EXTERNAL */
 #endif

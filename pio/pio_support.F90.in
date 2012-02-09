@@ -14,11 +14,14 @@
 
 module pio_support
   use pio_kinds
+#ifndef NO_MPIMOD
+  use mpi !_EXTERNAL
+#endif
   implicit none
   private
-
+#ifdef NO_MPIMOD
   include 'mpif.h'    ! _EXTERNAL
-
+#endif
   public :: piodie
   public :: CheckMPIreturn
   public :: pio_readdof

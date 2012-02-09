@@ -14,13 +14,16 @@
 !  CVS:$Name:  $
 
 ! !USES:
-!  uses no other modules
+!  uses mpi if available
+#ifndef NO_MPIMOD
+   use mpi, only : MPI_OFFSET_KIND !_EXTERNAL
+#endif
 
    implicit none
    private
-
+#ifdef NO_MPIMOD
    include 'mpif.h'   ! _EXTERNAL
-
+#endif
 ! !DEFINED PARAMETERS:
 
    integer, parameter, public ::          &

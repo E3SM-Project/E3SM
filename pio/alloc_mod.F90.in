@@ -70,15 +70,15 @@ contains
     character(len=*), parameter :: subName=modName//'::alloc_check_1d_{TYPE}'
 
     integer ierr, ierror, rank
-
-    if(debug) then
+#ifdef ALLOC_DEBUG
+    if(alloc_debug) then
        if(present(msg)) then
           print *,__PIO_FILE__,__LINE__,msg,varlen
        else
           print *,__PIO_FILE__,__LINE__,varlen
        end if
     end if
-
+#endif
 
     if(varlen==0) then
       allocate(data(1),stat=ierr)
@@ -130,7 +130,7 @@ contains
 
     character(len=*), parameter :: subName=modName//'::dealloc_check_{DIMS}d_{TYPE}'
     integer ierr, ierror, rank
-
+#ifdef ALLOC_DEBUG
     if(debug) then
        if(present(msg)) then
           print *,__PIO_FILE__,__LINE__,msg,size(data)
@@ -138,7 +138,7 @@ contains
           print *,__PIO_FILE__,__LINE__,size(data)
        end if
     end if
-
+#endif
 
     deallocate(data,stat=ierr)
 
@@ -211,7 +211,11 @@ end subroutine dealloc_check_0d_{TYPE}
 !! PIO internal memory allocation check routines.  
 !<
   subroutine alloc_print_usage(rank,msg)
+#ifndef NO_MPIMOD
+    use mpi ! _EXTERNAL
+#else
   include 'mpif.h'        ! _EXTERNAL
+#endif
 
     integer, intent(in) :: rank
     character(len=*), intent(in), optional :: msg

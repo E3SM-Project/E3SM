@@ -113,14 +113,17 @@ contains
 #ifdef TIMING
     use perf_mod        ! _EXTERNAL
 #endif
-
+#ifndef NO_MPIMOD
+    use mpi !_EXTERNAL
+#endif
     implicit none
     integer, intent(in) :: numcomps
     type(iosystem_desc_t), target :: iosystem(numcomps)
     type(iosystem_desc_t), pointer :: ios
     integer :: msg = 0, ierr
+#ifdef NO_MPIMOD
     include 'mpif.h' ! _EXTERNAL
- 
+#endif
     integer :: status(MPI_STATUS_SIZE)
     integer :: req(numcomps)
     integer :: index

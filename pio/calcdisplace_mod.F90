@@ -1,16 +1,28 @@
 #define __PIO_FILE__ "calcdisplace_mod.F90"
 MODULE calcdisplace_mod
 
-  use pio_kinds, only: i4, PIO_OFFSET
+  use pio_kinds, only: i4, PIO_OFFSET, i8
   use pio_support, only : piodie
 
   private
   public :: GCDblocksize,gcd
   public :: calcdisplace, calcdisplace_box
 
+  interface gcd_pair
+     module procedure gcd_pair_i4
+     module procedure gcd_pair_i8
+  end interface
+
+  interface gcd_array
+     module procedure gcd_array_i4
+     module procedure gcd_array_i8
+  end interface
+
   interface gcd
-     module procedure gcd_array
-     module procedure gcd_pair
+     module procedure gcd_array_i4
+     module procedure gcd_array_i8
+     module procedure gcd_pair_i4
+     module procedure gcd_pair_i8
   end interface
 
 CONTAINS
@@ -21,10 +33,11 @@ CONTAINS
   subroutine calcdisplace(bsize,dof,displace)
 
     integer(i4), intent(in) :: bsize    ! length of contigious blocks of numbers
-    integer(i4), intent(in) :: dof(:)   ! degree of freedom on which to setup the displacement array
-    integer(i4), intent(inout) :: displace(:)  ! array of mpi displacments
+    integer(kind=pio_offset), intent(in) :: dof(:)   ! degree of freedom on which to setup the displacement array
+    integer(kind=pio_offset), intent(inout) :: displace(:)  ! array of mpi displacments
 
-    integer :: numblocks,lenblocks,i,ii,dis
+    integer :: numblocks,lenblocks,i,ii
+    integer(kind=pio_offset) :: dis
 
     numblocks = size(displace)
     lenblocks = bsize
@@ -44,11 +57,11 @@ CONTAINS
     integer(i4),intent(in) :: gsize(:)   ! global size of output domain
     integer(kind=PIO_offset),intent(in) :: start(:), count(:)
     integer(i4), intent(in) :: ndim
-    integer(i4),intent(inout) :: displace(:)  ! mpi displacments
+    integer(kind=pio_offset),intent(inout) :: displace(:)  ! mpi displacments
 
     !!
 
-    integer ndisp
+    integer(kind=pio_offset):: ndisp
     integer(i4) :: gstride(ndim)
     integer i,j
     integer iosize
@@ -74,7 +87,8 @@ CONTAINS
     if (iosize<1 .or. ndisp<1) return
 
     if (ndisp/=iosize) then
-       call piodie(__PIO_FILE__,__LINE__,'ndisp=',ndisp,' /= iosize=',iosize)
+       print *,__PIO_FILE__,__LINE__,ndisp
+       call piodie(__PIO_FILE__,__LINE__,'ndisp /= iosize=',iosize)
     endif
 
     do i=1,ndim
@@ -151,13 +165,14 @@ CONTAINS
   SUBROUTINE GCDblocksize(arr_in,bsize)
     implicit none
 
-    integer(i4),intent(in) ,dimension(:)  :: arr_in  !arr_in = rindex array from box_rearrange
-    integer(i4),intent(out)               :: bsize   ! the gcd of the block length array
+    integer(kind=pio_offset),intent(in) ,dimension(:)  :: arr_in  !arr_in = rindex array from box_rearrange
+    integer(kind=pio_offset),intent(out)               :: bsize   ! the gcd of the block length array
 
     ! Locals
-    integer(i4),dimension(:),allocatable   :: del_arr,loc_arr,blk_len
-    integer(i4),dimension(:),allocatable :: gaps
-    integer(i4) :: i,j,k,n,numblks,numtimes,tloc,bsizeg,ii
+    integer(i4),dimension(:),allocatable   :: del_arr,loc_arr
+    integer(kind=pio_offset),dimension(:),allocatable :: gaps, blk_len
+    integer(i4) :: i,j,k,n,numblks,numtimes,tloc,ii
+    integer(kind=pio_offset) :: bsizeg
 
 
     n = size(arr_in)
@@ -239,15 +254,16 @@ CONTAINS
   end SUBROUTINE GCDblocksize
 
 
-  integer function gcd_array(ain) result(bsize)
+  integer(kind=pio_offset) function gcd_array_i8(ain) result(bsize)
     implicit none
 
 
-    integer(i4), intent(in),dimension(:) :: ain
+    integer(kind=pio_offset), intent(in),dimension(:) :: ain
 
     ! locals
-    integer(i4),allocatable :: gcr(:) 
-    integer(i4) :: i,j,a_min,x,index,n
+    integer(i8),allocatable :: gcr(:) 
+    integer(i8) :: i,j,x,index,n
+    integer(kind=pio_offset) :: a_min
 
     bsize=1
     n = size(ain) 
@@ -281,9 +297,82 @@ CONTAINS
 
     deallocate(gcr)
 
-  end function gcd_array
+  end function gcd_array_i8
 
-  integer FUNCTION gcd_pair(u,v) result(gcd)
+  integer function gcd_array_i4(ain) result(bsize)
+    implicit none
+
+
+    integer(i4), intent(in),dimension(:) :: ain
+
+    ! locals
+    integer(i4),allocatable :: gcr(:) 
+    integer(i4) :: i,j,x,index,n
+    integer(i4) :: a_min
+
+    bsize=1
+    n = size(ain) 
+    ! First check, if an element is 1, then 1 is the gcd (i.e bsize)
+    if(n==0 .or. any(ain <= 1)) return
+
+    allocate(gcr(n))
+    gcr = 0
+    !
+
+    ! Find and set the min value.
+
+    a_min = minval(ain)
+
+
+    !print*,"amin = ", a_min
+
+    ! Now compute the gcd between a_min and the rest of the array elements as long as a_min /= 1
+    ! otherwise gcd = a_min = 1.
+    ! Done by calling the external function that is below.
+
+    do i = 1,n
+       gcr(i) = gcd_pair(a_min,ain(i))
+    end do
+
+    !
+    ! Now look for the smallest value in the gcr array and and assign it to bsize.
+    !
+
+    bsize = minval(gcr)
+
+    deallocate(gcr)
+
+  end function gcd_array_i4
+
+  integer(kind=pio_offset) FUNCTION gcd_pair_i8(u,v) result(gcd)
+    implicit none
+
+    integer(kind=pio_offset),intent(in) :: u,v
+
+    ! locals
+    integer(i8) :: x,a,b
+
+    a = u
+    b = v
+
+    if(a < b) then
+       x = a
+       a = b
+       b = x
+    end if
+
+    do 
+       x = mod(a,b)
+       if ( x == 0 ) EXIT
+       a = b 
+       b = x 
+    end do
+
+    gcd = b 
+
+  end FUNCTION gcd_pair_i8
+
+  integer FUNCTION gcd_pair_i4(u,v) result(gcd)
     implicit none
 
     integer(i4),intent(in) :: u,v
@@ -309,6 +398,6 @@ CONTAINS
 
     gcd = b 
 
-  end FUNCTION gcd_pair
+  end FUNCTION gcd_pair_i4
 
 END MODULE calcdisplace_mod

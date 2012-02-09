@@ -336,11 +336,13 @@ end subroutine ReadTestPIO_Namelist
 subroutine Broadcast_Namelist(caller, myID, root, comm, ierror)
 
   use pio ! _EXTERNAL
-
+#ifndef NO_MPIMOD
+  use mpi ! _EXTERNAL
+#endif
   implicit none
-
+#ifdef NO_MPIMOD
   include 'mpif.h' ! _EXTERNAL
-
+#endif
   character(len=*), intent(IN) :: caller
   integer(i4),      intent(IN)  :: myID
   integer(i4),      intent(IN)  :: root
