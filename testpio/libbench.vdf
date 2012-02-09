@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="ISO-8859-1" standalone="yes"?>
+<Metadata BlockSize="64 64 64"  CompressionRatios="1 10 100 500"  DimensionLength="1088 1088 1088"  VDCType="2"  VDFVersion="4"  WaveletBoundaryMode="symh"  WaveletName="bior3.3" >
+<GridPermutation Type="Long">
+  0 1 2 
+</GridPermutation>
+<NumTimeSteps Type="Long">
+  10 
+</NumTimeSteps>
+<PeriodicBoundary Type="Long">
+  0 0 0 
+</PeriodicBoundary>
+<Extents Type="Double">
+  0 0 0 1 1 1 
+</Extents>
+<Comment Type="String">
+  
+</Comment>
+<CoordinateSystem Type="String">
+  cartesian
+</CoordinateSystem>
+<GridType Type="String">
+  regular
+</GridType>
+<VariableNames Type="String">
+  vx
+</VariableNames>
+<Variables2DXY Type="String">
+  
+</Variables2DXY>
+<Variables2DXZ Type="String">
+  
+</Variables2DXZ>
+<Variables2DYZ Type="String">
+  
+</Variables2DYZ>
+<Variables3D Type="String">
+  vx
+</Variables3D>
+<TimeStep>
+<UserTime Type="Double">
+  0 
+</UserTime>
+<AuxBasePath Type="String">
+  aux/aux.0000
+</AuxBasePath>
+<UserTimeStampString Type="String">
+  0
+</UserTimeStampString>
+<vx>
+<BasePath Type="String">
+  vx.0000
+</BasePath>
+</vx>
+</TimeStep>
+<TimeStep>
+<UserTime Type="Double">
+  1 
+</UserTime>
+<AuxBasePath Type="String">
+  aux/aux.0001
+</AuxBasePath>
+<UserTimeStampString Type="String">
+  1
+</UserTimeStampString>
+<vx>
+<BasePath Type="String">
+  vx/vx.0001
+</BasePath>
+</vx>
+</TimeStep>
+<TimeStep>
+<UserTime Type="Double">
+  2 
+</UserTime>
+<AuxBasePath Type="String">
+  aux/aux.0002
+</AuxBasePath>
+<UserTimeStampString Type="String">
+  2
+</UserTimeStampString>
+<vx>
+<BasePath Type="String">
+  vx/vx.0002
+</BasePath>
+</vx>
+</TimeStep>
+<TimeStep>
+<UserTime Type="Double">
+  3 
+</UserTime>
+<AuxBasePath Type="String">
+  aux/aux.0003
+</AuxBasePath>
+<UserTimeStampString Type="String">
+  3
+</UserTimeStampString>
+<vx>
+<BasePath Type="String">
+  vx/vx.0003
+</BasePath>
+</vx>
+</TimeStep>
+<TimeStep>
+<UserTime Type="Double">
+  4 
+</UserTime>
+<AuxBasePath Type="String">
+  aux/aux.0004
+</AuxBasePath>
+<UserTimeStampString Type="String">
+  4
+</UserTimeStampString>
+<vx>
+<BasePath Type="String">
+  vx/vx.0004
+</BasePath>
+</vx>
+</TimeStep>
+<TimeStep>
+<UserTime Type="Double">
+  5 
+</UserTime>
+<AuxBasePath Type="String">
+  aux/aux.0005
+</AuxBasePath>
+<UserTimeStampString Type="String">
+  5
+</UserTimeStampString>
+<vx>
+<BasePath Type="String">
+  vx/vx.0005
+</BasePath>
+</vx>
+</TimeStep>
+<TimeStep>
+<UserTime Type="Double">
+  6 
+</UserTime>
+<AuxBasePath Type="String">
+  aux/aux.0006
+</AuxBasePath>
+<UserTimeStampString Type="String">
+  6
+</UserTimeStampString>
+<vx>
+<BasePath Type="String">
+  vx/vx.0006
+</BasePath>
+</vx>
+</TimeStep>
+<TimeStep>
+<UserTime Type="Double">
+  7 
+</UserTime>
+<AuxBasePath Type="String">
+  aux/aux.0007
+</AuxBasePath>
+<UserTimeStampString Type="String">
+  7
+</UserTimeStampString>
+<vx>
+<BasePath Type="String">
+  vx/vx.0007
+</BasePath>
+</vx>
+</TimeStep>
+<TimeStep>
+<UserTime Type="Double">
+  8 
+</UserTime>
+<AuxBasePath Type="String">
+  aux/aux.0008
+</AuxBasePath>
+<UserTimeStampString Type="String">
+  8
+</UserTimeStampString>
+<vx>
+<BasePath Type="String">
+  vx/vx.0008
+</BasePath>
+</vx>
+</TimeStep>
+<TimeStep>
+<UserTime Type="Double">
+  9 
+</UserTime>
+<AuxBasePath Type="String">
+  aux/aux.0009
+</AuxBasePath>
+<UserTimeStampString Type="String">
+  9
+</UserTimeStampString>
+<vx>
+<BasePath Type="String">
+  vx/vx.0009
+</BasePath>
+</vx>
+</TimeStep>
+</Metadata>
