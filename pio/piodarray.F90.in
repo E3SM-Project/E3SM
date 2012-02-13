@@ -132,8 +132,10 @@ contains
           else
              call write_darray_nf_{TYPE}(File,varDesc,iodesc, array, iostat)
           endif
+
        case(pio_iotype_vdc2)
           call write_vdc2_{TYPE}(File, Vardesc, iodesc, array, iostat)
+
        case(pio_iotype_binary)
           print *, subName,': IO type not supported'
        end select
@@ -248,8 +250,10 @@ contains
        call read_darray_bin_{TYPE} (File,varDesc,iodesc,array, iostat)
     case(pio_iotype_pnetcdf, pio_iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
        call read_darray_nf_{TYPE} (File,varDesc,iodesc,array, iostat)
+
     case(pio_iotype_vdc2)
        call read_vdc2_{TYPE} (File, vardesc, iodesc, array, iostat)
+
     case(pio_iotype_binary)
        print *, subName,': IO type not supported'
     end select
@@ -1062,6 +1066,8 @@ contains
 #endif
 
   end subroutine read_darray_bin_{TYPE}
+
+
 ! TYPE real,int,double
  subroutine write_vdc2_{TYPE}(File,varDesc,ioDesc,array, iostat)
 
@@ -1148,6 +1154,8 @@ contains
     if(UseRearranger) call dealloc_check(IOBUF)
 
   end subroutine write_vdc2_{TYPE}
+
+
 
 ! TYPE real,int,double
 subroutine read_vdc2_{TYPE}(File,varDesc,ioDesc,array, iostat)

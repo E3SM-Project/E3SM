@@ -45,6 +45,11 @@ AC_HELP_STRING([--enable-debug],
 [DEBUG=$enableval],[DEBUG=no])
 AC_SUBST(DEBUG)
 
+AC_ARG_ENABLE(compression,
+AC_HELP_STRING( [--enable-compression],
+  [use compression (Uses VDC2 compression) (default no)]),
+  [USE_COMPRESSION=$enableval],[USE_COMPRESSION=no])
+
 AC_ARG_ENABLE(timing,
 AC_HELP_STRING([--enable-timing],
 [Turn on the gptl timing library interface]),
@@ -486,6 +491,11 @@ if test "$USE_PNETCDF" = "yes"
        USE_PNETCDF=no
 fi
 
+if test "$USE_COMPRESSION" = "yes"
+   then
+	CPPDEFS="$CPPDEFS -D_COMPRESSION"
+fi
+
 
 if test "$USE_TIMING" = "yes"
   then
@@ -586,6 +596,7 @@ echo Output Variables: {CC=$CC} \
 {PNETCDF_PATH=$PNETCDF_PATH} \
 {USE_NETCDF=$USE_NETCDF} \
 {NETCDF_PATH=$NETCDF_PATH} \
+{USE_COMPRESSION=$USE_COMPRESSION} \
 {CPPDEFS=$CPPDEFS} \
 {INCLUDEPATH=$INCLUDEPATH} \
 {LDLIBS=$LDLIBS} \
@@ -593,6 +604,7 @@ echo Output Variables: {CC=$CC} \
 
 echo
 AC_SUBST(PIO_PATH)
+AC_SUBST(USE_COMPRESSION)
 AC_SUBST(CPPDEFS)
 AC_SUBST(LDLIBS)
 

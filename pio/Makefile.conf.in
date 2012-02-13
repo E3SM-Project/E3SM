@@ -17,6 +17,9 @@ MODINC         = @MODINC@
 # explicit fortran preprocessing
 EXPLICIT_CPP = @EXPLICIT_FPP@
 
+#VDC2 compression enabling
+USE_COMPRESSION = @USE_COMPRESSION@
+
 # PREPROCESSOR COMMAND
 
 CPPDEFS	= @CPPDEFS@
@@ -68,4 +71,3 @@ SIZEOF_VOID_P   = @SIZEOF_VOID_P@
 #  INCLUDES += -I$(PIO_PATH)/../timing
 #  LDLIBS += -L$(PIO_PATH)/../timing -ltiming
 #endif
-
