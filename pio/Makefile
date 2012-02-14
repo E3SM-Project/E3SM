@@ -42,6 +42,10 @@ SRCS_FC =  pio.F90 \
 	    calcdisplace_mod.F90 \
 	    pio_msg_callbacks.F90 
 
+ifeq (yes,$(USE_COMPRESSION))
+SRCS_FC += libpiovdc.F90
+endif
+
 TEMPLATES_FC = pionfatt_mod.F90.in \
 	        pionfread_mod.F90.in \
                 pionfwrite_mod.F90.in \
