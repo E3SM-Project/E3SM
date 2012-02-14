@@ -132,10 +132,10 @@ contains
           else
              call write_darray_nf_{TYPE}(File,varDesc,iodesc, array, iostat)
           endif
-
+#ifdef _COMPRESSION
        case(pio_iotype_vdc2)
           call write_vdc2_{TYPE}(File, Vardesc, iodesc, array, iostat)
-
+#endif
        case(pio_iotype_binary)
           print *, subName,': IO type not supported'
        end select
@@ -250,10 +250,10 @@ contains
        call read_darray_bin_{TYPE} (File,varDesc,iodesc,array, iostat)
     case(pio_iotype_pnetcdf, pio_iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
        call read_darray_nf_{TYPE} (File,varDesc,iodesc,array, iostat)
-
+#ifdef _COMPRESSION
     case(pio_iotype_vdc2)
        call read_vdc2_{TYPE} (File, vardesc, iodesc, array, iostat)
-
+#endif
     case(pio_iotype_binary)
        print *, subName,': IO type not supported'
     end select
@@ -1067,7 +1067,6 @@ contains
 
   end subroutine read_darray_bin_{TYPE}
 
-
 ! TYPE real,int,double
  subroutine write_vdc2_{TYPE}(File,varDesc,ioDesc,array, iostat)
 
@@ -1119,6 +1118,8 @@ contains
     start      = iodesc%start
     count      = iodesc%count
 
+#ifdef _COMPRESSION
+
     if(UseRearranger) then 
        if (IOproc) then 
 
@@ -1150,12 +1151,9 @@ contains
 
     endif
 
-
     if(UseRearranger) call dealloc_check(IOBUF)
-
+#endif
   end subroutine write_vdc2_{TYPE}
-
-
 
 ! TYPE real,int,double
 subroutine read_vdc2_{TYPE}(File,varDesc,ioDesc,array, iostat)
@@ -1209,6 +1207,7 @@ subroutine read_vdc2_{TYPE}(File,varDesc,ioDesc,array, iostat)
     start      = iodesc%start
     count      = iodesc%count
 
+#ifdef _COMPRESSION
     if(UseRearranger) then 
        if (IOproc) then 
 
@@ -1235,6 +1234,7 @@ subroutine read_vdc2_{TYPE}(File,varDesc,ioDesc,array, iostat)
     endif   ! if(UseRearranger) 
 
     if(UseRearranger) call dealloc_check(IOBUF)
+#endif
 
   end subroutine read_vdc2_{TYPE}
 
