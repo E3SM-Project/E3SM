@@ -1147,7 +1147,7 @@ contains
 
 
     if (IOproc) then
-	call write_vdc2_var(iobuf, start, count,  ndims, File%iosystem%IO_comm, varDesc%bs, varDesc%cur_ts, varDesc%lod, varDesc%dims, TRIM(varDesc%vdf), TRIM(varDesc%name), File%iosystem%num_iotasks)
+	call write_vdc2_var(iobuf, start, count,  ndims, File%iosystem%IO_comm, varDesc%bs, varDesc%cur_ts, varDesc%lod, varDesc%dims, TRIM(varDesc%vdf), TRIM(varDesc%name), File%iosystem%num_iotasks, varDesc%reflevel)
 
     endif
 
@@ -1214,7 +1214,7 @@ subroutine read_vdc2_{TYPE}(File,varDesc,ioDesc,array, iostat)
           if(Debug) print *, 'read_vdc2_real: IAM: ',File%iosystem%comp_rank,'Before call to allocate(IOBUF): ',len
           call alloc_check(IOBUF,len,' TYPE :IOBUF')
           IOBUF= -1.0_r8
-  	  call read_vdc2_var(iobuf, start, count,  ndims, File%iosystem%IO_comm, varDesc%bs, varDesc%cur_ts, varDesc%lod, varDesc%dims, TRIM(varDesc%vdf), TRIM(varDesc%name))
+  	  call read_vdc2_var(iobuf, start, count,  ndims, File%iosystem%IO_comm, varDesc%bs, varDesc%cur_ts, varDesc%lod, varDesc%dims, TRIM(varDesc%vdf), TRIM(varDesc%name), varDesc%reflevel)
        else
           call alloc_check(IOBUF,0)
           IOBUF= -1.0_r8

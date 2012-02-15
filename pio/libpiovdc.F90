@@ -160,7 +160,7 @@ endsubroutine
 !> @param[inout] vardesc Var_desc_t the variable description structure
 !> @param[out] ierr error return handle
 !> @return var_desc is now an opened variable that can be used with pio_write_darray
-subroutine piovdc_open_var(ts, varname, lod, var_desc, ierr)
+subroutine piovdc_open_var(ts, varname, lod, reflevel, var_desc, ierr)
 	use pio
 	use pio_kinds
 	type (Var_desc_t), intent(inout)	:: var_desc
@@ -170,6 +170,7 @@ subroutine piovdc_open_var(ts, varname, lod, var_desc, ierr)
 	var_desc%name = varname
 	var_desc%cur_ts = ts
 	var_desc%lod = lod	
+	var_desc%reflevel = reflevel
 	RETURN
 endsubroutine
 

@@ -174,7 +174,7 @@ module pio_types
 #endif	
 	character(len=25) :: name
 	character(len=100) :: vdf
-	integer(i4)     :: cur_ts, num_ts, lod, bs(3), dims(3)
+	integer(i4)     :: cur_ts, num_ts, lod, bs(3), dims(3), reflevel
 
         integer(i4)     :: varID
         integer(i4)     :: rec   ! This is a record number or pointer into the unlim dimension of the	    
