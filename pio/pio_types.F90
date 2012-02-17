@@ -172,16 +172,29 @@ module pio_types
 #ifdef SEQUENCE
 	sequence
 #endif	
-	character(len=25) :: name
-	character(len=100) :: vdf
-	integer(i4)     :: cur_ts, num_ts, lod, bs(3), dims(3), reflevel
-
         integer(i4)     :: varID
         integer(i4)     :: rec   ! This is a record number or pointer into the unlim dimension of the	    
                                  ! netcdf file
 	integer(i4)     :: type
         integer(i4)     :: ndims ! number of dimensions as defined on the netcdf file.
     end type 
+
+#ifdef _COMPRESSION
+!>
+!! @public
+!! @struct VDC_var_desc_t VDC_var_desc_t
+!! @brief A VDC2 variable descriptor returned from @ref PIO_def_var (see pio_types) 
+!<
+    type, public :: VDC_Var_desc_t
+#ifdef SEQUENCE
+	sequence
+#endif	
+	character(len=*) :: name
+	character(len=*) :: vdf
+	integer(i4)     :: cur_ts, num_ts, lod, bs(3), dims(3), reflevel
+	integer(i4)     :: type
+    end type 
+#endif
 
 !>
 !! @defgroup PIO_iotype PIO_iotype
