@@ -21,11 +21,7 @@
 !>	generated using PIO instead of a VDC
 module piovdc
 	use pio
-	use pio_kinds
-	use pio_types
-
 	implicit none
-		
 contains
 
 !> @brief subroutine checks MPI status and prepares a VDC optimized IO
@@ -48,13 +44,20 @@ contains
 !> @param[inout] rank int rank of the current task 
 !> @param[inout] ierr int error handle
 subroutine piovdc_init(vdf_path, nioprocs, iostart, iocount, rank, ierr)
-	include 'mpif.h' !_EXTERNAL
+#ifndef NO_MPIMOD
+	use mpi			!_EXTERNAL
+#endif
+	implicit none
+#ifdef NO_MPIMOD
+	include 'mpif.h'	!_EXTERNAL
+#endif
+	integer (kind=PIO_OFFSET), intent(out)  :: iostart(3), iocount(3)
+	character(LEN=*), intent(in)		   :: vdf_path
 	integer (i4), intent(inout)	:: ierr, rank
 	integer (i4), intent(inout)	:: nioprocs
-	integer (kind=PIO_OFFSET), intent(out)  :: iostart(3), iocount(3)
-	character, intent(in)		   :: vdf_path*100
 	!Locals
-	integer (i4)	::	bsize(3), nprocs, dims(3), ts
+	integer(i4)    :: bsize(3), dims(3)
+	integer (i4)	:: nprocs, ts
 
 	logical		:: flag
 
@@ -117,23 +120,24 @@ endsubroutine
 !> @param[in] vdf_path char the path to the vdf meta file
 !> @param[inout] ierr int error handle
 subroutine piovdc_gen_vdc2_handles(file_handle, var_handle, iosystem, iocount, vdf_path, ierr)
-	use pio	
-	use pio_kinds
-	use pio_types
-
-	include 'mpif.h' !_EXTERNAL
+#ifndef NO_MPIMOD
+	use mpi			!_EXTERNAL
+#endif
+	implicit none
+#ifdef NO_MPIMOD
+	include 'mpif.h'	!_EXTERNAL
+#endif
 
 	type (Var_desc_t),intent(out) :: var_handle
-	character,intent(in)	::	vdf_path*100
 	type (file_desc_t), intent(out) :: file_handle
+	character(LEN=*),intent(in)	::	vdf_path
 	type (iosystem_desc_t), target, intent(in) :: iosystem
-	integer(kind=PIO_OFFSET), intent(in) :: iocount(3)
+	integer(kind=PIO_OFFSET), dimension(:), intent(in) :: iocount
 	integer(i4), intent(inout)	:: ierr
 	!LOCALS
-	integer (i4)	::	bsize(3) !global vdc2 block size
-	integer (i4) 	::	ts !total num of time steps
-	integer (i4)	::	dims(3) !global grid size
-	integer (i4)	::	rank
+	integer(i4)	:: bsize(3), dims(3)
+	integer(i4) 	::	ts !total num of time steps
+	integer(i4)	::	rank
 
 	file_handle%iotype = pio_iotype_vdc2
 	file_handle%iosystem => iosystem
@@ -161,12 +165,11 @@ endsubroutine
 !> @param[out] ierr error return handle
 !> @return var_desc is now an opened variable that can be used with pio_write_darray
 subroutine piovdc_open_var(ts, varname, lod, reflevel, var_desc, ierr)
-	use pio
-	use pio_kinds
-	type (Var_desc_t), intent(inout)	:: var_desc
 	integer(i4), intent(in)	:: ts, lod
-	character, intent(in)	:: varname*20
+	character(LEN=*), intent(in)	:: varname
 	integer(i4), intent(out) :: ierr
+	type (Var_desc_t), intent(inout)	:: var_desc
+
 	var_desc%name = varname
 	var_desc%cur_ts = ts
 	var_desc%lod = lod	
@@ -183,11 +186,9 @@ endsubroutine
 !> @param[inout] start int(3) current MPI task global start
 !> @param[inout] count int(3) current MPI task global count
 subroutine adjust_bounds(global_dims, start, count, rank)
-
-	use pio_kinds
-	integer (kind=PIO_OFFSET), intent(inout) :: start(3), count(3)
-	real (r4), intent(in) :: global_dims(3)
+	real (r4), dimension(:), intent(in) :: global_dims
 	integer(i4), intent(in) :: rank
+	integer (kind=PIO_OFFSET), dimension(:), intent(inout) :: start, count
 
 	!first check to ensure the start is legal
 
@@ -197,8 +198,8 @@ subroutine adjust_bounds(global_dims, start, count, rank)
 #ifdef DEBUG
 	   print *, ' rank: ' , rank, ' start: ' , start, ' count: ' , count , ' negated'
 #endif
-	   start = (/ -1, -1, -1/)
-	   count = (/ -1, -1, -1/)
+	   start = (/ 0, 0, 0/)
+	   count = (/ 0, 0, 0/)
 	else 
 	   !start is legit but count might not be, check & adjust to the boundaries
 	   if(count(1) + start(1) - 1 .GT. global_dims(1)) then
@@ -229,9 +230,11 @@ end subroutine
 !> @param[in] bsize int(3) VDC block size
 subroutine auto_get_start_count(rank, nioprocs, block_dims, start, count, bsize)
   use pio_kinds
-  integer (i4), intent(in) :: rank, bsize(3)
-  real (r4), intent(in) 	:: block_dims(3)
   integer (kind=PIO_OFFSET), intent(out):: start(3), count(3)
+  integer(i4), dimension(:), intent(in) :: bsize
+  integer (i4), intent(in) :: rank, 
+  real (r4), dimension(:), intent(in) 	:: block_dims
+
   integer (i4), intent(inout) :: nioprocs
   !locals
   real (r4)             :: proc_count
@@ -290,12 +293,11 @@ end subroutine
 !> @param[out] iocount int(3) IO count for the current MPI task
 !> @param[inout] ioprocs int max # of IO procs, gets returned as the actual # used
 subroutine init_vdc2(rank, data_dims, vdc_bsize, iostart, iocount, ioprocs)
-  use pio_kinds
-
-  integer (i4), intent(in) :: rank, data_dims(3), vdc_bsize(3)
-  integer (i4), intent(inout):: ioprocs
   integer (kind=PIO_OFFSET), intent(out)  :: iostart(3), iocount(3)
-  integer (kind=PIO_OFFSET):: start(3), count(3)
+  integer (i4), intent(in) :: rank
+  integer(i4), dimension(:), intent(in) :: data_dims, vdc_bsize
+  integer (i4), intent(inout):: ioprocs
+  !locals
   real(r4) :: vdc_blocks(3)   
   integer (i4)	:: ierr
 
@@ -306,13 +308,11 @@ subroutine init_vdc2(rank, data_dims, vdc_bsize, iostart, iocount, ioprocs)
 #endif
   vdc_blocks = data_dims/real(vdc_bsize)
   
-  call auto_get_start_count (rank, ioprocs, vdc_blocks, start, count, vdc_bsize)
+  call auto_get_start_count (rank, ioprocs, vdc_blocks, iostart, iocount, vdc_bsize)
   
 #ifdef DEBUG 
-		print *, 'Retrieved VDF start count', start, '-', count, 'rank: ' , rank
+		print *, 'Retrieved VDF start count', iostart, '-', iocount, 'rank: ' , rank
 #endif
-  iostart = start 
-  iocount = count 
 
 endsubroutine
 
