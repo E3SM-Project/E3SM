@@ -132,9 +132,11 @@ contains
           else
              call write_darray_nf_{TYPE}(File,varDesc,iodesc, array, iostat)
           endif
+#if ({ITYPE} == TYPEREAL)
 #ifdef _COMPRESSION
        case(pio_iotype_vdc2)
           call write_vdc2_{TYPE}(File, Vardesc, iodesc, array, iostat)
+#endif
 #endif
        case(pio_iotype_binary)
           print *, subName,': IO type not supported'
@@ -250,9 +252,11 @@ contains
        call read_darray_bin_{TYPE} (File,varDesc,iodesc,array, iostat)
     case(pio_iotype_pnetcdf, pio_iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
        call read_darray_nf_{TYPE} (File,varDesc,iodesc,array, iostat)
+#if ({ITYPE} == TYPEREAL)
 #ifdef _COMPRESSION
     case(pio_iotype_vdc2)
        call read_vdc2_{TYPE} (File, vardesc, iodesc, array, iostat)
+#endif
 #endif
     case(pio_iotype_binary)
        print *, subName,': IO type not supported'
@@ -1067,9 +1071,9 @@ contains
 
   end subroutine read_darray_bin_{TYPE}
 
-! TYPE real,int,double
+! TYPE real
  subroutine write_vdc2_{TYPE}(File,varDesc,ioDesc,array, iostat)
-
+    use pio_support, only : piodie
     ! !DESCRIPTION:
     !  Writes a VDC2 vapor data collection
     !
@@ -1105,11 +1109,13 @@ contains
          ndims                       ! number of variable dimensions
     integer(4), pointer :: start(:), count(:)
     double precision    :: timer;
+
     ! pull information from file_desc_t data structure
     IOproc     = File%iosystem%IOproc
     iotype     = File%iotype
     UseRearranger  = File%iosystem%UseRearranger
 
+#ifdef _COMPRESSION
     ! pull information out of the decomposition data structure 
     len        = iodesc%IOmap%length
     ndims      = size(iodesc%start)
@@ -1118,7 +1124,7 @@ contains
     start      = iodesc%start
     count      = iodesc%count
 
-#ifdef _COMPRESSION
+
 
     if(UseRearranger) then 
        if (IOproc) then 
@@ -1152,12 +1158,14 @@ contains
     endif
 
     if(UseRearranger) call dealloc_check(IOBUF)
+#else
+    call piodie(__FILE__,__LINE__,'Compression is not enabled. Cannot write VDC2 file')
 #endif
   end subroutine write_vdc2_{TYPE}
 
 ! TYPE real,int,double
 subroutine read_vdc2_{TYPE}(File,varDesc,ioDesc,array, iostat)
-
+    use pio_support, only : piodie
     ! !DESCRIPTION:
     !  Writes a VDC2 vapor data collection
     !
@@ -1194,6 +1202,7 @@ subroutine read_vdc2_{TYPE}(File,varDesc,ioDesc,array, iostat)
     integer(4), pointer :: start(:), count(:)
     double precision    :: timer;
 
+#ifdef _COMPRESSION
     ! pull information from file_desc_t data structure
     IOproc     = File%iosystem%IOproc
     iotype     = File%iotype
@@ -1207,7 +1216,6 @@ subroutine read_vdc2_{TYPE}(File,varDesc,ioDesc,array, iostat)
     start      = iodesc%start
     count      = iodesc%count
 
-#ifdef _COMPRESSION
     if(UseRearranger) then 
        if (IOproc) then 
 
@@ -1234,6 +1242,8 @@ subroutine read_vdc2_{TYPE}(File,varDesc,ioDesc,array, iostat)
     endif   ! if(UseRearranger) 
 
     if(UseRearranger) call dealloc_check(IOBUF)
+#else
+    call piodie(__FILE__,__LINE__,'Compression is not enabled. Cannot read VDC2 file')
 #endif
 
   end subroutine read_vdc2_{TYPE}
