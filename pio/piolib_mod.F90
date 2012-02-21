@@ -165,7 +165,8 @@ module piolib_mod
      module procedure initdecomp_2dof_nf_i8
      module procedure initdecomp_2dof_bin_i4
      module procedure initdecomp_2dof_bin_i8
-
+     module procedure initdecomp_dof_vdc_i4
+     module procedure initdecomp_dof_vdc_i8
      module procedure PIO_initdecomp_bc
      module procedure PIO_initdecomp_dof_dof
   end interface
@@ -414,6 +415,162 @@ contains
     call piodie(__PIO_FILE__,__LINE__,'subroutine not yet implemented')
 
   end subroutine PIO_initdecomp_bc
+
+!> 
+!! @public 
+!! @ingroup PIO_initdecomp
+!! @brief Implements the @ref decomp_dof_vdc for PIO_initdecomp
+!! @details  This provides the ability to describe a computational
+!! decomposition in PIO using degrees of freedom method. This is  
+!! a decomposition that can not be easily described using a start  
+!! and count metehod (see @ref decomp_dof).  This subroutine also 
+!! requires the user to specify the IO decomposition using the 
+!! degree of freedom method.  This version of the subroutine 
+!! is most suitable for those who want complete control over 
+!! the actions of PIO and is set up to use compression
+!! @param iosystem @copydoc iosystem_desc_t
+!! @param basepiotype @copydoc use_PIO_kinds
+!! @param dims An array of the global length of each dimesion of the variable(s)
+!! @param compdof : mapping of the storage order of the variable to its memory order
+!! @param iodesc @copydoc iodesc_generate
+!! @param iostart   The start index for the block-cyclic io decomposition
+!! @param iocount   The count for the block-cyclic io decomposition
+!! @param vdf_path  The location of the vdf file to be used with 
+!<
+  subroutine PIO_initdecomp_dof_vdc_i4(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount, vdf_path, nioprocs)
+
+    type (iosystem_desc_t), intent(inout) :: iosystem
+    integer(i4), intent(in)               :: basepiotype
+    integer(i4), intent(in)               :: dims(:)
+    type (IO_desc_t), intent(out)         :: iodesc
+    integer (kind=PIO_OFFSET),optional    :: iostart(:)  
+    integer (kind=PIO_OFFSET),optional    :: iocount(:)    
+    integer(i4), intent(in)                        :: compdof(:)
+    character(LEN=*), intent(in)		   :: vdf_path
+    integer (i4), intent(inout)	:: nioprocs
+    !locals
+    integer(i4) :: rank
+	integer(i4)    :: bsize(3), dims(3)
+	integer (i4)	:: ts
+    !VDC2 specific setup
+
+#ifndef NO_MPIMOD
+	use mpi			!_EXTERNAL
+#endif
+	implicit none
+#ifdef NO_MPIMOD
+	include 'mpif.h'	!_EXTERNAL
+#endif
+
+	call MPI_COMM_RANK(MPI_COMM_WORLD, rank, ierr)
+ 	
+	endif
+
+#ifdef DEBUG
+	if (rank .eq. 0 ) then
+		print *, 'Retrieving VDF info...', vdf_path
+	endif
+#endif
+
+	call getvdfinfo(bsize, dims, ts, rank, TRIM(vdf_path))
+
+#ifdef DEBUG
+	if (rank .eq. 0) then
+		print *, 'VDF info retrieved'
+		print *, 'Calling init_vdc2...'
+	endif
+#endif	
+
+	call init_vdc2(rank, dims, bsize, iostart, iocount, nioprocs)
+	
+#ifdef DEBUG
+	if(rank .eq. 0 ) then
+	    print *, 'init_vdc2 calculated vdc2 block params'
+	endif
+#endif
+	return 
+
+    call pio_initdecomp_dof_i4(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount)
+
+  end subroutine PIO_initdecomp_dof_vdc_i4
+
+!> 
+!! @public 
+!! @ingroup PIO_initdecomp
+!! @brief Implements the @ref decomp_dof_vdc for PIO_initdecomp
+!! @details  This provides the ability to describe a computational
+!! decomposition in PIO using degrees of freedom method. This is  
+!! a decomposition that can not be easily described using a start  
+!! and count metehod (see @ref decomp_dof).  This subroutine also 
+!! requires the user to specify the IO decomposition using the 
+!! degree of freedom method.  This version of the subroutine 
+!! is most suitable for those who want complete control over 
+!! the actions of PIO and is set up to use compression
+!! @param iosystem @copydoc iosystem_desc_t
+!! @param basepiotype @copydoc use_PIO_kinds
+!! @param dims An array of the global length of each dimesion of the variable(s)
+!! @param compdof : mapping of the storage order of the variable to its memory order
+!! @param iodesc @copydoc iodesc_generate
+!! @param iostart   The start index for the block-cyclic io decomposition
+!! @param iocount   The count for the block-cyclic io decomposition
+!! @param vdf_path  The location of the vdf file to be used with 
+!<
+  subroutine PIO_initdecomp_dof_vdc_i8(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount, vdf_path, nioprocs)
+
+    type (iosystem_desc_t), intent(inout) :: iosystem
+    integer(i4), intent(in)               :: basepiotype
+    integer(i4), intent(in)               :: dims(:)
+    type (IO_desc_t), intent(out)         :: iodesc
+    integer (kind=PIO_OFFSET),optional    :: iostart(:)  
+    integer (kind=PIO_OFFSET),optional    :: iocount(:)    
+    integer(i8), intent(in)                        :: compdof(:)
+    character(LEN=*), intent(in)		   :: vdf_path
+    integer (i4), intent(inout)	:: nioprocs
+    !locals
+    integer(i4) :: rank
+	integer(i4)    :: bsize(3), dims(3)
+	integer (i4)	:: ts
+    !VDC2 specific setup
+
+#ifndef NO_MPIMOD
+	use mpi			!_EXTERNAL
+#endif
+	implicit none
+#ifdef NO_MPIMOD
+	include 'mpif.h'	!_EXTERNAL
+#endif
+
+	call MPI_COMM_RANK(MPI_COMM_WORLD, rank, ierr)
+ 	
+	endif
+
+#ifdef DEBUG
+	if (rank .eq. 0 ) then
+		print *, 'Retrieving VDF info...', vdf_path
+	endif
+#endif
+
+	call getvdfinfo(bsize, dims, ts, rank, TRIM(vdf_path))
+
+#ifdef DEBUG
+	if (rank .eq. 0) then
+		print *, 'VDF info retrieved'
+		print *, 'Calling init_vdc2...'
+	endif
+#endif	
+
+	call init_vdc2(rank, dims, bsize, iostart, iocount, nioprocs)
+	
+#ifdef DEBUG
+	if(rank .eq. 0 ) then
+	    print *, 'init_vdc2 calculated vdc2 block params'
+	endif
+#endif
+	return 
+
+    call pio_initdecomp_dof_i8(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount)
+
+  end subroutine PIO_initdecomp_dof_vdc_i8
 
 !>
 !! @public
