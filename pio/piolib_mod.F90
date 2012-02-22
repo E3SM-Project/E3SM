@@ -2314,6 +2314,8 @@ contains
        if(debug) print *,__PIO_FILE__,__LINE__,' open: ', trim(myfname), amode
        ierr = create_nf(file,trim(myfname), amode)	
        if(debug .and. iosystem%io_rank==0)print *,__PIO_FILE__,__LINE__,' open: ', myfname, file%fh
+    case(pio_iotype_vdc2)
+	print *, 'creatfile: vdf library will handle creating files'	
     case(pio_iotype_binary)
        print *,'createfile: io type not supported'
     end select
