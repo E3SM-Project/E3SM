@@ -27,7 +27,7 @@ module piodarray
   include 'mpif.h'            !_EXTERNAL
 #endif
   private
-  public :: pio_read_darray, pio_write_darray, darray_write_complete, pio_buffer_size_limit
+  public :: pio_read_darray, pio_write_darray, darray_write_complete, pio_set_buffer_size_limit
   
 !> 
 !! @defgroup PIO_write_darray PIO_write_darray
@@ -196,7 +196,7 @@ module piodarray
 contains
 
 # 65 "piodarray.F90.in"
-  subroutine set_pio_buffer_size_limit(limit)
+  subroutine pio_set_buffer_size_limit(limit)
     integer, intent(in) :: limit 
 
     if(limit<0) then
@@ -204,7 +204,7 @@ contains
     end if
     pio_buffer_size_limit=limit
 
-  end subroutine set_pio_buffer_size_limit
+  end subroutine pio_set_buffer_size_limit
 
 
 
