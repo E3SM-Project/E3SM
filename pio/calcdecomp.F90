@@ -21,7 +21,7 @@ contains
     integer, intent(in) :: newsize
 
     if(newsize<0) then
-       piodie(__PIO_FILE__,__LINE__,'bad value to blocksize: ',newsize)
+       call piodie(__PIO_FILE__,__LINE__,'bad value to blocksize: ',newsize)
     end if
 
     blocksize=newsize
