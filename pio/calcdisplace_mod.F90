@@ -65,11 +65,11 @@ CONTAINS
     integer(i4) :: gstride(ndim)
     integer i,j
     integer iosize
-    integer(i4) :: myloc(ndim)
-    integer(i4) :: ub(ndim)
+    integer(kind=pio_offset) :: myloc(ndim)
+    integer(kind=pio_offset) :: ub(ndim)
     integer idim
     logical done
-    integer gindex
+    integer(kind=pio_offset) ::  gindex
 
     gstride(1)=gsize(1)
     do i=2,ndim
@@ -154,7 +154,8 @@ CONTAINS
     ! check for strictly increasing
 
     do i=1,ndisp-1	
-       if(displace(i) .gt. displace(i+1)) then
+       if(displace(i) > displace(i+1)) then
+          print *,__PIO_FILE__,__LINE__,i,displace(max(1,i-1):min(i+1,ndisp-1))
           call piodie(__PIO_FILE__,__LINE__,'displace is not increasing')
        endif
     enddo

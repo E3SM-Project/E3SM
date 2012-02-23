@@ -59,7 +59,7 @@ contains
 
     start(:)=1
     kount(:)=0
-    if(iorank>=use_io_procs) return 
+
     ldims=ndims
     p=basesize
     do i=1,ndims
@@ -77,7 +77,7 @@ contains
           use_io_procs=use_io_procs-1
        end do
     end if
-
+    if(iorank>=use_io_procs) return 
 
 
     kount=gdims
@@ -89,6 +89,14 @@ contains
        if(gdims(i)>1) then
           if(gdims(i)>=ioprocs) then
              call computestartandcount(gdims(i),ioprocs,tiorank,start(i),kount(i))
+             if(start(i)+kount(i)>gdims(i)+1) then
+                print *,__PIO_FILE__,__LINE__,i,ioprocs,gdims(i),start(i),kount(i)
+#if TESTCALCDECOMP
+                stop
+#else
+                call piodie(__PIO_FILE__,__LINE__,'Start plus count exceeds dimension bound')
+#endif
+             endif
              exit  ! Decomposition is complete
           else
              ! The current dimension cannot complete the decomposition.   Decompose this 
@@ -144,8 +152,8 @@ program sandctest
 !  integer, parameter :: ndims=4
 !  integer, parameter :: gdims(ndims) = (/66,199,10,8/)
   integer, parameter :: ndims=3
-  integer, parameter :: gdims(ndims) = (/3600,2400,40/)
-  integer, parameter :: num_io_procs=8
+  integer, parameter :: gdims(ndims) = (/3600,2400,60/)
+  integer, parameter :: num_io_procs=240
 !  integer :: gdims(ndims)
   integer :: psize, n, i,j,k,m
   integer, parameter :: imax=200,jmax=200,kmax=30,mmax=7
