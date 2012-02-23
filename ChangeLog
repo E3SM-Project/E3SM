@@ -1,6 +1,73 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_4_1
+Originator(s): Jim
+Date: 02-23-2012
+One-line Summary: async pnetcdf writes, bug fix in calcdecomp
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+	pio_set_blocksize: PIO will try to generate contiguous blocks of this size on
+	                       each iotask
+	pio_set_buffer_limit_size: PIO will buffer up to this limit of bytes of data
+	                        before flushing to disk (pnetcdf only)
+
+List all existing files that have been modified, and describe the changes:
+
+pio/calcdecomp.F90 
+	Add code allowing for runtime setting of blocksize with default 884736 bytes
+	Correct bug introduced in 1.4.0 which may cause index to exceed dimension bounds
+pio/calcdisplace_mod.F90
+	A few more variables need to be i8 for > 2GB array support
+pio/pio.F90 
+	Add new functions pio_set_buffer_size_limit and pio_set_blocksize to public entities
+
+pio/piolib_mod.F90 
+pio/pio_msg_callbacks.F90 
+	Add function freedecomp_handler for async interface (fixes longstanding expected test failure)
+pio/pio_msg_mod.F90
+	Correct handling of iodesc when io is async
+pio/pio_types.F90 
+pio/piodarray.F90.in 
+pio/pionfwrite_mod.F90.in 
+	Add support for buffering IO fields written using pnetcdf async interface
+
+
+
+testpio/POPDv2.csh
+testpio/Utils.pm 
+testpio/build_defaults.xml
+testpio/namelists/testpio_in.pb06
+  Update hopper interface, reduce size of arrays in pb06 to prevent memory blowout
+	
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+     
+Bugs fixed: 
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+   async pnetcdf change appears to be a 10x improvement on some systems
+
+
+Code reviewed by: Self
+
+Summary of pre-tag testing:
+
+  Regression tests:  Bluefire:  113 tests PASS, 0 tests FAIL
+	             lynx intel :  80 tests PASS, 0 tests FAIL
+	             Hopper pgi : 113 tests PASS, 0 tests FAIL
+                   
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name:  pio1_4_0
 Originator(s): Jim
 Date: 02-07-2012
