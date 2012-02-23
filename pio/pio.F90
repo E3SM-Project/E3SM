@@ -25,7 +25,7 @@ module pio
 
 
 
-  use piodarray, only : pio_read_darray, pio_write_darray  
+  use piodarray, only : pio_read_darray, pio_write_darray, pio_set_buffer_size_limit  
 
   use nf_mod, only:        &
        PIO_enddef,            &
@@ -53,6 +53,11 @@ module pio
        PIO_get_att   => get_att
   use pionfput_mod, only : PIO_put_var   => put_var
   use pionfget_mod, only : PIO_get_var   => get_var
+
+  use calcdecomp, only : pio_set_blocksize
+   
+
+
   implicit none
   public
 contains

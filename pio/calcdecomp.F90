@@ -13,13 +13,26 @@ module calcdecomp
   implicit none 
 #endif
 
-  public :: CalcStartandCount
-
+  public :: CalcStartandCount, pio_set_blocksize
+  integer, parameter :: default_blocksize=884736
+  integer :: blocksize=default_blocksize
 contains 
+  subroutine pio_set_blocksize(newsize)
+    integer, intent(in) :: newsize
+
+    if(newsize<0) then
+       piodie(__PIO_FILE__,__LINE__,'bad value to blocksize: ',newsize)
+    end if
+
+    blocksize=newsize
+
+
+  end subroutine pio_set_blocksize
+
 
 !
 !  Determine start and kount values for an array of global size gdims over at most num_io_procs tasks.
-!  The algorythm creates contigous blocks of approximate size stripesize.  Stripesize should be adjusted
+!  The algorythm creates contigous blocks of approximate size stripesize.  Blocksize should be adjusted
 !  to be optimal for the filesystem being used.   The actual number of io tasks used is output in variable
 !  use_io_procs
 !
@@ -33,9 +46,9 @@ contains
     integer(kind=pio_offset) :: p
     integer :: extras, subrank, tioprocs, rem
 
-    integer, parameter :: stripeSize = 864*1024
-    integer :: minbytes = stripeSize-256   ! minimum number of contigous blocks in bytes to put on a IO task
-    integer :: maxbytes = stripeSize+256   ! maximum length of contigous block in bytes to put on a IO task
+
+    integer :: minbytes = blocksize-256   ! minimum number of contigous blocks in bytes to put on a IO task
+    integer :: maxbytes = blocksize+256   ! maximum length of contigous block in bytes to put on a IO task
 
     integer :: minblocksize, basesize, maxiosize, ioprocs, tiorank
     integer :: ldims
