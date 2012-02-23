@@ -155,7 +155,7 @@ CONTAINS
 
     do i=1,ndisp-1	
        if(displace(i) > displace(i+1)) then
-          print *,__PIO_FILE__,__LINE__,i,displace(max(1,i-1):min(i+1,ndisp-1))
+          print *,__PIO_FILE__,__LINE__,i,displace(max(1,i-1):min(int(i+1,kind=pio_offset),ndisp-1))
           call piodie(__PIO_FILE__,__LINE__,'displace is not increasing')
        endif
     enddo
