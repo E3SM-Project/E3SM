@@ -61,6 +61,8 @@ module namelist_mod
     character(len=4), save  :: ioFMT
     character(len=80), save :: fname1, fname2
     character(len=*), parameter :: myname='namelist_mod'
+    integer(i4) :: max_buffer_size
+    integer(i4) :: block_size
 
 ! Variables whose values are derived form items in namelist io_nml:
 
@@ -74,6 +76,8 @@ module namelist_mod
 	nz_global,	&
         nvars,          &
 	dir, 		&
+        max_buffer_size, &
+        block_size,     &
 	casename, 	&
 	maxiter,	&
         ioFMT, 		&
@@ -133,6 +137,11 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
     iodof_input = 'internal'
     compdof_output = 'none'
     nvars = 10
+
+    max_buffer_size = -1  !! use default value
+    block_size = -1       !! use default value
+
+
 
     npr_yz = (/nprocs,1,1,nprocs/)
     set_mpi_values = 0  !! Set to one for true
@@ -486,6 +495,25 @@ subroutine Broadcast_Namelist(caller, myID, root, comm, ierror)
 
   call MPI_Bcast(npr_yz, 4, MPI_INTEGER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(npr_yz)',ierror,__FILE__,__LINE__)
+
+  call MPI_Bcast(max_buffer_size, 1, MPI_INTEGER, root, comm, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(npr_yz)',ierror,__FILE__,__LINE__)
+
+  call MPI_Bcast(block_size, 1, MPI_INTEGER, root, comm, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(npr_yz)',ierror,__FILE__,__LINE__)
+
+  if(max_buffer_size>0) then
+     if(myid==0) print *,'Setting buffer_limit_size to : ',max_buffer_size
+     call pio_set_buffer_limit_size(max_buffer_size)
+  end if
+  if(block_size>0) then
+     if(myid==0) print *,'Setting blocksize to : ',block_size
+     call pio_set_blocksize(block_size)
+  end if
+
+
+
+
 
 end subroutine Broadcast_Namelist
 
