@@ -221,8 +221,8 @@ sub loadmodules{
 	module(" load p-netcdf/1.1.1");
     }elsif($host =~ "hopper"){
 	require "/opt/modules/default/init/perl";
-	module(" load netcdf/4.1.3");      
-	module(" load pnetcdf/1.2.0");
+	module(" load netcdf-hdf5parallel/4.1.3");      
+	module(" load parallel-netcdf/1.2.0");
         module("list");
     }elsif($host =~ "pleiades"){
         module(" load netcdf/4.0-i10.1");

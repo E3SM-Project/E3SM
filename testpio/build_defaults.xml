@@ -435,16 +435,17 @@
 
   CPPDEFS = " -DFORTRANUNDERSCORE -D_NO_MPI_RSEND"
   NETCDF_PATH = "${NETCDF_DIR}"
-  PNETCDF_PATH = "/usr/common/usg/pnetcdf/1.2.0/"
+  PNETCDF_PATH = "${PARALLEL_NETCDF_DIR}"
   LDLIBS="`nc-config --flibs`"
   workdir = "/scratch/scratchdirs/${USER}/testpio.norsend"
   run = "aprun"
   corespernode = "24"
   submit = "qsub "
-  conopts = " --enable-pnetcdf --enable-timing --enable-filesystem-hints=lustre "
+  conopts = " --enable-netcdf4 --enable-pnetcdf --enable-timing --enable-filesystem-hints=lustre "
   preamble="
 #PBS -N testpio_suite
-#PBS -l walltime=00:30:00
+#PBS -l walltime=01:00:00
+#PBS -q regular
 #PBS -j oe
 #PBS -V"
 />
