@@ -45,13 +45,14 @@ contains
     integer :: i,  dims(ndims), lb, ub, inc
     integer(kind=pio_offset) :: p
     integer :: extras, subrank, tioprocs, rem
-
-
-    integer :: minbytes = blocksize-256   ! minimum number of contigous blocks in bytes to put on a IO task
-    integer :: maxbytes = blocksize+256   ! maximum length of contigous block in bytes to put on a IO task
+    integer :: minbytes, maxbytes
 
     integer :: minblocksize, basesize, maxiosize, ioprocs, tiorank
     integer :: ldims
+
+
+    minbytes = blocksize-256   ! minimum number of contigous blocks in bytes to put on a IO task
+    maxbytes = blocksize+256   ! maximum length of contigous block in bytes to put on a IO task
 
     select case(basetype)
     case(PIO_int)
