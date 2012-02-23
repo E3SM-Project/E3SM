@@ -23,7 +23,7 @@ module piodarray
   include 'mpif.h'            !_EXTERNAL
 #endif
   private
-  public :: pio_read_darray, pio_write_darray
+  public :: pio_read_darray, pio_write_darray, darray_write_complete, pio_buffer_size_limit
   
 !> 
 !! @defgroup PIO_write_darray PIO_write_darray
@@ -49,9 +49,31 @@ module piodarray
 !>
 !! @private
 !<
+  interface add_data_to_buffer
+! TYPE real,int,double
+     module procedure add_data_to_buffer_{TYPE}
+  end interface
+
+
   character(len=*), parameter, private  :: modName='piodarray'
+  integer :: total_buffsize=0
+  integer :: pio_buffer_size_limit= 100000000   ! 100MB default
+
 
 contains
+
+  subroutine set_pio_buffer_size_limit(limit)
+    integer, intent(in) :: limit 
+
+    if(limit<0) then
+       call piodie(__PIO_FILE__,__LINE__,' bad value to buffer_size_limit',limit)
+    end if
+    pio_buffer_size_limit=limit
+
+  end subroutine set_pio_buffer_size_limit
+
+
+
 
 ! TYPE real,int,double
 !> 
@@ -119,22 +141,22 @@ contains
        if(debugasync) print *,__PIO_FILE__,__LINE__
     endif
 
-       select case(File%iotype)
-       case(pio_iotype_pbinary, pio_iotype_direct_pbinary)
-          if (present(fillval)) then
-             call write_darray_bin_{TYPE}(File,varDesc,iodesc, array, iostat, fillval)
-          else
-             call write_darray_bin_{TYPE}(File,varDesc,iodesc, array, iostat)
-          endif
-       case(pio_iotype_pnetcdf, pio_iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
-          if (present(fillval)) then
-             call write_darray_nf_{TYPE}(File,varDesc,iodesc, array, iostat, fillval)
-          else
-             call write_darray_nf_{TYPE}(File,varDesc,iodesc, array, iostat)
-          endif
-       case(pio_iotype_binary)
-          print *, subName,': IO type not supported'
-       end select
+    select case(File%iotype)
+    case(pio_iotype_pbinary, pio_iotype_direct_pbinary)
+       if (present(fillval)) then
+          call write_darray_bin_{TYPE}(File,varDesc,iodesc, array, iostat, fillval)
+       else
+          call write_darray_bin_{TYPE}(File,varDesc,iodesc, array, iostat)
+       endif
+    case(pio_iotype_pnetcdf, pio_iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
+       if (present(fillval)) then
+          call write_darray_nf_{TYPE}(File,varDesc,iodesc, array, iostat, fillval)
+       else
+          call write_darray_nf_{TYPE}(File,varDesc,iodesc, array, iostat)
+       endif
+    case(pio_iotype_binary)
+       print *, subName,': IO type not supported'
+    end select
     
   end subroutine write_darray_1d_{TYPE}
 
@@ -328,7 +350,7 @@ contains
     integer(pio_offset), pointer :: start(:), count(:)
 
     integer(i4), intent(out) :: iostat
-
+    integer :: request
     !EOP
     !BOC
     !-----------------------------------------------------------------------
@@ -431,9 +453,13 @@ contains
        !--------------------------------------------
        ! End data rearrange
        !--------------------------------------------
-
     else
-       iobuf=>array
+       if(file%iotype==pio_iotype_pnetcdf) then
+          allocate(iobuf(size(array)))
+          iobuf=array
+       else
+          iobuf=>array
+       end if
     endif   ! if(UseRearranger) 
 #ifdef TIMING
     call t_stopf("pio_rearrange_write")
@@ -483,6 +509,9 @@ contains
           count=iodesc%count
           if(Debug) print *, __PIO_FILE__,__LINE__,'start:',start,' count:',count,' ndims:',ndims
        end if
+
+
+
     else
        ! some compilers have problems passing 
        ! unassociated pointers when they are intent in
@@ -493,14 +522,20 @@ contains
 #ifdef TIMING
     call t_startf("pio_write_nf")
 #endif
-    ierr = write_nf(File,IOBUF,varDesc,iodesc,start,count) 
+    ierr = write_nf(File,IOBUF,varDesc,iodesc,start,count, request) 
 #ifdef TIMING
     call t_stopf("pio_write_nf")
 #endif
     call dealloc_check(start)
     call dealloc_check(count)
 
-    if(UseRearranger) call dealloc_check(IOBUF)
+    if(IOPROC) then
+       if(file%iotype==pio_iotype_pnetcdf) then
+          call add_data_to_buffer(File, IOBUF, request)
+       else if(Userearranger) then
+          deallocate(iobuf)
+       end if
+    end if
 
     !   call MPI_Barrier(File%iosystem%comp_comm,ierr)
 
@@ -1058,6 +1093,105 @@ contains
 #endif
 
   end subroutine read_darray_bin_{TYPE}
+
+  ! TYPE real,int,double  
+  subroutine add_data_to_buffer_{TYPE} (File, IOBUF, request)
+    use pio_types, only : io_data_list
+    type(file_desc_t) :: File
+    {VTYPE}, pointer :: IOBUF(:)
+    integer, intent(in) :: request
+    integer :: cnt, mpierr, maxbuffsize, this_buffsize
+    type(io_data_list), pointer :: ptr
+
+
+    if(.not. associated(File%data_list_top)) then
+       allocate(file%data_list_top)
+       ptr => file%data_list_top
+    else
+       ptr => file%data_list_top
+       do while(associated(ptr%next))
+          ptr => ptr%next
+       end do
+       
+       allocate(ptr%next)
+       ptr=>ptr%next
+       nullify(ptr%next)
+    end if
+    ptr%request = request
+    File%request_cnt=File%request_cnt+1
+    ptr%data_{TYPE} => IOBUF
+    this_buffsize = size(iobuf)*sizeof(iobuf(1))
+    file%buffsize=file%buffsize+this_buffsize
+    total_buffsize = total_buffsize+this_buffsize
+    
+    call MPI_ALLREDUCE(total_buffsize,maxbuffsize,1,MPI_INTEGER,MPI_MAX,file%iosystem%io_comm, mpierr)
+
+    if(maxbuffsize > pio_buffer_size_limit) then
+       call darray_write_complete(File)
+    endif
+
+    if(debug) print *,__FILE__,__LINE__,'buffsize = ',file%buffsize,file%request_cnt
+
+
+  end subroutine add_data_to_buffer_{TYPE}
+
+
+  subroutine darray_write_complete(File)
+    use pio_types, only : io_data_list
+#ifdef _PNETCDF
+#   include <pnetcdf.inc>   /* _EXTERNAL */    
+#endif
+
+    type(file_desc_t) :: File
+    type(io_data_list), pointer :: ptr, prevptr
+    integer :: cnt, ierr
+    integer, pointer :: array_of_requests(:), status(:)
+
+    if(associated(file%data_list_top)) then
+       if(debug) print *,__FILE__,__LINE__, file%request_cnt
+
+       allocate(array_of_requests(file%request_cnt), status(file%request_cnt))
+       ptr=>file%data_list_top
+       cnt=1
+       do while(associated(ptr))
+          array_of_requests(cnt)=ptr%request
+          cnt=cnt+1
+          ptr=>ptr%next
+       end do
+       if(DEBUG) print *,__FILE__,__LINE__, array_of_requests, cnt, file%request_cnt
+#ifdef _PNETCDF
+       ierr  = nfmpi_wait_all(file%fh, file%request_cnt, array_of_requests, status)
+#endif
+       if(DEBUG) print *,__FILE__,__LINE__,status, ierr, total_buffsize
+
+       ptr=>file%data_list_top
+       do while(associated(ptr))
+          if(associated(ptr%data_double)) then
+             deallocate(ptr%data_double)
+          else if(associated(ptr%data_real)) then
+             deallocate(ptr%data_real)
+          else if(associated(ptr%data_int)) then
+             deallocate(ptr%data_int)
+          end if
+          prevptr=>ptr
+          ptr => ptr%next
+          deallocate(prevptr)
+       end do
+       nullify(file%data_list_top)
+
+       total_buffsize=total_buffsize-file%buffsize
+
+       file%buffsize=0
+       file%request_cnt=0
+       deallocate(array_of_requests)
+       deallocate(status)
+    end if
+  end subroutine darray_write_complete
+    
+
+
+
+
 
 end module piodarray
 

@@ -2156,7 +2156,7 @@ contains
     case( pio_iotype_pnetcdf, pio_iotype_netcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c)
        if(debug) print *,__PIO_FILE__,__LINE__,' open: ', trim(myfname), amode
        ierr = create_nf(file,trim(myfname), amode)	
-       if(debug .and. iosystem%io_rank==0)print *,__PIO_FILE__,__LINE__,' open: ', myfname, file%fh
+       if(debug .and. iosystem%io_rank==0)print *,__PIO_FILE__,__LINE__,' open: ', myfname, file%fh, ierr
     case(pio_iotype_binary)
        print *,'createfile: io type not supported'
     end select
@@ -2361,9 +2361,16 @@ contains
     implicit none
     type (iosystem_desc_t) :: ios
     type (io_desc_t) :: iodesc
-    integer :: ierr
+    integer :: ierr, msg
 
-
+    if(ios%async_interface .and. .not. ios%ioproc) then
+       msg = PIO_MSG_FREEDECOMP
+       if(ios%comp_rank==0) then
+          call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       end if
+       call mpi_bcast(iodesc%async_id,1, mpi_integer, ios%compmaster,ios%intercomm, ierr)
+    end if
+    iodesc%async_id=-1
     call rearrange_free(ios,iodesc)
 
 #ifndef _MPISERIAL
@@ -2427,7 +2434,7 @@ contains
 !! @param file @copydoc file_desc_t
 !< 
   subroutine closefile(file)
-
+    use piodarray, only : darray_write_complete
     type (file_desc_t),intent(inout)   :: file
 
     integer :: ierr, msg
@@ -2452,6 +2459,7 @@ contains
     case(pio_iotype_pbinary, pio_iotype_direct_pbinary)
        ierr = close_mpiio(file)
     case( pio_iotype_pnetcdf, pio_iotype_netcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+       call darray_write_complete(file)
        ierr = close_nf(file)
     case(pio_iotype_binary)
        print *,'closefile: io type not supported'

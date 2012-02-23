@@ -22,9 +22,10 @@ subroutine pio_callback_handler(iosystem, msg)
   character(len=pio_max_name) :: name
   type(var_desc_t) :: vardesc
 
+
   call mpi_bcast(fh, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
   file=> lookupfile(fh)
-
+  
 
   select case(msg)
   case (PIO_MSG_CLOSE_FILE)
@@ -73,6 +74,29 @@ subroutine pio_callback_handler(iosystem, msg)
   end select
 
 end subroutine pio_callback_handler
+
+subroutine freedecomp_handler(iosystem)
+  use pio, only : iosystem_desc_t, io_desc_t, pio_freedecomp
+#ifndef NO_MPIMOD
+  use mpi !_EXTERNAL
+  use pio_msg_mod, only : delete_from_iodesc_list
+#endif
+  implicit none
+#ifdef NO_MPIMOD
+  include 'mpif.h' !_EXTERNAL
+#endif
+  type(iosystem_desc_t) :: iosystem
+  type(io_desc_t), pointer :: iodesc
+  integer :: async_id, ierr
+
+
+  call mpi_bcast(async_id, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+  iodesc=>delete_from_iodesc_list(async_id)
+  call pio_freedecomp(iosystem, iodesc)
+
+
+end subroutine freedecomp_handler
+
 
 subroutine create_file_handler(iosystem)
   use pio, only : iosystem_desc_t, file_desc_t, pio_createfile
@@ -267,9 +291,9 @@ subroutine readdarray_handler(iosystem)
   integer(i4) :: aint(1)
   real(r4) :: areal(1)
   real(r8) :: adouble(1)
+
+  if(debugasync) print *,__FILE__,__LINE__
   
-
-
   call mpi_bcast(fh, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
   call mpi_bcast(v%varid, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
   call mpi_bcast(v%rec, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
@@ -277,6 +301,9 @@ subroutine readdarray_handler(iosystem)
   call mpi_bcast(type, 1, mpi_integer , iosystem%compmaster, iosystem%intercomm, ierr)
 
   file=> lookupfile(fh)
+
+  if(debugasync) print *,__FILE__,__LINE__,iod_id, type
+
   iodesc => lookupiodesc(iod_id)
 #ifndef _MPISERIAL
   select case(type)

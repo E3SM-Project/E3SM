@@ -9,7 +9,7 @@ module pio_msg_mod
   public :: pio_msg_handler_init, pio_msg_handler
 
 
-  public :: add_to_file_list, lookupfile, delete_from_file_list, lookupiodesc, add_to_iodesc_list
+  public :: add_to_file_list, lookupfile, delete_from_file_list, lookupiodesc, add_to_iodesc_list, delete_from_iodesc_list
 
 ! PIO ASYNC MESSAGE TAGS
    integer, parameter, public :: pio_msg_create_file = 300
@@ -72,25 +72,27 @@ module pio_msg_mod
    integer, parameter, public :: pio_msg_putatt_1d = 403
 
    integer, parameter, public :: PIO_MSG_SYNC_FILE = 500
+   integer, parameter, public :: PIO_MSG_FREEDECOMP = 502
+
    integer, parameter, public :: pio_msg_exit = 999   
 
    
    type :: file_desc_list
-      type(file_desc_t), pointer :: file
-      type(file_desc_list), pointer :: next
+      type(file_desc_t), pointer :: file => null()
+      type(file_desc_list), pointer :: next => null()
    end type file_desc_list
 
-   type(file_desc_list), target :: top_file
+   type(file_desc_list), target, save :: top_file
 
    type :: io_desc_list
-      type(io_desc_t), pointer :: iodesc
-      type(io_desc_list), pointer :: next
+      integer :: index
+      type(io_desc_t), pointer :: iodesc => null()
+      type(io_desc_list), pointer :: next => null()
    end type io_desc_list
 
-   type(io_desc_list), target :: top_iodesc
+   type(io_desc_list), target, save :: top_iodesc
 
    integer :: io_comm, iorank
-
 
 contains
 
@@ -99,11 +101,7 @@ contains
 
     io_comm = io_comm_in
     iorank = io_rank_in
-    
-    nullify(top_file%file)
-    nullify(top_file%next)
-    nullify(top_iodesc%iodesc)
-    nullify(top_iodesc%next)
+    top_iodesc%index = 1
 
   end subroutine pio_msg_handler_init
 
@@ -225,6 +223,8 @@ contains
           call att_handler(ios, msg)
        case (PIO_MSG_PUTATT_1D)
           call att_1d_handler(ios, msg)          
+       case (PIO_MSG_FREEDECOMP)
+          call freedecomp_handler(ios, msg)
        case (PIO_MSG_EXIT)
           call finalize_handler(ios)
           print *,'PIO Exiting'
@@ -276,14 +276,18 @@ contains
   subroutine add_to_iodesc_list(iodesc)
     type(io_desc_t), pointer :: iodesc
     type(io_desc_list), pointer :: list_item
-    integer :: id
+    integer :: id, index
+
 
     list_item=> top_iodesc
 
+    if(debugasync) print *,__FILE__,__LINE__,list_item%index
+    index=top_iodesc%index
     id = 0
     if(associated(list_item%iodesc)) then
        do while(associated(list_item%iodesc) .and. associated(list_item%next))
           list_item => list_item%next
+          index = index+1
        end do
        if(associated(list_item%iodesc)) then
           id = max(id, list_item%iodesc%async_id+1)
@@ -293,34 +297,75 @@ contains
        end if
     end if
     iodesc%async_id=id
+    list_item%index=index
+
     list_item%iodesc => iodesc
 
   end subroutine add_to_iodesc_list
 
 
-  subroutine delete_from_file_list(fh)
-    integer, intent(in) :: fh
-    type(file_desc_list), pointer :: list_item
-    integer :: fh1
+  function delete_from_iodesc_list(id) result(iodesc)
+    integer, intent(in) :: id
+    type(io_desc_list), pointer :: list_item, previtem
+    type(io_desc_t), pointer :: iodesc
 
-    fh1 = abs(fh)
+    list_item=> top_iodesc
+    nullify(previtem)
+    do while(associated(list_item%iodesc) )
+       if(abs(list_item%iodesc%async_id) == id) then
+          iodesc=>list_item%iodesc
+          iodesc%async_id=-1
+          nullify(list_item%iodesc)
+          if(associated(previtem)) then
+             if(associated(list_item%next)) then
+                previtem%next => list_item%next
+             else
+                nullify(previtem%next)
+             end if
+             deallocate(list_item)
+          end if
 
-    list_item=> top_file
-
-    do while(associated(list_item%file) )
-       if(abs(list_item%file%fh) == fh1) then
-          nullify(list_item%file)
           exit
        end if
        if(associated(list_item%next)) then
+          previtem=>list_item
           list_item=>list_item%next
        else
           call piodie(__PIO_FILE__,__LINE__)
        end if
     end do
 
+  end function delete_from_iodesc_list
 
+  subroutine delete_from_file_list(fh)
+    integer, intent(in) :: fh
+    type(file_desc_list), pointer :: list_item, previtem
+    integer :: fh1
 
+    fh1 = abs(fh)
+
+    list_item=> top_file
+    nullify(previtem)
+    do while(associated(list_item%file) )
+       if(abs(list_item%file%fh) == fh1) then
+          nullify(list_item%file)
+          if(associated(previtem)) then
+             if(associated(list_item%next)) then
+                previtem%next=>list_item%next
+             else
+                nullify(previtem%next)
+             end if
+             deallocate(list_item)
+          end if
+          exit
+       end if
+       if(associated(list_item%next)) then
+          previtem=>list_item
+          list_item=>list_item%next
+       else
+          call piodie(__PIO_FILE__,__LINE__)
+       end if
+    end do
 
   end subroutine delete_from_file_list
 
@@ -355,10 +400,12 @@ contains
 
 
     list_item=> top_iodesc
+    if(debugasync) print *,__FILE__,__LINE__,list_item%index,async_id
     
     do while(associated(list_item%iodesc) )
        if(abs(list_item%iodesc%async_id) == async_id) then
           iodesc => list_item%iodesc
+          if(debugasync) print *,__FILE__,__LINE__,async_id,list_item%index
           exit
        end if
        list_item=>list_item%next

@@ -19,6 +19,7 @@ module pio_types
         integer(i4) :: length
     end type
 
+
     !------------------------------------
     !  a file descriptor data structure
     !------------------------------------
@@ -78,6 +79,14 @@ module pio_types
     type(iosystem_list_t) :: iosystems(MAX_IO_SYSTEMS)
 
 
+    type, public :: io_data_list
+       integer :: request
+       real(r4), pointer :: data_real(:) => null()
+       integer(i4), pointer :: data_int(:) => null()
+       real(r8), pointer :: data_double(:) => null()
+       type(io_data_list), pointer :: next=> null()
+    end type io_data_list
+
      
 !> 
 !! @public
@@ -86,6 +95,9 @@ module pio_types
 !>
     type, public :: File_desc_t
        type(iosystem_desc_t), pointer :: iosystem
+       type(io_data_list), pointer :: data_list_top  => null()  ! used for non-blocking pnetcdf calls
+       integer :: buffsize=0
+       integer :: request_cnt=0
        integer(i4) :: fh
        integer(kind=PIO_OFFSET) :: offset             ! offset into file
        integer(i4)              :: iotype             ! Type of IO to perform see parameter statement below     

@@ -1,6 +1,6 @@
 #!/usr/bin/csh
 set id = `date "+%m%d%y-%H%M"`
-set host = 'kraken'
+set host = 'bluefire'
 #set host = 'hopper'
 ./testpio_bench.pl --maxiter 10 --iofmt pnc --pecount 64  --bench CAM05 --numIO 6  --log ${host}.0064.pnc.iotask_6.log.${id}
 ./testpio_bench.pl --maxiter 10 --iofmt pnc --pecount 128 --bench CAM05 --numIO 10  --log ${host}.0128.pnc.iotask_10.${id}
