@@ -1,7 +1,7 @@
-c_ext#                                               -*- Autoconf -*-
+#                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT(MCT, 2.0)
+AC_INIT(MCT, 2.8)
 
 # PROCESS THE FOLLOWING MAKEFILES
 AC_CONFIG_MACRO_DIR([m4])
@@ -14,6 +14,12 @@ AC_ARG_ENABLE(mpiserial,
 AC_HELP_STRING([--enable-mpiserial],
 [Use the included MPI replacement library for single processor]),
 [DONOTCHECKMPI="DONOTCHECKMPI"]
+)
+
+AC_ARG_ENABLE(debugging,
+AC_HELP_STRING([--enable-debugging],
+[Use the debugging flag and disable the optimization flag]),
+[DEBUGGING="ENABLED"]
 )
 
 AC_ARG_ENABLE(selectedrealkind,
@@ -41,7 +47,9 @@ AC_ARG_VAR(FPPFLAGS,C-preprocessing flags for Fortran source code)
 AC_ARG_VAR(MACHDEFS,MCT compiler and OS flags)
 AC_ARG_VAR(FC,The Fortran compiler)
 AC_ARG_VAR(FCFLAGS,User-defined Fortran compiler flags)
+AC_ARG_VAR(PROGFCFLAGS,User-defined Fortran compiler flags for example programs)
 AC_ARG_VAR(CFLAGS,Customized C source compilation flags)
+AC_ARG_VAR(DEBUG,Fortran compiler flag for generating symbolic debugging information)
 AC_ARG_VAR(OPT,Fortran compiler flag for optimization level) 
 AC_ARG_VAR(REAL8,[Fortran compiler flag for setting the default REAL size to REAL(KIND=8)])
 AC_ARG_VAR(BIT64,Fortran compiler flag for generating 64-bit objects)
@@ -86,11 +94,11 @@ if test "$ES" = "YES"; then
    if test -z "$CC"; then
       CC="escc"
    fi
-   if test -z "$F90"; then
-      F90="esf90"
+   if test -z "$FC"; then
+      FC="esf90"
    fi
-   if test -z "$MPIF90"; then
-      MPIF90="esmpif90"
+   if test -z "$MPIFC"; then
+      MPIFC="esmpif90"
    fi
    if test -z "$AR"; then
       AR="esar cqs"
@@ -98,8 +106,8 @@ if test "$ES" = "YES"; then
    if test -z "FPP"; then
       FPPFLAGS=" "
    fi
-   if test -z "$F90FLAGS"; then
-      F90FLAGS="-EP -Wf'-pvctl fullmsg -L fmtlist transform map'"
+   if test -z "$FCFLAGS"; then
+      FCFLAGS="-EP -Wf'-pvctl fullmsg -L fmtlist transform map'"
    fi
    if test -z "$OPT"; then
       OPT="-C vopt"
@@ -213,6 +221,7 @@ AC_COMPILE_IFELSE(
 FC="$OLDFC"
 
 # CHECK HOW TO GET THE COMPILER VERSION.
+echo "Checking Compiler Version"
 AX_FC_VERSION()
 
 AC_LANG_POP(Fortran)
@@ -221,19 +230,9 @@ AC_LANG_POP(Fortran)
 
 AC_FC_PP_DEFINE()
 
-# CHECK IF FORTRAN COMPILER CREATES MODULE FILES IN UPPERCASE OR LOWERCASE
-OLDFC="$FC"
-OLDFCFLAGS="$FCFLAGS"
-
-FC="$FC" # use MPIFC, since differences may exist between MPIFC and FC 
-
-
-FC="$OLDFC"
-FCFLAGS="$OLDFCFLAGS"
 
 # CHECK HOW TO NAME MANGLE C FUNCTIONS SO THAT IT CAN BE CALLED FROM FORTRAN
 OLDFC="$FC"
-FC="$FC" # use MPIFC, since differences may exist between MPIFC and FC
 
 AC_FC_WRAPPERS()
 
@@ -242,7 +241,6 @@ FC="$OLDFC"
 # CHECK THAT THE FORTRAN COMPILER CAN CORRECTLY PROCESS THESE DIRECTIVES
 # IF NOT, USE THE EXTERNAL C PREPROCESSOR
 OLDFC="$FC"
-FC="$FC" # use MPIFC, since differences may exist between MPIFC and FC
 
 defineflag="-Daardvark"
 if test "$OLDFC" = "xlf90"; then
@@ -251,6 +249,8 @@ fi
 if test "$OLDFC" = "frt"; then
    defineflag="-Wp,-Daardvark"
 fi
+
+FC="$OLDFC"
 
 # DEFINE VARIABLES ACCORDING TO OS AND COMPILER
 
@@ -296,7 +296,46 @@ if test -z "$SYSDEF"; then
    AC_MSG_WARN([OPERATING SYSTEM UNKNOWN])
    SYSDEF="UNKNOWNOS"
 fi
-CPPDEFS+=" -DSYS$SYSDEF"
+
+# Set the default FCFLAGS for non-gfortran compilers.
+# NOTE:  This may change with a new version of autoconf.
+DEFFCFLAGS="-g"
+
+# CHECK COMPILER NAME
+if echo $FC | grep ifort >/dev/null 2>&1; then
+   echo "Fortran Compiler is Intel ifort"
+   CPRDEF="INTEL"
+   if test -z "$REAL8"; then
+      REAL8="-r8"
+   fi  
+   if test "$FCFLAGS" = "$DEFFCFLAGS"; then
+      FCFLAGS="-w -ftz"
+   fi  
+   if test -z "$PROGFCFLAGS"; then
+      PROGFCFLAGS="-assume byterecl"
+   fi
+   if test -z "$ENDIAN"; then
+      ENDIAN="-convert big_endian"
+   fi
+   if test -z "$OPT"; then
+      OPT="-O2"
+   fi
+   if test -z "$DEBUG"; then
+          DEBUG="-g"
+   fi
+fi
+
+CPPDEFS+=" -DSYS$SYSDEF -DCPR$CPRDEF"
+if test -n "$SRKDEF"; then
+    CPPDEFS="$CPPDEFS -D$SRKDEF"
+fi
+
+# IF DEBUGGING ENABLED, DISABLE OPTIMIZATION FLAG
+if test "$DEBUGGING" = "ENABLED"; then
+        OPT=""
+else
+        DEBUG=""
+fi
 
 # SET HARDCODED VARIABLES AS A LAST RESORT
 
@@ -317,8 +356,8 @@ fi
 
 echo
 echo Output Variables: {CC=$CC} {CFLAGS=$CFLAGS} \
-{FC=$FC} {FCFLAGS=$FCFLAGS} \
-{MACHDEFS=$MACHDEFS} {OPT=$OPT} {REAL8=$REAL8} \
+{FC=$FC} {FCFLAGS=$FCFLAGS} {PROGFCFLAGS=$PROGFCFLAGS}\
+{MACHDEFS=$MACHDEFS} {OPT=$OPT} {DEBUG=$DEBUG} {REAL8=$REAL8} \
 {BIT64=$BIT64} {ENDIAN=$ENDIAN} {MPIFC=$MPIFC} \
 {MPILIBS=$MPILIBS} {MPIHEADER=$MPIHEADER}  \
 {INCLUDEFLAG=$INCLUDEFLAG} {INCLUDEPATH=$INCLUDEPATH} \
