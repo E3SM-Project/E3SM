@@ -79,8 +79,8 @@ subroutine freedecomp_handler(iosystem)
   use pio, only : iosystem_desc_t, io_desc_t, pio_freedecomp
 #ifndef NO_MPIMOD
   use mpi !_EXTERNAL
-  use pio_msg_mod, only : delete_from_iodesc_list
 #endif
+  use pio_msg_mod, only : delete_from_iodesc_list
   implicit none
 #ifdef NO_MPIMOD
   include 'mpif.h' !_EXTERNAL
