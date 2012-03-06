@@ -111,23 +111,13 @@ Optional Contents available
   configure command)
 
   PLATFORM NOTES:
-  On the Argonne BlueGene/L, use:
-  > ./configure FC=mpif90.ibm CC=mpicc.ibm
-
-  On the BlueGene/P, use:
-  > ./configure
-  This is equivalent to:
-  > ./configure FC=mpixlf90_r CC=mpixlc_r
+  On a BlueGene/P, use:
+  >  ./configure FC=bgxlf90_r CC=mpixlc_r MPIFC=mpixlf90_r (can also use versions without _r)
+  At ALCF, one can just type "./configure".
 
   On the Cray XT3/XT4 (e.g. jaguar) use:
   > ./configure --host=Linux FC=ftn F90=ftn 
 
-  On jazz for g95:
-  use .soft key @all-mpich_gm-gcc4.0.2-g95-0.50
-  set the environment variable G95_UNBUFFERED_6 to prevent
-  truncation of stdout
-  > ./configure F90=mpif90
- 
 ######################################################################
   INSTALLATION INSTRUCTIONS:
 
