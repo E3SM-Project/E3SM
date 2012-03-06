@@ -132,9 +132,12 @@ fi
 
 # Check if we are on the ANL BG/P
 
-if echo $fullhostname | egrep -q '.\.(surveyor|intrepid)\.alcf\.anl\.gov' 
+if echo $fullhostname | egrep -q '.\.(challenger|intrepid)\.alcf\.anl\.gov' 
   then if test -z "$FC"; then
-         FC=mpixlf90_r
+         FC=bgxlf90_r
+       fi
+       if test -z "$MPIFC"; then
+         MPIFC=mpixlf90_r
        fi
        if test -z "$CC"; then
          CC=mpixlc_r
