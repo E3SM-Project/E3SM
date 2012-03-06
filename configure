@@ -4928,6 +4928,29 @@ fi
 DEFFCFLAGS="-g"
 
 # CHECK COMPILER NAME
+if echo $FC | grep pgf90 >/dev/null 2>&1; then
+   echo "Fortran Compiler is Portland Group"
+   CPRDEF="PGI"
+   if test -z "$REAL8"; then
+      REAL8="-r8"
+   fi
+   if test -z "$BIT64"; then
+      BIT64="-pc 64"
+   fi
+   if test "$FCFLAGS" = "$DEFFCFLAGS"; then
+      FCFLAGS=""
+   fi
+   if test -z "$ENDIAN"; then
+      ENDIAN="-byteswapio"
+   fi
+   if test -z "$OPT"; then
+      OPT="-O2"
+   fi
+   if test -z "$DEBUG"; then
+      DEBUG="-g"
+   fi
+fi
+
 if echo $FC | grep ifort >/dev/null 2>&1; then
    echo "Fortran Compiler is Intel ifort"
    CPRDEF="INTEL"
@@ -4947,9 +4970,28 @@ if echo $FC | grep ifort >/dev/null 2>&1; then
       OPT="-O2"
    fi
    if test -z "$DEBUG"; then
-          DEBUG="-g"
+      DEBUG="-g"
    fi
 fi
+if echo $FC | grep g95 >/dev/null 2>&1; then
+   echo "Fortran Compiler is GNU"
+   CPRDEF="GNU"
+fi
+if echo $FC | grep gfortran >/dev/null 2>&1; then
+   echo "Fortran Compiler is GNU"
+   CPRDEF="GNU"
+# For gfortran, default flags are different
+   if test "$FCFLAGS" = "-g -O2"; then
+      FCFLAGS=""
+   fi
+   if test -z "$DEBUG"; then
+      DEBUG="-g"
+   fi
+   if test -z "$OPT"; then
+      OPT=""
+   fi
+fi
+
 
 CPPDEFS+=" -DSYS$SYSDEF -DCPR$CPRDEF"
 if test -n "$SRKDEF"; then
