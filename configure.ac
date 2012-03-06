@@ -44,7 +44,6 @@ AC_ARG_VAR(MPILIBS,[MPI library command line invocation])
 AC_ARG_VAR(MPIHEADER,[MPI header include path with INCLUDEFLAG])
 AC_ARG_VAR(FPP,C-preprocessor for Fortran source code)
 AC_ARG_VAR(FPPFLAGS,C-preprocessing flags for Fortran source code)
-AC_ARG_VAR(MACHDEFS,MCT compiler and OS flags)
 AC_ARG_VAR(FC,The Fortran compiler)
 AC_ARG_VAR(FCFLAGS,User-defined Fortran compiler flags)
 AC_ARG_VAR(PROGFCFLAGS,User-defined Fortran compiler flags for example programs)
@@ -112,8 +111,8 @@ if test "$ES" = "YES"; then
    if test -z "$OPT"; then
       OPT="-C vopt"
    fi      
-   if test -z "$MACHDEFS"; then
-      MACHDEFS="-DESVEC"
+   if test -z "$CPPDEFS"; then
+      CPPDEFS="-DESVEC"
    fi
 fi
 
@@ -302,6 +301,23 @@ fi
 DEFFCFLAGS="-g"
 
 # CHECK COMPILER NAME
+# CHECK COMPILER NAME
+if echo $FC | grep xlf >/dev/null 2>&1; then
+   echo "Fortran Compiler is XLF"
+   CPRDEF="XLF"
+   if test -z "$REAL8"; then
+      REAL8="-qrealsize=8"
+   fi
+   if test -z "$OPT"; then
+      OPT="-O2 -qarch=auto"
+   fi
+   if test -z "$DEBUG"; then
+      DEBUG="-qdbg"
+   fi
+   if test "$FCFLAGS" = "$DEFFCFLAGS"; then
+       FCFLAGS=""
+   fi
+fi
 if echo $FC | grep pgf90 >/dev/null 2>&1; then
    echo "Fortran Compiler is Portland Group"
    CPRDEF="PGI"
@@ -367,7 +383,7 @@ if echo $FC | grep gfortran >/dev/null 2>&1; then
 fi
 
 
-CPPDEFS+=" -DSYS$SYSDEF -DCPR$CPRDEF"
+CPPDEFS="$CPPDEFS -DSYS$SYSDEF -DCPR$CPRDEF"
 if test -n "$SRKDEF"; then
     CPPDEFS="$CPPDEFS -D$SRKDEF"
 fi
@@ -399,13 +415,13 @@ fi
 echo
 echo Output Variables: {CC=$CC} {CFLAGS=$CFLAGS} \
 {FC=$FC} {FCFLAGS=$FCFLAGS} {PROGFCFLAGS=$PROGFCFLAGS}\
-{MACHDEFS=$MACHDEFS} {OPT=$OPT} {DEBUG=$DEBUG} {REAL8=$REAL8} \
+{CPPDEFS=$CPPDEFS} {OPT=$OPT} {DEBUG=$DEBUG} {REAL8=$REAL8} \
 {BIT64=$BIT64} {ENDIAN=$ENDIAN} {MPIFC=$MPIFC} \
 {MPILIBS=$MPILIBS} {MPIHEADER=$MPIHEADER}  \
 {INCLUDEFLAG=$INCLUDEFLAG} {INCLUDEPATH=$INCLUDEPATH} \
 {AR=$AR} {BABELROOT=$BABELROOT} {COMPILER_ROOT=$COMPILER_ROOT} \
 {PYTHON=$PYTHON} {PYTHONOPTS=$PYTHONOPTS} {FORT_SIZE=$FORT_SIZE} {prefix=$prefix} \
-{SRCDIR=$SRCDIR}
+{SRCDIR=$SRCDIR} {FC_DEFINE=$FC_DEFINE}
 echo
 
 AC_OUTPUT
