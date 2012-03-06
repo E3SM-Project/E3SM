@@ -2208,9 +2208,12 @@ fi
 
 # Check if we are on the ANL BG/P
 
-if echo $fullhostname | egrep -q '.\.(surveyor|intrepid)\.alcf\.anl\.gov'
+if echo $fullhostname | egrep -q '.\.(challenger|intrepid)\.alcf\.anl\.gov'
   then if test -z "$FC"; then
-         FC=mpixlf90_r
+         FC=bgxlf90_r
+       fi
+       if test -z "$MPIFC"; then
+         MPIFC=mpixlf90_r
        fi
        if test -z "$CC"; then
          CC=mpixlc_r
@@ -4037,7 +4040,7 @@ _ACEOF
 # 1 to this macro) to the Fortran 90 compiler in order to get "version" output
 ac_save_FCFLAGS=$FCFLAGS
 FCFLAGS="$FCFLAGS $ac_version"
-(eval echo $as_me:4040: \"$ac_link\") >&5
+(eval echo $as_me:4043: \"$ac_link\") >&5
 ac_fc_version_output=`eval $ac_link 5>&1 2>&1 | grep -v 'Driving:'`
 echo "$ac_fc_version_output" >&5
 FCFLAGS=$ac_save_FCFLAGS
