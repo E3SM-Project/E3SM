@@ -304,7 +304,6 @@ fi
 DEFFCFLAGS="-g"
 
 # CHECK COMPILER NAME
-# CHECK COMPILER NAME
 if echo $FC | grep xlf >/dev/null 2>&1; then
    echo "Fortran Compiler is XLF"
    CPRDEF="XLF"
@@ -321,7 +320,7 @@ if echo $FC | grep xlf >/dev/null 2>&1; then
        FCFLAGS=""
    fi
 fi
-if echo $FC | grep pgf90 >/dev/null 2>&1; then
+if echo $FC | grep pgf >/dev/null 2>&1; then
    echo "Fortran Compiler is Portland Group"
    CPRDEF="PGI"
    if test -z "$REAL8"; then
@@ -342,6 +341,31 @@ if echo $FC | grep pgf90 >/dev/null 2>&1; then
    if test -z "$DEBUG"; then
       DEBUG="-g"
    fi
+fi
+if echo $FC | grep ftn >/dev/null 2>&1; then
+ if echo $ac_fc_version_output | grep -i Portland >/dev/null 2>&1; then
+   echo "Fortran Compiler is Portland Group, Cray"
+   CPRDEF="PGI"
+   SYSDEF="CATAMOUNT"
+   if test -z "$REAL8"; then
+      REAL8="-r8"
+   fi  
+   if test -z "$BIT64"; then
+      BIT64="-pc 64"
+   fi  
+   if test "$FCFLAGS" = "$DEFFCFLAGS"; then
+      FCFLAGS=""
+   fi  
+   if test -z "$ENDIAN"; then
+      ENDIAN="-byteswapio"
+   fi  
+   if test -z "$OPT"; then
+      OPT="-O2"
+   fi
+   if test -z "$DEBUG"; then
+      DEBUG="-g"
+   fi
+ fi
 fi
 
 if echo $FC | grep ifort >/dev/null 2>&1; then
