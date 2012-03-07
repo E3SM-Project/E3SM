@@ -115,8 +115,8 @@ Optional Contents available
   >  ./configure FC=bgxlf90_r CC=mpixlc_r MPIFC=mpixlf90_r (can also use versions without _r)
   At ALCF, one can just type "./configure".
 
-  On the Cray XT3/XT4 (e.g. jaguar) use:
-  > ./configure --host=Linux FC=ftn F90=ftn 
+  On the Cray X* (e.g. jaguar) use:
+  > ./configure --host=Linux FC=ftn MPIFC=ftn 
 
 ######################################################################
   INSTALLATION INSTRUCTIONS:
