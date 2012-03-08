@@ -290,7 +290,8 @@ fi
 # NOTE:  This may change with a new version of autoconf.
 DEFFCFLAGS="-g"
 
-# CHECK COMPILER NAME
+#####################################################
+# CHECK COMPILER NAME and add specific flags
 if echo $FC | grep xlf >/dev/null 2>&1; then
    echo "Fortran Compiler is XLF"
    CPRDEF="XLF"
@@ -333,7 +334,7 @@ if echo $FC | grep ftn >/dev/null 2>&1; then
  if echo $ac_fc_version_output | grep -i Portland >/dev/null 2>&1; then
    echo "Fortran Compiler is Portland Group, Cray"
    CPRDEF="PGI"
-   SYSDEF="CATAMOUNT"
+   SYSDEF="CNLINUX"
    if test -z "$REAL8"; then
       REAL8="-r8"
    fi  
@@ -395,7 +396,169 @@ if echo $FC | grep gfortran >/dev/null 2>&1; then
       OPT=""
    fi
 fi
+###########################################################
+# the compiler flags below have not been verified recently
+###########################################################
 
+if echo $FC | grep frt >/dev/null 2>&1; then
+   echo "Fortran Compiler is UXP/V"
+   echo "Suggested additional vectorization flags: -Wv,-s5,-t3,-noalias,-ilfunc,-md"
+   CPRDEF="FUJITSU"
+   if test -z "$F90FLAGS"; then
+      F90FLAGS="-Am -X9"
+   fi
+   if test -z "$BIT64"; then
+      BIT64="-KA64"
+   fi
+   if test -z "$REAL8"; then
+      REAL8="-Ad"
+   fi
+fi
+
+if echo $FC | grep lf95 >/dev/null 2>&1; then
+   echo "Fortran Compiler is Lahey"
+   CPRDEF="LAHEY"
+fi
+
+if echo $FC | grep ifc >/dev/null 2>&1; then
+   echo "Fortran Compiler is Intel 7.x or earlier"
+   echo "Intel ifc compiler must set the environment variable F_UFMTENDIAN=big to do endian conversion"
+   CPRDEF="INTEL"
+   if test -z "$REAL8"; then
+      REAL8="-r8"
+   fi
+   if test -z "$F90FLAGS"; then
+      F90FLAGS="-w"
+   fi
+   if test -z "$OPT"; then
+      OPT="-O2"
+   fi
+fi
+
+if echo $FC | grep efc >/dev/null 2>&1; then
+   echo "Fortran Compiler is Intel 7.x or earlier for IA-64"
+   echo "Intel efc compiler must set the environment variable F_UFMTENDIAN=big to do endian conversion"
+   CPRDEF="INTEL"
+   if test -z "$REAL8"; then
+      REAL8="-r8"
+   fi
+   if test -z "$F90FLAGS"; then
+      F90FLAGS="-w -ftz"
+   fi
+   if test -z "$OPT"; then
+      OPT="-O2"
+   fi
+fi
+
+if echo $FC | grep pathf90 >/dev/null 2>&1; then
+   echo "Fortran Compiler is PathScale"
+   CPRDEF="PATHSC"
+   if test -z "$REAL8"; then
+      REAL8="-r8"
+   fi
+   if test -z "$BIT64"; then
+      BIT64="-m64"
+   fi
+   if test -z "$OPT"; then
+      OPT="-O2"
+   fi
+fi
+
+if echo $ac_fc_version_output | grep -i nag >/dev/null 2>&1; then
+   echo "Fortran Compiler is NAG"
+   CPRDEF="NAG"
+   if test -z "$F90FLAGS"; then
+      F90FLAGS="-dusty -kind=byte"
+   fi
+   if test -z "$OPT"; then
+      OPT="-O2"
+   fi
+fi
+
+if echo $ac_fc_version_output | grep -i absoft >/dev/null 2>&1; then
+   echo "Fortran Compiler is Absoft"
+   CPRDEF="ABSOFT"
+   if test -z "$REAL8"; then
+      REAL8="-N113"
+   fi
+   if test -z "$INCLUDEFLAG"; then
+      INCLUDEFLAG="-p"
+   fi
+   if test -z "$OPT"; then
+      OPT="-O2"
+   fi
+fi
+
+if echo $ac_fc_version_output | grep -i workshop >/dev/null 2>&1; then
+   echo "Fortran Compiler is Workshop"
+   CPRDEF="WORKSHOP"
+   if test -z "$INCLUDEFLAG"; then
+      INCLUDEFLAG="-M"
+   fi
+fi
+
+if echo $ac_fc_version_output | grep -i mipspro >/dev/null 2>&1; then
+   echo "Fortran Compiler is MIPSPro"
+   CPRDEF="MIPSPRO"
+   EXTRACFLAGS="-64"
+   if test -z "$OPT"; then
+      OPT="-O3"
+   fi
+   if test -z "$REAL8"; then
+      REAL8="-r8"
+   fi
+   if test -z "$BIT64"; then
+      BIT64="-64"
+   fi
+fi
+
+if echo $ac_fc_version_output | grep -i compaq >/dev/null 2>&1; then
+   echo "Fortran Compiler is Compaq"
+   CPRDEF="COMPAQ"
+   MPILIBS="$MPILIBS -lelan"
+   if test -z "$OPT"; then
+      OPT="-fast"
+   fi
+   if test -z "$REAL8"; then
+      REAL8="-real_size 64"
+   fi
+   if test -z "$ENDIAN"; then
+      ENDIAN="-convert big_endian"
+   fi
+fi
+
+
+# Compaq Fortran changed its name to HP Fortran.
+# Lets support both versions for now.
+if echo $ac_fc_version_output | grep HP >/dev/null 2>&1; then
+   echo "Fortran Compiler is HP"
+   CPRDEF="COMPAQ"
+   MPILIBS="$MPILIBS -lelan"
+   if test -z "$OPT"; then
+      OPT="-fast"
+   fi
+   if test -z "$REAL8"; then
+      REAL8="-real_size 64"
+   fi
+   if test -z "$ENDIAN"; then
+      ENDIAN="-convert big_endian"
+   fi
+fi
+
+if echo $ac_fc_version_output | grep -i sx >/dev/null 2>&1; then
+   echo "Fortran Compiler is SX"
+   CPRDEF="SX"
+   if test -z "$F90FLAGS"; then
+      F90FLAGS="-EP -Wf'-pvctl noassoc'"
+   fi
+   if test -z "$OPT"; then
+      OPT="-Chopt"
+   fi
+fi
+
+###########################################################
+# END of compiler-specific flag setting
+###########################################################
 
 CPPDEFS="$CPPDEFS -DSYS$SYSDEF -DCPR$CPRDEF"
 if test -n "$SRKDEF"; then
