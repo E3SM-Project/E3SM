@@ -15,7 +15,7 @@
 
 ######################################################################
 
-  This is version 2.8.1 of the Model Coupling Toolkit (MCT).
+  This is version 2.8.2 of the Model Coupling Toolkit (MCT).
 
   Our purpose in creating this toolkit is to support the construction
   of highly portable and extensible high-performance couplers 
@@ -46,6 +46,8 @@
   data/    -- input data for running example programs.  Not needed to
               compile the library.
 
+  m4/      -- files for autoconf (not needed to build).
+
 Optional Contents available
 
   babel/   -- multi language interface for MCT using BABEL.
@@ -65,19 +67,18 @@ Optional Contents available
   The MCT library builds and the examples run on the following
   platforms/compilers:
 
-  Linux: Portland Group, Intel, g95, Absoft, Pathscale, Lahey, NAG
+  Linux: Portland Group, Intel, gfortran, Absoft, Pathscale, Lahey, NAG
   MacOSX: gfortran
   IBM (AIX) xlf
   IBM BlueGene (see PLATFORM NOTE below)
   SGI Altix
-  Cray XT4/5
+  Cray XT/XK
   Compaq  Compaq Fortran Compiler (X5.5-2801-48CAG or later)
   SUN (Solaris) f90 WorkShop
-  Cray X1
   NEC
   Fujitsu
 
-  Running all the examples requires a parallel platform.
+  Running some of the examples requires a parallel platform.
   Memory requirements are modest.
 
 ######################################################################
@@ -98,10 +99,10 @@ Optional Contents available
   for another.
 
   Example: If configure has trouble finding the correct F90 compiler:
-    > ./configure F90=pgf90. 
+    > ./configure FC=pgf90. 
 
   You can also direct configure through environment variables:
-    > setenv F90 xlf90
+    > setenv FC xlf90
     > ./configure
 
   If the build fails, please do the following:
@@ -196,7 +197,7 @@ Optional Contents available
   28 Feb, 2010 -- version 2.7.1 (released only in CESM1)
   30 Nov, 2010 -- version 2.8.0 (released only in CESM1.0.3)
   25 Jan, 2011 -- version 2.8.1 (not released)
-
+  07 Mar, 2012 -- version 2.8.2 (not released)
 
 
 Tag $Name$
