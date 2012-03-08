@@ -116,20 +116,6 @@ if test "$ES" = "YES"; then
    fi
 fi
 
-# CHECK IF WE ARE ON THE NCSA IA-64 CLUSTER TITAN
-if test "$ac_hostname" = "user02"; then
-   if echo $osname | grep -i linux >/dev/null 2>&1; then
-      if test -z "$MPILIBS"; then
-         if test -z "$MPIHEADER"; then
-            echo "Using preset MPI configuration for titan"
-	    MPILIBS="-L/usr/local/vmi/mpich/lib/intel -lmpich -lvmi -ldl -lpthread"
-	    MPIHEADER="-I/usr/local/vmi/mpich/include"
-         fi
-      fi
-   fi
-fi
-
-
 # Check if we are on the ANL BG/P
 
 if echo $fullhostname | egrep -q '.\.(challenger|intrepid)\.alcf\.anl\.gov' 
@@ -155,7 +141,8 @@ AC_PROG_CC([cc])
 AC_C_BIGENDIAN
 
 # CHECK FOR THE FORTRAN COMPILER
-AC_PROG_FC
+# RLJ- specify the order, include PathScale and do not search for F77
+AC_PROG_FC([xlf95 pgf95 ifort gfortran pathf95 ftn lf95 f95 fort ifc efc g95 xlf90 pgf90 pathf90 epcf90 pghpf])
 
 # CHECK FOR MPI LIBRARIES
 AC_LANG_PUSH(Fortran)
