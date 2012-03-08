@@ -307,8 +307,7 @@ if echo $FC | grep xlf >/dev/null 2>&1; then
    if test "$FCFLAGS" = "$DEFFCFLAGS"; then
        FCFLAGS=""
    fi
-fi
-if echo $FC | grep pgf >/dev/null 2>&1; then
+elif echo $FC | grep pgf >/dev/null 2>&1; then
    echo "Fortran Compiler is Portland Group"
    CPRDEF="PGI"
    if test -z "$REAL8"; then
@@ -329,8 +328,7 @@ if echo $FC | grep pgf >/dev/null 2>&1; then
    if test -z "$DEBUG"; then
       DEBUG="-g"
    fi
-fi
-if echo $FC | grep ftn >/dev/null 2>&1; then
+elif echo $FC | grep ftn >/dev/null 2>&1; then
  if echo $ac_fc_version_output | grep -i Portland >/dev/null 2>&1; then
    echo "Fortran Compiler is Portland Group, Cray"
    CPRDEF="PGI"
@@ -354,9 +352,7 @@ if echo $FC | grep ftn >/dev/null 2>&1; then
       DEBUG="-g"
    fi
  fi
-fi
-
-if echo $FC | grep ifort >/dev/null 2>&1; then
+elif echo $FC | grep ifort >/dev/null 2>&1; then
    echo "Fortran Compiler is Intel ifort"
    CPRDEF="INTEL"
    if test -z "$REAL8"; then
@@ -377,12 +373,10 @@ if echo $FC | grep ifort >/dev/null 2>&1; then
    if test -z "$DEBUG"; then
       DEBUG="-g"
    fi
-fi
-if echo $FC | grep g95 >/dev/null 2>&1; then
+elif echo $FC | grep g95 >/dev/null 2>&1; then
    echo "Fortran Compiler is GNU"
    CPRDEF="GNU"
-fi
-if echo $FC | grep gfortran >/dev/null 2>&1; then
+elif echo $FC | grep gfortran >/dev/null 2>&1; then
    echo "Fortran Compiler is GNU"
    CPRDEF="GNU"
 # For gfortran, default flags are different
@@ -395,12 +389,10 @@ if echo $FC | grep gfortran >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT=""
    fi
-fi
 ###########################################################
 # the compiler flags below have not been verified recently
 ###########################################################
-
-if echo $FC | grep frt >/dev/null 2>&1; then
+elif echo $FC | grep frt >/dev/null 2>&1; then
    echo "Fortran Compiler is UXP/V"
    echo "Suggested additional vectorization flags: -Wv,-s5,-t3,-noalias,-ilfunc,-md"
    CPRDEF="FUJITSU"
@@ -413,14 +405,10 @@ if echo $FC | grep frt >/dev/null 2>&1; then
    if test -z "$REAL8"; then
       REAL8="-Ad"
    fi
-fi
-
-if echo $FC | grep lf95 >/dev/null 2>&1; then
+elif echo $ac_fc_version_output | grep Lahey >/dev/null 2>&1; then
    echo "Fortran Compiler is Lahey"
    CPRDEF="LAHEY"
-fi
-
-if echo $FC | grep ifc >/dev/null 2>&1; then
+elif echo $FC | grep ifc >/dev/null 2>&1; then
    echo "Fortran Compiler is Intel 7.x or earlier"
    echo "Intel ifc compiler must set the environment variable F_UFMTENDIAN=big to do endian conversion"
    CPRDEF="INTEL"
@@ -433,9 +421,7 @@ if echo $FC | grep ifc >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT="-O2"
    fi
-fi
-
-if echo $FC | grep efc >/dev/null 2>&1; then
+elif echo $FC | grep efc >/dev/null 2>&1; then
    echo "Fortran Compiler is Intel 7.x or earlier for IA-64"
    echo "Intel efc compiler must set the environment variable F_UFMTENDIAN=big to do endian conversion"
    CPRDEF="INTEL"
@@ -448,9 +434,7 @@ if echo $FC | grep efc >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT="-O2"
    fi
-fi
-
-if echo $FC | grep pathf90 >/dev/null 2>&1; then
+elif echo $FC | grep pathf90 >/dev/null 2>&1; then
    echo "Fortran Compiler is PathScale"
    CPRDEF="PATHSC"
    if test -z "$REAL8"; then
@@ -462,9 +446,7 @@ if echo $FC | grep pathf90 >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT="-O2"
    fi
-fi
-
-if echo $ac_fc_version_output | grep -i nag >/dev/null 2>&1; then
+elif echo $ac_fc_version_output | grep -i nag >/dev/null 2>&1; then
    echo "Fortran Compiler is NAG"
    CPRDEF="NAG"
    if test -z "$F90FLAGS"; then
@@ -473,9 +455,7 @@ if echo $ac_fc_version_output | grep -i nag >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT="-O2"
    fi
-fi
-
-if echo $ac_fc_version_output | grep -i absoft >/dev/null 2>&1; then
+elif echo $ac_fc_version_output | grep -i absoft >/dev/null 2>&1; then
    echo "Fortran Compiler is Absoft"
    CPRDEF="ABSOFT"
    if test -z "$REAL8"; then
@@ -487,17 +467,13 @@ if echo $ac_fc_version_output | grep -i absoft >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT="-O2"
    fi
-fi
-
-if echo $ac_fc_version_output | grep -i workshop >/dev/null 2>&1; then
+elif echo $ac_fc_version_output | grep -i workshop >/dev/null 2>&1; then
    echo "Fortran Compiler is Workshop"
    CPRDEF="WORKSHOP"
    if test -z "$INCLUDEFLAG"; then
       INCLUDEFLAG="-M"
    fi
-fi
-
-if echo $ac_fc_version_output | grep -i mipspro >/dev/null 2>&1; then
+elif echo $ac_fc_version_output | grep -i mipspro >/dev/null 2>&1; then
    echo "Fortran Compiler is MIPSPro"
    CPRDEF="MIPSPRO"
    EXTRACFLAGS="-64"
@@ -510,9 +486,7 @@ if echo $ac_fc_version_output | grep -i mipspro >/dev/null 2>&1; then
    if test -z "$BIT64"; then
       BIT64="-64"
    fi
-fi
-
-if echo $ac_fc_version_output | grep -i compaq >/dev/null 2>&1; then
+elif echo $ac_fc_version_output | grep -i compaq >/dev/null 2>&1; then
    echo "Fortran Compiler is Compaq"
    CPRDEF="COMPAQ"
    MPILIBS="$MPILIBS -lelan"
@@ -525,12 +499,10 @@ if echo $ac_fc_version_output | grep -i compaq >/dev/null 2>&1; then
    if test -z "$ENDIAN"; then
       ENDIAN="-convert big_endian"
    fi
-fi
-
 
 # Compaq Fortran changed its name to HP Fortran.
 # Lets support both versions for now.
-if echo $ac_fc_version_output | grep HP >/dev/null 2>&1; then
+elif echo $ac_fc_version_output | grep HP >/dev/null 2>&1; then
    echo "Fortran Compiler is HP"
    CPRDEF="COMPAQ"
    MPILIBS="$MPILIBS -lelan"
@@ -543,9 +515,8 @@ if echo $ac_fc_version_output | grep HP >/dev/null 2>&1; then
    if test -z "$ENDIAN"; then
       ENDIAN="-convert big_endian"
    fi
-fi
 
-if echo $ac_fc_version_output | grep -i sx >/dev/null 2>&1; then
+elif echo $ac_fc_version_output | grep -i sx >/dev/null 2>&1; then
    echo "Fortran Compiler is SX"
    CPRDEF="SX"
    if test -z "$F90FLAGS"; then
