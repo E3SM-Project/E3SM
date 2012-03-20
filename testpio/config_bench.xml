@@ -7,6 +7,71 @@
 <BenchConfig bench_name="CUBE2K"      nx_global="2048" ny_global="2048"  nz_global="2048" </BenchConfig>
 <BenchConfig bench_name="WRFB"        nx_global="900"  ny_global="900"   nz_global="100" </BenchConfig>
 <BenchConfig bench_name="CAM05"       nx_global="576"  ny_global="384"   nz_global="26"  </BenchConfig>
+<BenchConfig bench_name="MPASA60km" nx_global="70" ny_global="163842"  nz_global="1" </BenchConfig>
+<BenchConfig bench_name="MPASA30km" nx_global="70" ny_global="655362"  nz_global="1" </BenchConfig>
+<BenchConfig bench_name="MPASA3km" nx_global="70" ny_global="3118083"  nz_global="1" </BenchConfig>
+
+<!--             MPASA60km    -->
+<CompConfig nprocs="64" bench_name="MPASA60km"
+   <partfile>163842/x1.163842.graph.info.part.64</partfile>
+</CompConfig>
+<CompConfig nprocs="120" bench_name="MPASA60km"
+   <partfile>163842/x1.163842.graph.info.part.120</partfile>
+</CompConfig>
+<CompConfig nprocs="240" bench_name="MPASA60km"
+   <partfile>163842/x1.163842.graph.info.part.240</partfile>
+</CompConfig>
+<CompConfig nprocs="480" bench_name="MPASA60km"
+   <partfile>163842/x1.163842.graph.info.part.480</partfile>
+</CompConfig>
+<CompConfig nprocs="960" bench_name="MPASA60km"
+   <partfile>163842/x1.163842.graph.info.part.960</partfile>
+</CompConfig>
+<CompConfig nprocs="1020" bench_name="MPASA60km"
+   <partfile>163842/x1.163842.graph.info.part.1020</partfile>
+</CompConfig>
+
+<!--             MPASA30km    -->
+<CompConfig nprocs="120" bench_name="MPASA30km"
+   <partfile>655362/x1.655362.graph.info.part.120</partfile>
+</CompConfig>
+<CompConfig nprocs="240" bench_name="MPASA30km"
+   <partfile>655362/x1.655362.graph.info.part.240</partfile>
+</CompConfig>
+<CompConfig nprocs="480" bench_name="MPASA30km"
+   <partfile>655362/x1.655362.graph.info.part.480</partfile>
+</CompConfig>
+<CompConfig nprocs="960" bench_name="MPASA30km"
+   <partfile>655362/x1.655362.graph.info.part.960</partfile>
+</CompConfig>
+<CompConfig nprocs="1920" bench_name="MPASA30km"
+   <partfile>655362/x1.655362.graph.info.part.1920</partfile>
+</CompConfig>
+<CompConfig nprocs="3840" bench_name="MPASA30km"
+   <partfile>655362/x1.655362.graph.info.part.3840</partfile>
+</CompConfig>
+
+<!--             MPASA3km    -->
+<CompConfig nprocs="480" bench_name="MPASA3km"
+   <partfile>3118083/x32.3118083.graph.info.part.480</partfile>
+</CompConfig>
+<CompConfig nprocs="960" bench_name="MPASA3km"
+   <partfile>3118083/x32.3118083.graph.info.part.960</partfile>
+</CompConfig>
+<CompConfig nprocs="1920" bench_name="MPASA3km"
+   <partfile>3118083/x32.3118083.graph.info.part.1920</partfile>
+</CompConfig>
+<CompConfig nprocs="3840" bench_name="MPASA3km"
+   <partfile>3118083/x32.3118083.graph.info.part.3840</partfile>
+</CompConfig>
+<CompConfig nprocs="8000" bench_name="MPASA3km"
+   <partfile>3118083/x32.3118083.graph.info.part.8000</partfile>
+</CompConfig>
+<CompConfig nprocs="16000" bench_name="MPASA3km"
+   <partfile>3118083/x32.3118083.graph.info.part.16000</partfile>
+</CompConfig>
+
+
 
 <!--              CUBE4K   -->
 <CompConfig nprocs="512" bench_name="CUBE2K"
@@ -236,6 +301,15 @@
 <CompConfig nprocs="8000" bench_name = "POPD"
    <ldx>45</ldx> <ldy>24</ldy> <ldz>10</ldz>
 </CompConfig>
+
+<CompConfig nprocs="12000" bench_name = "POPD"
+   <ldx>30</ldx> <ldy>24</ldy> <ldz>40</ldz>
+</CompConfig>
+
+<CompConfig nprocs="15000" bench_name = "POPD"
+   <ldx>24</ldx> <ldy>24</ldy> <ldz>40</ldz>
+</CompConfig>
+
 
 </Config>
 

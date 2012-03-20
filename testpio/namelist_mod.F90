@@ -47,10 +47,13 @@ module namelist_mod
     character(len=true_false_str_len), public, save :: ibm_io_largeblock_io = ''
     character(len=true_false_str_len), public, save :: ibm_io_sparse_access = ''
 
+    integer(kind=i4), public, save :: set_lustre_values = 0 !! Set to one for true
+    integer(kind=i4), public, save :: lfs_ost_count = 1
     
     character(len=80), save, public :: compdof_input
     character(len=80), save, public :: iodof_input 
     character(len=80), save, public :: compdof_output
+    character(len=256), save, public :: part_input
     character(len=256), save, public :: casename
     character(len=80), save, public :: dir
     character(len=4) , save, public :: ioFMTd
@@ -87,6 +90,7 @@ module namelist_mod
         compdof_input,  &
         compdof_output, &
         iodof_input,    &
+	part_input, 	&
 	DebugLevel,     &
         npr_yz,         &
         set_mpi_values,       &
@@ -98,7 +102,9 @@ module namelist_mod
         set_ibm_io_values,    &
         ibm_io_buffer_size,   &
         ibm_io_largeblock_io, &
-        ibm_io_sparse_access
+        ibm_io_sparse_access, &
+	set_lustre_values,    &
+	lfs_ost_count
 
 contains
 
@@ -134,6 +140,7 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
     nprocsIO = 0
     num_iodofs = 1
     compdof_input = 'namelist'
+    part_input = 'null'
     iodof_input = 'internal'
     compdof_output = 'none'
     nvars = 10
@@ -156,6 +163,9 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
     ibm_io_buffer_size = ''
     ibm_io_largeblock_io = ''  !! Default is "false"
     ibm_io_sparse_access = ''  !! Default is false
+
+    set_lustre_values = 0
+    lfs_ost_count = 1
 
     ioFMT = 'bin'
     dir   = './'
@@ -211,6 +221,7 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
     write(*,*) trim(string),' compdof_input  = ',trim(compdof_input)
     write(*,*) trim(string),' compdof_output = ',trim(compdof_output)
     write(*,*) trim(string),' iodof_input = ',trim(iodof_input)
+    write(*,*) trim(string),' part_input =', trim(part_input)
     if (set_mpi_values /= 0) then
        if (mpi_cb_buffer_size /= '') then
           write(*,*) trim(string),' mpi_cb_buffer_size = ', &
@@ -248,6 +259,10 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
                trim(ibm_io_sparse_access)
        end if
     end if
+
+    if (set_lustre_values /= 0) then
+       write(*,*) trim(string),'lfs_ost_count = ', lfs_ost_count
+    endif
 
     write(*,*) ' '
 
@@ -457,6 +472,12 @@ subroutine Broadcast_Namelist(caller, myID, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(ibm_io_sparse_access)', ierror, &
                         __FILE__, __LINE__)
 
+  call MPI_Bcast(set_lustre_values,1, MPI_INTEGER, root, comm, ierror)
+  call CheckMPIReturn('Call to MPI_Bcase(set_lustre_values)', ierror, __FILE__, __LINE__)
+
+  call MPI_Bcast(lfs_ost_count,1, MPI_INTEGER, root, comm, ierror)
+  call CheckMPIReturn('Call to MPI_Bcase(lfs_ost_count)', ierror, __FILE__, __LINE__)
+
   call MPI_Bcast(iotype, 1, MPI_INTEGER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(iotype)',ierror,__FILE__,__LINE__)
 
@@ -481,6 +502,9 @@ subroutine Broadcast_Namelist(caller, myID, root, comm, ierror)
   call MPI_Bcast(iodof_input, 80, MPI_CHARACTER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(iodof_input)',ierror,__FILE__,__LINE__)
 
+  call MPI_Bcast(part_input, 256, MPI_CHARACTER, root, comm, ierror)
+  call CheckMPIReturn('Call to MPI_Bcast(part_input)',ierror,__FILE__,__LINE__)
+
   call MPI_Bcast(casename, 256, MPI_CHARACTER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(casename)',ierror,__FILE__,__LINE__)
 
@@ -504,7 +528,7 @@ subroutine Broadcast_Namelist(caller, myID, root, comm, ierror)
 
   if(max_buffer_size>0) then
      if(myid==0) print *,'Setting buffer_limit_size to : ',max_buffer_size
-     call pio_set_buffer_limit_size(max_buffer_size)
+!     call pio_set_buffer_limit_size(max_buffer_size)
   end if
   if(block_size>0) then
      if(myid==0) print *,'Setting blocksize to : ',block_size

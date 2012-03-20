@@ -15,6 +15,7 @@ module gdecomp_mod
    public :: gdecomp_print
    public :: gdecomp_DOF
    public :: camlike_decomp_generator
+   public :: mpas_decomp_generator
 
    type :: gdecomp_type
       private
@@ -1107,6 +1108,91 @@ contains
 #endif
 !==================================================================
 !==================================================================
+
+  subroutine mpas_decomp_generator(dim1,dim2,dim3,my_task,fname,dof)
+    integer :: dim1, dim2, dim3
+    integer, intent(in)          :: my_task         ! my MPI rank
+    character(len=*),intent(in)  :: fname           ! name of MPAS partition file 
+    integer, pointer             :: dof(:)
+
+!  Local variables
+
+    integer :: idx
+    integer :: gnz             ! number of vertical levels
+    integer :: nCellsGlobal    ! total number of cells in the horizontal
+    integer :: nCellsSolve
+
+    integer, pointer :: globalIDList(:)
+    integer :: i1,i2
+
+!    print *,'IAM: ',my_task,' Inside mpas_decomp_generator'
+    ! ----------------------------
+    ! MPAS convension
+    ! ----------------------------
+    !   1st dimension:	vertical
+    !   2nd dimension:  horizontal
+
+    gnz = dim1     
+    nCellsGlobal = dim2*dim3
+    call get_global_id_list(my_task,fname,nCellsSolve,nCellsGlobal,globalIDList)
+
+    allocate(dof(gnz*nCellsSolve))
+    idx = 1
+    do i2=1,nCellsSolve
+    do i1=1,gnz
+       dof(idx) = i1 + (globalIDList(i2)-1)*gnz
+       idx = idx + 1
+    enddo
+    enddo
+
+  end subroutine mpas_decomp_generator
+
+  subroutine get_global_id_list(mype, fname, nCellsSolve, nCellsGlobal, globalIDList)
+
+   implicit none
+
+   include 'mpif.h' ! _EXTERNAL
+
+   integer, intent(in) :: mype, nCellsGlobal
+   character(len=*), intent(in) :: fname
+   integer, intent(out) :: nCellsSolve
+   integer, dimension(:), pointer :: globalIDList
+
+   integer :: i, nlist, ierr
+   integer, dimension(nCellsGlobal) :: owner_list
+
+   !
+   ! Each line in the part.128 file corresponds to a global column, and the value in the line
+   !   identifies the partition that owns the corresponding column
+   !
+   if (mype == 0) then
+      open(21,file=TRIM(fname),form='formatted',status='old')
+      do i=1,nCellsGlobal
+         read(21,*) owner_list(i)
+      end do
+      close(21)
+   end if
+   call MPI_Bcast(owner_list, nCellsGlobal, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
+
+   nlist = 0
+   do i=1,nCellsGlobal
+      if (owner_list(i) == mype) nlist = nlist + 1
+   end do
+   allocate(globalIDList(nlist))
+
+   nCellsSolve = nlist
+
+   nlist = 1
+   do i=1,nCellsGlobal
+      if (owner_list(i) == mype) then
+         globalIDList(nlist) = i
+         nlist = nlist + 1
+     end if
+   end do
+
+   end subroutine get_global_id_list
+
+
 
 
   subroutine camlike_decomp_generator(gnx, gny, gnz, myid, ntasks, npr_yz, dof)

@@ -288,14 +288,15 @@
   FC    = "pgf90" 
   CC     = "pgcc" 
   FFLAGS = "-D_USE_FLOW_CONTROL"
-  NETCDF_PATH = "$NETCDF_DIR"
+  NETCDF_PATH = "$NETCDF_PATH"
   PNETCDF_PATH = "$PNETCDF_DIR"
-  workdir = "/lustre/scratch/${USER}/testpio"
+  workdir = "/lustre/scratch/${USER}/testpio2"
   run = "aprun"
   submit = "qsub"
-  conopts = "  --enable-filesystem-hints=lustre"
+  conopts = " --enable-filesystem-hints=lustre"
   corespernode = "12"
   preamble="
+#PBS -A TG-ATM090041
 #PBS -N testpio_suite
 #PBS -l walltime=00:50:00
 #PBS -j oe

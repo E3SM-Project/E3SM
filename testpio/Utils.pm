@@ -217,8 +217,8 @@ sub loadmodules{
 	module(" swap xt-binutils-quadcore xt-binutils-quadcore/2.0.1");
     }elsif($host =~ "kraken"){
 	require "/opt/modules/default/init/perl";
-	module(" load netcdf/3.6.2");      
-	module(" load p-netcdf/1.1.1");
+	module(" load netcdf/3.6.3");      
+	module(" load p-netcdf/1.2.0");
     }elsif($host =~ "hopper"){
 	require "/opt/modules/default/init/perl";
 	module(" load netcdf-hdf5parallel/4.1.3");      

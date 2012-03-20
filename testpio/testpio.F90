@@ -27,7 +27,7 @@ program testpio
   use pio_support, only : piodie , checkmpireturn, pio_writedof, pio_readdof !_EXTERNAL
   ! Modules from testpio suite that are used by this application
 
-  use gdecomp_mod, only: gdecomp_type, gdecomp_DOF, gdecomp_read_nml, camlike_decomp_generator
+  use gdecomp_mod, only: gdecomp_type, gdecomp_DOF, gdecomp_read_nml, camlike_decomp_generator, mpas_decomp_generator
   use alloc_mod       ! _EXTERNAL
   use check_mod
   use namelist_mod
@@ -300,6 +300,9 @@ program testpio
                           trim(ibm_io_sparse_access))
      end if
   end if
+  if(set_lustre_values /= 0) then 
+        call PIO_setnum_OST(PIOSYS,lfs_ost_count)
+  endif
 
   !-----------------------------------------
   ! Compute compDOF based on namelist input
@@ -313,6 +316,9 @@ program testpio
 
   if(index(casename,'CAM')==1) then
      call camlike_decomp_generator(gdims3d(1),gdims3d(2),gdims3d(3),my_task,nprocs,npr_yz,compDOF)
+  elseif(index(casename,'MPAS')==1) then 
+!     print *,'testpio: before call to mpas_decomp_generator: (',TRIM(part_input),') gdims3d: ',gdims3d
+     call mpas_decomp_generator(gdims3d(1),gdims3d(2),gdims3d(3),my_task,part_input,compDOF)
   else  if (trim(compdof_input) == 'namelist') then
      if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #1'
      call gdecomp_read_nml(gdecomp,nml_filename,'comp',PIOSYS%comp_rank,PIOSYS%num_tasks,gDims3D(1:3))
@@ -755,9 +761,9 @@ program testpio
               call t_stopf('testpio_write')
 #endif
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #9.1'
+              call PIO_CloseFile(File_r8)
               et = MPI_Wtime()
               dt_write_r8 = dt_write_r8 + (et - st)/nvars
-              call PIO_CloseFile(File_r8)
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #9.2'
            endif
 
@@ -776,9 +782,9 @@ program testpio
 #ifdef TIMING
               call t_stopf('testpio_write')
 #endif
+              call PIO_CloseFile(File_r4)
               et = MPI_Wtime()
               dt_write_r4 = dt_write_r4 + (et - st)/nvars
-              call PIO_CloseFile(File_r4)
            endif
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #13'
 

@@ -15,6 +15,7 @@ my $help=0;
 my $host;
 my $pecount = 0;
 my $bname;
+my $partdir;
 my $iofmt;
 my $rearr;
 my $numIO;
@@ -30,7 +31,7 @@ my $iodecomp;
 my $logfile = '';
 my $logfile_date_suffix = '';  # Optional suffix to logfile date (e.g., a,b,c,etc.)
 my $logfile_name_comment = '';
-my $logfile_suffix = 'testpio.out';
+my $logfile_suffix;
 my $logfile_name_user = '';  # Overrides automated logfile construction
 my $enablenetcdf4;
 
@@ -76,6 +77,7 @@ my $result = GetOptions("suites=s@"=>\$suites,
                         "stride=i"=>\$stride,
  			"maxiter=i"=>\$maxiter,
                         "dir=s"=>\$dir,
+			"partdir=s"=>\$partdir,
                         "numagg=i"=>\$numagg,
 			"numvars=i"=>\$numvars,
                         "decomp=s"=>\$iodecomp,
@@ -83,7 +85,6 @@ my $result = GetOptions("suites=s@"=>\$suites,
 		        "log=s"=>\$logfile,
                         "logfile-date-suffix=s"=>\$logfile_date_suffix,
                         "logfile-name-comment=s"=>\$logfile_name_comment,
-                        "help"=>\$help,
                         "mpi-env-mpich"=>\$use_mpich_env,
                         "mpi-env-cray"=>\$use_cray_env,
                         "mpi-env-ibm"=>\$use_ibm_env,
@@ -96,6 +97,7 @@ my $result = GetOptions("suites=s@"=>\$suites,
                         "ibm-io-sparse-access=s"=>\$ibm_io_sparse_access,
                         "lfs-ost-count=i"=>\$lfs_ost_count,
                         "lfs-stripe-size=s"=>\$lfs_stripe_size,
+			"logfile-suffix=s"=>\$logfile_suffix,
 		        "help"=>\$help);
 usage() if($help || ($argc < 2));
 
@@ -147,6 +149,8 @@ sub usage{
     print "                          in logfile\n";
     print "--logfile-name-comment=str\n";
     print "                        : Comment string included in logfile name\n";
+    print "--logfile-suffix=str    : Sets the final log file suffix\n";
+    print "--partdir               : Sets the input data directory for the MPAS partitioning files\n";
     exit;
 }
 
@@ -300,6 +304,7 @@ print "pecount is $pecount\n";
 my $ldx=0;
 my $ldy=0;
 my $ldz=0;
+my $partfile;
 my $nx_global=0;
 my $ny_global=0;
 my $nz_global=0;
@@ -307,6 +312,8 @@ my $nz_global=0;
 my %configuration = ( ldx => 0,
                       ldy => 0,
                       ldz => 0,
+                      partfile => 'null',
+                      partdir  => 'foo',
                       iofmt => 'pnc', 
                       rearr => 'box',
                       numprocsIO => 10,
@@ -325,6 +332,7 @@ my %configuration = ( ldx => 0,
                       set_ibm_io_values => 0,
                       ibm_io_buffer_size => '',
                       ibm_io_largeblock_io => '',
+		      logfile_suffix => 'testpio.out',
                       ibm_io_sparse_access => '');
 
 #-------------------------------------------------
@@ -337,7 +345,9 @@ if (defined $stride)  {$configuration{'stride'} = $stride;}
 if (defined $maxiter) {$configuration{'maxiter'} = $maxiter;}
 if (defined $numvars) {$configuration{'numvars'} = $numvars;}
 if (defined $dir)     {$configuration{'dir'} = $dir;}
+if (defined $partdir) {$configuration{'partdir'} = $partdir;}
 if (defined $numagg)  {$configuration{'numagg'} = $numagg;}
+if (defined $logfile_suffix) {$configuration{'logfile_suffix'}=$logfile_suffix;}
 
 
 if (defined $set_mpi_values) {
@@ -511,8 +521,8 @@ if ($set_lustre_values != 0) {
 if ($logfile_name_user ne '') {
   $logfile = $logfile_name_user;
 } else {
-  $logfile = $cal_date . $logfile_date_suffix . "_" . $host . "_"
-    . $logfile_name_comment . $suffix . "_" . $logfile_suffix;
+#  $logfile = $cal_date . $logfile_date_suffix . "_" . $host . "_"
+    $logfile = $host . "_" . $logfile_name_comment . $suffix . "_" . $logfile_suffix;
 }
 
 my $testname = "bench." . $date . "." . $suffix;
@@ -778,6 +788,7 @@ sub gen_io_nml {
   print F "stride         = $configuration{'stride'}\n";
   print F "maxiter        = $configuration{'maxiter'}\n";
   print F "dir            = '$configuration{'dir'}'\n";
+  print F "part_input     = '$configuration{'partdir'}/$configuration{'partfile'}'\n";
   print F "num_aggregator = $configuration{'numagg'}\n";
 
   print F "set_mpi_values = $configuration{'set_mpi_values'}\n";
