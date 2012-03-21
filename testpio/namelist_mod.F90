@@ -527,8 +527,8 @@ subroutine Broadcast_Namelist(caller, myID, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(npr_yz)',ierror,__FILE__,__LINE__)
 
   if(max_buffer_size>0) then
-     if(myid==0) print *,'Setting buffer_limit_size to : ',max_buffer_size
-!     call pio_set_buffer_limit_size(max_buffer_size)
+     if(myid==0) print *,'Setting buffer_size_limit to : ',max_buffer_size
+     call pio_set_buffer_size_limit(max_buffer_size)
   end if
   if(block_size>0) then
      if(myid==0) print *,'Setting blocksize to : ',block_size

@@ -16,7 +16,7 @@
 ! !USES:
 !  uses mpi if available
 #ifndef NO_MPIMOD
-   use mpi, only : MPI_OFFSET_KIND !_EXTERNAL
+   use mpi, only : MPI_OFFSET_KIND ! _EXTERNAL
 #endif
 
    implicit none

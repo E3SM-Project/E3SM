@@ -1,6 +1,69 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_4_3
+Originator(s): Jim, John Dennis
+Date: 03-21-2012
+One-line Summary: Add test decomp for MPAS, additional lustre optimizations
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+
+       testpio/testpio.F90
+       testpio/config_bench.xml
+       testpio/MPASA30km.csh
+       testpio/CAM05.csh
+       testpio/build_defaults.xml
+       testpio/POPDv2.csh
+       testpio/testpio_bench.pl
+       testpio/namelist_mod.F90
+       testpio/gdecomp_mod.F90
+       testpio/MPASA60km.csh
+       testpio/Utils.pm
+       testpio/POPB.csh
+
+       pio/pio_types.F90      
+       pio/piolib_mod.F90
+       pio/pio_kinds.F90
+       pio/box_rearrange.F90.in
+       pio/box_rearrange.F90
+          Fix some minor issues including further protections against calling mpi with invalid (comm,info) handles.
+	
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: Jim
+
+Summary of pre-tag testing:
+
+  Regression tests:
+  Regression tests:  Bluefire:  113 tests PASS, 0 tests FAIL
+	             lynx intel :  80 tests PASS, 0 tests FAIL
+	             lynx pgi : 80 tests PASS, 0 tests FAIL
+
+
+===============================================================
+Tag name: pio1_4_2
+Originator(s): Jim
+Date: 03-??-2012
+One-line Summary: Correct cppdef flags around use mpi call in pio_msg_callbackes.F90
+	
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_4_1
 Originator(s): Jim
 Date: 02-23-2012

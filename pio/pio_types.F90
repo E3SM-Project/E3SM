@@ -5,9 +5,14 @@ module pio_types
 #ifdef _NETCDF
      use netcdf                                  ! _EXTERNAL
 #endif
+#ifndef NO_MPIMOD
+    use mpi, only : MPI_COMM_NULL, MPI_INFO_NULL ! _EXTERNAL
+#endif
     implicit none
     private 
-
+#ifdef NO_MPIMOD
+    include 'mpif.h'                             ! _EXTERNAL
+#endif
     !-------------------------------------------
     !  data structure to describe decomposition
     !-------------------------------------------
@@ -33,12 +38,12 @@ module pio_types
 	sequence
 #endif
         
-        integer(i4)              :: union_comm         ! The intracomm union of comp and io communicators (for async only)
-        integer(i4)              :: IO_comm            ! The IO communicator
-        integer(i4)              :: comp_comm          ! The Compute communicator
-        integer(i4)              :: intercomm          ! the intercomm (may be MPI_COMM_NULL)
+        integer(i4)              :: union_comm=MPI_COMM_NULL ! The intracomm union of comp and io communicators (for async only)
+        integer(i4)              :: IO_comm=MPI_COMM_NULL            ! The IO communicator
+        integer(i4)              :: comp_comm=MPI_COMM_NULL          ! The Compute communicator
+        integer(i4)              :: intercomm=MPI_COMM_NULL          ! the intercomm (may be MPI_COMM_NULL)
         
-        integer(i4)              :: my_comm            ! either comp_comm or intercomm
+        integer(i4)              :: my_comm=MPI_COMM_NULL            ! either comp_comm or intercomm
         integer(i4)              :: num_tasks          !  number of tasks
         integer(i4)              :: num_iotasks        ! total number of IO tasks
         integer(i4)              :: num_aiotasks       ! number of actual IO tasks
@@ -48,8 +53,8 @@ module pio_types
         integer(i4)              :: comp_rank          ! the computational rank
         integer(i4)              :: io_rank            ! the io rank if io_rank = -1 not an IO processor
 !
-        integer(i4)              :: Info               ! MPI-IO info structure
-        integer(i4)              :: numOST
+        integer(i4)              :: Info=MPI_INFO_NULL  ! MPI-IO info structure
+        integer(i4)              :: numOST              ! The number of Object Storage Target (OST) to use.  This is a hardware raid device.
         
 ! rank of the io and comp roots in the intercomm
         integer(i4)              :: IOMaster           ! The intercom of the io_rank 0

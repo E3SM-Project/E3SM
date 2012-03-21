@@ -78,6 +78,7 @@
   ENV_MP_EAGER_LIMIT="0"
   ENV_CONFIG_SHELL="/bin/bash"  
   ENV_LIBPATH="/contrib/zlib/lib"
+  FC = "xlf95_r"
   MPIFC = "mpxlf95_r"
   CC = "xlc_r"
   MPICC="mpcc_r"

@@ -1330,7 +1330,6 @@ contains
 #ifdef TIMING
     call t_startf("PIO_init")
 #endif
-
     iosystem%error_handling = PIO_internal_error
     iosystem%union_comm = comp_comm
     iosystem%comp_comm = comp_comm
@@ -1341,6 +1340,10 @@ contains
 #ifndef _MPISERIAL
     iosystem%info = mpi_info_null
 #endif
+    if(comp_comm == MPI_COMM_NULL) then
+       call piodie(__PIO_FILE__,__LINE__,'invalid comp_comm in pio_init')
+    end if
+
     call mpi_comm_size(comp_comm,iosystem%num_tasks,ierr)
 
     iosystem%num_comptasks = iosystem%num_tasks
@@ -1461,8 +1464,6 @@ contains
 
     iosystem%iomaster = iosystem%ioranks(1)
     iosystem%ioroot = iosystem%ioranks(1)
-    if(debug) print *,'init: iam: ',comp_rank,'io processor: ',iosystem%ioproc, 'io rank ',&
-         iosystem%io_rank, iosystem%iomaster		  
 
 
     if(debug) print *,'init: iam: ',comp_rank,' before allocate(status): n_iotasks: ',n_iotasks
@@ -1476,8 +1477,6 @@ contains
 #ifndef _MPISERIAL
     call mpi_info_create(iosystem%info,ierr)
 #endif
-
-    if(debug) print *,'iam: ',iosystem%io_rank,__LINE__,'init: userearranger: ',iosystem%userearranger
 
     !---------------------------------
     ! initialize the rearranger system 
@@ -1511,6 +1510,10 @@ contains
     itmp = num_aggregator
     call mpi_bcast(itmp, 1, mpi_integer, 0, iosystem%comp_comm, ierr)
 
+    if(debug) print *,__LINE__,'init: iam: ',comp_rank,'io processor: ',iosystem%ioproc, 'io rank ',&
+         iosystem%io_rank, iosystem%iomaster, iosystem%comp_comm, iosystem%io_comm
+
+
     if(itmp .gt. 0) then 
        write(cb_nodes,('(i5)')) itmp
 #ifdef BGx
@@ -1529,6 +1532,8 @@ contains
 #endif
     iosystem%num_aiotasks = iosystem%num_iotasks
     iosystem%numost = PIO_NUM_OST
+    if(debug) print *,__LINE__,'init: iam: ',comp_rank,'io processor: ',iosystem%ioproc, 'io rank ',&
+         iosystem%io_rank, iosystem%iomaster, iosystem%comp_comm, iosystem%io_comm
 
 #ifdef TIMING
     call t_stopf("PIO_init")
@@ -1826,13 +1831,13 @@ contains
 !! @retval ierr @copydoc  error_return
 !<
   subroutine PIO_set_hint(iosystem, hint, hintval)
-    type (iosystem_desc_t), intent(out)  :: iosystem  ! io descriptor to initalize
+    type (iosystem_desc_t), intent(inout)  :: iosystem  ! io descriptor to initalize
     character(len=*), intent(in) :: hint, hintval
     
     integer :: ierr
 #if defined(USEMPIIO) || defined(_PNETCDF) || defined(_NETCDF4)
 #ifndef _MPISERIAL
-    if(iosystem%ioproc) then
+    if(iosystem%ioproc .and. (iosystem%info /= MPI_INFO_NULL)) then
        if(iosystem%io_rank==0 .or. Debug) print *,'Setting mpi info: ',hint,'=',hintval
        call mpi_info_set(iosystem%info,hint,hintval,ierr)
        call checkmpireturn('PIO_set_hint',ierr)

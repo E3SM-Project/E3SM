@@ -1027,6 +1027,8 @@ end subroutine box_rearrange_io2comp_{TYPE}
        ! note that index in start,count is the io_rank not comp_rank
     endif
 
+    if(debug) print *,__PIO_FILE__,__LINE__,ndim,iosystem%num_iotasks,iosystem%ioranks(1),iosystem%union_comm
+
     call MPI_BCAST(start, ndim*Iosystem%num_iotasks, MPI_INTEGER,   & ! buf, cnt
                    Iosystem%ioranks(1), Iosystem%union_comm, ierror    )
     call CheckMPIReturn(subName, ierror)
