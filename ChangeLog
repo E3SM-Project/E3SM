@@ -1,3 +1,14 @@
+Tag name: pio1_4_4 
+Originator: Jim
+Date: 04-18-2012
+One-line Summary: Minor fixes for mpi-serial build and mpi_abort syntax
+
+Modified Files:
+  pio/pio_support.F90.in
+  pio/pio_support.F90
+  pio/pio_types.F90
+
+test complete on lynx 80 tests PASS, 0 tests FAIL
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 

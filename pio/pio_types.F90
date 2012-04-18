@@ -326,9 +326,5 @@ module pio_types
    integer, public, parameter :: PIO_num_OST =  16
 #endif
 #endif
-! should be defined in the mct mpiserial library.
-#ifdef _MPISERIAL
-   integer, public, parameter :: MPI_DATATYPE_NULL=0
-#endif
 
 end module pio_types

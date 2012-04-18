@@ -116,7 +116,7 @@ contains
 #if (defined _MPI)
     ! passing an argument of 1 to mpi_abort will lead to a STOPALL output 
     ! error code of 257
-    call mpi_abort (MPI_COMM_WORLD, 1)  
+    call mpi_abort (MPI_COMM_WORLD, 1, ierr)  
 #else
     call abort
 #endif
