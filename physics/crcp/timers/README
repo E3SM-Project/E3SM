@@ -1,0 +1,39 @@
+Simple elapsed-time timers: begin, end, print.
+
+The elapsed time is obtained by reading the timebase 
+register and converting to seconds just before printing.
+This keeps overhead down to ~40 nsec for 32-bit, ~20 nsec
+for 64-bit mode.  Initialization is done on the first
+call to Tbeg.  All you have to do is call with matching
+labels for begin/end pairs; then print at the end.
+
+--------------------------
+C syntax:
+
+void Tbeg(char *);
+void Tend(char *);
+void Tprt();
+
+--------------------------
+C example:
+
+Tbeg("main");
+
+Tbeg("do_work");
+do_work(...);
+Tend("do_work");
+
+Tend("main");
+Tprt();
+
+--------------------------
+Fortran example
+  call tbeg('main')
+
+  call tbeg('do_work')
+  call do_work(...)
+  call tend('do_work')
+
+  call tend('main')
+  call tprt()
+

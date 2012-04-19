@@ -1,0 +1,24 @@
+*************************************TAG_LOG.txt*************************************
+* Christoph ERATH
+* 11. April 2011
+* Documentation of the status of CSLAM in HOMME
+* find this file in test/cslamtests
+
+This file describes the status of the tags in the HOMME repository
+https://svn-homme-model.cgd.ucar.edu/branch_tags/cslam-ce_tags/
+Newest will be the first!
+
+-------------------------------------------------------------------------------------
+CSLAM01:
+- element_mod.F90: cslam tracer c added in element_state_t
+- edge_mode.F90: two subroutines added, ghostcellpack and ghostcellunpack,
+                 creating the ghostcells for cslam (it is a dirty hack from
+                 edgeVpack and edgeVunpack)
+- transformation_mod.F90 added in src/share, rotation routines implemented
+- cslam_main.F90: adapted from shallow water main, call cslam
+- cslam_mod.F90: SOLID Body rotation works (departure and arrival cell created),
+                 testing the ghostcell routines
+- Testenvironment: in test/cslamtests are files for testing cslam, including
+                   Makefiles for running on cisl-sevran (Mac)
+-------------------------------------------------------------------------------------
+

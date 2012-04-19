@@ -1,0 +1,113 @@
+High Order Method Modeling Environment
+
+In 2010, HOMME transitioned to a GNU Autoconf/Automake build
+system.  Please notice the new build system does not affect the directory
+structure of the previous one. 
+
+1. What do I need to know?
+HOMME depends on the NetCDF and/or Parallel NetCDF libraries for system
+IO. At least one of these needs to be pre-installed in your system for HOMME to
+build. HOMME 
+
+2. Building HOMME using GNU Autoconf/Automake.
+
+Although the process to build HOMME with autoconf is rather simple
+(just two steps), there are a number of significant environment
+variables that control how the build process goes. To know what
+variables and how to set them, there are a number of things you need
+to know about your system in order set your environment right. 
+
+We have included few examples of how to set the environment in the
+file MACHINES. Please take a look there and see if you can use it as
+an example for your specific system.
+
+a. Compilers. 
+
+HOMME is a combination of mostly Fortran 90 code, along
+with some Forran 77 code in third party libraries and few files
+written in C. Compilers are very strange creatures and although a
+great deal of work has been done to standarize its use across
+platform, it remains to this date the main divergence among systems.
+
+First you need to set the variables that control what compiler you
+wish to use. These are:
+
+FC          The Fortran compiler command
+MPIF90      The MPI Fortran compiler command
+CC          C compiler command
+MPICC       The MPI C compiler command
+F77         Fortran 77 compiler command
+FPP         C-preprocessor for Fortran source code
+
+b. Compiler flags.
+
+Each specific flag you wish to pass to your compilers is controlled by
+the following environment variables:
+
+CFLAGS      C compiler flags
+CPPFLAGS    C/C++/Objective C preprocessor flags, e.g. -I<include dir> if
+            you have headers in a nonstandard directory <include dir>
+FCFLAGS     Fortran compiler flags (ignored by PIO's configure)
+F90FLAGS    Fortran 90 compiler flags (note: used by PIO's configure)
+FFLAGS      Fortran 77 compiler flags
+FPPFLAGS    C-preprocessing flags for Fortran source code
+
+c. Libraries Location.
+
+
+d. Building the code
+
+First build PIO, the timing library, blas and lapack:
+% cd utils/pio
+% ./configure  ; make -j4
+(to run on lustre parallel file systems: ./configure --enable-filesystem-hints=lustre ; make -j )
+% cd utils/timing ; make   
+% cd libs/blas ; ./configure ; make
+% cd libs/lapack ; ./configure ; make
+
+
+Then build the code.  
+
+Here is two examples which will build the shallow water and primitive equation code.
+These assume PIO was build with both netcdf and pnetcdf support.  You can drop the
+--with-pnetcdf option if PIO was only built with netcdf support.
+
+cd build/sweqx 
+./configure --enable-blas --enable-lapack --with-netcdf=$NETCDF_PATH \
+   --with-pnetcdf=$PNETCDF_PATH NP=4 PLEV=1 
+make depends
+make clean
+make
+
+(To use the system blas and lapack librariers, the HOMME configure scripts,
+i.e. build/preqx/configure, add HOMME_LIBS += "-llapack -lblas" and ommit
+the --enable-blas and --enable-lapack options above)
+
+
+An example which will build the 3D primitive equation model:
+
+cd build/preqx
+./configure --enable-blas --enable-lapack --with-netcdf=$NETCDF_PATH \
+   --with-pnetcdf=$PNETCDF_PATH NP=4 PLEV=26  --enable-energy-diagnostics
+make depends
+make clean
+make
+
+
+e. Running the code
+Once everything is in place that the code builds successfully, the easest
+way to run the code is to start with one of the regression tests,
+in test/reg_test.  A good place to start is shallow water test case 5,
+    test/reg_test/individual_tests/swtc5.sh
+The most "CAM-like" regression test is
+    test/reg_test/individual_tests/baro2b.sh
+
+
+f. Hybrid MPI/OPENMP
+To run with openMP enabled, 
+  1) add the necessary compilter option to FCFLAGS   ("-openmp for Intel Fortran).
+  2) build the timing library with openMP support (edit utils/timing/Makefile
+     and add CFLAGS+=-openmp -DTHREADED_OMP)
+  3) build HOMME with -D_OPENMP  (Intel fortran will define this automatically
+     if compilign with -openmp, so this may not be needed)
+

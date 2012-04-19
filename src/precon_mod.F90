@@ -1,0 +1,326 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+
+#undef _DGEMV
+module precon_mod
+! a preconditioner version of solver_mod to eventually be incorporated into
+! solver_mod perhaps
+
+  use kinds, only : real_kind, int_kind
+  use dimensions_mod, only : npsq, nlev
+  use perf_mod, only : t_startf, t_stopf
+  use solver_mod, only : blkjac_t
+  implicit none
+  private
+
+  character(len=8), private, parameter :: blkjac_storage = "inverse"
+  !  character(len=8), private, parameter :: blkjac_storage = "LUfactor"
+
+  public  :: pcg_presolver_nonstag
+
+contains
+
+  ! ================================================
+  ! pcg_presolver_nonstag:
+  !
+  ! Preconditioned conjugate gradient solver on the
+  ! Gauss-Lobatto nonstaggered grid (np = nv).
+  ! 
+  ! ================================================
+
+  function pcg_presolver_nonstag(pptr, rhs) result(x) 
+    use dimensions_mod, only : nlev, nv, np, nvsq, nelemd
+    use element_mod, only : element_t
+    use derived_type_mod, only : precon_type
+    use reduction_mod, only : reductionbuffer_ordered_1d_t
+    use cg_mod, only : cg_t, congrad
+    use edge_mod, only : edgebuffer_t, edgevpack, edgerotate, edgevunpack
+    use derivative_mod, only : derivative_t, gradient_wk, gradient, divergence
+    use control_mod, only : maxits, while_iter, tol, precon_method
+    use physical_constants, only : rrearth
+    use bndry_mod, only : bndry_exchangeV
+    use linear_algebra_mod, only : matvec
+    use solver_mod, only : blkjac_t
+
+    integer  :: nets,nete
+    type(element_t) :: elem(nelemd)
+    real (kind=real_kind), intent(in) :: rhs(nv,nv,nlev,nelemd) ! right hand side of operator
+    type (cg_t)                       :: cg             ! conjugate gradient    (private)
+    type (ReductionBuffer_ordered_1d_t)  :: red         ! CG reduction buffer   (shared memory)
+    type (EdgeBuffer_t)               :: edge1   ! Laplacian gradient edge buffer (shared memory)
+    type (EdgeBuffer_t)               :: edge2   ! Laplacian gradient edge buffer (shared memory)
+    real (kind=real_kind)             :: lambdasq(nlev) ! Helmholtz lengthscale (private)
+    type (derivative_t)               :: deriv   ! non staggered derivative struct (private)
+    type (blkjac_t)		      :: blkjac(nelemd)
+
+    real (kind=real_kind)             :: x(nv,nv,nlev,nelemd)     ! solution (result)
+    type(precon_type) ,pointer        :: pptr
+
+    ! ===========
+    ! Local
+    ! ===========
+
+    real (kind=real_kind), dimension(2,2,nv,nv) :: metinv
+    real (kind=real_kind), dimension(nv,nv) :: metdet
+    real (kind=real_kind), dimension(nv,nv) :: rmetdet
+    real (kind=real_kind), dimension(nv,nv) :: rmv
+    real (kind=real_kind), dimension(nv,nv) :: metdetp
+    real (kind=real_kind), dimension(nv,nv) :: mp
+    real (kind=real_kind), dimension(nv,nv) :: mv
+
+    real (kind=real_kind) :: gradp(nv,nv,2,nlev,nelemd)
+    real (kind=real_kind) :: div(nv,nv,nlev,nelemd)
+    real (kind=real_kind) :: p(nv,nv)
+    real (kind=real_kind) :: r(nvsq)
+    real (kind=real_kind) :: z(nvsq)
+
+    real (kind=real_kind) :: gradp1
+    real (kind=real_kind) :: gradp2
+
+    integer :: ie
+    integer :: i,j,k
+    integer :: kptr
+    integer :: iptr
+    integer :: ieptr
+
+! declarations of unpacked pptr pointer
+    cg              =  pptr%cg 
+    red             =  pptr%red 
+    edge1           =  pptr%edge1 
+    edge2           =  pptr%edge2 
+   do k=1,nlev
+    lambdasq(k)     =  pptr%lambdasq(k)
+   end do 
+    deriv           =  pptr%deriv
+    nets            =  pptr%nets
+    nete            =  pptr%nete
+   do ie=nets,nete
+    elem(ie)        =  pptr%base(ie)
+   end do 
+    blkjac      =  pptr%bc
+
+    ! ========================================
+    ! Load the rhs in the cg struct...
+    ! ========================================
+
+    call t_startf('pcg_presolver')
+
+    do ie=nets,nete
+       ieptr=ie-nets+1
+       do k=1,nlev
+          iptr=1
+          do j=1,nv
+             do i=1,nv
+                pptr%cg%state(ieptr)%r(iptr,k) = rhs(i,j,k,ie)
+                iptr=iptr+1
+             end do
+          end do
+       end do
+    end do
+
+    do while (congrad(cg,red,maxits,tol))
+       call t_startf('in_congrad')
+
+       do ie=nets,nete
+          ieptr=ie-nets+1
+          metinv = elem(ie)%metinv
+          metdet = elem(ie)%metdet
+          rmetdet  = elem(ie)%rmetdet
+          rmv     = elem(ie)%rmv
+          metdetp = elem(ie)%metdetp
+          mv      = elem(ie)%mv
+
+          do k=1,nlev
+             if (.not.cg%converged(k)) then
+
+                ! ========================================
+                ! Apply preconditioner: wrk2 = (M^-1) * wrk1 
+                ! ========================================
+
+                if (precon_method == "block_jacobi") then
+
+                   if (blkjac_storage == "LUfactor") then
+                      call dgesl(cg%state(ieptr)%r(:,k),cg%state(ieptr)%z(:,k),blkjac(ie)%E(:,:,k),blkjac(ie)%ipvt(:,k),nvsq)
+                   else if (blkjac_storage == "inverse") then
+                      call matvec(cg%state(ieptr)%r(:,k),cg%state(ieptr)%z(:,k),blkjac(ie)%E(:,:,k),nvsq)
+                   end if
+
+                   !                   iptr=1
+                   !                   do j=1,nv
+                   !                      do i=1,nv
+                   !                         cg%wrk2(iptr,k,ieptr)=z(iptr)
+                   !                         p(i,j) = cg%state(ieptr)%z(iptr,k)
+                   !                         iptr=iptr+1
+                   !                      end do
+                   !                   end do
+
+                else if (precon_method == "identity") then
+
+                   iptr=1
+                   do j=1,nv
+                      do i=1,nv
+                         cg%state(ieptr)%z(iptr,k) = cg%state(ieptr)%r(iptr,k)*rmetdet(i,j)
+                         iptr=iptr+1
+                      end do
+                   end do
+
+
+                end if
+
+                !JMD===========================================
+                !JMD   2*nv*nv*(nv + nv) Flops 
+   		!JMD  SR = (4*nv*nv + 2*nv*nv + nv*nv)*Ld
+   		!JMD  SUM(WS) = (6*nv*nv + 2*nv*nv + nv*nv
+                !JMD===========================================
+
+#ifdef _WK_GRAD
+                gradp(:,:,:,k,ie)=gradient_wk(reshape(cg%state(ieptr)%z(:,k),(/np,np/)),deriv)*rrearth
+#else
+                gradp(:,:,:,k,ie)=gradient(cg%state(ieptr)%z(:,k),deriv)*rrearth
+#endif
+
+
+                ! =======================================
+                ! rotate gradient to form contravariant
+                !JMD  4*nv*nv Flops
+                ! =======================================
+
+                do j=1,nv
+                   do i=1,nv
+                      gradp1       = gradp(i,j,1,k,ie)
+                      gradp2       = gradp(i,j,2,k,ie)
+#if 1
+                      gradp(i,j,1,k,ie) = metdet(i,j)*(metinv(1,1,i,j)*gradp1 + &
+                           metinv(1,2,i,j)*gradp2)
+                      gradp(i,j,2,k,ie) = metdet(i,j)*(metinv(2,1,i,j)*gradp1 + &
+                           metinv(2,2,i,j)*gradp2)
+#else
+                      gradp(i,j,1,k,ie) = (metinv(1,1,i,j)*gradp1 + metinv(1,2,i,j)*gradp2)
+                      gradp(i,j,2,k,ie) = (metinv(2,1,i,j)*gradp1 + metinv(2,2,i,j)*gradp2)
+#endif
+                   end do
+                end do
+             end if
+          end do
+
+          kptr=0
+          call edgeVpack(edge2,gradp(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
+
+          kptr=0
+          call edgerotate(edge2,2*nlev,kptr,elem(ie)%desc)
+
+       end do
+
+       while_iter = while_iter + 1 
+       !$OMP BARRIER
+
+       call bndry_exchangeV(cg%hybrid,edge2)
+
+       !$OMP BARRIER
+
+       do ie=nets,nete
+          ieptr=ie-nets+1
+
+          kptr=0
+          call edgeVunpack(edge2, gradp(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
+
+          do k=1,nlev
+             if (.not.cg%converged(k)) then
+
+                ! ====================
+                ! 2*nv*nv Flops
+                ! ====================
+
+                do j=1,nv
+                   do i=1,nv
+                      gradp(i,j,1,k,ie) = rmv(i,j)*gradp(i,j,1,k,ie)
+                      gradp(i,j,2,k,ie) = rmv(i,j)*gradp(i,j,2,k,ie)
+                   ! gradp(i,j,1,k,ie) = metdet(i,j)*rmv(i,j)*gradp(i,j,1,k,ie)
+                   ! gradp(i,j,2,k,ie) = metdet(i,j)*rmv(i,j)*gradp(i,j,2,k,ie)
+                   end do
+                end do
+
+                ! ================================================
+                ! Compute  Pseudo Laplacian(p), store in div
+                !JMD   2*nv*np*(nv + np) Flops 
+                ! ================================================
+
+                div(:,:,k,ie) = divergence(gradp(:,:,:,k,ie),deriv)*rrearth
+
+                do j=1,nv
+                   do i=1,nv
+                      div(i,j,k,ie) = mv(i,j)*div(i,j,k,ie)
+                   end do
+                end do
+             end if
+          end do
+
+          k=0
+          call edgeVpack(edge1, div(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+
+       end do
+
+
+       !$OMP BARRIER
+
+       call bndry_exchangeV(cg%hybrid,edge1)
+
+       !$OMP BARRIER
+
+       ! ==========================================
+       ! compute Helmholtz operator, store in wrk3
+       !  4*np*np Flops
+       ! ==========================================
+
+       do ie=nets,nete
+          ieptr=ie-nets+1
+
+          rmv      = elem(ie)%rmv
+          rmetdet  = elem(ie)%rmetdet
+          metdet   = elem(ie)%metdet
+          metdetp  = elem(ie)%metdetp
+
+          kptr=0
+          call edgeVunpack(edge1, div(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+
+          do k=1,nlev
+             if (.not.cg%converged(k)) then
+
+                iptr=1
+                do j=1,nv
+                   do i=1,nv
+                      cg%state(ieptr)%s(iptr,k) = metdetp(i,j)*cg%state(ieptr)%z(iptr,k)+lambdasq(k)*rmv(i,j)*div(i,j,k,ie)
+                      iptr=iptr+1
+                   end do
+                end do
+
+            end if
+          end do
+       end do
+       call t_stopf('in_congrad')
+
+    end do  ! CG solver while loop
+    ! ===============================
+    ! Converged! unpack wrk3 into x
+    ! ===============================
+
+    do ie=nets,nete
+       ieptr=ie-nets+1
+       do k=1,nlev
+          iptr=1
+          do j=1,nv
+             do i=1,nv
+!                !       x(i,j,k,ie)=cg%wrk3(iptr,k,ieptr)
+                x(i,j,k,ie)=cg%state(ieptr)%x(iptr,k)
+                iptr=iptr+1
+             end do
+          end do
+       end do
+    end do
+    call t_stopf('pcg_presolver')
+
+  end function pcg_presolver_nonstag
+
+end module precon_mod

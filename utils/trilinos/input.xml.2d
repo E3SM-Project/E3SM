@@ -1,0 +1,47 @@
+<ParameterList>
+  <ParameterList name="LOCA">
+    <ParameterList name="Predictor">
+      <Parameter name="Method" type="string" value="Constant"/>
+    </ParameterList>
+    <ParameterList name="Step Size">
+      <Parameter name="Initial Step Size" type="double" value="0.1"/>
+    </ParameterList>
+    <ParameterList name="Stepper">
+      <Parameter name="Continuation Method" type="string" value="Natural"/>
+      <Parameter name="Initial Value" type="double" value="0.0"/>
+      <Parameter name="Max Nonlinear Iterations" type="int" value="15"/>
+      <Parameter name="Max Steps" type="int" value="0"/>
+      <Parameter name="Max Value" type="double" value="100"/>
+      <Parameter name="Min Value" type="double" value="0.05"/>
+      <Parameter name="Compute Eigenvalues" type="bool" value="0"/>
+    </ParameterList>
+  </ParameterList>
+  <ParameterList name="NOX">
+    <Parameter name="Convergence Tolerance" type="double" value="1.0e-8"/>
+    <ParameterList name="Direction">
+      <ParameterList name="Newton">
+        <ParameterList name="Stratimikos">
+          <Parameter name="Linear Solver Type" type="string" value="Belos"/>
+          <ParameterList name="Linear Solver Types">
+            <ParameterList name="Belos">
+              <Parameter name="Solver Type" type="string" value="Block GMRES"/>
+              <ParameterList name="Solver Types">
+                <ParameterList name="Block GMRES">
+                  <Parameter name="Convergence Tolerance" type="double" value="1e-3"/>
+                  <Parameter name="Output Frequency" type="int" value="1"/>
+                  <Parameter name="Size of Krylov Subspace" type="int" value="50"/>
+                  <Parameter name="Verbosity" type="int" value="9"/>
+                  <Parameter name="Maximum Iterations" type="int" value="100"/>
+                  <Parameter name="Block Size" type="int" value="1"/>
+                  <Parameter name="Num Blocks" type="int" value="100"/>
+                  <Parameter name="Flexible Gmres" type="bool" value="1"/>
+                </ParameterList> 
+              </ParameterList> 
+            </ParameterList> 
+          </ParameterList>  
+        </ParameterList>  
+      </ParameterList> 
+    </ParameterList> 
+  </ParameterList> 
+</ParameterList>
+

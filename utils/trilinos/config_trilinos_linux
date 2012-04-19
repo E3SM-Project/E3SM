@@ -1,0 +1,11 @@
+../../downloads/trilinos-8.0.4/configure --prefix=/home/4ue/trilinos/MPI4p3 \
+--with-blas=/home/4ue/lapack/blas_LINUX.a  \
+--with-lapack=/home/4ue/lapack/lapack_LINUX.a \
+--enable-nox --enable-belos --enable-ifpack --enable-ml \
+--enable-teuchos --enable-teuchos-complex --enable-teuchos-extended \
+--enable-sacado --enable-nox-lapack --enable-epetraext \
+--enable-nox-epetra --enable-anasazi --enable-epetra \
+--enable-nox-epetra-examples --enable-loca \
+--enable-mpi F77=mpif77 F90=mpif90 CC=mpicc CXX=mpicxx \
+--with-mpi-compilers CPPFLAGS="-DMPICH_IGNORE_CXX_SEEK" \
+--enable-export-makefiles \

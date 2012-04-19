@@ -1,0 +1,164 @@
+#!/bin/tcsh -f 
+#
+#  Mark Taylor 2010
+#  script to run HOMME in CAM history interpolation mode
+#  interpolate CAM-HOMME cubed-sphere netcdf output to lat/lon netcdf output  
+#
+#  NOTE: to avoid all errors, one should interpolate to a grid with 2x
+#  the resolution of the native cubed sphere grid.  This is a little extreme
+#  so we compromise and use 1.4x in the configurations below for
+#  NE=30,60,120 and 240.
+#
+#  interp_type = 0 (native spectral element shape functions) gives the
+#                  best results for smooth fields
+#
+#  interp_type = 1 (bilinear interpolation) is best for noisy fields
+#                  and fields where monotone interpolation is needed
+#                  such as for all tracers
+#  HOMME is not smart enough to figure out which to use on a field by field
+#        basis, so the default set below is interp_type=1
+#
+#
+#
+#PBS -l walltime=2:00:00
+#PBS -j oe
+#
+# SNL
+#XPBS -l nodes=50:ppn=2
+#XPBS -A FY104068
+
+# Jaguar
+#PBS -A CLI017DEV 
+#PBS -l size=12
+
+set NCPU = 16
+if ( ${?PBS_NODEFILE} ) then
+    set NCPU = `wc $PBS_NODEFILE | awk '{print $1}' - `
+endif
+if ( ${?PBS_NNODES} ) then
+  set NCPU = $PBS_NNODES
+endif
+echo using NCPU = $NCPU
+
+set MPIRUN = "mpirun -np $NCPU"
+if ( jaguar == `hostname | head -c 6` ) then
+   set MPIRUN = "aprun -n $NCPU"
+endif
+
+
+# number of levels:  
+set nlev=26
+
+#set interp_type = 0  # native
+set interp_type = 1  # bilin
+#set gridtype = 1    #   FV
+set gridtype = 2    #   Gauss grid (CAM Eulerian)
+#set gridtype = 3     #  FV staggered velocity grid (dont use)
+
+
+# directory and filenames of files to interpolate
+# SNL test case
+set name = f2000_ne30 
+set wdir = ~/scratch1/$name/run
+cd $wdir
+set files = "$name.cam2.h0.*"
+
+# jaguarpf test case
+#set name = test
+#set wdir = ~/scratch1/$name
+#cd $wdir
+#set files = cami*
+
+# settings to interpolate CAM-HOMME topo files
+#set interp_type = 0   # use native, since we will compute spectra
+#set wdir = ~/scratch1/smoothphis
+#cd $wdir
+#set files = "smooth*.i.nc"
+
+
+
+# Extract the cubed-sphere resoluiotn (NE) from the first file:
+foreach file ( $files )
+   set ne = `ncdump -h $file  | grep "ne = " | awk '{print $3}' -`
+   break
+end
+echo "using NE=$ne (extraced from first file)"
+
+
+set NLAT = 256
+set NLON = 512
+if ( $ne == 30 ) then
+   # use for NE=30  (360pts on equator.  1.4x = 503 pts on equator)
+   set NLAT = 256
+   set NLON = 512
+endif
+if ( $ne == 60 ) then
+   set NLAT = 512
+   set NLON = 1024
+endif
+if ( $ne == 120 ) then
+   set NLAT = 1024
+   set NLON = 2048
+endif
+if ( $ne == 240 ) then
+   set NLAT = 2048
+   set NLON = 4096
+endif
+
+
+
+set homme = ~/codes/homme
+set src = $homme/build.Linux
+set input = $homme/test/interpf
+set params = Params${nlev}-4.inc
+
+# setup the work directory
+mkdir $wdir/movies
+# copy Params.inc into output directory to archive it
+cp -f $input/$params $wdir/Params.inc
+diff  $input/$params $src/../Params.inc
+if ($status != 0) then
+   echo "replacing Params.inc"
+   cp $input/$params $src/../Params.inc
+endif
+
+cd $src
+rm -f preqx
+make -j4 preqx
+
+
+# jaguar cant read in vcoord files from home directory, so rsync into
+# working directory
+cd $wdir
+mkdir vcoord
+rsync $homme/test/vcoord/cam?-$nlev* vcoord
+
+
+
+foreach file ( $files ) 
+   if ( -f $file ) then
+      echo interpolating: $file
+      rm -f $wdir/explicit.nl
+   sed s/NE/$ne/ $input/explicit${nlev}.nl.sed | \
+   sed s:vfile_mid.\*:"vfile_mid = './vcoord/camm-$nlev.fbin.littleendian'":   |\
+   sed s:vfile_int.\*:"vfile_int = './vcoord/cami-$nlev.fbin.littleendian'":   |\
+   sed s/nlat.\*/"nlat = $NLAT"/   |\
+   sed s/nlon.\*/"nlon = $NLON"/   |\
+   sed s:interp_type.\*:"interp_type=$interp_type": |\
+   sed s:gridtype.\*:"gridtype = $gridtype": |\
+   sed s:infilenames.\*:"infilenames='$file'": |\
+   sed s:output_varnames1.\*:"output_varnames1='all'": \
+   > $wdir/explicit.nl
+
+   $MPIRUN  $src/preqx < $wdir/explicit.nl
+   set basename = `basename $file .nc`
+   mv movies/$basename.interp1.nc movies/$basename.nc
+   chmod a+r movies/$basename.nc
+   else
+      echo ERROR: file does not exist
+   endif
+end
+
+
+
+

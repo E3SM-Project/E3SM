@@ -1,0 +1,179 @@
+#!/bin/tcsh -f 
+#SBATCH -N 8
+#SBATCH --account=FY115932
+#SBATCH --time=0:10:00
+
+set NCPU = 1
+if ( ${?PBS_NODEFILE} ) then
+    set NCPU = `wc $PBS_NODEFILE | awk '{print $1}' - `
+endif
+#@ NCPU /= 4
+echo using NCPU = $NCPU
+#
+# Mark Taylor 2010
+#
+# generate template  files used for SCRIP/ESMF and interpic, and paraview metadata files
+# HOMME is used to run a short (1 timestep) dummy simulation.  the output is then
+# processed to NCO & NCL to produce:
+#   
+# for running CAM physics on GLL points:  (colocated)
+#   ne$NEnp$NP_latlon.nc     template for interpic_new and paraview metadata
+#   ne$NEnp$NP_scrip.nc      template for SCRIP/ESMF mapping utility
+#
+# for running CAM physics on CSLAM grid
+#   ne$NEnc$NP_latlon.nc    template for interpic_new and paraview metadata
+#   ne$NEnc$NP_scrip.nc     template for SCRIP/ESMF mapping utility
+#                                  
+#
+#
+# NE=240 runs in a few minutes.  needs 24 nodes, io_stride=8
+#
+# to plot the control volumes, see:   plotgrid.ncl
+#
+# GLL points within each element:
+set NPTS = 4
+# CSLAM points points within each element:
+set NC = 4
+
+# UNIFORM grids
+set ne = 16 ; 
+set meshfile='none'
+set meshname = ne{$ne}np{$NPTS}
+set meshsub = ne{$ne}nc{$NPTS}
+
+# unstructured grid from file
+#set ne = 0
+#set meshname = ARM_30_x8_s1.g
+#set meshname = ARM_30_x8.g
+#set meshfile=~/codes/mapping/grids/$meshname
+
+set MESHREFINE = --enable-mesh-refine
+
+
+
+
+set tstep = 1  
+set name = template
+set nlev=20
+set qsize = 0
+
+if ( $NPTS == 4 ) then
+   set outnames = "'area','cv_lat','cv_lon','corners','phys_lat','phys_lon','phys_cv_lat','phys_cv_lon','phys_area'"
+else
+   set outnames = "'area','corners','phys_lat','phys_lon','phys_cv_lat','phys_cv_lon','phys_area'"
+endif
+
+set src = ~/codes/homme/build/preqx
+set input = ~/codes/homme/test/template
+set mesh = ne${ne}-${NPTS}t${tstep}l${nlev}
+set output = jw_baroclinic1.nc
+
+# setup the work directory
+# NOTE: PIO + older Lustre (as on blackrose) will output only zeros!
+set wdir = ~/scratch1
+#set wdir = ~/scratch3
+
+mkdir $wdir/preqx
+mkdir $wdir/preqx/$name
+mkdir $wdir/preqx/$name/movies
+mkdir $wdir/preqx/vcoord
+rsync -a $src/../../test/vcoord/*ascii $wdir/preqx/vcoord
+
+set wdir = $wdir/preqx/$name
+
+
+cd $src
+set build = 1
+if ( -f preqx.template ) set build = 0
+set make = 1 # for debugging - rebuild code every run but dont re-configure
+
+if ( $build == 1  ) then
+  ./configure $MESHREFINE --enable-pio --enable-blas --enable-lapack --with-netcdf=$NETCDF_PATH \
+    --with-pnetcdf=$PNETCDF_PATH NP=$NPTS PLEV=$nlev  
+  make -j4 depends
+  make clean
+  make -j4 preqx
+  mv preqx preqx.template
+exit
+endif
+if ( $make == 1 ) then
+    make -j4 preqx
+    if ( $status ) exit
+    mv preqx preqx.template
+endif
+
+cd $wdir
+
+
+
+
+
+rm -f $wdir/input.nl
+sed s/NE/$ne/ $input/explicit20.nl.sed | sed s/TSTEP/$tstep/ |\
+sed s:meshfile.\*:"mesh_file = '$meshfile'":   |\
+sed s/qsize.\*/"qsize = $qsize"/   |\
+sed s/runtype.\*/"runtype = 0"/   |\
+sed s/output_frequency.\*/"output_frequency = 1"/   |\
+sed s:infilenames.\*:"infilenames='h0-tavg.nc'": |\
+sed s:output_varnames1.\*:"output_varnames1=$outnames": \
+> $wdir/input.nl
+
+if ( $status ) exit
+
+set echo
+rm -Rf $wdir/movies/jw*
+mpirun  $src/preqx.template < $wdir/input.nl
+
+
+
+
+# the GLL interpIC template (and paraview metadata)
+set echo
+ncks -O -v lat,lon,corners movies/$output {$meshname}_tmp.nc
+ncl $input/HOMME2META.ncl  name=\"$meshname\"  ne=$ne
+rm -f {$meshname}_tmp.nc
+
+if ( $NPTS == 4 ) then
+   ncks -O -v lat,lon,area,cv_lat,cv_lon movies/$output {$meshname}_tmp.nc
+   ncl $input/HOMME2SCRIP.ncl  name=\"$meshname\"  ne=$ne
+   rm -f {$meshname}_tmp.nc
+endif
+
+
+
+# a subelement control volume interpIC template:
+set echo
+ncks -O -v phys_lat,phys_lon,phys_area movies/$output {$meshsub}_tmp.nc
+ncrename -v phys_lat,lat {$meshsub}_tmp.nc
+ncrename -v phys_lon,lon {$meshsub}_tmp.nc
+ncrename -v phys_area,area {$meshsub}_tmp.nc
+ncrename -d nphys,ncol {$meshsub}_tmp.nc
+ncl $input/HOMME2META.ncl  name=\"$meshsub\"  ne=$ne
+rm -f {$meshsub}_tmp.nc
+
+
+# subelement ESMF/SCRIP template (still need phys_area)
+ncks -O -v phys_area,phys_lat,phys_lon,phys_cv_lat,phys_cv_lon movies/$output {$meshsub}_tmp.nc
+ncrename -v phys_area,area {$meshsub}_tmp.nc
+ncrename -v phys_lat,lat {$meshsub}_tmp.nc
+ncrename -v phys_lon,lon {$meshsub}_tmp.nc
+ncrename -v phys_cv_lat,cv_lat {$meshsub}_tmp.nc
+ncrename -v phys_cv_lon,cv_lon {$meshsub}_tmp.nc
+ncl $input/HOMME2SCRIP.ncl  name=\"$meshsub\"  ne=$ne
+rm -f {$meshsub}_tmp.nc
+
+
+
+
+exit
+rm -f new.out
+ncdump ne${ne}np4.nc > new.out
+diff new.out  ne${ne}np4.nc.orig.out
+
+ncdump  ne$ne-4_latlon.nc > new.out
+diff new.out ne$ne-4_latlon.nc.orig.out
+
+
+
+exit
+

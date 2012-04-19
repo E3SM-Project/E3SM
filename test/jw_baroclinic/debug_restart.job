@@ -1,0 +1,304 @@
+#!/bin/tcsh 
+#
+#PBS -l walltime=0:10:00
+#PBS -j oe
+
+# SNL
+#XPBS -l nodes=2:ppn=2
+#XPBS -A FY104068
+
+# Jaguar
+#PBS -A CLI017DEV 
+#PBS -l size=12
+
+#NCAR batch system: 
+#BSUB -x                # exlusive use of node (not_shared)
+#BSUB -n 24             # number of tasks
+#BSUB -a poe            # select the poe elim
+#BSUB -R "span[ptile=32]"       # tasks per node
+#BSUB -J homme          # job name
+#BSUB -o homme.out      # output filename
+#BSUB -e homme.out  
+#BSUB -W 0:15	        #  wall clock time 
+#BSUB -P 93300642
+#BSUB -q premium        # queue
+
+
+# intrepid   intrepid does not have #PBS options
+# user will run this script, and then it will qsub itself
+# with the --batch argument
+set NTIME = 20
+set NNODES = 6
+set BGPQUE = prod-devel
+
+set nthreads = 1
+if ( $nthreads > 1 )  then
+  setenv OMP_NUM_THREADS 8  # max. allowed threads
+  setenv OMP_STACKSIZE 8M
+endif
+
+
+
+# determine number of MPI processes available, for my own
+# information.  set NCPU below to override for debugging
+set NCPU = 2
+if ( ${?PBS_NODEFILE} ) then
+    set NCPU = `wc $PBS_NODEFILE | awk '{print $1}' - `
+endif
+if ( ${?PBS_NNODES} ) then
+  set NCPU = $PBS_NNODES
+endif
+if ( ${?LSB_MCPU_HOSTS} ) then
+  set NCPU = `wc $LSB_DJOB_HOSTFILE | awk '{print $1}' - `
+endif
+if ( $NCPU > 24 ) then
+  echo "only 24 elements!"
+  set NCPU = 24
+endif
+echo using NCPU = $NCPU
+set build = 0
+if ( $#argv > 0) then
+   if ($1 == "build") set build=1
+endif
+
+
+#
+# My standard debug test case.  nlev=26  NE=2  delt=180, nmax=4d
+# no viscosity.  
+#
+#
+set nlev=26
+set ne = 2
+set tstep = 180
+set NPTS = 4
+set qsize = 2
+set energy_fixer = 0
+set LFTfreq=0
+
+# compate these settings to debug-tadv0.out
+#set tadv = 0 ; set RK2 = 0 ; set qsplit = 1
+
+# compare these settings with debug-sub3.out:
+set tadv = 1 ; set RK2 = 1 ; set qsplit = 3 ; set energy_fixer = -1
+
+
+set dorun1 = 1   # make the restart file
+set dorun2 = 1   # do the restart run
+if ( `basename $0` == debug.job ) set dorun2 = 0
+
+# set number of hours
+set nmax = 96
+@ nmax *= 3600
+@ nmax /= $tstep
+
+# restartfreq
+set rfreq = 24
+@ rfreq *= 3600
+@ rfreq /= $tstep
+
+
+# restart from day 1
+set rname = restart/R000000480
+
+
+# number of min between calls to prim_printstate
+set sfreq = 360
+@ sfreq *= 60
+@ sfreq /= $tstep
+#set sfreq = 1
+
+# this debug case is usually run inviscid
+#set nu = 6e16
+#set nu_s = 6e16
+#set nu_p = 0
+#set hypervis = 2
+#set subcycle = 1
+set nu = 0
+set nu_s = 0
+set nu_p = 0
+set hypervis = 2
+set subcycle = 1
+
+#
+#  src    build directory
+#  input  location of namelist file
+#  wdir   working directory where outptu to run co
+#
+set sys = `uname`
+set make = 'make -j4'
+
+
+
+#
+#  default  linux workstations, SNL linux clusters
+#  aix      bluefire at NCAR
+#  jaguar   ORNL xt3
+#
+set machine = default
+if ( AIX == $sys ) set machine = aix
+if ( jaguar == `hostname | head -c 6` ) set machine = jaguar
+if ( yodjag == `hostname | head -c 6` ) set machine = jaguar
+if ( intrepid.alcf.anl.gov  == `hostname -f | tail --bytes 22` ) set machine = intrepid
+
+echo hostname = `hostname`
+echo machine = $machine
+
+set bigendian = 0
+
+
+set input = $PWD
+cd ../..
+set HOMME = $PWD
+cd $input
+set src = $HOMME/build/preqx
+set vdir = $HOMME/test/vcoord
+
+set wdir = /tmp/preqx
+if ( -d ~/scratch1 ) set wdir = ~/scratch1/preqx
+set mpirun = "mpirun"
+set mpiopts = "-np $NCPU"
+
+
+if ( $machine == aix ) then
+   set bigendian = 1
+   set wdir = /ptmp/$USER/preqx
+   setenv MP_LABELIO yes
+   setenv MP_COREFILE_FORMAT txt
+   set make = "gmake -j4"
+   set mpirun = mpirun.lsf
+   set mpiopts = launch
+endif
+
+# BGP
+if ( $machine == intrepid  ) then
+   set bigendian = 1
+   if ( "$1" != "--batch" ) then
+     qsub -A CCESDev -q $BGPQUE -t $NTIME -n $NNODES --mode script $0 --batch $*
+     exit
+   endif
+   @ NCPU = $NNODES * 4
+   set mpirun = cobalt-mpirun
+   set mpiopts = "-np $NCPU -mode VN"
+endif
+
+
+# override defaults for Jaguar
+if ( $machine == jaguar  ) then
+   # jaguar compute nodes cant read files in my home directory:
+   set mpirun = aprun
+   set mpiopts = "-n $NCPU"
+endif
+
+
+
+
+#
+#  construct run name based on some parameters
+#
+if ( $NPTS == 8 ) then
+   set mesh = ne${ne}t${tstep}l${nlev}
+else
+   set mesh = ne${ne}-${NPTS}t${tstep}l${nlev}
+endif
+
+if ( $hypervis == 0 ) then
+   set name = jw-${mesh}-nu${nu}
+endif
+if ( $hypervis == 1 ) then
+   set name = jw-${mesh}-wnu${nu}-$subcycle
+endif
+if ( $hypervis == 2 ) then
+   if ( $nu_p == 0 ) then
+      set name = jw-${mesh}-hnu${nu}-$subcycle
+   else
+      set name = jw-${mesh}-hpnu${nu}-$subcycle
+   endif
+endif
+
+echo $name
+
+
+
+
+# setup the work directory
+mkdir $wdir
+
+set wdir = $wdir/$name
+mkdir $wdir
+mkdir $wdir/movies
+mkdir $wdir/restart
+mkdir $wdir/vcoord
+rsync -a $vdir/*26* $wdir/vcoord
+
+
+
+cd $input
+rm -f $wdir/input.nl
+sed s/NE/$ne/ debug${nlev}.nl.sed | sed s/TSTEP/$tstep/ | sed s/NMAX/$nmax/ | sed s/SFREQ/$sfreq/ |\
+sed s/NU1/$nu/ | sed s/NU2/$nu_s/ | sed s/NUP/$nu_p/ |\
+sed s/restartfreq.\*/"restartfreq = $rfreq"/ |\
+sed s/qsize.\*/"qsize = $qsize"/  |\
+sed s/NThreads.\*/"nthreads = $nthreads"/  |\
+sed s/energy_fixer.\*/"energy_fixer = $energy_fixer"/  |\
+sed s/tracer_advection_formulation.\*/"tracer_advection_formulation=$tadv tstep_type=$RK2 qsplit=$qsplit  LFTfreq=$LFTfreq"/  |\
+sed s/ORDER/$hypervis/ | sed s/SUBCYCLE/$subcycle/ > $wdir/input.nl
+if ( $bigendian == 1 ) then
+  mv -f $wdir/input.nl $wdir/tmp.nl
+  sed  s/.littleendian//g $wdir/tmp.nl > $wdir/input.nl
+endif
+
+
+if ( $build == 1 ) then
+   cd $src
+   #setenv  FCFLAGS "-openmp -O2 -w90"
+   ./configure --enable-blas --enable-lapack --with-netcdf=$NETCDF_PATH \
+    --with-pnetcdf=$PNETCDF_PATH NP=4 PLEV=26   --enable-energy-diagnostics
+   make -j4 depends
+   make clean
+   $make 
+   exit
+endif
+cd $src
+$make
+if ($status ) exit
+cd $wdir
+
+if ( $dorun1 == 1 ) then
+   rm -Rf restart/R00*
+   echo RUNNING: $mpirun $mpiopts $src/preqx
+   $mpirun $mpiopts $src/preqx < $wdir/input.nl
+endif
+
+
+
+#
+# now setupt the restart run
+#
+# run for 3d
+set nmax = 72
+@ nmax *= 3600
+@ nmax /= $tstep
+
+
+cd $input
+rm -f $wdir/input.nl
+sed s/NE/$ne/ debug${nlev}.nl.sed | sed s/TSTEP/$tstep/ | sed s/NMAX/$nmax/ | sed s/SFREQ/$sfreq/ |\
+sed s/NU1/$nu/ | sed s/NU2/$nu_s/ | sed s/NUP/$nu_p/ |\
+sed s/runtype.\*/"runtype = 1"/ |\
+sed s/qsize.\*/"qsize = $qsize"/  |\
+sed s/energy_fixer.\*/"energy_fixer = $energy_fixer"/  |\
+sed s/tracer_advection_formulation.\*/"tracer_advection_formulation=$tadv tstep_type = $RK2 qsplit = $qsplit"/  |\
+sed s@R0001@$rname@ |\
+sed s/ORDER/$hypervis/ | sed s/SUBCYCLE/$subcycle/ > $wdir/input.nl
+if ( $bigendian == 1 ) then
+  mv -f $wdir/input.nl $wdir/tmp.nl
+  sed  s/.littleendian//g $wdir/tmp.nl > $wdir/input.nl
+endif
+
+
+cd $wdir
+if ( $dorun2 == 1 ) then
+   echo RUNNING: $mpirun $mpiopts $src/preqx
+   $mpirun $mpiopts $src/preqx < $wdir/input.nl
+endif
+

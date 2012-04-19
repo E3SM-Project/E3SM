@@ -1,0 +1,39 @@
+
+__________________
+7/31/2009 directory added to the repository for eventual link to the implicit
+solver option in /src/implicit_mod.F90, which has routines that call the
+subroutines in this directory: noxinit, noxsolve, and noxfinalize
+(not including the preconditioner)
+
+This directory contains the routines to call the trilinos solver packages. 
+The trilinos library needs to be used for these routines to work.
+
+To build Trilinos, the configure script in the file config_trilinos 
+was used for the platform indicated. It will not stay in date as Trilinos
+is updated, but provides a starting point for successfully building trilinos 
+using the packages in HOMME For more info check out: http://trilinos.sandia.gov 
+
+To use the implicit solver for the 2D shallow water version of HOMME, the 
+input.xml.2d file and precon.xml files need to be copied into the local directory 
+of the model run as input.xml and precon.xml so that the solver parameters can 
+be assigned. These templates are provided as a starting point. 
+
+12/17/2010 To use the implicit solver for the 3D version of HOMME, copy over the 
+input.xml.3d file to input.xml (along with precon.xml as with the 2D) into 
+the run directory you will use. Right now it is set to produce maximum output for 
+analysis.
+
+To build and run the fully implicit solver option, first build the code with
+the 'make swim' (shallow water) or 'make prim' (3D) commands in the build.Linux 
+directory. A working build of trilinos with the packages required by the 
+LOCA/NOX solver is needed. This version of the code is kept current with the 
+default build of Trilinos on ORNL's Jaguar system.
+
+Then select the integration='full_imp' option in the namelist, and copy over the
+.xml files, as instructed above, to the run directory and run the code as desired.
+  
+For more information or assistance contact:
+Kate Evans
+Oak Ridge National Laboratory
+evanskj@ornl.gov
+

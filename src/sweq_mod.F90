@@ -1,0 +1,1508 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+module sweq_mod
+contains
+  subroutine sweq(elem,cslam,edge1,edge2,edge3,red,par,ithr,nets,nete)
+    !-----------------
+    use kinds, only : real_kind, longdouble_kind
+    !-----------------
+    use physical_constants, only : g_sw
+    !-----------------
+    use parallel_mod, only : parallel_t, syncmp
+    !-----------------
+    use thread_mod, only : nthreads
+    !-----------------
+    use hybrid_mod, only : hybrid_t, hybrid_create
+    !-----------------
+    use time_mod, only : timelevel_t , tstep, secpday, time_at, nmax, timelevel_update, timelevel_init
+    !-----------------
+    use derivative_mod, only : derivative_t, derivinit, deriv_print
+    !-----------------
+    use dimensions_mod, only : np, nlev, npsq, npsq, nelemd, nvar, nc
+    !-----------------
+    use shallow_water_mod, only : tc1_init_state, tc2_init_state, tc5_init_state, tc6_init_state, tc5_invariants, &
+         tc8_init_state, vortex_init_state, vortex_errors, sj1_init_state, tc6_errors, &
+         tc1_errors, tc2_errors, tc5_errors, sweq_invariants, swirl_init_state, swirl_errors
+!is swirl ever run with this routine???? its a pure advection test
+
+    !-----------------
+#ifdef PIO_INTERP
+    use interp_movie_mod, only : interp_movie_init, interp_movie_output, interp_movie_finish
+#else
+    use shal_movie_mod, only : shal_movie_init, shal_movie_output, shal_movie_finish
+#endif
+    !-----------------
+    use global_norms_mod, only : test_global_integral, print_cfl
+    !-----------------
+    use quadrature_mod, only : quadrature_t, gausslobatto
+    !-----------------
+    use edge_mod, only : EdgeBuffer_t
+    ! ----------------
+    use reduction_mod, only : ReductionBuffer_ordered_1d_t
+    !-----------------
+    use element_mod, only : element_t
+    !-----------------
+    use state_mod, only : printstate
+    !-----------------
+    use filter_mod, only : filter_t, taylor_filter_create, fm_filter_create, fm_transfer, bv_transfer
+    !-----------------
+    use solver_mod, only : blkjac_t, blkjac_init
+    !-----------------
+    use cg_mod, only : cg_t, cg_create
+    !-----------------
+    use restart_io_mod, only : readrestart, writerestart
+    !-----------------
+    use advance_mod, only : advance_nonstag, advance_si_nonstag
+    !-----------------
+#ifdef TRILINOS
+    use implicit_mod, only : advance_imp_nonstag
+    !-----------------
+    use, intrinsic :: iso_c_binding 
+    !-----------------
+    use derived_type_mod ,only : derived_type, precon_type, initialize, init_precon
+#endif
+    !-----------------
+    use control_mod, only : integration, filter_mu, filter_type, transfer_type, debug_level,  &
+         restartfreq, statefreq, runtype, s_bv, p_bv, wght_fm, kcut_fm, precon_method, topology,   &
+         test_case, sub_case, qsplit, nu, nu_s, limiter_option, hypervis_subcycle, test_cfldep
+    use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
+    use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
+    use bndry_mod, only : compute_ghost_corner_orientation
+    use checksum_mod, only : test_ghost
+    
+    use cslam_mod, only : cslam_init2    
+    use cslam_control_volume_mod, only : cslam_struct
+    use cslam_bsp_mod, only: cslam_init_tracer
+    use reduction_mod, only : parallelmax
+    
+    
+    implicit none
+
+    integer, parameter :: facs = 4            ! starting face number to print
+    integer, parameter :: face = 4            ! ending  face number to print
+    type (element_t), intent(inout) :: elem(:)
+    type (cslam_struct), intent(inout) :: cslam(:)
+    
+    type (EdgeBuffer_t), intent(in)             :: edge1 ! edge buffer entity             (shared)
+    type (EdgeBuffer_t), intent(in)             :: edge2 ! edge buffer entity             (shared)
+    type (EdgeBuffer_t), intent(inout)             :: edge3 ! edge buffer entity             (shared)
+    type (ReductionBuffer_ordered_1d_t),intent(in)    :: red   ! reduction buffer               (shared)
+    type (parallel_t), intent(in)               :: par   ! distributed parallel structure (shared)
+    integer, intent(in)                         :: ithr  ! thread number                  (private)
+    integer, intent(in)                         :: nets  ! starting thread element number (private)
+    integer, intent(in)                         :: nete  ! ending thread element number   (private)
+
+    ! ==================================
+    ! Local thread (private) memory
+    ! ==================================
+
+    real (kind=real_kind)       :: dt              ! "timestep dependent" timestep
+!   variables used to calculate CFL
+    real (kind=real_kind) :: dtnu            ! timestep*viscosity parameter
+    real (kind=real_kind) :: dt_dyn          ! dynamics timestep
+    real (kind=real_kind) :: dt_tracers      ! tracer timestep
+
+    real (kind=real_kind)       :: pmean           ! mean geopotential
+    type (derivative_t)         :: deriv           ! derivative struct
+    type (TimeLevel_t)          :: tl              ! time level struct
+    type (blkjac_t),allocatable :: blkjac(:)  
+    type (cg_t)                 :: cg              ! conjugate gradient struct
+    real (kind=real_kind)       :: lambdasq(nlev)  ! Helmholtz length scale
+    type (hybrid_t)             :: hybrid
+    type (quadrature_t)         :: gll,gs          ! gauss-lobatto and gauss wts and pts
+
+    real (kind=real_kind) :: Tp(np)          ! transfer function
+    type (filter_t)       :: flt           ! Filter structure for both v and p grid
+    type (quadrature_t)   :: gp           ! quadratures on velocity and pressure grids
+    real (kind=real_kind) :: solver_wts(npsq,nete-nets+1) ! solver wets array for nonstag grid
+
+#ifdef TRILINOS
+    integer :: lenx
+    real (c_double) ,allocatable ,dimension(:) :: xstate
+! state_object is a derived data type passed thru noxinit as a pointer
+    type(derived_type) ,target         :: state_object
+    type(derived_type) ,pointer        :: fptr=>NULL()
+    type(c_ptr)                        :: c_ptr_to_object
+    type(precon_type) ,target          :: pre_object
+    type(precon_type) ,pointer         :: pptr=>NULL()
+    type(c_ptr)                        :: c_ptr_to_pre
+#endif
+
+    integer :: simday
+
+    integer :: point
+    integer :: i,j,iptr
+    integer :: it,ie,k
+    integer :: ntmp
+    integer :: nm1,n0,np1
+    integer :: nstep
+
+    real*8  :: tot_iter
+    logical, parameter :: Debug = .FALSE.
+    
+#ifdef _CSLAM
+  real (kind=longdouble_kind)                    :: cslam_nodes(nc+1)
+  real (kind=real_kind)                          :: xtmp
+  real (kind=real_kind)                          :: maxcflx, maxcfly  
+  integer                                        :: k
+#endif    
+
+#ifdef TRILINOS
+  interface 
+    subroutine noxinit(vectorSize,vector,comm,v_container,p_container) &
+        bind(C,name='noxinit')
+    use ,intrinsic :: iso_c_binding
+      integer(c_int)                :: vectorSize,comm
+      real(c_double)  ,dimension(*) :: vector
+      type(c_ptr)                   :: v_container
+      type(c_ptr)                   :: p_container  !precon ptr
+    end subroutine noxinit
+
+    subroutine noxfinish() bind(C,name='noxfinish')
+    use ,intrinsic :: iso_c_binding ,only : c_double ,c_int ,c_ptr
+    end subroutine noxfinish
+
+  end interface
+#endif
+
+
+
+
+    if(Debug) print *,'homme: point #1'
+
+    ! ==========================
+    ! begin executable code
+    ! ==========================
+    call t_startf('sweq')
+
+    call define_g
+
+    hybrid = hybrid_create(par,ithr,NThreads)
+
+    if (topology == "cube") then
+       call test_global_integral(elem,hybrid,nets,nete)
+
+       dtnu = 2.0d0*tstep*max(nu,nu_s)/hypervis_subcycle
+       call print_cfl(elem,hybrid,nets,nete,dtnu,tstep,tstep)
+
+#ifndef MESH
+        ! MNL: there are abort calls in edge_mod::ghostVpackfull that
+        !      require ne>0 / don't allow -DMESH as compile option
+        ! used by CSLAM:
+        call compute_ghost_corner_orientation(hybrid,elem,nets,nete)
+        call test_ghost(hybrid,elem,nets,nete)
+#endif
+    end if
+
+    if(Debug) print *,'homme: point #2'
+    ! ==================================
+    ! Initialize derivative structure
+    ! ==================================
+
+#ifdef _CSLAM
+
+    ! Initialize derivative structure
+    ! CSLAM nodes are equally spaced in alpha/beta
+    ! HOMME with equ-angular gnomonic projection maps alpha/beta space
+    ! to the reference element via simple scale + translation
+    ! thus, CSLAM nodes in reference element [-1,1] are a tensor product of
+    ! array 'cslam_nodes(:)' computed below:
+    xtmp=nc 
+    do i=1,nc+1
+      cslam_nodes(i)= 2*(i-1)/xtmp - 1
+    end do
+    call derivinit(deriv,cslam_corners=cslam_nodes)
+    call cslam_init2(elem,cslam,hybrid,nets,nete,tl)
+    
+#else
+    call derivinit(deriv)
+#endif    
+
+!    if (hybrid%par%masterproc .AND. ithr == 0) then
+!       call deriv_print(deriv)
+!    end if
+
+    ! ========================================
+    ! Initialize velocity and pressure grid
+    ! quadrature points...
+    ! ========================================
+
+    
+    gp =gausslobatto(np)
+
+    if(Debug) print *,'homme: point #3'
+    ! ==========================================
+    ! Initialize pressure and velocity grid 
+    ! filter matrix...
+    ! ==========================================
+
+    if (transfer_type == "bv") then
+       Tp    = bv_transfer(p_bv,s_bv,np)
+    else if (transfer_type == "fm") then
+       Tp    = fm_transfer(kcut_fm,wght_fm,np)
+    end if
+
+    if (filter_type == "taylor") then
+       flt = taylor_filter_create(Tp, filter_mu, gp)
+    else if (filter_type == "fischer") then
+       flt = fm_filter_create(Tp, filter_mu, gp)
+    end if
+    if (hybrid%par%masterproc .AND. ithr==0) then
+       print *,"transfer function type in homme=",transfer_type
+       print *,"filter type            in homme=",filter_type
+       write(*,'(a,99f10.6)') "Tp(:) = ",Tp(:)
+    end if
+
+    if(Debug) print *,'homme: point #4'
+
+    if (hybrid%par%masterproc .AND. ithr == 0) then
+#if 0
+       print *,"Filter:"
+       do j=1,nv
+          do k=1,nv
+             print *,"F(",k,",",j,")=",flt%FmatV(k,j)
+          end do
+       end do
+
+       if (transfer_type=="bv") then
+          call bvsigma_test(p_bv)
+       end if
+#endif
+    end if
+
+    do ie=nets,nete
+       iptr=1
+       do j=1,np
+          do i=1,np
+             solver_wts(iptr,ie-nets+1) = elem(ie)%solver_wts(i,j)
+             iptr=iptr+1
+          end do
+       end do
+    end do
+
+    ! =================================
+    ! Slow start leapfrog...
+    ! =================================
+    ! mt 4/2007:  added better leapfrog bootstrap procedure (due to J. Tribbia)
+    ! original algorithm looses 2 digits in the Energy because of first 2 timesteps.
+    !
+    !   original algorithm                                        better version
+    !
+    !  nm = u(0)                                                  nm = u(0)
+    !  n0 = u(0)                                                  n0 = u(0)           
+    !  np = undefined                                             np = undefined
+    ! 
+    !  call advance (dt/2)    np = nm + 2*(dt/2)*n0               call advance(dt/4)   np = nm + 2*dt/4*n0
+    !
+    !  nm = u(0)                                                  nm=u(0)
+    !  n0 = u(0)                                                  n0=u(0)             
+    !  np = u(dt)                                                 np = u(dt/2)
+    !
+    !  call timelevel_update(forward)                             call timelevel_updatate(forward)
+    ! 
+    !  nm = u(0)                                                  nm=u(0)             
+    !  n0 = u(dt)                                                 n0=u(dt/2)          
+    !  np = undefined                                             np = undefiend
+    !
+    !  call advance (dt)                                          call advance (dt/2)
+    !
+    !  nm = u(0)                                                  nm=u(0)
+    !  n0 = u(dt)                                                 n0=u(dt/2)          
+    !  np = u(2dt)                                                np=u(dt)
+    !
+    !  call timelevel_updatate(leapfrog)                          call timelevel_updatate(forward)
+    !  
+    !  nm = u(dt)                                                 nm=u(0)
+    !  n0 = u(2dt)                                                n0=u(dt)            
+    !  np = undefined                                             np=undefined
+    !
+    !                                                             call advance (dt) 
+    !
+    !                                                             nm=u(0)
+    !                                                             n0=u(dt)            
+    !                                                             np=u(2dt)
+    !
+    !                                                             call timelevel_updatate(leapfrog)
+    !
+    !                                                             nm=u(dt)
+    !                                                             n0=u(2dt)           
+    !                                                             np=undefined
+    !
+
+    call TimeLevel_init(tl) !note: hard wired in tc1_init_state so if chg here then chg there too
+
+    if(Debug) print *,'homme: point #5'
+    ! =================================================================
+    ! Initialize geopotential and velocity for different test cases...
+    ! =================================================================
+
+    if (topology == "cube") then
+       if (runtype .eq. 1) then 
+          if (hybrid%par%masterproc.and.ithr==0) then
+             print *,'runtype: RESTART of Shallow Water equations'
+          end if
+          if (test_case(1:5) == "swtc1") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swtc1..."
+             !==================================================
+             ! Recover the initial state for diagnostic purposes
+             !==================================================
+             call tc1_init_state(elem,nets,nete,pmean)
+          else if (test_case(1:5) == "swtc2") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swtc2..."
+             !==================================================
+             ! Recover the initial state for diagnostic purposes
+             !==================================================
+             call tc2_init_state(elem,nets,nete,pmean)
+          else if (test_case(1:5) == "swtc5") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swtc5..."
+             !==================================================
+             ! Recover the initial state for diagnostic purposes
+             !==================================================
+             call tc5_init_state(elem, nets,nete,pmean,deriv)
+             call tc5_invariants(elem,90,tl,pmean,edge2,deriv,hybrid,nets,nete)
+             call tc5_errors(elem,7,tl,pmean,"ref_tc5_imp",simday,hybrid,nets,nete,par)
+          else if (test_case(1:5) == "swtc6") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swtc6..."
+             call tc6_init_state(elem,nets,nete,pmean)
+             simday=0
+             call tc6_errors(elem,7,tl,pmean,"ref_tc6_imp",simday,hybrid,nets,nete,par)
+          else if (test_case(1:5) == "swtc8") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swtc8..."
+             call tc8_init_state(elem,nets,nete,hybrid,pmean)
+          else if (test_case(1:6) == "vortex") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting vortex..."
+             call vortex_init_state(elem,nets,nete,pmean)
+          else if (test_case(1:5) == "swirl") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swirl..."
+             call swirl_init_state(elem,nets,nete,pmean)
+          else if (test_case(1:5) == "swsj1") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swsj1..."
+             call sj1_init_state(elem,nets,nete,hybrid,pmean,deriv)
+          end if
+          !============================
+          ! Read in the restarted state 
+          !============================
+          call ReadRestart(elem,ithr,nete,nets,tl)
+          if (integration == "semi_imp") then
+!          if ((integration == "semi_imp").or.(integration == "full_imp")) then
+             allocate(blkjac(nets:nete))
+             call cg_create(cg, npsq, nlev, nete-nets+1, hybrid, debug_level, solver_wts)
+          endif
+          !================================================
+          ! Print out the state variables 
+          !================================================
+          !DBG print *,'homme: right after ReadRestart pmean is: ',pmean
+
+          call printstate(elem,pmean,g_sw,tl%n0,hybrid,nets,nete,-1)
+
+          call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
+       else 
+          if (hybrid%par%masterproc.and.ithr==0) then
+             print *,'runtype: INITIAL of Shallow Water equations'
+          end if
+          dt = tstep/4
+          if (test_case(1:5) == "swtc1") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing swtc1..."
+             call tc1_init_state(elem,nets,nete,pmean)
+          else if (test_case(1:5) == "swtc2") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing swtc2..."
+             call tc2_init_state(elem,nets,nete,pmean)
+          else if (test_case(1:5) == "swtc5") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing swtc5..."
+             call tc5_init_state(elem,nets,nete,pmean,deriv)
+             call tc5_invariants(elem,90,tl,pmean,edge2,deriv,hybrid,nets,nete)
+             call tc5_errors(elem,7,tl,pmean,"ref_tc5_imp",simday,hybrid,nets,nete,par)
+             
+#ifdef _CSLAM
+             do ie=nets,nete
+               call cslam_init_tracer(cslam(ie),tl)
+             end do
+             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing CSLAM tracers for swtc5..."
+#endif
+             
+          else if (test_case(1:5) == "swtc6") then
+             if (hybrid%par%masterproc.and.ithr==0)  print *,"initializing swtc6..."
+             call tc6_init_state(elem,nets,nete,pmean)
+             simday=0
+             call tc6_errors(elem,7,tl,pmean,"ref_tc6_imp",simday,hybrid,nets,nete,par)
+          else if (test_case(1:5) == "swtc8") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing swtc8..."
+             call tc8_init_state(elem,nets,nete,hybrid,pmean)
+          else if (test_case(1:6) == "vortex") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing vortex..."
+             call vortex_init_state(elem,nets,nete,pmean)
+          else if (test_case(1:5) == "swirl") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing swirl..."
+             call swirl_init_state(elem,nets,nete,pmean)
+          else if (test_case(1:5) == "swsj1") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing swsj1..."
+             call sj1_init_state(elem,nets,nete,hybrid,pmean,deriv)
+          end if  ! test case init calls
+
+          ! ==============================================
+          ! Output initial picture of geopotential...
+          ! ============================================== 
+#ifdef PIO_INTERP
+	  call interp_movie_init(elem,hybrid,nets,nete,tl=tl)
+          call interp_movie_output(elem,tl, hybrid, pmean, deriv, nets, nete)
+#else
+#ifdef _CSLAM
+	        call shal_movie_init(elem,hybrid,cslam)
+          call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv,cslam)
+#else
+	        call shal_movie_init(elem,hybrid)
+          call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
+#endif
+#endif
+          call printstate(elem,pmean,g_sw,tl%n0,hybrid,nets,nete,-1)
+
+          call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
+
+          if(Debug) print *,'homme: point #6'
+
+! OG put it here. Otherwise, with tc1 and integration=explicit there are no
+! error files (not created)
+          if (test_case(1:5) == "swtc1") then
+             call tc1_errors(elem, 7, tl, pmean, hybrid, nets, nete)
+          endif
+! end of insert
+          ! ===========================================================
+          ! In the case of semi implicit integration (as solver or precon),
+          ! initialize solver
+          ! ===========================================================
+
+          if (integration == "semi_imp") then
+             allocate(blkjac(nets:nete))
+             call cg_create(cg, npsq, nlev, nete-nets+1, hybrid, debug_level, solver_wts)
+             if (precon_method == "block_jacobi") then
+                !JMD call blkjac_init(deriv,lambdasq,nets,nete,E(1,1,1,nets),blkjac)
+                call blkjac_init(elem,deriv,lambdasq,nets,nete,blkjac)
+             end if
+          else if (integration == "full_imp") then
+! only nonstagger is coded
+             allocate(blkjac(nets:nete))
+             lambdasq(:) = pmean*dt*dt
+             call cg_create(cg, npsq, nlev, nete-nets+1, hybrid, debug_level, solver_wts)
+!             if (precon_method == "block_jacobi") then
+!                call blkjac_init(elem,deriv,lambdasq,nets,nete,blkjac)
+!             end if
+          end if
+
+          if(Debug) print *,'homme: point #7'
+
+          ! =================================
+          ! Call advance
+          ! =================================
+
+          if (integration == "explicit") then
+             call advance_nonstag(elem, edge2, edge3,    deriv,  flt,  hybrid, &
+                  dt,    pmean,     tl,  nets,   nete)
+#ifdef _CSLAM
+       call Shal_Advec_Tracers_cslam(elem, cslam, deriv,hybrid,dt,tl,nets,nete)
+       if(test_cfldep) then
+         do k=1,nlev
+           maxcflx = parallelmax(cslam(:)%maxcfl(1,k),hybrid)
+           maxcfly = parallelmax(cslam(:)%maxcfl(2,k),hybrid) 
+           if(hybrid%masterthread) then 
+             write(*,*) "Time step:", tl%nstep, "LEVEL:", k
+             write(*,*) "CFL: maxcflx=", maxcflx, "maxcfly=", maxcfly 
+             print *
+           endif 
+         end do
+       endif
+#endif
+             call TimeLevel_update(tl,"forward")
+          else if (integration == "semi_imp") then
+             if(Debug) print *,'homme: before call to advance_si'
+             call advance_si_nonstag(elem, edge1, edge2,    edge3        ,   red          ,     &
+                  deriv,                         &
+                  flt,                                        &
+                  cg   ,    blkjac ,  lambdasq,  &
+                  dt   ,    pmean        ,   tl           ,             &
+                  nets ,    nete         )
+             if(Debug) print *,'homme: after call to advance_si'
+             call TimeLevel_update(tl,"forward")
+          endif
+          if(Debug) print *,'homme: point #8'
+
+          ! ============================================================
+          ! Shallow Water Test Case 1 outputs
+          ! L1,L2,Linf error norms every timestep
+          ! ============================================================
+
+          if (test_case(1:5) == "swtc1") then
+             call tc1_errors(elem, 7, tl, pmean, hybrid, nets, nete)
+          else if (test_case(1:5) == "swtc2") then
+             call tc2_errors(elem, 7, tl, pmean, hybrid, nets, nete)
+          end if
+          if(Debug) print *,'homme: point #9'
+
+          ! ===============================================================
+          ! Print Min/Max/Sum of State vars after first timestep
+          ! ===============================================================
+          if (integration /= "full_imp") then
+
+          call printstate(elem,pmean,g_sw,tl%n0,hybrid,nets,nete,-1)
+
+          endif  ! if time step taken
+          call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
+       endif  ! if initial run 
+    end if ! if topology == "cube"
+
+    ! reset timestep counter.  New more accurate leapfrog bootstrap routine takes
+    ! one extra timestep to get started.  dont count that timestep, otherwise
+    ! times will all be off by tstep. Also, full_imp is just starting.
+
+    tl%nstep=0 
+
+    ! =========================================
+    ! Set up for leapfrog time integration...
+    ! =========================================
+
+    dt = tstep/2
+
+    if (integration == "semi_imp") then
+       lambdasq(:) = pmean*dt*dt
+       if (precon_method == "block_jacobi") then
+          call blkjac_init(elem, deriv,lambdasq,nets,nete,blkjac)
+       end if
+    else if (integration == "full_imp") then
+       lambdasq(:) = pmean*dt*dt
+!       if (precon_method == "block_jacobi") then
+!          call blkjac_init(elem, deriv,lambdasq,nets,nete,blkjac)
+!       end if
+    end if
+
+    if (integration == "full_imp") then
+      if (hybrid%par%masterproc.and.ithr==0) print *,'initializing Trilinos solver info'
+
+#ifdef TRILINOS
+      lenx=nv*nv*nlev*nvar*(nete-nets+1)
+      allocate(xstate(lenx))
+      xstate(:) = 0
+       call initialize(state_object, lenx, elem, pmean, edge3, &
+        hybrid, deriv, dt, tl, nets, nete)
+       call init_precon(pre_object, lenx, elem, blkjac, edge1, edge2, edge3, &
+        red, deriv, cg, lambdasq, dt, pmean, tl, nets, nete)
+
+        fptr => state_object
+        c_ptr_to_object =  c_loc(fptr)
+        pptr => pre_object
+        c_ptr_to_pre =  c_loc(pptr)
+
+        call noxinit(size(xstate), xstate, 1, c_ptr_to_object, c_ptr_to_pre)
+#endif
+
+    end if
+    
+#if (! defined ELEMENT_OPENMP)
+    !$OMP BARRIER
+#endif
+    if (ithr==0) then
+       call syncmp(par)
+    end if
+#if (! defined ELEMENT_OPENMP)
+    !$OMP BARRIER
+#endif
+
+    ! ===================================
+    ! Main timestepping loop
+    ! ===================================
+    tot_iter=0.0       
+    do while(tl%nstep<nmax)
+
+       ! =================================
+       ! Call advance
+       ! =================================
+       point = 1
+#ifdef _HTRACE
+       call EVENT_POINT(point)
+#endif
+       if(Debug) print *,'homme: point #12'
+
+       if      (integration == "explicit") then
+          call advance_nonstag( elem,  edge2, edge3, deriv, flt, hybrid, &
+               dt   , pmean, tl   , nets, nete)
+#ifdef _CSLAM
+       call Shal_Advec_Tracers_cslam(elem, cslam, deriv,hybrid,dt,tl,nets,nete)
+        if(test_cfldep) then
+          do k=1,nlev
+            maxcflx = parallelmax(cslam(:)%maxcfl(1,k),hybrid)
+            maxcfly = parallelmax(cslam(:)%maxcfl(2,k),hybrid) 
+            if(hybrid%masterthread) then 
+              write(*,*) "Time step:", tl%nstep, "LEVEL:", k
+              write(*,*) "CFL: maxcflx=", maxcflx, "maxcfly=", maxcfly 
+              print *
+            endif 
+          end do
+        endif
+#endif 
+               
+               
+       else if (integration == "full_imp") then
+            dt=tstep
+#ifdef TRILINOS
+            call advance_imp_nonstag(elem, edge1, edge2, edge3, red, deriv,  &
+               cg, hybrid, blkjac, lambdasq, dt, pmean, tl, nets, nete, xstate)
+#else
+            print*, "Need to include -DTRILINOS at compile time to activate FI solver"
+            print*, "Check /utils/trilinos/README for more details"
+#endif
+       else if (integration == "semi_imp") then
+          call advance_si_nonstag(elem, edge1, edge2,    edge3        ,   red          ,             &
+               deriv,                                  &
+               flt         ,             &
+               cg   ,    blkjac,  lambdasq,  &
+               dt   ,    pmean        ,   tl           ,             &
+               nets ,    nete         )
+          tot_iter=tot_iter+cg%iter
+       end if
+       if(Debug) print *,'homme: point #13'
+!      if (hybrid%par%masterproc.and.ithr==0) print *,'post solve same ts'
+
+       point = 2
+#ifdef _HTRACE
+       call EVENT_POINT(point)
+#endif
+
+       ! =================================
+       ! update time level pointers
+       ! =================================
+        if (integration == "full_imp") then
+           call TimeLevel_update(tl,"forward") ! second order Crank Nicolson
+        else
+           if (tl%nstep==0) then
+              call TimeLevel_update(tl,"forward")
+              dt=dt*2    
+           else
+              call TimeLevel_update(tl,"leapfrog")
+           endif
+        end if 
+
+       ! ============================================================
+       ! Instrumentation alley:
+       !
+       ! Shallow Water Test Case output files
+       ! ============================================================
+#ifdef PIO_INTERP
+       call interp_movie_output(elem, tl, hybrid, pmean, deriv, nets, nete)
+#else     
+#ifdef _CSLAM
+          call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv,cslam)
+#else
+          call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
+#endif
+#endif
+       ! ==================================================
+       ! Shallow Water Test Cases:
+       ! ==================================================
+       if(Debug) print *,'homme: point #14'
+
+#if (! defined ELEMENT_OPENMP)
+       !$OMP BARRIER
+#endif
+       if (test_case(1:5) == "swtc1") then
+
+          ! ==================================================
+          ! Shallow Water Test Case 1:  cosine bell
+          ! L1,L2,Linf error norms every statefreq timestep
+          ! ==================================================
+
+          if (MODULO(tl%nstep,statefreq)==0) then
+             call tc1_errors(elem, 7, tl, pmean, hybrid, nets, nete)
+          end if
+
+       else if (test_case(1:5) == "swtc2") then
+          if(Debug) print *,'homme: point #15'
+
+          ! ==================================================
+          ! Shallow Water Test Case 2:  cosine bell
+          ! L1,L2,Linf error norms every statefreq timestep
+          ! ==================================================
+
+          if (MODULO(tl%nstep,statefreq)==0) then
+             call tc2_errors(elem, 7, tl, pmean, hybrid, nets, nete)
+          end if
+          if(Debug) print *,'homme: point #16'
+
+       else if (test_case(1:5) == "swtc5") then
+
+          ! ===============================================================
+          ! Shallow Water Test Case 5: Rossby Haurwitz Waves
+          ! L1,L2,Linf error norms every model day (compared to real soln)
+          ! 
+          ! detect day rollover
+          ! ===============================================================
+
+          if(Debug) print *,'homme: point #16.1'
+          if (MODULO(tl%nstep,statefreq)==0) then
+             call tc5_invariants(elem, 90, tl, pmean, edge2, deriv, hybrid, nets, nete)
+          end if
+          if(Debug) print *,'homme: point #16.2'
+
+          if (MODULO(Time_at(tl%nstep),secpday) <= 0.5*tstep) then
+!          if (MODULO(tl%nstep,statefreq)==0) then
+             simday=NINT(Time_at(tl%nstep)/secpday)
+             call tc5_errors(elem,7,tl,pmean,"ref_tc5_imp",simday,hybrid,nets,nete,par)
+          end if
+          if(Debug) print *,'homme: point #16.3'
+
+       else if (test_case(1:5) == "swtc6") then
+
+          ! ===============================================================
+          ! Shallow Water Test Case 6: Rossby Haurwitz Waves
+          ! L1,L2,Linf error norms every model day (compared to real soln)
+          ! 
+          ! detect day rollover
+          ! ===============================================================
+
+          if (MODULO(Time_at(tl%nstep),secpday) <= 0.5*tstep) then
+             simday=NINT(Time_at(tl%nstep)/secpday)
+             call tc6_errors(elem,7,tl,pmean,"ref_tc6_imp",simday,hybrid,nets,nete,par)
+          end if
+
+       else if (test_case(1:5) == "swtc8") then
+!!! RDL            call tc8_invariants(90, tl, pmean, edge2, deriv, hybrid, nets, nete)
+       else if (test_case(1:6) == "vortex") then
+
+          ! ===============================================================
+          ! Shallow Water Test Case 9: vortex
+          ! L1,L2,Linf error norms every model day (compared to real soln)
+          ! detect day rollover
+          ! ===============================================================
+
+          if (MODULO(tl%nstep,statefreq)==0) then
+             call vortex_errors(elem, 7, tl,  hybrid, nets, nete)
+          end if
+       else if (test_case(1:5) == "swirl") then
+
+          if (MODULO(tl%nstep,statefreq)==0) then
+             call swirl_errors(elem, 7, tl,  hybrid, nets, nete)
+          end if
+
+       end if
+
+#if (! defined ELEMENT_OPENMP)
+       !$OMP BARRIER
+#endif
+       if(Debug) print *,'homme: point #17'
+       if (MODULO(tl%nstep,statefreq)==0 ) then 
+!          if(hybrid%par%masterproc .AND. ithr == 0) then
+          if(par%masterproc) then
+             print *,tl%nstep,"time=",Time_at(tl%nstep)/secpday," days"
+          end if
+
+          call printstate(elem,pmean,g_sw,tl%n0,hybrid,nets,nete,-1)
+
+          call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
+       end if
+
+       if (MODULO(tl%nstep,statefreq)==0 ) then
+          if(hybrid%par%masterproc .AND. ithr == 0) then
+             if (integration == "semi_imp") print *, "cg its=",cg%iter
+          endif
+       endif
+
+#if (! defined ELEMENT_OPENMP)
+       !$OMP BARRIER
+#endif
+
+       ! ============================================================
+       ! Write restart files if required
+       ! ============================================================
+
+       if((restartfreq > 0) .and. (MODULO(tl%nstep,restartfreq) ==0)) then
+          call WriteRestart(elem, ithr,nets,nete,tl)
+          if (par%masterproc) print *, "after restart"
+       endif
+
+    end do
+
+     if (integration == "full_imp") then ! closeout trilinos assignments
+#ifdef TRILINOS
+       call noxfinish()
+       deallocate(xstate)
+#endif
+     end if
+
+    ! ======================================================
+    ! compute and report times...
+    ! ======================================================
+
+    ! ==========================
+    ! end of the hybrid program
+    ! ==========================
+#ifdef PIO_INTERP
+    call interp_movie_finish
+#else
+    call shal_movie_finish
+#endif
+    call t_stopf('sweq')
+  end subroutine sweq
+
+  subroutine sweq_rk(elem, edge1,edge2,edge3,red,par,ithr,nets,nete)
+    !-----------------
+    use kinds, only : real_kind
+    !-----------------
+    use physical_constants, only : dd_pi, g_sw
+    !-----------------
+    use parallel_mod, only : parallel_t, syncmp
+    !-----------------
+    use thread_mod, only : nthreads
+    !-----------------
+    use hybrid_mod, only : hybrid_t, hybrid_create
+    !-----------------
+    use time_mod, only : timelevel_t , ndays, tstep, secpday, time_at, nmax, timelevel_update, timelevel_init
+    !-----------------
+    use derivative_mod, only : derivative_t, derivinit, deriv_print
+    !-----------------
+    use dimensions_mod, only :  np, nlev, npsq
+    !-----------------
+    use shallow_water_mod, only : tc1_init_state, tc2_init_state, tc5_init_state, &
+         tc6_init_state, tc5_invariants, tc8_init_state, vortex_init_state, &
+         vortex_errors, sj1_init_state, tc6_errors, tc1_errors, tc2_errors, &
+         tc5_errors, sweq_invariants, swirl_init_state, swirl_errors,&
+         kmass_swirl
+    !-----------------
+#ifdef PIO_INTERP
+    use interp_movie_mod, only : interp_movie_init, interp_movie_output, interp_movie_finish
+
+#else
+    use shal_movie_mod, only : shal_movie_init, shal_movie_output, shal_movie_finish
+    
+
+
+#endif
+    !-----------------
+    use global_norms_mod, only : test_global_integral, print_cfl
+    !-----------------
+    use quadrature_mod, only : quadrature_t, gausslobatto
+    !-----------------
+    use edge_mod, only : EdgeBuffer_t
+    ! ----------------
+    use reduction_mod, only : ReductionBuffer_ordered_1d_t
+    !-----------------
+    use element_mod, only : element_t
+    !-----------------
+    use state_mod, only : printstate
+    !-----------------
+    use filter_mod, only : filter_t, taylor_filter_create, fm_filter_create, fm_transfer, bv_transfer
+    !-----------------
+    use restart_io_mod, only : readrestart, writerestart
+    !-----------------
+    use advance_mod, only : advance_nonstag_rk
+    !-----------------
+    use control_mod, only : integration, filter_mu, filter_type, transfer_type, debug_level,  &
+         restartfreq, statefreq, runtype, s_bv, p_bv, wght_fm, kcut_fm, topology, &
+         rk_stage_user, test_case, sub_case, kmass, qsplit, nu, nu_s, limiter_option, &
+         hypervis_subcycle
+    use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
+
+    use rk_mod, only     : RkInit
+    use types_mod, only : rk_t
+    
+    implicit none
+
+    integer, parameter :: facs = 4            ! starting face number to print
+    integer, parameter :: face = 4            ! ending  face number to print
+    type (element_t), intent(inout) :: elem(:)
+    type (EdgeBuffer_t), intent(in)             :: edge1 ! edge buffer entity             (shared)
+    type (EdgeBuffer_t), intent(in)             :: edge2 ! edge buffer entity             (shared)
+    type (EdgeBuffer_t), intent(inout)             :: edge3 ! edge buffer entity             (shared)
+    type (ReductionBuffer_ordered_1d_t),intent(in)    :: red   ! reduction buffer               (shared)
+    type (parallel_t), intent(in)               :: par   ! distributed parallel structure (shared)
+    integer, intent(in)                         :: ithr  ! thread number                  (private)
+    integer, intent(in)                         :: nets  ! starting thread element number (private)
+    integer, intent(in)                         :: nete  ! ending thread element number   (private)
+
+    ! ==================================
+    ! Local thread (private) memory
+    ! ==================================
+
+    real (kind=real_kind)       :: dt,dt_rk        ! "timestep dependent" timestep
+!   variables used to calculate CFL
+    real (kind=real_kind) :: dtnu            ! timestep*viscosity parameter
+    real (kind=real_kind) :: dt_dyn          ! dynamics timestep
+    real (kind=real_kind) :: dt_tracers      ! tracer timestep
+
+    real (kind=real_kind)       :: pmean           ! mean geopotential
+    type (derivative_t)         :: deriv           ! derivative struct
+    type (TimeLevel_t)          :: tl              ! time level struct
+    type (hybrid_t)             :: hybrid
+    type (quadrature_t)         :: gll,gs          ! gauss-lobatto and gauss wts and pts
+
+
+    real (kind=real_kind) :: Tp(np)          ! transfer function
+    type (filter_t)       :: flt           ! Filter structure for both v and p grid
+    type (quadrature_t)   :: gp           ! quadratures on velocity and pressure grids
+    
+    real (kind=real_kind) :: mindx,dt_gv
+
+    integer  :: simday
+
+    integer :: point
+    integer :: i,j,iptr
+    integer :: it,ie,k
+    integer :: ntmp
+    integer :: nm1,n0,np1
+    integer :: nstep
+    integer :: cfl
+
+    type (rk_t) :: RungeKutta
+
+    real*8  :: tot_iter
+    logical, parameter :: Debug = .FALSE.
+
+
+    if(Debug) print *,'e: point #1'
+    ! ==========================
+    ! begin executable code
+    ! ==========================
+    call t_startf('sweq')
+
+    call define_g
+    call define_kmass
+
+    hybrid = hybrid_create(par,ithr,NThreads)
+
+    if (topology == "cube") then
+       call test_global_integral(elem,hybrid,nets,nete,mindx)
+       dtnu = (tstep/rk_stage_user)*max(nu,nu_s)/hypervis_subcycle
+       call print_cfl(elem,hybrid,nets,nete,dtnu,tstep,tstep)
+    end if
+
+    ! Find time-step to gravity wave speed
+    dt_gv = (mindx/dd_pi)/300.0D0    
+    dt = tstep ! this is the "user" time-step
+    if (hybrid%par%masterproc .AND. ithr==0) then
+       print *,"dt grv = ", dt_gv
+       print *,"dt user= ", dt
+    endif
+  
+    if(Debug) print *,'homme: point #2'
+    ! ==================================
+    ! Initialize derivative structure
+    ! ==================================
+
+    call derivinit(deriv)
+
+    if (hybrid%par%masterproc .AND. ithr == 0) then
+       !call deriv_print(deriv)
+    end if
+
+    ! ========================================
+    ! Initialize velocity and pressure grid
+    ! quadrature points...
+    ! ========================================
+
+    gp=gausslobatto(np)
+
+    if(Debug) print *,'homme: point #3'
+    ! ==========================================
+    ! Initialize pressure and velocity grid 
+    ! filter matrix...
+    ! ==========================================
+
+    if (transfer_type == "bv") then
+       Tp    = bv_transfer(p_bv,s_bv,np)
+    else if (transfer_type == "fm") then
+       Tp    = fm_transfer(kcut_fm,wght_fm,np)
+    end if
+
+    if (filter_type == "taylor") then
+       flt = taylor_filter_create(Tp, filter_mu, gp)
+    else if (filter_type == "fischer") then
+       flt = fm_filter_create(Tp, filter_mu, gp)
+    end if
+    if (hybrid%par%masterproc .AND. ithr==0) then
+       print *,"transfer function type in homme=",transfer_type
+       print *,"filter type            in homme=",filter_type
+       write(*,'(a,99f10.6)') "I-mu + mu*Tp(:) = ",(1-filter_mu)+filter_mu*Tp(:)
+    end if
+
+    if(Debug) print *,'homme: point #4'
+
+    if (hybrid%par%masterproc .AND. ithr == 0) then
+
+    end if
+
+    call TimeLevel_init(tl)
+
+    ! =================================================================
+    ! Initialize geopotential and velocity for different test cases...
+    ! =================================================================
+
+    if (topology == "cube") then
+       if (runtype .eq. 1) then 
+          if (hybrid%par%masterproc.and.ithr==0) then
+             print *,'runtype: RESTART of Shallow Water equations'
+          end if
+          if (test_case(1:5) == "swtc1") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swtc1..."
+             !==================================================
+             ! Recover the initial state for diagnostic purposes
+             !==================================================
+             call tc1_init_state(elem,nets,nete,pmean)
+          else if (test_case(1:5) == "swtc2") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swtc2..."
+             !==================================================
+             ! Recover the initial state for diagnostic purposes
+             !==================================================
+             call tc2_init_state(elem,nets,nete,pmean)
+          else if (test_case(1:5) == "swtc5") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swtc5..."
+             !==================================================
+             ! Recover the initial state for diagnostic purposes
+             !==================================================
+             call tc5_init_state(elem, nets,nete,pmean,deriv)
+             call tc5_invariants(elem,90,tl,pmean,edge2,deriv,hybrid,nets,nete)
+             call tc5_errors(elem,7, tl, pmean, "ref_tc5_imp", simday, hybrid, nets, nete,par)
+          else if (test_case(1:5) == "swtc6") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swtc6..."
+             call tc6_init_state(elem,nets,nete,pmean)
+             simday=0
+             call tc6_errors(elem,7, tl, pmean, "ref_tc6_imp", simday, hybrid, nets, nete,par)
+          else if (test_case(1:5) == "swtc8") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swtc8..."
+             call tc8_init_state(elem,nets,nete,hybrid,pmean)
+          else if (test_case(1:6) == "vortex") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting vortex..."
+             !==================================================
+             ! Recover the initial state for diagnostic purposes
+             !==================================================
+             call vortex_init_state(elem,nets,nete,pmean)
+          else if (test_case(1:5) == "swirl") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swirl..."
+             !==================================================
+             ! Recover the initial state for diagnostic purposes
+             !==================================================
+             call swirl_init_state(elem,nets,nete,pmean)
+          else if (test_case(1:5) == "swsj1") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swsj1..."
+             call sj1_init_state(elem,nets,nete,hybrid,pmean,deriv)
+          end if
+          !============================
+          ! Read in the restarted state 
+          !============================
+          call ReadRestart(elem,ithr,nete,nets,tl)
+          !================================================
+          ! Print out the state variables 
+          !================================================
+          !DBG print *,'homme: right after ReadRestart pmean is: ',pmean
+
+          call printstate(elem,pmean,g_sw,tl%n0,hybrid,nets,nete,kmass)
+
+          call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
+       else 
+          if (hybrid%par%masterproc.and.ithr==0) then
+             print *,'runtype: INITIAL of Shallow Water equations'
+          end if
+          
+          if (test_case(1:5) == "swtc1") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing swtc1..."
+             call tc1_init_state(elem,nets,nete,pmean)
+          else if (test_case(1:5) == "swtc2") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing swtc2..."
+             call tc2_init_state(elem,nets,nete,pmean)
+          else if (test_case(1:5) == "swtc5") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing swtc5..."
+             call tc5_init_state(elem,nets,nete,pmean,deriv)
+             call tc5_invariants(elem,90,tl,pmean,edge2,deriv,hybrid,nets,nete)
+             call tc5_errors(elem,7, tl, pmean, "ref_tc5_imp", simday, hybrid, nets, nete,par)
+          else if (test_case(1:5) == "swtc6") then
+             if (hybrid%par%masterproc.and.ithr==0)  print *,"initializing swtc6..."
+             call tc6_init_state(elem,nets,nete,pmean)
+             simday=0
+             call tc6_errors(elem,7, tl, pmean, "ref_tc6_imp", simday, hybrid, nets, nete,par)
+          else if (test_case(1:5) == "swtc8") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing swtc8..."
+             call tc8_init_state(elem,nets,nete,hybrid,pmean)
+          else if (test_case(1:6) == "vortex") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing vortex..."
+             call vortex_init_state(elem,nets,nete,pmean)
+          else if (test_case(1:5) == "swirl") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing swirl..."
+             call swirl_init_state(elem,nets,nete,pmean,hybrid,edge3)
+          else if (test_case(1:5) == "swsj1") then
+             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing swsj1..."
+             call sj1_init_state(elem,nets,nete,hybrid,pmean,deriv)
+          end if
+
+          ! ==============================================
+          ! Output initial picture of geopotential...
+          ! ============================================== 
+#ifdef PIO_INTERP
+	  call interp_movie_init(elem,hybrid,nets,nete,tl=tl)
+          call interp_movie_output(elem,tl, hybrid, pmean, deriv, nets, nete)
+#else
+	  call shal_movie_init(elem,hybrid)
+          call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
+#endif
+
+          call printstate(elem,pmean,g_sw,tl%n0,hybrid,nets,nete,kmass)
+
+          call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
+          if(Debug) print *,'homme: point #6'
+
+          ! ============================================================
+          ! Shallow Water Test Case outputs
+          ! L1,L2,Linf error norms every timestep
+          ! ============================================================
+
+          if (test_case(1:5) == "swtc1") then
+             call tc1_errors(elem, 7, tl, pmean, hybrid, nets, nete)
+          else if (test_case(1:5) == "swtc2") then
+             call tc2_errors(elem, 7, tl, pmean, hybrid, nets, nete)
+          else if (test_case(1:6) == "vortex") then
+             call vortex_errors(elem, 7, tl, hybrid, nets, nete)
+          else if (test_case(1:5) == "swirl") then
+             call swirl_errors(elem, 7, tl, hybrid, nets, nete)
+          end if
+          if(Debug) print *,'homme: point #9'
+
+          ! ===============================================================
+          ! Print Min/Max/Sum of State vars after first timestep
+          ! ===============================================================
+
+          call printstate(elem,pmean,g_sw,tl%n0,hybrid,nets,nete,kmass)
+
+          call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
+       endif  ! if initial run 
+    end if ! if topology == "cube"
+
+    ! reset timestep counter.  New more accurate leapfrog bootstrap routine takes
+    ! one extra timestep to get started.  dont count that timestep, otherwise
+    ! times will all be off by tstep. 
+    tl%nstep=0 
+
+
+    if(Debug) print *,'homme: point #11'
+
+#if (! defined ELEMENT_OPENMP)
+    !$OMP BARRIER
+#endif
+    if (ithr==0) then
+       call syncmp(par)
+    end if
+#if (! defined ELEMENT_OPENMP)
+    !$OMP BARRIER
+#endif
+
+    ! ===================================
+    ! Main timestepping loop
+    ! ===================================
+    
+    do while(tl%nstep<nmax)  
+
+       ! =================================
+       ! Call advance
+       ! =================================
+       point = 1
+
+#ifdef _HTRACE
+       call EVENT_POINT(point)
+#endif
+
+       if (rk_stage_user > 0) then
+          ! user specified number of stages.  has to be >= 2
+          cfl = max(2,rk_stage_user)
+          cfl = cfl - 1  
+       else
+          cfl = ceiling(dt/dt_gv + 1.0D0)
+       endif
+       dt_rk = dt
+
+       call RkInit(cfl,RungeKutta)  ! number of stages: cfl+1
+
+       call advance_nonstag_rk(RungeKutta, elem,  edge2, edge3, deriv, flt, hybrid, &
+            dt_rk   , pmean, tl   , nets, nete)
+       
+       call TimeLevel_update(tl,"leapfrog")       
+       point = 2
+#ifdef _HTRACE
+       call EVENT_POINT(point)
+#endif
+
+       ! ============================================================
+       ! Instrumentation alley:
+       !
+       ! Shallow Water Test Case output files
+       ! ============================================================
+#ifdef PIO_INTERP
+       call interp_movie_output(elem, tl, hybrid, pmean, deriv, nets, nete)
+#else       
+          call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
+#endif
+       ! ==================================================
+       ! Shallow Water Test Cases:
+       ! ==================================================
+       if(Debug) print *,'homme: point #14'
+
+#if (! defined ELEMENT_OPENMP)
+       !$OMP BARRIER
+#endif
+       if (test_case(1:5) == "swtc1") then
+
+          ! ==================================================
+          ! Shallow Water Test Case 1:  cosine bell
+          ! L1,L2,Linf error norms every statefreq timestep
+          ! ==================================================
+
+          if (MODULO(tl%nstep,statefreq)==0) then
+             call tc1_errors(elem, 7, tl, pmean, hybrid, nets, nete)
+          end if
+
+       else if (test_case(1:5) == "swtc2") then
+          if(Debug) print *,'homme: point #15'
+
+          ! ==================================================
+          ! Shallow Water Test Case 2:  cosine bell
+          ! L1,L2,Linf error norms every statefreq timestep
+          ! ==================================================
+
+          if (MODULO(tl%nstep,statefreq)==0) then
+             call tc2_errors(elem, 7, tl, pmean, hybrid, nets, nete)
+          end if
+          if(Debug) print *,'homme: point #16'
+
+       else if (test_case(1:5) == "swtc5") then
+
+          ! ===============================================================
+          ! Shallow Water Test Case 5: Rossby Haurwitz Waves
+          ! L1,L2,Linf error norms every model day (compared to real soln)
+          ! 
+          ! detect day rollover
+          ! ===============================================================
+
+          if(Debug) print *,'homme: point #16.1'
+          if (MODULO(tl%nstep,statefreq)==0) then
+             call tc5_invariants(elem, 90, tl, pmean, edge2, deriv, hybrid, nets, nete)
+          end if
+          if(Debug) print *,'homme: point #16.2'
+
+          if (MODULO(Time_at(tl%nstep),secpday) <= 0.5*tstep) then
+             simday=NINT(Time_at(tl%nstep)/secpday)
+             call tc5_errors(elem, 7,tl, pmean, "ref_tc5_imp", simday, hybrid, nets, nete,par)
+          end if
+          if(Debug) print *,'homme: point #16.3'
+
+       else if (test_case(1:5) == "swtc6") then
+
+          ! ===============================================================
+          ! Shallow Water Test Case 6: Rossby Haurwitz Waves
+          ! L1,L2,Linf error norms every model day (compared to real soln)
+          ! 
+          ! detect day rollover
+          ! ===============================================================
+
+          if (MODULO(Time_at(tl%nstep),secpday) <= 0.5*tstep) then
+             simday=NINT(Time_at(tl%nstep)/secpday)
+             call tc6_errors(elem, 7,tl, pmean, "ref_tc6_imp", simday, hybrid, nets, nete,par)
+          end if
+
+       else if (test_case(1:5) == "swtc8") then
+          ! Nothing !
+       else if (test_case(1:6) == "vortex") then
+
+          ! ==================================================
+          ! Shallow Water Test Case 9:  vortex
+          ! L1,L2,Linf error norms every statefreq timestep
+          ! ==================================================
+
+          if (MODULO(tl%nstep,statefreq)==0) then
+             call vortex_errors(elem, 7, tl, hybrid, nets, nete)
+          end if
+          if(Debug) print *,'homme: point #16'
+
+       else if (test_case(1:5) == "swirl") then
+
+          ! ==================================================
+          ! Shallow Water Test Case:  swirl
+          ! L1,L2,Linf error norms every statefreq timestep
+          ! ==================================================
+          if (MODULO(tl%nstep,statefreq)==0) then
+             call swirl_errors(elem, 7, tl, hybrid, nets, nete)
+          end if
+          if(Debug) print *,'homme: point #16'
+
+       end if
+
+#if (! defined ELEMENT_OPENMP)
+       !$OMP BARRIER
+#endif
+       if(Debug) print *,'homme: point #17'
+       if (MODULO(tl%nstep,statefreq)==0 ) then 
+          if(hybrid%par%masterproc .AND. ithr == 0) then
+             print *,tl%nstep,"time=",Time_at(tl%nstep)/secpday," days"
+             print *,"Integrating at ",dt/dt_gv," times gravity wave restriction"
+          end if
+
+          call printstate(elem,pmean,g_sw,tl%n0,hybrid,nets,nete,kmass)
+
+          call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
+       end if
+#if (! defined ELEMENT_OPENMP)
+       !$OMP BARRIER
+#endif
+
+       ! ============================================================
+       ! Write restart files if required
+       ! ============================================================
+
+       if((restartfreq > 0) .and. (MODULO(tl%nstep,restartfreq) ==0)) then
+          call WriteRestart(elem, ithr,nets,nete,tl)
+       endif
+
+    end do
+
+    ! ======================================================
+    ! compute and report times...
+    ! ======================================================
+
+
+    ! ==========================
+    ! end of the hybrid program
+    ! ==========================
+#ifdef PIO_INTERP
+    call interp_movie_finish
+#else
+    call shal_movie_finish
+#endif
+    call t_stopf('sweq')
+  end subroutine sweq_rk
+
+
+!this one defines if we'll have a density field
+!such a field is needed for efficient limiting and output if tracer_adv_formulation is on
+!if flux formulation, we do not use such a field
+!so kmass >0 means we are goint to use density field
+!if kmass=-1 then by some reason it is not in use
+
+  subroutine define_kmass
+    use kinds, only : real_kind
+    use control_mod, only : test_case, kmass,TRACERADV_UGRADQ,tracer_advection_formulation
+    use shallow_water_mod, only : kmass_swirl
+    use dimensions_mod, only : nlev
+
+    implicit none
+   
+    
+    if(tracer_advection_formulation==TRACERADV_UGRADQ)then
+      kmass=-1
+    else
+      if(test_case(1:5) == "swirl") then
+	if((kmass_swirl<0).or.(kmass_swirl>nlev))then
+!well, someone gave us wrong kmass
+	  kmass=-1
+        else
+	  kmass=kmass_swirl
+	endif
+!other test cases with valid kmass live here
+      else
+!if testcase doesnt have kmass
+	kmass=-1
+      endif
+    endif
+
+  end subroutine define_kmass
+
+
+!this one defines gravity const, in swirl it has to be 1
+!in other test cases its different
+  subroutine define_g
+    use kinds, only : real_kind
+    use physical_constants, only : g, g_sw
+    use control_mod, only : test_case
+    implicit none
+
+      if(test_case(1:5) == "swirl") then
+	g_sw=1.0d0
+      else
+	g_sw=g
+      endif
+
+  end subroutine define_g
+  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ! CSLAM driver
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    subroutine Shal_Advec_Tracers_cslam(elem, cslam, deriv,hybrid,&
+                                        dt,tl,nets,nete)
+      use element_mod, only : element_t
+      use cslam_control_volume_mod, only : cslam_struct
+      use derivative_mod, only : derivative_t
+      use kinds, only : real_kind
+      use hybrid_mod, only : hybrid_t
+      use time_mod, only : timelevel_t
+      use perf_mod, only : t_startf, t_stopf, t_barrierf            ! _EXTERNAL
+      use derivative_mod, only : divergence_sphere, ugradv_sphere
+      use cslam_mod, only : cslam_run, cslam_runair, edgeveloc, cslam_mcgregor
+      
+      use bndry_mod, only : bndry_exchangev
+      use edge_mod, only  : edgevpack, edgevunpack
+      use dimensions_mod, only : np, nlev
+      
+      implicit none
+      type (element_t), intent(inout)               :: elem(:)
+      type (cslam_struct), intent(inout)            :: cslam(:)
+      type (derivative_t), intent(in)               :: deriv
+      type (hybrid_t),     intent(in)               :: hybrid
+      type (TimeLevel_t), intent(in)                :: tl
+
+      real(kind=real_kind) , intent(in)             :: dt
+      integer,intent(in)                            :: nets,nete
+
+      integer :: ie,k
+
+      real (kind=real_kind), dimension(np, np,2) :: ulatlon
+      real (kind=real_kind), dimension(np, np) :: v1, v2
+
+
+      call t_barrierf('sync_shal_advec_tracers_cslam', hybrid%par%comm)
+      call t_startf('shal_advec_tracers_cslam')
+
+      ! using McGregor AMS 1993 scheme: Economical Determination of Departure Points for
+      ! Semi-Lagrangian Models 
+      do ie=nets,nete
+        do k=1,nlev
+           ! Convert wind to lat-lon
+          v1     = (elem(ie)%state%v(:,:,1,k,tl%n0) + elem(ie)%state%v(:,:,1,k,tl%np1))/2.0D0  ! contra
+          v2     = (elem(ie)%state%v(:,:,2,k,tl%n0) + elem(ie)%state%v(:,:,2,k,tl%np1))/2.0D0   ! contra 
+          ulatlon(:,:,1)=elem(ie)%D(1,1,:,:)*v1 + elem(ie)%D(1,2,:,:)*v2   ! contra->latlon
+          ulatlon(:,:,2)=elem(ie)%D(2,1,:,:)*v1 + elem(ie)%D(2,2,:,:)*v2   ! contra->latlon
+          
+          ! calculate high order approximation
+          call cslam_mcgregor(elem(ie), deriv, dt, ulatlon, 1)
+          ! apply DSS to make vstar C0
+          elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%spheremp(:,:)*ulatlon(:,:,1) 
+          elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%spheremp(:,:)*ulatlon(:,:,2) 
+        enddo 
+        call edgeVpack(edgeveloc,elem(ie)%derived%vstar(:,:,1,:),nlev,0,elem(ie)%desc)
+        call edgeVpack(edgeveloc,elem(ie)%derived%vstar(:,:,2,:),nlev,nlev,elem(ie)%desc)
+      enddo 
+      call bndry_exchangeV(hybrid,edgeveloc)
+      do ie=nets,nete
+         call edgeVunpack(edgeveloc,elem(ie)%derived%vstar(:,:,1,:),nlev,0,elem(ie)%desc)
+         call edgeVunpack(edgeveloc,elem(ie)%derived%vstar(:,:,2,:),nlev,nlev,elem(ie)%desc)
+         do k=1, nlev  
+           elem(ie)%derived%vstar(:,:,1,k)=elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%rspheremp(:,:)
+           elem(ie)%derived%vstar(:,:,2,k)=elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%rspheremp(:,:)
+         end do
+      end do
+
+      ! CSLAM departure calcluation should use vstar.
+      ! from c(n0) compute c(np1): 
+      call cslam_run(elem,cslam,hybrid,deriv,dt,tl,nets,nete)
+      
+      call cslam_runair(elem,cslam,hybrid,deriv,dt,tl,nets,nete)
+
+      call t_stopf('shal_advec_tracers_cslam')
+    end subroutine shal_advec_tracers_cslam  
+
+end module sweq_mod
+
+
