@@ -155,36 +155,6 @@ contains
     ! also compute the [-pi/2,pi/2] cubed sphere coordinates:
     elem%cartp=element_var_coordinates(elem%corners,gll_points)
 
-#if 0
-REMOVED: physics grid only exists in CAM's dp coupling layer
-    ! =========================================
-    ! initialize the physics grid
-    ! =========================================
-    phys_corners(1)=-1
-    phys_corners(nphys+1)=1
-    do i=2,nphys
-       phys_corners(i)=(phys_points(i-1)+phys_points(i))/2
-    enddo
-    do i=1,nphys+1
-    do j=1,nphys+1
-       elem%sphere_phys_corners(i,j)=ref2sphere(phys_corners(i),phys_corners(j),elem%corners,face_no)
-    enddo
-    enddo
-
-    do i=1,nphys
-    do j=1,nphys
-       elem%sphere_phys(i,j)=ref2sphere(phys_points(i),phys_points(j),elem%corners,face_no)
-
-       quad(1) = spherical_to_cart(elem%sphere_phys_corners(i,j))
-       quad(2) = spherical_to_cart(elem%sphere_phys_corners(i+1,j))
-       quad(3) = spherical_to_cart(elem%sphere_phys_corners(i+1,j+1))
-       quad(4) = spherical_to_cart(elem%sphere_phys_corners(i,j+1))
-       call sphere_tri_area(quad(1),quad(2),quad(3),area1)
-       call sphere_tri_area(quad(1),quad(3),quad(4),area2)
-       elem%area_phys(i,j)=area1+area2
-    enddo
-    enddo
-#endif
 
   end subroutine coordinates_atomic
 
@@ -217,23 +187,6 @@ REMOVED: physics grid only exists in CAM's dp coupling layer
     unif2quadmap(3,2)=(-coords(1,1)%y-coords(nx,1)%y+coords(nx,nx)%y+coords(1,nx)%y)/4.0d0
     unif2quadmap(4,1)=(coords(1,1)%x-coords(nx,1)%x+coords(nx,nx)%x-coords(1,nx)%x)/4.0d0
     unif2quadmap(4,2)=(coords(1,1)%y-coords(nx,1)%y+coords(nx,nx)%y-coords(1,nx)%y)/4.0d0
-#if 0
-    do ii=1,nx
-        do jj=1,nx
-            J(1,1,ii,jj) = unif2quadmap(2,1)+unif2quadmap(4,1)*gauss%points(jj)
-            J(1,2,ii,jj) = unif2quadmap(3,1)+unif2quadmap(4,1)*gauss%points(ii)
-            J(2,1,ii,jj) = unif2quadmap(2,2)+unif2quadmap(4,2)*gauss%points(jj)
-            J(2,2,ii,jj) = unif2quadmap(3,2)+unif2quadmap(4,2)*gauss%points(ii)
-
-            Jdet(ii,jj) = J(1,1,ii,jj)*J(2,2,ii,jj)-J(1,2,ii,jj)*J(2,1,ii,jj)
-
-            Jinv(1,1,ii,jj) =  J(2,2,ii,jj)/Jdet(ii,jj)
-            Jinv(1,2,ii,jj) = -J(1,2,ii,jj)/Jdet(ii,jj)
-            Jinv(2,1,ii,jj) = -J(2,1,ii,jj)/Jdet(ii,jj)
-            Jinv(2,2,ii,jj) =  J(1,1,ii,jj)/Jdet(ii,jj)
-        end do
-    end do
-#endif
 
   end subroutine elem_jacobians
 
@@ -244,12 +197,16 @@ REMOVED: physics grid only exists in CAM's dp coupling layer
   ! equal angular elements (atomic)
   ! initialize:  
   !         metdet, rmetdet  (analytic)    = detD, 1/detD
-  !         met                (analytic)    D'D or DD' ?                   
+  !         met                (analytic)    D^t D     (symmetric)
   !         metdet             (analytic)    = detD
-  !         metinv             (analytic)    Dinv'Dinv  or Dinv Dinv' ?     
+  !         metinv             (analytic)    Dinv Dinv^t  (symmetic)
   !         D     (from subroutine vmap)
   !         Dinv  (computed directly from D)
   ! 
+  ! ucontra = Dinv * u  =  metinv * ucov   
+  ! ucov    = D^t * u   =  met * ucontra
+  !
+  !
   ! so if we want to tweak the mapping by a factor alpha (so he weights add up to 4pi, for example)
   ! we take:
   !    NEW       OLD     

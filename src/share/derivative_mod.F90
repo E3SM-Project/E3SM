@@ -79,6 +79,7 @@ private
 ! the gnomonic coordinate operators above.  Vectors (input or output)
 ! are always expressed in lat-lon coordinates
   public  :: gradient_sphere
+  public  :: gradient_sphere_wk
   public  :: ugradv_sphere
   public  :: vorticity_sphere
   public  :: divergence_sphere
@@ -1581,6 +1582,75 @@ endif
     enddo
 
     end function gradient_sphere
+
+
+
+
+  function gradient_sphere_wk(s,deriv,elem) result(ds)
+!
+!   input s:  scalar
+!   output  ds: weak gradient, lat/lon coordinates
+!
+!   strong form is integral[ phivec metdet grad(s) ]
+!      where phivec is a covarient test function and we 
+!      convert grad from covariant to contravariant
+!
+!   weak form:  integral[  div( metdet phivec) s ] 
+!   where div(metdet*phivec) = is divergence_sphere() acting on
+!   the GLL values of metdet*phivec.
+!
+!   some algebra shows that in contra coordinates, 
+!     u = (metinv(1,1),metenv(2,1))s
+!     v = (metinv(1,2),metenv(2,2))s
+!
+!   ds_contra(1) = divergence_sphere_wk( u )
+!   ds_contra(2) = divergence_sphere_wk( v )
+!
+
+    type (derivative_t)              :: deriv
+    real(kind=real_kind), intent(in), dimension(2,2,np,np) :: Dinv
+    real(kind=real_kind), intent(in) :: s(np,np)
+
+    real(kind=real_kind) :: ds(np,np,2)
+
+    integer i,j,l
+
+    real(kind=real_kind) ::  dsdx00
+    real(kind=real_kind) ::  dsdy00
+    real(kind=real_kind) ::  vcontra(np,np,2)
+    real(kind=real_kind) ::  v(np,np,2)
+    real(kind=real_kind) ::  dscontra(np,np,2)
+
+    ! metinv = Dinv Dinv^t     metinv*ucov = ucontra
+    ! create two contra vectors:
+    !    vcontra1(:,:,1) = metinv(1,1,:,:)*s
+    !    vcontra1(;,:,2) = metinv(2,1,:,:)*s
+    !
+    !    vcontra1(:,:,1) = metinv(1,2,:,:)*s
+    !    vcontra1(;,:,2) = metinv(2,2,:,:)*s
+    !
+    ! then convert to latlon for input to divergence_sphere_wk():
+
+
+    vcontra(:,:,1) = elem*metinv(1,1,:,:)*s
+    vcontra(:,:,2) = elem*metinv(2,1,:,:)*s
+    ! contra->latlon (for input to subroutine)
+    v(:,:,1)=(elem%D(1,1,:,:)*vcontra(:,:,1) + elem%D(1,2,:,:)*vcontra(:,:,2))
+    v(:,:,2)=(elem%D(2,1,:,:)*vcontra(:,:,1) + elem%D(2,2,:,:)*vcontra(:,:,2))
+    dscontra(:,:,1)=divergence_sphere_wk(v,deriv,elem)
+
+    vcontra(:,:,1) = elem*metinv(1,2,:,:)*s
+    vcontra(:,:,2) = elem*metinv(2,2,:,:)*s
+    ! contra->latlon (for input to subroutine)
+    v(:,:,1)=(elem%D(1,1,:,:)*vcontra(:,:,1) + elem%D(1,2,:,:)*vcontra(:,:,2))
+    v(:,:,2)=(elem%D(2,1,:,:)*vcontra(:,:,1) + elem%D(2,2,:,:)*vcontra(:,:,2))
+    dscontra(:,:,2)=divergence_sphere_wk(v,deriv,elem)
+
+    ! convert contra to latlon
+    ds(:,:,1)=(elem%D(1,1,:,:)*dscontra(:,:,1) + elem%D(1,2,:,:)*dscontra(:,:,2))
+    ds(:,:,2)=(elem%D(2,1,:,:)*dscontra(:,:,1) + elem%D(2,2,:,:)*dscontra(:,:,2))
+
+    end function gradient_sphere_wk
 
 
 
