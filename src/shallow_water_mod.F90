@@ -38,7 +38,7 @@ module shallow_water_mod
   ! ------------------------
   use common_io_mod, only: output_prefix     ! Added to support output_prefix 
   ! ------------------------
-  use viscosity_mod, only: biharmonic_wk, test_ibyp, neighbor_minmax
+  use viscosity_mod, only: biharmonic_wk, test_ibyp, neighbor_minmax, check_edge_flux
   ! ------------------------
   use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, limiter_option, integration, test_case, sub_case, kmass
   ! ------------------------
@@ -289,7 +289,7 @@ contains
 
 !    print *,'calling test_ibyp'
 !    call test_ibyp(elem,hybrid,nets,nete)
-!    call check_edge_flux(elem,deriv(hybrid%ithr),nets,nete)
+!    call check_edge_flux(elem,deriv,nets,nete)
 !    stop
 
     n0 = tl%n0

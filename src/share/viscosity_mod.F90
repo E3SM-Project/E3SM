@@ -1127,9 +1127,17 @@ end subroutine
 
 
   subroutine check_edge_flux(elem,deriv,nets,nete)
+!
+!  check two identities:
+!  1. div and weak div are adjoints:
+!     integral[  p div(u) ] + integral[ grad(p) dot u ] = boundary_integral[ u p]
+!  1. grad and weak grad are adjoints:
+!     integral[  p div(u) ] + integral[ grad(p) dot u ] = boundary_integral[ u p]
+!
+!
   use dimensions_mod, only : np, np, nlev
   use element_mod, only : element_t
-  use derivative_mod, only : derivative_t , divergence_sphere, divergence_sphere_wk, element_boundary_integral
+  use derivative_mod, only : derivative_t , divergence_sphere, divergence_sphere_wk, element_boundary_integral, gradient_sphere, gradient_sphere_wk
   use physical_constants, only : rrearth
 
   implicit none
@@ -1138,40 +1146,96 @@ end subroutine
   type (derivative_t)  , intent(in) :: deriv
   integer :: nets,nete
   ! local 
-  real (kind=real_kind), dimension(np,np,2) :: ucontra,ulatlon
-  real (kind=real_kind), dimension(np,np) :: phidivu,ugradphi,rhs,lhs
+  real (kind=real_kind), dimension(np,np,2) :: ucontra,ulatlon,gradp,gradp_wk,ucov
+  real (kind=real_kind), dimension(np,np) :: phidivu,ugradphi,rhs,lhs,p
+  real (kind=real_kind), dimension(np,np) :: rhs2,lhs2
   integer :: i,j,ie
 
-  ! test integration by parts identity
-  ! for random vector u, verify:
-  ! int ( phi div(u) ) + int ( grad(phi) dot u ) = 
-  ! boundary integral phi u dot n
-  call random_number(ucontra)
 
-  print *,'integration by parts identity check:'
+  print *,'integration by parts identity: check div/weak div:'
+  ! test integration by parts identity for each Cardinal function PHI:
+  ! div(u)*spheremp - div_wk(u) = boundary integral phi u dot n
   do ie=nets,nete
+     call random_number(ucontra)
   ! contra->latlon
-  do j=1,np
-     do i=1,np
-        ulatlon(i,j,1)=(elem(ie)%D(1,1,i,j)*ucontra(i,j,1) + elem(ie)%D(1,2,i,j)*ucontra(i,j,2))
-        ulatlon(i,j,2)=(elem(ie)%D(2,1,i,j)*ucontra(i,j,1) + elem(ie)%D(2,2,i,j)*ucontra(i,j,2))
+     ulatlon(:,:,1)=(elem(ie)%D(1,1,:,:)*ucontra(:,:,1) + elem(ie)%D(1,2,:,:)*ucontra(:,:,2))
+     ulatlon(:,:,2)=(elem(ie)%D(2,1,:,:)*ucontra(:,:,1) + elem(ie)%D(2,2,:,:)*ucontra(:,:,2))
+     phidivu = elem(ie)%spheremp(:,:)*divergence_sphere(ulatlon,deriv,elem(ie))
+     ugradphi = divergence_sphere_wk(ulatlon,deriv,elem(ie))
+     lhs = phidivu - ugradphi
+     
+     rhs = element_boundary_integral(ulatlon,deriv,elem(ie))
+     
+     
+     do j=1,np
+        do i=1,np
+           if ( abs(lhs(i,j)-rhs(i,j)) .gt. 1d-20) then
+              write(*,'(a)') 'ERROR: div/div_wk integration by parts failure!'
+              write(*,'(a,2i3,a,3e12.5)') 'for test function (i,j)=',i,j,' lhs,rhs=',lhs(i,j),rhs(i,j),lhs(i,j)-rhs(i,j)
+           endif
+        enddo
      enddo
   enddo
-  phidivu = elem(ie)%spheremp(:,:)*divergence_sphere(ulatlon,deriv,elem(ie))
-  ugradphi = divergence_sphere_wk(ulatlon,deriv,elem(ie))
-  lhs = phidivu - ugradphi
 
-  rhs = element_boundary_integral(ulatlon,deriv,elem(ie))
+  print *,'integration by parts identity: check grad/weak grad:'
+  ! PHIVEC = contra cardinal function 
+  !          check each contra component seperately
+
+  do ie=nets,nete
+     call random_number(p)
+     
+     ! grad(p)  (lat/lon vector)
+     gradp = gradient_sphere(p,deriv,elem(ie)%Dinv)
+     gradp(:,:,1)=gradp(:,:,1)*elem(ie)%spheremp(:,:)  
+     gradp(:,:,2)=gradp(:,:,2)*elem(ie)%spheremp(:,:)
+     gradp_wk = gradient_sphere_wk(p,deriv,elem(ie))
+     
+     ucontra(:,:,1)=p
+     ucontra(:,:,2)=0
+     ! contra->latlon
+     ulatlon(:,:,1)=(elem(ie)%D(1,1,:,:)*ucontra(:,:,1) + elem(ie)%D(1,2,:,:)*ucontra(:,:,2))
+     ulatlon(:,:,2)=(elem(ie)%D(2,1,:,:)*ucontra(:,:,1) + elem(ie)%D(2,2,:,:)*ucontra(:,:,2))
+
+     rhs = element_boundary_integral(ulatlon,deriv,elem(ie))
+     lhs = gradp(:,:,1)-gradp_wk(:,:,1)
+
+     ucontra(:,:,1)=0
+     ucontra(:,:,2)=p
+     ! contra->latlon
+     ulatlon(:,:,1)=(elem(ie)%D(1,1,:,:)*ucontra(:,:,1) + elem(ie)%D(1,2,:,:)*ucontra(:,:,2))
+     ulatlon(:,:,2)=(elem(ie)%D(2,1,:,:)*ucontra(:,:,1) + elem(ie)%D(2,2,:,:)*ucontra(:,:,2))
+     rhs2 = element_boundary_integral(ulatlon,deriv,elem(ie))
+     lhs2 = gradp(:,:,2)-gradp_wk(:,:,2)  
 
 
-  do j=1,np
-     do i=1,np
-        if ( abs(lhs(i,j)-rhs(i,j)) .gt. 1d-20) then
-        write(*,'(a)') 'ERROR: integration by parts failure!'
-        write(*,'(a,2i3,a,3e12.5)') 'for test function (i,j)=',i,j,' lhs,rhs=',lhs(i,j),rhs(i,j),lhs(i,j)-rhs(i,j)
-        endif
+     ! gradient_sphere() and gradient_sphere_wk() compute covariant vectors
+     ! and then convert to latlon.  Thus to get the identity to work, the
+     ! same transformation has to be applied to the vector of boundary integrals:
+     ! tread (rhs,rhs2) as covariant vector and convert to latlon:
+     gradp(:,:,1)=rhs
+     gradp(:,:,2)=rhs2
+     rhs(:,:)=elem(ie)%Dinv(1,1,:,:)*gradp(:,:,1) + elem(ie)%Dinv(2,1,:,:)*gradp(:,:,2)
+     rhs2(:,:)=elem(ie)%Dinv(1,2,:,:)*gradp(:,:,1) + elem(ie)%Dinv(2,2,:,:)*gradp(:,:,2)
+
+
+     do j=1,np
+        do i=1,np
+           if ( abs(lhs(i,j)-rhs(i,j)) .gt. 1d-20) then
+              write(*,'(a)') 'ERROR: grad/grad_wk (1) integration by parts failure!'
+              write(*,'(a,2i3,a,4e13.5)') 'for test function (i,j)=',i,j,' lhs,rhs=',lhs(i,j),rhs(i,j),lhs(i,j)-rhs(i,j),lhs(i,j)/rhs(i,j)
+           endif
+        enddo
      enddo
-  enddo
+
+
+     do j=1,np
+        do i=1,np
+           if ( abs(lhs2(i,j)-rhs2(i,j)) .gt. 1d-20) then
+              write(*,'(a)') 'ERROR: grad/grad_wk (2) integration by parts failure!'
+              write(*,'(a,2i3,a,3e12.5)') 'for test function (i,j)=',i,j,' lhs,rhs=',lhs(i,j),rhs(i,j),lhs(i,j)-rhs(i,j)
+           endif
+        enddo
+     enddo
 
   enddo
   print *,'done. integration by parts identity check:'

@@ -1591,20 +1591,19 @@ endif
 !   input s:  scalar
 !   output  ds: weak gradient, lat/lon coordinates
 !
-!   strong form is integral[ phivec metdet grad(s) ]
-!      where phivec is a covarient test function and we 
-!      convert grad from covariant to contravariant
+!   integral[ phivec dot grad(s) ] 
+!        = phivec  dot  gradient_sphere(p) * spheremp(i,j) 
+!   if phivec_contra(:,:,1)=phi (cardinal function)
+!   if phivec_contra(:,:,2)=0
+!        = gradp_covariant(:,:,1) * spheremp(i,j)
+!   if phivec_contra(:,:,1)=0
+!   if phivec_contra(:,:,2)=phi (cardinal function)
+!        = gradp_covariant(:,:,2) * spheremp(i,j)
 !
-!   weak form:  integral[  div( metdet phivec) s ] 
-!   where div(metdet*phivec) = is divergence_sphere() acting on
-!   the GLL values of metdet*phivec.
-!
-!   some algebra shows that in contra coordinates, 
-!     u = (metinv(1,1),metenv(2,1))s
-!     v = (metinv(1,2),metenv(2,2))s
-!
-!   ds_contra(1) = divergence_sphere_wk( u )
-!   ds_contra(2) = divergence_sphere_wk( v )
+!   weak form is thus defined over all contra cardinal functions:   
+!      integral[ div(phivec) s ] = sum  spheremp()* phi_x() * s
+!                                  sum  spheremp()* phi_y() * s
+!      
 !
 
     type (derivative_t)              :: deriv
@@ -1613,42 +1612,78 @@ endif
 
     real(kind=real_kind) :: ds(np,np,2)
 
-    integer i,j,l
+    integer i,j,l,m,n
+    real(kind=real_kind) ::  dscov(np,np,2)
 
-    real(kind=real_kind) ::  dsdx00
-    real(kind=real_kind) ::  dsdy00
+    ! debug: 
     real(kind=real_kind) ::  vcontra(np,np,2)
     real(kind=real_kind) ::  v(np,np,2)
-    real(kind=real_kind) ::  dscontra(np,np,2)
-
-    ! metinv = Dinv Dinv^t     metinv*ucov = ucontra
-    ! create two contra vectors:
-    !    vcontra1(:,:,1) = metinv(1,1,:,:)*s
-    !    vcontra1(;,:,2) = metinv(2,1,:,:)*s
-    !
-    !    vcontra1(:,:,1) = metinv(1,2,:,:)*s
-    !    vcontra1(;,:,2) = metinv(2,2,:,:)*s
-    !
-    ! then convert to latlon for input to divergence_sphere_wk():
+    real(kind=real_kind) ::  div(np,np)
 
 
-    vcontra(:,:,1) = elem%metinv(1,1,:,:)*s
-    vcontra(:,:,2) = elem%metinv(2,1,:,:)*s
-    ! contra->latlon (for input to subroutine)
-    v(:,:,1)=(elem%D(1,1,:,:)*vcontra(:,:,1) + elem%D(1,2,:,:)*vcontra(:,:,2))
-    v(:,:,2)=(elem%D(2,1,:,:)*vcontra(:,:,1) + elem%D(2,2,:,:)*vcontra(:,:,2))
-    dscontra(:,:,1)=divergence_sphere_wk(v,deriv,elem)
 
-    vcontra(:,:,1) = elem%metinv(1,2,:,:)*s
-    vcontra(:,:,2) = elem%metinv(2,2,:,:)*s
-    ! contra->latlon (for input to subroutine)
-    v(:,:,1)=(elem%D(1,1,:,:)*vcontra(:,:,1) + elem%D(1,2,:,:)*vcontra(:,:,2))
-    v(:,:,2)=(elem%D(2,1,:,:)*vcontra(:,:,1) + elem%D(2,2,:,:)*vcontra(:,:,2))
-    dscontra(:,:,2)=divergence_sphere_wk(v,deriv,elem)
+    dscov=0
+    do n=1,np
+       do m=1,np
+          do j=1,np
+             ! phi(m)_x  sum over first index, second index fixed at n
+             dscov(m,n,1)=dscov(m,n,1)-(elem%mp(j,n)*elem%metdet(m,n)*s(j,n)*deriv%Dvv(m,j) )*rrearth
+             ! phi(n)_y  sum over second index, 1st index fixed at m
+             dscov(m,n,2)=dscov(m,n,2)-(elem%mp(m,j)*elem%metdet(m,n)*s(m,j)*deriv%Dvv(n,j) )*rrearth
+          enddo
+       enddo
+    enddo
 
-    ! convert contra to latlon
-    ds(:,:,1)=(elem%D(1,1,:,:)*dscontra(:,:,1) + elem%D(1,2,:,:)*dscontra(:,:,2))
-    ds(:,:,2)=(elem%D(2,1,:,:)*dscontra(:,:,1) + elem%D(2,2,:,:)*dscontra(:,:,2))
+#if 0
+    ! slow form:
+    do m=1,np
+       do n=1,np
+          vcontra=0
+          vcontra(m,n,1)=1
+
+          ! contra->latlon:
+          v(:,:,1)=(elem%D(1,1,:,:)*vcontra(:,:,1) + elem%D(1,2,:,:)*vcontra(:,:,2))
+          v(:,:,2)=(elem%D(2,1,:,:)*vcontra(:,:,1) + elem%D(2,2,:,:)*vcontra(:,:,2))
+
+
+          ! compute div(metdet phivec) * s
+          div = divergence_sphere(v,deriv,elem)
+          ! compute integral[ div(phi) * s ]
+          ds(m,n,1)=0
+          do i=1,np
+             do j=1,np
+                ds(m,n,1)=ds(m,n,1) + div(i,j)*s(i,j)*elem%spheremp(i,j)
+             enddo
+          enddo
+
+          vcontra=0
+          vcontra(m,n,2)=1
+
+          ! contra->latlon:
+          v(:,:,1)=(elem%D(1,1,:,:)*vcontra(:,:,1) + elem%D(1,2,:,:)*vcontra(:,:,2))
+          v(:,:,2)=(elem%D(2,1,:,:)*vcontra(:,:,1) + elem%D(2,2,:,:)*vcontra(:,:,2))
+
+          ! compute div(metdet phivec) * s
+          div = divergence_sphere(v,deriv,elem)
+          ! compute integral[ div(phi) * s ]
+          ds(m,n,2)=0
+          do i=1,np
+             do j=1,np
+                ds(m,n,2)=ds(m,n,2) + div(i,j)*s(i,j)*elem%spheremp(i,j)
+             enddo
+          enddo
+       enddo
+    enddo
+    ! change sign 
+    ds=-ds
+    print *,'ds,dscov:1 ',ds(1,1,1),dscov(1,1,1),ds(1,1,1)/dscov(1,1,1)
+    print *,'ds,dscov:2 ',ds(1,1,2),dscov(1,1,2),ds(1,1,2)/dscov(1,1,2)
+
+    dscov=ds
+#endif
+    ! convert covariant to latlon 
+    ds(:,:,1)=elem%Dinv(1,1,:,:)*dscov(:,:,1) + elem%Dinv(2,1,:,:)*dscov(:,:,2)
+    ds(:,:,2)=elem%Dinv(1,2,:,:)*dscov(:,:,1) + elem%Dinv(2,2,:,:)*dscov(:,:,2)
 
     end function gradient_sphere_wk
 
