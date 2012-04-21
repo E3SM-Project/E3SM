@@ -1608,7 +1608,7 @@ endif
 !
 
     type (derivative_t)              :: deriv
-    real(kind=real_kind), intent(in), dimension(2,2,np,np) :: Dinv
+    type (element_t)              :: elem
     real(kind=real_kind), intent(in) :: s(np,np)
 
     real(kind=real_kind) :: ds(np,np,2)
@@ -1632,15 +1632,15 @@ endif
     ! then convert to latlon for input to divergence_sphere_wk():
 
 
-    vcontra(:,:,1) = elem*metinv(1,1,:,:)*s
-    vcontra(:,:,2) = elem*metinv(2,1,:,:)*s
+    vcontra(:,:,1) = elem%metinv(1,1,:,:)*s
+    vcontra(:,:,2) = elem%metinv(2,1,:,:)*s
     ! contra->latlon (for input to subroutine)
     v(:,:,1)=(elem%D(1,1,:,:)*vcontra(:,:,1) + elem%D(1,2,:,:)*vcontra(:,:,2))
     v(:,:,2)=(elem%D(2,1,:,:)*vcontra(:,:,1) + elem%D(2,2,:,:)*vcontra(:,:,2))
     dscontra(:,:,1)=divergence_sphere_wk(v,deriv,elem)
 
-    vcontra(:,:,1) = elem*metinv(1,2,:,:)*s
-    vcontra(:,:,2) = elem*metinv(2,2,:,:)*s
+    vcontra(:,:,1) = elem%metinv(1,2,:,:)*s
+    vcontra(:,:,2) = elem%metinv(2,2,:,:)*s
     ! contra->latlon (for input to subroutine)
     v(:,:,1)=(elem%D(1,1,:,:)*vcontra(:,:,1) + elem%D(1,2,:,:)*vcontra(:,:,2))
     v(:,:,2)=(elem%D(2,1,:,:)*vcontra(:,:,1) + elem%D(2,2,:,:)*vcontra(:,:,2))
