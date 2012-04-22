@@ -2303,10 +2303,12 @@ endif
 !   ouput:  phat = Legendre coefficients
 !
 !   Computes  < g dot p  > 
-!   (the quadrature approximation of the spherical integral of p against
-!    all Legendre polynomials up to degree nggnpdg)
+!   (the quadrature approximation of the *spherical* integral of p against
+!    all Legendre polynomials up to degree npdg)
 !
 !   spheremp should be elem(ie)%spheremp(:,:) = metdet*GLL weights
+!
+!   for npdg < np, this routine gives the (exact) modal expansion of p/spheremp()
 !
     real(kind=real_kind), intent(in) :: p(np,np) 
     real(kind=real_kind), intent(in) :: spheremp(np,np) 
@@ -2352,7 +2354,7 @@ endif
   function dgmodal_to_gll(phat,deriv) result(p)
 !
 !   input:  phat = coefficients of Legendre expansion
-!   ouput:  p    = evaluate at GLL points
+!   ouput:  p    = sum expansion to evaluate phat at GLL points
 !
     real(kind=real_kind) :: p(np,np) 
     type (derivative_t)  :: deriv

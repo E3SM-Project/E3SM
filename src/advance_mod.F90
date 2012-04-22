@@ -335,11 +335,11 @@ contains
     real (kind=real_kind), dimension(np,np,2)    :: pv      ! p*v lat-lon
     real (kind=real_kind), dimension(np,np)      :: E          ! kinetic energy term
     real (kind=real_kind), dimension(np,np)      :: zeta       ! relative vorticity
-    real (kind=real_kind), dimension(np,np)      :: div, div_storage
+    real (kind=real_kind), dimension(np,np)      :: div, flux
     real (kind=real_kind), dimension(np,np,2)    :: ulatlon
 
 
-    real (kind=real_kind) :: v1,v2,pstar,flux,gmn
+    real (kind=real_kind) :: v1,v2,pstar,gmn
     real (kind=real_kind) :: vtens1,vtens2
     real (kind=real_kind) :: pmin(nlev,nets:nete),pmax(nlev,nets:nete)
     real (kind=real_kind) :: plmin(np,np,nlev,nets:nete),plmax(np,np,nlev,nets:nete)
@@ -354,13 +354,16 @@ contains
     integer    :: ntmp
 
     logical :: Debug = .FALSE.
+    logical :: use_advective_flux 
 
     real (kind=real_kind) ::  notreliable
 
 
     if (test_case=="swtc1" .or. test_case=="vortex" .or. test_case=="swirl") then
        ! advection test cases support conservation form or advective form
+       use_advective_flux=.true.
     else
+       use_advective_flux=.false.
        ! shallow water test cases require conservation form of h equation
        if (tracer_advection_formulation==TRACERADV_UGRADQ) then
           print *,'ERROR: shallow water tests require conservation formulation:'
@@ -652,31 +655,44 @@ contains
 
           if (npdg>0) then
              do k=1,nlev
-#if 0
-                ! upwind flux  l2=.255, .103
-                ptens(:,:,k,ie) = ptens_dg(:,:,k,ie) + &
-                     edge_flux_u_cg( elem(ie)%state%v(:,:,:,k,n0), elem(ie)%state%p(:,:,k,n0),&
-                     pedges(:,:,k), deriv, elem(ie), u_is_contra=.true.)
-#else
-                ! adv flux from DG code:  l2=.25
-                ptens(:,:,k,ie) = ptens_dg(:,:,k,ie) + elem(ie)%metdet(:,:)*adv_flux_term(deriv,&
-                     elem(ie)%state%v(:,:,:,k,n0), elem(ie)%state%p(:,:,k,n0),pedges(:,:,k))
-#endif
+                if (use_advective_flux) then
+                   ! simple upwind flux
+                   !flux=edge_flux_u_cg( elem(ie)%state%v(:,:,:,k,n0), elem(ie)%state%p(:,:,k,n0),&
+                   !     pedges(:,:,k), deriv, elem(ie), u_is_contra=.true.)
+                   ! adv flux from DG code: 
+                   flux=elem(ie)%metdet(:,:)*adv_flux_term(deriv,&
+                        elem(ie)%state%v(:,:,:,k,n0), elem(ie)%state%p(:,:,k,n0),pedges(:,:,k))
+                else
+                   ! shallow water flux:
+                   ! fjmax=sw_fjmax(elem(ie)%state%v(:,:,:,k,n0),gh11,gh22,gh11_halo,gh22_halo)
+                   ! call swsys_flux(3,deriv,fjmax,vec,vec_halo,fluxvec,flux_halo,numflux)
+                endif
+
+                ! combine weak gradient and edge flux:
+                ptens(:,:,k,ie) = ptens_dg(:,:,k,ie) + flux(:,:)
 
                 ! advance in time. GLL quadrature, cardinal function basis, under-integrated.  
-                ! local mass matrix is diagonal, with entries elem(ie)%spheremp()
+                ! local mass matrix is diagonal, with entries elem(ie)%spheremp(),
+                ! so we divide through by elem(ie)%spheremp().
                 ptens(:,:,k,ie) = elem(ie)%state%p(:,:,k,n0) - dtstage*ptens(:,:,k,ie)/elem(ie)%spheremp(:,:)
                 if (npdg<np) then
                    ! modal timestep, with exact integration.  using prognostic variable: p*metdet
                    ! local mass matrix is diagonal assuming npdg<np so that GLL quadrature is exact)
-                   phat = gll_to_dgmodal(ptens(:,:,k,ie),deriv,elem(ie)%spheremp(:,:))  
-                   ptens(:,:,k,ie)=dgmodal_to_gll(phat,deriv)  ! modal back to GLL: 
-                   ptens(:,:,k,ie)=ptens(:,:,k,ie)/elem(ie)%metdet(:,:)
+
+                   ! compute modal coefficients of p*metdet
+                   ! (spherical inner-product of Legendre polynomial and p)
+                   phat = gll_to_dgmodal(ptens(:,:,k,ie),deriv,elem(ie)%spheremp(:,:))   
+
+                   ! evalute modal expanion of p*metdet on GLL points
+                   ptens(:,:,k,ie)=dgmodal_to_gll(phat,deriv) 
+                   
+                   ! convert back to p
+                   ptens(:,:,k,ie)=ptens(:,:,k,ie)*elem(ie)%rmetdet(:,:)
                 endif
              enddo
              ! truncation + mass weighted redistribution:
              if (limiter_option==4) call limiter2d_zero(ptens(:,:,:,ie),elem(ie)%spheremp, kmass)
-             ! Find optimal (l2 norm) solution which is closed to unlimited solution:
+             ! Find optimal (l2 norm) solution which is closest to unlimited solution:
              if (limiter_option==8) call limiter_optim_iter_full3(ptens(:,:,:,ie),elem(ie)%spheremp(:,:),&
                   pmin(:,ie),pmax(:,ie),kmass,.true.,.true.)
           endif
