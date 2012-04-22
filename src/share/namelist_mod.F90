@@ -21,9 +21,7 @@ module namelist_mod
        sub_case,      &
        tasknum,	      &       ! used dg model in AIX machine
        remapfreq,     &       ! number of steps per remapping call
-#ifdef _PRIMDG
        remap_type,    &       ! selected remapping option
-#endif
        statefreq,     &       ! number of steps per printstate call
        accumfreq,     &       ! frequency in steps of accumulation
        accumstart,    &       ! model day to start accumulating state variables
@@ -233,9 +231,7 @@ module namelist_mod
                      ne,            &       ! element resolution factor
 		     tasknum,	    &
 		     remapfreq,     &       ! number of steps per remapping call
-#ifdef _PRIMDG
                      remap_type,    &       ! selected remapping option
-#endif
                      statefreq,     &       ! number of steps per printstate call
                      accumfreq,     &       ! frequency in steps of accumulation
                      accumstart,    &       ! model day to start accumulating state variables
@@ -414,9 +410,7 @@ module namelist_mod
     runtype       = 0
     statefreq     = 1
     remapfreq     = 240
-#ifdef _PRIMDG
     remap_type    = "parabolic"
-#endif
     tasknum       =-1
     integration   = "explicit"
     moisture      = "dry"
@@ -770,9 +764,7 @@ module namelist_mod
     
     call MPI_bcast(sub_case ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(remapfreq ,1,MPIinteger_t,par%root,par%comm,ierr)
-#ifdef _PRIMDG
     call MPI_bcast(remap_type, MAX_STRING_LEN, MPIChar_t, par%root, par%comm, ierr)
-#endif
     call MPI_bcast(statefreq ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(accumfreq ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(accumstart,1,MPIinteger_t,par%root,par%comm,ierr)
@@ -989,18 +981,19 @@ module namelist_mod
 
 
 
-#ifndef CAM
 !=======================================================================================================!                                 
 !	Adding for SW DG										!
 !=======================================================================================================!
+#ifndef CAM
 #ifdef _SWDG    
     call MPI_bcast(riemanntype,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(alphatype,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(alpha_dg,1,MPIreal_t,par%root,par%comm,ierr)    
     call MPI_bcast(stage_rk,1,MPIinteger_t,par%root,par%comm,ierr)
 #endif    
+#endif
 !=======================================================================================================!
-#else
+#ifdef CAM
     nmpi_per_node=1
 #endif
     call MPI_bcast(interpolate_analysis, 7,MPIlogical_t,par%root,par%comm,ierr)

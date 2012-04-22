@@ -3,10 +3,10 @@
 #endif
 
 module advance_mod
-
   use kinds, only : real_kind
   use dimensions_mod, only : np,npdg
   use physical_constants, only : rearth, rrearth 
+  implicit none
   ! semi-implicit needs to be re-initialized each time dt changes 
   real (kind=real_kind) :: initialized_for_dt   = 0
 contains
@@ -652,9 +652,17 @@ contains
 
           if (npdg>0) then
              do k=1,nlev
+#if 0
+                ! upwind flux  l2=.255, .103
                 ptens(:,:,k,ie) = ptens_dg(:,:,k,ie) + &
                      edge_flux_u_cg( elem(ie)%state%v(:,:,:,k,n0), elem(ie)%state%p(:,:,k,n0),&
                      pedges(:,:,k), deriv, elem(ie), u_is_contra=.true.)
+#else
+                ! adv flux from DG code:  l2=.25
+                ptens(:,:,k,ie) = ptens_dg(:,:,k,ie) + elem(ie)%metdet(:,:)*adv_flux_term(deriv,&
+                     elem(ie)%state%v(:,:,:,k,n0), elem(ie)%state%p(:,:,k,n0),pedges(:,:,k))
+#endif
+
                 ! advance in time. GLL quadrature, cardinal function basis, under-integrated.  
                 ! local mass matrix is diagonal, with entries elem(ie)%spheremp()
                 ptens(:,:,k,ie) = elem(ie)%state%p(:,:,k,n0) - dtstage*ptens(:,:,k,ie)/elem(ie)%spheremp(:,:)
@@ -666,7 +674,9 @@ contains
                    ptens(:,:,k,ie)=ptens(:,:,k,ie)/elem(ie)%metdet(:,:)
                 endif
              enddo
+             ! truncation + mass weighted redistribution:
              if (limiter_option==4) call limiter2d_zero(ptens(:,:,:,ie),elem(ie)%spheremp, kmass)
+             ! Find optimal (l2 norm) solution which is closed to unlimited solution:
              if (limiter_option==8) call limiter_optim_iter_full3(ptens(:,:,:,ie),elem(ie)%spheremp(:,:),&
                   pmin(:,ie),pmax(:,ie),kmass,.true.,.true.)
           endif
@@ -750,7 +760,7 @@ contains
     real (kind=real_kind), dimension(np,np) :: weights
     real (kind=real_kind), dimension(np,np) :: ptens_mass
     integer  k1, k, i, j, iter, i1, i2
-    integer :: pos_count, neg_count, whois_neg(np*np), whois_pos(np*np)
+    integer :: pos_counter, neg_counter, whois_neg(np*np), whois_pos(np*np)
     real (kind=real_kind) :: addmass, weightssum, mass
     real (kind=real_kind) :: x(np*np),c(np*np)
     real (kind=real_kind) :: al_neg(np*np), al_pos(np*np), howmuch
@@ -952,7 +962,7 @@ contains
     real (kind=real_kind), dimension(np,np) :: weights
     real (kind=real_kind), dimension(np,np) :: ptens_mass
     integer  k1, k, i, j, iter, i1, i2
-    integer :: pos_count, neg_count, whois_neg(np*np), whois_pos(np*np)
+    integer :: pos_counter, neg_counter, whois_neg(np*np), whois_pos(np*np)
     real (kind=real_kind) :: addmass, weightssum, mass
     real (kind=real_kind) :: x(np*np),c(np*np)
     real (kind=real_kind) :: al_neg(np*np), al_pos(np*np), howmuch
@@ -2854,522 +2864,109 @@ endif
   end subroutine compute_and_apply_rhs
   
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
+!=======================================================================================!
+!  Advection Flux Term							   		!
+!  from DG code - modified for CG velocity
+!=======================================================================================!
+function adv_flux_term(deriv,contrauv,si,si_neighbor) result(numflux)
+!=======================================================================================!
+    use derivative_mod, only : derivative_t
+    integer, parameter :: south=1, east=2, north=3, west=4
+    type (derivative_t)         :: deriv
+    real (kind=real_kind), dimension(np,np,2),intent(in) :: contrauv
+    real (kind=real_kind), dimension(np,np),  intent(in) :: si
+    real (kind=real_kind), dimension(0:np+1,0:np+1),   intent(in) :: si_neighbor
+    real (kind=real_kind), dimension(np,4) :: si_senw
+    real (kind=real_kind), dimension(np,np) :: numflux
+    real (kind=real_kind), dimension(np,np) :: mij
+    real (kind=real_kind), dimension(np)   :: lf_south,lf_north,lf_east,lf_west
+    real(kind=real_kind) ::  alfa1, alfa2, ul,ur , left, right, f_left, f_right, s1,s2
+    integer i,j, k
+!=======================================================================================!
+    mij(:,:)  = 0
+    mij(1,1)  = 1
+    mij(np,np)= 1
 
-!-------------------------------------------------------------------
-! c  Copyright (C) 1995, 1996, 1997, 1998
-! c  Berwin A. Turlach <bturlach@stats.adelaide.edu.au>
-! c  $Id: solve.QP.f,v 1.15 1998/07/23 05:23:26 bturlach Exp $
-! c 
-! c  This library is free software; you can redistribute it and/or
-! c  modify it under the terms of the GNU Library General Public
-! c  License as published by the Free Software Foundation; either
-! c  version 2 of the License, or (at your option) any later version.
-! c  
-! c  This library is distributed in the hope that it will be useful,
-! c  but WITHOUT ANY WARRANTY; without even the implied warranty of
-! c  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-! c  Library General Public License for more details.
-! c  
-! c  You should have received a copy of the GNU Library General Public
-! c  License along with this library; if not, write to the Free Software
-! c  Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-! c  MA 02111-1307 USA
-! c 
-! c  This routine uses the Goldfarb/Idnani algorithm to solve the
-! c  following minimization problem:
-! c
-! c        minimize  -d^T x + 1/2 *  x^T D x
-! c        where   A1^T x  = b1
-! c                A2^T x >= b2
-! c
-! c  the matrix D is assumed to be positive definite.  Especially,
-! c  w.l.o.g. D is assumed to be symmetric.
-! c  
-! c  Input parameter:
-! c  dmat   nxn matrix, the matrix D from above (dp)
-! c         *** WILL BE DESTROYED ON EXIT ***
-! c         The user has two possibilities:
-! c         a) Give D (ierr=0), in this case we use routines from LINPACK
-! c            to decompose D.
-! c         b) To get the algorithm started we need R^-1, where D=R^TR.
-! c            So if it is cheaper to calculate R^-1 in another way (D may
-! c            be a band matrix) then with the general routine, the user
-! c            may pass R^{-1}.  Indicated by ierr not equal to zero.
-! c  dvec   nx1 vector, the vector d from above (dp)
-! c         *** WILL BE DESTROYED ON EXIT ***
-! c         contains on exit the solution to the initial, i.e.,
-! c         unconstrained problem
-! c  fddmat scalar, the leading dimension of the matrix dmat
-! c  n      the dimension of dmat and dvec (int)
-! c  amat   nxq matrix, the matrix A from above (dp) [ A=(A1 A2) ]
-! c         *** ENTRIES CORRESPONDING TO EQUALITY CONSTRAINTS MAY HAVE
-! c             CHANGED SIGNES ON EXIT ***
-! c  bvec   qx1 vector, the vector of constants b in the constraints (dp)
-! c         [ b = (b1^T b2^T)^T ]
-! c         *** ENTRIES CORRESPONDING TO EQUALITY CONSTRAINTS MAY HAVE
-! c             CHANGED SIGNES ON EXIT ***
-! c  fdamat the first dimension of amat as declared in the calling program. 
-! c         fdamat >= n !!
-! c  q      integer, the number of constraints.
-! c  meq    integer, the number of equality constraints, 0 <= meq <= q.
-! c  ierr   integer, code for the status of the matrix D:
-! c            ierr =  0, we have to decompose D
-! c            ierr != 0, D is already decomposed into D=R^TR and we were
-! c                       given R^{-1}.
-! c
-! c  Output parameter:
-! c  sol   nx1 the final solution (x in the notation above)
-! c  crval scalar, the value of the criterion at the minimum      
-! c  iact  qx1 vector, the constraints which are active in the final
-! c        fit (int)
-! c  nact  scalar, the number of constraints active in the final fit (int)
-! c  iter  2x1 vector, first component gives the number of "main" 
-! c        iterations, the second one says how many constraints were
-! c        deleted after they became active
-! c  ierr  integer, error code on exit, if
-! c           ierr = 0, no problems
-! c           ierr = 1, the minimization problem has no solution
-! c           ierr = 2, problems with decomposing D, in this case sol
-! c                     contains garbage!!
-! c
-! c  Working space:
-! c  work  vector with length at least 2*n+r*(r+5)/2 + 2*q +1
-! c        where r=min(n,q)
-! c
-      subroutine qpgen2(dmat, dvec, fddmat, n, sol, crval, amat, &
-          bvec, fdamat, q, meq, iact, nact, iter, work, ierr, maxit)  
-      implicit none
-      integer n, i, j, l, l1, fdamat, fddmat, &
-          info, q, iact(*), iter(*), it1,    &
-          ierr, nact, iwzv, iwrv, iwrm, iwsv, iwuv, nvl,   &
-          r, iwnbv, meq, maxit
-      double precision dmat(fddmat,*), dvec(*),sol(*), bvec(*), &
-          work(*), temp, sum, t1, tt, gc, gs, crval, &
-          nu, amat(fdamat,*)
-      logical t1inf, t2min
-      r = min(n,q)
-      l = 2*n + (r*(r+5))/2 + 2*q + 1
+    ! convert from edgeDGVunpack variable to Ram's variables:
+    si_senw(:,south) = si_neighbor(1:np,0)
+    si_senw(:,north) = si_neighbor(1:np,np+1)
+    si_senw(:,east) = si_neighbor(np+1,1:np)
+    si_senw(:,west) = si_neighbor(0,1:np)
 
-      do 10 i=1,n
-         work(i) = dvec(i)
- 10   continue
-      do 11 i=n+1,l
-         work(i) = 0.d0
- 11   continue
-      do 12 i=1,q
-         iact(i)=0
- 12   continue
-
-      if( ierr .EQ. 0 )then
-
-         call dpofa(dmat,fddmat,n,info)
-
-         if( info .NE. 0 )then
-            ierr = 2
-            goto 999
-         endif
-         call dposl(dmat,fddmat,n,dvec)
-         call dpori(dmat,fddmat,n)
-      else
-
-         do 20 j=1,n
-            sol(j)  = 0.d0
-            do 21 i=1,j
-               sol(j) = sol(j) + dmat(i,j)*dvec(i)
- 21         continue
- 20      continue
-         do 22 j=1,n
-            dvec(j) = 0.d0
-            do 23 i=j,n
-               dvec(j) = dvec(j) + dmat(j,i)*sol(i)
- 23         continue
- 22      continue
-      endif
-
-      crval = 0.d0   
-      do 30 j=1,n
-         sol(j)  = dvec(j)
-         crval   = crval + work(j)*sol(j)
-         work(j) = 0.d0
-         do 32 i=j+1,n
-            dmat(i,j) = 0.d0
- 32      continue
- 30   continue
-      crval = -crval/2.d0
-      ierr = 0
-
-      iwzv  = n
-      iwrv  = iwzv + n
-      iwuv  = iwrv + r
-      iwrm  = iwuv + r+1
-      iwsv  = iwrm + (r*(r+1))/2
-      iwnbv = iwsv + q
-
-      do 51 i=1,q
-         sum = 0.d0
-         do 52 j=1,n
-            sum = sum + amat(j,i)*amat(j,i)
- 52      continue
-         work(iwnbv+i) = sqrt(sum)
- 51   continue
-      nact = 0
-      iter(1) = 0
-      iter(2) = 0
- 50   continue
+    ! South & North    Max flux Jacobians
+!   ul = abs(contrauv(i,1,2))
+    alfa1 = maxval(abs(contrauv(1:np,1,2)))
+!   ur = abs(contrauv(i,np,2))
+    alfa2 = maxval(abs(contrauv(1:np,np,2)))
 
 
+    do i = 1, np
+       ! South wall
+       left = si_senw(i,south)
+       right  = si(i,1)
+!       f_left = fxy_halo(i,south,2)
+!       f_right = fxy(i,1,2)
+       f_left = left*contrauv(i,1,2)
+       f_right= right*contrauv(i,1,2)
+       lf_south(i) =  0.5D0 *(f_left + f_right - alfa1*(right - left))
 
-      iter(1) = iter(1)+1
-
-      if(iter(1)>maxit)then
-         ierr=3
-         goto 999
-      endif
-
-
-
-      l = iwsv
-      do 60 i=1,q
-         l = l+1
-         sum = -bvec(i)
-         do 61 j = 1,n
-            sum = sum + amat(j,i)*sol(j)
- 61      continue
-         if (i .GT. meq) then
-            work(l) = sum
-         else
-            work(l) = -abs(sum)
-            if (sum .GT. 0.d0) then
-               do 62 j=1,n
-                  amat(j,i) = -amat(j,i)
- 62            continue
-               bvec(i) = -bvec(i)
-            endif
-         endif
- 60   continue
-
-      do 70 i=1,nact
-         work(iwsv+iact(i)) = 0.d0
- 70   continue
-
-      nvl = 0 
-      temp = 0.d0
-      do 71 i=1,q
-         if (work(iwsv+i) .LT. temp*work(iwnbv+i)) then
-            nvl = i
-            temp = work(iwsv+i)/work(iwnbv+i)
-         endif
-
- 71   continue
- 72   if (nvl .EQ. 0) goto 999
-
- 55   continue
-      do 80 i=1,n
-         sum = 0.d0
-         do 81 j=1,n
-            sum = sum + dmat(j,i)*amat(j,nvl)
- 81      continue
-         work(i) = sum
- 80   continue
-
-      l1 = iwzv
-      do 90 i=1,n
-         work(l1+i) =0.d0
- 90   continue
-      do 92 j=nact+1,n
-         do 93 i=1,n
-            work(l1+i) = work(l1+i) + dmat(i,j)*work(j) 
- 93      continue
- 92   continue
-
-      t1inf = .TRUE.
-      do 95 i=nact,1,-1
-         sum = work(i)
-         l  = iwrm+(i*(i+3))/2
-         l1 = l-i
-         do 96 j=i+1,nact
-            sum = sum - work(l)*work(iwrv+j)
-            l   = l+j
- 96      continue
-         sum = sum / work(l1)
-         work(iwrv+i) = sum
-         if (iact(i) .LE. meq) goto 95
-         if (sum .LE. 0.d0) goto 95
- 7       t1inf = .FALSE.
-         it1 = i
- 95   continue
- 
-      if ( .NOT. t1inf) then
-         t1   = work(iwuv+it1)/work(iwrv+it1)
-         do 100 i=1,nact
-            if (iact(i) .LE. meq) goto 100
-            if (work(iwrv+i) .LE. 0.d0) goto 100
-            temp = work(iwuv+i)/work(iwrv+i)
-            if (temp .LT. t1) then
-               t1   = temp
-               it1  = i
-            endif
- 100     continue
-      endif 
-
-      sum = 0.d0
-      do 110 i=iwzv+1,iwzv+n
-         sum = sum + work(i)*work(i)
- 110  continue
-      temp = 1000.d0
-      sum  = sum+temp
-      if (temp .EQ. sum) then
-     
-         if (t1inf) then
-
-            ierr = 1
-            goto 999
-         else
-
-            do 111 i=1,nact
-               work(iwuv+i) = work(iwuv+i) - t1*work(iwrv+i)
- 111        continue
-            work(iwuv+nact+1) = work(iwuv+nact+1) + t1
-            goto 700
-         endif
-      else
-
-         sum = 0.d0
-         do 120 i = 1,n
-            sum = sum + work(iwzv+i)*amat(i,nvl)
- 120     continue
-         tt = -work(iwsv+nvl)/sum
-         t2min = .TRUE.
-         if (.NOT. t1inf) then
-            if (t1 .LT. tt) then
-               tt    = t1
-               t2min = .FALSE.
-            endif
-         endif
-
-         do 130 i=1,n
-            sol(i) = sol(i) + tt*work(iwzv+i)
- 130     continue
-         crval = crval + tt*sum*(tt/2.d0 + work(iwuv+nact+1))
-         do 131 i=1,nact
-            work(iwuv+i) = work(iwuv+i) - tt*work(iwrv+i)
- 131     continue
-         work(iwuv+nact+1) = work(iwuv+nact+1) + tt
-
-         if(t2min) then
-
-            nact = nact + 1
-            iact(nact) = nvl
-
-            l = iwrm + ((nact-1)*nact)/2 + 1
-            do 150 i=1,nact-1
-               work(l) = work(i)
-               l = l+1
- 150        continue
-
-            if (nact .EQ. n) then
-               work(l) = work(n)
-            else
-               do 160 i=n,nact+1,-1
-
-                  if (work(i) .EQ. 0.d0) goto 160
-                  gc   = max(abs(work(i-1)),abs(work(i)))
-                  gs   = min(abs(work(i-1)),abs(work(i)))
-                  temp = sign(gc*sqrt(1+gs*gs/(gc*gc)), work(i-1))
-                  gc   = work(i-1)/temp
-                  gs   = work(i)/temp
-
-                  if (gc .EQ. 1.d0) goto 160
-                  if (gc .EQ. 0.d0) then
-                     work(i-1) = gs * temp
-                     do 170 j=1,n
-                        temp        = dmat(j,i-1)
-                        dmat(j,i-1) = dmat(j,i)
-                        dmat(j,i)   = temp
- 170                 continue
-                  else
-                     work(i-1) = temp
-                     nu = gs/(1.d0+gc)
-                     do 180 j=1,n
-                        temp        = gc*dmat(j,i-1) + gs*dmat(j,i)
-                        dmat(j,i)   = nu*(dmat(j,i-1)+temp) - dmat(j,i)
-                        dmat(j,i-1) = temp
- 180                 continue
-                  endif
- 160           continue
-
-               work(l) = work(nact)
-            endif
-         else
-
-            sum = -bvec(nvl)
-            do 190 j = 1,n
-               sum = sum + sol(j)*amat(j,nvl)
- 190        continue
-            if( nvl .GT. meq ) then
-               work(iwsv+nvl) = sum
-            else
-               work(iwsv+nvl) = -abs(sum)
-               if( sum .GT. 0.d0) then
-                  do 191 j=1,n
-                     amat(j,nvl) = -amat(j,nvl)
- 191              continue
-               bvec(i) = -bvec(i)
-               endif
-            endif
-            goto 700
-         endif
-      endif
-      goto 50
-
- 700  continue
-
-      if (it1 .EQ. nact) goto 799
-
- 797  continue
-
-      l  = iwrm + (it1*(it1+1))/2 + 1
-      l1 = l+it1
-      if (work(l1) .EQ. 0.d0) goto 798
-      gc   = max(abs(work(l1-1)),abs(work(l1)))
-      gs   = min(abs(work(l1-1)),abs(work(l1)))
-      temp = sign(gc*sqrt(1+gs*gs/(gc*gc)), work(l1-1))
-      gc   = work(l1-1)/temp
-      gs   = work(l1)/temp
-
-      if (gc .EQ. 1.d0) goto 798
-      if (gc .EQ. 0.d0) then
-         do 710 i=it1+1,nact
-            temp       = work(l1-1)
-            work(l1-1) = work(l1)
-            work(l1)   = temp
-            l1 = l1+i
- 710     continue
-         do 711 i=1,n
-            temp          = dmat(i,it1)
-            dmat(i,it1)   = dmat(i,it1+1)
-            dmat(i,it1+1) = temp
- 711     continue
-      else
-         nu = gs/(1.d0+gc)
-         do 720 i=it1+1,nact
-            temp       = gc*work(l1-1) + gs*work(l1)
-            work(l1)   = nu*(work(l1-1)+temp) - work(l1)
-            work(l1-1) = temp
-            l1 = l1+i
- 720     continue
-         do 721 i=1,n
-            temp          = gc*dmat(i,it1) + gs*dmat(i,it1+1)
-            dmat(i,it1+1) = nu*(dmat(i,it1)+temp) - dmat(i,it1+1)
-            dmat(i,it1)   = temp
- 721     continue
-      endif
-
- 798  continue
-      l1 = l-it1
-      do 730 i=1,it1
-         work(l1)=work(l)
-         l  = l+1
-         l1 = l1+1
- 730  continue
-
-      work(iwuv+it1) = work(iwuv+it1+1)
-      iact(it1)      = iact(it1+1)
-      it1 = it1+1
-      if (it1 .LT. nact) goto 797
- 799  work(iwuv+nact)   = work(iwuv+nact+1)
-      work(iwuv+nact+1) = 0.d0
-      iact(nact)        = 0
-      nact = nact-1
-      iter(2) = iter(2)+1
-      goto 55
- 999  continue
-      return
-      end subroutine qpgen2
+       ! North wall
+       left  = si(i,np)
+       right = si_senw(i,north)
+!       f_left  = fxy(i,np,2)
+!       f_right = fxy_halo(i,north,2)
+       f_left  = left*contrauv(i,np,2)
+       f_right = right*contrauv(i,np,2)
+       lf_north(i) =  0.5D0 *(f_left + f_right - alfa2*(right - left))
+    enddo
 
 
+    ! East & West   max of Flux Jacobians
 
-!-------------------------------------------------------------------
-      subroutine dpori(a,lda,n)
-      integer lda,n
-      double precision a(lda,1)
-
-      double precision t
-      integer j,k,kp1
-      do 100 k = 1, n
-         a(k,k) = 1.0d0/a(k,k)
-         t = -a(k,k)
-         call dscal(k-1,t,a(1,k),1)
-         kp1 = k + 1
-         if (n .lt. kp1) go to 90
-         do 80 j = kp1, n
-            t = a(k,j)
-            a(k,j) = 0.0d0
-            call daxpy(k,t,a(1,k),1,a(1,j),1)
- 80      continue
- 90      continue
- 100  continue
-      return
-      end  subroutine dpori
- 
-!-------------------------------------------------------------------
-
-      subroutine dposl(a,lda,n,b)
-      integer lda,n
-      double precision a(lda,1),b(1)
-
-      double precision ddot,t
-      integer k,kb
-      do 10 k = 1, n
-         t = ddot(k-1,a(1,k),1,b(1),1)
-         b(k) = (b(k) - t)/a(k,k)
-   10 continue
-
-      do 20 kb = 1, n
-         k = n + 1 - kb
-         b(k) = b(k)/a(k,k)
-         t = -b(k)
-         call daxpy(k-1,t,a(1,k),1,b(1),1)
-   20 continue
-
-      return
-      end subroutine dposl
+!    ur = abs(contrauv(1,j,1))
+    alfa1 = maxval(abs(contrauv(1,1:np,1)))
+!    ul = abs(contrauv(np,j,1))
+    alfa2 = maxval(abs(contrauv(np,1:np,1)))
 
 
-!-------------------------------------------------------------------
-      SUBROUTINE DPOFA (A, LDA, N, INFO)
+    do j = 1, np
+       !West wall
+       left  =  si_senw(j,west)
+       right  = si(1,j)
+!       f_left  = fxy_halo(j,west,1)
+!       f_right = fxy(1,j,1)
+       f_left = left*contrauv(1,j,1)
+       f_right= right*contrauv(1,j,1)
+       lf_west(j) =  0.5D0 *(f_left + f_right - alfa1*(right - left))
 
-      INTEGER LDA,N,INFO
-      DOUBLE PRECISION A(LDA,*)
+       !East wall
+       left  = si(np,j)
+       right  = si_senw(j,east)
+!       f_left  = fxy(np,j,1)
+!       f_right = fxy_halo(j,east,1)
+       f_left = left*contrauv(np,j,1)
+       f_right= right*contrauv(np,j,1)
+       lf_east(j) =  0.5D0 *(f_left + f_right - alfa2*(right - left))
 
-      DOUBLE PRECISION DDOT,T
-      DOUBLE PRECISION S
-      INTEGER J,JM1,K
+    enddo
 
-         DO 30 J = 1, N
-            INFO = J
-            S = 0.0D0
-            JM1 = J - 1
-            IF (JM1 .LT. 1) GO TO 20
-            DO 10 K = 1, JM1
-               T = A(K,J) - DDOT(K-1,A(1,K),1,A(1,J),1)
-               T = T/A(K,K)
-               A(K,J) = T
-               S = S + T*T
-   10       CONTINUE
-   20       CONTINUE
-            S = A(J,J) - S
-            IF (S .LE. 0.0D0) GO TO 40
-            A(J,J) = SQRT(S)
-   30    CONTINUE
-         INFO = 0
-   40 CONTINUE
-      RETURN
-      END SUBROUTINE DPOFA
-!-----------------------------------------------------------------
+    !Flux integral along the element boundary
+
+
+    do j = 1, np
+       do i = 1, np
+
+          s1 =  (lf_east(j) *mij(i,np) - lf_west(j) *mij(i,1) )* deriv%Mvv_twt(j,j)
+          s2 =  (lf_north(i)*mij(j,np) - lf_south(i)*mij(j,1) )* deriv%Mvv_twt(i,i)
+
+          numflux(i,j) = (s1 + s2) * rrearth
+
+       enddo
+    enddo
+!=======================================================================================!
+end function adv_flux_term
 
 
 
