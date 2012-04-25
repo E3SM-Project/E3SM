@@ -363,6 +363,7 @@ contains
        ! advection test cases support conservation form or advective form
        use_advective_flux=.true.
     else
+       ! use shallow water flux
        use_advective_flux=.false.
        ! shallow water test cases require conservation form of h equation
        if (tracer_advection_formulation==TRACERADV_UGRADQ) then
@@ -660,12 +661,14 @@ contains
                    !flux=edge_flux_u_cg( elem(ie)%state%v(:,:,:,k,n0), elem(ie)%state%p(:,:,k,n0),&
                    !     pedges(:,:,k), deriv, elem(ie), u_is_contra=.true.)
                    ! adv flux from DG code: 
-                   flux=elem(ie)%metdet(:,:)*adv_flux_term(deriv,&
+                   flux=adv_flux_term(deriv,&
                         elem(ie)%state%v(:,:,:,k,n0), elem(ie)%state%p(:,:,k,n0),pedges(:,:,k))
+                   flux = elem(ie)%metdet(:,:)*flux ! CG weak form uses integration on the sphere
                 else
                    ! shallow water flux:
                    ! fjmax=sw_fjmax(elem(ie)%state%v(:,:,:,k,n0),gh11,gh22,gh11_halo,gh22_halo)
-                   ! call swsys_flux(3,deriv,fjmax,vec,vec_halo,fluxvec,flux_halo,numflux)
+                   ! call swsys_flux(1,deriv,fjmax,vec,vec_halo,elem(ie)%state%v(:,:,:,k,n0),flux)
+                   flux = elem(ie)%metdet(:,:)*flux ! CG weak form uses integration on the sphere
                 endif
 
                 ! combine weak gradient and edge flux:
@@ -678,10 +681,13 @@ contains
                 if (npdg<np) then
                    ! modal timestep, with exact integration.  using prognostic variable: p*metdet
                    ! local mass matrix is diagonal assuming npdg<np so that GLL quadrature is exact)
+                   ! (note: GLL/modal conversion comutes with time-stepping)
 
                    ! compute modal coefficients of p*metdet
                    ! (spherical inner-product of Legendre polynomial and p)
-                   phat = gll_to_dgmodal(ptens(:,:,k,ie),deriv,elem(ie)%spheremp(:,:))   
+                   phat = gll_to_dgmodal(ptens(:,:,k,ie)*elem(ie)%metdet(:,:),deriv)   
+
+                   ! modal based limiter goes here
 
                    ! evalute modal expanion of p*metdet on GLL points
                    ptens(:,:,k,ie)=dgmodal_to_gll(phat,deriv) 
@@ -2985,6 +2991,135 @@ function adv_flux_term(deriv,contrauv,si,si_neighbor) result(numflux)
 end function adv_flux_term
 
 
+!==================================================================================!
+! Element-wise Max flux Jacobian for SW system 
+! from DG code, modified for CG velocity
+!----------------------------------------------------------------------------------
+ Function sw_fjmax(contuv,gh11,gh22,gh11_halo,gh22_halo) result(fjmax)
+!----------------------------------------------------------------------------------
+ Implicit None
+ real (kind=real_kind),dimension(np,np,2),intent(in):: contuv
+ real (kind=real_kind),dimension(np,np),  intent(in):: gh11,gh22 
+ real (kind=real_kind),dimension(np,4),   intent(in):: gh11_halo, gh22_halo 
 
+ real (kind=real_kind),dimension(4)   :: fjmax
+ real (kind=real_kind):: alfa1,alfa2, ul,ur 
+ integer, parameter:: south=1,east=2,north=3,west=4
+ integer:: i,j,wall
+!========================================================
+    alfa1 = 0.0D0
+    alfa2 = 0.0D0
+    do i = 1, np
+       ul = abs(contuv(i,1,2))      + sqrt(gh22(i,1))
+       ur = abs(contuv(i,1,2))      + sqrt(gh22_halo(i,south))
+       alfa1= max(alfa1,ul,ur)
+       
+       ul = abs(contuv(i,np,2)) + sqrt(gh22_halo(i,north))
+       ur = abs(contuv(i,np,2))     + sqrt(gh22(i,np))
+       alfa2= max(alfa2,ul,ur)
+    enddo
+
+    fjmax(south) = alfa1
+    fjmax(north) = alfa2
+
+    alfa1 = 0.0D0
+    alfa2 = 0.0D0
+    do j = 1, np
+       ul = abs(contuv(1,j,1))  + sqrt(gh11_halo(j,west))
+       ur = abs(contuv(1,j,1))  + sqrt(gh11(1,j))
+     alfa1= max(alfa1,ul,ur)
+       ul = abs(contuv(np,j,1))  + sqrt(gh11(np,j))
+       ur = abs(contuv(np,j,1))  + sqrt(gh11_halo(j,east))
+     alfa2= max(alfa2,ul,ur)
+    enddo
+
+    fjmax(west) = alfa1
+    fjmax(east) = alfa2 
+
+   End Function sw_fjmax  
+!=======================================================================================!
+
+!=======================================================================================! 
+subroutine swsys_flux(numeqn,deriv,fjmax,si,si_senw,uvcontra,fluxout)
+   use derivative_mod, only : derivative_t
+   integer, parameter :: south=1, east=2, north=3, west=4
+   integer, intent(in):: numeqn
+   type (derivative_t)                                  :: deriv
+   real (kind=real_kind), dimension(4),    intent(in)   :: fjmax
+   real (kind=real_kind), dimension(np,np,2,numeqn),intent(in) :: uvcontra
+   real (kind=real_kind), dimension(np,np,numeqn),  intent(in) :: si
+   real (kind=real_kind), dimension(np,4,numeqn),   intent(in) :: si_senw
+
+   real (kind=real_kind), dimension(np,np,numeqn), intent(out) :: fluxout
+
+   real (kind=real_kind), dimension(np,np) :: mij
+   real (kind=real_kind), dimension(np)   :: lf_south,lf_north,lf_east,lf_west
+   real(kind=real_kind) ::  fj(4), ul,ur , left, right, f_left, f_right, s1,s2
+
+   integer i,j,k,eqn 
+
+      mij(:,:) = 0.0D0
+      mij(1,1) = 1.0D0
+    mij(np,np) = 1.0D0
+
+!       fj(:) = scale*fjmax(:)
+
+    !For SW-system  (u1,u2,dp,pt) order   (4 equations)
+
+    fluxout(:,:,:) = 0.0D0 
+
+      do eqn = 1, numeqn
+
+
+           ! East & West   LF flux  (fjmax <- max of flux Jacobian)
+
+         do j = 1, np
+
+                    left  = si_senw(j,west,eqn)
+                   right  = si(1,j,eqn)
+                  f_left  = uvcontra(1,j,1,eqn)*left
+                  f_right = uvcontra(1,j,1,eqn)*right
+               lf_west(j) = 0.5D0 *(f_left + f_right - fj(west)*(right - left))
+
+                    left  = si(np,j,eqn)
+                   right  = si_senw(j,east,eqn)
+                  f_left  = uvcontra(np,j,1,eqn)*left
+                  f_right = uvcontra(np,j,1,eqn)*right
+               lf_east(j) = 0.5D0 *(f_left + f_right - fj(east)*(right - left))
+
+          end do
+
+           ! North& South  LF flux  (fjmax <- max of flux Jacobian)
+
+         do i = 1, np
+
+                     left = si_senw(i,south,eqn)
+                   right  = si(i,1,eqn)
+                   f_left = uvcontra(i,1,2,eqn)*left
+                  f_right = uvcontra(i,1,2,eqn)*right
+              lf_south(i) = 0.5D0 *(f_left + f_right - fj(south)*(right - left))
+
+                    left  = si(i,np,eqn)
+                    right = si_senw(i,north,eqn)
+                  f_left  = uvcontra(i,np,2,eqn)*left
+                  f_right = uvcontra(i,np,2,eqn)*right
+              lf_north(i) = 0.5D0 *(f_left + f_right - fj(north)*(right - left))
+
+         end do
+
+        !Flux integral along the element boundary
+
+        do j = 1, np
+        do i = 1, np
+            s1 = (lf_east(j) *mij(i,np) - lf_west(j) *mij(i,1) )* deriv%Mvv_twt(j,j)
+            s2 = (lf_north(i)*mij(j,np) - lf_south(i)*mij(j,1) )* deriv%Mvv_twt(i,i)
+            fluxout(i,j,eqn) = (s1 + s2) * rrearth
+        end do
+        end do
+
+    end do 
+
+ end subroutine  swsys_flux 
+!=======================================================================================================! 
 
 end module advance_mod

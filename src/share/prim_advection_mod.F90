@@ -2315,20 +2315,41 @@ end subroutine compute_and_apply_rhs
                 edge_flux_u_cg( Vstar(:,:,:,k), elem(ie)%state%Qdp(:,:,k,q,n0),qedges(:,:,k,q),&
                 deriv, elem(ie), u_is_contra=.false.)
 
-           ! take timestep
+           ! advance in time. GLL quadrature, cardinal function basis, under-integrated.  
+           ! local mass matrix is diagonal, with entries elem(ie)%spheremp(),
+           ! so we divide through by elem(ie)%spheremp().
            elem(ie)%state%Qdp(:,:,k,q,np1)=elem(ie)%state%Qdp(:,:,k,q,n0) - dt*divdp/elem(ie)%spheremp
            
            if (npdg<np) then
-              ! modal timestep. for npdg<np, then GLL based spherical innner product 
-              ! gives exact modal coefficients of p*metdet and local mass matrix is diagonal
-              pshat = gll_to_dgmodal(elem(ie)%state%Qdp(:,:,k,q,np1),deriv,elem(ie)%spheremp)  
+              ! modal timestep, with exact integration.  using prognostic variable: p*metdet
+              ! local mass matrix is diagonal assuming npdg<np so that GLL quadrature is exact)
+              ! (note: GLL/modal conversion comutes with time-stepping)
+              
+              ! compute modal coefficients of p*metdet
+              ! (spherical inner-product of Legendre polynomial and p)
+              pshat = gll_to_dgmodal(elem(ie)%state%Qdp(:,:,k,q,np1)*elem(ie)%metdet(:,:),deriv)
+
+              ! modal based limiter goes here
+              ! apply a little dissipation to last mode:
+              do j=1,npdg
+              do i=1,npdg
+                 !if ( (i-1)+(j-1) == 4) pshat(i,j)=pshat(i,j)*.75
+                 !if ( (i-1)+(j-1) == 3) pshat(i,j)=pshat(i,j)*.90
+                 if ( i==npdg) pshat(i,j)=pshat(i,j)*.90
+                 if ( j==npdg) pshat(i,j)=pshat(i,j)*.90
+              enddo
+              enddo
+
+
+              ! evalute modal expanion of p*metdet on GLL points
               divdp=dgmodal_to_gll(pshat,deriv)  
+
               ! convert from p*metdet back to p:
               elem(ie)%state%Qdp(:,:,k,q,np1)=divdp/elem(ie)%metdet(:,:)
            endif
         enddo
         if(limiter_option == 4)then
-           ! reuse CG subroutine, which wants Qdp*spheremp:
+           ! reuse CG limiter, which wants Qdp*spheremp:
            do k=1,nlev
               elem(ie)%state%Qdp(:,:,k,q,np1)=elem(ie)%state%Qdp(:,:,k,q,np1)*elem(ie)%spheremp(:,:)
            enddo

@@ -2297,21 +2297,18 @@ endif
   end function vlaplace_sphere_wk
 
 
-  function gll_to_dgmodal(p,deriv,spheremp) result(phat)
+  function gll_to_dgmodal(p,deriv) result(phat)
 !
 !   input:  v = velocity in lat-lon coordinates
 !   ouput:  phat = Legendre coefficients
 !
-!   Computes  < g dot p  > 
-!   (the quadrature approximation of the *spherical* integral of p against
-!    all Legendre polynomials up to degree npdg)
-!
-!   spheremp should be elem(ie)%spheremp(:,:) = metdet*GLL weights
+!   Computes  < g dot p  > = SUM  g(i,j) p(i,j) w(i) w(j)
+!   (the quadrature approximation on the *reference element* of the integral of p against
+!    all Legendre polynomials up to degree npdg
 !
 !   for npdg < np, this routine gives the (exact) modal expansion of p/spheremp()
 !
     real(kind=real_kind), intent(in) :: p(np,np) 
-    real(kind=real_kind), intent(in) :: spheremp(np,np) 
     type (derivative_t)              :: deriv
     real(kind=real_kind) :: phat(npdg,npdg)
 
@@ -2321,10 +2318,11 @@ endif
     A=0
     phat=0
 
+    ! N^3 tensor product formulation:
     do m=1,npdg
     do j=1,np
     do i=1,np
-       A(j,m)=A(j,m)+p(i,j)*spheremp(i,j)*deriv%legdg(m,i)
+       A(j,m)=A(j,m)+( p(i,j)*deriv%Mvv_twt(i,i)*deriv%Mvv_twt(j,j)  )*deriv%legdg(m,i)
     enddo
     enddo
     enddo
@@ -2343,7 +2341,7 @@ endif
           do j=1,np
              do i=1,np
                 gmn = deriv%legdg(m,i)*deriv%legdg(n,j) ! basis function
-                phat(m,n)=phat(m,n)+gmn*p(i,j)*spheremp(i,j)
+                phat(m,n)=phat(m,n)+gmn*p(i,j)*deriv%Mvv_twt(i,i)*deriv%Mvv_twt(j,j)
              enddo
           enddo
        enddo
