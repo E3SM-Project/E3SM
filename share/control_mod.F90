@@ -28,7 +28,7 @@ module control_mod
   integer, public  :: ftype = 0                                ! Forcing Type
                                                                ! ftype = 0  HOMME ApplyColumn() type forcing process split
                                                                ! ftype = -1   ignore forcing  (used for testing energy balance)
-  integer, public  :: use_cpstar=1                             ! use cp or cp* in T equation                               
+  integer, public  :: use_cpstar=0                             ! use cp or cp* in T equation                               
   integer, public  :: energy_fixer = 0                         ! 0 = no fixer, 
                                                                ! 1 = CAM style fixer  Tnew = T + beta
   integer, public :: qsplit = 1           ! ratio of dynamics tsteps to tracer tsteps        

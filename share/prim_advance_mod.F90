@@ -218,10 +218,9 @@ contains
     ! note:time step computes u(t+1)= u(t*) + RHS. 
     ! for consistency, dt_vis = t-1 - t*, so this is timestep method dependent
     if (tstep_type==1) then  ! forward-in-time
-       !call advance_hypervis(edge3p1,elem,hvcoord,hybrid,deriv,np1,np1,np1,nets,nete,dt_vis,eta_ave_w)
-       call advance_hypervis(edge3p1,elem,hvcoord,hybrid,deriv,np1,nets,nete,dt_vis,eta_ave_w)
+       call advance_hypervis(edge3p1,elem,hvcoord,hybrid,deriv,np1,np1,np1,nets,nete,dt_vis,eta_ave_w)
     else ! leapfrog
-       call advance_hypervis_lf(edge3p1,elem,hvcoord,hybrid,deriv,nm1,n0,np1,nets,nete,dt_vis,eta_ave_w)
+       call advance_hypervis(edge3p1,elem,hvcoord,hybrid,deriv,nm1,n0,np1,nets,nete,dt_vis,eta_ave_w)
     endif
 #ifdef ENERGY_DIAGNOSTICS
     if (compute_diagnostics) then
@@ -1366,7 +1365,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
 
-  subroutine advance_hypervis_lf(edge3,elem,hvcoord,hybrid,deriv,nm1,n0,nt,nets,nete,dt2,eta_ave_w)
+  subroutine advance_hypervis(edge3,elem,hvcoord,hybrid,deriv,nm1,n0,nt,nets,nete,dt2,eta_ave_w)
   !
   !  take one timestep of:  
   !          u(:,:,:,np) = u(:,:,:,np) +  dt2*nu*laplacian**order ( u )
@@ -1425,8 +1424,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   ournull => NULL()
 
   if (nu_s == 0 .and. nu == 0 .and. nu_p==0 ) return;
-  call t_barrierf('sync_advance_hypervis_lf', hybrid%par%comm)
-  call t_startf('advance_hypervis_lf')
+  call t_barrierf('sync_advance_hypervis', hybrid%par%comm)
+  call t_startf('advance_hypervis')
 
 ! for non-leapfrog,nt=n0=nmt
 !  
@@ -1538,8 +1537,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                        ! normalize so as to conserve IE  (not needed when using p-surface viscosity)
                        ! scale velosity by 1/rho (normalized to be O(1))
                        ! dp/dn = O(ps0)*O(delta_eta) = O(ps0)/O(nlev)
+                       ! for leapfrog, compute dpdn at n0.  otherwise n0=nt and we compute at nt
                        dpdn = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                            ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,n0)  ! nt ?
+                            ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,n0)  
                        dpdn0 = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                             ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
                        nu_scale = dpdn0/dpdn
@@ -1646,14 +1646,20 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      enddo
   endif
   
-  call t_stopf('advance_hypervis_lf')
+  call t_stopf('advance_hypervis')
   
-  end subroutine advance_hypervis_lf
+  end subroutine advance_hypervis
   
   
 
 
 
+
+#if 0
+
+NOTE: with nu_p>0 this routine correctly adds all assocated heating terms and
+conserves energy.  BUT: results are very oscillatory - it seems nu_p>0 heating terms
+are much better added via a fixer
 
 
   subroutine advance_hypervis(edge3,elem,hvcoord,hybrid,deriv,nt,nets,nete,dt2,eta_ave_w)
