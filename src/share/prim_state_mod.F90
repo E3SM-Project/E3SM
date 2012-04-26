@@ -767,6 +767,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete,tQ
     tstagger = .true.
 
 ! energy_fixer
+!     -2         disabled, but compute energy non-staggered in time
 !     -1         disabled, but compute energy non-staggered in time
 !     0          disabled, but compute energy staggered in time 
 !     1          cp_star(t1)*dp(t1)*T(t2)

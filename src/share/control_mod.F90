@@ -29,8 +29,18 @@ module control_mod
                                                                ! ftype = 0  HOMME ApplyColumn() type forcing process split
                                                                ! ftype = -1   ignore forcing  (used for testing energy balance)
   integer, public  :: use_cpstar=0                             ! use cp or cp* in T equation                               
-  integer, public  :: energy_fixer = 0                         ! 0 = no fixer, 
-                                                               ! 1 = CAM style fixer  Tnew = T + beta
+  integer, public  :: energy_fixer = 0    ! options appropriate for leapfrog:
+                                          !   0:  no fixer, compute energy staggered in time
+                                          !   1:  Energy with cp_star, staggered (for debug only)
+                                          !   2:  Energy with cp, staggered
+                                          ! options appropreate for forward-in-time
+                                          ! -1,-2:  no fixer, compute energy non-staggered in time
+                                          !   3:  Energy with cp_star, non-staggered (for debug only)
+                                          !   4:  Energy with cp, non-staggered
+
+
+                                          ! 1 = CAM style fixer  Tnew = T + beta
+                                              
   integer, public :: qsplit = 1           ! ratio of dynamics tsteps to tracer tsteps        
   integer, public :: LFTfreq=0            ! leapfrog-trapazoidal frequency
                                           ! interspace a lf-trapazoidal step every LFTfreq leapfrogs    
