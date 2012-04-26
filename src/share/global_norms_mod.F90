@@ -510,7 +510,8 @@ contains
     deallocate(gp%weights)
 
      if (hybrid%masterthread) then
-       write(iulog,'(a,f10.2)') 'CFL estimates in terms of S=time step stability region (S=1 for leapfrog)'
+       write(iulog,'(a,f10.2)') 'CFL estimates in terms of S=time step stability region'
+       write(iulog,'(a,f10.2)') '(i.e. advection w/leapfrog: S=1, viscosity w/forward Euler: S=2)'
        if (rk_stage_user>0) then
           dt_eul = (dt_advection/(rk_stage_user-1)) ! stepsize of internal euler step in RKSSP method
           !write(iulog,'(a,f10.2)') 'SSP Forward Euler (120m/s) Courant number=', (120.0d0*max_max_eig*rrearth*dt_eul)/min_gw

@@ -389,7 +389,6 @@ module namelist_mod
     se_limiter_option=4
     se_ftype = 2
     energy_fixer = -1      ! no fixer, non-staggered-in-time formulas
-!    energy_fixer = 4      ! fix dry energy, non-staggered-in-time formulas
     se_partmethod = -1
     se_ne       = -1
     se_topology = 'none'

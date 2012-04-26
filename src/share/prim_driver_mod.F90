@@ -641,24 +641,6 @@ contains
        endif
     endif
 
-    ! ==================================
-    ! should T equation use cp or cp*:
-    ! this has to be done here because CAM does not set 'moisture' until
-    ! after calling prim_init1
-    ! ==================================
-#if (! defined ELEMENT_OPENMP)
-    !$OMP MASTER
-#endif
-    if  (moisture /= "dry") then
-       use_cpstar = 1
-       if (energy_fixer==-2) use_cpstar=0
-    else   
-       use_cpstar = 0
-    endif
-#if (! defined ELEMENT_OPENMP)
-    !$OMP END MASTER
-#endif
-
 #if (! defined ELEMENT_OPENMP)
     !$OMP BARRIER
 #endif
