@@ -335,11 +335,11 @@ contains
     real (kind=real_kind), dimension(np,np,2)    :: pv      ! p*v lat-lon
     real (kind=real_kind), dimension(np,np)      :: E          ! kinetic energy term
     real (kind=real_kind), dimension(np,np)      :: zeta       ! relative vorticity
-    real (kind=real_kind), dimension(np,np)      :: div, flux
+    real (kind=real_kind), dimension(np,np)      :: div, flux, plocal
     real (kind=real_kind), dimension(np,np,2)    :: ulatlon
 
 
-    real (kind=real_kind) :: v1,v2,pstar,gmn
+    real (kind=real_kind) :: v1,v2,pstar,gmn,fjmax(4)
     real (kind=real_kind) :: vtens1,vtens2
     real (kind=real_kind) :: pmin(nlev,nets:nete),pmax(nlev,nets:nete)
     real (kind=real_kind) :: plmin(np,np,nlev,nets:nete),plmax(np,np,nlev,nets:nete)
@@ -628,10 +628,8 @@ contains
           ! ===========================================================
           ! Unpack the edges for vgradp and vtens
           ! ===========================================================
-          kptr=0
-          if (npdg>0) then
-             call edgeDGVunpack(edge3, pedges, nlev, kptr, elem(ie)%desc)
-          else
+          if (npdg==0) then
+             kptr=0
              call edgeVunpack(edge3, ptens(1,1,1,ie), nlev, kptr, elem(ie)%desc)
           endif
           kptr=nlev
@@ -655,20 +653,20 @@ contains
           end do
 
           if (npdg>0) then
+             kptr=0
+             call edgeDGVunpack(edge3, pedges, nlev, kptr, elem(ie)%desc)
+             pedges=pedges+pmean  ! add in mean value, to get edge flux correct
              do k=1,nlev
+                plocal(:,:)=elem(ie)%state%p(:,:,k,n0)+pmean  ! add in mean value
                 if (use_advective_flux) then
                    ! simple upwind flux
                    !flux=edge_flux_u_cg( elem(ie)%state%v(:,:,:,k,n0), elem(ie)%state%p(:,:,k,n0),&
                    !     pedges(:,:,k), deriv, elem(ie), u_is_contra=.true.)
-                   ! adv flux from DG code: 
-                   flux=adv_flux_term(deriv,&
-                        elem(ie)%state%v(:,:,:,k,n0), elem(ie)%state%p(:,:,k,n0),pedges(:,:,k))
-                   flux = elem(ie)%metdet(:,:)*flux ! CG weak form uses integration on the sphere
+                   flux=adv_flux_term(elem(ie),deriv,elem(ie)%state%v(:,:,:,k,n0),plocal,pedges(:,:,k))
                 else
                    ! shallow water flux:
-                   ! fjmax=sw_fjmax(elem(ie)%state%v(:,:,:,k,n0),gh11,gh22,gh11_halo,gh22_halo)
-                   ! call swsys_flux(1,deriv,fjmax,vec,vec_halo,elem(ie)%state%v(:,:,:,k,n0),flux)
-                   flux = elem(ie)%metdet(:,:)*flux ! CG weak form uses integration on the sphere
+                   fjmax=sw_fjmax(elem(ie)%state%v(:,:,:,k,n0),plocal,pedges(:,:,k),elem(ie))
+                   call swsys_flux(1,elem(ie),deriv,fjmax,plocal,pedges(:,:,k),elem(ie)%state%v(:,:,:,k,n0),flux)
                 endif
 
                 ! combine weak gradient and edge flux:
@@ -2892,14 +2890,17 @@ endif
 !  Advection Flux Term							   		!
 !  from DG code - modified for CG velocity
 !=======================================================================================!
-function adv_flux_term(deriv,contrauv,si,si_neighbor) result(numflux)
+function adv_flux_term(elem,deriv,contrauv,si,si_neighbor) result(numflux)
 !=======================================================================================!
     use derivative_mod, only : derivative_t
+    use element_mod, only : element_t
     integer, parameter :: south=1, east=2, north=3, west=4
     type (derivative_t)         :: deriv
     real (kind=real_kind), dimension(np,np,2),intent(in) :: contrauv
     real (kind=real_kind), dimension(np,np),  intent(in) :: si
     real (kind=real_kind), dimension(0:np+1,0:np+1),   intent(in) :: si_neighbor
+    type (element_t) :: elem
+
     real (kind=real_kind), dimension(np,4) :: si_senw
     real (kind=real_kind), dimension(np,np) :: numflux
     real (kind=real_kind), dimension(np,np) :: mij
@@ -2923,7 +2924,6 @@ function adv_flux_term(deriv,contrauv,si,si_neighbor) result(numflux)
 !   ur = abs(contrauv(i,np,2))
     alfa2 = maxval(abs(contrauv(1:np,np,2)))
 
-
     do i = 1, np
        ! South wall
        left = si_senw(i,south)
@@ -2942,6 +2942,7 @@ function adv_flux_term(deriv,contrauv,si,si_neighbor) result(numflux)
        f_left  = left*contrauv(i,np,2)
        f_right = right*contrauv(i,np,2)
        lf_north(i) =  0.5D0 *(f_left + f_right - alfa2*(right - left))
+
     enddo
 
 
@@ -2951,7 +2952,6 @@ function adv_flux_term(deriv,contrauv,si,si_neighbor) result(numflux)
     alfa1 = maxval(abs(contrauv(1,1:np,1)))
 !    ul = abs(contrauv(np,j,1))
     alfa2 = maxval(abs(contrauv(np,1:np,1)))
-
 
     do j = 1, np
        !West wall
@@ -2975,13 +2975,17 @@ function adv_flux_term(deriv,contrauv,si,si_neighbor) result(numflux)
     enddo
 
     !Flux integral along the element boundary
-
+    ! note: added metdet() below which is not used in DG code.  
+    ! in CG code, all integrals used in weak formulation match physical integrals used
+    ! to define mass and energy:
+    ! ds (arc length)   =  metdet(i,j)*w(i)
+    ! dA (area measure) =  metdet(i,j)*w(i)*w(j)
 
     do j = 1, np
        do i = 1, np
 
-          s1 =  (lf_east(j) *mij(i,np) - lf_west(j) *mij(i,1) )* deriv%Mvv_twt(j,j)
-          s2 =  (lf_north(i)*mij(j,np) - lf_south(i)*mij(j,1) )* deriv%Mvv_twt(i,i)
+          s1 =  (lf_east(j) *mij(i,np) - lf_west(j) *mij(i,1) )* deriv%Mvv_twt(j,j)*elem%metdet(i,j)
+          s2 =  (lf_north(i)*mij(j,np) - lf_south(i)*mij(j,1) )* deriv%Mvv_twt(i,i)*elem%metdet(i,j)
 
           numflux(i,j) = (s1 + s2) * rrearth
 
@@ -2995,18 +2999,48 @@ end function adv_flux_term
 ! Element-wise Max flux Jacobian for SW system 
 ! from DG code, modified for CG velocity
 !----------------------------------------------------------------------------------
- Function sw_fjmax(contuv,gh11,gh22,gh11_halo,gh22_halo) result(fjmax)
+ Function sw_fjmax(contuv,si,si_neighbor,elem) result(fjmax)
 !----------------------------------------------------------------------------------
+ use element_mod, only : element_t
  Implicit None
  real (kind=real_kind),dimension(np,np,2),intent(in):: contuv
- real (kind=real_kind),dimension(np,np),  intent(in):: gh11,gh22 
- real (kind=real_kind),dimension(np,4),   intent(in):: gh11_halo, gh22_halo 
+ real (kind=real_kind), dimension(np,np),  intent(in) :: si
+ real (kind=real_kind), dimension(0:np+1,0:np+1),   intent(in) :: si_neighbor
+ type (element_t) :: elem
 
+ real (kind=real_kind),dimension(np,np) :: gh11,gh22,g11,g22
+ real (kind=real_kind),dimension(np,4)  :: gh11_halo, gh22_halo 
  real (kind=real_kind),dimension(4)   :: fjmax
  real (kind=real_kind):: alfa1,alfa2, ul,ur 
  integer, parameter:: south=1,east=2,north=3,west=4
  integer:: i,j,wall
 !========================================================
+#if 0
+    ! for debugging: with this, we should duplicate adv_flux_term()
+    g11=0
+    g22=0
+#else
+    g11=(elem%metinv(1,1,:,:))   ! sqrt(g11)=contra component of nhat on east/west edges
+    g22=(elem%metinv(2,2,:,:))   ! sgrt(g22)=contra component of nhat on north/south edges
+#endif
+
+    gh11(:,:) = (si(:,:))*g11(:,:)
+    gh22(:,:) = (si(:,:))*g22(:,:)
+
+    ! convert from edgeDGVunpack variable to Ram's variables:
+    gh11_halo(:,south) = (si_neighbor(1:np,0))*g11(1:np,1)
+    gh11_halo(:,north) = (si_neighbor(1:np,np+1))*g11(1:np,np)
+    gh11_halo(:,east) = (si_neighbor(np+1,1:np))*g11(np,1:np)
+    gh11_halo(:,west) = (si_neighbor(0,1:np))*g11(1,1:np)
+
+    gh22_halo(:,south) = (si_neighbor(1:np,0))*g22(1:np,1)
+    gh22_halo(:,north) = (si_neighbor(1:np,np+1))*g22(1:np,np)
+    gh22_halo(:,east) = (si_neighbor(np+1,1:np))*g22(np,1:np)
+    gh22_halo(:,west) = (si_neighbor(0,1:np))*g22(1,1:np)
+
+
+
+
     alfa1 = 0.0D0
     alfa2 = 0.0D0
     do i = 1, np
@@ -3040,21 +3074,23 @@ end function adv_flux_term
 !=======================================================================================!
 
 !=======================================================================================! 
-subroutine swsys_flux(numeqn,deriv,fjmax,si,si_senw,uvcontra,fluxout)
+subroutine swsys_flux(numeqn,elem,deriv,fjmax,si,si_neighbor,uvcontra,fluxout)
+   use element_mod, only : element_t
    use derivative_mod, only : derivative_t
    integer, parameter :: south=1, east=2, north=3, west=4
    integer, intent(in):: numeqn
    type (derivative_t)                                  :: deriv
+   type (element_t) :: elem
    real (kind=real_kind), dimension(4),    intent(in)   :: fjmax
    real (kind=real_kind), dimension(np,np,2,numeqn),intent(in) :: uvcontra
    real (kind=real_kind), dimension(np,np,numeqn),  intent(in) :: si
-   real (kind=real_kind), dimension(np,4,numeqn),   intent(in) :: si_senw
-
+   real (kind=real_kind), dimension(0:np+1,0:np+1,numeqn),   intent(in) :: si_neighbor
    real (kind=real_kind), dimension(np,np,numeqn), intent(out) :: fluxout
 
+   real (kind=real_kind), dimension(np,4,numeqn) :: si_senw
    real (kind=real_kind), dimension(np,np) :: mij
    real (kind=real_kind), dimension(np)   :: lf_south,lf_north,lf_east,lf_west
-   real(kind=real_kind) ::  fj(4), ul,ur , left, right, f_left, f_right, s1,s2
+   real(kind=real_kind) ::  ul,ur , left, right, f_left, f_right, s1,s2
 
    integer i,j,k,eqn 
 
@@ -3062,30 +3098,33 @@ subroutine swsys_flux(numeqn,deriv,fjmax,si,si_senw,uvcontra,fluxout)
       mij(1,1) = 1.0D0
     mij(np,np) = 1.0D0
 
-!       fj(:) = scale*fjmax(:)
-
     !For SW-system  (u1,u2,dp,pt) order   (4 equations)
 
     fluxout(:,:,:) = 0.0D0 
 
       do eqn = 1, numeqn
-
+         ! convert from edgeDGVunpack variable to Ram's variables:
+         si_senw(:,south,eqn) = si_neighbor(1:np,0,eqn)
+         si_senw(:,north,eqn) = si_neighbor(1:np,np+1,eqn)
+         si_senw(:,east,eqn) = si_neighbor(np+1,1:np,eqn)
+         si_senw(:,west,eqn) = si_neighbor(0,1:np,eqn)
+         
 
            ! East & West   LF flux  (fjmax <- max of flux Jacobian)
 
          do j = 1, np
 
-                    left  = si_senw(j,west,eqn)
-                   right  = si(1,j,eqn)
+                    left  = si_senw(j,west,eqn) 
+                   right  = si(1,j,eqn) 
                   f_left  = uvcontra(1,j,1,eqn)*left
                   f_right = uvcontra(1,j,1,eqn)*right
-               lf_west(j) = 0.5D0 *(f_left + f_right - fj(west)*(right - left))
+               lf_west(j) = 0.5D0 *(f_left + f_right - fjmax(west)*(right - left))
 
-                    left  = si(np,j,eqn)
-                   right  = si_senw(j,east,eqn)
+                    left  = si(np,j,eqn) 
+                   right  = si_senw(j,east,eqn) 
                   f_left  = uvcontra(np,j,1,eqn)*left
                   f_right = uvcontra(np,j,1,eqn)*right
-               lf_east(j) = 0.5D0 *(f_left + f_right - fj(east)*(right - left))
+               lf_east(j) = 0.5D0 *(f_left + f_right - fjmax(east)*(right - left))
 
           end do
 
@@ -3093,26 +3132,30 @@ subroutine swsys_flux(numeqn,deriv,fjmax,si,si_senw,uvcontra,fluxout)
 
          do i = 1, np
 
-                     left = si_senw(i,south,eqn)
-                   right  = si(i,1,eqn)
+                     left = si_senw(i,south,eqn) 
+                   right  = si(i,1,eqn) 
                    f_left = uvcontra(i,1,2,eqn)*left
                   f_right = uvcontra(i,1,2,eqn)*right
-              lf_south(i) = 0.5D0 *(f_left + f_right - fj(south)*(right - left))
+              lf_south(i) = 0.5D0 *(f_left + f_right - fjmax(south)*(right - left))
 
-                    left  = si(i,np,eqn)
-                    right = si_senw(i,north,eqn)
+                    left  = si(i,np,eqn) 
+                    right = si_senw(i,north,eqn) 
                   f_left  = uvcontra(i,np,2,eqn)*left
                   f_right = uvcontra(i,np,2,eqn)*right
-              lf_north(i) = 0.5D0 *(f_left + f_right - fj(north)*(right - left))
+              lf_north(i) = 0.5D0 *(f_left + f_right - fjmax(north)*(right - left))
 
          end do
 
         !Flux integral along the element boundary
-
+        ! note: added metdet() below which is not used in DG code.  
+        ! in CG code, all integrals used in weak formulation match physical integrals used
+        ! to define mass and energy:
+        ! v dot nhat ds (arc length)   =  ucontra * metdet(i,j)*w(i)
+        ! dA (area measure)            =  metdet(i,j)*w(i)*w(j)
         do j = 1, np
         do i = 1, np
-            s1 = (lf_east(j) *mij(i,np) - lf_west(j) *mij(i,1) )* deriv%Mvv_twt(j,j)
-            s2 = (lf_north(i)*mij(j,np) - lf_south(i)*mij(j,1) )* deriv%Mvv_twt(i,i)
+            s1 = (lf_east(j) *mij(i,np) - lf_west(j) *mij(i,1) )* deriv%Mvv_twt(j,j) * elem%metdet(i,j) 
+            s2 = (lf_north(i)*mij(j,np) - lf_south(i)*mij(j,1) )* deriv%Mvv_twt(i,i) * elem%metdet(i,j)
             fluxout(i,j,eqn) = (s1 + s2) * rrearth
         end do
         end do

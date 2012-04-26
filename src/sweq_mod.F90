@@ -220,7 +220,7 @@ contains
     call derivinit(deriv)
 #endif    
 
-!    if (hybrid%par%masterproc .AND. ithr == 0) then
+!   if (hybrid%masterthread) then
 !       call deriv_print(deriv)
 !    end if
 
@@ -249,7 +249,7 @@ contains
     else if (filter_type == "fischer") then
        flt = fm_filter_create(Tp, filter_mu, gp)
     end if
-    if (hybrid%par%masterproc .AND. ithr==0) then
+    if (hybrid%masterthread) then
        print *,"transfer function type in homme=",transfer_type
        print *,"filter type            in homme=",filter_type
        write(*,'(a,99f10.6)') "Tp(:) = ",Tp(:)
@@ -257,7 +257,7 @@ contains
 
     if(Debug) print *,'homme: point #4'
 
-    if (hybrid%par%masterproc .AND. ithr == 0) then
+    if (hybrid%masterthread) then
 #if 0
        print *,"Filter:"
        do j=1,nv
@@ -340,23 +340,23 @@ contains
 
     if (topology == "cube") then
        if (runtype .eq. 1) then 
-          if (hybrid%par%masterproc.and.ithr==0) then
+          if (hybrid%masterthread) then
              print *,'runtype: RESTART of Shallow Water equations'
           end if
           if (test_case(1:5) == "swtc1") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swtc1..."
+             if (hybrid%masterthread) print *,"Restarting swtc1..."
              !==================================================
              ! Recover the initial state for diagnostic purposes
              !==================================================
              call tc1_init_state(elem,nets,nete,pmean)
           else if (test_case(1:5) == "swtc2") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swtc2..."
+             if (hybrid%masterthread) print *,"Restarting swtc2..."
              !==================================================
              ! Recover the initial state for diagnostic purposes
              !==================================================
              call tc2_init_state(elem,nets,nete,pmean)
           else if (test_case(1:5) == "swtc5") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swtc5..."
+             if (hybrid%masterthread) print *,"Restarting swtc5..."
              !==================================================
              ! Recover the initial state for diagnostic purposes
              !==================================================
@@ -364,21 +364,21 @@ contains
              call tc5_invariants(elem,90,tl,pmean,edge2,deriv,hybrid,nets,nete)
              call tc5_errors(elem,7,tl,pmean,"ref_tc5_imp",simday,hybrid,nets,nete,par)
           else if (test_case(1:5) == "swtc6") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swtc6..."
+             if (hybrid%masterthread) print *,"Restarting swtc6..."
              call tc6_init_state(elem,nets,nete,pmean)
              simday=0
              call tc6_errors(elem,7,tl,pmean,"ref_tc6_imp",simday,hybrid,nets,nete,par)
           else if (test_case(1:5) == "swtc8") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swtc8..."
+             if (hybrid%masterthread) print *,"Restarting swtc8..."
              call tc8_init_state(elem,nets,nete,hybrid,pmean)
           else if (test_case(1:6) == "vortex") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting vortex..."
+             if (hybrid%masterthread) print *,"Restarting vortex..."
              call vortex_init_state(elem,nets,nete,pmean)
           else if (test_case(1:5) == "swirl") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swirl..."
+             if (hybrid%masterthread) print *,"Restarting swirl..."
              call swirl_init_state(elem,nets,nete,pmean)
           else if (test_case(1:5) == "swsj1") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swsj1..."
+             if (hybrid%masterthread) print *,"Restarting swsj1..."
              call sj1_init_state(elem,nets,nete,hybrid,pmean,deriv)
           end if
           !============================
@@ -399,18 +399,18 @@ contains
 
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
        else 
-          if (hybrid%par%masterproc.and.ithr==0) then
+          if (hybrid%masterthread) then
              print *,'runtype: INITIAL of Shallow Water equations'
           end if
           dt = tstep/4
           if (test_case(1:5) == "swtc1") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing swtc1..."
+             if (hybrid%masterthread) print *,"initializing swtc1..."
              call tc1_init_state(elem,nets,nete,pmean)
           else if (test_case(1:5) == "swtc2") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing swtc2..."
+             if (hybrid%masterthread) print *,"initializing swtc2..."
              call tc2_init_state(elem,nets,nete,pmean)
           else if (test_case(1:5) == "swtc5") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing swtc5..."
+             if (hybrid%masterthread) print *,"initializing swtc5..."
              call tc5_init_state(elem,nets,nete,pmean,deriv)
              call tc5_invariants(elem,90,tl,pmean,edge2,deriv,hybrid,nets,nete)
              call tc5_errors(elem,7,tl,pmean,"ref_tc5_imp",simday,hybrid,nets,nete,par)
@@ -419,25 +419,25 @@ contains
              do ie=nets,nete
                call cslam_init_tracer(cslam(ie),tl)
              end do
-             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing CSLAM tracers for swtc5..."
+             if (hybrid%masterthread) print *,"initializing CSLAM tracers for swtc5..."
 #endif
              
           else if (test_case(1:5) == "swtc6") then
-             if (hybrid%par%masterproc.and.ithr==0)  print *,"initializing swtc6..."
+             if (hybrid%masterthread)  print *,"initializing swtc6..."
              call tc6_init_state(elem,nets,nete,pmean)
              simday=0
              call tc6_errors(elem,7,tl,pmean,"ref_tc6_imp",simday,hybrid,nets,nete,par)
           else if (test_case(1:5) == "swtc8") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing swtc8..."
+             if (hybrid%masterthread) print *,"initializing swtc8..."
              call tc8_init_state(elem,nets,nete,hybrid,pmean)
           else if (test_case(1:6) == "vortex") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing vortex..."
+             if (hybrid%masterthread) print *,"initializing vortex..."
              call vortex_init_state(elem,nets,nete,pmean)
           else if (test_case(1:5) == "swirl") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing swirl..."
+             if (hybrid%masterthread) print *,"initializing swirl..."
              call swirl_init_state(elem,nets,nete,pmean)
           else if (test_case(1:5) == "swsj1") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing swsj1..."
+             if (hybrid%masterthread) print *,"initializing swsj1..."
              call sj1_init_state(elem,nets,nete,hybrid,pmean,deriv)
           end if  ! test case init calls
 
@@ -576,7 +576,7 @@ contains
     end if
 
     if (integration == "full_imp") then
-      if (hybrid%par%masterproc.and.ithr==0) print *,'initializing Trilinos solver info'
+      if (hybrid%masterthread) print *,'initializing Trilinos solver info'
 
 #ifdef TRILINOS
       lenx=nv*nv*nlev*nvar*(nete-nets+1)
@@ -660,7 +660,7 @@ contains
           tot_iter=tot_iter+cg%iter
        end if
        if(Debug) print *,'homme: point #13'
-!      if (hybrid%par%masterproc.and.ithr==0) print *,'post solve same ts'
+!      if (hybrid%masterthread) print *,'post solve same ts'
 
        point = 2
 #ifdef _HTRACE
@@ -789,8 +789,7 @@ contains
 #endif
        if(Debug) print *,'homme: point #17'
        if (MODULO(tl%nstep,statefreq)==0 ) then 
-!          if(hybrid%par%masterproc .AND. ithr == 0) then
-          if(par%masterproc) then
+          if(hybrid%masterthread) then
              print *,tl%nstep,"time=",Time_at(tl%nstep)/secpday," days"
           end if
 
@@ -800,7 +799,7 @@ contains
        end if
 
        if (MODULO(tl%nstep,statefreq)==0 ) then
-          if(hybrid%par%masterproc .AND. ithr == 0) then
+          if(hybrid%masterthread) then
              if (integration == "semi_imp") print *, "cg its=",cg%iter
           endif
        endif
@@ -974,9 +973,11 @@ contains
     end if
 
     ! Find time-step to gravity wave speed
+    ! 2012: broken because mindx=0.  also, should be updated to use true eigenvalue,
+    ! not mindx.  
     dt_gv = (mindx/dd_pi)/300.0D0    
     dt = tstep ! this is the "user" time-step
-    if (hybrid%par%masterproc .AND. ithr==0) then
+    if (hybrid%masterthread) then
        print *,"dt grv = ", dt_gv
        print *,"dt user= ", dt
     endif
@@ -988,7 +989,7 @@ contains
 
     call derivinit(deriv)
 
-    if (hybrid%par%masterproc .AND. ithr == 0) then
+    if (hybrid%masterthread) then
        !call deriv_print(deriv)
     end if
 
@@ -1016,18 +1017,13 @@ contains
     else if (filter_type == "fischer") then
        flt = fm_filter_create(Tp, filter_mu, gp)
     end if
-    if (hybrid%par%masterproc .AND. ithr==0) then
+    if (hybrid%masterthread) then
        print *,"transfer function type in homme=",transfer_type
        print *,"filter type            in homme=",filter_type
        write(*,'(a,99f10.6)') "I-mu + mu*Tp(:) = ",(1-filter_mu)+filter_mu*Tp(:)
     end if
 
     if(Debug) print *,'homme: point #4'
-
-    if (hybrid%par%masterproc .AND. ithr == 0) then
-
-    end if
-
     call TimeLevel_init(tl)
 
     ! =================================================================
@@ -1036,23 +1032,23 @@ contains
 
     if (topology == "cube") then
        if (runtype .eq. 1) then 
-          if (hybrid%par%masterproc.and.ithr==0) then
+          if (hybrid%masterthread) then
              print *,'runtype: RESTART of Shallow Water equations'
           end if
           if (test_case(1:5) == "swtc1") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swtc1..."
+             if (hybrid%masterthread) print *,"Restarting swtc1..."
              !==================================================
              ! Recover the initial state for diagnostic purposes
              !==================================================
              call tc1_init_state(elem,nets,nete,pmean)
           else if (test_case(1:5) == "swtc2") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swtc2..."
+             if (hybrid%masterthread) print *,"Restarting swtc2..."
              !==================================================
              ! Recover the initial state for diagnostic purposes
              !==================================================
              call tc2_init_state(elem,nets,nete,pmean)
           else if (test_case(1:5) == "swtc5") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swtc5..."
+             if (hybrid%masterthread) print *,"Restarting swtc5..."
              !==================================================
              ! Recover the initial state for diagnostic purposes
              !==================================================
@@ -1060,27 +1056,27 @@ contains
              call tc5_invariants(elem,90,tl,pmean,edge2,deriv,hybrid,nets,nete)
              call tc5_errors(elem,7, tl, pmean, "ref_tc5_imp", simday, hybrid, nets, nete,par)
           else if (test_case(1:5) == "swtc6") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swtc6..."
+             if (hybrid%masterthread) print *,"Restarting swtc6..."
              call tc6_init_state(elem,nets,nete,pmean)
              simday=0
              call tc6_errors(elem,7, tl, pmean, "ref_tc6_imp", simday, hybrid, nets, nete,par)
           else if (test_case(1:5) == "swtc8") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swtc8..."
+             if (hybrid%masterthread) print *,"Restarting swtc8..."
              call tc8_init_state(elem,nets,nete,hybrid,pmean)
           else if (test_case(1:6) == "vortex") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting vortex..."
+             if (hybrid%masterthread) print *,"Restarting vortex..."
              !==================================================
              ! Recover the initial state for diagnostic purposes
              !==================================================
              call vortex_init_state(elem,nets,nete,pmean)
           else if (test_case(1:5) == "swirl") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swirl..."
+             if (hybrid%masterthread) print *,"Restarting swirl..."
              !==================================================
              ! Recover the initial state for diagnostic purposes
              !==================================================
              call swirl_init_state(elem,nets,nete,pmean)
           else if (test_case(1:5) == "swsj1") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"Restarting swsj1..."
+             if (hybrid%masterthread) print *,"Restarting swsj1..."
              call sj1_init_state(elem,nets,nete,hybrid,pmean,deriv)
           end if
           !============================
@@ -1096,37 +1092,37 @@ contains
 
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
        else 
-          if (hybrid%par%masterproc.and.ithr==0) then
+          if (hybrid%masterthread) then
              print *,'runtype: INITIAL of Shallow Water equations'
           end if
           
           if (test_case(1:5) == "swtc1") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing swtc1..."
+             if (hybrid%masterthread) print *,"initializing swtc1..."
              call tc1_init_state(elem,nets,nete,pmean)
           else if (test_case(1:5) == "swtc2") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing swtc2..."
+             if (hybrid%masterthread) print *,"initializing swtc2..."
              call tc2_init_state(elem,nets,nete,pmean)
           else if (test_case(1:5) == "swtc5") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing swtc5..."
+             if (hybrid%masterthread) print *,"initializing swtc5..."
              call tc5_init_state(elem,nets,nete,pmean,deriv)
              call tc5_invariants(elem,90,tl,pmean,edge2,deriv,hybrid,nets,nete)
              call tc5_errors(elem,7, tl, pmean, "ref_tc5_imp", simday, hybrid, nets, nete,par)
           else if (test_case(1:5) == "swtc6") then
-             if (hybrid%par%masterproc.and.ithr==0)  print *,"initializing swtc6..."
+             if (hybrid%masterthread)  print *,"initializing swtc6..."
              call tc6_init_state(elem,nets,nete,pmean)
              simday=0
              call tc6_errors(elem,7, tl, pmean, "ref_tc6_imp", simday, hybrid, nets, nete,par)
           else if (test_case(1:5) == "swtc8") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing swtc8..."
+             if (hybrid%masterthread) print *,"initializing swtc8..."
              call tc8_init_state(elem,nets,nete,hybrid,pmean)
           else if (test_case(1:6) == "vortex") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing vortex..."
+             if (hybrid%masterthread) print *,"initializing vortex..."
              call vortex_init_state(elem,nets,nete,pmean)
           else if (test_case(1:5) == "swirl") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing swirl..."
+             if (hybrid%masterthread) print *,"initializing swirl..."
              call swirl_init_state(elem,nets,nete,pmean,hybrid,edge3)
           else if (test_case(1:5) == "swsj1") then
-             if (hybrid%par%masterproc.and.ithr==0) print *,"initializing swsj1..."
+             if (hybrid%masterthread) print *,"initializing swsj1..."
              call sj1_init_state(elem,nets,nete,hybrid,pmean,deriv)
           end if
 
@@ -1334,9 +1330,9 @@ contains
 #endif
        if(Debug) print *,'homme: point #17'
        if (MODULO(tl%nstep,statefreq)==0 ) then 
-          if(hybrid%par%masterproc .AND. ithr == 0) then
+          if(hybrid%masterthread) then
              print *,tl%nstep,"time=",Time_at(tl%nstep)/secpday," days"
-             print *,"Integrating at ",dt/dt_gv," times gravity wave restriction"
+          !   print *,"Integrating at ",dt/dt_gv," times gravity wave restriction"
           end if
 
           call printstate(elem,pmean,g_sw,tl%n0,hybrid,nets,nete,kmass)
