@@ -82,6 +82,7 @@ module element_mod
      real (kind=real_kind) :: FQ(np,np,nlev,qsize_d, 1) ! F-Tracers   
      real (kind=real_kind) :: FM(np,np,2,nlev, 1)       ! F-momentum  
      real (kind=real_kind) :: FT(np,np,nlev, 1)         ! F-Temperature
+     real (kind=real_kind) :: omega_prescribed(np,np,nlev) ! vertical tendency (prescribed)       
 #else
      ! when does forcing ever need more than 1 timelevel?  
      real (kind=real_kind) :: FQ(np,np,nlev,qsize_d, timelevels) ! F-Tracers  

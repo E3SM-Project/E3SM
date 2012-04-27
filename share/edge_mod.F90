@@ -126,28 +126,6 @@ contains
 
     integer :: nbuf,ith
 
-    ! sanity check on edge.  edge must NOT be thread-prive, but must be shared by all threads
-    ! the calling program needs to instantiate 'edge' outside the threaded region.
-    ! if 'edge' is thread private, it creates flaky openMP problems that are difficut to debug
-    ! so lets try and detect it here:
-    if (omp_get_num_threads()>1) then
-       ith=omp_get_thread_num()
-       if (ith <= 1 ) then
-          edgebuff_addr(ith)=loc(edge)
-       endif
-#if (! defined ELEMENT_OPENMP)
-       !$OMP BARRIER
-       !$OMP MASTER
-#endif
-       if (edgebuff_addr(0) .ne. edgebuff_addr(1)) then
-          call haltmp('ERROR: edge struct appears to be thread-private.')
-       endif
-#if (! defined ELEMENT_OPENMP)
-       !$OMP ENDMASTER
-#endif
-    endif
-
-
     nbuf=4*(np+max_corner_elem)*nelemd
 !   only master thread should allocate the buffer
 #if (! defined ELEMENT_OPENMP)
@@ -166,6 +144,27 @@ contains
 #if (! defined ELEMENT_OPENMP)
 !$OMP BARRIER
 #endif
+
+    ! sanity check on edge.  edge must NOT be thread-prive, but must be shared by all threads
+    ! the calling program needs to instantiate 'edge' outside the threaded region.
+    ! if 'edge' is thread private, it creates flaky openMP problems that are difficut to debug
+    ! so lets try and detect it here:
+    if (omp_get_num_threads()>1) then
+       ith=omp_get_thread_num()
+       if (ith <= 1 ) then
+          edgebuff_addr(ith)=loc(edge%buf)
+       endif
+#if (! defined ELEMENT_OPENMP)
+       !$OMP BARRIER
+       !$OMP MASTER
+#endif
+       if (edgebuff_addr(0) .ne. edgebuff_addr(1)) then
+          call haltmp('ERROR: edge struct appears to be thread-private.')
+       endif
+#if (! defined ELEMENT_OPENMP)
+       !$OMP ENDMASTER
+#endif
+    endif
 
   end subroutine initEdgeBuffer
   ! =========================================

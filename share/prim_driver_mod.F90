@@ -918,7 +918,7 @@ contains
     use hybvcoord_mod, only : hvcoord_t
     use time_mod, only : TimeLevel_t, time_at, timelevel_update, smooth
     use control_mod, only: statefreq, integration, tracer_advection_formulation,&
-           TRACERADV_TOTAL_DIVERGENCE,TRACERADV_UGRADQ,ftype, ftype, tstep_type, nu_p
+           TRACERADV_TOTAL_DIVERGENCE,TRACERADV_UGRADQ, ftype, tstep_type, nu_p
     use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3, &
          applycamforcing, applycamforcing_leapfrog
     use prim_advection_mod, only : prim_advec_tracers_lf
@@ -1101,7 +1101,7 @@ contains
     use hybvcoord_mod, only : hvcoord_t
     use time_mod, only : TimeLevel_t, time_at, timelevel_update, smooth, ptimelevels
     use control_mod, only: statefreq, integration, tracer_advection_formulation,&
-           TRACERADV_TOTAL_DIVERGENCE,TRACERADV_UGRADQ,ftype, energy_fixer, ftype, qsplit, nu_p, test_cfldep
+           TRACERADV_TOTAL_DIVERGENCE,TRACERADV_UGRADQ, energy_fixer, ftype, qsplit, nu_p, test_cfldep
     use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3, applycamforcing, &
                                  applycamforcing_dynamics, prim_advance_exp
     use prim_advection_mod, only : prim_advec_tracers_remap_rk2, prim_advec_tracers_cslam
@@ -1149,10 +1149,11 @@ contains
 
 
 #ifdef CAM
-    if (ftype < 0) print *,'ERROR: subcyling ftype<0 not yet coded'
+    if (ftype < -1) print *,'ERROR: subcyling ftype<-1 not yet coded'
     ! ftype=2  Q was adjusted by physics, but apply u,T forcing here
     ! ftype=1  forcing was applied time-split in CAM coupling layer
     ! ftype=0 means forcing apply here
+    ! ftype=-1 do not apply forcing
     if (ftype==0) call ApplyCAMForcing(elem, hvcoord,tl%n0,dt_q,nets,nete)
     if (ftype==2) call ApplyCAMForcing_dynamics(elem, hvcoord,tl%n0,dt_q,nets,nete)
 #endif
@@ -1321,7 +1322,7 @@ contains
     use physical_constants, only : Cp, cpwater_vapor,g,dd_pi
     use physics_mod, only : Virtual_Specific_Heat
     use time_mod, only : timelevel_t
-    use control_mod, only : moisture, tracer_advection_formulation,traceradv_total_divergence,energy_fixer, ftype, use_cpstar
+    use control_mod, only : moisture, tracer_advection_formulation,traceradv_total_divergence,energy_fixer, use_cpstar
     use hybvcoord_mod, only : hvcoord_t
     use global_norms_mod, only: wrap_repro_sum
     type (hybrid_t), intent(in)           :: hybrid  ! distributed parallel structure (shared)

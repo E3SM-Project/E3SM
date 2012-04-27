@@ -137,13 +137,24 @@ contains
        time=tl%nstep*dt
 
        do ie=nets,nete
+
+#ifdef CAM
+          ! read in omega met data and store it in derived%omega_prescribed
+          ! --- compute eta_dot_dpdn from omega_prescribed ...
+          eta_dot_dpdn(:,:,nlev+1) = 0.0d0
+
+          do k = nlev,2,-1
+             eta_dot_dpdn(:,:,k) = eta_dot_dpdn(:,:,k+1) - 2.d0*elem(ie)%derived%omega_prescribed(:,:,k)
+          enddo
+
+          eta_dot_dpdn(:,:,1) = 0.0d0
+#else
           ! assume most fields are constant in time
           elem(ie)%state%ps_v(:,:,np1) = elem(ie)%state%ps_v(:,:,n0)
           elem(ie)%state%lnps(:,:,np1) = elem(ie)%state%lnps(:,:,n0)
           elem(ie)%state%T(:,:,:,np1)   = elem(ie)%state%T(:,:,:,n0)
           elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,n0)
           elem(ie)%derived%div = 0
-#ifndef CAM
 	  !get eta_dot_dpdn at n0, ps_v is not used or calculated in this routine
           call asp_advection_vertical(time,hvcoord,elem(ie)%state%ps_v(:,:,n0),&
               eta_dot_dpdn)
