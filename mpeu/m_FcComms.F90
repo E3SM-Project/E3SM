@@ -12,6 +12,17 @@
 ! the Community Atmosphere Model's spmd_utils.F90.
 !
 ! !INTERFACE:
+!
+! Workaround for performance issue with rsend on cray systems with
+! gemini interconnect
+!
+#ifdef _NO_MPI_RSEND
+#define MPI_RSEND MPI_SEND
+#define mpi_rsend mpi_send
+#define MPI_IRSEND MPI_ISEND
+#define mpi_irsend mpi_isend
+#endif
+
  module m_FcComms
 
       implicit none
