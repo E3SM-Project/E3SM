@@ -2385,7 +2385,7 @@
 ! architecture-friendly portions of this routine will be invoked.
 !
 ! If the optional argument {\tt sharedIndices} is present, it should be
-! the result of the call {\tt SharedIndicesOneType_(aVin, aVout, 'REAL',
+! the result of the call {\tt SharedIndicesOneType\_(aVin, aVout, 'REAL',
 ! sharedIndices)}. Providing this argument speeds up this routine
 ! substantially. For example, you can compute a {\tt sharedIndices}
 ! structure once for a given pair of {\tt AttrVect}s, then use that same
@@ -2725,7 +2725,7 @@
 ! architecture-friendly portions of this routine will be invoked.
 !
 ! If the optional argument {\tt sharedIndices} is present, it should be
-! the result of the call {\tt SharedIndicesOneType_(aVin, aVout, 'INTEGER',
+! the result of the call {\tt SharedIndicesOneType\_(aVin, aVout, 'INTEGER',
 ! sharedIndices)}. Providing this argument speeds up this routine
 ! substantially. For example, you can compute a {\tt sharedIndices}
 ! structure once for a given pair of {\tt AttrVect}s, then use that same
@@ -3078,7 +3078,7 @@
 ! architecture-friendly portions of this routine will be invoked.
 !
 ! If the optional argument {\tt sharedIndices} is present, it should be
-! the result of the call {\tt SharedIndices_(aVin, aVout,
+! the result of the call {\tt SharedIndices\_(aVin, aVout,
 ! sharedIndices)}. Providing this argument speeds up this routine
 ! substantially. For example, you can compute a {\tt sharedIndices}
 ! structure once for a given pair of {\tt AttrVect}s, then use that same
@@ -3814,13 +3814,13 @@
 ! structure contains arrays of indices to the locations of the shared
 ! attributes, as well as auxiliary information.  The structure contains
 ! information on both the {\tt REAL} and {\tt INTEGER} attributes.  See
-! documentation for the {\tt SharedIndicesOneType_} subroutine for some
+! documentation for the {\tt SharedIndicesOneType\_} subroutine for some
 ! additional details, as much of the work is done there.
 !
 ! {\bf N.B.:} The returned structure, {\tt sharedIndices}, contains
 ! allocated arrays that must be deallocated once the user no longer
 ! needs them.  This should be done through a call to {\tt
-! cleanSharedIndices_}.
+! cleanSharedIndices\_}.
 !
 ! !INTERFACE:
 
@@ -3870,12 +3870,12 @@
 ! {\bf N.B.:} The returned structure, {\tt sharedIndices}, contains
 ! allocated arrays that must be deallocated once the user no longer
 ! needs them.  This should be done through a call to {\tt
-! cleanSharedIndicesOneType_}.  Even if there are no attributes in
+! cleanSharedIndicesOneType\_}.  Even if there are no attributes in
 ! common between {\tt aV1} and {\tt aV2}, {\tt sharedIndices} will still
 ! be initialized, and memory will still be allocated. Furthermore, if an
 ! already-initialized {\tt sharedIndices} variable is to be given new
-! values, {\tt cleanSharedIndicesOneType_} must be called before {\tt
-! SharedIndicesOneType_} is called a second time, in order to prevent a
+! values, {\tt cleanSharedIndicesOneType\_} must be called before {\tt
+! SharedIndicesOneType\_} is called a second time, in order to prevent a
 ! memory leak.
 !
 ! !INTERFACE:
@@ -3929,7 +3929,7 @@
 ! Climate and Global Dynamics Division, National Center for Atmospheric Research !
 !BOP -----------------------------------------------------------------------------
 !
-! !IROUTINE cleanSharedIndices_ - Deallocate allocated memory structures of an AVSharedIndices structure
+! !IROUTINE: cleanSharedIndices_ - Deallocate allocated memory structures of an AVSharedIndices structure
 !
 ! !DESCRIPTION: This routine deallocates the allocated memory structures
 ! of the input/output {\tt AVSharedIndicesOneType} argument {\tt
@@ -3981,7 +3981,7 @@
 ! Climate and Global Dynamics Division, National Center for Atmospheric Research !
 !BOP -----------------------------------------------------------------------------
 !
-! !IROUTINE cleanSharedIndicesOneType_ - Deallocate allocated memory structures of an AVSharedIndicesOneType structure
+! !IROUTINE: cleanSharedIndicesOneType_ - Deallocate allocated memory structures of an AVSharedIndicesOneType structure
 !
 ! !DESCRIPTION: This routine deallocates the allocated memory structures
 ! of the input/output {\tt AVSharedIndices} argument {\tt
