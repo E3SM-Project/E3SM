@@ -387,7 +387,7 @@ elif echo $FC | grep gfortran >/dev/null 2>&1; then
       DEBUG="-g"
    fi
    if test -z "$OPT"; then
-      OPT=""
+      OPT="-O2"
    fi
 ###########################################################
 # the compiler flags below have not been verified recently
