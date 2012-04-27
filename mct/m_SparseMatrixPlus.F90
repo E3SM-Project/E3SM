@@ -497,7 +497,7 @@
   if(GlobalSegMap_gsize(xGSMap) /= SparseMatrix_nCols(sMat)) then
      write(stderr,'(3a,i8,2a,i8)') myname, &
 	  ':: FATAL--length of vector x different from column count of sMat.', &
-	  'Length of y = ',GlobalSegMap_gsize(yGSMap),' Number of columns in ',&
+	  'Length of x = ',GlobalSegMap_gsize(xGSMap),' Number of columns in ',&
 	  'sMat = ',SparseMatrix_nCols(sMat)
      call die(myname_)
   endif
