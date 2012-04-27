@@ -55,9 +55,12 @@
 ! array and importing a given attribute from a one-dimensional array.  
 ! There is a method for copying attributes from one {\tt AttrVect} to 
 ! another.  There is also a method for cross-indexing the attributes in 
-! two {\tt AttrVect} variables.  Finally, there are methods for sorting
-! and permuting {\tt AttrVect} entries using a MergeSort scheme keyed 
-! by the attributes of the {\tt AttrVect}.
+! two {\tt AttrVect} variables.  In addition, there are methods that
+! return those cross-indexed attributes along with some auxiliary data
+! in a {\tt AVSharedIndicesOneType} or {\tt AVSharedIndices} structure.
+! Finally, there are methods for sorting and permuting {\tt AttrVect}
+! entries using a MergeSort scheme keyed by the attributes of the {\tt
+! AttrVect}.
 !
 ! !INTERFACE:
 
@@ -76,6 +79,11 @@
 ! !PUBLIC TYPES:
 
       public :: AttrVect        ! The class data structure
+      public :: AVSharedIndicesOneType ! Data structure recording shared indices between
+                                       ! two attribute vectors, for a single data type
+                                       ! (e.g., shared real attributes)
+      public :: AVSharedIndices ! Data structure recording shared indices between two
+                                ! attribute vectors, for all data types
 
     type AttrVect
 #ifdef SEQUENCE
@@ -86,6 +94,23 @@
       integer,dimension(:,:),pointer :: iAttr
       real(FP) ,dimension(:,:),pointer :: rAttr
     end type AttrVect
+
+    type AVSharedIndicesOneType
+       integer :: num_indices           ! number of shared items
+       logical :: contiguous            ! true if index segments are contiguous in memory
+       character*7 :: data_flag         ! data type flag (e.g., 'REAL' or 'INTEGER')
+
+       ! arrays of indices to storage locations of shared attributes between the two
+       ! attribute vectors: 
+       integer, dimension(:), pointer :: aVindices1
+       integer, dimension(:), pointer :: aVindices2
+    end type AVSharedIndicesOneType
+
+    type AVSharedIndices
+       type(AVSharedIndicesOneType) :: shared_real     ! shared indices of type REAL
+       type(AVSharedIndicesOneType) :: shared_integer  ! shared indices of type INTEGER
+    end type AVSharedIndices
+       
 
 ! !PUBLIC MEMBER FUNCTIONS:
 
@@ -118,6 +143,11 @@
       public :: SortPermute     ! sort and permute entries
       public :: SharedAttrIndexList  ! Cross-indices of shared
                                      ! attributes of two AttrVects
+      public :: SharedIndices        ! Given two AttrVects, create an AVSharedIndices structure
+      public :: SharedIndicesOneType ! Given two AttrVects, create an
+                                     ! AVSharedIndicesOneType structure for a single type
+      public :: cleanSharedIndices   ! clean a AVSharedIndices structure
+      public :: cleanSharedIndicesOneType  ! clean a AVSharedIndicesOneType structure
 
 
     interface init   ; module procedure	&
@@ -170,6 +200,10 @@
     interface SharedAttrIndexList ; module procedure &
         aVaVSharedAttrIndexList_ 
     end interface
+    interface SharedIndices ; module procedure SharedIndices_ ; end interface
+    interface SharedIndicesOneType ; module procedure SharedIndicesOneType_ ; end interface
+    interface cleanSharedIndices ; module procedure cleanSharedIndices_ ; end interface
+    interface cleanSharedIndicesOneType ; module procedure cleanSharedIndicesOneType_ ; end interface
 
 ! !REVISION HISTORY:
 ! 10Apr98 - Jing Guo <guo@thunder> - initial prototype/prolog/code
@@ -201,6 +235,11 @@
 ! 12Jun02 - R.L. Jacob <jacob@mcs.anl.gov> - add Copy function
 ! 13Jun02 - R.L. Jacob <jacob@mcs.anl.gov> - move aVavSharedAttrIndexList
 !           to this module from old m_SharedAttrIndicies
+! 28Apr11 - W.J. Sacks <sacks@ucar.edu> - added AVSharedIndices and
+!           AVSharedIndicesOneType derived types, and associated
+!           subroutines
+! 10Apr12 - W.J. Sacks <sacks@ucar.edu> - modified AVSharedIndices code
+!           to be Fortran-90 compliant
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='MCT::m_AttrVect'
@@ -2345,11 +2384,20 @@
 ! If the optional argument {\tt Vector} is present and true, the vector 
 ! architecture-friendly portions of this routine will be invoked.
 !
+! If the optional argument {\tt sharedIndices} is present, it should be
+! the result of the call {\tt SharedIndicesOneType_(aVin, aVout, 'REAL',
+! sharedIndices)}. Providing this argument speeds up this routine
+! substantially. For example, you can compute a {\tt sharedIndices}
+! structure once for a given pair of {\tt AttrVect}s, then use that same
+! structure for all copies between those two {\tt AttrVect}s (although
+! note that a different {\tt sharedIndices} variable would be needed if
+! {\tt aVin} and {\tt aVout} were reversed).
+!
 ! {\bf N.B.:}  This routine will fail if the {\tt aVout} is not initialized.
 !
 ! !INTERFACE:
 
- subroutine RCopy_(aVin, aVout, vector)
+ subroutine RCopy_(aVin, aVout, vector, sharedIndices)
 
 !
 ! !USES:
@@ -2366,6 +2414,7 @@
 
       type(AttrVect),             intent(in)    :: aVin
       logical, optional,          intent(in)    :: vector 
+      type(AVSharedIndicesOneType), optional, intent(in) :: sharedIndices
 
 ! !OUTPUT PARAMETERS: 
 
@@ -2374,21 +2423,23 @@
 
 ! !REVISION HISTORY:
 ! 18Aug06 - R. Jacob <jacob@mcs.anl.gov> - initial version.
+! 28Apr11 - W.J. Sacks <sacks@ucar.edu> - added sharedIndices argument
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::RCopy_'
 
   integer :: i,j,ier       ! dummy variables
-  integer :: num_indices   ! Overlapping attribute index number
   integer :: aVsize        ! The lsize of aVin and aVout
   integer :: num_inindices, num_outindices   ! Number of matching indices in aV
   integer :: inxmin, outxmin, inx, outx      ! Index variables
-  logical :: contiguous    ! true if index segments are contiguous in memory  
   logical :: usevector    ! true if vector flag is present and true.
   character*7 :: data_flag ! character variable used as data type flag
-
-  ! Overlapping attribute index storage arrays:
-  integer, dimension(:), pointer :: aVinindices, aVoutindices
+  type(AVSharedIndicesOneType) :: mySharedIndices  ! copied from sharedIndices, or
+                                                   ! computed if sharedIndices is not
+                                                   ! present
+  logical :: clean_mySharedIndices ! true if we need to clean mySharedIndices before
+                                   ! returning (will be true if we did allocation in this
+                                   ! subroutine)
 
 
   ! Check the arguments
@@ -2400,14 +2451,31 @@
                        &do not have the same size',2)
   endif
 
-  ! Check REAL attributes for matching indices
   data_flag = 'REAL'
-  call aVaVSharedAttrIndexList_(aVin, aVout, data_flag, num_indices, &
-	               		   aVinindices, aVoutindices)
 
-  if(num_indices <= 0) then
-    deallocate(aVinindices, aVoutindices,stat=ier)
-    if(ier /= 0) call die(myname_,'deallocate int(Vinindices...',ier)
+  if (present(sharedIndices)) then
+     ! do some error checking on sharedIndices
+     if (.not. (associated(sharedIndices%aVindices1) .and. associated(sharedIndices%aVindices2))) then
+        call die(myname_,'MCTERROR: provided sharedIndices structure is uninitialized',3)
+     endif
+     if (trim(sharedIndices%data_flag) /= data_flag) then
+        call die(myname_,'MCTERROR: provided sharedIndices structure has incorrect data_flag',4)
+     endif
+
+     ! copy into local variable
+     mySharedIndices = sharedIndices
+     clean_mySharedIndices = .false.
+  else
+     ! Check REAL attributes for matching indices
+     call SharedIndicesOneType_(aVin, aVout, data_flag, mySharedIndices)
+     clean_mySharedIndices = .true.
+  endif
+
+  if(mySharedIndices%num_indices <= 0) then
+    if (clean_mySharedIndices) then
+       call cleanSharedIndicesOneType_(mySharedIndices,stat=ier)
+       if(ier /= 0) call die(myname_,'MCTERROR: in cleanSharedIndicesOneType_',ier)
+    endif
     return
   endif
 
@@ -2417,26 +2485,15 @@
    if(vector) usevector = .true.
   endif
 
-  ! Check indices for contiguous segments in memory
-  contiguous=.true.
-  do i=2,num_indices
-     if(aVinindices(i) /= aVinindices(i-1)+1) contiguous = .false.
-  enddo
-  if(contiguous) then
-     do i=2,num_indices
-        if(aVoutindices(i) /= aVoutindices(i-1)+1) contiguous=.false.
-     enddo
-  endif
-     
   ! Start copying 
 
-  if(contiguous) then
+  if(mySharedIndices%contiguous) then
 
      if(usevector) then
-        outxmin=aVoutindices(1)-1
-        inxmin=aVinindices(1)-1
+        outxmin=mySharedIndices%aVindices2(1)-1
+        inxmin=mySharedIndices%aVindices1(1)-1
 !$OMP PARALLEL DO PRIVATE(i,j)
-        do i=1,num_indices
+        do i=1,mySharedIndices%num_indices
 !CDIR SELECT(VECTOR)
 !DIR$ CONCURRENT
            do j=1,aVsize
@@ -2444,12 +2501,12 @@
            enddo
         enddo
      else
-        outxmin=aVoutindices(1)-1
-        inxmin=aVinindices(1)-1
+        outxmin=mySharedIndices%aVindices2(1)-1
+        inxmin=mySharedIndices%aVindices1(1)-1
 !$OMP PARALLEL DO PRIVAtE(j,i)
         do j=1,aVsize
 !DIR$ CONCURRENT
-           do i=1,num_indices
+           do i=1,mySharedIndices%num_indices
               aVout%rAttr(outxmin+i,j) = aVin%rAttr(inxmin+i,j)
            enddo
         enddo
@@ -2460,9 +2517,9 @@
 !$OMP PARALLEL DO PRIVATE(j,i,outx,inx) 
      do j=1,aVsize
 !DIR$ CONCURRENT
-        do i=1,num_indices
-           outx=aVoutindices(i)
-           inx=aVinindices(i)     
+        do i=1,mySharedIndices%num_indices
+           outx=mySharedIndices%aVindices2(i)
+           inx=mySharedIndices%aVindices1(i)     
            aVout%rAttr(outx,j) = aVin%rAttr(inx,j)
         enddo
      enddo
@@ -2470,8 +2527,10 @@
   endif
 
 
-  deallocate(aVinindices, aVoutindices,stat=ier)
-  if(ier /= 0) call die(myname_,'deallocate real(Vinindices...',ier)
+  if (clean_mySharedIndices) then
+     call cleanSharedIndicesOneType_(mySharedIndices,stat=ier)
+     if(ier /= 0) call die(myname_,'MCTERROR: in cleanSharedIndicesOneType_',ier)
+  endif
 
  end subroutine RCopy_
 
@@ -2665,11 +2724,20 @@
 ! If the optional argument {\tt Vector} is present and true, the vector 
 ! architecture-friendly portions of this routine will be invoked.
 !
+! If the optional argument {\tt sharedIndices} is present, it should be
+! the result of the call {\tt SharedIndicesOneType_(aVin, aVout, 'INTEGER',
+! sharedIndices)}. Providing this argument speeds up this routine
+! substantially. For example, you can compute a {\tt sharedIndices}
+! structure once for a given pair of {\tt AttrVect}s, then use that same
+! structure for all copies between those two {\tt AttrVect}s (although
+! note that a different {\tt sharedIndices} variable would be needed if
+! {\tt aVin} and {\tt aVout} were reversed).
+!
 ! {\bf N.B.:}  This routine will fail if the {\tt aVout} is not initialized.
 !
 ! !INTERFACE:
 
- subroutine ICopy_(aVin, aVout, vector)
+ subroutine ICopy_(aVin, aVout, vector, sharedIndices)
 
 !
 ! !USES:
@@ -2686,6 +2754,7 @@
 
       type(AttrVect),             intent(in)    :: aVin
       logical, optional,          intent(in)    :: vector 
+      type(AVSharedIndicesOneType), optional, intent(in) :: sharedIndices
 
 ! !OUTPUT PARAMETERS: 
 
@@ -2694,22 +2763,24 @@
 
 ! !REVISION HISTORY:
 ! 16Aug06 - R. Jacob <jacob@mcs.anl.gov> - initial version.
+! 28Apr11 - W.J. Sacks <sacks@ucar.edu> - added sharedIndices argument
 !
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname_=myname//'::ICopy_'
 
   integer :: i,j,ier       ! dummy variables
-  integer :: num_indices   ! Overlapping attribute index number
   integer :: aVsize        ! The lsize of aVin and aVout
   integer :: num_inindices, num_outindices   ! Number of matching indices in aV
   integer :: inxmin, outxmin, inx, outx      ! Index variables
-  logical :: contiguous    ! true if index segments are contiguous in memory  
   logical :: usevector    ! true if vector flag is present and true.
   character*7 :: data_flag ! character variable used as data type flag
-
-  ! Overlapping attribute index storage arrays:
-  integer, dimension(:), pointer :: aVinindices, aVoutindices
+  type(AVSharedIndicesOneType) :: mySharedIndices  ! copied from sharedIndices, or
+                                                   ! computed if sharedIndices is not
+                                                   ! present
+  logical :: clean_mySharedIndices ! true if we need to clean mySharedIndices before
+                                   ! returning (will be true if we did allocation in this
+                                   ! subroutine)
 
 
   ! Check the arguments
@@ -2721,13 +2792,31 @@
                        &do not have the same size',2)
   endif
 
-  ! Check INTEGER attributes for matching indices
   data_flag = 'INTEGER'
-  call aVaVSharedAttrIndexList_(aVin, aVout, data_flag, num_indices, &
-		   		   aVinindices, aVoutindices)
-  if(num_indices <= 0) then
-    deallocate(aVinindices, aVoutindices,stat=ier)
-    if(ier /= 0) call die(myname_,'deallocate int(Vinindices...',ier)
+  
+  if (present(sharedIndices)) then
+     ! do some error checking on sharedIndices
+     if (.not. (associated(sharedIndices%aVindices1) .and. associated(sharedIndices%aVindices2))) then
+        call die(myname_,'MCTERROR: provided sharedIndices structure is uninitialized',3)
+     endif
+     if (trim(sharedIndices%data_flag) /= data_flag) then
+        call die(myname_,'MCTERROR: provided sharedIndices structure has incorrect data_flag',4)
+     endif
+
+     ! copy into local variable
+     mySharedIndices = sharedIndices
+     clean_mySharedIndices = .false.
+  else
+     ! Check INTEGER attributes for matching indices
+     call SharedIndicesOneType_(aVin, aVout, data_flag, mySharedIndices)
+     clean_mySharedIndices = .true.
+  endif
+
+  if(mySharedIndices%num_indices <= 0) then
+    if (clean_mySharedIndices) then
+       call cleanSharedIndicesOneType_(mySharedIndices,stat=ier)
+       if(ier /= 0) call die(myname_,'MCTERROR: in cleanSharedIndicesOneType_',ier)
+    endif
     return
   endif
 
@@ -2737,25 +2826,14 @@
    if(vector) usevector = .true.
   endif
 
-  ! Check indices for contiguous segments in memory
-  contiguous=.true.
-  do i=2,num_indices
-     if(aVinindices(i) /= aVinindices(i-1)+1) contiguous = .false.
-  enddo
-  if(contiguous) then
-     do i=2,num_indices
-        if(aVoutindices(i) /= aVoutindices(i-1)+1) contiguous=.false.
-     enddo
-  endif
 
-
-  if(contiguous) then
+  if(mySharedIndices%contiguous) then
       
      if(usevector) then
-        outxmin=aVoutindices(1)-1
-        inxmin=aVinindices(1)-1
+        outxmin=mySharedIndices%aVindices2(1)-1
+        inxmin=mySharedIndices%aVindices1(1)-1
 !$OMP PARALLEL DO PRIVATE(i,j)
-        do i=1,num_indices
+        do i=1,mySharedIndices%num_indices
 !CDIR SELECT(VECTOR)
 !DIR$ CONCURRENT
            do j=1,aVsize
@@ -2763,12 +2841,12 @@
            enddo
         enddo
      else
-        outxmin=aVoutindices(1)-1
-        inxmin=aVinindices(1)-1
+        outxmin=mySharedIndices%aVindices2(1)-1
+        inxmin=mySharedIndices%aVindices1(1)-1
 !$OMP PARALLEL DO PRIVATE(j,i)
         do j=1,aVsize
 !DIR$ CONCURRENT
-           do i=1,num_indices
+           do i=1,mySharedIndices%num_indices
               aVout%iAttr(outxmin+i,j) = aVin%iAttr(inxmin+i,j)
            enddo
         enddo
@@ -2779,17 +2857,19 @@
 !$OMP PARALLEL DO PRIVATE(j,i,outx,inx)
      do j=1,aVsize
 !DIR$ CONCURRENT
-        do i=1,num_indices
-           outx=aVoutindices(i)
-           inx=aVinindices(i)     
+        do i=1,mySharedIndices%num_indices
+           outx=mySharedIndices%aVindices2(i)
+           inx=mySharedIndices%aVindices1(i)     
            aVout%iAttr(outx,j) = aVin%iAttr(inx,j)
         enddo
      enddo
      
   endif
 
-  deallocate(aVinindices, aVoutindices,stat=ier)
-  if(ier /= 0) call die(myname_,'deallocate int(Vinindices...',ier)
+  if (clean_mySharedIndices) then
+     call cleanSharedIndicesOneType_(mySharedIndices,stat=ier)
+     if(ier /= 0) call die(myname_,'MCTERROR: in cleanSharedIndicesOneType_',ier)
+  endif
 
  end subroutine ICopy_
 
@@ -2997,17 +3077,28 @@
 ! If the optional argument {\tt Vector} is present and true, the vector 
 ! architecture-friendly portions of this routine will be invoked.
 !
+! If the optional argument {\tt sharedIndices} is present, it should be
+! the result of the call {\tt SharedIndices_(aVin, aVout,
+! sharedIndices)}. Providing this argument speeds up this routine
+! substantially. For example, you can compute a {\tt sharedIndices}
+! structure once for a given pair of {\tt AttrVect}s, then use that same
+! structure for all copies between those two {\tt AttrVect}s (although
+! note that a different {\tt sharedIndices} variable would be needed if
+! {\tt aVin} and {\tt aVout} were reversed). Note, however, that {\tt
+! sharedIndices} is ignored if either {\tt rList} or {\tt iList} are
+! given.
+!
 ! {\bf N.B.:}  This routine will fail if the {\tt aVout} is not initialized or
 ! if any of the specified attributes are not present in either {\tt aVout} or {\tt aVin}.
 !
 ! !INTERFACE:
 
- subroutine Copy_(aVin, aVout, rList, TrList, iList, TiList, vector)
+ subroutine Copy_(aVin, aVout, rList, TrList, iList, TiList, vector, sharedIndices)
 
 !
 ! !USES:
 !
-      use m_die ,          only : die
+      use m_die ,          only : die, warn
       use m_stdio ,        only : stderr
 
       use m_List,          only : GetSharedListIndices
@@ -3023,6 +3114,7 @@
       character(len=*), optional, intent(in)    :: TiList
       character(len=*), optional, intent(in)    :: TrList
       logical, optional,          intent(in)    :: vector 
+      type(AVSharedIndices), optional, intent(in) :: sharedIndices
 
 ! !OUTPUT PARAMETERS: 
 
@@ -3041,6 +3133,7 @@
 !           argument to use vector-friendly code provided by Fujitsu
 ! 16Aug06 - R. Jacob <jacob@mcs.anl.gov> - split into 4 routines:
 !           RCopy_,RCopyL_,ICopy_,ICopyL_
+! 28Apr11 - W.J. Sacks <sacks@ucar.edu> - added sharedIndices argument
 !
 !EOP ___________________________________________________________________
 
@@ -3085,6 +3178,11 @@
 	   endif
 	endif
 
+        if(present(sharedIndices)) then
+           call warn(myname_,'Use of sharedIndices not implemented in RCopyL; &
+                     &ignoring sharedIndices',1)
+        end if
+
 	if(TrListIsPresent) then
 	   call RCopyL_(aVin,aVout,rList,TrList,vector=usevector)
 	else
@@ -3104,6 +3202,11 @@
 	   endif
 	endif
 
+        if(present(sharedIndices)) then
+           call warn(myname_,'Use of sharedIndices not implemented in ICopyL; &
+                     &ignoring sharedIndices',1)
+        end if
+
 	if(TiListIsPresent) then
 	   call ICopyL_(aVin,aVout,iList,TiList,vector=usevector)
 	else
@@ -3116,8 +3219,13 @@
   ! from in to out.
   if( .not.present(rList) .and. .not.present(iList)) then
 
-     call RCopy_(aVin, Avout, vector=usevector)
-     call ICopy_(aVin, Avout, vector=usevector)
+     if (present(sharedIndices)) then
+        call RCopy_(aVin, Avout, vector=usevector, sharedIndices=sharedIndices%shared_real)
+        call ICopy_(aVin, Avout, vector=usevector, sharedIndices=sharedIndices%shared_integer)
+     else
+        call RCopy_(aVin, Avout, vector=usevector)
+        call ICopy_(aVin, Avout, vector=usevector)
+     endif
 
   endif
 
@@ -3692,6 +3800,261 @@
   end select
 
  end subroutine aVaVSharedAttrIndexList_
+
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+! Climate and Global Dynamics Division, National Center for Atmospheric Research !
+!BOP -----------------------------------------------------------------------------
+!
+! !IROUTINE: SharedIndices_ - AttrVect shared attributes and auxiliary information
+!
+! !DESCRIPTION:  {\tt SharedIndices\_()} takes a pair of user-supplied
+! {\tt AttrVect} variables {\tt aV1} and {\tt aV2}, and returns a
+! structure of type {\tt AVSharedIndices} ({\tt sharedIndices}).  This
+! structure contains arrays of indices to the locations of the shared
+! attributes, as well as auxiliary information.  The structure contains
+! information on both the {\tt REAL} and {\tt INTEGER} attributes.  See
+! documentation for the {\tt SharedIndicesOneType_} subroutine for some
+! additional details, as much of the work is done there.
+!
+! {\bf N.B.:} The returned structure, {\tt sharedIndices}, contains
+! allocated arrays that must be deallocated once the user no longer
+! needs them.  This should be done through a call to {\tt
+! cleanSharedIndices_}.
+!
+! !INTERFACE:
+
+ subroutine SharedIndices_(aV1, aV2, sharedIndices)
+
+    implicit none
+
+! !INPUT PARAMETERS: 
+!
+      type(AttrVect),        intent(in)  :: aV1   
+      type(AttrVect),        intent(in)  :: aV2
+
+! !INPUT/OUTPUT PARAMETERS:   
+!
+      type(AVSharedIndices), intent(inout) :: sharedIndices
+
+! !REVISION HISTORY:
+! 28Apr11 - W.J. Sacks <sacks@ucar.edu> - initial version
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::SharedIndices_'
+
+  call SharedIndicesOneType_(aV1, aV2, 'REAL', sharedIndices%shared_real)
+  call SharedIndicesOneType_(aV1, aV2, 'INTEGER', sharedIndices%shared_integer)
+
+ end subroutine SharedIndices_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+! Climate and Global Dynamics Division, National Center for Atmospheric Research !
+!BOP -----------------------------------------------------------------------------
+!
+! !IROUTINE: SharedIndicesOneType_ - AttrVect shared attributes and auxiliary information, for one data type
+!
+! !DESCRIPTION:  {\tt SharedIndicesOneType\_()} takes a pair of
+! user-supplied {\tt AttrVect} variables {\tt aV1} and {\tt aV2}, and
+! for choice of either {\tt REAL} or {\tt INTEGER} attributes (as
+! specified literally in the input {\tt CHARACTER} argument {\tt
+! attrib}) returns a structure of type {\tt AVSharedIndicesOneType} ({\tt
+! sharedIndices}).  This structure contains arrays of indices to the
+! locations of the shared attributes of the given type, as well as
+! auxiliary information.
+!
+! The {\tt aVindices1} and {\tt aVindices2} components of {\tt
+! sharedIndices} will be indices into {\tt aV1} and {\tt aV2},
+! respectively.
+!
+! {\bf N.B.:} The returned structure, {\tt sharedIndices}, contains
+! allocated arrays that must be deallocated once the user no longer
+! needs them.  This should be done through a call to {\tt
+! cleanSharedIndicesOneType_}.  Even if there are no attributes in
+! common between {\tt aV1} and {\tt aV2}, {\tt sharedIndices} will still
+! be initialized, and memory will still be allocated. Furthermore, if an
+! already-initialized {\tt sharedIndices} variable is to be given new
+! values, {\tt cleanSharedIndicesOneType_} must be called before {\tt
+! SharedIndicesOneType_} is called a second time, in order to prevent a
+! memory leak.
+!
+! !INTERFACE:
+
+ subroutine SharedIndicesOneType_(aV1, aV2, attrib, sharedIndices)
+
+    implicit none
+
+! !INPUT PARAMETERS: 
+!
+      type(AttrVect),        intent(in)  :: aV1   
+      type(AttrVect),        intent(in)  :: aV2
+      character(len=*),      intent(in)  :: attrib
+
+! !INPUT/OUTPUT PARAMETERS:   
+!
+      type(AVSharedIndicesOneType), intent(inout) :: sharedIndices
+
+! !REVISION HISTORY:
+! 28Apr11 - W.J. Sacks <sacks@ucar.edu> - initial version
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::SharedIndicesOneType_'
+  integer :: i
+
+  ! Check appropriate attributes (real or integer) for matching indices
+  call aVaVSharedAttrIndexList_(aV1, aV2, attrib, sharedIndices%num_indices, &
+                                   sharedIndices%aVindices1, sharedIndices%aVindices2)
+
+  sharedIndices%data_flag = attrib
+
+  ! Check indices for contiguous segments in memory
+  sharedIndices%contiguous=.true.
+  do i=2,sharedIndices%num_indices
+     if(sharedIndices%aVindices1(i) /= sharedIndices%aVindices1(i-1)+1) then 
+        sharedIndices%contiguous = .false.
+     endif
+  enddo
+  if(sharedIndices%contiguous) then
+     do i=2,sharedIndices%num_indices
+        if(sharedIndices%aVindices2(i) /= sharedIndices%aVindices2(i-1)+1) then
+           sharedIndices%contiguous=.false.
+        endif
+     enddo
+  endif
+
+ end subroutine SharedIndicesOneType_
+
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+! Climate and Global Dynamics Division, National Center for Atmospheric Research !
+!BOP -----------------------------------------------------------------------------
+!
+! !IROUTINE cleanSharedIndices_ - Deallocate allocated memory structures of an AVSharedIndices structure
+!
+! !DESCRIPTION: This routine deallocates the allocated memory structures
+! of the input/output {\tt AVSharedIndicesOneType} argument {\tt
+! sharedIndices}, if they are currently associated.  It also resets
+! other components of this structure to a default state.  The success
+! (failure) of this operation is signified by a zero (non-zero) value of
+! the optional {\tt INTEGER} output argument {\tt stat}.  If {\tt
+! clean\_()} is invoked without supplying {\tt stat}, and any of the
+! deallocation operations fail, the routine will terminate with an error
+! message.  If multiple errors occur, {\tt stat} will give the error
+! condition for the last error.
+!
+! !INTERFACE:
+
+ subroutine cleanSharedIndices_(sharedIndices, stat)
+
+    implicit none
+
+! !INPUT/OUTPUT PARAMETERS:   
+!
+      type(AVSharedIndices), intent(inout) :: sharedIndices
+
+! !OUTPUT PARAMETERS:
+!
+      integer, optional, intent(out)       :: stat
+
+! !REVISION HISTORY:
+! 28Apr11 - W.J. Sacks <sacks@ucar.edu> - initial version
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::cleanSharedIndices_'
+  integer :: ier
+
+  if(present(stat)) stat=0
+
+  call cleanSharedIndicesOneType_(sharedIndices%shared_real, stat=ier)
+  if(present(stat) .and. ier /= 0) then
+     stat = ier
+  end if
+
+  call cleanSharedIndicesOneType_(sharedIndices%shared_integer, stat=ier)
+  if(present(stat) .and. ier /= 0) then
+     stat = ier
+  end if
+
+ end subroutine cleanSharedIndices_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+! Climate and Global Dynamics Division, National Center for Atmospheric Research !
+!BOP -----------------------------------------------------------------------------
+!
+! !IROUTINE cleanSharedIndicesOneType_ - Deallocate allocated memory structures of an AVSharedIndicesOneType structure
+!
+! !DESCRIPTION: This routine deallocates the allocated memory structures
+! of the input/output {\tt AVSharedIndices} argument {\tt
+! sharedIndices}, if they are currently associated.  It also resets
+! other components of this structure to a default state.  The success
+! (failure) of this operation is signified by a zero (non-zero) value of
+! the optional {\tt INTEGER} output argument {\tt stat}.  If {\tt
+! clean\_()} is invoked without supplying {\tt stat}, and any of the
+! deallocation operations fail, the routine will terminate with an error
+! message.  If multiple errors occur, {\tt stat} will give the error
+! condition for the last error.
+!
+! !INTERFACE:
+
+ subroutine cleanSharedIndicesOneType_(sharedIndices, stat)
+!
+! !USES:
+!
+      use m_die,      only : die
+
+    implicit none
+
+! !INPUT/OUTPUT PARAMETERS:   
+!
+      type(AVSharedIndicesOneType), intent(inout) :: sharedIndices
+
+! !OUTPUT PARAMETERS:
+!
+      integer, optional, intent(out)       :: stat
+
+! !REVISION HISTORY:
+! 28Apr11 - W.J. Sacks <sacks@ucar.edu> - initial version
+!EOP ___________________________________________________________________
+
+  character(len=*),parameter :: myname_=myname//'::cleanSharedIndicesOneType_'
+  integer :: ier
+
+  if(present(stat)) stat=0
+
+  if(associated(sharedIndices%aVindices1)) then
+     
+     deallocate(sharedIndices%aVindices1,stat=ier)
+
+     if (ier /= 0) then
+        if(present(stat)) then
+           stat=ier
+        else
+           call die(myname_,'deallocate(sharedIndices%aVindices1)',ier)
+        endif
+     endif
+
+  endif
+
+  if(associated(sharedIndices%aVindices2)) then
+     
+     deallocate(sharedIndices%aVindices2,stat=ier)
+
+     if (ier /= 0) then
+        if(present(stat)) then
+           stat=ier
+        else
+           call die(myname_,'deallocate(sharedIndices%aVindices2)',ier)
+        endif
+     endif
+
+  endif  
+        
+  ! Reset other components to default values
+  sharedIndices%num_indices = 0
+  sharedIndices%contiguous = .false.
+  sharedIndices%data_flag = ' '
+
+  end subroutine cleanSharedIndicesOneType_
 
  end module m_AttrVect
 !.
