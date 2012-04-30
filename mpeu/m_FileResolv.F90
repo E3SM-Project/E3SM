@@ -97,7 +97,7 @@ CONTAINS
 
 #if SYSUNICOS || CPRCRAY
    integer, external  :: ishell
-#else
+#elif (!defined __GFORTRAN__)
    integer, external  :: system
 #endif
    character(len=255) :: path, host, dirn, basen, head, tail, cmd, filen
