@@ -11,7 +11,7 @@ module cslam_reconstruction_mod
   use coordinate_systems_mod, only : cartesian2D_t,cartesian3D_t
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
   use cslam_control_volume_mod, only: cslam_struct
-  
+  use parallel_mod, only: abortmp
   implicit none
   private
   public :: reconstruction
@@ -768,9 +768,9 @@ subroutine reconstruction_cubic(fcube,cslam,fnewval,fhalo,fhaloex,recons)
 !-----------------------------------------------------------------------------------!            
     !THIS CASE SHOULD NOT HAPPEN!     
     case default
-      print *, 'Fatal Error in first select statement:'
-      print *, 'cslam_reconstruction_mod.F90 subroutine reconstruction_cubic!' 
-      stop  
+      print *,'Fatal Error in first select statement:'
+      call abortmp('cslam_reconstruction_mod.F90 subroutine reconstruction_cubic!' )
+      
   end select
 end subroutine reconstruction_cubic
 !END SUBROUTINE RECONSTRUCTION_CUBIC------------------------------------CE-for CSLAM!

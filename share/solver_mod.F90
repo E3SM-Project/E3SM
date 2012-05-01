@@ -8,6 +8,7 @@ module solver_mod
   use kinds, only : real_kind, int_kind
   use dimensions_mod, only : npsq, nlev
   use perf_mod, only: t_startf, t_stopf ! _EXTERNAL
+  use parallel_mod, only : abortmp
   implicit none
   private
 
@@ -152,7 +153,7 @@ contains
                 if (precon_method == "block_jacobi") then
 
                    if (blkjac_storage == "LUfactor") then
-                      stop 'dgesl needs linpack'
+                      call abortmp('dgesl needs linpack')
 !                      call dgesl(cg%state(ieptr)%r(:,k), &
 !                                 cg%state(ieptr)%z(:,k), &
 !                                 blkjac(ie)%E(:,:,k),    &
@@ -439,7 +440,7 @@ contains
                 if (precon_method == "block_jacobi") then
 
                    if (blkjac_storage == "LUfactor") then
-                      stop 'dgesl needs linpack'
+                      call abortmp( 'dgesl needs linpack')
 !                      call dgesl(cg%state(ieptr)%r(:,k), &
 !                                 cg%state(ieptr)%z(:,k), &
 !                                 blkjac(ie)%E(:,:,k),    &

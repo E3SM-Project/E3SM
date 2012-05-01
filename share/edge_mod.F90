@@ -8,6 +8,9 @@ module edge_mod
   use perf_mod, only: t_startf, t_stopf ! _EXTERNAL
   use parallel_mod, only : haltmp
   use thread_mod, only: omp_get_num_threads, omp_get_thread_num
+  use parallel_mod,   only : abortmp
+
+
 
   implicit none
   private
@@ -36,8 +39,13 @@ module edge_mod
 
   type, public :: EdgeBuffer_t
      sequence
+#ifdef HAVE_F2008_CONTIGUOUS
+     real (kind=real_kind), dimension(:,:), pointer, contiguous :: buf
+     real (kind=real_kind), dimension(:,:), pointer, contiguous :: receive
+#else
      real (kind=real_kind), dimension(:,:), pointer :: buf
      real (kind=real_kind), dimension(:,:), pointer :: receive
+#endif
      integer :: nlyr ! Number of layers
      integer :: nbuf ! size of the horizontal dimension of the buffers.
   end type EdgeBuffer_t
@@ -116,15 +124,18 @@ contains
   !
   ! create an Real based communication buffer
   ! =========================================
-  subroutine initEdgeBuffer(edge,nlyr)
+  subroutine initEdgeBuffer(edge,nlyr, newbuf,newreceive)
     use dimensions_mod, only : np, nelemd, max_corner_elem
     implicit none
     integer,intent(in)                :: nlyr
     type (EdgeBuffer_t),intent(out) :: edge
-
+#ifdef HAVE_F2008_CONTIGUOUS
+    real(kind=real_kind), optional, target, contiguous :: newbuf(:,:), newreceive(:,:)
+#else
+    real(kind=real_kind), optional, target :: newbuf(:,:), newreceive(:,:)
+#endif
     ! Local variables
-
-    integer :: nbuf,ith
+    integer :: nbuf,ith,xtra
 
     nbuf=4*(np+max_corner_elem)*nelemd
 !   only master thread should allocate the buffer
@@ -133,8 +144,21 @@ contains
 #endif
     edge%nlyr=nlyr
     edge%nbuf=nbuf
-    allocate(edge%buf    (nlyr,nbuf))
-    allocate(edge%receive(nlyr,nbuf))
+
+    if (present(newbuf) .and. present(newreceive)) then
+       xtra = size(newbuf)/nlyr
+       if (xtra<nbuf) call abortmp('Error: user provided edge buffer is too small')
+#ifdef HAVE_F2008_CONTIGUOUS
+       edge%buf(1:nlyr,1:xtra) => newbuf
+       edge%receive(1:nlyr,1:xtra) => newreceive
+#else
+       ! call F77 routine which will reshape arrays.  
+       call set_edge_buffers(edge,edge%nlyr,edge%nbuf,newbuf,newreceive)
+#endif
+    else
+       allocate(edge%buf    (nlyr,nbuf))
+       allocate(edge%receive(nlyr,nbuf))
+    endif
     edge%buf    (:,:)=0.0D0
     edge%receive(:,:)=0.0D0
 #if (! defined ELEMENT_OPENMP)
@@ -1382,14 +1406,14 @@ contains
     in = desc%putmapP_ghost(north) 
     iw = desc%putmapP_ghost(west)  
 #if 1
-    if (is>edge%nbuf) stop 'error is='
-    if (ie>edge%nbuf) stop 'error ie='
-    if (in>edge%nbuf) stop 'error in='
-    if (iw>edge%nbuf) stop 'error iw='
-    if (is<1) stop 'error is=0'
-    if (ie<1) stop 'error ie=0'
-    if (in<1) stop 'error in=0'
-    if (iw<1) stop 'error iw=0'
+    if (is>edge%nbuf) call abortmp('error is=')
+    if (ie>edge%nbuf) call abortmp('error ie=')
+    if (in>edge%nbuf) call abortmp('error in=')
+    if (iw>edge%nbuf) call abortmp('error iw=')
+    if (is<1) call abortmp('error is=0')
+    if (ie<1) call abortmp('error ie=0')
+    if (in<1) call abortmp('error in=0')
+    if (iw<1) call abortmp('error iw=0')
 #endif
 
 
@@ -1464,7 +1488,7 @@ contains
     ! of the corners, and this which (i,j) dimension maps to which dimension
 ! SWEST
     do l=swest, swest+max_corner_elem-1
-       if (l.ne.swest) stop 'ERROR1: swest ghost cell update requires ne>0 cubed-sphere mesh'
+       if (l.ne.swest) call abortmp('ERROR1: swest ghost cell update requires ne>0 cubed-sphere mesh')
        if (desc%putmapP_ghost(l) /= -1) then
           do k=1,vlyr
              ! edge%buf(1,1,kptr+k,desc%putmapP_ghost(l))=v(1,1 ,k)
@@ -1477,7 +1501,7 @@ contains
     
 ! SEAST
     do l=swest+max_corner_elem, swest+2*max_corner_elem-1
-       if (l.ne.seast) stop 'ERROR1: seast ghost cell update requires ne>0 cubed-sphere mesh'
+       if (l.ne.seast) call abortmp('ERROR1: seast ghost cell update requires ne>0 cubed-sphere mesh')
        if (desc%putmapP_ghost(l) /= -1) then
           do k=1,vlyr
              ! edge%buf(1,1,kptr+k,desc%putmapP_ghost(l))=v(nc ,1 ,k)
@@ -1490,7 +1514,7 @@ contains
     
 ! NEAST
     do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
-       if (l.ne.neast) stop 'ERROR1: neast ghost cell update requires ne>0 cubed-sphere mesh'
+       if (l.ne.neast) call abortmp('ERROR1: neast ghost cell update requires ne>0 cubed-sphere mesh')
        if (desc%putmapP_ghost(l) /= -1) then
           do k=1,vlyr
              !edge%buf(1,1,kptr+k,desc%putmapP_ghost(l))=v(nc ,nc,k)
@@ -1505,7 +1529,7 @@ contains
     
 ! NWEST
     do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
-       if (l.ne.nwest) stop 'ERROR1: nwest ghost cell update requires ne>0 cubed-sphere mesh'
+       if (l.ne.nwest) call abortmp('ERROR1: nwest ghost cell update requires ne>0 cubed-sphere mesh')
        if (desc%putmapP_ghost(l) /= -1) then
           do k=1,vlyr
              !edge%buf(1,1,kptr+k,desc%putmapP_ghost(l))=v(1  ,nc,k)
@@ -1737,9 +1761,6 @@ contains
 subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
   use dimensions_mod, only : max_corner_elem
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
-  use parallel_mod, only : abortmp
-
-
 
   type (Ghostbuffertr_t)                      :: edge
   integer,              intent(in)   :: vlyr
@@ -1858,7 +1879,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
   ! of the corners, and this which (i,j) dimension maps to which dimension
 ! SWEST
   do l=swest,swest+max_corner_elem-1
-     if (l.ne.swest) stop 'ERROR2: swest ghost cell update requires ne>0 cubed-sphere mesh'
+     if (l.ne.swest) call abortmp('ERROR2: swest ghost cell update requires ne>0 cubed-sphere mesh')
      if (desc%putmapP_ghost(l) /= -1) then
        do itr=1,ntrac
          do k=1,vlyr
@@ -1875,7 +1896,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
   
 ! SEAST
   do l=swest+max_corner_elem,swest+2*max_corner_elem-1
-     if (l.ne.seast) stop 'ERROR2: seast ghost cell update requires ne>0 cubed-sphere mesh'
+     if (l.ne.seast) call abortmp('ERROR2: seast ghost cell update requires ne>0 cubed-sphere mesh')
      if (desc%putmapP_ghost(l) /= -1) then
        do itr=1,ntrac
          do k=1,vlyr
@@ -1892,7 +1913,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
   
 ! NEAST
   do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
-     if (l.ne.neast) stop 'ERROR2: neast ghost cell update requires ne>0 cubed-sphere mesh'
+     if (l.ne.neast) call abortmp('ERROR2: neast ghost cell update requires ne>0 cubed-sphere mesh')
      if (desc%putmapP_ghost(l) /= -1) then
        do itr=1,ntrac
         do k=1,vlyr
@@ -1909,7 +1930,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
   
 ! NWEST
   do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
-     if (l.ne.nwest) stop 'ERROR2: nwest ghost cell update requires ne>0 cubed-sphere mesh'
+     if (l.ne.nwest) call abortmp('ERROR2: nwest ghost cell update requires ne>0 cubed-sphere mesh')
      if (desc%putmapP_ghost(l) /= -1) then
       do itr=1,ntrac
         do k=1,vlyr
@@ -2272,7 +2293,7 @@ end subroutine ghostVunpack
       ! of the corners, and this which (i,j) dimension maps to which dimension
   ! SWEST
       do l=swest,swest+max_corner_elem-1
-         if (l.ne.swest) stop 'ERROR3: swest ghost cell update requires ne>0 cubed-sphere mesh'
+         if (l.ne.swest) call abortmp('ERROR3: swest ghost cell update requires ne>0 cubed-sphere mesh')
            if (desc%putmapP_ghost(l) /= -1) then
                do i=1,nhc
                  do j=1,nhc
@@ -2284,7 +2305,7 @@ end subroutine ghostVunpack
 
   ! SEAST
       do l=swest+max_corner_elem,swest+2*max_corner_elem-1
-         if (l.ne.seast) stop 'ERROR3: seast ghost cell update requires ne>0 cubed-sphere mesh'
+         if (l.ne.seast) call abortmp('ERROR3: seast ghost cell update requires ne>0 cubed-sphere mesh')
            if (desc%putmapP_ghost(l) /= -1) then
                do i=1,nhc             
                  do j=1,nhc
@@ -2296,7 +2317,7 @@ end subroutine ghostVunpack
 
   ! NEAST
       do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
-         if (l.ne.neast) stop 'ERROR3: neast ghost cell update requires ne>0 cubed-sphere mesh'
+         if (l.ne.neast) call abortmp('ERROR3: neast ghost cell update requires ne>0 cubed-sphere mesh')
            if (desc%putmapP_ghost(l) /= -1) then
                do i=1,nhc
                   do j=1,nhc
@@ -2308,7 +2329,7 @@ end subroutine ghostVunpack
 
   ! NWEST
       do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
-         if (l.ne.nwest) stop 'ERROR3: nwest ghost cell update requires ne>0 cubed-sphere mesh'
+         if (l.ne.nwest) call abortmp('ERROR3: nwest ghost cell update requires ne>0 cubed-sphere mesh')
            if (desc%putmapP_ghost(l) /= -1) then
              do i=1,nhc
                do j=1,nhc
@@ -2548,9 +2569,6 @@ end subroutine ghostVunpack
   subroutine ghostVpack3d(ghost, v, vlyr, kptr, desc)
     use dimensions_mod, only : max_corner_elem
     use control_mod,    only : north, south, east, west, neast, nwest, seast, swest
-    use parallel_mod,   only : abortmp
-
-
 
     type (Ghostbuffer3d_t)                :: ghost
     integer,              intent(in)      :: kptr,vlyr
@@ -2980,3 +2998,27 @@ End module edge_mod
 
 
 
+
+
+#ifndef HAVE_F2008_CONTIGUOUS
+!
+! subroutine to allow sharing edge buffers
+! this has to be outside a module to allow us to (F77 style) access the same chunk 
+! of memory with a different shape
+!
+! some compilers dont allow the 'target' attribute to be used in a F77 subroutine
+! such as cray.  if that is the case, try compiling with -DHAVE_F2008_CONTIGUOUS
+!
+subroutine set_edge_buffers(edge,nlyr,nbuf,newbuf,newreceive)
+use kinds, only          : real_kind,int_kind
+use edge_mod, only       : EdgeBuffer_t
+! input
+type (EdgeBuffer_t) :: edge
+integer :: nlyr,nbuf
+real(kind=real_kind) , target :: newbuf(nlyr,nbuf), newreceive(nlyr,nbuf)
+
+edge%buf => newbuf
+edge%receive => newreceive
+end subroutine set_edge_buffers
+
+#endif
