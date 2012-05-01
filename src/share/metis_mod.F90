@@ -4,6 +4,7 @@
 
 module metis_mod
   use kinds, only : iulog
+  use parallel_mod, only : abortmp
   implicit none
   private 
   integer, parameter :: VertexWeight = 1000
@@ -373,7 +374,7 @@ contains
     do k=1,nelem
        write(iulog,*) k,part(k)
     enddo
-    stop 'halting: at the end of genmetispart'
+    call abortmp(' at the end of genmetispart')
 
     if(OutputFiles) then
        do k=1,nelem
@@ -499,7 +500,7 @@ contains
              enddo
           endif
        enddo
-       if (max_neigh < jj+1) stop "number or neighbors foudn exceeds expected max error"
+       if (max_neigh < jj+1) call abortmp( "number or neighbors foudn exceeds expected max error")
        call sort(max_neigh,neigh_list,index)
        degree       = COUNT(GridVertex(i)%wgtP(:) .gt. 0) 
        ! Copy the sorted adjncy list in
@@ -552,7 +553,7 @@ contains
        do ii=1,n
           if (msk(ii) .and. list(ii)<= lmin) iloc=ii
        enddo
-       if (iloc==-1) stop "sort() error"
+       if (iloc==-1) call abortmp( "sort() error")
 
        index(i)=iloc
        if(Debug) write(iulog,*)'sort: point #4'

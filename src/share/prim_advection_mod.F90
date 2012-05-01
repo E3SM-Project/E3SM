@@ -84,7 +84,7 @@ module vertremap_mod
   use element_mod, only    : element_t
   use cslam_control_volume_mod, only    : cslam_struct
   use perf_mod, only	   : t_startf, t_stopf  ! _EXTERNAL
-  	
+  use parallel_mod, only   : abortmp  	
   contains
 
   subroutine remap_velocityUV(np1,dt,elem,hvcoord,nets,nete)
@@ -1207,7 +1207,7 @@ module prim_advection_mod
   use bndry_mod, only          : bndry_exchangev
   use viscosity_mod, only      : biharmonic_wk_scalar, biharmonic_wk_scalar_minmax, neighbor_minmax
   use perf_mod, only           : t_startf, t_stopf, t_barrierf ! _EXTERNAL
-
+  use parallel_mod, only   : abortmp  	
 
   implicit none
   
@@ -1225,19 +1225,19 @@ module prim_advection_mod
 
 
 contains
+
   subroutine Prim_Advec_Init()
     use dimensions_mod, only : nlev, qsize, nelemd
 
-    call initEdgeBuffer(edgeAdv1,nlev)
-    call initEdgeBuffer(edgeAdv,qsize*nlev)
-    call initEdgeBuffer(edgeAdv_p1,qsize*nlev + nlev) 
-    call initEdgeBuffer(edgeAdvQ2,qsize*nlev*2)  ! Qtens,Qmin, Qmax
+    ! allocate largest one first
     call initEdgeBuffer(edgeAdvQ3,qsize*nlev*3)  ! Qtens,Qmin, Qmax
+    ! remaining edge buffers can share %buf and %receive with edgeAdvQ3:
+    call initEdgeBuffer(edgeAdv1,nlev,edgeAdvQ3%buf,edgeAdvQ3%receive)
+    call initEdgeBuffer(edgeAdv,qsize*nlev,edgeAdvQ3%buf,edgeAdvQ3%receive)
+    call initEdgeBuffer(edgeAdv_p1,qsize*nlev + nlev,edgeAdvQ3%buf,edgeAdvQ3%receive) 
+    call initEdgeBuffer(edgeAdvQ2,qsize*nlev*2,edgeAdvQ3%buf,edgeAdvQ3%receive)  ! Qtens,Qmin, Qmax
 
-    call replace_edge_buffers(edgeAdvQ2,edgeAdvQ2%nlyr,edgeAdvQ2%nbuf,edgeAdvQ3%buf,edgeAdvQ3%receive)
-    call replace_edge_buffers(edgeAdv_p1,edgeAdv_p1%nlyr,edgeAdv_p1%nbuf,edgeAdvQ3%buf,edgeAdvQ3%receive)
-    call replace_edge_buffers(edgeAdv1,edgeAdv1%nlyr,edgeAdv1%nbuf,edgeAdvQ3%buf,edgeAdvQ3%receive)
-    call replace_edge_buffers(edgeAdv,edgeAdv%nlyr,edgeAdv%nbuf,edgeAdvQ3%buf,edgeAdvQ3%receive)
+
 
 
     ! this static array is shared by all threads, so dimension for all threads (nelemd), not nets:nete:
@@ -1467,8 +1467,7 @@ contains
     elseif (vert_remap_q_alg == 1 .or. vert_remap_q_alg == 2) then
       call remap_velocityQ_ppm(n0,np1,dt,elem,hybrid,hvcoord,nets,nete,compute_diagnostics,rkstage)
     else
-      write(*,*) 'specification for vert_remap_q_alg must be 0, 1, or 2.'
-      stop
+      call abortmp('specification for vert_remap_q_alg must be 0, 1, or 2.')
     endif
 
 
@@ -2239,7 +2238,7 @@ end subroutine compute_and_apply_rhs
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   rhs_viss=0
   if (limiter_option == 8) then
-     stop 'limiter_opiton=8 not supported for dg advection'
+     call abortmp('limiter_opiton=8 not supported for dg advection')
      ! todo:  we need to track a 'dg' mass, and use that to back out Q
      ! then compute Qmin/Qmax here
   endif  
@@ -3374,31 +3373,6 @@ end subroutine
 
 end subroutine preq_vertadv_dpQ
 end module prim_advection_mod
-
-
-
-
-
-
-!
-! subroutine to force all the tracer edge buffers to share the largest buffer
-! this has to be outside a module to allow us to (F77 style) access the same chunk 
-! of memory with a different shape
-!
-subroutine replace_edge_buffers(edge,nlyr,nbuf,newbuf,newreceive)
-use kinds, only          : real_kind,int_kind
-use edge_mod, only       : EdgeBuffer_t
-! input
-type (EdgeBuffer_t) :: edge
-integer :: nlyr,nbuf
-real(kind=real_kind) , target :: newbuf(nlyr,nbuf), newreceive(nlyr,nbuf)
-
-deallocate(edge%buf)
-deallocate(edge%receive)
-edge%buf => newbuf
-edge%receive => newreceive
-end subroutine replace_edge_buffers
-
 
 
 

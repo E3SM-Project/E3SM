@@ -3,6 +3,7 @@
 #endif
 
 module bndry_mod
+  use parallel_mod, only : abortmp
   implicit none
   private
   public :: bndry_exchangeV, ghost_exchangeVfull, compute_ghost_corner_orientation
@@ -805,7 +806,7 @@ contains
         if (abs(cout(nc1,1,1,ie)-cout(nc1,0,1,ie)) .gt. tol )  fail1=.true.
         if (abs(cout(1,nc1,1,ie)-cout(0,nc1,1,ie)).gt.tol) fail2=.true.
      endif
-     if (fail1 .neqv. fail2 ) stop 'ghost exchange SW orientation failure'
+     if (fail1 .neqv. fail2 ) call abortmp( 'ghost exchange SW orientation failure')
      if (fail1) then
         elem(ie)%desc%reverse(swest)=.true.
         !print *,'reversion sw orientation ie',ie
@@ -822,7 +823,7 @@ contains
         if (abs(cout(nc2,1,1,ie)-cout(nc2,0,1,ie)) .gt. tol )  fail1=.true.
         if (abs(cout(nc+1,nc1,1,ie)-cout(nc,nc1,1,ie)).gt.tol) fail2=.true.
      endif
-     if (fail1 .neqv. fail2 ) stop 'ghost exchange SE orientation failure'
+     if (fail1 .neqv. fail2 ) call abortmp('ghost exchange SE orientation failure')
      if (fail1) then
         elem(ie)%desc%reverse(seast)=.true.
      endif
@@ -835,7 +836,7 @@ contains
         if (abs(cout(nc1,nc+1,1,ie)-cout(nc1,nc,1,ie)) .gt. tol )  fail1=.true.
         if (abs(cout(1,nc2,1,ie)-cout(0,nc2,1,ie)).gt.tol) fail2=.true.
      endif
-     if (fail1 .neqv. fail2 ) stop 'ghost exchange NW orientation failure'
+     if (fail1 .neqv. fail2 ) call abortmp( 'ghost exchange NW orientation failure')
      if (fail1) then
         elem(ie)%desc%reverse(nwest)=.true.
      endif
@@ -848,7 +849,7 @@ contains
         if (abs(cout(nc2,nc+1,1,ie)-cout(nc2,nc,1,ie)) .gt. tol )  fail1=.true.
         if (abs(cout(nc+1,nc2,1,ie)-cout(nc,nc2,1,ie)).gt.tol) fail2=.true.
      endif
-     if (fail1 .neqv. fail2 ) stop 'ghost exchange NE orientation failure'
+     if (fail1 .neqv. fail2 ) call abortmp( 'ghost exchange NE orientation failure')
      if (fail1) then
         elem(ie)%desc%reverse(neast)=.true.
      endif

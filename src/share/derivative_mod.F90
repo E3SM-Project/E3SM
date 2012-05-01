@@ -129,7 +129,7 @@ contains
     gp=gausslobatto(np)
 
     ! Legendre polynomials of degree npdg-1, on the np GLL grid:
-    if (npdg>np) stop 'FATAL ERROR: npdg>np'
+    if (npdg>np) call abortmp( 'FATAL ERROR: npdg>np')
     if (npdg>0 .and. npdg<np) then
        ! in this case, we use a DG basis of Legendre polynomials
        ! stored at the GLL points.  
@@ -1512,7 +1512,7 @@ endif
        enddo
     enddo
     print *,'sum of weights: ',pout(:,:)
-       stop
+    call abortmp(__FILE__)
 #endif
     endif
     !OMP ENDMASTER

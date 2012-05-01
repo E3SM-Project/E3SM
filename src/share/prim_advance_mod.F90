@@ -10,7 +10,7 @@ module prim_advance_mod
   use edge_mod, only : EdgeBuffer_t
   use kinds, only : real_kind, iulog
   use perf_mod, only: t_startf, t_stopf, t_barrierf ! _EXTERNAL
-
+  use parallel_mod, only : abortmp
   implicit none
   private
   public :: prim_advance_exp, prim_advance_si, prim_advance_init, preq_robert3,&
@@ -1450,7 +1450,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   !  regular viscosity  
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   if (hypervis_order == 1) then
-     if (nu_p>0) stop 'ERROR: hypervis_order == 1 not coded for nu_p>0'
+     if (nu_p>0) call abortmp( 'ERROR: hypervis_order == 1 not coded for nu_p>0')
      do ic=1,hypervis_subcycle
         do ie=nets,nete
            
@@ -1759,8 +1759,8 @@ are much better added via a fixer
   !  regular viscosity  
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   if (hypervis_order == 1) then
-     if (nu_p>0) stop 'ERROR: hypervis_order == 1 not coded for nu_p>0'
-     if (nu_top>0) stop 'ERROR: hypervis_order == 1 not coded for nu_top>0'
+     if (nu_p>0) call abortmp( 'ERROR: hypervis_order == 1 not coded for nu_p>0')
+     if (nu_top>0) call abortmp( 'ERROR: hypervis_order == 1 not coded for nu_top>0')
      do ic=1,hypervis_subcycle
         do ie=nets,nete
            

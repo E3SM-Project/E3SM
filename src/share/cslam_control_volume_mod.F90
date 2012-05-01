@@ -18,6 +18,8 @@ module cslam_control_volume_mod
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
   ! ---------------------------------------------------------------------------------
   use cube_mod, only     : cube_xstart, cube_xend, cube_ystart, cube_yend
+
+  use parallel_mod, only : abortmp
   
   implicit none
   private
@@ -121,9 +123,8 @@ subroutine cslam_mesh_ari(elem, cslam, tl)
         cslam%cubeboundary=j
         corner=.TRUE.
       else
-        print *,'Error in CSLAM_CONTROL_VOLUME_MOD - Subroutine CSLAM_MESH_ARI: &
-                 Do not allow one element per face for CSLAM, please increase ne!'
-        STOP
+        print *,'Error in CSLAM_CONTROL_VOLUME_MOD - Subroutine CSLAM_MESH_ARI: '
+        call abortmp('Do not allow one element per face for CSLAM, please increase ne!')
       endif
     end if
   end do
@@ -795,8 +796,7 @@ subroutine create_ari(elem, cslam)
   !THIS CASE SHOULD NOT HAPPEN, SINCE WE ASSUME NE>=2!     
     case default
       print *, 'Fatal Error in cslam_line_integrals_mod.F90.'
-      print *, 'Selected case for cubeboundary does not exists!' 
-      Stop    
+      call abortmp('Selected case for cubeboundary does not exists!')     
   end select
   
   cslam%acartx(jx_min-1)=-bignum 
@@ -843,8 +843,6 @@ end subroutine create_ari
 !        cslam   ...  structure                                                     !                 
 !-----------------------------------------------------------------------------------!
 subroutine create_interpolation_points(elem,cslam)
-  use parallel_mod, only : haltmp
-  
   implicit none
   type (element_t), intent(in)      :: elem
   type (cslam_struct), intent(inout)   :: cslam  
@@ -965,9 +963,8 @@ subroutine create_interpolation_points(elem,cslam)
         end do
       !THIS CASE SHOULD NOT HAPPEN!     
         case default
-          print *, 'Fatal Error in first select statement:'
-          print *, 'cslam_reconstruction_mod.F90 subroutine fillhalo_cubic!' 
-          stop
+           print *,'Fatal Error in first select statement:'
+           call abortmp('cslam_reconstruction_mod.F90 subroutine fillhalo_cubic!' )
     end select
   !CORNER TREATMENT
   else  
@@ -1256,10 +1253,9 @@ subroutine create_interpolation_points(elem,cslam)
         end do
         !THIS CASE SHOULD NOT HAPPEN!     
           case default
-            print *, 'Fatal Error in second select statement:'
-            print *, 'cslam_reconstruction_mod.F90 subroutine create_interpolationpoint!' 
-            stop
-      end select
+            print *,'Fatal Error in second select statement:'
+            call abortmp('cslam_reconstruction_mod.F90 subroutine create_interpolationpoint!')
+         end select
   endif
 end subroutine create_interpolation_points
 !END SUBROUTINE CREATE_INTERPOLATION_POINTS-----------------------------CE-for CSLAM!
