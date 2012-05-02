@@ -25,7 +25,6 @@ echo NCPU = $NCPU
 
 
 set test_case = swtc5
-set params = $input/Params4-1.inc    # 1 level
 
 
 
@@ -45,10 +44,9 @@ set hypervis_subcycle =  1
 
 set NE = 30
 
-
+#LF
 set tstep = 90
 set nu = 1.5e15   
-set nu = 0
 set integration = explicit
 set smooth = .05
 
