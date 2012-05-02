@@ -3016,6 +3016,7 @@ End module edge_mod
 !
 subroutine set_edge_buffers(edge,nlyr,nbuf,newbuf,newreceive)
 use kinds, only          : real_kind,int_kind
+use edge_mod, only       : EdgeBuffer_t
 ! input
 type (EdgeBuffer_t) :: edge
 integer :: nlyr,nbuf
