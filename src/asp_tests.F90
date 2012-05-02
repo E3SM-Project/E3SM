@@ -965,14 +965,15 @@ END MODULE testcases_3_4_5_6
 
 
 
-
 module asp_tests
 !
 !  This module contains the initial condititions for the baroclinic
 !  instability probelms in Jablonowski and Williamson, QJR (2006) 132 
 !
 use element_mod, only : element_t, timelevels
+#ifndef MESH
 use cslam_control_volume_mod, only : cslam_struct
+#endif
 use hybrid_mod, only : hybrid_t
 use hybvcoord_mod, only : hvcoord_t 
 use kinds, only : real_kind
@@ -987,14 +988,17 @@ use parallel_mod, only : abortmp
 implicit none
 private
 
+#ifndef MESH
 public :: asp_baroclinic
+#endif
+
 public :: asp_tracer, asp_advection_vertical, asp_gravity_wave, asp_rossby, asp_mountain
 
 
 
 contains
 
-
+#ifndef MESH
 subroutine asp_baroclinic(elem,hybrid,hvcoord,nets,nete, cslam)
 !=======================================================================================================!
 !  
@@ -1242,6 +1246,7 @@ if (qsize>=5) then
 endif
 
 end subroutine
+#endif
 
 
 
