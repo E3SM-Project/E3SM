@@ -144,10 +144,15 @@ contains
 #endif
     edge%nlyr=nlyr
     edge%nbuf=nbuf
+    if (nlyr==0) return  ! tracer code might call initedgebuffer() with zero tracers
+
 
     if (present(newbuf) .and. present(newreceive)) then
        xtra = size(newbuf)/nlyr
-       if (xtra<nbuf) call abortmp('Error: user provided edge buffer is too small')
+       if (xtra<nbuf) then
+          print *,'xtra,nbuf=',xtra,nbuf
+          call abortmp('Error: user provided edge buffer is too small')
+       endif
 #ifdef HAVE_F2008_CONTIGUOUS
        edge%buf(1:nlyr,1:xtra) => newbuf
        edge%receive(1:nlyr,1:xtra) => newreceive

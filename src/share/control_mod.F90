@@ -54,7 +54,7 @@ module control_mod
 ! vert_remap_q_alg:    0  default value, Zerroukat monotonic splines
 !                      1  PPM vertical remap with mirroring at the boundaries (solid wall bc's, high-order throughout)
 !                      2  PPM vertical remap without mirroring at the boundaries (no bc's enforced, first-order at two cells bordering top and bottom boundaries)
-  integer, public :: vert_remap_q_alg = 1
+  integer, public :: vert_remap_q_alg = 0
 
 !tolerance to define smth small, was introduced for lim 8 in 2d and 3d
   real (kind=real_kind), public, parameter :: tol_limiter=1e-13

@@ -1229,8 +1229,9 @@ contains
   subroutine Prim_Advec_Init()
     use dimensions_mod, only : nlev, qsize, nelemd
 
+    ! this might be called with qsize=0
     ! allocate largest one first
-    call initEdgeBuffer(edgeAdvQ3,qsize*nlev*3)  ! Qtens,Qmin, Qmax
+    call initEdgeBuffer(edgeAdvQ3,max(nlev,qsize*nlev*3))  ! Qtens,Qmin, Qmax
     ! remaining edge buffers can share %buf and %receive with edgeAdvQ3:
     call initEdgeBuffer(edgeAdv1,nlev,edgeAdvQ3%buf,edgeAdvQ3%receive)
     call initEdgeBuffer(edgeAdv,qsize*nlev,edgeAdvQ3%buf,edgeAdvQ3%receive)
