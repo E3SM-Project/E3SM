@@ -15,13 +15,16 @@ restartfreq   = 43200
 restartfile   = "./R0001"
 runtype       = -1
 tstep         = TSTEP
+tstep_type   = 1
+qsplit=4
 integration   = "explicit"
-smooth        = 0.005           
-nu            = 0
+smooth        = 0
+nu=0
 nu_s          = 0
 nu_p          = 0
 hypervis_order = 2
-hypervis_subcycle = 1
+hypervis_subcycle= 1
+hypervis_subcycle_q= -1
 u_perturb      = 1
 /
 &solver_nl

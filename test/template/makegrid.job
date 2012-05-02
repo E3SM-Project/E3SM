@@ -1,6 +1,6 @@
 #!/bin/tcsh -f 
-#SBATCH -N 8
-#SBATCH --account=FY115932
+#SBATCH -N 1
+#SBATCH --account=FY127788
 #SBATCH --time=0:10:00
 
 set NCPU = 1
@@ -33,41 +33,49 @@ echo using NCPU = $NCPU
 # GLL points within each element:
 set NPTS = 4
 # CSLAM points points within each element:
-set NC = 4
+set NC = 4  # must match value in dimensions_mod.F90
 
 # UNIFORM grids
-set ne = 16 ; 
-set meshfile='none'
-set meshname = ne{$ne}np{$NPTS}
-set meshsub = ne{$ne}nc{$NPTS}
+#set HYPERVIS_OPTS = 
+#set tstep = 1  
+#set ne = 16 ; 
+#set nu = 0
+#set hypervis_subcycle = 1
+#set meshfile='none'
+#set meshname = ne{$ne}np{$NP}
+#set meshsub = ne{$ne}nc{$NC}
 
 # unstructured grid from file
-#set ne = 0
+set ne = 0
 #set meshname = ARM_30_x8_s1.g
-#set meshname = ARM_30_x8.g
-#set meshfile=~/codes/mapping/grids/$meshname
-
+set meshname = ARM_30_x8.g
+set meshfile=~/codes/mapping/grids/$meshname
+set nu = 1.1e12
+# dtime=600 nsplit=19  qsplit=5   tstep=6.3
+set tstep = 6
 set MESHREFINE = --enable-mesh-refine
+set hypervis_subcycle = 1
+set HYPERVIS_OPTS = 'hypervis_power=3.2  fine_ne=240 max_hypervis_courant=9991.9 qsplit=5'
 
 
 
 
-set tstep = 1  
+
 set name = template
 set nlev=20
 set qsize = 0
 
 if ( $NPTS == 4 ) then
-   set outnames = "'area','cv_lat','cv_lon','corners','phys_lat','phys_lon','phys_cv_lat','phys_cv_lon','phys_area'"
+   set outnames = "'area','cv_lat','cv_lon','corners','phys_lat','phys_lon','phys_cv_lat','phys_cv_lon','phys_area','hypervis'"
 else
-   set outnames = "'area','corners','phys_lat','phys_lon','phys_cv_lat','phys_cv_lon','phys_area'"
+   set outnames = "'area','corners','phys_lat','phys_lon','phys_cv_lat','phys_cv_lon','phys_area','hypervis'"
 endif
 
 set src = ~/codes/homme/build/preqx
 set input = ~/codes/homme/test/template
 set mesh = ne${ne}-${NPTS}t${tstep}l${nlev}
 set output = jw_baroclinic1.nc
-
+set exe = preqx.template.nc$NC
 # setup the work directory
 # NOTE: PIO + older Lustre (as on blackrose) will output only zeros!
 set wdir = ~/scratch1
@@ -84,7 +92,7 @@ set wdir = $wdir/preqx/$name
 
 cd $src
 set build = 1
-if ( -f preqx.template ) set build = 0
+if ( -f $exe ) set build = 0
 set make = 1 # for debugging - rebuild code every run but dont re-configure
 
 if ( $build == 1  ) then
@@ -93,25 +101,26 @@ if ( $build == 1  ) then
   make -j4 depends
   make clean
   make -j4 preqx
-  mv preqx preqx.template
+  mv preqx $exe
 exit
 endif
 if ( $make == 1 ) then
     make -j4 preqx
     if ( $status ) exit
-    mv preqx preqx.template
+    set exe = preqx
 endif
 
 cd $wdir
 
 
 
-
-
 rm -f $wdir/input.nl
 sed s/NE/$ne/ $input/explicit20.nl.sed | sed s/TSTEP/$tstep/ |\
-sed s:meshfile.\*:"mesh_file = '$meshfile'":   |\
+sed s:meshfile.\*:"mesh_file = '$meshfile'    $HYPERVIS_OPTS":   |\
 sed s/qsize.\*/"qsize = $qsize"/   |\
+sed s/nu=.\*/"nu=$nu"/   |\
+sed s/hypervis_subcycle=.\*/"hypervis_subcycle=$hypervis_subcycle"/   |\
+sed s/hypervis_subcycle_q.\*/"hypervis_subcycle_q=$hypervis_subcycle"/   |\
 sed s/runtype.\*/"runtype = 0"/   |\
 sed s/output_frequency.\*/"output_frequency = 1"/   |\
 sed s:infilenames.\*:"infilenames='h0-tavg.nc'": |\
@@ -122,7 +131,7 @@ if ( $status ) exit
 
 set echo
 rm -Rf $wdir/movies/jw*
-mpirun  $src/preqx.template < $wdir/input.nl
+mpirun  $src/$exe < $wdir/input.nl
 
 
 
@@ -140,6 +149,7 @@ if ( $NPTS == 4 ) then
 endif
 
 
+if ( ${?meshsub} ) then
 
 # a subelement control volume interpIC template:
 set echo
@@ -161,6 +171,12 @@ ncrename -v phys_cv_lat,cv_lat {$meshsub}_tmp.nc
 ncrename -v phys_cv_lon,cv_lon {$meshsub}_tmp.nc
 ncl $input/HOMME2SCRIP.ncl  name=\"$meshsub\"  ne=$ne
 rm -f {$meshsub}_tmp.nc
+
+endif
+
+
+# make hypervisocity grid plot:
+ncl $input/plot_hypervis.ncl
 
 
 

@@ -31,14 +31,14 @@ print("lat min/max = "+min(fin->lat)+" "+max(fin->lat))
 ;grid_area@units = "radians^2"
 
 if (isfilevar(fin,"corners")) then
-; there are always 2 less subeleemnts than GLL points
-corners = new ( (/4,grid_size-2/), "integer")
-do k=0,3
+  dims=dimsizes(fin->corners)
+  corners = new ( (/4,dims(1)/), "integer")
+  do k=0,3
 ;   corners(:,k) = (/fin->corners(k,:)/)
-   corners(k,:) = (/fin->corners(k,:)/)
-end do 
-corners!1 = "ncorners"
-corners!0 = "ncenters"
+    corners(k,:) = (/fin->corners(k,:)/)
+  end do 
+  corners!0 = "ncorners"
+  corners!1 = "ncells"
 end if
 
 
