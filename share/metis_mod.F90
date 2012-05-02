@@ -489,7 +489,9 @@ contains
        xadj(i)      = ii
        jj=1
        neigh_list=0
-       do j=1,num_neighbors
+
+#ifdef MESH
+do j=1,num_neighbors
           if(GridVertex(i)%wgtP(j) .gt. 0) then 
              do k=1,SIZE(GridVertex(i)%nbrs(j)%n)
                 adjncy(ii+jj-1)   = GridVertex(i)%nbrs(j)%n(k)
@@ -500,7 +502,19 @@ contains
              enddo
           endif
        enddo
+#else
+       do j=1,num_neighbors
+          if(GridVertex(i)%wgtP(j) .gt. 0) then 
+             adjncy(ii+jj-1)   = GridVertex(i)%nbrs(j)%n
+             neigh_list(jj)    = GridVertex(i)%nbrs(j)%n
+             adjwgt(ii+jj-1)   = GridVertex(i)%wgtP(j)*EdgeWeight
+             neigh_wgt(jj)     = GridVertex(i)%wgtP(j)*EdgeWeight
+             jj=jj+1
+          endif
+       enddo
+#endif
        if (max_neigh < jj+1) call abortmp( "number or neighbors foudn exceeds expected max error")
+
        call sort(max_neigh,neigh_list,index)
        degree       = COUNT(GridVertex(i)%wgtP(:) .gt. 0) 
        ! Copy the sorted adjncy list in

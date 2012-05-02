@@ -27,6 +27,7 @@ module prim_state_mod
   use global_norms_mod, only : global_integral 
   ! ------------------------------
   use element_mod, only : element_t
+  ! ------------------------------
   use cslam_control_volume_mod, only : cslam_struct
   ! ------------------------------
   use viscosity_mod, only : compute_zeta_C0_2d
@@ -146,7 +147,7 @@ contains
     integer               :: npts,n,q
 
     if (.not. present(cslam) .and. ntrac>0) then
-       print *,'ERROR: prim_state_mod.F90: optional cslam argument requred if ntrac>0'
+       print *,'ERROR: prim_state_mod.F90: optional cslam argument required if ntrac>0'
     endif
 
     TOTE     = 0
