@@ -1396,7 +1396,7 @@ contains
 
     iosystem%ioproc = .false.
 
-#ifdef BGxisbroken
+#ifdef BGx
 
     call alloc_check(iotmp,iosystem%num_tasks,'init:num_tasks')
     call alloc_check(iotmp2,iosystem%num_tasks,'init:num_tasks')
@@ -1786,7 +1786,7 @@ contains
     call mpi_comm_size(comm,num_tasks,ierr)
     call mpi_comm_rank(comm,iam,ierr)
 
-#ifdef BGxisbroken    
+#ifdef BGx    
     call alloc_check(iotmp,num_tasks,'init:num_tasks')
     call alloc_check(iotmp2,num_tasks,'init:num_tasks')
     !---------------------------------------------------

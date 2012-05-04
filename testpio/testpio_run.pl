@@ -244,7 +244,10 @@ foreach \$suite (qw(@testsuites)){
 		copy("$tstdir/testpio","testpio");  
 	    }
 	    chmod 0755,"testpio";
-	    symlink("$tstdir/namelists/testpio_in.\$test","testpio_in");
+#	    symlink("$tstdir/namelists/testpio_in.\$test","testpio_in");
+
+	    copy("$tstdir/namelists/testpio_in.\$test","testpio_in");
+
 	    mkdir "none" unless(-d "none");
             my \$exename = "./testpio";
 	    my \$log = "\$casedir/testpio.out";
