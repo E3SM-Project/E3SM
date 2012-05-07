@@ -138,15 +138,14 @@ contains
     integer :: nbuf,ith,xtra
 
     nbuf=4*(np+max_corner_elem)*nelemd
-!   only master thread should allocate the buffer
-#if (! defined ELEMENT_OPENMP)
-!$OMP MASTER
-#endif
     edge%nlyr=nlyr
     edge%nbuf=nbuf
     if (nlyr==0) return  ! tracer code might call initedgebuffer() with zero tracers
 
-
+!   only master thread should allocate the buffer
+#if (! defined ELEMENT_OPENMP)
+!$OMP MASTER
+#endif
     if (present(newbuf) .and. present(newreceive)) then
        xtra = size(newbuf)/nlyr
        if (xtra<nbuf) then
