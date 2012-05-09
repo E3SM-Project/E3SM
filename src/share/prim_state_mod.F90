@@ -765,21 +765,19 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete,tQ
        t2=tl%np1
     endif
 
-    tstagger = .true.
+    tstagger = .false.
 
 ! energy_fixer
-!     -2         disabled, but compute energy non-staggered in time
-!     -1         disabled, but compute energy non-staggered in time
+!     <0         disabled, but compute energy non-staggered in time
 !     0          disabled, but compute energy staggered in time 
 !     1          cp_star(t1)*dp(t1)*T(t2)
 !     2          cp*dp(t1)*T(t2)
 !     3          cp_star(t2)*dp(t2)*T(t2)
 !     4          cp*dp(t2)*T(t2)
 !
-    if (energy_fixer==-2) tstagger = .false.
-    if (energy_fixer==-1) tstagger = .false.
-    if (energy_fixer==3) tstagger = .false.
-    if (energy_fixer==4) tstagger = .false.
+    if (energy_fixer==0) tstagger = .true.
+    if (energy_fixer==1) tstagger = .true.
+    if (energy_fixer==2) tstagger = .true.
 
 
     !   IE   Cp*dpdn*T  + (Cpv-Cp) Qdpdn*T
