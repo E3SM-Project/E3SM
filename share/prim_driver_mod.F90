@@ -491,7 +491,6 @@ contains
     !DBG  write(iulog,*) 'prim_init: after call to initRestartFile'
 
 #ifndef TESTGRID
-    print *, 'Deallocating local variables --------> '
     deallocate(GridEdge)
     deallocate(GridVertex)
     deallocate(MetaVertex)
