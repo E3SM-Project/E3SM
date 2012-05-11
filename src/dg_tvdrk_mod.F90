@@ -30,7 +30,7 @@ module dg_tvdrk_mod
 ! ---------------------
  use time_mod, only: timelevel_t, smooth
 ! ---------------------
- use control_mod, only: filter_freq, filter_counter, topology, test_case, nu 
+ use control_mod, only: filter_freq, filter_counter, topology, test_case, nu
 ! ---------------------
  use cg_mod, only: cg_t
 ! ---------------------
@@ -173,7 +173,9 @@ subroutine dg_tvdrk(elem, stage,edge3,deriv,flt,hybrid,dt,pmean,tl,nets,nete)
            call sw2_init(elem,tl,ie,k,pmean)
         elseif (topology == "cube" .and. test_case=="swtc5") then
            call sw5_init(elem,tl,ie,k,pmean)
-	endif
+        elseif (topology == "cube" .and. test_case=="galewsky") then
+           call galewsky_init(elem,tl,ie,k,pmean)
+        endif
         elem(ie)%state%couv(:,:,:,k)= contra2co(elem(ie)%state%v(:,:,:,k,n0),elem(ie)%met(:,:,:,:))  
       endif
        !================================================================================================!
@@ -495,10 +497,9 @@ If (nstep > 0 .and. filter_freq > 0 .and. MODULO(nstep,filter_freq) == 0) then
        if (topology == "cube" .and. test_case=="swtc2") then
           call sw2_init(elem,tl,ie,k,pmean)
        elseif (topology == "cube" .and. test_case=="swtc5") then
-          call galewsky_init(elem,tl,ie,k,pmean)
-      !   call sw5_init(elem,tl,ie,k,pmean)
-      !elseif (topology == "cube" .and. test_case=="swtc8") then
-      !   call galewsky_init(elem,tl,ie,k,pmean)
+          call sw5_init(elem,tl,ie,k,pmean)
+      elseif (topology == "cube" .and. test_case=="galewsky") then
+         call galewsky_init(elem,tl,ie,k,pmean)
        endif
        elem(ie)%state%uv(:,:,:,k) = elem(ie)%state%v(:,:,:,k,n0)
       !if (ie == nets)  print*, " dg_uvh activated  ", "tl = ", n0 

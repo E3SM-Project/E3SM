@@ -60,7 +60,7 @@ subroutine sweq_dg(elem,edge1,edge2,edge3,red,par,ithr,nets,nete)
          restartfreq, statefreq, runtype, s_bv, p_bv, wght_fm, kcut_fm, tasknum, topology, precon_method
     !----------------- 
     use dg_tests_mod, only : sw1_init_state, sw2_init_state, sw5_init_state, 				&
-    			     sw1_errors, sw2_errors, sw5_errors, sw5_invariants 
+    			     sw1_errors, sw2_errors, sw5_errors, sw5_invariants,galewsky_init_state 
     !-----------------
 !    use shallow_water_mod, only : tc1_init_state, tc2_init_state, tc5_init_state, 			&
 !    			     	  tc1_errors, tc2_errors, tc5_errors, tc5_invariants     
@@ -251,6 +251,12 @@ endif
              !==================================================
              call sw5_init_state(elem,nets,nete,pmean,deriv)
              call sw5_invariants(elem,90,tl,pmean,edge2,deriv,hybrid,nets,nete)
+          else if (test_case(1:8) == 'galewsky') then
+             print *, 'Restarting galewsky...'
+             !==================================================
+             ! Recover the initial state for diagnostic purposes
+             !==================================================
+	     call galewsky_init_state(elem,nets,nete,pmean,deriv)
           end if
           !============================
           ! Read in the restarted state 
@@ -285,6 +291,11 @@ endif
              endif
              call sw5_init_state(elem,nets,nete,pmean,deriv)
              call sw5_invariants(elem,90,tl,pmean,edge2,deriv,hybrid,nets,nete)
+          else if (test_case(1:8) == 'galewsky') then
+             if(hybrid%par%masterproc) then 
+                 print *,'initializing galewsky...'
+             end if 
+	     call galewsky_init_state(elem,nets,nete,pmean,deriv)
           endif
 
           ! ============================================================
@@ -328,6 +339,9 @@ endif
               ! call dg_tvdrk(elem,stage_rk,edge3,deriv,flt,hybrid,dt,pmean,tl,nets,nete)
               ! call dg_ssprk2(elem,edge3,deriv,flt,hybrid,dt,pmean,tl,nets,nete)      
                 call dg_uvhrk(elem,edge3,deriv,flt,hybrid,dt,pmean,tl,nets,nete)      
+             elseif (test_case(1:8) == 'galewsky' ) then
+		call  dg_uvhrk(elem,edge3,deriv,flt,hybrid,dt,pmean,tl,nets,nete)             
+
              endif
           endif
           if(Debug) print *,'seam: point #7'
@@ -399,7 +413,9 @@ endif
          !call dg_tvdrk(elem,stage_rk,edge3,deriv,flt,hybrid,dt,pmean,tl,nets,nete)
          !call dg_ssprk2(elem,edge3,deriv,flt,hybrid,dt,pmean,tl,nets,nete)      
           call dg_uvhrk(elem,edge3,deriv,flt,hybrid,dt,pmean,tl,nets,nete)      
-	endif
+	elseif (test_case(1:8) == 'galewsky') then
+          call dg_uvhrk(elem,edge3,deriv,flt,hybrid,dt,pmean,tl,nets,nete)       
+       endif
        endif	
        if(Debug) print *,'seam: point #10'
 !=======================================================================================================!
