@@ -14,6 +14,7 @@
 m4_include([m4/acx_hdf5.m4])
 m4_include([m4/acx_mpi.m4])
 m4_include([m4/ax_fc_version.m4])
+m4_include([m4/expat.m4])
 m4_include([m4/fortran.m4])
 m4_include([m4/netcdf.m4])
 m4_include([m4/pkg.m4])

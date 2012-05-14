@@ -23,7 +23,9 @@ module pio
 #endif
         pio_rearr_box, pio_internal_error, pio_bcast_error, pio_return_error
 
-
+#ifdef _COMPRESSION
+!  use piovdc
+#endif
 
   use piodarray, only : pio_read_darray, pio_write_darray, pio_set_buffer_size_limit  
 

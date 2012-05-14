@@ -23,7 +23,9 @@ module piolib_mod
   use ionf_mod, only : create_nf, open_nf,close_nf, sync_nf
   use pionfread_mod, only : read_nf
   use pionfwrite_mod, only : write_nf
-
+#ifdef _COMPRESSION
+    use piovdc
+#endif
   use pio_mpi_utils, only : PIO_type_to_mpi_type 
   use iompi_mod
   use rearrange
@@ -165,7 +167,6 @@ module piolib_mod
      module procedure initdecomp_2dof_nf_i8
      module procedure initdecomp_2dof_bin_i4
      module procedure initdecomp_2dof_bin_i8
-
      module procedure PIO_initdecomp_bc
      module procedure PIO_initdecomp_dof_dof
   end interface
@@ -935,10 +936,19 @@ contains
     internal_compdof = int(compdof,kind=pio_offset)
     
     if(present(iostart) .and. present(iocount) ) then
-       call pio_initdecomp(iosystem, basepiotype, dims, internal_compdof, iodesc, iostart, iocount)
-    else
-       call pio_initdecomp(iosystem, basepiotype, dims, internal_compdof, iodesc)
+       call pio_initdecomp_dof_i8(iosystem, basepiotype, dims, internal_compdof, iodesc, iostart, iocount)
+#ifdef _COMPRESSION
+    else 
+	if(debug) then
+		print *, 'pio_initdecomp iostart: ' , vdc_iostart, ' iocount: ', vdc_iocount
+	endif
+  	call pio_initdecomp_dof_i8(iosystem, basepiotype, dims, internal_compdof, iodesc, vdc_iostart, vdc_iocount)
     endif
+#else
+    else
+       call pio_initdecomp_dof_i8(iosystem, basepiotype, dims, internal_compdof, iodesc)
+    endif
+#endif
     deallocate(internal_compdof)
 
   end subroutine PIO_initdecomp_dof_i4
@@ -1014,7 +1024,7 @@ contains
 
     if(DebugAsync) print*,__PIO_FILE__,__LINE__
     piotype=PIO_type_to_mpi_type(basepiotype)
-       
+
     !-------------------------------------------
     ! for testing purposes set the iomap
     ! (decompmap_t) to something basic for
@@ -1027,6 +1037,7 @@ contains
        print *,__PIO_FILE__,__LINE__,'mem=',rss
     end if
 #endif
+
     userearranger = iosystem%userearranger
     !---------------------
     ! number of dimensions
@@ -1036,9 +1047,9 @@ contains
     ! total global size
     !---------------------
     glength= product(int(dims,kind=PIO_OFFSET))
-    if(glength > int(huge(i),kind=pio_offset)) then
-       call piodie( __PIO_FILE__,__LINE__, &
-            'requested array size too large for this interface ')       
+    if(glength > huge(int(i,kind=pio_offset))) then !not sure if this works, glength is pio_offset, if its > pio_offset range then 
+       call piodie( __PIO_FILE__,__LINE__, & !it will simply wrap around rather than be > max_int(pio_offset)
+            'requested array size too large for this interface ') !might be better to use a temp 8 byte int to store results of dims product and compare to the maxint(pio_offset)       
     endif
 
        
@@ -1061,10 +1072,20 @@ contains
        else if(present(iostart) .or. present(iocount)) then
           call piodie( __PIO_FILE__,__LINE__, &
                'both optional parameters start and count must be provided')
+#ifdef _COMPRESSION
+       else
+	if(debug) then
+		print *, 'pio_initdecomp iostart: ' , vdc_iostart, ' iocount: ', vdc_iocount
+	endif
+	  iodesc%start = vdc_iostart
+	  iodesc%count = vdc_iocount
+ 	endif
+#else
        else
           call calcstartandcount(basepiotype, ndims, dims, iosystem%num_iotasks, iosystem%io_rank,&
                  iodesc%start, iodesc%count,iosystem%num_aiotasks)
        end if
+#endif
        iosize=1
        do i=1,ndims
           iosize=iosize*iodesc%count(i)
@@ -1120,6 +1141,7 @@ contains
        if(DebugAsync) print*,__PIO_FILE__,__LINE__
        call rearrange_create( iosystem,compdof,dims,ndims,iodesc)
     endif
+
     if(DebugAsync) print*,__PIO_FILE__,__LINE__
 #ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
@@ -1128,7 +1150,7 @@ contains
        print *,__PIO_FILE__,__LINE__,'mem=',rss
     end if
 #endif
-    
+
     !---------------------------------------------
     !  the setup for the mpi-io type information 
     !---------------------------------------------
@@ -1148,7 +1170,7 @@ contains
        iodesc%write%elemtype = mpi_datatype_null
        iodesc%write%filetype = mpi_datatype_null
     endif
-    
+
 #ifdef MEMCHK	
     call get_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
@@ -1165,7 +1187,7 @@ contains
 !       print *, __PIO_FILE__,__LINE__,iodesc%write%filetype,iodesc%write%elemtype,&
 !            iodesc%write%n_elemtype,iodesc%write%n_words
 !    end if
-    
+
     if (iosystem%ioproc) then
        call dealloc_check(displace)
     endif
@@ -1296,18 +1318,29 @@ contains
 !! @param rearr @copydoc PIO_rearr_method
 !! @param iosystem a derived type which can be used in subsequent pio operations (defined in PIO_types).
 !! @param base @em optional argument can be used to offset the first io task - default base is task 1.
+!! @param dims @optional argument that indicates to PIO that compression should be setup, represents comp grid size
+!! @param bsize @optional compression argument that represents block size for the VDC
+!! @param num_ts @optional compression argument that represents the number of timesteps the user have in the VDC
 !<
-  subroutine init_intracom(comp_rank, comp_comm, num_iotasks, num_aggregator, stride,  rearr, iosystem,base)
+  subroutine init_intracom(comp_rank, comp_comm, num_iotasks, num_aggregator, stride,  rearr, iosystem,base, dims, bsize, num_ts)
     use pio_types, only : pio_internal_error, pio_rearr_none
     integer(i4), intent(in) :: comp_rank
     integer(i4), intent(in) :: comp_comm
+#ifdef _COMPRESSION
+    integer(i4), intent(inout) :: num_iotasks
+#else
     integer(i4), intent(in) :: num_iotasks 
+#endif
     integer(i4), intent(in) :: num_aggregator
     integer(i4), intent(in) :: stride
     integer(i4), intent(in) :: rearr
     type (iosystem_desc_t), intent(out)  :: iosystem  ! io descriptor to initalize
-    integer(i4), intent(in),optional :: base
 
+    integer(i4), intent(in),optional :: base
+    !vdf optionals
+    integer(i4), intent(in),optional :: dims(3)
+    integer(i4), intent(in), optional:: num_ts, bsize(3)
+    
     integer(i4) :: n_iotasks
     integer(i4) :: length
     integer(i4) :: ngseg,io_rank,i,lbase, io_comm,ierr 
@@ -1329,6 +1362,29 @@ contains
 
 #ifdef TIMING
     call t_startf("PIO_init")
+#endif
+#ifdef _COMPRESSION
+    if(present(dims)) then
+	if(.not. present(bsize)) then
+		vdc_bsize = (/64, 64, 64/) !default bsize of 64^3 if none is given
+	else
+		vdc_bsize = bsize
+	endif
+	if(.not. present(num_ts)) then
+	    	vdc_ts = 10 !default to having 10 timesteps for the vdf
+	else
+		vdc_ts = num_ts
+	endif
+	call init_vdc2(comp_rank, dims, vdc_bsize, vdc_iostart, vdc_iocount, num_iotasks)
+
+	if(debug) then
+		print *, 'rank: ', comp_rank, ' pio_init iostart: ' , vdc_iostart, ' iocount: ', vdc_iocount
+	endif
+
+    	vdc_dims = dims
+    else
+       call piodie(__PIO_FILE__,__LINE__,'compression enabled but no dims option passed to init')
+    endif
 #endif
     iosystem%error_handling = PIO_internal_error
     iosystem%union_comm = comp_comm
@@ -2069,6 +2125,9 @@ contains
 !! @retval ierr @copydoc error_return
 !<
   integer function createfile(iosystem, file,iotype, fname, amode_in) result(ierr)
+#ifdef _COMPRESSION
+    use pio_types, only : pio_clobber, pio_noclobber, pio_iotype_vdc2
+#endif
     type (iosystem_desc_t), intent(inout), target :: iosystem
     type (file_desc_t), intent(out) :: file
     integer, intent(in) :: iotype
@@ -2086,6 +2145,9 @@ contains
     character(len=4) :: stripestr
     character(len=9) :: stripestr2
     character(len=char_len)  :: myfname
+#ifdef _COMPRESSION
+    integer :: restart
+#endif
 #ifdef TIMING
     call t_startf("PIO_createfile")
 #endif
@@ -2164,9 +2226,20 @@ contains
        if(debug .and. iosystem%io_rank==0)print *,__PIO_FILE__,__LINE__,' open: ', myfname, file%fh, ierr
     case(pio_iotype_binary)
        print *,'createfile: io type not supported'
+#ifdef _COMPRESSION
+    case(pio_iotype_vdc2)
+	if(amode == PIO_CLOBBER) then
+		restart = 1
+	  	call createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , TRIM(fname) // CHAR(0))
+	else
+		restart = 0
+	  	call createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , TRIM(fname) // CHAR(0))
+	endif
+
+#endif
     end select
     if(ierr==0) file%file_is_open=.true.
-
+	
     if(debug .and. file%iosystem%io_rank==0) print *,__PIO_FILE__,__LINE__,'open: ',file%fh, myfname
 
 #ifdef TIMING

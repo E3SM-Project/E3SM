@@ -25,7 +25,11 @@ endif
 include Makefile.$(PIOARCH)
 export PIOARCH
 
-SRCS_C = topology.c 
+ifeq ($(findstring BG,$(CPPDEFS)),BG)
+  SRCS_C = topology.c
+else
+  SRCS_C =  
+endif
 
 SRCS_FC =  pio.F90 \
             pio_kinds.F90  \
@@ -41,6 +45,10 @@ SRCS_FC =  pio.F90 \
             pio_msg_mod.F90 \
 	    calcdisplace_mod.F90 \
 	    pio_msg_callbacks.F90 
+
+ifeq (yes,$(USE_COMPRESSION))
+SRCS_FC += piovdc.F90
+endif
 
 TEMPLATES_FC = pionfatt_mod.F90.in \
 	        pionfread_mod.F90.in \

@@ -8,14 +8,17 @@ MPIFC          = @MPIFC@
 FFLAGS		= @BIT64@ @REAL8@ @ENDIAN@ @FFLAGS@ @FCFLAGS@ 
 
 FOPTS           = @OPT@
+FCLIBS = @FCLIBS@
+LD = @LD@
 
 INCLUDES        = @INCLUDEPATH@ 
 
 # INCLUDE FLAG FOR LOCATING MODULES (-I, -M, or -p)
 MODINC         = @MODINC@
 
-# explicit fortran preprocessing
-EXPLICIT_CPP = @EXPLICIT_FPP@
+
+#VDC2 compression enabling
+USE_COMPRESSION = @USE_COMPRESSION@
 
 # PREPROCESSOR COMMAND
 
@@ -68,4 +71,3 @@ SIZEOF_VOID_P   = @SIZEOF_VOID_P@
 #  INCLUDES += -I$(PIO_PATH)/../timing
 #  LDLIBS += -L$(PIO_PATH)/../timing -ltiming
 #endif
-

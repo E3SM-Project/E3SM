@@ -196,6 +196,22 @@ module pio_types
         integer(i4)     :: ndims ! number of dimensions as defined on the netcdf file.
     end type 
 
+
+!>
+!! @public
+!! @struct VDC_var_desc_t VDC_var_desc_t
+!! @brief A VDC2 variable descriptor returned from @ref PIO_def_var (see pio_types) 
+!<
+    type, public :: VDC_Var_desc_t
+#ifdef SEQUENCE
+	sequence
+#endif	
+	character(len=50) :: name
+	integer(i4)     :: ts, lod, reflevel
+	integer(i4)     :: type
+    end type 
+
+
 !>
 !! @defgroup PIO_iotype PIO_iotype
 !! @public
@@ -216,8 +232,11 @@ module pio_types
         PIO_iotype_pnetcdf = 5, &   ! parallel read/write of pNetCDF files
         PIO_iotype_netcdf  = 6, &   ! serial read/write of NetCDF file using 'base_node'
         PIO_iotype_netcdf4c = 7, &  ! netcdf4 (hdf5 format) file opened for compression (serial write access only)   
-        PIO_iotype_netcdf4p = 8     ! netcdf4 (hdf5 format) file opened in parallel (all netcdf4 files for read will be opened this way)
+        PIO_iotype_netcdf4p = 8, &  ! netcdf4 (hdf5 format) file opened in parallel (all netcdf4 files for read will be opened this way)
+        PIO_iotype_vdc2 = 10        ! VDC2 format file opened for compressed parallel write 
 
+
+! These are for backward compatability and should not be used or expanded upon
     integer(i4), public, parameter ::                       &
         iotype_pbinary = PIO_iotype_pbinary,                &
         iotype_direct_pbinary = PIO_iotype_direct_pbinary,  &

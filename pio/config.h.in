@@ -3,6 +3,9 @@
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
 
+/* Define to 1 if you have the <expat.h> header file. */
+#undef HAVE_EXPAT_H
+
 /* Define if you have the HDF5 library. */
 #undef HAVE_HDF5
 
