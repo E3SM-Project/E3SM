@@ -16,7 +16,7 @@
   compdof_output = '..//vdc01.dof.txt'
 /
 &compdof_nml
-  nblksppe = 1
+  nblksppe = 256
   grdorder = 'xyz'
   grddecomp = 'xyz'
   gdx = 64
