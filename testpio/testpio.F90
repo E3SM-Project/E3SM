@@ -24,7 +24,6 @@ program testpio
 #ifdef TIMING
   use perf_mod        ! _EXTERNAL
 #endif
-  use pio_types, only : vdc_var_desc_t
   use pio_support, only : piodie , checkmpireturn, pio_writedof, pio_readdof !_EXTERNAL
   ! Modules from testpio suite that are used by this application
 
@@ -61,8 +60,8 @@ program testpio
        vard_i4i,vard_i4j,vard_i4k,vard_i4m,vard_i4dof
   type(var_desc_t), pointer :: vard_r8(:), vard_r4(:)
 
-#ifdef _COMPRESSSION
-  type(vdc_var_desc_t), pointer ::  vdc_vard_r4(:)
+#ifdef _COMPRESSION
+  type(VDC_var_desc_t), pointer ::  vdc_vard_r4(:)
 #endif
 
   type (IO_desc_t)    :: IOdesc_r8,IOdesc_r4,IOdesc_i4
