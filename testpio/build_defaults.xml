@@ -68,6 +68,7 @@
  />
 
 <bluefire
+  CPPDEFS=" -DMEMCHK"
   NETCDF_PATH="$NETCDF" 
   PNETCDF_PATH="/contrib/parallel-netcdf-1.2.0-svn961" 
   FFLAGS = "-g -qfullpath -O3 "

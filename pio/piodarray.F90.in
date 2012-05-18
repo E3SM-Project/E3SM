@@ -64,6 +64,9 @@ module piodarray
   integer :: total_buffsize=0
   integer :: pio_buffer_size_limit= 100000000   ! 100MB default
 
+#ifdef MEMCHK
+integer :: msize, rss, mshare, mtext, mstack, lastrss=0
+#endif
 
 contains
 
@@ -1266,7 +1269,13 @@ contains
     integer, intent(in) :: request
     integer :: cnt, mpierr, maxbuffsize, this_buffsize
     type(io_data_list), pointer :: ptr
-
+#ifdef MEMCHK	
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
+    if(rss>lastrss) then
+       lastrss=rss
+       print *,__PIO_FILE__,__LINE__,'mem=',rss
+    end if
+#endif
 
     if(.not. associated(File%data_list_top)) then
        allocate(file%data_list_top)
@@ -1295,7 +1304,13 @@ contains
     endif
 
     if(debug) print *,__FILE__,__LINE__,'buffsize = ',file%buffsize,file%request_cnt
-
+#ifdef MEMCHK	
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
+    if(rss>lastrss) then
+       lastrss=rss
+       print *,__PIO_FILE__,__LINE__,'mem=',rss
+    end if
+#endif
 
   end subroutine add_data_to_buffer_{TYPE}
 
@@ -1313,7 +1328,13 @@ contains
 
     if(associated(file%data_list_top)) then
        if(debug) print *,__FILE__,__LINE__, file%request_cnt
-
+#ifdef MEMCHK	
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
+    if(rss>lastrss) then
+       lastrss=rss
+       print *,__PIO_FILE__,__LINE__,'mem=',rss
+    end if
+#endif
        allocate(array_of_requests(file%request_cnt), status(file%request_cnt))
        ptr=>file%data_list_top
        cnt=1
@@ -1350,6 +1371,13 @@ contains
        deallocate(array_of_requests)
        deallocate(status)
     end if
+#ifdef MEMCHK	
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
+    if(rss>lastrss) then
+       lastrss=rss
+       print *,__PIO_FILE__,__LINE__,'mem=',rss
+    end if
+#endif
   end subroutine darray_write_complete
     
 
@@ -1399,6 +1427,14 @@ contains
     UseRearranger  = File%iosystem%UseRearranger
 
 #ifdef _COMPRESSION
+#ifdef MEMCHK	
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
+    if(rss>lastrss) then
+       lastrss=rss
+       print *,__PIO_FILE__,__LINE__,'mem=',rss
+    end if
+#endif
+
     ! pull information out of the decomposition data structure 
     len        = iodesc%IOmap%length
     ndims      = size(iodesc%start)
@@ -1443,6 +1479,13 @@ contains
     if(UseRearranger) call dealloc_check(IOBUF)
 #else
     call piodie(__FILE__,__LINE__,'Compression is not enabled. Cannot write VDC2 file')
+#endif
+#ifdef MEMCHK	
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
+    if(rss>lastrss) then
+       lastrss=rss
+       print *,__PIO_FILE__,__LINE__,'mem=',rss
+    end if
 #endif
   end subroutine write_vdc2_{TYPE}
 

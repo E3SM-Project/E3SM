@@ -780,7 +780,7 @@ contains
     call t_startf("PIO_initdecomp")
 #endif
 #ifdef MEMCHK	
-    call get_memusage(msize, rss, mshare, mtext, mstack)
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__PIO_FILE__,__LINE__,'mem=',rss
@@ -808,7 +808,7 @@ contains
     call alloc_check(displace,int(ndisp))
 
 #ifdef MEMCHK	
-    call get_memusage(msize, rss, mshare, mtext, mstack)
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__PIO_FILE__,__LINE__,'mem=',rss
@@ -827,7 +827,7 @@ contains
        call calcdisplace(lenblocks,iodof,displace)
     end if
 #ifdef MEMCHK	
-    call get_memusage(msize, rss, mshare, mtext, mstack)
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__PIO_FILE__,__LINE__,'mem=',rss
@@ -850,7 +850,7 @@ contains
        
     endif
 #ifdef MEMCHK	
-    call get_memusage(msize, rss, mshare, mtext, mstack)
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__PIO_FILE__,__LINE__,'mem=',rss
@@ -873,7 +873,7 @@ contains
        if(debug) print *,'initdecomp: at the end of subroutine',iodesc%write%n_elemtype,iodesc%write%n_words
     endif
 #ifdef MEMCHK	
-    call get_memusage(msize, rss, mshare, mtext, mstack)
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__PIO_FILE__,__LINE__,'mem=',rss
@@ -889,7 +889,7 @@ contains
     call dealloc_check(displace)
 
 #ifdef MEMCHK	
-    call get_memusage(msize, rss, mshare, mtext, mstack)
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__PIO_FILE__,__LINE__,'mem=',rss
@@ -1031,7 +1031,7 @@ contains
     ! testing.
     !-------------------------------------------
 #ifdef MEMCHK	
-    call get_memusage(msize, rss, mshare, mtext, mstack)
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__PIO_FILE__,__LINE__,'mem=',rss
@@ -1128,7 +1128,7 @@ contains
     if(DebugAsync) print*,__PIO_FILE__,__LINE__
 
 #ifdef MEMCHK	
-    call get_memusage(msize, rss, mshare, mtext, mstack)
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__PIO_FILE__,__LINE__,'mem=',rss
@@ -1144,7 +1144,7 @@ contains
 
     if(DebugAsync) print*,__PIO_FILE__,__LINE__
 #ifdef MEMCHK	
-    call get_memusage(msize, rss, mshare, mtext, mstack)
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__PIO_FILE__,__LINE__,'mem=',rss
@@ -1172,7 +1172,7 @@ contains
     endif
 
 #ifdef MEMCHK	
-    call get_memusage(msize, rss, mshare, mtext, mstack)
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__PIO_FILE__,__LINE__,'mem=',rss
@@ -1193,7 +1193,7 @@ contains
     endif
 
 #ifdef MEMCHK	
-    call get_memusage(msize, rss, mshare, mtext, mstack)
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__PIO_FILE__,__LINE__,'mem=',rss
