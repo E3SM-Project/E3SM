@@ -1,6 +1,6 @@
 program Test_Lib
 	use pio !everything is forwarded from the PIO module, should be the only use necessary
-
+	use pio_kinds
 	implicit none
 	
 	include 'mpif.h'
@@ -45,13 +45,8 @@ program Test_Lib
 	endif
 #endif
 	
-	!call PIO_init with dims (required) to enable compression. Block size, and the # of time steps used are optional args after dims
-	call PIO_init(rank, MPI_COMM_WORLD, nioprocs, nioprocs, 1, PIO_rearr_box, iosystem, 0, dims)		
-	!example using optional bsize specifier
-	!call PIO_init(rank, MPI_COMM_WORLD, nioprocs, nioprocs, 1, PIO_rearr_box, iosystem, 0, dims, (/128, 128, 128/))
-	
-	!example using optional bsize and # timesteps specifiers
-	!call PIO_init(rank, MPI_COMM_WORLD, nioprocs, nioprocs, 1, PIO_rearr_box, iosystem, 0, dims, (/128, 128, 128/), 30)		
+	!call PIO_init to initiate iosystem
+	call PIO_init(rank, MPI_COMM_WORLD, nioprocs, nioprocs, 1, PIO_rearr_box, iosystem, 0)		
 	
 #ifdef DEBUG
 	if(rank .eq. 0 ) then
@@ -124,7 +119,11 @@ program Test_Lib
 	!call init_decomp in order to setup the IO decomposition with PIO, no optional arguments necessary since PIO automatically
 	!generates the necessary IO start/counts when dims are passed into PIO_init
 	call PIO_initdecomp(iosystem, PIO_real, dims, compdof, iodesc) 
-
+	!example using optional bsize specifier
+	!call PIO_initdecomp(iosystem, PIO_real, dims, compdof, iodesc (/128, 128, 128/))
+	
+	!example using optional bsize and # timesteps specifiers
+	!call PIO_initdecomp(iosystem, PIO_real, dims, compdof, iodesc(/128, 128, 128/), 30)		
 #ifdef DEBUG
 	if(rank .eq. 0) then 
 	    print *, 'Decomposition initialized'
