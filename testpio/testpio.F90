@@ -24,6 +24,7 @@ program testpio
 #ifdef TIMING
   use perf_mod        ! _EXTERNAL
 #endif
+  use pio_types, only : vdc_var_desc_t
   use pio_support, only : piodie , checkmpireturn, pio_writedof, pio_readdof !_EXTERNAL
   ! Modules from testpio suite that are used by this application
 
@@ -34,7 +35,6 @@ program testpio
 #ifndef NO_MPIMOD
   use mpi    ! _EXTERNAL
 #endif
-
   implicit none
 #ifdef NO_MPIMOD
   include 'mpif.h'    ! _EXTERNAL
@@ -61,6 +61,10 @@ program testpio
        vard_i4i,vard_i4j,vard_i4k,vard_i4m,vard_i4dof
   type(var_desc_t), pointer :: vard_r8(:), vard_r4(:)
 
+#ifdef _COMPRESSSION
+  type(vdc_var_desc_t), pointer ::  vdc_vard_r4(:)
+#endif
+
   type (IO_desc_t)    :: IOdesc_r8,IOdesc_r4,IOdesc_i4
   type (gdecomp_type) :: gdecomp
 
@@ -85,8 +89,8 @@ program testpio
   real(r4),   pointer :: test_r4wr(:),test_r4rd(:),diff_r4(:)
   real(r8),   pointer :: test_r8wr(:),test_r8rd(:),diff_r8(:)
 
-  logical, parameter :: TestR8    = .true.
-  logical, parameter :: TestR4    = .false.
+  logical, parameter :: TestR8    = .false.
+  logical, parameter :: TestR4    = .true.
   logical, parameter :: TestInt   = .false.
   logical, parameter :: TestCombo = .false.
   logical, parameter :: CheckArrays = .true.  ! turn off the array check for maximum memory usage testing
@@ -626,7 +630,11 @@ program testpio
 
            if(TestR4) then
               if(Debug) write(*,'(2a,i8)') myname,':: REAL*4 Test:  Creating File...,it=',it
+#ifdef _COMPRESSION
+              ierr = PIO_CreateFile(PIOSYS,File_r4, PIO_iotype_vdc2 ,trim(fname_r4), mode)
+#else
               ierr = PIO_CreateFile(PIOSYS,File_r4,iotype,trim(fname_r4), mode)
+#endif
               call check_pioerr(ierr,__FILE__,__LINE__,' r4 createfile')
            endif
 
@@ -639,6 +647,9 @@ program testpio
            ! Set Frame to '1' in the PIO descriptor file
            
            allocate(vard_r8(nvars), vard_r4(nvars))
+#ifdef _COMPRESSION
+          allocate(vdc_vard_r4(nvars))
+#endif
            
            do ivar=1,nvars
               call PIO_SetFrame(vard_r8(ivar),one)
@@ -686,7 +697,11 @@ program testpio
 
                  do ivar = 1, nvars
                     write(varname,'(a,i5.5)') 'field',ivar
+#ifdef _COMPRESSION
+	            iostat = PIO_def_var(File_r4,varname,PIO_real,vdc_vard_r4(ivar))
+#else
                     iostat = PIO_def_var(File_r4,varname,PIO_real,(/dimid_x,dimid_y,dimid_z/),vard_r4(ivar))
+#endif
                     call check_pioerr(iostat,__FILE__,__LINE__,' r4 defvar')
                  end do
                  iostat = PIO_enddef(File_r4)
@@ -776,7 +791,11 @@ program testpio
               call t_startf('testpio_write')
 #endif
               do ivar=1,nvars
+#ifdef _COMPRESSION
+                 call PIO_write_darray(File_r4,vdc_vard_r4(ivar),iodesc_r4, test_r4wr,iostat, it)
+#else
                  call PIO_write_darray(File_r4,vard_r4(ivar),iodesc_r4, test_r4wr,iostat)
+#endif
                  call check_pioerr(iostat,__FILE__,__LINE__,' r4 write_darray')
               end do
 #ifdef TIMING
@@ -849,8 +868,12 @@ program testpio
            endif
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #15'
            
-           if(TestR4) then 
+           if(TestR4) then
+#ifdef _COMPRESSION 
+              ierr = PIO_OpenFile(PIOSYS,File_r4, pio_iotype_vdc2, fname_r4)
+#else
               ierr = PIO_OpenFile(PIOSYS,File_r4,iotype, fname_r4)
+#endif
               call check_pioerr(ierr,__FILE__,__LINE__,' r4 openfile')
            endif
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #16'
@@ -876,7 +899,15 @@ program testpio
                  endif
 
                  if(TestR4) then 
-                    iostat = PIO_inq_varid(File_r4,'field00001',vard_r4(ivar))
+
+#ifdef _COMPRESSION
+		    !there currently exists no vdc concept of inquiring a variable, the only thing in the vdc_var_desc_t
+		    !directly used by the writing/reading is var name
+	       	    iostat = PIO_def_var(File_r4,'field00001', PIO_real, vdc_vard_r4(ivar))  
+		
+#else
+	            iostat = PIO_inq_varid(File_r4,'field00001',vard_r4(ivar))  
+#endif      
                     call check_pioerr(iostat,__FILE__,__LINE__,' r4 inq_varid')
                  endif
               end do
@@ -932,7 +963,11 @@ program testpio
               call t_startf('testpio_read')
 #endif
               do ivar=1,nvars
-                 call PIO_read_darray(File_r4,vard_r4(ivar),iodesc_r4,test_r4rd,iostat)
+#ifdef _COMPRESSION
+	         call PIO_read_darray(File_r4,vdc_vard_r4(ivar),iodesc_r4,test_r4rd,iostat, it)
+#else
+	         call PIO_read_darray(File_r4,vard_r4(ivar),iodesc_r4,test_r4rd,iostat)
+#endif
                  call check_pioerr(iostat,__FILE__,__LINE__,' r4 read_darray')
               enddo
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #19'
