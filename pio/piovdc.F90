@@ -23,7 +23,7 @@
 module piovdc
 	use pio_kinds, only : i4, r4, pio_offset
 	implicit none
-	integer (i4)	:: vdc_dims(3), vdc_bsize(3), vdc_ts
+	integer (i4)	:: vdc_dims(3), vdc_bsize(3), vdc_ts, vdc_numiotasks
 	integer (kind=PIO_OFFSET)  :: vdc_iostart(3), vdc_iocount(3)	
 contains
 
