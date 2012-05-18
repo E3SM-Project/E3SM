@@ -731,9 +731,8 @@ contains
     integer (i4), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
     integer (i4), intent(in)          :: iodof(:)     ! global degrees of freedom for io decomposition 
     type (io_desc_t), intent(out)     :: iodesc
-    integer :: piotype
+    integer :: piotype	
     integer(kind=PIO_offset), intent(in) :: start(:), count(:)
-
 
     call initdecomp_1dof_nf_i8(iosystem, basepiotype,dims,lenblocks,int(compdof,kind=pio_offset),int(iodof,kind=pio_offset),&
          start,count,iodesc)
@@ -921,17 +920,18 @@ contains
 !! @param iostart   The start index for the block-cyclic io decomposition
 !! @param iocount   The count for the block-cyclic io decomposition
 !<
-  subroutine PIO_initdecomp_dof_i4(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount)
+  subroutine PIO_initdecomp_dof_i4(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount, num_ts, bsize)
     use calcdisplace_mod, only : calcdisplace_box
     use calcdecomp, only : calcstartandcount
     type (iosystem_desc_t), intent(inout) :: iosystem
     integer(i4), intent(in)           :: basepiotype
-    integer(i4), intent(in)           :: dims(:)
     integer(i4), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
     integer (kind=PIO_offset), optional :: iostart(:), iocount(:)
     type (io_desc_t), intent(out)     :: iodesc
     integer(kind=PIO_OFFSET), pointer :: internal_compdof(:)
-
+    integer(i4), intent(in)           :: dims(:)
+    !vdf optionals
+    integer(i4), intent(in), optional:: num_ts, bsize(3)
     allocate(internal_compdof(size(compdof)))
     internal_compdof = int(compdof,kind=pio_offset)
     
@@ -942,7 +942,11 @@ contains
 	if(debug) then
 		print *, 'pio_initdecomp iostart: ' , vdc_iostart, ' iocount: ', vdc_iocount
 	endif
-  	call pio_initdecomp_dof_i8(iosystem, basepiotype, dims, internal_compdof, iodesc, vdc_iostart, vdc_iocount)
+	if(present(num_ts) .and. present(bsize)) then
+ 	 	call pio_initdecomp_dof_i8(iosystem, basepiotype, dims, internal_compdof, iodesc, vdc_iostart, vdc_iocount, num_ts, bsize)
+	else
+		call pio_initdecomp_dof_i8(iosystem, basepiotype, dims, internal_compdof, iodesc, vdc_iostart, vdc_iocount)
+	endif
     endif
 #else
     else
@@ -954,7 +958,7 @@ contains
   end subroutine PIO_initdecomp_dof_i4
 
 
-  subroutine PIO_initdecomp_dof_i8(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount)
+  subroutine PIO_initdecomp_dof_i8(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount, num_ts, bsize)
     use calcdisplace_mod, only : calcdisplace_box
     use calcdecomp, only : calcstartandcount
     type (iosystem_desc_t), intent(inout) :: iosystem
@@ -968,7 +972,8 @@ contains
     integer(i4) :: ndims
     integer (i4)                       :: lenblocks
     integer(i4)                       ::  piotype
-
+    !vdf optionals
+    integer(i4), intent(in), optional:: num_ts, bsize(3)
     integer (kind=pio_offset), pointer :: displace(:)  ! the displacements for the mpi data structure (read)
 
     integer(i4) :: prev
@@ -1073,6 +1078,25 @@ contains
           call piodie( __PIO_FILE__,__LINE__, &
                'both optional parameters start and count must be provided')
 #ifdef _COMPRESSION
+	if(.not. present(bsize)) then
+		vdc_bsize = (/64, 64, 64/) !default bsize of 64^3 if none is given
+	else
+		vdc_bsize = bsize
+	endif
+	if(.not. present(num_ts)) then
+	    	vdc_ts = 10 !default to having 10 timesteps for the vdf
+	else
+		vdc_ts = num_ts
+	endif
+
+	call init_vdc2(iosystem%comp_rank, dims, vdc_bsize, vdc_iostart, vdc_iocount, vdc_numiotasks)
+	iosystem%num_iotasks = vdc_numiotasks
+	if(debug) then
+		print *, 'rank: ', iosystem%comp_rank, ' pio_init iostart: ' , vdc_iostart, ' iocount: ', vdc_iocount
+	endif
+
+    	vdc_dims = dims
+
        else
 	if(debug) then
 		print *, 'pio_initdecomp iostart: ' , vdc_iostart, ' iocount: ', vdc_iocount
@@ -1322,24 +1346,17 @@ contains
 !! @param bsize @optional compression argument that represents block size for the VDC
 !! @param num_ts @optional compression argument that represents the number of timesteps the user have in the VDC
 !<
-  subroutine init_intracom(comp_rank, comp_comm, num_iotasks, num_aggregator, stride,  rearr, iosystem,base, dims, bsize, num_ts)
+  subroutine init_intracom(comp_rank, comp_comm, num_iotasks, num_aggregator, stride,  rearr, iosystem,base)
     use pio_types, only : pio_internal_error, pio_rearr_none
     integer(i4), intent(in) :: comp_rank
     integer(i4), intent(in) :: comp_comm
-#ifdef _COMPRESSION
-    integer(i4), intent(inout) :: num_iotasks
-#else
     integer(i4), intent(in) :: num_iotasks 
-#endif
     integer(i4), intent(in) :: num_aggregator
     integer(i4), intent(in) :: stride
     integer(i4), intent(in) :: rearr
     type (iosystem_desc_t), intent(out)  :: iosystem  ! io descriptor to initalize
 
     integer(i4), intent(in),optional :: base
-    !vdf optionals
-    integer(i4), intent(in),optional :: dims(3)
-    integer(i4), intent(in), optional:: num_ts, bsize(3)
     
     integer(i4) :: n_iotasks
     integer(i4) :: length
@@ -1363,29 +1380,7 @@ contains
 #ifdef TIMING
     call t_startf("PIO_init")
 #endif
-#ifdef _COMPRESSION
-    if(present(dims)) then
-	if(.not. present(bsize)) then
-		vdc_bsize = (/64, 64, 64/) !default bsize of 64^3 if none is given
-	else
-		vdc_bsize = bsize
-	endif
-	if(.not. present(num_ts)) then
-	    	vdc_ts = 10 !default to having 10 timesteps for the vdf
-	else
-		vdc_ts = num_ts
-	endif
-	call init_vdc2(comp_rank, dims, vdc_bsize, vdc_iostart, vdc_iocount, num_iotasks)
 
-	if(debug) then
-		print *, 'rank: ', comp_rank, ' pio_init iostart: ' , vdc_iostart, ' iocount: ', vdc_iocount
-	endif
-
-    	vdc_dims = dims
-    else
-       call piodie(__PIO_FILE__,__LINE__,'compression enabled but no dims option passed to init')
-    endif
-#endif
     iosystem%error_handling = PIO_internal_error
     iosystem%union_comm = comp_comm
     iosystem%comp_comm = comp_comm
@@ -2294,12 +2289,14 @@ contains
 !! @retval ierr @copydoc error_return
 !<
   integer function PIO_openfile(iosystem, file, iotype, fname,mode) result(ierr)
+#ifdef _COMPRESSION
+    use pio_types, only : pio_iotype_vdc2
+#endif
     type (iosystem_desc_t), intent(inout), target :: iosystem
     type (file_desc_t), intent(out) :: file
     integer, intent(in) :: iotype
     character(len=*), intent(in)  :: fname
     integer, optional, intent(in) :: mode
-
     ! ===================
     !  local variables
     ! ================
@@ -2386,7 +2383,10 @@ contains
        ierr = open_nf(file,myfname,amode)
        if(debug .and. iosystem%io_rank==0)print *,__PIO_FILE__,__LINE__,' open: ', myfname, file%fh
     case(pio_iotype_binary)   ! appears to be a no-op
-       
+#ifdef _COMPRESSION
+    case(pio_iotype_vdc2) !equivalent to calling create def without clobbering the file, arguments dont matter
+  	call createvdf(vdc_dims, vdc_bsize, vdc_ts, 0 , TRIM(myfname) // CHAR(0))
+#endif
     end select
     if(Debug .and. file%iosystem%io_rank==0) print *,__PIO_FILE__,__LINE__,'open: ',file%fh, myfname
     if(ierr==0) file%file_is_open=.true.
