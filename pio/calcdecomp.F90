@@ -19,11 +19,11 @@ module calcdecomp
 contains 
   subroutine pio_set_blocksize(newsize)
     integer, intent(in) :: newsize
-
+#ifndef TESTCALCDECOMP
     if(newsize<0) then
        call piodie(__PIO_FILE__,__LINE__,'bad value to blocksize: ',newsize)
     end if
-
+#endif
     blocksize=newsize
 
 
@@ -87,7 +87,7 @@ contains
 ! Things work best if use_io_procs is a multiple of gdims(ndims)
 ! this adjustment makes it so, potentially increasing the blocksize a bit
     if (gdims(ldims)<use_io_procs) then
-       do while(mod(gdims(ldims),use_io_procs)>0)
+       do while(mod(use_io_procs,gdims(ldims))>0)
           use_io_procs=use_io_procs-1
        end do
     end if
@@ -102,6 +102,7 @@ contains
     do i=ldims,1,-1
        if(gdims(i)>1) then
           if(gdims(i)>=ioprocs) then
+             
              call computestartandcount(gdims(i),ioprocs,tiorank,start(i),kount(i))
              if(start(i)+kount(i)>gdims(i)+1) then
                 print *,__PIO_FILE__,__LINE__,i,ioprocs,gdims(i),start(i),kount(i)
@@ -117,9 +118,11 @@ contains
              ! dimension in groups then go on to decompose the next dimesion in each of those
              ! groups.
              tioprocs=gdims(i)
-             tiorank = mod(iorank,tioprocs)
+             tiorank = (iorank*tioprocs)/ioprocs
+             
              call computestartandcount(gdims(i),tioprocs, tiorank  , start(i),kount(i))
-             ioprocs=tioprocs
+             ioprocs=use_io_procs/tioprocs
+             tiorank = mod(iorank,ioprocs)
           end if
        end if
     end do
@@ -145,6 +148,7 @@ contains
     if(gdim<ioprocs) then
        stop 'bad arguments'
     end if
+!    print *,__LINE__,gdim,ioprocs,rank
 
     kount = gdim/ioprocs
     start = kount*rank+1
@@ -153,6 +157,7 @@ contains
        kount=kount+1
        start=start+max(0,(rank+remainder-ioprocs))
     end if
+!    print *, __LINE__,gdim,ioprocs,rank,start,kount
   end subroutine computestartandcount
 
 
@@ -163,12 +168,13 @@ program sandctest
   use calcdecomp  !_EXTERNAL
   implicit none
   
-!  integer, parameter :: ndims=4
+
+  integer, parameter :: ndims=4
 !  integer, parameter :: gdims(ndims) = (/66,199,10,8/)
-  integer, parameter :: ndims=3
-  integer, parameter :: gdims(ndims) = (/3600,2400,60/)
-  integer, parameter :: num_io_procs=240
-!  integer :: gdims(ndims)
+!  integer, parameter :: ndims=3
+!  integer, parameter :: gdims(ndims) = (/3600,2400,40/)
+  integer, parameter :: num_io_procs=80
+  integer :: gdims(ndims)
   integer :: psize, n, i,j,k,m
   integer, parameter :: imax=200,jmax=200,kmax=30,mmax=7
   integer(kind=pio_offset) :: start(ndims), count(ndims)
@@ -198,7 +204,7 @@ program sandctest
 !                                        write(*,'(i2,a,3i5,a,3i5,2i12)') iorank,' start =',start,' count=', count, product(gdims), psize
                     !                 else if(ndims==4) then
                     if(sum(count)>0) then
-                       write(*,'(i2,a,3i8,a,3i8,2i12)') iorank,' start =',start,' count=', count, product(gdims), psize
+                       write(*,'(i2,a,4i8,a,4i8,2i12)') iorank,' start =',start,' count=', count, product(gdims), psize
                        if(any(start<0)) then
                           print *, gdims
                           stop 
