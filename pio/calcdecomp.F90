@@ -159,7 +159,7 @@ contains
        kount=kount+1
        start=start+max(0,(irank+remainder-ioprocs))
     end if
-    write(99,*) __LINE__,gdim,ioprocs,rank,start,kount,remainder
+!    write(99,*) __LINE__,gdim,ioprocs,rank,start,kount,remainder
   end subroutine computestartandcount
 
 
