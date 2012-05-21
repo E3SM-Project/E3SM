@@ -29,10 +29,10 @@ program Test_Lib
 #endif
 	
 	!first set locals for vdc compression and the uncompressed data path
-	dims = (/2048, 2048, 2048/)
-	vdf_path = '/lustre/janus_scratch/ypolius/piovdc/libbench.vdf'
-	binary_path = '/lustre/janus_scratch/ypolius/piovdc/benchdata.nc'
-	nioprocs = 256
+	dims = (/1024, 1024, 1024/)
+	vdf_path = '/glade/scratch/ypolius/piovdc/libbench.vdf'
+	binary_path = '/glade/scratch/ypolius/piovdc/benchdata.nc'
+	nioprocs = 64
 	
 	!init MPI and retrieve MPI-specific info
 	call MPI_init(ierr)

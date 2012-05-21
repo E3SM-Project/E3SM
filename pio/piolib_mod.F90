@@ -1077,6 +1077,7 @@ contains
        else if(present(iostart) .or. present(iocount)) then
           call piodie( __PIO_FILE__,__LINE__, &
                'both optional parameters start and count must be provided')
+       else
 #ifdef _COMPRESSION
 	if(.not. present(bsize)) then
 		vdc_bsize = (/64, 64, 64/) !default bsize of 64^3 if none is given
@@ -1088,28 +1089,22 @@ contains
 	else
 		vdc_ts = num_ts
 	endif
-
+	vdc_numiotasks = iosystem%num_iotasks
 	call init_vdc2(iosystem%comp_rank, dims, vdc_bsize, vdc_iostart, vdc_iocount, vdc_numiotasks)
 	iosystem%num_iotasks = vdc_numiotasks
 	if(debug) then
 		print *, 'rank: ', iosystem%comp_rank, ' pio_init iostart: ' , vdc_iostart, ' iocount: ', vdc_iocount
 	endif
 
-    	vdc_dims = dims
-
-       else
-	if(debug) then
-		print *, 'pio_initdecomp iostart: ' , vdc_iostart, ' iocount: ', vdc_iocount
-	endif
-	  iodesc%start = vdc_iostart
-	  iodesc%count = vdc_iocount
- 	endif
+    	vdc_dims = dims	
+	iodesc%start = vdc_iostart
+	iodesc%count = vdc_iocount
 #else
-       else
           call calcstartandcount(basepiotype, ndims, dims, iosystem%num_iotasks, iosystem%io_rank,&
                  iodesc%start, iodesc%count,iosystem%num_aiotasks)
-       end if
 #endif
+       end if
+
        iosize=1
        do i=1,ndims
           iosize=iosize*iodesc%count(i)
