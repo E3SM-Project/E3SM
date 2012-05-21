@@ -121,7 +121,7 @@ contains
              tiorank = (iorank*tioprocs)/ioprocs
              
              call computestartandcount(gdims(i),tioprocs, tiorank  , start(i),kount(i))
-             ioprocs=use_io_procs/tioprocs
+             ioprocs=ioprocs/tioprocs
              tiorank = mod(iorank,ioprocs)
           end if
        end if
@@ -143,21 +143,23 @@ contains
     implicit none
     integer,intent(in) :: gdim,ioprocs,rank
     integer(kind=pio_offset),intent(out) :: start,kount
-    integer :: remainder
+    integer :: remainder, irank
 
     if(gdim<ioprocs) then
        stop 'bad arguments'
     end if
 !    print *,__LINE__,gdim,ioprocs,rank
 
+    irank = mod(rank,ioprocs)
+
     kount = gdim/ioprocs
-    start = kount*rank+1
+    start = kount*irank+1
     remainder = gdim-kount*ioprocs
-    if(remainder>=ioprocs-rank) then
+    if(remainder>=ioprocs-irank) then
        kount=kount+1
-       start=start+max(0,(rank+remainder-ioprocs))
+       start=start+max(0,(irank+remainder-ioprocs))
     end if
-!    print *, __LINE__,gdim,ioprocs,rank,start,kount
+    write(99,*) __LINE__,gdim,ioprocs,rank,start,kount,remainder
   end subroutine computestartandcount
 
 
@@ -169,12 +171,12 @@ program sandctest
   implicit none
   
 
-  integer, parameter :: ndims=4
+!  integer, parameter :: ndims=4
 !  integer, parameter :: gdims(ndims) = (/66,199,10,8/)
-!  integer, parameter :: ndims=3
-!  integer, parameter :: gdims(ndims) = (/3600,2400,40/)
-  integer, parameter :: num_io_procs=80
-  integer :: gdims(ndims)
+  integer, parameter :: ndims=3
+  integer, parameter :: gdims(ndims) = (/777602,2,2/)
+  integer, parameter :: num_io_procs=32
+!  integer :: gdims(ndims)
   integer :: psize, n, i,j,k,m
   integer, parameter :: imax=200,jmax=200,kmax=30,mmax=7
   integer(kind=pio_offset) :: start(ndims), count(ndims)
@@ -204,7 +206,7 @@ program sandctest
 !                                        write(*,'(i2,a,3i5,a,3i5,2i12)') iorank,' start =',start,' count=', count, product(gdims), psize
                     !                 else if(ndims==4) then
                     if(sum(count)>0) then
-                       write(*,'(i2,a,4i8,a,4i8,2i12)') iorank,' start =',start,' count=', count, product(gdims), psize
+                       write(*,'(i2,a,3i8,a,3i8,2i12)') iorank,' start =',start,' count=', count, product(gdims), psize
                        if(any(start<0)) then
                           print *, gdims
                           stop 
