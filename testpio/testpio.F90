@@ -133,7 +133,7 @@ program testpio
   integer(kind=PIO_OFFSET) :: startpio(3), countpio(3)
 
   character(len=80) :: fname, fname_r8,fname_r4,fname_i4
-  logical, parameter :: Debug = .false.
+  logical, parameter :: Debug = .true.
   integer :: mpi_comm_compute, mpi_comm_io, mpi_icomm_cio
 
   character(len=3) :: citer
