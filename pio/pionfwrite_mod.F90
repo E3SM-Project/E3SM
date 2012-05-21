@@ -95,17 +95,10 @@ contains
           end if
 #endif
 
-#ifndef NO_PNETCDF_ASYNC
           ierr=nfmpi_iput_vara( File%fh,varDesc%varid,start, &
                count, IOBUF , &
                iodesc%Write%n_ElemTYPE, &
                iodesc%Write%ElemTYPE, request)
-#else
-             ierr=nfmpi_put_vara_all( File%fh,varDesc%varid,start, &
-                  count,IOBUF, &
-                  iodesc%Write%n_ElemTYPE, &
-                  iodesc%Write%ElemTYPE)
-#endif
           if(Debug.or.ierr/=PIO_noerr) print *,subname,__LINE__, &
                '  IAM: ',File%iosystem%io_rank,' start: ',start,' count: ',count,&
                ' size :',iodesc%Write%n_ElemTYPE, ' error: ',ierr, &
@@ -321,17 +314,10 @@ contains
           end if
 #endif
 
-#ifndef NO_PNETCDF_ASYNC
           ierr=nfmpi_iput_vara( File%fh,varDesc%varid,start, &
                count, IOBUF , &
                iodesc%Write%n_ElemTYPE, &
                iodesc%Write%ElemTYPE, request)
-#else
-             ierr=nfmpi_put_vara_all( File%fh,varDesc%varid,start, &
-                  count,IOBUF, &
-                  iodesc%Write%n_ElemTYPE, &
-                  iodesc%Write%ElemTYPE)
-#endif
           if(Debug.or.ierr/=PIO_noerr) print *,subname,__LINE__, &
                '  IAM: ',File%iosystem%io_rank,' start: ',start,' count: ',count,&
                ' size :',iodesc%Write%n_ElemTYPE, ' error: ',ierr, &
@@ -547,17 +533,10 @@ contains
           end if
 #endif
 
-#ifndef NO_PNETCDF_ASYNC
           ierr=nfmpi_iput_vara( File%fh,varDesc%varid,start, &
                count, IOBUF , &
                iodesc%Write%n_ElemTYPE, &
                iodesc%Write%ElemTYPE, request)
-#else
-             ierr=nfmpi_put_vara_all( File%fh,varDesc%varid,start, &
-                  count,IOBUF, &
-                  iodesc%Write%n_ElemTYPE, &
-                  iodesc%Write%ElemTYPE)
-#endif
           if(Debug.or.ierr/=PIO_noerr) print *,subname,__LINE__, &
                '  IAM: ',File%iosystem%io_rank,' start: ',start,' count: ',count,&
                ' size :',iodesc%Write%n_ElemTYPE, ' error: ',ierr, &

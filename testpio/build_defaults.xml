@@ -68,7 +68,7 @@
  />
 
 <bluefire
-  NETCDF_PATH="$NETCDF" 
+  NETCDF_PATH="${NETCDF}" 
   PNETCDF_PATH="/contrib/parallel-netcdf-1.2.0-svn961" 
   FFLAGS = "-g -qfullpath -O3 "
   CFLAGS = "-g -qfullpath -O3"

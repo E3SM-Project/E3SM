@@ -1,3 +1,16 @@
+Tag name: pio1_4_5
+Originator: Jim
+Date: 05-19-2012
+One-line Summary: bug fix in calcdecomp.F90
+   pio/calcdecomp.F90
+
+tests:
+   bluefire
+   lynx pgi
+   lynx intel
+   challenger (intrepid) 
+
+===============================================================
 Tag name: pio1_4_4 
 Originator: Jim
 Date: 04-18-2012
