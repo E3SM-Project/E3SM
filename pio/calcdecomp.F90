@@ -84,13 +84,25 @@ contains
        end if
     end do
 
+
+
 ! Things work best if use_io_procs is a multiple of gdims(ndims)
 ! this adjustment makes it so, potentially increasing the blocksize a bit
     if (gdims(ldims)<use_io_procs) then
-       do while(mod(use_io_procs,gdims(ldims))>0)
-          use_io_procs=use_io_procs-1
-       end do
+       if(ldims>1 .and. gdims(ldims-1) > use_io_procs) then
+          ldims=ldims-1
+       else
+          use_io_procs = use_io_procs - mod(use_io_procs,gdims(ldims))
+!       if(ldims==ndims .and. use_io_procs< 3*num_io_procs/4 .and. gdims(ldims-1)>num_io_procs) then
+!          use_io_procs = num_io_procs
+!          ldims=ldims-1
+       end if
     end if
+!    
+!   
+!
+
+
     if(iorank>=use_io_procs) return 
 
 
@@ -174,8 +186,8 @@ program sandctest
 !  integer, parameter :: ndims=4
 !  integer, parameter :: gdims(ndims) = (/66,199,10,8/)
   integer, parameter :: ndims=3
-  integer, parameter :: gdims(ndims) = (/777602,2,2/)
-  integer, parameter :: num_io_procs=32
+  integer, parameter :: gdims(ndims) = (/3600,2400,40/)
+  integer, parameter :: num_io_procs=79
 !  integer :: gdims(ndims)
   integer :: psize, n, i,j,k,m
   integer, parameter :: imax=200,jmax=200,kmax=30,mmax=7
