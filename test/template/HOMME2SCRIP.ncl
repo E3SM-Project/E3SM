@@ -24,6 +24,7 @@ grid_rank = 1
 
 ; see if there are any hexagons:  
 grid_corners = 0
+if ( isfilevar(fin,"cv_lon") ) then 
 kmax = dimsizes(fin->cv_lon)
 do k=1,kmax(0)-1
   maxlon = max(abs( fin->cv_lon(k,:) ))
@@ -48,6 +49,7 @@ else
       end if
    end if
 end if
+end if
 
 
 print("lon min/max = "+min(fin->lon)+" "+max(fin->lon))
@@ -67,31 +69,33 @@ grid_center_lon = (/ fin->lon /)
 grid_center_lon!0 = "grid_size"
 grid_center_lon@units = "degrees"
 
-grid_corner_lon = new ( (/grid_size,grid_corners/), "double")
-grid_corner_lat = new ( (/grid_size,grid_corners/), "double")
-print("dims of cv_lon: "+dimsizes(fin->cv_lon))
-print("dims of grid_corner_lat: " + dimsizes(grid_corner_lat))
+if (grid_corners .gt. 0) then
+  grid_corner_lon = new ( (/grid_size,grid_corners/), "double")
+  grid_corner_lat = new ( (/grid_size,grid_corners/), "double")
+  print("dims of cv_lon: "+dimsizes(fin->cv_lon))
+  print("dims of grid_corner_lat: " + dimsizes(grid_corner_lat))
 
-do k=0,grid_corners-1
-   grid_corner_lon(:,k) = (/fin->cv_lon(k,:)/)
-   grid_corner_lat(:,k) = (/fin->cv_lat(k,:)/)
-end do 
-grid_corner_lon!1 = "grid_corners"
-grid_corner_lon!0 = "grid_size"
-grid_corner_lon@units = "degrees"
-
-grid_corner_lat!1 = "grid_corners"
-grid_corner_lat!0 = "grid_size"
-grid_corner_lat@units = "degrees"
-
+  do k=0,grid_corners-1
+    grid_corner_lon(:,k) = (/fin->cv_lon(k,:)/)
+    grid_corner_lat(:,k) = (/fin->cv_lat(k,:)/)
+  end do 
+  grid_corner_lon!1 = "grid_corners"
+  grid_corner_lon!0 = "grid_size"
+  grid_corner_lon@units = "degrees"
+  
+  grid_corner_lat!1 = "grid_corners"
+  grid_corner_lat!0 = "grid_size"
+  grid_corner_lat@units = "degrees"
+  
 ; reverse orientation at pole point
-do i=0,grid_size-1
-  if ( abs( 90 - abs(grid_center_lat(i)) ) .lt. 1e-9 ) then
-    print("i="+i+" pole point: "+grid_center_lat(i)+" "+grid_center_lon(i))
-    print("cv: "+grid_corner_lat(i,:)+" "+grid_corner_lon(i,:))
-    ; 1 2 3 4  ->  1 4 3 2    swap pos 1,3
-  end if
-end do
+  do i=0,grid_size-1
+    if ( abs( 90 - abs(grid_center_lat(i)) ) .lt. 1e-9 ) then
+      print("i="+i+" pole point: "+grid_center_lat(i)+" "+grid_center_lon(i))
+      print("cv: "+grid_corner_lat(i,:)+" "+grid_corner_lon(i,:))
+                                ; 1 2 3 4  ->  1 4 3 2    swap pos 1,3
+    end if
+  end do
+end if
 
 grid_imask = new ( (/grid_size/), "double")
 grid_imask = 1
@@ -110,8 +114,10 @@ fout@history = "HOMME2SCRIP.ncl mt 2009"
 fout->grid_area = grid_area
 fout->grid_center_lat = grid_center_lat
 fout->grid_center_lon = grid_center_lon
-fout->grid_corner_lon = grid_corner_lon
-fout->grid_corner_lat = grid_corner_lat
+if (grid_corners .gt. 0) then
+  fout->grid_corner_lon = grid_corner_lon
+  fout->grid_corner_lat = grid_corner_lat
+end if
 fout->grid_imask = grid_imask
 fout->grid_dims = grid_dims
 

@@ -31,31 +31,32 @@ echo using NCPU = $NCPU
 # to plot the control volumes, see:   plotgrid.ncl
 #
 # GLL points within each element:
-set NPTS = 4
+set NPTS = 5
 # CSLAM points points within each element:
 set NC = 4  # must match value in dimensions_mod.F90
 
 # UNIFORM grids
-#set HYPERVIS_OPTS = 
-#set tstep = 1  
-#set ne = 16 ; 
-#set nu = 0
-#set hypervis_subcycle = 1
-#set meshfile='none'
-#set meshname = ne{$ne}np{$NP}
-#set meshsub = ne{$ne}nc{$NC}
+set HYPERVIS_OPTS = 
+set MESHREFINE = 
+set tstep = 1  
+set ne = 15 ; 
+set nu = 0
+set hypervis_subcycle = 1
+set meshfile='none'
+set meshname = ne{$ne}np{$NPTS}   #eg  ne30np5
+set meshsub = ne{$ne}nc{$NC}    #eg  ne30nc4
 
 # unstructured grid from file
-set ne = 0
+#set ne = 0
 #set meshname = ARM_30_x8_s1.g
-set meshname = ARM_30_x8.g
-set meshfile=~/codes/mapping/grids/$meshname
-set nu = 1.1e12
+#set meshname = ARM_30_x8.g
+#set meshfile=~/codes/mapping/grids/$meshname
+#set nu = 1.1e12
 # dtime=600 nsplit=19  qsplit=5   tstep=6.3
-set tstep = 6
-set MESHREFINE = --enable-mesh-refine
-set hypervis_subcycle = 1
-set HYPERVIS_OPTS = 'hypervis_power=3.2  fine_ne=240 max_hypervis_courant=9991.9 qsplit=5'
+#set tstep = 6
+#set MESHREFINE = --enable-mesh-refine
+#set hypervis_subcycle = 1
+#set HYPERVIS_OPTS = 'hypervis_power=3.2  fine_ne=240 max_hypervis_courant=9991.9 qsplit=5'
 
 
 
@@ -144,6 +145,10 @@ rm -f {$meshname}_tmp.nc
 
 if ( $NPTS == 4 ) then
    ncks -O -v lat,lon,area,cv_lat,cv_lon movies/$output {$meshname}_tmp.nc
+   ncl $input/HOMME2SCRIP.ncl  name=\"$meshname\"  ne=$ne
+   rm -f {$meshname}_tmp.nc
+else
+   ncks -O -v lat,lon,area movies/$output {$meshname}_tmp.nc
    ncl $input/HOMME2SCRIP.ncl  name=\"$meshname\"  ne=$ne
    rm -f {$meshname}_tmp.nc
 endif
