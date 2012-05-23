@@ -103,6 +103,9 @@ subroutine auto_get_start_count(rank, nioprocs, block_dims, start, count, bsize)
 	  do counter=1, nlinesPslab 
 		proc_count =  CEILING(nlinesPslab / REAL(counter)) * CEILING(nslabs / REAL(slab_counter))
 		!test to see if counter # of lines per processor per slab is possible
+
+                print *,__LINE__,proc_count, nioprocs
+
 		if (nioprocs >= proc_count) then
 			if (proc_count .gt. calc_procs) then
 				calc_procs = proc_count ! return the actual # of io procs used
@@ -159,9 +162,9 @@ subroutine init_vdc2(rank, data_dims, vdc_bsize, iostart, iocount, ioprocs)
   
   call auto_get_start_count (rank, ioprocs, vdc_blocks, iostart, iocount, vdc_bsize)
   
-#ifdef DEBUG 
+!#ifdef DEBUG 
 		print *, 'Retrieved VDF start count', iostart, '-', iocount, 'rank: ' , rank
-#endif
+!#endif
 
 endsubroutine
 

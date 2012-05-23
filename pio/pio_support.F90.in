@@ -26,7 +26,7 @@ module pio_support
   public :: CheckMPIreturn
   public :: pio_readdof
   public :: pio_writedof
-  public :: pio_fc_gather_int
+  public :: pio_fc_gather_offset
 #ifdef NO_MPI2
   public :: MPI_TYPE_CREATE_INDEXED_BLOCK
 #endif
@@ -161,14 +161,15 @@ contains
     ! Arguments
     !
     character(len=*),intent(in) :: file
-    integer        ,intent(in) :: dof(:)
+    integer(kind=pio_offset)  ,intent(in) :: dof(:)
     integer         ,intent(in) :: comm
     integer,optional,intent(in) :: punit
 
     character(len=*), parameter :: subName=modName//'::pio_writedof'
-    integer ierr, myrank, npes, sdof, sdof_tmp(1), m, n, unit
-    integer, pointer :: wdof(:)
-    integer, pointer :: sdof1d(:)
+    integer ierr, myrank, npes, m, n, unit
+    integer(kind=pio_offset), pointer :: wdof(:)
+    integer(kind=pio_offset), pointer :: sdof1d(:)
+    integer(kind=pio_offset) :: sdof, sdof_tmp(1)
     integer          :: status(MPI_STATUS_SIZE)
     integer, parameter :: masterproc = 0
 #ifndef _NO_FLOW_CONTROL
@@ -191,7 +192,7 @@ contains
     allocate(sdof1d(0:npes-1))
     sdof1d = -1
     sdof_tmp(1) = sdof
-    call pio_fc_gather_int(sdof_tmp, 1, MPI_INTEGER, &
+    call pio_fc_gather_offset(sdof_tmp, 1, MPI_INTEGER, &
        sdof1d, 1, MPI_INTEGER,masterproc,comm)
 
     if (myrank == masterproc) then
@@ -266,7 +267,7 @@ contains
     ! Arguments
     !
     character(len=*),intent(in) :: file
-    integer        ,pointer:: dof(:)
+    integer(kind=pio_offset),pointer:: dof(:)
     integer         ,intent(in) :: comm
     integer,optional,intent(in) :: punit
 
@@ -371,7 +372,11 @@ contains
   end function sizeof_{TYPE}
 #endif
 
-   subroutine pio_fc_gather_int ( sendbuf, sendcnt, sendtype, &
+!
+!========================================================================
+!
+
+   subroutine pio_fc_gather_offset ( sendbuf, sendcnt, sendtype, &
                                   recvbuf, recvcnt, recvtype, &
                                   root, comm, flow_cntl )
 
@@ -405,7 +410,7 @@ contains
 
 !---------------------------Input arguments--------------------------
 !
-   integer, intent(in)  :: sendbuf(*)       ! outgoing message buffer
+   integer(kind=pio_offset), intent(in)  :: sendbuf(:)       ! outgoing message buffer
    integer, intent(in)  :: sendcnt          ! size of send buffer
    integer, intent(in)  :: sendtype         ! MPI type of send buffer
    integer, intent(in)  :: recvcnt          ! size of receive buffer
@@ -416,7 +421,7 @@ contains
 
 !---------------------------Output arguments--------------------------
 !
-   integer, intent(out) :: recvbuf(*)       ! incoming message buffer
+   integer(kind=pio_offset), intent(out) :: recvbuf(*)       ! incoming message buffer
 
 #ifndef _MPISERIAL
 !
@@ -533,6 +538,6 @@ contains
 
    return
 
-   end subroutine pio_fc_gather_int
+   end subroutine pio_fc_gather_offset
 
 end module pio_support

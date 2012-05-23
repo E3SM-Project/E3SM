@@ -922,7 +922,6 @@ contains
 !<
   subroutine PIO_initdecomp_dof_i4(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount, num_ts, bsize)
     use calcdisplace_mod, only : calcdisplace_box
-    use calcdecomp, only : calcstartandcount
     type (iosystem_desc_t), intent(inout) :: iosystem
     integer(i4), intent(in)           :: basepiotype
     integer(i4), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
@@ -1090,7 +1089,7 @@ contains
 		vdc_ts = num_ts
 	endif
 	vdc_numiotasks = iosystem%num_iotasks
-	call init_vdc2(iosystem%comp_rank, dims, vdc_bsize, vdc_iostart, vdc_iocount, vdc_numiotasks)
+	call init_vdc2(iosystem%io_rank, dims, vdc_bsize, vdc_iostart, vdc_iocount, vdc_numiotasks)
 	iosystem%num_iotasks = vdc_numiotasks
 	if(debug) then
 		print *, 'rank: ', iosystem%comp_rank, ' pio_init iostart: ' , vdc_iostart, ' iocount: ', vdc_iocount
@@ -1104,6 +1103,7 @@ contains
                  iodesc%start, iodesc%count,iosystem%num_aiotasks)
 #endif
        end if
+
 
        iosize=1
        do i=1,ndims

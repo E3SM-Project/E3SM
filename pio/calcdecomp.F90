@@ -19,11 +19,11 @@ module calcdecomp
 contains 
   subroutine pio_set_blocksize(newsize)
     integer, intent(in) :: newsize
-
+#ifndef TESTCALCDECOMP
     if(newsize<0) then
        call piodie(__PIO_FILE__,__LINE__,'bad value to blocksize: ',newsize)
     end if
-
+#endif
     blocksize=newsize
 
 
@@ -84,13 +84,22 @@ contains
        end if
     end do
 
+
+
 ! Things work best if use_io_procs is a multiple of gdims(ndims)
 ! this adjustment makes it so, potentially increasing the blocksize a bit
     if (gdims(ldims)<use_io_procs) then
-       do while(mod(gdims(ldims),use_io_procs)>0)
-          use_io_procs=use_io_procs-1
-       end do
+       if(ldims>1 .and. gdims(ldims-1) > use_io_procs) then
+          ldims=ldims-1
+       else
+          use_io_procs = use_io_procs - mod(use_io_procs,gdims(ldims))
+       end if
     end if
+!    
+!   
+!
+
+
     if(iorank>=use_io_procs) return 
 
 
@@ -102,6 +111,7 @@ contains
     do i=ldims,1,-1
        if(gdims(i)>1) then
           if(gdims(i)>=ioprocs) then
+             
              call computestartandcount(gdims(i),ioprocs,tiorank,start(i),kount(i))
              if(start(i)+kount(i)>gdims(i)+1) then
                 print *,__PIO_FILE__,__LINE__,i,ioprocs,gdims(i),start(i),kount(i)
@@ -117,9 +127,11 @@ contains
              ! dimension in groups then go on to decompose the next dimesion in each of those
              ! groups.
              tioprocs=gdims(i)
-             tiorank = mod(iorank,tioprocs)
+             tiorank = (iorank*tioprocs)/ioprocs
+             
              call computestartandcount(gdims(i),tioprocs, tiorank  , start(i),kount(i))
-             ioprocs=tioprocs
+             ioprocs=ioprocs/tioprocs
+             tiorank = mod(iorank,ioprocs)
           end if
        end if
     end do
@@ -140,19 +152,23 @@ contains
     implicit none
     integer,intent(in) :: gdim,ioprocs,rank
     integer(kind=pio_offset),intent(out) :: start,kount
-    integer :: remainder
+    integer :: remainder, irank
 
     if(gdim<ioprocs) then
        stop 'bad arguments'
     end if
+!    print *,__LINE__,gdim,ioprocs,rank
+
+    irank = mod(rank,ioprocs)
 
     kount = gdim/ioprocs
-    start = kount*rank+1
+    start = kount*irank+1
     remainder = gdim-kount*ioprocs
-    if(remainder>=ioprocs-rank) then
+    if(remainder>=ioprocs-irank) then
        kount=kount+1
-       start=start+max(0,(rank+remainder-ioprocs))
+       start=start+max(0,(irank+remainder-ioprocs))
     end if
+!    write(99,*) __LINE__,gdim,ioprocs,rank,start,kount,remainder
   end subroutine computestartandcount
 
 
@@ -163,11 +179,12 @@ program sandctest
   use calcdecomp  !_EXTERNAL
   implicit none
   
+
 !  integer, parameter :: ndims=4
 !  integer, parameter :: gdims(ndims) = (/66,199,10,8/)
   integer, parameter :: ndims=3
-  integer, parameter :: gdims(ndims) = (/3600,2400,60/)
-  integer, parameter :: num_io_procs=240
+  integer, parameter :: gdims(ndims) = (/1024,1024,1024/)
+  integer, parameter :: num_io_procs=16
 !  integer :: gdims(ndims)
   integer :: psize, n, i,j,k,m
   integer, parameter :: imax=200,jmax=200,kmax=30,mmax=7

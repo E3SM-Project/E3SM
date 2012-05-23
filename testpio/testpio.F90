@@ -115,7 +115,7 @@ program testpio
   integer(i4)  :: master_task
   logical      :: log_master_task
   integer(i4)  :: nml_error
-  integer(i4)  :: sdof,sdof_sum,sdof_min,sdof_max
+  integer(kind=pio_offset)  :: sdof,sdof_sum,sdof_min,sdof_max
 
   ! memory tracking stuff
   integer(i4)  :: msize,mrss,mrss0,mrss1,mrss2
@@ -123,8 +123,8 @@ program testpio
   real(r8),allocatable :: mem_tmp(:)
   integer(i4),allocatable :: lmem(:),gmem(:,:)
 
-  integer(i4), pointer  :: compDOF(:), ioDOF(:)
-  integer(i4), pointer  :: ioDOFR(:),ioDOFW(:)
+  integer(kind=pio_offset), pointer  :: compDOF(:), ioDOF(:)
+  integer(kind=pio_offset), pointer  :: ioDOFR(:),ioDOFW(:)
 
   integer(i4) :: startIO(3),countIO(3), &
        startCOMP(3), countCOMP(3), &
@@ -326,9 +326,8 @@ program testpio
      if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #1'
      call gdecomp_read_nml(gdecomp,nml_filename,'comp',PIOSYS%comp_rank,PIOSYS%num_tasks,gDims3D(1:3))
      if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #2'
-
      call gdecomp_DOF(gdecomp,PIOSYS%comp_rank,compDOF,start,count)
-     if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #3'
+     if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #3', minval(compdof),maxval(compdof)
   else
      call pio_readdof(trim(compdof_input),compDOF,MPI_COMM_COMPUTE,75)
      sdof = size(compDOF)
@@ -360,12 +359,16 @@ program testpio
      call pio_writedof(trim(compdof_output),compDOF,MPI_COMM_COMPUTE,75)
   endif
 
-  sdof = size(compDOF)
-  call MPI_REDUCE(sdof,sdof_sum,1,MPI_INTEGER,MPI_SUM,master_task,MPI_COMM_COMPUTE,ierr)
+  sdof = sum(compDOF)
+  call MPI_REDUCE(sdof,sdof_sum,1,MPI_INTEGER8,MPI_SUM,master_task,MPI_COMM_COMPUTE,ierr)
   call CheckMPIReturn('Call to MPI_REDUCE SUM',ierr,__FILE__,__LINE__)
-  call MPI_REDUCE(sdof,sdof_min,1,MPI_INTEGER,MPI_MIN,master_task,MPI_COMM_COMPUTE,ierr)
+
+  sdof = minval(compDOF)
+  call MPI_REDUCE(sdof,sdof_min,1,MPI_INTEGER8,MPI_MIN,master_task,MPI_COMM_COMPUTE,ierr)
   call CheckMPIReturn('Call to MPI_REDUCE MIN',ierr,__FILE__,__LINE__)
-  call MPI_REDUCE(sdof,sdof_max,1,MPI_INTEGER,MPI_MAX,master_task,MPI_COMM_COMPUTE,ierr)
+
+  sdof = maxval(compDOF)
+  call MPI_REDUCE(sdof,sdof_max,1,MPI_INTEGER8,MPI_MAX,master_task,MPI_COMM_COMPUTE,ierr)
   call CheckMPIReturn('Call to MPI_REDUCE MAX',ierr,__FILE__,__LINE__)
   if (my_task == master_task) then
      write(6,*) trim(myname),' total nprocs = ',nprocs
@@ -692,8 +695,9 @@ program testpio
                  !-----------------------------------
                  ! for the single record real*4 file 
                  !-----------------------------------
+#ifndef _COMPRESSION
                  call WriteHeader(File_r4,nx_global,ny_global,nz_global,dimid_x,dimid_y,dimid_z)
-
+#endif
                  do ivar = 1, nvars
                     write(varname,'(a,i5.5)') 'field',ivar
 #ifdef _COMPRESSION
@@ -1425,9 +1429,9 @@ contains
   !=============================================================================
 
   subroutine c1dto3d(gindex,nx,ny,nz,i,j,k)
-
     implicit none
-    integer,intent(in) :: gindex,nx,ny,nz
+    integer(kind=pio_offset),intent(in) :: gindex
+    integer, intent(in) :: nx,ny,nz
     integer,intent(out) :: i,j,k
 
     k = (gindex                          - 1) / (nx*ny) + 1

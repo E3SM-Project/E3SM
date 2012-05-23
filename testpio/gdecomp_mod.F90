@@ -3,6 +3,7 @@ module gdecomp_mod
    use kinds_mod
 #if !defined(STANDALONE_TEST)
    use pio_support, only : piodie  ! _EXTERNAL
+   use pio, only : pio_offset
 #endif
 
    implicit none
@@ -307,7 +308,7 @@ contains
 
    type(gdecomp_type), intent(in)  :: gdecomp
    integer(i4),        intent(in)  :: my_task  ! task number
-   integer(i4),pointer             :: DOF(:)   ! allocated in this routine
+   integer(kind=pio_offset),pointer             :: DOF(:)   ! allocated in this routine
    integer(i4),        intent(out) :: start(3) ! netcdf start index
    integer(i4),        intent(out) :: count(3) ! netcdf count index
    logical, optional,  intent(in)  :: write_decomp  ! write gdecomp.nc output file
@@ -1113,7 +1114,7 @@ contains
     integer :: dim1, dim2, dim3
     integer, intent(in)          :: my_task         ! my MPI rank
     character(len=*),intent(in)  :: fname           ! name of MPAS partition file 
-    integer, pointer             :: dof(:)
+    integer(kind=pio_offset), pointer             :: dof(:)
 
 !  Local variables
 
@@ -1197,11 +1198,11 @@ contains
 
   subroutine camlike_decomp_generator(gnx, gny, gnz, myid, ntasks, npr_yz, dof)
     integer, intent(in) :: gnx, gny, gnz, myid, ntasks, npr_yz(4)
-    integer, pointer :: dof(:), tdof(:), tchk(:) 
+    integer(kind=pio_offset), pointer :: dof(:), tdof(:), tchk(:) 
     real, pointer :: rdof(:)
+    integer(kind=pio_offset) :: dofsize,tdofsize
 
-
-    integer :: dofsize, tdofsize, twodsize, i, j, spnt
+    integer :: twodsize, i, j, spnt
 
 
 
@@ -1280,7 +1281,7 @@ contains
        end do
     end do
 
-    CALL qsRecursive(1, dofsize, dof) !kicks off the recursive 
+    CALL qsRecursive(1_PIO_OFFSET, dofsize, dof) !kicks off the recursive 
 
     deallocate(tdof)
 
@@ -1293,10 +1294,10 @@ contains
 
   RECURSIVE SUBROUTINE qsRecursive (lo, hi, list)
     !This is the actualy recursive portion of the quicksort
-    INTEGER :: pivotPoint
-    INTEGER, INTENT(IN) :: lo
-    INTEGER, INTENT(IN) :: hi
-    integer, INTENT(INOUT), DIMENSION(*) :: list
+    INTEGER(KIND=PIO_OFFSET) :: pivotPoint
+    INTEGER(KIND=PIO_OFFSET), INTENT(IN) :: lo
+    INTEGER(KIND=PIO_OFFSET), INTENT(IN) :: hi
+    integer(kind=pio_offset), INTENT(INOUT), DIMENSION(*) :: list
     pivotPoint = qsPartition(lo, hi, list); !basically all we do is find the pivot point, adjust elements, then call it again
     IF (lo < pivotPoint) CALL qsRecursive(lo, pivotPoint -1, list)
     IF (pivotPoint < hi) CALL qsRecursive(pivotPoint + 1, hi, list)
@@ -1305,14 +1306,14 @@ contains
 
 
 
-  integer FUNCTION qsPartition (loin, hiin, list)
+  integer(kind=pio_offset) FUNCTION qsPartition (loin, hiin, list)
     !The partition portios of the Quick Sort is the must involved part
-    integer, INTENT(INOUT), DIMENSION(*) :: list
-    INTEGER, INTENT(IN) :: loin
-    INTEGER:: lo !variable so we can manipulate the hi and lo values without changing things elsewhere in the program by reference
-    INTEGER, INTENT(IN) :: hiin
-    INTEGER:: hi !variable so we can manipulate the hi and lo values without changing things elsewhere in the program by reference
-    integer::pivot !the temp location for the pivitoal element to which everything will be compaired
+    integer(kind=pio_offset), INTENT(INOUT), DIMENSION(*) :: list
+    INTEGER(KIND=PIO_OFFSET), INTENT(IN) :: loin
+    INTEGER(KIND=PIO_OFFSET):: lo !variable so we can manipulate the hi and lo values without changing things elsewhere in the program by reference
+    INTEGER(KIND=PIO_OFFSET), INTENT(IN) :: hiin
+    INTEGER(KIND=PIO_OFFSET):: hi !variable so we can manipulate the hi and lo values without changing things elsewhere in the program by reference
+    integer(kind=pio_offset)::pivot !the temp location for the pivitoal element to which everything will be compaired
     hi = hiin
     lo = loin
     pivot = list(lo)

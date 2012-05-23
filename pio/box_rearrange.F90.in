@@ -73,10 +73,10 @@ module box_rearrange
   use pio_types, only : io_desc_t, iosystem_desc_t
 #ifdef NO_MPI2
   use pio_support, only : MPI_TYPE_CREATE_INDEXED_BLOCK, piodie, &
-                          Debug, DebugIO, CheckMPIReturn, pio_fc_gather_int
+                          Debug, DebugIO, CheckMPIReturn, pio_fc_gather_offset
 #else
-  use pio_support, only : piodie, Debug, DebugIO, CheckMPIReturn, &
-                          pio_fc_gather_int
+  use pio_support, only : piodie, Debug, DebugIO, CheckMPIReturn, pio_fc_gather_offset
+                          
 #endif
   use alloc_mod,      only : alloc_check, dealloc_check
   use pio_spmd_utils, only : pio_swapm
@@ -854,8 +854,8 @@ end subroutine box_rearrange_io2comp_{TYPE}
                           dest_ioproc, dest_ioindex                    )
     implicit none
     integer(kind=pio_offset), intent(in) :: compdof(:)
-    integer, intent(in) :: start(:,:)       ! start(ndim,nioproc)
-    integer, intent(in) :: count(:,:)       ! count(ndim,nioproc)
+    integer(kind=pio_offset), intent(in) :: start(:,:)       ! start(ndim,nioproc)
+    integer(kind=pio_offset), intent(in) :: count(:,:)       ! count(ndim,nioproc)
 
     integer, intent(in) :: gsize(:)         ! global domain size gsize(ndim) 
     integer, intent(in) :: ndim   
@@ -902,7 +902,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
     ndof=size(compdof)
 
-    if(Debug) print *,__PIO_FILE__,__LINE__,minval(compdof), maxval(compdof)
+!    if(Debug) print *,__PIO_FILE__,__LINE__,minval(compdof), maxval(compdof)
     do i=1,ndof
        ! Compute global coordinates for compdof(i)
 
@@ -976,8 +976,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
     ! local vars
     character(len=*), parameter :: subName=modName//'::box_rearrange_create'
-    integer :: start(ndim,nioproc)
-    integer :: count(ndim,nioproc)
+    integer(kind=pio_offset) :: start(ndim,nioproc), count(ndim,nioproc)
 
     integer :: ierror
     integer :: i
@@ -1010,41 +1009,41 @@ end subroutine box_rearrange_io2comp_{TYPE}
     end if
 #endif
     if (Iosystem%IOproc) then
-       call pio_fc_gather_int(int(iodesc%start), ndim, MPI_INTEGER, & ! sendbuf, count, type
-                              start, ndim, MPI_INTEGER,             & ! recvbuf, count, type
-                              0, Iosystem%IO_comm                   )
+       call pio_fc_gather_offset(iodesc%start, ndim, MPI_INTEGER8, & ! sendbuf, count, type
+            start, ndim, MPI_INTEGER8,             & ! recvbuf, count, type
+            0, Iosystem%IO_comm                   )
 
-       call pio_fc_gather_int(int(iodesc%count), ndim, MPI_INTEGER, & ! sendbuf, count, type
-                              count, ndim, MPI_INTEGER,             & ! recvbuf, count, type
-                              0, Iosystem%IO_comm                   )
+       call pio_fc_gather_offset(iodesc%count, ndim, MPI_INTEGER8, & ! sendbuf, count, type
+            count, ndim, MPI_INTEGER8,             & ! recvbuf, count, type
+            0, Iosystem%IO_comm                   )
 
-       if(Debug) then
+ !      if(Debug) then
           print *, __PIO_FILE__,__LINE__,iodesc%start, iodesc%count
           if(iosystem%io_rank==0) &
              print *,__PIO_FILE__,__LINE__,ndim,(i,' :', &
                 start(:,i), count(:,i),i=1,iosystem%num_iotasks)
-       end if
+!       end if
        ! note that index in start,count is the io_rank not comp_rank
     endif
 
     if(debug) print *,__PIO_FILE__,__LINE__,ndim,iosystem%num_iotasks,iosystem%ioranks(1),iosystem%union_comm
 
-    call MPI_BCAST(start, ndim*Iosystem%num_iotasks, MPI_INTEGER,   & ! buf, cnt
+    call MPI_BCAST(start, ndim*Iosystem%num_iotasks, MPI_INTEGER8,   & ! buf, cnt
                    Iosystem%ioranks(1), Iosystem%union_comm, ierror    )
     call CheckMPIReturn(subName, ierror)
 
-    call MPI_BCAST(count, ndim*Iosystem%num_iotasks, MPI_INTEGER,   & ! buf, cnt
+    call MPI_BCAST(count, ndim*Iosystem%num_iotasks, MPI_INTEGER8,   & ! buf, cnt
                    Iosystem%ioranks(1), Iosystem%union_comm, ierror    )
     call CheckMPIReturn(subName, ierror)
 
-#if DEBUG
+!#if DEBUG
     if (debug .and. Iosystem%comp_rank==0) then
        do i=1,Iosystem%num_iotasks
           print *, subName,':: comp_rank=', Iosystem%comp_rank, ': io ', &
              i, ' start=',start(:,i), ' count=', count(:,i)
        end do
     endif
-#endif
+!#endif
 #ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
