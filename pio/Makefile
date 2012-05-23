@@ -44,7 +44,8 @@ SRCS_FC =  pio.F90 \
             pio_quicksort.F90 \
             pio_msg_mod.F90 \
 	    calcdisplace_mod.F90 \
-	    pio_msg_callbacks.F90 
+	    pio_msg_callbacks.F90 \
+            C_interface_mod.F90
 
 ifeq (yes,$(USE_COMPRESSION))
 SRCS_FC += piovdc.F90

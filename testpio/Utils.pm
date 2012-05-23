@@ -150,11 +150,12 @@ sub loadmodules{
 		   hopper => "/opt/modules/default/",
 		   lynx => "/opt/modules/default/",
 		   lynx_intel => "/opt/modules/default/",
+		   lynx_gnu => "/opt/modules/default/",
 		   pleiades => "/usr",
                    columbia => "/usr/share/modules/"};
 #HOST SPECIFIC END
 
-    return unless(defined $modpath->{$host});
+    die unless(defined $modpath->{$host});
 
     $ENV{MODULESHOME} = $modpath->{$host};
 
@@ -235,6 +236,12 @@ sub loadmodules{
 	module(" load PrgEnv-intel");
 	module(" switch intel intel/12.1.0");
         module(" load INTEL/netcdf4/4.1.3_seq");
+        module(" load pnetcdf/1.2.0");
+	module(" list");
+    }elsif($host =~ "lynx_gnu"){
+	require "/opt/modules/default/init/perl";
+	module(" rm PrgEnv-pgi ");
+	module(" load PrgEnv-gnu");
         module(" load pnetcdf/1.2.0");
 	module(" list");
     }elsif($host =~ "lynx"){

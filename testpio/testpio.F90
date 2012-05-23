@@ -698,11 +698,35 @@ program testpio
 #ifndef _COMPRESSION
                  call WriteHeader(File_r4,nx_global,ny_global,nz_global,dimid_x,dimid_y,dimid_z)
 #endif
+
                  do ivar = 1, nvars
-                    write(varname,'(a,i5.5)') 'field',ivar
 #ifdef _COMPRESSION
-	            iostat = PIO_def_var(File_r4,varname,PIO_real,vdc_vard_r4(ivar))
+                    select case(ivar)
+                    case(1)
+                       varname = 'fielda'
+                    case(2)
+                       varname = 'fieldb'                    
+                    case(3)
+                       varname = 'fieldc'                    
+                    case(4)
+                       varname = 'fieldd'                    
+                    case(5)
+                       varname = 'fielde'                    
+                    case(6)
+                       varname = 'fieldf'                    
+                    case(7)
+                       varname = 'fieldg'                    
+                    case(8)
+                       varname = 'fieldh'                    
+                    case(9)
+                       varname = 'fieldi'
+                    case default
+                       varname = 'field'
+                    end select
+                       
+	            iostat = PIO_def_var(File_r4,'fielda',PIO_real,vdc_vard_r4(ivar))
 #else
+                    write(varname,'(a,i5.5)') 'field',ivar
                     iostat = PIO_def_var(File_r4,varname,PIO_real,(/dimid_x,dimid_y,dimid_z/),vard_r4(ivar))
 #endif
                     call check_pioerr(iostat,__FILE__,__LINE__,' r4 defvar')

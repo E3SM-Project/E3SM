@@ -1420,7 +1420,7 @@ contains
 
 #ifdef _COMPRESSION
        case(pio_iotype_vdc2)
-	  if(ios%comp_rank .eq. 0) then
+	  if(ios%io_rank .eq. 0) then
 		  call endvdfdef
 	  endif
 
@@ -1711,13 +1711,15 @@ contains
 !! @retval ierr @copydoc error_return
 !<
   integer function def_var_md_vdc(File,name,type, vardesc) result(ierr)
-
+    use C_interface_mod, only : F_C_String_dup
     type (File_desc_t), intent(in)  :: File
     character(len=*), intent(in)    :: name
     integer, intent(in)             :: type
 
     type (vdc_var_desc_t), intent(inout) :: vardesc
     type(iosystem_desc_t), pointer :: ios
+
+
     !------------------
     ! Local variables
     !------------------
@@ -1732,10 +1734,9 @@ contains
 
     vardesc%type = type
 
-    vardesc%name = TRIM(name // CHAR(0))
-
     ios => file%iosystem
     nlen = len_trim(name)
+
 
     if(ios%async_interface) then
        if( .not. ios%ioproc) then
@@ -1748,11 +1749,15 @@ contains
        call mpi_bcast(name, nlen, mpi_character, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast(3, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
     endif
+    vardesc%name = name(1:nlen)
+
+
     if(ios%IOproc) then
        select case(iotype)
        case(pio_iotype_vdc2)
-	  if(ios%comp_rank .eq. 0) then
-	  	  call defvdfvar(TRIM(name) // CHAR(0))
+	  if(ios%io_rank .eq. 0) then
+             print *,__FILE__,__LINE__,vardesc%name(1:nlen+1)
+             call defvdfvar( vardesc%name(1:nlen)//CHAR(0), nlen+1 )
 	  endif
        case default
           call bad_iotype(iotype,__PIO_FILE__,__LINE__)
@@ -1898,5 +1903,6 @@ contains
     if(present(name)) ierr = pio_inq_dimname(ncid, dimid,name)
 
   end function PIO_inquire_dimension
+
 
 end module nf_mod

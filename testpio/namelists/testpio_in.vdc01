@@ -1,12 +1,12 @@
 &io_nml
-  casename    = 'vdc01:pnc:box:stride=1'
+  casename    = 'vdc01:pnc:box:stride=4'
   nx_global   = 1024
   ny_global   = 1024
   nz_global   = 1024
   iofmt       = 'pnc'
   rearr       = 'box'
   nprocsIO    = 16
-  stride      = 1
+  stride      = 4
   base        = 0
   maxiter     = 10
   dir         = './none/'
