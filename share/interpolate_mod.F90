@@ -398,6 +398,86 @@ contains
 
   end function interpol_bilinear
 
+! ----------------------------------------------------------------------------------!
+!FUNCTION   interpol_bilinear_phys--------------------------------------CE-for CSLAM!
+! AUTHOR: CHRISTOPH ERATH, 23. May 2012                                             !
+! DESCRIPTION: Bilinear interpolation for every physics grid cell                   !
+!                                                                                   !
+! CALLS: 
+! INPUT: 
+!        
+! OUTPUT: 
+!-----------------------------------------------------------------------------------!
+function interpol_bilinear_phys(cart, f, interp, npts, fillvalue) result(fxy)
+
+  integer, intent(in)               :: npts
+  type (cartesian2D_t), intent(in)  :: cart
+  real (kind=real_kind), intent(in) :: f(npts,npts)
+  type (interpolate_t)              :: interp
+  real (kind=real_kind)             :: fxy     ! value of f interpolated to (x,y)
+  real (kind=real_kind), intent(in), optional :: fillvalue
+  ! local variables
+
+  real (kind=real_kind)             :: xoy(npts)
+  real (kind=real_kind)             :: p,q,xp,yp ,y4(4)
+
+  integer                           :: l,j,k, ii, jj, na,nb,nm
+
+  xp = cart%x
+  yp = cart%y
+
+  xoy(:) = interp%glp(:)
+
+  ! Search index along "x"  (bisection method)
+
+  na = 1
+  nb = npts
+  do
+     if  ((nb-na) <=  1)  exit
+     nm = (nb + na)/2
+     if (xp  >  xoy(nm)) then
+        na = nm
+     else
+        nb = nm
+     endif
+  enddo
+  ii = na
+
+  ! Search index along "y"
+
+  na = 1
+  nb = npts
+  do
+     if  ((nb-na) <=  1)  exit
+     nm = (nb + na)/2
+     if (yp  >  xoy(nm)) then
+        na = nm
+     else
+        nb = nm
+     endif
+  enddo
+  jj = na
+
+  ! GLL cell containing (xp,yp)
+
+  y4(1) = f(ii,jj)
+  y4(2) = f(ii+1,jj)
+  y4(3) = f(ii+1,jj+1)
+  y4(4) = f(ii,jj+1)
+
+  if(present(fillvalue)) then
+     if (any(y4==fillvalue)) then
+        fxy = fillvalue
+        return
+     endif
+  endif
+     p = (xp - xoy(ii))/(xoy(ii+1) - xoy(ii))
+     q = (yp - xoy(jj))/(xoy(jj+1) - xoy(jj))
+
+     fxy = (1.0D0 - p)*(1.0D0 - q)* y4(1) + p*(1.0D0 - q) * y4(2)   &
+          + p*q* y4(3) + (1.0D0 - p)*q * y4(4)
+
+end function interpol_bilinear_phys
 
 !
 ! fast iterative search for bilinear elements on gnomonic cube face

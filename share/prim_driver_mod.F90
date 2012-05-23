@@ -1229,7 +1229,10 @@ contains
          elem(ie)%derived%psdiss_ave=0
          elem(ie)%derived%psdiss_biharmonic=0
       endif
-
+      if (ntrac>0) then
+        ! save velocity at time t for CSLAM
+        cslam(ie)%vn0=elem(ie)%state%v(:,:,:,:,tl%n0)
+      end if
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k, j, i)
 #endif

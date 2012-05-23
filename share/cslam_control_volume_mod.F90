@@ -34,10 +34,11 @@ module cslam_control_volume_mod
     sequence
     ! cslam tracer mixing ratio: (kg/kg)
     real (kind=real_kind) :: c(1-nhc:nc+nhc,1-nhc:nc+nhc,nlev,ntrac_d,timelevels) 
-    real (kind=real_kind) :: cair(1-nhc:nc+nhc,1-nhc:nc+nhc,nlev,timelevels)     
 !-----------------------------------------------------------------------------------!
     ! define the arrival grid, which is build on the original HOMME elements
     type (spherical_polar_t) :: asphere(nc+1,nc+1) ! spherical coordinates
+    ! save velocity at time t 
+    real (kind=real_kind)    :: vn0(np,np,2,nlev)
 !-----------------------------------------------------------------------------------!
     real (kind=real_kind)    :: dalpha, dbeta    ! grid step in alpha/beta coord.
 !-----------------------------------------------------------------------------------!

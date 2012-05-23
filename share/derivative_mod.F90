@@ -1695,45 +1695,39 @@ endif
 !   input:  vectors u and v  (latlon coordinates)
 !   output: vector  [ u dot grad ] v  (latlon coordinates)
 !
-!   Based on the formula in Sction 2.1, Heinbockel,
-!   introduction to tensor calculus and continuum mechanics
-!
     type (derivative_t)              :: deriv
-    type (element_t)              :: elem
+    type (element_t)                 :: elem
     real(kind=real_kind), intent(in) :: u(np,np,2)
     real(kind=real_kind), intent(in) :: v(np,np,2)
 
     real(kind=real_kind) :: ugradv(np,np,2)
-    real(kind=real_kind) :: ugradv_contra(np,np,2)
-    real(kind=real_kind) :: vcontra(np,np,2)
-    real(kind=real_kind) :: gradv1(np,np,2)
+    real(kind=real_kind) :: dum_cart(np,np,3)
 
-    integer :: i,j,component
+    integer :: component
 
-    ! latlon->contra
-    do j=1,np
-       do i=1,np
-          vcontra(i,j,1)=(elem%Dinv(1,1,i,j)*v(i,j,1) + elem%Dinv(1,2,i,j)*v(i,j,2))
-          vcontra(i,j,2)=(elem%Dinv(2,1,i,j)*v(i,j,1) + elem%Dinv(2,2,i,j)*v(i,j,2))
-       enddo
+    ! latlon -> cartesian
+    do component=1,3
+       ! Summing along the third dimension is a sum over components for each point.
+       ! (This is just a faster way of doing a dot product for each grid point,
+       ! since reindexing the inputs to use the intrinsic effectively would be
+       ! just asking for trouble.)
+       dum_cart(:,:,component)=sum( elem%vec_sphere2cart(:,:,component,:)*v(:,:,:) ,3)
+    end do
+
+    ! Do ugradv on the cartesian components.
+    do component=1,3
+       ! Dot u with the gradient of each component
+       dum_cart(:,:,component) = sum( u(:,:,:) * &
+            gradient_sphere(dum_cart(:,:,component),deriv,elem%Dinv) ,3)
     enddo
+
+    ! cartesian -> latlon
     do component=1,2
-       ! gradth dot u^1 
-       gradv1 = gradient_sphere(vcontra(:,:,component),deriv,elem%Dinv)
-       
-       ! gradth dot grad(u^i)
-       ugradv_contra(:,:,component) = u(:,:,1)*gradv1(:,:,1)+u(:,:,2)*gradv1(:,:,2)
-    enddo
-    ! contra->latlon
-    do j=1,np
-       do i=1,np
-          ugradv(i,j,1)=(elem%D(1,1,i,j)*ugradv_contra(i,j,1) + elem%D(1,2,i,j)*ugradv_contra(i,j,2))
-          ugradv(i,j,2)=(elem%D(2,1,i,j)*ugradv_contra(i,j,1) + elem%D(2,2,i,j)*ugradv_contra(i,j,2))
-       enddo
-    enddo
+       ! vec_sphere2cart is its own pseudoinverse.
+       ugradv(:,:,component)=sum( dum_cart(:,:,:)*elem%vec_sphere2cart(:,:,:,component) ,3)
+    end do
 
   end function ugradv_sphere
-
 
 
 
