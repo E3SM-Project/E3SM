@@ -27,12 +27,6 @@ contains
         cube_init_atomic, rotation_init_atomic, set_corner_coordinates, &
         assign_node_numbers_to_elem
     ! --------------------------------
-    use mesh_mod, only : MeshSetCoordinates,      &
-                           MeshUseMeshFile,   &
-                           MeshCubeTopology,  &
-                           MeshCubeElemCount, &
-                           MeshCubeEdgeCount
-    ! --------------------------------
     use edge_mod, only : edgebuffer_t, initedgebuffer   
     ! --------------------------------
     use reduction_mod, only : reductionbuffer_ordered_1d_t, red_min, red_flops, red_timer, &
@@ -138,13 +132,9 @@ contains
         write(6,*)"creating cube topology..."
      end if
 
-     if (MeshUseMeshFile) then
-        nelem      = MeshCubeElemCount()
-        nelem_edge = MeshCubeEdgeCount() 
-     else
-        nelem      = CubeElemCount()
-        nelem_edge = CubeEdgeCount() 
-     end if
+
+      nelem      = CubeElemCount()
+      nelem_edge = CubeEdgeCount() 
       approx_elements_per_task = dble(nelem)/dble(par%nprocs)
       if  (approx_elements_per_task < 1.0D0) then
           if(par%masterproc) print *,"number of elements=", nelem
@@ -154,14 +144,7 @@ contains
      allocate(GridVertex(nelem))
      allocate(GridEdge(nelem_edge))
 
-     if (MeshUseMeshFile) then
-        if (par%masterproc) then
-           write(6,*)"Set up grid vertex from mesh..."
-        end if
-        call MeshCubeTopology(GridEdge,GridVertex)
-     else 
-        call CubeTopology(GridEdge,GridVertex)
-     end if 
+     call CubeTopology(GridEdge,GridVertex)
      if(par%masterproc) write(6,*)"...done."
 
     if(par%masterproc) write(6,*)"partitioning graph..."
@@ -252,14 +235,11 @@ contains
      ! Note it is more expensive to initialize each individual spectral element 
      ! ========================================================================
      if(par%masterproc) write(6,*)"initializing cube elements..."
-     if (MeshUseMeshFile) then
-        call MeshSetCoordinates(elem)
-     else
+
         do ie=1,nelemd
            call set_corner_coordinates(elem(ie))
         enddo
         call assign_node_numbers_to_elem(elem, GridVertex)
-     endif
 
      ! initialize the GLL grid 
      gp=gausslobatto(np)
