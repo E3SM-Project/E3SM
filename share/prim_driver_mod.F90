@@ -1284,6 +1284,11 @@ contains
 
 #ifndef MESH
     if (ntrac>0) then 
+      if ( n_Q /= tl%n0 ) then
+        do ie=nets,nete
+          cslam(ie)%c(:,:,:,:,tl%n0)  = cslam(ie)%c(:,:,:,:,n_Q)
+        enddo
+      endif
       call Prim_Advec_Tracers_cslam(elem, cslam, deriv(hybrid%ithr),hvcoord,hybrid,&
            dt_q,tl,nets,nete,compute_diagnostics)
 
