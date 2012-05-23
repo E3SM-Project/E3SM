@@ -29,7 +29,8 @@ module cslam_mod
   type (ghostBuffertr_t)                      :: cellghostbuf
   type (EdgeBuffer_t)                         :: edgeveloc
   
-  public :: cslam_run, cslam_runair, cslam_init1,cslam_init2, cslam_mcgregor, cellghostbuf, edgeveloc
+  public :: cslam_run, cslam_runair, cslam_runairdensity
+  public :: cslam_init1,cslam_init2, cslam_mcgregor, cellghostbuf, edgeveloc
 contains
 
 subroutine cslam_run(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
@@ -100,16 +101,123 @@ subroutine cslam_run(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
     !note write tl%np1 in buffer
     call ghostVpack(cellghostbuf, cslam(ie)%c(:,:,:,:,tl%np1),nhc,nc,nlev,ntrac,0,elem(ie)%desc)
   end do
-  ! go one time step forward and do the data exchange, new values shift from tl%np1 to tl%n0
   call t_startf('CSLAM Communication')
   call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc)
   call t_stopf('CSLAM Communication')
   !-----------------------------------------------------------------------------------!
   do ie=nets,nete
-    ! note time level has changed, write buffer in tl%np1 
     call ghostVunpack(cellghostbuf, cslam(ie)%c(:,:,:,:,tl%np1), nhc, nc,nlev,ntrac, 0, elem(ie)%desc)
   enddo
 end subroutine cslam_run
+
+
+
+! use this subroutine for benchmark tests, couple airdensity with tracer concentration
+subroutine cslam_runairdensity(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
+  ! ---------------------------------------------------------------------------------
+  use cslam_line_integrals_mod, only: compute_weights
+  ! ---------------------------------------------------------------------------------  
+  use cslam_filter_mod, only: monotonic_gradient_cart
+  ! ---------------------------------------------------------------------------------
+  use cslam_reconstruction_mod, only: reconstruction
+  ! ---------------------------------------------------------------------------------
+  use derivative_mod, only : derivative_t
+  ! ---------------------------------------------------------------------------------
+  use bndry_mod, only: ghost_exchangeV
+  ! ---------------------------------------------------------------------------------
+  use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
+  ! -----------------------------------------------
+   
+  implicit none
+  type (element_t), intent(inout)                :: elem(:)
+  type (cslam_struct), intent(inout)             :: cslam(:)
+  type (hybrid_t), intent(in)                 :: hybrid   ! distributed parallel structure (shared)
+  integer, intent(in)                         :: nets  ! starting thread element number (private)
+  integer, intent(in)                         :: nete  ! ending thread element number   (private)
+  real (kind=real_kind)                       :: tstep
+  
+  integer                                     :: i,j,k,ie,itr, jx, jy, jdx, jdy, h
+  type (TimeLevel_t)                          :: tl              ! time level struct
+  type (derivative_t)                         :: deriv           ! derivative struct
+ 
+  real (kind=real_kind)   , dimension(10*(nc+2*nhe)*(nc+2*nhe),6)  :: weights_all
+  integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: weights_eul_index_all
+  integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: weights_lgr_index_all
+  integer (kind=int_kind)                                          :: jall
+    
+  real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons
+  real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)        :: tracer0 
+  
+  real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)        :: tracer_air0   
+  real (kind=real_kind), dimension(1:nc,1:nc)                        :: tracer1, tracer_air1 
+  real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons_air   
+   
+  do ie=nets, nete
+    do k=1,nlev
+      call cslam_mesh_dep(elem(ie),deriv,cslam(ie),tstep,tl,k)
+      !-Departure CSLAM Meshes, initialization done                                                               
+      call compute_weights(cslam(ie),6,weights_all,weights_eul_index_all, &
+             weights_lgr_index_all,jall) 
+             
+      tracer_air0=1.0D0 !elem(ie)%derived%dp(:,:,k)       
+      call reconstruction(tracer_air0, cslam(ie),elem(ie)%corners(1),recons_air)
+      call monotonic_gradient_cart(tracer_air0, cslam(ie),recons_air, elem(ie)%desc)
+      tracer_air1=0.0D0   
+      do h=1,jall
+        jx  = weights_lgr_index_all(h,1)
+        jy  = weights_lgr_index_all(h,2)
+        jdx = weights_eul_index_all(h,1)
+        jdy = weights_eul_index_all(h,2)
+        call remap(tracer_air0(jdx,jdy),tracer_air1(jx,jy),weights_all(h,:),&
+                   recons_air(:,jdx,jdy),cslam(ie)%spherecentroid(:,jdx,jdy))             
+      end do
+      ! finish scheme
+      do j=1,nc
+        do i=1,nc
+          tracer_air1(i,j)=tracer_air1(i,j)/cslam(ie)%area_sphere(i,j)
+        end do
+      end do
+      !loop through all tracers
+      do itr=1,ntrac
+        tracer0=cslam(ie)%c(:,:,k,itr,tl%n0)
+        call reconstruction(tracer0, cslam(ie),elem(ie)%corners(1),recons)
+        call monotonic_gradient_cart(tracer0, cslam(ie),recons, elem(ie)%desc)
+        tracer1=0.0D0   
+        do h=1,jall
+          jx  = weights_lgr_index_all(h,1)
+          jy  = weights_lgr_index_all(h,2)
+          jdx = weights_eul_index_all(h,1)
+          jdy = weights_eul_index_all(h,2)
+         
+          call remap_air(tracer0(jdx,jdy),tracer1(jx,jy),tracer_air0(jdx,jdy),&
+                       weights_all(h,:), recons(:,jdx,jdy),recons_air(:,jdx,jdy),&
+                       cslam(ie)%spherecentroid(:,jdx,jdy))
+        end do                     
+        ! finish scheme
+        do j=1,nc
+          do i=1,nc
+            cslam(ie)%c(i,j,k,itr,tl%np1)= &
+            (tracer1(i,j)/cslam(ie)%area_sphere(i,j))/tracer_air1(i,j)
+          end do
+        end do            
+      enddo  !End Tracer
+    end do  !End Level
+    !note write tl%np1 in buffer
+    call ghostVpack(cellghostbuf, cslam(ie)%c(:,:,:,:,tl%np1),nhc,nc,nlev,ntrac,0,elem(ie)%desc)
+  end do
+  call t_startf('CSLAM Communication')
+  call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc)
+  call t_stopf('CSLAM Communication')
+  !-----------------------------------------------------------------------------------!
+  do ie=nets,nete
+     call ghostVunpack(cellghostbuf, cslam(ie)%c(:,:,:,:,tl%np1), nhc, nc,nlev,ntrac, 0, elem(ie)%desc)
+  enddo
+end subroutine cslam_runairdensity
+
+
+
+
+
 
 ! use this subroutine for benchmark tests, couple airdensity with tracer concentration
 subroutine cslam_runair(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
@@ -206,13 +314,11 @@ subroutine cslam_runair(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
     !note write tl%np1 in buffer
     call ghostVpack(cellghostbuf, cslam(ie)%c(:,:,:,:,tl%np1),nhc,nc,nlev,ntrac,0,elem(ie)%desc)
   end do
-  ! go one time step forward and do the data exchange, new values shift from tl%np1 to tl%n0
   call t_startf('CSLAM Communication')
   call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc)
   call t_stopf('CSLAM Communication')
   !-----------------------------------------------------------------------------------!
   do ie=nets,nete
-     ! note time level has changed, write buffer in tl%np1 
      call ghostVunpack(cellghostbuf, cslam(ie)%c(:,:,:,:,tl%np1), nhc, nc,nlev,ntrac, 0, elem(ie)%desc)
   enddo
 end subroutine cslam_runair
@@ -312,7 +418,7 @@ subroutine cslam_init1(par)
      call haltmp("PARAMTER ERROR for CSLAM: ntrac > ntrac_d")
   endif
 
-  call initghostbuffer(cellghostbuf,nlev,ntrac,nhc,nc)
+  call initghostbuffer(cellghostbuf,nlev,ntrac+1,nhc,nc) !+1 for the air_density, which comes from SE
   
   call initEdgebuffer(edgeveloc,2*nlev)
 end subroutine cslam_init1

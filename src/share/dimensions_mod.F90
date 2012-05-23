@@ -12,8 +12,8 @@ module dimensions_mod
 
 ! set MAX number of tracers.  actual number of tracers is a run time argument  
 #ifndef CAM
-  integer, parameter         :: qsize_d=5           ! SE tracers  
-  integer, parameter         :: ntrac_d=5           ! CSLAM tracers
+  integer, parameter         :: qsize_d=4           ! SE tracers  
+  integer, parameter         :: ntrac_d=0          ! CSLAM tracers
 #endif
   integer, parameter, public :: nvar = 3 ! FI # dependent variables 
 

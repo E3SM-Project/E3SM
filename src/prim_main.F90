@@ -22,7 +22,7 @@ program prim_main
   ! ----------------------------------------------- 
   use time_mod, only : tstep, nendstep, timelevel_t, TimeLevel_init
   ! -----------------------------------------------
-  use dimensions_mod, only : nelemd
+  use dimensions_mod, only : nelemd, qsize, ntrac
   ! -----------------------------------------------
   use control_mod, only : restartfreq, vfile_mid, vfile_int, runtype, integration, statefreq, tstep_type
   ! -----------------------------------------------
@@ -66,6 +66,9 @@ program prim_main
   integer ithr
   integer ierr
   integer nstep
+  
+  character (len=20)                          :: numproc_char
+  character (len=20)                          :: numtrac_char
   
   logical :: dir_e ! boolean existence of directory where output netcdf goes
   
@@ -269,7 +272,11 @@ program prim_main
 
   call t_stopf('Total')
   if(par%masterproc) print *,"writing timing data"
-  call t_prf('HommeTime', par%comm)
+  write(numproc_char,*) par%nprocs
+  write(numtrac_char,*) ntrac
+!   call system('mkdir -p '//'time/'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char))) 
+  call t_prf('time/HommeCSLAMTime-'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char)),par%comm)
+!   call t_prf('HommeTimeSE', par%comm)
   if(par%masterproc) print *,"calling t_finalizef"
   call t_finalizef()
   call haltmp("exiting program...")

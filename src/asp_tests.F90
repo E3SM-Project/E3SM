@@ -1128,6 +1128,7 @@ if (ntrac>=1) then
    idex=1
    do ie=nets,nete
       cslam(ie)%c(:,:,:,idex,:) = 1
+      cslam(ie)%cair=1.0D0            !set cslam air density to 1.0D0
    enddo
 endif
 if (ntrac>=2) then
@@ -1180,7 +1181,7 @@ if (ntrac>=5) then
    do ie=nets,nete
       do k=1,nlev
       do t=1,timelevels
-         cslam(ie)%c(1:nc,1:nc,k,idex,t) = cslam(ie)%centersphere(:,:)%lat
+         cslam(ie)%c(1:nc,1:nc,k,idex,t) = 1.0D0
       enddo
       enddo
    enddo

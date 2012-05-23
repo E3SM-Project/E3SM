@@ -1267,7 +1267,7 @@ contains
     use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
     use derivative_mod, only : divergence_sphere, ugradv_sphere
     use vertremap_mod, only: remap_velocityC,remap_velocityUV  ! _EXTERNAL (actually INTERNAL)
-    use cslam_mod, only : cslam_run, edgeveloc, cslam_mcgregor
+    use cslam_mod, only : cslam_run, cslam_runairdensity, edgeveloc, cslam_mcgregor
     
     implicit none
     type (element_t), intent(inout)   :: elem(:)
@@ -1296,6 +1296,19 @@ contains
     n0  = tl%n0
     np1 = tl%np1
 
+!     do ie=nets,nete
+!       do k=1,nlev
+!         do i=1,np
+!           do j=1,np      
+!           elem(ie)%derived%dp(i,j,k)=
+!           enddo
+!         enddo
+!       enddo
+!     enddo
+
+
+! dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+!      ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,n0)
 
     ! mean vertical velocity computed in dynamics needs to be DSS'd:
     ! this should be moved into one of the DSS operations performed by the
@@ -1352,7 +1365,7 @@ contains
 
     ! CSLAM departure calcluation should use vstar.
     ! from c(n0) compute c(np1): 
-    call cslam_run(elem,cslam,hybrid,deriv,dt,tl,nets,nete)
+    call cslam_runairdensity(elem,cslam,hybrid,deriv,dt,tl,nets,nete)
 
     ! apply vertical remap back to reference levels
     call remap_velocityC(n0,np1,dt,elem,cslam,hvcoord,nets,nete,compute_diagnostics)
