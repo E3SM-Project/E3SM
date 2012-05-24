@@ -155,6 +155,15 @@ contains
     ! also compute the [-pi/2,pi/2] cubed sphere coordinates:
     elem%cartp=element_var_coordinates(elem%corners,gll_points)
 
+    ! Matrix describing vector conversion to cartesian
+    ! Zonal direction
+    elem%vec_sphere2cart(:,:,1,1) =                            -SIN(elem%spherep(:,:)%lon)
+    elem%vec_sphere2cart(:,:,2,1) =                             COS(elem%spherep(:,:)%lon)
+    elem%vec_sphere2cart(:,:,3,1) =                             0.0_real_kind
+    ! Meridional direction
+    elem%vec_sphere2cart(:,:,1,2) = -SIN(elem%spherep(:,:)%lat)*COS(elem%spherep(:,:)%lon)
+    elem%vec_sphere2cart(:,:,2,2) = -SIN(elem%spherep(:,:)%lat)*SIN(elem%spherep(:,:)%lon)
+    elem%vec_sphere2cart(:,:,3,2) =  COS(elem%spherep(:,:)%lat)
 
   end subroutine coordinates_atomic
 
