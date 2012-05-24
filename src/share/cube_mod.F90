@@ -47,10 +47,8 @@ module cube_mod
   ! ==========================================
   ! Public Interfaces
   ! ==========================================
-
-#ifndef MESH
   public :: CubeTopology
-#endif 
+
 
   ! Rotate the North Pole:  used for JW baroclinic test case
   ! Settings this only changes Coriolis.  
@@ -1730,7 +1728,7 @@ contains
 
   end subroutine convert_gbl_index
    
-#ifndef MESH
+#ifndef NOCUBEGRID
   subroutine CubeTopology(GridEdge, GridVertex)
     use params_mod, only : RECURSIVE, SFCURVE
     use control_mod, only: partmethod

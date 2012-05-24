@@ -17,13 +17,11 @@ module cslam_control_volume_mod
   ! ---------------------------------------------------------------------------------
   use element_mod, only: timelevels, element_t
   ! ---------------------------------------------------------------------------------
-  use dimensions_mod, only: nc, nhc, nhe, nlev, ntrac, ntrac_d, ne
+  use dimensions_mod, only: nc, nhc, nhe, nlev, ntrac, ntrac_d, ne, np
   ! ---------------------------------------------------------------------------------
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
-#ifndef MESH
   ! ---------------------------------------------------------------------------------
   use cube_mod, only     : cube_xstart, cube_xend, cube_ystart, cube_yend
-#endif
 
   use parallel_mod, only : abortmp
   
@@ -86,7 +84,7 @@ module cslam_control_volume_mod
     integer                  :: ibasehaloex(-1:nc+2,2,2)     
   end type cslam_struct
 
-#ifndef MESH
+#ifdef _CSLAM
   public :: cslam_mesh_ari
   
   real (kind=real_kind),parameter, public   :: bignum = 1.0D20

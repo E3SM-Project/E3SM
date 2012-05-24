@@ -74,7 +74,7 @@ contains
 
     use cslam_control_volume_mod, only : cslam_struct
     
-#ifndef MESH
+#ifdef _CSLAM
     use cslam_mod, only : cslam_init2    
     use cslam_bsp_mod, only: cslam_init_tracer
 #endif
@@ -190,14 +190,9 @@ contains
 
        dtnu = 2.0d0*tstep*max(nu,nu_s)/hypervis_subcycle
        call print_cfl(elem,hybrid,nets,nete,dtnu,tstep,tstep)
-
-#ifndef MESH
-        ! MNL: there are abort calls in edge_mod::ghostVpackfull that
-        !      require ne>0 / don't allow -DMESH as compile option
-        ! used by CSLAM:
+        ! used by CSLAM and template generation code:
         call compute_ghost_corner_orientation(hybrid,elem,nets,nete)
         call test_ghost(hybrid,elem,nets,nete)
-#endif
     end if
 
     if(Debug) print *,'homme: point #2'
@@ -453,10 +448,10 @@ contains
           call interp_movie_output(elem,tl, hybrid, pmean, deriv, nets, nete)
 #else
 #ifdef _CSLAM
-	        call shal_movie_init(elem,hybrid,cslam)
+          call shal_movie_init(elem,hybrid,cslam)
           call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv,cslam)
 #else
-	        call shal_movie_init(elem,hybrid)
+          call shal_movie_init(elem,hybrid)
           call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
 #endif
 #endif
@@ -1431,7 +1426,7 @@ contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-#ifndef MESH
+#ifdef _CSLAM
     subroutine Shal_Advec_Tracers_cslam(elem, cslam, deriv,hybrid,&
                                         dt,tl,nets,nete)
       use element_mod, only : element_t
