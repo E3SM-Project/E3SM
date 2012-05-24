@@ -29,7 +29,7 @@ module element_mod
      real (kind=real_kind) :: v(np,np,2,nlev,timelevels)   ! velocity                                            1
      real (kind=real_kind) :: T(np,np,nlev,timelevels)     ! temperature                                         2
      real (kind=real_kind) :: lnps(np,np,timelevels)       ! log surface pressure                                3
-     real (kind=real_kind) :: ps_v(np,np,timelevels)       ! surface pressure on v grid                          4
+     real (kind=real_kind) :: ps_v(np,np,timelevels)       ! surface pressure                         4
      real (kind=real_kind) :: phis(np,np)         ! surface geopotential (prescribed)                            5
      ! qsize = 1 is related to the mixing ratio
      ! everything else are passive tracers that can eventually

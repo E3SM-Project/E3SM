@@ -1154,6 +1154,22 @@ contains
 
 
   subroutine prim_run_subcycle(elem, cslam, hybrid,nets,nete, dt, tl, hvcoord)
+!
+!   advance all variables (u,v,T,ps,Q,C) from time t to t + dt_q
+!     
+!   input: 
+!       tl%nm1   not used
+!       tl%n0    data at time t
+!       tl%np1   new values at t+dt_q
+!   
+!   then we update timelevel pointers:
+!       tl%nm1 = tl%n0
+!       tl%n0  = tl%np1
+!   so that:
+!       tl%nm1   tracers:  t    dynamics:  t+(qsplit-1)*dt
+!       tl%n0    time t + dt_q
+!   
+!
     use hybvcoord_mod, only : hvcoord_t
     use time_mod, only : TimeLevel_t, time_at, timelevel_update, smooth, ptimelevels
     use control_mod, only: statefreq, integration, tracer_advection_formulation,&
@@ -1257,7 +1273,8 @@ contains
     ! ===============
     ! Dynamical Step 
     ! ===============
-    n_Q = tl%n0   ! use Q at timelevel n0 for all dynamics steps:
+    n_Q = tl%n0   ! n_Q = timelevel of Q at time t.  need to save this because dynamics
+                  ! will scramble the timelevel pointers.
 
     call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
          flt , hybrid, dt, tl, nets, nete, compute_diagnostics,n_Q)
@@ -1268,7 +1285,7 @@ contains
 
        call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
             flt , hybrid, dt, tl, nets, nete, .false.,n_Q)
-       ! defer final robert, & timelevel update until after Q update.
+       ! defer final timelevel update until after Q update.
 
     enddo
 
@@ -1311,13 +1328,38 @@ contains
              print *
            endif 
        endif   
+
+       ! dynamics computed a predictor surface pressure, now correct with CSLAM result
+       ! CSLAM has computed a new dp(:,:,k) on the CSLAM grid
+       ! step 1: compute surface pressure from dp:
+       ! note:
+       !    dp(k) =( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + 
+       !     ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*ps
+       ! sum over all k:
+       !   sum(dp(k)) =( hvcoord%hyai(nlev+1) - hvcoord%hyai(1) )*hvcoord%ps0 + 
+       !     ( hvcoord%hybi(nlev+1) - hvcoord%hybi(1) )*ps
+       ! thus:
+       ! ps = [ sum(dp(k)) - ( hvcoord%hyai(nlev+1) - hvcoord%hyai(1) )*hvcoord%ps0 ] / 
+       !                     ( hvcoord%hybi(nlev+1) - hvcoord%hybi(1) )
+       !
+       !  at k=nlev+1:  a=0, b=1
+       !  at k=1:       b=0
+       !
+       ! ps = sum(dp(k)) +  hvcoord%hyai(1)*hvcoord%ps0 
+       !
+       !
+       ! step 1:  computes sum of CSLAM density on CSLAM grid
+       ! step 2:  interpolate to GLL grid
+       ! step 3:  store in  elem(ie)%state%ps_v(:,:,tl%np1)
+       ! step 4:  apply DSS to make ps_v continuous 
+       !          (or use continuous reconstruction)
     endif
 #endif
 
 
     ! now we have:
     !   u(nm1)   dynamics at  t+dt_q - 2*dt 
-    !   u(n0)    dynamics at  t+dt_q - dt       (Not yet Robert-filtered)
+    !   u(n0)    dynamics at  t+dt_q - dt    
     !   u(np1)   dynamics at  t+dt_q 
     !
     !   Q(nm1)   undefined
