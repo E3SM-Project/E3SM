@@ -17,23 +17,11 @@ module dimensions_mod
 #endif
   integer, parameter, public :: nvar = 3 ! FI # dependent variables 
 
-
-#ifdef _CSLAM 
-  ! settings used by 2D CSLAM test code: 
-  integer, parameter, public :: np = NC+1 ! this can be delted once CSLAM has it own I/O
-  ! nc  : nc*nc is the number of finite volume cells on each element (we have 
-  !       6*ne*ne*nc*nc cells on the sphere),   
-  integer, parameter, public :: nc=NC       
-
-  ! set the number of tracers
-  integer         :: ntrac =NTRAC
-  integer         :: qsize=0
-#else   
   integer, parameter, public :: np = NP
   integer, parameter, public :: nc = 4
   integer         :: ntrac = 0
   integer         :: qsize=qsize_d
-#endif
+
 
   ! CSLAM dimensions:
   integer, parameter, public :: ngpc=4    !number of Gausspoints for the CSLAM integral approximation  
