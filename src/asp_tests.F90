@@ -971,9 +971,7 @@ module asp_tests
 !  instability probelms in Jablonowski and Williamson, QJR (2006) 132 
 !
 use element_mod, only : element_t, timelevels
-#ifdef _CSLAM
 use cslam_control_volume_mod, only : cslam_struct
-#endif
 use hybrid_mod, only : hybrid_t
 use hybvcoord_mod, only : hvcoord_t 
 use kinds, only : real_kind
@@ -1125,7 +1123,6 @@ if (ntrac>=1) then
    idex=1
    do ie=nets,nete
       cslam(ie)%c(:,:,:,idex,:) = 1
-      cslam(ie)%cair=1.0D0            !set cslam air density to 1.0D0
    enddo
 endif
 if (ntrac>=2) then
@@ -1185,7 +1182,6 @@ if (ntrac>=5) then
    enddo
 endif
 endif
-
 
 
 
