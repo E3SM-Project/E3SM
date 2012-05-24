@@ -329,6 +329,10 @@ module element_mod
      real (kind=real_kind)    :: D(2,2,np,np)        ! Map covariant field on cube to vector field on the sphere
      real (kind=real_kind)    :: Dinv(2,2,np,np)     ! Map vector field on the sphere to covariant v on cube
 
+     ! Convert vector fields from spherical to rectangular components
+     ! The transpose of this operation is its pseudoinverse.
+     real (kind=real_kind)    :: vec_sphere2cart(np,np,3,2)
+
      ! Mass matrix terms for an element on a cube face
      real (kind=real_kind)    :: mp(np,np)          ! mass matrix on  velocity and pressure grid
      real (kind=real_kind)    :: rmp(np,np)         ! inverse mass matrix on velocity and pressure grid
