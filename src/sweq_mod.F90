@@ -71,14 +71,10 @@ contains
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     use bndry_mod, only : compute_ghost_corner_orientation
     use checksum_mod, only : test_ghost
-
-    use cslam_control_volume_mod, only : cslam_struct
     
-#ifndef MESH
     use cslam_mod, only : cslam_init2    
+    use cslam_control_volume_mod, only : cslam_struct
     use cslam_bsp_mod, only: cslam_init_tracer
-#endif
-
     use reduction_mod, only : parallelmax
     
     
@@ -1430,8 +1426,6 @@ contains
   ! CSLAM driver
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-#ifndef MESH
     subroutine Shal_Advec_Tracers_cslam(elem, cslam, deriv,hybrid,&
                                         dt,tl,nets,nete)
       use element_mod, only : element_t
@@ -1443,6 +1437,7 @@ contains
       use perf_mod, only : t_startf, t_stopf, t_barrierf            ! _EXTERNAL
       use derivative_mod, only : divergence_sphere, ugradv_sphere
       use cslam_mod, only : cslam_run, cslam_runair, edgeveloc, cslam_mcgregor
+      
       use bndry_mod, only : bndry_exchangev
       use edge_mod, only  : edgevpack, edgevunpack
       use dimensions_mod, only : np, nlev
@@ -1503,7 +1498,6 @@ contains
 
       call t_stopf('shal_advec_tracers_cslam')
     end subroutine shal_advec_tracers_cslam  
-#endif
 
 end module sweq_mod
 

@@ -30,20 +30,15 @@ contains
     ! --------------------------------
     use mass_matrix_mod, only : mass_matrix
     ! --------------------------------
-    use mesh_mod, only : MeshUseMeshFile
-#ifndef MESH
-     use cube_mod,  only : cubeedgecount , cubeelemcount, cubetopology
-#else
+    use cube_mod, only : cubeelemcount, cubeedgecount, cubetopology, &
+        cube_init_atomic, rotation_init_atomic, set_corner_coordinates, &
+        assign_node_numbers_to_elem
     ! --------------------------------
     use mesh_mod, only :   MeshSetCoordinates,      &
+                           MeshUseMeshFile,   &
                            MeshCubeTopology,  &
                            MeshCubeElemCount, &
                            MeshCubeEdgeCount
-#endif 
-    ! --------------------------------
-    use cube_mod, only : cube_init_atomic, rotation_init_atomic, set_corner_coordinates, &
-         assign_node_numbers_to_elem
-
     ! --------------------------------
     use edge_mod, only : edgebuffer_t, initedgebuffer   
     ! --------------------------------
@@ -173,21 +168,12 @@ contains
        end if
        
        if (MeshUseMeshFile) then
-#ifdef MESH
           nelem      = MeshCubeElemCount()
           nelem_edge = MeshCubeEdgeCount() 
-#else
-          call abortmp('Input file requires compilation with CPP macro MESH, but mesh support was not built in. Aborting.')
-#endif
+       else
+          nelem      = CubeElemCount()
+          nelem_edge = CubeEdgeCount() 
        end if
-
-#ifndef MESH 
-        nelem      = CubeElemCount()
-        nelem_edge = CubeEdgeCount() 
-#else
-        call abortmp('Input file does not require an external mesh file, yet the standard cube topology was not built in. Aborting.')
-#endif
-
         approx_elements_per_task = dble(nelem)/dble(par%nprocs)
         if  (approx_elements_per_task < 1.0D0) then
             if(par%masterproc) print *,"number of elements=", nelem
@@ -198,24 +184,14 @@ contains
        allocate(GridEdge(nelem_edge))
 
        if (MeshUseMeshFile) then
-#ifdef MESH
           if (par%masterproc) then
              write(6,*)"Set up grid vertex from mesh..."
           end if
           call MeshCubeTopology(GridEdge,GridVertex)
-#else
-          call abortmp('Input file requires compilation with CPP macro MESH, but mesh support was not built in. Aborting.')
-#endif 
        else 
-#ifndef MESH    
           call CubeTopology(GridEdge,GridVertex)
-#else
-          call abortmp('Input file does not require an external mesh file, yet the standard cube topology was not built in. Aborting.')
-#endif
-       end if
-
+       end if 
        if(par%masterproc) write(6,*)"...done."
-       
     end if
 
     if(par%masterproc) write(6,*)"partitioning graph..."
@@ -315,7 +291,6 @@ contains
        ! Note it is more expensive to initialize each individual spectral element 
        ! ========================================================================
        if(par%masterproc) write(6,*)"initializing cube elements..."
-#ifdef MESH
        if (MeshUseMeshFile) then
           call MeshSetCoordinates(elem)
        else
@@ -324,12 +299,6 @@ contains
           enddo
           call assign_node_numbers_to_elem(elem, GridVertex)
        endif
-#else
-       do ie=1,nelemd
-          call set_corner_coordinates(elem(ie))
-       enddo
-       call assign_node_numbers_to_elem(elem, GridVertex)
-#endif 
        do ie=1,nelemd
           call cube_init_atomic(elem(ie),gp%points)
           call rotation_init_atomic(elem(ie),rot_type)

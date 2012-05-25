@@ -1,13 +1,8 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 !MODULE CSLAM_ANALYTIC_MOD----------------------------------------------CE-for CSLAM!
 ! AUTHOR: CHRISTOPH ERATH, 17.October 2011                                          !
 ! This module contains all analytical terms for CSLAM                               ! 
 !-----------------------------------------------------------------------------------!
 module cslam_analytic_mod
-#ifndef MESH
   use kinds, only : real_kind, int_kind
   use dimensions_mod, only: nc, nhe, ntrac
   
@@ -287,7 +282,5 @@ function I_11(x,y)
   I_11 = -SQRT(1+x*x+y*y)
 end function I_11
 !END SUBROUTINES I_00, I_01, I_20, I_02, I11----------------------------CE-for CSLAM!
-
-#endif
 
 end module cslam_analytic_mod

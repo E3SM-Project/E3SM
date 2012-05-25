@@ -74,7 +74,6 @@ contains
 #else
     use parallel_mod, only : nComPoints, iam
 #endif
-     use parallel_mod, only : haltmp, iam
     implicit none
     type(element_t), intent(inout)        :: elem(:)
     integer, intent(in)                :: PartNumber
@@ -212,8 +211,6 @@ contains
     deallocate(tmpP)
     deallocate(tmpP_ghost)
 
-    
-
     do ie=1,nelemd0
        elem(ie)%vertex     = MetaVertex%members(ie)
        ig                  = MetaVertex%members(ie)%number
@@ -262,6 +259,7 @@ contains
 #ifdef DEBUGPART
     call haltmp("genEdgeSched: Just testing the partitioning algorithms")
 #endif
+
   end subroutine genEdgeSched
 #ifdef DOTHIS
   subroutine MessageStats(nlyr)
@@ -970,7 +968,6 @@ contains
          'SRC ',I3,2x,'DEST ',I3,2x,'PTR ',I5)
 
   end subroutine PrintCycle
-
   subroutine SetCycle(elem, schedule,Cycle,Edge)
     use element_mod, only : element_t
     use dimensions_mod, only : max_corner_elem, max_neigh_edges

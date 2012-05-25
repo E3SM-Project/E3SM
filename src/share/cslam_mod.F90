@@ -12,9 +12,6 @@
 #endif
 
 module cslam_mod
-
-#ifndef MESH
-
   use kinds, only : real_kind, int_kind, longdouble_kind
   use edge_mod, only : ghostbuffertr_t, initghostbuffer, freeghostbuffertr, &
                        ghostVpack, ghostVunpack,  edgebuffer_t, initEdgebuffer
@@ -801,7 +798,4 @@ subroutine cslam_mcgregor(elem, deriv, tstep, vstar, order)
   end do
 end subroutine cslam_mcgregor
 !END SUBROUTINE CSLAM_MCGREGOR------------------------------------------CE-for CSLAM!
-
-#endif
-
 end module cslam_mod
