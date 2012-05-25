@@ -764,7 +764,7 @@ end subroutine check_departurecellest
 !        
 ! OUTPUT: 
 !-----------------------------------------------------------------------------------!
-subroutine cslam_mcgregor(elem, deriv, tstep, vstar, order)
+subroutine cslam_mcgregor(elem, deriv, tstep, vhat, vstar,order)
   use element_mod, only : element_t
   use derivative_mod, only : derivative_t, gradient_sphere, ugradv_sphere, vorticity_sphere
   implicit none
@@ -773,17 +773,14 @@ subroutine cslam_mcgregor(elem, deriv, tstep, vstar, order)
   type (derivative_t), intent(in)                             :: deriv      ! derivative struct
   real (kind=real_kind), intent(in)                           :: tstep
   real (kind=real_kind), dimension(np,np,2), intent(inout)    :: vstar
+  real (kind=real_kind), dimension(np,np,2), intent(inout)    :: vhat
+  
   integer, intent(in)                                         :: order
 
   integer                                            :: i
-  real (kind=real_kind), dimension(np,np,2)          :: vgradv, ugradv, vstarold, vgradv2
-  real (kind=real_kind), dimension(np,np,2)          :: gradvstar
+  real (kind=real_kind), dimension(np,np,2)          :: ugradv
   real (kind=real_kind)                              :: timetaylor
-  
-  real (kind=real_kind), dimension(np,np)            :: tmp   ! mean velocity in lat/lon or relative vorticity
-  
-  vstarold=vstar
-  vgradv=vstar
+    
   ugradv=vstar
   timetaylor=1
   do i=1,order
@@ -800,7 +797,7 @@ subroutine cslam_mcgregor(elem, deriv, tstep, vstar, order)
 !     timetaylor=-timetaylor*tstep/(i+1)
 !     vstar=vstar + timetaylor*vgradv
     
-    ugradv=ugradv_sphere(vstarold,ugradv,deriv,elem)
+    ugradv=ugradv_sphere(vhat,ugradv,deriv,elem)
     timetaylor=-timetaylor*tstep/(i+1)
     
     vstar=vstar + timetaylor*ugradv  

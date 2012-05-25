@@ -1344,10 +1344,10 @@ contains
     ! Semi-Lagrangian Models 
     do ie=nets,nete
       do k=1,nlev
-        vstar=elem(ie)%derived%vstar(:,:,:,k) ! it is already velocity at t+1/2
+        vstar=elem(ie)%derived%vstar(:,:,:,k) 
         vhat=(cslam(ie)%vn0(:,:,:,k) + elem(ie)%derived%vstar(:,:,:,k))/2
         ! calculate high order approximation
-        call cslam_mcgregor(elem(ie), deriv, dt, vstar,1)
+        call cslam_mcgregor(elem(ie), deriv, dt, vhat, vstar,3)
         ! apply DSS to make vstar C0
         elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%spheremp(:,:)*vstar(:,:,1) 
         elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%spheremp(:,:)*vstar(:,:,2) 
