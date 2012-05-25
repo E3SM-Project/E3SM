@@ -5037,8 +5037,7 @@ contains
     !BOC
 
     !!!!!!!!!!! locals !!!!!!!!!!!!!!!!!!!!!
-    real(c_float), dimension(:), pointer ::  &
-         IOBUF                        ! local IO buffer
+    real(c_float), pointer :: IOBUF(:) ! local IO buffer
 
     logical(log_kind)  :: UseRearranger
     logical (log_kind) :: IOproc     ! true if IO processor
@@ -5116,7 +5115,7 @@ contains
 #endif
   end subroutine write_vdc2_real
 
-# 1514 "piodarray.F90.in"
+# 1513 "piodarray.F90.in"
 subroutine read_vdc2_real(File,varDesc,ioDesc,array, iostat)
     use pio_support, only : piodie
     ! !DESCRIPTION:

@@ -2231,15 +2231,18 @@ contains
        print *,'createfile: io type not supported'
 #ifdef _COMPRESSION
     case(pio_iotype_vdc2)
+	  print *,__FILE__,__LINE__,iosystem%io_rank
        if(iosystem%io_rank==0) then
           restart=0
           if(amode == PIO_CLOBBER) then
              restart = 1
           endif
           call createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , F_C_String_dup(fname) )
-       else
+	  
+       else if(iosystem%io_rank>0) then
           call createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , F_C_String_dup(fname) )
        endif
+	  print *,__FILE__,__LINE__,iosystem%io_rank
 #endif
     end select
     if(ierr==0) file%file_is_open=.true.
@@ -2394,7 +2397,9 @@ contains
     case(pio_iotype_binary)   ! appears to be a no-op
 #ifdef _COMPRESSION
     case(pio_iotype_vdc2) !equivalent to calling create def without clobbering the file, arguments dont matter
-       call createvdf(vdc_dims, vdc_bsize, vdc_ts, 0 , F_C_STRING_DUP(myfname))
+       if(iosystem%io_rank>=0) then
+          call createvdf(vdc_dims, vdc_bsize, vdc_ts, 0 , F_C_STRING_DUP(myfname))
+       end if
 #endif
     end select
     if(Debug .and. file%iosystem%io_rank==0) print *,__PIO_FILE__,__LINE__,'open: ',file%fh, myfname
