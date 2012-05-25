@@ -11,7 +11,7 @@
 !-----------------------------------------------------------------------------------!
 module cslam_reconstruction_mod
 
-#ifdef _CSLAM
+#ifndef MESH
 
   use kinds, only                  : int_kind, real_kind
   use dimensions_mod, only         : nc,nhc,nhe
