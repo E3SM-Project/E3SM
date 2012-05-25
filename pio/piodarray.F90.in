@@ -72,7 +72,7 @@ integer :: msize, rss, mshare, mtext, mstack, lastrss=0
   interface
      subroutine readvdc2var(array, start, len, comm, ts, lod, reflevel, name, num_iotasks) bind(C)
        use, intrinsic :: iso_c_binding
-       real(C_float), pointer :: array(:)
+       type(C_Ptr), value :: array
        integer(C_int) :: start(3), len(3)
        integer(C_int) :: comm, ts, lod, reflevel
        type(C_ptr), value :: name
@@ -81,7 +81,7 @@ integer :: msize, rss, mshare, mtext, mstack, lastrss=0
      end subroutine readvdc2var
      subroutine writevdc2var(array, start, len, comm, ts, lod, reflevel, name, num_iotasks) bind(C)
        use, intrinsic :: iso_c_binding
-       real(C_float), pointer :: array(:)
+       type(C_ptr), value :: array
        integer(C_int) :: start(3), len(3)
        integer(C_int) :: comm, ts, lod, reflevel
        type(C_ptr), value :: name
@@ -1497,7 +1497,7 @@ contains
 
 
     if (IOproc) then
-	call WriteVDC2Var(iobuf, start, count,  File%iosystem%IO_comm, varDesc%ts, varDesc%lod, varDesc%reflevel, F_C_STRING_DUP(varDesc%name), File%iosystem%num_iotasks)
+	call WriteVDC2Var(c_loc(iobuf), start, count,  File%iosystem%IO_comm, varDesc%ts, varDesc%lod, varDesc%reflevel, F_C_STRING_DUP(varDesc%name), File%iosystem%num_iotasks)
 
     endif
 
@@ -1573,7 +1573,7 @@ subroutine read_vdc2_{TYPE}(File,varDesc,ioDesc,array, iostat)
           if(Debug) print *, 'read_vdc2_real: IAM: ',File%iosystem%comp_rank,'Before call to allocate(IOBUF): ',len
           call alloc_check(IOBUF,len,' TYPE :IOBUF')
           IOBUF= -1.0_r8
-  	  call ReadVDC2Var(iobuf, start, count,  File%iosystem%IO_comm, varDesc%ts, varDesc%lod, varDesc%reflevel, F_C_STRING_DUP(varDesc%name), File%iosystem%num_iotasks)
+  	  call ReadVDC2Var(c_loc(iobuf), start, count,  File%iosystem%IO_comm, varDesc%ts, varDesc%lod, varDesc%reflevel, F_C_STRING_DUP(varDesc%name), File%iosystem%num_iotasks)
        else
           call alloc_check(IOBUF,0)
           IOBUF= -1.0_r8
