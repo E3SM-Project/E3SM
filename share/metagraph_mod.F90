@@ -247,7 +247,7 @@ contains
     type (GridVertex_t), intent(in),target  :: GridVertex(:)
     type (GridEdge_t),   intent(in),target  :: GridEdge(:)
 
-    !type (MetaEdge_t), allocatable :: MetaEdge(:)
+    type (MetaEdge_t), allocatable :: MetaEdge(:)
     integer                          :: nelem,nelem_edge, nedges  
     integer,allocatable              :: icount(:)
     integer                          :: ic,i,j,ii
@@ -283,10 +283,7 @@ contains
        endif
     enddo
     call LLGetEdgeCount(nedges)
-
-    NULLIFY(MetaVertex%edges)
-        
-    allocate(MetaVertex%edges(nedges))
+    allocate(MetaEdge(nedges))
 
     ! Initalize the Meta Vertices to zero... probably should be done
     ! in a separate routine
@@ -296,6 +293,7 @@ contains
     if(Debug) write(iulog,*)'initMetagraph: point #2'
 
 
+    NULLIFY(MetaVertex%edges)
 
     !  Give some identity to the Meta_vertex
     MetaVertex%number   = ThisProcessorNumber
@@ -329,16 +327,16 @@ contains
        endif
     enddo
 
-    nedges = SIZE(MetaVertex%edges)
+    nedges = SIZE(MetaEdge)
     if(Debug) write(iulog,*)'initMetagraph: point #6 nedges',nedges
     !  Zero out all the edge numbers ... this should probably be
     !  move to some initalization routine
-    MetaVertex%edges%number   = 0
-    MetaVertex%edges%nmembers = 0
-    MetaVertex%edges%wgtP     = 0
-    MetaVertex%edges%wgtP_ghost     = 0
+    MetaEdge%number   = 0
+    MetaEdge%nmembers = 0
+    MetaEdge%wgtP     = 0
+    MetaEdge%wgtP_ghost     = 0
     do i=1,nedges
-       NULLIFY(MetaVertex%edges(i)%members)
+       NULLIFY(MetaEdge(i)%members)
     enddo
 
     if(Debug) write(iulog,*)'initMetagraph: point #7'
@@ -357,27 +355,27 @@ contains
           ii=GridEdge(i)%tail_face
           wgtP=Gridedge(i)%tail%wgtP(ii)
 
-          MetaVertex%edges(j)%nmembers                = MetaVertex%edges(j)%nmembers+1
-          MetaVertex%edges(j)%wgtP                    = MetaVertex%edges(j)%wgtP + wgtP
+          MetaEdge(j)%nmembers                = MetaEdge(j)%nmembers+1
+          MetaEdge(j)%wgtP                    = MetaEdge(j)%wgtP + wgtP
 
-          MetaVertex%edges(j)%wgtP_ghost              = MetaVertex%edges(j)%wgtP_ghost + Gridedge(i)%tail%wgtP_ghost(ii)
+          MetaEdge(j)%wgtP_ghost              = MetaEdge(j)%wgtP_ghost + Gridedge(i)%tail%wgtP_ghost(ii)
 
           if(Debug) write(iulog,*)'initMetagraph: point #9'
 
           !  If this the first grid edge to be inserted into the Meta Edge
           !  do some more stuff
 
-          if(MetaVertex%edges(j)%nmembers .eq. 1) then
+          if(MetaEdge(j)%nmembers .eq. 1) then
 
              if(Debug) write(iulog,*)'initMetagraph: point #10'
-             MetaVertex%edges(j)%number   = j                      ! its identity
-             MetaVertex%edges(j)%type  = gridedge_type(GridEdge(i))  ! Type of grid edge
+             MetaEdge(j)%number   = j                      ! its identity
+             MetaEdge(j)%type  = gridedge_type(GridEdge(i))  ! Type of grid edge
 
              if(Debug) write(iulog,*)'initMetagraph: point #11'
 
              !  Setup the pointer to the head and tail of the Vertex
-             MetaVertex%edges(j)%HeadVertex          = head_processor_number
-             MetaVertex%edges(j)%TailVertex          = tail_processor_number
+             MetaEdge(j)%HeadVertex          = head_processor_number
+             MetaEdge(j)%TailVertex          = tail_processor_number
              if(Debug) write(iulog,*)'initMetagraph: point #12'
 
              !  Determine the number of edges for the Meta_Vertex
@@ -390,11 +388,11 @@ contains
 
     do i=1,nedges
        !  Allocate space for the member edges and edge index
-       allocate(MetaVertex%edges(i)%members (MetaVertex%edges(i)%nmembers))
-       allocate(MetaVertex%edges(i)%edgeptrP(MetaVertex%edges(i)%nmembers))
-       allocate(MetaVertex%edges(i)%edgeptrP_ghost(MetaVertex%edges(i)%nmembers))
-       MetaVertex%edges(i)%edgeptrP(:)=0
-       MetaVertex%edges(i)%edgeptrP_ghost(:)=0
+       allocate(MetaEdge(i)%members (MetaEdge(i)%nmembers))
+       allocate(MetaEdge(i)%edgeptrP(MetaEdge(i)%nmembers))
+       allocate(MetaEdge(i)%edgeptrP_ghost(MetaEdge(i)%nmembers))
+       MetaEdge(i)%edgeptrP(:)=0
+       MetaEdge(i)%edgeptrP_ghost(:)=0
     enddo
     if(Debug) write(iulog,*)'initMetagraph: point #14'
 
@@ -406,15 +404,15 @@ contains
        tail_processor_number = GridEdge(i)%tail%processor_number
        call LLFindEdge(mEdgeList,tail_processor_number,head_processor_number,j,found)
        if(found) then 
-          MetaVertex%edges(j)%members(icount(j)) = GridEdge(i)
-          if(icount(j)+1 .le. MetaVertex%edges(j)%nmembers) then
+          MetaEdge(j)%members(icount(j)) = GridEdge(i)
+          if(icount(j)+1 .le. MetaEdge(j)%nmembers) then
 
              ii=GridEdge(i)%tail_face
              wgtP=Gridedge(i)%tail%wgtP(ii)
-             MetaVertex%edges(j)%edgeptrP(icount(j)+1) = MetaVertex%edges(j)%edgeptrP(icount(j)) + wgtP
+             MetaEdge(j)%edgeptrP(icount(j)+1) = MetaEdge(j)%edgeptrP(icount(j)) + wgtP
 
              wgtP=Gridedge(i)%tail%wgtP_ghost(ii)
-             MetaVertex%edges(j)%edgeptrP_ghost(icount(j)+1) = MetaVertex%edges(j)%edgeptrP_ghost(icount(j)) + wgtP
+             MetaEdge(j)%edgeptrP_ghost(icount(j)+1) = MetaEdge(j)%edgeptrP_ghost(icount(j)) + wgtP
           endif
           if(Debug) write(iulog,*)'initMetagraph: point #15'
           icount(j)=icount(j)+1
@@ -423,14 +421,22 @@ contains
     deallocate(icount)
     if(Debug) write(iulog,*)'initMetagraph: point #16'
 
+    !  Fill in the additional edge information for the Meta Vertex
+    !  Allocate the number of edges incident to each Meta Vertex
+    allocate(MetaVertex%edges(MetaVertex%nedges))
+    ic=1
+    do j=1,nedges
+       MetaVertex%edges(j) = MetaEdge(j)
+    enddo
+
     if(Verbose) then
        print *
        write(iulog,*)"edge bundle list:(INITMETAGRAPH)"
-       call PrintMetaEdge( MetaVertex%edges)
+       call PrintMetaEdge(MetaEdge)
        write(iulog,*)'initmetagrap: Before last call to PrintMetaVertex'
        call PrintMetaVertex(MetaVertex)
     endif
-
+    deallocate(MetaEdge)
     call LLFree(mEdgeList)
 
 90  format('EDGE #',I2,2x,'TYPE ',I1,2x,'Processor Numbers ',I2,' ---> ',I2)

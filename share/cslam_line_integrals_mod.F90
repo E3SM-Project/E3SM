@@ -1,7 +1,3 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 !MODULE CSLAM_LINE_INTEGRALS_MOD----------------------------------------CE-for CSLAM!
 ! AUTHOR: CHRISTOPH ERATH, 17.October 2011                                          !
 ! Given four vertices of a simply connected cell (x(i),y(i)), i=1,4 ordered in a    !
@@ -11,8 +7,6 @@
 !                                                                                   !
 !-----------------------------------------------------------------------------------!
 module cslam_line_integrals_mod
-#ifndef MESH
-
   use kinds, only               : int_kind, real_kind
   use dimensions_mod, only      : nc, nhe, ngpc
   use parallel_mod, only : abortmp
@@ -2066,7 +2060,5 @@ end subroutine gauss_points
       fuzzy = -1
     ENDIF
   end function
-
-#endif
 
 end module cslam_line_integrals_mod
