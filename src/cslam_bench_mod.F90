@@ -254,7 +254,7 @@ subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
         
         vstar= (vstar0 + vstar1) / 2.0D0
         ! calculate high order approximation
-        call cslam_mcgregor(elem(ie), deriv, tstep, vstar, 1)
+        call cslam_mcgregor(elem(ie), deriv, tstep, vstar, 3)
      
         ! apply DSS to make vstar C0
         elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%spheremp(:,:)*vstar(:,:,1) 
