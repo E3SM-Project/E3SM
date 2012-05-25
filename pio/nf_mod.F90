@@ -1392,6 +1392,11 @@ contains
     logical, parameter :: Check = .TRUE.
     integer :: msg = PIO_MSG_ENDDEF
 
+    interface
+       subroutine endvdfdef() bind(C)
+       end subroutine endvdfdef
+    end interface
+
     iotype = File%iotype
 
     ierr=PIO_noerr
@@ -1421,7 +1426,7 @@ contains
 #ifdef _COMPRESSION
        case(pio_iotype_vdc2)
 	  if(ios%io_rank .eq. 0) then
-		  call endvdfdef
+             call endvdfdef
 	  endif
 
 #endif
@@ -1720,6 +1725,13 @@ contains
     type(iosystem_desc_t), pointer :: ios
 
 
+    interface
+       subroutine defvdfvar(foo) bind(C)
+         use, intrinsic :: iso_c_binding
+         type(c_ptr), value, intent(in) :: foo
+       end subroutine defvdfvar
+    end interface
+
     !------------------
     ! Local variables
     !------------------
@@ -1756,8 +1768,7 @@ contains
        select case(iotype)
        case(pio_iotype_vdc2)
 	  if(ios%io_rank .eq. 0) then
-             print *,__FILE__,__LINE__,vardesc%name(1:nlen+1)
-             call defvdfvar( vardesc%name(1:nlen)//CHAR(0), nlen+1 )
+             call defvdfvar( F_C_string_dup(vardesc%name(1:nlen), nlen ) )
 	  endif
        case default
           call bad_iotype(iotype,__PIO_FILE__,__LINE__)

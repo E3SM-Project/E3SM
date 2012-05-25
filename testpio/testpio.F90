@@ -724,7 +724,7 @@ program testpio
                        varname = 'field'
                     end select
                        
-	            iostat = PIO_def_var(File_r4,'fielda',PIO_real,vdc_vard_r4(ivar))
+	            iostat = PIO_def_var(File_r4,varname,PIO_real,vdc_vard_r4(ivar))
 #else
                     write(varname,'(a,i5.5)') 'field',ivar
                     iostat = PIO_def_var(File_r4,varname,PIO_real,(/dimid_x,dimid_y,dimid_z/),vard_r4(ivar))

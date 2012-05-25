@@ -25,6 +25,7 @@ module piolib_mod
   use pionfwrite_mod, only : write_nf
 #ifdef _COMPRESSION
     use piovdc
+    use C_interface_mod, only : F_C_STRING_DUP
 #endif
   use pio_mpi_utils, only : PIO_type_to_mpi_type 
   use iompi_mod
@@ -245,7 +246,16 @@ module piolib_mod
 
   !eoc
   !***********************************************************************
-
+#ifdef _COMPRESSION
+  interface
+     subroutine createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , fname) bind(C)
+       use, intrinsic :: iso_c_binding
+       integer(c_int), intent(in) :: vdc_dims(3), vdc_bsize(3)
+       integer(c_int), intent(in), value :: vdc_ts, restart
+       type(c_ptr), intent(in), value :: fname
+     end subroutine createvdf
+  end interface
+#endif
 
 contains
 
@@ -2137,6 +2147,9 @@ contains
     character(len=char_len)  :: myfname
 #ifdef _COMPRESSION
     integer :: restart
+
+
+
 #endif
 #ifdef TIMING
     call t_startf("PIO_createfile")
@@ -2219,13 +2232,13 @@ contains
 #ifdef _COMPRESSION
     case(pio_iotype_vdc2)
        if(iosystem%io_rank==0) then
+          restart=0
           if(amode == PIO_CLOBBER) then
              restart = 1
-             call createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , TRIM(fname) // CHAR(0))
-          else
-             restart = 0
-             call createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , TRIM(fname) // CHAR(0))
           endif
+          call createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , F_C_String_dup(fname) )
+       else
+          call createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , F_C_String_dup(fname) )
        endif
 #endif
     end select
@@ -2381,9 +2394,7 @@ contains
     case(pio_iotype_binary)   ! appears to be a no-op
 #ifdef _COMPRESSION
     case(pio_iotype_vdc2) !equivalent to calling create def without clobbering the file, arguments dont matter
-       if(iosystem%io_rank==0) then
-          call createvdf(vdc_dims, vdc_bsize, vdc_ts, 0 , TRIM(myfname) // CHAR(0))
-       end if
+       call createvdf(vdc_dims, vdc_bsize, vdc_ts, 0 , F_C_STRING_DUP(myfname))
 #endif
     end select
     if(Debug .and. file%iosystem%io_rank==0) print *,__PIO_FILE__,__LINE__,'open: ',file%fh, myfname

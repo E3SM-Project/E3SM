@@ -339,7 +339,8 @@ contains
    integer(i4) :: ierr,rcode
    integer(i4) :: npesx,nblks,nbors
    integer(i4) :: gnpes
-   integer(i4) :: n1,n2,n3,n2b,ii,nbord,nbxyz,nb1,nb2,nb3,nb,nbtmp,n
+   integer(i4) :: n1,n2,n3,n2b,nbord,nb1,nb2,nb3,nb,nbtmp,n
+   integer(kind=pio_offset) :: ii, nbxyz
    integer(i4) :: contval
    logical :: testonly,startok,wdecomp
    logical,save :: first_call = .true.
