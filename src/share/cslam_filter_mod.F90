@@ -1,9 +1,16 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 !MODULE CSLAM_FILTER_MOD------------------------------------------------CE-for CSLAM!
 ! AUTHOR: CHRISTOPH ERATH, 30.November 2011                                         !
 ! This module contains everything  to do (ONLY) a CUBIC (3rd order) filtering       ! 
 ! which expect coefficient from the cubic reconstruciton                            !
 !-----------------------------------------------------------------------------------!
 module cslam_filter_mod
+
+#ifndef MESH
+
   use kinds, only                  : int_kind, real_kind
   use dimensions_mod, only         : nc,nhc,nhe
   use coordinate_systems_mod, only : cartesian2D_t,cartesian3D_t
@@ -715,5 +722,7 @@ subroutine slopelimiter_val(value, cell_value, local_min, local_max, min_phi)
 
 end subroutine slopelimiter_val
 !END SUBROUTINE SLOPELIMITER_VAL----------------------------------------CE-for CSLAM!
+
+#endif
 
 end module cslam_filter_mod

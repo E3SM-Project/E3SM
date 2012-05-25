@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #ifdef CAM
 #else
 ! sometimes used for debugging REMAP
@@ -1213,7 +1217,11 @@ module prim_advection_mod
   
   private  
 
-  public :: Prim_Advec_Init, Prim_Advec_Tracers_remap_rk2, Prim_Advec_Tracers_lf, prim_advec_tracers_cslam
+  public :: Prim_Advec_Init, Prim_Advec_Tracers_remap_rk2, Prim_Advec_Tracers_lf
+#ifndef MESH
+  public :: prim_advec_tracers_cslam
+#endif
+
   type (EdgeBuffer_t) :: edgeAdv, edgeAdvQ3, edgeAdv_p1, edgeAdvQ2, edgeAdv1
 
   integer,parameter :: DSSeta = 1
@@ -1248,6 +1256,7 @@ contains
   end subroutine Prim_Advec_Init
 
 
+#ifndef MESH
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! CSLAM driver
@@ -1280,6 +1289,7 @@ contains
     integer :: n0,np1,ie,k
     
     real (kind=real_kind)  :: vstar(np,np,2)
+    real (kind=real_kind)  :: vhat(np,np,2)
     
 
     call t_barrierf('sync_prim_advec_tracers_cslam', hybrid%par%comm)
@@ -1335,7 +1345,7 @@ contains
     do ie=nets,nete
       do k=1,nlev
         vstar=elem(ie)%derived%vstar(:,:,:,k) ! it is already velocity at t+1/2
-        vhat=(cslam(ie)%vn0 + elem(ie)%derived%vstar(:,:,:,k))/2
+        vhat=(cslam(ie)%vn0(:,:,:,k) + elem(ie)%derived%vstar(:,:,:,k))/2
         ! calculate high order approximation
         call cslam_mcgregor(elem(ie), deriv, dt, vstar,1)
         ! apply DSS to make vstar C0
@@ -1366,7 +1376,7 @@ contains
     call t_stopf('prim_advec_tracers_cslam')
   end subroutine prim_advec_tracers_cslam
 
-
+#endif
 
 
 

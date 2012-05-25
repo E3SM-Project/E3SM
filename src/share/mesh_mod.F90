@@ -3,13 +3,19 @@
 #endif
 
 module mesh_mod
-  use kinds, only : real_kind, long_kind
+
+ use kinds, only : real_kind, long_kind
   use physical_constants, only : DD_PI
   use control_mod, only : MAX_FILE_LEN
 
   use netcdf ! _EXTERNAL
 
   implicit none
+  logical, public           :: MeshUseMeshFile = .false.
+    public  :: MeshOpen           ! Must be called first
+
+#ifdef MESH
+ 
   
   integer, parameter :: MXSTLN = 32
 
@@ -17,8 +23,6 @@ module mesh_mod
   ! Public methods for mesh_mod
   ! ===============================
   
-  logical, public           :: MeshUseMeshFile = .false.
-  public  :: MeshOpen           ! Must be called first
   public  :: MeshCubeEdgeCount  ! called anytime afer MeshOpen
   public  :: MeshCubeElemCount  ! called anytime afer MeshOpen
   public  :: MeshCubeTopology   ! called afer MeshOpen
@@ -1019,6 +1023,21 @@ contains
     integer                          :: element_nodes(p_number_elements, 4)
     call mesh_connectivity (element_nodes)
   end subroutine test_private_methods
+
+#else
+
+contains
+
+  subroutine MeshOpen(mesh_file_name, par) 
+    use parallel_mod, only : abortmp, parallel_t
+    character (len=*), intent(in) :: mesh_file_name
+    type (parallel_t), intent(in) :: par
+
+    call abortmp('Calling mesh_mod::MeshOpen, yet the code was not compiled with the CPP macro MESH. Aborting.')
+
+  end subroutine MeshOpen
+
+#endif // ifdef MESH
 
 end module mesh_mod
 

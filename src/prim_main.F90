@@ -275,11 +275,7 @@ program prim_main
   write(numproc_char,*) par%nprocs
   write(numtrac_char,*) ntrac
 !   call system('mkdir -p '//'time/'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char))) 
-!  call t_prf('time/HommeCSLAMTime-'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char)),par%comm)
-! note: why was mkdir line commented out above?  not portable?
-! if one does not like hundreds of timings files, set the singlefile option in the timing 
-! section in the namelist file.
-  call t_prf('HommeCSLAMTime-'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char)),par%comm)
+  call t_prf('time/HommeCSLAMTime-'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char)),par%comm)
 !   call t_prf('HommeTimeSE', par%comm)
   if(par%masterproc) print *,"calling t_finalizef"
   call t_finalizef()
