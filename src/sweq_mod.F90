@@ -1459,7 +1459,7 @@ contains
 
       integer :: ie,k
 
-      real (kind=real_kind), dimension(np, np,2) :: ulatlon
+      real (kind=real_kind), dimension(np, np,2) :: vstar, vhat
       real (kind=real_kind), dimension(np, np) :: v1, v2
 
 
@@ -1473,11 +1473,17 @@ contains
            ! Convert wind to lat-lon
           v1     = (elem(ie)%state%v(:,:,1,k,tl%n0) + elem(ie)%state%v(:,:,1,k,tl%np1))/2.0D0  ! contra
           v2     = (elem(ie)%state%v(:,:,2,k,tl%n0) + elem(ie)%state%v(:,:,2,k,tl%np1))/2.0D0   ! contra 
-          ulatlon(:,:,1)=elem(ie)%D(1,1,:,:)*v1 + elem(ie)%D(1,2,:,:)*v2   ! contra->latlon
-          ulatlon(:,:,2)=elem(ie)%D(2,1,:,:)*v1 + elem(ie)%D(2,2,:,:)*v2   ! contra->latlon
+          vhat(:,:,1)=elem(ie)%D(1,1,:,:)*v1 + elem(ie)%D(1,2,:,:)*v2   ! contra->latlon
+          vhat(:,:,2)=elem(ie)%D(2,1,:,:)*v1 + elem(ie)%D(2,2,:,:)*v2   ! contra->latlon
+          
+           ! Convert wind to lat-lon
+          v1     = elem(ie)%state%v(:,:,1,k,tl%np1)  ! contra
+          v2     = elem(ie)%state%v(:,:,2,k,tl%np1)   ! contra 
+          vstar(:,:,1)=elem(ie)%D(1,1,:,:)*v1 + elem(ie)%D(1,2,:,:)*v2   ! contra->latlon
+          vstar(:,:,2)=elem(ie)%D(2,1,:,:)*v1 + elem(ie)%D(2,2,:,:)*v2   ! contra->latlon
           
           ! calculate high order approximation
-          call cslam_mcgregor(elem(ie), deriv, dt, ulatlon, 1)
+          call cslam_mcgregor(elem(ie), deriv, dt, vhat,vstar, 1)
           ! apply DSS to make vstar C0
           elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%spheremp(:,:)*ulatlon(:,:,1) 
           elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%spheremp(:,:)*ulatlon(:,:,2) 

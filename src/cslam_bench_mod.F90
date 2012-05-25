@@ -100,7 +100,7 @@ subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
   real (kind=real_kind)                                              :: xtmp
   real (kind=longdouble_kind)                                        :: cslam_nodes(nc+1)
   
-  real (kind=real_kind), dimension(np,np,2)    :: vstar, vstar1, vstar0
+  real (kind=real_kind), dimension(np,np,2)    :: vstar, vhat
   real (kind=real_kind)                        :: maxcflx, maxcfly  
   
   integer  choosetrac, chooselev   !for test reason the output
@@ -249,12 +249,10 @@ subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
   DO WHILE(tl%nstep<nmax)
     do ie=nets,nete
       do k=1,nlev
-        vstar1 = get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
-        vstar0 = get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep))
-        
-        vstar= (vstar0 + vstar1) / 2.0D0
+        vstar = get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
+        vhat= (get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep)) + vstar) / 2.0D0
         ! calculate high order approximation
-        call cslam_mcgregor(elem(ie), deriv, tstep, vstar, 3)
+        call cslam_mcgregor(elem(ie), deriv, tstep, vhat, vstar, 3)
      
         ! apply DSS to make vstar C0
         elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%spheremp(:,:)*vstar(:,:,1) 
