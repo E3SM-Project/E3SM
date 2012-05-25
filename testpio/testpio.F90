@@ -515,6 +515,7 @@ program testpio
 	   writePhase = .true.
 	   readPhase = .false.
 	else
+           exit
 	   writePhase = .false.
 	   readPhase = .true.
         endif
