@@ -763,7 +763,7 @@ end subroutine check_departurecellest
 !-----------------------------------------------------------------------------------!
 subroutine cslam_mcgregor(elem, deriv, tstep, vstar, order)
   use element_mod, only : element_t
-  use derivative_mod, only : derivative_t, gradient_sphere, vorticity_sphere
+  use derivative_mod, only : derivative_t, gradient_sphere, ugradv_sphere, vorticity_sphere
   implicit none
 
   type (element_t), intent(in)                                :: elem
@@ -773,7 +773,7 @@ subroutine cslam_mcgregor(elem, deriv, tstep, vstar, order)
   integer, intent(in)                                         :: order
 
   integer                                            :: i
-  real (kind=real_kind), dimension(np,np,2)          :: vgradv, vstarold, vgradv2
+  real (kind=real_kind), dimension(np,np,2)          :: vgradv, ugradv, vstarold, vgradv2
   real (kind=real_kind), dimension(np,np,2)          :: gradvstar
   real (kind=real_kind)                              :: timetaylor
   
@@ -781,20 +781,26 @@ subroutine cslam_mcgregor(elem, deriv, tstep, vstar, order)
   
   vstarold=vstar
   vgradv=vstar
+  ugradv=vstar
   timetaylor=1
   do i=1,order
-    tmp = 0.5D0*(vgradv(:,:,1)**2 + vgradv(:,:,2)**2) 
-
-    gradvstar = gradient_sphere(tmp,deriv,elem%Dinv)    ! scalar -> latlon vector
-    tmp = vorticity_sphere(vgradv,deriv,elem)                 ! latlon vector -> scalar 
-
-    ! v \nabla v expressed through gradient of mean scalar and relative velocity
-    ! see (17) in Williamson et.al. 1992, JCP 102 (211-224)
-    vgradv(:,:,1)= gradvstar(:,:,1) - vstarold(:,:,2)*tmp(:,:)
-    vgradv(:,:,2)= gradvstar(:,:,2) + vstarold(:,:,1)*tmp(:,:)
+!     tmp = 0.5D0*(vgradv(:,:,1)**2 + vgradv(:,:,2)**2) 
+! 
+!     gradvstar = gradient_sphere(tmp,deriv,elem%Dinv)    ! scalar -> latlon vector
+!     tmp = vorticity_sphere(vgradv,deriv,elem)                 ! latlon vector -> scalar 
+! 
+!     ! v \nabla v expressed through gradient of mean scalar and relative velocity
+!     ! see (17) in Williamson et.al. 1992, JCP 102 (211-224)
+!     vgradv(:,:,1)= gradvstar(:,:,1) - vstarold(:,:,2)*tmp(:,:)
+!     vgradv(:,:,2)= gradvstar(:,:,2) + vstarold(:,:,1)*tmp(:,:)
+!     
+!     timetaylor=-timetaylor*tstep/(i+1)
+!     vstar=vstar + timetaylor*vgradv
     
+    ugradv=ugradv_sphere(vstarold,ugradv,deriv,elem)
     timetaylor=-timetaylor*tstep/(i+1)
-    vstar=vstar + timetaylor*vgradv
+    
+    vstar=vstar + timetaylor*ugradv  
   end do
 end subroutine cslam_mcgregor
 !END SUBROUTINE CSLAM_MCGREGOR------------------------------------------CE-for CSLAM!
