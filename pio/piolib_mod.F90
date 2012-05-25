@@ -2231,18 +2231,16 @@ contains
        print *,'createfile: io type not supported'
 #ifdef _COMPRESSION
     case(pio_iotype_vdc2)
-	  print *,__FILE__,__LINE__,iosystem%io_rank
+       restart=0
        if(iosystem%io_rank==0) then
-          restart=0
-          if(amode == PIO_CLOBBER) then
+!          if(amode == PIO_CLOBBER) then
              restart = 1
-          endif
+!          endif
           call createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , F_C_String_dup(fname) )
 	  
        else if(iosystem%io_rank>0) then
           call createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , F_C_String_dup(fname) )
        endif
-	  print *,__FILE__,__LINE__,iosystem%io_rank
 #endif
     end select
     if(ierr==0) file%file_is_open=.true.

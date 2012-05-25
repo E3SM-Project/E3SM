@@ -14,7 +14,6 @@ module piodarray
   use rearrange
 #ifdef _COMPRESSION
   use piovdc
-  use C_interface_mod
 #endif
 #ifdef TIMING
   use perf_mod, only : t_startf, t_stopf   !_EXTERNAL
@@ -68,30 +67,6 @@ module piodarray
 #ifdef MEMCHK
 integer :: msize, rss, mshare, mtext, mstack, lastrss=0
 #endif
-#ifdef _COMPRESSION
-  interface
-     subroutine readvdc2var(array, start, len, comm, ts, lod, reflevel, name, num_iotasks) bind(C)
-       use, intrinsic :: iso_c_binding
-       type(C_Ptr), value :: array
-       integer(C_int) :: start(3), len(3)
-       integer(C_int) :: comm, ts, lod, reflevel
-       type(C_ptr), value :: name
-       integer(c_int) :: num_iotasks
-
-     end subroutine readvdc2var
-     subroutine writevdc2var(array, start, len, comm, ts, lod, reflevel, name, num_iotasks) bind(C)
-       use, intrinsic :: iso_c_binding
-       type(C_ptr), value :: array
-       integer(C_int) :: start(3), len(3)
-       integer(C_int) :: comm, ts, lod, reflevel
-       type(C_ptr), value :: name
-       integer(c_int) :: num_iotasks
-
-     end subroutine writevdc2var
-
-
-  end interface
-#endif
 
 contains
 
@@ -106,6 +81,7 @@ contains
   end subroutine pio_set_buffer_size_limit
 
 
+! TYPE real
 !> 
 !! @public
 !! @ingroup PIO_write_darray
@@ -188,6 +164,7 @@ contains
 #endif
   end subroutine write_darray_1d_vdc
 
+! TYPE real
 !> 
 !! @public
 !! @ingroup PIO_read_darray
@@ -1405,6 +1382,7 @@ contains
     
 
 
+! TYPE real
  subroutine write_vdc2_real(File,varDesc,ioDesc,array, iostat)
     use pio_support, only : piodie
     ! !DESCRIPTION:
@@ -1423,7 +1401,7 @@ contains
     type (io_desc_t), intent(inout) :: &
          ioDesc                 ! IO decomp descriptor
 
-    real(r4), dimension(:), intent(in), target ::  &
+    {VTYPE}, dimension(:), intent(in), target ::  &
          array                  ! array to be written
 
     integer (i4), intent(out)   :: iostat
@@ -1432,7 +1410,8 @@ contains
     !BOC
 
     !!!!!!!!!!! locals !!!!!!!!!!!!!!!!!!!!!
-    real(c_float), pointer :: IOBUF(:) ! local IO buffer
+    {VTYPE}, dimension(:), pointer ::  &
+         IOBUF                        ! local IO buffer
 
     logical(log_kind)  :: UseRearranger
     logical (log_kind) :: IOproc     ! true if IO processor
@@ -1469,7 +1448,7 @@ contains
     if(UseRearranger) then 
        if (IOproc) then 
 
-          if(Debug) print *, 'write_vdc2_real: IAM: ',File%iosystem%comp_rank,'Before call to allocate(IOBUF): ',len
+          if(Debug) print *, 'write_vdc2_{TYPE}: IAM: ',File%iosystem%comp_rank,'Before call to allocate(IOBUF): ',len
           call alloc_check(IOBUF,len,' TYPE :IOBUF')
           IOBUF= -1.0_r8
 
@@ -1493,7 +1472,7 @@ contains
 
 
     if (IOproc) then
-	call WriteVDC2Var(c_loc(iobuf), start, count,  File%iosystem%IO_comm, varDesc%ts, varDesc%lod, varDesc%reflevel, F_C_STRING_DUP(varDesc%name), File%iosystem%num_iotasks)
+	call WriteVDC2Var(iobuf, start, count,  File%iosystem%IO_comm, varDesc%ts, varDesc%lod, varDesc%reflevel, TRIM(varDesc%name), File%iosystem%num_iotasks)
 
     endif
 
@@ -1508,9 +1487,10 @@ contains
        print *,__PIO_FILE__,__LINE__,'mem=',rss
     end if
 #endif
-  end subroutine write_vdc2_real
+  end subroutine write_vdc2_{TYPE}
 
-subroutine read_vdc2_real(File,varDesc,ioDesc,array, iostat)
+! TYPE real
+subroutine read_vdc2_{TYPE}(File,varDesc,ioDesc,array, iostat)
     use pio_support, only : piodie
     ! !DESCRIPTION:
     !  Writes a VDC2 vapor data collection
@@ -1528,7 +1508,7 @@ subroutine read_vdc2_real(File,varDesc,ioDesc,array, iostat)
     type (io_desc_t), intent(inout) :: &
          ioDesc                 ! IO decomp descriptor
 
-    real(r4), dimension(:), intent(inout), target ::  &
+    {VTYPE}, dimension(:), intent(inout), target ::  &
          array                  ! array to be written
 
     integer (i4), intent(out)   :: iostat
@@ -1537,7 +1517,7 @@ subroutine read_vdc2_real(File,varDesc,ioDesc,array, iostat)
     !BOC
 
     !!!!!!!!!!! locals !!!!!!!!!!!!!!!!!!!!!
-    real(c_float), dimension(:), pointer ::  &
+    {VTYPE}, dimension(:), pointer ::  &
          IOBUF                        ! local IO buffer
 
     logical(log_kind)  :: UseRearranger
@@ -1568,7 +1548,7 @@ subroutine read_vdc2_real(File,varDesc,ioDesc,array, iostat)
           if(Debug) print *, 'read_vdc2_real: IAM: ',File%iosystem%comp_rank,'Before call to allocate(IOBUF): ',len
           call alloc_check(IOBUF,len,' TYPE :IOBUF')
           IOBUF= -1.0_r8
-  	  call ReadVDC2Var(c_loc(iobuf), start, count,  File%iosystem%IO_comm, varDesc%ts, varDesc%lod, varDesc%reflevel, F_C_STRING_DUP(varDesc%name), File%iosystem%num_iotasks)
+  	  call ReadVDC2Var(iobuf, start, count,  File%iosystem%IO_comm, varDesc%ts, varDesc%lod, varDesc%reflevel, TRIM(varDesc%name), File%iosystem%num_iotasks)
        else
           call alloc_check(IOBUF,0)
           IOBUF= -1.0_r8
@@ -1592,7 +1572,7 @@ subroutine read_vdc2_real(File,varDesc,ioDesc,array, iostat)
     call piodie(__FILE__,__LINE__,'Compression is not enabled. Cannot read VDC2 file')
 #endif
 
-  end subroutine read_vdc2_real
+  end subroutine read_vdc2_{TYPE}
 
 
 
