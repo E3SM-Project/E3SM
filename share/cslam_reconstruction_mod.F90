@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 !MODULE CSLAM_RECONSTRUCTION_MOD----------------------------------------CE-for CSLAM!
 ! AUTHOR: CHRISTOPH ERATH, 17.October 2011                                          !
 ! This module contains everything  to do (ONLY) a CUBIC (3rd order) reconstruction  ! 
@@ -6,6 +10,9 @@
 !            but it works for ncfl=1                                                !
 !-----------------------------------------------------------------------------------!
 module cslam_reconstruction_mod
+
+#ifndef MESH
+
   use kinds, only                  : int_kind, real_kind
   use dimensions_mod, only         : nc,nhc,nhe
   use coordinate_systems_mod, only : cartesian2D_t,cartesian3D_t
@@ -999,4 +1006,7 @@ subroutine reconstruct_cubic_haloy(f, recons, delta1, delta2,centroid, invx,invy
   enddo 
 end subroutine reconstruct_cubic_haloy
 !END SUBROUTINE RECONSTRUCTION_CUBIC_HALOY------------------------------CE-for CSLAM!
+
+#endif
+
 end module cslam_reconstruction_mod

@@ -21,7 +21,9 @@ module prim_driver_mod
   use derivative_mod, only : derivative_t
   use reduction_mod, only : reductionbuffer_ordered_1d_t, red_min, red_max, &
          red_sum, red_sum_int, red_flops, initreductionbuffer
+#ifndef MESH
   use cslam_mod, only : cslam_init1,cslam_init2
+#endif
   use cslam_control_volume_mod, only : cslam_struct
   use element_mod, only : element_t
 
@@ -67,18 +69,20 @@ contains
     ! --------------------------------
     use mass_matrix_mod, only : mass_matrix
     ! --------------------------------
-    use cube_mod,  only : cubeedgecount , cubeelemcount, cubetopology, &
-         cube_init_atomic, rotation_init_atomic, set_corner_coordinates, &
-         assign_node_numbers_to_elem
+#ifndef MESH
+    use cube_mod,  only : cubeedgecount , cubeelemcount, cubetopology
     ! --------------------------------
+#else
     use mesh_mod, only : MeshSetCoordinates, MeshUseMeshFile, MeshCubeTopology, &
          MeshCubeElemCount, MeshCubeEdgeCount
+#endif 
+    use cube_mod, only : cube_init_atomic, rotation_init_atomic, set_corner_coordinates, assign_node_numbers_to_elem
     ! --------------------------------
     use metagraph_mod, only : metavertex_t, metaedge_t, localelemcount, initmetagraph
     ! --------------------------------
     use gridgraph_mod, only : gridvertex_t, gridedge_t
     ! --------------------------------
-    use schedule_mod, only : schedule, genEdgeSched
+    use schedule_mod, only : schedule, genEdgeSched,  PrintSchedule
     ! --------------------------------
     use prim_advection_mod, only: prim_advec_init
     ! --------------------------------    
@@ -114,7 +118,6 @@ contains
     implicit none
     type (element_t), pointer :: elem(:)
     type (cslam_struct), pointer :: cslam(:)
-
     type (parallel_t), intent(in) :: par
     type (domain1d_t), pointer :: dom_mt(:)      
     type (timelevel_t), intent(out) :: Tl
@@ -123,7 +126,6 @@ contains
     type (GridVertex_t), target,allocatable :: GridVertex(:)
     type (GridEdge_t),   target,allocatable :: Gridedge(:)
     type (MetaVertex_t), target,allocatable :: MetaVertex(:)
-    type (MetaEdge_t),   target,allocatable :: MetaEdge(:)
 
     integer :: ii,ie, ith
     integer :: nets, nete
@@ -131,7 +133,7 @@ contains
     integer :: nstep
     integer :: nlyr
     integer :: iMv
-    integer :: err, ierr
+    integer :: err, ierr, l
 
     real(kind=real_kind), allocatable :: aratio(:,:)
     real(kind=real_kind) :: area(1),xtmp
@@ -157,10 +159,19 @@ contains
 #ifndef CAM
     call readnl(par)
     if (MeshUseMeshFile) then
-        total_nelem = MeshCubeElemCount()
+#ifdef MESH
+       total_nelem = MeshCubeElemCount()
+#else
+       call abortmp('Input file requires compilation with CPP macro MESH, but mesh support was not built in. Aborting.')
+#endif 
     else
-        total_nelem      = CubeElemCount()
+#ifndef MESH       
+       total_nelem      = CubeElemCount()
+#else
+       call abortmp('Input file does not require an external mesh file, yet the standard cube topology was not built in. Aborting.')
+#endif
     end if
+
     approx_elements_per_task = dble(total_nelem)/dble(par%nprocs)
     if  (approx_elements_per_task < 1.0D0) then
        if(par%masterproc) print *,"number of elements=", total_nelem
@@ -217,34 +228,53 @@ contains
        end if
 
        if (MeshUseMeshFile) then
+#ifdef MESH
            nelem = MeshCubeElemCount()
            nelem_edge = MeshCubeEdgeCount()
+#else
+           call abortmp('Input file requires compilation with CPP macro MESH, but mesh support was not built in. Aborting.')
+#endif
        else
+#ifndef MESH
            nelem      = CubeElemCount()
            nelem_edge = CubeEdgeCount()
+#else
+           call abortmp('Input file does not require an external mesh file, yet the standard cube topology was not built in. Aborting.')
+#endif
        end if
+
        allocate(GridVertex(nelem))
        allocate(GridEdge(nelem_edge))
 
        if (MeshUseMeshFile) then
+#ifdef MESH
            if (par%masterproc) then
                write(iulog,*) "Set up grid vertex from mesh..."
            end if
            call MeshCubeTopology(GridEdge, GridVertex)
+#else
+           call abortmp('Input file requires compilation with CPP macro MESH, but mesh support was not built in. Aborting.')
+#endif 
        else
+#ifndef MESH
            call CubeTopology(GridEdge,GridVertex)
-       end if
+#else
+           call abortmp('Input file does not require an external mesh file, yet the standard cube topology was not built in. Aborting.')
+#endif
+        end if
+       
        if(par%masterproc)       write(iulog,*)"...done."
     end if
 
 
     !debug  call PrintGridVertex(GridVertex)
 
-    if(par%masterproc) write(iulog,*)"partitioning graph..."
 
     if(partmethod .eq. SFCURVE) then 
+       if(par%masterproc) write(iulog,*)"partitioning graph using SF Curve..."
        call genspacepart(GridEdge,GridVertex)
     else
+        if(par%masterproc) write(iulog,*)"partitioning graph using Metis..."
        call genmetispart(GridEdge,GridVertex)
     endif
 
@@ -268,6 +298,7 @@ contains
     ! ====================================================
     call initMetaGraph(iam,MetaVertex(1),GridVertex,GridEdge)
 
+
     nelemd = LocalElemCount(MetaVertex(1))
 
     if(nelemd .le. 0) then 
@@ -283,11 +314,15 @@ contains
 #endif
 
     allocate(elem(nelemd))
+
+#ifndef MESH
     if (ntrac>0) allocate(cslam(nelemd))
+#endif
 
     ! ====================================================
     !  Generate the communication schedule
     ! ====================================================
+
     call genEdgeSched(elem,iam,Schedule(1),MetaVertex(1))
 
     allocate(global_shared_buf(nelemd,nrepro_vars))
@@ -344,7 +379,12 @@ contains
     if (topology=="cube") then
        if(par%masterproc) write(iulog,*) "initializing cube elements..."
        if (MeshUseMeshFile) then
+#ifdef MESH
            call MeshSetCoordinates(elem)
+#else
+           print *, 'Input file requires MESH but mesh support was not built in'
+           call abortmp('You get what you deserve')
+#endif
        else
            do ie=1,nelemd
                call set_corner_coordinates(elem(ie))
@@ -379,6 +419,8 @@ contains
           call rotation_init_atomic(elem(ie),rot_type)
        enddo
     end if
+
+
     if(par%masterproc) write(iulog,*) 're-running mass_matrix'
     call mass_matrix(par,elem)
     ! =================================================================
@@ -414,9 +456,9 @@ contains
 
 
 
-
     call prim_printstate_init(par)
     ! Initialize output fields for plotting...
+
 
     while_iter = 0
     filter_counter = 0
@@ -451,6 +493,9 @@ contains
 #ifndef TESTGRID
     deallocate(GridEdge)
     deallocate(GridVertex)
+    deallocate(MetaVertex)
+    deallocate(TailPartition)
+    deallocate(HeadPartition)
 #else
     ! here we need to call a function in gridgraph_mod.F to deallocate
     ! all of GridVertex's EdgeIndex pointers
@@ -481,11 +526,13 @@ contains
     call prim_advance_init(integration)
     call Prim_Advec_Init()
     call diffusion_init()
+#ifndef MESH
     if (ntrac>0) call cslam_init1(par)
-
+#endif
 
     call TimeLevel_init(tl)
     if(par%masterproc) write(iulog,*) 'end of prim_init'
+    
   end subroutine prim_init1
 
   subroutine prim_init2(elem,cslam, hybrid, nets, nete, tl, hvcoord)
@@ -511,7 +558,11 @@ contains
     use column_model_mod, only : InitColumnModel
     use held_suarez_mod, only : hs0_init_state
     use baroclinic_inst_mod, only : binst_init_state, jw_baroclinic
+#ifndef MESH
     use asp_tests, only : asp_tracer, asp_baroclinic, asp_rossby, asp_mountain, asp_gravity_wave 
+#else
+    use asp_tests, only : asp_tracer, asp_rossby, asp_mountain, asp_gravity_wave
+#endif
     use aquaplanet, only : aquaplanet_init_state
 #endif
 
@@ -587,11 +638,12 @@ contains
     ! ==================================
     call derivinit(deriv(hybrid%ithr),cslam_corners)
 
+#ifndef MESH
     ! ================================================
     ! CSLAM initialization
     ! ================================================
     if (ntrac>0) call cslam_init2(elem,cslam,hybrid,nets,nete,tl)
-
+#endif
 
 
     ! ====================================
@@ -751,7 +803,11 @@ contains
           if (hybrid%masterthread) then
              write(iulog,*) 'initializing Jablonowski and Williamson ASP baroclinic instability test'
           end if
+#ifndef MESH
           call asp_baroclinic(elem, hybrid,hvcoord,nets,nete,cslam)
+#else
+          call abortmp('The Jablonowski and Williamson ASP baroclinic instability test is only available when the CPP macro MESH is not defined')
+#endif
        else if (test_case(1:13) == "jw_baroclinic") then
           if (hybrid%masterthread) then
              write(iulog,*) 'initializing Jablonowski and Williamson baroclinic instability test V1'
@@ -1120,7 +1176,11 @@ contains
            TRACERADV_TOTAL_DIVERGENCE,TRACERADV_UGRADQ, energy_fixer, ftype, qsplit, nu_p, test_cfldep
     use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3, applycamforcing, &
                                  applycamforcing_dynamics, prim_advance_exp
+#ifndef MESH
     use prim_advection_mod, only : prim_advec_tracers_remap_rk2, prim_advec_tracers_cslam
+#else
+    use prim_advection_mod, only : prim_advec_tracers_remap_rk2
+#endif
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use parallel_mod, only : abortmp
     use reduction_mod, only : parallelmax
@@ -1242,6 +1302,7 @@ contains
     if (qsize>0) call Prim_Advec_Tracers_remap_rk2(elem, deriv(hybrid%ithr),hvcoord,flt_advection,hybrid,&
          dt_q,tl,nets,nete,compute_diagnostics)
 
+#ifndef MESH
     if (ntrac>0) then 
       if ( n_Q /= tl%n0 ) then
         do ie=nets,nete
@@ -1249,7 +1310,8 @@ contains
         enddo
       endif
       call Prim_Advec_Tracers_cslam(elem, cslam, deriv(hybrid%ithr),hvcoord,hybrid,&
-         dt_q,tl,nets,nete,compute_diagnostics)
+           dt_q,tl,nets,nete,compute_diagnostics)
+
        if(test_cfldep) then
          maxcflx=0.0D0
          maxcfly=0.0D0
@@ -1292,6 +1354,8 @@ contains
        ! step 4:  apply DSS to make ps_v continuous 
        !          (or use continuous reconstruction)
     endif
+#endif
+
 
     ! now we have:
     !   u(nm1)   dynamics at  t+dt_q - 2*dt 

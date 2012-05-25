@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 !MODULE CSLAM_CONTROL_VOLUME_MOD----------------------------------------CE-for CSLAM!
 ! AUTHOR: Christoph Erath, 11.June 2011                                             !
 ! This module contains everything to initialize the arrival. It also provides the   !
@@ -16,8 +20,10 @@ module cslam_control_volume_mod
   use dimensions_mod, only: nc, nhc, nhe, nlev, ntrac, ntrac_d, ne, np
   ! ---------------------------------------------------------------------------------
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+#ifndef MESH
   ! ---------------------------------------------------------------------------------
   use cube_mod, only     : cube_xstart, cube_xend, cube_ystart, cube_yend
+#endif
 
   use parallel_mod, only : abortmp
   
@@ -80,6 +86,7 @@ module cslam_control_volume_mod
     integer                  :: ibasehaloex(-1:nc+2,2,2)     
   end type cslam_struct
 
+#ifndef MESH
   public :: cslam_mesh_ari
   
   real (kind=real_kind),parameter, public   :: bignum = 1.0D20
@@ -113,8 +120,8 @@ subroutine cslam_mesh_ari(elem, cslam, tl)
   corner=.FALSE.
 
   do j=1,8
-    if (ASSOCIATED(elem%vertex%nbrs(j)%n)) then
-      cslam%nbrsface(j)=elem%vertex%nbrs(j)%f(1)
+    if (elem%vertex%nbrs(j)%used) then
+      cslam%nbrsface(j)=elem%vertex%nbrs(j)%f
       ! note that if the element lies on a corner, it will be at j=5,6,7,8
       if ((cslam%nbrsface(j) /= cslam%faceno) .AND. (j<5)) then
         cslam%cubeboundary=j
@@ -132,6 +139,7 @@ subroutine cslam_mesh_ari(elem, cslam, tl)
   end do
   call create_ari(elem,cslam)
   call create_interpolation_points(elem,cslam)
+
 end subroutine cslam_mesh_ari
 !END SUBROUTINE CSLAM_MESH_ARI------------------------------------------CE-for CSLAM!
 
@@ -1339,5 +1347,6 @@ subroutine interpolation_point(gnom,gnom1d,face1,face2,xy,except, point,ida,ide,
   
 end subroutine interpolation_point
 !END SUBROUTINE INTERPOLATION_POINT-------------------------------------CE-for CSLAM!
+#endif
 
 end module cslam_control_volume_mod
