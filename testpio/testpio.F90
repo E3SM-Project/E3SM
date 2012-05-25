@@ -605,7 +605,11 @@ program testpio
         
         fname    = TRIM(dir)//'foo.'//citer//'.'//TRIM(Iofmtd)
         fname_r8 = TRIM(dir)//'foo.r8.'//citer//'.'//TRIM(Iofmtd)
+#ifdef _COMPRESSION
+        fname_r4 = TRIM(dir)//'foo.r4.'//citer//'.vdf'
+#else
         fname_r4 = TRIM(dir)//'foo.r4.'//citer//'.'//TRIM(Iofmtd)
+#endif
         fname_i4 = TRIM(dir)//'foo.i4.'//citer//'.'//TRIM(Iofmtd)
         !   print *, __FILE__,__LINE__,'>',fname,'<'
         !   print *, __FILE__,__LINE__,'>',fname_r8,'<'
@@ -700,38 +704,19 @@ program testpio
 #endif
 
                  do ivar = 1, nvars
-#ifdef _COMPRESSION
-                    select case(ivar)
-                    case(1)
-                       varname = 'fielda'
-                    case(2)
-                       varname = 'fieldb'                    
-                    case(3)
-                       varname = 'fieldc'                    
-                    case(4)
-                       varname = 'fieldd'                    
-                    case(5)
-                       varname = 'fielde'                    
-                    case(6)
-                       varname = 'fieldf'                    
-                    case(7)
-                       varname = 'fieldg'                    
-                    case(8)
-                       varname = 'fieldh'                    
-                    case(9)
-                       varname = 'fieldi'
-                    case default
-                       varname = 'field'
-                    end select
-                       
+                    write(varname,'(a,i5.5)') 'field',ivar
+	print *,__FILE__,__LINE__
+
+#ifdef _COMPRESSION                       
 	            iostat = PIO_def_var(File_r4,varname,PIO_real,vdc_vard_r4(ivar))
 #else
-                    write(varname,'(a,i5.5)') 'field',ivar
                     iostat = PIO_def_var(File_r4,varname,PIO_real,(/dimid_x,dimid_y,dimid_z/),vard_r4(ivar))
 #endif
                     call check_pioerr(iostat,__FILE__,__LINE__,' r4 defvar')
                  end do
+	print *,__FILE__,__LINE__
                  iostat = PIO_enddef(File_r4)
+	print *,__FILE__,__LINE__
                  call check_pioerr(iostat,__FILE__,__LINE__,' i4 enddef')
               endif
 
@@ -819,7 +804,9 @@ program testpio
 #endif
               do ivar=1,nvars
 #ifdef _COMPRESSION
+       print *,__FILE__,__LINE__,ivar
                  call PIO_write_darray(File_r4,vdc_vard_r4(ivar),iodesc_r4, test_r4wr,iostat, it)
+       print *,__FILE__,__LINE__,ivar
 #else
                  call PIO_write_darray(File_r4,vard_r4(ivar),iodesc_r4, test_r4wr,iostat)
 #endif
@@ -873,7 +860,7 @@ program testpio
            endif
 
            if(Debug) then
-              write(*,'(a,2(a,i8))') myname,':: After calls to PIO_write_darray.  comp_rank=',piosys%comp_rank, & 
+              write(*,'(a,2(a,i8),i8)') myname,':: After calls to PIO_write_darray.  comp_rank=',piosys%comp_rank, & 
                    ' io_rank=',piosys%io_rank,piosys%io_comm
               
            endif
