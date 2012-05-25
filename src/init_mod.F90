@@ -31,10 +31,9 @@ contains
     use mass_matrix_mod, only : mass_matrix
     ! --------------------------------
     use mesh_mod, only : MeshUseMeshFile
-#ifndef NOCUBEGRID
+#ifndef MESH
      use cube_mod,  only : cubeedgecount , cubeelemcount, cubetopology
-#endif
-#ifdef MESH
+#else
     ! --------------------------------
     use mesh_mod, only :   MeshSetCoordinates,      &
                            MeshCubeTopology,  &
@@ -182,11 +181,11 @@ contains
 #endif
        end if
 
-#ifndef NOCUBEMESH
+#ifndef MESH 
         nelem      = CubeElemCount()
         nelem_edge = CubeEdgeCount() 
 #else
-        call abortmp('Input file uses internal mesh, but code compiled with NOCUBEMESH')
+        call abortmp('Input file does not require an external mesh file, yet the standard cube topology was not built in. Aborting.')
 #endif
 
         approx_elements_per_task = dble(nelem)/dble(par%nprocs)
@@ -208,7 +207,7 @@ contains
           call abortmp('Input file requires compilation with CPP macro MESH, but mesh support was not built in. Aborting.')
 #endif 
        else 
-#ifndef NOCUBEMESH
+#ifndef MESH    
           call CubeTopology(GridEdge,GridVertex)
 #else
           call abortmp('Input file does not require an external mesh file, yet the standard cube topology was not built in. Aborting.')

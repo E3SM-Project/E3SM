@@ -13,7 +13,7 @@
 
 module cslam_mod
 
-#ifdef _CSLAM
+#ifndef MESH
 
   use kinds, only : real_kind, int_kind, longdouble_kind
   use edge_mod, only : ghostbuffertr_t, initghostbuffer, freeghostbuffertr, &

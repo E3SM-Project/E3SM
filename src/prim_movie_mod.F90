@@ -111,7 +111,9 @@ contains
     use pio, only : PIO_InitDecomp, pio_setdebuglevel, pio_int, pio_double, pio_closefile !_EXTERNAL
     use netcdf_io_mod, only : iodesc2d, iodesc3d, iodesc2d_nc, iodesc3d_nc, iodesc3d_subelem, iodesct, pio_subsystem 
     use common_io_mod, only : num_io_procs, num_agg, io_stride
+#ifdef _CSLAM
     use cslam_control_volume_mod, only : cslam_mesh_ari
+#endif
     type (element_t), intent(in) :: elem(:)
     type (parallel_t), intent(in)     :: par
     type (hvcoord_t), intent(in) :: hvcoord
@@ -401,9 +403,9 @@ contains
              deallocate(var3d)
           end if
 
+#ifdef _CSLAM          
           allocate(var1(nc*nc*nelemd,nlev))
           allocate(var2(nc*nc*nelemd,nlev))
-          
           if( (nf_selectedvar('phys_lat', output_varnames))) then
              jj=0
              do ie=1,nelemd
@@ -491,7 +493,11 @@ contains
           endif
           deallocate(var1)
           deallocate(var2)
-
+#else
+          if( (nf_selectedvar('phys_lat', output_varnames))) then
+             if (par%masterproc) print *,'WARNING: compile with -D_CSLAM to output CSLAM grid coordinate data'
+          endif
+#endif
           if (par%masterproc) print *,'done writing coordinates ios=',ios
        end if
     end do

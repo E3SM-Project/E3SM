@@ -1218,7 +1218,7 @@ module prim_advection_mod
   private  
 
   public :: Prim_Advec_Init, Prim_Advec_Tracers_remap_rk2, Prim_Advec_Tracers_lf
-#ifdef _CSLAM
+#ifndef MESH
   public :: prim_advec_tracers_cslam
 #endif
 
@@ -1256,7 +1256,7 @@ contains
   end subroutine Prim_Advec_Init
 
 
-#ifdef _CSLAM
+#ifndef MESH
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! CSLAM driver

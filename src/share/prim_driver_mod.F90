@@ -21,7 +21,7 @@ module prim_driver_mod
   use derivative_mod, only : derivative_t
   use reduction_mod, only : reductionbuffer_ordered_1d_t, red_min, red_max, &
          red_sum, red_sum_int, red_flops, initreductionbuffer
-#ifdef _CSLAM
+#ifndef MESH
   use cslam_mod, only : cslam_init1,cslam_init2
 #endif
   use cslam_control_volume_mod, only : cslam_struct
@@ -69,11 +69,10 @@ contains
     ! --------------------------------
     use mass_matrix_mod, only : mass_matrix
     ! --------------------------------
-#ifndef NOCUBEGRID
+#ifndef MESH
     use cube_mod,  only : cubeedgecount , cubeelemcount, cubetopology
     ! --------------------------------
-#endif
-#ifdef MESH
+#else
     use mesh_mod, only : MeshSetCoordinates, MeshUseMeshFile, MeshCubeTopology, &
          MeshCubeElemCount, MeshCubeEdgeCount
 #endif 
@@ -166,7 +165,7 @@ contains
        call abortmp('Input file requires compilation with CPP macro MESH, but mesh support was not built in. Aborting.')
 #endif 
     else
-#ifndef NOCUBEGRID
+#ifndef MESH       
        total_nelem      = CubeElemCount()
 #else
        call abortmp('Input file does not require an external mesh file, yet the standard cube topology was not built in. Aborting.')
@@ -236,7 +235,7 @@ contains
            call abortmp('Input file requires compilation with CPP macro MESH, but mesh support was not built in. Aborting.')
 #endif
        else
-#ifndef NOCUBEGRID
+#ifndef MESH
            nelem      = CubeElemCount()
            nelem_edge = CubeEdgeCount()
 #else
@@ -257,7 +256,7 @@ contains
            call abortmp('Input file requires compilation with CPP macro MESH, but mesh support was not built in. Aborting.')
 #endif 
        else
-#ifndef NOCUBEGRID
+#ifndef MESH
            call CubeTopology(GridEdge,GridVertex)
 #else
            call abortmp('Input file does not require an external mesh file, yet the standard cube topology was not built in. Aborting.')
@@ -316,7 +315,7 @@ contains
 
     allocate(elem(nelemd))
 
-#ifdef _CSLAM
+#ifndef MESH
     if (ntrac>0) allocate(cslam(nelemd))
 #endif
 
@@ -527,7 +526,7 @@ contains
     call prim_advance_init(integration)
     call Prim_Advec_Init()
     call diffusion_init()
-#ifdef _CSLAM
+#ifndef MESH
     if (ntrac>0) call cslam_init1(par)
 #endif
 
@@ -559,7 +558,11 @@ contains
     use column_model_mod, only : InitColumnModel
     use held_suarez_mod, only : hs0_init_state
     use baroclinic_inst_mod, only : binst_init_state, jw_baroclinic
+#ifndef MESH
     use asp_tests, only : asp_tracer, asp_baroclinic, asp_rossby, asp_mountain, asp_gravity_wave 
+#else
+    use asp_tests, only : asp_tracer, asp_rossby, asp_mountain, asp_gravity_wave
+#endif
     use aquaplanet, only : aquaplanet_init_state
 #endif
 
@@ -635,7 +638,7 @@ contains
     ! ==================================
     call derivinit(deriv(hybrid%ithr),cslam_corners)
 
-#ifdef _CSLAM
+#ifndef MESH
     ! ================================================
     ! CSLAM initialization
     ! ================================================
@@ -800,7 +803,11 @@ contains
           if (hybrid%masterthread) then
              write(iulog,*) 'initializing Jablonowski and Williamson ASP baroclinic instability test'
           end if
+#ifndef MESH
           call asp_baroclinic(elem, hybrid,hvcoord,nets,nete,cslam)
+#else
+          call abortmp('The Jablonowski and Williamson ASP baroclinic instability test is only available when the CPP macro MESH is not defined')
+#endif
        else if (test_case(1:13) == "jw_baroclinic") then
           if (hybrid%masterthread) then
              write(iulog,*) 'initializing Jablonowski and Williamson baroclinic instability test V1'
@@ -1169,7 +1176,7 @@ contains
            TRACERADV_TOTAL_DIVERGENCE,TRACERADV_UGRADQ, energy_fixer, ftype, qsplit, nu_p, test_cfldep
     use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3, applycamforcing, &
                                  applycamforcing_dynamics, prim_advance_exp
-#ifdef _CSLAM
+#ifndef MESH
     use prim_advection_mod, only : prim_advec_tracers_remap_rk2, prim_advec_tracers_cslam
 #else
     use prim_advection_mod, only : prim_advec_tracers_remap_rk2
@@ -1295,7 +1302,7 @@ contains
     if (qsize>0) call Prim_Advec_Tracers_remap_rk2(elem, deriv(hybrid%ithr),hvcoord,flt_advection,hybrid,&
          dt_q,tl,nets,nete,compute_diagnostics)
 
-#ifdef _CSLAM
+#ifndef MESH
     if (ntrac>0) then 
       if ( n_Q /= tl%n0 ) then
         do ie=nets,nete
