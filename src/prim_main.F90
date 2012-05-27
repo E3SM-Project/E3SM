@@ -67,8 +67,8 @@ program prim_main
   integer ierr
   integer nstep
   
-  character (len=20)                          :: numproc_char
-  character (len=20)                          :: numtrac_char
+!   character (len=20)                          :: numproc_char
+!   character (len=20)                          :: numtrac_char
   
   logical :: dir_e ! boolean existence of directory where output netcdf goes
   
@@ -272,11 +272,11 @@ program prim_main
 
   call t_stopf('Total')
   if(par%masterproc) print *,"writing timing data"
-  write(numproc_char,*) par%nprocs
-  write(numtrac_char,*) ntrac
+!   write(numproc_char,*) par%nprocs
+!   write(numtrac_char,*) ntrac
 !   call system('mkdir -p '//'time/'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char))) 
-  call t_prf('time/HommeCSLAMTime-'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char)),par%comm)
-!   call t_prf('HommeTimeSE', par%comm)
+!   call t_prf('time/HommeCSLAMTime-'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char)),par%comm)
+  call t_prf('HommeTime', par%comm)
   if(par%masterproc) print *,"calling t_finalizef"
   call t_finalizef()
   call haltmp("exiting program...")

@@ -150,7 +150,6 @@ contains
   real (kind=longdouble_kind)                    :: cslam_nodes(nc+1)
   real (kind=real_kind)                          :: xtmp
   real (kind=real_kind)                          :: maxcflx, maxcfly  
-  integer                                        :: k
 #endif    
 
 #ifdef TRILINOS
@@ -1485,8 +1484,8 @@ contains
           ! calculate high order approximation
           call cslam_mcgregor(elem(ie), deriv, dt, vhat,vstar, 1)
           ! apply DSS to make vstar C0
-          elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%spheremp(:,:)*ulatlon(:,:,1) 
-          elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%spheremp(:,:)*ulatlon(:,:,2) 
+          elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%spheremp(:,:)*vstar(:,:,1) 
+          elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%spheremp(:,:)*vstar(:,:,2) 
         enddo 
         call edgeVpack(edgeveloc,elem(ie)%derived%vstar(:,:,1,:),nlev,0,elem(ie)%desc)
         call edgeVpack(edgeveloc,elem(ie)%derived%vstar(:,:,2,:),nlev,nlev,elem(ie)%desc)

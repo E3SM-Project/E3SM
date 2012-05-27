@@ -30,7 +30,7 @@ module cslam_mod
   type (EdgeBuffer_t)                         :: edgeveloc
   
   public :: cslam_run, cslam_runair, cslam_runairdensity
-  public :: cslam_init1,cslam_init2, cslam_mcgregor, cellghostbuf, edgeveloc
+  public :: cellghostbuf, edgeveloc, cslam_init1,cslam_init2, cslam_mcgregor, cslam_mcgregordss
 contains
 
 subroutine cslam_run(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
@@ -773,7 +773,7 @@ subroutine cslam_mcgregor(elem, deriv, tstep, vhat, vstar,order)
   type (derivative_t), intent(in)                             :: deriv      ! derivative struct
   real (kind=real_kind), intent(in)                           :: tstep
   real (kind=real_kind), dimension(np,np,2), intent(inout)    :: vstar
-  real (kind=real_kind), dimension(np,np,2), intent(inout)    :: vhat
+  real (kind=real_kind), dimension(np,np,2), intent(in)       :: vhat
   
   integer, intent(in)                                         :: order
 
@@ -804,7 +804,72 @@ subroutine cslam_mcgregor(elem, deriv, tstep, vhat, vstar,order)
   end do
 end subroutine cslam_mcgregor
 !END SUBROUTINE CSLAM_MCGREGOR------------------------------------------CE-for CSLAM!
+! ----------------------------------------------------------------------------------!
+!SUBROUTINE CSLAM_MCGREGORDSS-------------------------------------------CE-for CSLAM!
+! AUTHOR: CHRISTOPH ERATH, 26. May 2012                                             !
+! DESCRIPTION: ! using McGregor AMS 1993 scheme: Economical Determination of        !
+!                Departure Points for Semi-Lagrangian Models                        !
+!                McGegror version with DSS every ugradv                             !
+! CALLS: 
+! INPUT: 
+!        
+! OUTPUT: 
+!-----------------------------------------------------------------------------------!
+subroutine cslam_mcgregordss(elem,cslam,nets,nete, hybrid, deriv, tstep, ordertaylor)
+  use derivative_mod, only : derivative_t, ugradv_sphere
+  use edge_mod, only : edgevpack, edgevunpack
+  use bndry_mod, only : bndry_exchangev
+  
+  implicit none
 
+  type (element_t), intent(inout)                :: elem(:)
+  type (cslam_struct), intent(in)                :: cslam(:)
+
+  integer, intent(in)                         :: nets  ! starting thread element number (private)
+  integer, intent(in)                         :: nete  ! ending thread element number   (private)
+  type (hybrid_t), intent(in)                 :: hybrid   ! distributed parallel structure (shared)
+
+  type (derivative_t), intent(in)                             :: deriv      ! derivative struct
+  real (kind=real_kind), intent(in)                           :: tstep
+  integer, intent(in)                                         :: ordertaylor
+
+  real (kind=real_kind), dimension(nets:nete,np,np,2,nlev)    :: ugradv
+  real (kind=real_kind), dimension(nets:nete,np,np,2,nlev)    :: vhat
+  integer                                                     :: ie, k, order
+  real (kind=real_kind), dimension(np,np,2)                   :: ugradvtmp
+  real (kind=real_kind)                                       :: timetaylor
+
+    !------------------------------------------------------------------------------------
+  timetaylor=1  
+  do  order=1,ordertaylor
+    timetaylor=-timetaylor*tstep/(order+1)  
+    do ie=nets,nete
+      if (order==1)then
+        ugradv(ie,:,:,:,:)=elem(ie)%derived%vstar(:,:,:,:) 
+        vhat(ie,:,:,:,:)=(cslam(ie)%vn0(:,:,:,:) + ugradv(ie,:,:,:,:))/2 
+      endif
+      do k=1,nlev
+        ugradvtmp=ugradv_sphere(vhat(ie,:,:,:,k),ugradv(ie,:,:,:,k),deriv,elem(ie))
+        ugradv(ie,:,:,1,k) = elem(ie)%spheremp(:,:)*ugradvtmp(:,:,1) 
+        ugradv(ie,:,:,2,k) = elem(ie)%spheremp(:,:)*ugradvtmp(:,:,2) 
+      enddo 
+      call edgeVpack(edgeveloc,ugradv(ie,:,:,1,:),nlev,0,elem(ie)%desc)
+      call edgeVpack(edgeveloc,ugradv(ie,:,:,2,:),nlev,nlev,elem(ie)%desc)
+    enddo 
+    call bndry_exchangeV(hybrid,edgeveloc)
+    do ie=nets,nete
+       call edgeVunpack(edgeveloc,ugradv(ie,:,:,1,:),nlev,0,elem(ie)%desc)
+       call edgeVunpack(edgeveloc,ugradv(ie,:,:,2,:),nlev,nlev,elem(ie)%desc)
+       do k=1, nlev  
+         ugradv(ie,:,:,1,k)=ugradv(ie,:,:,1,k)*elem(ie)%rspheremp(:,:)
+         ugradv(ie,:,:,2,k)=ugradv(ie,:,:,2,k)*elem(ie)%rspheremp(:,:)
+         elem(ie)%derived%vstar(:,:,:,k)=elem(ie)%derived%vstar(:,:,:,k) + timetaylor*ugradv(ie,:,:,:,k)
+       end do
+    end do
+  end do  
+
+end subroutine cslam_mcgregordss
+!END SUBROUTINE CSLAM_MCGREGORDSS---------------------------------------CE-for CSLAM!
 #endif
 
 end module cslam_mod
