@@ -1265,9 +1265,8 @@ contains
   subroutine Prim_Advec_Tracers_cslam(elem, cslam, deriv,hvcoord,hybrid,&
         dt,tl,nets,nete, compute_diagnostics)
     use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
-    use derivative_mod, only : divergence_sphere, ugradv_sphere
     use vertremap_mod, only: remap_velocityC,remap_velocityUV  ! _EXTERNAL (actually INTERNAL)
-    use cslam_mod, only : cslam_run, cslam_runairdensity, edgeveloc, cslam_mcgregor
+    use cslam_mod, only : cslam_run, cslam_runairdensity, edgeveloc, cslam_mcgregor, cslam_mcgregordss
     
     implicit none
     type (element_t), intent(inout)   :: elem(:)
@@ -1339,31 +1338,39 @@ contains
     ! elem%state%u(np1)  = velocity at time t+1 on reference levels
     ! elem%derived%vstar = velocity at t+1 on floating levels (computed below)
     call remap_velocityUV(np1,dt,elem,hvcoord,nets,nete)
-    
+!------------------------------------------------------------------------------------    
+    call t_startf('cslam_mcgregor')
     ! using McGregor AMS 1993 scheme: Economical Determination of Departure Points for
     ! Semi-Lagrangian Models 
-    do ie=nets,nete
-      do k=1,nlev
-        vstar=elem(ie)%derived%vstar(:,:,:,k) 
-        vhat=(cslam(ie)%vn0(:,:,:,k) + elem(ie)%derived%vstar(:,:,:,k))/2
-        ! calculate high order approximation
-        call cslam_mcgregor(elem(ie), deriv, dt, vhat, vstar,3)
-        ! apply DSS to make vstar C0
-        elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%spheremp(:,:)*vstar(:,:,1) 
-        elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%spheremp(:,:)*vstar(:,:,2) 
-      enddo 
-      call edgeVpack(edgeveloc,elem(ie)%derived%vstar(:,:,1,:),nlev,0,elem(ie)%desc)
-      call edgeVpack(edgeveloc,elem(ie)%derived%vstar(:,:,2,:),nlev,nlev,elem(ie)%desc)
-    enddo 
-    call bndry_exchangeV(hybrid,edgeveloc)
-    do ie=nets,nete
-       call edgeVunpack(edgeveloc,elem(ie)%derived%vstar(:,:,1,:),nlev,0,elem(ie)%desc)
-       call edgeVunpack(edgeveloc,elem(ie)%derived%vstar(:,:,2,:),nlev,nlev,elem(ie)%desc)
-       do k=1, nlev  
-         elem(ie)%derived%vstar(:,:,1,k)=elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%rspheremp(:,:)
-         elem(ie)%derived%vstar(:,:,2,k)=elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%rspheremp(:,:)
-       end do
-    end do
+!     do ie=nets,nete
+!       do k=1,nlev
+!         vstar=elem(ie)%derived%vstar(:,:,:,k) 
+!         vhat=(cslam(ie)%vn0(:,:,:,k) + elem(ie)%derived%vstar(:,:,:,k))/2
+!         ! calculate high order approximation
+!         call cslam_mcgregor(elem(ie), deriv, dt, vhat, vstar,3)
+!         ! apply DSS to make vstar C0
+!         elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%spheremp(:,:)*vstar(:,:,1) 
+!         elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%spheremp(:,:)*vstar(:,:,2) 
+!       enddo 
+!       call edgeVpack(edgeveloc,elem(ie)%derived%vstar(:,:,1,:),nlev,0,elem(ie)%desc)
+!       call edgeVpack(edgeveloc,elem(ie)%derived%vstar(:,:,2,:),nlev,nlev,elem(ie)%desc)
+!     enddo 
+!     call bndry_exchangeV(hybrid,edgeveloc)
+!     do ie=nets,nete
+!        call edgeVunpack(edgeveloc,elem(ie)%derived%vstar(:,:,1,:),nlev,0,elem(ie)%desc)
+!        call edgeVunpack(edgeveloc,elem(ie)%derived%vstar(:,:,2,:),nlev,nlev,elem(ie)%desc)
+!        do k=1, nlev  
+!          elem(ie)%derived%vstar(:,:,1,k)=elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%rspheremp(:,:)
+!          elem(ie)%derived%vstar(:,:,2,k)=elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%rspheremp(:,:)
+!        end do
+!     end do
+
+    call cslam_mcgregordss(elem,cslam,nets,nete, hybrid, deriv, dt, 3)
+    call t_stopf('cslam_mcgregor')
+
+!------------------------------------------------------------------------------------    
+    
+    
 
     ! CSLAM departure calcluation should use vstar.
     ! from c(n0) compute c(np1): 
