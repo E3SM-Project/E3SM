@@ -16,7 +16,7 @@ module cslam_bench_mod
                        edgeVpack, edgeVunpack, freeedgebuffer 
   use dimensions_mod, only: nelem, nelemd, nelemdmax, nlev, np, ne, nc, nhc, nhe, nlev, ntrac
   use time_mod, only : timelevel_t
-  use element_mod, only : element_t
+  use element_mod, only : element_t, timelevels
   use hybrid_mod, only : hybrid_t
 
 contains
@@ -144,7 +144,7 @@ subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
     enddo
     !
     !first exchange of the initial values
-    call ghostVpack(cellghostbuf, cslam(ie)%c(:,:,:,:,tl%n0),nhc,nc,nlev,ntrac,0,elem(ie)%desc)
+    call ghostVpack(cellghostbuf, cslam(ie)%c,nhc,nc,nlev,ntrac,0,tl%n0,timelevels,elem(ie)%desc)
     ! reset the new unknown
     do k=1,nlev
       do itr=1,ntrac
@@ -162,7 +162,7 @@ subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
 !-----------------------------------------------------------------------------------!    
 
   do ie=nets,nete
-    call ghostVunpack(cellghostbuf, cslam(ie)%c(:,:,:,:,tl%n0), nhc, nc,nlev,ntrac, 0, elem(ie)%desc)
+     call ghostVunpack(cellghostbuf, cslam(ie)%c, nhc, nc,nlev,ntrac, 0, tl%n0, timelevels,elem(ie)%desc)
     ! for the mass value
     global_shared_buf(ie,1)=0D0
     global_shared_buf(ie,1)=cslam(ie)%elem_mass

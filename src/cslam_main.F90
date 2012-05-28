@@ -148,10 +148,10 @@ program cslam_main
   ! ================================================
   call t_stopf('Total')
   write(numproc_char,*) par%nprocs
-  write(numtrac_char,*) ntrac
+  write(numtrac_char,*) qsize
 !   call system('mkdir -p '//'time/'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char))) 
 !  call t_prf('time/'//trim(adjustl(numproc_char))//'/'//trim(adjustl(numtrac_char))//'/HommeCSLAMTime',par%comm)
-  call t_prf('HommeCSLAMTime',par%comm)
+  call t_prf('HommeSETime',par%comm)
   call t_finalizef()
   call haltmp("exiting program...")
   deallocate(elem)
