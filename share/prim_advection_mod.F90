@@ -1907,7 +1907,7 @@ end subroutine compute_and_apply_rhs
      return
   endif
 
-  call t_barrierf('sync_euler_step', hybrid%par%comm)
+!   call t_barrierf('sync_euler_step', hybrid%par%comm)
   call t_startf('euler_step')
 
 

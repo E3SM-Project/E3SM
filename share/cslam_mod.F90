@@ -20,7 +20,7 @@ module cslam_mod
                        ghostVpack, ghostVunpack,  edgebuffer_t, initEdgebuffer
   use dimensions_mod, only: nelem, nelemd, nelemdmax, nlev, ne, nc, nhc, nhe, nlev, ntrac, np, ntrac_d
   use time_mod, only : timelevel_t
-  use element_mod, only : element_t
+  use element_mod, only : element_t, timelevels
   use cslam_control_volume_mod, only: cslam_struct
   use hybrid_mod, only : hybrid_t
 
@@ -81,15 +81,17 @@ subroutine cslam_run(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
         call reconstruction(tracer0, cslam(ie),elem(ie)%corners(1),recons)
         call monotonic_gradient_cart(tracer0, cslam(ie),recons, elem(ie)%desc)
         tracer1=0.0D0   
-        do h=1,jall
-          jx  = weights_lgr_index_all(h,1)
-          jy  = weights_lgr_index_all(h,2)
-          jdx = weights_eul_index_all(h,1)
-          jdy = weights_eul_index_all(h,2)
-              
-          call remap(tracer0(jdx,jdy),tracer1(jx,jy),weights_all(h,:),&
-                     recons(:,jdx,jdy),cslam(ie)%spherecentroid(:,jdx,jdy))             
-        end do
+!         do h=1,jall
+!           jx  = weights_lgr_index_all(h,1)
+!           jy  = weights_lgr_index_all(h,2)
+!           jdx = weights_eul_index_all(h,1)
+!           jdy = weights_eul_index_all(h,2)
+!               
+!           call remap(tracer0(jdx,jdy),tracer1(jx,jy),weights_all(h,:),&
+!                      recons(:,jdx,jdy),cslam(ie)%spherecentroid(:,jdx,jdy))             
+!         end do
+        call remap(tracer0,tracer1,weights_all, recons, &
+                   cslam(ie)%spherecentroid, weights_eul_index_all, weights_lgr_index_all, jall)
         ! finish scheme
         do j=1,nc
           do i=1,nc
@@ -99,14 +101,14 @@ subroutine cslam_run(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
       enddo  !End Tracer
     end do  !End Level
     !note write tl%np1 in buffer
-    call ghostVpack(cellghostbuf, cslam(ie)%c(:,:,:,:,tl%np1),nhc,nc,nlev,ntrac,0,elem(ie)%desc)
+    call ghostVpack(cellghostbuf, cslam(ie)%c,nhc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
   end do
   call t_startf('CSLAM Communication')
   call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc)
   call t_stopf('CSLAM Communication')
   !-----------------------------------------------------------------------------------!
   do ie=nets,nete
-    call ghostVunpack(cellghostbuf, cslam(ie)%c(:,:,:,:,tl%np1), nhc, nc,nlev,ntrac, 0, elem(ie)%desc)
+     call ghostVunpack(cellghostbuf, cslam(ie)%c, nhc, nc,nlev,ntrac, 0, tl%np1, timelevels,elem(ie)%desc)
   enddo
 end subroutine cslam_run
 
@@ -151,7 +153,8 @@ subroutine cslam_runairdensity(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
   real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)        :: tracer_air0   
   real (kind=real_kind), dimension(1:nc,1:nc)                        :: tracer1, tracer_air1 
   real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons_air   
-   
+  
+  call t_startf('CSLAM scheme') 
   do ie=nets, nete
     do k=1,nlev
       call cslam_mesh_dep(elem(ie),deriv,cslam(ie),tstep,tl,k)
@@ -163,14 +166,9 @@ subroutine cslam_runairdensity(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
       call reconstruction(tracer_air0, cslam(ie),elem(ie)%corners(1),recons_air)
       call monotonic_gradient_cart(tracer_air0, cslam(ie),recons_air, elem(ie)%desc)
       tracer_air1=0.0D0   
-      do h=1,jall
-        jx  = weights_lgr_index_all(h,1)
-        jy  = weights_lgr_index_all(h,2)
-        jdx = weights_eul_index_all(h,1)
-        jdy = weights_eul_index_all(h,2)
-        call remap(tracer_air0(jdx,jdy),tracer_air1(jx,jy),weights_all(h,:),&
-                   recons_air(:,jdx,jdy),cslam(ie)%spherecentroid(:,jdx,jdy))             
-      end do
+
+      call remap(tracer_air0,tracer_air1,weights_all, recons_air, &
+                 cslam(ie)%spherecentroid, weights_eul_index_all, weights_lgr_index_all, jall)             
       ! finish scheme
       do j=1,nc
         do i=1,nc
@@ -182,17 +180,9 @@ subroutine cslam_runairdensity(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
         tracer0=cslam(ie)%c(:,:,k,itr,tl%n0)
         call reconstruction(tracer0, cslam(ie),elem(ie)%corners(1),recons)
         call monotonic_gradient_cart(tracer0, cslam(ie),recons, elem(ie)%desc)
-        tracer1=0.0D0   
-        do h=1,jall
-          jx  = weights_lgr_index_all(h,1)
-          jy  = weights_lgr_index_all(h,2)
-          jdx = weights_eul_index_all(h,1)
-          jdy = weights_eul_index_all(h,2)
-         
-          call remap_air(tracer0(jdx,jdy),tracer1(jx,jy),tracer_air0(jdx,jdy),&
-                       weights_all(h,:), recons(:,jdx,jdy),recons_air(:,jdx,jdy),&
-                       cslam(ie)%spherecentroid(:,jdx,jdy))
-        end do                     
+        tracer1=0.0D0                      
+        call remap_air(tracer0,tracer1,tracer_air0,weights_all, recons,recons_air,&
+                       cslam(ie)%spherecentroid,weights_eul_index_all, weights_lgr_index_all, jall)
         ! finish scheme
         do j=1,nc
           do i=1,nc
@@ -203,20 +193,19 @@ subroutine cslam_runairdensity(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
       enddo  !End Tracer
     end do  !End Level
     !note write tl%np1 in buffer
-    call ghostVpack(cellghostbuf, cslam(ie)%c(:,:,:,:,tl%np1),nhc,nc,nlev,ntrac,0,elem(ie)%desc)
+    call ghostVpack(cellghostbuf, cslam(ie)%c,nhc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
   end do
+  call t_stopf('CSLAM scheme')
   call t_startf('CSLAM Communication')
   call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc)
   call t_stopf('CSLAM Communication')
   !-----------------------------------------------------------------------------------!
+  call t_startf('CSLAM Unpack')
   do ie=nets,nete
-     call ghostVunpack(cellghostbuf, cslam(ie)%c(:,:,:,:,tl%np1), nhc, nc,nlev,ntrac, 0, elem(ie)%desc)
+     call ghostVunpack(cellghostbuf, cslam(ie)%c, nhc, nc,nlev,ntrac, 0, tl%np1, timelevels,elem(ie)%desc)
   enddo
+  call t_stopf('CSLAM Unpack')
 end subroutine cslam_runairdensity
-
-
-
-
 
 
 ! use this subroutine for benchmark tests, couple airdensity with tracer concentration
@@ -274,15 +263,8 @@ subroutine cslam_runair(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
         if (itr==1) then !calculation for air density  (the first tracer is supposed to be)
           recons_air=recons
           tracer_air0=tracer0
-          do h=1,jall
-            jx  = weights_lgr_index_all(h,1)
-            jy  = weights_lgr_index_all(h,2)
-            jdx = weights_eul_index_all(h,1)
-            jdy = weights_eul_index_all(h,2)
-                
-            call remap(tracer0(jdx,jdy),tracer1(jx,jy),weights_all(h,:),&
-                       recons(:,jdx,jdy),cslam(ie)%spherecentroid(:,jdx,jdy))             
-          end do
+          call remap(tracer0,tracer1,weights_all, recons, &
+                 cslam(ie)%spherecentroid, weights_eul_index_all, weights_lgr_index_all, jall)
           ! finish scheme
           do j=1,nc
             do i=1,nc
@@ -290,17 +272,9 @@ subroutine cslam_runair(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
               cslam(ie)%c(i,j,k,itr,tl%np1)=tracer_air1(i,j)
             end do
           end do
-        else !calculation for the other tracers
-          do h=1,jall
-            jx  = weights_lgr_index_all(h,1)
-            jy  = weights_lgr_index_all(h,2)
-            jdx = weights_eul_index_all(h,1)
-            jdy = weights_eul_index_all(h,2)
-           
-            call remap_air(tracer0(jdx,jdy),tracer1(jx,jy),tracer_air0(jdx,jdy),&
-                         weights_all(h,:), recons(:,jdx,jdy),recons_air(:,jdx,jdy),&
-                         cslam(ie)%spherecentroid(:,jdx,jdy))
-          end do                     
+        else !calculation for the other tracers    
+          call remap_air(tracer0,tracer1,tracer_air0,weights_all, recons,recons_air,&
+                       cslam(ie)%spherecentroid,weights_eul_index_all, weights_lgr_index_all, jall)                
           ! finish scheme
           do j=1,nc
             do i=1,nc
@@ -312,84 +286,125 @@ subroutine cslam_runair(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
       enddo  !End Tracer
     end do  !End Level
     !note write tl%np1 in buffer
-    call ghostVpack(cellghostbuf, cslam(ie)%c(:,:,:,:,tl%np1),nhc,nc,nlev,ntrac,0,elem(ie)%desc)
+    call ghostVpack(cellghostbuf, cslam(ie)%c,nhc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
   end do
   call t_startf('CSLAM Communication')
   call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc)
   call t_stopf('CSLAM Communication')
   !-----------------------------------------------------------------------------------!
   do ie=nets,nete
-     call ghostVunpack(cellghostbuf, cslam(ie)%c(:,:,:,:,tl%np1), nhc, nc,nlev,ntrac, 0, elem(ie)%desc)
+     call ghostVunpack(cellghostbuf, cslam(ie)%c, nhc, nc,nlev,ntrac, 0, tl%np1, timelevels,elem(ie)%desc)
   enddo
 end subroutine cslam_runair
 
 
 ! do the remapping
-subroutine remap(tracer0,tracer1,weights,recons,centroid)
-  real (kind=real_kind), intent(in)               :: tracer0
-  real (kind=real_kind), intent(inout)            :: tracer1
-  real (kind=real_kind), intent(in)               :: weights(6),recons(5),centroid(5)
-    
-  tracer1 = tracer1+weights(1)*(&
-       ! all constant terms 
-       tracer0 - recons(1)*centroid(1) - recons(2)*centroid(2) &
-       + recons(3)*(2.0D0*centroid(1)**2 -centroid(3)) &
-       + recons(4)*(2.0D0*centroid(2)**2 -centroid(4)) &
-       + recons(5)*(2.0D0*centroid(1)*centroid(2)-centroid(5))) + &
-       ! linear terms
-       weights(2)*&
-       (recons(1) - recons(3)*2.0D0*centroid(1)- recons(5)*centroid(2)) + &
-       weights(3)*&
-       (recons(2) - recons(4)*2.0D0*centroid(2)- recons(5)*centroid(1)) + &
-       ! quadratic terms
-       weights(4)*recons(3)+&
-       weights(5)*recons(4)+&
-       weights(6)*recons(5)
+subroutine remap(tracer0,tracer1,weights,recons,centroid, &
+                 weights_eul_index_all, weights_lgr_index_all, jall)
+  real (kind=real_kind), intent(in)           :: tracer0(1-nhc:nc+nhc,1-nhc:nc+nhc)
+  real (kind=real_kind), intent(inout)        :: tracer1(1:nc,1:nc)
+  real (kind=real_kind), intent(in)           :: weights(10*(nc+2*nhe)*(nc+2*nhe),6)
+  real (kind=real_kind), intent(in)           :: recons(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+  real (kind=real_kind), intent(in)           :: centroid(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+  integer (kind=int_kind), intent(in)        :: weights_eul_index_all(10*(nc+2*nhe)*(nc+2*nhe),2)
+  integer (kind=int_kind), intent(in)        :: weights_lgr_index_all(10*(nc+2*nhe)*(nc+2*nhe),2)
+  integer (kind=int_kind), intent(in)        :: jall  
+  
+  integer                                     :: h, jx, jy, jdx, jdy
+       
+    do h=1,jall
+      jx  = weights_lgr_index_all(h,1)
+      jy  = weights_lgr_index_all(h,2)
+      jdx = weights_eul_index_all(h,1)
+      jdy = weights_eul_index_all(h,2)
+
+      tracer1(jx,jy) = tracer1(jx,jy)+weights(h,1)*(&
+         ! all constant terms 
+         tracer0(jdx,jdy) - recons(1,jdx,jdy)*centroid(1,jdx,jdy) &
+         - recons(2,jdx,jdy)*centroid(2,jdx,jdy) &
+         + recons(3,jdx,jdy)*(2.0D0*centroid(1,jdx,jdy)**2 -centroid(3,jdx,jdy)) &
+         + recons(4,jdx,jdy)*(2.0D0*centroid(2,jdx,jdy)**2 -centroid(4,jdx,jdy)) &
+         + recons(5,jdx,jdy)*(2.0D0*centroid(1,jdx,jdy)*centroid(2,jdx,jdy)-centroid(5,jdx,jdy))) + &
+         ! linear terms
+         weights(h,2)*&
+         (recons(1,jdx,jdy) - recons(3,jdx,jdy)*2.0D0*centroid(1,jdx,jdy) &
+          - recons(5,jdx,jdy)*centroid(2,jdx,jdy)) + &
+         weights(h,3)*&
+         (recons(2,jdx,jdy) - recons(4,jdx,jdy)*2.0D0*centroid(2,jdx,jdy) &
+         - recons(5,jdx,jdy)*centroid(1,jdx,jdy)) + &
+         ! quadratic terms
+         weights(h,4)*recons(3,jdx,jdy)+&
+         weights(h,5)*recons(4,jdx,jdy)+&
+         weights(h,6)*recons(5,jdx,jdy)
+     end do
 end subroutine remap
 
 ! do remapping with air (i.e. conserve mass of air density * concentration),
 ! see Nair et.al 2010 in JCP: A class of deformational flow test cases for linear transport
 ! schemes on the sphere, Appendix B
-subroutine remap_air(tracer0,tracer1,tracer_air,weights,recons, recons_air,centroid)
-  real (kind=real_kind), intent(in)         :: tracer0, tracer_air
-  real (kind=real_kind), intent(inout)      :: tracer1
-  real (kind=real_kind), intent(in)         :: weights(6),recons(5),recons_air(5),centroid(5)
-    
-  tracer1 = tracer1+&
-        ! air density times tracer reconstruction
-        tracer_air*(weights(1)*(&      ! 1 is for air
-        ! all constant terms 
-        tracer0 - recons(1)*centroid(1) - recons(2)*centroid(2) &
-        + recons(3)*(2.0D0*centroid(1)**2 -centroid(3)) &
-        + recons(4)*(2.0D0*centroid(2)**2 -centroid(4)) &
-        + recons(5)*(2.0D0*centroid(1)*centroid(2)-centroid(5))) + &
-        ! linear terms
-        weights(2)* &
-        (recons(1)- recons(3)*2.0D0*centroid(1) - recons(5)*centroid(2)) + &
-        weights(3)* &
-        (recons(2) - recons(4)*2.0D0*centroid(2) - recons(5)*centroid(1)) + &
-        ! quadratic terms
-        weights(4)*recons(3) + &
-        weights(5)*recons(4) + &
-        weights(6)*recons(5)) + &
+subroutine remap_air(tracer0,tracer1,tracer_air, weights,recons, recons_air, centroid, &
+                 weights_eul_index_all, weights_lgr_index_all, jall)
+                 
+  real (kind=real_kind), intent(in)           :: tracer0(1-nhc:nc+nhc,1-nhc:nc+nhc)
+  real (kind=real_kind), intent(inout)        :: tracer1(1:nc,1:nc)
+  real (kind=real_kind), intent(in)           :: tracer_air(1-nhc:nc+nhc,1-nhc:nc+nhc)
+  real (kind=real_kind), intent(in)           :: recons(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+  real (kind=real_kind), intent(in)           :: recons_air(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+  
+  real (kind=real_kind), intent(in)           :: weights(10*(nc+2*nhe)*(nc+2*nhe),6)
+  real (kind=real_kind), intent(in)           :: centroid(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+  integer (kind=int_kind), intent(in)         :: weights_eul_index_all(10*(nc+2*nhe)*(nc+2*nhe),2)
+  integer (kind=int_kind), intent(in)         :: weights_lgr_index_all(10*(nc+2*nhe)*(nc+2*nhe),2)
+  integer (kind=int_kind), intent(in)         :: jall  
 
-        !tracer times air reconstruction
-        tracer0*(weights(1)*(&      
-        ! all constant terms 
-!       tracer_air &  this term cancels it out
-        - recons_air(1)*centroid(1) - recons_air(2)*centroid(2) &
-        + recons_air(3)*(2.0D0*centroid(1)**2 -centroid(3)) &
-        + recons_air(4)*(2.0D0*centroid(2)**2 -centroid(4)) &
-        + recons_air(5)*(2.0D0*centroid(1)*centroid(2)-centroid(5))) + &
-        ! linear terms
-        weights(2)* &
-        (recons_air(1) - recons_air(3)*2.0D0*centroid(1) - recons_air(5)*centroid(2)) + &
-        weights(3)* &
-        (recons_air(2) - recons_air(4)*2.0D0*centroid(2) - recons_air(5)*centroid(1)) + &
-        ! quadratic terms
-        weights(4)*recons_air(3)+&
-        weights(5)*recons_air(4)+&
-        weights(6)*recons_air(5))
+  integer                                     :: h, jx, jy, jdx, jdy    
+  
+  do h=1,jall
+    jx  = weights_lgr_index_all(h,1)
+    jy  = weights_lgr_index_all(h,2)
+    jdx = weights_eul_index_all(h,1)
+    jdy = weights_eul_index_all(h,2)                     
+    tracer1(jx,jy) = tracer1(jx,jy)+&
+          ! air density times tracer reconstruction
+          tracer_air(jdx,jdy)*(weights(h,1)*(&      ! 1 is for air
+          ! all constant terms 
+          tracer0(jdx,jdy) - recons(1,jdx,jdy)*centroid(1,jdx,jdy) &
+          - recons(2,jdx,jdy)*centroid(2,jdx,jdy) &
+          + recons(3,jdx,jdy)*(2.0D0*centroid(1,jdx,jdy)**2 -centroid(3,jdx,jdy)) &
+          + recons(4,jdx,jdy)*(2.0D0*centroid(2,jdx,jdy)**2 -centroid(4,jdx,jdy)) &
+          + recons(5,jdx,jdy)*(2.0D0*centroid(1,jdx,jdy)*centroid(2,jdx,jdy)-centroid(5,jdx,jdy))) + &
+          ! linear terms
+          weights(h,2)* &
+          (recons(1,jdx,jdy)- recons(3,jdx,jdy)*2.0D0*centroid(1,jdx,jdy) &
+           - recons(5,jdx,jdy)*centroid(2,jdx,jdy)) + &
+          weights(h,3)* &
+          (recons(2,jdx,jdy) - recons(4,jdx,jdy)*2.0D0*centroid(2,jdx,jdy) &
+          - recons(5,jdx,jdy)*centroid(1,jdx,jdy)) + &
+          ! quadratic terms
+          weights(h,4)*recons(3,jdx,jdy) + &
+          weights(h,5)*recons(4,jdx,jdy) + &
+          weights(h,6)*recons(5,jdx,jdy)) + &
+
+          !tracer times air reconstruction
+          tracer0(jdx,jdy)*(weights(h,1)*(&      
+          ! all constant terms 
+  !       tracer_air &  this term cancels it out
+          - recons_air(1,jdx,jdy)*centroid(1,jdx,jdy) - recons_air(2,jdx,jdy)*centroid(2,jdx,jdy) &
+          + recons_air(3,jdx,jdy)*(2.0D0*centroid(1,jdx,jdy)**2 -centroid(3,jdx,jdy)) &
+          + recons_air(4,jdx,jdy)*(2.0D0*centroid(2,jdx,jdy)**2 -centroid(4,jdx,jdy)) &
+          + recons_air(5,jdx,jdy)*(2.0D0*centroid(1,jdx,jdy)*centroid(2,jdx,jdy)-centroid(5,jdx,jdy))) + &
+          ! linear terms
+          weights(h,2)* &
+          (recons_air(1,jdx,jdy) - recons_air(3,jdx,jdy)*2.0D0*centroid(1,jdx,jdy) &
+          - recons_air(5,jdx,jdy)*centroid(2,jdx,jdy)) + &
+          weights(h,3)* &
+          (recons_air(2,jdx,jdy) - recons_air(4,jdx,jdy)*2.0D0*centroid(2,jdx,jdy) &
+          - recons_air(5,jdx,jdy)*centroid(1,jdx,jdy)) + &
+          ! quadratic terms
+          weights(h,4)*recons_air(3,jdx,jdy)+&
+          weights(h,5)*recons_air(4,jdx,jdy)+&
+          weights(h,6)*recons_air(5,jdx,jdy))
+  end do
 end subroutine remap_air
 
 

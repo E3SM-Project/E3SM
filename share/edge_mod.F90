@@ -77,7 +77,6 @@ module edge_mod
      real (kind=real_kind), dimension(:,:,:,:), pointer :: buf
      real (kind=real_kind), dimension(:,:,:,:), pointer :: receive
      integer :: nlyr ! Number of layers
-     integer :: ntrac ! Number of tracers
      integer :: nbuf ! size of the horizontal dimension of the buffers.
   end type GhostBuffer_t
   
@@ -86,7 +85,6 @@ module edge_mod
      real (kind=real_kind), dimension(:,:,:,:,:), pointer :: buf
      real (kind=real_kind), dimension(:,:,:,:,:), pointer :: receive
      integer :: nlyr ! Number of layers
-     integer :: ntrac ! Number of tracers
      integer :: nbuf ! size of the horizontal dimension of the buffers.
   end type GhostBuffertr_t
   
@@ -1742,7 +1740,6 @@ contains
 !$OMP MASTER
 #endif
     ghost%nlyr=nlyr
-    ghost%ntrac=ntrac
     ghost%nbuf=nbuf
     allocate(ghost%buf(npoints,nhc,nlyr,ntrac,nbuf))
     ghost%buf=0
@@ -1762,16 +1759,18 @@ contains
 ! Christoph Erath
 !> Packs the halo zone from v
 ! =========================================
-subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
-  use dimensions_mod, only : max_corner_elem
+! NOTE: I have to give timelevels as argument, because element_mod is not compiled first
+! and the array call has to be done in this way because of performance reasons!!!
+subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,tn0,timelevels,desc)
+  use dimensions_mod, only : max_corner_elem, ntrac_d
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
 
   type (Ghostbuffertr_t)                      :: edge
   integer,              intent(in)   :: vlyr
   integer,              intent(in)   :: ntrac
+  integer,              intent(in)   :: npoints,nhc,kptr, tn0, timelevels
   
-  real (kind=real_kind),intent(in)   :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc,vlyr,ntrac)
-  integer,              intent(in)   :: npoints,nhc,kptr
+  real (kind=real_kind),intent(in)   :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc,vlyr,ntrac_d,timelevels)
   type (EdgeDescriptor_t),intent(in) :: desc
 
   ! Local variables
@@ -1808,10 +1807,10 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
     do k=1,vlyr
       do i=1,npoints
         do j=1,nhc
-          edge%buf(i,j,kptr+k,itr,is)   = v(i  ,j ,k,itr)
-          edge%buf(i,j,kptr+k,itr,ie)   = v(npoints-j+1 ,i ,k,itr)
-          edge%buf(i,j,kptr+k,itr,in)   = v(i  ,npoints-j+1,k,itr)
-          edge%buf(i,j,kptr+k,itr,iw)   = v(j  ,i ,k,itr)
+          edge%buf(i,j,kptr+k,itr,is)   = v(i  ,j ,k,itr,tn0)
+          edge%buf(i,j,kptr+k,itr,ie)   = v(npoints-j+1 ,i ,k,itr,tn0)
+          edge%buf(i,j,kptr+k,itr,in)   = v(i  ,npoints-j+1,k,itr,tn0)
+          edge%buf(i,j,kptr+k,itr,iw)   = v(j  ,i ,k,itr,tn0)
         enddo
       end do
     end do
@@ -1828,7 +1827,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
        do i=1,npoints
          do j=1,nhc
            ir = npoints-i+1
-           edge%buf(ir,j,kptr+k,itr,is)=v(i,j,k,itr)
+           edge%buf(ir,j,kptr+k,itr,is)=v(i,j,k,itr,tn0)
          enddo
        enddo
      enddo
@@ -1842,7 +1841,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
        do i=1,npoints
          do j=1,nhc
            ir = npoints-i+1
-           edge%buf(ir,j,kptr+k,itr,ie)=v(npoints-j+1,i,k,itr)
+           edge%buf(ir,j,kptr+k,itr,ie)=v(npoints-j+1,i,k,itr,tn0)
           enddo
         enddo
       enddo
@@ -1856,7 +1855,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
         do i=1,npoints
           do j=1,nhc
             ir = npoints-i+1
-            edge%buf(ir,j,kptr+k,itr,in)=v(i,npoints-j+1,k,itr)
+            edge%buf(ir,j,kptr+k,itr,in)=v(i,npoints-j+1,k,itr,tn0)
           enddo
         enddo
       enddo
@@ -1870,7 +1869,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
        do i=1,npoints
          do j=1,nhc
             ir = npoints-i+1
-            edge%buf(ir,j,kptr+k,itr,iw)=v(j,i,k,itr)
+            edge%buf(ir,j,kptr+k,itr,iw)=v(j,i,k,itr,tn0)
           enddo
         enddo
       enddo
@@ -1890,7 +1889,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
            ! edge%buf(1,1,kptr+k,desc%putmapP_ghost(l))=v(1,1 ,k)
           do i=1,nhc
             do j=1,nhc
-              edge%buf(i,j,kptr+k,itr,desc%putmapP_ghost(l))=v(i  ,j ,k,itr)
+              edge%buf(i,j,kptr+k,itr,desc%putmapP_ghost(l))=v(i  ,j ,k,itr,tn0)
             enddo
           end do
         end do
@@ -1907,7 +1906,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
            ! edge%buf(1,1,kptr+k,desc%putmapP_ghost(l))=v(nc ,1 ,k)
           do i=1,nhc
             do j=1,nhc
-              edge%buf(i,j,kptr+k,itr,desc%putmapP_ghost(l))=v(npoints-i+1 ,j ,k,itr)
+              edge%buf(i,j,kptr+k,itr,desc%putmapP_ghost(l))=v(npoints-i+1 ,j ,k,itr,tn0)
             enddo
           end do
         end do
@@ -1924,7 +1923,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
            !edge%buf(1,1,kptr+k,desc%putmapP_ghost(l))=v(nc ,nc,k)
            do i=1,nhc
               do j=1,nhc
-                 edge%buf(i,j,kptr+k,itr,desc%putmapP_ghost(l))=v(npoints-i+1,npoints-j+1,k,itr)
+                 edge%buf(i,j,kptr+k,itr,desc%putmapP_ghost(l))=v(npoints-i+1,npoints-j+1,k,itr,tn0)
               enddo
             enddo
           end do
@@ -1941,7 +1940,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
            !edge%buf(1,1,kptr+k,desc%putmapP_ghost(l))=v(1  ,nc,k)
           do i=1,nhc
             do j=1,nhc
-              edge%buf(i,j,kptr+k,itr,desc%putmapP_ghost(l))=v(i  ,npoints-j+1,k,itr)
+              edge%buf(i,j,kptr+k,itr,desc%putmapP_ghost(l))=v(i  ,npoints-j+1,k,itr,tn0)
             enddo
           end do
         end do
@@ -1955,17 +1954,19 @@ end subroutine GhostVpack
 !
 ! Unpack the halo zone into v
 ! ========================================
-
-subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
-  use dimensions_mod, only : max_corner_elem
+! NOTE: I have to give timelevels as argument, because element_mod is not compiled first
+! and the array call has to be done in this way because of performance reasons!!!
+subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,tn0,timelevels,desc)
+  use dimensions_mod, only : max_corner_elem, ntrac_d
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
   type (Ghostbuffertr_t),         intent(in)  :: edge
 
   integer,               intent(in)  :: vlyr
   integer,              intent(in)   :: ntrac
+  integer,               intent(in)  :: kptr,nhc,npoints, tn0, timelevels
   
-  real (kind=real_kind), intent(inout) :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc,vlyr,ntrac)
-  integer,               intent(in)  :: kptr,nhc,npoints
+  real (kind=real_kind), intent(inout) :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc,vlyr,ntrac_d,timelevels)
+  
   type (EdgeDescriptor_t)            :: desc
 
   ! Local
@@ -1992,10 +1993,10 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
     do k=1,vlyr
       do i=1,npoints
        do j=1,nhc
-          v(i  ,1-j  ,k,itr)      = edge%buf(i,j,kptr+k,itr,is  )
-          v(npoints+j ,i  ,k,itr) = edge%buf(i,j,kptr+k,itr,ie  )
-          v(i  ,npoints+j ,k,itr) = edge%buf(i,j,kptr+k,itr,in  )
-          v(1-j  ,i  ,k,itr)      = edge%buf(i,j,kptr+k,itr,iw  )
+          v(i  ,1-j  ,k,itr,tn0)      = edge%buf(i,j,kptr+k,itr,is  )
+          v(npoints+j ,i  ,k,itr,tn0) = edge%buf(i,j,kptr+k,itr,ie  )
+          v(i  ,npoints+j ,k,itr,tn0) = edge%buf(i,j,kptr+k,itr,in  )
+          v(1-j  ,i  ,k,itr,tn0)      = edge%buf(i,j,kptr+k,itr,iw  )
        end do
       end do
     end do
@@ -2012,7 +2013,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
               !v(0  ,0 ,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
               do j=1,nhc
                  do i=1,nhc
-                    v(1-j,1-i,k,itr)=edge%buf(i,j,kptr+k,itr,ic)
+                    v(1-j,1-i,k,itr,tn0)=edge%buf(i,j,kptr+k,itr,ic)
                  enddo
               enddo
              enddo
@@ -2023,7 +2024,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
               !v(0  ,0 ,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
               do j=1,nhc
                  do i=1,nhc
-                    v(1-j,1-i,k,itr)=edge%buf(j,i,kptr+k,itr,ic)
+                    v(1-j,1-i,k,itr,tn0)=edge%buf(j,i,kptr+k,itr,ic)
                  enddo
               enddo
              enddo
@@ -2034,7 +2035,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
          do k=1,vlyr
            do j=1,nhc
              do i=1,nhc
-               v(1-i,1-j,k,itr)=NaN
+               v(1-i,1-j,k,itr,tn0)=NaN
              enddo
            enddo
          enddo
@@ -2053,7 +2054,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
               !v(nc+1 ,0 ,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
               do j=1,nhc
                  do i=1,nhc
-                    v(npoints+i,1-j,k,itr)=edge%buf(j,i,kptr+k,itr,ic)
+                    v(npoints+i,1-j,k,itr,tn0)=edge%buf(j,i,kptr+k,itr,ic)
                  enddo
               enddo
             enddo
@@ -2064,7 +2065,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
               !v(nc+1 ,0 ,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
               do j=1,nhc
                  do i=1,nhc
-                    v(npoints+i ,1-j ,k,itr)=edge%buf(i,j,kptr+k,itr,ic)
+                    v(npoints+i ,1-j ,k,itr,tn0)=edge%buf(i,j,kptr+k,itr,ic)
                  enddo
               enddo
             enddo
@@ -2075,7 +2076,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
          do k=1,vlyr
           do j=1,nhc
             do i=1,nhc
-              v(npoints+i,1-j,k,itr)=NaN
+              v(npoints+i,1-j,k,itr,tn0)=NaN
             enddo
           enddo
          enddo
@@ -2094,7 +2095,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
               !v(nc+1 ,nc+1,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
               do j=1,nhc
                  do i=1,nhc
-                    v(npoints+i ,npoints+j,k,itr)=edge%buf(j,i,kptr+k,itr,ic)
+                    v(npoints+i ,npoints+j,k,itr,tn0)=edge%buf(j,i,kptr+k,itr,ic)
                  enddo
               enddo
             enddo
@@ -2105,7 +2106,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
               !v(nc+1 ,nc+1,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
               do j=1,nhc
                  do i=1,nhc
-                    v(npoints+i ,npoints+j,k,itr)=edge%buf(i,j,kptr+k,itr,ic)
+                    v(npoints+i ,npoints+j,k,itr,tn0)=edge%buf(i,j,kptr+k,itr,ic)
                  enddo
               enddo
             enddo
@@ -2116,7 +2117,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
          do k=1,vlyr        
           do j=1,nhc
             do i=1,nhc
-              v(npoints+i,npoints+j,k,itr)=NaN
+              v(npoints+i,npoints+j,k,itr,tn0)=NaN
             enddo
           enddo
          enddo
@@ -2135,7 +2136,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
               !v(0  ,nc+1,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
               do j=1,nhc
                  do i=1,nhc
-                    v(1-i ,npoints+j,k,itr)=edge%buf(j,i,kptr+k,itr,ic)
+                    v(1-i ,npoints+j,k,itr,tn0)=edge%buf(j,i,kptr+k,itr,ic)
                  enddo
               enddo
             enddo
@@ -2146,7 +2147,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
               !v(0  ,nc+1,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
               do j=1,nhc
                  do i=1,nhc
-                    v(1-i ,npoints+j,k,itr)=edge%buf(i,j,kptr+k,itr,ic)
+                    v(1-i ,npoints+j,k,itr,tn0)=edge%buf(i,j,kptr+k,itr,ic)
                  enddo
               enddo
             enddo
@@ -2157,7 +2158,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
          do k=1,vlyr
           do j=1,nhc
             do i=1,nhc
-              v(1-i,npoints+j,k,itr)=NaN
+              v(1-i,npoints+j,k,itr,tn0)=NaN
             enddo
           enddo
          enddo
