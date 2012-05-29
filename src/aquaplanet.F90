@@ -28,7 +28,9 @@ module aquaplanet
   ! ====================
   use gravity_wave_drag_mod, only : Rayleigh, ue, ve, tme, the, pre, qve
   ! ====================
-  use control_mod, only : statefreq
+  use control_mod, only : statefreq, columnpackage
+  ! ====================
+  use column_types_mod, only : ColumnModelMulticloud_t
   ! ====================
   use global_norms_mod, only: wrap_repro_sum
   ! ====================
@@ -49,6 +51,7 @@ module aquaplanet
   integer              , public :: isrf_forc
   real (kind=real_kind), public :: h_dis
   real (kind=real_kind), public :: cdrag
+  real (kind=real_kind), public :: chdrag
   real (kind=real_kind), public :: wstar
   real (kind=real_kind), public :: tsurf
   real (kind=real_kind), public :: qsurf
@@ -65,6 +68,8 @@ module aquaplanet
   public :: aquaplanet_init_state
   public :: aquaplanet_forcing
   public :: Potential_Temperature
+  public :: presc_cooling_mc
+
   real (kind=real_kind),allocatable :: ff_min(:,:),ff_max(:,:)
 
   real (kind=real_kind) :: udrag_min,udrag_max
@@ -90,7 +95,8 @@ module aquaplanet
   real (kind=real_kind), allocatable,public :: tsflx(:,:,:)
 
 contains
-  subroutine aquaplanet_forcing(dt,ie, elemin,hybrid,hvcoord,nets,nete,tl)
+
+  subroutine aquaplanet_forcing(dt,ie, elemin,hybrid,hvcoord,nets,nete,tl,mc)
     real (kind=real_kind),intent(in) :: dt
     type (element_t), intent(inout)  :: elemin
     integer, intent(in)              :: ie
@@ -98,6 +104,8 @@ contains
     type (hvcoord_t), intent(in)     :: hvcoord
     type (TimeLevel_t), intent(in)   :: tl
     integer,intent(in)               :: nets,nete
+
+    type (ColumnModelMulticloud_t), intent(in), optional :: mc
 
 #ifdef FORCINGSTAT
     real (kind=real_kind) :: tcool_pmin,tcool_pmax,tcool_psum
@@ -112,16 +120,20 @@ contains
     iprint=0
 !    if ((tl%nstep==0).and.(hybrid%masterthread).and.(ie==nets)) iprint=1
 
-    if(cool_ampl.ne.0.) then
-       cooling=presc_cooling(hvcoord,np,nlev,iprint) ! cooling can change in time
+    ! cooling is embedded in MC param thus do not do it here...
 
-       do k=1,nlev
-          do j=1,np
-             do i=1,np
-                elemin%derived%FT(i,j,k,nm1) = elemin%derived%FT(i,j,k,nm1) + cooling(k)
+    if(columnpackage .ne. "multicloud")then
+       if(cool_ampl.ne.0.) then
+          cooling=presc_cooling(hvcoord,np,nlev,iprint) ! cooling can change in time
+          
+          do k=1,nlev
+             do j=1,np
+                do i=1,np
+                   elemin%derived%FT(i,j,k,nm1) = elemin%derived%FT(i,j,k,nm1) + cooling(k)*elemin%state%mask(i,j)
+                enddo
              enddo
           enddo
-       enddo
+       endif
 
 #ifdef FORCINGSTAT
 !       if(ie==nete .and. MODULO(tl%nstep,statefreq) == 0) then
@@ -206,15 +218,51 @@ contains
 
   end function presc_cooling
 
+  function presc_cooling_mc(hvcoord,mc,npts,nlevels,iprint) result(cooling)
+
+    integer, intent(in)          :: npts
+    integer, intent(in)          :: nlevels
+    integer, intent(in)          :: iprint
+    type (hvcoord_t), intent(in) :: hvcoord
+    real (kind=real_kind), dimension(nlevels) :: cooling
+    type (ColumnModelMulticloud_t), intent(in) :: mc
+
+    ! Local variables
+
+    real (kind=real_kind), parameter :: href = 7.34D3
+    real (kind=real_kind), dimension(nlevels)   :: zfull
+    real (kind=real_kind) :: cool_ampl_per_sec,func23,rnlev,a,b,c
+    integer :: k
+
+    do k=1,nlevels
+       cooling(k) = mc%Q0R1*mc%D%psitrunc(k,1) + mc%D%Q0R2*(mc%D%psitrunc(k,2)-mc%csr*mc%D%psi2avgtrunc)
+    end do
+
+    if (iprint.eq.1)then
+       do k=1,nlevels
+          print 1,'cooling:',k,zfull(k), &
+               cool_ampl,' [K]',cool_max,cool_min,cooling(k),' [K/sec]'
+       end do
+    endif
+
+    if (iprint.eq.1) print *
+1   format(a8,i3,f8.1,f6.2,a4,2f8.1,f12.8,a8)
+
+  end function presc_cooling_mc
+
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+!  subroutine aquaplanet_init_state(elem, hybrid,hvcoord,nets,nete, integration,noisestart)
   subroutine aquaplanet_init_state(elem, hybrid,hvcoord,nets,nete, integration)
+
     type (element_t), intent(inout) :: elem(:)
     type (hybrid_t),intent(in)       :: hybrid	
     type (hvcoord_t), intent(in) :: hvcoord
     integer, intent(in)   :: nets
     integer, intent(in)   :: nete
     character(len=*)    , intent(in) :: integration 
+ !   integer, intent(in)   :: noisestart
     !ccccccccccccccccccccccccccccccccccccccccccccccccccc
     !cc environmental sounding:
     !cc "0000 UTC, 1 September 1974 GARP-GATE sounding"
@@ -251,6 +299,7 @@ contains
 
     real(kind=real_kind) ::  aa,bb,cc,uur,uu0,uu1,vv1,rearthi,zearth,fcorio,tmpf
     real(kind=real_kind) ::  zabscal,zabsamp
+    real(kind=real_kind) ::  u0loc
     real(kind=real_kind) ::  ff_pmin,ff_pmax
 
     !cccccccccccccccccccccccccccccccccccccccc
@@ -748,7 +797,8 @@ contains
     ! forces for the momentum, temperature and moisture
     !---------------------------------------------------
     if(kmin .eq. 1) then
-       call abortmp('it appears that surface forcing is being applied at TOA')
+       !print *, 'it appears that surface forcing is being applied at TOA'
+       !call abortmp('it appears that surface forcing is being applied at TOA')
     end if
     do k=kmin,nlevels-1
        do j=1,np
