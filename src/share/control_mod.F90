@@ -20,7 +20,7 @@ module control_mod
 !but (\rho q)/\pho= q is limited. really, would only be used in swirl test case for now
 !because other test cases have to be reviewed in order to add a const field
   integer, public  :: kmass  = -1
-
+  real (kind=real_kind), public ::nu_mc = 0.0
 
   integer, public  :: tstep_type= 0                           ! 0 = leapfrog
                                                               ! 1 = RK (foward-in-time)
