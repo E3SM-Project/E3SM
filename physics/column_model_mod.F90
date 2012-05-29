@@ -117,6 +117,7 @@ contains
              do j=1,np	
                 do i=1,np	
                    elem(ie)%state%Q(i,j,k,1,1:3)      = 0_real_kind
+                   elem(ie)%state%Qdp(i,j,k,1,1:3)      = 0_real_kind
                    elem(ie)%derived%FQ(i,j,k,1,1:3)     = 0_real_kind
                    elem(ie)%derived%FM(i,j,1:2,k,1:3) = 0_real_kind
                    elem(ie)%derived%FT(i,j,k,1:3)     = 0_real_kind
