@@ -11,8 +11,6 @@
 !-----------------------------------------------------------------------------------!
 module cslam_reconstruction_mod
 
-#ifndef MESH
-
   use kinds, only                  : int_kind, real_kind
   use dimensions_mod, only         : nc,nhc,nhe
   use coordinate_systems_mod, only : cartesian2D_t,cartesian3D_t
@@ -1006,7 +1004,5 @@ subroutine reconstruct_cubic_haloy(f, recons, delta1, delta2,centroid, invx,invy
   enddo 
 end subroutine reconstruct_cubic_haloy
 !END SUBROUTINE RECONSTRUCTION_CUBIC_HALOY------------------------------CE-for CSLAM!
-
-#endif
 
 end module cslam_reconstruction_mod

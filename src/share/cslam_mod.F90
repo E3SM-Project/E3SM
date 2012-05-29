@@ -13,8 +13,6 @@
 
 module cslam_mod
 
-#ifndef MESH
-
   use kinds, only : real_kind, int_kind, longdouble_kind
   use edge_mod, only : ghostbuffertr_t, initghostbuffer, freeghostbuffertr, &
                        ghostVpack, ghostVunpack,  edgebuffer_t, initEdgebuffer
@@ -486,9 +484,11 @@ subroutine cslam_mesh_dep(elem, deriv, cslam, dt, tl, klev)
   use control_mod, only : test_cfldep
 
   use derivative_mod, only : derivative_t
-#ifdef _CSLAM
+
+#ifndef _PRIM
   use cslam_bsp_mod, only: boomerang, solidbody
 #endif
+
   implicit none
   type (derivative_t)  , intent(in) :: deriv
   type (cslam_struct), intent(inout)   :: cslam
@@ -885,6 +885,5 @@ subroutine cslam_mcgregordss(elem,cslam,nets,nete, hybrid, deriv, tstep, orderta
 
 end subroutine cslam_mcgregordss
 !END SUBROUTINE CSLAM_MCGREGORDSS---------------------------------------CE-for CSLAM!
-#endif
 
 end module cslam_mod
