@@ -11,7 +11,7 @@ module prim_driver_mod
   use hybrid_mod, only : hybrid_t
   use quadrature_mod, only : quadrature_t, test_gauss, test_gausslobatto, gausslobatto
 #ifndef CAM
-  use column_model_mod, only : ColumnModel_t
+  use column_types_mod, only : ColumnModel_t
   use prim_restart_mod, only : initrestartfile
   use restart_io_mod , only : RestFile,readrestart
 #endif
@@ -715,7 +715,7 @@ contains
     ! HOMME stand alone initialization
     ! =================================
     tl%nstep0=2   ! This will be the first full leapfrog step
-    call InitColumnModel(elem, cm(hybrid%ithr),hvcoord,tl,nets,nete,runtype)
+    call InitColumnModel(elem, cm(hybrid%ithr), hvcoord, hybrid, tl,nets,nete,runtype)
 
     if(runtype >= 1) then 
        ! ===========================================================
@@ -1111,7 +1111,7 @@ contains
     ! ftype==1 means forcing is applied in dp_coupling.F90
     if (ftype<=0) call ApplyCAMForcing_leapfrog(elem, hvcoord,tl%n0,tl%np1,dt,nets,nete)
 #else
-    call ApplyColumnModel(elem, hybrid,cm(hybrid%ithr),dt)
+    call ApplyColumnModel(elem, hybrid, hvcoord, cm(hybrid%ithr),dt)
 #endif
     ! measure the effects of forcing
     if (compute_diagnostics) then
