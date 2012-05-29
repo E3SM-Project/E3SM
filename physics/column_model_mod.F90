@@ -171,7 +171,7 @@ contains
     real (kind=real_kind)              :: tau_damp
 
 
-    nm1 = cm%tl%n0
+    nm1 = cm%tl%nm1
 
     ! forcings are accumulated then applied
 
@@ -192,9 +192,11 @@ contains
       call ApplyColumnModelEmanuel(elem, hybrid,cm%cm_em,dt,cm%hvcoord,cm%tl,cm%nets,cm%nete)
     endif
     if(test_case(1:12) == "held_suarez0")then
+      forcing=1
       call ApplyHeldSuarezForcing(elem, cm%cm_hs,dt, cm%hvcoord,cm%tl,cm%nets,cm%nete)
     endif
     if(test_case(1:10) == "aquaplanet")then
+       forcing=1
        if(columnpackage == "multicloud")then
           call ApplyAquaplanetForcing(elem, hybrid,cm%cm_aq,dt, cm%hvcoord,cm%tl,cm%nets,cm%nete,cm%cm_mc)          
           if(cm%cm_mc%relaxation > 0.0D0)then
@@ -206,9 +208,11 @@ contains
        end if
     endif
 
-    do ie=cm%nets,cm%nete
-       call Apply_Forcing(EXP_EULER,elem(ie), hvcoord, cm%tl,dt)
-    end do
+    if (forcing==1) then
+       do ie=cm%nets,cm%nete
+          call Apply_Forcing(EXP_EULER,elem(ie), hvcoord, cm%tl,dt)
+       end do
+    endif
 
   end subroutine ApplyColumnModel
 
