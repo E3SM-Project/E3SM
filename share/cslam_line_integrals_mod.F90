@@ -11,7 +11,6 @@
 !                                                                                   !
 !-----------------------------------------------------------------------------------!
 module cslam_line_integrals_mod
-#ifndef MESH
 
   use kinds, only               : int_kind, real_kind
   use dimensions_mod, only      : nc, nhe, ngpc
@@ -2067,6 +2066,5 @@ end subroutine gauss_points
     ENDIF
   end function
 
-#endif
 
 end module cslam_line_integrals_mod

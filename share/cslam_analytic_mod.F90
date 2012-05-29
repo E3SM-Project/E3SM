@@ -7,7 +7,7 @@
 ! This module contains all analytical terms for CSLAM                               ! 
 !-----------------------------------------------------------------------------------!
 module cslam_analytic_mod
-#ifndef MESH
+
   use kinds, only : real_kind, int_kind
   use dimensions_mod, only: nc, nhe, ntrac
   
@@ -288,6 +288,5 @@ function I_11(x,y)
 end function I_11
 !END SUBROUTINES I_00, I_01, I_20, I_02, I11----------------------------CE-for CSLAM!
 
-#endif
 
 end module cslam_analytic_mod

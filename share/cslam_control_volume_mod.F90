@@ -86,7 +86,6 @@ module cslam_control_volume_mod
     integer                  :: ibasehaloex(-1:nc+2,2,2)     
   end type cslam_struct
 
-#ifndef MESH
   public :: cslam_mesh_ari
   
   real (kind=real_kind),parameter, public   :: bignum = 1.0D20
@@ -119,6 +118,11 @@ subroutine cslam_mesh_ari(elem, cslam, tl)
   cslam%cubeboundary=0
   corner=.FALSE.
 
+! Jose Garcia: This code does not work with MESH
+! yet we allow it so MESH and CSLAM can be compiled 
+! in the same executable. Some execution paths that
+! do not call this routine will work fine.
+#ifndef MESH
   do j=1,8
     if (elem%vertex%nbrs(j)%used) then
       cslam%nbrsface(j)=elem%vertex%nbrs(j)%f
@@ -137,6 +141,8 @@ subroutine cslam_mesh_ari(elem, cslam, tl)
       endif
     end if
   end do
+#endif
+
   call create_ari(elem,cslam)
   call create_interpolation_points(elem,cslam)
 
@@ -861,7 +867,14 @@ subroutine create_interpolation_points(elem,cslam)
                                                         gnomystart, gnomyend
   integer                                       :: i, halo, ida, ide, iref1, iref2
   type (cartesian2D_t)                          :: tmpgnom     
-  
+
+! Jose Garcia
+! creating an empty routine when MESH is defined.
+! We allow this so both MESH and CSLAM can be compiled together
+! because some executions paths that do not use this routine are 
+! important.
+
+#ifndef MESH  
   ! element is not on a corner, but shares a cube edge (call of subroutine)
   if(cslam%cubeboundary <= 4) then
     gnomxstart(1-nhc)=elem%corners(1)%x-(nhc-0.5)*cslam%dalpha
@@ -1267,6 +1280,12 @@ subroutine create_interpolation_points(elem,cslam)
             call abortmp('cslam_reconstruction_mod.F90 subroutine create_interpolationpoint!')
          end select
   endif
+
+#endif 
+!  ^
+!  |
+! endif for ifndef MESH
+
 end subroutine create_interpolation_points
 !END SUBROUTINE CREATE_INTERPOLATION_POINTS-----------------------------CE-for CSLAM!
 
@@ -1347,6 +1366,5 @@ subroutine interpolation_point(gnom,gnom1d,face1,face2,xy,except, point,ida,ide,
   
 end subroutine interpolation_point
 !END SUBROUTINE INTERPOLATION_POINT-------------------------------------CE-for CSLAM!
-#endif
 
 end module cslam_control_volume_mod
