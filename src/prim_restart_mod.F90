@@ -109,7 +109,7 @@ contains
 
     if(columnpackage .eq. "emanuel") then
        ! see comments in restart_io_mod.F90
-       call abortmp('Error: restart w/ Emanual physics currently broken')
+       !call abortmp('Error: restart w/ Emanual physics currently broken')
        len = SIZE(pelem(1)%state%CBMF)
        call AddStateField(RestDesc,len,type)
     end if
