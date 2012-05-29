@@ -69,6 +69,7 @@ module physical_constants
   real (kind=real_kind), public, parameter :: Rd_on_Rv     = Rgas/Rwater_vapor	
   real (kind=real_kind), public, parameter :: Cpd_on_Cpv     = Cp/Cpwater_vapor
   real (kind=real_kind), public, parameter :: rrearth      = 1.0_real_kind/rearth         ! m
+  real (kind=real_kind), public, parameter :: Lc           = 2.5D+6 ! multicloud J/Kg
 #endif
 
 end module physical_constants
