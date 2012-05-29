@@ -19,6 +19,7 @@ module element_mod
   integer, public, parameter :: timelevels=3
 
 #ifdef _PRIM
+
   type, public :: elem_state_t
      sequence
 !
@@ -35,7 +36,30 @@ module element_mod
      ! everything else are passive tracers that can eventually
      ! be forced by the column model.
      real (kind=real_kind) :: Q(np,np,nlev,qsize_d,timelevels)  ! Tracer concentration
-     real (kind=real_kind) :: Qdp(np,np,nlev,qsize_d,timelevels)  ! Tracer mass           
+     real (kind=real_kind) :: Qdp(np,np,nlev,qsize_d,timelevels)  ! Tracer mass    
+#ifndef CAM
+!required by multicloud       
+     real (kind=real_kind) :: mask(np,np)  
+     real (kind=real_kind) :: invmask(np,np)  
+     real (kind=real_kind) :: qmc(np,np,  timelevels)
+     real (kind=real_kind) :: teb(np,np,timelevels)
+     real (kind=real_kind) :: Hs(np,np,timelevels)
+     real (kind=real_kind) :: Hc(np,np,timelevels)
+     real (kind=real_kind) :: uproj1(np,np,2,timelevels)
+     real (kind=real_kind) :: uproj2(np,np,2,timelevels)
+     real (kind=real_kind) :: ubar(np,np,2,timelevels)
+     real (kind=real_kind) :: pot0(np,np,nlev) ! This is the forcing applied to dycore
+     real (kind=real_kind) :: QHeating(np,np,nlev) ! This is the forcing applied to dycore
+     real (kind=real_kind) :: Pmc(np,np) ! This is the precipitation
+     real (kind=real_kind) :: Hd(np,np) 
+     real (kind=real_kind) :: D(np,np) 
+     real (kind=real_kind) :: w(np,np,nlev) ! Vertical velocity     
+     real (kind=real_kind) :: delthetasurf(np,np) ! This the space dependent version of TstarMinTeb
+     real (kind=real_kind)    :: mp(np,np)          ! mass matrix on pressure grid
+     real (kind=real_kind)    :: mv(np,np)          ! mass matrix on velocity grid
+     real (kind=real_kind)    :: rmv(np,np)         ! inverse mass matrix on velocity grid
+!end multicloud
+#endif
 
   end type elem_state_t
 
@@ -280,7 +304,9 @@ module element_mod
      integer(kind=int_kind) :: LocalId
      integer(kind=int_kind) :: GlobalId
 
-     
+     real (kind=real_kind) :: dx
+     real (kind=real_kind) :: dy
+
      !=====================================
      !Add the link list hooks
      !=====================================
