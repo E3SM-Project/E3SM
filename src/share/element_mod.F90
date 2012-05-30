@@ -37,31 +37,9 @@ module element_mod
      ! be forced by the column model.
      real (kind=real_kind) :: Q(np,np,nlev,qsize_d,timelevels)  ! Tracer concentration
      real (kind=real_kind) :: Qdp(np,np,nlev,qsize_d,timelevels)  ! Tracer mass    
-#ifndef CAM
-!required by multicloud       
-     real (kind=real_kind) :: mask(np,np)  
-     real (kind=real_kind) :: invmask(np,np)  
-     real (kind=real_kind) :: qmc(np,np,  timelevels)
-     real (kind=real_kind) :: teb(np,np,timelevels)
-     real (kind=real_kind) :: Hs(np,np,timelevels)
-     real (kind=real_kind) :: Hc(np,np,timelevels)
-     real (kind=real_kind) :: uproj1(np,np,2,timelevels)
-     real (kind=real_kind) :: uproj2(np,np,2,timelevels)
-     real (kind=real_kind) :: ubar(np,np,2,timelevels)
-     real (kind=real_kind) :: pot0(np,np,nlev) ! This is the forcing applied to dycore
-     real (kind=real_kind) :: QHeating(np,np,nlev) ! This is the forcing applied to dycore
-     real (kind=real_kind) :: Pmc(np,np) ! This is the precipitation
-     real (kind=real_kind) :: Hd(np,np) 
-     real (kind=real_kind) :: D(np,np) 
-     real (kind=real_kind) :: w(np,np,nlev) ! Vertical velocity     
-     real (kind=real_kind) :: delthetasurf(np,np) ! This the space dependent version of TstarMinTeb
-     real (kind=real_kind)    :: mp(np,np)          ! mass matrix on pressure grid
-     real (kind=real_kind)    :: mv(np,np)          ! mass matrix on velocity grid
-     real (kind=real_kind)    :: rmv(np,np)         ! inverse mass matrix on velocity grid
-!end multicloud
-#endif
 
   end type elem_state_t
+
 
   ! JPE: This parameter must match the number of variables in the state
   ! structure all of which are assumed to be of kind=real_kind.  This is a

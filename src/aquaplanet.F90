@@ -16,7 +16,7 @@ module aquaplanet
   ! ====================
   use element_mod, only : element_t
   ! ====================
-  use physics_mod, only : Virtual_Temperature, Virtual_Specific_Heat, Saturation_Specific_Humidity
+  use physics_mod, only : elem_physics_t, Virtual_Temperature, Virtual_Specific_Heat, Saturation_Specific_Humidity
   ! ====================
   use hybrid_mod, only : hybrid_t
   ! ====================
@@ -96,9 +96,10 @@ module aquaplanet
 
 contains
 
-  subroutine aquaplanet_forcing(dt,ie, elemin,hybrid,hvcoord,nets,nete,tl,mc)
+  subroutine aquaplanet_forcing(dt,ie, elemin,elemin_physics, hybrid,hvcoord,nets,nete,tl,mc)
     real (kind=real_kind),intent(in) :: dt
     type (element_t), intent(inout)  :: elemin
+    type (elem_physics_t), intent(inout)  :: elemin_physics
     integer, intent(in)              :: ie
     type (hybrid_t), intent(in)      :: hybrid
     type (hvcoord_t), intent(in)     :: hvcoord
@@ -129,7 +130,7 @@ contains
           do k=1,nlev
              do j=1,np
                 do i=1,np
-                   elemin%derived%FT(i,j,k,nm1) = elemin%derived%FT(i,j,k,nm1) + cooling(k)*elemin%state%mask(i,j)
+                   elemin%derived%FT(i,j,k,nm1) = elemin%derived%FT(i,j,k,nm1) + cooling(k)*elemin_physics%mask(i,j)
                 enddo
              enddo
           enddo
