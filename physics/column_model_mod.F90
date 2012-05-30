@@ -25,7 +25,7 @@ module column_model_mod
   use hybrid_mod,      only : hybrid_t
   use kinds,           only : real_kind, int_kind
   use time_mod,        only : TimeLevel_t
-  use physics_mod,     only : Specific_Humidity, Saturation_Specific_Humidity, getsurfpress, Temp2PotTemp
+  use physics_mod,     only : elem_physics_t, Specific_Humidity, Saturation_Specific_Humidity, getsurfpress, Temp2PotTemp
   use dimensions_mod,  only : nlev, nlevp, np, qsize, nelemd
   use control_mod,     only : integration, columnpackage, test_case,  &
                               accumfreq, statefreq, &
@@ -101,8 +101,9 @@ module column_model_mod
 #endif
 contains
 
-  subroutine InitColumnModel(elem, cm,hvcoord,hybrid,tl,nets,nete,runtype)
+  subroutine InitColumnModel(elem, elem_physics, cm,hvcoord,hybrid,tl,nets,nete,runtype)
     type(element_t), intent(inout) :: elem(:)
+    type(elem_physics_t), intent(inout) :: elem_physics(:)
     type (ColumnModel_t) :: cm
     type (hvcoord_t), intent(in), target     :: hvcoord
     type (TimeLevel_t), intent(in), target   :: tl
@@ -152,16 +153,17 @@ contains
     ! The MC needs the sounding
     
     if(columnpackage == "multicloud")then
-       call InitColumnModelMulticloud(elem,cm%hybrid,cm%hvcoord,cm%cm_mc,nets,nete)!ASC gets 30S-30N
+       call InitColumnModelMulticloud(elem,elem_physics, cm%hybrid,cm%hvcoord,cm%cm_mc,nets,nete)!ASC gets 30S-30N
        call InitShearDamping(elem,cm%hybrid,nets,nete)
     endif
 
   end subroutine InitColumnModel
 
-  subroutine ApplyColumnModel(elem, hybrid, hvcoord, cm,dt)
+  subroutine ApplyColumnModel(elem, elem_physics, hybrid, hvcoord, cm,dt)
     use hybvcoord_mod, only : hvcoord_t
 
     type (element_t), intent(inout) :: elem(:)
+    type(elem_physics_t), intent(inout) :: elem_physics(:)
     type (ColumnModel_t),intent(inout) :: cm
     real (kind=real_kind),intent(in)   :: dt
     type (hvcoord_t)                  :: hvcoord
@@ -198,13 +200,13 @@ contains
     if(test_case(1:10) == "aquaplanet")then
        forcing=1
        if(columnpackage == "multicloud")then
-          call ApplyAquaplanetForcing(elem, hybrid,cm%cm_aq,dt, cm%hvcoord,cm%tl,cm%nets,cm%nete,cm%cm_mc)          
+          call ApplyAquaplanetForcing(elem, elem_physics, hybrid,cm%cm_aq,dt, cm%hvcoord,cm%tl,cm%nets,cm%nete,cm%cm_mc)          
           if(cm%cm_mc%relaxation > 0.0D0)then
              tau_damp = 1.0D0/cm%cm_mc%relaxation
-             call ApplyShearDamping(elem,tau_damp,hybrid,cm%tl,cm%nets,cm%nete)
+             call ApplyShearDamping(elem, elem_physics, tau_damp,hybrid,cm%tl,cm%nets,cm%nete)
           end if
        else
-          call ApplyAquaplanetForcing(elem, hybrid,cm%cm_aq,dt, cm%hvcoord,cm%tl,cm%nets,cm%nete)
+          call ApplyAquaplanetForcing(elem, elem_physics, hybrid,cm%cm_aq,dt, cm%hvcoord,cm%tl,cm%nets,cm%nete)
        end if
     endif
 
@@ -495,9 +497,10 @@ contains
   !
   ! pour t1 et t2 enlever les soundings (aussi dans multicloud_mod)
   !
-  subroutine InitColumnModelMulticloud(elem,hybrid,hvcoord,cm,nets,nete)
+  subroutine InitColumnModelMulticloud(elem, elem_physics, hybrid,hvcoord,cm,nets,nete)
 
     type(element_t), intent(inout)  :: elem(:)
+    type(elem_physics_t), intent(inout)  :: elem_physics(:)
     type (hybrid_t), intent(in)     :: hybrid
     type (hvcoord_t), intent(inout) :: hvcoord
     type (ColumnModelMultiCloud_t)  :: cm
@@ -548,9 +551,9 @@ contains
           do j=1,np
              do i=1,np
                 lat  =  elem(ie)%sphereP(i,j)%lat
-                elem(ie)%state%mask(i,j) = 1.0D0
+                elem_physics(ie)%mask(i,j) = 1.0D0
                 Tmask(i,j,ie) = 60.0D0*(1.0D0 - cos(lat))
-                elem(ie)%state%invmask(i,j) = 1.0D0 - elem(ie)%state%mask(i,j)
+                elem_physics(ie)%invmask(i,j) = 1.0D0 - elem_physics(ie)%mask(i,j)
              enddo
           enddo
        enddo
@@ -568,9 +571,9 @@ contains
           do j=1,np
              do i=1,np
                 lat  =  elem(ie)%sphereP(i,j)%lat
-                elem(ie)%state%mask(i,j) = cos(lat)*cos(lat)
+                elem_physics(ie)%mask(i,j) = cos(lat)*cos(lat)
                 Tmask(i,j,ie) = 60.0D0*(1.0D0 - cos(lat))
-                elem(ie)%state%invmask(i,j) = 1.0D0 - elem(ie)%state%mask(i,j)
+                elem_physics(ie)%invmask(i,j) = 1.0D0 - elem_physics(ie)%mask(i,j)
              enddo
           enddo
        enddo
@@ -588,9 +591,9 @@ contains
           do j=1,np
              do i=1,np
                 lat  =  elem(ie)%sphereP(i,j)%lat
-                elem(ie)%state%mask(i,j) = Heaviside(lat,mc_mask_k,mc_mask_pos)
+                elem_physics(ie)%mask(i,j) = Heaviside(lat,mc_mask_k,mc_mask_pos)
                 Tmask(i,j,ie) = 60.0D0*(1.0D0 - cos(lat))
-                elem(ie)%state%invmask(i,j) = 1.0D0 - elem(ie)%state%mask(i,j)
+                elem_physics(ie)%invmask(i,j) = 1.0D0 - elem_physics(ie)%mask(i,j)
              enddo
           enddo
        enddo
@@ -617,7 +620,7 @@ contains
              do i=1,np
                 lat  =  elem(ie)%sphereP(i,j)%lat
                 lon  =  elem(ie)%sphereP(i,j)%lon
-                elem(ie)%state%delthetasurf(i,j) =  cm%TstarMinTeb
+                elem_physics(ie)%delthetasurf(i,j) =  cm%TstarMinTeb
              enddo
           enddo
        enddo
@@ -629,7 +632,7 @@ contains
              do i=1,np
                 lat  =  elem(ie)%sphereP(i,j)%lat
                 lon  =  elem(ie)%sphereP(i,j)%lon
-                elem(ie)%state%delthetasurf(i,j) = Warm_pool(lat,lon,cm%TstarMinTeb)
+                elem_physics(ie)%delthetasurf(i,j) = Warm_pool(lat,lon,cm%TstarMinTeb)
              enddo
           enddo
        enddo
@@ -811,27 +814,27 @@ contains
     do ie=nets,nete
        ! useful only if v at t=0 is not zero ...
        ! V1
-       call VerticalProjectionVector(elem(ie)%state%v(:,:,:,:,n0),elem(ie)%state%uproj1(:,:,:,n0),&
+       call VerticalProjectionVector(elem(ie)%state%v(:,:,:,:,n0),elem_physics(ie)%uproj1(:,:,:,n0),&
             cm%D%phi(:,1),elem(ie)%state%lnps(:,:,n0),hvcoord)
        ! V2
-       call VerticalProjectionVector(elem(ie)%state%v(:,:,:,:,n0),elem(ie)%state%uproj2(:,:,:,n0),&
+       call VerticalProjectionVector(elem(ie)%state%v(:,:,:,:,n0),elem_physics(ie)%uproj2(:,:,:,n0),&
             cm%D%phi(:,2),elem(ie)%state%lnps(:,:,n0),hvcoord)
        ! Vbar
-       call VerticalProjectionVector(elem(ie)%state%v(:,:,:,:,n0),elem(ie)%state%ubar(:,:,:,n0),&
+       call VerticalProjectionVector(elem(ie)%state%v(:,:,:,:,n0),elem_physics(ie)%ubar(:,:,:,n0),&
             cm%D%cstmode(:),elem(ie)%state%lnps(:,:,n0),hvcoord)
 
        do j=1,np
           do i=1,np
-             up1 = elem(ie)%state%uproj1(i,j,:,n0)
-             up2 = elem(ie)%state%uproj2(i,j,:,n0)
-             elem(ie)%state%uproj1(i,j,1,n0)=up1(1)*cm%D%Aphi(1,1)+up2(1)*cm%D%Aphi(1,2)
-             elem(ie)%state%uproj1(i,j,2,n0)=up1(2)*cm%D%Aphi(1,1)+up2(2)*cm%D%Aphi(1,2)
-             elem(ie)%state%uproj2(i,j,1,n0)=up1(1)*cm%D%Aphi(2,1)+up2(1)*cm%D%Aphi(2,2)
-             elem(ie)%state%uproj2(i,j,2,n0)=up1(2)*cm%D%Aphi(2,1)+up2(2)*cm%D%Aphi(2,2)
+             up1 = elem_physics(ie)%uproj1(i,j,:,n0)
+             up2 = elem_physics(ie)%uproj2(i,j,:,n0)
+             elem_physics(ie)%uproj1(i,j,1,n0)=up1(1)*cm%D%Aphi(1,1)+up2(1)*cm%D%Aphi(1,2)
+             elem_physics(ie)%uproj1(i,j,2,n0)=up1(2)*cm%D%Aphi(1,1)+up2(2)*cm%D%Aphi(1,2)
+             elem_physics(ie)%uproj2(i,j,1,n0)=up1(1)*cm%D%Aphi(2,1)+up2(1)*cm%D%Aphi(2,2)
+             elem_physics(ie)%uproj2(i,j,2,n0)=up1(2)*cm%D%Aphi(2,1)+up2(2)*cm%D%Aphi(2,2)
           enddo
        enddo
 
-       if(Debug) print *,ie,":AVERAGE = ",elem(ie)%state%qmc(:,:,n0), " ===> Q = ", elem(ie)%state%Q(:,:,:,1,n0)
+       if(Debug) print *,ie,":AVERAGE = ",elem_physics(ie)%qmc(:,:,n0), " ===> Q = ", elem(ie)%state%Q(:,:,:,1,n0)
 
        ! copy other time-slabs
 
@@ -869,7 +872,7 @@ contains
        ! Stores potential temp at t=0 ... 
    
        pot(:,:,:) = Temp2PotTemp(elem(ie)%state%T(:,:,:,n0),p(:,:,:))
-       elem(ie)%state%pot0(:,:,:) = pot(:,:,:) ! this is to do pot -pot(t=0) later
+       elem_physics(ie)%pot0(:,:,:) = pot(:,:,:) ! this is to do pot -pot(t=0) later
        do k=1,nlev
           OneMinusPonPs(:,:,k) = 1.0D0 - p(:,:,k)/ps(:,:)
        enddo
@@ -1043,29 +1046,29 @@ contains
        ! copy for other time steps
        do j=1,np
           do i=1,np                 
-             elem(ie)%state%ubar(i,j,1:2,2)   = elem(ie)%state%ubar(i,j,1:2,1) 
-             elem(ie)%state%ubar(i,j,1:,3)    = elem(ie)%state%ubar(i,j,1:2,1) 
-             elem(ie)%state%uproj1(i,j,1:2,2) = elem(ie)%state%uproj1(i,j,1:2,1) 
-             elem(ie)%state%uproj1(i,j,1:2,3) = elem(ie)%state%uproj1(i,j,1:2,1) 
-             elem(ie)%state%uproj2(i,j,1:2,2) = elem(ie)%state%uproj2(i,j,1:2,1) 
-             elem(ie)%state%uproj2(i,j,1:2,3) = elem(ie)%state%uproj2(i,j,1:2,1)
+             elem_physics(ie)%ubar(i,j,1:2,2)   = elem_physics(ie)%ubar(i,j,1:2,1) 
+             elem_physics(ie)%ubar(i,j,1:,3)    = elem_physics(ie)%ubar(i,j,1:2,1) 
+             elem_physics(ie)%uproj1(i,j,1:2,2) = elem_physics(ie)%uproj1(i,j,1:2,1) 
+             elem_physics(ie)%uproj1(i,j,1:2,3) = elem_physics(ie)%uproj1(i,j,1:2,1) 
+             elem_physics(ie)%uproj2(i,j,1:2,2) = elem_physics(ie)%uproj2(i,j,1:2,1) 
+             elem_physics(ie)%uproj2(i,j,1:2,3) = elem_physics(ie)%uproj2(i,j,1:2,1)
 
              lat  =  elem(ie)%sphereP(i,j)%lat
 
-             elem(ie)%state%qmc(i,j,1)        = 0.0D0 !FOR TESTING ADVECTION cos(lat)*cos(lat)
-             elem(ie)%state%qmc(i,j,2)        = elem(ie)%state%qmc(i,j,1) 
-             elem(ie)%state%qmc(i,j,3)        = elem(ie)%state%qmc(i,j,1) 
+             elem_physics(ie)%qmc(i,j,1)        = 0.0D0 !FOR TESTING ADVECTION cos(lat)*cos(lat)
+             elem_physics(ie)%qmc(i,j,2)        = elem_physics(ie)%qmc(i,j,1) 
+             elem_physics(ie)%qmc(i,j,3)        = elem_physics(ie)%qmc(i,j,1) 
 
-             elem(ie)%state%Hs(i,j,1:3)       = cm%alpha_strat*cm%Q0R1
-             elem(ie)%state%Hc(i,j,1:3)       = cm%D%Q0R2+cm%alpha_strat*cm%Q0R1
-             elem(ie)%state%QHeating(i,j,:)   = 0.0D0
-             elem(ie)%state%teb(i,j,1:3)      = 0.0D0
+             elem_physics(ie)%Hs(i,j,1:3)       = cm%alpha_strat*cm%Q0R1
+             elem_physics(ie)%Hc(i,j,1:3)       = cm%D%Q0R2+cm%alpha_strat*cm%Q0R1
+             elem_physics(ie)%QHeating(i,j,:)   = 0.0D0
+             elem_physics(ie)%teb(i,j,1:3)      = 0.0D0
           enddo
        enddo
 
-       if(Debug)print *,"QMC1 = ",elem(ie)%state%qmc(:,:,1)
-       if(Debug)print *,"QMC2 = ",elem(ie)%state%qmc(:,:,2)
-       if(Debug)print *,"QMC3 = ",elem(ie)%state%qmc(:,:,3)
+       if(Debug)print *,"QMC1 = ",elem_physics(ie)%qmc(:,:,1)
+       if(Debug)print *,"QMC2 = ",elem_physics(ie)%qmc(:,:,2)
+       if(Debug)print *,"QMC3 = ",elem_physics(ie)%qmc(:,:,3)
 
     enddo
 
@@ -1136,8 +1139,9 @@ contains
   end subroutine ApplyHeldSuarezForcing
 
 
-  subroutine ApplyAquaplanetForcing(elem, hybrid,cm,dt,hvcoord, tl, nets, nete,mc)
+  subroutine ApplyAquaplanetForcing(elem, elem_physics, hybrid,cm,dt,hvcoord, tl, nets, nete,mc)
     type (element_t),intent(inout) :: elem(:)
+    type(elem_physics_t), intent(inout) :: elem_physics(:)
     type (hybrid_t), intent(in)       :: hybrid
     type (AquaplanetForcing_t),intent(inout) :: cm
     real (kind=real_kind),intent(in)             :: dt
@@ -1148,7 +1152,7 @@ contains
     type (ColumnModelMulticloud_t), intent(in),optional :: mc
     if(cm%INIT)then
        do ie=nets,nete
-          call aquaplanet_forcing(dt,ie,elem(ie),hybrid,hvcoord,nets,nete,tl,mc)
+          call aquaplanet_forcing(dt,ie,elem(ie),elem_physics(ie), hybrid,hvcoord,nets,nete,tl,mc)
           ! AMIK was removed on 5/29/2008: put back on 12/24/2008 
           ! Removed again on 1/13/2009
           !call gravity_wave_drag_forcing(dt,elem(ie),tl)
