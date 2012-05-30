@@ -389,26 +389,10 @@ module element_mod
   end type element_t
 
 
-  type, public :: eroot_t
-     sequence
-     type(element_t), pointer :: first
-  end type eroot_t
-
-  integer, public :: NumEdges
-
-  type (eroot_t), public :: eroot
-
   public :: element_coordinates
   public :: element_var_coordinates
   public :: element_var_coordinates3D
-
-
   public :: GetColumnIdP,GetColumnIdV
-#if 0
-  interface assignment  ( = ) 
-     module procedure copy_node
-  end interface
-#endif
 
 contains
 
