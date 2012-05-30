@@ -129,7 +129,7 @@ contains
   subroutine Zero_Forcing(elemin,tl)
     use element_mod, only : element_t
     use time_mod, only : timelevel_t
-    use dimensions_mod, only : np, nlev, qsize_d
+    use dimensions_mod, only : np, nlev, qsize
     type(element_t), intent(inout) :: elemin
     type(timelevel_t), intent(in) :: tl
 
@@ -145,7 +145,7 @@ contains
           enddo
        enddo
     enddo
-    do m=1,qsize_d
+    do m=1,qsize
        do k=1,nlev
           do j=1,np
              do i=1,np

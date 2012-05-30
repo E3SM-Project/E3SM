@@ -32,7 +32,8 @@ module dimensions_mod
   integer, parameter, public :: np = NP
   integer, parameter, public :: nc = 4
   integer         :: ntrac = 0
-  integer         :: qsize=qsize_d
+!  integer         :: qsize=qsize_d
+  integer         :: qsize=4
 #endif
 
   ! CSLAM dimensions:
