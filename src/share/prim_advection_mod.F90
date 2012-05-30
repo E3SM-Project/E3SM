@@ -1218,9 +1218,7 @@ module prim_advection_mod
   private  
 
   public :: Prim_Advec_Init, Prim_Advec_Tracers_remap_rk2, Prim_Advec_Tracers_lf
-#ifndef MESH
   public :: prim_advec_tracers_cslam
-#endif
 
   type (EdgeBuffer_t) :: edgeAdv, edgeAdvQ3, edgeAdv_p1, edgeAdvQ2, edgeAdv1
 
@@ -1256,7 +1254,6 @@ contains
   end subroutine Prim_Advec_Init
 
 
-#ifndef MESH
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! CSLAM driver
@@ -1382,8 +1379,6 @@ contains
 
     call t_stopf('prim_advec_tracers_cslam')
   end subroutine prim_advec_tracers_cslam
-
-#endif
 
 
 

@@ -45,7 +45,10 @@ contains
     use solver_mod, only : blkjac_t
 
     integer  :: nets,nete
-    type(element_t) :: elem(nelemd)
+
+! MT:  this cant be correct: this routine has a static copy of the entire elem struct???
+!    type(element_t) :: elem(nelemd)
+
     real (kind=real_kind), intent(in) :: rhs(nv,nv,nlev,nelemd) ! right hand side of operator
     type (cg_t)                       :: cg             ! conjugate gradient    (private)
     type (ReductionBuffer_ordered_1d_t)  :: red         ! CG reduction buffer   (shared memory)

@@ -21,9 +21,7 @@ module prim_driver_mod
   use derivative_mod, only : derivative_t
   use reduction_mod, only : reductionbuffer_ordered_1d_t, red_min, red_max, &
          red_sum, red_sum_int, red_flops, initreductionbuffer
-#ifndef MESH
   use cslam_mod, only : cslam_init1,cslam_init2
-#endif
   use cslam_control_volume_mod, only : cslam_struct
   use element_mod, only : element_t
 
@@ -51,6 +49,7 @@ module prim_driver_mod
   type (ReductionBuffer_ordered_1d_t), save :: red   ! reduction buffer               (shared)
 
 contains
+
   subroutine prim_init1(elem, cslam, par, dom_mt, Tl)
     ! --------------------------------
     use thread_mod, only : nthreads, omp_get_thread_num, omp_set_num_threads
@@ -147,11 +146,11 @@ contains
     real(kind=real_kind) :: approx_elements_per_task
     integer :: n_domains
 
+
 #ifndef CAM
     logical :: repro_sum_use_ddpdd, repro_sum_recompute
     real(kind=real_kind) :: repro_sum_rel_diff_max
 #endif
-
     ! =====================================
     ! Read in model control information
     ! =====================================
@@ -305,25 +304,21 @@ contains
        call abortmp('Not yet ready to handle nelemd = 0 yet' )
        stop
     endif
-
 #ifdef _MPI 
-    call mpi_allreduce(nelemd,nelemdmax,1, &
-         MPIinteger_t,MPI_MAX,par%comm,ierr)
+    call mpi_allreduce(nelemd,nelemdmax,1,MPIinteger_t,MPI_MAX,par%comm,ierr)
 #else
     nelemdmax=nelemd
 #endif
 
-    allocate(elem(nelemd))
-
-#ifndef MESH
+    if (nelemd>0) allocate(elem(nelemd))
     if (ntrac>0) allocate(cslam(nelemd))
-#endif
 
     ! ====================================================
     !  Generate the communication schedule
     ! ====================================================
 
     call genEdgeSched(elem,iam,Schedule(1),MetaVertex(1))
+
 
     allocate(global_shared_buf(nelemd,nrepro_vars))
     !  nlyr=edge3p1%nlyr
@@ -348,6 +343,7 @@ contains
 #if (defined ELEMENT_OPENMP)
     n_domains = 1
 #endif
+
 
     ! =================================================================
     ! Initialize shared boundary_exchange and reduction buffers
@@ -526,14 +522,12 @@ contains
     call prim_advance_init(integration)
     call Prim_Advec_Init()
     call diffusion_init()
-#ifndef MESH
     if (ntrac>0) call cslam_init1(par)
-#endif
 
     call TimeLevel_init(tl)
     if(par%masterproc) write(iulog,*) 'end of prim_init'
-    
   end subroutine prim_init1
+
 
   subroutine prim_init2(elem,cslam, hybrid, nets, nete, tl, hvcoord)
     use parallel_mod, only : parallel_t, haltmp, syncmp, abortmp
@@ -558,11 +552,7 @@ contains
     use column_model_mod, only : InitColumnModel
     use held_suarez_mod, only : hs0_init_state
     use baroclinic_inst_mod, only : binst_init_state, jw_baroclinic
-#ifndef MESH
     use asp_tests, only : asp_tracer, asp_baroclinic, asp_rossby, asp_mountain, asp_gravity_wave 
-#else
-    use asp_tests, only : asp_tracer, asp_rossby, asp_mountain, asp_gravity_wave
-#endif
     use aquaplanet, only : aquaplanet_init_state
 #endif
 
@@ -638,12 +628,10 @@ contains
     ! ==================================
     call derivinit(deriv(hybrid%ithr),cslam_corners)
 
-#ifndef MESH
     ! ================================================
     ! CSLAM initialization
     ! ================================================
     if (ntrac>0) call cslam_init2(elem,cslam,hybrid,nets,nete,tl)
-#endif
 
 
     ! ====================================
@@ -755,7 +743,7 @@ contains
              elem(ie)%state%T(:,:,:,tl%nm1)=elem(ie)%state%T(:,:,:,tl%n0)
              elem(ie)%state%ps_v(:,:,tl%nm1)=elem(ie)%state%ps_v(:,:,tl%n0)
              elem(ie)%state%lnps(:,:,tl%nm1)=elem(ie)%state%lnps(:,:,tl%n0)
-             elem(ie)%state%Q(:,:,:,:,tl%nm1)=elem(ie)%state%Q(:,:,:,:,tl%n0)
+             elem(ie)%state%Q(:,:,:,1:qsize,tl%nm1)=elem(ie)%state%Q(:,:,:,1:qsize,tl%n0)
           enddo
        endif ! runtype==2
        if (hybrid%masterthread) then 
@@ -803,11 +791,7 @@ contains
           if (hybrid%masterthread) then
              write(iulog,*) 'initializing Jablonowski and Williamson ASP baroclinic instability test'
           end if
-#ifndef MESH
           call asp_baroclinic(elem, hybrid,hvcoord,nets,nete,cslam)
-#else
-          call abortmp('The Jablonowski and Williamson ASP baroclinic instability test is only available when the CPP macro MESH is not defined')
-#endif
        else if (test_case(1:13) == "jw_baroclinic") then
           if (hybrid%masterthread) then
              write(iulog,*) 'initializing Jablonowski and Williamson baroclinic instability test V1'
@@ -921,7 +905,6 @@ contains
 
     call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete, cslam)
   end subroutine prim_init2
-
 
 
 
@@ -1176,11 +1159,7 @@ contains
            TRACERADV_TOTAL_DIVERGENCE,TRACERADV_UGRADQ, energy_fixer, ftype, qsplit, nu_p, test_cfldep
     use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3, applycamforcing, &
                                  applycamforcing_dynamics, prim_advance_exp
-#ifndef MESH
     use prim_advection_mod, only : prim_advec_tracers_remap_rk2, prim_advec_tracers_cslam
-#else
-    use prim_advection_mod, only : prim_advec_tracers_remap_rk2
-#endif
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use parallel_mod, only : abortmp
     use reduction_mod, only : parallelmax
@@ -1302,7 +1281,6 @@ contains
     if (qsize>0) call Prim_Advec_Tracers_remap_rk2(elem, deriv(hybrid%ithr),hvcoord,flt_advection,hybrid,&
          dt_q,tl,nets,nete,compute_diagnostics)
 
-#ifndef MESH
     if (ntrac>0) then 
       if ( n_Q /= tl%n0 ) then
         do ie=nets,nete
@@ -1354,7 +1332,6 @@ contains
        ! step 4:  apply DSS to make ps_v continuous 
        !          (or use continuous reconstruction)
     endif
-#endif
 
 
     ! now we have:
