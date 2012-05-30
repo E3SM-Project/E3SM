@@ -1295,8 +1295,8 @@ contains
     ! Prim_Advec_Tracers will advance from n0 -> np1, so make sure Q(n_Q) data is in the n0 timelevel:
     if ( n_Q /= tl%n0 ) then
       do ie=nets,nete
-        elem(ie)%state%Q(:,:,:,:,tl%n0)  = elem(ie)%state%Q(:,:,:,:,n_Q)
-        elem(ie)%state%Qdp(:,:,:,:,tl%n0)  = elem(ie)%state%Qdp(:,:,:,:,n_Q)
+        elem(ie)%state%Q(:,:,:,1:qsize,tl%n0)  = elem(ie)%state%Q(:,:,:,1:qsize,n_Q)
+        elem(ie)%state%Qdp(:,:,:,1:qsize,tl%n0)  = elem(ie)%state%Qdp(:,:,:,1:qsize,n_Q)
       enddo
     endif
     if (qsize>0) call Prim_Advec_Tracers_remap_rk2(elem, deriv(hybrid%ithr),hvcoord,flt_advection,hybrid,&
@@ -1306,7 +1306,7 @@ contains
     if (ntrac>0) then 
       if ( n_Q /= tl%n0 ) then
         do ie=nets,nete
-          cslam(ie)%c(:,:,:,:,tl%n0)  = cslam(ie)%c(:,:,:,:,n_Q)
+          cslam(ie)%c(:,:,:,1:ntrac,tl%n0)  = cslam(ie)%c(:,:,:,1:ntrac,n_Q)
         enddo
       endif
       call Prim_Advec_Tracers_cslam(elem, cslam, deriv(hybrid%ithr),hvcoord,hybrid,&

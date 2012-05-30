@@ -215,6 +215,11 @@ contains
   ! ucontra = Dinv * u  =  metinv * ucov   
   ! ucov    = D^t * u   =  met * ucontra
   !
+  ! we also compute DE = D*E, where 
+  ! E = eigenvectors of metinv as a basis      metinv = E LAMBDA E^t
+  !   
+  ! ueig = E^t ucov  = E^t D^t u =  (DE)^t u  
+  !  
   !
   ! so if we want to tweak the mapping by a factor alpha (so he weights add up to 4pi, for example)
   ! we take:
@@ -237,7 +242,7 @@ contains
     real (kind=longdouble_kind)      :: gll_points(np)
     ! Local variables
     integer ii,face_no
-    integer i,j
+    integer i,j,nn
     integer iptr
 
     real (kind=real_kind) :: r         ! distance from origin for point on cube tangent to unit sphere
@@ -248,6 +253,7 @@ contains
     real (kind=real_kind) :: x1        ! 1st cube face coordinate
     real (kind=real_kind) :: x2        ! 2nd cube face coordinate
     real (kind=real_kind) :: tmpD(2,2)
+    real (kind=real_kind) :: M(2,2),E(2,2),eig(2),DE(2,2)
     real (kind=real_kind) :: l1, l2     ! eigen values of met
 
     face_no = elem%vertex%face_number
@@ -318,7 +324,53 @@ contains
           elem%metinv(1,2,i,j) = -elem%met(1,2,i,j)/(detD*detD)
           elem%metinv(2,1,i,j) = -elem%met(2,1,i,j)/(detD*detD)
           elem%metinv(2,2,i,j) =  elem%met(1,1,i,j)/(detD*detD)
-          
+#if 0
+          ! compute eigenvectors of metinv
+          M = elem%metinv(:,:,i,j)
+
+          eig(1) = (M(1,1) + M(2,2) + sqrt(4.0d0*M(1,2)*M(2,1) + &
+              (M(1,1) - M(2,2))**2))/2.0d0
+          eig(2) = (M(1,1) + M(2,2) - sqrt(4.0d0*M(1,2)*M(2,1) + &
+              (M(1,1) - M(2,2))**2))/2.0d0
+
+          do nn=1,2
+             if ( abs( M(1,1)-eig(nn)) > abs(M(2,2)-eig(nn)) ) then
+                E(1,nn)= -M(1,2)/( M(1,1)-eig(nn) )
+                E(2,nn)=1
+             else
+                E(1,nn)=1
+                E(2,nn)= -M(1,2)/( M(2,2)-eig(nn) )
+             endif
+             ! normalize
+             norm = sqrt(E(1,nn)**2 + E(2,nn)**2)
+             E(:,nn)=E(:,nn)/norm
+          enddo
+          DE(1,1)=sum(M(1,:)*E(:,1))
+          DE(1,2)=sum(M(1,:)*E(:,2))
+          DE(2,1)=sum(M(2,:)*E(:,1))
+          DE(2,2)=sum(M(2,:)*E(:,2))
+
+          ! verify that M = E LAMBDA E^t   and E E^t = I
+          ! or:  M E = E LAMBDA
+          print *,'E E^t should be I'
+          write(*,'(2e20.10)') sum(E(1,:)*E(1,:)),sum(E(1,:)*E(2,:))
+          write(*,'(2e20.10)') sum(E(2,:)*E(1,:)),sum(E(2,:)*E(2,:))
+          print *,'M E - E LAMBDA (should be zero)'
+          write(*,'(2e20.10)') sum(M(1,:)*E(:,1))-eig(1)*E(1,1),sum(M(1,:)*E(:,2))-eig(2)*E(1,2)
+          write(*,'(2e20.10)') sum(M(2,:)*E(:,1))-eig(1)*E(2,1),sum(M(2,:)*E(:,2))-eig(2)*E(2,2)
+
+          ! Lambda = diag( nu1*eig1, nu2*eig2 )
+          ! viscosity tensor = DE * Lambda * (DE)^t
+          nu1=1
+          nu2=1
+          DEL(:,1) = nu1*eig(1)*DE(:,1)
+          DEL(:,2) = nu2*eig(2)*DE(:,2)
+
+          V(1,1)=sum(DEL(1,:)*DE(1,:))
+          V(1,2)=sum(DEL(1,:)*DE(2,:))
+          V(2,1)=sum(DEL(2,:)*DE(1,:))
+          V(2,2)=sum(DEL(2,:)*DE(2,:))
+#endif          
        end do
     end do
 

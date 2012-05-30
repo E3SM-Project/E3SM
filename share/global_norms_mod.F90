@@ -413,6 +413,22 @@ contains
            max_unif_dx = (111.28*30)/dble(fine_ne)
         endif
 
+! 
+! note: if L = eigenvalue of metinv, then associated length scale (km) is
+! dx = 1.0d0/( sqrt(L)*0.5d0*dble(np-1)*rrearth*1000.0d0)
+!
+!       for viscosity *tensor*, we take at each point: 
+!            nu1 = nu*(dx1/max_unif_dx)**3.2      dx1 associated with eigenvalue 1
+!            nu2 = nu*(dx2/max_unif_dx)**3.2      dx2 associated with eigenvalue 2
+!       with this approach:
+!          - with this formula, no need to adjust for CFL violations
+!          - if nu comes from a 3.2 scaling that is stable for coarse and fine resolutions,
+!            this formulat will be stable.  
+!          - gives the correct answer in long skinny rectangles:
+!            large viscosity in the long direction, small viscosity in the short direction 
+!            
+!
+
         dt = tstep
         max_hvcourant = 0
 
