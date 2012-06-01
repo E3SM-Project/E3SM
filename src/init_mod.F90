@@ -179,14 +179,17 @@ contains
 #else
           call abortmp('Input file requires compilation with CPP macro MESH, but mesh support was not built in. Aborting.')
 #endif
-       end if
+
+       else
 
 #ifndef MESH 
-        nelem      = CubeElemCount()
-        nelem_edge = CubeEdgeCount() 
+          nelem      = CubeElemCount()
+          nelem_edge = CubeEdgeCount() 
 #else
-        call abortmp('Input file does not require an external mesh file, yet the standard cube topology was not built in. Aborting.')
+          call abortmp('Input file does not require an external mesh file, yet the standard cube topology was not built in. Aborting.')
 #endif
+       end if
+
 
         approx_elements_per_task = dble(nelem)/dble(par%nprocs)
         if  (approx_elements_per_task < 1.0D0) then
