@@ -151,7 +151,7 @@ program cslam_main
   write(numtrac_char,*) ntrac
 !   call system('mkdir -p '//'time/'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char))) 
 !  call t_prf('time/'//trim(adjustl(numproc_char))//'/'//trim(adjustl(numtrac_char))//'/HommeCSLAMTime',par%comm)
-  call t_prf('HommeSETime',par%comm)
+  call t_prf('HommeCSLAMTime',par%comm)
   call t_finalizef()
   call haltmp("exiting program...")
   deallocate(elem)
