@@ -28,7 +28,7 @@ subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
   ! ---------------------------------------------------------------------------------  
   use cslam_control_volume_mod, only: cslam_struct
   ! ---------------------------------------------------------------------------------
-  use cslam_mod, only: cslam_runair, cslam_init1,cslam_init2, cslam_mcgregor, cellghostbuf, edgeveloc
+  use cslam_mod, only: cslam_runair, cslam_init1,cslam_init2, cslam_mcgregor,cslam_mcgregordss, cellghostbuf, edgeveloc
   ! ---------------------------------------------------------------------------------
   use cslam_line_integrals_mod, only: compute_weights
   ! ---------------------------------------------------------------------------------  
@@ -247,6 +247,7 @@ subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
   
   !BEGIN TIME LOOP, start at 0, calculate then next step
   DO WHILE(tl%nstep<nmax)
+! start old mcgregor----------------------
     do ie=nets,nete
       do k=1,nlev
         vstar = get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
@@ -270,7 +271,16 @@ subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
          elem(ie)%derived%vstar(:,:,2,k)=elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%rspheremp(:,:)
        end do
     end do
-     
+!end old mcgegor-----------------------
+! ! start mcgregordss
+!     do ie=nets,nete
+!       do k=1,nlev
+!         elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
+!         cslam(ie)%vn0(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),time_at(tl%nstep))
+!       end do
+!     end do
+!     call cslam_mcgregordss(elem,cslam,nets,nete, hybrid, deriv, tstep, 3)
+! ! end mcgregordss   
     call cslam_runair(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
   
     do ie=nets,nete

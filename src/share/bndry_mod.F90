@@ -486,7 +486,7 @@ contains
     use kinds, only : log_kind
     use edge_mod, only : Ghostbuffertr_t
     use schedule_mod, only : schedule_t, cycle_t, schedule
-    use dimensions_mod, only: nelemd, ntrac
+    use dimensions_mod, only: nelemd
 #ifdef _MPI
     use parallel_mod, only : abortmp, status, srequest, rrequest, &
          mpireal_t, mpiinteger_t, mpi_success
@@ -503,7 +503,7 @@ contains
     type (Cycle_t),pointer                        :: pCycle
     integer                                       :: dest,length,tag
     integer                                       :: icycle,ierr
-    integer                                       :: iptr,source,nlyr
+    integer                                       :: iptr,source,nlyr,ntrac
     integer                                       :: nSendCycles,nRecvCycles
     integer                                       :: errorcode,errorlen
     character*(80) errorstring
@@ -525,6 +525,7 @@ contains
        pSchedule => Schedule(1)
 #endif
        nlyr = buffer%nlyr
+       ntrac = buffer%ntrac
               
        nSendCycles = pSchedule%nSendCycles
        nRecvCycles = pSchedule%nRecvCycles
