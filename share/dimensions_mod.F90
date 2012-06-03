@@ -13,12 +13,12 @@ module dimensions_mod
 ! set MAX number of tracers.  actual number of tracers is a run time argument  
 #ifndef CAM
   integer, parameter         :: qsize_d=4          ! SE tracers  
-  integer, parameter         :: ntrac_d=4          ! CSLAM tracers
+  integer, parameter         :: ntrac_d=0          ! CSLAM tracers
 #endif
   integer, parameter, public :: nvar = 3 ! FI # dependent variables 
 
-
-#ifdef _CSLAM 
+!this can be deleted, once CSLAM has its own interp I/O
+#ifdef _CSLAM   
   ! settings used by 2D CSLAM test code: 
   integer, parameter, public :: np = NC+1 ! this can be delted once CSLAM has it own I/O
   ! nc  : nc*nc is the number of finite volume cells on each element (we have 
@@ -26,11 +26,11 @@ module dimensions_mod
   integer, parameter, public :: nc=NC       
 
   ! set the number of tracers
-  integer         :: ntrac =ntrac_d
+  integer         :: ntrac =0
   integer         :: qsize=0
 #else   
   integer, parameter, public :: np = NP
-  integer, parameter, public :: nc = 4
+  integer, parameter, public :: nc = NC
   integer         :: ntrac = 0
   integer         :: qsize = 0
 #endif
