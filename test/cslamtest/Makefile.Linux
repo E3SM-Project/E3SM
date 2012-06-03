@@ -1,0 +1,83 @@
+# MAKEFILE written by Christoph Erath
+# NP has to be at least >=2
+NP        = 5
+# NC has to be at >=4
+NC        = 4 
+#for preqx set it to 26
+PLEV      = 1
+QUEUE        =  qsub
+#QUEUE       = cqsub -q debug or cqsub -q JumboFridays
+# EXECUTE   = preqx
+# EXECUTE   =  preqxse
+EXECUTE   =  preqx
+# EXECUTE   = sweqx
+# INPUT     = baro.nl 
+# INPUT     = barocslamnp5.nl
+# INPUT   =  barosenp4.nl
+# INPUT     = cs-swtc5-ne5.nl
+
+HNAME     = $(shell hostname -s)
+ARCH      = $(shell uname -s)
+ADIR      = $(shell pwd)
+all:
+	@echo "********** Running HOMME-$(EXECUTE) on $(HNAME): Operating system $(ARCH) **********"
+	@echo
+	@echo "*** BUILD $(EXECUTE) in build/" 
+	cd ../../build/$(EXECUTE)/ && make -j 4
+	cd $(ADIR) 
+
+runse:
+	@echo " ************* RUN preqxse with the command $(QUEUE): -n $(NPROC) ./preqxse **********"
+	@echo " ********************************--->"
+	@echo
+	$(QUEUE) < preqxse.run
+
+runcslam:
+	@echo " ************* RUN preqxcslam with the command $(QUEUE): -n $(NPROC) ./preqxcslam **********"
+	@echo " ********************************--->"
+	@echo
+	$(QUEUE) < preqxcslam.run
+	
+run:
+	@echo " ************* RUN $(EXECUTE) with the command $(QUEUE): -n $(NPROC) ./$(EXECUTE) **********"
+	@echo " ********************************--->"
+	@echo
+	cp $(INPUT) input.nl 
+	cp ../vcoord/cam*-26.fbin.littleendian .   #depending on which machine we are use littleendian
+	@echo "*** COPY $(EXECUTE) TO $(ADIR)"
+	cp ../../build/$(EXECUTE)/$(EXECUTE) .
+  # mkdir -p time/$(NPROC)
+  # cd time/$(NPROC) && mkdir -p $(NTRAC)
+  # cd $(ADIR)
+	$(QUEUE) < $(EXECUTE).run
+
+cleansource:
+	@echo "*** Clean Source from $(EXECUTE) in build/$(EXECUTE)" 
+	cd ../../build/$(EXECUTE)/ && make clean
+	cd $(ADIR)
+
+depends:
+	@echo "*** RENEW DEPENDENCIES in Source from $(EXECUTE) in build/$(EXECUTE)"
+	cd ../../build/$(EXECUTE)/ && make clean-depends && make depends
+	cd $(ADIR)
+	@echo "*** DONE: RENEW DEPENDENCIES in Source from $(EXECUTE) in build/$(EXECUTE)"
+
+clean:
+	rm -rf *.err *.out *.errors *~ fort.* swtc*.* core.* sweq.*
+
+tclean:	
+	rm -rf *.txt mpi_profile.* events.trc
+
+pclean:
+	rm -rf corun.* vnrun.* debug.*
+
+dclean:
+	rm -rf ./data/*.out ./movies/*.nc debug*
+
+clear: tclean clean dclean
+
+comp:
+	@echo "**** Running everything for HOMME-$(EXECUTE) on $(HNAME): Operating system $(ARCH) ******"
+	cd ../../build/$(EXECUTE)/  && aclocal && autoconf && automake && ./configure NC=$(NC) NP=$(NP) PLEV=$(PLEV) --enable-blas --enable-lapack --enable-pio --enable-cslam --with-pnetcdf=$(PNETCDF_PATH) --with-netcdf=$(NETCDF_PATH) && make clean-depends && make depends  
+	make cleansource
+	make  

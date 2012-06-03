@@ -12,9 +12,9 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/shea_util.ncl"
 
 begin
-  fnames =  "frost/filter/cslam_boomerang50-4-300filter.nc"  
-  output_format = "pdf"                ; change for different outputs
-  wks = gsn_open_wks(output_format,"cslam_boomerang50-4-300filter")  ; Open an X11 window
+  fnames =  "cslam_boomerang1.nc"  
+  output_format = "ps"                ; change for different outputs
+  wks = gsn_open_wks(output_format,"cslam_boomerang1")  ; Open an X11 window
 
 
   f = addfile(fnames,"r") 
@@ -29,7 +29,7 @@ begin
   nxy = dimsizes(lon1d);
   print ("ntimes="+ntimes+" nxy="+nxy)
 
-  firsttime=ntimes-5
+  firsttime=1
   lasttime=ntimes-1
   timeinc=1
   
@@ -73,11 +73,11 @@ begin
   res@sfYArray            = lat1d        ; overlay data on globe.
   ; plotval = new(dimsizes(time),graphic)
   
-  k=0  ; first level only
+  k=1  ; first level only
     do t = firsttime,lasttime,timeinc
-    val=f->c(t,k,:)
-    res@cnMinLevelValF = -0.05
-    res@cnMaxLevelValF = 1.2
+    val=f->c2(t,k,:)
+    res@cnMinLevelValF = 0.09
+    res@cnMaxLevelValF = 1
     res@cnLevelSpacingF = 0.05
     
     res@tiMainString        = "c at level = "+k+", time="+time(t)+" days"    ;

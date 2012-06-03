@@ -6,7 +6,7 @@ begin
   ; define problem, outputformat and output variables
   problem = "swtc5"
   output_format = "ps"	
-  field = (/"c","c2"/)
+  field = (/"c","c2", "c3"/)
 
   fname =  "movies/"+problem+"1.nc"
   f     = addfile(fname,"r")       ; Open netCDF file.
@@ -22,15 +22,14 @@ begin
   lastlev=nlev-1
   levinc=1
   
- print ("ntimes="+ntimes+" nlev="+nlev)
- print ("plotting index = "+lasttime)
+  print ("ntimes="+ntimes+" nlev="+nlev)
+  print ("plotting index = "+lasttime)
 
   time = f->time
  
   wks = gsn_open_wks(output_format,"sweqx")
 
 ; To see the various colormaps, go to:
-;
 ; http://ngwww.ucar.edu/ncl/coltable.html
 ;
   gsn_define_colormap(wks,"BlAqGrYeOrReVi200")
@@ -47,13 +46,13 @@ begin
 
   res@lbLabelAutoStride   = True         ; Clean up labelbar labels.
   res@lbBoxLinesOn        = False        ; Turn of labelbar box lines.
-  res@cnMinLevelValF = 0.09
-  res@cnMaxLevelValF = 2
-  res@cnLevelSpacingF = 0.05
+  ; res@cnMinLevelValF = 1
+  ; res@cnMaxLevelValF = 1100
+  ; res@cnLevelSpacingF = 10
   
   do k = firstlev,lastlev,levinc
-    do t = firsttime,lasttime,timeinc
-      do n = 0,dimsizes(field)-1
+    do n = 0,dimsizes(field)-1
+     do t = firsttime,lasttime,timeinc
         print("field = "+field(n))
         var=(f->$field(n)$(t,k,:))
         print(dimsizes(var))

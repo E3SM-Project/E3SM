@@ -1,49 +1,48 @@
-!===================================================================================!
-! TEST INPUT for CSLAM                                                              !
-! Christoph Erath                                                                   !
-! 	1 day = 1 * 24 * 3600 = 86400 sec		                                            !
-! 	nmax  = ndays * 86400 / tstep 			                                            !
-! 	12 days (1036800 s) 		                                                        !
-!===================================================================================!
 &ctl_nl
 NThreads      = 1
-partmethod    = 4
-test_case     = "cslam_boomerang"
-ne            = 5 !4 ! number of elements is ne*ne on each face, number must be >=2, o
-                  !ne element per face is not allowed
-ndays	        = 12
-!nmax = 2
-tstep         = 1200   ! use factor 2 of 600 to reach the end time
+partmethod    = 0
+topology      = "cube"
+test_case     = "swtc5"
+test_cfldep   = .TRUE.
+ne            = 22
+ndays         = 15
+ntrac         = 4
+statefreq     = 360
+accumfreq     = 90
+accumstart    = 300
+accumstop     = 600
+restartfreq   = -100
+restartfile   = "./R0001"
+runtype       = 0
+tstep         = 60
+smooth        = 0.00
+integration   = "explicit"
+nu = 1e15
+nu_s = 1e15
+hypervis_order = 2
+hypervis_subcycle = 1
+/
+&solver_nl
+precon_method = "block_jacobi"
+maxits        = 100
+tol           = 1.e-12
+debug_level   = 0
+/
+&filter_nl
+transfer_type = "bv"
+filter_type   = "taylor"
+filter_freq   = 0
+filter_mu     = 0.04D0
+p_bv          = 12.0D0
+s_bv          = .666666666666666666D0
+kcut_fm       = 2
+wght_fm       = 0.10D0
 /
 &analysis_nl
-!=======================================================!
-!  currently up to 5 streams are allowed		!
-!  output_stream_count=1				!
-!							!
-!  timunits: 0= steps, 1=days, 2=hours			!
-!  output_timeunits=1,2 				!
-!  output_start_time=0,1176				!			
-!  output_end_time=-1,-1				!
-!  output_frequency=1,1 				!
-!  output_dir ="./results/" is default				!
-!							!
-!  allowed variables: 'ps   ','geop ', 'c    ', u    ','v    ',	!
-!                     'latp ','lonp ','latv ','lonv ',	!
-!                     'elem ','Time ' 			!
-!							!
-!  output_varnames1-5					!
-!=======================================================!    
-output_start_time = 0
-output_end_time   = 288
-output_frequency  = 6
-output_timeunits  = 2
-output_varnames1  = 'geop','c','c2'
-interp_nlat       = 128
-interp_nlon       = 256
-output_type='netcdf'
+output_timeunits=1
+output_frequency=1
+output_varnames1  = 'geop','c','c2', 'c3'
 /
-
-
 ! this will be used by homme only if namelist file is 'input.nl'
 &prof_inparm
 profile_single_file = .true.
@@ -53,4 +52,10 @@ profile_outpe_num = 5000
 
 
 
-!END of FILE- an extra line is important!
+
+
+
+
+
+
+

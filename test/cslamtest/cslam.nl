@@ -13,7 +13,8 @@ ne            = 5 !4 ! number of elements is ne*ne on each face, number must be 
                   !ne element per face is not allowed
 ndays	        = 12
 !nmax = 2
-tstep         = 1200   ! use factor 2 of 600 to reach the end time
+tstep         = 2400   ! use factor 2 of 600 to reach the end time
+test_cfldep   = .TRUE.
 /
 &analysis_nl
 !=======================================================!

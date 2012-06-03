@@ -8,9 +8,11 @@ begin
   fname1 =  "movies/asp_baroclinic1.nc"
   f1     = addfile(fname1,"r")       ; Open netCDF file.	
 
-  field = (/"Q","C4","Q2","C2","Q3","C3","C"/)
+  ; field = (/"Q", "C4", "Q2", "C2", "Q3", "C3", "Q4", "C"/)
+  ; field = (/"C4"/)
+  field = (/"C4", "C2", "C3", "C"/)
 
-  output_format = "pdf"
+  output_format = "ps"
 
 
   vcnt = getfiledimsizes(f)
@@ -20,6 +22,7 @@ begin
   nxy = vcnt(0)
 
 ; change the levels and or times to plot here
+	firsttime=0
   lasttime=ntimes-1
 
 
@@ -33,8 +36,8 @@ begin
 
   time = f->time
  
-  wks = gsn_open_wks(output_format,"baro2b_native")
-  print ("Writing file baro1b."+output_format)
+  wks = gsn_open_wks(output_format,"baro")
+  print ("Writing file baro."+output_format)
 
 ; To see the various colormaps, go to:
 ;
@@ -66,9 +69,10 @@ begin
     res@mpMaxLatF = 80
     res@vpHeightF           = .3
 
+	do t=firsttime, lasttime
     do n = 0,dimsizes(field)-1
       print("field = "+field(n))
-      var3d=(f->$field(n)$(lasttime,:,:))
+      var3d=(f->$field(n)$(t,:,:))
       print(dimsizes(var3d))
 
       if (f->$field(n)$!2 .eq. "nphys" ) then
@@ -80,7 +84,7 @@ begin
       end if
       
       
-      ps = f1->ps(lasttime,:)
+      ps = f1->ps(t,:)
       hyam = f->hyam
       hybm = f->hybm
       pnew = (/ 850 /)
@@ -104,7 +108,7 @@ begin
       end if
 ;      print(res@cnMinLevelValF+" "+res@cnMaxLevelValF) 
       
-      res@tiMainString        = field(n)+" at level = "+k+", time="+time(lasttime)+" days"    ;
+      res@tiMainString        = field(n)+" at level = "+k+", time="+time(t)+" days"    ;
       contour = gsn_csm_contour_map(wks,var,res)     ; Draw a contour plot.
       print("Contour complete: "+res@tiMainString)
       delete(var3d)
@@ -112,6 +116,7 @@ begin
       delete(res@sfXArray)
       delete(res@sfYArray)
     end do
+	end do
 
 
 end
