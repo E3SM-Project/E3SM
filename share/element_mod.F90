@@ -8,7 +8,11 @@ module element_mod
   ! ------------------------------
   use coordinate_systems_mod, only : spherical_polar_t, cartesian2D_t, cartesian3D_t, distance
   !--------------------------
+#ifdef _CSLAM
   use dimensions_mod, only : np, npsq, nlev, nlevp, qsize_d, nc, nhc, ntrac_d
+#else
+  use dimensions_mod, only : np, npsq, nlev, nlevp, qsize_d
+#endif
   !--------------------------
   use edge_mod, only : edgedescriptor_t, rotation_t
   !--------------------------
