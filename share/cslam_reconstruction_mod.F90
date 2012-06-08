@@ -28,28 +28,22 @@ contains
 !                                                                                   !
 ! CALLS: fillhalo_cubic, reconstruction_cubic                                       !
 ! INPUT: fcube    ...  tracer values incl. the halo zone                            !
-!        cslam    ...  structure incl. tracer values aso                            !
-!        corner   ...  first corner point (lower-left) from the element in          !
-!                      alpha/beta representation                                    ! 
+!        cslam    ...  structure incl. tracer values aso                            !                                   ! 
 ! OUTPUT:recons   ...  has the reconstruction coefficients (5) for the 3rd order    !
 !                      reconstruction: dx, dy, dx^2, dy^2, dxdy                     !
 !-----------------------------------------------------------------------------------!
-subroutine reconstruction(fcube,cslam,corner,recons)
+subroutine reconstruction(fcube,cslam,recons)
   use cslam_control_volume_mod, only: cslam_struct
 
   implicit none
   real (kind=real_kind), dimension(1-nhc:nc+nhc, 1-nhc:nc+nhc), intent(in) :: fcube
   type (cslam_struct), intent(in)                                     :: cslam
-  type (cartesian2D_t), intent(in)                                    :: corner
   real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe), &
                                                     intent(out)       :: recons
   
   real (kind=real_kind),dimension(-1:nc+2,2,2)                        :: fnewval
   real (kind=real_kind), dimension(-1:nc+2,2,2)                       :: fhalo
   real (kind=real_kind), dimension(0:nhe+1,2,2)                       :: fhaloex
-  real (kind=real_kind),dimension(-1:nc+2,2,2)                        :: fnewval_new
-  real (kind=real_kind), dimension(-1:nc+2,2,2)                       :: fhalo_new
-  real (kind=real_kind), dimension(0:nhe+1,2,2)                       :: fhaloex_new
           
   ! if element lies on a cube edge, recalculation the values in the halo zone
   if (cslam%cubeboundary > 0) then    

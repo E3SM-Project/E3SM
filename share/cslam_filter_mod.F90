@@ -17,6 +17,7 @@ module cslam_filter_mod
   implicit none
   private
   public :: monotonic_gradient_cart
+  public :: recons_val_cart
 contains
 ! ----------------------------------------------------------------------------------!
 !SUBROUTINE MONOTONIC_GRADIENT_CART-------------------------------------CE-for CSLAM!

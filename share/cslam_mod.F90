@@ -76,7 +76,7 @@ subroutine cslam_run(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
       !loop through all tracers
       do itr=1,ntrac
         tracer0=cslam(ie)%c(:,:,k,itr,tl%n0)
-        call reconstruction(tracer0, cslam(ie),elem(ie)%corners(1),recons)
+        call reconstruction(tracer0, cslam(ie),recons)
         call monotonic_gradient_cart(tracer0, cslam(ie),recons, elem(ie)%desc)
         tracer1=0.0D0   
 !         do h=1,jall
@@ -161,7 +161,7 @@ subroutine cslam_runairdensity(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
              weights_lgr_index_all,jall) 
              
       tracer_air0=1.0D0 !elem(ie)%derived%dp(:,:,k)       
-      call reconstruction(tracer_air0, cslam(ie),elem(ie)%corners(1),recons_air)
+      call reconstruction(tracer_air0, cslam(ie),recons_air)
       call monotonic_gradient_cart(tracer_air0, cslam(ie),recons_air, elem(ie)%desc)
       tracer_air1=0.0D0   
 
@@ -176,7 +176,7 @@ subroutine cslam_runairdensity(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
       !loop through all tracers
       do itr=1,ntrac
         tracer0=cslam(ie)%c(:,:,k,itr,tl%n0)
-        call reconstruction(tracer0, cslam(ie),elem(ie)%corners(1),recons)
+        call reconstruction(tracer0, cslam(ie),recons)
         call monotonic_gradient_cart(tracer0, cslam(ie),recons, elem(ie)%desc)
         tracer1=0.0D0                      
         call remap_air(tracer0,tracer1,tracer_air0,weights_all, recons,recons_air,&
@@ -255,7 +255,7 @@ subroutine cslam_runair(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
       !loop through all tracers
       do itr=1,ntrac
         tracer0=cslam(ie)%c(:,:,k,itr,tl%n0)
-        call reconstruction(tracer0, cslam(ie),elem(ie)%corners(1),recons)
+        call reconstruction(tracer0, cslam(ie),recons)
         call monotonic_gradient_cart(tracer0, cslam(ie),recons, elem(ie)%desc)
         tracer1=0.0D0   
         if (itr==1) then !calculation for air density  (the first tracer is supposed to be)

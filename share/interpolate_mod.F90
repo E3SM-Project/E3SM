@@ -5,7 +5,7 @@
 module interpolate_mod
   use kinds, only : real_kind, iulog
   use element_mod, only : element_t
-  use dimensions_mod, only : np, ne, nelemd
+  use dimensions_mod, only : np, ne, nelemd, nc, nhe, nhc
   use quadrature_mod, only : quadrature_t, legendre, quad_norm
   use coordinate_systems_mod, only : spherical_polar_t, cartesian2d_t, cartesian3D_t, sphere2cubedsphere, spherical_to_cart, cubedsphere2cart, distance, ref2sphere_double
   use physical_constants,     only : DD_PI
@@ -47,6 +47,7 @@ module interpolate_mod
   public :: interp_init
   public :: setup_latlon_interp
   public :: interpolate_scalar
+  public :: interpol_phys_latlon
   public :: interpolate_vector
   public :: set_interp_parameter
   public :: get_interp_parameter
@@ -399,85 +400,79 @@ contains
   end function interpol_bilinear
 
 ! ----------------------------------------------------------------------------------!
-!FUNCTION   interpol_bilinear_phys--------------------------------------CE-for CSLAM!
+!FUNCTION   interpol_phys_latlon----------------------------------------CE-for CSLAM!
 ! AUTHOR: CHRISTOPH ERATH, 23. May 2012                                             !
-! DESCRIPTION: Bilinear interpolation for every physics grid cell                   !
+! DESCRIPTION: evaluation of the reconstruction for every physics grid cell         !
 !                                                                                   !
 ! CALLS: 
 ! INPUT: 
 !        
 ! OUTPUT: 
 !-----------------------------------------------------------------------------------!
-function interpol_bilinear_phys(cart, f, interp, npts, fillvalue) result(fxy)
-
-  integer, intent(in)               :: npts
-  type (cartesian2D_t), intent(in)  :: cart
-  real (kind=real_kind), intent(in) :: f(npts,npts)
-  type (interpolate_t)              :: interp
-  real (kind=real_kind)             :: fxy     ! value of f interpolated to (x,y)
-  real (kind=real_kind), intent(in), optional :: fillvalue
+subroutine interpol_phys_latlon(interpdata,f, cslam, desc, flatlon)
+  use cslam_control_volume_mod, only : cslam_struct
+  use cslam_reconstruction_mod, only: reconstruction
+  use cslam_filter_mod, only: monotonic_gradient_cart, recons_val_cart
+  use edge_mod, only : edgedescriptor_t
+  
+  type (interpdata_t), intent(in)     :: interpdata                        
+  real (kind=real_kind), intent(in)   :: f(1-nhc:nc+nhc,1-nhc:nc+nhc)
+  type (cslam_struct), intent(in)     :: cslam
+  type (edgedescriptor_t),intent(in)  :: desc
+  
+                          
+  real (kind=real_kind)             :: flatlon(:)
   ! local variables
+  real (kind=real_kind)             :: xp,yp, tmpval
+  real (kind=real_kind)             :: tmpaxp,tmpaxm, tmpayp, tmpaym
+  integer                           :: i, ix, jy, starti,endi,tmpi
+  real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons
+  
+  call reconstruction(f, cslam,recons)
+  call monotonic_gradient_cart(f, cslam,recons, desc)
+  tmpaxp=(cslam%acartx(1)+cslam%acartx(nc+1))/2
+  tmpaxm=(cslam%acartx(nc+1)-cslam%acartx(1))/2
+  tmpayp=(cslam%acarty(1)+cslam%acarty(nc+1))/2
+  tmpaym=(cslam%acarty(nc+1)-cslam%acarty(1))/2
+  do i=1,interpdata%n_interp
+    ! caculation phys grid coordinate of xp point
+    xp=tmpaxp+interpdata%interp_xy(i)%x*tmpaxm
+    yp=tmpayp+interpdata%interp_xy(i)%y*tmpaym   
 
-  real (kind=real_kind)             :: xoy(npts)
-  real (kind=real_kind)             :: p,q,xp,yp ,y4(4)
-
-  integer                           :: l,j,k, ii, jj, na,nb,nm
-
-  xp = cart%x
-  yp = cart%y
-
-  xoy(:) = interp%glp(:)
-
-  ! Search index along "x"  (bisection method)
-
-  na = 1
-  nb = npts
-  do
-     if  ((nb-na) <=  1)  exit
-     nm = (nb + na)/2
-     if (xp  >  xoy(nm)) then
-        na = nm
-     else
-        nb = nm
-     endif
-  enddo
-  ii = na
+    ! Search index along "x"  (bisection method)
+    starti = 1
+    endi = nc+1
+    do
+       if  ((endi-starti) <=  1)  exit
+       tmpi = (endi + starti)/2
+       if (xp  >  cslam%acartx(tmpi)) then
+          starti = tmpi
+       else
+          endi = tmpi
+       endif
+    enddo
+    ix = starti
 
   ! Search index along "y"
-
-  na = 1
-  nb = npts
-  do
-     if  ((nb-na) <=  1)  exit
-     nm = (nb + na)/2
-     if (yp  >  xoy(nm)) then
-        na = nm
-     else
-        nb = nm
-     endif
-  enddo
-  jj = na
-
-  ! GLL cell containing (xp,yp)
-
-  y4(1) = f(ii,jj)
-  y4(2) = f(ii+1,jj)
-  y4(3) = f(ii+1,jj+1)
-  y4(4) = f(ii,jj+1)
-
-  if(present(fillvalue)) then
-     if (any(y4==fillvalue)) then
-        fxy = fillvalue
-        return
-     endif
-  endif
-     p = (xp - xoy(ii))/(xoy(ii+1) - xoy(ii))
-     q = (yp - xoy(jj))/(xoy(jj+1) - xoy(jj))
-
-     fxy = (1.0D0 - p)*(1.0D0 - q)* y4(1) + p*(1.0D0 - q) * y4(2)   &
-          + p*q* y4(3) + (1.0D0 - p)*q * y4(4)
-
-end function interpol_bilinear_phys
+    starti = 1
+    endi = nc+1
+    do
+       if  ((endi-starti) <=  1)  exit
+       tmpi = (endi + starti)/2
+       if (yp  >  cslam%acarty(tmpi)) then
+          starti = tmpi
+       else
+          endi = tmpi
+       endif
+    enddo
+    jy = starti
+    
+    call recons_val_cart(f, xp,yp,cslam%spherecentroid,recons,ix,jy,tmpval)
+    flatlon(i)=tmpval
+    
+!     flatlon(i)=f(ix,jy)
+  end do
+end subroutine interpol_phys_latlon
 
 !
 ! fast iterative search for bilinear elements on gnomonic cube face
