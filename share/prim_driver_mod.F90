@@ -24,8 +24,7 @@ module prim_driver_mod
   use cslam_mod, only : cslam_init1,cslam_init2
   use cslam_control_volume_mod, only : cslam_struct
   use element_mod, only : element_t
-  use physics_mod, only : elem_physics_t
-
+  use Manager
 
   implicit none
   private
@@ -50,7 +49,7 @@ module prim_driver_mod
   type (ReductionBuffer_ordered_1d_t), save :: red   ! reduction buffer               (shared)
 
 contains
-  subroutine prim_init1(elem, elem_physics, cslam, par, dom_mt, Tl)
+  subroutine prim_init1(elem, cslam, par, dom_mt, Tl)
 
     ! --------------------------------
     use thread_mod, only : nthreads, omp_get_thread_num, omp_set_num_threads
@@ -117,7 +116,6 @@ contains
 #endif
     implicit none
     type (element_t), pointer :: elem(:)
-    type (elem_physics_t), pointer :: elem_physics(:)
     type (cslam_struct), pointer :: cslam(:)
     type (parallel_t), intent(in) :: par
     type (domain1d_t), pointer :: dom_mt(:)      
@@ -315,7 +313,7 @@ contains
 
     if (nelemd>0) then
        allocate(elem(nelemd))
-       allocate(elem_physics(nelemd))
+       call ManagerInit()
     endif
 
     if (ntrac>0) allocate(cslam(nelemd))
@@ -536,7 +534,7 @@ contains
   end subroutine prim_init1
 
 
-  subroutine prim_init2(elem, elem_physics,cslam, hybrid, nets, nete, tl, hvcoord)
+  subroutine prim_init2(elem, cslam, hybrid, nets, nete, tl, hvcoord)
 
     use parallel_mod, only : parallel_t, haltmp, syncmp, abortmp
     use time_mod, only : timelevel_t, tstep, phys_tscale, timelevel_init, time_at, nendstep, smooth, nsplit
@@ -565,7 +563,6 @@ contains
 #endif
 
     type (element_t), intent(inout) :: elem(:)
-    type (elem_physics_t), intent(inout) :: elem_physics(:)
     type (cslam_struct), intent(inout) :: cslam(:)
     type (hybrid_t), intent(in) :: hybrid
 
@@ -607,6 +604,7 @@ contains
     if (topology == "cube") then
        call test_global_integral(elem, hybrid,nets,nete)  
     end if
+
 
     ! compute most restrictive dt*nu: 
     if (tstep_type.eq.0) then
@@ -705,14 +703,12 @@ contains
     endif
 
 
-
-
 #ifndef CAM
     ! =================================
     ! HOMME stand alone initialization
     ! =================================
     tl%nstep0=2   ! This will be the first full leapfrog step
-    call InitColumnModel(elem, elem_physics, cm(hybrid%ithr), hvcoord, hybrid, tl,nets,nete,runtype)
+    call InitColumnModel(elem, cm(hybrid%ithr), hvcoord, hybrid, tl,nets,nete,runtype)
 
     if(runtype >= 1) then 
        ! ===========================================================
@@ -917,7 +913,7 @@ contains
 
 
 
-  subroutine leapfrog_bootstrap(elem, elem_physics, hybrid,nets,nete,tstep,tl,hvcoord)
+  subroutine leapfrog_bootstrap(elem, hybrid,nets,nete,tstep,tl,hvcoord)
   !
   ! leapfrog bootstrap code.  
   !
@@ -929,7 +925,6 @@ contains
   use control_mod, only : tstep_type
 
   type (element_t) , intent(inout)        :: elem(:)
-  type (elem_physics_t) , intent(inout)        :: elem_physics(:)
   type (hybrid_t), intent(in)           :: hybrid  ! distributed parallel structure (shared)
   type (hvcoord_t), intent(in)      :: hvcoord         ! hybrid vertical coordinate struct
   integer, intent(in)                     :: nets  ! starting thread element number (private)
@@ -948,11 +943,11 @@ contains
   ! (note: leapfrog tstep_dyn/4 with nm1=n0 is Euler with tstep_dyn/2 )
   tstep_tmp=tstep_dyn/4        
 
-  call prim_run(elem, elem_physics, hybrid,nets,nete, tstep_tmp, tl, hvcoord, "forward")
+  call prim_run(elem, hybrid,nets,nete, tstep_tmp, tl, hvcoord, "forward")
   
   ! leapfrog with tstep_dyn/2 to get to tstep_dyn (keep t=0 in nm1 timelevel)
   tstep_tmp=tstep_dyn/2
-  call prim_run(elem, elem_physics, hybrid,nets,nete, tstep_tmp, tl, hvcoord, "forward")  
+  call prim_run(elem, hybrid,nets,nete, tstep_tmp, tl, hvcoord, "forward")
 
 
   tl%nstep=tl%nstep-1        ! count all of that as 1 timestep
@@ -963,7 +958,7 @@ contains
 
 
 
-  subroutine prim_run(elem, elem_physics, hybrid,nets,nete, dt, tl, hvcoord, advance_name)
+  subroutine prim_run(elem, hybrid,nets,nete, dt, tl, hvcoord, advance_name)
     use hybvcoord_mod, only : hvcoord_t
     use time_mod, only : TimeLevel_t, time_at, timelevel_update, smooth
     use control_mod, only: statefreq, integration, tracer_advection_formulation,&
@@ -978,7 +973,6 @@ contains
 #endif
 
     type (element_t) , intent(inout)        :: elem(:)
-    type (elem_physics_t) , intent(inout)        :: elem_physics(:)
     type (hybrid_t), intent(in)           :: hybrid  ! distributed parallel structure (shared)
 
     type (hvcoord_t), intent(in)      :: hvcoord         ! hybrid vertical coordinate struct
@@ -1105,7 +1099,7 @@ contains
     ! ftype==1 means forcing is applied in dp_coupling.F90
     if (ftype<=0) call ApplyCAMForcing_leapfrog(elem, hvcoord,tl%n0,tl%np1,dt,nets,nete)
 #else
-    call ApplyColumnModel(elem, elem_physics, hybrid, hvcoord, cm(hybrid%ithr),dt)
+    call ApplyColumnModel(elem, hybrid, hvcoord, cm(hybrid%ithr),dt)
 #endif
     ! measure the effects of forcing
     if (compute_diagnostics) then

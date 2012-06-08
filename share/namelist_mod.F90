@@ -35,6 +35,7 @@ module namelist_mod
        tstep_type, &
        compute_mean_flux, &
        qsplit, &
+       physics, &
        rk_stage_user, &
        LFTfreq,       &
        TRACERADV_TOTAL_DIVERGENCE, &
@@ -229,8 +230,8 @@ module namelist_mod
                      useframes,     &
                      numnodes,      &
                      ne,            &       ! element resolution factor
-		     tasknum,	    &
-		     remapfreq,     &       ! number of steps per remapping call
+		             tasknum,	    &
+		             remapfreq,     &       ! number of steps per remapping call
                      remap_type,    &       ! selected remapping option
                      statefreq,     &       ! number of steps per printstate call
                      accumfreq,     &       ! frequency in steps of accumulation
@@ -242,6 +243,7 @@ module namelist_mod
                      npdg, &
                      compute_mean_flux, &
                      qsplit, &
+                     physics, &             ! The type of physics, 0=none, 1=multicloud or 2= emanuel.
                      rk_stage_user, &
                      LFTfreq,       &
                      prescribed_wind, &
@@ -254,7 +256,7 @@ module namelist_mod
                      nu_q,          &
                      nu_div,          &
                      nu_p,          &
-	             nu_top,        &
+	                 nu_top,        &
                      psurf_vis,    &  
                      hypervis_order,    &  
                      hypervis_power,    &  
@@ -263,7 +265,7 @@ module namelist_mod
                      smooth_phis_numcycle, &
                      smooth_sgh_numcycle, &
                      smooth_phis_nudt, &
-	             initial_total_mass, &
+	                 initial_total_mass, &
                      u_perturb,     &
                      rotate_grid,   &
                      mesh_file,     &               ! Name of mesh file
@@ -449,6 +451,7 @@ module namelist_mod
        open(unit=7,file="input.nl",status="OLD")
        read(unit=7,nml=ctl_nl)
 #else
+      print *, 'Reading namelist ctl_nl from standard input'
       read(*,nml=ctl_nl)
 #endif
 #ifndef _USEMETIS
@@ -818,6 +821,7 @@ module namelist_mod
     call MPI_bcast(npdg,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(compute_mean_flux,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(qsplit,1,MPIinteger_t ,par%root,par%comm,ierr)
+    call MPI_bcast(physics,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(rk_stage_user,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(LFTfreq,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(prescribed_wind,1,MPIinteger_t ,par%root,par%comm,ierr)
@@ -1099,6 +1103,7 @@ module namelist_mod
        write(iulog,*)"filter: smooth         = ",smooth
 #endif
        write(iulog,*)"readnl: qsplit        = ",qsplit
+       write(iulog,*)"readnl: physics       = ",physics
 
        write(iulog,*)"readnl: energy_fixer  = ",energy_fixer
        write(iulog,*)"readnl: runtype       = ",runtype
