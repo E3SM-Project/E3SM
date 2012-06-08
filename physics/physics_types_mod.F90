@@ -38,8 +38,4 @@ module physics_types_mod
 
   type(physics_t), public, allocatable, target :: pelem(:)
 
-
-
-
-
 end module physics_types_mod

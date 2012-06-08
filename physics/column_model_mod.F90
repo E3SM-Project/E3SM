@@ -8,6 +8,7 @@
 !#define USE_MAXLAT
 #define _DBG_ !DBG
 
+
 !============================================
 !
 ! For help or information:
@@ -27,7 +28,7 @@ module column_model_mod
   use time_mod,        only : TimeLevel_t
   use physics_mod,     only : elem_physics_t, Specific_Humidity, Saturation_Specific_Humidity, getsurfpress, Temp2PotTemp
   use dimensions_mod,  only : nlev, nlevp, np, qsize, nelemd
-  use control_mod,     only : integration, columnpackage, test_case,  &
+  use control_mod,     only : integration, columnpackage, test_case,  physics, &
                               accumfreq, statefreq, &
                               TRACERADV_TOTAL_DIVERGENCE, &
                               tracer_advection_formulation
@@ -101,16 +102,19 @@ module column_model_mod
 #endif
 contains
 
-  subroutine InitColumnModel(elem, elem_physics, cm,hvcoord,hybrid,tl,nets,nete,runtype)
+  subroutine InitColumnModel(elem, cm,hvcoord,hybrid,tl,nets,nete,runtype)
+
+    use Manager
+
     type(element_t), intent(inout) :: elem(:)
-    type(elem_physics_t), intent(inout) :: elem_physics(:)
+    type(elem_physics_t), pointer :: elem_physics(:)
     type (ColumnModel_t) :: cm
     type (hvcoord_t), intent(in), target     :: hvcoord
     type (TimeLevel_t), intent(in), target   :: tl
     type (hybrid_t), intent(in),target       :: hybrid
     integer, intent(in), target              :: nets,nete,runtype
-
     integer :: i,j,k,ie
+
     if(runtype.ne.1) then
     ! for all column type
        do ie=nets,nete
@@ -138,11 +142,17 @@ contains
     if(columnpackage == "emanuel")then
        call InitColumnModelEmanuel(cm%cm_em,nets,nete)
     endif
-
-    !if(columnpackage == "multicloud")then
-    !   call InitColumnModelEmanuel(cm%cm_em,nets,nete) ! ASC gets 30-90 N and 30 to 90 S
-    !endif
-
+    ! The MC needs the sounding
+    if(columnpackage == "multicloud")then
+       if (physics == 0) then
+          call abortmp('Physics package is set to 0 but you are using multicloud, aborting!')
+       else
+          nullify(elem_physics)
+          call element_physics_get(elem_physics)
+       end if
+       call InitColumnModelMulticloud(elem,elem_physics, cm%hybrid,cm%hvcoord,cm%cm_mc,nets,nete)!ASC gets 30S-30N
+       call InitShearDamping(elem,cm%hybrid,nets,nete)
+    endif
 
     if(columnpackage == "none" .AND. test_case(1:12) == "held_suarez0")then
        call InitHeldSuarezForcing(cm%cm_hs)
@@ -150,20 +160,15 @@ contains
        call InitAquaplanetForcing(cm%cm_aq)
     endif
 
-    ! The MC needs the sounding
-    
-    if(columnpackage == "multicloud")then
-       call InitColumnModelMulticloud(elem,elem_physics, cm%hybrid,cm%hvcoord,cm%cm_mc,nets,nete)!ASC gets 30S-30N
-       call InitShearDamping(elem,cm%hybrid,nets,nete)
-    endif
 
   end subroutine InitColumnModel
 
-  subroutine ApplyColumnModel(elem, elem_physics, hybrid, hvcoord, cm,dt)
+  subroutine ApplyColumnModel(elem,  hybrid, hvcoord, cm,dt)
     use hybvcoord_mod, only : hvcoord_t
+    use Manager
 
     type (element_t), intent(inout) :: elem(:)
-    type(elem_physics_t), intent(inout) :: elem_physics(:)
+    type(elem_physics_t), pointer :: elem_physics(:)
     type (ColumnModel_t),intent(inout) :: cm
     real (kind=real_kind),intent(in)   :: dt
     type (hvcoord_t)                  :: hvcoord
@@ -200,6 +205,12 @@ contains
     if(test_case(1:10) == "aquaplanet")then
        forcing=1
        if(columnpackage == "multicloud")then
+       if (physics == 0) then
+          call abortmp('Physics package is set to 0 but you are using multicloud, aborting!')
+       else
+          nullify(elem_physics)
+          call element_physics_get(elem_physics)
+       end if
           call ApplyAquaplanetForcing(elem, elem_physics, hybrid,cm%cm_aq,dt, cm%hvcoord,cm%tl,cm%nets,cm%nete,cm%cm_mc)          
           if(cm%cm_mc%relaxation > 0.0D0)then
              tau_damp = 1.0D0/cm%cm_mc%relaxation
