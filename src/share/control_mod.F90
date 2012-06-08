@@ -41,7 +41,10 @@ module control_mod
 
                                           ! 1 = CAM style fixer  Tnew = T + beta
                                               
-  integer, public :: qsplit = 1           ! ratio of dynamics tsteps to tracer tsteps        
+  integer, public :: qsplit = 1           ! ratio of dynamics tsteps to tracer tsteps
+  integer, public :: physics = 0          ! Defines if the program is to use its own phsyics (HOMME standalone), valid values 1,2,3
+                                          ! physics = 0, no physics
+                                          ! physics = 1, Use physics
   integer, public :: LFTfreq=0            ! leapfrog-trapazoidal frequency
                                           ! interspace a lf-trapazoidal step every LFTfreq leapfrogs    
                                           ! 0 = disabled

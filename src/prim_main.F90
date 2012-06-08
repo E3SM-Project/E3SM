@@ -30,8 +30,6 @@ program prim_main
   ! -----------------------------------------------
   use element_mod, only : element_t
   !-----------------------------------------------
-  use physics_mod, only : elem_physics_t
-  !-----------------------------------------------
   use cslam_control_volume_mod, only : cslam_struct
   ! -----------------------------------------------
   use common_io_mod, only:  output_dir
@@ -55,7 +53,6 @@ program prim_main
 	
   implicit none
   type (element_t), pointer  :: elem(:)
-  type (elem_physics_t), pointer  :: elem_physics(:)
   type (cslam_struct), pointer  :: cslam(:)
 
   type (hybrid_t)       :: hybrid ! parallel structure for shared memory/distributed memory
@@ -93,7 +90,7 @@ program prim_main
 	Mpicom=par%comm, MasterTask=par%masterproc)
   call t_startf('Total')
   call t_startf('prim_init1')
-  call prim_init1(elem, elem_physics,  cslam, par,dom_mt,tl)
+  call prim_init1(elem,  cslam, par,dom_mt,tl)
   call t_stopf('prim_init1')
 
 
@@ -161,7 +158,7 @@ program prim_main
   nete=dom_mt(ithr)%end
 
   call t_startf('prim_init2')
-  call prim_init2(elem, elem_physics, cslam,  hybrid,nets,nete,tl, hvcoord)
+  call prim_init2(elem, cslam,  hybrid,nets,nete,tl, hvcoord)
   call t_stopf('prim_init2')
 #if (! defined ELEMENT_OPENMP)
   !$OMP END PARALLEL
@@ -221,7 +218,7 @@ program prim_main
   if(integration == 'semi_imp') then
      if (runtype /= 1 ) then
         if(hybrid%masterthread) print *,"Leapfrog bootstrap initialization..."
-        call leapfrog_bootstrap(elem, elem_physics, hybrid,1,nelemd,tstep,tl,hvcoord)
+        call leapfrog_bootstrap(elem, hybrid,1,nelemd,tstep,tl,hvcoord)
      endif
   endif
   
@@ -242,7 +239,7 @@ program prim_main
         if (tstep_type==1) then  ! foreward in time methods
            call prim_run_subcycle(elem, cslam, hybrid,nets,nete, tstep, tl, hvcoord)
         else  ! leapfrog
-           call prim_run(elem, elem_physics, hybrid,nets,nete, tstep, tl, hvcoord, "leapfrog")
+           call prim_run(elem, hybrid,nets,nete, tstep, tl, hvcoord, "leapfrog")
         endif
         call t_stopf('prim_run')
      end do
