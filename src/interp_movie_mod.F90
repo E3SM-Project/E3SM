@@ -456,7 +456,7 @@ contains
 #if defined(_PRIM) 
   subroutine interp_movie_output(elem, tl, hvcoord, hybrid, nets,nete,cslam)
 #elif defined(_PRIMDG) 
-  subroutine interp_movie_output(elem, tl, hvcoord, hybrid, phimean, deriv, nets,nete)
+  subroutine interp_movie_output(elem, tl, hvcoord, hybrid, phimean, deriv, nets,nete,cslam)
 #else
   subroutine interp_movie_output(elem, tl, hybrid, phimean, deriv, nets,nete, cslam)
 #endif
