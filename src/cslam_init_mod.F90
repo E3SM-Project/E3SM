@@ -400,7 +400,7 @@ subroutine cslam_readnl(par)
   !-----------------
   use thread_mod, only : nthreads
   !-----------------
-  use dimensions_mod, only : ne, np,nc,ntrac, nnodes, nmpi_per_node, npart, qsize, qsize_d
+  use dimensions_mod, only : ne, np,nc,ntrac, ntrac_d, nnodes, nmpi_per_node, npart, qsize, qsize_d
   !-----------------
 #ifdef CAM
   use time_mod, only : smooth, phys_tscale
@@ -484,6 +484,7 @@ subroutine cslam_readnl(par)
   ! ============================================
   namelist /ctl_nl/ partmethod,          &       ! Mesh partitioning method (METIS)
                     qsize,               &       ! number of tracers
+                    ntrac,               &       ! number of tracers
                     nthreads,            &       ! Number of threads per process
                     ne,                  &       ! element resolution factor
                     test_case,           &       ! test case
@@ -633,6 +634,7 @@ subroutine cslam_readnl(par)
   
   call MPI_bcast(qsize     ,1,MPIinteger_t,par%root,par%comm,ierr)
   
+  call MPI_bcast(ntrac     ,1,MPIinteger_t,par%root,par%comm,ierr)
 
   call MPI_bcast(tstep     ,1,MPIreal_t   ,par%root,par%comm,ierr) 
   call MPI_bcast(nmax      ,1,MPIinteger_t,par%root,par%comm,ierr)
@@ -690,7 +692,7 @@ subroutine cslam_readnl(par)
      write(iulog,*)"readnl: NThreads      = ",NTHREADS
 
      write(iulog,*)"readnl: ne,np,nc      = ",NE,np,nc
-     write(iulog,*)"readnl: ntrac         = ",ntrac
+     write(iulog,*)"readnl: ntrac, ntrac_d         = ",ntrac, ntrac_d
      
      write(iulog,*)"readnl: partmethod    = ",PARTMETHOD
      write(iulog,*)'readnl: nmpi_per_node = ',nmpi_per_node

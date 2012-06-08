@@ -34,8 +34,6 @@ subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
   ! ---------------------------------------------------------------------------------  
   use cslam_filter_mod, only: monotonic_gradient_cart
   ! ---------------------------------------------------------------------------------
-  use cslam_reconstruction_mod, only: reconstruction
-  ! ---------------------------------------------------------------------------------
   use checksum_mod, only: test_ghost
   ! ---------------------------------------------------------------------------------
   use derivative_mod, only : derivative_t, derivative_stag_t, derivinit, deriv_print
@@ -171,41 +169,6 @@ subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
     tmp2(ie) = MINVAL(cslam(ie)%c(:,:,chooselev,choosetrac,tl%n0))   
   ! BEGIN Testoutput: write data in p (interpolation) to use existing IO
   ! prepare date for I/O
-    do k=1,nlev
-      do j=1,nc+1
-        do i=1,nc+1 
-          !write it in p because of IO 
-          !first only with three elements in the patch
-          if ((cslam(ie)%cubeboundary==swest) .AND. (j==1) .AND. (i==1)) then
-            elem(ie)%state%p(i,j,k,tl%n0)=g*(cslam(ie)%area_sphere(i,j-1)*cslam(ie)%c(i,j-1,k,choosetrac,tl%n0)+ &
-            cslam(ie)%area_sphere(i-1,j)*cslam(ie)%c(i-1,j,k,choosetrac,tl%n0)+ &
-            cslam(ie)%area_sphere(i,j)*cslam(ie)%c(i,j,k,choosetrac,tl%n0))/ &
-            (cslam(ie)%area_sphere(i,j-1)+cslam(ie)%area_sphere(i-1,j)+cslam(ie)%area_sphere(i,j))
-          elseif ((cslam(ie)%cubeboundary==seast) .AND. (j==1) .AND. (i==nc+1)) then
-            elem(ie)%state%p(i,j,k,tl%n0)=g*(cslam(ie)%area_sphere(i-1,j-1)*cslam(ie)%c(i-1,j-1,k,choosetrac,tl%n0)+ &
-            cslam(ie)%area_sphere(i-1,j)*cslam(ie)%c(i-1,j,k,choosetrac,tl%n0)+ &
-            cslam(ie)%area_sphere(i,j)*cslam(ie)%c(i,j,k,choosetrac,tl%n0))/(cslam(ie)%area_sphere(i-1,j-1)+ &
-            cslam(ie)%area_sphere(i-1,j)+cslam(ie)%area_sphere(i,j)) 
-          elseif ((cslam(ie)%cubeboundary==nwest) .AND. (j==nc+1) .AND. (i==1)) then
-            elem(ie)%state%p(i,j,k,tl%n0)=g*(cslam(ie)%area_sphere(i-1,j-1)*cslam(ie)%c(i-1,j-1,k,choosetrac,tl%n0)+ &
-            cslam(ie)%area_sphere(i,j-1)*cslam(ie)%c(i,j-1,k,choosetrac,tl%n0)+ &
-            cslam(ie)%area_sphere(i,j)*cslam(ie)%c(i,j,k,choosetrac,tl%n0))/(cslam(ie)%area_sphere(i-1,j-1)+ &
-            cslam(ie)%area_sphere(i,j-1)+cslam(ie)%area_sphere(i,j)) 
-          elseif ((cslam(ie)%cubeboundary==neast) .AND. (j==nc+1) .AND. (i==nc+1)) then   
-            elem(ie)%state%p(i,j,k,tl%n0)=g*(cslam(ie)%area_sphere(i-1,j-1)*cslam(ie)%c(i-1,j-1,k,choosetrac,tl%n0)+ &
-            cslam(ie)%area_sphere(i,j-1)*cslam(ie)%c(i,j-1,k,choosetrac,tl%n0)+ &
-            cslam(ie)%area_sphere(i-1,j)*cslam(ie)%c(i-1,j,k,choosetrac,tl%n0))/(cslam(ie)%area_sphere(i-1,j-1)+ &
-            cslam(ie)%area_sphere(i,j-1)+cslam(ie)%area_sphere(i-1,j))
-          else
-            elem(ie)%state%p(i,j,k,tl%n0)=g*(cslam(ie)%area_sphere(i-1,j-1)*cslam(ie)%c(i-1,j-1,k,choosetrac,tl%n0)+ &
-            cslam(ie)%area_sphere(i,j-1)*cslam(ie)%c(i,j-1,k,choosetrac,tl%n0)+ &
-            cslam(ie)%area_sphere(i-1,j)*cslam(ie)%c(i-1,j,k,choosetrac,tl%n0)+ &
-            cslam(ie)%area_sphere(i,j)*cslam(ie)%c(i,j,k,choosetrac,tl%n0))/(cslam(ie)%area_sphere(i-1,j-1)+ &
-            cslam(ie)%area_sphere(i,j-1)+cslam(ie)%area_sphere(i-1,j)+cslam(ie)%area_sphere(i,j))
-          end if
-        end do
-      end do
-    end do
   end do
 
 
@@ -222,7 +185,7 @@ subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
 !write first time step to IO 
 #ifdef PIO_INTERP
   call interp_movie_init(elem,hybrid,nets,nete,tl=tl)    
-  call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete)
+  call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete,cslam)
 #else
     call shal_movie_init(elem,hybrid,cslam)
     call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv,cslam)
@@ -286,41 +249,6 @@ subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
     do ie=nets,nete
     ! prepare data for I/O
       global_shared_buf(ie,1)=0D0  ! for mass calculation
-      do k=1, nlev
-        do j=1,nc+1
-          do i=1,nc+1 
-            !write it in p because of IO 
-            !first only with three elements in the patch
-            if ((cslam(ie)%cubeboundary==swest) .AND. (j==1) .AND. (i==1)) then
-              elem(ie)%state%p(i,j,k,tl%np1)=g*(cslam(ie)%area_sphere(i,j-1)*cslam(ie)%c(i,j-1,k,choosetrac,tl%np1)+ &
-              cslam(ie)%area_sphere(i-1,j)*cslam(ie)%c(i-1,j,k,choosetrac,tl%np1)+ &
-              cslam(ie)%area_sphere(i,j)*cslam(ie)%c(i,j,k,choosetrac,tl%np1))/ &
-              (cslam(ie)%area_sphere(i,j-1)+cslam(ie)%area_sphere(i-1,j)+cslam(ie)%area_sphere(i,j))
-            elseif ((cslam(ie)%cubeboundary==seast) .AND. (j==1) .AND. (i==nc+1)) then
-              elem(ie)%state%p(i,j,k,tl%np1)=g*(cslam(ie)%area_sphere(i-1,j-1)*cslam(ie)%c(i-1,j-1,k,choosetrac,tl%np1)+ &
-              cslam(ie)%area_sphere(i-1,j)*cslam(ie)%c(i-1,j,k,choosetrac,tl%np1)+ &
-              cslam(ie)%area_sphere(i,j)*cslam(ie)%c(i,j,k,choosetrac,tl%np1))/(cslam(ie)%area_sphere(i-1,j-1)+ &
-              cslam(ie)%area_sphere(i-1,j)+cslam(ie)%area_sphere(i,j)) 
-            elseif ((cslam(ie)%cubeboundary==nwest) .AND. (j==nc+1) .AND. (i==1)) then
-              elem(ie)%state%p(i,j,k,tl%np1)=g*(cslam(ie)%area_sphere(i-1,j-1)*cslam(ie)%c(i-1,j-1,k,choosetrac,tl%np1)+ &
-              cslam(ie)%area_sphere(i,j-1)*cslam(ie)%c(i,j-1,k,choosetrac,tl%np1)+ &
-              cslam(ie)%area_sphere(i,j)*cslam(ie)%c(i,j,k,choosetrac,tl%np1))/(cslam(ie)%area_sphere(i-1,j-1)+ &
-              cslam(ie)%area_sphere(i,j-1)+cslam(ie)%area_sphere(i,j)) 
-            elseif ((cslam(ie)%cubeboundary==neast) .AND. (j==nc+1) .AND. (i==nc+1)) then   
-              elem(ie)%state%p(i,j,k,tl%np1)=g*(cslam(ie)%area_sphere(i-1,j-1)*cslam(ie)%c(i-1,j-1,k,choosetrac,tl%np1)+ &
-              cslam(ie)%area_sphere(i,j-1)*cslam(ie)%c(i,j-1,k,choosetrac,tl%np1)+ &
-              cslam(ie)%area_sphere(i-1,j)*cslam(ie)%c(i-1,j,k,choosetrac,tl%np1))/(cslam(ie)%area_sphere(i-1,j-1)+ &
-              cslam(ie)%area_sphere(i,j-1)+cslam(ie)%area_sphere(i-1,j))
-            else
-              elem(ie)%state%p(i,j,k,tl%np1)=g*(cslam(ie)%area_sphere(i-1,j-1)*cslam(ie)%c(i-1,j-1,k,choosetrac,tl%np1)+ &
-              cslam(ie)%area_sphere(i,j-1)*cslam(ie)%c(i,j-1,k,choosetrac,tl%np1)+ &
-              cslam(ie)%area_sphere(i-1,j)*cslam(ie)%c(i-1,j,k,choosetrac,tl%np1)+ &
-              cslam(ie)%area_sphere(i,j)*cslam(ie)%c(i,j,k,choosetrac,tl%np1))/(cslam(ie)%area_sphere(i-1,j-1)+ &
-              cslam(ie)%area_sphere(i,j-1)+cslam(ie)%area_sphere(i-1,j)+cslam(ie)%area_sphere(i,j))
-            end if 
-          end do
-        end do
-      end do
       ! test mass, just for chooselev and choosetrac, it is not optimized yet
       do j=1,nc
         do i=1,nc   
@@ -364,7 +292,7 @@ subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
 !-----------------------------------------------------------------------------------!  
 
 #ifdef PIO_INTERP
-    call interp_movie_output(elem, tl, hybrid, 0D0, deriv, nets, nete)
+    call interp_movie_output(elem, tl, hybrid, 0D0, deriv, nets, nete,cslam)
 #else     
     call shal_movie_output(elem, tl, hybrid, 0D0, nets, nete,deriv,cslam)
 #endif

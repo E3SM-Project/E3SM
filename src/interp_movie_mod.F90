@@ -4,10 +4,10 @@
 
 module interp_movie_mod
   use kinds, only : real_kind
-  use dimensions_mod, only :  nlev, nelemd, np, ne, qsize
+  use dimensions_mod, only :  nlev, nelemd, np, ne, qsize, ntrac, nc
   use interpolate_mod, only : interpolate_t, setup_latlon_interp, interpdata_t, &
        get_interp_parameter, get_interp_lat, get_interp_lon, interpolate_scalar, interpolate_vector, &
-       set_interp_parameter
+       set_interp_parameter, interpol_phys_latlon
   use pio_io_mod, only : & 
        nf_output_init_begin,&
        nf_output_init_complete,  &
@@ -40,12 +40,13 @@ module interp_movie_mod
        nf_addrequiredvar,   &
        num_io_procs,        &
        PIOFS
+  use cslam_control_volume_mod, only : cslam_struct
 
   implicit none
 #undef V_IS_LATLON
 #if defined(_PRIM) || defined(_PRIMDG)
 #define V_IS_LATLON
-  integer, parameter :: varcnt = 36
+  integer, parameter :: varcnt = 41
   integer, parameter :: maxdims =  5
   character*(*), parameter :: varnames(varcnt)=(/'ps       ', &
                                                  'geos     ', &
@@ -61,6 +62,11 @@ module interp_movie_mod
                                                  'Q3       ', &
                                                  'Q4       ', &
                                                  'Q5       ', &
+                                                 'C        ', &
+                                                 'C2       ', &
+                                                 'C3       ', &
+                                                 'C4       ', &
+                                                 'C5       ', &                                                 
                                                  'geo      ', &
                                                  'omega    ', &
                                                  'FU       ', &
@@ -86,6 +92,8 @@ module interp_movie_mod
   integer, parameter :: vartype(varcnt)=(/PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
+                                          PIO_double,PIO_double,PIO_double,&
+                                          PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,&
@@ -98,6 +106,7 @@ module interp_movie_mod
                                           PIO_double,PIO_double,&
                                           PIO_double/)
   logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,.false.,&
+                                              .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
@@ -125,6 +134,11 @@ module interp_movie_mod
        1,2,3,5,0,  &   ! Q3
        1,2,3,5,0,  &   ! Q4
        1,2,3,5,0,  &   ! Q5
+       1,2,3,5,0,  &   ! C
+       1,2,3,5,0,  &   ! C2
+       1,2,3,5,0,  &   ! C3
+       1,2,3,5,0,  &   ! C4
+       1,2,3,5,0,  &   ! C5
        1,2,3,5,0,  &   ! geo
        1,2,3,5,0,  &   ! omega
        1,2,3,5,0,  &   ! FU
@@ -151,7 +165,7 @@ module interp_movie_mod
 
   character*(*),parameter::dimnames(maxdims)=(/'lon ','lat ','lev ','ilev','time'/)  
 #else
-  integer, parameter :: varcnt = 13
+  integer, parameter :: varcnt = 18
   integer, parameter :: maxdims=4
   character*(*),parameter::dimnames(maxdims)=(/'lon ','lat ','lev ','time'/)  
   integer, parameter :: vardims(maxdims,varcnt) =  reshape( (/ 1,2,4,0,  &
@@ -166,20 +180,29 @@ module interp_movie_mod
                                                                1,2,0,0, &
                                                                1,2,0,0, &
                                                                1,2,0,0, &
+                                                               1,2,3,4,  &
+                                                               1,2,3,4,  &
+                                                               1,2,3,4,  &
+                                                               1,2,3,4,  &
+                                                               1,2,3,4,  &
                                                                1,2,3,4/),&
                                                                shape=(/maxdims,varcnt/))
   character*(*),parameter::varnames(varcnt)=(/'ps      ','geop    ','u       ', &
                                               'v       ','zeta    ','lon     ', &
                                               'lat     ','gw      ','time    ', &
                                               'hypervis','max_dx  ','min_dx  ', &
+                                              'C       ','C1      ','C2      ', &
+                                              'C3      ','C4      ',            &
                                               'div     '/)
   integer, parameter :: vartype(varcnt)=(/PIO_double,PIO_double,PIO_double,PIO_double, &
                                           PIO_double,PIO_double,PIO_double,PIO_double, &
                                           PIO_double,PIO_double,PIO_double,PIO_double, &
-                                          PIO_double/)
+                                          PIO_double, PIO_double,PIO_double,PIO_double, &
+                                          PIO_double, PIO_double/)
   logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,&
                                               .false.,.true.,.true.,.true.,.true.,&
-                                              .false.,.false.,.false.,.false./)
+                                              .false.,.false.,.false.,.false., &
+                                              .false.,.false.,.false.,.false.,.false./)
 
 #endif
   type(interpolate_t) :: interp
@@ -223,6 +246,7 @@ contains
 
     type (TimeLevel_t), intent(in)         :: tl     ! time level struct
     type(element_t) :: elem(:)
+    
     type(hybrid_t), target  :: hybrid
 #if defined(_PRIM) || defined(_PRIMDG)
     type(hvcoord_t), intent(in), optional :: hvcoord
@@ -339,6 +363,11 @@ contains
     call nf_variable_attributes(ncdf, 'lat', 'column latitude','degrees_north')
     call nf_variable_attributes(ncdf, 'lon', 'column longitude','degrees_east')
     call nf_variable_attributes(ncdf, 'time', 'Model elapsed time','days')
+    call nf_variable_attributes(ncdf, 'C', 'concentration','kg/kg')
+    call nf_variable_attributes(ncdf, 'C2', 'concentration','kg/kg')
+    call nf_variable_attributes(ncdf, 'C3', 'concentration','kg/kg')
+    call nf_variable_attributes(ncdf, 'C4', 'concentration','kg/kg')
+    call nf_variable_attributes(ncdf, 'C5', 'concentration','kg/kg')
 
 #if defined(_PRIM) || defined(_PRIMDG)
     if(test_case.eq.'aquaplanet') then
@@ -425,11 +454,11 @@ contains
   end subroutine interp_movie_finish
 
 #if defined(_PRIM) 
-  subroutine interp_movie_output(elem, tl, hvcoord, hybrid, nets,nete)
+  subroutine interp_movie_output(elem, tl, hvcoord, hybrid, nets,nete,cslam)
 #elif defined(_PRIMDG) 
   subroutine interp_movie_output(elem, tl, hvcoord, hybrid, phimean, deriv, nets,nete)
 #else
-  subroutine interp_movie_output(elem, tl, hybrid, phimean, deriv, nets,nete)
+  subroutine interp_movie_output(elem, tl, hybrid, phimean, deriv, nets,nete, cslam)
 #endif
     use kinds, only : int_kind, real_kind
     use element_mod, only : element_t
@@ -458,6 +487,8 @@ contains
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     ! ---------------------    
     type (element_t)    :: elem(:)
+    type (cslam_struct), optional   :: cslam(:)
+    
     type (TimeLevel_t)  :: tl
     type (parallel_t)     :: par
 #if defined(_PRIM)
@@ -484,7 +515,7 @@ contains
 
     integer :: ierr
 
-    integer :: ncnt,n0,n0q,itype,qindex
+    integer :: ncnt,n0,n0q,itype,qindex,cindex
     character(len=2) :: vname
 
     real (kind=real_kind) :: vco(np,np,2),ke(np,np,nlev)
@@ -683,6 +714,29 @@ contains
 
 #endif
 
+#if defined(_CSLAM) 
+    do cindex=1,min(ntrac,5)  ! allow a maximum output of 5 tracers
+       write(vname,'(a1,i1)') 'C',cindex
+       if (cindex==1) vname='C'
+
+       if(nf_selectedvar(vname, output_varnames)) then
+          if (hybrid%par%masterproc) print *,'writing ',vname
+          allocate(datall(ncnt,nlev))
+          st=1
+          do ie=nets,nete
+             en=st+interpdata(ie)%n_interp-1
+             do k=1,nlev
+               call interpol_phys_latlon(interpdata(ie),cslam(ie)%c(:,:,k,cindex,n0), &
+                                  cslam(ie),elem(ie)%desc,datall(st:en,k))
+             end do
+             st=st+interpdata(ie)%n_interp
+          enddo
+          call nf_put_var(ncdf(ios),datall,start3d, count3d, name=vname)
+          deallocate(datall)
+       end if
+    enddo
+#endif
+
 #if defined(_PRIM) 
              if(nf_selectedvar('T', output_varnames)) then
                 if (hybrid%par%masterproc) print *,'writing T...'
@@ -764,7 +818,6 @@ contains
                    call set_interp_parameter("itype",itype)
                 end if
              enddo
-
 
 
              if(nf_selectedvar('geo', output_varnames)) then

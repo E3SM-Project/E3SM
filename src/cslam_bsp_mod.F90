@@ -123,17 +123,17 @@ subroutine analytical_function(value,sphere,klev,itr)
   Rg2 = acos(sin(lat2)*sin(sphere%lat)+cos(lat2)*cos(sphere%lat)*cos(sphere%lon-lon2))   
 
   if ((Rg1 .le. R0) .AND. (abs(sphere%lon-lon1).ge. R0/6)) then
-    value = 1.0D0 !+ itr*1.0D0/ntrac + klev*1.0D0/nlev
+    value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
   elseif ((Rg2 .le. R0) .AND. (abs(sphere%lon-lon2).ge. R0/6)) then
-    value = 1.0D0 !+ itr*1.0D0/ntrac + klev*1.0D0/nlev
+    value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
   elseif ((Rg1 .le. R0) .AND. (abs(sphere%lon-lon1) < R0/6) &
                         .AND. (sphere%lat-lat1 < -5.0D0*R0/12.0D0)) then
-    value = 1.0D0 !+ itr*1.0D0/ntrac + klev*1.0D0/nlev
+    value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
   elseif ((Rg2 .le. R0) .AND. (abs(sphere%lon-lon2) < R0/6) &
                         .AND. (sphere%lat-lat2 > 5.0D0*R0/12.0D0)) then
-    value = 1.0D0 !+ itr*1.0D0/ntrac + klev*1.0D0/nlev
+    value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
   else
-    value = 0.1D0 !+ itr*1.0D0/ntrac + klev*1.0D0/nlev   
+    value = 0.1D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev   
   endif  
 end subroutine analytical_function
 !END SUBROUTINE ANALYTICAL_FUNCTION-------------------------------------CE-for CSLAM!
