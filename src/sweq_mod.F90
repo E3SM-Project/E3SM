@@ -449,15 +449,15 @@ contains
           ! ============================================== 
 #ifdef PIO_INTERP
 	  call interp_movie_init(elem,hybrid,nets,nete,tl=tl)
-          call interp_movie_output(elem,tl, hybrid, pmean, deriv, nets, nete)
+    call interp_movie_output(elem,tl, hybrid, pmean, deriv, nets, nete,cslam)     
 #else
-#ifdef _CSLAM
-	        call shal_movie_init(elem,hybrid,cslam)
-          call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv,cslam)
-#else
-	        call shal_movie_init(elem,hybrid)
-          call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
-#endif
+! #ifdef _CSLAM
+	  call shal_movie_init(elem,hybrid,cslam)
+    call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv,cslam)
+! #else
+!           call shal_movie_init(elem,hybrid)
+!           call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
+! #endif
 #endif
           call printstate(elem,pmean,g_sw,tl%n0,hybrid,nets,nete,-1)
 
@@ -690,13 +690,17 @@ contains
        ! Shallow Water Test Case output files
        ! ============================================================
 #ifdef PIO_INTERP
-       call interp_movie_output(elem, tl, hybrid, pmean, deriv, nets, nete)
+! #ifdef _CSLAM   
+          call interp_movie_output(elem,tl, hybrid, pmean, deriv, nets, nete,cslam)
+! #else
+!           call interp_movie_output(elem,tl, hybrid, pmean, deriv, nets, nete)          
+! #endif
 #else     
-#ifdef _CSLAM
+! #ifdef _CSLAM
           call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv,cslam)
-#else
-          call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
-#endif
+! #else
+!           call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
+! #endif
 #endif
        ! ==================================================
        ! Shallow Water Test Cases:
