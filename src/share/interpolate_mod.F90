@@ -409,7 +409,7 @@ contains
 !        
 ! OUTPUT: 
 !-----------------------------------------------------------------------------------!
-subroutine interpol_phys_latlon(interpdata,f, cslam, desc, flatlon)
+subroutine interpol_phys_latlon(interpdata,f, cslam, corners, desc, flatlon)
   use cslam_control_volume_mod, only : cslam_struct
   use cslam_reconstruction_mod, only: reconstruction
   use cslam_filter_mod, only: monotonic_gradient_cart, recons_val_cart
@@ -418,6 +418,7 @@ subroutine interpol_phys_latlon(interpdata,f, cslam, desc, flatlon)
   type (interpdata_t), intent(in)     :: interpdata                        
   real (kind=real_kind), intent(in)   :: f(1-nhc:nc+nhc,1-nhc:nc+nhc)
   type (cslam_struct), intent(in)     :: cslam
+  type (cartesian2d_t), intent(in)    :: corners(4)
   type (edgedescriptor_t),intent(in)  :: desc
   
                           
@@ -430,14 +431,14 @@ subroutine interpol_phys_latlon(interpdata,f, cslam, desc, flatlon)
   
   call reconstruction(f, cslam,recons)
   call monotonic_gradient_cart(f, cslam,recons, desc)
-  tmpaxp=(cslam%acartx(1)+cslam%acartx(nc+1))/2
-  tmpaxm=(cslam%acartx(nc+1)-cslam%acartx(1))/2
-  tmpayp=(cslam%acarty(1)+cslam%acarty(nc+1))/2
-  tmpaym=(cslam%acarty(nc+1)-cslam%acarty(1))/2
+  tmpaxp=(corners(1)%x+corners(2)%x)/2
+  tmpaxm=(corners(2)%x-corners(1)%x)/2
+  tmpayp=(corners(1)%y+corners(4)%y)/2
+  tmpaym=(corners(4)%y-corners(1)%y)/2
   do i=1,interpdata%n_interp
-    ! caculation phys grid coordinate of xp point
-    xp=tmpaxp+interpdata%interp_xy(i)%x*tmpaxm
-    yp=tmpayp+interpdata%interp_xy(i)%y*tmpaym   
+    ! caculation phys grid coordinate of xp point, note the interp_xy are on the reference [-1,1]x[-1,1]
+    xp=tan(tmpaxp+interpdata%interp_xy(i)%x*tmpaxm)
+    yp=tan(tmpayp+interpdata%interp_xy(i)%y*tmpaym)   
 
     ! Search index along "x"  (bisection method)
     starti = 1
