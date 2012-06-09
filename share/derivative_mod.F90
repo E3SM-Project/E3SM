@@ -22,7 +22,7 @@ private
      real (kind=real_kind) :: Mvv_twt(np,np)  ! diagonal matrix of GLL weights
      real (kind=real_kind) :: vvtemp(np,np)
      real (kind=real_kind) :: vvtempt(np,np,2)
-     real (kind=real_kind) :: MCSLAM(np,nc+1)
+     real (kind=real_kind) :: Mfvm(np,nc+1)
      real (kind=real_kind) :: legdg(np,np)
   end type derivative_t
 
@@ -50,7 +50,7 @@ private
   public :: vorticity
   public :: divergence
 
-  public :: interpolate_gll2cslam_corners
+  public :: interpolate_gll2fvm_corners
   public :: remap_phys2gll
 
 
@@ -103,10 +103,10 @@ contains
 ! derivatives and interpolating
 ! ==========================================
 
-  subroutine derivinit(deriv,cslam_corners)
+  subroutine derivinit(deriv,fvm_corners)
     type (derivative_t)      :: deriv
 !    real (kind=longdouble_kind),optional :: phys_points(:)
-    real (kind=longdouble_kind),optional :: cslam_corners(nc+1)
+    real (kind=longdouble_kind),optional :: fvm_corners(nc+1)
 
     ! Local variables
     type (quadrature_t) :: gp   ! Quadrature points and weights on pressure grid
@@ -159,8 +159,8 @@ contains
 
     deriv%Dvv_twt = TRANSPOSE(dvv)
     deriv%Mvv_twt = v2v
-    if (present(cslam_corners)) &
-         call v2pinit(deriv%MCSLAM,gp%points,cslam_corners,np,nc+1)
+    if (present(fvm_corners)) &
+         call v2pinit(deriv%Mfvm,gp%points,fvm_corners,np,nc+1)
 
     
     ! notice we deallocate this memory here even though it was allocated 
@@ -403,7 +403,7 @@ contains
     enddo
 
     ! compute product of leg_out * inv(leg):
-    do j=1,n2   ! this should be CSLAM points
+    do j=1,n2   ! this should be fvm points
        do l=1,n1   ! this should be GLL points
           sum=0
           do k=1,n1  ! number of polynomials = number of GLL points
@@ -416,7 +416,7 @@ contains
     deallocate(gll_pts%weights)
 
 #if 0
-    do j=1,n2   ! this should be CSLAM points
+    do j=1,n2   ! this should be fvm points
        do l=1,n1   ! this should be GLL points
           print *,l,j,v2p_new(l,j),v2p(l,j)
        enddo
@@ -1341,12 +1341,12 @@ endif
 
 
 !  ================================================
-!  interpolate_gll2cslam_corners:
+!  interpolate_gll2fvm_corners:
 !
 !  shape funtion interpolation from data on GLL grid to physics grid
 !
 !  ================================================
-  function interpolate_gll2cslam_corners(v,deriv) result(p)
+  function interpolate_gll2fvm_corners(v,deriv) result(p)
 
     real(kind=real_kind), intent(in) :: v(np,np)
     type (derivative_t)         :: deriv
@@ -1365,7 +1365,7 @@ endif
        do l=1,nc+1
           sumx00=0.0d0
           do i=1,np
-             sumx00 = sumx00 + deriv%MCSLAM(i,l  )*v(i,j  )
+             sumx00 = sumx00 + deriv%Mfvm(i,l  )*v(i,j  )
           enddo
           vtemp(j  ,l) = sumx00
         enddo
@@ -1374,12 +1374,12 @@ endif
        do i=1,nc+1
           sumx00=0.0d0
           do l=1,np
-             sumx00 = sumx00 + deriv%MCSLAM(l,j  )*vtemp(l,i)
+             sumx00 = sumx00 + deriv%Mfvm(l,j  )*vtemp(l,i)
           enddo
           p(i  ,j  ) = sumx00
        enddo
     enddo
-  end function interpolate_gll2cslam_corners
+  end function interpolate_gll2fvm_corners
 
 
 

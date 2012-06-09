@@ -86,7 +86,7 @@ module vertremap_mod
   use dimensions_mod, only : np,nlev,qsize,nlevp,npsq,ntrac
   use hybvcoord_mod, only  : hvcoord_t
   use element_mod, only    : element_t
-  use cslam_control_volume_mod, only    : cslam_struct
+  use fvm_control_volume_mod, only    : fvm_struct
   use perf_mod, only	   : t_startf, t_stopf  ! _EXTERNAL
   use parallel_mod, only   : abortmp  	
   contains
@@ -878,14 +878,14 @@ end function integrate_parabola
 
 
 
-  subroutine remap_velocityC(n0,np1,dt,elem,cslam,hvcoord,nets,nete,compute_diagnostics)
+  subroutine remap_velocityC(n0,np1,dt,elem,fvm,hvcoord,nets,nete,compute_diagnostics)
   
     use physical_constants, only : cp, cpwater_vapor
 	
     implicit none
     real (kind=real_kind),  intent(in)        :: dt
     type (element_t),    intent(inout), target  :: elem(:)
-    type (cslam_struct),    intent(inout), target  :: cslam(:)
+    type (fvm_struct),    intent(inout), target  :: fvm(:)
     type (hvcoord_t),    intent(in)        :: hvcoord
     logical,        intent(in)              :: compute_diagnostics
     
@@ -932,9 +932,9 @@ end function integrate_parabola
                 z1c(k+1) = z1c(k)+dp_star
                 z2c(k+1) = z2c(k)+dp_np1
 #ifdef ZEROHORZ			  
-                Qcol(k)=cslam(ie)%c(i,j,k,q,n0)  ! ignore horizontal motion
+                Qcol(k)=fvm(ie)%c(i,j,k,q,n0)  ! ignore horizontal motion
 #else		
-                Qcol(k)=cslam(ie)%c(i,j,k,q,np1)
+                Qcol(k)=fvm(ie)%c(i,j,k,q,np1)
 #endif			
                 zv(k+1) = zv(k)+Qcol(k)
              enddo
@@ -1144,8 +1144,8 @@ end function integrate_parabola
 				endif
                 zv2 = zv(zkr(k+1))+(za0(zkr(k+1))*zgam(k+1)+(za1(zkr(k+1))/2)*(zgam(k+1)**2)+ &
                      (za2(zkr(k+1))/3)*(zgam(k+1)**3))*zhdp(zkr(k+1))
-                Q_vadv = (cslam(ie)%c(i,j,k,q,np1) - (zv2 - zv1)) / dt
-                cslam(ie)%c(i,j,k,q,np1) = (zv2 - zv1)	
+                Q_vadv = (fvm(ie)%c(i,j,k,q,np1) - (zv2 - zv1)) / dt
+                fvm(ie)%c(i,j,k,q,np1) = (zv2 - zv1)	
                 zv1 = zv2
 #ifdef ENERGY_DIAGNOSTICS
                 if (compute_diagnostics .and. q==1) then
@@ -1197,7 +1197,7 @@ module prim_advection_mod
   use derivative_mod, only     : gradient, vorticity, gradient_wk, derivative_t, divergence, &
                                  gradient_sphere, divergence_sphere
   use element_mod, only        : element_t
-  use cslam_control_volume_mod, only        : cslam_struct
+  use fvm_control_volume_mod, only        : fvm_struct
   use filter_mod, only         : filter_t, filter_P
   use hybvcoord_mod, only      : hvcoord_t
   use time_mod, only           : TimeLevel_t, smooth
@@ -1218,7 +1218,7 @@ module prim_advection_mod
   private  
 
   public :: Prim_Advec_Init, Prim_Advec_Tracers_remap_rk2, Prim_Advec_Tracers_lf
-  public :: prim_advec_tracers_cslam
+  public :: prim_advec_tracers_fvm
 
   type (EdgeBuffer_t) :: edgeAdv, edgeAdvQ3, edgeAdv_p1, edgeAdvQ2, edgeAdv1
 
@@ -1256,18 +1256,18 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! CSLAM driver
+! fvm driver
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine Prim_Advec_Tracers_cslam(elem, cslam, deriv,hvcoord,hybrid,&
+  subroutine Prim_Advec_Tracers_fvm(elem, fvm, deriv,hvcoord,hybrid,&
         dt,tl,nets,nete, compute_diagnostics)
     use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
     use vertremap_mod, only: remap_velocityC,remap_velocityUV  ! _EXTERNAL (actually INTERNAL)
-    use cslam_mod, only : cslam_run, cslam_runairdensity, edgeveloc, cslam_mcgregor, cslam_mcgregordss
+    use fvm_mod, only : cslam_run, cslam_runairdensity, edgeveloc, fvm_mcgregor, fvm_mcgregordss
     
     implicit none
     type (element_t), intent(inout)   :: elem(:)
-    type (cslam_struct), intent(inout)   :: cslam(:)
+    type (fvm_struct), intent(inout)   :: fvm(:)
     type (derivative_t), intent(in)   :: deriv
     type (hvcoord_t)                  :: hvcoord
     type (hybrid_t),     intent(in):: hybrid
@@ -1288,8 +1288,8 @@ contains
     real (kind=real_kind)  :: vhat(np,np,2)
     
 
-    call t_barrierf('sync_prim_advec_tracers_cslam', hybrid%par%comm)
-    call t_startf('prim_advec_tracers_cslam')
+    call t_barrierf('sync_prim_advec_tracers_fvm', hybrid%par%comm)
+    call t_startf('prim_advec_tracers_fvm')
     n0  = tl%n0
     np1 = tl%np1
 
@@ -1336,15 +1336,15 @@ contains
     ! elem%derived%vstar = velocity at t+1 on floating levels (computed below)
     call remap_velocityUV(np1,dt,elem,hvcoord,nets,nete)
 !------------------------------------------------------------------------------------    
-    call t_startf('cslam_mcgregor')
+    call t_startf('fvm_mcgregor')
     ! using McGregor AMS 1993 scheme: Economical Determination of Departure Points for
     ! Semi-Lagrangian Models 
 !     do ie=nets,nete
 !       do k=1,nlev
 !         vstar=elem(ie)%derived%vstar(:,:,:,k) 
-!         vhat=(cslam(ie)%vn0(:,:,:,k) + elem(ie)%derived%vstar(:,:,:,k))/2
+!         vhat=(fvm(ie)%vn0(:,:,:,k) + elem(ie)%derived%vstar(:,:,:,k))/2
 !         ! calculate high order approximation
-!         call cslam_mcgregor(elem(ie), deriv, dt, vhat, vstar,3)
+!         call fvm_mcgregor(elem(ie), deriv, dt, vhat, vstar,3)
 !         ! apply DSS to make vstar C0
 !         elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%spheremp(:,:)*vstar(:,:,1) 
 !         elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%spheremp(:,:)*vstar(:,:,2) 
@@ -1362,23 +1362,23 @@ contains
 !        end do
 !     end do
 
-    call cslam_mcgregordss(elem,cslam,nets,nete, hybrid, deriv, dt, 3)
-    call t_stopf('cslam_mcgregor')
+    call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, dt, 3)
+    call t_stopf('fvm_mcgregor')
 
 !------------------------------------------------------------------------------------    
     
     
 
-    ! CSLAM departure calcluation should use vstar.
+    ! fvm departure calcluation should use vstar.
     ! from c(n0) compute c(np1): 
-    call cslam_runairdensity(elem,cslam,hybrid,deriv,dt,tl,nets,nete)
+    call cslam_runairdensity(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
 
     ! apply vertical remap back to reference levels
-    call remap_velocityC(n0,np1,dt,elem,cslam,hvcoord,nets,nete,compute_diagnostics)
+    call remap_velocityC(n0,np1,dt,elem,fvm,hvcoord,nets,nete,compute_diagnostics)
 
 
-    call t_stopf('prim_advec_tracers_cslam')
-  end subroutine prim_advec_tracers_cslam
+    call t_stopf('prim_advec_tracers_fvm')
+  end subroutine Prim_Advec_Tracers_fvm
 
 
 

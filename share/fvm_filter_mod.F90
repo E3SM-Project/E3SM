@@ -2,12 +2,12 @@
 #include "config.h"
 #endif
 
-!MODULE CSLAM_FILTER_MOD------------------------------------------------CE-for CSLAM!
+!MODULE FVM_FILTER_MOD----------------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 30.November 2011                                         !
 ! This module contains everything  to do (ONLY) a CUBIC (3rd order) filtering       ! 
 ! which expect coefficient from the cubic reconstruciton                            !
 !-----------------------------------------------------------------------------------!
-module cslam_filter_mod
+module fvm_filter_mod
 
   use kinds, only                  : int_kind, real_kind
   use dimensions_mod, only         : nc,nhc,nhe
@@ -20,14 +20,14 @@ module cslam_filter_mod
   public :: recons_val_cart
 contains
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINE MONOTONIC_GRADIENT_CART-------------------------------------CE-for CSLAM!
+!SUBROUTINE MONOTONIC_GRADIENT_CART---------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 30.November 2011                                         !
 ! DESCRIPTION: apply a monotonic filter to the calculated gradient from the cubic   !
 !              reconstruction                                                       !
 !                                                                                   !
 ! CALLS: monotonic_interior, monotonic_exterior, monotonic_exteriorswap             !
 ! INPUT: fcube  ...  tracer values incl. the halo zone                              !
-!        cslam  ...  structure incl. tracer values aso                              !
+!        fvm  ...  structure incl. tracer values aso                                !
 !        desc   ...  edge descriptor, needed for reordering                         !
 ! INPUT/OUTPUT:                                                                     !
 !        recons ...  array of reconstructed coefficients, which will be scaled by   !
@@ -38,13 +38,13 @@ contains
 !   Barth and Jespersen, AIAA-89-0366, 27th Aerospace Sciences Meeting,             !
 !   January 9-12, 1989.                                                             !
 !-----------------------------------------------------------------------------------!
-subroutine monotonic_gradient_cart(fcube,cslam,recons,desc)
-  use cslam_control_volume_mod, only: cslam_struct
+subroutine monotonic_gradient_cart(fcube,fvm,recons,desc)
+  use fvm_control_volume_mod, only: fvm_struct
   use edge_mod, only : edgedescriptor_t
   
   implicit none
   real (kind=real_kind), dimension(1-nhc:nc+nhc, 1-nhc:nc+nhc),intent(in)    :: fcube
-  type (cslam_struct), intent(in)                                            :: cslam   
+  type (fvm_struct), intent(in)                                            :: fvm   
   real (kind=real_kind),dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe),intent(inout) :: recons  
   type (edgedescriptor_t),intent(in)                                         :: desc
   
@@ -52,37 +52,37 @@ subroutine monotonic_gradient_cart(fcube,cslam,recons,desc)
   real (kind=real_kind)            :: local_min, local_max, value, phi, min_phi
   real (kind=real_kind)            :: disc, mx, my
   
-  call monotonic_int(fcube,recons,cslam%acartx,cslam%acarty,cslam%spherecentroid, &
-                     cslam%jx_min,cslam%jx_max,cslam%jy_min,cslam%jy_max,cslam%cubeboundary)
+  call monotonic_int(fcube,recons,fvm%acartx,fvm%acarty,fvm%spherecentroid, &
+                     fvm%jx_min,fvm%jx_max,fvm%jy_min,fvm%jy_max,fvm%cubeboundary)
 
   ! all elements, which have a cube edge
-  if(cslam%cubeboundary>0)then
-    if(cslam%swap1) then
-      call monotonic_haloswap(fcube,recons,cslam%acartx1,cslam%acarty1,&
-                                  cslam%spherecentroid,cslam%jx_min1,cslam%jx_max1,&
-                                  cslam%jy_min1,cslam%jy_max1,cslam%cubeboundary,desc)
+  if(fvm%cubeboundary>0)then
+    if(fvm%swap1) then
+      call monotonic_haloswap(fcube,recons,fvm%acartx1,fvm%acarty1,&
+                                  fvm%spherecentroid,fvm%jx_min1,fvm%jx_max1,&
+                                  fvm%jy_min1,fvm%jy_max1,fvm%cubeboundary,desc)
     else
-      call monotonic_halo(fcube,recons,cslam%acartx1,cslam%acarty1,&
-                              cslam%spherecentroid,cslam%jx_min1,cslam%jx_max1,&
-                              cslam%jy_min1,cslam%jy_max1,cslam%cubeboundary,desc)
+      call monotonic_halo(fcube,recons,fvm%acartx1,fvm%acarty1,&
+                              fvm%spherecentroid,fvm%jx_min1,fvm%jx_max1,&
+                              fvm%jy_min1,fvm%jy_max1,fvm%cubeboundary,desc)
     endif
     ! only for corner elements 
-    if(cslam%cubeboundary>4)then
-      if(cslam%swap2) then
-        call monotonic_haloswap(fcube,recons,cslam%acartx2,cslam%acarty2,&
-                                    cslam%spherecentroid,cslam%jx_min2,cslam%jx_max2,&
-                                    cslam%jy_min2,cslam%jy_max2,cslam%cubeboundary,desc)
+    if(fvm%cubeboundary>4)then
+      if(fvm%swap2) then
+        call monotonic_haloswap(fcube,recons,fvm%acartx2,fvm%acarty2,&
+                                    fvm%spherecentroid,fvm%jx_min2,fvm%jx_max2,&
+                                    fvm%jy_min2,fvm%jy_max2,fvm%cubeboundary,desc)
       else
-        call monotonic_halo(fcube,recons,cslam%acartx2,cslam%acarty2,&
-                                cslam%spherecentroid,cslam%jx_min2,cslam%jx_max2,&
-                                cslam%jy_min2,cslam%jy_max2,cslam%cubeboundary,desc)
+        call monotonic_halo(fcube,recons,fvm%acartx2,fvm%acarty2,&
+                                fvm%spherecentroid,fvm%jx_min2,fvm%jx_max2,&
+                                fvm%jy_min2,fvm%jy_max2,fvm%cubeboundary,desc)
       endif
     endif
   endif
 end subroutine monotonic_gradient_cart
-!END SUBROUTINE MONOTONIC_GRADIENT_CART---------------------------------CE-for CSLAM!
+!END SUBROUTINE MONOTONIC_GRADIENT_CART-----------------------------------CE-for FVM!
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINE MONOTONIC_INT-----------------------------------------------CE-for CSLAM!
+!SUBROUTINE MONOTONIC_INT-------------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 30.November 2011                                         !
 ! DESCRIPTION: filtering for interior elements                                      !
 !              this subroutine calls an optimized minmax search algorithm, and does !
@@ -90,7 +90,7 @@ end subroutine monotonic_gradient_cart
 !                                                                                   !
 ! CALLS: minmax_patch, recons_val_cart, slopelimiter_val                            !
 ! INPUT: fcube  ...  tracer values incl. the halo zone                              !
-!        cslam  ...  structure incl. tracer values aso                              !
+!        fvm  ...  structure incl. tracer values aso                                !
 !        acartx ...  x cartesian coordinats of the arrival grid on the cube         !
 !        acarty ...  y cartesian coordinats of the arrival grid on the cube         !
 !        centroid..  x,y,x^2,y^2,xy                                                 !
@@ -219,16 +219,16 @@ subroutine monotonic_int(fcube,recons,acartx,acarty,centroid,jx_min,jx_max,jy_mi
     enddo
   enddo
 end subroutine monotonic_int
-!END SUBROUTINE MONOTONIC_INT-------------------------------------------CE-for CSLAM!
+!END SUBROUTINE MONOTONIC_INT---------------------------------------------CE-for FVM!
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINE MONOTONIC_HALO----------------------------------------------CE-for CSLAM!
+!SUBROUTINE MONOTONIC_HALO------------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 30.November 2011                                         !
 ! DESCRIPTION: filtering for elements with an edge on the cube boundary             !
 !             for certain elements we have to reorder the coefficients and centroids!
 !                                                                                   !
 ! CALLS: minmax_patch_halo, recons_val_cart, slopelimiter_val                       !
 ! INPUT: fcube  ...  tracer values incl. the halo zone                              !
-!        cslam  ...  structure incl. tracer values aso                              !
+!        fvm  ...  structure incl. tracer values aso                                !
 !        acartx ...  x cartesian coordinats of the arrival grid on the cube         !
 !        acarty ...  y cartesian coordinats of the arrival grid on the cube         !
 !        centroid..  x,y,x^2,y^2,xy                                                 !
@@ -360,9 +360,9 @@ subroutine monotonic_halo(fcube,recons,acartx,acarty,centroid,&
     enddo
   enddo
 end subroutine monotonic_halo
-!END SUBROUTINE MONOTONIC_HALO------------------------------------------CE-for CSLAM!
+!END SUBROUTINE MONOTONIC_HALO--------------------------------------------CE-for FVM!
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINE MONOTONIC_HALOSWAP------------------------------------------CE-for CSLAM!
+!SUBROUTINE MONOTONIC_HALOSWAP--------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 30.November 2011                                         !
 ! DESCRIPTION: filtering for elements with an edge on the cube boundary             !
 !              use this if we have to swap x and y coordinates                      !
@@ -370,7 +370,7 @@ end subroutine monotonic_halo
 !                                                                                   !
 ! CALLS: minmax_patch_halo, recons_val_cart, slopelimiter_val                       !
 ! INPUT: fcube  ...  tracer values incl. the halo zone                              !
-!        cslam  ...  structure incl. tracer values aso                              !
+!        fvm  ...  structure incl. tracer values aso                                !
 !        acartx ...  x cartesian coordinats of the arrival grid on the cube         !
 !        acarty ...  y cartesian coordinats of the arrival grid on the cube         !
 !        centroid..  x,y,x^2,y^2,xy                                                 !
@@ -502,9 +502,9 @@ subroutine monotonic_haloswap(fcube,recons,acartx,acarty,centroid,&
     enddo
   enddo
 end subroutine monotonic_haloswap
-!END SUBROUTINE MONOTONIC_HALOSWAP--------------------------------------CE-for CSLAM!
+!END SUBROUTINE MONOTONIC_HALOSWAP----------------------------------------CE-for FVM!
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINE MINMAX_PATCH------------------------------------------------CE-for CSLAM!
+!SUBROUTINE MINMAX_PATCH--------------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 30.November 2011                                         !
 ! DESCRIPTION: search for the min/max in a patch (around a the element (a,b))       !
 !              this is optimized and just valid for interior elements               !
@@ -546,9 +546,9 @@ subroutine minmax_patch(fcube, a, b, min_val, max_val,cubeboundary)
     enddo
   enddo
 end subroutine minmax_patch
-!END SUBROUTINE MINMAX_PATCH--------------------------------------------CE-for CSLAM!
+!END SUBROUTINE MINMAX_PATCH----------------------------------------------CE-for FVM!
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINE MINMAX_PATCH_HALO-------------------------------------------CE-for CSLAM!
+!SUBROUTINE MINMAX_PATCH_HALO---------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 30.November 2011                                         !
 ! DESCRIPTION: search for the min/max in a patch (around a the element (a,b))       !
 !              this is a geneneral subroutine, here only used for the halo zone     !
@@ -642,9 +642,9 @@ subroutine minmax_patch_halo(fcube, a, b, cubeboundary, min_val, max_val)
     enddo
   enddo
 end subroutine minmax_patch_halo
-!END SUBROUTINE MINMAX_PATCH_HALO---------------------------------------CE-for CSLAM!
+!END SUBROUTINE MINMAX_PATCH_HALO-----------------------------------------CE-for FVM!
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINE RECONS_VAL_CART---------------------------------------------CE-for CSLAM!
+!SUBROUTINE RECONS_VAL_CART-----------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 30.November 2011                                         !
 ! DESCRIPTION: returns the value from the reconstruction (3rd order Taylor polynom) !
 !              at the point (cartx,carty) -> in cube CARTESIAN coordinates          !
@@ -681,9 +681,9 @@ subroutine recons_val_cart(fcube, cartx, carty, centroid, recons, a, b, value)
           recons(4,a,b) * (carty - centroid(2,a,b))**2 + &
           recons(5,a,b) * (cartx - centroid(1,a,b)) * (carty - centroid(2,a,b))
 end subroutine recons_val_cart
-!END SUBROUTINE RECONS_VAL_CART-----------------------------------------CE-for CSLAM!
+!END SUBROUTINE RECONS_VAL_CART-------------------------------------------CE-for FVM!
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINE SLOPELIMITER_VAL--------------------------------------------CE-for CSLAM!
+!SUBROUTINE SLOPELIMITER_VAL----------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 30.November 2011                                         !
 ! DESCRIPTION: returns the value from the reconstruction (3rd order Taylor polynom) !
 !              at the point (cartx,carty) -> in cube CARTESIAN coordinates          !
@@ -720,6 +720,6 @@ subroutine slopelimiter_val(value, cell_value, local_min, local_max, min_phi)
   endif
 
 end subroutine slopelimiter_val
-!END SUBROUTINE SLOPELIMITER_VAL----------------------------------------CE-for CSLAM!
+!END SUBROUTINE SLOPELIMITER_VAL------------------------------------------CE-for FVM!
 
-end module cslam_filter_mod
+end module fvm_filter_mod

@@ -219,7 +219,7 @@ module namelist_mod
                      se_smooth,        &        ! Timestep Filter  
 #else
                      qsize,         &       ! number of SE tracers
-                     ntrac,         &       ! number of cslam tracers
+                     ntrac,         &       ! number of fvm tracers
                      nthreads,      &       ! Number of threads per process
                      limiter_option, &
                      smooth,        &        ! Timestep Filter  
@@ -270,7 +270,7 @@ module namelist_mod
                      rotate_grid,   &
                      mesh_file,     &               ! Name of mesh file
                      vert_remap_q_alg, &
-                     test_cfldep                  ! CSLAM: test shape of departure grid cell and cfl number
+                     test_cfldep                  ! fvm: test shape of departure grid cell and cfl number
                      
 #ifdef CAM                      
     namelist  /ctl_nl/ SE_NSPLIT,  &       ! number of dynamics steps per physics timestep

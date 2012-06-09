@@ -400,7 +400,7 @@ contains
   end function interpol_bilinear
 
 ! ----------------------------------------------------------------------------------!
-!FUNCTION   interpol_phys_latlon----------------------------------------CE-for CSLAM!
+!FUNCTION   interpol_phys_latlon----------------------------------------CE-for fvm!
 ! AUTHOR: CHRISTOPH ERATH, 23. May 2012                                             !
 ! DESCRIPTION: evaluation of the reconstruction for every physics grid cell         !
 !                                                                                   !
@@ -409,15 +409,15 @@ contains
 !        
 ! OUTPUT: 
 !-----------------------------------------------------------------------------------!
-subroutine interpol_phys_latlon(interpdata,f, cslam, corners, desc, flatlon)
-  use cslam_control_volume_mod, only : cslam_struct
-  use cslam_reconstruction_mod, only: reconstruction
-  use cslam_filter_mod, only: monotonic_gradient_cart, recons_val_cart
+subroutine interpol_phys_latlon(interpdata,f, fvm, corners, desc, flatlon)
+  use fvm_control_volume_mod, only : fvm_struct
+  use fvm_reconstruction_mod, only: reconstruction
+  use fvm_filter_mod, only: monotonic_gradient_cart, recons_val_cart
   use edge_mod, only : edgedescriptor_t
   
   type (interpdata_t), intent(in)     :: interpdata                        
   real (kind=real_kind), intent(in)   :: f(1-nhc:nc+nhc,1-nhc:nc+nhc)
-  type (cslam_struct), intent(in)     :: cslam
+  type (fvm_struct), intent(in)     :: fvm
   type (cartesian2d_t), intent(in)    :: corners(4)
   type (edgedescriptor_t),intent(in)  :: desc
   
@@ -429,8 +429,8 @@ subroutine interpol_phys_latlon(interpdata,f, cslam, corners, desc, flatlon)
   integer                           :: i, ix, jy, starti,endi,tmpi
   real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons
   
-  call reconstruction(f, cslam,recons)
-  call monotonic_gradient_cart(f, cslam,recons, desc)
+  call reconstruction(f, fvm,recons)
+  call monotonic_gradient_cart(f, fvm,recons, desc)
   tmpaxp=(corners(1)%x+corners(2)%x)/2
   tmpaxm=(corners(2)%x-corners(1)%x)/2
   tmpayp=(corners(1)%y+corners(4)%y)/2
@@ -446,7 +446,7 @@ subroutine interpol_phys_latlon(interpdata,f, cslam, corners, desc, flatlon)
     do
        if  ((endi-starti) <=  1)  exit
        tmpi = (endi + starti)/2
-       if (xp  >  cslam%acartx(tmpi)) then
+       if (xp  >  fvm%acartx(tmpi)) then
           starti = tmpi
        else
           endi = tmpi
@@ -460,7 +460,7 @@ subroutine interpol_phys_latlon(interpdata,f, cslam, corners, desc, flatlon)
     do
        if  ((endi-starti) <=  1)  exit
        tmpi = (endi + starti)/2
-       if (yp  >  cslam%acarty(tmpi)) then
+       if (yp  >  fvm%acarty(tmpi)) then
           starti = tmpi
        else
           endi = tmpi
@@ -468,7 +468,7 @@ subroutine interpol_phys_latlon(interpdata,f, cslam, corners, desc, flatlon)
     enddo
     jy = starti
     
-    call recons_val_cart(f, xp,yp,cslam%spherecentroid,recons,ix,jy,tmpval)
+    call recons_val_cart(f, xp,yp,fvm%spherecentroid,recons,ix,jy,tmpval)
     flatlon(i)=tmpval
     
 !     flatlon(i)=f(ix,jy)

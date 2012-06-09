@@ -21,8 +21,8 @@ module prim_driver_mod
   use derivative_mod, only : derivative_t
   use reduction_mod, only : reductionbuffer_ordered_1d_t, red_min, red_max, &
          red_sum, red_sum_int, red_flops, initreductionbuffer
-  use cslam_mod, only : cslam_init1,cslam_init2
-  use cslam_control_volume_mod, only : cslam_struct
+  use fvm_mod, only : fvm_init1,fvm_init2
+  use fvm_control_volume_mod, only : fvm_struct
   use element_mod, only : element_t
   use Manager
 
@@ -33,8 +33,8 @@ module prim_driver_mod
 
   type (cg_t), allocatable  :: cg(:)              ! conjugate gradient struct (nthreads)
   type (quadrature_t)   :: gp                     ! element GLL points
-  real(kind=longdouble_kind)  :: cslam_corners(nc+1)     ! CSLAM cell corners on reference element
-  real(kind=longdouble_kind)  :: cslam_points(nc)     ! CSLAM cell centers on reference element
+  real(kind=longdouble_kind)  :: fvm_corners(nc+1)     ! fvm cell corners on reference element
+  real(kind=longdouble_kind)  :: fvm_points(nc)     ! fvm cell centers on reference element
 
 
 #ifndef CAM
@@ -49,7 +49,7 @@ module prim_driver_mod
   type (ReductionBuffer_ordered_1d_t), save :: red   ! reduction buffer               (shared)
 
 contains
-  subroutine prim_init1(elem, cslam, par, dom_mt, Tl)
+  subroutine prim_init1(elem, fvm, par, dom_mt, Tl)
 
     ! --------------------------------
     use thread_mod, only : nthreads, omp_get_thread_num, omp_set_num_threads
@@ -116,7 +116,7 @@ contains
 #endif
     implicit none
     type (element_t), pointer :: elem(:)
-    type (cslam_struct), pointer :: cslam(:)
+    type (fvm_struct), pointer :: fvm(:)
     type (parallel_t), intent(in) :: par
     type (domain1d_t), pointer :: dom_mt(:)      
     type (timelevel_t), intent(out) :: Tl
@@ -316,7 +316,7 @@ contains
        call ManagerInit()
     endif
 
-    if (ntrac>0) allocate(cslam(nelemd))
+    if (ntrac>0) allocate(fvm(nelemd))
 
     ! ====================================================
     !  Generate the communication schedule
@@ -364,17 +364,17 @@ contains
 
     gp=gausslobatto(np)  ! GLL points
 
-    ! CSLAM nodes are equally spaced in alpha/beta
+    ! fvm nodes are equally spaced in alpha/beta
     ! HOMME with equ-angular gnomonic projection maps alpha/beta space
     ! to the reference element via simple scale + translation
-    ! thus, CSLAM nodes in reference element [-1,1] are a tensor product of
-    ! array 'cslam_corners(:)' computed below:
+    ! thus, fvm nodes in reference element [-1,1] are a tensor product of
+    ! array 'fvm_corners(:)' computed below:
     xtmp=nc 
     do i=1,nc+1
-       cslam_corners(i)= 2*(i-1)/xtmp - 1  ! [-1,1] including end points
+       fvm_corners(i)= 2*(i-1)/xtmp - 1  ! [-1,1] including end points
     end do
     do i=1,nc
-       cslam_points(i)= ( cslam_corners(i)+cslam_corners(i+1) ) /2
+       fvm_points(i)= ( fvm_corners(i)+fvm_corners(i+1) ) /2
     end do
 
     if (topology=="cube") then
@@ -527,14 +527,14 @@ contains
     call prim_advance_init(integration)
     call Prim_Advec_Init()
     call diffusion_init()
-    if (ntrac>0) call cslam_init1(par)
+    if (ntrac>0) call fvm_init1(par)
 
     call TimeLevel_init(tl)
     if(par%masterproc) write(iulog,*) 'end of prim_init'
   end subroutine prim_init1
 
 
-  subroutine prim_init2(elem, cslam, hybrid, nets, nete, tl, hvcoord)
+  subroutine prim_init2(elem, fvm, hybrid, nets, nete, tl, hvcoord)
 
     use parallel_mod, only : parallel_t, haltmp, syncmp, abortmp
     use time_mod, only : timelevel_t, tstep, phys_tscale, timelevel_init, time_at, nendstep, smooth, nsplit
@@ -563,7 +563,7 @@ contains
 #endif
 
     type (element_t), intent(inout) :: elem(:)
-    type (cslam_struct), intent(inout) :: cslam(:)
+    type (fvm_struct), intent(inout) :: fvm(:)
     type (hybrid_t), intent(in) :: hybrid
 
     type (TimeLevel_t), intent(inout)    :: tl              ! time level struct
@@ -633,12 +633,12 @@ contains
     ! ==================================
     ! Initialize derivative structure
     ! ==================================
-    call derivinit(deriv(hybrid%ithr),cslam_corners)
+    call derivinit(deriv(hybrid%ithr),fvm_corners)
 
     ! ================================================
-    ! CSLAM initialization
+    ! fvm initialization
     ! ================================================
-    if (ntrac>0) call cslam_init2(elem,cslam,hybrid,nets,nete,tl)
+    if (ntrac>0) call fvm_init2(elem,fvm,hybrid,nets,nete,tl)
 
 
     ! ====================================
@@ -796,7 +796,7 @@ contains
           if (hybrid%masterthread) then
              write(iulog,*) 'initializing Jablonowski and Williamson ASP baroclinic instability test'
           end if
-          call asp_baroclinic(elem, hybrid,hvcoord,nets,nete,cslam)
+          call asp_baroclinic(elem, hybrid,hvcoord,nets,nete,fvm)
        else if (test_case(1:13) == "jw_baroclinic") then
           if (hybrid%masterthread) then
              write(iulog,*) 'initializing Jablonowski and Williamson baroclinic instability test V1'
@@ -908,7 +908,7 @@ contains
     end if
 #endif
 
-    call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete, cslam)
+    call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete, fvm)
   end subroutine prim_init2
 
 
@@ -1141,7 +1141,7 @@ contains
 
 
 
-  subroutine prim_run_subcycle(elem, cslam, hybrid,nets,nete, dt, tl, hvcoord)
+  subroutine prim_run_subcycle(elem, fvm, hybrid,nets,nete, dt, tl, hvcoord)
 !
 !   advance all variables (u,v,T,ps,Q,C) from time t to t + dt_q
 !     
@@ -1164,14 +1164,14 @@ contains
            TRACERADV_TOTAL_DIVERGENCE,TRACERADV_UGRADQ, energy_fixer, ftype, qsplit, nu_p, test_cfldep
     use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3, applycamforcing, &
                                  applycamforcing_dynamics, prim_advance_exp
-    use prim_advection_mod, only : prim_advec_tracers_remap_rk2, prim_advec_tracers_cslam
+    use prim_advection_mod, only : prim_advec_tracers_remap_rk2, prim_advec_tracers_fvm
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use parallel_mod, only : abortmp
     use reduction_mod, only : parallelmax
     
 
     type (element_t) , intent(inout)        :: elem(:)
-    type (cslam_struct) , intent(inout)        :: cslam(:)
+    type (fvm_struct) , intent(inout)        :: fvm(:)
     type (hybrid_t), intent(in)           :: hybrid  ! distributed parallel structure (shared)
 
     type (hvcoord_t), intent(in)      :: hvcoord         ! hybrid vertical coordinate struct
@@ -1230,8 +1230,8 @@ contains
          elem(ie)%derived%psdiss_biharmonic=0
       endif
       if (ntrac>0) then
-        ! save velocity at time t for CSLAM
-        cslam(ie)%vn0=elem(ie)%state%v(:,:,:,:,tl%n0)
+        ! save velocity at time t for fvm
+        fvm(ie)%vn0=elem(ie)%state%v(:,:,:,:,tl%n0)
       end if
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k, j, i)
@@ -1289,20 +1289,20 @@ contains
     if (ntrac>0) then 
       if ( n_Q /= tl%n0 ) then
         do ie=nets,nete
-          cslam(ie)%c(:,:,:,1:ntrac,tl%n0)  = cslam(ie)%c(:,:,:,1:ntrac,n_Q)
+          fvm(ie)%c(:,:,:,1:ntrac,tl%n0)  = fvm(ie)%c(:,:,:,1:ntrac,n_Q)
         enddo
       endif
-      call Prim_Advec_Tracers_cslam(elem, cslam, deriv(hybrid%ithr),hvcoord,hybrid,&
+      call Prim_Advec_Tracers_fvm(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&
            dt_q,tl,nets,nete,compute_diagnostics)
 
        if(test_cfldep) then
          maxcflx=0.0D0
          maxcfly=0.0D0
          do k=1, nlev
-!            maxcflx = parallelmax(cslam(:)%maxcfl(1,k),hybrid)
-!            maxcfly = parallelmax(cslam(:)%maxcfl(2,k),hybrid) 
-           maxcflx = max(maxcflx,parallelmax(cslam(:)%maxcfl(1,k),hybrid))
-           maxcfly = max(maxcfly,parallelmax(cslam(:)%maxcfl(2,k),hybrid))
+!            maxcflx = parallelmax(fvm(:)%maxcfl(1,k),hybrid)
+!            maxcfly = parallelmax(fvm(:)%maxcfl(2,k),hybrid) 
+           maxcflx = max(maxcflx,parallelmax(fvm(:)%maxcfl(1,k),hybrid))
+           maxcfly = max(maxcfly,parallelmax(fvm(:)%maxcfl(2,k),hybrid))
           end do
            
            if(hybrid%masterthread) then 
@@ -1312,8 +1312,8 @@ contains
            endif 
        endif   
 
-       ! dynamics computed a predictor surface pressure, now correct with CSLAM result
-       ! CSLAM has computed a new dp(:,:,k) on the CSLAM grid
+       ! dynamics computed a predictor surface pressure, now correct with fvm result
+       ! fvm has computed a new dp(:,:,k) on the fvm grid
        ! step 1: compute surface pressure from dp:
        ! note:
        !    dp(k) =( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + 
@@ -1331,7 +1331,7 @@ contains
        ! ps = sum(dp(k)) +  hvcoord%hyai(1)*hvcoord%ps0 
        !
        !
-       ! step 1:  computes sum of CSLAM density on CSLAM grid
+       ! step 1:  computes sum of fvm density on fvm grid
        ! step 2:  interpolate to GLL grid
        ! step 3:  store in  elem(ie)%state%ps_v(:,:,tl%np1)
        ! step 4:  apply DSS to make ps_v continuous 
@@ -1384,7 +1384,7 @@ contains
        if (hybrid%masterthread) then 
           write(iulog,*) "nstep=",tl%nstep," time=",Time_at(tl%nstep)/(24*3600)," [day]"
        end if
-       call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete, cslam)
+       call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete, fvm)
     end if
   end subroutine prim_run_subcycle
 
