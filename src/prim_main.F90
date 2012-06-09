@@ -30,7 +30,7 @@ program prim_main
   ! -----------------------------------------------
   use element_mod, only : element_t
   !-----------------------------------------------
-  use cslam_control_volume_mod, only : cslam_struct
+  use fvm_control_volume_mod, only : fvm_struct
   ! -----------------------------------------------
   use common_io_mod, only:  output_dir
   ! -----------------------------------------------
@@ -53,7 +53,7 @@ program prim_main
 	
   implicit none
   type (element_t), pointer  :: elem(:)
-  type (cslam_struct), pointer  :: cslam(:)
+  type (fvm_struct), pointer  :: fvm(:)
 
   type (hybrid_t)       :: hybrid ! parallel structure for shared memory/distributed memory
   type (parallel_t)                    :: par  ! parallel structure for distributed memory programming
@@ -90,7 +90,7 @@ program prim_main
 	Mpicom=par%comm, MasterTask=par%masterproc)
   call t_startf('Total')
   call t_startf('prim_init1')
-  call prim_init1(elem,  cslam, par,dom_mt,tl)
+  call prim_init1(elem,  fvm, par,dom_mt,tl)
   call t_stopf('prim_init1')
 
 
@@ -158,7 +158,7 @@ program prim_main
   nete=dom_mt(ithr)%end
 
   call t_startf('prim_init2')
-  call prim_init2(elem, cslam,  hybrid,nets,nete,tl, hvcoord)
+  call prim_init2(elem, fvm,  hybrid,nets,nete,tl, hvcoord)
   call t_stopf('prim_init2')
 #if (! defined ELEMENT_OPENMP)
   !$OMP END PARALLEL
@@ -207,9 +207,9 @@ program prim_main
   ! output initial state for NEW runs (not restarts or branch runs)
   if (runtype == 0 ) then
 #ifdef PIO_INTERP
-     call interp_movie_output(elem, tl, hvcoord, hybrid, 1, nelemd,cslam)
+     call interp_movie_output(elem, tl, hvcoord, hybrid, 1, nelemd,fvm)
 #else
-     call prim_movie_output(elem, tl, hvcoord, hybrid, 1,nelemd, cslam)
+     call prim_movie_output(elem, tl, hvcoord, hybrid, 1,nelemd, fvm)
 #endif
   endif
 
@@ -237,7 +237,7 @@ program prim_main
      do while(tl%nstep<nstep)
         call t_startf('prim_run')
         if (tstep_type==1) then  ! foreward in time methods
-           call prim_run_subcycle(elem, cslam, hybrid,nets,nete, tstep, tl, hvcoord)
+           call prim_run_subcycle(elem, fvm, hybrid,nets,nete, tstep, tl, hvcoord)
         else  ! leapfrog
            call prim_run(elem, hybrid,nets,nete, tstep, tl, hvcoord, "leapfrog")
         endif
@@ -250,9 +250,9 @@ program prim_main
      ithr=omp_get_thread_num()
      hybrid = hybrid_create(par,ithr,1)
 #ifdef PIO_INTERP
-     call interp_movie_output(elem, tl,hvcoord, hybrid, 1,nelemd,cslam)
+     call interp_movie_output(elem, tl,hvcoord, hybrid, 1,nelemd,fvm)
 #else
-     call prim_movie_output(elem, tl, hvcoord, hybrid, 1,nelemd, cslam)
+     call prim_movie_output(elem, tl, hvcoord, hybrid, 1,nelemd, fvm)
 #endif
      ! ============================================================
      ! Write restart files if required 
@@ -276,7 +276,7 @@ program prim_main
 !   write(numproc_char,*) par%nprocs
 !   write(numtrac_char,*) ntrac
 !   call system('mkdir -p '//'time/'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char))) 
-!   call t_prf('time/HommeCSLAMTime-'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char)),par%comm)
+!   call t_prf('time/HommeFVMTime-'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char)),par%comm)
   call t_prf('HommeTime', par%comm)
   if(par%masterproc) print *,"calling t_finalizef"
   call t_finalizef()

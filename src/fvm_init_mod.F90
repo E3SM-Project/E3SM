@@ -2,9 +2,9 @@
 #include "config.h"
 #endif
 
-module cslam_init_mod
+module fvm_init_mod
 contains
- subroutine cslam_init(elem,red,par)
+ subroutine fvm_init(elem,red,par)
     use kinds, only : real_kind, longdouble_kind
     ! --------------------------------
     use thread_mod, only : nthreads
@@ -101,9 +101,9 @@ contains
     ! =====================================
     ! Read in model control information
     ! =====================================
-    call t_startf('cslam_init')
+    call t_startf('fvm_init')
 
-    call cslam_readnl(par)
+    call fvm_readnl(par)
 
     ! =====================================
     ! Set cube edge rotation type for model
@@ -314,14 +314,14 @@ contains
        call initRestartFile(elem(1)%state,par,RestFile)
     endif
 
-    call t_stopf('cslam_init')
-  end subroutine cslam_init
+    call t_stopf('fvm_init')
+  end subroutine fvm_init
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!CE: my own readnl for cslam
+!CE: my own readnl for fvm
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-subroutine cslam_readnl(par)
+subroutine fvm_readnl(par)
   !-----------------
   use kinds, only : real_kind, iulog
   !-----------------
@@ -718,7 +718,7 @@ subroutine cslam_readnl(par)
      end if
   end if
 
-end subroutine cslam_readnl
+end subroutine fvm_readnl
 
 
-end module cslam_init_mod
+end module fvm_init_mod

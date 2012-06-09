@@ -40,7 +40,7 @@ module interp_movie_mod
        nf_addrequiredvar,   &
        num_io_procs,        &
        PIOFS
-  use cslam_control_volume_mod, only : cslam_struct
+  use fvm_control_volume_mod, only : fvm_struct
 
   implicit none
 #undef V_IS_LATLON
@@ -454,11 +454,11 @@ contains
   end subroutine interp_movie_finish
 
 #if defined(_PRIM) 
-  subroutine interp_movie_output(elem, tl, hvcoord, hybrid, nets,nete,cslam)
+  subroutine interp_movie_output(elem, tl, hvcoord, hybrid, nets,nete,fvm)
 #elif defined(_PRIMDG) 
-  subroutine interp_movie_output(elem, tl, hvcoord, hybrid, phimean, deriv, nets,nete,cslam)
+  subroutine interp_movie_output(elem, tl, hvcoord, hybrid, phimean, deriv, nets,nete,fvm)
 #else
-  subroutine interp_movie_output(elem, tl, hybrid, phimean, deriv, nets,nete, cslam)
+  subroutine interp_movie_output(elem, tl, hybrid, phimean, deriv, nets,nete, fvm)
 #endif
     use kinds, only : int_kind, real_kind
     use element_mod, only : element_t
@@ -487,7 +487,7 @@ contains
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     ! ---------------------    
     type (element_t)    :: elem(:)
-    type (cslam_struct), optional   :: cslam(:)
+    type (fvm_struct), optional   :: fvm(:)
     
     type (TimeLevel_t)  :: tl
     type (parallel_t)     :: par
@@ -714,7 +714,7 @@ contains
 
 #endif
 
-#if defined(_CSLAM) 
+#if defined(_FVM) 
     do cindex=1,min(ntrac,5)  ! allow a maximum output of 5 tracers
        write(vname,'(a1,i1)') 'C',cindex
        if (cindex==1) vname='C'
@@ -726,8 +726,8 @@ contains
           do ie=nets,nete
              en=st+interpdata(ie)%n_interp-1
              do k=1,nlev
-               call interpol_phys_latlon(interpdata(ie),cslam(ie)%c(:,:,k,cindex,n0), &
-                                  cslam(ie),elem(ie)%corners,elem(ie)%desc,datall(st:en,k))
+               call interpol_phys_latlon(interpdata(ie),fvm(ie)%c(:,:,k,cindex,n0), &
+                                  fvm(ie),elem(ie)%corners,elem(ie)%desc,datall(st:en,k))
              end do
              st=st+interpdata(ie)%n_interp
           enddo

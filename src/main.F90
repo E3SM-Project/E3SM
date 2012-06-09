@@ -22,7 +22,7 @@ program main
   ! -----------------------------------------------
   use element_mod, only : element_t
   ! -----------------------------------------------
-  use cslam_control_volume_mod, only : cslam_struct
+  use fvm_control_volume_mod, only : fvm_struct
   ! -----------------------------------------------
   !      use state_mod
   ! -----------------------------------------------
@@ -36,7 +36,7 @@ program main
 
   implicit none
   type (element_t), pointer :: elem(:)
-  type (cslam_struct), pointer  :: cslam(:)
+  type (fvm_struct), pointer  :: fvm(:)
   
   type (EdgeBuffer_t)  :: edge1            ! 1 component edge buffer (1, 3d scalar field)
   type (EdgeBuffer_t)  :: edge2            ! 2 component edge buffer (1, 3d vector field)
@@ -58,16 +58,16 @@ program main
        Mpicom=par%comm, MasterTask=par%masterproc)
   call t_startf('Total')
   
-#ifdef _CSLAM
+#ifdef _FVM
   if(par%masterproc) then
     print *, '----------------------------'
-    print *, 'RUN SWEQX with CSLAM TRACERS'
+    print *, 'RUN SWEQX with FVM TRACERS  '
     print *, '----------------------------'
   endif
 #endif
 
-#ifdef _CSLAM
-    call init(elem,edge1,edge2,edge3,red,par,cslam)
+#ifdef _FVM
+    call init(elem,edge1,edge2,edge3,red,par,fvm)
 #else    
     call init(elem,edge1,edge2,edge3,red,par)
 #endif    
@@ -118,7 +118,7 @@ program main
   if(integration == "runge_kutta")then
      call sweq_rk(elem,edge1,edge2,edge3,red,par,ithr,nets,nete)
   else
-     call sweq(elem,cslam,edge1,edge2,edge3,red,par,ithr,nets,nete)
+     call sweq(elem,fvm,edge1,edge2,edge3,red,par,ithr,nets,nete)
   endif
 
 #if (! defined ELEMENT_OPENMP)

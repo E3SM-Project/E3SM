@@ -28,7 +28,7 @@ module prim_state_mod
   ! ------------------------------
   use element_mod, only : element_t
   ! ------------------------------
-  use cslam_control_volume_mod, only : cslam_struct
+  use fvm_control_volume_mod, only : fvm_struct
   ! ------------------------------
   use viscosity_mod, only : compute_zeta_C0_2d
   ! ------------------------------
@@ -70,9 +70,9 @@ contains
 
   end subroutine prim_printstate_init
 
-  subroutine prim_printstate(elem, tl,hybrid,hvcoord,nets,nete, cslam)
+  subroutine prim_printstate(elem, tl,hybrid,hvcoord,nets,nete, fvm)
     type (element_t), intent(in) :: elem(:)
-    type (cslam_struct), intent(in), optional :: cslam(:)
+    type (fvm_struct), intent(in), optional :: fvm(:)
     type (TimeLevel_t), target, intent(in) :: tl
     type (hybrid_t),intent(in)     :: hybrid
     type (hvcoord_t), intent(in)   :: hvcoord
@@ -146,8 +146,8 @@ contains
     integer               :: n0, nm1, pnm1, np1
     integer               :: npts,n,q
 
-    if (.not. present(cslam) .and. ntrac>0) then
-       print *,'ERROR: prim_state_mod.F90: optional cslam argument required if ntrac>0'
+    if (.not. present(fvm) .and. ntrac>0) then
+       print *,'ERROR: prim_state_mod.F90: optional fvm argument required if ntrac>0'
     endif
 
     TOTE     = 0
@@ -232,15 +232,15 @@ contains
     enddo
     do q=1,ntrac
        do ie=nets,nete
-          tmp1(ie) = MINVAL(cslam(ie)%c(:,:,:,q,n0))
+          tmp1(ie) = MINVAL(fvm(ie)%c(:,:,:,q,n0))
        enddo
        cmin(q) = ParallelMin(tmp1,hybrid)
        do ie=nets,nete
-          tmp1(ie) = MAXVAL(cslam(ie)%c(:,:,:,q,n0))
+          tmp1(ie) = MAXVAL(fvm(ie)%c(:,:,:,q,n0))
        enddo
        cmax(q) = ParallelMax(tmp1,hybrid)
        do ie=nets,nete
-          global_shared_buf(ie,1) = SUM(cslam(ie)%c(:,:,:,q,n0))
+          global_shared_buf(ie,1) = SUM(fvm(ie)%c(:,:,:,q,n0))
        enddo
        call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
        csum(q) = global_shared_sum(1)

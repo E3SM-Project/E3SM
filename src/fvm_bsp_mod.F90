@@ -1,19 +1,19 @@
-!MODULE CSLAM_BSP_MOD---------------------------------------------------CE-for CSLAM!
+! MODULE FVM_BSP_MOD------------------------------------------------------CE-for FVM!
 ! AUTHOR: Christoph Erath, 11.June 2011                                             !
-! This module contains everything to run testcases, including cslam_mesh_dep        !
+! This module contains everything to run testcases, including fvm_mesh_dep          !
 ! which computes the departure grid for the selected test case                      !
 ! SELECTION of TEST CASES just in a COMMENT and UNCOMMENT basis                     !
 ! Available tests: SOLID Body, Bommerang with slotted cylinders                     !
 !-----------------------------------------------------------------------------------! 
-module cslam_bsp_mod
+module fvm_bsp_mod
   ! ---------------------------------------------------------------------------------
   use kinds, only                  : real_kind
   use dimensions_mod, only: np, nc, ntrac,nlev
   
   implicit none
   private
-  public :: cslam_bsp, boomerang, set_boomerang_velocities_gll, get_boomerang_velocities_gll, &
-            cslam_init_tracer
+  public :: fvm_bsp, boomerang, set_boomerang_velocities_gll, get_boomerang_velocities_gll, &
+            fvm_init_tracer
 
   public :: solidbody
   public :: analytical_function
@@ -22,7 +22,7 @@ contains
 
 
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINE SOLIDBODY---------------------------------------------------CE-for CSLAM!
+!SUBROUTINE SOLIDBODY-----------------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 11.June 2011                                             !
 ! DESCRIPTION: calculates the deparute grid for the solid body test case            !
 !                                                                                   !
@@ -34,7 +34,7 @@ subroutine solidbody(asphere, dsphere)
   use kinds, only : real_kind
   use time_mod, only : tstep, nmax, Time_at
   use physical_constants, only : DD_PI
-  use cslam_transformation_mod, only: vortex_rotatedsphere, vortex_rotatedsphereback
+  use fvm_transformation_mod, only: vortex_rotatedsphere, vortex_rotatedsphereback
   use coordinate_systems_mod, only : spherical_polar_t
 
   implicit none
@@ -73,10 +73,10 @@ subroutine solidbody(asphere, dsphere)
   dsphere%lat=tmplatdep
   dsphere%r=asphere%r
 end subroutine solidbody
-!END SUBROUTINE SOLIDBODY-----------------------------------------------CE-for CSLAM!
+!END SUBROUTINE SOLIDBODY-------------------------------------------------CE-for FVM!
 
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINE ANALYTICAL_FUNCTION-----------------------------------------CE-for CSLAM!
+!SUBROUTINE ANALYTICAL_FUNCTION-------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 11.June 2011                                             !
 ! DESCRIPTION: evaluates the analytical function for the solid body test case       !
 !                                                                                   !
@@ -136,12 +136,12 @@ subroutine analytical_function(value,sphere,klev,itr)
     value = 0.1D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev   
   endif  
 end subroutine analytical_function
-!END SUBROUTINE ANALYTICAL_FUNCTION-------------------------------------CE-for CSLAM!
+!END SUBROUTINE ANALYTICAL_FUNCTION---------------------------------------CE-for FVM!
 
 
 
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINE CSLAM_BSP---------------------------------------------------CE-for CSLAM!
+!SUBROUTINE FVM_BSP-------------------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 11.June 2011                                             !
 ! DESCRIPTION: controls the test cases                                              !
 !                                                                                   !
@@ -149,35 +149,35 @@ end subroutine analytical_function
 ! INPUT: elem     ...  element structure from HOMME                                 !
 !        tl       ...  time level structure                                         !
 ! INTPUT/OUTPUT:                                                                    !
-!        cslam   ...  structure                                                     !
+!        fvm   ...  structure                                                       !
 !-----------------------------------------------------------------------------------!
-subroutine cslam_bsp(cslam, tl)
+subroutine fvm_bsp(fvm, tl)
   use element_mod, only : element_t
   use time_mod, only : timelevel_t
-  use cslam_control_volume_mod, only: cslam_struct
+  use fvm_control_volume_mod, only: fvm_struct
   implicit none
-  type (cslam_struct), intent(inout)      :: cslam
+  type (fvm_struct), intent(inout)      :: fvm
   type (timeLevel_t), intent(in)       :: tl              ! time level struct
   
   integer                              :: i,j,k,itr
   
   do k=1, nlev
-    cslam%c(:,:,k,1,tl%n0)=1.0D0    !density of the air
+    fvm%c(:,:,k,1,tl%n0)=1.0D0    !density of the air
     do itr=2,ntrac
       do j=1,nc
         do i=1,nc               
-          call analytical_function(cslam%c(i,j,k,itr,tl%n0),cslam%centersphere(i,j),k,itr)      
+          call analytical_function(fvm%c(i,j,k,itr,tl%n0),fvm%centersphere(i,j),k,itr)      
         end do
       end do
     end do 
   end do
-end subroutine cslam_bsp
-!END SUBROUTINE CSLAM_BSP-----------------------------------------------CE-for CSLAM!
+end subroutine fvm_bsp
+!END SUBROUTINE FVM_BSP---------------------------------------------------CE-for FVM!
 
 function get_boomerang_velocities_gll(elem, time) result(vstar)
   use coordinate_systems_mod, only : cart2cubedspherexy, spherical_to_cart
   use element_mod, only : element_t
-  use cslam_control_volume_mod, only: cslam_struct
+  use fvm_control_volume_mod, only: fvm_struct
   use physical_constants, only : DD_PI, rearth
   
   implicit none
@@ -222,7 +222,7 @@ end function get_boomerang_velocities_gll
 subroutine set_boomerang_velocities_gll(elem, time,klev)
   use coordinate_systems_mod, only : cart2cubedspherexy, spherical_to_cart
   use element_mod, only : element_t
-  use cslam_control_volume_mod, only: cslam_struct
+  use fvm_control_volume_mod, only: fvm_struct
   use physical_constants, only : DD_PI, rearth
   
   implicit none
@@ -266,9 +266,9 @@ end subroutine set_boomerang_velocities_gll
 
 
 
-!END SUBROUTINE CSLAM_MESH_DEP------------------------------------------CE-for CSLAM!
+!END SUBROUTINE FVM_MESH_DEP----------------------------------------------CE-for FVM!
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINE BOOMERANG---------------------------------------------------CE-for CSLAM!
+!SUBROUTINE BOOMERANG-----------------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 31. October 2011                                         !
 ! DESCRIPTION: calculates the deparute grid for the boomerang flow                  !
 !                                                                                   !
@@ -394,10 +394,10 @@ subroutine boomerang(asphere,dsphere,nstep)
   dsphere%lat=tmp_th
   dsphere%r=asphere%r
 end subroutine boomerang
-!END SUBROUTINE BOOMERANG-----------------------------------------------CE-for CSLAM!
+!END SUBROUTINE BOOMERANG-------------------------------------------------CE-for FVM!
 
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINE CSLAM_INIT_TRACER-------------------------------------------CE-for CSLAM!
+!SUBROUTINE FVM_INIT_TRACER-----------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 11.June 2011                                             !
 ! DESCRIPTION: controls the test cases                                              !
 !                                                                                   !
@@ -405,31 +405,31 @@ end subroutine boomerang
 ! INPUT: elem     ...  element structure from HOMME                                 !
 !        tl       ...  time level structure                                         !
 ! INTPUT/OUTPUT:                                                                    !
-!        cslam   ...  structure                                                     !
+!        fvm   ...  structure                                                       !
 !-----------------------------------------------------------------------------------!
-subroutine cslam_init_tracer(cslam, tl)
+subroutine fvm_init_tracer(fvm, tl)
   use element_mod, only : element_t
   use time_mod, only : timelevel_t
-  use cslam_control_volume_mod, only: cslam_struct
+  use fvm_control_volume_mod, only: fvm_struct
   implicit none
-  type (cslam_struct), intent(inout)      :: cslam
+  type (fvm_struct), intent(inout)      :: fvm
   type (timeLevel_t), intent(in)       :: tl              ! time level struct
   
   integer                              :: i,j,k,itr
   
   do k=1, nlev
-    cslam%c(:,:,k,1,tl%n0)=1.0D0    !density of the air
-    cslam%c(:,:,k,2,tl%n0)=10.0D0    !density of the air
+    fvm%c(:,:,k,1,tl%n0)=1.0D0    !density of the air
+    fvm%c(:,:,k,2,tl%n0)=10.0D0    !density of the air
     
     do itr=3,ntrac
       do j=1,nc
         do i=1,nc               
-          call analytical_function(cslam%c(i,j,k,itr,tl%n0),cslam%centersphere(i,j),k,itr)      
+          call analytical_function(fvm%c(i,j,k,itr,tl%n0),fvm%centersphere(i,j),k,itr)      
         end do
       end do
     end do 
   end do
-end subroutine cslam_init_tracer
-!END SUBROUTINE CSLAM_BSP-----------------------------------------------CE-for CSLAM!
+end subroutine fvm_init_tracer
+!END SUBROUTINE FVM_BSP---------------------------------------------------CE-for FVM!
 
-end module cslam_bsp_mod
+end module fvm_bsp_mod

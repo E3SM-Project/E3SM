@@ -1,5 +1,5 @@
 !----------------------------------------------------------------------------!
-! Main File for the cslam project in HOMME                                   !
+! Main File for the fvm project in HOMME                                   !
 ! Author: Christoph Erath                                                    !
 ! Date: 13.January 2010                                                      !
 !----------------------------------------------------------------------------!
@@ -9,12 +9,12 @@
 #endif
 
 
-program cslam_main
+program fvm_main
   ! -----------------------------------------------
-  use cslam_mod, only: cslam_init1, cslam_init2
-  use cslam_bench_mod, only: cslam_run_bench
+  use fvm_mod, only: fvm_init1, fvm_init2
+  use fvm_bench_mod, only: cslam_run_bench
   ! -----------------------------------------------
-  use cslam_control_volume_mod, only: cslam_struct
+  use fvm_control_volume_mod, only: fvm_struct
   ! -----------------------------------------------
   use dimensions_mod, only : nelemd, ntrac
   ! -----------------------------------------------
@@ -24,7 +24,7 @@ program cslam_main
   ! -----------------------------------------------
   use element_mod, only : element_t
   ! -----------------------------------------------
-  use cslam_init_mod, only : cslam_init
+  use fvm_init_mod, only : fvm_init
   ! -----------------------------------------------
   use time_mod, only : timelevel_t, timelevel_init
   ! -----------------------------------------------
@@ -40,7 +40,7 @@ program cslam_main
 
   implicit none
   type (element_t), pointer :: elem(:)
-  type (cslam_struct), pointer                :: cslam(:)
+  type (fvm_struct), pointer                :: fvm(:)
   type (TimeLevel_t)                          :: tl              ! time level struct
   
   type (EdgeBuffer_t)  :: edgecell,edgepoints                 ! 1 component edge buffer (1, 3d scalar field)
@@ -69,7 +69,7 @@ program cslam_main
   call t_initf('input.nl',LogPrint=par%masterproc, &
        Mpicom=par%comm, MasterTask=par%masterproc)
   call t_startf('Total')
-  call cslam_init(elem,red,par)
+  call fvm_init(elem,red,par)
   ! =====================================================
   ! Allocate state variables
   ! =====================================================
@@ -90,7 +90,7 @@ program cslam_main
   ! =====================================
 
   call syncmp(par)
-  call cslam_init1(par)
+  call fvm_init1(par)
 
 
   ! initialize time management
@@ -127,18 +127,18 @@ program cslam_main
 
 
   ! ================================================
-  ! Initialize ghost cell code (should be done in threaded region, so not in cslam_init1)
+  ! Initialize ghost cell code (should be done in threaded region, so not in fvm_init1)
   ! ================================================
     
 
-  !-Create new CSLAM Mesh
-  allocate(cslam(nelemd))
-  call cslam_init2(elem,cslam,hybrid,nets,nete,tl)
+  !-Create new fvm Mesh
+  allocate(fvm(nelemd))
+  call fvm_init2(elem,fvm,hybrid,nets,nete,tl)
 
 
 
 
-  call cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
+  call cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
 
 #if (! defined ELEMENT_OPENMP)
   !$OMP END PARALLEL
@@ -150,10 +150,10 @@ program cslam_main
   write(numproc_char,*) par%nprocs
   write(numtrac_char,*) ntrac
 !   call system('mkdir -p '//'time/'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char))) 
-!  call t_prf('time/'//trim(adjustl(numproc_char))//'/'//trim(adjustl(numtrac_char))//'/HommeCSLAMTime',par%comm)
-  call t_prf('HommeCSLAMTime',par%comm)
+!  call t_prf('time/'//trim(adjustl(numproc_char))//'/'//trim(adjustl(numtrac_char))//'/HommefvmTime',par%comm)
+  call t_prf('HommeFVMTime',par%comm)
   call t_finalizef()
   call haltmp("exiting program...")
   deallocate(elem)
-end program cslam_main
+end program fvm_main
 

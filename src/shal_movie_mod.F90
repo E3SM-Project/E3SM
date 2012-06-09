@@ -26,7 +26,7 @@ module shal_movie_mod
   use control_mod, only : test_case, runtype, kmass
   ! ---------------------
   use element_mod, only : element_t
-  use cslam_control_volume_mod, only : cslam_struct
+  use fvm_control_volume_mod, only : fvm_struct
   ! ---------------------
   use coordinate_systems_mod, only : cartesian2d_t, spherical_polar_t
   ! ---------------------
@@ -110,9 +110,9 @@ contains
   end subroutine GetDOF
 
 
-  subroutine shal_movie_init(elem, hybrid, cslam)
+  subroutine shal_movie_init(elem, hybrid, fvm)
     type (element_t), intent(in)    :: elem(:)
-    type (cslam_struct), optional, intent(in)    :: cslam(:)
+    type (fvm_struct), optional, intent(in)    :: fvm(:)
     type (hybrid_t), intent(in)     :: hybrid
     ! Local variables
     integer ie,i,j,k,ios,ii,jj,base,global_nc
@@ -162,8 +162,8 @@ contains
          compDOF(1:1),IOdescT)
     deallocate(compdof)
 
-! CSLAM grid
-    if (hybrid%par%masterproc) print *,'PIO initialization of CSLAM grid'
+! fvm grid
+    if (hybrid%par%masterproc) print *,'PIO initialization of fvm grid'
     allocate(compdof(nc*nc*nelemd*nlev))
     jj=0
     do k=0,nlev-1
@@ -196,9 +196,9 @@ contains
     call nf_variable_attributes(ncdf, 'T', 'Temperature','degrees kelvin')
     call nf_variable_attributes(ncdf, 'lat', 'column latitude','degrees_north')
     call nf_variable_attributes(ncdf, 'lon', 'column longitude','degrees_east')
-    call nf_variable_attributes(ncdf, 'cslam_lat', 'column latitude','degrees_north')
-    call nf_variable_attributes(ncdf, 'cslam_lon', 'column longitude','degrees_east')
-    call nf_variable_attributes(ncdf, 'cslam_area', 'area weights','radians^2')
+    call nf_variable_attributes(ncdf, 'fvm_lat', 'column latitude','degrees_north')
+    call nf_variable_attributes(ncdf, 'fvm_lon', 'column longitude','degrees_east')
+    call nf_variable_attributes(ncdf, 'fvm_area', 'area weights','radians^2')
     call nf_variable_attributes(ncdf, 'time', 'Model elapsed time','days')
 
     call nf_output_init_complete(ncdf)
@@ -233,8 +233,8 @@ contains
           enddo
           call nf_put_var(ncdf(ios),latp,start(1:1), count(1:1), name='area')
 
-          if (present(cslam)) then 
-          if (hybrid%par%masterproc) print *,'writing CSLAM coordinates ios=',ios
+          if (present(fvm)) then 
+          if (hybrid%par%masterproc) print *,'writing fvm coordinates ios=',ios
           allocate(var1(nc*nc*nelemd,nlev))
           allocate(var2(nc*nc*nelemd,nlev))
           var1=0
@@ -246,8 +246,8 @@ contains
              do j=1,nc
                 do i=1,nc
                    jj=jj+1
-                   var1(jj,1) = cslam(ie)%centersphere(i,j)%lat
-                   var2(jj,1) = cslam(ie)%centersphere(i,j)%lon
+                   var1(jj,1) = fvm(ie)%centersphere(i,j)%lat
+                   var2(jj,1) = fvm(ie)%centersphere(i,j)%lon
                 end do
              end do
           end do
@@ -265,7 +265,7 @@ contains
              do j=1,nc
                 do i=1,nc
                    jj=jj+1
-                   var1(jj,1)=cslam(ie)%area_sphere(i,j)
+                   var1(jj,1)=fvm(ie)%area_sphere(i,j)
                 end do
              end do
           end do
@@ -284,14 +284,14 @@ contains
     
   end subroutine shal_movie_init
 
-  subroutine shal_movie_output(elem,tl,hybrid, phimean, nets, nete,deriv, cslam)
+  subroutine shal_movie_output(elem,tl,hybrid, phimean, nets, nete,deriv, fvm)
     use time_mod, only : Timelevel_t, time_at
     use derivative_mod, only : vorticity_sphere
 
     integer,          intent(in)    :: nets,nete  
     type (derivative_t),intent(in)  :: deriv 
     type (element_t), intent(inout) :: elem(:)
-    type (cslam_struct), optional, intent(inout) :: cslam(:)
+    type (fvm_struct), optional, intent(inout) :: fvm(:)
     type (TimeLevel_t), intent(in)  :: tl
     type (hybrid_t), intent(in)     :: hybrid
     real (kind=real_kind), intent(in) :: phimean
@@ -400,7 +400,7 @@ contains
              call nf_put_var(ncdf(ios),var3d,start, count, name='div')
 	  endif 
 
-          if (present(cslam)) then
+          if (present(fvm)) then
           do cindex=1,min(ntrac,4)
              write(vname,'(a1,i1)') 'c',cindex
              if (cindex==1) vname='c'
@@ -417,7 +417,7 @@ contains
                       do j=1,nc
                          do i=1,nc
                             jj=jj+1
-                            varphys(jj,k)= cslam(ie)%c(i,j,k,cindex,tl%n0)
+                            varphys(jj,k)= fvm(ie)%c(i,j,k,cindex,tl%n0)
                          end do
                       end do
                    end do
@@ -435,7 +435,7 @@ contains
              do ie=1,nelemd
                 en=st+elem(ie)%idxp%NumUniquePts-1
                    do k=1,nlev
-                      if(test_case(1:5).eq.'cslam') then
+                      if(test_case(1:5).eq.'fvm') then
                          varptmp(:,:,k) = elem(ie)%state%p(:,:,k,tl%n0) 
                       else
                          varptmp(:,:,k) = (elem(ie)%state%p(:,:,k,tl%n0) + elem(ie)%state%ps + phimean)/g_sw

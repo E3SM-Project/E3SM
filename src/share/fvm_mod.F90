@@ -1,17 +1,17 @@
 !-----------------------------------------------------------------------------------!
-!MODULE CSLAM_MOD-------------------------------------------------------CE-for CSLAM!
-! CSLAM_MOD File for the cslam project in HOMME                                     !
+!MODULE FVM_MOD-----------------------------------------------------------CE-for FVM!
+! FVM_MOD File for the fvm project in HOMME                                         !
 ! Author: Christoph Erath                                                           !
 ! Date: 25.January 2011                                                             !
-! MAIN module to run CSLAM on HOMME                                                 !
+! MAIN module to run fvm on HOMME                                                   !
 ! 14.November 2011: reorganisation done                                             !
-! 7.Februar 2012: cslam_run and cslam_runair                                        !
+! 7.Februar 2012: cslam_run and cslam_runair                                            !
 !-----------------------------------------------------------------------------------!
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-module cslam_mod
+module fvm_mod
 
   use kinds, only : real_kind, int_kind, longdouble_kind
   use edge_mod, only : ghostbuffertr_t, initghostbuffer, freeghostbuffertr, &
@@ -19,7 +19,7 @@ module cslam_mod
   use dimensions_mod, only: nelem, nelemd, nelemdmax, nlev, ne, nc, nhc, nhe, nlev, ntrac, np, ntrac_d
   use time_mod, only : timelevel_t
   use element_mod, only : element_t, timelevels
-  use cslam_control_volume_mod, only: cslam_struct
+  use fvm_control_volume_mod, only: fvm_struct
   use hybrid_mod, only : hybrid_t
 
   implicit none
@@ -28,16 +28,16 @@ module cslam_mod
   type (EdgeBuffer_t)                         :: edgeveloc
   
   public :: cslam_run, cslam_runair, cslam_runairdensity
-  public :: cellghostbuf, edgeveloc, cslam_init1,cslam_init2, cslam_mcgregor, cslam_mcgregordss
+  public :: cellghostbuf, edgeveloc, fvm_init1,fvm_init2, fvm_mcgregor, fvm_mcgregordss
 contains
 
-subroutine cslam_run(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
+subroutine cslam_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   ! ---------------------------------------------------------------------------------
-  use cslam_line_integrals_mod, only: compute_weights
+  use fvm_line_integrals_mod, only: compute_weights
   ! ---------------------------------------------------------------------------------  
-  use cslam_filter_mod, only: monotonic_gradient_cart
+  use fvm_filter_mod, only: monotonic_gradient_cart
   ! ---------------------------------------------------------------------------------
-  use cslam_reconstruction_mod, only: reconstruction
+  use fvm_reconstruction_mod, only: reconstruction
   ! ---------------------------------------------------------------------------------
   use derivative_mod, only : derivative_t
   ! ---------------------------------------------------------------------------------
@@ -48,7 +48,7 @@ subroutine cslam_run(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
    
   implicit none
   type (element_t), intent(inout)                :: elem(:)
-  type (cslam_struct), intent(inout)             :: cslam(:)
+  type (fvm_struct), intent(inout)             :: fvm(:)
   type (hybrid_t), intent(in)                 :: hybrid   ! distributed parallel structure (shared)
   integer, intent(in)                         :: nets  ! starting thread element number (private)
   integer, intent(in)                         :: nete  ! ending thread element number   (private)
@@ -69,15 +69,15 @@ subroutine cslam_run(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
    
   do ie=nets, nete
     do k=1,nlev
-      call cslam_mesh_dep(elem(ie),deriv,cslam(ie),tstep,tl,k)
-      !-Departure CSLAM Meshes, initialization done                                                               
-      call compute_weights(cslam(ie),6,weights_all,weights_eul_index_all, &
+      call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
+      !-Departure fvm Meshes, initialization done                                                               
+      call compute_weights(fvm(ie),6,weights_all,weights_eul_index_all, &
              weights_lgr_index_all,jall) 
       !loop through all tracers
       do itr=1,ntrac
-        tracer0=cslam(ie)%c(:,:,k,itr,tl%n0)
-        call reconstruction(tracer0, cslam(ie),recons)
-        call monotonic_gradient_cart(tracer0, cslam(ie),recons, elem(ie)%desc)
+        tracer0=fvm(ie)%c(:,:,k,itr,tl%n0)
+        call reconstruction(tracer0, fvm(ie),recons)
+        call monotonic_gradient_cart(tracer0, fvm(ie),recons, elem(ie)%desc)
         tracer1=0.0D0   
 !         do h=1,jall
 !           jx  = weights_lgr_index_all(h,1)
@@ -85,41 +85,41 @@ subroutine cslam_run(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
 !           jdx = weights_eul_index_all(h,1)
 !           jdy = weights_eul_index_all(h,2)
 !               
-!           call remap(tracer0(jdx,jdy),tracer1(jx,jy),weights_all(h,:),&
-!                      recons(:,jdx,jdy),cslam(ie)%spherecentroid(:,jdx,jdy))             
+!           call cslam_remap(tracer0(jdx,jdy),tracer1(jx,jy),weights_all(h,:),&
+!                      recons(:,jdx,jdy),fvm(ie)%spherecentroid(:,jdx,jdy))             
 !         end do
-        call remap(tracer0,tracer1,weights_all, recons, &
-                   cslam(ie)%spherecentroid, weights_eul_index_all, weights_lgr_index_all, jall)
+        call cslam_remap(tracer0,tracer1,weights_all, recons, &
+                   fvm(ie)%spherecentroid, weights_eul_index_all, weights_lgr_index_all, jall)
         ! finish scheme
         do j=1,nc
           do i=1,nc
-            cslam(ie)%c(i,j,k,itr,tl%np1)=tracer1(i,j)/cslam(ie)%area_sphere(i,j)
+            fvm(ie)%c(i,j,k,itr,tl%np1)=tracer1(i,j)/fvm(ie)%area_sphere(i,j)
           end do
         end do
       enddo  !End Tracer
     end do  !End Level
     !note write tl%np1 in buffer
-    call ghostVpack(cellghostbuf, cslam(ie)%c,nhc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
+    call ghostVpack(cellghostbuf, fvm(ie)%c,nhc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
   end do
-  call t_startf('CSLAM Communication')
+  call t_startf('FVM Communication')
   call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc)
-  call t_stopf('CSLAM Communication')
+  call t_stopf('FVM Communication')
   !-----------------------------------------------------------------------------------!
   do ie=nets,nete
-     call ghostVunpack(cellghostbuf, cslam(ie)%c, nhc, nc,nlev,ntrac, 0, tl%np1, timelevels,elem(ie)%desc)
+     call ghostVunpack(cellghostbuf, fvm(ie)%c, nhc, nc,nlev,ntrac, 0, tl%np1, timelevels,elem(ie)%desc)
   enddo
 end subroutine cslam_run
 
 
 
 ! use this subroutine for benchmark tests, couple airdensity with tracer concentration
-subroutine cslam_runairdensity(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
+subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   ! ---------------------------------------------------------------------------------
-  use cslam_line_integrals_mod, only: compute_weights
+  use fvm_line_integrals_mod, only: compute_weights
   ! ---------------------------------------------------------------------------------  
-  use cslam_filter_mod, only: monotonic_gradient_cart
+  use fvm_filter_mod, only: monotonic_gradient_cart
   ! ---------------------------------------------------------------------------------
-  use cslam_reconstruction_mod, only: reconstruction
+  use fvm_reconstruction_mod, only: reconstruction
   ! ---------------------------------------------------------------------------------
   use derivative_mod, only : derivative_t
   ! ---------------------------------------------------------------------------------
@@ -130,7 +130,7 @@ subroutine cslam_runairdensity(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
    
   implicit none
   type (element_t), intent(inout)                :: elem(:)
-  type (cslam_struct), intent(inout)             :: cslam(:)
+  type (fvm_struct), intent(inout)             :: fvm(:)
   type (hybrid_t), intent(in)                 :: hybrid   ! distributed parallel structure (shared)
   integer, intent(in)                         :: nets  ! starting thread element number (private)
   integer, intent(in)                         :: nete  ! ending thread element number   (private)
@@ -155,65 +155,65 @@ subroutine cslam_runairdensity(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
   call t_startf('CSLAM scheme') 
   do ie=nets, nete
     do k=1,nlev
-      call cslam_mesh_dep(elem(ie),deriv,cslam(ie),tstep,tl,k)
-      !-Departure CSLAM Meshes, initialization done                                                               
-      call compute_weights(cslam(ie),6,weights_all,weights_eul_index_all, &
+      call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
+      !-Departure fvm Meshes, initialization done                                                               
+      call compute_weights(fvm(ie),6,weights_all,weights_eul_index_all, &
              weights_lgr_index_all,jall) 
              
       tracer_air0=1.0D0 !elem(ie)%derived%dp(:,:,k)       
-      call reconstruction(tracer_air0, cslam(ie),recons_air)
-      call monotonic_gradient_cart(tracer_air0, cslam(ie),recons_air, elem(ie)%desc)
+      call reconstruction(tracer_air0, fvm(ie),recons_air)
+      call monotonic_gradient_cart(tracer_air0, fvm(ie),recons_air, elem(ie)%desc)
       tracer_air1=0.0D0   
 
-      call remap(tracer_air0,tracer_air1,weights_all, recons_air, &
-                 cslam(ie)%spherecentroid, weights_eul_index_all, weights_lgr_index_all, jall)             
+      call cslam_remap(tracer_air0,tracer_air1,weights_all, recons_air, &
+                 fvm(ie)%spherecentroid, weights_eul_index_all, weights_lgr_index_all, jall)             
       ! finish scheme
       do j=1,nc
         do i=1,nc
-          tracer_air1(i,j)=tracer_air1(i,j)/cslam(ie)%area_sphere(i,j)
+          tracer_air1(i,j)=tracer_air1(i,j)/fvm(ie)%area_sphere(i,j)
         end do
       end do
       !loop through all tracers
       do itr=1,ntrac
-        tracer0=cslam(ie)%c(:,:,k,itr,tl%n0)
-        call reconstruction(tracer0, cslam(ie),recons)
-        call monotonic_gradient_cart(tracer0, cslam(ie),recons, elem(ie)%desc)
+        tracer0=fvm(ie)%c(:,:,k,itr,tl%n0)
+        call reconstruction(tracer0, fvm(ie),recons)
+        call monotonic_gradient_cart(tracer0, fvm(ie),recons, elem(ie)%desc)
         tracer1=0.0D0                      
-        call remap_air(tracer0,tracer1,tracer_air0,weights_all, recons,recons_air,&
-                       cslam(ie)%spherecentroid,weights_eul_index_all, weights_lgr_index_all, jall)
+        call cslam_remap_air(tracer0,tracer1,tracer_air0,weights_all, recons,recons_air,&
+                       fvm(ie)%spherecentroid,weights_eul_index_all, weights_lgr_index_all, jall)
         ! finish scheme
         do j=1,nc
           do i=1,nc
-            cslam(ie)%c(i,j,k,itr,tl%np1)= &
-            (tracer1(i,j)/cslam(ie)%area_sphere(i,j))/tracer_air1(i,j)
+            fvm(ie)%c(i,j,k,itr,tl%np1)= &
+            (tracer1(i,j)/fvm(ie)%area_sphere(i,j))/tracer_air1(i,j)
           end do
         end do            
       enddo  !End Tracer
     end do  !End Level
     !note write tl%np1 in buffer
-    call ghostVpack(cellghostbuf, cslam(ie)%c,nhc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
+    call ghostVpack(cellghostbuf, fvm(ie)%c,nhc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
   end do
   call t_stopf('CSLAM scheme')
-  call t_startf('CSLAM Communication')
+  call t_startf('FVM Communication')
   call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc)
-  call t_stopf('CSLAM Communication')
+  call t_stopf('FVM Communication')
   !-----------------------------------------------------------------------------------!
-  call t_startf('CSLAM Unpack')
+  call t_startf('FVM Unpack')
   do ie=nets,nete
-     call ghostVunpack(cellghostbuf, cslam(ie)%c, nhc, nc,nlev,ntrac, 0, tl%np1, timelevels,elem(ie)%desc)
+     call ghostVunpack(cellghostbuf, fvm(ie)%c, nhc, nc,nlev,ntrac, 0, tl%np1, timelevels,elem(ie)%desc)
   enddo
-  call t_stopf('CSLAM Unpack')
+  call t_stopf('FVM Unpack')
 end subroutine cslam_runairdensity
 
 
 ! use this subroutine for benchmark tests, couple airdensity with tracer concentration
-subroutine cslam_runair(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
+subroutine cslam_runair(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   ! ---------------------------------------------------------------------------------
-  use cslam_line_integrals_mod, only: compute_weights
+  use fvm_line_integrals_mod, only: compute_weights
   ! ---------------------------------------------------------------------------------  
-  use cslam_filter_mod, only: monotonic_gradient_cart
+  use fvm_filter_mod, only: monotonic_gradient_cart
   ! ---------------------------------------------------------------------------------
-  use cslam_reconstruction_mod, only: reconstruction
+  use fvm_reconstruction_mod, only: reconstruction
   ! ---------------------------------------------------------------------------------
   use derivative_mod, only : derivative_t
   ! ---------------------------------------------------------------------------------
@@ -224,7 +224,7 @@ subroutine cslam_runair(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
    
   implicit none
   type (element_t), intent(inout)                :: elem(:)
-  type (cslam_struct), intent(inout)             :: cslam(:)
+  type (fvm_struct), intent(inout)             :: fvm(:)
   type (hybrid_t), intent(in)                 :: hybrid   ! distributed parallel structure (shared)
   integer, intent(in)                         :: nets  ! starting thread element number (private)
   integer, intent(in)                         :: nete  ! ending thread element number   (private)
@@ -248,56 +248,56 @@ subroutine cslam_runair(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
    
   do ie=nets, nete
     do k=1,nlev
-      call cslam_mesh_dep(elem(ie),deriv,cslam(ie),tstep,tl,k)
-      !-Departure CSLAM Meshes, initialization done                                                               
-      call compute_weights(cslam(ie),6,weights_all,weights_eul_index_all, &
+      call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
+      !-Departure fvm Meshes, initialization done                                                               
+      call compute_weights(fvm(ie),6,weights_all,weights_eul_index_all, &
              weights_lgr_index_all,jall) 
       !loop through all tracers
       do itr=1,ntrac
-        tracer0=cslam(ie)%c(:,:,k,itr,tl%n0)
-        call reconstruction(tracer0, cslam(ie),recons)
-        call monotonic_gradient_cart(tracer0, cslam(ie),recons, elem(ie)%desc)
+        tracer0=fvm(ie)%c(:,:,k,itr,tl%n0)
+        call reconstruction(tracer0, fvm(ie),recons)
+        call monotonic_gradient_cart(tracer0, fvm(ie),recons, elem(ie)%desc)
         tracer1=0.0D0   
         if (itr==1) then !calculation for air density  (the first tracer is supposed to be)
           recons_air=recons
           tracer_air0=tracer0
-          call remap(tracer0,tracer1,weights_all, recons, &
-                 cslam(ie)%spherecentroid, weights_eul_index_all, weights_lgr_index_all, jall)
+          call cslam_remap(tracer0,tracer1,weights_all, recons, &
+                 fvm(ie)%spherecentroid, weights_eul_index_all, weights_lgr_index_all, jall)
           ! finish scheme
           do j=1,nc
             do i=1,nc
-              tracer_air1(i,j)=tracer1(i,j)/cslam(ie)%area_sphere(i,j)
-              cslam(ie)%c(i,j,k,itr,tl%np1)=tracer_air1(i,j)
+              tracer_air1(i,j)=tracer1(i,j)/fvm(ie)%area_sphere(i,j)
+              fvm(ie)%c(i,j,k,itr,tl%np1)=tracer_air1(i,j)
             end do
           end do
         else !calculation for the other tracers    
-          call remap_air(tracer0,tracer1,tracer_air0,weights_all, recons,recons_air,&
-                       cslam(ie)%spherecentroid,weights_eul_index_all, weights_lgr_index_all, jall)                
+          call cslam_remap_air(tracer0,tracer1,tracer_air0,weights_all, recons,recons_air,&
+                       fvm(ie)%spherecentroid,weights_eul_index_all, weights_lgr_index_all, jall)                
           ! finish scheme
           do j=1,nc
             do i=1,nc
-              cslam(ie)%c(i,j,k,itr,tl%np1)= &
-              (tracer1(i,j)/cslam(ie)%area_sphere(i,j))/tracer_air1(i,j)
+              fvm(ie)%c(i,j,k,itr,tl%np1)= &
+              (tracer1(i,j)/fvm(ie)%area_sphere(i,j))/tracer_air1(i,j)
             end do
           end do            
         end if
       enddo  !End Tracer
     end do  !End Level
     !note write tl%np1 in buffer
-    call ghostVpack(cellghostbuf, cslam(ie)%c,nhc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
+    call ghostVpack(cellghostbuf, fvm(ie)%c,nhc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
   end do
-  call t_startf('CSLAM Communication')
+  call t_startf('FVM Communication')
   call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc)
-  call t_stopf('CSLAM Communication')
+  call t_stopf('FVM Communication')
   !-----------------------------------------------------------------------------------!
   do ie=nets,nete
-     call ghostVunpack(cellghostbuf, cslam(ie)%c, nhc, nc,nlev,ntrac, 0, tl%np1, timelevels,elem(ie)%desc)
+     call ghostVunpack(cellghostbuf, fvm(ie)%c, nhc, nc,nlev,ntrac, 0, tl%np1, timelevels,elem(ie)%desc)
   enddo
 end subroutine cslam_runair
 
 
 ! do the remapping
-subroutine remap(tracer0,tracer1,weights,recons,centroid, &
+subroutine cslam_remap(tracer0,tracer1,weights,recons,centroid, &
                  weights_eul_index_all, weights_lgr_index_all, jall)
   real (kind=real_kind), intent(in)           :: tracer0(1-nhc:nc+nhc,1-nhc:nc+nhc)
   real (kind=real_kind), intent(inout)        :: tracer1(1:nc,1:nc)
@@ -335,12 +335,12 @@ subroutine remap(tracer0,tracer1,weights,recons,centroid, &
          weights(h,5)*recons(4,jdx,jdy)+&
          weights(h,6)*recons(5,jdx,jdy)
      end do
-end subroutine remap
+end subroutine cslam_remap
 
 ! do remapping with air (i.e. conserve mass of air density * concentration),
 ! see Nair et.al 2010 in JCP: A class of deformational flow test cases for linear transport
 ! schemes on the sphere, Appendix B
-subroutine remap_air(tracer0,tracer1,tracer_air, weights,recons, recons_air, centroid, &
+subroutine cslam_remap_air(tracer0,tracer1,tracer_air, weights,recons, recons_air, centroid, &
                  weights_eul_index_all, weights_lgr_index_all, jall)
                  
   real (kind=real_kind), intent(in)           :: tracer0(1-nhc:nc+nhc,1-nhc:nc+nhc)
@@ -403,17 +403,17 @@ subroutine remap_air(tracer0,tracer1,tracer_air, weights,recons, recons_air, cen
           weights(h,5)*recons_air(4,jdx,jdy)+&
           weights(h,6)*recons_air(5,jdx,jdy))
   end do
-end subroutine remap_air
+end subroutine cslam_remap_air
 
 
 ! initialize global buffers shared by all threads
-subroutine cslam_init1(par)
+subroutine fvm_init1(par)
   use parallel_mod, only : parallel_t, haltmp
   type (parallel_t) :: par
   
   if (nc<4) then
      if (par%masterproc) then
-        print *, "NUMBER OF CELLS ERROR for CSLAM: Number of cells parmeter"
+        print *, "NUMBER OF CELLS ERROR for fvm: Number of cells parmeter"
         print *, "parameter nc at least 4 (nc>=4), nc*nc cells per element. This is"
         print *, "needed for the cubic reconstruction, which is only implemented yet! STOP"
      endif
@@ -421,32 +421,32 @@ subroutine cslam_init1(par)
   end if
   if (nhe .ne. 1) then
      if (par%masterproc) then
-        print *, "PARAMTER ERROR for CSLAM: Number of halo zone for the extended"
+        print *, "PARAMTER ERROR for fvm: Number of halo zone for the extended"
         print *,"element nhe has to be 1, only this is available now! STOP!"
      endif
      call haltmp("stopping")
   end if
   if (ntrac>ntrac_d) then
      if (par%masterproc) print *,'ntrac,ntrac_d=',ntrac,ntrac_d
-     call haltmp("PARAMTER ERROR for CSLAM: ntrac > ntrac_d")
+     call haltmp("PARAMTER ERROR for fvm: ntrac > ntrac_d")
   endif
 
   call initghostbuffer(cellghostbuf,nlev,ntrac+1,nhc,nc) !+1 for the air_density, which comes from SE
   
   call initEdgebuffer(edgeveloc,2*nlev)
-end subroutine cslam_init1
+end subroutine fvm_init1
 
 
 
 ! initialization that can be done in threaded regions
-subroutine cslam_init2(elem,cslam,hybrid,nets,nete,tl)
-  use cslam_control_volume_mod, only: cslam_mesh_ari
-  use cslam_analytic_mod, only: computexytosphere_moments
+subroutine fvm_init2(elem,fvm,hybrid,nets,nete,tl)
+  use fvm_control_volume_mod, only: fvm_mesh_ari
+  use fvm_analytic_mod, only: computexytosphere_moments
   use bndry_mod, only: compute_ghost_corner_orientation 
 
 
   type (timelevel_t) :: tl
-  type (cslam_struct) :: cslam(:)
+  type (fvm_struct) :: fvm(:)
   type (element_t) :: elem(:)
   type (hybrid_t)                             :: hybrid
   integer :: ie,nets,nete
@@ -457,28 +457,28 @@ subroutine cslam_init2(elem,cslam,hybrid,nets,nete,tl)
   
 
   do ie=nets,nete
-    call cslam_mesh_ari(elem(ie),cslam(ie),tl)
-    call computexytosphere_moments(cslam(ie),elem(ie)%desc)
+    call fvm_mesh_ari(elem(ie),fvm(ie),tl)
+    call computexytosphere_moments(fvm(ie),elem(ie)%desc)
   enddo
 
-end subroutine cslam_init2
+end subroutine fvm_init2
 
 
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINE CSLAM_MESH_DEP----------------------------------------------CE-for CSLAM!
+!SUBROUTINE FVM_MESH_DEP--------------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 30.October 2011                                          !
 ! DESCRIPTION: Calculates the departure mesh                                        !
 !              Please select the test cases by an COMMENT/UNCOMMENT basis           !
 !                                                                                   !
 ! CALLS: solidbody, cart2cubedspherexy, analytical_function                         !
 ! INTPUT/OUTPUT:                                                                    !
-!        cslam   ...  structure                                                     !
+!        fvm   ...  structure                                                       !
 ! INPUT: nstep   ... actual step                                                    !
 !-----------------------------------------------------------------------------------!
-subroutine cslam_mesh_dep(elem, deriv, cslam, dt, tl, klev)
+subroutine fvm_mesh_dep(elem, deriv, fvm, dt, tl, klev)
   use coordinate_systems_mod, only : cartesian2D_t
   use element_mod, only : element_t
-  use cslam_control_volume_mod, only: cslam_struct
+  use fvm_control_volume_mod, only: fvm_struct
   use time_mod, only : timelevel_t, time_at
   use parallel_mod, only : haltmp
   use control_mod, only : test_cfldep
@@ -486,12 +486,12 @@ subroutine cslam_mesh_dep(elem, deriv, cslam, dt, tl, klev)
   use derivative_mod, only : derivative_t
 
 #ifndef _PRIM
-  use cslam_bsp_mod, only: boomerang, solidbody
+  use fvm_bsp_mod, only: boomerang, solidbody
 #endif
 
   implicit none
   type (derivative_t)  , intent(in) :: deriv
-  type (cslam_struct), intent(inout)   :: cslam
+  type (fvm_struct), intent(inout)   :: fvm
   type (timelevel_t),intent(in)        :: tl
   integer,intent(in)                   :: klev
   
@@ -503,45 +503,45 @@ subroutine cslam_mesh_dep(elem, deriv, cslam, dt, tl, klev)
 
 ! for the benchmark test, use more accurate departure point creation
 #if 0
-!CE: define new mesh for fvm cslam on an equal angular grid
+!CE: define new mesh for fvm fvm on an equal angular grid
 ! go from alpha,beta -> cartesian xy on cube -> lat lon on the sphere
-#ifdef _CSLAM
+#ifdef _FVM
   do j=1,nc+1
      do i=1,nc+1               
-!                 call solidbody(cslam%asphere(i,j), cslam%dsphere(i,j))
-        call boomerang(cslam%asphere(i,j), cslam%dsphere(i,j),tl%nstep)
+!                 call solidbody(fvm%asphere(i,j), fvm%dsphere(i,j))
+        call boomerang(fvm%asphere(i,j), fvm%dsphere(i,j),tl%nstep)
      end do
   end do
 #endif
 #else
 
 ! for given velocities in the element structure
-  call cslam_dep_from_gll(elem, deriv, cslam%asphere,cslam%dsphere,dt,tl,klev)
+  call fvm_dep_from_gll(elem, deriv, fvm%asphere,fvm%dsphere,dt,tl,klev)
 #endif
 
    if (test_cfldep) then
-     call check_departurecell(cslam,klev) 
+     call check_departurecell(fvm,klev) 
    endif 
   
-end subroutine cslam_mesh_dep
+end subroutine fvm_mesh_dep
 
 
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINE CSLAM_DEP_FROM_GLL------------------------------------------CE-for CSLAM!
+!SUBROUTINE FVM_DEP_FROM_GLL----------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, MARK TAYLOR 14. December 2011                            !
-! DESCRIPTION: calculates the deparute grid for CSLAM coming from the gll points    !
+! DESCRIPTION: calculates the deparute grid for fvm coming from the gll points      !
 !                                                                                   !
 ! CALLS: 
 ! INPUT: 
 !        
 ! OUTPUT: 
 !-----------------------------------------------------------------------------------!
-subroutine cslam_dep_from_gll(elem, deriv, asphere,dsphere,dt,tl,klev)
+subroutine fvm_dep_from_gll(elem, deriv, asphere,dsphere,dt,tl,klev)
   use physical_constants, only : DD_PI, rearth
   use coordinate_systems_mod, only : spherical_polar_t, cartesian3D_t, change_coordinates
   use time_mod, only : timelevel_t
   use element_mod, only : element_t
-  use derivative_mod, only : derivative_t, interpolate_gll2cslam_corners
+  use derivative_mod, only : derivative_t, interpolate_gll2fvm_corners
 
   implicit none
   type (element_t), intent(in)          :: elem
@@ -579,9 +579,9 @@ subroutine cslam_dep_from_gll(elem, deriv, asphere,dsphere,dt,tl,klev)
     
      enddo
    enddo
-   ! interpolate velocity to CSLAM nodes
+   ! interpolate velocity to fvm nodes
    do i=1,3
-      uxyz(:,:,i)=interpolate_gll2cslam_corners(uxyz_gll(:,:,i),deriv)
+      uxyz(:,:,i)=interpolate_gll2fvm_corners(uxyz_gll(:,:,i),deriv)
    end do 
    ! compute departure point 
    ! crude, 1st order accurate approximation.  to be improved
@@ -597,24 +597,24 @@ subroutine cslam_dep_from_gll(elem, deriv, asphere,dsphere,dt,tl,klev)
       enddo
    enddo
   
-end subroutine cslam_dep_from_gll
-!END SUBROUTINE CSLAM_DEP_FROM_GLL--------------------------------------CE-for CSLAM!
+end subroutine fvm_dep_from_gll
+!END SUBROUTINE FVM_DEP_FROM_GLL------------------------------------------CE-for FVM!
 
-!SUBROUTINE CHECK_DEPARTURECELL-----------------------------------------CE-for CSLAM!
+!SUBROUTINE CHECK_DEPARTURECELL-------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 17.October 2011                                          !
 ! DESCRIPTION: Check if the departure cell is degenerated or if the                 !
 !              CFL number > 1.0D0                                                   !
 !         IF THE CHECK FAILS, THE PROGRAM WILL STOP                                 !
 !                                                                                   !
-! INPUT:  cslam  ... cslam structur                                                 ! 
+! INPUT:  fvm  ... fvm structur                                                 ! 
 !         klev   ... Level (vertical)                                               !
 !-----------------------------------------------------------------------------------!
-subroutine check_departurecell(cslam,klev)
+subroutine check_departurecell(fvm,klev)
   use coordinate_systems_mod, only: cartesian2D_t, cart2cubedspherexy, spherical_to_cart
-  use cslam_control_volume_mod, only:  cslam_struct                                         
+  use fvm_control_volume_mod, only:  fvm_struct                                         
   implicit none
 
-  type (cslam_struct), intent(inout)   :: cslam
+  type (fvm_struct), intent(inout)   :: fvm
   integer,intent(in)                   :: klev
   
   type (cartesian2D_t)                 :: dcart(nc+1,nc+1)
@@ -623,27 +623,27 @@ subroutine check_departurecell(cslam,klev)
   logical                              :: crossline
             
   ! calculate xy Cartesian on the cube of departure points on the corresponding face  
-  ! the calculation of dcart is also done in cslam_line_integrals_mod.F90, one could 
+  ! the calculation of dcart is also done in fvm_line_integrals_mod.F90, one could 
   ! save the points here...
   ! BUT: this subroutine should only be used for test reasons
   do j=1,nc+1
      do i=1,nc+1               
-        call cart2cubedspherexy(spherical_to_cart(cslam%dsphere(i,j)),&
-             cslam%faceno,dcart(i,j))              
+        call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(i,j)),&
+             fvm%faceno,dcart(i,j))              
      end do
   end do                        
   cflx=0.0D0
   cfly=0.0D0
-  cslam%maxcfl(1,klev)=cflx
-  cslam%maxcfl(2,klev)=cfly
+  fvm%maxcfl(1,klev)=cflx
+  fvm%maxcfl(2,klev)=cfly
   crossline=.FALSE.
   do j=1,nc
      do i=1,nc  
       ! equidistant mesh in alpha/beta coordinates
-      cflx=abs((atan(dcart(i,j)%x)-atan(cslam%acartx(i)))/cslam%dalpha)
-      cfly=abs((atan(dcart(i,j)%y)-atan(cslam%acarty(j)))/cslam%dbeta)
-      if(cflx>cslam%maxcfl(1,klev)) cslam%maxcfl(1,klev)=cflx
-      if(cfly>cslam%maxcfl(2,klev)) cslam%maxcfl(2,klev)=cfly
+      cflx=abs((atan(dcart(i,j)%x)-atan(fvm%acartx(i)))/fvm%dalpha)
+      cfly=abs((atan(dcart(i,j)%y)-atan(fvm%acarty(j)))/fvm%dbeta)
+      if(cflx>fvm%maxcfl(1,klev)) fvm%maxcfl(1,klev)=cflx
+      if(cfly>fvm%maxcfl(2,klev)) fvm%maxcfl(2,klev)=cfly
     
       !one could stop immediately here, if crossline=.TRUE., but want to calculate 
       ! all CFL first
@@ -653,23 +653,23 @@ subroutine check_departurecell(cslam,klev)
   end do  
   ! nodes on the north and east boundary
   do i=1,nc+1  
-    cflx=abs((atan(dcart(i,nc+1)%x)-atan(cslam%acartx(i)))/cslam%dalpha)
-    cfly=abs((atan(dcart(nc+1,j)%y)-atan(cslam%acarty(j)))/cslam%dbeta)
-    if(cflx>cslam%maxcfl(1,klev)) cslam%maxcfl(1,klev)=cflx
-    if(cfly>cslam%maxcfl(2,klev)) cslam%maxcfl(2,klev)=cfly
+    cflx=abs((atan(dcart(i,nc+1)%x)-atan(fvm%acartx(i)))/fvm%dalpha)
+    cfly=abs((atan(dcart(nc+1,j)%y)-atan(fvm%acarty(j)))/fvm%dbeta)
+    if(cflx>fvm%maxcfl(1,klev)) fvm%maxcfl(1,klev)=cflx
+    if(cfly>fvm%maxcfl(2,klev)) fvm%maxcfl(2,klev)=cfly
   end do
 
-  if (cslam%maxcfl(1,klev) > 1.0D0 .OR. cslam%maxcfl(2,klev) > 1.0D0) then
-    write(*,*) "Error in cslam_mod.F90: CFL number too big"
+  if (fvm%maxcfl(1,klev) > 1.0D0 .OR. fvm%maxcfl(2,klev) > 1.0D0) then
+    write(*,*) "Error in fvm_mod.F90: CFL number too big"
     write(*,*) "CFL has to be < 1.0D0"
     write(*,*) "Choose a smaller time step!"
-    write(*,*) "max CFL in this element: maxcflx", cslam%maxcfl(1,klev), "maxcfly", cslam%maxcfl(2,klev) 
+    write(*,*) "max CFL in this element: maxcflx", fvm%maxcfl(1,klev), "maxcfly", fvm%maxcfl(2,klev) 
     STOP "Exit program!"
   endif
 
   if (crossline) then
-    write(*,*) "FATAL Error in cslam_mod.F90: departure cell is degenerated!"
-    write(*,*) "Choose a smaller time step! max CFL in this element: maxcflx", cslam%maxcfl(1,klev), "maxcfly", cslam%maxcfl(2,klev) 
+    write(*,*) "FATAL Error in fvm_mod.F90: departure cell is degenerated!"
+    write(*,*) "Choose a smaller time step! max CFL in this element: maxcflx", fvm%maxcfl(1,klev), "maxcfly", fvm%maxcfl(2,klev) 
     STOP "Exit program!"
   endif
 end subroutine check_departurecell
@@ -699,7 +699,7 @@ subroutine check_lines_cross(p1,p2,q1,q2,crossline)
   endif
 end subroutine check_lines_cross
 
-!SUBROUTINE CHECK_DEPARTURECELLEST--------------------------------------CE-for CSLAM!
+!SUBROUTINE CHECK_DEPARTURECELLEST----------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 17.October 2011                                          !
 ! DESCRIPTION: Check if the departure cell is degenerated or if the                 !
 !              CFL number > 1.0D0                                                   !
@@ -752,7 +752,7 @@ subroutine check_departurecellest(acartx,acarty,dcart)
   end do
   
   if (maxcflx > 1.0D0 .OR. maxcfly > 1.0D0) then
-    write(*,*) "FATAL Error in cslam_line_integrals.F90: CFL number too big"
+    write(*,*) "FATAL Error in fvm_line_integrals.F90: CFL number too big"
     write(*,*) "CFL has to be < 1.0D0"
     write(*,*) "Choose a smaller time step!"
     write(*,*) "max CFL in this element: maxcflx", maxcflx, "maxcfly", maxcfly 
@@ -760,7 +760,7 @@ subroutine check_departurecellest(acartx,acarty,dcart)
   endif
   
   if (crossline) then
-    write(*,*) "FATAL Error in cslam_line_integrals.F90: departure cell is degenerated!"
+    write(*,*) "FATAL Error in fvm_line_integrals.F90: departure cell is degenerated!"
     write(*,*) "Choose a smaller time step!"
     write(*,*) "max CFL in this element: maxcflx", maxcflx, "maxcfly", maxcfly 
     STOP "Exit program!"
@@ -769,7 +769,7 @@ end subroutine check_departurecellest
 
 
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINE CSLAM_MCGREGOR----------------------------------------------CE-for CSLAM!
+!SUBROUTINE FVM_MCGREGOR--------------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 09. January 2012                                         !
 ! DESCRIPTION: ! using McGregor AMS 1993 scheme: Economical Determination of        !
 !                Departure Points for Semi-Lagrangian Models                        !
@@ -779,7 +779,7 @@ end subroutine check_departurecellest
 !        
 ! OUTPUT: 
 !-----------------------------------------------------------------------------------!
-subroutine cslam_mcgregor(elem, deriv, tstep, vhat, vstar,order)
+subroutine fvm_mcgregor(elem, deriv, tstep, vhat, vstar,order)
   use element_mod, only : element_t
   use derivative_mod, only : derivative_t, gradient_sphere, ugradv_sphere, vorticity_sphere
   implicit none
@@ -817,10 +817,10 @@ subroutine cslam_mcgregor(elem, deriv, tstep, vhat, vstar,order)
     
     vstar=vstar + timetaylor*ugradv  
   end do
-end subroutine cslam_mcgregor
-!END SUBROUTINE CSLAM_MCGREGOR------------------------------------------CE-for CSLAM!
+end subroutine fvm_mcgregor
+!END SUBROUTINE FVM_MCGREGOR----------------------------------------------CE-for FVM!
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINE CSLAM_MCGREGORDSS-------------------------------------------CE-for CSLAM!
+!SUBROUTINE FVM_MCGREGORDSS-----------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 26. May 2012                                             !
 ! DESCRIPTION: ! using McGregor AMS 1993 scheme: Economical Determination of        !
 !                Departure Points for Semi-Lagrangian Models                        !
@@ -830,7 +830,7 @@ end subroutine cslam_mcgregor
 !        
 ! OUTPUT: 
 !-----------------------------------------------------------------------------------!
-subroutine cslam_mcgregordss(elem,cslam,nets,nete, hybrid, deriv, tstep, ordertaylor)
+subroutine fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, tstep, ordertaylor)
   use derivative_mod, only : derivative_t, ugradv_sphere
   use edge_mod, only : edgevpack, edgevunpack
   use bndry_mod, only : bndry_exchangev
@@ -838,7 +838,7 @@ subroutine cslam_mcgregordss(elem,cslam,nets,nete, hybrid, deriv, tstep, orderta
   implicit none
 
   type (element_t), intent(inout)                :: elem(:)
-  type (cslam_struct), intent(in)                :: cslam(:)
+  type (fvm_struct), intent(in)                :: fvm(:)
 
   integer, intent(in)                         :: nets  ! starting thread element number (private)
   integer, intent(in)                         :: nete  ! ending thread element number   (private)
@@ -861,7 +861,7 @@ subroutine cslam_mcgregordss(elem,cslam,nets,nete, hybrid, deriv, tstep, orderta
     do ie=nets,nete
       if (order==1)then
         ugradv(ie,:,:,:,:)=elem(ie)%derived%vstar(:,:,:,:) 
-        vhat(ie,:,:,:,:)=(cslam(ie)%vn0(:,:,:,:) + ugradv(ie,:,:,:,:))/2 
+        vhat(ie,:,:,:,:)=(fvm(ie)%vn0(:,:,:,:) + ugradv(ie,:,:,:,:))/2 
       endif
       do k=1,nlev
         ugradvtmp=ugradv_sphere(vhat(ie,:,:,:,k),ugradv(ie,:,:,:,k),deriv,elem(ie))
@@ -883,7 +883,7 @@ subroutine cslam_mcgregordss(elem,cslam,nets,nete, hybrid, deriv, tstep, orderta
     end do
   end do  
 
-end subroutine cslam_mcgregordss
-!END SUBROUTINE CSLAM_MCGREGORDSS---------------------------------------CE-for CSLAM!
+end subroutine fvm_mcgregordss
+!END SUBROUTINE FVM_MCGREGORDSS-------------------------------------------CE-for FVM!
 
-end module cslam_mod
+end module fvm_mod

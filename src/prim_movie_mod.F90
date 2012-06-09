@@ -20,7 +20,7 @@ module prim_movie_mod
   use time_mod, only : Timelevel_t, tstep, ndays, time_at, secpday, nendstep,nmax
   ! ---------------------
   use element_mod, only : element_t
-  use cslam_control_volume_mod, only : cslam_struct
+  use fvm_control_volume_mod, only : fvm_struct
   ! ---------------------
   use cube_mod, only : cube_assemble
   ! ---------------------
@@ -111,13 +111,13 @@ contains
     use pio, only : PIO_InitDecomp, pio_setdebuglevel, pio_int, pio_double, pio_closefile !_EXTERNAL
     use netcdf_io_mod, only : iodesc2d, iodesc3d, iodesc2d_nc, iodesc3d_nc, iodesc3d_subelem, iodesct, pio_subsystem 
     use common_io_mod, only : num_io_procs, num_agg, io_stride
-    use cslam_control_volume_mod, only : cslam_mesh_ari
+    use fvm_control_volume_mod, only : fvm_mesh_ari
     type (element_t), intent(in) :: elem(:)
     type (parallel_t), intent(in)     :: par
     type (hvcoord_t), intent(in) :: hvcoord
     type(timelevel_t) :: tl
     ! Local variables
-    type (cslam_struct) :: cslam_tmp
+    type (fvm_struct) :: fvm_tmp
     type (hybrid_t) :: hybrid
     real (kind=real_kind),allocatable, dimension(:) :: latp,lonp
     integer :: ie, v1(4), i, ios, istartP
@@ -202,7 +202,7 @@ contains
 
     deallocate(compdof)
 
-! the CSLAM grid
+! the fvm grid
     allocate(dof(nc*nc*nelemd*nlev))
     jj=0
     do cc=0,nlev-1
@@ -406,17 +406,17 @@ contains
           if( (nf_selectedvar('phys_lat', output_varnames))) then
              jj=0
              do ie=1,nelemd
-                ! cslam grid for element ie.
-                ! (if ntrac=0, cslam grid was never computed, so we cant use cslam()%
-                call cslam_mesh_ari(elem(ie),cslam_tmp,tl)
+                ! fvm grid for element ie.
+                ! (if ntrac=0, fvm grid was never computed, so we cant use fvm()%
+                call fvm_mesh_ari(elem(ie),fvm_tmp,tl)
                 ii=0
                 do j=1,nc
                    do i=1,nc
                       ii=ii+1
                       jj=jj+1
                       ! take center of mass of elem(ie)%
-                      var1(jj,1) = cslam_tmp%centersphere(i,j)%lat
-                      var2(jj,1) = cslam_tmp%centersphere(i,j)%lon
+                      var1(jj,1) = fvm_tmp%centersphere(i,j)%lat
+                      var2(jj,1) = fvm_tmp%centersphere(i,j)%lon
                    end do
                 end do
              end do
@@ -435,16 +435,16 @@ contains
              jj=0
              do ie=1,nelemd
 
-                ! cslam grid for element ie.
-                ! (if ntrac=0, cslam grid was never computed, so we cant use cslam()%
-                call cslam_mesh_ari(elem(ie),cslam_tmp,tl)
+                ! fvm grid for element ie.
+                ! (if ntrac=0, fvm grid was never computed, so we cant use fvm()%
+                call fvm_mesh_ari(elem(ie),fvm_tmp,tl)
 
                 ii=0
                 do j=1,nc
                    do i=1,nc
                       ii=ii+1
                       jj=jj+1
-                      var1(jj,1)= cslam_tmp%area_sphere(i,j)
+                      var1(jj,1)= fvm_tmp%area_sphere(i,j)
                    end do
                 end do
              end do
@@ -459,9 +459,9 @@ contains
              jj=0
              do ie=1,nelemd
 
-                ! cslam grid for element ie.
-                ! (if ntrac=0, cslam grid was never computed, so we cant use cslam()%
-                call cslam_mesh_ari(elem(ie),cslam_tmp,tl)
+                ! fvm grid for element ie.
+                ! (if ntrac=0, fvm grid was never computed, so we cant use fvm()%
+                call fvm_mesh_ari(elem(ie),fvm_tmp,tl)
 
                 ii=0
                 do j=1,nc
@@ -469,14 +469,14 @@ contains
                       ii=ii+1
                       jj=jj+1
                       ! take center of mass of elem(ie)%
-                      var1(jj,1) = cslam_tmp%asphere(i,j)%lat
-                      var2(jj,1) = cslam_tmp%asphere(i,j)%lon
-                      var1(jj,2) = cslam_tmp%asphere(i+1,j)%lat
-                      var2(jj,2) = cslam_tmp%asphere(i+1,j)%lon
-                      var1(jj,3) = cslam_tmp%asphere(i+1,j+1)%lat
-                      var2(jj,3) = cslam_tmp%asphere(i+1,j+1)%lon
-                      var1(jj,4) = cslam_tmp%asphere(i,j+1)%lat
-                      var2(jj,4) = cslam_tmp%asphere(i,j+1)%lon
+                      var1(jj,1) = fvm_tmp%asphere(i,j)%lat
+                      var2(jj,1) = fvm_tmp%asphere(i,j)%lon
+                      var1(jj,2) = fvm_tmp%asphere(i+1,j)%lat
+                      var2(jj,2) = fvm_tmp%asphere(i+1,j)%lon
+                      var1(jj,3) = fvm_tmp%asphere(i+1,j+1)%lat
+                      var2(jj,3) = fvm_tmp%asphere(i+1,j+1)%lon
+                      var1(jj,4) = fvm_tmp%asphere(i,j+1)%lat
+                      var2(jj,4) = fvm_tmp%asphere(i,j+1)%lon
                    end do
                 end do
              end do
@@ -492,7 +492,7 @@ contains
           deallocate(var2)
 ! #else
 !           if( (nf_selectedvar('phys_lat', output_varnames))) then
-!              if (par%masterproc) print *,'WARNING: compile with -D_CSLAM to output CSLAM grid coordinate data'
+!              if (par%masterproc) print *,'WARNING: compile with -D_FVM to output fvm grid coordinate data'
 !           endif
 ! #endif
           if (par%masterproc) print *,'done writing coordinates ios=',ios
@@ -536,14 +536,14 @@ contains
     end if
  end function nextoutputstep
 
-  subroutine prim_movie_output(elem, tl, hvcoord, hybrid, nets,nete, cslam)
+  subroutine prim_movie_output(elem, tl, hvcoord, hybrid, nets,nete, fvm)
     use piolib_mod, only : Pio_SetDebugLevel !_EXTERNAL
     use perf_mod, only : t_startf, t_stopf !_EXTERNAL
     use viscosity_mod, only : compute_zeta_C0
     use netcdf_io_mod, only : iodesc3d_nc
 
     type (element_t)    :: elem(:)
-    type (cslam_struct), optional   :: cslam(:)
+    type (fvm_struct), optional   :: fvm(:)
     type (TimeLevel_t)  :: tl
     type (hvcoord_t)    :: hvcoord
     type (hybrid_t)      , intent(in) :: hybrid
@@ -740,7 +740,7 @@ contains
                 end if
              enddo
 
-             if (present(cslam)) then
+             if (present(fvm)) then
              do qindex=1,min(ntrac,4)
                 write(vname,'(a1,i1)') 'C',qindex
                 if (qindex==1) vname='C'
@@ -754,7 +754,7 @@ contains
                          do j=1,nc
                             do i=1,nc
                                jj=jj+1
-                               varphys(jj,k)= cslam(ie)%c(i,j,k,qindex,tl%n0)
+                               varphys(jj,k)= fvm(ie)%c(i,j,k,qindex,tl%n0)
                             end do
                          end do
                       end do

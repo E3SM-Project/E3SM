@@ -13,7 +13,7 @@ module dimensions_mod
 ! set MAX number of tracers.  actual number of tracers is a run time argument  
 #ifndef CAM
   integer, parameter         :: qsize_d=4          ! SE tracers  
-  integer, parameter         :: ntrac_d=4          ! CSLAM tracers
+  integer, parameter         :: ntrac_d=4          ! fvm tracers
 #endif
   integer, parameter, public :: nvar = 3 ! FI # dependent variables 
 
@@ -23,8 +23,8 @@ module dimensions_mod
   integer         :: ntrac = 0
   integer         :: qsize = 0
 
-  ! CSLAM dimensions:
-  integer, parameter, public :: ngpc=4    !number of Gausspoints for the CSLAM integral approximation  
+  ! fvm dimensions:
+  integer, parameter, public :: ngpc=4    !number of Gausspoints for the fvm integral approximation  
   ! nhe ... halo/depth of the extended element (CFL number), now only nhe=1 is tested !
   !         this number sets where we have to calculate the reconstruction in the halo!
   integer, parameter, public :: nhe=1     !number/depth of the extended element (CFL number)

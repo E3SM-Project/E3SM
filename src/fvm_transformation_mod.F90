@@ -6,7 +6,7 @@
 ! - vortex_rotatedsphereback                                                        !
 !***********************************************************************************!
 
-module cslam_transformation_mod
+module fvm_transformation_mod
   use kinds, only : real_kind
   use physical_constants, only : DD_PI
   
@@ -106,4 +106,4 @@ subroutine vortex_rotatedsphereback(lap,thp,lar,thr,lau,thu)
 
 end subroutine vortex_rotatedsphereback
 
-end module cslam_transformation_mod
+end module fvm_transformation_mod

@@ -1,15 +1,15 @@
 !-----------------------------------------------------------------------------------!
-! CSLAM2_MOD File for the cslam project in HOMME, FLUX VERSION                      !
+! fvm2_MOD File for the fvm project in HOMME, FLUX VERSION                      !
 ! Author: Christoph Erath                                                           !
 ! Date: 25.January 2010                                                             !
-! MAIN module to run CSLAM on HOMME                                                 !
+! MAIN module to run fvm on HOMME                                                 !
 ! 14.June 2011: reorganisation done                                                 !
 !-----------------------------------------------------------------------------------!
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-module cslam_mod
+module fvm_mod
   use kinds, only : real_kind
   
 contains
@@ -18,13 +18,13 @@ subroutine cslam_run(elem,cellbuffer,pointsbuffer,red,par,ithr,nets,nete)
   ! ---------------------------------------------------------------------------------
   use dimensions_mod, only: nc, nhc
   ! ---------------------------------------------------------------------------------
-  use cslam_control_volume_mod, only: cslam_mesh, cslam_struct
+  use fvm_control_volume_mod, only: fvm_mesh, fvm_struct
   ! ---------------------------------------------------------------------------------
-  use cslam_flux_mod, only: simplified_flux
+  use fvm_flux_mod, only: simplified_flux
   ! ---------------------------------------------------------------------------------
-  use cslam_ghostcell_mod, only: ghostcellpack, ghostcellunpack, ghostpointspack, ghostpointsunpack
+  use fvm_ghostcell_mod, only: ghostcellpack, ghostcellunpack, ghostpointspack, ghostpointsunpack
   ! ---------------------------------------------------------------------------------
-  use cslam_line_integrals_mod, only: my_compute_weights
+  use fvm_line_integrals_mod, only: my_compute_weights
   ! ---------------------------------------------------------------------------------
   use edge_mod, only : EdgeBuffer_t
   ! ---------------------------------------------------------------------------------
@@ -69,7 +69,7 @@ subroutine cslam_run(elem,cellbuffer,pointsbuffer,red,par,ithr,nets,nete)
   integer, intent(in)                         :: nets  ! starting thread element number (private)
   integer, intent(in)                         :: nete  ! ending thread element number   (private)
 
-  type (cslam_struct), pointer :: cslam(:)
+  type (fvm_struct), pointer :: fvm(:)
 
   real (kind=real_kind)                       :: spherearea, massstart, mass, maxc, maxcstart  
   integer                                     :: i,j,k,ie, kptr,time
@@ -82,7 +82,7 @@ subroutine cslam_run(elem,cellbuffer,pointsbuffer,red,par,ithr,nets,nete)
  !-----------------------------------------------------------------------------------!  
    if(par%masterproc) then 
      print *,"!-----------------------------------------------------------------------!"
-     print *,"!  SOLID-BODY ROTATION Test CASE for simplified CSLAM, Christoph Erath  !" 
+     print *,"!  SOLID-BODY ROTATION Test CASE for simplified fvm, Christoph Erath  !" 
      print *,"!-----------------------------------------------------------------------!" 
    endif
      
@@ -94,10 +94,10 @@ subroutine cslam_run(elem,cellbuffer,pointsbuffer,red,par,ithr,nets,nete)
   spherearea=0
   massstart=0
   
-  !-Create new CSLAM Mesh
-  allocate(cslam(nelemd))
-  call cslam_mesh(elem,cslam,tl,nets,nete)
-  !-Arrival and departure CSLAM Meshes, initialization done  
+  !-Create new fvm Mesh
+  allocate(fvm(nelemd))
+  call fvm_mesh(elem,fvm,tl,nets,nete)
+  !-Arrival and departure fvm Meshes, initialization done  
   if(par%masterproc) then 
     print *
     print *,"Arrival and departure grid created, initialization done. " 
@@ -120,8 +120,8 @@ do ie=nets, nete
         elem(ie)%state%c(i,j,1,tl%np1)=0.0D0
       end do
     end do
-    spherearea=spherearea+cslam(ie)%elem_areasphere
-    massstart=massstart+cslam(ie)%elem_mass
+    spherearea=spherearea+fvm(ie)%elem_areasphere
+    massstart=massstart+fvm(ie)%elem_mass
 end do    
 call bndry_exchangeV(hybrid,cellbuffer)
 
@@ -129,7 +129,7 @@ do ie=nets, nete
   call ghostcellunpack(cellbuffer, elem(ie)%state%c(:,:,:,tl%n0),nlev,kptr,elem(ie)%desc)
 end do
 !-----------------------------------------------------------------------------------!  
-!Initialize Output via geopotential (should be changed, separate output for CSLAM
+!Initialize Output via geopotential (should be changed, separate output for fvm
 !write first time step to IO 
 #ifdef PIO_INTERP
 	  call interp_movie_init(elem,hybrid,nets,nete,tl=tl)    
@@ -161,8 +161,8 @@ maxcstart=0
 !-----------------------------------------------------------------------------------!
 !BEGIN TIME LOOP, start at 0, calculate then next step
 do while(tl%nstep<0)  
-  ! calculate with simplified flux cslam
-  call simplified_flux(elem(ie)%state%c(:,:,:,:),cslam,tl, nets, nete)
+  ! calculate with simplified flux fvm
+  call simplified_flux(elem(ie)%state%c(:,:,:,:),fvm,tl, nets, nete)
   ! go one time step forward and do the data exchange, new values shift from tl%np1 to tl%n0
   call TimeLevel_update(tl,"forward") 
   ! calculated values are now in tl%n0  
@@ -192,9 +192,9 @@ do while(tl%nstep<0)
     do j=1,nc+1
       do i=1,nc+1 
          if ((i<=nc) .AND. (j<=nc)) then  
-       !    write (*,*) elem(ie)%state%c(i,j,1,tl%n0),cslam(ie)%area_sphere(i,j)      
+       !    write (*,*) elem(ie)%state%c(i,j,1,tl%n0),fvm(ie)%area_sphere(i,j)      
        !    print *
-           mass=mass+cslam(ie)%area_sphere(i,j)*elem(ie)%state%c(i,j,1,tl%n0)
+           mass=mass+fvm(ie)%area_sphere(i,j)*elem(ie)%state%c(i,j,1,tl%n0)
          endif
          !write it in p because of IO 
          elem(ie)%state%p(i,j,1,tl%n0)=(elem(ie)%state%c(i-1,j-1,1,tl%n0)+ &
@@ -244,7 +244,7 @@ end do
 if(par%masterproc) then 
   print *
   print *,"!-----------------------------------------------------------------------!"
-  print *,"!  SOLID-BODY ROTATION Test CASE for simplified CSLAM, Christoph Erath  !" 
+  print *,"!  SOLID-BODY ROTATION Test CASE for simplified fvm, Christoph Erath  !" 
   print *,"!-----------------------------------------------------------------------!"
   print *  
 endif
@@ -257,15 +257,15 @@ do ie=nets, nete
 !   write (*,0817) elem(ie)%LocalId,elem(ie)%GlobalId,elem(ie)%FaceNum
   do j=1,nc
     do i=1,nc 
-!          write (*,*) elem(ie)%state%c(i,j,1,tl%n0),cslam(ie)%area_sphere(i,j)
+!          write (*,*) elem(ie)%state%c(i,j,1,tl%n0),fvm(ie)%area_sphere(i,j)
          if (maxc<elem(ie)%state%c(i,j,1,tl%n0)) then
            maxc=elem(ie)%state%c(i,j,1,tl%n0)   
          endif 
-         mass=mass+cslam(ie)%area_sphere(i,j)*elem(ie)%state%c(i,j,1,tl%n0)      
+         mass=mass+fvm(ie)%area_sphere(i,j)*elem(ie)%state%c(i,j,1,tl%n0)      
     end do
   end do
-  if (maxcstart<cslam(ie)%maxc) then
-    maxcstart=cslam(ie)%maxc   
+  if (maxcstart<fvm(ie)%maxc) then
+    maxcstart=fvm(ie)%maxc   
   endif
 end do
 print *
@@ -276,4 +276,4 @@ write(*,*) 'number of elements', 6*ne*ne*nc*nc
 
 !-END TESTENVIRONMENT__--------------------------------------------------------------
 end subroutine cslam_run
-end module cslam_mod
+end module fvm_mod

@@ -1,13 +1,13 @@
 !***********************************************************************************!
 ! Author: Christoph Erath                                                           !
 ! Date: May 2011                                                                    !
-! Module for CSLAM exchange buffer aso                                              !
+! Module for fvm exchange buffer aso                                              !
 !***********************************************************************************!
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-module cslam_ghostcell_mod
+module fvm_ghostcell_mod
   use kinds, only               : real_kind
   use edge_mod, only            : EdgeBuffer_t, EdgeDescriptor_t
   use dimensions_mod, only      : nc, nhc
@@ -27,7 +27,7 @@ contains
 !-----------------------------------------------------------------------------------!
 ! Christoph Erath, May 2011                                                         !
 ! Pack cells on the boundary of c into buf, use structure from shallow water
-! This should be replaced by CSLAM buffer system
+! This should be replaced by fvm buffer system
 !-----------------------------------------------------------------------------------!
 subroutine ghostcellpack(edge,c,vlyr,kptr,desc)
 
@@ -58,7 +58,7 @@ subroutine ghostcellpack(edge,c,vlyr,kptr,desc)
     iw = desc%putmapP(west)
 
    do k=1,vlyr
-      ! dirty hack, cslam uses one less, provide NaN there
+      ! dirty hack, fvm uses one less, provide NaN there
       edge%buf(kptr+k,is+1)   = c(1  ,1 ,k)
       edge%buf(kptr+k,ie+1)   = c(nc ,1 ,k)
       edge%buf(kptr+k,in+1)   = c(1  ,nc,k)
@@ -81,7 +81,7 @@ subroutine ghostcellpack(edge,c,vlyr,kptr,desc)
     if(desc%reverse(south)) then
        !is = desc%putmapP(south)  is is already set
        do k=1,vlyr
-         ! dirty hack, cslam uses one less, provide NaN there
+         ! dirty hack, fvm uses one less, provide NaN there
          edge%buf(kptr+k,is+1)   = c(nc  ,1 ,k)  
          edge%buf(kptr+k,is+2)   = NaN
           do i=1,nc-1
@@ -157,7 +157,7 @@ end subroutine ghostcellpack
 !-----------------------------------------------------------------------------------!
 ! Christoph Erath, May 2011                                                         !
 ! UnPack cells on the boundary of v into buf, use structure from shallow water
-! This should be replaced by CSLAM buffer system
+! This should be replaced by fvm buffer system
 !-----------------------------------------------------------------------------------!
 subroutine ghostcellunpack(edge,c,vlyr,kptr,desc)
   type (EdgeBuffer_t),         intent(in)   :: edge
@@ -183,7 +183,7 @@ subroutine ghostcellunpack(edge,c,vlyr,kptr,desc)
     c(nc+nhc ,1  ,k) = edge%buf(kptr+k,ie+1  )
     c(1  ,nc+nhc ,k) = edge%buf(kptr+k,in+1  )
     c(1-nhc  ,1  ,k) = edge%buf(kptr+k,iw+1  )    
-! second entry in buf is NaN (cslam is not node based)
+! second entry in buf is NaN (fvm is not node based)
     do i=2,nc 
         c(i  ,1-nhc  ,k) = edge%buf(kptr+k,is+i+1  )
         c(nc+nhc ,i  ,k) = edge%buf(kptr+k,ie+i+1  )
@@ -223,7 +223,7 @@ end subroutine ghostcellunpack
 !-----------------------------------------------------------------------------------!
 ! Christoph Erath, May 2011                                                         !
 ! Pack points on the boundary of c into buf, use structure from shallow water
-! This should be replaced by CSLAM buffer system
+! This should be replaced by fvm buffer system
 !-----------------------------------------------------------------------------------!
 subroutine ghostpointspack(edge,points,kptr,desc)
 
@@ -312,7 +312,7 @@ end subroutine ghostpointspack
 !-----------------------------------------------------------------------------------!
 ! Christoph Erath, May 2011                                                         !
 ! UnPack points on the boundary of v into buf, use structure from shallow water
-! This should be replaced by CSLAM buffer system
+! This should be replaced by fvm buffer system
 !-----------------------------------------------------------------------------------!
 subroutine ghostpointsunpack(edge,points,kptr,desc)
   type (EdgeBuffer_t),         intent(in)   :: edge
@@ -369,4 +369,4 @@ subroutine ghostpointsunpack(edge,points,kptr,desc)
 
 end subroutine ghostpointsunpack
 
-end module cslam_ghostcell_mod
+end module fvm_ghostcell_mod

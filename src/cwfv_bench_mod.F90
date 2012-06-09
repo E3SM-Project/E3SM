@@ -16,26 +16,26 @@ module cwfv_bench_mod
   use dimensions_mod, only: nelem, nelemd, nelemdmax, nlev, ne, nc, nhc, nhe, nlev, ntrac
   use time_mod, only : timelevel_t
   use element_mod, only : element_t, timelevels
-  use cslam_control_volume_mod, only: cslam_struct
+  use fvm_control_volume_mod, only: fvm_struct
   use hybrid_mod, only : hybrid_t
-  use cslam_mod, only: cellghostbuf
+  use fvm_mod, only: cellghostbuf
 
 
-  public :: cslam_init1,cslam_init2
+  public :: fvm_init1,fvm_init2
 contains
 
 
 
-subroutine cwfv_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
+subroutine cwfv_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   ! ---------------------------------------------------------------------------------
-  use cslam_bsp_mod, only: cslam_bsp, set_boomerang_velocities_gll
-  use cslam_mod, only: cslam_run
+  use fvm_bsp_mod, only: fvm_bsp, set_boomerang_velocities_gll
+  use fvm_mod, only: cslam_run
   ! ---------------------------------------------------------------------------------
-  use cslam_line_integrals_mod, only: compute_weights
+  use fvm_line_integrals_mod, only: compute_weights
   ! ---------------------------------------------------------------------------------  
-  use cslam_filter_mod, only: monotonic_gradient_cart
+  use fvm_filter_mod, only: monotonic_gradient_cart
   ! ---------------------------------------------------------------------------------
-  use cslam_reconstruction_mod, only: reconstruction
+  use fvm_reconstruction_mod, only: reconstruction
   ! ---------------------------------------------------------------------------------
   use checksum_mod, only: test_ghost
   ! ---------------------------------------------------------------------------------
@@ -78,7 +78,7 @@ subroutine cwfv_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
   
   implicit none
   type (element_t), intent(inout)                :: elem(:)
-  type (cslam_struct), intent(inout)             :: cslam(:)
+  type (fvm_struct), intent(inout)             :: fvm(:)
   type (ReductionBuffer_ordered_1d_t),intent(in)    :: red   ! reduction buffer         (shared)
   type (hybrid_t), intent(in)                 :: hybrid   ! distributed parallel structure (shared)
   integer, intent(in)                         :: nets  ! starting thread element number (private)
@@ -102,7 +102,7 @@ subroutine cwfv_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
   real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons  
   real (kind=real_kind), dimension(nelemd,1-nhe:nc+nhe,1-nhe:nc+nhe) :: area    
   real (kind=real_kind) :: xtmp
-  real (kind=longdouble_kind) :: cslam_nodes(nc+1)
+  real (kind=longdouble_kind) :: fvm_nodes(nc+1)
   
   integer  choosetrac, chooselev   !for test reason the output
  !-----------------------------------------------------------------------------------!  
@@ -121,34 +121,34 @@ subroutine cwfv_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
   ! HOMME with equ-angular gnomonic projection maps alpha/beta space
   ! to the reference element via simple scale + translation
   ! thus, CWFV nodes in reference element [-1,1] are a tensor product of
-  ! array 'cslam_nodes(:)' computed below:
+  ! array 'fvm_nodes(:)' computed below:
   xtmp=nc 
   do i=1,nc+1
-    cslam_nodes(i)= 2*(i-1)/xtmp - 1
+    fvm_nodes(i)= 2*(i-1)/xtmp - 1
   end do
-  call derivinit(deriv,cslam_corners=cslam_nodes)
+  call derivinit(deriv,fvm_corners=fvm_nodes)
 
 
 !-----------------------------------------------------------------------------------!    
   kptr=0
   do ie=nets,nete
-    call cslam_bsp(cslam(ie),tl)
-    cslam(ie)%elem_mass=0
+    call fvm_bsp(fvm(ie),tl)
+    fvm(ie)%elem_mass=0
     do j=1,nc
       do i=1,nc
-        cslam(ie)%elem_mass=cslam(ie)%elem_mass + &
-                      cslam(ie)%area_sphere(i,j)*cslam(ie)%c(i,j,chooselev,choosetrac,tl%n0)
+        fvm(ie)%elem_mass=fvm(ie)%elem_mass + &
+                      fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)
       enddo
     enddo
     !
     !first exchange of the initial values
-    call ghostVpack(cellghostbuf, cslam(ie)%c,nhc,nc,nlev,ntrac,0,tl%n0,timelevels,elem(ie)%desc)
+    call ghostVpack(cellghostbuf, fvm(ie)%c,nhc,nc,nlev,ntrac,0,tl%n0,timelevels,elem(ie)%desc)
     ! reset the new unknown
     do k=1,nlev
       do itr=1,ntrac
         do j=1-nhc,nc+nhc
           do i=1-nhc,nc+nhc 
-          cslam(ie)%c(i,j,k,itr,tl%np1)=0.0D0
+          fvm(ie)%c(i,j,k,itr,tl%np1)=0.0D0
           end do
         end do
       enddo
@@ -161,13 +161,13 @@ subroutine cwfv_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
 
   do ie=nets,nete
     kptr=0
-     call ghostVunpack(cellghostbuf, cslam(ie)%c, nhc, nc,nlev,ntrac, 0, tl%n0, timelevels,elem(ie)%desc)
+     call ghostVunpack(cellghostbuf, fvm(ie)%c, nhc, nc,nlev,ntrac, 0, tl%n0, timelevels,elem(ie)%desc)
     ! for the mass value
     global_shared_buf(ie,1)=0D0
-    global_shared_buf(ie,1)=cslam(ie)%elem_mass
+    global_shared_buf(ie,1)=fvm(ie)%elem_mass
     ! for the max value on the sphere
-    tmp1(ie) = MAXVAL(cslam(ie)%c(:,:,chooselev,choosetrac,tl%n0))
-    tmp2(ie) = MINVAL(cslam(ie)%c(:,:,chooselev,choosetrac,tl%n0))   
+    tmp1(ie) = MAXVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))
+    tmp2(ie) = MINVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))   
   ! BEGIN Testoutput: write data in p (interpolation) to use existing IO
   ! prepare date for I/O
     do k=1,nlev
@@ -175,32 +175,32 @@ subroutine cwfv_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
         do i=1,nc+1 
           !write it in p because of IO 
           !first only with three elements in the patch
-          if ((cslam(ie)%cubeboundary==swest) .AND. (j==1) .AND. (i==1)) then
-            elem(ie)%state%p(i,j,k,tl%n0)=g*(cslam(ie)%area_sphere(i,j-1)*cslam(ie)%c(i,j-1,k,choosetrac,tl%n0)+ &
-            cslam(ie)%area_sphere(i-1,j)*cslam(ie)%c(i-1,j,k,choosetrac,tl%n0)+ &
-            cslam(ie)%area_sphere(i,j)*cslam(ie)%c(i,j,k,choosetrac,tl%n0))/ &
-            (cslam(ie)%area_sphere(i,j-1)+cslam(ie)%area_sphere(i-1,j)+cslam(ie)%area_sphere(i,j))
-          elseif ((cslam(ie)%cubeboundary==seast) .AND. (j==1) .AND. (i==nc+1)) then
-            elem(ie)%state%p(i,j,k,tl%n0)=g*(cslam(ie)%area_sphere(i-1,j-1)*cslam(ie)%c(i-1,j-1,k,choosetrac,tl%n0)+ &
-            cslam(ie)%area_sphere(i-1,j)*cslam(ie)%c(i-1,j,k,choosetrac,tl%n0)+ &
-            cslam(ie)%area_sphere(i,j)*cslam(ie)%c(i,j,k,choosetrac,tl%n0))/(cslam(ie)%area_sphere(i-1,j-1)+ &
-            cslam(ie)%area_sphere(i-1,j)+cslam(ie)%area_sphere(i,j)) 
-          elseif ((cslam(ie)%cubeboundary==nwest) .AND. (j==nc+1) .AND. (i==1)) then
-            elem(ie)%state%p(i,j,k,tl%n0)=g*(cslam(ie)%area_sphere(i-1,j-1)*cslam(ie)%c(i-1,j-1,k,choosetrac,tl%n0)+ &
-            cslam(ie)%area_sphere(i,j-1)*cslam(ie)%c(i,j-1,k,choosetrac,tl%n0)+ &
-            cslam(ie)%area_sphere(i,j)*cslam(ie)%c(i,j,k,choosetrac,tl%n0))/(cslam(ie)%area_sphere(i-1,j-1)+ &
-            cslam(ie)%area_sphere(i,j-1)+cslam(ie)%area_sphere(i,j)) 
-          elseif ((cslam(ie)%cubeboundary==neast) .AND. (j==nc+1) .AND. (i==nc+1)) then   
-            elem(ie)%state%p(i,j,k,tl%n0)=g*(cslam(ie)%area_sphere(i-1,j-1)*cslam(ie)%c(i-1,j-1,k,choosetrac,tl%n0)+ &
-            cslam(ie)%area_sphere(i,j-1)*cslam(ie)%c(i,j-1,k,choosetrac,tl%n0)+ &
-            cslam(ie)%area_sphere(i-1,j)*cslam(ie)%c(i-1,j,k,choosetrac,tl%n0))/(cslam(ie)%area_sphere(i-1,j-1)+ &
-            cslam(ie)%area_sphere(i,j-1)+cslam(ie)%area_sphere(i-1,j))
+          if ((fvm(ie)%cubeboundary==swest) .AND. (j==1) .AND. (i==1)) then
+            elem(ie)%state%p(i,j,k,tl%n0)=g*(fvm(ie)%area_sphere(i,j-1)*fvm(ie)%c(i,j-1,k,choosetrac,tl%n0)+ &
+            fvm(ie)%area_sphere(i-1,j)*fvm(ie)%c(i-1,j,k,choosetrac,tl%n0)+ &
+            fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,k,choosetrac,tl%n0))/ &
+            (fvm(ie)%area_sphere(i,j-1)+fvm(ie)%area_sphere(i-1,j)+fvm(ie)%area_sphere(i,j))
+          elseif ((fvm(ie)%cubeboundary==seast) .AND. (j==1) .AND. (i==nc+1)) then
+            elem(ie)%state%p(i,j,k,tl%n0)=g*(fvm(ie)%area_sphere(i-1,j-1)*fvm(ie)%c(i-1,j-1,k,choosetrac,tl%n0)+ &
+            fvm(ie)%area_sphere(i-1,j)*fvm(ie)%c(i-1,j,k,choosetrac,tl%n0)+ &
+            fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,k,choosetrac,tl%n0))/(fvm(ie)%area_sphere(i-1,j-1)+ &
+            fvm(ie)%area_sphere(i-1,j)+fvm(ie)%area_sphere(i,j)) 
+          elseif ((fvm(ie)%cubeboundary==nwest) .AND. (j==nc+1) .AND. (i==1)) then
+            elem(ie)%state%p(i,j,k,tl%n0)=g*(fvm(ie)%area_sphere(i-1,j-1)*fvm(ie)%c(i-1,j-1,k,choosetrac,tl%n0)+ &
+            fvm(ie)%area_sphere(i,j-1)*fvm(ie)%c(i,j-1,k,choosetrac,tl%n0)+ &
+            fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,k,choosetrac,tl%n0))/(fvm(ie)%area_sphere(i-1,j-1)+ &
+            fvm(ie)%area_sphere(i,j-1)+fvm(ie)%area_sphere(i,j)) 
+          elseif ((fvm(ie)%cubeboundary==neast) .AND. (j==nc+1) .AND. (i==nc+1)) then   
+            elem(ie)%state%p(i,j,k,tl%n0)=g*(fvm(ie)%area_sphere(i-1,j-1)*fvm(ie)%c(i-1,j-1,k,choosetrac,tl%n0)+ &
+            fvm(ie)%area_sphere(i,j-1)*fvm(ie)%c(i,j-1,k,choosetrac,tl%n0)+ &
+            fvm(ie)%area_sphere(i-1,j)*fvm(ie)%c(i-1,j,k,choosetrac,tl%n0))/(fvm(ie)%area_sphere(i-1,j-1)+ &
+            fvm(ie)%area_sphere(i,j-1)+fvm(ie)%area_sphere(i-1,j))
           else
-            elem(ie)%state%p(i,j,k,tl%n0)=g*(cslam(ie)%area_sphere(i-1,j-1)*cslam(ie)%c(i-1,j-1,k,choosetrac,tl%n0)+ &
-            cslam(ie)%area_sphere(i,j-1)*cslam(ie)%c(i,j-1,k,choosetrac,tl%n0)+ &
-            cslam(ie)%area_sphere(i-1,j)*cslam(ie)%c(i-1,j,k,choosetrac,tl%n0)+ &
-            cslam(ie)%area_sphere(i,j)*cslam(ie)%c(i,j,k,choosetrac,tl%n0))/(cslam(ie)%area_sphere(i-1,j-1)+ &
-            cslam(ie)%area_sphere(i,j-1)+cslam(ie)%area_sphere(i-1,j)+cslam(ie)%area_sphere(i,j))
+            elem(ie)%state%p(i,j,k,tl%n0)=g*(fvm(ie)%area_sphere(i-1,j-1)*fvm(ie)%c(i-1,j-1,k,choosetrac,tl%n0)+ &
+            fvm(ie)%area_sphere(i,j-1)*fvm(ie)%c(i,j-1,k,choosetrac,tl%n0)+ &
+            fvm(ie)%area_sphere(i-1,j)*fvm(ie)%c(i-1,j,k,choosetrac,tl%n0)+ &
+            fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,k,choosetrac,tl%n0))/(fvm(ie)%area_sphere(i-1,j-1)+ &
+            fvm(ie)%area_sphere(i,j-1)+fvm(ie)%area_sphere(i-1,j)+fvm(ie)%area_sphere(i,j))
           end if
         end do
       end do
@@ -223,15 +223,15 @@ subroutine cwfv_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
   call interp_movie_init(elem,hybrid,nets,nete,tl=tl)    
   call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete)
 #else
-    call shal_movie_init(elem,hybrid,cslam)
-    call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv,cslam)
+    call shal_movie_init(elem,hybrid,fvm)
+    call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv,fvm)
 #endif 
 !-----------------------------------------------------------------------------------!
 !-----------------------------------------------------------------------------------!  
 #ifdef PIO_INTERP
   call interp_movie_output(elem, tl, hybrid, 0D0, deriv, nets, nete)
 #else     
-  call shal_movie_output(elem, tl, hybrid, 0D0, nets, nete,deriv,cslam)
+  call shal_movie_output(elem, tl, hybrid, 0D0, nets, nete,deriv,fvm)
 #endif
 !-----------------------------------------------------------------------------------!
   if(hybrid%masterthread) then 
@@ -255,20 +255,20 @@ subroutine cwfv_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
            !reset value
            do j=1-nhc,nc+nhc
               do i=1-nhc,nc+nhc 
-                 cslam(ie)%c(i,j,k,itr,tl%np1)=0.0D0
+                 fvm(ie)%c(i,j,k,itr,tl%np1)=0.0D0
               end do
            end do
            
            !!!! PUT IN NEW SCHEME HERE!!!!
            do j=1,nc
               do i=1,nc
-                 cslam(ie)%c(i,j,k,itr,tl%np1)=cslam(ie)%c(i,j,k,itr,tl%n0)
+                 fvm(ie)%c(i,j,k,itr,tl%np1)=fvm(ie)%c(i,j,k,itr,tl%n0)
               end do
            end do
         enddo  !End Tracer
      end do  !End Level
      !note write tl%np1 in buffer
-     call ghostVpack(cellghostbuf, cslam(ie)%c(:,:,:,:,tl%np1),nhc,nc,nlev,ntrac,kptr,elem(ie)%desc)
+     call ghostVpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),nhc,nc,nlev,ntrac,kptr,elem(ie)%desc)
   end do
 
   !-----------------------------------------------------------------------------------!
@@ -278,7 +278,7 @@ subroutine cwfv_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
   !-----------------------------------------------------------------------------------!
   do ie=nets,nete
      ! note time level has changed, write buffer in tl%np1 
-     call ghostVunpack(cellghostbuf, cslam(ie)%c(:,:,:,:,tl%np1), nhc, nc,nlev,ntrac, kptr, elem(ie)%desc)
+     call ghostVunpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1), nhc, nc,nlev,ntrac, kptr, elem(ie)%desc)
   enddo
 
 ! HERE ENDS THE NEW SCHEME ----------------------------------------------------------
@@ -296,32 +296,32 @@ subroutine cwfv_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
           do i=1,nc+1 
             !write it in p because of IO 
             !first only with three elements in the patch
-            if ((cslam(ie)%cubeboundary==swest) .AND. (j==1) .AND. (i==1)) then
-              elem(ie)%state%p(i,j,k,tl%np1)=g*(cslam(ie)%area_sphere(i,j-1)*cslam(ie)%c(i,j-1,k,choosetrac,tl%np1)+ &
-              cslam(ie)%area_sphere(i-1,j)*cslam(ie)%c(i-1,j,k,choosetrac,tl%np1)+ &
-              cslam(ie)%area_sphere(i,j)*cslam(ie)%c(i,j,k,choosetrac,tl%np1))/ &
-              (cslam(ie)%area_sphere(i,j-1)+cslam(ie)%area_sphere(i-1,j)+cslam(ie)%area_sphere(i,j))
-            elseif ((cslam(ie)%cubeboundary==seast) .AND. (j==1) .AND. (i==nc+1)) then
-              elem(ie)%state%p(i,j,k,tl%np1)=g*(cslam(ie)%area_sphere(i-1,j-1)*cslam(ie)%c(i-1,j-1,k,choosetrac,tl%np1)+ &
-              cslam(ie)%area_sphere(i-1,j)*cslam(ie)%c(i-1,j,k,choosetrac,tl%np1)+ &
-              cslam(ie)%area_sphere(i,j)*cslam(ie)%c(i,j,k,choosetrac,tl%np1))/(cslam(ie)%area_sphere(i-1,j-1)+ &
-              cslam(ie)%area_sphere(i-1,j)+cslam(ie)%area_sphere(i,j)) 
-            elseif ((cslam(ie)%cubeboundary==nwest) .AND. (j==nc+1) .AND. (i==1)) then
-              elem(ie)%state%p(i,j,k,tl%np1)=g*(cslam(ie)%area_sphere(i-1,j-1)*cslam(ie)%c(i-1,j-1,k,choosetrac,tl%np1)+ &
-              cslam(ie)%area_sphere(i,j-1)*cslam(ie)%c(i,j-1,k,choosetrac,tl%np1)+ &
-              cslam(ie)%area_sphere(i,j)*cslam(ie)%c(i,j,k,choosetrac,tl%np1))/(cslam(ie)%area_sphere(i-1,j-1)+ &
-              cslam(ie)%area_sphere(i,j-1)+cslam(ie)%area_sphere(i,j)) 
-            elseif ((cslam(ie)%cubeboundary==neast) .AND. (j==nc+1) .AND. (i==nc+1)) then   
-              elem(ie)%state%p(i,j,k,tl%np1)=g*(cslam(ie)%area_sphere(i-1,j-1)*cslam(ie)%c(i-1,j-1,k,choosetrac,tl%np1)+ &
-              cslam(ie)%area_sphere(i,j-1)*cslam(ie)%c(i,j-1,k,choosetrac,tl%np1)+ &
-              cslam(ie)%area_sphere(i-1,j)*cslam(ie)%c(i-1,j,k,choosetrac,tl%np1))/(cslam(ie)%area_sphere(i-1,j-1)+ &
-              cslam(ie)%area_sphere(i,j-1)+cslam(ie)%area_sphere(i-1,j))
+            if ((fvm(ie)%cubeboundary==swest) .AND. (j==1) .AND. (i==1)) then
+              elem(ie)%state%p(i,j,k,tl%np1)=g*(fvm(ie)%area_sphere(i,j-1)*fvm(ie)%c(i,j-1,k,choosetrac,tl%np1)+ &
+              fvm(ie)%area_sphere(i-1,j)*fvm(ie)%c(i-1,j,k,choosetrac,tl%np1)+ &
+              fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,k,choosetrac,tl%np1))/ &
+              (fvm(ie)%area_sphere(i,j-1)+fvm(ie)%area_sphere(i-1,j)+fvm(ie)%area_sphere(i,j))
+            elseif ((fvm(ie)%cubeboundary==seast) .AND. (j==1) .AND. (i==nc+1)) then
+              elem(ie)%state%p(i,j,k,tl%np1)=g*(fvm(ie)%area_sphere(i-1,j-1)*fvm(ie)%c(i-1,j-1,k,choosetrac,tl%np1)+ &
+              fvm(ie)%area_sphere(i-1,j)*fvm(ie)%c(i-1,j,k,choosetrac,tl%np1)+ &
+              fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,k,choosetrac,tl%np1))/(fvm(ie)%area_sphere(i-1,j-1)+ &
+              fvm(ie)%area_sphere(i-1,j)+fvm(ie)%area_sphere(i,j)) 
+            elseif ((fvm(ie)%cubeboundary==nwest) .AND. (j==nc+1) .AND. (i==1)) then
+              elem(ie)%state%p(i,j,k,tl%np1)=g*(fvm(ie)%area_sphere(i-1,j-1)*fvm(ie)%c(i-1,j-1,k,choosetrac,tl%np1)+ &
+              fvm(ie)%area_sphere(i,j-1)*fvm(ie)%c(i,j-1,k,choosetrac,tl%np1)+ &
+              fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,k,choosetrac,tl%np1))/(fvm(ie)%area_sphere(i-1,j-1)+ &
+              fvm(ie)%area_sphere(i,j-1)+fvm(ie)%area_sphere(i,j)) 
+            elseif ((fvm(ie)%cubeboundary==neast) .AND. (j==nc+1) .AND. (i==nc+1)) then   
+              elem(ie)%state%p(i,j,k,tl%np1)=g*(fvm(ie)%area_sphere(i-1,j-1)*fvm(ie)%c(i-1,j-1,k,choosetrac,tl%np1)+ &
+              fvm(ie)%area_sphere(i,j-1)*fvm(ie)%c(i,j-1,k,choosetrac,tl%np1)+ &
+              fvm(ie)%area_sphere(i-1,j)*fvm(ie)%c(i-1,j,k,choosetrac,tl%np1))/(fvm(ie)%area_sphere(i-1,j-1)+ &
+              fvm(ie)%area_sphere(i,j-1)+fvm(ie)%area_sphere(i-1,j))
             else
-              elem(ie)%state%p(i,j,k,tl%np1)=g*(cslam(ie)%area_sphere(i-1,j-1)*cslam(ie)%c(i-1,j-1,k,choosetrac,tl%np1)+ &
-              cslam(ie)%area_sphere(i,j-1)*cslam(ie)%c(i,j-1,k,choosetrac,tl%np1)+ &
-              cslam(ie)%area_sphere(i-1,j)*cslam(ie)%c(i-1,j,k,choosetrac,tl%np1)+ &
-              cslam(ie)%area_sphere(i,j)*cslam(ie)%c(i,j,k,choosetrac,tl%np1))/(cslam(ie)%area_sphere(i-1,j-1)+ &
-              cslam(ie)%area_sphere(i,j-1)+cslam(ie)%area_sphere(i-1,j)+cslam(ie)%area_sphere(i,j))
+              elem(ie)%state%p(i,j,k,tl%np1)=g*(fvm(ie)%area_sphere(i-1,j-1)*fvm(ie)%c(i-1,j-1,k,choosetrac,tl%np1)+ &
+              fvm(ie)%area_sphere(i,j-1)*fvm(ie)%c(i,j-1,k,choosetrac,tl%np1)+ &
+              fvm(ie)%area_sphere(i-1,j)*fvm(ie)%c(i-1,j,k,choosetrac,tl%np1)+ &
+              fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,k,choosetrac,tl%np1))/(fvm(ie)%area_sphere(i-1,j-1)+ &
+              fvm(ie)%area_sphere(i,j-1)+fvm(ie)%area_sphere(i-1,j)+fvm(ie)%area_sphere(i,j))
             end if 
           end do
         end do
@@ -329,13 +329,13 @@ subroutine cwfv_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
       ! test mass, just for chooselev and choosetrac
       do j=1,nc
         do i=1,nc        
-          mass=mass+cslam(ie)%area_sphere(i,j)*cslam(ie)%c(i,j,chooselev,choosetrac,tl%np1)
-          global_shared_buf(ie,1)=global_shared_buf(ie,1)+cslam(ie)%area_sphere(i,j)*cslam(ie)%c(i,j,chooselev,choosetrac,tl%np1)
+          mass=mass+fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,chooselev,choosetrac,tl%np1)
+          global_shared_buf(ie,1)=global_shared_buf(ie,1)+fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,chooselev,choosetrac,tl%np1)
         end do
       end do
       ! for the max/min value on the sphere
-      tmp1(ie) = MAXVAL(cslam(ie)%c(:,:,chooselev,choosetrac,tl%np1))
-      tmp2(ie) = MINVAL(cslam(ie)%c(:,:,chooselev,choosetrac,tl%np1))
+      tmp1(ie) = MAXVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%np1))
+      tmp2(ie) = MINVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%np1))
     end do
 
 
@@ -364,7 +364,7 @@ subroutine cwfv_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
 #ifdef PIO_INTERP
     call interp_movie_output(elem, tl, hybrid, 0D0, deriv, nets, nete)
 #else     
-    call shal_movie_output(elem, tl, hybrid, 0D0, nets, nete,deriv,cslam)
+    call shal_movie_output(elem, tl, hybrid, 0D0, nets, nete,deriv,fvm)
 #endif
 !-----------------------------------------------------------------------------------!  
   END DO

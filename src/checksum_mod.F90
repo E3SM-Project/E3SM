@@ -372,20 +372,20 @@ contains
   type (element_t)     , intent(inout), target :: elem(:)
   integer :: nets,nete
 
-  real (kind=real_kind) :: pin (        np,          np,  nlev,  nets:nete)  !CE: cslam tracer
-  real (kind=real_kind) :: pout(1-np:np+np,  1-np:np+np,  nlev,  nets:nete)  !CE: cslam tracer
+  real (kind=real_kind) :: pin (        np,          np,  nlev,  nets:nete)  !CE: fvm tracer
+  real (kind=real_kind) :: pout(1-np:np+np,  1-np:np+np,  nlev,  nets:nete)  !CE: fvm tracer
 
 
   integer :: mult(5:8)
-  real (kind=real_kind) :: vout(1-NHC : np+NHC,   1-NHC : np+NHC, nlev, nets:nete)  !CE: cslam tracer
+  real (kind=real_kind) :: vout(1-NHC : np+NHC,   1-NHC : np+NHC, nlev, nets:nete)  !CE: fvm tracer
 
   real (kind=real_kind) :: sw  (1-NHC : 1     ,   1-NHC : 1       , nlev, max_corner_elem-1, nets:nete)
   real (kind=real_kind) :: se  (   np : np+NHC,   1-NHC : 1       , nlev, max_corner_elem-1, nets:nete)
   real (kind=real_kind) :: ne  (   np : np+NHC,      np : np+NHC  , nlev, max_corner_elem-1, nets:nete)
   real (kind=real_kind) :: nw  (1-NHC : 1     ,      np : np+NHC  , nlev, max_corner_elem-1, nets:nete)
 
-  real (kind=real_kind) :: cin(2,2,nlev,nets:nete)  !CE: cslam tracer
-  real (kind=real_kind) :: cout(-1:4,-1:4,nlev,nets:nete)  !CE: cslam tracer
+  real (kind=real_kind) :: cin(2,2,nlev,nets:nete)  !CE: fvm tracer
+  real (kind=real_kind) :: cout(-1:4,-1:4,nlev,nets:nete)  !CE: fvm tracer
   integer :: i,j,k,m,n,ie,kptr,np1,np2,nc,nc1,nc2
   logical :: fail,fail1,fail2
   real (kind=real_kind) :: tol=.1

@@ -4,7 +4,7 @@
 
 module sweq_mod
 contains
-  subroutine sweq(elem,cslam,edge1,edge2,edge3,red,par,ithr,nets,nete)
+  subroutine sweq(elem,fvm,edge1,edge2,edge3,red,par,ithr,nets,nete)
     !-----------------
     use kinds, only : real_kind, longdouble_kind
     !-----------------
@@ -72,11 +72,11 @@ contains
     use bndry_mod, only : compute_ghost_corner_orientation
     use checksum_mod, only : test_ghost
 
-    use cslam_control_volume_mod, only : cslam_struct
+    use fvm_control_volume_mod, only : fvm_struct
     
 #ifndef MESH
-    use cslam_mod, only : cslam_init2    
-    use cslam_bsp_mod, only: cslam_init_tracer
+    use fvm_mod, only : fvm_init2    
+    use fvm_bsp_mod, only: fvm_init_tracer
 #endif
 
     use reduction_mod, only : parallelmax
@@ -87,7 +87,7 @@ contains
     integer, parameter :: facs = 4            ! starting face number to print
     integer, parameter :: face = 4            ! ending  face number to print
     type (element_t), intent(inout) :: elem(:)
-    type (cslam_struct), intent(inout) :: cslam(:)
+    type (fvm_struct), intent(inout) :: fvm(:)
     
     type (EdgeBuffer_t), intent(in)             :: edge1 ! edge buffer entity             (shared)
     type (EdgeBuffer_t), intent(in)             :: edge2 ! edge buffer entity             (shared)
@@ -146,8 +146,8 @@ contains
     real*8  :: tot_iter
     logical, parameter :: Debug = .FALSE.
     
-#ifdef _CSLAM
-  real (kind=longdouble_kind)                    :: cslam_nodes(nc+1)
+#ifdef _FVM
+  real (kind=longdouble_kind)                    :: fvm_nodes(nc+1)
   real (kind=real_kind)                          :: xtmp
   real (kind=real_kind)                          :: maxcflx, maxcfly  
 #endif    
@@ -193,7 +193,7 @@ contains
 #ifndef MESH
         ! MNL: there are abort calls in edge_mod::ghostVpackfull that
         !      require ne>0 / don't allow -DMESH as compile option
-        ! used by CSLAM:
+        ! used by fvm:
         call compute_ghost_corner_orientation(hybrid,elem,nets,nete)
         call test_ghost(hybrid,elem,nets,nete)
 #endif
@@ -204,20 +204,20 @@ contains
     ! Initialize derivative structure
     ! ==================================
 
-#ifdef _CSLAM
+#ifdef _FVM
 
     ! Initialize derivative structure
-    ! CSLAM nodes are equally spaced in alpha/beta
+    ! fvm nodes are equally spaced in alpha/beta
     ! HOMME with equ-angular gnomonic projection maps alpha/beta space
     ! to the reference element via simple scale + translation
-    ! thus, CSLAM nodes in reference element [-1,1] are a tensor product of
-    ! array 'cslam_nodes(:)' computed below:
+    ! thus, fvm nodes in reference element [-1,1] are a tensor product of
+    ! array 'fvm_nodes(:)' computed below:
     xtmp=nc 
     do i=1,nc+1
-      cslam_nodes(i)= 2*(i-1)/xtmp - 1
+      fvm_nodes(i)= 2*(i-1)/xtmp - 1
     end do
-    call derivinit(deriv,cslam_corners=cslam_nodes)
-    call cslam_init2(elem,cslam,hybrid,nets,nete,tl)
+    call derivinit(deriv,fvm_corners=fvm_nodes)
+    call fvm_init2(elem,fvm,hybrid,nets,nete,tl)
     
 #else
     call derivinit(deriv)
@@ -418,11 +418,11 @@ contains
              call tc5_invariants(elem,90,tl,pmean,edge2,deriv,hybrid,nets,nete)
              call tc5_errors(elem,7,tl,pmean,"ref_tc5_imp",simday,hybrid,nets,nete,par)
              
-#ifdef _CSLAM
+#ifdef _FVM
              do ie=nets,nete
-               call cslam_init_tracer(cslam(ie),tl)
+               call fvm_init_tracer(fvm(ie),tl)
              end do
-             if (hybrid%masterthread) print *,"initializing CSLAM tracers for swtc5..."
+             if (hybrid%masterthread) print *,"initializing fvm tracers for swtc5..."
 #endif
              
           else if (test_case(1:5) == "swtc6") then
@@ -449,11 +449,11 @@ contains
           ! ============================================== 
 #ifdef PIO_INTERP
 	  call interp_movie_init(elem,hybrid,nets,nete,tl=tl)
-    call interp_movie_output(elem,tl, hybrid, pmean, deriv, nets, nete,cslam)     
+    call interp_movie_output(elem,tl, hybrid, pmean, deriv, nets, nete,fvm)     
 #else
-! #ifdef _CSLAM
-	  call shal_movie_init(elem,hybrid,cslam)
-    call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv,cslam)
+! #ifdef _FVM
+	  call shal_movie_init(elem,hybrid,fvm)
+    call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv,fvm)
 ! #else
 !           call shal_movie_init(elem,hybrid)
 !           call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
@@ -502,12 +502,12 @@ contains
           if (integration == "explicit") then
              call advance_nonstag(elem, edge2, edge3,    deriv,  flt,  hybrid, &
                   dt,    pmean,     tl,  nets,   nete)
-#ifdef _CSLAM
-       call Shal_Advec_Tracers_cslam(elem, cslam, deriv,hybrid,dt,tl,nets,nete)
+#ifdef _FVM
+       call Shal_Advec_Tracers_fvm(elem, fvm, deriv,hybrid,dt,tl,nets,nete)
        if(test_cfldep) then
          do k=1,nlev
-           maxcflx = parallelmax(cslam(:)%maxcfl(1,k),hybrid)
-           maxcfly = parallelmax(cslam(:)%maxcfl(2,k),hybrid) 
+           maxcflx = parallelmax(fvm(:)%maxcfl(1,k),hybrid)
+           maxcfly = parallelmax(fvm(:)%maxcfl(2,k),hybrid) 
            if(hybrid%masterthread) then 
              write(*,*) "Time step:", tl%nstep, "LEVEL:", k
              write(*,*) "CFL: maxcflx=", maxcflx, "maxcfly=", maxcfly 
@@ -628,12 +628,12 @@ contains
        if      (integration == "explicit") then
           call advance_nonstag( elem,  edge2, edge3, deriv, flt, hybrid, &
                dt   , pmean, tl   , nets, nete)
-#ifdef _CSLAM
-       call Shal_Advec_Tracers_cslam(elem, cslam, deriv,hybrid,dt,tl,nets,nete)
+#ifdef _FVM
+       call Shal_Advec_Tracers_fvm(elem, fvm, deriv,hybrid,dt,tl,nets,nete)
         if(test_cfldep) then
           do k=1,nlev
-            maxcflx = parallelmax(cslam(:)%maxcfl(1,k),hybrid)
-            maxcfly = parallelmax(cslam(:)%maxcfl(2,k),hybrid) 
+            maxcflx = parallelmax(fvm(:)%maxcfl(1,k),hybrid)
+            maxcfly = parallelmax(fvm(:)%maxcfl(2,k),hybrid) 
             if(hybrid%masterthread) then 
               write(*,*) "Time step:", tl%nstep, "LEVEL:", k
               write(*,*) "CFL: maxcflx=", maxcflx, "maxcfly=", maxcfly 
@@ -690,14 +690,14 @@ contains
        ! Shallow Water Test Case output files
        ! ============================================================
 #ifdef PIO_INTERP
-! #ifdef _CSLAM   
-          call interp_movie_output(elem,tl, hybrid, pmean, deriv, nets, nete,cslam)
+! #ifdef _FVM   
+          call interp_movie_output(elem,tl, hybrid, pmean, deriv, nets, nete,fvm)
 ! #else
 !           call interp_movie_output(elem,tl, hybrid, pmean, deriv, nets, nete)          
 ! #endif
 #else     
-! #ifdef _CSLAM
-          call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv,cslam)
+! #ifdef _FVM
+          call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv,fvm)
 ! #else
 !           call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
 ! #endif
@@ -1430,29 +1430,29 @@ contains
   
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ! CSLAM driver
+  ! fvm driver
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 #ifndef MESH
-    subroutine Shal_Advec_Tracers_cslam(elem, cslam, deriv,hybrid,&
+    subroutine Shal_Advec_Tracers_fvm(elem, fvm, deriv,hybrid,&
                                         dt,tl,nets,nete)
       use element_mod, only : element_t
-      use cslam_control_volume_mod, only : cslam_struct
+      use fvm_control_volume_mod, only : fvm_struct
       use derivative_mod, only : derivative_t
       use kinds, only : real_kind
       use hybrid_mod, only : hybrid_t
       use time_mod, only : timelevel_t
       use perf_mod, only : t_startf, t_stopf, t_barrierf            ! _EXTERNAL
       use derivative_mod, only : divergence_sphere, ugradv_sphere
-      use cslam_mod, only : cslam_run, cslam_runair, edgeveloc, cslam_mcgregor
+      use fvm_mod, only : cslam_run, cslam_runair, edgeveloc, fvm_mcgregor
       use bndry_mod, only : bndry_exchangev
       use edge_mod, only  : edgevpack, edgevunpack
       use dimensions_mod, only : np, nlev
       
       implicit none
       type (element_t), intent(inout)               :: elem(:)
-      type (cslam_struct), intent(inout)            :: cslam(:)
+      type (fvm_struct), intent(inout)            :: fvm(:)
       type (derivative_t), intent(in)               :: deriv
       type (hybrid_t),     intent(in)               :: hybrid
       type (TimeLevel_t), intent(in)                :: tl
@@ -1466,8 +1466,8 @@ contains
       real (kind=real_kind), dimension(np, np) :: v1, v2
 
 
-      call t_barrierf('sync_shal_advec_tracers_cslam', hybrid%par%comm)
-      call t_startf('shal_advec_tracers_cslam')
+      call t_barrierf('sync_shal_advec_tracers_fvm', hybrid%par%comm)
+      call t_startf('shal_advec_tracers_fvm')
 
       ! using McGregor AMS 1993 scheme: Economical Determination of Departure Points for
       ! Semi-Lagrangian Models 
@@ -1486,7 +1486,7 @@ contains
           vstar(:,:,2)=elem(ie)%D(2,1,:,:)*v1 + elem(ie)%D(2,2,:,:)*v2   ! contra->latlon
           
           ! calculate high order approximation
-          call cslam_mcgregor(elem(ie), deriv, dt, vhat,vstar, 1)
+          call fvm_mcgregor(elem(ie), deriv, dt, vhat,vstar, 1)
           ! apply DSS to make vstar C0
           elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%spheremp(:,:)*vstar(:,:,1) 
           elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%spheremp(:,:)*vstar(:,:,2) 
@@ -1504,14 +1504,14 @@ contains
          end do
       end do
 
-      ! CSLAM departure calcluation should use vstar.
+      ! fvm departure calcluation should use vstar.
       ! from c(n0) compute c(np1): 
-      call cslam_run(elem,cslam,hybrid,deriv,dt,tl,nets,nete)
+      call cslam_run(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
       
-      call cslam_runair(elem,cslam,hybrid,deriv,dt,tl,nets,nete)
+      call cslam_runair(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
 
-      call t_stopf('shal_advec_tracers_cslam')
-    end subroutine shal_advec_tracers_cslam  
+      call t_stopf('shal_advec_tracers_fvm')
+    end subroutine shal_advec_tracers_fvm  
 #endif
 
 end module sweq_mod

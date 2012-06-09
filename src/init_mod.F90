@@ -4,9 +4,9 @@
 
 module init_mod
 contains
-! not a nice way to integrate CSLAM but otherwise DG does not work anymore
-#ifdef _CSLAM
-  subroutine init(elem, edge1,edge2,edge3,red,par, cslam)
+! not a nice way to integrate fvm but otherwise DG does not work anymore
+#ifdef _FVM
+  subroutine init(elem, edge1,edge2,edge3,red,par, fvm)
 #else  
   subroutine init(elem, edge1,edge2,edge3,red,par)
 #endif
@@ -78,9 +78,9 @@ contains
     use params_mod, only : SFCURVE
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     ! --------------------------------
-#ifdef _CSLAM 
-  use cslam_mod, only : cslam_init1
-  use cslam_control_volume_mod, only : cslam_struct
+#ifdef _FVM 
+  use fvm_mod, only : fvm_init1
+  use fvm_control_volume_mod, only : fvm_struct
   use dimensions_mod, only : nc
 #endif
 
@@ -91,8 +91,8 @@ contains
 !   G95  "pointer attribute conflicts with INTENT attribute":  
 !    type (element_t), intent(inout), pointer :: elem(:)
     type (element_t), pointer :: elem(:)
-#ifdef _CSLAM    
-    type (cslam_struct), pointer, optional :: cslam(:)
+#ifdef _FVM    
+    type (fvm_struct), pointer, optional :: fvm(:)
 #endif
         
     type (EdgeBuffer_t)           :: edge1
@@ -297,8 +297,8 @@ contains
 
     allocate(elem(nelemd))
 
-#ifdef _CSLAM
-    allocate(cslam(nelemd))
+#ifdef _FVM
+    allocate(fvm(nelemd))
 #endif
 
     ! ====================================================
@@ -414,8 +414,8 @@ contains
     endif
     !DBG  print *,'prim_init: after call to initRestartFile'
   
-#ifdef _CSLAM
-  call cslam_init1(par)
+#ifdef _FVM
+  call fvm_init1(par)
 #endif    
     
     call t_stopf('init')

@@ -2,13 +2,13 @@
 #include "config.h"
 #endif
 
-!CE-for CSLAM-----------------------------------------------------------------------!
+!CE-for fvm-----------------------------------------------------------------------!
 ! AUTHOR: Christoph Erath, 11.June 2011                                             !
-! This modules contains the flux version of CSLAM                                   !
+! This modules contains the flux version of fvm                                   !
 ! AVAILABLE: only the simplified version is implemented (14.June 2011)              !
 !-----------------------------------------------------------------------------------!
   
-module cslam_flux_mod
+module fvm_flux_mod
   ! ---------------------------------------------------------------------------------
   use kinds, only : real_kind
   ! --------------------------------------------------------------------------------- 
@@ -19,18 +19,18 @@ module cslam_flux_mod
 
 contains
 
-!CE-for CSLAM-----------------------------------------------------------------------!
+!CE-for fvm-----------------------------------------------------------------------!
 ! AUTHOR: Christoph Erath, 11.June 2011                                             !
 !-----------------------------------------------------------------------------------!
-subroutine simplified_flux(fcube,cslam, tl, nets, nete)
+subroutine simplified_flux(fcube,fvm, tl, nets, nete)
   use dimensions_mod, only: nc, nhc
-  use cslam_control_volume_mod, only: cslam_struct
+  use fvm_control_volume_mod, only: fvm_struct
   use time_mod, only : timelevel_t
   ! --------------------------------------------------------------------------------- 
   implicit none
   real (kind=real_kind), dimension(:,:,:,:), intent(inout) :: fcube
   
-  type (cslam_struct),intent(inout)     :: cslam(:)
+  type (fvm_struct),intent(inout)     :: fvm(:)
   type (TimeLevel_t), intent(in)        :: tl              ! time level struct
   integer, intent(in)                   :: nets, nete
   
@@ -41,19 +41,19 @@ subroutine simplified_flux(fcube,cslam, tl, nets, nete)
     do j=1,nc
       do i=1,nc+1
         ! xfluxes
-        call flux_areas_x(cslam(ie)%acart(i,j), cslam(ie)%acart(i,j+1), &
-                          cslam(ie)%dcart(i,j), cslam(ie)%dcart(i,j+1), &
+        call flux_areas_x(fvm(ie)%acart(i,j), fvm(ie)%acart(i,j+1), &
+                          fvm(ie)%dcart(i,j), fvm(ie)%dcart(i,j+1), &
                           fcube(i-1,j,1,tl%n0),fcube(i,j,1,tl%n0),&
-                          cslam(ie)%asphere(i,j), cslam(ie)%asphere(i,j+1), &
-                          cslam(ie)%dsphere(i,j), cslam(ie)%dsphere(i,j+1),cslam(ie)%faceno,tmpflux)
+                          fvm(ie)%asphere(i,j), fvm(ie)%asphere(i,j+1), &
+                          fvm(ie)%dsphere(i,j), fvm(ie)%dsphere(i,j+1),fvm(ie)%faceno,tmpflux)
         fcube(i-1,j,1,tl%np1)=fcube(i-1,j,1,tl%np1)-tmpflux
         fcube(i,j,1,tl%np1)=fcube(i,j,1,tl%np1)+tmpflux    
         !yfluxes         
-        call flux_areas_y(cslam(ie)%acart(j,i), cslam(ie)%acart(j+1,i), &
-                          cslam(ie)%dcart(j,i), cslam(ie)%dcart(j+1,i), &
+        call flux_areas_y(fvm(ie)%acart(j,i), fvm(ie)%acart(j+1,i), &
+                          fvm(ie)%dcart(j,i), fvm(ie)%dcart(j+1,i), &
                           fcube(j,i-1,1,tl%n0),fcube(j,i,1,tl%n0),&
-                          cslam(ie)%asphere(j,i), cslam(ie)%asphere(j+1,i), &
-                          cslam(ie)%dsphere(j,i), cslam(ie)%dsphere(j+1,i),cslam(ie)%faceno,tmpflux)
+                          fvm(ie)%asphere(j,i), fvm(ie)%asphere(j+1,i), &
+                          fvm(ie)%dsphere(j,i), fvm(ie)%dsphere(j+1,i),fvm(ie)%faceno,tmpflux)
                 
         fcube(j,i-1,1,tl%np1)=fcube(j,i-1,1,tl%np1)+tmpflux
         fcube(j,i,1,tl%np1)=fcube(j,i,1,tl%np1)-tmpflux 
@@ -63,7 +63,7 @@ subroutine simplified_flux(fcube,cslam, tl, nets, nete)
     do j=1,nc
       do i=1,nc        
         fcube(i,j,1,tl%np1)=fcube(i,j,1,tl%n0)+   &
-                 (fcube(i,j,1,tl%np1))/cslam(ie)%area_sphere(i,j)  
+                 (fcube(i,j,1,tl%np1))/fvm(ie)%area_sphere(i,j)  
       end do
     end do     
   end do
@@ -342,4 +342,4 @@ function spherical_area_tria(lat, lon) result(area)
   area=4*atan(tmp)    
 end function spherical_area_tria
 
-end module cslam_flux_mod
+end module fvm_flux_mod

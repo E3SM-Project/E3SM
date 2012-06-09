@@ -1,16 +1,16 @@
 !-----------------------------------------------------------------------------------!
-!MODULE CSLAM_MOD-------------------------------------------------------CE-for CSLAM!
-! CSLAM_MOD File for the cslam project in HOMME                                     !
+! MODULE FVM_MOD----------------------------------------------------------CE-for FVM!
+! fvm_MOD File for the fvm project in HOMME                                         !
 ! Author: Christoph Erath                                                           !
 ! Date: 25.January 2011                                                             !
-! MAIN module to run CSLAM on HOMME                                                 !
+! MAIN module to run fvm on HOMME                                                   !
 ! 14.November 2011: reorganisation done                                             !
 !-----------------------------------------------------------------------------------!
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-module cslam_bench_mod
+module fvm_bench_mod
   use kinds, only : real_kind, int_kind, longdouble_kind
   use edge_mod, only : freeghostbuffertr, ghostVpack, ghostVunpack, &
                        edgeVpack, edgeVunpack, freeedgebuffer 
@@ -22,17 +22,17 @@ module cslam_bench_mod
 contains
 
 
-subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
+subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   ! ---------------------------------------------------------------------------------  
-  use cslam_bsp_mod, only: cslam_bsp, get_boomerang_velocities_gll
+  use fvm_bsp_mod, only: fvm_bsp, get_boomerang_velocities_gll
   ! ---------------------------------------------------------------------------------  
-  use cslam_control_volume_mod, only: cslam_struct
+  use fvm_control_volume_mod, only: fvm_struct
   ! ---------------------------------------------------------------------------------
-  use cslam_mod, only: cslam_runair, cslam_init1,cslam_init2, cslam_mcgregor,cslam_mcgregordss, cellghostbuf, edgeveloc
+  use fvm_mod, only: cslam_runair, fvm_init1,fvm_init2, fvm_mcgregor,fvm_mcgregordss, cellghostbuf, edgeveloc
   ! ---------------------------------------------------------------------------------
-  use cslam_line_integrals_mod, only: compute_weights
+  use fvm_line_integrals_mod, only: compute_weights
   ! ---------------------------------------------------------------------------------  
-  use cslam_filter_mod, only: monotonic_gradient_cart
+  use fvm_filter_mod, only: monotonic_gradient_cart
   ! ---------------------------------------------------------------------------------
   use checksum_mod, only: test_ghost
   ! ---------------------------------------------------------------------------------
@@ -72,7 +72,7 @@ subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
   
   implicit none
   type (element_t), intent(inout)                :: elem(:)
-  type (cslam_struct), intent(inout)             :: cslam(:)
+  type (fvm_struct), intent(inout)             :: fvm(:)
   type (ReductionBuffer_ordered_1d_t),intent(in)    :: red   ! reduction buffer         (shared)
   type (hybrid_t), intent(in)                 :: hybrid   ! distributed parallel structure (shared)
   integer, intent(in)                         :: nets  ! starting thread element number (private)
@@ -96,7 +96,7 @@ subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
   real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons  
   real (kind=real_kind), dimension(nelemd,1-nhe:nc+nhe,1-nhe:nc+nhe) :: area    
   real (kind=real_kind)                                              :: xtmp
-  real (kind=longdouble_kind)                                        :: cslam_nodes(nc+1)
+  real (kind=longdouble_kind)                                        :: fvm_nodes(nc+1)
   
   real (kind=real_kind), dimension(np,np,2)    :: vstar, vhat
   real (kind=real_kind)                        :: maxcflx, maxcfly  
@@ -108,47 +108,47 @@ subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
  
   if(hybrid%masterthread) then 
     print *,"!-----------------------------------------------------------------------!"
-    print *,"!  Test CASE for CSLAM, Christoph Erath                                 !" 
+    print *,"!  Test CASE for fvm, Christoph Erath                                 !" 
     print *,"!-----------------------------------------------------------------------!" 
   endif
      
   ! Initialize derivative structure
-  ! CSLAM nodes are equally spaced in alpha/beta
+  ! fvm nodes are equally spaced in alpha/beta
   ! HOMME with equ-angular gnomonic projection maps alpha/beta space
   ! to the reference element via simple scale + translation
-  ! thus, CSLAM nodes in reference element [-1,1] are a tensor product of
-  ! array 'cslam_nodes(:)' computed below:
+  ! thus, fvm nodes in reference element [-1,1] are a tensor product of
+  ! array 'fvm_nodes(:)' computed below:
   xtmp=nc 
   do i=1,nc+1
-    cslam_nodes(i)= 2*(i-1)/xtmp - 1
+    fvm_nodes(i)= 2*(i-1)/xtmp - 1
   end do
-  call derivinit(deriv,cslam_corners=cslam_nodes)
+  call derivinit(deriv,fvm_corners=fvm_nodes)
 
 !-----------------------------------------------------------------------------------!    
   do ie=nets,nete
-    call cslam_bsp(cslam(ie),tl)
-    cslam(ie)%elem_mass=0
+    call fvm_bsp(fvm(ie),tl)
+    fvm(ie)%elem_mass=0
     do j=1,nc
       do i=1,nc
         if (choosetrac==1) then   ! mass of air, code is not optimal
-          cslam(ie)%elem_mass=cslam(ie)%elem_mass + &
-                        cslam(ie)%area_sphere(i,j)*cslam(ie)%c(i,j,chooselev,choosetrac,tl%n0)
+          fvm(ie)%elem_mass=fvm(ie)%elem_mass + &
+                        fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)
         else
-          cslam(ie)%elem_mass=cslam(ie)%elem_mass + &
-                        cslam(ie)%area_sphere(i,j)*cslam(ie)%c(i,j,chooselev,1,tl%n0)*&
-                                                   cslam(ie)%c(i,j,chooselev,choosetrac,tl%n0)
+          fvm(ie)%elem_mass=fvm(ie)%elem_mass + &
+                        fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,chooselev,1,tl%n0)*&
+                                                   fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)
         endif
       enddo
     enddo
     !
     !first exchange of the initial values
-    call ghostVpack(cellghostbuf, cslam(ie)%c,nhc,nc,nlev,ntrac,0,tl%n0,timelevels,elem(ie)%desc)
+    call ghostVpack(cellghostbuf, fvm(ie)%c,nhc,nc,nlev,ntrac,0,tl%n0,timelevels,elem(ie)%desc)
     ! reset the new unknown
     do k=1,nlev
       do itr=1,ntrac
         do j=1-nhc,nc+nhc
           do i=1-nhc,nc+nhc 
-          cslam(ie)%c(i,j,k,itr,tl%np1)=0.0D0
+          fvm(ie)%c(i,j,k,itr,tl%np1)=0.0D0
           end do
         end do
       enddo
@@ -160,13 +160,13 @@ subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
 !-----------------------------------------------------------------------------------!    
 
   do ie=nets,nete
-     call ghostVunpack(cellghostbuf, cslam(ie)%c, nhc, nc,nlev,ntrac, 0, tl%n0, timelevels,elem(ie)%desc)
+     call ghostVunpack(cellghostbuf, fvm(ie)%c, nhc, nc,nlev,ntrac, 0, tl%n0, timelevels,elem(ie)%desc)
     ! for the mass value
     global_shared_buf(ie,1)=0D0
-    global_shared_buf(ie,1)=cslam(ie)%elem_mass
+    global_shared_buf(ie,1)=fvm(ie)%elem_mass
     ! for the max value on the sphere
-    tmp1(ie) = MAXVAL(cslam(ie)%c(:,:,chooselev,choosetrac,tl%n0))
-    tmp2(ie) = MINVAL(cslam(ie)%c(:,:,chooselev,choosetrac,tl%n0))   
+    tmp1(ie) = MAXVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))
+    tmp2(ie) = MINVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))   
   ! BEGIN Testoutput: write data in p (interpolation) to use existing IO
   ! prepare date for I/O
   end do
@@ -181,21 +181,21 @@ subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
   maxcstart = parallelmax(tmp1,hybrid)
   mincstart = parallelmin(tmp2,hybrid)
 !-----------------------------------------------------------------------------------!  
-!Initialize Output via geopotential (should be changed, separate output for CSLAM
+!Initialize Output via geopotential (should be changed, separate output for fvm
 !write first time step to IO 
 #ifdef PIO_INTERP
   call interp_movie_init(elem,hybrid,nets,nete,tl=tl)    
-  call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete,cslam)
+  call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete,fvm)
 #else
-    call shal_movie_init(elem,hybrid,cslam)
-    call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv,cslam)
+    call shal_movie_init(elem,hybrid,fvm)
+    call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv,fvm)
 #endif 
 !-----------------------------------------------------------------------------------!
 !-----------------------------------------------------------------------------------!  
 #ifdef PIO_INTERP
   call interp_movie_output(elem, tl, hybrid, 0D0, deriv, nets, nete)
 #else     
-  call shal_movie_output(elem, tl, hybrid, 0D0, nets, nete,deriv,cslam)
+  call shal_movie_output(elem, tl, hybrid, 0D0, nets, nete,deriv,fvm)
 #endif
 !-----------------------------------------------------------------------------------!
   if(hybrid%masterthread) then 
@@ -205,8 +205,8 @@ subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
   endif
   tmp=0
   
-  call t_barrierf('CSLAM time loop', hybrid%par%comm)
-  call t_startf('CSLAM')
+  call t_barrierf('fvm time loop', hybrid%par%comm)
+  call t_startf('fvm')
   
   !BEGIN TIME LOOP, start at 0, calculate then next step
   DO WHILE(tl%nstep<nmax)
@@ -216,7 +216,7 @@ subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
         vstar = get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
         vhat= (get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep)) + vstar) / 2.0D0
         ! calculate high order approximation
-        call cslam_mcgregor(elem(ie), deriv, tstep, vhat, vstar, 3)
+        call fvm_mcgregor(elem(ie), deriv, tstep, vhat, vstar, 3)
      
         ! apply DSS to make vstar C0
         elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%spheremp(:,:)*vstar(:,:,1) 
@@ -239,12 +239,12 @@ subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
 !     do ie=nets,nete
 !       do k=1,nlev
 !         elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
-!         cslam(ie)%vn0(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),time_at(tl%nstep))
+!         fvm(ie)%vn0(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),time_at(tl%nstep))
 !       end do
 !     end do
-!     call cslam_mcgregordss(elem,cslam,nets,nete, hybrid, deriv, tstep, 3)
+!     call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, tstep, 3)
 ! ! end mcgregordss   
-    call cslam_runair(elem,cslam,hybrid,deriv,tstep,tl,nets,nete)
+    call cslam_runair(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   
     do ie=nets,nete
     ! prepare data for I/O
@@ -253,17 +253,17 @@ subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
       do j=1,nc
         do i=1,nc   
           if (choosetrac==1) then
-            global_shared_buf(ie,1)=global_shared_buf(ie,1)+cslam(ie)%area_sphere(i,j)*&
-                                    cslam(ie)%c(i,j,chooselev,choosetrac,tl%np1)
+            global_shared_buf(ie,1)=global_shared_buf(ie,1)+fvm(ie)%area_sphere(i,j)*&
+                                    fvm(ie)%c(i,j,chooselev,choosetrac,tl%np1)
           else   
-            global_shared_buf(ie,1)=global_shared_buf(ie,1)+cslam(ie)%area_sphere(i,j)*&
-                 cslam(ie)%c(i,j,chooselev,1,tl%np1)*cslam(ie)%c(i,j,chooselev,choosetrac,tl%np1)
+            global_shared_buf(ie,1)=global_shared_buf(ie,1)+fvm(ie)%area_sphere(i,j)*&
+                 fvm(ie)%c(i,j,chooselev,1,tl%np1)*fvm(ie)%c(i,j,chooselev,choosetrac,tl%np1)
           endif
         end do
       end do
       ! for the max/min value on the sphere
-      tmp1(ie) = MAXVAL(cslam(ie)%c(:,:,chooselev,choosetrac,tl%np1))
-      tmp2(ie) = MINVAL(cslam(ie)%c(:,:,chooselev,choosetrac,tl%np1))
+      tmp1(ie) = MAXVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%np1))
+      tmp2(ie) = MINVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%np1))
     end do
 
     call TimeLevel_update(tl,"forward") 
@@ -274,8 +274,8 @@ subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
     mass=global_shared_sum(1)
     maxc = parallelmax(tmp1,hybrid)
     minc = parallelmin(tmp2,hybrid)
-    maxcflx = parallelmax(cslam(:)%maxcfl(1,chooselev),hybrid)
-    maxcfly = parallelmax(cslam(:)%maxcfl(2,chooselev),hybrid)
+    maxcflx = parallelmax(fvm(:)%maxcfl(1,chooselev),hybrid)
+    maxcfly = parallelmax(fvm(:)%maxcfl(2,chooselev),hybrid)
     !
     if  (hybrid%masterthread) then 
       write(*,*) 'time=', time_at(tl%nstep), 'timeatmax',Time_at(nmax)
@@ -292,15 +292,15 @@ subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
 !-----------------------------------------------------------------------------------!  
 
 #ifdef PIO_INTERP
-    call interp_movie_output(elem, tl, hybrid, 0D0, deriv, nets, nete,cslam)
+    call interp_movie_output(elem, tl, hybrid, 0D0, deriv, nets, nete,fvm)
 #else     
-    call shal_movie_output(elem, tl, hybrid, 0D0, nets, nete,deriv,cslam)
+    call shal_movie_output(elem, tl, hybrid, 0D0, nets, nete,deriv,fvm)
 #endif
 !-----------------------------------------------------------------------------------!  
   END DO
 !------------END TIME LOOP-------------END TIME LOOP--------------END TIME LOOP-----!
 !-----------------------------------------------------------------------------------! 
-  call t_stopf('CSLAM')
+  call t_stopf('fvm')
 
 
   call freeghostbuffertr(cellghostbuf)
@@ -316,7 +316,7 @@ subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
   if(hybrid%masterthread) then 
     print *
     print *,"!-----------------------------------------------------------------------!"
-    print *,"!  Test CASE for CSLAM, Christoph Erath                                 !" 
+    print *,"!  Test CASE for FVM, Christoph Erath                                   !" 
     print *,"!-----------------------------------------------------------------------!"
     print *  
     write(*,*) 'number of elements', 6*ne*ne*nc*nc
@@ -334,4 +334,4 @@ subroutine cslam_run_bench(elem,cslam,red,hybrid,nets,nete,tl)
 end subroutine cslam_run_bench
 
 
-end module cslam_bench_mod
+end module fvm_bench_mod

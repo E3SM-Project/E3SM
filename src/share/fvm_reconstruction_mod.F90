@@ -2,42 +2,42 @@
 #include "config.h"
 #endif
 
-!MODULE CSLAM_RECONSTRUCTION_MOD----------------------------------------CE-for CSLAM!
+!MODULE FVM_RECONSTRUCTION_MOD--------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 17.October 2011                                          !
 ! This module contains everything  to do (ONLY) a CUBIC (3rd order) reconstruction  ! 
 !                                                                                   !
 ! IMPORTANT: the implementation is done for a ncfl > 1, which is not working        !
 !            but it works for ncfl=1                                                !
 !-----------------------------------------------------------------------------------!
-module cslam_reconstruction_mod
+module fvm_reconstruction_mod
 
   use kinds, only                  : int_kind, real_kind
   use dimensions_mod, only         : nc,nhc,nhe
   use coordinate_systems_mod, only : cartesian2D_t,cartesian3D_t
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
-  use cslam_control_volume_mod, only: cslam_struct
+  use fvm_control_volume_mod, only: fvm_struct
   use parallel_mod, only: abortmp
   implicit none
   private
   public :: reconstruction
 contains
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINE RECONSTRUCTION----------------------------------------------CE-for CSLAM!
+!SUBROUTINE RECONSTRUCTION------------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 17.October 2011                                          !
 ! DESCRIPTION: controls the cubic (3rd order) reconstructions:                      !
 !                                                                                   !
 ! CALLS: fillhalo_cubic, reconstruction_cubic                                       !
 ! INPUT: fcube    ...  tracer values incl. the halo zone                            !
-!        cslam    ...  structure incl. tracer values aso                            !                                   ! 
+!        fvm    ...  structure incl. tracer values aso                            !                                   ! 
 ! OUTPUT:recons   ...  has the reconstruction coefficients (5) for the 3rd order    !
 !                      reconstruction: dx, dy, dx^2, dy^2, dxdy                     !
 !-----------------------------------------------------------------------------------!
-subroutine reconstruction(fcube,cslam,recons)
-  use cslam_control_volume_mod, only: cslam_struct
+subroutine reconstruction(fcube,fvm,recons)
+  use fvm_control_volume_mod, only: fvm_struct
 
   implicit none
   real (kind=real_kind), dimension(1-nhc:nc+nhc, 1-nhc:nc+nhc), intent(in) :: fcube
-  type (cslam_struct), intent(in)                                     :: cslam
+  type (fvm_struct), intent(in)                                     :: fvm
   real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe), &
                                                     intent(out)       :: recons
   
@@ -46,20 +46,20 @@ subroutine reconstruction(fcube,cslam,recons)
   real (kind=real_kind), dimension(0:nhe+1,2,2)                       :: fhaloex
           
   ! if element lies on a cube edge, recalculation the values in the halo zone
-  if (cslam%cubeboundary > 0) then    
-    call fillhalo_cubic(fcube,cslam,fnewval,fhalo,fhaloex)               
+  if (fvm%cubeboundary > 0) then    
+    call fillhalo_cubic(fcube,fvm,fnewval,fhalo,fhaloex)               
   end if
 
-  call reconstruction_cubic(fcube,cslam,fnewval,fhalo,&
+  call reconstruction_cubic(fcube,fvm,fnewval,fhalo,&
                             fhaloex, recons)
 end subroutine reconstruction
-!END SUBROUTINE RECONSTRUCTION------------------------------------------CE-for CSLAM!
+!END SUBROUTINE RECONSTRUCTION--------------------------------------------CE-for FVM!
 
 
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINE FILLHALO_CUBIC----------------------------------------------CE-for CSLAM!
+!SUBROUTINE FILLHALO_CUBIC------------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 17.October 2011                                          !
-! DESCRIPTION: uses the interpolation points in the cslam structure,                !
+! DESCRIPTION: uses the interpolation points in the fvm structure,                !
 !        on different cubic faces, also in the halo region:                         !
 !        because we also need the reconstruction coefficients in the halo zone,     !
 !        which is basically calculated twice, on the original cell of an element    !
@@ -70,21 +70,21 @@ end subroutine reconstruction
 !                                                                                   !
 ! CALLS: interpolation_point, interpolation_value                                   !
 ! INPUT: fcube    ...  tracer values incl. the halo zone                            !
-!        cslam    ...  cslam structure                                              !
+!        fvm    ...  fvm structure                                              !
 ! OUTPUT:fnewval ... contains the interpolationvalues for cell on the actual element!
 !        fhalo ... contains interpolation values for the reconstruction in the halo !
 !                  zone                                                             !
 !        fhaloex...contains interpolation values for the reconstruction in the halo !
 !                  zone, only for corner elements                                   !                  
 !-----------------------------------------------------------------------------------!
-subroutine fillhalo_cubic(fcube,cslam,fnewval,fhalo,fhaloex)
+subroutine fillhalo_cubic(fcube,fvm,fnewval,fhalo,fhaloex)
 
   use parallel_mod, only : haltmp
   use cube_mod, only     : cube_xstart, cube_xend, cube_ystart, cube_yend
   
   implicit none
   real (kind=real_kind), dimension(1-nhc:nc+nhc, 1-nhc:nc+nhc), intent(in) :: fcube
-  type (cslam_struct), intent(in)                                          :: cslam
+  type (fvm_struct), intent(in)                                          :: fvm
   
   real (kind=real_kind),  dimension(-1:nc+2,2,2), intent(out)        :: fnewval
   real (kind=real_kind),  dimension(-1:nc+2,2,2), intent(out)        :: fhalo
@@ -95,7 +95,7 @@ subroutine fillhalo_cubic(fcube,cslam,fnewval,fhalo,fhaloex)
   real (kind=real_kind), dimension(1:nhc)       :: tmpfval
   
   ! element is not on a corner, but shares a cube edge (call of subroutine)
-  select case (cslam%cubeboundary)
+  select case (fvm%cubeboundary)
     ! NOTE case(0) is excluded in the subroutine call
 !-----------------------------------------------------------------------------------!
     !CASE WEST
@@ -103,16 +103,16 @@ subroutine fillhalo_cubic(fcube,cslam,fnewval,fhalo,fhaloex)
       ! west zone
       do halo=1,2
         do i=-1,nc+2
-          ibaseref=cslam%ibase(i,halo,1)                                      
-          fnewval(i,halo,1)=cubic_equispace_interp(cslam%dbeta, cslam%interp(i,halo,1),&
+          ibaseref=fvm%ibase(i,halo,1)                                      
+          fnewval(i,halo,1)=cubic_equispace_interp(fvm%dbeta, fvm%interp(i,halo,1),&
                                                   fcube(1-halo,ibaseref:ibaseref+3))                                      
         end do
       end do
       !westhalo: east zone (because of the reconstruction in the halo, conservation!)
       do halo=1,2
         do i=-1,nc+2
-          ibaseref=cslam%ibasehalo(i,halo,1)                                      
-          fhalo(i,halo,1)=cubic_equispace_interp(cslam%dbeta, cslam%interphalo(i,halo,1),&
+          ibaseref=fvm%ibasehalo(i,halo,1)                                      
+          fhalo(i,halo,1)=cubic_equispace_interp(fvm%dbeta, fvm%interphalo(i,halo,1),&
                                                   fcube(halo,ibaseref:ibaseref+3))                                    
         end do
       end do
@@ -122,16 +122,16 @@ subroutine fillhalo_cubic(fcube,cslam,fnewval,fhalo,fhaloex)
       ! east zone
       do halo=1,2
         do i=-1,nc+2
-          ibaseref=cslam%ibase(i,halo,1)                                      
-          fnewval(i,halo,1)=cubic_equispace_interp(cslam%dbeta, cslam%interp(i,halo,1),&
+          ibaseref=fvm%ibase(i,halo,1)                                      
+          fnewval(i,halo,1)=cubic_equispace_interp(fvm%dbeta, fvm%interp(i,halo,1),&
                                                   fcube(nc+halo,ibaseref:ibaseref+3))                                      
         end do 
       end do  
       !easthalo: west zone (because of the reconstruction in the halo, conservation!)
       do halo=1,2
         do i=-1,nc+2                                    
-          ibaseref=cslam%ibasehalo(i,halo,1)                                      
-          fhalo(i,halo,1)=cubic_equispace_interp(cslam%dbeta, cslam%interphalo(i,halo,1),&
+          ibaseref=fvm%ibasehalo(i,halo,1)                                      
+          fhalo(i,halo,1)=cubic_equispace_interp(fvm%dbeta, fvm%interphalo(i,halo,1),&
                                                   fcube(nc+1-halo,ibaseref:ibaseref+3))                                    
         end do
       end do
@@ -141,16 +141,16 @@ subroutine fillhalo_cubic(fcube,cslam,fnewval,fhalo,fhaloex)
       ! north zone
       do halo=1,2 
         do i=-1,nc+2
-          ibaseref=cslam%ibase(i,halo,2)                                      
-          fnewval(i,halo,2)=cubic_equispace_interp(cslam%dalpha, cslam%interp(i,halo,2),&
+          ibaseref=fvm%ibase(i,halo,2)                                      
+          fnewval(i,halo,2)=cubic_equispace_interp(fvm%dalpha, fvm%interp(i,halo,2),&
                                                    fcube(ibaseref:ibaseref+3,nc+halo))                                       
         end do
       end do
       !northhalo: south zone (because of the reconstruction in the halo, conservation!)
       do halo=1,2
         do i=-1,nc+2
-          ibaseref=cslam%ibasehalo(i,halo,2)                                      
-          fhalo(i,halo,2)=cubic_equispace_interp(cslam%dalpha, cslam%interphalo(i,halo,2),&
+          ibaseref=fvm%ibasehalo(i,halo,2)                                      
+          fhalo(i,halo,2)=cubic_equispace_interp(fvm%dalpha, fvm%interphalo(i,halo,2),&
                                                    fcube(ibaseref:ibaseref+3,nc+1-halo))
         end do
       end do   
@@ -160,8 +160,8 @@ subroutine fillhalo_cubic(fcube,cslam,fnewval,fhalo,fhaloex)
      !south zone
      do halo=1,2
         do i=-1,nc+2
-          ibaseref=cslam%ibase(i,halo,2)                                      
-          fnewval(i,halo,2)=cubic_equispace_interp(cslam%dalpha, cslam%interp(i,halo,2),&
+          ibaseref=fvm%ibase(i,halo,2)                                      
+          fnewval(i,halo,2)=cubic_equispace_interp(fvm%dalpha, fvm%interp(i,halo,2),&
                                                    fcube(ibaseref:ibaseref+3,1-halo))
         end do
       end do      
@@ -169,8 +169,8 @@ subroutine fillhalo_cubic(fcube,cslam,fnewval,fhalo,fhaloex)
       !southhalo: north zone (because of the reconstruction in the halo, conservation!) 
       do halo=1,2
         do i=-1,nc+2
-          ibaseref=cslam%ibasehalo(i,halo,2)                                      
-          fhalo(i,halo,2)=cubic_equispace_interp(cslam%dalpha, cslam%interphalo(i,halo,2),&
+          ibaseref=fvm%ibasehalo(i,halo,2)                                      
+          fhalo(i,halo,2)=cubic_equispace_interp(fvm%dalpha, fvm%interphalo(i,halo,2),&
                                                    fcube(ibaseref:ibaseref+3,halo))
         end do
       end do
@@ -181,14 +181,14 @@ subroutine fillhalo_cubic(fcube,cslam,fnewval,fhalo,fhaloex)
       ! west zone
       do halo=1,2
         do i=0,nc+2
-          ibaseref=cslam%ibase(i,halo,1)                                      
-          fnewval(i,halo,1)=cubic_equispace_interp(cslam%dbeta, cslam%interp(i,halo,1),&
+          ibaseref=fvm%ibase(i,halo,1)                                      
+          fnewval(i,halo,1)=cubic_equispace_interp(fvm%dbeta, fvm%interp(i,halo,1),&
                                                    fcube(1-halo,ibaseref:ibaseref+3))
         end do
       ! south zone
         do i=0,nc+2
-          ibaseref=cslam%ibase(i,halo,2)                                      
-          fnewval(i,halo,2)=cubic_equispace_interp(cslam%dalpha, cslam%interp(i,halo,2),&
+          ibaseref=fvm%ibase(i,halo,2)                                      
+          fnewval(i,halo,2)=cubic_equispace_interp(fvm%dalpha, fvm%interp(i,halo,2),&
                                                    fcube(ibaseref:ibaseref+3,1-halo))
         end do
       end do
@@ -196,16 +196,16 @@ subroutine fillhalo_cubic(fcube,cslam,fnewval,fhalo,fhaloex)
       !(because of the reconstruction in the halo, conservation!) 
       do halo=1,2
         do i=0,nc+2
-          ibaseref=cslam%ibasehalo(i,halo,1)                                      
-          fhalo(i,halo,1)=cubic_equispace_interp(cslam%dbeta, cslam%interphalo(i,halo,1),&
+          ibaseref=fvm%ibasehalo(i,halo,1)                                      
+          fhalo(i,halo,1)=cubic_equispace_interp(fvm%dbeta, fvm%interphalo(i,halo,1),&
                                                    fcube(halo,ibaseref:ibaseref+3))
         end do
         do i=1,nhc
           tmpfval(i)=fcube(halo,-nhc+i)
         enddo
         do i=0,nhe+1
-          ibaseref=cslam%ibasehaloex(i,halo,1)                                      
-          fhaloex(nhe+1-i,halo,1)=cubic_equispace_interp(cslam%dalpha, cslam%interphaloex(i,halo,1),&
+          ibaseref=fvm%ibasehaloex(i,halo,1)                                      
+          fhaloex(nhe+1-i,halo,1)=cubic_equispace_interp(fvm%dalpha, fvm%interphaloex(i,halo,1),&
                                                          tmpfval)
         end do
       end do
@@ -213,16 +213,16 @@ subroutine fillhalo_cubic(fcube,cslam,fnewval,fhalo,fhaloex)
       !(because of the reconstruction in the halo, conservation!) 
       do halo=1,2
         do i=0,nc+2
-          ibaseref=cslam%ibasehalo(i,halo,2)                                      
-          fhalo(i,halo,2)=cubic_equispace_interp(cslam%dalpha, cslam%interphalo(i,halo,2),&
+          ibaseref=fvm%ibasehalo(i,halo,2)                                      
+          fhalo(i,halo,2)=cubic_equispace_interp(fvm%dalpha, fvm%interphalo(i,halo,2),&
                                                    fcube(ibaseref:ibaseref+3,halo))
         end do
         do i=1,nhc
           tmpfval(i)=fcube(i-nhc,halo)
         enddo
         do i=0,nhe+1
-          ibaseref=cslam%ibasehaloex(i,halo,2)                                      
-          fhaloex(nhe+1-i,halo,2)=cubic_equispace_interp(cslam%dbeta, cslam%interphaloex(i,halo,2),&
+          ibaseref=fvm%ibasehaloex(i,halo,2)                                      
+          fhaloex(nhe+1-i,halo,2)=cubic_equispace_interp(fvm%dbeta, fvm%interphaloex(i,halo,2),&
                                                    tmpfval)
         end do
       end do
@@ -232,14 +232,14 @@ subroutine fillhalo_cubic(fcube,cslam,fnewval,fhalo,fhaloex)
       ! east zone
       do halo=1,2
         do i=0,nc+2
-          ibaseref=cslam%ibase(i,halo,1)                                      
-          fnewval(i,halo,1)=cubic_equispace_interp(cslam%dbeta, cslam%interp(i,halo,1),&
+          ibaseref=fvm%ibase(i,halo,1)                                      
+          fnewval(i,halo,1)=cubic_equispace_interp(fvm%dbeta, fvm%interp(i,halo,1),&
                                                    fcube(nc+halo,ibaseref:ibaseref+3))
         end do
       ! south zone
         do i=-1,nc+1
-          ibaseref=cslam%ibase(i,halo,2)                                      
-          fnewval(i,halo,2)=cubic_equispace_interp(cslam%dalpha, cslam%interp(i,halo,2),&
+          ibaseref=fvm%ibase(i,halo,2)                                      
+          fnewval(i,halo,2)=cubic_equispace_interp(fvm%dalpha, fvm%interp(i,halo,2),&
                                                    fcube(ibaseref:ibaseref+3,1-halo))
         end do
       end do      
@@ -247,16 +247,16 @@ subroutine fillhalo_cubic(fcube,cslam,fnewval,fhalo,fhaloex)
       !(because of the reconstruction in the halo, conservation!) 
       do halo=1,2
         do i=0,nc+2
-          ibaseref=cslam%ibasehalo(i,halo,1)                                      
-          fhalo(i,halo,1)=cubic_equispace_interp(cslam%dbeta, cslam%interphalo(i,halo,1),&
+          ibaseref=fvm%ibasehalo(i,halo,1)                                      
+          fhalo(i,halo,1)=cubic_equispace_interp(fvm%dbeta, fvm%interphalo(i,halo,1),&
                                                    fcube(nc+1-halo,ibaseref:ibaseref+3))
         end do
         do i=1,nhc
           tmpfval(i)=fcube(nc+1-halo,1-i)
         enddo
         do i=0,nhe+1
-          ibaseref=cslam%ibasehaloex(i,halo,1)                                      
-          fhaloex(i,halo,1)=cubic_equispace_interp(cslam%dalpha, cslam%interphaloex(i,halo,1),&
+          ibaseref=fvm%ibasehaloex(i,halo,1)                                      
+          fhaloex(i,halo,1)=cubic_equispace_interp(fvm%dalpha, fvm%interphaloex(i,halo,1),&
                                                    tmpfval)
         end do
       end do
@@ -264,16 +264,16 @@ subroutine fillhalo_cubic(fcube,cslam,fnewval,fhalo,fhaloex)
       !southhalo: north zone & west zone
       do halo=1,2
         do i=-1,nc+1
-          ibaseref=cslam%ibasehalo(i,halo,2)                                      
-          fhalo(i,halo,2)=cubic_equispace_interp(cslam%dalpha, cslam%interphalo(i,halo,2),&
+          ibaseref=fvm%ibasehalo(i,halo,2)                                      
+          fhalo(i,halo,2)=cubic_equispace_interp(fvm%dalpha, fvm%interphalo(i,halo,2),&
                                                    fcube(ibaseref:ibaseref+3,halo))
         end do
         do i=1,nhc
           tmpfval(i)=fcube(nc+nhc+1-i,halo)
         enddo
         do i=0,nhe+1
-          ibaseref=cslam%ibasehaloex(i,halo,2)                                      
-          fhaloex(nhe+1-i,halo,2)=cubic_equispace_interp(cslam%dbeta, cslam%interphaloex(i,halo,2),&
+          ibaseref=fvm%ibasehaloex(i,halo,2)                                      
+          fhaloex(nhe+1-i,halo,2)=cubic_equispace_interp(fvm%dbeta, fvm%interphaloex(i,halo,2),&
                                                    tmpfval)
         end do
       end do  
@@ -283,14 +283,14 @@ subroutine fillhalo_cubic(fcube,cslam,fnewval,fhalo,fhaloex)
       ! east zone
       do halo=1,2
         do i=-1,nc+1 
-          ibaseref=cslam%ibase(i,halo,1)                                      
-          fnewval(i,halo,1)=cubic_equispace_interp(cslam%dbeta, cslam%interp(i,halo,1),&
+          ibaseref=fvm%ibase(i,halo,1)                                      
+          fnewval(i,halo,1)=cubic_equispace_interp(fvm%dbeta, fvm%interp(i,halo,1),&
                                                    fcube(nc+halo,ibaseref:ibaseref+3))
         end do
       ! north zone
         do i=-1,nc+1
-          ibaseref=cslam%ibase(i,halo,2)                                      
-          fnewval(i,halo,2)=cubic_equispace_interp(cslam%dalpha, cslam%interp(i,halo,2),&
+          ibaseref=fvm%ibase(i,halo,2)                                      
+          fnewval(i,halo,2)=cubic_equispace_interp(fvm%dalpha, fvm%interp(i,halo,2),&
                                                    fcube(ibaseref:ibaseref+3,nc+halo))
         end do
       end do
@@ -298,16 +298,16 @@ subroutine fillhalo_cubic(fcube,cslam,fnewval,fhalo,fhaloex)
       !(because of the reconstruction in the halo, conservation!) 
       do halo=1,2
         do i=-1,nc+1
-          ibaseref=cslam%ibasehalo(i,halo,1)                                      
-          fhalo(i,halo,1)=cubic_equispace_interp(cslam%dbeta, cslam%interphalo(i,halo,1),&
+          ibaseref=fvm%ibasehalo(i,halo,1)                                      
+          fhalo(i,halo,1)=cubic_equispace_interp(fvm%dbeta, fvm%interphalo(i,halo,1),&
                                                    fcube(nc+1-halo,ibaseref:ibaseref+3))
         end do
         do i=1,nhc
           tmpfval(i)=fcube(nc+1-halo,nc+i)
         enddo
         do i=0,nhe+1
-          ibaseref=cslam%ibasehaloex(i,halo,1)                                      
-          fhaloex(i,halo,1)=cubic_equispace_interp(cslam%dalpha, cslam%interphaloex(i,halo,1),&
+          ibaseref=fvm%ibasehaloex(i,halo,1)                                      
+          fhaloex(i,halo,1)=cubic_equispace_interp(fvm%dalpha, fvm%interphaloex(i,halo,1),&
                                                    tmpfval)
         end do
       end do
@@ -315,16 +315,16 @@ subroutine fillhalo_cubic(fcube,cslam,fnewval,fhalo,fhaloex)
       !(because of the reconstruction in the halo, conservation!)         
       do halo=1,2
         do i=-1,nc+1
-          ibaseref=cslam%ibasehalo(i,halo,2)                                      
-          fhalo(i,halo,2)=cubic_equispace_interp(cslam%dalpha, cslam%interphalo(i,halo,2),&
+          ibaseref=fvm%ibasehalo(i,halo,2)                                      
+          fhalo(i,halo,2)=cubic_equispace_interp(fvm%dalpha, fvm%interphalo(i,halo,2),&
                                                    fcube(ibaseref:ibaseref+3,nc+1-halo))
         end do
         do i=1,nhc
           tmpfval(i)=fcube(nc+i,nc+1-halo)
         enddo
         do i=0,nhe+1
-          ibaseref=cslam%ibasehaloex(i,halo,2)                                      
-          fhaloex(i,halo,2)=cubic_equispace_interp(cslam%dbeta, cslam%interphaloex(i,halo,2),&
+          ibaseref=fvm%ibasehaloex(i,halo,2)                                      
+          fhaloex(i,halo,2)=cubic_equispace_interp(fvm%dbeta, fvm%interphaloex(i,halo,2),&
                                                    tmpfval)
         end do
       end do  
@@ -334,14 +334,14 @@ subroutine fillhalo_cubic(fcube,cslam,fnewval,fhalo,fhaloex)
       ! west zone
       do halo=1,2
         do i=-1,nc+1
-          ibaseref=cslam%ibase(i,halo,1)                                      
-          fnewval(i,halo,1)=cubic_equispace_interp(cslam%dbeta, cslam%interp(i,halo,1),&
+          ibaseref=fvm%ibase(i,halo,1)                                      
+          fnewval(i,halo,1)=cubic_equispace_interp(fvm%dbeta, fvm%interp(i,halo,1),&
                                                    fcube(1-halo,ibaseref:ibaseref+3))
         end do
       ! north zone
         do i=0,nc+2
-          ibaseref=cslam%ibase(i,halo,2)                                      
-          fnewval(i,halo,2)=cubic_equispace_interp(cslam%dalpha, cslam%interp(i,halo,2),&
+          ibaseref=fvm%ibase(i,halo,2)                                      
+          fnewval(i,halo,2)=cubic_equispace_interp(fvm%dalpha, fvm%interp(i,halo,2),&
                                                    fcube(ibaseref:ibaseref+3,nc+halo))
         end do
       end do
@@ -349,16 +349,16 @@ subroutine fillhalo_cubic(fcube,cslam,fnewval,fhalo,fhaloex)
       !(because of the reconstruction in the halo, conservation!) 
       do halo=1,2
         do i=-1,nc+1
-          ibaseref=cslam%ibasehalo(i,halo,1)                                      
-          fhalo(i,halo,1)=cubic_equispace_interp(cslam%dbeta, cslam%interphalo(i,halo,1),&
+          ibaseref=fvm%ibasehalo(i,halo,1)                                      
+          fhalo(i,halo,1)=cubic_equispace_interp(fvm%dbeta, fvm%interphalo(i,halo,1),&
                                                    fcube(halo,ibaseref:ibaseref+3))
         end do
         do i=1,nhc
           tmpfval(i)=fcube(halo,nc+nhc-i+1)
         enddo
         do i=0,nhe+1
-          ibaseref=cslam%ibasehaloex(i,halo,1)                                      
-          fhaloex(nhe+1-i,halo,1)=cubic_equispace_interp(cslam%dalpha, cslam%interphaloex(i,halo,1),&
+          ibaseref=fvm%ibasehaloex(i,halo,1)                                      
+          fhaloex(nhe+1-i,halo,1)=cubic_equispace_interp(fvm%dalpha, fvm%interphaloex(i,halo,1),&
                                                    tmpfval)
         end do
       end do        
@@ -366,16 +366,16 @@ subroutine fillhalo_cubic(fcube,cslam,fnewval,fhalo,fhaloex)
       !(because of the reconstruction in the halo, conservation!) 
       do halo=1,2
         do i=0,nc+2
-          ibaseref=cslam%ibasehalo(i,halo,2)                                      
-          fhalo(i,halo,2)=cubic_equispace_interp(cslam%dalpha, cslam%interphalo(i,halo,2),&
+          ibaseref=fvm%ibasehalo(i,halo,2)                                      
+          fhalo(i,halo,2)=cubic_equispace_interp(fvm%dalpha, fvm%interphalo(i,halo,2),&
                                                    fcube(ibaseref:ibaseref+3,nc+1-halo))
         end do
         do i=1,nhc
           tmpfval(i)=fcube(-i+1,nc+1-halo)
         enddo
         do i=0,nhe+1
-          ibaseref=cslam%ibasehaloex(i,halo,2)                                      
-          fhaloex(i,halo,2)=cubic_equispace_interp(cslam%dbeta, cslam%interphaloex(i,halo,2),&
+          ibaseref=fvm%ibasehaloex(i,halo,2)                                      
+          fhaloex(i,halo,2)=cubic_equispace_interp(fvm%dbeta, fvm%interphaloex(i,halo,2),&
                                                    tmpfval)
         end do
       end do
@@ -383,14 +383,14 @@ subroutine fillhalo_cubic(fcube,cslam,fnewval,fhalo,fhaloex)
       !THIS CASE SHOULD NOT HAPPEN!     
       case default
         print *, 'Fatal Error in second select statement:'
-        print *, 'cslam_reconstruction_mod.F90 subroutine fillhalo_cubic!' 
+        print *, 'fvm_reconstruction_mod.F90 subroutine fillhalo_cubic!' 
         stop
     end select
 end subroutine fillhalo_cubic
-!END SUBROUTINE FILLHALO_CUBIC------------------------------------------CE-for CSLAM!
+!END SUBROUTINE FILLHALO_CUBIC--------------------------------------------CE-for FVM!
 
 ! ----------------------------------------------------------------------------------!
-!FUNCTION CUBIC_EQUISPACE_INTERP----------------------------------------CE-for CSLAM!
+!FUNCTION CUBIC_EQUISPACE_INTERP------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 17.October 2011                                          !
 ! DESCRIPTION: apply cubic interpolation of Lagrange type on the specified array of !
 !        values, where all points are equally spaced.                               !
@@ -416,28 +416,28 @@ function cubic_equispace_interp(dx, x, y)
     (-y(3) / (2 * dx**3)) * (x) * (x - dx) * (x - 3 * dx) +                  &
     ( y(4) / (6 * dx**3)) * (x) * (x - dx) * (x - 2 * dx)
 end function cubic_equispace_interp
-!END FUNCTION CUBIC_EQUISPACE_INTERP------------------------------------CE-for CSLAM!
+!END FUNCTION CUBIC_EQUISPACE_INTERP--------------------------------------CE-for FVM!
 
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINE RECONSTRUCTION_CUBIC----------------------------------------CE-for CSLAM!
+!SUBROUTINE RECONSTRUCTION_CUBIC------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 17.October 2011                                          !
 ! DESCRIPTION: construct a piecewise cubic reconstruction in the alpha/beta         !
 !              coordinate system                                                    !
 !                                                                                   !
 ! CALLS: reconstruct_cubic_onface, reconstruct_cubic_x, reconstruct_cubic_y         !
 ! INPUT: fcube    ... tracer values incl. halo region                               !
-!        cslam    ... cslam structure                                               !
+!        fvm    ... fvm structure                                               !
 !        fnewval  ... interpolated values for halo regions on cube edges            !
 !        fhalo    ... interpolated values for reconstruction in the halo region     !
 !        fhaloex  ... interpolated values for reconstruction in the halo region     !
 !                     if it is a corner element                                     !
 ! OUTPUT:recons ... reconstruction coefficients df/dx, df/dy, d^2f/dx^2, d^2/dy^2   !                 
 !-----------------------------------------------------------------------------------!
-subroutine reconstruction_cubic(fcube,cslam,fnewval,fhalo,fhaloex,recons)
+subroutine reconstruction_cubic(fcube,fvm,fnewval,fhalo,fhaloex,recons)
   implicit none
   real (kind=real_kind),   &
        dimension(1-nhc:nc+nhc, 1-nhc:nc+nhc), intent(in)          :: fcube
-  type (cslam_struct), intent(in)                                 :: cslam
+  type (fvm_struct), intent(in)                                 :: fvm
   real (kind=real_kind), dimension(-1:nc+2,2,2), intent(in)       :: fnewval
   real (kind=real_kind), dimension(-1:nc+2,2,2), intent(in)       :: fhalo
   real (kind=real_kind), dimension(0:nhe+1,2,2), intent(in)       :: fhaloex   
@@ -460,17 +460,17 @@ subroutine reconstruction_cubic(fcube,cslam,fnewval,fhalo,fhaloex,recons)
   ! and d^2/dxdy for the interior cells and for cells in the halo, which are on the
   ! same face as the original cell, note that below we calculate also the coefficients
   ! for cells in the halo on different faces, which we will overwrite below
-  select case (cslam%cubeboundary) 
+  select case (fvm%cubeboundary) 
 !-----------------------------------------------------------------------------------!    
     case (0)
-      call reconstruct_cubic_onface(cslam, fcubenew, recons)
+      call reconstruct_cubic_onface(fvm, fcubenew, recons)
 !-----------------------------------------------------------------------------------!
     case(west) 
       do i=-1,nc+2    
         fcubenew(0,i)=fnewval(i,1,1)
         fcubenew(-1,i)=fnewval(i,2,1)       
       end do
-      call reconstruct_cubic_onface(cslam, fcubenew, recons)
+      call reconstruct_cubic_onface(fvm, fcubenew, recons)
       ! calculation for the halo zone
       do j=-2,nc+3
         do i=1,nhe+2
@@ -482,16 +482,16 @@ subroutine reconstruction_cubic(fcube,cslam,fnewval,fhalo,fhaloex,recons)
         fotherface(j,nhe+4)=fhalo(j,2,1)
       end do
       
-      call reconstruct_cubic_haloy(fotherface, recons,cslam%dalpha, cslam%dbeta,&
-            cslam%spherecentroid, cslam%invx1,cslam%invy1,cslam%jx_min1,cslam%jx_max1-1, &
-             cslam%jy_min1,cslam%jy_max1-1,cslam%swap1)    
+      call reconstruct_cubic_haloy(fotherface, recons,fvm%dalpha, fvm%dbeta,&
+            fvm%spherecentroid, fvm%invx1,fvm%invy1,fvm%jx_min1,fvm%jx_max1-1, &
+             fvm%jy_min1,fvm%jy_max1-1,fvm%swap1)    
 !-----------------------------------------------------------------------------------!        
     case(east)
       do i=-1,nc+2
         fcubenew(nc+1,i)=fnewval(i,1,1)
         fcubenew(nc+2,i)=fnewval(i,2,1)
       end do  
-      call reconstruct_cubic_onface(cslam, fcubenew, recons)  
+      call reconstruct_cubic_onface(fvm, fcubenew, recons)  
       !calculation for the halo zone
       do j=-2,nc+3
         do i=1,nhe+2
@@ -502,16 +502,16 @@ subroutine reconstruction_cubic(fcube,cslam,fnewval,fhalo,fhaloex,recons)
         fotherface(j,1)=fhalo(j,2,1)
         fotherface(j,2)=fhalo(j,1,1)
       end do
-      call reconstruct_cubic_haloy(fotherface, recons,cslam%dalpha, cslam%dbeta,&
-            cslam%spherecentroid, cslam%invx1,cslam%invy1,cslam%jx_min1,cslam%jx_max1-1, &
-             cslam%jy_min1,cslam%jy_max1-1,cslam%swap1)
+      call reconstruct_cubic_haloy(fotherface, recons,fvm%dalpha, fvm%dbeta,&
+            fvm%spherecentroid, fvm%invx1,fvm%invy1,fvm%jx_min1,fvm%jx_max1-1, &
+             fvm%jy_min1,fvm%jy_max1-1,fvm%swap1)
 !-----------------------------------------------------------------------------------!        
     case(north)
       do i=-1,nc+2
         fcubenew(i,nc+1)=fnewval(i,1,2)
         fcubenew(i,nc+2)=fnewval(i,2,2) 
       end do
-      call reconstruct_cubic_onface(cslam, fcubenew, recons)
+      call reconstruct_cubic_onface(fvm, fcubenew, recons)
 !       !calculation for the halo zone
       do i=-2,nc+3
         do j=1,nhe+2
@@ -522,16 +522,16 @@ subroutine reconstruction_cubic(fcube,cslam,fnewval,fhalo,fhaloex,recons)
         fotherface(i,2)=fhalo(i,1,2)
         fotherface(i,1)=fhalo(i,2,2)
       end do
-      call reconstruct_cubic_halox(fotherface, recons,cslam%dalpha, cslam%dbeta,&
-            cslam%spherecentroid, cslam%invx1,cslam%invy1,cslam%jx_min1,cslam%jx_max1-1, &
-             cslam%jy_min1,cslam%jy_max1-1,cslam%swap1)
+      call reconstruct_cubic_halox(fotherface, recons,fvm%dalpha, fvm%dbeta,&
+            fvm%spherecentroid, fvm%invx1,fvm%invy1,fvm%jx_min1,fvm%jx_max1-1, &
+             fvm%jy_min1,fvm%jy_max1-1,fvm%swap1)
 !-----------------------------------------------------------------------------------! 
     case(south)
       do i=-1,nc+2    
         fcubenew(i,0)=fnewval(i,1,2)
         fcubenew(i,-1)=fnewval(i,2,2)        
       end do 
-      call reconstruct_cubic_onface(cslam, fcubenew, recons)
+      call reconstruct_cubic_onface(fvm, fcubenew, recons)
       !calculation
       do i=-2,nc+3
         do j=1,nhe+2
@@ -542,9 +542,9 @@ subroutine reconstruction_cubic(fcube,cslam,fnewval,fhalo,fhaloex,recons)
         fotherface(i,nhe+3)=fhalo(i,1,2)
         fotherface(i,nhe+4)=fhalo(i,2,2)
       end do
-      call reconstruct_cubic_halox(fotherface, recons,cslam%dalpha, cslam%dbeta,&
-            cslam%spherecentroid, cslam%invx1,cslam%invy1,cslam%jx_min1,cslam%jx_max1-1, &
-             cslam%jy_min1,cslam%jy_max1-1,cslam%swap1)
+      call reconstruct_cubic_halox(fotherface, recons,fvm%dalpha, fvm%dbeta,&
+            fvm%spherecentroid, fvm%invx1,fvm%invy1,fvm%jx_min1,fvm%jx_max1-1, &
+             fvm%jy_min1,fvm%jy_max1-1,fvm%swap1)
 !-----------------------------------------------------------------------------------!       
     case(swest) 
       do i=0,nc+1    !note: fcube(0,0) is not needed, we will overwrite it
@@ -559,7 +559,7 @@ subroutine reconstruction_cubic(fcube,cslam,fnewval,fhalo,fhaloex,recons)
       fcubenew(nc+2,0)=fnewval(nc+2,1,2)
       ! the soutwest corner is an extrapolation, we take an average of the neighbours
       fcubenew(0,0)=(fcubenew(0,1)+fcubenew(1,0)+fcubenew(-1,0)+fcubenew(0,-1))/4.0D0 
-      call reconstruct_cubic_onface(cslam, fcubenew, recons)
+      call reconstruct_cubic_onface(fvm, fcubenew, recons)
       !calculation for the halo zone
        do i=1,nc+3
          do j=1,nhe+2
@@ -576,9 +576,9 @@ subroutine reconstruction_cubic(fcube,cslam,fnewval,fhalo,fhaloex,recons)
        end do
        fotherface(0,nhe+3)=(fotherface(-1,nhe+3)+fotherface(0,nhe+2)+ &
                                fotherface(1,nhe+3)+fotherface(0,nhe+4))/4.0D0
-       call reconstruct_cubic_halox(fotherface, recons,cslam%dalpha, cslam%dbeta,&
-             cslam%spherecentroid, cslam%invx1,cslam%invy1,cslam%jx_min1,cslam%jx_max1-1, &
-              cslam%jy_min1,cslam%jy_max1-1,cslam%swap1)
+       call reconstruct_cubic_halox(fotherface, recons,fvm%dalpha, fvm%dbeta,&
+             fvm%spherecentroid, fvm%invx1,fvm%invy1,fvm%jx_min1,fvm%jx_max1-1, &
+              fvm%jy_min1,fvm%jy_max1-1,fvm%swap1)
       !west
       do j=1,nc+3
         do i=1,nhe+2
@@ -595,9 +595,9 @@ subroutine reconstruction_cubic(fcube,cslam,fnewval,fhalo,fhaloex,recons)
       end do
       fotherface(0,nhe+3)=(fotherface(0,nhe+4)+fotherface(1,nhe+3)+ &
                               fotherface(-1,nhe+3)+fotherface(0,nhe+2))/4.0D0                  
-      call reconstruct_cubic_haloy(fotherface, recons,cslam%dalpha, cslam%dbeta,&
-            cslam%spherecentroid, cslam%invx2,cslam%invy2,cslam%jx_min2,&
-             cslam%jx_max2-1, cslam%jy_min2,cslam%jy_max2-1,cslam%swap2)                               
+      call reconstruct_cubic_haloy(fotherface, recons,fvm%dalpha, fvm%dbeta,&
+            fvm%spherecentroid, fvm%invx2,fvm%invy2,fvm%jx_min2,&
+             fvm%jx_max2-1, fvm%jy_min2,fvm%jy_max2-1,fvm%swap2)                               
 !-----------------------------------------------------------------------------------!        
     case(seast)
       do i=0,nc+1
@@ -613,7 +613,7 @@ subroutine reconstruction_cubic(fcube,cslam,fnewval,fhalo,fhaloex,recons)
       ! the souteast corner is an extrapolation, we take an average of the neighbours
       fcubenew(nc+1,0)=(fcubenew(nc+1,1)+fcubenew(nc,0)+&
                         fcubenew(nc+2,0)+fcubenew(nc+1,-1))/4.0D0
-      call reconstruct_cubic_onface(cslam, fcubenew, recons)
+      call reconstruct_cubic_onface(fvm, fcubenew, recons)
       !calculation for the halo zone
       do i=-2,nc
         do j=1,nhe+2
@@ -631,9 +631,9 @@ subroutine reconstruction_cubic(fcube,cslam,fnewval,fhalo,fhaloex,recons)
       fotherface(nc+1,nhe+3)=(fotherface(nc,nhe+3)+fotherface(nc+1,nhe+2)+ &
                              fotherface(nc+2,nhe+3)+fotherface(nc+1,nhe+4))/4.0D0
 
-      call reconstruct_cubic_halox(fotherface, recons,cslam%dalpha, cslam%dbeta,&
-             cslam%spherecentroid, cslam%invx1,cslam%invy1,cslam%jx_min1,cslam%jx_max1-1, &
-             cslam%jy_min1,cslam%jy_max1-1,cslam%swap1)
+      call reconstruct_cubic_halox(fotherface, recons,fvm%dalpha, fvm%dbeta,&
+             fvm%spherecentroid, fvm%invx1,fvm%invy1,fvm%jx_min1,fvm%jx_max1-1, &
+             fvm%jy_min1,fvm%jy_max1-1,fvm%swap1)
       !east
       do j=1,nc+3
         do i=1,nhe+2
@@ -650,9 +650,9 @@ subroutine reconstruction_cubic(fcube,cslam,fnewval,fhalo,fhaloex,recons)
       end do
       fotherface(0,2)=(fotherface(0,1)+fotherface(1,2)+ &
                               fotherface(0,3)+fotherface(-1,2))/4.0D0
-      call reconstruct_cubic_haloy(fotherface, recons,cslam%dalpha, cslam%dbeta,&
-           cslam%spherecentroid, cslam%invx2,cslam%invy2,cslam%jx_min2,&
-           cslam%jx_max2-1, cslam%jy_min2,cslam%jy_max2-1,cslam%swap2)
+      call reconstruct_cubic_haloy(fotherface, recons,fvm%dalpha, fvm%dbeta,&
+           fvm%spherecentroid, fvm%invx2,fvm%invy2,fvm%jx_min2,&
+           fvm%jx_max2-1, fvm%jy_min2,fvm%jy_max2-1,fvm%swap2)
 !-----------------------------------------------------------------------------------!                          
     case(neast)
       do i=0,nc+1
@@ -668,7 +668,7 @@ subroutine reconstruction_cubic(fcube,cslam,fnewval,fhalo,fhaloex,recons)
       ! the northeast corner is an extrapolation, we take an average of the neighbours
       fcubenew(nc+1,nc+1)=(fcubenew(nc,nc+1)+fcubenew(nc+1,nc)+&
                            fcubenew(nc+1,nc+2)+fcubenew(nc+2,nc+1))/4.0D0
-      call reconstruct_cubic_onface(cslam, fcubenew, recons)
+      call reconstruct_cubic_onface(fvm, fcubenew, recons)
       !calculation for the halo zone
       do i=-2,nc
         do j=1,nhe+2
@@ -686,9 +686,9 @@ subroutine reconstruction_cubic(fcube,cslam,fnewval,fhalo,fhaloex,recons)
       fotherface(nc+1,2)=(fotherface(nc,2)+fotherface(nc+1,1)+ &
                              fotherface(nc+2,2)+fotherface(nc+1,3))/4.0D0
       
-      call reconstruct_cubic_halox(fotherface, recons,cslam%dalpha, cslam%dbeta,&
-            cslam%spherecentroid, cslam%invx1,cslam%invy1,cslam%jx_min1,cslam%jx_max1-1, &
-             cslam%jy_min1,cslam%jy_max1-1,cslam%swap1)
+      call reconstruct_cubic_halox(fotherface, recons,fvm%dalpha, fvm%dbeta,&
+            fvm%spherecentroid, fvm%invx1,fvm%invy1,fvm%jx_min1,fvm%jx_max1-1, &
+             fvm%jy_min1,fvm%jy_max1-1,fvm%swap1)
       
       !east
       do j=-2,nc
@@ -706,9 +706,9 @@ subroutine reconstruction_cubic(fcube,cslam,fnewval,fhalo,fhaloex,recons)
       end do
       fotherface(nc+1,2)=(fotherface(nc+1,1)+fotherface(nc+2,2)+ &
                              fotherface(nc+1,3)+fotherface(nc,2))/4.0D0
-      call reconstruct_cubic_haloy(fotherface, recons,cslam%dalpha, cslam%dbeta,&
-            cslam%spherecentroid, cslam%invx2,cslam%invy2,cslam%jx_min2,&
-             cslam%jx_max2-1, cslam%jy_min2,cslam%jy_max2-1,cslam%swap2)
+      call reconstruct_cubic_haloy(fotherface, recons,fvm%dalpha, fvm%dbeta,&
+            fvm%spherecentroid, fvm%invx2,fvm%invy2,fvm%jx_min2,&
+             fvm%jx_max2-1, fvm%jy_min2,fvm%jy_max2-1,fvm%swap2)
 !-----------------------------------------------------------------------------------!       
     case(nwest)    
       do i=0,nc+1
@@ -724,7 +724,7 @@ subroutine reconstruction_cubic(fcube,cslam,fnewval,fhalo,fhaloex,recons)
       ! the northwest corner is an extrapolation, we take an average of the neighbours
       fcubenew(0,nc+1)=(fcubenew(0,nc)+fcubenew(1,nc+1)+&
                         fcubenew(-1,nc+1)+fcubenew(0,nc+2))/4.0D0  
-      call reconstruct_cubic_onface(cslam, fcubenew, recons)
+      call reconstruct_cubic_onface(fvm, fcubenew, recons)
       !calculation for the halo zone
       do i=1,nc+3
         do j=1,nhe+2
@@ -742,9 +742,9 @@ subroutine reconstruction_cubic(fcube,cslam,fnewval,fhalo,fhaloex,recons)
       fotherface(0,2)=(fotherface(-1,2)+fotherface(0,1)+ &
                               fotherface(1,2)+fotherface(0,3))/4.0D0
       
-      call reconstruct_cubic_halox(fotherface, recons,cslam%dalpha, cslam%dbeta,&
-            cslam%spherecentroid, cslam%invx1,cslam%invy1,cslam%jx_min1,cslam%jx_max1-1, &
-             cslam%jy_min1,cslam%jy_max1-1,cslam%swap1)
+      call reconstruct_cubic_halox(fotherface, recons,fvm%dalpha, fvm%dbeta,&
+            fvm%spherecentroid, fvm%invx1,fvm%invy1,fvm%jx_min1,fvm%jx_max1-1, &
+             fvm%jy_min1,fvm%jy_max1-1,fvm%swap1)
       !WEST
       do j=-2,nc
         do i=1,nhe+2
@@ -761,35 +761,35 @@ subroutine reconstruction_cubic(fcube,cslam,fnewval,fhalo,fhaloex,recons)
       end do
       fotherface(nc+1,nhe+3)=(fotherface(nc+1,nhe+4)+fotherface(nc+2,nhe+3)+ &
                               fotherface(nc,nhe+3)+fotherface(nc+1,nhe+2))/4.0D0 
-      call reconstruct_cubic_haloy(fotherface, recons,cslam%dalpha, cslam%dbeta,&
-            cslam%spherecentroid, cslam%invx2,cslam%invy2,cslam%jx_min2,&
-             cslam%jx_max2-1, cslam%jy_min2,cslam%jy_max2-1,cslam%swap2)                          
+      call reconstruct_cubic_haloy(fotherface, recons,fvm%dalpha, fvm%dbeta,&
+            fvm%spherecentroid, fvm%invx2,fvm%invy2,fvm%jx_min2,&
+             fvm%jx_max2-1, fvm%jy_min2,fvm%jy_max2-1,fvm%swap2)                          
 !-----------------------------------------------------------------------------------!            
     !THIS CASE SHOULD NOT HAPPEN!     
     case default
       print *,'Fatal Error in first select statement:'
-      call abortmp('cslam_reconstruction_mod.F90 subroutine reconstruction_cubic!' )
+      call abortmp('fvm_reconstruction_mod.F90 subroutine reconstruction_cubic!' )
       
   end select
 end subroutine reconstruction_cubic
-!END SUBROUTINE RECONSTRUCTION_CUBIC------------------------------------CE-for CSLAM!
+!END SUBROUTINE RECONSTRUCTION_CUBIC--------------------------------------CE-for FVM!
 
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINE RECONSTRUCT_CUBIC_ONFACE------------------------------------CE-for CSLAM!
+!SUBROUTINE RECONSTRUCT_CUBIC_ONFACE--------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 14.November 2011                                         !
 ! DESCRIPTION: construct a piecewise cubic reconstruction in the alpha/beta         !
 !              coordinate system for the interior element and halo zone on the same !
 !              face as the element                                                  !
 !                                                                                   !
-! INPUT: cslam    ... cslam structure                                               !
+! INPUT: fvm    ... fvm structure                                               !
 !        fcube    ... tracer values in the patch                                    !                                    
 ! INPUT/OUTPUT:                                                                     !
 !          recons ... reconstruction coefficients df/dx, df/dy, d^2f/dx^2, d^2/dy^2 !                 
 !-----------------------------------------------------------------------------------!
-subroutine reconstruct_cubic_onface(cslam, fcube, recons)
+subroutine reconstruct_cubic_onface(fvm, fcube, recons)
   implicit none
 
-  type (cslam_struct), intent(in)                               :: cslam
+  type (fvm_struct), intent(in)                               :: fvm
   real (kind=real_kind),   &
       dimension(1-nhc:nc+nhc, 1-nhc:nc+nhc)                     :: fcube
   real (kind=real_kind), &
@@ -797,49 +797,49 @@ subroutine reconstruct_cubic_onface(cslam, fcube, recons)
   
   integer  :: i, j
         
-  do j = cslam%jy_min, cslam%jy_max-1
-    do i = cslam%jx_min, cslam%jx_max-1
+  do j = fvm%jy_min, fvm%jy_max-1
+    do i = fvm%jx_min, fvm%jx_max-1
       ! df/dx
       recons(1,i,j) = (- fcube(i+2,j) + 8 * fcube(i+1,j)      &
-                       - 8 * fcube(i-1,j) + fcube(i-2,j))/(12 * cslam%dalpha)     
+                       - 8 * fcube(i-1,j) + fcube(i-2,j))/(12 * fvm%dalpha)     
       ! df/dy
       recons(2,i,j) = (- fcube(i,j+2) + 8 * fcube(i,j+1)      &
-                       - 8 * fcube(i,j-1) + fcube(i,j-2)) /( 12 * cslam%dbeta)
+                       - 8 * fcube(i,j-1) + fcube(i,j-2)) /( 12 * fvm%dbeta)
       ! Stretching
-      recons(1,i,j) = recons(1,i,j) / (1 + cslam%spherecentroid(1,i,j)**2)
+      recons(1,i,j) = recons(1,i,j) / (1 + fvm%spherecentroid(1,i,j)**2)
       
-      recons(2,i,j) = recons(2,i,j) / (1 + cslam%spherecentroid(2,i,j)**2)
+      recons(2,i,j) = recons(2,i,j) / (1 + fvm%spherecentroid(2,i,j)**2)
 
       ! d^2f/dx^2
       recons(3,i,j) = (- fcube(i+2,j) + 16 * fcube(i+1,j)     &
                        - 30 * fcube(i,j) + 16 * fcube(i-1,j)  &
-                       - fcube(i-2,j)) / (12 * cslam%dalpha**2)
+                       - fcube(i-2,j)) / (12 * fvm%dalpha**2)
 
       ! d^2f/dy^2
       recons(4,i,j) = (- fcube(i,j+2) + 16 * fcube(i,j+1)     &
                        - 30 * fcube(i,j) + 16 * fcube(i,j-1)  &
-                       - fcube(i,j-2)) / (12 * cslam%dbeta**2)
+                       - fcube(i,j-2)) / (12 * fvm%dbeta**2)
       ! d^2f/dxdy
       recons(5,i,j) = (+ fcube(i+1,j+1) - fcube(i-1,j+1)  &
-                       - fcube(i+1,j-1) + fcube(i-1,j-1)) / (4 * cslam%dalpha * cslam%dbeta)
+                       - fcube(i+1,j-1) + fcube(i-1,j-1)) / (4 * fvm%dalpha * fvm%dbeta)
       ! stretching
-      recons(3,i,j) = (- 2 * cslam%spherecentroid(1,i,j) * &
-                      (1 + cslam%spherecentroid(1,i,j)**2) * recons(1,i,j) &
-                       + recons(3,i,j)) / (1 + cslam%spherecentroid(1,i,j)**2)**2
-      recons(4,i,j) = (- 2 * cslam%spherecentroid(2,i,j) * &
-                      (1 + cslam%spherecentroid(2,i,j)**2) * recons(2,i,j) &
-                       + recons(4,i,j)) / (1 + cslam%spherecentroid(2,i,j)**2)**2
-      recons(5,i,j) = recons(5,i,j) / ((1 + cslam%spherecentroid(1,i,j)**2) * (1 + cslam%spherecentroid(2,i,j)**2))
+      recons(3,i,j) = (- 2 * fvm%spherecentroid(1,i,j) * &
+                      (1 + fvm%spherecentroid(1,i,j)**2) * recons(1,i,j) &
+                       + recons(3,i,j)) / (1 + fvm%spherecentroid(1,i,j)**2)**2
+      recons(4,i,j) = (- 2 * fvm%spherecentroid(2,i,j) * &
+                      (1 + fvm%spherecentroid(2,i,j)**2) * recons(2,i,j) &
+                       + recons(4,i,j)) / (1 + fvm%spherecentroid(2,i,j)**2)**2
+      recons(5,i,j) = recons(5,i,j) / ((1 + fvm%spherecentroid(1,i,j)**2) * (1 + fvm%spherecentroid(2,i,j)**2))
       ! scaling
       recons(3,i,j) = 0.5 * recons(3,i,j)
       recons(4,i,j) = 0.5 * recons(4,i,j)
     enddo
   enddo
 end subroutine reconstruct_cubic_onface
-!END SUBROUTINE RECONSTRUCTION_CUBIC_ONFACE-----------------------------CE-for CSLAM!
+!END SUBROUTINE RECONSTRUCTION_CUBIC_ONFACE-------------------------------CE-for FVM!
 
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINE RECONSTRUCTION_CUBIC_HALOX----------------------------------CE-for CSLAM!
+!SUBROUTINE RECONSTRUCTION_CUBIC_HALOX------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 17.October 2011                                          !
 ! DESCRIPTION: construct a piecewise cubic reconstruction in the alpha/beta         !
 !              coordinate system, the loop goes over cells in beta (y) direction    !
@@ -917,10 +917,10 @@ subroutine reconstruct_cubic_halox(f, recons, delta1, delta2,centroid, invx,invy
     enddo
   enddo 
 end subroutine reconstruct_cubic_halox
-!END SUBROUTINE RECONSTRUCTION_CUBIC_HALOX------------------------------CE-for CSLAM!
+!END SUBROUTINE RECONSTRUCTION_CUBIC_HALOX--------------------------------CE-for FVM!
 
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINE RECONSTRUCTION_CUBIC_HALOY----------------------------------CE-for CSLAM!
+!SUBROUTINE RECONSTRUCTION_CUBIC_HALOY------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 17.October 2011                                          !
 ! DESCRIPTION: construct a piecewise cubic reconstruction in the alpha/beta         !
 !              coordinate system, the loop goes over cells in beta (y) direction    !
@@ -997,6 +997,6 @@ subroutine reconstruct_cubic_haloy(f, recons, delta1, delta2,centroid, invx,invy
     enddo
   enddo 
 end subroutine reconstruct_cubic_haloy
-!END SUBROUTINE RECONSTRUCTION_CUBIC_HALOY------------------------------CE-for CSLAM!
+!END SUBROUTINE RECONSTRUCTION_CUBIC_HALOY--------------------------------CE-for FVM!
 
-end module cslam_reconstruction_mod
+end module fvm_reconstruction_mod

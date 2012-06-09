@@ -2,11 +2,11 @@
 #include "config.h"
 #endif
 
-!MODULE CSLAM_ANALYTIC_MOD----------------------------------------------CE-for CSLAM!
+!MODULE FVM_ANALYTIC_MOD--------------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 17.October 2011                                          !
-! This module contains all analytical terms for CSLAM                               ! 
+! This module contains all analytical terms for fvm                                 ! 
 !-----------------------------------------------------------------------------------!
-module cslam_analytic_mod
+module fvm_analytic_mod
 
   use kinds, only : real_kind, int_kind
   use dimensions_mod, only: nc, nhe, ntrac
@@ -17,20 +17,20 @@ module cslam_analytic_mod
   public :: I_00, I_10, I_01, I_20, I_02, I_11
 contains
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINE COMPUTEXYTOSPHERE_MOMENTS-----------------------------------CE-for CSLAM!
+!SUBROUTINE COMPUTEXYTOSPHERE_MOMENTS-------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 20.July 2011                                             !
 ! DESCRIPTION: Compute area and centroids/moments via line integrals                !
 !                                                                                   !
-! INPUT:  cslam ... cslam structure                                                 !
+! INPUT:  fvm ... fvm structure                                                     !
 !         desc... edge descriptor, needed for reordering                            !
 !-----------------------------------------------------------------------------------!
-subroutine computexytosphere_moments(cslam,desc)
-  use cslam_control_volume_mod, only:  cslam_struct 
+subroutine computexytosphere_moments(fvm,desc)
+  use fvm_control_volume_mod, only:  fvm_struct 
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
   use edge_mod, only : edgedescriptor_t
   implicit none
   
-  type (cslam_struct), intent(inout)                  :: cslam
+  type (fvm_struct), intent(inout)                  :: fvm
   type (edgedescriptor_t),intent(in)                  :: desc
   
   real (kind=real_kind)                               :: tmpval(5,1-nhe:nc+nhe)
@@ -39,74 +39,74 @@ subroutine computexytosphere_moments(cslam,desc)
   integer                                             :: i,j,tmpi,tmpj
   
 ! compute area and centroid for the interior and halo zone of interior elements
-  call moment_onsphere(cslam%area_sphere,cslam%spherecentroid,cslam%acartx,cslam%acarty,&
-                       cslam%jx_min,cslam%jx_max,cslam%jy_min,cslam%jy_max)
+  call moment_onsphere(fvm%area_sphere,fvm%spherecentroid,fvm%acartx,fvm%acarty,&
+                       fvm%jx_min,fvm%jx_max,fvm%jy_min,fvm%jy_max)
   
-  if(cslam%cubeboundary>0) then   !only for elements on the cube edge
-    if(cslam%swap1) then
-      call moment_onsphereswap(cslam%area_sphere,cslam%spherecentroid, &
-                           cslam%acartx1,cslam%acarty1,cslam%jx_min1,cslam%jx_max1, &
-                           cslam%jy_min1,cslam%jy_max1)
+  if(fvm%cubeboundary>0) then   !only for elements on the cube edge
+    if(fvm%swap1) then
+      call moment_onsphereswap(fvm%area_sphere,fvm%spherecentroid, &
+                           fvm%acartx1,fvm%acarty1,fvm%jx_min1,fvm%jx_max1, &
+                           fvm%jy_min1,fvm%jy_max1)
     else             
-      call moment_onsphere(cslam%area_sphere,cslam%spherecentroid,cslam%acartx1,&
-                cslam%acarty1,cslam%jx_min1,cslam%jx_max1,cslam%jy_min1,cslam%jy_max1)
+      call moment_onsphere(fvm%area_sphere,fvm%spherecentroid,fvm%acartx1,&
+                fvm%acarty1,fvm%jx_min1,fvm%jx_max1,fvm%jy_min1,fvm%jy_max1)
     endif
     !I have to reorder it, note that the corner is already included (southwest in 
     ! south and west), note, no element can have a west and a east or a north and a
     ! south, we do not allow just one element per face
     if(desc%reverse(west) .or. desc%reverse(east)) then
-      do i=cslam%jx_min1,cslam%jx_max1-1
-        tmpval=cslam%spherecentroid(:,i,:)
-        tmpvalarea=cslam%area_sphere(i,:)
-        do j=cslam%jy_min1,cslam%jy_max1-1
-          tmpj=cslam%jy_max1-1+cslam%jy_min1-j
-          cslam%spherecentroid(:,i,tmpj)=tmpval(:,j)
-          cslam%area_sphere(i,tmpj)=tmpvalarea(j)
+      do i=fvm%jx_min1,fvm%jx_max1-1
+        tmpval=fvm%spherecentroid(:,i,:)
+        tmpvalarea=fvm%area_sphere(i,:)
+        do j=fvm%jy_min1,fvm%jy_max1-1
+          tmpj=fvm%jy_max1-1+fvm%jy_min1-j
+          fvm%spherecentroid(:,i,tmpj)=tmpval(:,j)
+          fvm%area_sphere(i,tmpj)=tmpvalarea(j)
         enddo
       enddo
     endif
     if(desc%reverse(north) .or. desc%reverse(south)) then
-      do j=cslam%jy_min1,cslam%jy_max1-1
-        tmpval=cslam%spherecentroid(:,:,j)
-        tmpvalarea=cslam%area_sphere(:,j)
-        do i=cslam%jx_min1,cslam%jx_max1-1
-          tmpi=cslam%jx_max1-1+cslam%jx_min1-i
-          cslam%spherecentroid(:,tmpi,j)=tmpval(:,i)
-          cslam%area_sphere(tmpi,j)=tmpvalarea(i)
+      do j=fvm%jy_min1,fvm%jy_max1-1
+        tmpval=fvm%spherecentroid(:,:,j)
+        tmpvalarea=fvm%area_sphere(:,j)
+        do i=fvm%jx_min1,fvm%jx_max1-1
+          tmpi=fvm%jx_max1-1+fvm%jx_min1-i
+          fvm%spherecentroid(:,tmpi,j)=tmpval(:,i)
+          fvm%area_sphere(tmpi,j)=tmpvalarea(i)
         enddo
       enddo
     endif
     
-    if(cslam%cubeboundary>4) then !only for elements on the corner
-      if(cslam%swap2) then
-        call moment_onsphereswap(cslam%area_sphere,cslam%spherecentroid, &
-                           cslam%acartx2,cslam%acarty2,cslam%jx_min2,cslam%jx_max2, &
-                           cslam%jy_min2,cslam%jy_max2)
+    if(fvm%cubeboundary>4) then !only for elements on the corner
+      if(fvm%swap2) then
+        call moment_onsphereswap(fvm%area_sphere,fvm%spherecentroid, &
+                           fvm%acartx2,fvm%acarty2,fvm%jx_min2,fvm%jx_max2, &
+                           fvm%jy_min2,fvm%jy_max2)
       else
-        call moment_onsphere(cslam%area_sphere,cslam%spherecentroid,cslam%acartx2,&
-               cslam%acarty2,cslam%jx_min2,cslam%jx_max2,cslam%jy_min2,cslam%jy_max2)
+        call moment_onsphere(fvm%area_sphere,fvm%spherecentroid,fvm%acartx2,&
+               fvm%acarty2,fvm%jx_min2,fvm%jx_max2,fvm%jy_min2,fvm%jy_max2)
       endif
 
       if(desc%reverse(west) .or. desc%reverse(east)) then
-        do i=cslam%jx_min2,cslam%jx_max2-1
-          tmpval=cslam%spherecentroid(:,i,:)
-          tmpvalarea=cslam%area_sphere(i,:)
-          do j=cslam%jy_min2,cslam%jy_max2-1
-            tmpj=cslam%jy_max2-1+cslam%jy_min2-j
-            cslam%spherecentroid(:,i,tmpj)=tmpval(:,j)
-            cslam%area_sphere(i,tmpj)=tmpvalarea(j)
+        do i=fvm%jx_min2,fvm%jx_max2-1
+          tmpval=fvm%spherecentroid(:,i,:)
+          tmpvalarea=fvm%area_sphere(i,:)
+          do j=fvm%jy_min2,fvm%jy_max2-1
+            tmpj=fvm%jy_max2-1+fvm%jy_min2-j
+            fvm%spherecentroid(:,i,tmpj)=tmpval(:,j)
+            fvm%area_sphere(i,tmpj)=tmpvalarea(j)
           enddo
         enddo
       endif
 
       if(desc%reverse(north) .or. desc%reverse(south)) then
-        do j=cslam%jy_min2,cslam%jy_max2-1
-          tmpval=cslam%spherecentroid(:,:,j)
-          tmpvalarea=cslam%area_sphere(:,j)
-          do i=cslam%jx_min2,cslam%jx_max2-1
-            tmpi=cslam%jx_max2-1+cslam%jx_min2-i
-            cslam%spherecentroid(:,tmpi,j)=tmpval(:,i)
-            cslam%area_sphere(tmpi,j)=tmpvalarea(i)
+        do j=fvm%jy_min2,fvm%jy_max2-1
+          tmpval=fvm%spherecentroid(:,:,j)
+          tmpvalarea=fvm%area_sphere(:,j)
+          do i=fvm%jx_min2,fvm%jx_max2-1
+            tmpi=fvm%jx_max2-1+fvm%jx_min2-i
+            fvm%spherecentroid(:,tmpi,j)=tmpval(:,i)
+            fvm%area_sphere(tmpi,j)=tmpvalarea(i)
           enddo
         enddo
       endif
@@ -114,9 +114,9 @@ subroutine computexytosphere_moments(cslam,desc)
   endif
 !   
 end subroutine computexytosphere_moments
-!END SUBROUTINE COMPUTEXYTOSPHERE_MOMENTS-------------------------------CE-for CSLAM!
+!END SUBROUTINE COMPUTEXYTOSPHERE_MOMENTS---------------------------------CE-for FVM!
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINE MOMENT_ONSPHERE---------------------------------------------CE-for CSLAM!
+!SUBROUTINE MOMENT_ONSPHERE-----------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 20.July 2011                                             !
 ! DESCRIPTION: Compute area and centroids/moments via line integrals                !
 !                                                                                   !
@@ -161,9 +161,9 @@ subroutine moment_onsphere(area,centroid,x,y,jx_min,jx_max,jy_min,jy_max)
     end do
   end do  
 end subroutine moment_onsphere
-!END SUBROUTINE MOMENT_ONSPHERE-----------------------------------------CE-for CSLAM!
+!END SUBROUTINE MOMENT_ONSPHERE-------------------------------------------CE-for FVM!
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINE MOMENT_ONSPHERESWAP-----------------------------------------CE-for CSLAM!
+!SUBROUTINE MOMENT_ONSPHERESWAP-------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 16. November 2011                                        !
 ! DESCRIPTION: Compute area and centroids/moments via line integrals for            !
 !              swap version (if x and y coordinates has to be swapped)              !
@@ -209,10 +209,10 @@ subroutine moment_onsphereswap(area,centroid,x,y,jx_min,jx_max,jy_min,jy_max)
     end do
   end do  
 end subroutine moment_onsphereswap
-!END SUBROUTINE MOMENT_ONSPHERESWAP-------------------------------------CE-for CSLAM!
+!END SUBROUTINE MOMENT_ONSPHERESWAP---------------------------------------CE-for FVM!
 
 ! ----------------------------------------------------------------------------------!
-!SUBROUTINES I_00, I_01, I_20, I_02, I11--------------------------------CE-for CSLAM!
+!SUBROUTINES I_00, I_01, I_20, I_02, I11----------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 17.October 2011                                          !
 ! DESCRIPTION: calculates the exact integrals                                       !
 !                                                                                   !
@@ -286,7 +286,7 @@ function I_11(x,y)
 
   I_11 = -SQRT(1+x*x+y*y)
 end function I_11
-!END SUBROUTINES I_00, I_01, I_20, I_02, I11----------------------------CE-for CSLAM!
+!END SUBROUTINES I_00, I_01, I_20, I_02, I11------------------------------CE-for FVM!
 
 
-end module cslam_analytic_mod
+end module fvm_analytic_mod
