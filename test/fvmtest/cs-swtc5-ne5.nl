@@ -41,7 +41,7 @@ wght_fm       = 0.10D0
 &analysis_nl
 output_timeunits=1
 output_frequency=1
-output_varnames1  = 'geop','c','c2', 'c3'
+output_varnames1  = 'geop','C','C2', 'C3'
 /
 ! this will be used by homme only if namelist file is 'input.nl'
 &prof_inparm

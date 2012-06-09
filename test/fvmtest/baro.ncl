@@ -8,10 +8,11 @@ begin
   fname1 =  "movies/asp_baroclinic1.nc"
   f1     = addfile(fname1,"r")       ; Open netCDF file.	
 
-  ; field = (/"Q", "C4", "Q2", "C2", "Q3", "C3", "Q4", "C"/)
+  field = (/"Q", "C4", "Q2", "C2", "Q3", "C3", "Q4", "C"/)
   ; field = (/"C4"/)
-  field = (/"C4", "C2", "C3", "C"/)
-
+  ; field = (/"C4", "C2", "C3", "C"/)
+  ; field = (/"C4","C2","C3","C"/)
+  ; field = (/"Q","Q2","Q3"/)
   output_format = "ps"
 
 
@@ -30,6 +31,7 @@ begin
   lastlev=nlev-1
   levinc=2
   nxe=0
+  k=17
   
  print ("ntimes="+ntimes+" nlev="+nlev+" nxy="+nxy)
  print ("plotting index = "+lasttime)
@@ -65,8 +67,8 @@ begin
     res@mpCenterLonF         = -90
     res@mpShapeMode          = "FreeAspect"
 
-    res@mpMinLatF = 20
-    res@mpMaxLatF = 80
+    ; res@mpMinLatF = 20
+    ; res@mpMaxLatF = 80
     res@vpHeightF           = .3
 
 	do t=firsttime, lasttime
@@ -94,7 +96,6 @@ begin
       extrap = False
       P0mb = 1000
 ;    var = vinth2p(var3d,hyam,hybm,pnew,ps,interp,P0mb,1,extrap)
-      k=17
       var = var3d(k,:)
       
       

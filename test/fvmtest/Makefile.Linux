@@ -4,7 +4,7 @@ NP        = 5
 # NC has to be at >=4
 NC        = 4 
 #for preqx set it to 26
-PLEV      = 1
+PLEV      = 26
 QUEUE        =  qsub
 #QUEUE       = cqsub -q debug or cqsub -q JumboFridays
 # EXECUTE   = preqx
@@ -12,8 +12,6 @@ QUEUE        =  qsub
 EXECUTE   =  preqx
 # EXECUTE   = sweqx
 # INPUT     = baro.nl 
-# INPUT     = barocslamnp5.nl
-# INPUT   =  barosenp4.nl
 # INPUT     = cs-swtc5-ne5.nl
 
 HNAME     = $(shell hostname -s)
@@ -32,7 +30,7 @@ runse:
 	@echo
 	$(QUEUE) < preqxse.run
 
-runcslam:
+runfvm:
 	@echo " ************* RUN preqxcslam with the command $(QUEUE): -n $(NPROC) ./preqxcslam **********"
 	@echo " ********************************--->"
 	@echo
@@ -43,12 +41,8 @@ run:
 	@echo " ********************************--->"
 	@echo
 	cp $(INPUT) input.nl 
-	cp ../vcoord/cam*-26.fbin.littleendian .   #depending on which machine we are use littleendian
 	@echo "*** COPY $(EXECUTE) TO $(ADIR)"
 	cp ../../build/$(EXECUTE)/$(EXECUTE) .
-  # mkdir -p time/$(NPROC)
-  # cd time/$(NPROC) && mkdir -p $(NTRAC)
-  # cd $(ADIR)
 	$(QUEUE) < $(EXECUTE).run
 
 cleansource:
@@ -78,6 +72,6 @@ clear: tclean clean dclean
 
 comp:
 	@echo "**** Running everything for HOMME-$(EXECUTE) on $(HNAME): Operating system $(ARCH) ******"
-	cd ../../build/$(EXECUTE)/  && aclocal && autoconf && automake && ./configure NC=$(NC) NP=$(NP) PLEV=$(PLEV) --enable-blas --enable-lapack --enable-pio --enable-cslam --with-pnetcdf=$(PNETCDF_PATH) --with-netcdf=$(NETCDF_PATH) && make clean-depends && make depends  
+	cd ../../build/$(EXECUTE)/  && aclocal && autoconf && automake && ./configure NC=$(NC) NP=$(NP) PLEV=$(PLEV) --enable-blas --enable-lapack --enable-pio --enable-fvm --with-pnetcdf=$(PNETCDF_PATH) --with-netcdf=$(NETCDF_PATH) && make clean-depends && make depends  
 	make cleansource
 	make  
