@@ -417,8 +417,8 @@ subroutine interpol_phys_latlon(interpdata,f, fvm, corners, desc, flatlon)
   
   type (interpdata_t), intent(in)     :: interpdata                        
   real (kind=real_kind), intent(in)   :: f(1-nhc:nc+nhc,1-nhc:nc+nhc)
-  type (fvm_struct), intent(in)     :: fvm
-  type (cartesian2d_t), intent(in)    :: corners(4)
+  type (fvm_struct), intent(in)       :: fvm
+  type (cartesian2d_t), intent(in)    :: corners(:)
   type (edgedescriptor_t),intent(in)  :: desc
   
                           
@@ -431,6 +431,7 @@ subroutine interpol_phys_latlon(interpdata,f, fvm, corners, desc, flatlon)
   
   call reconstruction(f, fvm,recons)
   call monotonic_gradient_cart(f, fvm,recons, desc)
+
   tmpaxp=(corners(1)%x+corners(2)%x)/2
   tmpaxm=(corners(2)%x-corners(1)%x)/2
   tmpayp=(corners(1)%y+corners(4)%y)/2
@@ -469,9 +470,8 @@ subroutine interpol_phys_latlon(interpdata,f, fvm, corners, desc, flatlon)
     jy = starti
     
     call recons_val_cart(f, xp,yp,fvm%spherecentroid,recons,ix,jy,tmpval)
-    flatlon(i)=tmpval
-    
-!     flatlon(i)=f(ix,jy)
+    flatlon(i)=tmpval    
+!     flatlon(i)=f(ix,jy)    
   end do
 end subroutine interpol_phys_latlon
 
