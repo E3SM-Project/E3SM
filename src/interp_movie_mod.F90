@@ -715,26 +715,26 @@ contains
 #endif
 
 #if defined(_FVM) 
-    do cindex=1,min(ntrac,5)  ! allow a maximum output of 5 tracers
-       write(vname,'(a1,i1)') 'C',cindex
-       if (cindex==1) vname='C'
+            do cindex=1,min(ntrac,5)  ! allow a maximum output of 5 tracers
+               write(vname,'(a1,i1)') 'C',cindex
+               if (cindex==1) vname='C'
 
-       if(nf_selectedvar(vname, output_varnames)) then
-          if (hybrid%par%masterproc) print *,'writing ',vname
-          allocate(datall(ncnt,nlev))
-          st=1
-          do ie=nets,nete
-             en=st+interpdata(ie)%n_interp-1
-             do k=1,nlev
-               call interpol_phys_latlon(interpdata(ie),fvm(ie)%c(:,:,k,cindex,n0), &
-                                  fvm(ie),elem(ie)%corners,elem(ie)%desc,datall(st:en,k))
-             end do
-             st=st+interpdata(ie)%n_interp
-          enddo
-          call nf_put_var(ncdf(ios),datall,start3d, count3d, name=vname)
-          deallocate(datall)
-       end if
-    enddo
+               if(nf_selectedvar(vname, output_varnames)) then
+                  if (hybrid%par%masterproc) print *,'writing ',vname
+                  allocate(datall(ncnt,nlev))
+                  st=1
+                  do ie=nets,nete
+                     en=st+interpdata(ie)%n_interp-1
+                     do k=1,nlev                       
+                       call interpol_phys_latlon(interpdata(ie),fvm(ie)%c(:,:,k,cindex,n0), &
+                                          fvm(ie),elem(ie)%corners,elem(ie)%desc,datall(st:en,k))                                          
+                     end do
+                     st=st+interpdata(ie)%n_interp
+                  enddo                  
+                  call nf_put_var(ncdf(ios),datall,start3d, count3d, name=vname)                  
+                  deallocate(datall)                  
+               end if
+            enddo
 #endif
 
 #if defined(_PRIM) 

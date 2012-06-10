@@ -191,12 +191,6 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
     call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv,fvm)
 #endif 
 !-----------------------------------------------------------------------------------!
-!-----------------------------------------------------------------------------------!  
-#ifdef PIO_INTERP
-  call interp_movie_output(elem, tl, hybrid, 0D0, deriv, nets, nete)
-#else     
-  call shal_movie_output(elem, tl, hybrid, 0D0, nets, nete,deriv,fvm)
-#endif
 !-----------------------------------------------------------------------------------!
   if(hybrid%masterthread) then 
     print *

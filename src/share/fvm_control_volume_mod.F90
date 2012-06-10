@@ -64,6 +64,7 @@ module fvm_control_volume_mod
     integer                  :: jx_min1, jx_max1, jy_min1, jy_max1
     integer                  :: jx_min2, jx_max2, jy_min2, jy_max2
     !gnomonic coordinates, the real Cartesian coordinates on the cube
+    !first and last entry of acartx* is bignum because of search algorithm
     real (kind=real_kind)    :: acartx(-nhe:nc+2+nhe), acarty(-nhe:nc+2+nhe)
     ! points for the first halo zone (only for west, east, north, south, swest,
     !                                 seast, neast, nwest)
