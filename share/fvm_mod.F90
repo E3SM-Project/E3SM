@@ -478,7 +478,7 @@ subroutine fvm_init3(elem,fvm,deriv,hybrid,hvcoord,nets,nete,tnp0)
   integer,intent(in)                        :: nets,nete,tnp0       
                                                                             
   integer                                   :: ie,i,j,k                   
-  real(kind=real_kind), intent(in)          :: dp(np,np)
+  real(kind=real_kind)                      :: dp(np,np)
   
   
   ! do it only for FVM tracers, FIRST TRACER will be the AIR DENSITY   
