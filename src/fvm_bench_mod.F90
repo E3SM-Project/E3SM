@@ -205,38 +205,38 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   !BEGIN TIME LOOP, start at 0, calculate then next step
   DO WHILE(tl%nstep<nmax)
 ! start old mcgregor----------------------
-    do ie=nets,nete
-      do k=1,nlev
-        vstar = get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
-        vhat= (get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep)) + vstar) / 2.0D0
-        ! calculate high order approximation
-        call fvm_mcgregor(elem(ie), deriv, tstep, vhat, vstar, 3)
-     
-        ! apply DSS to make vstar C0
-        elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%spheremp(:,:)*vstar(:,:,1) 
-        elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%spheremp(:,:)*vstar(:,:,2) 
-      enddo
-      call edgeVpack(edgeveloc,elem(ie)%derived%vstar(:,:,1,:),nlev,0,elem(ie)%desc)
-      call edgeVpack(edgeveloc,elem(ie)%derived%vstar(:,:,2,:),nlev,nlev,elem(ie)%desc)
-    enddo 
-    call bndry_exchangeV(hybrid,edgeveloc)
-    do ie=nets,nete
-       call edgeVunpack(edgeveloc,elem(ie)%derived%vstar(:,:,1,:),nlev,0,elem(ie)%desc)
-       call edgeVunpack(edgeveloc,elem(ie)%derived%vstar(:,:,2,:),nlev,nlev,elem(ie)%desc)
-       do k=1, nlev  
-         elem(ie)%derived%vstar(:,:,1,k)=elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%rspheremp(:,:)
-         elem(ie)%derived%vstar(:,:,2,k)=elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%rspheremp(:,:)
-       end do
-    end do
-!end old mcgegor-----------------------
-! ! start mcgregordss
 !     do ie=nets,nete
 !       do k=1,nlev
-!         elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
-!         fvm(ie)%vn0(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),time_at(tl%nstep))
-!       end do
+!         vstar = get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
+!         vhat= (get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep)) + vstar) / 2.0D0
+!         ! calculate high order approximation
+!         call fvm_mcgregor(elem(ie), deriv, tstep, vhat, vstar, 3)
+!      
+!         ! apply DSS to make vstar C0
+!         elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%spheremp(:,:)*vstar(:,:,1) 
+!         elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%spheremp(:,:)*vstar(:,:,2) 
+!       enddo
+!       call edgeVpack(edgeveloc,elem(ie)%derived%vstar(:,:,1,:),nlev,0,elem(ie)%desc)
+!       call edgeVpack(edgeveloc,elem(ie)%derived%vstar(:,:,2,:),nlev,nlev,elem(ie)%desc)
+!     enddo 
+!     call bndry_exchangeV(hybrid,edgeveloc)
+!     do ie=nets,nete
+!        call edgeVunpack(edgeveloc,elem(ie)%derived%vstar(:,:,1,:),nlev,0,elem(ie)%desc)
+!        call edgeVunpack(edgeveloc,elem(ie)%derived%vstar(:,:,2,:),nlev,nlev,elem(ie)%desc)
+!        do k=1, nlev  
+!          elem(ie)%derived%vstar(:,:,1,k)=elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%rspheremp(:,:)
+!          elem(ie)%derived%vstar(:,:,2,k)=elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%rspheremp(:,:)
+!        end do
 !     end do
-!     call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, tstep, 3)
+!end old mcgegor-----------------------
+! ! start mcgregordss
+    do ie=nets,nete
+      do k=1,nlev
+        elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
+        fvm(ie)%vn0(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),time_at(tl%nstep))
+      end do
+    end do
+    call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, tstep, 3)
 ! ! end mcgregordss   
     call cslam_runair(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   

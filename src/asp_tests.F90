@@ -1120,6 +1120,7 @@ endif
 if (present(fvm)) then
 if (ntrac>=1) then
    idex=1
+   ! First tracer will be airdensity
    do ie=nets,nete
       fvm(ie)%c(:,:,:,idex,:) = 1
    enddo
