@@ -29,7 +29,10 @@ module fvm_mod
   type (EdgeBuffer_t)                         :: edgeveloc
   
   public :: cslam_run, cslam_runair, cslam_runairdensity
-  public :: cellghostbuf, edgeveloc, fvm_init1,fvm_init2, fvm_init3, fvm_mcgregor, fvm_mcgregordss
+  public :: cellghostbuf, edgeveloc, fvm_init1,fvm_init2, fvm_mcgregor, fvm_mcgregordss
+#ifdef _PRIM
+  public :: fvm_init3
+#endif
 contains
 
 subroutine cslam_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
@@ -459,7 +462,7 @@ subroutine fvm_init2(elem,fvm,hybrid,nets,nete,tl)
 
 end subroutine fvm_init2
 
-
+#ifdef _PRIM
 ! first communciation of FVM tracers and overwrite airdensity
 subroutine fvm_init3(elem,fvm,deriv,hybrid,hvcoord,nets,nete,tnp0)
   use derivative_mod, only : derivative_t, interpolate_gll2fvm_points
@@ -475,6 +478,7 @@ subroutine fvm_init3(elem,fvm,deriv,hybrid,hvcoord,nets,nete,tnp0)
   integer,intent(in)                        :: nets,nete,tnp0       
                                                                             
   integer                                   :: ie,i,j,k                   
+  real(kind=real_kind), intent(in)          :: dp(np,np)
   
   
   ! do it only for FVM tracers, FIRST TRACER will be the AIR DENSITY   
@@ -483,12 +487,12 @@ subroutine fvm_init3(elem,fvm,deriv,hybrid,hvcoord,nets,nete,tnp0)
     do k=1,nlev
  	    do i=1,np
  	      do j=1,np      
-     		  elem(ie)%derived%dp(i,j,k)=( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+     		  dp(i,j)=( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
 		       ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,tnp0)
  	      enddo
  	    enddo
       !write air density in tracer 1 of FVM
-      fvm(ie)%c(1:nc,1:nc,k,1,tnp0)=interpolate_gll2fvm_points(elem(ie)%derived%dp(:,:,k),deriv)
+      fvm(ie)%c(1:nc,1:nc,k,1,tnp0)=interpolate_gll2fvm_points(dp,deriv)
 !        fvm%c(:,:,k,1,tnp0)=1.0D0
     enddo    
     !note write tl%np1 in buffer
@@ -502,7 +506,7 @@ subroutine fvm_init3(elem,fvm,deriv,hybrid,hvcoord,nets,nete,tnp0)
   enddo
 
 end subroutine fvm_init3
-
+#endif
 ! ----------------------------------------------------------------------------------!
 !SUBROUTINE FVM_MESH_DEP--------------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 30.October 2011                                          !
