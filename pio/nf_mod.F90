@@ -1716,7 +1716,7 @@ contains
 !! @retval ierr @copydoc error_return
 !<
   integer function def_var_md_vdc(File,name,type, vardesc) result(ierr)
-    use C_interface_mod, only : F_C_String_dup
+!    use C_interface_mod, only : F_C_String_dup
     type (File_desc_t), intent(in)  :: File
     character(len=*), intent(in)    :: name
     integer, intent(in)             :: type
@@ -1725,12 +1725,12 @@ contains
     type(iosystem_desc_t), pointer :: ios
 
 
-    interface
-       subroutine defvdfvar(foo) bind(C)
-         use, intrinsic :: iso_c_binding
-         type(c_ptr), value, intent(in) :: foo
-       end subroutine defvdfvar
-    end interface
+!    interface
+!       subroutine defvdfvar(foo) bind(C)
+!         use, intrinsic :: iso_c_binding
+!         type(c_ptr), value, intent(in) :: foo
+!       end subroutine defvdfvar
+!    end interface
 
     !------------------
     ! Local variables
@@ -1761,14 +1761,14 @@ contains
        call mpi_bcast(name, nlen, mpi_character, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast(3, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
     endif
-    vardesc%name = name(1:nlen)
+    vardesc%name = TRIM(name) // CHAR(0)
 
 
     if(ios%IOproc) then
        select case(iotype)
        case(pio_iotype_vdc2)
 	  if(ios%io_rank .eq. 0) then
-             call defvdfvar( F_C_string_dup(vardesc%name(1:nlen), nlen ) )
+             call defvdfvar(vardesc%name) !F_C_string_dup(vardesc%name(1:nlen), nlen ) )
 	  endif
        case default
           call bad_iotype(iotype,__PIO_FILE__,__LINE__)

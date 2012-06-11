@@ -1475,7 +1475,7 @@ contains
 
     if (IOproc) then
        vlen = len_trim(vardesc%name)
-	call WriteVDC2Var(iobuf, start, count,  File%iosystem%IO_comm, varDesc%ts, varDesc%lod, varDesc%reflevel, varDesc%name(1:vlen)//char(0), File%iosystem%num_iotasks)
+	call WriteVDC2Var(iobuf, start, count,  File%iosystem%IO_comm, varDesc%ts, varDesc%lod, varDesc%reflevel, varDesc%name, File%iosystem%num_iotasks)
     endif
 
     if(UseRearranger) call dealloc_check(IOBUF)
@@ -1549,7 +1549,7 @@ subroutine read_vdc2_real(File,varDesc,ioDesc,array, iostat)
           if(Debug) print *, 'read_vdc2_real: IAM: ',File%iosystem%comp_rank,'Before call to allocate(IOBUF): ',len
           call alloc_check(IOBUF,len,' TYPE :IOBUF')
           IOBUF= -1.0_r8
-  	  call ReadVDC2Var(iobuf, start, count,  File%iosystem%IO_comm, varDesc%ts, varDesc%lod, varDesc%reflevel, TRIM(varDesc%name), File%iosystem%num_iotasks)
+  	  call ReadVDC2Var(iobuf, start, count,  File%iosystem%IO_comm, varDesc%ts, varDesc%lod, varDesc%reflevel,vardesc%name, File%iosystem%num_iotasks)
        else
           call alloc_check(IOBUF,0)
           IOBUF= -1.0_r8

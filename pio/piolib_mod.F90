@@ -246,7 +246,7 @@ module piolib_mod
 
   !eoc
   !***********************************************************************
-#ifdef _COMPRESSION
+#ifdef _COMPRESSIONS
   interface
      subroutine createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , fname) bind(C)
        use, intrinsic :: iso_c_binding
@@ -2236,10 +2236,10 @@ contains
 !          if(amode == PIO_CLOBBER) then
              restart = 1
 !          endif
-          call createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , F_C_String_dup(fname) )
+          call createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , TRIM(fname) // CHAR(0) )
 	  
        else if(iosystem%io_rank>0) then
-          call createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , F_C_String_dup(fname) )
+          call createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , TRIM(fname) // CHAR(0) )
        endif
 #endif
     end select
@@ -2396,7 +2396,7 @@ contains
 #ifdef _COMPRESSION
     case(pio_iotype_vdc2) !equivalent to calling create def without clobbering the file, arguments dont matter
        if(iosystem%io_rank>=0) then
-          call createvdf(vdc_dims, vdc_bsize, vdc_ts, 0 , F_C_STRING_DUP(trim(myfname)))
+          call createvdf(vdc_dims, vdc_bsize, vdc_ts, 0 , trim(myfname) // CHAR(0))
        end if
 #endif
     end select
