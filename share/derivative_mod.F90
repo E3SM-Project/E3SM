@@ -23,6 +23,7 @@ private
      real (kind=real_kind) :: vvtemp(np,np)
      real (kind=real_kind) :: vvtempt(np,np,2)
      real (kind=real_kind) :: Mfvm(np,nc+1)
+     real (kind=real_kind) :: Cfvm(np,nc)
      real (kind=real_kind) :: legdg(np,np)
   end type derivative_t
 
@@ -51,6 +52,7 @@ private
   public :: divergence
 
   public :: interpolate_gll2fvm_corners
+  public :: interpolate_gll2fvm_points
   public :: remap_phys2gll
 
 
@@ -103,10 +105,11 @@ contains
 ! derivatives and interpolating
 ! ==========================================
 
-  subroutine derivinit(deriv,fvm_corners)
+  subroutine derivinit(deriv,fvm_corners, fvm_points)
     type (derivative_t)      :: deriv
 !    real (kind=longdouble_kind),optional :: phys_points(:)
     real (kind=longdouble_kind),optional :: fvm_corners(nc+1)
+    real (kind=longdouble_kind),optional :: fvm_points(nc)
 
     ! Local variables
     type (quadrature_t) :: gp   ! Quadrature points and weights on pressure grid
@@ -162,7 +165,8 @@ contains
     if (present(fvm_corners)) &
          call v2pinit(deriv%Mfvm,gp%points,fvm_corners,np,nc+1)
 
-    
+    if (present(fvm_points)) &
+         call v2pinit(deriv%Cfvm,gp%points,fvm_points,np,nc)
     ! notice we deallocate this memory here even though it was allocated 
     ! by the call to gausslobatto.
     deallocate(gp%points)
@@ -1341,6 +1345,47 @@ endif
 
 
 !  ================================================
+!  interpolate_gll2fvm_points:
+!
+!  shape funtion interpolation from data on GLL grid to cellcenters on physics grid
+!  Author: Christoph Erath
+!  ================================================
+  function interpolate_gll2fvm_points(v,deriv) result(p)
+
+    real(kind=real_kind), intent(in) :: v(np,np)
+    type (derivative_t)         :: deriv
+    real(kind=real_kind) :: p(nc,nc)
+
+    ! Local
+    integer i
+    integer j
+    integer l
+
+    real(kind=real_kind)  sumx00,sumx01
+    real(kind=real_kind)  sumx10,sumx11
+    real(kind=real_kind)  vtemp(np,nc)
+
+    do j=1,np
+       do l=1,nc
+          sumx00=0.0d0
+          do i=1,np
+             sumx00 = sumx00 + deriv%Cfvm(i,l  )*v(i,j  )
+          enddo
+          vtemp(j  ,l) = sumx00
+        enddo
+    enddo
+    do j=1,nc
+       do i=1,nc
+          sumx00=0.0d0
+          do l=1,np
+             sumx00 = sumx00 + deriv%Cfvm(l,j  )*vtemp(l,i)
+          enddo
+          p(i  ,j  ) = sumx00
+       enddo
+    enddo
+  end function interpolate_gll2fvm_points
+
+!  ================================================
 !  interpolate_gll2fvm_corners:
 !
 !  shape funtion interpolation from data on GLL grid to physics grid
@@ -1380,8 +1425,6 @@ endif
        enddo
     enddo
   end function interpolate_gll2fvm_corners
-
-
 
 
 

@@ -6,7 +6,7 @@
 #define _DBG_ 
 module prim_driver_mod
   use kinds, only : real_kind, iulog, longdouble_kind
-  use dimensions_mod, only : np, nlev, nelem, nelemd, nelemdmax, GlobalUniqueCols, ntrac, qsize, nc
+  use dimensions_mod, only : np, nlev, nelem, nelemd, nelemdmax, GlobalUniqueCols, ntrac, qsize, nc,nhc
   use cg_mod, only : cg_t
   use hybrid_mod, only : hybrid_t
   use quadrature_mod, only : quadrature_t, test_gauss, test_gausslobatto, gausslobatto
@@ -21,9 +21,9 @@ module prim_driver_mod
   use derivative_mod, only : derivative_t
   use reduction_mod, only : reductionbuffer_ordered_1d_t, red_min, red_max, &
          red_sum, red_sum_int, red_flops, initreductionbuffer
-  use fvm_mod, only : fvm_init1,fvm_init2
+  use fvm_mod, only : fvm_init1,fvm_init2, fvm_init3
   use fvm_control_volume_mod, only : fvm_struct
-  use element_mod, only : element_t
+  use element_mod, only : element_t, timelevels
   use Manager
 
   implicit none
@@ -633,7 +633,7 @@ contains
     ! ==================================
     ! Initialize derivative structure
     ! ==================================
-    call derivinit(deriv(hybrid%ithr),fvm_corners)
+    call derivinit(deriv(hybrid%ithr),fvm_corners, fvm_points)
 
     ! ================================================
     ! fvm initialization
@@ -868,6 +868,15 @@ contains
           enddo
        endif
     endif
+    
+ ! do it only for FVM tracers, FIRST TRACER will be the AIR DENSITY   
+ ! should be optimize and combined with the above caculation 
+    if (ntrac>0) then 
+      call fvm_init3(elem,fvm,deriv(hybrid%ithr),hybrid,hvcoord,nets,nete,tl%n0)
+      if (hybrid%masterthread) then
+         write(iulog,*) 'FVM tracers (incl. in halo zone) initialized. FIRST tracer has air density!'
+      end if
+    endif  
 
     ! for restart runs, we read in Qdp for exact restart, and rederive Q
     if (runtype==1 .and. tracer_advection_formulation==TRACERADV_TOTAL_DIVERGENCE) then
@@ -1237,16 +1246,14 @@ contains
 !$omp parallel do private(k, j, i)
 #endif
       do k=1,nlev
-	  do i=1,np
-	    do j=1,np      
-		elem(ie)%derived%dp(i,j,k)=( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-		      ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,tl%n0)
-	    enddo
-	  enddo
+    	  do i=1,np
+    	    do j=1,np      
+        		elem(ie)%derived%dp(i,j,k)=( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+  		      ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,tl%n0)
+    	    enddo
+    	  enddo
       enddo
-
     enddo
-
 
 
     ! E(1) Energy at start of timestep, diagnostics at t-dt/2  (using t-dt, t and Q(t))

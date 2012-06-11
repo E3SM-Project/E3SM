@@ -16,6 +16,7 @@ module fvm_mod
   use kinds, only : real_kind, int_kind, longdouble_kind
   use edge_mod, only : ghostbuffertr_t, initghostbuffer, freeghostbuffertr, &
                        ghostVpack, ghostVunpack,  edgebuffer_t, initEdgebuffer
+  use bndry_mod, only: ghost_exchangeV                     
   use dimensions_mod, only: nelem, nelemd, nelemdmax, nlev, ne, nc, nhc, nhe, nlev, ntrac, np, ntrac_d
   use time_mod, only : timelevel_t
   use element_mod, only : element_t, timelevels
@@ -28,7 +29,7 @@ module fvm_mod
   type (EdgeBuffer_t)                         :: edgeveloc
   
   public :: cslam_run, cslam_runair, cslam_runairdensity
-  public :: cellghostbuf, edgeveloc, fvm_init1,fvm_init2, fvm_mcgregor, fvm_mcgregordss
+  public :: cellghostbuf, edgeveloc, fvm_init1,fvm_init2, fvm_init3, fvm_mcgregor, fvm_mcgregordss
 contains
 
 subroutine cslam_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
@@ -40,8 +41,6 @@ subroutine cslam_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   use fvm_reconstruction_mod, only: reconstruction
   ! ---------------------------------------------------------------------------------
   use derivative_mod, only : derivative_t
-  ! ---------------------------------------------------------------------------------
-  use bndry_mod, only: ghost_exchangeV
   ! ---------------------------------------------------------------------------------
   use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   ! -----------------------------------------------
@@ -123,8 +122,6 @@ subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   ! ---------------------------------------------------------------------------------
   use derivative_mod, only : derivative_t
   ! ---------------------------------------------------------------------------------
-  use bndry_mod, only: ghost_exchangeV
-  ! ---------------------------------------------------------------------------------
   use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   ! -----------------------------------------------
    
@@ -159,8 +156,8 @@ subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
       !-Departure fvm Meshes, initialization done                                                               
       call compute_weights(fvm(ie),6,weights_all,weights_eul_index_all, &
              weights_lgr_index_all,jall) 
-             
-      tracer_air0=1.0D0 !elem(ie)%derived%dp(:,:,k)       
+      ! THE FIRST TRACER IS AIRDENSITY
+      tracer_air0=fvm(ie)%c(:,:,k,1,tl%n0)       
       call reconstruction(tracer_air0, fvm(ie),recons_air)
       call monotonic_gradient_cart(tracer_air0, fvm(ie),recons_air, elem(ie)%desc)
       tracer_air1=0.0D0   
@@ -171,10 +168,11 @@ subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
       do j=1,nc
         do i=1,nc
           tracer_air1(i,j)=tracer_air1(i,j)/fvm(ie)%area_sphere(i,j)
+          fvm(ie)%c(i,j,k,1,tl%np1)=tracer_air1(i,j)
         end do
       end do
       !loop through all tracers
-      do itr=1,ntrac
+      do itr=2,ntrac
         tracer0=fvm(ie)%c(:,:,k,itr,tl%n0)
         call reconstruction(tracer0, fvm(ie),recons)
         call monotonic_gradient_cart(tracer0, fvm(ie),recons, elem(ie)%desc)
@@ -216,8 +214,6 @@ subroutine cslam_runair(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   use fvm_reconstruction_mod, only: reconstruction
   ! ---------------------------------------------------------------------------------
   use derivative_mod, only : derivative_t
-  ! ---------------------------------------------------------------------------------
-  use bndry_mod, only: ghost_exchangeV
   ! ---------------------------------------------------------------------------------
   use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   ! -----------------------------------------------
@@ -431,7 +427,7 @@ subroutine fvm_init1(par)
      call haltmp("PARAMTER ERROR for fvm: ntrac > ntrac_d")
   endif
 
-  call initghostbuffer(cellghostbuf,nlev,ntrac+1,nhc,nc) !+1 for the air_density, which comes from SE
+  call initghostbuffer(cellghostbuf,nlev,ntrac,nhc,nc) !+1 for the air_density, which comes from SE
   
   call initEdgebuffer(edgeveloc,2*nlev)
 end subroutine fvm_init1
@@ -463,6 +459,49 @@ subroutine fvm_init2(elem,fvm,hybrid,nets,nete,tl)
 
 end subroutine fvm_init2
 
+
+! first communciation of FVM tracers and overwrite airdensity
+subroutine fvm_init3(elem,fvm,deriv,hybrid,hvcoord,nets,nete,tnp0)
+  use derivative_mod, only : derivative_t, interpolate_gll2fvm_points
+  use hybvcoord_mod, only  : hvcoord_t
+  
+  type (element_t),intent(inout)            :: elem(:)                 
+  type (fvm_struct),intent(inout)           :: fvm(:)  
+  type (derivative_t), intent(in)           :: deriv
+                  
+  type (hybrid_t),intent(in)                :: hybrid                  
+  type (hvcoord_t), intent(in)              :: hvcoord         ! hybrid vertical coordinate struct
+                                                                            
+  integer,intent(in)                        :: nets,nete,tnp0       
+                                                                            
+  integer                                   :: ie,i,j,k                   
+  
+  
+  ! do it only for FVM tracers, FIRST TRACER will be the AIR DENSITY   
+  ! should be optimize and combined with the above caculation 
+  do ie=nets,nete 
+    do k=1,nlev
+ 	    do i=1,np
+ 	      do j=1,np      
+     		  elem(ie)%derived%dp(i,j,k)=( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+		       ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,tnp0)
+ 	      enddo
+ 	    enddo
+      !write air density in tracer 1 of FVM
+      fvm(ie)%c(1:nc,1:nc,k,1,tnp0)=interpolate_gll2fvm_points(elem(ie)%derived%dp(:,:,k),deriv)
+!        fvm%c(:,:,k,1,tnp0)=1.0D0
+    enddo    
+    !note write tl%np1 in buffer
+    call ghostVpack(cellghostbuf, fvm(ie)%c,nhc,nc,nlev,ntrac,0,tnp0,timelevels,elem(ie)%desc)
+  end do
+  !exchange values for the initial data
+  call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc)
+  !-----------------------------------------------------------------------------------!
+  do ie=nets,nete
+    call ghostVunpack(cellghostbuf, fvm(ie)%c, nhc, nc,nlev,ntrac, 0, tnp0, timelevels,elem(ie)%desc)
+  enddo
+
+end subroutine fvm_init3
 
 ! ----------------------------------------------------------------------------------!
 !SUBROUTINE FVM_MESH_DEP--------------------------------------------------CE-for FVM!
