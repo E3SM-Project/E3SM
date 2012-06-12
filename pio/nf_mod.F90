@@ -175,6 +175,13 @@ module nf_mod
 !<
   public :: PIO_copy_att
 
+  interface
+     subroutine defvdfvar(foo) bind(C)
+       use, intrinsic :: iso_c_binding
+       type(c_ptr), value, intent(in) :: foo
+     end subroutine defvdfvar
+  end interface
+
 contains 
 
 !>
@@ -1607,7 +1614,7 @@ contains
 !! @retval ierr @copydoc error_return
 !<
   integer function def_var_md(File,name,type,dimids,vardesc) result(ierr)
-
+    use C_interface_mod, only : F_C_String_dup
     type (File_desc_t), intent(in)  :: File
     character(len=*), intent(in)    :: name
     integer, intent(in)             :: type
@@ -1695,7 +1702,7 @@ contains
        case(pio_iotype_vdc2)
 	  vardesc%name = TRIM(name) // CHAR(0)
 	  if(ios%io_rank .eq. 0) then
-             call defvdfvar(name // CHAR(0))
+             call defvdfvar( F_C_String_dup(name) )
 	  endif
 #endif
        case default

@@ -60,10 +60,6 @@ program testpio
        vard_i4i,vard_i4j,vard_i4k,vard_i4m,vard_i4dof
   type(var_desc_t), pointer :: vard_r8(:), vard_r4(:)
 
-#ifdef _COMPRESSION
-  type(VDC_var_desc_t), pointer ::  vdc_vard_r4(:)
-#endif
-
   type (IO_desc_t)    :: IOdesc_r8,IOdesc_r4,IOdesc_i4
   type (gdecomp_type) :: gdecomp
 
@@ -654,9 +650,6 @@ program testpio
            ! Set Frame to '1' in the PIO descriptor file
            
            allocate(vard_r8(nvars), vard_r4(nvars))
-#ifdef _COMPRESSION
-          allocate(vdc_vard_r4(nvars))
-#endif
            
            do ivar=1,nvars
               call PIO_SetFrame(vard_r8(ivar),one)
@@ -709,7 +702,7 @@ program testpio
 	print *,__FILE__,__LINE__
 
 #ifdef _COMPRESSION                       
-	            iostat = PIO_def_var(File_r4,varname,PIO_real,vdc_vard_r4(ivar))
+	            iostat = PIO_def_var(File_r4,varname,PIO_real,vard_r4(ivar))
 #else
                     iostat = PIO_def_var(File_r4,varname,PIO_real,(/dimid_x,dimid_y,dimid_z/),vard_r4(ivar))
 #endif
@@ -806,7 +799,7 @@ program testpio
               do ivar=1,nvars
 #ifdef _COMPRESSION
        print *,__FILE__,__LINE__,ivar
-                 call PIO_write_darray(File_r4,vdc_vard_r4(ivar),iodesc_r4, test_r4wr,iostat, it)
+                 call PIO_write_darray(File_r4,vard_r4(ivar),iodesc_r4, test_r4wr,iostat, it)
        print *,__FILE__,__LINE__,ivar
 #else
                  call PIO_write_darray(File_r4,vard_r4(ivar),iodesc_r4, test_r4wr,iostat)
@@ -918,7 +911,7 @@ program testpio
 #ifdef _COMPRESSION
 		    !there currently exists no vdc concept of inquiring a variable, the only thing in the vdc_var_desc_t
 		    !directly used by the writing/reading is var name
-	       	    iostat = PIO_def_var(File_r4,'field00001', PIO_real, vdc_vard_r4(ivar))  
+	       	    iostat = PIO_def_var(File_r4,'field00001', PIO_real, vard_r4(ivar))  
 		
 #else
 	            iostat = PIO_inq_varid(File_r4,'field00001',vard_r4(ivar))  
@@ -979,7 +972,7 @@ program testpio
 #endif
               do ivar=1,nvars
 #ifdef _COMPRESSION
-	         call PIO_read_darray(File_r4,vdc_vard_r4(ivar),iodesc_r4,test_r4rd,iostat, it)
+	         call PIO_read_darray(File_r4,vard_r4(ivar),iodesc_r4,test_r4rd,iostat, it)
 #else
 	         call PIO_read_darray(File_r4,vard_r4(ivar),iodesc_r4,test_r4rd,iostat)
 #endif

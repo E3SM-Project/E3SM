@@ -59,7 +59,27 @@ module piodarray
      module procedure add_data_to_buffer_{TYPE}
   end interface
 
+#ifdef _COMPRESSION
+  interface 
+     subroutine WriteVDC2Var(iobuf, start, kount, iocomm, ts, lod, reflevel, iotasks, name ) bind(C)
+       use, intrinsic :: iso_c_binding
+       type(c_ptr), intent(in), value :: iobuf
+       integer(c_int), intent(in) :: start(3), kount(3)
+       integer(c_int), intent(in), value :: iocomm, ts, lod, reflevel, iotasks
+       type(c_ptr), intent(in), value :: name
+     end subroutine WriteVDC2Var
+  end interface
+  interface
+     subroutine ReadVDC2Var(iobuf, start, kount, iocomm, ts, lod, reflevel, iotasks, name) bind(C)
+       use, intrinsic :: iso_c_binding
+       type(c_ptr), intent(in), value :: iobuf
+       integer(c_int), intent(in) :: start(3), kount(3)
+       integer(c_int), intent(in), value :: iocomm, ts, lod, reflevel, iotasks
+       type(c_ptr), intent(in), value :: name
+     end subroutine ReadVDC2Var
+  end interface
 
+#endif
   character(len=*), parameter, private  :: modName='piodarray'
   integer :: total_buffsize=0
   integer :: pio_buffer_size_limit= 100000000   ! 100MB default
@@ -1386,6 +1406,8 @@ contains
 
  subroutine write_vdc2_real(File, Vardesc, iodesc, array, iostat, tmp_lod, tmp_reflevel, tmp_ts)
     use pio_support, only : piodie
+    use, intrinsic :: iso_c_binding
+    use C_interface_mod, only : F_C_STRING_DUP
     ! !DESCRIPTION:
     !  Writes a VDC2 vapor data collection
     !
@@ -1424,6 +1446,9 @@ contains
     integer(4), pointer :: start(:), count(:)
     double precision    :: timer;
     integer :: vlen
+
+    type(c_ptr) :: cptr
+
 
     ! pull information from file_desc_t data structure
     IOproc     = File%iosystem%IOproc
@@ -1477,7 +1502,9 @@ contains
 
     if (IOproc) then
        vlen = len_trim(vardesc%name)
-	call WriteVDC2Var(iobuf, start, count,  File%iosystem%IO_comm, tmp_ts, tmp_lod, tmp_reflevel, varDesc%name, File%iosystem%num_iotasks)
+       cptr = c_loc(iobuf(1))
+       print *,__FILE__,__LINE__,file%iosystem%num_iotasks,vardesc%name(1:vlen)
+       call WriteVDC2Var(cptr, start, count,  File%iosystem%IO_comm, tmp_ts, tmp_lod, tmp_reflevel, File%iosystem%num_iotasks, F_C_STRING_DUP(varDesc%name(1:vlen)))
     endif
 
     if(UseRearranger) call dealloc_check(IOBUF)
@@ -1495,6 +1522,8 @@ contains
 
 subroutine read_vdc2_real(File, Vardesc, iodesc, array, iostat, tmp_lod, tmp_ref, tmp_ts)
     use pio_support, only : piodie
+    use, intrinsic :: iso_c_binding
+    use C_interface_mod, only : F_C_STRING_DUP
     ! !DESCRIPTION:
     !  Writes a VDC2 vapor data collection
     !
@@ -1531,6 +1560,7 @@ subroutine read_vdc2_real(File, Vardesc, iodesc, array, iostat, tmp_lod, tmp_ref
     integer(4), pointer :: start(:), count(:)
     integer (i4), intent(in)	:: tmp_lod, tmp_ref, tmp_ts
     double precision    :: timer;
+    type(c_ptr) :: cptr
 
 #ifdef _COMPRESSION
     ! pull information from file_desc_t data structure
@@ -1552,7 +1582,8 @@ subroutine read_vdc2_real(File, Vardesc, iodesc, array, iostat, tmp_lod, tmp_ref
           if(Debug) print *, 'read_vdc2_real: IAM: ',File%iosystem%comp_rank,'Before call to allocate(IOBUF): ',len
           call alloc_check(IOBUF,len,' TYPE :IOBUF')
           IOBUF= -1.0_r8
-  	  call ReadVDC2Var(iobuf, start, count,  File%iosystem%IO_comm, tmp_ts, tmp_lod, tmp_ref, varDesc%name, File%iosystem%num_iotasks)
+          cptr = c_loc(iobuf(1))
+  	  call ReadVDC2Var(cptr, start, count,  File%iosystem%IO_comm, tmp_ts, tmp_lod, tmp_ref, File%iosystem%num_iotasks, F_C_String_dup(varDesc%name))
        else
           call alloc_check(IOBUF,0)
           IOBUF= -1.0_r8

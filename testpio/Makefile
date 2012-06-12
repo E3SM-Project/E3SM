@@ -91,13 +91,13 @@ endif
 PIOLIBA = $(PIODIR)/libpio.a
 
 $(EXE): $(OBJS) $(PIOLIBA)
-	$(LD) $(FFLAGS) -o $@ $(OBJS) $(PIOLIB) $(LDLIBS) $(FCLIBS)
+	$(LD) $(LDFLAGS) $(FFLAGS) -o $@ $(OBJS) $(PIOLIB) $(LDLIBS) $(FCLIBS)
 
 $(EXE2): $(OBJS2) $(PIOLIBA)
-	$(LD) $(FFLAGS) -o $@ $(OBJS2) $(PIOLIB) $(LDLIBS) $(FCLIBS)
+	$(LD) $(LDFLAGS) $(FFLAGS) -o $@ $(OBJS2) $(PIOLIB) $(LDLIBS) $(FCLIBS)
 
 $(EXE3): $(OBJS3) $(PIOLIBA)
-	$(LD) $(FFLAGS) -o $@ $(OBJS3) $(PIOLIB) $(LDLIBS) $(FCLIBS)
+	$(LD) $(LDFLAGS) $(FFLAGS) -o $@ $(OBJS3) $(PIOLIB) $(LDLIBS) $(FCLIBS)
 
 #
 # Suffix rules

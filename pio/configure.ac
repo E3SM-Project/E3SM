@@ -173,7 +173,6 @@ AC_FC_SRCEXT(F90)
 
 AC_FC_FREEFORM()
 AC_FC_LINE_LENGTH([unlimited])
-AC_FC_LIBRARY_LDFLAGS
 
 # When using a cache file it appears that sometimes ac_ext does not get set
 if test -z "$ac_ext"; then
@@ -501,6 +500,17 @@ fi
 
 if test "$USE_COMPRESSION" = "yes"
    then
+	AC_MSG_CHECKING([for libpiovdc])
+	if test "$with_piovdc" != "no"
+        then
+           LDLIBS=" $LDLIBS -L$with_piovdc/lib -lpiovdc -lpiocommon "
+        fi
+#        AC_SEARCH_LIBS([createvdf], piovdc, AC_MSG_RESULT([yes]),
+#           AC_MSG_ERROR([Could not find libpiovdc required for compression]),[ -lpiocommon ])
+#        fi
+        AC_FC_LIBRARY_LDFLAGS
+
+
         AC_PROG_CXX
 	AC_LANG_PUSH(C)
 	AM_WITH_EXPAT
@@ -511,16 +521,13 @@ if test "$USE_COMPRESSION" = "yes"
           LDLIBS=" $LDLIBS -lexpat"
         fi	
 	AC_LANG_POP
-	AC_MSG_CHECKING([for libpiovdc])
-	if test "$with_piovdc" != "no"
-        then
-           LDLIBS=" $LDLIBS -L$with_piovdc/lib -lpiocommon -lpiovdc "
-        fi
-#        AC_SEARCH_LIBS([createvdf], piovdc, AC_MSG_RESULT([yes]),
-#           AC_MSG_ERROR([Could not find libpiovdc required for compression]),[ -lpiocommon ])
-#        fi
+
 	CPPDEFS="$CPPDEFS -D_COMPRESSION"
-        LD=$MPICXX
+        AC_MSG_CHECKING([how to link f90 with cxx])
+        LDFLAGS_TMP=$LDFLAGS
+	LDFLAGS="$LDFLAGS -cxxlib"
+        AC_COMPILE_IFELSE([AC_LANG_PROGRAM([],[  integer :: a     ])],[LD=$MPIFC ;AC_MSG_RESULT([ using $MPIFC])],
+          [LD=$MPICXX; LDFLAGS=$LDFLAGS_TMP; AC_MSG_RESULT([ using $MPICXX])])
 else 
         LD=$MPIFC
 fi
