@@ -331,7 +331,7 @@ if test -z "$SYSDEF"; then
    SYSDEF="UNKNOWNOS"
 fi
 
-CPPDEFS=" $CPPDEFS -DSYS$SYSDEF -DCPR$CPRDEF"
+CPPDEFS=" $CPPDEFS -DSYS$SYSDEF "
 
 AC_FC_MODULE_EXTENSION
 
@@ -526,7 +526,7 @@ if test "$USE_COMPRESSION" = "yes"
         AC_MSG_CHECKING([how to link f90 with cxx])
         LDFLAGS_TMP=$LDFLAGS
 	LDFLAGS="$LDFLAGS -cxxlib"
-        AC_COMPILE_IFELSE([AC_LANG_PROGRAM([],[  integer :: a     ])],[LD=$MPIFC ;AC_MSG_RESULT([ using $MPIFC])],
+        AC_LINK_IFELSE([AC_LANG_PROGRAM([],[  integer :: a     ])],[LD=$MPIFC ;AC_MSG_RESULT([ using $MPIFC])],
           [LD=$MPICXX; LDFLAGS=$LDFLAGS_TMP; AC_MSG_RESULT([ using $MPICXX])])
 else 
         LD=$MPIFC
