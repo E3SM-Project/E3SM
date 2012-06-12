@@ -550,7 +550,7 @@ contains
          hypervis_subcycle_q
     use prim_si_ref_mod, only: prim_si_refstate_init, prim_set_mass
     use thread_mod, only : nthreads
-    use derivative_mod, only : derivinit
+    use derivative_mod, only : derivinit, interpolate_gll2fvm_points
     use global_norms_mod, only : test_global_integral, print_cfl
     use hybvcoord_mod, only : hvcoord_t
 #ifdef CAM
@@ -872,7 +872,22 @@ contains
  ! do it only for FVM tracers, FIRST TRACER will be the AIR DENSITY   
  ! should be optimize and combined with the above caculation 
     if (ntrac>0) then 
-      call fvm_init3(elem,fvm,deriv(hybrid%ithr),hybrid,hvcoord,nets,nete,tl%n0)
+      ! do it only for FVM tracers, FIRST TRACER will be the AIR DENSITY   
+      ! should be optimize and combined with the above caculation 
+      do ie=nets,nete 
+        do k=1,nlev
+     	    do i=1,np
+     	      do j=1,np      
+         		  elem(ie)%derived%dp(i,j,k)=( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+    		       ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,tl%n0)
+     	      enddo
+     	    enddo
+          !write air density in tracer 1 of FVM
+          fvm(ie)%c(1:nc,1:nc,k,1,tl%n0)=interpolate_gll2fvm_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
+    !        fvm%c(:,:,k,1,tnp0)=1.0D0
+        enddo
+      enddo
+      call fvm_init3(elem,fvm,hybrid,nets,nete,tl%n0)
       if (hybrid%masterthread) then
          write(iulog,*) 'FVM tracers (incl. in halo zone) initialized. FIRST tracer has air density!'
       end if
