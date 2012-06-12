@@ -8,7 +8,7 @@ module piodarray
   use pio_types, only : file_desc_t, io_desc_t, var_desc_t, pio_noerr, iosystem_desc_t, &
 	pio_iotype_pbinary, pio_iotype_binary, pio_iotype_direct_pbinary, &
 	pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c, &
-        PIO_MAX_VAR_DIMS, pio_iotype_vdc2, vdc_var_desc_t
+        PIO_MAX_VAR_DIMS, pio_iotype_vdc2
   use pio_kinds
   use pio_support
   use pionfwrite_mod, only : write_nf
@@ -242,7 +242,7 @@ contains
     type (File_desc_t), intent(inout) :: &
          File                   ! file information
 
-    type (vdc_var_desc_t), intent(inout) :: &
+    type (var_desc_t), intent(inout) :: &
          varDesc                      ! variable descriptor
 
     type (io_desc_t), intent(inout) :: &
@@ -254,25 +254,25 @@ contains
     real(r4), optional, intent(in) :: fillval    ! rearrange receiver fill value
     type(iosystem_desc_t), pointer :: ios
     integer(i4), intent(in) :: ts
-    integer(i4), intent(inout), optional :: lod, reflevel
+    integer(i4), intent(in), optional ::  reflevel, lod
 
     integer(i4), intent(out) :: iostat
-    integer :: msg, ierr
+    integer :: msg, ierr, tmp_lod,tmp_ref,tmp_ts
 
     character(len=*), parameter :: subName=modName//'::write_darray_vdc_real'
 #ifdef _COMPRESSION
     if(present(lod)) then
-        vardesc%lod = lod
+        tmp_lod = lod
     else
-	vardesc%lod = -1
+	tmp_lod = -1
     endif
     
     if(present(reflevel)) then
-    	vardesc%reflevel = reflevel
+    	tmp_ref = reflevel
     else
-	vardesc%reflevel = -1
+	tmp_ref = -1
     endif
-    vardesc%ts = ts
+    tmp_ts = ts
     ios => file%iosystem
     if(ios%async_interface .and. .not. ios%ioproc) then
        msg = PIO_MSG_WRITEDARRAY
@@ -294,7 +294,7 @@ contains
        if(debugasync) print *,__PIO_FILE__,__LINE__
     endif
        if(File%iotype .EQ. pio_iotype_vdc2) then
-          call write_vdc2_real(File, Vardesc, iodesc, array, iostat)
+          call write_vdc2_real(File, Vardesc, iodesc, array, iostat, tmp_lod, tmp_ref, tmp_ts)
        end if
 #endif
   end subroutine write_darray_1d_vdc
@@ -325,7 +325,7 @@ contains
     type (File_desc_t), intent(inout) :: &
 	 File                   ! file information
 
-    type (vdc_var_desc_t), intent(inout) :: &
+    type (var_desc_t), intent(inout) :: &
 	 varDesc                      ! variable descriptor
 
     type (io_desc_t), intent(inout) :: &
@@ -342,21 +342,21 @@ contains
     integer(i4), intent(inout), optional :: lod, reflevel
 	
     type(iosystem_desc_t), pointer :: ios
-    integer :: ierr, msg
+    integer :: msg, ierr, tmp_lod,tmp_ref,tmp_ts
 
 #ifdef _COMPRESSION
     if(present(lod)) then
-        vardesc%lod = lod
+        tmp_lod = lod
     else
-	vardesc%lod = -1
+	tmp_lod = -1
     endif
     
     if(present(reflevel)) then
-    	vardesc%reflevel = reflevel
+    	tmp_ref = reflevel
     else
-	vardesc%reflevel = -1
+	tmp_ref = -1
     endif
-    vardesc%ts = ts
+    tmp_ts = ts
     array = 0	
     ios => File%iosystem
 
@@ -373,7 +373,7 @@ contains
 
     select case(File%iotype)
     case(pio_iotype_vdc2)
-       call read_vdc2_real(File, vardesc, iodesc, array, iostat)
+       call read_vdc2_real(File, Vardesc, iodesc, array, iostat, tmp_lod, tmp_ref, tmp_ts)
     end select
 #endif
   end subroutine read_darray_1d_vdc
@@ -4986,7 +4986,7 @@ contains
 
 
 # 1387 "piodarray.F90.in"
- subroutine write_vdc2_real(File,varDesc,ioDesc,array, iostat)
+ subroutine write_vdc2_real(File, Vardesc, iodesc, array, iostat, tmp_lod, tmp_reflevel, tmp_ts)
     use pio_support, only : piodie
     ! !DESCRIPTION:
     !  Writes a VDC2 vapor data collection
@@ -4998,7 +4998,7 @@ contains
     type (File_desc_t), intent(inout) :: &
          File                   ! file information
 
-    type (vdc_var_desc_t), intent(inout) :: &
+    type (var_desc_t), intent(inout) :: &
          varDesc                ! varable descriptor
 
     type (io_desc_t), intent(inout) :: &
@@ -5006,6 +5006,8 @@ contains
 
     real(r4), dimension(:), intent(in), target ::  &
          array                  ! array to be written
+
+    integer (i4), intent(in)	:: tmp_lod, tmp_reflevel, tmp_ts
 
     integer (i4), intent(out)   :: iostat
 
@@ -5077,7 +5079,7 @@ contains
 
     if (IOproc) then
        vlen = len_trim(vardesc%name)
-	call WriteVDC2Var(iobuf, start, count,  File%iosystem%IO_comm, varDesc%ts, varDesc%lod, varDesc%reflevel, varDesc%name, File%iosystem%num_iotasks)
+	call WriteVDC2Var(iobuf, start, count,  File%iosystem%IO_comm, tmp_ts, tmp_lod, tmp_reflevel, varDesc%name, File%iosystem%num_iotasks)
     endif
 
     if(UseRearranger) call dealloc_check(IOBUF)
@@ -5093,8 +5095,8 @@ contains
 #endif
   end subroutine write_vdc2_real
 
-# 1494 "piodarray.F90.in"
-subroutine read_vdc2_real(File,varDesc,ioDesc,array, iostat)
+# 1496 "piodarray.F90.in"
+subroutine read_vdc2_real(File, Vardesc, iodesc, array, iostat, tmp_lod, tmp_ref, tmp_ts)
     use pio_support, only : piodie
     ! !DESCRIPTION:
     !  Writes a VDC2 vapor data collection
@@ -5106,7 +5108,7 @@ subroutine read_vdc2_real(File,varDesc,ioDesc,array, iostat)
     type (File_desc_t), intent(inout) :: &
          File                   ! file information
 
-    type (vdc_var_desc_t), intent(inout) :: &
+    type (var_desc_t), intent(inout) :: &
          varDesc                ! varable descriptor
 
     type (io_desc_t), intent(inout) :: &
@@ -5130,6 +5132,7 @@ subroutine read_vdc2_real(File,varDesc,ioDesc,array, iostat)
          iotype,                    &! type of IO to perform
          ndims                       ! number of variable dimensions
     integer(4), pointer :: start(:), count(:)
+    integer (i4), intent(in)	:: tmp_lod, tmp_ref, tmp_ts
     double precision    :: timer;
 
 #ifdef _COMPRESSION
@@ -5152,7 +5155,7 @@ subroutine read_vdc2_real(File,varDesc,ioDesc,array, iostat)
           if(Debug) print *, 'read_vdc2_real: IAM: ',File%iosystem%comp_rank,'Before call to allocate(IOBUF): ',len
           call alloc_check(IOBUF,len,' TYPE :IOBUF')
           IOBUF= -1.0_r8
-  	  call ReadVDC2Var(iobuf, start, count,  File%iosystem%IO_comm, varDesc%ts, varDesc%lod, varDesc%reflevel,vardesc%name, File%iosystem%num_iotasks)
+  	  call ReadVDC2Var(iobuf, start, count,  File%iosystem%IO_comm, tmp_ts, tmp_lod, tmp_ref, varDesc%name, File%iosystem%num_iotasks)
        else
           call alloc_check(IOBUF,0)
           IOBUF= -1.0_r8

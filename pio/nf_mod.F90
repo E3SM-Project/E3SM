@@ -7,7 +7,7 @@ module nf_mod
   use alloc_mod
 
   use pio_kinds, only: i4,r4,r8,pio_offset
-  use pio_types, only: file_desc_t, iosystem_desc_t, var_desc_t, pio_noerr, pio_iotype_netcdf, vdc_var_desc_t, &
+  use pio_types, only: file_desc_t, iosystem_desc_t, var_desc_t, pio_noerr, pio_iotype_netcdf, &
 	pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c, pio_max_name
 
   use pio_support, only : Debug, DebugIO, DebugAsync, piodie   
@@ -54,8 +54,7 @@ module nf_mod
   interface pio_def_var
      module procedure &
           def_var_0d, &
-          def_var_md, &
-	  def_var_md_vdc
+          def_var_md
   end interface
 
 !>
@@ -1692,6 +1691,13 @@ contains
              call MPI_BCAST(vardesc%varid, 1, MPI_INTEGER, 0, ios%IO_Comm, ierr)
           end if
 #endif
+#ifdef _COMPRESSION
+       case(pio_iotype_vdc2)
+	  vardesc%name = TRIM(name) // CHAR(0)
+	  if(ios%io_rank .eq. 0) then
+             call defvdfvar(name // CHAR(0))
+	  endif
+#endif
        case default
           call bad_iotype(iotype,__PIO_FILE__,__LINE__)
 
@@ -1702,84 +1708,6 @@ contains
        call MPI_BCAST(vardesc%varid, 1, MPI_INTEGER, ios%Iomaster, ios%my_Comm, ierr)
     end if
   end function def_var_md
-
-!> 
-!! @public
-!! @ingroup PIO_def_var
-!! @brief Defines a VDC variable, non-thread safe
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param name : The name of the variable to define
-!! @param type : The type of variable 
-!! @param dimids : The dimension identifier returned by \ref PIO_def_dim
-!! @param vdc_desc @copydoc vdc_var_desc_t
-!! @retval ierr @copydoc error_return
-!<
-  integer function def_var_md_vdc(File,name,type, vardesc) result(ierr)
-!    use C_interface_mod, only : F_C_String_dup
-    type (File_desc_t), intent(in)  :: File
-    character(len=*), intent(in)    :: name
-    integer, intent(in)             :: type
-
-    type (vdc_var_desc_t), intent(inout) :: vardesc
-    type(iosystem_desc_t), pointer :: ios
-
-
-!    interface
-!       subroutine defvdfvar(foo) bind(C)
-!         use, intrinsic :: iso_c_binding
-!         type(c_ptr), value, intent(in) :: foo
-!       end subroutine defvdfvar
-!    end interface
-
-    !------------------
-    ! Local variables
-    !------------------
-
-#ifdef _COMPRESSION
-    integer :: iotype, mpierr, nlen
-    integer :: msg = PIO_MSG_DEF_VAR
-
-    iotype = File%iotype
-
-    ierr=PIO_noerr
-
-    vardesc%type = type
-
-    ios => file%iosystem
-    nlen = len_trim(name)
-
-
-    if(ios%async_interface) then
-       if( .not. ios%ioproc) then
-          if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-          call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-       end if
-       call mpi_bcast(type, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-       
-       call mpi_bcast(nlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-       call mpi_bcast(name, nlen, mpi_character, ios%compmaster, ios%intercomm, ierr)
-       call mpi_bcast(3, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-    endif
-    vardesc%name = TRIM(name) // CHAR(0)
-
-
-    if(ios%IOproc) then
-       select case(iotype)
-       case(pio_iotype_vdc2)
-	  if(ios%io_rank .eq. 0) then
-             call defvdfvar(vardesc%name) !F_C_string_dup(vardesc%name(1:nlen), nlen ) )
-	  endif
-       case default
-          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
-
-       end select
-    endif
-#else
-    ierr=-1
-#endif
-  end function def_var_md_vdc
-
 
 !>
 !! @public

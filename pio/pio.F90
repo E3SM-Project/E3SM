@@ -22,7 +22,7 @@ module pio
 	pio_nofill, pio_unlimited, pio_64bit_offset, &
 #endif
 #ifdef _COMPRESSION
-	pio_iotype_vdc2, vdc_var_desc_t, &
+	pio_iotype_vdc2, &
 #endif
         pio_rearr_box, pio_internal_error, pio_bcast_error, pio_return_error
 

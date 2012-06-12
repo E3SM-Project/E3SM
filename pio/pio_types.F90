@@ -146,7 +146,6 @@ module pio_types
 	integer(kind=PIO_Offset), pointer :: start(:) => NULL()
 	integer(kind=PIO_Offset), pointer :: count(:) => NULL()
 
-
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ! fields for box-based rearranger
         ! should put this in its own derived type later
@@ -194,23 +193,8 @@ module pio_types
                                  ! netcdf file
 	integer(i4)     :: type
         integer(i4)     :: ndims ! number of dimensions as defined on the netcdf file.
+	character(len=50) :: name ! vdc needed variable
     end type 
-
-
-!>
-!! @public
-!! @struct VDC_var_desc_t VDC_var_desc_t
-!! @brief A VDC2 variable descriptor returned from @ref PIO_def_var (see pio_types) 
-!<
-    type, public :: VDC_Var_desc_t
-#ifdef SEQUENCE
-	sequence
-#endif	
-	character(len=50) :: name
-	integer(i4)     :: ts, lod, reflevel
-	integer(i4)     :: type
-    end type 
-
 
 !>
 !! @defgroup PIO_iotype PIO_iotype

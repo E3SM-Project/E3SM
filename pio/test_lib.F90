@@ -5,7 +5,7 @@ program Test_Lib
 	
 	include 'mpif.h'
 	type (Var_desc_t)	:: var_handle_no_comp !type handle for normal, uncompressed PIO variables
-	type (VDC_Var_desc_t)	:: var_handle !type handle for compressed, VDC variables
+	type (Var_desc_t)	:: var_handle !type handle for compressed, VDC variables
 	character		:: vdf_path*100 !location to save the vdf file and it's related data
 	character		:: binary_path*100 !location to save the binary data
 	type (File_desc_t)	:: file_handle !each open file requires a separate file handle, this one is for VDC data
@@ -165,7 +165,7 @@ program Test_Lib
 	!to write data call PIO_write_darray, the only difference with compressed vs uncompressed
 	!writing is that compressed writing requires that the the user inputs the current time step 
 	!corresponding to the variable about to be written
-	call PIO_write_darray(file_handle, var_handle, iodesc,  array, iostat, 0)
+	call PIO_write_darray(file_handle, var_handle, iodesc,  array, iostat)
 
 #ifdef DEBUG
 	print *, 'Rank: ', rank, ' vdc write time: ', MPI_WTIME() - start
@@ -182,7 +182,7 @@ program Test_Lib
 	!to read data call PIO_read_darray, the only difference with compressed vs uncompressed
 	!reading is that compressed reading requires that the the user inputs the current time step 
 	!corresponding to the variable about to be read
-	call PIO_read_darray(file_handle, var_handle, iodesc,  read_array, iostat, 0)
+	call PIO_read_darray(file_handle, var_handle, iodesc,  read_array, iostat)
 
 #ifdef DEBUG
 	print *, 'Rank: ', rank, ' vdc read time: ' , MPI_WTIME() - start
