@@ -699,8 +699,6 @@ program testpio
 
                  do ivar = 1, nvars
                     write(varname,'(a,i5.5)') 'field',ivar
-	print *,__FILE__,__LINE__
-
 #ifdef _COMPRESSION                       
 	            iostat = PIO_def_var(File_r4,varname,PIO_real,vard_r4(ivar))
 #else
@@ -708,9 +706,7 @@ program testpio
 #endif
                     call check_pioerr(iostat,__FILE__,__LINE__,' r4 defvar')
                  end do
-	print *,__FILE__,__LINE__
                  iostat = PIO_enddef(File_r4)
-	print *,__FILE__,__LINE__
                  call check_pioerr(iostat,__FILE__,__LINE__,' i4 enddef')
               endif
 
