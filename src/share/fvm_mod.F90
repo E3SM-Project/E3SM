@@ -30,9 +30,7 @@ module fvm_mod
   
   public :: cslam_run, cslam_runair, cslam_runairdensity
   public :: cellghostbuf, edgeveloc, fvm_init1,fvm_init2, fvm_mcgregor, fvm_mcgregordss
-#ifdef _PRIM
   public :: fvm_init3
-#endif
 contains
 
 subroutine cslam_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
@@ -462,40 +460,20 @@ subroutine fvm_init2(elem,fvm,hybrid,nets,nete,tl)
 
 end subroutine fvm_init2
 
-#ifdef _PRIM
-! first communciation of FVM tracers and overwrite airdensity
-subroutine fvm_init3(elem,fvm,deriv,hybrid,hvcoord,nets,nete,tnp0)
-  use derivative_mod, only : derivative_t, interpolate_gll2fvm_points
-  use hybvcoord_mod, only  : hvcoord_t
+! first communciation of FVM tracers
+subroutine fvm_init3(elem,fvm,hybrid,nets,nete,tnp0)
   
   type (element_t),intent(inout)            :: elem(:)                 
   type (fvm_struct),intent(inout)           :: fvm(:)  
-  type (derivative_t), intent(in)           :: deriv
                   
   type (hybrid_t),intent(in)                :: hybrid                  
-  type (hvcoord_t), intent(in)              :: hvcoord         ! hybrid vertical coordinate struct
                                                                             
   integer,intent(in)                        :: nets,nete,tnp0       
                                                                             
-  integer                                   :: ie,i,j,k                   
-  real(kind=real_kind)                      :: dp(np,np)
-  
+  integer                                   :: ie                 
   
   ! do it only for FVM tracers, FIRST TRACER will be the AIR DENSITY   
-  ! should be optimize and combined with the above caculation 
   do ie=nets,nete 
-    do k=1,nlev
- 	    do i=1,np
- 	      do j=1,np      
-     		  dp(i,j)=( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-		       ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,tnp0)
- 	      enddo
- 	    enddo
-      !write air density in tracer 1 of FVM
-      fvm(ie)%c(1:nc,1:nc,k,1,tnp0)=interpolate_gll2fvm_points(dp,deriv)
-!        fvm%c(:,:,k,1,tnp0)=1.0D0
-    enddo    
-    !note write tl%np1 in buffer
     call ghostVpack(cellghostbuf, fvm(ie)%c,nhc,nc,nlev,ntrac,0,tnp0,timelevels,elem(ie)%desc)
   end do
   !exchange values for the initial data
@@ -506,7 +484,6 @@ subroutine fvm_init3(elem,fvm,deriv,hybrid,hvcoord,nets,nete,tnp0)
   enddo
 
 end subroutine fvm_init3
-#endif
 ! ----------------------------------------------------------------------------------!
 !SUBROUTINE FVM_MESH_DEP--------------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 30.October 2011                                          !

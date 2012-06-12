@@ -75,7 +75,7 @@ contains
     use fvm_control_volume_mod, only : fvm_struct
     
 #ifndef MESH
-    use fvm_mod, only : fvm_init2    
+    use fvm_mod, only : fvm_init2,fvm_init3    
     use fvm_bsp_mod, only: fvm_init_tracer
 #endif
 
@@ -422,6 +422,7 @@ contains
              do ie=nets,nete
                call fvm_init_tracer(fvm(ie),tl)
              end do
+             call fvm_init3(elem,fvm,hybrid,nets,nete,tl%n0)
              if (hybrid%masterthread) print *,"initializing fvm tracers for swtc5..."
 #endif
              
@@ -1506,7 +1507,7 @@ contains
 
       ! fvm departure calcluation should use vstar.
       ! from c(n0) compute c(np1): 
-      call cslam_run(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
+      ! call cslam_run(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
       
       call cslam_runair(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
 
