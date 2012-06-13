@@ -88,7 +88,7 @@ LIB	= lib$(MODULE).a
 .SUFFIXES: .F90 .c .o 
 
 .c.o:
-	$(CC) -c $(INCPATH) $(CFLAGS) $<
+	$(CC) -c $(INCPATH) $(CPPDEFS) $(CFLAGS) $<
 
 .F90.o:
 	$(FC) -c $(INCFLAG). $(INCPATH) $(FPPDEFS) $(FCFLAGS) $(MPEUFLAGS) $<
