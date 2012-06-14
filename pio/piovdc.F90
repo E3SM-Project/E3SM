@@ -23,7 +23,7 @@
 module piovdc
 	use pio_kinds, only : i4, r4, pio_offset
 	implicit none
-	integer (i4)	:: vdc_dims(3), vdc_bsize(3), vdc_ts, vdc_numiotasks
+	integer (i4)	:: vdc_dims(3), vdc_bsize(3), vdc_ts
 	integer (kind=PIO_OFFSET)  :: vdc_iostart(3), vdc_iocount(3)	
 contains
 
@@ -103,9 +103,6 @@ subroutine auto_get_start_count(rank, nioprocs, block_dims, start, count, bsize)
 	  do counter=1, nlinesPslab 
 		proc_count =  CEILING(nlinesPslab / REAL(counter)) * CEILING(nslabs / REAL(slab_counter))
 		!test to see if counter # of lines per processor per slab is possible
-
-                print *,__LINE__,proc_count, nioprocs
-
 		if (nioprocs >= proc_count) then
 			if (proc_count .gt. calc_procs) then
 				calc_procs = proc_count ! return the actual # of io procs used
@@ -153,11 +150,11 @@ subroutine init_vdc2(rank, data_dims, vdc_bsize, iostart, iocount, ioprocs)
   real(r4) :: vdc_blocks(3)   
   integer (i4)	:: ierr
 
-#ifdef DEBUG
-  if(rank .eq. 0) then
-	print *, 'Calling get start count...block_dims: ', data_dims/real(vdc_bsize), ' bsize: ' , vdc_bsize, ' ioprocs: ', ioprocs, ' dims: ', data_dims
-  endif
-#endif
+!#ifdef DEBUG
+!  if(rank .eq. 0) then
+	print *, 'Calling get start count...block_dims: ', data_dims/real(vdc_bsize), ' bsize: ' , vdc_bsize, ' ioprocs: ', ioprocs, ' dims: ', data_dims, ' rank: ',rank
+!  endif
+!#endif
   vdc_blocks = data_dims/real(vdc_bsize)
   
   call auto_get_start_count (rank, ioprocs, vdc_blocks, iostart, iocount, vdc_bsize)

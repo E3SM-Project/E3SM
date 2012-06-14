@@ -1098,9 +1098,14 @@ contains
 	else
 		vdc_ts = num_ts
 	endif
-	vdc_numiotasks = iosystem%num_iotasks
-	call init_vdc2(iosystem%io_rank, dims, vdc_bsize, vdc_iostart, vdc_iocount, vdc_numiotasks)
-	iosystem%num_iotasks = vdc_numiotasks
+
+	
+
+	iosystem%num_aiotasks = iosystem%num_iotasks
+	call init_vdc2(iosystem%io_rank, dims, vdc_bsize, vdc_iostart, vdc_iocount, iosystem%num_aiotasks)
+	
+
+
 	if(debug) then
 		print *, 'rank: ', iosystem%comp_rank, ' pio_init iostart: ' , vdc_iostart, ' iocount: ', vdc_iocount
 	endif

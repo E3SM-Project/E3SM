@@ -544,7 +544,7 @@ program testpio
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.4'
            endif
         else
-           if(iofmtd.eq.'nc') then ! netCDF
+           if(iofmtd.eq.'nc' .or. iofmtd.eq.'vdc2') then ! netCDF
               if (num_iodofs == 1) then
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.5'
                  if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOF,startpio,countpio,IOdesc_r8)
@@ -602,11 +602,7 @@ program testpio
         
         fname    = TRIM(dir)//'foo.'//citer//'.'//TRIM(Iofmtd)
         fname_r8 = TRIM(dir)//'foo.r8.'//citer//'.'//TRIM(Iofmtd)
-#ifdef _COMPRESSION
-        fname_r4 = TRIM(dir)//'foo.r4.'//citer//'.vdf'
-#else
         fname_r4 = TRIM(dir)//'foo.r4.'//citer//'.'//TRIM(Iofmtd)
-#endif
         fname_i4 = TRIM(dir)//'foo.i4.'//citer//'.'//TRIM(Iofmtd)
         !   print *, __FILE__,__LINE__,'>',fname,'<'
         !   print *, __FILE__,__LINE__,'>',fname_r8,'<'
@@ -633,11 +629,7 @@ program testpio
 
            if(TestR4) then
               if(Debug) write(*,'(2a,i8)') myname,':: REAL*4 Test:  Creating File...,it=',it
-#ifdef _COMPRESSION
-              ierr = PIO_CreateFile(PIOSYS,File_r4, PIO_iotype_vdc2 ,trim(fname_r4), mode)
-#else
               ierr = PIO_CreateFile(PIOSYS,File_r4,iotype,trim(fname_r4), mode)
-#endif
               call check_pioerr(ierr,__FILE__,__LINE__,' r4 createfile')
            endif
 
@@ -700,6 +692,7 @@ program testpio
                  do ivar = 1, nvars
                     write(varname,'(a,i5.5)') 'field',ivar
 #ifdef _COMPRESSION                       
+       print *,__FILE__,__LINE__,varname
 	            iostat = PIO_def_var(File_r4,varname,PIO_real,vard_r4(ivar))
 #else
                     iostat = PIO_def_var(File_r4,varname,PIO_real,(/dimid_x,dimid_y,dimid_z/),vard_r4(ivar))
@@ -867,11 +860,7 @@ program testpio
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #15'
            
            if(TestR4) then
-#ifdef _COMPRESSION 
-              ierr = PIO_OpenFile(PIOSYS,File_r4, pio_iotype_vdc2, fname_r4)
-#else
               ierr = PIO_OpenFile(PIOSYS,File_r4,iotype, fname_r4)
-#endif
               call check_pioerr(ierr,__FILE__,__LINE__,' r4 openfile')
            endif
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #16'
