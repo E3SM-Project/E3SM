@@ -10,8 +10,8 @@ module dg_movie_mod
   ! ---------------------
   use kinds, only : real_kind
   ! ---------------------
-  use dimensions_mod, only : ne, np, nv, nelem, nelemd, nlev, nelemdmax, &
-       GlobalUniqueCols, npsq, nvsq
+  use dimensions_mod, only : ne, np, nelem, nelemd, nlev, nelemdmax, &
+       GlobalUniqueCols, npsq
   ! ---------------------
   use hybrid_mod, only : hybrid_t
   ! ---------------------
@@ -191,7 +191,7 @@ contains
     type (TimeLevel_t), intent(in)  :: tl
     type (hybrid_t), intent(in)     :: hybrid
     real (kind=real_kind), intent(in) :: phimean
-    real (kind=real_kind) :: varvtmp(nv,nv,nlev), varptmp(np,np,nlev)
+    real (kind=real_kind) :: varptmp(np,np,nlev)
     integer :: ios, ierr, istat(4)
     integer :: vcntv2d, vcntv3d, vcntp3d,vcntp2d, ie, k
     character(len=varname_len), pointer :: output_varnames(:)
@@ -199,8 +199,8 @@ contains
     integer(kind=nfsizekind) :: start(3), count(3), start2d(2),count2d(2)
     integer :: ncnt 
 
-    real (kind=real_kind)  :: varp2d(npsq), varv2d(nvsq)
-    real (kind=real_kind)  :: varp3d(npsq,nlev), varv3d(nvsq,nlev)
+    real (kind=real_kind)  :: varp2d(npsq)
+    real (kind=real_kind)  :: varp3d(npsq,nlev)
 
     do ios=1,max_output_streams
        if((output_frequency(ios) .gt. 0) .and. (output_start_time(ios) .le. tl%nstep) .and. &
@@ -521,9 +521,7 @@ contains
           allocate(gbl_fld(npts*ne,npts*ne,6,nlev))
 
           do ie=1,nelemd
-             if (npts==nv) then
-                cart => elem(ie)%cartv
-             else if (npts==np) then
+             if (npts==np) then
                 cart => elem(ie)%cartp
              end if
              x(:,:,1)=cart(:,:)%x
@@ -533,9 +531,7 @@ contains
           call syncmp(hybrid%par)
 
           do ie=1,nelemd
-             if (npts==nv) then
-                cart => elem(ie)%cartv
-             else if (npts==np) then
+             if (npts==np) then
                 cart => elem(ie)%cartp
              end if
              y(:,:,1)=cart(:,:)%y
@@ -630,9 +626,7 @@ contains
           allocate(gbl_fld(npts*ne,npts*ne,6,nlev))
 
           do ie=1,nelemd
-             if (npts==nv) then
-                cart => elem(ie)%cartv
-             else if (npts==np) then
+             if (npts==np) then
                 cart => elem(ie)%cartp
              end if
              x(:,:,1)=cart(:,:)%x
@@ -642,9 +636,7 @@ contains
           call syncmp(hybrid%par)
 
           do ie=1,nelemd
-             if (npts==nv) then
-                cart => elem(ie)%cartv
-             else if (npts==np) then
+             if (npts==np) then
                 cart => elem(ie)%cartp
              end if
 
@@ -717,8 +709,8 @@ contains
     real (kind=real_kind):: lat,lon,sum_global 
     real (kind=real_kind):: rnaccump1
     real (kind=real_kind):: v1,v2,epsi=1.0D-06    
-    real (kind=real_kind):: local_cube(nv,nv,nlev)
-    real (kind=real_kind):: global_cube(nv*ne,nv*ne,6,nlev)
+    real (kind=real_kind):: local_cube(np,np,nlev)
+    real (kind=real_kind):: global_cube(np*ne,np*ne,6,nlev)
     real (kind=real_kind), dimension(:,:,:), allocatable:: global_T,global_u
     real (kind=real_kind), dimension(:,:), allocatable  :: zonal_T,zonal_u 
     !=======================================================================================================!
@@ -780,19 +772,19 @@ contains
        !   lat-lon Output   
        !=======================================================================================================!
        if (accum_done) then
-          gll=gausslobatto(nv)
+          gll=gausslobatto(np)
           call interpolate_create(gll,interp)    
 
-          klon= (nv-1)*ne*4 + 1
-          klat= (nv-1)*ne*2 + 1    
+          klon= (np-1)*ne*4 + 1
+          klat= (np-1)*ne*2 + 1
           if (hybrid%par%masterproc .and. hybrid%ithr==0) then
              print *,'GLL coordinate'    
-             do i=1,nv
+             do i=1,np
                 print *,i,interp%glp(i)
              end do
              print *,'GLL intpolant'
-             do j=1,nv
-                print *,j,(interp%Imat(i,j),i=1,nv)
+             do j=1,np
+                print *,j,(interp%Imat(i,j),i=1,np)
              enddo
              print *,'Global Longitude:',klon
              print *,'Global Latitude :',klat           
