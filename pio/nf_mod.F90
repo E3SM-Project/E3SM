@@ -1628,6 +1628,7 @@ contains
     integer :: iotype, mpierr, nlen
     integer :: msg = PIO_MSG_DEF_VAR
 
+
     iotype = File%iotype
 
     ierr=PIO_noerr

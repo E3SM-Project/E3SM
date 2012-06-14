@@ -520,7 +520,7 @@ program testpio
      do it=1,maxiter
 
      !-------------------------------------------------------
-     ! Explain the distributed array decomposition to PIOlib
+     ! Explain the distributed array decomposition to PIO lib
      !-------------------------------------------------------
 
         if (trim(rearr) == 'box') then
@@ -544,7 +544,7 @@ program testpio
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.4'
            endif
         else
-           if(iofmtd.eq.'nc' .or. iofmtd.eq.'vdc2') then ! netCDF
+           if(iofmtd.eq.'nc' .or. iofmtd.eq.'vdf') then ! netCDF
               if (num_iodofs == 1) then
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.5'
                  if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOF,startpio,countpio,IOdesc_r8)
@@ -639,24 +639,9 @@ program testpio
               call check_pioerr(ierr,__FILE__,__LINE__,' i4 createfile')
            endif
 
-           ! Set Frame to '1' in the PIO descriptor file
            
            allocate(vard_r8(nvars), vard_r4(nvars))
            
-           do ivar=1,nvars
-              call PIO_SetFrame(vard_r8(ivar),one)
-              call PIO_SetFrame(vard_r4(ivar),one)
-           end do
-
-           call PIO_SetFrame(vard_i4,one)
-           call PIO_SetFrame(vard_r8c,one)
-           call PIO_SetFrame(vard_r4c,one)
-           call PIO_SetFrame(vard_i4c,one)
-           call PIO_SetFrame(vard_i4i,one)
-           call PIO_SetFrame(vard_i4j,one)
-           call PIO_SetFrame(vard_i4k,one)
-           call PIO_SetFrame(vard_i4m,one)
-           call PIO_SetFrame(vard_i4dof,one)
 
            !---------------------------
            ! Code specifically for netCDF files 
@@ -664,7 +649,8 @@ program testpio
            if(iotype == iotype_pnetcdf .or. & 
                 iotype == iotype_netcdf .or. &
                 iotype == PIO_iotype_netcdf4p .or. &
-                iotype == PIO_iotype_netcdf4c) then
+                iotype == PIO_iotype_netcdf4c .or. &
+                iotype == PIO_IOTYPE_vdc2) then
 
               if(TestR8) then 
                  !-----------------------------------
@@ -692,7 +678,6 @@ program testpio
                  do ivar = 1, nvars
                     write(varname,'(a,i5.5)') 'field',ivar
 #ifdef _COMPRESSION                       
-       print *,__FILE__,__LINE__,varname
 	            iostat = PIO_def_var(File_r4,varname,PIO_real,vard_r4(ivar))
 #else
                     iostat = PIO_def_var(File_r4,varname,PIO_real,(/dimid_x,dimid_y,dimid_z/),vard_r4(ivar))
@@ -742,6 +727,23 @@ program testpio
 
            endif ! if(iotype == iotype_pnetcdf .or. iotype == iotype_netcdf ) then
 
+           ! Set Frame to '1' in the PIO descriptor file
+           do ivar=1,nvars
+              call PIO_SetFrame(vard_r8(ivar),one)
+              call PIO_SetFrame(vard_r4(ivar),one)
+                 print *,__FILE__,__LINE__,vard_r4(ivar)%rec
+           end do
+
+           call PIO_SetFrame(vard_i4,one)
+           call PIO_SetFrame(vard_r8c,one)
+           call PIO_SetFrame(vard_r4c,one)
+           call PIO_SetFrame(vard_i4c,one)
+           call PIO_SetFrame(vard_i4i,one)
+           call PIO_SetFrame(vard_i4j,one)
+           call PIO_SetFrame(vard_i4k,one)
+           call PIO_SetFrame(vard_i4m,one)
+           call PIO_SetFrame(vard_i4dof,one)
+
            if(Debug) then
               write(*,'(a,2(a,i8))') myname,':: After call to OpenFile.  comp_rank=',piosys%comp_rank, &
                    ' io_rank=',piosys%io_rank
@@ -786,6 +788,7 @@ program testpio
               call t_startf('testpio_write')
 #endif
               do ivar=1,nvars
+                 print *,__FILE__,__LINE__,vard_r4(1)%rec
                  call PIO_write_darray(File_r4,vard_r4(ivar),iodesc_r4, test_r4wr,iostat)
                  call check_pioerr(iostat,__FILE__,__LINE__,' r4 write_darray')
               end do
@@ -878,7 +881,8 @@ program testpio
            if(Debug) print *,__FILE__,__LINE__
 
            if(iotype == iotype_pnetcdf .or. &
-                iotype == iotype_netcdf ) then
+                iotype == iotype_netcdf .or. &
+              iotype == pio_iotype_vdc2) then
               do ivar=1,nvars
                  if(TestR8) then 
                     iostat = PIO_inq_varid(File_r8,'field00001',vard_r8(ivar))
