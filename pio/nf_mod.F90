@@ -1700,7 +1700,8 @@ contains
 #endif
 #ifdef _COMPRESSION
        case(pio_iotype_vdc2)
-	  vardesc%name = TRIM(name) // CHAR(0)
+	  vardesc%name(1:nlen) = name(1:nlen)
+
 	  if(ios%io_rank .eq. 0) then
              call defvdfvar( F_C_String_dup(name) )
 	  endif

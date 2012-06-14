@@ -36,7 +36,6 @@ module piodarray
 ! TYPE real,int,double
 ! DIMS 1,2,3,4,5,6,7
      module procedure write_darray_{DIMS}d_{TYPE}
-     module procedure write_darray_1d_vdc
   end interface
 
 
@@ -48,7 +47,6 @@ module piodarray
 ! TYPE real,int,double
 ! DIMS 1,2,3,4,5,6,7
      module procedure read_darray_{DIMS}d_{TYPE}
-     module procedure read_darray_1d_vdc
   end interface
 
 !>
@@ -102,165 +100,6 @@ contains
 
 
 
-!> 
-!! @public
-!! @ingroup PIO_write_darray
-!! @brief Writes a VDC compressed 1D array of type real
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc vdc_var_desc_t
-!! @param ioDesc  @copydoc io_desc_t
-!! @param array  : The data to be written
-!! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
-!! @param fillval : An optional fill value to fill holes in the data written
-!<  
-  subroutine write_darray_1d_vdc (File,varDesc,ioDesc, array, iostat, ts, fillval, lod, reflevel)
-    use pio_msg_mod, only : pio_msg_writedarray
-    ! !DESCRIPTION:
-    !  Writes a 2-d slab of TYPE to a netcdf file.
-    !
-    ! !REVISION HISTORY:
-    !  same as module
-
-    ! !INPUT PARAMETERS:
-
-    type (File_desc_t), intent(inout) :: &
-         File                   ! file information
-
-    type (var_desc_t), intent(inout) :: &
-         varDesc                      ! variable descriptor
-
-    type (io_desc_t), intent(inout) :: &
-         ioDesc                      ! variable descriptor
-
-    real(r4), dimension(:), target, intent(in) ::  &
-         array                 ! array to be written
-
-    real(r4), optional, intent(in) :: fillval    ! rearrange receiver fill value
-    type(iosystem_desc_t), pointer :: ios
-    integer(i4), intent(in) :: ts
-    integer(i4), intent(in), optional ::  reflevel, lod
-
-    integer(i4), intent(out) :: iostat
-    integer :: msg, ierr, tmp_lod,tmp_ref,tmp_ts
-
-    character(len=*), parameter :: subName=modName//'::write_darray_vdc_real'
-#ifdef _COMPRESSION
-    if(present(lod)) then
-        tmp_lod = lod
-    else
-	tmp_lod = -1
-    endif
-    
-    if(present(reflevel)) then
-    	tmp_ref = reflevel
-    else
-	tmp_ref = -1
-    endif
-    tmp_ts = ts
-    ios => file%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc) then
-       msg = PIO_MSG_WRITEDARRAY
-
-       if(debugasync) print *,__PIO_FILE__,__LINE__
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-       call mpi_bcast(3, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-       call mpi_bcast(iodesc%async_id, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-       call mpi_bcast(MPI_REAL4, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-       if(debugasync) print *,__PIO_FILE__,__LINE__, MPI_REAL4
-       
-       if(present(fillval)) then
-          call mpi_bcast(1, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-          call mpi_bcast(fillval, 1, MPI_REAL4, ios%compmaster, ios%intercomm, ierr)
-       else
-          call mpi_bcast(0, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-       end if
-       if(debugasync) print *,__PIO_FILE__,__LINE__
-    endif
-       if(File%iotype .EQ. pio_iotype_vdc2) then
-          call write_vdc2_real(File, Vardesc, iodesc, array, iostat, tmp_lod, tmp_ref, tmp_ts)
-       end if
-#endif
-  end subroutine write_darray_1d_vdc
-
-
-!> 
-!! @public
-!! @ingroup PIO_read_darray
-!! @brief
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc vdc_var_desc_t
-!! @param ioDesc @copydoc io_desc_t
-!! @param array  : The read data
-!! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
-!<
-  subroutine read_darray_1d_vdc (File,varDesc, ioDesc, array, iostat, ts, lod, reflevel)
-    use pio_msg_mod, only : pio_msg_readdarray
-    ! !DESCRIPTION:
-    !  Reads a 2-d slab of TYPE to a netcdf file.
-    !
-    ! !REVISION HISTORY:
-    !  same as module
-
-    ! !INPUT PARAMETERS:
-
-    type (File_desc_t), intent(inout) :: &
-	 File                   ! file information
-
-    type (var_desc_t), intent(inout) :: &
-	 varDesc                      ! variable descriptor
-
-    type (io_desc_t), intent(inout) :: &
-	 ioDesc                      ! iodecomp descriptor
-
-    real(r4), dimension(:), intent(out) ::  &
-	 array                 ! array to be read
-
-    integer(i4), intent(out) :: iostat
-
-    character(len=*), parameter :: subName=modName//'::read_darray_vdc'
-
-    integer(i4), intent(in) :: ts
-    integer(i4), intent(inout), optional :: lod, reflevel
-	
-    type(iosystem_desc_t), pointer :: ios
-    integer :: msg, ierr, tmp_lod,tmp_ref,tmp_ts
-
-#ifdef _COMPRESSION
-    if(present(lod)) then
-        tmp_lod = lod
-    else
-	tmp_lod = -1
-    endif
-    
-    if(present(reflevel)) then
-    	tmp_ref = reflevel
-    else
-	tmp_ref = -1
-    endif
-    tmp_ts = ts
-    array = 0	
-    ios => File%iosystem
-
-    if(ios%async_interface .and. .not. ios%ioproc) then
-       msg = PIO_MSG_READDARRAY
-
-       if(DebugAsync) print *,__PIO_FILE__,__LINE__
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-       call mpi_bcast(iodesc%async_id, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-       call mpi_bcast(MPI_REAL4, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-       if(DebugAsync) print *,__PIO_FILE__,__LINE__, MPI_REAL4
-    endif
-
-    select case(File%iotype)
-    case(pio_iotype_vdc2)
-       call read_vdc2_real(File, Vardesc, iodesc, array, iostat, tmp_lod, tmp_ref, tmp_ts)
-    end select
-#endif
-  end subroutine read_darray_1d_vdc
 
 ! TYPE real,int,double
 !> 
@@ -343,6 +182,10 @@ contains
        endif
     case(pio_iotype_binary)
        print *, subName,': IO type not supported'
+    case(pio_iotype_vdc2)
+#if ( {ITYPE} == TYPEREAL )
+       call write_vdc2_real(File, Vardesc, iodesc, array, iostat)
+#endif
     end select
     
   end subroutine write_darray_1d_{TYPE}
@@ -455,6 +298,10 @@ contains
        call read_darray_bin_{TYPE} (File,varDesc,iodesc,array, iostat)
     case(pio_iotype_pnetcdf, pio_iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
        call read_darray_nf_{TYPE} (File,varDesc,iodesc,array, iostat)
+    case(pio_iotype_vdc2)
+#if ( {ITYPE} == TYPEREAL )
+       call read_vdc2_real(File, Vardesc, iodesc, array, iostat)
+#endif
     case(pio_iotype_binary)
        print *, subName,': IO type not supported'
     end select
@@ -1404,7 +1251,7 @@ contains
 
 
 
- subroutine write_vdc2_real(File, Vardesc, iodesc, array, iostat, tmp_lod, tmp_reflevel, tmp_ts)
+ subroutine write_vdc2_real(File, Vardesc, iodesc, array, iostat)
     use pio_support, only : piodie
     use, intrinsic :: iso_c_binding
     use C_interface_mod, only : F_C_STRING_DUP
@@ -1426,8 +1273,6 @@ contains
 
     real(r4), dimension(:), intent(in), target ::  &
          array                  ! array to be written
-
-    integer (i4), intent(in)	:: tmp_lod, tmp_reflevel, tmp_ts
 
     integer (i4), intent(out)   :: iostat
 
@@ -1504,7 +1349,7 @@ contains
        vlen = len_trim(vardesc%name)
        cptr = c_loc(iobuf(1))
        print *,__FILE__,__LINE__,file%iosystem%num_iotasks,vardesc%name(1:vlen)
-       call WriteVDC2Var(cptr, start, count,  File%iosystem%IO_comm, tmp_ts, tmp_lod, tmp_reflevel, File%iosystem%num_iotasks, F_C_STRING_DUP(varDesc%name(1:vlen)))
+       call WriteVDC2Var(cptr, start, count,  File%iosystem%IO_comm, Vardesc%rec, -1, -1, File%iosystem%num_iotasks, F_C_STRING_DUP(varDesc%name(1:vlen)))
     endif
 
     if(UseRearranger) call dealloc_check(IOBUF)
@@ -1520,7 +1365,7 @@ contains
 #endif
   end subroutine write_vdc2_real
 
-subroutine read_vdc2_real(File, Vardesc, iodesc, array, iostat, tmp_lod, tmp_ref, tmp_ts)
+subroutine read_vdc2_real(File, Vardesc, iodesc, array, iostat)
     use pio_support, only : piodie
     use, intrinsic :: iso_c_binding
     use C_interface_mod, only : F_C_STRING_DUP
@@ -1558,7 +1403,7 @@ subroutine read_vdc2_real(File, Vardesc, iodesc, array, iostat, tmp_lod, tmp_ref
          iotype,                    &! type of IO to perform
          ndims                       ! number of variable dimensions
     integer(4), pointer :: start(:), count(:)
-    integer (i4), intent(in)	:: tmp_lod, tmp_ref, tmp_ts
+
     double precision    :: timer;
     type(c_ptr) :: cptr
 
@@ -1583,7 +1428,7 @@ subroutine read_vdc2_real(File, Vardesc, iodesc, array, iostat, tmp_lod, tmp_ref
           call alloc_check(IOBUF,len,' TYPE :IOBUF')
           IOBUF= -1.0_r8
           cptr = c_loc(iobuf(1))
-  	  call ReadVDC2Var(cptr, start, count,  File%iosystem%IO_comm, tmp_ts, tmp_lod, tmp_ref, File%iosystem%num_iotasks, F_C_String_dup(varDesc%name))
+  	  call ReadVDC2Var(cptr, start, count,  File%iosystem%IO_comm, vardesc%rec, -1, -1, File%iosystem%num_iotasks, F_C_String_dup(varDesc%name))
        else
           call alloc_check(IOBUF,0)
           IOBUF= -1.0_r8

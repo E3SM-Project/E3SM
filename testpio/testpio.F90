@@ -793,13 +793,7 @@ program testpio
               call t_startf('testpio_write')
 #endif
               do ivar=1,nvars
-#ifdef _COMPRESSION
-       print *,__FILE__,__LINE__,ivar
-                 call PIO_write_darray(File_r4,vard_r4(ivar),iodesc_r4, test_r4wr,iostat, it)
-       print *,__FILE__,__LINE__,ivar
-#else
                  call PIO_write_darray(File_r4,vard_r4(ivar),iodesc_r4, test_r4wr,iostat)
-#endif
                  call check_pioerr(iostat,__FILE__,__LINE__,' r4 write_darray')
               end do
 #ifdef TIMING
@@ -967,11 +961,7 @@ program testpio
               call t_startf('testpio_read')
 #endif
               do ivar=1,nvars
-#ifdef _COMPRESSION
-	         call PIO_read_darray(File_r4,vard_r4(ivar),iodesc_r4,test_r4rd,iostat, it)
-#else
 	         call PIO_read_darray(File_r4,vard_r4(ivar),iodesc_r4,test_r4rd,iostat)
-#endif
                  call check_pioerr(iostat,__FILE__,__LINE__,' r4 read_darray')
               enddo
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #19'

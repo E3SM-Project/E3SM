@@ -3,7 +3,7 @@
   nx_global   = 512
   ny_global   = 512
   nz_global   = 512
-  iofmt       = 'pnc'
+  iofmt       = 'vdc2'
   rearr       = 'box'
   nprocsIO    = 16
   stride      = -1
