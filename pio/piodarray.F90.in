@@ -1348,7 +1348,6 @@ contains
     if (IOproc) then
        vlen = len_trim(vardesc%name)
        cptr = c_loc(iobuf(1))
-       print *,__FILE__,__LINE__,file%iosystem%num_iotasks,vardesc%name(1:vlen)
        call WriteVDC2Var(cptr, start, count,  File%iosystem%IO_comm, Vardesc%rec, -1, -1, File%iosystem%num_iotasks, F_C_STRING_DUP(varDesc%name(1:vlen)))
     endif
 

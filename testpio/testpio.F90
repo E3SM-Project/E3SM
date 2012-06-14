@@ -84,11 +84,19 @@ program testpio
   real(r4),   pointer :: test_r4wr(:),test_r4rd(:),diff_r4(:)
   real(r8),   pointer :: test_r8wr(:),test_r8rd(:),diff_r8(:)
 
+#ifdef _COMPRESSION
   logical, parameter :: TestR8    = .false.
   logical, parameter :: TestR4    = .true.
   logical, parameter :: TestInt   = .false.
   logical, parameter :: TestCombo = .false.
   logical, parameter :: CheckArrays = .true.  ! turn off the array check for maximum memory usage testing
+#else
+  logical, parameter :: TestR8    = .true.
+  logical, parameter :: TestR4    = .false.
+  logical, parameter :: TestInt   = .false.
+  logical, parameter :: TestCombo = .false.
+  logical, parameter :: CheckArrays = .true.  ! turn off the array check for maximum memory usage testing
+#endif
 
   logical :: writePhase, readPhase
   logical, parameter :: splitPhase = .true.
@@ -129,7 +137,7 @@ program testpio
   integer(kind=PIO_OFFSET) :: startpio(3), countpio(3)
 
   character(len=80) :: fname, fname_r8,fname_r4,fname_i4
-  logical, parameter :: Debug = .true.
+  logical, parameter :: Debug = .false.
   integer :: mpi_comm_compute, mpi_comm_io, mpi_icomm_cio
 
   character(len=3) :: citer
@@ -659,7 +667,7 @@ program testpio
                  call WriteHeader(File_r8,nx_global,ny_global,nz_global,dimid_x,dimid_y,dimid_z)
 
                  do ivar = 1, nvars
-                    write(varname,'(a,i5.5)') 'field',ivar
+                    write(varname,'(a,i5.5,a)') 'field',ivar,char(0)
                     iostat = PIO_def_var(File_r8,varname,PIO_double,(/dimid_x,dimid_y,dimid_z/),vard_r8(ivar))
                     call check_pioerr(iostat,__FILE__,__LINE__,' r8 defvar')
                  end do
@@ -676,12 +684,8 @@ program testpio
 #endif
 
                  do ivar = 1, nvars
-                    write(varname,'(a,i5.5)') 'field',ivar
-#ifdef _COMPRESSION                       
-	            iostat = PIO_def_var(File_r4,varname,PIO_real,vard_r4(ivar))
-#else
+                    write(varname,'(a,i5.5,a)') 'field',ivar
                     iostat = PIO_def_var(File_r4,varname,PIO_real,(/dimid_x,dimid_y,dimid_z/),vard_r4(ivar))
-#endif
                     call check_pioerr(iostat,__FILE__,__LINE__,' r4 defvar')
                  end do
                  iostat = PIO_enddef(File_r4)
@@ -731,7 +735,6 @@ program testpio
            do ivar=1,nvars
               call PIO_SetFrame(vard_r8(ivar),one)
               call PIO_SetFrame(vard_r4(ivar),one)
-                 print *,__FILE__,__LINE__,vard_r4(ivar)%rec
            end do
 
            call PIO_SetFrame(vard_i4,one)
@@ -788,7 +791,6 @@ program testpio
               call t_startf('testpio_write')
 #endif
               do ivar=1,nvars
-                 print *,__FILE__,__LINE__,vard_r4(1)%rec
                  call PIO_write_darray(File_r4,vard_r4(ivar),iodesc_r4, test_r4wr,iostat)
                  call check_pioerr(iostat,__FILE__,__LINE__,' r4 write_darray')
               end do

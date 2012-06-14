@@ -150,18 +150,18 @@ subroutine init_vdc2(rank, data_dims, vdc_bsize, iostart, iocount, ioprocs)
   real(r4) :: vdc_blocks(3)   
   integer (i4)	:: ierr
 
-!#ifdef DEBUG
-!  if(rank .eq. 0) then
+#ifdef DEBUG
+  if(rank .eq. 0) then
 	print *, 'Calling get start count...block_dims: ', data_dims/real(vdc_bsize), ' bsize: ' , vdc_bsize, ' ioprocs: ', ioprocs, ' dims: ', data_dims, ' rank: ',rank
-!  endif
-!#endif
+  endif
+#endif
   vdc_blocks = data_dims/real(vdc_bsize)
   
   call auto_get_start_count (rank, ioprocs, vdc_blocks, iostart, iocount, vdc_bsize)
   
-!#ifdef DEBUG 
+#ifdef DEBUG 
 		print *, 'Retrieved VDF start count', iostart, '-', iocount, 'rank: ' , rank
-!#endif
+#endif
 
 endsubroutine
 

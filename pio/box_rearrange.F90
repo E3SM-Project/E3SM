@@ -2249,16 +2249,14 @@ end subroutine box_rearrange_io2comp_int
             count, ndim, MPI_INTEGER8,             & ! recvbuf, count, type
             0, Iosystem%IO_comm                   )
 
- !      if(Debug) then
+       if(Debug) then
           print *, __PIO_FILE__,__LINE__,iodesc%start, iodesc%count
           if(iosystem%io_rank==0) &
-             print *,__PIO_FILE__,__LINE__,ndim,(i,' :', &
-                start(:,i), count(:,i),i=1,iosystem%num_iotasks)
-!       end if
+               print *,__PIO_FILE__,__LINE__,ndim,(i,' :', &
+               start(:,i), count(:,i),i=1,iosystem%num_iotasks)
+       end if
        ! note that index in start,count is the io_rank not comp_rank
     endif
-
-    print *,__PIO_FILE__,__LINE__,ndim,iosystem%num_iotasks,iosystem%ioranks(1),iosystem%union_comm
 
     call MPI_BCAST(start, ndim*Iosystem%num_iotasks, MPI_INTEGER8,   & ! buf, cnt
                    Iosystem%ioranks(1), Iosystem%union_comm, ierror    )
@@ -2344,7 +2342,7 @@ end subroutine box_rearrange_io2comp_int
 
 #ifndef _MPISERIAL
 
-# 1115 "box_rearrange.F90.in"
+# 1113 "box_rearrange.F90.in"
   subroutine compute_counts(Iosystem, ioDesc, niodof)
     
     use calcdisplace_mod, only : calcdisplace,GCDblocksize,gcd
@@ -2895,7 +2893,7 @@ end subroutine box_rearrange_io2comp_int
   !
 
 
-# 1665 "box_rearrange.F90.in"
+# 1663 "box_rearrange.F90.in"
   subroutine box_rearrange_create( Iosystem,compdof,gsize,ndim,nioproc,ioDesc)
     implicit none
 
@@ -3088,7 +3086,7 @@ end subroutine box_rearrange_io2comp_int
 
 #ifndef _MPISERIAL
 
-# 1857 "box_rearrange.F90.in"
+# 1855 "box_rearrange.F90.in"
   subroutine compute_counts( Iosystem,ioDesc,niodof )
 
     use calcdisplace_mod, only : calcdisplace, GCDblocksize, gcd
@@ -3563,7 +3561,7 @@ end subroutine box_rearrange_io2comp_int
   !   the rearrangement
   !
 
-# 2331 "box_rearrange.F90.in"
+# 2329 "box_rearrange.F90.in"
   subroutine box_rearrange_free(Iosystem,ioDesc)
     implicit none
 

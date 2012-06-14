@@ -1701,7 +1701,7 @@ contains
 #endif
 #ifdef _COMPRESSION
        case(pio_iotype_vdc2)
-	  vardesc%name(1:nlen) = name(1:nlen)
+	  vardesc%name = name(1:nlen)//char(0)
 
 	  if(ios%io_rank .eq. 0) then
              call defvdfvar( F_C_String_dup(name) )
