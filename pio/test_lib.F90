@@ -154,7 +154,7 @@ program Test_Lib
 
 	!finally call enddef to have the VDF metadata file written out
 	ierr = PIO_enddef(file_handle)
-
+	call PIO_setframe(var_handle, int(0, PIO_OFFSET))
 #ifdef DEBUG
 	if(rank .eq. 0 ) then
 	    print *, 'Ended VDF definition'
