@@ -147,7 +147,9 @@ contains
     logical, parameter :: Debug = .FALSE.
     
 #ifdef _FVM
-  real (kind=longdouble_kind)                    :: fvm_nodes(nc+1)
+  real (kind=longdouble_kind)                    :: fvm_corners(nc+1)
+  real(kind=longdouble_kind)                     :: fvm_points(nc)     ! fvm cell centers on reference element
+  
   real (kind=real_kind)                          :: xtmp
   real (kind=real_kind)                          :: maxcflx, maxcfly  
 #endif    
@@ -214,9 +216,12 @@ contains
     ! array 'fvm_nodes(:)' computed below:
     xtmp=nc 
     do i=1,nc+1
-      fvm_nodes(i)= 2*(i-1)/xtmp - 1
+      fvm_corners(i)= 2*(i-1)/xtmp - 1
     end do
-    call derivinit(deriv,fvm_corners=fvm_nodes)
+    do i=1,nc
+       fvm_points(i)= ( fvm_corners(i)+fvm_corners(i+1) ) /2
+    end do
+    call derivinit(deriv,fvm_corners,fvm_points)
     call fvm_init2(elem,fvm,hybrid,nets,nete,tl)
     
 #else
@@ -1446,14 +1451,14 @@ contains
       use time_mod, only : timelevel_t
       use perf_mod, only : t_startf, t_stopf, t_barrierf            ! _EXTERNAL
       use derivative_mod, only : divergence_sphere, ugradv_sphere
-      use fvm_mod, only : cslam_run, cslam_runair, edgeveloc, fvm_mcgregor
+      use fvm_mod, only :  cslam_runairdensity, edgeveloc, fvm_mcgregor,fvm_mcgregordss
       use bndry_mod, only : bndry_exchangev
       use edge_mod, only  : edgevpack, edgevunpack
       use dimensions_mod, only : np, nlev
       
       implicit none
       type (element_t), intent(inout)               :: elem(:)
-      type (fvm_struct), intent(inout)            :: fvm(:)
+      type (fvm_struct), intent(inout)              :: fvm(:)
       type (derivative_t), intent(in)               :: deriv
       type (hybrid_t),     intent(in)               :: hybrid
       type (TimeLevel_t), intent(in)                :: tl
@@ -1472,44 +1477,55 @@ contains
 
       ! using McGregor AMS 1993 scheme: Economical Determination of Departure Points for
       ! Semi-Lagrangian Models 
-      do ie=nets,nete
-        do k=1,nlev
-           ! Convert wind to lat-lon
-          v1     = (elem(ie)%state%v(:,:,1,k,tl%n0) + elem(ie)%state%v(:,:,1,k,tl%np1))/2.0D0  ! contra
-          v2     = (elem(ie)%state%v(:,:,2,k,tl%n0) + elem(ie)%state%v(:,:,2,k,tl%np1))/2.0D0   ! contra 
-          vhat(:,:,1)=elem(ie)%D(1,1,:,:)*v1 + elem(ie)%D(1,2,:,:)*v2   ! contra->latlon
-          vhat(:,:,2)=elem(ie)%D(2,1,:,:)*v1 + elem(ie)%D(2,2,:,:)*v2   ! contra->latlon
-          
-           ! Convert wind to lat-lon
-          v1     = elem(ie)%state%v(:,:,1,k,tl%np1)  ! contra
-          v2     = elem(ie)%state%v(:,:,2,k,tl%np1)   ! contra 
-          vstar(:,:,1)=elem(ie)%D(1,1,:,:)*v1 + elem(ie)%D(1,2,:,:)*v2   ! contra->latlon
-          vstar(:,:,2)=elem(ie)%D(2,1,:,:)*v1 + elem(ie)%D(2,2,:,:)*v2   ! contra->latlon
-          
-          ! calculate high order approximation
-          call fvm_mcgregor(elem(ie), deriv, dt, vhat,vstar, 1)
-          ! apply DSS to make vstar C0
-          elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%spheremp(:,:)*vstar(:,:,1) 
-          elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%spheremp(:,:)*vstar(:,:,2) 
-        enddo 
-        call edgeVpack(edgeveloc,elem(ie)%derived%vstar(:,:,1,:),nlev,0,elem(ie)%desc)
-        call edgeVpack(edgeveloc,elem(ie)%derived%vstar(:,:,2,:),nlev,nlev,elem(ie)%desc)
-      enddo 
-      call bndry_exchangeV(hybrid,edgeveloc)
-      do ie=nets,nete
-         call edgeVunpack(edgeveloc,elem(ie)%derived%vstar(:,:,1,:),nlev,0,elem(ie)%desc)
-         call edgeVunpack(edgeveloc,elem(ie)%derived%vstar(:,:,2,:),nlev,nlev,elem(ie)%desc)
-         do k=1, nlev  
-           elem(ie)%derived%vstar(:,:,1,k)=elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%rspheremp(:,:)
-           elem(ie)%derived%vstar(:,:,2,k)=elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%rspheremp(:,:)
-         end do
-      end do
+!-BEGIN McGregor Without DSS
+!       do ie=nets,nete
+!         do k=1,nlev
+!            ! Convert wind to lat-lon
+!           v1     = (elem(ie)%state%v(:,:,1,k,tl%n0) + elem(ie)%state%v(:,:,1,k,tl%np1))/2.0D0  ! contra
+!           v2     = (elem(ie)%state%v(:,:,2,k,tl%n0) + elem(ie)%state%v(:,:,2,k,tl%np1))/2.0D0   ! contra 
+!           vhat(:,:,1)=elem(ie)%D(1,1,:,:)*v1 + elem(ie)%D(1,2,:,:)*v2   ! contra->latlon
+!           vhat(:,:,2)=elem(ie)%D(2,1,:,:)*v1 + elem(ie)%D(2,2,:,:)*v2   ! contra->latlon
+!           
+!            ! Convert wind to lat-lon
+!           v1     = elem(ie)%state%v(:,:,1,k,tl%np1)  ! contra
+!           v2     = elem(ie)%state%v(:,:,2,k,tl%np1)   ! contra 
+!           vstar(:,:,1)=elem(ie)%D(1,1,:,:)*v1 + elem(ie)%D(1,2,:,:)*v2   ! contra->latlon
+!           vstar(:,:,2)=elem(ie)%D(2,1,:,:)*v1 + elem(ie)%D(2,2,:,:)*v2   ! contra->latlon
+!           
+!           ! calculate high order approximation
+!           call fvm_mcgregor(elem(ie), deriv, dt, vhat,vstar, 1)
+!           ! apply DSS to make vstar C0
+!           elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%spheremp(:,:)*vstar(:,:,1) 
+!           elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%spheremp(:,:)*vstar(:,:,2) 
+!         enddo 
+!         call edgeVpack(edgeveloc,elem(ie)%derived%vstar(:,:,1,:),nlev,0,elem(ie)%desc)
+!         call edgeVpack(edgeveloc,elem(ie)%derived%vstar(:,:,2,:),nlev,nlev,elem(ie)%desc)
+!       enddo 
+!       call bndry_exchangeV(hybrid,edgeveloc)
+!       do ie=nets,nete
+!          call edgeVunpack(edgeveloc,elem(ie)%derived%vstar(:,:,1,:),nlev,0,elem(ie)%desc)
+!          call edgeVunpack(edgeveloc,elem(ie)%derived%vstar(:,:,2,:),nlev,nlev,elem(ie)%desc)
+!          do k=1, nlev  
+!            elem(ie)%derived%vstar(:,:,1,k)=elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%rspheremp(:,:)
+!            elem(ie)%derived%vstar(:,:,2,k)=elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%rspheremp(:,:)
+!          end do
+!       end do
+!-END McGregor Without DSS
+
+!-------BEGIN McGregor scheme
+    do ie=nets,nete
+      ! save velocity at time t for fvm
+      fvm(ie)%vn0=elem(ie)%state%v(:,:,:,:,tl%n0) 
+      elem(ie)%derived%vstar=elem(ie)%state%v(:,:,:,:,tl%np1)   
+    end do  
+      call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, dt, 3)
+!-------END new McGregor scheme--------
 
       ! fvm departure calcluation should use vstar.
       ! from c(n0) compute c(np1): 
       ! call cslam_run(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
       
-      call cslam_runair(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
+      call cslam_runairdensity(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
 
       call t_stopf('shal_advec_tracers_fvm')
     end subroutine shal_advec_tracers_fvm  

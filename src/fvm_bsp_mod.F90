@@ -419,9 +419,9 @@ subroutine fvm_init_tracer(fvm, tl)
   
   do k=1, nlev
     fvm%c(:,:,k,1,tl%n0)=1.0D0    !density of the air
-    fvm%c(:,:,k,2,tl%n0)=10.0D0    !density of the air
+!     fvm%c(:,:,k,2,tl%n0)=10.0D0    !density of the air
     
-    do itr=3,ntrac
+    do itr=2,ntrac
       do j=1,nc
         do i=1,nc               
           call analytical_function(fvm%c(i,j,k,itr,tl%n0),fvm%centersphere(i,j),k,itr)      
