@@ -47,6 +47,8 @@ module interpolate_mod
   public :: interp_init
   public :: setup_latlon_interp
   public :: interpolate_scalar
+  public :: interpolate_ce
+  
   public :: interpol_phys_latlon
   public :: interpolate_vector
   public :: set_interp_parameter
@@ -1308,6 +1310,39 @@ end subroutine interpol_phys_latlon
 
 
   end subroutine setup_latlon_interp
+
+
+
+! interpolate_scalar
+!
+! Interpolate a scalar field given in an element (fld_cube) to the points in
+! interpdata%interp_xy(i), i=1 .. interpdata%n_interp.
+!
+! Note that it is possible the given element contains none of the interpolation points
+! =======================================
+subroutine interpolate_ce(cart,fld_cube,npts,fld, fillvalue)
+  type (cartesian2D_t) :: cart
+  integer                  ::  npts
+  real (kind=real_kind)    ::  fld_cube(npts,npts) ! cube field
+  real (kind=real_kind)    ::  fld          ! field at new grid lat,lon coordinates
+  real (kind=real_kind), intent(in), optional :: fillvalue
+  ! Local variables
+  type (interpolate_t), pointer  ::  interp          ! interpolation structure
+
+  integer :: ne
+
+  integer :: i
+
+
+  if (npts==np) then
+     interp => interp_p
+  else
+     call abortmp('Error in interpolate_scalar(): must be called with p or v grid data')
+  endif
+
+  fld=interpolate_2d(cart,fld_cube,interp,npts,fillvalue)
+
+end subroutine interpolate_ce
 
 
 

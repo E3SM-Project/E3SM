@@ -13,12 +13,11 @@ module cwfv_bench_mod
   use kinds, only : real_kind, int_kind, longdouble_kind
   use edge_mod, only : ghostbuffertr_t, initghostbuffer, freeghostbuffertr, &
                        ghostVpack, ghostVunpack
-  use dimensions_mod, only: nelem, nelemd, nelemdmax, nlev, ne, nc, nhc, nhe, nlev, ntrac
+  use dimensions_mod, only: nelem, nelemd, nelemdmax, nlev, ne, np, nlev, ntrac
   use time_mod, only : timelevel_t
   use element_mod, only : element_t, timelevels
-  use fvm_control_volume_mod, only: fvm_struct
   use hybrid_mod, only : hybrid_t
-  use fvm_mod, only: cellghostbuf
+  use cwfv_mod, only: cellghostbuf, cwfv_struct
 
 
   public :: fvm_init1,fvm_init2
@@ -28,8 +27,9 @@ contains
 
 subroutine cwfv_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   ! ---------------------------------------------------------------------------------
-  use fvm_bsp_mod, only: fvm_bsp, set_boomerang_velocities_gll
-  use fvm_mod, only: cslam_run
+  use fvm_bsp_mod, only: analytical_function, set_boomerang_velocities_gll, get_boomerang_velocities_gll
+  use cwfv_mod, only: fvm_mcgregordss, cwfv_run
+!    
   ! ---------------------------------------------------------------------------------
   use fvm_line_integrals_mod, only: compute_weights
   ! ---------------------------------------------------------------------------------  
@@ -40,7 +40,6 @@ subroutine cwfv_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   use checksum_mod, only: test_ghost
   ! ---------------------------------------------------------------------------------
   use derivative_mod, only : derivative_t, derivative_stag_t, derivinit, deriv_print
-  ! ---------------------------------------------------------------------------------
   ! ---------------------------------------------------------------------------------
   ! ---------------------------------------------------------------------------------
   use reduction_mod, only : ReductionBuffer_ordered_1d_t
@@ -78,7 +77,7 @@ subroutine cwfv_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   
   implicit none
   type (element_t), intent(inout)                :: elem(:)
-  type (fvm_struct), intent(inout)             :: fvm(:)
+  type (cwfv_struct), intent(inout)             :: fvm(:)
   type (ReductionBuffer_ordered_1d_t),intent(in)    :: red   ! reduction buffer         (shared)
   type (hybrid_t), intent(in)                 :: hybrid   ! distributed parallel structure (shared)
   integer, intent(in)                         :: nets  ! starting thread element number (private)
@@ -93,20 +92,12 @@ subroutine cwfv_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   type (spherical_polar_t)                    :: tmpsphereincart   
  
   character (len=99)                          :: filename
-  
-  real (kind=real_kind)   , dimension(10*(nc+2*nhe)*(nc+2*nhe),6)  :: weights_all
-  integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: weights_eul_index_all
-  integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: weights_lgr_index_all
-  integer (kind=int_kind)                                          :: jall
-    
-  real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons  
-  real (kind=real_kind), dimension(nelemd,1-nhe:nc+nhe,1-nhe:nc+nhe) :: area    
+     
   real (kind=real_kind) :: xtmp
-  real (kind=longdouble_kind) :: fvm_nodes(nc+1)
   
   integer  choosetrac, chooselev   !for test reason the output
  !-----------------------------------------------------------------------------------!  
- choosetrac=1
+ choosetrac=2
  chooselev=1
  
   if(hybrid%masterthread) then 
@@ -122,89 +113,38 @@ subroutine cwfv_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   ! to the reference element via simple scale + translation
   ! thus, CWFV nodes in reference element [-1,1] are a tensor product of
   ! array 'fvm_nodes(:)' computed below:
-  xtmp=nc 
-  do i=1,nc+1
-    fvm_nodes(i)= 2*(i-1)/xtmp - 1
-  end do
-  call derivinit(deriv,fvm_corners=fvm_nodes)
+  call derivinit(deriv)
 
 
 !-----------------------------------------------------------------------------------!    
   kptr=0
   do ie=nets,nete
-    call fvm_bsp(fvm(ie),tl)
-    fvm(ie)%elem_mass=0
-    do j=1,nc
-      do i=1,nc
-        fvm(ie)%elem_mass=fvm(ie)%elem_mass + &
-                      fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)
-      enddo
-    enddo
+    do k=1, nlev
+        fvm(ie)%c(:,:,k,1,tl%n0)=1.0D0    !density of the air
+        do itr=2,ntrac
+          do j=1,np
+            do i=1,np               
+              call analytical_function(fvm(ie)%c(i,j,k,itr,tl%n0),elem(ie)%spherep(i,j),k,itr)      
+            end do
+          end do
+        end do 
+      end do
     !
     !first exchange of the initial values
-    call ghostVpack(cellghostbuf, fvm(ie)%c,nhc,nc,nlev,ntrac,0,tl%n0,timelevels,elem(ie)%desc)
-    ! reset the new unknown
-    do k=1,nlev
-      do itr=1,ntrac
-        do j=1-nhc,nc+nhc
-          do i=1-nhc,nc+nhc 
-          fvm(ie)%c(i,j,k,itr,tl%np1)=0.0D0
-          end do
-        end do
-      enddo
-    enddo
+    call ghostVpack(cellghostbuf, fvm(ie)%c,np,np,nlev,ntrac,0,tl%n0,timelevels,elem(ie)%desc)
   end do
-
 !-----------------------------------------------------------------------------------!  
-  call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc)
+  call ghost_exchangeV(hybrid,cellghostbuf,np,np)
 !-----------------------------------------------------------------------------------!    
-
   do ie=nets,nete
     kptr=0
-     call ghostVunpack(cellghostbuf, fvm(ie)%c, nhc, nc,nlev,ntrac, 0, tl%n0, timelevels,elem(ie)%desc)
+     call ghostVunpack(cellghostbuf, fvm(ie)%c, np, np,nlev,ntrac, 0, tl%n0, timelevels,elem(ie)%desc)
     ! for the mass value
-    global_shared_buf(ie,1)=0D0
-    global_shared_buf(ie,1)=fvm(ie)%elem_mass
+!     global_shared_buf(ie,1)=0D0
+!     global_shared_buf(ie,1)=fvm(ie)%elem_mass
     ! for the max value on the sphere
     tmp1(ie) = MAXVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))
     tmp2(ie) = MINVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))   
-  ! BEGIN Testoutput: write data in p (interpolation) to use existing IO
-  ! prepare date for I/O
-    do k=1,nlev
-      do j=1,nc+1
-        do i=1,nc+1 
-          !write it in p because of IO 
-          !first only with three elements in the patch
-          if ((fvm(ie)%cubeboundary==swest) .AND. (j==1) .AND. (i==1)) then
-            elem(ie)%state%p(i,j,k,tl%n0)=g*(fvm(ie)%area_sphere(i,j-1)*fvm(ie)%c(i,j-1,k,choosetrac,tl%n0)+ &
-            fvm(ie)%area_sphere(i-1,j)*fvm(ie)%c(i-1,j,k,choosetrac,tl%n0)+ &
-            fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,k,choosetrac,tl%n0))/ &
-            (fvm(ie)%area_sphere(i,j-1)+fvm(ie)%area_sphere(i-1,j)+fvm(ie)%area_sphere(i,j))
-          elseif ((fvm(ie)%cubeboundary==seast) .AND. (j==1) .AND. (i==nc+1)) then
-            elem(ie)%state%p(i,j,k,tl%n0)=g*(fvm(ie)%area_sphere(i-1,j-1)*fvm(ie)%c(i-1,j-1,k,choosetrac,tl%n0)+ &
-            fvm(ie)%area_sphere(i-1,j)*fvm(ie)%c(i-1,j,k,choosetrac,tl%n0)+ &
-            fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,k,choosetrac,tl%n0))/(fvm(ie)%area_sphere(i-1,j-1)+ &
-            fvm(ie)%area_sphere(i-1,j)+fvm(ie)%area_sphere(i,j)) 
-          elseif ((fvm(ie)%cubeboundary==nwest) .AND. (j==nc+1) .AND. (i==1)) then
-            elem(ie)%state%p(i,j,k,tl%n0)=g*(fvm(ie)%area_sphere(i-1,j-1)*fvm(ie)%c(i-1,j-1,k,choosetrac,tl%n0)+ &
-            fvm(ie)%area_sphere(i,j-1)*fvm(ie)%c(i,j-1,k,choosetrac,tl%n0)+ &
-            fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,k,choosetrac,tl%n0))/(fvm(ie)%area_sphere(i-1,j-1)+ &
-            fvm(ie)%area_sphere(i,j-1)+fvm(ie)%area_sphere(i,j)) 
-          elseif ((fvm(ie)%cubeboundary==neast) .AND. (j==nc+1) .AND. (i==nc+1)) then   
-            elem(ie)%state%p(i,j,k,tl%n0)=g*(fvm(ie)%area_sphere(i-1,j-1)*fvm(ie)%c(i-1,j-1,k,choosetrac,tl%n0)+ &
-            fvm(ie)%area_sphere(i,j-1)*fvm(ie)%c(i,j-1,k,choosetrac,tl%n0)+ &
-            fvm(ie)%area_sphere(i-1,j)*fvm(ie)%c(i-1,j,k,choosetrac,tl%n0))/(fvm(ie)%area_sphere(i-1,j-1)+ &
-            fvm(ie)%area_sphere(i,j-1)+fvm(ie)%area_sphere(i-1,j))
-          else
-            elem(ie)%state%p(i,j,k,tl%n0)=g*(fvm(ie)%area_sphere(i-1,j-1)*fvm(ie)%c(i-1,j-1,k,choosetrac,tl%n0)+ &
-            fvm(ie)%area_sphere(i,j-1)*fvm(ie)%c(i,j-1,k,choosetrac,tl%n0)+ &
-            fvm(ie)%area_sphere(i-1,j)*fvm(ie)%c(i-1,j,k,choosetrac,tl%n0)+ &
-            fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,k,choosetrac,tl%n0))/(fvm(ie)%area_sphere(i-1,j-1)+ &
-            fvm(ie)%area_sphere(i,j-1)+fvm(ie)%area_sphere(i-1,j)+fvm(ie)%area_sphere(i,j))
-          end if
-        end do
-      end do
-    end do
   end do
 
 
@@ -219,20 +159,18 @@ subroutine cwfv_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
 !-----------------------------------------------------------------------------------!  
 !Initialize Output via geopotential (should be changed, separate output for CWFV
 !write first time step to IO 
+  do ie=nets,nete
+    elem(ie)%state%p(:,:,:,tl%n0)=g*fvm(ie)%c(1:np,1:np,:,choosetrac,tl%n0)
+    elem(ie)%state%ps(:,:)=0.0D0
+  end do
 #ifdef PIO_INTERP
   call interp_movie_init(elem,hybrid,nets,nete,tl=tl)    
   call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete)
 #else
     call shal_movie_init(elem,hybrid,fvm)
-    call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv,fvm)
+    call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv)
 #endif 
 !-----------------------------------------------------------------------------------!
-!-----------------------------------------------------------------------------------!  
-#ifdef PIO_INTERP
-  call interp_movie_output(elem, tl, hybrid, 0D0, deriv, nets, nete)
-#else     
-  call shal_movie_output(elem, tl, hybrid, 0D0, nets, nete,deriv,fvm)
-#endif
 !-----------------------------------------------------------------------------------!
   if(hybrid%masterthread) then 
     print *
@@ -243,101 +181,37 @@ subroutine cwfv_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   call t_startf('CWFV')
   
   !BEGIN TIME LOOP, start at 0, calculate then next step
+!   DO WHILE(tl%nstep<nmax)
   DO WHILE(tl%nstep<nmax)
-
 ! HERE STARTS THE NEW SCHEME --------------------------------------------------------
   kptr=0
-  do ie=nets, nete
-     !loop through all levels
-     do k=1,nlev
-        !loop through all tracers
-        do itr=1,ntrac
-           !reset value
-           do j=1-nhc,nc+nhc
-              do i=1-nhc,nc+nhc 
-                 fvm(ie)%c(i,j,k,itr,tl%np1)=0.0D0
-              end do
-           end do
-           
-           !!!! PUT IN NEW SCHEME HERE!!!!
-           do j=1,nc
-              do i=1,nc
-                 fvm(ie)%c(i,j,k,itr,tl%np1)=fvm(ie)%c(i,j,k,itr,tl%n0)
-              end do
-           end do
-        enddo  !End Tracer
-     end do  !End Level
-     !note write tl%np1 in buffer
-     call ghostVpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),nhc,nc,nlev,ntrac,kptr,elem(ie)%desc)
-  end do
-
-  !-----------------------------------------------------------------------------------!
-  !
-  ! go one time step forward and do the data exchange, new values shift from tl%np1 to tl%n0
-  call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc)
-  !-----------------------------------------------------------------------------------!
-  do ie=nets,nete
-     ! note time level has changed, write buffer in tl%np1 
-     call ghostVunpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1), nhc, nc,nlev,ntrac, kptr, elem(ie)%desc)
-  enddo
-
-! HERE ENDS THE NEW SCHEME ----------------------------------------------------------
-
-
-
+! ! start mcgregordss
+    do ie=nets,nete
+      do k=1,nlev
+        elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep-1))
+        fvm(ie)%vn0(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),time_at(tl%nstep))
+      end do
+    end do
+    
+    call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, tstep, 3)
+    call cwfv_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
 
 
    do ie=nets,nete
     ! prepare data for I/O
       global_shared_buf(ie,1)=0D0  ! for mass calculation
       global_shared_buf(ie,2)=0D0  ! for max value
-      do k=1, nlev
-        do j=1,nc+1
-          do i=1,nc+1 
-            !write it in p because of IO 
-            !first only with three elements in the patch
-            if ((fvm(ie)%cubeboundary==swest) .AND. (j==1) .AND. (i==1)) then
-              elem(ie)%state%p(i,j,k,tl%np1)=g*(fvm(ie)%area_sphere(i,j-1)*fvm(ie)%c(i,j-1,k,choosetrac,tl%np1)+ &
-              fvm(ie)%area_sphere(i-1,j)*fvm(ie)%c(i-1,j,k,choosetrac,tl%np1)+ &
-              fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,k,choosetrac,tl%np1))/ &
-              (fvm(ie)%area_sphere(i,j-1)+fvm(ie)%area_sphere(i-1,j)+fvm(ie)%area_sphere(i,j))
-            elseif ((fvm(ie)%cubeboundary==seast) .AND. (j==1) .AND. (i==nc+1)) then
-              elem(ie)%state%p(i,j,k,tl%np1)=g*(fvm(ie)%area_sphere(i-1,j-1)*fvm(ie)%c(i-1,j-1,k,choosetrac,tl%np1)+ &
-              fvm(ie)%area_sphere(i-1,j)*fvm(ie)%c(i-1,j,k,choosetrac,tl%np1)+ &
-              fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,k,choosetrac,tl%np1))/(fvm(ie)%area_sphere(i-1,j-1)+ &
-              fvm(ie)%area_sphere(i-1,j)+fvm(ie)%area_sphere(i,j)) 
-            elseif ((fvm(ie)%cubeboundary==nwest) .AND. (j==nc+1) .AND. (i==1)) then
-              elem(ie)%state%p(i,j,k,tl%np1)=g*(fvm(ie)%area_sphere(i-1,j-1)*fvm(ie)%c(i-1,j-1,k,choosetrac,tl%np1)+ &
-              fvm(ie)%area_sphere(i,j-1)*fvm(ie)%c(i,j-1,k,choosetrac,tl%np1)+ &
-              fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,k,choosetrac,tl%np1))/(fvm(ie)%area_sphere(i-1,j-1)+ &
-              fvm(ie)%area_sphere(i,j-1)+fvm(ie)%area_sphere(i,j)) 
-            elseif ((fvm(ie)%cubeboundary==neast) .AND. (j==nc+1) .AND. (i==nc+1)) then   
-              elem(ie)%state%p(i,j,k,tl%np1)=g*(fvm(ie)%area_sphere(i-1,j-1)*fvm(ie)%c(i-1,j-1,k,choosetrac,tl%np1)+ &
-              fvm(ie)%area_sphere(i,j-1)*fvm(ie)%c(i,j-1,k,choosetrac,tl%np1)+ &
-              fvm(ie)%area_sphere(i-1,j)*fvm(ie)%c(i-1,j,k,choosetrac,tl%np1))/(fvm(ie)%area_sphere(i-1,j-1)+ &
-              fvm(ie)%area_sphere(i,j-1)+fvm(ie)%area_sphere(i-1,j))
-            else
-              elem(ie)%state%p(i,j,k,tl%np1)=g*(fvm(ie)%area_sphere(i-1,j-1)*fvm(ie)%c(i-1,j-1,k,choosetrac,tl%np1)+ &
-              fvm(ie)%area_sphere(i,j-1)*fvm(ie)%c(i,j-1,k,choosetrac,tl%np1)+ &
-              fvm(ie)%area_sphere(i-1,j)*fvm(ie)%c(i-1,j,k,choosetrac,tl%np1)+ &
-              fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,k,choosetrac,tl%np1))/(fvm(ie)%area_sphere(i-1,j-1)+ &
-              fvm(ie)%area_sphere(i,j-1)+fvm(ie)%area_sphere(i-1,j)+fvm(ie)%area_sphere(i,j))
-            end if 
-          end do
-        end do
-      end do
       ! test mass, just for chooselev and choosetrac
-      do j=1,nc
-        do i=1,nc        
-          mass=mass+fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,chooselev,choosetrac,tl%np1)
-          global_shared_buf(ie,1)=global_shared_buf(ie,1)+fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,chooselev,choosetrac,tl%np1)
-        end do
-      end do
+!       do j=1,nc
+!         do i=1,nc        
+!           mass=mass+fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,chooselev,choosetrac,tl%np1)
+!           global_shared_buf(ie,1)=global_shared_buf(ie,1)+fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,chooselev,choosetrac,tl%np1)
+!         end do
+!       end do
       ! for the max/min value on the sphere
       tmp1(ie) = MAXVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%np1))
       tmp2(ie) = MINVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%np1))
     end do
-
 
     call TimeLevel_update(tl,"forward") 
 
@@ -360,11 +234,14 @@ subroutine cwfv_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
       print *
     endif
 !-----------------------------------------------------------------------------------!  
-
+  do ie=nets,nete
+    elem(ie)%state%p(:,:,:,tl%n0)=g*fvm(ie)%c(1:np,1:np,:,choosetrac,tl%n0)
+    elem(ie)%state%ps(:,:)=0.0D0
+  end do
 #ifdef PIO_INTERP
     call interp_movie_output(elem, tl, hybrid, 0D0, deriv, nets, nete)
 #else     
-    call shal_movie_output(elem, tl, hybrid, 0D0, nets, nete,deriv,fvm)
+    call shal_movie_output(elem, tl, hybrid, 0D0, nets, nete,deriv)
 #endif
 !-----------------------------------------------------------------------------------!  
   END DO
@@ -389,7 +266,7 @@ subroutine cwfv_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
     print *,"!  Test CASE for CWFV, Christoph Erath                                  !" 
     print *,"!-----------------------------------------------------------------------!"
     print *  
-    write(*,*) 'number of elements', 6*ne*ne*nc*nc
+    write(*,*) 'number of elements', 6*ne*ne
 
     print *
     write(*,*) 'chooselev=', chooselev, 'choosetrac=', choosetrac
@@ -400,6 +277,11 @@ subroutine cwfv_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   endif
 
   0817 format("*****ELEMENT ",I6,2x,I6,2x,I1)
+  
+!   do ie=nets,nete
+!     write(*,*) elem(ie)%LocalId,elem(ie)%GlobalId,elem(ie)%vertex%nbrs(:)%n
+!   end do
+
 end subroutine cwfv_run_bench
 
 end module cwfv_bench_mod

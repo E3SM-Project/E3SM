@@ -11,10 +11,9 @@
 
 program cwfv_main
   ! -----------------------------------------------
-  use fvm_mod, only: fvm_init1, fvm_init2
-  use cwfv_bench_mod, only: cwfv_run_bench
+  use cwfv_mod, only: fvm_init1, fvm_init2
+  use cwfv_bench_mod, only: cwfv_run_bench, cwfv_struct
   ! -----------------------------------------------
-  use fvm_control_volume_mod, only: fvm_struct
   ! -----------------------------------------------
   use dimensions_mod, only : nelemd, ntrac
   ! -----------------------------------------------
@@ -40,7 +39,7 @@ program cwfv_main
 
   implicit none
   type (element_t), pointer :: elem(:)
-  type (fvm_struct), pointer                :: fvm(:)
+  type (cwfv_struct), pointer                :: fvm(:)
   type (TimeLevel_t)                          :: tl              ! time level struct
   
   type (EdgeBuffer_t)  :: edgecell,edgepoints                 ! 1 component edge buffer (1, 3d scalar field)
@@ -56,8 +55,6 @@ program cwfv_main
   integer                                     :: nets,nete
   integer                                     :: ithr
   integer                                     :: ierr
-
-
 
 
   ! =====================================================
