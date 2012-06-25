@@ -946,22 +946,9 @@ contains
     
     if(present(iostart) .and. present(iocount) ) then
        call pio_initdecomp_dof_i8(iosystem, basepiotype, dims, internal_compdof, iodesc, iostart, iocount)
-#ifdef _COMPRESSION
     else 
-	if(debug) then
-		print *, 'pio_initdecomp iostart: ' , vdc_iostart, ' iocount: ', vdc_iocount
-	endif
-	if(present(num_ts) .and. present(bsize)) then
- 	 	call pio_initdecomp_dof_i8(iosystem, basepiotype, dims, internal_compdof, iodesc, vdc_iostart, vdc_iocount, num_ts, bsize)
-	else
-		call pio_initdecomp_dof_i8(iosystem, basepiotype, dims, internal_compdof, iodesc, vdc_iostart, vdc_iocount)
-	endif
-    endif
-#else
-    else
        call pio_initdecomp_dof_i8(iosystem, basepiotype, dims, internal_compdof, iodesc)
     endif
-#endif
     deallocate(internal_compdof)
 
   end subroutine PIO_initdecomp_dof_i4
@@ -1086,39 +1073,35 @@ contains
        else if(present(iostart) .or. present(iocount)) then
           call piodie( __PIO_FILE__,__LINE__, &
                'both optional parameters start and count must be provided')
-       else
-#ifdef _COMPRESSION
-	if(.not. present(bsize)) then
-		vdc_bsize = (/64, 64, 64/) !default bsize of 64^3 if none is given
-	else
-		vdc_bsize = bsize
-	endif
-	if(.not. present(num_ts)) then
-	    	vdc_ts = 10 !default to having 10 timesteps for the vdf
-	else
-		vdc_ts = num_ts
-	endif
-
-	
-
-	iosystem%num_aiotasks = iosystem%num_iotasks
-	call init_vdc2(iosystem%io_rank, dims, vdc_bsize, vdc_iostart, vdc_iocount, iosystem%num_aiotasks)
-	
-
-
-	if(debug) then
-		print *, 'rank: ', iosystem%comp_rank, ' pio_init iostart: ' , vdc_iostart, ' iocount: ', vdc_iocount
-	endif
-
-    	vdc_dims = dims	
-	iodesc%start = vdc_iostart
-	iodesc%count = vdc_iocount
-#else
-          call calcstartandcount(basepiotype, ndims, dims, iosystem%num_iotasks, iosystem%io_rank,&
-                 iodesc%start, iodesc%count,iosystem%num_aiotasks)
-#endif
        end if
+       if(present(num_ts)) then   ! vdc compression requires the num_ts argument
 
+          if(.not. present(bsize)) then
+             vdc_bsize = (/64, 64, 64/) !default bsize of 64^3 if none is given
+          else
+             vdc_bsize = bsize
+          endif
+          vdc_ts = num_ts
+          
+          iosystem%num_aiotasks = iosystem%num_iotasks
+#ifdef _COMPRESSION
+          print *,__FILE__,__LINE__
+          call init_vdc2(iosystem%io_rank, dims, vdc_bsize, vdc_iostart, vdc_iocount, iosystem%num_aiotasks)
+          
+#endif	
+
+
+          if(debug) then
+             print *, 'rank: ', iosystem%comp_rank, ' pio_init iostart: ' , vdc_iostart, ' iocount: ', vdc_iocount
+          endif
+          
+          vdc_dims = dims	
+          iodesc%start = vdc_iostart
+          iodesc%count = vdc_iocount
+       else
+          call calcstartandcount(basepiotype, ndims, dims, iosystem%num_iotasks, iosystem%io_rank,&
+               iodesc%start, iodesc%count,iosystem%num_aiotasks)
+       endif
 
        iosize=1
        do i=1,ndims
@@ -2238,11 +2221,8 @@ contains
     case(pio_iotype_vdc2)
        restart=0
        if(iosystem%io_rank==0) then
-!          if(amode == PIO_CLOBBER) then
-             restart = 1
-!          endif
+          restart = 1
           call createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , F_C_String_dup(fname) )
-	  
        else if(iosystem%io_rank>0) then
           call createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , F_C_String_dup(fname) )
        endif
@@ -2401,7 +2381,7 @@ contains
 #ifdef _COMPRESSION
     case(pio_iotype_vdc2) !equivalent to calling create def without clobbering the file, arguments dont matter
        if(iosystem%io_rank>=0) then
-          call createvdf(vdc_dims, vdc_bsize, vdc_ts, 0 , F_C_STRING_DUP(myfname))
+          call createvdf(vdc_dims, vdc_bsize, vdc_ts, 0 , F_C_STRING_DUP(trim(myfname)))
        end if
 #endif
     end select

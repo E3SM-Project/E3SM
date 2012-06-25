@@ -137,7 +137,8 @@ foreach(keys %attributes){
     }elsif(/ENV_(.*)/){
         print "set $1 $attributes{$_}\n";
 	print F "\$ENV{$1}=\"$attributes{$_}\"\;\n";
-    }elsif(/NETCDF_PATH/){
+    }elsif(/(.?NETCDF_PATH)/){
+	print F "\$ENV{$1}=\"$attributes{$_}\"\;\n";
 	if($attributes{conopts} =~ /enable-netcdf4/){
 	    $enablenetcdf4="--enable-netcdf4";
 	}
@@ -177,14 +178,14 @@ if(\$rc != 0) {
     system("cp -fr $piodir/testpio $srcdir");
 }
 
-my \$confopts = {all=>" --enable-pnetcdf --enable-mpiio --enable-netcdf --enable-timing $enablenetcdf4",
+my \$confopts = {all=>" --enable-pnetcdf --enable-mpiio --enable-netcdf --enable-timing $enablenetcdf4 --enable-compression",
 		snet=>"--disable-pnetcdf --disable-mpiio --enable-netcdf --enable-timing $enablenetcdf4",
 		pnet=>"--enable-pnetcdf --disable-mpiio --disable-netcdf --enable-timing",
 		ant=>"--enable-pnetcdf --enable-mpiio --enable-netcdf --disable-timing $enablenetcdf4",
 		mpiio=>"--disable-pnetcdf --enable-mpiio --disable-netcdf --enable-timing",
                 vdc=>"--enable-compression --enable-pnetcdf --disable-netcdf --enable-timing"};
 
-my \$testlist = {all=>["sn01","sn02","sn03","sb01","sb02","sb03","sb04","sb05","sb06","sb07","sb08",
+my \$testlist = {all=>["vdc01","sn01","sn02","sn03","sb01","sb02","sb03","sb04","sb05","sb06","sb07","sb08",
                       "pn01","pn02","pn03","pb01","pb02","pb03","pb04","pb05","pb06","pb07","pb08",
                       "bn01","bn02","bn03","bb01","bb02","bb03","bb04","bb05","bb06","bb07","bb08",
                       "wr01","rd01","apb05","asb01","asb04"],

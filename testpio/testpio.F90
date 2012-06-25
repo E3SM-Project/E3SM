@@ -84,19 +84,13 @@ program testpio
   real(r4),   pointer :: test_r4wr(:),test_r4rd(:),diff_r4(:)
   real(r8),   pointer :: test_r8wr(:),test_r8rd(:),diff_r8(:)
 
-#ifdef _COMPRESSION
+
   logical, parameter :: TestR8    = .false.
   logical, parameter :: TestR4    = .true.
   logical, parameter :: TestInt   = .false.
   logical, parameter :: TestCombo = .false.
   logical, parameter :: CheckArrays = .true.  ! turn off the array check for maximum memory usage testing
-#else
-  logical, parameter :: TestR8    = .true.
-  logical, parameter :: TestR4    = .false.
-  logical, parameter :: TestInt   = .false.
-  logical, parameter :: TestCombo = .false.
-  logical, parameter :: CheckArrays = .true.  ! turn off the array check for maximum memory usage testing
-#endif
+
 
   logical :: writePhase, readPhase
   logical, parameter :: splitPhase = .true.
@@ -137,7 +131,7 @@ program testpio
   integer(kind=PIO_OFFSET) :: startpio(3), countpio(3)
 
   character(len=80) :: fname, fname_r8,fname_r4,fname_i4
-  logical, parameter :: Debug = .false.
+  logical, parameter :: Debug = .true.
   integer :: mpi_comm_compute, mpi_comm_io, mpi_icomm_cio
 
   character(len=3) :: citer
@@ -419,7 +413,7 @@ program testpio
   countpio = countIO
   lenblocks = countIO(1)
 
-  if(Debug) print *,'comp_rank,io_rank: ',piosys%comp_rank,piosys%io_rank,' ioDOF ',ioDOF
+!  if(Debug) print *,'comp_rank,io_rank: ',piosys%comp_rank,piosys%io_rank,' ioDOF ',ioDOF
   if(Debug) print *,'comp_rank: ',PIOSYS%comp_rank,SIZE(compDOF),SIZE(ioDOF)
 
   !-----------------------------------------------------
@@ -510,6 +504,7 @@ program testpio
   else
     numPhases = 1
   endif
+  
   do ip=1,numPhases
      if(numPhases == 1) then 
         readPhase = .true.
@@ -519,9 +514,10 @@ program testpio
 	   writePhase = .true.
 	   readPhase = .false.
 	else
-           exit
 	   writePhase = .false.
 	   readPhase = .true.
+           if( iotype == PIO_IOTYPE_vdc2) exit
+
         endif
      endif
      if(log_master_task) print *,'{write,read}Phase:  ',writePhase,readPhase
@@ -538,7 +534,14 @@ program testpio
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #7'
               if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double,  gDims3D,compDOF,IOdesc_r8,startpio,countpio)
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #7.1'
-              if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,IOdesc_r4,startpio,countpio)
+              
+              if(TestR4 .or. TestCombo) then
+                 if(iotype == PIO_IOTYPE_vdc2) then
+                    call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,IOdesc_r4,startpio,countpio,num_ts=10)
+                 else
+                    call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,IOdesc_r4,startpio,countpio)
+                 end if
+              end if
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #7.2'
               if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,     gDims3D,compDOF,IOdesc_i4,startpio,countpio)
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8'
@@ -546,29 +549,38 @@ program testpio
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.1'
               if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double,  gDims3D,compDOF,IOdesc_r8)
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.2'
-              if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,IOdesc_r4)
+              if(TestR4 .or. TestCombo) then
+                 if(iotype == PIO_IOTYPE_vdc2) then
+                    if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.2a'
+                    call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,IOdesc_r4,num_ts=10)
+                 else
+                    if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.2b'
+                    call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,IOdesc_r4)
+                 end if
+              end if
+
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.3'
               if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,     gDims3D,compDOF,IOdesc_i4)
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.4'
            endif
         else
-           if(iofmtd.eq.'nc' .or. iofmtd.eq.'vdf') then ! netCDF
+           if(iofmtd.eq.'nc' ) then ! netCDF
               if (num_iodofs == 1) then
-              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.5'
+                 if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.5'
                  if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOF,startpio,countpio,IOdesc_r8)
-              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.6'
+                 if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.6'
                  if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,compDOF,ioDOF,startpio,countpio,IOdesc_r4)
-              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.7'
+                 if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.7'
                  if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,compDOF,ioDOF,startpio,countpio,IOdesc_i4)
-              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.8'
+                 if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.8'
               elseif (num_iodofs == 2) then
-              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.9'
+                 if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.9'
                  if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,startpio,countpio,IOdesc_r8)
-              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.10'
+                 if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.10'
                  if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,startpio,countpio,IOdesc_r4)
-              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.11'
+                 if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.11'
                  if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,startpio,countpio,IOdesc_i4)
-              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.12'
+                 if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.12'
               else
                  call piodie(__FILE__,__LINE__,' num_iodofs not 1 or 2')
               endif
@@ -679,9 +691,9 @@ program testpio
                  !-----------------------------------
                  ! for the single record real*4 file 
                  !-----------------------------------
-#ifndef _COMPRESSION
-                 call WriteHeader(File_r4,nx_global,ny_global,nz_global,dimid_x,dimid_y,dimid_z)
-#endif
+                if(iotype /= PIO_IOTYPE_vdc2) then
+                   call WriteHeader(File_r4,nx_global,ny_global,nz_global,dimid_x,dimid_y,dimid_z)
+                end if
 
                  do ivar = 1, nvars
                     write(varname,'(a,i5.5,a)') 'field',ivar
@@ -893,15 +905,16 @@ program testpio
 
                  if(TestR4) then 
 
-#ifdef _COMPRESSION
-		    !there currently exists no vdc concept of inquiring a variable, the only thing in the vdc_var_desc_t
+                    if(iotype == pio_iotype_vdc2) then
+
+		    !there currently exists no vdc concept of inquiring a variable, the only thing in the var_desc_t
 		    !directly used by the writing/reading is var name
 	       	    iostat = PIO_def_var(File_r4,'field00001', PIO_real, vard_r4(ivar))  
 		
-#else
+                 else
 	            iostat = PIO_inq_varid(File_r4,'field00001',vard_r4(ivar))  
-#endif      
-                    call check_pioerr(iostat,__FILE__,__LINE__,' r4 inq_varid')
+                 endif
+                 call check_pioerr(iostat,__FILE__,__LINE__,' r4 inq_varid')
                  endif
               end do
               if(TestInt) then 
@@ -1109,7 +1122,7 @@ program testpio
         if(TestR4 .or. TestCombo) call pio_freedecomp(PIOSYS, iodesc_r4)
         if(TestInt .or. TestCombo) call pio_freedecomp(PIOSYS, iodesc_i4)
      enddo ! do it=1,maxiter
-              if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #25'
+     if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #25'
 
   enddo ! do ip=1,numphase
 
