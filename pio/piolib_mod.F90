@@ -1076,7 +1076,7 @@ contains
                'both optional parameters start and count must be provided')
        end if
        if(present(num_ts)) then   ! vdc compression requires the num_ts argument
-
+#ifdef _COMPRESSION
           if(.not. present(bsize)) then
              vdc_bsize = (/64, 64, 64/) !default bsize of 64^3 if none is given
           else
@@ -1085,13 +1085,10 @@ contains
           vdc_ts = num_ts
           
           iosystem%num_aiotasks = iosystem%num_iotasks
-#ifdef _COMPRESSION
+
           print *,__FILE__,__LINE__
           call init_vdc2(iosystem%io_rank, dims, vdc_bsize, vdc_iostart, vdc_iocount, iosystem%num_aiotasks)
           
-#endif	
-
-
           if(debug) then
              print *, 'rank: ', iosystem%comp_rank, ' pio_init iostart: ' , vdc_iostart, ' iocount: ', vdc_iocount
           endif
@@ -1099,6 +1096,7 @@ contains
           vdc_dims = dims	
           iodesc%start = vdc_iostart
           iodesc%count = vdc_iocount
+#endif	
        else
           call calcstartandcount(basepiotype, ndims, dims, iosystem%num_iotasks, iosystem%io_rank,&
                iodesc%start, iodesc%count,iosystem%num_aiotasks)
