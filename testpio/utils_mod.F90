@@ -55,42 +55,7 @@ subroutine WriteHeader(File,nx,ny,nz,dimid_x,dimid_y,dimid_z)
 
 end subroutine WriteHeader
 
-subroutine ReadHeader(File,nx,ny,nz,dimid_x,dimid_y,dimid_z)
-!! NOTE: This subroutine is screwed up, it should be get, not put (tcraig 2/18/09)
 
-       type (File_desc_t), intent(inout) :: File
-       integer(i4), intent(in) :: nx,ny,nz
-       integer(i4), intent(out) :: dimid_x,dimid_y,dimid_z
-
-       integer(i4) :: itmp,iostat
-
-       iostat = PIO_put_att(File,pio_global,'title','Test NetCDF file')
-       if(iostat /= pio_noerr) then
-          write(*,*) 'testPIO:  Error writing TITLE to netCDF file'
-       endif
-
-       itmp = 4
-       iostat = PIO_put_att(File,pio_global,'ivalue',(/itmp/))
-       if(iostat /= pio_noerr) then
-          write(*,*) 'testPIO:  Error writing iVALUE to netCDF file'
-       endif
-
-       iostat = PIO_def_dim(File,'X',nx,dimid_x)
-       if(iostat /= pio_noerr) then
-          write(*,*) 'testPIO:  Error defining dimension X for netCDF file'
-       endif
-
-       iostat = PIO_def_dim(File,'Y',ny,dimid_y)
-       if(iostat /= pio_noerr) then
-          write(*,*) 'testPIO:  Error defining dimension Y for netCDF file'
-       endif
-
-       iostat = PIO_def_dim(File,'Z',nz,dimid_z)
-       if(iostat /= pio_noerr) then
-          write(*,*) 'testPIO:  Error defining dimension Z for netCDF file'
-       endif
-
-end subroutine ReadHeader
 
 subroutine split_comm(initial_comm, nprocs, num_iotasks, stride, base, mpi_comm_compute, mpi_comm_io, intercomm)
   use pio_support !_EXTERNAL

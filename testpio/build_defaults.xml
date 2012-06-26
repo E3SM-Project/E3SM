@@ -5,18 +5,19 @@
 <janus
   PNETCDF_PATH="${PNETCDF}"
   NETCDF_PATH="${NETCDF}"
-
+  CXX="icpc"
   CC="icc"
   FC="mpif90"
   MPIFC="mpif90"
   MPICC="mpicc"
+  MPICXX="mpic++"
   FFLAGS = "-O3 -ip -no-prec-div -free"
   CPPDEFS= "-DFORTRANUNDERSCORE "
   workdir="/lustre/janus_scratch/${USER}/testpio"
   submit="qsub"
   run = "mpirun"
   corespernode="12"
-  conopts="--enable-filesystem-hints=lustre"
+  conopts="--enable-filesystem-hints=lustre --with-piovdc=/home/jimedwards/libpiovdc/1.0/intel_12.1.4"
   preamble = "
 #PBS -l walltime=01:00:00
 #PBS -N testpiob
@@ -68,7 +69,7 @@
  />
 
 <bluefire
-  NETCDF_PATH="${NETCDF}" 
+  NETCDF_PATH="$NETCDF" 
   PNETCDF_PATH="/contrib/parallel-netcdf-1.2.0-svn961" 
   FFLAGS = "-g -qfullpath -O3 "
   CFLAGS = "-g -qfullpath -O3"
@@ -80,9 +81,11 @@
   MPIFC = "mpxlf95_r"
   CC = "xlc_r"
   MPICC="mpcc_r"
+  CXX = "xlC_r"
+  MPICXX = "mpCC"
   LDFLAGS=" "
   LDLIBS="`nc-config --flibs`"
-  conopts = " --enable-timing --enable-filesystem-hints=gpfs --enable-netcdf4 "
+  conopts = " --enable-timing --enable-filesystem-hints=gpfs --enable-netcdf4 --with-expat=/contrib/expat/2.1.0/ --with-piovdc=/glade/home/jedwards/libpiovdc-cinterop/ "
   workdir = "/ptmp/${USER}/testpio"
   submit = "bsub <"
   run = "mpirun.lsf "

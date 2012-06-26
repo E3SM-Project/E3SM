@@ -23,7 +23,7 @@ sub usage{
     print "--host    : Force a hostname for testing\n";
     print "--pecount : Select the processor count on which to run tests\n";
     print "--retry   : Do not repeat tests that have already passed\n";
-    print "--suites  : Test only the listed suites (all, snet, pnet, mpiio, ant)\n";
+    print "--suites  : Test only the listed suites (all, snet, pnet, mpiio, ant, vdc)\n";
     print "--twopass : Run in two passes - first builds on login node, second submits (required on some systems)\n";
     exit;
 }
@@ -38,7 +38,7 @@ my @valid_env = qw(NETCDF_PATH PNETCDF_PATH MPI_LIB MPI_INC F90 FC CC FFLAGS
                    MPICC MPIF90 LDLIBS MACHDEFS);
 
 
-my @testsuites = qw(all snet pnet mpiio ant);
+my @testsuites = qw(all snet pnet mpiio ant vdc);
 
 
 
@@ -178,20 +178,22 @@ if(\$rc != 0) {
     system("cp -fr $piodir/testpio $srcdir");
 }
 
-my \$confopts = {all=>" --enable-pnetcdf --enable-mpiio --enable-netcdf --enable-timing $enablenetcdf4",
+my \$confopts = {all=>" --enable-pnetcdf --enable-mpiio --enable-netcdf --enable-timing $enablenetcdf4 --enable-compression",
 		snet=>"--disable-pnetcdf --disable-mpiio --enable-netcdf --enable-timing $enablenetcdf4",
 		pnet=>"--enable-pnetcdf --disable-mpiio --disable-netcdf --enable-timing",
 		ant=>"--enable-pnetcdf --enable-mpiio --enable-netcdf --disable-timing $enablenetcdf4",
-		mpiio=>"--disable-pnetcdf --enable-mpiio --disable-netcdf --enable-timing"};
+		mpiio=>"--disable-pnetcdf --enable-mpiio --disable-netcdf --enable-timing",
+                vdc=>"--enable-compression --enable-pnetcdf --disable-netcdf --enable-timing"};
 
-my \$testlist = {all=>["sn01","sn02","sn03","sb01","sb02","sb03","sb04","sb05","sb06","sb07","sb08",
+my \$testlist = {all=>["vdc01","sn01","sn02","sn03","sb01","sb02","sb03","sb04","sb05","sb06","sb07","sb08",
                       "pn01","pn02","pn03","pb01","pb02","pb03","pb04","pb05","pb06","pb07","pb08",
                       "bn01","bn02","bn03","bb01","bb02","bb03","bb04","bb05","bb06","bb07","bb08",
                       "wr01","rd01","apb05","asb01","asb04"],
 		snet=>["sn01","sn02","sn03","sb01","sb02","sb03","sb04","sb05","sb06","sb07","sb08","asb01","asb04" ],
 		pnet=>["pn01","pn02","pn03","pb01","pb02","pb03","pb04","pb05","pb06","pb07","pb08","apb05"],
 		ant=>["sn02","sb02","pn02","pb02","bn02","bb02"],
-		mpiio=>["bn01","bn02","bn03","bb01","bb02","bb03","bb04","bb05","bb06","bb07","bb08"]};
+		mpiio=>["bn01","bn02","bn03","bb01","bb02","bb03","bb04","bb05","bb06","bb07","bb08"],
+	        vdc=>["vdc01"]};
 
 
 my \@netcdf4tests = ("n4n01","n4n02","n4n03","n4b01","n4b02","n4b03","n4b04","n4b05","n4b06","n4b07","n4b08");

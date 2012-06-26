@@ -18,10 +18,13 @@ module nf_mod
 #endif
   use pio_support, only : CheckMPIReturn
   use pio_msg_mod
+#ifdef _COMPRESSION
+  use pio_types, only : pio_iotype_vdc2
+!  use piovdc
+#endif
 #ifndef NO_MPIMOD
   use mpi ! _EXTERNAL
 #endif
-
   implicit none
   private
 #ifdef NO_MPIMOD
@@ -171,6 +174,13 @@ module nf_mod
 !! \defgroup PIO_copy_att
 !<
   public :: PIO_copy_att
+
+  interface
+     subroutine defvdfvar(foo) bind(C)
+       use, intrinsic :: iso_c_binding
+       type(c_ptr), value, intent(in) :: foo
+     end subroutine defvdfvar
+  end interface
 
 contains 
 
@@ -1388,6 +1398,11 @@ contains
     logical, parameter :: Check = .TRUE.
     integer :: msg = PIO_MSG_ENDDEF
 
+    interface
+       subroutine endvdfdef() bind(C)
+       end subroutine endvdfdef
+    end interface
+
     iotype = File%iotype
 
     ierr=PIO_noerr
@@ -1414,6 +1429,13 @@ contains
           ierr=nf90_enddef(File%fh)
 #endif
 
+#ifdef _COMPRESSION
+       case(pio_iotype_vdc2)
+	  if(ios%io_rank .eq. 0) then
+             call endvdfdef
+	  endif
+
+#endif
        case default
           call bad_iotype(iotype,__PIO_FILE__,__LINE__)
 
@@ -1592,7 +1614,7 @@ contains
 !! @retval ierr @copydoc error_return
 !<
   integer function def_var_md(File,name,type,dimids,vardesc) result(ierr)
-
+    use C_interface_mod, only : F_C_String_dup
     type (File_desc_t), intent(in)  :: File
     character(len=*), intent(in)    :: name
     integer, intent(in)             :: type
@@ -1605,6 +1627,7 @@ contains
     !------------------
     integer :: iotype, mpierr, nlen
     integer :: msg = PIO_MSG_DEF_VAR
+
 
     iotype = File%iotype
 
@@ -1676,7 +1699,14 @@ contains
              call MPI_BCAST(vardesc%varid, 1, MPI_INTEGER, 0, ios%IO_Comm, ierr)
           end if
 #endif
+#ifdef _COMPRESSION
+       case(pio_iotype_vdc2)
+	  vardesc%name = name(1:nlen)//char(0)
 
+	  if(ios%io_rank .eq. 0) then
+             call defvdfvar( F_C_String_dup(name) )
+	  endif
+#endif
        case default
           call bad_iotype(iotype,__PIO_FILE__,__LINE__)
 
@@ -1821,5 +1851,6 @@ contains
     if(present(name)) ierr = pio_inq_dimname(ncid, dimid,name)
 
   end function PIO_inquire_dimension
+
 
 end module nf_mod
