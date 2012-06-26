@@ -1,3 +1,58 @@
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
+Tag name: pio1_4_6
+Originator(s): abaker, jedwards, goldhaber
+Date: 6-26-2012
+One-line Summary: Improve BGP performance, bug fix in GCD calculation
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+	 timing/GPTLget_memusage.c
+            Memory usage on intrepid was only being reported for IO nodes,
+	    with this fix we now report all tasks
+	 testpio/testpio.F90
+	    Problem with mpi_finalize on bg machines - needs to be addressed
+	 testpio/testpio_run.pl
+	    Fix issue with path to NETCDF on bluefire
+	 testpio/build_defaults.xml
+	    Update testpio paths on lynx, lynx_intel
+	 pio/calcdisplace_mod.F90
+	    Fix GCD calculation bug
+	 pio/piolib_mod.F90
+	    Update Bluegene interface 
+	 pio/topology.c
+
+
+	
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:  GCD was not always giving consistant results
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+
+
+Code reviewed by: Jim
+
+Summary of pre-tag testing:
+
+  Regression tests:  intrepid 74 tests PASS, 6 tests FAIL (expected)
+                     Bluefire:  113 tests PASS, 0 tests FAIL
+	             lynx intel :  80 tests PASS, 0 tests FAIL
+	             lynx pgi : 80 tests PASS, 0 tests FAIL	
+
+
+===============================================================
 Tag name: pio1_4_5
 Originator: Jim
 Date: 05-19-2012

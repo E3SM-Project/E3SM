@@ -17,7 +17,6 @@
 #define AIX
 #endif
 
-
 #ifdef AIX
 #include <sys/times.h>
 #endif
@@ -33,9 +32,22 @@
 #include <unistd.h>
 #endif
 
+
+#ifdef BGP
+#include <spi/kernel_interface.h>
+#include <common/bgp_personality.h>
+#include <common/bgp_personality_inlines.h>
+#include <malloc.h>
+
+#define   Personality                    _BGP_Personality_t
+
+
+#endif
+
+
 int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack)
 {
-#ifdef LINUX
+#ifdef LINUX 
   FILE *fd;                       /* file descriptor for fopen */
   int pid;                        /* process id */
   static char *head = "/proc/";   /* part of path */
@@ -48,12 +60,14 @@ int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack
   */
 
   pid = (int) getpid ();
+  //printf ("pid = %d\n", pid);
   if (pid > 999999) {
     fprintf (stderr, "get_memusage: pid %d is too large\n", pid);
     return -1;
   }
 
   sprintf (file, "%s%d%s", head, pid, tail);
+  //printf("pid file name = %s", file);
   if ((fd = fopen (file, "r")) < 0) {
     fprintf (stderr, "get_memusage: bad attempt to open %s\n", file);
     return -1;
@@ -65,10 +79,44 @@ int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack
   */
 
   (void) fscanf (fd, "%d %d %d %d %d %d %d", size, rss, share, text, datastack, &dum, &dum);
+  //printf("After fscanf\n");
   (void) fclose (fd);
   return 0;
 
-#else
+#else 
+
+
+
+#ifdef BGP
+
+  long long alloc;
+  struct mallinfo m;
+  Personality pers;
+
+  long long total;
+  int node_config;
+ 
+ /* memory available */
+  Kernel_GetPersonality(&pers, sizeof(pers));
+  total = BGP_Personality_DDRSizeMB(&pers);
+
+  node_config  = BGP_Personality_processConfig(&pers);
+  if (node_config == _BGP_PERS_PROCESSCONFIG_VNM) total /= 4;
+  else if (node_config == _BGP_PERS_PROCESSCONFIG_2x2) total /= 2;
+  total *= 1024*1024;
+
+  *size = total;
+
+  /* total memory used  - heap only (not static memory)*/
+
+  m = mallinfo();
+  alloc = m.hblkhd + m.uordblks;
+
+  *rss = alloc;
+
+
+#else 
+
 
   struct rusage usage;         /* structure filled in by getrusage */
 
@@ -82,8 +130,13 @@ int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack
   *datastack = -1;
 #ifdef IRIX64
   *datastack = usage.ru_idrss + usage.ru_isrss;
-#endif
+#endif  
+
+#endif 
+
+
   return 0;
 
-#endif
+#endif 
+
 }

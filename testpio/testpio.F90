@@ -204,7 +204,7 @@ program testpio
   if(Debug) print *,'testpio: after call to broadcast_namelist'
 
   !-------------------------------------
-  ! Checks
+  ! Checks (num_iotasks can be negative on BGx)
   !-------------------------------------
 
 #if !defined(BGx) 
@@ -215,13 +215,15 @@ program testpio
 #endif
 
   ! ----------------------------------------------------------------
-  ! if stride is and num_iotasks is incompatible than reset stride
+  ! if stride is and num_iotasks is incompatible than reset stride (ignore stride on BGx)
   ! ----------------------------------------------------------------
+#if !defined(BGx) 
   if (base + num_iotasks * (stride-1) > nprocs-1) then
      write(*,*) trim(myname),' ERROR: num_iotasks, base and stride too large', &
           ' base=',base,' num_iotasks=',num_iotasks,' stride=',stride,' nprocs=',nprocs
      call piodie(__FILE__,__LINE__)
   endif
+#endif
 
   !--------------------------------------
   ! Initalizes the parallel IO subsystem 
@@ -1129,6 +1131,7 @@ program testpio
   lmem(1) = msize
   lmem(2) = mrss
   call mpi_gather(lmem,2,MPI_INTEGER,gmem,2,MPI_INTEGER,0,MPI_COMM_COMPUTE,ierr)
+  call CheckMPIReturn('Call to mpi_gather',ierr,__FILE__,__LINE__)
   if (my_task == master_task) then
      do n = 0,nprocs-1
         write(*,'(2a,i8,a,2f10.2)') myname,' my_task=',n,' : (hw, usage) memory (MB) = ',gmem(1,n)*mb_blk,gmem(2,n)*mb_blk
@@ -1148,9 +1151,18 @@ program testpio
      print *,' '
   endif
 
+  !print *,'IAM: ',my_task,'before PIO_finalize'
   call PIO_finalize(PIOSYS,ierr)
+  !print *,'IAM: ',my_task,'before MPI_finalize'
+
+  !this is sometimes causing a problem on BGP....do this until fixed
+  !#ifndef BGx
   call MPI_Finalize(ierr)
-  call CheckMPIReturn('Call to MPI_FINALIZE()',ierr,__FILE__,__LINE__)
+  !#endif
+
+  !print *,'IAM: ',my_task,'afterMPI_finalize'
+  !call CheckMPIReturn('Call to MPI_FINALIZE()',ierr,__FILE__,__LINE__)
+  !print *,'IAM: ',my_task,'after CheckMPIReturn'
 
   !=============================================================================
 contains

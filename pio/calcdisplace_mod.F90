@@ -262,41 +262,27 @@ CONTAINS
     integer(kind=pio_offset), intent(in),dimension(:) :: ain
 
     ! locals
-    integer(i8),allocatable :: gcr(:) 
-    integer(i8) :: i,j,x,index,n
-    integer(kind=pio_offset) :: a_min
+    integer(i8) :: i,n
 
     bsize=1
     n = size(ain) 
     ! First check, if an element is 1, then 1 is the gcd (i.e bsize)
     if(n==0 .or. any(ain <= 1)) return
 
-    allocate(gcr(n))
-    gcr = 0
-    !
+    bsize=1
+    n = size(ain) 
+    ! First check, if an element is 1, then 1 is the gcd (i.e bsize)
+    if(n==0 .or. any(ain <= 1)) return
 
-    ! Find and set the min value.
-
-    a_min = minval(ain)
-
-
-    !print*,"amin = ", a_min
-
-    ! Now compute the gcd between a_min and the rest of the array elements as long as a_min /= 1
-    ! otherwise gcd = a_min = 1.
+    ! Calculate GCD using GCD(a,b,c,...) = GCD(a,GCD(b,c...))
+    ! otherwise gcd = 1.
     ! Done by calling the external function that is below.
 
-    do i = 1,n
-       gcr(i) = gcd_pair(a_min,ain(i))
+    bsize = ain(1)
+    do i = 2,n
+       bsize = gcd_pair(bsize,ain(i))
+       if (bsize == 1) exit
     end do
-
-    !
-    ! Now look for the smallest value in the gcr array and and assign it to bsize.
-    !
-
-    bsize = minval(gcr)
-
-    deallocate(gcr)
 
   end function gcd_array_i8
 
@@ -307,41 +293,22 @@ CONTAINS
     integer(i4), intent(in),dimension(:) :: ain
 
     ! locals
-    integer(i4),allocatable :: gcr(:) 
-    integer(i4) :: i,j,x,index,n
-    integer(i4) :: a_min
+    integer(i4) :: i,n
 
     bsize=1
     n = size(ain) 
     ! First check, if an element is 1, then 1 is the gcd (i.e bsize)
     if(n==0 .or. any(ain <= 1)) return
 
-    allocate(gcr(n))
-    gcr = 0
-    !
-
-    ! Find and set the min value.
-
-    a_min = minval(ain)
-
-
-    !print*,"amin = ", a_min
-
-    ! Now compute the gcd between a_min and the rest of the array elements as long as a_min /= 1
-    ! otherwise gcd = a_min = 1.
+    ! Calculate GCD using GCD(a,b,c,...) = GCD(a,GCD(b,c...))
+    ! otherwise gcd = 1.
     ! Done by calling the external function that is below.
 
-    do i = 1,n
-       gcr(i) = gcd_pair(a_min,ain(i))
+    bsize = ain(1)
+    do i = 2,n
+       bsize = gcd_pair(bsize,ain(i))
+       if (bsize == 1) exit
     end do
-
-    !
-    ! Now look for the smallest value in the gcr array and and assign it to bsize.
-    !
-
-    bsize = minval(gcr)
-
-    deallocate(gcr)
 
   end function gcd_array_i4
 

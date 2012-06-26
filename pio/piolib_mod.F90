@@ -1052,7 +1052,8 @@ contains
        
     iodesc%start=0
     iodesc%count=0
-    if(Debug) print*,__PIO_FILE__,__LINE__, iosystem%num_tasks, iosystem%num_iotasks, iosystem%io_rank, iosystem%io_comm, iosystem%ioranks
+
+    if(debug) print*,__PIO_FILE__,__LINE__, 'before calcstartandcount: ', iosystem%num_tasks, iosystem%num_iotasks, iosystem%io_rank, iosystem%io_comm, iosystem%ioranks
 
     if (iosystem%ioproc) then
        if(present(iostart) .and. present(iocount)) then
@@ -1074,6 +1075,7 @@ contains
 
        if(debug) print *,'IAM: ',iosystem%comp_rank,' after getiostartandcount: count is: ',iodesc%count
 
+       if(debug) print *,'IAM: ',iosystem%comp_rank,' after getiostartandcount, num_aiotasks is: ', iosystem%num_aiotasks
 
        lenblocks=iodesc%count(1)
 
@@ -1330,6 +1332,7 @@ contains
 #ifdef TIMING
     call t_startf("PIO_init")
 #endif
+
     iosystem%error_handling = PIO_internal_error
     iosystem%union_comm = comp_comm
     iosystem%comp_comm = comp_comm
@@ -1340,12 +1343,13 @@ contains
 #ifndef _MPISERIAL
     iosystem%info = mpi_info_null
 #endif
+
+
     if(comp_comm == MPI_COMM_NULL) then
        call piodie(__PIO_FILE__,__LINE__,'invalid comp_comm in pio_init')
     end if
 
     call mpi_comm_size(comp_comm,iosystem%num_tasks,ierr)
-
     iosystem%num_comptasks = iosystem%num_tasks
     iosystem%union_rank = comp_rank
     iosystem%rearr = rearr
@@ -1389,7 +1393,7 @@ contains
     call mpi_bcast(lstride, 1, mpi_integer, 0, iosystem%comp_comm, ierr)
     call mpi_bcast(lbase, 1, mpi_integer, 0, iosystem%comp_comm, ierr)
 
-    if (lbase+(n_iotasks-1)*lstride >= iosystem%num_tasks) then
+    if (lbase+(n_iotasks-1)*lstride >= iosystem%num_tasks .and. lstride > 0  .and. n_iotasks > 0) then
        print *,__PIO_FILE__,__LINE__,lbase,n_iotasks,lstride,iosystem%num_tasks
        call piodie(__PIO_FILE__,__LINE__,'not enough procs for the stride')
     endif
@@ -1401,7 +1405,7 @@ contains
     call alloc_check(iotmp,iosystem%num_tasks,'init:num_tasks')
     call alloc_check(iotmp2,iosystem%num_tasks,'init:num_tasks')
     !---------------------------------------------------
-    ! Note for Blue Gene n_iotasks get overwritten in 
+    ! Note:  n_iotasks get overwritten (set correctly) in 
     ! determineiotasks   
     !
     ! Entry: it is the number of IO-clients per IO-node
@@ -1412,40 +1416,57 @@ contains
     else
        rearrFlag = 1
     endif
-    call determineiotasks(comp_comm,n_iotasks,lbase,lstride,rearrFlag,iotask)
 
+    ! more diagnostics (AB)	
+    if (debug) print *,__PIO_FILE__,__LINE__,iosystem%comp_rank, 'START determineiotasks (num_tasks, n_iotasks, lstride, lbase)',  &
+         iosystem%num_tasks, n_iotasks, lstride, lbase
 
-    iotmp(:)=0
-    if(iotask==1) then 
-       iosystem%ioproc = .true.
-       iotmp(comp_rank+1) = 1
-    endif
-    iotmp2(:)=0 
-    call MPI_allreduce(iotmp,iotmp2,iosystem%num_tasks,MPI_INTEGER,MPI_SUM,comp_comm,ierr)
+    !now determine n_iotasks and iotasks
+    call determineiotasks(iosystem%comp_comm, n_iotasks, lbase, lstride, rearrFlag, iotask)
 
-    n_iotasks=SUM(iotmp2)
+    !more diagnostics (AB)
+    if (debug) print *,__PIO_FILE__,__LINE__, 'CHECK 1 (myid, n_iotasks, lstride, lbase, iotask, num_iotasks):', &
+         iosystem%comp_rank, n_iotasks, lstride, lbase, iotask, iosystem%num_tasks
+
     iosystem%num_iotasks =n_iotasks
+
+    ! now determine the iomaster and ioranks to populate iosystem
+    iotmp(:)=0
+    if(iotask == 1) then 
+       iosystem%ioproc = .true.
+       iotmp(comp_rank + 1) = 1
+    endif
+
+    iotmp2(:)=0 
+    call MPI_allreduce(iotmp, iotmp2, iosystem%num_tasks, MPI_INTEGER, MPI_SUM, comp_comm, ierr)
+    call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
     call alloc_check(iosystem%ioranks,n_iotasks,'init:n_ioranks')
     j=1
-    iosystem%iomaster=-1
-    do i=1,iosystem%num_tasks
+    iosystem%iomaster = -1
+    do i=1, iosystem%num_tasks
        if(iotmp2(i) == 1) then 
           iosystem%ioranks(j) = i-1
-	  j=j+1
-	  if(iosystem%iomaster<0) iosystem%iomaster=i-1
+    	  j=j+1
+    	  if(iosystem%iomaster<0) iosystem%iomaster = i-1
        endif
     enddo
     call dealloc_check(iotmp)
     call dealloc_check(iotmp2)
-    iotask = 0
-    if(iosystem%ioproc) then 
-       iotask = 1
-    endif
+
     call identity(comp_comm,iotask)
+    
+
+    if (debug) print *,__PIO_FILE__,__LINE__, 'CHECK 2 (myid, n_iotasks, lstride, lbase, iotask, num_iotasks) :', &
+         iosystem%comp_rank, n_iotasks, lstride, lbase, iotask, iosystem%num_tasks	
+    if (debug) print *,__PIO_FILE__,__LINE__, 'IORANK CHECK for proc=:', iosystem%comp_rank, 'n_iotasks = ', &
+         n_iotasks, iosystem%iomaster, iosystem%ioranks(:)
+
+
+    iosystem%ioroot = iosystem%iomaster
 
 #else
 
-    iosystem%num_iotasks = n_iotasks
+  iosystem%num_iotasks = n_iotasks
     call alloc_check(iosystem%ioranks,n_iotasks,'init:n_ioranks')
 
     do i=1,n_iotasks
@@ -1460,10 +1481,13 @@ contains
 
        if(comp_rank == iosystem%ioranks(i))  iosystem%ioproc = .true.
     enddo
-#endif
+
 
     iosystem%iomaster = iosystem%ioranks(1)
     iosystem%ioroot = iosystem%ioranks(1)
+
+#endif
+
 
 
     if(debug) print *,'init: iam: ',comp_rank,' before allocate(status): n_iotasks: ',n_iotasks
@@ -1510,6 +1534,7 @@ contains
     itmp = num_aggregator
     call mpi_bcast(itmp, 1, mpi_integer, 0, iosystem%comp_comm, ierr)
 
+
     if(debug) print *,__LINE__,'init: iam: ',comp_rank,'io processor: ',iosystem%ioproc, 'io rank ',&
          iosystem%io_rank, iosystem%iomaster, iosystem%comp_comm, iosystem%io_comm
 
@@ -1517,7 +1542,7 @@ contains
     if(itmp .gt. 0) then 
        write(cb_nodes,('(i5)')) itmp
 #ifdef BGx
-       call PIO_set_hint(iosystem,"bgl_nodes_pset",trim(adjustl(cb_nodes)))
+        call PIO_set_hint(iosystem,"bgl_nodes_pset",trim(adjustl(cb_nodes)))
 #else
        call PIO_set_hint(iosystem,"cb_nodes",trim(adjustl(cb_nodes)))
 #endif       
@@ -1567,7 +1592,7 @@ contains
     integer :: ierr
     logical :: is_inter
     logical, parameter :: check=.true.
-
+  
     integer :: i, j, iam, io_leader, comp_leader
     integer(i4), pointer :: iotmp(:)
     character(len=5) :: cb_nodes
@@ -1604,9 +1629,11 @@ contains
              iam = -1
           end if
           call mpi_allreduce(iam, io_leader, 1, mpi_integer, MPI_MAX, peer_comm, ierr)
+          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
           ! Find the rank of the comp leader in peer_comm
           iam = -1
           call mpi_allreduce(iam, comp_leader, 1, mpi_integer, MPI_MAX, peer_comm, ierr)
+          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
           ! create the intercomm
           call mpi_intercomm_create(io_comm, 0, peer_comm, comp_leader, i, iosystem(i)%intercomm, ierr)
           ! create the union_comm
@@ -1615,6 +1642,8 @@ contains
           ! Find the rank of the io leader in peer_comm
           iam = -1
           call mpi_allreduce(iam, io_leader, 1, mpi_integer, MPI_MAX, peer_comm, ierr)
+          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
+
           ! Find the rank of the comp leader in peer_comm
           iosystem(i)%comp_rank = -1
           if(comp_comms(i)/=MPI_COMM_NULL) then
@@ -1626,7 +1655,8 @@ contains
              end if
           end if
           call mpi_allreduce(iam, comp_leader, 1, mpi_integer, MPI_MAX, peer_comm, ierr)
-          
+          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
+
           ! create the intercomm
           call mpi_intercomm_create(comp_comms(i), 0, peer_comm, io_leader, i, iosystem(i)%intercomm, ierr)
           ! create the union comm
@@ -1675,8 +1705,12 @@ contains
           if(Debugasync) print *,__PIO_FILE__,__LINE__
           
           call MPI_allreduce(iosystem(i)%comproot, j, 1, MPI_INTEGER, MPI_MAX,iosystem(i)%union_comm,ierr)
+          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
+          
           iosystem%comproot=j
           call MPI_allreduce(iosystem(i)%ioroot, j, 1, MPI_INTEGER, MPI_MAX,iosystem(i)%union_comm,ierr)
+          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
+
           iosystem%ioroot=j
 
           if(Debugasync) print *,__PIO_FILE__,__LINE__, i, iosystem(i)%comproot, iosystem(i)%ioroot
@@ -1706,7 +1740,8 @@ contains
           call alloc_check(iosystem(i)%ioranks, iosystem(i)%num_iotasks,'init:n_ioranks')
           if(Debugasync) print *,__PIO_FILE__,__LINE__,iotmp
           call MPI_allreduce(iotmp,iosystem(i)%ioranks,iosystem(i)%num_iotasks,MPI_INTEGER,MPI_MAX,iosystem(i)%union_comm,ierr)
-          
+          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
+
           if(Debugasync) print *,__PIO_FILE__,__LINE__,iosystem(i)%ioranks
           call dealloc_check(iotmp)
           
@@ -1807,6 +1842,7 @@ contains
     endif
     iotmp2(:)=0 
     call MPI_allreduce(iotmp,iotmp2,num_tasks,MPI_INTEGER,MPI_SUM,comm,ierr)
+    call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
 
     numiotasks=SUM(iotmp2)
 
@@ -1864,16 +1900,19 @@ contains
      integer :: msg
 
      if(iosystem%async_interface .and. iosystem%comp_rank==0) then
-       msg = PIO_MSG_EXIT
-       call mpi_send(msg, 1, mpi_integer, iosystem%ioroot, 1, iosystem%union_comm, ierr)
+        !print *,'IAM: ',iosystem%comp_rank, ' ASYNC in finalize'
+        msg = PIO_MSG_EXIT
+        call mpi_send(msg, 1, mpi_integer, iosystem%ioroot, 1, iosystem%union_comm, ierr)
      end if
 
 #ifndef _MPISERIAL
      if(iosystem%info .ne. mpi_info_null) then 
         call mpi_info_free(iosystem%info,ierr) 
+        !print *,'IAM: ',iosystem%comp_rank, ' finalize (1) error = ', ierr
      endif
      if(iosystem%io_comm .ne. mpi_comm_null) then 
         call mpi_comm_free(iosystem%io_comm,ierr)
+        !print *,'IAM: ',iosystem%comp_rank, ' finalize (2) error = ', ierr
      endif
 #endif
      ierr = 0
