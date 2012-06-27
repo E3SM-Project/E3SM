@@ -198,8 +198,9 @@ my \$testlist = {all=>["sn01","sn02","sn03","sb01","sb02","sb03","sb04","sb05","
 my \@vdctests = ("vdc01");
 
 if(\"$attributes{conopts}\" =~ /with-piovdc/){
+    \$confopts->{all} .= " --enable-compression";
     push(\@{\$testlist->{all}},\@vdctests);
-    \$testlist->{vdc} = \@vdctests;
+    push(\@{\$testlist->{vdc}},\@vdctests);
 }
 
 

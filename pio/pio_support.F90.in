@@ -192,8 +192,8 @@ contains
     allocate(sdof1d(0:npes-1))
     sdof1d = -1
     sdof_tmp(1) = sdof
-    call pio_fc_gather_offset(sdof_tmp, 1, MPI_INTEGER, &
-       sdof1d, 1, MPI_INTEGER,masterproc,comm)
+    call pio_fc_gather_offset(sdof_tmp, 1, MPI_INTEGER8, &
+       sdof1d, 1, MPI_INTEGER8,masterproc,comm)
 
     if (myrank == masterproc) then
        write(6,*) subName,': writing file ',trim(file),' unit=',unit
