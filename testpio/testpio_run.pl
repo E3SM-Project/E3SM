@@ -239,6 +239,11 @@ foreach \$suite (qw(@testsuites)){
 	rename("testpio","testpio.\$suite");
     }elsif(($twopass && \$thispass==2 && -e "testpio.\$suite")  or  (-e "../pio/Makefile.conf" && -e "testpio")){
 	foreach \$test (\@testlist){
+	    if(\$host eq "intrepid" && (\$test =~ /^a/)) {
+		print "Skipping async test \$test on \$host\n";
+		next;
+	    }
+
 	    my \$casedir = "$workdir/\$suite.\$test";
 	    mkdir \$casedir unless(-d \$casedir);
 	    chdir(\$casedir) or die "Could not cd to \$casedir";
