@@ -982,6 +982,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     integer :: i
 
     integer :: niodof
+    integer :: pio_offset_kind                        ! kind of pio_offset
 
 !!!!!!
     iodesc%ndof = size(compdof)
@@ -1009,12 +1010,18 @@ end subroutine box_rearrange_io2comp_{TYPE}
     end if
 #endif
     if (Iosystem%IOproc) then
-       call pio_fc_gather_offset(iodesc%start, ndim, MPI_INTEGER8, & ! sendbuf, count, type
-            start, ndim, MPI_INTEGER8,             & ! recvbuf, count, type
+       if(kind(iodesc%start) == kind(ndim)) then
+          pio_offset_kind = MPI_INTEGER
+       else
+          pio_offset_kind = MPI_INTEGER8
+       end if
+
+       call pio_fc_gather_offset(iodesc%start, ndim, PIO_OFFSET_KIND, & ! sendbuf, count, type
+            start, ndim, PIO_OFFSET_KIND,             & ! recvbuf, count, type
             0, Iosystem%IO_comm                   )
 
-       call pio_fc_gather_offset(iodesc%count, ndim, MPI_INTEGER8, & ! sendbuf, count, type
-            count, ndim, MPI_INTEGER8,             & ! recvbuf, count, type
+       call pio_fc_gather_offset(iodesc%count, ndim, PIO_OFFSET_KIND, & ! sendbuf, count, type
+            count, ndim, PIO_OFFSET_KIND,             & ! recvbuf, count, type
             0, Iosystem%IO_comm                   )
 
        if(Debug) then
@@ -1026,11 +1033,11 @@ end subroutine box_rearrange_io2comp_{TYPE}
        ! note that index in start,count is the io_rank not comp_rank
     endif
 
-    call MPI_BCAST(start, ndim*Iosystem%num_iotasks, MPI_INTEGER8,   & ! buf, cnt
+    call MPI_BCAST(start, ndim*Iosystem%num_iotasks, PIO_OFFSET_KIND,   & ! buf, cnt
                    Iosystem%ioranks(1), Iosystem%union_comm, ierror    )
     call CheckMPIReturn(subName, ierror)
 
-    call MPI_BCAST(count, ndim*Iosystem%num_iotasks, MPI_INTEGER8,   & ! buf, cnt
+    call MPI_BCAST(count, ndim*Iosystem%num_iotasks, PIO_OFFSET_KIND,   & ! buf, cnt
                    Iosystem%ioranks(1), Iosystem%union_comm, ierror    )
     call CheckMPIReturn(subName, ierror)
 
