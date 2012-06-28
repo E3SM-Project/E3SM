@@ -300,7 +300,7 @@ contains
     integer :: ierr, myrank, npes, m, n, unit, rn
     integer(kind=pio_offset) :: sdof
     integer :: rversno, rnpes
-    integer, pointer :: wdof(:)
+    integer(kind=pio_offset), pointer :: wdof(:)
     integer, parameter :: masterproc = 0
     integer :: status(MPI_STATUS_SIZE)
     integer :: pio_offset_kind                        ! kind of pio_offset
