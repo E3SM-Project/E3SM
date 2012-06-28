@@ -1009,13 +1009,13 @@ end subroutine box_rearrange_io2comp_{TYPE}
        print *,__PIO_FILE__,__LINE__,'mem=',rss
     end if
 #endif
-    if (Iosystem%IOproc) then
-       if(kind(iodesc%start) == kind(ndim)) then
-          pio_offset_kind = MPI_INTEGER
-       else
-          pio_offset_kind = MPI_INTEGER8
-       end if
+    if(kind(start) == kind(ndim)) then
+       pio_offset_kind = MPI_INTEGER
+    else
+       pio_offset_kind = MPI_INTEGER8
+    end if
 
+    if (Iosystem%IOproc) then
        call pio_fc_gather_offset(iodesc%start, ndim, PIO_OFFSET_KIND, & ! sendbuf, count, type
             start, ndim, PIO_OFFSET_KIND,             & ! recvbuf, count, type
             0, Iosystem%IO_comm                   )
