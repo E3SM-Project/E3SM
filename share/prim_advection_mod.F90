@@ -1286,6 +1286,7 @@ contains
     
     real (kind=real_kind)  :: vstar(np,np,2)
     real (kind=real_kind)  :: vhat(np,np,2)
+    real (kind=real_kind), dimension(np, np) :: v1, v2
     
 
     call t_barrierf('sync_prim_advec_tracers_fvm', hybrid%par%comm)
@@ -1344,7 +1345,7 @@ contains
 !         vstar=elem(ie)%derived%vstar(:,:,:,k) 
 !         vhat=(fvm(ie)%vn0(:,:,:,k) + elem(ie)%derived%vstar(:,:,:,k))/2
 !         ! calculate high order approximation
-!         call fvm_mcgregor(elem(ie), deriv, dt, vhat, vstar,3)
+!         call fvm_mcgregor(elem(ie), deriv, dt, vhat, vstar,1)
 !         ! apply DSS to make vstar C0
 !         elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%spheremp(:,:)*vstar(:,:,1) 
 !         elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%spheremp(:,:)*vstar(:,:,2) 
@@ -1361,8 +1362,23 @@ contains
 !          elem(ie)%derived%vstar(:,:,2,k)=elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%rspheremp(:,:)
 !        end do
 !     end do
-
-    call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, dt, 3)
+!     do ie=nets,nete
+!       do k=1,nlev
+!          ! Convert wind to lat-lon
+!         v1     = fvm(ie)%vn0(:,:,1,k)  ! contra
+!         v2     = fvm(ie)%vn0(:,:,2,k)  ! contra 
+!         fvm(ie)%vn0(:,:,1,k)=elem(ie)%D(1,1,:,:)*v1 + elem(ie)%D(1,2,:,:)*v2   ! contra->latlon
+!         fvm(ie)%vn0(:,:,2,k)=elem(ie)%D(2,1,:,:)*v1 + elem(ie)%D(2,2,:,:)*v2   ! contra->latlon
+!     
+! !          ! Convert wind to lat-lon
+! !         v1     = elem(ie)%derived%vstar(:,:,1,k)  ! contra
+! !         v2     = elem(ie)%derived%vstar(:,:,2,k)   ! contra 
+! !         elem(ie)%derived%vstar(:,:,1,k)=elem(ie)%D(1,1,:,:)*v1 + elem(ie)%D(1,2,:,:)*v2   ! contra->latlon
+! !         elem(ie)%derived%vstar(:,:,2,k)=elem(ie)%D(2,1,:,:)*v1 + elem(ie)%D(2,2,:,:)*v2   ! contra->latlon
+!     
+!       enddo  
+!     end do
+!     call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, dt, 3)
     call t_stopf('fvm_mcgregor')
 
 !------------------------------------------------------------------------------------    

@@ -883,8 +883,8 @@ contains
      	      enddo
      	    enddo
           !write air density in tracer 1 of FVM
-          fvm(ie)%c(1:nc,1:nc,k,1,tl%n0)=interpolate_gll2fvm_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
-    !        fvm%c(:,:,k,1,tnp0)=1.0D0
+!           fvm(ie)%c(1:nc,1:nc,k,1,tl%n0)=interpolate_gll2fvm_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
+           fvm(ie)%c(:,:,k,1,tl%n0)=1.0D0
         enddo
       enddo
       call fvm_init3(elem,fvm,hybrid,nets,nete,tl%n0)
