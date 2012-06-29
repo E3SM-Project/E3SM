@@ -73,10 +73,10 @@ module box_rearrange
   use pio_types, only : io_desc_t, iosystem_desc_t
 #ifdef NO_MPI2
   use pio_support, only : MPI_TYPE_CREATE_INDEXED_BLOCK, piodie, &
-                          Debug, DebugIO, CheckMPIReturn, pio_fc_gather_int
+                          Debug, DebugIO, CheckMPIReturn, pio_fc_gather_offset
 #else
-  use pio_support, only : piodie, Debug, DebugIO, CheckMPIReturn, &
-                          pio_fc_gather_int
+  use pio_support, only : piodie, Debug, DebugIO, CheckMPIReturn, pio_fc_gather_offset
+                          
 #endif
   use alloc_mod,      only : alloc_check, dealloc_check
   use pio_spmd_utils, only : pio_swapm
@@ -746,7 +746,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
   subroutine gindex_to_coord( gindex, gstride, ndim, gcoord )
     implicit none
     integer(kind=pio_offset),intent(in) :: gindex           ! 0-based global index
-    integer,intent(in) :: gstride(:)       ! stride for each dimension
+    integer(kind=pio_offset),intent(in) :: gstride(:)       ! stride for each dimension
     ! e.g. (nx,nx*ny,nx*ny*nz)
     integer,intent(in) :: ndim             ! number of dimesions e.g. 2 or 3
     integer(kind=pio_offset),intent(out) :: gcoord(:)       ! output global coords (0-based)
@@ -754,7 +754,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     ! local vars
     character(len=*), parameter :: subName=modName//'::gindex_to_coord'
     integer i
-    integer tempindex
+    integer (kind=pio_offset) :: tempindex
 
     ! loop outermost to innermost e.g. z,y,x
 
@@ -785,7 +785,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     integer(kind=pio_offset),intent(in) :: gcoord(:)
     integer(kind=pio_offset),intent(in) :: lb(ndim,nioproc)
     integer(kind=pio_offset),intent(in) :: ub(ndim,nioproc)
-    integer,intent(in) :: lstride(ndim,nioproc)
+    integer(kind=pio_offset),intent(in) :: lstride(ndim,nioproc)
     integer,intent(in) :: ndim
     integer,intent(in) :: nioproc
     integer,intent(out) :: io_proc
@@ -794,8 +794,8 @@ end subroutine box_rearrange_io2comp_{TYPE}
     character(len=*), parameter :: subName=modName//'::find_ioproc'
     integer i,j
     logical found
-    integer :: lcoord(ndim)
-    integer lindex
+    integer(kind=pio_offset) :: lcoord(ndim)
+    integer(kind=pio_offset)::  lindex
 
     found = .false.
     io_proc  = -1
@@ -854,8 +854,8 @@ end subroutine box_rearrange_io2comp_{TYPE}
                           dest_ioproc, dest_ioindex                    )
     implicit none
     integer(kind=pio_offset), intent(in) :: compdof(:)
-    integer, intent(in) :: start(:,:)       ! start(ndim,nioproc)
-    integer, intent(in) :: count(:,:)       ! count(ndim,nioproc)
+    integer(kind=pio_offset), intent(in) :: start(:,:)       ! start(ndim,nioproc)
+    integer(kind=pio_offset), intent(in) :: count(:,:)       ! count(ndim,nioproc)
 
     integer, intent(in) :: gsize(:)         ! global domain size gsize(ndim) 
     integer, intent(in) :: ndim   
@@ -871,8 +871,8 @@ end subroutine box_rearrange_io2comp_{TYPE}
     integer(kind=pio_offset)::  lb(ndim,nioproc)        ! 0-based lower bound of boxes
     integer(kind=pio_offset):: ub(ndim,nioproc)        ! 0-based upper bound of boxes
     integer(kind=pio_offset):: gcoord(ndim)            ! 0-based xyz coordinates
-    integer gstride(ndim)           ! stride for each dimension
-    integer lstride(ndim,nioproc)   ! stride for each dim on each ioprocs
+    integer(kind=pio_offset):: gstride(ndim)           ! stride for each dimension
+    integer(kind=pio_offset):: lstride(ndim,nioproc)   ! stride for each dim on each ioprocs
     integer ioproc
     integer (kind=pio_offset) :: ioindex
 
@@ -902,7 +902,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
     ndof=size(compdof)
 
-    if(Debug) print *,__PIO_FILE__,__LINE__,minval(compdof), maxval(compdof)
+!    if(Debug) print *,__PIO_FILE__,__LINE__,minval(compdof), maxval(compdof)
     do i=1,ndof
        ! Compute global coordinates for compdof(i)
 
@@ -976,13 +976,13 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
     ! local vars
     character(len=*), parameter :: subName=modName//'::box_rearrange_create'
-    integer :: start(ndim,nioproc)
-    integer :: count(ndim,nioproc)
+    integer(kind=pio_offset) :: start(ndim,nioproc), count(ndim,nioproc)
 
     integer :: ierror
     integer :: i
 
     integer :: niodof
+    integer :: pio_offset_kind                        ! kind of pio_offset
 
 !!!!!!
     iodesc%ndof = size(compdof)
@@ -1009,42 +1009,46 @@ end subroutine box_rearrange_io2comp_{TYPE}
        print *,__PIO_FILE__,__LINE__,'mem=',rss
     end if
 #endif
-    if (Iosystem%IOproc) then
-       call pio_fc_gather_int(int(iodesc%start), ndim, MPI_INTEGER, & ! sendbuf, count, type
-                              start, ndim, MPI_INTEGER,             & ! recvbuf, count, type
-                              0, Iosystem%IO_comm                   )
+    if(kind(start) == kind(ndim)) then
+       pio_offset_kind = MPI_INTEGER
+    else
+       pio_offset_kind = MPI_INTEGER8
+    end if
 
-       call pio_fc_gather_int(int(iodesc%count), ndim, MPI_INTEGER, & ! sendbuf, count, type
-                              count, ndim, MPI_INTEGER,             & ! recvbuf, count, type
-                              0, Iosystem%IO_comm                   )
+    if (Iosystem%IOproc) then
+       call pio_fc_gather_offset(iodesc%start, ndim, PIO_OFFSET_KIND, & ! sendbuf, count, type
+            start, ndim, PIO_OFFSET_KIND,             & ! recvbuf, count, type
+            0, Iosystem%IO_comm                   )
+
+       call pio_fc_gather_offset(iodesc%count, ndim, PIO_OFFSET_KIND, & ! sendbuf, count, type
+            count, ndim, PIO_OFFSET_KIND,             & ! recvbuf, count, type
+            0, Iosystem%IO_comm                   )
 
        if(Debug) then
           print *, __PIO_FILE__,__LINE__,iodesc%start, iodesc%count
           if(iosystem%io_rank==0) &
-             print *,__PIO_FILE__,__LINE__,ndim,(i,' :', &
-                start(:,i), count(:,i),i=1,iosystem%num_iotasks)
+               print *,__PIO_FILE__,__LINE__,ndim,(i,' :', &
+               start(:,i), count(:,i),i=1,iosystem%num_iotasks)
        end if
        ! note that index in start,count is the io_rank not comp_rank
     endif
 
-    if(debug) print *,__PIO_FILE__,__LINE__,ndim,iosystem%num_iotasks,iosystem%ioranks(1),iosystem%union_comm
-
-    call MPI_BCAST(start, ndim*Iosystem%num_iotasks, MPI_INTEGER,   & ! buf, cnt
+    call MPI_BCAST(start, ndim*Iosystem%num_iotasks, PIO_OFFSET_KIND,   & ! buf, cnt
                    Iosystem%ioranks(1), Iosystem%union_comm, ierror    )
     call CheckMPIReturn(subName, ierror)
 
-    call MPI_BCAST(count, ndim*Iosystem%num_iotasks, MPI_INTEGER,   & ! buf, cnt
+    call MPI_BCAST(count, ndim*Iosystem%num_iotasks, PIO_OFFSET_KIND,   & ! buf, cnt
                    Iosystem%ioranks(1), Iosystem%union_comm, ierror    )
     call CheckMPIReturn(subName, ierror)
 
-#if DEBUG
+!#if DEBUG
     if (debug .and. Iosystem%comp_rank==0) then
        do i=1,Iosystem%num_iotasks
           print *, subName,':: comp_rank=', Iosystem%comp_rank, ': io ', &
              i, ' start=',start(:,i), ' count=', count(:,i)
        end do
     endif
-#endif
+!#endif
 #ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
@@ -1086,10 +1090,6 @@ end subroutine box_rearrange_io2comp_{TYPE}
     end do
 
     call compute_counts(Iosystem, ioDesc, niodof)
-    call dealloc_check(iodesc%dest_ioindex,'dest_ioindex')
-    nullify(iodesc%dest_ioindex)
-    call dealloc_check(iodesc%dest_ioproc,'dest_ioproc')
-    nullify(iodesc%dest_ioproc)
 
 #ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
@@ -1098,6 +1098,13 @@ end subroutine box_rearrange_io2comp_{TYPE}
        print *,__PIO_FILE__,__LINE__,'mem=',rss
     end if
 #endif
+
+    call dealloc_check(iodesc%dest_ioindex,'dest_ioindex')
+    nullify(iodesc%dest_ioindex)
+    call dealloc_check(iodesc%dest_ioproc,'dest_ioproc')
+    nullify(iodesc%dest_ioproc)
+
+
 ! not _MPISERIAL
 #endif
 
@@ -1253,7 +1260,13 @@ end subroutine box_rearrange_io2comp_{TYPE}
        do i=1,num_tasks
           recv_displs(i) = i-1
        end do
-
+#ifdef MEMCHK	
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
+    if(rss>lastrss) then
+       lastrss=rss
+       print *,__PIO_FILE__,__LINE__,'mem=',rss
+    end if
+#endif
     else
 
        ! for non-i/o processes
@@ -1304,7 +1317,13 @@ end subroutine box_rearrange_io2comp_{TYPE}
              rfrom(nrecvs)  = i-1             
           endif
        enddo
-
+#ifdef MEMCHK	
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
+    if(rss>lastrss) then
+       lastrss=rss
+       print *,__PIO_FILE__,__LINE__,'mem=',rss
+    end if
+#endif
     endif
     ioDesc%nrecvs = nrecvs
 
@@ -1390,7 +1409,13 @@ end subroutine box_rearrange_io2comp_{TYPE}
        do i=2,nrecvs
           recv_displs(rfrom(i)+1) = recv_displs(rfrom(i-1)+1) + rcount(i-1)
        enddo
-
+#ifdef MEMCHK	
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
+    if(rss>lastrss) then
+       lastrss=rss
+       print *,__PIO_FILE__,__LINE__,'mem=',rss
+    end if
+#endif
     else
 
        ! for non-i/o processes
@@ -1427,7 +1452,13 @@ end subroutine box_rearrange_io2comp_{TYPE}
     !
 
     if (Iosystem%IOproc .and. nrecvs>0) then
- 
+#ifdef MEMCHK	
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
+    if(rss>lastrss) then
+       lastrss=rss
+       print *,__PIO_FILE__,__LINE__,'mem=',rss
+    end if
+#endif 
       !need to cache
        call alloc_check(ioDesc%rtype, nrecvs, 'mpi recv types')
        rtype=>ioDesc%rtype
@@ -1446,11 +1477,24 @@ end subroutine box_rearrange_io2comp_{TYPE}
           !       print *,'gcd: receive block lengths: ', bsizeT(1:ii-1)
           deallocate(bsizeT)
           !       print *,'GCD calculated for receive loop blocksize: ',blocksize
+#ifdef MEMCHK	
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
+    if(rss>lastrss) then
+       lastrss=rss
+       print *,__PIO_FILE__,__LINE__,'mem=',rss
+    end if
+#endif  
           call MPI_TYPE_CONTIGUOUS(blocksize,ioDesc%baseTYPE,newTYPEr,ierror)
           call CheckMPIReturn(subName,ierror)
           call MPI_TYPE_COMMIT(newTYPEr,ierror)
           call CheckMPIReturn(subName,ierror)
-
+#ifdef MEMCHK	
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
+    if(rss>lastrss) then
+       lastrss=rss
+       print *,__PIO_FILE__,__LINE__,'mem=',rss
+    end if
+#endif 
           pos = 1
           do i=1,nrecvs
 
@@ -1479,14 +1523,26 @@ end subroutine box_rearrange_io2comp_{TYPE}
                 rindex(pos:pos+rcount(i)-1) = rindex(pos:pos+rcount(i)-1)+1
                 call calcdisplace(blocksize,rindex(pos:pos+rcount(i)-1),displace)
              endif
-
+#ifdef MEMCHK	
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
+    if(rss>lastrss) then
+       lastrss=rss
+       print *,__PIO_FILE__,__LINE__,'mem=',rss
+    end if
+#endif 
              !DBG call alloc_print_usage(iosystem%comp_comm,80,'l2629')
              ! need rindex to contain 0-based displacements here
              call MPI_TYPE_CREATE_INDEXED_BLOCK( &
                   len, 1, int(displace), &               ! count,blen, disp
                   newTYPEr, rtype(i), ierror )       ! oldtype, newtype
              call CheckMPIReturn(subName,ierror)
-             
+#ifdef MEMCHK	
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
+    if(rss>lastrss) then
+       lastrss=rss
+       print *,__PIO_FILE__,__LINE__,'mem=',rss
+    end if
+#endif              
              call MPI_TYPE_COMMIT(rtype(i), ierror)
              call CheckMPIReturn(subName,ierror)
              
@@ -1494,9 +1550,17 @@ end subroutine box_rearrange_io2comp_{TYPE}
              pos = pos + rcount(i)
           end do
           call MPI_TYPE_FREE(newTYPEr,ierror)
+
     endif
     !
     ! Create the mpi types for the comp proc sends
+#ifdef MEMCHK	
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
+    if(rss>lastrss) then
+       lastrss=rss
+       print *,__PIO_FILE__,__LINE__,'mem=',rss
+    end if
+#endif
 
     !need to cache
     call alloc_check(ioDesc%stype, num_iotasks, 'mpi send types')
@@ -1520,6 +1584,14 @@ end subroutine box_rearrange_io2comp_{TYPE}
     call CheckMPIReturn(subName,ierror)
     call MPI_TYPE_COMMIT(newTYPEs,ierror)
     call CheckMPIReturn(subName,ierror)
+
+#ifdef MEMCHK	
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
+    if(rss>lastrss) then
+       lastrss=rss
+       print *,__PIO_FILE__,__LINE__,'mem=',rss
+    end if
+#endif
 
     pos = 1
     do i=1,num_iotasks
@@ -1560,7 +1632,13 @@ end subroutine box_rearrange_io2comp_{TYPE}
     !
     ! clean up
     !
-
+#ifdef MEMCHK	
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
+    if(rss>lastrss) then
+       lastrss=rss
+       print *,__PIO_FILE__,__LINE__,'mem=',rss
+    end if
+#endif
     if (Iosystem%IOproc) then
        call dealloc_check(rcount, 'rcount temp')
        call dealloc_check(rindex, 'rindex temp')

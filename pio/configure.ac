@@ -45,6 +45,11 @@ AC_HELP_STRING([--enable-debug],
 [DEBUG=$enableval],[DEBUG=no])
 AC_SUBST(DEBUG)
 
+AC_ARG_ENABLE(compression,
+AC_HELP_STRING( [--enable-compression],
+  [use compression (Uses VDC2 compression) (default no)]),
+  [USE_COMPRESSION=$enableval],[USE_COMPRESSION=no])
+
 AC_ARG_ENABLE(timing,
 AC_HELP_STRING([--enable-timing],
 [Turn on the gptl timing library interface]),
@@ -85,6 +90,8 @@ AC_ARG_ENABLE(filesystem-hints,
 AC_HELP_STRING([--enable-filesystem-hints],
 [set hints for gpfs or lustre parallel file systems]),
 [FSHINTS=$enableval],[FSHINTS=no])
+
+AC_ARG_WITH([piovdc],[--with-piovdc  Use the piovdc interface library (required for compression)], [with_piovdc="$withval"],[with_piovdc=no])  
 
 
 ##############################################################################
@@ -324,7 +331,7 @@ if test -z "$SYSDEF"; then
    SYSDEF="UNKNOWNOS"
 fi
 
-CPPDEFS=" $CPPDEFS -DSYS$SYSDEF -DCPR$CPRDEF"
+CPPDEFS=" $CPPDEFS -DSYS$SYSDEF "
 
 AC_FC_MODULE_EXTENSION
 
@@ -462,28 +469,67 @@ if test ! "$USE_PNETCDF" = "no"
        fi
        USE_PNETCDF="yes"
        AC_MSG_CHECKING([for pnetcdf.inc in $PNETCDF_PATH/include])
-       if test ! -f $PNETCDF_PATH/include/pnetcdf.inc
-         then AC_MSG_WARN( [pnetcdf.inc not found in $PNETCDF_PATH/include \
+       if test -f $PNETCDF_PATH/include/pnetcdf.inc
+       then AC_MSG_RESULT([yes])
+       else
+         AC_MSG_WARN( [pnetcdf.inc not found in $PNETCDF_PATH/include \
                              disabling pnetcdf support ])
          USE_PNETCDF=no
        fi
 
        AC_MSG_CHECKING([for libpnetcdf.a in $PNETCDF_PATH/lib])
-       if test ! -f $PNETCDF_PATH/lib/libpnetcdf.a
-         then AC_MSG_WARN( [libpnetcdf.a not found in $PNETCDF_PATH/lib \
+       if test -f $PNETCDF_PATH/lib/libpnetcdf.a
+         then
+	 AC_MSG_RESULT(yes) 
+         else
+         AC_MSG_WARN( [libpnetcdf.a not found in $PNETCDF_PATH/lib \
                              disabling pnetcdf support ])
          USE_PNETCDF=no
        fi
 fi
 if test "$USE_PNETCDF" = "yes"
   then
-       AC_MSG_CHECKING([for pnetcdf])
+     #  AC_MSG_CHECKING([for pnetcdf])
         CPPDEFS="$CPPDEFS -D_PNETCDF"
         INCLUDEPATH=" $INCLUDEPATH -I$PNETCDF_PATH/include"
         LDLIBS=" $LDLIBS -L$PNETCDF_PATH/lib -lpnetcdf"
   else
        CPPDEFS="$CPPDEFS -D_NOPNETCDF"
        USE_PNETCDF=no
+fi
+
+if test "$USE_COMPRESSION" = "yes"
+   then
+	AC_MSG_CHECKING([for libpiovdc])
+	if test "$with_piovdc" != "no"
+        then
+           LDLIBS=" $LDLIBS -L$with_piovdc/lib -lpiovdc -lpiocommon "
+        fi
+#        AC_SEARCH_LIBS([createvdf], piovdc, AC_MSG_RESULT([yes]),
+#           AC_MSG_ERROR([Could not find libpiovdc required for compression]),[ -lpiocommon ])
+#        fi
+        AC_FC_LIBRARY_LDFLAGS
+
+
+        AC_PROG_CXX
+	AC_LANG_PUSH(C)
+	AM_WITH_EXPAT
+	if test "$with_expat" != "no"
+        then
+          LDLIBS=" $LDLIBS -L$with_expat/lib -lexpat"
+        else
+          LDLIBS=" $LDLIBS -lexpat"
+        fi	
+	AC_LANG_POP
+
+	CPPDEFS="$CPPDEFS -D_COMPRESSION"
+        AC_MSG_CHECKING([how to link f90 with cxx])
+        LDFLAGS_TMP=$LDFLAGS
+	LDFLAGS="$LDFLAGS -cxxlib"
+        AC_LINK_IFELSE([AC_LANG_PROGRAM([],[  integer :: a     ])],[LD=$MPIFC ;AC_MSG_RESULT([ using $MPIFC])],
+          [LD=$MPICXX; LDFLAGS=$LDFLAGS_TMP; AC_MSG_RESULT([ using $MPICXX])])
+else 
+        LD=$MPIFC
 fi
 
 
@@ -561,15 +607,15 @@ PIO_PATH=`pwd`
 #############################################################################
 
 echo
-echo Temp variables: {FC=$FC} {MPIFC=$MPIFC}
-
-echo
-echo Output Variables: {CC=$CC} \
-{MPICC=$MPICC} \
-{ALLCFLAGS=$ALLCFLAGS} \
-{EXPLICIT_FPP=$EXPLICIT_FPP} {FPP=$FPP} {FPPFLAGS=$FPPFLAGS} \
+echo Output Variables: \
+{CC=$CC} \
 {FC=$FC} \
+{CXX=$CXX} \
+{MPICC=$MPICC} \
 {MPIFC=$MPIFC}\
+{MPICXX=$MPICXX} \
+{FPPFLAGS=$FPPFLAGS} \
+{LD=$LD} \
 {OPT=$OPT} \
 {BIT64=$BIT64} \
 {REAL8=$REAL8} \
@@ -578,7 +624,8 @@ echo Output Variables: {CC=$CC} \
 {CFLAGS=$CFLAGS} \
 {FCFLAGS=$FCFLAGS} \
 {FC_DEFINE=$FC_DEFINE} \
-{MPI_INC=$MPI_INC} {MPI_LIB=$MPI_LIB} \
+{MPI_INC=$MPI_INC} \
+{MPI_LIB=$MPI_LIB} \
 {MODINC=$MODINC}  \
 {AR=$AR} \
 {ARFLAGS=$ARFLAGS} \
@@ -586,6 +633,7 @@ echo Output Variables: {CC=$CC} \
 {PNETCDF_PATH=$PNETCDF_PATH} \
 {USE_NETCDF=$USE_NETCDF} \
 {NETCDF_PATH=$NETCDF_PATH} \
+{USE_COMPRESSION=$USE_COMPRESSION} \
 {CPPDEFS=$CPPDEFS} \
 {INCLUDEPATH=$INCLUDEPATH} \
 {LDLIBS=$LDLIBS} \
@@ -593,9 +641,10 @@ echo Output Variables: {CC=$CC} \
 
 echo
 AC_SUBST(PIO_PATH)
+AC_SUBST(USE_COMPRESSION)
 AC_SUBST(CPPDEFS)
 AC_SUBST(LDLIBS)
-
+AC_SUBST(LD)
 AC_OUTPUT
 
 echo Please check the Makefile.conf

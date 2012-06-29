@@ -23,7 +23,10 @@ module piolib_mod
   use ionf_mod, only : create_nf, open_nf,close_nf, sync_nf
   use pionfread_mod, only : read_nf
   use pionfwrite_mod, only : write_nf
-
+#ifdef _COMPRESSION
+    use piovdc
+    use C_interface_mod, only : F_C_STRING_DUP
+#endif
   use pio_mpi_utils, only : PIO_type_to_mpi_type 
   use iompi_mod
   use rearrange
@@ -165,7 +168,6 @@ module piolib_mod
      module procedure initdecomp_2dof_nf_i8
      module procedure initdecomp_2dof_bin_i4
      module procedure initdecomp_2dof_bin_i8
-
      module procedure PIO_initdecomp_bc
      module procedure PIO_initdecomp_dof_dof
   end interface
@@ -244,7 +246,16 @@ module piolib_mod
 
   !eoc
   !***********************************************************************
-
+#ifdef _COMPRESSION
+  interface
+     subroutine createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , fname) bind(C)
+       use, intrinsic :: iso_c_binding
+       integer(c_int), intent(in) :: vdc_dims(3), vdc_bsize(3)
+       integer(c_int), intent(in), value :: vdc_ts, restart
+       type(c_ptr), intent(in), value :: fname
+     end subroutine createvdf
+  end interface
+#endif
 
 contains
 
@@ -730,9 +741,8 @@ contains
     integer (i4), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
     integer (i4), intent(in)          :: iodof(:)     ! global degrees of freedom for io decomposition 
     type (io_desc_t), intent(out)     :: iodesc
-    integer :: piotype
+    integer :: piotype	
     integer(kind=PIO_offset), intent(in) :: start(:), count(:)
-
 
     call initdecomp_1dof_nf_i8(iosystem, basepiotype,dims,lenblocks,int(compdof,kind=pio_offset),int(iodof,kind=pio_offset),&
          start,count,iodesc)
@@ -779,7 +789,7 @@ contains
     call t_startf("PIO_initdecomp")
 #endif
 #ifdef MEMCHK	
-    call get_memusage(msize, rss, mshare, mtext, mstack)
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__PIO_FILE__,__LINE__,'mem=',rss
@@ -807,7 +817,7 @@ contains
     call alloc_check(displace,int(ndisp))
 
 #ifdef MEMCHK	
-    call get_memusage(msize, rss, mshare, mtext, mstack)
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__PIO_FILE__,__LINE__,'mem=',rss
@@ -826,7 +836,7 @@ contains
        call calcdisplace(lenblocks,iodof,displace)
     end if
 #ifdef MEMCHK	
-    call get_memusage(msize, rss, mshare, mtext, mstack)
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__PIO_FILE__,__LINE__,'mem=',rss
@@ -849,7 +859,7 @@ contains
        
     endif
 #ifdef MEMCHK	
-    call get_memusage(msize, rss, mshare, mtext, mstack)
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__PIO_FILE__,__LINE__,'mem=',rss
@@ -872,7 +882,7 @@ contains
        if(debug) print *,'initdecomp: at the end of subroutine',iodesc%write%n_elemtype,iodesc%write%n_words
     endif
 #ifdef MEMCHK	
-    call get_memusage(msize, rss, mshare, mtext, mstack)
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__PIO_FILE__,__LINE__,'mem=',rss
@@ -888,7 +898,7 @@ contains
     call dealloc_check(displace)
 
 #ifdef MEMCHK	
-    call get_memusage(msize, rss, mshare, mtext, mstack)
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__PIO_FILE__,__LINE__,'mem=',rss
@@ -920,31 +930,31 @@ contains
 !! @param iostart   The start index for the block-cyclic io decomposition
 !! @param iocount   The count for the block-cyclic io decomposition
 !<
-  subroutine PIO_initdecomp_dof_i4(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount)
+  subroutine PIO_initdecomp_dof_i4(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount, num_ts, bsize)
     use calcdisplace_mod, only : calcdisplace_box
-    use calcdecomp, only : calcstartandcount
     type (iosystem_desc_t), intent(inout) :: iosystem
     integer(i4), intent(in)           :: basepiotype
-    integer(i4), intent(in)           :: dims(:)
     integer(i4), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
     integer (kind=PIO_offset), optional :: iostart(:), iocount(:)
     type (io_desc_t), intent(out)     :: iodesc
     integer(kind=PIO_OFFSET), pointer :: internal_compdof(:)
-
+    integer(i4), intent(in)           :: dims(:)
+    !vdf optionals
+    integer(i4), intent(in), optional:: num_ts, bsize(3)
     allocate(internal_compdof(size(compdof)))
     internal_compdof = int(compdof,kind=pio_offset)
     
     if(present(iostart) .and. present(iocount) ) then
-       call pio_initdecomp(iosystem, basepiotype, dims, internal_compdof, iodesc, iostart, iocount)
-    else
-       call pio_initdecomp(iosystem, basepiotype, dims, internal_compdof, iodesc)
+       call pio_initdecomp_dof_i8(iosystem, basepiotype, dims, internal_compdof, iodesc, iostart, iocount)
+    else 
+       call pio_initdecomp_dof_i8(iosystem, basepiotype, dims, internal_compdof, iodesc)
     endif
     deallocate(internal_compdof)
 
   end subroutine PIO_initdecomp_dof_i4
 
 
-  subroutine PIO_initdecomp_dof_i8(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount)
+  subroutine PIO_initdecomp_dof_i8(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount, num_ts, bsize)
     use calcdisplace_mod, only : calcdisplace_box
     use calcdecomp, only : calcstartandcount
     type (iosystem_desc_t), intent(inout) :: iosystem
@@ -958,7 +968,8 @@ contains
     integer(i4) :: ndims
     integer (i4)                       :: lenblocks
     integer(i4)                       ::  piotype
-
+    !vdf optionals
+    integer(i4), intent(in), optional:: num_ts, bsize(3)
     integer (kind=pio_offset), pointer :: displace(:)  ! the displacements for the mpi data structure (read)
 
     integer(i4) :: prev
@@ -1014,19 +1025,20 @@ contains
 
     if(DebugAsync) print*,__PIO_FILE__,__LINE__
     piotype=PIO_type_to_mpi_type(basepiotype)
-       
+
     !-------------------------------------------
     ! for testing purposes set the iomap
     ! (decompmap_t) to something basic for
     ! testing.
     !-------------------------------------------
 #ifdef MEMCHK	
-    call get_memusage(msize, rss, mshare, mtext, mstack)
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__PIO_FILE__,__LINE__,'mem=',rss
     end if
 #endif
+
     userearranger = iosystem%userearranger
     !---------------------
     ! number of dimensions
@@ -1036,9 +1048,9 @@ contains
     ! total global size
     !---------------------
     glength= product(int(dims,kind=PIO_OFFSET))
-    if(glength > int(huge(i),kind=pio_offset)) then
-       call piodie( __PIO_FILE__,__LINE__, &
-            'requested array size too large for this interface ')       
+    if(glength > huge(int(i,kind=pio_offset))) then !not sure if this works, glength is pio_offset, if its > pio_offset range then 
+       call piodie( __PIO_FILE__,__LINE__, & !it will simply wrap around rather than be > max_int(pio_offset)
+            'requested array size too large for this interface ') !might be better to use a temp 8 byte int to store results of dims product and compare to the maxint(pio_offset)       
     endif
 
        
@@ -1062,10 +1074,33 @@ contains
        else if(present(iostart) .or. present(iocount)) then
           call piodie( __PIO_FILE__,__LINE__, &
                'both optional parameters start and count must be provided')
+       end if
+       if(present(num_ts)) then   ! vdc compression requires the num_ts argument
+#ifdef _COMPRESSION
+          if(.not. present(bsize)) then
+             vdc_bsize = (/64, 64, 64/) !default bsize of 64^3 if none is given
+          else
+             vdc_bsize = bsize
+          endif
+          vdc_ts = num_ts
+          
+          iosystem%num_aiotasks = iosystem%num_iotasks
+
+          call init_vdc2(iosystem%io_rank, dims, vdc_bsize, vdc_iostart, vdc_iocount, iosystem%num_aiotasks)
+          
+          if(debug) then
+             print *, 'rank: ', iosystem%comp_rank, ' pio_init iostart: ' , vdc_iostart, ' iocount: ', vdc_iocount
+          endif
+          
+          vdc_dims = dims	
+          iodesc%start = vdc_iostart
+          iodesc%count = vdc_iocount
+#endif	
        else
           call calcstartandcount(basepiotype, ndims, dims, iosystem%num_iotasks, iosystem%io_rank,&
-                 iodesc%start, iodesc%count,iosystem%num_aiotasks)
-       end if
+               iodesc%start, iodesc%count,iosystem%num_aiotasks)
+       endif
+
        iosize=1
        do i=1,ndims
           iosize=iosize*iodesc%count(i)
@@ -1109,7 +1144,7 @@ contains
     if(DebugAsync) print*,__PIO_FILE__,__LINE__
 
 #ifdef MEMCHK	
-    call get_memusage(msize, rss, mshare, mtext, mstack)
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__PIO_FILE__,__LINE__,'mem=',rss
@@ -1122,15 +1157,16 @@ contains
        if(DebugAsync) print*,__PIO_FILE__,__LINE__
        call rearrange_create( iosystem,compdof,dims,ndims,iodesc)
     endif
+
     if(DebugAsync) print*,__PIO_FILE__,__LINE__
 #ifdef MEMCHK	
-    call get_memusage(msize, rss, mshare, mtext, mstack)
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__PIO_FILE__,__LINE__,'mem=',rss
     end if
 #endif
-    
+
     !---------------------------------------------
     !  the setup for the mpi-io type information 
     !---------------------------------------------
@@ -1150,9 +1186,9 @@ contains
        iodesc%write%elemtype = mpi_datatype_null
        iodesc%write%filetype = mpi_datatype_null
     endif
-    
+
 #ifdef MEMCHK	
-    call get_memusage(msize, rss, mshare, mtext, mstack)
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__PIO_FILE__,__LINE__,'mem=',rss
@@ -1167,13 +1203,13 @@ contains
 !       print *, __PIO_FILE__,__LINE__,iodesc%write%filetype,iodesc%write%elemtype,&
 !            iodesc%write%n_elemtype,iodesc%write%n_words
 !    end if
-    
+
     if (iosystem%ioproc) then
        call dealloc_check(displace)
     endif
 
 #ifdef MEMCHK	
-    call get_memusage(msize, rss, mshare, mtext, mstack)
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__PIO_FILE__,__LINE__,'mem=',rss
@@ -1298,6 +1334,9 @@ contains
 !! @param rearr @copydoc PIO_rearr_method
 !! @param iosystem a derived type which can be used in subsequent pio operations (defined in PIO_types).
 !! @param base @em optional argument can be used to offset the first io task - default base is task 1.
+!! @param dims @optional argument that indicates to PIO that compression should be setup, represents comp grid size
+!! @param bsize @optional compression argument that represents block size for the VDC
+!! @param num_ts @optional compression argument that represents the number of timesteps the user have in the VDC
 !<
   subroutine init_intracom(comp_rank, comp_comm, num_iotasks, num_aggregator, stride,  rearr, iosystem,base)
     use pio_types, only : pio_internal_error, pio_rearr_none
@@ -1308,8 +1347,9 @@ contains
     integer(i4), intent(in) :: stride
     integer(i4), intent(in) :: rearr
     type (iosystem_desc_t), intent(out)  :: iosystem  ! io descriptor to initalize
-    integer(i4), intent(in),optional :: base
 
+    integer(i4), intent(in),optional :: base
+    
     integer(i4) :: n_iotasks
     integer(i4) :: length
     integer(i4) :: ngseg,io_rank,i,lbase, io_comm,ierr 
@@ -2108,6 +2148,9 @@ contains
 !! @retval ierr @copydoc error_return
 !<
   integer function createfile(iosystem, file,iotype, fname, amode_in) result(ierr)
+#ifdef _COMPRESSION
+    use pio_types, only : pio_clobber, pio_noclobber, pio_iotype_vdc2
+#endif
     type (iosystem_desc_t), intent(inout), target :: iosystem
     type (file_desc_t), intent(out) :: file
     integer, intent(in) :: iotype
@@ -2125,6 +2168,12 @@ contains
     character(len=4) :: stripestr
     character(len=9) :: stripestr2
     character(len=char_len)  :: myfname
+#ifdef _COMPRESSION
+    integer :: restart
+
+
+
+#endif
 #ifdef TIMING
     call t_startf("PIO_createfile")
 #endif
@@ -2203,9 +2252,19 @@ contains
        if(debug .and. iosystem%io_rank==0)print *,__PIO_FILE__,__LINE__,' open: ', myfname, file%fh, ierr
     case(pio_iotype_binary)
        print *,'createfile: io type not supported'
+#ifdef _COMPRESSION
+    case(pio_iotype_vdc2)
+       restart=0
+       if(iosystem%io_rank==0) then
+          restart = 1
+          call createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , F_C_String_dup(fname) )
+       else if(iosystem%io_rank>0) then
+          call createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , F_C_String_dup(fname) )
+       endif
+#endif
     end select
     if(ierr==0) file%file_is_open=.true.
-
+	
     if(debug .and. file%iosystem%io_rank==0) print *,__PIO_FILE__,__LINE__,'open: ',file%fh, myfname
 
 #ifdef TIMING
@@ -2260,12 +2319,14 @@ contains
 !! @retval ierr @copydoc error_return
 !<
   integer function PIO_openfile(iosystem, file, iotype, fname,mode) result(ierr)
+#ifdef _COMPRESSION
+    use pio_types, only : pio_iotype_vdc2
+#endif
     type (iosystem_desc_t), intent(inout), target :: iosystem
     type (file_desc_t), intent(out) :: file
     integer, intent(in) :: iotype
     character(len=*), intent(in)  :: fname
     integer, optional, intent(in) :: mode
-
     ! ===================
     !  local variables
     ! ================
@@ -2352,7 +2413,12 @@ contains
        ierr = open_nf(file,myfname,amode)
        if(debug .and. iosystem%io_rank==0)print *,__PIO_FILE__,__LINE__,' open: ', myfname, file%fh
     case(pio_iotype_binary)   ! appears to be a no-op
-       
+#ifdef _COMPRESSION
+    case(pio_iotype_vdc2) !equivalent to calling create def without clobbering the file, arguments dont matter
+       if(iosystem%io_rank>=0) then
+          call createvdf(vdc_dims, vdc_bsize, vdc_ts, 0 , F_C_STRING_DUP(trim(myfname)))
+       end if
+#endif
     end select
     if(Debug .and. file%iosystem%io_rank==0) print *,__PIO_FILE__,__LINE__,'open: ',file%fh, myfname
     if(ierr==0) file%file_is_open=.true.

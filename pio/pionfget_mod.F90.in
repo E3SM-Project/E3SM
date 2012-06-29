@@ -57,19 +57,21 @@ CONTAINS
 !<
   integer function get_var1_{TYPE} (File,varid, index, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar1
+    use pio_types, only : pio_max_var_dims
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, index(:)
     {VTYPE}, intent(out) :: ival
     type(iosystem_desc_t), pointer :: ios
     character(len=*), parameter :: subName=modName//'::get_var1_{TYPE}'
-    integer :: iotype, mpierr, ilen, msg
+    integer :: iotype, mpierr, ilen, msg, sofindex
+    integer(kind=pio_offset) :: kount(PIO_MAX_VAR_DIMS)
 #ifdef TIMING
     call t_startf("pio_get_var1_{TYPE}")
 #endif
     ierr=0
     iotype = File%iotype 
     ios => File%iosystem
-    if(Debug) print *,__PIO_FILE__,__LINE__,index
+    sofindex = size(index)
 
 #if ({ITYPE} == TYPETEXT)
     ilen = len(ival)
@@ -77,14 +79,15 @@ CONTAINS
 #else
     ilen=1
 #endif	
+    if(Debug) print *,__PIO_FILE__,__LINE__,index, ilen
     
     if(ios%async_interface .and. .not. ios%ioproc ) then
        msg=PIO_MSG_GETVAR1
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(size(index),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(index,size(index),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(sofindex,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(index,sofindex,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST({ITYPE},1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        if({ITYPE} == TYPETEXT) then
           call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
@@ -99,7 +102,13 @@ CONTAINS
           ierr = nfmpi_begin_indep_data(File%fh)
           ! Only io proc 0 will do reading
           if(ierr==PIO_NOERR .and. File%iosystem%io_rank==0) then
+#if ({ITYPE} == TYPETEXT)
+             kount = 1
+             kount(1) = ilen
+             ierr = nfmpi_get_vara_{TYPE} (File%fh, varid, int(index,kind=PIO_OFFSET), kount(1:sofindex), ival)
+#else
              ierr = nfmpi_get_var1_{TYPE} (File%fh, varid, int(index,kind=PIO_OFFSET), ival)
+#endif
              if(ierr/=PIO_NOERR) print *, __PIO_FILE__,__LINE__,index, ival
           end if
           if(ierr==PIO_NOERR) then

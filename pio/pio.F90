@@ -21,9 +21,8 @@ module pio
 #if defined(_NETCDF) || defined(_PNETCDF)
 	pio_nofill, pio_unlimited, pio_64bit_offset, &
 #endif
+	pio_iotype_vdc2, &
         pio_rearr_box, pio_internal_error, pio_bcast_error, pio_return_error
-
-
 
   use piodarray, only : pio_read_darray, pio_write_darray, pio_set_buffer_size_limit  
 
