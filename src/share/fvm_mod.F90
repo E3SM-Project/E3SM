@@ -158,7 +158,7 @@ subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
       call compute_weights(fvm(ie),6,weights_all,weights_eul_index_all, &
              weights_lgr_index_all,jall) 
       ! THE FIRST TRACER IS AIRDENSITY
-      tracer_air0=fvm(ie)%c(:,:,k,1,tl%n0)       
+      tracer_air0=1.0D0 !fvm(ie)%c(:,:,k,1,tl%n0)       
       call reconstruction(tracer_air0, fvm(ie),recons_air)
       call monotonic_gradient_cart(tracer_air0, fvm(ie),recons_air, elem(ie)%desc)
       tracer_air1=0.0D0   
@@ -525,14 +525,14 @@ subroutine fvm_mesh_dep(elem, deriv, fvm, dt, tl, klev)
 #if 0
 !CE: define new mesh for fvm fvm on an equal angular grid
 ! go from alpha,beta -> cartesian xy on cube -> lat lon on the sphere
-#ifdef _FVM
+! #ifdef _FVM
   do j=1,nc+1
      do i=1,nc+1               
 !                 call solidbody(fvm%asphere(i,j), fvm%dsphere(i,j))
         call boomerang(fvm%asphere(i,j), fvm%dsphere(i,j),tl%nstep)
      end do
   end do
-#endif
+! #endif
 #else
 
 ! for given velocities in the element structure

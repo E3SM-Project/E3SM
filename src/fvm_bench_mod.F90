@@ -28,7 +28,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   ! ---------------------------------------------------------------------------------  
   use fvm_control_volume_mod, only: fvm_struct
   ! ---------------------------------------------------------------------------------
-  use fvm_mod, only: cslam_runair, fvm_init1,fvm_init2, fvm_mcgregor,fvm_mcgregordss, cellghostbuf, edgeveloc
+  use fvm_mod, only: cslam_runair, fvm_init1,fvm_init2, fvm_init3, fvm_mcgregor,fvm_mcgregordss, cellghostbuf, edgeveloc
   ! ---------------------------------------------------------------------------------
   use fvm_line_integrals_mod, only: compute_weights
   ! ---------------------------------------------------------------------------------  
@@ -78,8 +78,8 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   integer, intent(in)                         :: nets  ! starting thread element number (private)
   integer, intent(in)                         :: nete  ! ending thread element number   (private)
 
-  real (kind=real_kind)                       :: massstart, mass, maxc, maxcstart,minc, mincstart, tmp  
-  real (kind=real_kind)                       :: tmp1(nets:nete), tmp2(nets:nete)
+  real (kind=real_kind)                       :: massstart, mass, maxc, maxcstart,minc, mincstart, tmp, l2, lmax  
+  real (kind=real_kind)                       :: tmp1(nets:nete), tmp2(nets:nete), tmp3(nets:nete), tmp4(nets:nete)
   
   integer                                     :: i,j,k,ie,itr, jx, jy, jdx, jdy, h
   type (TimeLevel_t)                          :: tl              ! time level struct
@@ -100,6 +100,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   
   real (kind=real_kind), dimension(np,np,2)    :: vstar, vhat
   real (kind=real_kind)                        :: maxcflx, maxcfly  
+  
   
   integer  choosetrac, chooselev   !for test reason the output
  !-----------------------------------------------------------------------------------!  
@@ -138,10 +139,12 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
                         fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,chooselev,1,tl%n0)*&
                                                    fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)
         endif
+        fvm(ie)%cstart(i,j)=fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)
       enddo
     enddo
     !
     !first exchange of the initial values
+!     call fvm_init3(elem,fvm,hybrid,nets,nete,tl%n0)
     call ghostVpack(cellghostbuf, fvm(ie)%c,nhc,nc,nlev,ntrac,0,tl%n0,timelevels,elem(ie)%desc)
     ! reset the new unknown
     do k=1,nlev
@@ -167,8 +170,6 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
     ! for the max value on the sphere
     tmp1(ie) = MAXVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))
     tmp2(ie) = MINVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))   
-  ! BEGIN Testoutput: write data in p (interpolation) to use existing IO
-  ! prepare date for I/O
   end do
 
 
@@ -305,6 +306,22 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
     call shal_movie_finish
 #endif
 !-----------------------------------------------------------------------------------!  
+  
+    do ie=nets,nete
+      tmp3(ie)=0.0D0
+      tmp4(ie)=0.0D0
+      tmp=0.0D0
+      do j=1,nc
+        do i=1,nc
+          tmp3(ie)=tmp3(ie)+fvm(ie)%area_sphere(i,j)*(fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)-fvm(ie)%cstart(i,j))* &
+                                            (fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)-fvm(ie)%cstart(i,j))
+          tmp=max(tmp,abs(fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)-fvm(ie)%cstart(i,j)))
+        end do
+      end do
+      tmp4(ie)=tmp
+    end do
+    l2 = parallelmax(tmp3,hybrid)
+    lmax = parallelmin(tmp4,hybrid)
 
 !SUMMARY
   if(hybrid%masterthread) then 
@@ -322,6 +339,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
     write(*,*) 'maxvaluestart:', maxcstart, 'minvaluestart:', mincstart
     write(*,*) 'maxvalue:     ', maxc,      'minvalue:     ', minc
     write(*,*) "CFL: maxcflx=", maxcflx, "maxcfly=", maxcfly 
+    write(*,*) "l2 = ", sqrt(l2), "lmax = ", lmax
   endif
 
   0817 format("*****ELEMENT ",I6,2x,I6,2x,I1)

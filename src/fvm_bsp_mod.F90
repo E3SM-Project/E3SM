@@ -99,42 +99,42 @@ subroutine analytical_function(value,sphere,klev,itr)
 
 !   ! temporary: set all parameters for the Solid Body rotation test
 !   Solid Body test ----------------------------------------------------------------!
-!   R0=sphere%r/3.0D0
-!   h0=1000.0D0
-!   lon=2.0D0*DD_PI/2.0D0
-!   lat=DD_PI/6.0D0
-!   Rg = acos(sin(lat)*sin(sphere%lat)+cos(lat)*cos(sphere%lat)*cos(sphere%lon-lon)) 
-!   if (Rg .ge. R0) then
-!     value = 100.0D0
-! !     value=sin(sphere%lon)*cos(sphere%lat)
-!   else
-!     value = 100.0D0+(h0/2.0D0)*(1.0D0+cos(DD_PI*Rg/R0))
-!   endif
+  R0=sphere%r/3.0D0
+  h0=1000.0D0
+  lon=2.0D0*DD_PI/2.0D0
+  lat=DD_PI/6.0D0
+  Rg = acos(sin(lat)*sin(sphere%lat)+cos(lat)*cos(sphere%lat)*cos(sphere%lon-lon)) 
+  if (Rg .ge. R0) then
+    value = 100.0D0
+!     value=sin(sphere%lon)*cos(sphere%lat)
+  else
+    value = 100.0D0+(h0/2.0D0)*(1.0D0+cos(DD_PI*Rg/R0))
+  endif
 
 
 
   !Non-smooth scalar field (slotted cylinder) --------------------------------------!
-  R0=0.5D0
-  lon1=4.0D0*DD_PI/5.0D0
-  lat1=0.0D0
-  Rg1 = acos(sin(lat1)*sin(sphere%lat)+cos(lat1)*cos(sphere%lat)*cos(sphere%lon-lon1))
-  lon2=6.0D0*DD_PI/5.0D0
-  lat2=0.0D0
-  Rg2 = acos(sin(lat2)*sin(sphere%lat)+cos(lat2)*cos(sphere%lat)*cos(sphere%lon-lon2))   
-
-  if ((Rg1 .le. R0) .AND. (abs(sphere%lon-lon1).ge. R0/6)) then
-    value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
-  elseif ((Rg2 .le. R0) .AND. (abs(sphere%lon-lon2).ge. R0/6)) then
-    value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
-  elseif ((Rg1 .le. R0) .AND. (abs(sphere%lon-lon1) < R0/6) &
-                        .AND. (sphere%lat-lat1 < -5.0D0*R0/12.0D0)) then
-    value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
-  elseif ((Rg2 .le. R0) .AND. (abs(sphere%lon-lon2) < R0/6) &
-                        .AND. (sphere%lat-lat2 > 5.0D0*R0/12.0D0)) then
-    value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
-  else
-    value = 0.1D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev   
-  endif  
+!   R0=0.5D0
+!   lon1=4.0D0*DD_PI/5.0D0
+!   lat1=0.0D0
+!   Rg1 = acos(sin(lat1)*sin(sphere%lat)+cos(lat1)*cos(sphere%lat)*cos(sphere%lon-lon1))
+!   lon2=6.0D0*DD_PI/5.0D0
+!   lat2=0.0D0
+!   Rg2 = acos(sin(lat2)*sin(sphere%lat)+cos(lat2)*cos(sphere%lat)*cos(sphere%lon-lon2))   
+! 
+!   if ((Rg1 .le. R0) .AND. (abs(sphere%lon-lon1).ge. R0/6)) then
+!     value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
+!   elseif ((Rg2 .le. R0) .AND. (abs(sphere%lon-lon2).ge. R0/6)) then
+!     value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
+!   elseif ((Rg1 .le. R0) .AND. (abs(sphere%lon-lon1) < R0/6) &
+!                         .AND. (sphere%lat-lat1 < -5.0D0*R0/12.0D0)) then
+!     value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
+!   elseif ((Rg2 .le. R0) .AND. (abs(sphere%lon-lon2) < R0/6) &
+!                         .AND. (sphere%lat-lat2 > 5.0D0*R0/12.0D0)) then
+!     value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
+!   else
+!     value = 0.1D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev   
+!   endif  
 end subroutine analytical_function
 !END SUBROUTINE ANALYTICAL_FUNCTION---------------------------------------CE-for FVM!
 

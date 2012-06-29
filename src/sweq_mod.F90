@@ -1514,9 +1514,20 @@ contains
 
 !-------BEGIN McGregor scheme
     do ie=nets,nete
-      ! save velocity at time t for fvm
-      fvm(ie)%vn0=elem(ie)%state%v(:,:,:,:,tl%n0) 
-      elem(ie)%derived%vstar=elem(ie)%state%v(:,:,:,:,tl%np1)   
+      do k=1,nlev
+         ! Convert wind to lat-lon
+        v1     = elem(ie)%state%v(:,:,1,k,tl%n0)  ! contra
+        v2     = elem(ie)%state%v(:,:,2,k,tl%n0)  ! contra 
+        fvm(ie)%vn0(:,:,1,k)=elem(ie)%D(1,1,:,:)*v1 + elem(ie)%D(1,2,:,:)*v2   ! contra->latlon
+        fvm(ie)%vn0(:,:,2,k)=elem(ie)%D(2,1,:,:)*v1 + elem(ie)%D(2,2,:,:)*v2   ! contra->latlon
+        
+         ! Convert wind to lat-lon
+        v1     = elem(ie)%state%v(:,:,1,k,tl%np1)  ! contra
+        v2     = elem(ie)%state%v(:,:,2,k,tl%np1)   ! contra 
+        elem(ie)%derived%vstar(:,:,1,k)=elem(ie)%D(1,1,:,:)*v1 + elem(ie)%D(1,2,:,:)*v2   ! contra->latlon
+        elem(ie)%derived%vstar(:,:,2,k)=elem(ie)%D(2,1,:,:)*v1 + elem(ie)%D(2,2,:,:)*v2   ! contra->latlon
+        
+      enddo  
     end do  
       call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, dt, 3)
 !-------END new McGregor scheme--------
