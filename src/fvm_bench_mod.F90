@@ -78,8 +78,8 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   integer, intent(in)                         :: nets  ! starting thread element number (private)
   integer, intent(in)                         :: nete  ! ending thread element number   (private)
 
-  real (kind=real_kind)                       :: massstart, mass, maxc, maxcstart,minc, mincstart, tmp, l2, lmax  
-  real (kind=real_kind)                       :: tmp1(nets:nete), tmp2(nets:nete), tmp3(nets:nete), tmp4(nets:nete)
+  real (kind=real_kind)                       :: massstart, mass, maxc, maxcstart,minc, mincstart, tmp, l1,l2, lmax  
+  real (kind=real_kind)                       :: tmp1(nets:nete), tmp2(nets:nete), tmp3(nets:nete), tmp4(nets:nete), tmp5(nets:nete)
   
   integer                                     :: i,j,k,ie,itr, jx, jy, jdx, jdy, h
   type (TimeLevel_t)                          :: tl              ! time level struct
@@ -310,18 +310,21 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
     do ie=nets,nete
       tmp3(ie)=0.0D0
       tmp4(ie)=0.0D0
+      tmp5(ie)=0.0D0
       tmp=0.0D0
       do j=1,nc
         do i=1,nc
-          tmp3(ie)=tmp3(ie)+fvm(ie)%area_sphere(i,j)*(fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)-fvm(ie)%cstart(i,j))* &
+          tmp3(ie)=tmp3(ie)+fvm(ie)%area_sphere(i,j)*(fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)-fvm(ie)%cstart(i,j))
+          tmp4(ie)=tmp3(ie)+fvm(ie)%area_sphere(i,j)*(fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)-fvm(ie)%cstart(i,j))* &
                                             (fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)-fvm(ie)%cstart(i,j))
           tmp=max(tmp,abs(fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)-fvm(ie)%cstart(i,j)))
         end do
       end do
-      tmp4(ie)=tmp
+      tmp5(ie)=tmp
     end do
-    l2 = parallelmax(tmp3,hybrid)
-    lmax = parallelmin(tmp4,hybrid)
+    l1 = parallelmax(tmp4,hybrid)
+    l2 = parallelmax(tmp4,hybrid)
+    lmax = parallelmax(tmp5,hybrid)
 
 !SUMMARY
   if(hybrid%masterthread) then 
@@ -339,7 +342,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
     write(*,*) 'maxvaluestart:', maxcstart, 'minvaluestart:', mincstart
     write(*,*) 'maxvalue:     ', maxc,      'minvalue:     ', minc
     write(*,*) "CFL: maxcflx=", maxcflx, "maxcfly=", maxcfly 
-    write(*,*) "l2 = ", sqrt(l2), "lmax = ", lmax
+    write(*,*) "l1 = ", l1, "l2 = ", sqrt(l2), "lmax = ", lmax
   endif
 
   0817 format("*****ELEMENT ",I6,2x,I6,2x,I1)

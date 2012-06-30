@@ -244,17 +244,15 @@ subroutine fvm_mesh_dep_gll(elem, deriv, fvm, dt, tl, klev)
   integer                                     :: number
 
 ! for the benchmark test, use more accurate departure point creation
-#if 0
+#if 1
 !CE: define new mesh for fvm fvm on an equal angular grid
 ! go from alpha,beta -> cartesian xy on cube -> lat lon on the sphere
-#ifdef _FVM
   do j=1,np
      do i=1,np               
 !                 call solidbody(fvm%asphere(i,j), fvm%dsphere(i,j))
         call boomerang(elem%spherep(i,j), fvm%dsphere(i,j),tl%nstep)
      end do
   end do
-#endif
 #else
 
 ! for given velocities in the element structure
