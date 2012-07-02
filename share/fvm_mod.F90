@@ -528,8 +528,8 @@ subroutine fvm_mesh_dep(elem, deriv, fvm, dt, tl, klev)
 ! #ifdef _FVM
   do j=1,nc+1
      do i=1,nc+1               
-!                 call solidbody(fvm%asphere(i,j), fvm%dsphere(i,j))
-        call boomerang(fvm%asphere(i,j), fvm%dsphere(i,j),tl%nstep)
+                call solidbody(fvm%asphere(i,j), fvm%dsphere(i,j))
+!         call boomerang(fvm%asphere(i,j), fvm%dsphere(i,j),tl%nstep)
      end do
   end do
 ! #endif
