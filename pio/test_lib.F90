@@ -116,14 +116,12 @@ program Test_Lib
 	start = MPI_WTIME()
 #endif
 
-	!call init_decomp in order to setup the IO decomposition with PIO, no optional arguments necessary since PIO automatically
-	!generates the necessary IO start/counts when dims are passed into PIO_init
-	call PIO_initdecomp(iosystem, PIO_real, dims, compdof, iodesc) 
-	!example using optional bsize specifier
-	!call PIO_initdecomp(iosystem, PIO_real, dims, compdof, iodesc (/128, 128, 128/))
+	!call init_decomp in order to setup the IO decomposition with PIO
+        ! The optional parameter num_ts is required to indicate the vdc output method
+	call PIO_initdecomp(iosystem, PIO_real, dims, compdof, iodesc, num_ts=10) 
 	
 	!example using optional bsize and # timesteps specifiers
-	!call PIO_initdecomp(iosystem, PIO_real, dims, compdof, iodesc(/128, 128, 128/), 30)		
+	!call PIO_initdecomp(iosystem, PIO_real, dims, compdof, iodesc, bsize=(/128, 128, 128/), num_ts=30)		
 #ifdef DEBUG
 	if(rank .eq. 0) then 
 	    print *, 'Decomposition initialized'

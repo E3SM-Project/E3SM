@@ -383,7 +383,7 @@
   run = "aprun" 
   corespernode = "12"
   submit = "qsub "
-  conopts = "   --enable-filesystem-hints=lustre "
+  conopts = "   --enable-filesystem-hints=lustre --with-piovdc=/glade/home/jedwards/libpiovdc-cinterop/lynx/intel"
   preamble="
 #PBS -N testpio_suite
 #PBS -l walltime=01:50:00
