@@ -13,7 +13,7 @@ module fvm_bsp_mod
   implicit none
   private
   public :: fvm_bsp, boomerang, set_boomerang_velocities_gll, get_boomerang_velocities_gll, &
-            fvm_init_tracer
+            fvm_init_tracer, get_solidbody_velocities_gll
 
   public :: solidbody
   public :: analytical_function
@@ -49,7 +49,7 @@ subroutine solidbody(asphere, dsphere)
 
   ! set values for solid-body rotation on the sphere with alpha, this should be 
   ! outside 
-  alpha=DD_PI/4 !1.3!0.78
+  alpha=0.0D0 !DD_PI/4 !1.3!0.78
   omega=2*DD_PI/Time_at(nmax)          ! angular velocity: around the earth
   omega=2*DD_PI/1036800
   lap=DD_PI
@@ -99,47 +99,47 @@ subroutine analytical_function(value,sphere,klev,itr)
 
 !   ! temporary: set all parameters for the Solid Body rotation test
 !   Solid Body test ----------------------------------------------------------------!
-!   R0=sphere%r/3.0D0
-!   h0=1.0D0
-!   lon1=4.0D0*DD_PI/5.0D0
-!   lat1=0.0D0
-!   Rg1 = acos(sin(lat1)*sin(sphere%lat)+cos(lat1)*cos(sphere%lat)*cos(sphere%lon-lon1))
-! !   lon2=6.0D0*DD_PI/5.0D0
-! !   lat2=0.0D0
-! !   Rg2 = acos(sin(lat2)*sin(sphere%lat)+cos(lat2)*cos(sphere%lat)*cos(sphere%lon-lon2))
-!   if (Rg1 .le. R0) then
-!     value = 1.0D0+(h0/2.0D0)*(1.0D0+cos(DD_PI*Rg1/R0))
-! !     value=sin(sphere%lon)*cos(sphere%lat)
-! !   elseif (Rg2 .le. R0) then
-! !     value = 1.0D0+(h0/2.0D0)*(1.0D0+cos(DD_PI*Rg2/R0))
-!   else
-!     value = 1.0D0
-!   endif
+  R0=sphere%r/3.0D0
+  h0=1.0D0
+  lon1=4.0D0*DD_PI/5.0D0
+  lat1=0.0D0
+  Rg1 = acos(sin(lat1)*sin(sphere%lat)+cos(lat1)*cos(sphere%lat)*cos(sphere%lon-lon1))
+!   lon2=6.0D0*DD_PI/5.0D0
+!   lat2=0.0D0
+!   Rg2 = acos(sin(lat2)*sin(sphere%lat)+cos(lat2)*cos(sphere%lat)*cos(sphere%lon-lon2))
+  if (Rg1 .le. R0) then
+    value = (h0/2.0D0)*(1.0D0+cos(DD_PI*Rg1/R0))
+!     value=sin(sphere%lon)*cos(sphere%lat)
+!   elseif (Rg2 .le. R0) then
+!     value = 1.0D0+(h0/2.0D0)*(1.0D0+cos(DD_PI*Rg2/R0))
+  else
+    value = 0.0D0
+  endif
 
 
 
   !Non-smooth scalar field (slotted cylinder) --------------------------------------!
-  R0=0.5D0
-  lon1=4.0D0*DD_PI/5.0D0
-  lat1=0.0D0
-  Rg1 = acos(sin(lat1)*sin(sphere%lat)+cos(lat1)*cos(sphere%lat)*cos(sphere%lon-lon1))
-  lon2=6.0D0*DD_PI/5.0D0
-  lat2=0.0D0
-  Rg2 = acos(sin(lat2)*sin(sphere%lat)+cos(lat2)*cos(sphere%lat)*cos(sphere%lon-lon2))   
-
-  if ((Rg1 .le. R0) .AND. (abs(sphere%lon-lon1).ge. R0/6)) then
-    value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
-  elseif ((Rg2 .le. R0) .AND. (abs(sphere%lon-lon2).ge. R0/6)) then
-    value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
-  elseif ((Rg1 .le. R0) .AND. (abs(sphere%lon-lon1) < R0/6) &
-                        .AND. (sphere%lat-lat1 < -5.0D0*R0/12.0D0)) then
-    value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
-  elseif ((Rg2 .le. R0) .AND. (abs(sphere%lon-lon2) < R0/6) &
-                        .AND. (sphere%lat-lat2 > 5.0D0*R0/12.0D0)) then
-    value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
-  else
-    value = 0.1D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev   
-  endif  
+!   R0=0.5D0
+!   lon1=4.0D0*DD_PI/5.0D0
+!   lat1=0.0D0
+!   Rg1 = acos(sin(lat1)*sin(sphere%lat)+cos(lat1)*cos(sphere%lat)*cos(sphere%lon-lon1))
+!   lon2=6.0D0*DD_PI/5.0D0
+!   lat2=0.0D0
+!   Rg2 = acos(sin(lat2)*sin(sphere%lat)+cos(lat2)*cos(sphere%lat)*cos(sphere%lon-lon2))   
+! 
+!   if ((Rg1 .le. R0) .AND. (abs(sphere%lon-lon1).ge. R0/6)) then
+!     value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
+!   elseif ((Rg2 .le. R0) .AND. (abs(sphere%lon-lon2).ge. R0/6)) then
+!     value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
+!   elseif ((Rg1 .le. R0) .AND. (abs(sphere%lon-lon1) < R0/6) &
+!                         .AND. (sphere%lat-lat1 < -5.0D0*R0/12.0D0)) then
+!     value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
+!   elseif ((Rg2 .le. R0) .AND. (abs(sphere%lon-lon2) < R0/6) &
+!                         .AND. (sphere%lat-lat2 > 5.0D0*R0/12.0D0)) then
+!     value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
+!   else
+!     value = 0.1D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev   
+!   endif  
 end subroutine analytical_function
 !END SUBROUTINE ANALYTICAL_FUNCTION---------------------------------------CE-for FVM!
 
@@ -178,6 +178,40 @@ subroutine fvm_bsp(fvm, tl)
   end do
 end subroutine fvm_bsp
 !END SUBROUTINE FVM_BSP---------------------------------------------------CE-for FVM!
+
+function get_solidbody_velocities_gll(elem, time) result(vstar)
+  use coordinate_systems_mod, only : cart2cubedspherexy, spherical_to_cart
+  use element_mod, only : element_t
+  use fvm_control_volume_mod, only: fvm_struct
+  use physical_constants, only : DD_PI, rearth
+  use fvm_transformation_mod, only: vortex_rotatedsphere, vortex_rotatedsphereback
+  
+  implicit none
+  type (element_t), intent(in)   :: elem
+  real (kind=real_kind),intent(in)             :: time  ! time of the arrival grid
+  real (kind=real_kind)                        :: vstar(np,np,2)
+  
+  integer                             :: i,j
+  real (kind=real_kind)               :: lon, lat, u0, alpha, u, v
+
+  alpha=DD_PI/2.0D0 !0.0D0
+  u0=2*DD_PI*Rearth/(12*3600*24)
+
+  do i=1,np
+    do j=1,np
+      lon = elem%spherep(i,j)%lon
+      lat = elem%spherep(i,j)%lat
+
+      u = u0*(cos(alpha)*cos(lat)+sin(alpha)*cos(lon)*sin(lat))
+      v = -u0*sin(alpha)*sin(lon)
+      ! convert from radians per dimensionless time to 
+      ! meters/sec 
+      vstar(i,j,1)=u !* Rearth /( 12*3600*24/5)
+      vstar(i,j,2)=v !* Rearth /( 12*3600*24/5)
+    enddo
+  enddo
+end function get_solidbody_velocities_gll
+
 
 function get_boomerang_velocities_gll(elem, time) result(vstar)
   use coordinate_systems_mod, only : cart2cubedspherexy, spherical_to_cart
