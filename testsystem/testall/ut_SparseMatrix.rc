@@ -18,7 +18,7 @@
 #  11Apr01   J.W. Larson <larson@mcs.anl.gov> -- Initial version.
 # 
 #-------------------------------------------------------------------------
-Data_Directory:                  ../data
+Data_Directory:                  ../../data
 atmosphere_to_ocean_remap_file:  t42_to_popx1_c_mat.asc
 ocean_to_atmosphere_remap_file:  popx1_to_t42_c_mat.asc
 atmosphere_dimensions:           128 64
