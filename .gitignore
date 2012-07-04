@@ -6,3 +6,4 @@ autom4te.cache
 *.o
 *.mod
 lib*.a
+data
