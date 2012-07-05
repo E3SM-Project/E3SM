@@ -238,8 +238,8 @@ if(myProc==0) then
 !       do not impose a sorting order upon initialization
 
    call convertPOPT(POPGrid, &
-	     "../data/grid.320x384.da", &
-	     "../data/kmt_full_40.da", Nox, Noy)    
+	     "../../data/grid.320x384.da", &
+	     "../../data/kmt_full_40.da", Nox, Noy)    
 
    call GGrid_test(POPGrid,"POP::POPGrid",3400+myProc)
 

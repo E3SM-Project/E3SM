@@ -2,4 +2,5 @@ testall
 *.clog
 fort.*
 *.log
-testall.*
+*testall.*
+*.script
