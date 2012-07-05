@@ -200,9 +200,7 @@ subroutine initdecomp_dof_handler(iosystem)
 
   call mpi_bcast(iodesc%async_id, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)  
 
-
   call pio_initdecomp(iosystem, basepiotype, dims(1:dims_size), compdof, iodesc)
-
 
 end subroutine initdecomp_dof_handler
 
@@ -239,6 +237,7 @@ subroutine writedarray_handler(iosystem)
   call mpi_bcast(fillv, 1, mpi_integer , iosystem%compmaster, iosystem%intercomm, ierr)
 
   file=> lookupfile(fh)
+  if(debugasync) print *,__FILE__,__LINE__,v%varid,iod_id
   iodesc => lookupiodesc(iod_id)
 #ifndef _MPISERIAL
   select case(type)

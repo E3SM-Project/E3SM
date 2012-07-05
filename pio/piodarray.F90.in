@@ -148,7 +148,7 @@ contains
     if(ios%async_interface .and. .not. ios%ioproc) then
        msg = PIO_MSG_WRITEDARRAY
 
-       if(debugasync) print *,__PIO_FILE__,__LINE__
+       if(debugasync) print *,__PIO_FILE__,__LINE__, iodesc%async_id
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast(vardesc%varid, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
@@ -166,6 +166,8 @@ contains
        end if
        if(debugasync) print *,__PIO_FILE__,__LINE__
     endif
+
+    if(debugasync .and. ios%ioproc) print *,__FILE__,__LINE__,iodesc%async_id
 
     select case(File%iotype)
     case(pio_iotype_pbinary, pio_iotype_direct_pbinary)
@@ -437,7 +439,7 @@ contains
 #endif
     if(UseRearranger) then 
        if (IOproc) then 
-          if(Debug) print *, subName,': IAM: ',File%iosystem%comp_rank,'Before call to allocate(IOBUF): ',len
+          if(Debug) print *, subName,': IAM: ',File%iosystem%comp_rank,'Before call to allocate(IOBUF): ',len, iodesc%write%n_elemtype
 
           call alloc_check(IOBUF,len,' TYPE :IOBUF')
 

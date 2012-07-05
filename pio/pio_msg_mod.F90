@@ -276,43 +276,50 @@ contains
   subroutine add_to_iodesc_list(iodesc)
     type(io_desc_t), pointer :: iodesc
     type(io_desc_list), pointer :: list_item
-    integer :: id, index
+    integer ::  index
 
 
     list_item=> top_iodesc
 
-    if(debugasync) print *,__FILE__,__LINE__,list_item%index
     index=top_iodesc%index
-    id = 0
+
     if(associated(list_item%iodesc)) then
        do while(associated(list_item%iodesc) .and. associated(list_item%next))
           list_item => list_item%next
           index = index+1
        end do
        if(associated(list_item%iodesc)) then
-          id = max(id, list_item%iodesc%async_id+1)
+!          id = max(id+1, list_item%iodesc%async_id+1)
           allocate(list_item%next)
           list_item=>list_item%next
+          index = index+1
           nullify(list_item%next)
        end if
-    end if
-    iodesc%async_id=id
-    list_item%index=index
 
+
+
+       if(debugasync) print *,__FILE__,__LINE__,index
+    end if
+    iodesc%async_id=index
+    list_item%index=index
     list_item%iodesc => iodesc
+
+
+    if(debugasync) print *,__FILE__,__LINE__,index,list_item%iodesc%async_id
 
   end subroutine add_to_iodesc_list
 
 
   function delete_from_iodesc_list(id) result(iodesc)
     integer, intent(in) :: id
-    type(io_desc_list), pointer :: list_item, previtem
+    type(io_desc_list), pointer :: list_item, previtem, nextitem
     type(io_desc_t), pointer :: iodesc
 
     list_item=> top_iodesc
     nullify(previtem)
     do while(associated(list_item%iodesc) )
        if(abs(list_item%iodesc%async_id) == id) then
+    if(debugasync) print *,__FILE__,__LINE__,id,list_item%index
           iodesc=>list_item%iodesc
           iodesc%async_id=-1
           nullify(list_item%iodesc)
@@ -323,6 +330,17 @@ contains
                 nullify(previtem%next)
              end if
              deallocate(list_item)
+          else if(associated(list_item%next)) then  
+             nextitem => list_item%next
+             list_item%iodesc=>nextitem%iodesc
+             list_item%index = nextitem%index
+             if(associated(nextitem%next)) then
+                list_item%next => nextitem%next
+             else
+                nullify(list_item%next)
+             end if
+             deallocate(nextitem)
+             
           end if
 
           exit
@@ -400,18 +418,21 @@ contains
 
 
     list_item=> top_iodesc
-    if(debugasync) print *,__FILE__,__LINE__,list_item%index,async_id
-    
+    nullify(iodesc)
     do while(associated(list_item%iodesc) )
+
+       if(debugasync) print *,__FILE__,__LINE__,list_item%index,async_id,list_item%iodesc%async_id
        if(abs(list_item%iodesc%async_id) == async_id) then
           iodesc => list_item%iodesc
-          if(debugasync) print *,__FILE__,__LINE__,async_id,list_item%index
+          if(debugasync) print *,__FILE__,__LINE__,async_id,list_item%index,iodesc%write%n_elemtype
           exit
        end if
        list_item=>list_item%next
     end do
-
-
+    if(.not.associated(iodesc)) then
+       call piodie(__PIO_FILE__,__LINE__)
+    end if
+    
   end function lookupiodesc
 
 end module pio_msg_mod

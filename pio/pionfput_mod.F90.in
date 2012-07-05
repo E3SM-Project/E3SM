@@ -75,7 +75,7 @@ contains
 #ifdef TIMING
     call t_startf("pio_put_var1_{TYPE}")
 #endif 
-    ierr=0
+    ierr=PIO_NOERR
     iotype = File%iotype 
     if(debug) print *,__PIO_FILE__,__LINE__,ival,iotype, index
 
@@ -114,8 +114,15 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(pio_iotype_pnetcdf)
-          ierr = nfmpi_put_vara_all (File%fh, varid, int(index,kind=PIO_OFFSET), int(count,kind=PIO_OFFSET), &
-               ival, int(count,kind=PIO_OFFSET), {MPITYPE})
+          ierr = nfmpi_begin_indep_data(File%fh)
+          if(Ios%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
+             ierr = nfmpi_put_vara (File%fh, varid, int(index,kind=PIO_OFFSET), int(count,kind=PIO_OFFSET), &
+                  ival, int(count,kind=PIO_OFFSET), {MPITYPE})
+          end if
+          if(ierr==PIO_NOERR) then
+             ierr = nfmpi_end_indep_data(File%fh)
+          end if
+
 #endif
 #ifdef _NETCDF
        case (pio_iotype_netcdf4p)
@@ -407,8 +414,14 @@ contains
           do i=2,size(count)
              clen=clen*count(i)
           end do
-          ierr = nfmpi_put_vara_{TYPE}_all (File%fh, varid, pstart, &
-               pcount, ival, clen, {MPITYPE})
+          ierr = nfmpi_begin_indep_data(File%fh)
+          if(Ios%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
+             ierr = nfmpi_put_vara_{TYPE} (File%fh, varid, pstart, &
+                  pcount, ival, clen, {MPITYPE})
+          end if
+          if(ierr==PIO_NOERR) then
+             ierr = nfmpi_end_indep_data(File%fh)
+          end if
 #endif
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p)
