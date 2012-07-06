@@ -485,7 +485,7 @@ contains
     integer (i4), intent(in)          :: compdof(:)   !> global degrees of freedom for computational decomposition
     integer (i4), intent(in)          :: iodofr(:)     !> global degrees of freedom for io decomposition 
     integer (i4), intent(in)          :: iodofw(:)     !> global degrees of freedom for io decomposition 
-    type (io_desc_t), intent(out)     :: iodesc
+    type (io_desc_t), intent(inout)     :: iodesc
 
 
     call initdecomp_2dof_bin_i8(iosystem,basepiotype,dims,lenblocks,int(compdof,kind=pio_offset),int(iodofr,kind=pio_offset), &
@@ -503,7 +503,7 @@ contains
     integer (kind=pio_offset), intent(in)          :: compdof(:)   !> global degrees of freedom for computational decomposition
     integer (kind=pio_offset), intent(in)          :: iodofr(:)     !> global degrees of freedom for io decomposition 
     integer (kind=pio_offset), intent(in)          :: iodofw(:)     !> global degrees of freedom for io decomposition 
-    type (io_desc_t), intent(out)     :: iodesc
+    type (io_desc_t), intent(inout)     :: iodesc
 
     integer(kind=PIO_offset) :: start(1), count(1)
 
@@ -619,7 +619,7 @@ contains
     integer(i4), intent(in)          :: lenblocks
     integer(kind=pio_offset), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
     integer(kind=pio_offset), intent(in)          :: iodofr(:)     ! global degrees of freedom for io decomposition 
-    type (io_desc_t), intent(out)     :: iodesc
+    type (io_desc_t), intent(inout)     :: iodesc
 
     integer(kind=PIO_offset) :: start(1), count(1)
     ! these are not used in the binary interface
@@ -636,7 +636,7 @@ contains
     integer (i4), intent(in)          :: lenblocks
     integer (i4), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
     integer (i4), intent(in)          :: iodofr(:)     ! global degrees of freedom for io decomposition 
-    type (io_desc_t), intent(out)     :: iodesc
+    type (io_desc_t), intent(inout)     :: iodesc
 
     integer(kind=PIO_offset) :: start(1), count(1)
     ! these are not used in the binary interface
@@ -674,7 +674,7 @@ contains
     integer (i4), intent(in)          :: iodofr(:)     ! global degrees of freedom for io decomposition 
     integer (i4), intent(in)          :: iodofw(:)     ! global degrees of freedom for io decomposition 
 
-    type (io_desc_t), intent(out)     :: iodesc
+    type (io_desc_t), intent(inout)     :: iodesc
 
     integer(kind=PIO_offset), intent(in) :: start(:), count(:)
     type (io_desc_t) :: tmp
@@ -694,7 +694,7 @@ contains
     integer (kind=pio_offset), intent(in)          :: iodofr(:)     ! global degrees of freedom for io decomposition 
     integer (kind=pio_offset), intent(in)          :: iodofw(:)     ! global degrees of freedom for io decomposition 
 
-    type (io_desc_t), intent(out)     :: iodesc
+    type (io_desc_t), intent(inout)     :: iodesc
 
     integer(kind=PIO_offset), intent(in) :: start(:), count(:)
     type (io_desc_t) :: tmp
@@ -740,7 +740,7 @@ contains
     integer (i4), intent(in) :: lenblocks
     integer (i4), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
     integer (i4), intent(in)          :: iodof(:)     ! global degrees of freedom for io decomposition 
-    type (io_desc_t), intent(out)     :: iodesc
+    type (io_desc_t), intent(inout)     :: iodesc
     integer :: piotype	
     integer(kind=PIO_offset), intent(in) :: start(:), count(:)
 
@@ -756,7 +756,7 @@ contains
     integer (i4), intent(in) :: lenblocks
     integer (kind=pio_offset), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
     integer (kind=pio_offset), intent(in)          :: iodof(:)     ! global degrees of freedom for io decomposition 
-    type (io_desc_t), intent(out)     :: iodesc
+    type (io_desc_t), intent(inout)     :: iodesc
     integer :: piotype
     integer(kind=PIO_offset), intent(in) :: start(:), count(:)
 
@@ -936,7 +936,7 @@ contains
     integer(i4), intent(in)           :: basepiotype
     integer(i4), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
     integer (kind=PIO_offset), optional :: iostart(:), iocount(:)
-    type (io_desc_t), intent(out)     :: iodesc
+    type (io_desc_t), intent(inout)     :: iodesc
     integer(kind=PIO_OFFSET), pointer :: internal_compdof(:)
     integer(i4), intent(in)           :: dims(:)
     !vdf optionals
@@ -962,7 +962,7 @@ contains
     integer(i4), intent(in)           :: dims(:)
     integer (kind=pio_offset), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
     integer (kind=PIO_offset), optional :: iostart(:), iocount(:)
-    type (io_desc_t), intent(out)     :: iodesc
+    type (io_desc_t), intent(inout)     :: iodesc
 
     integer(i4) :: length,n_iotasks
     integer(i4) :: ndims
