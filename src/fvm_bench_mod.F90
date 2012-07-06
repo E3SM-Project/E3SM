@@ -144,9 +144,8 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
       enddo
     enddo
     !
-    !first exchange of the initial values
-!     call fvm_init3(elem,fvm,hybrid,nets,nete,tl%n0)
-    call ghostVpack(cellghostbuf, fvm(ie)%c,nhc,nc,nlev,ntrac,0,tl%n0,timelevels,elem(ie)%desc)
+
+!     call ghostVpack(cellghostbuf, fvm(ie)%c,nhc,nc,nlev,ntrac,0,tl%n0,timelevels,elem(ie)%desc)
     ! reset the new unknown
     do k=1,nlev
       do itr=1,ntrac
@@ -158,13 +157,15 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
       enddo
     enddo
   end do
-
+  
+  !first exchange of the initial values
+  call fvm_init3(elem,fvm,hybrid,nets,nete,tl%n0)
 !-----------------------------------------------------------------------------------!  
-  call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc)
+!   call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc)
 !-----------------------------------------------------------------------------------!    
 
   do ie=nets,nete
-     call ghostVunpack(cellghostbuf, fvm(ie)%c, nhc, nc,nlev,ntrac, 0, tl%n0, timelevels,elem(ie)%desc)
+!      call ghostVunpack(cellghostbuf, fvm(ie)%c, nhc, nc,nlev,ntrac, 0, tl%n0, timelevels,elem(ie)%desc)
     ! for the mass value
     global_shared_buf(ie,1)=0D0
     global_shared_buf(ie,1)=fvm(ie)%elem_mass

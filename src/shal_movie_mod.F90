@@ -402,14 +402,14 @@ contains
 
           if (present(fvm)) then
           do cindex=1,min(ntrac,4)
-             write(vname,'(a1,i1)') 'c',cindex
-             if (cindex==1) vname='c'
+             write(vname,'(a1,i1)') 'C',cindex
+             if (cindex==1) vname='C'
              if(nf_selectedvar(vname, output_varnames)) then
                 if (hybrid%par%masterproc) print *,'output: ',vname
-                count(1:2)=-1  ! ignored by PIO
-                start(1:2)=-1  ! ignored by PIO
-                start(3)=nf_get_frame(ncdf(ios))
-                count(3)=1
+                  count(1:2)=-1  ! ignored by PIO
+                  start(1:2)=-1  ! ignored by PIO
+                  start(3)=nf_get_frame(ncdf(ios))
+                  count(3)=1
                 
                 do k=1,nlev
                    jj=0
@@ -423,7 +423,7 @@ contains
                    end do
                 end do
                 
-                call nf_put_var(ncdf(ios),varphys,start, count, name=vname,iodescin=iodesc3d_nc)
+                call nf_put_var(ncdf(ios),varphys,start, count, name=vname)
              endif
           enddo
           endif

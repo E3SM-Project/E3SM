@@ -50,6 +50,8 @@ module fvm_control_volume_mod
 !-----------------------------------------------------------------------------------!  
     !area of the cell on the sphere 
     real (kind=real_kind)    :: area_sphere(1-nhe:nc+nhe,1-nhe:nc+nhe)    
+    real (kind=real_kind)    :: area_spherenew(1-nhe:nc+nhe,1-nhe:nc+nhe)    
+    
     real (kind=real_kind)    :: spherecentroid(5,1-nhe:nc+nhe,1-nhe:nc+nhe)    
     integer                  :: faceno
     integer                  :: nbrsface(8)    ! store the neighbours in north, south 

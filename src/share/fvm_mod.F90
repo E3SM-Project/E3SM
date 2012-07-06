@@ -142,8 +142,11 @@ subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: weights_eul_index_all
   integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: weights_lgr_index_all
   integer (kind=int_kind)                                          :: jall
+  real (kind=real_kind),dimension(1-nhe:nc+nhe,1-nhe:nc+nhe,6)      :: total_weight
     
   real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons
+  real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: reconsalt
+  
   real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)        :: tracer0 
   
   real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)        :: tracer_air0   
@@ -157,10 +160,36 @@ subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
       !-Departure fvm Meshes, initialization done                                                               
       call compute_weights(fvm(ie),6,weights_all,weights_eul_index_all, &
              weights_lgr_index_all,jall) 
+             
+             
+       total_weight=0.0D0      
+       do h=1,jall
+         jdx = weights_eul_index_all(h,1)
+         jdy = weights_eul_index_all(h,2)
+         total_weight(jdx,jdy,:)=total_weight(jdx,jdy,:)+weights_all(h,:)
+       end do 
+       do j=1-nhe,nc+nhe
+         do i=1-nhe,nc+nhe    
+            if (abs(total_weight(i,j,1)-fvm(ie)%area_sphere(i,j))>1.0D-12) then
+               write(*,*)'AREA wrong', i,j,total_weight(i,j,1),fvm(ie)%area_sphere(i,j)
+               write(*,*) 'diff', total_weight(i,j,1)-fvm(ie)%area_sphere(i,j)
+               stop
+            endif
+         enddo
+       enddo
+       
+       
       ! THE FIRST TRACER IS AIRDENSITY
       tracer_air0=1.0D0 !fvm(ie)%c(:,:,k,1,tl%n0)       
       call reconstruction(tracer_air0, fvm(ie),recons_air)
+
       call monotonic_gradient_cart(tracer_air0, fvm(ie),recons_air, elem(ie)%desc)
+!       recons_air(1,:,:)=0.0D0
+!       recons_air(2,:,:)=0.0D0
+!       recons_air(3,:,:)=0.0D0
+!       recons_air(4,:,:)=0.0D0
+!       recons_air(5,:,:)=0.0D0
+      
       tracer_air1=0.0D0   
 
       call cslam_remap(tracer_air0,tracer_air1,weights_all, recons_air, &
@@ -176,15 +205,42 @@ subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
       do itr=2,ntrac
         tracer0=fvm(ie)%c(:,:,k,itr,tl%n0)
         call reconstruction(tracer0, fvm(ie),recons)
+        reconsalt=recons
         call monotonic_gradient_cart(tracer0, fvm(ie),recons, elem(ie)%desc)
-        tracer1=0.0D0                      
+!         recons(1,:,:)=0.0D0
+!         recons(2,:,:)=0.0D0
+!         recons(3,:,:)=0.0D0
+!         recons(4,:,:)=0.0D0
+!         recons(5,:,:)=0.0D0
+        
+        tracer1=0.0D0   
+        
+!         call cslam_remap(tracer0,tracer1,weights_all, recons, &
+!                    fvm(ie)%spherecentroid, weights_eul_index_all, weights_lgr_index_all, jall)                   
         call cslam_remap_air(tracer0,tracer1,tracer_air0,weights_all, recons,recons_air,&
                        fvm(ie)%spherecentroid,weights_eul_index_all, weights_lgr_index_all, jall)
+                       
         ! finish scheme
         do j=1,nc
           do i=1,nc
             fvm(ie)%c(i,j,k,itr,tl%np1)= &
             (tracer1(i,j)/fvm(ie)%area_sphere(i,j))/tracer_air1(i,j)
+!             if (abs(fvm(ie)%c(i,j,k,itr,tl%np1))>2.1D0) then
+!               write (*,*) "I blow up, please help!",fvm(ie)%c(i,j,k,itr,tl%np1)
+!               write(*,*) "tracerair", tracer_air1(i,j), 'tracer1', tracer1(i,j)
+!               write(*,*) "area_sphere", fvm(ie)%area_sphere(i,j)
+!               write(*,*) 'recons', recons
+!               write(*,*) 'reconsalt', reconsalt
+!               
+!               write(*,*) 'weightall', weights_all
+!               write(*,*) 'weightseul_index_all', weights_eul_index_all
+!               write(*,*) 'weightslgr_index_all',weights_lgr_index_all
+!               write(*,*) 'jall',jall 
+!               
+!               STOP
+!             endif
+!             tracer1(i,j)=tracer1(i,j)/fvm(ie)%area_sphere(i,j)
+!             fvm(ie)%c(i,j,k,itr,tl%np1)=tracer1(i,j)
           end do
         end do            
       enddo  !End Tracer

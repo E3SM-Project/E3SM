@@ -49,7 +49,7 @@ subroutine solidbody(asphere, dsphere)
 
   ! set values for solid-body rotation on the sphere with alpha, this should be 
   ! outside 
-  alpha=0.0D0 !DD_PI/4 !1.3!0.78
+  alpha=DD_PI/4  !DD_PI/4 !1.3!0.78
   omega=2*DD_PI/Time_at(nmax)          ! angular velocity: around the earth
   omega=2*DD_PI/1036800
   lap=DD_PI
@@ -99,47 +99,47 @@ subroutine analytical_function(value,sphere,klev,itr)
 
 !   ! temporary: set all parameters for the Solid Body rotation test
 !   Solid Body test ----------------------------------------------------------------!
-  R0=sphere%r/3.0D0
-  h0=1.0D0
-  lon1=4.0D0*DD_PI/5.0D0
-  lat1=0.0D0
-  Rg1 = acos(sin(lat1)*sin(sphere%lat)+cos(lat1)*cos(sphere%lat)*cos(sphere%lon-lon1))
-!   lon2=6.0D0*DD_PI/5.0D0
-!   lat2=0.0D0
-!   Rg2 = acos(sin(lat2)*sin(sphere%lat)+cos(lat2)*cos(sphere%lat)*cos(sphere%lon-lon2))
-  if (Rg1 .le. R0) then
-    value = (h0/2.0D0)*(1.0D0+cos(DD_PI*Rg1/R0))
-!     value=sin(sphere%lon)*cos(sphere%lat)
-!   elseif (Rg2 .le. R0) then
-!     value = 1.0D0+(h0/2.0D0)*(1.0D0+cos(DD_PI*Rg2/R0))
-  else
-    value = 0.0D0
-  endif
+!   R0=0.5D0 !sphere%r/3.0D0
+!   h0=1.0D0
+!   lon1=5.0D0*DD_PI/4.0D0
+!   lat1=0.0D0
+!   Rg1 = acos(sin(lat1)*sin(sphere%lat)+cos(lat1)*cos(sphere%lat)*cos(sphere%lon-lon1))
+! !   lon2=6.0D0*DD_PI/5.0D0
+! !   lat2=0.0D0
+! !   Rg2 = acos(sin(lat2)*sin(sphere%lat)+cos(lat2)*cos(sphere%lat)*cos(sphere%lon-lon2))
+!   if (Rg1 .le. R0) then
+!     value = (h0/2.0D0)*(1.0D0+cos(DD_PI*Rg1/R0))
+! !     value=sin(sphere%lon)*cos(sphere%lat)
+! !   elseif (Rg2 .le. R0) then
+! !     value = 1.0D0+(h0/2.0D0)*(1.0D0+cos(DD_PI*Rg2/R0))
+!   else
+!     value = 0.0D0
+!   endif
 
 
 
   !Non-smooth scalar field (slotted cylinder) --------------------------------------!
-!   R0=0.5D0
-!   lon1=4.0D0*DD_PI/5.0D0
-!   lat1=0.0D0
-!   Rg1 = acos(sin(lat1)*sin(sphere%lat)+cos(lat1)*cos(sphere%lat)*cos(sphere%lon-lon1))
-!   lon2=6.0D0*DD_PI/5.0D0
-!   lat2=0.0D0
-!   Rg2 = acos(sin(lat2)*sin(sphere%lat)+cos(lat2)*cos(sphere%lat)*cos(sphere%lon-lon2))   
-! 
-!   if ((Rg1 .le. R0) .AND. (abs(sphere%lon-lon1).ge. R0/6)) then
-!     value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
-!   elseif ((Rg2 .le. R0) .AND. (abs(sphere%lon-lon2).ge. R0/6)) then
-!     value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
-!   elseif ((Rg1 .le. R0) .AND. (abs(sphere%lon-lon1) < R0/6) &
-!                         .AND. (sphere%lat-lat1 < -5.0D0*R0/12.0D0)) then
-!     value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
-!   elseif ((Rg2 .le. R0) .AND. (abs(sphere%lon-lon2) < R0/6) &
-!                         .AND. (sphere%lat-lat2 > 5.0D0*R0/12.0D0)) then
-!     value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
-!   else
-!     value = 0.1D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev   
-!   endif  
+  R0=0.5D0
+  lon1=4.0D0*DD_PI/5.0D0
+  lat1=0.0D0
+  Rg1 = acos(sin(lat1)*sin(sphere%lat)+cos(lat1)*cos(sphere%lat)*cos(sphere%lon-lon1))
+  lon2=6.0D0*DD_PI/5.0D0
+  lat2=0.0D0
+  Rg2 = acos(sin(lat2)*sin(sphere%lat)+cos(lat2)*cos(sphere%lat)*cos(sphere%lon-lon2))   
+
+  if ((Rg1 .le. R0) .AND. (abs(sphere%lon-lon1).ge. R0/6)) then
+    value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
+  elseif ((Rg2 .le. R0) .AND. (abs(sphere%lon-lon2).ge. R0/6)) then
+    value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
+  elseif ((Rg1 .le. R0) .AND. (abs(sphere%lon-lon1) < R0/6) &
+                        .AND. (sphere%lat-lat1 < -5.0D0*R0/12.0D0)) then
+    value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
+  elseif ((Rg2 .le. R0) .AND. (abs(sphere%lon-lon2) < R0/6) &
+                        .AND. (sphere%lat-lat2 > 5.0D0*R0/12.0D0)) then
+    value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
+  else
+    value = 0.1D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev   
+  endif  
 end subroutine analytical_function
 !END SUBROUTINE ANALYTICAL_FUNCTION---------------------------------------CE-for FVM!
 
@@ -194,7 +194,7 @@ function get_solidbody_velocities_gll(elem, time) result(vstar)
   integer                             :: i,j
   real (kind=real_kind)               :: lon, lat, u0, alpha, u, v
 
-  alpha=DD_PI/2.0D0 !0.0D0
+  alpha=DD_PI/4.0D0 !0.0D0
   u0=2*DD_PI*Rearth/(12*3600*24)
 
   do i=1,np
