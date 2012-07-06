@@ -1378,7 +1378,7 @@ contains
 !     
 !       enddo  
 !     end do
-!     call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, dt, 3)
+    call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, dt, 3)
     call t_stopf('fvm_mcgregor')
 
 !------------------------------------------------------------------------------------    
