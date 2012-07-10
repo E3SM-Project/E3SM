@@ -1,8 +1,8 @@
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
-! CVS $Id$
-! CVS $Name$ 
+! CVS $Id: m_GlobalSegMap.F90,v 1.56 2009-03-17 16:51:49 jacob Exp $
+! CVS $Name:  $ 
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_GlobalSegMap - a nontrivial 1-D decomposition of an array.
@@ -69,6 +69,7 @@
       public :: increasing      ! Are the indices for each pe strictly
                                 ! increasing?
       public :: copy            ! Copy the gsmap
+      public :: print           ! Print the contents of the GSMap
 
 ! !PUBLIC TYPES:
 
@@ -125,6 +126,10 @@
     end interface
     interface increasing ; module procedure increasing_ ; end interface
     interface copy ; module procedure copy_ ; end interface
+    interface print ; module procedure &
+          print_ ,&
+	  printFromRoot_
+    end interface
 
 
 ! !REVISION HISTORY:
@@ -2429,6 +2434,92 @@
                  src%start, src%length, src%pe_loc )
 
   end subroutine copy_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !   
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: print_ - Print GSMap info
+!
+! !DESCRIPTION:
+! Print out contents of GSMAP on unit number 'lun'
+!
+! !INTERFACE:
+
+    subroutine print_(gsmap,lun)
+!
+! !USES:
+!
+      use m_die
+
+      implicit none
+
+!INPUT/OUTPUT PARAMETERS:
+      type(GlobalSegMap),      intent(in) :: gsmap
+      integer, intent(in)           :: lun 
+
+! !REVISION HISTORY:
+! 06Jul12 - R. Jacob <jacob@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
+
+
+    integer n
+    character(len=*),parameter :: myname_=myname//'::print_'
+
+    write(lun,*) gsmap%comp_id
+    write(lun,*) gsmap%ngseg
+    write(lun,*) gsmap%gsize
+    do n=1,gsmap%ngseg
+        write(lun,*) gsmap%start(n),gsmap%length(n),gsmap%pe_loc(n)
+    end do
+
+  end subroutine print_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !   
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: printFromRoot_ - Print GSMap info
+!
+! !DESCRIPTION:
+! Print out contents of GSMAP on unit number 'lun'
+!
+! !INTERFACE:
+
+    subroutine printFromRoot_(gsmap,mycomm,lun)
+!
+! !USES:
+!
+      use m_die
+      use m_mpif90
+
+      implicit none
+
+!INPUT/OUTPUT PARAMETERS:
+      type(GlobalSegMap),      intent(in) :: gsmap
+      integer, intent(in)           :: mycomm
+      integer, intent(in)           :: lun 
+
+! !REVISION HISTORY:
+! 06Jul12 - R. Jacob <jacob@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
+
+
+    integer myrank
+    integer ier
+    character(len=*),parameter :: myname_=myname//'::print_'
+
+    call MP_comm_rank(mycomm,myrank,ier)
+    if(ier/=0) call MP_perr_die(myname_,'MP_comm_rank',ier)
+
+    if (myrank == 0) then
+      call print_(gsmap,lun)
+    endif
+
+  end subroutine printFromRoot_
+
+
+
 
  end module m_GlobalSegMap
 
