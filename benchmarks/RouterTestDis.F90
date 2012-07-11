@@ -145,7 +145,7 @@ program RouterTestDis
               root_pe_loc, 0, newcomm, 1)
 
      
-! initalize the Router
+! initalize the Router with component 2
    call Router_init(2,comp1GSMap,newcomm,myRout)
 
 ! *******************************
@@ -182,12 +182,13 @@ program RouterTestDis
         read(mdev2,*) root_start(n),root_length(n), &
                          root_pe_loc(n)
       enddo
-      write(0,*) "root",root_start
     endif
 
+! initalize the GSMap from root
     call GSMap_init(comp2GSMap, ngseg, root_start, root_length, &
               root_pe_loc, 0, newcomm, 2)
 
+! initalize the Router with component 1
    call Router_init(1,comp2GSMap,newcomm,myRout)
   endif
 
