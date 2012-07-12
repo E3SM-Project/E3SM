@@ -128,7 +128,7 @@
     interface copy ; module procedure copy_ ; end interface
     interface print ; module procedure &
           print_ ,&
-	  printFromRoot_
+	  printFromRootnp_
     end interface
 
 
@@ -2486,10 +2486,11 @@
 !
 ! !INTERFACE:
 
-    subroutine printFromRoot_(gsmap,mycomm,lun)
+    subroutine printFromRootnp_(gsmap,mycomm,lun)
 !
 ! !USES:
 !
+      use m_MCTWorld,      only : printnp
       use m_die
       use m_mpif90
 
@@ -2513,10 +2514,11 @@
     if(ier/=0) call MP_perr_die(myname_,'MP_comm_rank',ier)
 
     if (myrank == 0) then
+      call printnp(gsmap%comp_id,lun)
       call print_(gsmap,lun)
     endif
 
-  end subroutine printFromRoot_
+  end subroutine printFromRootnp_
 
 
 
