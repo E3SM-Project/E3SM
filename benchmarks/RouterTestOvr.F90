@@ -68,8 +68,8 @@ program RouterTestOvr
   call MPI_COMM_SIZE(MPI_COMM_WORLD,nprocs,ier)
   call MPI_COMM_RANK(MPI_COMM_WORLD,rank,ier)
 
-  filename1="T42.8pR"
-  filename2="T42.8pC"
+  filename1="gx1.8pR"
+  filename2="gx1.8pC"
 
 ! open up the two files with the GSMap information.
 ! and read the total number of processors needed
@@ -187,7 +187,7 @@ program RouterTestOvr
               root_pe_loc, 0, comm2, 2)
 
 ! now initialize the Router
-  call Router_init(comp1GSMap,comp2GSMap,comm1,myRout)
+  call Router_init(comp1GSMap,comp2GSMap,comm1,myRout,"Over")
 
 
   call MPI_Finalize(ier)

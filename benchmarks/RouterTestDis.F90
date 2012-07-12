@@ -28,6 +28,7 @@ program RouterTestDis
   use m_stdio,        only : stdout,stderr
   use m_die,          only : die 
   use m_mpif90
+  use m_zeit
 
   implicit none
 
@@ -146,7 +147,8 @@ program RouterTestDis
 
      
 ! initalize the Router with component 2
-   call Router_init(2,comp1GSMap,newcomm,myRout)
+   call Router_init(2,comp1GSMap,newcomm,myRout,"Dis1")
+   call zeit_allflush(newcomm,0,6)
 
 ! *******************************
 !  Component 2
@@ -189,7 +191,8 @@ program RouterTestDis
               root_pe_loc, 0, newcomm, 2)
 
 ! initalize the Router with component 1
-   call Router_init(1,comp2GSMap,newcomm,myRout)
+   call Router_init(1,comp2GSMap,newcomm,myRout,"Dis2")
+   call zeit_allflush(newcomm,0,6)
   endif
 
   call MPI_Finalize(ier)
