@@ -366,16 +366,6 @@
   endif
 
 
-#if 0
-   if (t_initialized == 0) then        ! rml timers
-     t_initialized=1                   ! rml timers
-
-     call shr_timer_get(t_loop,"m_Router:initp_ loop")  ! rml timers
-     call shr_timer_get(t_loop2,"m_Router:initp_ loop2")  ! rml timers
-     call shr_timer_get(t_load,"m_Router:initp_ load")  ! rml timers
-   endif
-#endif
-
   mysize = ProcessStorage(GSMap,myPid)
   othercomp = GSMap_comp_id(RGSMap)
 
@@ -383,14 +373,16 @@
 !.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  
 
 
-!  call shr_timer_start(t_loop2)    ! rml timers
-
 
 !! 
 !! determine the global segments on this processor 
 !! just once, so the info be used repeatedly below
 !! same code was used in m_GlobalToLocal - should make a subroutine...
 !!
+  if(present(name)) then
+    tagname='03'//name//'lloop'
+    call zeit_ci(trim(tagname))
+  endif
 
   ngseg = GlobalSegMap_ngseg(GSMap)
   nlseg = GlobalSegMap_nlseg(GSMap, myPid)
@@ -418,6 +410,9 @@
   do i=2,nlseg
     mygs_lstart(i)=mygs_lstart(i-1)+mygs_len(i-1)
   enddo
+  if(present(name)) then
+    call zeit_co(trim(tagname))
+  endif
 
 
 !!
@@ -437,7 +432,7 @@
   !!   latter would be a major change).
 
   if(present(name)) then
-    tagname='03'//name//'loop1'
+    tagname='04'//name//'rloop'
     call zeit_ci(trim(tagname))
   endif
   r_max_nlseg = GlobalSegMap_max_nlseg(RGSMap)
@@ -471,12 +466,19 @@
 !!! 
 !!! this is purely for error checking
 
+  if(present(name)) then
+    tagname='05'//name//'erchck'
+    call zeit_ci(trim(tagname))
+  endif
   do proc = 1, nprocs
     if (rgs_count(proc) > r_max_nlseg) then
       write(stderr,*) myname_,"overflow on rgs array",proc,rgs_count(proc)
       call die(myname_,'overflow on rgs',0)
     endif
   enddo
+  if(present(name)) then
+    call zeit_co(trim(tagname))
+  endif
 
 !!!
 
@@ -488,7 +490,7 @@
 !   the max of the local segments and the remote segments
 
   if(present(name)) then
-    tagname='04'//name//'loop2'
+    tagname='06'//name//'loop2'
     call zeit_ci(trim(tagname))
   endif
   max_rgs_count=0
@@ -601,7 +603,7 @@
 ! start loading up the Router with data
 
   if(present(name)) then
-    tagname='05'//name//'load'
+    tagname='07'//name//'load'
     call zeit_ci(trim(tagname))
   endif
 
