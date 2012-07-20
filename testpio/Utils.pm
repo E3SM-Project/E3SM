@@ -30,6 +30,8 @@ sub host{
         $host = "lynx";
     }elsif($host =~ /^hopp/){
 	$host = "hopper";
+    }elsif($host =~ /^cvrs/) {
+        $host = "carver";
     }elsif( $host =~ /^login/){
 	if(-d "/lustre/janus_scratch"){
 	    $host="janus";
@@ -69,7 +71,7 @@ sub projectInfo{
    }elsif($host =~ "athena" or $host =~ "kraken"){
 #    $project = `showproj -s athena | tail -1`;
      $projectInfo ="##PBS -A $project\n";
-   }elsif($host =~ "columbia" or $host =~ "pleiades"){
+   }elsif($host =~ "columbia" or $host =~ "pleiades" or $host=~ "carver"){
      $project = "";
      $projectInfo ="##PBS -W group_list=$project\n";
    }
@@ -84,7 +86,7 @@ sub preambleResource{
      $preambleResource = "#BSUB -n $pecount\n";
   }elsif($host =~ "frost"){
      $preambleResource = "";
-  }elsif($host =~ "edinburgh"){
+  }elsif($host =~ "edinburgh" or $host =~ "carver"){
      $nodes = ceil($pecount/$corespernode);
      $preambleResource = "#PBS -l nodes=$nodes:ppn=$corespernode\n"; 
   }elsif($host =~ "aum"){
@@ -151,6 +153,7 @@ sub loadmodules{
 		   lynx => "/opt/modules/default/",
 		   lynx_intel => "/opt/modules/default/",
 		   pleiades => "/usr",
+                   carver => "/usr/common/nsg/opt/Modules/default/",
                    columbia => "/usr/share/modules/"};
 #HOST SPECIFIC END
 
@@ -243,6 +246,14 @@ sub loadmodules{
 	module(" switch pgi pgi/11.10.0");
         module(" load PGI/netcdf4/4.1.3_seq");
         module(" load pnetcdf/1.2.0");
+        module("list");
+    }elsif($host eq "carver"){
+	require "/usr/common/nsg/opt/Modules/default/init/perl";
+        module("rm pgi");
+	module("rm openmpi");
+	module("load intel");
+	module("load openmpi-intel");
+	module("load netcdf-intel");
         module("list");
     }
 	

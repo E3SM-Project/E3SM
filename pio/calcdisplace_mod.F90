@@ -163,18 +163,18 @@ CONTAINS
   end subroutine calcdisplace_box
 
 
-  SUBROUTINE GCDblocksize(arr_in,bsize)
+  SUBROUTINE GCDblocksize(arr_in,bsize,debug)
     implicit none
 
     integer(kind=pio_offset),intent(in) ,dimension(:)  :: arr_in  !arr_in = rindex array from box_rearrange
     integer(kind=pio_offset),intent(out)               :: bsize   ! the gcd of the block length array
 
     ! Locals
-    integer(i4),dimension(:),allocatable   :: del_arr,loc_arr
+    integer(kind=pio_offset),dimension(:),allocatable   :: del_arr,loc_arr
     integer(kind=pio_offset),dimension(:),allocatable :: gaps, blk_len
-    integer(i4) :: i,j,k,n,numblks,numtimes,tloc,ii
+    integer(i4) :: i,j,k,n,numblks,numtimes,ii
     integer(kind=pio_offset) :: bsizeg
-
+    integer, intent(in), optional :: debug
 
     n = size(arr_in)
 
@@ -185,16 +185,14 @@ CONTAINS
 
     do  i = 1,n-1  ! compute foward diff of the elements; if =1, still in a contiguous block,
        ! if /= 1 , the end of a block has been reached. 
-
        del_arr(i) = (arr_in(i+1) - arr_in(i))
 
-
     end do
-!    print *,'del_arr: ',del_arr
 
     numtimes = count( del_arr /= 1) 
     numblks  = numtimes + 1   ! the number of contiguous blocks.
      
+    if(present(debug)) print *,debug,': numtimes:',numtimes
 
     if ( numtimes == 0 ) then    ! new logic to account for the case that there is only
        allocate(loc_arr(numblks))  ! one contigious block in which case numtimes=0 and the 
@@ -210,29 +208,28 @@ CONTAINS
 
        if ( del_arr(i) == 1 ) cycle
 
-       tloc = i
-
        j = j+1
 
-       loc_arr(j) = tloc
+       loc_arr(j) = i
 
     end do
     
     if(numtimes>0) then 
        ii=1
        do i=1,n-1
-         if(del_arr(i) .gt. 1) then
-            gaps(ii) = del_arr(i) -1
+         if(del_arr(i) > 1) then
+            gaps(ii) = abs(del_arr(i)) -1
 	    ii=ii+1
          endif
        enddo
+       if(present(debug)) print *,__FILE__,__LINE__,ii,numtimes
     endif
 
     allocate(blk_len(numblks))
     blk_len(1) = loc_arr(1)
 
     do k = 2,numblks-1           ! computes the the length of each block by differencing the 
-       ! eleemts of the res array. 
+       ! elements of the res array. 
 
        blk_len(k)  = loc_arr(k) - loc_arr(k-1)
 
@@ -241,10 +238,22 @@ CONTAINS
     blk_len(numblks) = n - sum(blk_len(1:numblks-1)) ! computes the length of the last block
 
 
+
     bsize = gcd_array(blk_len) ! call to compute the gcd of the blk_len array.    
+
+    if(present(debug)) then
+	print *,debug,': numblks,blk_len :',numblks, minval(blk_len),minloc(blk_len),maxval(blk_len),maxloc(blk_len),bsize
+     endif
+
+
     if(numtimes>0) then 
-       bsizeg = gcd_array(gaps(1:numtimes)) 
+       bsizeg = gcd_array(gaps(1:ii-1)) 
        bsize = gcd_pair(bsize,bsizeg)
+
+    if(present(debug)) then
+	print *,debug,': numblks,gaps :',numblks, minval(gaps(1:ii-1)),minloc(gaps(1:ii-1)),maxval(gaps(1:ii-1)),maxloc(gaps(1:ii-1)),bsize,bsizeg,arr_in(1)
+     endif
+
        deallocate(gaps)
     endif
     if(arr_in(1)>0) then    ! account for an initial gap
@@ -263,11 +272,6 @@ CONTAINS
 
     ! locals
     integer(i8) :: i,n
-
-    bsize=1
-    n = size(ain) 
-    ! First check, if an element is 1, then 1 is the gcd (i.e bsize)
-    if(n==0 .or. any(ain <= 1)) return
 
     bsize=1
     n = size(ain) 
