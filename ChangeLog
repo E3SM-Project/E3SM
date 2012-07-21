@@ -1,6 +1,47 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_5_2
+Originator(s): Jim
+Date: 7-21-2012
+One-line Summary: bug fix in calcdecomp, port to carver
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+    M pio/calcdecomp_mod.F90
+    M testpio/Utils.pm
+    M testpio/build_defaults.xml
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed: Wrong length of gaps array caused computation of block length to always return 1
+            which increased memory consumption 3x or more
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+               Substantial memory reduction in box_rearranger
+
+
+Code reviewed by: Jim
+
+Summary of pre-tag testing:
+
+  Regression tests:114 of 114 tests pass on Bluefire
+                     81 of 81 pass on lynx_intel
+                     81 of 81 pass on carver
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_5_1
 Originator(s): Jedwards
 Date: July 09, 2012
