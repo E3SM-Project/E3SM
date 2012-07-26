@@ -162,9 +162,15 @@ module shallow_water_mod
   real (kind=real_kind), private, parameter :: lat2_case2=0.0D0;
 
   !sub_case = 3
-  real (kind=real_kind), private, parameter :: lon1_case3=3.0D0*DD_PI/4.0D0 
+  !real (kind=real_kind), private, parameter :: lon1_case3=3.0D0*DD_PI/4.0D0 
+  !real (kind=real_kind), private, parameter :: lat1_case3=0.0D0; 
+  !real (kind=real_kind), private, parameter :: lon2_case3=5.0D0*DD_PI/4.0D0 
+  !real (kind=real_kind), private, parameter :: lat2_case3=0.0D0;
+
+! i put subcase 2 center data here cause this is what pl uses for paper
+  real (kind=real_kind), private, parameter :: lon1_case3=5.0D0*DD_PI/6.0D0; 
   real (kind=real_kind), private, parameter :: lat1_case3=0.0D0; 
-  real (kind=real_kind), private, parameter :: lon2_case3=5.0D0*DD_PI/4.0D0 
+  real (kind=real_kind), private, parameter :: lon2_case3=7.0D0*DD_PI/6.0D0; 
   real (kind=real_kind), private, parameter :: lat2_case3=0.0D0;
 
   !subcase 4 is the same as subcase 2 but with added zonal flow, see below
@@ -3185,7 +3191,7 @@ contains
        lon2=lon2_case3
        lat2=lat2_case3
        Kcoef=1.0   
-       add_pure_rotation = .false.
+       add_pure_rotation = .true.
 !as subcase 2 but with rotation
     elseif(sub_case==4)then
        lon1=lon1_case2
