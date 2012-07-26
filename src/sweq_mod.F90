@@ -182,8 +182,6 @@ contains
     ! ==========================
     call t_startf('sweq')
 
-    call define_g
-
     hybrid = hybrid_create(par,ithr,NThreads)
 
     if (topology == "cube") then
@@ -973,9 +971,6 @@ contains
     ! begin executable code
     ! ==========================
     call t_startf('sweq')
-
-    call define_g
-    call define_kmass
 
     hybrid = hybrid_create(par,ithr,NThreads)
 
