@@ -66,7 +66,7 @@ module pio_types
 
         logical(log_kind)        :: IOproc             ! .true. if an IO processor
         logical(log_kind)        :: UseRearranger      ! .true. if data rearrangement is necessary
-        logical(log_kind)        :: async_interface    ! .true. if using the async interface model
+        logical(log_kind)        :: async_interface=.false.    ! .true. if using the async interface model
         integer(i4)              :: rearr         ! type of rearranger
                                                   ! e.g. rearr_{none,box}
 	integer(i4)              :: error_handling ! how pio handles errors

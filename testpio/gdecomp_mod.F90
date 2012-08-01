@@ -589,6 +589,9 @@ contains
       allocate(testdof(1,1))
       testdof = 0
    endif
+
+   print *,__FILE__,__LINE__,cnta(my_task)
+
    allocate(dof(cnta(my_task)))
    dof = 0
    cntb = 0

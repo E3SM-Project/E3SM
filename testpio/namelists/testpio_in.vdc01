@@ -5,7 +5,7 @@
   nz_global   = 512
   iofmt       = 'vdc2'
   rearr       = 'box'
-  nprocsIO    = 16
+  nprocsIO    = 64
   stride      = -1
   base        = 0
   maxiter     = 1
@@ -16,15 +16,15 @@
   compdof_input = 'namelist'
 /
 &compdof_nml
-  nblksppe = 256
+!  nblksppe = 256
   grdorder = 'xyz'
-  grddecomp = 'xyz'
-  gdx = 64
-  gdy = 64
-  gdz = 64
+  grddecomp = 'z'
+! gdx = 512
+! gdy = 512
+! gdz = 8
   blkorder = 'xyz'
-  blkdecomp1 = 'xyz'
-  bdx = 16
-  bdy = 16
-  bdz = 1
+  blkdecomp1 = 'z'
+  bdx = 512
+  bdy = 512
+  bdz = 8
 /

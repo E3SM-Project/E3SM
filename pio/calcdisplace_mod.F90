@@ -172,9 +172,14 @@ CONTAINS
     ! Locals
     integer(kind=pio_offset),dimension(:),allocatable   :: del_arr,loc_arr
     integer(kind=pio_offset),dimension(:),allocatable :: gaps, blk_len
-    integer(i4) :: i,j,k,n,numblks,numtimes,ii
+    integer(i4) :: i,j,k,n,numblks,numtimes,ii, numgaps
     integer(kind=pio_offset) :: bsizeg
     integer, intent(in), optional :: debug
+
+
+    numblks=0
+    numtimes=0
+    numgaps=0
 
     n = size(arr_in)
 
@@ -198,7 +203,6 @@ CONTAINS
        allocate(loc_arr(numblks))  ! one contigious block in which case numtimes=0 and the 
     else                         ! error from the assignment in line 87 goes away
        allocate(loc_arr(numtimes))
-       allocate(gaps(numtimes))
     end if
     loc_arr = 1
 
@@ -216,13 +220,16 @@ CONTAINS
     
     if(numtimes>0) then 
        ii=1
-       do i=1,n-1
-         if(del_arr(i) > 1) then
-            gaps(ii) = abs(del_arr(i)) -1
-	    ii=ii+1
-         endif
-       enddo
-       if(present(debug)) print *,__FILE__,__LINE__,ii,numtimes
+       numgaps = count(del_arr > 1)
+       if(numgaps>0) then
+          allocate(gaps(numgaps))
+          do i=1,n-1
+             if(del_arr(i) > 1) then
+                gaps(ii) = del_arr(i) -1
+                ii=ii+1
+             endif
+          enddo
+       end if
     endif
 
     allocate(blk_len(numblks))
@@ -246,15 +253,15 @@ CONTAINS
      endif
 
 
-    if(numtimes>0) then 
-       bsizeg = gcd_array(gaps(1:ii-1)) 
-       bsize = gcd_pair(bsize,bsizeg)
+     if(numgaps>0) then
+        bsizeg = gcd_array(gaps(1:numgaps)) 
+        bsize = gcd_pair(bsize,bsizeg)
 
-    if(present(debug)) then
-	print *,debug,': numblks,gaps :',numblks, minval(gaps(1:ii-1)),minloc(gaps(1:ii-1)),maxval(gaps(1:ii-1)),maxloc(gaps(1:ii-1)),bsize,bsizeg,arr_in(1)
-     endif
+        if(present(debug)) then
+           print *,debug,': numblks,gaps :',numblks, minval(gaps(1:numgaps)),minloc(gaps(1:numgaps)),maxval(gaps(1:numgaps)),maxloc(gaps(1:numgaps)),bsize,bsizeg,arr_in(1)
+        endif
 
-       deallocate(gaps)
+        deallocate(gaps)
     endif
     if(arr_in(1)>0) then    ! account for an initial gap
        bsize = gcd_pair(bsize,arr_in(1))

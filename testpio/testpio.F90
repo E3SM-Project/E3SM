@@ -129,12 +129,15 @@ program testpio
        start(3), count(3)
   integer(i4) :: lenblocks, glenr8, glenr4, gleni4
   integer(kind=PIO_OFFSET) :: startpio(3), countpio(3)
-
-  character(len=80) :: fname, fname_r8,fname_r4,fname_i4
+  integer, parameter :: strlen=80
+  character(len=strlen) :: fname, fname_r8,fname_r4,fname_i4, fnamechk
   logical, parameter :: Debug = .false.
   integer :: mpi_comm_compute, mpi_comm_io, mpi_icomm_cio
-
+  integer :: charlen
   character(len=3) :: citer
+
+  type(var_desc_t) :: varfn_r8, varfn_r4, varfn
+
 
   ! Initialize MPI
 
@@ -686,6 +689,10 @@ program testpio
                  !-----------------------------------
                  call WriteHeader(File_r8,nx_global,ny_global,nz_global,dimid_x,dimid_y,dimid_z)
 
+		 iostat = PIO_def_dim(File_r8,'charlen',strlen,charlen)
+		 iostat = PIO_def_var(File_r8,'filename',pio_char,(/charlen/),varfn_r8)
+
+
                  do ivar = 1, nvars
                     write(varname,'(a,i5.5,a)') 'field',ivar,char(0)
                     iostat = PIO_def_var(File_r8,varname,PIO_double,(/dimid_x,dimid_y,dimid_z/),vard_r8(ivar))
@@ -702,6 +709,9 @@ program testpio
                 if(iotype /= PIO_IOTYPE_vdc2) then
                    call WriteHeader(File_r4,nx_global,ny_global,nz_global,dimid_x,dimid_y,dimid_z)
                 end if
+
+		 iostat = PIO_def_dim(File_r4,'charlen',strlen,charlen)
+		 iostat = PIO_def_var(File_r4,'filename',pio_char,(/charlen/),varfn_r4)
 
                  do ivar = 1, nvars
                     write(varname,'(a,i5.5,a)') 'field',ivar
@@ -745,6 +755,12 @@ program testpio
                  call check_pioerr(iostat,__FILE__,__LINE__,' combo r4 defvar')
                  iostat = PIO_def_var(File,'field_i4',PIO_int,(/dimid_x,dimid_y,dimid_z/),vard_i4c)
                  call check_pioerr(iostat,__FILE__,__LINE__,' combo i4 defvar')
+
+		 iostat = PIO_def_dim(File,'charlen',strlen,charlen)
+		 iostat = PIO_def_var(File,'filename',pio_char,(/charlen/),varfn)
+
+
+
                  iostat = PIO_enddef(File)
                  call check_pioerr(iostat,__FILE__,__LINE__,' combo enddef')
               endif
@@ -776,7 +792,14 @@ program testpio
            ! Time the parallel write 
            !-------------------------
 
+	   
+	   
            if(TestR8) then
+              if(iofmtd .ne. 'bin') then
+                 iostat = pio_put_var(file_r8,varfn_r8,fname_r8)
+              end if
+
+
               dt_write_r8 = 0.
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #9.0.1'
               call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
@@ -803,6 +826,9 @@ program testpio
            endif
 
            if(TestR4) then
+              if(iofmtd .ne. 'bin') then
+                 iostat = pio_put_var(file_r4,varfn_r4,fname_r4)
+              end if
               dt_write_r4 = 0.
               call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
               call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
@@ -852,6 +878,10 @@ program testpio
            endif
 
            if(TestCombo) then 
+              if(iofmtd .ne. 'bin') then
+                 iostat = pio_put_var(file,varfn,fname)
+              end if
+
               call PIO_write_darray(File,vard_r8c,iodesc_r8,test_r8wr,iostat)
               call check_pioerr(iostat,__FILE__,__LINE__,' combo r8 write_darray')
               call PIO_write_darray(File,vard_r4c,iodesc_r4, test_r4wr,iostat)
@@ -907,11 +937,15 @@ program testpio
               iotype == pio_iotype_vdc2) then
               do ivar=1,nvars
                  if(TestR8) then 
+                    iostat = PIO_inq_varid(file_r8,'filename',varfn_r8)
+
+
                     iostat = PIO_inq_varid(File_r8,'field00001',vard_r8(ivar))
                     call check_pioerr(iostat,__FILE__,__LINE__,' r8 inq_varid')
                  endif
 
                  if(TestR4) then 
+                    iostat = PIO_inq_varid(file_r4,'filename',varfn_r4)
 
                     if(iotype == pio_iotype_vdc2) then
 
@@ -947,6 +981,13 @@ program testpio
            ! Time the parallel  read
            !-------------------------
            if(TestR8) then 
+              if(iofmtd .ne. 'bin') then
+                 iostat = pio_get_var(file_r8,varfn_r8, fnamechk)
+                 if(fnamechk /= fname_r8) then
+                    print *,__FILE__,__LINE__,'fname chk failed: ',fname_r8,fnamechk
+                 end if
+              end if
+
               dt_read_r8 = 0.
               call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
               call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
@@ -969,6 +1010,13 @@ program testpio
            endif
 
            if(TestR4) then
+              if(iofmtd .ne. 'bin') then
+                 iostat = pio_get_var(file_r8,varfn_r8, fnamechk)
+
+                 if(fnamechk /= fname_r4) then
+                    print *,__FILE__,__LINE__,'fname chk failed: ',fname_r4,fnamechk
+                 end if
+              end if
               dt_read_r4 = 0.
               call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
               call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
@@ -1071,8 +1119,18 @@ program testpio
                  call check_pioerr(iostat,__FILE__,__LINE__,' combo test r4 inq_varid')
                  iostat = PIO_inq_varid(File,'field_i4',vard_i4c)
                  call check_pioerr(iostat,__FILE__,__LINE__,' combo test i4 inq_varid')
+
               endif
-           
+
+              if(iofmtd.ne.'bin') then
+                 iostat = PIO_inq_varid(file,'filename',varfn)
+
+                 iostat = pio_get_var(file,varfn, fnamechk)
+		 
+                 if(piosys%io_rank==0 .and. fnamechk /= fname) then
+                    print *,__FILE__,__LINE__,'fname chk failed: ',trim(fname),'<>',trim(fnamechk),'<'
+                 end if
+              end if
               call PIO_read_darray(File,vard_r8c,iodesc_r8,test_r8rd,iostat)
               call check_pioerr(iostat,__FILE__,__LINE__,' combo test r4 pio_read_darray')
               call PIO_read_darray(File,vard_r4c,iodesc_r4,test_r4rd,iostat)
@@ -1238,7 +1296,7 @@ contains
     implicit none
 
     character(len=*),  intent(IN) :: CaseName
-    character(len=80), intent(IN) :: FileName
+    character(len=strlen), intent(IN) :: FileName
     integer(i4),       intent(in) :: glen
     integer(i4),       intent(IN) :: trialNo
     real(r8),          intent(IN) :: dtRead
@@ -1286,7 +1344,7 @@ contains
 
     character(len=*),          intent(IN) :: casename
     character(len=*),          intent(IN) :: TestName
-    character(len=80),         intent(IN) :: FileName
+    character(len=strlen),         intent(IN) :: FileName
     integer(i4),          intent(IN) :: glen
     real(r8),    dimension(:), pointer ::    ReadTimes
     real(r8),    dimension(:), pointer ::    WriteTimes
