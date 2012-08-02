@@ -708,11 +708,9 @@ program testpio
                  !-----------------------------------
                 if(iotype /= PIO_IOTYPE_vdc2) then
                    call WriteHeader(File_r4,nx_global,ny_global,nz_global,dimid_x,dimid_y,dimid_z)
+                   iostat = PIO_def_dim(File_r4,'charlen',strlen,charlen)
+                   iostat = PIO_def_var(File_r4,'filename',pio_char,(/charlen/),varfn_r4)
                 end if
-
-		 iostat = PIO_def_dim(File_r4,'charlen',strlen,charlen)
-		 iostat = PIO_def_var(File_r4,'filename',pio_char,(/charlen/),varfn_r4)
-
                  do ivar = 1, nvars
                     write(varname,'(a,i5.5,a)') 'field',ivar
                     iostat = PIO_def_var(File_r4,varname,PIO_real,(/dimid_x,dimid_y,dimid_z/),vard_r4(ivar))
@@ -826,7 +824,7 @@ program testpio
            endif
 
            if(TestR4) then
-              if(iofmtd .ne. 'bin') then
+              if(iofmtd(2:3) .eq. 'nc') then
                  iostat = pio_put_var(file_r4,varfn_r4,fname_r4)
               end if
               dt_write_r4 = 0.
@@ -945,8 +943,9 @@ program testpio
                  endif
 
                  if(TestR4) then 
-                    iostat = PIO_inq_varid(file_r4,'filename',varfn_r4)
-
+                    if(iofmtd(2:3) .eq. 'nc') then
+                       iostat = PIO_inq_varid(file_r4,'filename',varfn_r4)
+                    end if
                     if(iotype == pio_iotype_vdc2) then
 
 		    !there currently exists no vdc concept of inquiring a variable, the only thing in the var_desc_t
@@ -981,7 +980,7 @@ program testpio
            ! Time the parallel  read
            !-------------------------
            if(TestR8) then 
-              if(iofmtd .ne. 'bin') then
+              if(iofmtd(2:3) .eq. 'nc') then
                  iostat = pio_get_var(file_r8,varfn_r8, fnamechk)
                  if(fnamechk /= fname_r8) then
                     print *,__FILE__,__LINE__,'fname chk failed: ',fname_r8,fnamechk
@@ -1010,7 +1009,7 @@ program testpio
            endif
 
            if(TestR4) then
-              if(iofmtd .ne. 'bin') then
+              if(iofmtd(2:3) .eq. 'nc') then
                  iostat = pio_get_var(file_r8,varfn_r8, fnamechk)
 
                  if(fnamechk /= fname_r4) then
