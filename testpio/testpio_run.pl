@@ -11,7 +11,7 @@ my $retry=0;
 my $help=0;
 my $host;
 my $debug=0;
-my $pecount=16;
+my $pecount=64;
 my $enablenetcdf4;
 my $result = GetOptions("suites=s@"=>\$suites,"retry"=>\$retry,"host=s"=>\$host,"pecount=i"=>\$pecount,"help"=>\$help,
                         "twopass"=>\$twopass,"debug"=>\$debug);
