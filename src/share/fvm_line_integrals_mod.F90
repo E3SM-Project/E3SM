@@ -989,7 +989,7 @@ end subroutine getdep_cellboundariesxyvec
        enddo
        !          write(*,*) "tmp=",tmp
        !          if (ldbg) then
-       IF (abs(tmp)>0.01) THEN
+       IF (abs(tmp)>0.04) THEN
          WRITE(*,*) "sum of weights too large",tmp
          !              ldbg=.TRUE.
          stop
@@ -1158,7 +1158,7 @@ end subroutine getdep_cellboundariesxyvec
                    xseg(2) = rend_tmp(1)
                    yseg(1) = rstart(2)
                    yseg(2) = rend_tmp(2)
-                   call get_weights_exact(weights_tmp,xseg,yseg,nreconstruction)
+                   call get_weights_exact(weights_tmp,xseg,yseg,nreconstruction,ngauss,gauss_weights,abscissae)
 
 !phl                   if (i.LE.nc.AND.i.GE.1.AND.h.LE.nc.AND.h.GE.1) then
                    if (i.LE.jy_max-1.AND.i.GE.jy_min.AND.h.LE.jx_max-1.AND.h.GE.jx_min) then
@@ -1310,7 +1310,7 @@ end subroutine getdep_cellboundariesxyvec
           IF (ldbg) WRITE(*,*) "ygno",ygno(jy_eul),ygno(jy_eul+1)
 
           iter = iter+1
-          IF (iter>1000) THEN
+          IF (iter>10) THEN
             WRITE(*,*) "search not converging",iter
             STOP
           END IF
@@ -1629,12 +1629,16 @@ end subroutine getdep_cellboundariesxyvec
     END IF
   end function x_cross_eul_lat
 
-  subroutine get_weights_exact(weights,xseg,yseg,nreconstruction)
+  subroutine get_weights_exact(weights,xseg,yseg,nreconstruction,ngauss,gauss_weights,abscissae)
     use fvm_analytic_mod, only: I_00, I_10, I_01, I_20, I_02, I_11
   
     implicit none
-    integer (kind=int_kind), intent(in) :: nreconstruction
+    integer (kind=int_kind), intent(in) :: nreconstruction, ngauss
     real (kind=real_kind), dimension(nreconstruction), intent(out) :: weights
+    real (kind=real_kind), dimension(nreconstruction) :: weightsgauss
+    real (kind=real_kind), dimension(ngauss), intent(in) :: gauss_weights, abscissae
+    
+    
     real (kind=real_kind), dimension(2     ), intent(in) :: xseg,yseg
     !
     ! compute weights
@@ -1657,6 +1661,15 @@ end subroutine getdep_cellboundariesxyvec
        weights(5) = ((I_02(xseg(2),yseg(2))-I_02(xseg(1),yseg(1))))
        weights(6) = ((I_11(xseg(2),yseg(2))-I_11(xseg(1),yseg(1))))
     endif
+
+    call get_weights_gauss(weightsgauss,xseg,yseg,nreconstruction,ngauss,gauss_weights,abscissae)
+!     do i=1, 6
+!       if (abs(weightsgauss(i)-weights(i))>1.0D-12) then
+!          write(*,*)'weightsdiff', i, abs(weightsgauss(i)-weights(i)), weightsgauss(i), weights(i) !/abs(weightsgauss(i))
+!               stop
+!       endif  
+!     enddo
+    weights=weightsgauss
 
     IF (ldbg) THEN
       WRITE(*,*) "from get weights exact"
@@ -1702,21 +1715,21 @@ end subroutine getdep_cellboundariesxyvec
 !    if (fuzzy(abs(xseg(1) -xseg(2)),fuzzy_width)==0)then
     if (xseg(1).EQ.xseg(2))then
       weights = 0.0D0
-    else if (abs(yseg(1) -yseg(2))<fuzzy_width) then
+  !  else if (abs(yseg(1) -yseg(2))<fuzzy_width) then
       !
       ! line segment parallel to latitude - compute weights exactly
       !
-      if (ldbg) write(*,*) "line segment parallel to latitude - compute weights exactly"
-      weights(1) = ((I_00(xseg(2),yseg(2))-I_00(xseg(1),yseg(1))))
-      if (nreconstruction>1) then
-        weights(2) = ((I_10(xseg(2),yseg(2))-I_10(xseg(1),yseg(1))))
-        weights(3) = ((I_01(xseg(2),yseg(2))-I_01(xseg(1),yseg(1))))
-      endif
-      if (nreconstruction>3) then
-        weights(4) = ((I_20(xseg(2),yseg(2))-I_20(xseg(1),yseg(1))))
-        weights(5) = ((I_02(xseg(2),yseg(2))-I_02(xseg(1),yseg(1))))
-        weights(6) = ((I_11(xseg(2),yseg(2))-I_11(xseg(1),yseg(1))))
-      endif
+  !    if (ldbg) write(*,*) "line segment parallel to latitude - compute weights exactly"
+  !    weights(1) = ((I_00(xseg(2),yseg(2))-I_00(xseg(1),yseg(1))))
+  !    if (nreconstruction>1) then
+  !      weights(2) = ((I_10(xseg(2),yseg(2))-I_10(xseg(1),yseg(1))))
+  !      weights(3) = ((I_01(xseg(2),yseg(2))-I_01(xseg(1),yseg(1))))
+  !    endif
+  !    if (nreconstruction>3) then
+  !      weights(4) = ((I_20(xseg(2),yseg(2))-I_20(xseg(1),yseg(1))))
+  !      weights(5) = ((I_02(xseg(2),yseg(2))-I_02(xseg(1),yseg(1))))
+  !      weights(6) = ((I_11(xseg(2),yseg(2))-I_11(xseg(1),yseg(1))))
+  !    endif
     else
       
       
