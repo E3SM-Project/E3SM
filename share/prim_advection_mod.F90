@@ -881,7 +881,8 @@ end function integrate_parabola
   subroutine remap_velocityC(n0,np1,dt,elem,fvm,hvcoord,nets,nete,compute_diagnostics)
   
     use physical_constants, only : cp, cpwater_vapor
-	
+	  use dimensions_mod, only : nc
+	  
     implicit none
     real (kind=real_kind),  intent(in)        :: dt
     type (element_t),    intent(inout), target  :: elem(:)
@@ -897,9 +898,11 @@ end function integrate_parabola
 
     real (kind=real_kind), dimension(nlev+1)    :: rhs,lower_diag,diag,upper_diag,q_diag,zgam,z1c,z2c,zv
     real (kind=real_kind), dimension(nlev)      :: h,Qcol,dy,za0,za1,za2,zarg,zhdp
-    real (kind=real_kind)  :: dp_star,dp_np1,f_xm,level1,level2,level3,level4,level5, &
+    real (kind=real_kind)  :: dp_star,f_xm,level1,level2,level3,level4,level5, &
 								peaks_min,peaks_max,Q_vadv,tmp_cal,xm,xm_d,zv1,zv2, &
 								zero = 0,one = 1,tiny = 1e-12,qmax = 1d50
+    
+    real (kind=real_kind)  :: ps_c(nc,nc), dp_np1(nc,nc,nlev)
     
     integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, & 
 									lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
@@ -913,29 +916,35 @@ end function integrate_parabola
 !$omp    private(dy,im1,im2,im3,ip1,t1,t2,t3,za0,za1,za2,xm_d,xm,f_xm,t4,tm,tp,peaks,peaks_min) &
 !$omp    private(peaks_max,ip2,level1,level2,level3,level4,level5,lt1,lt2,lt3,zv1,zv2,Q_vadv)
 #endif
-      do q=1,ntrac
-        do i=1,np
-          do j=1,np
+! do not remap density q=1, but update density at the end of this loop
+
+  do i=1,nc   
+    do j=1,nc
+      ! 1. compute surface pressure, 'ps_c', from CSLAM air density
+     ps_c(i,j)=sum(fvm(ie)%c(i,j,:,1,np1)) +  hvcoord%hyai(1)*hvcoord%ps0 
+     ! 2. compute dp_np1 using CSLAM air density and eta coordinate formula
+     ! get the dp now on the eta coordinates (reference level)
+     do k=1,nlev
+       dp_np1(i,j,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
+           (hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps_c(i,j)
+     end do
+   end do
+ end do
+
+      do q=2,ntrac
+        do i=1,nc   
+          do j=1,nc
              z1c(1)=0
              z2c(1)=0
              zv(1)=0
+             
              do k=1,nlev
-                dp_np1 = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
-                     (hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(i,j,np1)
 
-#ifdef ZEROVERT                        
-                dp_star = dp_np1  ! ignore the vertical motion
-#else
-                dp_star = dp_np1 + dt*(elem(ie)%derived%eta_dot_dpdn(i,j,k+1) & 
-                     -elem(ie)%derived%eta_dot_dpdn(i,j,k)) 
-#endif        
+                dp_star=fvm(ie)%c(i,j,k,1,np1)  
                 z1c(k+1) = z1c(k)+dp_star
-                z2c(k+1) = z2c(k)+dp_np1
-#ifdef ZEROHORZ			  
-                Qcol(k)=fvm(ie)%c(i,j,k,q,n0)  ! ignore horizontal motion
-#else		
-                Qcol(k)=fvm(ie)%c(i,j,k,q,np1)
-#endif			
+                z2c(k+1) = z2c(k)+dp_np1(i,j,k)
+                
+                Qcol(k)=fvm(ie)%c(i,j,k,q,np1)*dp_star   !convert mixing ratio to tracer mass
                 zv(k+1) = zv(k)+Qcol(k)
              enddo
              
@@ -1145,7 +1154,7 @@ end function integrate_parabola
                 zv2 = zv(zkr(k+1))+(za0(zkr(k+1))*zgam(k+1)+(za1(zkr(k+1))/2)*(zgam(k+1)**2)+ &
                      (za2(zkr(k+1))/3)*(zgam(k+1)**3))*zhdp(zkr(k+1))
                 Q_vadv = (fvm(ie)%c(i,j,k,q,np1) - (zv2 - zv1)) / dt
-                fvm(ie)%c(i,j,k,q,np1) = (zv2 - zv1)	
+                fvm(ie)%c(i,j,k,q,np1) = (zv2 - zv1) / (z2c(k+1)-z2c(k))  ! convert from tracer mass to mixing ratio
                 zv1 = zv2
 #ifdef ENERGY_DIAGNOSTICS
                 if (compute_diagnostics .and. q==1) then
@@ -1156,6 +1165,15 @@ end function integrate_parabola
           enddo
        enddo
     enddo
+    !remap q=1 
+     do i=1,nc   
+       do j=1,nc
+        do k=1,nlev
+          fvm(ie)%c(i,j,k,1,np1)=dp_np1(i,j,k)
+        end do
+      end do
+    end do
+    
  enddo
  
  call t_stopf('remap_velocityC')
