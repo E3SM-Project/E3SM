@@ -2178,7 +2178,7 @@ end subroutine ghostVunpack
 
   ! =================================================================================
   ! GHOSTVPACK2D
-  ! AUTHOR: Christoph Erath (from a subroutine of Mark Taylor, ghostvpack)
+  ! AUTHOR: Christoph Erath 
   ! Pack edges of v into an ghost buffer for boundary exchange.
   !
   ! This subroutine packs for one vertical layers into an ghost
@@ -2195,30 +2195,23 @@ end subroutine ghostVunpack
   ! - kptr Vertical pointer to the place in the edge buffer where 
   ! data will be located.
   ! =================================================================================
-    subroutine ghostVpack2d(ghost,v,nhc, npoints,kptr,desc, cellcenter)
-      use dimensions_mod, only : max_corner_elem
+    subroutine ghostVpack2d(ghost,v,nhc, npoints,vlyr,ntrac,kptr,tn0,timelevels,desc)
+      use dimensions_mod, only : max_corner_elem, ntrac_d
       use control_mod, only : north, south, east, west, neast, nwest, seast, swest
 
-
-
-      type (Ghostbuffer_t)                  :: ghost
-      real (kind=real_kind),intent(in)      :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc)
-      integer,              intent(in)      :: nhc,npoints,kptr
+      type (Ghostbuffertr_t)                  :: ghost
+      integer,               intent(in)  :: vlyr
+      integer,              intent(in)   :: ntrac
+      integer,              intent(in)      :: nhc,npoints,kptr, tn0, timelevels
+      
+      real (kind=real_kind),intent(in)      :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc, vlyr, ntrac_d,timelevels)
       type (EdgeDescriptor_t),intent(in)    :: desc
-
-      logical, optional, intent(in)         :: cellcenter 
-
 
       ! Local variables
       integer :: i,j,ir,l,e
-      integer :: idxshift
+      integer :: itr,k
       integer :: is,ie,in,iw
 
-      if (present(cellcenter)) then
-        idxshift=1 
-      else
-          idxshift=0
-      end if
 
       if(.not. threadsafe) then
 #if (! defined ELEMENT_OPENMP)
@@ -2243,14 +2236,17 @@ end subroutine ghostVunpack
       ie = desc%putmapP_ghost(east)  
       in = desc%putmapP_ghost(north) 
       iw = desc%putmapP_ghost(west)  
-
-      do i=1,npoints
-         do j=1,nhc
-            ghost%buf(i,j,kptr,is)   = v(i  ,j+1-idxshift )
-            ghost%buf(i,j,kptr,ie)   = v(npoints-j+idxshift ,i )
-            ghost%buf(i,j,kptr,in)   = v(i  ,npoints-j+idxshift)
-            ghost%buf(i,j,kptr,iw)   = v(j+1-idxshift  ,i )
-         enddo
+      do itr=1,ntrac
+       do k=1,vlyr
+          do i=1,npoints
+             do j=1,nhc
+                ghost%buf(i,j,kptr+k,itr,is)   = v(i  ,j+1, k,itr,tn0)
+                ghost%buf(i,j,kptr+k,itr,ie)   = v(npoints-j,i, k,itr,tn0 )
+                ghost%buf(i,j,kptr+k,itr,in)   = v(i  ,npoints-j, k,itr,tn0)
+                ghost%buf(i,j,kptr+k,itr,iw)   = v(j+1,i, k,itr,tn0 )
+             enddo
+          end do
+        end do
       end do
 
       !  This is really kludgy way to setup the index reversals
@@ -2259,42 +2255,58 @@ end subroutine ghostVunpack
       !  if it is, swap the order of data in the edge
       if(desc%reverse(south)) then
   !        is = desc%putmapP_ghost(south)
-         do i=1,npoints
-            do j=1,nhc
-               ir = npoints-i+1
-               ghost%buf(ir,j,kptr,is)=v(i,j+1-idxshift)
+        do itr=1,ntrac
+          do k=1,vlyr
+            do i=1,npoints
+              do j=1,nhc
+                ir = npoints-i+1
+                ghost%buf(ir,j,kptr+k,itr,is)=v(i,j+1, k,itr,tn0)
+               enddo
             enddo
-         enddo
+          end do
+        end do
       endif
 
       if(desc%reverse(east)) then
   !        ie = desc%putmapP_ghost(east)
-         do i=1,npoints
-            do j=1,nhc
-               ir = npoints-i+1
-               ghost%buf(ir,j,kptr,ie)=v(npoints-j+idxshift,i)
+        do itr=1,ntrac
+          do k=1,vlyr  
+            do i=1,npoints
+              do j=1,nhc
+                ir = npoints-i+1
+                ghost%buf(ir,j,kptr+k,itr,ie)=v(npoints-j,i, k,itr,tn0)
+              enddo
             enddo
-         enddo
+          end do
+        end do
       endif
 
       if(desc%reverse(north)) then
   !        in = desc%putmapP_ghost(north)
-         do i=1,npoints
-            do j=1,nhc
-               ir = npoints-i+1
-               ghost%buf(ir,j,kptr,in)=v(i,npoints-j+idxshift)
+        do itr=1,ntrac
+          do k=1,vlyr
+            do i=1,npoints
+              do j=1,nhc
+                ir = npoints-i+1
+                ghost%buf(ir,j,kptr+k,itr,in)=v(i,npoints-j, k,itr,tn0)
+              enddo
             enddo
-         enddo
+          end do
+        end do
       endif
 
       if(desc%reverse(west)) then
   !        iw = desc%putmapP_ghost(west)
-         do i=1,npoints
-            do j=1,nhc
-               ir = npoints-i+1
-               ghost%buf(ir,j,kptr,iw)=v(j+1-idxshift,i)
+        do itr=1,ntrac
+          do k=1,vlyr
+            do i=1,npoints
+              do j=1,nhc
+                ir = npoints-i+1
+                ghost%buf(ir,j,kptr+k,itr,iw)=v(j+1,i, k,itr,tn0)
+              enddo
             enddo
-         enddo
+          enddo
+        enddo
       endif
 
       ! corners.  this is difficult because we dont know the orientaton
@@ -2303,11 +2315,15 @@ end subroutine ghostVunpack
       do l=swest,swest+max_corner_elem-1
          if (l.ne.swest) call abortmp('ERROR3: swest ghost cell update requires ne>0 cubed-sphere mesh')
            if (desc%putmapP_ghost(l) /= -1) then
-               do i=1,nhc
-                 do j=1,nhc
-                    ghost%buf(i,j,kptr,desc%putmapP_ghost(l))=v(i+1-idxshift  ,j+1-idxshift )
-                 enddo
-               enddo             
+             do itr=1,ntrac
+               do k=1,vlyr
+                 do i=1,nhc
+                   do j=1,nhc
+                     ghost%buf(i,j,kptr+k,itr,desc%putmapP_ghost(l))=v(i+1,j+1,k,itr,tn0 )
+                   enddo
+                 enddo     
+               enddo
+             enddo        
            end if
       end do
 
@@ -2315,11 +2331,15 @@ end subroutine ghostVunpack
       do l=swest+max_corner_elem,swest+2*max_corner_elem-1
          if (l.ne.seast) call abortmp('ERROR3: seast ghost cell update requires ne>0 cubed-sphere mesh')
            if (desc%putmapP_ghost(l) /= -1) then
-               do i=1,nhc             
-                 do j=1,nhc
-                    ghost%buf(i,j,kptr,desc%putmapP_ghost(l))=v(npoints-i+idxshift ,j+1-idxshift)
+             do itr=1,ntrac
+               do k=1,vlyr
+                 do i=1,nhc             
+                   do j=1,nhc
+                     ghost%buf(i,j,kptr+k,itr,desc%putmapP_ghost(l))=v(npoints-i ,j+1,k,itr,tn0)
+                   enddo
                  enddo
-               enddo             
+               enddo
+             enddo             
            end if
       end do
 
@@ -2327,11 +2347,15 @@ end subroutine ghostVunpack
       do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
          if (l.ne.neast) call abortmp('ERROR3: neast ghost cell update requires ne>0 cubed-sphere mesh')
            if (desc%putmapP_ghost(l) /= -1) then
-               do i=1,nhc
-                  do j=1,nhc
-                     ghost%buf(i,j,kptr,desc%putmapP_ghost(l))=v(npoints-i+idxshift,npoints-j+idxshift)           
-                  enddo
+             do itr=1,ntrac
+               do k=1,vlyr
+                 do i=1,nhc
+                   do j=1,nhc
+                     ghost%buf(i,j,kptr+k,itr,desc%putmapP_ghost(l))=v(npoints-i,npoints-j,k,itr,tn0)           
+                   enddo
+                 enddo
                enddo
+             enddo
             end if
       end do
 
@@ -2339,10 +2363,14 @@ end subroutine ghostVunpack
       do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
          if (l.ne.nwest) call abortmp('ERROR3: nwest ghost cell update requires ne>0 cubed-sphere mesh')
            if (desc%putmapP_ghost(l) /= -1) then
-             do i=1,nhc
-               do j=1,nhc
-                  ghost%buf(i,j,kptr,desc%putmapP_ghost(l))=v(i+1-idxshift,npoints-j+idxshift)
-               enddo       
+             do itr=1,ntrac
+               do k=1,vlyr
+                 do i=1,nhc
+                   do j=1,nhc
+                     ghost%buf(i,j,kptr+k,itr,desc%putmapP_ghost(l))=v(i+1,npoints-j,k,itr,tn0)
+                   enddo       
+                 enddo
+               enddo
              enddo      
            end if
       end do   
@@ -2350,24 +2378,26 @@ end subroutine ghostVunpack
 
   ! =================================================================================
   ! GHOSTVUNPACK2D
-  ! AUTHOR: Christoph Erath (from a subroutine of Mark Taylor, ghostVunpack)
+  ! AUTHOR: Christoph Erath 
   ! Unpack ghost points from ghost buffer into v...
   ! It is for cartesian points (v is only two dimensional).
   ! INPUT SAME arguments as for GHOSTVPACK2d
   ! =================================================================================
 
-  subroutine ghostVunpack2d(ghost,v,nhc,npoints,kptr,desc)
-    use dimensions_mod, only : max_corner_elem
+  subroutine ghostVunpack2d(ghost,v,nhc,npoints,vlyr,ntrac,kptr,tn0,timelevels,desc)
+    use dimensions_mod, only : max_corner_elem, ntrac_d
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
-    type (Ghostbuffer_t),         intent(in)  :: ghost
+    type (Ghostbuffertr_t),         intent(in)  :: ghost
 
-    real (kind=real_kind), intent(inout)  :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc)
-    integer,               intent(in)     :: kptr,nhc,npoints
+    integer,              intent(in)      :: nhc,npoints,kptr, vlyr,ntrac,tn0,timelevels
+
+    real (kind=real_kind), intent(inout)  :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc, vlyr, ntrac_d,timelevels)
     type (EdgeDescriptor_t)               :: desc
+
 
     ! Local
     logical, parameter :: UseUnroll = .TRUE.
-    integer :: i,j,l
+    integer :: i,j,l, itr, k
     integer :: is,ie,in,iw,ic
     logical :: reverse
     
@@ -2385,15 +2415,18 @@ end subroutine ghostVunpack
     ! first row ('edge') goes in v(:,np+1)
     ! 2nd   row ('edge') goes in v(:,np+2)
     ! etc...
-    
-    do i=1,npoints
-       do j=1,nhc
-          v(i  ,1-j  ) = ghost%buf(i,j,kptr,is  )
-          v(npoints+j ,i ) = ghost%buf(i,j,kptr,ie  )
-          v(i  ,npoints+j ) = ghost%buf(i,j,kptr,in  )
-          v(1-j  ,i  ) = ghost%buf(i,j,kptr,iw  )
-       end do
-    end do
+    do itr=1,ntrac
+      do k=1,vlyr
+        do i=1,npoints
+          do j=1,nhc
+            v(i  ,1-j, k,itr,tn0  ) = ghost%buf(i,j,kptr+k,itr,is  )
+            v(npoints+j ,i,k,itr,tn0 ) = ghost%buf(i,j,kptr+k,itr,ie  )
+            v(i  ,npoints+j,k,itr,tn0 ) = ghost%buf(i,j,kptr+k,itr,in  )
+            v(1-j  ,i,k,itr,tn0  ) = ghost%buf(i,j,kptr+k,itr,iw  )
+          end do
+        end do
+      end do
+    enddo
 
 ! SWEST
     do l=swest,swest+max_corner_elem-1
@@ -2401,23 +2434,35 @@ end subroutine ghostVunpack
        if(ic /= -1) then 
           reverse=desc%reverse(l)
           if (reverse) then
+            do itr=1,ntrac
+              do k=1,vlyr
                 do j=1,nhc
                    do i=1,nhc
-                      v(1-i,1-j)=ghost%buf(j,i,kptr,ic)
+                      v(1-i,1-j,k,itr,tn0)=ghost%buf(j,i,kptr+k,itr,ic)
                    enddo
                 enddo
+              enddo
+            enddo
           else
+            do itr=1,ntrac
+              do k=1,vlyr
                 do j=1,nhc
                    do i=1,nhc
-                      v(1-i,1-j)=ghost%buf(i,j,kptr,ic)
+                      v(1-i,1-j,k,itr,tn0)=ghost%buf(i,j,kptr+k,itr,ic)
                    enddo
                 enddo
+              enddo
+            enddo
           endif
        else
-         do j=1,nhc
-            do i=1,nhc
-               v(1-i,1-j)=NaN
-            enddo
+         do itr=1,ntrac
+           do k=1,vlyr
+             do j=1,nhc
+               do i=1,nhc
+                 v(1-i,1-j,k,itr,tn0)=NaN
+               enddo
+             enddo
+           enddo
          enddo      
        endif
     end do
@@ -2428,23 +2473,35 @@ end subroutine ghostVunpack
        if(ic /= -1) then 
           reverse=desc%reverse(l)
           if (reverse) then
+            do itr=1,ntrac
+              do k=1,vlyr
                 do j=1,nhc
                    do i=1,nhc
-                      v(npoints+i,1-j)=ghost%buf(j,i,kptr,ic)
+                      v(npoints+i,1-j,k,itr,tn0)=ghost%buf(j,i,kptr+k,itr,ic)
                    enddo
                 enddo
+              enddo
+            enddo
           else
+            do itr=1,ntrac
+              do k=1,vlyr
                 do j=1,nhc
                    do i=1,nhc
-                      v(npoints+i ,1-j)=ghost%buf(i,j,kptr,ic)
+                      v(npoints+i ,1-j,k,itr,tn0)=ghost%buf(i,j,kptr+k,itr,ic)
                    enddo
                 enddo
+              enddo
+            enddo
           endif
        else
-         do j=1,nhc
-           do i=1,nhc
-              v(npoints+i ,1-j)=NaN
-           enddo
+         do itr=1,ntrac
+           do k=1,vlyr
+              do j=1,nhc
+                do i=1,nhc
+                  v(npoints+i ,1-j,k,itr,tn0)=NaN
+                enddo
+              enddo
+            enddo
          enddo
        endif
     end do
@@ -2457,24 +2514,36 @@ end subroutine ghostVunpack
        if(ic /= -1) then 
           reverse=desc%reverse(l)
           if (reverse) then
+            do itr=1,ntrac
+              do k=1,vlyr
                 do j=1,nhc
                    do i=1,nhc
-                      v(npoints+i ,npoints+j)=ghost%buf(j,i,kptr,ic)
+                      v(npoints+i ,npoints+j,k,itr,tn0)=ghost%buf(j,i,kptr+k,itr,ic)
                    enddo
                 enddo
+              enddo
+            enddo
           else
+            do itr=1,ntrac
+              do k=1,vlyr
                 do j=1,nhc
                    do i=1,nhc
-                      v(npoints+i ,npoints+j)=ghost%buf(i,j,kptr,ic)
+                      v(npoints+i ,npoints+j,k,itr,tn0)=ghost%buf(i,j,kptr+k,itr,ic)
                    enddo
                 enddo
+              enddo
+            enddo
           endif
         else
-          do j=1,nhc
-            do i=1,nhc
-               v(npoints+i ,npoints+j)=NaN
+          do itr=1,ntrac
+            do k=1,vlyr
+              do j=1,nhc
+                do i=1,nhc
+                  v(npoints+i ,npoints+j,k,itr,tn0)=NaN
+                enddo
+              enddo 
             enddo
-          enddo    
+          enddo   
        endif
     end do
 
@@ -2485,22 +2554,34 @@ end subroutine ghostVunpack
        if(ic /= -1) then 
           reverse=desc%reverse(l)
           if (reverse) then
+            do itr=1,ntrac
+              do k=1,vlyr
                 do j=1,nhc
                    do i=1,nhc
-                      v(1-i ,npoints+j)=ghost%buf(j,i,kptr,ic)
+                      v(1-i ,npoints+j,k,itr,tn0)=ghost%buf(j,i,kptr+k,itr,ic)
                    enddo
                 enddo
+              enddo
+            enddo
           else
+            do itr=1,ntrac
+              do k=1,vlyr
                 do j=1,nhc
                    do i=1,nhc
-                      v(1-i ,npoints+j)=ghost%buf(i,j,kptr,ic)
+                      v(1-i ,npoints+j,k,itr,tn0)=ghost%buf(i,j,kptr+k,itr,ic)
                    enddo
                 enddo
+              enddo
+            enddo
           endif
         else
-          do j=1,nhc
-            do i=1,nhc
-               v(1-i ,npoints+j)=NaN
+          do itr=1,ntrac
+            do k=1,vlyr
+              do j=1,nhc
+                do i=1,nhc
+                  v(1-i ,npoints+j,k,itr,tn0)=NaN
+                enddo
+              enddo
             enddo
           enddo
        endif

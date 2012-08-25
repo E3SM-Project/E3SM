@@ -28,7 +28,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   ! ---------------------------------------------------------------------------------  
   use fvm_control_volume_mod, only: fvm_struct
   ! ---------------------------------------------------------------------------------
-  use fvm_mod, only: cslam_runair, fvm_init1,fvm_init2, fvm_init3, fvm_mcgregor,fvm_mcgregordss, cellghostbuf, edgeveloc
+  use fvm_mod, only: cslam_runairdensity, fvm_init1,fvm_init2, fvm_init3, fvm_mcgregor,fvm_mcgregordss, cellghostbuf, edgeveloc
   ! ---------------------------------------------------------------------------------
   use fvm_line_integrals_mod, only: compute_weights
   ! ---------------------------------------------------------------------------------  
@@ -105,7 +105,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   
   integer  choosetrac, chooselev   !for test reason the output
  !-----------------------------------------------------------------------------------!  
- choosetrac=2
+ choosetrac=1
  chooselev=1
  
   if(hybrid%masterthread) then 
@@ -243,7 +243,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
     end do
     call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, tstep, 3)
 ! ! end mcgregordss   
-    call cslam_runair(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
+    call cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   
     do ie=nets,nete
     ! prepare data for I/O
