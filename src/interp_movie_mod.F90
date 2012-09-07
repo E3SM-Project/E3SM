@@ -7,7 +7,7 @@ module interp_movie_mod
   use dimensions_mod, only :  nlev, nelemd, np, ne, qsize, ntrac, nc
   use interpolate_mod, only : interpolate_t, setup_latlon_interp, interpdata_t, &
        get_interp_parameter, get_interp_lat, get_interp_lon, interpolate_scalar, interpolate_vector, &
-       set_interp_parameter, interpol_phys_latlon
+       set_interp_parameter, interpol_phys_latlon, interpol_spelt_latlon
   use pio_io_mod, only : & 
        nf_output_init_begin,&
        nf_output_init_complete,  &
@@ -41,6 +41,7 @@ module interp_movie_mod
        num_io_procs,        &
        PIOFS
   use fvm_control_volume_mod, only : fvm_struct
+  use spelt_mod, only : spelt_struct
 
   implicit none
 #undef V_IS_LATLON
@@ -487,7 +488,12 @@ contains
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     ! ---------------------    
     type (element_t)    :: elem(:)
-    type (fvm_struct), optional   :: fvm(:)
+    
+#if defined(_SPELT)
+    type (spelt_struct), optional   :: fvm(:)
+#else
+     type (fvm_struct), optional   :: fvm(:)    
+#endif
     
     type (TimeLevel_t)  :: tl
     type (parallel_t)     :: par
@@ -728,6 +734,29 @@ contains
                      do k=1,nlev                       
                        call interpol_phys_latlon(interpdata(ie),fvm(ie)%c(:,:,k,cindex,n0), &
                                           fvm(ie),elem(ie)%corners,elem(ie)%desc,datall(st:en,k))                                          
+                     end do
+                     st=st+interpdata(ie)%n_interp
+                  enddo                  
+                  call nf_put_var(ncdf(ios),datall,start3d, count3d, name=vname)                  
+                  deallocate(datall)                  
+               end if
+            enddo
+#endif
+
+#if defined(_SPELT) 
+            do cindex=1,min(ntrac,5)  ! allow a maximum output of 5 tracers
+               write(vname,'(a1,i1)') 'C for SPELT: ',cindex
+               if (cindex==1) vname='C'
+
+               if(nf_selectedvar(vname, output_varnames)) then
+                  if (hybrid%par%masterproc) print *,'writing for SPELT: ',vname
+                  allocate(datall(ncnt,nlev))
+                  st=1
+                  do ie=nets,nete
+                     en=st+interpdata(ie)%n_interp-1
+                     do k=1,nlev                       
+                       call interpol_spelt_latlon(interpdata(ie),fvm(ie)%c(:,:,k,cindex,n0), &
+                                          fvm(ie),elem(ie)%corners,datall(st:en,k))                                          
                      end do
                      st=st+interpdata(ie)%n_interp
                   enddo                  

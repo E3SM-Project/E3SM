@@ -87,6 +87,7 @@ module vertremap_mod
   use hybvcoord_mod, only  : hvcoord_t
   use element_mod, only    : element_t
   use fvm_control_volume_mod, only    : fvm_struct
+  use spelt_mod, only      : spelt_struct 
   use perf_mod, only	   : t_startf, t_stopf  ! _EXTERNAL
   use parallel_mod, only   : abortmp  	
   contains
@@ -875,6 +876,311 @@ end function integrate_parabola
 
  
 
+  subroutine remap_velocityCspelt(n0,np1,dt,elem,spelt,hvcoord,nets,nete,compute_diagnostics)
+  
+    use physical_constants, only : cp, cpwater_vapor
+	  use dimensions_mod, only : nc, nep
+	  
+    implicit none
+    real (kind=real_kind),  intent(in)        :: dt
+    type (element_t),    intent(inout), target  :: elem(:)
+    type (spelt_struct),    intent(inout), target  :: spelt(:)
+    type (hvcoord_t),    intent(in)        :: hvcoord
+    logical,        intent(in)              :: compute_diagnostics
+    
+    integer :: nets,nete,n0,np1
+    
+    ! ========================
+    ! Local Variables
+    ! ========================
+
+    real (kind=real_kind), dimension(nlev+1)    :: rhs,lower_diag,diag,upper_diag,q_diag,zgam,z1c,z2c,zv
+    real (kind=real_kind), dimension(nlev)      :: h,Qcol,dy,za0,za1,za2,zarg,zhdp
+    real (kind=real_kind)  :: dp_star,f_xm,level1,level2,level3,level4,level5, &
+								peaks_min,peaks_max,Q_vadv,tmp_cal,xm,xm_d,zv1,zv2, &
+								zero = 0,one = 1,tiny = 1e-12,qmax = 1d50
+    
+    real (kind=real_kind)  :: ps_c(nep,nep), dp_np1(nep,nep,nlev)
+    
+    integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, & 
+									lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
+    
+    call t_startf('remap_velocityCspelt')
+
+    do ie=nets,nete
+#if (defined ELEMENT_OPENMP)
+!$omp parallel do private(q,i,j,z1c,z2c,zv,k,dp_np1,dp_star,Qcol,zkr,ilev) &
+!$omp    private(jk,zgam,zhdp,h,zarg,rhs,lower_diag,diag,upper_diag,q_diag,tmp_cal,filter_code) &
+!$omp    private(dy,im1,im2,im3,ip1,t1,t2,t3,za0,za1,za2,xm_d,xm,f_xm,t4,tm,tp,peaks,peaks_min) &
+!$omp    private(peaks_max,ip2,level1,level2,level3,level4,level5,lt1,lt2,lt3,zv1,zv2,Q_vadv)
+#endif
+! do not remap density q=1, but update density at the end of this loop
+
+  do i=1,nep   
+    do j=1,nep
+      ! 1. compute surface pressure, 'ps_c', from SPELT air density
+     ps_c(i,j)=sum(spelt(ie)%c(i,j,:,2,np1)/spelt(ie)%sga(i,j)) +  hvcoord%hyai(1)*hvcoord%ps0 
+     ! 2. compute dp_np1 using CSLAM air density and eta coordinate formula
+     ! get the dp now on the eta coordinates (reference level)
+     do k=1,nlev
+       dp_np1(i,j,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
+           (hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps_c(i,j)
+     end do
+   end do
+ end do
+
+      do q=3,ntrac
+        do i=1,nep   
+          do j=1,nep
+             z1c(1)=0
+             z2c(1)=0
+             zv(1)=0
+             
+             do k=1,nlev
+
+                dp_star=spelt(ie)%c(i,j,k,2,np1)/spelt(ie)%sga(i,j)  
+                z1c(k+1) = z1c(k)+dp_star
+                z2c(k+1) = z2c(k)+dp_np1(i,j,k)
+                
+                Qcol(k)=spelt(ie)%c(i,j,k,q,np1)*dp_star/spelt(ie)%sga(i,j)   !convert mixing ratio to tracer mass
+                zv(k+1) = zv(k)+Qcol(k)
+             enddo
+             
+             if (ABS(z2c(nlev+1)-z1c(nlev+1)).GE.0.000001) then
+                write(6,*) 'SURFACE PRESSURE IMPLIED BY ADVECTION SCHEME'
+                write(6,*) 'NOT CORRESPONDING TO SURFACE PRESSURE IN    '
+                write(6,*) 'DATA FOR MODEL LEVELS'
+                write(6,*) 'PLEVMODEL=',z2c(nlev+1)
+                write(6,*) 'PLEV     =',z1c(nlev+1)
+                write(6,*) 'DIFF     =',z2c(nlev+1)-z1c(nlev+1)
+                ! call ABORT
+             endif
+             
+             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+             !! quadratic splies with UK met office monotonicity constraints  !!
+             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+             zkr  = 99
+             ilev = 2
+             zkr(1) = 1
+             zkr(nlev+1) = nlev
+             kloop: do k = 2,nlev
+                do jk = ilev,nlev+1
+                   if (z1c(jk).ge.z2c(k)) then
+                      ilev      = jk
+                      zkr(k)   = jk-1
+                      cycle kloop
+                   endif
+                enddo
+             enddo kloop
+             
+             zgam  = (z2c(1:nlev+1)-z1c(zkr)) / (z1c(zkr+1)-z1c(zkr))
+             zgam(1)      = 0.0
+             zgam(nlev+1) = 1.0
+             zhdp = z1c(2:nlev+1)-z1c(1:nlev)
+             
+             
+             h = 1/zhdp
+             zarg = Qcol * h
+             rhs = 0
+             lower_diag = 0
+             diag = 0
+             upper_diag = 0
+             
+             rhs(1)=3*zarg(1)
+             rhs(2:nlev) = 3*(zarg(2:nlev)*h(2:nlev) + zarg(1:nlev-1)*h(1:nlev-1)) 
+             rhs(nlev+1)=3*zarg(nlev)
+             
+             lower_diag(1)=1
+             lower_diag(2:nlev) = h(1:nlev-1)
+             lower_diag(nlev+1)=1
+             
+             diag(1)=2
+             diag(2:nlev) = 2*(h(2:nlev) + h(1:nlev-1))
+             diag(nlev+1)=2
+             
+             upper_diag(1)=1
+             upper_diag(2:nlev) = h(2:nlev)
+             upper_diag(nlev+1)=0
+             
+             q_diag(1)=-upper_diag(1)/diag(1)
+             rhs(1)= rhs(1)/diag(1)
+             
+             do k=2,nlev+1
+                tmp_cal    =  1/(diag(k)+lower_diag(k)*q_diag(k-1))
+                q_diag(k) = -upper_diag(k)*tmp_cal
+                rhs(k) =  (rhs(k)-lower_diag(k)*rhs(k-1))*tmp_cal
+             enddo
+             do k=nlev,1,-1
+                rhs(k)=rhs(k)+q_diag(k)*rhs(k+1)
+             enddo
+             
+             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+             !!  monotonicity modifications  !!
+             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
+             
+             filter_code = 0
+             dy(1:nlev-1) = zarg(2:nlev)-zarg(1:nlev-1)
+             dy(nlev) = dy(nlev-1)                          
+             
+             dy = merge(zero, dy, abs(dy) < tiny )
+             
+             do k=1,nlev
+                im1=MAX(1,k-1)
+                im2=MAX(1,k-2)
+                im3=MAX(1,k-3)
+                ip1=MIN(nlev,k+1)
+                t1 = merge(1,0,(zarg(k)-rhs(k))*(rhs(k)-zarg(im1)) >= 0)
+                t2 = merge(1,0,dy(im2)*(rhs(k)-zarg(im1)) > 0 .AND. dy(im2)*dy(im3) > 0 &
+                     .AND. dy(k)*dy(ip1) > 0 .AND. dy(im2)*dy(k) < 0 )
+                t3 = merge(1,0,ABS(rhs(k)-zarg(im1)) > ABS(rhs(k)-zarg(k)))	
+                
+                filter_code(k) = merge(0,1,t1+t2 > 0) 
+                rhs(k) = (1-filter_code(k))*rhs(k)+filter_code(k)*(t3*zarg(k)+(1-t3)*zarg(im1))
+                filter_code(im1) = MAX(filter_code(im1),filter_code(k))
+             enddo
+             
+             rhs = merge(qmax,rhs,rhs > qmax)
+             rhs = merge(zero,rhs,rhs < zero)
+             
+             za0 = rhs(1:nlev) 
+             za1 = -4*rhs(1:nlev) - 2*rhs(2:nlev+1) + 6*zarg  
+             za2 =  3*rhs(1:nlev) + 3*rhs(2:nlev+1) - 6*zarg 
+             
+             dy(1:nlev) = rhs(2:nlev+1)-rhs(1:nlev)                             
+             dy = merge(zero, dy, abs(dy) < tiny )
+             
+             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!     
+             !! Compute the 3 quadratic spline coeffients {za0, za1, za2}				   !!
+             !! knowing the quadratic spline parameters {rho_left,rho_right,zarg}		   !!
+             !! Zerroukat et.al., Q.J.R. Meteorol. Soc., Vol. 128, pp. 2801-2820 (2002).   !!
+             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+             
+             
+             h = rhs(2:nlev+1)  
+             
+             do k=1,nlev
+                
+                xm_d = merge(one,2*za2(k),abs(za2(k)) < tiny)
+                xm = merge(zero,-za1(k)/xm_d, abs(za2(k)) < tiny)            
+                f_xm = za0(k) + za1(k)*xm + za2(k)*xm**2
+                
+                t1 = merge(1,0,ABS(za2(k)) > tiny)
+                t2 = merge(1,0,xm <= zero .OR. xm >= 1)
+                t3 = merge(1,0,za2(k) > zero)
+                t4 = merge(1,0,za2(k) < zero)
+                tm = merge(1,0,t1*((1-t2)+t3) .EQ. 2)
+                tp = merge(1,0,t1*((1-t2)+(1-t3)+t4) .EQ. 3)
+                
+                peaks=0
+                peaks = merge(-1,peaks,tm .EQ. 1)
+                peaks = merge(+1,peaks,tp .EQ. 1)
+                peaks_min = merge(f_xm,MIN(za0(k),za0(k)+za1(k)+za2(k)),tm .EQ. 1)
+                peaks_max = merge(f_xm,MAX(za0(k),za0(k)+za1(k)+za2(k)),tp .EQ. 1)
+                
+                im1=MAX(1,k-1)
+                im2=MAX(1,k-2)
+                ip1=MIN(nlev,k+1)
+                ip2=MIN(nlev,k+2)
+                
+                t1 = merge(abs(peaks),0,(dy(im2)*dy(im1) <= tiny) .OR. &
+                     (dy(ip1)*dy(ip2) <= tiny) .OR. (dy(im1)*dy(ip1) >= tiny) .OR. &
+                     (dy(im1)*float(peaks) <= tiny))
+                
+                filter_code(k) = merge(1,t1+(1-t1)*filter_code(k),(rhs(k) >= qmax) .OR. & 
+                     (rhs(k) <= zero) .OR. (peaks_max > qmax) .OR. (peaks_min < tiny))
+                
+                if (filter_code(k) > 0) then
+                   
+                   level1 = rhs(k)
+                   level2 = (2*rhs(k)+h(k))/3
+                   level3 = 0.5*(rhs(k)+h(k)) 
+                   level4 = (1/3d0)*rhs(k)+2*(1/3d0)*h(k)
+                   level5 = h(k)
+                   
+                   t1 = merge(1,0,h(k) >= rhs(k))
+                   t2 = merge(1,0,zarg(k) <= level1 .OR.  zarg(k) >= level5)
+                   t3 = merge(1,0,zarg(k) >  level1 .AND. zarg(k) <  level2)
+                   t4 = merge(1,0,zarg(k) >  level4 .AND. zarg(k) <  level5)
+                   
+                   lt1 = t1*t2
+                   lt2 = t1*(1-t2+t3)
+                   lt3 = t1*(1-t2+1-t3+t4)
+                   
+                   za0(k) = merge(zarg(k),za0(k),lt1 .EQ. 1)
+                   za1(k) = merge(zero,za1(k),lt1 .EQ. 1)
+                   za2(k) = merge(zero,za2(k),lt1 .EQ. 1)
+                   
+                   za0(k) = merge(rhs(k),za0(k),lt2 .EQ. 2)
+                   za1(k) = merge(zero,za1(k),lt2 .EQ. 2)
+                   za2(k) = merge(3*(zarg(k)-rhs(k)),za2(k),lt2 .EQ. 2)
+                   
+                   za0(k) = merge(-2*h(k)+3*zarg(k),za0(k),lt3 .EQ. 3)
+                   za1(k) = merge(+6*h(k)-6*zarg(k),za1(k),lt3 .EQ. 3)
+                   za2(k) = merge(-3*h(k)+3*zarg(k),za2(k),lt3 .EQ. 3)
+                   
+                   t2 = merge(1,0,zarg(k) >= level1 .OR.  zarg(k) <= level5)
+                   t3 = merge(1,0,zarg(k) <  level1 .AND. zarg(k) >  level2)
+                   t4 = merge(1,0,zarg(k) <  level4 .AND. zarg(k) >  level5)
+                   
+                   lt1 = (1-t1)*t2
+                   lt2 = (1-t1)*(1-t2+t3)
+                   lt3 = (1-t1)*(1-t2+1-t3+t4)
+                   
+                   za0(k) = merge(zarg(k),za0(k),lt1 .EQ. 1)
+                   za1(k) = merge(zero,za1(k),lt1 .EQ. 1)
+                   za2(k) = merge(zero,za2(k),lt1 .EQ. 1)
+                   
+                   za0(k) = merge(rhs(k),za0(k),lt2 .EQ. 2)
+                   za1(k) = merge(zero,za1(k),lt2 .EQ. 2)
+                   za2(k) = merge(3*(zarg(k)-rhs(k)),za2(k),lt2 .EQ. 2)
+                   
+                   za0(k) = merge(-2*h(k)+3*zarg(k),za0(k),lt3 .EQ. 3)
+                   za1(k) = merge(+6*h(k)-6*zarg(k),za1(k),lt3 .EQ. 3)
+                   za2(k) = merge(-3*h(k)+3*zarg(k),za2(k),lt3 .EQ. 3)	
+                endif
+             enddo
+             
+             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+             !! start iteration from top to bottom of atmosphere !! 
+			 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+             
+             zv1 = 0
+             do k=1,nlev
+				if (zgam(k+1)>1d0) then
+					WRITE(*,*) 'r not in [0:1]', zgam(k+1)
+				endif
+                zv2 = zv(zkr(k+1))+(za0(zkr(k+1))*zgam(k+1)+(za1(zkr(k+1))/2)*(zgam(k+1)**2)+ &
+                     (za2(zkr(k+1))/3)*(zgam(k+1)**3))*zhdp(zkr(k+1))
+                Q_vadv = (spelt(ie)%c(i,j,k,q,np1)/spelt(ie)%sga(i,j) - (zv2 - zv1)) / dt
+                spelt(ie)%c(i,j,k,q,np1) = (zv2 - zv1) / (z2c(k+1)-z2c(k))  ! convert from tracer mass to mixing ratio
+                spelt(ie)%c(i,j,k,q,np1)=spelt(ie)%sga(i,j)*spelt(ie)%c(i,j,k,q,np1)
+                zv1 = zv2
+#ifdef ENERGY_DIAGNOSTICS
+                if (compute_diagnostics .and. q==1) then
+                   elem(ie)%accum%IEvert1_wet(i,j) = elem(ie)%accum%IEvert1_wet(i,j) + (Cpwater_vapor-Cp)*elem(ie)%state%T(i,j,k,n0)*Q_vadv
+                endif
+#endif	
+             enddo
+          enddo
+       enddo
+    enddo
+    !remap q=1 
+     do i=1,nep   
+       do j=1,nep
+        do k=1,nlev
+          spelt(ie)%c(i,j,k,2,np1)=spelt(ie)%sga(i,j)*dp_np1(i,j,k)
+        end do
+      end do
+    end do
+    
+ enddo
+ 
+ call t_stopf('remap_velocityCspelt')
+ end subroutine remap_velocityCspelt
+
+
+
+
 
 
 
@@ -1216,6 +1522,7 @@ module prim_advection_mod
                                  gradient_sphere, divergence_sphere
   use element_mod, only        : element_t
   use fvm_control_volume_mod, only        : fvm_struct
+  use spelt_mod, only          : spelt_struct
   use filter_mod, only         : filter_t, filter_P
   use hybvcoord_mod, only      : hvcoord_t
   use time_mod, only           : TimeLevel_t, smooth
@@ -1236,7 +1543,7 @@ module prim_advection_mod
   private  
 
   public :: Prim_Advec_Init, Prim_Advec_Tracers_remap_rk2, Prim_Advec_Tracers_lf
-  public :: prim_advec_tracers_fvm
+  public :: prim_advec_tracers_fvm, prim_advec_tracers_spelt
 
   type (EdgeBuffer_t) :: edgeAdv, edgeAdvQ3, edgeAdv_p1, edgeAdvQ2, edgeAdv1
 
@@ -1271,7 +1578,122 @@ contains
 
   end subroutine Prim_Advec_Init
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! SPELT driver
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  subroutine Prim_Advec_Tracers_spelt(elem, spelt, deriv,hvcoord,hybrid,&
+        dt,tl,nets,nete, compute_diagnostics)
+    use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
+    use vertremap_mod, only: remap_velocityCspelt,remap_velocityUV  ! _EXTERNAL (actually INTERNAL)
+    use spelt_mod, only : spelt_run, spelt_runair, edgeveloc, spelt_mcgregordss
+    use derivative_mod, only : interpolate_gll2spelt_points
+    
+    implicit none
+    type (element_t), intent(inout)   :: elem(:)
+    type (spelt_struct), intent(inout)  :: spelt(:)
+    type (derivative_t), intent(in)   :: deriv
+    type (hvcoord_t)                  :: hvcoord
+    type (hybrid_t),     intent(in):: hybrid
+    type (TimeLevel_t)                :: tl
 
+    real(kind=real_kind) , intent(in) :: dt
+    integer,intent(in)                :: nets,nete
+
+    logical,intent(in)                :: compute_diagnostics
+
+
+    real (kind=real_kind), dimension(np,np,nlev)    :: dp_star
+    real (kind=real_kind), dimension(np,np,nlev)    :: dp_np1
+   
+    integer :: n0,np1,ie,k, i, j
+    
+    real (kind=real_kind)  :: vstar(np,np,2)
+    real (kind=real_kind)  :: vhat(np,np,2)
+    real (kind=real_kind)  :: v1, v2
+    
+
+    call t_barrierf('sync_prim_advec_tracers_spelt', hybrid%par%comm)
+    call t_startf('prim_advec_tracers_spelt')
+    n0  = tl%n0
+    np1 = tl%np1
+
+!     do ie=nets,nete
+!       do k=1,nlev
+!         do i=1,np
+!           do j=1,np      
+!           elem(ie)%derived%dp(i,j,k)=
+!           enddo
+!         enddo
+!       enddo
+!     enddo
+
+! dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+!      ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,n0)
+
+    ! mean vertical velocity computed in dynamics needs to be DSS'd:
+    ! this should be moved into one of the DSS operations performed by the
+    ! dynamics to be more efficient, but only if ntrac>0
+    do ie=nets,nete
+       do k=1,nlev
+          elem(ie)%derived%eta_dot_dpdn(:,:,k) = elem(ie)%spheremp(:,:)*elem(ie)%derived%eta_dot_dpdn(:,:,k) 
+       enddo
+       call edgeVpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
+    enddo
+    call bndry_exchangeV(hybrid,edgeAdv1)
+    do ie=nets,nete
+       call edgeVunpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
+       do k=1,nlev
+          elem(ie)%derived%eta_dot_dpdn(:,:,k)=elem(ie)%derived%eta_dot_dpdn(:,:,k)*elem(ie)%rspheremp(:,:)
+       enddo
+       ! SET VERTICAL VELOCITY TO ZERO FOR DEBUGGING
+!        elem(ie)%derived%eta_dot_dpdn(:,:,:)=0
+    end do
+    
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! 2D advection step
+    ! 
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! elem%state%u(np1)  = velocity at time t+1 on reference levels
+    ! elem%derived%vstar = velocity at t+1 on floating levels (computed below)
+    call remap_velocityUV(np1,dt,elem,hvcoord,nets,nete)
+!------------------------------------------------------------------------------------      
+    ! ! start mcgregordss
+    do ie=nets,nete
+      do k=1,nlev
+        vstar=elem(ie)%derived%vstar(:,:,:,k)/rearth
+        do j=1,np
+          do i=1,np
+  !           v1 = elem(ie)%Dinv(1,1,i,j)*vstar(i,j,1) + elem(ie)%Dinv(1,2,i,j)*vstar(i,j,2)
+  !           v2 = elem(ie)%Dinv(2,1,i,j)*vstar(i,j,1) + elem(ie)%Dinv(2,2,i,j)*vstar(i,j,2)
+            v1 = spelt(ie)%Dinv(1,1,i,j)*vstar(i,j,1) + spelt(ie)%Dinv(1,2,i,j)*vstar(i,j,2)
+            v2 = spelt(ie)%Dinv(2,1,i,j)*vstar(i,j,1) + spelt(ie)%Dinv(2,2,i,j)*vstar(i,j,2)
+            vstar(i,j,1)=v1
+            vstar(i,j,2)=v2
+          enddo
+        enddo
+        spelt(ie)%contrau(:,:,k)=interpolate_gll2spelt_points(vstar(:,:,1),deriv)
+        spelt(ie)%contrav(:,:,k)=interpolate_gll2spelt_points(vstar(:,:,2),deriv)
+      end do
+    end do
+    
+    call t_startf('spelt_mcgregor')
+    call spelt_mcgregordss(elem,spelt,nets,nete, hybrid, deriv, dt, 3)
+    call t_stopf('spelt_mcgregor')
+    
+    ! ! end mcgregordss
+    ! spelt departure calcluation should use vstar.
+    ! from c(n0) compute c(np1):
+!     call spelt_run(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
+    call spelt_runair(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
+    ! apply vertical remap back to reference levels
+    call remap_velocityCspelt(n0,np1,dt,elem,spelt,hvcoord,nets,nete,compute_diagnostics)
+
+    call t_stopf('prim_advec_tracers_spelt')
+  end subroutine Prim_Advec_Tracers_spelt
+  
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! fvm driver

@@ -31,6 +31,7 @@ program prim_main
   use element_mod, only : element_t
   !-----------------------------------------------
   use fvm_control_volume_mod, only : fvm_struct
+  use spelt_mod, only : spelt_struct
   ! -----------------------------------------------
   use common_io_mod, only:  output_dir
   ! -----------------------------------------------
@@ -53,7 +54,11 @@ program prim_main
 	
   implicit none
   type (element_t), pointer  :: elem(:)
-  type (fvm_struct), pointer  :: fvm(:)
+#if defined(_SPELT)
+    type (spelt_struct), pointer   :: fvm(:)
+#else
+     type (fvm_struct), pointer   :: fvm(:)    
+#endif
 
   type (hybrid_t)       :: hybrid ! parallel structure for shared memory/distributed memory
   type (parallel_t)                    :: par  ! parallel structure for distributed memory programming

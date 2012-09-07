@@ -105,7 +105,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   
   integer  choosetrac, chooselev   !for test reason the output
  !-----------------------------------------------------------------------------------!  
- choosetrac=1
+ choosetrac=4
  chooselev=1
  
   if(hybrid%masterthread) then 
@@ -244,7 +244,10 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
     call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, tstep, 3)
 ! ! end mcgregordss   
     call cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
-  
+    
+    call TimeLevel_update(tl,"forward")
+     
+if (mod(tl%nstep,50)==0) then  
     do ie=nets,nete
     ! prepare data for I/O
       global_shared_buf(ie,1)=0D0  ! for mass calculation
@@ -253,20 +256,17 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
         do i=1,nc   
           if (choosetrac==1) then
             global_shared_buf(ie,1)=global_shared_buf(ie,1)+fvm(ie)%area_sphere(i,j)*&
-                                    fvm(ie)%c(i,j,chooselev,choosetrac,tl%np1)
+                                    fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)
           else   
             global_shared_buf(ie,1)=global_shared_buf(ie,1)+fvm(ie)%area_sphere(i,j)*&
-                 fvm(ie)%c(i,j,chooselev,1,tl%np1)*fvm(ie)%c(i,j,chooselev,choosetrac,tl%np1)
+                 fvm(ie)%c(i,j,chooselev,1,tl%n0)*fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)
           endif
         end do
       end do
       ! for the max/min value on the sphere
-      tmp1(ie) = MAXVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%np1))
-      tmp2(ie) = MINVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%np1))
+      tmp1(ie) = MAXVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))
+      tmp2(ie) = MINVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))
     end do
-
-    call TimeLevel_update(tl,"forward") 
-
 !-----------------------------------------------------------------------------------!
     ! for mass calculation
     call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
@@ -288,6 +288,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
       write(*,*) "CFL: maxcflx=", maxcflx, "maxcfly=", maxcfly 
       print *
     endif
+endif
 !-----------------------------------------------------------------------------------!  
 
 #ifdef PIO_INTERP
