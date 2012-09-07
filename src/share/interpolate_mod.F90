@@ -58,6 +58,8 @@ module interpolate_mod
   public :: get_interp_lon
   public :: var_is_vector_uvar, var_is_vector_vvar
   public :: cube_facepoint_ne
+  public :: cube_facepoint_unstructured
+
 
   private ::  parametric_coordinates
   private ::  find_parametric_by_roots
@@ -950,12 +952,12 @@ end subroutine interpol_phys_latlon
     integer             , intent(out)     :: number
 
     integer               :: ii
-    Logical               :: found, p
+    Logical               :: found
     type (cartesian3D_t)       :: sphere_xyz
     type (cartesian2D_t)  :: cube
     sphere_xyz=spherical_to_cart(sphere)
 
-    p = .false.
+    number=-1
     do ii = 1,nelemd
        found = point_inside_equiangular(elem(ii), sphere, sphere_xyz)
        if (found) then
