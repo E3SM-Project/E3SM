@@ -78,8 +78,8 @@ alpha_dg = 0.0D0
 
 
 
-
-
-
-
-
+! this will be used by homme only if namelist file is 'input.nl'
+&prof_inparm
+profile_single_file = .true.
+profile_outpe_num = 60
+/
