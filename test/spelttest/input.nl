@@ -1,5 +1,5 @@
 !===================================================================================!
-! TEST INPUT for fvm                                                              !
+! TEST INPUT for CWFV                                                              !
 ! Christoph Erath                                                                   !
 ! 	1 day = 1 * 24 * 3600 = 86400 sec		                                            !
 ! 	nmax  = ndays * 86400 / tstep 			                                            !
@@ -8,14 +8,14 @@
 &ctl_nl
 NThreads      = 1
 partmethod    = 4
-test_case     = "fvm_boomerang"
-ne            = 120 !4 ! number of elements is ne*ne on each face, number must be >=2, o
+test_case     = "spelt_boomerang"
+ne            = 5 !4 ! number of elements is ne*ne on each face, number must be >=2, o
                   !ne element per face is not allowed
-ntrac         = 4
-ndays	        = 60
-!nmax = 2
-tstep         = 150   ! use factor 2 of 600 to reach the end time
 test_cfldep   = .TRUE.
+ndays	        = 12
+ntrac         = 1
+!nmax = 2
+tstep         = 2400   ! use factor 2 of 600 to reach the end time
 /
 &analysis_nl
 !=======================================================!
@@ -36,10 +36,10 @@ test_cfldep   = .TRUE.
 !  output_varnames1-5					!
 !=======================================================!    
 output_start_time = 0
-output_end_time   = 24000
-output_frequency  = 2
-output_timeunits  = 1
-output_varnames1  = 'C','C2', 'C3'
+output_end_time   = 100000
+output_frequency  = 6
+output_timeunits  = 2
+output_varnames1  = 'geop','C'
 interp_nlat       = 256
 interp_nlon       = 512
 output_type='netcdf'

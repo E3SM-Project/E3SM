@@ -1,0 +1,111 @@
+number of elements        2400
+
+chooselev=           1 choosetrac=           1
+massbegin   1.2566366384774446      massend   1.2566366384774441     
+rel -3.53395083552653854E-016
+maxvaluestart:  0.82675795045537925      minvaluestart:  2.54311652840624577E-007
+maxvalue:       0.62209523752424745      minvalue:      -2.31612410277108709E-002
+l1 =   0.23626826326903752      l2 =   0.21570967977836134      lmax =   0.45102301980692905     
+ne*nc =           20 timestep =    2400.0000000000000
+
+
+
+time=   1036800.0000000000      timeatmax   1036800.0000000000     
+chooselev=           1 choosetrac=           1
+STEP         432 MAXSTEP         432 t0           2 t1           3
+massbegin  0.23129790778205786      massend  0.23129790778205792     
+rel  2.39998501342102990E-016
+maxvaluestart:  0.92398420212533883      minvaluestart:   0.0000000000000000     
+maxvalue:       0.88365337401572963      minvalue:     -6.61025418636234860E-003
+
+
+
+
+!             write(*,*) elem(ie)%GlobalId, i, j, fvm(ie)%cd(i,j,k,itr,tl%n0)
+!   if ((elem(ie)%GlobalId==22) .and. (i==2) .and. (j==2)) then
+!      write(*,*) elem(ie)%GlobalId, i,j, ff(2,2)  
+! !      write(*,*) elem(ie)%GlobalId, i,j, ff(:,2)     
+! !      write(*,*) elem(ie)%GlobalId, i,j, ff(:,3)     
+!         
+!   endif
+
+
+!     do k=1, nlev
+!         do itr=1,ntrac
+!           do j=1,nep
+!             do i=1,nep               
+!               fvm(ie)%c(i,j,k,itr,tl%n0)=(elem(ie)%GlobalId-1)*(ne-1)*(ne-1)*(nep-1)*(nep-1)+(j-1)*(nep-1)+i 
+!             end do
+!           end do
+!         end do 
+!       end do
+    !
+    
+    !  !need the buffer cellghostbuf in the time loop
+    !   ! for mass calculation
+    !   call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
+    !   massstart=global_shared_sum(1)
+    !   maxcstart = parallelmax(tmp1,hybrid)
+    !   mincstart = parallelmin(tmp2,hybrid)
+    ! !-----------------------------------------------------------------------------------!  
+    ! !Initialize Output via geopotential (should be changed, separate output for CWFV
+    ! !write first time step to IO 
+    !   do ie=nets,nete
+    !     elem(ie)%state%p(:,:,:,tl%n0)=g*fvm(ie)%c(1:np,1:np,:,choosetrac,tl%n0)
+    !     elem(ie)%state%ps(:,:)=0.0D0
+    !   end do
+    ! #ifdef PIO_INTERP
+    !   call interp_movie_init(elem,hybrid,nets,nete,tl=tl)    
+    !   call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete)
+    ! #else
+    !     call shal_movie_init(elem,hybrid,fvm)
+    !     call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv)
+    ! #endif
+    
+    
+    ! BEGIN Testoutput: Just for test reasons
+      do ie=nets, nete
+        print *, ""
+        write (*,0816) elem(ie)%LocalId,elem(ie)%GlobalId,elem(ie)%FaceNum
+        do j=2-nip,nep+nip-1
+          do i=2-nip,nep+nip-1 
+            write (*,*) i,j,fvm(ie)%c(i,j,1,1,tl%n0)      
+            print *
+          end do
+        end do
+      end do 
+    ! END Testoutput  
+    0816 format("Element ",I4,2x,I4,2x,I1)   
+    
+    
+    !           if ((elem(ie)%GlobalId==18) .and. (i==4) .and. (j==1)) then
+    !              write(*,*) elem(ie)%GlobalId, i,j, icell, jcell, dref%x, dref%y, tmp   
+    ! !              write(*,*) fvm(ie)%asphere(i,j), dsphere      
+    !           endif
+    !           if ((elem(ie)%GlobalId==9).and. (i==2) .and. (j==1)) then
+    !              write(*,*) elem(ie)%GlobalId, i,j, icell, jcell, dref%x, dref%y, tmp 
+    ! !              write(*,*) fvm(ie)%asphere(i,j), dsphere    
+    !           endif
+    
+    
+    
+    xtmp=nep-1
+    do i=1,nep
+      refnep(i)= 2*(i-1)/xtmp - 1
+    end do
+
+    call derivspeltinit(deriv(hybrid%ithr),refnep)
+    
+    do ie=nets,nete
+      vstar=get_solidbody_velocities_gll(elem(ie), tstep)
+      do j=1,np
+        do i=1,np
+          v1 = elem(ie)%Dinv(1,1,i,j)*vstar(i,j,1) + elem(ie)%Dinv(1,2,i,j)*vstar(i,j,2)
+          v2 = elem(ie)%Dinv(2,1,i,j)*vstar(i,j,1) + elem(ie)%Dinv(2,2,i,j)*vstar(i,j,2)
+          vstar(i,j,1)=v1
+          vstar(i,j,2)=v2
+        enddo
+      enddo
+      fvm(ie)%contrau(1:nep,1:nep)=interpolate_gll2fvm_points(vstar(:,:,1),deriv(hybrid%ithr))
+      fvm(ie)%contrav(1:nep,1:nep)=interpolate_gll2fvm_points(vstar(:,:,2),deriv(hybrid%ithr)) 
+    enddo 

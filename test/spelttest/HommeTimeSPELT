@@ -1,0 +1,50 @@
+$Id: gptl.c,v 1.153 2010/04/13 21:41:50 rosinski Exp $
+Underlying timing routine was MPI_Wtime.
+Per-call utr overhead est: 6.91414e-08 sec.
+If overhead stats are printed, roughly half the estimated number is
+embedded in the wallclock stats for each timer.
+Print method was most_frequent.
+If a '%_of' field is present, it is w.r.t. the first timer for thread 0.
+If a 'e6_per_sec' field is present, it is in millions of PAPI counts per sec.
+
+A '*' in column 1 below means the timer had multiple parents, though the
+values printed are for all calls. Further down the listing is more detailed
+information about multiple parents. Look for 'Multiple parent info'
+
+Stats for thread 0:
+                         Called  Recurse Wallclock max       min       UTR_Overhead  
+  Total                         1    -       6.761     6.761     6.761         0.000 
+    fvm_init                    1    -       0.002     0.002     0.002         0.000 
+*   edge_pack              129700    -       0.024     0.000     0.000         0.018 
+*   edge_unpack            129700    -       0.024     0.000     0.000         0.018 
+    decompose                   1    -       0.000     0.000     0.000         0.000 
+    interp_movie_output       433    -       1.825     0.042     0.000         0.000 
+    repro_sum_int             434    -       0.016     0.000     0.000         0.000 
+    bndry_exchange           1296    -       0.118     0.003     0.000         0.000 
+    SPELT Communication       432    -       0.338     0.003     0.000         0.000 
+    SPELT Unpacking           432    -       0.013     0.000     0.000         0.000 
+  t_prf                         0    -       0.000     0.000     0.000         0.000 
+Overhead sum          =    0.0363 wallclock seconds
+Total calls           = 262430
+Total recursive calls = 0
+
+Multiple parent info (if any) for thread 0:
+Columns are count and name for the listed child
+Rows are each parent, with their common child being the last entry, which is indented
+Count next to each parent is the number of times it called the child
+Count next to child is total number of times it was called by the listed parents
+
+     100 fvm_init                        
+  129600 Total                           
+  129700   edge_pack                       
+
+     100 fvm_init                        
+  129600 Total                           
+  129700   edge_unpack                     
+
+Thread 0 total memory usage=131.4 KB
+hashmem = 129.024 KB
+regionmem = 2.2 KB (papimem portion = 0 KB)
+parent/child arrays = 0.176 KB
+
+threadid[0]=0

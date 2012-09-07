@@ -4,10 +4,10 @@ partmethod                   = 4
 topology                     = "cube"
 test_case                    = "asp_baroclinic"
 rotate_grid                  = 0
-ne                           = 30
+ne                           =30 !120 !30 !30
 qsize                        = 4
 ntrac                        = 4
-test_cfldep                  = .FALSE.
+test_cfldep                  = .TRUE.
 tracer_advection_formulation = 1
 tstep_type                   = 1 
 compute_mean_flux            = 1  
@@ -19,15 +19,15 @@ accumstop                    = 1200
 restartfreq                  = 43200
 restartfile                  = "./R0001"
 runtype                      = 0
-tstep                        = 50
-qsplit                       = 4
+tstep                        = 90 !20 !90 !50
+qsplit                       = 4 !4
 rk_stage_user                = 3
 psurf_vis                    = 0  
 integration                  = "explicit"
 smooth                       = 0
-nu                           = 2e14
-nu_s                         = -1        ! use same value as nu
-nu_q                         = 2e14    
+nu                           = 9.6e14 !1.1e13 !9.6e14 !2e14
+nu_s                         = -1       ! use same value as nu
+nu_q                         = 9.6e14 !1.1e13 !9.6e14 !2e14    
 nu_p                         = 0
 limiter_option               = 8 
 energy_fixer                 = -1
@@ -66,14 +66,19 @@ profile_barrier = .true.
 /
 
 &analysis_nl
- interp_gridtype   = 2
  output_timeunits  = 1,1
  output_frequency  = 1,1
  output_start_time = 0,0
- output_end_time   = 15,15
- output_varnames1  = 'ps', 'zeta', 'DIFFT'
- output_varnames2  = 'Q', 'Q2', 'Q3', 'Q4','C', 'C2', 'C3', 'C4','phys_lat','phys_lon'
+ output_end_time   = 20,20
+ output_varnames1  = 'ps', 'zeta' !, 'DIFFT'
+!  output_varnames2  = 'Q', 'Q2', 'Q3', 'Q4', 'phys_lat','phys_lon'
+ output_varnames2  = 'Q', 'Q2', 'Q3', 'Q4' , 'zeta', 'C', 'C2', 'C3', 'C4', 'phys_lat','phys_lon'
+! output_varnames2  = 'C', 'C2', 'C3', 'C4', 'zeta', 'phys_lat','phys_lon'
+!  output_varnames2  = 'Q3', 'Q4' ,'C', 'C3', 'zeta', 'phys_lat','phys_lon'
  io_stride         = 8
+ interp_nlat       = 256
+ interp_nlon       = 512
+ output_dir ="./movies/"
  output_type       = 'netcdf' 
 /
 

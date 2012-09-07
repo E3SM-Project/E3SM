@@ -4,20 +4,20 @@ NP        = 4
 # NC has to be at >=4
 NC        = 4 
 #for preqx set it to 26
-PLEV      = 26
+PLEV      = 1
 QUEUE        =  qsub
 #QUEUE       = cqsub -q debug or cqsub -q JumboFridays
-EXECUTE   = preqx
+# EXECUTE   = preqx
 # EXECUTE   = fvm
-# EXECUTE   = swdgx
+# EXECUTE   = sweqx
 # EXECUTE   =  preqxse
 # EXECUTE   =  primdgx
 # EXECUTE   = sweqx
-# EXECUTE    = spelt
-INPUT     = baro.nl 
+EXECUTE     = spelt
+# INPUT     = baro.nl 
 # INPUT     = fvm.nl
 # INPUT     = swtc5.nl
-# INPUT      = spelt.nl
+INPUT      = spelt.nl
 
 HNAME     = $(shell hostname -s)
 ARCH      = $(shell uname -s)
@@ -77,6 +77,6 @@ clear: tclean clean dclean
 
 comp:
 	@echo "**** Running everything for HOMME-$(EXECUTE) on $(HNAME): Operating system $(ARCH) ******"
-	cd ../../build/$(EXECUTE)/  && aclocal && autoconf && automake && ./configure NC=$(NC) NP=$(NP) PLEV=$(PLEV) --enable-blas --enable-lapack --with-pnetcdf=$(PNETCDF_PATH) --with-netcdf=$(NETCDF_PATH) && make clean-depends && make depends  
+	cd ../../build/$(EXECUTE)/  && aclocal && autoconf && automake && ./configure NC=$(NC) NP=$(NP) PLEV=$(PLEV) --enable-blas --enable-lapack --enable-spelt --with-pnetcdf=$(PNETCDF_PATH) --with-netcdf=$(NETCDF_PATH) && make clean-depends && make depends  
 	make cleansource
 	make  
