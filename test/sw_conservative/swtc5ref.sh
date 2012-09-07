@@ -27,9 +27,30 @@ echo NCPU = $NCPU
 set test_case = swtc5
 
 
+set build = 0
+set make = 1
+if ( $#argv >= 1) then
+  if ( $1 == 'build' ) set build = 1
+endif
 
-cd $src
-make -j2 sweqx
+if ( $build == 1 ) then
+   cd $src
+   ./configure --enable-blas --enable-lapack --with-netcdf=$NETCDF_PATH \
+    --with-pnetcdf=$PNETCDF_PATH NP=4 PLEV=1   --enable-energy-diagnostics
+   make depends
+   make clean
+   make -j4 sweqx
+   exit
+endif
+if ( $make == 1 ) then
+   cd src
+   make -j4 sweqx
+   if ($status) exit
+endif
+
+
+
+
 mkdir $wdir
 cd $wdir
 mkdir movies
@@ -84,11 +105,11 @@ sed s/nu_s=.\*/"nu_s= $nu_s"/  |\
 sed s/filter_freq.\*/"filter_freq = $filter_freq"/  |\
 sed s/hypervis_subcycle.\*/"hypervis_subcycle = $hypervis_subcycle"/  |\
 sed s/statefreq.\*/"statefreq = $sfreq"/  \
-> swtc5.nl
+> input.nl
 
 date
-rm -f movies/swtc5?.nl
-mpirun -np $NCPU $src/sweqx < swtc5.nl | tee  sweq.out
+rm -f movies/swtc5?.nc
+mpirun -np $NCPU $src/sweqx < input.nl | tee  sweq.out
 date
 
 

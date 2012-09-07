@@ -13,7 +13,7 @@
 #  homme/README 
 #
 set wdir = ~/scratch1/swtc6
-set src = ~/codes/homme/build.Linux
+set src = ~/codes/homme/build/sweqx
 set input = ~/codes/homme/test/sw_conservative
 
 set NCPU = 2
@@ -35,9 +35,24 @@ endif
 
 
 
-cd $src
-rm -f sweqx
-make -j2 sweqx
+#configure the model
+set configure = 1
+if ( $configure ) then
+  cd $src
+  ./configure --with-netcdf=$NETCDF_PATH --with-pnetcdf=$PNETCDF_PATH NP=4 PLEV=1
+  if ($status ) exit
+
+  gmake clean
+  gmake -j4 depends
+  if ($status ) exit
+endif
+
+gmake -j2 sweqx
+if ($status ) exit
+
+
+
+
 mkdir $wdir
 cd $wdir
 mkdir movies

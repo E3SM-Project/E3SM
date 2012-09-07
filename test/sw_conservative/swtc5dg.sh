@@ -25,14 +25,8 @@ echo NCPU = $NCPU
 
 
 set test_case = swtc5
-set params = $input/Params4-1.inc    # 1 level
 
 
-diff  $params  $src/../Params.inc
-if ($status != 0) then
-   echo "replacing Params.inc"
-   cp $params $src/../Params.inc
-endif
 
 
 set build = 0
