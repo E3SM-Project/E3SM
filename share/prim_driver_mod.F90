@@ -6,7 +6,7 @@
 #define _DBG_ 
 module prim_driver_mod
   use kinds, only : real_kind, iulog, longdouble_kind
-  use dimensions_mod, only : np, nlev, nelem, nelemd, nelemdmax, GlobalUniqueCols, ntrac, qsize, nc,nhc
+  use dimensions_mod, only : np, nlev, nelem, nelemd, nelemdmax, GlobalUniqueCols, ntrac, qsize, nc,nhc, nep
   use cg_mod, only : cg_t
   use hybrid_mod, only : hybrid_t
   use quadrature_mod, only : quadrature_t, test_gauss, test_gausslobatto, gausslobatto
@@ -21,8 +21,11 @@ module prim_driver_mod
   use derivative_mod, only : derivative_t
   use reduction_mod, only : reductionbuffer_ordered_1d_t, red_min, red_max, &
          red_sum, red_sum_int, red_flops, initreductionbuffer
-  use fvm_mod, only : fvm_init1,fvm_init2, fvm_init3
+
+  use fvm_mod, only : fvm_init1,fvm_init2, fvm_init3  
   use fvm_control_volume_mod, only : fvm_struct
+  use spelt_mod, only : spelt_struct, spelt_init1,spelt_init2, spelt_init3
+  
   use element_mod, only : element_t, timelevels
   use Manager
 
@@ -116,7 +119,11 @@ contains
 #endif
     implicit none
     type (element_t), pointer :: elem(:)
-    type (fvm_struct), pointer :: fvm(:)
+#if defined(_SPELT)
+    type (spelt_struct), pointer   :: fvm(:)
+#else
+     type (fvm_struct), pointer   :: fvm(:)    
+#endif
     type (parallel_t), intent(in) :: par
     type (domain1d_t), pointer :: dom_mt(:)      
     type (timelevel_t), intent(out) :: Tl
@@ -527,8 +534,13 @@ contains
     call prim_advance_init(integration)
     call Prim_Advec_Init()
     call diffusion_init()
-    if (ntrac>0) call fvm_init1(par)
-
+    if (ntrac>0) then
+#if defined(_SPELT)
+      call spelt_init1(par)
+#else
+      call fvm_init1(par)    
+#endif
+    endif
     call TimeLevel_init(tl)
     if(par%masterproc) write(iulog,*) 'end of prim_init'
   end subroutine prim_init1
@@ -550,7 +562,7 @@ contains
          hypervis_subcycle_q
     use prim_si_ref_mod, only: prim_si_refstate_init, prim_set_mass
     use thread_mod, only : nthreads
-    use derivative_mod, only : derivinit, interpolate_gll2fvm_points
+    use derivative_mod, only : derivinit, interpolate_gll2fvm_points, interpolate_gll2spelt_points, v2pinit
     use global_norms_mod, only : test_global_integral, print_cfl
     use hybvcoord_mod, only : hvcoord_t
 #ifdef CAM
@@ -563,7 +575,11 @@ contains
 #endif
 
     type (element_t), intent(inout) :: elem(:)
-    type (fvm_struct), intent(inout) :: fvm(:)
+#if defined(_SPELT)
+    type (spelt_struct), intent(inout)   :: fvm(:)
+#else
+     type (fvm_struct), intent(inout)    :: fvm(:)    
+#endif    
     type (hybrid_t), intent(in) :: hybrid
 
     type (TimeLevel_t), intent(inout)    :: tl              ! time level struct
@@ -597,6 +613,8 @@ contains
     integer :: i,j,k,ie,iptr,t,q
     integer :: ierr
     integer :: nfrc
+    real (kind=longdouble_kind)                 :: refnep(1:nep), tmp
+    
 
     ! ==========================
     ! begin executable code
@@ -638,9 +656,18 @@ contains
     ! ================================================
     ! fvm initialization
     ! ================================================
-    if (ntrac>0) call fvm_init2(elem,fvm,hybrid,nets,nete,tl)
-
-
+    if (ntrac>0) then
+#if defined(_SPELT)
+      tmp=nep-1
+      do i=1,nep
+        refnep(i)= 2*(i-1)/tmp - 1
+      end do
+      call v2pinit(deriv(hybrid%ithr)%Sfvm,gp%points,refnep,np,nep)
+      call spelt_init2(elem,fvm,hybrid,nets,nete,tl)
+#else
+      call fvm_init2(elem,fvm,hybrid,nets,nete,tl)    
+#endif
+    endif
     ! ====================================
     ! In the semi-implicit case:
     ! initialize vertical structure and 
@@ -872,6 +899,32 @@ contains
  ! do it only for FVM tracers, FIRST TRACER will be the AIR DENSITY   
  ! should be optimize and combined with the above caculation 
     if (ntrac>0) then 
+#if defined(_SPELT)
+      ! do it only for FVM tracers, FIRST TRACER will be the AIR DENSITY   
+      ! should be optimize and combined with the above caculation 
+      do ie=nets,nete 
+        do k=1,nlev
+     	    do i=1,np
+     	      do j=1,np      
+         		  elem(ie)%derived%dp(i,j,k)=( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+    		       ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,tl%n0)
+     	      enddo
+     	    enddo
+          !write air density in tracer 1 of FVM
+          fvm(ie)%c(1:nep,1:nep,k,2,tl%n0)=interpolate_gll2spelt_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
+          do i=1,nep
+            do j=1,nep
+              fvm(ie)%c(i,j,k,2,tl%n0)=fvm(ie)%sga(i,j)*fvm(ie)%c(i,j,k,2,tl%n0)
+!            fvm(ie)%c(i,j,k,1,tl%n0)=fvm(ie)%sga(i,j)
+            end do
+          end do
+        enddo
+      enddo
+      call spelt_init3(elem,fvm,hybrid,nets,nete,tl%n0)
+      if (hybrid%masterthread) then
+         write(iulog,*) 'FVM (Spelt) tracers (incl. in halo zone) initialized. FIRST tracer has air density!'
+      end if
+#else
       ! do it only for FVM tracers, FIRST TRACER will be the AIR DENSITY   
       ! should be optimize and combined with the above caculation 
       do ie=nets,nete 
@@ -891,6 +944,7 @@ contains
       if (hybrid%masterthread) then
          write(iulog,*) 'FVM tracers (incl. in halo zone) initialized. FIRST tracer has air density!'
       end if
+#endif      
     endif  
 
     ! for restart runs, we read in Qdp for exact restart, and rederive Q
@@ -1188,14 +1242,19 @@ contains
            TRACERADV_TOTAL_DIVERGENCE,TRACERADV_UGRADQ, energy_fixer, ftype, qsplit, nu_p, test_cfldep
     use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3, applycamforcing, &
                                  applycamforcing_dynamics, prim_advance_exp
-    use prim_advection_mod, only : prim_advec_tracers_remap_rk2, prim_advec_tracers_fvm
+    use prim_advection_mod, only : prim_advec_tracers_remap_rk2, prim_advec_tracers_fvm, prim_advec_tracers_spelt
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use parallel_mod, only : abortmp
     use reduction_mod, only : parallelmax
     
 
     type (element_t) , intent(inout)        :: elem(:)
-    type (fvm_struct) , intent(inout)        :: fvm(:)
+    
+#if defined(_SPELT)
+      type(spelt_struct), intent(inout) :: fvm(:)
+#else
+      type(fvm_struct), intent(inout) :: fvm(:)
+#endif
     type (hybrid_t), intent(in)           :: hybrid  ! distributed parallel structure (shared)
 
     type (hvcoord_t), intent(in)      :: hvcoord         ! hybrid vertical coordinate struct
@@ -1308,12 +1367,16 @@ contains
     if (qsize>0) call Prim_Advec_Tracers_remap_rk2(elem, deriv(hybrid%ithr),hvcoord,flt_advection,hybrid,&
          dt_q,tl,nets,nete,compute_diagnostics)
 
-    if (ntrac>0) then 
+    if (ntrac>0) then
       if ( n_Q /= tl%n0 ) then
         do ie=nets,nete
           fvm(ie)%c(:,:,:,1:ntrac,tl%n0)  = fvm(ie)%c(:,:,:,1:ntrac,n_Q)
         enddo
-      endif
+      endif 
+#if defined(_SPELT) 
+      call Prim_Advec_Tracers_spelt(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&
+           dt_q,tl,nets,nete,compute_diagnostics)
+#else      
       call Prim_Advec_Tracers_fvm(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&
            dt_q,tl,nets,nete,compute_diagnostics)
 
@@ -1333,7 +1396,7 @@ contains
              print *
            endif 
        endif   
-
+#endif
        ! dynamics computed a predictor surface pressure, now correct with fvm result
        ! fvm has computed a new dp(:,:,k) on the fvm grid
        ! step 1: compute surface pressure from dp:

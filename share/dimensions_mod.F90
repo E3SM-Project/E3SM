@@ -31,6 +31,13 @@ module dimensions_mod
   ! nhc ... halo/depth for the tracer values, only cubic reconstruction is supported
   !         now, therefore nhc=nhe+3    
   integer, parameter, public :: nhc=nhe+3 
+  
+  ! constants for SPELT
+  integer, parameter, public :: nip=3     !number of interpolation values, works only for this
+  integer, parameter, public :: nipm=nip-1
+  integer, parameter, public :: nep=nipm*nc+1      ! number of points in an element  
+  
+  
   integer, public :: npdg = 0  ! dg degree for hybrid cg/dg element  0=disabled 
 
   integer, parameter, public :: npsq = np*np

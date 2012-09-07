@@ -49,7 +49,7 @@ module interpolate_mod
   public :: interpolate_scalar
   public :: interpolate_ce
   
-  public :: interpol_phys_latlon
+  public :: interpol_phys_latlon, interpol_spelt_latlon
   public :: interpolate_vector
   public :: set_interp_parameter
   public :: get_interp_parameter
@@ -478,6 +478,121 @@ subroutine interpol_phys_latlon(interpdata,f, fvm, corners, desc, flatlon)
 !     flatlon(i)=f(ix,jy)    
   end do
 end subroutine interpol_phys_latlon
+
+
+! ----------------------------------------------------------------------------------!
+!FUNCTION   interpol_spelt_latlon---------------------------------------CE-for spelt!
+! AUTHOR: CHRISTOPH ERATH, 24. August 2012                                             !
+! DESCRIPTION: evaluation of the reconstruction for every spelt grid cell         !
+!                                                                                   !
+! CALLS: 
+! INPUT: 
+!        
+! OUTPUT: 
+!-----------------------------------------------------------------------------------!
+subroutine interpol_spelt_latlon(interpdata,f, spelt,corners, flatlon)
+  use spelt_mod, only : spelt_struct, cell_search, cip_coeff, cell_minmax, &
+                        cip_interpolate, qmsl_cell_filter, metric_term
+  use dimensions_mod, only: nip, nipm, nep
+  use coordinate_systems_mod, only : cartesian2d_t
+  
+  use edge_mod, only : edgedescriptor_t
+  
+  type (interpdata_t), intent(in)     :: interpdata                        
+  real (kind=real_kind), intent(in)   :: f(1-nipm:nep+nipm,1-nipm:nep+nipm)
+  type (spelt_struct), intent(in)     :: spelt  
+  type (cartesian2d_t), intent(in)    :: corners(4)
+                            
+  real (kind=real_kind)             :: flatlon(:)
+  ! local variables
+  real (kind=real_kind)             :: xp,yp,dxp,dyp, tmpval
+  integer                           :: i, j, ix,jy, icell, jcell, starti,endi,tmpi
+  real (kind=real_kind)             :: cf(nip,nip,1:nc,1:nc)
+  real (kind=real_kind)             :: ff(nip,nip)
+  real (kind=real_kind)             :: minmax(1-nhe:nc+nhe,1-nhe:nc+nhe,2)
+  
+  real (kind=real_kind)             :: refnc(1:nc+1), tmp
+  type (cartesian2d_t)              :: alphabeta   
+  real(kind=real_kind)              :: pi,pj,qi,qj, sga
+  
+
+  do j=1,nc
+    do i=1,nc
+      icell=1+(i-1)*nipm
+      jcell=1+(j-1)*nipm
+      ff=f(icell:icell+nipm,jcell:jcell+nipm)
+      minmax(i,j,:)=cell_minmax(ff)
+      call cip_coeff(ff,ff(2,2),cf(:,:,i,j))
+    enddo
+  enddo
+! 
+  tmp=nc
+  do i=1,nc+1
+    refnc(i)= 2*(i-1)/tmp - 1
+  end do
+! 
+  do i=1,interpdata%n_interp
+    ! caculation phys grid coordinate of xp point, note the interp_xy are on the reference [-1,1]x[-1,1] 
+    xp=interpdata%interp_xy(i)%x
+    yp=interpdata%interp_xy(i)%y
+    ! Search index along "x"  (bisection method)
+    starti = 1
+    endi = nc+1
+    do
+       if  ((endi-starti) <=  1)  exit
+       tmpi = (endi + starti)/2
+       if (xp  >  refnc(tmpi)) then
+          starti = tmpi
+       else
+          endi = tmpi
+       endif
+    enddo
+    icell = starti
+
+  ! Search index along "y"
+    starti = 1
+    endi = nc+1
+    do
+       if  ((endi-starti) <=  1)  exit
+       tmpi = (endi + starti)/2
+       if (yp  >  refnc(tmpi)) then
+          starti = tmpi
+       else
+          endi = tmpi
+       endif
+    enddo
+    jcell = starti
+    
+    if ((icell<1) .or.(icell>nc) .or. (jcell<1) .or. (jcell>nc)) then
+      write(*,*) 'icell, jcell,Something is wrong in the search of interpol_spelt_latlon!'
+      stop
+    endif
+    dxp=xp-refnc(icell)
+    dyp=yp-refnc(jcell)
+    tmp=cip_interpolate(cf(:,:,icell,jcell),dxp,dyp)      
+    tmp=qmsl_cell_filter(icell,jcell,minmax,tmp) 
+    
+    !next lines can be deleted, once the subroutine for the metric term for ref points works
+    pi = (1-xp)/2
+    pj = (1-yp)/2
+    qi = (1+xp)/2
+    qj = (1+yp)/2
+    alphabeta%x = pi*pj*corners(1)%x &
+         + qi*pj*corners(2)%x &
+         + qi*qj*corners(3)%x &
+         + pi*qj*corners(4)%x 
+    alphabeta%y = pi*pj*corners(1)%y &
+         + qi*pj*corners(2)%y &
+         + qi*qj*corners(3)%y &
+         + pi*qj*corners(4)%y
+
+    sga=metric_term(alphabeta)
+    
+    flatlon(i)=tmp/sga
+!     flatlon(i)=f(icell*nipm,jcell*nipm)    
+  end do
+end subroutine interpol_spelt_latlon
+
 
 !
 ! fast iterative search for bilinear elements on gnomonic cube face
