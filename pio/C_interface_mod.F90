@@ -13,6 +13,7 @@
 ! few exceptions.
 ! 
 module C_interface_mod
+#ifndef __GFORTRAN__
   use, intrinsic :: ISO_C_Binding, &
   ! C type aliases for pointer derived types:
       C_ptr => C_ptr , &
@@ -444,5 +445,5 @@ contains
       string = C_NULL_ptr
     end if
   end subroutine C_string_free
-
+#endif
 end module C_interface_mod

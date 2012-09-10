@@ -31,7 +31,7 @@
  />  
 
 <carver
-  PNETCDF_PATH="/global/homes/j/jedwards//pnetcdf/carver/intel"
+  PNETCDF_PATH="${PNETCDF_DIR}"
   NETCDF_PATH="${NETCDF_DIR}"
   CXX="icpc"
   CC="icc"
@@ -456,6 +456,28 @@
   PNETCDF_PATH = "${PARALLEL_NETCDF_DIR}"
   LDLIBS="`nc-config --flibs`"
   workdir = "/scratch/scratchdirs/${USER}/testpio.norsend"
+  run = "aprun"
+  corespernode = "24"
+  submit = "qsub "
+  conopts = " --enable-netcdf4 --enable-pnetcdf --enable-timing --enable-filesystem-hints=lustre "
+  preamble="
+#PBS -N testpio_suite
+#PBS -l walltime=01:00:00
+#PBS -q regular
+#PBS -j oe
+#PBS -V"
+/>
+
+<hopper_gnu
+  MPIFC = "ftn "
+  MPICC  = "cc "
+  FC = "ftn"
+  CC     = "cc"
+
+  CPPDEFS = " -DFORTRANUNDERSCORE -D_NO_MPI_RSEND"
+  NETCDF_PATH = "${NETCDF_DIR}"
+  LDLIBS="`nf-config --flibs`"
+  workdir = "/scratch/scratchdirs/${USER}/testpio.gnu"
   run = "aprun"
   corespernode = "24"
   submit = "qsub "
