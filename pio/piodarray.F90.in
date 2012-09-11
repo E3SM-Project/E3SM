@@ -184,9 +184,11 @@ contains
        endif
     case(pio_iotype_binary)
        print *, subName,': IO type not supported'
+#ifdef _COMPRESSION
     case(pio_iotype_vdc2)
 #if ( {ITYPE} == TYPEREAL )
        call write_vdc2_real(File, Vardesc, iodesc, array, iostat)
+#endif
 #endif
     end select
     
@@ -300,9 +302,11 @@ contains
        call read_darray_bin_{TYPE} (File,varDesc,iodesc,array, iostat)
     case(pio_iotype_pnetcdf, pio_iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
        call read_darray_nf_{TYPE} (File,varDesc,iodesc,array, iostat)
+#ifdef _COMPRESSION
     case(pio_iotype_vdc2)
 #if ( {ITYPE} == TYPEREAL )
        call read_vdc2_real(File, Vardesc, iodesc, array, iostat)
+#endif
 #endif
     case(pio_iotype_binary)
        print *, subName,': IO type not supported'
