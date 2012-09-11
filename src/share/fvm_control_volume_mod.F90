@@ -34,6 +34,7 @@ module fvm_control_volume_mod
     sequence
     ! fvm tracer mixing ratio: (kg/kg)
     real (kind=real_kind) :: c(1-nhc:nc+nhc,1-nhc:nc+nhc,nlev,ntrac_d,timelevels) 
+    real (kind=real_kind) :: psc(1-nhc:nc+nhc,1-nhc:nc+nhc)
     real (kind=real_kind) :: cstart(1:nc,1:nc)
 !-----------------------------------------------------------------------------------!
     ! define the arrival grid, which is build on the original HOMME elements

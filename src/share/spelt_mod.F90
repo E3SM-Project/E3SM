@@ -28,6 +28,7 @@ module spelt_mod
     sequence
     ! spelt tracer mixing ratio: (kg/kg)
     real (kind=real_kind)    :: c(1-nipm:nep+nipm,1-nipm:nep+nipm,nlev,ntrac_d,timelevels) 
+    real (kind=real_kind)    :: psc(1-nipm:nep+nipm,1-nipm:nep+nipm)
 !-----------------------------------------------------------------------------------!   
     real (kind=real_kind)    :: vn0(np,np,2,nlev) 
     real (kind=real_kind)    :: contrau(1:nep,1:nep,nlev), contrav(1:nep,1:nep,nlev)
@@ -171,15 +172,15 @@ subroutine spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
           tmp=cip_interpolate(cf(:,:,icell2(i,j),jcell2(i,j)),dref2(i,j)%x,dref2(i,j)%y) 
           tmp=qmsl_cell_filter(icell2(i,j),jcell2(i,j),minmax,tmp)
           slvalair(i,j,3)=(sga/sg2(i,j))*tmp
-          spelt(ie)%c(i,j,k,2,tl%np1)=slvalair(i,j,3)
+          spelt(ie)%c(i,j,k,2,tl%np1)=sga*slvalair(i,j,3)/slvalone(i,j,3)
 
          if (mod(i,2)==1) then                   ! works only for nip=3!!!
-            fluxval(i,j,1) =  dt6 * spelt(ie)%contrau(i,j,k)* (slvalair(i,j,1) + & 
-                   4.0D0 * slvalair(i,j,2) + slvalair(i,j,3) )
+            fluxval(i,j,1) =  dt6 * spelt(ie)%contrau(i,j,k)* sga*(slvalair(i,j,1)/slvalone(i,j,1) + & 
+                   4.0D0 * slvalair(i,j,2)/slvalone(i,j,2) + slvalair(i,j,3)/slvalone(i,j,3) )
           endif
           if (mod(j,2)==1) then            ! works only for nip=3!!!
-            fluxval(i,j,2) =  dt6 * spelt(ie)%contrav(i,j,k)* (slvalair(i,j,1) + & 
-                   4.0D0 * slvalair(i,j,2) + slvalair(i,j,3) )    
+            fluxval(i,j,2) =  dt6 * spelt(ie)%contrav(i,j,k)* sga*(slvalair(i,j,1)/slvalone(i,j,1) + & 
+                   4.0D0 * slvalair(i,j,2)/slvalone(i,j,2) + slvalair(i,j,3)/slvalone(i,j,3) )    
           endif
         end do
       end do 
@@ -665,6 +666,7 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
     stop
   endif
 
+#ifndef MESH
   if(number==elem%vertex%nbrs(1)%n) then  !west
     if ((elem%FaceNum<=4) .or. (face_nodep==elem%FaceNum)) then
       icell=icell-nc
@@ -1022,7 +1024,7 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
       endif
     endif
   end if
-      
+#endif      
   if ((icell<0) .or.(icell>nc+1) .or. (jcell<0) .or. (jcell>nc+1)) then
     write(*,*) '2 Something is wrong in search!'
     write(*,*) number, elem%vertex%nbrs(1)%n, elem%vertex%nbrs(2)%n, elem%vertex%nbrs(3)%n, elem%vertex%nbrs(4)%n, elem%vertex%nbrs(5)%n, elem%vertex%nbrs(6)%n, elem%vertex%nbrs(7)%n, elem%vertex%nbrs(8)%n
