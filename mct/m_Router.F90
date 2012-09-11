@@ -253,6 +253,8 @@
 !           rgs_lb and rgs_ub
 ! 25Jan08 - R. Jacob <jacob@mcs.anl.gov> - Dont die if GSMap is not
 !           increasing.  Instead, permute it to increasing and proceed.
+! 07Sep12 - T. Craig <tcraig@ucar.edu> - Replace a double loop with a single
+!           to improve speed for large proc and segment counts.
 !EOP -------------------------------------------------------------------
 
   character(len=*),parameter :: myname_=myname//'::initp_'
@@ -423,23 +425,19 @@
             nsegs_overlap_arr(nprocs), stat=ier )
   if(ier/=0) call die(myname_,'allocate rgs, nsegs',ier)
 
+! tcraig, updated loop
+  rgs_count = 0                !! number of segments in RGSMap local to proc
 
-  do proc = 1, nprocs
-
-     rgs_count(proc)=0                !! number of segments in RGSMap local to proc
-
-     do i=1,r_ngseg
-       if (RGSMap%pe_loc(i) == (proc-1) ) then
-
-         rgs_count(proc) = rgs_count(proc) +1
-
-         rgs_lb( rgs_count(proc) , proc )=RGSMap%start(i)
-         rgs_ub( rgs_count(proc) , proc )=RGSMap%start(i) + RGSMap%length(i) -1
-
-       endif
-     enddo
-
-  end do
+  do i=1,r_ngseg
+     proc = RGSMap%pe_loc(i) + 1
+!     if (proc < 1 .or. proc > nprocs) then
+!        write(stderr,*) myname_,"proc pe_loc error",i,proc
+!        call die(myname_,'pe_loc error',0)
+!     endif
+     rgs_count(proc) = rgs_count(proc) +1
+     rgs_lb( rgs_count(proc) , proc )=RGSMap%start(i)
+     rgs_ub( rgs_count(proc) , proc )=RGSMap%start(i) + RGSMap%length(i) -1
+  enddo 
 
 !!! 
 !!! this is purely for error checking
