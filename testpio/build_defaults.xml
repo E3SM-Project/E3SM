@@ -31,7 +31,7 @@
  />  
 
 <carver
-  PNETCDF_PATH="${PNETCDF_DIR}"
+  PNETCDF_PATH="/global/homes/j/jedwards/pnetcdf/carver/intel/"
   NETCDF_PATH="${NETCDF_DIR}"
   CXX="icpc"
   CC="icc"
@@ -454,7 +454,7 @@
   CPPDEFS = " -DFORTRANUNDERSCORE -D_NO_MPI_RSEND"
   NETCDF_PATH = "${NETCDF_DIR}"
   PNETCDF_PATH = "${PARALLEL_NETCDF_DIR}"
-  LDLIBS="`nc-config --flibs`"
+  LDLIBS="`nf-config --flibs`"
   workdir = "/scratch/scratchdirs/${USER}/testpio.norsend"
   run = "aprun"
   corespernode = "24"

@@ -224,7 +224,7 @@ sub loadmodules{
 	module(" load p-netcdf/1.2.0");
     }elsif($host =~ "hopper"){
 	require "/opt/modules/default/init/perl";
-	module(" load netcdf-hdf5parallel/4.1.3");      
+	module(" load netcdf-hdf5parallel/4.2.0");      
 	module(" load parallel-netcdf/1.2.0");
         module("list");
     }elsif($host =~ "pleiades"){
@@ -257,12 +257,10 @@ sub loadmodules{
         module("list");
     }elsif($host eq "carver"){
 	require "/usr/common/nsg/opt/Modules/default/init/perl";
-        module("rm pgi");
-	module("rm openmpi");
-	module("load intel");
-	module("load openmpi-intel");
-	module("load netcdf-intel");
-        module("load pnetcdf/1.3.0");
+        module("load intel ");
+	module("load openmpi-intel/1.6");
+	module("load netcdf-intel/4.1.1");
+#        module("load pnetcdf/1.3.0");
         module("list");
     }
 	

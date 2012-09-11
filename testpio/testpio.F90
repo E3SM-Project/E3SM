@@ -4,7 +4,9 @@
 #ifdef BGL
 #define BGx
 #endif
+#ifdef TIMING
 #define MEMCHK
+#endif
 !>
 !! @file testpio.F90
 !! An example of how PIO can be used
