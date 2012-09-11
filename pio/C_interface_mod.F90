@@ -13,7 +13,7 @@
 ! few exceptions.
 ! 
 module C_interface_mod
-#ifndef __GFORTRAN__
+#ifdef _COMPRESSION
   use, intrinsic :: ISO_C_Binding, &
   ! C type aliases for pointer derived types:
       C_ptr => C_ptr , &

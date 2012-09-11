@@ -1251,7 +1251,7 @@ contains
   end subroutine darray_write_complete
     
 
-
+#ifdef _COMPRESSION
 
  subroutine write_vdc2_real(File, Vardesc, iodesc, array, iostat)
     use pio_support, only : piodie
@@ -1302,7 +1302,6 @@ contains
     iotype     = File%iotype
     UseRearranger  = File%iosystem%UseRearranger
 
-#ifdef _COMPRESSION
 #ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
@@ -1354,9 +1353,8 @@ contains
     endif
 
     if(UseRearranger) call dealloc_check(IOBUF)
-#else
-    call piodie(__FILE__,__LINE__,'Compression is not enabled. Cannot write VDC2 file')
-#endif
+
+
 #ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
@@ -1408,7 +1406,7 @@ subroutine read_vdc2_real(File, Vardesc, iodesc, array, iostat)
     double precision    :: timer;
     type(c_ptr) :: cptr
 
-#ifdef _COMPRESSION
+
     ! pull information from file_desc_t data structure
     IOproc     = File%iosystem%IOproc
     iotype     = File%iotype
@@ -1449,12 +1447,10 @@ subroutine read_vdc2_real(File, Vardesc, iodesc, array, iostat)
     endif   ! if(UseRearranger) 
 
     if(UseRearranger) call dealloc_check(IOBUF)
-#else
-    call piodie(__FILE__,__LINE__,'Compression is not enabled. Cannot read VDC2 file')
-#endif
+
 
   end subroutine read_vdc2_real
-
+#endif
 
 
 end module piodarray

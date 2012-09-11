@@ -174,14 +174,14 @@ module nf_mod
 !! \defgroup PIO_copy_att
 !<
   public :: PIO_copy_att
-
+#ifdef _COMPRESSION
   interface
      subroutine defvdfvar(foo) bind(C)
        use, intrinsic :: iso_c_binding
        type(c_ptr), value, intent(in) :: foo
      end subroutine defvdfvar
   end interface
-
+#endif
 contains 
 
 !>
@@ -1397,12 +1397,12 @@ contains
     integer :: iotype, mpierr
     logical, parameter :: Check = .TRUE.
     integer :: msg = PIO_MSG_ENDDEF
-
+#ifdef _COMPRESSION
     interface
        subroutine endvdfdef() bind(C)
        end subroutine endvdfdef
     end interface
-
+#endif
     iotype = File%iotype
 
     ierr=PIO_noerr
@@ -1614,7 +1614,9 @@ contains
 !! @retval ierr @copydoc error_return
 !<
   integer function def_var_md(File,name,type,dimids,vardesc) result(ierr)
+#ifdef _COMPRESSION
     use C_interface_mod, only : F_C_String_dup
+#endif
     type (File_desc_t), intent(in)  :: File
     character(len=*), intent(in)    :: name
     integer, intent(in)             :: type
