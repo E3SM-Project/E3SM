@@ -6,7 +6,7 @@
 #define _DBG_ 
 module prim_driver_mod
   use kinds, only : real_kind, iulog, longdouble_kind
-  use dimensions_mod, only : np, nlev, nelem, nelemd, nelemdmax, GlobalUniqueCols, ntrac, qsize, nc,nhc, nep
+  use dimensions_mod, only : np, nlev, nelem, nelemd, nelemdmax, GlobalUniqueCols, ntrac, qsize, nc,nhc, nep, nipm
   use cg_mod, only : cg_t
   use hybrid_mod, only : hybrid_t
   use quadrature_mod, only : quadrature_t, test_gauss, test_gausslobatto, gausslobatto
@@ -921,6 +921,14 @@ contains
         enddo
       enddo
       call spelt_init3(elem,fvm,hybrid,nets,nete,tl%n0)
+      do ie=nets,nete 
+   	    do i=1-nipm,nep+nipm
+   	      do j=1-nipm,nep+nipm  
+   	        fvm(ie)%psc(i,j) = fvm(ie)%sga(i,j)*(sum(fvm(ie)%c(i,j,:,2,tl%n0)/fvm(ie)%sga(i,j)) +  hvcoord%hyai(1)*hvcoord%ps0)
+   	      enddo
+   	    enddo
+      enddo
+      
       if (hybrid%masterthread) then
          write(iulog,*) 'FVM (Spelt) tracers (incl. in halo zone) initialized. FIRST tracer has air density!'
       end if
@@ -941,8 +949,15 @@ contains
         enddo
       enddo
       call fvm_init3(elem,fvm,hybrid,nets,nete,tl%n0)
+      do ie=nets,nete 
+   	    do i=1-nhc,nc+nhc
+   	      do j=1-nhc,nc+nhc  
+   	        fvm(ie)%psc(i,j) = sum(fvm(ie)%c(i,j,:,1,tl%n0)) +  hvcoord%hyai(1)*hvcoord%ps0
+   	      enddo
+   	    enddo
+      enddo
       if (hybrid%masterthread) then
-         write(iulog,*) 'FVM tracers (incl. in halo zone) initialized. FIRST tracer has air density!'
+         write(iulog,*) 'FVM tracers (incl. in halo zone) initialized. FIRST tracer has air density!'	       
       end if
 #endif      
     endif  
@@ -1376,9 +1391,25 @@ contains
 #if defined(_SPELT) 
       call Prim_Advec_Tracers_spelt(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&
            dt_q,tl,nets,nete,compute_diagnostics)
+       do ie=nets,nete 
+    	    do i=1-nipm,nep+nipm
+    	      do j=1-nipm,nep+nipm  
+    	        fvm(ie)%psc(i,j) = fvm(ie)%sga(i,j)*(sum(fvm(ie)%c(i,j,:,2,tl%np1)/fvm(ie)%sga(i,j)) +  hvcoord%hyai(1)*hvcoord%ps0)
+    	      enddo
+    	    enddo
+       enddo
 #else      
       call Prim_Advec_Tracers_fvm(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&
            dt_q,tl,nets,nete,compute_diagnostics)
+       do ie=nets,nete 
+         do i=1-nhc,nc+nhc
+           do j=1-nhc,nc+nhc  
+             fvm(ie)%psc(i,j) = sum(fvm(ie)%c(i,j,:,1,tl%np1)) +  hvcoord%hyai(1)*hvcoord%ps0
+           enddo
+         enddo
+       enddo
+
+
 
        if(test_cfldep) then
          maxcflx=0.0D0
@@ -1451,6 +1482,7 @@ contains
     ! update dynamics time level pointers 
     ! =================================
     call TimeLevel_update(tl,"leapfrog")
+    
 
     ! now we have:
     !   u(nm1)   dynamics at  t+dt_q - dt       (Robert-filtered)
