@@ -13,30 +13,38 @@
 #  used to check stability of m-stage RK schemes
 #
 set wdir = ~/scratch1/sweqx
-set src = ~/codes/homme/build.Linux
+set src = ~/codes/homme/build/sweqx
 set input = ~/codes/homme/test/sw_conservative
 set NCPU = 2
 
-if ( ${?SNLSYSTEM} ) then
-if ( $SNLSYSTEM == rose | $SNLSYSTEM == thunderbird ) then
-   if ( ${?PBS_NODEFILE} ) then
-      set NCPU = `wc $PBS_NODEFILE | awk '{print $1}' - `
-   endif
+if ( ${?PBS_NODEFILE} ) then
+   set NCPU = `wc $PBS_NODEFILE | awk '{print $1}' - `
 endif
+if ( ${?SLURM_NNODES} ) then
+   # SLURM_NNODES  = number of nodes
+   # hard to tell how many cores per nodes
+   # set NCPU to zero, and mpirun will use the max allowed
+   set NCPU = 0
 endif
 echo NCPU = $NCPU
 
-
 set test_case = swtc2
-set params = $input/Params4-1.inc    # 1 level
 
+#configure the model
+cd $src
+set configure = 0
+if ( $configure ) then
+  cd $src
+  ./configure --with-netcdf=$NETCDF_PATH --with-pnetcdf=$PNETCDF_PATH NP=4 PLEV=1
+  if ($status ) exit
 
-diff  $params  $src/../Params.inc
-if ($status != 0) then
-   echo "replacing Params.inc"
-   cp $params $src/../Params.inc
+  gmake clean
+  gmake -j4 depends
+  if ($status ) exit
 endif
 
+gmake -j2 sweqx
+if ($status ) exit
 
 
 cd $src
@@ -53,40 +61,23 @@ set nu = 0
 set nu_s = 0
 set LFTfreq = 0
 
-#ne=4 dt=600  
-
-#set NE = 48
-#set nu = 2e14
-set NE = 120
-set nu = 0
-#set nu = 1e15      # needs dt < 150s
-#set nu = 1.5e15   
-#set nu = 2e15      # needs dt < 75s
-#set nu = 3e15      # needs dt < 50s
-#set nu = 5e15      # needs dt < 25s
 set hypervis_subcycle =  1
-
-
 set integration = explicit
-#set smooth = .05
-set smooth = 0 ; set LFTfreq = 1
-#set tstep = 600
-#set tstep = 300    # stable with nu=1e15
-#set tstep = 180    # stable with nu=1e15
-#set tstep = 90    # stable with nu=1e15
-#set tstep = 45
-set tstep = 20
-#set tstep = 125
-#set tstep = 70    # stable with nu=0
 
+set NE = 20
+#set nu = 5.1e15
+set tstep = 144
+
+### leapfrog
+#set smooth = 0.05 ; set LFTfreq = 0
+
+### leapfrog-trapazoidal 
+set smooth = 0 ; set LFTfreq = 1
+
+### RK (note: needs viscosity to be stable)
 #set integration = runge_kutta
 #set rk_stage = 2
 #set tstep = 75
-
-#set rk_stage = 3   
-#set tstep = 30
-
-
 
 set filter_freq = 0
 set name = ${test_case}-NE${NE}-t${tstep}
@@ -109,10 +100,10 @@ sed s/nu_s=.\*/"nu_s= $nu_s"/  |\
 sed s/filter_freq.\*/"filter_freq = $filter_freq"/  |\
 sed s/hypervis_subcycle.\*/"hypervis_subcycle = $hypervis_subcycle"/  |\
 sed s/statefreq.\*/"statefreq = $sfreq"/  \
-> swtc2.nl
+> input.nl
 
 date
-mpirun -np $NCPU $src/sweqx < swtc2.nl | tee  sweq.out
+mpirun -np $NCPU $src/sweqx < input.nl | tee  sweq.out
 date
 
 mv -f sweq.mass $name.mass

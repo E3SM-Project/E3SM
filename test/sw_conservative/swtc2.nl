@@ -23,6 +23,7 @@ integration   = "runge_kutta"
 rk_stage_user = 4
 LFTfreq       = 0
 smooth        = 0.05
+limiter_option = 0
 nu=            7.0e5
 nu_s=          0
 hypervis_order= 2
@@ -44,8 +45,6 @@ wght_fm       = 0.10D0
 kcut_fm       = 2
 /
 &analysis_nl
-nlat=64
-nlon=128
 !=======================================================!
 !  currently up to 5 streams are allowed		!
 !  output_stream_count=1				!
@@ -78,6 +77,11 @@ alpha_dg = 0.0D0
 /
 
 
+! this will be used by homme only if namelist file is 'input.nl'
+&prof_inparm
+profile_single_file = .true.
+profile_outpe_num = 60
+/
 
 
 
