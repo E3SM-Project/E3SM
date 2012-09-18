@@ -1,6 +1,62 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_5_3
+Originator(s): Jim Edwards
+Date: 9-12-2012
+One-line Summary: move testlib to test directory make sure f95 compatible when 
+	_COMPRESSION is not defined.  Clean up pionfput_mod.F90.in
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+       testpio/testpio.F90
+       testpio/testpio_run.pl
+       testpio/build_defaults.xml
+       testpio/namelists/testpio_in.vdc01
+       testpio/test_lib.F90
+       testpio/gdecomp_mod.F90
+       testpio/Utils.pm
+       pio/pionfwrite_mod.F90.in
+       pio/C_interface_mod.F90
+       pio/calcdisplace_mod.F90
+       pio/pionfput_mod.F90.in
+       pio/pio_types.F90
+       pio/box_rearrange.F90.in
+       pio/pio_support.F90
+       pio/pionfatt_mod.F90
+       pio/pio_spmd_utils.F90
+       pio/piodarray.F90.in
+       pio/nf_mod.F90
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+
+
+Code reviewed by: Jim
+
+Summary of pre-tag testing: tested with several cesm1_1_alpha18a tests
+
+  Regression tests:
+                   bluefire 114 tests PASS, 0 tests FAIL
+	           carver 81 tests PASS, 0 tests FAIL (intel)
+                   hopper 80 tests PASS, 0 tests FAIL (pgi)
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_5_2
 Originator(s): Jim
 Date: 7-21-2012
