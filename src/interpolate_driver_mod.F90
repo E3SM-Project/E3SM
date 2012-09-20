@@ -678,9 +678,9 @@ contains
                          end do
                       end do
                       offset = offset+elem(ie)%idxP%NumUniquePts
-                      elem(ie)%state%Q(:,:,:,1,1) = 0.0d0
-                      call putUniquePoints(elem(ie)%idxP, lev, ftmp, elem(ie)%state%Q(:,:,1:lev,1,1))
-                      call edgevpack(edge, elem(ie)%state%Q(:,:,1:lev,1,1),lev,0,elem(ie)%desc)
+                      elem(ie)%state%Q(:,:,:,1) = 0.0d0
+                      call putUniquePoints(elem(ie)%idxP, lev, ftmp, elem(ie)%state%Q(:,:,1:lev,1))
+                      call edgevpack(edge, elem(ie)%state%Q(:,:,1:lev,1),lev,0,elem(ie)%desc)
                       deallocate(ftmp)
                    end do
 
@@ -691,9 +691,9 @@ contains
                    array=0
                    do ie=1,nelemd
                       en=st+interpdata(ie)%n_interp-1
-                      call edgeVunpack(edge, elem(ie)%state%Q(:,:,1:lev,1,1),lev,0,elem(ie)%desc)
+                      call edgeVunpack(edge, elem(ie)%state%Q(:,:,1:lev,1),lev,0,elem(ie)%desc)
                       
-                      call interpolate_scalar(interpdata(ie), elem(ie)%state%Q(:,:,1:lev,1,1), &
+                      call interpolate_scalar(interpdata(ie), elem(ie)%state%Q(:,:,1:lev,1), &
                            np, lev, array(st:en,:))
 
                       st=st+interpdata(ie)%n_interp

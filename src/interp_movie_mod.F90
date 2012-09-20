@@ -883,7 +883,7 @@ contains
                    st=1
                    do ie=nets,nete
                       en=st+interpdata(ie)%n_interp-1
-                      call interpolate_scalar(interpdata(ie), elem(ie)%state%Q(:,:,:,qindex,n0), &
+                      call interpolate_scalar(interpdata(ie), elem(ie)%state%Q(:,:,:,qindex), &
                            np, nlev, datall(st:en,:))
                       st=st+interpdata(ie)%n_interp
                    enddo

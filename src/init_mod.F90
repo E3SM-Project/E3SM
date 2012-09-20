@@ -86,7 +86,8 @@ contains
 
     implicit none
 #ifdef _MPI
-#include <mpif.h> ! _EXTERNAL
+! _EXTERNAL
+#include <mpif.h> 
 #endif
 !   G95  "pointer attribute conflicts with INTENT attribute":  
 !    type (element_t), intent(inout), pointer :: elem(:)

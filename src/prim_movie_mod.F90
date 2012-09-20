@@ -733,7 +733,7 @@ contains
                    st=1
                    do ie=1,nelemd
                       en=st+elem(ie)%idxp%NumUniquePts-1
-                      call UniquePoints(elem(ie)%idxP,nlev,elem(ie)%state%Q(:,:,:,qindex,tl%n0), var3d(st:en,:))
+                      call UniquePoints(elem(ie)%idxP,nlev,elem(ie)%state%Q(:,:,:,qindex), var3d(st:en,:))
                       st=en+1
                    end do
                    call nf_put_var(ncdf(ios),var3d,start, count, name=vname)

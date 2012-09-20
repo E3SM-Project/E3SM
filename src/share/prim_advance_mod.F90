@@ -61,7 +61,7 @@ contains
 
 
   subroutine prim_advance_exp(elem, deriv, hvcoord, Flt, hybrid,&
-       dt, tl,  nets, nete, compute_diagnostics,n_Q)
+       dt, tl,  nets, nete, compute_diagnostics)
     use bndry_mod, only : bndry_exchangev
     use control_mod, only : hypervis_order, prescribed_wind, qsplit, compute_mean_flux, tstep_type, nu_p
     use derivative_mod, only : derivative_t, vorticity, divergence, gradient, gradient_wk
@@ -92,7 +92,6 @@ contains
     type (TimeLevel_t)   , intent(in) :: tl
     integer              , intent(in) :: nets
     integer              , intent(in) :: nete
-    integer              , intent(in) :: n_Q    ! use Q at this timelevel
     logical, intent(in)               :: compute_diagnostics
 
     ! =================
@@ -194,20 +193,25 @@ contains
     ! ==================================
     if (method==0) then ! RK2
        ! forward euler to u(dt/2) = u(0) + (dt/2) RHS(0)  (store in u(np1))
+
        call compute_and_apply_rhs(np1,n0,n0,dt/2,elem,hvcoord,hybrid,&
-            deriv,nets,nete,compute_diagnostics,n_Q,0d0)
+            deriv,nets,nete,compute_diagnostics,0d0)
 
        ! leapfrog:  u(dt) = u(0) + dt RHS(dt/2)     (store in u(np1))
        call compute_and_apply_rhs(np1,n0,np1,dt,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,n_Q,eta_ave_w)
+            deriv,nets,nete,.false.,eta_ave_w)
 
        dt_vis = dt                      
     endif
     if (method==1) then
+
+
        ! regular LF step
        call compute_and_apply_rhs(np1,nm1,n0,dt2,elem,hvcoord,hybrid,&
-            deriv,nets,nete,compute_diagnostics,n_Q,eta_ave_w)
+            deriv,nets,nete,compute_diagnostics,eta_ave_w)
        dt_vis = dt2  ! dt to use for time-split dissipation
+
+
     endif
  
 
@@ -1137,33 +1141,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      elem(ie)%state%v(:,:,:,:,n0) = elem(ie)%state%v(:,:,:,:,n0) + smooth*(elem(ie)%state%v(:,:,:,:,nm1) &
           - 2.0D0*elem(ie)%state%v(:,:,:,:,n0) + elem(ie)%state%v(:,:,:,:,np1))
      
-     ! only apply Robert filter if running leapfrog for tracers
-     if (tstep_type==0) then
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(q,k,i,j,dp)
-#endif
-        do q=1,qsize
-           if (tracer_advection_formulation==TRACERADV_TOTAL_DIVERGENCE) then
-              elem(ie)%state%Qdp(:,:,:,q,n0) = elem(ie)%state%Qdp(:,:,:,q,n0) + &
-                   smooth*(elem(ie)%state%Qdp(:,:,:,q,nm1) &
-                   - 2.0D0*elem(ie)%state%Qdp(:,:,:,q,n0)   + elem(ie)%state%Qdp(:,:,:,q,np1))
-              ! Qdp(n0) and ps_v(n0) were filtered -update Q(n)
-              do k=1,nlev
-                 do j=1,np
-                    do i=1,np
-                       dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                            ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,n0)
-                       elem(ie)%state%Q(i,j,k,q,n0) = elem(ie)%state%Qdp(i,j,k,q,n0)/dp
-                    enddo
-                 enddo
-              enddo
-           else
-              elem(ie)%state%Q(:,:,:,q,n0) = elem(ie)%state%Q(:,:,:,q,n0) + &
-                   smooth*(elem(ie)%state%Q(:,:,:,q,nm1) &
-                   - 2.0D0*elem(ie)%state%Q(:,:,:,q,n0)   + elem(ie)%state%Q(:,:,:,q,np1))
-           endif
-        enddo
-     endif
+     ! no longer running leapfrog for tracers
+
   end do
   call t_stopf('preq_robert')
   
@@ -1172,7 +1151,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   
 
 
-  subroutine applyCAMforcing_leapfrog(elem,hvcoord,n0,np1,dt,nets,nete)
+  subroutine applyCAMforcing_leapfrog(elem,hvcoord,n0,np1,np1_qdp, dt,nets,nete)
   use dimensions_mod, only : np, nlev, qsize
   use element_mod, only : element_t
   use hybvcoord_mod, only : hvcoord_t
@@ -1184,7 +1163,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   type (element_t)     , intent(inout) :: elem(:)
   real (kind=real_kind), intent(in) :: dt
   type (hvcoord_t), intent(in)      :: hvcoord
-  integer,  intent(in) :: n0,np1,nets,nete
+  integer,  intent(in) :: n0,np1,nets,nete, np1_qdp
   
   ! local
   integer :: i,j,k,ie,q
@@ -1210,14 +1189,21 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               do j=1,np	
                  do i=1,np
                     v1 = dt_q*elem(ie)%derived%FQ(i,j,k,q,1)
-                    if (elem(ie)%state%Qdp(i,j,k,q,np1) + v1 < 0 .and. v1<0) then
-                       if (elem(ie)%state%Qdp(i,j,k,q,np1) < 0 ) then
+                    !if (elem(ie)%state%Qdp(i,j,k,q,np1) + v1 < 0 .and. v1<0) then
+                    if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
+                       !if (elem(ie)%state%Qdp(i,j,k,q,np1) < 0 ) then
+                       if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
+
                           v1=0  ! Q already negative, dont make it more so
                        else
-                          v1 = -elem(ie)%state%Qdp(i,j,k,q,np1)
+                          !v1 = -elem(ie)%state%Qdp(i,j,k,q,np1)
+                          v1 = -elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
+
                        endif
                     endif
-                    elem(ie)%state%Qdp(i,j,k,q,np1) = elem(ie)%state%Qdp(i,j,k,q,np1)+v1
+                    elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)+v1
+                    !elem(ie)%state%Qdp(i,j,k,q,np1) = elem(ie)%state%Qdp(i,j,k,q,np1)+v1
+
                     if (q==1) then
                        elem(ie)%derived%FQps(i,j,np1)=elem(ie)%derived%FQps(i,j,np1)+v1/dt_q
                     endif
@@ -1242,7 +1228,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                  do i=1,np
                     dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,np1)
-                    elem(ie)%state%Q(i,j,k,q,np1) = elem(ie)%state%Qdp(i,j,k,q,np1)/dp
+                    elem(ie)%state%Q(i,j,k,q) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)/dp
                  enddo
               enddo
            enddo
@@ -1253,8 +1239,10 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 !$omp parallel do private(q)
 #endif
        do q=1,qsize !! Loop index added (AAM)
-        elem(ie)%state%Q(:,:,:,q,np1) = elem(ie)%state%Q(:,:,:,q,np1)+&
+        elem(ie)%state%Q(:,:,:,q) = elem(ie)%state%Q(:,:,:,q)+&
              dt_q*elem(ie)%derived%FQ(:,:,:,q,1)
+
+
        enddo
      endif
      
@@ -1267,7 +1255,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
 
-  subroutine applyCAMforcing(elem,hvcoord,np1,dt_q,nets,nete)
+  subroutine applyCAMforcing(elem,hvcoord,np1,np1_qdp,dt_q,nets,nete)
   use dimensions_mod, only : np, nlev, qsize
   use element_mod, only : element_t
   use hybvcoord_mod, only : hvcoord_t
@@ -1279,7 +1267,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   type (element_t)     , intent(inout) :: elem(:)
   real (kind=real_kind), intent(in) :: dt_q
   type (hvcoord_t), intent(in)      :: hvcoord
-  integer,  intent(in) :: np1,nets,nete
+  integer,  intent(in) :: np1,nets,nete,np1_qdp
   
   ! local
   integer :: i,j,k,ie,q
@@ -1299,14 +1287,18 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            do j=1,np	
               do i=1,np
                  v1 = dt_q*elem(ie)%derived%FQ(i,j,k,q,1)
-                 if (elem(ie)%state%Qdp(i,j,k,q,np1) + v1 < 0 .and. v1<0) then
-                    if (elem(ie)%state%Qdp(i,j,k,q,np1) < 0 ) then
+                 !if (elem(ie)%state%Qdp(i,j,k,q,np1) + v1 < 0 .and. v1<0) then
+                 if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
+                    !if (elem(ie)%state%Qdp(i,j,k,q,np1) < 0 ) then
+                    if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
                        v1=0  ! Q already negative, dont make it more so
                     else
-                       v1 = -elem(ie)%state%Qdp(i,j,k,q,np1)
+                       !v1 = -elem(ie)%state%Qdp(i,j,k,q,np1)
+                       v1 = -elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
                     endif
                  endif
-                 elem(ie)%state%Qdp(i,j,k,q,np1) = elem(ie)%state%Qdp(i,j,k,q,np1)+v1
+                 !elem(ie)%state%Qdp(i,j,k,q,np1) = elem(ie)%state%Qdp(i,j,k,q,np1)+v1
+                 elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)+v1
                  if (q==1) then
                     elem(ie)%derived%FQps(i,j,1)=elem(ie)%derived%FQps(i,j,1)+v1/dt_q
                  endif
@@ -1334,7 +1326,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               do i=1,np
                  dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                       ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,np1)
-                 elem(ie)%state%Q(i,j,k,q,np1) = elem(ie)%state%Qdp(i,j,k,q,np1)/dp
+                 elem(ie)%state%Q(i,j,k,q) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)/dp
               enddo
            enddo
         enddo
@@ -1979,12 +1971,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   end subroutine advance_hypervis_lf
   
 
-  
-  
-
-
   subroutine compute_and_apply_rhs(np1,nm1,n0,dt2,elem,hvcoord,hybrid,&
-       deriv,nets,nete,compute_diagnostics,n_Q,eta_ave_w)
+       deriv,nets,nete,compute_diagnostics,eta_ave_w)
   ! ===================================
   ! compute the RHS, accumulate into u(np1) and apply DSS
   !
@@ -2006,7 +1994,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   ! note: for prescribed velocity case, velocity will be computed at
   ! "real_time", which should be the time of timelevel n0.  
   !
-  ! note: Q(timelevel=n_Q) is used to compute Tv
   !
   ! ===================================
   use kinds, only : real_kind
@@ -2025,7 +2012,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
   implicit none
-  integer :: np1,nm1,n0,nets,nete,n_Q
+  integer :: np1,nm1,n0,nets,nete
   real*8 :: dt2
   logical  :: compute_diagnostics
 
@@ -2155,7 +2142,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         do k=1,nlev
            do j=1,np
               do i=1,np
-                 Qt = elem(ie)%state%Q(i,j,k,1,n_Q) 
+                 Qt = elem(ie)%state%Q(i,j,k,1) 
                  T_v(i,j,k) = Virtual_Temperature(elem(ie)%state%T(i,j,k,n0),Qt)
                  if (use_cpstar==1) then
                     kappa_star(i,j,k) =  Rgas/Virtual_Specific_Heat(Qt)
@@ -2411,7 +2398,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                  ! IEvert2_wet():  (Cpv-Cp) Qdp T_vadv   T equation
                  if (use_cpstar==1) then
                  elem(ie)%accum%IEvert2_wet(i,j)=elem(ie)%accum%IEvert2_wet(i,j) +&
-                      (Cpwater_vapor-Cp)*elem(ie)%state%Q(i,j,k,1,n_Q)*T_vadv(i,j,k)*dp(i,j,k)
+                      (Cpwater_vapor-Cp)*elem(ie)%state%Q(i,j,k,1)*T_vadv(i,j,k)*dp(i,j,k)
                  endif
 
                  gpterm = hvcoord%hybm(k)*T_v(i,j,k)/p(i,j,k)
@@ -2427,7 +2414,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                  
                  ! cp_star = cp + cp2
                  if (use_cpstar==1) then
-                 cp2 = (Cpwater_vapor-Cp)*elem(ie)%state%Q(i,j,k,1,n_Q)
+                 cp2 = (Cpwater_vapor-Cp)*elem(ie)%state%Q(i,j,k,1)
                  cp_ratio = cp2/(cp+cp2)
                  elem(ie)%accum%S1_wet(i,j) = elem(ie)%accum%S1_wet(i,j) + &
                       cp_ratio*(Rgas*T_v(i,j,k)*omega_p(i,j,k)*dp(i,j,k))
@@ -2459,7 +2446,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                  
                  if (use_cpstar==1) then
                  elem(ie)%accum%IEhorz2_wet(i,j) = elem(ie)%accum%IEhorz2_wet(i,j) + &
-                      (Cpwater_vapor-Cp)*elem(ie)%state%Q(i,j,k,1,n_Q)*&
+                      (Cpwater_vapor-Cp)*elem(ie)%state%Q(i,j,k,1)*&
                       (v1*vtemp(i,j,1) + v2*vtemp(i,j,2))*dp(i,j,k)
                  endif
                  
@@ -2788,11 +2775,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 #endif
   enddo
   end subroutine smooth_phis
-
-
-
-
-
 
 
 

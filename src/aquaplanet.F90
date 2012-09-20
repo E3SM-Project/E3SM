@@ -510,7 +510,9 @@ contains
 
              ! elem(ie)%state%T(:,:,k,:)   =tme(k)
              !  elem(ie)%state%Q(:,:,1,k)   =(1.0D0+ff(:,:)*1.0D-2)*qve(k)
-             elem(ie)%state%Q(:,:,k,1,:)  = qve(k) 
+             !elem(ie)%state%Q(:,:,k,1,:)  = qve(k) 
+             elem(ie)%state%Q(:,:,k,1)  = qve(k) !Q has one level
+
              zearth=rearth+zfull(k)
              uu0=u0*zearth*rearthi
              uur=u0*rearthi
@@ -549,7 +551,8 @@ contains
           elem(ie)%state%lnps(:,:,:) = LOG(p0)
           elem(ie)%state%phis(:,:)   = 0.0D0
           do k=1,nlev
-             elem(ie)%state%Q(:,:,k,1,:)   =qve(k)
+             !elem(ie)%state%Q(:,:,k,1,:)   =qve(k)
+             elem(ie)%state%Q(:,:,k,1)   =qve(k)
              elem(ie)%state%T(:,:,k,:)   =tme(k)
           end do
        end do
@@ -583,7 +586,7 @@ contains
                    else
                       fxy = 0.0
                    end if
-                   elem(ie)%state%Q(i,j,k,1,:)=(1.0+ampl*fxy)*elem(ie)%state%Q(i,j,k,1,:)
+                   elem(ie)%state%Q(i,j,k,1)=(1.0+ampl*fxy)*elem(ie)%state%Q(i,j,k,1)
 
                    !                     if(k.eq.nlev .and. elem(ie)%spherep(i,j)%lat<(-0.21).and. &
                    !                          elem(ie)%spherep(i,j)%lat>(-0.22) .and. &
@@ -703,7 +706,7 @@ contains
 
           zfull(i,j,:)=zhydrostatic(pfull(i,j,:), &
                elemin%state%T(i,j,:,nm1),&
-               elemin%state%Q(i,j,:,1,nm1)*1.D3, &
+               elemin%state%Q(i,j,:,1)*1.D3, &
                p_srf, &
                tsrf,&
                qsrf*1.D3, &
@@ -740,7 +743,7 @@ contains
           t_srf = Potential_Temperature( &
                elemin%state%T(i,j,nlevels,nm1), &
                p_srf,0.0D0)
-          q_srf=elemin%state%Q(i,j,nlevels,1,nm1)
+          q_srf=elemin%state%Q(i,j,nlevels,1)
 
           !             Wd=pelem(ie)%surfc%Wd(i,j)      ! Incorporate coupling 
           !             Tp=pelem(ie)%surfc%Tprime(i,j)  ! parameters from column

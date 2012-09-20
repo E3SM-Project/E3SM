@@ -194,8 +194,9 @@ enddo
 if (qsize>=1) then
    idex=1
    do ie=nets,nete
-      do tl=1,3
-         elem(ie)%state%Q(:,:,:,idex,tl) = elem(ie)%state%T(:,:,:,tl)/400
+      !do tl=1,3
+      do tl=1,1
+         elem(ie)%state%Q(:,:,:,idex) = elem(ie)%state%T(:,:,:,tl)/400
       enddo
    enddo
 endif
@@ -208,12 +209,13 @@ if (qsize>=2) then
    allocate(var3d(np,np,nlev,nets:nete))
    call compute_zeta_C0(var3d,elem,hybrid,nets,nete,1)
    do ie=nets,nete
-      do tl=1,3
+      !do tl=1,3
+      do tl=1,1
          do k=1,nlev
          do j=1,np
          do i=1,np
-            elem(ie)%state%Q(i,j,k,idex,tl) = var3d(i,j,k,ie)/2e-5
-            if (var3d(i,j,k,ie)<0) elem(ie)%state%Q(i,j,k,idex,tl)=0
+            elem(ie)%state%Q(i,j,k,idex) = var3d(i,j,k,ie)/2e-5
+            if (var3d(i,j,k,ie)<0) elem(ie)%state%Q(i,j,k,idex)=0
          enddo
          enddo
          enddo
@@ -228,7 +230,7 @@ endif
 if (qsize>=2) then
    idex=3
    do ie=nets,nete
-            elem(ie)%state%Q(:,:,:,idex,:) = 1.0d0
+            elem(ie)%state%Q(:,:,:,idex) = 1.0d0
    enddo
 endif
 !=======================================================================================================!

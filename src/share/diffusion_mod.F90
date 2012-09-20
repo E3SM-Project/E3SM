@@ -291,6 +291,8 @@ contains
 
   end subroutine prim_diffusion
 
+  !only called by prim_advect_scalars_lf (no longer supported) 
+  ! so the Q part is not up to date for this
   subroutine scalar_diffusion(elem, nets,nete,np1,deriv,dt2,hybrid)
     use hybrid_mod, only : hybrid_t
     use physical_constants, only : rrearth
@@ -345,7 +347,7 @@ contains
 #endif
           do k=1,nlev   
              
-             grad_tmp(:,:,:) = gradient(elem(ie)%state%Q(:,:,k,q,np1),deriv)*rrearth
+             grad_tmp(:,:,:) = gradient(elem(ie)%state%Q(:,:,k,q),deriv)*rrearth
 
              do j=1,np
                 do i=1,np
@@ -445,7 +447,7 @@ contains
              do j=1,np
                 do i=1,np
                    lap_Q_np1(i,j,k,q,ie)   = rmp(i,j)*lap_Q_np1(i,j,k,q,ie)
-                   elem(ie)%state%Q(i,j,k,q,np1)   = elem(ie)%state%Q(i,j,k,q,np1)   + nu_s*dt2*lap_Q_np1(i,j,k,q,ie)
+                   elem(ie)%state%Q(i,j,k,q)   = elem(ie)%state%Q(i,j,k,q)   + nu_s*dt2*lap_Q_np1(i,j,k,q,ie)
                 end do
              end do
 

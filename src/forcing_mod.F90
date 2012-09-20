@@ -84,7 +84,7 @@ contains
           do k=1,nlev
              do j=1,np
                 do i=1,np
-                   elemin%state%Q(i,j,k,m,np1_d) = elemin%state%Q(i,j,k,m,nm1_d) + dt2_q*elemin%derived%FQ(i,j,k,m,nm1_p)
+                   elemin%state%Q(i,j,k,m) = elemin%state%Q(i,j,k,m) + dt2_q*elemin%derived%FQ(i,j,k,m,nm1_p)
                 end do
              end do
           end do
@@ -101,7 +101,7 @@ contains
           enddo
        enddo
        do m=1,qsize
-          elemin%state%Q(:,:,:,m,np1_d) = elemin%state%Q(:,:,:,m,np1_d)&
+          elemin%state%Q(:,:,:,m) = elemin%state%Q(:,:,:,m)&
                + dt2_q*elemin%derived%FQ(:,:,:,m,nm1_p) 
        end do
 
@@ -117,7 +117,7 @@ contains
        do i=1,np
           dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elemin%state%ps_v(i,j,np1_d)
-          elemin%state%Qdp(i,j,k,q,np1_d) = elemin%state%Q(i,j,k,q,np1_d)*dp
+          elemin%state%Qdp(i,j,k,q,np1_d) = elemin%state%Q(i,j,k,q)*dp
        enddo
        enddo
        enddo

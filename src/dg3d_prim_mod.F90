@@ -126,7 +126,7 @@
                elem(ie)%state%pr3d_ref(:,:,:)= elem(ie)%state%pr3d(:,:,:)  
                ! Set initial value for Q based on qt3d
                ! I need to pass qt3d by lagrangian_surfvars later
-               elem(ie)%state%Q(:,:,:,n0) = elem(ie)%state%qt3d(:,:,:)
+               elem(ie)%state%Q(:,:,:) = elem(ie)%state%qt3d(:,:,:)
                do k=1,nlev    
                   elem(ie)%state%uv(:,:,:,k)  = contra2sphere(elem(ie)%state%v(:,:,:,k,n0),elem(ie)%D(:,:,:,:))
                   elem(ie)%state%uv0(:,:,:,k) = elem(ie)%state%uv(:,:,:,k)
@@ -688,7 +688,7 @@
          elem(ie)%state%T(:,:,:,n0) = pt2temp(elem(ie)%state%pr3d,elem(ie)%state%pt3d)
          ! The moist is just the qt3d field which may be converted later to Q by something else.
          ! if not, this is just a waste of memory.
-         elem(ie)%state%Q(:,:,:,n0) = elem(ie)%state%qt3d(:,:,:)
+         elem(ie)%state%Q(:,:,:) = elem(ie)%state%qt3d(:,:,:)
       end do
 
     end subroutine dg3d_uv_ssprk3  
@@ -1136,7 +1136,7 @@
          elem(ie)%state%T(:,:,:,n0) = pt2temp(elem(ie)%state%pr3d,elem(ie)%state%pt3d)
          ! The moist is just the qt3d field which may be converted later to Q by something else.
          ! if not, this is just a waste of memory.
-         elem(ie)%state%Q(:,:,:,n0) = elem(ie)%state%qt3d(:,:,:)
+         elem(ie)%state%Q(:,:,:) = elem(ie)%state%qt3d(:,:,:)
       end do
 
     end subroutine dg3d_uv_ssprk2
@@ -1616,7 +1616,7 @@
          elem(ie)%state%T(:,:,:,n0) = pt2temp(elem(ie)%state%pr3d,elem(ie)%state%pt3d)
          ! The moist is just the qt3d field which may be converted later to Q by something else.
          ! if not, this is just a waste of memory.
-         elem(ie)%state%Q(:,:,:,n0) = elem(ie)%state%qt3d(:,:,:)
+         elem(ie)%state%Q(:,:,:) = elem(ie)%state%qt3d(:,:,:)
       end do
 
     end subroutine dg3d_ssprk2

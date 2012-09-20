@@ -1073,7 +1073,7 @@ if (qsize>=1) then
          lon = elem(ie)%spherep(i,j)%lon
          lat = elem(ie)%spherep(i,j)%lat
          do k=1,nlev
-            elem(ie)%state%Q(i,j,k,idex,:) = tracer_q1_q2(lon,lat,hvcoord%etam(k),rotate_grid, eta_c)
+            elem(ie)%state%Q(i,j,k,idex) = tracer_q1_q2(lon,lat,hvcoord%etam(k),rotate_grid, eta_c)
          enddo
       enddo
       enddo
@@ -1089,7 +1089,7 @@ if (qsize>=2) then
          lon = elem(ie)%spherep(i,j)%lon
          lat = elem(ie)%spherep(i,j)%lat
          do k=1,nlev
-            elem(ie)%state%Q(i,j,k,idex,:) = tracer_q1_q2(lon,lat,hvcoord%etam(k),rotate_grid, eta_c)
+            elem(ie)%state%Q(i,j,k,idex) = tracer_q1_q2(lon,lat,hvcoord%etam(k),rotate_grid, eta_c)
          enddo
       enddo
       enddo
@@ -1104,7 +1104,7 @@ if (qsize>=3) then
          lon = elem(ie)%spherep(i,j)%lon
          lat = elem(ie)%spherep(i,j)%lat
          do k=1,nlev
-            elem(ie)%state%Q(i,j,k,idex,:) = tracer_q3(lon,lat,hvcoord%etam(k),rotate_grid)
+            elem(ie)%state%Q(i,j,k,idex) = tracer_q3(lon,lat,hvcoord%etam(k),rotate_grid)
          enddo
       enddo
       enddo
@@ -1114,7 +1114,7 @@ endif
 if (qsize>=4) then
    idex=4
    do ie=nets,nete
-      elem(ie)%state%Q(:,:,:,idex,:) = 1
+      elem(ie)%state%Q(:,:,:,idex) = 1
    enddo
 endif
 
@@ -1315,7 +1315,7 @@ if (qsize>=5) then
             endif
             if ((height > z0) .and. ((perturb_lat-slot) < lat .and. lat < (perturb_lat+slot)) ) q6 = 0.0d0   ! slotted ellipse     
 
-            elem(ie)%state%Q(i,j,k,idex,:) = q6
+            elem(ie)%state%Q(i,j,k,idex) = q6
 
          enddo
       enddo
@@ -1438,9 +1438,9 @@ subroutine asp_tracer(elem,hybrid,hvcoord,nets,nete)
 
              if (qsize>=2) then
                 idex=1
-                elem(ie)%state%Q(i,j,k,idex,:) = q5
+                elem(ie)%state%Q(i,j,k,idex) = q5
                 idex=2
-                elem(ie)%state%Q(i,j,k,idex,:) = q6
+                elem(ie)%state%Q(i,j,k,idex) = q6
              endif
           enddo
        enddo

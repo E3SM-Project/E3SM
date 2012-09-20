@@ -39,8 +39,15 @@ module element_mod
      ! qsize = 1 is related to the mixing ratio
      ! everything else are passive tracers that can eventually
      ! be forced by the column model.
-     real (kind=real_kind) :: Q(np,np,nlev,qsize_d,timelevels)  ! Tracer concentration
-     real (kind=real_kind) :: Qdp(np,np,nlev,qsize_d,timelevels)  ! Tracer mass    
+     
+     !real (kind=real_kind) :: Q(np,np,nlev,qsize_d,timelevels)  ! Tracer concentration
+     !real (kind=real_kind) :: Qdp(np,np,nlev,qsize_d,timelevels)  ! Tracer mass           
+
+     !customize for CAM using RK ( must use tstep_type = 1)
+     real (kind=real_kind) :: Q(np,np,nlev,qsize_d)  ! Tracer concentration
+     real (kind=real_kind) :: Qdp(np,np,nlev,qsize_d,2)  ! Tracer mass           
+
+
 
   end type elem_state_t
 
