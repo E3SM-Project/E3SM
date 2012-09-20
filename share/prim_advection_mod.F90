@@ -92,6 +92,8 @@ module vertremap_mod
   use parallel_mod, only   : abortmp  	
   contains
 
+!=======================================================================================================! 
+
   subroutine remap_velocityUV(np1,dt,elem,hvcoord,nets,nete)
 
     implicit none
@@ -328,9 +330,10 @@ module vertremap_mod
     call t_stopf('remap_velocityUV')
   end subroutine remap_velocityUV
   
+  !=======================================================================================================! 
+
   
-  
-  subroutine remap_velocityQ(n0,np1,dt,elem,hvcoord,nets,nete,compute_diagnostics,rkstage)
+  subroutine remap_velocityQ(n0,np1,n0_qdp, np1_qdp, dt,elem,hvcoord,nets,nete,compute_diagnostics,rkstage)
   
     use physical_constants, only : cp, cpwater_vapor
 	
@@ -340,7 +343,7 @@ module vertremap_mod
     type (hvcoord_t),    intent(in)        :: hvcoord
     logical,        intent(in)              :: compute_diagnostics
     
-    integer :: nets,nete,n0,np1,rkstage
+    integer :: nets,nete,n0,np1,rkstage, n0_qdp, np1_qdp
     
     ! ========================
     ! Local Variables
@@ -384,10 +387,10 @@ module vertremap_mod
                 z1c(k+1) = z1c(k)+dp_star
                 z2c(k+1) = z2c(k)+dp_np1
 #ifdef ZEROHORZ			  
-                Qcol(k)=elem(ie)%state%Qdp(i,j,k,q,n0)
+                Qcol(k)=elem(ie)%state%Qdp(i,j,k,q,n0_qdp)
 #else		
-                Qcol(k)=(elem(ie)%state%Qdp(i,j,k,q,n0)+&
-                     (rkstage-1)*elem(ie)%state%Qdp(i,j,k,q,np1))/rkstage
+                Qcol(k)=(elem(ie)%state%Qdp(i,j,k,q,n0_qdp)+&
+                     (rkstage-1)*elem(ie)%state%Qdp(i,j,k,q,np1_qdp))/rkstage
 #endif			
                 zv(k+1) = zv(k)+Qcol(k)
              enddo
@@ -598,8 +601,8 @@ module vertremap_mod
 				endif
                 zv2 = zv(zkr(k+1))+(za0(zkr(k+1))*zgam(k+1)+(za1(zkr(k+1))/2)*(zgam(k+1)**2)+ &
                      (za2(zkr(k+1))/3)*(zgam(k+1)**3))*zhdp(zkr(k+1))
-                Q_vadv = (elem(ie)%state%Qdp(i,j,k,q,np1) - (zv2 - zv1)) / dt
-                elem(ie)%state%Qdp(i,j,k,q,np1) = (zv2 - zv1)	
+                Q_vadv = (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) - (zv2 - zv1)) / dt
+                elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = (zv2 - zv1)	
                 zv1 = zv2
 #ifdef ENERGY_DIAGNOSTICS
                 if (compute_diagnostics .and. q==1) then
@@ -615,11 +618,12 @@ module vertremap_mod
  call t_stopf('remap_velocityQ')
  end subroutine remap_velocityQ
  
+!=======================================================================================================! 
 
 
 !This uses the exact same model and reference grids and data as remap_velocityQ, but it interpolates
 !using PPM instead of splines.
-subroutine remap_velocityQ_ppm(n0,np1,dt,elem,hybrid,hvcoord,nets,nete,compute_diagnostics,rkstage)
+subroutine remap_velocityQ_ppm(n0,np1,n0_qdp,np1_qdp,dt,elem,hybrid,hvcoord,nets,nete,compute_diagnostics,rkstage)
   use hybrid_mod, only: hybrid_t
   use physical_constants, only : cp, cpwater_vapor
   use control_mod, only        : compute_mean_flux, prescribed_wind, vert_remap_q_alg
@@ -629,7 +633,7 @@ subroutine remap_velocityQ_ppm(n0,np1,dt,elem,hybrid,hvcoord,nets,nete,compute_d
     type (hybrid_t),     intent(in):: hybrid
   type (hvcoord_t)     , intent(in)            :: hvcoord
   logical              , intent(in)            :: compute_diagnostics
-  integer              , intent(in)            :: nets,nete,n0,np1,rkstage
+  integer              , intent(in)            :: nets,nete,n0,np1,rkstage,n0_qdp,np1_qdp
   ! Local Variables
   integer, parameter :: gs = 2                              !Number of cells to place in the ghost region
   real(kind=real_kind), dimension(       nlev+2 ) :: pio    !Pressure at interfaces for old grid
@@ -707,9 +711,9 @@ subroutine remap_velocityQ_ppm(n0,np1,dt,elem,hybrid,hvcoord,nets,nete,compute_d
           masso(1) = 0.
           do k = 1 , nlev
 #ifdef ZEROHORZ
-            ao(k) = elem(ie)%state%Qdp(i,j,k,q,n0)
+            ao(k) = elem(ie)%state%Qdp(i,j,k,q,n0_qdp)
 #else
-            ao(k) = ( elem(ie)%state%Qdp(i,j,k,q,n0) + (rkstage-1) * elem(ie)%state%Qdp(i,j,k,q,np1) ) / rkstage
+            ao(k) = ( elem(ie)%state%Qdp(i,j,k,q,n0_qdp) + (rkstage-1) * elem(ie)%state%Qdp(i,j,k,q,np1_qdp) ) / rkstage
 #endif
             masso(k+1) = masso(k) + ao(k) !Accumulate the old mass. This will simplify the remapping
             ao(k) = ao(k) / dpo(k)        !Divide out the old grid spacing because we want the tracer mixing ratio, not mass.
@@ -728,7 +732,7 @@ subroutine remap_velocityQ_ppm(n0,np1,dt,elem,hybrid,hvcoord,nets,nete,compute_d
           do k = 1 , nlev
             kk = kid(k)
             massn2 = masso(kk) + integrate_parabola( coefs(:,kk) , z1(k) , z2(k) ) * dpo(kk)
-            elem(ie)%state%Qdp(i,j,k,q,np1) = massn2 - massn1
+            elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = massn2 - massn1
             massn1 = massn2
           enddo
         enddo
@@ -739,6 +743,7 @@ subroutine remap_velocityQ_ppm(n0,np1,dt,elem,hybrid,hvcoord,nets,nete,compute_d
 end subroutine remap_velocityQ_ppm
 
 
+!=======================================================================================================! 
 
 
 !THis compute grid-based coefficients from Collela & Woodward 1984.
@@ -783,6 +788,7 @@ function compute_ppm_grids( dx )   result(rslt)
   enddo
 end function compute_ppm_grids
 
+!=======================================================================================================! 
 
 
 
@@ -860,6 +866,7 @@ function compute_ppm( a , dx )    result(coefs)
   endif
 end function compute_ppm
 
+!=======================================================================================================! 
 
 
 
@@ -875,6 +882,9 @@ end function integrate_parabola
 
 
  
+
+
+!=============================================================================================! 
 
   subroutine remap_velocityCspelt(n0,np1,dt,elem,spelt,hvcoord,nets,nete,compute_diagnostics)
   
@@ -1493,6 +1503,7 @@ end function integrate_parabola
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
+!=======================================================================================================! 
 
 
 
@@ -1525,7 +1536,7 @@ module prim_advection_mod
   use spelt_mod, only          : spelt_struct
   use filter_mod, only         : filter_t, filter_P
   use hybvcoord_mod, only      : hvcoord_t
-  use time_mod, only           : TimeLevel_t, smooth
+  use time_mod, only           : TimeLevel_t, smooth, TimeLevel_Qdp
   use prim_si_mod, only        : preq_pressure
   use diffusion_mod, only      : scalar_diffusion, diffusion_init
   use control_mod, only        : integration, test_case, filter_freq_advection,  hypervis_order, &
@@ -1838,6 +1849,8 @@ contains
 
 
 
+!=================================================================================================! 
+
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
 ! forward-in-time 2 level vertically lagrangian step
@@ -1872,7 +1885,7 @@ contains
     use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
     use derivative_mod, only : divergence_sphere
     use vertremap_mod, only: remap_velocityuv,remap_velocityq, remap_velocityq_ppm  ! _EXTERNAL (actually INTERNAL)
-    use control_mod, only: vert_remap_q_alg
+    use control_mod, only: vert_remap_q_alg, qsplit
 
     implicit none
     type (element_t), intent(inout)   :: elem(:)
@@ -1895,12 +1908,15 @@ contains
    
     integer :: i,j,k,l,ie,q,nmin
     integer :: n0,np1,nfilt,rkstage,rhs_multiplier
-
+    integer :: n0_qdp, np1_qdp
 
     call t_barrierf('sync_prim_advec_tracers_remap_k2', hybrid%par%comm)
     call t_startf('prim_advec_tracers_remap_rk2')
     n0  = tl%n0
     np1 = tl%np1
+    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp) !time levels for qdp are not the same
+
+
     rkstage=3 !   3 stage RKSSP scheme, with optimal SSP CFL
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1930,15 +1946,15 @@ contains
       !rhs_multiplier is for obtaining dp_tracers at each stage:
       !dp_tracers(stage) = dp - rhs_multiplier*dt*divdp_proj
       rhs_multiplier = 0
-      call euler_step(np1,n0,dt/2,elem,hvcoord,hybrid,deriv,nets,nete,&
+      call euler_step(np1, n0, np1_qdp, n0_qdp, dt/2,elem,hvcoord,hybrid,deriv,nets,nete,&
            compute_diagnostics,DSSdiv_vdp_ave,rhs_multiplier)
       
       rhs_multiplier = 1
-      call euler_step(np1,np1,dt/2,elem,hvcoord,hybrid,deriv,nets,nete,&
+      call euler_step(np1, np1, np1_qdp, np1_qdp, dt/2,elem,hvcoord,hybrid,deriv,nets,nete,&
            .false.,DSSeta,rhs_multiplier)
       
       rhs_multiplier = 2
-      call euler_step(np1,np1,dt/2,elem,hvcoord,hybrid,deriv,nets,nete,&
+      call euler_step(np1, np1, np1_qdp, np1_qdp, dt/2,elem,hvcoord,hybrid,deriv,nets,nete,&
            .false.,DSSomega,rhs_multiplier)
       
 
@@ -1946,9 +1962,9 @@ contains
     ! to get a second order estimate for t+1.  We then apply the vertical
     ! remap.  These two steps have been merged into one for efficienty:
     if (vert_remap_q_alg == 0) then
-      call remap_velocityQ(n0,np1,dt,elem,hvcoord,nets,nete,compute_diagnostics,rkstage)
+      call remap_velocityQ(n0, np1, n0_qdp, np1_qdp, dt,elem,hvcoord,nets,nete,compute_diagnostics,rkstage)
     elseif (vert_remap_q_alg == 1 .or. vert_remap_q_alg == 2) then
-      call remap_velocityQ_ppm(n0,np1,dt,elem,hybrid,hvcoord,nets,nete,compute_diagnostics,rkstage)
+      call remap_velocityQ_ppm(n0,np1,n0_qdp,np1_qdp, dt,elem,hybrid,hvcoord,nets,nete,compute_diagnostics,rkstage)
     else
       call abortmp('specification for vert_remap_q_alg must be 0, 1, or 2.')
     endif
@@ -1961,7 +1977,7 @@ contains
     if (limiter_option == 8 .or. nu_p>0) then
        ! dissipation was applied in RHS.  
     else
-       call advance_hypervis_scalar(edgeadv,elem,hvcoord,hybrid,deriv,np1,nets,nete,dt)
+       call advance_hypervis_scalar(edgeadv,elem,hvcoord,hybrid,deriv,np1,np1_qdp,nets,nete,dt)
     endif
 #endif
 
@@ -1974,7 +1990,7 @@ contains
           dp_np1(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
           do q=1,qsize
-            elem(ie)%state%Q(:,:,k,q,np1)=elem(ie)%state%Qdp(:,:,k,q,np1)/dp_np1(:,:,k) 
+            elem(ie)%state%Q(:,:,k,q)=elem(ie)%state%Qdp(:,:,k,q,np1_qdp)/dp_np1(:,:,k) 
           enddo
        enddo
     enddo
@@ -1983,9 +1999,9 @@ contains
     call t_stopf('prim_advec_tracers_remap_rk2')
   end subroutine prim_advec_tracers_remap_rk2
 
-!-----------------------------------------------------------------------------
-!-----------------------------------------------------------------------------
-
+!=======================================================================================================! 
+! This is no longer called/supported
+!   - and the last arguments of Q have been removed since it is now 1 level
   subroutine Prim_Advec_Tracers_lf(elem, deriv,hvcoord,flt,hybrid,dt,tl,nets,nete, compute_diagnostics)
     use perf_mod, only : t_startf, t_stopf              ! _EXTERNAL
     implicit none
@@ -1995,7 +2011,6 @@ contains
     type (filter_t)                   :: flt
 
     type (hybrid_t),     intent(in):: hybrid
-
     real(kind=real_kind) , intent(in) :: dt
     type (TimeLevel_t)                :: tl
 
@@ -2028,21 +2043,21 @@ contains
 #endif
           do q=1,qsize	
              do k=1,nlev    !  Potential loop inversion (AAM)
-                call filter_P(elem(ie)%state%Q(:,:,k,q,nfilt),flt)
-                elem(ie)%state%Q(:,:,k,q,nfilt) = elem(ie)%mp(:,:)*elem(ie)%state%Q(:,:,k,q,nfilt)
+                call filter_P(elem(ie)%state%Q(:,:,k,q),flt)
+                elem(ie)%state%Q(:,:,k,q) = elem(ie)%mp(:,:)*elem(ie)%state%Q(:,:,k,q)
              end do
           end do
-          call edgeVpack(edgeadv,elem(ie)%state%Q(:,:,:,:,nfilt),nlev*qsize,0,elem(ie)%desc)
+          call edgeVpack(edgeadv,elem(ie)%state%Q(:,:,:,:),nlev*qsize,0,elem(ie)%desc)
        end do
        call bndry_exchangeV(hybrid,edgeadv)
        do ie=nets,nete
-          call edgeVunpack(edgeadv,elem(ie)%state%Q(:,:,:,:,nfilt),nlev*qsize,0,elem(ie)%desc)
+          call edgeVunpack(edgeadv,elem(ie)%state%Q(:,:,:,:),nlev*qsize,0,elem(ie)%desc)
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k,q)    !  Potential loop inversion (AAM)
 #endif
           do q=1,qsize	
              do k=1,nlev
-                elem(ie)%state%Q(:,:,k,q,nfilt) = elem(ie)%rmp(:,:)*elem(ie)%state%Q(:,:,k,q,nfilt)
+                elem(ie)%state%Q(:,:,k,q) = elem(ie)%rmp(:,:)*elem(ie)%state%Q(:,:,k,q)
              enddo
           end do
        end do
@@ -2077,63 +2092,63 @@ contains
     endif
 
     if (nu_q>0) then
-    ! if nu_q=0, we are running an inviscid test, skip fixer
-    !
-    ! apply negative Q fixer
-    !
-    do ie=nets,nete
+       ! if nu_q=0, we are running an inviscid test, skip fixer
+       !
+       ! apply negative Q fixer
+       !
+       do ie=nets,nete
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,q)
+          !$omp parallel do private(k,q)
 #endif
-       do q=1,qsize
-          do k=1,nlev
-             elem(ie)%state%Q(:,:,k,q,np1) = elem(ie)%spheremp(:,:)*elem(ie)%state%Q(:,:,k,q,np1)
-          enddo
-
-          ! limiter3d_noncon: no negative values, even if mass is added
-          call limiter3d_noncon(elem(ie)%state%Q(:,:,:,q,np1),&
-              elem(ie)%state%ps_v(:,:,n0),&
-              hvcoord,elem(ie)%accum%mass_added(q))
-
+          do q=1,qsize
+             do k=1,nlev
+                elem(ie)%state%Q(:,:,k,q) = elem(ie)%spheremp(:,:)*elem(ie)%state%Q(:,:,k,q)
+             enddo
+             
+             ! limiter3d_noncon: no negative values, even if mass is added
+             call limiter3d_noncon(elem(ie)%state%Q(:,:,:,q),&
+                  elem(ie)%state%ps_v(:,:,n0),&
+                  hvcoord,elem(ie)%accum%mass_added(q))
+             
+          end do
+          call edgeVpack(edgeadv,elem(ie)%state%Q(:,:,:,:),nlev*qsize,0,elem(ie)%desc)
        end do
-       call edgeVpack(edgeadv,elem(ie)%state%Q(:,:,:,:,np1),nlev*qsize,0,elem(ie)%desc)
-    end do
-    call bndry_exchangeV(hybrid,edgeadv)
-    do ie=nets,nete
-       call edgeVunpack(edgeadv,elem(ie)%state%Q(:,:,:,:,np1),nlev*qsize,0,elem(ie)%desc)
+       call bndry_exchangeV(hybrid,edgeadv)
+       do ie=nets,nete
+          call edgeVunpack(edgeadv,elem(ie)%state%Q(:,:,:,:),nlev*qsize,0,elem(ie)%desc)
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,q)
+          !$omp parallel do private(k,q)
 #endif
-       do q=1,qsize	
-          do k=1,nlev    !  Potential loop inversion (AAM)
-             elem(ie)%state%Q(:,:,k,q,np1) = elem(ie)%rspheremp(:,:)*elem(ie)%state%Q(:,:,k,q,np1)
-          enddo
+          do q=1,qsize	
+             do k=1,nlev    !  Potential loop inversion (AAM)
+                elem(ie)%state%Q(:,:,k,q) = elem(ie)%rspheremp(:,:)*elem(ie)%state%Q(:,:,k,q)
+             enddo
+          end do
        end do
-    end do
 #ifdef DEBUGOMP
 #if (! defined ELEMENT_OPENMP)
-!$OMP BARRIER
+       !$OMP BARRIER
 #endif
 #endif
     endif
-
+    
     call t_stopf('prim_advec_tracers_lf')
-
+    
     if (tracer_advection_formulation==TRACERADV_TOTAL_DIVERGENCE) then
        do ie=nets,nete
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,q,j,i,dp)
+          !$omp parallel do private(k,q,j,i,dp)
 #endif
           do q=1,qsize
              do k=1,nlev
                 do j=1,np
                    do i=1,np
                       ! timestep was done in Q.  copy over to Qdp:                                              
-                      elem(ie)%state%Qdp(i,j,k,q,np1)=elem(ie)%state%Q(i,j,k,q,np1)
+                      elem(ie)%state%Qdp(i,j,k,q,np1)=elem(ie)%state%Q(i,j,k,q)
                       ! recompute Q from dpQ for consistency                                                    
                       dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                            ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,n0)
-                      elem(ie)%state%Q(i,j,k,q,np1) =elem(ie)%state%Qdp(i,j,k,q,np1)/dp
+                      elem(ie)%state%Q(i,j,k,q) =elem(ie)%state%Qdp(i,j,k,q,np1)/dp
                    enddo
                 enddo
              enddo
@@ -2198,15 +2213,15 @@ contains
 
   do ie=nets,nete
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,q,j,i,gradQ,divdp,qtens,v1,v2,Q_vadv,rpdel)
+     !$omp parallel do private(k,q,j,i,gradQ,divdp,qtens,v1,v2,Q_vadv,rpdel)
 #endif
      do q=1,qsize
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !   2D contribution
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if (tracer_advection_formulation==TRACERADV_TOTAL_DIVERGENCE) then
            do k=1,nlev
-              ! div( U dp Q),                                                                                 
+              ! div( U dp Q),                                                                   
               gradQ(:,:,1)=elem(ie)%state%v(:,:,1,k,n0)*elem(ie)%state%Qdp(:,:,k,q,n0)
               gradQ(:,:,2)=elem(ie)%state%v(:,:,2,k,n0)*elem(ie)%state%Qdp(:,:,k,q,n0)
               divdp = divergence_sphere(gradQ,deriv,elem(ie))
@@ -2219,7 +2234,7 @@ contains
         else
            !   UGRADQ formulation
            do k=1,nlev
-              gradQ = gradient_sphere(elem(ie)%state%Q(:,:,k,q,n0),deriv,elem(ie)%Dinv)
+              gradQ = gradient_sphere(elem(ie)%state%Q(:,:,k,q),deriv,elem(ie)%Dinv)
               do j=1,np	
                  do i=1,np
                     v1    = elem(ie)%state%v(i,j,1,k,n0)
@@ -2230,17 +2245,18 @@ contains
            enddo
         endif
         
-
-
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ! vertical advection
         ! evaluate at np1 for time-split scheme
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if (tracer_advection_formulation==TRACERADV_TOTAL_DIVERGENCE) then
-           call preq_vertadv_dpQ(elem(ie)%state%Q(:,:,:,q,n0),elem(ie)%derived%eta_dot_dpdn,Q_vadv)
+           call preq_vertadv_dpQ(elem(ie)%state%Q(:,:,:,q),elem(ie)%derived%eta_dot_dpdn,Q_vadv)
+           
            ! advance in time, into Q, apply mass matrix
            do k=1,nlev
-              elem(ie)%state%Q(:,:,k,q,np1) = elem(ie)%spheremp(:,:)*&
+              elem(ie)%state%Q(:,:,k,q) = elem(ie)%spheremp(:,:)*&
                    ( elem(ie)%state%Qdp(:,:,k,q,nm1)  + &
                    dt2*(qtens(:,:,k)-Q_vadv(:,:,k)) )
            enddo
@@ -2256,40 +2272,42 @@ contains
                     end do
                  end do
               enddo
-              call preq_vertadvQ(elem(ie)%state%Q(:,:,:,q,n0),elem(ie)%derived%eta_dot_dpdn,rpdel,Q_vadv)
+              call preq_vertadvQ(elem(ie)%state%Q(:,:,:,q),elem(ie)%derived%eta_dot_dpdn,rpdel,Q_vadv)
            else
               ! recompute eta_dot_dpdn using velocity at level n0
               ! and elem%derived%grad_lnps
-              call preq_impsysQ(elem(ie),hvcoord,np1,n0,nm1,elem(ie)%state%Q(:,:,:,q,n0),Q_vadv)
+              call preq_impsysQ(elem(ie),hvcoord,np1,n0,nm1,elem(ie)%state%Q(:,:,:,q),Q_vadv)
            endif
            ! advance in time, apply mass matrix
            do k=1,nlev
-              elem(ie)%state%Q(:,:,k,q,np1) = elem(ie)%spheremp(:,:)*&
-                   ( elem(ie)%state%Q(:,:,k,q,nm1)  + &
+              elem(ie)%state%Q(:,:,k,q) = elem(ie)%spheremp(:,:)*&
+                   ( elem(ie)%state%Q(:,:,k,q)  + &
                    dt2*(qtens(:,:,k)-Q_vadv(:,:,k)) )
            enddo
         endif
         
         if (nu_q>0) then
            ! if nu_q=0, we are running an inviscid test, skip fixer
-           call limiter2d_zero(elem(ie)%state%Q(:,:,:,q,np1),&
-             elem(ie)%state%ps_v(:,:,n0),hvcoord)
+           call limiter2d_zero(elem(ie)%state%Q(:,:,:,q),&
+                elem(ie)%state%ps_v(:,:,n0),hvcoord)
         endif
         
-     end do
-     call edgeVpack(edgeadv,elem(ie)%state%Q(:,:,:,:,np1),nlev*qsize,0,elem(ie)%desc)
-  end do
+     end do !end of qsize loop
+
+     call edgeVpack(edgeadv,elem(ie)%state%Q(:,:,:,:),nlev*qsize,0,elem(ie)%desc)
+
+  end do ! end of elements loop
   call bndry_exchangeV(hybrid,edgeadv)
   
   do ie=nets,nete
-     call edgeVunpack(edgeadv,elem(ie)%state%Q(:,:,:,:,np1),nlev*qsize,0,elem(ie)%desc)
-     
+     call edgeVunpack(edgeadv,elem(ie)%state%Q(:,:,:,:),nlev*qsize,0,elem(ie)%desc)
+
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k, q)
 #endif
      do q=1,qsize	
         do k=1,nlev    !  Potential loop inversion (AAM)
-           elem(ie)%state%Q(:,:,k,q,np1) = elem(ie)%rspheremp(:,:)*elem(ie)%state%Q(:,:,k,q,np1)
+           elem(ie)%state%Q(:,:,k,q) = elem(ie)%rspheremp(:,:)*elem(ie)%state%Q(:,:,k,q)
         enddo
      end do
   end do
@@ -2306,7 +2324,7 @@ end subroutine compute_and_apply_rhs
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
 
-  subroutine euler_step(np1,n0,dt,elem,hvcoord,hybrid,deriv,nets,nete,&
+  subroutine euler_step(np1,n0,np1_qdp, n0_qdp, dt,elem,hvcoord,hybrid,deriv,nets,nete,&
       compute_diagnostics,DSSopt,rhs_multiplier)
   ! ===================================
   ! This routine is the basic foward
@@ -2329,7 +2347,7 @@ end subroutine compute_and_apply_rhs
   use hybvcoord_mod, only : hvcoord_t
 
   implicit none
-  integer :: np1,nm1,n0,nets,nete,DSSopt,rhs_multiplier
+  integer :: np1, n0, np1_qdp, n0_qdp, nets, nete, DSSopt, rhs_multiplier
   real (kind=real_kind), intent(in)  :: dt
   logical  :: compute_diagnostics
 
@@ -2353,7 +2371,7 @@ end subroutine compute_and_apply_rhs
   integer :: rhs_viss=0
 
   if (npdg>0) then
-      call euler_step_dg(np1,n0,dt,elem,hvcoord,hybrid,deriv,nets,nete,&
+      call euler_step_dg(np1,n0,np1_qdp, n0_qdp, dt,elem,hvcoord,hybrid,deriv,nets,nete,&
            compute_diagnostics,DSSopt,rhs_multiplier)
      return
   endif
@@ -2407,7 +2425,7 @@ end subroutine compute_and_apply_rhs
            dp(:,:,k) = elem(ie)%derived%dp(:,:,k) - &
                 rhs_multiplier*dt*elem(ie)%derived%divdp_proj(:,:,k) 
            do q=1,qsize
-              Qtens_biharmonic(:,:,k,q,ie) = elem(ie)%state%Qdp(:,:,k,q,n0)/dp(:,:,k)
+              Qtens_biharmonic(:,:,k,q,ie) = elem(ie)%state%Qdp(:,:,k,q,n0_qdp)/dp(:,:,k)
            enddo
         enddo
      enddo
@@ -2538,10 +2556,10 @@ end subroutine compute_and_apply_rhs
 
         do k=1,nlev  !  dp_star used as temporary instead of divdp (AAM)
            ! div( U dp Q), 
-           gradQ(:,:,1)=Vstar(:,:,1,k)*elem(ie)%state%Qdp(:,:,k,q,n0)
-           gradQ(:,:,2)=Vstar(:,:,2,k)*elem(ie)%state%Qdp(:,:,k,q,n0)
+           gradQ(:,:,1)=Vstar(:,:,1,k)*elem(ie)%state%Qdp(:,:,k,q,n0_qdp)
+           gradQ(:,:,2)=Vstar(:,:,2,k)*elem(ie)%state%Qdp(:,:,k,q,n0_qdp)
            dp_star(:,:,k) = divergence_sphere(gradQ,deriv,elem(ie))
-           Qtens(:,:,k)=elem(ie)%state%Qdp(:,:,k,q,n0) - dt*dp_star(:,:,k)
+           Qtens(:,:,k)=elem(ie)%state%Qdp(:,:,k,q,n0_qdp) - dt*dp_star(:,:,k)
            ! optionally add in hyperviscosity computed above:
            if (rhs_viss/=0) Qtens(:,:,k) = Qtens(:,:,k) + Qtens_biharmonic(:,:,k,q,ie)
         enddo
@@ -2579,14 +2597,14 @@ end subroutine compute_and_apply_rhs
         ! dont do this earlier, since we allow np1 to be the same as n0
         ! and we dont want to overwrite n0 until we are done using it
         do k=1,nlev
-           elem(ie)%state%Qdp(:,:,k,q,np1) = elem(ie)%spheremp(:,:)*Qtens(:,:,k) 
+           elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%spheremp(:,:)*Qtens(:,:,k) 
         enddo
 
         if(limiter_option == 4)then
 	  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 	  ! sign-preserving limiter, applied after mass matrix
 	  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-	  call limiter2d_zero(elem(ie)%state%Qdp(:,:,:,q,np1),&
+	  call limiter2d_zero(elem(ie)%state%Qdp(:,:,:,q,np1_qdp),&
              elem(ie)%state%ps_v(:,:,np1),hvcoord) ! ps_v argument not used
         endif
 
@@ -2594,9 +2612,9 @@ end subroutine compute_and_apply_rhs
      end do
 
      if(DSSopt==DSSno_var)then
-	call edgeVpack(edgeAdv,elem(ie)%state%Qdp(:,:,:,:,np1),nlev*qsize,0,elem(ie)%desc)
+	call edgeVpack(edgeAdv,elem(ie)%state%Qdp(:,:,:,:,np1_qdp),nlev*qsize,0,elem(ie)%desc)
      else
-	call edgeVpack(edgeAdv_p1,elem(ie)%state%Qdp(:,:,:,:,np1),nlev*qsize,0,elem(ie)%desc)
+	call edgeVpack(edgeAdv_p1,elem(ie)%state%Qdp(:,:,:,:,np1_qdp),nlev*qsize,0,elem(ie)%desc)
 	! also DSS extra field
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k)
@@ -2622,23 +2640,23 @@ end subroutine compute_and_apply_rhs
      if ( DSSopt == DSSdiv_vdp_ave) DSSvar => elem(ie)%derived%divdp_proj(:,:,:)
 
      if(DSSopt==DSSno_var)then
-	call edgeVunpack(edgeAdv,elem(ie)%state%Qdp(:,:,:,:,np1),nlev*qsize,0,elem(ie)%desc)
+	call edgeVunpack(edgeAdv,elem(ie)%state%Qdp(:,:,:,:,np1_qdp),nlev*qsize,0,elem(ie)%desc)
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k,q)
 #endif
 	do q=1,qsize
            do k=1,nlev    !  Potential loop inversion (AAM)
-	      elem(ie)%state%Qdp(:,:,k,q,np1) = elem(ie)%rspheremp(:,:)*elem(ie)%state%Qdp(:,:,k,q,np1)
+	      elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%rspheremp(:,:)*elem(ie)%state%Qdp(:,:,k,q,np1_qdp)
 	   enddo
 	end do
      else
-	call edgeVunpack(edgeAdv_p1,elem(ie)%state%Qdp(:,:,:,:,np1),nlev*qsize,0,elem(ie)%desc)
+	call edgeVunpack(edgeAdv_p1,elem(ie)%state%Qdp(:,:,:,:,np1_qdp),nlev*qsize,0,elem(ie)%desc)
 #if (defined ELEMENT_OPENMP)
         !$omp parallel do private(k,q)
 #endif
         do q=1,qsize
            do k=1,nlev    !  Potential loop inversion (AAM)
-	      elem(ie)%state%Qdp(:,:,k,q,np1) = elem(ie)%rspheremp(:,:)*elem(ie)%state%Qdp(:,:,k,q,np1)
+	      elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%rspheremp(:,:)*elem(ie)%state%Qdp(:,:,k,q,np1_qdp)
            enddo
 	end do
 	call edgeVunpack(edgeAdv_p1,DSSvar(:,:,1:nlev),nlev,qsize*nlev,elem(ie)%desc)
@@ -2665,7 +2683,7 @@ end subroutine compute_and_apply_rhs
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
 
-  subroutine euler_step_dg(np1,n0,dt,elem,hvcoord,hybrid,deriv,nets,nete,&
+  subroutine euler_step_dg(np1,n0,np1_qdp, n0_qdp, dt,elem,hvcoord,hybrid,deriv,nets,nete,&
       compute_diagnostics,DSSopt,rhs_multiplier)
   ! ===================================
   ! This routine is the basic foward
@@ -2688,7 +2706,7 @@ end subroutine compute_and_apply_rhs
   use hybvcoord_mod, only : hvcoord_t
 
   implicit none
-  integer :: np1,nm1,n0,nets,nete,DSSopt,rhs_multiplier
+  integer :: np1, n0, np1_qdp, n0_qdp, nets, nete, DSSopt, rhs_multiplier
   real (kind=real_kind), intent(in)  :: dt
   logical  :: compute_diagnostics
 
@@ -2740,9 +2758,9 @@ end subroutine compute_and_apply_rhs
      if ( DSSopt == DSSdiv_vdp_ave) DSSvar => elem(ie)%derived%divdp_proj(:,:,:)
 
      if(DSSopt==DSSno_var)then
-	call edgeVpack(edgeAdv,elem(ie)%state%Qdp(:,:,:,:,n0),nlev*qsize,0,elem(ie)%desc)
+	call edgeVpack(edgeAdv,elem(ie)%state%Qdp(:,:,:,:,n0_qdp),nlev*qsize,0,elem(ie)%desc)
      else
-	call edgeVpack(edgeAdv_p1,elem(ie)%state%Qdp(:,:,:,:,n0),nlev*qsize,0,elem(ie)%desc)
+	call edgeVpack(edgeAdv_p1,elem(ie)%state%Qdp(:,:,:,:,n0_qdp),nlev*qsize,0,elem(ie)%desc)
 	! also DSS extra field
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k)
@@ -2790,17 +2808,17 @@ end subroutine compute_and_apply_rhs
 
      do q=1,qsize
         do k=1,nlev
-           vtemp(:,:,1)=elem(ie)%state%Qdp(:,:,k,q,n0)*Vstar(:,:,1,k)
-           vtemp(:,:,2)=elem(ie)%state%Qdp(:,:,k,q,n0)*Vstar(:,:,2,k)
+           vtemp(:,:,1)=elem(ie)%state%Qdp(:,:,k,q,n0_qdp)*Vstar(:,:,1,k)
+           vtemp(:,:,2)=elem(ie)%state%Qdp(:,:,k,q,n0_qdp)*Vstar(:,:,2,k)
            
            divdp = divergence_sphere_wk(vtemp,deriv,elem(ie)) + &
-                edge_flux_u_cg( Vstar(:,:,:,k), elem(ie)%state%Qdp(:,:,k,q,n0),qedges(:,:,k,q),&
+                edge_flux_u_cg( Vstar(:,:,:,k), elem(ie)%state%Qdp(:,:,k,q,n0_qdp),qedges(:,:,k,q),&
                 deriv, elem(ie), u_is_contra=.false.)
 
            ! advance in time. GLL quadrature, cardinal function basis, under-integrated.  
            ! local mass matrix is diagonal, with entries elem(ie)%spheremp(),
            ! so we divide through by elem(ie)%spheremp().
-           elem(ie)%state%Qdp(:,:,k,q,np1)=elem(ie)%state%Qdp(:,:,k,q,n0) - dt*divdp/elem(ie)%spheremp
+           elem(ie)%state%Qdp(:,:,k,q,np1_qdp)=elem(ie)%state%Qdp(:,:,k,q,n0_qdp) - dt*divdp/elem(ie)%spheremp
            
            if (npdg<np) then
               ! modal timestep, with exact integration.  using prognostic variable: p*metdet
@@ -2809,7 +2827,7 @@ end subroutine compute_and_apply_rhs
               
               ! compute modal coefficients of p*metdet
               ! (spherical inner-product of Legendre polynomial and p)
-              pshat = gll_to_dgmodal(elem(ie)%state%Qdp(:,:,k,q,np1)*elem(ie)%metdet(:,:),deriv)
+              pshat = gll_to_dgmodal(elem(ie)%state%Qdp(:,:,k,q,np1_qdp)*elem(ie)%metdet(:,:),deriv)
 
               ! modal based limiter goes here
               ! apply a little dissipation to last mode:
@@ -2827,18 +2845,18 @@ end subroutine compute_and_apply_rhs
               divdp=dgmodal_to_gll(pshat,deriv)  
 
               ! convert from p*metdet back to p:
-              elem(ie)%state%Qdp(:,:,k,q,np1)=divdp/elem(ie)%metdet(:,:)
+              elem(ie)%state%Qdp(:,:,k,q,np1_qdp)=divdp/elem(ie)%metdet(:,:)
            endif
         enddo
         if(limiter_option == 4)then
            ! reuse CG limiter, which wants Qdp*spheremp:
            do k=1,nlev
-              elem(ie)%state%Qdp(:,:,k,q,np1)=elem(ie)%state%Qdp(:,:,k,q,np1)*elem(ie)%spheremp(:,:)
+              elem(ie)%state%Qdp(:,:,k,q,np1_qdp)=elem(ie)%state%Qdp(:,:,k,q,np1_qdp)*elem(ie)%spheremp(:,:)
            enddo
-           call limiter2d_zero(elem(ie)%state%Qdp(:,:,:,q,np1),&
+           call limiter2d_zero(elem(ie)%state%Qdp(:,:,:,q,np1_qdp),&
                 elem(ie)%state%ps_v(:,:,np1),hvcoord) ! ps_v argument not used
            do k=1,nlev
-              elem(ie)%state%Qdp(:,:,k,q,np1)=elem(ie)%state%Qdp(:,:,k,q,np1)/elem(ie)%spheremp(:,:)
+              elem(ie)%state%Qdp(:,:,k,q,np1_qdp)=elem(ie)%state%Qdp(:,:,k,q,np1_qdp)/elem(ie)%spheremp(:,:)
            enddo
         endif
      end do
@@ -3466,6 +3484,9 @@ end subroutine
   !  For correct scaling, dt2 should be the same 'dt2' used in the leapfrog advace
   !
   !
+  ! Note:  this fcn is *no longer supported* since it is only called from  Prim_Advec_Tracers_lf  ! - which is no longer supported (due to changes in storage for Q and Qdp)
+
+
   use kinds, only : real_kind
   use dimensions_mod, only : np, nlev
   use hybrid_mod, only : hybrid_t
@@ -3524,19 +3545,19 @@ end subroutine
 #endif
 	       do q=1,qsize
               do k=1,nlev    !  Potential loop inversion (AAM)
-                 lap_p=laplace_sphere_wk(elem(ie)%state%Q(:,:,k,q,nt),deriv,elem(ie),viscosity)
+                 lap_p=laplace_sphere_wk(elem(ie)%state%Q(:,:,k,q),deriv,elem(ie),viscosity)
                  ! advace in time.  (note: DSS commutes with time stepping, so we
                  ! can time advance and then DSS.
-                 elem(ie)%state%Q(:,:,k,q,nt)=elem(ie)%state%Q(:,:,k,q,nt)*elem(ie)%spheremp(:,:)  +  dt*nu_q*lap_p(:,:) 
+                 elem(ie)%state%Q(:,:,k,q)=elem(ie)%state%Q(:,:,k,q)*elem(ie)%spheremp(:,:)  +  dt*nu_q*lap_p(:,:) 
               enddo
            enddo
-           call edgeVpack(edgeAdv, elem(ie)%state%Q(:,:,:,:,nt),nlev*qsize,0,elem(ie)%desc)
+           call edgeVpack(edgeAdv, elem(ie)%state%Q(:,:,:,:),nlev*qsize,0,elem(ie)%desc)
         enddo
            
         call bndry_exchangeV(hybrid,edgeAdv)
         
         do ie=nets,nete
-           call edgeVunpack(edgeAdv, elem(ie)%state%Q(:,:,:,:,nt),nlev*qsize,0,elem(ie)%desc)
+           call edgeVunpack(edgeAdv, elem(ie)%state%Q(:,:,:,:),nlev*qsize,0,elem(ie)%desc)
               !rspheremp     => elem(ie)%rspheremp
               ! apply inverse mass matrix
 #if (defined ELEMENT_OPENMP)
@@ -3546,7 +3567,7 @@ end subroutine
               do k=1,nlev    !  Potential loop inversion (AAM)
               do j=1,np
               do i=1,np             
-                 elem(ie)%state%Q(i,j,k,q,nt)=elem(ie)%rspheremp(i,j)*elem(ie)%state%Q(i,j,k,q,nt)
+                 elem(ie)%state%Q(i,j,k,q)=elem(ie)%rspheremp(i,j)*elem(ie)%state%Q(i,j,k,q)
               enddo
               enddo
               enddo
@@ -3569,7 +3590,7 @@ end subroutine
         do ie=nets,nete
            if (density_scaling==1) then
               ! state%Q really is Q !
-              Qtens(:,:,:,:,ie)=elem(ie)%state%Q(:,:,:,1:qsize,nt)
+              Qtens(:,:,:,:,ie)=elem(ie)%state%Q(:,:,:,1:qsize)
            else
               ! state%Q is really Qdp.  but we only apply diffusion on Q
 #if (defined ELEMENT_OPENMP)
@@ -3581,7 +3602,7 @@ end subroutine
                  ! note: use ps(t+1) to get exact consistency
                  dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                       ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,nt)
-                 Qtens(i,j,k,:,ie)=elem(ie)%state%Q(i,j,k,1:qsize,nt)/dp
+                 Qtens(i,j,k,:,ie)=elem(ie)%state%Q(i,j,k,1:qsize)/dp
               enddo
               enddo
               enddo
@@ -3610,14 +3631,13 @@ end subroutine
                  dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                       ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,n0)
                  nu_scale = dp0/dp
-                 elem(ie)%state%Q(i,j,k,q,nt)  =  elem(ie)%state%Q(i,j,k,q,nt)*elem(ie)%spheremp(i,j) &
+                 elem(ie)%state%Q(i,j,k,q)  =  elem(ie)%state%Q(i,j,k,q)*elem(ie)%spheremp(i,j) &
                               -dt*nu_q*nu_scale*Qtens(i,j,k,q,ie)
               else
                  ! advection Qdp.  For mass advection consistency:
                  ! DIFF( Qdp) ~   dp0 DIFF (Q)  =  dp0 DIFF ( Qdp/dp )  
-!                 elem(ie)%state%Q(i,j,k,q,nt)  =  elem(ie)%state%Q(i,j,k,q,nt)*elem(ie)%spheremp(i,j) &
-!                        -dt*nu_q*Qtens(i,j,k,q,ie)
-                 elem(ie)%state%Q(i,j,k,q,nt)  =  elem(ie)%state%Q(i,j,k,q,nt)*elem(ie)%spheremp(i,j) &
+
+                 elem(ie)%state%Q(i,j,k,q)  =  elem(ie)%state%Q(i,j,k,q)*elem(ie)%spheremp(i,j) &
                         -dt*nu_q*dp0*Qtens(i,j,k,q,ie)
               endif
            enddo
@@ -3626,17 +3646,17 @@ end subroutine
 
            ! smooth some of the negativities introduced by diffusion:
            ! note: ps_v not used if advecting Qdp
-           call limiter2d_zero(elem(ie)%state%Q(:,:,:,q,nt),&
+           call limiter2d_zero(elem(ie)%state%Q(:,:,:,q),&
                 elem(ie)%state%ps_v(:,:,n0),hvcoord)
 
            enddo
-           call edgeVpack(edgeAdv,elem(ie)%state%Q(:,:,:,:,nt),qsize*nlev,0,elem(ie)%desc)
+           call edgeVpack(edgeAdv,elem(ie)%state%Q(:,:,:,:),qsize*nlev,0,elem(ie)%desc)
         enddo
 
         call bndry_exchangeV(hybrid,edgeAdv)
 
         do ie=nets,nete
-        call edgeVunpack(edgeAdv, elem(ie)%state%Q(:,:,:,:,nt), qsize*nlev, 0, elem(ie)%desc)
+        call edgeVunpack(edgeAdv, elem(ie)%state%Q(:,:,:,:), qsize*nlev, 0, elem(ie)%desc)
         !rspheremp     => elem(ie)%rspheremp
         ! apply inverse mass matrix
 #if (defined ELEMENT_OPENMP)
@@ -3646,7 +3666,7 @@ end subroutine
            do k=1,nlev    !  Potential loop inversion (AAM)
            do j=1,np
            do i=1,np
-              elem(ie)%state%Q(i,j,k,q,nt)=elem(ie)%rspheremp(i,j)*elem(ie)%state%Q(i,j,k,q,nt)
+              elem(ie)%state%Q(i,j,k,q)=elem(ie)%rspheremp(i,j)*elem(ie)%state%Q(i,j,k,q)
            enddo
            enddo
            enddo
@@ -3666,7 +3686,7 @@ end subroutine
 
 
 
-  subroutine advance_hypervis_scalar(edgeAdv,elem,hvcoord,hybrid,deriv,nt,nets,nete,dt2)
+  subroutine advance_hypervis_scalar(edgeAdv,elem,hvcoord,hybrid,deriv,nt,nt_qdp,nets,nete,dt2)
   !
   !  hyperviscsoity operator for foward-in-time scheme
   !  take one timestep of:  
@@ -3691,7 +3711,7 @@ end subroutine
   type (EdgeBuffer_t)  , intent(inout) :: edgeAdv
   type (derivative_t)  , intent(in) :: deriv
   real (kind=real_kind) :: dt2
-  integer :: nets,nete,nt
+  integer :: nets,nete,nt,nt_qdp
 
   
   ! local
@@ -3732,7 +3752,7 @@ end subroutine
            dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,nt)
            do q=1,qsize
-              Qtens(:,:,k,q,ie)=elem(ie)%state%Qdp(:,:,k,q,nt)/dp(:,:,k)
+              Qtens(:,:,k,q,ie)=elem(ie)%state%Qdp(:,:,k,q,nt_qdp)/dp(:,:,k)
            enddo
         enddo
      enddo
@@ -3752,23 +3772,23 @@ end subroutine
            do i=1,np
               ! advection Qdp.  For mass advection consistency:
               ! DIFF( Qdp) ~   dp0 DIFF (Q)  =  dp0 DIFF ( Qdp/dp )  
-              elem(ie)%state%Qdp(i,j,k,q,nt)  =  elem(ie)%state%Qdp(i,j,k,q,nt)*elem(ie)%spheremp(i,j) &
+              elem(ie)%state%Qdp(i,j,k,q,nt_qdp)  =  elem(ie)%state%Qdp(i,j,k,q,nt_qdp)*elem(ie)%spheremp(i,j) &
                    -dt*nu_q*dp0*Qtens(i,j,k,q,ie)
            enddo
            enddo
            enddo
 
            ! smooth some of the negativities introduced by diffusion:
-           call limiter2d_zero(elem(ie)%state%Qdp(:,:,:,q,nt),&
+           call limiter2d_zero(elem(ie)%state%Qdp(:,:,:,q,nt_qdp),&
                 elem(ie)%state%ps_v(:,:,nt),hvcoord)
         enddo
-        call edgeVpack(edgeAdv,elem(ie)%state%Qdp(:,:,:,:,nt),qsize*nlev,0,elem(ie)%desc)
+        call edgeVpack(edgeAdv,elem(ie)%state%Qdp(:,:,:,:,nt_qdp),qsize*nlev,0,elem(ie)%desc)
      enddo
 
      call bndry_exchangeV(hybrid,edgeAdv)
      
      do ie=nets,nete
-        call edgeVunpack(edgeAdv, elem(ie)%state%Qdp(:,:,:,:,nt), qsize*nlev, 0, elem(ie)%desc)
+        call edgeVunpack(edgeAdv, elem(ie)%state%Qdp(:,:,:,:,nt_qdp), qsize*nlev, 0, elem(ie)%desc)
         !rspheremp     => elem(ie)%rspheremp
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(q,k)
@@ -3776,7 +3796,7 @@ end subroutine
         do q=1,qsize    
            ! apply inverse mass matrix
            do k=1,nlev
-              elem(ie)%state%Qdp(:,:,k,q,nt)=elem(ie)%rspheremp(:,:)*elem(ie)%state%Qdp(:,:,k,q,nt)
+              elem(ie)%state%Qdp(:,:,k,q,nt_qdp)=elem(ie)%rspheremp(:,:)*elem(ie)%state%Qdp(:,:,k,q,nt_qdp)
            enddo
         enddo
      enddo

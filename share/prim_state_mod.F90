@@ -17,7 +17,7 @@ module prim_state_mod
   ! ------------------------------
   use physical_constants, only : p0,Cp,g
   ! ------------------------------
-  use time_mod, only : tstep, secpday, timelevel_t 
+  use time_mod, only : tstep, secpday, timelevel_t, TimeLevel_Qdp 
   ! ------------------------------
   use control_mod, only : integration, test_case, runtype, moisture, tracer_advection_formulation,&
        TRACERADV_TOTAL_DIVERGENCE,TRACERADV_UGRADQ,tstep_type,energy_fixer, qsplit, ftype, use_cpstar
@@ -48,6 +48,7 @@ private
   public :: prim_diag_scalars
 
 contains
+!=======================================================================================================! 
 
 
   subroutine prim_printstate_init(par)
@@ -70,6 +71,7 @@ contains
     end if
 
   end subroutine prim_printstate_init
+!=======================================================================================================! 
 
   subroutine prim_printstate(elem, tl,hybrid,hvcoord,nets,nete, fvm)
     type (element_t), intent(in) :: elem(:)
@@ -223,15 +225,17 @@ contains
 
     do q=1,qsize
        do ie=nets,nete
-          tmp1(ie) = MINVAL(elem(ie)%state%Q(:,:,:,q,n0))
+          tmp1(ie) = MINVAL(elem(ie)%state%Q(:,:,:,q))
        enddo
        qvmin_p(q) = ParallelMin(tmp1,hybrid)
        do ie=nets,nete
-          tmp1(ie) = MAXVAL(elem(ie)%state%Q(:,:,:,q,n0))
+          tmp1(ie) = MAXVAL(elem(ie)%state%Q(:,:,:,q))
        enddo
+
        qvmax_p(q) = ParallelMax(tmp1,hybrid)
+
        do ie=nets,nete
-          global_shared_buf(ie,1) = SUM(elem(ie)%state%Q(:,:,:,q,n0))
+          global_shared_buf(ie,1) = SUM(elem(ie)%state%Q(:,:,:,q))
        enddo
        call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
        qvsum_p(q) = global_shared_sum(1)
@@ -397,9 +401,13 @@ contains
        write(iulog,100) "v     = ",vmin_p,vmax_p,vsum_p
        write(iulog,100) "omega = ",omegamin_p,omegamax_p,omegasum_p
        write(iulog,100) "t     = ",tmin_p,tmax_p,tsum_p
-       do q=1,qsize
-          write(iulog,100) "qv= ",qvmin_p(q), qvmax_p(q), qvsum_p(q)
-       enddo
+
+       if (tstep_type==1) then  !no longer support tracer advection with tstep_type = 0
+          do q=1,qsize
+             write(iulog,100) "qv= ",qvmin_p(q), qvmax_p(q), qvsum_p(q)
+          enddo
+       endif
+
        do q=1,ntrac
           write(iulog,100) " c= ",cmin(q), cmax(q), csum(q)
        enddo
@@ -650,11 +658,14 @@ contains
 #endif
           ddt_tot = (TOTE(2)-TOTE(1))/(dt)
           write(iulog,'(a,3E22.14)') " E,dE/dt     ",TOTE(2),ddt_tot
-          do q=1,qsize
-             write(iulog,'(a,i1,a,E22.14,a,2E15.7)') "Q",q,",Q diss, dQ^2/dt:",Qmass(q,2)," kg/m^2",&
-                  (Qmass(q,2)-Qmass(q,1))/dt,(Qvar(q,2)-Qvar(q,1))/dt
-          enddo
           
+          if (tstep_type==1) then  !no longer support tracer advection with tstep_type = 0
+             do q=1,qsize
+                write(iulog,'(a,i1,a,E22.14,a,2E15.7)') "Q",q,",Q diss, dQ^2/dt:",Qmass(q,2)," kg/m^2",&
+                     (Qmass(q,2)-Qmass(q,1))/dt,(Qvar(q,2)-Qvar(q,1))/dt
+             enddo
+          endif
+
           ! LF code diagnostics
           if (tstep_type==0) then  ! leapfrog
              write(iulog,'(a)') 'Robert filter, Physics (except adjustments):'
@@ -678,12 +689,14 @@ contains
        if (ftype>=0) TOTE0=-1  
 #endif       
        if (TOTE0>0) then
-          write(iulog,100) "(E-E0)/E0    ",(TOTE(4)-TOTE0)/TOTE0
-          do q=1,qsize
-             if(Qmass0(q)>0.0) then
-                write(iulog,'(a,E23.15,a,i1)') "(Q-Q0)/Q0 ",(Qmass(q,2)-Qmass0(q))/Qmass0(q),"   Q",q
-             end if
-          enddo
+          if (tstep_type==1) then  !no longer support tracer advection with tstep_type = 0
+             write(iulog,100) "(E-E0)/E0    ",(TOTE(4)-TOTE0)/TOTE0
+             do q=1,qsize
+                if(Qmass0(q)>0.0) then
+                   write(iulog,'(a,E23.15,a,i1)') "(Q-Q0)/Q0 ",(Qmass(q,2)-Qmass0(q))/Qmass0(q),"   Q",q
+                end if
+             enddo
+          endif
        endif
     endif
     
@@ -706,7 +719,7 @@ contains
    
    
 
-
+!=======================================================================================================! 
 
 
 subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete,tQ)
@@ -715,7 +728,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete,tQ
 !  dynamics:     nm1,  n0,  np1.  
 !
 !
-!  This routien is called 4 times:  n=1:    t1=nm1, t2=n0
+!  This routine is called 4 times:  n=1:    t1=nm1, t2=n0
 !                                   n=2:    t1=n0, t2=np1
 !                                   n=3:    t1=n0, t2=np1
 !                                   n=4:    t1=n0, t2=np1
@@ -761,14 +774,19 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete,tQ
     real (kind=real_kind), dimension(np,np,nlev)  :: sumlk, suml2k
     real (kind=real_kind) :: cp_star1,cp_star2,qval_t1,qval_t2
     logical tstagger
+    integer:: t2_qdp, t1_qdp   ! the time pointers for Qdp are not the same
 
     nm_f = 1
     if (t_before_advance) then
        t1=tl%nm1
        t2=tl%n0
+       call TimeLevel_Qdp( tl, qsplit, t2_qdp, t1_qdp) !get n0 level into t2_qdp 
     else
        t1=tl%n0
        t2=tl%np1
+       call TimeLevel_Qdp(tl, qsplit, t1_qdp, t2_qdp) !get np1 into t2_qdp
+
+
     endif
 
     tstagger = .false.
@@ -813,15 +831,15 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete,tQ
                 ! Cp_star = cp + (Cpwater_vapor - cp)*qval
                 if (present(tQ)) then
                    ! we should interpolate to t +/- dt_dynamics/2, but not worth the trouble
-                   cp_star2= Virtual_Specific_Heat(elem(ie)%state%Q(i,j,k,1,tQ))
+                   cp_star2= Virtual_Specific_Heat(elem(ie)%state%Q(i,j,k,1))
                    cp_star1= cp_star2  
-                else
+                else !not used for now with CAM
                    if (tracer_advection_formulation==TRACERADV_TOTAL_DIVERGENCE) then
-                      qval_t1 = elem(ie)%state%Qdp(i,j,k,1,t1)/dpt1(i,j,k)
-                      qval_t2 = elem(ie)%state%Qdp(i,j,k,1,t2)/dpt2(i,j,k)
+                      qval_t1 = elem(ie)%state%Qdp(i,j,k,1,t1_qdp)/dpt1(i,j,k)
+                      qval_t2 = elem(ie)%state%Qdp(i,j,k,1,t2_qdp)/dpt2(i,j,k)
                    else
-                      qval_t1 = elem(ie)%state%Q(i,j,k,1,t1)
-                      qval_t2 = elem(ie)%state%Q(i,j,k,1,t2)
+                      qval_t1 = elem(ie)%state%Q(i,j,k,1)
+                      qval_t2 = elem(ie)%state%Q(i,j,k,1)
                    endif
                    cp_star1= Virtual_Specific_Heat(qval_t1)
                    cp_star2= Virtual_Specific_Heat(qval_t2)
@@ -892,14 +910,15 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete,tQ
     
 end subroutine prim_energy_halftimes
     
-    
+!=======================================================================================================! 
+  
 
 subroutine prim_diag_scalars(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 ! 
 !  called at the end of a timestep, before timelevel update.  Solution known at
 !  timelevel nm1,n0,np1.  
 !
-!  This routien is called twice:  n=1:    t1=nm1, t2=n0
+!  This routine is called twice:  n=1:    t1=nm1, t2=n0
 !                                 n=2:    t1=n0, t2=np1
 ! 
 !  in all cases:
@@ -919,7 +938,7 @@ subroutine prim_diag_scalars(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     integer :: t1,t2,n,nets,nete
     type (element_t)     , intent(inout), target :: elem(:)
     type (hvcoord_t)                  :: hvcoord
-
+    
     integer :: ie,k,q,nm_f
     real (kind=real_kind), dimension(np,np)  :: ps         ! pressure
     real (kind=real_kind), dimension(np,np)  :: dp         ! delta pressure
@@ -927,89 +946,63 @@ subroutine prim_diag_scalars(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     real (kind=real_kind), dimension(np,np)  :: suml
     type (TimeLevel_t), intent(in)       :: tl
     logical :: t_before_advance
+    integer:: t2_qdp, tmp   ! the time pointer for Qdp are not the same
 
     nm_f = 1
     if (t_before_advance) then
        t1=tl%nm1     
        t2=tl%n0
+       call TimeLevel_Qdp( tl, qsplit, t2_qdp) !get n0 level into t2_qdp 
     else
        t1=tl%n0
        t2=tl%np1
+       call TimeLevel_Qdp(tl, qsplit, tmp, t2_qdp) !get np1 into t2_qdp (don't need tmp)
     endif
 
     !
     !  leapfrog of Qdp.  compute at t1 and t2, take average
     !
+
     if (tracer_advection_formulation==TRACERADV_TOTAL_DIVERGENCE .and. &
          tstep_type==0) then
+    !   advections of tracers is no longer supported for tstep_type = 0
 
-    do ie=nets,nete
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(q,k,suml)
-#endif
-    do q=1,qsize
-       suml=0
-       do k=1,nlev
-          suml = suml + .5*( elem(ie)%state%Qdp(:,:,k,q,t1)*elem(ie)%state%Q(:,:,k,q,t1) + & 
-                             elem(ie)%state%Qdp(:,:,k,q,t2)*elem(ie)%state%Q(:,:,k,q,t2) )
-       enddo
-       elem(ie)%accum%Qvar(:,:,q,n)=suml(:,:)
-    enddo
-    enddo
 
-    do ie=nets,nete
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(q,k,suml)
-#endif
-    do q=1,qsize
-       suml=0
-       do k=1,nlev
-          suml = suml + .5*(elem(ie)%state%Qdp(:,:,k,q,t1) + elem(ie)%state%Qdp(:,:,k,q,t2) )
-       enddo
-       elem(ie)%accum%Qmass(:,:,q,n)=suml(:,:)
-
-       suml=0
-       do k=1,nlev
-          suml = suml + elem(ie)%state%Qdp(:,:,k,q,t2)
-       enddo
-       elem(ie)%accum%Q1mass(:,:,q)=suml(:,:)
-    enddo
-    enddo
-    endif
-
+    endif 
 
     !
     !  RK2 forward scheme.  compute everything at t2
-    !
+    !  (used by CAM)
+    !   Q has only one time dimension
     if (tracer_advection_formulation==TRACERADV_TOTAL_DIVERGENCE .and. &
          tstep_type==1) then
 
-    do ie=nets,nete
+       do ie=nets,nete
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(q,k,suml)
+          !$omp parallel do private(q,k,suml)
 #endif
-    do q=1,qsize
-       suml=0
-       do k=1,nlev
-          suml = suml + elem(ie)%state%Qdp(:,:,k,q,t2)*elem(ie)%state%Q(:,:,k,q,t2)
+          do q=1,qsize
+             suml=0
+             do k=1,nlev
+                suml = suml + elem(ie)%state%Qdp(:,:,k,q,t2_qdp)*elem(ie)%state%Q(:,:,k,q)
+             enddo
+             elem(ie)%accum%Qvar(:,:,q,n)=suml(:,:)
+          enddo
        enddo
-       elem(ie)%accum%Qvar(:,:,q,n)=suml(:,:)
-    enddo
-    enddo
-
-    do ie=nets,nete
+       
+       do ie=nets,nete
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(q,k,suml)
+          !$omp parallel do private(q,k,suml)
 #endif
-    do q=1,qsize
-       suml=0
-       do k=1,nlev
-          suml = suml + elem(ie)%state%Qdp(:,:,k,q,t2)
+          do q=1,qsize
+             suml=0
+             do k=1,nlev
+                suml = suml + elem(ie)%state%Qdp(:,:,k,q,t2_qdp)
+             enddo
+             elem(ie)%accum%Q1mass(:,:,q)=suml(:,:)
+             elem(ie)%accum%Qmass(:,:,q,n)=suml(:,:)
+          enddo
        enddo
-       elem(ie)%accum%Q1mass(:,:,q)=suml(:,:)
-       elem(ie)%accum%Qmass(:,:,q,n)=suml(:,:)
-    enddo
-    enddo
     endif
 
 
@@ -1017,51 +1010,7 @@ subroutine prim_diag_scalars(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     !  leapfrog of Q - use staggered in time formula
     !
     if (tracer_advection_formulation==TRACERADV_UGRADQ) then
-    do ie=nets,nete
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(q,k,suml,ps,dp)
-#endif
-    do q=1,qsize
-       suml=0
-       ps(:,:)=elem(ie)%state%ps_v(:,:,t1)
-       do k=1,nlev
-          dp(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*ps
-          suml = suml + elem(ie)%state%Q(:,:,k,q,t2)**2 *dp(:,:) 
-       enddo
-       ps(:,:)=elem(ie)%state%ps_v(:,:,t2)
-       do k=1,nlev
-          dp(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*ps
-          suml = suml + elem(ie)%state%Q(:,:,k,q,t1)**2 *dp(:,:)  
-       enddo
-       elem(ie)%accum%Qvar(:,:,q,n)=suml(:,:)/2
-    enddo
-    enddo
-    do ie=nets,nete
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(q,k,suml,ps,dp)
-#endif
-    do q=1,qsize
-       suml=0
-       ps(:,:)=elem(ie)%state%ps_v(:,:,t1)
-       do k=1,nlev
-          dp(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*ps
-          suml = suml + elem(ie)%state%Q(:,:,k,q,t2) *dp(:,:) 
-       enddo
-       ps(:,:)=elem(ie)%state%ps_v(:,:,t2)
-       do k=1,nlev
-          dp(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*ps
-          suml = suml + elem(ie)%state%Q(:,:,k,q,t1) *dp(:,:)  
-       enddo
-       elem(ie)%accum%Qmass(:,:,q,n)=suml(:,:)/2
-    enddo
-    enddo
-
-
-
+ 
     endif
 
 

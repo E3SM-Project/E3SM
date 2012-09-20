@@ -31,10 +31,10 @@ module time_mod
   end type TimeLevel_t
 
   ! Methods
-
   public :: Time_at
   public :: TimeLevel_update
   public :: TimeLevel_init
+  public :: TimeLevel_Qdp
 
   interface TimeLevel_init
      module procedure TimeLevel_init_default
@@ -77,6 +77,36 @@ contains
     tl%np1= n2
     tl%nstep= nstep
   end subroutine TimeLevel_init_specific
+
+
+  !this subroutine returns the proper
+  !locations for nm1 and n0 for Qdp - because
+  !it only has 2 levels for storage
+  subroutine TimeLevel_Qdp(tl, qsplit, n0, np1)
+    type (TimeLevel_t) :: tl
+    integer, intent(in) :: qsplit
+    integer, intent(inout) :: n0
+    integer, intent(inout), optional :: np1
+
+    integer :: i_temp
+
+    i_temp = tl%nstep/qsplit
+
+    if (mod(i_temp,2)  ==0) then
+       n0 = 1
+       if (present(np1)) then
+          np1 = 2
+       endif
+    else
+       n0 = 2
+       if (present(np1)) then 
+          np1 = 1
+       end if
+    endif
+
+    !print * ,'nstep = ', tl%nstep, 'qsplit= ', qsplit, 'i_temp = ', i_temp, 'n0 = ', n0
+
+  end subroutine TimeLevel_Qdp
 
   subroutine TimeLevel_update(tl,uptype)
     type (TimeLevel_t) :: tl

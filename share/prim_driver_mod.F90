@@ -28,6 +28,7 @@ module prim_driver_mod
   
   use element_mod, only : element_t, timelevels
   use Manager
+  use time_mod, only           : TimeLevel_Qdp
 
   implicit none
   private
@@ -52,6 +53,7 @@ module prim_driver_mod
   type (ReductionBuffer_ordered_1d_t), save :: red   ! reduction buffer               (shared)
 
 contains
+
   subroutine prim_init1(elem, fvm, par, dom_mt, Tl)
 
     ! --------------------------------
@@ -544,12 +546,12 @@ contains
     call TimeLevel_init(tl)
     if(par%masterproc) write(iulog,*) 'end of prim_init'
   end subroutine prim_init1
-
+!=======================================================================================================! 
 
   subroutine prim_init2(elem, fvm, hybrid, nets, nete, tl, hvcoord)
 
     use parallel_mod, only : parallel_t, haltmp, syncmp, abortmp
-    use time_mod, only : timelevel_t, tstep, phys_tscale, timelevel_init, time_at, nendstep, smooth, nsplit
+    use time_mod, only : timelevel_t, tstep, phys_tscale, timelevel_init, time_at, nendstep, smooth, nsplit, TimeLevel_Qdp
     use prim_state_mod, only : prim_printstate, prim_diag_scalars
     use filter_mod, only : filter_t, fm_filter_create, taylor_filter_create, &
          fm_transfer, bv_transfer
@@ -585,7 +587,7 @@ contains
     type (TimeLevel_t), intent(inout)    :: tl              ! time level struct
     type (hvcoord_t), intent(inout)      :: hvcoord         ! hybrid vertical coordinate struct
 
-    integer, intent(in)                     :: nets  ! starting thread element number (private)
+     integer, intent(in)                     :: nets  ! starting thread element number (private)
     integer, intent(in)                     :: nete  ! ending thread element number   (private)
 
     ! ==================================
@@ -613,6 +615,7 @@ contains
     integer :: i,j,k,ie,iptr,t,q
     integer :: ierr
     integer :: nfrc
+    integer :: n0_qdp
     real (kind=longdouble_kind)                 :: refnep(1:nep), tmp
     
 
@@ -775,7 +778,7 @@ contains
              elem(ie)%state%T(:,:,:,tl%nm1)=elem(ie)%state%T(:,:,:,tl%n0)
              elem(ie)%state%ps_v(:,:,tl%nm1)=elem(ie)%state%ps_v(:,:,tl%n0)
              elem(ie)%state%lnps(:,:,tl%nm1)=elem(ie)%state%lnps(:,:,tl%n0)
-             elem(ie)%state%Q(:,:,:,1:qsize,tl%nm1)=elem(ie)%state%Q(:,:,:,1:qsize,tl%n0)
+
           enddo
        endif ! runtype==2
        if (hybrid%masterthread) then 
@@ -875,22 +878,25 @@ contains
        end do
 
        if (tracer_advection_formulation==TRACERADV_TOTAL_DIVERGENCE) then
+          call TimeLevel_Qdp( tl, qsplit, n0_qdp)
           do ie=nets,nete
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k, j, i, t, q, dp)
 #endif
              do k=1,nlev    !  Loop inversion (AAM)
-             do t=1,3
-             do q=1,qsize       
-             do i=1,np
-             do j=1,np          
-                dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                     ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,t)
-                elem(ie)%state%Qdp(i,j,k,q,t)=elem(ie)%state%Q(i,j,k,q,t)*dp  
-             enddo
-             enddo
-             enddo
-             enddo
+                do t=1,3
+                   do q=1,qsize       
+                      do i=1,np
+                         do j=1,np          
+                            dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,t)
+
+                            elem(ie)%state%Qdp(i,j,k,q,n0_qdp)=elem(ie)%state%Q(i,j,k,q)*dp  
+                            
+                         enddo
+                      enddo
+                   enddo
+                enddo
              enddo
           enddo
        endif
@@ -964,22 +970,23 @@ contains
 
     ! for restart runs, we read in Qdp for exact restart, and rederive Q
     if (runtype==1 .and. tracer_advection_formulation==TRACERADV_TOTAL_DIVERGENCE) then
+       call TimeLevel_Qdp( tl, qsplit, n0_qdp)
        do ie=nets,nete
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k, j, i, t, q, dp)
 #endif
           do k=1,nlev    !  Loop inversion (AAM)
-          do t=tl%n0,tl%n0
-          do q=1,qsize       
-          do i=1,np
-          do j=1,np          
-             dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                  ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,t)
-             elem(ie)%state%Q(i,j,k,q,t)=elem(ie)%state%Qdp(i,j,k,q,t)/dp  
-          enddo
-          enddo
-          enddo
-          enddo
+             do t=tl%n0,tl%n0
+                do q=1,qsize       
+                   do i=1,np
+                      do j=1,np          
+                         dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                              ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,t)
+                         elem(ie)%state%Q(i,j,k,q)=elem(ie)%state%Qdp(i,j,k,q, n0_qdp)/dp 
+                      enddo
+                   enddo
+                enddo
+             enddo
           enddo
        enddo
     endif
@@ -1004,9 +1011,12 @@ contains
     call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete, fvm)
   end subroutine prim_init2
 
+!=======================================================================================================! 
+
 
 
   subroutine leapfrog_bootstrap(elem, hybrid,nets,nete,tstep,tl,hvcoord)
+
   !
   ! leapfrog bootstrap code.  
   !
@@ -1048,14 +1058,14 @@ contains
   end subroutine leapfrog_bootstrap
 
 
-
+!=======================================================================================================! 
 
 
   subroutine prim_run(elem, hybrid,nets,nete, dt, tl, hvcoord, advance_name)
     use hybvcoord_mod, only : hvcoord_t
     use time_mod, only : TimeLevel_t, time_at, timelevel_update, smooth
     use control_mod, only: statefreq, integration, tracer_advection_formulation,&
-           TRACERADV_TOTAL_DIVERGENCE,TRACERADV_UGRADQ, ftype, tstep_type, nu_p
+           TRACERADV_TOTAL_DIVERGENCE,TRACERADV_UGRADQ, ftype, tstep_type, nu_p, qsplit
     use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3, &
          applycamforcing, applycamforcing_leapfrog
     use prim_advection_mod, only : prim_advec_tracers_lf
@@ -1077,6 +1087,7 @@ contains
     character(len=*), intent(in) :: advance_name
     real(kind=real_kind) :: st, st1, dp
     integer :: ie, t, q,k,i,j
+    integer:: np1_qdp, no_qdp
 
 
     logical :: compute_diagnostics
@@ -1157,7 +1168,7 @@ contains
     if (integration == "explicit") then
        call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
             flt , hybrid,             &
-            dt, tl, nets, nete, compute_diagnostics,tl%n0)
+            dt, tl, nets, nete, compute_diagnostics)
     else if (integration == "semi_imp") then
        call prim_advance_si(elem, nets, nete, cg(hybrid%ithr), blkjac, red, &
             refstate, hvcoord, deriv(hybrid%ithr), flt, hybrid, tl, dt)
@@ -1170,10 +1181,11 @@ contains
     ! and maybe timelevel np1 which was computed in dynamics step above.  
     ! ===============
 
-    if (qsize>0) then
-       call Prim_Advec_Tracers_lf(elem, deriv(hybrid%ithr),hvcoord,flt_advection,hybrid,&
-            dt,tl,nets,nete,compute_diagnostics)
-    endif
+    !!!!!! NOTE: no longer suppoting advecting tracersw/leapfrog code
+    !if (qsize>0) then
+    !   call Prim_Advec_Tracers_lf(elem, deriv(hybrid%ithr),hvcoord,flt_advection,hybrid,&
+    !        dt,tl,nets,nete,compute_diagnostics)
+    !endif
 
     ! =================================
     ! energy, dissipation rate diagnostics.  Uses data at t and t+1
@@ -1184,13 +1196,14 @@ contains
        call prim_diag_scalars(elem,hvcoord,tl,2,.false.,nets,nete)
     endif
 
-    ! ===================================
+    ! =================================== 
     ! Compute Forcing Tendencies from nm1 data (for PROCESS SPLIT)
     ! or np1 data (for TIMESPLIT) and add tendencies into soluiton at timelevel np1
     ! ===================================       
 #ifdef CAM
     ! ftype==1 means forcing is applied in dp_coupling.F90
-    if (ftype<=0) call ApplyCAMForcing_leapfrog(elem, hvcoord,tl%n0,tl%np1,dt,nets,nete)
+    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
+    if (ftype<=0) call ApplyCAMForcing_leapfrog(elem, hvcoord,tl%n0,tl%np1,np1_qdp, dt,nets,nete)
 #else
     call ApplyColumnModel(elem, hybrid, hvcoord, cm(hybrid%ithr),dt)
 #endif
@@ -1231,7 +1244,7 @@ contains
     end if
   end subroutine prim_run
 
-
+!=======================================================================================================! 
 
 
   subroutine prim_run_subcycle(elem, fvm, hybrid,nets,nete, dt, tl, hvcoord)
@@ -1279,7 +1292,7 @@ contains
     real(kind=real_kind), intent(in)        :: dt  ! "timestep dependent" timestep
     type (TimeLevel_t), intent(inout)       :: tl
     real(kind=real_kind) :: st, st1, dp, dt_q
-    integer :: ie, t, q,k,i,j,n, n_Q
+    integer :: ie, t, q,k,i,j,n, n_Q, n_Qdp, t_temp, n0_qdp
 
     real (kind=real_kind)                          :: maxcflx, maxcfly  
 
@@ -1312,7 +1325,8 @@ contains
     ! ftype=1  forcing was applied time-split in CAM coupling layer
     ! ftype=0 means forcing apply here
     ! ftype=-1 do not apply forcing
-    if (ftype==0) call ApplyCAMForcing(elem, hvcoord,tl%n0,dt_q,nets,nete)
+    call TimeLevel_Qdp( tl, qsplit, n0_qdp)
+    if (ftype==0) call ApplyCAMForcing(elem, hvcoord,tl%n0,n0_qdp, dt_q,nets,nete)
     if (ftype==2) call ApplyCAMForcing_dynamics(elem, hvcoord,tl%n0,dt_q,nets,nete)
 #endif
 
@@ -1342,30 +1356,40 @@ contains
     	    enddo
     	  enddo
       enddo
+
     enddo
 
-
+    !We are only storing Q now (just n0 - not nm1 and np1)  
     ! E(1) Energy at start of timestep, diagnostics at t-dt/2  (using t-dt, t and Q(t))
-    if (compute_energy) call prim_energy_halftimes(elem,hvcoord,tl,1,.true.,nets,nete,tl%n0)
+    if (compute_energy) call prim_energy_halftimes(elem,hvcoord,tl,1,.true.,nets,nete,1)
+
     ! qmass and variance, using Q(n0),Qdp(n0)
     if (compute_diagnostics) call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
 
     ! ===============
     ! Dynamical Step 
     ! ===============
-    n_Q = tl%n0   ! n_Q = timelevel of Q at time t.  need to save this because dynamics
+
+    
+    n_Q = tl%n0  ! n_Q = timelevel of Q at time t.  need to save this because dynamics
                   ! will scramble the timelevel pointers.
+    
+    !save the location of  n0 for Qdp
+    !call TimeLevel_Qdp( tl, n_Qdp) !time levels for qdp are not the same
+
 
     call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
-         flt , hybrid, dt, tl, nets, nete, compute_diagnostics,n_Q)
+         flt , hybrid, dt, tl, nets, nete, compute_diagnostics)
+
 
     do n=2,qsplit
 
        call TimeLevel_update(tl,"leapfrog")
 
        call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
-            flt , hybrid, dt, tl, nets, nete, .false.,n_Q)
+            flt , hybrid, dt, tl, nets, nete, .false.)
        ! defer final timelevel update until after Q update.
+
 
     enddo
 
@@ -1373,12 +1397,16 @@ contains
     ! Tracer Advection.  needs U(t) (saved above) and U(t+1), dp(t+1) (now in elem%state%np1 )
     ! ===============
     ! Prim_Advec_Tracers will advance from n0 -> np1, so make sure Q(n_Q) data is in the n0 timelevel:
-    if ( n_Q /= tl%n0 ) then
-      do ie=nets,nete
-        elem(ie)%state%Q(:,:,:,1:qsize,tl%n0)  = elem(ie)%state%Q(:,:,:,1:qsize,n_Q)
-        elem(ie)%state%Qdp(:,:,:,1:qsize,tl%n0)  = elem(ie)%state%Qdp(:,:,:,1:qsize,n_Q)
-      enddo
-    endif
+
+
+    !ALLI - to do: should be aBle to get rid of this!
+    !call TimeLevel_Qdp( tl, t_temp) 
+    !if ( n_Qdp /= t_temp ) then
+    !do ie=nets,nete
+    !     elem(ie)%state%Qdp(:,:,:,:,t_temp)  = elem(ie)%state%Qdp(:,:,:,:,n_Qdp)
+    !  enddo
+    !endif
+
     if (qsize>0) call Prim_Advec_Tracers_remap_rk2(elem, deriv(hybrid%ithr),hvcoord,flt_advection,hybrid,&
          dt_q,tl,nets,nete,compute_diagnostics)
 
@@ -1415,6 +1443,7 @@ contains
          maxcflx=0.0D0
          maxcfly=0.0D0
          do k=1, nlev
+
 !            maxcflx = parallelmax(fvm(:)%maxcfl(1,k),hybrid)
 !            maxcfly = parallelmax(fvm(:)%maxcfl(2,k),hybrid) 
            maxcflx = max(maxcflx,parallelmax(fvm(:)%maxcfl(1,k),hybrid))
@@ -1454,28 +1483,30 @@ contains
        !          (or use continuous reconstruction)
     endif
 
+   
 
     ! now we have:
     !   u(nm1)   dynamics at  t+dt_q - 2*dt 
     !   u(n0)    dynamics at  t+dt_q - dt    
     !   u(np1)   dynamics at  t+dt_q 
     !
-    !   Q(nm1)   undefined
-    !   Q(n0)    Q at t
-    !   Q(np1)   Q at t+dt_q
+    !   Q(1)   Q at t+dt_q
     if (compute_diagnostics) call prim_diag_scalars(elem,hvcoord,tl,2,.false.,nets,nete)
-    if (compute_energy) call prim_energy_halftimes(elem,hvcoord,tl,2,.false.,nets,nete,tl%np1)
 
-
+    if (compute_energy) call prim_energy_halftimes(elem,hvcoord,tl,2,.false.,nets,nete,1)
 
     if (energy_fixer > 0) then
        if ( .not. compute_energy) call abortmp("ERROR: energy fixer needs compute_energy=.true")
        call prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete)
     endif
+
+
     if (compute_diagnostics) then
        call prim_diag_scalars(elem,hvcoord,tl,3,.false.,nets,nete)
-       call prim_energy_halftimes(elem,hvcoord,tl,3,.false.,nets,nete,tl%np1)
-    endif
+
+       call prim_energy_halftimes(elem,hvcoord,tl,3,.false.,nets,nete,1)
+
+     endif
 
 
     ! =================================
@@ -1505,7 +1536,7 @@ contains
     end if
   end subroutine prim_run_subcycle
 
-
+!=======================================================================================================! 
 
 
   subroutine prim_finalize(hybrid)
@@ -1516,7 +1547,7 @@ contains
     ! ==========================
   end subroutine prim_finalize
 
-
+!=======================================================================================================! 
 
 
 
@@ -1534,12 +1565,12 @@ contains
     use hybvcoord_mod, only : hvcoord_t
     use physical_constants, only : Cp, cpwater_vapor,g,dd_pi
     use physics_mod, only : Virtual_Specific_Heat
-    use time_mod, only : timelevel_t
-    use control_mod, only : moisture, tracer_advection_formulation,traceradv_total_divergence,energy_fixer, use_cpstar
+    use time_mod, only : timelevel_t, TimeLevel_Qdp
+    use control_mod, only : moisture, tracer_advection_formulation,traceradv_total_divergence,energy_fixer, use_cpstar, qsplit
     use hybvcoord_mod, only : hvcoord_t
     use global_norms_mod, only: wrap_repro_sum
     type (hybrid_t), intent(in)           :: hybrid  ! distributed parallel structure (shared)
-    integer :: t1,t2,t3,n,nets,nete,t_beta
+    integer :: t1,t2,t3,n,nets,nete,t_beta, t_beta_qdp, t1_qdp, t2_qdp
     type (element_t)     , intent(inout), target :: elem(:)
     type (hvcoord_t)                  :: hvcoord
     type (TimeLevel_t), intent(inout)       :: tl
@@ -1561,19 +1592,19 @@ contains
 !
     t1=tl%n0     ! timelevel for cp_star dp 
     t2=tl%np1    ! timelevel for T
-
+    call TimeLevel_Qdp( tl, qsplit, t1_qdp, t2_qdp) 
+    
     use_cp_star = (use_cpstar.eq.1)  ! by default, use global value
     ! but override to false for certain fixers:
     if (energy_fixer==2) use_cp_star = .false.   
     if (energy_fixer==4) use_cp_star = .false.
     
-
-
-    
     t_beta = t1
+    t_beta_qdp = t1_qdp
     scale = 2.0
     if (energy_fixer==3 .or. energy_fixer==4) then
        t_beta=t2
+       t_beta_qdp = t2_qdp
        scale = 1.0
     endif
     ! with staggered-in-time formula:
@@ -1604,9 +1635,9 @@ contains
           do j=1,np
              if(use_cp_star)  then
                 if (tracer_advection_formulation==TRACERADV_TOTAL_DIVERGENCE) then
-                   qval = elem(ie)%state%Qdp(i,j,k,1,t_beta)/dp(i,j,k)
+                   qval = elem(ie)%state%Qdp(i,j,k,1,t_beta_qdp)/dp(i,j,k)
                 else
-                   qval = elem(ie)%state%Q(i,j,k,1,t_beta)
+                   qval = elem(ie)%state%Q(i,j,k,1)
                 endif
                 cp_star= Virtual_Specific_Heat(qval)
                 sumlk(i,j,k) = cp_star*dp(i,j,k) 
@@ -1654,7 +1685,7 @@ contains
        elem(ie)%state%T(:,:,:,t2) =  elem(ie)%state%T(:,:,:,t2) + beta
     enddo
 
-
+!=======================================================================================================! 
     end subroutine prim_energy_fixer
 
 
