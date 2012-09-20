@@ -13,7 +13,7 @@ contains
        hybrid, blkjac, lambdasq, dt, pmean, tl, nets, nete, xstate)
 
     use kinds, only : real_kind
-    use dimensions_mod, only : nv, np, nlev, nvar
+    use dimensions_mod, only : np, nlev, nvar
     use physical_constants, only : g
     use element_mod, only : element_t
     use parallel_mod, only : parallel_t
@@ -108,14 +108,14 @@ contains
        do n=1,nvar
         do ie=nets,nete
         do k=1,nlev
-          do j=1,nv
-            do i=1,nv
+          do j=1,np
+            do i=1,np
              lx = lx+1
              if (n==1) xstate(lx) = elem(ie)%state%v(i,j,1,k,np1)
              if (n==2) xstate(lx) = elem(ie)%state%v(i,j,2,k,np1)
              if (n==3) xstate(lx) = elem(ie)%state%p(i,j,k,np1)
-            end do  !nv
-          end do  !nv
+            end do  !np
+          end do  !np
         end do  !nlev
        end do !ie
        end do !nvar
@@ -138,8 +138,8 @@ contains
        do n=1,nvar
         do ie=nets,nete
         do k=1,nlev
-          do j=1,nv
-            do i=1,nv
+          do j=1,np
+            do i=1,np
              lx = lx+1
              if (n==1) elem(ie)%state%v(i,j,1,k,np1)=xstate(lx)
              if (n==2) elem(ie)%state%v(i,j,2,k,np1)=xstate(lx)
@@ -158,7 +158,7 @@ contains
        do ie=nets,nete
        if (topology == "cube" .and. test_case=="swtc1") then
           do k=1,nlev
-             elem(ie)%state%v(:,:,:,k,np1)=tc1_velocity(elem(ie)%spherev,elem(ie)%Dinv)
+             elem(ie)%state%v(:,:,:,k,np1)=tc1_velocity(elem(ie)%spherep,elem(ie)%Dinv)
              elem(ie)%state%v(:,:,:,k,n0 )=elem(ie)%state%v(:,:,:,k,np1)
              elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,np1)
           end do
@@ -176,7 +176,7 @@ contains
 
     use ,intrinsic :: iso_c_binding 
     use kinds, only : real_kind
-    use dimensions_mod, only : nv, np, nlev, nvar, nelem
+    use dimensions_mod, only : np, nlev, nvar, nelem
     use element_mod, only : element_t
     use edge_mod, only : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack
     use hybrid_mod, only : hybrid_t
@@ -198,18 +198,18 @@ contains
     integer              :: ns
     integer              :: ne
 
-    real (kind=real_kind), dimension(nv,nv) :: fcor,spheremv,ps
-    real (kind=real_kind), dimension(nv,nv,2,nlev,nelem)  :: vtens
-    real (kind=real_kind), dimension(nv,nv,2,nlev,nelem)  :: vtens_n
+    real (kind=real_kind), dimension(np,np) :: fcor,spheremp,ps
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem)  :: vtens
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem)  :: vtens_n
     real (kind=real_kind), dimension(np,np,nlev,nelem) :: ptens ! at t=n+1
     real (kind=real_kind), dimension(np,np,nlev,nelem) :: ptens_n ! at t=n
 
-    real (kind=real_kind), dimension(nv,nv,2)  :: grade,grade_n ! strong KE gradient
-    real (kind=real_kind), dimension(nv,nv,2)  :: pv,pv_n     ! p*v lat-lon at t=n+1,n
-    real (kind=real_kind), dimension(nv,nv)    :: E,E_n       ! kinetic energy term
-    real (kind=real_kind), dimension(nv,nv)    :: zeta,zeta_n ! relative vorticity
-    real (kind=real_kind), dimension(nv,nv)    :: div,div_n   ! at t=n+1,n  
-    real (kind=real_kind), dimension(nv,nv,2)  :: ulatlon, up, um
+    real (kind=real_kind), dimension(np,np,2)  :: grade,grade_n ! strong KE gradient
+    real (kind=real_kind), dimension(np,np,2)  :: pv,pv_n     ! p*v lat-lon at t=n+1,n
+    real (kind=real_kind), dimension(np,np)    :: E,E_n       ! kinetic energy term
+    real (kind=real_kind), dimension(np,np)    :: zeta,zeta_n ! relative vorticity
+    real (kind=real_kind), dimension(np,np)    :: div,div_n   ! at t=n+1,n  
+    real (kind=real_kind), dimension(np,np,2)  :: ulatlon, up, um
 
     real (kind=real_kind) ::  v1, v2, v1p, v2p, v1m, v2m
     real (kind=real_kind) ::  vtens1, vtens2
@@ -241,23 +241,23 @@ contains
      do n=1,nvar
       do ie=ns,ne
         do k=1,nlev
-          do j=1,nv
-            do i=1,nv
+          do j=1,np
+            do i=1,np
              lx = lx+1
              if (n==1) fptr%base(ie)%state%v(i,j,1,k,np1) = xstate(lx)
              if (n==2) fptr%base(ie)%state%v(i,j,2,k,np1) = xstate(lx)
              if (n==3) fptr%base(ie)%state%p(i,j,k,np1)  = xstate(lx)
-            end do  !nv
-          end do  !nv
+            end do  !np
+          end do  !np
         end do  !nlev
       end do !ie
      end do !nvar
 
     do ie=ns,ne
-      do j=1,nv
-       do i=1,nv
+      do j=1,np
+       do i=1,np
         fcor(i,j)        = fptr%base(ie)%fcor(i,j)
-        spheremv(i,j)    = fptr%base(ie)%spheremv(i,j)
+        spheremp(i,j)    = fptr%base(ie)%spheremp(i,j)
         ps(i,j)          = fptr%base(ie)%state%ps(i,j)
        end do
       end do
@@ -267,8 +267,8 @@ contains
          ! Compute kinetic energy term at each time level
          ! ==============================================
 
-      do j=1,nv
-       do i=1,nv
+      do j=1,np
+       do i=1,np
 
           v1       = fptr%base(ie)%state%v(i,j,1,k,n0)   ! contra
           v2       = fptr%base(ie)%state%v(i,j,2,k,n0)   ! contra 
@@ -307,33 +307,33 @@ contains
           ! ==============================================
           ! Compute residual terms
           ! ==============================================
-          do j=1,nv
-             do i=1,nv
+          do j=1,np
+             do i=1,np
 
-            vtens_n(i,j,1,k,ie)=spheremv(i,j)* &
+            vtens_n(i,j,1,k,ie)=spheremp(i,j)* &
           (ulatlon(i,j,2)*(fcor(i,j) + zeta_n(i,j)) - grade_n(i,j,1))
-            vtens_n(i,j,2,k,ie)=spheremv(i,j)* &
+            vtens_n(i,j,2,k,ie)=spheremp(i,j)* &
           (-ulatlon(i,j,1)*(fcor(i,j) + zeta_n(i,j)) - grade_n(i,j,2))
 
-            vtens(i,j,1,k,ie)=spheremv(i,j)* &
+            vtens(i,j,1,k,ie)=spheremp(i,j)* &
           (up(i,j,2)*(fcor(i,j) + zeta(i,j)) - grade(i,j,1))
-            vtens(i,j,2,k,ie)=spheremv(i,j)* &
+            vtens(i,j,2,k,ie)=spheremp(i,j)* &
           (-up(i,j,1)*(fcor(i,j) + zeta(i,j)) - grade(i,j,2))
 
-            ptens_n(i,j,k,ie) =  -spheremv(i,j)*div_n(i,j)
-            ptens(i,j,k,ie) =  -spheremv(i,j)*div(i,j)
+            ptens_n(i,j,k,ie) =  -spheremp(i,j)*div_n(i,j)
+            ptens(i,j,k,ie) =  -spheremp(i,j)*div(i,j)
 
 ! calculate nonlinear residual 
 
-       ptens(i,j,k,ie) = spheremv(i,j)*(fptr%base(ie)%state%p(i,j,k,np1)- &
+       ptens(i,j,k,ie) = spheremp(i,j)*(fptr%base(ie)%state%p(i,j,k,np1)- &
           fptr%base(ie)%state%p(i,j,k,n0))*dti - 0.5*ptens(i,j,k,ie) &
           - 0.5*ptens_n(i,j,k,ie)
 
-      vtens(i,j,1,k,ie) = spheremv(i,j)* &
+      vtens(i,j,1,k,ie) = spheremp(i,j)* &
         (up(i,j,1)-ulatlon(i,j,1))*dti - 0.5*vtens(i,j,1,k,ie) &
           - 0.5*vtens_n(i,j,1,k,ie)
 
-       vtens(i,j,2,k,ie) = spheremv(i,j)* &
+       vtens(i,j,2,k,ie) = spheremp(i,j)* &
          (up(i,j,2)-ulatlon(i,j,2))*dti - 0.5*vtens(i,j,2,k,ie) &
           - 0.5*vtens_n(i,j,2,k,ie)
 
@@ -373,22 +373,22 @@ contains
     do n=1,nvar
     do ie=ns,ne
       do k=1,nlev
-         do j=1,nv
-            do i=1,nv
+         do j=1,np
+            do i=1,np
               lx = lx+1
            if (topology == "cube" .and. test_case=="swtc1") then
               if (n==1) fx(lx) = 0.0
               if (n==2) fx(lx) = 0.0
            else 
-                vtens1=fptr%base(ie)%rspheremv(i,j)*vtens(i,j,1,k,ie)
-                vtens2=fptr%base(ie)%rspheremv(i,j)*vtens(i,j,2,k,ie)
+                vtens1=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,1,k,ie)
+                vtens2=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,2,k,ie)
 
               if (n==1) fx(lx) = fptr%base(ie)%Dinv(1,1,i,j)*vtens1 &
                      + fptr%base(ie)%Dinv(1,2,i,j)*vtens2
               if (n==2) fx(lx) = fptr%base(ie)%Dinv(2,1,i,j)*vtens1 &
                      + fptr%base(ie)%Dinv(2,2,i,j)*vtens2
            end if
-              if (n==3) fx(lx) = fptr%base(ie)%rspheremv(i,j)*ptens(i,j,k,ie) 
+              if (n==3) fx(lx) = fptr%base(ie)%rspheremp(i,j)*ptens(i,j,k,ie) 
             end do
           end do
        end do
@@ -405,7 +405,7 @@ contains
 
     use ,intrinsic :: iso_c_binding
     use kinds, only : real_kind
-    use dimensions_mod, only : nv, np, nlev, nvar, nelem
+    use dimensions_mod, only : np, nlev, nvar, nelem
     use physical_constants, only : rearth, g
     use element_mod, only : element_t
 !    use parallel_mod, only : parallel_t
@@ -504,7 +504,7 @@ contains
 
     use ,intrinsic :: iso_c_binding 
     use kinds, only : real_kind
-    use dimensions_mod, only : nv, np, nlev, nvar, nelem
+    use dimensions_mod, only : np, nlev, nvar, nelem
     use element_mod, only : element_t
     use edge_mod, only : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack
     use hybrid_mod, only : hybrid_t
@@ -526,20 +526,20 @@ contains
     integer              :: ns
     integer              :: ne
 
-    real (kind=real_kind), dimension(nv,nv) :: fcor,spheremv,ps
-    real (kind=real_kind), dimension(nv,nv,2,nlev,nelem)  :: vtens
-    real (kind=real_kind), dimension(nv,nv,2,nlev,nelem)  :: vtens_n
+    real (kind=real_kind), dimension(np,np) :: fcor,spheremp,ps
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem)  :: vtens
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem)  :: vtens_n
     real (kind=real_kind), dimension(np,np,nlev,nelem) :: ptens ! at t=n+1
     real (kind=real_kind), dimension(np,np,nlev,nelem) :: ptens_n ! at t=n
 
-    real (kind=real_kind), dimension(nv,nv,2)  :: grade,grade_n ! strong KE gradient
-    real (kind=real_kind), dimension(nv,nv,2)  :: pv,pv_n     ! p*v lat-lon at t=n+1,n
-    real (kind=real_kind), dimension(nv,nv)    :: E,E_n       ! kinetic energy term
-    real (kind=real_kind), dimension(nv,nv)    :: zeta,zeta_n ! relative vorticity
-    real (kind=real_kind), dimension(nv,nv)    :: div,div_n   ! at t=n+1,n  
-    real (kind=real_kind), dimension(nv,nv,2)  :: ulatlon, up, um
-    real (kind=real_kind), dimension(nv,nv,2,nlev,nelem)  :: dv
-    real (kind=real_kind), dimension(nv,nv,nlev,nelem)  :: dp
+    real (kind=real_kind), dimension(np,np,2)  :: grade,grade_n ! strong KE gradient
+    real (kind=real_kind), dimension(np,np,2)  :: pv,pv_n     ! p*v lat-lon at t=n+1,n
+    real (kind=real_kind), dimension(np,np)    :: E,E_n       ! kinetic energy term
+    real (kind=real_kind), dimension(np,np)    :: zeta,zeta_n ! relative vorticity
+    real (kind=real_kind), dimension(np,np)    :: div,div_n   ! at t=n+1,n  
+    real (kind=real_kind), dimension(np,np,2)  :: ulatlon, up, um
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem)  :: dv
+    real (kind=real_kind), dimension(np,np,nlev,nelem)  :: dp
 
     real (kind=real_kind) ::  v1, v2, v1p, v2p, v1m, v2m
     real (kind=real_kind) ::  vtens1, vtens2
@@ -571,23 +571,23 @@ contains
      do n=1,nvar
       do ie=ns,ne
         do k=1,nlev
-          do j=1,nv
-            do i=1,nv
+          do j=1,np
+            do i=1,np
              lx = lx+1
              if (n==1) fptr%base(ie)%state%v(i,j,1,k,np1) = xs(lx)
              if (n==2) fptr%base(ie)%state%v(i,j,2,k,np1) = xs(lx)
              if (n==3) fptr%base(ie)%state%p(i,j,k,np1)  = xs(lx)
-            end do  !nv
-          end do  !nv
+            end do  !np
+          end do  !np
         end do  !nlev
       end do !ie
      end do !nvar
 
     do ie=ns,ne
-      do j=1,nv
-       do i=1,nv
+      do j=1,np
+       do i=1,np
         fcor(i,j)        = fptr%base(ie)%fcor(i,j)
-        spheremv(i,j)    = fptr%base(ie)%spheremv(i,j)
+        spheremp(i,j)    = fptr%base(ie)%spheremp(i,j)
         ps(i,j)          = fptr%base(ie)%state%ps(i,j)
        end do
       end do
@@ -597,8 +597,8 @@ contains
          ! Compute kinetic energy term at each time level
          ! ==============================================
 
-      do j=1,nv
-       do i=1,nv
+      do j=1,np
+       do i=1,np
 
           v1       = fptr%base(ie)%state%v(i,j,1,k,n0)   ! contra
           v2       = fptr%base(ie)%state%v(i,j,2,k,n0)   ! contra 
@@ -637,33 +637,33 @@ contains
           ! ==============================================
           ! Compute residual terms
           ! ==============================================
-          do j=1,nv
-             do i=1,nv
+          do j=1,np
+             do i=1,np
 
-            vtens_n(i,j,1,k,ie)=spheremv(i,j)* &
+            vtens_n(i,j,1,k,ie)=spheremp(i,j)* &
           (ulatlon(i,j,2)*(fcor(i,j) + zeta_n(i,j)) - grade_n(i,j,1))
-            vtens_n(i,j,2,k,ie)=spheremv(i,j)* &
+            vtens_n(i,j,2,k,ie)=spheremp(i,j)* &
           (-ulatlon(i,j,1)*(fcor(i,j) + zeta_n(i,j)) - grade_n(i,j,2))
 
-            vtens(i,j,1,k,ie)=spheremv(i,j)* &
+            vtens(i,j,1,k,ie)=spheremp(i,j)* &
           (up(i,j,2)*(fcor(i,j) + zeta(i,j)) - grade(i,j,1))
-            vtens(i,j,2,k,ie)=spheremv(i,j)* &
+            vtens(i,j,2,k,ie)=spheremp(i,j)* &
           (-up(i,j,1)*(fcor(i,j) + zeta(i,j)) - grade(i,j,2))
 
-            ptens_n(i,j,k,ie) =  -spheremv(i,j)*div_n(i,j)
-            ptens(i,j,k,ie) =  -spheremv(i,j)*div(i,j)
+            ptens_n(i,j,k,ie) =  -spheremp(i,j)*div_n(i,j)
+            ptens(i,j,k,ie) =  -spheremp(i,j)*div(i,j)
 
 ! calculate nonlinear residual 
 
-       ptens(i,j,k,ie) = spheremv(i,j)*(fptr%base(ie)%state%p(i,j,k,np1)- &
+       ptens(i,j,k,ie) = spheremp(i,j)*(fptr%base(ie)%state%p(i,j,k,np1)- &
           fptr%base(ie)%state%p(i,j,k,n0))*dti - 0.5*ptens(i,j,k,ie) &
           - 0.5*ptens_n(i,j,k,ie)
 
-      vtens(i,j,1,k,ie) = spheremv(i,j)* &
+      vtens(i,j,1,k,ie) = spheremp(i,j)* &
         (up(i,j,1)-ulatlon(i,j,1))*dti - 0.5*vtens(i,j,1,k,ie) &
           - 0.5*vtens_n(i,j,1,k,ie)
 
-       vtens(i,j,2,k,ie) = spheremv(i,j)* &
+       vtens(i,j,2,k,ie) = spheremp(i,j)* &
          (up(i,j,2)-ulatlon(i,j,2))*dti - 0.5*vtens(i,j,2,k,ie) &
           - 0.5*vtens_n(i,j,2,k,ie)
 
@@ -703,22 +703,22 @@ contains
     do n=1,nvar
     do ie=ns,ne
       do k=1,nlev
-         do j=1,nv
-            do i=1,nv
+         do j=1,np
+            do i=1,np
               lx = lx+1
            if (topology == "cube" .and. test_case=="swtc1") then
               if (n==1) fx(lx) = 0.0
               if (n==2) fx(lx) = 0.0
            else 
-                vtens1=fptr%base(ie)%rspheremv(i,j)*vtens(i,j,1,k,ie)
-                vtens2=fptr%base(ie)%rspheremv(i,j)*vtens(i,j,2,k,ie)
+                vtens1=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,1,k,ie)
+                vtens2=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,2,k,ie)
 
               if (n==1) fx(lx) = fptr%base(ie)%Dinv(1,1,i,j)*vtens1 &
                      + fptr%base(ie)%Dinv(1,2,i,j)*vtens2
               if (n==2) fx(lx) = fptr%base(ie)%Dinv(2,1,i,j)*vtens1 &
                      + fptr%base(ie)%Dinv(2,2,i,j)*vtens2
            end if
-              if (n==3) fx(lx) = fptr%base(ie)%rspheremv(i,j)*ptens(i,j,k,ie) 
+              if (n==3) fx(lx) = fptr%base(ie)%rspheremp(i,j)*ptens(i,j,k,ie) 
 ! for testing, ID preconditioner
 !              if (n==1) fx(lx) = xs(lx)
 !              if (n==2) fx(lx) = xs(lx)
@@ -745,7 +745,7 @@ contains
     use ,intrinsic :: iso_c_binding 
     use kinds, only : real_kind
     use physical_constants, only : rearth, g
-    use dimensions_mod, only : nv, np, nlev, nvar, nelem
+    use dimensions_mod, only : np, nlev, nvar, nelem
     use element_mod, only : element_t
     use edge_mod, only : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack
     use reduction_mod, only : reductionbuffer_ordered_1d_t
@@ -776,32 +776,32 @@ contains
     ! Local Variables
     ! =================
 
-    real (kind=real_kind), dimension(nv,nv)     :: mp
-    real (kind=real_kind), dimension(nv,nv)     :: metdetp
-    real (kind=real_kind), dimension(nv,nv)     :: fcor
-    real (kind=real_kind), dimension(nv,nv)     :: rmv
-    real (kind=real_kind), dimension(nv,nv)     :: mv
-    real (kind=real_kind), dimension(nv,nv)     :: rspheremv
-    real (kind=real_kind), dimension(nv,nv)     :: spheremv
-    real (kind=real_kind), dimension(nv,nv)     :: metdet
-    real (kind=real_kind), dimension(2,2,nv,nv) :: met
-    real (kind=real_kind), dimension(2,2,nv,nv) :: metinv
+    real (kind=real_kind), dimension(np,np)     :: mp
+    real (kind=real_kind), dimension(np,np)     :: metdetp
+    real (kind=real_kind), dimension(np,np)     :: fcor
+    real (kind=real_kind), dimension(np,np)     :: rmv
+    real (kind=real_kind), dimension(np,np)     :: mv
+    real (kind=real_kind), dimension(np,np)     :: rspheremp
+    real (kind=real_kind), dimension(np,np)     :: spheremp
+    real (kind=real_kind), dimension(np,np)     :: metdet
+    real (kind=real_kind), dimension(2,2,np,np) :: met
+    real (kind=real_kind), dimension(2,2,np,np) :: metinv
 
     ! Thread private working set ...
 
-    real (kind=real_kind), dimension(nv,nv,2,nlev,nelem)  :: dv, zv
-    real (kind=real_kind), dimension(nv,nv,2,nlev,nelem)  :: Ru
-    real (kind=real_kind), dimension(nv,nv,2,nlev,nelem)  :: grad_dp
-    real (kind=real_kind), dimension(nv,nv,nlev,nelem)    :: vgradp 
-    real (kind=real_kind), dimension(nv,nv,nlev,nelem)    :: Rs   
-    real (kind=real_kind), dimension(nv,nv,nlev,nelem)    :: dp, zp 
-    real (kind=real_kind), dimension(nv,nv,2) :: gradp,grappm1 ! weak p grad, time level n,n-1
-    real (kind=real_kind), dimension(nv,nv,2) :: grade   ! strong KE gradient
-    real (kind=real_kind), dimension(nv,nv,2) :: gv,gvm1 ! metdet*v(n,n-1), v contravar
-    real (kind=real_kind), dimension(nv,nv,2) :: ulatlon     !(cov) latlon velocity
-    real (kind=real_kind), dimension(nv,nv)   :: E       ! kinetic energy term
-    real (kind=real_kind), dimension(nv,nv)   :: zeta    ! relative vorticity
-    real (kind=real_kind), dimension(nv,nv)   :: div,divm1 ! tstep n,n-1 velocity div
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem)  :: dv, zv
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem)  :: Ru
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem)  :: grad_dp
+    real (kind=real_kind), dimension(np,np,nlev,nelem)    :: vgradp 
+    real (kind=real_kind), dimension(np,np,nlev,nelem)    :: Rs   
+    real (kind=real_kind), dimension(np,np,nlev,nelem)    :: dp, zp 
+    real (kind=real_kind), dimension(np,np,2) :: gradp,grappm1 ! weak p grad, time level n,n-1
+    real (kind=real_kind), dimension(np,np,2) :: grade   ! strong KE gradient
+    real (kind=real_kind), dimension(np,np,2) :: gv,gvm1 ! metdet*v(n,n-1), v contravar
+    real (kind=real_kind), dimension(np,np,2) :: ulatlon     !(cov) latlon velocity
+    real (kind=real_kind), dimension(np,np)   :: E       ! kinetic energy term
+    real (kind=real_kind), dimension(np,np)   :: zeta    ! relative vorticity
+    real (kind=real_kind), dimension(np,np)   :: div,divm1 ! tstep n,n-1 velocity div
 
     real (kind=real_kind) ::  v1,v2
     real (kind=real_kind) ::  gradp1,gradp2
@@ -841,14 +841,14 @@ contains
      do nn=1,nvar
       do ie=ns,ne
         do k=1,nlev
-          do j=1,nv
-            do i=1,nv
+          do j=1,np
+            do i=1,np
              lx = lx+1
              if (nn==1) zv(i,j,1,k,ie) = z(lx)
              if (nn==2) zv(i,j,2,k,ie) = z(lx)
              if (nn==3) zp(i,j,k,ie)   = z(lx)
-            end do  !nv
-          end do  !nv
+            end do  !np
+          end do  !np
         end do  !nlev
       end do !ie
      end do !nvar
@@ -857,18 +857,18 @@ contains
 
     do ie=ns,ne
 
-        rspheremv(:,:)         = pptr%base(ie)%rspheremv(:,:)
+        rspheremp(:,:)         = pptr%base(ie)%rspheremp(:,:)
 
        do k=1,nlev
 
           ! =========================================================
           ! Scale velocity tendency and v.grad(p) term by inverse mass
           ! matrix, scale velocity by metric g factor.
-          !     11 nv*nv Flops
+          !     11 np*np Flops
           ! =========================================================
 
-          do j=1,nv
-             do i=1,nv
+          do j=1,np
+             do i=1,np
 
              gvm1(i,j,1) = pptr%base(ie)%D(1,1,i,j)*zv(i,j,1,k,ie) + &
   pptr%base(ie)%D(1,2,i,j)*zv(i,j,2,k,ie)
@@ -884,10 +884,10 @@ contains
 
            divm1  = divergence_sphere(gvm1,pptr%deriv,pptr%base(ie))
 
-          do j=1,nv
-             do i=1,nv
+          do j=1,np
+             do i=1,np
                 Rs(i,j,k,ie) =        &
-                 +  pptr%base(ie)%spheremv(i,j)*(zp(i,j,k,ie)  &
+                 +  pptr%base(ie)%spheremp(i,j)*(zp(i,j,k,ie)  &
                 -  pptr%dt*pmean*divm1(i,j) )
              end do
           end do
@@ -906,9 +906,9 @@ contains
        kptr=0
        call edgeVunpack(pptr%edge1, Rs(1,1,1,ie), nlev, kptr, pptr%base(ie)%desc)
        do k=1,nlev
-          do j=1,nv
-             do i=1,nv
-                Rs(i,j,k,ie) = pptr%base(ie)%rspheremv(i,j)*Rs(i,j,k,ie)
+          do j=1,np
+             do i=1,np
+                Rs(i,j,k,ie) = pptr%base(ie)%rspheremp(i,j)*Rs(i,j,k,ie)
              enddo
           enddo
        enddo
@@ -936,8 +936,8 @@ contains
     do ie=ns,ne
 
        metinv(:,:,:,:)  = pptr%base(ie)%metinv(:,:,:,:)
-       spheremv(:,:)  = pptr%base(ie)%spheremv(:,:)
-       rspheremv(:,:)  = pptr%base(ie)%rspheremv(:,:)
+       spheremp(:,:)  = pptr%base(ie)%spheremp(:,:)
+       rspheremp(:,:)  = pptr%base(ie)%rspheremp(:,:)
 
        do k=1,nlev
 
@@ -947,13 +947,13 @@ contains
 
           ! ==================================================
           ! Rotate grad_dp to form contravariant object:
-          !        6 nv*nv Flops
+          !        6 np*np Flops
           ! ==================================================
 
-          do j=1,nv
-             do i=1,nv
-                grad_dp(i,j,1,k,ie) = spheremv(i,j)*grad_dp(i,j,1,k,ie) 
-                grad_dp(i,j,2,k,ie) = spheremv(i,j)*grad_dp(i,j,2,k,ie) 
+          do j=1,np
+             do i=1,np
+                grad_dp(i,j,1,k,ie) = spheremp(i,j)*grad_dp(i,j,1,k,ie) 
+                grad_dp(i,j,2,k,ie) = spheremp(i,j)*grad_dp(i,j,2,k,ie) 
              end do
           end do
        enddo
@@ -974,13 +974,13 @@ contains
 
           ! ==============================
           ! Update velocity
-          !    16 nv*nv Flops
+          !    16 np*np Flops
           ! ==============================
 
-          do j=1,nv
-             do i=1,nv
-               grad_dp1 = pptr%base(ie)%rspheremv(i,j)*grad_dp(i,j,1,k,ie)
-               grad_dp2 = pptr%base(ie)%rspheremv(i,j)*grad_dp(i,j,2,k,ie)
+          do j=1,np
+             do i=1,np
+               grad_dp1 = pptr%base(ie)%rspheremp(i,j)*grad_dp(i,j,1,k,ie)
+               grad_dp2 = pptr%base(ie)%rspheremp(i,j)*grad_dp(i,j,2,k,ie)
            grad_dp(i,j,1,k,ie)   = pptr%base(ie)%Dinv(1,1,i,j)*grad_dp1 + &
                       pptr%base(ie)%Dinv(1,2,i,j)*grad_dp2
            grad_dp(i,j,2,k,ie)   = pptr%base(ie)%Dinv(2,1,i,j)*grad_dp1 + &
@@ -999,8 +999,8 @@ contains
      do nn=1,nvar
       do ie=ns,ne
         do k=1,nlev
-          do j=1,nv
-            do i=1,nv
+          do j=1,np
+            do i=1,np
              lx = lx+1
 ! for testing, ID preconditioner 
 !              vv(lx) = z(lx)
@@ -1011,8 +1011,8 @@ contains
              if (nn.ne.3) vv(lx) = dv(i,j,nn,k,ie)
              if (nn==3)   vv(lx) = dp(i,j,k,ie)
            end if
-            end do  !nv
-          end do  !nv
+            end do  !np
+          end do  !np
         end do  !nlev
       end do !ie
      end do !nvar

@@ -26,12 +26,12 @@ contains
   ! pcg_presolver_nonstag:
   !
   ! Preconditioned conjugate gradient solver on the
-  ! Gauss-Lobatto nonstaggered grid (np = nv).
+  ! Gauss-Lobatto nonstaggered grid
   ! 
   ! ================================================
 
   function pcg_presolver_nonstag(pptr, rhs) result(x) 
-    use dimensions_mod, only : nlev, nv, np, nvsq, nelemd
+    use dimensions_mod, only : nlev, np, npsq, nelemd
     use element_mod, only : element_t
     use derived_type_mod, only : precon_type
     use reduction_mod, only : reductionbuffer_ordered_1d_t
@@ -46,38 +46,35 @@ contains
 
     integer  :: nets,nete
 
-! MT:  this cant be correct: this routine has a static copy of the entire elem struct???
-!    type(element_t) :: elem(nelemd)
+    type(element_t) :: elem(nelemd)
 
-    real (kind=real_kind), intent(in) :: rhs(nv,nv,nlev,nelemd) ! right hand side of operator
+    real (kind=real_kind), intent(in) :: rhs(np,np,nlev,nelemd) ! right hand side of operator
     type (cg_t)                       :: cg             ! conjugate gradient    (private)
     type (ReductionBuffer_ordered_1d_t)  :: red         ! CG reduction buffer   (shared memory)
     type (EdgeBuffer_t)               :: edge1   ! Laplacian gradient edge buffer (shared memory)
     type (EdgeBuffer_t)               :: edge2   ! Laplacian gradient edge buffer (shared memory)
     real (kind=real_kind)             :: lambdasq(nlev) ! Helmholtz lengthscale (private)
     type (derivative_t)               :: deriv   ! non staggered derivative struct (private)
-    type (blkjac_t)		      :: blkjac(nelemd)
+    type (blkjac_t)                   :: blkjac(nelemd)
 
-    real (kind=real_kind)             :: x(nv,nv,nlev,nelemd)     ! solution (result)
+    real (kind=real_kind)             :: x(np,np,nlev,nelemd)     ! solution (result)
     type(precon_type) ,pointer        :: pptr
 
     ! ===========
     ! Local
     ! ===========
 
-    real (kind=real_kind), dimension(2,2,nv,nv) :: metinv
-    real (kind=real_kind), dimension(nv,nv) :: metdet
-    real (kind=real_kind), dimension(nv,nv) :: rmetdet
-    real (kind=real_kind), dimension(nv,nv) :: rmv
-    real (kind=real_kind), dimension(nv,nv) :: metdetp
-    real (kind=real_kind), dimension(nv,nv) :: mp
-    real (kind=real_kind), dimension(nv,nv) :: mv
+    real (kind=real_kind), dimension(2,2,np,np) :: metinv
+    real (kind=real_kind), dimension(np,np) :: metdet
+    real (kind=real_kind), dimension(np,np) :: rmetdet
+    real (kind=real_kind), dimension(np,np) :: rmp
+    real (kind=real_kind), dimension(np,np) :: mp
 
-    real (kind=real_kind) :: gradp(nv,nv,2,nlev,nelemd)
-    real (kind=real_kind) :: div(nv,nv,nlev,nelemd)
-    real (kind=real_kind) :: p(nv,nv)
-    real (kind=real_kind) :: r(nvsq)
-    real (kind=real_kind) :: z(nvsq)
+    real (kind=real_kind) :: gradp(np,np,2,nlev,nelemd)
+    real (kind=real_kind) :: div(np,np,nlev,nelemd)
+    real (kind=real_kind) :: p(np,np)
+    real (kind=real_kind) :: r(npsq)
+    real (kind=real_kind) :: z(npsq)
 
     real (kind=real_kind) :: gradp1
     real (kind=real_kind) :: gradp2
@@ -114,8 +111,8 @@ contains
        ieptr=ie-nets+1
        do k=1,nlev
           iptr=1
-          do j=1,nv
-             do i=1,nv
+          do j=1,np
+             do i=1,np
                 pptr%cg%state(ieptr)%r(iptr,k) = rhs(i,j,k,ie)
                 iptr=iptr+1
              end do
@@ -131,9 +128,8 @@ contains
           metinv = elem(ie)%metinv
           metdet = elem(ie)%metdet
           rmetdet  = elem(ie)%rmetdet
-          rmv     = elem(ie)%rmv
-          metdetp = elem(ie)%metdetp
-          mv      = elem(ie)%mv
+          rmp     = elem(ie)%rmp
+          mp      = elem(ie)%mp
 
           do k=1,nlev
              if (.not.cg%converged(k)) then
@@ -145,14 +141,14 @@ contains
                 if (precon_method == "block_jacobi") then
 
                    if (blkjac_storage == "LUfactor") then
-                      call dgesl(cg%state(ieptr)%r(:,k),cg%state(ieptr)%z(:,k),blkjac(ie)%E(:,:,k),blkjac(ie)%ipvt(:,k),nvsq)
+                      call dgesl(cg%state(ieptr)%r(:,k),cg%state(ieptr)%z(:,k),blkjac(ie)%E(:,:,k),blkjac(ie)%ipvt(:,k),npsq)
                    else if (blkjac_storage == "inverse") then
-                      call matvec(cg%state(ieptr)%r(:,k),cg%state(ieptr)%z(:,k),blkjac(ie)%E(:,:,k),nvsq)
+                      call matvec(cg%state(ieptr)%r(:,k),cg%state(ieptr)%z(:,k),blkjac(ie)%E(:,:,k),npsq)
                    end if
 
                    !                   iptr=1
-                   !                   do j=1,nv
-                   !                      do i=1,nv
+                   !                   do j=1,np
+                   !                      do i=1,np
                    !                         cg%wrk2(iptr,k,ieptr)=z(iptr)
                    !                         p(i,j) = cg%state(ieptr)%z(iptr,k)
                    !                         iptr=iptr+1
@@ -162,8 +158,8 @@ contains
                 else if (precon_method == "identity") then
 
                    iptr=1
-                   do j=1,nv
-                      do i=1,nv
+                   do j=1,np
+                      do i=1,np
                          cg%state(ieptr)%z(iptr,k) = cg%state(ieptr)%r(iptr,k)*rmetdet(i,j)
                          iptr=iptr+1
                       end do
@@ -173,9 +169,9 @@ contains
                 end if
 
                 !JMD===========================================
-                !JMD   2*nv*nv*(nv + nv) Flops 
-   		!JMD  SR = (4*nv*nv + 2*nv*nv + nv*nv)*Ld
-   		!JMD  SUM(WS) = (6*nv*nv + 2*nv*nv + nv*nv
+                !JMD   2*np*np*(np + np) Flops 
+   		!JMD  SR = (4*np*np + 2*np*np + np*np)*Ld
+   		!JMD  SUM(WS) = (6*np*np + 2*np*np + np*np
                 !JMD===========================================
 
 #ifdef _WK_GRAD
@@ -187,11 +183,11 @@ contains
 
                 ! =======================================
                 ! rotate gradient to form contravariant
-                !JMD  4*nv*nv Flops
+                !JMD  4*np*np Flops
                 ! =======================================
 
-                do j=1,nv
-                   do i=1,nv
+                do j=1,np
+                   do i=1,np
                       gradp1       = gradp(i,j,1,k,ie)
                       gradp2       = gradp(i,j,2,k,ie)
 #if 1
@@ -233,28 +229,28 @@ contains
              if (.not.cg%converged(k)) then
 
                 ! ====================
-                ! 2*nv*nv Flops
+                ! 2*np*np Flops
                 ! ====================
 
-                do j=1,nv
-                   do i=1,nv
-                      gradp(i,j,1,k,ie) = rmv(i,j)*gradp(i,j,1,k,ie)
-                      gradp(i,j,2,k,ie) = rmv(i,j)*gradp(i,j,2,k,ie)
-                   ! gradp(i,j,1,k,ie) = metdet(i,j)*rmv(i,j)*gradp(i,j,1,k,ie)
-                   ! gradp(i,j,2,k,ie) = metdet(i,j)*rmv(i,j)*gradp(i,j,2,k,ie)
+                do j=1,np
+                   do i=1,np
+                      gradp(i,j,1,k,ie) = rmp(i,j)*gradp(i,j,1,k,ie)
+                      gradp(i,j,2,k,ie) = rmp(i,j)*gradp(i,j,2,k,ie)
+                   ! gradp(i,j,1,k,ie) = metdet(i,j)*rmp(i,j)*gradp(i,j,1,k,ie)
+                   ! gradp(i,j,2,k,ie) = metdet(i,j)*rmp(i,j)*gradp(i,j,2,k,ie)
                    end do
                 end do
 
                 ! ================================================
                 ! Compute  Pseudo Laplacian(p), store in div
-                !JMD   2*nv*np*(nv + np) Flops 
+                !JMD   2*np*np*(np + np) Flops 
                 ! ================================================
 
                 div(:,:,k,ie) = divergence(gradp(:,:,:,k,ie),deriv)*rrearth
 
-                do j=1,nv
-                   do i=1,nv
-                      div(i,j,k,ie) = mv(i,j)*div(i,j,k,ie)
+                do j=1,np
+                   do i=1,np
+                      div(i,j,k,ie) = mp(i,j)*div(i,j,k,ie)
                    end do
                 end do
              end if
@@ -280,10 +276,9 @@ contains
        do ie=nets,nete
           ieptr=ie-nets+1
 
-          rmv      = elem(ie)%rmv
+          rmp      = elem(ie)%rmp
           rmetdet  = elem(ie)%rmetdet
           metdet   = elem(ie)%metdet
-          metdetp  = elem(ie)%metdetp
 
           kptr=0
           call edgeVunpack(edge1, div(1,1,1,ie), nlev, kptr, elem(ie)%desc)
@@ -292,9 +287,9 @@ contains
              if (.not.cg%converged(k)) then
 
                 iptr=1
-                do j=1,nv
-                   do i=1,nv
-                      cg%state(ieptr)%s(iptr,k) = metdetp(i,j)*cg%state(ieptr)%z(iptr,k)+lambdasq(k)*rmv(i,j)*div(i,j,k,ie)
+                do j=1,np
+                   do i=1,np
+                      cg%state(ieptr)%s(iptr,k) = metdet(i,j)*cg%state(ieptr)%z(iptr,k)+lambdasq(k)*rmp(i,j)*div(i,j,k,ie)
                       iptr=iptr+1
                    end do
                 end do
@@ -313,8 +308,8 @@ contains
        ieptr=ie-nets+1
        do k=1,nlev
           iptr=1
-          do j=1,nv
-             do i=1,nv
+          do j=1,np
+             do i=1,np
 !                !       x(i,j,k,ie)=cg%wrk3(iptr,k,ieptr)
                 x(i,j,k,ie)=cg%state(ieptr)%x(iptr,k)
                 iptr=iptr+1

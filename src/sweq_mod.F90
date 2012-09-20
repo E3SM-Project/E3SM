@@ -266,8 +266,8 @@ contains
     if (hybrid%masterthread) then
 #if 0
        print *,"Filter:"
-       do j=1,nv
-          do k=1,nv
+       do j=1,np
+          do k=1,np
              print *,"F(",k,",",j,")=",flt%FmatV(k,j)
           end do
        end do
@@ -586,7 +586,7 @@ contains
       if (hybrid%masterthread) print *,'initializing Trilinos solver info'
 
 #ifdef TRILINOS
-      lenx=nv*nv*nlev*nvar*(nete-nets+1)
+      lenx=np*np*nlev*nvar*(nete-nets+1)
       allocate(xstate(lenx))
       xstate(:) = 0
        call initialize(state_object, lenx, elem, pmean, edge3, &

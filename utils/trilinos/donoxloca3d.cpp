@@ -1,7 +1,7 @@
 #include "LOCA.H"
 #include "LOCA_Epetra.H"
 //STRAT1
-#include "NOX_Epetra_LinearSystem_Stratimikos.hpp"
+#include "NOX_Epetra_LinearSystem_Stratimikos.H"
 
 // Trilinos Objects
 #include "Epetra_MpiComm.h"
@@ -89,7 +89,7 @@ void noxinit(int* nelems, double* statevector, int* mpi_comm_ignored,
     Teuchos::rcp(new Teuchos::ParameterList);
 
   // Read in the parameter list from a file
-  Teuchos::updateParametersFromXmlFile("input.xml", paramList.get());
+  Teuchos::updateParametersFromXmlFile("input.xml", paramList.ptr());
 
   // Set some default parameters
   Teuchos::ParameterList& locaParamsList = paramList->sublist("LOCA");
@@ -200,8 +200,9 @@ void noxsolve(int* nelems, double* statevector,
 {
 
   try {
-    TEST_FOR_EXCEPTION(is_null(solver), logic_error, "Exception: noxsolve called with solver=null: "
-                             << "either did call noxinit 1st, or called noxfinish already");
+    TEUCHOS_TEST_FOR_EXCEPTION(is_null(solver), logic_error, 
+                               "Exception: noxsolve called with solver=null: "
+                               << "either did call noxinit 1st, or called noxfinish already");
 
     // reset solver with new initial Guess
     Epetra_Vector& initialGuessEV = initialGuess->getEpetraVector();
