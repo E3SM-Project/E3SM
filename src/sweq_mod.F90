@@ -837,6 +837,11 @@ contains
 #endif
      end if
 
+! TODO: branch has this, I think we need it here as well, but not yet tested
+!     if ((integration == "full_imp").or.(integration == "semi_imp")) then ! closeout 
+!       deallocate(blkjac)
+!     end if
+
     ! ======================================================
     ! compute and report times...
     ! ======================================================

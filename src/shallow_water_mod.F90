@@ -496,6 +496,7 @@ contains
     ! with monotone limiter of order -1e-11 for some reason
     if (integration == "explicit" .and. limiter_option /= 0) pmean = 0
     if (integration == "runge_kutta" .and. limiter_option /= 0) pmean = 0
+    if (integration == "full_imp" .and. limiter_option /= 0) pmean = 0
   end function tc1_init_pmean
   ! ===========================================
   ! tc2_init_pmean
@@ -576,6 +577,7 @@ contains
           case = sub_case
           if (sub_case==1 .and. k>1) case=k  ! run one sub_case in each level
           elem(ie)%state%p(:,:,k,n0)=tc1_geopotential(elem(ie)%spherep(:,:),pmean,latc0,lonc0,case)
+!          elem(ie)%state%p(:,:,k,n0)=0.0D0
           elem(ie)%state%p(:,:,k,nm1)=elem(ie)%state%p(:,:,k,n0)
           elem(ie)%state%p(:,:,k,np1)=0.0D0
           

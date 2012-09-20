@@ -1,16 +1,3 @@
-9/2012 CGB and KJE 
-
-HOMME now has a CMake build option for both sweqx and swim.
-(swim is the SW version of HOMME that uses trilinos in the implicit solve option)
-
-To use this:
-1. mkdir BUILD_DIR somewhere
-2. cp /bld/cmake-script/$APPROPRIATE_BUILD_SCRIPT into $BUILD_DIR 
-3. ./$APPROPRIATE_BUILD_SCRIPT
-4. Modify as appropriate
-5. make -j4
-6. make install (if you want the executable installed in /opt/homme/trunk-$DATE)
-
 DO NOT READ THIS!!!!
 
 This is the README file with instructions for building HOMME using the

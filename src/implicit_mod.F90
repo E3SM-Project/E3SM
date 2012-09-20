@@ -323,7 +323,7 @@ contains
             ptens_n(i,j,k,ie) =  -spheremp(i,j)*div_n(i,j)
             ptens(i,j,k,ie) =  -spheremp(i,j)*div(i,j)
 
-! calculate nonlinear residual 
+! calculate nonlinear residual using Crank-Nicolson
 
        ptens(i,j,k,ie) = spheremp(i,j)*(fptr%base(ie)%state%p(i,j,k,np1)- &
           fptr%base(ie)%state%p(i,j,k,n0))*dti - 0.5*ptens(i,j,k,ie) &
