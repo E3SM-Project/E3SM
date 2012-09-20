@@ -117,7 +117,7 @@ contains
           do i=1,np
              do k=1,nlev
                 pmid = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*EXP(elemin%state%lnps(i,j,nfrc))
-                r0=elemin%state%Q(i,j,k,q,nfrc)
+                r0=elemin%state%Q(i,j,k,q)
                 r1=r0
                 call Prim_Condense(r1,elemin%state%T(i,j,k,nfrc),pmid)
                 elemin%derived%FQ(i,j,k,q,nm1) = elemin%derived%FQ(i,j,k,q,nm1) + &
@@ -344,13 +344,9 @@ contains
 
        if (qsize>=1) then
        q=1
-       elem(ie)%state%Q(:,:,:,q,n0) =0  ! moist HS tracer IC=0
-       elem(ie)%state%Q(:,:,:,q,nm1)=0
-       elem(ie)%state%Q(:,:,:,q,np1)=0
+       elem(ie)%state%Q(:,:,:,q) =0  ! moist HS tracer IC=0
        do q=2,qsize
-          elem(ie)%state%Q(:,:,:,q,n0) =elem(ie)%state%T(:,:,:,n0)/400
-          elem(ie)%state%Q(:,:,:,q,nm1)=elem(ie)%state%T(:,:,:,n0)/400
-          elem(ie)%state%Q(:,:,:,q,np1)=elem(ie)%state%T(:,:,:,n0)/400
+          elem(ie)%state%Q(:,:,:,q) =elem(ie)%state%T(:,:,:,n0)/400
        enddo
        endif
     end do

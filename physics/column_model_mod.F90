@@ -121,8 +121,11 @@ contains
           do k=1,nlev
              do j=1,np	
                 do i=1,np	
-                   elem(ie)%state%Q(i,j,k,1,1:3)      = 0_real_kind
-                   elem(ie)%state%Qdp(i,j,k,1,1:3)      = 0_real_kind
+                   !elem(ie)%state%Q(i,j,k,1,1:3)      = 0_real_kind
+                   !elem(ie)%state%Qdp(i,j,k,1,1:3)      = 0_real_kind
+                   elem(ie)%state%Q(i,j,k,1)      = 0_real_kind
+                   elem(ie)%state%Qdp(i,j,k,1,1:2)      = 0_real_kind
+
                    elem(ie)%derived%FQ(i,j,k,1,1:3)     = 0_real_kind
                    elem(ie)%derived%FM(i,j,1:2,k,1:3) = 0_real_kind
                    elem(ie)%derived%FT(i,j,k,1:3)     = 0_real_kind
@@ -316,7 +319,7 @@ contains
                 cm%col(i,j)%P(nlevp-k)     = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*ps(i,j)
                 cm%col(i,j)%PH(nlevp-k+1)  = hvcoord%hyai(k)*hvcoord%ps0 + hvcoord%hybi(k)*ps(i,j)
 
-                cm%col(i,j)%Q(nlevp-k)     = elemin%state%Q(i,j,k,1,nm1)
+                cm%col(i,j)%Q(nlevp-k)     = elemin%state%Q(i,j,k,1)
 
                 cm%col(i,j)%QS(nlevp-k)    = Saturation_Specific_Humidity(cm%col(i,j)%P(nlevp-k),T)
                 cm%col(i,j)%TRA(nlevp-k,1) = 0_real_kind 
@@ -351,7 +354,7 @@ contains
                 cm%col(i,j)%T(nlevp-k)     = T
                 cm%col(i,j)%P(nlevp-k)     = hyam_ps0 + hvcoord%hybm(k  )*ps(i,j)
                 cm%col(i,j)%PH(nlevp-k)    = hyai_ps0 + hvcoord%hybi(k+1)*ps(i,j)
-                cm%col(i,j)%Q(nlevp-k)     = Specific_Humidity(elemin%state%Q(i,j,k,1,nm1))
+                cm%col(i,j)%Q(nlevp-k)     = Specific_Humidity(elemin%state%Q(i,j,k,1))
                 cm%col(i,j)%QS(nlevp-k)    = Saturation_Specific_Humidity(cm%col(i,j)%P(nlevp-k),T)
                 cm%col(i,j)%TRA(nlevp-k,1) = 0_real_kind 
 
@@ -405,7 +408,7 @@ contains
                 elemin%state%v(i,j,2,k,nm1)  = cd%V( nlevp-k)
 
                 elemin%state%T(i,j,k,nm1)    = cd%T(nlevp-k)
-                elemin%state%Q(i,j,k,1,nm1)    = cd%Q(nlevp-k)
+                elemin%state%Q(i,j,k,1)    = cd%Q(nlevp-k)
 #ifdef USE_MAXLAT
              endif
 #endif
@@ -460,7 +463,7 @@ contains
                 elemin%state%v(i,j,1,k,nm1)  = u1*elemin%Dinv(1,1,i,j) + v1*elemin%Dinv(1,2,i,j)
                 elemin%state%v(i,j,2,k,nm1)  = u1*elemin%Dinv(2,1,i,j) + v1*elemin%Dinv(2,2,i,j)
                 elemin%state%T(i,j,k,nm1)    = cd%T(nlevp-k)
-                elemin%state%Q(i,j,k,1,nm1)      = cd%Q(nlevp-k)/(1_real_kind - cd%Q(nlevp-k))
+                elemin%state%Q(i,j,k,1)      = cd%Q(nlevp-k)/(1_real_kind - cd%Q(nlevp-k))
 #ifdef USE_MAXLAT
              endif
 #endif
@@ -479,7 +482,7 @@ contains
 
                 fu = cd%FU(nlevp-k)
                 fv = cd%FV(nlevp-k)
-                RCD = (1_real_kind+elemin%state%Q(i,j,k,1,nm1))**2_real_kind
+                RCD = (1_real_kind+elemin%state%Q(i,j,k,1))**2_real_kind
 
                 elemin%derived%FM(i,j,1,k,nm1) = &
                 elemin%derived%FM(i,j,1,k,nm1) + fu*elemin%Dinv(1,1,i,j) + fv*elemin%Dinv(1,2,i,j)
@@ -845,7 +848,7 @@ contains
           enddo
        enddo
 
-       if(Debug) print *,ie,":AVERAGE = ",elem_physics(ie)%qmc(:,:,n0), " ===> Q = ", elem(ie)%state%Q(:,:,:,1,n0)
+       if(Debug) print *,ie,":AVERAGE = ",elem_physics(ie)%qmc(:,:,n0), " ===> Q = ", elem(ie)%state%Q(:,:,:,1)
 
        ! copy other time-slabs
 
@@ -892,13 +895,13 @@ contains
 
        if(Debug)then
           if(hybrid%par%masterproc)then
-             print *,"Q=",elem(ie)%state%Q(:,:,:,1,n0)
+             print *,"Q=",elem(ie)%state%Q(:,:,:,1)
              print *,"1-p/ps=",OneMinusPonPs
              print *,"lnps=",elem(ie)%state%lnps(:,:,n0)
           end if
        end if
 
-       call ProjVandDQ(OneMinusPonPs,elem(ie)%state%Q(:,:,:,1,n0),&
+       call ProjVandDQ(OneMinusPonPs,elem(ie)%state%Q(:,:,:,1),&
             Qt0glob(:,:,ie),elem(ie)%state%lnps(:,:,n0),hvcoord)
 
        do k=1,nlev
@@ -910,7 +913,7 @@ contains
        enddo
 
        ! Q1 global
-       call ProjVandDQ(pot,elem(ie)%state%Q(:,:,:,1,n0),Qt1glob(:,:,ie),elem(ie)%state%lnps(:,:,n0),hvcoord)
+       call ProjVandDQ(pot,elem(ie)%state%Q(:,:,:,1),Qt1glob(:,:,ie),elem(ie)%state%lnps(:,:,n0),hvcoord)
 
        do k=1,nlev
           do j=1,np
@@ -920,7 +923,7 @@ contains
           enddo
        enddo
        ! Q2 global
-       call ProjVandDQ(pot,elem(ie)%state%Q(:,:,:,1,n0),Qt2glob(:,:,ie),elem(ie)%state%lnps(:,:,n0),hvcoord)
+       call ProjVandDQ(pot,elem(ie)%state%Q(:,:,:,1),Qt2glob(:,:,ie),elem(ie)%state%lnps(:,:,n0),hvcoord)
 !
 !To change the strength of moisture background gradient Qt1, Qt2, etc. coomment/uncomment the command line
 ! which defines Lc0nCp = (c) Lc/Cp. (c)=1 == original GATE sounding, (c) = 2, GATE sounding is doubled.   
