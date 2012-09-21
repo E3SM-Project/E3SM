@@ -93,13 +93,14 @@ void identity(MPI_Fint *comm, int *iotask)
 
    int psetNum;
    psetNum = Personality_psetNum (&pers);
+#ifdef DEBUG
    if((*iotask)>0) {
       printf( "%04i (%-50s %s) %i yes\n", rank, my_name, message, psetNum );
    } else {
       printf( "%04i (%-50s %s) %i --\n", rank, my_name, message, psetNum);
    }
    printf("MPI task %6i is rank %3i in Pset: %3i \n",rank, rankInPset,psetNum);
-
+#endif
   /* Determine which core on node....  I don't want to put more than one io-task per node */
    coreId = get_processor_id ();
 
