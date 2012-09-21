@@ -1,13 +1,13 @@
 /*
-** $Id: gptl_papi.c,v 1.76 2010/02/17 23:59:54 rosinski Exp $
+** $Id: gptl_papi.c,v 1.79 2011-03-28 20:55:19 rosinski Exp $
 **
 ** Author: Jim Rosinski
 **
 ** Contains routines which interface to PAPI library
 */
  
-#include "gptl.h"
 #include "private.h"
+#include "gptl.h"
 
 #ifdef HAVE_PAPI
 
@@ -284,6 +284,10 @@ int GPTL_PAPIsetoption (const int counter,  /* PAPI counter (or option) */
       pr_event[nevents].event    = derivedtable[idx];
       pr_event[nevents].numidx   = enable (PAPI_FP_OPS);
       pr_event[nevents].denomidx = enable (PAPI_L1_DCA);
+#ifdef DEBUG
+      printf ("GPTL_PAPIsetoption: pr_event %d is derived and will be PAPI event %d / %d\n", 
+	      nevents, pr_event[nevents].numidx, pr_event[nevents].denomidx);
+#endif
       if (verbose)
 	printf ("GPTL_PAPIsetoption: enabling derived event %s = PAPI_FP_OPS / PAPI_L1_DCA\n", 
 		pr_event[nevents].event.namestr);
@@ -623,6 +627,9 @@ int enable (int counter)
 
   for (n = 0; n < npapievents; ++n) {
     if (papieventlist[n] == counter) {
+#ifdef DEBUG
+      printf ("enable: PAPI event %d is %d\n", n, counter);
+#endif
       return n;
     }
   }
@@ -665,8 +672,8 @@ int GPTL_PAPIlibraryinit ()
 
   if ((ret = PAPI_is_initialized ()) == PAPI_NOT_INITED) {
     if ((ret = PAPI_library_init (PAPI_VER_CURRENT)) != PAPI_VER_CURRENT) {
-      fprintf(stderr, "GPTL_PAPIlibraryinit: ret=%d PAPI_VER_CURRENT=%d\n", 
-	      ret, PAPI_VER_CURRENT);
+      fprintf (stderr, "GPTL_PAPIlibraryinit: ret=%d PAPI_VER_CURRENT=%d\n", 
+	       ret, (int) PAPI_VER_CURRENT);
       return GPTLerror ("GPTL_PAPIlibraryinit: PAPI_library_init failure:%s\n",
 			PAPI_strerror (ret));
     }
@@ -901,6 +908,9 @@ int GPTL_PAPIstop (const int t,         /* thread number */
   */
 
   for (n = 0; n < npapievents; n++) {
+#ifdef DEBUG
+    printf ("GPTL_PAPIstop: event %d counter value is %ld\n", n, (long) papicounters[t][n]);
+#endif
     delta = papicounters[t][n] - aux->last[n];
     if ( ! is_multiplexed && delta < 0)
       aux->accum[n] = BADCOUNT;
@@ -978,6 +988,10 @@ void GPTL_PAPIpr (FILE *fp,                          /* file descriptor to write
     if (pr_event[n].denomidx > -1) {      /* derived event */
       denomidx = pr_event[n].denomidx;
 
+#ifdef DEBUG
+      printf ("GPTL_PAPIpr: derived event: numidx=%d denomidx=%d values = %ld %ld\n", 
+	      numidx, denomidx, (long) aux->accum[numidx], (long) aux->accum[denomidx]);
+#endif
       /* Protect against divide by zero */
 
       if (aux->accum[denomidx] > 0)
@@ -988,6 +1002,10 @@ void GPTL_PAPIpr (FILE *fp,                          /* file descriptor to write
 
     } else {                               /* Raw PAPI event */
 
+#ifdef DEBUG
+      printf ("GPTL_PAPIpr: raw event: numidx=%d value = %ld\n", 
+	      numidx, (long) aux->accum[numidx]);
+#endif
       if (aux->accum[numidx] < PRTHRESH)
 	fprintf (fp, intfmt, (long) aux->accum[numidx]);
       else
@@ -1083,8 +1101,13 @@ void GPTL_PAPIfinalize (int maxthreads)
 
   /* Reset initial values */
 
-  nevents = 0;
   npapievents = 0;
+  nevents = 0;
+  is_multiplexed = false;
+  narrowprint = true;
+  persec = true;
+  enable_multiplexing = false;
+  verbose = false;
 }
 
 /*
@@ -1281,8 +1304,13 @@ int GPTLget_npapievents (void)
 #else
 
 /*
-** "Should not be called" entry points for public routines
+** HAVE_PAPI not defined branch: "Should not be called" entry points for public routines
 */
+
+int GPTL_PAPIlibraryinit ()
+{
+  return GPTLerror ("GPTL_PAPIlibraryinit: PAPI not enabled\n");
+}
 
 int GPTLevent_name_to_code (const char *name, int *code)
 {

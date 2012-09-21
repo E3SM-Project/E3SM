@@ -57,6 +57,7 @@ module perf_utils
    ! precision/kind constants (from csm_share/shr/shr_kind_mod.F90)
    !----------------------------------------------------------------------------
    integer,parameter,public :: SHR_KIND_R8 = selected_real_kind(12) ! 8 byte real
+   integer,parameter,public :: SHR_KIND_I8 = selected_int_kind (13) ! 8 byte integer
    integer,parameter,public :: SHR_KIND_IN = kind(1)                ! native integer
    integer,parameter,public :: SHR_KIND_CL = 256                    ! long char
    integer,parameter,public :: SHR_KIND_CX = 512                    ! extra-long char
@@ -461,13 +462,13 @@ subroutine find_group_name(unit, group, status)
          ! look for group name in this record
 
          ! remove leading blanks
-         inrec2 = adjustl(inrec)
+         inrec2 = to_lower(adjustl(inrec))
 
          ! check for leading '&'
          if (inrec2(1:1) == '&') then
 
             ! check for case insensitive group name
-            if (trim(lc_group) == to_lower(inrec2(2:len_grp+1))) then
+            if (trim(lc_group) == inrec2(2:len_grp+1)) then
 
                ! found group name.  backspace to leave file position at this record
                backspace(unit)

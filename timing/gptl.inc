@@ -1,10 +1,10 @@
 !
-! $Id: gptl.inc,v 1.41 2009/12/29 02:03:53 rosinski Exp $
+! $Id: gptl.inc,v 1.44 2011-03-28 20:55:19 rosinski Exp $
 !
 ! Author: Jim Rosinski
 !
-! #include or Fortran include this file in application codes which invoke GPTL functions.
-! Values defined here match their counterparts in gptl.h See that file or man pages
+! GPTL header file to be included in user code. Values match
+! their counterparts in gptl.h. See that file or man pages
 ! or web-based documenation for descriptions of each value
 !
       integer GPTLsync_mpi
@@ -23,6 +23,7 @@
       integer GPTLdopr_multparent
       integer GPTLdopr_collision
       integer GPTLprint_method
+      integer GPTLtablesize
 
       integer GPTL_IPC
       integer GPTL_CI
@@ -36,11 +37,11 @@
       integer GPTL_L3MRT
 
       integer GPTLnanotime
-      integer GPTLrtc
       integer GPTLmpiwtime
       integer GPTLclockgettime
       integer GPTLgettimeofday
       integer GPTLpapitime
+      integer GPTLread_real_time
 
       integer GPTLfirst_parent
       integer GPTLlast_parent
@@ -63,6 +64,7 @@
       parameter (GPTLdopr_multparent= 14)
       parameter (GPTLdopr_collision = 15)
       parameter (GPTLprint_method   = 16)
+      parameter (GPTLtablesize      = 50)
 
       parameter (GPTL_IPC           = 17)
       parameter (GPTL_CI            = 18)
@@ -77,10 +79,10 @@
 
       parameter (GPTLgettimeofday   = 1)
       parameter (GPTLnanotime       = 2)
-      parameter (GPTLrtc            = 3)
       parameter (GPTLmpiwtime       = 4)
       parameter (GPTLclockgettime   = 5)
       parameter (GPTLpapitime       = 6)
+      parameter (GPTLread_real_time = 3)
 
       parameter (GPTLfirst_parent   = 1)
       parameter (GPTLlast_parent    = 2)
@@ -92,11 +94,18 @@
       integer gptlsetoption
       integer gptlinitialize
       integer gptlstart
+      integer gptlstart_handle
       integer gptlstop
+      integer gptlstop_handle
       integer gptlstamp 
+      integer gptlpr_set_append
+      integer gptlpr_query_append
+      integer gptlpr_set_write
+      integer gptlpr_query_write
       integer gptlpr
       integer gptlpr_file
       integer gptlpr_summary
+      integer gptlpr_summary_file
       integer gptlbarrier
       integer gptlreset 
       integer gptlfinalize
@@ -111,19 +120,25 @@
       integer gptlget_eventvalue
       integer gptlget_nregions
       integer gptlget_regionname
-#ifdef HAVE_PAPI
       integer gptl_papilibraryinit
       integer gptlevent_name_to_code
       integer gptlevent_code_to_name
-#endif
+
       external gptlsetoption
       external gptlinitialize
       external gptlstart
+      external gptlstart_handle
       external gptlstop
+      external gptlstop_handle
       external gptlstamp 
+      external gptlpr_set_append
+      external gptlpr_query_append
+      external gptlpr_set_write
+      external gptlpr_query_write
       external gptlpr
       external gptlpr_file
       external gptlpr_summary
+      external gptlpr_summary_file
       external gptlbarrier
       external gptlreset 
       external gptlfinalize
@@ -138,8 +153,6 @@
       external gptlget_eventvalue
       external gptlget_nregions
       external gptlget_regionname
-#ifdef HAVE_PAPI
       external gptl_papilibraryinit
       external gptlevent_name_to_code
       external gptlevent_code_to_name
-#endif

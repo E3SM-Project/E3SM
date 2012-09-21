@@ -1,88 +1,86 @@
-#
-# Defined externally in Makefile.arch for each platform
-#
-#   INCLUDES
-#   LIBS
-#   MPICC
-#   MPIF90
-#   COPTS
-#   FOPTS
-#   CFLAGS
-#   FFLAGS
-#   AWK
-#   AR
-
-RM=/bin/rm -f
-MODSUF = .mod
-CPPSUF = .f90
-
-
-ifeq (,$(PIOARCH))
-  PIOARCH=conf
-endif
-include ../pio/Makefile.$(PIOARCH)
-export PIOARCH
-
-SRCS_C = GPTLget_memusage.c \
-         GPTLprint_memusage.c \
-         GPTLutil.c \
-         f_wrappers.c \
-         gptl.c \
-         gptl_papi.c \
-         threadutil.c \
-
-SRCS_F90 =  perf_mod.F90 \
-            perf_utils.F90  
-
-OBJS=  $(SRCS_C:.c=.o) \
-       $(SRCS_F90:.F90=.o)
-
-
-MODFILES := $(SRCS_F90:.F90=$(MODSUF))
-
-PERL = /usr/bin/perl
-
-LIB= libtiming.a
-
-all: $(LIB)
-
-
-#
-# Suffix rules
-#
-
 .SUFFIXES:
-.SUFFIXES: .o .c .F90 $(DEPSUF)
+.SUFFIXES: .F90 .o .c .f90
+# name of macros file - but default this is generic
 
+VPATH := $(GPTL_DIR)
 
-
-ifeq ($(EXPLICIT_CPP),yes)
-SRCS_CPP= $(SRCS_F90:.F90=$(CPPSUF))
-.F90.o:
-	@if [ -w $*.f90 ] ; then echo "ERROR: file $*.f90 is writable - the .f90 suffix is reserved for temporary cpp output" ; exit 1; fi
-	$(RM) $*.f90
-	$(CPP) $(CPPDEFS) $(CFLAGS) $(COPTS) $(INCLUDES) -o $*.f90 $*.F90 
-	chmod a-w $*.f90
-	$(MPIFC) -c $(FFLAGS) $(FOPTS) $(INCLUDES) $*.f90
-else
-SRCS_CPP=
-.F90.o:
-	$(MPIFC) -c $(FFLAGS) $(FOPTS) $(INCLUDES) $*.F90
+# Determine whether to compile threaded or not
+ifeq ($(strip $(BUILD_THREADED)),TRUE)
+   compile_threaded = true
 endif
+ifeq ($(strip $(SMP)),TRUE)
+   compile_threaded = true
+endif
+
+
+ifndef MOD_SUFFIX
+   MOD_SUFFIX := mod
+endif
+
+
+ifeq ($(strip $(MACFILE)),)
+   MACFILE  := Macros
+endif
+
+# Machine specific macros file 
+# This must be included before any settings are overwritten 
+# But must be AFTER any definitions it uses are defined.
+# So be careful if moving this either earlier or later in the makefile!!!
+include $(MACFILE)
+
+ifeq ($(strip $(MPILIB)), mpi-serial)
+  CC      := $(SCC)
+  FC      := $(SFC)
+  MPIFC   := $(SFC)
+  MPICC   := $(SCC)
+  INCLDIR += -I$(EXEROOT)/mct/mpi-serial
+else
+  CC := $(MPICC)
+  FC := $(MPIFC)
+  CPPDEFS += -DHAVE_MPI
+endif
+ifdef CPRE
+  FPPDEFS := $(patsubst -D%,$(CPRE)%,$(CPPDEFS)) 
+else
+  FPPDEFS := $(CPPDEFS)
+endif
+
+
+
+OBJS = gptl.o GPTLutil.o GPTLget_memusage.o GPTLprint_memusage.o \
+       gptl_papi.o f_wrappers.o perf_mod.o perf_utils.o
+
+
+libgptl.a: $(OBJS)
+	$(AR) ruv $@ $(OBJS)
+
+
 
 .c.o:
-	$(MPICC) -c $(CFLAGS) $(CPPDEFS) $(COPTS) $(INCLUDES) $*.c
+	$(CC) -c $(INCLDIR) $(INCS) $(CFLAGS) $(CPPDEFS) $<
+.F.o:
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FPPDEFS) $(FIXEDFLAGS) $<
+.f90.o:
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  $<
+.F90.o:
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FPPDEFS) $(FREEFLAGS)  $<
 
+mostlyclean:
+	$(RM) -f *.f *.f90 
 
-$(LIB): $(OBJS)
-	$(RM) $@
-	$(AR) $(ARFLAGS) $@ $(OBJS)
-
-     
 clean:
-	$(RM) $(LIB) $(OBJS) $(MODFILES) $(SRCS_CPP)
+	$(RM) -f *.f *.f90 *.d *.$(MOD_SUFFIX) $(OBJS)
+
+
+install: libgptl.a
+	cp -p perf_mod.$(MOD_SUFFIX) $(INCROOT) 
+	cp -p libgptl.a $(LIBROOT)
 
 
 perf_mod.o: perf_utils.o
-perf_mod.o: gptl.inc
-perf_utils.o: gptl.inc
+f_wrappers.o: gptl.h private.h
+f_wrappers_pmpi.o: gptl.h private.h
+gptl.o: gptl.h private.h
+util.o: gptl.h private.h
+gptl_papi.o: gptl.h private.h
+pmpi.o: gptl.h private.h

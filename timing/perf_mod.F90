@@ -19,7 +19,7 @@ module perf_mod
    use perf_utils
 #else
    use shr_sys_mod,       only: shr_sys_abort
-   use shr_kind_mod,      only: shr_kind_cl, shr_kind_r8
+   use shr_kind_mod,      only: shr_kind_cl, shr_kind_r8, shr_kind_i8
    use shr_mpi_mod,       only: shr_mpi_barrier, shr_mpi_bcast
    use shr_file_mod,      only: shr_file_getUnit, shr_file_freeUnit
    use namelist_utils,    only: find_group_name
@@ -96,7 +96,7 @@ module perf_mod
                          ! timer nesting 
 
    integer, parameter :: def_timing_detail_limit = 1           ! default
-   integer, private   :: timing_detail_limit = def_timer_depth_limit
+   integer, private   :: timing_detail_limit = def_timing_detail_limit
                          ! integer indicating maximum detail level to
                          ! profile
 
@@ -115,7 +115,7 @@ module perf_mod
                          ! (per component communicator) or to a 
                          ! separate file for each process
 
-   integer, parameter :: def_perf_outpe_num = -1               ! default
+   integer, parameter :: def_perf_outpe_num = 0                ! default
    integer, private   :: perf_outpe_num = def_perf_outpe_num
                          ! maximum number of processes writing out 
                          ! timing data (for this component communicator)
@@ -126,15 +126,18 @@ module perf_mod
                          ! that are writing out timing data 
                          ! (for this component communicator)
 
-   logical, parameter :: def_perf_global_stats = .false.        ! default
+   logical, parameter :: def_perf_global_stats = .true.        ! default
    logical, private   :: perf_global_stats = def_perf_global_stats
                          ! collect and print out global performance statistics
                          ! (for this component communicator)
-
-#ifdef UNICOSMP
-   integer, parameter :: def_perf_timer = GPTLrtc              ! default
-#else
+#ifdef HAVE_MPI
    integer, parameter :: def_perf_timer = GPTLmpiwtime         ! default
+#else
+#ifdef CPRIBM
+   integer,parameter :: def_perf_timer = GPTLread_real_time
+#else
+   integer,parameter :: def_perf_timer = GPTLgettimeofday
+#endif
 #endif
    integer, private   :: perf_timer = def_perf_timer           ! default
                          ! integer indicating which timer to use
@@ -341,7 +344,7 @@ contains
       if ( present(perf_timer_in) ) then
          if ((perf_timer_in .eq. GPTLgettimeofday) .or. &
              (perf_timer_in .eq. GPTLnanotime) .or. &
-             (perf_timer_in .eq. GPTLrtc) .or. &
+             (perf_timer_in .eq. GPTLread_real_time) .or. &
              (perf_timer_in .eq. GPTLmpiwtime) .or. &
              (perf_timer_in .eq. GPTLclockgettime) .or. &
              (perf_timer_in .eq. GPTLpapitime)) then
@@ -592,14 +595,20 @@ contains
 !
 !========================================================================
 !
-   subroutine t_startf(event)
+   subroutine t_startf(event, handle)
 !----------------------------------------------------------------------- 
 ! Purpose: Start an event timer
 ! Author: P. Worley 
 !-----------------------------------------------------------------------
 !---------------------------Input arguments-----------------------------
 !
-   character(len=*), intent(in) :: event  ! performance timer event name
+   ! performance timer event name
+   character(len=*), intent(in) :: event  
+!
+!---------------------------Input/Output arguments----------------------
+!
+   ! GPTL event handle
+   integer(shr_kind_i8), optional :: handle
 !
 !---------------------------Local workspace-----------------------------
 !
@@ -611,7 +620,11 @@ contains
        (timing_disable_depth .eq. 0) .and. &
        (cur_timing_detail .le. timing_detail_limit)) then
 
-      ierr = GPTLstart(event)
+      if ( present (handle) ) then
+         ierr = GPTLstart_handle(event, handle)
+      else
+         ierr = GPTLstart(event)
+      endif
 
    endif
 
@@ -620,14 +633,20 @@ contains
 !
 !========================================================================
 !
-   subroutine t_stopf(event)
+   subroutine t_stopf(event, handle)
 !----------------------------------------------------------------------- 
 ! Purpose: Stop an event timer
 ! Author: P. Worley 
 !-----------------------------------------------------------------------
 !---------------------------Input arguments-----------------------------
 !
-   character(len=*), intent(in) :: event  ! performance timer event name
+   ! performance timer event name
+   character(len=*), intent(in) :: event  
+!
+!---------------------------Input/Output arguments----------------------
+!
+   ! GPTL event handle
+   integer(shr_kind_i8), optional :: handle
 !
 !---------------------------Local workspace-----------------------------
 !
@@ -639,7 +658,11 @@ contains
        (timing_disable_depth .eq. 0) .and. &
        (cur_timing_detail .le. timing_detail_limit)) then
 
-      ierr = GPTLstop(event)
+      if ( present (handle) ) then
+         ierr = GPTLstop_handle(event, handle)
+      else
+         ierr = GPTLstop(event)
+      endif
 
    endif
 
@@ -811,7 +834,7 @@ contains
 !========================================================================
 !
    subroutine t_prf(filename, mpicom, num_outpe, stride_outpe, &
-                    single_file, global_stats)
+                    single_file, global_stats, output_thispe)
 !----------------------------------------------------------------------- 
 ! Purpose: Write out performance timer data
 ! Author: P. Worley 
@@ -830,6 +853,8 @@ contains
    logical, intent(in), optional :: single_file
    ! enable/disable the collection of global statistics
    logical, intent(in), optional :: global_stats
+   ! output timing data for this process
+   logical, intent(in), optional :: output_thispe
 !
 !---------------------------Local workspace-----------------------------
 !
@@ -837,6 +862,10 @@ contains
                                   !  all data to a single file
    logical  glb_stats             ! flag indicting whether to compute
                                   !  global statistics
+   logical  pr_write              ! flag indicating whether the current 
+                                  !  GPTL output mode is write
+   logical  write_data            ! flag indicating whether this process
+                                  !  should output its timing data
    integer  i                     ! loop index
    integer  mpicom2               ! local copy of MPI communicator
    integer  me                    ! communicator local process id
@@ -844,7 +873,7 @@ contains
    integer  gme                   ! global process id
    integer  ierr                  ! MPI error return
    integer  outpe_num             ! max number of processes writing out
-                                  !  timing data
+                                  !  timing data (excluding output_thispe)
    integer  outpe_stride          ! separation between process ids for
                                   !  processes writing out timing data
    integer  max_outpe             ! max process id for processes
@@ -883,6 +912,14 @@ contains
 
    unitn = shr_file_getUnit()
 
+   ! determine what the current output mode is (append or write)
+   if (GPTLpr_query_write() == 1) then
+     pr_write = .true.
+     ierr = GPTLpr_set_append()
+   else 
+     pr_write=.false.
+   endif
+
    ! Determine whether to write all data to a single fie
    if (present(single_file)) then
       one_file = single_file
@@ -898,6 +935,8 @@ contains
    endif
 
    ! Determine which processes are writing out timing data
+   write_data = .false.
+
    if (present(num_outpe)) then
       if (num_outpe < 0) then
          outpe_num = npes
@@ -911,7 +950,7 @@ contains
          outpe_num = perf_outpe_num
       endif
    endif
-!
+
    if (present(stride_outpe)) then
       if (stride_outpe < 1) then
          outpe_stride = 1
@@ -925,8 +964,15 @@ contains
          outpe_stride = perf_outpe_stride
       endif
    endif
-!         
+
    max_outpe = min(outpe_num*outpe_stride, npes) - 1
+
+   if ((mod(me, outpe_stride) .eq. 0) .and. (me .le. max_outpe)) &
+      write_data = .true.
+
+   if (present(output_thispe)) then
+      write_data = output_thispe
+   endif
 
    ! If a single timing output file, take turns writing to it.
    if (one_file) then
@@ -947,10 +993,10 @@ contains
  100        format(/,"***** GLOBAL STATISTICS (",I6," MPI TASKS) *****",/)
             close( unitn )
 
-            ierr = GPTLpr_summary(mpicom2)
+            ierr = GPTLpr_summary_file(mpicom2, trim(fname))
          endif
 
-         if (me .le. max_outpe) then
+         if (write_data) then
             if (glb_stats) then
                open( unitn, file=trim(fname), status='OLD', position='APPEND' )
             else
@@ -967,7 +1013,7 @@ contains
       else
 
          if (glb_stats) then
-            ierr = GPTLpr_summary(mpicom2)
+            ierr = GPTLpr_summary_file(mpicom2, trim(fname))
          endif
 
          call mpi_recv (signal, 1, mpi_integer, me-1, me-1, mpicom2, status, ierr)
@@ -976,7 +1022,7 @@ contains
             call shr_sys_abort()
          end if
 
-         if ((mod(me, outpe_stride) .eq. 0) .and. (me .le. max_outpe)) then
+         if (write_data) then
             open( unitn, file=trim(fname), status='OLD', position='APPEND' )
             write( unitn, 101) me, gme
             close( unitn )
@@ -1007,11 +1053,11 @@ contains
             close( unitn )
          endif
 
-         ierr = GPTLpr_summary(mpicom2)
+         ierr = GPTLpr_summary_file(mpicom2, trim(fname))
          fname(str_length+1:str_length+6) = '      '
       endif
 
-      if ((mod(me, outpe_stride) .eq. 0) .and. (me .le. max_outpe)) then
+      if (write_data) then
          if (npes .le. 10) then
             write(cme,'(i1.1)') me
             cme_adj = 2
@@ -1052,6 +1098,12 @@ contains
    endif
 
    call shr_file_freeUnit( unitn )
+
+   ! reset GPTL output mode
+   if (pr_write) then
+     ierr = GPTLpr_set_write()
+   endif
+
 !$OMP END MASTER
    call t_stopf("t_prf")
 
@@ -1267,7 +1319,7 @@ contains
 !pw              papi_ctr4_str = "PAPI_FP_INS"
               papi_ctr1_str = "PAPI_FP_OPS"
           endif
-#ifdef HAVE_PAPI
+
           if (papi_ctr1_str(1:11) /= "PAPI_NO_CTR") then
              ierr = gptlevent_name_to_code(trim(papi_ctr1_str), papi_ctr1_id)
           endif
@@ -1280,7 +1332,7 @@ contains
           if (papi_ctr4_str(1:11) /= "PAPI_NO_CTR") then
              ierr = gptlevent_name_to_code(trim(papi_ctr4_str), papi_ctr4_id)
           endif
-#endif
+
        endif
        ! This logic assumes that there will be only one MasterTask
        ! per communicator, and that this MasterTask is process 0.
