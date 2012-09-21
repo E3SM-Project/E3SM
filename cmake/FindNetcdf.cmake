@@ -29,12 +29,22 @@ else()
   MESSAGE(STATUS "Found HDF5: ${HDF5hl_LIBRARY} ${HDF5_LIBRARY}")
 endif()
 
-find_package(ZLIB REQUIRED)
+find_library(ZLIB_LIBRARY
+             NAMES libz.a z
+             PATHS ENV Z_DIR
+             PATH_SUFFIXES lib lib64
+             NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
+if(${ZLIB_LIBRARY} STREQUAL "ZLIB_LIBRARY-NOTFOUND")
+  set(ZLIB_FOUND OFF)
+else()
+  set(ZLIB_FOUND ON)
+  MESSAGE(STATUS "Found ZLIB: ${ZLIBhl_LIBRARY}")
+endif()
 
 if (${Netcdf_INCLUDE_DIR} STREQUAL "Netcdf_INCLUDE_DIR-NOTFOUND")
   set(Netcdf_FOUND OFF)
 else()
-  set(Netcdf_LIBRARIES ${NetcdfF_LIBRARY} ${Netcdf_LIBRARY} ${HDF5hl_LIBRARY} ${HDF5_LIBRARY} ${ZLIB_LIBRARIES})
+  set(Netcdf_LIBRARIES ${NetcdfF_LIBRARY} ${Netcdf_LIBRARY} ${HDF5hl_LIBRARY} ${HDF5_LIBRARY} ${ZLIB_LIBRARY})
   set(Netcdf_INCLUDE_DIRS ${Netcdf_INCLUDE_DIR})
   set(Netcdf_FOUND ON)
   MESSAGE(STATUS "Found Netcdf: ${Netcdf_LIBRARIES}")
