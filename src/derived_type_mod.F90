@@ -114,7 +114,7 @@ module derived_type_mod
    use time_mod, only : TimeLevel_t
    use cg_mod, only : cg_t
    use solver_mod, only : blkjac_t, blkjac_init
-   use control_mod, only : precon_method
+!   use control_mod, only : si_precon_method
 
    implicit none 
 
@@ -144,7 +144,7 @@ module derived_type_mod
     if ( dt /= initialized_for_dt ) then
      if(cg%hybrid%par%masterproc) print *,'Initializing SI matricies for dt=',dt
        lambdasq(:) = pmean*dt*dt
-!       if (precon_method == "block_jacobi") then
+!       if (si_precon_method == "block_jacobi") then
 !        call blkjac_init(elem, deriv,lambdasq,nets,nete,blkjac)
 !       end if
        initialized_for_dt = dt

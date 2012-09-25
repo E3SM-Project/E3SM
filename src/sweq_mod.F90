@@ -65,7 +65,7 @@ contains
 #endif
     !-----------------
     use control_mod, only : integration, filter_mu, filter_type, transfer_type, debug_level,  &
-         restartfreq, statefreq, runtype, s_bv, p_bv, wght_fm, kcut_fm, precon_method, topology,   &
+         restartfreq, statefreq, runtype, s_bv, p_bv, wght_fm, kcut_fm, si_precon_method, topology,   &
          test_case, sub_case, qsplit, nu, nu_s, limiter_option, hypervis_subcycle, test_cfldep
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
@@ -483,7 +483,7 @@ contains
           if (integration == "semi_imp") then
              allocate(blkjac(nets:nete))
              call cg_create(cg, npsq, nlev, nete-nets+1, hybrid, debug_level, solver_wts)
-             if (precon_method == "block_jacobi") then
+             if (si_precon_method == "block_jacobi") then
                 !JMD call blkjac_init(deriv,lambdasq,nets,nete,E(1,1,1,nets),blkjac)
                 call blkjac_init(elem,deriv,lambdasq,nets,nete,blkjac)
              end if
@@ -492,7 +492,7 @@ contains
              allocate(blkjac(nets:nete))
              lambdasq(:) = pmean*dt*dt
              call cg_create(cg, npsq, nlev, nete-nets+1, hybrid, debug_level, solver_wts)
-!             if (precon_method == "block_jacobi") then
+!             if (si_precon_method == "block_jacobi") then
 !                call blkjac_init(elem,deriv,lambdasq,nets,nete,blkjac)
 !             end if
           end if
@@ -572,12 +572,12 @@ contains
 
     if (integration == "semi_imp") then
        lambdasq(:) = pmean*dt*dt
-       if (precon_method == "block_jacobi") then
+       if (si_precon_method == "block_jacobi") then
           call blkjac_init(elem, deriv,lambdasq,nets,nete,blkjac)
        end if
     else if (integration == "full_imp") then
        lambdasq(:) = pmean*dt*dt
-!       if (precon_method == "block_jacobi") then
+!       if (si_precon_method == "block_jacobi") then
 !          call blkjac_init(elem, deriv,lambdasq,nets,nete,blkjac)
 !       end if
     end if

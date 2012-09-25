@@ -48,7 +48,7 @@ contains
     use cg_mod, only : cg_t, congrad
     use edge_mod, only : edgebuffer_t, edgevpack, edgevunpack!,edgerotate
     use derivative_mod, only : derivative_t, gradient_wk, gradient, divergence, derivative_stag_t
-    use control_mod, only : maxits, while_iter, tol, precon_method
+    use control_mod, only : maxits, while_iter, tol, si_precon_method
     use physical_constants, only : rrearth
     use bndry_mod, only : bndry_exchangeV
     use linear_algebra_mod, only : matvec
@@ -150,7 +150,7 @@ contains
                 ! Apply preconditioner: wrk2 = (M^-1) * wrk1 
                 ! ========================================
 
-                if (precon_method == "block_jacobi") then
+                if (si_precon_method == "block_jacobi") then
 
                    if (blkjac_storage == "LUfactor") then
                       call abortmp('dgesl needs linpack')
@@ -166,7 +166,7 @@ contains
 #endif
                    end if
 
-                else if (precon_method == "identity") then
+                else if (si_precon_method == "identity") then
 
                    do j=1,npsq
                       cg%state(ieptr)%z(j,k)=cg%state(ieptr)%r(j,k)
@@ -347,7 +347,7 @@ contains
     use cg_mod, only : cg_t, congrad
     use edge_mod, only : edgebuffer_t, edgevpack, edgevunpack!, edgerotate
     use derivative_mod, only : derivative_t, gradient_wk, gradient, divergence
-    use control_mod, only : maxits, while_iter, tol, precon_method
+    use control_mod, only : maxits, while_iter, tol, si_precon_method
     use physical_constants, only : rrearth
     use bndry_mod, only : bndry_exchangeV
     use linear_algebra_mod, only : matvec
@@ -437,7 +437,7 @@ contains
                 ! Apply preconditioner: wrk2 = (M^-1) * wrk1 
                 ! ========================================
 
-                if (precon_method == "block_jacobi") then
+                if (si_precon_method == "block_jacobi") then
 
                    if (blkjac_storage == "LUfactor") then
                       call abortmp( 'dgesl needs linpack')
@@ -459,7 +459,7 @@ contains
                    !                      end do
                    !                   end do
 
-                else if (precon_method == "identity") then
+                else if (si_precon_method == "identity") then
 
                    iptr=1
                    do j=1,np

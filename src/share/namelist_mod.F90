@@ -77,7 +77,7 @@ module namelist_mod
        vform,           &
        vfile_mid,       &
        vfile_int,       &    
-       precon_method, &
+       si_precon_method, &
        maxits,        &
        tol,           &
        debug_level,   &
@@ -289,7 +289,7 @@ module namelist_mod
                      moisture
 #endif                      
 
-    namelist /solver_nl/precon_method, &
+    namelist /solver_nl/si_precon_method, &
                         maxits,        &
                         tol,           &
                         debug_level                        
@@ -492,7 +492,7 @@ module namelist_mod
           ! =========================
           ! set solver defaults
           ! =========================
-          precon_method = "identity"
+          si_precon_method = "identity"
           maxits        = 100
           tol           = 1.0D-13
           debug_level   = CG_NO_DEBUG
@@ -834,7 +834,7 @@ module namelist_mod
     call MPI_bcast(uselapi,1,MPIlogical_t,par%root,par%comm,ierr)
 
     if ((integration == "semi_imp").or.(integration == "full_imp")) then
-       call MPI_bcast(precon_method,MAX_STRING_LEN,MPIChar_t,par%root,par%comm,ierr)
+       call MPI_bcast(si_precon_method,MAX_STRING_LEN,MPIChar_t,par%root,par%comm,ierr)
        call MPI_bcast(maxits     ,1,MPIinteger_t,par%root,par%comm,ierr) 
        call MPI_bcast(tol        ,1,MPIreal_t   ,par%root,par%comm,ierr) 
     end if
@@ -1109,7 +1109,7 @@ module namelist_mod
        write(iulog,*)"readnl: runtype       = ",runtype
        if (integration == "semi_imp") then
           print *
-          write(iulog,*)"solver: precon_method  = ",precon_method
+          write(iulog,*)"solver: si_precon_method  = ",si_precon_method
           write(iulog,*)"solver: max iterations = ",maxits
           write(iulog,*)"solver: tolerance      = ",tol
           write(iulog,*)"solver: debug_level    = ",debug_level
