@@ -267,7 +267,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           refstate, hvcoord, deriv, flt, hybrid, tl, dt)
        use bndry_mod, only : bndry_exchangev
        use cg_mod, only : cg_t, cg_create
-       use control_mod, only : filter_freq,debug_level, precon_method
+       use control_mod, only : filter_freq,debug_level, si_precon_method
        use derivative_mod, only : derivative_t, vorticity, divergence, gradient, gradient_wk
        use dimensions_mod, only : np, nlev, nlevp
        use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack, initEdgeBuffer
@@ -432,7 +432,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           end do
           call cg_create(cg, np*np, nlev, nete-nets+1, hybrid, debug_level, solver_wts)
           deallocate(solver_wts)
-          if (precon_method == "block_jacobi") then
+          if (si_precon_method == "block_jacobi") then
              call blkjac_init(elem, deriv,refstate%Lambda,nets,nete,blkjac)
           end if
           initialized_for_dt = dt

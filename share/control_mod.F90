@@ -70,7 +70,7 @@ module control_mod
   integer              , public :: filter_counter
   real (kind=real_kind), public :: filter_mu
   real (kind=real_kind), public :: filter_mu_advection
-  character(len=MAX_STRING_LEN)    , public :: precon_method  ! if semi_implicit, type of preconditioner:
+  character(len=MAX_STRING_LEN)    , public :: si_precon_method  ! if semi_implicit, type of preconditioner:
                                                   ! choices block_jacobi or identity
 
   integer              , public :: partmethod     ! partition methods
