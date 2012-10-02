@@ -232,7 +232,18 @@ foreach \$suite (qw(@testsuites)){
     chdir ("$tstdir");
     unless($twopass && \$thispass==2){
 	unlink("../pio/Makefile.conf");
+	my \$saveprocs;
+        if("$host" eq "erebus"){
+	  \$saveprocs=\$ENV{MP_PROCS};
+          \$ENV{MP_PROCS} = 1;
+          system("hostname > $tstdir/hostfile");
+          \$ENV{MP_HOSTFILE}="$tstdir/hostfile";
+        }
 	system("perl ./testpio_build.pl --conopts=\\"\$confopts\\" --host=$host");
+        if("$host" eq "erebus"){
+          \$ENV{MP_PROCS}=\$saveprocs;
+          delete \$ENV{MP_HOSTFILE};
+        } 
     }
     my \$test;
 
