@@ -392,7 +392,7 @@ subroutine fvm_readnl(par)
        vform,           &
        vfile_mid,       &
        vfile_int,       &    
-       si_precon_method, &
+       precon_method, &
        maxits,        &
        tol,           &
        debug_level,   &

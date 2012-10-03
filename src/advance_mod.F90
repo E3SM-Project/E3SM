@@ -1556,7 +1556,7 @@ contains
     ! ---------------------
     use time_mod, only : timelevel_t, smooth
     ! ---------------------
-    use control_mod, only : filter_freq, filter_counter, topology, test_case, si_precon_method
+    use control_mod, only : filter_freq, filter_counter, topology, test_case, precon_method
     ! ---------------------
     use shallow_water_mod, only : tc1_velocity
     ! ---------------------
@@ -1651,7 +1651,7 @@ contains
        if(cg%hybrid%par%masterproc) print *,'Initializing semi-implicit matricies for dt=',dt
 
        lambdasq(:) = pmean*dt*dt
-       if (si_precon_method == "block_jacobi") then
+       if (precon_method == "block_jacobi") then
           call blkjac_init(elem, deriv,lambdasq,nets,nete,blkjac)
        end if
        initialized_for_dt = dt

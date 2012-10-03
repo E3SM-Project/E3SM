@@ -10,7 +10,7 @@ module flops_mod
   ! ---------------------
   use dimensions_mod, only : nv, np, nelem, nelemd, nlev, ne
   ! ---------------------
-  use control_mod, only : filter_counter, filter_freq, si_precon_method, integration
+  use control_mod, only : filter_counter, filter_freq, precon_method, integration
   ! ---------------------
   use time_mod, only : nmax
   ! ---------------------
@@ -135,10 +135,10 @@ contains
           if(Debug) write(iulog,*)'flops_report: point #6.1'
           flops_cg0   = nmax*flops_cg0_it1 + (tot_iter-2*nmax)*flops_cg0_itn 
           if(Debug) write(iulog,*)'flops_report: point #6.2'
-          if (si_precon_method == "block_jacobi") then
+          if (precon_method == "block_jacobi") then
              flops_solver = flops_cg0     + (tot_iter-nmax)*(flops_helm + flops_blkjac)
              if(Debug) write(iulog,*)'flops_report: point #6.3'
-          else if (si_precon_method == "identity") then
+          else if (precon_method == "identity") then
              flops_solver = flops_cg0     + (tot_iter-nmax)*(flops_helm)
              if(Debug) write(iulog,*)'flops_report: point #6.4'
           end if
@@ -215,10 +215,10 @@ contains
 
           if(Debug) write(iulog,*)'flops_report: point #10'
 
-          if (si_precon_method == "block_jacobi") then
+          if (precon_method == "block_jacobi") then
              if(gtimer%time_buf(T_precon) > 0.0D0) write(iulog,240)gtimer%time_buf(T_precon)&
                   /nmax,(tot_iter*flops_blkjac*nelem*nlev)/gtimer%time_buf(T_precon)
-          else if (si_precon_method == "identity") then
+          else if (precon_method == "identity") then
              if(gtimer%time_buf(T_precon) > 0.0D0) write(iulog,240)gtimer%time_buf(T_precon)/nmax,0./gtimer%time_buf(T_precon)
           end if
 

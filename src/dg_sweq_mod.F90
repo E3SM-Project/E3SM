@@ -57,7 +57,7 @@ subroutine sweq_dg(elem,edge1,edge2,edge3,red,par,ithr,nets,nete)
     use restart_io_mod, only : readrestart, writerestart
     !-----------------
     use control_mod, only : integration, filter_mu, filter_type, transfer_type, debug_level, test_case, &
-         restartfreq, statefreq, runtype, s_bv, p_bv, wght_fm, kcut_fm, tasknum, topology, si_precon_method
+         restartfreq, statefreq, runtype, s_bv, p_bv, wght_fm, kcut_fm, tasknum, topology
     !----------------- 
     use dg_tests_mod, only : sw1_init_state, sw2_init_state, sw5_init_state, 				&
     			     sw1_errors, sw2_errors, sw5_errors, sw5_invariants,galewsky_init_state 
