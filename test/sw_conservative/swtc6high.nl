@@ -65,7 +65,7 @@ output_start_time= 0
 output_end_time  = -1
 output_timeunits = 1
 output_frequency = 1
-output_varnames1 = 'geop','u','v'
+output_varnames1 = 'geop','u','v','zeta'
 io_stride = 8
 output_type = 'netcdf'
 /

@@ -93,9 +93,9 @@ sed s/nu_s=.\*/"nu_s= $nu_s"/  |\
 sed s/filter_freq.\*/"filter_freq = $filter_freq"/  |\
 sed s/hypervis_subcycle.\*/"hypervis_subcycle = $hypervis_subcycle"/  |\
 sed s/statefreq.\*/"statefreq = $sfreq"/  \
-> swtc6.nl
+> input.nl
 
 date
-mpirun -np $NCPU $src/sweqx < swtc6.nl | tee  sweq.out
+mpirun -np $NCPU $src/sweqx < input.nl tee  sweq.out
 date
 
