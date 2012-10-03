@@ -1400,10 +1400,14 @@ contains
     l2   = l2_snorm(elem, p(:,:,nets:nete),  pt(:,:,nets:nete),hybrid,npts,nets,nete)
     linf = linf_snorm(p(:,:,nets:nete),pt(:,:,nets:nete),hybrid,npts,nets,nete)
 
-    if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
+    if (hybrid%masterthread) then
        write(iounit+0,30)time_tmp/secpday,l1
        write(iounit+1,30)time_tmp/secpday,l2
        write(iounit+2,30)time_tmp/secpday,linf
+    end if
+    if (hybrid%masterthread) then
+       write(*,'(f6.2,a,3e15.7)') time_tmp/secpday,' days  l1,l2,linf=',&
+            l1,l2,linf
     end if
 #if (! defined ELEMENT_OPENMP)
     !$OMP BARRIER
