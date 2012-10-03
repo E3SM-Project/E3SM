@@ -86,7 +86,7 @@ contains
     integer    :: i,j,k,ie
     integer    :: kptr
     integer    :: nm1,n0,np1
-    integer    :: nstep
+    integer    :: nstep, steptype
 
     nm1   = tl%nm1
     n0    = tl%n0
@@ -100,26 +100,23 @@ contains
     call t_startf('advance_nonstag')
 
 
-#define USE_LEAPFROG
 
-! for testing only:
-#undef USE_MATSUNO
-#undef USE_RK2
-#undef USE_RK2M
-
-
-#ifdef USE_LEAPFROG
     ! LFTfreq=0   pure Leapfrog (default)
     ! LFTfreq=1   pure Leapfrog-trapazoidal
     ! LFTfreq=n   alternate Leapfrog, leapfrog-trapazoidal
-    do_leapfrog=.true.
-    if (LFTfreq>0) do_leapfrog = (mod(nstep,LFTfreq).ne.0)
 
-    ! for now, dont use LF-trapazoidal during bootstrap (nstep=0) phase
-    ! maybe it is ok -need to check
-    if (nstep==0) do_leapfrog=.true.
-
-    if (do_leapfrog) then
+    ! steptype = 0  leapfrog
+    ! steptype = 1  leapfrog-trap
+    ! steptype = N  RK2, followed by N-1 leapfrogs
+    if (LFTfreq==0) then
+       steptype=0
+    elseif (LFTfreq==1) then
+       steptype=1
+    else
+       steptype=2  
+       if (mod(nstep,LFTfreq).ne.0) steptype=0
+    endif
+    if (steptype==0) then
 
        ! Leapfrog timestep: u(np1) = u(nm1) + dt2*DSS [ RHS(u(n0)) ]
        call compute_and_apply_rhs(np1,nm1,n0,dt2,real_time,edge3,elem,pmean,hybrid,deriv,vtens,ptens,nets,nete)
@@ -130,7 +127,7 @@ contains
 
        call advance_hypervis(edge3,elem,hybrid,deriv,vtens,ptens,np1,nets,nete,dt2)
 
-    else
+    else if (steptype==1)  then
 
        ! leapfrog+trapazoidal
        ! 2x as expensive as LF, but 2nd order, no Robert filter needed, 
@@ -139,7 +136,6 @@ contains
        ! u(n+1) = u(n) + dt [ F(u(n)) + F(u(*)) ] /2
        
        ! u(n+1) = u(n) + dt/2 F(u(n))   
-     
        call compute_and_apply_rhs(np1,n0,n0,dt/2,real_time,edge3,elem,pmean,hybrid,deriv,vtens,ptens,nets,nete)
 
        ! u(n-1) = u(n-1) + 4( u(n+1)-u(n))     u(*) above
@@ -155,73 +151,26 @@ contains
        ! ====================================================
        ! apply viscosity  Note: use dt, not dt/2
        ! ====================================================
-
        call advance_hypervis(edge3,elem,hybrid,deriv,vtens,ptens,np1,nets,nete,dt)
 
+    else if (steptype==2) then
+       if (smooth/=0) stop 'ERROR: smooth>0 not allowed'
+       ! RK2 with forward euler
+       ! Foward Euler  t u(n0) -> t+1 u(np1)
+       call compute_and_apply_rhs(np1,n0,n0,dt,real_time,edge3,elem,pmean,hybrid,deriv,vtens,ptens,nets,nete)
+       ! Foward Euler  t+1 u(np1) -> t+2 u(np1)
+       call compute_and_apply_rhs(np1,np1,np1,dt,real_time+dt,edge3,elem,pmean,hybrid,deriv,vtens,ptens,nets,nete)
+       
+       !    u(np1) = (u(np1) +  u(n0) )/2
+       do ie=nets,nete
+          elem(ie)%state%v(:,:,:,:,np1)  = (elem(ie)%state%v(:,:,:,:,np1) + &
+               elem(ie)%state%v(:,:,:,:,n0)) /2 
+          elem(ie)%state%p(:,:,:,np1)  = (elem(ie)%state%p(:,:,:,np1) + &
+               elem(ie)%state%p(:,:,:,n0)) /2 
+       enddo
+       call advance_hypervis(edge3,elem,hybrid,deriv,vtens,ptens,np1,nets,nete,dt)
     endif
-! ---
-#endif  
-! --- endif USE_LEAPFROG     
 
-
-#ifdef USE_MATSUNO
-    ! first order:
-    !  u* = u + a*dt*f(u)  
-    !  u  = u + dt*f(u*)
-    ! Matsuno  a=1.0
-    !  a=.75  1.0  same stability as Leapfrog, more accurate than Matsuno
-    !  a=.5   standard RK2 (but stability is .8 leapfrog)
-    !       call compute_and_apply_rhs(np1,n0,n0,dt,real_time,edge3,elem,pmean,hybrid,deriv,vtens,ptens,nets,nete)
-    call compute_and_apply_rhs(np1,n0,n0,dt,real_time,edge3,elem,pmean,hybrid,deriv,vtens,ptens,nets,nete)
-    call compute_and_apply_rhs(np1,n0,np1,dt,real_time+dt,edge3,elem,pmean,hybrid,deriv,vtens,ptens,nets,nete)
-!   call advance_hypervis(edge3,elem,hybrid,deriv,vtens,ptens,np1,nets,nete,dt)
-    if (smooth/=0) stop 'ERROR: smooth>0 not allowed'
-! ---
-#endif 
-! --- endif USE_MATSUNO
-
-#ifdef USE_RK2
-    ! RK2 with forward euler
-    ! Foward Euler  t u(n0) -> t+1 u(np1)
-    call compute_and_apply_rhs(np1,n0,n0,dt,real_time,edge3,elem,pmean,hybrid,deriv,vtens,ptens,nets,nete)
-    ! Foward Euler  t+1 u(np1) -> t+2 u(np1)
-    call compute_and_apply_rhs(np1,np1,np1,dt,real_time+dt,edge3,elem,pmean,hybrid,deriv,vtens,ptens,nets,nete)
-
-!    u(np1) = (u(np1) +  u(n0) )/2
-    do ie=nets,nete
-       elem(ie)%state%v(:,:,:,:,np1)  = (elem(ie)%state%v(:,:,:,:,np1) + &
-            elem(ie)%state%v(:,:,:,:,n0)) /2 
-       elem(ie)%state%p(:,:,:,np1)  = (elem(ie)%state%p(:,:,:,np1) + &
-            elem(ie)%state%p(:,:,:,n0)) /2 
-    enddo
-!   call advance_hypervis(edge3,elem,hybrid,deriv,vtens,ptens,np1,nets,nete,dt)
-    if (smooth/=0) stop 'ERROR: smooth>0 not allowed'
-! ---
-#endif
-! --- endif USE_RK2
-
-#ifdef USE_RK2M
-    ! RK2 with matsuno instead of forward euler
-    ! matsuno from t u(n0) to t+1 u(np1)
-    call compute_and_apply_rhs(np1,n0,n0,dt,real_time,edge3,elem,pmean,hybrid,deriv,vtens,ptens,nets,nete)
-    call compute_and_apply_rhs(np1,n0,np1,dt,real_time+dt,edge3,elem,pmean,hybrid,deriv,vtens,ptens,nets,nete)
-
-    ! matsuno from t+1 u(np1) to t+2 u(nm1)
-    call compute_and_apply_rhs(nm1,np1,np1,dt,real_time+dt,edge3,elem,pmean,hybrid,deriv,vtens,ptens,nets,nete)
-    call compute_and_apply_rhs(nm1,np1,nm1,dt,real_time+2*dt,edge3,elem,pmean,hybrid,deriv,vtens,ptens,nets,nete)
-
-!    u(np1) = (u(n0) +  u(nm1) )/2
-    do ie=nets,nete
-       elem(ie)%state%v(:,:,:,:,np1)  = (elem(ie)%state%v(:,:,:,:,nm1) + &
-            elem(ie)%state%v(:,:,:,:,n0)) /2 
-       elem(ie)%state%p(:,:,:,np1)  = (elem(ie)%state%p(:,:,:,nm1) + &
-            elem(ie)%state%p(:,:,:,n0)) /2 
-    enddo
-!   call advance_hypervis(edge3,elem,hybrid,deriv,vtens,ptens,np1,nets,nete,dt)
-    if (smooth/=0) stop 'ERROR: smooth>0 not allowed'
-! ---
-#endif
-! --- endif USE_RK2M
 
 
 

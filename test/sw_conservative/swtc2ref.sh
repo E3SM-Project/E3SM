@@ -63,15 +63,22 @@ set integration = explicit
 
 set NE = 20
 #set nu = 5.1e15
-set tstep = 144
+
 
 ### leapfrog
-#set smooth = 0.05 ; set LFTfreq = 0
+set smooth = 0.05 ; set LFTfreq = 0
+set tstep = 144
+
 
 ### leapfrog-trapazoidal 
-set smooth = 0 ; set LFTfreq = 1
+#set smooth = 0 ; set LFTfreq = 1
+#set tstep = 200
 
-### RK (note: needs viscosity to be stable)
+### RK2-M (what's used in 3D code)
+#set smooth = 0 ; set LFTfreq = 4
+#set tstep = 144
+
+### RK2-SSP 
 #set integration = runge_kutta
 #set rk_stage = 2
 #set tstep = 75

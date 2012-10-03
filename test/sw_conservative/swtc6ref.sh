@@ -29,15 +29,19 @@ set test_case = swtc6
 set configure = 1
 if ( $configure ) then
   cd $src
-  ./configure --with-netcdf=$NETCDF_PATH --with-pnetcdf=$PNETCDF_PATH NP=4 PLEV=1
+  if (${?PNETCDF_PATH} ) then
+     ./configure --with-netcdf=$NETCDF_PATH --with-pnetcdf=$PNETCDF_PATH NP=4 PLEV=1
+  else
+     ./configure --with-netcdf=$NETCDF_PATH NP=4 PLEV=1
+  endif
   if ($status ) exit
 
-  gmake clean
-  gmake -j4 depends
+  make clean
+  make -j4 depends
   if ($status ) exit
 endif
 
-gmake -j2 sweqx
+make -j2 sweqx
 if ($status ) exit
 
 
@@ -60,11 +64,24 @@ set NE = 30
 set nu = 1.5e15   
 set hypervis_subcycle =  1
 
-
+#leapfrog
 set integration = explicit
 set smooth = .05
 set tstep = 90    # stable with nu=1e15
 
+#leapfrog-trap
+#set integration = explicit
+#set smooth = 0
+#set tstep = 120
+#set LFTfreq = 1
+
+# RK2-m stage used by 3d code
+#set integration = explicit
+#set smooth = 0
+#set tstep = 90
+#set LFTfreq = 4
+
+# RK-SSP
 #set integration = runge_kutta
 #set rk_stage = 3   
 #set tstep = 30
