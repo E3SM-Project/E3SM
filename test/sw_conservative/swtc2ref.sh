@@ -38,18 +38,15 @@ if ( $configure ) then
   ./configure --with-netcdf=$NETCDF_PATH --with-pnetcdf=$PNETCDF_PATH NP=4 PLEV=1
   if ($status ) exit
 
-  gmake clean
-  gmake -j4 depends
+  make clean
+  make -j4 depends
   if ($status ) exit
 endif
 
-gmake -j2 sweqx
+make -j2 sweqx
 if ($status ) exit
 
 
-cd $src
-rm -f sweqx
-make -j2 sweqx
 mkdir $wdir
 cd $wdir
 mkdir movies
@@ -92,7 +89,7 @@ sed s/ne=.\*/"ne = $NE"/  $input/swtc2.nl |\
 sed s/tstep.\*/"tstep = $tstep"/  |\
 sed s/smooth.\*/"smooth = $smooth"/  |\
 sed s/test_case.\*/"test_case = \'$test_case\'"/  |\
-sed s/integration.\*/"integration = $integration"/  |\
+sed s/integration.\*/"integration = '$integration'"/  |\
 sed s/rk_stage_user.\*/"rk_stage_user = $rk_stage"/  |\
 sed s/LFTfreq.\*/"LFTfreq = $LFTfreq"/  |\
 sed s/nu=.\*/"nu= $nu"/  |\
