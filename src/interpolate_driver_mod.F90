@@ -311,7 +311,7 @@ contains
     type(hybrid_t) :: hybrid
     type(file_t) :: infile
 
-    type(interpdata_t), pointer, intent(out) :: interpdata(:)
+    type(interpdata_t), pointer :: interpdata(:)
     type(nf_handle), pointer :: outfile
 
     integer :: ncoldimid, londimid, latdimid, i, j, k
@@ -1022,7 +1022,7 @@ contains
     use element_mod, only : element_t
 
     type(element_t), intent(in) :: elem(:)
-    integer, pointer, intent(out) :: Compdof(:)
+    integer, pointer :: Compdof(:)
     integer, intent(in) :: lev
 
     integer :: nxyp, icnt, i, ie, k

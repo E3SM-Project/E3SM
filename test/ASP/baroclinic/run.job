@@ -248,8 +248,13 @@ cd $src
 set build = run  # build, make or run(default)
 if ( $#argv >= 1) set build = $1
 if ( $build == "build" ) then
-   ./configure --enable-blas --enable-lapack --with-netcdf=$NETCDF_PATH \
-    --with-pnetcdf=$PNETCDF_PATH NP=4 PLEV=26   --enable-energy-diagnostics
+   if (${?PNETCDF_PATH} ) then
+      ./configure --enable-blas --enable-lapack --with-netcdf=$NETCDF_PATH \
+       --with-pnetcdf=$PNETCDF_PATH NP=4 PLEV=26   --enable-energy-diagnostics
+   else
+      ./configure --enable-blas --enable-lapack --with-netcdf=$NETCDF_PATH \
+       NP=4 PLEV=26   --enable-energy-diagnostics
+   endif
    make -j4 depends
    make clean
    $make 

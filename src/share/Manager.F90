@@ -94,7 +94,7 @@ contains
         use parallel_mod, only: abortmp
         use physics_mod,  only : elem_physics_t
 
-        type (elem_physics_t), dimension(:), pointer, intent(out)  :: elem_physics
+        type (elem_physics_t), dimension(:), pointer :: elem_physics  ! removed intent(out), for gfortran4.2
 
         if  (physics == 0) then
             call abortmp('The variable physics is set to zero, yet you wish to get a handle to the physics resource. Not possible, aborting!')
