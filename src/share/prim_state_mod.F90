@@ -689,8 +689,8 @@ contains
        if (ftype>=0) TOTE0=-1  
 #endif       
        if (TOTE0>0) then
+          write(iulog,100) "(E-E0)/E0    ",(TOTE(4)-TOTE0)/TOTE0
           if (tstep_type==1) then  !no longer support tracer advection with tstep_type = 0
-             write(iulog,100) "(E-E0)/E0    ",(TOTE(4)-TOTE0)/TOTE0
              do q=1,qsize
                 if(Qmass0(q)>0.0) then
                    write(iulog,'(a,E23.15,a,i1)') "(Q-Q0)/Q0 ",(Qmass(q,2)-Qmass0(q))/Qmass0(q),"   Q",q
