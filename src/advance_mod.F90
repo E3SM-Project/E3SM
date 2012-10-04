@@ -116,6 +116,12 @@ contains
        steptype=2  
        if (mod(nstep,LFTfreq).ne.0) steptype=0
     endif
+
+    ! in call cases, use LF during during bootstrap (nstep=0) phase
+    ! For RK methods we should remove bootstrap procedure
+    if (nstep==0) steptype=0
+
+
     if (steptype==0) then
 
        ! Leapfrog timestep: u(np1) = u(nm1) + dt2*DSS [ RHS(u(n0)) ]
