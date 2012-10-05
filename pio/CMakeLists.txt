@@ -68,26 +68,28 @@ ADD_DEFINITIONS(${PIO_DEFINITIONS})
 SET(PIO_INCLUDE_DIRS   ${pio_include_dirs_} CACHE STRING "")
 INCLUDE_DIRECTORIES(${PIO_INCLUDE_DIRS})
 
-SET(SRCS_C topology.c pnetcdfversion.c)
+SET(SRCS_C topology.c)
 
 SET(SRCS_F90 pio.F90 pio_kinds.F90 nf_mod.F90  ionf_mod.F90 pio_types.F90
              piolib_mod.F90 pio_mpi_utils.F90 pio_nf_utils.F90 pio_utils.F90
              pio_quicksort.F90 pio_msg_mod.F90 pio_msg_callbacks.F90)
 
 SET(TEMPSRCF90    pionfatt_mod.F90
-	                pionfread_mod.F90
-                  pionfwrite_mod.F90
-                  pionfput_mod.F90
-                  pionfget_mod.F90
-	                alloc_mod.F90
-                  box_rearrange.F90
-                  rearrange.F90
-                  pio_support.F90
-	                mct_rearrange.F90
-	                iompi_mod.F90
-	                piodarray.F90
-	                pio_spmd_utils.F90
-	                pio_msg_getput_callbacks.F90)
+         	                pionfread_mod.F90
+                                pionfwrite_mod.F90
+                                pionfput_mod.F90
+                                pionfget_mod.F90
+	                        alloc_mod.F90
+                                box_rearrange.F90
+                                rearrange.F90
+                                pio_support.F90
+         	                iompi_mod.F90
+           	                piodarray.F90
+	                        pio_spmd_utils.F90
+	                        pio_msg_getput_callbacks.F90
+                                calcdisplace_mod.F90
+                                calcdecomp.F90
+        )
 
 ADD_LIBRARY(pio ${SRCS_F90} ${SRC_C} ${TEMPSRCF90})
 TARGET_LINK_LIBRARIES(pio ${Pnetcdf_LIBRARIES})

@@ -72,7 +72,12 @@
 #define gptl_papilibraryinit        FCI_GLOBAL(gptl_papilibraryinit,GPTL_PAPILIBRARYINIT)
 #define gptlevent_name_to_code      FCI_GLOBAL(gptlevent_name_to_code,GPTLEVENT_NAME_TO_CODE)
 #define gptlevent_code_to_name      FCI_GLOBAL(gptlevent_code_to_name,GPTLEVENT_CODE_TO_NAME)
-
+#define gptlpr_query_write          FCI_GLOBAL(gptlpr_query_write,GPTLPR_QUERY_WRITE)
+#define gptlpr_summary_file         FCI_GLOBAL(gptlpr_summary_file,GPTLPR_SUMMARY_FILE)
+#define gptlpr_set_write            FCI_GLOBAL(gptlpr_set_write,GPTLPR_SET_WRITE)
+#define gptlpr_set_append           FCI_GLOBAL(gptlpr_set_append,GPTLPR_SET_APPEND)
+#define gptlstop_handle             FCI_GLOBAL(gptlstop_handle,GPTLSTOP_HANDLE)
+#define gptlstart_handle            FCI_GLOBAL(gptlstart_handle,GPTLSTART_HANDLE)
 #elif ( defined FORTRANUNDERSCORE )
 
 #define gptlinitialize gptlinitialize_
