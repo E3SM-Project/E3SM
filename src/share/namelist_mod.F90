@@ -958,9 +958,6 @@ module namelist_mod
         endif
     endif
     if (tstep_type == 1) then
-       if (tracer_advection_formulation/=TRACERADV_TOTAL_DIVERGENCE) then
-          call abortmp('tstep_type=1(RK timestepping) requires conservation formulation')
-       endif
        if (energy_fixer == 1 .or. energy_fixer==2) then
           call abortmp("ERROR: Rk tiemsteping requires non-staggered-in-time energy fixer")
        endif

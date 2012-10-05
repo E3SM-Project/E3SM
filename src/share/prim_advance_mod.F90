@@ -34,7 +34,11 @@ contains
     character(len=*)    , intent(in) :: integration 
     integer :: i
 
+#ifdef VERT_LAGRANGIAN
+    call initEdgeBuffer(edge3p1,4*nlev+1)
+#else
     call initEdgeBuffer(edge3p1,3*nlev+1)
+#endif
 
     if(integration == 'semi_imp') then
        call initEdgeBuffer(edge1,nlev)
@@ -110,7 +114,6 @@ contains
     np1   = tl%np1
     nstep = tl%nstep
     dt2 = 2*dt
-
 
 !collect mean quantities:
 ! omega_P        used by CAM physics
@@ -193,25 +196,18 @@ contains
     ! ==================================
     if (method==0) then ! RK2
        ! forward euler to u(dt/2) = u(0) + (dt/2) RHS(0)  (store in u(np1))
-
        call compute_and_apply_rhs(np1,n0,n0,dt/2,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,0d0)
-
        ! leapfrog:  u(dt) = u(0) + dt RHS(dt/2)     (store in u(np1))
        call compute_and_apply_rhs(np1,n0,np1,dt,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,eta_ave_w)
-
        dt_vis = dt                      
     endif
     if (method==1) then
-
-
        ! regular LF step
        call compute_and_apply_rhs(np1,nm1,n0,dt2,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,eta_ave_w)
        dt_vis = dt2  ! dt to use for time-split dissipation
-
-
     endif
  
 
@@ -252,12 +248,6 @@ contains
        enddo
     endif
 #endif
-       ! rest of the code/diagnostics are using lnps, so compute:
-    do ie = nets,nete
-       elem(ie)%state%lnps(:,:,np1)= LOG(elem(ie)%state%ps_v(:,:,np1))
-    end do
-
-
     call t_stopf('prim_advance_exp')
     end subroutine prim_advance_exp
 
@@ -2035,12 +2025,13 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind), dimension(np,np)      :: vgrad_T    ! v.grad(T)
   real (kind=real_kind), dimension(np,np)      :: Ephi       ! kinetic energy + PHI term
   real (kind=real_kind), dimension(np,np,2)      :: grad_ps    ! lat-lon coord version
+  real (kind=real_kind), dimension(np,np,2,nlev) :: grad_p    
   real (kind=real_kind), dimension(np,np,nlev)   :: vort       ! vorticity
   real (kind=real_kind), dimension(np,np,nlev)   :: p          ! pressure
   real (kind=real_kind), dimension(np,np,nlev)   :: dp         ! delta pressure
   real (kind=real_kind), dimension(np,np,nlev)   :: rdp        ! inverse of delta pressure
   real (kind=real_kind), dimension(np,np,nlev)   :: T_vadv     ! temperature vertical advection
-  real (kind=real_kind), dimension(np,np,nlev)   :: vgrad_ps ! v.grad(lnps) 
+  real (kind=real_kind), dimension(np,np,nlev)   :: vgrad_p    ! v.grad(p)
   real (kind=real_kind), dimension(np,np,nlev+1) :: ph               ! half level pressures on p-grid
   real (kind=real_kind), dimension(np,np,2,nlev) :: v_vadv   ! velocity vertical advection
   real (kind=real_kind) ::  Kappa_star(np,np,nlev)
@@ -2056,10 +2047,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   call t_barrierf('sync_compute_and_apply_rhs', hybrid%par%comm)
   call t_startf('compute_and_apply_rhs')
   do ie=nets,nete
-     ps => elem(ie)%state%ps_v(:,:,n0)
-!     divdp => elem(ie)%derived%div(:,:,:,n0)
+     !ps => elem(ie)%state%ps_v(:,:,n0)
      phi => elem(ie)%derived%phi(:,:,:)
-!     omega_p => elem(ie)%derived%omega_p(:,:,:)
      
      ! ==================================================
      ! compute pressure (p) on half levels from ps 
@@ -2067,33 +2056,47 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! e.g. equation (3.a.92) of the CCM-2 description, 
      ! (NCAR/TN-382+STR), June 1993, p. 24.
      ! ==================================================
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,i,j)
+#ifndef VERT_LAGRANGIAN
+     grad_ps = gradient_sphere(elem(ie)%state%ps_v(:,:,n0),deriv,elem(ie)%Dinv)
 #endif
-     do k=1,nlev+1
-        do j=1,np
-           do i=1,np
-              ph(i,j,k)   = hvcoord%hyai(k)*hvcoord%ps0 + hvcoord%hybi(k)*ps(i,j)
-           end do
-        end do
-     end do
-     
+
      ! ============================
      ! compute p and delta p
      ! ============================
+#if (defined ELEMENT_OPENMP)
+!$omp parallel do private(k,i,j)
+#endif
+!     do k=1,nlev+1
+!       ph(:,:,k)   = hvcoord%hyai(k)*hvcoord%ps0 + hvcoord%hybi(k)*elem(ie)%state%ps_v(:,:,n0)
+!     end do
 
-     grad_ps = gradient_sphere(elem(ie)%state%ps_v(:,:,n0),deriv,elem(ie)%Dinv)
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k,i,j,v1,v2,vtemp)
 #endif
      do k=1,nlev
-        do j=1,np
-           do i=1,np
-              p(i,j,k)   = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*ps(i,j)
-              dp(i,j,k)  = ph(i,j,k+1) - ph(i,j,k)
-              rdp(i,j,k) = 1.0D0/dp(i,j,k)
-           end do
-        end do
+#ifdef VERT_LAGRANGIAN
+        !p(k)= hyam(k)*ps0 + hybm(k)*ps
+        !    = .5*(hyai(k+1)+hyai(k))*ps0 + .5*(hybi(k+1)+hybi(k))*ps
+        !    = .5*(ph(k+1) + ph(k) )  = ph(k) + dp(k)/2
+        !
+        ! p(k+1)-p(k) = ph(k+1)-ph(k) + (dp(k+1)-dp(k))/2
+        !             = dp(k) + (dp(k+1)-dp(k))/2 = (dp(k+1)+dp(k))/2
+        dp(:,:,k) = elem(ie)%state%dp3d(:,:,k,n0)
+        if (k==1) then
+           p(:,:,k)=hvcoord%hyai(k)*hvcoord%ps0 + dp(:,:,k)/2
+        else
+           p(:,:,k)=p(:,:,k-1) + dp(:,:,k-1)/2 + dp(:,:,k)/2
+        endif
+        grad_p(:,:,:,k) = gradient_sphere(p(:,:,k),deriv,elem(ie)%Dinv)
+#else
+        p(:,:,k)   = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,n0)
+        !dp(:,:,k)  = ph(:,:,k+1) - ph(:,:,k)
+        dp(:,:,k) = (hvcoord%hyai(k+1)*hvcoord%ps0 + hvcoord%hybi(k+1)*elem(ie)%state%ps_v(:,:,n0)) &
+             - (hvcoord%hyai(k)*hvcoord%ps0 + hvcoord%hybi(k)*elem(ie)%state%ps_v(:,:,n0))
+        grad_p(:,:,:,k) = hvcoord%hybm(k)*grad_ps(:,:,:)
+#endif
+        rdp(:,:,k) = 1.0D0/dp(:,:,k)
+
         ! ============================
         ! compute vgrad_lnps 
         ! ============================
@@ -2101,7 +2104,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            do i=1,np
               v1 = elem(ie)%state%v(i,j,1,k,n0)
               v2 = elem(ie)%state%v(i,j,2,k,n0)
-              vgrad_ps(i,j,k) = v1*grad_ps(i,j,1) + v2*grad_ps(i,j,2)
+!              vgrad_p(i,j,k) = &
+!                   hvcoord%hybm(k)*(v1*grad_ps(i,j,1) + v2*grad_ps(i,j,2)) 
+              vgrad_p(i,j,k) = (v1*grad_p(i,j,1,k) + v2*grad_p(i,j,2,k)) 
               vtemp(i,j,1) = v1*dp(i,j,k)
               vtemp(i,j,2) = v2*dp(i,j,k)
            end do
@@ -2177,7 +2182,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! ====================================================
      ! Compute omega_p according to CCM-3 
      ! ====================================================
-     call preq_omega_ps(omega_p,hvcoord,ps,p,vgrad_ps,divdp)
+     call preq_omega_ps(omega_p,hvcoord,p,vgrad_p,divdp)
      
      ! ==================================================
      ! zero partial sum for accumulating sum
@@ -2277,9 +2282,12 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         
         do j=1,np
            do i=1,np
-              gpterm = hvcoord%hybm(k)*T_v(i,j,k)/p(i,j,k)
-              glnps1 = Rgas*gpterm*grad_ps(i,j,1)
-              glnps2 = Rgas*gpterm*grad_ps(i,j,2)
+!              gpterm = hvcoord%hybm(k)*T_v(i,j,k)/p(i,j,k)
+!              glnps1 = Rgas*gpterm*grad_ps(i,j,1)
+!              glnps2 = Rgas*gpterm*grad_ps(i,j,2)
+              gpterm = T_v(i,j,k)/p(i,j,k)
+              glnps1 = Rgas*gpterm*grad_p(i,j,1,k)
+              glnps2 = Rgas*gpterm*grad_p(i,j,2,k)
               
               v1     = elem(ie)%state%v(i,j,1,k,n0)
               v2     = elem(ie)%state%v(i,j,2,k,n0)
@@ -2401,9 +2409,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                       (Cpwater_vapor-Cp)*elem(ie)%state%Q(i,j,k,1)*T_vadv(i,j,k)*dp(i,j,k)
                  endif
 
-                 gpterm = hvcoord%hybm(k)*T_v(i,j,k)/p(i,j,k)
+                 gpterm = T_v(i,j,k)/p(i,j,k)
                  elem(ie)%accum%T1(i,j) = elem(ie)%accum%T1(i,j) - &
-                      Rgas*gpterm*(grad_ps(i,j,1)*v1 + grad_ps(i,j,2)*v2)*dp(i,j,k)
+                      Rgas*gpterm*(grad_p(i,j,1,k)*v1 + grad_p(i,j,2,k)*v2)*dp(i,j,k)
                  
                  elem(ie)%accum%T2(i,j) = elem(ie)%accum%T2(i,j) - &
                       (vtemp(i,j,1)*v1 + vtemp(i,j,2)*v2)*dp(i,j,k)
@@ -2420,7 +2428,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                       cp_ratio*(Rgas*T_v(i,j,k)*omega_p(i,j,k)*dp(i,j,k))
                  endif
                  
-                 elem(ie)%accum%CONV(i,j,:,k)=-Rgas*gpterm*grad_ps(i,j,:)-vtemp(i,j,:)
+                 elem(ie)%accum%CONV(i,j,:,k)=-Rgas*gpterm*grad_p(i,j,:,k)-vtemp(i,j,:)
               enddo
            enddo
            
@@ -2471,6 +2479,10 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%spheremp(:,:)*vtens1(:,:,k) 
            elem(ie)%state%v(:,:,2,k,np1) = elem(ie)%spheremp(:,:)*vtens2(:,:,k) 
            elem(ie)%state%T(:,:,k,np1) = elem(ie)%spheremp(:,:)*ttens(:,:,k)
+#ifdef VERT_LAGRANGIAN
+           elem(ie)%state%dp3d(:,:,k,np1) = -elem(ie)%spheremp(:,:)*&
+                (divdp(:,:,k) + eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k)) 
+#endif
         enddo
         elem(ie)%state%ps_v(:,:,np1) = -elem(ie)%spheremp(:,:)*sdot_sum
      else
@@ -2481,6 +2493,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%spheremp(:,:)*( elem(ie)%state%v(:,:,1,k,nm1) + dt2*vtens1(:,:,k) )
            elem(ie)%state%v(:,:,2,k,np1) = elem(ie)%spheremp(:,:)*( elem(ie)%state%v(:,:,2,k,nm1) + dt2*vtens2(:,:,k) )
            elem(ie)%state%T(:,:,k,np1) = elem(ie)%spheremp(:,:)*(elem(ie)%state%T(:,:,k,nm1) + dt2*ttens(:,:,k))
+#ifdef VERT_LAGRANGIAN
+           elem(ie)%state%dp3d(:,:,k,np1) = elem(ie)%spheremp(:,:)*&
+                (elem(ie)%state%dp3d(:,:,k,nm1)-dt2*&
+                (divdp(:,:,k) + eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k)))
+#endif
         enddo
         elem(ie)%state%ps_v(:,:,np1) = elem(ie)%spheremp(:,:)*( elem(ie)%state%ps_v(:,:,nm1) - dt2*sdot_sum )
      endif
@@ -2499,7 +2516,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      
      kptr=nlev+1
      call edgeVpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1),2*nlev,kptr,elem(ie)%desc)
-     
+
+#ifdef VERT_LAGRANGIAN
+     kptr=kptr+2*nlev
+     call edgeVpack(edge3p1, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr,elem(ie)%desc)
+#endif     
   end do
   
   ! =============================================================
@@ -2522,27 +2543,35 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      kptr=nlev+1
      call edgeVunpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1), 2*nlev, kptr, elem(ie)%desc)
      
+#ifdef VERT_LAGRANGIAN
+     kptr=kptr+2*nlev
+     call edgeVunpack(edge3p1, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr,elem(ie)%desc)
+#endif     
      
      ! ====================================================
      ! Scale tendencies by inverse mass matrix, Leapfog update 
      ! ====================================================
-     do j=1,np
-        do i=1,np
-           elem(ie)%state%ps_v(i,j,np1) = elem(ie)%rspheremp(i,j)*elem(ie)%state%ps_v(i,j,np1)
-        end do
-     end do
+
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
      do k=1,nlev
-        do j=1,np
-           do i=1,np
-              elem(ie)%state%T(i,j,k,np1)   = elem(ie)%rspheremp(i,j)*elem(ie)%state%T(i,j,k,np1)
-              elem(ie)%state%v(i,j,1,k,np1) = elem(ie)%rspheremp(i,j)*elem(ie)%state%v(i,j,1,k,np1)
-              elem(ie)%state%v(i,j,2,k,np1) = elem(ie)%rspheremp(i,j)*elem(ie)%state%v(i,j,2,k,np1)
-           end do
-        end do
+#ifdef VERT_LAGRANGIAN
+        elem(ie)%state%dp3d(:,:,k,np1)= elem(ie)%rspheremp(:,:)*elem(ie)%state%dp3d(:,:,k,np1)
+#endif
+        elem(ie)%state%T(:,:,k,np1)   = elem(ie)%rspheremp(:,:)*elem(ie)%state%T(:,:,k,np1)
+        elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%rspheremp(:,:)*elem(ie)%state%v(:,:,1,k,np1)
+        elem(ie)%state%v(:,:,2,k,np1) = elem(ie)%rspheremp(:,:)*elem(ie)%state%v(:,:,2,k,np1)
      end do
+
+#ifdef VERT_LAGRANGIAN
+     ! keep surface presure updated based on dp
+     elem(ie)%state%ps_v(:,:,np1) = hvcoord%hyai(1)*hvcoord%ps0 + &
+          sum(elem(ie)%state%dp3d(:,:,:,np1),3)
+#else
+     elem(ie)%state%ps_v(:,:,np1) = elem(ie)%rspheremp(:,:)*elem(ie)%state%ps_v(:,:,np1)
+#endif    
+
   end do
 #ifdef DEBUGOMP
 #if (! defined ELEMENT_OPENMP)

@@ -11,14 +11,14 @@ module control_mod
   integer, public, parameter :: MAX_STRING_LEN=80
   integer, public, parameter :: MAX_FILE_LEN=240
   character(len=MAX_STRING_LEN)    , public :: integration    ! time integration (explicit or semi_implicit)
+
+! none of this is used anymore:
   integer, public, parameter :: TRACERADV_UGRADQ=0            !  u grad(Q) formulation
   integer, public, parameter :: TRACERADV_TOTAL_DIVERGENCE=1   ! div(u dp/dn Q ) formulation                                                    
   integer, public  :: tracer_advection_formulation  = TRACERADV_TOTAL_DIVERGENCE
 
-!OG
-!kmass points to a level with density so that not (\rho q) is limited
-!but (\rho q)/\pho= q is limited. really, would only be used in swirl test case for now
-!because other test cases have to be reviewed in order to add a const field
+!shallow water advection tests:
+!kmass points to a level with density.  other levels contain test tracers
   integer, public  :: kmass  = -1
   real (kind=real_kind), public ::nu_mc = 0.0
 

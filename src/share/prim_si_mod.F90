@@ -170,7 +170,7 @@ contains
 !  compute omega/p using ps, modeled after CCM3 formulas 
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-  subroutine preq_omega_ps(omega_p,hvcoord,ps,p,vgrad_ps,divdp)
+  subroutine preq_omega_ps(omega_p,hvcoord,p,vgrad_p,divdp)
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev
     use hybvcoord_mod, only : hvcoord_t
@@ -179,9 +179,8 @@ contains
 
     !------------------------------Arguments---------------------------------------------------------------
     real(kind=real_kind), intent(in) :: divdp(np,np,nlev)      ! divergence
-    real(kind=real_kind), intent(in) :: vgrad_ps(np,np,nlev) ! v.grad(ps)
+    real(kind=real_kind), intent(in) :: vgrad_p(np,np,nlev) ! v.grad(p)
     real(kind=real_kind), intent(in) :: p(np,np,nlev)     ! layer thicknesses (pressure)
-    real(kind=real_kind), intent(in) :: ps(np,np)
     type (hvcoord_t),     intent(in) :: hvcoord
     real(kind=real_kind), intent(out):: omega_p(np,np,nlev)   ! vertical pressure velocity
     !------------------------------------------------------------------------------------------------------
@@ -201,7 +200,8 @@ contains
           do i=1,np
              ckk = 0.5d0/p(i,j,1)
              term = divdp(i,j,1)
-             omega_p(i,j,1) = hvcoord%hybm(1)*vgrad_ps(i,j,1)/p(i,j,1)
+!             omega_p(i,j,1) = hvcoord%hybm(1)*vgrad_ps(i,j,1)/p(i,j,1)
+             omega_p(i,j,1) = vgrad_p(i,j,1)/p(i,j,1)
              omega_p(i,j,1) = omega_p(i,j,1) - ckk*term
              suml(i,j) = term
           end do
@@ -211,7 +211,8 @@ contains
                 ckk = 0.5d0/p(i,j,k)
                 ckl = 2*ckk
                 term = divdp(i,j,k)
-                omega_p(i,j,k) = hvcoord%hybm(k)*vgrad_ps(i,j,k)/p(i,j,k)
+!                omega_p(i,j,k) = hvcoord%hybm(k)*vgrad_ps(i,j,k)/p(i,j,k)
+                omega_p(i,j,k) = vgrad_p(i,j,k)/p(i,j,k)
                 omega_p(i,j,k) = omega_p(i,j,k) - ckl*suml(i,j) - ckk*term
                 suml(i,j) = suml(i,j) + term
 
@@ -222,7 +223,8 @@ contains
              ckk = 0.5d0/p(i,j,nlev)
              ckl = 2*ckk
              term = divdp(i,j,nlev)
-             omega_p(i,j,nlev) = hvcoord%hybm(nlev)*vgrad_ps(i,j,nlev)/p(i,j,nlev)
+!             omega_p(i,j,nlev) = hvcoord%hybm(nlev)*vgrad_ps(i,j,nlev)/p(i,j,nlev)
+             omega_p(i,j,nlev) = vgrad_p(i,j,nlev)/p(i,j,nlev)
              omega_p(i,j,nlev) = omega_p(i,j,nlev) - ckl*suml(i,j) - ckk*term
           end do
 

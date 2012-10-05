@@ -6,7 +6,7 @@
 #define _DBG_ 
 module prim_driver_mod
   use kinds, only : real_kind, iulog, longdouble_kind
-  use dimensions_mod, only : np, nlev, nelem, nelemd, nelemdmax, GlobalUniqueCols, ntrac, qsize, nc,nhc, nep, nipm
+  use dimensions_mod, only : np, nlev, nlevp, nelem, nelemd, nelemdmax, GlobalUniqueCols, ntrac, qsize, nc,nhc, nep, nipm
   use cg_mod, only : cg_t
   use hybrid_mod, only : hybrid_t
   use quadrature_mod, only : quadrature_t, test_gauss, test_gausslobatto, gausslobatto
@@ -559,7 +559,7 @@ contains
          debug_level, vfile_int, filter_freq, filter_freq_advection, &
          transfer_type, vform, vfile_mid, filter_type, kcut_fm, wght_fm, p_bv, &
          s_bv, topology,columnpackage, moisture, precon_method, qsplit, rk_stage_user,&
-         TRACERADV_TOTAL_DIVERGENCE, TRACERADV_UGRADQ, tracer_advection_formulation, sub_case, &
+         TRACERADV_TOTAL_DIVERGENCE, TRACERADV_UGRADQ, sub_case, &
          use_cpstar, energy_fixer, limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
          hypervis_subcycle_q
     use prim_si_ref_mod, only: prim_si_refstate_init, prim_set_mass
@@ -877,29 +877,27 @@ contains
           elem(ie)%derived%omega_p(:,:,:) = 0D0
        end do
 
-       if (tracer_advection_formulation==TRACERADV_TOTAL_DIVERGENCE) then
-          call TimeLevel_Qdp( tl, qsplit, n0_qdp)
-          do ie=nets,nete
+       call TimeLevel_Qdp( tl, qsplit, n0_qdp)
+       do ie=nets,nete
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k, j, i, t, q, dp)
 #endif
-             do k=1,nlev    !  Loop inversion (AAM)
-                do t=1,3
-                   do q=1,qsize       
-                      do i=1,np
-                         do j=1,np          
-                            dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,t)
-
-                            elem(ie)%state%Qdp(i,j,k,q,n0_qdp)=elem(ie)%state%Q(i,j,k,q)*dp  
-                            
-                         enddo
+          do k=1,nlev    !  Loop inversion (AAM)
+             do t=1,3
+                do q=1,qsize       
+                   do i=1,np
+                      do j=1,np          
+                         dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                              ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,t)
+                         
+                         elem(ie)%state%Qdp(i,j,k,q,n0_qdp)=elem(ie)%state%Q(i,j,k,q)*dp  
+                         
                       enddo
                    enddo
                 enddo
              enddo
           enddo
-       endif
+       enddo
     endif
     
  ! do it only for FVM tracers, FIRST TRACER will be the AIR DENSITY   
@@ -969,7 +967,7 @@ contains
     endif  
 
     ! for restart runs, we read in Qdp for exact restart, and rederive Q
-    if (runtype==1 .and. tracer_advection_formulation==TRACERADV_TOTAL_DIVERGENCE) then
+    if (runtype==1) then
        call TimeLevel_Qdp( tl, qsplit, n0_qdp)
        do ie=nets,nete
 #if (defined ELEMENT_OPENMP)
@@ -1064,11 +1062,10 @@ contains
   subroutine prim_run(elem, hybrid,nets,nete, dt, tl, hvcoord, advance_name)
     use hybvcoord_mod, only : hvcoord_t
     use time_mod, only : TimeLevel_t, time_at, timelevel_update, smooth
-    use control_mod, only: statefreq, integration, tracer_advection_formulation,&
+    use control_mod, only: statefreq, integration, &
            TRACERADV_TOTAL_DIVERGENCE,TRACERADV_UGRADQ, ftype, tstep_type, nu_p, qsplit
     use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3, &
          applycamforcing, applycamforcing_leapfrog
-    use prim_advection_mod, only : prim_advec_tracers_lf
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use parallel_mod, only : abortmp
 #ifndef CAM
@@ -1180,7 +1177,6 @@ contains
     ! Tracer Advection  Needs U,V at timelevel n0 and eta_dot_dpdn at timellevel n0
     ! and maybe timelevel np1 which was computed in dynamics step above.  
     ! ===============
-
     !!!!!! NOTE: no longer suppoting advecting tracersw/leapfrog code
     !if (qsize>0) then
     !   call Prim_Advec_Tracers_lf(elem, deriv(hybrid%ithr),hvcoord,flt_advection,hybrid,&
@@ -1266,7 +1262,7 @@ contains
 !
     use hybvcoord_mod, only : hvcoord_t
     use time_mod, only : TimeLevel_t, time_at, timelevel_update, smooth, ptimelevels
-    use control_mod, only: statefreq, integration, tracer_advection_formulation,&
+    use control_mod, only: statefreq, integration, &
            TRACERADV_TOTAL_DIVERGENCE,TRACERADV_UGRADQ, energy_fixer, ftype, qsplit, nu_p, test_cfldep
     use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3, applycamforcing, &
                                  applycamforcing_dynamics, prim_advance_exp
@@ -1349,14 +1345,14 @@ contains
 !$omp parallel do private(k, j, i)
 #endif
       do k=1,nlev
-    	  do i=1,np
-    	    do j=1,np      
-        		elem(ie)%derived%dp(i,j,k)=( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-  		      ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,tl%n0)
-    	    enddo
-    	  enddo
+         elem(ie)%derived%dp(:,:,k)=&
+              ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+              ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
+#ifdef VERT_LAGRANGIAN
+         ! initialize prognostic variable for floating levels
+         elem(ie)%state%dp3d(:,:,:,tl%n0)=elem(ie)%derived%dp(:,:,:)
+#endif
       enddo
-
     enddo
 
     !We are only storing Q now (just n0 - not nm1 and np1)  
@@ -1369,49 +1365,42 @@ contains
     ! ===============
     ! Dynamical Step 
     ! ===============
-
-    
-    n_Q = tl%n0  ! n_Q = timelevel of Q at time t.  need to save this because dynamics
-                  ! will scramble the timelevel pointers.
-    
-    !save the location of  n0 for Qdp
-    !call TimeLevel_Qdp( tl, n_Qdp) !time levels for qdp are not the same
-
-
+    n_Q = tl%n0  ! n_Q = timelevel of FV tracers at time t.  need to save this
     call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
          flt , hybrid, dt, tl, nets, nete, compute_diagnostics)
-
-
     do n=2,qsplit
-
        call TimeLevel_update(tl,"leapfrog")
-
        call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
             flt , hybrid, dt, tl, nets, nete, .false.)
        ! defer final timelevel update until after Q update.
-
-
     enddo
+#ifdef VERT_LAGRANGIAN
+    !compute vertical flux (elem()%derived%eta_dot_dpdn) 
+    !needed to get back to ref levels:
+    !call compute_vertical_flux(elem,hvcoord,dt,tl,nets,nete)
+
+    call remap_dynamics(elem,hvcoord,dt,tl,nets,nete)
+#endif
+
+
+    ! rest of the code/diagnostics are using lnps, so compute:
+    do ie = nets,nete
+       elem(ie)%state%lnps(:,:,tl%np1)= LOG(elem(ie)%state%ps_v(:,:,tl%np1))
+    end do
+
 
     ! ===============
-    ! Tracer Advection.  needs U(t) (saved above) and U(t+1), dp(t+1) (now in elem%state%np1 )
+    ! Tracer Advection.  SE advection uses mean flux variables:
+    !        derived%dp              =  dp at start of timestep
+    !        derived%vdp_ave         =  mean horiz. flux:   U*dp
+    !        derived%eta_dot_dpdn    =  mean vertical velocity (used for remap)
     ! ===============
-    ! Prim_Advec_Tracers will advance from n0 -> np1, so make sure Q(n_Q) data is in the n0 timelevel:
-
-
-    !ALLI - to do: should be aBle to get rid of this!
-    !call TimeLevel_Qdp( tl, t_temp) 
-    !if ( n_Qdp /= t_temp ) then
-    !do ie=nets,nete
-    !     elem(ie)%state%Qdp(:,:,:,:,t_temp)  = elem(ie)%state%Qdp(:,:,:,:,n_Qdp)
-    !  enddo
-    !endif
-
     if (qsize>0) call Prim_Advec_Tracers_remap_rk2(elem, deriv(hybrid%ithr),hvcoord,flt_advection,hybrid,&
          dt_q,tl,nets,nete,compute_diagnostics)
 
     if (ntrac>0) then
       if ( n_Q /= tl%n0 ) then
+        ! make sure tl%n0 contains tracers at start of timestep
         do ie=nets,nete
           fvm(ie)%c(:,:,:,1:ntrac,tl%n0)  = fvm(ie)%c(:,:,:,1:ntrac,n_Q)
         enddo
@@ -1492,7 +1481,6 @@ contains
     !
     !   Q(1)   Q at t+dt_q
     if (compute_diagnostics) call prim_diag_scalars(elem,hvcoord,tl,2,.false.,nets,nete)
-
     if (compute_energy) call prim_energy_halftimes(elem,hvcoord,tl,2,.false.,nets,nete,1)
 
     if (energy_fixer > 0) then
@@ -1500,20 +1488,15 @@ contains
        call prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete)
     endif
 
-
     if (compute_diagnostics) then
        call prim_diag_scalars(elem,hvcoord,tl,3,.false.,nets,nete)
-
        call prim_energy_halftimes(elem,hvcoord,tl,3,.false.,nets,nete,1)
-
      endif
-
 
     ! =================================
     ! update dynamics time level pointers 
     ! =================================
     call TimeLevel_update(tl,"leapfrog")
-    
 
     ! now we have:
     !   u(nm1)   dynamics at  t+dt_q - dt       (Robert-filtered)
@@ -1548,7 +1531,86 @@ contains
   end subroutine prim_finalize
 
 !=======================================================================================================! 
+#ifdef VERT_LAGRANGIAN
+    subroutine compute_vertical_flux(elem,hvcoord,dt,tl,nets,nete)
+    ! This routine is called at the end of the vertically Lagrangian 
+    ! dynamics step to compute the vertical flux needed to get back
+    ! to reference eta levels 
+    !
+    ! input:
+    !     derived%dp()  delta p on levels at beginning of timestep
+    !     state%dp3d(np1)  delta p on levels at end of timestep
+    ! output:
+    !     state%ps_v(np1)          surface pressure at time np1 
+    !     derived%eta_dot_dpdn()   vertical flux from final Lagrangian
+    !                              levels to reference eta levels
+    !
+    use kinds, only : real_kind
+    use hybvcoord_mod, only : hvcoord_t
+    use time_mod, only : timelevel_t, TimeLevel_Qdp
+!    type (hybrid_t), intent(in)       :: hybrid  ! distributed parallel structure (shared)
+    type (element_t), intent(inout)   :: elem(:)
+    type (hvcoord_t)                  :: hvcoord
+    type (TimeLevel_t), intent(in)    :: tl
+    real (kind=real_kind)             :: dt
 
+    integer :: ie,k,np1,nets,nete
+    real (kind=real_kind), dimension(np,np)  :: dp,dp_star
+    np1 = tl%np1
+
+    ! dp(k) = (hyai(k+1)-hyai(k))*ps0 + (hybi(k+1)-hybi(k))*ps_v(i,j)
+    !   hybi(1)=0          pure pressure at top of atmosphere
+    !   hyai(1)=ptop
+    !   hyai(nlev+1) = 0   pure sigma at bottom
+    !   hybi(nlev+1) = 1
+    !
+    ! sum over k=1,nlev
+    !  sum(dp(k)) = (hyai(nlev+1)-hyai(1))*ps0 + (hybi(nlev+1)-hybi(1))*ps_v
+    !             = -ps0 + ps_v
+    !  ps_v =  ps0+sum(dp(k))
+    !
+    ! compute final surface pressure:
+    do ie=nets,nete
+       ! compute vertical mass flux:
+       ! reference levels:
+       !    dp(k) = (hyai(k+1)-hyai(k))*ps0 + (hybi(k+1)-hybi(k))*ps_v
+       ! floating levels:
+       !    dp_star(k) = dp(k) + dt_q*(eta_dot_dpdn(i,j,k+1) - eta_dot_dpdn(i,j,k) ) 
+       ! hence:
+       !    (dp_star(k)-dp(k))/dt_q = (eta_dot_dpdn(i,j,k+1) - eta_dot_dpdn(i,j,k) ) 
+       !    
+       elem(ie)%derived%eta_dot_dpdn(:,:,1)=0
+       elem(ie)%derived%eta_dot_dpdn(:,:,nlevp)=0
+       do k=1,nlev-1
+          dp(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+          dp_star(:,:) = elem(ie)%state%dp3d(:,:,k,np1)
+          elem(ie)%derived%eta_dot_dpdn(:,:,k+1) = elem(ie)%derived%eta_dot_dpdn(:,:,k) + &
+               (dp_star(:,:)-dp(:,:))/dt
+       enddo
+
+    enddo
+  end subroutine
+
+
+    subroutine remap_dynamics(elem,hvcoord,dt,tl,nets,nete)
+    use kinds, only : real_kind
+    use hybvcoord_mod, only : hvcoord_t
+    use time_mod, only : timelevel_t, TimeLevel_Qdp
+    type (element_t), intent(inout)   :: elem(:)
+    type (hvcoord_t)                  :: hvcoord
+    type (TimeLevel_t), intent(in)    :: tl
+    real (kind=real_kind)             :: dt
+
+    integer :: ie,k,np1,nets,nete
+    real (kind=real_kind), dimension(np,np)  :: dp,dp_star
+    np1 = tl%np1
+
+    do ie=nets,nete
+       !call remap_UV(np1,dt,elem,hvcoord,nets,nete)
+       !call remap_T()
+    enddo
+  end subroutine
+#endif
 
 
   subroutine prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete)
@@ -1566,7 +1628,7 @@ contains
     use physical_constants, only : Cp, cpwater_vapor,g,dd_pi
     use physics_mod, only : Virtual_Specific_Heat
     use time_mod, only : timelevel_t, TimeLevel_Qdp
-    use control_mod, only : moisture, tracer_advection_formulation,traceradv_total_divergence,energy_fixer, use_cpstar, qsplit
+    use control_mod, only : moisture, traceradv_total_divergence,energy_fixer, use_cpstar, qsplit
     use hybvcoord_mod, only : hvcoord_t
     use global_norms_mod, only: wrap_repro_sum
     type (hybrid_t), intent(in)           :: hybrid  ! distributed parallel structure (shared)
@@ -1634,11 +1696,7 @@ contains
           do i=1,np
           do j=1,np
              if(use_cp_star)  then
-                if (tracer_advection_formulation==TRACERADV_TOTAL_DIVERGENCE) then
-                   qval = elem(ie)%state%Qdp(i,j,k,1,t_beta_qdp)/dp(i,j,k)
-                else
-                   qval = elem(ie)%state%Q(i,j,k,1)
-                endif
+                qval = elem(ie)%state%Qdp(i,j,k,1,t_beta_qdp)/dp(i,j,k)
                 cp_star= Virtual_Specific_Heat(qval)
                 sumlk(i,j,k) = cp_star*dp(i,j,k) 
              else

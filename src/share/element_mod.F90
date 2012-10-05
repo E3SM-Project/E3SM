@@ -34,6 +34,9 @@ module element_mod
      real (kind=real_kind) :: v(np,np,2,nlev,timelevels)   ! velocity                                            1
      real (kind=real_kind) :: T(np,np,nlev,timelevels)     ! temperature                                         2
      real (kind=real_kind) :: lnps(np,np,timelevels)       ! log surface pressure                                3
+#ifdef VERT_LAGRANGIAN
+     real (kind=real_kind) :: dp3d(np,np,nlev,timelevels)  ! delta p on levels
+#endif
      real (kind=real_kind) :: ps_v(np,np,timelevels)       ! surface pressure                         4
      real (kind=real_kind) :: phis(np,np)         ! surface geopotential (prescribed)                            5
      ! qsize = 1 is related to the mixing ratio
