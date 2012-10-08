@@ -329,19 +329,20 @@ module vertremap_mod
   !=======================================================================================================! 
 
   
-  subroutine remap1(Qdp,ps,eta_dot_dpdn,dt,hvcoord)
+  subroutine remap1(Q,ps,eta_dot_dpdn,dt,hvcoord)
     ! remap 1 field
-    ! input:  Qdp   field to be remapped  
+    ! input:  Q     field to be remapped (NOTE: MIXING RATIO)
     !         ps()  surface pressure (determines reference levels)
     !         eta_dot_dpdn()  mass flux which to get to reference levels  
     !
-    ! output: remaped Qdp
+    ! output: remaped Q, conserving Qdp
+    !
     use physical_constants, only : cp, cpwater_vapor
 	
     implicit none
     real (kind=real_kind), intent(in)   :: dt
     type (hvcoord_t),      intent(in)      :: hvcoord
-    real (kind=real_kind), intent(inout)  :: Qdp(np,np,nlev)
+    real (kind=real_kind), intent(inout)  :: Q(np,np,nlev)
     real (kind=real_kind), intent(in)     :: ps(np,np),eta_dot_dpdn(np,np,nlev)
     ! ========================
     ! Local Variables
@@ -354,7 +355,7 @@ module vertremap_mod
 								zero = 0,one = 1,tiny = 1e-12,qmax = 1d50
     
     integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, & 
-									lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
+									lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k
     
     call t_startf('remap_velocityQ')
 
@@ -381,7 +382,7 @@ module vertremap_mod
 
                 z1c(k+1) = z1c(k)+dp_star
                 z2c(k+1) = z2c(k)+dp_np1
-                Qcol(k)=Qdp(i,j,k)
+                Qcol(k)=Q(i,j,k)*dp_star
                 zv(k+1) = zv(k)+Qcol(k)
              enddo
              
@@ -591,7 +592,7 @@ module vertremap_mod
                 endif
                 zv2 = zv(zkr(k+1))+(za0(zkr(k+1))*zgam(k+1)+(za1(zkr(k+1))/2)*(zgam(k+1)**2)+ &
                      (za2(zkr(k+1))/3)*(zgam(k+1)**3))*zhdp(zkr(k+1))
-                Qdp(i,j,k) = (zv2 - zv1)	
+                Q(i,j,k) = (zv2 - zv1)	/ (z2c(k+1)-z2c(k) )
                 zv1 = zv2
              enddo
           enddo
