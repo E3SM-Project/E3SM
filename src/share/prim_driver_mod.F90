@@ -1377,9 +1377,8 @@ contains
 #ifdef VERT_LAGRANGIAN
     !compute vertical flux (elem()%derived%eta_dot_dpdn) 
     !needed to get back to ref levels:
-    !call compute_vertical_flux(elem,hvcoord,dt,tl,nets,nete)
-
-    call remap_dynamics(elem,hvcoord,dt,tl,nets,nete)
+    call compute_vertical_flux(elem,hvcoord,dt_q,tl,nets,nete)
+    call remap_dynamics(elem,hvcoord,dt_q,tl%np1,nets,nete)
 #endif
 
 
@@ -1592,22 +1591,31 @@ contains
   end subroutine
 
 
-    subroutine remap_dynamics(elem,hvcoord,dt,tl,nets,nete)
+    subroutine remap_dynamics(elem,hvcoord,dt,np1,nets,nete)
     use kinds, only : real_kind
     use hybvcoord_mod, only : hvcoord_t
-    use time_mod, only : timelevel_t, TimeLevel_Qdp
+    use vertremap_mod, only : remap1
+
     type (element_t), intent(inout)   :: elem(:)
     type (hvcoord_t)                  :: hvcoord
-    type (TimeLevel_t), intent(in)    :: tl
     real (kind=real_kind)             :: dt
 
     integer :: ie,k,np1,nets,nete
     real (kind=real_kind), dimension(np,np)  :: dp,dp_star
-    np1 = tl%np1
+    real (kind=real_kind), dimension(np,np,nlev)  :: xtmp
 
     do ie=nets,nete
-       !call remap_UV(np1,dt,elem,hvcoord,nets,nete)
-       !call remap_T()
+       call remap1(elem(ie)%state%T(:,:,:,np1),elem(ie)%state%ps_v(:,:,np1),&
+            elem(ie)%derived%eta_dot_dpdn,dt,hvcoord)
+       xtmp=elem(ie)%state%v(:,:,1,:,np1)
+       call remap1(xtmp,elem(ie)%state%ps_v(:,:,np1),&
+            elem(ie)%derived%eta_dot_dpdn,dt,hvcoord)
+       elem(ie)%state%v(:,:,1,:,np1)=xtmp
+
+       xtmp=elem(ie)%state%v(:,:,2,:,np1)
+       call remap1(xtmp,elem(ie)%state%ps_v(:,:,np1),&
+            elem(ie)%derived%eta_dot_dpdn,dt,hvcoord)
+       elem(ie)%state%v(:,:,2,:,np1)=xtmp
     enddo
   end subroutine
 #endif

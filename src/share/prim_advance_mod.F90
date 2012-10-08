@@ -2224,7 +2224,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      
      eta_dot_dpdn(:,:,1     ) = 0.0D0
      eta_dot_dpdn(:,:,nlev+1) = 0.0D0
-
+#ifdef VERT_LAGRANGIAN
+     eta_dot_dpdn=0
+#endif
 
 
      ! accumulate mean fluxes:
