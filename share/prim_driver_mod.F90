@@ -1595,6 +1595,7 @@ contains
     use kinds, only : real_kind
     use hybvcoord_mod, only : hvcoord_t
     use vertremap_mod, only : remap1
+    use physical_constants, only : Cp
 
     type (element_t), intent(inout)   :: elem(:)
     type (hvcoord_t)                  :: hvcoord
@@ -1603,10 +1604,17 @@ contains
     integer :: ie,k,np1,nets,nete
     real (kind=real_kind), dimension(np,np)  :: dp,dp_star
     real (kind=real_kind), dimension(np,np,nlev)  :: xtmp
+    real (kind=real_kind), dimension(np,np,nlev)  :: ttmp
 
+    ! remap u,v and cp*T + .5 u^2 
     do ie=nets,nete
-       call remap1(elem(ie)%state%T(:,:,:,np1),elem(ie)%state%ps_v(:,:,np1),&
+       ttmp=(elem(ie)%state%v(:,:,1,:,np1)**2 + &
+             elem(ie)%state%v(:,:,2,:,np1)**2)/2 + &
+             elem(ie)%state%t(:,:,:,np1)*cp
+
+       call remap1(ttmp,elem(ie)%state%ps_v(:,:,np1),&
             elem(ie)%derived%eta_dot_dpdn,dt,hvcoord)
+
        xtmp=elem(ie)%state%v(:,:,1,:,np1)
        call remap1(xtmp,elem(ie)%state%ps_v(:,:,np1),&
             elem(ie)%derived%eta_dot_dpdn,dt,hvcoord)
@@ -1616,6 +1624,11 @@ contains
        call remap1(xtmp,elem(ie)%state%ps_v(:,:,np1),&
             elem(ie)%derived%eta_dot_dpdn,dt,hvcoord)
        elem(ie)%state%v(:,:,2,:,np1)=xtmp
+
+       elem(ie)%state%t(:,:,:,np1) = &
+            ( ttmp - ( (elem(ie)%state%v(:,:,1,:,np1)**2 + &
+                        elem(ie)%state%v(:,:,2,:,np1)**2)/2))/cp
+             
     enddo
   end subroutine
 #endif
