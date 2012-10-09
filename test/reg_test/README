@@ -246,7 +246,7 @@ SHALLOW WATER TESTS -- DETAILS
 
    baro2a.sh   Test case from Jablonowski and Williamson 2006
                Spectral Element core
-               (with 4 tracers, per ASP)
+               No tracers
                Explicit leapfrog + hyperviscosity
 			   Output using PIO_INTERP
 			   NE=15, NP=4, PLEV=26, dt=180
@@ -254,6 +254,12 @@ SHALLOW WATER TESTS -- DETAILS
 			   compare plots produced in q.pdf (either run
 			   in branch AND trunk or compare to plots in
 			   baro2a-ref.pdf in this directory)
+
+                           NOTE: tracer advection with leapfrog dynamics
+                                 no longer supported. Need to update 
+                                 reference plots to look at vorticty
+                                 instead of tracers. (MT 2012/10)
+
 
    baro2b.sh   Test case from Jablonowski and Williamson 2006
                Spectral Element core
