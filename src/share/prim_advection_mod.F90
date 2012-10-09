@@ -91,7 +91,21 @@ module vertremap_mod
 !=======================================================================================================! 
 
   subroutine remap_UV(np1,dt,elem,hvcoord,nets,nete)
-
+!
+!   remap, without limiters, velocity, from REFERENCE levels to Lagrangian levels
+!   NOTE: this routine is remapping in the opposite direction as the other routines
+!         it is used to compute the velocity on Lagrangian levels from dynamics
+!         velocity given on reference levels.  It will not be needed when
+!         we switch dynamics to vertically lagrangian
+!
+!   input:  elem(:)%state%ps_v(:,:,np1)    surface pressure
+!           elem(:)%derived%eta_dot_dpdn   mass flux from lagrangian levels
+!                                          to reference levels 
+!           elem(:)%state%v(:,:,:,:,np1)   velocity on REF levels
+!
+!   output: elem(:)%state%v(:,:,:,:,np1)   velocity on Lagrangian levels 
+!           
+!
     implicit none
     real (kind=real_kind),  intent(in)          :: dt
     type (element_t),    intent(inout), target  :: elem(:)
