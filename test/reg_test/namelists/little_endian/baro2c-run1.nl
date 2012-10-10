@@ -26,7 +26,7 @@ hypervis_order = 2
 hypervis_subcycle = 1
 u_perturb      = 1
 initial_total_mass = 0
-limiter_option = 4
+limiter_option = 8
 /
 &solver_nl
 precon_method = "identity"
