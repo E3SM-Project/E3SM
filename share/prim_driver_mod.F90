@@ -1377,7 +1377,7 @@ contains
 #ifdef VERT_LAGRANGIAN
     !compute vertical flux (elem()%derived%eta_dot_dpdn) 
     !needed to get back to ref levels:
-    call compute_vertical_flux(elem,hvcoord,dt_q,tl,nets,nete)
+    call compute_vertical_flux(elem,hvcoord,dt_q,tl%np1,nets,nete)
     call remap_dynamics(elem,hvcoord,dt_q,tl%np1,nets,nete)
 #endif
 
@@ -1531,7 +1531,7 @@ contains
 
 !=======================================================================================================! 
 #ifdef VERT_LAGRANGIAN
-    subroutine compute_vertical_flux(elem,hvcoord,dt,tl,nets,nete)
+    subroutine compute_vertical_flux(elem,hvcoord,dt,np1,nets,nete)
     ! This routine is called at the end of the vertically Lagrangian 
     ! dynamics step to compute the vertical flux needed to get back
     ! to reference eta levels 
@@ -1546,16 +1546,13 @@ contains
     !
     use kinds, only : real_kind
     use hybvcoord_mod, only : hvcoord_t
-    use time_mod, only : timelevel_t, TimeLevel_Qdp
 !    type (hybrid_t), intent(in)       :: hybrid  ! distributed parallel structure (shared)
     type (element_t), intent(inout)   :: elem(:)
     type (hvcoord_t)                  :: hvcoord
-    type (TimeLevel_t), intent(in)    :: tl
     real (kind=real_kind)             :: dt
 
     integer :: ie,k,np1,nets,nete
     real (kind=real_kind), dimension(np,np)  :: dp,dp_star
-    np1 = tl%np1
 
     ! dp(k) = (hyai(k+1)-hyai(k))*ps0 + (hybi(k+1)-hybi(k))*ps_v(i,j)
     !   hybi(1)=0          pure pressure at top of atmosphere
@@ -1594,7 +1591,7 @@ contains
     subroutine remap_dynamics(elem,hvcoord,dt,np1,nets,nete)
     use kinds, only : real_kind
     use hybvcoord_mod, only : hvcoord_t
-    use vertremap_mod, only : remap1
+    use vertremap_mod, only : remap1,remap_UV_lagrange2ref
     use physical_constants, only : Cp
 
     type (element_t), intent(inout)   :: elem(:)
@@ -1603,9 +1600,15 @@ contains
 
     integer :: ie,k,np1,nets,nete
     real (kind=real_kind), dimension(np,np)  :: dp,dp_star
-    real (kind=real_kind), dimension(np,np,nlev)  :: xtmp
     real (kind=real_kind), dimension(np,np,nlev)  :: ttmp
 
+#if 0
+    do ie=nets,nete
+       call remap1(elem(ie)%state%t(:,:,:,np1),elem(ie)%state%ps_v(:,:,np1),&
+            elem(ie)%derived%eta_dot_dpdn,dt,hvcoord)
+    enddo
+    call remap_UV_lagrange2ref(np1,dt,elem,hvcoord,nets,nete)
+#else
     ! remap u,v and cp*T + .5 u^2 
     do ie=nets,nete
        ttmp=(elem(ie)%state%v(:,:,1,:,np1)**2 + &
@@ -1615,21 +1618,19 @@ contains
        call remap1(ttmp,elem(ie)%state%ps_v(:,:,np1),&
             elem(ie)%derived%eta_dot_dpdn,dt,hvcoord)
 
-       xtmp=elem(ie)%state%v(:,:,1,:,np1)
-       call remap1(xtmp,elem(ie)%state%ps_v(:,:,np1),&
-            elem(ie)%derived%eta_dot_dpdn,dt,hvcoord)
-       elem(ie)%state%v(:,:,1,:,np1)=xtmp
-
-       xtmp=elem(ie)%state%v(:,:,2,:,np1)
-       call remap1(xtmp,elem(ie)%state%ps_v(:,:,np1),&
-            elem(ie)%derived%eta_dot_dpdn,dt,hvcoord)
-       elem(ie)%state%v(:,:,2,:,np1)=xtmp
-
+       elem(ie)%state%t(:,:,:,np1)=ttmp  ! overwrite T with TE
+    enddo
+    call remap_UV_lagrange2ref(np1,dt,elem,hvcoord,nets,nete)
+    ! back out T from TE
+    do ie=nets,nete
        elem(ie)%state%t(:,:,:,np1) = &
-            ( ttmp - ( (elem(ie)%state%v(:,:,1,:,np1)**2 + &
+            ( elem(ie)%state%t(:,:,:,np1) - ( (elem(ie)%state%v(:,:,1,:,np1)**2 + &
                         elem(ie)%state%v(:,:,2,:,np1)**2)/2))/cp
              
     enddo
+#endif
+
+
   end subroutine
 #endif
 

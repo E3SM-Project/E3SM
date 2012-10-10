@@ -85,12 +85,12 @@ module vertremap_mod
   use perf_mod, only	   : t_startf, t_stopf  ! _EXTERNAL
   use parallel_mod, only   : abortmp  	
 
-  public remap1
+  public remap1,remap_UV_lagrange2ref
   contains
 
 !=======================================================================================================! 
 
-  subroutine remap_UV(np1,dt,elem,hvcoord,nets,nete)
+  subroutine remap_UV_ref2lagrange(np1,dt,elem,hvcoord,nets,nete)
 !
 !   remap, without limiters, velocity, from REFERENCE levels to Lagrangian levels
 !   NOTE: this routine is remapping in the opposite direction as the other routines
@@ -103,7 +103,7 @@ module vertremap_mod
 !                                          to reference levels 
 !           elem(:)%state%v(:,:,:,:,np1)   velocity on REF levels
 !
-!   output: elem(:)%state%v(:,:,:,:,np1)   velocity on Lagrangian levels 
+!   output: elem(:)%state%vstar(:,:,:,:)   velocity on Lagrangian levels 
 !           
 !
     implicit none
@@ -129,7 +129,7 @@ module vertremap_mod
     
     integer(kind=int_kind) :: zkrU(nlev+1),zkrV(nlev+1),ie,i,j,k,jl,jk,ilevU,itopU,ibotU,ilevV,itopV,ibotV,jsubz,ij
     
-    call t_startf('remap_UV')
+    call t_startf('remap_UV_ref2lagrange')
     do ie=nets,nete
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(ij,i,j,k,dp,dp_star,Ustar,Vstar,z1cU,z2cU,z1cV,z2cV,Uold,Vold) &
@@ -337,8 +337,244 @@ module vertremap_mod
           enddo
        enddo
     enddo
-    call t_stopf('remap_UV')
-  end subroutine remap_UV
+    call t_stopf('remap_UV_ref2lagrange')
+  end subroutine remap_UV_ref2lagrange
+  
+  subroutine remap_UV_lagrange2ref(np1,dt,elem,hvcoord,nets,nete)
+!
+!   remap, without limiters, velocity, from Lagrangian levels to REFERECE levels
+!
+!   input:  elem(:)%state%ps_v(:,:,np1)    surface pressure
+!           elem(:)%derived%eta_dot_dpdn   mass flux from lagrangian levels
+!                                          to reference levels 
+!           elem(:)%state%v(:,:,:,:,np1)   velocity on Lagrangian levels
+!
+!   output: elem(:)%state%v(:,:,:,:,np1)   velocity on REF levels 
+!           
+!
+    implicit none
+    real (kind=real_kind),  intent(in)          :: dt
+    type (element_t),    intent(inout), target  :: elem(:)
+    type (hvcoord_t),    intent(in)             :: hvcoord
+    
+    integer :: nets,nete,np1
+     
+    ! ========================
+    ! Local Variables
+    ! ========================
+
+    real(kind=real_kind), dimension(nlev) :: dp,dp_star,Ustar,Vstar
+    real(kind=real_kind), dimension(nlev) :: Uold,Vold,Unew,Vnew
+    real(kind=real_kind), dimension(nlevp):: z1c,z2c
+    real(kind=real_kind), dimension(nlev+1)    :: rhsU,lower_diagU,diagU,upper_diagU,q_diagU,zgamU, & 
+                             rhsV,lower_diagV,diagV,upper_diagV,q_diagV,zgamV
+    real(kind=real_kind), dimension(nlev)    :: hU,rho_barU,za0U,za1U,za2U,zhdpU, & 
+                             hV,rho_barV,za0V,za1V,za2V,zhdpV
+    real(kind=real_kind)            :: tmp_calU,zaccintegerbU,zacctopU,zaccbotU, & 
+                             tmp_calV,zaccintegerbV,zacctopV,zaccbotV
+    
+    integer(kind=int_kind) :: zkrU(nlev+1),zkrV(nlev+1),ie,i,j,k,jl,jk,ilevU,itopU,ibotU,ilevV,itopV,ibotV,jsubz,ij
+    
+    call t_startf('remap_UV_lagrange2ref')
+    do ie=nets,nete
+#if (defined ELEMENT_OPENMP)
+!$omp parallel do private(ij,i,j,k,dp,dp_star,Ustar,Vstar,z1c,z2c,Uold,Vold) &
+!$omp    private(zkrU,ilevU,zgamU,zhdpU,zkrV,ilevV,zgamV,zhdpV,jl,jk,hU,rhsU,hV,rhsV) &
+!$omp    private(lower_diagU,lower_diagV,diagU,diagV,upper_diagU,upper_diagV,q_diagU) &
+!$omp    private(q_diagV,tmp_calU,tmp_calV,za0U,za1U,za2U,za0V,za1V,za2V,zaccintegerbU) &
+!$omp    private(itopU,zacctopU,zaccintegerbV,itopV,zacctopV,ibotU,jsubz,zaccbotU,ibotV) &
+!$omp    private(zaccbotV,rho_barU,rho_barV)
+#endif
+       do ij = 1, npsq
+          j = (ij-1)/np + 1
+          i = ij - (j-1)*np
+          do k=1,nlev
+            dp(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,np1)
+            dp_star(k) = dp(k) + dt*(elem(ie)%derived%eta_dot_dpdn(i,j,k+1) - elem(ie)%derived%eta_dot_dpdn(i,j,k) ) 
+            Ustar(k) = elem(ie)%state%v(i,j,1,k,np1)*dp_star(k)
+            Vstar(k) = elem(ie)%state%v(i,j,2,k,np1)*dp_star(k)
+          enddo
+          
+
+          z1c(1)=0
+          z2c(1)=0
+          do k=1,nlev
+            Uold(k) = Ustar(k)
+            z1c(k+1) = z1c(k)+dp_star(k)
+            z2c(k+1) = z2c(k)+dp(k)
+            Vold(k) = Vstar(k)
+          enddo
+		  
+          if (ABS(z2c(nlev+1)-z1c(nlev+1)).GE.0.000001) then
+             write(6,*) 'SURFACE PRESSURE IMPLIED BY ADVECTION SCHEME'
+             write(6,*) 'NOT CORRESPONDING TO SURFACE PRESSURE IN    '
+             write(6,*) 'DATA FOR MODEL LEVELS'
+             write(6,*) 'PLEVMODEL=',z2c(nlev+1)
+             write(6,*) 'PLEV     =',z1c(nlev+1)
+             write(6,*) 'DIFF     =',z2c(nlev+1)-z1c(nlev+1)
+             ! call ABORT
+          endif
+          
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          !!  calculate quadratic splies !!
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          
+          zkrU  = 99
+          ilevU = 2
+          zkrU(1)       = 1
+          zgamU(1)      = 0.0
+          zkrU(nlev+1)  = nlev
+          zgamU(nlev+1) = 1.0
+          zhdpU(1) = z1c(2)-z1c(1)
+          
+          zkrV  = 99
+          ilevV = 2
+          zkrV(1)       = 1
+          zgamV(1)      = 0.0
+          zkrV(nlev+1)  = nlev
+          zgamV(nlev+1) = 1.0
+          zhdpV(1) = z1c(2)-z1c(1)
+          do jl = 2,nlev
+            zhdpU(jl) = z1c(jl+1)-z1c(jl)
+            jkloopU: do jk = ilevU,nlev+1
+              if (z1c(jk).ge.z2c(jl)) then
+                ilevU      = jk
+                zkrU(jl)   = jk-1
+                zgamU(jl)   = (z2c(jl)-z1c(jk-1))/(z1c(jk)-z1c(jk-1))
+                exit jkloopU
+              endif
+            enddo jkloopU
+            zhdpV(jl) = z1c(jl+1)-z1c(jl)
+            jkloopV: do jk = ilevV,nlev+1
+              if (z1c(jk).ge.z2c(jl)) then
+                ilevV      = jk
+                zkrV(jl)   = jk-1
+                zgamV(jl)   = (z2c(jl)-z1c(jk-1))/(z1c(jk)-z1c(jk-1))
+                exit jkloopV
+              endif
+            enddo jkloopV
+          enddo 
+
+          hU = 1/zhdpU
+          rho_barU = Uold * hU
+          rhsU = 0
+          lower_diagU = 0
+          diagU = 0
+          upper_diagU = 0
+          
+          hV = 1/zhdpV 
+          rho_barV = Vold * hV          
+          rhsV = 0
+          lower_diagV = 0
+          diagV = 0
+          upper_diagV = 0
+
+          rhsU(1)=3*rho_barU(1)
+          rhsU(2:nlev) = 3*(rho_barU(2:nlev)*hU(2:nlev) + rho_barU(1:nlev-1)*hU(1:nlev-1)) 
+          rhsU(nlev+1)=3*rho_barU(nlev)
+          
+          rhsV(1)=3*rho_barV(1)
+          rhsV(2:nlev) = 3*(rho_barV(2:nlev)*hV(2:nlev) + rho_barV(1:nlev-1)*hV(1:nlev-1)) 
+          rhsV(nlev+1)=3*rho_barV(nlev)
+
+          lower_diagU(1)=1
+          lower_diagU(2:nlev) = hU(1:nlev-1)
+          lower_diagU(nlev+1)=1
+          
+          lower_diagV(1)=1
+          lower_diagV(2:nlev) = hV(1:nlev-1)
+          lower_diagV(nlev+1)=1
+
+          diagU(1)=2
+          diagU(2:nlev) = 2*(hU(2:nlev) + hU(1:nlev-1))
+          diagU(nlev+1)=2
+          
+          diagV(1)=2
+          diagV(2:nlev) = 2*(hV(2:nlev) + hV(1:nlev-1))
+          diagV(nlev+1)=2
+
+          upper_diagU(1)=1
+          upper_diagU(2:nlev) = hU(2:nlev)
+          upper_diagU(nlev+1)=0
+          
+          upper_diagV(1)=1
+          upper_diagV(2:nlev) = hV(2:nlev)
+          upper_diagV(nlev+1)=0
+
+          q_diagU(1)=-upper_diagU(1)/diagU(1)
+          rhsU(1)= rhsU(1)/diagU(1)
+          
+          q_diagV(1)=-upper_diagV(1)/diagV(1)
+          rhsV(1)= rhsV(1)/diagV(1)
+          do jl=2,nlev+1
+            tmp_calU    =  1/(diagU(jl)+lower_diagU(jl)*q_diagU(jl-1))
+            q_diagU(jl) = -upper_diagU(jl)*tmp_calU
+            rhsU(jl) =  (rhsU(jl)-lower_diagU(jl)*rhsU(jl-1))*tmp_calU
+            
+            tmp_calV    =  1/(diagV(jl)+lower_diagV(jl)*q_diagV(jl-1))
+            q_diagV(jl) = -upper_diagV(jl)*tmp_calV
+            rhsV(jl) =  (rhsV(jl)-lower_diagV(jl)*rhsV(jl-1))*tmp_calV
+          enddo
+          do jl=nlev,1,-1
+            rhsU(jl)=rhsU(jl)+q_diagU(jl)*rhsU(jl+1)
+            rhsV(jl)=rhsV(jl)+q_diagV(jl)*rhsV(jl+1)
+          enddo        
+
+          za0U = rhsU(1:nlev)
+          za1U = -4*rhsU(1:nlev) - 2*rhsU(2:nlev+1) + 6*rho_barU
+          za2U = +3*rhsU(1:nlev) + 3*rhsU(2:nlev+1) - 6*rho_barU
+          
+          za0V = rhsV(1:nlev)
+          za1V = -4*rhsV(1:nlev) - 2*rhsV(2:nlev+1) + 6*rho_barV
+          za2V = +3*rhsV(1:nlev) + 3*rhsV(2:nlev+1) - 6*rho_barV
+          
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          !! start iteration from top to bottom of atmosphere !! 
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                 
+          zaccintegerbU = 0
+          itopU = 1
+          zacctopU = 0.0
+          
+          zaccintegerbV = 0
+          itopV = 1
+          zacctopV = 0.0
+
+
+          do jk = 1,nlev
+            ibotU = zkrU(jk+1)
+            if (zgamU(jk+1)>1d0) then
+               WRITE(*,*) 'r not in [0:1]', zgamU(jk+1)
+            endif
+            do jsubz=itopU,ibotU-1,1
+              zaccintegerbU = zaccintegerbU + Uold(jsubz)
+            enddo
+            zaccbotU = zaccintegerbU + (za0U(ibotU)*zgamU(jk+1)+(za1U(ibotU)/2)*(zgamU(jk+1)**2)+(za2U(ibotU)/3)*(zgamU(jk+1)**3))*zhdpU(ibotU)
+
+            elem(ie)%state%v(i,j,1,jk,np1) = (zaccbotU-zacctopU)/dp(jk)
+
+            zacctopU        = zaccbotU
+            itopU           = ibotU
+            
+            ibotV = zkrV(jk+1)
+            if (zgamV(jk+1)>1d0) then
+               WRITE(*,*) 'r not in [0:1]', zgamV(jk+1)
+            endif
+            do jsubz=itopV,ibotV-1,1
+              zaccintegerbV = zaccintegerbV + Vold(jsubz)
+            enddo
+            zaccbotV = zaccintegerbV + (za0V(ibotV)*zgamV(jk+1)+(za1V(ibotV)/2)*(zgamV(jk+1)**2)+(za2V(ibotV)/3)*(zgamV(jk+1)**3))*zhdpV(ibotV)
+
+            elem(ie)%state%v(i,j,2,jk,np1) = (zaccbotV-zacctopV)/dp(jk)
+
+            zacctopV        = zaccbotV
+            itopV           = ibotV
+
+          enddo
+       enddo
+    enddo
+    call t_stopf('remap_UV_lagrange2ref')
+  end subroutine remap_UV_lagrange2ref
   
   !=======================================================================================================! 
 
@@ -1858,7 +2094,7 @@ contains
   subroutine Prim_Advec_Tracers_spelt(elem, spelt, deriv,hvcoord,hybrid,&
         dt,tl,nets,nete, compute_diagnostics)
     use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
-    use vertremap_mod, only: remap_velocityCspelt,remap_UV  ! _EXTERNAL (actually INTERNAL)
+    use vertremap_mod, only: remap_velocityCspelt,remap_UV_ref2lagrange  ! _EXTERNAL (actually INTERNAL)
     use spelt_mod, only : spelt_run, spelt_runair, edgeveloc, spelt_mcgregordss
     use derivative_mod, only : interpolate_gll2spelt_points
     
@@ -1917,7 +2153,7 @@ contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! elem%state%u(np1)  = velocity at time t+1 on reference levels
     ! elem%derived%vstar = velocity at t+1 on floating levels (computed below)
-    call remap_UV(np1,dt,elem,hvcoord,nets,nete)
+    call remap_UV_ref2lagrange(np1,dt,elem,hvcoord,nets,nete)
 !------------------------------------------------------------------------------------      
     ! ! start mcgregordss
     do ie=nets,nete
@@ -1961,7 +2197,7 @@ contains
   subroutine Prim_Advec_Tracers_fvm(elem, fvm, deriv,hvcoord,hybrid,&
         dt,tl,nets,nete, compute_diagnostics)
     use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
-    use vertremap_mod, only: remap_velocityC,remap_UV  ! _EXTERNAL (actually INTERNAL)
+    use vertremap_mod, only: remap_velocityC,remap_UV_ref2lagrange  ! _EXTERNAL (actually INTERNAL)
     use fvm_mod, only : cslam_run, cslam_runairdensity, edgeveloc, fvm_mcgregor, fvm_mcgregordss
     
     implicit none
@@ -2020,7 +2256,7 @@ contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! elem%state%u(np1)  = velocity at time t+1 on reference levels
     ! elem%derived%vstar = velocity at t+1 on floating levels (computed below)
-    call remap_UV(np1,dt,elem,hvcoord,nets,nete)
+    call remap_UV_ref2lagrange(np1,dt,elem,hvcoord,nets,nete)
 !------------------------------------------------------------------------------------    
     call t_startf('fvm_mcgregor')
     ! using McGregor AMS 1993 scheme: Economical Determination of Departure Points for
@@ -2118,7 +2354,7 @@ contains
         dt,tl,nets,nete, compute_diagnostics)
     use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
     use derivative_mod, only : divergence_sphere
-    use vertremap_mod, only: remap_uv,remap_velocityq, remap_velocityq_ppm  ! _EXTERNAL (actually INTERNAL)
+    use vertremap_mod, only: remap_velocityq, remap_velocityq_ppm  ! _EXTERNAL (actually INTERNAL)
     use control_mod, only: vert_remap_q_alg, qsplit
 
     implicit none
