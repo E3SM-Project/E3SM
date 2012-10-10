@@ -1261,12 +1261,13 @@ contains
 !   
 !
     use hybvcoord_mod, only : hvcoord_t
-    use time_mod, only : TimeLevel_t, time_at, timelevel_update, smooth, ptimelevels
-    use control_mod, only: statefreq, integration, &
-           TRACERADV_TOTAL_DIVERGENCE,TRACERADV_UGRADQ, energy_fixer, ftype, qsplit, nu_p, test_cfldep
+    use time_mod, only : TimeLevel_t, time_at, timelevel_update, nsplit
+    use control_mod, only: statefreq,&
+           energy_fixer, ftype, qsplit, nu_p, test_cfldep
     use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3, applycamforcing, &
                                  applycamforcing_dynamics, prim_advance_exp
-    use prim_advection_mod, only : prim_advec_tracers_remap_rk2, prim_advec_tracers_fvm, prim_advec_tracers_spelt
+    use prim_advection_mod, only : prim_advec_tracers_remap_rk2, prim_advec_tracers_fvm, &
+         prim_advec_tracers_spelt, vertical_remap
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use parallel_mod, only : abortmp
     use reduction_mod, only : parallelmax
@@ -1288,10 +1289,11 @@ contains
     real(kind=real_kind), intent(in)        :: dt  ! "timestep dependent" timestep
     type (TimeLevel_t), intent(inout)       :: tl
     real(kind=real_kind) :: st, st1, dp, dt_q
-    integer :: ie, t, q,k,i,j,n, n_Q, n_Qdp, t_temp, n0_qdp
+    integer :: ie, t, q,k,i,j,n, n_Q
+    integer :: n0_qdp,np1_qdp
 
     real (kind=real_kind)                          :: maxcflx, maxcfly  
-
+    real (kind=real_kind) :: dp_np1(np,np)
     logical :: compute_diagnostics, compute_energy
 
 
@@ -1326,13 +1328,37 @@ contains
     if (ftype==2) call ApplyCAMForcing_dynamics(elem, hvcoord,tl%n0,dt_q,nets,nete)
 #endif
 
+    !We are only storing Q now (just n0 - not nm1 and np1)  
+    ! E(1) Energy at start of timestep, diagnostics at t-dt/2  (using t-dt, t and Q(t))
+    if (compute_energy) call prim_energy_halftimes(elem,hvcoord,tl,1,.true.,nets,nete,1)
+
+    ! qmass and variance, using Q(n0),Qdp(n0)
+    if (compute_diagnostics) call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
+
+
+#ifdef VERT_LAGRANGIAN
+    do ie=nets,nete
+      do k=1,nlev
+         ! initialize prognostic variable for floating levels
+         elem(ie)%state%dp3d(:,:,:,tl%n0)=&
+              ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+              ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
+
+      enddo
+    enddo
+#endif
+
+    ! loop over rsplit vertically lagrangian timesteps
+    !do r=1,rsplit   
+
     ! ===============
-    ! initialize mean flux accumulation variables and store dp at n0 for use by advection
+    ! initialize mean flux accumulation variables and save some variables at n0 
+    ! for use by advection
     ! ===============
     do ie=nets,nete
-      elem(ie)%derived%eta_dot_dpdn=0   
-      elem(ie)%derived%vn0=0
-      elem(ie)%derived%omega_p=0
+      elem(ie)%derived%eta_dot_dpdn=0     ! mean vertical mass flux
+      elem(ie)%derived%vn0=0              ! mean horizontal mass flux
+      elem(ie)%derived%omega_p=0          
       if (nu_p>0) then
          elem(ie)%derived%psdiss_ave=0
          elem(ie)%derived%psdiss_biharmonic=0
@@ -1345,22 +1371,17 @@ contains
 !$omp parallel do private(k, j, i)
 #endif
       do k=1,nlev
+         ! save dp at time t 
+#ifdef VERT_LAGRANGIAN
+         ! initialize prognostic variable for floating levels
+         elem(ie)%derived%dp(:,:,k)=elem(ie)%state%dp3d(:,:,:,tl%n0)
+#else
          elem(ie)%derived%dp(:,:,k)=&
               ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
-#ifdef VERT_LAGRANGIAN
-         ! initialize prognostic variable for floating levels
-         elem(ie)%state%dp3d(:,:,:,tl%n0)=elem(ie)%derived%dp(:,:,:)
 #endif
       enddo
     enddo
-
-    !We are only storing Q now (just n0 - not nm1 and np1)  
-    ! E(1) Energy at start of timestep, diagnostics at t-dt/2  (using t-dt, t and Q(t))
-    if (compute_energy) call prim_energy_halftimes(elem,hvcoord,tl,1,.true.,nets,nete,1)
-
-    ! qmass and variance, using Q(n0),Qdp(n0)
-    if (compute_diagnostics) call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
 
     ! ===============
     ! Dynamical Step 
@@ -1374,28 +1395,20 @@ contains
             flt , hybrid, dt, tl, nets, nete, .false.)
        ! defer final timelevel update until after Q update.
     enddo
-#ifdef VERT_LAGRANGIAN
-    !compute vertical flux (elem()%derived%eta_dot_dpdn) 
-    !needed to get back to ref levels:
-    call compute_vertical_flux(elem,hvcoord,dt_q,tl%np1,nets,nete)
-    call remap_dynamics(elem,hvcoord,dt_q,tl%np1,nets,nete)
-#endif
 
-
-    ! rest of the code/diagnostics are using lnps, so compute:
-    do ie = nets,nete
-       elem(ie)%state%lnps(:,:,tl%np1)= LOG(elem(ie)%state%ps_v(:,:,tl%np1))
-    end do
 
 
     ! ===============
     ! Tracer Advection.  SE advection uses mean flux variables:
     !        derived%dp              =  dp at start of timestep
-    !        derived%vdp_ave         =  mean horiz. flux:   U*dp
-    !        derived%eta_dot_dpdn    =  mean vertical velocity (used for remap)
+    !        derived%vn0             =  mean horiz. flux:   U*dp
+    ! in addition, this routine will apply the DSS to:
+    !        derived%eta_dot_dpdn    =  mean vertical velocity (used for remap below)
+    !        derived%omega           =  
     ! ===============
     if (qsize>0) call Prim_Advec_Tracers_remap_rk2(elem, deriv(hybrid%ithr),hvcoord,flt_advection,hybrid,&
-         dt_q,tl,nets,nete,compute_diagnostics)
+         dt_q,tl,nets,nete)
+
 
     if (ntrac>0) then
       if ( n_Q /= tl%n0 ) then
@@ -1406,7 +1419,7 @@ contains
       endif 
 #if defined(_SPELT) 
       call Prim_Advec_Tracers_spelt(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&
-           dt_q,tl,nets,nete,compute_diagnostics)
+           dt_q,tl,nets,nete)
        do ie=nets,nete 
     	    do i=1-nipm,nep+nipm
     	      do j=1-nipm,nep+nipm  
@@ -1416,7 +1429,7 @@ contains
        enddo
 #else      
       call Prim_Advec_Tracers_fvm(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&
-           dt_q,tl,nets,nete,compute_diagnostics)
+           dt_q,tl,nets,nete)
        do ie=nets,nete 
          do i=1-nhc,nc+nhc
            do j=1-nhc,nc+nhc  
@@ -1471,6 +1484,45 @@ contains
        !          (or use continuous reconstruction)
     endif
 
+
+    !enddo  ! end of rsplit loop
+
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    !  apply vertical remap
+    !  always for tracers  
+    !  also for dynamics ifdef VERT_LEGRANGIAN
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !compute timelevels for tracers (no longer the same as dynamics)
+    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp) 
+    call vertical_remap(elem,hvcoord,dt_q,tl%np1,np1_qdp,nets,nete)
+
+
+
+
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! time step is complete.  update some diagnostic variables:
+    ! lnps (we should get rid of this)
+    ! Q    (mixing ratio)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
+    do ie=nets,nete
+#if (defined ELEMENT_OPENMP)
+       !$omp parallel do private(k,q)
+#endif
+       elem(ie)%state%lnps(:,:,tl%np1)= LOG(elem(ie)%state%ps_v(:,:,tl%np1))
+       do k=1,nlev    !  Loop inversion (AAM)
+          dp_np1(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%np1)
+          do q=1,qsize
+             elem(ie)%state%Q(:,:,k,q)=elem(ie)%state%Qdp(:,:,k,q,np1_qdp)/dp_np1(:,:) 
+          enddo
+       enddo
+    enddo
+    
+
+
    
 
     ! now we have:
@@ -1501,10 +1553,6 @@ contains
     !   u(nm1)   dynamics at  t+dt_q - dt       (Robert-filtered)
     !   u(n0)    dynamics at  t+dt_q 
     !   u(np1)   undefined
-    !
-    !   Q(nm1)   Q at t
-    !   Q(n0)    Q at t+dt_q
-    !   Q(np1)   undefined
  
 
     ! ============================================================
@@ -1530,111 +1578,6 @@ contains
   end subroutine prim_finalize
 
 !=======================================================================================================! 
-#ifdef VERT_LAGRANGIAN
-    subroutine compute_vertical_flux(elem,hvcoord,dt,np1,nets,nete)
-    ! This routine is called at the end of the vertically Lagrangian 
-    ! dynamics step to compute the vertical flux needed to get back
-    ! to reference eta levels 
-    !
-    ! input:
-    !     derived%dp()  delta p on levels at beginning of timestep
-    !     state%dp3d(np1)  delta p on levels at end of timestep
-    ! output:
-    !     state%ps_v(np1)          surface pressure at time np1 
-    !     derived%eta_dot_dpdn()   vertical flux from final Lagrangian
-    !                              levels to reference eta levels
-    !
-    use kinds, only : real_kind
-    use hybvcoord_mod, only : hvcoord_t
-!    type (hybrid_t), intent(in)       :: hybrid  ! distributed parallel structure (shared)
-    type (element_t), intent(inout)   :: elem(:)
-    type (hvcoord_t)                  :: hvcoord
-    real (kind=real_kind)             :: dt
-
-    integer :: ie,k,np1,nets,nete
-    real (kind=real_kind), dimension(np,np)  :: dp,dp_star
-
-    ! dp(k) = (hyai(k+1)-hyai(k))*ps0 + (hybi(k+1)-hybi(k))*ps_v(i,j)
-    !   hybi(1)=0          pure pressure at top of atmosphere
-    !   hyai(1)=ptop
-    !   hyai(nlev+1) = 0   pure sigma at bottom
-    !   hybi(nlev+1) = 1
-    !
-    ! sum over k=1,nlev
-    !  sum(dp(k)) = (hyai(nlev+1)-hyai(1))*ps0 + (hybi(nlev+1)-hybi(1))*ps_v
-    !             = -ps0 + ps_v
-    !  ps_v =  ps0+sum(dp(k))
-    !
-    ! compute final surface pressure:
-    do ie=nets,nete
-       ! compute vertical mass flux:
-       ! reference levels:
-       !    dp(k) = (hyai(k+1)-hyai(k))*ps0 + (hybi(k+1)-hybi(k))*ps_v
-       ! floating levels:
-       !    dp_star(k) = dp(k) + dt_q*(eta_dot_dpdn(i,j,k+1) - eta_dot_dpdn(i,j,k) ) 
-       ! hence:
-       !    (dp_star(k)-dp(k))/dt_q = (eta_dot_dpdn(i,j,k+1) - eta_dot_dpdn(i,j,k) ) 
-       !    
-       elem(ie)%derived%eta_dot_dpdn(:,:,1)=0
-       elem(ie)%derived%eta_dot_dpdn(:,:,nlevp)=0
-       do k=1,nlev-1
-          dp(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
-          dp_star(:,:) = elem(ie)%state%dp3d(:,:,k,np1)
-          elem(ie)%derived%eta_dot_dpdn(:,:,k+1) = elem(ie)%derived%eta_dot_dpdn(:,:,k) + &
-               (dp_star(:,:)-dp(:,:))/dt
-       enddo
-
-    enddo
-  end subroutine
-
-
-    subroutine remap_dynamics(elem,hvcoord,dt,np1,nets,nete)
-    use kinds, only : real_kind
-    use hybvcoord_mod, only : hvcoord_t
-    use vertremap_mod, only : remap1,remap_UV_lagrange2ref
-    use physical_constants, only : Cp
-
-    type (element_t), intent(inout)   :: elem(:)
-    type (hvcoord_t)                  :: hvcoord
-    real (kind=real_kind)             :: dt
-
-    integer :: ie,k,np1,nets,nete
-    real (kind=real_kind), dimension(np,np)  :: dp,dp_star
-    real (kind=real_kind), dimension(np,np,nlev)  :: ttmp
-
-#if 0
-    do ie=nets,nete
-       call remap1(elem(ie)%state%t(:,:,:,np1),elem(ie)%state%ps_v(:,:,np1),&
-            elem(ie)%derived%eta_dot_dpdn,dt,hvcoord)
-    enddo
-    call remap_UV_lagrange2ref(np1,dt,elem,hvcoord,nets,nete)
-#else
-    ! remap u,v and cp*T + .5 u^2 
-    do ie=nets,nete
-       ttmp=(elem(ie)%state%v(:,:,1,:,np1)**2 + &
-             elem(ie)%state%v(:,:,2,:,np1)**2)/2 + &
-             elem(ie)%state%t(:,:,:,np1)*cp
-
-       call remap1(ttmp,elem(ie)%state%ps_v(:,:,np1),&
-            elem(ie)%derived%eta_dot_dpdn,dt,hvcoord)
-
-       elem(ie)%state%t(:,:,:,np1)=ttmp  ! overwrite T with TE
-    enddo
-    call remap_UV_lagrange2ref(np1,dt,elem,hvcoord,nets,nete)
-    ! back out T from TE
-    do ie=nets,nete
-       elem(ie)%state%t(:,:,:,np1) = &
-            ( elem(ie)%state%t(:,:,:,np1) - ( (elem(ie)%state%v(:,:,1,:,np1)**2 + &
-                        elem(ie)%state%v(:,:,2,:,np1)**2)/2))/cp
-             
-    enddo
-#endif
-
-
-  end subroutine
-#endif
-
-
   subroutine prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete)
 ! 
 ! non-subcycle code:

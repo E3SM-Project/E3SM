@@ -85,7 +85,7 @@ module vertremap_mod
   use perf_mod, only	   : t_startf, t_stopf  ! _EXTERNAL
   use parallel_mod, only   : abortmp  	
 
-  public remap1,remap_UV_lagrange2ref
+  public remap1,remap_UV_lagrange2ref, remap_q, remap_q_ppm
   contains
 
 !=======================================================================================================! 
@@ -607,7 +607,7 @@ module vertremap_mod
     integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, & 
 									lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k
     
-    call t_startf('remap_velocityQ')
+    call t_startf('remap1')
 
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(i,j,z1c,z2c,zv,k,dp_np1,dp_star,Qcol,zkr,ilev) &
@@ -848,10 +848,10 @@ module vertremap_mod
           enddo
        enddo
  
- call t_stopf('remap_velocityQ')
+ call t_stopf('remap1')
  end subroutine remap1
  
-  subroutine remap_velocityQ(n0,np1,n0_qdp, np1_qdp, dt,elem,hvcoord,nets,nete,compute_diagnostics,rkstage)
+  subroutine remap_Q(np1,np1_qdp, dt,elem,hvcoord,nets,nete)
   
     use physical_constants, only : cp, cpwater_vapor
 	
@@ -859,9 +859,8 @@ module vertremap_mod
     real (kind=real_kind),  intent(in)        :: dt
     type (element_t),    intent(inout), target  :: elem(:)
     type (hvcoord_t),    intent(in)        :: hvcoord
-    logical,        intent(in)              :: compute_diagnostics
     
-    integer :: nets,nete,n0,np1,rkstage, n0_qdp, np1_qdp
+    integer :: nets,nete,np1,np1_qdp
     
     ! ========================
     ! Local Variables
@@ -876,7 +875,7 @@ module vertremap_mod
     integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, & 
 									lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
     
-    call t_startf('remap_velocityQ')
+    call t_startf('remap_Q')
 
     do ie=nets,nete
 #if (defined ELEMENT_OPENMP)
@@ -903,8 +902,7 @@ module vertremap_mod
 
                 z1c(k+1) = z1c(k)+dp_star
                 z2c(k+1) = z2c(k)+dp_np1
-                Qcol(k)=(elem(ie)%state%Qdp(i,j,k,q,n0_qdp)+&
-                     (rkstage-1)*elem(ie)%state%Qdp(i,j,k,q,np1_qdp))/rkstage
+                Qcol(k)=elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
                 zv(k+1) = zv(k)+Qcol(k)
              enddo
              
@@ -1114,39 +1112,31 @@ module vertremap_mod
 				endif
                 zv2 = zv(zkr(k+1))+(za0(zkr(k+1))*zgam(k+1)+(za1(zkr(k+1))/2)*(zgam(k+1)**2)+ &
                      (za2(zkr(k+1))/3)*(zgam(k+1)**3))*zhdp(zkr(k+1))
-                Q_vadv = (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) - (zv2 - zv1)) / dt
+                !Q_vadv = (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) - (zv2 - zv1)) / dt
                 elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = (zv2 - zv1)	
                 zv1 = zv2
-#ifdef ENERGY_DIAGNOSTICS
-                if (compute_diagnostics .and. q==1) then
-                   elem(ie)%accum%IEvert1_wet(i,j) = elem(ie)%accum%IEvert1_wet(i,j) + (Cpwater_vapor-Cp)*elem(ie)%state%T(i,j,k,n0)*Q_vadv
-                endif
-#endif	
              enddo
           enddo
        enddo
     enddo
  enddo
  
- call t_stopf('remap_velocityQ')
- end subroutine remap_velocityQ
+ call t_stopf('remap_Q')
+ end subroutine remap_Q
  
 !=======================================================================================================! 
 
 
-!This uses the exact same model and reference grids and data as remap_velocityQ, but it interpolates
+!This uses the exact same model and reference grids and data as remap_Q, but it interpolates
 !using PPM instead of splines.
-subroutine remap_velocityQ_ppm(n0,np1,n0_qdp,np1_qdp,dt,elem,hybrid,hvcoord,nets,nete,compute_diagnostics,rkstage)
-  use hybrid_mod, only: hybrid_t
+subroutine remap_Q_ppm(np1,np1_qdp,dt,elem,hvcoord,nets,nete)
   use physical_constants, only : cp, cpwater_vapor
   use control_mod, only        : compute_mean_flux, prescribed_wind, vert_remap_q_alg
   implicit none
   real (kind=real_kind), intent(in)            :: dt
   type (element_t)     , intent(inout), target :: elem(:)
-    type (hybrid_t),     intent(in):: hybrid
   type (hvcoord_t)     , intent(in)            :: hvcoord
-  logical              , intent(in)            :: compute_diagnostics
-  integer              , intent(in)            :: nets,nete,n0,np1,rkstage,n0_qdp,np1_qdp
+  integer              , intent(in)            :: nets,nete,np1,np1_qdp
   ! Local Variables
   integer, parameter :: gs = 2                              !Number of cells to place in the ghost region
   real(kind=real_kind), dimension(       nlev+2 ) :: pio    !Pressure at interfaces for old grid
@@ -1160,7 +1150,7 @@ subroutine remap_velocityQ_ppm(n0,np1,n0_qdp,np1_qdp,dt,elem,hybrid,hvcoord,nets
   real(kind=real_kind) :: mymass, massn1, massn2, dpn
   integer :: i, j, k, q, ie, kk, kid(nlev)
 
-  call t_startf('remap_velocityQ_ppm')
+  call t_startf('remap_Q_ppm')
   do ie = nets , nete
     do j = 1 , np
       do i = 1 , np
@@ -1211,7 +1201,7 @@ subroutine remap_velocityQ_ppm(n0,np1,n0_qdp,np1_qdp,dt,elem,hybrid,hvcoord,nets
           !to ensure tracer consistency for an initially uniform field. I copied it from the old remap routine.
           masso(1) = 0.
           do k = 1 , nlev
-            ao(k) = ( elem(ie)%state%Qdp(i,j,k,q,n0_qdp) + (rkstage-1) * elem(ie)%state%Qdp(i,j,k,q,np1_qdp) ) / rkstage
+            ao(k) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
             masso(k+1) = masso(k) + ao(k) !Accumulate the old mass. This will simplify the remapping
             ao(k) = ao(k) / dpo(k)        !Divide out the old grid spacing because we want the tracer mixing ratio, not mass.
           enddo
@@ -1236,8 +1226,8 @@ subroutine remap_velocityQ_ppm(n0,np1,n0_qdp,np1_qdp,dt,elem,hybrid,hvcoord,nets
       enddo
     enddo
   enddo
-  call t_stopf('remap_velocityQ_ppm')
-end subroutine remap_velocityQ_ppm
+  call t_stopf('remap_Q_ppm')
+end subroutine remap_Q_ppm
 
 
 !=======================================================================================================! 
@@ -1383,7 +1373,7 @@ end function integrate_parabola
 
 !=============================================================================================! 
 
-  subroutine remap_velocityCspelt(n0,np1,dt,elem,spelt,hvcoord,nets,nete,compute_diagnostics)
+  subroutine remap_velocityCspelt(np1,dt,elem,spelt,hvcoord,nets,nete)
   
     use physical_constants, only : cp, cpwater_vapor
 	  use dimensions_mod, only : nc, nep
@@ -1393,9 +1383,7 @@ end function integrate_parabola
     type (element_t),    intent(inout), target  :: elem(:)
     type (spelt_struct),    intent(inout), target  :: spelt(:)
     type (hvcoord_t),    intent(in)        :: hvcoord
-    logical,        intent(in)              :: compute_diagnostics
-    
-    integer :: nets,nete,n0,np1
+    integer :: nets,nete,np1
     
     ! ========================
     ! Local Variables
@@ -1658,15 +1646,10 @@ end function integrate_parabola
 				endif
                 zv2 = zv(zkr(k+1))+(za0(zkr(k+1))*zgam(k+1)+(za1(zkr(k+1))/2)*(zgam(k+1)**2)+ &
                      (za2(zkr(k+1))/3)*(zgam(k+1)**3))*zhdp(zkr(k+1))
-                Q_vadv = (spelt(ie)%c(i,j,k,q,np1)/spelt(ie)%sga(i,j) - (zv2 - zv1)) / dt
+                !Q_vadv = (spelt(ie)%c(i,j,k,q,np1)/spelt(ie)%sga(i,j) - (zv2 - zv1)) / dt
                 spelt(ie)%c(i,j,k,q,np1) = (zv2 - zv1) / (z2c(k+1)-z2c(k))  ! convert from tracer mass to mixing ratio
                 spelt(ie)%c(i,j,k,q,np1)=spelt(ie)%sga(i,j)*spelt(ie)%c(i,j,k,q,np1)
                 zv1 = zv2
-#ifdef ENERGY_DIAGNOSTICS
-                if (compute_diagnostics .and. q==1) then
-                   elem(ie)%accum%IEvert1_wet(i,j) = elem(ie)%accum%IEvert1_wet(i,j) + (Cpwater_vapor-Cp)*elem(ie)%state%T(i,j,k,n0)*Q_vadv
-                endif
-#endif	
              enddo
           enddo
        enddo
@@ -1691,7 +1674,7 @@ end function integrate_parabola
 
 
 
-  subroutine remap_velocityC(n0,np1,dt,elem,fvm,hvcoord,nets,nete,compute_diagnostics)
+  subroutine remap_velocityC(np1,dt,elem,fvm,hvcoord,nets,nete)
   
     use physical_constants, only : cp, cpwater_vapor
 	  use dimensions_mod, only : nc
@@ -1701,9 +1684,8 @@ end function integrate_parabola
     type (element_t),    intent(inout), target  :: elem(:)
     type (fvm_struct),    intent(inout), target  :: fvm(:)
     type (hvcoord_t),    intent(in)        :: hvcoord
-    logical,        intent(in)              :: compute_diagnostics
     
-    integer :: nets,nete,n0,np1
+    integer :: nets,nete,np1
     
     ! ========================
     ! Local Variables
@@ -1961,19 +1943,14 @@ end function integrate_parabola
              
              zv1 = 0
              do k=1,nlev
-				if (zgam(k+1)>1d0) then
-					WRITE(*,*) 'r not in [0:1]', zgam(k+1)
-				endif
+                if (zgam(k+1)>1d0) then
+                   WRITE(*,*) 'r not in [0:1]', zgam(k+1)
+                endif
                 zv2 = zv(zkr(k+1))+(za0(zkr(k+1))*zgam(k+1)+(za1(zkr(k+1))/2)*(zgam(k+1)**2)+ &
                      (za2(zkr(k+1))/3)*(zgam(k+1)**3))*zhdp(zkr(k+1))
-                Q_vadv = (fvm(ie)%c(i,j,k,q,np1) - (zv2 - zv1)) / dt
+                !Q_vadv = (fvm(ie)%c(i,j,k,q,np1) - (zv2 - zv1)) / dt
                 fvm(ie)%c(i,j,k,q,np1) = (zv2 - zv1) / (z2c(k+1)-z2c(k))  ! convert from tracer mass to mixing ratio
                 zv1 = zv2
-#ifdef ENERGY_DIAGNOSTICS
-                if (compute_diagnostics .and. q==1) then
-                   elem(ie)%accum%IEvert1_wet(i,j) = elem(ie)%accum%IEvert1_wet(i,j) + (Cpwater_vapor-Cp)*elem(ie)%state%T(i,j,k,n0)*Q_vadv
-                endif
-#endif	
              enddo
           enddo
        enddo
@@ -2052,6 +2029,7 @@ module prim_advection_mod
 
   public :: Prim_Advec_Init, Prim_Advec_Tracers_remap_rk2
   public :: prim_advec_tracers_fvm, prim_advec_tracers_spelt
+  public :: vertical_remap
 
   type (EdgeBuffer_t) :: edgeAdv, edgeAdvQ3, edgeAdv_p1, edgeAdvQ2, edgeAdv1
 
@@ -2092,7 +2070,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine Prim_Advec_Tracers_spelt(elem, spelt, deriv,hvcoord,hybrid,&
-        dt,tl,nets,nete, compute_diagnostics)
+        dt,tl,nets,nete)
     use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
     use vertremap_mod, only: remap_velocityCspelt,remap_UV_ref2lagrange  ! _EXTERNAL (actually INTERNAL)
     use spelt_mod, only : spelt_run, spelt_runair, edgeveloc, spelt_mcgregordss
@@ -2109,13 +2087,10 @@ contains
     real(kind=real_kind) , intent(in) :: dt
     integer,intent(in)                :: nets,nete
 
-    logical,intent(in)                :: compute_diagnostics
-
-
     real (kind=real_kind), dimension(np,np,nlev)    :: dp_star
     real (kind=real_kind), dimension(np,np,nlev)    :: dp_np1
    
-    integer :: n0,np1,ie,k, i, j
+    integer :: np1,ie,k, i, j
     
     real (kind=real_kind)  :: vstar(np,np,2)
     real (kind=real_kind)  :: vhat(np,np,2)
@@ -2124,7 +2099,6 @@ contains
 
     call t_barrierf('sync_prim_advec_tracers_spelt', hybrid%par%comm)
     call t_startf('prim_advec_tracers_spelt')
-    n0  = tl%n0
     np1 = tl%np1
 
     ! mean vertical velocity computed in dynamics needs to be DSS'd:
@@ -2184,7 +2158,7 @@ contains
 !     call spelt_run(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
     call spelt_runair(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
     ! apply vertical remap back to reference levels
-    call remap_velocityCspelt(n0,np1,dt,elem,spelt,hvcoord,nets,nete,compute_diagnostics)
+    call remap_velocityCspelt(np1,dt,elem,spelt,hvcoord,nets,nete)
 
     call t_stopf('prim_advec_tracers_spelt')
   end subroutine Prim_Advec_Tracers_spelt
@@ -2195,7 +2169,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine Prim_Advec_Tracers_fvm(elem, fvm, deriv,hvcoord,hybrid,&
-        dt,tl,nets,nete, compute_diagnostics)
+        dt,tl,nets,nete)
     use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
     use vertremap_mod, only: remap_velocityC,remap_UV_ref2lagrange  ! _EXTERNAL (actually INTERNAL)
     use fvm_mod, only : cslam_run, cslam_runairdensity, edgeveloc, fvm_mcgregor, fvm_mcgregordss
@@ -2211,13 +2185,11 @@ contains
     real(kind=real_kind) , intent(in) :: dt
     integer,intent(in)                :: nets,nete
 
-    logical,intent(in)                :: compute_diagnostics
-
 
     real (kind=real_kind), dimension(np,np,nlev)    :: dp_star
     real (kind=real_kind), dimension(np,np,nlev)    :: dp_np1
    
-    integer :: n0,np1,ie,k
+    integer :: np1,ie,k
     
     real (kind=real_kind)  :: vstar(np,np,2)
     real (kind=real_kind)  :: vhat(np,np,2)
@@ -2226,7 +2198,6 @@ contains
 
     call t_barrierf('sync_prim_advec_tracers_fvm', hybrid%par%comm)
     call t_startf('prim_advec_tracers_fvm')
-    n0  = tl%n0
     np1 = tl%np1
 
     ! mean vertical velocity computed in dynamics needs to be DSS'd:
@@ -2311,7 +2282,7 @@ contains
     call cslam_runairdensity(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
 
     ! apply vertical remap back to reference levels
-    call remap_velocityC(n0,np1,dt,elem,fvm,hvcoord,nets,nete,compute_diagnostics)
+    call remap_velocityC(np1,dt,elem,fvm,hvcoord,nets,nete)
 
 
     call t_stopf('prim_advec_tracers_fvm')
@@ -2351,10 +2322,9 @@ contains
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
   subroutine Prim_Advec_Tracers_remap_rk2(elem, deriv,hvcoord,flt,hybrid,&
-        dt,tl,nets,nete, compute_diagnostics)
+        dt,tl,nets,nete)
     use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
     use derivative_mod, only : divergence_sphere
-    use vertremap_mod, only: remap_velocityq, remap_velocityq_ppm  ! _EXTERNAL (actually INTERNAL)
     use control_mod, only: vert_remap_q_alg, qsplit
 
     implicit none
@@ -2368,22 +2338,18 @@ contains
     real(kind=real_kind) , intent(in) :: dt
     integer,intent(in)                :: nets,nete
 
-    logical,intent(in)                :: compute_diagnostics
     real (kind=real_kind), dimension(np,np,2)    :: gradQ
 
 
-    real (kind=real_kind), dimension(np,np,nlev) :: Q_vadv 
     real (kind=real_kind), dimension(np,np,nlev)    :: dp_star
     real (kind=real_kind), dimension(np,np,nlev)    :: dp_np1
    
     integer :: i,j,k,l,ie,q,nmin
-    integer :: n0,np1,nfilt,rkstage,rhs_multiplier
+    integer :: nfilt,rkstage,rhs_multiplier
     integer :: n0_qdp, np1_qdp
 
     call t_barrierf('sync_prim_advec_tracers_remap_k2', hybrid%par%comm)
     call t_startf('prim_advec_tracers_remap_rk2')
-    n0  = tl%n0
-    np1 = tl%np1
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp) !time levels for qdp are not the same
 
 
@@ -2416,54 +2382,36 @@ contains
       !rhs_multiplier is for obtaining dp_tracers at each stage:
       !dp_tracers(stage) = dp - rhs_multiplier*dt*divdp_proj
       rhs_multiplier = 0
-      call euler_step(np1, n0, np1_qdp, n0_qdp, dt/2,elem,hvcoord,hybrid,deriv,nets,nete,&
-           compute_diagnostics,DSSdiv_vdp_ave,rhs_multiplier)
+      call euler_step(np1_qdp, n0_qdp, dt/2,elem,hvcoord,hybrid,deriv,nets,nete,&
+           DSSdiv_vdp_ave,rhs_multiplier)
       
       rhs_multiplier = 1
-      call euler_step(np1, np1, np1_qdp, np1_qdp, dt/2,elem,hvcoord,hybrid,deriv,nets,nete,&
-           .false.,DSSeta,rhs_multiplier)
+      call euler_step(np1_qdp, np1_qdp, dt/2,elem,hvcoord,hybrid,deriv,nets,nete,&
+           DSSeta,rhs_multiplier)
       
       rhs_multiplier = 2
-      call euler_step(np1, np1, np1_qdp, np1_qdp, dt/2,elem,hvcoord,hybrid,deriv,nets,nete,&
-           .false.,DSSomega,rhs_multiplier)
+      call euler_step(np1_qdp, np1_qdp, dt/2,elem,hvcoord,hybrid,deriv,nets,nete,&
+           DSSomega,rhs_multiplier)
       
 
     ! to finish the 2D advection step, we need to average the t and t+2 results
-    ! to get a second order estimate for t+1.  We then apply the vertical
-    ! remap.  These two steps have been merged into one for efficienty:
-    if (vert_remap_q_alg == 0) then
-      call remap_velocityQ(n0, np1, n0_qdp, np1_qdp, dt,elem,hvcoord,nets,nete,compute_diagnostics,rkstage)
-    elseif (vert_remap_q_alg == 1 .or. vert_remap_q_alg == 2) then
-      call remap_velocityQ_ppm(n0,np1,n0_qdp,np1_qdp, dt,elem,hybrid,hvcoord,nets,nete,compute_diagnostics,rkstage)
-    else
-      call abortmp('specification for vert_remap_q_alg must be 0, 1, or 2.')
-    endif
+    ! to get a second order estimate for t+1.  
+    do ie=nets,nete
+       elem(ie)%state%Qdp(:,:,:,1:qsize,np1_qdp) =  &
+            (elem(ie)%state%Qdp(:,:,:,1:qsize,n0_qdp)+&
+            (rkstage-1)*elem(ie)%state%Qdp(:,:,:,1:qsize,np1_qdp))/rkstage
+    enddo
 
-
-#ifndef ZEROHORZ
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !  Dissipation
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     if (limiter_option == 8 .or. nu_p>0) then
        ! dissipation was applied in RHS.  
     else
-       call advance_hypervis_scalar(edgeadv,elem,hvcoord,hybrid,deriv,np1,np1_qdp,nets,nete,dt)
+       call advance_hypervis_scalar(edgeadv,elem,hvcoord,hybrid,deriv,tl%np1,np1_qdp,nets,nete,dt)
     endif
-#endif
 
-    ! update Q from Qdp
-    do ie=nets,nete
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,q)
-#endif
-       do k=1,nlev    !  Loop inversion (AAM)
-          dp_np1(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
-          do q=1,qsize
-            elem(ie)%state%Q(:,:,k,q)=elem(ie)%state%Qdp(:,:,k,q,np1_qdp)/dp_np1(:,:,k) 
-          enddo
-       enddo
-    enddo
+
 
 
     call t_stopf('prim_advec_tracers_remap_rk2')
@@ -2475,8 +2423,8 @@ contains
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
 
-  subroutine euler_step(np1,n0,np1_qdp, n0_qdp, dt,elem,hvcoord,hybrid,deriv,nets,nete,&
-      compute_diagnostics,DSSopt,rhs_multiplier)
+  subroutine euler_step(np1_qdp, n0_qdp, dt,elem,hvcoord,hybrid,deriv,nets,nete,&
+      DSSopt,rhs_multiplier)
   ! ===================================
   ! This routine is the basic foward
   ! euler component used to construct RK SSP methods
@@ -2498,9 +2446,8 @@ contains
   use hybvcoord_mod, only : hvcoord_t
 
   implicit none
-  integer :: np1, n0, np1_qdp, n0_qdp, nets, nete, DSSopt, rhs_multiplier
+  integer :: np1_qdp, n0_qdp, nets, nete, DSSopt, rhs_multiplier
   real (kind=real_kind), intent(in)  :: dt
-  logical  :: compute_diagnostics
 
   type (hvcoord_t)     , intent(in) :: hvcoord
   type (hybrid_t)      , intent(in) :: hybrid
@@ -2522,8 +2469,8 @@ contains
   integer :: rhs_viss=0
 
   if (npdg>0) then
-      call euler_step_dg(np1,n0,np1_qdp, n0_qdp, dt,elem,hvcoord,hybrid,deriv,nets,nete,&
-           compute_diagnostics,DSSopt,rhs_multiplier)
+      call euler_step_dg(np1_qdp, n0_qdp, dt,elem,hvcoord,hybrid,deriv,nets,nete,&
+           DSSopt,rhs_multiplier)
      return
   endif
 
@@ -2715,17 +2662,6 @@ contains
            if (rhs_viss/=0) Qtens(:,:,k) = Qtens(:,:,k) + Qtens_biharmonic(:,:,k,q,ie)
         enddo
            
-#ifdef ENERGY_DIAGNOSTICS
-        if (compute_diagnostics .and. q==1) then
-          do k=1,nlev  !  dp_star used as temporary instead of divdp (AAM)
-              ! IEvert1_wet():  (Cpv-Cp) T Qdp_vadv  (Q equation)
-              ! IEhorz1_wet():  (Cpv-Cp) T Qdp_hadv  (Q equation)
-              elem(ie)%accum%IEhorz1_wet(:,:) = elem(ie)%accum%IEhorz1_wet(:,:) +&
-                   (Cpwater_vapor-Cp)*elem(ie)%state%T(:,:,k,n0)*dp_star(:,:,k)
-          enddo
-        endif
-#endif
-
         if(limiter_option == 8)then
 
            do k=1,nlev  ! Loop index added (AAM)
@@ -2755,8 +2691,7 @@ contains
 	  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 	  ! sign-preserving limiter, applied after mass matrix
 	  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-	  call limiter2d_zero(elem(ie)%state%Qdp(:,:,:,q,np1_qdp),&
-             elem(ie)%state%ps_v(:,:,np1),hvcoord) ! ps_v argument not used
+	  call limiter2d_zero(elem(ie)%state%Qdp(:,:,:,q,np1_qdp),hvcoord) 
         endif
 
 
@@ -2834,8 +2769,8 @@ contains
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
 
-  subroutine euler_step_dg(np1,n0,np1_qdp, n0_qdp, dt,elem,hvcoord,hybrid,deriv,nets,nete,&
-      compute_diagnostics,DSSopt,rhs_multiplier)
+  subroutine euler_step_dg(np1_qdp, n0_qdp, dt,elem,hvcoord,hybrid,deriv,nets,nete,&
+      DSSopt,rhs_multiplier)
   ! ===================================
   ! This routine is the basic foward
   ! euler component used to construct RK SSP methods
@@ -2857,9 +2792,8 @@ contains
   use hybvcoord_mod, only : hvcoord_t
 
   implicit none
-  integer :: np1, n0, np1_qdp, n0_qdp, nets, nete, DSSopt, rhs_multiplier
+  integer :: np1_qdp, n0_qdp, nets, nete, DSSopt, rhs_multiplier
   real (kind=real_kind), intent(in)  :: dt
-  logical  :: compute_diagnostics
 
   type (hvcoord_t)     , intent(in) :: hvcoord
   type (hybrid_t)      , intent(in) :: hybrid
@@ -3004,8 +2938,7 @@ contains
            do k=1,nlev
               elem(ie)%state%Qdp(:,:,k,q,np1_qdp)=elem(ie)%state%Qdp(:,:,k,q,np1_qdp)*elem(ie)%spheremp(:,:)
            enddo
-           call limiter2d_zero(elem(ie)%state%Qdp(:,:,:,q,np1_qdp),&
-                elem(ie)%state%ps_v(:,:,np1),hvcoord) ! ps_v argument not used
+           call limiter2d_zero(elem(ie)%state%Qdp(:,:,:,q,np1_qdp),hvcoord)
            do k=1,nlev
               elem(ie)%state%Qdp(:,:,k,q,np1_qdp)=elem(ie)%state%Qdp(:,:,k,q,np1_qdp)/elem(ie)%spheremp(:,:)
            enddo
@@ -3304,7 +3237,7 @@ end subroutine
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
 
-  subroutine limiter2d_zero(Q,ps,hvcoord)
+  subroutine limiter2d_zero(Q,hvcoord)
 !
 ! mass conserving zero limiter (2D only).  to be called just before DSS
 !
@@ -3317,7 +3250,6 @@ end subroutine
 !
   implicit none
   real (kind=real_kind), intent(inout)  :: Q(np,np,nlev)
-  real (kind=real_kind), intent(in)  :: ps(np,np)
   type (hvcoord_t)                 :: hvcoord
 
   ! local
@@ -3361,444 +3293,6 @@ end subroutine
 
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
-
-  subroutine limiter3d_noncon(Q,ps,hvcoord,mass_added)
-!
-! local element negative mass "fixer"  
-! Trucate negative values, then use CAM style mass fixer to restore
-! original mass.  Mass fixer is local to the element.  Will break C0
-! do DSS needs to be done afterwards.
-! 
-! this routine is called inside a DSS loop, and so Q had already
-! been multiplied by the mass matrix.  Thus dont include the mass
-! matrix when computing the mass = integral of Q over the element
-!
-! ps is only used when advecting Q instead of Qdp
-! so ps should be at one timelevel behind Q
-!
-  implicit none
-  real (kind=real_kind), intent(inout)  :: Q(np,np,nlev)
-  real (kind=real_kind), intent(in)  :: ps(np,np)
-  real (kind=real_kind), intent(out)  :: mass_added
-  type (hvcoord_t)                 :: hvcoord
-
-  ! local
-  real (kind=real_kind) ::  dp(np,np)
-  integer i,j,k
-  real (kind=real_kind) :: mass,mass_new,ml
-
-  mass_added=0
-  mass=0
-  mass_new=0
-
-
-  do k=nlev,1,-1
-     do j=1,np	
-        do i=1,np
-!           ml = Q(i,j,k)*dp(i,j)*spheremp(i,j)  ! see above
-           mass = mass + Q(i,j,k)
-           if (Q(i,j,k)<0) then
-              Q(i,j,k)=0
-           else
-              mass_new = mass_new + Q(i,j,k)
-           endif
-        enddo
-     enddo
-  enddo
-
-  ! now scale the all positive values to restore mass
-  if ( mass > 0) then
-     ! rescale positive values to restore original mass
-     Q(:,:,:) = Q(:,:,:)*mass/mass_new
-  else
-     ! mass was negative.  set all values to zero
-     Q(:,:,:) = 0
-     mass_added = mass_added -mass
-  endif
-  
-  
-  end subroutine 
-  
-!-----------------------------------------------------------------------------
-!-----------------------------------------------------------------------------
-
-  subroutine preq_impsysQ(elemin,hvcoord,np1,n0,nm1,Q,Q_vadv)
-    use perf_mod, only : t_startf, t_stopf                    ! _EXTERNAL
-    implicit none
-
-    type (element_t), intent(in)     :: elemin
-    type (hvcoord_t)                 :: hvcoord
-    integer, intent(in)              :: np1
-    integer, intent(in)              :: n0
-    integer, intent(in)              :: nm1
-
-    real(kind=real_kind), intent(in),target, dimension(np,np,nlev)   :: Q         
-    real(kind=real_kind), intent(inout), dimension(np,np,nlev)       :: Q_vadv    
-
-    ! ==============================
-    ! Local Variables
-    ! ==============================
-    
-    real(kind=real_kind), dimension(nlevp)      :: hyai
-    real(kind=real_kind), dimension(nlevp)      :: hybi
-    real(kind=real_kind), dimension(nlev)       :: hyam
-    real(kind=real_kind), dimension(nlev)       :: hybm
-    real(kind=real_kind), dimension(nlev)       :: hybd 
-    real(kind=real_kind), dimension(np,np,nlev) :: div
-
-    real(kind=real_kind), dimension(np,np)      :: ps                ! surface pressure
-    real(kind=real_kind), dimension(np,np)      :: rps               ! 1/ps
-    real(kind=real_kind), dimension(np,np,nlev) :: rpdel             ! 1./pdel
-
-    real(kind=real_kind), dimension(np,np,nlevp)  :: eta_dot_dp_deta       ! eta dot * dp/deta at time level n
-    real(kind=real_kind), dimension(np,np,nlev)   :: vgrad_ps              ! ps*(v.grad(lnps))
-
-    real(kind=real_kind) :: pint(np,np,nlevp)
-    real(kind=real_kind) :: pdel(np,np,nlev)
-    real(kind=real_kind) :: pmid(np,np,nlev)
-
-    real(kind=real_kind) :: v1, v2, vcon1, vcon2
-
-    integer :: i,j,k,l
-
-    call t_startf('preq_impsysQ')
-
-
-
-
-    hyai   = hvcoord%hyai
-    hybi   = hvcoord%hybi
-    hyam   = hvcoord%hyam
-    hybm   = hvcoord%hybm
-    hybd   = hvcoord%hybd
-
-    ps(:,:)  = EXP(elemin%state%lnps(:,:,n0))
-    rps(:,:) = 1.0_real_kind/ps(:,:)
-
-    call preq_pressure(hvcoord%ps0,  ps,&
-         hyai, hybi, hyam, hybm,&
-         pint, pmid, pdel)
-
-    rpdel = 1.0_real_kind/pdel
-
-!   v should be contravariant for explicit time step
-
-    do k=1,nlev
-       do j=1,np
-          do i=1,np
-             v1 = elemin%state%v(i,j,1,k,n0)
-             v2 = elemin%state%v(i,j,2,k,n0)
-
-!            vcon1 = elemin%metinv(1,1,i,j)*v1 + elemin%metinv(1,2,i,j)*v2
-!            vcon2 = elemin%metinv(2,1,i,j)*v1 + elemin%metinv(2,2,i,j)*v2
-
-             vcon1 = elemin%Dinv(1,1,i,j)*v1 + elemin%Dinv(1,2,i,j)*v2
-             vcon2 = elemin%Dinv(2,1,i,j)*v1 + elemin%Dinv(2,2,i,j)*v2
-
-             vgrad_ps(i,j,k) = ps(i,j)*(vcon1*elemin%derived%grad_lnps(i,j,1) + vcon2*elemin%derived%grad_lnps(i,j,2))
-          end do
-       end do
-    end do
-
-    eta_dot_dp_deta(:,:,1) = 0.0_real_kind
-
-    do k=1,nlev
-       div(:,:,k) = elemin%derived%div(:,:,k,n0)
-       do j=1,np
-          do i=1,np
-             eta_dot_dp_deta(i,j,k+1) = eta_dot_dp_deta(i,j,k) + vgrad_ps(i,j,k)*hybd(k) + div(i,j,k)*pdel(i,j,k)
-          end do
-       end do
-    end do
-
-    do k=1,nlev-1
-       do j=1,np
-          do i=1,np
-             eta_dot_dp_deta(i,j,k+1) = hybi(k+1)*eta_dot_dp_deta(i,j,nlev+1) - eta_dot_dp_deta(i,j,k+1)
-          end do
-       end do
-    end do
-
-    eta_dot_dp_deta(:,:,nlev+1) = 0.0_real_kind
-
-    call preq_vertadvQ(Q(:,:,:),eta_dot_dp_deta,rpdel,Q_vadv)
-    call t_stopf('preq_impsysQ')
-
-  end subroutine preq_impsysQ
-
-
-
-  subroutine preq_vertadvQ(Q,eta_dot_dp_deta, rpdel, Q_vadv)
-    use perf_mod, only : t_startf, t_stopf                   ! _EXTERNAL
-    implicit none
-
-    real (kind=real_kind), intent(in)  :: Q(np,np,nlev)
-    real (kind=real_kind), intent(in)  :: eta_dot_dp_deta(np,np,nlevp)
-    real (kind=real_kind), intent(in)  :: rpdel(np,np,nlev)
-
-    real (kind=real_kind), intent(inout) :: Q_vadv(np,np,nlev)
-
-    ! ========================
-    ! Local Variables
-    ! ========================
-
-    integer                            :: i,j,k,l
-    real (kind=real_kind)              :: facp, facm
-
-    ! ===========================================================
-    ! Compute vertical advection of Q from eq. (3.b.1)
-    !
-    ! k = 1 case:
-    ! ===========================================================
-    call t_startf('preq_vertadvQ')
-
-    k=1
-    do j=1,np
-       do i=1,np 
-          facp  = (0.5_real_kind*rpdel(i,j,k))*eta_dot_dp_deta(i,j,k+1)             
-          Q_vadv(i,j,k) = facp*(Q(i,j,k+1)- Q(i,j,k))
-       end do
-    end do
-
-    ! ===========================================================
-    ! vertical advection
-    !
-    ! 1 < k < nlev case:
-    ! ===========================================================
-
-    do k=2,nlev-1
-       do j=1,np
-          do i=1,np
-             facp = (0.5_real_kind*rpdel(i,j,k))*eta_dot_dp_deta(i,j,k+1)
-             facm = (0.5_real_kind*rpdel(i,j,k))*eta_dot_dp_deta(i,j,k)                
-             Q_vadv(i,j,k) = facp*(Q(i,j,k+1)- Q(i,j,k)) + facm*(Q(i,j,k)- Q(i,j,k-1))
-          enddo
-       end do
-    end do
-
-    ! ===========================================================
-    ! vertical advection
-    !
-    ! k = nlev case:
-    ! ===========================================================
-
-    k=nlev
-    do j=1,np
-       do i=1,np
-          facm = (0.5_real_kind*rpdel(i,j,k))*eta_dot_dp_deta(i,j,k)             
-          Q_vadv(i,j,k) = facm*(Q(i,j,k)- Q(i,j,k-1))
-       enddo
-    end do
-    call t_stopf('preq_vertadvQ')
-
-  end subroutine preq_vertadvQ
-
-
-
-
-  subroutine advance_hypervis_scalar_lf(edgeAdv,elem,hvcoord,hybrid,deriv,nt,n0,nets,nete,dt2)
-  !
-  !  hyperviscosity operator used by leapfrog scheme
-  !  take one timestep of:  
-  !          Q(:,:,:,np) = Q(:,:,:,np) +  dt2*nu*laplacian**order ( Q )
-  !
-  !  For correct scaling, dt2 should be the same 'dt2' used in the leapfrog advace
-  !
-  !
-  ! Note:  this fcn is *no longer supported* since it is only called from  Prim_Advec_Tracers_lf  ! - which is no longer supported (due to changes in storage for Q and Qdp)
-
-
-  use kinds, only : real_kind
-  use dimensions_mod, only : np, nlev
-  use hybrid_mod, only : hybrid_t
-  use element_mod, only : element_t
-  use derivative_mod, only : derivative_t, laplace_sphere_wk
-  use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack
-  use bndry_mod, only : bndry_exchangev
-  use perf_mod, only: t_startf, t_stopf                  ! _EXTERNAL
-  implicit none
-
-  type (hvcoord_t), intent(in)      :: hvcoord
-  type (hybrid_t)      , intent(in) :: hybrid
-  type (element_t)     , intent(inout), target :: elem(:)
-  type (EdgeBuffer_t)  , intent(inout) :: edgeAdv
-  type (derivative_t)  , intent(in) :: deriv
-  real (kind=real_kind) :: dt2
-  integer :: nets,nete,nt,n0
-
-  
-  ! local
-  integer :: k,kptr,i,j,ie,ic,q
-  real (kind=real_kind), dimension(np,np,nlev,qsize,nets:nete) :: Qtens
-
-! NOTE: PGI compiler bug: when using spheremp, rspheremp and ps as pointers to elem(ie)% members,
-!       data is incorrect (offset by a few numbers actually)
-!       removed for now.  
-!  real (kind=real_kind), dimension(:,:), pointer :: spheremp,rspheremp
-
-  real (kind=real_kind), dimension(np,np) :: lap_p
-  real (kind=real_kind) :: v1,v2,dt,nu_scale,dp,dp0
-  integer :: density_scaling = 0
-  real(kind=real_kind), dimension(:,:), pointer :: viscosity => NULL()
-  
-  if (nu_q == 0) return;
-  call t_barrierf('sync_advance_hypervisc_scalar_lf', hybrid%par%comm)
-  call t_startf('advance_hypervis_scalar_lf')
-
-  dt=dt2/hypervis_subcycle_q
-  
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !  regular viscosity  
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  if (hypervis_order == 1) then
-     do ic=1,hypervis_subcycle_q
-        do ie=nets,nete
-           viscosity     => elem(ie)%variable_hyperviscosity
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,q,lap_p)
-#endif
-	       do q=1,qsize
-              do k=1,nlev    !  Potential loop inversion (AAM)
-                 lap_p=laplace_sphere_wk(elem(ie)%state%Q(:,:,k,q),deriv,elem(ie),viscosity)
-                 ! advace in time.  (note: DSS commutes with time stepping, so we
-                 ! can time advance and then DSS.
-                 elem(ie)%state%Q(:,:,k,q)=elem(ie)%state%Q(:,:,k,q)*elem(ie)%spheremp(:,:)  +  dt*nu_q*lap_p(:,:) 
-              enddo
-           enddo
-           call edgeVpack(edgeAdv, elem(ie)%state%Q(:,:,:,:),nlev*qsize,0,elem(ie)%desc)
-        enddo
-           
-        call bndry_exchangeV(hybrid,edgeAdv)
-        
-        do ie=nets,nete
-           call edgeVunpack(edgeAdv, elem(ie)%state%Q(:,:,:,:),nlev*qsize,0,elem(ie)%desc)
-              !rspheremp     => elem(ie)%rspheremp
-              ! apply inverse mass matrix
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,q,i,j)
-#endif
-	       do q=1,qsize
-              do k=1,nlev    !  Potential loop inversion (AAM)
-              do j=1,np
-              do i=1,np             
-                 elem(ie)%state%Q(i,j,k,q)=elem(ie)%rspheremp(i,j)*elem(ie)%state%Q(i,j,k,q)
-              enddo
-              enddo
-              enddo
-           enddo
-        enddo
-#ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
-!$OMP BARRIER
-#endif
-#endif
-     enddo  ! subcycle
-  endif
-        
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !  hyper viscosity  
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  if (hypervis_order == 2) then
-     do ic=1,hypervis_subcycle_q
-        do ie=nets,nete
-           if (density_scaling==1) then
-              ! state%Q really is Q !
-              Qtens(:,:,:,:,ie)=elem(ie)%state%Q(:,:,:,1:qsize)
-           else
-              ! state%Q is really Qdp.  but we only apply diffusion on Q
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,i,j,dp)
-#endif
-              do k=1,nlev
-              do j=1,np
-              do i=1,np
-                 ! note: use ps(t+1) to get exact consistency
-                 dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                      ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,nt)
-                 Qtens(i,j,k,:,ie)=elem(ie)%state%Q(i,j,k,1:qsize)/dp
-              enddo
-              enddo
-              enddo
-           endif
-        enddo
-        ! compute biharmonic operator. Qtens = input and output 
-        call biharmonic_wk_scalar(elem,Qtens,deriv,edgeAdv,hybrid,nets,nete)
-        do ie=nets,nete
-           !spheremp     => elem(ie)%spheremp
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(q,k,i,j,dp0,dp,nu_scale)
-#endif
-           do q=1,qsize
-           do k=1,nlev
-           do j=1,np
-           do i=1,np
-
-              dp0 = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                   ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
-
-              if (density_scaling==1) then
-                 ! advection Q.  For conservation:     dp0/dp DIFF(Q)
-                 ! scale velosity by 1/rho (normalized to be O(1))
-                 ! dp = O(ps0)*O(delta_eta) = O(ps0)/O(nlev)
-                 ! NOTE: use ps(t) to get exact mass conservation
-                 dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                      ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,n0)
-                 nu_scale = dp0/dp
-                 elem(ie)%state%Q(i,j,k,q)  =  elem(ie)%state%Q(i,j,k,q)*elem(ie)%spheremp(i,j) &
-                              -dt*nu_q*nu_scale*Qtens(i,j,k,q,ie)
-              else
-                 ! advection Qdp.  For mass advection consistency:
-                 ! DIFF( Qdp) ~   dp0 DIFF (Q)  =  dp0 DIFF ( Qdp/dp )  
-
-                 elem(ie)%state%Q(i,j,k,q)  =  elem(ie)%state%Q(i,j,k,q)*elem(ie)%spheremp(i,j) &
-                        -dt*nu_q*dp0*Qtens(i,j,k,q,ie)
-              endif
-           enddo
-           enddo
-           enddo
-
-           ! smooth some of the negativities introduced by diffusion:
-           ! note: ps_v not used if advecting Qdp
-           call limiter2d_zero(elem(ie)%state%Q(:,:,:,q),&
-                elem(ie)%state%ps_v(:,:,n0),hvcoord)
-
-           enddo
-           call edgeVpack(edgeAdv,elem(ie)%state%Q(:,:,:,:),qsize*nlev,0,elem(ie)%desc)
-        enddo
-
-        call bndry_exchangeV(hybrid,edgeAdv)
-
-        do ie=nets,nete
-        call edgeVunpack(edgeAdv, elem(ie)%state%Q(:,:,:,:), qsize*nlev, 0, elem(ie)%desc)
-        !rspheremp     => elem(ie)%rspheremp
-        ! apply inverse mass matrix
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,q,i,j)
-#endif
-	       do q=1,qsize
-           do k=1,nlev    !  Potential loop inversion (AAM)
-           do j=1,np
-           do i=1,np
-              elem(ie)%state%Q(i,j,k,q)=elem(ie)%rspheremp(i,j)*elem(ie)%state%Q(i,j,k,q)
-           enddo
-           enddo
-           enddo
-           enddo
-        enddo
-#ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
-!$OMP BARRIER
-#endif
-#endif
-     enddo
-  endif
-
-  call t_stopf('advance_hypervis_scalar_lf')
-  
-  end subroutine advance_hypervis_scalar_lf
-
-
 
   subroutine advance_hypervis_scalar(edgeAdv,elem,hvcoord,hybrid,deriv,nt,nt_qdp,nets,nete,dt2)
   !
@@ -3863,8 +3357,12 @@ end subroutine
 !$omp parallel do private(k,q)
 #endif
         do k=1,nlev
+#ifdef VERT_LAGRANGIAN
+           dp(:,:,k) = elem(ie)%state%dp3d(:,:,k,nt)
+#else
            dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,nt)
+#endif
            do q=1,qsize
               Qtens(:,:,k,q,ie)=elem(ie)%state%Qdp(:,:,k,q,nt_qdp)/dp(:,:,k)
            enddo
@@ -3893,8 +3391,7 @@ end subroutine
            enddo
 
            ! smooth some of the negativities introduced by diffusion:
-           call limiter2d_zero(elem(ie)%state%Qdp(:,:,:,q,nt_qdp),&
-                elem(ie)%state%ps_v(:,:,nt),hvcoord)
+           call limiter2d_zero(elem(ie)%state%Qdp(:,:,:,q,nt_qdp),hvcoord)
         enddo
         call edgeVpack(edgeAdv,elem(ie)%state%Qdp(:,:,:,:,nt_qdp),qsize*nlev,0,elem(ie)%desc)
      enddo
@@ -3927,68 +3424,119 @@ end subroutine
 
 
 
-
-
-
-
-  subroutine preq_vertadv_dpQ(Q,eta_dot_dp_deta, Q_vadv)
-    implicit none
-    
-    real (kind=real_kind), intent(in)  :: Q(np,np,nlev)
-    real (kind=real_kind), intent(in)  :: eta_dot_dp_deta(np,np,nlevp)
-    real (kind=real_kind), intent(inout) :: Q_vadv(np,np,nlev)
-
-    ! ========================
-    ! Local Variables
-    ! ========================
-
-    integer                            :: i,j,k,l
-    real (kind=real_kind)              :: qp,qm
+  subroutine vertical_remap(elem,hvcoord,dt,np1,np1_qdp,nets,nete)
+    ! This routine is called at the end of the vertically Lagrangian 
+    ! dynamics step to compute the vertical flux needed to get back
+    ! to reference eta levels 
     !
-    ! compute  d(eta_dot_dp_deta Q)
-    ! 
+    ! input:
+    !     derived%dp()  delta p on levels at beginning of timestep
+    !     state%dp3d(np1)  delta p on levels at end of timestep
+    ! output:
+    !     state%ps_v(np1)          surface pressure at time np1 
+    !     derived%eta_dot_dpdn()   vertical flux from final Lagrangian
+    !                              levels to reference eta levels
     !
-    qp=0
-    qm=0
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,i,j,qp,qm)
-#endif
-    do k=1,nlev
-       do i=1,np
-       do j=1,np
-       ! at k=1,nlev, eta_dot_dp_deta is zero, so value of q does not matter
-#undef QADV_UPWIND
-#ifdef QADV_UPWIND
-       ! UPWIND, 1st order:
-          if (k/=nlev) then
-             if (eta_dot_dp_deta(i,j,k+1) > 0 ) then
-                qp=Q(i,j,k)
-             else
-                qp=Q(i,j,k+1)
-             endif
-          endif
-          if (k/=1) then
-             if (eta_dot_dp_deta(i,j,k) > 0 ) then
-                qm=Q(i,j,k-1)
-             else
-                qm=Q(i,j,k)
-             endif
-          endif
-#else
-          ! CENTERED, 2nd order:
-          if (k/=nlev) then
-             qp=.5*(Q(i,j,k)+Q(i,j,k+1))
-          endif
-          if (k/=1) then
-             qm=.5*(Q(i,j,k)+Q(i,j,k-1))
-          endif
-#endif
-          Q_vadv(i,j,k)= eta_dot_dp_deta(i,j,k+1)*qp - eta_dot_dp_deta(i,j,k)*qm
+    use kinds, only : real_kind
+    use hybvcoord_mod, only : hvcoord_t
+    use vertremap_mod, only : remap1, remap_uv_lagrange2ref, remap_q, remap_q_ppm ! _EXTERNAL (actually INTERNAL)
+    use control_mod, only :  vert_remap_q_alg
+    use parallel_mod, only : abortmp
+
+!    type (hybrid_t), intent(in)       :: hybrid  ! distributed parallel structure (shared)
+    type (element_t), intent(inout)   :: elem(:)
+    type (hvcoord_t)                  :: hvcoord
+    real (kind=real_kind)             :: dt
+
+    integer :: ie,k,np1,nets,nete,np1_qdp
+    real (kind=real_kind), dimension(np,np)  :: dp,dp_star
+
+
+    ! dp(k) = (hyai(k+1)-hyai(k))*ps0 + (hybi(k+1)-hybi(k))*ps_v(i,j)
+    !   hybi(1)=0          pure pressure at top of atmosphere
+    !   hyai(1)=ptop
+    !   hyai(nlev+1) = 0   pure sigma at bottom
+    !   hybi(nlev+1) = 1
+    !
+    ! sum over k=1,nlev
+    !  sum(dp(k)) = (hyai(nlev+1)-hyai(1))*ps0 + (hybi(nlev+1)-hybi(1))*ps_v
+    !             = -ps0 + ps_v
+    !  ps_v =  ps0+sum(dp(k))
+    !
+    ! compute final surface pressure:
+#ifdef VERT_LAGRANGIAN
+    do ie=nets,nete
+       ! compute vertical mass flux:
+       ! reference levels:
+       !    dp(k) = (hyai(k+1)-hyai(k))*ps0 + (hybi(k+1)-hybi(k))*ps_v
+       ! floating levels:
+       !    dp_star(k) = dp(k) + dt_q*(eta_dot_dpdn(i,j,k+1) - eta_dot_dpdn(i,j,k) ) 
+       ! hence:
+       !    (dp_star(k)-dp(k))/dt_q = (eta_dot_dpdn(i,j,k+1) - eta_dot_dpdn(i,j,k) ) 
+       !    
+       elem(ie)%derived%eta_dot_dpdn(:,:,1)=0
+       elem(ie)%derived%eta_dot_dpdn(:,:,nlevp)=0
+       do k=1,nlev-1
+          dp(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+          dp_star(:,:) = elem(ie)%state%dp3d(:,:,k,np1)
+          elem(ie)%derived%eta_dot_dpdn(:,:,k+1) = elem(ie)%derived%eta_dot_dpdn(:,:,k) + &
+               (dp_star(:,:)-dp(:,:))/dt
        enddo
-      enddo
+
     enddo
 
-end subroutine preq_vertadv_dpQ
+    ! remap the dynamics:  
+#if 0
+    do ie=nets,nete
+       call remap1(elem(ie)%state%t(:,:,:,np1),elem(ie)%state%ps_v(:,:,np1),&
+            elem(ie)%derived%eta_dot_dpdn,dt,hvcoord)
+    enddo
+    call remap_UV_lagrange2ref(np1,dt,elem,hvcoord,nets,nete)
+#else
+    ! remap u,v and cp*T + .5 u^2 
+    do ie=nets,nete
+       ttmp=(elem(ie)%state%v(:,:,1,:,np1)**2 + &
+             elem(ie)%state%v(:,:,2,:,np1)**2)/2 + &
+             elem(ie)%state%t(:,:,:,np1)*cp
+
+       call remap1(ttmp,elem(ie)%state%ps_v(:,:,np1),&
+            elem(ie)%derived%eta_dot_dpdn,dt,hvcoord)
+
+       elem(ie)%state%t(:,:,:,np1)=ttmp  ! overwrite T with TE
+    enddo
+    call remap_UV_lagrange2ref(np1,dt,elem,hvcoord,nets,nete)
+    ! back out T from TE
+    do ie=nets,nete
+       elem(ie)%state%t(:,:,:,np1) = &
+            ( elem(ie)%state%t(:,:,:,np1) - ( (elem(ie)%state%v(:,:,1,:,np1)**2 + &
+                        elem(ie)%state%v(:,:,2,:,np1)**2)/2))/cp
+             
+    enddo
+#endif
+#endif
+
+
+    ! remap the tracers from lagrangian levels to REF levels
+    ! REF levels are computed from ps_v
+    ! Lagrangian levels are computed from REF levels and vertical mass flux
+    if (vert_remap_q_alg == 0) then
+      call remap_Q(np1, np1_qdp, dt,elem,hvcoord,nets,nete)
+    elseif (vert_remap_q_alg == 1 .or. vert_remap_q_alg == 2) then
+      call remap_Q_ppm(np1,np1_qdp, dt,elem,hvcoord,nets,nete)
+    else
+      call abortmp('specification for vert_remap_q_alg must be 0, 1, or 2.')
+    endif
+
+
+  end subroutine
+
+
+
+
+
+
+
+
 end module prim_advection_mod
 
 

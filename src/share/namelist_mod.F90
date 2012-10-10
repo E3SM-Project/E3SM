@@ -35,6 +35,7 @@ module namelist_mod
        tstep_type, &
        compute_mean_flux, &
        qsplit, &
+       rsplit, &
        physics, &
        rk_stage_user, &
        LFTfreq,       &
@@ -243,6 +244,7 @@ module namelist_mod
                      npdg, &
                      compute_mean_flux, &
                      qsplit, &
+                     rsplit, &
                      physics, &             ! The type of physics, 0=none, 1=multicloud or 2= emanuel.
                      rk_stage_user, &
                      LFTfreq,       &
@@ -821,6 +823,7 @@ module namelist_mod
     call MPI_bcast(npdg,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(compute_mean_flux,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(qsplit,1,MPIinteger_t ,par%root,par%comm,ierr)
+    call MPI_bcast(rsplit,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(physics,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(rk_stage_user,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(LFTfreq,1,MPIinteger_t ,par%root,par%comm,ierr)
@@ -1100,6 +1103,11 @@ module namelist_mod
        write(iulog,*)"filter: smooth         = ",smooth
 #endif
        write(iulog,*)"readnl: qsplit        = ",qsplit
+#ifdef VERT_LAGRANGIAN
+       write(iulog,*)"readnl: vertical remap frequency rsplit=",rsplit
+#else
+       if (rsplit/=1) call abort('rsplit must be 1 for non-verticaly lagrangian code')
+#endif
        write(iulog,*)"readnl: physics       = ",physics
 
        write(iulog,*)"readnl: energy_fixer  = ",energy_fixer
