@@ -41,6 +41,7 @@ module fvm_control_volume_mod
     type (spherical_polar_t) :: asphere(nc+1,nc+1) ! spherical coordinates
     ! save velocity at time t 
     real (kind=real_kind)    :: vn0(np,np,2,nlev)
+    real (kind=real_kind)    :: vstar(2-np:2*np-1,2-np:2*np-1,2,nlev,4)
 !-----------------------------------------------------------------------------------!
     real (kind=real_kind)    :: dalpha, dbeta    ! grid step in alpha/beta coord.
 !-----------------------------------------------------------------------------------!
