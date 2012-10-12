@@ -33,23 +33,16 @@ module element_mod
 !
      real (kind=real_kind) :: v(np,np,2,nlev,timelevels)   ! velocity                                            1
      real (kind=real_kind) :: T(np,np,nlev,timelevels)     ! temperature                                         2
-     real (kind=real_kind) :: lnps(np,np,timelevels)       ! log surface pressure                                3
-#ifdef VERT_LAGRANGIAN
-     real (kind=real_kind) :: dp3d(np,np,nlev,timelevels)  ! delta p on levels
-#endif
      real (kind=real_kind) :: ps_v(np,np,timelevels)       ! surface pressure                         4
+     real (kind=real_kind) :: lnps(np,np,timelevels)       ! log surface pressure                                3
      real (kind=real_kind) :: phis(np,np)         ! surface geopotential (prescribed)                            5
-     ! qsize = 1 is related to the mixing ratio
-     ! everything else are passive tracers that can eventually
-     ! be forced by the column model.
-     
-     !real (kind=real_kind) :: Q(np,np,nlev,qsize_d,timelevels)  ! Tracer concentration
-     !real (kind=real_kind) :: Qdp(np,np,nlev,qsize_d,timelevels)  ! Tracer mass           
 
-     !customize for CAM using RK ( must use tstep_type = 1)
+     ! vetically lagrangian code advects dp instead of ps_v
+     real (kind=real_kind) :: dp3d(np,np,nlev,timelevels)  ! delta p on levels
+
+     !tracers always use 2 level time scheme: 
      real (kind=real_kind) :: Q(np,np,nlev,qsize_d)  ! Tracer concentration
      real (kind=real_kind) :: Qdp(np,np,nlev,qsize_d,2)  ! Tracer mass           
-
 
 
   end type elem_state_t

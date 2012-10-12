@@ -3311,6 +3311,7 @@ end subroutine
   use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack
   use bndry_mod, only : bndry_exchangev
   use perf_mod, only: t_startf, t_stopf                          ! _EXTERNAL
+  use control_mod, only : rsplit
   implicit none
 
   type (hvcoord_t), intent(in)      :: hvcoord
@@ -3357,12 +3358,14 @@ end subroutine
 !$omp parallel do private(k,q)
 #endif
         do k=1,nlev
-#ifdef VERT_LAGRANGIAN
-           dp(:,:,k) = elem(ie)%state%dp3d(:,:,k,nt)
-#else
-           dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+           if (rsplit>0 ) then
+              ! verticaly lagrangian code: use prognostic dp
+              dp(:,:,k) = elem(ie)%state%dp3d(:,:,k,nt)
+           else
+              ! eulerian code: derive dp from ps_v
+              dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,nt)
-#endif
+           endif
            do q=1,qsize
               Qtens(:,:,k,q,ie)=elem(ie)%state%Qdp(:,:,k,q,nt_qdp)/dp(:,:,k)
            enddo
@@ -3440,7 +3443,7 @@ end subroutine
     use kinds, only : real_kind
     use hybvcoord_mod, only : hvcoord_t
     use vertremap_mod, only : remap1, remap_uv_lagrange2ref, remap_q, remap_q_ppm ! _EXTERNAL (actually INTERNAL)
-    use control_mod, only :  vert_remap_q_alg
+    use control_mod, only :  vert_remap_q_alg, rsplit
     use parallel_mod, only : abortmp
 
 !    type (hybrid_t), intent(in)       :: hybrid  ! distributed parallel structure (shared)
@@ -3450,9 +3453,14 @@ end subroutine
 
     integer :: ie,k,np1,nets,nete,np1_qdp
     real (kind=real_kind), dimension(np,np)  :: dp,dp_star
+    real (kind=real_kind), dimension(np,np,nlev)  :: ttmp
 
 
-    ! dp(k) = (hyai(k+1)-hyai(k))*ps0 + (hybi(k+1)-hybi(k))*ps_v(i,j)
+    if (rsplit>0) then
+    !  REMAP u,v,T from levels in dp3d() to REF levels
+    !
+    ! reference levels:  
+    !   dp(k) = (hyai(k+1)-hyai(k))*ps0 + (hybi(k+1)-hybi(k))*ps_v(i,j)
     !   hybi(1)=0          pure pressure at top of atmosphere
     !   hyai(1)=ptop
     !   hyai(nlev+1) = 0   pure sigma at bottom
@@ -3463,10 +3471,11 @@ end subroutine
     !             = -ps0 + ps_v
     !  ps_v =  ps0+sum(dp(k))
     !
-    ! compute final surface pressure:
-#ifdef VERT_LAGRANGIAN
+
+
+    ! step1: compute, eta_dot_dpdn, implied mass flux between dp3d() levels and REF levels:
+    ! note: for rsplit=0 (vertically eulerian code) eta_dot_dpdn computed as part of dynamics
     do ie=nets,nete
-       ! compute vertical mass flux:
        ! reference levels:
        !    dp(k) = (hyai(k+1)-hyai(k))*ps0 + (hybi(k+1)-hybi(k))*ps_v
        ! floating levels:
@@ -3513,7 +3522,7 @@ end subroutine
              
     enddo
 #endif
-#endif
+    endif
 
 
     ! remap the tracers from lagrangian levels to REF levels

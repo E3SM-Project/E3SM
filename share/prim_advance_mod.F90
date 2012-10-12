@@ -30,15 +30,16 @@ contains
   subroutine prim_advance_init(integration)
     use edge_mod, only : initEdgeBuffer
     use dimensions_mod, only : nlev
-    use control_mod, only : qsplit
+    use control_mod, only : qsplit,rsplit
     character(len=*)    , intent(in) :: integration 
     integer :: i
 
-#ifdef VERT_LAGRANGIAN
-    call initEdgeBuffer(edge3p1,4*nlev+1)
-#else
-    call initEdgeBuffer(edge3p1,3*nlev+1)
-#endif
+    if (rsplit==0) then
+       call initEdgeBuffer(edge3p1,3*nlev+1)
+    else   
+       ! need extra buffer space for dp3d
+       call initEdgeBuffer(edge3p1,4*nlev+1)
+    endif
 
     if(integration == 'semi_imp') then
        call initEdgeBuffer(edge1,nlev)
@@ -1993,7 +1994,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use derivative_mod, only : derivative_t, divergence_sphere, gradient_sphere, vorticity_sphere
   use edge_mod, only : edgevpack, edgevunpack
   use bndry_mod, only : bndry_exchangev
-  use control_mod, only : moisture, qsplit, compute_mean_flux, use_cpstar
+  use control_mod, only : moisture, qsplit, compute_mean_flux, use_cpstar, rsplit
   use hybvcoord_mod, only : hvcoord_t
 
   use physical_constants, only : cp, cpwater_vapor, Rgas, kappa
@@ -2056,9 +2057,10 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! e.g. equation (3.a.92) of the CCM-2 description, 
      ! (NCAR/TN-382+STR), June 1993, p. 24.
      ! ==================================================
-#ifndef VERT_LAGRANGIAN
-     grad_ps = gradient_sphere(elem(ie)%state%ps_v(:,:,n0),deriv,elem(ie)%Dinv)
-#endif
+     ! vertically eulerian only needs grad(ps)
+     if (rsplit==0) &
+          grad_ps = gradient_sphere(elem(ie)%state%ps_v(:,:,n0),deriv,elem(ie)%Dinv)
+
 
      ! ============================
      ! compute p and delta p
@@ -2074,27 +2076,30 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 !$omp parallel do private(k,i,j,v1,v2,vtemp)
 #endif
      do k=1,nlev
-#ifdef VERT_LAGRANGIAN
-        !p(k)= hyam(k)*ps0 + hybm(k)*ps
-        !    = .5*(hyai(k+1)+hyai(k))*ps0 + .5*(hybi(k+1)+hybi(k))*ps
-        !    = .5*(ph(k+1) + ph(k) )  = ph(k) + dp(k)/2
-        !
-        ! p(k+1)-p(k) = ph(k+1)-ph(k) + (dp(k+1)-dp(k))/2
-        !             = dp(k) + (dp(k+1)-dp(k))/2 = (dp(k+1)+dp(k))/2
-        dp(:,:,k) = elem(ie)%state%dp3d(:,:,k,n0)
-        if (k==1) then
-           p(:,:,k)=hvcoord%hyai(k)*hvcoord%ps0 + dp(:,:,k)/2
+        if (rsplit==0) then
+           p(:,:,k)   = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,n0)
+           !dp(:,:,k)  = ph(:,:,k+1) - ph(:,:,k)
+           dp(:,:,k) = (hvcoord%hyai(k+1)*hvcoord%ps0 + hvcoord%hybi(k+1)*elem(ie)%state%ps_v(:,:,n0)) &
+                - (hvcoord%hyai(k)*hvcoord%ps0 + hvcoord%hybi(k)*elem(ie)%state%ps_v(:,:,n0))
+           grad_p(:,:,:,k) = hvcoord%hybm(k)*grad_ps(:,:,:)
         else
-           p(:,:,k)=p(:,:,k-1) + dp(:,:,k-1)/2 + dp(:,:,k)/2
+           ! vertically lagrangian code: we advect dp3d instead of ps_v
+           ! we also need grad(p) at all levels (not just grad(ps))
+           !p(k)= hyam(k)*ps0 + hybm(k)*ps
+           !    = .5*(hyai(k+1)+hyai(k))*ps0 + .5*(hybi(k+1)+hybi(k))*ps
+           !    = .5*(ph(k+1) + ph(k) )  = ph(k) + dp(k)/2
+           !
+           ! p(k+1)-p(k) = ph(k+1)-ph(k) + (dp(k+1)-dp(k))/2
+           !             = dp(k) + (dp(k+1)-dp(k))/2 = (dp(k+1)+dp(k))/2
+           dp(:,:,k) = elem(ie)%state%dp3d(:,:,k,n0)
+           if (k==1) then
+              p(:,:,k)=hvcoord%hyai(k)*hvcoord%ps0 + dp(:,:,k)/2
+           else
+              p(:,:,k)=p(:,:,k-1) + dp(:,:,k-1)/2 + dp(:,:,k)/2
+           endif
+           grad_p(:,:,:,k) = gradient_sphere(p(:,:,k),deriv,elem(ie)%Dinv)
         endif
-        grad_p(:,:,:,k) = gradient_sphere(p(:,:,k),deriv,elem(ie)%Dinv)
-#else
-        p(:,:,k)   = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,n0)
-        !dp(:,:,k)  = ph(:,:,k+1) - ph(:,:,k)
-        dp(:,:,k) = (hvcoord%hyai(k+1)*hvcoord%ps0 + hvcoord%hybi(k+1)*elem(ie)%state%ps_v(:,:,n0)) &
-             - (hvcoord%hyai(k)*hvcoord%ps0 + hvcoord%hybi(k)*elem(ie)%state%ps_v(:,:,n0))
-        grad_p(:,:,:,k) = hvcoord%hybm(k)*grad_ps(:,:,:)
-#endif
+
         rdp(:,:,k) = 1.0D0/dp(:,:,k)
 
         ! ============================
@@ -2196,63 +2201,60 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! Compute eta_dot_dpdn 
      ! save sdot_sum as this is the -RHS of ps_v equation
      ! ==================================================
-#ifdef VERT_LAGRANGIAN
-     eta_dot_dpdn=0   ! no vertical motion
-     T_vadv=0          
-     v_vadv=0
-#else
-     do k=1,nlev
-        ! ==================================================
-        ! add this term to PS equation so we exactly conserve dry mass
-        ! ==================================================
-        do j=1,np
-           do i=1,np
-              sdot_sum(i,j) = sdot_sum(i,j) + divdp(i,j,k) 
-              eta_dot_dpdn(i,j,k+1) = sdot_sum(i,j)      
-           end do
+     if (rsplit>0) then
+        ! VERTICALLY LAGRANGIAN:   no vertical motion
+        eta_dot_dpdn=0    
+        T_vadv=0          
+        v_vadv=0
+     else
+        do k=1,nlev
+           ! ==================================================
+           ! add this term to PS equation so we exactly conserve dry mass
+           ! ==================================================
+           sdot_sum(:,:) = sdot_sum(:,:) + divdp(:,:,k) 
+           eta_dot_dpdn(:,:,k+1) = sdot_sum(:,:)      
         end do
-     end do
      
-     
-     ! ===========================================================
-     ! at this point, eta_dot_dpdn contains integral_etatop^eta[ divdp ]
-     ! compute at interfaces:
-     !    eta_dot_dpdn = -dp/dt - integral_etatop^eta[ divdp ]
-     ! for reference: at mid layers we have:
-     !    omega = v grad p  - integral_etatop^eta[ divdp ]
-     ! ===========================================================
+        ! ===========================================================
+        ! at this point, eta_dot_dpdn contains integral_etatop^eta[ divdp ]
+        ! compute at interfaces:
+        !    eta_dot_dpdn = -dp/dt - integral_etatop^eta[ divdp ]
+        ! for reference: at mid layers we have:
+        !    omega = v grad p  - integral_etatop^eta[ divdp ]
+        ! ===========================================================
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k)
+        !$omp parallel do private(k)
 #endif
-     do k=1,nlev-1
-        eta_dot_dpdn(:,:,k+1) = hvcoord%hybi(k+1)*sdot_sum(:,:) - eta_dot_dpdn(:,:,k+1)
-     end do
-     
-     eta_dot_dpdn(:,:,1     ) = 0.0D0
-     eta_dot_dpdn(:,:,nlev+1) = 0.0D0
+        do k=1,nlev-1
+           eta_dot_dpdn(:,:,k+1) = hvcoord%hybi(k+1)*sdot_sum(:,:) - eta_dot_dpdn(:,:,k+1)
+        end do
+        
+        eta_dot_dpdn(:,:,1     ) = 0.0D0
+        eta_dot_dpdn(:,:,nlev+1) = 0.0D0
+        
+        ! ===========================================================
+        ! Compute vertical advection of T and v from eq. CCM2 (3.b.1)
+        ! ==============================================
+        call preq_vertadv(elem(ie)%state%T(:,:,:,n0),elem(ie)%state%v(:,:,:,:,n0), &
+             eta_dot_dpdn,rdp,T_vadv,v_vadv)
+     endif
 
-     ! ===========================================================
-     ! Compute vertical advection of T and v from eq. CCM2 (3.b.1)
-     ! ==============================================
-     call preq_vertadv(elem(ie)%state%T(:,:,:,n0),elem(ie)%state%v(:,:,:,:,n0), &
-          eta_dot_dpdn,rdp,T_vadv,v_vadv)
-
-
-
+        
      ! accumulate mean fluxes:
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k)
+     !$omp parallel do private(k)
 #endif
      do k=1,nlev  !  Loop index added (AAM)
-       elem(ie)%derived%eta_dot_dpdn(:,:,k) = &
-          elem(ie)%derived%eta_dot_dpdn(:,:,k) + eta_ave_w*eta_dot_dpdn(:,:,k)
-       elem(ie)%derived%omega_p(:,:,k) = &
-          elem(ie)%derived%omega_p(:,:,k) + eta_ave_w*omega_p(:,:,k)
+        elem(ie)%derived%eta_dot_dpdn(:,:,k) = &
+             elem(ie)%derived%eta_dot_dpdn(:,:,k) + eta_ave_w*eta_dot_dpdn(:,:,k)
+        elem(ie)%derived%omega_p(:,:,k) = &
+             elem(ie)%derived%omega_p(:,:,k) + eta_ave_w*omega_p(:,:,k)
      enddo
      elem(ie)%derived%eta_dot_dpdn(:,:,nlev+1) = &
-        elem(ie)%derived%eta_dot_dpdn(:,:,nlev+1) + eta_ave_w*eta_dot_dpdn(:,:,nlev+1)
+          elem(ie)%derived%eta_dot_dpdn(:,:,nlev+1) + eta_ave_w*eta_dot_dpdn(:,:,nlev+1)
+     
 
-#endif     
+
      
      
      ! ==============================================
@@ -2485,10 +2487,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%spheremp(:,:)*vtens1(:,:,k) 
            elem(ie)%state%v(:,:,2,k,np1) = elem(ie)%spheremp(:,:)*vtens2(:,:,k) 
            elem(ie)%state%T(:,:,k,np1) = elem(ie)%spheremp(:,:)*ttens(:,:,k)
-#ifdef VERT_LAGRANGIAN
-           elem(ie)%state%dp3d(:,:,k,np1) = -elem(ie)%spheremp(:,:)*&
+           if (rsplit>0) &
+                elem(ie)%state%dp3d(:,:,k,np1) = -elem(ie)%spheremp(:,:)*&
                 (divdp(:,:,k) + eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k)) 
-#endif
         enddo
         elem(ie)%state%ps_v(:,:,np1) = -elem(ie)%spheremp(:,:)*sdot_sum
      else
@@ -2499,11 +2500,10 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%spheremp(:,:)*( elem(ie)%state%v(:,:,1,k,nm1) + dt2*vtens1(:,:,k) )
            elem(ie)%state%v(:,:,2,k,np1) = elem(ie)%spheremp(:,:)*( elem(ie)%state%v(:,:,2,k,nm1) + dt2*vtens2(:,:,k) )
            elem(ie)%state%T(:,:,k,np1) = elem(ie)%spheremp(:,:)*(elem(ie)%state%T(:,:,k,nm1) + dt2*ttens(:,:,k))
-#ifdef VERT_LAGRANGIAN
-           elem(ie)%state%dp3d(:,:,k,np1) = elem(ie)%spheremp(:,:)*&
+           if (rsplit>0) &
+                elem(ie)%state%dp3d(:,:,k,np1) = elem(ie)%spheremp(:,:)*&
                 (elem(ie)%state%dp3d(:,:,k,nm1)-dt2*&
                 (divdp(:,:,k) + eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k)))
-#endif
         enddo
         elem(ie)%state%ps_v(:,:,np1) = elem(ie)%spheremp(:,:)*( elem(ie)%state%ps_v(:,:,nm1) - dt2*sdot_sum )
      endif
@@ -2523,10 +2523,10 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      kptr=nlev+1
      call edgeVpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1),2*nlev,kptr,elem(ie)%desc)
 
-#ifdef VERT_LAGRANGIAN
-     kptr=kptr+2*nlev
-     call edgeVpack(edge3p1, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr,elem(ie)%desc)
-#endif     
+     if (rsplit>0) then
+        kptr=kptr+2*nlev
+        call edgeVpack(edge3p1, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr,elem(ie)%desc)
+     endif
   end do
   
   ! =============================================================
@@ -2549,10 +2549,10 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      kptr=nlev+1
      call edgeVunpack(edge3p1, elem(ie)%state%v(:,:,:,:,np1), 2*nlev, kptr, elem(ie)%desc)
      
-#ifdef VERT_LAGRANGIAN
-     kptr=kptr+2*nlev
-     call edgeVunpack(edge3p1, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr,elem(ie)%desc)
-#endif     
+     if (rsplit>0) then
+        kptr=kptr+2*nlev
+        call edgeVunpack(edge3p1, elem(ie)%state%dp3d(:,:,:,np1),nlev,kptr,elem(ie)%desc)
+     endif
      
      ! ====================================================
      ! Scale tendencies by inverse mass matrix, Leapfog update 
@@ -2562,21 +2562,21 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 !$omp parallel do private(k,i,j)
 #endif
      do k=1,nlev
-#ifdef VERT_LAGRANGIAN
-        elem(ie)%state%dp3d(:,:,k,np1)= elem(ie)%rspheremp(:,:)*elem(ie)%state%dp3d(:,:,k,np1)
-#endif
+        if (rsplit>0) &
+             elem(ie)%state%dp3d(:,:,k,np1)= elem(ie)%rspheremp(:,:)*elem(ie)%state%dp3d(:,:,k,np1)
         elem(ie)%state%T(:,:,k,np1)   = elem(ie)%rspheremp(:,:)*elem(ie)%state%T(:,:,k,np1)
         elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%rspheremp(:,:)*elem(ie)%state%v(:,:,1,k,np1)
         elem(ie)%state%v(:,:,2,k,np1) = elem(ie)%rspheremp(:,:)*elem(ie)%state%v(:,:,2,k,np1)
      end do
 
-#ifdef VERT_LAGRANGIAN
-     ! keep surface presure updated based on dp
-     elem(ie)%state%ps_v(:,:,np1) = hvcoord%hyai(1)*hvcoord%ps0 + &
-          sum(elem(ie)%state%dp3d(:,:,:,np1),3)
-#else
-     elem(ie)%state%ps_v(:,:,np1) = elem(ie)%rspheremp(:,:)*elem(ie)%state%ps_v(:,:,np1)
-#endif    
+     if (rsplit>0) then
+        ! keep surface presure updated based on dp
+        elem(ie)%state%ps_v(:,:,np1) = hvcoord%hyai(1)*hvcoord%ps0 + &
+             sum(elem(ie)%state%dp3d(:,:,:,np1),3)
+     else
+        ! vertically eulerian: complete ps_v timestep
+        elem(ie)%state%ps_v(:,:,np1) = elem(ie)%rspheremp(:,:)*elem(ie)%state%ps_v(:,:,np1)
+     endif
 
   end do
 #ifdef DEBUGOMP
