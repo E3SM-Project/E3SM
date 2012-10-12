@@ -111,7 +111,7 @@ contains
         use parallel_mod, only: abortmp
 
         if (physics == 0) then
-            print *, 'No physics package prescribed, do not attempt to get access to the physics resource, it is uninitialized'
+            !print *, 'No physics package prescribed, do not attempt to get access to the physics resource, it is uninitialized'
         else if (physics == 1) then
             ! for now only the multicloud package works.
             call element_physics_set()
