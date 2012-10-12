@@ -79,7 +79,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   integer, intent(in)                         :: nete  ! ending thread element number   (private)
 
   real (kind=real_kind)                       :: massstart, mass, maxc, maxcstart,minc, mincstart, tmp, tmpref  
-  real (kind=real_kind)                       :: tmp1(nets:nete), tmp2(nets:nete)
+  real (kind=real_kind)                       :: tmp1(nets:nete), tmp2(nets:nete), tmpt
   real (kind=real_kind)                       :: l1,l2, lmax 
   
   integer                                     :: i,j,k,ie,itr, jx, jy, jdx, jdy, h
@@ -105,7 +105,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   
   integer  choosetrac, chooselev   !for test reason the output
  !-----------------------------------------------------------------------------------!  
- choosetrac=4
+ choosetrac=2
  chooselev=1
  
   if(hybrid%masterthread) then 
@@ -242,12 +242,25 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
       end do
     end do
     call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, tstep, 3)
+    
+    tmpt=(time_at(tl%nstep+1)-time_at(tl%nstep))/3
+    do ie=nets,nete
+      do i=1,4
+        do k=1,nlev
+          fvm(ie)%vstar(:,:,:,k,i)=get_boomerang_velocities_gll(elem(ie),time_at(tl%nstep+1)-tmpt*(i-1))
+!         elem(ie)%derived%vstar(:,:,:,k)=get_solidbody_velocities_gll(elem(ie), time_at(tl%nstep+1))
+!         fvm(ie)%vn0(:,:,:,k)=get_solidbody_velocities_gll(elem(ie),time_at(tl%nstep))
+        end do
+      end do
+    end do    
+    
+    
 ! ! end mcgregordss   
     call cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
     
     call TimeLevel_update(tl,"forward")
      
-if (mod(tl%nstep,50)==0) then  
+if (mod(tl%nstep,1)==0) then  
     do ie=nets,nete
     ! prepare data for I/O
       global_shared_buf(ie,1)=0D0  ! for mass calculation

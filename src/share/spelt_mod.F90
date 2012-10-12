@@ -38,7 +38,7 @@ module spelt_mod
     type (spherical_polar_t) :: asphere(nep,nep)     ! Spherical coordinates
     ! equidistant mesh spacing in each direction of the reference(!) element, depends on nep       
     real(kind=real_kind)     :: dx  
-    real(kind=real_kind)     :: sga(1:nep,1:nep)   
+    real(kind=real_kind)     :: sga(1-nipm:nep+nipm,1-nipm:nep+nipm)     
     ! next maybe used just for test reasons
     real (kind=real_kind)    :: elem_mass
 !       real (kind=real_kind)    :: area_sphere(1-nhe:nc+nhe,1-nhe:nc+nhe) 
@@ -49,7 +49,7 @@ module spelt_mod
 
   end type spelt_struct
   
-  public :: cellghostbuf, edgeveloc, spelt_init1,spelt_init2, spelt_init3, spelt_mcgregordss, spelt_run, spelt_runair, spelt_grid_init
+  public :: cellghostbuf, edgeveloc, spelt_init1,spelt_init2, spelt_init3, spelt_mcgregordss, spelt_run, spelt_runlimit, spelt_runair, spelt_grid_init
   public :: cip_coeff, cip_interpolate, metric_term, metric_termref, cell_search, qmsl_cell_filter, cell_minmax, cip_cell_avr
 contains
 
@@ -259,6 +259,175 @@ subroutine spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 end subroutine spelt_runair
 
 
+subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
+
+  use derivative_mod, only : derivative_t
+  ! ---------------------------------------------------------------------------------
+  use edge_mod, only :  ghostVpack2d, ghostVunpack2d
+  ! ---------------------------------------------------------------------------------
+  use bndry_mod, only: ghost_exchangeV
+  ! ---------------------------------------------------------------------------------
+  use coordinate_systems_mod, only : spherical_to_cart, cart2cubedspherexy, ref2sphere, sphere2cubedsphere
+  ! ------EXTERNAL----------------
+  use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
+  ! -----------------------------------------------  
+  
+  implicit none
+  type (element_t), intent(inout)             :: elem(:)
+  type (spelt_struct), intent(inout)          :: spelt(:)
+  type (hybrid_t), intent(in)                 :: hybrid   ! distributed parallel structure (shared)
+  type (derivative_t), intent(in)             :: deriv           ! derivative struct
+  real (kind=real_kind), intent(in)           :: tstep
+  type (TimeLevel_t), intent(in)              :: tl              ! time level struct
+  integer, intent(in)                         :: nets  ! starting thread element number (private)
+  integer, intent(in)                         :: nete  ! ending thread element number   (private)
+ 
+  integer                                     :: i,j,k,ie,itr
+        
+  real (kind=real_kind)                       :: ff(nip,nip), c_low(1:nc,1:nc)
+  real (kind=real_kind)                       :: cf(nip,nip,1-nhe:nc+nhe,1-nhe:nc+nhe)
+  type (spherical_polar_t)                    :: dsphere1(1:nep,1:nep), dsphere2(1:nep,1:nep)
+    
+  real (kind=real_kind)                       :: slval(3), fluxval(nep,nep,2), flux(4)
+  real (kind=real_kind)                       :: fluxlowx(nc+1,nc), fluxlowy(nc,nc+1)
+  
+  type (cartesian2D_t)                        :: dref1(1:nep,1:nep), dref2(1:nep,1:nep)
+  real (kind=real_kind)                       :: sg1(1:nep,1:nep),sg2(1:nep,1:nep)  
+  real (kind=real_kind)                       :: minmax(1-nhe:nc+nhe,1-nhe:nc+nhe,2)
+  integer                                     :: icell1(1:nep,1:nep), jcell1(1:nep,1:nep)     
+  integer                                     :: icell2(1:nep,1:nep), jcell2(1:nep,1:nep)
+  
+  integer                                     :: icell, jcell
+  real (kind=real_kind)                       :: dxoy, dxyi, dt6, sg, sga
+  type (cartesian2D_t)                        :: alphabeta
+  real (kind=real_kind)                       :: tmp
+  
+
+  
+  dt6  = tstep/ 6.0D0
+  do ie=nets,nete 
+    tmp=abs(elem(ie)%corners(1)%x-elem(ie)%corners(2)%x)/nc
+    dxoy=tmp / 6.0D0
+    dxyi=1.0D0/(tmp*tmp)
+    do k=1, nlev
+      call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
+      call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)         
+      !search has not to be done for all tracers!
+      do j=1,nep
+        do i=1,nep
+!           call solidbody(spelt(ie)%asphere(i,j), dsphere, 0.5D0) 
+          call cell_search(elem(ie), dsphere1(i,j),icell1(i,j), jcell1(i,j),dref1(i,j),alphabeta)
+          sg1(i,j)=metric_term(alphabeta)
+!           sg1(i,j)=metric_termref(elem(ie),dref1(i,j))
+!           call solidbody(spelt(ie)%asphere(i,j), dsphere, 1.0D0)  
+          call cell_search(elem(ie), dsphere2(i,j), icell2(i,j), jcell2(i,j),dref2(i,j),alphabeta)
+          sg2(i,j)=metric_term(alphabeta)
+!           sg2(i,j)=metric_termref(elem(ie),dref2(i,j))
+          
+        end do
+      end do
+      ! search of both point on the trajectory done
+      do itr=1,ntrac
+        do j=1-nhe,nc+nhe
+          do i=1-nhe,nc+nhe
+            icell=1+(i-1)*nipm
+            jcell=1+(j-1)*nipm
+            ff=spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,k,itr,tl%n0)
+            minmax(i,j,:)=cell_minmax(ff)
+            call cip_coeff(ff,ff(2,2),cf(:,:,i,j))
+          enddo
+        enddo
+        do j=1,nep
+          do i=1,nep  
+            sga=spelt(ie)%sga(i,j)
+            slval(1)=spelt(ie)%c(i,j,k,itr,tl%n0)
+ 
+            tmp=cip_interpolate(cf(:,:,icell1(i,j),jcell1(i,j)),dref1(i,j)%x,dref1(i,j)%y) 
+            tmp=qmsl_cell_filter(icell1(i,j),jcell1(i,j),minmax,tmp)
+            slval(2)=(sga/sg1(i,j))*tmp
+
+            tmp=cip_interpolate(cf(:,:,icell2(i,j),jcell2(i,j)),dref2(i,j)%x,dref2(i,j)%y) 
+            tmp=qmsl_cell_filter(icell2(i,j),jcell2(i,j),minmax,tmp)
+            slval(3)=(sga/sg2(i,j))*tmp
+            spelt(ie)%c(i,j,k,itr,tl%np1)=slval(3)
+
+           if (mod(i,2)==1) then                   ! works only for nip=3!!!
+              fluxval(i,j,1) =  dt6 * spelt(ie)%contrau(i,j,k)* (slval(1) + & 
+                     4.0D0 * slval(2) + slval(3) )
+            endif
+            if (mod(j,2)==1) then            ! works only for nip=3!!!
+              fluxval(i,j,2) =  dt6 * spelt(ie)%contrav(i,j,k)* (slval(1) + & 
+                     4.0D0 * slval(2) + slval(3) )    
+            endif    
+          end do
+        end do 
+        !calculate low order flux
+        do j=1,nc+1
+          do i=1,nc
+            icell=2+(i-1)*nipm
+            jcell=1+(j-1)*nipm
+            
+            if (spelt(ie)%contrau(jcell,icell,k)>0.0D0) then
+              fluxlowx(j,i)=6.0D0*dxoy*tstep*spelt(ie)%contrau(jcell,icell,k)* &
+                            spelt(ie)%c(jcell-1,icell,k,itr,tl%n0)*spelt(ie)%sga(jcell,icell)/spelt(ie)%sga(jcell-1,icell)
+            else
+              fluxlowx(j,i)=6.0D0*dxoy*tstep*spelt(ie)%contrau(jcell,icell,k)* &
+                            spelt(ie)%c(jcell+1,icell,k,itr,tl%n0)*spelt(ie)%sga(jcell,icell)/spelt(ie)%sga(jcell+1,icell)
+            endif
+            if (spelt(ie)%contrav(icell,jcell,k)>0.0D0) then
+              fluxlowy(i,j)=6.0D0*dxoy*tstep*spelt(ie)%contrav(icell,jcell,k)* &
+                            spelt(ie)%c(icell,jcell-1,k,itr,tl%n0)*spelt(ie)%sga(icell,jcell)/spelt(ie)%sga(icell,jcell-1)
+            else
+              fluxlowy(i,j)=6.0D0*dxoy*tstep*spelt(ie)%contrav(icell,jcell,k)* &
+                            spelt(ie)%c(icell,jcell+1,k,itr,tl%n0)*spelt(ie)%sga(icell,jcell)/spelt(ie)%sga(icell,jcell+1)
+            endif    
+          end do
+        end do
+              
+        do j=1,nc
+          do i=1,nc
+            icell=2+(i-1)*nipm
+            jcell=2+(j-1)*nipm
+        ! for low order flux
+            c_low(icell,jcell) = spelt(ie)%c(icell,jcell,k,itr,tl%n0) + &
+                                  (fluxlowx(i,j) + fluxlowy(i,j) - fluxlowx(i+1,j) - fluxlowy(i,j+1) ) * dxyi
+            spelt(ie)%c(icell,jcell,k,itr,tl%np1)=c_low(icell,jcell)                        
+          end do
+        end do
+        
+        do j=1,nep,2
+          do i=1,nep,2            
+              flux(1) = dxoy * (fluxval(i,j,1) + 4.0D0 * fluxval(i,j+1,1) + fluxval(i,j+2,1))  ! west
+              flux(2) = dxoy * (fluxval(i,j,2) + 4.0D0 * fluxval(i+1,j,2) + fluxval(i+2,j,2))  ! south
+              flux(3) = dxoy * (fluxval(i+2,j,1) + 4.0D0 * fluxval(i+2,j+1,1) + fluxval(i+2,j+2,1)) ! east
+              flux(4) = dxoy * (fluxval(i+2,j+2,2) + 4.0D0 * fluxval(i+1,j+2,2) + fluxval(i,j+2,2)) ! north
+              
+              
+              spelt(ie)%c(i+1,j+1,k,itr,tl%np1) = spelt(ie)%c(i+1,j+1,k,itr,tl%n0) + &
+                                        (flux(1) + flux(2) - flux(3) - flux(4) ) * dxyi  
+                                                                                         
+          end do
+        end do
+        
+        
+        
+      end do !ntrac
+    end do   !nlev
+    call ghostVpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tl%np1, timelevels,elem(ie)%desc)
+  end do
+!-----------------------------------------------------------------------------------! 
+  call t_startf('SPELT Communication') 
+  call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep)
+  call t_stopf('SPELT Communication')
+!-----------------------------------------------------------------------------------!  
+  call t_startf('SPELT Unpacking')  
+  do ie=nets,nete
+    call ghostVunpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tl%np1, timelevels,elem(ie)%desc)
+  end do
+  call t_stopf('SPELT Unpacking')
+end subroutine spelt_runlimit
+
+
 subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 
   use derivative_mod, only : derivative_t
@@ -438,6 +607,8 @@ subroutine spelt_init3(elem,spelt,hybrid,nets,nete,tnp0)
   use edge_mod, only :  ghostVpack2d, ghostVunpack2d
   ! ---------------------------------------------------------------------------------
   use bndry_mod, only: ghost_exchangeV
+  use edge_mod, only :  ghostVpack2d_single, ghostVunpack2d_single,initghostbuffer,freeghostbuffertr
+  
   
   type (element_t),intent(inout)            :: elem(:)                 
   type (spelt_struct),intent(inout)         :: spelt(:)  
@@ -448,6 +619,9 @@ subroutine spelt_init3(elem,spelt,hybrid,nets,nete,tnp0)
      
   real (kind=real_kind)                     :: ff(nip,nip)                                                                          
   integer                                   :: ie, k, itr, i, j, icell, jcell                 
+  
+  type (ghostBuffertr_t)                      :: buf
+  
   
   ! do it only for FVM tracers, FIRST TRACER will be the AIR DENSITY   
       !first exchange of the initial values
@@ -477,13 +651,25 @@ subroutine spelt_init3(elem,spelt,hybrid,nets,nete,tnp0)
       enddo
     enddo
   enddo
+  
+  call initghostbuffer(buf,1,1,nipm,nep)
+  do ie=nets,nete
+    call ghostVpack2d_single(buf,spelt(ie)%sga,nipm, nep,elem(ie)%desc)
+  end do
+!-----------------------------------------------------------------------------------! 
+  call ghost_exchangeV(hybrid,buf,nipm,nep)
+!-----------------------------------------------------------------------------------!  
+  do ie=nets,nete
+    call ghostVunpack2d_single(buf,spelt(ie)%sga,nipm, nep,elem(ie)%desc)
+  end do
+  call freeghostbuffertr(buf)
 end subroutine spelt_init3
 
 subroutine spelt_grid_init(elem,spelt,nets,nete,tl)
   use coordinate_systems_mod, only : ref2sphere, sphere2cubedsphere
   use cube_mod, only : vmap
   use kinds, only : longdouble_kind
-  
+    
   implicit none
   type (element_t),intent(inout)            :: elem(:)                 
   type (spelt_struct),intent(inout)          :: spelt(:)
@@ -494,7 +680,8 @@ subroutine spelt_grid_init(elem,spelt,nets,nete,tl)
   real (kind=longdouble_kind)               :: xref, yref, dx
   real (kind=real_kind)                     :: tmpD(2,2), detD
   type (cartesian2D_t)                      :: alphabeta
-  type (cartesian2D_t)                      :: dref
+  type (cartesian2D_t)                      :: dref  
+  
   
   do ie=nets,nete
     dx=2.0D0/(nep-1)   ! equi-distant grid on reference element in both directions!
@@ -508,12 +695,13 @@ subroutine spelt_grid_init(elem,spelt,nets,nete,tl)
         alphabeta=sphere2cubedsphere(spelt(ie)%asphere(i,j), elem(ie)%FaceNum)
         spelt(ie)%sga(i,j)=metric_term(alphabeta)
         
-        dref%x=xref
-        dref%y=yref
+!         dref%x=xref
+!         dref%y=yref
 !         spelt(ie)%sga(i,j)=metric_termref(elem(ie),dref)
         
-      end do 
+      end do    
     end do
+       
     !this can be deleted, once the transformation is on the reference element
     do j=1,np
       do i=1,np
@@ -527,6 +715,7 @@ subroutine spelt_grid_init(elem,spelt,nets,nete,tl)
       enddo
     enddo
   end do
+    
 end subroutine spelt_grid_init
 
 !END SUBROUTINE FVM_MCGREGOR----------------------------------------------CE-for FVM!
@@ -665,7 +854,7 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
     write(*,*) 'icell, jcell,Something is wrong in search!'
     stop
   endif
-
+  
 #ifndef MESH
   if(number==elem%vertex%nbrs(1)%n) then  !west
     if ((elem%FaceNum<=4) .or. (face_nodep==elem%FaceNum)) then

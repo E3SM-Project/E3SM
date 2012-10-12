@@ -162,7 +162,7 @@ subroutine analytical_function(value,sphere,klev,itr)
                         .AND. (sphere%lat-lat2 > 5.0D0*R0/12.0D0)) then
     value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
   else
-    value = 0.1D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev   
+    value = 0.0D0 !0.1D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev   
   endif  
 end subroutine analytical_function
 !END SUBROUTINE ANALYTICAL_FUNCTION---------------------------------------CE-for FVM!
@@ -191,8 +191,8 @@ subroutine fvm_bsp(fvm, tl)
   integer                              :: i,j,k,itr
   
   do k=1, nlev
-!     fvm%c(:,:,k,1,tl%n0)=1.0D0    !density of the air
-    do itr=1,ntrac
+    fvm%c(:,:,k,1,tl%n0)=1.0D0    !density of the air
+    do itr=2,ntrac
       do j=1,nc
         do i=1,nc               
           call analytical_function(fvm%c(i,j,k,itr,tl%n0),fvm%centersphere(i,j),k,itr)      

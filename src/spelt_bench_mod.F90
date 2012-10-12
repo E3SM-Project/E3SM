@@ -27,7 +27,7 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
   use element_mod, only : element_t, timelevels
   use hybrid_mod, only : hybrid_t
   use spelt_mod, only: cellghostbuf, edgeveloc, spelt_struct
-  use spelt_mod, only: spelt_mcgregordss, spelt_run, spelt_runair 
+  use spelt_mod, only: spelt_mcgregordss, spelt_run, spelt_runair, spelt_runlimit, spelt_init3
   use spelt_mod, only: cip_coeff, cip_interpolate, metric_term, metric_termref, cell_search, qmsl_cell_filter, cell_minmax, cip_cell_avr
   ! ---------------------------------------------------------------------------------
   use bndry_mod, only: ghost_exchangeV
@@ -87,7 +87,7 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
   
   integer  choosetrac, chooselev   !for test reason the output
  !-----------------------------------------------------------------------------------!  
- choosetrac=4
+ choosetrac=2
  chooselev=1
  
   if(hybrid%masterthread) then 
@@ -130,17 +130,12 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
         end do
       end do 
     end do
-    !first exchange of the initial values
-    call ghostVpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tl%n0, timelevels,elem(ie)%desc)
   end do
-!-----------------------------------------------------------------------------------!  
-  call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep)
-!-----------------------------------------------------------------------------------!    
-  do ie=nets,nete
-    call ghostVunpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tl%n0, timelevels,elem(ie)%desc)
-  end do
+  
+  !first exchange of the initial values
+  call spelt_init3(elem,spelt,hybrid,nets,nete,tl%n0)
 !-----------------------------------------------------------------------------------!
-! initialize test example
+! ONLY for output on ps needed
   do ie=nets,nete  
     do k=1, nlev
       do itr=1,ntrac
@@ -149,8 +144,6 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
             icell=1+(i-1)*nipm
             jcell=1+(j-1)*nipm
             ff=spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,k,itr,tl%n0)
-            ff(2,2)=cip_cell_avr(ff) 
-            spelt(ie)%c(icell+1,jcell+1,k,itr,tl%n0)=ff(2,2)
             ! FOR TEST OUTPUT on gll only needed
             minmax(i,j,:)=cell_minmax(ff)
             call cip_coeff(ff,ff(2,2),cf(:,:,i,j))
@@ -184,12 +177,15 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
 ! for Quantities as mass aso 
   do ie=nets,nete
    spelt(ie)%elem_mass=0
+   tmp1(ie)=-1.0D0-20
+   tmp2(ie)=1.0D20
    tmp=abs(elem(ie)%corners(1)%x-elem(ie)%corners(2)%x)/nc
    do j=1,nc
      do i=1,nc
        icell= 2+(i-1)*nipm
        jcell=2+(j-1)*nipm
-       if (choosetrac==1) then   ! mass of air, code is not optimal
+       sga=spelt(ie)%sga(icell,jcell)
+       if (choosetrac==2) then   ! mass of air, code is not optimal
          spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
                        tmp*tmp*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
        else
@@ -197,14 +193,16 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
                        tmp*tmp*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
        endif
   !           spelt(ie)%cstart(i,j)=spelt(ie)%c(i,j,chooselev,choosetrac,tl%n0)
+      tmp1(ie)=max(tmp1(ie),spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga)
+      tmp2(ie)=min(tmp2(ie),spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga)
      enddo
    enddo
    ! for the mass value
    global_shared_buf(ie,1)=0D0
    global_shared_buf(ie,1)=spelt(ie)%elem_mass
    ! for the max value on the sphere
-   tmp1(ie) = MAXVAL(spelt(ie)%c(:,:,chooselev,choosetrac,tl%n0))
-   tmp2(ie) = MINVAL(spelt(ie)%c(:,:,chooselev,choosetrac,tl%n0))   
+!    tmp1(ie) = MAXVAL(spelt(ie)%c(:,:,chooselev,choosetrac,tl%n0))
+!    tmp2(ie) = MINVAL(spelt(ie)%c(:,:,chooselev,choosetrac,tl%n0))   
   end do 
 
 
@@ -243,22 +241,26 @@ DO WHILE(tl%nstep<nmax)
   end do
   call spelt_mcgregordss(elem,spelt,nets,nete, hybrid, deriv, tstep, 3)
 ! ! end mcgregordss
-
 !   call spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
-  call spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
+
+  call spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
+!   call spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 
   call TimeLevel_update(tl,"forward") 
 !-----------------------------------------------------------------------------------! 
 ! for Quantities as mass aso
-if (mod(tl%nstep,50)==0) then
+if (mod(tl%nstep,1)==0) then
   do ie=nets,nete
     spelt(ie)%elem_mass=0
+    tmp1(ie)=-1.0D0-20
+    tmp2(ie)=1.0D20
     tmp=abs(elem(ie)%corners(1)%x-elem(ie)%corners(2)%x)/nc
     do j=1,nc
       do i=1,nc
         icell= 2+(i-1)*nipm
         jcell=2+(j-1)*nipm
-        if (choosetrac==1) then   ! mass of air, code is not optimal
+        sga=spelt(ie)%sga(icell,jcell)
+        if (choosetrac==2) then   ! mass of air, code is not optimal
           spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
                          tmp*tmp*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
         else
@@ -266,14 +268,18 @@ if (mod(tl%nstep,50)==0) then
                          tmp*tmp*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
         endif
  !           spelt(ie)%cstart(i,j)=spelt(ie)%c(i,j,chooselev,choosetrac,tl%n0)
+        
+        tmp1(ie)=max(tmp1(ie),spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga)
+        tmp2(ie)=min(tmp2(ie),spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga)
       enddo
     enddo
     ! for the mass value
     global_shared_buf(ie,1)=0D0
     global_shared_buf(ie,1)=spelt(ie)%elem_mass
     ! for the max value on the sphere
-    tmp1(ie) = MAXVAL(spelt(ie)%c(:,:,chooselev,choosetrac,tl%n0))
-    tmp2(ie) = MINVAL(spelt(ie)%c(:,:,chooselev,choosetrac,tl%n0))   
+    
+!     tmp1(ie) = MAXVAL(spelt(ie)%c(:,:,chooselev,choosetrac,tl%n0))
+!     tmp2(ie) = MINVAL(spelt(ie)%c(:,:,chooselev,choosetrac,tl%n0))   
   end do
 
   !need the buffer cellghostbuf in the time loop

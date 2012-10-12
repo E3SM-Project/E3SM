@@ -11,8 +11,8 @@
 
 program cwfv_main
   ! -----------------------------------------------
-  use cwfv_mod, only: fvm_init1, fvm_init2
-  use cwfv_bench_mod, only: cwfv_run_bench, cwfv_struct
+  use cwfv_mod, only: fvm_init1, fvm_init2, cwfv_struct
+  use cwfv_bench_mod, only: cwfv_run_bench
   ! -----------------------------------------------
   ! -----------------------------------------------
   use dimensions_mod, only : nelemd, ntrac
@@ -48,6 +48,7 @@ program cwfv_main
   type (parallel_t)    :: par              ! parallel structure for distributed memory programming
   type (hybrid_t) :: hybrid
   type (domain1d_t), allocatable :: dom_mt(:)
+  
 
   character (len=20)                          :: numproc_char
   character (len=20)                          :: numtrac_char
@@ -135,7 +136,7 @@ program cwfv_main
 
 
 
-  call cwfv_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
+  call cwfv_run_bench(elem,fvm,hybrid,nets,nete,tl)
 
 #if (! defined ELEMENT_OPENMP)
   !$OMP END PARALLEL
