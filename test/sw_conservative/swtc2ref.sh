@@ -1,6 +1,5 @@
 #!/bin/tcsh -f
-#XPBS -l nodes=100:ppn=4
-#PBS -l nodes=200:ppn=2
+#PBS -l nodes=4:ppn=8
 #PBS -l walltime=8:00:00
 #PBS -N swtc2
 #PBS -j oe

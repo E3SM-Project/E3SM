@@ -1,6 +1,5 @@
 #!/bin/tcsh -f
-#XPBS -l nodes=100:ppn=4
-#PBS -l nodes=200:ppn=2
+#PBS -l nodes=16:ppn=8
 #PBS -l walltime=1:00:00
 #PBS -N swtc1
 #PBS -j oe
@@ -24,11 +23,12 @@ echo NCPU = $NCPU
 
 
 set test_case = swtc6
+set sub_case = 1 # default
 
 #configure the model
+cd $src
 set configure = 1
 if ( $configure ) then
-  cd $src
   if (${?PNETCDF_PATH} ) then
      ./configure --with-netcdf=$NETCDF_PATH --with-pnetcdf=$PNETCDF_PATH NP=4 PLEV=1
   else
@@ -41,7 +41,7 @@ if ( $configure ) then
   if ($status ) exit
 endif
 
-make -j2 sweqx
+make -j4 sweqx
 if ($status ) exit
 
 
@@ -61,13 +61,20 @@ set LFTfreq = 0
 
 
 set NE = 30
-set nu = 1.5e15   
+set nu = 1.0e15   
 set hypervis_subcycle =  1
 
 #leapfrog
+# tstep=90  nu=0      NAN
+#           nu=1e15   stable, but occasional 2dx noise at cube corners
+#           nu=1.5e15 good
+# tstep=80  nu=0      stable, but noisy
+#           nu=1e15  
+#
 set integration = explicit
 set smooth = .05
-set tstep = 90    # stable with nu=1e15
+set tstep = 80    
+                  
 
 #leapfrog-trap
 #set integration = explicit
@@ -78,7 +85,7 @@ set tstep = 90    # stable with nu=1e15
 # RK2-m stage used by 3d code
 #set integration = explicit
 #set smooth = 0
-#set tstep = 90
+#set tstep = 80
 #set LFTfreq = 4
 
 # RK-SSP
@@ -101,7 +108,7 @@ sed s/ne=.\*/"ne = $NE"/  $input/swtc6high.nl |\
 sed s/tstep.\*/"tstep = $tstep"/  |\
 sed s/limiter_option.\*/"limiter_option = $limiter"/  |\
 sed s/smooth.\*/"smooth = $smooth"/  |\
-sed s/test_case.\*/"test_case = \'$test_case\'"/  |\
+sed s/test_case.\*/"test_case = \'$test_case\' sub_case=$sub_case"/  |\
 sed s/integration.\*/"integration = '$integration'"/  |\
 sed s/rk_stage_user.\*/"rk_stage_user = $rk_stage"/  |\
 sed s/LFTfreq.\*/"LFTfreq = $LFTfreq"/  |\
