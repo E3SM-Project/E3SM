@@ -275,6 +275,7 @@ contains
     real (kind=real_kind) :: penst(np,np,nets:nete)
     real (kind=real_kind) :: pv(np,np,nets:nete)
     real (kind=real_kind) :: div(np,np,nets:nete)
+    real (kind=real_kind) :: vor(np,np,nets:nete)
 
     real (kind=real_kind) :: diss_p(np,np,nlev,nets:nete)
     real (kind=real_kind) :: diss_v(np,np,2,nlev,nets:nete)
@@ -287,7 +288,7 @@ contains
     ! dont use Imass0,Ienergy0,Ipenst0 because they are being used by tc5_invariants
     real (kind=real_kind),save :: Imass_init(nlev),Ienergy_init,Ipenst_init,Ipv_init,Idiv_init
     real (kind=real_kind),save :: time_last,Imass_last(nlev),Ikenergy_last,Ipenergy_last,Ipenst_last,Ipv_last,Idiv_last
-    real (kind=real_kind) :: time,Imass(nlev),Ikenergy,Ipenergy,Ipenst,Ienergy,Ipv,Idiv
+    real (kind=real_kind) :: time,Imass(nlev),Ikenergy,Ipenergy,Ipenst,Ienergy,Ipv,Idiv,rms_div,rms_vor,rms_f
     real (kind=real_kind), dimension(:,:,:), pointer :: v
     real (kind=real_kind), dimension(:,:),   pointer :: viscosity => NULL()
 
@@ -311,6 +312,8 @@ contains
           open(iounit+3,file=TRIM(output_prefix)//"sweq.penst",status="unknown",form="formatted")
           open(iounit+4,file=TRIM(output_prefix)//"sweq.pv",status="unknown",form="formatted")
           open(iounit+5,file=TRIM(output_prefix)//"sweq.div",status="unknown",form="formatted")
+          open(iounit+6,file=TRIM(output_prefix)//"sweq.div2",status="unknown",form="formatted")
+          open(iounit+7,file=TRIM(output_prefix)//"sweq.vor2",status="unknown",form="formatted")
        endif
     endif
     if (nu > 0 .or. nu_s > 0 ) then
@@ -389,8 +392,8 @@ contains
        ! global integral < f*g > is computed correctly if either f or g is continious
        ! enstropy = < PV**2 >, so we need to make the PV continious before computing global integral
        div(:,:,ie) = divergence_sphere(vlatlon,deriv,elem(ie)) ! latlon vector -> scalar 
-       penst(:,:,ie) = vorticity_sphere(vlatlon,deriv,elem(ie)) ! latlon vector -> scalar 
-       penst(:,:,ie) = penst(:,:,ie)*elem(ie)%spheremp(:,:)
+       vor(:,:,ie) = vorticity_sphere(vlatlon,deriv,elem(ie)) ! latlon vector -> scalar 
+       penst(:,:,ie) = vor(:,:,ie)*elem(ie)%spheremp(:,:)
        kptr=0
        call edgeVpack(edge3, penst(1,1,ie), 1, kptr,elem(ie)%desc)
     end do
@@ -421,9 +424,17 @@ contains
     dissE  =  global_integral(elem,diss_p(:,:,k,nets:nete),hybrid,np,nets,nete)
     if (hypervis_order==2) dissE=-dissE  ! biharmonic is applied with a minus sign
 
+    rms_div = global_integral(elem,div(:,:,nets:nete)**2,hybrid,np,nets,nete)
+    rms_vor = global_integral(elem,vor(:,:,nets:nete)**2,hybrid,np,nets,nete)
+    ! planatery vorticity for normalization
+    do ie=nets,nete
+       vor(:,:,ie)=elem(ie)%fcor(:,:)
+    enddo
+    rms_f = global_integral(elem,vor(:,:,nets:nete)**2,hybrid,np,nets,nete)
+
+
 
     time   = Time_at(tl%nstep)
-
 #if (! defined ELEMENT_OPENMP)
     !$OMP BARRIER
 #endif
@@ -442,6 +453,8 @@ contains
        write(iounit+3,*)time/secpday,Ipenst
        write(iounit+4,*)time/secpday,Ipv
        write(iounit+5,*)time/secpday,Idiv
+       write(iounit+6,*)time/secpday,sqrt(rms_div/rms_f)
+       write(iounit+7,*)time/secpday,sqrt(rms_vor/rms_f)
 
        !write(6,*)time/secpday,"mass          =",(Imass-Imass_init)/Imass_init
        !write(6,*)time/secpday,"total energy  =",(Ienergy-Ienergy_init)/Ienergy_init
@@ -462,9 +475,11 @@ contains
              write(6,'(a,e13.6,f10.3)') "                       Dissipation/E  = ",dissE/(Ikenergy+Ipenergy)
           endif
           dm = (Ipv-Ipv_last)/(time-time_last)
-          write(6,'(a,e11.4,a,e13.6,a,e13.6)') "PV-PV0       =",(Ipv-Ipv_init), " dPV/dt      = ",dm
+          write(6,'(a,e11.4,a,e13.6,a,e13.6,a,e13.6)') "PV-PV0       =",(Ipv-Ipv_init),&
+               " dPV/dt      = ",dm," |vor|/|f|=",sqrt(rms_vor/rms_f)
           dm = (Idiv-Idiv_last)/(time-time_last)
-          write(6,'(a,e11.4,a,e13.6,a,e13.6)') "DV-DV0       =",(Idiv-Idiv_init), " dDV/dt      = ",dm
+          write(6,'(a,e11.4,a,e13.6,a,e13.6,a,e13.6)') "DV-DV0       =",(Idiv-Idiv_init),&
+               " dDV/dt      = ",dm," |div|/|f|=",sqrt(rms_div/rms_f)
        endif
 
     end if
@@ -522,8 +537,9 @@ contains
   function tc6_init_pmean() result(pmean)
     implicit none
     real (kind=real_kind) :: pmean 
-
+    ! gh0_tc6  = g*h0_tc6   h0_tc6=8d3
     pmean = gh0_tc6
+    if (sub_case > 1 ) pmean = g*h0_tc6*sub_case 
   end function tc6_init_pmean
   ! ===========================================
   ! tc8_init_pmean

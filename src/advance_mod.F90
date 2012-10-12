@@ -103,7 +103,7 @@ contains
 
     ! LFTfreq=0   pure Leapfrog (default)
     ! LFTfreq=1   pure Leapfrog-trapazoidal
-    ! LFTfreq=n   alternate Leapfrog, leapfrog-trapazoidal
+    ! LFTfreq=n   RK2, then n-1 leapfrogs
 
     ! steptype = 0  leapfrog
     ! steptype = 1  leapfrog-trap
@@ -161,19 +161,12 @@ contains
 
     else if (steptype==2) then
        if (smooth/=0) stop 'ERROR: smooth>0 not allowed'
-       ! RK2 with forward euler
-       ! Foward Euler  t u(n0) -> t+1 u(np1)
-       call compute_and_apply_rhs(np1,n0,n0,dt,real_time,edge3,elem,pmean,hybrid,deriv,vtens,ptens,nets,nete)
-       ! Foward Euler  t+1 u(np1) -> t+2 u(np1)
-       call compute_and_apply_rhs(np1,np1,np1,dt,real_time+dt,edge3,elem,pmean,hybrid,deriv,vtens,ptens,nets,nete)
-       
-       !    u(np1) = (u(np1) +  u(n0) )/2
-       do ie=nets,nete
-          elem(ie)%state%v(:,:,:,:,np1)  = (elem(ie)%state%v(:,:,:,:,np1) + &
-               elem(ie)%state%v(:,:,:,:,n0)) /2 
-          elem(ie)%state%p(:,:,:,np1)  = (elem(ie)%state%p(:,:,:,np1) + &
-               elem(ie)%state%p(:,:,:,n0)) /2 
-       enddo
+       ! RK2 (which is forward euler at dt/2 followed by LF with dt)
+       ! Foward Euler  u(n0) -> u(np1) at t+.5
+       call compute_and_apply_rhs(np1,n0,n0,dt/2,real_time,edge3,elem,pmean,hybrid,deriv,vtens,ptens,nets,nete)
+       ! leapfrog:  u(dt) = u(n0) + dt RHS(dt/2)     (store in u(np1))
+       call compute_and_apply_rhs(np1,n0,np1,dt,real_time+dt,edge3,elem,pmean,hybrid,deriv,vtens,ptens,nets,nete)
+
        call advance_hypervis(edge3,elem,hybrid,deriv,vtens,ptens,np1,nets,nete,dt)
     endif
 
