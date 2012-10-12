@@ -1103,11 +1103,7 @@ module namelist_mod
        write(iulog,*)"filter: smooth         = ",smooth
 #endif
        write(iulog,*)"readnl: qsplit        = ",qsplit
-#ifdef VERT_LAGRANGIAN
-       write(iulog,*)"readnl: vertical remap frequency rsplit=",rsplit
-#else
-       if (rsplit/=1) call abort('rsplit must be 1 for non-verticaly lagrangian code')
-#endif
+       write(iulog,*)"readnl: vertical remap frequency rsplit (0=disabled): ",rsplit
        write(iulog,*)"readnl: physics       = ",physics
 
        write(iulog,*)"readnl: energy_fixer  = ",energy_fixer

@@ -19,8 +19,8 @@ module prim_state_mod
   ! ------------------------------
   use time_mod, only : tstep, secpday, timelevel_t, TimeLevel_Qdp 
   ! ------------------------------
-  use control_mod, only : integration, test_case, runtype, moisture, tracer_advection_formulation,&
-       TRACERADV_TOTAL_DIVERGENCE,TRACERADV_UGRADQ,tstep_type,energy_fixer, qsplit, ftype, use_cpstar
+  use control_mod, only : integration, test_case, runtype, moisture, &
+       tstep_type,energy_fixer, qsplit, ftype, use_cpstar, rsplit
   ! ------------------------------
   use hybvcoord_mod, only : hvcoord_t 
   ! ------------------------------
@@ -175,47 +175,23 @@ contains
     pnm1=tl%nm1  
 #endif
 
-    dt = tstep*qsplit
+    dt=tstep*qsplit
+    if (rsplit>0) dt = tstep*qsplit*rsplit  ! vertical REMAP timestep 
     !
-    !   state variables in n0 are at time =  'time' 
-    !   state variables in nm1 are at time =  'time-dt' 
+    !   dynamics variables in n0 are at time =  'time' 
     !
-    !   Other diagnostics were computed during the timestep, and thus:
-    !   Energy variables *(:,:,2)       time-0.5*dt    "time2"
-    !   Energy variables *(:,:,1)       time-1.5*dt    "time1"
-    !   dE/dt variables                 time-1.0*dt 
-    ! advecting Q
-    !   Mass                            time (conserved w/o forcing, so never changes)
-    !   conserved mass is at half levels
-    ! 
-    ! advecting Qdp with leapfrog (tstep_type=0)
-    !   Note: Qmass conserved at whole timelevels, but we compute at half-time levels 
-    !         so change in Qmass will exactly balance forcing term.  
-    !         could also use time, time-2*dt, but then Qmass uses a different dt from all other terms
+    !   Diagnostics computed a 4 different levels during one compute REMAP step
+    ! in RK code:
+    !   E(:,:,2)-E(:,:,1)   change due to dynamics step  from time-dt to time
+    !   E(:,:,3)-E(:,:,2)   change due to energy fixer   
+    !   E(:,:,1)-E(:,:,4)   impact of forcing
     !
-    !   Mass                            time ( Mass-Q1mass(:,:) conserved )
-    !   Q1Mass                          time  
-    !   Qmass(:,:,4)                    time-0.5*dt  after robert
-    !   Qmass(:,:,3)                    time-0.5*dt  after forcing
-    !   Qmass(:,:,2)                    time-0.5*dt  after timestep to time
-    !   Qmass(:,:,1)                    time-1.5*dt  
+    ! Dissipation rates were computed during the first dynamics timstep, and represent
+    ! the change going from 'time-dt' to 'time-dt+tstep' (one dynamics step)
     !
-    !   Qmass is computed at t+.5, t-.5 so that dQ/dt exactly balances FQ
-    !   To check conservation of dry mass, use Qmass at time t ("Q1mass")
-    !
-    ! advecting Qdp with RK-SSP (tstep_type=1)
-    !   Mass                            time ( Mass-Q1mass(:,:) conserved )
-    !   Q1Mass                          time  
-    !   Qmass(:,:,2)                    time after timestep to time
-    !   Qmass(:,:,1)                    time-dt
-    !   Qmass is computed at t+1, t so that dQ/dt exactly balances FQ
-    !   Qmass(:,:,3) , Qmass(:,:,4) and Q1Mass are all the same since there is
-    !   no robert filter
-    !
-    time=tl%nstep* dt
-    time2 = time - dt/2
-    time1 = time - 3*dt/2
-
+    time=tl%nstep*tstep
+    time2 = time 
+    time1 = time - dt
 
 
     vsum_t(1) = 0.0D0
@@ -604,11 +580,7 @@ contains
     if(hybrid%par%masterproc .and. hybrid%ithr==0) then 
        if(moisture /= "dry")then
           if (qsize>=1) then
-             if (tracer_advection_formulation==TRACERADV_TOTAL_DIVERGENCE) then
-                write(iulog,'(a,E23.15,a,E23.15,a)') "    dry M = ",Mass-Q1mass(1),' kg/m^2'
-             else
-                write(iulog,'(a,E23.15,a,E23.15,a)') "    dry M = ",.5*(Mass_np1+Mass)-Qmass(1,2),' kg/m^2'
-             endif
+             write(iulog,'(a,E23.15,a,E23.15,a)') "    dry M = ",Mass-Q1mass(1),' kg/m^2'
           endif
        endif
        
@@ -727,18 +699,13 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete,tQ
 !  called at the end of a timestep, before timelevel update.  Solution known at
 !  dynamics:     nm1,  n0,  np1.  
 !
+!                                                           LF code            RK code
+!  This routine is called 4 times:  n=1:    t1=nm1, t2=n0   start              after forcing, before timestep
+!                                   n=2:    t1=n0, t2=np1   after timestep     after timestep, including remap
+!                                   n=3:    t1=n0, t2=np1   after forcing      after fixer 
+!                                   n=4:    t1=n0, t2=np1   after Robert       before forcing
 !
-!  This routine is called 4 times:  n=1:    t1=nm1, t2=n0
-!                                   n=2:    t1=n0, t2=np1
-!                                   n=3:    t1=n0, t2=np1
-!                                   n=4:    t1=n0, t2=np1
-!
-!  Solution is given at times u(t-1),u(t),u(t+1)
-!  E(n=1) = energy at time t-.5
-!  E(n=2) = energy at time t+.5
-!  E(n=3) = energy at time t+.5  after Forcing applied
-!  E(n=4) = energy at time t+.5  after Robert filter
-!
+! LF case we use staggered formulas:
 !  compute the energies at time half way between timelevels t1 and t2,
 !  using timelevels t1,t2.  store in location n of our elem()%accum%* variables
 !    
@@ -834,13 +801,8 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete,tQ
                    cp_star2= Virtual_Specific_Heat(elem(ie)%state%Q(i,j,k,1))
                    cp_star1= cp_star2  
                 else !not used for now with CAM
-                   if (tracer_advection_formulation==TRACERADV_TOTAL_DIVERGENCE) then
-                      qval_t1 = elem(ie)%state%Qdp(i,j,k,1,t1_qdp)/dpt1(i,j,k)
-                      qval_t2 = elem(ie)%state%Qdp(i,j,k,1,t2_qdp)/dpt2(i,j,k)
-                   else
-                      qval_t1 = elem(ie)%state%Q(i,j,k,1)
-                      qval_t2 = elem(ie)%state%Q(i,j,k,1)
-                   endif
+                   qval_t1 = elem(ie)%state%Qdp(i,j,k,1,t1_qdp)/dpt1(i,j,k)
+                   qval_t2 = elem(ie)%state%Qdp(i,j,k,1,t2_qdp)/dpt2(i,j,k)
                    cp_star1= Virtual_Specific_Heat(qval_t1)
                    cp_star2= Virtual_Specific_Heat(qval_t2)
                 endif
@@ -959,23 +921,12 @@ subroutine prim_diag_scalars(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        call TimeLevel_Qdp(tl, qsplit, tmp, t2_qdp) !get np1 into t2_qdp (don't need tmp)
     endif
 
-    !
-    !  leapfrog of Qdp.  compute at t1 and t2, take average
-    !
-
-    if (tracer_advection_formulation==TRACERADV_TOTAL_DIVERGENCE .and. &
-         tstep_type==0) then
-    !   advections of tracers is no longer supported for tstep_type = 0
-
-
-    endif 
 
     !
     !  RK2 forward scheme.  compute everything at t2
     !  (used by CAM)
     !   Q has only one time dimension
-    if (tracer_advection_formulation==TRACERADV_TOTAL_DIVERGENCE .and. &
-         tstep_type==1) then
+    if (tstep_type==1) then
 
        do ie=nets,nete
 #if (defined ELEMENT_OPENMP)
@@ -1005,13 +956,6 @@ subroutine prim_diag_scalars(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        enddo
     endif
 
-
-    !
-    !  leapfrog of Q - use staggered in time formula
-    !
-    if (tracer_advection_formulation==TRACERADV_UGRADQ) then
- 
-    endif
 
 
 end subroutine prim_diag_scalars

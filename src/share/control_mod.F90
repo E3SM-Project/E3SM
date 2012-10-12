@@ -42,7 +42,7 @@ module control_mod
                                           ! 1 = CAM style fixer  Tnew = T + beta
                                               
   integer, public :: qsplit = 1           ! ratio of dynamics tsteps to tracer tsteps
-  integer, public :: rsplit = 1           ! for vertically lagrangian dynamics, apply remap
+  integer, public :: rsplit = 0           ! for vertically lagrangian dynamics, apply remap
                                           ! every rsplit tracer timesteps
   integer, public :: physics = 0          ! Defines if the program is to use its own phsyics (HOMME standalone), valid values 1,2,3
                                           ! physics = 0, no physics

@@ -1263,7 +1263,7 @@ contains
     use hybvcoord_mod, only : hvcoord_t
     use time_mod, only : TimeLevel_t, time_at, timelevel_update, nsplit
     use control_mod, only: statefreq,&
-           energy_fixer, ftype, qsplit, nu_p, test_cfldep
+           energy_fixer, ftype, qsplit, rsplit, nu_p, test_cfldep
     use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3, applycamforcing, &
                                  applycamforcing_dynamics, prim_advance_exp
     use prim_advection_mod, only : prim_advec_tracers_remap_rk2, prim_advec_tracers_fvm, &
@@ -1288,9 +1288,9 @@ contains
     integer, intent(in)                     :: nete  ! ending thread element number   (private)
     real(kind=real_kind), intent(in)        :: dt  ! "timestep dependent" timestep
     type (TimeLevel_t), intent(inout)       :: tl
-    real(kind=real_kind) :: st, st1, dp, dt_q
+    real(kind=real_kind) :: st, st1, dp, dt_q, dt_remap
     integer :: ie, t, q,k,i,j,n, n_Q
-    integer :: n0_qdp,np1_qdp
+    integer :: n0_qdp,np1_qdp,r
 
     real (kind=real_kind)                          :: maxcflx, maxcfly  
     real (kind=real_kind) :: dp_np1(np,np)
@@ -1301,6 +1301,8 @@ contains
     ! Main timestepping loop
     ! ===================================
     dt_q = dt*qsplit
+    dt_remap = dt_q
+    if (rsplit>1) dt_remap=dt_q*rsplit   ! rsplit=0 means use eulerian code, not vert. lagrange
 
 
     ! compute diagnostics and energy for STDOUT 
@@ -1336,20 +1338,160 @@ contains
     if (compute_diagnostics) call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
 
 
-#ifdef VERT_LAGRANGIAN
+    if (rsplit>0) then
+    ! vertically lagrangian code: initialize prognostic variable dp3d for floating levels
     do ie=nets,nete
       do k=1,nlev
-         ! initialize prognostic variable for floating levels
-         elem(ie)%state%dp3d(:,:,:,tl%n0)=&
+         elem(ie)%state%dp3d(:,:,k,tl%n0)=&
               ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
 
       enddo
     enddo
-#endif
+    endif
 
     ! loop over rsplit vertically lagrangian timesteps
-    !do r=1,rsplit   
+    call prim_step(elem, fvm, hybrid,nets,nete, dt, tl, hvcoord,compute_diagnostics)
+    do r=2,rsplit   
+       call TimeLevel_update(tl,"leapfrog")
+       call prim_step(elem, fvm, hybrid,nets,nete, dt, tl, hvcoord,.false.)
+    enddo
+
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    !  apply vertical remap
+    !  always for tracers  
+    !  also for dynamics if rsplit>0
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !compute timelevels for tracers (no longer the same as dynamics)
+    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp) 
+    call vertical_remap(elem,hvcoord,dt_remap,tl%np1,np1_qdp,nets,nete)
+
+
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! time step is complete.  update some diagnostic variables:
+    ! lnps (we should get rid of this)
+    ! Q    (mixing ratio)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
+    do ie=nets,nete
+#if (defined ELEMENT_OPENMP)
+       !$omp parallel do private(k,q)
+#endif
+       elem(ie)%state%lnps(:,:,tl%np1)= LOG(elem(ie)%state%ps_v(:,:,tl%np1))
+       do k=1,nlev    !  Loop inversion (AAM)
+          dp_np1(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%np1)
+          do q=1,qsize
+             elem(ie)%state%Q(:,:,k,q)=elem(ie)%state%Qdp(:,:,k,q,np1_qdp)/dp_np1(:,:) 
+          enddo
+       enddo
+    enddo
+    
+
+
+   
+
+    ! now we have:
+    !   u(nm1)   dynamics at  t+dt_q - 2*dt 
+    !   u(n0)    dynamics at  t+dt_q - dt    
+    !   u(np1)   dynamics at  t+dt_q 
+    !
+    !   Q(1)   Q at t+dt_q
+    if (compute_diagnostics) call prim_diag_scalars(elem,hvcoord,tl,2,.false.,nets,nete)
+    if (compute_energy) call prim_energy_halftimes(elem,hvcoord,tl,2,.false.,nets,nete,1)
+
+    if (energy_fixer > 0) then
+       if ( .not. compute_energy) call abortmp("ERROR: energy fixer needs compute_energy=.true")
+       call prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete)
+    endif
+
+    if (compute_diagnostics) then
+       call prim_diag_scalars(elem,hvcoord,tl,3,.false.,nets,nete)
+       call prim_energy_halftimes(elem,hvcoord,tl,3,.false.,nets,nete,1)
+     endif
+
+    ! =================================
+    ! update dynamics time level pointers 
+    ! =================================
+    call TimeLevel_update(tl,"leapfrog")
+
+    ! now we have:
+    !   u(nm1)   dynamics at  t+dt_q - dt       (Robert-filtered)
+    !   u(n0)    dynamics at  t+dt_q 
+    !   u(np1)   undefined
+ 
+
+    ! ============================================================
+    ! Print some diagnostic information 
+    ! ============================================================
+    if (compute_diagnostics) then
+       if (hybrid%masterthread) then 
+          write(iulog,*) "nstep=",tl%nstep," time=",Time_at(tl%nstep)/(24*3600)," [day]"
+       end if
+       call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete, fvm)
+    end if
+  end subroutine prim_run_subcycle
+
+
+
+
+
+
+  subroutine prim_step(elem, fvm, hybrid,nets,nete, dt, tl, hvcoord, compute_diagnostics)
+!
+!   Take qsplit dynamics steps and one tracer step
+!   for vertically lagrangian option, this subroutine does only the horizontal step
+!     
+!   input: 
+!       tl%nm1   not used
+!       tl%n0    data at time t
+!       tl%np1   new values at t+dt_q
+!   
+!   then we update timelevel pointers:
+!       tl%nm1 = tl%n0
+!       tl%n0  = tl%np1
+!   so that:
+!       tl%nm1   tracers:  t    dynamics:  t+(qsplit-1)*dt
+!       tl%n0    time t + dt_q
+!   
+!
+    use hybvcoord_mod, only : hvcoord_t
+    use time_mod, only : TimeLevel_t, time_at, timelevel_update, nsplit
+    use control_mod, only: statefreq,&
+           energy_fixer, ftype, qsplit, nu_p, test_cfldep, rsplit
+    use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3, applycamforcing, &
+                                 applycamforcing_dynamics, prim_advance_exp
+    use prim_advection_mod, only : prim_advec_tracers_remap_rk2, prim_advec_tracers_fvm, &
+         prim_advec_tracers_spelt, vertical_remap
+    use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
+    use parallel_mod, only : abortmp
+    use reduction_mod, only : parallelmax
+    
+
+    type (element_t) , intent(inout)        :: elem(:)
+    
+#if defined(_SPELT)
+      type(spelt_struct), intent(inout) :: fvm(:)
+#else
+      type(fvm_struct), intent(inout) :: fvm(:)
+#endif
+    type (hybrid_t), intent(in)           :: hybrid  ! distributed parallel structure (shared)
+
+    type (hvcoord_t), intent(in)      :: hvcoord         ! hybrid vertical coordinate struct
+
+    integer, intent(in)                     :: nets  ! starting thread element number (private)
+    integer, intent(in)                     :: nete  ! ending thread element number   (private)
+    real(kind=real_kind), intent(in)        :: dt  ! "timestep dependent" timestep
+    type (TimeLevel_t), intent(inout)       :: tl
+    real(kind=real_kind) :: st, st1, dp, dt_q
+    integer :: ie, t, q,k,i,j,n, n_Q
+
+    real (kind=real_kind)                          :: maxcflx, maxcfly  
+    real (kind=real_kind) :: dp_np1(np,np)
+    logical :: compute_diagnostics
+    dt_q = dt*qsplit
 
     ! ===============
     ! initialize mean flux accumulation variables and save some variables at n0 
@@ -1370,16 +1512,17 @@ contains
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k, j, i)
 #endif
+      ! save dp at time t for use in tracers
       do k=1,nlev
-         ! save dp at time t 
-#ifdef VERT_LAGRANGIAN
-         ! initialize prognostic variable for floating levels
-         elem(ie)%derived%dp(:,:,k)=elem(ie)%state%dp3d(:,:,:,tl%n0)
-#else
-         elem(ie)%derived%dp(:,:,k)=&
-              ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-              ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
-#endif
+         if (rsplit==0) then
+            ! dp at time t is on REF levels
+            elem(ie)%derived%dp(:,:,k)=&
+                 ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
+         else
+            ! dp at time t:  use floating lagrangian levels:
+            elem(ie)%derived%dp(:,:,k)=elem(ie)%state%dp3d(:,:,k,tl%n0)
+         endif
       enddo
     enddo
 
@@ -1484,87 +1627,9 @@ contains
        !          (or use continuous reconstruction)
     endif
 
-
-    !enddo  ! end of rsplit loop
-
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    !  apply vertical remap
-    !  always for tracers  
-    !  also for dynamics ifdef VERT_LEGRANGIAN
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !compute timelevels for tracers (no longer the same as dynamics)
-    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp) 
-    call vertical_remap(elem,hvcoord,dt_q,tl%np1,np1_qdp,nets,nete)
+  end subroutine prim_step
 
 
-
-
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ! time step is complete.  update some diagnostic variables:
-    ! lnps (we should get rid of this)
-    ! Q    (mixing ratio)
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
-    do ie=nets,nete
-#if (defined ELEMENT_OPENMP)
-       !$omp parallel do private(k,q)
-#endif
-       elem(ie)%state%lnps(:,:,tl%np1)= LOG(elem(ie)%state%ps_v(:,:,tl%np1))
-       do k=1,nlev    !  Loop inversion (AAM)
-          dp_np1(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%np1)
-          do q=1,qsize
-             elem(ie)%state%Q(:,:,k,q)=elem(ie)%state%Qdp(:,:,k,q,np1_qdp)/dp_np1(:,:) 
-          enddo
-       enddo
-    enddo
-    
-
-
-   
-
-    ! now we have:
-    !   u(nm1)   dynamics at  t+dt_q - 2*dt 
-    !   u(n0)    dynamics at  t+dt_q - dt    
-    !   u(np1)   dynamics at  t+dt_q 
-    !
-    !   Q(1)   Q at t+dt_q
-    if (compute_diagnostics) call prim_diag_scalars(elem,hvcoord,tl,2,.false.,nets,nete)
-    if (compute_energy) call prim_energy_halftimes(elem,hvcoord,tl,2,.false.,nets,nete,1)
-
-    if (energy_fixer > 0) then
-       if ( .not. compute_energy) call abortmp("ERROR: energy fixer needs compute_energy=.true")
-       call prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete)
-    endif
-
-    if (compute_diagnostics) then
-       call prim_diag_scalars(elem,hvcoord,tl,3,.false.,nets,nete)
-       call prim_energy_halftimes(elem,hvcoord,tl,3,.false.,nets,nete,1)
-     endif
-
-    ! =================================
-    ! update dynamics time level pointers 
-    ! =================================
-    call TimeLevel_update(tl,"leapfrog")
-
-    ! now we have:
-    !   u(nm1)   dynamics at  t+dt_q - dt       (Robert-filtered)
-    !   u(n0)    dynamics at  t+dt_q 
-    !   u(np1)   undefined
- 
-
-    ! ============================================================
-    ! Print some diagnostic information 
-    ! ============================================================
-    if (compute_diagnostics) then
-       if (hybrid%masterthread) then 
-          write(iulog,*) "nstep=",tl%nstep," time=",Time_at(tl%nstep)/(24*3600)," [day]"
-       end if
-       call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete, fvm)
-    end if
-  end subroutine prim_run_subcycle
 
 !=======================================================================================================! 
 
