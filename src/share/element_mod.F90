@@ -46,13 +46,9 @@ module element_mod
 
 
   end type elem_state_t
-
-
-  ! JPE: This parameter must match the number of variables in the state
-  ! structure all of which are assumed to be of kind=real_kind.  This is a
-  ! requirement for restart I/O. 
-  ! MT: this is now obsolete?
-  integer(kind=int_kind),public,parameter :: StateComponents=7
+  ! number of variables in the state struct 
+  ! used for standalone HOMME restart file
+  integer(kind=int_kind),public,parameter :: StateComponents=8
 
 
   type, public :: derived_state_t

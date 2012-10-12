@@ -83,10 +83,8 @@ contains
 
     type = MPIReal_t       !  All the types are Real
     !=========================================
-    ! Add all the fields in the State variable
+    ! for PRESTART, must add *all* the fields in the State variable
     !=========================================
-
-
     len = SIZE(state%v)
     call AddStateField(RestDesc,len,type)
 
@@ -105,6 +103,9 @@ contains
     len = SIZE(state%Q)
     call AddStateField(RestDesc,len,type)
     len = SIZE(state%Qdp)
+    call AddStateField(RestDesc,len,type)
+
+    len = SIZE(state%dp3d)
     call AddStateField(RestDesc,len,type)
 
     if(columnpackage .eq. "emanuel") then
