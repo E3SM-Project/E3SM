@@ -243,16 +243,16 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
     end do
     call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, tstep, 3)
     
-    tmpt=(time_at(tl%nstep+1)-time_at(tl%nstep))/3
-    do ie=nets,nete
-      do i=1,4
-        do k=1,nlev
-          fvm(ie)%vstar(:,:,:,k,i)=get_boomerang_velocities_gll(elem(ie),time_at(tl%nstep+1)-tmpt*(i-1))
-!         elem(ie)%derived%vstar(:,:,:,k)=get_solidbody_velocities_gll(elem(ie), time_at(tl%nstep+1))
-!         fvm(ie)%vn0(:,:,:,k)=get_solidbody_velocities_gll(elem(ie),time_at(tl%nstep))
-        end do
-      end do
-    end do    
+!     tmpt=(time_at(tl%nstep+1)-time_at(tl%nstep))/3
+!     do ie=nets,nete
+! !       do i=1,4
+!         do k=1,nlev
+!           fvm(ie)%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),time_at(tl%nstep+1)-tmpt*(i-1))
+! !         elem(ie)%derived%vstar(:,:,:,k)=get_solidbody_velocities_gll(elem(ie), time_at(tl%nstep+1))
+! !         fvm(ie)%vn0(:,:,:,k)=get_solidbody_velocities_gll(elem(ie),time_at(tl%nstep))
+!         end do
+! !       end do
+!     end do    
     
     
 ! ! end mcgregordss   

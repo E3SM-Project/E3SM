@@ -572,71 +572,71 @@ subroutine fvm_mesh_dep(elem, deriv, fvm, dt, tl, klev)
   
 end subroutine fvm_mesh_dep
 
-subroutine fvm_dep_from_gll_iter(elem, deriv, fvm, dt, tl, klev)
-  use coordinate_systems_mod, only : cartesian2D_t
-  use element_mod, only : element_t
-  use fvm_control_volume_mod, only: fvm_struct
-  use time_mod, only : timelevel_t, time_at
-  use parallel_mod, only : haltmp
-  use control_mod, only : test_cfldep
-
-  use derivative_mod, only : derivative_t
-
-  implicit none
-  type (element_t), intent(in)          :: elem
-  type (derivative_t)  , intent(in) :: deriv
-  type (spherical_polar_t),intent(in)   :: asphere(nc+1,nc+1)
-  type (spherical_polar_t),intent(out)  :: dsphere(nc+1,nc+1)
-  type (timelevel_t),intent(in)        :: tl
-  real (kind=real_kind),intent(in)      :: dt
-  integer,intent(in)                   :: klev
-  
-  real (kind=real_kind)                 :: uxyz_gll(np,np,3),uxyz(nc+1,nc+1,3)
-  real (kind=real_kind)                 :: un,ue,ur,clon,clat,slon,slat
-  type(cartesian3D_t)                   :: acart
-  integer :: i,j,k
-  
-  real (kind=real_kind)  :: vstar(np,np,2)
-  
-   ! convert velocity from lat/lon to cartesian 3D
-   vstar = elem%derived%vstar(:,:,:,klev)
-    
-   do i=1,np
-     do j=1,np
-        clon = cos(elem%spherep(i,j)%lon)
-        slon = sin(elem%spherep(i,j)%lon)
-        clat = cos(elem%spherep(i,j)%lat)
-        slat = sin(elem%spherep(i,j)%lat)
-
-        ur = 0
-        ue = vstar(i,j,1) 
-        un = vstar(i,j,2)
-
-        uxyz_gll(i,j,1)= clon*clat*ur - clon*slat*un - slon*ue
-        uxyz_gll(i,j,2)= slon*clon*ur - slon*slat*un + clon*ue
-        uxyz_gll(i,j,3)= slat          *ur + clat          *un
-    
-     enddo
-   enddo
-   ! interpolate velocity to fvm nodes
-   do i=1,3
-      uxyz(:,:,i)=interpolate_gll2fvm_corners(uxyz_gll(:,:,i),deriv)
-   end do 
-   ! compute departure point 
-   ! crude, 1st order accurate approximation.  to be improved
-   do i=1,nc+1
-      do j=1,nc+1
-         ! note: asphere()%r=1, so we need to convert velocity to radians/sec:
-         acart = change_coordinates(asphere(i,j))  
-         acart%x = acart%x - dt*uxyz(i,j,1)/rearth
-         acart%y = acart%y - dt*uxyz(i,j,2)/rearth
-         acart%z = acart%z - dt*uxyz(i,j,3)/rearth
-         dsphere(i,j) = change_coordinates(acart)
-         dsphere(i,j)%r = asphere(i,j)%r
-      enddo
-   enddo
-  
-end subroutine fvm_dep_from_gll_iter
+! subroutine fvm_dep_from_gll_iter(elem, deriv, fvm, dt, tl, klev)
+!   use coordinate_systems_mod, only : cartesian2D_t
+!   use element_mod, only : element_t
+!   use fvm_control_volume_mod, only: fvm_struct
+!   use time_mod, only : timelevel_t, time_at
+!   use parallel_mod, only : haltmp
+!   use control_mod, only : test_cfldep
+! 
+!   use derivative_mod, only : derivative_t
+! 
+!   implicit none
+!   type (element_t), intent(in)          :: elem
+!   type (derivative_t)  , intent(in) :: deriv
+!   type (spherical_polar_t),intent(in)   :: asphere(nc+1,nc+1)
+!   type (spherical_polar_t),intent(out)  :: dsphere(nc+1,nc+1)
+!   type (timelevel_t),intent(in)        :: tl
+!   real (kind=real_kind),intent(in)      :: dt
+!   integer,intent(in)                   :: klev
+!   
+!   real (kind=real_kind)                 :: uxyz_gll(np,np,3),uxyz(nc+1,nc+1,3)
+!   real (kind=real_kind)                 :: un,ue,ur,clon,clat,slon,slat
+!   type(cartesian3D_t)                   :: acart
+!   integer :: i,j,k
+!   
+!   real (kind=real_kind)  :: vstar(np,np,2)
+!   
+!    ! convert velocity from lat/lon to cartesian 3D
+!    vstar = elem%derived%vstar(:,:,:,klev)
+!     
+!    do i=1,np
+!      do j=1,np
+!         clon = cos(elem%spherep(i,j)%lon)
+!         slon = sin(elem%spherep(i,j)%lon)
+!         clat = cos(elem%spherep(i,j)%lat)
+!         slat = sin(elem%spherep(i,j)%lat)
+! 
+!         ur = 0
+!         ue = vstar(i,j,1) 
+!         un = vstar(i,j,2)
+! 
+!         uxyz_gll(i,j,1)= clon*clat*ur - clon*slat*un - slon*ue
+!         uxyz_gll(i,j,2)= slon*clon*ur - slon*slat*un + clon*ue
+!         uxyz_gll(i,j,3)= slat          *ur + clat          *un
+!     
+!      enddo
+!    enddo
+!    ! interpolate velocity to fvm nodes
+!    do i=1,3
+!       uxyz(:,:,i)=interpolate_gll2fvm_corners(uxyz_gll(:,:,i),deriv)
+!    end do 
+!    ! compute departure point 
+!    ! crude, 1st order accurate approximation.  to be improved
+!    do i=1,nc+1
+!       do j=1,nc+1
+!          ! note: asphere()%r=1, so we need to convert velocity to radians/sec:
+!          acart = change_coordinates(asphere(i,j))  
+!          acart%x = acart%x - dt*uxyz(i,j,1)/rearth
+!          acart%y = acart%y - dt*uxyz(i,j,2)/rearth
+!          acart%z = acart%z - dt*uxyz(i,j,3)/rearth
+!          dsphere(i,j) = change_coordinates(acart)
+!          dsphere(i,j)%r = asphere(i,j)%r
+!       enddo
+!    enddo
+!   
+! end subroutine fvm_dep_from_gll_iter
 
 ! ----------------------------------------------------------------------------------!
 !SUBROUTINE FVM_DEP_FROM_GLL----------------------------------------------CE-for FVM!
