@@ -116,7 +116,6 @@ private
       vmin_local(ie) = MINVAL(elem(ie)%state%v(:,:,2,:,2))
       usum_local(ie) = SUM(elem(ie)%state%v(:,:,1,:,2))
       vsum_local(ie) = SUM(elem(ie)%state%v(:,:,2,:,2))
-
 #endif   
 #endif
       global_shared_buf(ie,1) = usum_local(ie)
@@ -176,7 +175,8 @@ private
   
     real (kind=real_kind)  :: umin_local(nets:nete),umax_local(nets:nete),usum_local(nets:nete), & 
 			      vmin_local(nets:nete),vmax_local(nets:nete),vsum_local(nets:nete), &
-			      pmin_local(nets:nete),pmax_local(nets:nete),psum_local(nets:nete)
+			      pmin_local(nets:nete),pmax_local(nets:nete),psum_local(nets:nete), &
+			      vel_norm_max_local(nets:nete)
     integer :: ie,k, i, j, k1,k2, k6
 
     real (kind=real_kind) :: umin, vmin, pmin
@@ -293,100 +293,6 @@ private
     120 format (A20,3(E24.15))
     enddo
 
-!!!!this code is to see if limiters preserve const sum of two tracers
-!made for swirl only and right now is not set to work(?)
-    if((nlev>=5).and.(kmass>0))then
-      k1=5 ! compiler will complain if code access index 5 below and nlev<5:
-      do ie=nets,nete
-	pmax_local(ie) = MAXVAL(elem(ie)%state%p(:,:,1,n0)/elem(ie)%state%p(:,:,kmass,n0) &
-			+ elem(ie)%state%p(:,:,k1,n0)/elem(ie)%state%p(:,:,kmass,n0))
-	pmin_local(ie) = MINVAL(elem(ie)%state%p(:,:,1,n0)/elem(ie)%state%p(:,:,kmass,n0) &
-			+ elem(ie)%state%p(:,:,k1,n0)/elem(ie)%state%p(:,:,kmass,n0))
-      end do
-
-      pmin = ParallelMin(pmin_local,hybrid)
-      pmax = ParallelMax(pmax_local,hybrid)
-
-      if(hybrid%par%masterproc .and. hybrid%ithr==0) then 
-	write (*,110) "min/max(TRACER1+TRACER5)(meaningless if not swirl)= ",pmin,pmax
-      endif
-    endif
-!!!!this code is to see if limiters preserve sum of two tracers = third tracer
-!made for swirl only and right now is not set to work(?),
-!requires initializetion level 7 = level 2 + level 6
-    if((nlev>=7).and.(kmass>0))then
-      do ie=nets,nete
-        k6=6
-        k2=2
-	pmax_local(ie) = MAXVAL(elem(ie)%state%p(:,:,k2,n0)/elem(ie)%state%p(:,:,kmass,n0) &
-			+ elem(ie)%state%p(:,:,k6,n0)/elem(ie)%state%p(:,:,kmass,n0) &
-			- elem(ie)%state%p(:,:,k6+1,n0)/elem(ie)%state%p(:,:,kmass,n0) )
-	pmin_local(ie) = MINVAL(elem(ie)%state%p(:,:,k2,n0)/elem(ie)%state%p(:,:,kmass,n0) &
-			+ elem(ie)%state%p(:,:,k6,n0)/elem(ie)%state%p(:,:,kmass,n0) &
-			- elem(ie)%state%p(:,:,k6+1,n0)/elem(ie)%state%p(:,:,kmass,n0) )
-      end do
-
-      pmin = ParallelMin(pmin_local,hybrid)
-      pmax = ParallelMax(pmax_local,hybrid)
-
-      if(hybrid%par%masterproc .and. hybrid%ithr==0) then 
-	write (*,110) "min/max(TR2+TR6-TR7)(meaningless if not swirl)= ",pmin,pmax
-      endif
-    endif
-
-!this is mixing diagnostics, makes sense only in swirl because
-!it requires setup of layers 1 and 6
-    if(nlev>5)then
-      do ie=nets,nete
-	if(kmass>0)then
-          k1=0
-          do i=1,np
-            do j=1,np
-              k1=k1+1
-              k6=6
-              tracer1(k1)=elem(ie)%state%p(i,j,1,n0)/elem(ie)%state%p(i,j,kmass,n0)
-              tracer2(k1)=elem(ie)%state%p(i,j,k6,n0)/elem(ie)%state%p(i,j,kmass,n0)
-              w(k1)=elem(ie)%spheremp(i,j)
-            enddo
-          enddo
-	else
-          k1=0
-          do i=1,np
-            do j=1,np
-              k1=k1+1
-              k6=6
-              tracer1(k1)=elem(ie)%state%p(i,j,1,n0)
-              tracer2(k1)=elem(ie)%state%p(i,j,k6,n0)
-              w(k1)=elem(ie)%spheremp(i,j)
-            enddo
-          enddo
-        endif
-	call correlation_diag(tracer1,tracer2,w,np*np,rm(ie),rpu(ie),os(ie))
-        weights_s(ie)=sum(w)
-        global_shared_buf(ie,1) = rm(ie)
-        global_shared_buf(ie,2) = rpu(ie)
-        global_shared_buf(ie,3) = os(ie)
-        global_shared_buf(ie,4) = weights_s(ie)
-      end do
-
-      call wrap_repro_sum(nvars=4, comm=hybrid%par%comm)
-      rm_sum = global_shared_sum(1)
-      rpu_sum = global_shared_sum(2)
-      os_sum = global_shared_sum(3)
-!redundant, weights_sum is a const always
-      weights_sum = global_shared_sum(4)
-
-      if(hybrid%par%masterproc .and. hybrid%ithr==0) then 
-	if(weights_sum>0)then
-	  write (*,120) "real mixing = ",rm_sum/weights_sum
-	  write (*,120) "range_pres_unmixing = ",rpu_sum/weights_sum
-	  write (*,120) "overshooting = ",os_sum/weights_sum
-	  write (*,120) "weightsum = ",weights_sum
-	else
-	  write (*,120) 'Warning: mixing diagnostics: by some reason area of sphere is not positive?'
-	endif
-      endif
-    endif
 
   end subroutine printstate
 !======================================================================================================!

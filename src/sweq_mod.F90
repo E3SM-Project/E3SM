@@ -8,8 +8,6 @@ contains
     !-----------------
     use kinds, only : real_kind, longdouble_kind
     !-----------------
-    use physical_constants, only : g_sw
-    !-----------------
     use parallel_mod, only : parallel_t, syncmp
     !-----------------
     use thread_mod, only : nthreads
@@ -66,7 +64,7 @@ contains
     !-----------------
     use control_mod, only : integration, filter_mu, filter_type, transfer_type, debug_level,  &
          restartfreq, statefreq, runtype, s_bv, p_bv, wght_fm, kcut_fm, precon_method, topology,   &
-         test_case, sub_case, qsplit, nu, nu_s, limiter_option, hypervis_subcycle, test_cfldep
+         test_case, sub_case, qsplit, nu, nu_s, limiter_option, hypervis_subcycle, test_cfldep, g_sw_output
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     use bndry_mod, only : compute_ghost_corner_orientation
@@ -401,7 +399,7 @@ contains
           !================================================
           !DBG print *,'homme: right after ReadRestart pmean is: ',pmean
 
-          call printstate(elem,pmean,g_sw,tl%n0,hybrid,nets,nete,-1)
+          call printstate(elem,pmean,g_sw_output,tl%n0,hybrid,nets,nete,-1)
 
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
        else 
@@ -463,7 +461,7 @@ contains
 !           call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
 ! #endif
 #endif
-          call printstate(elem,pmean,g_sw,tl%n0,hybrid,nets,nete,-1)
+          call printstate(elem,pmean,g_sw_output,tl%n0,hybrid,nets,nete,-1)
 
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
 
@@ -551,7 +549,7 @@ contains
           ! ===============================================================
           if (integration /= "full_imp") then
 
-          call printstate(elem,pmean,g_sw,tl%n0,hybrid,nets,nete,-1)
+          call printstate(elem,pmean,g_sw_output,tl%n0,hybrid,nets,nete,-1)
 
           endif  ! if time step taken
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
@@ -804,7 +802,7 @@ contains
              print *,tl%nstep,"time=",Time_at(tl%nstep)/secpday," days"
           end if
 
-          call printstate(elem,pmean,g_sw,tl%n0,hybrid,nets,nete,-1)
+          call printstate(elem,pmean,g_sw_output,tl%n0,hybrid,nets,nete,-1)
 
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
        end if
@@ -861,7 +859,7 @@ contains
     !-----------------
     use kinds, only : real_kind
     !-----------------
-    use physical_constants, only : dd_pi, g_sw
+    use physical_constants, only : dd_pi
     !-----------------
     use parallel_mod, only : parallel_t, syncmp
     !-----------------
@@ -912,7 +910,7 @@ contains
     use control_mod, only : integration, filter_mu, filter_type, transfer_type, debug_level,  &
          restartfreq, statefreq, runtype, s_bv, p_bv, wght_fm, kcut_fm, topology, &
          rk_stage_user, test_case, sub_case, kmass, qsplit, nu, nu_s, limiter_option, &
-         hypervis_subcycle
+         hypervis_subcycle, g_sw_output
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
 
     use rk_mod, only     : RkInit
@@ -1101,7 +1099,7 @@ contains
           !================================================
           !DBG print *,'homme: right after ReadRestart pmean is: ',pmean
 
-          call printstate(elem,pmean,g_sw,tl%n0,hybrid,nets,nete,kmass)
+          call printstate(elem,pmean,g_sw_output,tl%n0,hybrid,nets,nete,kmass)
 
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
        else 
@@ -1150,7 +1148,7 @@ contains
           call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
 #endif
 
-          call printstate(elem,pmean,g_sw,tl%n0,hybrid,nets,nete,kmass)
+          call printstate(elem,pmean,g_sw_output,tl%n0,hybrid,nets,nete,kmass)
 
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
           if(Debug) print *,'homme: point #6'
@@ -1175,7 +1173,7 @@ contains
           ! Print Min/Max/Sum of State vars after first timestep
           ! ===============================================================
 
-          call printstate(elem,pmean,g_sw,tl%n0,hybrid,nets,nete,kmass)
+          call printstate(elem,pmean,g_sw_output,tl%n0,hybrid,nets,nete,kmass)
 
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
        endif  ! if initial run 
@@ -1348,7 +1346,7 @@ contains
           !   print *,"Integrating at ",dt/dt_gv," times gravity wave restriction"
           end if
 
-          call printstate(elem,pmean,g_sw,tl%n0,hybrid,nets,nete,kmass)
+          call printstate(elem,pmean,g_sw_output,tl%n0,hybrid,nets,nete,kmass)
 
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
        end if
@@ -1382,57 +1380,6 @@ contains
     call t_stopf('sweq')
   end subroutine sweq_rk
 
-
-!this one defines if we'll have a density field
-!such a field is needed for efficient limiting and output if tracer_adv_formulation is on
-!if flux formulation, we do not use such a field
-!so kmass >0 means we are goint to use density field
-!if kmass=-1 then by some reason it is not in use
-
-  subroutine define_kmass
-    use kinds, only : real_kind
-    use control_mod, only : test_case, kmass,TRACERADV_UGRADQ,tracer_advection_formulation
-    use shallow_water_mod, only : kmass_swirl
-    use dimensions_mod, only : nlev
-
-    implicit none
-   
-    
-    if(tracer_advection_formulation==TRACERADV_UGRADQ)then
-      kmass=-1
-    else
-      if(test_case(1:5) == "swirl") then
-	if((kmass_swirl<0).or.(kmass_swirl>nlev))then
-!well, someone gave us wrong kmass
-	  kmass=-1
-        else
-	  kmass=kmass_swirl
-	endif
-!other test cases with valid kmass live here
-      else
-!if testcase doesnt have kmass
-	kmass=-1
-      endif
-    endif
-
-  end subroutine define_kmass
-
-
-!this one defines gravity const, in swirl it has to be 1
-!in other test cases its different
-  subroutine define_g
-    use kinds, only : real_kind
-    use physical_constants, only : g, g_sw
-    use control_mod, only : test_case
-    implicit none
-
-      if(test_case(1:5) == "swirl") then
-	g_sw=1.0d0
-      else
-	g_sw=g
-      endif
-
-  end subroutine define_g
   
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -6,7 +6,7 @@
 program main
   use init_mod, only : init
   ! -----------------------------------------------
-  use sweq_mod, only : sweq, sweq_rk, define_g, define_kmass
+  use sweq_mod, only : sweq, sweq_rk
   ! -----------------------------------------------
   !      use kinds
   ! -----------------------------------------------
@@ -115,13 +115,7 @@ program main
   write(6,9) par%rank,ithr,nets,nete 
 9 format("process: ",i2,1x,"thread: ",i2,1x,"element limits: ",i4," - ",i4)
 
-  call define_g
-  call define_kmass
-
   if(integration == "runge_kutta")then
-!define_g is setting g=1 for swirl test case, for all other tcases g=g
-!define_kmass sets kmass to the level with air density, if provided. right now it is provided 
-!only for swirl test case. also, kmass is only for lim8 to work, and lim8 is only for RK
      call sweq_rk(elem,edge1,edge2,edge3,red,par,ithr,nets,nete)
   else
      call sweq(elem,fvm,edge1,edge2,edge3,red,par,ithr,nets,nete)

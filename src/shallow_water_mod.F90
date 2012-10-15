@@ -40,7 +40,8 @@ module shallow_water_mod
   ! ------------------------
   use viscosity_mod, only: biharmonic_wk, test_ibyp, neighbor_minmax, check_edge_flux
   ! ------------------------
-  use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, limiter_option, integration, test_case, sub_case, kmass
+  use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, limiter_option, integration, test_case, sub_case, kmass, &
+                          g_sw_output,TRACERADV_UGRADQ,tracer_advection_formulation
   ! ------------------------
 
   implicit none
@@ -1492,7 +1493,6 @@ contains
     end do
 
     pmean = pmean - pmean_adjust
-
 
   end subroutine tc5_init_state
 
@@ -3250,28 +3250,15 @@ contains
        elem(ie)%state%gradps(:,:,:)=0.0D0
     end do
 
+    g_sw_output=1.0D0
 
-!temporary code to test limiters
-!i still need it, OG
-!     if (present(hybrid)) then
-!       if(nlev>13)then
-!       !initialize layers with smoothness metric
-!       !this is a duplicate of whats in advance_nonstag_rk
-! 	call neighbor_minmax(elem,hybrid,edge3,nets,nete,n0,pmin,pmax,min_var,max_var)
-! 
-! 	do ie=nets,nete
-! 	    do k=1,3
-! 	      local_var=maxval(elem(ie)%state%p(:,:,k,n0))-minval(elem(ie)%state%p(:,:,k,n0))
-! 	      maxvar_neighb=max_var(k,ie)
-! 	      minvar_neighb=min_var(k,ie)
-! 	      value=(max(maxvar_neighb,local_var))/&
-! 		  (min(minvar_neighb,local_var)+eps)
-! 	      elem(ie)%state%p(:,:,k+7,:)=min(1000.0d0,value)
-! 	    enddo
-! 	enddo
-!       endif
-!     endif
-!!!!!!!!!!!!!!!!!!!!!
+    if(tracer_advection_formulation==TRACERADV_UGRADQ)then
+    else
+      if((kmass_swirl<0).or.(kmass_swirl>nlev))then
+      else
+ 	  kmass=kmass_swirl
+      endif
+    endif
 
   end subroutine swirl_init_state
 
@@ -3773,6 +3760,7 @@ contains
        pElem%state%gradps(:,:,:) = 0.0D0
     end do
     pmean=0.0D0
+
   end subroutine sj1_init_state
 
   function sj1_velocity(lat) result(ulat)
