@@ -1064,8 +1064,7 @@ contains
     use time_mod, only : TimeLevel_t, time_at, timelevel_update, smooth
     use control_mod, only: statefreq, integration, &
            TRACERADV_TOTAL_DIVERGENCE,TRACERADV_UGRADQ, ftype, tstep_type, nu_p, qsplit
-    use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3, &
-         applycamforcing, applycamforcing_leapfrog
+    use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use parallel_mod, only : abortmp
 #ifndef CAM
@@ -1178,10 +1177,7 @@ contains
     ! and maybe timelevel np1 which was computed in dynamics step above.  
     ! ===============
     !!!!!! NOTE: no longer suppoting advecting tracersw/leapfrog code
-    !if (qsize>0) then
-    !   call Prim_Advec_Tracers_lf(elem, deriv(hybrid%ithr),hvcoord,flt_advection,hybrid,&
-    !        dt,tl,nets,nete,compute_diagnostics)
-    !endif
+
 
     ! =================================
     ! energy, dissipation rate diagnostics.  Uses data at t and t+1
@@ -1197,9 +1193,7 @@ contains
     ! or np1 data (for TIMESPLIT) and add tendencies into soluiton at timelevel np1
     ! ===================================       
 #ifdef CAM
-    ! ftype==1 means forcing is applied in dp_coupling.F90
-    call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
-    if (ftype<=0) call ApplyCAMForcing_leapfrog(elem, hvcoord,tl%n0,tl%np1,np1_qdp, dt,nets,nete)
+    call abortmp('CAM-HOMME-SE requires RK timestepping option turned on')
 #else
     call ApplyColumnModel(elem, hybrid, hvcoord, cm(hybrid%ithr),dt)
 #endif
@@ -1266,11 +1260,11 @@ contains
            energy_fixer, ftype, qsplit, rsplit, nu_p, test_cfldep
     use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3, applycamforcing, &
                                  applycamforcing_dynamics, prim_advance_exp
-    use prim_advection_mod, only : prim_advec_tracers_remap_rk2, prim_advec_tracers_fvm, &
-         prim_advec_tracers_spelt, vertical_remap
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use parallel_mod, only : abortmp
     use reduction_mod, only : parallelmax
+    use prim_advection_mod, only : vertical_remap
+
     
 
     type (element_t) , intent(inout)        :: elem(:)
@@ -1290,7 +1284,7 @@ contains
     type (TimeLevel_t), intent(inout)       :: tl
     real(kind=real_kind) :: st, st1, dp, dt_q, dt_remap
     integer :: ie, t, q,k,i,j,n, n_Q
-    integer :: n0_qdp,np1_qdp,r
+    integer :: n0_qdp,np1_qdp,r, nstep_end
 
     real (kind=real_kind)                          :: maxcflx, maxcfly  
     real (kind=real_kind) :: dp_np1(np,np)
@@ -1302,14 +1296,19 @@ contains
     ! ===================================
     dt_q = dt*qsplit
     dt_remap = dt_q
-    if (rsplit>1) dt_remap=dt_q*rsplit   ! rsplit=0 means use eulerian code, not vert. lagrange
+    nstep_end = tl%nstep + qsplit
+    if (rsplit>0) then
+       dt_remap=dt_q*rsplit   ! rsplit=0 means use eulerian code, not vert. lagrange
+       nstep_end = tl%nstep + qsplit*rsplit  ! nstep at end of this routine
+    endif
+
 
 
     ! compute diagnostics and energy for STDOUT 
     ! compute energy if we are using an energy fixer
     compute_diagnostics=.false.
     compute_energy=energy_fixer > 0
-    if (MODULO(tl%nstep+qsplit,statefreq)==0 .or. tl%nstep+qsplit==tl%nstep0) then
+    if (MODULO(nstep_end,statefreq)==0 .or. nstep_end==tl%nstep0) then
        compute_diagnostics=.true.  
        compute_energy = .true.
     endif
@@ -1320,14 +1319,13 @@ contains
 
 
 #ifdef CAM
-    if (ftype < -1) print *,'ERROR: subcyling ftype<-1 not yet coded'
     ! ftype=2  Q was adjusted by physics, but apply u,T forcing here
     ! ftype=1  forcing was applied time-split in CAM coupling layer
     ! ftype=0 means forcing apply here
     ! ftype=-1 do not apply forcing
     call TimeLevel_Qdp( tl, qsplit, n0_qdp)
-    if (ftype==0) call ApplyCAMForcing(elem, hvcoord,tl%n0,n0_qdp, dt_q,nets,nete)
-    if (ftype==2) call ApplyCAMForcing_dynamics(elem, hvcoord,tl%n0,dt_q,nets,nete)
+    if (ftype==0) call ApplyCAMForcing(elem, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
+    if (ftype==2) call ApplyCAMForcing_dynamics(elem, hvcoord,tl%n0,dt_remap,nets,nete)
 #endif
 
     !We are only storing Q now (just n0 - not nm1 and np1)  
@@ -1336,7 +1334,6 @@ contains
 
     ! qmass and variance, using Q(n0),Qdp(n0)
     if (compute_diagnostics) call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
-
 
     if (rsplit>0) then
     ! vertically lagrangian code: initialize prognostic variable dp3d for floating levels
@@ -1356,6 +1353,7 @@ contains
        call TimeLevel_update(tl,"leapfrog")
        call prim_step(elem, fvm, hybrid,nets,nete, dt, tl, hvcoord,.false.)
     enddo
+    ! defer final timelevel update until after remap and diagnostics
 
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1367,8 +1365,6 @@ contains
     !compute timelevels for tracers (no longer the same as dynamics)
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp) 
     call vertical_remap(elem,hvcoord,dt_remap,tl%np1,np1_qdp,nets,nete)
-
-
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! time step is complete.  update some diagnostic variables:
@@ -1394,11 +1390,11 @@ contains
    
 
     ! now we have:
-    !   u(nm1)   dynamics at  t+dt_q - 2*dt 
-    !   u(n0)    dynamics at  t+dt_q - dt    
-    !   u(np1)   dynamics at  t+dt_q 
+    !   u(nm1)   dynamics at  t+dt_remap - 2*dt 
+    !   u(n0)    dynamics at  t+dt_remap - dt    
+    !   u(np1)   dynamics at  t+dt_remap
     !
-    !   Q(1)   Q at t+dt_q
+    !   Q(1)   Q at t+dt_remap
     if (compute_diagnostics) call prim_diag_scalars(elem,hvcoord,tl,2,.false.,nets,nete)
     if (compute_energy) call prim_energy_halftimes(elem,hvcoord,tl,2,.false.,nets,nete,1)
 
@@ -1418,8 +1414,8 @@ contains
     call TimeLevel_update(tl,"leapfrog")
 
     ! now we have:
-    !   u(nm1)   dynamics at  t+dt_q - dt       (Robert-filtered)
-    !   u(n0)    dynamics at  t+dt_q 
+    !   u(nm1)   dynamics at  t+dt_remap - dt       (Robert-filtered)
+    !   u(n0)    dynamics at  t+dt_remap 
     !   u(np1)   undefined
  
 
@@ -1464,7 +1460,7 @@ contains
     use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3, applycamforcing, &
                                  applycamforcing_dynamics, prim_advance_exp
     use prim_advection_mod, only : prim_advec_tracers_remap_rk2, prim_advec_tracers_fvm, &
-         prim_advec_tracers_spelt, vertical_remap
+         prim_advec_tracers_spelt
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use parallel_mod, only : abortmp
     use reduction_mod, only : parallelmax
@@ -1603,22 +1599,6 @@ contains
 #endif
        ! dynamics computed a predictor surface pressure, now correct with fvm result
        ! fvm has computed a new dp(:,:,k) on the fvm grid
-       ! step 1: compute surface pressure from dp:
-       ! note:
-       !    dp(k) =( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + 
-       !     ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*ps
-       ! sum over all k:
-       !   sum(dp(k)) =( hvcoord%hyai(nlev+1) - hvcoord%hyai(1) )*hvcoord%ps0 + 
-       !     ( hvcoord%hybi(nlev+1) - hvcoord%hybi(1) )*ps
-       ! thus:
-       ! ps = [ sum(dp(k)) - ( hvcoord%hyai(nlev+1) - hvcoord%hyai(1) )*hvcoord%ps0 ] / 
-       !                     ( hvcoord%hybi(nlev+1) - hvcoord%hybi(1) )
-       !
-       !  at k=nlev+1:  a=0, b=1
-       !  at k=1:       b=0
-       !
-       ! ps = sum(dp(k)) +  hvcoord%hyai(1)*hvcoord%ps0 
-       !
        !
        ! step 1:  computes sum of fvm density on fvm grid
        ! step 2:  interpolate to GLL grid

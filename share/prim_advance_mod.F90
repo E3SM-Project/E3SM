@@ -14,7 +14,7 @@ module prim_advance_mod
   implicit none
   private
   public :: prim_advance_exp, prim_advance_si, prim_advance_init, preq_robert3,&
-       applyCAMforcing_dynamics, applyCAMforcing, applyCAMforcing_leapfrog, smooth_phis
+       applyCAMforcing_dynamics, applyCAMforcing, smooth_phis
 
   type (EdgeBuffer_t) :: edge1
   type (EdgeBuffer_t) :: edge2
@@ -1140,110 +1140,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   end subroutine preq_robert3
   
   
-
-
-  subroutine applyCAMforcing_leapfrog(elem,hvcoord,n0,np1,np1_qdp, dt,nets,nete)
-  use dimensions_mod, only : np, nlev, qsize
-  use element_mod, only : element_t
-  use hybvcoord_mod, only : hvcoord_t
-  use control_mod, only : TRACERADV_TOTAL_DIVERGENCE, tracer_advection_formulation,&
-       tstep_type, moisture
-  use time_mod, only : smooth
-  
-  implicit none
-  type (element_t)     , intent(inout) :: elem(:)
-  real (kind=real_kind), intent(in) :: dt
-  type (hvcoord_t), intent(in)      :: hvcoord
-  integer,  intent(in) :: n0,np1,nets,nete, np1_qdp
-  
-  ! local
-  integer :: i,j,k,ie,q
-  real (kind=real_kind) :: dt2,dt_q,v1,dp
-  logical :: wet  
-  
-  wet = (moisture /= "dry")  
-  
-  dt2=2*dt
-  dt_q=dt2
-  if (tstep_type==1) dt_q=dt
-  
-  do ie=nets,nete
-     ! apply forcing to Q
-     if (tracer_advection_formulation==TRACERADV_TOTAL_DIVERGENCE) then
-        
-        elem(ie)%derived%FQps(:,:,np1)=0
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(q,k,i,j,v1)
-#endif
-        do q=1,qsize
-           do k=1,nlev
-              do j=1,np	
-                 do i=1,np
-                    v1 = dt_q*elem(ie)%derived%FQ(i,j,k,q,1)
-                    !if (elem(ie)%state%Qdp(i,j,k,q,np1) + v1 < 0 .and. v1<0) then
-                    if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
-                       !if (elem(ie)%state%Qdp(i,j,k,q,np1) < 0 ) then
-                       if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
-
-                          v1=0  ! Q already negative, dont make it more so
-                       else
-                          !v1 = -elem(ie)%state%Qdp(i,j,k,q,np1)
-                          v1 = -elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
-
-                       endif
-                    endif
-                    elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)+v1
-                    !elem(ie)%state%Qdp(i,j,k,q,np1) = elem(ie)%state%Qdp(i,j,k,q,np1)+v1
-
-                    if (q==1) then
-                       elem(ie)%derived%FQps(i,j,np1)=elem(ie)%derived%FQps(i,j,np1)+v1/dt_q
-                    endif
-                 enddo
-              enddo
-           enddo
-        enddo
-
-        if (wet .and. qsize>0) then
-           elem(ie)%state%ps_v(:,:,np1) = elem(ie)%state%ps_v(:,:,np1) + dt_q*elem(ie)%derived%FQps(:,:,np1)
-        endif
-        ! Qdp(np1) and ps_v(np1) were updated by forcing - update Q(np1)
-        ! ps_v(n0) may also have been changed if using Robert,
-        ! but Q(n0) will be updated after robert filter
-        ! so no need to do that now
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(q,k,i,j,dp)
-#endif
-        do q=1,qsize
-           do k=1,nlev
-              do j=1,np	
-                 do i=1,np
-                    dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                         ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,np1)
-                    elem(ie)%state%Q(i,j,k,q) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)/dp
-                 enddo
-              enddo
-           enddo
-        enddo
-        
-     else
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(q)
-#endif
-       do q=1,qsize !! Loop index added (AAM)
-        elem(ie)%state%Q(:,:,:,q) = elem(ie)%state%Q(:,:,:,q)+&
-             dt_q*elem(ie)%derived%FQ(:,:,:,q,1)
-
-
-       enddo
-     endif
-     
-     elem(ie)%state%T(:,:,:,np1) = elem(ie)%state%T(:,:,:,np1) + &
-          dt2*elem(ie)%derived%FT(:,:,:,1)
-     elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + &
-          dt2*elem(ie)%derived%FM(:,:,:,:,1)
-  enddo
-  end subroutine applyCAMforcing_leapfrog
-
 
 
   subroutine applyCAMforcing(elem,hvcoord,np1,np1_qdp,dt_q,nets,nete)
