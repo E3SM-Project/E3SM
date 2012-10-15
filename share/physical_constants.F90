@@ -47,8 +47,7 @@ module physical_constants
 #else
   real (kind=real_kind), public, parameter :: DD_PI = 3.141592653589793238462643383279_real_kind
   real (kind=longdouble_kind), public, parameter :: QQ_PI = 3.141592653589793238462643383279_longdouble_kind
-!g for different shallow water test cases can differ
-  real (kind=real_kind), public :: g_sw
+
 
 #ifdef JUPITER
   real (kind=real_kind), public, parameter :: rearth       = 7e7             ! m
@@ -57,7 +56,7 @@ module physical_constants
 #else
   real (kind=real_kind), public, parameter :: rearth       = 6.376D6         ! m
   real (kind=real_kind), public, parameter :: omega        = 7.292D-5        ! radians/s
-  real (kind=real_kind), public, parameter :: g            = 9.80616D0       ! m s^-2
+  real (kind=real_kind), public, parameter :: g            = 9.80616D0         ! m s^-2
 #endif
   real (kind=real_kind), public, parameter :: Rgas         = 287.04D0        
   real (kind=real_kind), public, parameter :: Cp           = 1005.0D0

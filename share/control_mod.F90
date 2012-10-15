@@ -20,6 +20,8 @@ module control_mod
 !shallow water advection tests:
 !kmass points to a level with density.  other levels contain test tracers
   integer, public  :: kmass  = -1
+  real (kind=real_kind), public :: g_sw_output            	   = 9.80616D0          ! m s^-2
+
   real (kind=real_kind), public ::nu_mc = 0.0
 
   integer, public  :: tstep_type= 0                           ! 0 = leapfrog
@@ -130,8 +132,15 @@ module control_mod
   integer, public :: hypervis_subcycle_q=1  ! number of subcycles for hyper viscsosity timestep on TRACERS
   integer, public :: hypervis_order=0     ! laplace**hypervis_order.  0=not used  1=regular viscosity, 2=grad**4
   integer, public :: psurf_vis = 0        ! 0 = use laplace on eta surfaces
-  real (kind=real_kind), public :: hypervis_power=0     ! if not 0, use variable hyperviscosity based on element area          
                                           ! 1 = use (approx.) laplace on p surfaces
+
+  real (kind=real_kind), public :: hypervis_power=0     ! if not 0, use variable hyperviscosity based on element area          
+
+  integer, public :: which_vlaplace=1    ! 1= vector laplace based on vector identities
+					 ! 2= vector laplace based on transform to cartesian
+					 ! tensor HV would only work with (2) (impossible to overcome right now), 
+					 ! const or variable hv would work with (1) or (2)  
+
 
   ! hyperviscosity parameters used for smoothing topography
   integer, public :: smooth_phis_numcycle = 0   ! 0 = disable
@@ -155,5 +164,8 @@ module control_mod
   integer, public, parameter :: neast = 8
   
   logical, public            :: test_cfldep=.FALSE.
+
+
+
 
 end module control_mod
