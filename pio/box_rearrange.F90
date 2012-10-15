@@ -498,9 +498,11 @@ subroutine box_rearrange_comp2io_real (IOsystem, ioDesc, s1, src, s2, &
       a2a_displs(i) = 0
 
       a2a_sendcounts(i) = 0
-      a2a_sendtypes(i)  = MPI_INTEGER
       a2a_recvcounts(i) = 0
+
+      a2a_sendtypes(i)  = MPI_INTEGER
       a2a_recvtypes(i)  = MPI_INTEGER
+
     end do
 
     if (IOsystem%IOproc) then
@@ -530,6 +532,7 @@ subroutine box_rearrange_comp2io_real (IOsystem, ioDesc, s1, src, s2, &
       call CheckMPIReturn('box_rearrange', ierror)
     else
 #endif
+      if(iosystem%io_rank==0) print *,__FILE__,__LINE__,rtype(1),stype(1)
       call pio_swapm( nprocs, myrank,                            &
         src,  ndof,   a2a_sendcounts, a2a_displs, a2a_sendtypes, &
         dest, niodof, a2a_recvcounts, a2a_displs, a2a_recvtypes, &
@@ -726,9 +729,11 @@ subroutine box_rearrange_comp2io_double (IOsystem, ioDesc, s1, src, s2, &
       a2a_displs(i) = 0
 
       a2a_sendcounts(i) = 0
-      a2a_sendtypes(i)  = MPI_INTEGER
       a2a_recvcounts(i) = 0
+
+      a2a_sendtypes(i)  = MPI_INTEGER
       a2a_recvtypes(i)  = MPI_INTEGER
+
     end do
 
     if (IOsystem%IOproc) then
@@ -758,6 +763,7 @@ subroutine box_rearrange_comp2io_double (IOsystem, ioDesc, s1, src, s2, &
       call CheckMPIReturn('box_rearrange', ierror)
     else
 #endif
+      if(iosystem%io_rank==0) print *,__FILE__,__LINE__,rtype(1),stype(1)
       call pio_swapm( nprocs, myrank,                            &
         src,  ndof,   a2a_sendcounts, a2a_displs, a2a_sendtypes, &
         dest, niodof, a2a_recvcounts, a2a_displs, a2a_recvtypes, &
@@ -954,9 +960,11 @@ subroutine box_rearrange_comp2io_int (IOsystem, ioDesc, s1, src, s2, &
       a2a_displs(i) = 0
 
       a2a_sendcounts(i) = 0
-      a2a_sendtypes(i)  = MPI_INTEGER
       a2a_recvcounts(i) = 0
+
+      a2a_sendtypes(i)  = MPI_INTEGER
       a2a_recvtypes(i)  = MPI_INTEGER
+
     end do
 
     if (IOsystem%IOproc) then
@@ -986,6 +994,7 @@ subroutine box_rearrange_comp2io_int (IOsystem, ioDesc, s1, src, s2, &
       call CheckMPIReturn('box_rearrange', ierror)
     else
 #endif
+      if(iosystem%io_rank==0) print *,__FILE__,__LINE__,rtype(1),stype(1)
       call pio_swapm( nprocs, myrank,                            &
         src,  ndof,   a2a_sendcounts, a2a_displs, a2a_sendtypes, &
         dest, niodof, a2a_recvcounts, a2a_displs, a2a_recvtypes, &
@@ -1082,7 +1091,7 @@ end subroutine box_rearrange_comp2io_int
 !  rearrange from the io decomposition to the comp decomposition
 !
 ! TYPE real,double,int
-# 440 "box_rearrange.F90.in"
+# 443 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_real (IOsystem, ioDesc, s1, iobuf, &
    s2, compbuf, comm_option, fc_options)
   implicit none
@@ -1153,7 +1162,7 @@ end subroutine box_rearrange_io2comp_real
 !  rearrange from the io decomposition to the comp decomposition
 !
 ! TYPE real,double,int
-# 440 "box_rearrange.F90.in"
+# 443 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_double (IOsystem, ioDesc, s1, iobuf, &
    s2, compbuf, comm_option, fc_options)
   implicit none
@@ -1224,7 +1233,7 @@ end subroutine box_rearrange_io2comp_double
 !  rearrange from the io decomposition to the comp decomposition
 !
 ! TYPE real,double,int
-# 440 "box_rearrange.F90.in"
+# 443 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_int (IOsystem, ioDesc, s1, iobuf, &
    s2, compbuf, comm_option, fc_options)
   implicit none
@@ -1289,7 +1298,7 @@ subroutine box_rearrange_io2comp_int (IOsystem, ioDesc, s1, iobuf, &
 end subroutine box_rearrange_io2comp_int
 #else /* not _MPISERIAL */
 ! TYPE real,double,int
-# 504 "box_rearrange.F90.in"
+# 507 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -1508,7 +1517,7 @@ subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
 
 end subroutine box_rearrange_io2comp_real
 ! TYPE real,double,int
-# 504 "box_rearrange.F90.in"
+# 507 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -1727,7 +1736,7 @@ subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
 
 end subroutine box_rearrange_io2comp_double
 ! TYPE real,double,int
-# 504 "box_rearrange.F90.in"
+# 507 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -1954,7 +1963,7 @@ end subroutine box_rearrange_io2comp_int
   !   find the rank in union_comm of the ith io processor
   !
 
-# 730 "box_rearrange.F90.in"
+# 733 "box_rearrange.F90.in"
   integer function find_io_comprank( Iosystem, ioprocindex )
     implicit none
 
@@ -1971,7 +1980,7 @@ end subroutine box_rearrange_io2comp_int
   !   find global xyz coordinates given a global index
   !
 
-# 746 "box_rearrange.F90.in"
+# 749 "box_rearrange.F90.in"
   subroutine gindex_to_coord( gindex, gstride, ndim, gcoord )
     implicit none
     integer(kind=pio_offset),intent(in) :: gindex           ! 0-based global index
@@ -2008,7 +2017,7 @@ end subroutine box_rearrange_io2comp_int
   !   and 1-based index for that ioproc's iobuf          '
   !
 
-# 782 "box_rearrange.F90.in"
+# 785 "box_rearrange.F90.in"
   logical function find_ioproc( gcoord, lb, ub, lstride, ndim, nioproc, &
        io_proc, io_index )
     implicit none
@@ -2081,7 +2090,7 @@ end subroutine box_rearrange_io2comp_int
   !
   !
 
-# 854 "box_rearrange.F90.in"
+# 857 "box_rearrange.F90.in"
   subroutine compute_dest(compdof, start, kount, gsize, ndim, nioproc, &
                           dest_ioproc, dest_ioindex                    )
     implicit none
@@ -2194,7 +2203,7 @@ end subroutine box_rearrange_io2comp_int
   ! this space should be freed in box_rearrange_free
   !
 
-# 966 "box_rearrange.F90.in"
+# 969 "box_rearrange.F90.in"
   subroutine box_rearrange_create(Iosystem, compdof, gsize, ndim, &
                                   nioproc, ioDesc)
 
@@ -2214,7 +2223,7 @@ end subroutine box_rearrange_io2comp_int
     integer :: ierror
     integer :: i
 
-    integer :: niodof
+    integer(kind=pio_offset) :: niodof
     integer :: pio_offset_kind                        ! kind of pio_offset
 
 !!!!!!
@@ -2323,7 +2332,7 @@ end subroutine box_rearrange_io2comp_int
     end do
 
     call compute_counts(Iosystem, ioDesc, niodof)
-
+    print *,iodesc%count(1:ndim),niodof
 #ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
@@ -2350,7 +2359,7 @@ end subroutine box_rearrange_io2comp_int
 
 #ifndef _MPISERIAL
 
-# 1121 "box_rearrange.F90.in"
+# 1124 "box_rearrange.F90.in"
   subroutine compute_counts(Iosystem, ioDesc, niodof)
     
     use calcdisplace_mod, only : calcdisplace,GCDblocksize,gcd
@@ -2360,7 +2369,7 @@ end subroutine box_rearrange_io2comp_int
     type (IO_desc_t),intent(inout) :: ioDesc
 
 
-    integer, intent(in) :: niodof
+    integer(kind=pio_offset), intent(in) :: niodof
 
     ! local vars
     integer :: ndof
@@ -2631,7 +2640,7 @@ end subroutine box_rearrange_io2comp_int
        !  recv_displs(num_tasks) is 0 for non-'rfrom', is sum_i recv_counts for 'rfrom'
 
        rbuf_size = niodof
-       call alloc_check(rindex, niodof, 'rindex buffer')
+       allocate(rindex(niodof))
        rindex = 0
 
        recv_counts = 0
@@ -2667,6 +2676,7 @@ end subroutine box_rearrange_io2comp_int
 
     endif
     sr_types = MPI_INTEGER8
+    print *,__FILE__,__LINE__,size(s2rindex), size(rindex),niodof
     call pio_swapm( num_tasks, myrank,                         &
       s2rindex, ndof,      send_counts, send_displs, sr_types, &
       rindex,   rbuf_size, recv_counts, recv_displs, sr_types, &
@@ -2710,7 +2720,7 @@ end subroutine box_rearrange_io2comp_int
           blocksize = gcd(bsizeT(1:ii-1))
           !       print *,'gcd: receive block lengths: ', bsizeT(1:ii-1)
           deallocate(bsizeT)
-          !       print *,'GCD calculated for receive loop blocksize: ',blocksize
+
 #ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
@@ -2722,7 +2732,8 @@ end subroutine box_rearrange_io2comp_int
           call CheckMPIReturn(subName,ierror)
           call MPI_TYPE_COMMIT(newTYPEr,ierror)
           call CheckMPIReturn(subName,ierror)
-#ifdef MEMCHK	
+          print *,'GCD calculated for receive loop blocksize: ',blocksize,newtyper
+#ifdef MEMCHK
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
@@ -2779,7 +2790,6 @@ end subroutine box_rearrange_io2comp_int
 #endif              
              call MPI_TYPE_COMMIT(rtype(i), ierror)
              call CheckMPIReturn(subName,ierror)
-             
              deallocate(displace)
              pos = pos + rcount(i)
           end do
@@ -2812,13 +2822,15 @@ end subroutine box_rearrange_io2comp_int
        endif
     enddo
     blocksize = gcd(bsizeT(1:ii-1))
+
     deallocate(bsizeT)
-!    print *,'GCD calculated for send loop blocksize: ',blocksize
+    print *,'GCD calculated for send loop blocksize: ',blocksize
     call MPI_TYPE_CONTIGUOUS(blocksize,ioDesc%baseTYPE,newTYPEs,ierror)
     call CheckMPIReturn(subName,ierror)
     call MPI_TYPE_COMMIT(newTYPEs,ierror)
     call CheckMPIReturn(subName,ierror)
 
+    print *,'GCD calculated for send loop blocksize: ',blocksize,newtypes
 #ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
@@ -2854,7 +2866,7 @@ end subroutine box_rearrange_io2comp_int
           
           call MPI_TYPE_COMMIT(stype(i), ierror)
           call CheckMPIReturn(subName,ierror)
- 
+	  if(iosystem%io_rank==0) print *,__FILE__,__LINE__,stype(1) 
           deallocate(displace)
           pos = pos + scount(i)
        endif
@@ -2901,7 +2913,7 @@ end subroutine box_rearrange_io2comp_int
   !
 
 
-# 1671 "box_rearrange.F90.in"
+# 1677 "box_rearrange.F90.in"
   subroutine box_rearrange_create( Iosystem,compdof,gsize,ndim,nioproc,ioDesc)
     implicit none
 
@@ -3094,7 +3106,7 @@ end subroutine box_rearrange_io2comp_int
 
 #ifndef _MPISERIAL
 
-# 1863 "box_rearrange.F90.in"
+# 1869 "box_rearrange.F90.in"
   subroutine compute_counts( Iosystem,ioDesc,niodof )
 
     use calcdisplace_mod, only : calcdisplace, GCDblocksize, gcd
@@ -3569,7 +3581,7 @@ end subroutine box_rearrange_io2comp_int
   !   the rearrangement
   !
 
-# 2337 "box_rearrange.F90.in"
+# 2343 "box_rearrange.F90.in"
   subroutine box_rearrange_free(Iosystem,ioDesc)
     implicit none
 

@@ -309,9 +309,11 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, s2, &
       a2a_displs(i) = 0
 
       a2a_sendcounts(i) = 0
-      a2a_sendtypes(i)  = MPI_INTEGER
       a2a_recvcounts(i) = 0
+
+      a2a_sendtypes(i)  = MPI_INTEGER
       a2a_recvtypes(i)  = MPI_INTEGER
+
     end do
 
     if (IOsystem%IOproc) then
@@ -982,7 +984,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     integer :: ierror
     integer :: i
 
-    integer :: niodof
+    integer(kind=pio_offset) :: niodof
     integer :: pio_offset_kind                        ! kind of pio_offset
 
 !!!!!!
@@ -1091,7 +1093,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     end do
 
     call compute_counts(Iosystem, ioDesc, niodof)
-
+    print *,iodesc%count(1:ndim),niodof
 #ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
@@ -1127,7 +1129,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     type (IO_desc_t),intent(inout) :: ioDesc
 
 
-    integer, intent(in) :: niodof
+    integer(kind=pio_offset), intent(in) :: niodof
 
     ! local vars
     integer :: ndof
@@ -1398,7 +1400,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
        !  recv_displs(num_tasks) is 0 for non-'rfrom', is sum_i recv_counts for 'rfrom'
 
        rbuf_size = niodof
-       call alloc_check(rindex, niodof, 'rindex buffer')
+       allocate(rindex(niodof))
        rindex = 0
 
        recv_counts = 0
@@ -1477,7 +1479,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
           blocksize = gcd(bsizeT(1:ii-1))
           !       print *,'gcd: receive block lengths: ', bsizeT(1:ii-1)
           deallocate(bsizeT)
-          !       print *,'GCD calculated for receive loop blocksize: ',blocksize
+
 #ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
@@ -1489,7 +1491,8 @@ end subroutine box_rearrange_io2comp_{TYPE}
           call CheckMPIReturn(subName,ierror)
           call MPI_TYPE_COMMIT(newTYPEr,ierror)
           call CheckMPIReturn(subName,ierror)
-#ifdef MEMCHK	
+!          print *,'GCD calculated for receive loop blocksize: ',blocksize
+#ifdef MEMCHK
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
@@ -1546,7 +1549,6 @@ end subroutine box_rearrange_io2comp_{TYPE}
 #endif              
              call MPI_TYPE_COMMIT(rtype(i), ierror)
              call CheckMPIReturn(subName,ierror)
-             
              deallocate(displace)
              pos = pos + rcount(i)
           end do
@@ -1579,6 +1581,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
        endif
     enddo
     blocksize = gcd(bsizeT(1:ii-1))
+
     deallocate(bsizeT)
 !    print *,'GCD calculated for send loop blocksize: ',blocksize
     call MPI_TYPE_CONTIGUOUS(blocksize,ioDesc%baseTYPE,newTYPEs,ierror)
@@ -1586,6 +1589,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     call MPI_TYPE_COMMIT(newTYPEs,ierror)
     call CheckMPIReturn(subName,ierror)
 
+!    print *,'GCD calculated for send loop blocksize: ',blocksize,newtypes
 #ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
@@ -1621,7 +1625,6 @@ end subroutine box_rearrange_io2comp_{TYPE}
           
           call MPI_TYPE_COMMIT(stype(i), ierror)
           call CheckMPIReturn(subName,ierror)
- 
           deallocate(displace)
           pos = pos + scount(i)
        endif

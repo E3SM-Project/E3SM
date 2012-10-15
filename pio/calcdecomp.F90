@@ -65,10 +65,8 @@ contains
 
     minblocksize = minbytes/basesize
 
-    p=product(gdims)
+    p=product(int(gdims,pio_offset))
     use_io_procs = max(1, min(int(real(p)/real(minblocksize)+0.5),num_io_procs))
-
-
 
 
     start(:)=1
