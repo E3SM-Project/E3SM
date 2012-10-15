@@ -11,6 +11,7 @@ module derivative_mod
   ! needed for spherical differential operators:
   use physical_constants, only : rrearth 
   use element_mod, only : element_t
+  use control_mod, only : which_vlaplace 
 
 implicit none
 private
@@ -1618,9 +1619,7 @@ endif
     
     end function remap_phys2gll
     
-    
-
-
+!----------------------------------------------------------------
 
 
   function gradient_sphere(s,deriv,Dinv) result(ds)
@@ -1861,6 +1860,8 @@ endif
  
     end function curl_sphere
 
+
+!--------------------------------------------------------------------------
 
 
 
@@ -2195,6 +2196,20 @@ endif
   end function divergence_sphere
 
 
+!three types of viscosity are supported right now:
+! (1) const hv, i.e., the operator nu * (\div \grad)^hypervis_order
+! (2) variable-within-element (or just variable) hv, the operator nu * (viscosity \div \grad )^hypervis_order
+! (3) tensor hv,  nu * ( \div * tensor * \grad )^hypervis_order
+
+! the switch between (2) and (3) is here, in preproc directive #TENSORHV
+! the switch between (1) and (2,3) is in namelist variable:
+! hypervis_power =0 for const hv (1),  <>0 for variable hv (2) and tensor hv (3)
+! if using (2), it is required to set also fine_ne, max_hypervis_courant
+
+#undef TENSORHV
+!#define TENSORHV
+
+
   function laplace_sphere_wk(s,deriv,elem,viscosity) result(laplace)
 !
 !   input:  s = scalar
@@ -2206,28 +2221,101 @@ endif
     type (derivative_t)              :: deriv
     type (element_t)                 :: elem
     real(kind=real_kind)             :: laplace(np,np)
+    real(kind=real_kind)             :: laplace2(np,np)
     integer i,j
 
     ! Local
-    real(kind=real_kind) :: grads(np,np,2)
+    real(kind=real_kind) :: grads(np,np,2), oldgrads(np,np,2)
 
     grads=gradient_sphere(s,deriv,elem%Dinv)
-
+ 
+#ifndef TENSORHV
+! const or variable viscosity, (1) or (2)
     if (ASSOCIATED(viscosity)) then
-       grads(:,:,1) = grads(:,:,1)*viscosity(:,:)
-       grads(:,:,2) = grads(:,:,2)*viscosity(:,:)
+        grads(:,:,1) = grads(:,:,1)*viscosity(:,:)
+        grads(:,:,2) = grads(:,:,2)*viscosity(:,:)
     end if
+#else
+! tensor hv, (3)
+    if (ASSOCIATED(viscosity)) then
+      oldgrads=grads
+      do j=1,np
+	do i=1,np
+	  grads(i,j,1) = sum(oldgrads(i,j,:)*elem%tensorVisc(1,:,i,j))
+	  grads(i,j,2) = sum(oldgrads(i,j,:)*elem%tensorVisc(2,:,i,j))
+	end do
+      end do
+    endif
+#endif
 
     ! note: divergnece_sphere and divergence_sphere_wk are identical *after* bndry_exchange
     ! if input is C_0.  Here input is not C_0, so we should use divergence_sphere_wk().  
+
     laplace=divergence_sphere_wk(grads,deriv,elem)
 
   end function laplace_sphere_wk
 
 
-
-
   function vlaplace_sphere_wk(v,deriv,elem,viscosity,nu_ratio) result(laplace)
+!
+!   input:  v = vector in lat-lon coordinates
+!   ouput:  weak laplacian of v, in lat-lon coordinates
+
+    real(kind=real_kind), intent(in) :: v(np,np,2) 
+    real(kind=real_kind), pointer, dimension(:,:) :: viscosity
+    type (derivative_t)              :: deriv
+    type (element_t)                 :: elem
+    real(kind=real_kind), optional :: nu_ratio
+    real(kind=real_kind) :: laplace(np,np,2)
+
+    if (which_vlaplace .eq. 2) then
+      laplace=cartesian_laplace_sphere_wk(v,deriv,elem,viscosity,nu_ratio)
+    else
+      laplace=vector_identities_laplace_sphere_wk(v,deriv,elem,viscosity,nu_ratio)
+    endif
+
+  end function vlaplace_sphere_wk
+
+
+
+  function cartesian_laplace_sphere_wk(v,deriv,elem,viscosity,nu_ratio) result(laplace)
+!
+!   input:  v = vector in lat-lon coordinates
+!   ouput:  weak laplacian of v, in lat-lon coordinates
+
+    real(kind=real_kind), intent(in) :: v(np,np,2) 
+    real(kind=real_kind), pointer, dimension(:,:) :: viscosity
+    type (derivative_t)              :: deriv
+    type (element_t)                 :: elem
+    real(kind=real_kind) :: laplace(np,np,2)
+    real(kind=real_kind), optional :: nu_ratio
+    ! Local
+
+    integer component
+    real(kind=real_kind) :: dum_cart(np,np,3)
+
+
+    ! latlon -> cartesian
+    do component=1,3
+       dum_cart(:,:,component)=sum( elem%vec_sphere2cart(:,:,component,:)*v(:,:,:) ,3)
+    end do
+
+    ! Do laplace on cartesian comps
+    do component=1,3
+       dum_cart(:,:,component) = laplace_sphere_wk(dum_cart(:,:,component),deriv,elem,viscosity)
+    enddo
+
+    ! cartesian -> latlon
+    do component=1,2
+       ! vec_sphere2cart is its own pseudoinverse.
+       laplace(:,:,component)=sum( dum_cart(:,:,:)*elem%vec_sphere2cart(:,:,:,component) ,3)
+    end do 
+
+  end function cartesian_laplace_sphere_wk
+
+
+
+  function vector_identities_laplace_sphere_wk(v,deriv,elem,viscosity,nu_ratio) result(laplace)
 !
 !   input:  v = vector in lat-lon coordinates
 !   ouput:  weak laplacian of v, in lat-lon coordinates
@@ -2370,7 +2458,11 @@ endif
 #endif
        enddo
     enddo
-  end function vlaplace_sphere_wk
+  end function vector_identities_laplace_sphere_wk
+
+
+
+!-----------------------------------------------------------------------------------
 
 
   function gll_to_dgmodal(p,deriv) result(phat)

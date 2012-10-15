@@ -310,6 +310,7 @@ module element_mod
      real (kind=real_kind)    :: min_eig        ! min singular value of metinv
      real (kind=real_kind)    :: dx_short       ! short length scale
      real (kind=real_kind)    :: dx_long        ! long length scale
+
      real (kind=real_kind)    :: variable_hyperviscosity(np,np)  ! hyperviscosity based on above
      real (kind=real_kind)    :: courant !  advective courant number
      real (kind=real_kind)    :: hv_courant ! hyperviscosity courant number
@@ -335,6 +336,9 @@ module element_mod
      real (kind=real_kind)    :: rmetdet(np,np)      ! 1/metdet on velocity pressure grid
      real (kind=real_kind)    :: D(2,2,np,np)        ! Map covariant field on cube to vector field on the sphere
      real (kind=real_kind)    :: Dinv(2,2,np,np)     ! Map vector field on the sphere to covariant v on cube
+
+!og, matrix V for tensor viscosity
+     real (kind=real_kind)    :: tensorVisc(2,2,np,np)   
 
      ! Convert vector fields from spherical to rectangular components
      ! The transpose of this operation is its pseudoinverse.

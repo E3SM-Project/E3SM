@@ -10,7 +10,10 @@
 module cube_mod
   use kinds, only : real_kind, long_kind, longdouble_kind
   use coordinate_systems_mod, only : spherical_polar_t, cartesian3D_t
-  use physical_constants, only : dd_pi
+  use physical_constants, only : dd_pi, rearth
+
+  use control_mod, only : hypervis_power
+
   implicit none
   private
 
@@ -253,9 +256,11 @@ contains
     real (kind=real_kind) :: x1        ! 1st cube face coordinate
     real (kind=real_kind) :: x2        ! 2nd cube face coordinate
     real (kind=real_kind) :: tmpD(2,2)
-    real (kind=real_kind) :: M(2,2),E(2,2),eig(2),DE(2,2)
-    real (kind=real_kind) :: l1, l2     ! eigen values of met
+    real (kind=real_kind) :: M(2,2),E(2,2),eig(2),DE(2,2),DEL(2,2),V(2,2), nu1, nu2, lamStar1, lamStar2
+    real (kind=real_kind) :: l1, l2, sc     ! eigen values of met
 
+    real (kind=real_kind) :: roundoff_err = 1e-11 !!! OG: this is a temporal fix
+    
     face_no = elem%vertex%face_number
 
     ! ==============================================
@@ -324,8 +329,10 @@ contains
           elem%metinv(1,2,i,j) = -elem%met(1,2,i,j)/(detD*detD)
           elem%metinv(2,1,i,j) = -elem%met(2,1,i,j)/(detD*detD)
           elem%metinv(2,2,i,j) =  elem%met(1,1,i,j)/(detD*detD)
-#if 0
-          ! compute eigenvectors of metinv
+
+!!!MATRICES FOR HV TENSOR
+! compute eigenvectors of metinv
+
           M = elem%metinv(:,:,i,j)
 
           eig(1) = (M(1,1) + M(2,2) + sqrt(4.0d0*M(1,2)*M(2,1) + &
@@ -333,44 +340,80 @@ contains
           eig(2) = (M(1,1) + M(2,2) - sqrt(4.0d0*M(1,2)*M(2,1) + &
               (M(1,1) - M(2,2))**2))/2.0d0
 
-          do nn=1,2
-             if ( abs( M(1,1)-eig(nn)) > abs(M(2,2)-eig(nn)) ) then
-                E(1,nn)= -M(1,2)/( M(1,1)-eig(nn) )
-                E(2,nn)=1
-             else
-                E(1,nn)=1
-                E(2,nn)= -M(1,2)/( M(2,2)-eig(nn) )
-             endif
-             ! normalize
-             norm = sqrt(E(1,nn)**2 + E(2,nn)**2)
-             E(:,nn)=E(:,nn)/norm
-          enddo
-          DE(1,1)=sum(M(1,:)*E(:,1))
-          DE(1,2)=sum(M(1,:)*E(:,2))
-          DE(2,1)=sum(M(2,:)*E(:,1))
-          DE(2,2)=sum(M(2,:)*E(:,2))
+!!! this alg of getting E requires a fix
+	  if(abs(M(2,1))>roundoff_err)then
+	      E(1,1)=eig(1)-M(2,2); E(2,1)=M(2,1);
+	      E(1,2)=eig(2)-M(2,2); E(2,2)=M(2,1);
+	  elseif(abs(M(1,2))>roundoff_err)then
+	      E(1,1)=M(1,2); E(2,1)=eig(1)-M(1,1);
+	      E(1,2)=M(1,2); E(2,2)=eig(2)-M(1,1);
+	  else
+	      E(1,1)=1.0d0; E(1,2)=0.0d0; E(2,1)=0.0d0; E(2,2)=1.0d0;
+	  endif
 
-          ! verify that M = E LAMBDA E^t   and E E^t = I
-          ! or:  M E = E LAMBDA
-          print *,'E E^t should be I'
-          write(*,'(2e20.10)') sum(E(1,:)*E(1,:)),sum(E(1,:)*E(2,:))
-          write(*,'(2e20.10)') sum(E(2,:)*E(1,:)),sum(E(2,:)*E(2,:))
-          print *,'M E - E LAMBDA (should be zero)'
-          write(*,'(2e20.10)') sum(M(1,:)*E(:,1))-eig(1)*E(1,1),sum(M(1,:)*E(:,2))-eig(2)*E(1,2)
-          write(*,'(2e20.10)') sum(M(2,:)*E(:,1))-eig(1)*E(2,1),sum(M(2,:)*E(:,2))-eig(2)*E(2,2)
+!normalize columns
+	  E(:,1)=E(:,1)/sqrt(sum(E(:,1)*E(:,1))); 
+	  E(:,2)=E(:,2)/sqrt(sum(E(:,2)*E(:,2))); 
 
-          ! Lambda = diag( nu1*eig1, nu2*eig2 )
-          ! viscosity tensor = DE * Lambda * (DE)^t
-          nu1=1
-          nu2=1
-          DEL(:,1) = nu1*eig(1)*DE(:,1)
-          DEL(:,2) = nu2*eig(2)*DE(:,2)
 
+!matrix D*E, original V tensor
+          DE(1,1)=sum(elem%D(1,:,i,j)*E(:,1))
+          DE(1,2)=sum(elem%D(1,:,i,j)*E(:,2))
+          DE(2,1)=sum(elem%D(2,:,i,j)*E(:,1))
+          DE(2,2)=sum(elem%D(2,:,i,j)*E(:,2))
+
+! verify that M = E LAMBDA E^t   and E E^t = I
+! or:  M E = E LAMBDA
+!           print *,'E^t E should be I'
+!           write(*,'(2e20.10)') sum(E(:,1)*E(:,1)),sum(E(:,1)*E(:,2))
+!           write(*,'(2e20.10)') sum(E(:,2)*E(:,1)),sum(E(:,2)*E(:,2))
+!           print *,'E E^t should be I'
+!           write(*,'(2e20.10)') sum(E(1,:)*E(1,:)),sum(E(1,:)*E(2,:))
+!           write(*,'(2e20.10)') sum(E(2,:)*E(1,:)),sum(E(2,:)*E(2,:))
+!           print *,'M E - E LAMBDA (should be zero)'
+!           write(*,'(2e20.10)') sum(M(1,:)*E(:,1))-eig(1)*E(1,1),sum(M(1,:)*E(:,2))-eig(2)*E(1,2)
+!           write(*,'(2e20.10)') sum(M(2,:)*E(:,1))-eig(1)*E(2,1),sum(M(2,:)*E(:,2))-eig(2)*E(2,2)
+
+
+! introduce Lambda = diag( nu1*eig1, nu2*eig2 )
+! viscosity tensor = DE * Lambda^* * Lambda * (DE)^t     
+! lamStar is like a diag matrix Lam* which is inserted in front of matrix Lambda=(lam_1 0;0 lam2) 
+! in order to scale Lambda
+! 4th order scaling is given by division by lambda, because lambda ~ 4/(Delta x)^2
+! 4th order scaling, for example, is 
+!	  lamStar1=1/(eig(1))*(rearth**2)
+!	  lamStar2=1/(eig(2))*(rearth**2)
+
+!TENSOR IS V = D E LAM LAM^* E^T D^T
+!tensor V is in physical dimensions now
+	  lamStar1=1/(eig(1)**(hypervis_power/4.0d0))*(rearth**(hypervis_power/2.0d0))
+	  lamStar2=1/(eig(2)**(hypervis_power/4.0d0))*(rearth**(hypervis_power/2.0d0))
+
+!matrix (DE) * Lam^* * Lam  
+          DEL(1:2,1) = lamStar1*eig(1)*DE(1:2,1)
+          DEL(1:2,2) = lamStar2*eig(2)*DE(1:2,2)
+
+!matrix (DE) * Lam^* * Lam  *E^t *D^t
           V(1,1)=sum(DEL(1,:)*DE(1,:))
           V(1,2)=sum(DEL(1,:)*DE(2,:))
           V(2,1)=sum(DEL(2,:)*DE(1,:))
           V(2,2)=sum(DEL(2,:)*DE(2,:))
-#endif          
+
+! for 4th order scaling, V=DD^t
+! very usefult for debugging
+!TENSOR IS DD^T
+!           V(1,1)=sum(elem%D(1,:,i,j)*elem%D(1,:,i,j))*(rearth**(2.0d0))
+!           V(1,2)=sum(elem%D(1,:,i,j)*elem%D(2,:,i,j))*(rearth**(2.0d0))
+!           V(2,1)=sum(elem%D(2,:,i,j)*elem%D(1,:,i,j))*(rearth**(2.0d0))
+!           V(2,2)=sum(elem%D(2,:,i,j)*elem%D(2,:,i,j))*(rearth**(2.0d0))
+!if(abs(V(1,1)-sum(elem%D(1,:,i,j)*elem%D(1,:,i,j))*(rearth**(2.0d0))) > 1e-2) write(6,*) elem%GlobalID
+!if(abs(V(1,2)-sum(elem%D(1,:,i,j)*elem%D(2,:,i,j))*(rearth**(2.0d0))) > 1e-2) write(6,*) elem%GlobalID
+!if(abs(V(2,1)-sum(elem%D(2,:,i,j)*elem%D(1,:,i,j))*(rearth**(2.0d0))) > 1e-2) write(6,*) elem%GlobalID
+!if(abs(V(2,2)-sum(elem%D(2,:,i,j)*elem%D(2,:,i,j))*(rearth**(2.0d0))) > 1e-2) write(6,*) elem%GlobalID
+
+
+	  elem%tensorVisc(:,:,i,j)=V(:,:)
+        
        end do
     end do
 

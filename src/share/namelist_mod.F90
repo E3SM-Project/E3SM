@@ -53,6 +53,7 @@ module namelist_mod
        nu_div,          &
        nu_p,          &
        nu_top,        &
+       which_vlaplace, & ! which vector laplace to use, cartesian or vector_identities
        psurf_vis,    &  
        hypervis_order,    &  
        hypervis_power,    &  
@@ -264,6 +265,7 @@ module namelist_mod
                      hypervis_power,    &  
                      hypervis_subcycle, &
                      hypervis_subcycle_q, &
+                     which_vlaplace, & 
                      smooth_phis_numcycle, &
                      smooth_sgh_numcycle, &
                      smooth_phis_nudt, &
@@ -798,7 +800,10 @@ module namelist_mod
     call MPI_bcast(vert_remap_q_alg,1,MPIinteger_t   ,par%root,par%comm,ierr) 
 
     call MPI_bcast(fine_ne    ,1,MPIinteger_t,par%root,par%comm,ierr) 
-    call MPI_bcast(max_hypervis_courant,1,MPIreal_t   ,par%root,par%comm,ierr) 
+    call MPI_bcast(max_hypervis_courant,1,MPIreal_t   ,par%root,par%comm,ierr)
+ 
+    call MPI_bcast(which_vlaplace    ,1,MPIinteger_t,par%root,par%comm,ierr)
+
     call MPI_bcast(nu         ,1,MPIreal_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(nu_s         ,1,MPIreal_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(nu_q         ,1,MPIreal_t   ,par%root,par%comm,ierr) 
