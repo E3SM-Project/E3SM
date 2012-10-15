@@ -1,6 +1,49 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_5_5
+Originator(s): Jim Edwards
+Date: 10-15-2012
+One-line Summary: bug fix for large >4GB data, cmake tools, updated timing lib
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+	 testpio/build_defaults.xml:
+	 testpio/Utils.pm:
+	 testpio/testpio_run.pl : port to erebus and yellowstone
+	 pio/box_rearrange.F90.in : promote some variables i4 to i8, remove debug prints
+	 pio/calcdecomp.F90 : correct product calculation to i8
+	 pio/topology.c : remove extra print statements (bluegene only)
+	
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed: 
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+
+
+Code reviewed by: self
+
+Summary of pre-tag testing:
+
+  Regression tests:
+                  bluefire 114 tests PASS, 0 tests FAIL
+		  yellowstone 80 tests PASS, 0 tests FAIL		  
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_5_4   (ChangeLog was not updated for pio1_5_3)
 Originator(s): Jim Edwards
 Date: 9-12-2012
