@@ -3491,19 +3491,10 @@ end subroutine
           elem(ie)%derived%eta_dot_dpdn(:,:,k+1) = elem(ie)%derived%eta_dot_dpdn(:,:,k) + &
                (dp_star(:,:)-dp(:,:))/dt
        enddo
-
-    enddo
-
-    ! remap the dynamics:  
-#if 0
-    do ie=nets,nete
-       call remap1(elem(ie)%state%t(:,:,:,np1),elem(ie)%state%ps_v(:,:,np1),&
-            elem(ie)%derived%eta_dot_dpdn,dt,hvcoord)
-    enddo
-    call remap_UV_lagrange2ref(np1,dt,elem,hvcoord,nets,nete)
-#else
-    ! remap u,v and cp*T + .5 u^2 
-    do ie=nets,nete
+       ! remap the dynamics:  
+#undef REMAP_TE
+#ifdef REMAP_TE
+       ! remap u,v and cp*T + .5 u^2 
        ttmp=(elem(ie)%state%v(:,:,1,:,np1)**2 + &
              elem(ie)%state%v(:,:,2,:,np1)**2)/2 + &
              elem(ie)%state%t(:,:,:,np1)*cp
@@ -3512,8 +3503,13 @@ end subroutine
             elem(ie)%derived%eta_dot_dpdn,dt,hvcoord)
 
        elem(ie)%state%t(:,:,:,np1)=ttmp  ! overwrite T with TE
+#else
+       call remap1(elem(ie)%state%t(:,:,:,np1),elem(ie)%state%ps_v(:,:,np1),&
+            elem(ie)%derived%eta_dot_dpdn,dt,hvcoord)
+#endif
     enddo
     call remap_UV_lagrange2ref(np1,dt,elem,hvcoord,nets,nete)
+#ifdef REMAP_TE
     ! back out T from TE
     do ie=nets,nete
        elem(ie)%state%t(:,:,:,np1) = &
@@ -3523,6 +3519,7 @@ end subroutine
     enddo
 #endif
     endif
+
 
 
     ! remap the tracers from lagrangian levels to REF levels
