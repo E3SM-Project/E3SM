@@ -259,6 +259,9 @@ contains
 
   end subroutine test_global_integral
 
+
+!------------------------------------------------------------------------------------
+
   ! ================================
   ! print_cfl:
   !
@@ -303,7 +306,7 @@ contains
     real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
     real (kind=real_kind) :: lambda_max, lambda_vis, min_gw
     real (kind=real_kind) :: dt,dt_eul
-    integer :: ie,corner, i, j
+    integer :: ie,corner, i, j, rowind, colind
     type (quadrature_t)    :: gp
 
     ! Eigenvalues calculated by folks at UMich (Paul U & Jared W)
@@ -410,6 +413,7 @@ contains
         if (fine_ne>0) then
            ! viscosity in namelist specified for regions with a resolution
            ! equivilant to a uniform grid with ne=fine_ne
+!!! og: is this in km? np=4? yes
            max_unif_dx = (111.28*30)/dble(fine_ne)
         endif
 
@@ -454,19 +458,18 @@ contains
            
            elem(ie)%hv_courant = dtnu*(elem(ie)%variable_hyperviscosity(1,1)**2) * (lambda_vis**2) * ((rrearth*elem(ie)%max_eig)**4)
 
-
             ! Check to see if this is stable
             if (elem(ie)%hv_courant.gt.max_hypervis_courant) then
                 stable_hv = sqrt( max_hypervis_courant / &
                      (  dtnu * (lambda_vis)**2 * (rrearth*elem(ie)%max_eig)**4 ) )
 
 #if 0
-        ! Useful print statements for debugging the adjustments to hypervis 
-                print*, "Adjusting hypervis on elem ", elem(ie)%GlobalId
-                print*, "From ", nu*elem(ie)%variable_hyperviscosity(1,1)**2, " to ", nu*stable_hv
-                print*, "Difference = ", nu*(/elem(ie)%variable_hyperviscosity(1,1)**2-stable_hv/)
-                print*, "Factor of ", elem(ie)%variable_hyperviscosity(1,1)**2/stable_hv
-                print*, " "
+         ! Useful print statements for debugging the adjustments to hypervis 
+                 print*, "Adjusting hypervis on elem ", elem(ie)%GlobalId
+                 print*, "From ", nu*elem(ie)%variable_hyperviscosity(1,1)**2, " to ", nu*stable_hv
+                 print*, "Difference = ", nu*(/elem(ie)%variable_hyperviscosity(1,1)**2-stable_hv/)
+                 print*, "Factor of ", elem(ie)%variable_hyperviscosity(1,1)**2/stable_hv
+                 print*, " "
 #endif
 
 !                make sure that: elem(ie)%hv_courant <=  max_hypervis_courant 
@@ -522,6 +525,68 @@ contains
         max_hvcourant = dtnu * (lambda_vis)**2 * (rrearth*max_max_eig)**4
     end if
 
+
+
+!!! this is a temp solution: right now, hypervis_power ~= 0 means either variable hv or tensor hv,
+!but variable hv uses elem%variable_hyperviscosity, tensor hv uses elem%tensorVisc. When hypervis_power ~=0,
+!both valiables are built (though only one is needed), leads to extra dss calls
+    if (hypervis_power /= 0) then
+!this is a code for smoothing V for tensor HV
+!probably can be placed better but
+!here we dss matrix V, each component
+
+!WARNING: since the switch between tensor HV and other HV algs is in preproc directive in derivative_mod, 
+!if tensor HV is not used, (or even if nu=0), we have extra 4 DSS here!
+!rowind, colind are from 1 to 2 cause they correspond to 2D tensor in lat/lon
+
+!IF DSSED V NEEDED
+#if 1
+    call initEdgeBuffer(edgebuf,1)
+    do rowind=1,2
+      do colind=1,2
+	do ie=nets,nete
+	  zeta(:,:,ie) = elem(ie)%tensorVisc(rowind,colind,:,:)*elem(ie)%spheremp(:,:)
+	  call edgeVpack(edgebuf,zeta(1,1,ie),1,0,elem(ie)%desc)
+	end do
+	call bndry_exchangeV(hybrid,edgebuf)
+	do ie=nets,nete
+	  call edgeVunpack(edgebuf,zeta(1,1,ie),1,0,elem(ie)%desc)
+	  elem(ie)%tensorVisc(rowind,colind,:,:) = zeta(:,:,ie)*elem(ie)%rspheremp(:,:)
+	end do
+      enddo !rowind
+    enddo !colind
+    call FreeEdgeBuffer(edgebuf)
+#endif
+
+!IF BILINEAR MAP OF V NEEDED
+#if 1
+    do rowind=1,2
+      do colind=1,2
+    ! replace hypervis w/ bilinear based on continuous corner values
+	do ie=nets,nete
+	  noreast = elem(ie)%tensorVisc(rowind,colind,np,np)
+	  nw = elem(ie)%tensorVisc(rowind,colind,1,np)
+	  se = elem(ie)%tensorVisc(rowind,colind,np,1)
+	  sw = elem(ie)%tensorVisc(rowind,colind,1,1)
+	  do i=1,np
+	    x = gp%points(i)
+	    do j=1,np
+		y = gp%points(j)
+		elem(ie)%tensorVisc(rowind,colind,i,j) = 0.25d0*( &
+					(1.0d0-x)*(1.0d0-y)*sw + &
+					(1.0d0-x)*(y+1.0d0)*nw + &
+					(x+1.0d0)*(1.0d0-y)*se + &
+					(x+1.0d0)*(y+1.0d0)*noreast)
+	    end do
+	  end do
+	end do
+      enddo !rowind
+    enddo !colind
+#endif
+    endif
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
     deallocate(gp%points)
     deallocate(gp%weights)
 
@@ -558,6 +623,7 @@ contains
 !         print*, 'fine_ne = ', fine_ne
 !         print*, 'Using max_unif_dx = ', max_unif_dx
       end if
+
     end if
 
   end subroutine print_cfl
