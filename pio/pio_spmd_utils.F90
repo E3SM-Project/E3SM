@@ -200,7 +200,6 @@ contains
       call CheckMPIReturn(subName,ier)
 
       offset_s = sdispls(mytask)+1
-
       call mpi_send( sndbuf(offset_s), sndlths(mytask), stypes(mytask), &
                      mytask, tag, comm, ier )
       call CheckMPIReturn(subName,ier)
@@ -729,7 +728,6 @@ contains
       call CheckMPIReturn(subName,ier)
 
       offset_s = sdispls(mytask)+1
-
       call mpi_send( sndbuf(offset_s), sndlths(mytask), stypes(mytask), &
                      mytask, tag, comm, ier )
       call CheckMPIReturn(subName,ier)
@@ -1258,7 +1256,6 @@ contains
       call CheckMPIReturn(subName,ier)
 
       offset_s = sdispls(mytask)+1
-
       call mpi_send( sndbuf(offset_s), sndlths(mytask), stypes(mytask), &
                      mytask, tag, comm, ier )
       call CheckMPIReturn(subName,ier)
@@ -1787,7 +1784,6 @@ contains
       call CheckMPIReturn(subName,ier)
 
       offset_s = sdispls(mytask)+1
-
       call mpi_send( sndbuf(offset_s), sndlths(mytask), stypes(mytask), &
                      mytask, tag, comm, ier )
       call CheckMPIReturn(subName,ier)
