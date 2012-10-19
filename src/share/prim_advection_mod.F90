@@ -76,21 +76,25 @@ module vertremap_mod
   !
   !**************************************************************************************
 
-  use kinds, only          : real_kind,int_kind
-  use dimensions_mod, only : np,nlev,qsize,nlevp,npsq,ntrac
-  use hybvcoord_mod, only  : hvcoord_t
-  use element_mod, only    : element_t
-  use fvm_control_volume_mod, only    : fvm_struct
-  use spelt_mod, only      : spelt_struct 
-  use perf_mod, only	   : t_startf, t_stopf  ! _EXTERNAL
-  use parallel_mod, only   : abortmp  	
+  use kinds, only                  : real_kind,int_kind
+  use dimensions_mod, only         : np,nlev,qsize,nlevp,npsq,ntrac
+  use hybvcoord_mod, only          : hvcoord_t
+  use element_mod, only            : element_t
+  use fvm_control_volume_mod, only : fvm_struct
+  use spelt_mod, only              : spelt_struct 
+  use perf_mod, only               : t_startf, t_stopf  ! _EXTERNAL
+  use parallel_mod, only           : abortmp
 
-  public remap1,remap_UV_lagrange2ref, remap_q, remap_q_ppm
+  public remap1
+  public remap_UV_lagrange2ref
+  public remap_q
+  public remap_q_ppm
+
   contains
 
 !=======================================================================================================! 
 
-  subroutine remap_UV_ref2lagrange(np1,dt,elem,hvcoord,nets,nete)
+subroutine remap_UV_ref2lagrange(np1,dt,elem,hvcoord,ie)
 !
 !   remap, without limiters, velocity, from REFERENCE levels to Lagrangian levels
 !   NOTE: this routine is remapping in the opposite direction as the other routines
@@ -106,31 +110,28 @@ module vertremap_mod
 !   output: elem(:)%state%vstar(:,:,:,:)   velocity on Lagrangian levels 
 !           
 !
-    implicit none
-    real (kind=real_kind),  intent(in)          :: dt
-    type (element_t),    intent(inout), target  :: elem(:)
-    type (hvcoord_t),    intent(in)             :: hvcoord
-    
-    integer :: nets,nete,np1
-     
-    ! ========================
-    ! Local Variables
-    ! ========================
+  implicit none
+  real (kind=real_kind),  intent(in   )         :: dt
+  type (element_t),       intent(inout), target :: elem(:)
+  type (hvcoord_t),       intent(in   )         :: hvcoord
+  integer,                intent(in   )         :: ie,np1
+   
+  ! ========================
+  ! Local Variables
+  ! ========================
 
-    real(kind=real_kind), dimension(nlev) :: dp,dp_star,Ustar,Vstar
-    real(kind=real_kind), dimension(nlev) :: Uold,Vold,Unew,Vnew
-    real(kind=real_kind), dimension(nlevp):: z1cU,z2cU,z1cV,z2cV
-    real(kind=real_kind), dimension(nlev+1)    :: rhsU,lower_diagU,diagU,upper_diagU,q_diagU,zgamU, & 
-                             rhsV,lower_diagV,diagV,upper_diagV,q_diagV,zgamV
-    real(kind=real_kind), dimension(nlev)    :: hU,rho_barU,za0U,za1U,za2U,zhdpU, & 
-                             hV,rho_barV,za0V,za1V,za2V,zhdpV
-    real(kind=real_kind)            :: tmp_calU,zaccintegerbU,zacctopU,zaccbotU, & 
-                             tmp_calV,zaccintegerbV,zacctopV,zaccbotV
-    
-    integer(kind=int_kind) :: zkrU(nlev+1),zkrV(nlev+1),ie,i,j,k,jl,jk,ilevU,itopU,ibotU,ilevV,itopV,ibotV,jsubz,ij
-    
-    call t_startf('remap_UV_ref2lagrange')
-    do ie=nets,nete
+  real(kind=real_kind), dimension(nlev)   :: dp,dp_star,Ustar,Vstar
+  real(kind=real_kind), dimension(nlev)   :: Uold,Vold,Unew,Vnew
+  real(kind=real_kind), dimension(nlevp)  :: z1cU,z2cU,z1cV,z2cV
+  real(kind=real_kind), dimension(nlev+1) :: rhsU,lower_diagU,diagU,upper_diagU,q_diagU,zgamU, & 
+                                             rhsV,lower_diagV,diagV,upper_diagV,q_diagV,zgamV
+  real(kind=real_kind), dimension(nlev)   :: hU,rho_barU,za0U,za1U,za2U,zhdpU, & 
+                                             hV,rho_barV,za0V,za1V,za2V,zhdpV
+  real(kind=real_kind)   :: tmp_calU,zaccintegerbU,zacctopU,zaccbotU, & 
+                            tmp_calV,zaccintegerbV,zacctopV,zaccbotV
+  integer(kind=int_kind) :: zkrU(nlev+1),zkrV(nlev+1),i,j,k,jl,jk,ilevU,itopU,ibotU,ilevV,itopV,ibotV,jsubz,ij
+  
+  call t_startf('remap_UV_ref2lagrange')
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(ij,i,j,k,dp,dp_star,Ustar,Vstar,z1cU,z2cU,z1cV,z2cV,Uold,Vold) &
 !$omp    private(zkrU,ilevU,zgamU,zhdpU,zkrV,ilevV,zgamV,zhdpV,jl,jk,hU,rhsU,hV,rhsV) &
@@ -139,208 +140,205 @@ module vertremap_mod
 !$omp    private(itopU,zacctopU,zaccintegerbV,itopV,zacctopV,ibotU,jsubz,zaccbotU,ibotV) &
 !$omp    private(zaccbotV,rho_barU,rho_barV)
 #endif
-       do ij = 1, npsq
-          j = (ij-1)/np + 1
-          i = ij - (j-1)*np
-          do k=1,nlev
-            dp(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,np1)
-            dp_star(k) = dp(k) + dt*(elem(ie)%derived%eta_dot_dpdn(i,j,k+1) - elem(ie)%derived%eta_dot_dpdn(i,j,k) ) 
-            Ustar(k) = elem(ie)%state%v(i,j,1,k,np1)*dp(k)
-            Vstar(k) = elem(ie)%state%v(i,j,2,k,np1)*dp(k)
-          enddo
-          
-
-          z1cU(1)=0
-          z2cU(1)=0
-          z1cV(1)=0
-          z2cV(1)=0
-          do k=1,nlev
-            Uold(k) = Ustar(k)
-            z1cU(k+1) = z1cU(k)+dp(k)
-            z2cU(k+1) = z2cU(k)+dp_star(k)
-            Vold(k) = Vstar(k)
-            z1cV(k+1) = z1cV(k)+dp(k)
-            z2cV(k+1) = z2cV(k)+dp_star(k)
-          enddo
-		  
-          if (ABS(z2cU(nlev+1)-z1cU(nlev+1)).GE.0.000001) then
-             write(6,*) 'SURFACE PRESSURE IMPLIED BY ADVECTION SCHEME'
-             write(6,*) 'NOT CORRESPONDING TO SURFACE PRESSURE IN    '
-             write(6,*) 'DATA FOR MODEL LEVELS'
-             write(6,*) 'PLEVMODEL=',z2cU(nlev+1)
-             write(6,*) 'PLEV     =',z1cU(nlev+1)
-             write(6,*) 'DIFF     =',z2cU(nlev+1)-z1cU(nlev+1)
-             ! call ABORT
-          endif
-          
-          if (ABS(z2cV(nlev+1)-z1cV(nlev+1)).GE.0.000001) then
-             write(6,*) 'SURFACE PRESSURE IMPLIED BY ADVECTION SCHEME'
-             write(6,*) 'NOT CORRESPONDING TO SURFACE PRESSURE IN    '
-             write(6,*) 'DATA FOR MODEL LEVELS'
-             write(6,*) 'PLEVMODEL=',z2cV(nlev+1)
-             write(6,*) 'PLEV     =',z1cV(nlev+1)
-             write(6,*) 'DIFF     =',z2cV(nlev+1)-z1cV(nlev+1)
-             ! call ABORT
-          endif
-          
-          
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          !!  calculate quadratic splies !!
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          
-          zkrU  = 99
-          ilevU = 2
-          zkrU(1)       = 1
-          zgamU(1)      = 0.0
-          zkrU(nlev+1)  = nlev
-          zgamU(nlev+1) = 1.0
-          zhdpU(1) = z1cU(2)-z1cU(1)
-          
-          zkrV  = 99
-          ilevV = 2
-          zkrV(1)       = 1
-          zgamV(1)      = 0.0
-          zkrV(nlev+1)  = nlev
-          zgamV(nlev+1) = 1.0
-          zhdpV(1) = z1cV(2)-z1cV(1)
-          do jl = 2,nlev
-            zhdpU(jl) = z1cU(jl+1)-z1cU(jl)
-            jkloopU: do jk = ilevU,nlev+1
-              if (z1cU(jk).ge.z2cU(jl)) then
-                ilevU      = jk
-                zkrU(jl)   = jk-1
-                zgamU(jl)   = (z2cU(jl)-z1cU(jk-1))/(z1cU(jk)-z1cU(jk-1))
-                exit jkloopU
-              endif
-            enddo jkloopU
-            zhdpV(jl) = z1cV(jl+1)-z1cV(jl)
-            jkloopV: do jk = ilevV,nlev+1
-              if (z1cV(jk).ge.z2cV(jl)) then
-                ilevV      = jk
-                zkrV(jl)   = jk-1
-                zgamV(jl)   = (z2cV(jl)-z1cV(jk-1))/(z1cV(jk)-z1cV(jk-1))
-                exit jkloopV
-              endif
-            enddo jkloopV
-          enddo 
-
-          hU = 1/zhdpU
-          rho_barU = Uold * hU
-          rhsU = 0
-          lower_diagU = 0
-          diagU = 0
-          upper_diagU = 0
-          
-          hV = 1/zhdpV 
-          rho_barV = Vold * hV          
-          rhsV = 0
-          lower_diagV = 0
-          diagV = 0
-          upper_diagV = 0
-
-          rhsU(1)=3*rho_barU(1)
-          rhsU(2:nlev) = 3*(rho_barU(2:nlev)*hU(2:nlev) + rho_barU(1:nlev-1)*hU(1:nlev-1)) 
-          rhsU(nlev+1)=3*rho_barU(nlev)
-          
-          rhsV(1)=3*rho_barV(1)
-          rhsV(2:nlev) = 3*(rho_barV(2:nlev)*hV(2:nlev) + rho_barV(1:nlev-1)*hV(1:nlev-1)) 
-          rhsV(nlev+1)=3*rho_barV(nlev)
-
-          lower_diagU(1)=1
-          lower_diagU(2:nlev) = hU(1:nlev-1)
-          lower_diagU(nlev+1)=1
-          
-          lower_diagV(1)=1
-          lower_diagV(2:nlev) = hV(1:nlev-1)
-          lower_diagV(nlev+1)=1
-
-          diagU(1)=2
-          diagU(2:nlev) = 2*(hU(2:nlev) + hU(1:nlev-1))
-          diagU(nlev+1)=2
-          
-          diagV(1)=2
-          diagV(2:nlev) = 2*(hV(2:nlev) + hV(1:nlev-1))
-          diagV(nlev+1)=2
-
-          upper_diagU(1)=1
-          upper_diagU(2:nlev) = hU(2:nlev)
-          upper_diagU(nlev+1)=0
-          
-          upper_diagV(1)=1
-          upper_diagV(2:nlev) = hV(2:nlev)
-          upper_diagV(nlev+1)=0
-
-          q_diagU(1)=-upper_diagU(1)/diagU(1)
-          rhsU(1)= rhsU(1)/diagU(1)
-          
-          q_diagV(1)=-upper_diagV(1)/diagV(1)
-          rhsV(1)= rhsV(1)/diagV(1)
-          do jl=2,nlev+1
-            tmp_calU    =  1/(diagU(jl)+lower_diagU(jl)*q_diagU(jl-1))
-            q_diagU(jl) = -upper_diagU(jl)*tmp_calU
-            rhsU(jl) =  (rhsU(jl)-lower_diagU(jl)*rhsU(jl-1))*tmp_calU
-            
-            tmp_calV    =  1/(diagV(jl)+lower_diagV(jl)*q_diagV(jl-1))
-            q_diagV(jl) = -upper_diagV(jl)*tmp_calV
-            rhsV(jl) =  (rhsV(jl)-lower_diagV(jl)*rhsV(jl-1))*tmp_calV
-          enddo
-          do jl=nlev,1,-1
-            rhsU(jl)=rhsU(jl)+q_diagU(jl)*rhsU(jl+1)
-            rhsV(jl)=rhsV(jl)+q_diagV(jl)*rhsV(jl+1)
-          enddo        
-
-          za0U = rhsU(1:nlev)
-          za1U = -4*rhsU(1:nlev) - 2*rhsU(2:nlev+1) + 6*rho_barU
-          za2U = +3*rhsU(1:nlev) + 3*rhsU(2:nlev+1) - 6*rho_barU
-          
-          za0V = rhsV(1:nlev)
-          za1V = -4*rhsV(1:nlev) - 2*rhsV(2:nlev+1) + 6*rho_barV
-          za2V = +3*rhsV(1:nlev) + 3*rhsV(2:nlev+1) - 6*rho_barV
-          
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          !! start iteration from top to bottom of atmosphere !! 
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                 
-          zaccintegerbU = 0
-          itopU = 1
-          zacctopU = 0.0
-          
-          zaccintegerbV = 0
-          itopV = 1
-          zacctopV = 0.0
-
-
-          do jk = 1,nlev
-            ibotU = zkrU(jk+1)
-            if (zgamU(jk+1)>1d0) then
-               WRITE(*,*) 'r not in [0:1]', zgamU(jk+1)
-            endif
-            do jsubz=itopU,ibotU-1,1
-              zaccintegerbU = zaccintegerbU + Uold(jsubz)
-            enddo
-            zaccbotU = zaccintegerbU + (za0U(ibotU)*zgamU(jk+1)+(za1U(ibotU)/2)*(zgamU(jk+1)**2)+(za2U(ibotU)/3)*(zgamU(jk+1)**3))*zhdpU(ibotU)
-            elem(ie)%derived%vstar(i,j,1,jk) = (zaccbotU-zacctopU)/dp_star(jk)
-            zacctopU        = zaccbotU
-            itopU           = ibotU
-            
-            ibotV = zkrV(jk+1)
-            if (zgamV(jk+1)>1d0) then
-               WRITE(*,*) 'r not in [0:1]', zgamV(jk+1)
-            endif
-            do jsubz=itopV,ibotV-1,1
-              zaccintegerbV = zaccintegerbV + Vold(jsubz)
-            enddo
-            zaccbotV = zaccintegerbV + (za0V(ibotV)*zgamV(jk+1)+(za1V(ibotV)/2)*(zgamV(jk+1)**2)+(za2V(ibotV)/3)*(zgamV(jk+1)**3))*zhdpV(ibotV)
-            elem(ie)%derived%vstar(i,j,2,jk) = (zaccbotV-zacctopV)/dp_star(jk)
-            zacctopV        = zaccbotV
-            itopV           = ibotV
-          enddo
-       enddo
+  do ij = 1, npsq
+    j = (ij-1)/np + 1
+    i = ij - (j-1)*np
+    do k=1,nlev
+      dp(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,np1)
+      dp_star(k) = dp(k) + dt*(elem(ie)%derived%eta_dot_dpdn(i,j,k+1) - elem(ie)%derived%eta_dot_dpdn(i,j,k) ) 
+      Ustar(k) = elem(ie)%state%v(i,j,1,k,np1)*dp(k)
+      Vstar(k) = elem(ie)%state%v(i,j,2,k,np1)*dp(k)
     enddo
-    call t_stopf('remap_UV_ref2lagrange')
-  end subroutine remap_UV_ref2lagrange
+    
+    z1cU(1)=0
+    z2cU(1)=0
+    z1cV(1)=0
+    z2cV(1)=0
+    do k=1,nlev
+      Uold(k) = Ustar(k)
+      z1cU(k+1) = z1cU(k)+dp(k)
+      z2cU(k+1) = z2cU(k)+dp_star(k)
+      Vold(k) = Vstar(k)
+      z1cV(k+1) = z1cV(k)+dp(k)
+      z2cV(k+1) = z2cV(k)+dp_star(k)
+    enddo
+
+    if (ABS(z2cU(nlev+1)-z1cU(nlev+1)).GE.0.000001) then
+      write(6,*) 'SURFACE PRESSURE IMPLIED BY ADVECTION SCHEME'
+      write(6,*) 'NOT CORRESPONDING TO SURFACE PRESSURE IN    '
+      write(6,*) 'DATA FOR MODEL LEVELS'
+      write(6,*) 'PLEVMODEL=',z2cU(nlev+1)
+      write(6,*) 'PLEV     =',z1cU(nlev+1)
+      write(6,*) 'DIFF     =',z2cU(nlev+1)-z1cU(nlev+1)
+      ! call ABORT
+    endif
+    
+    if (ABS(z2cV(nlev+1)-z1cV(nlev+1)).GE.0.000001) then
+      write(6,*) 'SURFACE PRESSURE IMPLIED BY ADVECTION SCHEME'
+      write(6,*) 'NOT CORRESPONDING TO SURFACE PRESSURE IN    '
+      write(6,*) 'DATA FOR MODEL LEVELS'
+      write(6,*) 'PLEVMODEL=',z2cV(nlev+1)
+      write(6,*) 'PLEV     =',z1cV(nlev+1)
+      write(6,*) 'DIFF     =',z2cV(nlev+1)-z1cV(nlev+1)
+      ! call ABORT
+    endif
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!  calculate quadratic splies !!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    zkrU  = 99
+    ilevU = 2
+    zkrU(1)       = 1
+    zgamU(1)      = 0.0
+    zkrU(nlev+1)  = nlev
+    zgamU(nlev+1) = 1.0
+    zhdpU(1) = z1cU(2)-z1cU(1)
+    
+    zkrV  = 99
+    ilevV = 2
+    zkrV(1)       = 1
+    zgamV(1)      = 0.0
+    zkrV(nlev+1)  = nlev
+    zgamV(nlev+1) = 1.0
+    zhdpV(1) = z1cV(2)-z1cV(1)
+    do jl = 2,nlev
+      zhdpU(jl) = z1cU(jl+1)-z1cU(jl)
+      jkloopU: do jk = ilevU,nlev+1
+        if (z1cU(jk).ge.z2cU(jl)) then
+          ilevU      = jk
+          zkrU(jl)   = jk-1
+          zgamU(jl)   = (z2cU(jl)-z1cU(jk-1))/(z1cU(jk)-z1cU(jk-1))
+          exit jkloopU
+        endif
+      enddo jkloopU
+      zhdpV(jl) = z1cV(jl+1)-z1cV(jl)
+      jkloopV: do jk = ilevV,nlev+1
+        if (z1cV(jk).ge.z2cV(jl)) then
+          ilevV      = jk
+          zkrV(jl)   = jk-1
+          zgamV(jl)   = (z2cV(jl)-z1cV(jk-1))/(z1cV(jk)-z1cV(jk-1))
+          exit jkloopV
+        endif
+      enddo jkloopV
+    enddo 
+
+    hU = 1/zhdpU
+    rho_barU = Uold * hU
+    rhsU = 0
+    lower_diagU = 0
+    diagU = 0
+    upper_diagU = 0
+    
+    hV = 1/zhdpV 
+    rho_barV = Vold * hV          
+    rhsV = 0
+    lower_diagV = 0
+    diagV = 0
+    upper_diagV = 0
+
+    rhsU(1)=3*rho_barU(1)
+    rhsU(2:nlev) = 3*(rho_barU(2:nlev)*hU(2:nlev) + rho_barU(1:nlev-1)*hU(1:nlev-1)) 
+    rhsU(nlev+1)=3*rho_barU(nlev)
+    
+    rhsV(1)=3*rho_barV(1)
+    rhsV(2:nlev) = 3*(rho_barV(2:nlev)*hV(2:nlev) + rho_barV(1:nlev-1)*hV(1:nlev-1)) 
+    rhsV(nlev+1)=3*rho_barV(nlev)
+
+    lower_diagU(1)=1
+    lower_diagU(2:nlev) = hU(1:nlev-1)
+    lower_diagU(nlev+1)=1
+    
+    lower_diagV(1)=1
+    lower_diagV(2:nlev) = hV(1:nlev-1)
+    lower_diagV(nlev+1)=1
+
+    diagU(1)=2
+    diagU(2:nlev) = 2*(hU(2:nlev) + hU(1:nlev-1))
+    diagU(nlev+1)=2
+    
+    diagV(1)=2
+    diagV(2:nlev) = 2*(hV(2:nlev) + hV(1:nlev-1))
+    diagV(nlev+1)=2
+
+    upper_diagU(1)=1
+    upper_diagU(2:nlev) = hU(2:nlev)
+    upper_diagU(nlev+1)=0
+    
+    upper_diagV(1)=1
+    upper_diagV(2:nlev) = hV(2:nlev)
+    upper_diagV(nlev+1)=0
+
+    q_diagU(1)=-upper_diagU(1)/diagU(1)
+    rhsU(1)= rhsU(1)/diagU(1)
+    
+    q_diagV(1)=-upper_diagV(1)/diagV(1)
+    rhsV(1)= rhsV(1)/diagV(1)
+    do jl=2,nlev+1
+      tmp_calU    =  1/(diagU(jl)+lower_diagU(jl)*q_diagU(jl-1))
+      q_diagU(jl) = -upper_diagU(jl)*tmp_calU
+      rhsU(jl) =  (rhsU(jl)-lower_diagU(jl)*rhsU(jl-1))*tmp_calU
+      
+      tmp_calV    =  1/(diagV(jl)+lower_diagV(jl)*q_diagV(jl-1))
+      q_diagV(jl) = -upper_diagV(jl)*tmp_calV
+      rhsV(jl) =  (rhsV(jl)-lower_diagV(jl)*rhsV(jl-1))*tmp_calV
+    enddo
+    do jl=nlev,1,-1
+      rhsU(jl)=rhsU(jl)+q_diagU(jl)*rhsU(jl+1)
+      rhsV(jl)=rhsV(jl)+q_diagV(jl)*rhsV(jl+1)
+    enddo        
+
+    za0U = rhsU(1:nlev)
+    za1U = -4*rhsU(1:nlev) - 2*rhsU(2:nlev+1) + 6*rho_barU
+    za2U = +3*rhsU(1:nlev) + 3*rhsU(2:nlev+1) - 6*rho_barU
+    
+    za0V = rhsV(1:nlev)
+    za1V = -4*rhsV(1:nlev) - 2*rhsV(2:nlev+1) + 6*rho_barV
+    za2V = +3*rhsV(1:nlev) + 3*rhsV(2:nlev+1) - 6*rho_barV
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !! start iteration from top to bottom of atmosphere !! 
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+           
+    zaccintegerbU = 0
+    itopU = 1
+    zacctopU = 0.0
+    
+    zaccintegerbV = 0
+    itopV = 1
+    zacctopV = 0.0
+
+
+    do jk = 1,nlev
+      ibotU = zkrU(jk+1)
+      if (zgamU(jk+1)>1d0) then
+        WRITE(*,*) 'r not in [0:1]', zgamU(jk+1)
+      endif
+      do jsubz=itopU,ibotU-1,1
+        zaccintegerbU = zaccintegerbU + Uold(jsubz)
+      enddo
+      zaccbotU = zaccintegerbU + (za0U(ibotU)*zgamU(jk+1)+(za1U(ibotU)/2)*(zgamU(jk+1)**2)+(za2U(ibotU)/3)*(zgamU(jk+1)**3))*zhdpU(ibotU)
+      elem(ie)%derived%vstar(i,j,1,jk) = (zaccbotU-zacctopU)/dp_star(jk)
+      zacctopU        = zaccbotU
+      itopU           = ibotU
+      
+      ibotV = zkrV(jk+1)
+      if (zgamV(jk+1)>1d0) then
+        WRITE(*,*) 'r not in [0:1]', zgamV(jk+1)
+      endif
+      do jsubz=itopV,ibotV-1,1
+        zaccintegerbV = zaccintegerbV + Vold(jsubz)
+      enddo
+      zaccbotV = zaccintegerbV + (za0V(ibotV)*zgamV(jk+1)+(za1V(ibotV)/2)*(zgamV(jk+1)**2)+(za2V(ibotV)/3)*(zgamV(jk+1)**3))*zhdpV(ibotV)
+      elem(ie)%derived%vstar(i,j,2,jk) = (zaccbotV-zacctopV)/dp_star(jk)
+      zacctopV        = zaccbotV
+      itopV           = ibotV
+    enddo
+  enddo
+  call t_stopf('remap_UV_ref2lagrange')
+end subroutine remap_UV_ref2lagrange
   
-  subroutine remap_UV_lagrange2ref(np1,dt,elem,hvcoord,nets,nete)
+subroutine remap_UV_lagrange2ref(np1,dt,elem,hvcoord,ie)
 !
 !   remap, without limiters, velocity, from Lagrangian levels to REFERECE levels
 !
@@ -352,31 +350,28 @@ module vertremap_mod
 !   output: elem(:)%state%v(:,:,:,:,np1)   velocity on REF levels 
 !           
 !
-    implicit none
-    real (kind=real_kind),  intent(in)          :: dt
-    type (element_t),    intent(inout), target  :: elem(:)
-    type (hvcoord_t),    intent(in)             :: hvcoord
-    
-    integer :: nets,nete,np1
-     
-    ! ========================
-    ! Local Variables
-    ! ========================
+  implicit none
+  real (kind=real_kind),  intent(in   )          :: dt
+  type (element_t),       intent(inout), target  :: elem(:)
+  type (hvcoord_t),       intent(in   )          :: hvcoord
+  integer,                intent(in   )          :: ie,np1
+   
+  ! ========================
+  ! Local Variables
+  ! ========================
 
-    real(kind=real_kind), dimension(nlev) :: dp,dp_star,Ustar,Vstar
-    real(kind=real_kind), dimension(nlev) :: Uold,Vold,Unew,Vnew
-    real(kind=real_kind), dimension(nlevp):: z1c,z2c
-    real(kind=real_kind), dimension(nlev+1)    :: rhsU,lower_diagU,diagU,upper_diagU,q_diagU,zgamU, & 
-                             rhsV,lower_diagV,diagV,upper_diagV,q_diagV,zgamV
-    real(kind=real_kind), dimension(nlev)    :: hU,rho_barU,za0U,za1U,za2U,zhdpU, & 
-                             hV,rho_barV,za0V,za1V,za2V,zhdpV
-    real(kind=real_kind)            :: tmp_calU,zaccintegerbU,zacctopU,zaccbotU, & 
-                             tmp_calV,zaccintegerbV,zacctopV,zaccbotV
-    
-    integer(kind=int_kind) :: zkrU(nlev+1),zkrV(nlev+1),ie,i,j,k,jl,jk,ilevU,itopU,ibotU,ilevV,itopV,ibotV,jsubz,ij
-    
-    call t_startf('remap_UV_lagrange2ref')
-    do ie=nets,nete
+  real(kind=real_kind), dimension(nlev)   :: dp,dp_star,Ustar,Vstar
+  real(kind=real_kind), dimension(nlev)   :: Uold,Vold,Unew,Vnew
+  real(kind=real_kind), dimension(nlevp)  :: z1c,z2c
+  real(kind=real_kind), dimension(nlev+1) :: rhsU,lower_diagU,diagU,upper_diagU,q_diagU,zgamU, & 
+                                             rhsV,lower_diagV,diagV,upper_diagV,q_diagV,zgamV
+  real(kind=real_kind), dimension(nlev)   :: hU,rho_barU,za0U,za1U,za2U,zhdpU, & 
+                                             hV,rho_barV,za0V,za1V,za2V,zhdpV
+  real(kind=real_kind)   :: tmp_calU,zaccintegerbU,zacctopU,zaccbotU, & 
+                            tmp_calV,zaccintegerbV,zacctopV,zaccbotV
+  integer(kind=int_kind) :: zkrU(nlev+1),zkrV(nlev+1),i,j,k,jl,jk,ilevU,itopU,ibotU,ilevV,itopV,ibotV,jsubz,ij
+  
+  call t_startf('remap_UV_lagrange2ref')
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(ij,i,j,k,dp,dp_star,Ustar,Vstar,z1c,z2c,Uold,Vold) &
 !$omp    private(zkrU,ilevU,zgamU,zhdpU,zkrV,ilevV,zgamV,zhdpV,jl,jk,hU,rhsU,hV,rhsV) &
@@ -385,229 +380,226 @@ module vertremap_mod
 !$omp    private(itopU,zacctopU,zaccintegerbV,itopV,zacctopV,ibotU,jsubz,zaccbotU,ibotV) &
 !$omp    private(zaccbotV,rho_barU,rho_barV)
 #endif
-       do ij = 1, npsq
-          j = (ij-1)/np + 1
-          i = ij - (j-1)*np
-          do k=1,nlev
-            dp(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,np1)
-            dp_star(k) = dp(k) + dt*(elem(ie)%derived%eta_dot_dpdn(i,j,k+1) - elem(ie)%derived%eta_dot_dpdn(i,j,k) ) 
-            Ustar(k) = elem(ie)%state%v(i,j,1,k,np1)*dp_star(k)
-            Vstar(k) = elem(ie)%state%v(i,j,2,k,np1)*dp_star(k)
-          enddo
-          
-
-          z1c(1)=0
-          z2c(1)=0
-          do k=1,nlev
-            Uold(k) = Ustar(k)
-            z1c(k+1) = z1c(k)+dp_star(k)
-            z2c(k+1) = z2c(k)+dp(k)
-            Vold(k) = Vstar(k)
-          enddo
-		  
-          if (ABS(z2c(nlev+1)-z1c(nlev+1)).GE.0.000001) then
-             write(6,*) 'SURFACE PRESSURE IMPLIED BY ADVECTION SCHEME'
-             write(6,*) 'NOT CORRESPONDING TO SURFACE PRESSURE IN    '
-             write(6,*) 'DATA FOR MODEL LEVELS'
-             write(6,*) 'PLEVMODEL=',z2c(nlev+1)
-             write(6,*) 'PLEV     =',z1c(nlev+1)
-             write(6,*) 'DIFF     =',z2c(nlev+1)-z1c(nlev+1)
-             ! call ABORT
-          endif
-          
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          !!  calculate quadratic splies !!
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          
-          zkrU  = 99
-          ilevU = 2
-          zkrU(1)       = 1
-          zgamU(1)      = 0.0
-          zkrU(nlev+1)  = nlev
-          zgamU(nlev+1) = 1.0
-          zhdpU(1) = z1c(2)-z1c(1)
-          
-          zkrV  = 99
-          ilevV = 2
-          zkrV(1)       = 1
-          zgamV(1)      = 0.0
-          zkrV(nlev+1)  = nlev
-          zgamV(nlev+1) = 1.0
-          zhdpV(1) = z1c(2)-z1c(1)
-          do jl = 2,nlev
-            zhdpU(jl) = z1c(jl+1)-z1c(jl)
-            jkloopU: do jk = ilevU,nlev+1
-              if (z1c(jk).ge.z2c(jl)) then
-                ilevU      = jk
-                zkrU(jl)   = jk-1
-                zgamU(jl)   = (z2c(jl)-z1c(jk-1))/(z1c(jk)-z1c(jk-1))
-                exit jkloopU
-              endif
-            enddo jkloopU
-            zhdpV(jl) = z1c(jl+1)-z1c(jl)
-            jkloopV: do jk = ilevV,nlev+1
-              if (z1c(jk).ge.z2c(jl)) then
-                ilevV      = jk
-                zkrV(jl)   = jk-1
-                zgamV(jl)   = (z2c(jl)-z1c(jk-1))/(z1c(jk)-z1c(jk-1))
-                exit jkloopV
-              endif
-            enddo jkloopV
-          enddo 
-
-          hU = 1/zhdpU
-          rho_barU = Uold * hU
-          rhsU = 0
-          lower_diagU = 0
-          diagU = 0
-          upper_diagU = 0
-          
-          hV = 1/zhdpV 
-          rho_barV = Vold * hV          
-          rhsV = 0
-          lower_diagV = 0
-          diagV = 0
-          upper_diagV = 0
-
-          rhsU(1)=3*rho_barU(1)
-          rhsU(2:nlev) = 3*(rho_barU(2:nlev)*hU(2:nlev) + rho_barU(1:nlev-1)*hU(1:nlev-1)) 
-          rhsU(nlev+1)=3*rho_barU(nlev)
-          
-          rhsV(1)=3*rho_barV(1)
-          rhsV(2:nlev) = 3*(rho_barV(2:nlev)*hV(2:nlev) + rho_barV(1:nlev-1)*hV(1:nlev-1)) 
-          rhsV(nlev+1)=3*rho_barV(nlev)
-
-          lower_diagU(1)=1
-          lower_diagU(2:nlev) = hU(1:nlev-1)
-          lower_diagU(nlev+1)=1
-          
-          lower_diagV(1)=1
-          lower_diagV(2:nlev) = hV(1:nlev-1)
-          lower_diagV(nlev+1)=1
-
-          diagU(1)=2
-          diagU(2:nlev) = 2*(hU(2:nlev) + hU(1:nlev-1))
-          diagU(nlev+1)=2
-          
-          diagV(1)=2
-          diagV(2:nlev) = 2*(hV(2:nlev) + hV(1:nlev-1))
-          diagV(nlev+1)=2
-
-          upper_diagU(1)=1
-          upper_diagU(2:nlev) = hU(2:nlev)
-          upper_diagU(nlev+1)=0
-          
-          upper_diagV(1)=1
-          upper_diagV(2:nlev) = hV(2:nlev)
-          upper_diagV(nlev+1)=0
-
-          q_diagU(1)=-upper_diagU(1)/diagU(1)
-          rhsU(1)= rhsU(1)/diagU(1)
-          
-          q_diagV(1)=-upper_diagV(1)/diagV(1)
-          rhsV(1)= rhsV(1)/diagV(1)
-          do jl=2,nlev+1
-            tmp_calU    =  1/(diagU(jl)+lower_diagU(jl)*q_diagU(jl-1))
-            q_diagU(jl) = -upper_diagU(jl)*tmp_calU
-            rhsU(jl) =  (rhsU(jl)-lower_diagU(jl)*rhsU(jl-1))*tmp_calU
-            
-            tmp_calV    =  1/(diagV(jl)+lower_diagV(jl)*q_diagV(jl-1))
-            q_diagV(jl) = -upper_diagV(jl)*tmp_calV
-            rhsV(jl) =  (rhsV(jl)-lower_diagV(jl)*rhsV(jl-1))*tmp_calV
-          enddo
-          do jl=nlev,1,-1
-            rhsU(jl)=rhsU(jl)+q_diagU(jl)*rhsU(jl+1)
-            rhsV(jl)=rhsV(jl)+q_diagV(jl)*rhsV(jl+1)
-          enddo        
-
-          za0U = rhsU(1:nlev)
-          za1U = -4*rhsU(1:nlev) - 2*rhsU(2:nlev+1) + 6*rho_barU
-          za2U = +3*rhsU(1:nlev) + 3*rhsU(2:nlev+1) - 6*rho_barU
-          
-          za0V = rhsV(1:nlev)
-          za1V = -4*rhsV(1:nlev) - 2*rhsV(2:nlev+1) + 6*rho_barV
-          za2V = +3*rhsV(1:nlev) + 3*rhsV(2:nlev+1) - 6*rho_barV
-          
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          !! start iteration from top to bottom of atmosphere !! 
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                 
-          zaccintegerbU = 0
-          itopU = 1
-          zacctopU = 0.0
-          
-          zaccintegerbV = 0
-          itopV = 1
-          zacctopV = 0.0
-
-
-          do jk = 1,nlev
-            ibotU = zkrU(jk+1)
-            if (zgamU(jk+1)>1d0) then
-               WRITE(*,*) 'r not in [0:1]', zgamU(jk+1)
-            endif
-            do jsubz=itopU,ibotU-1,1
-              zaccintegerbU = zaccintegerbU + Uold(jsubz)
-            enddo
-            zaccbotU = zaccintegerbU + (za0U(ibotU)*zgamU(jk+1)+(za1U(ibotU)/2)*(zgamU(jk+1)**2)+(za2U(ibotU)/3)*(zgamU(jk+1)**3))*zhdpU(ibotU)
-
-            elem(ie)%state%v(i,j,1,jk,np1) = (zaccbotU-zacctopU)/dp(jk)
-
-            zacctopU        = zaccbotU
-            itopU           = ibotU
-            
-            ibotV = zkrV(jk+1)
-            if (zgamV(jk+1)>1d0) then
-               WRITE(*,*) 'r not in [0:1]', zgamV(jk+1)
-            endif
-            do jsubz=itopV,ibotV-1,1
-              zaccintegerbV = zaccintegerbV + Vold(jsubz)
-            enddo
-            zaccbotV = zaccintegerbV + (za0V(ibotV)*zgamV(jk+1)+(za1V(ibotV)/2)*(zgamV(jk+1)**2)+(za2V(ibotV)/3)*(zgamV(jk+1)**3))*zhdpV(ibotV)
-
-            elem(ie)%state%v(i,j,2,jk,np1) = (zaccbotV-zacctopV)/dp(jk)
-
-            zacctopV        = zaccbotV
-            itopV           = ibotV
-
-          enddo
-       enddo
+  do ij = 1, npsq
+    j = (ij-1)/np + 1
+    i = ij - (j-1)*np
+    do k=1,nlev
+      dp(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,np1)
+      dp_star(k) = dp(k) + dt*(elem(ie)%derived%eta_dot_dpdn(i,j,k+1) - elem(ie)%derived%eta_dot_dpdn(i,j,k) ) 
+      Ustar(k) = elem(ie)%state%v(i,j,1,k,np1)*dp_star(k)
+      Vstar(k) = elem(ie)%state%v(i,j,2,k,np1)*dp_star(k)
     enddo
-    call t_stopf('remap_UV_lagrange2ref')
-  end subroutine remap_UV_lagrange2ref
+
+    z1c(1)=0
+    z2c(1)=0
+    do k=1,nlev
+      Uold(k) = Ustar(k)
+      z1c(k+1) = z1c(k)+dp_star(k)
+      z2c(k+1) = z2c(k)+dp(k)
+      Vold(k) = Vstar(k)
+    enddo
+
+    if (ABS(z2c(nlev+1)-z1c(nlev+1)).GE.0.000001) then
+      write(6,*) 'SURFACE PRESSURE IMPLIED BY ADVECTION SCHEME'
+      write(6,*) 'NOT CORRESPONDING TO SURFACE PRESSURE IN    '
+      write(6,*) 'DATA FOR MODEL LEVELS'
+      write(6,*) 'PLEVMODEL=',z2c(nlev+1)
+      write(6,*) 'PLEV     =',z1c(nlev+1)
+      write(6,*) 'DIFF     =',z2c(nlev+1)-z1c(nlev+1)
+      ! call ABORT
+    endif
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!  calculate quadratic splies !!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    zkrU  = 99
+    ilevU = 2
+    zkrU(1)       = 1
+    zgamU(1)      = 0.0
+    zkrU(nlev+1)  = nlev
+    zgamU(nlev+1) = 1.0
+    zhdpU(1) = z1c(2)-z1c(1)
+    
+    zkrV  = 99
+    ilevV = 2
+    zkrV(1)       = 1
+    zgamV(1)      = 0.0
+    zkrV(nlev+1)  = nlev
+    zgamV(nlev+1) = 1.0
+    zhdpV(1) = z1c(2)-z1c(1)
+    do jl = 2,nlev
+      zhdpU(jl) = z1c(jl+1)-z1c(jl)
+      jkloopU: do jk = ilevU,nlev+1
+        if (z1c(jk).ge.z2c(jl)) then
+          ilevU      = jk
+          zkrU(jl)   = jk-1
+          zgamU(jl)   = (z2c(jl)-z1c(jk-1))/(z1c(jk)-z1c(jk-1))
+          exit jkloopU
+        endif
+      enddo jkloopU
+      zhdpV(jl) = z1c(jl+1)-z1c(jl)
+      jkloopV: do jk = ilevV,nlev+1
+        if (z1c(jk).ge.z2c(jl)) then
+          ilevV      = jk
+          zkrV(jl)   = jk-1
+          zgamV(jl)   = (z2c(jl)-z1c(jk-1))/(z1c(jk)-z1c(jk-1))
+          exit jkloopV
+        endif
+      enddo jkloopV
+    enddo 
+
+    hU = 1/zhdpU
+    rho_barU = Uold * hU
+    rhsU = 0
+    lower_diagU = 0
+    diagU = 0
+    upper_diagU = 0
+    
+    hV = 1/zhdpV 
+    rho_barV = Vold * hV          
+    rhsV = 0
+    lower_diagV = 0
+    diagV = 0
+    upper_diagV = 0
+
+    rhsU(1)=3*rho_barU(1)
+    rhsU(2:nlev) = 3*(rho_barU(2:nlev)*hU(2:nlev) + rho_barU(1:nlev-1)*hU(1:nlev-1)) 
+    rhsU(nlev+1)=3*rho_barU(nlev)
+    
+    rhsV(1)=3*rho_barV(1)
+    rhsV(2:nlev) = 3*(rho_barV(2:nlev)*hV(2:nlev) + rho_barV(1:nlev-1)*hV(1:nlev-1)) 
+    rhsV(nlev+1)=3*rho_barV(nlev)
+
+    lower_diagU(1)=1
+    lower_diagU(2:nlev) = hU(1:nlev-1)
+    lower_diagU(nlev+1)=1
+    
+    lower_diagV(1)=1
+    lower_diagV(2:nlev) = hV(1:nlev-1)
+    lower_diagV(nlev+1)=1
+
+    diagU(1)=2
+    diagU(2:nlev) = 2*(hU(2:nlev) + hU(1:nlev-1))
+    diagU(nlev+1)=2
+    
+    diagV(1)=2
+    diagV(2:nlev) = 2*(hV(2:nlev) + hV(1:nlev-1))
+    diagV(nlev+1)=2
+
+    upper_diagU(1)=1
+    upper_diagU(2:nlev) = hU(2:nlev)
+    upper_diagU(nlev+1)=0
+    
+    upper_diagV(1)=1
+    upper_diagV(2:nlev) = hV(2:nlev)
+    upper_diagV(nlev+1)=0
+
+    q_diagU(1)=-upper_diagU(1)/diagU(1)
+    rhsU(1)= rhsU(1)/diagU(1)
+    
+    q_diagV(1)=-upper_diagV(1)/diagV(1)
+    rhsV(1)= rhsV(1)/diagV(1)
+    do jl=2,nlev+1
+      tmp_calU    =  1/(diagU(jl)+lower_diagU(jl)*q_diagU(jl-1))
+      q_diagU(jl) = -upper_diagU(jl)*tmp_calU
+      rhsU(jl) =  (rhsU(jl)-lower_diagU(jl)*rhsU(jl-1))*tmp_calU
+      
+      tmp_calV    =  1/(diagV(jl)+lower_diagV(jl)*q_diagV(jl-1))
+      q_diagV(jl) = -upper_diagV(jl)*tmp_calV
+      rhsV(jl) =  (rhsV(jl)-lower_diagV(jl)*rhsV(jl-1))*tmp_calV
+    enddo
+    do jl=nlev,1,-1
+      rhsU(jl)=rhsU(jl)+q_diagU(jl)*rhsU(jl+1)
+      rhsV(jl)=rhsV(jl)+q_diagV(jl)*rhsV(jl+1)
+    enddo        
+
+    za0U = rhsU(1:nlev)
+    za1U = -4*rhsU(1:nlev) - 2*rhsU(2:nlev+1) + 6*rho_barU
+    za2U = +3*rhsU(1:nlev) + 3*rhsU(2:nlev+1) - 6*rho_barU
+    
+    za0V = rhsV(1:nlev)
+    za1V = -4*rhsV(1:nlev) - 2*rhsV(2:nlev+1) + 6*rho_barV
+    za2V = +3*rhsV(1:nlev) + 3*rhsV(2:nlev+1) - 6*rho_barV
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !! start iteration from top to bottom of atmosphere !! 
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+           
+    zaccintegerbU = 0
+    itopU = 1
+    zacctopU = 0.0
+    
+    zaccintegerbV = 0
+    itopV = 1
+    zacctopV = 0.0
+
+
+    do jk = 1,nlev
+      ibotU = zkrU(jk+1)
+      if (zgamU(jk+1)>1d0) then
+        WRITE(*,*) 'r not in [0:1]', zgamU(jk+1)
+      endif
+      do jsubz=itopU,ibotU-1,1
+        zaccintegerbU = zaccintegerbU + Uold(jsubz)
+      enddo
+      zaccbotU = zaccintegerbU + (za0U(ibotU)*zgamU(jk+1)+(za1U(ibotU)/2)*(zgamU(jk+1)**2)+(za2U(ibotU)/3)*(zgamU(jk+1)**3))*zhdpU(ibotU)
+
+      elem(ie)%state%v(i,j,1,jk,np1) = (zaccbotU-zacctopU)/dp(jk)
+
+      zacctopU        = zaccbotU
+      itopU           = ibotU
+      
+      ibotV = zkrV(jk+1)
+      if (zgamV(jk+1)>1d0) then
+        WRITE(*,*) 'r not in [0:1]', zgamV(jk+1)
+      endif
+      do jsubz=itopV,ibotV-1,1
+        zaccintegerbV = zaccintegerbV + Vold(jsubz)
+      enddo
+      zaccbotV = zaccintegerbV + (za0V(ibotV)*zgamV(jk+1)+(za1V(ibotV)/2)*(zgamV(jk+1)**2)+(za2V(ibotV)/3)*(zgamV(jk+1)**3))*zhdpV(ibotV)
+
+      elem(ie)%state%v(i,j,2,jk,np1) = (zaccbotV-zacctopV)/dp(jk)
+
+      zacctopV        = zaccbotV
+      itopV           = ibotV
+
+    enddo
+  enddo
+  call t_stopf('remap_UV_lagrange2ref')
+end subroutine remap_UV_lagrange2ref
   
   !=======================================================================================================! 
 
   
-  subroutine remap1(Q,ps,eta_dot_dpdn,dt,hvcoord)
-    ! remap 1 field
-    ! input:  Q     field to be remapped (NOTE: MIXING RATIO)
-    !         ps()  surface pressure (determines reference levels)
-    !         eta_dot_dpdn()  mass flux which to get to reference levels  
-    !
-    ! output: remaped Q, conserving Qdp
-    !
-    use physical_constants, only : cp, cpwater_vapor
-	
-    implicit none
-    real (kind=real_kind), intent(in)   :: dt
-    type (hvcoord_t),      intent(in)      :: hvcoord
-    real (kind=real_kind), intent(inout)  :: Q(np,np,nlev)
-    real (kind=real_kind), intent(in)     :: ps(np,np),eta_dot_dpdn(np,np,nlev)
-    ! ========================
-    ! Local Variables
-    ! ========================
+subroutine remap1(Q,ps,eta_dot_dpdn,dt,hvcoord)
+  ! remap 1 field
+  ! input:  Q     field to be remapped (NOTE: MIXING RATIO)
+  !         ps()  surface pressure (determines reference levels)
+  !         eta_dot_dpdn()  mass flux which to get to reference levels  
+  !
+  ! output: remaped Q, conserving Qdp
+  !
+  use physical_constants, only : cp, cpwater_vapor
 
-    real (kind=real_kind), dimension(nlev+1)    :: rhs,lower_diag,diag,upper_diag,q_diag,zgam,z1c,z2c,zv
-    real (kind=real_kind), dimension(nlev)      :: h,Qcol,dy,za0,za1,za2,zarg,zhdp
-    real (kind=real_kind)  :: dp_star,dp_np1,f_xm,level1,level2,level3,level4,level5, &
-								peaks_min,peaks_max,tmp_cal,xm,xm_d,zv1,zv2, &
-								zero = 0,one = 1,tiny = 1e-12,qmax = 1d50
-    
-    integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, & 
-									lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k
-    
-    call t_startf('remap1')
+  implicit none
+  real (kind=real_kind), intent(in   ) :: dt
+  type (hvcoord_t),      intent(in   ) :: hvcoord
+  real (kind=real_kind), intent(inout) :: Q(np,np,nlev)
+  real (kind=real_kind), intent(in   ) :: ps(np,np),eta_dot_dpdn(np,np,nlev)
+  ! ========================
+  ! Local Variables
+  ! ========================
+
+  real (kind=real_kind), dimension(nlev+1)    :: rhs,lower_diag,diag,upper_diag,q_diag,zgam,z1c,z2c,zv
+  real (kind=real_kind), dimension(nlev)      :: h,Qcol,dy,za0,za1,za2,zarg,zhdp
+  real (kind=real_kind)  :: dp_star,dp_np1,f_xm,level1,level2,level3,level4,level5, &
+                            peaks_min,peaks_max,tmp_cal,xm,xm_d,zv1,zv2, &
+                            zero = 0,one = 1,tiny = 1e-12,qmax = 1d50
+  integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, & 
+                            lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k
+  
+  call t_startf('remap1')
 
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(i,j,z1c,z2c,zv,k,dp_np1,dp_star,Qcol,zkr,ilev) &
@@ -615,528 +607,516 @@ module vertremap_mod
 !$omp    private(dy,im1,im2,im3,ip1,t1,t2,t3,za0,za1,za2,xm_d,xm,f_xm,t4,tm,tp,peaks,peaks_min) &
 !$omp    private(peaks_max,ip2,level1,level2,level3,level4,level5,lt1,lt2,lt3,zv1,zv2)
 #endif
-        do i=1,np
-          do j=1,np
-             z1c(1)=0
-             z2c(1)=0
-             zv(1)=0
-             do k=1,nlev
-                dp_np1 = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
-                     (hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps(i,j)
-                dp_star = dp_np1 + dt*(eta_dot_dpdn(i,j,k+1) & 
-                     -eta_dot_dpdn(i,j,k)) 
+  do i=1,np
+    do j=1,np
+      z1c(1)=0
+      z2c(1)=0
+      zv(1)=0
+      do k=1,nlev
+        dp_np1 = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
+                 (hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps(i,j)
+        dp_star = dp_np1 + dt*(eta_dot_dpdn(i,j,k+1) & 
+                  -eta_dot_dpdn(i,j,k)) 
 
-                ! uncommnet to ignore the vertical motion
-                !dp_star = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
-                !     (hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(i,j,np1)
+        ! uncommnet to ignore the vertical motion
+        !dp_star = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
+        !     (hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(i,j,np1)
 
-                z1c(k+1) = z1c(k)+dp_star
-                z2c(k+1) = z2c(k)+dp_np1
-                Qcol(k)=Q(i,j,k)*dp_star
-                zv(k+1) = zv(k)+Qcol(k)
-             enddo
-             
-             if (ABS(z2c(nlev+1)-z1c(nlev+1)).GE.0.000001) then
-                write(6,*) 'SURFACE PRESSURE IMPLIED BY ADVECTION SCHEME'
-                write(6,*) 'NOT CORRESPONDING TO SURFACE PRESSURE IN    '
-                write(6,*) 'DATA FOR MODEL LEVELS'
-                write(6,*) 'PLEVMODEL=',z2c(nlev+1)
-                write(6,*) 'PLEV     =',z1c(nlev+1)
-                write(6,*) 'DIFF     =',z2c(nlev+1)-z1c(nlev+1)
-                ! call ABORT
-             endif
-             
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-             !! quadratic splies with UK met office monotonicity constraints  !!
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-             
-             zkr  = 99
-             ilev = 2
-             zkr(1) = 1
-             zkr(nlev+1) = nlev
-             kloop: do k = 2,nlev
-                do jk = ilev,nlev+1
-                   if (z1c(jk).ge.z2c(k)) then
-                      ilev      = jk
-                      zkr(k)   = jk-1
-                      cycle kloop
-                   endif
-                enddo
-             enddo kloop
-             
-             zgam  = (z2c(1:nlev+1)-z1c(zkr)) / (z1c(zkr+1)-z1c(zkr))
-             zgam(1)      = 0.0
-             zgam(nlev+1) = 1.0
-             zhdp = z1c(2:nlev+1)-z1c(1:nlev)
-             
-             
-             h = 1/zhdp
-             zarg = Qcol * h
-             rhs = 0
-             lower_diag = 0
-             diag = 0
-             upper_diag = 0
-             
-             rhs(1)=3*zarg(1)
-             rhs(2:nlev) = 3*(zarg(2:nlev)*h(2:nlev) + zarg(1:nlev-1)*h(1:nlev-1)) 
-             rhs(nlev+1)=3*zarg(nlev)
-             
-             lower_diag(1)=1
-             lower_diag(2:nlev) = h(1:nlev-1)
-             lower_diag(nlev+1)=1
-             
-             diag(1)=2
-             diag(2:nlev) = 2*(h(2:nlev) + h(1:nlev-1))
-             diag(nlev+1)=2
-             
-             upper_diag(1)=1
-             upper_diag(2:nlev) = h(2:nlev)
-             upper_diag(nlev+1)=0
-             
-             q_diag(1)=-upper_diag(1)/diag(1)
-             rhs(1)= rhs(1)/diag(1)
-             
-             do k=2,nlev+1
-                tmp_cal    =  1/(diag(k)+lower_diag(k)*q_diag(k-1))
-                q_diag(k) = -upper_diag(k)*tmp_cal
-                rhs(k) =  (rhs(k)-lower_diag(k)*rhs(k-1))*tmp_cal
-             enddo
-             do k=nlev,1,-1
-                rhs(k)=rhs(k)+q_diag(k)*rhs(k+1)
-             enddo
-             
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-             !!  monotonicity modifications  !!
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
-             
-             filter_code = 0
-             dy(1:nlev-1) = zarg(2:nlev)-zarg(1:nlev-1)
-             dy(nlev) = dy(nlev-1)                          
-             
-             dy = merge(zero, dy, abs(dy) < tiny )
-             
-             do k=1,nlev
-                im1=MAX(1,k-1)
-                im2=MAX(1,k-2)
-                im3=MAX(1,k-3)
-                ip1=MIN(nlev,k+1)
-                t1 = merge(1,0,(zarg(k)-rhs(k))*(rhs(k)-zarg(im1)) >= 0)
-                t2 = merge(1,0,dy(im2)*(rhs(k)-zarg(im1)) > 0 .AND. dy(im2)*dy(im3) > 0 &
-                     .AND. dy(k)*dy(ip1) > 0 .AND. dy(im2)*dy(k) < 0 )
-                t3 = merge(1,0,ABS(rhs(k)-zarg(im1)) > ABS(rhs(k)-zarg(k)))	
-                
-                filter_code(k) = merge(0,1,t1+t2 > 0) 
-                rhs(k) = (1-filter_code(k))*rhs(k)+filter_code(k)*(t3*zarg(k)+(1-t3)*zarg(im1))
-                filter_code(im1) = MAX(filter_code(im1),filter_code(k))
-             enddo
-             
-             rhs = merge(qmax,rhs,rhs > qmax)
-             rhs = merge(zero,rhs,rhs < zero)
-             
-             za0 = rhs(1:nlev) 
-             za1 = -4*rhs(1:nlev) - 2*rhs(2:nlev+1) + 6*zarg  
-             za2 =  3*rhs(1:nlev) + 3*rhs(2:nlev+1) - 6*zarg 
-             
-             dy(1:nlev) = rhs(2:nlev+1)-rhs(1:nlev)                             
-             dy = merge(zero, dy, abs(dy) < tiny )
-             
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!     
-             !! Compute the 3 quadratic spline coeffients {za0, za1, za2}				   !!
-             !! knowing the quadratic spline parameters {rho_left,rho_right,zarg}		   !!
-             !! Zerroukat et.al., Q.J.R. Meteorol. Soc., Vol. 128, pp. 2801-2820 (2002).   !!
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-             
-             
-             h = rhs(2:nlev+1)  
-             
-             do k=1,nlev
-                
-                xm_d = merge(one,2*za2(k),abs(za2(k)) < tiny)
-                xm = merge(zero,-za1(k)/xm_d, abs(za2(k)) < tiny)            
-                f_xm = za0(k) + za1(k)*xm + za2(k)*xm**2
-                
-                t1 = merge(1,0,ABS(za2(k)) > tiny)
-                t2 = merge(1,0,xm <= zero .OR. xm >= 1)
-                t3 = merge(1,0,za2(k) > zero)
-                t4 = merge(1,0,za2(k) < zero)
-                tm = merge(1,0,t1*((1-t2)+t3) .EQ. 2)
-                tp = merge(1,0,t1*((1-t2)+(1-t3)+t4) .EQ. 3)
-                
-                peaks=0
-                peaks = merge(-1,peaks,tm .EQ. 1)
-                peaks = merge(+1,peaks,tp .EQ. 1)
-                peaks_min = merge(f_xm,MIN(za0(k),za0(k)+za1(k)+za2(k)),tm .EQ. 1)
-                peaks_max = merge(f_xm,MAX(za0(k),za0(k)+za1(k)+za2(k)),tp .EQ. 1)
-                
-                im1=MAX(1,k-1)
-                im2=MAX(1,k-2)
-                ip1=MIN(nlev,k+1)
-                ip2=MIN(nlev,k+2)
-                
-                t1 = merge(abs(peaks),0,(dy(im2)*dy(im1) <= tiny) .OR. &
-                     (dy(ip1)*dy(ip2) <= tiny) .OR. (dy(im1)*dy(ip1) >= tiny) .OR. &
-                     (dy(im1)*float(peaks) <= tiny))
-                
-                filter_code(k) = merge(1,t1+(1-t1)*filter_code(k),(rhs(k) >= qmax) .OR. & 
-                     (rhs(k) <= zero) .OR. (peaks_max > qmax) .OR. (peaks_min < tiny))
-                
-                if (filter_code(k) > 0) then
-                   
-                   level1 = rhs(k)
-                   level2 = (2*rhs(k)+h(k))/3
-                   level3 = 0.5*(rhs(k)+h(k)) 
-                   level4 = (1/3d0)*rhs(k)+2*(1/3d0)*h(k)
-                   level5 = h(k)
-                   
-                   t1 = merge(1,0,h(k) >= rhs(k))
-                   t2 = merge(1,0,zarg(k) <= level1 .OR.  zarg(k) >= level5)
-                   t3 = merge(1,0,zarg(k) >  level1 .AND. zarg(k) <  level2)
-                   t4 = merge(1,0,zarg(k) >  level4 .AND. zarg(k) <  level5)
-                   
-                   lt1 = t1*t2
-                   lt2 = t1*(1-t2+t3)
-                   lt3 = t1*(1-t2+1-t3+t4)
-                   
-                   za0(k) = merge(zarg(k),za0(k),lt1 .EQ. 1)
-                   za1(k) = merge(zero,za1(k),lt1 .EQ. 1)
-                   za2(k) = merge(zero,za2(k),lt1 .EQ. 1)
-                   
-                   za0(k) = merge(rhs(k),za0(k),lt2 .EQ. 2)
-                   za1(k) = merge(zero,za1(k),lt2 .EQ. 2)
-                   za2(k) = merge(3*(zarg(k)-rhs(k)),za2(k),lt2 .EQ. 2)
-                   
-                   za0(k) = merge(-2*h(k)+3*zarg(k),za0(k),lt3 .EQ. 3)
-                   za1(k) = merge(+6*h(k)-6*zarg(k),za1(k),lt3 .EQ. 3)
-                   za2(k) = merge(-3*h(k)+3*zarg(k),za2(k),lt3 .EQ. 3)
-                   
-                   t2 = merge(1,0,zarg(k) >= level1 .OR.  zarg(k) <= level5)
-                   t3 = merge(1,0,zarg(k) <  level1 .AND. zarg(k) >  level2)
-                   t4 = merge(1,0,zarg(k) <  level4 .AND. zarg(k) >  level5)
-                   
-                   lt1 = (1-t1)*t2
-                   lt2 = (1-t1)*(1-t2+t3)
-                   lt3 = (1-t1)*(1-t2+1-t3+t4)
-                   
-                   za0(k) = merge(zarg(k),za0(k),lt1 .EQ. 1)
-                   za1(k) = merge(zero,za1(k),lt1 .EQ. 1)
-                   za2(k) = merge(zero,za2(k),lt1 .EQ. 1)
-                   
-                   za0(k) = merge(rhs(k),za0(k),lt2 .EQ. 2)
-                   za1(k) = merge(zero,za1(k),lt2 .EQ. 2)
-                   za2(k) = merge(3*(zarg(k)-rhs(k)),za2(k),lt2 .EQ. 2)
-                   
-                   za0(k) = merge(-2*h(k)+3*zarg(k),za0(k),lt3 .EQ. 3)
-                   za1(k) = merge(+6*h(k)-6*zarg(k),za1(k),lt3 .EQ. 3)
-                   za2(k) = merge(-3*h(k)+3*zarg(k),za2(k),lt3 .EQ. 3)	
-                endif
-             enddo
-             
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-             !! start iteration from top to bottom of atmosphere !! 
-			 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-             
-             zv1 = 0
-             do k=1,nlev
-                if (zgam(k+1)>1d0) then
-                   WRITE(*,*) 'r not in [0:1]', zgam(k+1)
-                endif
-                zv2 = zv(zkr(k+1))+(za0(zkr(k+1))*zgam(k+1)+(za1(zkr(k+1))/2)*(zgam(k+1)**2)+ &
-                     (za2(zkr(k+1))/3)*(zgam(k+1)**3))*zhdp(zkr(k+1))
-                Q(i,j,k) = (zv2 - zv1)	/ (z2c(k+1)-z2c(k) )
-                zv1 = zv2
-             enddo
-          enddo
-       enddo
- 
- call t_stopf('remap1')
- end subroutine remap1
- 
-  subroutine remap_Q(np1,np1_qdp, dt,elem,hvcoord,nets,nete)
+        z1c(k+1) = z1c(k)+dp_star
+        z2c(k+1) = z2c(k)+dp_np1
+        Qcol(k)=Q(i,j,k)*dp_star
+        zv(k+1) = zv(k)+Qcol(k)
+      enddo
+      
+      if (ABS(z2c(nlev+1)-z1c(nlev+1)).GE.0.000001) then
+        write(6,*) 'SURFACE PRESSURE IMPLIED BY ADVECTION SCHEME'
+        write(6,*) 'NOT CORRESPONDING TO SURFACE PRESSURE IN    '
+        write(6,*) 'DATA FOR MODEL LEVELS'
+        write(6,*) 'PLEVMODEL=',z2c(nlev+1)
+        write(6,*) 'PLEV     =',z1c(nlev+1)
+        write(6,*) 'DIFF     =',z2c(nlev+1)-z1c(nlev+1)
+        ! call ABORT
+      endif
+      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! quadratic splies with UK met office monotonicity constraints  !!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      
+      zkr  = 99
+      ilev = 2
+      zkr(1) = 1
+      zkr(nlev+1) = nlev
+      kloop: do k = 2,nlev
+        do jk = ilev,nlev+1
+          if (z1c(jk).ge.z2c(k)) then
+            ilev      = jk
+            zkr(k)   = jk-1
+            cycle kloop
+          endif
+        enddo
+      enddo kloop
+      
+      zgam  = (z2c(1:nlev+1)-z1c(zkr)) / (z1c(zkr+1)-z1c(zkr))
+      zgam(1)      = 0.0
+      zgam(nlev+1) = 1.0
+      zhdp = z1c(2:nlev+1)-z1c(1:nlev)
+      
+      
+      h = 1/zhdp
+      zarg = Qcol * h
+      rhs = 0
+      lower_diag = 0
+      diag = 0
+      upper_diag = 0
+      
+      rhs(1)=3*zarg(1)
+      rhs(2:nlev) = 3*(zarg(2:nlev)*h(2:nlev) + zarg(1:nlev-1)*h(1:nlev-1)) 
+      rhs(nlev+1)=3*zarg(nlev)
+      
+      lower_diag(1)=1
+      lower_diag(2:nlev) = h(1:nlev-1)
+      lower_diag(nlev+1)=1
+      
+      diag(1)=2
+      diag(2:nlev) = 2*(h(2:nlev) + h(1:nlev-1))
+      diag(nlev+1)=2
+      
+      upper_diag(1)=1
+      upper_diag(2:nlev) = h(2:nlev)
+      upper_diag(nlev+1)=0
+      
+      q_diag(1)=-upper_diag(1)/diag(1)
+      rhs(1)= rhs(1)/diag(1)
+      
+      do k=2,nlev+1
+        tmp_cal    =  1/(diag(k)+lower_diag(k)*q_diag(k-1))
+        q_diag(k) = -upper_diag(k)*tmp_cal
+        rhs(k) =  (rhs(k)-lower_diag(k)*rhs(k-1))*tmp_cal
+      enddo
+      do k=nlev,1,-1
+        rhs(k)=rhs(k)+q_diag(k)*rhs(k+1)
+      enddo
+      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!  monotonicity modifications  !!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
+      
+      filter_code = 0
+      dy(1:nlev-1) = zarg(2:nlev)-zarg(1:nlev-1)
+      dy(nlev) = dy(nlev-1)                          
+      
+      dy = merge(zero, dy, abs(dy) < tiny )
+      
+      do k=1,nlev
+        im1=MAX(1,k-1)
+        im2=MAX(1,k-2)
+        im3=MAX(1,k-3)
+        ip1=MIN(nlev,k+1)
+        t1 = merge(1,0,(zarg(k)-rhs(k))*(rhs(k)-zarg(im1)) >= 0)
+        t2 = merge(1,0,dy(im2)*(rhs(k)-zarg(im1)) > 0 .AND. dy(im2)*dy(im3) > 0 &
+             .AND. dy(k)*dy(ip1) > 0 .AND. dy(im2)*dy(k) < 0 )
+        t3 = merge(1,0,ABS(rhs(k)-zarg(im1)) > ABS(rhs(k)-zarg(k)))	
+        
+        filter_code(k) = merge(0,1,t1+t2 > 0) 
+        rhs(k) = (1-filter_code(k))*rhs(k)+filter_code(k)*(t3*zarg(k)+(1-t3)*zarg(im1))
+        filter_code(im1) = MAX(filter_code(im1),filter_code(k))
+      enddo
+      
+      rhs = merge(qmax,rhs,rhs > qmax)
+      rhs = merge(zero,rhs,rhs < zero)
+      
+      za0 = rhs(1:nlev) 
+      za1 = -4*rhs(1:nlev) - 2*rhs(2:nlev+1) + 6*zarg  
+      za2 =  3*rhs(1:nlev) + 3*rhs(2:nlev+1) - 6*zarg 
+      
+      dy(1:nlev) = rhs(2:nlev+1)-rhs(1:nlev)                             
+      dy = merge(zero, dy, abs(dy) < tiny )
+      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!     
+      !! Compute the 3 quadratic spline coeffients {za0, za1, za2}				   !!
+      !! knowing the quadratic spline parameters {rho_left,rho_right,zarg}		   !!
+      !! Zerroukat et.al., Q.J.R. Meteorol. Soc., Vol. 128, pp. 2801-2820 (2002).   !!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+      
+      
+      h = rhs(2:nlev+1)  
+      
+      do k=1,nlev
+        xm_d = merge(one,2*za2(k),abs(za2(k)) < tiny)
+        xm = merge(zero,-za1(k)/xm_d, abs(za2(k)) < tiny)            
+        f_xm = za0(k) + za1(k)*xm + za2(k)*xm**2
+        
+        t1 = merge(1,0,ABS(za2(k)) > tiny)
+        t2 = merge(1,0,xm <= zero .OR. xm >= 1)
+        t3 = merge(1,0,za2(k) > zero)
+        t4 = merge(1,0,za2(k) < zero)
+        tm = merge(1,0,t1*((1-t2)+t3) .EQ. 2)
+        tp = merge(1,0,t1*((1-t2)+(1-t3)+t4) .EQ. 3)
+        
+        peaks=0
+        peaks = merge(-1,peaks,tm .EQ. 1)
+        peaks = merge(+1,peaks,tp .EQ. 1)
+        peaks_min = merge(f_xm,MIN(za0(k),za0(k)+za1(k)+za2(k)),tm .EQ. 1)
+        peaks_max = merge(f_xm,MAX(za0(k),za0(k)+za1(k)+za2(k)),tp .EQ. 1)
+        
+        im1=MAX(1,k-1)
+        im2=MAX(1,k-2)
+        ip1=MIN(nlev,k+1)
+        ip2=MIN(nlev,k+2)
+        
+        t1 = merge(abs(peaks),0,(dy(im2)*dy(im1) <= tiny) .OR. &
+             (dy(ip1)*dy(ip2) <= tiny) .OR. (dy(im1)*dy(ip1) >= tiny) .OR. &
+             (dy(im1)*float(peaks) <= tiny))
+        
+        filter_code(k) = merge(1,t1+(1-t1)*filter_code(k),(rhs(k) >= qmax) .OR. & 
+             (rhs(k) <= zero) .OR. (peaks_max > qmax) .OR. (peaks_min < tiny))
+        
+        if (filter_code(k) > 0) then
+          level1 = rhs(k)
+          level2 = (2*rhs(k)+h(k))/3
+          level3 = 0.5*(rhs(k)+h(k)) 
+          level4 = (1/3d0)*rhs(k)+2*(1/3d0)*h(k)
+          level5 = h(k)
+          
+          t1 = merge(1,0,h(k) >= rhs(k))
+          t2 = merge(1,0,zarg(k) <= level1 .OR.  zarg(k) >= level5)
+          t3 = merge(1,0,zarg(k) >  level1 .AND. zarg(k) <  level2)
+          t4 = merge(1,0,zarg(k) >  level4 .AND. zarg(k) <  level5)
+          
+          lt1 = t1*t2
+          lt2 = t1*(1-t2+t3)
+          lt3 = t1*(1-t2+1-t3+t4)
+          
+          za0(k) = merge(zarg(k),za0(k),lt1 .EQ. 1)
+          za1(k) = merge(zero,za1(k),lt1 .EQ. 1)
+          za2(k) = merge(zero,za2(k),lt1 .EQ. 1)
+          
+          za0(k) = merge(rhs(k),za0(k),lt2 .EQ. 2)
+          za1(k) = merge(zero,za1(k),lt2 .EQ. 2)
+          za2(k) = merge(3*(zarg(k)-rhs(k)),za2(k),lt2 .EQ. 2)
+          
+          za0(k) = merge(-2*h(k)+3*zarg(k),za0(k),lt3 .EQ. 3)
+          za1(k) = merge(+6*h(k)-6*zarg(k),za1(k),lt3 .EQ. 3)
+          za2(k) = merge(-3*h(k)+3*zarg(k),za2(k),lt3 .EQ. 3)
+          
+          t2 = merge(1,0,zarg(k) >= level1 .OR.  zarg(k) <= level5)
+          t3 = merge(1,0,zarg(k) <  level1 .AND. zarg(k) >  level2)
+          t4 = merge(1,0,zarg(k) <  level4 .AND. zarg(k) >  level5)
+          
+          lt1 = (1-t1)*t2
+          lt2 = (1-t1)*(1-t2+t3)
+          lt3 = (1-t1)*(1-t2+1-t3+t4)
+          
+          za0(k) = merge(zarg(k),za0(k),lt1 .EQ. 1)
+          za1(k) = merge(zero,za1(k),lt1 .EQ. 1)
+          za2(k) = merge(zero,za2(k),lt1 .EQ. 1)
+          
+          za0(k) = merge(rhs(k),za0(k),lt2 .EQ. 2)
+          za1(k) = merge(zero,za1(k),lt2 .EQ. 2)
+          za2(k) = merge(3*(zarg(k)-rhs(k)),za2(k),lt2 .EQ. 2)
+          
+          za0(k) = merge(-2*h(k)+3*zarg(k),za0(k),lt3 .EQ. 3)
+          za1(k) = merge(+6*h(k)-6*zarg(k),za1(k),lt3 .EQ. 3)
+          za2(k) = merge(-3*h(k)+3*zarg(k),za2(k),lt3 .EQ. 3)
+        endif
+      enddo
+      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! start iteration from top to bottom of atmosphere !! 
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      
+      zv1 = 0
+      do k=1,nlev
+        if (zgam(k+1)>1d0) then
+          WRITE(*,*) 'r not in [0:1]', zgam(k+1)
+        endif
+        zv2 = zv(zkr(k+1))+(za0(zkr(k+1))*zgam(k+1)+(za1(zkr(k+1))/2)*(zgam(k+1)**2)+ &
+             (za2(zkr(k+1))/3)*(zgam(k+1)**3))*zhdp(zkr(k+1))
+        Q(i,j,k) = (zv2 - zv1) / (z2c(k+1)-z2c(k) )
+        zv1 = zv2
+      enddo
+    enddo
+  enddo
+  call t_stopf('remap1')
+end subroutine remap1
+
+subroutine remap_Q(np1,np1_qdp, dt,elem,hvcoord,ie)
+  use physical_constants, only : cp, cpwater_vapor
+  implicit none
+  real (kind=real_kind),  intent(in   )         :: dt
+  type (element_t),       intent(inout), target :: elem(:)
+  type (hvcoord_t),       intent(in   )         :: hvcoord
+  integer,                intent(in   )         :: ie,np1,np1_qdp
   
-    use physical_constants, only : cp, cpwater_vapor
-	
-    implicit none
-    real (kind=real_kind),  intent(in)        :: dt
-    type (element_t),    intent(inout), target  :: elem(:)
-    type (hvcoord_t),    intent(in)        :: hvcoord
-    
-    integer :: nets,nete,np1,np1_qdp
-    
-    ! ========================
-    ! Local Variables
-    ! ========================
+  ! ========================
+  ! Local Variables
+  ! ========================
 
-    real (kind=real_kind), dimension(nlev+1)    :: rhs,lower_diag,diag,upper_diag,q_diag,zgam,z1c,z2c,zv
-    real (kind=real_kind), dimension(nlev)      :: h,Qcol,dy,za0,za1,za2,zarg,zhdp
-    real (kind=real_kind)  :: dp_star,dp_np1,f_xm,level1,level2,level3,level4,level5, &
-								peaks_min,peaks_max,Q_vadv,tmp_cal,xm,xm_d,zv1,zv2, &
-								zero = 0,one = 1,tiny = 1e-12,qmax = 1d50
-    
-    integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, & 
-									lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
-    
-    call t_startf('remap_Q')
+  real (kind=real_kind), dimension(nlev+1)    :: rhs,lower_diag,diag,upper_diag,q_diag,zgam,z1c,z2c,zv
+  real (kind=real_kind), dimension(nlev)      :: h,Qcol,dy,za0,za1,za2,zarg,zhdp
+  real (kind=real_kind)  :: dp_star,dp_np1,f_xm,level1,level2,level3,level4,level5, &
+                            peaks_min,peaks_max,Q_vadv,tmp_cal,xm,xm_d,zv1,zv2, &
+                            zero = 0,one = 1,tiny = 1e-12,qmax = 1d50
+  integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, & 
+                            lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,i,ilev,j,jk,k,q
+  
+  call t_startf('remap_Q')
 
-    do ie=nets,nete
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(q,i,j,z1c,z2c,zv,k,dp_np1,dp_star,Qcol,zkr,ilev) &
 !$omp    private(jk,zgam,zhdp,h,zarg,rhs,lower_diag,diag,upper_diag,q_diag,tmp_cal,filter_code) &
 !$omp    private(dy,im1,im2,im3,ip1,t1,t2,t3,za0,za1,za2,xm_d,xm,f_xm,t4,tm,tp,peaks,peaks_min) &
 !$omp    private(peaks_max,ip2,level1,level2,level3,level4,level5,lt1,lt2,lt3,zv1,zv2,Q_vadv)
 #endif
-      do q=1,qsize
-        do i=1,np
-          do j=1,np
-             z1c(1)=0
-             z2c(1)=0
-             zv(1)=0
-             do k=1,nlev
-                dp_np1 = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
-                     (hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(i,j,np1)
-                dp_star = dp_np1 + dt*(elem(ie)%derived%eta_dot_dpdn(i,j,k+1) & 
-                     -elem(ie)%derived%eta_dot_dpdn(i,j,k)) 
+  do q=1,qsize
+    do i=1,np
+      do j=1,np
+        z1c(1)=0
+        z2c(1)=0
+        zv(1)=0
+        do k=1,nlev
+          dp_np1 = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
+                   (hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(i,j,np1)
+          dp_star = dp_np1 + dt*(elem(ie)%derived%eta_dot_dpdn(i,j,k+1) & 
+                    -elem(ie)%derived%eta_dot_dpdn(i,j,k)) 
 
-                ! uncommnet to ignore the vertical motion
-                !dp_star = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
-                !     (hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(i,j,np1)
+          ! uncommnet to ignore the vertical motion
+          !dp_star = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
+          !     (hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(i,j,np1)
 
-                z1c(k+1) = z1c(k)+dp_star
-                z2c(k+1) = z2c(k)+dp_np1
-                Qcol(k)=elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
-                zv(k+1) = zv(k)+Qcol(k)
-             enddo
-             
-             if (ABS(z2c(nlev+1)-z1c(nlev+1)).GE.0.000001) then
-                write(6,*) 'SURFACE PRESSURE IMPLIED BY ADVECTION SCHEME'
-                write(6,*) 'NOT CORRESPONDING TO SURFACE PRESSURE IN    '
-                write(6,*) 'DATA FOR MODEL LEVELS'
-                write(6,*) 'PLEVMODEL=',z2c(nlev+1)
-                write(6,*) 'PLEV     =',z1c(nlev+1)
-                write(6,*) 'DIFF     =',z2c(nlev+1)-z1c(nlev+1)
-                ! call ABORT
-             endif
-             
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-             !! quadratic splies with UK met office monotonicity constraints  !!
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-             
-             zkr  = 99
-             ilev = 2
-             zkr(1) = 1
-             zkr(nlev+1) = nlev
-             kloop: do k = 2,nlev
-                do jk = ilev,nlev+1
-                   if (z1c(jk).ge.z2c(k)) then
-                      ilev      = jk
-                      zkr(k)   = jk-1
-                      cycle kloop
-                   endif
-                enddo
-             enddo kloop
-             
-             zgam  = (z2c(1:nlev+1)-z1c(zkr)) / (z1c(zkr+1)-z1c(zkr))
-             zgam(1)      = 0.0
-             zgam(nlev+1) = 1.0
-             zhdp = z1c(2:nlev+1)-z1c(1:nlev)
-             
-             
-             h = 1/zhdp
-             zarg = Qcol * h
-             rhs = 0
-             lower_diag = 0
-             diag = 0
-             upper_diag = 0
-             
-             rhs(1)=3*zarg(1)
-             rhs(2:nlev) = 3*(zarg(2:nlev)*h(2:nlev) + zarg(1:nlev-1)*h(1:nlev-1)) 
-             rhs(nlev+1)=3*zarg(nlev)
-             
-             lower_diag(1)=1
-             lower_diag(2:nlev) = h(1:nlev-1)
-             lower_diag(nlev+1)=1
-             
-             diag(1)=2
-             diag(2:nlev) = 2*(h(2:nlev) + h(1:nlev-1))
-             diag(nlev+1)=2
-             
-             upper_diag(1)=1
-             upper_diag(2:nlev) = h(2:nlev)
-             upper_diag(nlev+1)=0
-             
-             q_diag(1)=-upper_diag(1)/diag(1)
-             rhs(1)= rhs(1)/diag(1)
-             
-             do k=2,nlev+1
-                tmp_cal    =  1/(diag(k)+lower_diag(k)*q_diag(k-1))
-                q_diag(k) = -upper_diag(k)*tmp_cal
-                rhs(k) =  (rhs(k)-lower_diag(k)*rhs(k-1))*tmp_cal
-             enddo
-             do k=nlev,1,-1
-                rhs(k)=rhs(k)+q_diag(k)*rhs(k+1)
-             enddo
-             
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-             !!  monotonicity modifications  !!
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
-             
-             filter_code = 0
-             dy(1:nlev-1) = zarg(2:nlev)-zarg(1:nlev-1)
-             dy(nlev) = dy(nlev-1)                          
-             
-             dy = merge(zero, dy, abs(dy) < tiny )
-             
-             do k=1,nlev
-                im1=MAX(1,k-1)
-                im2=MAX(1,k-2)
-                im3=MAX(1,k-3)
-                ip1=MIN(nlev,k+1)
-                t1 = merge(1,0,(zarg(k)-rhs(k))*(rhs(k)-zarg(im1)) >= 0)
-                t2 = merge(1,0,dy(im2)*(rhs(k)-zarg(im1)) > 0 .AND. dy(im2)*dy(im3) > 0 &
-                     .AND. dy(k)*dy(ip1) > 0 .AND. dy(im2)*dy(k) < 0 )
-                t3 = merge(1,0,ABS(rhs(k)-zarg(im1)) > ABS(rhs(k)-zarg(k)))	
-                
-                filter_code(k) = merge(0,1,t1+t2 > 0) 
-                rhs(k) = (1-filter_code(k))*rhs(k)+filter_code(k)*(t3*zarg(k)+(1-t3)*zarg(im1))
-                filter_code(im1) = MAX(filter_code(im1),filter_code(k))
-             enddo
-             
-             rhs = merge(qmax,rhs,rhs > qmax)
-             rhs = merge(zero,rhs,rhs < zero)
-             
-             za0 = rhs(1:nlev) 
-             za1 = -4*rhs(1:nlev) - 2*rhs(2:nlev+1) + 6*zarg  
-             za2 =  3*rhs(1:nlev) + 3*rhs(2:nlev+1) - 6*zarg 
-             
-             dy(1:nlev) = rhs(2:nlev+1)-rhs(1:nlev)                             
-             dy = merge(zero, dy, abs(dy) < tiny )
-             
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!     
-             !! Compute the 3 quadratic spline coeffients {za0, za1, za2}				   !!
-             !! knowing the quadratic spline parameters {rho_left,rho_right,zarg}		   !!
-             !! Zerroukat et.al., Q.J.R. Meteorol. Soc., Vol. 128, pp. 2801-2820 (2002).   !!
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-             
-             
-             h = rhs(2:nlev+1)  
-             
-             do k=1,nlev
-                
-                xm_d = merge(one,2*za2(k),abs(za2(k)) < tiny)
-                xm = merge(zero,-za1(k)/xm_d, abs(za2(k)) < tiny)            
-                f_xm = za0(k) + za1(k)*xm + za2(k)*xm**2
-                
-                t1 = merge(1,0,ABS(za2(k)) > tiny)
-                t2 = merge(1,0,xm <= zero .OR. xm >= 1)
-                t3 = merge(1,0,za2(k) > zero)
-                t4 = merge(1,0,za2(k) < zero)
-                tm = merge(1,0,t1*((1-t2)+t3) .EQ. 2)
-                tp = merge(1,0,t1*((1-t2)+(1-t3)+t4) .EQ. 3)
-                
-                peaks=0
-                peaks = merge(-1,peaks,tm .EQ. 1)
-                peaks = merge(+1,peaks,tp .EQ. 1)
-                peaks_min = merge(f_xm,MIN(za0(k),za0(k)+za1(k)+za2(k)),tm .EQ. 1)
-                peaks_max = merge(f_xm,MAX(za0(k),za0(k)+za1(k)+za2(k)),tp .EQ. 1)
-                
-                im1=MAX(1,k-1)
-                im2=MAX(1,k-2)
-                ip1=MIN(nlev,k+1)
-                ip2=MIN(nlev,k+2)
-                
-                t1 = merge(abs(peaks),0,(dy(im2)*dy(im1) <= tiny) .OR. &
-                     (dy(ip1)*dy(ip2) <= tiny) .OR. (dy(im1)*dy(ip1) >= tiny) .OR. &
-                     (dy(im1)*float(peaks) <= tiny))
-                
-                filter_code(k) = merge(1,t1+(1-t1)*filter_code(k),(rhs(k) >= qmax) .OR. & 
-                     (rhs(k) <= zero) .OR. (peaks_max > qmax) .OR. (peaks_min < tiny))
-                
-                if (filter_code(k) > 0) then
-                   
-                   level1 = rhs(k)
-                   level2 = (2*rhs(k)+h(k))/3
-                   level3 = 0.5*(rhs(k)+h(k)) 
-                   level4 = (1/3d0)*rhs(k)+2*(1/3d0)*h(k)
-                   level5 = h(k)
-                   
-                   t1 = merge(1,0,h(k) >= rhs(k))
-                   t2 = merge(1,0,zarg(k) <= level1 .OR.  zarg(k) >= level5)
-                   t3 = merge(1,0,zarg(k) >  level1 .AND. zarg(k) <  level2)
-                   t4 = merge(1,0,zarg(k) >  level4 .AND. zarg(k) <  level5)
-                   
-                   lt1 = t1*t2
-                   lt2 = t1*(1-t2+t3)
-                   lt3 = t1*(1-t2+1-t3+t4)
-                   
-                   za0(k) = merge(zarg(k),za0(k),lt1 .EQ. 1)
-                   za1(k) = merge(zero,za1(k),lt1 .EQ. 1)
-                   za2(k) = merge(zero,za2(k),lt1 .EQ. 1)
-                   
-                   za0(k) = merge(rhs(k),za0(k),lt2 .EQ. 2)
-                   za1(k) = merge(zero,za1(k),lt2 .EQ. 2)
-                   za2(k) = merge(3*(zarg(k)-rhs(k)),za2(k),lt2 .EQ. 2)
-                   
-                   za0(k) = merge(-2*h(k)+3*zarg(k),za0(k),lt3 .EQ. 3)
-                   za1(k) = merge(+6*h(k)-6*zarg(k),za1(k),lt3 .EQ. 3)
-                   za2(k) = merge(-3*h(k)+3*zarg(k),za2(k),lt3 .EQ. 3)
-                   
-                   t2 = merge(1,0,zarg(k) >= level1 .OR.  zarg(k) <= level5)
-                   t3 = merge(1,0,zarg(k) <  level1 .AND. zarg(k) >  level2)
-                   t4 = merge(1,0,zarg(k) <  level4 .AND. zarg(k) >  level5)
-                   
-                   lt1 = (1-t1)*t2
-                   lt2 = (1-t1)*(1-t2+t3)
-                   lt3 = (1-t1)*(1-t2+1-t3+t4)
-                   
-                   za0(k) = merge(zarg(k),za0(k),lt1 .EQ. 1)
-                   za1(k) = merge(zero,za1(k),lt1 .EQ. 1)
-                   za2(k) = merge(zero,za2(k),lt1 .EQ. 1)
-                   
-                   za0(k) = merge(rhs(k),za0(k),lt2 .EQ. 2)
-                   za1(k) = merge(zero,za1(k),lt2 .EQ. 2)
-                   za2(k) = merge(3*(zarg(k)-rhs(k)),za2(k),lt2 .EQ. 2)
-                   
-                   za0(k) = merge(-2*h(k)+3*zarg(k),za0(k),lt3 .EQ. 3)
-                   za1(k) = merge(+6*h(k)-6*zarg(k),za1(k),lt3 .EQ. 3)
-                   za2(k) = merge(-3*h(k)+3*zarg(k),za2(k),lt3 .EQ. 3)	
-                endif
-             enddo
-             
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-             !! start iteration from top to bottom of atmosphere !! 
-			 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-             
-             zv1 = 0
-             do k=1,nlev
-				if (zgam(k+1)>1d0) then
-					WRITE(*,*) 'r not in [0:1]', zgam(k+1)
-				endif
-                zv2 = zv(zkr(k+1))+(za0(zkr(k+1))*zgam(k+1)+(za1(zkr(k+1))/2)*(zgam(k+1)**2)+ &
-                     (za2(zkr(k+1))/3)*(zgam(k+1)**3))*zhdp(zkr(k+1))
-                !Q_vadv = (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) - (zv2 - zv1)) / dt
-                elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = (zv2 - zv1)	
-                zv1 = zv2
-             enddo
+          z1c(k+1) = z1c(k)+dp_star
+          z2c(k+1) = z2c(k)+dp_np1
+          Qcol(k)=elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
+          zv(k+1) = zv(k)+Qcol(k)
+        enddo
+        
+        if (ABS(z2c(nlev+1)-z1c(nlev+1)).GE.0.000001) then
+          write(6,*) 'SURFACE PRESSURE IMPLIED BY ADVECTION SCHEME'
+          write(6,*) 'NOT CORRESPONDING TO SURFACE PRESSURE IN    '
+          write(6,*) 'DATA FOR MODEL LEVELS'
+          write(6,*) 'PLEVMODEL=',z2c(nlev+1)
+          write(6,*) 'PLEV     =',z1c(nlev+1)
+          write(6,*) 'DIFF     =',z2c(nlev+1)-z1c(nlev+1)
+          ! call ABORT
+        endif
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !! quadratic splies with UK met office monotonicity constraints  !!
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        zkr  = 99
+        ilev = 2
+        zkr(1) = 1
+        zkr(nlev+1) = nlev
+        kloop: do k = 2,nlev
+          do jk = ilev,nlev+1
+            if (z1c(jk).ge.z2c(k)) then
+              ilev      = jk
+              zkr(k)   = jk-1
+              cycle kloop
+            endif
           enddo
-       enddo
+        enddo kloop
+        
+        zgam  = (z2c(1:nlev+1)-z1c(zkr)) / (z1c(zkr+1)-z1c(zkr))
+        zgam(1)      = 0.0
+        zgam(nlev+1) = 1.0
+        zhdp = z1c(2:nlev+1)-z1c(1:nlev)
+        
+        
+        h = 1/zhdp
+        zarg = Qcol * h
+        rhs = 0
+        lower_diag = 0
+        diag = 0
+        upper_diag = 0
+        
+        rhs(1)=3*zarg(1)
+        rhs(2:nlev) = 3*(zarg(2:nlev)*h(2:nlev) + zarg(1:nlev-1)*h(1:nlev-1)) 
+        rhs(nlev+1)=3*zarg(nlev)
+        
+        lower_diag(1)=1
+        lower_diag(2:nlev) = h(1:nlev-1)
+        lower_diag(nlev+1)=1
+        
+        diag(1)=2
+        diag(2:nlev) = 2*(h(2:nlev) + h(1:nlev-1))
+        diag(nlev+1)=2
+        
+        upper_diag(1)=1
+        upper_diag(2:nlev) = h(2:nlev)
+        upper_diag(nlev+1)=0
+        
+        q_diag(1)=-upper_diag(1)/diag(1)
+        rhs(1)= rhs(1)/diag(1)
+        
+        do k=2,nlev+1
+          tmp_cal    =  1/(diag(k)+lower_diag(k)*q_diag(k-1))
+          q_diag(k) = -upper_diag(k)*tmp_cal
+          rhs(k) =  (rhs(k)-lower_diag(k)*rhs(k-1))*tmp_cal
+        enddo
+        do k=nlev,1,-1
+          rhs(k)=rhs(k)+q_diag(k)*rhs(k+1)
+        enddo
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !!  monotonicity modifications  !!
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
+        
+        filter_code = 0
+        dy(1:nlev-1) = zarg(2:nlev)-zarg(1:nlev-1)
+        dy(nlev) = dy(nlev-1)                          
+        
+        dy = merge(zero, dy, abs(dy) < tiny )
+        
+        do k=1,nlev
+          im1=MAX(1,k-1)
+          im2=MAX(1,k-2)
+          im3=MAX(1,k-3)
+          ip1=MIN(nlev,k+1)
+          t1 = merge(1,0,(zarg(k)-rhs(k))*(rhs(k)-zarg(im1)) >= 0)
+          t2 = merge(1,0,dy(im2)*(rhs(k)-zarg(im1)) > 0 .AND. dy(im2)*dy(im3) > 0 &
+                         .AND. dy(k)*dy(ip1) > 0 .AND. dy(im2)*dy(k) < 0 )
+          t3 = merge(1,0,ABS(rhs(k)-zarg(im1)) > ABS(rhs(k)-zarg(k)))
+          
+          filter_code(k) = merge(0,1,t1+t2 > 0) 
+          rhs(k) = (1-filter_code(k))*rhs(k)+filter_code(k)*(t3*zarg(k)+(1-t3)*zarg(im1))
+          filter_code(im1) = MAX(filter_code(im1),filter_code(k))
+        enddo
+        
+        rhs = merge(qmax,rhs,rhs > qmax)
+        rhs = merge(zero,rhs,rhs < zero)
+        
+        za0 = rhs(1:nlev) 
+        za1 = -4*rhs(1:nlev) - 2*rhs(2:nlev+1) + 6*zarg  
+        za2 =  3*rhs(1:nlev) + 3*rhs(2:nlev+1) - 6*zarg 
+        
+        dy(1:nlev) = rhs(2:nlev+1)-rhs(1:nlev)                             
+        dy = merge(zero, dy, abs(dy) < tiny )
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!     
+        !! Compute the 3 quadratic spline coeffients {za0, za1, za2}				   !!
+        !! knowing the quadratic spline parameters {rho_left,rho_right,zarg}		   !!
+        !! Zerroukat et.al., Q.J.R. Meteorol. Soc., Vol. 128, pp. 2801-2820 (2002).   !!
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+        
+        
+        h = rhs(2:nlev+1)  
+        
+        do k=1,nlev
+          xm_d = merge(one,2*za2(k),abs(za2(k)) < tiny)
+          xm = merge(zero,-za1(k)/xm_d, abs(za2(k)) < tiny)            
+          f_xm = za0(k) + za1(k)*xm + za2(k)*xm**2
+          
+          t1 = merge(1,0,ABS(za2(k)) > tiny)
+          t2 = merge(1,0,xm <= zero .OR. xm >= 1)
+          t3 = merge(1,0,za2(k) > zero)
+          t4 = merge(1,0,za2(k) < zero)
+          tm = merge(1,0,t1*((1-t2)+t3) .EQ. 2)
+          tp = merge(1,0,t1*((1-t2)+(1-t3)+t4) .EQ. 3)
+          
+          peaks=0
+          peaks = merge(-1,peaks,tm .EQ. 1)
+          peaks = merge(+1,peaks,tp .EQ. 1)
+          peaks_min = merge(f_xm,MIN(za0(k),za0(k)+za1(k)+za2(k)),tm .EQ. 1)
+          peaks_max = merge(f_xm,MAX(za0(k),za0(k)+za1(k)+za2(k)),tp .EQ. 1)
+          
+          im1=MAX(1,k-1)
+          im2=MAX(1,k-2)
+          ip1=MIN(nlev,k+1)
+          ip2=MIN(nlev,k+2)
+          
+          t1 = merge(abs(peaks),0,(dy(im2)*dy(im1) <= tiny) .OR. &
+               (dy(ip1)*dy(ip2) <= tiny) .OR. (dy(im1)*dy(ip1) >= tiny) .OR. &
+               (dy(im1)*float(peaks) <= tiny))
+          
+          filter_code(k) = merge(1,t1+(1-t1)*filter_code(k),(rhs(k) >= qmax) .OR. & 
+               (rhs(k) <= zero) .OR. (peaks_max > qmax) .OR. (peaks_min < tiny))
+          
+          if (filter_code(k) > 0) then
+            level1 = rhs(k)
+            level2 = (2*rhs(k)+h(k))/3
+            level3 = 0.5*(rhs(k)+h(k)) 
+            level4 = (1/3d0)*rhs(k)+2*(1/3d0)*h(k)
+            level5 = h(k)
+            
+            t1 = merge(1,0,h(k) >= rhs(k))
+            t2 = merge(1,0,zarg(k) <= level1 .OR.  zarg(k) >= level5)
+            t3 = merge(1,0,zarg(k) >  level1 .AND. zarg(k) <  level2)
+            t4 = merge(1,0,zarg(k) >  level4 .AND. zarg(k) <  level5)
+            
+            lt1 = t1*t2
+            lt2 = t1*(1-t2+t3)
+            lt3 = t1*(1-t2+1-t3+t4)
+            
+            za0(k) = merge(zarg(k),za0(k),lt1 .EQ. 1)
+            za1(k) = merge(zero,za1(k),lt1 .EQ. 1)
+            za2(k) = merge(zero,za2(k),lt1 .EQ. 1)
+            
+            za0(k) = merge(rhs(k),za0(k),lt2 .EQ. 2)
+            za1(k) = merge(zero,za1(k),lt2 .EQ. 2)
+            za2(k) = merge(3*(zarg(k)-rhs(k)),za2(k),lt2 .EQ. 2)
+            
+            za0(k) = merge(-2*h(k)+3*zarg(k),za0(k),lt3 .EQ. 3)
+            za1(k) = merge(+6*h(k)-6*zarg(k),za1(k),lt3 .EQ. 3)
+            za2(k) = merge(-3*h(k)+3*zarg(k),za2(k),lt3 .EQ. 3)
+            
+            t2 = merge(1,0,zarg(k) >= level1 .OR.  zarg(k) <= level5)
+            t3 = merge(1,0,zarg(k) <  level1 .AND. zarg(k) >  level2)
+            t4 = merge(1,0,zarg(k) <  level4 .AND. zarg(k) >  level5)
+            
+            lt1 = (1-t1)*t2
+            lt2 = (1-t1)*(1-t2+t3)
+            lt3 = (1-t1)*(1-t2+1-t3+t4)
+            
+            za0(k) = merge(zarg(k),za0(k),lt1 .EQ. 1)
+            za1(k) = merge(zero,za1(k),lt1 .EQ. 1)
+            za2(k) = merge(zero,za2(k),lt1 .EQ. 1)
+            
+            za0(k) = merge(rhs(k),za0(k),lt2 .EQ. 2)
+            za1(k) = merge(zero,za1(k),lt2 .EQ. 2)
+            za2(k) = merge(3*(zarg(k)-rhs(k)),za2(k),lt2 .EQ. 2)
+            
+            za0(k) = merge(-2*h(k)+3*zarg(k),za0(k),lt3 .EQ. 3)
+            za1(k) = merge(+6*h(k)-6*zarg(k),za1(k),lt3 .EQ. 3)
+            za2(k) = merge(-3*h(k)+3*zarg(k),za2(k),lt3 .EQ. 3)
+          endif
+        enddo
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !! start iteration from top to bottom of atmosphere !! 
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        zv1 = 0
+        do k=1,nlev
+          if (zgam(k+1)>1d0) then
+            WRITE(*,*) 'r not in [0:1]', zgam(k+1)
+          endif
+          zv2 = zv(zkr(k+1))+(za0(zkr(k+1))*zgam(k+1)+(za1(zkr(k+1))/2)*(zgam(k+1)**2)+ &
+               (za2(zkr(k+1))/3)*(zgam(k+1)**3))*zhdp(zkr(k+1))
+          !Q_vadv = (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) - (zv2 - zv1)) / dt
+          elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = (zv2 - zv1)
+          zv1 = zv2
+        enddo
+      enddo
     enddo
- enddo
- 
- call t_stopf('remap_Q')
- end subroutine remap_Q
+  enddo
+  call t_stopf('remap_Q')
+end subroutine remap_Q
  
 !=======================================================================================================! 
 
 
 !This uses the exact same model and reference grids and data as remap_Q, but it interpolates
 !using PPM instead of splines.
-subroutine remap_Q_ppm(np1,np1_qdp,dt,elem,hvcoord,nets,nete)
+subroutine remap_Q_ppm(np1,np1_qdp,dt,elem,hvcoord,ie)
   use physical_constants, only : cp, cpwater_vapor
   use control_mod, only        : compute_mean_flux, prescribed_wind, vert_remap_q_alg
   implicit none
-  real (kind=real_kind), intent(in)            :: dt
+  real (kind=real_kind), intent(in   )         :: dt
   type (element_t)     , intent(inout), target :: elem(:)
-  type (hvcoord_t)     , intent(in)            :: hvcoord
-  integer              , intent(in)            :: nets,nete,np1,np1_qdp
+  type (hvcoord_t)     , intent(in   )         :: hvcoord
+  integer              , intent(in   )         :: ie,np1,np1_qdp
   ! Local Variables
   integer, parameter :: gs = 2                              !Number of cells to place in the ghost region
   real(kind=real_kind), dimension(       nlev+2 ) :: pio    !Pressure at interfaces for old grid
@@ -1148,80 +1128,78 @@ subroutine remap_Q_ppm(np1,np1_qdp,dt,elem,hvcoord,nets,nete)
   real(kind=real_kind), dimension(       nlev   ) :: z1, z2
   real(kind=real_kind) :: ppmdx(10,0:nlev+1)  !grid spacings
   real(kind=real_kind) :: mymass, massn1, massn2, dpn
-  integer :: i, j, k, q, ie, kk, kid(nlev)
+  integer :: i, j, k, q, kk, kid(nlev)
 
   call t_startf('remap_Q_ppm')
-  do ie = nets , nete
-    do j = 1 , np
-      do i = 1 , np
-        !Form old and new grids for remapping. It counts from the top of the atmosphere to the bottom. Starting with no mass at the top.
-        pio(1) = 0.
-        pin(1) = 0.
-        do k = 1 , nlev
-          dpn = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + (hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(i,j,np1)
-          dpo(k) = dpn + dt * ( elem(ie)%derived%eta_dot_dpdn(i,j,k+1) - elem(ie)%derived%eta_dot_dpdn(i,j,k) ) 
-          pio(k+1) = pio(k) + dpo(k)
-          pin(k+1) = pin(k) + dpn
+  do j = 1 , np
+    do i = 1 , np
+      !Form old and new grids for remapping. It counts from the top of the atmosphere to the bottom. Starting with no mass at the top.
+      pio(1) = 0.
+      pin(1) = 0.
+      do k = 1 , nlev
+        dpn = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + (hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(i,j,np1)
+        dpo(k) = dpn + dt * ( elem(ie)%derived%eta_dot_dpdn(i,j,k+1) - elem(ie)%derived%eta_dot_dpdn(i,j,k) ) 
+        pio(k+1) = pio(k) + dpo(k)
+        pin(k+1) = pin(k) + dpn
+      enddo
+      pio(nlev+2) = pio(nlev+1) + 1.  !This is here to allow an entire block of k threads to run in the remapping phase.
+                                      !It makes sure there's an old interface value below the domain that is larger.
+      pin  (nlev+1) = pio  (nlev+1)   !The total mass in a column does not change. Therefore, the pressure of that mass cannot either.
+      !Fill in the ghost regions with mirrored values. if vert_remap_q_alg is defined, this is of no consequence.
+      do k = 1 , gs
+        dpo(1   -k) = dpo(       k)
+        dpo(nlev+k) = dpo(nlev+1-k)
+      enddo
+
+      !Compute remapping intervals once for all tracers. Find the old grid cell index in which the k-th new cell interface resides. Then integrate
+      !from the bottom of that old cell to the new interface location. In practice, the grid never deforms past one cell, so the search can be
+      !simplified by this. Also, the interval of integration is usually of magnitude close to zero or close to dpo because of minimial deformation.
+      !Numerous tests confirmed that the bottom and top of the grids match to machine precision, so I set them equal to each other.
+      do k = 1 , nlev
+        kk = k  !Keep from an order n^2 search operation by assuming the old cell index is close.
+        !Find the index of the old grid cell in which this new cell's bottom interface resides.
+        do while ( pio(kk) <= pin(k+1) )
+          kk = kk + 1
         enddo
-        pio(nlev+2) = pio(nlev+1) + 1.  !This is here to allow an entire block of k threads to run in the remapping phase.
-                                        !It makes sure there's an old interface value below the domain that is larger.
-        pin  (nlev+1) = pio  (nlev+1)   !The total mass in a column does not change. Therefore, the pressure of that mass cannot either.
-        !Fill in the ghost regions with mirrored values. if vert_remap_q_alg is defined, this is of no consequence.
+        kk = kk - 1                   !kk is now the cell index we're integrating over.
+        if (kk == nlev+1) kk = nlev   !This is to keep the indices in bounds. Top bounds match anyway, so doesn't matter what coefficients are used
+        kid(k) = kk                   !Save for reuse
+        z1(k) = -0.5D0                !This remapping assumes we're starting from the left interface of an old grid cell
+                                      !In fact, we're usually integrating very little or almost all of the cell in question
+        z2(k) = ( pin(k+1) - ( pio(kk) + pio(kk+1) ) * 0.5 ) / dpo(kk)  !PPM interpolants are normalized to an independent coordinate domain [-0.5,0.5].
+      enddo
+
+      !This turned out a big optimization, remembering that only parts of the PPM algorithm depends on the data, namely the limiting. So anything that
+      !depends only on the grid is pre-computed outside the tracer loop.
+      ppmdx(:,:) = compute_ppm_grids( dpo )
+
+      !From here, we loop over tracers for only those portions which depend on tracer data, which includes PPM limiting and mass accumulation
+      do q = 1 , qsize
+        !Accumulate the old mass up to old grid cell interface locations to simplify integration during remapping. Also, divide out the
+        !grid spacing so we're working with actual tracer values and can conserve mass. The option for ifndef ZEROHORZ I believe is there
+        !to ensure tracer consistency for an initially uniform field. I copied it from the old remap routine.
+        masso(1) = 0.
+        do k = 1 , nlev
+          ao(k) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
+          masso(k+1) = masso(k) + ao(k) !Accumulate the old mass. This will simplify the remapping
+          ao(k) = ao(k) / dpo(k)        !Divide out the old grid spacing because we want the tracer mixing ratio, not mass.
+        enddo
+        !Fill in ghost values. Ignored if vert_remap_q_alg == 2
         do k = 1 , gs
-          dpo(1   -k) = dpo(       k)
-          dpo(nlev+k) = dpo(nlev+1-k)
+          ao(1   -k) = ao(       k)
+          ao(nlev+k) = ao(nlev+1-k)
         enddo
-
-        !Compute remapping intervals once for all tracers. Find the old grid cell index in which the k-th new cell interface resides. Then integrate
-        !from the bottom of that old cell to the new interface location. In practice, the grid never deforms past one cell, so the search can be
-        !simplified by this. Also, the interval of integration is usually of magnitude close to zero or close to dpo because of minimial deformation.
-        !Numerous tests confirmed that the bottom and top of the grids match to machine precision, so I set them equal to each other.
+        !Compute monotonic and conservative PPM reconstruction over every cell
+        coefs(:,:) = compute_ppm( ao , ppmdx )
+        !Compute tracer values on the new grid by integrating from the old cell bottom to the new cell interface to form a new grid mass accumulation
+        !Taking the difference between accumulation at successive interfaces gives the mass inside each cell. Since Qdp is supposed to hold the full mass
+        !this needs no normalization.
+        massn1 = 0.
         do k = 1 , nlev
-          kk = k  !Keep from an order n^2 search operation by assuming the old cell index is close.
-          !Find the index of the old grid cell in which this new cell's bottom interface resides.
-          do while ( pio(kk) <= pin(k+1) )
-            kk = kk + 1
-          enddo
-          kk = kk - 1                   !kk is now the cell index we're integrating over.
-          if (kk == nlev+1) kk = nlev   !This is to keep the indices in bounds. Top bounds match anyway, so doesn't matter what coefficients are used
-          kid(k) = kk                   !Save for reuse
-          z1(k) = -0.5D0                !This remapping assumes we're starting from the left interface of an old grid cell
-                                        !In fact, we're usually integrating very little or almost all of the cell in question
-          z2(k) = ( pin(k+1) - ( pio(kk) + pio(kk+1) ) * 0.5 ) / dpo(kk)  !PPM interpolants are normalized to an independent coordinate domain [-0.5,0.5].
-        enddo
-
-        !This turned out a big optimization, remembering that only parts of the PPM algorithm depends on the data, namely the limiting. So anything that
-        !depends only on the grid is pre-computed outside the tracer loop.
-        ppmdx(:,:) = compute_ppm_grids( dpo )
-
-        !From here, we loop over tracers for only those portions which depend on tracer data, which includes PPM limiting and mass accumulation
-        do q = 1 , qsize
-          !Accumulate the old mass up to old grid cell interface locations to simplify integration during remapping. Also, divide out the
-          !grid spacing so we're working with actual tracer values and can conserve mass. The option for ifndef ZEROHORZ I believe is there
-          !to ensure tracer consistency for an initially uniform field. I copied it from the old remap routine.
-          masso(1) = 0.
-          do k = 1 , nlev
-            ao(k) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
-            masso(k+1) = masso(k) + ao(k) !Accumulate the old mass. This will simplify the remapping
-            ao(k) = ao(k) / dpo(k)        !Divide out the old grid spacing because we want the tracer mixing ratio, not mass.
-          enddo
-          !Fill in ghost values. Ignored if vert_remap_q_alg == 2
-          do k = 1 , gs
-            ao(1   -k) = ao(       k)
-            ao(nlev+k) = ao(nlev+1-k)
-          enddo
-          !Compute monotonic and conservative PPM reconstruction over every cell
-          coefs(:,:) = compute_ppm( ao , ppmdx )
-          !Compute tracer values on the new grid by integrating from the old cell bottom to the new cell interface to form a new grid mass accumulation
-          !Taking the difference between accumulation at successive interfaces gives the mass inside each cell. Since Qdp is supposed to hold the full mass
-          !this needs no normalization.
-          massn1 = 0.
-          do k = 1 , nlev
-            kk = kid(k)
-            massn2 = masso(kk) + integrate_parabola( coefs(:,kk) , z1(k) , z2(k) ) * dpo(kk)
-            elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = massn2 - massn1
-            massn1 = massn2
-          enddo
+          kk = kid(k)
+          massn2 = masso(kk) + integrate_parabola( coefs(:,kk) , z1(k) , z2(k) ) * dpo(kk)
+          elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = massn2 - massn1
+          massn1 = massn2
         enddo
       enddo
     enddo
@@ -1356,7 +1334,6 @@ end function compute_ppm
 !=======================================================================================================! 
 
 
-
 !Simple function computes the definite integral of a parabola in normalized coordinates, xi=(x-x0)/dx, given two bounds. Make sure this gets inlined during compilation.
 function integrate_parabola( a , x1 , x2 )    result(mass)
   implicit none
@@ -1368,41 +1345,33 @@ function integrate_parabola( a , x1 , x2 )    result(mass)
 end function integrate_parabola
 
 
- 
-
-
 !=============================================================================================! 
 
-  subroutine remap_velocityCspelt(np1,dt,elem,spelt,hvcoord,nets,nete)
+subroutine remap_velocityCspelt(np1,dt,elem,spelt,hvcoord,ie)
+  use physical_constants, only : cp, cpwater_vapor
+  use dimensions_mod, only : nc, nep
+  implicit none
+  real (kind=real_kind),  intent(in   )         :: dt
+  type (element_t),       intent(inout), target :: elem(:)
+  type (spelt_struct),    intent(inout), target :: spelt(:)
+  type (hvcoord_t),       intent(in   )         :: hvcoord
+  integer,                intent(in   )         :: ie,np1
   
-    use physical_constants, only : cp, cpwater_vapor
-	  use dimensions_mod, only : nc, nep
-	  
-    implicit none
-    real (kind=real_kind),  intent(in)        :: dt
-    type (element_t),    intent(inout), target  :: elem(:)
-    type (spelt_struct),    intent(inout), target  :: spelt(:)
-    type (hvcoord_t),    intent(in)        :: hvcoord
-    integer :: nets,nete,np1
-    
-    ! ========================
-    ! Local Variables
-    ! ========================
+  ! ========================
+  ! Local Variables
+  ! ========================
 
-    real (kind=real_kind), dimension(nlev+1)    :: rhs,lower_diag,diag,upper_diag,q_diag,zgam,z1c,z2c,zv
-    real (kind=real_kind), dimension(nlev)      :: h,Qcol,dy,za0,za1,za2,zarg,zhdp
-    real (kind=real_kind)  :: dp_star,f_xm,level1,level2,level3,level4,level5, &
-								peaks_min,peaks_max,Q_vadv,tmp_cal,xm,xm_d,zv1,zv2, &
-								zero = 0,one = 1,tiny = 1e-12,qmax = 1d50
-    
-    real (kind=real_kind)  :: ps_c(nep,nep), dp_np1(nep,nep,nlev)
-    
-    integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, & 
-									lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
-    
-    call t_startf('remap_velocityCspelt')
+  real (kind=real_kind), dimension(nlev+1) :: rhs,lower_diag,diag,upper_diag,q_diag,zgam,z1c,z2c,zv
+  real (kind=real_kind), dimension(nlev)   :: h,Qcol,dy,za0,za1,za2,zarg,zhdp
+  real (kind=real_kind)  :: dp_star,f_xm,level1,level2,level3,level4,level5, &
+                            peaks_min,peaks_max,Q_vadv,tmp_cal,xm,xm_d,zv1,zv2, &
+                            zero = 0,one = 1,tiny = 1e-12,qmax = 1d50
+  real (kind=real_kind)  :: ps_c(nep,nep), dp_np1(nep,nep,nlev)
+  integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, & 
+                            lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,i,ilev,j,jk,k,q
+  
+  call t_startf('remap_velocityCspelt')
 
-    do ie=nets,nete
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(q,i,j,z1c,z2c,zv,k,dp_np1,dp_star,Qcol,zkr,ilev) &
 !$omp    private(jk,zgam,zhdp,h,zarg,rhs,lower_diag,diag,upper_diag,q_diag,tmp_cal,filter_code) &
@@ -1414,259 +1383,253 @@ end function integrate_parabola
   do i=1,nep   
     do j=1,nep
       ! 1. compute surface pressure, 'ps_c', from SPELT air density
-     ps_c(i,j)=sum(spelt(ie)%c(i,j,:,2,np1)/spelt(ie)%sga(i,j)) +  hvcoord%hyai(1)*hvcoord%ps0 
-     ! 2. compute dp_np1 using CSLAM air density and eta coordinate formula
-     ! get the dp now on the eta coordinates (reference level)
-     do k=1,nlev
-       dp_np1(i,j,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
-           (hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps_c(i,j)
-     end do
-   end do
- end do
-
-      do q=3,ntrac
-        do i=1,nep   
-          do j=1,nep
-             z1c(1)=0
-             z2c(1)=0
-             zv(1)=0
-             
-             do k=1,nlev
-
-                dp_star=spelt(ie)%c(i,j,k,2,np1)/spelt(ie)%sga(i,j)  
-                z1c(k+1) = z1c(k)+dp_star
-                z2c(k+1) = z2c(k)+dp_np1(i,j,k)
-                
-                Qcol(k)=spelt(ie)%c(i,j,k,q,np1)*dp_star/spelt(ie)%sga(i,j)   !convert mixing ratio to tracer mass
-                zv(k+1) = zv(k)+Qcol(k)
-             enddo
-             
-             if (ABS(z2c(nlev+1)-z1c(nlev+1)).GE.0.000001) then
-                write(6,*) 'SURFACE PRESSURE IMPLIED BY ADVECTION SCHEME'
-                write(6,*) 'NOT CORRESPONDING TO SURFACE PRESSURE IN    '
-                write(6,*) 'DATA FOR MODEL LEVELS'
-                write(6,*) 'PLEVMODEL=',z2c(nlev+1)
-                write(6,*) 'PLEV     =',z1c(nlev+1)
-                write(6,*) 'DIFF     =',z2c(nlev+1)-z1c(nlev+1)
-                ! call ABORT
-             endif
-             
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-             !! quadratic splies with UK met office monotonicity constraints  !!
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-             zkr  = 99
-             ilev = 2
-             zkr(1) = 1
-             zkr(nlev+1) = nlev
-             kloop: do k = 2,nlev
-                do jk = ilev,nlev+1
-                   if (z1c(jk).ge.z2c(k)) then
-                      ilev      = jk
-                      zkr(k)   = jk-1
-                      cycle kloop
-                   endif
-                enddo
-             enddo kloop
-             
-             zgam  = (z2c(1:nlev+1)-z1c(zkr)) / (z1c(zkr+1)-z1c(zkr))
-             zgam(1)      = 0.0
-             zgam(nlev+1) = 1.0
-             zhdp = z1c(2:nlev+1)-z1c(1:nlev)
-             
-             
-             h = 1/zhdp
-             zarg = Qcol * h
-             rhs = 0
-             lower_diag = 0
-             diag = 0
-             upper_diag = 0
-             
-             rhs(1)=3*zarg(1)
-             rhs(2:nlev) = 3*(zarg(2:nlev)*h(2:nlev) + zarg(1:nlev-1)*h(1:nlev-1)) 
-             rhs(nlev+1)=3*zarg(nlev)
-             
-             lower_diag(1)=1
-             lower_diag(2:nlev) = h(1:nlev-1)
-             lower_diag(nlev+1)=1
-             
-             diag(1)=2
-             diag(2:nlev) = 2*(h(2:nlev) + h(1:nlev-1))
-             diag(nlev+1)=2
-             
-             upper_diag(1)=1
-             upper_diag(2:nlev) = h(2:nlev)
-             upper_diag(nlev+1)=0
-             
-             q_diag(1)=-upper_diag(1)/diag(1)
-             rhs(1)= rhs(1)/diag(1)
-             
-             do k=2,nlev+1
-                tmp_cal    =  1/(diag(k)+lower_diag(k)*q_diag(k-1))
-                q_diag(k) = -upper_diag(k)*tmp_cal
-                rhs(k) =  (rhs(k)-lower_diag(k)*rhs(k-1))*tmp_cal
-             enddo
-             do k=nlev,1,-1
-                rhs(k)=rhs(k)+q_diag(k)*rhs(k+1)
-             enddo
-             
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-             !!  monotonicity modifications  !!
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
-             
-             filter_code = 0
-             dy(1:nlev-1) = zarg(2:nlev)-zarg(1:nlev-1)
-             dy(nlev) = dy(nlev-1)                          
-             
-             dy = merge(zero, dy, abs(dy) < tiny )
-             
-             do k=1,nlev
-                im1=MAX(1,k-1)
-                im2=MAX(1,k-2)
-                im3=MAX(1,k-3)
-                ip1=MIN(nlev,k+1)
-                t1 = merge(1,0,(zarg(k)-rhs(k))*(rhs(k)-zarg(im1)) >= 0)
-                t2 = merge(1,0,dy(im2)*(rhs(k)-zarg(im1)) > 0 .AND. dy(im2)*dy(im3) > 0 &
-                     .AND. dy(k)*dy(ip1) > 0 .AND. dy(im2)*dy(k) < 0 )
-                t3 = merge(1,0,ABS(rhs(k)-zarg(im1)) > ABS(rhs(k)-zarg(k)))	
-                
-                filter_code(k) = merge(0,1,t1+t2 > 0) 
-                rhs(k) = (1-filter_code(k))*rhs(k)+filter_code(k)*(t3*zarg(k)+(1-t3)*zarg(im1))
-                filter_code(im1) = MAX(filter_code(im1),filter_code(k))
-             enddo
-             
-             rhs = merge(qmax,rhs,rhs > qmax)
-             rhs = merge(zero,rhs,rhs < zero)
-             
-             za0 = rhs(1:nlev) 
-             za1 = -4*rhs(1:nlev) - 2*rhs(2:nlev+1) + 6*zarg  
-             za2 =  3*rhs(1:nlev) + 3*rhs(2:nlev+1) - 6*zarg 
-             
-             dy(1:nlev) = rhs(2:nlev+1)-rhs(1:nlev)                             
-             dy = merge(zero, dy, abs(dy) < tiny )
-             
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!     
-             !! Compute the 3 quadratic spline coeffients {za0, za1, za2}				   !!
-             !! knowing the quadratic spline parameters {rho_left,rho_right,zarg}		   !!
-             !! Zerroukat et.al., Q.J.R. Meteorol. Soc., Vol. 128, pp. 2801-2820 (2002).   !!
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-             
-             
-             h = rhs(2:nlev+1)  
-             
-             do k=1,nlev
-                
-                xm_d = merge(one,2*za2(k),abs(za2(k)) < tiny)
-                xm = merge(zero,-za1(k)/xm_d, abs(za2(k)) < tiny)            
-                f_xm = za0(k) + za1(k)*xm + za2(k)*xm**2
-                
-                t1 = merge(1,0,ABS(za2(k)) > tiny)
-                t2 = merge(1,0,xm <= zero .OR. xm >= 1)
-                t3 = merge(1,0,za2(k) > zero)
-                t4 = merge(1,0,za2(k) < zero)
-                tm = merge(1,0,t1*((1-t2)+t3) .EQ. 2)
-                tp = merge(1,0,t1*((1-t2)+(1-t3)+t4) .EQ. 3)
-                
-                peaks=0
-                peaks = merge(-1,peaks,tm .EQ. 1)
-                peaks = merge(+1,peaks,tp .EQ. 1)
-                peaks_min = merge(f_xm,MIN(za0(k),za0(k)+za1(k)+za2(k)),tm .EQ. 1)
-                peaks_max = merge(f_xm,MAX(za0(k),za0(k)+za1(k)+za2(k)),tp .EQ. 1)
-                
-                im1=MAX(1,k-1)
-                im2=MAX(1,k-2)
-                ip1=MIN(nlev,k+1)
-                ip2=MIN(nlev,k+2)
-                
-                t1 = merge(abs(peaks),0,(dy(im2)*dy(im1) <= tiny) .OR. &
-                     (dy(ip1)*dy(ip2) <= tiny) .OR. (dy(im1)*dy(ip1) >= tiny) .OR. &
-                     (dy(im1)*float(peaks) <= tiny))
-                
-                filter_code(k) = merge(1,t1+(1-t1)*filter_code(k),(rhs(k) >= qmax) .OR. & 
-                     (rhs(k) <= zero) .OR. (peaks_max > qmax) .OR. (peaks_min < tiny))
-                
-                if (filter_code(k) > 0) then
-                   
-                   level1 = rhs(k)
-                   level2 = (2*rhs(k)+h(k))/3
-                   level3 = 0.5*(rhs(k)+h(k)) 
-                   level4 = (1/3d0)*rhs(k)+2*(1/3d0)*h(k)
-                   level5 = h(k)
-                   
-                   t1 = merge(1,0,h(k) >= rhs(k))
-                   t2 = merge(1,0,zarg(k) <= level1 .OR.  zarg(k) >= level5)
-                   t3 = merge(1,0,zarg(k) >  level1 .AND. zarg(k) <  level2)
-                   t4 = merge(1,0,zarg(k) >  level4 .AND. zarg(k) <  level5)
-                   
-                   lt1 = t1*t2
-                   lt2 = t1*(1-t2+t3)
-                   lt3 = t1*(1-t2+1-t3+t4)
-                   
-                   za0(k) = merge(zarg(k),za0(k),lt1 .EQ. 1)
-                   za1(k) = merge(zero,za1(k),lt1 .EQ. 1)
-                   za2(k) = merge(zero,za2(k),lt1 .EQ. 1)
-                   
-                   za0(k) = merge(rhs(k),za0(k),lt2 .EQ. 2)
-                   za1(k) = merge(zero,za1(k),lt2 .EQ. 2)
-                   za2(k) = merge(3*(zarg(k)-rhs(k)),za2(k),lt2 .EQ. 2)
-                   
-                   za0(k) = merge(-2*h(k)+3*zarg(k),za0(k),lt3 .EQ. 3)
-                   za1(k) = merge(+6*h(k)-6*zarg(k),za1(k),lt3 .EQ. 3)
-                   za2(k) = merge(-3*h(k)+3*zarg(k),za2(k),lt3 .EQ. 3)
-                   
-                   t2 = merge(1,0,zarg(k) >= level1 .OR.  zarg(k) <= level5)
-                   t3 = merge(1,0,zarg(k) <  level1 .AND. zarg(k) >  level2)
-                   t4 = merge(1,0,zarg(k) <  level4 .AND. zarg(k) >  level5)
-                   
-                   lt1 = (1-t1)*t2
-                   lt2 = (1-t1)*(1-t2+t3)
-                   lt3 = (1-t1)*(1-t2+1-t3+t4)
-                   
-                   za0(k) = merge(zarg(k),za0(k),lt1 .EQ. 1)
-                   za1(k) = merge(zero,za1(k),lt1 .EQ. 1)
-                   za2(k) = merge(zero,za2(k),lt1 .EQ. 1)
-                   
-                   za0(k) = merge(rhs(k),za0(k),lt2 .EQ. 2)
-                   za1(k) = merge(zero,za1(k),lt2 .EQ. 2)
-                   za2(k) = merge(3*(zarg(k)-rhs(k)),za2(k),lt2 .EQ. 2)
-                   
-                   za0(k) = merge(-2*h(k)+3*zarg(k),za0(k),lt3 .EQ. 3)
-                   za1(k) = merge(+6*h(k)-6*zarg(k),za1(k),lt3 .EQ. 3)
-                   za2(k) = merge(-3*h(k)+3*zarg(k),za2(k),lt3 .EQ. 3)	
-                endif
-             enddo
-             
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-             !! start iteration from top to bottom of atmosphere !! 
-			 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-             
-             zv1 = 0
-             do k=1,nlev
-				if (zgam(k+1)>1d0) then
-					WRITE(*,*) 'r not in [0:1]', zgam(k+1)
-				endif
-                zv2 = zv(zkr(k+1))+(za0(zkr(k+1))*zgam(k+1)+(za1(zkr(k+1))/2)*(zgam(k+1)**2)+ &
-                     (za2(zkr(k+1))/3)*(zgam(k+1)**3))*zhdp(zkr(k+1))
-                !Q_vadv = (spelt(ie)%c(i,j,k,q,np1)/spelt(ie)%sga(i,j) - (zv2 - zv1)) / dt
-                spelt(ie)%c(i,j,k,q,np1) = (zv2 - zv1) / (z2c(k+1)-z2c(k))  ! convert from tracer mass to mixing ratio
-                spelt(ie)%c(i,j,k,q,np1)=spelt(ie)%sga(i,j)*spelt(ie)%c(i,j,k,q,np1)
-                zv1 = zv2
-             enddo
-          enddo
-       enddo
-    enddo
-    !remap q=1 
-     do i=1,nep   
-       do j=1,nep
-        do k=1,nlev
-          spelt(ie)%c(i,j,k,2,np1)=spelt(ie)%sga(i,j)*dp_np1(i,j,k)
-        end do
+      ps_c(i,j)=sum(spelt(ie)%c(i,j,:,2,np1)/spelt(ie)%sga(i,j)) +  hvcoord%hyai(1)*hvcoord%ps0 
+      ! 2. compute dp_np1 using CSLAM air density and eta coordinate formula
+      ! get the dp now on the eta coordinates (reference level)
+      do k=1,nlev
+        dp_np1(i,j,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
+                        (hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps_c(i,j)
       end do
     end do
-    
- enddo
- 
- call t_stopf('remap_velocityCspelt')
- end subroutine remap_velocityCspelt
+  end do
+
+  do q=3,ntrac
+    do i=1,nep   
+      do j=1,nep
+        z1c(1)=0
+        z2c(1)=0
+        zv(1)=0
+        
+        do k=1,nlev
+          dp_star=spelt(ie)%c(i,j,k,2,np1)/spelt(ie)%sga(i,j)  
+          z1c(k+1) = z1c(k)+dp_star
+          z2c(k+1) = z2c(k)+dp_np1(i,j,k)
+          
+          Qcol(k)=spelt(ie)%c(i,j,k,q,np1)*dp_star/spelt(ie)%sga(i,j)   !convert mixing ratio to tracer mass
+          zv(k+1) = zv(k)+Qcol(k)
+        enddo
+        
+        if (ABS(z2c(nlev+1)-z1c(nlev+1)).GE.0.000001) then
+          write(6,*) 'SURFACE PRESSURE IMPLIED BY ADVECTION SCHEME'
+          write(6,*) 'NOT CORRESPONDING TO SURFACE PRESSURE IN    '
+          write(6,*) 'DATA FOR MODEL LEVELS'
+          write(6,*) 'PLEVMODEL=',z2c(nlev+1)
+          write(6,*) 'PLEV     =',z1c(nlev+1)
+          write(6,*) 'DIFF     =',z2c(nlev+1)-z1c(nlev+1)
+          ! call ABORT
+        endif
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !! quadratic splies with UK met office monotonicity constraints  !!
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        zkr  = 99
+        ilev = 2
+        zkr(1) = 1
+        zkr(nlev+1) = nlev
+        kloop: do k = 2,nlev
+          do jk = ilev,nlev+1
+            if (z1c(jk).ge.z2c(k)) then
+              ilev      = jk
+              zkr(k)   = jk-1
+              cycle kloop
+            endif
+          enddo
+        enddo kloop
+        
+        zgam  = (z2c(1:nlev+1)-z1c(zkr)) / (z1c(zkr+1)-z1c(zkr))
+        zgam(1)      = 0.0
+        zgam(nlev+1) = 1.0
+        zhdp = z1c(2:nlev+1)-z1c(1:nlev)
+        
+        
+        h = 1/zhdp
+        zarg = Qcol * h
+        rhs = 0
+        lower_diag = 0
+        diag = 0
+        upper_diag = 0
+        
+        rhs(1)=3*zarg(1)
+        rhs(2:nlev) = 3*(zarg(2:nlev)*h(2:nlev) + zarg(1:nlev-1)*h(1:nlev-1)) 
+        rhs(nlev+1)=3*zarg(nlev)
+        
+        lower_diag(1)=1
+        lower_diag(2:nlev) = h(1:nlev-1)
+        lower_diag(nlev+1)=1
+        
+        diag(1)=2
+        diag(2:nlev) = 2*(h(2:nlev) + h(1:nlev-1))
+        diag(nlev+1)=2
+        
+        upper_diag(1)=1
+        upper_diag(2:nlev) = h(2:nlev)
+        upper_diag(nlev+1)=0
+        
+        q_diag(1)=-upper_diag(1)/diag(1)
+        rhs(1)= rhs(1)/diag(1)
+        
+        do k=2,nlev+1
+          tmp_cal    =  1/(diag(k)+lower_diag(k)*q_diag(k-1))
+          q_diag(k) = -upper_diag(k)*tmp_cal
+          rhs(k) =  (rhs(k)-lower_diag(k)*rhs(k-1))*tmp_cal
+        enddo
+        do k=nlev,1,-1
+          rhs(k)=rhs(k)+q_diag(k)*rhs(k+1)
+        enddo
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !!  monotonicity modifications  !!
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
+        
+        filter_code = 0
+        dy(1:nlev-1) = zarg(2:nlev)-zarg(1:nlev-1)
+        dy(nlev) = dy(nlev-1)                          
+        
+        dy = merge(zero, dy, abs(dy) < tiny )
+        
+        do k=1,nlev
+          im1=MAX(1,k-1)
+          im2=MAX(1,k-2)
+          im3=MAX(1,k-3)
+          ip1=MIN(nlev,k+1)
+          t1 = merge(1,0,(zarg(k)-rhs(k))*(rhs(k)-zarg(im1)) >= 0)
+          t2 = merge(1,0,dy(im2)*(rhs(k)-zarg(im1)) > 0 .AND. dy(im2)*dy(im3) > 0 &
+               .AND. dy(k)*dy(ip1) > 0 .AND. dy(im2)*dy(k) < 0 )
+          t3 = merge(1,0,ABS(rhs(k)-zarg(im1)) > ABS(rhs(k)-zarg(k)))	
+          
+          filter_code(k) = merge(0,1,t1+t2 > 0) 
+          rhs(k) = (1-filter_code(k))*rhs(k)+filter_code(k)*(t3*zarg(k)+(1-t3)*zarg(im1))
+          filter_code(im1) = MAX(filter_code(im1),filter_code(k))
+        enddo
+        
+        rhs = merge(qmax,rhs,rhs > qmax)
+        rhs = merge(zero,rhs,rhs < zero)
+        
+        za0 = rhs(1:nlev) 
+        za1 = -4*rhs(1:nlev) - 2*rhs(2:nlev+1) + 6*zarg  
+        za2 =  3*rhs(1:nlev) + 3*rhs(2:nlev+1) - 6*zarg 
+        
+        dy(1:nlev) = rhs(2:nlev+1)-rhs(1:nlev)                             
+        dy = merge(zero, dy, abs(dy) < tiny )
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!     
+        !! Compute the 3 quadratic spline coeffients {za0, za1, za2}				   !!
+        !! knowing the quadratic spline parameters {rho_left,rho_right,zarg}		   !!
+        !! Zerroukat et.al., Q.J.R. Meteorol. Soc., Vol. 128, pp. 2801-2820 (2002).   !!
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+        
+        
+        h = rhs(2:nlev+1)  
+        
+        do k=1,nlev
+          xm_d = merge(one,2*za2(k),abs(za2(k)) < tiny)
+          xm = merge(zero,-za1(k)/xm_d, abs(za2(k)) < tiny)            
+          f_xm = za0(k) + za1(k)*xm + za2(k)*xm**2
+          
+          t1 = merge(1,0,ABS(za2(k)) > tiny)
+          t2 = merge(1,0,xm <= zero .OR. xm >= 1)
+          t3 = merge(1,0,za2(k) > zero)
+          t4 = merge(1,0,za2(k) < zero)
+          tm = merge(1,0,t1*((1-t2)+t3) .EQ. 2)
+          tp = merge(1,0,t1*((1-t2)+(1-t3)+t4) .EQ. 3)
+          
+          peaks=0
+          peaks = merge(-1,peaks,tm .EQ. 1)
+          peaks = merge(+1,peaks,tp .EQ. 1)
+          peaks_min = merge(f_xm,MIN(za0(k),za0(k)+za1(k)+za2(k)),tm .EQ. 1)
+          peaks_max = merge(f_xm,MAX(za0(k),za0(k)+za1(k)+za2(k)),tp .EQ. 1)
+          
+          im1=MAX(1,k-1)
+          im2=MAX(1,k-2)
+          ip1=MIN(nlev,k+1)
+          ip2=MIN(nlev,k+2)
+          
+          t1 = merge(abs(peaks),0,(dy(im2)*dy(im1) <= tiny) .OR. &
+               (dy(ip1)*dy(ip2) <= tiny) .OR. (dy(im1)*dy(ip1) >= tiny) .OR. &
+               (dy(im1)*float(peaks) <= tiny))
+          
+          filter_code(k) = merge(1,t1+(1-t1)*filter_code(k),(rhs(k) >= qmax) .OR. & 
+               (rhs(k) <= zero) .OR. (peaks_max > qmax) .OR. (peaks_min < tiny))
+          
+          if (filter_code(k) > 0) then
+            level1 = rhs(k)
+            level2 = (2*rhs(k)+h(k))/3
+            level3 = 0.5*(rhs(k)+h(k)) 
+            level4 = (1/3d0)*rhs(k)+2*(1/3d0)*h(k)
+            level5 = h(k)
+            
+            t1 = merge(1,0,h(k) >= rhs(k))
+            t2 = merge(1,0,zarg(k) <= level1 .OR.  zarg(k) >= level5)
+            t3 = merge(1,0,zarg(k) >  level1 .AND. zarg(k) <  level2)
+            t4 = merge(1,0,zarg(k) >  level4 .AND. zarg(k) <  level5)
+            
+            lt1 = t1*t2
+            lt2 = t1*(1-t2+t3)
+            lt3 = t1*(1-t2+1-t3+t4)
+            
+            za0(k) = merge(zarg(k),za0(k),lt1 .EQ. 1)
+            za1(k) = merge(zero,za1(k),lt1 .EQ. 1)
+            za2(k) = merge(zero,za2(k),lt1 .EQ. 1)
+            
+            za0(k) = merge(rhs(k),za0(k),lt2 .EQ. 2)
+            za1(k) = merge(zero,za1(k),lt2 .EQ. 2)
+            za2(k) = merge(3*(zarg(k)-rhs(k)),za2(k),lt2 .EQ. 2)
+            
+            za0(k) = merge(-2*h(k)+3*zarg(k),za0(k),lt3 .EQ. 3)
+            za1(k) = merge(+6*h(k)-6*zarg(k),za1(k),lt3 .EQ. 3)
+            za2(k) = merge(-3*h(k)+3*zarg(k),za2(k),lt3 .EQ. 3)
+            
+            t2 = merge(1,0,zarg(k) >= level1 .OR.  zarg(k) <= level5)
+            t3 = merge(1,0,zarg(k) <  level1 .AND. zarg(k) >  level2)
+            t4 = merge(1,0,zarg(k) <  level4 .AND. zarg(k) >  level5)
+            
+            lt1 = (1-t1)*t2
+            lt2 = (1-t1)*(1-t2+t3)
+            lt3 = (1-t1)*(1-t2+1-t3+t4)
+            
+            za0(k) = merge(zarg(k),za0(k),lt1 .EQ. 1)
+            za1(k) = merge(zero,za1(k),lt1 .EQ. 1)
+            za2(k) = merge(zero,za2(k),lt1 .EQ. 1)
+            
+            za0(k) = merge(rhs(k),za0(k),lt2 .EQ. 2)
+            za1(k) = merge(zero,za1(k),lt2 .EQ. 2)
+            za2(k) = merge(3*(zarg(k)-rhs(k)),za2(k),lt2 .EQ. 2)
+            
+            za0(k) = merge(-2*h(k)+3*zarg(k),za0(k),lt3 .EQ. 3)
+            za1(k) = merge(+6*h(k)-6*zarg(k),za1(k),lt3 .EQ. 3)
+            za2(k) = merge(-3*h(k)+3*zarg(k),za2(k),lt3 .EQ. 3)	
+          endif
+        enddo
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !! start iteration from top to bottom of atmosphere !! 
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        zv1 = 0
+        do k=1,nlev
+          if (zgam(k+1)>1d0) then
+            WRITE(*,*) 'r not in [0:1]', zgam(k+1)
+          endif
+          zv2 = zv(zkr(k+1))+(za0(zkr(k+1))*zgam(k+1)+(za1(zkr(k+1))/2)*(zgam(k+1)**2)+ &
+               (za2(zkr(k+1))/3)*(zgam(k+1)**3))*zhdp(zkr(k+1))
+          !Q_vadv = (spelt(ie)%c(i,j,k,q,np1)/spelt(ie)%sga(i,j) - (zv2 - zv1)) / dt
+          spelt(ie)%c(i,j,k,q,np1) = (zv2 - zv1) / (z2c(k+1)-z2c(k))  ! convert from tracer mass to mixing ratio
+          spelt(ie)%c(i,j,k,q,np1)=spelt(ie)%sga(i,j)*spelt(ie)%c(i,j,k,q,np1)
+          zv1 = zv2
+        enddo
+      enddo
+    enddo
+  enddo
+  !remap q=1 
+  do i=1,nep   
+    do j=1,nep
+      do k=1,nlev
+        spelt(ie)%c(i,j,k,2,np1)=spelt(ie)%sga(i,j)*dp_np1(i,j,k)
+      end do
+    end do
+  end do
+  call t_stopf('remap_velocityCspelt')
+end subroutine remap_velocityCspelt
 
 
 
@@ -1674,37 +1637,31 @@ end function integrate_parabola
 
 
 
-  subroutine remap_velocityC(np1,dt,elem,fvm,hvcoord,nets,nete)
+subroutine remap_velocityC(np1,dt,elem,fvm,hvcoord,ie)
+  use physical_constants, only : cp, cpwater_vapor
+  use dimensions_mod, only : nc
+  implicit none
+  real (kind=real_kind),  intent(in   )         :: dt
+  type (element_t),       intent(inout), target :: elem(:)
+  type (fvm_struct),      intent(inout), target :: fvm(:)
+  type (hvcoord_t),       intent(in   )         :: hvcoord
+  integer,                intent(in   )         :: ie,np1
   
-    use physical_constants, only : cp, cpwater_vapor
-	  use dimensions_mod, only : nc
-	  
-    implicit none
-    real (kind=real_kind),  intent(in)        :: dt
-    type (element_t),    intent(inout), target  :: elem(:)
-    type (fvm_struct),    intent(inout), target  :: fvm(:)
-    type (hvcoord_t),    intent(in)        :: hvcoord
-    
-    integer :: nets,nete,np1
-    
-    ! ========================
-    ! Local Variables
-    ! ========================
+  ! ========================
+  ! Local Variables
+  ! ========================
 
-    real (kind=real_kind), dimension(nlev+1)    :: rhs,lower_diag,diag,upper_diag,q_diag,zgam,z1c,z2c,zv
-    real (kind=real_kind), dimension(nlev)      :: h,Qcol,dy,za0,za1,za2,zarg,zhdp
-    real (kind=real_kind)  :: dp_star,f_xm,level1,level2,level3,level4,level5, &
-								peaks_min,peaks_max,Q_vadv,tmp_cal,xm,xm_d,zv1,zv2, &
-								zero = 0,one = 1,tiny = 1e-12,qmax = 1d50
-    
-    real (kind=real_kind)  :: ps_c(nc,nc), dp_np1(nc,nc,nlev)
-    
-    integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, & 
-									lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
-    
-    call t_startf('remap_velocityC')
+  real (kind=real_kind), dimension(nlev+1) :: rhs,lower_diag,diag,upper_diag,q_diag,zgam,z1c,z2c,zv
+  real (kind=real_kind), dimension(nlev)   :: h,Qcol,dy,za0,za1,za2,zarg,zhdp
+  real (kind=real_kind)  :: dp_star,f_xm,level1,level2,level3,level4,level5, &
+                            peaks_min,peaks_max,Q_vadv,tmp_cal,xm,xm_d,zv1,zv2, &
+                            zero = 0,one = 1,tiny = 1e-12,qmax = 1d50
+  real (kind=real_kind)  :: ps_c(nc,nc), dp_np1(nc,nc,nlev)
+  integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, & 
+                            lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,i,ilev,j,jk,k,q
+  
+  call t_startf('remap_velocityC')
 
-    do ie=nets,nete
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(q,i,j,z1c,z2c,zv,k,dp_np1,dp_star,Qcol,zkr,ilev) &
 !$omp    private(jk,zgam,zhdp,h,zarg,rhs,lower_diag,diag,upper_diag,q_diag,tmp_cal,filter_code) &
@@ -1716,260 +1673,255 @@ end function integrate_parabola
   do i=1,nc   
     do j=1,nc
       ! 1. compute surface pressure, 'ps_c', from CSLAM air density
-     ps_c(i,j)=sum(fvm(ie)%c(i,j,:,1,np1)) +  hvcoord%hyai(1)*hvcoord%ps0 
-     ! 2. compute dp_np1 using CSLAM air density and eta coordinate formula
-     ! get the dp now on the eta coordinates (reference level)
-     do k=1,nlev
-       dp_np1(i,j,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
-           (hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps_c(i,j)
-     end do
-   end do
- end do
-
-      do q=2,ntrac
-        do i=1,nc   
-          do j=1,nc
-             z1c(1)=0
-             z2c(1)=0
-             zv(1)=0
-             
-             do k=1,nlev
-
-                dp_star=fvm(ie)%c(i,j,k,1,np1)  
-                z1c(k+1) = z1c(k)+dp_star
-                z2c(k+1) = z2c(k)+dp_np1(i,j,k)
-                
-                Qcol(k)=fvm(ie)%c(i,j,k,q,np1)*dp_star   !convert mixing ratio to tracer mass
-                zv(k+1) = zv(k)+Qcol(k)
-             enddo
-             
-             if (ABS(z2c(nlev+1)-z1c(nlev+1)).GE.0.000001) then
-                write(6,*) 'SURFACE PRESSURE IMPLIED BY ADVECTION SCHEME'
-                write(6,*) 'NOT CORRESPONDING TO SURFACE PRESSURE IN    '
-                write(6,*) 'DATA FOR MODEL LEVELS'
-                write(6,*) 'PLEVMODEL=',z2c(nlev+1)
-                write(6,*) 'PLEV     =',z1c(nlev+1)
-                write(6,*) 'DIFF     =',z2c(nlev+1)-z1c(nlev+1)
-                ! call ABORT
-             endif
-             
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-             !! quadratic splies with UK met office monotonicity constraints  !!
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-             zkr  = 99
-             ilev = 2
-             zkr(1) = 1
-             zkr(nlev+1) = nlev
-             kloop: do k = 2,nlev
-                do jk = ilev,nlev+1
-                   if (z1c(jk).ge.z2c(k)) then
-                      ilev      = jk
-                      zkr(k)   = jk-1
-                      cycle kloop
-                   endif
-                enddo
-             enddo kloop
-             
-             zgam  = (z2c(1:nlev+1)-z1c(zkr)) / (z1c(zkr+1)-z1c(zkr))
-             zgam(1)      = 0.0
-             zgam(nlev+1) = 1.0
-             zhdp = z1c(2:nlev+1)-z1c(1:nlev)
-             
-             
-             h = 1/zhdp
-             zarg = Qcol * h
-             rhs = 0
-             lower_diag = 0
-             diag = 0
-             upper_diag = 0
-             
-             rhs(1)=3*zarg(1)
-             rhs(2:nlev) = 3*(zarg(2:nlev)*h(2:nlev) + zarg(1:nlev-1)*h(1:nlev-1)) 
-             rhs(nlev+1)=3*zarg(nlev)
-             
-             lower_diag(1)=1
-             lower_diag(2:nlev) = h(1:nlev-1)
-             lower_diag(nlev+1)=1
-             
-             diag(1)=2
-             diag(2:nlev) = 2*(h(2:nlev) + h(1:nlev-1))
-             diag(nlev+1)=2
-             
-             upper_diag(1)=1
-             upper_diag(2:nlev) = h(2:nlev)
-             upper_diag(nlev+1)=0
-             
-             q_diag(1)=-upper_diag(1)/diag(1)
-             rhs(1)= rhs(1)/diag(1)
-             
-             do k=2,nlev+1
-                tmp_cal    =  1/(diag(k)+lower_diag(k)*q_diag(k-1))
-                q_diag(k) = -upper_diag(k)*tmp_cal
-                rhs(k) =  (rhs(k)-lower_diag(k)*rhs(k-1))*tmp_cal
-             enddo
-             do k=nlev,1,-1
-                rhs(k)=rhs(k)+q_diag(k)*rhs(k+1)
-             enddo
-             
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-             !!  monotonicity modifications  !!
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
-             
-             filter_code = 0
-             dy(1:nlev-1) = zarg(2:nlev)-zarg(1:nlev-1)
-             dy(nlev) = dy(nlev-1)                          
-             
-             dy = merge(zero, dy, abs(dy) < tiny )
-             
-             do k=1,nlev
-                im1=MAX(1,k-1)
-                im2=MAX(1,k-2)
-                im3=MAX(1,k-3)
-                ip1=MIN(nlev,k+1)
-                t1 = merge(1,0,(zarg(k)-rhs(k))*(rhs(k)-zarg(im1)) >= 0)
-                t2 = merge(1,0,dy(im2)*(rhs(k)-zarg(im1)) > 0 .AND. dy(im2)*dy(im3) > 0 &
-                     .AND. dy(k)*dy(ip1) > 0 .AND. dy(im2)*dy(k) < 0 )
-                t3 = merge(1,0,ABS(rhs(k)-zarg(im1)) > ABS(rhs(k)-zarg(k)))	
-                
-                filter_code(k) = merge(0,1,t1+t2 > 0) 
-                rhs(k) = (1-filter_code(k))*rhs(k)+filter_code(k)*(t3*zarg(k)+(1-t3)*zarg(im1))
-                filter_code(im1) = MAX(filter_code(im1),filter_code(k))
-             enddo
-             
-             rhs = merge(qmax,rhs,rhs > qmax)
-             rhs = merge(zero,rhs,rhs < zero)
-             
-             za0 = rhs(1:nlev) 
-             za1 = -4*rhs(1:nlev) - 2*rhs(2:nlev+1) + 6*zarg  
-             za2 =  3*rhs(1:nlev) + 3*rhs(2:nlev+1) - 6*zarg 
-             
-             dy(1:nlev) = rhs(2:nlev+1)-rhs(1:nlev)                             
-             dy = merge(zero, dy, abs(dy) < tiny )
-             
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!     
-             !! Compute the 3 quadratic spline coeffients {za0, za1, za2}				   !!
-             !! knowing the quadratic spline parameters {rho_left,rho_right,zarg}		   !!
-             !! Zerroukat et.al., Q.J.R. Meteorol. Soc., Vol. 128, pp. 2801-2820 (2002).   !!
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-             
-             
-             h = rhs(2:nlev+1)  
-             
-             do k=1,nlev
-                
-                xm_d = merge(one,2*za2(k),abs(za2(k)) < tiny)
-                xm = merge(zero,-za1(k)/xm_d, abs(za2(k)) < tiny)            
-                f_xm = za0(k) + za1(k)*xm + za2(k)*xm**2
-                
-                t1 = merge(1,0,ABS(za2(k)) > tiny)
-                t2 = merge(1,0,xm <= zero .OR. xm >= 1)
-                t3 = merge(1,0,za2(k) > zero)
-                t4 = merge(1,0,za2(k) < zero)
-                tm = merge(1,0,t1*((1-t2)+t3) .EQ. 2)
-                tp = merge(1,0,t1*((1-t2)+(1-t3)+t4) .EQ. 3)
-                
-                peaks=0
-                peaks = merge(-1,peaks,tm .EQ. 1)
-                peaks = merge(+1,peaks,tp .EQ. 1)
-                peaks_min = merge(f_xm,MIN(za0(k),za0(k)+za1(k)+za2(k)),tm .EQ. 1)
-                peaks_max = merge(f_xm,MAX(za0(k),za0(k)+za1(k)+za2(k)),tp .EQ. 1)
-                
-                im1=MAX(1,k-1)
-                im2=MAX(1,k-2)
-                ip1=MIN(nlev,k+1)
-                ip2=MIN(nlev,k+2)
-                
-                t1 = merge(abs(peaks),0,(dy(im2)*dy(im1) <= tiny) .OR. &
-                     (dy(ip1)*dy(ip2) <= tiny) .OR. (dy(im1)*dy(ip1) >= tiny) .OR. &
-                     (dy(im1)*float(peaks) <= tiny))
-                
-                filter_code(k) = merge(1,t1+(1-t1)*filter_code(k),(rhs(k) >= qmax) .OR. & 
-                     (rhs(k) <= zero) .OR. (peaks_max > qmax) .OR. (peaks_min < tiny))
-                
-                if (filter_code(k) > 0) then
-                   
-                   level1 = rhs(k)
-                   level2 = (2*rhs(k)+h(k))/3
-                   level3 = 0.5*(rhs(k)+h(k)) 
-                   level4 = (1/3d0)*rhs(k)+2*(1/3d0)*h(k)
-                   level5 = h(k)
-                   
-                   t1 = merge(1,0,h(k) >= rhs(k))
-                   t2 = merge(1,0,zarg(k) <= level1 .OR.  zarg(k) >= level5)
-                   t3 = merge(1,0,zarg(k) >  level1 .AND. zarg(k) <  level2)
-                   t4 = merge(1,0,zarg(k) >  level4 .AND. zarg(k) <  level5)
-                   
-                   lt1 = t1*t2
-                   lt2 = t1*(1-t2+t3)
-                   lt3 = t1*(1-t2+1-t3+t4)
-                   
-                   za0(k) = merge(zarg(k),za0(k),lt1 .EQ. 1)
-                   za1(k) = merge(zero,za1(k),lt1 .EQ. 1)
-                   za2(k) = merge(zero,za2(k),lt1 .EQ. 1)
-                   
-                   za0(k) = merge(rhs(k),za0(k),lt2 .EQ. 2)
-                   za1(k) = merge(zero,za1(k),lt2 .EQ. 2)
-                   za2(k) = merge(3*(zarg(k)-rhs(k)),za2(k),lt2 .EQ. 2)
-                   
-                   za0(k) = merge(-2*h(k)+3*zarg(k),za0(k),lt3 .EQ. 3)
-                   za1(k) = merge(+6*h(k)-6*zarg(k),za1(k),lt3 .EQ. 3)
-                   za2(k) = merge(-3*h(k)+3*zarg(k),za2(k),lt3 .EQ. 3)
-                   
-                   t2 = merge(1,0,zarg(k) >= level1 .OR.  zarg(k) <= level5)
-                   t3 = merge(1,0,zarg(k) <  level1 .AND. zarg(k) >  level2)
-                   t4 = merge(1,0,zarg(k) <  level4 .AND. zarg(k) >  level5)
-                   
-                   lt1 = (1-t1)*t2
-                   lt2 = (1-t1)*(1-t2+t3)
-                   lt3 = (1-t1)*(1-t2+1-t3+t4)
-                   
-                   za0(k) = merge(zarg(k),za0(k),lt1 .EQ. 1)
-                   za1(k) = merge(zero,za1(k),lt1 .EQ. 1)
-                   za2(k) = merge(zero,za2(k),lt1 .EQ. 1)
-                   
-                   za0(k) = merge(rhs(k),za0(k),lt2 .EQ. 2)
-                   za1(k) = merge(zero,za1(k),lt2 .EQ. 2)
-                   za2(k) = merge(3*(zarg(k)-rhs(k)),za2(k),lt2 .EQ. 2)
-                   
-                   za0(k) = merge(-2*h(k)+3*zarg(k),za0(k),lt3 .EQ. 3)
-                   za1(k) = merge(+6*h(k)-6*zarg(k),za1(k),lt3 .EQ. 3)
-                   za2(k) = merge(-3*h(k)+3*zarg(k),za2(k),lt3 .EQ. 3)	
-                endif
-             enddo
-             
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-             !! start iteration from top to bottom of atmosphere !! 
-			 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-             
-             zv1 = 0
-             do k=1,nlev
-                if (zgam(k+1)>1d0) then
-                   WRITE(*,*) 'r not in [0:1]', zgam(k+1)
-                endif
-                zv2 = zv(zkr(k+1))+(za0(zkr(k+1))*zgam(k+1)+(za1(zkr(k+1))/2)*(zgam(k+1)**2)+ &
-                     (za2(zkr(k+1))/3)*(zgam(k+1)**3))*zhdp(zkr(k+1))
-                !Q_vadv = (fvm(ie)%c(i,j,k,q,np1) - (zv2 - zv1)) / dt
-                fvm(ie)%c(i,j,k,q,np1) = (zv2 - zv1) / (z2c(k+1)-z2c(k))  ! convert from tracer mass to mixing ratio
-                zv1 = zv2
-             enddo
-          enddo
-       enddo
-    enddo
-    !remap q=1 
-     do i=1,nc   
-       do j=1,nc
-        do k=1,nlev
-          fvm(ie)%c(i,j,k,1,np1)=dp_np1(i,j,k)
-        end do
+      ps_c(i,j)=sum(fvm(ie)%c(i,j,:,1,np1)) +  hvcoord%hyai(1)*hvcoord%ps0 
+      ! 2. compute dp_np1 using CSLAM air density and eta coordinate formula
+      ! get the dp now on the eta coordinates (reference level)
+      do k=1,nlev
+        dp_np1(i,j,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
+                        (hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps_c(i,j)
       end do
     end do
-    
- enddo
+  end do
+
+  do q=2,ntrac
+    do i=1,nc   
+      do j=1,nc
+        z1c(1)=0
+        z2c(1)=0
+        zv(1)=0
+        
+        do k=1,nlev
+          dp_star=fvm(ie)%c(i,j,k,1,np1)  
+          z1c(k+1) = z1c(k)+dp_star
+          z2c(k+1) = z2c(k)+dp_np1(i,j,k)
+          
+          Qcol(k)=fvm(ie)%c(i,j,k,q,np1)*dp_star   !convert mixing ratio to tracer mass
+          zv(k+1) = zv(k)+Qcol(k)
+        enddo
+        
+        if (ABS(z2c(nlev+1)-z1c(nlev+1)).GE.0.000001) then
+          write(6,*) 'SURFACE PRESSURE IMPLIED BY ADVECTION SCHEME'
+          write(6,*) 'NOT CORRESPONDING TO SURFACE PRESSURE IN    '
+          write(6,*) 'DATA FOR MODEL LEVELS'
+          write(6,*) 'PLEVMODEL=',z2c(nlev+1)
+          write(6,*) 'PLEV     =',z1c(nlev+1)
+          write(6,*) 'DIFF     =',z2c(nlev+1)-z1c(nlev+1)
+          ! call ABORT
+        endif
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !! quadratic splies with UK met office monotonicity constraints  !!
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        zkr  = 99
+        ilev = 2
+        zkr(1) = 1
+        zkr(nlev+1) = nlev
+        kloop: do k = 2,nlev
+          do jk = ilev,nlev+1
+            if (z1c(jk).ge.z2c(k)) then
+              ilev      = jk
+              zkr(k)   = jk-1
+              cycle kloop
+            endif
+          enddo
+        enddo kloop
+        
+        zgam  = (z2c(1:nlev+1)-z1c(zkr)) / (z1c(zkr+1)-z1c(zkr))
+        zgam(1)      = 0.0
+        zgam(nlev+1) = 1.0
+        zhdp = z1c(2:nlev+1)-z1c(1:nlev)
+        
+        h = 1/zhdp
+        zarg = Qcol * h
+        rhs = 0
+        lower_diag = 0
+        diag = 0
+        upper_diag = 0
+        
+        rhs(1)=3*zarg(1)
+        rhs(2:nlev) = 3*(zarg(2:nlev)*h(2:nlev) + zarg(1:nlev-1)*h(1:nlev-1)) 
+        rhs(nlev+1)=3*zarg(nlev)
+        
+        lower_diag(1)=1
+        lower_diag(2:nlev) = h(1:nlev-1)
+        lower_diag(nlev+1)=1
+        
+        diag(1)=2
+        diag(2:nlev) = 2*(h(2:nlev) + h(1:nlev-1))
+        diag(nlev+1)=2
+        
+        upper_diag(1)=1
+        upper_diag(2:nlev) = h(2:nlev)
+        upper_diag(nlev+1)=0
+        
+        q_diag(1)=-upper_diag(1)/diag(1)
+        rhs(1)= rhs(1)/diag(1)
+        
+        do k=2,nlev+1
+          tmp_cal    =  1/(diag(k)+lower_diag(k)*q_diag(k-1))
+          q_diag(k) = -upper_diag(k)*tmp_cal
+          rhs(k) =  (rhs(k)-lower_diag(k)*rhs(k-1))*tmp_cal
+        enddo
+        do k=nlev,1,-1
+          rhs(k)=rhs(k)+q_diag(k)*rhs(k+1)
+        enddo
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !!  monotonicity modifications  !!
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
+        
+        filter_code = 0
+        dy(1:nlev-1) = zarg(2:nlev)-zarg(1:nlev-1)
+        dy(nlev) = dy(nlev-1)                          
+        
+        dy = merge(zero, dy, abs(dy) < tiny )
+        
+        do k=1,nlev
+          im1=MAX(1,k-1)
+          im2=MAX(1,k-2)
+          im3=MAX(1,k-3)
+          ip1=MIN(nlev,k+1)
+          t1 = merge(1,0,(zarg(k)-rhs(k))*(rhs(k)-zarg(im1)) >= 0)
+          t2 = merge(1,0,dy(im2)*(rhs(k)-zarg(im1)) > 0 .AND. dy(im2)*dy(im3) > 0 &
+               .AND. dy(k)*dy(ip1) > 0 .AND. dy(im2)*dy(k) < 0 )
+          t3 = merge(1,0,ABS(rhs(k)-zarg(im1)) > ABS(rhs(k)-zarg(k)))	
+          
+          filter_code(k) = merge(0,1,t1+t2 > 0) 
+          rhs(k) = (1-filter_code(k))*rhs(k)+filter_code(k)*(t3*zarg(k)+(1-t3)*zarg(im1))
+          filter_code(im1) = MAX(filter_code(im1),filter_code(k))
+        enddo
+        
+        rhs = merge(qmax,rhs,rhs > qmax)
+        rhs = merge(zero,rhs,rhs < zero)
+        
+        za0 = rhs(1:nlev) 
+        za1 = -4*rhs(1:nlev) - 2*rhs(2:nlev+1) + 6*zarg  
+        za2 =  3*rhs(1:nlev) + 3*rhs(2:nlev+1) - 6*zarg 
+        
+        dy(1:nlev) = rhs(2:nlev+1)-rhs(1:nlev)                             
+        dy = merge(zero, dy, abs(dy) < tiny )
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!     
+        !! Compute the 3 quadratic spline coeffients {za0, za1, za2}				   !!
+        !! knowing the quadratic spline parameters {rho_left,rho_right,zarg}		   !!
+        !! Zerroukat et.al., Q.J.R. Meteorol. Soc., Vol. 128, pp. 2801-2820 (2002).   !!
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+        
+        
+        h = rhs(2:nlev+1)  
+        
+        do k=1,nlev
+          xm_d = merge(one,2*za2(k),abs(za2(k)) < tiny)
+          xm = merge(zero,-za1(k)/xm_d, abs(za2(k)) < tiny)            
+          f_xm = za0(k) + za1(k)*xm + za2(k)*xm**2
+          
+          t1 = merge(1,0,ABS(za2(k)) > tiny)
+          t2 = merge(1,0,xm <= zero .OR. xm >= 1)
+          t3 = merge(1,0,za2(k) > zero)
+          t4 = merge(1,0,za2(k) < zero)
+          tm = merge(1,0,t1*((1-t2)+t3) .EQ. 2)
+          tp = merge(1,0,t1*((1-t2)+(1-t3)+t4) .EQ. 3)
+          
+          peaks=0
+          peaks = merge(-1,peaks,tm .EQ. 1)
+          peaks = merge(+1,peaks,tp .EQ. 1)
+          peaks_min = merge(f_xm,MIN(za0(k),za0(k)+za1(k)+za2(k)),tm .EQ. 1)
+          peaks_max = merge(f_xm,MAX(za0(k),za0(k)+za1(k)+za2(k)),tp .EQ. 1)
+          
+          im1=MAX(1,k-1)
+          im2=MAX(1,k-2)
+          ip1=MIN(nlev,k+1)
+          ip2=MIN(nlev,k+2)
+          
+          t1 = merge(abs(peaks),0,(dy(im2)*dy(im1) <= tiny) .OR. &
+               (dy(ip1)*dy(ip2) <= tiny) .OR. (dy(im1)*dy(ip1) >= tiny) .OR. &
+               (dy(im1)*float(peaks) <= tiny))
+          
+          filter_code(k) = merge(1,t1+(1-t1)*filter_code(k),(rhs(k) >= qmax) .OR. & 
+               (rhs(k) <= zero) .OR. (peaks_max > qmax) .OR. (peaks_min < tiny))
+          
+          if (filter_code(k) > 0) then
+            level1 = rhs(k)
+            level2 = (2*rhs(k)+h(k))/3
+            level3 = 0.5*(rhs(k)+h(k)) 
+            level4 = (1/3d0)*rhs(k)+2*(1/3d0)*h(k)
+            level5 = h(k)
+            
+            t1 = merge(1,0,h(k) >= rhs(k))
+            t2 = merge(1,0,zarg(k) <= level1 .OR.  zarg(k) >= level5)
+            t3 = merge(1,0,zarg(k) >  level1 .AND. zarg(k) <  level2)
+            t4 = merge(1,0,zarg(k) >  level4 .AND. zarg(k) <  level5)
+            
+            lt1 = t1*t2
+            lt2 = t1*(1-t2+t3)
+            lt3 = t1*(1-t2+1-t3+t4)
+            
+            za0(k) = merge(zarg(k),za0(k),lt1 .EQ. 1)
+            za1(k) = merge(zero,za1(k),lt1 .EQ. 1)
+            za2(k) = merge(zero,za2(k),lt1 .EQ. 1)
+            
+            za0(k) = merge(rhs(k),za0(k),lt2 .EQ. 2)
+            za1(k) = merge(zero,za1(k),lt2 .EQ. 2)
+            za2(k) = merge(3*(zarg(k)-rhs(k)),za2(k),lt2 .EQ. 2)
+            
+            za0(k) = merge(-2*h(k)+3*zarg(k),za0(k),lt3 .EQ. 3)
+            za1(k) = merge(+6*h(k)-6*zarg(k),za1(k),lt3 .EQ. 3)
+            za2(k) = merge(-3*h(k)+3*zarg(k),za2(k),lt3 .EQ. 3)
+            
+            t2 = merge(1,0,zarg(k) >= level1 .OR.  zarg(k) <= level5)
+            t3 = merge(1,0,zarg(k) <  level1 .AND. zarg(k) >  level2)
+            t4 = merge(1,0,zarg(k) <  level4 .AND. zarg(k) >  level5)
+            
+            lt1 = (1-t1)*t2
+            lt2 = (1-t1)*(1-t2+t3)
+            lt3 = (1-t1)*(1-t2+1-t3+t4)
+            
+            za0(k) = merge(zarg(k),za0(k),lt1 .EQ. 1)
+            za1(k) = merge(zero,za1(k),lt1 .EQ. 1)
+            za2(k) = merge(zero,za2(k),lt1 .EQ. 1)
+            
+            za0(k) = merge(rhs(k),za0(k),lt2 .EQ. 2)
+            za1(k) = merge(zero,za1(k),lt2 .EQ. 2)
+            za2(k) = merge(3*(zarg(k)-rhs(k)),za2(k),lt2 .EQ. 2)
+            
+            za0(k) = merge(-2*h(k)+3*zarg(k),za0(k),lt3 .EQ. 3)
+            za1(k) = merge(+6*h(k)-6*zarg(k),za1(k),lt3 .EQ. 3)
+            za2(k) = merge(-3*h(k)+3*zarg(k),za2(k),lt3 .EQ. 3)	
+          endif
+        enddo
+        
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !! start iteration from top to bottom of atmosphere !! 
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+        zv1 = 0
+        do k=1,nlev
+          if (zgam(k+1)>1d0) then
+            WRITE(*,*) 'r not in [0:1]', zgam(k+1)
+          endif
+          zv2 = zv(zkr(k+1))+(za0(zkr(k+1))*zgam(k+1)+(za1(zkr(k+1))/2)*(zgam(k+1)**2)+ &
+               (za2(zkr(k+1))/3)*(zgam(k+1)**3))*zhdp(zkr(k+1))
+          !Q_vadv = (fvm(ie)%c(i,j,k,q,np1) - (zv2 - zv1)) / dt
+          fvm(ie)%c(i,j,k,q,np1) = (zv2 - zv1) / (z2c(k+1)-z2c(k))  ! convert from tracer mass to mixing ratio
+          zv1 = zv2
+        enddo
+      enddo
+    enddo
+  enddo
+  !remap q=1 
+  do i=1,nc   
+    do j=1,nc
+      do k=1,nlev
+        fvm(ie)%c(i,j,k,1,np1)=dp_np1(i,j,k)
+      end do
+    end do
+  end do
+  call t_stopf('remap_velocityC')
+end subroutine remap_velocityC
+
+
  
- call t_stopf('remap_velocityC')
- end subroutine remap_velocityC
- 
- end module vertremap_mod
+end module vertremap_mod
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! End GPU remap module    !!
@@ -2127,7 +2079,9 @@ contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! elem%state%u(np1)  = velocity at time t+1 on reference levels
     ! elem%derived%vstar = velocity at t+1 on floating levels (computed below)
-    call remap_UV_ref2lagrange(np1,dt,elem,hvcoord,nets,nete)
+    do ie=nets,nete
+      call remap_UV_ref2lagrange(np1,dt,elem,hvcoord,ie)
+    end do
 !------------------------------------------------------------------------------------      
     ! ! start mcgregordss
     do ie=nets,nete
@@ -2158,7 +2112,9 @@ contains
 !     call spelt_run(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
     call spelt_runair(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
     ! apply vertical remap back to reference levels
-    call remap_velocityCspelt(np1,dt,elem,spelt,hvcoord,nets,nete)
+    do ie=nets,nete
+      call remap_velocityCspelt(np1,dt,elem,spelt,hvcoord,ie)
+    enddo
 
     call t_stopf('prim_advec_tracers_spelt')
   end subroutine Prim_Advec_Tracers_spelt
@@ -2227,7 +2183,9 @@ contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! elem%state%u(np1)  = velocity at time t+1 on reference levels
     ! elem%derived%vstar = velocity at t+1 on floating levels (computed below)
-    call remap_UV_ref2lagrange(np1,dt,elem,hvcoord,nets,nete)
+    do ie=nets,nete
+      call remap_UV_ref2lagrange(np1,dt,elem,hvcoord,ie)
+    enddo
 !------------------------------------------------------------------------------------    
     call t_startf('fvm_mcgregor')
     ! using McGregor AMS 1993 scheme: Economical Determination of Departure Points for
@@ -2282,7 +2240,9 @@ contains
     call cslam_runairdensity(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
 
     ! apply vertical remap back to reference levels
-    call remap_velocityC(np1,dt,elem,fvm,hvcoord,nets,nete)
+    do ie=nets,nete
+      call remap_velocityC(np1,dt,elem,fvm,hvcoord,ie)
+    enddo
 
 
     call t_stopf('prim_advec_tracers_fvm')
@@ -3499,16 +3459,14 @@ end subroutine
              elem(ie)%state%v(:,:,2,:,np1)**2)/2 + &
              elem(ie)%state%t(:,:,:,np1)*cp
 
-       call remap1(ttmp,elem(ie)%state%ps_v(:,:,np1),&
-            elem(ie)%derived%eta_dot_dpdn,dt,hvcoord)
+       call remap1(ttmp,elem(ie)%state%ps_v(:,:,np1),elem(ie)%derived%eta_dot_dpdn,dt,hvcoord)
 
        elem(ie)%state%t(:,:,:,np1)=ttmp  ! overwrite T with TE
 #else
-       call remap1(elem(ie)%state%t(:,:,:,np1),elem(ie)%state%ps_v(:,:,np1),&
-            elem(ie)%derived%eta_dot_dpdn,dt,hvcoord)
+       call remap1(elem(ie)%state%t(:,:,:,np1),elem(ie)%state%ps_v(:,:,np1),elem(ie)%derived%eta_dot_dpdn,dt,hvcoord)
 #endif
+      call remap_UV_lagrange2ref(np1,dt,elem,hvcoord,ie)
     enddo
-    call remap_UV_lagrange2ref(np1,dt,elem,hvcoord,nets,nete)
 #ifdef REMAP_TE
     ! back out T from TE
     do ie=nets,nete
@@ -3526,9 +3484,13 @@ end subroutine
     ! REF levels are computed from ps_v
     ! Lagrangian levels are computed from REF levels and vertical mass flux
     if (vert_remap_q_alg == 0) then
-      call remap_Q(np1, np1_qdp, dt,elem,hvcoord,nets,nete)
+      do ie=nets,nete
+        call remap_Q(np1, np1_qdp, dt,elem,hvcoord,ie)
+      enddo
     elseif (vert_remap_q_alg == 1 .or. vert_remap_q_alg == 2) then
-      call remap_Q_ppm(np1,np1_qdp, dt,elem,hvcoord,nets,nete)
+      do ie=nets,nete
+        call remap_Q_ppm(np1,np1_qdp, dt,elem,hvcoord,ie)
+      enddo
     else
       call abortmp('specification for vert_remap_q_alg must be 0, 1, or 2.')
     endif
