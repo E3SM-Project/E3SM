@@ -90,6 +90,7 @@ SET(SRCS_F90
                ${SRC_UTILS}/shr_vmath_fwrap.c
                ${SRC_BASE}/ref_state_mod.F90
                ${SRC_SHARE}/perfmodel_mod.F90
+               ${SRC_BASE}/jrio.c
 )
 
 SET(SRCS_SWIM     ${SRC_TRIL}/donoxloca.cpp
@@ -98,7 +99,6 @@ SET(SRCS_SWIM     ${SRC_TRIL}/donoxloca.cpp
                   ${SRC_BASE}/derived_type_mod.F90
                   ${SRC_BASE}/implicit_mod.F90
                   ${SRC_BASE}/precon_mod.F90
-                  ${SRC_BASE}/jrio.c
 )
 
 ADD_LIBRARY(homme_swim ${SRCS_F90} ${SRCS_SWIM})

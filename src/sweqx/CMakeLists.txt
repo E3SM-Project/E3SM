@@ -83,6 +83,9 @@ SET(SRCS_F90
                ${SRC_UTILS}/shr_mpi_mod.F90
                ${SRC_UTILS}/shr_sys_mod.F90
                ${SRC_UTILS}/shr_vmath_mod.F90
+               ${SRC_BASE}/ref_state_mod.F90
+               ${SRC_BASE}/jrio.c
+
 )
 
 ADD_LIBRARY(homme_sweqx ${SRCS_F90})

@@ -8,7 +8,7 @@ contains
     !-----------------
     use kinds, only : real_kind, longdouble_kind
     !-----------------
-    use parallel_mod, only : parallel_t, syncmp
+    use parallel_mod, only : parallel_t, syncmp, abortmp
     !-----------------
     use thread_mod, only : nthreads
     !-----------------
@@ -22,7 +22,7 @@ contains
     !-----------------
     use shallow_water_mod, only : tc1_init_state, tc2_init_state, tc5_init_state, tc6_init_state, tc5_invariants, &
          tc8_init_state, vortex_init_state, vortex_errors, sj1_init_state, tc6_errors, &
-         tc1_errors, tc2_errors, tc5_errors, sweq_invariants, swirl_init_state, swirl_errors
+         tc1_errors, tc2_errors, tc5_errors, sweq_invariants, swirl_init_state, swirl_errors, sj1_errors
 !is swirl ever run with this routine???? its a pure advection test
 
     !-----------------
@@ -384,6 +384,8 @@ contains
           else if (test_case(1:5) == "swsj1") then
              if (hybrid%masterthread) print *,"Restarting swsj1..."
              call sj1_init_state(elem,nets,nete,hybrid,pmean,deriv)
+             simday=0
+             call sj1_errors(elem,7,tl,pmean,"ref_sj1_imp",simday,hybrid,nets,nete,par)
           end if
           !============================
           ! Read in the restarted state 
@@ -444,6 +446,8 @@ contains
           else if (test_case(1:5) == "swsj1") then
              if (hybrid%masterthread) print *,"initializing swsj1..."
              call sj1_init_state(elem,nets,nete,hybrid,pmean,deriv)
+             simday=0
+             call sj1_errors(elem,7,tl,pmean,"ref_sj1_imp",simday,hybrid,nets,nete,par)
           end if  ! test case init calls
 
           ! ==============================================
@@ -652,8 +656,8 @@ contains
             call advance_imp_nonstag(elem, edge1, edge2, edge3, red, deriv,  &
                cg, hybrid, blkjac, lambdasq, dt, pmean, tl, nets, nete, xstate)
 #else
-            print*, "Need to include -DTRILINOS at compile time to activate FI solver"
-            print*, "Check /utils/trilinos/README for more details"
+!           Check /utils/trilinos/README for more details
+            call abortmp('Need to include -DTRILINOS at compile time to execute FI solver')
 #endif
        else if (integration == "semi_imp") then
           call advance_si_nonstag(elem, edge1, edge2,    edge3        ,   red          ,             &
@@ -790,6 +794,24 @@ contains
           if (MODULO(tl%nstep,statefreq)==0) then
              call swirl_errors(elem, 7, tl,  hybrid, nets, nete)
           end if
+       else if (test_case(1:5) == "swirl") then
+
+          if (MODULO(tl%nstep,statefreq)==0) then
+             call swirl_errors(elem, 7, tl,  hybrid, nets, nete)
+          end if
+       else if (test_case(1:5) == "swsj1") then
+
+          ! ===============================================================
+          ! Shallow Water Test Case SJ:
+          ! L1,L2,Linf error norms every model day (compared to real soln)
+          ! 
+          ! detect day rollover
+          ! ===============================================================
+
+          if (MODULO(Time_at(tl%nstep),secpday) <= 0.5*tstep) then
+             simday=NINT(Time_at(tl%nstep)/secpday)
+             call sj1_errors(elem,7,tl,pmean,"ref_sj1_imp",simday,hybrid,nets,nete,par)
+          end if
 
        end if
 
@@ -876,7 +898,7 @@ contains
     use shallow_water_mod, only : tc1_init_state, tc2_init_state, tc5_init_state, &
          tc6_init_state, tc5_invariants, tc8_init_state, vortex_init_state, &
          vortex_errors, sj1_init_state, tc6_errors, tc1_errors, tc2_errors, &
-         tc5_errors, sweq_invariants, swirl_init_state, swirl_errors,&
+         tc5_errors, sweq_invariants, swirl_init_state, swirl_errors, sj1_errors,&
          kmass_swirl
     !-----------------
 #ifdef PIO_INTERP
@@ -1089,6 +1111,8 @@ contains
           else if (test_case(1:5) == "swsj1") then
              if (hybrid%masterthread) print *,"Restarting swsj1..."
              call sj1_init_state(elem,nets,nete,hybrid,pmean,deriv)
+             simday=0
+             call sj1_errors(elem,7,tl,pmean,"ref_sj1_imp",simday,hybrid,nets,nete,par)
           end if
           !============================
           ! Read in the restarted state 
@@ -1135,6 +1159,8 @@ contains
           else if (test_case(1:5) == "swsj1") then
              if (hybrid%masterthread) print *,"initializing swsj1..."
              call sj1_init_state(elem,nets,nete,hybrid,pmean,deriv)
+             simday=0
+             call sj1_errors(elem,7,tl,pmean,"ref_sj1_imp",simday,hybrid,nets,nete,par)
           end if
 
           ! ==============================================
@@ -1331,6 +1357,20 @@ contains
           ! ==================================================
           if (MODULO(tl%nstep,statefreq)==0) then
              call swirl_errors(elem, 7, tl, hybrid, nets, nete)
+          end if
+          if(Debug) print *,'homme: point #16'
+
+       else if (test_case(1:5) == "swsj1") then
+
+          ! ==================================================
+          ! Shallow Water Test Case:  swsj1
+          ! L1,L2,Linf error norms every model day (compared to real soln)
+          ! 
+          ! detect day rollover
+          ! ==================================================
+          if (MODULO(Time_at(tl%nstep),secpday) <= 0.5*tstep) then
+             simday=NINT(Time_at(tl%nstep)/secpday)
+             call sj1_errors(elem,7,tl,pmean,"ref_sj1_imp",simday,hybrid,nets,nete,par)
           end if
           if(Debug) print *,'homme: point #16'
 

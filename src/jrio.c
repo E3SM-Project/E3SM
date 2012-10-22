@@ -9,6 +9,13 @@
 
 #include <errno.h>
 
+// cmake fortran mangling macros
+// this header is generated at compile time by utils/timing 
+// it defines the FCI_GLOBAL mangling macro used below
+#ifdef INCLUDE_CMAKE_FCI
+#include "cmake_fortran_c_interface.h"
+#endif
+
 #define MAX_FILES 99
 static off_t rl[MAX_FILES];         // record length
 // map io handle to fd
@@ -31,6 +38,11 @@ static int verbose = 0;
 #define jrclose_direct jrclose_direct_
 #define jrwrite_direct jrwrite_direct_
 #define jrread_direct jrread_direct_
+#elif ( defined INCLUDE_CMAKE_FCI )
+#define jropen_direct   FCI_GLOBAL(jropen_direct,  JROPEN_DIRECT)
+#define jrclose_direct  FCI_GLOBAL(jrclose_direct, JRCLOSE_DIRECT)
+#define jrwrite_direct  FCI_GLOBAL(jrwrite_direct, JRWRITE_DIRECT)
+#define jrread_direct   FCI_GLOBAL(jrread_direct,  JRREAD_DIRECT)
 #endif
 
 static inline int gethandle (void);

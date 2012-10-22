@@ -155,6 +155,7 @@ contains
        ! reset v back to initial values
        ! ==========================================
 
+! TODO update with vortex and swirl possibly using set_prescribed_velocity
        do ie=nets,nete
        if (topology == "cube" .and. test_case=="swtc1") then
           do k=1,nlev
@@ -376,6 +377,7 @@ contains
          do j=1,np
             do i=1,np
               lx = lx+1
+! TODO have if statement include swirl and vortex, possibly using set_prescribed_velocity
            if (topology == "cube" .and. test_case=="swtc1") then
               if (n==1) fx(lx) = 0.0
               if (n==2) fx(lx) = 0.0
@@ -400,8 +402,8 @@ contains
   end subroutine residual
 
   subroutine precon_gmres(vv, z, nelemd, xstate, c_ptr_to_object, c_ptr_to_pre) &
-   bind(C,name='precon_gmres')
-!   bind(C,name='precon')
+!   bind(C,name='precon_gmres')
+   bind(C,name='precon')
 
     use ,intrinsic :: iso_c_binding
     use kinds, only : real_kind
@@ -483,16 +485,16 @@ contains
     call t_startf('precon_gmres')
 
     zt = z
-    xt = xstate
+!    xt = xstate
 
-    call init_prec(size(xstate), xt, zt, 1, c_ptr_to_object, c_ptr_to_pre)
+!    call init_prec(size(xstate), xt, zt, 1, c_ptr_to_object, c_ptr_to_pre)
 
 ! ForTrilinos interface to use applyJacobianInverse with F_l(x)=residual_lin(x)
-    call precon_solve(size(xstate), xt, zt, c_ptr_to_object, c_ptr_to_pre)
+!    call precon_solve(size(xstate), xt, zt, c_ptr_to_object, c_ptr_to_pre)
 
     vv = zt
 
-    call finish_prec()
+!    call finish_prec()
 
     call t_stopf('precon_gmres')
 
@@ -739,8 +741,8 @@ contains
 ! the semi-implicit solver advance_si_nonstag
 
   subroutine precon_si(vv, z, nelemd, xstate, c_ptr_to_object, c_ptr_to_pre) &
-   bind(C,name='precon')
-!   bind(C,name='precon_si')
+!   bind(C,name='precon')
+   bind(C,name='precon_si')
 
     use ,intrinsic :: iso_c_binding 
     use kinds, only : real_kind

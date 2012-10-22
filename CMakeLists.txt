@@ -4,6 +4,13 @@ INCLUDE(FortranCInterface)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
+# need to get the cmake_fortran_c_interface.h header
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
+FortranCInterface_HEADER(cmake_fortran_c_interface.h
+                         MACRO_NAMESPACE  "FCI_")
+# need to tell the source to use this capability
+ADD_DEFINITIONS(-DINCLUDE_CMAKE_FCI)
+
 OPTION(BUILD_HOMME_SWEQX ""   ON)
 OPTION(BUILD_HOMME_SWIM  ""  OFF)
 

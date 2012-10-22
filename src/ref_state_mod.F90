@@ -4,7 +4,7 @@
 
 
 module ref_state_mod
-#ifdef _REFSOLN
+!#ifdef _REFSOLN
   ! ------------------
   use kinds, only : real_kind
   ! ------------------
@@ -33,11 +33,11 @@ private
 contains
 
   subroutine ref_state_write_2d(phi,v,fstub,timetag,nets,nete)
-     use dimensions_mod, only : nv, np
+     use dimensions_mod, only : np
      implicit none
      integer              , intent(in) :: nets,nete
      real (kind=real_kind), intent(in) :: phi(np,np,nets:nete)
-     real (kind=real_kind), intent(in) :: v(nv,nv,2,nets:nete)
+     real (kind=real_kind), intent(in) :: v(np,np,2,nets:nete)
      integer              , intent(in) :: timetag         ! time tag (day)
      character(len=*)     , intent(in) :: fstub           ! file stub
 
@@ -52,7 +52,7 @@ contains
      character(len=6) :: chartag
      character(len=80):: fname
 
-     reclen = np*np + 2*nv*nv 
+     reclen = np*np + 2*np*np 
      iunit = 66                 ! hardwire hack the unit number (should use navu)
      
      write(chartag,'(i6)') timetag
@@ -70,11 +70,11 @@ contains
   end subroutine ref_state_write_2d
 
   subroutine ref_state_write_jr(phi,v,fstub,timetag,nets,nete,par)
-     use dimensions_mod, only : nv, np
+     use dimensions_mod, only : np
      implicit none
      integer              , intent(in) :: nets,nete
      real (kind=real_kind), intent(in) :: phi(np,np,nets:nete)
-     real (kind=real_kind), intent(in) :: v(nv,nv,2,nets:nete)
+     real (kind=real_kind), intent(in) :: v(np,np,2,nets:nete)
      integer              , intent(in) :: timetag         ! time tag (day)
      character(len=*)     , intent(in) :: fstub           ! file stub
      type(parallel_t)     , intent(in) :: par             ! communicator
@@ -92,7 +92,7 @@ contains
      character(len=20):: fname
 
      reclen = np*np
-!     reclen = np*np + 2*nv*nv 
+!     reclen = np*np + 2*np*np 
      iunit = 66                 ! hardwire hack the unit number (should use navu)
      
       write(chartag,'(i6)') timetag
@@ -123,11 +123,11 @@ contains
   end subroutine ref_state_write_jr
 
   subroutine ref_state_read_2d(phi,v,fstub,timetag,nets,nete)
-     use dimensions_mod, only : nv, np
+     use dimensions_mod, only : np
      implicit none
      integer              , intent(in)    :: nets,nete
      real (kind=real_kind), intent(out)   :: phi(np,np,nets:nete)
-     real (kind=real_kind), intent(out)   :: v(nv,nv,2,nets:nete)
+     real (kind=real_kind), intent(out)   :: v(np,np,2,nets:nete)
      integer              , intent(in)    :: timetag         ! time tag (day)
      character(len=*)     , intent(in)    :: fstub           ! file stub
 
@@ -142,7 +142,7 @@ contains
      character(len=6) :: chartag
      character(len=20):: fname
     
-     reclen = np*np + 2*nv*nv 
+     reclen = np*np + 2*np*np 
      iunit = 66                 ! hardwire hack the unit number (should use navu)
      write(chartag,'(i6)') timetag
      fname=TRIM(ADJUSTL(fstub))//"."//TRIM(ADJUSTL(chartag))
@@ -170,11 +170,11 @@ contains
   end subroutine ref_state_read_2d
 
   subroutine ref_state_read_jr(phi,v,fstub,timetag,nets,nete,par)
-     use dimensions_mod, only : nv, np
+     use dimensions_mod, only : np
      implicit none
      integer              , intent(in)    :: nets,nete
      real (kind=real_kind), intent(out)   :: phi(np,np,nets:nete)
-     real (kind=real_kind), intent(out)   :: v(nv,nv,2,nets:nete)
+     real (kind=real_kind), intent(out)   :: v(np,np,2,nets:nete)
      integer              , intent(in)    :: timetag         ! time tag (day)
      character(len=*)     , intent(in)    :: fstub           ! file stub
      type(parallel_t)     , intent(in)    :: par           ! file stub
@@ -192,7 +192,7 @@ contains
      character(len=80):: fname
     
      reclen = np*np
-!     reclen = np*np + 2*nv*nv 
+!     reclen = np*np + 2*np*np 
      iunit = 66                 ! hardwire hack the unit number (should use navu)
      write(chartag,'(i6)') timetag
      fname=TRIM(ADJUSTL(fstub))//"."//TRIM(ADJUSTL(chartag))
@@ -220,6 +220,6 @@ contains
      call jrclose_direct(handle)
 
   end subroutine ref_state_read_jr
-#endif
+!#endif
 end module ref_state_mod
 

@@ -32,9 +32,9 @@ module shallow_water_mod
   ! ------------------------
   use parallel_mod, only : parallel_t
   ! ------------------------
-#ifdef _REFSOLN
+!#ifdef _REFSOLN
   use ref_state_mod, only : ref_state_read, ref_state_write
-#endif
+!#endif
   ! ------------------------
   use common_io_mod, only: output_prefix     ! Added to support output_prefix 
   ! ------------------------
@@ -236,6 +236,7 @@ module shallow_water_mod
   private :: sj1_integrand
   private :: sj1_velocity
   private :: sj1_velocity_cubedsphere
+  public  :: sj1_errors
   !public  :: sj1_invariants
 
   real (kind=real_kind), public,save :: Imass0,Ienergy0,Ipenst0
@@ -3926,5 +3927,94 @@ contains
 
   end function sj1_velocity_cubedsphere
 
+  subroutine sj1_errors(elem, iounit, tl, pmean, fstub, simday, hybrid, nets, nete, par)
+
+    type(element_t), intent(in) :: elem(:)
+    integer              , intent(in) :: iounit
+    type (TimeLevel_t)   , intent(in) :: tl         ! model time struct
+    real (kind=real_kind), intent(in) :: pmean      ! mean geopotential
+    character(len=*)     , intent(in) :: fstub      ! file path stub
+    integer              , intent(in) :: simday     ! current day of simulation
+    type (hybrid_t)      , intent(in) :: hybrid     
+    integer              , intent(in) :: nets
+    integer              , intent(in) :: nete
+    type(parallel_t)     , intent(in) :: par
+
+    ! Local variables 
+
+    real (kind=real_kind) :: pt(np,np,nets:nete)
+    real (kind=real_kind) :: p(np,np,nets:nete)
+
+    real (kind=real_kind) :: vt(np,np,2,nets:nete)
+    real (kind=real_kind) :: v(np,np,2,nets:nete)
+
+    real (kind=real_kind) :: l1,l2,linf
+    integer ie,npts
+
+#if (! defined ELEMENT_OPENMP)
+    !$OMP BARRIER
+#endif
+    if ((tl%nstep == 1).or.(tl%nstep == 0)) then
+       if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
+          open(iounit+0,file=TRIM(output_prefix)//"sjtc1.l1.errors",form="formatted")
+          open(iounit+1,file=TRIM(output_prefix)//"sjtc1.l2.errors",form="formatted")
+          open(iounit+2,file=TRIM(output_prefix)//"sjtc1.linf.errors",form="formatted")
+       end if
+    end if
+
+    do ie=nets,nete
+       p(:,:,ie)   = elem(ie)%state%p(:,:,1,tl%n0) + pmean
+       v(:,:,:,ie) = elem(ie)%state%v(:,:,:,1,tl%n0)
+    end do
+
+    ! ======================================================
+    ! write in the reference state for this simulated day...
+    ! ======================================================
+
+!#ifdef _REFSOLN
+!  Parallel version of ref_state, comment out if reading below
+!    call ref_state_write(p(:,:,nets:nete),v(:,:,:,nets:nete),fstub,simday,nets,nete,par)
+!    do ie=nets,nete
+!       pt(:,:,ie)=p(:,:,ie)
+!       vt(:,:,:,ie)=v(:,:,:,ie)
+!    end do
+!#endif
+
+    ! ======================================================
+    ! read in the reference state for this simulated day...
+    ! ======================================================
+
+!#ifdef _REFSOLN
+!#if (! defined ELEMENT_OPENMP)
+!    !$OMP BARRIER
+!#endif
+!  Parallel version of ref_state, comment out if writing above
+    call ref_state_read(pt(:,:,nets:nete),vt(:,:,:,nets:nete),fstub,simday,nets,nete,par)
+!#if (! defined ELEMENT_OPENMP)
+    !$OMP BARRIER
+!#endif
+
+    npts=np
+
+    l1   = l1_snorm(elem,p(:,:,nets:nete),  pt(:,:,nets:nete),hybrid,npts,nets,nete)
+    l2   = l2_snorm(elem,p(:,:,nets:nete),  pt(:,:,nets:nete),hybrid,npts,nets,nete)
+    linf = linf_snorm(p(:,:,nets:nete),pt(:,:,nets:nete),hybrid,npts,nets,nete)
+
+    if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
+       write(iounit+0,30)REAL(simday),l1
+       write(iounit+1,30)REAL(simday),l2
+       write(iounit+2,30)REAL(simday),linf
+       print *,simday, "L1=",l1
+       print *,simday, "L2=",l2
+       print *,simday, "Linf=",linf
+    end if
+#if (! defined ELEMENT_OPENMP)
+    !$OMP BARRIER
+#endif
+!#endif
+
+30  format(f11.6,4x,e13.6)
+
+  end subroutine sj1_errors
 
 end module shallow_water_mod
