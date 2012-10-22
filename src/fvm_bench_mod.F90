@@ -207,6 +207,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   
   !BEGIN TIME LOOP, start at 0, calculate then next step
   DO WHILE(tl%nstep<nmax)
+  
 ! start old mcgregor----------------------
 !     do ie=nets,nete
 !       do k=1,nlev

@@ -241,9 +241,9 @@ DO WHILE(tl%nstep<nmax)
   end do
   call spelt_mcgregordss(elem,spelt,nets,nete, hybrid, deriv, tstep, 3)
 ! ! end mcgregordss
-!   call spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
+  call spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 
-  call spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
+!   call spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !   call spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 
   call TimeLevel_update(tl,"forward") 
@@ -340,7 +340,11 @@ ENDDO  ! END TIME LOOP
 
   call freeghostbuffertr(cellghostbuf)
   call freeedgebuffer(edgeveloc)
-  
+#ifdef PIO_INTERP
+    call interp_movie_finish
+#else
+    call shal_movie_finish
+#endif  
 !-----------------------------------------------------------------------------------!  
 ! Error analysis/ complicated, but for a first try o.k.
   do ie=nets,nete

@@ -340,7 +340,7 @@ end subroutine set_boomerang_velocities_gll
 !         nstep   ... actual step                                                   !
 ! OUTPUT: dsphere ...  departure grid in polar coordinates                          !
 !-----------------------------------------------------------------------------------!
-subroutine boomerang(asphere,dsphere,nstep)
+subroutine boomerang(asphere,dsphere,nstep,part)
   use physical_constants, only : DD_PI
   use coordinate_systems_mod, only : spherical_polar_t
   use time_mod, only : tstep,nmax
@@ -349,7 +349,8 @@ subroutine boomerang(asphere,dsphere,nstep)
   type (spherical_polar_t),intent(in)   :: asphere
   type (spherical_polar_t),intent(out)  :: dsphere
   integer, intent(in)                   :: nstep
-  
+  real (kind=real_kind), optional           :: part
+
   
   integer                     :: iorder, i, iteration
   real (kind=real_kind)       :: slat, clat, slon, clon, xg, yg, zg, ca, sa, co, so, &
@@ -357,7 +358,8 @@ subroutine boomerang(asphere,dsphere,nstep)
   real (kind=real_kind)       :: tmp_time,lon,lat,tmp_dt,tmp_lm,tmp_th, ck, tt, omega
   real (kind=real_kind)       :: dplm,dpth,trm1,trm2,sslm,cwt,swt
   real (kind=real_kind)       :: dt2,dt3,dt4,dtt,udc,uexact, vexact
-
+  
+ 
   iteration=10
   iorder=5
   
@@ -371,6 +373,10 @@ subroutine boomerang(asphere,dsphere,nstep)
   tmp_th = asphere%lat
   tt = 5.0D0  !total time
   ck = 10.0D0/tt
+  
+  if (present(part)) then
+    iteration=5
+  endif
   
   DO i=1,iteration
 
