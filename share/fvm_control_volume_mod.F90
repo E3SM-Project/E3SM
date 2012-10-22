@@ -47,12 +47,11 @@ module fvm_control_volume_mod
 !-----------------------------------------------------------------------------------!
     ! define the departure grid (depends on the examples, usually the velocity)
     ! they are NOT stored for the Levels
-    type (spherical_polar_t) :: dsphere(nc+1,nc+1)     ! Spherical coordinates
+    type (spherical_polar_t) :: dsphere(-1:nc+3,-1:nc+3,nlev)     ! Spherical coordinates
     type (spherical_polar_t) :: centersphere(nc,nc)      ! Spherical coordinates of fvm grid
 !-----------------------------------------------------------------------------------!  
     !area of the cell on the sphere 
     real (kind=real_kind)    :: area_sphere(1-nhe:nc+nhe,1-nhe:nc+nhe)    
-    real (kind=real_kind)    :: area_spherenew(1-nhe:nc+nhe,1-nhe:nc+nhe)    
     
     real (kind=real_kind)    :: spherecentroid(5,1-nhe:nc+nhe,1-nhe:nc+nhe)    
     integer                  :: faceno

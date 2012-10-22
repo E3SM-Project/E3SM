@@ -21,6 +21,7 @@ module fvm_line_integrals_mod
   real (kind=real_kind),parameter, public   :: bignum = 1.0D20
   real (kind=real_kind),parameter, public   :: tiny   = 1.0D-12
   real (kind=real_kind),parameter           :: fuzzy_width = 10.0*tiny
+  real (kind=real_kind)                     :: toleul=1.0D-15
   
   logical :: ldbg=.FALSE.
   
@@ -44,7 +45,7 @@ contains
 !         jall...number of intersections of an element                              !
 !-----------------------------------------------------------------------------------!
 subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all, &
-                                           weights_lgr_index_all,jall)  
+                                           weights_lgr_index_all,klev,jall)  
   use fvm_control_volume_mod, only:  fvm_struct                                         
   use coordinate_systems_mod,  only :  cartesian2D_t, spherical_polar_t, &
                                        cart2cubedspherexy, spherical_to_cart
@@ -61,6 +62,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
                                                 intent(out) :: weights_eul_index_all
   integer (kind=int_kind), dimension(10*(nc+2*nhe)*(nc+2*nhe),2), &
                                                 intent(out) :: weights_lgr_index_all
+  integer (kind=int_kind), intent(in)                       :: klev
   integer (kind=int_kind), intent(out)                      :: jall
 
   ! local workspace
@@ -76,7 +78,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
   
   integer (kind=int_kind)                     :: i, jtmp
   
-  type (cartesian2D_t)                        :: dcart(nc+1,nc+1)       ! Cartesian coordinates 
+  type (cartesian2D_t)                        :: dcart(-1:nc+3,-1:nc+3)       ! Cartesian coordinates 
   
   real (kind=real_kind), dimension(0:5)       :: xcell,ycell
   integer (kind=int_kind)                     :: inttmp
@@ -89,7 +91,10 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
   real (kind=real_kind)   , dimension(nhe*50,nreconstruction)   :: weights_cell
   integer (kind=int_kind),  dimension(nhe*50,2)                 :: weights_eul_index_cell
   integer (kind=int_kind)                                       :: jcollect_cell
-
+  
+  integer (kind=int_kind)                    :: jallactual, jallactual_eul, ja
+  real (kind=real_kind)                      :: da_cslam(1-nhe:nc+nhe,1-nhe:nc+nhe), centroid_cslam(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+  real (kind=real_kind)                      :: area
 
   jx_min=fvm%jx_min; jx_max=fvm%jx_max; 
   jy_min=fvm%jy_min; jy_max=fvm%jy_max;
@@ -110,15 +115,15 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
   jall = 1
   ! 
   ! calculate xy Cartesian on the cube of departure points on the corresponding face  
-  do jy=1,nc+1
-     do jx=1,nc+1               
-        call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy)),&
-             fvm%faceno,dcart(jx,jy))              
+  do jy=-1,nc+3
+     do jx=-1,nc+3  
+          call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+             fvm%faceno,dcart(jx,jy))  
      end do
   end do
   
   do jy=1, nc
-    do jx=1, nc
+    do jx=1, nc            
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
       call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
            fvm%acartx,fvm%acarty,jx_min, jx_max, jy_min, jy_max, &
@@ -134,21 +139,115 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
       endif
     end do
   end do
-
+  jallactual=jall
+  
+!!!!  WEIGHTS CORRECTION FOR THE interior element/cells
+    do jy=jy_min-1, 0
+      do jx=jx_min-1, jx_max  
+        if ((fvm%cubeboundary == swest) .and. (jx<1) .and. (jy<1)) then
+          cycle
+        endif      
+        if ((fvm%cubeboundary == seast) .and. (jx>nc) .and. (jy<1)) then
+          cycle
+        endif     
+        call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)  
+        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acartx,fvm%acarty,jx_min, jx_max, jy_min, jy_max, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell) 
+        if (jcollect_cell>0) then
+          weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+          weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                        weights_eul_index_cell(1:jcollect_cell,:)
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+          jall = jall+jcollect_cell          
+        endif
+      end do
+    end do
+    
+    do jy=nc+1, jy_max
+      do jx=jx_min-1, jx_max      
+        if ((fvm%cubeboundary == nwest) .and. (jx<1) .and. (jy>nc)) then
+          cycle
+        endif      
+        if ((fvm%cubeboundary == neast) .and. (jx>nc) .and. (jy>nc)) then
+          cycle
+        endif        
+        call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)  
+        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acartx,fvm%acarty,jx_min, jx_max, jy_min, jy_max, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell) 
+        if (jcollect_cell>0) then
+          weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+          weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                        weights_eul_index_cell(1:jcollect_cell,:)
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+          jall = jall+jcollect_cell          
+        endif
+      end do
+    end do
+    do jx=jx_min-1, 0
+      do jy=1, nc             
+        call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)  
+        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acartx,fvm%acarty,jx_min, jx_max, jy_min, jy_max, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell) 
+        if (jcollect_cell>0) then
+          weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+          weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                        weights_eul_index_cell(1:jcollect_cell,:)
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+          jall = jall+jcollect_cell          
+        endif
+      end do
+    end do
+    do jx=nc+1, jx_max
+      do jy=1, nc             
+        call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)  
+        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acartx,fvm%acarty,jx_min, jx_max, jy_min, jy_max, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell) 
+        if (jcollect_cell>0) then
+          weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+          weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                        weights_eul_index_cell(1:jcollect_cell,:)
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+          jall = jall+jcollect_cell          
+        endif
+      end do
+    end do
+    da_cslam=0.0D0
+    centroid_cslam=0.0D0
+    do ja=1,jall-1
+      jx = weights_eul_index_all(ja,1); jy = weights_eul_index_all(ja,2);
+      da_cslam(jx,jy) = da_cslam(jx,jy)+weights_all(ja,1)
+      centroid_cslam(:,jx,jy) = centroid_cslam(:,jx,jy)+weights_all(ja,2:6)
+    end do   
+  
+  jall=jallactual
+  jallactual_eul=jall
+  
   !WEST SIDE
   if (fvm%cubeboundary == west) then
-    jx=1
-    ! calculate xy Cartesian on the cube of departure points on the corresponding face  
-    do jy=1,nc+1
-      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy)),&
-           fvm%nbrsface(west),dcart(jx,jy))  
-      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx+1,jy)),&
-           fvm%nbrsface(west),dcart(jx+1,jy))                 
+    ! calculate xy Cartesian on the cube of departure points on the corresponding face
+    do jx=-1,2      
+      do jy=-1,nc+3
+        call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+             fvm%nbrsface(west),dcart(jx,jy))                  
+      end do
     end do
+    jx=1
     do jy=1,nc
 !       call getdep_cellboundaries(xcell,ycell,jx,jy,fvm%nbrsface(west),fvm%dsphere) 
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
-          
+
       if(swap1) then  !flip orientation
         call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
            fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
@@ -185,17 +284,74 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
         jall = jall+jcollect_cell          
       endif
     end do
+    
+    jallactual=jall
+   ! for Eulerian Correction  
+    do jx=-1,1      
+      do jy=-1,nc+2
+       if ((jx==1) .and. (jy>0) .and. (jy<nc+1)) then 
+         cycle
+       endif 
+  !       call getdep_cellboundaries(xcell,ycell,jx,jy,fvm%nbrsface(west),fvm%dsphere) 
+        call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
+
+        if(swap1) then  !flip orientation
+          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+          do i=1,jcollect_cell
+            inttmp=weights_eul_index_cell(i,1)
+            weights_eul_index_cell(i,1)=weights_eul_index_cell(i,2)
+            weights_eul_index_cell(i,2)=inttmp
+          end do
+        else  
+          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+        end if
+        !I have to correct the number
+        if (fvm%faceno==5) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,1)=weights_eul_index_cell(i,1)+nhe-1
+          end do
+        end if
+        if (fvm%faceno==6) then
+            do i=1,jcollect_cell
+              weights_eul_index_cell(i,2)=jy_max1-jy_min1-weights_eul_index_cell(i,2)-nhe-nhe+1
+            end do
+          end if
+        if (jcollect_cell>0) then
+          weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+          weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                           weights_eul_index_cell(1:jcollect_cell,:)
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+          jall = jall+jcollect_cell          
+        endif
+      end do
+    end do
+    
+    do ja=jallactual_eul,jall-1
+      jx = weights_eul_index_all(ja,1); jy = weights_eul_index_all(ja,2);
+      da_cslam(jx,jy) = da_cslam(jx,jy)+weights_all(ja,1)
+      centroid_cslam(:,jx,jy) = centroid_cslam(:,jx,jy)+weights_all(ja,2:6)
+    end do
+!     
+    jall=jallactual
   endif
+    
   !EAST SIDE
   if (fvm%cubeboundary == east) then
-    jx=nc
-    ! calculate xy Cartesian on the cube of departure points on the corresponding face  
-    do jy=1,nc+1
-      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy)),&
-           fvm%nbrsface(east),dcart(jx,jy))  
-      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx+1,jy)),&
-           fvm%nbrsface(east),dcart(jx+1,jy))                 
+    ! calculate xy Cartesian on the cube of departure points on the corresponding face 
+    do jx=nc,nc+3 
+      do jy=-1,nc+3
+        call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+             fvm%nbrsface(east),dcart(jx,jy))                  
+      end do
     end do
+    jx=nc
     do jy=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
       if(swap1) then !flip orientation
@@ -234,17 +390,72 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
         jall = jall+jcollect_cell          
       endif
     end do
+    
+    jallactual=jall
+    ! for Eulerian Correction  
+    do jx=nc,nc+2      
+      do jy=-1,nc+2
+       if ((jx==nc) .and. (jy>0) .and. (jy<nc+1)) then 
+         cycle
+       endif 
+         call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
+          if(swap1) then !flip orientation
+            call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+               fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
+               tmp,ngpc,gsweights,gspts,&
+               weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+            do i=1,jcollect_cell
+              inttmp=weights_eul_index_cell(i,1)
+              weights_eul_index_cell(i,1)=weights_eul_index_cell(i,2)
+              weights_eul_index_cell(i,2)=inttmp
+            end do
+          else
+            call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+               fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
+               tmp,ngpc,gsweights,gspts,&
+               weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+          end if
+          !I have to correct the number
+          if (fvm%faceno==5) then
+            do i=1,jcollect_cell
+              weights_eul_index_cell(i,2)=jy_max1-jy_min1-weights_eul_index_cell(i,2)-nhe-nhe+1
+            end do
+          end if
+          if (fvm%faceno==6) then
+            do i=1,jcollect_cell
+              weights_eul_index_cell(i,1)=weights_eul_index_cell(i,1)-nhe+1
+            end do
+          end if
+          if (jcollect_cell>0) then
+            weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+            weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                             weights_eul_index_cell(1:jcollect_cell,:)
+            weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+            weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+            jall = jall+jcollect_cell          
+          endif
+      end do
+    end do
+
+    do ja=jallactual_eul,jall-1
+      jx = weights_eul_index_all(ja,1); jy = weights_eul_index_all(ja,2);
+      da_cslam(jx,jy) = da_cslam(jx,jy)+weights_all(ja,1)
+      centroid_cslam(:,jx,jy) = centroid_cslam(:,jx,jy)+weights_all(ja,2:6)
+    end do
+
+    jall=jallactual
   endif  
+  
   !NORTH SIDE 
   if (fvm%cubeboundary == north) then
-    jy=nc
     ! calculate xy Cartesian on the cube of departure points on the corresponding face  
-    do jx=1,nc+1
-      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy)),&
-           fvm%nbrsface(north),dcart(jx,jy))  
-      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy+1)),&
-           fvm%nbrsface(north),dcart(jx,jy+1))                 
+    do jy=nc,nc+3
+      do jx=-1,nc+3
+        call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+             fvm%nbrsface(north),dcart(jx,jy))                  
+      end do
     end do
+    jy=nc
     do jx=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
       if(swap1) then !flip orientation
@@ -295,18 +506,84 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
         jall = jall+jcollect_cell          
       endif
     end do
+   
+   jallactual=jall
+   ! for Eulerian Correction      
+    do jy=nc,nc+2      
+      do jx=-1,nc+2
+       if ((jy==nc) .and. (jx>0) .and. (jx<nc+1)) then 
+         cycle
+       endif 
+        call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
+        if(swap1) then !flip orientation
+          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+          do i=1,jcollect_cell
+            inttmp=weights_eul_index_cell(i,1)
+            weights_eul_index_cell(i,1)=weights_eul_index_cell(i,2)
+            weights_eul_index_cell(i,2)=inttmp
+          end do
+        else
+          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)  
+        end if
+        !I have to correct the number
+        if (fvm%faceno==2) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)-nhe+1
+          end do
+        end if
+        if (fvm%faceno==3) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-(weights_eul_index_cell(i,1))-nhe-nhe+1
+            weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)-nhe+1
+          end do
+        end if
+        if (fvm%faceno==4) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-weights_eul_index_cell(i,1)-nhe-nhe+1
+          end do
+        end if
+        if (fvm%faceno==6) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-weights_eul_index_cell(i,1)-nhe-nhe+1
+            weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)-nhe+1
+          end do
+        end if
+        if (jcollect_cell>0) then
+          weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+          weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                           weights_eul_index_cell(1:jcollect_cell,:)
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+          jall = jall+jcollect_cell          
+        endif
+      end do
+    end do
+
+    do ja=jallactual_eul,jall-1
+      jx = weights_eul_index_all(ja,1); jy = weights_eul_index_all(ja,2);
+      da_cslam(jx,jy) = da_cslam(jx,jy)+weights_all(ja,1)
+      centroid_cslam(:,jx,jy) = centroid_cslam(:,jx,jy)+weights_all(ja,2:6)
+    end do
+!     
+    jall=jallactual    
   end if
 
   !SOUTH SIDE
   if (fvm%cubeboundary == south) then
-    jy=1
     ! calculate xy Cartesian on the cube of departure points on the corresponding face  
-    do jx=1,nc+1
-      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy)),&
-           fvm%nbrsface(south),dcart(jx,jy))  
-      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy+1)),&
-           fvm%nbrsface(south),dcart(jx,jy+1))                 
+    do jy=-1,2
+      do jx=-1,nc+3
+        call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+             fvm%nbrsface(south),dcart(jx,jy))                   
+      end do
     end do
+    jy=1
     do jx=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
       if(swap1) then !flip orientation
@@ -357,18 +634,88 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
         jall = jall+jcollect_cell          
       endif
     end do
+    
+    jallactual=jall
+    
+!for Eulerian correction    
+    do jy=-1,1      
+      do jx=-1,nc+2
+       if ((jy==1) .and. (jx>0) .and. (jx<nc+1)) then 
+         cycle
+       endif 
+        call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
+        if(swap1) then !flip orientation
+          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+          do i=1,jcollect_cell
+            inttmp=weights_eul_index_cell(i,1)
+            weights_eul_index_cell(i,1)=weights_eul_index_cell(i,2)
+            weights_eul_index_cell(i,2)=inttmp
+          end do
+        else
+          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)  
+        end if
+        !I have to correct the number   
+        if  (fvm%faceno==2) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-(weights_eul_index_cell(i,1)+nhe)-nhe+1
+          end do
+        end if
+        if  (fvm%faceno==3) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-(weights_eul_index_cell(i,1)+nhe)-nhe+1
+            weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)+nhe-1
+          end do
+        end if
+        if  (fvm%faceno==4) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)+nhe-1
+          end do
+        end if
+        if  (fvm%faceno==5) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-(weights_eul_index_cell(i,1)+nhe)-nhe+1
+            weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)+nhe-1
+          end do
+        end if
+        if (jcollect_cell>0) then
+          weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+          weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                           weights_eul_index_cell(1:jcollect_cell,:)
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+          jall = jall+jcollect_cell          
+        endif
+      end do
+    end do
+
+    do ja=jallactual_eul,jall-1
+      jx = weights_eul_index_all(ja,1); jy = weights_eul_index_all(ja,2);
+      da_cslam(jx,jy) = da_cslam(jx,jy)+weights_all(ja,1)
+      centroid_cslam(:,jx,jy) = centroid_cslam(:,jx,jy)+weights_all(ja,2:6)
+    end do
+
+    jall=jallactual    
   end if
 
   !SOUTHWEST Corner
   if (fvm%cubeboundary == swest) then
-    jy=1
     ! calculate xy Cartesian on the cube of departure points on the corresponding face  
-    do jx=1,nc+1
-      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy)),&
-           fvm%nbrsface(south),dcart(jx,jy))  
-      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy+1)),&
-           fvm%nbrsface(south),dcart(jx,jy+1))                 
+    do jy=-1,2
+      do jx=-1,nc+3
+        if ((jy<1) .and. (jx<1)) then   ! in the southwest corner are no values!!!
+          cycle
+        end if
+        call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+             fvm%nbrsface(south),dcart(jx,jy))                  
+      end do
     end do
+    jy=1
     do jx=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
       if(swap1) then !flip orientation
@@ -414,14 +761,80 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
       endif
     end do
 
-    jx=1
-    ! calculate xy Cartesian on the cube of departure points on the corresponding face  
-    do jy=1,nc+1
-      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy)),&
-           fvm%nbrsface(west),dcart(jx,jy))  
-      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx+1,jy)),&
-           fvm%nbrsface(west),dcart(jx+1,jy))                 
+    jallactual=jall
+  
+    do jy=-1,1      
+      do jx=-1,nc+2
+       if (((jy<1) .and. (jx<1)) .or. ((jy==1) .and. (jx>0) .and. (jx<nc+1))) then 
+         cycle
+       endif 
+        call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
+        if(swap1) then !flip orientation
+          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+          do i=1,jcollect_cell
+            inttmp=weights_eul_index_cell(i,1)
+            weights_eul_index_cell(i,1)=weights_eul_index_cell(i,2)
+            weights_eul_index_cell(i,2)=inttmp
+          end do
+        else
+          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+        end if
+        !I have to correct the number
+        if ((fvm%faceno==3) .OR. (fvm%faceno==5)) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-weights_eul_index_cell(i,1)+1
+            weights_eul_index_cell(i,2)=(weights_eul_index_cell(i,2)+nhe-1)
+          end do
+        end if
+        if (fvm%faceno==2) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-weights_eul_index_cell(i,1)+1
+          end do
+        end if
+        if (fvm%faceno==4) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)+nhe-1
+          end do
+        end if
+        if (jcollect_cell>0) then
+          weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+          weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                           weights_eul_index_cell(1:jcollect_cell,:)
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+          jall = jall+jcollect_cell          
+        endif
+      end do
     end do
+
+    do ja=jallactual_eul,jall-1
+      jx = weights_eul_index_all(ja,1); jy = weights_eul_index_all(ja,2);
+      da_cslam(jx,jy) = da_cslam(jx,jy)+weights_all(ja,1)
+      centroid_cslam(:,jx,jy) = centroid_cslam(:,jx,jy)+weights_all(ja,2:6)
+    end do
+    
+    
+    jall=jallactual    
+    jallactual_eul=jall  
+
+
+    ! calculate xy Cartesian on the cube of departure points on the corresponding face  
+    do jx=-1,2
+      do jy=-1,nc+3
+        if ((jy<1) .and. (jx<1)) then
+          cycle
+        end if
+        call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+             fvm%nbrsface(west),dcart(jx,jy))                  
+      end do
+    end do
+    jx=1
     do jy=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
       if(swap2) then !flip orientation
@@ -460,18 +873,76 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
         jall = jall+jcollect_cell          
       endif
     end do
+    
+    jallactual=jall
+    
+    do jx=-1,1      
+      do jy=-1,nc+2
+       if (((jx<1) .and. (jy<1)) .or. ((jx==1) .and. (jy>0) .and. (jy<nc+1))) then 
+         cycle
+       endif
+        call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
+        if(swap2) then !flip orientation
+          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acarty2,fvm%acartx2,jy_min2, jy_max2, jx_min2, jx_max2, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+          do i=1,jcollect_cell
+            inttmp=weights_eul_index_cell(i,1)
+            weights_eul_index_cell(i,1)=weights_eul_index_cell(i,2)
+            weights_eul_index_cell(i,2)=inttmp
+          end do
+        else
+          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acartx2,fvm%acarty2,jx_min2, jx_max2, jy_min2, jy_max2, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+        end if
+        !I have to correct the number
+        if (fvm%faceno==5) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,1)=weights_eul_index_cell(i,1)+nhe-1
+          end do
+        end if
+        if (fvm%faceno==6) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,2)=(jy_max2-jy_min2)-weights_eul_index_cell(i,2)+1
+          end do
+        end if
+        if (jcollect_cell>0) then
+          weights_all(jall:jall+jcollect_cell-1,:) = weights_cell (1:jcollect_cell,:)
+          weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                            weights_eul_index_cell(1:jcollect_cell,:)
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+          jall = jall+jcollect_cell          
+        endif
+      end do
+    end do
+
+    do ja=jallactual_eul,jall-1
+      jx = weights_eul_index_all(ja,1); jy = weights_eul_index_all(ja,2);
+      da_cslam(jx,jy) = da_cslam(jx,jy)+weights_all(ja,1)
+      centroid_cslam(:,jx,jy) = centroid_cslam(:,jx,jy)+weights_all(ja,2:6)
+    end do
+!     
+    jall=jallactual      
+    
   endif
 
   ! SOUTHEAST Corner
   if (fvm%cubeboundary == seast) then
-    jy=1
     ! calculate xy Cartesian on the cube of departure points on the corresponding face  
-    do jx=1,nc+1
-      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy)),&
-           fvm%nbrsface(south),dcart(jx,jy))  
-      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy+1)),&
-           fvm%nbrsface(south),dcart(jx,jy+1))                 
+    do jy=-1,2
+      do jx=-1,nc+3
+        if ((jy<1) .and. (jx>nc+1)) then   ! in the southwest corner are no values!!!
+          cycle
+        end if
+        call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+             fvm%nbrsface(south),dcart(jx,jy))  
+      end do
     end do
+    jy=1
     do jx=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
       if(swap1) then !flip orientation
@@ -522,15 +993,84 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
         jall = jall+jcollect_cell          
       endif
     end do
-
-    jx=nc
-    ! calculate xy Cartesian on the cube of departure points on the corresponding face  
-    do jy=1,nc+1
-      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy)),&
-           fvm%nbrsface(east),dcart(jx,jy))  
-      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx+1,jy)),&
-           fvm%nbrsface(east),dcart(jx+1,jy))                 
+    jallactual=jall
+! Eulerian weight correction    
+    do jy=-1,1
+      do jx=-1,nc+2
+        if (((jy<1) .and. (jx>nc)) .or. ((jy==1) .and. (jx>0) .and. (jx<nc+1))) then 
+          cycle
+        endif
+        call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
+        if(swap1) then !flip orientation
+          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+          do i=1,jcollect_cell
+            inttmp=weights_eul_index_cell(i,1)
+            weights_eul_index_cell(i,1)=weights_eul_index_cell(i,2)
+            weights_eul_index_cell(i,2)=inttmp
+          end do
+        else
+          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+        end if
+        !I have to correct the number   
+        if  (fvm%faceno==2) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-(weights_eul_index_cell(i,1)+nhe)-nhe+1
+          end do
+        end if
+        if  (fvm%faceno==3) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-(weights_eul_index_cell(i,1)+nhe)-nhe+1
+            weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)+nhe-1
+          end do
+        end if
+        if  (fvm%faceno==4) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)+nhe-1
+          end do
+        end if
+        if  (fvm%faceno==5) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-(weights_eul_index_cell(i,1)+nhe)-nhe+1
+            weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)+nhe-1
+          end do
+        end if
+        if (jcollect_cell>0) then
+          weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+          weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                           weights_eul_index_cell(1:jcollect_cell,:)
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+          jall = jall+jcollect_cell          
+        endif
+      end do
     end do
+
+    do ja=jallactual_eul,jall-1
+      jx = weights_eul_index_all(ja,1); jy = weights_eul_index_all(ja,2);
+      da_cslam(jx,jy) = da_cslam(jx,jy)+weights_all(ja,1)
+      centroid_cslam(:,jx,jy) = centroid_cslam(:,jx,jy)+weights_all(ja,2:6)
+    end do
+
+    jall=jallactual    
+    jallactual_eul=jall
+
+    ! calculate xy Cartesian on the cube of departure points on the corresponding face  
+    do jx=nc,nc+3
+      do jy=-1,nc+3
+        if ((jy<1) .and. (jx>nc+1)) then
+          cycle
+        end if
+        call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+             fvm%nbrsface(east),dcart(jx,jy))                   
+      end do
+    end do
+    jx=nc
     do jy=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
       if(swap2) then !flip orientation
@@ -569,18 +1109,76 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
         jall = jall+jcollect_cell          
       endif
     end do
+    
+    jallactual=jall
+    ! Eulerian weight correction        
+    do jx=nc,nc+2
+      do jy=-1,nc+2
+        if (((jx>nc) .and. (jy<1)) .or. ((jx==nc) .and. (jy>0) .and. (jy<nc+1))) then 
+          cycle
+        endif        
+        call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
+        if(swap2) then !flip orientation
+          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acarty2,fvm%acartx2,jy_min2, jy_max2, jx_min2, jx_max2, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+          do i=1,jcollect_cell
+            inttmp=weights_eul_index_cell(i,1)
+            weights_eul_index_cell(i,1)=weights_eul_index_cell(i,2)
+            weights_eul_index_cell(i,2)=inttmp
+          end do
+        else
+          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acartx2,fvm%acarty2,jx_min2, jx_max2, jy_min2, jy_max2, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+        end if
+        !I have to correct the number
+        if (fvm%faceno==5) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,2)=(jy_max2-jy_min2)-weights_eul_index_cell(i,2)+1
+          end do
+        end if
+        if (fvm%faceno==6) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,1)=weights_eul_index_cell(i,1)-nhe+1
+          end do
+        end if
+        if (jcollect_cell>0) then
+          weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+          weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                           weights_eul_index_cell(1:jcollect_cell,:)
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+          jall = jall+jcollect_cell          
+        endif
+      end do
+    end do 
+    
+    do ja=jallactual_eul,jall-1
+      jx = weights_eul_index_all(ja,1); jy = weights_eul_index_all(ja,2);
+      da_cslam(jx,jy) = da_cslam(jx,jy)+weights_all(ja,1)
+      centroid_cslam(:,jx,jy) = centroid_cslam(:,jx,jy)+weights_all(ja,2:6)
+    end do
+  !     
+    jall=jallactual
+    
   endif
   
   !NORTHEAST Corner
   if (fvm%cubeboundary == neast) then
-    jy=nc
     ! calculate xy Cartesian on the cube of departure points on the corresponding face  
-    do jx=1,nc+1
-      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy)),&
-           fvm%nbrsface(north),dcart(jx,jy))  
-      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy+1)),&
-           fvm%nbrsface(north),dcart(jx,jy+1))                 
+    do jy=nc,nc+3
+      do jx=-1,nc+3
+        if ((jy>nc+1) .and. (jx>nc+1)) then   ! in the southwest corner are no values!!!
+          cycle
+        end if
+        call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+             fvm%nbrsface(north),dcart(jx,jy))                
+      end do
     end do
+    jy=nc
     do jx=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
       if(swap1) then !flip orientation
@@ -631,15 +1229,89 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
         jall = jall+jcollect_cell          
       endif
     end do
-    
-    jx=nc
-    ! calculate xy Cartesian on the cube of departure points on the corresponding face  
-    do jy=1,nc+1
-      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy)),&
-           fvm%nbrsface(east),dcart(jx,jy))  
-      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx+1,jy)),&
-           fvm%nbrsface(east),dcart(jx+1,jy))                 
+
+
+    jallactual=jall
+
+    do jy=nc,nc+2      
+      do jx=-1,nc+2
+        if (((jy>nc) .and. (jx>nc)) .or. ((jy==nc) .and. (jx>0) .and. (jx<nc+1))) then 
+          cycle
+        endif
+        call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
+        if(swap1) then !flip orientation
+          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+          do i=1,jcollect_cell
+            inttmp=weights_eul_index_cell(i,1)
+            weights_eul_index_cell(i,1)=weights_eul_index_cell(i,2)
+            weights_eul_index_cell(i,2)=inttmp
+          end do
+        else
+          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+        end if
+        !I have to correct the number
+        if (fvm%faceno==2) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,2)=(weights_eul_index_cell(i,2))-nhe+1
+          end do
+        end if
+        if (fvm%faceno==3) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-weights_eul_index_cell(i,1)-nhe-nhe+1
+            weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)-nhe+1
+          end do
+        end if
+        if (fvm%faceno==6) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-weights_eul_index_cell(i,1)-nhe-nhe+1
+            weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)-nhe+1
+          end do
+        end if
+        if (fvm%faceno==4) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-weights_eul_index_cell(i,1)-nhe-nhe+1
+          end do
+        end if
+        if (jcollect_cell>0) then
+          weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+          weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                           weights_eul_index_cell(1:jcollect_cell,:)
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+          jall = jall+jcollect_cell          
+        endif
+      end do
     end do
+
+    do ja=jallactual_eul,jall-1
+      jx = weights_eul_index_all(ja,1); jy = weights_eul_index_all(ja,2);
+      da_cslam(jx,jy) = da_cslam(jx,jy)+weights_all(ja,1)
+      centroid_cslam(:,jx,jy) = centroid_cslam(:,jx,jy)+weights_all(ja,2:6)
+    end do
+
+
+    jall=jallactual    
+    jallactual_eul=jall  
+
+
+    
+    ! calculate xy Cartesian on the cube of departure points on the corresponding face  
+    do jx=nc,nc+3
+      do jy=-1,nc+3
+        if ((jy>nc+1) .and. (jx>nc+1)) then
+          cycle
+        end if
+        call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+             fvm%nbrsface(east),dcart(jx,jy))                  
+      end do
+    end do
+    jx=nc
     do jy=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
       if(swap2) then !flip orientation
@@ -679,18 +1351,77 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
         jall = jall+jcollect_cell          
       endif
     end do
+    
+    jallactual=jall
+    
+    do jx=nc, nc+2
+      do jy=-1,nc+2
+        if (((jx>nc) .and. (jy>nc)) .or. ((jx==nc) .and. (jy>0) .and. (jy<nc+1))) then 
+          cycle
+        endif
+        call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
+        if(swap2) then !flip orientation
+          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acarty2,fvm%acartx2,jy_min2, jy_max2, jx_min2, jx_max2, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+          do i=1,jcollect_cell
+            inttmp=weights_eul_index_cell(i,1)
+            weights_eul_index_cell(i,1)=weights_eul_index_cell(i,2)
+            weights_eul_index_cell(i,2)=inttmp
+          end do
+        else
+          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acartx2,fvm%acarty2,jx_min2, jx_max2, jy_min2, jy_max2, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+        end if
+        !I have to correct the number
+        if (fvm%faceno==5) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,2)=jy_max2-jy_min2-weights_eul_index_cell(i,2)-nhe-nhe+1
+          end do
+        end if
+        if (fvm%faceno==6) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,1)=weights_eul_index_cell(i,1)-nhe+1
+          end do
+        end if
+    
+        if (jcollect_cell>0) then
+          weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+          weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                           weights_eul_index_cell(1:jcollect_cell,:)
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+          jall = jall+jcollect_cell          
+        endif
+      end do
+    end do
+    
+    do ja=jallactual_eul,jall-1
+      jx = weights_eul_index_all(ja,1); jy = weights_eul_index_all(ja,2);
+      da_cslam(jx,jy) = da_cslam(jx,jy)+weights_all(ja,1)
+      centroid_cslam(:,jx,jy) = centroid_cslam(:,jx,jy)+weights_all(ja,2:6)
+    end do
+!     
+    jall=jallactual    
+    
   endif
 
   !NORTH WEST CORNER 
   if (fvm%cubeboundary == nwest) then
-    jy=nc
     ! calculate xy Cartesian on the cube of departure points on the corresponding face  
-    do jx=1,nc+1
-      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy)),&
-           fvm%nbrsface(north),dcart(jx,jy))  
-      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy+1)),&
-           fvm%nbrsface(north),dcart(jx,jy+1))                 
+    do jy=nc, nc+3
+      do jx=-1,nc+3
+        if ((jy>nc+1) .and. (jx<1)) then   ! in the southwest corner are no values!!!
+          cycle
+        end if
+        call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+             fvm%nbrsface(north),dcart(jx,jy))                   
+      end do
     end do
+    jy=nc
     do jx=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
       if(swap1) then !flip orientation
@@ -742,14 +1473,82 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
       endif
     end do
   
-    jx=1
-    ! calculate xy Cartesian on the cube of departure points on the corresponding face  
-    do jy=1,nc+1
-      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy)),&
-           fvm%nbrsface(west),dcart(jx,jy))  
-      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx+1,jy)),&
-           fvm%nbrsface(west),dcart(jx+1,jy))                 
+    jallactual=jall
+
+    do jy=nc,nc+2
+      do jx=-1,nc+2
+        if (((jy>nc) .and. (jx<1)) .or. ((jy==nc) .and. (jx>0) .and. (jx<nc+1))) then 
+          cycle
+        endif
+        call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
+        if(swap1) then !flip orientation
+          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+          do i=1,jcollect_cell
+            inttmp=weights_eul_index_cell(i,1)
+            weights_eul_index_cell(i,1)=weights_eul_index_cell(i,2)
+            weights_eul_index_cell(i,2)=inttmp
+          end do
+        else
+          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+        end if
+        !I have to correct the number
+        if (fvm%faceno==2) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)-nhe+1
+          end do
+        end if
+        if (fvm%faceno==3) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-(weights_eul_index_cell(i,1))+1
+            weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)-nhe+1
+          end do
+        end if
+        if (fvm%faceno==4) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-weights_eul_index_cell(i,1)+1
+          end do
+        end if
+        if (fvm%faceno==6) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-weights_eul_index_cell(i,1)+1
+            weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)-nhe+1
+          end do
+        end if
+        if (jcollect_cell>0) then
+          weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+          weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                           weights_eul_index_cell(1:jcollect_cell,:)
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+          jall = jall+jcollect_cell          
+        endif
+      end do  
     end do
+    do ja=jallactual_eul,jall-1
+      jx = weights_eul_index_all(ja,1); jy = weights_eul_index_all(ja,2);
+      da_cslam(jx,jy) = da_cslam(jx,jy)+weights_all(ja,1)
+      centroid_cslam(:,jx,jy) = centroid_cslam(:,jx,jy)+weights_all(ja,2:6)
+    end do
+    jall=jallactual    
+    jallactual_eul=jall  
+
+    ! calculate xy Cartesian on the cube of departure points on the corresponding face  
+    do jx=-1,2
+      do jy=-1,nc+3
+        if ((jy>nc+1) .and. (jx<1)) then
+          cycle
+        end if
+        call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+             fvm%nbrsface(west),dcart(jx,jy))                  
+      end do
+    end do
+    jx=1
     do jy=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
       if(swap2) then !flip orientation
@@ -788,8 +1587,114 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
         jall = jall+jcollect_cell          
       endif
     end do
+    
+    jallactual=jall
+    do jx=-1,1
+      do jy=-1,nc+2
+        if (((jx<1) .and. (jy>nc)) .or. ((jx==1) .and. (jy>0) .and. (jy<nc+1))) then 
+          cycle
+        endif
+        call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
+        if(swap2) then !flip orientation
+          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acarty2,fvm%acartx2,jy_min2, jy_max2, jx_min2, jx_max2, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+          do i=1,jcollect_cell
+            inttmp=weights_eul_index_cell(i,1)
+            weights_eul_index_cell(i,1)=weights_eul_index_cell(i,2)
+            weights_eul_index_cell(i,2)=inttmp
+          end do
+        else
+          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acartx2,fvm%acarty2,jx_min2, jx_max2, jy_min2, jy_max2, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+        end if
+        !I have to correct the number
+        if (fvm%faceno==5) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,1)=weights_eul_index_cell(i,1)+nhe-1
+          end do
+        end if
+        if (fvm%faceno==6) then
+            do i=1,jcollect_cell
+              weights_eul_index_cell(i,2)=jy_max2-jy_min2-weights_eul_index_cell(i,2)-nhe-nhe+1
+            end do
+          end if
+        if (jcollect_cell>0) then
+          weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+          weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                           weights_eul_index_cell(1:jcollect_cell,:)
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+          jall = jall+jcollect_cell          
+        endif
+      end do
+    end do
+    
+    do ja=jallactual_eul,jall-1
+      jx = weights_eul_index_all(ja,1); jy = weights_eul_index_all(ja,2);
+      da_cslam(jx,jy) = da_cslam(jx,jy)+weights_all(ja,1)
+      centroid_cslam(:,jx,jy) = centroid_cslam(:,jx,jy)+weights_all(ja,2:6)
+    end do
+!     
+    jall=jallactual       
   endif
+  
+  
   jall=jall-1
+  
+  toleul=1.0D-13
+  do jx=0,nc+1
+    do jy=0,nc+1
+!         write(*,*) 'area', jx, jy, da_cslam(jx,jy)-fvm%area_sphere(jx,jy)
+      if (abs(da_cslam(jx,jy)-fvm%area_sphere(jx,jy))>toleul) then
+        write(*,*) 'area', jx, jy, da_cslam(jx,jy)-fvm%area_sphere(jx,jy)
+        write(*,*) 'cubeboundary', fvm%cubeboundary, 'faceno', fvm%faceno
+          stop
+      endif
+      if (abs(centroid_cslam(1,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(1,jx,jy))>toleul) then
+        write(*,*) 'centroid 1', jx, jy, centroid_cslam(1,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(1,jx,jy)
+        write(*,*) 'cubeboundary', fvm%cubeboundary, 'faceno', fvm%faceno
+          stop
+      endif
+      if (abs(centroid_cslam(2,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(2,jx,jy))>toleul) then
+        write(*,*) 'centroid 2', jx, jy, centroid_cslam(2,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(2,jx,jy)
+        write(*,*) 'cubeboundary', fvm%cubeboundary, 'faceno', fvm%faceno
+          stop
+      endif
+      if (abs(centroid_cslam(3,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(3,jx,jy))>toleul) then
+        write(*,*) 'centroid 3', jx, jy, centroid_cslam(3,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(3,jx,jy)
+        write(*,*) 'cubeboundary', fvm%cubeboundary, 'faceno', fvm%faceno
+          stop
+      endif
+      if (abs(centroid_cslam(4,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(4,jx,jy))>toleul) then
+        write(*,*) 'centroid 4', jx, jy, centroid_cslam(4,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(4,jx,jy)
+        write(*,*) 'cubeboundary', fvm%cubeboundary, 'faceno', fvm%faceno
+          stop
+      endif
+      if (abs(centroid_cslam(5,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(5,jx,jy))>toleul) then
+        write(*,*) 'centroid 5', jx, jy, centroid_cslam(5,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(5,jx,jy)
+        write(*,*) 'cubeboundary', fvm%cubeboundary, 'faceno', fvm%faceno
+          stop
+      endif        
+!         write(*,*) 'centroid', jx, jy, centroid_cslam(:,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(:,jx,jy)
+    end do
+  end do
+ 
+! here is the correction, uncomment it if you want to run the scheme without weight correction!  
+  do ja=1,jall
+   jx = weights_eul_index_all(ja,1); jy = weights_eul_index_all(ja,2);
+   area=fvm%area_sphere(jx,jy)
+   weights_all(ja,1) = weights_all(ja,1)*(area/da_cslam(jx,jy))
+   weights_all(ja,2) = weights_all(ja,2)*(area*fvm%spherecentroid(1,jx,jy)/centroid_cslam(1,jx,jy))
+   weights_all(ja,3) = weights_all(ja,3)*(area*fvm%spherecentroid(2,jx,jy)/centroid_cslam(2,jx,jy))
+   weights_all(ja,4) = weights_all(ja,4)*(area*fvm%spherecentroid(3,jx,jy)/centroid_cslam(3,jx,jy))
+   weights_all(ja,5) = weights_all(ja,5)*(area*fvm%spherecentroid(4,jx,jy)/centroid_cslam(4,jx,jy))
+   weights_all(ja,6) = weights_all(ja,6)*(area*fvm%spherecentroid(5,jx,jy)/centroid_cslam(5,jx,jy))
+  end do
+ 
 end subroutine compute_weights  
 
 
@@ -811,7 +1716,7 @@ use coordinate_systems_mod, only : cartesian2D_t
   implicit none
   real (kind=real_kind), dimension(0:5), intent(inout)     :: xcell,ycell
   integer (kind=int_kind), intent(in)                      :: jx, jy
-  type (cartesian2D_t), intent(in)                         :: dcart(nc+1,nc+1)
+  type (cartesian2D_t), intent(in)                         :: dcart(-1:nc+3,-1:nc+3)
 
    xcell(1) = dcart(jx  ,jy  )%x 
    ycell(1) = dcart(jx  ,jy  )%y
@@ -976,13 +1881,13 @@ end subroutine getdep_cellboundariesxyvec
 !       WRITE(*,*) "min area",minval(weights(1:jcollect,1))
 !       stop
        do i=1,jcollect     
-!         IF (weights(i,1)<0.0) THEN
-!           IF (weights(i,1)<-1.0E-10) THEN
-!             WRITE(*,*) "negative cell area",weights(i,1)
-!             STOP
-!           END IF
+         IF (weights(i,1)<0.0) THEN
+           IF (weights(i,1)<-1.0E-10) THEN
+             WRITE(*,*) "negative cell area",weights(i,1)
+             STOP
+           END IF
 !           weights(i,2:nreconstruction) = 0.0
-!         END IF
+         END IF
 !       end do
 
          tmp=tmp+weights(i,1)

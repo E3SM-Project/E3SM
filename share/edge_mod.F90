@@ -111,6 +111,8 @@ module edge_mod
   public :: ghostVunpack2d
   public :: ghostVpack2d_single
   public :: ghostVunpack2d_single
+  public :: ghostVpack2d_level
+  public :: ghostVunpack2d_level
   public :: initGhostBuffer
   public :: ghostVpack3d
   public :: ghostVunpack3d
@@ -2612,6 +2614,376 @@ end subroutine ghostVunpack
   ! - kptr Vertical pointer to the place in the edge buffer where 
   ! data will be located.
   ! =================================================================================
+    subroutine ghostVpack2d_level(ghost,v,kptr,nhc, npoints,vlyr,desc)
+      use dimensions_mod, only : max_corner_elem, ntrac_d
+      use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+
+      type (Ghostbuffertr_t)                  :: ghost
+      integer,               intent(in)     :: vlyr,kptr
+      integer,              intent(in)      :: nhc,npoints
+      
+      real (kind=real_kind),intent(in)      :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc, vlyr)
+      type (EdgeDescriptor_t),intent(in)    :: desc
+
+      ! Local variables
+      integer :: i,j,ir,l,e
+      integer :: itr,k
+      integer :: is,ie,in,iw
+
+
+      if(.not. threadsafe) then
+#if (! defined ELEMENT_OPENMP)
+  !$OMP BARRIER
+#endif
+         threadsafe=.true.
+      end if
+      ! Example convenction for buffer to the north:
+      !  buf(:,,:,i,e) 
+      !   each "edge" is a row of data (i=1,np) in the element 
+      !     north most row of data goes into e=1
+      !     next row of data goes into e=2
+      !     .... 
+      !     south most row of data goes into e=np
+      !   We need to pack this way to preserve the orientation
+      !   so the data can be unpacked correctly
+
+      ! note: we think of buf as dimensioned buf(k,is,i,e)
+      ! but this array is flatted to:   buf(k,is+(i-1)+(e-1)*np)
+      !
+      is = desc%putmapP_ghost(south) 
+      ie = desc%putmapP_ghost(east)  
+      in = desc%putmapP_ghost(north) 
+      iw = desc%putmapP_ghost(west)  
+       do k=1,vlyr
+          do i=1,npoints
+             do j=1,nhc
+                ghost%buf(i,j,k,kptr,is)   = v(i  ,j+1, k)
+                ghost%buf(i,j,k,kptr,ie)   = v(npoints-j,i, k)
+                ghost%buf(i,j,k,kptr,in)   = v(i  ,npoints-j, k)
+                ghost%buf(i,j,k,kptr,iw)   = v(j+1,i, k)
+             enddo
+          end do
+        end do
+
+      !  This is really kludgy way to setup the index reversals
+      !  But since it is so a rare event not real need to spend time optimizing
+      !  Check if the edge orientation of the recieving element is different
+      !  if it is, swap the order of data in the edge
+      if(desc%reverse(south)) then
+  !        is = desc%putmapP_ghost(south)
+          do k=1,vlyr
+            do i=1,npoints
+              do j=1,nhc
+                ir = npoints-i+1
+                ghost%buf(ir,j,k,kptr,is)=v(i,j+1, k)
+               enddo
+            enddo
+          end do
+      endif
+
+      if(desc%reverse(east)) then
+  !        ie = desc%putmapP_ghost(east)
+          do k=1,vlyr  
+            do i=1,npoints
+              do j=1,nhc
+                ir = npoints-i+1
+                ghost%buf(ir,j,k,kptr,ie)=v(npoints-j,i, k)
+              enddo
+            enddo
+          end do
+      endif
+
+      if(desc%reverse(north)) then
+  !        in = desc%putmapP_ghost(north)
+          do k=1,vlyr
+            do i=1,npoints
+              do j=1,nhc
+                ir = npoints-i+1
+                ghost%buf(ir,j,k,kptr,in)=v(i,npoints-j, k)
+              enddo
+            enddo
+          end do
+      endif
+
+      if(desc%reverse(west)) then
+  !        iw = desc%putmapP_ghost(west)
+          do k=1,vlyr
+            do i=1,npoints
+              do j=1,nhc
+                ir = npoints-i+1
+                ghost%buf(ir,j,k,kptr,iw)=v(j+1,i, k)
+              enddo
+            enddo
+          enddo
+      endif
+
+      ! corners.  this is difficult because we dont know the orientaton
+      ! of the corners, and this which (i,j) dimension maps to which dimension
+  ! SWEST
+      do l=swest,swest+max_corner_elem-1
+         if (l.ne.swest) call abortmp('ERROR3: swest ghost cell update requires ne>0 cubed-sphere mesh')
+           if (desc%putmapP_ghost(l) /= -1) then
+               do k=1,vlyr
+                 do i=1,nhc
+                   do j=1,nhc
+                     ghost%buf(i,j,k,kptr,desc%putmapP_ghost(l))=v(i+1,j+1,k)
+                   enddo
+                 enddo     
+               enddo
+           end if
+      end do
+
+  ! SEAST
+      do l=swest+max_corner_elem,swest+2*max_corner_elem-1
+         if (l.ne.seast) call abortmp('ERROR3: seast ghost cell update requires ne>0 cubed-sphere mesh')
+           if (desc%putmapP_ghost(l) /= -1) then
+               do k=1,vlyr
+                 do i=1,nhc             
+                   do j=1,nhc
+                     ghost%buf(i,j,k,kptr,desc%putmapP_ghost(l))=v(npoints-i ,j+1,k)
+                   enddo
+                 enddo
+               enddo
+           end if
+      end do
+
+  ! NEAST
+      do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
+         if (l.ne.neast) call abortmp('ERROR3: neast ghost cell update requires ne>0 cubed-sphere mesh')
+           if (desc%putmapP_ghost(l) /= -1) then
+               do k=1,vlyr
+                 do i=1,nhc
+                   do j=1,nhc
+                     ghost%buf(i,j,k,kptr,desc%putmapP_ghost(l))=v(npoints-i,npoints-j,k)           
+                   enddo
+                 enddo
+               enddo
+            end if
+      end do
+
+  ! NWEST
+      do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
+         if (l.ne.nwest) call abortmp('ERROR3: nwest ghost cell update requires ne>0 cubed-sphere mesh')
+           if (desc%putmapP_ghost(l) /= -1) then
+               do k=1,vlyr
+                 do i=1,nhc
+                   do j=1,nhc
+                     ghost%buf(i,j,k,kptr,desc%putmapP_ghost(l))=v(i+1,npoints-j,k)
+                   enddo       
+                 enddo
+               enddo
+           end if
+      end do   
+    end subroutine ghostVpack2d_level
+
+  ! =================================================================================
+  ! GHOSTVUNPACK2D
+  ! AUTHOR: Christoph Erath 
+  ! Unpack ghost points from ghost buffer into v...
+  ! It is for cartesian points (v is only two dimensional).
+  ! INPUT SAME arguments as for GHOSTVPACK2d
+  ! =================================================================================
+
+  subroutine ghostVunpack2d_level(ghost,v,kptr,nhc,npoints,vlyr,desc)
+    use dimensions_mod, only : max_corner_elem, ntrac_d
+    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+    type (Ghostbuffertr_t),         intent(in)  :: ghost
+
+    integer,              intent(in)      :: nhc,npoints, vlyr,kptr
+
+    real (kind=real_kind), intent(inout)  :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc, vlyr)
+    type (EdgeDescriptor_t)               :: desc
+
+
+    ! Local
+    logical, parameter :: UseUnroll = .TRUE.
+    integer :: i,j,l, itr, k
+    integer :: is,ie,in,iw,ic
+    logical :: reverse
+    
+    real (kind=real_kind)                       :: NaN=-1.0
+    NaN=sqrt(NaN)
+
+    threadsafe=.false.
+
+    is=desc%getmapP_ghost(south) 
+    ie=desc%getmapP_ghost(east)  
+    in=desc%getmapP_ghost(north) 
+    iw=desc%getmapP_ghost(west)  
+
+    ! example for north buffer
+    ! first row ('edge') goes in v(:,np+1)
+    ! 2nd   row ('edge') goes in v(:,np+2)
+    ! etc...
+      do k=1,vlyr
+        do i=1,npoints
+          do j=1,nhc
+            v(i  ,1-j, k) = ghost%buf(i,j,k,kptr,is  )
+            v(npoints+j ,i,k ) = ghost%buf(i,j,k,kptr,ie  )
+            v(i  ,npoints+j,k) = ghost%buf(i,j,k,kptr,in  )
+            v(1-j  ,i,k) = ghost%buf(i,j,k,kptr,iw  )
+          end do
+        end do
+      end do
+
+! SWEST
+    do l=swest,swest+max_corner_elem-1
+       ic = desc%getmapP_ghost(l)       
+       if(ic /= -1) then 
+          reverse=desc%reverse(l)
+          if (reverse) then
+              do k=1,vlyr
+                do j=1,nhc
+                   do i=1,nhc
+                      v(1-i,1-j,k)=ghost%buf(j,i,k,kptr,ic)
+                   enddo
+                enddo
+              enddo
+          else
+              do k=1,vlyr
+                do j=1,nhc
+                   do i=1,nhc
+                      v(1-i,1-j,k)=ghost%buf(i,j,k,kptr,ic)
+                   enddo
+                enddo
+              enddo
+          endif
+       else
+           do k=1,vlyr
+             do j=1,nhc
+               do i=1,nhc
+                 v(1-i,1-j,k)=NaN
+               enddo
+             enddo
+           enddo
+       endif
+    end do
+    
+! SEAST
+    do l=swest+max_corner_elem,swest+2*max_corner_elem-1
+       ic = desc%getmapP_ghost(l)
+       if(ic /= -1) then 
+          reverse=desc%reverse(l)
+          if (reverse) then
+              do k=1,vlyr
+                do j=1,nhc
+                   do i=1,nhc
+                      v(npoints+i,1-j,k)=ghost%buf(j,i,k,kptr,ic)
+                   enddo
+                enddo
+              enddo
+          else
+              do k=1,vlyr
+                do j=1,nhc
+                   do i=1,nhc
+                      v(npoints+i ,1-j,k)=ghost%buf(i,j,k,kptr,ic)
+                   enddo
+                enddo
+              enddo
+          endif
+       else
+           do k=1,vlyr
+              do j=1,nhc
+                do i=1,nhc
+                  v(npoints+i ,1-j,k)=NaN
+                enddo
+              enddo
+            enddo
+       endif
+    end do
+
+
+! NEAST
+    do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
+       ic = desc%getmapP_ghost(l)
+       
+       if(ic /= -1) then 
+          reverse=desc%reverse(l)
+          if (reverse) then
+              do k=1,vlyr
+                do j=1,nhc
+                   do i=1,nhc
+                      v(npoints+i ,npoints+j,k)=ghost%buf(j,i,k,kptr,ic)
+                   enddo
+                enddo
+              enddo
+          else
+              do k=1,vlyr
+                do j=1,nhc
+                   do i=1,nhc
+                      v(npoints+i ,npoints+j,k)=ghost%buf(i,j,k,kptr,ic)
+                   enddo
+                enddo
+              enddo
+          endif
+        else
+            do k=1,vlyr
+              do j=1,nhc
+                do i=1,nhc
+                  v(npoints+i ,npoints+j,k)=NaN
+                enddo
+              enddo 
+            enddo
+       endif
+    end do
+
+! NWEST
+    do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
+       ic = desc%getmapP_ghost(l)
+       
+       if(ic /= -1) then 
+          reverse=desc%reverse(l)
+          if (reverse) then
+              do k=1,vlyr
+                do j=1,nhc
+                   do i=1,nhc
+                      v(1-i ,npoints+j,k)=ghost%buf(j,i,k,kptr,ic)
+                   enddo
+                enddo
+              enddo
+          else
+              do k=1,vlyr
+                do j=1,nhc
+                   do i=1,nhc
+                      v(1-i ,npoints+j,k)=ghost%buf(i,j,k,kptr,ic)
+                   enddo
+                enddo
+              enddo
+          endif
+        else
+            do k=1,vlyr
+              do j=1,nhc
+                do i=1,nhc
+                  v(1-i ,npoints+j,k)=NaN
+                enddo
+              enddo
+            enddo
+       endif
+    end do
+
+  end subroutine ghostVunpack2d_level
+
+
+
+  ! =================================================================================
+  ! GHOSTVPACK2D
+  ! AUTHOR: Christoph Erath 
+  ! Pack edges of v into an ghost buffer for boundary exchange.
+  !
+  ! This subroutine packs for one vertical layers into an ghost
+  ! buffer. It is for cartesian points (v is only two dimensional). 
+  ! If the buffer associated with edge is not large enough to 
+  ! hold all vertical layers you intent to pack, the method will 
+  ! halt the program with a call to parallel_mod::haltmp().
+  ! INPUT: 
+  ! - ghost Buffer into which the data will be packed.
+  !   This buffer must be previously allocated with initGhostBuffer().
+  ! - v The data to be packed.
+  ! - nhc deep of ghost/halo zone
+  ! - npoints number of points on on side
+  ! - kptr Vertical pointer to the place in the edge buffer where 
+  ! data will be located.
+  ! =================================================================================
     subroutine ghostVpack2d_single(ghost,v,nhc, npoints,desc)
       use dimensions_mod, only : max_corner_elem, ntrac_d
       use control_mod, only : north, south, east, west, neast, nwest, seast, swest
@@ -2916,6 +3288,9 @@ end subroutine ghostVunpack
     end do
 
   end subroutine ghostVunpack2d_single
+
+
+
 
 
 

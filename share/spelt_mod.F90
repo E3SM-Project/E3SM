@@ -97,7 +97,7 @@ subroutine spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   type (cartesian2D_t)                        :: alphabeta
   real (kind=real_kind)                       :: tmp
   
-
+  call t_startf('SPELT scheme') 
   
   dt6  = tstep/ 6.0D0
   do ie=nets,nete 
@@ -246,6 +246,7 @@ subroutine spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
     end do
     call ghostVpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tl%np1, timelevels,elem(ie)%desc)
   end do
+  call t_stopf('SPELT scheme') 
 !-----------------------------------------------------------------------------------! 
   call t_startf('SPELT Communication') 
   call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep)
@@ -303,6 +304,7 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   real (kind=real_kind)                       :: tmp
   
 
+  call t_startf('SPELT scheme') 
   
   dt6  = tstep/ 6.0D0
   do ie=nets,nete 
@@ -415,6 +417,7 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
     end do   !nlev
     call ghostVpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tl%np1, timelevels,elem(ie)%desc)
   end do
+  call t_stopf('SPELT scheme')
 !-----------------------------------------------------------------------------------! 
   call t_startf('SPELT Communication') 
   call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep)
@@ -437,6 +440,8 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   use bndry_mod, only: ghost_exchangeV
   ! ---------------------------------------------------------------------------------
   use coordinate_systems_mod, only : spherical_to_cart, cart2cubedspherexy, ref2sphere, sphere2cubedsphere
+  ! ---------------------------------------------------------------------------------
+  use fvm_bsp_mod, only : boomerang  
   ! ------EXTERNAL----------------
   use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   ! -----------------------------------------------  
@@ -469,7 +474,7 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   type (cartesian2D_t)                        :: alphabeta
   real (kind=real_kind)                       :: tmp
   
-
+  call t_startf('SPELT scheme') 
   
   dt6  = tstep/ 6.0D0
   do ie=nets,nete 
@@ -483,6 +488,11 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
       do j=1,nep
         do i=1,nep
 !           call solidbody(spelt(ie)%asphere(i,j), dsphere, 0.5D0) 
+
+          ! for analytic departure grid calculation
+!           call boomerang(spelt(ie)%asphere(i,j), dsphere1(i,j),tl%nstep,0.5D0)
+!           call boomerang(spelt(ie)%asphere(i,j), dsphere2(i,j),tl%nstep)
+          
           call cell_search(elem(ie), dsphere1(i,j),icell1(i,j), jcell1(i,j),dref1(i,j),alphabeta)
           sg1(i,j)=metric_term(alphabeta)
 !           sg1(i,j)=metric_termref(elem(ie),dref1(i,j))
@@ -543,6 +553,7 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
     end do
     call ghostVpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tl%np1, timelevels,elem(ie)%desc)
   end do
+  call t_stopf('SPELT scheme') 
 !-----------------------------------------------------------------------------------! 
   call t_startf('SPELT Communication') 
   call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep)
