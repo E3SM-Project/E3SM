@@ -39,6 +39,11 @@ ENDIF()
 IF (NOT DEFINED NUM_TRACERS) 
   SET(NUM_TRACERS ${NUM_TRACERS_default} CACHE STRING "")
 ENDIF()
+# to allow ifdefs to be included
+if(REF_SOLN)
+  MESSAGE(STATUS "Including option to read or write reference soln data...")
+  ADD_DEFINITIONS(-DREF_SOLN)
+endif()
 
 MESSAGE(STATUS "Build options:")
 MESSAGE(STATUS "-- num points (NP) set to... ${NUM_POINTS}")
