@@ -440,8 +440,8 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   use bndry_mod, only: ghost_exchangeV
   ! ---------------------------------------------------------------------------------
   use coordinate_systems_mod, only : spherical_to_cart, cart2cubedspherexy, ref2sphere, sphere2cubedsphere
-  ! ---------------------------------------------------------------------------------
-  use fvm_bsp_mod, only : boomerang  
+!  ! ---------------------------------------------------------------------------------
+!  use fvm_bsp_mod, only : boomerang  
   ! ------EXTERNAL----------------
   use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   ! -----------------------------------------------  
