@@ -111,6 +111,7 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(pio_iotype_pnetcdf)
+#ifdef USE_INDEP_WRITE
           ierr = nfmpi_begin_indep_data(File%fh)
           if(Ios%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_vara (File%fh, varid, int(index,kind=PIO_OFFSET), int(count,kind=PIO_OFFSET), &
@@ -119,6 +120,10 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#else
+             ierr = nfmpi_put_vara_all (File%fh, varid, int(index,kind=PIO_OFFSET), int(count,kind=PIO_OFFSET), &
+                  ival, int(count,kind=PIO_OFFSET), MPI_CHARACTER)
+#endif
 
 #endif
 #ifdef _NETCDF
@@ -198,6 +203,7 @@ contains
        select case (iotype) 
 #ifdef _PNETCDF
        case(pio_iotype_pnetcdf)
+#ifdef USE_INDEP_WRITE
           ierr = nfmpi_begin_indep_data(File%fh)
           if(Ios%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_vara (File%fh, varid, int(index,kind=PIO_OFFSET), int(count,kind=PIO_OFFSET), &
@@ -206,7 +212,11 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#else
+          ierr = nfmpi_put_vara_all (File%fh, varid, int(index,kind=PIO_OFFSET), int(count,kind=PIO_OFFSET), &
+               ival, int(count,kind=PIO_OFFSET), {MPITYPE})
 
+#endif
 #endif
 #ifdef _NETCDF
        case (pio_iotype_netcdf4p)
@@ -588,6 +598,7 @@ contains
           do i=2,size(count)
              clen=clen*count(i)
           end do
+#ifdef USE_INDEP_WRITE
           ierr = nfmpi_begin_indep_data(File%fh)
           if(Ios%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_vara_{TYPE} (File%fh, varid, pstart, &
@@ -596,6 +607,11 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#else
+             ierr = nfmpi_put_vara_{TYPE}_all (File%fh, varid, pstart, &
+                  pcount, ival, clen, {MPITYPE})
+
+#endif
 #endif
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p)
@@ -696,6 +712,7 @@ contains
           do i=2,size(count)
              clen=clen*count(i)
           end do
+#ifdef USE_INDEP_WRITE
           ierr = nfmpi_begin_indep_data(File%fh)
           if(Ios%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_vara_{TYPE} (File%fh, varid, pstart, &
@@ -704,6 +721,11 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
+#else
+          ierr = nfmpi_put_vara_{TYPE}_all (File%fh, varid, pstart, &
+               pcount, ival, clen, {MPITYPE})
+
+#endif
 #endif
 #ifdef _NETCDF
        case(pio_iotype_netcdf4p)

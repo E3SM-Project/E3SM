@@ -1334,9 +1334,6 @@ contains
 !! @param rearr @copydoc PIO_rearr_method
 !! @param iosystem a derived type which can be used in subsequent pio operations (defined in PIO_types).
 !! @param base @em optional argument can be used to offset the first io task - default base is task 1.
-!! @param dims @optional argument that indicates to PIO that compression should be setup, represents comp grid size
-!! @param bsize @optional compression argument that represents block size for the VDC
-!! @param num_ts @optional compression argument that represents the number of timesteps the user have in the VDC
 !<
   subroutine init_intracom(comp_rank, comp_comm, num_iotasks, num_aggregator, stride,  rearr, iosystem,base)
     use pio_types, only : pio_internal_error, pio_rearr_none
@@ -1838,7 +1835,7 @@ contains
 
 !>
 !! @public
-!! @defgroup PIO_recommend_iotasks
+!! @defgroup PIO_recommend_iotasks PIO_recommend_iotasks
 !! @brief Recommend a subset of tasks in comm to use as IO tasks
 !! @details  This subroutine will give PIO's best recommendation for the number and
 !!    location of iotasks for a given system there is no requirement to follow this recommendation.
@@ -1847,6 +1844,7 @@ contains
 !! @param miniotasks \em optional The minimum number of IO tasks the caller desires
 !! @param maxiotasks \em optional The maximum number of IO tasks the caller desires
 !! @param iotask if true pio recommends that this task be used as an iotask
+!<
 
   subroutine pio_recommend_iotasks(comm, ioproc, numiotasks, miniotasks, maxiotasks )
     integer, intent(in) :: comm

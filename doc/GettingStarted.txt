@@ -40,7 +40,7 @@ decomposition functions.
 You can then open a file for reading or writing with a call to \ref
 PIO_createfile or \ref PIO_openfile. In this call you will specify the
 file type: pio_iotype_netcdf, pio_iotype_pnetcdf, or
-pio_iotype_binary, or the new \ref netcdf4 types pio_iotype_netcdf4c,
+pio_iotype_binary, pio_iotype_netcdf4c or
 pio_iotype_netcdf4p; along with the file name and optionally the
 netcdf mode.
 
@@ -48,7 +48,7 @@ To read or write decomposed data you must first describe the mapping
 between the organization of data in the file and that in the
 application space.  This is done in a call to
 \ref PIO_initdecomp. In the simplest call to this function a
-one dimensional integer array is passed from each task the values in
+one dimensional integer array is passed from each task, the values in
 the array represent the 0 based offset from the beginning of the array
 on file.   
 

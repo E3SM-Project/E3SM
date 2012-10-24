@@ -1,4 +1,4 @@
-!> @file libpiovdc.F90
+!> @file piovdc.F90
 !> @author  Yannick Polius <ypolius@ucar.edu>
 !> @version 1.0
 !> @date 03/22/2012

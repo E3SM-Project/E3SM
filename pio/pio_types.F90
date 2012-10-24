@@ -30,7 +30,7 @@ module pio_types
     !------------------------------------
 !>
 !! @public
-!! @struct iosystem_desc_t iosystem_desc_t
+!! @struct iosystem_desc_t 
 !! @brief A defined PIO system descriptor created by @ref PIO_init (see pio_types)
 !<
     type, public :: IOSystem_desc_t
@@ -95,7 +95,7 @@ module pio_types
      
 !> 
 !! @public
-!! @struct file_desc_t file_desc_t
+!! @struct file_desc_t 
 !! @brief File descriptor returned by \ref PIO_openfile or \ref PIO_createfile (see pio_types)
 !>
     type, public :: File_desc_t
@@ -137,7 +137,7 @@ module pio_types
 !! @brief  An io descriptor handle that is generated in @ref PIO_initdecomp 
 !! (see pio_types)
 !<
-   type, public :: IO_desc_t
+   type, public :: io_desc_t
 #ifdef SEQUENCE
 	sequence
 #endif
@@ -181,7 +181,7 @@ module pio_types
 
 !>
 !! @public
-!! @struct var_desc_t var_desc_t
+!! @struct var_desc_t 
 !! @brief A variable descriptor returned from @ref PIO_def_var (see pio_types) 
 !<
     type, public :: Var_desc_t
