@@ -195,11 +195,11 @@ subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
       call reconstruction(tracer_air0, fvm(ie),recons_air)
 
 !       call monotonic_gradient_cart(tracer_air0, fvm(ie),recons_air, elem(ie)%desc)
-!       recons_air(1,:,:)=0.0D0
-!       recons_air(2,:,:)=0.0D0
-!       recons_air(3,:,:)=0.0D0
-!       recons_air(4,:,:)=0.0D0
-!       recons_air(5,:,:)=0.0D0
+      recons_air(1,:,:)=0.0D0
+      recons_air(2,:,:)=0.0D0
+      recons_air(3,:,:)=0.0D0
+      recons_air(4,:,:)=0.0D0
+      recons_air(5,:,:)=0.0D0
       
       tracer_air1=0.0D0   
 
