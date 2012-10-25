@@ -298,10 +298,12 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   integer                                     :: icell1(1:nep,1:nep), jcell1(1:nep,1:nep)     
   integer                                     :: icell2(1:nep,1:nep), jcell2(1:nep,1:nep)
   
-  integer                                     :: icell, jcell
+  integer                                     :: icell, jcell, jx, jy
   real (kind=real_kind)                       :: dxoy, dxyi, dt6, sg, sga
   type (cartesian2D_t)                        :: alphabeta
   real (kind=real_kind)                       :: tmp
+  
+  real (kind=real_kind)                       :: P, Q, R(0:nc+1,0:nc+1), c_min, c_max
   
 
   call t_startf('SPELT scheme') 
@@ -383,28 +385,74 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
               fluxlowy(i,j)=6.0D0*dxoy*tstep*spelt(ie)%contrav(icell,jcell,k)* &
                             spelt(ie)%c(icell,jcell+1,k,itr,tl%n0)*spelt(ie)%sga(icell,jcell)/spelt(ie)%sga(icell,jcell+1)
             endif    
+            
           end do
         end do
-              
+!!!! only needed for filter              
         do j=1,nc
+          jcell=2+(j-1)*nipm
+          jy=1+(j-1)*nipm
           do i=1,nc
             icell=2+(i-1)*nipm
-            jcell=2+(j-1)*nipm
         ! for low order flux
-            c_low(icell,jcell) = spelt(ie)%c(icell,jcell,k,itr,tl%n0) + &
+            c_low(i,j) = spelt(ie)%c(icell,jcell,k,itr,tl%n0) + &
                                   (fluxlowx(i,j) + fluxlowy(i,j) - fluxlowx(i+1,j) - fluxlowy(i,j+1) ) * dxyi
-            spelt(ie)%c(icell,jcell,k,itr,tl%np1)=c_low(icell,jcell)                        
+                                  
+!             spelt(ie)%c(icell,jcell,k,itr,tl%np1)=c_low(i,j) 
+            !high order flux
+            jx=1+(i-1)*nipm
+            flux(1) = dxoy * (fluxval(jx,jy,1) + 4.0D0 * fluxval(jx,jy+1,1) + fluxval(jx,jy+2,1))  ! west
+            flux(2) = dxoy * (fluxval(jx,jy,2) + 4.0D0 * fluxval(jx+1,jy,2) + fluxval(jx+2,jy,2))  ! south
+            flux(3) = dxoy * (fluxval(jx+2,jy,1) + 4.0D0 * fluxval(jx+2,jy+1,1) + fluxval(jx+2,jy+2,1)) ! east
+            flux(4) = dxoy * (fluxval(jx+2,jy+2,2) + 4.0D0 * fluxval(jx+1,jy+2,2) + fluxval(jx,jy+2,2)) ! north
+            
+            R(i,j)=-min(-flux(1),-flux(2),flux(3),flux(4))
+            
+            !overwrite low order flux by antidiffusive flux
+            fluxlowx(i,j)=flux(1)-fluxlowx(i,j) 
+            fluxlowy(i,j)=flux(2)-fluxlowx(i,j)         
           end do
+          jx=nep
+          flux(1) = dxoy * (fluxval(jx,jy,1) + 4.0D0 * fluxval(jx,jy+1,1) + fluxval(jx,jy+2,1))
+          fluxlowx(nc+1,j)=flux(1)-fluxlowx(nc+1,j)
         end do
-        
+        do i=1,nc
+          !high order flux
+          jx=1+(i-1)*nipm
+          jy=nep
+          flux(2) = dxoy * (fluxval(jx,jy,2) + 4.0D0 * fluxval(jx+1,jy,2) + fluxval(jx+2,jy,2))  
+          fluxlowx(i,nc+1)=flux(2)-fluxlowx(i,nc+1)      
+        end do
+       ! Anti diffusive flux are computed for each cell!
+!        do j=1,nc
+!          do i=1,nc
+!            c_min=min(c_low(i,j))
+!          end do
+!        end do
+       
+       
+       tmp=abs(elem(ie)%corners(1)%x-elem(ie)%corners(2)%x)/nc
+       !tmp*tmp is area in alpha beta
+!        do j=1,nc
+!          jcell=2+(j-1)*nipm
+!          do i=1,nc
+!            icell=2+(i-1)*nipm
+!            if (R(i,j)>0.0D0) then
+!              R(i,j)=min(1,tmp*tmp*spelt(ie)%c(icell,jcell,k,itr,tl%n0)/R(i,j))
+!            else
+!              R(i,j)=0.0D
+!            endif    
+!          end do
+!        end do    
+                    
+         
         do j=1,nep,2
           do i=1,nep,2            
               flux(1) = dxoy * (fluxval(i,j,1) + 4.0D0 * fluxval(i,j+1,1) + fluxval(i,j+2,1))  ! west
               flux(2) = dxoy * (fluxval(i,j,2) + 4.0D0 * fluxval(i+1,j,2) + fluxval(i+2,j,2))  ! south
               flux(3) = dxoy * (fluxval(i+2,j,1) + 4.0D0 * fluxval(i+2,j+1,1) + fluxval(i+2,j+2,1)) ! east
               flux(4) = dxoy * (fluxval(i+2,j+2,2) + 4.0D0 * fluxval(i+1,j+2,2) + fluxval(i,j+2,2)) ! north
-              
-              
+                      
               spelt(ie)%c(i+1,j+1,k,itr,tl%np1) = spelt(ie)%c(i+1,j+1,k,itr,tl%n0) + &
                                         (flux(1) + flux(2) - flux(3) - flux(4) ) * dxyi  
                                                                                          
