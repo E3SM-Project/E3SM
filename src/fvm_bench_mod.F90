@@ -105,7 +105,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   
   integer  choosetrac, chooselev   !for test reason the output
  !-----------------------------------------------------------------------------------!  
- choosetrac=2
+ choosetrac=1
  chooselev=1
  
   if(hybrid%masterthread) then 
@@ -296,7 +296,7 @@ if (mod(tl%nstep,1)==0) then
       write(*,*) 'STEP',tl%nstep,'MAXSTEP',nmax, &
                  't0', tl%n0, 't1', tl%np1
                write(*,*) 'massbegin', massstart, 'massend', mass 
-      write(*,*) 'rel', (mass-massstart)/massstart           
+      write(*,*) 'rel air', (mass-massstart)/massstart           
       write(*,*) 'maxvaluestart:', maxcstart, 'minvaluestart:', mincstart
       write(*,*) 'maxvalue:     ', maxc,       'minvalue:    ', minc
       write(*,*) "CFL: maxcflx=", maxcflx, "maxcfly=", maxcfly 
@@ -365,7 +365,7 @@ endif
     print *
     write(*,*) 'chooselev=', chooselev, 'choosetrac=', choosetrac
     write(*,*) 'massbegin', massstart, 'massend', mass 
-    write(*,*) 'rel', (mass-massstart)/massstart
+    write(*,*) 'rel air', (mass-massstart)/massstart
     write(*,*) 'maxvaluestart:', maxcstart, 'minvaluestart:', mincstart
     write(*,*) 'maxvalue:     ', maxc,      'minvalue:     ', minc
     write(*,*) "CFL: maxcflx=", maxcflx, "maxcfly=", maxcfly 

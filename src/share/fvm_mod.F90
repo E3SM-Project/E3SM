@@ -579,7 +579,7 @@ subroutine fvm_mesh_dep(elem, deriv, fvm, dt, tl, klev)
   
 
 ! for the benchmark test, use more accurate departure point creation
-#if 0
+#if 1
 !CE: define new mesh for fvm fvm on an equal angular grid
 ! go from alpha,beta -> cartesian xy on cube -> lat lon on the sphere
 ! #ifdef _FVM
@@ -587,6 +587,18 @@ subroutine fvm_mesh_dep(elem, deriv, fvm, dt, tl, klev)
      do i=1,nc+1               
 !                 call solidbody(fvm%asphere(i,j), fvm%dsphere(i,j))
         call boomerang(fvm%asphere(i,j), fvm%dsphere(i,j,klev),tl%nstep)
+        if (j==1) then
+          fvm%dsphere(i,j,klev)=fvm%asphere(i,j)
+        endif
+        if (j==nc+1) then
+          fvm%dsphere(i,j,klev)=fvm%asphere(i,j)
+        endif
+        if (i==nc+1) then
+          fvm%dsphere(i,j,klev)=fvm%asphere(i,j)
+        endif
+        if (i==1) then
+          fvm%dsphere(i,j,klev)=fvm%asphere(i,j)
+        endif
      end do
   end do
 ! #endif

@@ -241,9 +241,9 @@ DO WHILE(tl%nstep<nmax)
   end do
   call spelt_mcgregordss(elem,spelt,nets,nete, hybrid, deriv, tstep, 3)
 ! ! end mcgregordss
-  call spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
+!   call spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 
-!   call spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
+  call spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !   call spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 
   call TimeLevel_update(tl,"forward") 
