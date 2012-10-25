@@ -98,7 +98,6 @@ contains
 
 #ifdef _NETCDF
        case(PIO_iotype_netcdf4p)	
-          print *,__FILE__,__LINE__,start,count, size(iobuf)
           ierr=nf90_put_var(File%fh, vardesc%varid, iobuf,start=int(start),count=int(count))
        case(pio_iotype_netcdf,pio_iotype_netcdf4c)
           ! allocate space on root for copy of iobuf etc.
