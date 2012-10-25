@@ -1645,8 +1645,8 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
   
   jall=jall-1
   
-  do jx=0,nc+1
-    do jy=0,nc+1
+  do jx=1,nc
+    do jy=1,nc
 !         write(*,*) 'area', jx, jy, da_cslam(jx,jy)-fvm%area_sphere(jx,jy)
       if (abs(da_cslam(jx,jy)-fvm%area_sphere(jx,jy))>toleul) then
         write(*,*) 'area diff', jx, jy, da_cslam(jx,jy)-fvm%area_sphere(jx,jy)
@@ -1833,6 +1833,14 @@ end subroutine getdep_cellboundariesxyvec
     IF (ldbg) WRITE(*,*) "vertex 4  displacement",xcell(4)-xgno(jx+1),ycell(4)-ygno(jy)
     IF (ldbg) WRITE(*,*) "---------------------"
 
+!     if (abs(xcell(1)-xgno(jx)) > 1.0D0-12 )  WRITE(*,*) "vertex 1  displacement",xcell(1)-xgno(jx)
+!     if (abs(ycell(1)-ygno(jy)) > 1.0D0-12 )  WRITE(*,*) "vertex 1  displacement",ycell(1)-ygno(jy)
+!     if (abs(xcell(2)-xgno(jx)) > 1.0D0-12 )  WRITE(*,*) "vertex 2  displacement",xcell(2)-xgno(jx)
+!     if (abs(ycell(2)-ygno(jy+1)) > 1.0D0-12 )  WRITE(*,*) "vertex 2  displacement",ycell(2)-ygno(jy+1)
+!     if (abs(xcell(3)-xgno(jx+1)) > 1.0D0-12 )  WRITE(*,*) "vertex 3  displacement",xcell(3)-xgno(jx+1)
+!     if (abs(ycell(3)-ygno(jy+1)) > 1.0D0-12 )  WRITE(*,*) "vertex 3  displacement",ycell(3)-ygno(jy+1)
+!     if (abs(xcell(4)-xgno(jx+1)) > 1.0D0-12 )  WRITE(*,*) "vertex 4  displacement",xcell(4)-xgno(jx+1)
+!     if (abs(ycell(4)-ygno(jy)) > 1.0D0-12 )  WRITE(*,*) "vertex 4  displacement",ycell(4)-ygno(jy)
 
 
 
@@ -1962,6 +1970,9 @@ end subroutine getdep_cellboundariesxyvec
        do i=imin,imax
           do k=1,jsegment
              if (weights_eul_index(k,1)==i.AND.weights_eul_index(k,2)==j) then
+               if ((j<1) .or. (j>nc) .or. (i<1) .or. (i>nc)) then           !!! DEBUGGING
+                 weights(k,1:nreconstruction)=0.0D0
+               endif
                 weights_out(jcollect,1:nreconstruction) = &
                      weights_out(jcollect,1:nreconstruction) + weights(k,1:nreconstruction)
                 ltmp = .TRUE.
