@@ -21,7 +21,7 @@ module fvm_line_integrals_mod
   real (kind=real_kind),parameter, public   :: bignum = 1.0D20
   real (kind=real_kind),parameter, public   :: tiny   = 1.0D-12
   real (kind=real_kind),parameter           :: fuzzy_width = 10.0*tiny
-  real (kind=real_kind)                     :: toleul=1.0D-13
+  real (kind=real_kind)                     :: toleul=1.0D-10
   
   logical :: ldbg=.FALSE.
   
@@ -1645,49 +1645,46 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
   
   jall=jall-1
   
-!   do jx=1,nc
-!     do jy=1,nc
-! !         write(*,*) 'area', jx, jy, da_cslam(jx,jy)-fvm%area_sphere(jx,jy)
-!       if (abs(da_cslam(jx,jy)-fvm%area_sphere(jx,jy))>toleul) then
-!         write(*,*) 'area diff', jx, jy, da_cslam(jx,jy)-fvm%area_sphere(jx,jy)
-!         write(*,*) 'cubeboundary', fvm%cubeboundary, 'faceno', fvm%faceno
-! !           stop
-!       endif
-!       if (abs(centroid_cslam(1,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(1,jx,jy))>toleul) then
-!         write(*,*) 'centroid 1 diff', jx, jy, centroid_cslam(1,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(1,jx,jy)
-!         write(*,*) 'cubeboundary', fvm%cubeboundary, 'faceno', fvm%faceno
-! !           stop
-!       endif
-!       if (abs(centroid_cslam(2,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(2,jx,jy))>toleul) then
-!         write(*,*) 'centroid 2 diff', jx, jy, centroid_cslam(2,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(2,jx,jy)
-!         write(*,*) 'cubeboundary', fvm%cubeboundary, 'faceno', fvm%faceno
-! !           stop
-!       endif
-!       if (abs(centroid_cslam(3,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(3,jx,jy))>toleul) then
-!         write(*,*) 'centroid 3 diff', jx, jy, centroid_cslam(3,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(3,jx,jy)
-!         write(*,*) 'cubeboundary', fvm%cubeboundary, 'faceno', fvm%faceno
-! !           stop
-!       endif
-!       if (abs(centroid_cslam(4,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(4,jx,jy))>toleul) then
-!         write(*,*) 'centroid 4 diff', jx, jy, centroid_cslam(4,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(4,jx,jy)
-!         write(*,*) 'cubeboundary', fvm%cubeboundary, 'faceno', fvm%faceno
-! !           stop
-!       endif
-!       if (abs(centroid_cslam(5,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(5,jx,jy))>toleul) then
-!         write(*,*) 'centroid 5 diff', jx, jy, centroid_cslam(5,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(5,jx,jy)
-!         write(*,*) 'cubeboundary', fvm%cubeboundary, 'faceno', fvm%faceno
-! !           stop
-!       endif        
-! !         write(*,*) 'centroid', jx, jy, centroid_cslam(:,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(:,jx,jy)
-!     end do
-!   end do
+  do jx=0,nc+1
+    do jy=0,nc+1
+!         write(*,*) 'area', jx, jy, da_cslam(jx,jy)-fvm%area_sphere(jx,jy)
+      if (abs(da_cslam(jx,jy)-fvm%area_sphere(jx,jy))>toleul) then
+        write(*,*) 'area diff', jx, jy, da_cslam(jx,jy)-fvm%area_sphere(jx,jy)
+        write(*,*) 'cubeboundary', fvm%cubeboundary, 'faceno', fvm%faceno
+!           stop
+      endif
+      if (abs(centroid_cslam(1,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(1,jx,jy))>toleul) then
+        write(*,*) 'centroid 1 diff', jx, jy, centroid_cslam(1,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(1,jx,jy)
+        write(*,*) 'cubeboundary', fvm%cubeboundary, 'faceno', fvm%faceno
+!           stop
+      endif
+      if (abs(centroid_cslam(2,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(2,jx,jy))>toleul) then
+        write(*,*) 'centroid 2 diff', jx, jy, centroid_cslam(2,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(2,jx,jy)
+        write(*,*) 'cubeboundary', fvm%cubeboundary, 'faceno', fvm%faceno
+!           stop
+      endif
+      if (abs(centroid_cslam(3,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(3,jx,jy))>toleul) then
+        write(*,*) 'centroid 3 diff', jx, jy, centroid_cslam(3,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(3,jx,jy)
+        write(*,*) 'cubeboundary', fvm%cubeboundary, 'faceno', fvm%faceno
+!           stop
+      endif
+      if (abs(centroid_cslam(4,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(4,jx,jy))>toleul) then
+        write(*,*) 'centroid 4 diff', jx, jy, centroid_cslam(4,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(4,jx,jy)
+        write(*,*) 'cubeboundary', fvm%cubeboundary, 'faceno', fvm%faceno
+!           stop
+      endif
+      if (abs(centroid_cslam(5,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(5,jx,jy))>toleul) then
+        write(*,*) 'centroid 5 diff', jx, jy, centroid_cslam(5,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(5,jx,jy)
+        write(*,*) 'cubeboundary', fvm%cubeboundary, 'faceno', fvm%faceno
+!           stop
+      endif        
+!         write(*,*) 'centroid', jx, jy, centroid_cslam(:,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(:,jx,jy)
+    end do
+  end do
  
 ! here is the correction, uncomment it if you want to run the scheme without weight correction!  
   do ja=1,jall
    jx = weights_eul_index_all(ja,1); jy = weights_eul_index_all(ja,2);
-   if ((jx<1) .or. (jx>nc) .or. (jy<1) .or. (jy>nc)) then
-     cycle
-   endif
    area=fvm%area_sphere(jx,jy)
    weights_all(ja,1) = weights_all(ja,1)*(area/da_cslam(jx,jy))
    weights_all(ja,2) = weights_all(ja,2)*(area*fvm%spherecentroid(1,jx,jy)/centroid_cslam(1,jx,jy))
@@ -1833,14 +1830,6 @@ end subroutine getdep_cellboundariesxyvec
     IF (ldbg) WRITE(*,*) "vertex 4  displacement",xcell(4)-xgno(jx+1),ycell(4)-ygno(jy)
     IF (ldbg) WRITE(*,*) "---------------------"
 
-!     if (abs(xcell(1)-xgno(jx)) > 1.0D0-12 )  WRITE(*,*) "vertex 1  displacement",xcell(1)-xgno(jx)
-!     if (abs(ycell(1)-ygno(jy)) > 1.0D0-12 )  WRITE(*,*) "vertex 1  displacement",ycell(1)-ygno(jy)
-!     if (abs(xcell(2)-xgno(jx)) > 1.0D0-12 )  WRITE(*,*) "vertex 2  displacement",xcell(2)-xgno(jx)
-!     if (abs(ycell(2)-ygno(jy+1)) > 1.0D0-12 )  WRITE(*,*) "vertex 2  displacement",ycell(2)-ygno(jy+1)
-!     if (abs(xcell(3)-xgno(jx+1)) > 1.0D0-12 )  WRITE(*,*) "vertex 3  displacement",xcell(3)-xgno(jx+1)
-!     if (abs(ycell(3)-ygno(jy+1)) > 1.0D0-12 )  WRITE(*,*) "vertex 3  displacement",ycell(3)-ygno(jy+1)
-!     if (abs(xcell(4)-xgno(jx+1)) > 1.0D0-12 )  WRITE(*,*) "vertex 4  displacement",xcell(4)-xgno(jx+1)
-!     if (abs(ycell(4)-ygno(jy)) > 1.0D0-12 )  WRITE(*,*) "vertex 4  displacement",ycell(4)-ygno(jy)
 
 
 
@@ -1970,9 +1959,6 @@ end subroutine getdep_cellboundariesxyvec
        do i=imin,imax
           do k=1,jsegment
              if (weights_eul_index(k,1)==i.AND.weights_eul_index(k,2)==j) then
-               if ((j<1) .or. (j>nc) .or. (i<1) .or. (i>nc)) then           !!! DEBUGGING
-                 weights(k,1:nreconstruction)=0.0D0
-               endif
                 weights_out(jcollect,1:nreconstruction) = &
                      weights_out(jcollect,1:nreconstruction) + weights(k,1:nreconstruction)
                 ltmp = .TRUE.
@@ -2565,20 +2551,20 @@ end subroutine getdep_cellboundariesxyvec
     integer (kind=int_kind) :: i
 !    weights(:) = -half*(xseg(1)*yseg(2)-xseg(2)*yseg(1)) !dummy for testing
 
-!     weights(1) = ((I_00(xseg(2),yseg(2))-I_00(xseg(1),yseg(1))))
-!     if (ABS(weights(1))>1.0) THEN
-!       WRITE(*,*) "1 exact weights(jsegment)",weights(1),xseg,yseg
-!       stop
-!     end if
-!     if (nreconstruction>1) then
-!        weights(2) = ((I_10(xseg(2),yseg(2))-I_10(xseg(1),yseg(1))))
-!        weights(3) = ((I_01(xseg(2),yseg(2))-I_01(xseg(1),yseg(1))))
-!     endif
-!     if (nreconstruction>3) then
-!        weights(4) = ((I_20(xseg(2),yseg(2))-I_20(xseg(1),yseg(1))))
-!        weights(5) = ((I_02(xseg(2),yseg(2))-I_02(xseg(1),yseg(1))))
-!        weights(6) = ((I_11(xseg(2),yseg(2))-I_11(xseg(1),yseg(1))))
-!     endif
+    weights(1) = ((I_00(xseg(2),yseg(2))-I_00(xseg(1),yseg(1))))
+    if (ABS(weights(1))>1.0) THEN
+      WRITE(*,*) "1 exact weights(jsegment)",weights(1),xseg,yseg
+      stop
+    end if
+    if (nreconstruction>1) then
+       weights(2) = ((I_10(xseg(2),yseg(2))-I_10(xseg(1),yseg(1))))
+       weights(3) = ((I_01(xseg(2),yseg(2))-I_01(xseg(1),yseg(1))))
+    endif
+    if (nreconstruction>3) then
+       weights(4) = ((I_20(xseg(2),yseg(2))-I_20(xseg(1),yseg(1))))
+       weights(5) = ((I_02(xseg(2),yseg(2))-I_02(xseg(1),yseg(1))))
+       weights(6) = ((I_11(xseg(2),yseg(2))-I_11(xseg(1),yseg(1))))
+    endif
 
     call get_weights_gauss(weightsgauss,xseg,yseg,nreconstruction,ngauss,gauss_weights,abscissae)
 !     do i=1, 6
@@ -2633,14 +2619,12 @@ end subroutine getdep_cellboundariesxyvec
 !    if (fuzzy(abs(xseg(1) -xseg(2)),fuzzy_width)==0)then
     if (xseg(1).EQ.xseg(2))then
       weights = 0.0D0
-!    else if (abs(yseg(1) -yseg(2))<fuzzy_width) then
-!      weights(1) = ((I_00(xseg(2),yseg(2))-I_00(xseg(1),yseg(1))))
-     
+  !  else if (abs(yseg(1) -yseg(2))<fuzzy_width) then
       !
       ! line segment parallel to latitude - compute weights exactly
       !
   !    if (ldbg) write(*,*) "line segment parallel to latitude - compute weights exactly"
-!      weights(1) = ((I_00(xseg(2),yseg(2))-I_00(xseg(1),yseg(1))))
+  !    weights(1) = ((I_00(xseg(2),yseg(2))-I_00(xseg(1),yseg(1))))
   !    if (nreconstruction>1) then
   !      weights(2) = ((I_10(xseg(2),yseg(2))-I_10(xseg(1),yseg(1))))
   !      weights(3) = ((I_01(xseg(2),yseg(2))-I_01(xseg(1),yseg(1))))
@@ -2704,11 +2688,7 @@ end subroutine getdep_cellboundariesxyvec
         enddo
         weights(6) = integral*dx2  
       endif
-      if (abs(yseg(1) -yseg(2))<fuzzy_width) then
-        weights(1) = ((I_00(xseg(2),yseg(2))-I_00(xseg(1),yseg(1))))
-      end if
     end if
-
 !    IF (MAXVAL(ABS(weights(1:nreconstruction)))>0.1) THEN
     IF (ldbg) THEN
       WRITE(*,*) "from get weights gauss"

@@ -51,7 +51,7 @@ subroutine solidbody(asphere, dsphere)
   ! outside 
   alpha=-0.9*DD_PI/4.0D0 !DD_PI/4  !DD_PI/4 !1.3!0.78
   omega=2*DD_PI/Time_at(nmax)          ! angular velocity: around the earth
-  omega=2*DD_PI/1036800
+  omega=2*DD_PI/1036800                !in 12 days around the earth
   lap=DD_PI
   thp=DD_PI/2-alpha
 
@@ -343,7 +343,7 @@ end subroutine set_boomerang_velocities_gll
 subroutine boomerang(asphere,dsphere,nstep,part)
   use physical_constants, only : DD_PI
   use coordinate_systems_mod, only : spherical_polar_t
-  use time_mod, only : tstep,nmax
+  use time_mod, only : tstep,nmax, ndays
 
   implicit none
   type (spherical_polar_t),intent(in)   :: asphere
@@ -359,12 +359,16 @@ subroutine boomerang(asphere,dsphere,nstep,part)
   real (kind=real_kind)       :: dplm,dpth,trm1,trm2,sslm,cwt,swt
   real (kind=real_kind)       :: dt2,dt3,dt4,dtt,udc,uexact, vexact
   
+  integer                     :: nmaxaround
+  
  
   iteration=10
   iorder=5
   
-  tmp_time=(nstep)*5.0D0/nmax
-  tmp_dt = 5.0D0/nmax/iteration
+  nmaxaround=12*nmax/ndays          ! in 12 days around the earth
+  
+  tmp_time=(nstep)*5.0D0/nmaxaround
+  tmp_dt = 5.0D0/nmaxaround/iteration
   dt2 = tmp_dt*tmp_dt/2.0D0
   dt3 = dt2*tmp_dt/3.0D0
   dt4 = dt3*tmp_dt/4.0D0
