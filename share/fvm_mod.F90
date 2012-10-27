@@ -179,7 +179,7 @@ subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   do ie=nets,nete
     call ghostVunpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lat,1,2, nc+1,nlev,elem(ie)%desc)
     call ghostVunpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lon,2,2, nc+1,nlev,elem(ie)%desc)
-    fvm(ie)%dsphere(:,:,:)%r=fvm(ie)%asphere(1,1)%r  !!! RADIUS IS ASSUMED TO BE 1.0DO !!!!
+    fvm(ie)%dsphere(:,:,:)%r=1.0D0  !!! RADIUS IS ASSUMED TO BE 1.0DO !!!!
     
   end do
   call freeghostbuffertr(buflatlon)
@@ -194,12 +194,12 @@ subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
       tracer_air0=fvm(ie)%c(:,:,k,1,tl%n0)       
       call reconstruction(tracer_air0, fvm(ie),recons_air)
 
-!       call monotonic_gradient_cart(tracer_air0, fvm(ie),recons_air, elem(ie)%desc)
-      recons_air(1,:,:)=0.0D0
-      recons_air(2,:,:)=0.0D0
-      recons_air(3,:,:)=0.0D0
-      recons_air(4,:,:)=0.0D0
-      recons_air(5,:,:)=0.0D0
+      call monotonic_gradient_cart(tracer_air0, fvm(ie),recons_air, elem(ie)%desc)
+!       recons_air(1,:,:)=0.0D0
+!       recons_air(2,:,:)=0.0D0
+!       recons_air(3,:,:)=0.0D0
+!       recons_air(4,:,:)=0.0D0
+!       recons_air(5,:,:)=0.0D0
       
       tracer_air1=0.0D0   
 
@@ -585,21 +585,8 @@ subroutine fvm_mesh_dep(elem, deriv, fvm, dt, tl, klev)
 ! #ifdef _FVM
   do j=1,nc+1
      do i=1,nc+1               
-!                 call solidbody(fvm%asphere(i,j), fvm%dsphere(i,j))
+!                 call solidbody(fvm%asphere(i,j), fvm%dsphere(i,j,klev))
         call boomerang(fvm%asphere(i,j), fvm%dsphere(i,j,klev),tl%nstep)
-        fvm%dsphere(i,j,klev)=fvm%asphere(i,j)
-        if (j==1) then
-          fvm%dsphere(i,j,klev)=fvm%asphere(i,j)
-        endif
-        if (j==nc+1) then
-          fvm%dsphere(i,j,klev)=fvm%asphere(i,j)
-        endif
-        if (i==nc+1) then
-          fvm%dsphere(i,j,klev)=fvm%asphere(i,j)
-        endif
-        if (i==1) then
-          fvm%dsphere(i,j,klev)=fvm%asphere(i,j)
-        endif
      end do
   end do
 ! #endif
