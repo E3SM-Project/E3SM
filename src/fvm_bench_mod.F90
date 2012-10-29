@@ -30,19 +30,13 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   ! ---------------------------------------------------------------------------------
   use fvm_mod, only: cslam_runairdensity, fvm_init1,fvm_init2, fvm_init3, fvm_mcgregor,fvm_mcgregordss, cellghostbuf, edgeveloc
   ! ---------------------------------------------------------------------------------
-  use fvm_line_integrals_mod, only: compute_weights
-  ! ---------------------------------------------------------------------------------  
-  use fvm_filter_mod, only: monotonic_gradient_cart
-  ! ---------------------------------------------------------------------------------
-  use checksum_mod, only: test_ghost
+  use fvm_line_integrals_mod, only: correct_mass
   ! ---------------------------------------------------------------------------------
   use derivative_mod, only : derivative_t, derivative_stag_t, derivinit, deriv_print
   ! ---------------------------------------------------------------------------------
   use reduction_mod, only : ReductionBuffer_ordered_1d_t
   ! ---------------------------------------------------------------------------------
   use thread_mod, only : nthreads
-  ! ---------------------------------------------------------------------------------
-  use bndry_mod, only: ghost_exchangeV, bndry_exchangeV
   ! ---------------------------------------------------------------------------------
   use time_mod, only : tstep, nmax, time_at, timelevel_update, timelevel_init
   ! ---------------------------------------------------------------------------------
@@ -105,7 +99,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   
   integer  choosetrac, chooselev   !for test reason the output
  !-----------------------------------------------------------------------------------!  
- choosetrac=1
+ choosetrac=2
  chooselev=1
  
   if(hybrid%masterthread) then 
@@ -113,6 +107,8 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
     print *,"!  Test CASE for fvm, Christoph Erath                                 !" 
     print *,"!-----------------------------------------------------------------------!" 
   endif
+    
+    
      
   ! Initialize derivative structure
   ! fvm nodes are equally spaced in alpha/beta
@@ -144,8 +140,6 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
       enddo
     enddo
     !
-
-!     call ghostVpack(cellghostbuf, fvm(ie)%c,nhc,nc,nlev,ntrac,0,tl%n0,timelevels,elem(ie)%desc)
     ! reset the new unknown
     do k=1,nlev
       do itr=1,ntrac
@@ -160,12 +154,9 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   
   !first exchange of the initial values
   call fvm_init3(elem,fvm,hybrid,nets,nete,tl%n0)
-!-----------------------------------------------------------------------------------!  
-!   call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc)
-!-----------------------------------------------------------------------------------!    
+!-----------------------------------------------------------------------------------!     
 
   do ie=nets,nete
-!      call ghostVunpack(cellghostbuf, fvm(ie)%c, nhc, nc,nlev,ntrac, 0, tl%n0, timelevels,elem(ie)%desc)
     ! for the mass value
     global_shared_buf(ie,1)=0D0
     global_shared_buf(ie,1)=fvm(ie)%elem_mass
@@ -238,7 +229,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
       do k=1,nlev
         elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
         fvm(ie)%vn0(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),time_at(tl%nstep))
-!         elem(ie)%derived%vstar(:,:,:,k)=get_solidbody_velocities_gll(elem(ie), time_at(tl%nstep+1))
+!         elem(ie)%deriv  ed%vstar(:,:,:,k)=get_solidbody_velocities_gll(elem(ie), time_at(tl%nstep+1))
 !         fvm(ie)%vn0(:,:,:,k)=get_solidbody_velocities_gll(elem(ie),time_at(tl%nstep))
       end do
     end do
@@ -302,6 +293,14 @@ if (mod(tl%nstep,1)==0) then
       write(*,*) "CFL: maxcflx=", maxcflx, "maxcfly=", maxcfly 
       print *
     endif
+  if (mod(tl%nstep,10)==0) then    
+    if (mass-massstart>0.0D0) then
+      correct_mass=-1.0D-15
+    else
+      correct_mass=1.0D-15
+    endif
+    
+  endif
 endif
 !-----------------------------------------------------------------------------------!  
 
