@@ -30,8 +30,38 @@
 #BSUB -e testpio.%J.stderr
 #BSUB -J testpio_suite
 #BSUB -W 3:00
-#BSUB -P SSSG0002
 "
+ />  
+
+<yellowstone
+  PNETCDF_PATH="${PNETCDF}"
+  NETCDF_PATH="${NETCDF}"
+  ENV_MP_LABELIO="yes"
+  ENV_MP_MPILIB="mpich2"
+  CXX="icpc"
+  CC="icc"
+  FC="ifort"
+  MPIFC="mpiifort"
+  MPICC="mpiicc"
+  MPICXX="mpiicpc"
+  FFLAGS = " -ip -no-prec-div -free -g -traceback"
+  CFLAGS = "  -g -traceback"
+  CPPDEFS= "-DFORTRANUNDERSCORE  "
+  workdir="/glade/scratch/${USER}/testpio"
+  submit="bsub < "
+  run = "mpirun.lsf"
+  corespernode="32"
+  conopts="--enable-filesystem-hints=gpfs "
+  preamble = '
+#BSUB -q regular
+#BSUB -N
+#BSUB -x
+#BSUB -a poe
+#BSUB -o testpio.%J.stdout
+#BSUB -e testpio.%J.stderr
+#BSUB -J testpio_suite
+#BSUB -W 3:00
+'
  />  
 
 

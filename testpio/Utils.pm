@@ -34,6 +34,8 @@ sub host{
         $host = "carver";
     }elsif($host =~/erlogin/) {
 	$host="erebus";
+    }elsif($host =~/yslogin/) {
+	$host="yellowstone";
     }elsif( $host =~ /^login/){
 	if(-d "/lustre/janus_scratch"){
 	    $host="janus";
@@ -67,14 +69,14 @@ sub projectInfo{
       if($host =~ "bluefire") {
         $projectInfo = "#BSUB -R \"span[ptile=64]\"\n#BSUB -P $project\n";
       }
-   }elsif($host =~ "erebus"){
+   }elsif($host =~ "erebus" or $host =~ "yellowstone"){
        if(defined $ENV{USE_PROJECT}){
 	   $project=$ENV{USE_PROJECT};
        }else{
-	   $project="SSSG0002";
+	   $project="SCSG0002";
        }
        $projectInfo = "#BSUB -R \"span[ptile=16]\"\n#BSUB -P $project\n";
-
+       $projectInfo .= "#BSUB -R \"select[scratch_ok > 0]\"\n" if ($host=="yellowstone");
    }elsif($host =~ "jaguar"){
      $project = `/sw/xt5/bin/showproj -s jaguar | tail -1`;
      $projectInfo ="#PBS -A $project\n";
@@ -92,7 +94,7 @@ sub preambleResource{
   my ($mod,$host,$pecount,$corespernode) = @_;
   my $nodes;
   my $preambleResource;
-  if($host =~ "bluefire" or $host =~ "erebus") {
+  if($host =~ "bluefire" or $host =~ "erebus" or $host =~ "yellowstone") {
      $preambleResource = "#BSUB -n $pecount\n";
   }elsif($host =~ "frost"){
      $preambleResource = "";
@@ -122,7 +124,7 @@ sub preambleResource{
 sub runString{
   my ($mod,$host,$pecount,$run,$exename,$log)=@_;
   my $runString;
-  if($host =~ "bluefire" || $host =~ "erebus" ) {
+  if($host =~ "bluefire" || $host =~ "erebus" || $host =~ "yellowstone") {
     $runString = "$run $exename 1> $log 2>&1";
   }elsif($host eq "frost" ) {
     $runString = "$run $log -np $pecount $exename";
@@ -157,6 +159,7 @@ sub loadmodules{
 #HOST SPECIFIC START
     my $modpath = {bluefire => "/contrib/Modules/3.2.6/",
 		   erebus => "/usr/share/Modules/",
+		   yellowstone => "/usr/share/Modules/",
 		   jaguar  => "/opt/modules/default/",
 		   athena => "/opt/modules/default/",
 		   kraken => "/opt/modules/default/",
@@ -282,6 +285,16 @@ sub loadmodules{
 #        module("load netcdf/4.2");
         module("load pnetcdf/1.3.0");
         module("load ncarenv/0.0");
+	module("load ncarbinlibs/0.0");
+	module("list");
+    }elsif($host eq "yellowstone"){
+	require "/glade/apps/opt/lmod/lmod/init/perl";    
+        module("load intel/12.1.5");
+	module("load ncarcompilers/1.0");
+        module("unload netcdf");
+        module("load netcdf/4.2");
+        module("load pnetcdf/1.3.0");
+        module("load ncarenv/1.0");
 	module("load ncarbinlibs/0.0");
 	module("list");
     }

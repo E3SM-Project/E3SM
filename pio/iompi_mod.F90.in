@@ -1,8 +1,5 @@
 #define __PIO_FILE__ "iompi_mod.F90"
 module iompi_mod
-
-
-
     use pio_kinds, only : i4,r4,r8,log_kind,pio_offset
     use pio_types, only : io_desc_t,file_desc_t,var_desc_t, &
 		  iotype_pbinary, &
@@ -19,7 +16,6 @@ module iompi_mod
 
     implicit none
     private
-    save
 
 #ifdef NO_MPIMOD  
     include 'mpif.h'        ! _EXTERNAL
