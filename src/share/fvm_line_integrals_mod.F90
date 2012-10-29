@@ -22,6 +22,7 @@ module fvm_line_integrals_mod
   real (kind=real_kind),parameter, public   :: tiny   = 1.0D-12
   real (kind=real_kind),parameter           :: fuzzy_width = 10.0*tiny
   real (kind=real_kind)                     :: toleul=1.0D-10
+  real (kind=real_kind), public   :: correct_mass=0.0D0
   
   logical :: ldbg=.FALSE.
   
@@ -1644,39 +1645,39 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
   
   
   jall=jall-1
-  
+  toleul=1.0D-13
   do jx=0,nc+1
     do jy=0,nc+1
 !         write(*,*) 'area', jx, jy, da_cslam(jx,jy)-fvm%area_sphere(jx,jy)
       if (abs(da_cslam(jx,jy)-fvm%area_sphere(jx,jy))>toleul) then
         write(*,*) 'area diff', jx, jy, da_cslam(jx,jy)-fvm%area_sphere(jx,jy)
         write(*,*) 'cubeboundary', fvm%cubeboundary, 'faceno', fvm%faceno
-!           stop
+          stop
       endif
       if (abs(centroid_cslam(1,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(1,jx,jy))>toleul) then
         write(*,*) 'centroid 1 diff', jx, jy, centroid_cslam(1,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(1,jx,jy)
         write(*,*) 'cubeboundary', fvm%cubeboundary, 'faceno', fvm%faceno
-!           stop
+          stop
       endif
       if (abs(centroid_cslam(2,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(2,jx,jy))>toleul) then
         write(*,*) 'centroid 2 diff', jx, jy, centroid_cslam(2,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(2,jx,jy)
         write(*,*) 'cubeboundary', fvm%cubeboundary, 'faceno', fvm%faceno
-!           stop
+          stop
       endif
       if (abs(centroid_cslam(3,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(3,jx,jy))>toleul) then
         write(*,*) 'centroid 3 diff', jx, jy, centroid_cslam(3,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(3,jx,jy)
         write(*,*) 'cubeboundary', fvm%cubeboundary, 'faceno', fvm%faceno
-!           stop
+          stop
       endif
       if (abs(centroid_cslam(4,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(4,jx,jy))>toleul) then
         write(*,*) 'centroid 4 diff', jx, jy, centroid_cslam(4,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(4,jx,jy)
         write(*,*) 'cubeboundary', fvm%cubeboundary, 'faceno', fvm%faceno
-!           stop
+          stop
       endif
       if (abs(centroid_cslam(5,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(5,jx,jy))>toleul) then
         write(*,*) 'centroid 5 diff', jx, jy, centroid_cslam(5,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(5,jx,jy)
         write(*,*) 'cubeboundary', fvm%cubeboundary, 'faceno', fvm%faceno
-!           stop
+          stop
       endif        
 !         write(*,*) 'centroid', jx, jy, centroid_cslam(:,jx,jy)-fvm%area_sphere(jx,jy)*fvm%spherecentroid(:,jx,jy)
     end do
@@ -1686,12 +1687,12 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
   do ja=1,jall
    jx = weights_eul_index_all(ja,1); jy = weights_eul_index_all(ja,2);
    area=fvm%area_sphere(jx,jy)
-   weights_all(ja,1) = weights_all(ja,1)*(area/da_cslam(jx,jy))
-   weights_all(ja,2) = weights_all(ja,2)*(area*fvm%spherecentroid(1,jx,jy)/centroid_cslam(1,jx,jy))
-   weights_all(ja,3) = weights_all(ja,3)*(area*fvm%spherecentroid(2,jx,jy)/centroid_cslam(2,jx,jy))
-   weights_all(ja,4) = weights_all(ja,4)*(area*fvm%spherecentroid(3,jx,jy)/centroid_cslam(3,jx,jy))
-   weights_all(ja,5) = weights_all(ja,5)*(area*fvm%spherecentroid(4,jx,jy)/centroid_cslam(4,jx,jy))
-   weights_all(ja,6) = weights_all(ja,6)*(area*fvm%spherecentroid(5,jx,jy)/centroid_cslam(5,jx,jy))
+   weights_all(ja,1) = weights_all(ja,1)*(area/da_cslam(jx,jy)+correct_mass)!
+   weights_all(ja,2) = weights_all(ja,2)*(area*fvm%spherecentroid(1,jx,jy)/centroid_cslam(1,jx,jy)+correct_mass)
+   weights_all(ja,3) = weights_all(ja,3)*(area*fvm%spherecentroid(2,jx,jy)/centroid_cslam(2,jx,jy)+correct_mass)
+   weights_all(ja,4) = weights_all(ja,4)*(area*fvm%spherecentroid(3,jx,jy)/centroid_cslam(3,jx,jy)+correct_mass)
+   weights_all(ja,5) = weights_all(ja,5)*(area*fvm%spherecentroid(4,jx,jy)/centroid_cslam(4,jx,jy)+correct_mass)
+   weights_all(ja,6) = weights_all(ja,6)*(area*fvm%spherecentroid(5,jx,jy)/centroid_cslam(5,jx,jy)+correct_mass)
   end do
  
 end subroutine compute_weights  
