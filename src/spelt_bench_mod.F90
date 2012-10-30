@@ -47,11 +47,11 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
   use quadrature_mod, only : quadrature_t, gausslobatto
   
   
-#ifdef PIO_INTERP
-    use interp_movie_mod, only : interp_movie_init, interp_movie_output, interp_movie_finish
-#else
-    use shal_movie_mod, only : shal_movie_init, shal_movie_output, shal_movie_finish
-#endif
+! #ifdef PIO_INTERP
+!     use interp_movie_mod, only : interp_movie_init, interp_movie_output, interp_movie_finish
+! #else
+!     use shal_movie_mod, only : shal_movie_init, shal_movie_output, shal_movie_finish
+! #endif
   
   implicit none
   type (element_t), intent(inout)             :: elem(:)
@@ -87,7 +87,7 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
   
   integer  choosetrac, chooselev   !for test reason the output
  !-----------------------------------------------------------------------------------!  
- choosetrac=2
+ choosetrac=1
  chooselev=1
  
   if(hybrid%masterthread) then 
@@ -166,13 +166,13 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
     elem(ie)%state%ps(:,:)=0.0D0
   enddo 
 !-----------------------------------------------------------------------------------! 
-#ifdef PIO_INTERP
-  call interp_movie_init(elem,hybrid,nets,nete,tl=tl)    
-  call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete,spelt)
-#else
-  call shal_movie_init(elem,hybrid)
-  call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv)
-#endif
+! #ifdef PIO_INTERP
+!   call interp_movie_init(elem,hybrid,nets,nete,tl=tl)    
+!   call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete,spelt)
+! #else
+!   call shal_movie_init(elem,hybrid)
+!   call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv)
+! #endif
 !-----------------------------------------------------------------------------------! 
 ! for Quantities as mass aso 
   do ie=nets,nete
@@ -249,7 +249,7 @@ DO WHILE(tl%nstep<nmax)
   call TimeLevel_update(tl,"forward") 
 !-----------------------------------------------------------------------------------! 
 ! for Quantities as mass aso
-if (mod(tl%nstep,1)==0) then
+if (mod(tl%nstep,100)==0) then
   do ie=nets,nete
     spelt(ie)%elem_mass=0
     tmp1(ie)=-1.0D0-20
@@ -328,11 +328,11 @@ endif
     elem(ie)%state%ps(:,:)=0.0D0
   end do 
 
-#ifdef PIO_INTERP
-  call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete,spelt)
-#else
-  call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv)
-#endif  
+! #ifdef PIO_INTERP
+!   call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete,spelt)
+! #else
+!   call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv)
+! #endif  
 !-----------------------------------------------------------------------------------!
       
 ENDDO  ! END TIME LOOP
@@ -340,11 +340,11 @@ ENDDO  ! END TIME LOOP
 
   call freeghostbuffertr(cellghostbuf)
   call freeedgebuffer(edgeveloc)
-#ifdef PIO_INTERP
-    call interp_movie_finish
-#else
-    call shal_movie_finish
-#endif  
+! #ifdef PIO_INTERP
+!     call interp_movie_finish
+! #else
+!     call shal_movie_finish
+! #endif  
 !-----------------------------------------------------------------------------------!  
 ! Error analysis/ complicated, but for a first try o.k.
   do ie=nets,nete
