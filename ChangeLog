@@ -1,6 +1,60 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name:pio1_5_6
+Originator(s): Jim
+Date: 10-30-2012
+One-line Summary: minor change in pnetcdf interface, update documentation, update yellowstone in testpio
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+  Index: Doxyfile
+  Index: doc/Decomp.txt
+  Index: doc/GettingStarted.txt
+  Index: doc/base.txt
+  Index: testpio/testpio.F90
+  Index: testpio/testpio_run.pl
+  Index: testpio/build_defaults.xml
+  Index: testpio/Utils.pm
+  Index: pio/pionfwrite_mod.F90 
+  Index: pio/pionfwrite_mod.F90.in
+  Index: pio/pionfput_mod.F90
+  Index: pio/pionfput_mod.F90.in
+  Index: pio/pio_types.F90
+  Index: pio/piolib_mod.F90
+  Index: pio/piovdc.F90
+  Index: pio/iompi_mod.F90.in
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+
+
+Code reviewed by: self
+
+Summary of pre-tag testing:
+
+  Regression tests:
+                  bluefire 114 tests PASS, 0 tests FAIL
+		  yellowstone 80 tests PASS, 0 tests FAIL		  
+
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_5_5
 Originator(s): Jim Edwards
 Date: 10-15-2012
