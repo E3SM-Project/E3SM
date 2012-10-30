@@ -305,6 +305,8 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   
   real (kind=real_kind)                       :: P, Q, R(0:nc+1,0:nc+1), c_min, c_max
   
+  real (kind=real_kind)                      :: mult=1.0D13, tmpcut
+  integer (kind=8)                           :: longint
 
   call t_startf('SPELT scheme') 
   
@@ -313,6 +315,9 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
     tmp=abs(elem(ie)%corners(1)%x-elem(ie)%corners(2)%x)/nc
     dxoy=tmp / 6.0D0
     dxyi=1.0D0/(tmp*tmp)
+    tmpcut=dxyi*mult
+    longint=tmpcut
+    dxyi=longint/mult
     do k=1, nlev
       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)         
@@ -414,14 +419,14 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
           end do
           jx=nep
           flux(1) = dxoy * (fluxval(jx,jy,1) + 4.0D0 * fluxval(jx,jy+1,1) + fluxval(jx,jy+2,1))
-          fluxlowx(nc+1,j)=flux(1)-fluxlowx(nc+1,j)
+!           fluxlowx(nc+1,j)=flux(1)-fluxlowx(nc+1,j)
         end do
         do i=1,nc
           !high order flux
           jx=1+(i-1)*nipm
           jy=nep
           flux(2) = dxoy * (fluxval(jx,jy,2) + 4.0D0 * fluxval(jx+1,jy,2) + fluxval(jx+2,jy,2))  
-          fluxlowx(i,nc+1)=flux(2)-fluxlowx(i,nc+1)      
+!           fluxlowx(i,nc+1)=flux(2)-fluxlowx(i,nc+1)      
         end do
        ! Anti diffusive flux are computed for each cell!
 !        do j=1,nc
@@ -448,12 +453,24 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
          
         do j=1,nep,2
           do i=1,nep,2            
-              flux(1) = dxoy * (fluxval(i,j,1) + 4.0D0 * fluxval(i,j+1,1) + fluxval(i,j+2,1))  ! west
-              flux(2) = dxoy * (fluxval(i,j,2) + 4.0D0 * fluxval(i+1,j,2) + fluxval(i+2,j,2))  ! south
-              flux(3) = dxoy * (fluxval(i+2,j,1) + 4.0D0 * fluxval(i+2,j+1,1) + fluxval(i+2,j+2,1)) ! east
-              flux(4) = dxoy * (fluxval(i+2,j+2,2) + 4.0D0 * fluxval(i+1,j+2,2) + fluxval(i,j+2,2)) ! north
-                      
-              spelt(ie)%c(i+1,j+1,k,itr,tl%np1) = spelt(ie)%c(i+1,j+1,k,itr,tl%n0) + &
+            flux(1) = dxoy * (fluxval(i,j,1) + 4.0D0 * fluxval(i,j+1,1) + fluxval(i,j+2,1))  ! west
+            tmpcut=flux(1)*mult
+            longint=tmpcut
+            flux(1)=longint/mult
+            flux(2) = dxoy * (fluxval(i,j,2) + 4.0D0 * fluxval(i+1,j,2) + fluxval(i+2,j,2))  ! south
+            tmpcut=flux(2)*mult
+            longint=tmpcut
+            flux(2)=longint/mult
+            flux(3) = dxoy * (fluxval(i+2,j,1) + 4.0D0 * fluxval(i+2,j+1,1) + fluxval(i+2,j+2,1)) ! east
+            tmpcut=flux(3)*mult
+            longint=tmpcut
+            flux(3)=longint/mult
+            flux(4) = dxoy * (fluxval(i+2,j+2,2) + 4.0D0 * fluxval(i+1,j+2,2) + fluxval(i,j+2,2)) ! north
+            tmpcut=flux(4)*mult
+            longint=tmpcut
+            flux(4)=longint/mult
+            
+            spelt(ie)%c(i+1,j+1,k,itr,tl%np1) = spelt(ie)%c(i+1,j+1,k,itr,tl%n0) + &
                                         (flux(1) + flux(2) - flux(3) - flux(4) ) * dxyi  
                                                                                          
           end do

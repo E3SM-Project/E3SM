@@ -509,10 +509,10 @@ subroutine fvm_init2(elem,fvm,hybrid,nets,nete,tl)
   type (hybrid_t)                             :: hybrid
   integer :: ie,nets,nete
 
-  type (ghostBuffer_t)   :: ghostbuf_cv
-  integer :: i,j, kptr
-  real (kind=real_kind) :: cin(nc,nc,nlev,nets:nete)  !CE: fvm tracer
-  real (kind=real_kind) :: cout(-nc+1:nc+nc,-nc+1:nc+nc,nlev,nets:nete)  !CE: fvm tracer
+!   type (ghostBuffer_t)   :: ghostbuf_cv
+!   integer :: i,j, kptr
+!   real (kind=real_kind) :: cin(nc,nc,nlev,nets:nete)  !CE: fvm tracer
+!   real (kind=real_kind) :: cout(-nc+1:nc+nc,-nc+1:nc+nc,nlev,nets:nete)  !CE: fvm tracer
   
   call compute_ghost_corner_orientation(hybrid,elem,nets,nete)
   ! run some tests:
@@ -525,29 +525,29 @@ subroutine fvm_init2(elem,fvm,hybrid,nets,nete,tl)
   enddo
   
   
-  call initghostbufferfull(ghostbuf_cv,nlev,nc)
+!   call initghostbufferfull(ghostbuf_cv,nlev,nc)
+!   
+!   do ie=nets,nete  
+!     do i=1,nc
+!       do j=1,nc
+!       cin(i,j,:,ie)=fvm(ie)%area_sphere(i,j)
+!       cout(i,j,:,ie)=fvm(ie)%area_sphere(i,j)
+!       end do
+!     end do 
+!   end do
   
-  do ie=nets,nete  
-    do i=1,nc
-      do j=1,nc
-      cin(i,j,:,ie)=fvm(ie)%area_sphere(i,j)
-      cout(i,j,:,ie)=fvm(ie)%area_sphere(i,j)
-      end do
-    end do 
-  end do
-  
-  do ie=nets,nete
-     kptr=0
-     call ghostVpackfull(ghostbuf_cv, cin(:,:,:,ie),1,nc,nc,nlev,kptr,elem(ie)%desc)
-  end do
-
-  call ghost_exchangeVfull(hybrid,ghostbuf_cv,nc)
-
-  !call syncmp(hybrid%par)
-  do ie=nets,nete
-     kptr=0
-     call ghostVunpackfull(ghostbuf_cv, cout(:,:,:,ie), 1-nc,nc+nc,nc,nlev, kptr, elem(ie)%desc)
-  enddo
+!   do ie=nets,nete
+!      kptr=0
+!      call ghostVpackfull(ghostbuf_cv, cin(:,:,:,ie),1,nc,nc,nlev,kptr,elem(ie)%desc)
+!   end do
+! 
+!   call ghost_exchangeVfull(hybrid,ghostbuf_cv,nc)
+! 
+!   !call syncmp(hybrid%par)
+!   do ie=nets,nete
+!      kptr=0
+!      call ghostVunpackfull(ghostbuf_cv, cout(:,:,:,ie), 1-nc,nc+nc,nc,nlev, kptr, elem(ie)%desc)
+!   enddo
 
 !   do ie=nets,nete  
 !     do i=0,nc+1
@@ -560,13 +560,13 @@ subroutine fvm_init2(elem,fvm,hybrid,nets,nete,tl)
 !     end do 
 !   end do  
 !   stop
-  do ie=nets,nete  
-    do i=0,nc+1
-      do j=0,nc+1
-      fvm(ie)%area_sphere(i,j)=cout(i,j,1,ie)
-      end do
-    end do 
-  end do
+!   do ie=nets,nete  
+!     do i=0,nc+1
+!       do j=0,nc+1
+!       fvm(ie)%area_sphere(i,j)=cout(i,j,1,ie)
+!       end do
+!     end do 
+!   end do
 end subroutine fvm_init2
 
 ! first communciation of FVM tracers
@@ -631,7 +631,7 @@ subroutine fvm_mesh_dep(elem, deriv, fvm, dt, tl, klev)
   
 
 ! for the benchmark test, use more accurate departure point creation
-#if 1
+#if 0
 !CE: define new mesh for fvm fvm on an equal angular grid
 ! go from alpha,beta -> cartesian xy on cube -> lat lon on the sphere
 ! #ifdef _FVM
