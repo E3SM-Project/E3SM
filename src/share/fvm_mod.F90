@@ -189,7 +189,11 @@ subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
       !-Departure fvm Meshes, initialization done                                                               
       call compute_weights(fvm(ie),6,weights_all,weights_eul_index_all, &
              weights_lgr_index_all,k,jall)    
-       
+      
+      if (elem(ie)%GlobalId==1) then
+        write(*,*) 'jall', jall
+      endif  
+         
       ! THE FIRST TRACER IS AIRDENSITY
       tracer_air0=fvm(ie)%c(:,:,k,1,tl%n0)       
       call reconstruction(tracer_air0, fvm(ie),recons_air)

@@ -125,7 +125,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
 !-----------------------------------------------------------------------------------!    
   do ie=nets,nete
     call fvm_bsp(fvm(ie),tl)
-    fvm(ie)%elem_mass=0
+    fvm(ie)%elem_mass=0.0D0
     do j=1,nc
       do i=1,nc
         if (choosetrac==1) then   ! mass of air, code is not optimal
@@ -158,7 +158,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
 
   do ie=nets,nete
     ! for the mass value
-    global_shared_buf(ie,1)=0D0
+    global_shared_buf(ie,1)=0.0D0
     global_shared_buf(ie,1)=fvm(ie)%elem_mass
     ! for the max value on the sphere
     tmp1(ie) = MAXVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))
@@ -331,6 +331,15 @@ if ((mod(tl%nstep,262800)==0) .or. (tl%nstep==100)) then
     correct_mass=1.0D-15
   endif
 endif
+
+! if (mod(tl%nstep,10)==0) then    
+!   if (mass-massstart>0.0D0) then
+!     correct_mass=-1.0D-15
+!   else
+!     correct_mass=1.0D-15
+!   endif
+!   
+! endif
 !-----------------------------------------------------------------------------------!  
 
 #ifdef PIO_INTERP

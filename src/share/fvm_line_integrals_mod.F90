@@ -111,6 +111,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
   endif
 
   jmax_segments_cell = nhe*50
+  
   call gauss_points(ngpc,gsweights,gspts)
   tmp =0.0D0
   jall = 1
