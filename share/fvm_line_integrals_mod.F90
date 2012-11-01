@@ -1688,47 +1688,13 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
   do ja=1,jall
    jx = weights_eul_index_all(ja,1); jy = weights_eul_index_all(ja,2);
    area=fvm%area_sphere(jx,jy)
-!    if (da_cslam(jx,jy)-area>0.0D0) then
-!      correct_mass=-1.0D-15
-!    else
-!      correct_mass=1.0D-15
-!    endif    
-   weights_all(ja,1) = weights_all(ja,1)*(area/da_cslam(jx,jy)+correct_mass)!
    
-!    if (centroid_cslam(1,jx,jy)-area*fvm%spherecentroid(1,jx,jy)>0.0D0) then
-!      correct_mass=-1.0D-15
-!    else
-!      correct_mass=1.0D-15
-!    endif
-   weights_all(ja,2) = weights_all(ja,2)*(area*fvm%spherecentroid(1,jx,jy)/centroid_cslam(1,jx,jy)+correct_mass)
-   
-!    if (centroid_cslam(2,jx,jy)-area*fvm%spherecentroid(2,jx,jy)>0.0D0) then
-!      correct_mass=-1.0D-15
-!    else
-!      correct_mass=1.0D-15
-!    endif
-   weights_all(ja,3) = weights_all(ja,3)*(area*fvm%spherecentroid(2,jx,jy)/centroid_cslam(2,jx,jy)+correct_mass)
-   
-!    if (centroid_cslam(3,jx,jy)-area*fvm%spherecentroid(3,jx,jy)>0.0D0) then
-!      correct_mass=-1.0D-15
-!    else
-!      correct_mass=1.0D-15
-!    endif
-   weights_all(ja,4) = weights_all(ja,4)*(area*fvm%spherecentroid(3,jx,jy)/centroid_cslam(3,jx,jy)+correct_mass)
-   
-!    if (centroid_cslam(4,jx,jy)-area*fvm%spherecentroid(4,jx,jy)>0.0D0) then
-!      correct_mass=-1.0D-15
-!    else
-!      correct_mass=1.0D-15
-!    endif
-   weights_all(ja,5) = weights_all(ja,5)*(area*fvm%spherecentroid(4,jx,jy)/centroid_cslam(4,jx,jy)+correct_mass)
-   
-!    if (centroid_cslam(5,jx,jy)-area*fvm%spherecentroid(5,jx,jy)>0.0D0) then
-!      correct_mass=-1.0D-15
-!    else
-!      correct_mass=1.0D-15
-!    endif
-   weights_all(ja,6) = weights_all(ja,6)*(area*fvm%spherecentroid(5,jx,jy)/centroid_cslam(5,jx,jy)+correct_mass)
+   weights_all(ja,1) = weights_all(ja,1)*abs(area/da_cslam(jx,jy)+correct_mass)!
+   weights_all(ja,2) = weights_all(ja,2)*abs(area*fvm%spherecentroid(1,jx,jy)/centroid_cslam(1,jx,jy)+correct_mass)
+   weights_all(ja,3) = weights_all(ja,3)*abs(area*fvm%spherecentroid(2,jx,jy)/centroid_cslam(2,jx,jy)+correct_mass)
+   weights_all(ja,4) = weights_all(ja,4)*abs(area*fvm%spherecentroid(3,jx,jy)/centroid_cslam(3,jx,jy)+correct_mass)   
+   weights_all(ja,5) = weights_all(ja,5)*abs(area*fvm%spherecentroid(4,jx,jy)/centroid_cslam(4,jx,jy)+correct_mass)
+   weights_all(ja,6) = weights_all(ja,6)*abs(area*fvm%spherecentroid(5,jx,jy)/centroid_cslam(5,jx,jy)+correct_mass)
   end do
   
  
@@ -2657,21 +2623,21 @@ end subroutine getdep_cellboundariesxyvec
 !    if (fuzzy(abs(xseg(1) -xseg(2)),fuzzy_width)==0)then
     if (xseg(1).EQ.xseg(2))then
       weights = 0.0D0
-  !  else if (abs(yseg(1) -yseg(2))<fuzzy_width) then
-      !
-      ! line segment parallel to latitude - compute weights exactly
-      !
-  !    if (ldbg) write(*,*) "line segment parallel to latitude - compute weights exactly"
-  !    weights(1) = ((I_00(xseg(2),yseg(2))-I_00(xseg(1),yseg(1))))
-  !    if (nreconstruction>1) then
-  !      weights(2) = ((I_10(xseg(2),yseg(2))-I_10(xseg(1),yseg(1))))
-  !      weights(3) = ((I_01(xseg(2),yseg(2))-I_01(xseg(1),yseg(1))))
-  !    endif
-  !    if (nreconstruction>3) then
-  !      weights(4) = ((I_20(xseg(2),yseg(2))-I_20(xseg(1),yseg(1))))
-  !      weights(5) = ((I_02(xseg(2),yseg(2))-I_02(xseg(1),yseg(1))))
-  !      weights(6) = ((I_11(xseg(2),yseg(2))-I_11(xseg(1),yseg(1))))
-  !    endif
+!    else if (abs(yseg(1) -yseg(2))<fuzzy_width) then
+!       !
+!       ! line segment parallel to latitude - compute weights exactly
+!       !
+!   !    if (ldbg) write(*,*) "line segment parallel to latitude - compute weights exactly"
+!      weights(1) = ((I_00(xseg(2),yseg(2))-I_00(xseg(1),yseg(1))))
+!      if (nreconstruction>1) then
+!        weights(2) = ((I_10(xseg(2),yseg(2))-I_10(xseg(1),yseg(1))))
+!        weights(3) = ((I_01(xseg(2),yseg(2))-I_01(xseg(1),yseg(1))))
+!      endif
+!      if (nreconstruction>3) then
+!        weights(4) = ((I_20(xseg(2),yseg(2))-I_20(xseg(1),yseg(1))))
+!        weights(5) = ((I_02(xseg(2),yseg(2))-I_02(xseg(1),yseg(1))))
+!        weights(6) = ((I_11(xseg(2),yseg(2))-I_11(xseg(1),yseg(1))))
+!      endif
     else
       
       
