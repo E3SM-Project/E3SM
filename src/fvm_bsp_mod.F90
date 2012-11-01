@@ -191,7 +191,7 @@ subroutine fvm_bsp(fvm, tl)
   integer                              :: i,j,k,itr
   
   do k=1, nlev
-    fvm%c(:,:,k,1,tl%n0)=1.0D0    !density of the air
+    fvm%c(:,:,k,1,tl%n0)=1000000.0D0    !density of the air
     do itr=2,ntrac
       do j=1,nc
         do i=1,nc               

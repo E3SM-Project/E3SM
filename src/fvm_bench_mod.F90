@@ -252,7 +252,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
     
     call TimeLevel_update(tl,"forward")
      
-if (mod(tl%nstep,100)==0) then  
+if (mod(tl%nstep,1)==0) then  
     do ie=nets,nete
     ! prepare data for I/O
       global_shared_buf(ie,1)=0.0D0  ! for mass calculation
@@ -303,34 +303,34 @@ if (mod(tl%nstep,100)==0) then
 !   endif
 endif
 
-if ((mod(tl%nstep,262800)==0) .or. (tl%nstep==100)) then  
-  do ie=nets,nete
-  ! prepare data for I/O
-    global_shared_buf(ie,1)=0.0D0  ! for mass calculation
-    ! test mass, just for chooselev and choosetrac, it is not optimized yet
-    do j=1,nc
-      do i=1,nc   
-        if (choosetrac==1) then
-          global_shared_buf(ie,1)=global_shared_buf(ie,1)+fvm(ie)%area_sphere(i,j)*&
-                                  fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)
-        else   
-          global_shared_buf(ie,1)=global_shared_buf(ie,1)+fvm(ie)%area_sphere(i,j)*&
-               fvm(ie)%c(i,j,chooselev,1,tl%n0)*fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)
-        endif
-      end do
-    end do
-  end do
-!-----------------------------------------------------------------------------------!
-  ! for mass calculation
-  call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
-  mass=global_shared_sum(1)
-  
-  if (mass-massstart>0.0D0) then
-    correct_mass=-1.0D-15
-  else
-    correct_mass=1.0D-15
-  endif
-endif
+! if ((mod(tl%nstep,50000)==0) .or. (tl%nstep==1000)) then  
+!   do ie=nets,nete
+!   ! prepare data for I/O
+!     global_shared_buf(ie,1)=0.0D0  ! for mass calculation
+!     ! test mass, just for chooselev and choosetrac, it is not optimized yet
+!     do j=1,nc
+!       do i=1,nc   
+!         if (choosetrac==1) then
+!           global_shared_buf(ie,1)=global_shared_buf(ie,1)+fvm(ie)%area_sphere(i,j)*&
+!                                   fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)
+!         else   
+!           global_shared_buf(ie,1)=global_shared_buf(ie,1)+fvm(ie)%area_sphere(i,j)*&
+!                fvm(ie)%c(i,j,chooselev,1,tl%n0)*fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)
+!         endif
+!       end do
+!     end do
+!   end do
+! !-----------------------------------------------------------------------------------!
+!   ! for mass calculation
+!   call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
+!   mass=global_shared_sum(1)
+!   
+!   if (mass-massstart>0.0D0) then
+!     correct_mass=0.0D0 !-1.0D-18
+!   else
+!     correct_mass=1.0D-18
+!   endif
+! endif
 
 ! if (mod(tl%nstep,10)==0) then    
 !   if (mass-massstart>0.0D0) then
