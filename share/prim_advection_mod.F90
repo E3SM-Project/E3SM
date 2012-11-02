@@ -94,6 +94,31 @@ module vertremap_mod
 
 !=======================================================================================================! 
 
+!remap_calc_grids computes the vertical pressures and pressure differences for one vertical column for the reference grid
+!and for the deformed Lagrangian grid. This was pulled out of each routine since it was a repeated task.
+subroutine remap_calc_grids( hvcoord , ps , dt , eta_dot_dpdn , p_lag , p_ref , dp_lag , dp_ref )
+  implicit none
+  type(hvcoord_t)      , intent(in   ) :: hvcoord               !Derived type to hold vertical sigma grid parameters
+  real(kind=real_kind) , intent(in   ) :: ps                    !Surface pressure for this column
+  real(kind=real_kind) , intent(in   ) :: dt                    !Time step
+  real(kind=real_kind) , intent(in   ) :: eta_dot_dpdn(nlev+1)  !Looks like a vertical pressure flux to compute deformed grid spacing
+  real(kind=real_kind) , intent(  out) :: p_lag(nlev+1)         !Pressures at interfaces of the Lagrangian deformed grid
+  real(kind=real_kind) , intent(  out) :: p_ref(nlev+1)         !Pressures at interfaces of the reference grid
+  real(kind=real_kind) , intent(  out) :: dp_lag(nlev)          !Pressure differences on Lagrangian deformed grid
+  real(kind=real_kind) , intent(  out) :: dp_ref(nlev)          !Pressure differences on reference grid
+  integer :: k                                                  !Iterator
+  p_ref(1) = 0  !Both grids have a model top pressure of zero
+  p_lag(1) = 0  !Both grids have a model top pressure of zero
+  do k = 1 , nlev
+    dp_ref(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) ) * hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) * ps  !Reference pressure difference
+    dp_lag(k) = dp_ref(k) + dt * ( eta_dot_dpdn(k+1) - eta_dot_dpdn(k) )  !Lagrangian pressure difference (flux in - flux out over the time step)
+    p_ref(k+1) = p_ref(k) + dp_ref(k) !Pressure at interfaces accumulated using difference over each cell
+    p_lag(k+1) = p_lag(k) + dp_lag(k) !Pressure at interfaces accumulated using difference over each cell
+  enddo
+end subroutine remap_calc_grids
+
+!=======================================================================================================! 
+
 subroutine remap_UV_ref2lagrange(np1,dt,elem,hvcoord,ie)
 !
 !   remap, without limiters, velocity, from REFERENCE levels to Lagrangian levels
@@ -143,24 +168,17 @@ subroutine remap_UV_ref2lagrange(np1,dt,elem,hvcoord,ie)
   do ij = 1, npsq
     j = (ij-1)/np + 1
     i = ij - (j-1)*np
+    call remap_calc_grids( hvcoord , elem(ie)%state%ps_v(i,j,np1) , dt , elem(ie)%derived%eta_dot_dpdn(i,j,:) , z2cU , z1cU , dp_star , dp )
+    z1cV = z1cU
+    z2cV = z2cU
     do k=1,nlev
-      dp(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,np1)
-      dp_star(k) = dp(k) + dt*(elem(ie)%derived%eta_dot_dpdn(i,j,k+1) - elem(ie)%derived%eta_dot_dpdn(i,j,k) ) 
       Ustar(k) = elem(ie)%state%v(i,j,1,k,np1)*dp(k)
       Vstar(k) = elem(ie)%state%v(i,j,2,k,np1)*dp(k)
     enddo
     
-    z1cU(1)=0
-    z2cU(1)=0
-    z1cV(1)=0
-    z2cV(1)=0
     do k=1,nlev
       Uold(k) = Ustar(k)
-      z1cU(k+1) = z1cU(k)+dp(k)
-      z2cU(k+1) = z2cU(k)+dp_star(k)
       Vold(k) = Vstar(k)
-      z1cV(k+1) = z1cV(k)+dp(k)
-      z2cV(k+1) = z2cV(k)+dp_star(k)
     enddo
 
     if (ABS(z2cU(nlev+1)-z1cU(nlev+1)).GE.0.000001) then
@@ -383,19 +401,14 @@ subroutine remap_UV_lagrange2ref(np1,dt,elem,hvcoord,ie)
   do ij = 1, npsq
     j = (ij-1)/np + 1
     i = ij - (j-1)*np
+    call remap_calc_grids( hvcoord , elem(ie)%state%ps_v(i,j,np1) , dt ,elem(ie)%derived%eta_dot_dpdn(i,j,:) , z1c , z2c , dp_star , dp )
     do k=1,nlev
-      dp(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,np1)
-      dp_star(k) = dp(k) + dt*(elem(ie)%derived%eta_dot_dpdn(i,j,k+1) - elem(ie)%derived%eta_dot_dpdn(i,j,k) ) 
       Ustar(k) = elem(ie)%state%v(i,j,1,k,np1)*dp_star(k)
       Vstar(k) = elem(ie)%state%v(i,j,2,k,np1)*dp_star(k)
     enddo
 
-    z1c(1)=0
-    z2c(1)=0
     do k=1,nlev
       Uold(k) = Ustar(k)
-      z1c(k+1) = z1c(k)+dp_star(k)
-      z2c(k+1) = z2c(k)+dp(k)
       Vold(k) = Vstar(k)
     enddo
 
@@ -592,8 +605,8 @@ subroutine remap1(Q,ps,eta_dot_dpdn,dt,hvcoord)
   ! ========================
 
   real (kind=real_kind), dimension(nlev+1)    :: rhs,lower_diag,diag,upper_diag,q_diag,zgam,z1c,z2c,zv
-  real (kind=real_kind), dimension(nlev)      :: h,Qcol,dy,za0,za1,za2,zarg,zhdp
-  real (kind=real_kind)  :: dp_star,dp_np1,f_xm,level1,level2,level3,level4,level5, &
+  real (kind=real_kind), dimension(nlev)      :: h,Qcol,dy,za0,za1,za2,zarg,zhdp,dp_star,dp_np1
+  real (kind=real_kind)  :: f_xm,level1,level2,level3,level4,level5, &
                             peaks_min,peaks_max,tmp_cal,xm,xm_d,zv1,zv2, &
                             zero = 0,one = 1,tiny = 1e-12,qmax = 1d50
   integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, & 
@@ -609,22 +622,10 @@ subroutine remap1(Q,ps,eta_dot_dpdn,dt,hvcoord)
 #endif
   do i=1,np
     do j=1,np
-      z1c(1)=0
-      z2c(1)=0
+      call remap_calc_grids( hvcoord , ps(i,j) , dt , eta_dot_dpdn(i,j,:) , z1c , z2c , dp_star , dp_np1 )
       zv(1)=0
       do k=1,nlev
-        dp_np1 = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
-                 (hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps(i,j)
-        dp_star = dp_np1 + dt*(eta_dot_dpdn(i,j,k+1) & 
-                  -eta_dot_dpdn(i,j,k)) 
-
-        ! uncommnet to ignore the vertical motion
-        !dp_star = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
-        !     (hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(i,j,np1)
-
-        z1c(k+1) = z1c(k)+dp_star
-        z2c(k+1) = z2c(k)+dp_np1
-        Qcol(k)=Q(i,j,k)*dp_star
+        Qcol(k)=Q(i,j,k)*dp_star(k)
         zv(k+1) = zv(k)+Qcol(k)
       enddo
       
@@ -853,8 +854,8 @@ subroutine remap_Q(np1,np1_qdp, dt,elem,hvcoord,ie)
   ! ========================
 
   real (kind=real_kind), dimension(nlev+1)    :: rhs,lower_diag,diag,upper_diag,q_diag,zgam,z1c,z2c,zv
-  real (kind=real_kind), dimension(nlev)      :: h,Qcol,dy,za0,za1,za2,zarg,zhdp
-  real (kind=real_kind)  :: dp_star,dp_np1,f_xm,level1,level2,level3,level4,level5, &
+  real (kind=real_kind), dimension(nlev)      :: h,Qcol,dy,za0,za1,za2,zarg,zhdp,dp_star,dp_np1
+  real (kind=real_kind)  :: f_xm,level1,level2,level3,level4,level5, &
                             peaks_min,peaks_max,Q_vadv,tmp_cal,xm,xm_d,zv1,zv2, &
                             zero = 0,one = 1,tiny = 1e-12,qmax = 1d50
   integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, & 
@@ -871,21 +872,9 @@ subroutine remap_Q(np1,np1_qdp, dt,elem,hvcoord,ie)
   do q=1,qsize
     do i=1,np
       do j=1,np
-        z1c(1)=0
-        z2c(1)=0
+        call remap_calc_grids( hvcoord , elem(ie)%state%ps_v(i,j,np1) , dt , elem(ie)%derived%eta_dot_dpdn(i,j,:) , z1c , z2c , dp_star , dp_np1 )
         zv(1)=0
         do k=1,nlev
-          dp_np1 = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
-                   (hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(i,j,np1)
-          dp_star = dp_np1 + dt*(elem(ie)%derived%eta_dot_dpdn(i,j,k+1) & 
-                    -elem(ie)%derived%eta_dot_dpdn(i,j,k)) 
-
-          ! uncommnet to ignore the vertical motion
-          !dp_star = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
-          !     (hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(i,j,np1)
-
-          z1c(k+1) = z1c(k)+dp_star
-          z2c(k+1) = z2c(k)+dp_np1
           Qcol(k)=elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
           zv(k+1) = zv(k)+Qcol(k)
         enddo
@@ -1124,27 +1113,21 @@ subroutine remap_Q_ppm(np1,np1_qdp,dt,elem,hvcoord,ie)
   real(kind=real_kind), dimension(       nlev+1 ) :: masso  !Accumulate mass up to each interface
   real(kind=real_kind), dimension(  1-gs:nlev+gs) :: ao     !Tracer value on old grid
   real(kind=real_kind), dimension(  1-gs:nlev+gs) :: dpo    !change in pressure over a cell for old grid
+  real(kind=real_kind), dimension(  1-gs:nlev+gs) :: dpn    !change in pressure over a cell for old grid
   real(kind=real_kind), dimension(3,     nlev   ) :: coefs  !PPM coefficients within each cell
   real(kind=real_kind), dimension(       nlev   ) :: z1, z2
   real(kind=real_kind) :: ppmdx(10,0:nlev+1)  !grid spacings
-  real(kind=real_kind) :: mymass, massn1, massn2, dpn
+  real(kind=real_kind) :: mymass, massn1, massn2
   integer :: i, j, k, q, kk, kid(nlev)
 
   call t_startf('remap_Q_ppm')
   do j = 1 , np
     do i = 1 , np
       !Form old and new grids for remapping. It counts from the top of the atmosphere to the bottom. Starting with no mass at the top.
-      pio(1) = 0.
-      pin(1) = 0.
-      do k = 1 , nlev
-        dpn = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + (hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(i,j,np1)
-        dpo(k) = dpn + dt * ( elem(ie)%derived%eta_dot_dpdn(i,j,k+1) - elem(ie)%derived%eta_dot_dpdn(i,j,k) ) 
-        pio(k+1) = pio(k) + dpo(k)
-        pin(k+1) = pin(k) + dpn
-      enddo
+      call remap_calc_grids( hvcoord , elem(ie)%state%ps_v(i,j,np1) , dt , elem(ie)%derived%eta_dot_dpdn(i,j,:) , pio(1:nlev+1) , pin(1:nlev+1) , dpo(1:nlev) , dpn(1:nlev) )
       pio(nlev+2) = pio(nlev+1) + 1.  !This is here to allow an entire block of k threads to run in the remapping phase.
                                       !It makes sure there's an old interface value below the domain that is larger.
-      pin  (nlev+1) = pio  (nlev+1)   !The total mass in a column does not change. Therefore, the pressure of that mass cannot either.
+      pin(nlev+1) = pio(nlev+1)       !The total mass in a column does not change. Therefore, the pressure of that mass cannot either.
       !Fill in the ghost regions with mirrored values. if vert_remap_q_alg is defined, this is of no consequence.
       do k = 1 , gs
         dpo(1   -k) = dpo(       k)
