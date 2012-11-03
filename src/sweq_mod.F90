@@ -143,7 +143,8 @@ contains
 
     real*8  :: tot_iter
     logical, parameter :: Debug = .FALSE.
-    
+
+    logical :: fvm_check = .FALSE.
 #ifdef _FVM
   real (kind=longdouble_kind)                    :: fvm_corners(nc+1)
   real(kind=longdouble_kind)                     :: fvm_points(nc)     ! fvm cell centers on reference element
@@ -453,17 +454,22 @@ contains
           ! ==============================================
           ! Output initial picture of geopotential...
           ! ============================================== 
+#ifdef _FVM
+          fvm_check = .TRUE.
+#endif
+
+
 #ifdef PIO_INTERP
 	  call interp_movie_init(elem,hybrid,nets,nete,tl=tl)
-    call interp_movie_output(elem,tl, hybrid, pmean, deriv, nets, nete,fvm)     
+          call interp_movie_output(elem,tl, hybrid, pmean, deriv, nets, nete,fvm)     
 #else
-! #ifdef _FVM
-	  call shal_movie_init(elem,hybrid,fvm)
-    call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv,fvm)
-! #else
-!           call shal_movie_init(elem,hybrid)
-!           call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
-! #endif
+  if (fvm_check) then
+	   call shal_movie_init(elem,hybrid,fvm)
+           call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv,fvm)
+  else
+            call shal_movie_init(elem,hybrid)
+            call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
+  endif
 #endif
           call printstate(elem,pmean,g_sw_output,tl%n0,hybrid,nets,nete,-1)
 

@@ -115,7 +115,7 @@ module common_io_mod
 
   end type nf_handle
 
-  type(iosystem_desc_t), public :: PIOFS   ! just one of these needed 
+  type(iosystem_desc_t), save, public :: PIOFS   ! just one of these needed 
 
 
 contains

@@ -78,7 +78,7 @@ module interpolate_driver_mod
 
   type(nf_handle), private, target, save :: ncdf(max_output_streams)
 !  type(io_desc_t), pointer :: iodesc3d, iodesc2d, iodesc3dp1
-  type(io_desc_t) :: iodesc3d, iodesc2d, iodesc3dp1
+  type(io_desc_t) , save:: iodesc3d, iodesc2d, iodesc3dp1
 
 
 contains

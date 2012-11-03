@@ -30,7 +30,7 @@ module shal_movie_mod
   ! ---------------------
   use coordinate_systems_mod, only : cartesian2d_t, spherical_polar_t
   ! ---------------------
-  use physical_constants, only : omega, g, rearth, dd_pi, g_sw
+  use physical_constants, only : omega, g, rearth, dd_pi, g
   use derivative_mod, only : derivative_t, derivative_stag_t, vorticity
   ! ---------------------
 
@@ -234,46 +234,46 @@ contains
           call nf_put_var(ncdf(ios),latp,start(1:1), count(1:1), name='area')
 
           if (present(fvm)) then 
-          if (hybrid%par%masterproc) print *,'writing fvm coordinates ios=',ios
-          allocate(var1(nc*nc*nelemd,nlev))
-          allocate(var2(nc*nc*nelemd,nlev))
-          var1=0
-          var2=0
+             if (hybrid%par%masterproc) print *,'writing fvm coordinates ios=',ios
+             allocate(var1(nc*nc*nelemd,nlev))
+             allocate(var2(nc*nc*nelemd,nlev))
+             var1=0
+             var2=0
              
-          jj=0
-          do ie=1,nelemd
-             ii=0
-             do j=1,nc
-                do i=1,nc
-                   jj=jj+1
-                   var1(jj,1) = fvm(ie)%centersphere(i,j)%lat
-                   var2(jj,1) = fvm(ie)%centersphere(i,j)%lon
+             jj=0
+             do ie=1,nelemd
+                ii=0
+                do j=1,nc
+                   do i=1,nc
+                      jj=jj+1
+                      var1(jj,1) = fvm(ie)%centersphere(i,j)%lat
+                      var2(jj,1) = fvm(ie)%centersphere(i,j)%lon
+                   end do
                 end do
              end do
-          end do
-          
-          var1=var1*180/dd_pi
-          var2=var2*180/dd_pi
-          call nf_put_var(ncdf(ios),var1(:,1),start(1:1),count(1:1),&
-               name='phys_lat',iodescin=iodesc2d_nc)
-          call nf_put_var(ncdf(ios),var2(:,1),start(1:1),count(1:1),&
-               name='phys_lon',iodescin=iodesc2d_nc)
-          
-          jj=0
-          do ie=1,nelemd
-             ii=0
-             do j=1,nc
-                do i=1,nc
-                   jj=jj+1
-                   var1(jj,1)=fvm(ie)%area_sphere(i,j)
+             
+             var1=var1*180/dd_pi
+             var2=var2*180/dd_pi
+             call nf_put_var(ncdf(ios),var1(:,1),start(1:1),count(1:1),&
+                  name='phys_lat',iodescin=iodesc2d_nc)
+             call nf_put_var(ncdf(ios),var2(:,1),start(1:1),count(1:1),&
+                  name='phys_lon',iodescin=iodesc2d_nc)
+             
+             jj=0
+             do ie=1,nelemd
+                ii=0
+                do j=1,nc
+                   do i=1,nc
+                      jj=jj+1
+                      var1(jj,1)=fvm(ie)%area_sphere(i,j)
+                   end do
                 end do
              end do
-          end do
-          call nf_put_var(ncdf(ios),var1(:,1),start(1:1),count(1:1),&
-               name='phys_area',iodescin=iodesc2d_nc)
-          deallocate(var1)
-          deallocate(var2)
-          endif
+             call nf_put_var(ncdf(ios),var1(:,1),start(1:1),count(1:1),&
+                  name='phys_area',iodescin=iodesc2d_nc)
+             deallocate(var1)
+             deallocate(var2)
+          endif !fvm
 
           if (hybrid%par%masterproc) print *,'done.'
        end if
@@ -401,31 +401,31 @@ contains
 	  endif 
 
           if (present(fvm)) then
-          do cindex=1,min(ntrac,4)
-             write(vname,'(a1,i1)') 'C',cindex
-             if (cindex==1) vname='C'
-             if(nf_selectedvar(vname, output_varnames)) then
-                if (hybrid%par%masterproc) print *,'output: ',vname
-                  count(1:2)=-1  ! ignored by PIO
-                  start(1:2)=-1  ! ignored by PIO
-                  start(3)=nf_get_frame(ncdf(ios))
-                  count(3)=1
-                
-                do k=1,nlev
-                   jj=0
-                   do ie=1,nelemd
-                      do j=1,nc
-                         do i=1,nc
-                            jj=jj+1
-                            varphys(jj,k)= fvm(ie)%c(i,j,k,cindex,tl%n0)
+             do cindex=1,min(ntrac,4)
+                write(vname,'(a1,i1)') 'C',cindex
+                if (cindex==1) vname='C'
+                if(nf_selectedvar(vname, output_varnames)) then
+                   if (hybrid%par%masterproc) print *,'output: ',vname
+                   count(1:2)=-1  ! ignored by PIO
+                   start(1:2)=-1  ! ignored by PIO
+                   start(3)=nf_get_frame(ncdf(ios))
+                   count(3)=1
+                   
+                   do k=1,nlev
+                      jj=0
+                      do ie=1,nelemd
+                         do j=1,nc
+                            do i=1,nc
+                               jj=jj+1
+                               varphys(jj,k)= fvm(ie)%c(i,j,k,cindex,tl%n0)
+                            end do
                          end do
                       end do
                    end do
-                end do
-                
-                call nf_put_var(ncdf(ios),varphys,start, count, name=vname)
-             endif
-          enddo
+                   
+                   call nf_put_var(ncdf(ios),varphys,start, count, name=vname)
+                endif
+             enddo
           endif
 
           if(nf_selectedvar('geop', output_varnames)) then
@@ -438,7 +438,7 @@ contains
                       if(test_case(1:5).eq.'fvm') then
                          varptmp(:,:,k) = elem(ie)%state%p(:,:,k,tl%n0) 
                       else
-                         varptmp(:,:,k) = (elem(ie)%state%p(:,:,k,tl%n0) + elem(ie)%state%ps + phimean)/g_sw
+                         varptmp(:,:,k) = (elem(ie)%state%p(:,:,k,tl%n0) + elem(ie)%state%ps + phimean)/g
                       endif
                    end do
                    if (kmass.ne.-1) then

@@ -21,8 +21,8 @@ module netcdf_io_mod
   implicit none  
   private
   ! end of analysis_nl namelist variables
-  type(io_desc_t), public :: iodesc3d, iodesc2d, iodesct, iodesc2d_nc, iodesc3d_nc, iodesc3d_subelem
-  type(iosystem_desc_t),public :: pio_subsystem
+  type(io_desc_t), save, public :: iodesc3d, iodesc2d, iodesct, iodesc2d_nc, iodesc3d_nc, iodesc3d_subelem
+  type(iosystem_desc_t), save, public :: pio_subsystem
 
 
   interface nf_put_var
