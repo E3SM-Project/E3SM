@@ -152,7 +152,6 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, s2, &
   character(len=*), parameter :: subName=modName//'::box_rearrange_comp2io_{TYPE}'
 
   integer :: ndof
-  integer :: niodof
   integer :: num_tasks
   integer :: num_iotasks
 
@@ -163,7 +162,6 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, s2, &
 
 !  ndof   = size(ioDesc%dest_ioindex)
   ndof= iodesc%ndof
-  niodof = size(dest)
   num_tasks   = IOsystem%num_tasks
   num_iotasks = IOsystem%num_iotasks
 
@@ -172,7 +170,7 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, s2, &
                  'built with -D_MPISERIAL but num_tasks=', num_tasks, &
                  'num_iotasks=', num_iotasks )
 
-  if (size(src)>0 .and. size(src)< ndof) &
+  if (s1>0 .and. s1< ndof) &
     call piodie( __PIO_FILE__,__LINE__, &
                  'box_rearrange_comp2io: size(compbuf)=', size(src), &
                  ' not equal to size(compdof)=', ndof )
@@ -187,7 +185,7 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, s2, &
                      'box_rearrange_comp2io: i=', i, &
                      'dest_ioproc(i)=', ioproc )
 
-      if ( ioindex<0 .or. ioindex>=niodof ) &
+      if ( ioindex<0 .or. ioindex>=s2 ) &
         call piodie( __PIO_FILE__,__LINE__, &
                      'box_rearrange_comp2io: i=', i, &
                      'dest_ioindex(i) out of range=', int(ioindex))
@@ -201,16 +199,16 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, s2, &
 end subroutine box_rearrange_comp2io_{TYPE}
 #else /* not _MPISERIAL */
 ! TYPE real,double,int
-subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, s2, &
+subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, niodof, &
                                          dest, comm_option, fc_options)
 
   implicit none
 
   type (IOsystem_desc_t), intent(inout) :: IOsystem
   type (IO_desc_t)              :: ioDesc
-  integer, intent(in)           :: s1, s2
+  integer, intent(in)           :: s1, niodof
   {VTYPE}, intent(in)           :: src(s1)
-  {VTYPE}, intent(out)          :: dest(s2)
+  {VTYPE}, intent(out)          :: dest(niodof)
   integer, optional, intent(in) :: comm_option
   integer, optional, intent(in) :: fc_options(3)  ! 1: handshake (0/false,1/true)
                                                   ! 2: send (0) vs isend (1)
@@ -225,7 +223,6 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, s2, &
   logical :: pio_isend
   integer :: pio_maxreq
   integer :: ndof
-  integer :: niodof
   integer :: num_iotasks
   integer :: nrecvs
 
@@ -278,15 +275,14 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, s2, &
   endif
 
   ndof   = size(ioDesc%dest_ioindex)
-  niodof = size(dest)
   nrecvs = ioDesc%nrecvs             ! number of distinct senders to the ioproc
   myrank = IOsystem%union_rank
   nprocs = IOsystem%num_tasks
   num_iotasks = IOsystem%num_iotasks
 
-  if (size(src) > 0 .and. size(src)<ndof) &
+  if (s1 > 0 .and. s1<ndof) &
     call piodie( __PIO_FILE__,__LINE__, &
-                 'box_rearrange_comp2io: size(compbuf)=', size(src), &
+                 'box_rearrange_comp2io: size(compbuf)=', s1, &
                  ' not equal to size(compdof)=', ndof)
 
   if (IOsystem%IOproc) then
@@ -309,11 +305,9 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, s2, &
       a2a_displs(i) = 0
 
       a2a_sendcounts(i) = 0
-      a2a_recvcounts(i) = 0
-
       a2a_sendtypes(i)  = MPI_INTEGER
+      a2a_recvcounts(i) = 0
       a2a_recvtypes(i)  = MPI_INTEGER
-
     end do
 
     if (IOsystem%IOproc) then
@@ -984,7 +978,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     integer :: ierror
     integer :: i
 
-    integer(kind=pio_offset) :: niodof
+    integer :: niodof
     integer :: pio_offset_kind                        ! kind of pio_offset
 
 !!!!!!
@@ -1093,7 +1087,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     end do
 
     call compute_counts(Iosystem, ioDesc, niodof)
-    print *,iodesc%count(1:ndim),niodof
+
 #ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
@@ -1129,7 +1123,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     type (IO_desc_t),intent(inout) :: ioDesc
 
 
-    integer(kind=pio_offset), intent(in) :: niodof
+    integer, intent(in) :: niodof
 
     ! local vars
     integer :: ndof
@@ -1400,7 +1394,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
        !  recv_displs(num_tasks) is 0 for non-'rfrom', is sum_i recv_counts for 'rfrom'
 
        rbuf_size = niodof
-       allocate(rindex(niodof))
+       call alloc_check(rindex, niodof, 'rindex buffer')
        rindex = 0
 
        recv_counts = 0
@@ -1479,7 +1473,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
           blocksize = gcd(bsizeT(1:ii-1))
           !       print *,'gcd: receive block lengths: ', bsizeT(1:ii-1)
           deallocate(bsizeT)
-
+          !       print *,'GCD calculated for receive loop blocksize: ',blocksize
 #ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
@@ -1491,8 +1485,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
           call CheckMPIReturn(subName,ierror)
           call MPI_TYPE_COMMIT(newTYPEr,ierror)
           call CheckMPIReturn(subName,ierror)
-!          print *,'GCD calculated for receive loop blocksize: ',blocksize
-#ifdef MEMCHK
+#ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
@@ -1549,6 +1542,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 #endif              
              call MPI_TYPE_COMMIT(rtype(i), ierror)
              call CheckMPIReturn(subName,ierror)
+             
              deallocate(displace)
              pos = pos + rcount(i)
           end do
@@ -1581,7 +1575,6 @@ end subroutine box_rearrange_io2comp_{TYPE}
        endif
     enddo
     blocksize = gcd(bsizeT(1:ii-1))
-
     deallocate(bsizeT)
 !    print *,'GCD calculated for send loop blocksize: ',blocksize
     call MPI_TYPE_CONTIGUOUS(blocksize,ioDesc%baseTYPE,newTYPEs,ierror)
@@ -1589,7 +1582,6 @@ end subroutine box_rearrange_io2comp_{TYPE}
     call MPI_TYPE_COMMIT(newTYPEs,ierror)
     call CheckMPIReturn(subName,ierror)
 
-!    print *,'GCD calculated for send loop blocksize: ',blocksize,newtypes
 #ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
@@ -1625,6 +1617,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
           
           call MPI_TYPE_COMMIT(stype(i), ierror)
           call CheckMPIReturn(subName,ierror)
+ 
           deallocate(displace)
           pos = pos + scount(i)
        endif
