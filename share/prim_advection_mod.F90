@@ -599,7 +599,7 @@ subroutine remap1(Q,ps,eta_dot_dpdn,dt,hvcoord)
   real (kind=real_kind), intent(in   ) :: dt
   type (hvcoord_t),      intent(in   ) :: hvcoord
   real (kind=real_kind), intent(inout) :: Q(np,np,nlev)
-  real (kind=real_kind), intent(in   ) :: ps(np,np),eta_dot_dpdn(np,np,nlev)
+  real (kind=real_kind), intent(in   ) :: ps(np,np),eta_dot_dpdn(np,np,nlevp)
   ! ========================
   ! Local Variables
   ! ========================
