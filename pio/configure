@@ -5459,7 +5459,9 @@ $as_echo "" >&6; }
 $as_echo_n "checking for nf90_inq_grps... " >&6; }
             cat > conftest.$ac_ext <<_ACEOF
       program main
-use netcdf;i=nf90_inq_grps(id1,id2,id3)
+use netcdf;
+	                                           integer :: id1,id2,id3(1);
+                                                   i=nf90_inq_grps(id1,id2,id3)
       end
 _ACEOF
 if ac_fn_fc_try_compile "$LINENO"; then :
@@ -5470,6 +5472,7 @@ else
 $as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
 
         fi
         if test x"$acx_netcdf4_ok" = xyes; then
@@ -5519,10 +5522,6 @@ ac_compiler_gnu=$ac_cv_fc_compiler_gnu
                             check the environment variable NETCDF_PATH" "$LINENO" 5
        fi
 
-       if test ! -f $NETCDF_PATH/lib/libnetcdf.a
-         then as_fn_error $? "libnetcdf.a not found in NETCDF_PATH/lib \
-                            check the environment variable NETCDF_PATH " "$LINENO" 5
-       fi
   else
        CPPDEFS="$CPPDEFS -D_NONETCDF"
        USE_NETCDF4="no"

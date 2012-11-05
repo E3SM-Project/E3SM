@@ -179,8 +179,11 @@ NcError err_handler;
            [Fortran 77],[AC_CHECK_FUNC(nf_inq_grps,[acx_netcdf4_ok=yes;AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])]) ],
            [Fortran],[
             AC_MSG_CHECKING([for nf90_inq_grps])
-            AC_COMPILE_IFELSE([AC_LANG_PROGRAM([],[use netcdf;i=nf90_inq_grps(id1,id2,id3)])],[acx_netcdf4_ok=yes; AC_MSG_RESULT([yes])],
-                                                                 [acx_netcdf4_ok=no; AC_MSG_RESULT([no])])
+            AC_COMPILE_IFELSE([AC_LANG_PROGRAM([],[use netcdf;
+	                                           integer :: id1,id2,id3(1);
+                                                   i=nf90_inq_grps(id1,id2,id3)])],
+                  [acx_netcdf4_ok=yes; AC_MSG_RESULT([yes])],[acx_netcdf4_ok=no; AC_MSG_RESULT([no])])
+
            ])
         fi
         if test x"$acx_netcdf4_ok" = xyes; then

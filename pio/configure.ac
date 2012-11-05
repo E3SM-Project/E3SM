@@ -396,10 +396,6 @@ if test "$USE_NETCDF" = "yes"
                             check the environment variable NETCDF_PATH])
        fi
 
-       if test ! -f $NETCDF_PATH/lib/libnetcdf.a
-         then AC_MSG_ERROR( [libnetcdf.a not found in NETCDF_PATH/lib \
-                            check the environment variable NETCDF_PATH ])
-       fi
   else
        CPPDEFS="$CPPDEFS -D_NONETCDF"
        USE_NETCDF4="no"
