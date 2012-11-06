@@ -7,11 +7,9 @@ SET(SRC_SHARE   ${SRC_BASE}/share)
 SET(SRC_UTILS   ${SRC_BASE}/../utils/csm_share)
 
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
-                    ${CMAKE_CURRENT_BINARY_DIR}/share
                     ${PIO_INCLUDE_DIRS}
-                    ${TIMING_INCLUDE_DIRS})
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}
-                    ${CMAKE_CURRENT_SOURCE_DIR}/share)
+                    ${TIMING_INCLUDE_DIRS}
+                    ${CMAKE_CURRENT_SOURCE_DIR})
 
 CONFIGURE_FILE(config.h.cmake.in config.h)
 ADD_DEFINITIONS(-DHAVE_CONFIG_H)

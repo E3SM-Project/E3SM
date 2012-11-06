@@ -12,6 +12,7 @@ FortranCInterface_HEADER(cmake_fortran_c_interface.h
 ADD_DEFINITIONS(-DINCLUDE_CMAKE_FCI)
 
 OPTION(BUILD_HOMME_SWEQX ""   ON)
+OPTION(BUILD_HOMME_PREQX ""   ON)
 OPTION(BUILD_HOMME_SWIM  ""  OFF)
 
 SET(NUM_POINTS_default   4  CACHE   STRING    "Default number of POINTS (NP) in the element (default value is 4)")
@@ -63,6 +64,10 @@ ADD_SUBDIRECTORY(utils/timing)
 if(BUILD_HOMME_SWEQX)
   MESSAGE(STATUS "Building sweqx...")
   ADD_SUBDIRECTORY(src/sweqx)
+endif()
+if(BUILD_HOMME_PREQX)
+  MESSAGE(STATUS "Building preqx...")
+  ADD_SUBDIRECTORY(src/preqx)
 endif()
 if(BUILD_HOMME_SWIM)
   MESSAGE(STATUS "Building swim...")
