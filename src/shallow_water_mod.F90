@@ -32,9 +32,9 @@ module shallow_water_mod
   ! ------------------------
   use parallel_mod, only : parallel_t
   ! ------------------------
-!#ifdef _REFSOLN
+#ifdef _REFSOLN
   use ref_state_mod, only : ref_state_read, ref_state_write
-!#endif
+#endif
   ! ------------------------
   use common_io_mod, only: output_prefix     ! Added to support output_prefix 
   ! ------------------------
@@ -1780,7 +1780,7 @@ contains
 
 #ifdef _REFSOLN
 #if (! defined ELEMENT_OPENMP)
-!    !$OMP BARRIER
+    !$OMP BARRIER
 #endif
 !  Parallel version of ref_state, comment out if writing above
     call ref_state_read(pt(:,:,nets:nete),vt(:,:,:,nets:nete),fstub,simday,nets,nete,par)
@@ -3971,28 +3971,28 @@ contains
     ! write in the reference state for this simulated day...
     ! ======================================================
 
-!#ifdef _REFSOLN
+#ifdef _REFSOLN
 !  Parallel version of ref_state, comment out if reading below
 !    call ref_state_write(p(:,:,nets:nete),v(:,:,:,nets:nete),fstub,simday,nets,nete,par)
 !    do ie=nets,nete
 !       pt(:,:,ie)=p(:,:,ie)
 !       vt(:,:,:,ie)=v(:,:,:,ie)
 !    end do
-!#endif
+#endif
 
     ! ======================================================
     ! read in the reference state for this simulated day...
     ! ======================================================
 
-!#ifdef _REFSOLN
-!#if (! defined ELEMENT_OPENMP)
-!    !$OMP BARRIER
-!#endif
-!  Parallel version of ref_state, comment out if writing above
-    call ref_state_read(pt(:,:,nets:nete),vt(:,:,:,nets:nete),fstub,simday,nets,nete,par)
-!#if (! defined ELEMENT_OPENMP)
+#ifdef _REFSOLN
+#if (! defined ELEMENT_OPENMP)
     !$OMP BARRIER
-!#endif
+#endif
+!  Parallel version of ref_state, comment out if writing above
+   call ref_state_read(pt(:,:,nets:nete),vt(:,:,:,nets:nete),fstub,simday,nets,nete,par)
+#if (! defined ELEMENT_OPENMP)
+   !$OMP BARRIER
+#endif
 
     npts=np
 
@@ -4011,7 +4011,7 @@ contains
 #if (! defined ELEMENT_OPENMP)
     !$OMP BARRIER
 #endif
-!#endif
+#endif
 
 30  format(f11.6,4x,e13.6)
 

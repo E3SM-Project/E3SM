@@ -30,6 +30,10 @@ module dg_tests_mod
   ! ------------------------
   use hybrid_mod, only : hybrid_t
   ! ------------------------
+#ifdef _REFSOLN
+  use ref_state_mod, only : ref_state_read, ref_state_write
+#endif
+  ! ------------------------
   use common_io_mod, only :output_prefix     ! Added to support output_prefix 
   ! ------------------------
 !=======================================================================================================! 

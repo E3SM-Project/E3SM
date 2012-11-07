@@ -4,7 +4,7 @@
 
 
 module ref_state_mod
-!#ifdef _REFSOLN
+#ifdef _REFSOLN
   ! ------------------
   use kinds, only : real_kind
   ! ------------------
@@ -220,6 +220,6 @@ contains
      call jrclose_direct(handle)
 
   end subroutine ref_state_read_jr
-!#endif
+#endif
 end module ref_state_mod
 
