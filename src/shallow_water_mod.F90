@@ -86,7 +86,7 @@ module shallow_water_mod
   real (kind=real_kind), parameter, private :: gh0_tc6  = g*h0_tc6
   real (kind=real_kind), parameter, private :: omega_rh = 7.848D-6
   real (kind=real_kind), parameter, private :: K_rh     = omega_rh
-  real (kind=real_kind), parameter, private :: R_rh     = 4 
+  real (kind=real_kind), private :: R_rh     = 4 
 
   ! ============================================
   ! Shallow Water Test Case Parameters 
@@ -542,6 +542,11 @@ contains
     ! gh0_tc6  = g*h0_tc6   h0_tc6=8d3
     pmean = gh0_tc6
     if (sub_case > 1 ) pmean = g*h0_tc6*sub_case 
+    if (sub_case < 0 ) then  
+       R_rh = 32
+       pmean = g*h0_tc6*abs(sub_case)
+    end if
+
   end function tc6_init_pmean
   ! ===========================================
   ! tc8_init_pmean
@@ -1120,14 +1125,14 @@ contains
        linf = linf_snorm(p(:,:,nets:nete),pt(:,:,nets:nete),hybrid,np,nets,nete)
        
        if (k==1) then
-       if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
+       if (hybrid%masterthread) then
           write(iounit+0,30)time_tmp/secpday,l1
           write(iounit+1,30)time_tmp/secpday,l2
           write(iounit+2,30)time_tmp/secpday,linf
        end if
        end if
 
-       if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
+       if (hybrid%masterthread) then
           write(*,'(a,i2,f6.2,a,3e15.7)') 'k=',k,time_tmp/secpday,' days  l1,l2,linf=',&
                l1,l2,linf
        end if
