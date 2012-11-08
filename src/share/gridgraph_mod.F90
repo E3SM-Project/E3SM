@@ -573,7 +573,7 @@ contains
                 'S',9x,'N',9x,'SW',9x,'SE',9x,'NW',9x,'NE')
   99 format(10x,I3,8x,I4,2x,8(1x,I4,1x,'(',I2,')'))
   991  format(10x,I3,8x,I4,8x,I4,2x,30(1x,I4,1x,'(',I2,I2')'))
-  992 format((30x,'nbrs_cnt:', 2x,8(1x,I4)))
+  992 format(30x,'nbrs_cnt:', 2x,8(1x,I4))
 
   end subroutine PrintGridVertex
 
