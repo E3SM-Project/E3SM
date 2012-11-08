@@ -880,6 +880,7 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
   real (kind=real_kind)                    :: refnc(1:nc+1), dxcell, tmp
 
   integer                                  :: i, face_nodep      
+  integer                                  :: tmp_i 
 
   tmp=nc
   do i=1,nc+1
@@ -932,7 +933,7 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
   endif
   
 #ifndef MESH
-  if(number==elem%vertex%nbrs(1)%n) then  !west
+  if(number==elem%vertex%nbrs(1)) then  !west
     if ((elem%FaceNum<=4) .or. (face_nodep==elem%FaceNum)) then
       icell=icell-nc
     elseif (elem%FaceNum==5) then
@@ -952,7 +953,7 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
     endif
   end if   
          
-  if(number==elem%vertex%nbrs(2)%n) then   !east
+  if(number==elem%vertex%nbrs(2)) then   !east
     if ((elem%FaceNum<=4).or. (face_nodep==elem%FaceNum)) then
       icell=icell+nc
     elseif (elem%FaceNum==5) then
@@ -972,7 +973,7 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
     endif
   end if   
          
-  if(number==elem%vertex%nbrs(3)%n) then   !south
+  if(number==elem%vertex%nbrs(3)) then   !south
     if ((elem%FaceNum==1) .OR. (elem%FaceNum==6) .or. (face_nodep==elem%FaceNum)) then
       jcell=jcell-nc
     elseif (elem%FaceNum==2) then
@@ -997,7 +998,7 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
     endif
   end if   
          
-  if(number==elem%vertex%nbrs(4)%n) then   !north
+  if(number==elem%vertex%nbrs(4)) then   !north
     if ((elem%FaceNum==1) .OR. (elem%FaceNum==5) .or. (face_nodep==elem%FaceNum)) then
       jcell=nc+jcell
     elseif (elem%FaceNum==2) then
@@ -1022,7 +1023,7 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
     endif
   end if   
   ! cases southwest, southeast, northwest, northeast on a cube corner do not exist
-  if(number==elem%vertex%nbrs(5)%n) then   !southwest
+  if(number==elem%vertex%nbrs(5)) then   !southwest
     if ((face_nodep==elem%FaceNum) .or. (elem%FaceNum==1)) then
       icell=icell-nc
       jcell=jcell-nc
@@ -1089,7 +1090,7 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
     endif
   endif   
        
-  if(number==elem%vertex%nbrs(6)%n) then   !southeast
+  if(number==elem%vertex%nbrs(6)) then   !southeast
     if ((elem%FaceNum==1) .or. (face_nodep==elem%FaceNum)) then
       icell=nc+icell
       jcell=jcell-nc
@@ -1156,7 +1157,7 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
     endif
   endif   
 
-  if(number==elem%vertex%nbrs(7)%n) then   !northwest
+  if(number==elem%vertex%nbrs(7)) then   !northwest
     if ((elem%FaceNum==1) .or. (face_nodep==elem%FaceNum)) then
       icell=icell-nc
       jcell=nc+jcell
@@ -1223,7 +1224,7 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
     endif
   end if   
        
-  if(number==elem%vertex%nbrs(8)%n) then   !northeast
+  if(number==elem%vertex%nbrs(8)) then   !northeast
     if ((elem%FaceNum==1) .or. (face_nodep==elem%FaceNum)) then
       icell=nc+icell
       jcell=nc+jcell
@@ -1292,13 +1293,24 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
 #endif      
   if ((icell<0) .or.(icell>nc+1) .or. (jcell<0) .or. (jcell>nc+1)) then
     write(*,*) '2 Something is wrong in search!'
-    write(*,*) number, elem%vertex%nbrs(1)%n, elem%vertex%nbrs(2)%n, elem%vertex%nbrs(3)%n, elem%vertex%nbrs(4)%n, elem%vertex%nbrs(5)%n, elem%vertex%nbrs(6)%n, elem%vertex%nbrs(7)%n, elem%vertex%nbrs(8)%n
+#ifdef MESH
+    tmp_i = elem%vertex%nbrs_ptr(9) - 1
+#else
+    tmp_i = 8
+#endif
+    write(*,*) number, elem%vertex%nbrs(1:tmp_i)
     write(*,*) icell, jcell, elem%GlobalId, elem%FaceNum, face_nodep
     stop
   endif
   if ((dref%x<-1.0D-12) .or.(dref%y<-1.0D-12) .or.(dref%x>dxcell+1.0D-12) .or. (dref%y>dxcell+1.0D-12) ) then
     write(*,*) '3 Something is wrong in search!'
-    write(*,*) number, elem%vertex%nbrs(1)%n, elem%vertex%nbrs(2)%n, elem%vertex%nbrs(3)%n, elem%vertex%nbrs(4)%n, elem%vertex%nbrs(5)%n, elem%vertex%nbrs(6)%n, elem%vertex%nbrs(7)%n, elem%vertex%nbrs(8)%n
+#ifdef MESH
+    tmp_i = elem%vertex%nbrs_ptr(9) - 1
+#else
+    tmp_i = 8
+#endif
+
+    write(*,*) number, elem%vertex%nbrs(1:tmp_i)
     write(*,*) dref
     stop
   endif

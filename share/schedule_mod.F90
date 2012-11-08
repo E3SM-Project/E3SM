@@ -981,28 +981,28 @@ contains
     type (Schedule_t),intent(inout)          :: Schedule
     type (Cycle_t),intent(inout)             :: Cycle
     type (MetaEdge_t),intent(in),target      :: Edge
-    integer                                  :: i,il,face
+    integer                                  :: i,il,face, loc, dir
 
 
-    !  allocate and initalize the index into the buffer slots 
-    !JMD    allocate(Cycle%sEdgeIndex(Edge%nmembers))
-    !JMD    allocate(Cycle%rEdgeIndex(Edge%nmembers))
 #ifndef _PREDICT
     do i=1,Edge%nmembers
        !   Setup send index
        il                     = Global2Local(Edge%members(i)%tail%number)
        face                   = Edge%members(i)%tail_face
-       if (face.ge.5) then
-           face = face + (face-5)*(max_corner_elem-1)+(Edge%members(i)%tail_ind-1)
-        end if
+       !need to convert the location of corner elements for getmap and putmap
+       if (face.ge.5) then ! if a corner element
+          dir = Edge%members(i)%tail_dir
+          loc = MOD(dir,max_corner_elem) !this is the location within that direction
+          dir = (dir - loc)/max_corner_elem !this is the direction (1-8)
+          loc = dir + (dir-5)*(max_corner_elem-1)+loc
+       else
+          loc = face
+       end if
 
        if(il .gt. 0) then 
-!          print*, "i = ", i, "face = ", face
-!          print*, "putmapV = ", elem(il)%desc%putmapV(face)
-!          print*, '-------------'
-          elem(il)%desc%putmapP(face) = Edge%edgeptrP(i) + Cycle%ptrP - 1  ! offset, so start at 0
-          elem(il)%desc%putmapP_ghost(face) = Edge%edgeptrP_ghost(i) + Cycle%ptrP_ghost  ! index, start at 1
-          elem(il)%desc%reverse(face) = Edge%members(i)%reverse
+          elem(il)%desc%putmapP(loc) = Edge%edgeptrP(i) + Cycle%ptrP - 1  ! offset, so start at 0
+          elem(il)%desc%putmapP_ghost(loc) = Edge%edgeptrP_ghost(i) + Cycle%ptrP_ghost  ! index, start at 1
+          elem(il)%desc%reverse(loc) = Edge%members(i)%reverse
        endif
 
 
@@ -1010,18 +1010,23 @@ contains
        !   Setup receive index
        il                     = Global2Local(Edge%members(i)%head%number)
        face                   = Edge%members(i)%head_face
-       if (face.ge.5) then
-          face = face + (face-5)*(max_corner_elem-1)+(Edge%members(i)%head_ind-1)
-          if(face>max_neigh_edges) then
-             print *,__FILE__,__LINE__,iam,face,i,max_corner_elem,edge%members(i)%head_ind
+       !need to convert the location of corner elements for getmap and putmap
+       if (face.ge.5) then !its a corner
+          dir = Edge%members(i)%head_dir
+          loc = MOD(dir,max_corner_elem) !this is the location within that direction
+          dir = (dir - loc)/max_corner_elem !this is the direction (1-8)
+          loc = dir + (dir-5)*(max_corner_elem-1)+loc
+          if(loc>max_neigh_edges) then
+             print *,__FILE__,__LINE__,iam,face,i,max_corner_elem,edge%members(i)%head_face
              call abortmp('Face value out of bounds')
           end if
+       else
+          loc = face
        end if
-       
 
        if(il .gt. 0) then 
-          elem(il)%desc%getmapP(face) = Edge%edgeptrP(i) + Cycle%ptrP - 1
-          elem(il)%desc%getmapP_ghost(face) = Edge%edgeptrP_ghost(i) + Cycle%ptrP_ghost 
+          elem(il)%desc%getmapP(loc) = Edge%edgeptrP(i) + Cycle%ptrP - 1
+          elem(il)%desc%getmapP_ghost(loc) = Edge%edgeptrP_ghost(i) + Cycle%ptrP_ghost 
        endif
 
 

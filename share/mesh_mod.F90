@@ -86,7 +86,9 @@ module mesh_mod
 
 contains
 
-
+!======================================================================
+!  subroutine handle_error
+!======================================================================
   subroutine handle_error (status, file, line)
     use parallel_mod, only : abortmp
     implicit none
@@ -97,10 +99,13 @@ contains
     call abortmp("Terminating program due to netcdf error while obtaining mesh information, please see message in standard output.")
   end subroutine handle_error
   
-
-  !> Open the netcdf file containing the mesh.
-  !! Assign the holder to the file to p_ncid so everyone else knows
-  !! how to use it without passing the argument around.
+!======================================================================
+!  open_mesh_file() 
+!
+!> Open the netcdf file containing the mesh.
+!! Assign the holder to the file to p_ncid so everyone else knows
+!! how to use it without passing the argument around.
+!======================================================================
   subroutine open_mesh_file() 
     implicit none
     integer                        :: status
@@ -111,7 +116,11 @@ contains
     MeshUseMeshFile = .true. 
 
   end subroutine open_mesh_file
-  
+
+!======================================================================
+! subroutine close_mesh_file() 
+!======================================================================
+   
   subroutine close_mesh_file() 
     implicit none
     integer              :: status
@@ -120,7 +129,11 @@ contains
     if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
     
   end subroutine close_mesh_file
-  
+ 
+!======================================================================
+! function get_number_of_dimensions()
+!======================================================================
+
   function get_number_of_dimensions() result(number_dimensions)
     implicit none
     integer              :: number_dimensions
@@ -138,6 +151,10 @@ contains
 
   end function get_number_of_dimensions
 
+!======================================================================
+! function get_number_of_elements()
+!======================================================================
+
   function get_number_of_elements() result(number_elements)
     implicit none
     integer              :: number_elements 
@@ -154,6 +171,9 @@ contains
 
   end function get_number_of_elements
 
+!======================================================================
+!  function get_number_of_nodes()
+!======================================================================
   function get_number_of_nodes() result(number_nodes)
     implicit none
     integer              :: number_nodes
@@ -170,6 +190,10 @@ contains
 
   end function get_number_of_nodes
 
+
+!======================================================================
+!  function get_number_of_element_blocks()
+!======================================================================
   function get_number_of_element_blocks() result(number_element_blocks)
     use parallel_mod, only : abortmp
     implicit none
@@ -195,6 +219,9 @@ contains
 
   end function get_number_of_element_blocks
 
+!======================================================================
+!  function get_number_of_elements_per_face()
+!======================================================================
     function get_number_of_elements_per_face() result(number_elements_per_face)
     use parallel_mod, only : abortmp
     implicit none
@@ -231,7 +258,9 @@ contains
 
   end function get_number_of_elements_per_face
 
-  ! This function is used to set the value of p_elem_block_ids  but such variable is never used
+!======================================================================
+! This function is used to set the value of p_elem_block_ids  but such variable is never used
+!======================================================================
   function get_block_ids(idexo) result(block_ids)
     use parallel_mod, only : abortmp
     implicit none
@@ -239,6 +268,11 @@ contains
     integer(kind=long_kind)              :: block_ids(p_number_blocks)
   end function get_block_ids
 
+
+
+!======================================================================
+! subroutine get_face_connectivity
+!======================================================================
   subroutine get_face_connectivity() 
     use parallel_mod, only : abortmp
     implicit none
@@ -251,6 +285,9 @@ contains
     if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
   end subroutine get_face_connectivity
 
+!======================================================================
+! subroutine get_node_multiplicity
+!======================================================================
   subroutine get_node_multiplicity(node_multiplicity) 
     use parallel_mod, only : abortmp
     use dimensions_mod, only : max_elements_attached_to_node
@@ -283,6 +320,9 @@ contains
 
   end subroutine get_node_multiplicity
 
+!======================================================================
+!  subroutine get_node_coordinates ()
+!======================================================================
   subroutine get_node_coordinates ()
     use coordinate_systems_mod, only : cartesian3D_t
     use parallel_mod, only : abortmp
@@ -302,6 +342,9 @@ contains
   !
   ! ================================================================================
 
+!======================================================================
+! subroutine get_2D_sub_coordinate_indexes
+!======================================================================
   subroutine get_2D_sub_coordinate_indexes(x, y, sgnx, sgny, face_no) 
      implicit none
     integer, intent(in)              :: face_no
@@ -329,27 +372,33 @@ contains
     endif
   end subroutine get_2D_sub_coordinate_indexes
 
+!======================================================================
+!  function find_side_neighbor_information
+!
+!   return the element number and direction of the side neighbor (n,s,e,w)
+!   that shares side specified in nodes
+!======================================================================
   function find_side_neighbor_information(me, nodes, nel, element_nodes, direction) result(neighbor)
     use parallel_mod, only : abortmp
-    integer, intent(in)       :: me 
-    integer, intent(in)       :: nodes(2)
-    integer, intent(in)       :: nel
+    integer, intent(in)       :: me !my element
+    integer, intent(in)       :: nodes(2) !nodes defining one of the sides
+    integer, intent(in)       :: nel !number of elements
     integer, intent(out)      :: direction
     integer, intent(in)       :: element_nodes(nel, 4) 
     integer                   :: i,j
     integer                   :: neighbor
     integer                   :: side_nodes(2)
     neighbor = 0
-    do i=1,nel
+    do i=1,nel !loop through ALL elements
        if (i /= me) then
-          do j=1,4
+          do j=1,4 !loop through each elements four sides
              side_nodes(1) = element_nodes(i,j)
              side_nodes(2) = element_nodes(i,mod(j,4)+1)
              if ( (side_nodes(1) == nodes(2) .and. side_nodes(2) == nodes(1)) .or. &
                   (side_nodes(1) == nodes(1) .and. side_nodes(2) == nodes(2)) ) then
                 neighbor = i
                 direction = j
-                return
+                return  !found a match - we can return
              end if
           end do
        end if
@@ -357,6 +406,9 @@ contains
     if (neighbor == 0) call abortmp('find_side_neighbor_information: Neighbor not found! Every side should have a neighbor.') 
   end function find_side_neighbor_information
   
+!======================================================================
+! function find_nodal_neighbors
+!======================================================================
  
   function find_nodal_neighbors(node, element_nodes, elements) result(multiplicity)
     use parallel_mod, only : abortmp
@@ -372,20 +424,27 @@ contains
     integer                :: i,j
 
     multiplicity = 0
-    do i=1,p_number_elements
-       do j=1,4
+    do i=1,p_number_elements  !loop through all elements
+       do j=1,4  !loop through each node
           if ( element_nodes(i,j) == node ) then
              multiplicity = multiplicity + 1
-             elements(multiplicity) = i
+             elements(multiplicity) = i !keep track of matches
           end if
        end do
     end do
     if (multiplicity < 3 .or. max_elements_attached_to_node < multiplicity) then
       call abortmp('find_nodal_neighbors: Number of elements attached to node less than 3 or greater than maximum.')
+      !at least 3 elements attached to each node - no more than 7 for mesh (in dimensions_mod)
     endif
     
   end function find_nodal_neighbors
-  
+
+!======================================================================
+! subroutine mesh_connectivity(connect)
+!
+! puts the transpose of p_connectivity into connect
+!======================================================================
+
   subroutine  mesh_connectivity (connect) 
     use parallel_mod, only : abortmp
     implicit none
@@ -408,58 +467,72 @@ contains
 
   end subroutine mesh_connectivity 
 
-
-  subroutine find_side_neighbors (GridVertex, normal_to_homme_ordering, element_nodes)
+!======================================================================
+! subroutine find_side_neighbors()
+!
+! find the element neighbors to the n,s,e,w and put them in GridVertex_t
+!  (only 1 neighbor to the n,s,e,w
+!======================================================================
+  subroutine find_side_neighbors (GridVertex, normal_to_homme_ordering, element_nodes, edge_wgt)
     use coordinate_systems_mod, only : cartesian3D_t
     use gridgraph_mod, only   : GridVertex_t
     use parallel_mod, only : abortmp
     implicit none
     integer             ,  intent(in)    :: normal_to_homme_ordering(8)
     integer             ,  intent(in)    :: element_nodes(p_number_elements, 4)
+    integer             ,  intent(in)    :: edge_wgt
     type (GridVertex_t) ,  intent(inout) :: GridVertex(:)
     
     integer                              :: side_nodes(2)
-    integer                              :: neighbor, direction
-    integer                              :: j,k,l
-    
+    integer                              :: neighbor, direction, init_size
+    integer                              :: j,k,ll
+    integer                              :: loc
+
     if (0 == p_number_blocks)  call abortmp('find_side_neighbors called before MeshOpen')
+
     
-    do k=1, p_number_elements  
-       do l=1,4
-          ALLOCATE(GridVertex(k)%nbrs(l)%n(1))
-          ALLOCATE(GridVertex(k)%nbrs(l)%f(1))
-          GridVertex(k)%nbrs(l)%n(1) = 0
-       end do
-    end do
-    
-    do k=1,p_number_elements
-       do l=1,4
-          j = normal_to_homme_ordering(l)
-          if (GridVertex(k)%nbrs(j)%n(1) == 0) then
-             side_nodes(1) = element_nodes(k,l)
-             side_nodes(2) = element_nodes(k,mod(l,4)+1)
+    do k=1,p_number_elements  ! for each element
+
+       !set the side weights
+       GridVertex(k)%nbrs_wgt(1:4) = edge_wgt
+
+       do ll=1,4 !loop through the four sides
+
+          j = normal_to_homme_ordering(ll)
+          loc = GridVertex(k)%nbrs_ptr(j)
+
+          if (GridVertex(k)%nbrs(loc) == 0) then  !if not set yet, then
+
+             side_nodes(1) = element_nodes(k, ll)
+             side_nodes(2) = element_nodes(k, mod(ll,4)+1)
              neighbor = find_side_neighbor_information(k, side_nodes,     &
                   p_number_elements, &
                   element_nodes,     &
                   direction)
-             j = normal_to_homme_ordering(l)
-             GridVertex(k)%nbrs(j)%n(1)        = neighbor         
+
+             GridVertex(k)%nbrs(loc) = neighbor         
              
              j = normal_to_homme_ordering(direction)
-             GridVertex(neighbor)%nbrs(j)%n(1) = k         
+             loc = GridVertex(neighbor)%nbrs_ptr(j)
+             GridVertex(neighbor)%nbrs(loc)= k         
+
           endif
        enddo
     enddo
     
     do k=1,p_number_elements
-       do l=1,4
-          if ( 0 == GridVertex(k)%nbrs(l)%n(1)) then
+       do ll=1,4
+          if ( 0 == GridVertex(k)%nbrs(ll)) then
              call abortmp('Found one side of one element witout a neighbor.  Bummer!') 
           end if
        end do
     end do
   end subroutine find_side_neighbors
-  
+
+!======================================================================
+! function smallest_diameter_element
+!======================================================================
+
   function smallest_diameter_element(element_nodes) result(min_diameter)
     use parallel_mod, only   : abortmp
     
@@ -506,7 +579,10 @@ contains
     min_diameter = SQRT(min_diameter)
   end function smallest_diameter_element
   
-  
+!======================================================================
+!  subroutine cube_to_cube_coordinates 
+!======================================================================
+
   subroutine cube_to_cube_coordinates (cube_coor, node_coor, face_number)
     use parallel_mod,    only   : abortmp
     use physical_constants, only : dd_pi
@@ -522,6 +598,11 @@ contains
     cube_coor(:,2) = sgny*node_coor(:,y_index)
   end subroutine cube_to_cube_coordinates
   
+
+!======================================================================
+!  subroutine sphere_to_cube_coordinates 
+!======================================================================
+
   subroutine sphere_to_cube_coordinates (cube_coor, node_coor, face_number)
     use coordinate_systems_mod, only   : cartesian3D_t, cartesian2d_t, spherical_polar_t, &
          change_coordinates, sphere2cubedsphere
@@ -539,6 +620,11 @@ contains
     cube_coor(:,2) = cart(:)%y
   end subroutine sphere_to_cube_coordinates
   
+
+!======================================================================
+!  subroutine cube_face_element_centroids
+!======================================================================
+
   subroutine cube_face_element_centroids(centroids, face_numbers, element_nodes)
     use parallel_mod,    only   : abortmp
     implicit none
@@ -569,6 +655,9 @@ contains
     enddo
   end subroutine cube_face_element_centroids
   
+!======================================================================
+! subroutine initialize_space_filling_curve
+!======================================================================
   subroutine initialize_space_filling_curve(GridVertex, element_nodes)
     use gridgraph_mod, only   : GridVertex_t
     use parallel_mod,  only   : abortmp
@@ -679,8 +768,11 @@ contains
     
   end subroutine initialize_space_filling_curve
   
-  
-  subroutine find_corner_neighbors  (GridVertex, normal_to_homme_ordering, element_nodes)
+!======================================================================
+! subroutine find_corner_neighbors
+!======================================================================
+
+  subroutine find_corner_neighbors  (GridVertex, normal_to_homme_ordering, element_nodes, corner_wgt)
     use parallel_mod,           only : abortmp
     use gridgraph_mod,          only : GridVertex_t
     use dimensions_mod,         only : max_elements_attached_to_node
@@ -689,39 +781,76 @@ contains
     type (GridVertex_t), intent(inout) :: GridVertex(:)
     integer            , intent(in)  :: normal_to_homme_ordering(8)
     integer            , intent(in)  :: element_nodes(p_number_elements, 4)
-    
+    integer            , intent(in) :: corner_wgt
+
     integer                          :: node_elements (2*max_elements_attached_to_node)
-    integer                          :: elem_neighbor (2*max_elements_attached_to_node)
-    integer                          :: multiplicity
-    integer                          :: i, j, k, l
+    integer                          :: elem_neighbor (4*max_elements_attached_to_node)
+    integer                          :: nbr_cnt(4)
+    integer                          :: multiplicity, elem_nbr_start, start
+    integer                          :: i, j, k, ll, loc, cnt, jj
     
-    node_elements(:) = 0
-    elem_neighbor(:) = 0
-    do i=1, p_number_elements  
-       do j=1,4
+    do i=1, p_number_elements  !loop through all elements
+       node_elements(:) = 0
+       elem_neighbor(:) = 0
+       elem_nbr_start = 0
+       nbr_cnt(:) = 0
+       if (i == 291) then
+           elem_nbr_start = 0
+       endif
+
+       do j=1,4  !check each of the 4 nodes at the element corners
           multiplicity = find_nodal_neighbors(element_nodes(i,j), element_nodes, node_elements)
+          !returns all of the element neighbors to that node (in node_elements)
           k = 0
-          do l=1,multiplicity
-             if (                         i /= node_elements(l) .and. &
-                  GridVertex(i)%nbrs(1)%n(1) /= node_elements(l) .and. &
-                  GridVertex(i)%nbrs(2)%n(1) /= node_elements(l) .and. &
-                  GridVertex(i)%nbrs(3)%n(1) /= node_elements(l) .and. &
-                  GridVertex(i)%nbrs(4)%n(1) /= node_elements(l)) then   
+          do ll=1,multiplicity !node_elements that are not already side neighbors (or myself)
+                              !are corner neighbors
+             if (                         i /= node_elements(ll) .and. &
+                  GridVertex(i)%nbrs(1) /= node_elements(ll) .and. &
+                  GridVertex(i)%nbrs(2) /= node_elements(ll) .and. &
+                  GridVertex(i)%nbrs(3) /= node_elements(ll) .and. &
+                  GridVertex(i)%nbrs(4) /= node_elements(ll)) then   
                 k = k + 1
-                elem_neighbor(k) = node_elements(l)
+                elem_neighbor(elem_nbr_start + k) = node_elements(ll)
              end if
+          end do ! end of ll loop for multiplicity
+
+          !keep track of where we are starting in elem_neighbor for each j
+          elem_nbr_start = elem_nbr_start + k
+          nbr_cnt(j) = k !how many neighbors in this corner
+       end do ! end of j loop through 4 nodes
+
+
+       !now that we have done the 4 corners we can populate nbrs and nbrs_ptr 
+       ! (in cons. order)
+       !also we can add the corner weight
+
+       do j=5,8 !loop through 4 corners
+          elem_nbr_start = 1
+          !easiest to do these in ascending order - find loc
+          do jj = 5,8
+             ll = normal_to_homme_ordering(jj)
+             if (j == ll) then
+                loc = jj
+                exit
+             end if
+             elem_nbr_start = elem_nbr_start + nbr_cnt(jj-4)          
           end do
-          if (0 < k) then 
-             l = normal_to_homme_ordering(j+4)
-             ALLOCATE(GridVertex(i)%nbrs(l)%n(k))
-             ALLOCATE(GridVertex(i)%nbrs(l)%f(k))
-             GridVertex(i)%nbrs(l)%n(:)=0
-             GridVertex(i)%nbrs(l)%f(:)=0
-             GridVertex(i)%nbrs(l)%n(1:k) = elem_neighbor(1:k)
-             GridVertex(i)%nbrs(l)%f(1:k) = GridVertex(elem_neighbor(1:k))%face_number
+
+          start =  GridVertex(i)%nbrs_ptr(j)
+          cnt = nbr_cnt(loc - 4)
+          GridVertex(i)%nbrs_ptr(j+1) = start + cnt
+          
+          if (cnt > 0) then
+             GridVertex(i)%nbrs(start : start + cnt-1) = &
+                  elem_neighbor(elem_nbr_start : elem_nbr_start + cnt -1)
+             GridVertex(i)%nbrs_face(start : start + cnt - 1) = &
+                  GridVertex(elem_neighbor(elem_nbr_start : elem_nbr_start + cnt -1))%face_number
+             GridVertex(i)%nbrs_wgt(start : start + cnt-1)  = corner_wgt
           end if
+
        end do
-    end do
+       
+    end do ! end of i loop through elements
   end subroutine find_corner_neighbors
 
   ! ================================================================================
@@ -729,6 +858,10 @@ contains
   ! -------------------------------Public Methods-----------------------------------
   !
   ! ================================================================================
+
+!======================================================================
+! subroutine MeshOpen
+!======================================================================
 
   subroutine MeshOpen(mesh_file_name, par) 
     use parallel_mod, only : abortmp, parallel_t
@@ -800,8 +933,13 @@ contains
     
   end subroutine MeshOpen
 
-  ! This routine acts as a destructor cleaning the memory allocated in MeshOpen 
-  ! which acts as a constructor allocated dynamical memory for the nodes coordinates.
+!======================================================================
+! subroutine MeshClose
+!
+! This routine acts as a destructor cleaning the memory allocated in MeshOpen 
+! which acts as a constructor allocated dynamical memory for the nodes coordinates.
+!======================================================================
+
   subroutine MeshClose
     
     ! release memory
@@ -811,6 +949,12 @@ contains
     call close_mesh_file ()
 
   end subroutine MeshClose
+
+
+!======================================================================
+! subroutine MeshPrint
+!======================================================================
+
 
   subroutine MeshPrint(par)
     use parallel_mod, only : abortmp, parallel_t
@@ -837,14 +981,17 @@ contains
 
   end subroutine MeshPrint
 
+!======================================================================
+! subroutine MeshCubeTopology
+!======================================================================
    subroutine MeshCubeTopology(GridEdge, GridVertex)
     use parallel_mod,           only : abortmp
-    use dimensions_mod,         only : np
+    use dimensions_mod,         only : np,  max_elements_attached_to_node
     use coordinate_systems_mod, only : cartesian3D_t, cube_face_number_from_cart, cube_face_number_from_sphere
     use gridgraph_mod,          only : GridVertex_t
     use gridgraph_mod,          only : GridEdge_t
     use cube_mod,               only : CubeSetupEdgeIndex
-    use gridgraph_mod,          only : initgridedge
+    use gridgraph_mod,          only : initgridedge, num_neighbors
     use control_mod,            only : north, south, east, west, neast, seast, swest, nwest
 
     implicit none
@@ -855,11 +1002,12 @@ contains
     real(kind=real_kind)             :: centroid(3)
     type (cartesian3D_t)             :: face_center
 
-    integer                          :: i, j, k, l, m
+    integer                          :: i, j, k, ll, m, loc
     integer                          :: element_nodes(p_number_elements, 4)
     integer                          :: EdgeWgtP,CornerWgt
     integer                          :: normal_to_homme_ordering(8)
     integer                          :: node_numbers(4)
+    integer                          :: max_size
 
     normal_to_homme_ordering(1) = south
     normal_to_homme_ordering(2) =  east
@@ -883,29 +1031,49 @@ contains
 
     call mesh_connectivity (element_nodes)
 
+
+    !INITIALIZE the Grid Vertex for each element
+    !max number of neighbors:
+    !set init_size  (4 side neighbors + 4 corners (-3 is for 2 sides and element itself)
+    max_size = 4 + 4*(max_elements_attached_to_node -3)    
+
+    !TODO: can either reduce storage at the end if have alloced too much
+    ! or can alloc less and then increase if needed
+
     do i=1, p_number_elements  
        GridVertex(i)%number           = i
        GridVertex(i)%face_number      = 0
        GridVertex(i)%processor_number = 0
        GridVertex(i)%SpaceCurve       = 0
-       GridVertex(i)%wgtP(:)          = 0
-       GridVertex(i)%wgtP_ghost(:)    = 1
-       do j=1, 8  
-          NULLIFY(GridVertex(i)%nbrs(j)%n)
-          NULLIFY(GridVertex(i)%nbrs(j)%f)
-       end do
+
+       !do all allocations here - instead of looping through
+       !again in find_side_neighbors
+
+       ALLOCATE(GridVertex(i)%nbrs(max_size))
+       ALLOCATE(GridVertex(i)%nbrs_face(max_size))
+       ALLOCATE(GridVertex(i)%nbrs_wgt(max_size))
+       ALLOCATE(GridVertex(i)%nbrs_wgt_ghost(max_size))
+
+       GridVertex(i)%nbrs(:) = 0
+       GridVertex(i)%nbrs_face(:) = 0
+       GridVertex(i)%nbrs_wgt(:) = 0
+       GridVertex(i)%nbrs_wgt_ghost(:) = 1
+
+       !each elements has one side neighbor (first 4)
+       GridVertex(i)%nbrs_ptr(1) = 1
+       GridVertex(i)%nbrs_ptr(2) = 2
+       GridVertex(i)%nbrs_ptr(3) = 3
+       GridVertex(i)%nbrs_ptr(4) = 4
+       GridVertex(i)%nbrs_ptr(5:num_neighbors+1) = 5
+
     end do
+
 
     ! side neighbors 
-    call find_side_neighbors  (GridVertex, normal_to_homme_ordering, element_nodes)
+    call find_side_neighbors  (GridVertex, normal_to_homme_ordering, element_nodes, EdgeWgtP)
 
-    ! All side and corner weights
-    do i=1, p_number_elements
-       GridVertex(i)%wgtP(:) = EdgeWgtP
-    end do
-
-    ! vertex faces
-
+   
+    ! set vertex faces
     do i=1, p_number_elements
        node_numbers = element_nodes(i,:)    
        coordinates = p_node_coordinates(node_numbers,:)
@@ -916,24 +1084,21 @@ contains
        GridVertex(i)%face_number = cube_face_number_from_cart(face_center)
     end do
 
-    ! neighbor faces
+    ! set side neighbor faces
     do i=1, p_number_elements
-       do j=1,4
+       do j=1,4 !look at each side
           k = normal_to_homme_ordering(j)
-          l = GridVertex(i)%nbrs(k)%n(1)
-          GridVertex(i)%nbrs(k)%f(1) = GridVertex(l)%face_number
+          loc =  GridVertex(i)%nbrs_ptr(k)
+          
+          ll = GridVertex(i)%nbrs(loc)
+          GridVertex(i)%nbrs_face(loc) = GridVertex(ll)%face_number
        end do
     end do
 
-    ! corner neighbor and faces
-    call find_corner_neighbors  (GridVertex, normal_to_homme_ordering, element_nodes)
+    ! find corner neighbor and faces (weights added also)
+    call find_corner_neighbors  (GridVertex, normal_to_homme_ordering, element_nodes, CornerWgt)
 
-    do i=1,p_number_elements
-        do j=5,8
-            if (ASSOCIATED(GridVertex(i)%nbrs(j)%n)) GridVertex(i)%wgtP(j) = CornerWgt
-        end do
-    end do
-
+  
     call initgridedge(GridEdge,GridVertex) 
     do i=1,SIZE(GridEdge)
        call CubeSetupEdgeIndex(GridEdge(i)) 
@@ -942,7 +1107,10 @@ contains
     call initialize_space_filling_curve(GridVertex, element_nodes)
   end subroutine MeshCubeTopology
 
-
+!======================================================================
+! subroutine MeshSetCoordinates(elem)
+!======================================================================
+ 
   subroutine MeshSetCoordinates(elem)
     use element_mod, only : element_t
     use parallel_mod, only : abortmp
@@ -991,6 +1159,9 @@ contains
     end do
   end subroutine MeshSetCoordinates
 
+!======================================================================
+!function MeshCubeEdgeCount()
+!======================================================================
   function MeshCubeEdgeCount()  result(nedge)
     use parallel_mod, only : abortmp
     implicit none

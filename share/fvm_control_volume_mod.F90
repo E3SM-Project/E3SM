@@ -129,8 +129,8 @@ subroutine fvm_mesh_ari(elem, fvm, tl)
 ! do not call this routine will work fine.
 #ifndef MESH
   do j=1,8
-    if (elem%vertex%nbrs(j)%used) then
-      fvm%nbrsface(j)=elem%vertex%nbrs(j)%f
+    if (elem%vertex%nbrs_used(j)) then
+      fvm%nbrsface(j)=elem%vertex%nbrs_face(j)
       ! note that if the element lies on a corner, it will be at j=5,6,7,8
       if ((fvm%nbrsface(j) /= fvm%faceno) .AND. (j<5)) then
         fvm%cubeboundary=j

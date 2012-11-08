@@ -335,7 +335,7 @@ contains
 
     ! Local variables
     logical, parameter :: UseUnroll = .TRUE.
-    integer :: i,k,ir,l
+    integer :: i,k,ir,ll
 
     integer :: is,ie,in,iw
 
@@ -441,41 +441,43 @@ contains
        enddo
     endif
 
+
 ! SWEST
-    do l=swest,swest+max_corner_elem-1
-        if (desc%putmapP(l) /= -1) then
+    do ll=swest,swest+max_corner_elem-1
+        if (desc%putmapP(ll) /= -1) then
             do k=1,vlyr
-                edge%buf(kptr+k,desc%putmapP(l)+1)=v(1  ,1 ,k)
+                edge%buf(kptr+k,desc%putmapP(ll)+1)=v(1  ,1 ,k)
             end do
         end if
     end do
 
 ! SEAST
-    do l=swest+max_corner_elem,swest+2*max_corner_elem-1
-        if (desc%putmapP(l) /= -1) then
+    do ll=swest+max_corner_elem,swest+2*max_corner_elem-1
+        if (desc%putmapP(ll) /= -1) then
             do k=1,vlyr
-                edge%buf(kptr+k,desc%putmapP(l)+1)=v(np ,1 ,k)
+                edge%buf(kptr+k,desc%putmapP(ll)+1)=v(np ,1 ,k)
             end do
         end if
     end do
 
 ! NEAST
-    do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
-        if (desc%putmapP(l) /= -1) then
+    do ll=swest+3*max_corner_elem,swest+4*max_corner_elem-1
+        if (desc%putmapP(ll) /= -1) then
             do k=1,vlyr
-                edge%buf(kptr+k,desc%putmapP(l)+1)=v(np ,np,k)
+                edge%buf(kptr+k,desc%putmapP(ll)+1)=v(np ,np,k)
             end do
         end if
     end do
 
 ! NWEST
-    do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
-        if (desc%putmapP(l) /= -1) then
+    do ll=swest+2*max_corner_elem,swest+3*max_corner_elem-1
+        if (desc%putmapP(ll) /= -1) then
             do k=1,vlyr
-                edge%buf(kptr+k,desc%putmapP(l)+1)=v(1  ,np,k)
+                edge%buf(kptr+k,desc%putmapP(ll)+1)=v(1  ,np,k)
             end do
         end if
     end do
+
     call t_stopf('edge_pack')
 
   end subroutine edgeVpack
@@ -640,7 +642,7 @@ contains
 
     ! Local
     logical, parameter :: UseUnroll = .TRUE.
-    integer :: i,k,l
+    integer :: i,k,ll
     integer :: is,ie,in,iw
 
     call t_startf('edge_unpack')
@@ -682,40 +684,41 @@ contains
     endif
 
 ! SWEST
-    do l=swest,swest+max_corner_elem-1
-        if(desc%getmapP(l) /= -1) then 
+    do ll=swest,swest+max_corner_elem-1
+        if(desc%getmapP(ll) /= -1) then 
             do k=1,vlyr
-                v(1  ,1 ,k)=v(1 ,1 ,k)+edge%buf(kptr+k,desc%getmapP(l)+1)
+                v(1  ,1 ,k)=v(1 ,1 ,k)+edge%buf(kptr+k,desc%getmapP(ll)+1)
             enddo
         endif
     end do
 
 ! SEAST
-    do l=swest+max_corner_elem,swest+2*max_corner_elem-1
-        if(desc%getmapP(l) /= -1) then 
+    do ll=swest+max_corner_elem,swest+2*max_corner_elem-1
+        if(desc%getmapP(ll) /= -1) then 
             do k=1,vlyr
-                v(np ,1 ,k)=v(np,1 ,k)+edge%buf(kptr+k,desc%getmapP(l)+1)
+                v(np ,1 ,k)=v(np,1 ,k)+edge%buf(kptr+k,desc%getmapP(ll)+1)
             enddo
         endif
     end do
 
 ! NEAST
-    do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
-        if(desc%getmapP(l) /= -1) then 
+    do ll=swest+3*max_corner_elem,swest+4*max_corner_elem-1
+        if(desc%getmapP(ll) /= -1) then 
             do k=1,vlyr
-                v(np ,np,k)=v(np,np,k)+edge%buf(kptr+k,desc%getmapP(l)+1)
+                v(np ,np,k)=v(np,np,k)+edge%buf(kptr+k,desc%getmapP(ll)+1)
             enddo
         endif
     end do
 
 ! NWEST
-    do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
-        if(desc%getmapP(l) /= -1) then 
+    do ll=swest+2*max_corner_elem,swest+3*max_corner_elem-1
+        if(desc%getmapP(ll) /= -1) then 
             do k=1,vlyr
-                v(1  ,np,k)=v(1 ,np,k)+edge%buf(kptr+k,desc%getmapP(l)+1)
+                v(1  ,np,k)=v(1 ,np,k)+edge%buf(kptr+k,desc%getmapP(ll)+1)
             enddo
         endif
     end do
+
     call t_stopf('edge_unpack')
 
   end subroutine edgeVunpack

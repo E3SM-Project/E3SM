@@ -355,12 +355,13 @@ contains
           !  and setup the pointers
           if(Debug) write(iulog,*)'initMetagraph: point #8'
           ii=GridEdge(i)%tail_face
-          wgtP=Gridedge(i)%tail%wgtP(ii)
+
+          wgtP=Gridedge(i)%tail%nbrs_wgt(ii)
 
           MetaVertex%edges(j)%nmembers                = MetaVertex%edges(j)%nmembers+1
           MetaVertex%edges(j)%wgtP                    = MetaVertex%edges(j)%wgtP + wgtP
 
-          MetaVertex%edges(j)%wgtP_ghost              = MetaVertex%edges(j)%wgtP_ghost + Gridedge(i)%tail%wgtP_ghost(ii)
+          MetaVertex%edges(j)%wgtP_ghost              = MetaVertex%edges(j)%wgtP_ghost + Gridedge(i)%tail%nbrs_wgt_ghost(ii)
 
           if(Debug) write(iulog,*)'initMetagraph: point #9'
 
@@ -410,10 +411,11 @@ contains
           if(icount(j)+1 .le. MetaVertex%edges(j)%nmembers) then
 
              ii=GridEdge(i)%tail_face
-             wgtP=Gridedge(i)%tail%wgtP(ii)
+
+             wgtP=Gridedge(i)%tail%nbrs_wgt(ii)
              MetaVertex%edges(j)%edgeptrP(icount(j)+1) = MetaVertex%edges(j)%edgeptrP(icount(j)) + wgtP
 
-             wgtP=Gridedge(i)%tail%wgtP_ghost(ii)
+             wgtP=Gridedge(i)%tail%nbrs_wgt_ghost(ii)
              MetaVertex%edges(j)%edgeptrP_ghost(icount(j)+1) = MetaVertex%edges(j)%edgeptrP_ghost(icount(j)) + wgtP
           endif
           if(Debug) write(iulog,*)'initMetagraph: point #15'
