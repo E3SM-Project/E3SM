@@ -1,3 +1,4 @@
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -53,7 +54,7 @@ contains
     use metagraph_mod, only : metavertex_t, metaedge_t, LocalElemCount, &
          initmetagraph
     ! --------------------------------
-    use gridgraph_mod, only : gridvertex_t, gridedge_t
+    use gridgraph_mod, only : gridvertex_t, gridedge_t, PrintGridEdge, PrintGridVertex
     ! --------------------------------
     use schedule_mod, only : schedule, genEdgeSched
     ! --------------------------------
@@ -236,6 +237,7 @@ contains
     ! ===========================================================
     ! given partition, count number of local element descriptors
     ! ===========================================================
+
     !DBG call PrintGridVertex(GridVertex)
 
     nelem_edge=SIZE(GridEdge)
@@ -307,6 +309,9 @@ contains
     ! ====================================================
     call genEdgeSched(elem, iam,Schedule(1),MetaVertex(1))
 
+    !call PrintSchedule(Schedule(1))
+    
+
 #endif
     deallocate(TailPartition)
     deallocate(HeadPartition)
@@ -344,6 +349,9 @@ contains
     ! Run the checksum to verify communication schedule
     ! =================================================================
 !    call testchecksum(par,GridEdge)
+
+    
+
     ! =================================================================
     ! Initialize mass_matrix
     ! =================================================================

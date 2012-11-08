@@ -474,6 +474,7 @@ contains
     real(kind=REAL_KIND),allocatable    :: neigh_wgt(:)
     integer                         :: max_neigh
 
+    integer :: start, cnt
 
     nelem = SIZE(GridVertex)
 
@@ -491,24 +492,26 @@ contains
        neigh_list=0
 
 #ifdef MESH
-do j=1,num_neighbors
-          if(GridVertex(i)%wgtP(j) .gt. 0) then 
-             do k=1,SIZE(GridVertex(i)%nbrs(j)%n)
-                adjncy(ii+jj-1)   = GridVertex(i)%nbrs(j)%n(k)
-	        neigh_list(jj)    = GridVertex(i)%nbrs(j)%n(k)
-                adjwgt(ii+jj-1)   = GridVertex(i)%wgtP(j)*EdgeWeight
-                neigh_wgt(jj)     = GridVertex(i)%wgtP(j)*EdgeWeight
+       do j=1,num_neighbors
+          cnt = GridVertex(i)%nbrs_ptr(j+1) -  GridVertex(i)%nbrs_ptr(j) 
+          start =  GridVertex(i)%nbrs_ptr(j) 
+          do k=0, cnt-1
+             if(GridVertex(i)%nbrs_wgt(start+k) .gt. 0) then 
+                adjncy(ii+jj-1)   = GridVertex(i)%nbrs(start+k)
+	        neigh_list(jj)    = GridVertex(i)%nbrs(start+k)
+                adjwgt(ii+jj-1)   = GridVertex(i)%nbrs_wgt(start+k)*EdgeWeight
+                neigh_wgt(jj)     = GridVertex(i)%nbrs_wgt(start+k)*EdgeWeight
                 jj=jj+1
-             enddo
-          endif
+             endif
+          enddo
        enddo
 #else
        do j=1,num_neighbors
-          if(GridVertex(i)%wgtP(j) .gt. 0) then 
-             adjncy(ii+jj-1)   = GridVertex(i)%nbrs(j)%n
-             neigh_list(jj)    = GridVertex(i)%nbrs(j)%n
-             adjwgt(ii+jj-1)   = GridVertex(i)%wgtP(j)*EdgeWeight
-             neigh_wgt(jj)     = GridVertex(i)%wgtP(j)*EdgeWeight
+          if(GridVertex(i)%nbrs_wgt(j) .gt. 0) then 
+             adjncy(ii+jj-1)   = GridVertex(i)%nbrs(j)
+             neigh_list(jj)    = GridVertex(i)%nbrs(j)
+             adjwgt(ii+jj-1)   = GridVertex(i)%nbrs_wgt(j)*EdgeWeight
+             neigh_wgt(jj)     = GridVertex(i)%nbrs_wgt(j)*EdgeWeight
              jj=jj+1
           endif
        enddo
@@ -516,7 +519,7 @@ do j=1,num_neighbors
        if (max_neigh < jj+1) call abortmp( "number or neighbors foudn exceeds expected max error")
 
        call sort(max_neigh,neigh_list,index)
-       degree       = COUNT(GridVertex(i)%wgtP(:) .gt. 0) 
+       degree       = COUNT(GridVertex(i)%nbrs_wgt(:) .gt. 0) 
        ! Copy the sorted adjncy list in
        do j=1,degree
           adjncy(ii+j-1) = neigh_list(index(j))

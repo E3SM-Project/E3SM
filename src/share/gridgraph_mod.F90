@@ -13,25 +13,27 @@ module GridGraph_mod
 
   private
 
-  integer, public, parameter :: num_neighbors=8 
+  integer, public, parameter :: num_neighbors=8 ! for north, south, east, west, neast, nwest, seast, swest
 
-  type, public :: ptr
-     sequence
-#ifdef MESH
-     integer, dimension(:), pointer :: n => NULL()  ! number of neighbor element
-     integer, dimension(:), pointer :: f => NULL()  ! cube face number of neighbor element
-#else 
-     logical :: used 
-     integer :: n   ! number of neighbor element
-     integer :: f  ! cube face number of neighbor element
-#endif
-  end type ptr
 
   type, public :: GridVertex_t
       sequence
-      type (ptr)                :: nbrs(num_neighbors)
-      integer                   :: wgtP(num_neighbors)   ! The weights for edges defined by neighbors array
-      integer                   :: wgtP_ghost(num_neighbors)   ! The weights for edges defined by neighbors array
+#ifdef MESH
+      integer, allocatable      :: nbrs(:)               ! The numbers of the neighbor elements
+      integer, allocatable      :: nbrs_face(:)          ! The cube face number of the neighbor element (nbrs array)
+      integer, allocatable      :: nbrs_wgt(:)               ! The weights for edges defined by nbrs array
+      integer, allocatable      :: nbrs_wgt_ghost(:)         ! The weights for edges defined by nbrs array
+      integer                   :: nbrs_ptr(num_neighbors + 1) !index into the nbrs array for each neighbor direction
+#else
+     integer                    :: nbrs(num_neighbors)   ! number of neighbor element
+     integer                    :: nbrs_face(num_neighbors)  ! cube face number of neighbor element
+     logical                    :: nbrs_used(num_neighbors) 
+     integer                    :: nbrs_wgt(num_neighbors)       ! The weights for edges defined by nbrs array
+     integer                    :: nbrs_wgt_ghost(num_neighbors) ! The weights for edges defined by nbrs array
+   
+
+#endif
+
       integer                   :: face_number           ! which face of the cube this vertex is on
       integer                   :: number                ! element number
       integer                   :: processor_number      ! processor number
@@ -48,8 +50,8 @@ module GridGraph_mod
       sequence
       integer                      :: head_face  ! needed if head vertex has shape (i.e. square)
       integer                      :: tail_face  ! needed if tail vertex has shape (i.e. square)
-      integer                      :: head_ind   ! 
-      integer                      :: tail_ind   !
+      integer                      :: head_dir   !which of 8 neighbor directions is the head
+      integer                      :: tail_dir   !which of 8 neighbor directions is the tail
       type (GridVertex_t),pointer  :: head       ! edge head vertex
       type (GridVertex_t),pointer  :: tail       ! edge tail vertex
       logical                      :: reverse
@@ -87,12 +89,16 @@ module GridGraph_mod
 
 contains
 
+
+!======================================================================
+
 ! =====================================
 ! copy edge:
 ! copy device for overloading = sign.
 ! =====================================
 
-  recursive subroutine copy_gridedge(edge2,edge1)
+
+  recursive subroutine copy_gridedge(edge2, edge1)
 
     type (GridEdge_t), intent(out) :: edge2
     type (GridEdge_t), intent(in)  :: edge1
@@ -119,7 +125,9 @@ contains
 
   end subroutine copy_gridedge
 
-  recursive subroutine copy_gridvertex(vertex2,vertex1)
+!======================================================================
+
+  recursive subroutine copy_gridvertex(vertex2, vertex1)
         
     implicit none 
 
@@ -128,37 +136,39 @@ contains
 
     integer                            :: i,j,n
    
-    
-!JMD     vertex2%size      = vertex1%size
- 
      n = SIZE(vertex1%nbrs)
-     do i=1,n
-        vertex2%wgtP(i)  = vertex1%wgtP(i)
-        vertex2%wgtP_ghost(i)  = vertex1%wgtP_ghost(i)
+
 #ifdef MESH
-	if(associated(vertex2%nbrs(i)%n)) &
-             deallocate(vertex2%nbrs(i)%n)
-	if(associated(vertex2%nbrs(i)%f)) &
-             deallocate(vertex2%nbrs(i)%f)
-        allocate(vertex2%nbrs(i)%n(SIZE(vertex1%nbrs(i)%n)))
-        allocate(vertex2%nbrs(i)%f(SIZE(vertex1%nbrs(i)%n)))
-        do j=1,SIZE(vertex1%nbrs(i)%n)
-           vertex2%nbrs(i)%n(j) = vertex1%nbrs(i)%n(j)
-           vertex2%nbrs(i)%f(j) = vertex1%nbrs(i)%f(j)
-        end do
-#else
-     vertex2%nbrs(i)%n = vertex1%nbrs(i)%n
-     vertex2%nbrs(i)%f = vertex1%nbrs(i)%f
-     vertex2%nbrs(i)%used = vertex1%nbrs(i)%used
+     allocate(vertex2%nbrs(n))
+     allocate(vertex2%nbrs_face(n))
+     allocate(vertex2%nbrs_wgt(n))
+     allocate(vertex2%nbrs_wgt_ghost(n))
+#endif
+
+     do i=1,n
+        vertex2%nbrs(i) = vertex1%nbrs(i)
+        vertex2%nbrs_face(i) = vertex1%nbrs_face(i)
+        vertex2%nbrs_wgt(i)  = vertex1%nbrs_wgt(i)
+        vertex2%nbrs_wgt_ghost(i)  = vertex1%nbrs_wgt_ghost(i)
+#ifndef MESH
+        vertex2%nbrs_used(i) = vertex1%nbrs_used(i)
 #endif
     enddo
 
+#ifdef MESH
+    do i=1, num_neighbors+1
+        vertex2%nbrs_ptr(i) = vertex1%nbrs_ptr(i)
+    enddo
+#endif
+
+     vertex2%face_number     = vertex1%face_number
      vertex2%number     = vertex1%number
      vertex2%processor_number  = vertex1%processor_number 
      vertex2%SpaceCurve = vertex1%SpaceCurve 
 
   end subroutine copy_gridvertex
 
+!======================================================================
   recursive subroutine copy_edgeindex(index2,index1)
   
   type (EdgeIndex_t), intent(out) :: index2
@@ -175,6 +185,7 @@ contains
  
   end subroutine copy_edgeindex
 
+!======================================================================
   subroutine FreeGraph(Vertex)
 
      implicit none
@@ -191,11 +202,13 @@ contains
 
   end subroutine FreeGraph
 
+!======================================================================
+
 !===========================
 ! search edge list for match
 !===========================
 
-  function gridedge_search(nvert1,nvert2,edge) result(number)
+  function gridedge_search(nvert1, nvert2, edge) result(number)
 
     integer, intent(in) :: nvert1
     integer, intent(in) :: nvert2
@@ -228,6 +241,7 @@ contains
 
   end function gridedge_search
 
+!======================================================================
 
   function gridedge_type(edge) result(type)
 
@@ -243,9 +257,7 @@ contains
 
   end function gridedge_type
 
-
-
-
+!======================================================================
 
 
 
@@ -264,6 +276,8 @@ contains
     endif
 
   end function grid_edge_uses_vertex
+
+!======================================================================
 
   subroutine PrintChecksum(TestPattern,Checksum)
 
@@ -293,7 +307,9 @@ contains
 
   end subroutine PrintChecksum
 
-  subroutine CreateSubGridGraph(Vertex,SVertex,local2global)
+!======================================================================
+
+  subroutine CreateSubGridGraph(Vertex, SVertex, local2global)
 
     implicit none
         
@@ -301,18 +317,19 @@ contains
     type (GridVertex_t),intent(inout)      :: SVertex(:)
     integer,intent(in)                     :: local2global(:)
 
-    integer                                :: nelem,nelem_s,n,ncount
-    integer                                :: inbr,i,ig,j,k
+    integer                                :: nelem,nelem_s,n,ncount,cnt,pos, orig_start
+    integer                                :: inbr,i,ig,j,k, new_pos
     
     integer,allocatable                    :: global2local(:)
     logical, parameter    :: Debug = .FALSE.
-
 
     nelem   = SIZE(Vertex)
     nelem_s = SiZE(SVertex) 
 
     if(Debug) write(iulog,*)'CreateSubGridGraph: point #1'
+
     allocate(global2local(nelem))
+
     if(Debug) write(iulog,*)'CreateSubGridGraph: point #2'
 
     global2local(:) = 0
@@ -320,63 +337,83 @@ contains
         ig = local2global(i)
         global2local(ig) = i
     enddo
+
     if(Debug) write(iulog,*)'CreateSubGridGraph: point #3'
+
     do i=1,nelem_s
         ig = local2global(i)
 
         if(Debug) write(iulog,*)'CreateSubGridGraph: point #4'
-        call copy_gridvertex(SVertex(i),Vertex(ig))
+        call copy_gridvertex(SVertex(i),Vertex(ig))  !svertex(i) = vertex(ig)
+
         n = SIZE(SVertex(i)%nbrs(:))
         ! ==============================================
         ! Apply the correction to the neighbors list to 
         ! reflect new subgraph numbers 
         ! ==============================================
-        ncount=0
+
+
         if(Debug) write(iulog,*)'CreateSubGridGraph: point #5'
-        do j=1,n
+        
+        orig_start = 1
+
+        do j=1,num_neighbors
 #ifdef MESH
-           if(ASSOCIATED(Svertex(i)%nbrs(j)%n)) then 
-              do k = 1,SIZE(Svertex(i)%nbrs(j)%n)
-                 if(Debug) write(iulog,*)'CreateSubGridGraph: point #5.1 size(global2local) Svertex(i)%nbrs(j) ', &
-                              size(global2local), Svertex(i)%nbrs(j)%n(k)
-                 inbr = global2local(Svertex(i)%nbrs(j)%n(k))
+
+           cnt = Svertex(i)%nbrs_ptr(j+1) - orig_start  !number of neighbors for this direction
+           ncount = 0
+           do k = 1, cnt
+              pos = orig_start + k-1
+              if(Debug) write(iulog,*)'CreateSubGridGraph: point #5.1 size(global2local) Svertex(i)%nbrs(j) ', &
+                   size(global2local), Svertex(i)%nbrs(pos)
+
+                 inbr = global2local(Svertex(i)%nbrs(pos))
+
                  if(Debug) write(iulog,*)'CreateSubGridGraph: point #5.2'
                  if(inbr .gt. 0) then 
-                    Svertex(i)%nbrs(j)%n(k) = inbr
+                    new_pos = Svertex(i)%nbrs_ptr(j) + ncount
+
+                    Svertex(i)%nbrs(new_pos) = inbr
+                    Svertex(i)%nbrs_face(new_pos) = Svertex(i)%nbrs_face(pos)
+                    Svertex(i)%nbrs_wgt(new_pos) = Svertex(i)%nbrs_wgt(pos)
+                    Svertex(i)%nbrs_wgt_ghost(new_pos) = Svertex(i)%nbrs_wgt_ghost(pos)
                     ncount = ncount+1
-                 else 
-                    Svertex(i)%wgtP(j)  = 0        
-                    Svertex(i)%wgtP_ghost(j)  = 0        
-                    DEALLOCATE(Svertex(i)%nbrs(j)%n)
-                    DEALLOCATE(Svertex(i)%nbrs(j)%f)
                  endif
-              enddo
-           endif
+           enddo
+           !set neighbors ptr
+           orig_start =  Svertex(i)%nbrs_ptr(j+1);
+           Svertex(i)%nbrs_ptr(j+1) =  Svertex(i)%nbrs_ptr(j) + ncount
+           
+
 #else
-           if(Svertex(i)%nbrs(j)%used) then
+           if(Svertex(i)%nbrs_used(j)) then
            if(Debug) write(iulog,*)'CreateSubGridGraph: point #5.1 size(global2local) Svertex(i)%nbrs(j) ', &
-                size(global2local), Svertex(i)%nbrs(j)%n
-           inbr = global2local(Svertex(i)%nbrs(j)%n)
+                size(global2local), Svertex(i)%nbrs(j)
+           inbr = global2local(Svertex(i)%nbrs(j))
            if(Debug) write(iulog,*)'CreateSubGridGraph: point #5.2'
            if(inbr .gt. 0) then 
-              Svertex(i)%nbrs(j)%n = inbr
+              Svertex(i)%nbrs(j) = inbr
               ncount = ncount+1
            else 
-              Svertex(i)%wgtP(j)  = 0        
-              Svertex(i)%wgtP_ghost(j)  = 0        
+              Svertex(i)%nbrs_wgt(j)  = 0        
+              Svertex(i)%nbrs_wgt_ghost(j)  = 0        
            endif
         end if
 #endif 
            if(Debug) write(iulog,*)'CreateSubGridGraph: point #5.3'
-        enddo
-    if(Debug) write(iulog,*)'CreateSubGridGraph: point #6'
+        enddo !num_neighbors loop
+
+
+        if(Debug) write(iulog,*)'CreateSubGridGraph: point #6'
         Svertex(i)%number = i
-     enddo
-    if(Debug) write(iulog,*)'CreateSubGridGraph: point #7'
+     enddo !nelem_s loop
+     if(Debug) write(iulog,*)'CreateSubGridGraph: point #7'
      deallocate(global2local)
-    if(Debug) write(iulog,*)'CreateSubGridGraph: point #8'
+     if(Debug) write(iulog,*)'CreateSubGridGraph: point #8'
 
   end subroutine CreateSubGridGraph
+
+!======================================================================
 
   subroutine PrintGridEdge(Edge)
 
@@ -390,7 +427,11 @@ contains
     write(iulog,95)
     do i=1,nedge
           ii=Edge(i)%tail_face
-          wgtP=Edge(i)%tail%wgtP(ii)       
+#ifdef MESH
+          !map to correct location - for now all on same nbr side have same wgt, so take the first one
+!          ii = Edge(i)%tail%nbrs_ptr(ii)
+#endif
+          wgtP=Edge(i)%tail%nbrs_wgt(ii)       
           write(iulog,100) i, &
                Edge(i)%tail%number,Edge(i)%tail_face, wgtP, &
                Edge(i)%head%number,Edge(i)%head_face, gridedge_type(Edge(i))
@@ -400,6 +441,7 @@ contains
 
   end subroutine PrintGridEdge
 
+!======================================================================
 ! ==========================================
 ! set_GridVertex_neighbors:
 !
@@ -415,82 +457,102 @@ contains
 
   end subroutine set_GridVertex_number
 
+!======================================================================
   subroutine PrintGridVertex(Vertex)
 
     implicit none 
     type (GridVertex_t), intent(in),target :: Vertex(:)
   
     integer        :: i,nvert
-     integer ::n_west, n_east, n_south, n_north, n_swest, n_seast, n_nwest, n_neast
+    integer ::n_west, n_east, n_south, n_north, n_swest, n_seast, n_nwest, n_neast
     integer ::w_west, w_east, w_south, w_north, w_swest, w_seast, w_nwest, w_neast
+    integer ::n, print_buf(90), nbr(8), j, k, start, cnt, nbrs_cnt(8)
+
+    integer, pointer :: np(:)
+
+    nbr = (/ west, east, south, north, swest, seast, nwest, neast/)
 
     nvert = SIZE(Vertex)
         
     write(iulog,98)
     do i=1,nvert
 #ifdef MESH
-       write(iulog,99) Vertex(i)%number, Vertex(i)%processor_number, &
-            Vertex(i)%nbrs(west)%n(:),Vertex(i)%wgtP(west), &
-            Vertex(i)%nbrs(east)%n(:),Vertex(i)%wgtP(east), &
-            Vertex(i)%nbrs(south)%n(:),Vertex(i)%wgtP(south), &
-            Vertex(i)%nbrs(north)%n(:),Vertex(i)%wgtP(north), &
-            Vertex(i)%nbrs(swest)%n(:),Vertex(i)%wgtP(swest), &
-            Vertex(i)%nbrs(seast)%n(:),Vertex(i)%wgtP(seast), &
-            Vertex(i)%nbrs(nwest)%n(:),Vertex(i)%wgtP(nwest), &
-            Vertex(i)%nbrs(neast)%n(:),Vertex(i)%wgtP(neast)
+
+       print_buf(:) = 0
+       nbrs_cnt(:) = 0
+       np =>  Vertex(i)%nbrs_ptr !alias
+       cnt = 1
+       do j = 1,num_neighbors
+          n = np(nbr(j)+1) - np(nbr(j)) !num neigbors in that directions
+          start =  np(nbr(j)) !start in array
+          nbrs_cnt(j) = n
+          do k = 1, n
+             print_buf(cnt) = Vertex(i)%nbrs(start+k-1)
+             print_buf(cnt+1) = Vertex(i)%nbrs_wgt(start+k-1)
+             print_buf(cnt+2) = Vertex(i)%nbrs_face(start+k-1)
+             cnt = cnt + 3
+          end do
+       enddo
+
+       write(iulog,991) Vertex(i)%number, Vertex(i)%processor_number, &
+            Vertex(i)%face_number, &
+            print_buf(1:cnt-1)
+
+       write(iulog,992) nbrs_cnt(1:8)
+
 #else
-       if (Vertex(i)%nbrs(west)%used) then
-          n_west=Vertex(i)%nbrs(west)%n
-          w_west=Vertex(i)%wgtP(west)
+       if (Vertex(i)%nbrs_used(west)) then
+          n_west=Vertex(i)%nbrs(west)
+          w_west=Vertex(i)%nbrs_wgt(west)
        else
           n_west=-1
           w_west= 0
        end if       
-       if (Vertex(i)%nbrs(east)%used) then
-          n_east=Vertex(i)%nbrs(east)%n
-          w_east=Vertex(i)%wgtP(east)
+       if (Vertex(i)%nbrs_used(east)) then
+          n_east=Vertex(i)%nbrs(east)
+          w_east=Vertex(i)%nbrs_wgt(east)
        else
           n_east=-1
           w_east= 0
        end if
-       if (Vertex(i)%nbrs(south)%used) then
-          n_south=Vertex(i)%nbrs(south)%n
-          w_south=Vertex(i)%wgtP(south)
+       if (Vertex(i)%nbrs_used(south)) then
+          n_south=Vertex(i)%nbrs(south)
+          w_south=Vertex(i)%nbrs_wgt(south)
        else
           n_south=-1
           w_south= 0
        end if       
-       if (Vertex(i)%nbrs(north)%used) then
-          n_north=Vertex(i)%nbrs(north)%n
-          w_north=Vertex(i)%wgtP(north)
+       if (Vertex(i)%nbrs_used(north)) then
+          n_north=Vertex(i)%nbrs(north)
+          w_north=Vertex(i)%nbrs_wgt(north)
        else
           n_north=-1
           w_north= 0
        end if
-       if (Vertex(i)%nbrs(swest)%used) then
-          n_swest=Vertex(i)%nbrs(swest)%n
-          w_swest=Vertex(i)%wgtP(swest)
+       if (Vertex(i)%nbrs_used(swest)) then
+          n_swest=Vertex(i)%nbrs(swest)
+          w_swest=Vertex(i)%nbrs_wgt(swest)
        else
           n_swest=-1
           w_swest= 0
        end if       
-       if (Vertex(i)%nbrs(seast)%used) then
-          n_seast=Vertex(i)%nbrs(seast)%n
-          w_seast=Vertex(i)%wgtP(seast)
+       if (Vertex(i)%nbrs_used(seast)) then
+          n_seast=Vertex(i)%nbrs(seast)
+          w_seast=Vertex(i)%nbrs_wgt(seast)
        else
           n_seast=-1
           w_seast= 0
        end if       
-       if (Vertex(i)%nbrs(nwest)%used) then
-          n_nwest=Vertex(i)%nbrs(nwest)%n
-          w_nwest=Vertex(i)%wgtP(nwest)
+       if (Vertex(i)%nbrs_used(nwest)) then
+          n_nwest=Vertex(i)%nbrs(nwest)
+          w_nwest=Vertex(i)%nbrs_wgt(nwest)
        else
           n_nwest=-1
           w_nwest= 0
        end if       
-       if (Vertex(i)%nbrs(neast)%used) then
-          n_neast=Vertex(i)%nbrs(neast)%n
-          w_neast=Vertex(i)%wgtP(neast)
+       if (Vertex(i)%nbrs_used(neast)) then
+          n_neast=Vertex(i)%nbrs(neast)
+          w_neast=Vertex(i)%nbrs_wgt(neast)
        else
           n_neast=-1
           w_neast= 0
@@ -510,9 +572,14 @@ contains
    98 format(5x,'GRIDVERTEX #',2x,'PART',2x,'DEG',4x,'W',9x,'E',9x, &
                 'S',9x,'N',9x,'SW',9x,'SE',9x,'NW',9x,'NE')
   99 format(10x,I3,8x,I4,2x,8(1x,I4,1x,'(',I2,')'))
-
+  991  format(10x,I3,8x,I4,8x,I4,2x,30(1x,I4,1x,'(',I2,I2')'))
+  992 format((30x,'nbrs_cnt:', 2x,8(1x,I4))
 
   end subroutine PrintGridVertex
+
+
+!======================================================================
+
   subroutine CheckGridNeighbors(Vertex)
   
   implicit none
@@ -524,46 +591,32 @@ contains
   do i=1,nvert
         nnbrs = SIZE(Vertex(i)%nbrs)
         do j=1,nnbrs
-#ifdef MESH
-           do l=1,SIZE(Vertex(i)%nbrs(j)%n)
-              inbrs = Vertex(i)%nbrs(j)%n(l)
-              if(inbrs > 0) then
-                 do k=1,nnbrs
-                    do m=1,SIZE(Vertex(i)%nbrs(k)%n)
-                        if( inbrs .eq. Vertex(i)%nbrs(k)%n(m) .and. (j/=k .or. l/=m)) &
-                           write(iulog,*)'CheckGridNeighbors: ERROR identical neighbors detected  for Vertex ',i
-             
-                    enddo
-                 enddo
-              endif
-           enddo
-#else
-           inbrs = Vertex(i)%nbrs(j)%n
+           inbrs = Vertex(i)%nbrs(j)
            if(inbrs > 0) then
               do k=1,nnbrs
-                 if( inbrs .eq. Vertex(i)%nbrs(k)%n .and. (j/=k) ) &
+                 if( inbrs .eq. Vertex(i)%nbrs(k) .and. (j/=k) ) &
                       write(iulog,*)'CheckGridNeighbors: ERROR identical neighbors detected  for Vertex ',i
                     
               enddo
            endif
-#endif 
         enddo
      enddo
 
   end subroutine CheckGridNeighbors
 
-
+!======================================================================
   subroutine initgridedge(GridEdge,GridVertex)
   use parallel_mod, only : abortmp
-
+  use dimensions_mod, only : max_corner_elem
   implicit none
 
   type (GridEdge_t), intent(inout)       :: GridEdge(:)
   type (GridVertex_t), intent(in),target :: GridVertex(:)
 
-  integer                                :: i,j,k,m,l,iptr,wgtV,wgtP
+  integer                                :: i,j,k,iptr,m,n,wgtV,wgtP
   integer                                :: nelem,nelem_edge,inbr
   logical                                :: Verbose=.FALSE.
+  integer                                :: mynbr_cnt, cnt, mystart, start
 
   nelem      = SIZE(GridVertex)
   nelem_edge = SIZE(GridEdge)
@@ -572,20 +625,22 @@ contains
 
   iptr=1
   do j=1,nelem
-     do i=1,num_neighbors       
-#ifdef MESH    
-        if((GridVertex(j)%wgtP(i) .gt. 0).and.(associated(GridVertex(j)%nbrs(i)%n))) then    ! Do this only if has a non-zero weight
-           do l=1,SIZE(GridVertex(j)%nbrs(i)%n)
+     do i=1,num_neighbors    
+#ifdef MESH 
+        mynbr_cnt = GridVertex(j)%nbrs_ptr(i+1) - GridVertex(j)%nbrs_ptr(i) !length of neighbor location  
+        mystart = GridVertex(j)%nbrs_ptr(i) 
+        do m=0,mynbr_cnt-1
+           if((GridVertex(j)%nbrs_wgt(mystart + m) .gt. 0)) then    ! Do this only if has a non-zero weight
               if (nelem_edge<iptr) call abortmp('Error in initgridedge: Number of edges greater than expected.')
               GridEdge(iptr)%tail      => GridVertex(j)
-              GridEdge(iptr)%tail_face =  i
-              GridEdge(iptr)%tail_ind  =  l
-              inbr                     =  GridVertex(j)%nbrs(i)%n(l)
+              GridEdge(iptr)%tail_face =  mystart + m ! needs to be mystart + m (location in array)
+              GridEdge(iptr)%tail_dir = i*max_corner_elem + m !conversion needed for setcycle
+              inbr                     =  GridVertex(j)%nbrs(mystart+m)
               GridEdge(iptr)%head      => GridVertex(inbr)
 #ifdef TESTGRID
               wgtV                     =  GridVertex(j)%wgtV(i)
               GridEdge(iptr)%wgtV      =  wgtV
-              wgtP                     =  GridVertex(j)%wgtP(i)
+              wgtP                     =  GridVertex(j)%nbrs_wgt(mystart+m)
               GridEdge(iptr)%wgtP      =  wgtP
               ! allocate the indirect addressing arrays
               allocate(GridEdge(iptr)%TailIndex%ixV(wgtV))
@@ -601,73 +656,74 @@ contains
               allocate(GridEdge(iptr)%HeadIndex%iyP(wgtP))
 #endif
               ! ===========================================
-              ! Need this aweful piece of code to determine
+              ! Need this awful piece of code to determine
               ! which "face" of the neighbor element the
               ! edge links (i.e. the "head_face")
               ! ===========================================
-              
               do k=1,num_neighbors
-                 if (associated(GridVertex(inbr)%nbrs(k)%n)) then
-                    do m=1,SIZE(GridVertex(inbr)%nbrs(k)%n)
-                       if(GridVertex(inbr)%nbrs(k)%n(m) == GridVertex(j)%number) then
-                          GridEdge(iptr)%head_face=k
-                          GridEdge(iptr)%head_ind =m
-                       endif
-                    enddo
-                 end if
-              enddo
-              iptr=iptr+1
-           enddo
-        end if
-#else
-          if((GridVertex(j)%wgtP(i) .gt. 0) .and. (GridVertex(j)%nbrs(i)%used)) then    ! Do this only if has a non-zero weight
-              if (nelem_edge<iptr) then 
-                 print *, 'nelem_edge = ', nelem_edge, ' iptr = ', iptr
-                 print *, 'At j = ', j, ' of number of elements = ', nelem, ' and i = ', i ,' of number of neighbors = ',num_neighbors 
-                 call abortmp('Error in initgridedge: Number of edges greater than expected.')
-              end if
-              GridEdge(iptr)%tail      => GridVertex(j)
-              GridEdge(iptr)%tail_face =  i
-              GridEdge(iptr)%tail_ind  =  1
-              inbr                     =  GridVertex(j)%nbrs(i)%n
-              GridEdge(iptr)%head      => GridVertex(inbr)
-#ifdef TESTGRID
-              wgtV                     =  GridVertex(j)%wgtV(i)
-              GridEdge(iptr)%wgtV      =  wgtV
-              wgtP                     =  GridVertex(j)%wgtP(i)
-              GridEdge(iptr)%wgtP      =  wgtP
-              ! allocate the indirect addressing arrays
-              allocate(GridEdge(iptr)%TailIndex%ixV(wgtV))
-              allocate(GridEdge(iptr)%TailIndex%ixP(wgtP))
-              
-              allocate(GridEdge(iptr)%TailIndex%iyV(wgtV))
-              allocate(GridEdge(iptr)%TailIndex%iyP(wgtP))
-              
-              allocate(GridEdge(iptr)%HeadIndex%ixV(wgtV))
-              allocate(GridEdge(iptr)%HeadIndex%ixP(wgtP))
-              
-              allocate(GridEdge(iptr)%HeadIndex%iyV(wgtV))
-              allocate(GridEdge(iptr)%HeadIndex%iyP(wgtP))
-#endif
-              ! ===========================================
-              ! Need this aweful piece of code to determine
-              ! which "face" of the neighbor element the
-              ! edge links (i.e. the "head_face")
-              ! ===========================================
-              
-              do k=1,num_neighbors
-                 if (GridVertex(inbr)%nbrs(k)%used) then
-                    if(GridVertex(inbr)%nbrs(k)%n == GridVertex(j)%number) then
-                       GridEdge(iptr)%head_face=k
-                       GridEdge(iptr)%head_ind =1
+                 cnt = GridVertex(inbr)%nbrs_ptr(k+1) -GridVertex(inbr)%nbrs_ptr(k)                     
+                 start = GridVertex(inbr)%nbrs_ptr(k)
+                 do  n = 0, cnt-1
+                    if(GridVertex(inbr)%nbrs(start+n) == GridVertex(j)%number) then
+                       GridEdge(iptr)%head_face=start+n !needs to be start + n (location in array)
+                       GridEdge(iptr)%head_dir=k*max_corner_elem+n !conversion (un-done in setcycle)
                     endif
-                 endif
+                 enddo
               enddo
               iptr=iptr+1
            end if
+        end do ! m loop
+#else 
+        !not mesh
+        if((GridVertex(j)%nbrs_wgt(i) .gt. 0) .and. (GridVertex(j)%nbrs_used(i))) then    ! Do this only if has a non-zero weight
+           if (nelem_edge<iptr) then 
+              print *, 'nelem_edge = ', nelem_edge, ' iptr = ', iptr
+              print *, 'At j = ', j, ' of number of elements = ', nelem, ' and i = ', i ,' of number of neighbors = ',num_neighbors 
+              call abortmp('Error in initgridedge: Number of edges greater than expected.')
+           end if
+           GridEdge(iptr)%tail      => GridVertex(j)
+           GridEdge(iptr)%tail_face =  i
+           GridEdge(iptr)%tail_dir  =  i*max_corner_elem
+           inbr                     =  GridVertex(j)%nbrs(i)
+           GridEdge(iptr)%head      => GridVertex(inbr)
+#ifdef TESTGRID
+           wgtV                     =  GridVertex(j)%wgtV(i)
+           GridEdge(iptr)%wgtV      =  wgtV
+           wgtP                     =  GridVertex(j)%nbrs_wgt(i)
+           GridEdge(iptr)%wgtP      =  wgtP
+           ! allocate the indirect addressing arrays
+           allocate(GridEdge(iptr)%TailIndex%ixV(wgtV))
+           allocate(GridEdge(iptr)%TailIndex%ixP(wgtP))
+           
+           allocate(GridEdge(iptr)%TailIndex%iyV(wgtV))
+           allocate(GridEdge(iptr)%TailIndex%iyP(wgtP))
+           
+           allocate(GridEdge(iptr)%HeadIndex%ixV(wgtV))
+           allocate(GridEdge(iptr)%HeadIndex%ixP(wgtP))
+           
+           allocate(GridEdge(iptr)%HeadIndex%iyV(wgtV))
+           allocate(GridEdge(iptr)%HeadIndex%iyP(wgtP))
+#endif
+           ! ===========================================
+           ! Need this awful piece of code to determine
+           ! which "face" of the neighbor element the
+           ! edge links (i.e. the "head_face")
+           ! ===========================================
+           
+           do k=1,num_neighbors
+              if (GridVertex(inbr)%nbrs_used(k)) then
+                 if(GridVertex(inbr)%nbrs(k) == GridVertex(j)%number) then
+                    GridEdge(iptr)%head_face=k
+                    GridEdge(iptr)%head_dir=k*max_corner_elem !conversion (un-done in setcycle)
+
+                 endif
+              endif
+           enddo
+           iptr=iptr+1
+        end if
 #endif 
-        end do
-     end do
+     end do !end i loop
+  end do !end j loop
   if (nelem_edge+1 /= iptr) call abortmp('Error in initgridedge: Number of edges less than expected.')
   if (Verbose) then
 
@@ -685,5 +741,6 @@ contains
   end if
 
   end subroutine initgridedge
+!======================================================================
 
 end module GridGraph_mod

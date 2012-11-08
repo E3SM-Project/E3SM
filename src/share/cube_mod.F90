@@ -819,6 +819,7 @@ contains
     integer :: nrot,irot
     integer :: ii,i,j,k
     integer :: ir,jr
+    integer :: start, cnt
 
     real (kind=real_kind) :: Dloc(2,2,np)
     real (kind=real_kind) :: Drem(2,2,np)
@@ -830,12 +831,14 @@ contains
     nrot   = 0
 
     do inbr=1,8
-       if (ASSOCIATED(elem%vertex%nbrs(inbr)%n)) then
-          do k=1,SIZE(elem%vertex%nbrs(inbr)%n)
-             nbrface_no = elem%vertex%nbrs(inbr)%f(k)
-             if (myface_no /= nbrface_no) nrot=nrot+1
-          end do
-       end if
+        cnt = elem%vertex%nbrs_ptr(inbr+1) -  elem%vertex%nbrs_ptr(inbr) 
+        start =  elem%vertex%nbrs_ptr(inbr) 
+
+        do k = 0, cnt-1
+           nbrface_no = elem%vertex%nbrs_face(start+k)
+           if (myface_no /= nbrface_no) nrot=nrot+1
+        end do
+
     end do
 
     if(associated(elem%desc%rot)) then
@@ -854,352 +857,353 @@ contains
        allocate(elem%desc%rot(nrot))
        elem%desc%use_rotation=1
        irot=0          
+
        do inbr=1,8
-       if (ASSOCIATED(elem%vertex%nbrs(inbr)%n)) then
-       do k=1,SIZE(elem%vertex%nbrs(inbr)%n)
+          cnt = elem%vertex%nbrs_ptr(inbr+1) -  elem%vertex%nbrs_ptr(inbr) 
+          start =  elem%vertex%nbrs_ptr(inbr) 
 
-          nbrface_no = elem%vertex%nbrs(inbr)%f(k)
-          ! The cube edge (myface_no,nbrface_no) and inbr defines 
-          ! a unique rotation given by (D^-1) on myface_no x (D) on nbrface_no
+          do k= 0, cnt-1
 
-          if (myface_no /= nbrface_no .and. elem%vertex%nbrs(inbr)%n(k) /= -1 ) then           
+             nbrface_no = elem%vertex%nbrs_face(start+k)
+             ! The cube edge (myface_no,nbrface_no) and inbr defines 
+             ! a unique rotation given by (D^-1) on myface_no x (D) on nbrface_no
 
-             irot=irot+1
+             if (myface_no /= nbrface_no .and. elem%vertex%nbrs(start+k) /= -1 ) then           
+                irot=irot+1
 
-             if (inbr <= 4) then      
-                allocate(elem%desc%rot(irot)%R(2,2,np))  ! edge
-             else                     
-                allocate(elem%desc%rot(irot)%R(2,2,1 ))   ! corner
-             end if
-
-             ! must compute Dloc on my face, Drem on neighbor face, 
-             ! for each point on edge or corner.
-
-             ! ==================================== 
-             ! Equatorial belt east/west neighbors
-             ! ==================================== 
-
-             if (nbrface_no <= 4 .and. myface_no <= 4) then
-
-                if (inbr == west) then
-                   do j=1,np
-                      x1 = elem%cartp(1,j)%x
-                      x2 = elem%cartp(1,j)%y
-                      call Vmap(Dloc(1,1,j), x1,x2,myface_no)
-                      call Vmap(Drem(1,1,j),-x1,x2,nbrface_no)
-                   end do
-                else if (inbr == east) then
-                   do j=1,np
-                      x1 = elem%cartp(np,j)%x
-                      x2 = elem%cartp(np,j)%y
-                      call Vmap(Dloc(1,1,j), x1,x2,myface_no)
-                      call Vmap(Drem(1,1,j),-x1,x2,nbrface_no)
-                   end do
-                else if (inbr == swest ) then
-                   x1 = elem%cartp(1,1)%x
-                   x2 = elem%cartp(1,1)%y
-                   call Vmap(Dloc(1,1,1),x1,x2,myface_no)
-                   call Vmap(Drem(1,1,1),-x1,x2,nbrface_no)
-                else if (inbr == nwest ) then
-                   x1 = elem%cartp(1,np)%x
-                   x2 = elem%cartp(1,np)%y
-                   call Vmap(Dloc(1,1,1), x1,x2,myface_no)
-                   call Vmap(Drem(1,1,1),-x1,x2,nbrface_no)
-                else if (inbr == seast ) then
-                   x1 = elem%cartp(np,1)%x
-                   x2 = elem%cartp(np,1)%y
-                   call Vmap(Dloc(1,1,1), x1,x2,myface_no)
-                   call Vmap(Drem(1,1,1),-x1,x2,nbrface_no)
-                else if (inbr == neast ) then
-                   x1 = elem%cartp(np,np)%x
-                   x2 = elem%cartp(np,np)%y
-                   call Vmap(Dloc(1,1,1), x1,x2,myface_no)
-                   call Vmap(Drem(1,1,1),-x1,x2,nbrface_no)
+                if (inbr <= 4) then      
+                   allocate(elem%desc%rot(irot)%R(2,2,np))  ! edge
+                else                     
+                   allocate(elem%desc%rot(irot)%R(2,2,1 ))   ! corner
                 end if
 
-             end if
-
-             ! Northern Neighbors of Equatorial Belt
-
-             if ( myface_no <= 4 .and. nbrface_no == 6 ) then
-                if (inbr == north) then
-                   do i=1,np
-                      ir=np+1-i
-                      x1 = elem%cartp(i,np)%x
-                      x2 = elem%cartp(i,np)%y
-                      if ( myface_no == 1) then
-                         call Vmap(Dloc(1,1,i), x1,x2,myface_no)
-                         call Vmap(Drem(1,1,i),x1,-x2,nbrface_no)
-                      end if
-                      if ( myface_no == 2) then
-                         call Vmap(Dloc(1,1,i),x1,x2,myface_no)
-                         call Vmap(Drem(1,1,i),x2,x1,nbrface_no)
-
-                      end if
-                      if ( myface_no == 3) then
-                         call Vmap(Dloc(1,1,ir), x1,x2,myface_no)
-                         call Vmap(Drem(1,1,ir),-x1,x2,nbrface_no)
-                      end if
-                      if ( myface_no == 4) then
-                         call Vmap(Dloc(1,1,ir), x1,x2,myface_no)
-                         call Vmap(Drem(1,1,ir),-x2,-x1,nbrface_no)
-                      end if
-                   end do
-                else if (inbr == nwest) then
-                   x1 = elem%cartp(1,np)%x
-                   x2 = elem%cartp(1,np)%y
-                   call Vmap(Dloc(1,1,1), x1,x2,myface_no)
-                   if ( myface_no == 1) call Vmap(Drem(1,1,1),x1,-x2,nbrface_no)
-                   if ( myface_no == 2) call Vmap(Drem(1,1,1),x2, x1,nbrface_no)
-                   if ( myface_no == 3) call Vmap(Drem(1,1,1),-x1,x2,nbrface_no)
-                   if ( myface_no == 4) call Vmap(Drem(1,1,1),-x2,-x1,nbrface_no)
-                else if (inbr == neast) then
-                   x1 = elem%cartp(np,np)%x
-                   x2 = elem%cartp(np,np)%y
-                   call Vmap(Dloc(1,1,1),x1,x2,myface_no)
-                   if ( myface_no == 1) call Vmap(Drem(1,1,1),x1,-x2,nbrface_no)
-                   if ( myface_no == 2) call Vmap(Drem(1,1,1),x2, x1,nbrface_no)
-                   if ( myface_no == 3) call Vmap(Drem(1,1,1),-x1,x2,nbrface_no)
-                   if ( myface_no == 4) call Vmap(Drem(1,1,1),-x2,-x1,nbrface_no)
-                end if
-
-             end if
-
-             ! Southern Neighbors of Equatorial Belt
-
-             if ( myface_no <= 4 .and. nbrface_no == 5 ) then
-                if (inbr == south) then
-                   do i=1,np
-                      ir=np+1-i
-                      x1 = elem%cartp(i,1)%x
-                      x2 = elem%cartp(i,1)%y
-                      if ( myface_no == 1) then
-                         call Vmap(Dloc(1,1,i), x1, x2,myface_no)
-                         call Vmap(Drem(1,1,i), x1,-x2,nbrface_no)
-                      end if
-                      if ( myface_no == 2) then
-                         call Vmap(Dloc(1,1,ir),x1,x2,myface_no)
-                         call Vmap(Drem(1,1,ir),-x2,-x1,nbrface_no)
-                      end if
-                      if ( myface_no == 3) then
-                         call Vmap(Dloc(1,1,ir), x1,x2,myface_no)
-                         call Vmap(Drem(1,1,ir),-x1,x2,nbrface_no)
-                      end if
-                      if ( myface_no == 4) then
-                         call Vmap(Dloc(1,1,i), x1,x2,myface_no)
-                         call Vmap(Drem(1,1,i), x2,x1,nbrface_no)
-                      end if
-                   end do
-                else if (inbr == swest) then
-                   x1 = elem%cartp(1,1)%x
-                   x2 = elem%cartp(1,1)%y
-                   call Vmap(Dloc(1,1,1),x1,x2,myface_no)
-
-
-                   if ( myface_no == 1) call Vmap(Drem(1,1,1),x1,-x2,nbrface_no)
-                   if ( myface_no == 2) call Vmap(Drem(1,1,1),-x2,-x1,nbrface_no)
-                   if ( myface_no == 3) call Vmap(Drem(1,1,1),-x1,x2,nbrface_no)
-                   if ( myface_no == 4) call Vmap(Drem(1,1,1),x2,x1,nbrface_no)
-
-                else if (inbr == seast) then
-                   x1 = elem%cartp(np,1)%x
-                   x2 = elem%cartp(np,1)%y
-                   call Vmap(Dloc(1,1,1),x1,x2,myface_no)
-                   if ( myface_no == 1) call Vmap(Drem(1,1,1),x1,-x2,nbrface_no)
-                   if ( myface_no == 2) call Vmap(Drem(1,1,1),-x2,-x1,nbrface_no)
-                   if ( myface_no == 3) call Vmap(Drem(1,1,1),-x1,x2,nbrface_no)
-                   if ( myface_no == 4) call Vmap(Drem(1,1,1),x2,x1,nbrface_no)
-                end if
-
-             end if
-
-             ! Neighbors of Northern Capping Face Number 6
-
-             if ( myface_no == 6 ) then
-                if (nbrface_no == 1) then
-                   if (inbr == south) then
-                      do i=1,np
-                         x1 = elem%cartp(i,1)%x
-                         x2 = elem%cartp(i,1)%y
-                         call Vmap(Dloc(1,1,i),x1,x2,myface_no)
-                         call Vmap(Drem(1,1,i),x1,-x2,nbrface_no)
-                      end do
-                   else if (inbr == swest) then
-                      x1 = elem%cartp(1,1)%x
-                      x2 = elem%cartp(1,1)%y
-                      call Vmap(Dloc(1,1,1),x1,x2,myface_no)
-                      call Vmap(Drem(1,1,1),x1,-x2,nbrface_no)
-                   else if (inbr == seast) then
-                      x1 = elem%cartp(np,1)%x
-                      x2 = elem%cartp(np,1)%y
-                      call Vmap(Dloc(1,1,1),x1,x2,myface_no)
-                      call Vmap(Drem(1,1,1),x1,-x2,nbrface_no)
-                   end if
-                else if (nbrface_no == 2) then
-                   if (inbr == east) then
-                      do j=1,np
-                         x1 = elem%cartp(np,j)%x
-                         x2 = elem%cartp(np,j)%y
-                         call Vmap(Dloc(1,1,j),x1,x2,myface_no)
-                         call Vmap(Drem(1,1,j),x2,x1,nbrface_no)
-                      end do
-                   else if (inbr == seast) then
-                      x1 = elem%cartp(np,1)%x
-                      x2 = elem%cartp(np,1)%y
-                      call Vmap(Dloc(1,1,1),x1,x2,myface_no)
-                      call Vmap(Drem(1,1,1),x2,x1,nbrface_no)
-                   else if (inbr == neast) then
-                      x1 = elem%cartp(np,np)%x
-                      x2 = elem%cartp(np,np)%y
-                      call Vmap(Dloc(1,1,1),x1,x2,myface_no)
-                      call Vmap(Drem(1,1,1),x2,x1,nbrface_no)
-                   end if
-                else if (nbrface_no == 3) then
-                   if (inbr == north) then
-                      do i=1,np
-                         ir =np+1-i
-                         x1 = elem%cartp(i,np)%x
-                         x2 = elem%cartp(i,np)%y
-                         call Vmap(Dloc(1,1,ir),x1,x2,myface_no)
-                         call Vmap(Drem(1,1,ir),-x1,x2,nbrface_no)
-                      end do
-                   else if (inbr == nwest) then
-                      x1 = elem%cartp(1,np)%x
-                      x2 = elem%cartp(1,np)%y
-                      call Vmap(Dloc(1,1,1),x1,x2,myface_no)
-                      call Vmap(Drem(1,1,1),-x1,x2,nbrface_no)
-                   else if (inbr == neast) then
-                      x1 = elem%cartp(np,np)%x
-                      x2 = elem%cartp(np,np)%y
-                      call Vmap(Dloc(1,1,1),x1,x2,myface_no)
-                      call Vmap(Drem(1,1,1),-x1,x2,nbrface_no)
-                   end if
-                else if (nbrface_no == 4) then
+                ! must compute Dloc on my face, Drem on neighbor face, 
+                ! for each point on edge or corner.
+                
+                ! ==================================== 
+                ! Equatorial belt east/west neighbors
+                ! ==================================== 
+                
+                if (nbrface_no <= 4 .and. myface_no <= 4) then
+                   
                    if (inbr == west) then
                       do j=1,np
-                         jr=np+1-j
                          x1 = elem%cartp(1,j)%x
                          x2 = elem%cartp(1,j)%y
-                         call Vmap(Dloc(1,1,jr), x1, x2,myface_no )
-                         call Vmap(Drem(1,1,jr),-x2,-x1,nbrface_no)
+                         call Vmap(Dloc(1,1,j), x1,x2,myface_no)
+                         call Vmap(Drem(1,1,j),-x1,x2,nbrface_no)
                       end do
-                   else if (inbr == swest) then
+                   else if (inbr == east) then
+                      do j=1,np
+                         x1 = elem%cartp(np,j)%x
+                         x2 = elem%cartp(np,j)%y
+                         call Vmap(Dloc(1,1,j), x1,x2,myface_no)
+                         call Vmap(Drem(1,1,j),-x1,x2,nbrface_no)
+                      end do
+                   else if (inbr == swest ) then
                       x1 = elem%cartp(1,1)%x
                       x2 = elem%cartp(1,1)%y
                       call Vmap(Dloc(1,1,1),x1,x2,myface_no)
-                      call Vmap(Drem(1,1,1),-x2,-x1,nbrface_no)
-                   else if (inbr == nwest) then
+                      call Vmap(Drem(1,1,1),-x1,x2,nbrface_no)
+                   else if (inbr == nwest ) then
                       x1 = elem%cartp(1,np)%x
                       x2 = elem%cartp(1,np)%y
-                      call Vmap(Dloc(1,1,1),x1,x2,myface_no)
-                      call Vmap(Drem(1,1,1),-x2,-x1,nbrface_no)
-                   end if
-                end if
-             end if
-
-             ! Neighbors of South Capping Face Number 5
-
-             if ( myface_no == 5 ) then
-                if (nbrface_no == 1) then
-                   if (inbr == north) then
-                      do i=1,np
-                         x1 = elem%cartp(i,np)%x
-                         x2 = elem%cartp(i,np)%y
-                         call Vmap(Dloc(1,1,i),x1,x2,myface_no)
-                         call Vmap(Drem(1,1,i),x1,-x2,nbrface_no)
-                      end do
-                   else if (inbr == nwest) then
-                      x1 = elem%cartp(1,np)%x
-                      x2 = elem%cartp(1,np)%y
-                      call Vmap(Dloc(:,:,1),x1,x2,myface_no)
-                      call Vmap(Drem(:,:,1),x1,-x2,nbrface_no)
-                   else if (inbr == neast) then
-                      x1 = elem%cartp(np,np)%x
-                      x2 = elem%cartp(np,np)%y
-                      call Vmap(Dloc(1,1,1),x1,x2,myface_no)
-                      call Vmap(Drem(1,1,1),x1,-x2,nbrface_no)
-                   end if
-                else if (nbrface_no == 2) then
-                   if (inbr == east) then
-                      do j=1,np
-                         jr=np+1-j
-                         x1 = elem%cartp(np,j)%x
-                         x2 = elem%cartp(np,j)%y
-                         call Vmap(Dloc(1,1,jr),x1,  x2,myface_no)
-                         call Vmap(Drem(1,1,jr),-x2,-x1,nbrface_no)
-                      end do
-                   else if (inbr == seast) then
+                      call Vmap(Dloc(1,1,1), x1,x2,myface_no)
+                      call Vmap(Drem(1,1,1),-x1,x2,nbrface_no)
+                   else if (inbr == seast ) then
                       x1 = elem%cartp(np,1)%x
                       x2 = elem%cartp(np,1)%y
-                      call Vmap(Dloc(1,1,1),x1,x2,myface_no)
-                      call Vmap(Drem(1,1,1),-x2,-x1,nbrface_no)
+                      call Vmap(Dloc(1,1,1), x1,x2,myface_no)
+                      call Vmap(Drem(1,1,1),-x1,x2,nbrface_no)
+                   else if (inbr == neast ) then
+                      x1 = elem%cartp(np,np)%x
+                      x2 = elem%cartp(np,np)%y
+                      call Vmap(Dloc(1,1,1), x1,x2,myface_no)
+                      call Vmap(Drem(1,1,1),-x1,x2,nbrface_no)
+                   end if
+                   
+                end if
+                
+                ! Northern Neighbors of Equatorial Belt
+                
+                if ( myface_no <= 4 .and. nbrface_no == 6 ) then
+                   if (inbr == north) then
+                      do i=1,np
+                         ir=np+1-i
+                         x1 = elem%cartp(i,np)%x
+                         x2 = elem%cartp(i,np)%y
+                         if ( myface_no == 1) then
+                            call Vmap(Dloc(1,1,i), x1,x2,myface_no)
+                            call Vmap(Drem(1,1,i),x1,-x2,nbrface_no)
+                         end if
+                         if ( myface_no == 2) then
+                            call Vmap(Dloc(1,1,i),x1,x2,myface_no)
+                            call Vmap(Drem(1,1,i),x2,x1,nbrface_no)
+                            
+                         end if
+                         if ( myface_no == 3) then
+                            call Vmap(Dloc(1,1,ir), x1,x2,myface_no)
+                            call Vmap(Drem(1,1,ir),-x1,x2,nbrface_no)
+                         end if
+                         if ( myface_no == 4) then
+                            call Vmap(Dloc(1,1,ir), x1,x2,myface_no)
+                            call Vmap(Drem(1,1,ir),-x2,-x1,nbrface_no)
+                         end if
+                      end do
+                   else if (inbr == nwest) then
+                      x1 = elem%cartp(1,np)%x
+                      x2 = elem%cartp(1,np)%y
+                      call Vmap(Dloc(1,1,1), x1,x2,myface_no)
+                      if ( myface_no == 1) call Vmap(Drem(1,1,1),x1,-x2,nbrface_no)
+                      if ( myface_no == 2) call Vmap(Drem(1,1,1),x2, x1,nbrface_no)
+                      if ( myface_no == 3) call Vmap(Drem(1,1,1),-x1,x2,nbrface_no)
+                      if ( myface_no == 4) call Vmap(Drem(1,1,1),-x2,-x1,nbrface_no)
                    else if (inbr == neast) then
                       x1 = elem%cartp(np,np)%x
                       x2 = elem%cartp(np,np)%y
                       call Vmap(Dloc(1,1,1),x1,x2,myface_no)
-                      call Vmap(Drem(1,1,1),-x2,-x1,nbrface_no)
+                      if ( myface_no == 1) call Vmap(Drem(1,1,1),x1,-x2,nbrface_no)
+                      if ( myface_no == 2) call Vmap(Drem(1,1,1),x2, x1,nbrface_no)
+                      if ( myface_no == 3) call Vmap(Drem(1,1,1),-x1,x2,nbrface_no)
+                      if ( myface_no == 4) call Vmap(Drem(1,1,1),-x2,-x1,nbrface_no)
                    end if
-                else if (nbrface_no == 3) then
+                   
+                end if
+                
+                ! Southern Neighbors of Equatorial Belt
+                
+                if ( myface_no <= 4 .and. nbrface_no == 5 ) then
                    if (inbr == south) then
                       do i=1,np
                          ir=np+1-i
                          x1 = elem%cartp(i,1)%x
                          x2 = elem%cartp(i,1)%y
-                         call Vmap(Dloc(1,1,ir),x1,x2,myface_no)
-                         call Vmap(Drem(1,1,ir),-x1,x2,nbrface_no)
+                         if ( myface_no == 1) then
+                            call Vmap(Dloc(1,1,i), x1, x2,myface_no)
+                            call Vmap(Drem(1,1,i), x1,-x2,nbrface_no)
+                         end if
+                         if ( myface_no == 2) then
+                            call Vmap(Dloc(1,1,ir),x1,x2,myface_no)
+                            call Vmap(Drem(1,1,ir),-x2,-x1,nbrface_no)
+                         end if
+                         if ( myface_no == 3) then
+                            call Vmap(Dloc(1,1,ir), x1,x2,myface_no)
+                            call Vmap(Drem(1,1,ir),-x1,x2,nbrface_no)
+                         end if
+                         if ( myface_no == 4) then
+                            call Vmap(Dloc(1,1,i), x1,x2,myface_no)
+                            call Vmap(Drem(1,1,i), x2,x1,nbrface_no)
+                         end if
                       end do
                    else if (inbr == swest) then
                       x1 = elem%cartp(1,1)%x
                       x2 = elem%cartp(1,1)%y
                       call Vmap(Dloc(1,1,1),x1,x2,myface_no)
-                      call Vmap(Drem(1,1,1),-x1,x2,nbrface_no)
+                      
+                      
+                      if ( myface_no == 1) call Vmap(Drem(1,1,1),x1,-x2,nbrface_no)
+                      if ( myface_no == 2) call Vmap(Drem(1,1,1),-x2,-x1,nbrface_no)
+                      if ( myface_no == 3) call Vmap(Drem(1,1,1),-x1,x2,nbrface_no)
+                      if ( myface_no == 4) call Vmap(Drem(1,1,1),x2,x1,nbrface_no)
+                      
                    else if (inbr == seast) then
                       x1 = elem%cartp(np,1)%x
                       x2 = elem%cartp(np,1)%y
                       call Vmap(Dloc(1,1,1),x1,x2,myface_no)
-                      call Vmap(Drem(1,1,1),-x1,x2,nbrface_no)
+                      if ( myface_no == 1) call Vmap(Drem(1,1,1),x1,-x2,nbrface_no)
+                      if ( myface_no == 2) call Vmap(Drem(1,1,1),-x2,-x1,nbrface_no)
+                      if ( myface_no == 3) call Vmap(Drem(1,1,1),-x1,x2,nbrface_no)
+                      if ( myface_no == 4) call Vmap(Drem(1,1,1),x2,x1,nbrface_no)
                    end if
-                else if (nbrface_no == 4) then
-                   if (inbr == west) then
-                      do j=1,np
-                         x1 = elem%cartp(1,j)%x
-                         x2 = elem%cartp(1,j)%y
-                         call Vmap(Dloc(1,1,j),x1,x2,myface_no)
-                         call Vmap(Drem(1,1,j),x2,x1,nbrface_no)
-                      end do
-                   else if (inbr == swest) then
-                      x1 = elem%cartp(1,1)%x
-                      x2 = elem%cartp(1,1)%y
-                      call Vmap(Dloc(1,1,1),x1,x2,myface_no)
-                      call Vmap(Drem(1,1,1),x2,x1,nbrface_no)
-                   else if (inbr == nwest) then
-                      x1 = elem%cartp(1,np)%x
-                      x2 = elem%cartp(1,np)%y
-                      call Vmap(Dloc(1,1,1),x1,x2,myface_no)
-                      call Vmap(Drem(1,1,1),x2,x1,nbrface_no)
+                   
+                end if
+                
+                ! Neighbors of Northern Capping Face Number 6
+                
+                if ( myface_no == 6 ) then
+                   if (nbrface_no == 1) then
+                      if (inbr == south) then
+                         do i=1,np
+                            x1 = elem%cartp(i,1)%x
+                            x2 = elem%cartp(i,1)%y
+                            call Vmap(Dloc(1,1,i),x1,x2,myface_no)
+                            call Vmap(Drem(1,1,i),x1,-x2,nbrface_no)
+                         end do
+                      else if (inbr == swest) then
+                         x1 = elem%cartp(1,1)%x
+                         x2 = elem%cartp(1,1)%y
+                         call Vmap(Dloc(1,1,1),x1,x2,myface_no)
+                         call Vmap(Drem(1,1,1),x1,-x2,nbrface_no)
+                      else if (inbr == seast) then
+                         x1 = elem%cartp(np,1)%x
+                         x2 = elem%cartp(np,1)%y
+                         call Vmap(Dloc(1,1,1),x1,x2,myface_no)
+                         call Vmap(Drem(1,1,1),x1,-x2,nbrface_no)
+                      end if
+                   else if (nbrface_no == 2) then
+                      if (inbr == east) then
+                         do j=1,np
+                            x1 = elem%cartp(np,j)%x
+                            x2 = elem%cartp(np,j)%y
+                            call Vmap(Dloc(1,1,j),x1,x2,myface_no)
+                            call Vmap(Drem(1,1,j),x2,x1,nbrface_no)
+                         end do
+                      else if (inbr == seast) then
+                         x1 = elem%cartp(np,1)%x
+                         x2 = elem%cartp(np,1)%y
+                         call Vmap(Dloc(1,1,1),x1,x2,myface_no)
+                         call Vmap(Drem(1,1,1),x2,x1,nbrface_no)
+                      else if (inbr == neast) then
+                         x1 = elem%cartp(np,np)%x
+                         x2 = elem%cartp(np,np)%y
+                         call Vmap(Dloc(1,1,1),x1,x2,myface_no)
+                         call Vmap(Drem(1,1,1),x2,x1,nbrface_no)
+                      end if
+                   else if (nbrface_no == 3) then
+                      if (inbr == north) then
+                         do i=1,np
+                            ir =np+1-i
+                            x1 = elem%cartp(i,np)%x
+                            x2 = elem%cartp(i,np)%y
+                            call Vmap(Dloc(1,1,ir),x1,x2,myface_no)
+                            call Vmap(Drem(1,1,ir),-x1,x2,nbrface_no)
+                         end do
+                      else if (inbr == nwest) then
+                         x1 = elem%cartp(1,np)%x
+                         x2 = elem%cartp(1,np)%y
+                         call Vmap(Dloc(1,1,1),x1,x2,myface_no)
+                         call Vmap(Drem(1,1,1),-x1,x2,nbrface_no)
+                      else if (inbr == neast) then
+                         x1 = elem%cartp(np,np)%x
+                         x2 = elem%cartp(np,np)%y
+                         call Vmap(Dloc(1,1,1),x1,x2,myface_no)
+                         call Vmap(Drem(1,1,1),-x1,x2,nbrface_no)
+                      end if
+                   else if (nbrface_no == 4) then
+                      if (inbr == west) then
+                         do j=1,np
+                            jr=np+1-j
+                            x1 = elem%cartp(1,j)%x
+                            x2 = elem%cartp(1,j)%y
+                            call Vmap(Dloc(1,1,jr), x1, x2,myface_no )
+                            call Vmap(Drem(1,1,jr),-x2,-x1,nbrface_no)
+                         end do
+                      else if (inbr == swest) then
+                         x1 = elem%cartp(1,1)%x
+                         x2 = elem%cartp(1,1)%y
+                         call Vmap(Dloc(1,1,1),x1,x2,myface_no)
+                         call Vmap(Drem(1,1,1),-x2,-x1,nbrface_no)
+                      else if (inbr == nwest) then
+                         x1 = elem%cartp(1,np)%x
+                         x2 = elem%cartp(1,np)%y
+                         call Vmap(Dloc(1,1,1),x1,x2,myface_no)
+                         call Vmap(Drem(1,1,1),-x2,-x1,nbrface_no)
+                      end if
                    end if
                 end if
-             end if
+                
+                ! Neighbors of South Capping Face Number 5
 
-             elem%desc%rot(irot)%nbr = inbr
-             if (rot_type == "covariant") then
-                do i=1,SIZE(elem%desc%rot(irot)%R(:,:,:),3)
-                   elem%desc%rot(irot)%R(:,:,i)=covariant_rot(Dloc(:,:,i),Drem(:,:,i))
-                end do
-             else if (rot_type == "contravariant") then
-                do i=1,SIZE(elem%desc%rot(irot)%R(:,:,:),3)
-                   elem%desc%rot(irot)%R(:,:,i)=contravariant_rot(Dloc(:,:,i),Drem(:,:,i))
-                end do
-             end if
-
-          endif
-       end do
-       end if
-       end do
-    end if
-
+                if ( myface_no == 5 ) then
+                   if (nbrface_no == 1) then
+                      if (inbr == north) then
+                         do i=1,np
+                            x1 = elem%cartp(i,np)%x
+                            x2 = elem%cartp(i,np)%y
+                            call Vmap(Dloc(1,1,i),x1,x2,myface_no)
+                            call Vmap(Drem(1,1,i),x1,-x2,nbrface_no)
+                         end do
+                      else if (inbr == nwest) then
+                         x1 = elem%cartp(1,np)%x
+                         x2 = elem%cartp(1,np)%y
+                         call Vmap(Dloc(:,:,1),x1,x2,myface_no)
+                         call Vmap(Drem(:,:,1),x1,-x2,nbrface_no)
+                      else if (inbr == neast) then
+                         x1 = elem%cartp(np,np)%x
+                         x2 = elem%cartp(np,np)%y
+                         call Vmap(Dloc(1,1,1),x1,x2,myface_no)
+                         call Vmap(Drem(1,1,1),x1,-x2,nbrface_no)
+                      end if
+                   else if (nbrface_no == 2) then
+                      if (inbr == east) then
+                         do j=1,np
+                            jr=np+1-j
+                            x1 = elem%cartp(np,j)%x
+                            x2 = elem%cartp(np,j)%y
+                            call Vmap(Dloc(1,1,jr),x1,  x2,myface_no)
+                            call Vmap(Drem(1,1,jr),-x2,-x1,nbrface_no)
+                         end do
+                      else if (inbr == seast) then
+                         x1 = elem%cartp(np,1)%x
+                         x2 = elem%cartp(np,1)%y
+                         call Vmap(Dloc(1,1,1),x1,x2,myface_no)
+                         call Vmap(Drem(1,1,1),-x2,-x1,nbrface_no)
+                      else if (inbr == neast) then
+                         x1 = elem%cartp(np,np)%x
+                         x2 = elem%cartp(np,np)%y
+                         call Vmap(Dloc(1,1,1),x1,x2,myface_no)
+                         call Vmap(Drem(1,1,1),-x2,-x1,nbrface_no)
+                      end if
+                   else if (nbrface_no == 3) then
+                      if (inbr == south) then
+                         do i=1,np
+                            ir=np+1-i
+                            x1 = elem%cartp(i,1)%x
+                            x2 = elem%cartp(i,1)%y
+                            call Vmap(Dloc(1,1,ir),x1,x2,myface_no)
+                            call Vmap(Drem(1,1,ir),-x1,x2,nbrface_no)
+                         end do
+                      else if (inbr == swest) then
+                         x1 = elem%cartp(1,1)%x
+                         x2 = elem%cartp(1,1)%y
+                         call Vmap(Dloc(1,1,1),x1,x2,myface_no)
+                         call Vmap(Drem(1,1,1),-x1,x2,nbrface_no)
+                      else if (inbr == seast) then
+                         x1 = elem%cartp(np,1)%x
+                         x2 = elem%cartp(np,1)%y
+                         call Vmap(Dloc(1,1,1),x1,x2,myface_no)
+                         call Vmap(Drem(1,1,1),-x1,x2,nbrface_no)
+                      end if
+                   else if (nbrface_no == 4) then
+                      if (inbr == west) then
+                         do j=1,np
+                            x1 = elem%cartp(1,j)%x
+                            x2 = elem%cartp(1,j)%y
+                            call Vmap(Dloc(1,1,j),x1,x2,myface_no)
+                            call Vmap(Drem(1,1,j),x2,x1,nbrface_no)
+                         end do
+                      else if (inbr == swest) then
+                         x1 = elem%cartp(1,1)%x
+                         x2 = elem%cartp(1,1)%y
+                         call Vmap(Dloc(1,1,1),x1,x2,myface_no)
+                         call Vmap(Drem(1,1,1),x2,x1,nbrface_no)
+                      else if (inbr == nwest) then
+                         x1 = elem%cartp(1,np)%x
+                         x2 = elem%cartp(1,np)%y
+                         call Vmap(Dloc(1,1,1),x1,x2,myface_no)
+                         call Vmap(Drem(1,1,1),x2,x1,nbrface_no)
+                      end if
+                   end if
+                end if
+                
+                elem%desc%rot(irot)%nbr = inbr
+                if (rot_type == "covariant") then
+                   do i=1,SIZE(elem%desc%rot(irot)%R(:,:,:),3)
+                      elem%desc%rot(irot)%R(:,:,i)=covariant_rot(Dloc(:,:,i),Drem(:,:,i))
+                   end do
+                else if (rot_type == "contravariant") then
+                   do i=1,SIZE(elem%desc%rot(irot)%R(:,:,:),3)
+                      elem%desc%rot(irot)%R(:,:,i)=contravariant_rot(Dloc(:,:,i),Drem(:,:,i))
+                   end do
+                end if
+                
+             endif ! end of a unique rotation
+          end do !k loop over neighbors in that direction
+       end do !inbr loop
+    end if !nrot > 0
+    
   end subroutine rotation_init_atomic
-
+  
 #else
 
   subroutine rotation_init_atomic(elem, rot_type)
@@ -1232,8 +1236,8 @@ contains
     nrot   = 0
 
     do inbr=1,8
-       if (elem%vertex%nbrs(inbr)%used) then
-             nbrface_no = elem%vertex%nbrs(inbr)%f
+       if (elem%vertex%nbrs_used(inbr)) then
+             nbrface_no = elem%vertex%nbrs_face(inbr)
              if (myface_no /= nbrface_no) nrot=nrot+1
        end if
     end do
@@ -1255,12 +1259,12 @@ contains
        elem%desc%use_rotation=1
        irot=0          
        do inbr=1,8
-       if (elem%vertex%nbrs(inbr)%used) then
-          nbrface_no = elem%vertex%nbrs(inbr)%f
+       if (elem%vertex%nbrs_used(inbr)) then
+          nbrface_no = elem%vertex%nbrs_face(inbr)
           ! The cube edge (myface_no,nbrface_no) and inbr defines 
           ! a unique rotation given by (D^-1) on myface_no x (D) on nbrface_no
 
-          if (myface_no /= nbrface_no .and. elem%vertex%nbrs(inbr)%n /= -1 ) then           
+          if (myface_no /= nbrface_no .and. elem%vertex%nbrs(inbr) /= -1 ) then           
 
              irot=irot+1
 
@@ -1597,7 +1601,8 @@ contains
 
   end subroutine rotation_init_atomic
 
-#endif !MESH
+#endif 
+!MESH
 
   subroutine set_corner_coordinates(elem)
     use element_mod,    only : element_t 
@@ -1667,6 +1672,7 @@ contains
     integer                            :: nn(4), en(4)
     integer el, i, n, direction
     integer current_node_num, tot_ne
+    integer :: start, cnt
 
     current_node_num = 0
     tot_ne = 6*ne*ne
@@ -1680,37 +1686,39 @@ contains
        vertex = GridVertex(el)
        en = 0 
        do direction = 1,8
-          if (ASSOCIATED(vertex%nbrs(direction)%n)) then
-             do i=1,SIZE(vertex%nbrs(direction)%n)
-                n = vertex%nbrs(direction)%n(i)
-                if (n /= -1) then
-                   nn = connectivity(n,:)
-                   select case (direction)
-                   case (north)
-                      if (nn(1)/=0) en(4) = nn(1)
-                      if (nn(2)/=0) en(3) = nn(2)
-                   case (south)
-                      if (nn(4)/=0) en(1) = nn(4)
-                      if (nn(3)/=0) en(2) = nn(3)
-                   case (east)
-                      if (nn(1)/=0) en(2) = nn(1)
-                      if (nn(4)/=0) en(3) = nn(4)
-                   case (west)
-                      if (nn(2)/=0) en(1) = nn(2)
-                      if (nn(3)/=0) en(4) = nn(3)
-                   case (neast)
-                      if (nn(1)/=0) en(3) = nn(1)
-                   case (seast)
-                      if (nn(4)/=0) en(2) = nn(4)
-                   case (swest)
-                      if (nn(3)/=0) en(1) = nn(3)
-                   case (nwest)
-                      if (nn(2)/=0) en(4) = nn(2)
-                   end select
-                end if
-             end do
-          end if
-       end do
+          cnt = vertex%nbrs_ptr(direction+1) -  vertex%nbrs_ptr(direction) 
+          start =  vertex%nbrs_ptr(direction) 
+
+          do i=0, cnt-1
+             n = vertex%nbrs(start+i)
+             if (n /= -1) then
+                nn = connectivity(n,:)
+                select case (direction)
+                case (north)
+                   if (nn(1)/=0) en(4) = nn(1)
+                   if (nn(2)/=0) en(3) = nn(2)
+                case (south)
+                   if (nn(4)/=0) en(1) = nn(4)
+                   if (nn(3)/=0) en(2) = nn(3)
+                case (east)
+                   if (nn(1)/=0) en(2) = nn(1)
+                   if (nn(4)/=0) en(3) = nn(4)
+                case (west)
+                   if (nn(2)/=0) en(1) = nn(2)
+                   if (nn(3)/=0) en(4) = nn(3)
+                case (neast)
+                   if (nn(1)/=0) en(3) = nn(1)
+                case (seast)
+                   if (nn(4)/=0) en(2) = nn(4)
+                case (swest)
+                   if (nn(3)/=0) en(1) = nn(3)
+                case (nwest)
+                   if (nn(2)/=0) en(4) = nn(2)
+                end select
+             end if
+          end do
+       end do !direction
+
        do i=1,4
           if (en(i) == 0) then
              current_node_num = current_node_num + 1
@@ -1719,6 +1727,7 @@ contains
        end do
        connectivity(el,:) = en
     end do
+
     if (current_node_num /= (6*ne*ne+2)) then
        call abortmp('Error in assignment of node numbers: Failed Euler test')
     end if
@@ -1757,8 +1766,8 @@ contains
        vertex = GridVertex(el)
        en = 0 
        do direction = 1,8
-          if (vertex%nbrs(direction)%used) then
-                n = vertex%nbrs(direction)%n
+          if (vertex%nbrs_used(direction)) then
+                n = vertex%nbrs(direction)
                 if (n /= -1) then
                    nn = connectivity(n,:)
                    select case (direction)
@@ -1802,7 +1811,8 @@ contains
     end do
   end subroutine assign_node_numbers_to_elem
 
-#endif !MESH
+#endif 
+!MESH
 
   ! ================================================
   ! convert_gbl_index:
@@ -1844,7 +1854,7 @@ contains
     integer,allocatable       :: Mesh(:,:)
     integer,allocatable       :: Mesh2(:,:),Mesh2_map(:,:,:),sfcij(:,:)
     type (GridVertex_t),allocatable        :: GridElem(:,:,:)
-    integer                   :: i,j,k,l,number,irev,ne2,i2,j2,sfc_index
+    integer                   :: i,j,k,ll,number,irev,ne2,i2,j2,sfc_index
     integer                   :: EdgeWgtP,CornerWgt
     integer                   :: ielem, nedge, my_max
     integer                   :: offset, ierr
@@ -1867,11 +1877,11 @@ contains
              ! ====================================
 
              ! Do some initalization here
-             do l=1,8
-               GridElem(i,j,k)%nbrs(l)%used = .false.
+             do ll=1,8
+               GridElem(i,j,k)%nbrs_used(ll) = .false.
              end do
-             GridElem(i,j,k)%wgtP(:)=0
-             GridElem(i,j,k)%wgtP_ghost(:)=1  ! always this value
+             GridElem(i,j,k)%nbrs_wgt(:)=0
+             GridElem(i,j,k)%nbrs_wgt_ghost(:)=1  ! always this value
              GridElem(i,j,k)%SpaceCurve=0
              GridElem(i,j,k)%number=number 
              number=number+1
@@ -1882,8 +1892,8 @@ contains
     
     my_max = CubeElemCount()
     do k=1,my_max
-       do l=1,8
-          GridVertex(k)%nbrs(l)%used = .false.
+       do ll=1,8
+          GridVertex(k)%nbrs_used(ll) = .false.
        end do
     end do
 
@@ -2030,84 +2040,84 @@ contains
        ! setup  SOUTH, WEST, SW neighbors
        do j=2,ne
           do i=2,ne
-             GridElem(i,j,k)%nbrs(west)%used = .true.
-             GridElem(i,j,k)%nbrs(south)%used = .true.
-             GridElem(i,j,k)%nbrs(swest)%used = .true.
+             GridElem(i,j,k)%nbrs_used(west) = .true.
+             GridElem(i,j,k)%nbrs_used(south) = .true.
+             GridElem(i,j,k)%nbrs_used(swest) = .true.
 
 
 
-             GridElem(i,j,k)%nbrs(west)%n  = GridElem(i-1,j,k)%number
-             GridElem(i,j,k)%nbrs(west)%f  = k
-             GridElem(i,j,k)%wgtP(west)       = EdgeWgtP
-             GridElem(i,j,k)%nbrs(south)%n = GridElem(i,j-1,k)%number
-             GridElem(i,j,k)%nbrs(south)%f = k
-             GridElem(i,j,k)%wgtP(south)      = EdgeWgtP
-             GridElem(i,j,k)%nbrs(swest)%n = GridElem(i-1,j-1,k)%number
-             GridElem(i,j,k)%nbrs(swest)%f = k
-             GridElem(i,j,k)%wgtP(swest)      = CornerWgt
+             GridElem(i,j,k)%nbrs(west)  = GridElem(i-1,j,k)%number
+             GridElem(i,j,k)%nbrs_face(west)  = k
+             GridElem(i,j,k)%nbrs_wgt(west)       = EdgeWgtP
+             GridElem(i,j,k)%nbrs(south) = GridElem(i,j-1,k)%number
+             GridElem(i,j,k)%nbrs_face(south) = k
+             GridElem(i,j,k)%nbrs_wgt(south)      = EdgeWgtP
+             GridElem(i,j,k)%nbrs(swest) = GridElem(i-1,j-1,k)%number
+             GridElem(i,j,k)%nbrs_face(swest) = k
+             GridElem(i,j,k)%nbrs_wgt(swest)      = CornerWgt
           end do
        end do
 
        !  setup EAST, NORTH, NE neighbors
        do j=1,ne-1
           do i=1,ne-1
-             GridElem(i,j,k)%nbrs(east)%used = .true.
-             GridElem(i,j,k)%nbrs(north)%used = .true.
-             GridElem(i,j,k)%nbrs(neast)%used = .true.
+             GridElem(i,j,k)%nbrs_used(east) = .true.
+             GridElem(i,j,k)%nbrs_used(north) = .true.
+             GridElem(i,j,k)%nbrs_used(neast) = .true.
              
              
              
-             GridElem(i,j,k)%nbrs(east)%n   = GridElem(i+1,j,k)%number
-             GridElem(i,j,k)%nbrs(east)%f   = k
-             GridElem(i,j,k)%wgtP(east)        = EdgeWgtP
-             GridElem(i,j,k)%nbrs(north)%n  = GridElem(i,j+1,k)%number
-             GridElem(i,j,k)%nbrs(north)%f  = k
-             GridElem(i,j,k)%wgtP(north)       = EdgeWgtP
-             GridElem(i,j,k)%nbrs(neast)%n  = GridElem(i+1,j+1,k)%number
-             GridElem(i,j,k)%nbrs(neast)%f  = k
-             GridElem(i,j,k)%wgtP(neast)       = CornerWgt
+             GridElem(i,j,k)%nbrs(east)   = GridElem(i+1,j,k)%number
+             GridElem(i,j,k)%nbrs_face(east)   = k
+             GridElem(i,j,k)%nbrs_wgt(east)        = EdgeWgtP
+             GridElem(i,j,k)%nbrs(north)  = GridElem(i,j+1,k)%number
+             GridElem(i,j,k)%nbrs_face(north)  = k
+             GridElem(i,j,k)%nbrs_wgt(north)       = EdgeWgtP
+             GridElem(i,j,k)%nbrs(neast) = GridElem(i+1,j+1,k)%number
+             GridElem(i,j,k)%nbrs_face(neast)  = k
+             GridElem(i,j,k)%nbrs_wgt(neast)       = CornerWgt
           end do
        end do
 
        ! Setup the remaining SOUTH, EAST, and SE neighbors
        do j=2,ne
           do i=1,ne-1
-             GridElem(i,j,k)%nbrs(south)%used = .true.
-             GridElem(i,j,k)%nbrs(east)%used = .true.
-             GridElem(i,j,k)%nbrs(seast)%used = .true.
+             GridElem(i,j,k)%nbrs_used(south) = .true.
+             GridElem(i,j,k)%nbrs_used(east) = .true.
+             GridElem(i,j,k)%nbrs_used(seast) = .true.
              
              
              
-             GridElem(i,j,k)%nbrs(south)%n  = GridElem(i,j-1,k)%number
-             GridElem(i,j,k)%nbrs(south)%f  = k
-             GridElem(i,j,k)%wgtP(south)       = EdgeWgtP
-             GridElem(i,j,k)%nbrs(east)%n   = GridElem(i+1,j,k)%number
-             GridElem(i,j,k)%nbrs(east)%f   = k
-             GridElem(i,j,k)%wgtP(east)        = EdgeWgtP
-             GridElem(i,j,k)%nbrs(seast)%n  = GridElem(i+1,j-1,k)%number
-             GridElem(i,j,k)%nbrs(seast)%f  = k
-             GridElem(i,j,k)%wgtP(seast)       = CornerWgt
+             GridElem(i,j,k)%nbrs(south)  = GridElem(i,j-1,k)%number
+             GridElem(i,j,k)%nbrs_face(south)  = k
+             GridElem(i,j,k)%nbrs_wgt(south)       = EdgeWgtP
+             GridElem(i,j,k)%nbrs(east)   = GridElem(i+1,j,k)%number
+             GridElem(i,j,k)%nbrs_face(east)   = k
+             GridElem(i,j,k)%nbrs_wgt(east)        = EdgeWgtP
+             GridElem(i,j,k)%nbrs(seast)  = GridElem(i+1,j-1,k)%number
+             GridElem(i,j,k)%nbrs_face(seast)  = k
+             GridElem(i,j,k)%nbrs_wgt(seast)       = CornerWgt
           enddo
        enddo
 
        ! Setup the remaining NORTH, WEST, and NW neighbors
        do j=1,ne-1
           do i=2,ne
-             GridElem(i,j,k)%nbrs(north)%used = .true.
-             GridElem(i,j,k)%nbrs(west)%used = .true.
-             GridElem(i,j,k)%nbrs(nwest)%used = .true.
+             GridElem(i,j,k)%nbrs_used(north) = .true.
+             GridElem(i,j,k)%nbrs_used(west) = .true.
+             GridElem(i,j,k)%nbrs_used(nwest) = .true.
              
              
              
-             GridElem(i,j,k)%nbrs(north)%n  = GridElem(i,j+1,k)%number
-             GridElem(i,j,k)%nbrs(north)%f  = k
-             GridElem(i,j,k)%wgtP(north)       = EdgeWgtP
-             GridElem(i,j,k)%nbrs(west)%n   = GridElem(i-1,j,k)%number
-             GridElem(i,j,k)%nbrs(west)%f   = k
-             GridElem(i,j,k)%wgtP(west)        = EdgeWgtP
-             GridElem(i,j,k)%nbrs(nwest)%n  = GridElem(i-1,j+1,k)%number
-             GridElem(i,j,k)%nbrs(nwest)%f  = k
-             GridElem(i,j,k)%wgtP(nwest)       = CornerWgt
+             GridElem(i,j,k)%nbrs(north)  = GridElem(i,j+1,k)%number
+             GridElem(i,j,k)%nbrs_face(north)  = k
+             GridElem(i,j,k)%nbrs_wgt(north)       = EdgeWgtP
+             GridElem(i,j,k)%nbrs(west)   = GridElem(i-1,j,k)%number
+             GridElem(i,j,k)%nbrs_face(west)   = k
+             GridElem(i,j,k)%nbrs_wgt(west)        = EdgeWgtP
+             GridElem(i,j,k)%nbrs(nwest)  = GridElem(i-1,j+1,k)%number
+             GridElem(i,j,k)%nbrs_face(nwest)  = k
+             GridElem(i,j,k)%nbrs_wgt(nwest)       = CornerWgt
           enddo
        enddo
     end do
@@ -2118,41 +2128,41 @@ contains
 
     do k=1,4
        do j=1,ne
-          GridElem(1 ,j,k)%nbrs(west)%used = .true.
-          GridElem(ne,j,k)%nbrs(east)%used = .true.
+          GridElem(1 ,j,k)%nbrs_used(west) = .true.
+          GridElem(ne,j,k)%nbrs_used(east) = .true.
           
           
-          GridElem(1 ,j,k)%nbrs(west)%n = GridElem(ne,j,MODULO(2+k,4)+1)%number
-          GridElem(1 ,j,k)%nbrs(west)%f = MODULO(2+k,4)+1
-          GridElem(1 ,j,k)%wgtP(west)  = EdgeWgtP
-          GridElem(ne,j,k)%nbrs(east)%n = GridElem(1 ,j,MODULO(k  ,4)+1)%number
-          GridElem(ne,j,k)%nbrs(east)%f = MODULO(k  ,4)+1
-          GridElem(ne,j,k)%wgtP(east)  = EdgeWgtP
+          GridElem(1 ,j,k)%nbrs(west) = GridElem(ne,j,MODULO(2+k,4)+1)%number
+          GridElem(1 ,j,k)%nbrs_face(west) = MODULO(2+k,4)+1
+          GridElem(1 ,j,k)%nbrs_wgt(west)  = EdgeWgtP
+          GridElem(ne,j,k)%nbrs(east) = GridElem(1 ,j,MODULO(k  ,4)+1)%number
+          GridElem(ne,j,k)%nbrs_face(east) = MODULO(k  ,4)+1
+          GridElem(ne,j,k)%nbrs_wgt(east)  = EdgeWgtP
 
           !  Special rules for corner 'edges'
           if( j /= 1) then
-             GridElem(1 ,j,k)%nbrs(swest)%used = .true.
-             GridElem(ne,j,k)%nbrs(seast)%used = .true.
+             GridElem(1 ,j,k)%nbrs_used(swest) = .true.
+             GridElem(ne,j,k)%nbrs_used(seast) = .true.
              
              
-             GridElem(1 ,j,k)%nbrs(swest)%n   = GridElem(ne,j-1,MODULO(2+k,4)+1)%number
-             GridElem(1 ,j,k)%nbrs(swest)%f   = MODULO(2+k,4)+1
-             GridElem(1 ,j,k)%wgtP(swest)        = CornerWgt
-             GridElem(ne,j,k)%nbrs(seast)%n   = GridElem(1 ,j-1,MODULO(k  ,4)+1)%number
-             GridElem(ne,j,k)%nbrs(seast)%f   = MODULO(k  ,4)+1
-             GridElem(ne,j,k)%wgtP(seast)        = CornerWgt
+             GridElem(1 ,j,k)%nbrs(swest)   = GridElem(ne,j-1,MODULO(2+k,4)+1)%number
+             GridElem(1 ,j,k)%nbrs_face(swest)   = MODULO(2+k,4)+1
+             GridElem(1 ,j,k)%nbrs_wgt(swest)        = CornerWgt
+             GridElem(ne,j,k)%nbrs(seast)   = GridElem(1 ,j-1,MODULO(k  ,4)+1)%number
+             GridElem(ne,j,k)%nbrs_face(seast)   = MODULO(k  ,4)+1
+             GridElem(ne,j,k)%nbrs_wgt(seast)        = CornerWgt
           endif
           if( j /= ne) then
-             GridElem(1 ,j,k)%nbrs(nwest)%used = .true.
-             GridElem(ne,j,k)%nbrs(neast)%used = .true.
+             GridElem(1 ,j,k)%nbrs_used(nwest) = .true.
+             GridElem(ne,j,k)%nbrs_used(neast) = .true.
              
              
-             GridElem(1 ,j,k)%nbrs(nwest)%n   = GridElem(ne,j+1,MODULO(2+k,4)+1)%number
-             GridElem(1 ,j,k)%nbrs(nwest)%f   = MODULO(2+k,4)+1
-             GridElem(1 ,j,k)%wgtP(nwest)        = CornerWgt
-             GridElem(ne,j,k)%nbrs(neast)%n   = GridElem(1 ,j+1,MODULO(k  ,4)+1)%number
-             GridElem(ne,j,k)%nbrs(neast)%f   = MODULO(k  ,4)+1
-             GridElem(ne,j,k)%wgtP(neast)        = CornerWgt
+             GridElem(1 ,j,k)%nbrs(nwest)   = GridElem(ne,j+1,MODULO(2+k,4)+1)%number
+             GridElem(1 ,j,k)%nbrs_face(nwest)   = MODULO(2+k,4)+1
+             GridElem(1 ,j,k)%nbrs_wgt(nwest)        = CornerWgt
+             GridElem(ne,j,k)%nbrs(neast)   = GridElem(1 ,j+1,MODULO(k  ,4)+1)%number
+             GridElem(ne,j,k)%nbrs_face(neast)   = MODULO(k  ,4)+1
+             GridElem(ne,j,k)%nbrs_wgt(neast)        = CornerWgt
           endif
        end do
     end do
@@ -2163,41 +2173,41 @@ contains
     ! ==================================
 
     do i=1,ne
-       GridElem(i,1 ,1)%nbrs(south)%used = .true.
-       GridElem(i,ne,5)%nbrs(north)%used = .true.
+       GridElem(i,1 ,1)%nbrs_used(south) = .true.
+       GridElem(i,ne,5)%nbrs_used(north) = .true.
        
        
-       GridElem(i,1 ,1)%nbrs(south)%n = GridElem(i,ne,5)%number
-       GridElem(i,1 ,1)%nbrs(south)%f = 5
-       GridElem(i,1 ,1)%wgtP(south)      = EdgeWgtP
-       GridElem(i,ne,5)%nbrs(north)%n = GridElem(i,1 ,1)%number
-       GridElem(i,ne,5)%nbrs(north)%f = 1
-       GridElem(i,ne,5)%wgtP(north)      = EdgeWgtP
+       GridElem(i,1 ,1)%nbrs(south) = GridElem(i,ne,5)%number
+       GridElem(i,1 ,1)%nbrs_face(south) = 5
+       GridElem(i,1 ,1)%nbrs_wgt(south)      = EdgeWgtP
+       GridElem(i,ne,5)%nbrs(north) = GridElem(i,1 ,1)%number
+       GridElem(i,ne,5)%nbrs_face(north) = 1
+       GridElem(i,ne,5)%nbrs_wgt(north)      = EdgeWgtP
 
        !  Special rules for corner 'edges'
        if( i /= 1) then
-          GridElem(i,1 ,1)%nbrs(swest)%used = .true.
-          GridElem(i,ne,5)%nbrs(nwest)%used = .true.
+          GridElem(i,1 ,1)%nbrs_used(swest) = .true.
+          GridElem(i,ne,5)%nbrs_used(nwest) = .true.
           
           
-          GridElem(i,1 ,1)%nbrs(swest)%n    = GridElem(i-1,ne,5)%number
-          GridElem(i,1 ,1)%nbrs(swest)%f    = 5
-          GridElem(i,1 ,1)%wgtP(swest)         = CornerWgt
-          GridElem(i,ne,5)%nbrs(nwest)%n    = GridElem(i-1,1 ,1)%number
-          GridElem(i,ne,5)%nbrs(nwest)%f    = 1
-          GridElem(i,ne,5)%wgtP(nwest)         = CornerWgt
+          GridElem(i,1 ,1)%nbrs(swest)    = GridElem(i-1,ne,5)%number
+          GridElem(i,1 ,1)%nbrs_face(swest)    = 5
+          GridElem(i,1 ,1)%nbrs_wgt(swest)         = CornerWgt
+          GridElem(i,ne,5)%nbrs(nwest)    = GridElem(i-1,1 ,1)%number
+          GridElem(i,ne,5)%nbrs_face(nwest)    = 1
+          GridElem(i,ne,5)%nbrs_wgt(nwest)         = CornerWgt
        endif
        if( i /= ne) then
-          GridElem(i,1 ,1)%nbrs(seast)%used = .true.
-          GridElem(i,ne,5)%nbrs(neast)%used = .true.
+          GridElem(i,1 ,1)%nbrs_used(seast) = .true.
+          GridElem(i,ne,5)%nbrs_used(neast) = .true.
           
           
-          GridElem(i,1 ,1)%nbrs(seast)%n    = GridElem(i+1,ne,5)%number
-          GridElem(i,1 ,1)%nbrs(seast)%f    = 5
-          GridElem(i,1 ,1)%wgtP(seast)         = CornerWgt
-          GridElem(i,ne,5)%nbrs(neast)%n    = GridElem(i+1,1 ,1)%number
-          GridElem(i,ne,5)%nbrs(neast)%f    = 1
-          GridElem(i,ne,5)%wgtP(neast)         = CornerWgt
+          GridElem(i,1 ,1)%nbrs(seast)    = GridElem(i+1,ne,5)%number
+          GridElem(i,1 ,1)%nbrs_face(seast)    = 5
+          GridElem(i,1 ,1)%nbrs_wgt(seast)         = CornerWgt
+          GridElem(i,ne,5)%nbrs(neast)    = GridElem(i+1,1 ,1)%number
+          GridElem(i,ne,5)%nbrs_face(neast)    = 1
+          GridElem(i,ne,5)%nbrs_wgt(neast)         = CornerWgt
        endif
 
     end do
@@ -2208,41 +2218,41 @@ contains
 
     do i=1,ne
        irev=ne+1-i
-       GridElem(i, 1,2)%nbrs(south)%used = .true.
-       GridElem(ne,i,5)%nbrs(east)%used = .true.
+       GridElem(i, 1,2)%nbrs_used(south) = .true.
+       GridElem(ne,i,5)%nbrs_used(east) = .true.
        
        
-       GridElem(i,1 ,2)%nbrs(south)%n = GridElem(ne,irev,5)%number
-       GridElem(i,1 ,2)%nbrs(south)%f = 5
-       GridElem(i,1 ,2)%wgtP(south)      = EdgeWgtP
-       GridElem(ne,i,5)%nbrs(east)%n  = GridElem(irev,1 ,2)%number
-       GridElem(ne,i,5)%nbrs(east)%f  = 2
-       GridElem(ne,i,5)%wgtP(east)       = EdgeWgtP
+       GridElem(i,1 ,2)%nbrs(south) = GridElem(ne,irev,5)%number
+       GridElem(i,1 ,2)%nbrs_face(south) = 5
+       GridElem(i,1 ,2)%nbrs_wgt(south)      = EdgeWgtP
+       GridElem(ne,i,5)%nbrs(east)  = GridElem(irev,1 ,2)%number
+       GridElem(ne,i,5)%nbrs_face(east)  = 2
+       GridElem(ne,i,5)%nbrs_wgt(east)       = EdgeWgtP
 
        !  Special rules for corner 'edges'
        if( i /= 1) then
-          GridElem(i, 1,2)%nbrs(swest)%used = .true.
-          GridElem(ne,i,5)%nbrs(seast)%used = .true.
+          GridElem(i, 1,2)%nbrs_used(swest) = .true.
+          GridElem(ne,i,5)%nbrs_used(seast) = .true.
           
           
-          GridElem(i,1 ,2)%nbrs(swest)%n = GridElem(ne,irev+1,5)%number
-          GridElem(i,1 ,2)%nbrs(swest)%f = 5
-          GridElem(i,1 ,2)%wgtP(swest)      = CornerWgt
-          GridElem(ne,i,5)%nbrs(seast)%n = GridElem(irev+1,1 ,2)%number
-          GridElem(ne,i,5)%nbrs(seast)%f = 2
-          GridElem(ne,i,5)%wgtP(seast)      = CornerWgt
+          GridElem(i,1 ,2)%nbrs(swest) = GridElem(ne,irev+1,5)%number
+          GridElem(i,1 ,2)%nbrs_face(swest) = 5
+          GridElem(i,1 ,2)%nbrs_wgt(swest)      = CornerWgt
+          GridElem(ne,i,5)%nbrs(seast) = GridElem(irev+1,1 ,2)%number
+          GridElem(ne,i,5)%nbrs_face(seast) = 2
+          GridElem(ne,i,5)%nbrs_wgt(seast)      = CornerWgt
        endif
        if(i /= ne) then
-          GridElem(i, 1,2)%nbrs(seast)%used = .true.
-          GridElem(ne,i,5)%nbrs(neast)%used = .true.
+          GridElem(i, 1,2)%nbrs_used(seast) = .true.
+          GridElem(ne,i,5)%nbrs_used(neast) = .true.
           
           
-          GridElem(i,1 ,2)%nbrs(seast)%n   = GridElem(ne,irev-1,5)%number
-          GridElem(i,1 ,2)%nbrs(seast)%f   = 5
-          GridElem(i,1 ,2)%wgtP(seast)        = CornerWgt
-          GridElem(ne,i,5)%nbrs(neast)%n   = GridElem(irev-1,1 ,2)%number
-          GridElem(ne,i,5)%nbrs(neast)%f   = 2
-          GridElem(ne,i,5)%wgtP(neast)        = CornerWgt
+          GridElem(i,1 ,2)%nbrs(seast)   = GridElem(ne,irev-1,5)%number
+          GridElem(i,1 ,2)%nbrs_face(seast)   = 5
+          GridElem(i,1 ,2)%nbrs_wgt(seast)        = CornerWgt
+          GridElem(ne,i,5)%nbrs(neast)   = GridElem(irev-1,1 ,2)%number
+          GridElem(ne,i,5)%nbrs_face(neast)   = 2
+          GridElem(ne,i,5)%nbrs_wgt(neast)        = CornerWgt
        endif
     enddo
     ! ==================================
@@ -2251,41 +2261,41 @@ contains
 
     do i=1,ne
        irev=ne+1-i
-       GridElem(i,1,3)%nbrs(south)%used = .true.
-       GridElem(i,1,5)%nbrs(south)%used = .true.
+       GridElem(i,1,3)%nbrs_used(south) = .true.
+       GridElem(i,1,5)%nbrs_used(south) = .true.
        
        
-       GridElem(i,1,3)%nbrs(south)%n = GridElem(irev,1,5)%number
-       GridElem(i,1,3)%nbrs(south)%f = 5
-       GridElem(i,1,3)%wgtP(south)      = EdgeWgtP
-       GridElem(i,1,5)%nbrs(south)%n = GridElem(irev,1,3)%number
-       GridElem(i,1,5)%nbrs(south)%f = 3
-       GridElem(i,1,5)%wgtP(south)      = EdgeWgtP
+       GridElem(i,1,3)%nbrs(south) = GridElem(irev,1,5)%number
+       GridElem(i,1,3)%nbrs_face(south) = 5
+       GridElem(i,1,3)%nbrs_wgt(south)      = EdgeWgtP
+       GridElem(i,1,5)%nbrs(south) = GridElem(irev,1,3)%number
+       GridElem(i,1,5)%nbrs_face(south) = 3
+       GridElem(i,1,5)%nbrs_wgt(south)      = EdgeWgtP
 
        !  Special rules for corner 'edges'
        if( i /= 1) then
-          GridElem(i,1,3)%nbrs(swest)%used = .true.
-          GridElem(i,1,5)%nbrs(swest)%used = .true.
+          GridElem(i,1,3)%nbrs_used(swest) = .true.
+          GridElem(i,1,5)%nbrs_used(swest) = .true.
           
           
-          GridElem(i,1,3)%nbrs(swest)%n = GridElem(irev+1,1,5)%number
-          GridElem(i,1,3)%nbrs(swest)%f = 5
-          GridElem(i,1,3)%wgtP(swest)      = CornerWgt
-          GridElem(i,1,5)%nbrs(swest)%n = GridElem(irev+1,1,3)%number
-          GridElem(i,1,5)%nbrs(swest)%f = 3
-          GridElem(i,1,5)%wgtP(swest)      = CornerWgt
+          GridElem(i,1,3)%nbrs(swest) = GridElem(irev+1,1,5)%number
+          GridElem(i,1,3)%nbrs_face(swest) = 5
+          GridElem(i,1,3)%nbrs_wgt(swest)      = CornerWgt
+          GridElem(i,1,5)%nbrs(swest) = GridElem(irev+1,1,3)%number
+          GridElem(i,1,5)%nbrs_face(swest) = 3
+          GridElem(i,1,5)%nbrs_wgt(swest)      = CornerWgt
        endif
        if(i /= ne) then
-          GridElem(i,1,3)%nbrs(seast)%used = .true.
-          GridElem(i,1,5)%nbrs(seast)%used = .true.
+          GridElem(i,1,3)%nbrs_used(seast) = .true.
+          GridElem(i,1,5)%nbrs_used(seast) = .true.
           
           
-          GridElem(i,1,3)%nbrs(seast)%n    = GridElem(irev-1,1,5)%number
-          GridElem(i,1,3)%nbrs(seast)%f    = 5
-          GridElem(i,1,3)%wgtP(seast)         = CornerWgt
-          GridElem(i,1,5)%nbrs(seast)%n    = GridElem(irev-1,1,3)%number
-          GridElem(i,1,5)%nbrs(seast)%f    = 3
-          GridElem(i,1,5)%wgtP(seast)         = CornerWgt
+          GridElem(i,1,3)%nbrs(seast)    = GridElem(irev-1,1,5)%number
+          GridElem(i,1,3)%nbrs_face(seast)    = 5
+          GridElem(i,1,3)%nbrs_wgt(seast)         = CornerWgt
+          GridElem(i,1,5)%nbrs(seast)    = GridElem(irev-1,1,3)%number
+          GridElem(i,1,5)%nbrs_face(seast)    = 3
+          GridElem(i,1,5)%nbrs_wgt(seast)         = CornerWgt
        endif
     end do
 
@@ -2295,40 +2305,40 @@ contains
 
     do i=1,ne
        irev=ne+1-i
-       GridElem(i,1,4)%nbrs(south)%used = .true.
-       GridElem(1,i,5)%nbrs(west)%used = .true.
+       GridElem(i,1,4)%nbrs_used(south) = .true.
+       GridElem(1,i,5)%nbrs_used(west) = .true.
        
        
-       GridElem(i,1,4)%nbrs(south)%n = GridElem(1,i,5)%number
-       GridElem(i,1,4)%nbrs(south)%f = 5
-       GridElem(i,1,4)%wgtP(south)      = EdgeWgtP
-       GridElem(1,i,5)%nbrs(west)%n  = GridElem(i,1,4)%number
-       GridElem(1,i,5)%nbrs(west)%f  = 4
-       GridElem(1,i,5)%wgtP(west)       = EdgeWgtP
+       GridElem(i,1,4)%nbrs(south) = GridElem(1,i,5)%number
+       GridElem(i,1,4)%nbrs_face(south) = 5
+       GridElem(i,1,4)%nbrs_wgt(south)      = EdgeWgtP
+       GridElem(1,i,5)%nbrs(west)  = GridElem(i,1,4)%number
+       GridElem(1,i,5)%nbrs_face(west)  = 4
+       GridElem(1,i,5)%nbrs_wgt(west)       = EdgeWgtP
        !  Special rules for corner 'edges'
        if( i /= 1) then
-          GridElem(i,1,4)%nbrs(swest)%used = .true.
-          GridElem(1,i,5)%nbrs(swest)%used = .true.
+          GridElem(i,1,4)%nbrs_used(swest) = .true.
+          GridElem(1,i,5)%nbrs_used(swest) = .true.
           
           
-          GridElem(i,1,4)%nbrs(swest)%n    = GridElem(1,i-1,5)%number
-          GridElem(i,1,4)%nbrs(swest)%f    = 5
-          GridElem(i,1,4)%wgtP(swest)         = CornerWgt
-          GridElem(1,i,5)%nbrs(swest)%n    = GridElem(i-1,1,4)%number
-          GridElem(1,i,5)%nbrs(swest)%f    = 4
-          GridElem(1,i,5)%wgtP(swest)         = CornerWgt
+          GridElem(i,1,4)%nbrs(swest)    = GridElem(1,i-1,5)%number
+          GridElem(i,1,4)%nbrs_face(swest)    = 5
+          GridElem(i,1,4)%nbrs_wgt(swest)         = CornerWgt
+          GridElem(1,i,5)%nbrs(swest)    = GridElem(i-1,1,4)%number
+          GridElem(1,i,5)%nbrs_face(swest)    = 4
+          GridElem(1,i,5)%nbrs_wgt(swest)         = CornerWgt
        endif
        if( i /= ne) then
-          GridElem(i,1,4)%nbrs(seast)%used = .true.
-          GridElem(1,i,5)%nbrs(nwest)%used = .true.
+          GridElem(i,1,4)%nbrs_used(seast) = .true.
+          GridElem(1,i,5)%nbrs_used(nwest) = .true.
           
           
-          GridElem(i,1,4)%nbrs(seast)%n = GridElem(1,i+1,5)%number
-          GridElem(i,1,4)%nbrs(seast)%f = 5
-          GridElem(i,1,4)%wgtP(seast)      = CornerWgt
-          GridElem(1,i,5)%nbrs(nwest)%n = GridElem(i+1,1,4)%number
-          GridElem(1,i,5)%nbrs(nwest)%f = 4
-          GridElem(1,i,5)%wgtP(nwest)      = CornerWgt
+          GridElem(i,1,4)%nbrs(seast) = GridElem(1,i+1,5)%number
+          GridElem(i,1,4)%nbrs_face(seast) = 5
+          GridElem(i,1,4)%nbrs_wgt(seast)      = CornerWgt
+          GridElem(1,i,5)%nbrs(nwest) = GridElem(i+1,1,4)%number
+          GridElem(1,i,5)%nbrs_face(nwest) = 4
+          GridElem(1,i,5)%nbrs_wgt(nwest)      = CornerWgt
        endif
     end do
 
@@ -2337,40 +2347,40 @@ contains
     ! ==================================
 
     do i=1,ne
-       GridElem(i,ne,1)%nbrs(north)%used = .true.
-       GridElem(i,1 ,6)%nbrs(south)%used = .true.
+       GridElem(i,ne,1)%nbrs_used(north) = .true.
+       GridElem(i,1 ,6)%nbrs_used(south) = .true.
        
        
-       GridElem(i,ne,1)%nbrs(north)%n = GridElem(i,1 ,6)%number
-       GridElem(i,ne,1)%nbrs(north)%f = 6
-       GridElem(i,ne,1)%wgtP(north)      = EdgeWgtP
-       GridElem(i,1 ,6)%nbrs(south)%n = GridElem(i,ne,1)%number
-       GridElem(i,1 ,6)%nbrs(south)%f = 1
-       GridElem(i,1 ,6)%wgtP(south)      = EdgeWgtP
+       GridElem(i,ne,1)%nbrs(north) = GridElem(i,1 ,6)%number
+       GridElem(i,ne,1)%nbrs_face(north) = 6
+       GridElem(i,ne,1)%nbrs_wgt(north)      = EdgeWgtP
+       GridElem(i,1 ,6)%nbrs(south) = GridElem(i,ne,1)%number
+       GridElem(i,1 ,6)%nbrs_face(south) = 1
+       GridElem(i,1 ,6)%nbrs_wgt(south)      = EdgeWgtP
        !  Special rules for corner 'edges'
        if( i /= 1) then
-          GridElem(i,ne,1)%nbrs(nwest)%used = .true.
-          GridElem(i,1 ,6)%nbrs(swest)%used = .true.
+          GridElem(i,ne,1)%nbrs_used(nwest) = .true.
+          GridElem(i,1 ,6)%nbrs_used(swest) = .true.
           
           
-          GridElem(i,ne,1)%nbrs(nwest)%n = GridElem(i-1,1 ,6)%number
-          GridElem(i,ne,1)%nbrs(nwest)%f = 6
-          GridElem(i,ne,1)%wgtP(nwest)      = CornerWgt
-          GridElem(i,1 ,6)%nbrs(swest)%n = GridElem(i-1,ne,1)%number
-          GridElem(i,1 ,6)%nbrs(swest)%f = 1
-          GridElem(i,1 ,6)%wgtP(swest)      = CornerWgt
+          GridElem(i,ne,1)%nbrs(nwest) = GridElem(i-1,1 ,6)%number
+          GridElem(i,ne,1)%nbrs_face(nwest) = 6
+          GridElem(i,ne,1)%nbrs_wgt(nwest)      = CornerWgt
+          GridElem(i,1 ,6)%nbrs(swest) = GridElem(i-1,ne,1)%number
+          GridElem(i,1 ,6)%nbrs_face(swest) = 1
+          GridElem(i,1 ,6)%nbrs_wgt(swest)      = CornerWgt
        endif
        if( i /= ne) then
-          GridElem(i,ne,1)%nbrs(neast)%used = .true.
-          GridElem(i,1 ,6)%nbrs(seast)%used = .true.
+          GridElem(i,ne,1)%nbrs_used(neast) = .true.
+          GridElem(i,1 ,6)%nbrs_used(seast) = .true.
           
           
-          GridElem(i,ne,1)%nbrs(neast)%n = GridElem(i+1,1 ,6)%number
-          GridElem(i,ne,1)%nbrs(neast)%f = 6
-          GridElem(i,ne,1)%wgtP(neast)      = CornerWgt
-          GridElem(i,1 ,6)%nbrs(seast)%n = GridElem(i+1,ne,1)%number
-          GridElem(i,1 ,6)%nbrs(seast)%f = 1
-          GridElem(i,1 ,6)%wgtP(seast)      = CornerWgt
+          GridElem(i,ne,1)%nbrs(neast) = GridElem(i+1,1 ,6)%number
+          GridElem(i,ne,1)%nbrs_face(neast) = 6
+          GridElem(i,ne,1)%nbrs_wgt(neast)      = CornerWgt
+          GridElem(i,1 ,6)%nbrs(seast) = GridElem(i+1,ne,1)%number
+          GridElem(i,1 ,6)%nbrs_face(seast) = 1
+          GridElem(i,1 ,6)%nbrs_wgt(seast)      = CornerWgt
        endif
     end do
 
@@ -2379,40 +2389,40 @@ contains
     ! ==================================
 
     do i=1,ne
-       GridElem(i,ne,2)%nbrs(north)%used = .true.
-       GridElem(ne,i,6)%nbrs(east )%used = .true.
+       GridElem(i,ne,2)%nbrs_used(north) = .true.
+       GridElem(ne,i,6)%nbrs_used(east ) = .true.
        
        
-       GridElem(i,ne,2)%nbrs(north)%n = GridElem(ne,i,6)%number
-       GridElem(i,ne,2)%nbrs(north)%f = 6
-       GridElem(i,ne,2)%wgtP(north)      = EdgeWgtP
-       GridElem(ne,i,6)%nbrs(east)%n  = GridElem(i,ne,2)%number
-       GridElem(ne,i,6)%nbrs(east)%f  = 2
-       GridElem(ne,i,6)%wgtP(east)       = EdgeWgtP
+       GridElem(i,ne,2)%nbrs(north) = GridElem(ne,i,6)%number
+       GridElem(i,ne,2)%nbrs_face(north) = 6
+       GridElem(i,ne,2)%nbrs_wgt(north)      = EdgeWgtP
+       GridElem(ne,i,6)%nbrs(east)  = GridElem(i,ne,2)%number
+       GridElem(ne,i,6)%nbrs_face(east)  = 2
+       GridElem(ne,i,6)%nbrs_wgt(east)       = EdgeWgtP
        !  Special rules for corner 'edges'
        if( i /= 1) then
-          GridElem(i,ne,2)%nbrs(nwest)%used = .true.
-          GridElem(ne,i,6)%nbrs(seast)%used = .true.
+          GridElem(i,ne,2)%nbrs_used(nwest) = .true.
+          GridElem(ne,i,6)%nbrs_used(seast) = .true.
           
           
-          GridElem(i,ne,2)%nbrs(nwest)%n    = GridElem(ne,i-1,6)%number
-          GridElem(i,ne,2)%nbrs(nwest)%f    = 6
-          GridElem(i,ne,2)%wgtP(nwest)         = CornerWgt
-          GridElem(ne,i,6)%nbrs(seast)%n    = GridElem(i-1,ne,2)%number
-          GridElem(ne,i,6)%nbrs(seast)%f    = 2
-          GridElem(ne,i,6)%wgtP(seast)         = CornerWgt
+          GridElem(i,ne,2)%nbrs(nwest)    = GridElem(ne,i-1,6)%number
+          GridElem(i,ne,2)%nbrs_face(nwest)    = 6
+          GridElem(i,ne,2)%nbrs_wgt(nwest)         = CornerWgt
+          GridElem(ne,i,6)%nbrs(seast)    = GridElem(i-1,ne,2)%number
+          GridElem(ne,i,6)%nbrs_face(seast)    = 2
+          GridElem(ne,i,6)%nbrs_wgt(seast)         = CornerWgt
        endif
        if( i /= ne) then
-          GridElem(i,ne,2)%nbrs(neast)%used = .true.
-          GridElem(ne,i,6)%nbrs(neast)%used = .true.
+          GridElem(i,ne,2)%nbrs_used(neast) = .true.
+          GridElem(ne,i,6)%nbrs_used(neast) = .true.
           
           
-          GridElem(i,ne,2)%nbrs(neast)%n = GridElem(ne,i+1,6)%number
-          GridElem(i,ne,2)%nbrs(neast)%f = 6
-          GridElem(i,ne,2)%wgtP(neast)      = CornerWgt
-          GridElem(ne,i,6)%nbrs(neast)%n = GridElem(i+1,ne,2)%number
-          GridElem(ne,i,6)%nbrs(neast)%f = 2
-          GridElem(ne,i,6)%wgtP(neast)      = CornerWgt
+          GridElem(i,ne,2)%nbrs(neast) = GridElem(ne,i+1,6)%number
+          GridElem(i,ne,2)%nbrs_face(neast) = 6
+          GridElem(i,ne,2)%nbrs_wgt(neast)      = CornerWgt
+          GridElem(ne,i,6)%nbrs(neast) = GridElem(i+1,ne,2)%number
+          GridElem(ne,i,6)%nbrs_face(neast) = 2
+          GridElem(ne,i,6)%nbrs_wgt(neast)      = CornerWgt
        endif
     end do
 
@@ -2422,40 +2432,40 @@ contains
 
     do i=1,ne
        irev=ne+1-i
-       GridElem(i,ne,3)%nbrs(north)%used = .true.
-       GridElem(i,ne,6)%nbrs(north)%used = .true.
+       GridElem(i,ne,3)%nbrs_used(north) = .true.
+       GridElem(i,ne,6)%nbrs_used(north) = .true.
        
        
-       GridElem(i,ne,3)%nbrs(north)%n = GridElem(irev,ne,6)%number
-       GridElem(i,ne,3)%nbrs(north)%f = 6
-       GridElem(i,ne,3)%wgtP(north)      = EdgeWgtP
-       GridElem(i,ne,6)%nbrs(north)%n = GridElem(irev,ne,3)%number
-       GridElem(i,ne,6)%nbrs(north)%f = 3
-       GridElem(i,ne,6)%wgtP(north)      = EdgeWgtP
+       GridElem(i,ne,3)%nbrs(north) = GridElem(irev,ne,6)%number
+       GridElem(i,ne,3)%nbrs_face(north) = 6
+       GridElem(i,ne,3)%nbrs_wgt(north)      = EdgeWgtP
+       GridElem(i,ne,6)%nbrs(north) = GridElem(irev,ne,3)%number
+       GridElem(i,ne,6)%nbrs_face(north) = 3
+       GridElem(i,ne,6)%nbrs_wgt(north)      = EdgeWgtP
        !  Special rules for corner 'edges'
        if( i /= 1) then
-          GridElem(i,ne,3)%nbrs(nwest)%used = .true.
-          GridElem(i,ne,6)%nbrs(nwest)%used = .true.
+          GridElem(i,ne,3)%nbrs_used(nwest) = .true.
+          GridElem(i,ne,6)%nbrs_used(nwest) = .true.
           
           
-          GridElem(i,ne,3)%nbrs(nwest)%n = GridElem(irev+1,ne,6)%number
-          GridElem(i,ne,3)%nbrs(nwest)%f = 6
-          GridElem(i,ne,3)%wgtP(nwest)      = CornerWgt
-          GridElem(i,ne,6)%nbrs(nwest)%n = GridElem(irev+1,ne,3)%number
-          GridElem(i,ne,6)%nbrs(nwest)%f = 3
-          GridElem(i,ne,6)%wgtP(nwest)      = CornerWgt
+          GridElem(i,ne,3)%nbrs(nwest) = GridElem(irev+1,ne,6)%number
+          GridElem(i,ne,3)%nbrs_face(nwest) = 6
+          GridElem(i,ne,3)%nbrs_wgt(nwest)      = CornerWgt
+          GridElem(i,ne,6)%nbrs(nwest) = GridElem(irev+1,ne,3)%number
+          GridElem(i,ne,6)%nbrs_face(nwest) = 3
+          GridElem(i,ne,6)%nbrs_wgt(nwest)      = CornerWgt
        endif
        if( i /= ne) then
-          GridElem(i,ne,3)%nbrs(neast)%used = .true.
-          GridElem(i,ne,6)%nbrs(neast)%used = .true.
+          GridElem(i,ne,3)%nbrs_used(neast) = .true.
+          GridElem(i,ne,6)%nbrs_used(neast) = .true.
           
           
-          GridElem(i,ne,3)%nbrs(neast)%n = GridElem(irev-1,ne,6)%number
-          GridElem(i,ne,3)%nbrs(neast)%f = 6
-          GridElem(i,ne,3)%wgtP(neast)      = CornerWgt
-          GridElem(i,ne,6)%nbrs(neast)%n = GridElem(irev-1,ne,3)%number
-          GridElem(i,ne,6)%nbrs(neast)%f = 3
-          GridElem(i,ne,6)%wgtP(neast)      = CornerWgt
+          GridElem(i,ne,3)%nbrs(neast) = GridElem(irev-1,ne,6)%number
+          GridElem(i,ne,3)%nbrs_face(neast) = 6
+          GridElem(i,ne,3)%nbrs_wgt(neast)      = CornerWgt
+          GridElem(i,ne,6)%nbrs(neast) = GridElem(irev-1,ne,3)%number
+          GridElem(i,ne,6)%nbrs_face(neast) = 3
+          GridElem(i,ne,6)%nbrs_wgt(neast)      = CornerWgt
        endif
     end do
 
@@ -2465,40 +2475,40 @@ contains
 
     do i=1,ne
        irev=ne+1-i
-       GridElem(i,ne,4)%nbrs(north)%used = .true.
-       GridElem(1,i, 6)%nbrs(west)%used = .true.
+       GridElem(i,ne,4)%nbrs_used(north) = .true.
+       GridElem(1,i, 6)%nbrs_used(west) = .true.
        
        
-       GridElem(i,ne,4)%nbrs(north)%n = GridElem(1,irev,6)%number
-       GridElem(i,ne,4)%nbrs(north)%f = 6
-       GridElem(i,ne,4)%wgtP(north)      = EdgeWgtP
-       GridElem(1,i,6)%nbrs(west)%n   = GridElem(irev,ne,4)%number
-       GridElem(1,i,6)%nbrs(west)%f   = 4
-       GridElem(1,i,6)%wgtP(west)        = EdgeWgtP
+       GridElem(i,ne,4)%nbrs(north) = GridElem(1,irev,6)%number
+       GridElem(i,ne,4)%nbrs_face(north) = 6
+       GridElem(i,ne,4)%nbrs_wgt(north)      = EdgeWgtP
+       GridElem(1,i,6)%nbrs(west)   = GridElem(irev,ne,4)%number
+       GridElem(1,i,6)%nbrs_face(west)   = 4
+       GridElem(1,i,6)%nbrs_wgt(west)        = EdgeWgtP
        !  Special rules for corner 'edges'
        if( i /= 1) then
-          GridElem(i,ne,4)%nbrs(nwest)%used = .true.
-          GridElem(1,i, 6)%nbrs(swest)%used = .true.
+          GridElem(i,ne,4)%nbrs_used(nwest) = .true.
+          GridElem(1,i, 6)%nbrs_used(swest) = .true.
           
           
-          GridElem(i,ne,4)%nbrs(nwest)%n = GridElem(1,irev+1,6)%number
-          GridElem(i,ne,4)%nbrs(nwest)%f = 6
-          GridElem(i,ne,4)%wgtP(nwest)      = CornerWgt
-          GridElem(1,i,6)%nbrs(swest)%n  = GridElem(irev+1,ne,4)%number
-          GridElem(1,i,6)%nbrs(swest)%f  = 4
-          GridElem(1,i,6)%wgtP(swest)       = CornerWgt
+          GridElem(i,ne,4)%nbrs(nwest) = GridElem(1,irev+1,6)%number
+          GridElem(i,ne,4)%nbrs_face(nwest) = 6
+          GridElem(i,ne,4)%nbrs_wgt(nwest)      = CornerWgt
+          GridElem(1,i,6)%nbrs(swest)  = GridElem(irev+1,ne,4)%number
+          GridElem(1,i,6)%nbrs_face(swest)  = 4
+          GridElem(1,i,6)%nbrs_wgt(swest)       = CornerWgt
        endif
        if( i /= ne) then
-          GridElem(i,ne,4)%nbrs(neast)%used = .true.
-          GridElem(1,i ,6)%nbrs(nwest)%used = .true.
+          GridElem(i,ne,4)%nbrs_used(neast) = .true.
+          GridElem(1,i ,6)%nbrs_used(nwest) = .true.
           
           
-          GridElem(i,ne,4)%nbrs(neast)%n = GridElem(1,irev-1,6)%number
-          GridElem(i,ne,4)%nbrs(neast)%f = 6
-          GridElem(i,ne,4)%wgtP(neast)      = CornerWgt
-          GridElem(1,i,6)%nbrs(nwest)%n  = GridElem(irev-1,ne,4)%number
-          GridElem(1,i,6)%nbrs(nwest)%f  = 4
-          GridElem(1,i,6)%wgtP(nwest)       = CornerWgt
+          GridElem(i,ne,4)%nbrs(neast) = GridElem(1,irev-1,6)%number
+          GridElem(i,ne,4)%nbrs_face(neast) = 6
+          GridElem(i,ne,4)%nbrs_wgt(neast)      = CornerWgt
+          GridElem(1,i,6)%nbrs(nwest)  = GridElem(irev-1,ne,4)%number
+          GridElem(1,i,6)%nbrs_face(nwest)  = 4
+          GridElem(1,i,6)%nbrs_wgt(nwest)       = CornerWgt
        endif
     end do
     
@@ -2507,16 +2517,16 @@ contains
     do k=1,6
        do j=1,ne
           do i=1,ne
-             do l=1,8
-                if (GridElem(i,j,k)%nbrs(l)%used) then
-                   GridVertex(ielem)%nbrs(l)%n       = GridElem(i,j,k)%nbrs(l)%n
-                   GridVertex(ielem)%nbrs(l)%f       = GridElem(i,j,k)%nbrs(l)%f
-                   GridVertex(ielem)%nbrs(l)%used = GridElem(i,j,k)%nbrs(l)%used
+             do ll=1,8
+                if (GridElem(i,j,k)%nbrs_used(ll)) then
+                   GridVertex(ielem)%nbrs(ll)       = GridElem(i,j,k)%nbrs(ll)
+                   GridVertex(ielem)%nbrs_face(ll)  = GridElem(i,j,k)%nbrs_face(ll)
+                   GridVertex(ielem)%nbrs_used(ll)  = GridElem(i,j,k)%nbrs_used(ll)
                 end if
              end do
              
-             GridVertex(ielem)%wgtP       = GridElem(i,j,k)%wgtP
-             GridVertex(ielem)%wgtP_ghost = GridElem(i,j,k)%wgtP_ghost
+             GridVertex(ielem)%nbrs_wgt       = GridElem(i,j,k)%nbrs_wgt
+             GridVertex(ielem)%nbrs_wgt_ghost = GridElem(i,j,k)%nbrs_wgt_ghost
              GridVertex(ielem)%number     = GridElem(i,j,k)%number
              GridVertex(ielem)%processor_number  = 0
              GridVertex(ielem)%SpaceCurve = GridElem(i,j,k)%SpaceCurve
@@ -2765,7 +2775,12 @@ contains
     integer                            :: i,ii
 
     ii=Edge%tail_face
-    np0 = Edge%tail%wgtP(ii)
+#ifdef MESH
+    !map to correct location - for now all on same nbr side have same wgt, so take the first one
+    !ii = Edge%tail%nbrs_ptr(ii)
+#endif
+  
+    np0 = Edge%tail%nbrs_wgt(ii)
 
 #ifdef TESTGRID
 
