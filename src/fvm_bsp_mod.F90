@@ -30,10 +30,10 @@ contains
 ! INPUT:  asphere ... arrival grid in polar coordinates                             !
 ! OUTPUT: dsphere ...  departure grid in polar coordinates                          !
 !-----------------------------------------------------------------------------------!
-subroutine solidbody(asphere, dsphere)
+subroutine solidbody(asphere, dsphere,part)
   use kinds, only : real_kind
   use time_mod, only : tstep, nmax, Time_at
-  use physical_constants, only : DD_PI
+  use physical_constants, only : DD_PI, rearth
   use fvm_transformation_mod, only: vortex_rotatedsphere, vortex_rotatedsphereback
   use coordinate_systems_mod, only : spherical_polar_t
 
@@ -44,14 +44,19 @@ subroutine solidbody(asphere, dsphere)
 ! for test case solid-body rotation on the sphere with alpha
   real (kind=real_kind)                 :: alpha, omega
   real (kind=real_kind)                 :: lap,thp,lamrot, therot,tmplondep,tmplatdep
-  real (kind=real_kind)                 ::tmpflux
+  real (kind=real_kind)                 ::tmpflux, lon, lat, x, b1, b2, tt, tmp_lm, tmp_th, uexact
   integer ie,i,j
+  real (kind=real_kind), optional           :: part
 
   ! set values for solid-body rotation on the sphere with alpha, this should be 
   ! outside 
-  alpha=-0.9*DD_PI/4.0D0 !DD_PI/4  !DD_PI/4 !1.3!0.78
+  alpha=DD_PI/4 !0.0D0!-0.9*DD_PI/4.0D0 !DD_PI/4  !DD_PI/4 !1.3!0.78
   omega=2*DD_PI/Time_at(nmax)          ! angular velocity: around the earth
-  omega=2*DD_PI/1036800                !in 12 days around the earth
+  if(present(part)) then
+     omega=2*DD_PI/1036800/2.0D0                !in 12 days around the earth
+  else
+     omega=2*DD_PI/1036800                !in 12 days around the earth
+  endif
   lap=DD_PI
   thp=DD_PI/2-alpha
 
@@ -69,9 +74,39 @@ subroutine solidbody(asphere, dsphere)
     call vortex_rotatedsphereback(lap,thp,lamrot,therot,&
                                  tmplondep,tmplatdep)                                                      
   endif
+  
+  !turbulence
+!   lon=asphere%lon
+!   lat=asphere%lat
+!   tt=5  
+!   
+!   x = 0.3D0 * (lat + (DD_PI/6.0D0)) / (DD_PI/2.0D0 + (DD_PI/6.0D0))
+!   if (x>0.0D0) then
+!     b1 = exp(-1.0D0/x)
+!   else
+!     b1 = 0.0D0
+!   end if
+!   if (x<0.3D0) then
+!     b2 = exp(-1.0D0/(0.3D0 - x))
+!   else
+!     b2 = 0.0D0
+!   end if
+!   
+!   uexact =  b1*b2* exp(4.0D0 / 0.3D0)
+!   
+!   omega=2*DD_PI/1036800
+! 
+!   tmplondep = lon - tstep * omega*uexact
+!   !        WRITE(*,*) lon,lat,x,b1,b2,(lambda_dep-lon)*rad2deg
+!   tmplatdep  = lat
+  
   dsphere%lon=tmplondep
   dsphere%lat=tmplatdep
   dsphere%r=asphere%r
+  
+  
+  
+  
 end subroutine solidbody
 !END SUBROUTINE SOLIDBODY-------------------------------------------------CE-for FVM!
 
@@ -93,7 +128,7 @@ subroutine analytical_function(value,sphere,klev,itr)
   integer, intent(in)                     :: klev,itr
   real (kind=real_kind), intent(inout)    :: value 
 
-  real (kind=real_kind)                   :: R0, h0
+  real (kind=real_kind)                   :: R0, h0, alpha
   real (kind=real_kind)                   :: lon, lat, Rg
   real (kind=real_kind)                   :: lon1, lat1, lon2, lat2, Rg1, Rg2, tmp
   
@@ -102,9 +137,9 @@ subroutine analytical_function(value,sphere,klev,itr)
 !   ! temporary: set all parameters for the Solid Body rotation test
 !   Solid Body test ----------------------------------------------------------------!
 !   R0=7*DD_PI/64 !0.5D0 !sphere%r/3.0D0
-!   h0=1.0D0
+!   h0=1000.0D0
 !   lon1=3.0D0*DD_PI/2.0D0
-!   lat1=-0.0D0
+!   lat1=0
 !   Rg1 = acos(sin(lat1)*sin(sphere%lat)+cos(lat1)*cos(sphere%lat)*cos(sphere%lon-lon1))
 ! !   lon2=6.0D0*DD_PI/5.0D0
 ! !   lat2=0.0D0
@@ -117,53 +152,60 @@ subroutine analytical_function(value,sphere,klev,itr)
 !   else
 !     value = 0.0D0
 !   endif
+  
+! another field from Chen et al.
+!    alpha=DD_PI/4.0D0
+!    lon1=atan2(cos(sphere%lat)*sin(sphere%lon),)
+  
+  
 
 ! infinity smooth initial condition----------------------------------------------------------------!
 
-!     spherecenter%r=sphere%r
-!     spherecenter%lon=4.0D0*DD_PI/5.0D0
-!     spherecenter%lat=0.0D0
-!     h0=1.0D0
-!     R0=5.0D0
-!     
-!     cart=spherical_to_cart(sphere)
-!     cartcenter=spherical_to_cart(spherecenter)
-!     
-!     tmp=(cart%x-cartcenter%x)*(cart%x-cartcenter%x)+(cart%y-cartcenter%y)*(cart%y-cartcenter%y) + &
-!         (cart%z-cartcenter%z)*(cart%z-cartcenter%z)
-!     value=h0*exp(-R0*tmp)
-!     
-!     spherecenter%lon=1.0D0*DD_PI/5.0D0
-!     spherecenter%lat=0.0D0
-!     
-!     cartcenter=spherical_to_cart(spherecenter)
-!     
-!     tmp=(cart%x-cartcenter%x)*(cart%x-cartcenter%x)+(cart%y-cartcenter%y)*(cart%y-cartcenter%y) + &
-!         (cart%z-cartcenter%z)*(cart%z-cartcenter%z)
-!         
-!     value=value+h0*exp(-R0*tmp)
-!   !Non-smooth scalar field (slotted cylinder) --------------------------------------!
-  R0=0.5D0
-  lon1=4.0D0*DD_PI/5.0D0
-  lat1=0.0D0
-  Rg1 = acos(sin(lat1)*sin(sphere%lat)+cos(lat1)*cos(sphere%lat)*cos(sphere%lon-lon1))
-  lon2=6.0D0*DD_PI/5.0D0
-  lat2=0.0D0
-  Rg2 = acos(sin(lat2)*sin(sphere%lat)+cos(lat2)*cos(sphere%lat)*cos(sphere%lon-lon2))   
-
-  if ((Rg1 .le. R0) .AND. (abs(sphere%lon-lon1).ge. R0/6)) then
-    value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
-  elseif ((Rg2 .le. R0) .AND. (abs(sphere%lon-lon2).ge. R0/6)) then
-    value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
-  elseif ((Rg1 .le. R0) .AND. (abs(sphere%lon-lon1) < R0/6) &
-                        .AND. (sphere%lat-lat1 < -5.0D0*R0/12.0D0)) then
-    value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
-  elseif ((Rg2 .le. R0) .AND. (abs(sphere%lon-lon2) < R0/6) &
-                        .AND. (sphere%lat-lat2 > 5.0D0*R0/12.0D0)) then
-    value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
-  else
-    value = 0.0D0 !0.1D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev   
-  endif  
+    spherecenter%r=sphere%r
+    spherecenter%lon=4.0D0*DD_PI/5.0D0
+    spherecenter%lat=0.0D0
+    h0=1.0D0
+    R0=5.0D0
+    
+    cart=spherical_to_cart(sphere)
+    cartcenter=spherical_to_cart(spherecenter)
+    
+    tmp=(cart%x-cartcenter%x)*(cart%x-cartcenter%x)+(cart%y-cartcenter%y)*(cart%y-cartcenter%y) + &
+        (cart%z-cartcenter%z)*(cart%z-cartcenter%z)
+    value=h0*exp(-R0*tmp)
+    
+    spherecenter%lon=1.0D0*DD_PI/5.0D0
+    spherecenter%lat=0.0D0
+    
+    cartcenter=spherical_to_cart(spherecenter)
+    
+    tmp=(cart%x-cartcenter%x)*(cart%x-cartcenter%x)+(cart%y-cartcenter%y)*(cart%y-cartcenter%y) + &
+        (cart%z-cartcenter%z)*(cart%z-cartcenter%z)
+        
+    value=value+h0*exp(-R0*tmp)
+    
+  !Non-smooth scalar field (slotted cylinder) --------------------------------------!
+!   R0=0.5D0
+!   lon1=4.0D0*DD_PI/5.0D0
+!   lat1=0.0D0
+!   Rg1 = acos(sin(lat1)*sin(sphere%lat)+cos(lat1)*cos(sphere%lat)*cos(sphere%lon-lon1))
+!   lon2=6.0D0*DD_PI/5.0D0
+!   lat2=0.0D0
+!   Rg2 = acos(sin(lat2)*sin(sphere%lat)+cos(lat2)*cos(sphere%lat)*cos(sphere%lon-lon2))   
+! 
+!   if ((Rg1 .le. R0) .AND. (abs(sphere%lon-lon1).ge. R0/6)) then
+!     value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
+!   elseif ((Rg2 .le. R0) .AND. (abs(sphere%lon-lon2).ge. R0/6)) then
+!     value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
+!   elseif ((Rg1 .le. R0) .AND. (abs(sphere%lon-lon1) < R0/6) &
+!                         .AND. (sphere%lat-lat1 < -5.0D0*R0/12.0D0)) then
+!     value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
+!   elseif ((Rg2 .le. R0) .AND. (abs(sphere%lon-lon2) < R0/6) &
+!                         .AND. (sphere%lat-lat2 > 5.0D0*R0/12.0D0)) then
+!     value = 1.0D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev
+!   else
+!     value = 0.0D0 !0.1D0 + itr*1.0D0/ntrac + klev*1.0D0/nlev   
+!   endif  
 end subroutine analytical_function
 !END SUBROUTINE ANALYTICAL_FUNCTION---------------------------------------CE-for FVM!
 
@@ -191,8 +233,8 @@ subroutine fvm_bsp(fvm, tl)
   integer                              :: i,j,k,itr
   
   do k=1, nlev
-    fvm%c(:,:,k,1,tl%n0)=1000000.0D0    !density of the air
-    do itr=2,ntrac
+    fvm%c(:,:,k,1,tl%n0)=10000.0D0    !density of the air
+    do itr=1,ntrac
       do j=1,nc
         do i=1,nc               
           call analytical_function(fvm%c(i,j,k,itr,tl%n0),fvm%centersphere(i,j),k,itr)      
@@ -218,7 +260,7 @@ function get_solidbody_velocities_gll(elem, time) result(vstar)
   integer                             :: i,j
   real (kind=real_kind)               :: lon, lat, u0, alpha, u, v
 
-  alpha=DD_PI/4.0D0 !-0.9*DD_PI/4.0D0 !0.0D0
+  alpha=DD_PI/4.0D0 !0.0D0 !DD_PI/4.0D0 !-0.9*DD_PI/4.0D0 !0.0D0
   u0=2*DD_PI*rearth/dble(1036800)
 
   do i=1,np
