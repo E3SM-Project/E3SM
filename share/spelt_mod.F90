@@ -429,7 +429,7 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
             
             R(ie,i,j,k,itr,1)=-min(0.0D0,fluxhigh(ie,i,j,k,itr,1))-min(0.0D0,fluxhigh(ie,i,j,k,itr,2)) + &
                                max(0.0D0,fluxhigh(ie,i,j,k,itr,3))+max(0.0D0,fluxhigh(ie,i,j,k,itr,4))
-            if ((R(ie,i,j,k,itr,1)<0.0D0) .or. (isnan(R(ie,i,j,k,itr,1)))) then
+            if ((R(ie,i,j,k,itr,1)<0.0D0) .or. (R(ie,i,j,k,itr,1)/=R(ie,i,j,k,itr,1))) then
               write(*,*) 'error', R(ie,i,j,k,itr,1)
               stop
             endif  
@@ -1821,7 +1821,7 @@ subroutine solidbody_all(spelt, dsphere1,dsphere2,k)
   use kinds, only : real_kind
   use time_mod, only : tstep, nmax, Time_at
   use physical_constants, only : DD_PI, rearth
-  use fvm_transformation_mod, only: vortex_rotatedsphere, vortex_rotatedsphereback
+! use fvm_transformation_mod, only: vortex_rotatedsphere, vortex_rotatedsphereback
   use coordinate_systems_mod, only : spherical_polar_t
 
   implicit none
@@ -1859,11 +1859,11 @@ subroutine solidbody_all(spelt, dsphere1,dsphere2,k)
         tmplatdep=lat
       else            
         ! rotate sphere with the pole (lap,thp) with respect to the unrotated system
-        call vortex_rotatedsphere(lap,thp,lon,lat,lamrot,therot)
+!       call vortex_rotatedsphere(lap,thp,lon,lat,lamrot,therot)
         lamrot=lamrot-omega*tstep/2.0D0
     !     if (lamrot<0.0D0) lamrot=lamrot+2*DD_PI        
-        call vortex_rotatedsphereback(lap,thp,lamrot,therot,&
-                                     tmplondep,tmplatdep)                                                      
+!       call vortex_rotatedsphereback(lap,thp,lamrot,therot,&
+!                                    tmplondep,tmplatdep)                                                      
       endif
       dsphere1(i,j)%lon=tmplondep
       dsphere1(i,j)%lat=tmplatdep
@@ -1877,11 +1877,11 @@ subroutine solidbody_all(spelt, dsphere1,dsphere2,k)
         tmplatdep=lat
       else            
         ! rotate sphere with the pole (lap,thp) with respect to the unrotated system
-        call vortex_rotatedsphere(lap,thp,lon,lat,lamrot,therot)
+!       call vortex_rotatedsphere(lap,thp,lon,lat,lamrot,therot)
         lamrot=lamrot-omega*tstep
     !     if (lamrot<0.0D0) lamrot=lamrot+2*DD_PI        
-        call vortex_rotatedsphereback(lap,thp,lamrot,therot,&
-                                     tmplondep,tmplatdep)                                                      
+!       call vortex_rotatedsphereback(lap,thp,lamrot,therot,&
+!                                    tmplondep,tmplatdep)                                                      
       endif
       dsphere2(i,j)%lon=tmplondep
       dsphere2(i,j)%lat=tmplatdep
