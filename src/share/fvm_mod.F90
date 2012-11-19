@@ -635,7 +635,7 @@ subroutine fvm_mesh_dep(elem, deriv, fvm, dt, tl, klev)
   
 
 ! for the benchmark test, use more accurate departure point creation
-#if 1
+#if 0
 !CE: define new mesh for fvm fvm on an equal angular grid
 ! go from alpha,beta -> cartesian xy on cube -> lat lon on the sphere
 ! #ifdef _FVM
