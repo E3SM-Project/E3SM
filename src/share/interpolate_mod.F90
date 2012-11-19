@@ -511,9 +511,8 @@ subroutine interpol_spelt_latlon(interpdata,f, spelt,corners, flatlon)
   real (kind=real_kind)             :: ff(nip,nip)
   real (kind=real_kind)             :: minmax(1-nhe:nc+nhe,1-nhe:nc+nhe,2)
   
-  real (kind=real_kind)             :: refnc(1:nc+1), tmp
   type (cartesian2d_t)              :: alphabeta   
-  real(kind=real_kind)              :: pi,pj,qi,qj, sga
+  real(kind=real_kind)              :: pi,pj,qi,qj, sga, tmp
   
 
   do j=1,nc
@@ -522,14 +521,9 @@ subroutine interpol_spelt_latlon(interpdata,f, spelt,corners, flatlon)
       jcell=1+(j-1)*nipm
       ff=f(icell:icell+nipm,jcell:jcell+nipm)
       minmax(i,j,:)=cell_minmax(ff)
-      call cip_coeff(ff,ff(2,2),cf(:,:,i,j))
+      call cip_coeff(spelt%drefx(i,j),spelt%drefy(i,j),ff,ff(2,2),cf(:,:,i,j))
     enddo
   enddo
-! 
-  tmp=nc
-  do i=1,nc+1
-    refnc(i)= 2*(i-1)/tmp - 1
-  end do
 ! 
   do i=1,interpdata%n_interp
     ! caculation phys grid coordinate of xp point, note the interp_xy are on the reference [-1,1]x[-1,1] 
@@ -541,7 +535,7 @@ subroutine interpol_spelt_latlon(interpdata,f, spelt,corners, flatlon)
     do
        if  ((endi-starti) <=  1)  exit
        tmpi = (endi + starti)/2
-       if (xp  >  refnc(tmpi)) then
+       if (xp  >  spelt%pref(tmpi)) then
           starti = tmpi
        else
           endi = tmpi
@@ -555,7 +549,7 @@ subroutine interpol_spelt_latlon(interpdata,f, spelt,corners, flatlon)
     do
        if  ((endi-starti) <=  1)  exit
        tmpi = (endi + starti)/2
-       if (yp  >  refnc(tmpi)) then
+       if (yp  >  spelt%pref(tmpi)) then
           starti = tmpi
        else
           endi = tmpi
@@ -567,8 +561,8 @@ subroutine interpol_spelt_latlon(interpdata,f, spelt,corners, flatlon)
       write(*,*) 'icell, jcell,Something is wrong in the search of interpol_spelt_latlon!'
       stop
     endif
-    dxp=xp-refnc(icell)
-    dyp=yp-refnc(jcell)
+    dxp=xp-spelt%pref(icell)
+    dyp=yp-spelt%pref(jcell)
     tmp=cip_interpolate(cf(:,:,icell,jcell),dxp,dyp)      
     tmp=qmsl_cell_filter(icell,jcell,minmax,tmp) 
     

@@ -220,6 +220,7 @@ module element_mod
   type, public :: derived_state_t
      sequence
      real (kind=real_kind) :: dummmy
+     real (kind=real_kind) :: vstar(np,np,2,nlev) ! velocity on Lagrangian surfaces
   end type derived_state_t
 
 

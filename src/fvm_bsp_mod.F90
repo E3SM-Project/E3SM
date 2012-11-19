@@ -136,22 +136,22 @@ subroutine analytical_function(value,sphere,klev,itr)
   type (spherical_polar_t)                :: spherecenter
 !   ! temporary: set all parameters for the Solid Body rotation test
 !   Solid Body test ----------------------------------------------------------------!
-!   R0=7*DD_PI/64 !0.5D0 !sphere%r/3.0D0
-!   h0=1000.0D0
-!   lon1=3.0D0*DD_PI/2.0D0
-!   lat1=0
-!   Rg1 = acos(sin(lat1)*sin(sphere%lat)+cos(lat1)*cos(sphere%lat)*cos(sphere%lon-lon1))
-! !   lon2=6.0D0*DD_PI/5.0D0
-! !   lat2=0.0D0
-! !   Rg2 = acos(sin(lat2)*sin(sphere%lat)+cos(lat2)*cos(sphere%lat)*cos(sphere%lon-lon2))
-!   if (Rg1 .le. R0) then
-!     value = (h0/2.0D0)*(1.0D0+cos(DD_PI*Rg1/R0))
-! !     value=sin(sphere%lon)*cos(sphere%lat)
-! !   elseif (Rg2 .le. R0) then
-! !     value = 1.0D0+(h0/2.0D0)*(1.0D0+cos(DD_PI*Rg2/R0))
-!   else
-!     value = 0.0D0
-!   endif
+  R0=7*DD_PI/64 !0.5D0 !sphere%r/3.0D0
+  h0=1000.0D0
+  lon1=3.0D0*DD_PI/2.0D0
+  lat1=0
+  Rg1 = acos(sin(lat1)*sin(sphere%lat)+cos(lat1)*cos(sphere%lat)*cos(sphere%lon-lon1))
+!   lon2=6.0D0*DD_PI/5.0D0
+!   lat2=0.0D0
+!   Rg2 = acos(sin(lat2)*sin(sphere%lat)+cos(lat2)*cos(sphere%lat)*cos(sphere%lon-lon2))
+  if (Rg1 .le. R0) then
+    value = (h0/2.0D0)*(1.0D0+cos(DD_PI*Rg1/R0))
+!     value=sin(sphere%lon)*cos(sphere%lat)
+!   elseif (Rg2 .le. R0) then
+!     value = 1.0D0+(h0/2.0D0)*(1.0D0+cos(DD_PI*Rg2/R0))
+  else
+    value = 0.0D0
+  endif
   
 ! another field from Chen et al.
 !    alpha=DD_PI/4.0D0
@@ -161,30 +161,30 @@ subroutine analytical_function(value,sphere,klev,itr)
 
 ! infinity smooth initial condition----------------------------------------------------------------!
 
-    spherecenter%r=sphere%r
-    spherecenter%lon=4.0D0*DD_PI/5.0D0
-    spherecenter%lat=0.0D0
-    h0=1.0D0
-    R0=5.0D0
+!     spherecenter%r=sphere%r
+!     spherecenter%lon=4.0D0*DD_PI/5.0D0
+!     spherecenter%lat=0.0D0
+!     h0=1.0D0
+!     R0=1.0D0
+!     
+!     cart=spherical_to_cart(sphere)
+!     cartcenter=spherical_to_cart(spherecenter)
+!     
+!     tmp=(cart%x-cartcenter%x)*(cart%x-cartcenter%x)+(cart%y-cartcenter%y)*(cart%y-cartcenter%y) + &
+!         (cart%z-cartcenter%z)*(cart%z-cartcenter%z)
+!     value=h0*exp(-R0*tmp)
+!     
+!     spherecenter%lon=9.0D0*DD_PI/5.0D0
+!     spherecenter%lat=0.0D0
+!     
+!     cartcenter=spherical_to_cart(spherecenter)
+!     
+!     tmp=(cart%x-cartcenter%x)*(cart%x-cartcenter%x)+(cart%y-cartcenter%y)*(cart%y-cartcenter%y) + &
+!         (cart%z-cartcenter%z)*(cart%z-cartcenter%z)
+!         
+!     value=value+h0*exp(-R0*tmp)
     
-    cart=spherical_to_cart(sphere)
-    cartcenter=spherical_to_cart(spherecenter)
-    
-    tmp=(cart%x-cartcenter%x)*(cart%x-cartcenter%x)+(cart%y-cartcenter%y)*(cart%y-cartcenter%y) + &
-        (cart%z-cartcenter%z)*(cart%z-cartcenter%z)
-    value=h0*exp(-R0*tmp)
-    
-    spherecenter%lon=1.0D0*DD_PI/5.0D0
-    spherecenter%lat=0.0D0
-    
-    cartcenter=spherical_to_cart(spherecenter)
-    
-    tmp=(cart%x-cartcenter%x)*(cart%x-cartcenter%x)+(cart%y-cartcenter%y)*(cart%y-cartcenter%y) + &
-        (cart%z-cartcenter%z)*(cart%z-cartcenter%z)
-        
-    value=value+h0*exp(-R0*tmp)
-    
-  !Non-smooth scalar field (slotted cylinder) --------------------------------------!
+!   !Non-smooth scalar field (slotted cylinder) --------------------------------------!
 !   R0=0.5D0
 !   lon1=4.0D0*DD_PI/5.0D0
 !   lat1=0.0D0
@@ -233,8 +233,8 @@ subroutine fvm_bsp(fvm, tl)
   integer                              :: i,j,k,itr
   
   do k=1, nlev
-    fvm%c(:,:,k,1,tl%n0)=10000.0D0    !density of the air
-    do itr=1,ntrac
+    fvm%c(:,:,k,1,tl%n0)=1.0D0    !density of the air
+    do itr=2,ntrac
       do j=1,nc
         do i=1,nc               
           call analytical_function(fvm%c(i,j,k,itr,tl%n0),fvm%centersphere(i,j),k,itr)      

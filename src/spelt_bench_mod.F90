@@ -27,8 +27,8 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
   use element_mod, only : element_t, timelevels
   use hybrid_mod, only : hybrid_t
   use spelt_mod, only: cellghostbuf, edgeveloc, spelt_struct
-  use spelt_mod, only: spelt_mcgregordss, spelt_run, spelt_runair, spelt_runlimit, spelt_init3
-  use spelt_mod, only: cip_coeff, cip_interpolate, metric_term, metric_termref, cell_search, qmsl_cell_filter, cell_minmax, cip_cell_avr
+  use spelt_mod, only: spelt_mcgregordss, spelt_run, spelt_runlimit, spelt_init3
+  use spelt_mod, only: cip_coeff, cip_interpolate, metric_term,  cell_search, qmsl_cell_filter, cell_minmax, cip_cell_avr
   ! ---------------------------------------------------------------------------------
   use bndry_mod, only: ghost_exchangeV
   ! ---------------------------------------------------------------------------------
@@ -47,11 +47,11 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
   use quadrature_mod, only : quadrature_t, gausslobatto
   
   
-! #ifdef PIO_INTERP
-!     use interp_movie_mod, only : interp_movie_init, interp_movie_output, interp_movie_finish
-! #else
-!     use shal_movie_mod, only : shal_movie_init, shal_movie_output, shal_movie_finish
-! #endif
+#ifdef PIO_INTERP
+    use interp_movie_mod, only : interp_movie_init, interp_movie_output, interp_movie_finish
+#else
+    use shal_movie_mod, only : shal_movie_init, shal_movie_output, shal_movie_finish
+#endif
   
   implicit none
   type (element_t), intent(inout)             :: elem(:)
@@ -79,12 +79,13 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
   real (kind=longdouble_kind)                 :: refnep(1:nep)
   
   integer                                     :: icell, jcell
-  real (kind=real_kind)                       :: sga
+  real (kind=real_kind)                       :: sga, dx, dy
   type (cartesian2D_t)                        :: dref, alphabeta
   real (kind=real_kind)                       :: vstar(np,np,2), v1, v2
   
   type (quadrature_t) :: gp   ! Quadrature points and weights on pressure grid
   
+  integer                                     :: face_nodep
   integer  choosetrac, chooselev   !for test reason the output
  !-----------------------------------------------------------------------------------!  
  choosetrac=1
@@ -100,13 +101,23 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
   ! SPELT nodes are equally spaced in alpha/beta
   ! HOMME with equ-angular gnomonic projection maps alpha/beta space
   ! to the reference element via simple scale + translation
-
+  
   call derivinit(deriv)
-  tmp=nep-1
-  do i=1,nep
-    refnep(i)= 2*(i-1)/tmp - 1
-  end do
+  
   gp=gausslobatto(np)
+! ! for the np grid
+  do i=1,nc
+    tmp=abs(gp%points(i+1)-gp%points(i))/nipm
+    refnep(1+(i-1)*nipm)=gp%points(i)
+    refnep(2+(i-1)*nipm)=gp%points(i)+tmp
+  end do
+  refnep(nep)=gp%points(np)
+!  for the nc grid  
+!   tmp=nep-1
+!   do i=1,nep
+!     refnep(i)= 2*(i-1)/tmp - 1
+!   end do
+  
   call v2pinit(deriv%Sfvm,gp%points,refnep,np,nep)
   
 !Initialize test example with first communication-----------------------------------!      
@@ -116,16 +127,13 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
         do j=1,nep
           do i=1,nep  
         ! define test example
-            if (itr==0) then
-              spelt(ie)%c(i,j,k,1,tl%n0)=1.0D0    !density of the air
-            else
+!             if ((itr==1) .or. (itr==2)) then
+!               spelt(ie)%c(i,j,k,1,tl%n0)=1.0D0    !density of the air
+!             else
               call analytical_function(spelt(ie)%c(i,j,k,itr,tl%n0),spelt(ie)%asphere(i,j),k,itr)
-            endif
+!             endif
             sga=spelt(ie)%sga(i,j)
             spelt(ie)%c(i,j,k,itr,tl%n0)=sga*spelt(ie)%c(i,j,k,itr,tl%n0)  
-            if ((mod(i,2)==0) .and. (mod(j,2)==0) .and. (k==chooselev) .and. (itr==choosetrac)) then
-              spelt(ie)%cstart(i/2,j/2)=spelt(ie)%c(i,j,k,itr,tl%n0)  
-            endif  
           end do
         end do
       end do 
@@ -146,14 +154,15 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
             ff=spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,k,itr,tl%n0)
             ! FOR TEST OUTPUT on gll only needed
             minmax(i,j,:)=cell_minmax(ff)
-            call cip_coeff(ff,ff(2,2),cf(:,:,i,j))
+            call cip_coeff(spelt(ie)%drefx(i,j),spelt(ie)%drefy(i,j),ff,ff(2,2),cf(:,:,i,j))
           enddo
         enddo
         if ((itr==choosetrac) .and. (k==chooselev)) then
           do j=1,np    ! FOR TEST OUTPUT on gll only needed
             do i=1,np
-              call cell_search(elem(ie), elem(ie)%spherep(i,j), icell, jcell,dref, alphabeta)
-              tmp=cip_interpolate(cf(:,:,icell,jcell),dref%x,dref%y)      
+              call cell_search(elem(ie),spelt(ie), elem(ie)%spherep(i,j), icell, jcell,dref, alphabeta,face_nodep)
+!               write(*,*) 'da',icell, jcell,dref%x,dref%y
+              tmp=cip_interpolate(cf(:,:,icell,jcell),dref%x,dref%y)   
               tmp=qmsl_cell_filter(icell,jcell,minmax,tmp) 
               sga=metric_term(alphabeta) 
 !               sga= metric_termref(elem(ie),dref)
@@ -166,57 +175,62 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
     elem(ie)%state%ps(:,:)=0.0D0
   enddo 
 !-----------------------------------------------------------------------------------! 
-! #ifdef PIO_INTERP
-!   call interp_movie_init(elem,hybrid,nets,nete,tl=tl)    
-!   call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete,spelt)
-! #else
-!   call shal_movie_init(elem,hybrid)
-!   call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv)
-! #endif
+#ifdef PIO_INTERP
+  call interp_movie_init(elem,hybrid,nets,nete,tl=tl)    
+  call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete,spelt)
+#else
+  call shal_movie_init(elem,hybrid)
+  call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv)
+#endif
+
 !-----------------------------------------------------------------------------------! 
 ! for Quantities as mass aso 
   do ie=nets,nete
-   spelt(ie)%elem_mass=0
+   spelt(ie)%elem_mass=0.0D0
    tmp1(ie)=-1.0D0-20
    tmp2(ie)=1.0D20
-   tmp=abs(elem(ie)%corners(1)%x-elem(ie)%corners(2)%x)/nc
    do j=1,nc
      do i=1,nc
-       icell= 2+(i-1)*nipm
+       dx=spelt(ie)%dab(i)   
+       dy=spelt(ie)%dab(j)
+       area=dx*dy
+       icell=2+(i-1)*nipm
        jcell=2+(j-1)*nipm
        sga=spelt(ie)%sga(icell,jcell)
-       if (choosetrac==2) then   ! mass of air, code is not optimal
+!        if (choosetrac==1) then   ! mass of air, code is not optimal
+!          spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
+!                        dx*dy*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
          spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
-                       tmp*tmp*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
-       else
-         spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
-                       tmp*tmp*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
-       endif
-  !           spelt(ie)%cstart(i,j)=spelt(ie)%c(i,j,chooselev,choosetrac,tl%n0)
+                        area*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)   ! that is the real mass, we have cell average
+!        else
+!          spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
+!                        tmp*tmp*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
+!        endif
+         spelt(ie)%cstart(i,j)=spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
       tmp1(ie)=max(tmp1(ie),spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga)
       tmp2(ie)=min(tmp2(ie),spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga)
      enddo
    enddo
    ! for the mass value
-   global_shared_buf(ie,1)=0D0
+   global_shared_buf(ie,1)=0.0D0
    global_shared_buf(ie,1)=spelt(ie)%elem_mass
    ! for the max value on the sphere
 !    tmp1(ie) = MAXVAL(spelt(ie)%c(:,:,chooselev,choosetrac,tl%n0))
 !    tmp2(ie) = MINVAL(spelt(ie)%c(:,:,chooselev,choosetrac,tl%n0))   
   end do 
 
-
   !need the buffer cellghostbuf in the time loop
   ! for mass calculation
   call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
   massstart=global_shared_sum(1)
+  
   maxcstart = parallelmax(tmp1,hybrid)
   mincstart = parallelmin(tmp2,hybrid) 
 !-----------------------------------------------------------------------------------!
   call t_barrierf('spelt time loop', hybrid%par%comm)
   call t_startf('spelt')
   
-DO WHILE(tl%nstep<nmax)
+DO WHILE(tl%nstep< nmax) !nmax)
 ! ! start mcgregordss
   do ie=nets,nete
     do k=1,nlev
@@ -227,8 +241,6 @@ DO WHILE(tl%nstep<nmax)
       vstar=elem(ie)%derived%vstar(:,:,:,k)/rearth
       do j=1,np
         do i=1,np
-!           v1 = elem(ie)%Dinv(1,1,i,j)*vstar(i,j,1) + elem(ie)%Dinv(1,2,i,j)*vstar(i,j,2)
-!           v2 = elem(ie)%Dinv(2,1,i,j)*vstar(i,j,1) + elem(ie)%Dinv(2,2,i,j)*vstar(i,j,2)
           v1 = spelt(ie)%Dinv(1,1,i,j)*vstar(i,j,1) + spelt(ie)%Dinv(1,2,i,j)*vstar(i,j,2)
           v2 = spelt(ie)%Dinv(2,1,i,j)*vstar(i,j,1) + spelt(ie)%Dinv(2,2,i,j)*vstar(i,j,2)
           vstar(i,j,1)=v1
@@ -237,35 +249,42 @@ DO WHILE(tl%nstep<nmax)
       enddo
       spelt(ie)%contrau(:,:,k)=interpolate_gll2spelt_points(vstar(:,:,1),deriv)
       spelt(ie)%contrav(:,:,k)=interpolate_gll2spelt_points(vstar(:,:,2),deriv)
+!       spelt(ie)%contrau(:,:,k)=vstar(:,:,1)
+!       spelt(ie)%contrav(:,:,k)=vstar(:,:,2)
     end do
   end do
+  
   call spelt_mcgregordss(elem,spelt,nets,nete, hybrid, deriv, tstep, 3)
 ! ! end mcgregordss
-!   call spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
+!   call spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 
-  call spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
+  call spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !   call spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 
   call TimeLevel_update(tl,"forward") 
 !-----------------------------------------------------------------------------------! 
 ! for Quantities as mass aso
-if (mod(tl%nstep,100)==0) then
+if (mod(tl%nstep,1)==0) then
   do ie=nets,nete
-    spelt(ie)%elem_mass=0
+    spelt(ie)%elem_mass=0.0D0
     tmp1(ie)=-1.0D0-20
     tmp2(ie)=1.0D20
-    tmp=abs(elem(ie)%corners(1)%x-elem(ie)%corners(2)%x)/nc
     do j=1,nc
       do i=1,nc
+        dx=spelt(ie)%dab(i)   
+        dy=spelt(ie)%dab(j)
+        area=dx*dy
         icell= 2+(i-1)*nipm
         jcell=2+(j-1)*nipm
         sga=spelt(ie)%sga(icell,jcell)
-        if (choosetrac==2) then   ! mass of air, code is not optimal
-          spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
-                         tmp*tmp*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
+        if (choosetrac==1) then   ! mass of air, code is not optimal
+!           spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
+!                          dx*dy*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
+         spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
+                        area*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
         else
           spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
-                         tmp*tmp*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
+                         spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
         endif
  !           spelt(ie)%cstart(i,j)=spelt(ie)%c(i,j,chooselev,choosetrac,tl%n0)
         
@@ -274,7 +293,7 @@ if (mod(tl%nstep,100)==0) then
       enddo
     enddo
     ! for the mass value
-    global_shared_buf(ie,1)=0D0
+    global_shared_buf(ie,1)=0.0D0
     global_shared_buf(ie,1)=spelt(ie)%elem_mass
     ! for the max value on the sphere
     
@@ -312,12 +331,12 @@ endif
         jcell=1+(j-1)*nipm
         ff=spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,chooselev,choosetrac,tl%n0)
         minmax(i,j,:)=cell_minmax(ff)
-        call cip_coeff(ff,ff(2,2),cf(:,:,i,j))
+        call cip_coeff(spelt(ie)%drefx(i,j),spelt(ie)%drefy(i,j),ff,ff(2,2),cf(:,:,i,j))
       enddo
     enddo
     do j=1,np
       do i=1,np
-        call cell_search(elem(ie), elem(ie)%spherep(i,j), icell, jcell,dref, alphabeta)
+        call cell_search(elem(ie),spelt(ie), elem(ie)%spherep(i,j), icell, jcell,dref, alphabeta,face_nodep)
         tmp=cip_interpolate(cf(:,:,icell,jcell),dref%x,dref%y)      
         tmp=qmsl_cell_filter(icell,jcell,minmax,tmp)
         sga=metric_term(alphabeta) 
@@ -326,13 +345,28 @@ endif
       enddo
     enddo 
     elem(ie)%state%ps(:,:)=0.0D0
-  end do 
+  end do  
+  
+!   do ie=nets,nete
+!     do j=1-nipm,nep+nipm 
+!       do i=1-nipm,nep+nipm
+!         spelt(ie)%c(i,j,chooselev,choosetrac,tl%n0)=spelt(ie)%c(i,j,chooselev,choosetrac,tl%n0)/spelt(ie)%sga(i,j)
+!       end do
+!     end do
+!   end do
 
-! #ifdef PIO_INTERP
-!   call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete,spelt)
-! #else
-!   call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv)
-! #endif  
+#ifdef PIO_INTERP
+  call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete,spelt)
+#else
+  call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv)
+#endif  
+! do ie=nets,nete
+!   do j=1-nipm,nep+nipm 
+!     do i=1-nipm,nep+nipm
+!       spelt(ie)%c(i,j,chooselev,choosetrac,tl%n0)=spelt(ie)%c(i,j,chooselev,choosetrac,tl%n0)*spelt(ie)%sga(i,j)
+!     end do
+!   end do
+! end do
 !-----------------------------------------------------------------------------------!
       
 ENDDO  ! END TIME LOOP
@@ -340,29 +374,30 @@ ENDDO  ! END TIME LOOP
 
   call freeghostbuffertr(cellghostbuf)
   call freeedgebuffer(edgeveloc)
-! #ifdef PIO_INTERP
-!     call interp_movie_finish
-! #else
-!     call shal_movie_finish
-! #endif  
+#ifdef PIO_INTERP
+    call interp_movie_finish
+#else
+    call shal_movie_finish
+#endif  
 !-----------------------------------------------------------------------------------!  
 ! Error analysis/ complicated, but for a first try o.k.
   do ie=nets,nete
     tmp=0.0D0
     tmpref=0.0D0
     global_shared_buf(ie,:)=0.0D0
-    area=abs(elem(ie)%corners(1)%x-elem(ie)%corners(2)%x)/nc
-    area=area*area
     do j=1,nc
       do i=1,nc
+        dx=spelt(ie)%dab(i)   
+        dy=spelt(ie)%dab(j)
+        area=dx*dy
+!         area=spelt(ie)%area_sphere(i,j)*(area/spelt(ie)%area_sphere(i,j))*((area/spelt(ie)%area_sphere(i,j)))
         global_shared_buf(ie,1)=global_shared_buf(ie,1)+area*abs(spelt(ie)%c(i*nipm,j*nipm,chooselev,choosetrac,tl%n0)-spelt(ie)%cstart(i,j))
         global_shared_buf(ie,2)=global_shared_buf(ie,2)+area*abs(spelt(ie)%cstart(i,j))
 
         global_shared_buf(ie,3)=global_shared_buf(ie,3)+area*(spelt(ie)%c(i*nipm,j*nipm,chooselev,choosetrac,tl%n0)-spelt(ie)%cstart(i,j))* &
                                           (spelt(ie)%c(i*nipm,j*nipm,chooselev,choosetrac,tl%n0)-spelt(ie)%cstart(i,j))
         global_shared_buf(ie,4)=global_shared_buf(ie,4)+area*(spelt(ie)%cstart(i,j))*(spelt(ie)%cstart(i,j))
-
-        tmp=max(tmp,abs(spelt(ie)%c(i,j,chooselev,choosetrac,tl%n0)-spelt(ie)%cstart(i,j)))
+        tmp=max(tmp,abs(spelt(ie)%c(i*nipm,j*nipm,chooselev,choosetrac,tl%n0)-spelt(ie)%cstart(i,j)))
         tmpref=max(tmpref,abs(spelt(ie)%cstart(i,j)))
       end do
     end do
@@ -382,7 +417,7 @@ ENDDO  ! END TIME LOOP
     print *,"!-----------------------------------------------------------------------!"
     print *,"!  Test CASE for SPELT, Christoph Erath                                 !" 
     print *,"!-----------------------------------------------------------------------!"
-    print *  
+    print *, "Summary"  
     write(*,*) 'number of elements', 6*ne*ne*nc*nc
 
     print *

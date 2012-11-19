@@ -19,6 +19,10 @@ module fvm_bench_mod
   use element_mod, only : element_t, timelevels
   use hybrid_mod, only : hybrid_t
 
+#ifdef _MPI
+#include <mpif.h> ! _EXTERNAL
+#endif
+
 contains
 
 
@@ -30,7 +34,6 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   ! ---------------------------------------------------------------------------------
   use fvm_mod, only: cslam_runairdensity, fvm_init1,fvm_init2, fvm_init3, fvm_mcgregor,fvm_mcgregordss, cellghostbuf, edgeveloc
   ! ---------------------------------------------------------------------------------
-  use fvm_line_integrals_mod, only: correct_mass
   ! ---------------------------------------------------------------------------------
   use derivative_mod, only : derivative_t, derivative_stag_t, derivinit, deriv_print
   ! ---------------------------------------------------------------------------------
@@ -96,6 +99,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   real (kind=real_kind), dimension(np,np,2)    :: vstar, vhat
   real (kind=real_kind)                        :: maxcflx, maxcfly  
   
+  integer                                     :: ierr
   
   integer  choosetrac, chooselev   !for test reason the output
  !-----------------------------------------------------------------------------------!  
@@ -122,7 +126,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   end do
   call derivinit(deriv,fvm_corners=fvm_nodes)
 
-!-----------------------------------------------------------------------------------!    
+!-----------------------------------------------------------------------------------! 
   do ie=nets,nete
     call fvm_bsp(fvm(ie),tl)
     fvm(ie)%elem_mass=0.0D0
@@ -165,7 +169,6 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
     tmp2(ie) = MINVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))   
   end do
 
-
 !-----------------------------------------------------------------------------------!
   
   !need the buffer cellghostbuf in the time loop
@@ -197,7 +200,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   call t_startf('fvm')
   
   !BEGIN TIME LOOP, start at 0, calculate then next step
-  DO WHILE(tl%nstep<nmax)
+  DO WHILE(tl%nstep< nmax)
   
 ! start old mcgregor----------------------
 !     do ie=nets,nete
@@ -227,10 +230,10 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
 ! ! start mcgregordss
     do ie=nets,nete
       do k=1,nlev
-        elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
-        fvm(ie)%vn0(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),time_at(tl%nstep))
-!         elem(ie)%deriv  ed%vstar(:,:,:,k)=get_solidbody_velocities_gll(elem(ie), time_at(tl%nstep+1))
-!         fvm(ie)%vn0(:,:,:,k)=get_solidbody_velocities_gll(elem(ie),time_at(tl%nstep))
+!         elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
+!         fvm(ie)%vn0(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),time_at(tl%nstep))
+        elem(ie)%derived%vstar(:,:,:,k)=get_solidbody_velocities_gll(elem(ie), time_at(tl%nstep+1))
+        fvm(ie)%vn0(:,:,:,k)=get_solidbody_velocities_gll(elem(ie),time_at(tl%nstep))
       end do
     end do
     call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, tstep, 3)
@@ -275,6 +278,7 @@ if (mod(tl%nstep,1)==0) then
 !-----------------------------------------------------------------------------------!
     ! for mass calculation
     call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
+
     mass=global_shared_sum(1)
     maxc = parallelmax(tmp1,hybrid)
     minc = parallelmin(tmp2,hybrid)
@@ -293,53 +297,8 @@ if (mod(tl%nstep,1)==0) then
       write(*,*) "CFL: maxcflx=", maxcflx, "maxcfly=", maxcfly 
       print *
     endif
-!   if (mod(tl%nstep,10)==0) then    
-!     if (mass-massstart>0.0D0) then
-!       correct_mass=-1.0D-16
-!     else
-!       correct_mass=1.0D-16
-!     endif
-    
-!   endif
 endif
 
-! if ((mod(tl%nstep,50000)==0) .or. (tl%nstep==1000)) then  
-!   do ie=nets,nete
-!   ! prepare data for I/O
-!     global_shared_buf(ie,1)=0.0D0  ! for mass calculation
-!     ! test mass, just for chooselev and choosetrac, it is not optimized yet
-!     do j=1,nc
-!       do i=1,nc   
-!         if (choosetrac==1) then
-!           global_shared_buf(ie,1)=global_shared_buf(ie,1)+fvm(ie)%area_sphere(i,j)*&
-!                                   fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)
-!         else   
-!           global_shared_buf(ie,1)=global_shared_buf(ie,1)+fvm(ie)%area_sphere(i,j)*&
-!                fvm(ie)%c(i,j,chooselev,1,tl%n0)*fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)
-!         endif
-!       end do
-!     end do
-!   end do
-! !-----------------------------------------------------------------------------------!
-!   ! for mass calculation
-!   call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
-!   mass=global_shared_sum(1)
-!   
-!   if (mass-massstart>0.0D0) then
-!     correct_mass=0.0D0 !-1.0D-18
-!   else
-!     correct_mass=1.0D-18
-!   endif
-! endif
-
-! if (mod(tl%nstep,10)==0) then    
-!   if (mass-massstart>0.0D0) then
-!     correct_mass=-1.0D-15
-!   else
-!     correct_mass=1.0D-15
-!   endif
-!   
-! endif
 !-----------------------------------------------------------------------------------!  
 
 #ifdef PIO_INTERP
@@ -396,7 +355,7 @@ endif
     print *,"!-----------------------------------------------------------------------!"
     print *,"!  Test CASE for FVM, Christoph Erath                                   !" 
     print *,"!-----------------------------------------------------------------------!"
-    print *  
+    print *, "Summary" 
     write(*,*) 'number of elements', 6*ne*ne*nc*nc
 
     print *

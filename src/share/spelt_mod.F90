@@ -13,7 +13,7 @@ module spelt_mod
 
   use kinds, only : real_kind, int_kind
   use dimensions_mod, only: ne, nlev, ntrac, np, ntrac_d, nc, nhe, nip, nipm, nep
-  use edge_mod, only : ghostBuffertr_t,edgebuffer_t
+  use edge_mod, only : ghostBuffertr_t,edgebuffer_t,ghostbuffer_t
   use time_mod, only : timelevel_t
   use coordinate_systems_mod, only : spherical_polar_t, cartesian2D_t
   use element_mod, only : element_t, timelevels
@@ -32,25 +32,34 @@ module spelt_mod
 !-----------------------------------------------------------------------------------!   
     real (kind=real_kind)    :: vn0(np,np,2,nlev) 
     real (kind=real_kind)    :: contrau(1:nep,1:nep,nlev), contrav(1:nep,1:nep,nlev)
+    real (kind=real_kind)    :: contrau1(1:nep,1:nep), contrav1(1:nep,1:nep)
+    real (kind=real_kind)    :: contrau2(1:nep,1:nep), contrav2(1:nep,1:nep)
+    
 !-----------------------------------------------------------------------------------!
     ! define the departure grid (depends on the examples, usually the velocity)
     ! they are NOT stored for the Levels
     type (spherical_polar_t) :: asphere(nep,nep)     ! Spherical coordinates
     ! equidistant mesh spacing in each direction of the reference(!) element, depends on nep       
-    real(kind=real_kind)     :: dx  
+    real(kind=real_kind)     :: dab(1:nc)   ! cell size in alpha beta
+    real(kind=real_kind)     :: drefx(1-nhe:nc+nhe,1-nhe:nc+nhe), drefy(1-nhe:nc+nhe,1-nhe:nc+nhe), pref(1:nc+1)
+      
     real(kind=real_kind)     :: sga(1-nipm:nep+nipm,1-nipm:nep+nipm)     
     ! next maybe used just for test reasons
     real (kind=real_kind)    :: elem_mass
-!       real (kind=real_kind)    :: area_sphere(1-nhe:nc+nhe,1-nhe:nc+nhe) 
-    real (kind=real_kind) :: cstart(1:nc,1:nc)    ! for error analysis
+      real (kind=real_kind)   :: area_sphere(1:nc,1:nc) 
+    real (kind=real_kind)    :: cstart(1:nc,1:nc)    ! for error analysis
 !       real (kind=real_kind)    :: maxcfl(2,nlev)   
     !should be replace once the mapping comes from the reference element
     real (kind=real_kind)    :: Dinv(2,2,np,np)     ! Map vector field on the sphere to covariant v on cube
+    real (kind=real_kind)    :: Ainv(2,2,nep,nep)
+    
 
   end type spelt_struct
   
-  public :: cellghostbuf, edgeveloc, spelt_init1,spelt_init2, spelt_init3, spelt_mcgregordss, spelt_run, spelt_runlimit, spelt_runair, spelt_grid_init
-  public :: cip_coeff, cip_interpolate, metric_term, metric_termref, cell_search, qmsl_cell_filter, cell_minmax, cip_cell_avr
+  public :: cellghostbuf, edgeveloc, spelt_init1,spelt_init2, spelt_init3, spelt_mcgregordss, spelt_grid_init
+  public :: spelt_run, spelt_runair
+  public :: cip_coeff, cip_interpolate, metric_term, cell_search, qmsl_cell_filter, cell_minmax, cip_cell_avr
+  public :: spelt_runlimit
 contains
 
 
@@ -96,6 +105,7 @@ subroutine spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   real (kind=real_kind)                       :: dxoy, dxyi, dt6, sg, sga
   type (cartesian2D_t)                        :: alphabeta
   real (kind=real_kind)                       :: tmp
+  integer                                     :: face_nodep
   
   call t_startf('SPELT scheme') 
   
@@ -111,11 +121,11 @@ subroutine spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
       do j=1,nep
         do i=1,nep
 !           call solidbody(spelt(ie)%asphere(i,j), dsphere, 0.5D0) 
-          call cell_search(elem(ie), dsphere1(i,j),icell1(i,j), jcell1(i,j),dref1(i,j),alphabeta)
+          call cell_search(elem(ie),spelt(ie), dsphere1(i,j),icell1(i,j), jcell1(i,j),dref1(i,j),alphabeta,face_nodep)
           sg1(i,j)=metric_term(alphabeta)
 !           sg1(i,j)=metric_termref(elem(ie),dref1(i,j))
 !           call solidbody(spelt(ie)%asphere(i,j), dsphere, 1.0D0)  
-          call cell_search(elem(ie), dsphere2(i,j), icell2(i,j), jcell2(i,j),dref2(i,j),alphabeta)
+          call cell_search(elem(ie),spelt(ie), dsphere2(i,j), icell2(i,j), jcell2(i,j),dref2(i,j),alphabeta,face_nodep)
           sg2(i,j)=metric_term(alphabeta)
 !           sg2(i,j)=metric_termref(elem(ie),dref2(i,j))
           
@@ -129,7 +139,7 @@ subroutine spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
           jcell=1+(j-1)*nipm
           ff=spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,k,1,tl%n0)
           minmax(i,j,:)=cell_minmax(ff)
-          call cip_coeff(ff,ff(2,2),cf(:,:,i,j))
+          call cip_coeff(spelt(ie)%drefx(i,j),spelt(ie)%drefy(i,j),ff,ff(2,2),cf(:,:,i,j))
         enddo
       enddo
       do j=1,nep
@@ -157,7 +167,7 @@ subroutine spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
           jcell=1+(j-1)*nipm
           ff=spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,k,2,tl%n0)
           minmax(i,j,:)=cell_minmax(ff)
-          call cip_coeff(ff,ff(2,2),cf(:,:,i,j))
+          call cip_coeff(spelt(ie)%drefx(i,j),spelt(ie)%drefy(i,j),ff,ff(2,2),cf(:,:,i,j))
         enddo
       enddo
       do j=1,nep
@@ -204,7 +214,7 @@ subroutine spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
             jcell=1+(j-1)*nipm
             ff=spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,k,itr,tl%n0)
             minmax(i,j,:)=cell_minmax(ff)
-            call cip_coeff(ff,ff(2,2),cf(:,:,i,j))
+            call cip_coeff(spelt(ie)%drefx(i,j),spelt(ie)%drefy(i,j),ff,ff(2,2),cf(:,:,i,j))
           enddo
         enddo
         do j=1,nep
@@ -272,7 +282,10 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   ! ------EXTERNAL----------------
   use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   ! -----------------------------------------------  
-  
+  use bndry_mod, only : ghost_exchangevfull
+  use edge_mod, only : ghostbuffertr_t, ghostvpack, ghostvunpack, initghostbuffer,&
+       freeghostbuffer
+       
   implicit none
   type (element_t), intent(inout)             :: elem(:)
   type (spelt_struct), intent(inout)          :: spelt(:)
@@ -291,6 +304,7 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
     
   real (kind=real_kind)                       :: slval(3), fluxval(nep,nep,2), flux(4)
   real (kind=real_kind)                       :: fluxlowx(nc+1,nc), fluxlowy(nc,nc+1)
+  real (kind=real_kind)                       :: fluxhigh(nets:nete,nc,nc,nlev,ntrac,4)
   
   type (cartesian2D_t)                        :: dref1(1:nep,1:nep), dref2(1:nep,1:nep)
   real (kind=real_kind)                       :: sg1(1:nep,1:nep),sg2(1:nep,1:nep)  
@@ -301,23 +315,22 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   integer                                     :: icell, jcell, jx, jy
   real (kind=real_kind)                       :: dxoy, dxyi, dt6, sg, sga
   type (cartesian2D_t)                        :: alphabeta
-  real (kind=real_kind)                       :: tmp
+  real (kind=real_kind)                       :: dx, dy, tmp
   
-  real (kind=real_kind)                       :: P, Q, R(0:nc+1,0:nc+1), c_min, c_max
+  real (kind=real_kind)                       :: R(nets:nete,1-nhe:nc+nhe,1-nhe:nc+nhe,nlev,ntrac,timelevels), c_min, c_max, cmo(4)
+
+  type (ghostbuffertr_t)                      :: factorR
+  integer                                     :: face_nodep
   
-  real (kind=real_kind)                      :: mult=1.0D13, tmpcut
-  integer (kind=8)                           :: longint
+
 
   call t_startf('SPELT scheme') 
   
+  call initghostbuffer(factorR,nlev,ntrac,nhe,nc)    ! use the tracer entry
+  
+  
   dt6  = tstep/ 6.0D0
   do ie=nets,nete 
-    tmp=abs(elem(ie)%corners(1)%x-elem(ie)%corners(2)%x)/nc
-    dxoy=tmp / 6.0D0
-    dxyi=1.0D0/(tmp*tmp)
-    tmpcut=dxyi*mult
-    longint=tmpcut
-    dxyi=longint/mult
     do k=1, nlev
       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)         
@@ -325,11 +338,11 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
       do j=1,nep
         do i=1,nep
 !           call solidbody(spelt(ie)%asphere(i,j), dsphere, 0.5D0) 
-          call cell_search(elem(ie), dsphere1(i,j),icell1(i,j), jcell1(i,j),dref1(i,j),alphabeta)
+          call cell_search(elem(ie),spelt(ie), dsphere1(i,j),icell1(i,j), jcell1(i,j),dref1(i,j),alphabeta,face_nodep)
           sg1(i,j)=metric_term(alphabeta)
 !           sg1(i,j)=metric_termref(elem(ie),dref1(i,j))
 !           call solidbody(spelt(ie)%asphere(i,j), dsphere, 1.0D0)  
-          call cell_search(elem(ie), dsphere2(i,j), icell2(i,j), jcell2(i,j),dref2(i,j),alphabeta)
+          call cell_search(elem(ie),spelt(ie), dsphere2(i,j), icell2(i,j), jcell2(i,j),dref2(i,j),alphabeta, face_nodep)
           sg2(i,j)=metric_term(alphabeta)
 !           sg2(i,j)=metric_termref(elem(ie),dref2(i,j))
           
@@ -343,9 +356,10 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
             jcell=1+(j-1)*nipm
             ff=spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,k,itr,tl%n0)
             minmax(i,j,:)=cell_minmax(ff)
-            call cip_coeff(ff,ff(2,2),cf(:,:,i,j))
+            call cip_coeff(spelt(ie)%drefx(i,j),spelt(ie)%drefy(i,j),ff,ff(2,2),cf(:,:,i,j))
           enddo
         enddo
+        !reconstruction coefficients caculated done
         do j=1,nep
           do i=1,nep  
             sga=spelt(ie)%sga(i,j)
@@ -371,113 +385,120 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
           end do
         end do 
         !calculate low order flux
-        do j=1,nc+1
-          do i=1,nc
-            icell=2+(i-1)*nipm
-            jcell=1+(j-1)*nipm
-            
-            if (spelt(ie)%contrau(jcell,icell,k)>0.0D0) then
-              fluxlowx(j,i)=6.0D0*dxoy*tstep*spelt(ie)%contrau(jcell,icell,k)* &
-                            spelt(ie)%c(jcell-1,icell,k,itr,tl%n0)*spelt(ie)%sga(jcell,icell)/spelt(ie)%sga(jcell-1,icell)
-            else
-              fluxlowx(j,i)=6.0D0*dxoy*tstep*spelt(ie)%contrau(jcell,icell,k)* &
-                            spelt(ie)%c(jcell+1,icell,k,itr,tl%n0)*spelt(ie)%sga(jcell,icell)/spelt(ie)%sga(jcell+1,icell)
-            endif
-            if (spelt(ie)%contrav(icell,jcell,k)>0.0D0) then
-              fluxlowy(i,j)=6.0D0*dxoy*tstep*spelt(ie)%contrav(icell,jcell,k)* &
-                            spelt(ie)%c(icell,jcell-1,k,itr,tl%n0)*spelt(ie)%sga(icell,jcell)/spelt(ie)%sga(icell,jcell-1)
-            else
-              fluxlowy(i,j)=6.0D0*dxoy*tstep*spelt(ie)%contrav(icell,jcell,k)* &
-                            spelt(ie)%c(icell,jcell+1,k,itr,tl%n0)*spelt(ie)%sga(icell,jcell)/spelt(ie)%sga(icell,jcell+1)
-            endif    
-            
-          end do
-        end do
+!         do j=1,nc+1
+!           do i=1,nc
+!             icell=2+(i-1)*nipm
+!             jcell=1+(j-1)*nipm
+!             
+!             if (spelt(ie)%contrau(jcell,icell,k)>0.0D0) then
+!               fluxlowx(j,i)=6.0D0*dxoy*tstep*spelt(ie)%contrau(jcell,icell,k)* &
+!                             spelt(ie)%c(jcell-1,icell,k,itr,tl%n0)*spelt(ie)%sga(jcell,icell)/spelt(ie)%sga(jcell-1,icell)
+!             else
+!               fluxlowx(j,i)=6.0D0*dxoy*tstep*spelt(ie)%contrau(jcell,icell,k)* &
+!                             spelt(ie)%c(jcell+1,icell,k,itr,tl%n0)*spelt(ie)%sga(jcell,icell)/spelt(ie)%sga(jcell+1,icell)
+!             endif
+!             if (spelt(ie)%contrav(icell,jcell,k)>0.0D0) then
+!               fluxlowy(i,j)=6.0D0*dxoy*tstep*spelt(ie)%contrav(icell,jcell,k)* &
+!                             spelt(ie)%c(icell,jcell-1,k,itr,tl%n0)*spelt(ie)%sga(icell,jcell)/spelt(ie)%sga(icell,jcell-1)
+!             else
+!               fluxlowy(i,j)=6.0D0*dxoy*tstep*spelt(ie)%contrav(icell,jcell,k)* &
+!                             spelt(ie)%c(icell,jcell+1,k,itr,tl%n0)*spelt(ie)%sga(icell,jcell)/spelt(ie)%sga(icell,jcell+1)
+!             endif    
+!             
+!           end do
+!         end do
 !!!! only needed for filter              
         do j=1,nc
           jcell=2+(j-1)*nipm
           jy=1+(j-1)*nipm
           do i=1,nc
+            dx=spelt(ie)%dab(i)   
+            dy=spelt(ie)%dab(j)
             icell=2+(i-1)*nipm
         ! for low order flux
-            c_low(i,j) = spelt(ie)%c(icell,jcell,k,itr,tl%n0) + &
-                                  (fluxlowx(i,j) + fluxlowy(i,j) - fluxlowx(i+1,j) - fluxlowy(i,j+1) ) * dxyi
+!             c_low(i,j) = spelt(ie)%c(icell,jcell,k,itr,tl%n0) + &
+!                                   (fluxlowx(i,j) + fluxlowy(i,j) - fluxlowx(i+1,j) - fluxlowy(i,j+1) ) * dxyi
                                   
 !             spelt(ie)%c(icell,jcell,k,itr,tl%np1)=c_low(i,j) 
             !high order flux
             jx=1+(i-1)*nipm
-            flux(1) = dxoy * (fluxval(jx,jy,1) + 4.0D0 * fluxval(jx,jy+1,1) + fluxval(jx,jy+2,1))  ! west
-            flux(2) = dxoy * (fluxval(jx,jy,2) + 4.0D0 * fluxval(jx+1,jy,2) + fluxval(jx+2,jy,2))  ! south
-            flux(3) = dxoy * (fluxval(jx+2,jy,1) + 4.0D0 * fluxval(jx+2,jy+1,1) + fluxval(jx+2,jy+2,1)) ! east
-            flux(4) = dxoy * (fluxval(jx+2,jy+2,2) + 4.0D0 * fluxval(jx+1,jy+2,2) + fluxval(jx,jy+2,2)) ! north
+            fluxhigh(ie,i,j,k,itr,1) = dx * (fluxval(jx,jy,1) + 4.0D0 * fluxval(jx,jy+1,1) + fluxval(jx,jy+2,1)) / 6.0D0  ! west
+            fluxhigh(ie,i,j,k,itr,2) = dy * (fluxval(jx,jy,2) + 4.0D0 * fluxval(jx+1,jy,2) + fluxval(jx+2,jy,2)) / 6.0D0  ! south
+            fluxhigh(ie,i,j,k,itr,3) = dx * (fluxval(jx+2,jy,1) + 4.0D0 * fluxval(jx+2,jy+1,1) + fluxval(jx+2,jy+2,1)) / 6.0D0 ! east
+            fluxhigh(ie,i,j,k,itr,4) = dy * (fluxval(jx+2,jy+2,2) + 4.0D0 * fluxval(jx+1,jy+2,2) + fluxval(jx,jy+2,2)) / 6.0D0 ! north
             
-            R(i,j)=-min(-flux(1),-flux(2),flux(3),flux(4))
+            R(ie,i,j,k,itr,1)=-min(0.0D0,fluxhigh(ie,i,j,k,itr,1))-min(0.0D0,fluxhigh(ie,i,j,k,itr,2)) + &
+                               max(0.0D0,fluxhigh(ie,i,j,k,itr,3))+max(0.0D0,fluxhigh(ie,i,j,k,itr,4))
+            if ((R(ie,i,j,k,itr,1)<0.0D0) .or. (isnan(R(ie,i,j,k,itr,1)))) then
+              write(*,*) 'error', R(ie,i,j,k,itr,1)
+              stop
+            endif  
+!             
+            if (R(ie,i,j,k,itr,1)>0.0D0) then
+              R(ie,i,j,k,itr,1)=min(1.0D0,spelt(ie)%c(icell,jcell,k,itr,tl%n0)*dx*dy/R(ie,i,j,k,itr,1))
+            else
+              R(ie,i,j,k,itr,1)=0.0D0  
+            endif
             
             !overwrite low order flux by antidiffusive flux
-            fluxlowx(i,j)=flux(1)-fluxlowx(i,j) 
-            fluxlowy(i,j)=flux(2)-fluxlowx(i,j)         
-          end do
-          jx=nep
-          flux(1) = dxoy * (fluxval(jx,jy,1) + 4.0D0 * fluxval(jx,jy+1,1) + fluxval(jx,jy+2,1))
-!           fluxlowx(nc+1,j)=flux(1)-fluxlowx(nc+1,j)
-        end do
-        do i=1,nc
-          !high order flux
-          jx=1+(i-1)*nipm
-          jy=nep
-          flux(2) = dxoy * (fluxval(jx,jy,2) + 4.0D0 * fluxval(jx+1,jy,2) + fluxval(jx+2,jy,2))  
-!           fluxlowx(i,nc+1)=flux(2)-fluxlowx(i,nc+1)      
-        end do
-       ! Anti diffusive flux are computed for each cell!
-!        do j=1,nc
-!          do i=1,nc
-!            c_min=min(c_low(i,j))
-!          end do
-!        end do
-       
-       
-       tmp=abs(elem(ie)%corners(1)%x-elem(ie)%corners(2)%x)/nc
-       !tmp*tmp is area in alpha beta
-!        do j=1,nc
-!          jcell=2+(j-1)*nipm
-!          do i=1,nc
-!            icell=2+(i-1)*nipm
-!            if (R(i,j)>0.0D0) then
-!              R(i,j)=min(1,tmp*tmp*spelt(ie)%c(icell,jcell,k,itr,tl%n0)/R(i,j))
-!            else
-!              R(i,j)=0.0D
-!            endif    
-!          end do
-!        end do    
-                    
-         
-        do j=1,nep,2
-          do i=1,nep,2            
-            flux(1) = dxoy * (fluxval(i,j,1) + 4.0D0 * fluxval(i,j+1,1) + fluxval(i,j+2,1))  ! west
-            tmpcut=flux(1)*mult
-            longint=tmpcut
-            flux(1)=longint/mult
-            flux(2) = dxoy * (fluxval(i,j,2) + 4.0D0 * fluxval(i+1,j,2) + fluxval(i+2,j,2))  ! south
-            tmpcut=flux(2)*mult
-            longint=tmpcut
-            flux(2)=longint/mult
-            flux(3) = dxoy * (fluxval(i+2,j,1) + 4.0D0 * fluxval(i+2,j+1,1) + fluxval(i+2,j+2,1)) ! east
-            tmpcut=flux(3)*mult
-            longint=tmpcut
-            flux(3)=longint/mult
-            flux(4) = dxoy * (fluxval(i+2,j+2,2) + 4.0D0 * fluxval(i+1,j+2,2) + fluxval(i,j+2,2)) ! north
-            tmpcut=flux(4)*mult
-            longint=tmpcut
-            flux(4)=longint/mult
-            
-            spelt(ie)%c(i+1,j+1,k,itr,tl%np1) = spelt(ie)%c(i+1,j+1,k,itr,tl%n0) + &
-                                        (flux(1) + flux(2) - flux(3) - flux(4) ) * dxyi  
-                                                                                         
+!             fluxlowx(i,j)=flux(1)-fluxlowx(i,j) 
+!             fluxlowy(i,j)=flux(2)-fluxlowx(i,j)         
           end do
         end do
-        
-        
-        
+!         do i=1,nc
+!           !high order flux
+!           jx=1+(i-1)*nipm
+!           jy=nep
+!           flux(2) = dxoy * (fluxval(jx,jy,2) + 4.0D0 * fluxval(jx+1,jy,2) + fluxval(jx+2,jy,2))  
+!           fluxlowy(i,nc+1)=flux(2)-fluxlowy(i,nc+1)      
+!         end do
+      end do !ntrac
+    end do   !nlev
+    call ghostVpack(factorR, R(ie,:,:,:,:,:),nhe,nc,nlev,ntrac,0,1,timelevels,elem(ie)%desc)
+  end do
+       ! Anti diffusive flux are computed for each cell, done!
+  call ghost_exchangeV(hybrid,factorR,nhe,nc)
+
+  do ie=nets,nete
+    call ghostVunpack(factorR, R(ie,:,:,:,:,:), nhe, nc,nlev,ntrac,0, 1,timelevels,elem(ie)%desc)
+    do k=1, nlev
+      do itr=1,ntrac
+        !!!! only needed for filter     
+        do j=1,nc !nep,2
+          do i=1,nc !nep,2    
+              dx=spelt(ie)%dab(i)   
+              dy=spelt(ie)%dab(j)        
+              icell=2+(i-1)*nipm
+              jcell=2+(j-1)*nipm   
+              cmo=1.0D0 
+                !west
+                if(fluxhigh(ie,i,j,k,itr,1)>=0.0D0) then
+                  cmo(1)=R(ie,i-1,j,k,itr,1)  
+                else
+                  cmo(1)=R(ie,i,j,k,itr,1)  
+                endif 
+                !south                         
+                if(fluxhigh(ie,i,j,k,itr,2)>=0.0D0) then
+                  cmo(2)=R(ie,i,j-1,k,itr,1)  
+                else
+                  cmo(2)=R(ie,i,j,k,itr,1)  
+                endif  
+                !east  
+                if(fluxhigh(ie,i,j,k,itr,3)>=0.0D0) then
+                  cmo(3)=R(ie,i,j,k,itr,1)  
+                else
+                  cmo(3)=R(ie,i+1,j,k,itr,1)  
+                endif 
+                !north      
+                if(fluxhigh(ie,i,j,k,itr,4)>=0.0D0) then
+                  cmo(4)=R(ie,i,j,k,itr,1)  
+                else
+                  cmo(4)=R(ie,i,j+1,k,itr,1)  
+                endif   
+                spelt(ie)%c(icell,jcell,k,itr,tl%np1) = spelt(ie)%c(icell,jcell,k,itr,tl%n0) - &
+                                    (-cmo(1)*fluxhigh(ie,i,j,k,itr,1) - cmo(2)*fluxhigh(ie,i,j,k,itr,2) + cmo(3)*fluxhigh(ie,i,j,k,itr,3) + cmo(4)*fluxhigh(ie,i,j,k,itr,4) ) /(dx*dy)     
+          end do
+        end do                
       end do !ntrac
     end do   !nlev
     call ghostVpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tl%np1, timelevels,elem(ie)%desc)
@@ -505,8 +526,6 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   use bndry_mod, only: ghost_exchangeV
   ! ---------------------------------------------------------------------------------
   use coordinate_systems_mod, only : spherical_to_cart, cart2cubedspherexy, ref2sphere, sphere2cubedsphere
-!  ! ---------------------------------------------------------------------------------
-!  use fvm_bsp_mod, only : boomerang  
   ! ------EXTERNAL----------------
   use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   ! -----------------------------------------------  
@@ -533,39 +552,45 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   real (kind=real_kind)                       :: minmax(1-nhe:nc+nhe,1-nhe:nc+nhe,2)
   integer                                     :: icell1(1:nep,1:nep), jcell1(1:nep,1:nep)     
   integer                                     :: icell2(1:nep,1:nep), jcell2(1:nep,1:nep)
+  integer                                     :: face_nodep
   
   integer                                     :: icell, jcell
-  real (kind=real_kind)                       :: dxoy, dxyi, dt6, sg, sga
+  real (kind=real_kind)                       :: dx, dy, dxyi, dt6, sg, sga
   type (cartesian2D_t)                        :: alphabeta
   real (kind=real_kind)                       :: tmp
+  type (spherical_polar_t)                    :: tmpsphere
   
   call t_startf('SPELT scheme') 
   
   dt6  = tstep/ 6.0D0
   do ie=nets,nete 
-    tmp=abs(elem(ie)%corners(1)%x-elem(ie)%corners(2)%x)/nc
-    dxoy=tmp / 6.0D0
-    dxyi=1.0D0/(tmp*tmp)
     do k=1, nlev
+!       call solidbody_all(spelt(ie), dsphere1,dsphere2,k) 
+!       call boomerang_all(spelt(ie), dsphere1,k,tl%nstep,0.5D0)
+      
       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
-      call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)         
+      call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)
+               
       !search has not to be done for all tracers!
       do j=1,nep
         do i=1,nep
-!           call solidbody(spelt(ie)%asphere(i,j), dsphere, 0.5D0) 
-
+!           call solidbody(spelt(ie)%asphere(i,j), dsphere1(i,j), 0.5D0) 
+!           write(*,*) 'dsphere1', dsphere1(i,j)%lat-tmpsphere%lat,dsphere1(i,j)%lon-tmpsphere%lon
           ! for analytic departure grid calculation
 !           call boomerang(spelt(ie)%asphere(i,j), dsphere1(i,j),tl%nstep,0.5D0)
 !           call boomerang(spelt(ie)%asphere(i,j), dsphere2(i,j),tl%nstep)
-          
-          call cell_search(elem(ie), dsphere1(i,j),icell1(i,j), jcell1(i,j),dref1(i,j),alphabeta)
+          call cell_search(elem(ie),spelt(ie), dsphere1(i,j),icell1(i,j), jcell1(i,j),dref1(i,j),alphabeta, face_nodep)
+!           call solidbody_contra(dsphere1(i,j),alphabeta,face_nodep,spelt(ie)%contrau1(i,j),spelt(ie)%contrav1(i,j))
           sg1(i,j)=metric_term(alphabeta)
 !           sg1(i,j)=metric_termref(elem(ie),dref1(i,j))
-!           call solidbody(spelt(ie)%asphere(i,j), dsphere, 1.0D0)  
-          call cell_search(elem(ie), dsphere2(i,j), icell2(i,j), jcell2(i,j),dref2(i,j),alphabeta)
+
+!           call solidbody(spelt(ie)%asphere(i,j), dsphere2(i,j))  
+          
+          call cell_search(elem(ie),spelt(ie), dsphere2(i,j), icell2(i,j), jcell2(i,j),dref2(i,j),alphabeta,face_nodep)
+!           call solidbody_contra(dsphere2(i,j),alphabeta,face_nodep,spelt(ie)%contrau2(i,j),spelt(ie)%contrav2(i,j))
+          
           sg2(i,j)=metric_term(alphabeta)
 !           sg2(i,j)=metric_termref(elem(ie),dref2(i,j))
-          
         end do
       end do
       ! search of both point on the trajectory done
@@ -576,7 +601,7 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
             jcell=1+(j-1)*nipm
             ff=spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,k,itr,tl%n0)
             minmax(i,j,:)=cell_minmax(ff)
-            call cip_coeff(ff,ff(2,2),cf(:,:,i,j))
+            call cip_coeff(spelt(ie)%drefx(i,j),spelt(ie)%drefy(i,j),ff,ff(2,2),cf(:,:,i,j))
           enddo
         enddo
         do j=1,nep
@@ -589,29 +614,39 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
             slval(2)=(sga/sg1(i,j))*tmp
 
             tmp=cip_interpolate(cf(:,:,icell2(i,j),jcell2(i,j)),dref2(i,j)%x,dref2(i,j)%y) 
+            
             tmp=qmsl_cell_filter(icell2(i,j),jcell2(i,j),minmax,tmp)
             slval(3)=(sga/sg2(i,j))*tmp
-            spelt(ie)%c(i,j,k,itr,tl%np1)=slval(3)
+ 
+            spelt(ie)%c(i,j,k,itr,tl%np1)=(sga/sg2(i,j))*tmp
 
            if (mod(i,2)==1) then                   ! works only for nip=3!!!
               fluxval(i,j,1) =  dt6 * spelt(ie)%contrau(i,j,k)* (slval(1) + & 
-                     4.0D0 * slval(2) + slval(3) )
+                     4.0D0 * slval(2) + slval(3) )     
             endif
             if (mod(j,2)==1) then            ! works only for nip=3!!!
               fluxval(i,j,2) =  dt6 * spelt(ie)%contrav(i,j,k)* (slval(1) + & 
-                     4.0D0 * slval(2) + slval(3) )    
+                       4.0D0 * slval(2) + slval(3) )                      
             endif
           end do
         end do 
         
-        do j=1,nep,2
-          do i=1,nep,2            
-              flux(1) = dxoy * (fluxval(i,j,1) + 4.0D0 * fluxval(i,j+1,1) + fluxval(i,j+2,1))  ! west
-              flux(2) = dxoy * (fluxval(i,j,2) + 4.0D0 * fluxval(i+1,j,2) + fluxval(i+2,j,2))  ! south
-              flux(3) = dxoy * (fluxval(i+2,j,1) + 4.0D0 * fluxval(i+2,j+1,1) + fluxval(i+2,j+2,1)) ! east
-              flux(4) = dxoy * (fluxval(i+2,j+2,2) + 4.0D0 * fluxval(i+1,j+2,2) + fluxval(i,j+2,2)) ! north
+        ! write(*,*) 'ELEMID', elem(ie)%GlobalId
+        do jcell=1,nc
+          do icell=1,nc          
+              i=1+(icell-1)*nipm
+              j=1+(jcell-1)*nipm
+              
+              sga=spelt(ie)%sga(i+1,j+1)   
+              dx=spelt(ie)%dab(icell)   
+              dy=spelt(ie)%dab(jcell)
+              
+              flux(1) = dy * (fluxval(i,j,1) + 4.0D0 * fluxval(i,j+1,1) + fluxval(i,j+2,1))/6.0D0  ! west
+              flux(2) = dx * (fluxval(i,j,2) + 4.0D0 * fluxval(i+1,j,2) + fluxval(i+2,j,2))/6.0D0  ! south
+              flux(3) = dy * (fluxval(i+2,j,1) + 4.0D0 * fluxval(i+2,j+1,1) + fluxval(i+2,j+2,1))/6.0D0 ! east
+              flux(4) = dx * (fluxval(i+2,j+2,2) + 4.0D0 * fluxval(i+1,j+2,2) + fluxval(i,j+2,2))/6.0D0 ! north
               spelt(ie)%c(i+1,j+1,k,itr,tl%np1) = spelt(ie)%c(i+1,j+1,k,itr,tl%n0) + &
-                                        (flux(1) + flux(2) - flux(3) - flux(4) ) * dxyi
+                                        (flux(1) + flux(2) - flux(3) - flux(4) ) / (dx*dy)                    
           end do
         end do 
       end do
@@ -666,13 +701,15 @@ end subroutine spelt_init1
 ! initialization that can be done in threaded regions
 subroutine spelt_init2(elem,spelt,hybrid,nets,nete,tl)
   use bndry_mod, only: compute_ghost_corner_orientation 
-
+  use derivative_mod, only : derivative_t, derivinit, v2pinit, &
+                             interpolate_gll2spelt_points
   implicit none
   type (timelevel_t)                    :: tl
   type (spelt_struct)                    :: spelt(:)
   type (element_t)                      :: elem(:)
   type (hybrid_t)                       :: hybrid
   integer                               :: ie,nets,nete
+  type (derivative_t)                         :: deriv           ! derivative struct
   
   call compute_ghost_corner_orientation(hybrid,elem,nets,nete)
   call spelt_grid_init(elem,spelt, nets, nete, tl)
@@ -685,6 +722,7 @@ subroutine spelt_init3(elem,spelt,hybrid,nets,nete,tnp0)
   use bndry_mod, only: ghost_exchangeV
   use edge_mod, only :  ghostVpack2d_single, ghostVunpack2d_single,initghostbuffer,freeghostbuffertr
   
+  implicit none
   
   type (element_t),intent(inout)            :: elem(:)                 
   type (spelt_struct),intent(inout)         :: spelt(:)  
@@ -745,6 +783,11 @@ subroutine spelt_grid_init(elem,spelt,nets,nete,tl)
   use coordinate_systems_mod, only : ref2sphere, sphere2cubedsphere
   use cube_mod, only : vmap
   use kinds, only : longdouble_kind
+  use physical_constants, only : DD_PI
+  use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+  use quadrature_mod, only : quadrature_t, gausslobatto
+  use parallel_mod, only : haltmp, abortmp
+  
     
   implicit none
   type (element_t),intent(inout)            :: elem(:)                 
@@ -752,32 +795,88 @@ subroutine spelt_grid_init(elem,spelt,nets,nete,tl)
   integer, intent(in)                       :: nets, nete
   type (TimeLevel_t), intent(in)            :: tl              ! time level struct
   
-  integer                                   :: ie, i, j
+  integer                                   :: ie, i, j, ic,jc, iel,jel
   real (kind=longdouble_kind)               :: xref, yref, dx
-  real (kind=real_kind)                     :: tmpD(2,2), detD
-  type (cartesian2D_t)                      :: alphabeta
+  real (kind=real_kind)                     :: tmpD(2,2), detD, tmp, lat, lon, alpha, beta
+  type (cartesian2D_t)                      :: alphabeta, tmpab(nep,nep)
   type (cartesian2D_t)                      :: dref  
+  
+  type(cartesian2d_t)                       :: cart1, cart2, cart3, cart4, cartn(1:nep,1:nep)
+  real (kind=real_kind)                       :: cartx(1:nc+1), carty(1:nc+1)
+  
+  real (kind=real_kind)                     :: dalpha, dbeta
+  real(kind=real_kind)               :: pi,pj,qi,qj
+  integer                                   :: cubeboundary, nbrsface
+  logical                              :: corner
+  type (quadrature_t) :: gp   ! Quadrature points and weights on pressure grid
   
   
   do ie=nets,nete
-    dx=2.0D0/(nep-1)   ! equi-distant grid on reference element in both directions!
-    spelt(ie)%dx=dx
-    do j=1,nep
-      yref=-1+(j-1)*dx
-      do i=1,nep  
-        xref=-1+(i-1)*dx
-        !define the arrival grid in spherical coordinates
-        spelt(ie)%asphere(i,j)=ref2sphere(xref,yref,elem(ie)%corners,elem(ie)%FaceNum)             
-        alphabeta=sphere2cubedsphere(spelt(ie)%asphere(i,j), elem(ie)%FaceNum)
-        spelt(ie)%sga(i,j)=metric_term(alphabeta)
+    ! for the np grid
+    if (np .ne. nc+1) then
+      call haltmp("PARAMTER ERROR for SPELT, you are in gll grid point mode, use np = nc+1")
+    endif
+    gp=gausslobatto(np)
+    spelt(ie)%pref=gp%points
+    ! for the nc grid
+!     dx=2.0D0/(nc)   ! equi-distant grid on reference element in both directions!
+!     do j=1,nc+1
+!       spelt(ie)%pref(j)=-1+(j-1)*dx
+!     end do
+
+    do j=1,nc
+      spelt(ie)%dab(j)=abs(elem(ie)%cartp(j+1,1)%x-elem(ie)%cartp(j,1)%x)   ! for np grid
+!       spelt(ie)%dab(j)=abs(elem(ie)%corners(1)%x-elem(ie)%corners(2)%x)/nc  ! for nc grid
+      do i=1,nc  
+        spelt(ie)%drefx(i,j)=abs(spelt(ie)%pref(i+1)-spelt(ie)%pref(i)) 
+        spelt(ie)%drefy(i,j)=abs(spelt(ie)%pref(j+1)-spelt(ie)%pref(j))
+        do jc=1,nip
+          do ic=1,nip  
+            xref=spelt(ie)%pref(i)+(ic-1)*spelt(ie)%drefx(i,j)/nipm  
+            yref=spelt(ie)%pref(j)+(jc-1)*spelt(ie)%drefy(i,j)/nipm  
+            iel=ic+(i-1)*nipm
+            jel=jc+(j-1)*nipm
+            !define the arrival grid in spherical coordinates
+            spelt(ie)%asphere(iel,jel)=ref2sphere(xref,yref,elem(ie)%corners,elem(ie)%FaceNum) 
+            alphabeta=sphere2cubedsphere(spelt(ie)%asphere(iel,jel), elem(ie)%FaceNum)
+            tmpab(iel,jel)=alphabeta
+            spelt(ie)%sga(iel,jel)=metric_term(alphabeta)
         
-!         dref%x=xref
-!         dref%y=yref
-!         spelt(ie)%sga(i,j)=metric_termref(elem(ie),dref)
+            lat=spelt(ie)%asphere(iel,jel)%lat
+            lon=spelt(ie)%asphere(iel,jel)%lon
         
-      end do    
+            alpha=alphabeta%x
+            beta=alphabeta%y
+            ! Caculation transformation matrix lat/lon to alpha beta for spelt grid
+            ! earth radius is assumed to be 1.0D0
+            if (elem(ie)%FaceNum <= 4) then
+              lon=lon-(elem(ie)%FaceNum-1)*DD_PI/2
+              tmp=1.0D0/(cos(lat)*cos(lon))
+              spelt(ie)%Ainv(1,1,iel,jel)=tmp*cos(alpha)*cos(alpha)/cos(lon)
+              spelt(ie)%Ainv(2,1,iel,jel)=0.0D0
+              spelt(ie)%Ainv(1,2,iel,jel)=tmp*cos(beta)*cos(beta)*tan(lat)*tan(lon)
+              spelt(ie)%Ainv(2,2,iel,jel)=tmp*cos(beta)*cos(beta)/cos(lat)
+            endif
+            if (elem(ie)%FaceNum == 5) then
+              tmp=1.0D0/(sin(lat)*sin(lat))
+              spelt(ie)%Ainv(1,1,iel,jel)=-tmp*cos(alpha)*cos(alpha)*sin(lat)*cos(lon)
+              spelt(ie)%Ainv(2,1,iel,jel)=tmp*cos(alpha)*cos(alpha)*sin(lon)
+              spelt(ie)%Ainv(1,2,iel,jel)=tmp*cos(beta)*cos(beta)*sin(lat)*sin(lon)
+              spelt(ie)%Ainv(2,2,iel,jel)=tmp*cos(beta)*cos(beta)*cos(lon)
+            endif
+            if (elem(ie)%FaceNum == 6) then
+              tmp=1.0D0/(sin(lat)*sin(lat))
+              spelt(ie)%Ainv(1,1,iel,jel)=tmp*cos(alpha)*cos(alpha)*sin(lat)*cos(lon)
+              spelt(ie)%Ainv(2,1,iel,jel)=-tmp*cos(alpha)*cos(alpha)*sin(lon)
+              spelt(ie)%Ainv(1,2,iel,jel)=tmp*cos(beta)*cos(beta)*sin(lat)*sin(lon)
+              spelt(ie)%Ainv(2,2,iel,jel)=tmp*cos(beta)*cos(beta)*cos(lon)
+            endif
+        
+          end do    
+        end do
+      end do
     end do
-       
+
     !this can be deleted, once the transformation is on the reference element
     do j=1,np
       do i=1,np
@@ -790,10 +889,83 @@ subroutine spelt_grid_init(elem,spelt,nets,nete,tl)
         spelt(ie)%Dinv(2,2,i,j) =  tmpD(1,1)/detD
       enddo
     enddo
-  end do
     
+#ifndef MESH
+  corner=.False.
+  cubeboundary=0
+  do j=1,8
+    if (elem(ie)%vertex%nbrs_used(j)) then
+      nbrsface=elem(ie)%vertex%nbrs_face(j)
+      ! note that if the element lies on a corner, it will be at j=5,6,7,8
+      if ((nbrsface /= elem(ie)%FaceNum) .AND. (j<5)) then
+        cubeboundary=j
+      endif
+    else   ! corner on the cube
+      if (.NOT. corner) then
+        nbrsface=-1
+        cubeboundary=j
+        corner=.TRUE.
+      else
+        print *,'Error in fvm_CONTROL_VOLUME_MOD - Subroutine fvm_MESH_ARI: '
+        call abortmp('Do not allow one element per face for fvm, please increase ne!')
+      endif
+    endif
+  end do
+#endif
+
+     do i=1,nc
+        spelt(ie)%drefx(0,i)=spelt(ie)%drefx(1,i)
+        spelt(ie)%drefy(0,i)=spelt(ie)%drefy(1,i) 
+        spelt(ie)%drefx(i,0)=spelt(ie)%drefx(i,1)
+        spelt(ie)%drefy(i,0)=spelt(ie)%drefy(i,1)
+        spelt(ie)%drefx(nc+1,i)=spelt(ie)%drefx(nc,i) 
+        spelt(ie)%drefy(nc+1,i)=spelt(ie)%drefy(nc,i) 
+        spelt(ie)%drefx(i,nc+1)=spelt(ie)%drefx(i,nc)
+        spelt(ie)%drefy(i,nc+1)=spelt(ie)%drefy(i,nc)
+     end do
+     spelt(ie)%drefx(0,0)=spelt(ie)%drefx(1,1) 
+     spelt(ie)%drefy(0,0)=spelt(ie)%drefy(1,1)
+     spelt(ie)%drefx(nc+nhe,0)=spelt(ie)%drefx(nc,1) 
+     spelt(ie)%drefy(nc+nhe,0)=spelt(ie)%drefy(nc,1)
+     spelt(ie)%drefx(0,nc+nhe)=spelt(ie)%drefx(1,nc) 
+     spelt(ie)%drefy(0,nc+nhe)=spelt(ie)%drefy(1,nc)
+     spelt(ie)%drefx(nc+nhe,nc+nhe)=spelt(ie)%drefx(nc,nc) 
+     spelt(ie)%drefy(nc+nhe,nc+nhe)=spelt(ie)%drefy(nc,nc)
+          
+     do j=1,nc
+       do i=1,nc          
+          cart1=sphere2cubedsphere(spelt(ie)%asphere(1+(i-1)*nipm,1+(j-1)*nipm), elem(ie)%FaceNum)
+          cart2=sphere2cubedsphere(spelt(ie)%asphere(1+(i)*nipm,1+(j-1)*nipm), elem(ie)%FaceNum)
+          cart3=sphere2cubedsphere(spelt(ie)%asphere(1+(i-1)*nipm,1+(j)*nipm), elem(ie)%FaceNum)
+          cart4=sphere2cubedsphere(spelt(ie)%asphere(1+(i)*nipm,1+(j)*nipm), elem(ie)%FaceNum)
+ !          cart1=cartn(1+(i-1)*nipm,1+(j-1)*nipm)
+ !          cart2=cartn(1+(i)*nipm,1+(j-1)*nipm)
+ !          cart3=cartn(1+(i-1)*nipm,1+(j)*nipm)
+ !          cart4=cartn(1+(i)*nipm,1+(j)*nipm)
+
+          spelt(ie)%area_sphere(i,j) =  (I_00(tan(cart4%x),tan(cart4%y)) - I_00(tan(cart3%x),tan(cart3%y)) + &
+                             I_00(tan(cart1%x),tan(cart1%y)) - I_00(tan(cart2%x),tan(cart2%y)))
+
+
+ !           spelt(ie)%area_sphere(i,j)=(I_00(cart4%x,cart4%y) - I_00(cart3%x,cart3%y) + &
+ !                   I_00(cart1%x,cart1%y) - I_00(cart2%x,cart2%y))
+ !           write(*,*) i, cartx(i+1),cart4%x
+ !           spelt(ie)%area_sphere(i,j) =dalpha
+ !          spelt(ie)%area_sphere(i,j) = (I_00(cartx(i+1),carty(j+1)) - I_00(cartx(i),carty(j+1)) + &
+ !                                                I_00(cartx(i),carty(j)) - I_00(cartx(i+1),carty(j)))                  
+       enddo
+     enddo
+    
+  end do
 end subroutine spelt_grid_init
 
+function I_00(x,y)
+  implicit none
+  real (kind=real_kind)                 :: I_00
+  real (kind=real_kind), intent(in)     :: x,y
+
+  I_00 = ATAN(x*y/SQRT(1.0D0+x*x+y*y))
+end function I_00
 !END SUBROUTINE FVM_MCGREGOR----------------------------------------------CE-for FVM!
 ! ----------------------------------------------------------------------------------!
 !SUBROUTINE FVM_MCGREGORDSS-----------------------------------------------CE-for FVM!
@@ -862,34 +1034,27 @@ subroutine spelt_mcgregordss(elem,spelt,nets,nete, hybrid, deriv, tstep, orderta
 end subroutine spelt_mcgregordss
 !END SUBROUTINE FVM_MCGREGORDSS-------------------------------------------CE-for FVM!
 
-subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta) 
-  use coordinate_systems_mod, only : cube_face_number_from_sphere 
-  use physical_constants, only : DD_PI
+subroutine cell_search(elem, spelt, dsphere, icell, jcell,dref, alphabeta, face_nodep) 
 
   implicit none
 
   type (spherical_polar_t), intent(in)     :: dsphere
 
   type (element_t), intent(in)             :: elem
+  type (spelt_struct), intent(in)          :: spelt
+  
   integer, intent(out)                     :: icell, jcell
   type (cartesian2D_t),intent(out)         :: dref
   type (cartesian2D_t), intent(out)        :: alphabeta
     
   type (cartesian2D_t)                     :: dcart
   integer                                  :: number, endi, starti, tmpi
-  real (kind=real_kind)                    :: refnc(1:nc+1), dxcell, tmp
+  real (kind=real_kind)                    :: refnc(1:nc+1), dxcell, dycell, tmp
 
   integer                                  :: i, face_nodep      
   integer                                  :: tmp_i 
 
-  tmp=nc
-  do i=1,nc+1
-    refnc(i)= 2*(i-1)/tmp - 1
-  end do
-  dxcell=abs(refnc(2)-refnc(1))
-  
-!   dxcell=abs(elem%corners(1)%x-elem%corners(2)%x)/(nc)
-!   write(*,*) dxcell
+
   call cube_facepoint_ne(dsphere,ne,dcart, alphabeta, number, face_nodep)
     ! Search index along "x"  (bisection method)
   starti = 1
@@ -897,33 +1062,35 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
   do
     if  ((endi-starti) <=  1)  exit
     tmpi = (endi + starti)/2
-    if (dcart%x  >  refnc(tmpi)) then
+    if (dcart%x  >  spelt%pref(tmpi)) then
       starti = tmpi
     else
       endi = tmpi
     endif
   enddo
   icell = starti
+  dxcell=spelt%drefx(icell,1) !abs(spelt%pref(icell+1)-spelt%pref(icell))
   ! Search index along "y"
   starti = 1
   endi = nc+1
   do
     if  ((endi-starti) <=  1)  exit
     tmpi = (endi + starti)/2
-    if (dcart%y  >  refnc(tmpi)) then
+    if (dcart%y  >  spelt%pref(tmpi)) then
       starti = tmpi
     else
       endi = tmpi
     endif
   enddo
   jcell = starti
+  dycell=spelt%drefy(1,jcell) !abs(spelt%pref(jcell+1)-spelt%pref(jcell))
     
-  dref%x=dcart%x-refnc(icell)
-  dref%y=dcart%y-refnc(jcell)
+  dref%x=dcart%x-spelt%pref(icell)
+  dref%y=dcart%y-spelt%pref(jcell)
 !     
-  if ((dref%x<-1.0D-12) .or.(dref%y<-1.0D-12) .or.(dref%x>dxcell+1.0D-12) .or. (dref%y>dxcell+1.0D-12) ) then
+  if ((dref%x<-1.0D-12) .or.(dref%y<-1.0D-12) .or.(dref%x>dxcell+1.0D-12) .or. (dref%y>dycell+1.0D-12) ) then
     write(*,*) 'Something is wrong in search!'
-    write(*,*) dref%x, dref%y
+    write(*,*) dref%x,dxcell, dref%y,dycell
     stop
   endif
     
@@ -941,7 +1108,7 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
       icell=-jcell+1
       jcell=tmpi
       tmp=dref%x
-      dref%x=dxcell-dref%y
+      dref%x=dycell-dref%y
       dref%y=tmp
     elseif (elem%FaceNum==6) then
       tmpi=icell
@@ -968,7 +1135,7 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
       icell=nc+(nc+1-jcell)
       jcell=tmpi
       tmp=dref%x
-      dref%x=dxcell-dref%y
+      dref%x=dycell-dref%y
       dref%y=tmp
     endif
   end if   
@@ -981,13 +1148,13 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
       icell=nc+1-jcell
       jcell=tmpi-nc
       tmp=dref%x
-      dref%x=dxcell-dref%y
+      dref%x=dycell-dref%y
       dref%y=tmp
     elseif ((elem%FaceNum==3) .or. (elem%FaceNum==5)) then
       icell=nc+1-icell
       jcell=-jcell+1
       dref%x=dxcell-dref%x
-      dref%y=dxcell-dref%y
+      dref%y=dycell-dref%y
     elseif (elem%FaceNum==4) then
       tmpi=icell
       icell=jcell
@@ -1012,13 +1179,13 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
       icell=nc+1-icell
       jcell=nc+(nc+1-jcell)
       dref%x=dxcell-dref%x
-      dref%y=dxcell-dref%y
+      dref%y=dycell-dref%y
     elseif (elem%FaceNum==4) then
       tmpi=icell
       icell=1+(nc-jcell)
       jcell=nc+tmpi
       tmp=dref%x
-      dref%x=dxcell-dref%y
+      dref%x=dycell-dref%y
       dref%y=tmp
     endif
   end if   
@@ -1036,7 +1203,7 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
         icell=1-jcell
         jcell=-nc+tmpi
         tmp=dref%x
-        dref%x=dxcell-dref%y
+        dref%x=dycell-dref%y
         dref%y=tmp
       endif
     elseif (elem%FaceNum==3) then
@@ -1047,7 +1214,7 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
         icell=1-icell
         jcell=1-jcell
         dref%x=dxcell-dref%x
-        dref%y=dxcell-dref%y
+        dref%y=dycell-dref%y
       endif
     elseif (elem%FaceNum==4) then
       if (face_nodep==3) then
@@ -1067,13 +1234,13 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
         icell=1-jcell
         jcell=tmpi-nc
         tmp=dref%x
-        dref%x=dxcell-dref%y
+        dref%x=dycell-dref%y
         dref%y=tmp
       else
         icell=1-icell
         jcell=1-jcell
         dref%x=dxcell-dref%x
-        dref%y=dxcell-dref%y
+        dref%y=dycell-dref%y
       endif
     elseif (elem%FaceNum==6) then
       if (face_nodep==1) then          
@@ -1103,7 +1270,7 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
         icell=nc+(nc+1-jcell)
         jcell=-nc+tmpi
         tmp=dref%x
-        dref%x=dxcell-dref%y
+        dref%x=dycell-dref%y
         dref%y=tmp  
       endif
     elseif (elem%FaceNum==3) then
@@ -1114,7 +1281,7 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
         icell=nc+(nc+1-icell)
         jcell=1-jcell
         dref%x=dxcell-dref%x
-        dref%y=dxcell-dref%y
+        dref%y=dycell-dref%y
       endif
     elseif (elem%FaceNum==4) then
       if (face_nodep==1) then
@@ -1140,7 +1307,7 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
         icell=nc+(nc+1-icell)
         jcell=1-jcell
         dref%x=dxcell-dref%x
-        dref%y=dxcell-dref%y
+        dref%y=dycell-dref%y
       endif
     elseif (elem%FaceNum==6) then
       if(face_nodep==1) then
@@ -1151,7 +1318,7 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
         icell=nc+(nc+1-jcell)
         jcell=-nc+tmpi
         tmp=dref%x
-        dref%x=dxcell-dref%y
+        dref%x=dycell-dref%y
         dref%y=tmp
       endif
     endif
@@ -1181,7 +1348,7 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
         icell=1-icell
         jcell=nc+(nc+1-jcell)
         dref%x=dxcell-dref%x
-        dref%y=dxcell-dref%y
+        dref%y=dycell-dref%y
       endif
     elseif (elem%FaceNum==4) then
       if (face_nodep==3) then
@@ -1192,7 +1359,7 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
         icell=-jcell+1
         jcell=nc+tmpi
         tmp=dref%x
-        dref%x=dxcell-dref%y
+        dref%x=dycell-dref%y
         dref%y=tmp
       endif
     elseif (elem%FaceNum==5) then
@@ -1204,7 +1371,7 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
         icell=-jcell+1
         jcell=nc+tmpi
         tmp=dref%x
-        dref%x=dxcell-dref%y
+        dref%x=dycell-dref%y
         dref%y=tmp   
       endif
     elseif (elem%FaceNum==6) then
@@ -1219,7 +1386,7 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
         icell=1-icell
         jcell=nc+(nc+1-jcell)
         dref%x=dxcell-dref%x
-        dref%y=dxcell-dref%y
+        dref%y=dycell-dref%y
       endif
     endif
   end if   
@@ -1248,7 +1415,7 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
         icell=nc+(nc+1-icell)
         jcell=nc+(nc+1-jcell)
         dref%x=dxcell-dref%x
-        dref%y=dxcell-dref%y
+        dref%y=dycell-dref%y
       endif
     elseif (elem%FaceNum==4) then
       if (face_nodep==1) then
@@ -1259,7 +1426,7 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
         icell=nc+(nc+1-jcell)
         jcell=nc+tmpi
         tmp=dref%x
-        dref%x=dxcell-dref%y
+        dref%x=dycell-dref%y
         dref%y=tmp
       endif
     elseif (elem%FaceNum==5) then
@@ -1280,40 +1447,29 @@ subroutine cell_search(elem, dsphere, icell, jcell,dref, alphabeta)
         icell=nc+(nc+1-jcell)
         jcell=nc+tmpi
         tmp=dref%x
-        dref%x=dxcell-dref%y
+        dref%x=dycell-dref%y
         dref%y=tmp
       else
         icell=nc+(nc+1-icell)
         jcell=nc+(nc+1-jcell)
         dref%x=dxcell-dref%x
-        dref%y=dxcell-dref%y
+        dref%y=dycell-dref%y
       endif
     endif
   end if
 #endif      
   if ((icell<0) .or.(icell>nc+1) .or. (jcell<0) .or. (jcell>nc+1)) then
     write(*,*) '2 Something is wrong in search!'
-#ifdef MESH
-    tmp_i = elem%vertex%nbrs_ptr(9) - 1
-#else
-    tmp_i = 8
-#endif
-    write(*,*) number, elem%vertex%nbrs(1:tmp_i)
+    write(*,*) number
     write(*,*) icell, jcell, elem%GlobalId, elem%FaceNum, face_nodep
     stop
   endif
-  if ((dref%x<-1.0D-12) .or.(dref%y<-1.0D-12) .or.(dref%x>dxcell+1.0D-12) .or. (dref%y>dxcell+1.0D-12) ) then
-    write(*,*) '3 Something is wrong in search!'
-#ifdef MESH
-    tmp_i = elem%vertex%nbrs_ptr(9) - 1
-#else
-    tmp_i = 8
-#endif
-
-    write(*,*) number, elem%vertex%nbrs(1:tmp_i)
-    write(*,*) dref
-    stop
-  endif
+!   if ((dref%x<-1.0D-12) .or.(dref%y<-1.0D-12) .or.(dref%x>dxcell+1.0D-12) .or. (dref%y>dycell+1.0D-12) ) then
+!     write(*,*) '3 Something is wrong in search!'
+!     write(*,*) number, elem%vertex%nbrs(1)%n, elem%vertex%nbrs(2)%n, elem%vertex%nbrs(3)%n, elem%vertex%nbrs(4)%n, elem%vertex%nbrs(5)%n, elem%vertex%nbrs(6)%n, elem%vertex%nbrs(7)%n, elem%vertex%nbrs(8)%n
+!     write(*,*) dref, dxcell, dycell
+!     stop
+!   endif
 end subroutine cell_search
 
 
@@ -1412,30 +1568,6 @@ function metric_term(alphabeta) result(sg)
 
 end function metric_term
 
-function metric_termref(elem,ref) result(sg) 
-  use cube_mod, only : dmap
-  implicit none
-  type (element_t), intent(in)          :: elem
-  
-  type (cartesian2D_t), intent(in)      :: ref
-  real (kind=real_kind)                 :: sg                
-
-  real (kind=real_kind)  :: Jp(2,2)
-  real (kind=real_kind)  :: D(2,2)
-
-
-  ! input (a,b) shold be a point in the reference element [-1,1]
-  ! compute Jp(a,b)
-  Jp(1,1) = elem%u2qmap(2,1) + elem%u2qmap(4,1)*ref%y
-  Jp(1,2) = elem%u2qmap(3,1) + elem%u2qmap(4,1)*ref%x
-  Jp(2,1) = elem%u2qmap(2,2) + elem%u2qmap(4,2)*ref%y
-  Jp(2,2) = elem%u2qmap(3,2) + elem%u2qmap(4,2)*ref%x
-  
-  call Dmap(D, elem, ref%x,ref%y)
-  
-  
-  sg=(abs(D(1,2)*D(2,1)-D(1,1)*D(2,2)))
-end function metric_termref
 
 function cell_minmax(fel) result(minmax)  
   implicit none
@@ -1462,7 +1594,7 @@ function cell_minmax(fel) result(minmax)
   minmax(2) = vmax 
 end function cell_minmax
 
-! Positivity preserving QMSL filter for given point 
+!  QMSL filter for given point 
 function qmsl_cell_filter(ix,iy,minmax,val) result(qval) 
   implicit none
   integer, intent(in)                 :: ix,iy
@@ -1497,27 +1629,25 @@ function cip_interpolate(cf,dxi,det) result(val)
 end function cip_interpolate
 
 
-subroutine cip_coeff(ff,avr,cf) 
+subroutine cip_coeff(dxcell,dycell,ff,avr,cf) 
   use physical_constants, only : DD_PI
 
   implicit none
   real (kind=real_kind) , intent(in), dimension(nip,nip) :: ff
   real (kind=real_kind) , intent(in) :: avr 
   real (kind=real_kind) , intent(out) :: cf(nip,nip)  
-  real (kind=real_kind)  :: dxcell, dycell, d(8) 
+  real (kind=real_kind) , intent(in)  :: dxcell, dycell
+  real (kind=real_kind)  :: d(8) 
   integer ::  i,j
-
-  dxcell = 1.0D0/(2.0D0/nc)  
-!    dxcell=1.0D0/(DD_PI/2/nc)
-  dycell = dxcell               
-  d(1) = dxcell
-  d(2) = 2.0D0*dxcell*dxcell 
-  d(3) = d(1) 
-  d(4) = d(2)          
-  d(5) = d(2)          
-  d(6) = dxcell*dycell*dycell   
-  d(7) = d(6)          
-  d(8) = 3.0D0*d(6)*dxcell  
+!   write(*,*) dxcell, dycell
+  d(1) = 1.0D0/dxcell
+  d(2) = 2.0D0/(dxcell*dxcell) 
+  d(3) = 1.0D0/dycell
+  d(4) = 2.0D0/(dycell*dycell)          
+  d(5) = 2.0D0/(dxcell*dycell)          
+  d(6) = 1.0D0/(dxcell*dxcell*dycell)   
+  d(7) = 1.0D0/(dxcell*dycell*dycell)          
+  d(8) = 3.0D0/(dxcell*dxcell*dycell*dycell)
 
   cf(1,1) = ff(1,1)
   cf(2,1) = d(1) * (-3.0D0*ff(1,1) + 4.0D0*ff(2,1) - ff(3,1) ) 
@@ -1558,7 +1688,7 @@ end function cip_cell_avr
 
 
 subroutine cube_facepoint_ne(sphere,ne,cart, cube, number, face_no)
-  use coordinate_systems_mod, only : cube_face_number_from_sphere, sphere2cubedsphere
+  use coordinate_systems_mod, only : sphere2cubedsphere
   use physical_constants, only : DD_PI
   use parallel_mod,           only : abortmp
   
@@ -1576,7 +1706,6 @@ subroutine cube_facepoint_ne(sphere,ne,cart, cube, number, face_no)
   real (kind=real_kind) :: x1,x2
   real (kind=real_kind) :: dx
 
-!     face_no = cube_face_number_from_sphere(sphere)
   face_no = panel_index(sphere%lon,sphere%lat)
   
   cube    = sphere2cubedsphere(sphere, face_no)
@@ -1592,13 +1721,13 @@ subroutine cube_facepoint_ne(sphere,ne,cart, cube, number, face_no)
   je = INT(ABS(x2)/dx)
   ! if we are exactly on an element edge, we can put the point in
   ! either the ie or ie+1 element, EXCEPT if ie==ne.
-  if ( ABS(x1) < ne*dx  ) ie=ie+1
-  if ( ABS(x2) < ne*dx  ) je=je+1
+  if ( ABS(x1)/dx < ne  ) ie=ie+1
+  if ( ABS(x2)/dx < ne  ) je=je+1
   if (ie>ne .or. je>ne) then
      write(*,*)'ERROR: ',ie,je,ne
      write(*,*)'lat,lon=',sphere%lat,sphere%lon
      write(*,*)'face no=',face_no
-     write(*,*)x1,x2,x1/dx,x2/dx
+     write(*,*)xp,yp,dx,x1,x2,x1/dx,x2/dx
      call abortmp('cube_facepoint_ne: bad argument')
   endif
 
@@ -1665,7 +1794,7 @@ integer :: ix,iy,iz, iface
 end function panel_index
 
 function integer_part(a,b)  result(ii) 
-
+   implicit none
    real (kind=real_kind), Intent(in) :: a,b   
    real (kind=real_kind) :: tol,a1,b1 
    Integer :: ii
@@ -1686,5 +1815,92 @@ function integer_part(a,b)  result(ii)
       endif 
 
 end  function integer_part
+
+
+subroutine solidbody_all(spelt, dsphere1,dsphere2,k)
+  use kinds, only : real_kind
+  use time_mod, only : tstep, nmax, Time_at
+  use physical_constants, only : DD_PI, rearth
+  use fvm_transformation_mod, only: vortex_rotatedsphere, vortex_rotatedsphereback
+  use coordinate_systems_mod, only : spherical_polar_t
+
+  implicit none
+  type (spelt_struct), intent(inout)          :: spelt
+  type (spherical_polar_t),intent(out)        :: dsphere1(nep,nep),dsphere2(nep,nep)
+  integer, intent(in)                         :: k
+! for test case solid-body rotation on the sphere with alpha
+  real (kind=real_kind)                 :: alpha, omega
+  real (kind=real_kind)                 :: lap,thp,lamrot, therot,tmplondep,tmplatdep
+  real (kind=real_kind)                 ::tmpflux
+  integer ie,i,j
+  real (kind=real_kind)                 :: lon, lat, u0, u, v
+
+
+  ! set values for solid-body rotation on the sphere with alpha, this should be 
+  ! outside 
+  alpha=DD_PI/4!-0.9*DD_PI/4.0D0 !DD_PI/4  !DD_PI/4 !1.3!0.78
+!   omega=2*DD_PI/Time_at(nmax)          ! angular velocity: around the earth
+  
+  omega=2*DD_PI/1036800                !in 12 days around the earth
+  lap=DD_PI
+  thp=DD_PI/2-alpha
+
+  u0=2*DD_PI/dble(1036800)
+
+  do j=1,nep
+    do i=1,nep
+      lon = spelt%asphere(i,j)%lon
+      lat = spelt%asphere(i,j)%lat
+      if (alpha==0.0D0) then      ! move along the equator
+        tmplondep=lon-omega*tstep/2.0D0
+        if (tmplondep<0.0D0) then
+          tmplondep=tmplondep+2*DD_PI
+        endif
+        tmplatdep=lat
+      else            
+        ! rotate sphere with the pole (lap,thp) with respect to the unrotated system
+        call vortex_rotatedsphere(lap,thp,lon,lat,lamrot,therot)
+        lamrot=lamrot-omega*tstep/2.0D0
+    !     if (lamrot<0.0D0) lamrot=lamrot+2*DD_PI        
+        call vortex_rotatedsphereback(lap,thp,lamrot,therot,&
+                                     tmplondep,tmplatdep)                                                      
+      endif
+      dsphere1(i,j)%lon=tmplondep
+      dsphere1(i,j)%lat=tmplatdep
+      dsphere1(i,j)%r=spelt%asphere(i,j)%r
+
+      if (alpha==0.0D0) then      ! move along the equator
+        tmplondep=lon-omega*tstep
+        if (tmplondep<0.0D0) then
+          tmplondep=tmplondep+2*DD_PI
+        endif
+        tmplatdep=lat
+      else            
+        ! rotate sphere with the pole (lap,thp) with respect to the unrotated system
+        call vortex_rotatedsphere(lap,thp,lon,lat,lamrot,therot)
+        lamrot=lamrot-omega*tstep
+    !     if (lamrot<0.0D0) lamrot=lamrot+2*DD_PI        
+        call vortex_rotatedsphereback(lap,thp,lamrot,therot,&
+                                     tmplondep,tmplatdep)                                                      
+      endif
+      dsphere2(i,j)%lon=tmplondep
+      dsphere2(i,j)%lat=tmplatdep
+      dsphere2(i,j)%r=spelt%asphere(i,j)%r
+
+      u = u0*(cos(alpha)*cos(lat)+sin(alpha)*cos(lon)*sin(lat))
+      v = -u0*sin(alpha)*sin(lon)
+      ! convert from radians per dimensionless time to 
+      ! meters/sec 
+!       vstar(i,j,1)=u !* rearth /( 12*3600*24/5)
+!       vstar(i,j,2)=v !* rearth /( 12*3600*24/5)
+      ! transform to contravariant (alpha/beta velocities)
+      spelt%contrau(i,j,k)=spelt%Ainv(1,1,i,j)*u+spelt%Ainv(2,1,i,j)*v      
+      spelt%contrav(i,j,k)=spelt%Ainv(1,2,i,j)*u+spelt%Ainv(2,2,i,j)*v
+          
+
+    enddo
+  enddo
+end subroutine solidbody_all
+
 
 end module spelt_mod
