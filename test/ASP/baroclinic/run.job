@@ -13,10 +13,9 @@
 #XPBS -N baroclinic
 #XPBS -j oe
 
-# jaguarpf pick mult of 12
-# 80, 240, 300, 540, 900, 1200
+# titan -- specify number of nodes
 #XPBS -A CLI017DEV 
-#XPBS -l size=300
+#XPBS -l nodes=6
 #XPBS -l walltime=0:30:00
 #XPBS -N baroclinic
 #XPBS -j oe
@@ -38,11 +37,11 @@
 
 # directores
 #set HOMME = ~/codes/homme1_2_2      
-set HOMME = ~/codes/homme
+set HOMME = /tmp/work/$USER/homme
 set src = $HOMME/build/preqx
 
 
-set wdir = ~/scratch1/preqx   # work directory where output is stored
+set wdir = /tmp/work/$USER/preqx   # work directory where output is stored
 #set wdir = /ptmp/$user/preqx
 #set wdir = /ptmp/$HOMME/prexq
 
@@ -80,14 +79,14 @@ set nu_div = -1
 #              RK 3 stage for tracers
 set smooth = 0
 set tadv = 1 ; set RK2 = 1    
-set qsplit = 1
+set qsplit = 4
 set mean_flux=1
 set limiter = 8
 
 
 
 # resolution parameters
-set ne = 15    # setup for 8,15,30,60,120?
+set ne = 8    # setup for 8,15,30,60,120?
 
 #set ndays = 30
 set ndays = 9
@@ -219,8 +218,9 @@ echo using NCPU = $NCPU
 
 set machine = default
 if ( AIX == `uname` ) set machine = aix
-if ( jaguar == `hostname | head -c 6` ) set machine = jaguar
-if ( yodjag == `hostname | head -c 6` ) set machine = jaguar
+if ( yodjag == `hostname | head -c 6` ) set machine = titan
+if ( chester == `hostname | head -c 7` ) set machine = titan
+if ( titan == `hostname | head -c 5` ) set machine = titan
 echo machine = $machine
 echo hostname = `hostname`
 
@@ -232,12 +232,11 @@ if ( $machine == aix  ) then
   # other stuff for blue vista: 
   mv -f $wdir/input.nl $wdir/tmp.nl
   sed  s/.littleendian//g $wdir/tmp.nl > $wdir/input.nl
-else if ( jaguar == $machine ) then
-   set make = "make -j3"
+else if ( titan == $machine ) then
+   set make = "make -j4"
    set mpirun = "aprun -n $NCPU "
-
    # cant reference home directory
-   set vcoord = /lustre/widow1/scratch/taylorm/preqx/vcoord
+   set vcoord = /tmp/work/$USER/preqx/vcoord
    rsync -a $HOMME/test/vcoord/* $vcoord
 else
    set make = "make -j4"
