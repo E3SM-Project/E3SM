@@ -1788,7 +1788,7 @@ contains
     !$OMP BARRIER
 #endif
 !  Parallel version of ref_state, comment out if writing above
-    call ref_state_read(pt(:,:,nets:nete),vt(:,:,:,nets:nete),fstub,simday,nets,nete,par)
+!    call ref_state_read(pt(:,:,nets:nete),vt(:,:,:,nets:nete),fstub,simday,nets,nete,par)
 #if (! defined ELEMENT_OPENMP)
     !$OMP BARRIER
 #endif
@@ -2230,11 +2230,11 @@ contains
 
 #ifdef _REFSOLN
 !  Parallel version of ref_state, comment out read below if writing here
-    call ref_state_write(p(:,:,nets:nete),v(:,:,:,nets:nete),fstub,simday,nets,nete,par)
-    do ie=nets,nete
-       pt(:,:,ie)=p(:,:,ie)
-       vt(:,:,:,ie)=v(:,:,:,ie)
-    end do
+!    call ref_state_write(p(:,:,nets:nete),v(:,:,:,nets:nete),fstub,simday,nets,nete,par)
+!    do ie=nets,nete
+!       pt(:,:,ie)=p(:,:,ie)
+!       vt(:,:,:,ie)=v(:,:,:,ie)
+!    end do
 #endif
 
     ! ======================================================
