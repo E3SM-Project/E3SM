@@ -575,6 +575,9 @@ contains
     use asp_tests, only : asp_tracer, asp_baroclinic, asp_rossby, asp_mountain, asp_gravity_wave 
     use aquaplanet, only : aquaplanet_init_state
 #endif
+#ifdef _ACCEL
+    use cuda_mod, only: cuda_mod_init
+#endif
 
     type (element_t), intent(inout) :: elem(:)
 #if defined(_SPELT)
@@ -1004,6 +1007,11 @@ contains
        write(iulog,*) "initial state from CAM:"
        write(iulog,*) "nstep=",tl%nstep," time=",Time_at(tl%nstep)/(24*3600)," [day]"
     end if
+#endif
+
+#ifdef _ACCEL
+  !Inside this routine, we enforce an OMP BARRIER and an OMP MASTER. It's left out of here because it's ugly
+  call cuda_mod_init()
 #endif
 
     call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete, fvm)
