@@ -14,6 +14,7 @@ module prim_driver_mod
   use column_types_mod, only : ColumnModel_t
   use prim_restart_mod, only : initrestartfile
   use restart_io_mod , only : RestFile,readrestart
+  use Manager
 #endif
   use prim_si_ref_mod, only : ref_state_t
   use solver_mod, only : blkjac_t
@@ -27,7 +28,6 @@ module prim_driver_mod
   use spelt_mod, only : spelt_struct, spelt_init1,spelt_init2, spelt_init3
   
   use element_mod, only : element_t, timelevels
-  use Manager
   use time_mod, only           : TimeLevel_Qdp
 
   implicit none
@@ -115,9 +115,11 @@ contains
     ! --------------------------------
     use physical_constants, only : dd_pi
     ! --------------------------------
-    use repro_sum_mod, only: repro_sum
 #ifndef CAM
-    use repro_sum_mod, only: repro_sum_defaultopts, repro_sum_setopts
+    use repro_sum_mod, only: repro_sum, repro_sum_defaultopts, &
+         repro_sum_setopts
+#else
+    use shr_reprosum_mod, only: repro_sum => shr_reprosum_calc
 #endif
     implicit none
     type (element_t), pointer :: elem(:)
@@ -322,7 +324,9 @@ contains
 
     if (nelemd>0) then
        allocate(elem(nelemd))
+#ifndef CAM
        call ManagerInit()
+#endif
     endif
 
     if (ntrac>0) allocate(fvm(nelemd))
