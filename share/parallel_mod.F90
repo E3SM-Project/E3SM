@@ -6,9 +6,6 @@ module parallel_mod
          use kinds, only : real_kind, int_kind, iulog
          ! ---------------------------
 	 use dimensions_mod, only : nmpi_per_node
-#if defined(CAM)
-#define _MPI 
-#endif
 
 
        implicit none

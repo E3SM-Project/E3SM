@@ -60,6 +60,9 @@
 !> @author Jose Garcia (jgarcia@ucar.edu). NCAR
 !------------------------------------------------------------------------------
 
+! In the absence of a clear alternative, I have removed this module
+! and all uses of it from CAM compilations. -Sean Santos (santos@ucar.edu)
+#ifndef CAM
 module Manager
 
     use physics_mod, only : elem_physics_t
@@ -68,7 +71,7 @@ module Manager
 
     private
     !> @brief This is the physics resource.
-    type (elem_physics_t), pointer  :: my_elem_physics(:)
+    type (elem_physics_t), pointer  :: my_elem_physics(:) => null()
 
     ! --------------------------------- Private members ------------------------------------------
     private:: element_physics_set
@@ -121,3 +124,4 @@ contains
     end subroutine ManagerInit
 
 end module Manager
+#endif

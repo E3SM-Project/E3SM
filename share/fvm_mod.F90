@@ -500,8 +500,7 @@ end subroutine fvm_init1
 subroutine fvm_init2(elem,fvm,hybrid,nets,nete,tl)
   use fvm_control_volume_mod, only: fvm_mesh_ari
   use fvm_analytic_mod, only: computexytosphere_moments
-  use bndry_mod, only: compute_ghost_corner_orientation 
-  use checksum_mod, only: test_ghost
+  use bndry_mod, only: compute_ghost_corner_orientation
   use bndry_mod, only : ghost_exchangevfull, bndry_exchangev, ghost_exchangev3d
   
   use edge_mod, only : ghostbuffer_t, ghostvpackfull, ghostvunpackfull, initghostbufferfull,&
@@ -520,7 +519,7 @@ subroutine fvm_init2(elem,fvm,hybrid,nets,nete,tl)
   
   call compute_ghost_corner_orientation(hybrid,elem,nets,nete)
   ! run some tests:
-    call test_ghost(hybrid,elem,nets,nete)
+!    call test_ghost(hybrid,elem,nets,nete)
   
 
   do ie=nets,nete
