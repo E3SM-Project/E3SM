@@ -19,6 +19,12 @@ set NCPU = 2
 if ( ${?PBS_NODEFILE} ) then
    set NCPU = `wc $PBS_NODEFILE | awk '{print $1}' - `
 endif
+if ( ${?SLURM_NNODES} ) then
+   # SLURM_NNODES  = number of nodes
+   # hard to tell how many cores per nodes
+   # set NCPU to zero, and mpirun will use the max allowed
+   set NCPU = 0
+endif
 echo NCPU = $NCPU
 
 
@@ -69,7 +75,7 @@ set hypervis_subcycle =  1
 #           nu=1e15   stable, but occasional 2dx noise at cube corners
 #           nu=1.5e15 good
 # tstep=80  nu=0      stable, but noisy
-#           nu=1e15  
+#           nu=1e15   good
 #
 set integration = explicit
 set smooth = .05
