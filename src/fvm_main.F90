@@ -149,9 +149,10 @@ program fvm_main
   call t_stopf('Total')
   write(numproc_char,*) par%nprocs
   write(numtrac_char,*) ntrac
-!   call system('mkdir -p '//'time/'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char))) 
-!  call t_prf('time/'//trim(adjustl(numproc_char))//'/'//trim(adjustl(numtrac_char))//'/HommefvmTime',par%comm)
-  call t_prf('HommeFVMTime',par%comm)
+  
+  call t_prf('HommeTimeFVM',par%comm)
+!  call system('cp  '//'HommeTimeFVM'//' time/'//'HommeTimeFVM'//'-'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char))) 
+  
   call t_finalizef()
   call haltmp("exiting program...")
   deallocate(elem)

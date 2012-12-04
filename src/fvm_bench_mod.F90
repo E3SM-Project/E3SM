@@ -19,10 +19,6 @@ module fvm_bench_mod
   use element_mod, only : element_t, timelevels
   use hybrid_mod, only : hybrid_t
 
-#ifdef _MPI
-#include <mpif.h> ! _EXTERNAL
-#endif
-
 contains
 
 
@@ -32,7 +28,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   ! ---------------------------------------------------------------------------------  
   use fvm_control_volume_mod, only: fvm_struct
   ! ---------------------------------------------------------------------------------
-  use fvm_mod, only: cslam_runairdensity, fvm_init1,fvm_init2, fvm_init3, fvm_mcgregor,fvm_mcgregordss, cellghostbuf, edgeveloc
+  use fvm_mod, only: cslam_run, cslam_runtest,cslam_runairdensity, fvm_init1,fvm_init2, fvm_init3, fvm_mcgregor,fvm_mcgregordss, cellghostbuf, edgeveloc
   ! ---------------------------------------------------------------------------------
   ! ---------------------------------------------------------------------------------
   use derivative_mod, only : derivative_t, derivative_stag_t, derivinit, deriv_print
@@ -61,11 +57,11 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   use perf_mod, only : t_startf, t_stopf, t_barrierf ! _EXTERNAL
   ! -----------------------------------------------
   
-#ifdef PIO_INTERP
-    use interp_movie_mod, only : interp_movie_init, interp_movie_output, interp_movie_finish
-#else
-    use shal_movie_mod, only : shal_movie_init, shal_movie_output, shal_movie_finish
-#endif
+! #ifdef PIO_INTERP
+!      use interp_movie_mod, only : interp_movie_init, interp_movie_output, interp_movie_finish
+! #else
+!      use shal_movie_mod, only : shal_movie_init, shal_movie_output, shal_movie_finish
+! #endif
   
   implicit none
   type (element_t), intent(inout)                :: elem(:)
@@ -103,7 +99,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   
   integer  choosetrac, chooselev   !for test reason the output
  !-----------------------------------------------------------------------------------!  
- choosetrac=1
+ choosetrac=2
  chooselev=1
  
   if(hybrid%masterthread) then 
@@ -171,8 +167,8 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
 
 !-----------------------------------------------------------------------------------!
   
-  !need the buffer cellghostbuf in the time loop
-  ! for mass calculation
+!   !need the buffer cellghostbuf in the time loop
+!   ! for mass calculation
   call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
   massstart=global_shared_sum(1)
   maxcstart = parallelmax(tmp1,hybrid)
@@ -180,14 +176,15 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
 !-----------------------------------------------------------------------------------!  
 !Initialize Output via geopotential (should be changed, separate output for fvm
 !write first time step to IO 
-#ifdef PIO_INTERP
-  call interp_movie_init(elem,hybrid,nets,nete,tl=tl)    
-  call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete,fvm)
-#else
-    call shal_movie_init(elem,hybrid,fvm)
-    call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv,fvm)
-#endif 
-!-----------------------------------------------------------------------------------!
+! #ifdef PIO_INTERP
+!   call interp_movie_init(elem,hybrid,nets,nete,tl=tl)    
+!   call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete,fvm)
+! #else
+!     call shal_movie_init(elem,hybrid,fvm)
+!     call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv,fvm)
+! #endif 
+! !-----------------------------------------------------------------------------------!
+!
 !-----------------------------------------------------------------------------------!
   if(hybrid%masterthread) then 
     print *
@@ -230,10 +227,10 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
 ! ! start mcgregordss
     do ie=nets,nete
       do k=1,nlev
-!         elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
-!         fvm(ie)%vn0(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),time_at(tl%nstep))
-        elem(ie)%derived%vstar(:,:,:,k)=get_solidbody_velocities_gll(elem(ie), time_at(tl%nstep+1))
-        fvm(ie)%vn0(:,:,:,k)=get_solidbody_velocities_gll(elem(ie),time_at(tl%nstep))
+        elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
+        fvm(ie)%vn0(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),time_at(tl%nstep))
+!         elem(ie)%derived%vstar(:,:,:,k)=get_solidbody_velocities_gll(elem(ie), time_at(tl%nstep+1))
+!         fvm(ie)%vn0(:,:,:,k)=get_solidbody_velocities_gll(elem(ie),time_at(tl%nstep))
       end do
     end do
     call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, tstep, 3)
@@ -252,6 +249,8 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
     
 ! ! end mcgregordss   
     call cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
+!     call cslam_runtest(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
+!     call cslam_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
     
     call TimeLevel_update(tl,"forward")
      
@@ -301,11 +300,11 @@ endif
 
 !-----------------------------------------------------------------------------------!  
 
-#ifdef PIO_INTERP
-    call interp_movie_output(elem, tl, hybrid, 0D0, deriv, nets, nete,fvm)
-#else     
-    call shal_movie_output(elem, tl, hybrid, 0D0, nets, nete,deriv,fvm)
-#endif
+! #ifdef PIO_INTERP
+!     call interp_movie_output(elem, tl, hybrid, 0D0, deriv, nets, nete,fvm)
+! #else     
+!     call shal_movie_output(elem, tl, hybrid, 0D0, nets, nete,deriv,fvm)
+! #endif
 !-----------------------------------------------------------------------------------!  
   END DO
 !------------END TIME LOOP-------------END TIME LOOP--------------END TIME LOOP-----!
@@ -315,11 +314,11 @@ endif
 
   call freeghostbuffertr(cellghostbuf)
   call freeedgebuffer(edgeveloc)
-#ifdef PIO_INTERP
-    call interp_movie_finish
-#else
-    call shal_movie_finish
-#endif
+! #ifdef PIO_INTERP
+!     call interp_movie_finish
+! #else
+!     call shal_movie_finish
+! #endif
 !-----------------------------------------------------------------------------------!  
 ! Error analysis/ complicated, but for a first try o.k.
     do ie=nets,nete
