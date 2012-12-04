@@ -31,34 +31,38 @@ echo using NCPU = $NCPU
 # to plot the control volumes, see:   plotgrid.ncl
 #
 # GLL points within each element:
-set NPTS = 5
+set NPTS = 4
 # CSLAM points points within each element:
-set NC = 4  # must match value in dimensions_mod.F90
+set NC = 4  
 
-# UNIFORM grids
-set HYPERVIS_OPTS = 
-set MESHREFINE = 
-set tstep = 1  
-set ne = 15 ; 
-set nu = 0
-set hypervis_subcycle = 1
-set meshfile='none'
-set meshname = ne{$ne}np{$NPTS}   #eg  ne30np5
-set meshsub = ne{$ne}nc{$NC}    #eg  ne30nc4
+set ne = 4 ; 
 
-# unstructured grid from file
-#set ne = 0
-#set meshname = ARM_30_x8_s1.g
-#set meshname = ARM_30_x8.g
-#set meshfile=~/codes/mapping/grids/$meshname
-#set nu = 1.1e12
-# dtime=600 nsplit=19  qsplit=5   tstep=6.3
-#set tstep = 6
-#set MESHREFINE = --enable-mesh-refine
-#set hypervis_subcycle = 1
-#set HYPERVIS_OPTS = 'hypervis_power=3.2  fine_ne=240 max_hypervis_courant=9991.9 qsplit=5'
+if ( $ne == 0 ) then
+    # unstructured grid from file
+    #set meshname = ARM_30_x8_s1.g
+    set meshname = ARM_30_x8.g
+    set meshfile=~/codes/mapping/grids/$meshname
 
+    set meshname = uniform_16.g
+    set meshfile=~/tmp/$meshname
 
+    set nu = 1.1e12
+    dtime=600 nsplit=19  qsplit=5   tstep=6.3
+    set tstep = 6
+    set MESHREFINE = --enable-mesh-refine
+    set hypervis_subcycle = 1
+    set HYPERVIS_OPTS = 'hypervis_power=3.2  fine_ne=240 max_hypervis_courant=9991.9 qsplit=5'
+else
+   # UNIFORM grids
+   set HYPERVIS_OPTS = 
+   set MESHREFINE = 
+   set tstep = 1  
+   set nu = 0
+   set hypervis_subcycle = 1
+   set meshfile='none'
+   set meshname = ne{$ne}np{$NPTS}   #eg  ne30np5
+   set meshsub = ne{$ne}nc{$NC}    #eg  ne30nc4
+endif
 
 
 
@@ -76,7 +80,11 @@ set src = ~/codes/homme/build/preqx
 set input = ~/codes/homme/test/template
 set mesh = ne${ne}-${NPTS}t${tstep}l${nlev}
 set output = jw_baroclinic1.nc
+
 set exe = preqx.template.nc$NC
+if ( $ne == 0 ) set exe = preqx.template.ne$ne.nc$NC
+
+
 # setup the work directory
 # NOTE: PIO + older Lustre (as on blackrose) will output only zeros!
 set wdir = ~/scratch1
@@ -93,12 +101,16 @@ set wdir = $wdir/preqx/$name
 
 cd $src
 set build = 1
+set make = 0
+#set make = 1 # for debugging - rebuild code every run but dont re-configure
 if ( -f $exe ) set build = 0
-set make = 1 # for debugging - rebuild code every run but dont re-configure
+
 
 if ( $build == 1  ) then
   ./configure $MESHREFINE --enable-pio --enable-blas --enable-lapack --with-netcdf=$NETCDF_PATH \
-    --with-pnetcdf=$PNETCDF_PATH NP=$NPTS PLEV=$nlev  
+   --enable-cslam \
+    --with-pnetcdf=$PNETCDF_PATH NC=$NC NP=$NPTS PLEV=$nlev  
+  if ( $status ) exit
   make -j4 depends
   make clean
   make -j4 preqx
@@ -133,6 +145,8 @@ if ( $status ) exit
 set echo
 rm -Rf $wdir/movies/jw*
 mpirun  $src/$exe < $wdir/input.nl
+if ( $status ) exit
+
 
 
 
