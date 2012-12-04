@@ -1102,7 +1102,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use hybvcoord_mod, only : hvcoord_t
   use element_mod, only : element_t
   use time_mod, only: smooth
-  use control_mod, only : TRACERADV_TOTAL_DIVERGENCE, tracer_advection_formulation, integration, tstep_type
+  use control_mod, only : integration
 
   implicit none
   integer              , intent(in) :: nm1,n0,np1,nets,nete
@@ -1146,8 +1146,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use dimensions_mod, only : np, nlev, qsize
   use element_mod, only : element_t
   use hybvcoord_mod, only : hvcoord_t
-  use control_mod, only : TRACERADV_TOTAL_DIVERGENCE, tracer_advection_formulation,&
-       moisture
+  use control_mod, only : moisture
   use time_mod, only : smooth
   
   implicit none
