@@ -1100,7 +1100,7 @@ end subroutine remap_Q
 !using PPM instead of splines.
 subroutine remap_Q_ppm(np1,np1_qdp,dt,elem,hvcoord,ie)
   use physical_constants, only : cp, cpwater_vapor
-  use control_mod, only        : compute_mean_flux, prescribed_wind, vert_remap_q_alg
+  use control_mod, only        : prescribed_wind, vert_remap_q_alg
   implicit none
   real (kind=real_kind), intent(in   )         :: dt
   type (element_t)     , intent(inout), target :: elem(:)
@@ -1950,7 +1950,7 @@ module prim_advection_mod
   use diffusion_mod, only      : scalar_diffusion, diffusion_init
   use control_mod, only        : integration, test_case, filter_freq_advection,  hypervis_order, &
         statefreq, moisture, TRACERADV_TOTAL_DIVERGENCE, TRACERADV_UGRADQ, &
-        prescribed_wind, nu_q, nu_p, limiter_option, hypervis_subcycle_q
+        prescribed_wind, nu_q, nu_p, limiter_option, hypervis_subcycle_q, rsplit
   use edge_mod, only           : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack, initedgebuffer, edgevunpackmin
   use hybrid_mod, only         : hybrid_t
   use bndry_mod, only          : bndry_exchangev
@@ -2007,9 +2007,9 @@ contains
   subroutine Prim_Advec_Tracers_spelt(elem, spelt, deriv,hvcoord,hybrid,&
         dt,tl,nets,nete)
     use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
-    use vertremap_mod, only: remap_velocityCspelt,remap_UV_ref2lagrange  ! _EXTERNAL (actually INTERNAL)
     use spelt_mod, only : spelt_run, spelt_runair, edgeveloc, spelt_mcgregordss
     use derivative_mod, only : interpolate_gll2spelt_points
+    use vertremap_mod, only: remap_UV_ref2lagrange  ! _EXTERNAL (actually INTERNAL)
     
     implicit none
     type (element_t), intent(inout)   :: elem(:)
@@ -2036,35 +2036,42 @@ contains
     call t_startf('prim_advec_tracers_spelt')
     np1 = tl%np1
 
-    ! mean vertical velocity computed in dynamics needs to be DSS'd:
-    ! this should be moved into one of the DSS operations performed by the
-    ! dynamics to be more efficient, but only if ntrac>0
-    do ie=nets,nete
-       do k=1,nlev
-          elem(ie)%derived%eta_dot_dpdn(:,:,k) = elem(ie)%spheremp(:,:)*elem(ie)%derived%eta_dot_dpdn(:,:,k) 
+
+    ! interpolate t+1 velocity from reference levels to lagrangian levels
+    ! For rsplit=0, we need to first compute lagrangian levels based on vertical velocity
+    ! which requires we first DSS mean vertical velocity from dynamics
+    ! 
+    if (rsplit==0) then
+       do ie=nets,nete
+          do k=1,nlev
+             elem(ie)%derived%eta_dot_dpdn(:,:,k) = elem(ie)%spheremp(:,:)*elem(ie)%derived%eta_dot_dpdn(:,:,k) 
+          enddo
+          call edgeVpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
        enddo
-       call edgeVpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
-    enddo
-    call bndry_exchangeV(hybrid,edgeAdv1)
-    do ie=nets,nete
-       call edgeVunpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
-       do k=1,nlev
-          elem(ie)%derived%eta_dot_dpdn(:,:,k)=elem(ie)%derived%eta_dot_dpdn(:,:,k)*elem(ie)%rspheremp(:,:)
-       enddo
-       ! SET VERTICAL VELOCITY TO ZERO FOR DEBUGGING
-!        elem(ie)%derived%eta_dot_dpdn(:,:,:)=0
-    end do
-    
+       call bndry_exchangeV(hybrid,edgeAdv1)
+       do ie=nets,nete
+          call edgeVunpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
+          do k=1,nlev
+             elem(ie)%derived%eta_dot_dpdn(:,:,k)=elem(ie)%derived%eta_dot_dpdn(:,:,k)*elem(ie)%rspheremp(:,:)
+          enddo
+          ! SET VERTICAL VELOCITY TO ZERO FOR DEBUGGING
+          !        elem(ie)%derived%eta_dot_dpdn(:,:,:)=0
+          
+          ! elem%state%u(np1)  = velocity at time t+1 on reference levels
+          ! elem%derived%vstar = velocity at t+1 on floating levels (computed below) using eta_dot_dpdn
+          call remap_UV_ref2lagrange(np1,dt,elem,hvcoord,ie)
+       end do
+    else
+       ! for rsplit>0:  dynamics is also vertically lagrangian, so we do not need to
+       ! remap the velocities
+       stop 'FVM need to use lagrangian winds here' 
+    endif
+
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! 2D advection step
     ! 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ! elem%state%u(np1)  = velocity at time t+1 on reference levels
-    ! elem%derived%vstar = velocity at t+1 on floating levels (computed below)
-    do ie=nets,nete
-      call remap_UV_ref2lagrange(np1,dt,elem,hvcoord,ie)
-    end do
 !------------------------------------------------------------------------------------      
     ! ! start mcgregordss
     do ie=nets,nete
@@ -2094,10 +2101,6 @@ contains
     ! from c(n0) compute c(np1):
 !     call spelt_run(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
     call spelt_runair(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
-    ! apply vertical remap back to reference levels
-    do ie=nets,nete
-      call remap_velocityCspelt(np1,dt,elem,spelt,hvcoord,ie)
-    enddo
 
     call t_stopf('prim_advec_tracers_spelt')
   end subroutine Prim_Advec_Tracers_spelt
@@ -2110,7 +2113,7 @@ contains
   subroutine Prim_Advec_Tracers_fvm(elem, fvm, deriv,hvcoord,hybrid,&
         dt,tl,nets,nete)
     use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
-    use vertremap_mod, only: remap_velocityC,remap_UV_ref2lagrange  ! _EXTERNAL (actually INTERNAL)
+    use vertremap_mod, only: remap_UV_ref2lagrange  ! _EXTERNAL (actually INTERNAL)
 !    use fvm_mod, only : cslam_run, cslam_runairdensity, edgeveloc, fvm_mcgregor, fvm_mcgregordss
     use fvm_mod, only : cslam_runairdensity, edgeveloc, fvm_mcgregor, fvm_mcgregordss
     
@@ -2140,36 +2143,41 @@ contains
     call t_startf('prim_advec_tracers_fvm')
     np1 = tl%np1
 
-    ! mean vertical velocity computed in dynamics needs to be DSS'd:
-    ! this should be moved into one of the DSS operations performed by the
-    ! dynamics to be more efficient, but only if ntrac>0
-    do ie=nets,nete
-       do k=1,nlev
-          elem(ie)%derived%eta_dot_dpdn(:,:,k) = elem(ie)%spheremp(:,:)*elem(ie)%derived%eta_dot_dpdn(:,:,k) 
+    ! interpolate t+1 velocity from reference levels to lagrangian levels
+    ! For rsplit=0, we need to first compute lagrangian levels based on vertical velocity
+    ! which requires we first DSS mean vertical velocity from dynamics
+    ! 
+    if (rsplit==0) then
+       do ie=nets,nete
+          do k=1,nlev
+             elem(ie)%derived%eta_dot_dpdn(:,:,k) = elem(ie)%spheremp(:,:)*elem(ie)%derived%eta_dot_dpdn(:,:,k) 
+          enddo
+          call edgeVpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
        enddo
-       call edgeVpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
-    enddo
-    call bndry_exchangeV(hybrid,edgeAdv1)
-    do ie=nets,nete
-       call edgeVunpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
-       do k=1,nlev
-          elem(ie)%derived%eta_dot_dpdn(:,:,k)=elem(ie)%derived%eta_dot_dpdn(:,:,k)*elem(ie)%rspheremp(:,:)
-       enddo
-
-       ! SET VERTICAL VELOCITY TO ZERO FOR DEBUGGING
-!        elem(ie)%derived%eta_dot_dpdn(:,:,:)=0
-    end do
+       call bndry_exchangeV(hybrid,edgeAdv1)
+       do ie=nets,nete
+          call edgeVunpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,elem(ie)%desc)
+          do k=1,nlev
+             elem(ie)%derived%eta_dot_dpdn(:,:,k)=elem(ie)%derived%eta_dot_dpdn(:,:,k)*elem(ie)%rspheremp(:,:)
+          enddo
+          
+          ! SET VERTICAL VELOCITY TO ZERO FOR DEBUGGING
+          !        elem(ie)%derived%eta_dot_dpdn(:,:,:)=0
+          ! elem%state%u(np1)  = velocity at time t+1 on reference levels
+          ! elem%derived%vstar = velocity at t+1 on floating levels (computed below)
+          call remap_UV_ref2lagrange(np1,dt,elem,hvcoord,ie)
+       end do
+    else
+       ! for rsplit>0:  dynamics is also vertically lagrangian, so we do not need to
+       ! remap the velocities
+       stop 'FVM need to use lagrangian winds here' 
+    endif
     
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! 2D advection step
     ! 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ! elem%state%u(np1)  = velocity at time t+1 on reference levels
-    ! elem%derived%vstar = velocity at t+1 on floating levels (computed below)
-    do ie=nets,nete
-      call remap_UV_ref2lagrange(np1,dt,elem,hvcoord,ie)
-    enddo
 !------------------------------------------------------------------------------------    
     call t_startf('fvm_mcgregor')
     ! using McGregor AMS 1993 scheme: Economical Determination of Departure Points for
@@ -2223,11 +2231,6 @@ contains
     ! from c(n0) compute c(np1): 
     call cslam_runairdensity(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
 
-    ! apply vertical remap back to reference levels
-    do ie=nets,nete
-      call remap_velocityC(np1,dt,elem,fvm,hvcoord,ie)
-    enddo
-
 
     call t_stopf('prim_advec_tracers_fvm')
   end subroutine Prim_Advec_Tracers_fvm
@@ -2252,10 +2255,6 @@ contains
 !    Consistent mass/tracer-mass advection (used if subcycling turned on)
 !       dp()   dp at timelevel n0
 !       vn0()  mean flux  < U dp > going from n0 to np1
-!    Non-consistent scheme used with leapfrog dynamics, no subcycling
-!       vn0()           U at timelevel n0 
-!       eta_dot_dpdn()  mean vertical velocity
-! 
 !
 ! 3 stage
 !    Euler step from t     -> t+.5
@@ -3306,7 +3305,7 @@ contains
 
 
 
-  subroutine vertical_remap(elem,hvcoord,dt,np1,np1_qdp,nets,nete)
+  subroutine vertical_remap(elem,fvm,hvcoord,dt,np1,np1_qdp,nets,nete)
     ! This routine is called at the end of the vertically Lagrangian 
     ! dynamics step to compute the vertical flux needed to get back
     ! to reference eta levels 
@@ -3322,8 +3321,21 @@ contains
     use kinds, only : real_kind
     use hybvcoord_mod, only : hvcoord_t
     use vertremap_mod, only : remap1, remap_uv_lagrange2ref, remap_q, remap_q_ppm ! _EXTERNAL (actually INTERNAL)
+    use vertremap_mod, only: remap_velocityCspelt, remap_velocityC  ! _EXTERNAL (actually INTERNAL)
     use control_mod, only :  vert_remap_q_alg, rsplit
     use parallel_mod, only : abortmp
+#if defined(_SPELT)
+    use spelt_mod, only spelt_struct
+#else
+    use fvm_control_volume_mod, only : fvm_struct
+#endif    
+
+
+#if defined(_SPELT)
+    type(spelt_struct), intent(inout) :: fvm(:)
+#else
+    type(fvm_struct), intent(inout) :: fvm(:)
+#endif
 
 !    type (hybrid_t), intent(in)       :: hybrid  ! distributed parallel structure (shared)
     type (element_t), intent(inout)   :: elem(:)
@@ -3402,6 +3414,7 @@ contains
     ! remap the tracers from lagrangian levels to REF levels
     ! REF levels are computed from ps_v
     ! Lagrangian levels are computed from REF levels and vertical mass flux
+    if (qsize>0) then
     if (vert_remap_q_alg == 0) then
       do ie=nets,nete
         call remap_Q(np1, np1_qdp, dt,elem,hvcoord,ie)
@@ -3413,6 +3426,20 @@ contains
     else
       call abortmp('specification for vert_remap_q_alg must be 0, 1, or 2.')
     endif
+    endif
+
+    if (ntrac>0) then
+#if defined(_SPELT) 
+       do ie=nets,nete
+          call remap_velocityCspelt(np1,dt,elem,fvm,hvcoord,ie)
+       enddo
+#else
+       do ie=nets,nete
+          call remap_velocityC(np1,dt,elem,fvm,hvcoord,ie)
+       enddo
+#endif
+    endif
+
 
 
   end subroutine
