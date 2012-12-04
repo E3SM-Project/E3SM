@@ -390,7 +390,6 @@ module namelist_mod
     ! RK2 3 stage tracers, sign-preserving conservative
     tstep_type = 1         ! foward-in-time RK methods
     se_smooth=0;              ! RK methods dont use robert filter
-    tracer_advection_formulation = 1
     qsplit=4; rk_stage_user=3
     se_limiter_option=4
     se_ftype = 2
