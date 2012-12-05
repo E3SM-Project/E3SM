@@ -443,7 +443,8 @@ contains
 #endif
     if(UseRearranger) then 
        if (IOproc) then 
-          if(Debug) print *, subName,': IAM: ',File%iosystem%comp_rank,'Before call to allocate(IOBUF): ',len, iodesc%write%n_elemtype
+          if(Debug) print *, subName,': IAM: ',File%iosystem%comp_rank, &
+               'Before call to allocate(IOBUF): ',len, iodesc%write%n_elemtype
 
           call alloc_check(IOBUF,len,' TYPE :IOBUF')
 
@@ -779,7 +780,8 @@ contains
 ! TYPE real,int,double
 !> 
 !! @private
-!! @brief Read a 1D array of type {TYPE} defined by varDesc using the decomposition  described in ioDesc to the netcdf or pnetcdf file File. 
+!! @brief Read a 1D array of type {TYPE} defined by varDesc using the decomposition
+!! described in ioDesc to the netcdf or pnetcdf file File. 
 !! @details
 !! @param File @copydoc file_desc_t
 !! @param varDesc @copydoc var_desc_t
@@ -1353,7 +1355,8 @@ contains
     if (IOproc) then
        vlen = len_trim(vardesc%name)
        cptr = c_loc(iobuf(1))
-       call WriteVDC2Var(cptr, start, count,  File%iosystem%IO_comm, Vardesc%rec, -1, -1, File%iosystem%num_iotasks, F_C_STRING_DUP(varDesc%name(1:vlen)))
+       call WriteVDC2Var(cptr, start, count,  File%iosystem%IO_comm, Vardesc%rec, -1, -1, File%iosystem%num_iotasks, &
+            F_C_STRING_DUP(varDesc%name(1:vlen)))
     endif
 
     if(UseRearranger) call dealloc_check(IOBUF)
@@ -1431,7 +1434,8 @@ subroutine read_vdc2_real(File, Vardesc, iodesc, array, iostat)
           call alloc_check(IOBUF,len,' TYPE :IOBUF')
           IOBUF= -1.0_r8
           cptr = c_loc(iobuf(1))
-  	  call ReadVDC2Var(cptr, start, count,  File%iosystem%IO_comm, vardesc%rec, -1, -1, File%iosystem%num_iotasks, F_C_String_dup(varDesc%name))
+  	  call ReadVDC2Var(cptr, start, count,  File%iosystem%IO_comm, vardesc%rec, -1, -1, File%iosystem%num_iotasks, &
+          F_C_String_dup(varDesc%name))
        else
           call alloc_check(IOBUF,0)
           IOBUF= -1.0_r8

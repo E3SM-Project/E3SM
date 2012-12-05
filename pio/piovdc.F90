@@ -107,7 +107,8 @@ subroutine auto_get_start_count(rank, nioprocs, block_dims, start, count, bsize)
 			if (proc_count .gt. calc_procs) then
 				calc_procs = proc_count ! return the actual # of io procs used
 				count = (/ INT(block_dims(1) * bsize(1)), counter * bsize(2), slab_counter *bsize(3) /)
-				start = (/ 0, mod(rank, INT(CEILING(nlinesPslab / REAL(counter)))) * counter * bsize(2), INT(rank / CEILING(nlinesPslab / REAL(counter))) * slab_counter * bsize(3)/) + 1
+				start = (/ 0, mod(rank, INT(CEILING(nlinesPslab / REAL(counter)))) * counter * bsize(2), &
+         INT(rank / CEILING(nlinesPslab / REAL(counter))) * slab_counter * bsize(3)/) + 1
 				call adjust_bounds(block_dims * bsize, start, count, rank)
 
 				if(proc_count .eq. nioprocs) then !using max #of procs, suitable solution found (for now)
@@ -152,7 +153,8 @@ subroutine init_vdc2(rank, data_dims, vdc_bsize, iostart, iocount, ioprocs)
 
 #ifdef DEBUG
   if(rank .eq. 0) then
-	print *, 'Calling get start count...block_dims: ', data_dims/real(vdc_bsize), ' bsize: ' , vdc_bsize, ' ioprocs: ', ioprocs, ' dims: ', data_dims, ' rank: ',rank
+	print *, 'Calling get start count...block_dims: ', data_dims/real(vdc_bsize), ' bsize: ' , vdc_bsize, &
+      ' ioprocs: ', ioprocs, ' dims: ', data_dims, ' rank: ',rank
   endif
 #endif
   vdc_blocks = data_dims/real(vdc_bsize)

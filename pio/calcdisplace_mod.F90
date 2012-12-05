@@ -57,19 +57,19 @@ CONTAINS
     integer(i4),intent(in) :: gsize(:)   ! global size of output domain
     integer(kind=PIO_offset),intent(in) :: start(:), count(:)
     integer(i4), intent(in) :: ndim
-    integer(kind=pio_offset),intent(inout) :: displace(:)  ! mpi displacments
+    integer(i4),intent(inout) :: displace(:)  ! mpi displacments
 
     !!
 
-    integer(kind=pio_offset):: ndisp
+    integer(i4):: ndisp
     integer(i4) :: gstride(ndim)
     integer i,j
     integer iosize
-    integer(kind=pio_offset) :: myloc(ndim)
-    integer(kind=pio_offset) :: ub(ndim)
+    integer(i4) :: myloc(ndim)
+    integer(i4) :: ub(ndim)
     integer idim
     logical done
-    integer(kind=pio_offset) ::  gindex
+    integer(i4) ::  gindex
 
     gstride(1)=gsize(1)
     do i=2,ndim
@@ -155,7 +155,6 @@ CONTAINS
 
     do i=1,ndisp-1	
        if(displace(i) > displace(i+1)) then
-          print *,__PIO_FILE__,__LINE__,i,displace(max(1,i-1):min(int(i+1,kind=pio_offset),ndisp-1))
           call piodie(__PIO_FILE__,__LINE__,'displace is not increasing')
        endif
     enddo
@@ -258,7 +257,8 @@ CONTAINS
         bsize = gcd_pair(bsize,bsizeg)
 
         if(present(debug)) then
-           print *,debug,': numblks,gaps :',numblks, minval(gaps(1:numgaps)),minloc(gaps(1:numgaps)),maxval(gaps(1:numgaps)),maxloc(gaps(1:numgaps)),bsize,bsizeg,arr_in(1)
+           print *,debug,': numblks,gaps :',numblks, minval(gaps(1:numgaps)),minloc(gaps(1:numgaps)),maxval(gaps(1:numgaps)), &
+                maxloc(gaps(1:numgaps)),bsize,bsizeg,arr_in(1)
         endif
 
         deallocate(gaps)

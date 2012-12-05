@@ -13,6 +13,7 @@ module pio_types
 #ifdef NO_MPIMOD
     include 'mpif.h'                             ! _EXTERNAL
 #endif
+    save
     !-------------------------------------------
     !  data structure to describe decomposition
     !-------------------------------------------
@@ -70,13 +71,13 @@ module pio_types
         integer(i4)              :: rearr         ! type of rearranger
                                                   ! e.g. rearr_{none,box}
 	integer(i4)              :: error_handling ! how pio handles errors
-        integer(i4),pointer      :: ioranks(:)         ! the computational ranks for the IO tasks
+        integer(i4),pointer      :: ioranks(:) => null()         ! the computational ranks for the IO tasks
 
 	! This holds the IODESC
     end type
 
     type iosystem_list_t
-       type(iosystem_desc_t), pointer :: this_iosystem
+       type(iosystem_desc_t), pointer :: this_iosystem => null()
     end type iosystem_list_t
 
 
@@ -89,7 +90,7 @@ module pio_types
        real(r4), pointer :: data_real(:) => null()
        integer(i4), pointer :: data_int(:) => null()
        real(r8), pointer :: data_double(:) => null()
-       type(io_data_list), pointer :: next=> null()
+       type(io_data_list), pointer :: next => null()
     end type io_data_list
 
      
@@ -99,7 +100,7 @@ module pio_types
 !! @brief File descriptor returned by \ref PIO_openfile or \ref PIO_createfile (see pio_types)
 !>
     type, public :: File_desc_t
-       type(iosystem_desc_t), pointer :: iosystem
+       type(iosystem_desc_t), pointer :: iosystem => null()
        type(io_data_list), pointer :: data_list_top  => null()  ! used for non-blocking pnetcdf calls
        integer :: buffsize=0
        integer :: request_cnt=0

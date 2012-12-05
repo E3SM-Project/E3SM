@@ -107,7 +107,11 @@ contains
     ! error code of 257
     call mpi_abort (MPI_COMM_WORLD, 1, ierr)  
 #else
+#ifndef CPRNAG
     call abort
+#else
+    stop
+#endif
 #endif
 
   end subroutine piodie

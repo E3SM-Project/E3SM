@@ -160,7 +160,6 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, s2, &
 
   ! begin
 
-!  ndof   = size(ioDesc%dest_ioindex)
   ndof= iodesc%ndof
   num_tasks   = IOsystem%num_tasks
   num_iotasks = IOsystem%num_iotasks
@@ -274,7 +273,7 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, niodof, &
     endif
   endif
 
-  ndof   = size(ioDesc%dest_ioindex)
+  ndof= iodesc%ndof
   nrecvs = ioDesc%nrecvs             ! number of distinct senders to the ioproc
   myrank = IOsystem%union_rank
   nprocs = IOsystem%num_tasks
@@ -779,11 +778,11 @@ end subroutine box_rearrange_io2comp_{TYPE}
        io_proc, io_index )
     implicit none
     integer(kind=pio_offset),intent(in) :: gcoord(:)
+    integer,intent(in) :: ndim
+    integer,intent(in) :: nioproc
     integer(kind=pio_offset),intent(in) :: lb(ndim,nioproc)
     integer(kind=pio_offset),intent(in) :: ub(ndim,nioproc)
     integer(kind=pio_offset),intent(in) :: lstride(ndim,nioproc)
-    integer,intent(in) :: ndim
-    integer,intent(in) :: nioproc
     integer,intent(out) :: io_proc
     integer(kind=pio_offset),intent(out) :: io_index
 

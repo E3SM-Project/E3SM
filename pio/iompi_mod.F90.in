@@ -100,7 +100,8 @@ contains
            !---------------------------------
            File%offset = 0
         end select
-!        print *, subName,':: CreateFile: io_rank: ',File%io_rank,'amode,info: ',amode,File%info,' fname: ',fname,' File%fh: ',File%fh
+!        print *, subName,':: CreateFile: io_rank: ',File%io_rank,'amode,info: ',amode,File%info,' fname: ',fname, &
+!        ' File%fh: ',File%fh
      end if
      if(File%iosystem%num_tasks>File%iosystem%num_iotasks) then
         ! broadcast the return code from MPI_file_open
@@ -265,10 +266,12 @@ contains
      !-------------------------------------
      ! Set file view for distributed array
      !-------------------------------------
-     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,' before set_view iodesc%Read%fileTYPE: ',iodesc%Read%FileTYPE
+     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,' before set_view iodesc%Read%fileTYPE: ', &
+          iodesc%Read%FileTYPE
      call MPI_File_set_view(File%fh,File%offset, iodesc%Read%elemTYPE, iodesc%Read%fileType, 'native',File%iosystem%info,ierr)
      if(Check) call CheckMPIreturn('read_mpiio_{TYPE}: after call to file_set_view: ',ierr)
-!DBG     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,' after set_view IODesc%Read%fileTYPE: ',iodesc%Read%fileTYPE
+!DBG     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,' after set_view IODesc%Read%fileTYPE: ', &
+!DBG     iodesc%Read%fileTYPE
 
      !-----------------------------
      ! Read out distributed array

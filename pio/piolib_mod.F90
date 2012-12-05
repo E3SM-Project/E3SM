@@ -916,7 +916,7 @@ contains
 !! @details  This provides the ability to describe a computational
 !! decomposition in PIO using degrees of freedom method. This is
 !! a decomposition that can not be easily described using a start
-!! and count metehod (see @ref decomp_dof).
+!! and count method (see @ref decomp_dof).
 !! Optional parameters for this subroutine allows for the specififcation of
 !! io decomposition using iostart and iocount arrays.  If iostart
 !! and iocount arrays are not specified by the user, and rearrangement
@@ -925,7 +925,7 @@ contains
 !! @param iosystem @copydoc iosystem_desc_t
 !! @param basepiotype @copydoc use_PIO_kinds
 !! @param dims An array of the global length of each dimesion of the variable(s)
-!! @param compdof Mapping of the storage order for the computatinal decomposition to its memory order
+!! @param compdof Mapping of the storage order for the computational decomposition to its memory order
 !! @param iodesc @copydoc iodesc_generate
 !! @param iostart   The start index for the block-cyclic io decomposition
 !! @param iocount   The count for the block-cyclic io decomposition
@@ -970,7 +970,7 @@ contains
     integer(i4)                       ::  piotype
     !vdf optionals
     integer(i4), intent(in), optional:: num_ts, bsize(3)
-    integer (kind=pio_offset), pointer :: displace(:)  ! the displacements for the mpi data structure (read)
+    integer(i4), pointer :: displace(:)  ! the displacements for the mpi data structure (read)
 
     integer(i4) :: prev
     integer(kind=PIO_OFFSET) :: glength    ! global length in words
@@ -1050,7 +1050,8 @@ contains
     glength= product(int(dims,kind=PIO_OFFSET))
     if(glength > huge(int(i,kind=pio_offset))) then !not sure if this works, glength is pio_offset, if its > pio_offset range then 
        call piodie( __PIO_FILE__,__LINE__, & !it will simply wrap around rather than be > max_int(pio_offset)
-            'requested array size too large for this interface ') !might be better to use a temp 8 byte int to store results of dims product and compare to the maxint(pio_offset)       
+            'requested array size too large for this interface ') !might be better to use a temp 8 byte int to store results
+                                                                  !of dims product and compare to the maxint(pio_offset)       
     endif
 
        
@@ -1065,7 +1066,8 @@ contains
     iodesc%start=0
     iodesc%count=0
 
-    if(debug) print*,__PIO_FILE__,__LINE__, 'before calcstartandcount: ', iosystem%num_tasks, iosystem%num_iotasks, iosystem%io_rank, iosystem%io_comm, iosystem%ioranks
+    if(debug) print*,__PIO_FILE__,__LINE__, 'before calcstartandcount: ', iosystem%num_tasks, iosystem%num_iotasks, &
+         iosystem%io_rank, iosystem%io_comm, iosystem%ioranks
 
     if (iosystem%ioproc) then
        if(present(iostart) .and. present(iocount)) then
@@ -1176,7 +1178,7 @@ contains
        !-----------------------------------------------
        iodesc%write%n_elemtype = ndisp
        iodesc%write%n_words    = iodesc%write%n_elemtype*lenblocks
-       call genindexedblock(lenblocks,piotype,iodesc%write%elemtype,iodesc%write%filetype,int(displace))
+       call genindexedblock(lenblocks,piotype,iodesc%write%elemtype,iodesc%write%filetype,displace)
        
        if(debug) print *,__PIO_FILE__,__LINE__,iodesc%write%n_elemtype, &
         iodesc%write%n_words,iodesc%write%elemtype,iodesc%write%filetype
@@ -1455,7 +1457,7 @@ contains
     endif
 
     ! more diagnostics (AB)	
-    if (debug) print *,__PIO_FILE__,__LINE__,iosystem%comp_rank, 'START determineiotasks (num_tasks, n_iotasks, lstride, lbase)',  &
+    if (debug) print *,__PIO_FILE__,__LINE__,iosystem%comp_rank, 'START determineiotasks (num_tasks, n_iotasks, lstride, lbase)', &
          iosystem%num_tasks, n_iotasks, lstride, lbase
 
     !now determine n_iotasks and iotasks
@@ -2176,7 +2178,8 @@ contains
     call t_startf("PIO_createfile")
 #endif
 
-    if(debug.or.debugasync) print *,'createfile: {comp,io}_rank:',iosystem%comp_rank,iosystem%io_rank,'io proc: ',iosystem%ioproc, iosystem%async_interface, iotype
+    if(debug.or.debugasync) print *,'createfile: {comp,io}_rank:',iosystem%comp_rank,iosystem%io_rank, &
+         'io proc: ',iosystem%ioproc,iosystem%async_interface, iotype
     ierr=PIO_noerr
     
 
@@ -2339,7 +2342,8 @@ contains
 
 
 
-    if(Debug .or. Debugasync) print *,'PIO_openfile: {comp,io}_rank:',iosystem%comp_rank,iosystem%io_rank,'io proc: ',iosystem%ioproc
+    if(Debug .or. Debugasync) print *,'PIO_openfile: {comp,io}_rank:',iosystem%comp_rank,iosystem%io_rank,&
+         'io proc: ',iosystem%ioproc
     ierr=PIO_noerr
 
     file%iosystem => iosystem
@@ -2483,7 +2487,8 @@ contains
 
 #ifndef _MPISERIAL
     if(ios%ioproc) then
-!       if(debug) print *,__PIO_FILE__,__LINE__,iodesc%write%n_elemtype,iodesc%write%n_words,iodesc%write%elemtype,iodesc%write%filetype
+!       if(debug) print *,__PIO_FILE__,__LINE__,iodesc%write%n_elemtype,iodesc%write%n_words, &
+!       iodesc%write%elemtype,iodesc%write%filetype
 
        if((iodesc%read%filetype .ne. mpi_datatype_null)  &
 	  .and. (iodesc%read%filetype .ne. iodesc%write%filetype) .and. &
@@ -2610,7 +2615,11 @@ contains
        read(unit=lun,fmt=*,iostat=ios) iobuf(i)
        if (ios /= 0) then
           write (6,*) rank,': error reading item ',i,' of ',size
+#ifndef CPRNAG
           call abort
+#else
+          stop
+#endif
        endif
 
     end do
