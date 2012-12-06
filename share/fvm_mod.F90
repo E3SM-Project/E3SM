@@ -1201,6 +1201,8 @@ subroutine fvm_mcgregor(elem, deriv, tstep, vhat, vstar,order)
   end do
 end subroutine fvm_mcgregor
 !END SUBROUTINE FVM_MCGREGOR----------------------------------------------CE-for FVM!
+
+
 ! ----------------------------------------------------------------------------------!
 !SUBROUTINE FVM_MCGREGORDSS-----------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, 26. May 2012                                             !
@@ -1266,6 +1268,79 @@ subroutine fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, tstep, ordertaylor
   end do  
 
 end subroutine fvm_mcgregordss
+!END SUBROUTINE FVM_MCGREGORDSS-------------------------------------------CE-for FVM!
+
+! ----------------------------------------------------------------------------------!
+!SUBROUTINE FVM_RKDSS-----------------------------------------------CE-for FVM!
+! AUTHOR: CHRISTOPH ERATH, 26. May 2012                                             !
+!         Mark Taylor
+! DESCRIPTION: ! using McGregor AMS 1993 scheme: Economical Determination of        !
+!                Departure Points for Semi-Lagrangian Models                        !
+!                McGegror version with DSS every ugradv                             !
+! CALLS: 
+! INPUT: 
+!        
+! OUTPUT: 
+!-----------------------------------------------------------------------------------!
+subroutine fvm_rkdss(elem,fvm,nets,nete, hybrid, deriv, tstep, ordertaylor)
+  use derivative_mod, only : derivative_t, ugradv_sphere
+  use edge_mod, only : edgevpack, edgevunpack
+  use bndry_mod, only : bndry_exchangev
+  
+  implicit none
+
+  type (element_t), intent(inout)                :: elem(:)
+  type (fvm_struct), intent(in)                :: fvm(:)
+
+  integer, intent(in)                         :: nets  ! starting thread element number (private)
+  integer, intent(in)                         :: nete  ! ending thread element number   (private)
+  type (hybrid_t), intent(in)                 :: hybrid   ! distributed parallel structure (shared)
+
+  type (derivative_t), intent(in)                             :: deriv      ! derivative struct
+  real (kind=real_kind), intent(in)                           :: tstep
+  integer, intent(in)                                         :: ordertaylor
+
+  integer                                                     :: ie, k, order
+  real (kind=real_kind), dimension(np,np,2)                   :: ugradvtmp
+  real (kind=real_kind)                                       :: timetaylor
+!
+! RK-SSP 2 stage 2nd order:
+!     x*(t+1) = x(t) + U(x(t),t)                          
+!     x(t+1) = x(t) +  1/2 ( U(x*(t+1),t+1) + U(x(t),t) )       
+! apply taylor series:
+!  U(x*(t+1),t+1) = U(x(t),t+1) - (x*(t+1)-x(t)) gradU(x(t),t+1)
+!
+!  (x(t+1)-x(t))/dt =  1/2( U(x(t),t+1)+U(x(t),t)) - dt 1/2 U(x(t),t) gradU(x(t),t+1)  
+!
+! suppose dt = -tstep
+!  (x(t-tstep)-x(t))/-tstep =  1/2( U(x(t),t-tstep)+U(x(t),t)) + tstep 1/2 U(x(t),t) gradU(x(t),t-tstep)  
+!
+!  x(t-tstep) = x(t)) -tstep * [ 1/2( U(x(t),t-tstep)+U(x(t),t)) + tstep 1/2 U(x(t),t) gradU(x(t),t-tstep) ]  
+!
+!    !------------------------------------------------------------------------------------
+    do ie=nets,nete
+       ! vn0 = U(x,t)
+       ! vstar = U(x,t+1)
+      do k=1,nlev
+        ugradvtmp(:,:,:)=ugradv_sphere(fvm(ie)%vn0(:,:,:,k),elem(ie)%derived%vstar(:,:,:,k),deriv,elem(ie))
+        elem(ie)%derived%vstar(:,:,:,k) = &
+             (elem(ie)%derived%vstar(:,:,:,k) + fvm(ie)%vn0(:,:,:,k))/2   + tstep*ugradvtmp(:,:,:)/2
+
+        elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%spheremp(:,:)
+        elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%spheremp(:,:)
+      enddo 
+      call edgeVpack(edgeveloc,elem(ie)%derived%vstar,2*nlev,0,elem(ie)%desc)
+    enddo 
+    call bndry_exchangeV(hybrid,edgeveloc)
+    do ie=nets,nete
+       call edgeVunpack(edgeveloc,elem(ie)%derived%vstar,2*nlev,0,elem(ie)%desc)
+       do k=1, nlev  
+          elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%rspheremp(:,:)
+          elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%rspheremp(:,:)
+       end do
+    end do
+
+end subroutine fvm_rkdss
 !END SUBROUTINE FVM_MCGREGORDSS-------------------------------------------CE-for FVM!
 
 end module fvm_mod
