@@ -2372,6 +2372,9 @@ contains
   use edge_mod       , only : edgevpack, edgevunpack
   use bndry_mod      , only : bndry_exchangev
   use hybvcoord_mod  , only : hvcoord_t
+#ifdef _ACCEL
+  use cuda_mod, only: euler_step_cuda
+#endif
   implicit none
   integer              , intent(in   )         :: np1_qdp, n0_qdp
   real (kind=real_kind), intent(in   )         :: dt
@@ -2400,6 +2403,10 @@ contains
     call euler_step_dg( np1_qdp , n0_qdp , dt , elem , hvcoord , hybrid , deriv , nets , nete , DSSopt , rhs_multiplier )
     return
   endif
+#ifdef _ACCEL
+  call euler_step_cuda( np1_qdp , n0_qdp , dt , elem , hvcoord , hybrid , deriv , nets , nete , DSSopt , rhs_multiplier )
+  return
+#endif
 ! call t_barrierf('sync_euler_step', hybrid%par%comm)
   call t_startf('euler_step')
 
