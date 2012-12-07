@@ -570,8 +570,6 @@ contains
       do k = 1 , nlev
         elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%spheremp(:,:) * Qtens(:,:,k) 
       enddo
-
-      if ( limiter_option == 4 ) call limiter2d_zero( elem(ie)%state%Qdp(:,:,:,q,np1_qdp) , hvcoord ) 
     enddo
   enddo
 
@@ -582,15 +580,16 @@ contains
 !$OMP MASTER
   ierr = cudaThreadSynchronize()
   do ie = 1,nelemd
-    ierr = cudaMemcpy( qdp_d(1,1,1,1,1,ie) , elem(ie)%state%qdp , size(elem(ie)%state%qdp) , cudaMemcpyHostToDevice )
+    ierr = cudaMemcpy( qdp_d(1,1,1,1,np1_qdp,ie) , elem(ie)%state%qdp(1,1,1,1,np1_qdp) , size(elem(ie)%state%qdp(:,:,:,:,np1_qdp)) , cudaMemcpyHostToDevice )
   enddo
-  ierr = cudaMemcpy( edgebuf_d , edgeAdv%buf , size(edgeAdv%buf) , cudaMemcpyHostToDevice )
   ierr = cudaThreadSynchronize()
 
-
-  ierr = cudaThreadSynchronize()
+  if ( limiter_option == 4 ) then
+    blockdim = dim3( np, np, nlev )
+    griddim  = dim3( qsize_d, nelemd , 1 )
+    call limiter2d_zero_kernel<<<griddim,blockdim>>>( qdp_d , 1 , nelemd , np1_qdp )
+  endif
   call pack_exchange_unpack_stage(np1_qdp,hybrid,qdp_d,timelevels)
-  ierr = cudaThreadSynchronize()
   blockdim = dim3( np*np   , nlev   , 1 )
   griddim  = dim3( qsize_d , nelemd , 1 )
   call euler_hypervis_kernel_last<<<griddim,blockdim>>>( qdp_d , rspheremp_d , 1 , nelemd , np1_qdp )
@@ -598,7 +597,7 @@ contains
 
   ierr = cudaThreadSynchronize()
   do ie = 1,nelemd
-    ierr = cudaMemcpy( elem(ie)%state%qdp , qdp_d(1,1,1,1,1,ie) , size(elem(ie)%state%qdp) , cudaMemcpyDeviceToHost )
+    ierr = cudaMemcpy( elem(ie)%state%qdp(1,1,1,1,np1_qdp) , qdp_d(1,1,1,1,np1_qdp,ie) , size(elem(ie)%state%qdp(:,:,:,:,np1_qdp)) , cudaMemcpyDeviceToHost )
   enddo
   ierr = cudaThreadSynchronize()
 !$OMP END MASTER
@@ -607,6 +606,61 @@ contains
 
   call t_stopf('euler_step')
 end subroutine euler_step_cuda
+
+
+
+
+attributes(global) subroutine limiter2d_zero_kernel(Qdp,nets,nete,np1)
+  use kinds, only : real_kind
+  use dimensions_mod, only : np, nlev
+  implicit none
+  real (kind=real_kind), intent(inout) :: Qdp(np,np,nlev,qsize_d,timelevels,nets:nete)
+  integer, value       , intent(in   ) :: nets,nete,np1
+  integer :: i, j, k, q, ie, jj, tid, ind
+  real (kind=real_kind) :: mass,mass_new
+  real (kind=real_kind), shared :: Qdp_shared((np*np+PAD)*nlev)
+  real (kind=real_kind), shared :: mass_shared(nlev)
+  real (kind=real_kind), shared :: mass_new_shared(nlev)
+
+  i  = threadidx%x
+  j  = threadidx%y
+  k  = threadidx%z
+  q  = blockidx%x
+  ie = blockidx%y
+
+  tid = (threadidx%z-1)*(np*np    ) + (threadidx%y-1)*(np) + threadidx%x
+  ind = (threadidx%z-1)*(np*np+PAD) + (threadidx%y-1)*(np) + threadidx%x
+
+  Qdp_shared(ind) = Qdp(i,j,k,q,np1,ie)
+  call syncthreads()
+
+  if ( tid <= nlev ) then
+    mass = 0.
+    do jj = 1 , np*np
+      mass = mass + Qdp_shared((tid-1)*(np*np+PAD)+jj)
+    enddo
+    mass_shared(tid) = mass
+  endif
+  call syncthreads()
+
+  if ( mass_shared(k)  < 0 ) Qdp_shared(ind) = -Qdp_shared(ind)
+  if ( Qdp_shared(ind) < 0 ) Qdp_shared(ind) = 0
+  call syncthreads()
+
+  if ( tid <= nlev ) then
+    mass = 0.
+    do jj = 1 , np*np
+      mass = mass + Qdp_shared((tid-1)*(np*np+PAD)+jj)
+    enddo
+    mass_new_shared(tid) = mass
+  endif
+  call syncthreads()
+
+  ! now scale the all positive values to restore mass
+  if ( mass_new_shared(k) > 0 ) Qdp_shared(ind) =  Qdp_shared(ind) * abs(mass_shared(k)) / mass_new_shared(k)
+  if ( mass_shared    (k) < 0 ) Qdp_shared(ind) = -Qdp_shared(ind)
+  Qdp(i,j,k,q,np1,ie) = Qdp_shared(ind)
+end subroutine limiter2d_zero_kernel
 
 
 
