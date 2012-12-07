@@ -14,7 +14,7 @@
 #XPBS -j oe
 
 # titan -- specify number of nodes
-#PBS -A CLI017DEV 
+#PBS -A STF006
 #PBS -l nodes=6
 #PBS -l walltime=0:30:00
 #PBS -N baroclinic
@@ -56,7 +56,7 @@ set vcoord = $HOMME/test/vcoord          # location of vertical coordinate files
 
 
 # steady state parameters:
-set qsize = 4             # number of tracers  (0 or 4)
+set qsize = 106             # number of tracers  (0 or 4)
 set u_perturb = 1         # size of perturbation (0 or 1)
 set rotate = 0            # rotation, in degrees.  0, 45 and 90
 set limiter = 4
@@ -86,7 +86,7 @@ set smooth = 0
 set tadv = 1 ; set RK2 = 1    
 set qsplit = 4
 set mean_flux=1
-set limiter = 8
+#set limiter = 8
 
 
 
