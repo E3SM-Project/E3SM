@@ -1015,7 +1015,7 @@ contains
 
 #ifdef _ACCEL
   !Inside this routine, we enforce an OMP BARRIER and an OMP MASTER. It's left out of here because it's ugly
-  call cuda_mod_init()
+  call cuda_mod_init(elem)
 #endif
 
     call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete, fvm)
