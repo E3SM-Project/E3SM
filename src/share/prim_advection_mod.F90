@@ -85,10 +85,16 @@ module vertremap_mod
   use perf_mod, only               : t_startf, t_stopf  ! _EXTERNAL
   use parallel_mod, only           : abortmp
 
-  public remap1
-  public remap_UV_lagrange2ref
-  public remap_q
-  public remap_q_ppm
+  public remap1                  ! remap any field, splines, monotone
+  public remap1_nofilter         ! remap any field, splines, no filter
+!  public remap1_ppm              ! remap any field, PPM, monotone 
+
+! todo: replace all of these with the 3 routines above:
+  public remap_UV_ref2lagrange   ! remaps state%v to state%vstar
+  public remap_q                 ! remap state%Q, splines, monotone  
+  public remap_q_ppm             ! remap state%Q, PPM, monotone 
+  public remap_velocityCsplelt   ! remap spelt%c, splines, monotone  
+  public remap_velocityC         ! remap fvm%c, splines, monotone  
 
   contains
 
@@ -355,251 +361,23 @@ subroutine remap_UV_ref2lagrange(np1,dt,elem,hvcoord,ie)
   enddo
   call t_stopf('remap_UV_ref2lagrange')
 end subroutine remap_UV_ref2lagrange
-  
-subroutine remap_UV_lagrange2ref(np1,dt,elem,hvcoord,ie)
-!
-!   remap, without limiters, velocity, from Lagrangian levels to REFERECE levels
-!
-!   input:  elem(:)%state%ps_v(:,:,np1)    surface pressure
-!           elem(:)%derived%eta_dot_dpdn   mass flux from lagrangian levels
-!                                          to reference levels 
-!           elem(:)%state%v(:,:,:,:,np1)   velocity on Lagrangian levels
-!
-!   output: elem(:)%state%v(:,:,:,:,np1)   velocity on REF levels 
-!           
-!
-  implicit none
-  real (kind=real_kind),  intent(in   )          :: dt
-  type (element_t),       intent(inout), target  :: elem(:)
-  type (hvcoord_t),       intent(in   )          :: hvcoord
-  integer,                intent(in   )          :: ie,np1
-   
-  ! ========================
-  ! Local Variables
-  ! ========================
 
-  real(kind=real_kind), dimension(nlev)   :: dp,dp_star,Ustar,Vstar
-  real(kind=real_kind), dimension(nlev)   :: Uold,Vold,Unew,Vnew
-  real(kind=real_kind), dimension(nlevp)  :: z1c,z2c
-  real(kind=real_kind), dimension(nlev+1) :: rhsU,lower_diagU,diagU,upper_diagU,q_diagU,zgamU, & 
-                                             rhsV,lower_diagV,diagV,upper_diagV,q_diagV,zgamV
-  real(kind=real_kind), dimension(nlev)   :: hU,rho_barU,za0U,za1U,za2U,zhdpU, & 
-                                             hV,rho_barV,za0V,za1V,za2V,zhdpV
-  real(kind=real_kind)   :: tmp_calU,zaccintegerbU,zacctopU,zaccbotU, & 
-                            tmp_calV,zaccintegerbV,zacctopV,zaccbotV
-  integer(kind=int_kind) :: zkrU(nlev+1),zkrV(nlev+1),i,j,k,jl,jk,ilevU,itopU,ibotU,ilevV,itopV,ibotV,jsubz,ij
-  
-  call t_startf('remap_UV_lagrange2ref')
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(ij,i,j,k,dp,dp_star,Ustar,Vstar,z1c,z2c,Uold,Vold) &
-!$omp    private(zkrU,ilevU,zgamU,zhdpU,zkrV,ilevV,zgamV,zhdpV,jl,jk,hU,rhsU,hV,rhsV) &
-!$omp    private(lower_diagU,lower_diagV,diagU,diagV,upper_diagU,upper_diagV,q_diagU) &
-!$omp    private(q_diagV,tmp_calU,tmp_calV,za0U,za1U,za2U,za0V,za1V,za2V,zaccintegerbU) &
-!$omp    private(itopU,zacctopU,zaccintegerbV,itopV,zacctopV,ibotU,jsubz,zaccbotU,ibotV) &
-!$omp    private(zaccbotV,rho_barU,rho_barV)
-#endif
-  do ij = 1, npsq
-    j = (ij-1)/np + 1
-    i = ij - (j-1)*np
-    call remap_calc_grids( hvcoord , elem(ie)%state%ps_v(i,j,np1) , dt ,elem(ie)%derived%eta_dot_dpdn(i,j,:) , z1c , z2c , dp_star , dp )
-    do k=1,nlev
-      Ustar(k) = elem(ie)%state%v(i,j,1,k,np1)*dp_star(k)
-      Vstar(k) = elem(ie)%state%v(i,j,2,k,np1)*dp_star(k)
-    enddo
-
-    do k=1,nlev
-      Uold(k) = Ustar(k)
-      Vold(k) = Vstar(k)
-    enddo
-
-    if (ABS(z2c(nlev+1)-z1c(nlev+1)).GE.0.000001) then
-      write(6,*) 'SURFACE PRESSURE IMPLIED BY ADVECTION SCHEME'
-      write(6,*) 'NOT CORRESPONDING TO SURFACE PRESSURE IN    '
-      write(6,*) 'DATA FOR MODEL LEVELS'
-      write(6,*) 'PLEVMODEL=',z2c(nlev+1)
-      write(6,*) 'PLEV     =',z1c(nlev+1)
-      write(6,*) 'DIFF     =',z2c(nlev+1)-z1c(nlev+1)
-      ! call ABORT
-    endif
-    
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!  calculate quadratic splies !!
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    
-    zkrU  = 99
-    ilevU = 2
-    zkrU(1)       = 1
-    zgamU(1)      = 0.0
-    zkrU(nlev+1)  = nlev
-    zgamU(nlev+1) = 1.0
-    zhdpU(1) = z1c(2)-z1c(1)
-    
-    zkrV  = 99
-    ilevV = 2
-    zkrV(1)       = 1
-    zgamV(1)      = 0.0
-    zkrV(nlev+1)  = nlev
-    zgamV(nlev+1) = 1.0
-    zhdpV(1) = z1c(2)-z1c(1)
-    do jl = 2,nlev
-      zhdpU(jl) = z1c(jl+1)-z1c(jl)
-      jkloopU: do jk = ilevU,nlev+1
-        if (z1c(jk).ge.z2c(jl)) then
-          ilevU      = jk
-          zkrU(jl)   = jk-1
-          zgamU(jl)   = (z2c(jl)-z1c(jk-1))/(z1c(jk)-z1c(jk-1))
-          exit jkloopU
-        endif
-      enddo jkloopU
-      zhdpV(jl) = z1c(jl+1)-z1c(jl)
-      jkloopV: do jk = ilevV,nlev+1
-        if (z1c(jk).ge.z2c(jl)) then
-          ilevV      = jk
-          zkrV(jl)   = jk-1
-          zgamV(jl)   = (z2c(jl)-z1c(jk-1))/(z1c(jk)-z1c(jk-1))
-          exit jkloopV
-        endif
-      enddo jkloopV
-    enddo 
-
-    hU = 1/zhdpU
-    rho_barU = Uold * hU
-    rhsU = 0
-    lower_diagU = 0
-    diagU = 0
-    upper_diagU = 0
-    
-    hV = 1/zhdpV 
-    rho_barV = Vold * hV          
-    rhsV = 0
-    lower_diagV = 0
-    diagV = 0
-    upper_diagV = 0
-
-    rhsU(1)=3*rho_barU(1)
-    rhsU(2:nlev) = 3*(rho_barU(2:nlev)*hU(2:nlev) + rho_barU(1:nlev-1)*hU(1:nlev-1)) 
-    rhsU(nlev+1)=3*rho_barU(nlev)
-    
-    rhsV(1)=3*rho_barV(1)
-    rhsV(2:nlev) = 3*(rho_barV(2:nlev)*hV(2:nlev) + rho_barV(1:nlev-1)*hV(1:nlev-1)) 
-    rhsV(nlev+1)=3*rho_barV(nlev)
-
-    lower_diagU(1)=1
-    lower_diagU(2:nlev) = hU(1:nlev-1)
-    lower_diagU(nlev+1)=1
-    
-    lower_diagV(1)=1
-    lower_diagV(2:nlev) = hV(1:nlev-1)
-    lower_diagV(nlev+1)=1
-
-    diagU(1)=2
-    diagU(2:nlev) = 2*(hU(2:nlev) + hU(1:nlev-1))
-    diagU(nlev+1)=2
-    
-    diagV(1)=2
-    diagV(2:nlev) = 2*(hV(2:nlev) + hV(1:nlev-1))
-    diagV(nlev+1)=2
-
-    upper_diagU(1)=1
-    upper_diagU(2:nlev) = hU(2:nlev)
-    upper_diagU(nlev+1)=0
-    
-    upper_diagV(1)=1
-    upper_diagV(2:nlev) = hV(2:nlev)
-    upper_diagV(nlev+1)=0
-
-    q_diagU(1)=-upper_diagU(1)/diagU(1)
-    rhsU(1)= rhsU(1)/diagU(1)
-    
-    q_diagV(1)=-upper_diagV(1)/diagV(1)
-    rhsV(1)= rhsV(1)/diagV(1)
-    do jl=2,nlev+1
-      tmp_calU    =  1/(diagU(jl)+lower_diagU(jl)*q_diagU(jl-1))
-      q_diagU(jl) = -upper_diagU(jl)*tmp_calU
-      rhsU(jl) =  (rhsU(jl)-lower_diagU(jl)*rhsU(jl-1))*tmp_calU
-      
-      tmp_calV    =  1/(diagV(jl)+lower_diagV(jl)*q_diagV(jl-1))
-      q_diagV(jl) = -upper_diagV(jl)*tmp_calV
-      rhsV(jl) =  (rhsV(jl)-lower_diagV(jl)*rhsV(jl-1))*tmp_calV
-    enddo
-    do jl=nlev,1,-1
-      rhsU(jl)=rhsU(jl)+q_diagU(jl)*rhsU(jl+1)
-      rhsV(jl)=rhsV(jl)+q_diagV(jl)*rhsV(jl+1)
-    enddo        
-
-    za0U = rhsU(1:nlev)
-    za1U = -4*rhsU(1:nlev) - 2*rhsU(2:nlev+1) + 6*rho_barU
-    za2U = +3*rhsU(1:nlev) + 3*rhsU(2:nlev+1) - 6*rho_barU
-    
-    za0V = rhsV(1:nlev)
-    za1V = -4*rhsV(1:nlev) - 2*rhsV(2:nlev+1) + 6*rho_barV
-    za2V = +3*rhsV(1:nlev) + 3*rhsV(2:nlev+1) - 6*rho_barV
-    
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !! start iteration from top to bottom of atmosphere !! 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-           
-    zaccintegerbU = 0
-    itopU = 1
-    zacctopU = 0.0
-    
-    zaccintegerbV = 0
-    itopV = 1
-    zacctopV = 0.0
-
-
-    do jk = 1,nlev
-      ibotU = zkrU(jk+1)
-      if (zgamU(jk+1)>1d0) then
-        WRITE(*,*) 'r not in [0:1]', zgamU(jk+1)
-      endif
-      do jsubz=itopU,ibotU-1,1
-        zaccintegerbU = zaccintegerbU + Uold(jsubz)
-      enddo
-      zaccbotU = zaccintegerbU + (za0U(ibotU)*zgamU(jk+1)+(za1U(ibotU)/2)*(zgamU(jk+1)**2)+(za2U(ibotU)/3)*(zgamU(jk+1)**3))*zhdpU(ibotU)
-
-      elem(ie)%state%v(i,j,1,jk,np1) = (zaccbotU-zacctopU)/dp(jk)
-
-      zacctopU        = zaccbotU
-      itopU           = ibotU
-      
-      ibotV = zkrV(jk+1)
-      if (zgamV(jk+1)>1d0) then
-        WRITE(*,*) 'r not in [0:1]', zgamV(jk+1)
-      endif
-      do jsubz=itopV,ibotV-1,1
-        zaccintegerbV = zaccintegerbV + Vold(jsubz)
-      enddo
-      zaccbotV = zaccintegerbV + (za0V(ibotV)*zgamV(jk+1)+(za1V(ibotV)/2)*(zgamV(jk+1)**2)+(za2V(ibotV)/3)*(zgamV(jk+1)**3))*zhdpV(ibotV)
-
-      elem(ie)%state%v(i,j,2,jk,np1) = (zaccbotV-zacctopV)/dp(jk)
-
-      zacctopV        = zaccbotV
-      itopV           = ibotV
-
-    enddo
-  enddo
-  call t_stopf('remap_UV_lagrange2ref')
-end subroutine remap_UV_lagrange2ref
   
   !=======================================================================================================! 
 
   
-subroutine remap1(Q,ps,eta_dot_dpdn,dt,hvcoord)
+subroutine remap1(Qdp,nx,qsize,dp1,dp2)
   ! remap 1 field
-  ! input:  Q     field to be remapped (NOTE: MIXING RATIO)
-  !         ps()  surface pressure (determines reference levels)
-  !         eta_dot_dpdn()  mass flux which to get to reference levels  
+  ! input:  Qdp   field to be remapped (NOTE: MASS, not MIXING RATIO)
+  !         dp1   layer thickness (source)
+  !         dp2   layer thickness (target)
   !
-  ! output: remaped Q, conserving Qdp
+  ! output: remaped Qdp, conserving mass, monotone on Q=Qdp/dp
   !
-  use physical_constants, only : cp, cpwater_vapor
-
   implicit none
-  real (kind=real_kind), intent(in   ) :: dt
-  type (hvcoord_t),      intent(in   ) :: hvcoord
-  real (kind=real_kind), intent(inout) :: Q(np,np,nlev)
-  real (kind=real_kind), intent(in   ) :: ps(np,np),eta_dot_dpdn(np,np,nlevp)
+  integer, intent(in) :: nx,qsize 
+  real (kind=real_kind), intent(inout) :: Qdp(nx,nx,nlev,qsize)
+  real (kind=real_kind), intent(in) :: dp1(nx,nx,nlev),dp2(nx,nx,nlev)
   ! ========================
   ! Local Variables
   ! ========================
@@ -610,22 +388,30 @@ subroutine remap1(Q,ps,eta_dot_dpdn,dt,hvcoord)
                             peaks_min,peaks_max,tmp_cal,xm,xm_d,zv1,zv2, &
                             zero = 0,one = 1,tiny = 1e-12,qmax = 1d50
   integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, & 
-                            lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k
+                            lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
   
   call t_startf('remap1')
 
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(i,j,z1c,z2c,zv,k,dp_np1,dp_star,Qcol,zkr,ilev) &
+!$omp parallel do private(qsize,i,j,z1c,z2c,zv,k,dp_np1,dp_star,Qcol,zkr,ilev) &
 !$omp    private(jk,zgam,zhdp,h,zarg,rhs,lower_diag,diag,upper_diag,q_diag,tmp_cal,filter_code) &
 !$omp    private(dy,im1,im2,im3,ip1,t1,t2,t3,za0,za1,za2,xm_d,xm,f_xm,t4,tm,tp,peaks,peaks_min) &
 !$omp    private(peaks_max,ip2,level1,level2,level3,level4,level5,lt1,lt2,lt3,zv1,zv2)
 #endif
-  do i=1,np
-    do j=1,np
-      call remap_calc_grids( hvcoord , ps(i,j) , dt , eta_dot_dpdn(i,j,:) , z1c , z2c , dp_star , dp_np1 )
+  do q=1,qsize
+  do i=1,nx
+    do j=1,nx
+
+      z1c(1)=0 ! source grid
+      z2c(1)=0 ! target grid
+      do k=1,nlev
+         z1c(k+1)=z1c(k)+dp1(i,j,k)
+         z2c(k+1)=z2c(k)+dp2(i,j,k)
+      enddo
+
       zv(1)=0
       do k=1,nlev
-        Qcol(k)=Q(i,j,k)*dp_star(k)
+        Qcol(k)=Qdp(i,j,k,q)!  *(z1c(k+1)-z1c(k)) input is mass
         zv(k+1) = zv(k)+Qcol(k)
       enddo
       
@@ -833,16 +619,159 @@ subroutine remap1(Q,ps,eta_dot_dpdn,dt,hvcoord)
         endif
         zv2 = zv(zkr(k+1))+(za0(zkr(k+1))*zgam(k+1)+(za1(zkr(k+1))/2)*(zgam(k+1)**2)+ &
              (za2(zkr(k+1))/3)*(zgam(k+1)**3))*zhdp(zkr(k+1))
-        Q(i,j,k) = (zv2 - zv1) / (z2c(k+1)-z2c(k) )
+        Qdp(i,j,k,q) = (zv2 - zv1) ! / (z2c(k+1)-z2c(k) ) dont convert back to mixing ratio
         zv1 = zv2
       enddo
     enddo
   enddo
+  enddo ! q loop 
   call t_stopf('remap1')
 end subroutine remap1
 
+subroutine remap1_nofilter(Qdp,nx,qsize,dp1,dp2)
+  ! remap 1 field
+  ! input:  Qdp   field to be remapped (NOTE: MASS, not MIXING RATIO)
+  !         dp1   layer thickness (source)
+  !         dp2   layer thickness (target)
+  !
+  ! output: remaped Qdp, conserving mass
+  !
+  implicit none
+  integer, intent(in) :: nx,qsize 
+  real (kind=real_kind), intent(inout) :: Qdp(nx,nx,nlev,qsize)
+  real (kind=real_kind), intent(in) :: dp1(nx,nx,nlev),dp2(nx,nx,nlev)
+  ! ========================
+  ! Local Variables
+  ! ========================
+
+  real (kind=real_kind), dimension(nlev+1)    :: rhs,lower_diag,diag,upper_diag,q_diag,zgam,z1c,z2c,zv
+  real (kind=real_kind), dimension(nlev)      :: h,Qcol,dy,za0,za1,za2,zarg,zhdp,dp_star,dp_np1
+  real (kind=real_kind)  :: f_xm,level1,level2,level3,level4,level5, &
+                            peaks_min,peaks_max,tmp_cal,xm,xm_d,zv1,zv2, &
+                            zero = 0,one = 1,tiny = 1e-12,qmax = 1d50
+  integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, & 
+                            lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
+  
+  call t_startf('remap1_nofilter')
+
+#if (defined ELEMENT_OPENMP)
+!$omp parallel do private(qsize,i,j,z1c,z2c,zv,k,dp_np1,dp_star,Qcol,zkr,ilev) &
+!$omp    private(jk,zgam,zhdp,h,zarg,rhs,lower_diag,diag,upper_diag,q_diag,tmp_cal,filter_code) &
+!$omp    private(dy,im1,im2,im3,ip1,t1,t2,t3,za0,za1,za2,xm_d,xm,f_xm,t4,tm,tp,peaks,peaks_min) &
+!$omp    private(peaks_max,ip2,level1,level2,level3,level4,level5,lt1,lt2,lt3,zv1,zv2)
+#endif
+  do q=1,qsize
+  do i=1,nx
+    do j=1,nx
+
+      z1c(1)=0 ! source grid
+      z2c(1)=0 ! target grid
+      do k=1,nlev
+         z1c(k+1)=z1c(k)+dp1(i,j,k)
+         z2c(k+1)=z2c(k)+dp2(i,j,k)
+      enddo
+
+      zv(1)=0
+      do k=1,nlev
+        Qcol(k)=Qdp(i,j,k,q)!  *(z1c(k+1)-z1c(k)) input is mass
+        zv(k+1) = zv(k)+Qcol(k)
+      enddo
+      
+      if (ABS(z2c(nlev+1)-z1c(nlev+1)).GE.0.000001) then
+        write(6,*) 'SURFACE PRESSURE IMPLIED BY ADVECTION SCHEME'
+        write(6,*) 'NOT CORRESPONDING TO SURFACE PRESSURE IN    '
+        write(6,*) 'DATA FOR MODEL LEVELS'
+        write(6,*) 'PLEVMODEL=',z2c(nlev+1)
+        write(6,*) 'PLEV     =',z1c(nlev+1)
+        write(6,*) 'DIFF     =',z2c(nlev+1)-z1c(nlev+1)
+        ! call ABORT
+      endif
+      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! quadratic splies with UK met office monotonicity constraints  !!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      
+      zkr  = 99
+      ilev = 2
+      zkr(1) = 1
+      zkr(nlev+1) = nlev
+      kloop: do k = 2,nlev
+        do jk = ilev,nlev+1
+          if (z1c(jk).ge.z2c(k)) then
+            ilev      = jk
+            zkr(k)   = jk-1
+            cycle kloop
+          endif
+        enddo
+      enddo kloop
+      
+      zgam  = (z2c(1:nlev+1)-z1c(zkr)) / (z1c(zkr+1)-z1c(zkr))
+      zgam(1)      = 0.0
+      zgam(nlev+1) = 1.0
+      zhdp = z1c(2:nlev+1)-z1c(1:nlev)
+      
+      
+      h = 1/zhdp
+      zarg = Qcol * h
+      rhs = 0
+      lower_diag = 0
+      diag = 0
+      upper_diag = 0
+      
+      rhs(1)=3*zarg(1)
+      rhs(2:nlev) = 3*(zarg(2:nlev)*h(2:nlev) + zarg(1:nlev-1)*h(1:nlev-1)) 
+      rhs(nlev+1)=3*zarg(nlev)
+      
+      lower_diag(1)=1
+      lower_diag(2:nlev) = h(1:nlev-1)
+      lower_diag(nlev+1)=1
+      
+      diag(1)=2
+      diag(2:nlev) = 2*(h(2:nlev) + h(1:nlev-1))
+      diag(nlev+1)=2
+      
+      upper_diag(1)=1
+      upper_diag(2:nlev) = h(2:nlev)
+      upper_diag(nlev+1)=0
+      
+      q_diag(1)=-upper_diag(1)/diag(1)
+      rhs(1)= rhs(1)/diag(1)
+      
+      do k=2,nlev+1
+        tmp_cal    =  1/(diag(k)+lower_diag(k)*q_diag(k-1))
+        q_diag(k) = -upper_diag(k)*tmp_cal
+        rhs(k) =  (rhs(k)-lower_diag(k)*rhs(k-1))*tmp_cal
+      enddo
+      do k=nlev,1,-1
+        rhs(k)=rhs(k)+q_diag(k)*rhs(k+1)
+      enddo
+      
+      za0 = rhs(1:nlev) 
+      za1 = -4*rhs(1:nlev) - 2*rhs(2:nlev+1) + 6*zarg  
+      za2 =  3*rhs(1:nlev) + 3*rhs(2:nlev+1) - 6*zarg 
+      
+      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! start iteration from top to bottom of atmosphere !! 
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      
+      zv1 = 0
+      do k=1,nlev
+        if (zgam(k+1)>1d0) then
+          WRITE(*,*) 'r not in [0:1]', zgam(k+1)
+        endif
+        zv2 = zv(zkr(k+1))+(za0(zkr(k+1))*zgam(k+1)+(za1(zkr(k+1))/2)*(zgam(k+1)**2)+ &
+             (za2(zkr(k+1))/3)*(zgam(k+1)**3))*zhdp(zkr(k+1))
+        Qdp(i,j,k,q) = (zv2 - zv1) ! / (z2c(k+1)-z2c(k) ) dont convert back to mixing ratio
+        zv1 = zv2
+      enddo
+    enddo
+  enddo
+  enddo ! q loop 
+  call t_stopf('remap1_nofilter')
+end subroutine remap1_nofilter
+
 subroutine remap_Q(np1,np1_qdp, dt,elem,hvcoord,ie)
-  use physical_constants, only : cp, cpwater_vapor
   implicit none
   real (kind=real_kind),  intent(in   )         :: dt
   type (element_t),       intent(inout), target :: elem(:)
@@ -1099,7 +1028,6 @@ end subroutine remap_Q
 !This uses the exact same model and reference grids and data as remap_Q, but it interpolates
 !using PPM instead of splines.
 subroutine remap_Q_ppm(np1,np1_qdp,dt,elem,hvcoord,ie)
-  use physical_constants, only : cp, cpwater_vapor
   use control_mod, only        : prescribed_wind, vert_remap_q_alg
   implicit none
   real (kind=real_kind), intent(in   )         :: dt
@@ -1331,7 +1259,6 @@ end function integrate_parabola
 !=============================================================================================! 
 
 subroutine remap_velocityCspelt(np1,dt,elem,spelt,hvcoord,ie)
-  use physical_constants, only : cp, cpwater_vapor
   use dimensions_mod, only : nc, nep
   implicit none
   real (kind=real_kind),  intent(in   )         :: dt
@@ -1621,7 +1548,6 @@ end subroutine remap_velocityCspelt
 
 
 subroutine remap_velocityC(np1,dt,elem,fvm,hvcoord,ie)
-  use physical_constants, only : cp, cpwater_vapor
   use dimensions_mod, only : nc
   implicit none
   real (kind=real_kind),  intent(in   )         :: dt
@@ -1937,7 +1863,7 @@ module prim_advection_mod
 !  
   use kinds, only              : real_kind
   use dimensions_mod, only     : nlev, nlevp, np, qsize, ntrac
-  use physical_constants, only : rgas, Rwater_vapor, kappa, g, rearth, rrearth, cp, cpwater_vapor
+  use physical_constants, only : rgas, Rwater_vapor, kappa, g, rearth, rrearth, cp
   use derivative_mod, only     : gradient, vorticity, gradient_wk, derivative_t, divergence, &
                                  gradient_sphere, divergence_sphere
   use element_mod, only        : element_t
@@ -3313,145 +3239,138 @@ contains
 
 
   subroutine vertical_remap(elem,fvm,hvcoord,dt,np1,np1_qdp,nets,nete)
-    ! This routine is called at the end of the vertically Lagrangian 
-    ! dynamics step to compute the vertical flux needed to get back
-    ! to reference eta levels 
-    !
-    ! input:
-    !     derived%dp()  delta p on levels at beginning of timestep
-    !     state%dp3d(np1)  delta p on levels at end of timestep
-    ! output:
-    !     state%ps_v(np1)          surface pressure at time np1 
-    !     derived%eta_dot_dpdn()   vertical flux from final Lagrangian
-    !                              levels to reference eta levels
-    !
-    use kinds, only : real_kind
-    use hybvcoord_mod, only : hvcoord_t
-    use vertremap_mod, only : remap1, remap_uv_lagrange2ref, remap_q, remap_q_ppm ! _EXTERNAL (actually INTERNAL)
-    use vertremap_mod, only: remap_velocityCspelt, remap_velocityC  ! _EXTERNAL (actually INTERNAL)
-    use control_mod, only :  vert_remap_q_alg, rsplit
-    use parallel_mod, only : abortmp
+  ! This routine is called at the end of the vertically Lagrangian 
+  ! dynamics step to compute the vertical flux needed to get back
+  ! to reference eta levels 
+  !
+  ! input:
+  !     derived%dp()  delta p on levels at beginning of timestep
+  !     state%dp3d(np1)  delta p on levels at end of timestep
+  ! output:
+  !     state%ps_v(np1)          surface pressure at time np1 
+  !     derived%eta_dot_dpdn()   vertical flux from final Lagrangian
+  !                              levels to reference eta levels
+  !
+  use kinds, only : real_kind
+  use hybvcoord_mod, only : hvcoord_t
+  use vertremap_mod, only : remap1, remap1_nofilter, remap_q, remap_q_ppm ! _EXTERNAL (actually INTERNAL)
+  use vertremap_mod, only: remap_velocityCspelt, remap_velocityC  ! _EXTERNAL (actually INTERNAL)
+  use control_mod, only :  vert_remap_q_alg, rsplit
+  use parallel_mod, only : abortmp
 #if defined(_SPELT)
-    use spelt_mod, only spelt_struct
+  use spelt_mod, only spelt_struct
 #else
-    use fvm_control_volume_mod, only : fvm_struct
+  use fvm_control_volume_mod, only : fvm_struct
 #endif    
-
-
+  
+  
 #if defined(_SPELT)
-    type(spelt_struct), intent(inout) :: fvm(:)
+  type(spelt_struct), intent(inout) :: fvm(:)
 #else
-    type(fvm_struct), intent(inout) :: fvm(:)
+  type(fvm_struct), intent(inout) :: fvm(:)
 #endif
-
-!    type (hybrid_t), intent(in)       :: hybrid  ! distributed parallel structure (shared)
-    type (element_t), intent(inout)   :: elem(:)
-    type (hvcoord_t)                  :: hvcoord
-    real (kind=real_kind)             :: dt
-
-    integer :: ie,k,np1,nets,nete,np1_qdp
-    real (kind=real_kind), dimension(np,np)  :: dp,dp_star
-    real (kind=real_kind), dimension(np,np,nlev)  :: ttmp
-
-
-    if (rsplit>0) then
-    !  REMAP u,v,T from levels in dp3d() to REF levels
-    !
-    ! reference levels:  
-    !   dp(k) = (hyai(k+1)-hyai(k))*ps0 + (hybi(k+1)-hybi(k))*ps_v(i,j)
-    !   hybi(1)=0          pure pressure at top of atmosphere
-    !   hyai(1)=ptop
-    !   hyai(nlev+1) = 0   pure sigma at bottom
-    !   hybi(nlev+1) = 1
-    !
-    ! sum over k=1,nlev
-    !  sum(dp(k)) = (hyai(nlev+1)-hyai(1))*ps0 + (hybi(nlev+1)-hybi(1))*ps_v
-    !             = -ps0 + ps_v
-    !  ps_v =  ps0+sum(dp(k))
-    !
-
-
-    ! step1: compute, eta_dot_dpdn, implied mass flux between dp3d() levels and REF levels:
-    ! note: for rsplit=0 (vertically eulerian code) eta_dot_dpdn computed as part of dynamics
-    do ie=nets,nete
-       ! reference levels:
-       !    dp(k) = (hyai(k+1)-hyai(k))*ps0 + (hybi(k+1)-hybi(k))*ps_v
-       ! floating levels:
-       !    dp_star(k) = dp(k) + dt_q*(eta_dot_dpdn(i,j,k+1) - eta_dot_dpdn(i,j,k) ) 
-       ! hence:
-       !    (dp_star(k)-dp(k))/dt_q = (eta_dot_dpdn(i,j,k+1) - eta_dot_dpdn(i,j,k) ) 
-       !    
-       elem(ie)%derived%eta_dot_dpdn(:,:,1)=0
-       elem(ie)%derived%eta_dot_dpdn(:,:,nlevp)=0
-       do k=1,nlev-1
-          dp(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
-          dp_star(:,:) = elem(ie)%state%dp3d(:,:,k,np1)
-          elem(ie)%derived%eta_dot_dpdn(:,:,k+1) = elem(ie)%derived%eta_dot_dpdn(:,:,k) + &
-               (dp_star(:,:)-dp(:,:))/dt
-       enddo
-       ! remap the dynamics:  
+  
+  !    type (hybrid_t), intent(in)       :: hybrid  ! distributed parallel structure (shared)
+  type (element_t), intent(inout)   :: elem(:)
+  type (hvcoord_t)                  :: hvcoord
+  real (kind=real_kind)             :: dt
+  
+  integer :: ie,k,np1,nets,nete,np1_qdp
+  real (kind=real_kind), dimension(np,np,nlev)  :: dp,dp_star
+  real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
+  
+  
+  ! reference levels:  
+  !   dp(k) = (hyai(k+1)-hyai(k))*ps0 + (hybi(k+1)-hybi(k))*ps_v(i,j)
+  !   hybi(1)=0          pure pressure at top of atmosphere
+  !   hyai(1)=ptop
+  !   hyai(nlev+1) = 0   pure sigma at bottom
+  !   hybi(nlev+1) = 1
+  !
+  ! sum over k=1,nlev
+  !  sum(dp(k)) = (hyai(nlev+1)-hyai(1))*ps0 + (hybi(nlev+1)-hybi(1))*ps_v
+  !             = -ps0 + ps_v
+  !  ps_v =  ps0+sum(dp(k))
+  !
+  ! reference levels:
+  !    dp(k) = (hyai(k+1)-hyai(k))*ps0 + (hybi(k+1)-hybi(k))*ps_v
+  ! floating levels:
+  !    dp_star(k) = dp(k) + dt_q*(eta_dot_dpdn(i,j,k+1) - eta_dot_dpdn(i,j,k) ) 
+  ! hence:
+  !    (dp_star(k)-dp(k))/dt_q = (eta_dot_dpdn(i,j,k+1) - eta_dot_dpdn(i,j,k) ) 
+  !    
+  do ie=nets,nete
+     if (rsplit==0) then
+        ! compute dp_star from eta_dot_dpdn():
+        do k=1,nlev
+           dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+           dp_star(:,:,k) = dp(:,:,k) + dt*(elem(ie)%derived%eta_dot_dpdn(:,:,k+1) -&
+                elem(ie)%derived%eta_dot_dpdn(:,:,k)) 
+        enddo
+     else
+        !  REMAP u,v,T from levels in dp3d() to REF levels
+        !
+        do k=1,nlev
+           dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+           dp_star(:,:,k) = elem(ie)%state%dp3d(:,:,k,np1)
+        enddo
+        
+        ! remap the dynamics:  
 #undef REMAP_TE
 #ifdef REMAP_TE
-       ! remap u,v and cp*T + .5 u^2 
-       ttmp=(elem(ie)%state%v(:,:,1,:,np1)**2 + &
+        ! remap u,v and cp*T + .5 u^2 
+        ttmp(:,:,:,1)=(elem(ie)%state%v(:,:,1,:,np1)**2 + &
              elem(ie)%state%v(:,:,2,:,np1)**2)/2 + &
              elem(ie)%state%t(:,:,:,np1)*cp
-
-       call remap1(ttmp,elem(ie)%state%ps_v(:,:,np1),elem(ie)%derived%eta_dot_dpdn,dt,hvcoord)
-
-       elem(ie)%state%t(:,:,:,np1)=ttmp  ! overwrite T with TE
 #else
-       call remap1(elem(ie)%state%t(:,:,:,np1),elem(ie)%state%ps_v(:,:,np1),elem(ie)%derived%eta_dot_dpdn,dt,hvcoord)
+        ttmp(:,:,:,1)=elem(ie)%state%t(:,:,:,np1)
 #endif
-      call remap_UV_lagrange2ref(np1,dt,elem,hvcoord,ie)
-    enddo
+        ttmp(:,:,:,1)=ttmp(:,:,:,1)*dp_star
+        call remap1(ttmp,np,1,dp_star,dp)
+        elem(ie)%state%t(:,:,:,np1)=ttmp(:,:,:,1)/dp
+        
+        ttmp(:,:,:,1)=elem(ie)%state%v(:,:,1,:,np1)*dp_star
+        ttmp(:,:,:,2)=elem(ie)%state%v(:,:,2,:,np1)*dp_star
+        call remap1_nofilter(ttmp,np,2,dp_star,dp) 
+        elem(ie)%state%v(:,:,1,:,np1)=ttmp(:,:,:,1)/dp
+        elem(ie)%state%v(:,:,2,:,np1)=ttmp(:,:,:,2)/dp
 #ifdef REMAP_TE
-    ! back out T from TE
-    do ie=nets,nete
-       elem(ie)%state%t(:,:,:,np1) = &
-            ( elem(ie)%state%t(:,:,:,np1) - ( (elem(ie)%state%v(:,:,1,:,np1)**2 + &
-                        elem(ie)%state%v(:,:,2,:,np1)**2)/2))/cp
-             
-    enddo
+        ! back out T from TE
+        elem(ie)%state%t(:,:,:,np1) = &
+             ( elem(ie)%state%t(:,:,:,np1) - ( (elem(ie)%state%v(:,:,1,:,np1)**2 + &
+             elem(ie)%state%v(:,:,2,:,np1)**2)/2))/cp
+        
 #endif
-    endif
+     endif
 
-
-
-    ! remap the tracers from lagrangian levels to REF levels
-    ! REF levels are computed from ps_v
-    ! Lagrangian levels are computed from REF levels and vertical mass flux
-    if (qsize>0) then
-    if (vert_remap_q_alg == 0) then
-      do ie=nets,nete
-        call remap_Q(np1, np1_qdp, dt,elem,hvcoord,ie)
-      enddo
-    elseif (vert_remap_q_alg == 1 .or. vert_remap_q_alg == 2) then
-      do ie=nets,nete
-        call remap_Q_ppm(np1,np1_qdp, dt,elem,hvcoord,ie)
-      enddo
-    else
-      call abortmp('specification for vert_remap_q_alg must be 0, 1, or 2.')
-    endif
-    endif
-
-    if (ntrac>0) then
+     
+     ! remap the tracers from lagrangian levels to REF levels
+     ! REF levels are computed from ps_v
+     ! Lagrangian levels are computed from REF levels and vertical mass flux
+     if (qsize>0) then
+        if (vert_remap_q_alg == 0) then
+           !call remap_Q(np1, np1_qdp, dt,elem,hvcoord,ie)
+           call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,qsize,dp_star,dp)
+        elseif (vert_remap_q_alg == 1 .or. vert_remap_q_alg == 2) then
+           call remap_Q_ppm(np1,np1_qdp, dt,elem,hvcoord,ie)
+        else
+           call abortmp('specification for vert_remap_q_alg must be 0, 1, or 2.')
+        endif
+     endif
+     
+     if (ntrac>0) then
 #if defined(_SPELT) 
-       do ie=nets,nete
-          call remap_velocityCspelt(np1,dt,elem,fvm,hvcoord,ie)
-       enddo
+        call remap_velocityCspelt(np1,dt,elem,fvm,hvcoord,ie)
 #else
-       do ie=nets,nete
-          call remap_velocityC(np1,dt,elem,fvm,hvcoord,ie)
-       enddo
+        call remap_velocityC(np1,dt,elem,fvm,hvcoord,ie)
 #endif
-    endif
-
-
-
-  end subroutine
-
-
+     endif
+  enddo
+  
+  
+  end subroutine vertical_remap
+  
+  
 
 
 

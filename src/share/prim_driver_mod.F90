@@ -1155,16 +1155,10 @@ contains
 
     ! ===============
     ! initialize mean flux accumulation variables
-    ! save U(t) for use by tracers 
     ! ===============
     do ie=nets,nete
        elem(ie)%derived%eta_dot_dpdn=0
        elem(ie)%derived%omega_p=0
-       elem(ie)%derived%vn0=elem(ie)%state%v(:,:,:,:,tl%n0)
-       if (nu_p>0) then
-          elem(ie)%derived%psdiss_ave=0
-          elem(ie)%derived%psdiss_biharmonic=0
-       endif
     enddo
 
     ! ===============

@@ -229,10 +229,13 @@ contains
 
     ! note:time step computes u(t+1)= u(t*) + RHS. 
     ! for consistency, dt_vis = t-1 - t*, so this is timestep method dependent
-    if (tstep_type==1) then  ! forward-in-time
+    if (tstep_type==1) then  
+       ! forward-in-time, maybe hypervis applied to PS
        call advance_hypervis(edge3p1,elem,hvcoord,hybrid,deriv,np1,nets,nete,dt_vis,eta_ave_w)
+       ! forward-in-time, maybe hypervis applied to dp3d
+       !call advance_hypervis_dp(edge3p1,elem,hvcoord,hybrid,deriv,np1,nets,nete,dt_vis,eta_ave_w)
     else ! leapfrog
-       call advance_hypervis_lf(edge3p1,elem,hvcoord,hybrid,deriv,nm1,n0,np1,nets,nete,dt_vis,eta_ave_w)
+       call advance_hypervis_lf(edge3p1,elem,hvcoord,hybrid,deriv,nm1,n0,np1,nets,nete,dt_vis)
     endif
 #ifdef ENERGY_DIAGNOSTICS
     if (compute_diagnostics) then
@@ -1265,7 +1268,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   !
   !
   use dimensions_mod, only : np, np, nlev
-  use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, nu_p, nu_top, moisture, psurf_vis, energy_fixer
+  use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, nu_p, nu_top, psurf_vis
   use hybrid_mod, only : hybrid_t
   use hybvcoord_mod, only : hvcoord_t
   use element_mod, only : element_t
@@ -1386,21 +1389,12 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   !  hyper viscosity  
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! nu_p=0:
-!   scale T dissipaton by dp
+!   scale T dissipaton by dp  (conserve IE, dissipate T^2)
 ! nu_p>0
-!   1deg numbers, no heating, no dp scaling: diss KE, IE, PE:   -.82, -.86,  +.99  
-!   1deg numbers, no heating, w/ dp scaling: diss KE, IE, PE:   -.82,    0,  +.99  
+!   dont scale:  T equation IE dissipation matches (to truncation error) 
+!                IE dissipation from continuity equation 
+!                (1 deg: to about 0.1 W/m^2)
 !
-! 1.  energy_fixer=-3 (for testing - seems to produce bad results)
-!       scale T dissipation by dp, and add heating term from U and PS (conserves)
-! 2.  energy_fixer>0 (turned on)
-!        dont scale T dissipation by dp.  U heating, T and dp dissipation more or less cancel
-!                      fixer:  0.1 W/m^2
-! 3.  energy_fixer=-1 (for testing)
-!        dont scale T dissipation by dp.  out of balance by about 0.1 W/m^2   
-!       
-!
-
   if (hypervis_order == 2) then
      nu_ratio = nu_div/nu ! possibly weight div component more inside biharmonc_wk
      do ic=1,hypervis_subcycle
@@ -1432,7 +1426,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               
               do j=1,np
                  do i=1,np
-                    if (nu_p==0  .or. energy_fixer==-3) then
+                    if (nu_p==0) then
                        ! normalize so as to conserve IE  
                        ! scale by 1/rho (normalized to be O(1))
                        ! dp/dn = O(ps0)*O(delta_eta) = O(ps0)/O(nlev)
@@ -1519,41 +1513,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               call edgeVunpack(edge3, pstens(:,:,ie), 1, kptr, elem(ie)%desc)
               pstens(:,:,ie)=dt*pstens(:,:,ie)*elem(ie)%rspheremp(:,:)
               elem(ie)%state%ps_v(:,:,nt)=elem(ie)%state%ps_v(:,:,nt) + pstens(:,:,ie)
-              
-              if (energy_fixer==-3) then
-              do k=1,nlev
-                 ! now apply hypervis to PS, with additional heating term:
-                 ! E0 = dpdn * .5*u dot u + dpdn * T  + dpdn*PHIS
-                 ! E1 = dpdn+dptens) * .5*u dot u + (dpdn+dptens) * (T-X)  + (dpdn+dptens)*PHIS
-                 ! E1 - E0 = dptens ( .5*u dot u  +  T + phis )  - (dpdn+dptens)*X
-                 !  (dpdn+dptens) * X = dptens ( .5*u dot u  +  T + phis )
-                 !
-                 ! p=A(k)p0 + B(k)ps
-                 ! dp=A'(k)p0 + B'(k)ps
-                 ! dptens = B' pstens
-                 !
-                 do j=1,np
-                    do i=1,np
-                       v1=elem(ie)%state%v(i,j,1,k,nt)
-                       v2=elem(ie)%state%v(i,j,2,k,nt)
-                       
-                       dpdn = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                            ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,nt) 
-                       
-                       dptens = ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*pstens(i,j,ie)
-                       heating = dptens*( (v1*v1+v2*v2)/2 + cp*elem(ie)%state%T(i,j,k,nt) +&
-                            elem(ie)%state%phis(i,j) ) / dpdn 
-                       
-                       elem(ie)%state%T(i,j,k,nt)=elem(ie)%state%T(i,j,k,nt) -&
-                            heating/cp
-                       
-                    enddo
-                 enddo
-              enddo
-              endif
            endif
-
-           
            
         enddo
 #ifdef DEBUGOMP
@@ -1572,7 +1532,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
 
-  subroutine advance_hypervis_lf(edge3,elem,hvcoord,hybrid,deriv,nm1,n0,nt,nets,nete,dt2,eta_ave_w)
+  subroutine advance_hypervis_lf(edge3,elem,hvcoord,hybrid,deriv,nm1,n0,nt,nets,nete,dt2)
   !
   !  take one timestep of:  
   !          u(:,:,:,np) = u(:,:,:,np) +  dt2*nu*laplacian**order ( u )
@@ -1583,7 +1543,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   !
   !
   use dimensions_mod, only : np, np, nlev
-  use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, nu_p, nu_top, moisture, psurf_vis
+  use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, nu_p, nu_top, psurf_vis
   use hybrid_mod, only : hybrid_t
   use hybvcoord_mod, only : hvcoord_t
   use element_mod, only : element_t
@@ -1606,7 +1566,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   integer :: nets,nete
   
   ! local
-  real (kind=real_kind) :: eta_ave_w  ! weighting for mean flux terms
   real (kind=real_kind) :: nu_scale, dpdn,dpdn0, nu_scale_top,nu_ratio
   integer :: k,kptr,i,j,ie,ic,n0,nt,nm1
   real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)      :: vtens   
@@ -1715,11 +1674,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         call biharmonic_wk(elem,pstens,ptens,vtens,deriv,edge3,hybrid,nt,nets,nete,nu_ratio)
         do ie=nets,nete
 
-           ! comptue mean flux
-           if (nu_p>0) then
-              elem(ie)%derived%psdiss_ave(:,:)=elem(ie)%derived%psdiss_ave(:,:)+eta_ave_w*elem(ie)%state%ps_v(:,:,nt)/hypervis_subcycle
-              elem(ie)%derived%psdiss_biharmonic(:,:)=elem(ie)%derived%psdiss_biharmonic(:,:)+eta_ave_w*pstens(:,:,ie)/hypervis_subcycle
-           endif
            nu_scale=1
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k,i,j,lap_p,lap_v,nu_scale_top,dpdn,dpdn0,nu_scale,utens_tmp,vtens_tmp,ptens_tmp)
