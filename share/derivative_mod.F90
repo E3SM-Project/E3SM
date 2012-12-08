@@ -2206,8 +2206,8 @@ endif
 ! hypervis_power =0 for const hv (1),  <>0 for variable hv (2) and tensor hv (3)
 ! if using (2), it is required to set also fine_ne, max_hypervis_courant
 
-!#undef TENSORHV
-#define TENSORHV
+#undef TENSORHV
+!#define TENSORHV
 
 
   function laplace_sphere_wk(s,deriv,elem,viscosity) result(laplace)
