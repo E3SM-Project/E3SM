@@ -1,4 +1,3 @@
-#include "timer.h"
 module multicloud_mod
 
   use kinds, only              : real_kind
