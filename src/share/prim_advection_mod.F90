@@ -2807,14 +2807,13 @@ contains
     !This redistribution might violate constraints thus, we do a few iterations. 
     use kinds         , only : real_kind
     use dimensions_mod, only : np, np, nlev
-    real (kind=real_kind), dimension(np,np,nlev), intent(inout)            :: ptens
-    real (kind=real_kind), dimension(np,np     ), intent(in   )            :: sphweights
+    real (kind=real_kind), dimension(np*np,nlev), intent(inout)            :: ptens
+    real (kind=real_kind), dimension(np*np     ), intent(in   )            :: sphweights
     real (kind=real_kind), dimension(      nlev), intent(inout)            :: minp
     real (kind=real_kind), dimension(      nlev), intent(inout)            :: maxp
-    real (kind=real_kind), dimension(np,np,nlev), intent(in   ), optional  :: dpmass
+    real (kind=real_kind), dimension(np*np,nlev), intent(in   ), optional  :: dpmass
  
-    real (kind=real_kind), dimension(np,np,nlev) :: weights
-    real (kind=real_kind), dimension(np,np     ) :: ptens_mass
+    real (kind=real_kind), dimension(np*np,nlev) :: weights
     integer  k1, k, i, j, iter, i1, i2
     integer :: whois_neg(np*np), whois_pos(np*np), neg_counter, pos_counter
     real (kind=real_kind) :: addmass, weightssum, mass
@@ -2824,19 +2823,13 @@ contains
     integer, parameter :: maxiter = 5
 
     do k = 1 , nlev
-      weights(:,:,k) = sphweights(:,:) * dpmass(:,:,k)
-      ptens(:,:,k) = ptens(:,:,k) / dpmass(:,:,k)
+      weights(:,k) = sphweights(:) * dpmass(:,k)
+      ptens(:,k) = ptens(:,k) / dpmass(:,k)
     enddo
 
     do k = 1 , nlev
-      k1 = 1
-      do i = 1 , np
-        do j = 1 , np
-          c(k1) = weights(i,j,k)
-          x(k1) = ptens(i,j,k)
-          k1 = k1 + 1
-        enddo
-      enddo
+      c = weights(:,k)
+      x = ptens(:,k)
 
       mass = sum(c*x)
 
@@ -2952,19 +2945,12 @@ contains
          enddo
       endif
       
-      k1 = 1
-      do i = 1 , np
-        do j = 1 , np
-          ptens(i,j,k) = x(k1)
-          k1 = k1+1
-        enddo
-      enddo
-      
-   enddo
-   
-   do k = 1 , nlev
-     ptens(:,:,k) = ptens(:,:,k) * dpmass(:,:,k)
-   enddo
+      ptens(:,k) = x
+    enddo
+    
+    do k = 1 , nlev
+      ptens(:,k) = ptens(:,k) * dpmass(:,k)
+    enddo
   end subroutine limiter_optim_iter_full
 
 
