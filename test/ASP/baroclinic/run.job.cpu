@@ -86,7 +86,7 @@ set smooth = 0
 set tadv = 1 ; set RK2 = 1    
 set qsplit = 4
 set mean_flux=1
-#set limiter = 8
+set limiter = 8
 
 
 
@@ -94,7 +94,7 @@ set mean_flux=1
 set ne = 8    # setup for 8,15,30,60,120?
 
 #set ndays = 30
-set ndays = 9
+set ndays = 10
 if ( $ne == 8 ) then
    # 3.75 degree      # bluevista: run takes 4min on 16 processors
    set tstep = 360        # dynamics timestep
