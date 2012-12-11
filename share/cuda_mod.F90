@@ -52,12 +52,15 @@ module cuda_mod
   real (kind=real_kind),device,allocatable,dimension(:,:,:,:,:)   :: dinv_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: variable_hyperviscosity_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: metdet_d
+  real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: psdiss_biharmonic_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: rmetdet_d
   real (kind=real_kind),device,allocatable,dimension(:,:)         :: edgebuf_d
+  real (kind=real_kind),device,allocatable,dimension(:)           :: hybi_d
   logical              ,device,allocatable,dimension(:,:)         :: reverse_d
   integer              ,device,allocatable,dimension(:,:)         :: putmapP_d
   integer              ,device,allocatable,dimension(:,:)         :: getmapP_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:,:,:)   :: vstar_d
+  real (kind=real_kind),device,allocatable,dimension(:,:,:,:)     :: divdp_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:,:)     :: dp_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:,:)     :: dp_star_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: qmin_d
@@ -170,8 +173,11 @@ contains
     allocate( variable_hyperviscosity_d(np,np                        ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( metdet_d                 (np,np                        ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( rmetdet_d                (np,np                        ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( psdiss_biharmonic_d      (np,np                        ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( vstar_d                  (np,np,nlev,2                 ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( divdp_d                  (np,np,nlev                   ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( dp_d                     (np,np,nlev                   ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( hybi_d                   (      nlev+1                        ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( dp_star_d                (np,np,nlev                   ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( reverse_d                (max_neigh_edges              ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( putmapP_d                (max_neigh_edges              ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
@@ -538,9 +544,9 @@ contains
     do k = 1 , nlev    !  Loop index added (AAM)
       ! derived variable divdp_proj() (DSS'd version of divdp) will only be correct on 2nd and 3rd stage
       ! but that's ok because rhs_multiplier=0 on the first stage:
-      dp(:,:,k) = elem(ie)%derived%dp(:,:,k) - rhs_multiplier * dt * elem(ie)%derived%divdp_proj(:,:,k) 
-      Vstar(:,:,1,k) = elem(ie)%derived%vn0(:,:,1,k) / dp(:,:,k)
-      Vstar(:,:,2,k) = elem(ie)%derived%vn0(:,:,2,k) / dp(:,:,k)
+      dp_h(:,:,k,ie) = elem(ie)%derived%dp(:,:,k) - rhs_multiplier * dt * elem(ie)%derived%divdp_proj(:,:,k) 
+      Vstar(:,:,1,k) = elem(ie)%derived%vn0(:,:,1,k) / dp_h(:,:,k,ie)
+      Vstar(:,:,2,k) = elem(ie)%derived%vn0(:,:,2,k) / dp_h(:,:,k,ie)
     enddo
 
     ! advance Qdp
@@ -555,19 +561,6 @@ contains
         if ( rhs_viss /= 0 ) Qtens_h(:,:,k,q,ie) = Qtens_h(:,:,k,q,ie) + Qtens_biharmonic(:,:,k,q,ie)
       enddo
          
-      if ( limiter_option == 8 ) then
-        do k = 1 , nlev  ! Loop index added (AAM)
-          ! UN-DSS'ed dp at timelevel n0+1:  
-          dp_star_h(:,:,k,ie) = dp(:,:,k) - dt * elem(ie)%derived%divdp(:,:,k)  
-          if ( nu_p > 0 .and. rhs_viss /= 0 ) then
-            ! add contribution from UN-DSS'ed PS dissipation
-            dpdiss(:,:) = ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) * elem(ie)%derived%psdiss_biharmonic(:,:)
-            dp_star_h(:,:,k,ie) = dp_star_h(:,:,k,ie) - rhs_viss * dt * nu_q * dpdiss(:,:) / elem(ie)%spheremp(:,:)
-          endif
-        enddo
-        ! apply limiter to Q = Qtens_h / dp_star 
-!       call limiter_optim_iter_full( Qtens_h(:,:,:,q,ie) , elem(ie)%spheremp(:,:) , qmin(:,q,ie) , qmax(:,q,ie) , dp_star_h(:,:,:,ie) )
-      endif
     enddo
   enddo
 
@@ -580,16 +573,21 @@ contains
 ! do ie = 1,nelemd
 !   ierr = cudaMemcpy( qdp_d(1,1,1,1,np1_qdp,ie) , elem(ie)%state%qdp(1,1,1,1,np1_qdp) , size(elem(ie)%state%qdp(:,:,:,:,np1_qdp)) , cudaMemcpyHostToDevice )
 ! enddo
-  ierr = cudaMemcpy( qtens_d   , qtens_h   , size(qtens_h   ) , cudaMemcpyHostToDevice )
-  ierr = cudaMemcpy( qmin_d    , qmin      , size(qmin      ) , cudaMemcpyHostToDevice )
-  ierr = cudaMemcpy( qmax_d    , qmax      , size(qmax      ) , cudaMemcpyHostToDevice )
-  ierr = cudaMemcpy( dp_star_d , dp_star_h , size(dp_star_h ) , cudaMemcpyHostToDevice )
+  ierr = cudaMemcpy( qtens_d   , qtens_h      , size( qtens_h      ) , cudaMemcpyHostToDevice )
+  ierr = cudaMemcpy( qmin_d    , qmin         , size( qmin         ) , cudaMemcpyHostToDevice )
+  ierr = cudaMemcpy( qmax_d    , qmax         , size( qmax         ) , cudaMemcpyHostToDevice )
+  ierr = cudaMemcpy( dp_d      , dp_h         , size( dp_h         ) , cudaMemcpyHostToDevice )
+  ierr = cudaMemcpy( hybi_d    , hvcoord%hybi , size( hvcoord%hybi ) , cudaMemcpyHostToDevice )
+  do ie = 1 , nelemd
+    ierr = cudaMemcpy( psdiss_biharmonic_d(1,1  ,ie) , elem(ie)%derived%psdiss_biharmonic(1,1  ) , size( elem(ie)%derived%psdiss_biharmonic(:,:  ) ) , cudaMemcpyHostToDevice )
+    ierr = cudaMemcpy( divdp_d            (1,1,1,ie) , elem(ie)%derived%divdp            (1,1,1) , size( elem(ie)%derived%divdp            (:,:,:) ) , cudaMemcpyHostToDevice )
+  enddo
   ierr = cudaThreadSynchronize()
 
 
   blockdim = dim3( np, np, nlev )
   griddim  = dim3( qsize_d, nelemd , 1 )
-  call euler_step_kernel1<<<griddim,blockdim>>>( qdp_d , spheremp_d , qtens_d , qmin_d , qmax_d , dp_star_d , np1_qdp , 1 , nelemd )
+  call euler_step_kernel1<<<griddim,blockdim>>>( qdp_d , spheremp_d , qtens_d , qmin_d , qmax_d , dp_d , divdp_d , hybi_d , psdiss_biharmonic_d , np1_qdp , rhs_viss , dt , nu_p , nu_q , limiter_option , 1 , nelemd )
   if ( limiter_option == 4 ) then
     blockdim = dim3( np, np, nlev )
     griddim  = dim3( qsize_d, nelemd , 1 )
@@ -615,15 +613,23 @@ end subroutine euler_step_cuda
 
 
 
-attributes(global) subroutine euler_step_kernel1( Qdp , spheremp , Qtens , qmin , qmax , dp_star , np1_qdp , nets , nete )
+attributes(global) subroutine euler_step_kernel1( Qdp , spheremp , Qtens , qmin , qmax , dp , divdp , hybi , psdiss_biharmonic , np1_qdp , rhs_viss , dt , nu_p , nu_q , limiter_option , nets , nete )
   implicit none
   real(kind=real_kind), dimension(np,np,nlev,qsize_d,timelevels,nets:nete), intent(  out) :: Qdp
   real(kind=real_kind), dimension(np,np                        ,nets:nete), intent(in   ) :: spheremp
   real(kind=real_kind), dimension(np,np,nlev,qsize_d           ,nets:nete), intent(in   ) :: Qtens
   real(kind=real_kind), dimension(      nlev,qsize_d           ,nets:nete), intent(in   ) :: qmin
   real(kind=real_kind), dimension(      nlev,qsize_d           ,nets:nete), intent(in   ) :: qmax
-  real(kind=real_kind), dimension(np,np,nlev                   ,nets:nete), intent(in   ) :: dp_star
+  real(kind=real_kind), dimension(np,np,nlev                   ,nets:nete), intent(in   ) :: dp
+  real(kind=real_kind), dimension(np,np,nlev                   ,nets:nete), intent(in   ) :: divdp
+  real(kind=real_kind), dimension(      nlev+1                           ), intent(in   ) :: hybi
+  real(kind=real_kind), dimension(np,np                        ,nets:nete), intent(in   ) :: psdiss_biharmonic
+  real(kind=real_kind), value                                             , intent(in   ) :: dt
+  real(kind=real_kind), value                                             , intent(in   ) :: nu_q
+  real(kind=real_kind), value                                             , intent(in   ) :: nu_p
   integer, value                                                          , intent(in   ) :: np1_qdp
+  integer, value                                                          , intent(in   ) :: rhs_viss
+  integer, value                                                          , intent(in   ) :: limiter_option
   integer, value                                                          , intent(in   ) :: nets
   integer, value                                                          , intent(in   ) :: nete
   integer :: i,j,k,q,ie,ijk
@@ -639,15 +645,20 @@ attributes(global) subroutine euler_step_kernel1( Qdp , spheremp , Qtens , qmin 
   ie = blockidx%y
   ijk = (k-1)*np*np+(j-1)*np+i
   qtens_s(i,j,k) = qtens(i,j,k,q,ie)
-  dp_star_s(i,j,k) = dp_star(i,j,k,ie)
   if (ijk <= nlev) then
     qmin_s(ijk) = qmin(ijk,q,ie)
     qmax_s(ijk) = qmax(ijk,q,ie)
   endif
   if (k == 1) spheremp_s(i,j) = spheremp(i,j,ie)
   call syncthreads()
-  call limiter_optim_iter_full_dev( i , j , k , qtens_s(:,:,:) , spheremp_s(:,:) , qmin_s(:) , qmax_s(:) , dp_star_s(:,:,:) )
-  Qdp(i,j,k,q,np1_qdp,ie) = spheremp_s(i,j) * Qtens_s(i,j,k) 
+  if ( limiter_option == 8 ) then
+    dp_star_s(i,j,k) = dp(i,j,k,ie) - dt * divdp(i,j,k,ie)
+    if ( nu_p > 0 .and. rhs_viss /= 0 ) then   ! add contribution from UN-DSS'ed PS dissipation
+      dp_star_s(i,j,k) = dp_star_s(i,j,k) - rhs_viss * dt * nu_q * ( hybi(k+1) - hybi(k) ) * psdiss_biharmonic(i,j,ie) / spheremp_s(i,j)
+    endif
+    call limiter_optim_iter_full_dev( i , j , k , qtens_s(:,:,:) , spheremp_s(:,:) , qmin_s(:) , qmax_s(:) , dp_star_s(:,:,:) )
+  endif
+  Qdp(i,j,k,q,np1_qdp,ie) = spheremp_s(i,j) * Qtens_s(i,j,k)
 end subroutine euler_step_kernel1
 
 
