@@ -3348,6 +3348,16 @@ contains
 #if defined(_SPELT) 
         call remap_velocityCspelt(np1,dt,elem,fvm,hvcoord,ie)
 #else
+        ! create local variable  cdp(1:nc,1:nc,nlev,ntrac-1)
+        ! cdp(:,:,:,n) = fvm%c(:,:,:,n+1,np1)*fvm%c(:,:,:,1,np1)
+        ! dp(:,:,:) = reference level thicknesses
+
+        ! call remap1(cdp,nc,ntrac-1,fvm%c(:,:,:,1,np1),dp)
+
+        ! convert back to mass:
+        ! fvm%c(:,:,:,1,np1) = dp(:,:,:)
+        ! fvm%c(:,:,:,n,np1) = fvm%c(:,:,:,n,np1)/dp(:,:,:)
+
         call remap_velocityC(np1,dt,elem,fvm,hvcoord,ie)
 #endif
      endif
