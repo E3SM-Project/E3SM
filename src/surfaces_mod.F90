@@ -21,7 +21,7 @@ module surfaces_mod
 
   use parallel_mod, only   : abortmp,  global_shared_buf, global_shared_sum
   use edge_mod, only       : EdgeBuffer_t, Ghostbuffer3d_t
-  use dimensions_mod, only : np, ne, nelemd, max_elements_attached_to_node
+  use dimensions_mod, only : np, ne, nelemd, max_elements_attached_to_node, s_nv
   use global_norms_mod, only: wrap_repro_sum
 #if defined (_AIX) || defined (_BGL) || defined (_BGP) 
   use ieee_arithmetic, only: isnan => ieee_is_nan ! _EXTERNAL
@@ -31,11 +31,7 @@ module surfaces_mod
 
   private
 
-#ifdef MESH
-  integer, parameter, public :: nv = 2*max_elements_attached_to_node 
-#else
-  integer, parameter, public :: nv = 6
-#endif
+  integer, parameter, public :: nv = s_nv
 
   type, public :: ctrlvol_t
      real (kind=real_kind)    :: vol(np,np)           ! area of the unit sphere covered (local)

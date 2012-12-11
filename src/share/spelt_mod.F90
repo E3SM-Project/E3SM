@@ -791,6 +791,8 @@ subroutine spelt_grid_init(elem,spelt,nets,nete,tl)
   integer, intent(in)                       :: nets, nete
   type (TimeLevel_t), intent(in)            :: tl              ! time level struct
   
+  integer                                   :: cnt, pos
+
   integer                                   :: ie, i, j, ic,jc, iel,jel
   real (kind=longdouble_kind)               :: xref, yref, dx
   real (kind=real_kind)                     :: tmpD(2,2), detD, tmp, lat, lon, alpha, beta
@@ -805,7 +807,7 @@ subroutine spelt_grid_init(elem,spelt,nets,nete,tl)
   integer                                   :: cubeboundary, nbrsface
   logical                              :: corner
   type (quadrature_t) :: gp   ! Quadrature points and weights on pressure grid
-  
+
   
   do ie=nets,nete
     ! for the np grid
@@ -886,28 +888,31 @@ subroutine spelt_grid_init(elem,spelt,nets,nete,tl)
       enddo
     enddo
     
-#ifndef MESH
-  corner=.False.
-  cubeboundary=0
-  do j=1,8
-    if (elem(ie)%vertex%nbrs_used(j)) then
-      nbrsface=elem(ie)%vertex%nbrs_face(j)
-      ! note that if the element lies on a corner, it will be at j=5,6,7,8
-      if ((nbrsface /= elem(ie)%FaceNum) .AND. (j<5)) then
-        cubeboundary=j
-      endif
-    else   ! corner on the cube
-      if (.NOT. corner) then
-        nbrsface=-1
-        cubeboundary=j
-        corner=.TRUE.
-      else
-        print *,'Error in fvm_CONTROL_VOLUME_MOD - Subroutine fvm_MESH_ARI: '
-        call abortmp('Do not allow one element per face for fvm, please increase ne!')
-      endif
-    endif
-  end do
-#endif
+
+    ! this is assuming it is not a refined mesh - and that there is at most one corner element  
+    corner=.False.
+    cubeboundary=0
+    do j=1,8
+       cnt = elem(ie)%vertex%nbrs_ptr(j+1)- elem(ie)%vertex%nbrs_ptr(j)
+       if (cnt > 0) then
+          pos = elem(ie)%vertex%nbrs_ptr(j) !assuming just one - not a refined mesh
+          nbrsface=elem(ie)%vertex%nbrs_face(pos)
+          ! note that if the element lies on a corner, it will be at j=5,6,7,8
+          if ((nbrsface /= elem(ie)%FaceNum) .AND. (j<5)) then
+             cubeboundary=j
+          endif
+       else   ! corner on the cube
+          if (.NOT. corner) then
+             nbrsface=-1
+             cubeboundary=j
+             corner=.TRUE.
+          else
+             print *,'Error in fvm_CONTROL_VOLUME_MOD - Subroutine fvm_MESH_ARI: '
+             call abortmp('Do not allow one element per face for fvm, please increase ne!')
+          endif
+       endif
+    end do
+    
 
      do i=1,nc
         spelt(ie)%drefx(0,i)=spelt(ie)%drefx(1,i)
@@ -1049,6 +1054,7 @@ subroutine cell_search(elem, spelt, dsphere, icell, jcell,dref, alphabeta, face_
 
   integer                                  :: i, face_nodep      
   integer                                  :: tmp_i 
+  integer                                  :: j, cnt, loc, nbr, pos
 
 
   call cube_facepoint_ne(dsphere,ne,dcart, alphabeta, number, face_nodep)
@@ -1095,8 +1101,25 @@ subroutine cell_search(elem, spelt, dsphere, icell, jcell,dref, alphabeta, face_
     stop
   endif
   
-#ifndef MESH
-  if(number==elem%vertex%nbrs(1)) then  !west
+  !NOTE (AB): the following code assumes that we are not using a refined mesh - so there is 
+  ! at most one corner element 
+
+  !need to find which of the 8 locations has the nbr match for the number
+  loc = 0
+  do j=1,8
+     cnt = elem%vertex%nbrs_ptr(j+1)- elem%vertex%nbrs_ptr(j)
+     if (cnt > 0) then
+        pos = elem%vertex%nbrs_ptr(j) !assuming just one - not a refined mesh
+        nbr = elem%vertex%nbrs(pos)
+        if (number == nbr) then
+           loc = j
+           exit
+        endif
+     end if
+  end do
+
+
+  if(loc == 1) then  !west
     if ((elem%FaceNum<=4) .or. (face_nodep==elem%FaceNum)) then
       icell=icell-nc
     elseif (elem%FaceNum==5) then
@@ -1116,7 +1139,7 @@ subroutine cell_search(elem, spelt, dsphere, icell, jcell,dref, alphabeta, face_
     endif
   end if   
          
-  if(number==elem%vertex%nbrs(2)) then   !east
+  if(loc == 2) then   !east
     if ((elem%FaceNum<=4).or. (face_nodep==elem%FaceNum)) then
       icell=icell+nc
     elseif (elem%FaceNum==5) then
@@ -1136,7 +1159,7 @@ subroutine cell_search(elem, spelt, dsphere, icell, jcell,dref, alphabeta, face_
     endif
   end if   
          
-  if(number==elem%vertex%nbrs(3)) then   !south
+  if(loc == 3) then   !south
     if ((elem%FaceNum==1) .OR. (elem%FaceNum==6) .or. (face_nodep==elem%FaceNum)) then
       jcell=jcell-nc
     elseif (elem%FaceNum==2) then
@@ -1161,7 +1184,7 @@ subroutine cell_search(elem, spelt, dsphere, icell, jcell,dref, alphabeta, face_
     endif
   end if   
          
-  if(number==elem%vertex%nbrs(4)) then   !north
+  if(loc == 4) then   !north
     if ((elem%FaceNum==1) .OR. (elem%FaceNum==5) .or. (face_nodep==elem%FaceNum)) then
       jcell=nc+jcell
     elseif (elem%FaceNum==2) then
@@ -1185,8 +1208,9 @@ subroutine cell_search(elem, spelt, dsphere, icell, jcell,dref, alphabeta, face_
       dref%y=tmp
     endif
   end if   
+
   ! cases southwest, southeast, northwest, northeast on a cube corner do not exist
-  if(number==elem%vertex%nbrs(5)) then   !southwest
+  if(loc == 5) then   !southwest
     if ((face_nodep==elem%FaceNum) .or. (elem%FaceNum==1)) then
       icell=icell-nc
       jcell=jcell-nc
@@ -1253,7 +1277,7 @@ subroutine cell_search(elem, spelt, dsphere, icell, jcell,dref, alphabeta, face_
     endif
   endif   
        
-  if(number==elem%vertex%nbrs(6)) then   !southeast
+  if(loc == 6) then   !southeast
     if ((elem%FaceNum==1) .or. (face_nodep==elem%FaceNum)) then
       icell=nc+icell
       jcell=jcell-nc
@@ -1320,7 +1344,7 @@ subroutine cell_search(elem, spelt, dsphere, icell, jcell,dref, alphabeta, face_
     endif
   endif   
 
-  if(number==elem%vertex%nbrs(7)) then   !northwest
+  if(loc == 7) then   !northwest
     if ((elem%FaceNum==1) .or. (face_nodep==elem%FaceNum)) then
       icell=icell-nc
       jcell=nc+jcell
@@ -1387,7 +1411,7 @@ subroutine cell_search(elem, spelt, dsphere, icell, jcell,dref, alphabeta, face_
     endif
   end if   
        
-  if(number==elem%vertex%nbrs(8)) then   !northeast
+  if(loc == 8) then   !northeast
     if ((elem%FaceNum==1) .or. (face_nodep==elem%FaceNum)) then
       icell=nc+icell
       jcell=nc+jcell
@@ -1453,19 +1477,24 @@ subroutine cell_search(elem, spelt, dsphere, icell, jcell,dref, alphabeta, face_
       endif
     endif
   end if
-#endif      
+
+
   if ((icell<0) .or.(icell>nc+1) .or. (jcell<0) .or. (jcell>nc+1)) then
     write(*,*) '2 Something is wrong in search!'
-    write(*,*) number
+    tmp_i = elem%vertex%nbrs_ptr(9) - 1
+    write(*,*) number, elem%vertex%nbrs(1:tmp_i)
     write(*,*) icell, jcell, elem%GlobalId, elem%FaceNum, face_nodep
     stop
   endif
-!   if ((dref%x<-1.0D-12) .or.(dref%y<-1.0D-12) .or.(dref%x>dxcell+1.0D-12) .or. (dref%y>dycell+1.0D-12) ) then
-!     write(*,*) '3 Something is wrong in search!'
-!     write(*,*) number, elem%vertex%nbrs(1)%n, elem%vertex%nbrs(2)%n, elem%vertex%nbrs(3)%n, elem%vertex%nbrs(4)%n, elem%vertex%nbrs(5)%n, elem%vertex%nbrs(6)%n, elem%vertex%nbrs(7)%n, elem%vertex%nbrs(8)%n
-!     write(*,*) dref, dxcell, dycell
-!     stop
-!   endif
+  !if ((dref%x<-1.0D-12) .or.(dref%y<-1.0D-12) .or.(dref%x>dxcell+1.0D-12) .or. (dref%y>dxcell+1.0D-12) ) then
+  !  write(*,*) '3 Something is wrong in search!'
+  !   tmp_i = elem%vertex%nbrs_ptr(9) - 1
+
+  !  write(*,*) number, elem%vertex%nbrs(1:tmp_i)
+  !  write(*,*) dref
+  !  stop
+  !endif
+
 end subroutine cell_search
 
 

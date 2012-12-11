@@ -72,13 +72,12 @@ contains
 
     use fvm_control_volume_mod, only : fvm_struct
     
-#ifndef MESH
     use fvm_mod, only : fvm_init2,fvm_init3    
     use fvm_bsp_mod, only: fvm_init_tracer
-#endif
 
     use reduction_mod, only : parallelmax
-    
+    use mesh_mod, only : MeshUseMeshFile
+
     
     implicit none
 
@@ -189,13 +188,14 @@ contains
        dtnu = 2.0d0*tstep*max(nu,nu_s)/hypervis_subcycle
        call print_cfl(elem,hybrid,nets,nete,dtnu,tstep,tstep)
 
-#ifndef MESH
-        ! MNL: there are abort calls in edge_mod::ghostVpackfull that
-        !      require ne>0 / don't allow -DMESH as compile option
-        ! used by fvm:
-        call compute_ghost_corner_orientation(hybrid,elem,nets,nete)
-        call test_ghost(hybrid,elem,nets,nete)
-#endif
+       if (MeshUseMeshFile .EQV. .FALSE.) then
+          ! MNL: there are abort calls in edge_mod::ghostVpackfull that
+          !      require ne>0 / don't allow -DMESH as compile option
+          ! used by fvm:
+          !TODO: should fix these function for meshes
+          call compute_ghost_corner_orientation(hybrid,elem,nets,nete)
+          call test_ghost(hybrid,elem,nets,nete)
+       endif
     end if
 
     if(Debug) print *,'homme: point #2'
@@ -1433,7 +1433,7 @@ contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-#ifndef MESH
+
     subroutine Shal_Advec_Tracers_fvm(elem, fvm, deriv,hybrid,&
                                         dt,tl,nets,nete)
       use element_mod, only : element_t
@@ -1533,7 +1533,7 @@ contains
 
       call t_stopf('shal_advec_tracers_fvm')
     end subroutine shal_advec_tracers_fvm  
-#endif
+
 
 end module sweq_mod
 

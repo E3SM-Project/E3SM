@@ -26,9 +26,7 @@ contains
     use cube_mod, only : cubeelemcount, cubeedgecount, &
         cube_init_atomic, rotation_init_atomic, set_corner_coordinates, &
         assign_node_numbers_to_elem
-#ifndef MESH
     use cube_mod, only : cubetopology
-#endif
     ! --------------------------------
     use edge_mod, only : edgebuffer_t, initedgebuffer   
     ! --------------------------------

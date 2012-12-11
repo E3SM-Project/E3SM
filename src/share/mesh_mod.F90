@@ -12,10 +12,8 @@ module mesh_mod
 
   implicit none
   logical, public           :: MeshUseMeshFile = .false.
-    public  :: MeshOpen           ! Must be called first
+  public  :: MeshOpen           ! Must be called first
 
-#ifdef MESH
- 
   
   integer, parameter :: MXSTLN = 32
 
@@ -794,9 +792,6 @@ contains
        elem_neighbor(:) = 0
        elem_nbr_start = 0
        nbr_cnt(:) = 0
-       if (i == 291) then
-           elem_nbr_start = 0
-       endif
 
        do j=1,4  !check each of the 4 nodes at the element corners
           multiplicity = find_nodal_neighbors(element_nodes(i,j), element_nodes, node_elements)
@@ -1046,14 +1041,6 @@ contains
        GridVertex(i)%processor_number = 0
        GridVertex(i)%SpaceCurve       = 0
 
-       !do all allocations here - instead of looping through
-       !again in find_side_neighbors
-
-       ALLOCATE(GridVertex(i)%nbrs(max_size))
-       ALLOCATE(GridVertex(i)%nbrs_face(max_size))
-       ALLOCATE(GridVertex(i)%nbrs_wgt(max_size))
-       ALLOCATE(GridVertex(i)%nbrs_wgt_ghost(max_size))
-
        GridVertex(i)%nbrs(:) = 0
        GridVertex(i)%nbrs_face(:) = 0
        GridVertex(i)%nbrs_wgt(:) = 0
@@ -1064,6 +1051,7 @@ contains
        GridVertex(i)%nbrs_ptr(2) = 2
        GridVertex(i)%nbrs_ptr(3) = 3
        GridVertex(i)%nbrs_ptr(4) = 4
+       !don't know about corners yet
        GridVertex(i)%nbrs_ptr(5:num_neighbors+1) = 5
 
     end do
@@ -1195,21 +1183,6 @@ contains
     call mesh_connectivity (element_nodes)
   end subroutine test_private_methods
 
-#else
-
-contains
-
-  subroutine MeshOpen(mesh_file_name, par) 
-    use parallel_mod, only : abortmp, parallel_t
-    character (len=*), intent(in) :: mesh_file_name
-    type (parallel_t), intent(in) :: par
-
-    call abortmp('Calling mesh_mod::MeshOpen, yet the code was not compiled with the CPP macro MESH. Aborting.')
-
-  end subroutine MeshOpen
-
-!// ifdef MESH
-#endif 
 
 end module mesh_mod
 
