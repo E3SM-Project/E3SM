@@ -491,7 +491,7 @@ contains
        jj=1
        neigh_list=0
 
-#ifdef MESH
+
        do j=1,num_neighbors
           cnt = GridVertex(i)%nbrs_ptr(j+1) -  GridVertex(i)%nbrs_ptr(j) 
           start =  GridVertex(i)%nbrs_ptr(j) 
@@ -505,17 +505,6 @@ contains
              endif
           enddo
        enddo
-#else
-       do j=1,num_neighbors
-          if(GridVertex(i)%nbrs_wgt(j) .gt. 0) then 
-             adjncy(ii+jj-1)   = GridVertex(i)%nbrs(j)
-             neigh_list(jj)    = GridVertex(i)%nbrs(j)
-             adjwgt(ii+jj-1)   = GridVertex(i)%nbrs_wgt(j)*EdgeWeight
-             neigh_wgt(jj)     = GridVertex(i)%nbrs_wgt(j)*EdgeWeight
-             jj=jj+1
-          endif
-       enddo
-#endif
        if (max_neigh < jj+1) call abortmp( "number or neighbors foudn exceeds expected max error")
 
        call sort(max_neigh,neigh_list,index)

@@ -43,13 +43,19 @@ module dimensions_mod
   integer, parameter, public :: npsq = np*np
   integer, parameter, public :: nlev=PLEV
   integer, parameter, public :: nlevp=nlev+1
+
+
 #ifdef MESH
-  integer, parameter, public :: max_elements_attached_to_node = 7  ! variable resolution
+  integer, public, parameter :: max_elements_attached_to_node = 7
+  integer, public, parameter :: s_nv = 2*max_elements_attached_to_node 
 #else
-  integer, parameter, public :: max_elements_attached_to_node = 4
+  integer, public,parameter :: max_elements_attached_to_node = 4
+  integer, public, parameter :: s_nv = 6
 #endif
-  integer, parameter, public :: max_corner_elem               = max_elements_attached_to_node-3
-  integer, parameter, public :: max_neigh_edges               = 4 + 4*max_corner_elem
+
+  integer, public, parameter :: max_corner_elem               = max_elements_attached_to_node-3
+  integer, public, parameter :: max_neigh_edges               = 4 + 4*max_corner_elem
+
   public :: qsize,qsize_d,ntrac_d,ntrac
 
   integer, public :: ne
@@ -59,6 +65,26 @@ module dimensions_mod
   integer, public :: nPhysProc                          ! This is the number of physics processors/ per dynamics processor
   integer, public :: nnodes,npart,nmpi_per_node
   integer, public :: GlobalUniqueCols
+
+
+
+  public :: set_mesh_dimensions
+
+contains
+
+  subroutine set_mesh_dimensions()
+
+    !This will be used when we removed the mesh compile flag
+
+!    max_elements_attached_to_node = 7  ! variable resolution
+!    s_nv = 2*max_elements_attached_to_node 
+
+!    max_corner_elem               = max_elements_attached_to_node-3
+!    max_neigh_edges               = 4 + 4*max_corner_elem
+
+
+  end subroutine set_mesh_dimensions
+
 
 end module dimensions_mod
 

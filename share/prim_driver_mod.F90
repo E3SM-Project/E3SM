@@ -73,13 +73,10 @@ contains
     ! --------------------------------
     use mass_matrix_mod, only : mass_matrix
     ! --------------------------------
-#ifndef MESH
     use cube_mod,  only : cubeedgecount , cubeelemcount, cubetopology
     ! --------------------------------
-#else
     use mesh_mod, only : MeshSetCoordinates, MeshUseMeshFile, MeshCubeTopology, &
          MeshCubeElemCount, MeshCubeEdgeCount
-#endif 
     use cube_mod, only : cube_init_atomic, rotation_init_atomic, set_corner_coordinates, assign_node_numbers_to_elem
     ! --------------------------------
     use metagraph_mod, only : metavertex_t, metaedge_t, localelemcount, initmetagraph
@@ -169,17 +166,9 @@ contains
 #ifndef CAM
     call readnl(par)
     if (MeshUseMeshFile) then
-#ifdef MESH
        total_nelem = MeshCubeElemCount()
-#else
-       call abortmp('Input file requires compilation with CPP macro MESH, but mesh support was not built in. Aborting.')
-#endif 
     else
-#ifndef MESH       
-       total_nelem      = CubeElemCount()
-#else
-       call abortmp('Input file does not require an external mesh file, yet the standard cube topology was not built in. Aborting.')
-#endif
+       total_nelem = CubeElemCount()
     end if
 
     approx_elements_per_task = dble(total_nelem)/dble(par%nprocs)
@@ -238,39 +227,23 @@ contains
        end if
 
        if (MeshUseMeshFile) then
-#ifdef MESH
            nelem = MeshCubeElemCount()
            nelem_edge = MeshCubeEdgeCount()
-#else
-           call abortmp('Input file requires compilation with CPP macro MESH, but mesh support was not built in. Aborting.')
-#endif
        else
-#ifndef MESH
            nelem      = CubeElemCount()
            nelem_edge = CubeEdgeCount()
-#else
-           call abortmp('Input file does not require an external mesh file, yet the standard cube topology was not built in. Aborting.')
-#endif
        end if
 
        allocate(GridVertex(nelem))
        allocate(GridEdge(nelem_edge))
 
        if (MeshUseMeshFile) then
-#ifdef MESH
            if (par%masterproc) then
                write(iulog,*) "Set up grid vertex from mesh..."
            end if
            call MeshCubeTopology(GridEdge, GridVertex)
-#else
-           call abortmp('Input file requires compilation with CPP macro MESH, but mesh support was not built in. Aborting.')
-#endif 
        else
-#ifndef MESH
            call CubeTopology(GridEdge,GridVertex)
-#else
-           call abortmp('Input file does not require an external mesh file, yet the standard cube topology was not built in. Aborting.')
-#endif
         end if
        
        if(par%masterproc)       write(iulog,*)"...done."
@@ -393,12 +366,7 @@ contains
     if (topology=="cube") then
        if(par%masterproc) write(iulog,*) "initializing cube elements..."
        if (MeshUseMeshFile) then
-#ifdef MESH
            call MeshSetCoordinates(elem)
-#else
-           print *, 'Input file requires MESH but mesh support was not built in'
-           call abortmp('You get what you deserve')
-#endif
        else
            do ie=1,nelemd
                call set_corner_coordinates(elem(ie))

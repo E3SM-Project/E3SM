@@ -20,10 +20,8 @@ module fvm_control_volume_mod
   use dimensions_mod, only: nc, nhc, nhe, nlev, ntrac, ntrac_d, ne, np
   ! ---------------------------------------------------------------------------------
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
-#ifndef MESH
   ! ---------------------------------------------------------------------------------
   use cube_mod, only     : cube_xstart, cube_xend, cube_ystart, cube_yend
-#endif
 
   use parallel_mod, only : abortmp
   
@@ -117,24 +115,24 @@ subroutine fvm_mesh_ari(elem, fvm, tl)
   
   integer                              :: i,j
   logical                              :: corner
+  integer                              :: mynbr_cnt, cnt, mystart, start
 
   fvm%faceno=elem%FaceNum
   ! write the neighbors in the structure
   fvm%cubeboundary=0
   corner=.FALSE.
 
-! Jose Garcia: This code does not work with MESH
-! yet we allow it so MESH and fvm can be compiled 
-! in the same executable. Some execution paths that
-! do not call this routine will work fine.
-#ifndef MESH
+
   do j=1,8
-    if (elem%vertex%nbrs_used(j)) then
-      fvm%nbrsface(j)=elem%vertex%nbrs_face(j)
-      ! note that if the element lies on a corner, it will be at j=5,6,7,8
-      if ((fvm%nbrsface(j) /= fvm%faceno) .AND. (j<5)) then
-        fvm%cubeboundary=j
-      endif
+     mynbr_cnt = elem%vertex%nbrs_ptr(j+1) - elem%vertex%nbrs_ptr(j) !length of neighbor location  
+     mystart = elem%vertex%nbrs_ptr(i) 
+     !NOTE: assuming that we do not have multiple corner neighbors (so not a refined mesh)
+     if (mynbr_cnt > 0 ) then
+        fvm%nbrsface(j)=elem%vertex%nbrs_face(mystart)
+        ! note that if the element lies on a corner, it will be at j=5,6,7,8
+        if ((fvm%nbrsface(j) /= fvm%faceno) .AND. (j<5)) then
+           fvm%cubeboundary=j
+        endif
     else   ! corner on the cube
       if (.NOT. corner) then
         fvm%nbrsface(j)=-1
@@ -146,7 +144,7 @@ subroutine fvm_mesh_ari(elem, fvm, tl)
       endif
     end if
   end do
-#endif
+
 
   call create_ari(elem,fvm)
   call create_interpolation_points(elem,fvm)
@@ -873,13 +871,8 @@ subroutine create_interpolation_points(elem,fvm)
   integer                                       :: i, halo, ida, ide, iref1, iref2
   type (cartesian2D_t)                          :: tmpgnom     
 
-! Jose Garcia
-! creating an empty routine when MESH is defined.
-! We allow this so both MESH and fvm can be compiled together
-! because some executions paths that do not use this routine are 
-! important.
 
-#ifndef MESH  
+
   ! element is not on a corner, but shares a cube edge (call of subroutine)
   if(fvm%cubeboundary <= 4) then
     gnomxstart(1-nhc)=elem%corners(1)%x-(nhc-0.5)*fvm%dalpha
@@ -1286,10 +1279,6 @@ subroutine create_interpolation_points(elem,fvm)
          end select
   endif
 
-#endif 
-!  ^
-!  |
-! endif for ifndef MESH
 
 end subroutine create_interpolation_points
 !END SUBROUTINE CREATE_INTERPOLATION_POINTS-------------------------------CE-for FVM!
