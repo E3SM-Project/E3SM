@@ -100,6 +100,7 @@ if ( $ne == 8 ) then
    set tstep = 360        # dynamics timestep
    set nu = 2e16
    set nu_q = 2e16
+   set nu_p = $nu_q
    set resolution = low
 
 endif
