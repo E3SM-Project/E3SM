@@ -2228,13 +2228,8 @@ contains
     rhs_multiplier = 2
     call euler_step( np1_qdp , np1_qdp , dt/2 , elem , hvcoord , hybrid , deriv , nets , nete , DSSomega       , rhs_multiplier )
 
-    ! to finish the 2D advection step, we need to average the t and t+2 results
-    ! to get a second order estimate for t+1.  
-    do ie=nets,nete
-      elem(ie)%state%Qdp(:,:,:,1:qsize,np1_qdp) =               &
-                   ( elem(ie)%state%Qdp(:,:,:,1:qsize,n0_qdp) + &
-                     (rkstage-1)*elem(ie)%state%Qdp(:,:,:,1:qsize,np1_qdp) ) / rkstage
-    enddo
+    !to finish the 2D advection step, we need to average the t and t+2 results to get a second order estimate for t+1.  
+    call qdp_time_avg( elem , rkstage , n0_qdp , np1_qdp , nets , nete )
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !  Dissipation
@@ -2250,6 +2245,25 @@ contains
 
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
+
+  subroutine qdp_time_avg( elem , rkstage , n0_qdp , np1_qdp , nets , nete )
+#ifdef _ACCEL
+    use cuda_mod, only: qdp_time_avg_cuda
+#endif
+    implicit none
+    type(element_t), intent(inout) :: elem(:)
+    integer        , intent(in   ) :: rkstage , n0_qdp , np1_qdp , nets , nete
+    integer :: ie
+#ifdef _ACCEL
+    call qdp_time_avg_cuda( elem , rkstage , n0_qdp , np1_qdp , nets , nete )
+    return
+#endif
+    do ie=nets,nete
+      elem(ie)%state%Qdp(:,:,:,1:qsize,np1_qdp) =               &
+                   ( elem(ie)%state%Qdp(:,:,:,1:qsize,n0_qdp) + &
+                     (rkstage-1)*elem(ie)%state%Qdp(:,:,:,1:qsize,np1_qdp) ) / rkstage
+    enddo
+  end subroutine qdp_time_avg
 
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
