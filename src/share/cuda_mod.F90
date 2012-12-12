@@ -35,6 +35,9 @@ module cuda_mod
   !First listed are all externally accescible routines
   public :: cuda_mod_init
   public :: euler_step_cuda 
+  public :: qdp_time_avg_cuda
+  public :: copy_qdp_d2h
+  public :: copy_qdp_h2d
 
   !This is from prim_advection_mod.F90
   type(EdgeBuffer_t) :: edgeAdv, edgeAdvQ3, edgeAdvQ2, edgeAdvDSS
@@ -401,6 +404,44 @@ contains
 
 
 
+  subroutine copy_qdp_h2d( elem , nt )
+    use element_mod, only: element_t
+    implicit none
+    type(element_t), intent(in   ) :: elem(:)
+    integer        , intent(in   ) :: nt
+    integer :: ierr , ie
+!$OMP BARRIER
+!$OMP MASTER
+    ierr = cudaThreadSynchronize()
+    do ie = 1,nelemd
+      ierr = cudaMemcpy( qdp_d(1,1,1,1,nt,ie) , elem(ie)%state%qdp(1,1,1,1,nt) , size(elem(ie)%state%qdp(:,:,:,:,nt)) , cudaMemcpyHostToDevice )
+    enddo
+    ierr = cudaThreadSynchronize()
+!$OMP END MASTER
+!$OMP BARRIER
+  end subroutine copy_qdp_h2d
+
+
+
+  subroutine copy_qdp_d2h( elem , nt )
+    use element_mod, only: element_t
+    implicit none
+    type(element_t), intent(in   ) :: elem(:)
+    integer        , intent(in   ) :: nt
+    integer :: ierr , ie
+!$OMP BARRIER
+!$OMP MASTER
+    ierr = cudaThreadSynchronize()
+    do ie = 1,nelemd
+      ierr = cudaMemcpy( elem(ie)%state%qdp(1,1,1,1,nt) , qdp_d(1,1,1,1,nt,ie) , size(elem(ie)%state%qdp(:,:,:,:,nt)) , cudaMemcpyDeviceToHost )
+    enddo
+    ierr = cudaThreadSynchronize()
+!$OMP END MASTER
+!$OMP BARRIER
+  end subroutine copy_qdp_d2h
+
+
+
   subroutine euler_step_cuda( np1_qdp , n0_qdp , dt , elem , hvcoord , hybrid , deriv , nets , nete , DSSopt , rhs_multiplier )
   use kinds             , only: real_kind
   use dimensions_mod    , only: np, npdg, nlev, qsize
@@ -440,16 +481,9 @@ contains
 
   call t_startf('euler_step')
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!$OMP BARRIER
-!$OMP MASTER
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  do ie = 1,nelemd
-    ierr = cudaMemcpy( qdp_d(1,1,1,1,n0_qdp,ie) , elem(ie)%state%qdp(1,1,1,1,n0_qdp) , size(elem(ie)%state%qdp(:,:,:,:,n0_qdp)) , cudaMemcpyHostToDevice )
-  enddo
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!$OMP END MASTER
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  if (rhs_multiplier == 0) then
+    call copy_qdp_h2d( elem , n0_qdp)
+  endif
 
   do ie = nets , nete
     divdp_h            (:,:,:,ie) = elem(ie)%derived%divdp
@@ -463,6 +497,7 @@ contains
   ierr = cudaMemcpyAsync( psdiss_biharmonic_d , psdiss_biharmonic_h , size( psdiss_biharmonic_h ) , cudaMemcpyHostToDevice , streams(1) )
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !$OMP END MASTER
+!$OMP BARRIER
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !This is a departure from the original order, adding an extra MPI communication. It's advantageous because it simplifies
@@ -526,6 +561,7 @@ contains
       ierr = cudaMemcpyAsync( qmax_d , qmax , size( qmax ) , cudaMemcpyHostToDevice , streams(3) )
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !$OMP END MASTER
+!$OMP BARRIER
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     endif
 
@@ -548,6 +584,7 @@ contains
       ierr = cudaMemcpyAsync( qmax_d , qmax , size( qmax ) , cudaMemcpyHostToDevice , streams(3) )
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !$OMP END MASTER
+!$OMP BARRIER
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     endif
 
@@ -594,6 +631,7 @@ contains
       ierr = cudaMemcpyAsync( qmax_d , qmax , size( qmax ) , cudaMemcpyHostToDevice , streams(3) )
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !$OMP END MASTER
+!$OMP BARRIER
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       do ie = nets , nete
         do k = 1 , nlev    !  Loop inversion (AAM)
@@ -614,6 +652,7 @@ contains
   ierr = cudaMemcpyAsync( qtens_biharmonic_d  , qtens_biharmonic    , size( qtens_biharmonic    ) , cudaMemcpyHostToDevice , streams(4) )
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !$OMP END MASTER
+!$OMP BARRIER
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   !   2D Advection step
@@ -649,18 +688,56 @@ contains
   blockdim = dim3( np*np   , nlev   , 1 )
   griddim  = dim3( qsize_d , nelemd , 1 )
   call euler_hypervis_kernel_last<<<griddim,blockdim>>>( qdp_d , rspheremp_d , 1 , nelemd , np1_qdp )
+  ierr = cudaThreadSynchronize()
 
-  ierr = cudaThreadSynchronize()
-  do ie = 1,nelemd
-    ierr = cudaMemcpy( elem(ie)%state%qdp(1,1,1,1,np1_qdp) , qdp_d(1,1,1,1,np1_qdp,ie) , size(elem(ie)%state%qdp(:,:,:,:,np1_qdp)) , cudaMemcpyDeviceToHost )
-  enddo
-  ierr = cudaThreadSynchronize()
 !$OMP END MASTER
 !$OMP BARRIER
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  if (rhs_multiplier < 2) then
+    call copy_qdp_d2h( elem , np1_qdp)
+  endif
+
   call t_stopf('euler_step')
 end subroutine euler_step_cuda
+
+
+
+subroutine qdp_time_avg_cuda( elem , rkstage , n0_qdp , np1_qdp , nets , nete )
+  use element_mod, only: element_t
+  implicit none
+  type(element_t), intent(inout) :: elem(:)
+  integer        , intent(in   ) :: rkstage , n0_qdp , np1_qdp , nets , nete
+  type(dim3) :: griddim , blockdim
+  integer :: ierr, ie
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!$OMP BARRIER
+!$OMP MASTER
+  ierr = cudaThreadSynchronize()
+  blockdim = dim3( np      , np     , nlev )
+  griddim  = dim3( qsize_d , nelemd , 1    )
+  call qdp_time_avg_kernel<<<griddim,blockdim>>>( qdp_d , rkstage , n0_qdp , np1_qdp , 1 , nelemd )
+  ierr = cudaThreadSynchronize()
+!$OMP END MASTER
+!$OMP BARRIER
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  call copy_qdp_d2h( elem , np1_qdp)
+end subroutine qdp_time_avg_cuda
+
+
+
+attributes(global) subroutine qdp_time_avg_kernel( qdp , rkstage , n0_qdp , np1_qdp , nets , nete )
+  implicit none
+  real(kind=real_kind), intent(inout) :: qdp( np , np , nlev , qsize_d , timelevels , nets:nete )
+  integer, value      , intent(in   ) :: rkstage , n0_qdp , np1_qdp , nets , nete
+  integer :: i, j, k, q, ie
+  i  = threadidx%x
+  j  = threadidx%y
+  k  = threadidx%z
+  q  = blockidx%x
+  ie = blockidx%y
+  qdp(i,j,k,q,np1_qdp,ie) = ( qdp(i,j,k,q,n0_qdp,ie) + (rkstage-1) * qdp(i,j,k,q,np1_qdp,ie) ) / rkstage
+end subroutine qdp_time_avg_kernel
 
 
 
