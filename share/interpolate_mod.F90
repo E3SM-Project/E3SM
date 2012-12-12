@@ -482,7 +482,7 @@ end subroutine interpol_phys_latlon
 
 ! ----------------------------------------------------------------------------------!
 !FUNCTION   interpol_spelt_latlon---------------------------------------CE-for spelt!
-! AUTHOR: CHRISTOPH ERATH, 24. August 2012                                             !
+! AUTHOR: CHRISTOPH ERATH, 24. August 2012                                          !
 ! DESCRIPTION: evaluation of the reconstruction for every spelt grid cell         !
 !                                                                                   !
 ! CALLS: 
