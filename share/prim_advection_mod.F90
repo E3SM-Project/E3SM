@@ -1935,7 +1935,7 @@ contains
     use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
     use spelt_mod, only : spelt_run, spelt_runair, edgeveloc, spelt_mcgregordss
     use derivative_mod, only : interpolate_gll2spelt_points
-    use vertremap_mod, only: remap_UV_ref2lagrange  ! _EXTERNAL (actually INTERNAL)
+    use vertremap_mod, only: remap1_nofilter, remap_UV_ref2lagrange  ! _EXTERNAL (actually INTERNAL)
     
     implicit none
     type (element_t), intent(inout)   :: elem(:)
@@ -1949,7 +1949,7 @@ contains
     integer,intent(in)                :: nets,nete
 
     real (kind=real_kind), dimension(np,np,nlev)    :: dp_star
-    real (kind=real_kind), dimension(np,np,nlev)    :: dp_np1
+    real (kind=real_kind), dimension(np,np,nlev)    :: dp
    
     integer :: np1,ie,k, i, j
     
@@ -1985,7 +1985,14 @@ contains
           
           ! elem%state%u(np1)  = velocity at time t+1 on reference levels
           ! elem%derived%vstar = velocity at t+1 on floating levels (computed below) using eta_dot_dpdn
-          call remap_UV_ref2lagrange(np1,dt,elem,hvcoord,ie)
+!           call remap_UV_ref2lagrange(np1,dt,elem,hvcoord,ie)
+          do k=1,nlev
+             dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+             dp_star(:,:,k) = dp(:,:,k) + dt*(elem(ie)%derived%eta_dot_dpdn(:,:,k+1) -&
+                  elem(ie)%derived%eta_dot_dpdn(:,:,k)) 
+          enddo
+          elem(ie)%derived%vstar=elem(ie)%state%v(:,:,:,:,np1)
+          call remap1_nofilter(elem(ie)%derived%vstar,np,1,dp,dp_star)
        end do
     else
        ! for rsplit>0:  dynamics is also vertically lagrangian, so we do not need to
@@ -2039,7 +2046,7 @@ contains
   subroutine Prim_Advec_Tracers_fvm(elem, fvm, deriv,hvcoord,hybrid,&
         dt,tl,nets,nete)
     use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
-    use vertremap_mod, only: remap_UV_ref2lagrange  ! _EXTERNAL (actually INTERNAL)
+    use vertremap_mod, only: remap1_nofilter, remap_UV_ref2lagrange  ! _EXTERNAL (actually INTERNAL)
 !    use fvm_mod, only : cslam_run, cslam_runairdensity, edgeveloc, fvm_mcgregor, fvm_mcgregordss
     use fvm_mod, only : cslam_runairdensity, edgeveloc, fvm_mcgregor, fvm_mcgregordss, fvm_rkdss
     
@@ -2056,7 +2063,7 @@ contains
 
 
     real (kind=real_kind), dimension(np,np,nlev)    :: dp_star
-    real (kind=real_kind), dimension(np,np,nlev)    :: dp_np1
+    real (kind=real_kind), dimension(np,np,nlev)    :: dp
    
     integer :: np1,ie,k
     
@@ -2091,7 +2098,14 @@ contains
           !        elem(ie)%derived%eta_dot_dpdn(:,:,:)=0
           ! elem%state%u(np1)  = velocity at time t+1 on reference levels
           ! elem%derived%vstar = velocity at t+1 on floating levels (computed below)
-          call remap_UV_ref2lagrange(np1,dt,elem,hvcoord,ie)
+!           call remap_UV_ref2lagrange(np1,dt,elem,hvcoord,ie)
+          do k=1,nlev
+             dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+             dp_star(:,:,k) = dp(:,:,k) + dt*(elem(ie)%derived%eta_dot_dpdn(:,:,k+1) -&
+                  elem(ie)%derived%eta_dot_dpdn(:,:,k)) 
+          enddo
+          elem(ie)%derived%vstar=elem(ie)%state%v(:,:,:,:,np1)
+          call remap1_nofilter(elem(ie)%derived%vstar,np,1,dp,dp_star)
        end do
     else
        ! for rsplit>0:  dynamics is also vertically lagrangian, so we do not need to
@@ -2106,46 +2120,7 @@ contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !------------------------------------------------------------------------------------    
     call t_startf('fvm_depalg')
-    ! using McGregor AMS 1993 scheme: Economical Determination of Departure Points for
-    ! Semi-Lagrangian Models 
-!     do ie=nets,nete
-!       do k=1,nlev
-!         vstar=elem(ie)%derived%vstar(:,:,:,k) 
-!         vhat=(fvm(ie)%vn0(:,:,:,k) + elem(ie)%derived%vstar(:,:,:,k))/2
-!         ! calculate high order approximation
-!         call fvm_mcgregor(elem(ie), deriv, dt, vhat, vstar,1)
-!         ! apply DSS to make vstar C0
-!         elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%spheremp(:,:)*vstar(:,:,1) 
-!         elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%spheremp(:,:)*vstar(:,:,2) 
-!       enddo 
-!       call edgeVpack(edgeveloc,elem(ie)%derived%vstar(:,:,1,:),nlev,0,elem(ie)%desc)
-!       call edgeVpack(edgeveloc,elem(ie)%derived%vstar(:,:,2,:),nlev,nlev,elem(ie)%desc)
-!     enddo 
-!     call bndry_exchangeV(hybrid,edgeveloc)
-!     do ie=nets,nete
-!        call edgeVunpack(edgeveloc,elem(ie)%derived%vstar(:,:,1,:),nlev,0,elem(ie)%desc)
-!        call edgeVunpack(edgeveloc,elem(ie)%derived%vstar(:,:,2,:),nlev,nlev,elem(ie)%desc)
-!        do k=1, nlev  
-!          elem(ie)%derived%vstar(:,:,1,k)=elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%rspheremp(:,:)
-!          elem(ie)%derived%vstar(:,:,2,k)=elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%rspheremp(:,:)
-!        end do
-!     end do
-!     do ie=nets,nete
-!       do k=1,nlev
-!          ! Convert wind to lat-lon
-!         v1     = fvm(ie)%vn0(:,:,1,k)  ! contra
-!         v2     = fvm(ie)%vn0(:,:,2,k)  ! contra 
-!         fvm(ie)%vn0(:,:,1,k)=elem(ie)%D(1,1,:,:)*v1 + elem(ie)%D(1,2,:,:)*v2   ! contra->latlon
-!         fvm(ie)%vn0(:,:,2,k)=elem(ie)%D(2,1,:,:)*v1 + elem(ie)%D(2,2,:,:)*v2   ! contra->latlon
-!     
-! !          ! Convert wind to lat-lon
-! !         v1     = elem(ie)%derived%vstar(:,:,1,k)  ! contra
-! !         v2     = elem(ie)%derived%vstar(:,:,2,k)   ! contra 
-! !         elem(ie)%derived%vstar(:,:,1,k)=elem(ie)%D(1,1,:,:)*v1 + elem(ie)%D(1,2,:,:)*v2   ! contra->latlon
-! !         elem(ie)%derived%vstar(:,:,2,k)=elem(ie)%D(2,1,:,:)*v1 + elem(ie)%D(2,2,:,:)*v2   ! contra->latlon
-!     
-!       enddo  
-!     end do
+
 !     call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, dt, 3)
     call fvm_rkdss(elem,fvm,nets,nete, hybrid, deriv, dt, 3)
     call t_stopf('fvm_depalg')
