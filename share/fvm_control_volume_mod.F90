@@ -125,7 +125,7 @@ subroutine fvm_mesh_ari(elem, fvm, tl)
 
   do j=1,8
      mynbr_cnt = elem%vertex%nbrs_ptr(j+1) - elem%vertex%nbrs_ptr(j) !length of neighbor location  
-     mystart = elem%vertex%nbrs_ptr(i) 
+     mystart = elem%vertex%nbrs_ptr(j) 
      !NOTE: assuming that we do not have multiple corner neighbors (so not a refined mesh)
      if (mynbr_cnt > 0 ) then
         fvm%nbrsface(j)=elem%vertex%nbrs_face(mystart)
