@@ -53,10 +53,9 @@ module spelt_mod
     real (kind=real_kind)    :: Dinv(2,2,np,np)     ! Map vector field on the sphere to covariant v on cube
     real (kind=real_kind)    :: Ainv(2,2,nep,nep)
     
-
   end type spelt_struct
   
-  public :: cellghostbuf, edgeveloc, spelt_init1,spelt_init2, spelt_init3, spelt_mcgregordss, spelt_grid_init
+  public :: cellghostbuf, edgeveloc, spelt_init1,spelt_init2, spelt_init3, spelt_mcgregordss,spelt_rkdss, spelt_grid_init
   public :: spelt_run, spelt_runair
   public :: cip_coeff, cip_interpolate, metric_term, cell_search, qmsl_cell_filter, cell_minmax, cip_cell_avr
   public :: spelt_runlimit
@@ -562,7 +561,7 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   do ie=nets,nete 
     do k=1, nlev
 !       call solidbody_all(spelt(ie), dsphere1,dsphere2,k) 
-!       call boomerang_all(spelt(ie), dsphere1,k,tl%nstep,0.5D0)
+!       call boomerang_all(spelt(ie), dsphere1,dsphere2,k,tl%nstep)
       
       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)
@@ -590,6 +589,7 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
         end do
       end do
       ! search of both point on the trajectory done
+      call t_startf('SPELT ntrac') 
       do itr=1,ntrac
         do j=1-nhe,nc+nhe
           do i=1-nhe,nc+nhe
@@ -606,12 +606,12 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
             slval(1)=spelt(ie)%c(i,j,k,itr,tl%n0)
  
             tmp=cip_interpolate(cf(:,:,icell1(i,j),jcell1(i,j)),dref1(i,j)%x,dref1(i,j)%y) 
-            tmp=qmsl_cell_filter(icell1(i,j),jcell1(i,j),minmax,tmp)
+!             tmp=qmsl_cell_filter(icell1(i,j),jcell1(i,j),minmax,tmp)
             slval(2)=(sga/sg1(i,j))*tmp
 
             tmp=cip_interpolate(cf(:,:,icell2(i,j),jcell2(i,j)),dref2(i,j)%x,dref2(i,j)%y) 
             
-            tmp=qmsl_cell_filter(icell2(i,j),jcell2(i,j),minmax,tmp)
+!             tmp=qmsl_cell_filter(icell2(i,j),jcell2(i,j),minmax,tmp)
             slval(3)=(sga/sg2(i,j))*tmp
  
             spelt(ie)%c(i,j,k,itr,tl%np1)=(sga/sg2(i,j))*tmp
@@ -646,6 +646,8 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
           end do
         end do 
       end do
+      call t_stopf('SPELT ntrac') 
+      
     end do
     call ghostVpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tl%np1, timelevels,elem(ie)%desc)
   end do
@@ -661,6 +663,154 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   end do
   call t_stopf('SPELT Unpacking')
 end subroutine spelt_run
+
+
+subroutine boomerang_all(spelt, dsphere1,dsphere2,k,nstep)
+  use kinds, only : real_kind
+  use time_mod, only : tstep, nmax, ndays,Time_at
+  use physical_constants, only : DD_PI, rearth
+  use coordinate_systems_mod, only : spherical_polar_t
+
+  implicit none
+  type (spelt_struct), intent(inout)          :: spelt
+  type (spherical_polar_t),intent(out)        :: dsphere1(nep,nep),dsphere2(nep,nep)
+  integer, intent(in)                         :: k
+  integer, intent(in)                         :: nstep
+  
+  integer                     :: iorder, i,j,itr, iteration
+  real (kind=real_kind)       :: slat, clat, slon, clon, xg, yg, zg, ca, sa, co, so, &
+                                 slon2,clon2,slonh,clonh
+  real (kind=real_kind)       :: tmp_time,tstart,lon,lat,tmp_dt,tmp_lm,tmp_th, ck, tt, omega
+  real (kind=real_kind)       :: dplm,dpth,trm1,trm2,sslm,cwt,swt
+  real (kind=real_kind)       :: dt2,dt3,dt4,dtt,udc,uexact, vexact, u,v
+  
+  integer                     :: nmaxaround
+  
+  iteration=10   ! has to be an even number here
+  iorder=5
+  
+  nmaxaround=12*nmax/ndays          ! in 12 days around the earth
+!   tmp_time=(nstep)*5.0D0/nmaxaround
+!   tmp_dt = 5.0D0/nmaxaround/iteration
+  tstart=(nstep+1)*5.0D0/(nmax)
+  tmp_dt = 5.0D0/(nmax)/iteration
+  dt2 = tmp_dt*tmp_dt/2.0D0
+  dt3 = dt2*tmp_dt/3.0D0
+  dt4 = dt3*tmp_dt/4.0D0
+  tt = 5.0D0  !total time
+  ck = 10.0D0/tt
+  omega = DD_PI/tt
+  
+  do j=1,nep
+    do i=1,nep 
+      tmp_time=tstart
+      tmp_lm = spelt%asphere(i,j)%lon
+      tmp_th = spelt%asphere(i,j)%lat
+      do itr=1,iteration
+        if (itr>1) then
+          tmp_time=tmp_time-tmp_dt
+        end if 
+     
+        cwt = cos(omega*tmp_time)
+        swt = sin(omega*tmp_time)
+
+        lon   = tmp_lm
+        lat   = tmp_th
+        slat  = sin(lat)
+        clat  = cos(lat)
+    
+        slon  = sin(lon-tmp_time*2*DD_PI/tt)!solid-body rotation added
+        slon2 = sin(2*(lon-tmp_time*2*DD_PI/tt))!solid-body rotation added
+        clon  = cos(lon-tmp_time*2*DD_PI/tt)!solid-body rotation added
+        clon2 = cos(2*(lon-tmp_time*2*DD_PI/tt))!solid-body rotation added
+        sslm  = (sin(0.5*(lon-tmp_time*2*DD_PI/tt)))**2
+
+        uexact =  ck*slon*slon*sin(2*lat)*cos(tmp_time*omega) + clat*2*DD_PI/(tt)
+        vexact =  ck*slon2*clat*cos(tmp_time*omega)
+        udc    =  2*ck*slon*slon*slat*cos(tmp_time*omega) + 2*DD_PI/tt
+        ! 2nd-order
+        tmp_lm = lon - tmp_dt * udc 
+    
+        ! 3rd-order
+        if (iorder>2) then
+             tmp_lm = tmp_lm - 2 * dt2 * slon * (slon * swt * omega * slat - 2 * udc * cwt * clon * slat&
+             - vexact * slon * cwt * clat) * ck 
+        endif
+        ! 4th-order
+        if (iorder>3) then
+             tmp_lm = tmp_lm - dt3 * (-4 * slon * swt * (2 * udc * clon * slat + vexact * slon * clat) * &
+             ck * omega + 2 * cwt * (-omega ** 2 * slat + omega ** 2 * slat * clon ** 2 &
+             + 4 * udc ** 2 * clon ** 2 * slat - 2 * udc ** 2 * slat + 4 * udc * vexact * &
+             slon * clat * clon - vexact ** 2 * slat + vexact ** 2 * slat * clon ** 2) * ck)
+        endif
+        !
+        ! 5th-order
+        !
+        if (iorder>4) then
+             tmp_lm = tmp_lm + dt4 * (-2 * swt * (-slat * omega ** 2 + omega ** 2 * slat * clon ** 2 + &
+             12 * udc ** 2 * clon ** 2 * slat - 6 * udc ** 2 * slat + 12 * udc * vexact * &
+             slon * clon * clat - 3 * vexact ** 2 * slat + 3 * vexact ** 2 * slat * clon ** 2) &
+             * ck * omega - 2 * cwt * (vexact ** 3 * clat - 3 * vexact * omega ** 2 * clat * &
+             clon ** 2 - vexact ** 3 * clat * clon ** 2 - 8 * udc ** 2 * vexact * clon ** 2 * clat &
+             + 6 * udc * vexact ** 2 * slat * slon * clon + 3 * vexact * omega ** 2 * clat + 6 * &
+             udc ** 2 * vexact * clat + 8 * udc ** 3 * slon * clon * slat + 6 * udc * slon * &
+             omega ** 2 * clon * slat) * ck)
+        endif
+        ! 2nd-order
+        tmp_th = lat - tmp_dt * vexact 
+        ! 3rd-order
+        if (iorder>2) then
+             tmp_th = tmp_th &
+    !- 2 * dt2 * ck * (clat * swt * omega * slon * clon - 2 * udc * clat * cwt * &
+    !             clon ** 2 + udc * clat * cwt + vexact * slat * cwt * slon * clon)
+             + dt2 * (-ck * slon2 * clat * swt * omega + 2 * udc * ck * clon2 *&
+             clat * cwt - vexact * ck * slon2 * slat * cwt) 
+        endif
+        ! 4th-order
+        if (iorder>3) then    
+            tmp_th = tmp_th - dt3 * (-4 * omega * ck * swt * (2 * udc * clat * clon ** 2 &
+             - udc * clat - vexact * slat * slon * clon) - 2 * ck * cwt * (clat * omega ** 2 * &
+             slon * clon + 4 * udc ** 2 * slon * clat * clon + 12 * udc * vexact * slat &
+             * clon ** 2 - 2 * udc * vexact * slat + vexact ** 2 * slon * clat * clon))
+        endif
+        ! 5th-order
+        if (iorder>4) then
+          tmp_th = tmp_th + dt4 * (2 * omega * ck * swt * (clat * omega ** 2 * slon * clon - 6 * &
+          udc * vexact * slat + 12 * udc ** 2 * slon * clon * clat + 12 * udc * vexact * &
+          slat * clon ** 2 + 3 * vexact ** 2 * slon * clon * clat) - 2 * ck * cwt * &
+          (-vexact ** 3 * slat * slon * clon - 3 * udc * clat * omega ** 2 + 6 * udc * clat &
+          * omega ** 2 * clon ** 2 - 3 * vexact * slat * omega ** 2 * slon * clon + 6 * &
+          udc ** 3 * clat * clon ** 2 - 12 * udc ** 2 * vexact * slat * slon * clon + 6 * &
+          udc * vexact ** 2 * clon ** 2 * clat - 4 * udc * vexact ** 2 * clat - 4 * &
+          udc ** 3 * clat))
+        endif
+        ! need value half of the way
+        if(itr==5) then
+          dsphere1(i,j)%lon=tmp_lm
+          dsphere1(i,j)%lat=tmp_th
+          dsphere1(i,j)%r=spelt%asphere(i,j)%r
+        endif
+        if(itr==1) then
+          u=uexact /( 12*3600*24/5)
+          v=vexact /( 12*3600*24/5)
+          spelt%contrau(i,j,k)=spelt%Ainv(1,1,i,j)*u+spelt%Ainv(2,1,i,j)*v      
+          spelt%contrav(i,j,k)=spelt%Ainv(1,2,i,j)*u+spelt%Ainv(2,2,i,j)*v
+        endif
+      end do
+      dsphere2(i,j)%lon=tmp_lm
+      dsphere2(i,j)%lat=tmp_th
+      dsphere2(i,j)%r=spelt%asphere(i,j)%r
+
+!       u = u0*(cos(alpha)*cos(lat)+sin(alpha)*cos(lon)*sin(lat))
+!       v = -u0*sin(alpha)*sin(lon)
+!       ! transform to contravariant (alpha/beta velocities)
+!       spelt%contrau(i,j,k)=spelt%Ainv(1,1,i,j)*u+spelt%Ainv(2,1,i,j)*v      
+!       spelt%contrav(i,j,k)=spelt%Ainv(1,2,i,j)*u+spelt%Ainv(2,2,i,j)*v
+    enddo
+  enddo
+end subroutine boomerang_all
+
+
 
 ! initialize global buffers shared by all threads
 subroutine spelt_init1(par)
@@ -746,21 +896,21 @@ subroutine spelt_init3(elem,spelt,hybrid,nets,nete,tnp0)
   end do
 
 ! initialize test example
-  do ie=nets,nete  
-    do k=1, nlev
-      do itr=1,ntrac
-        do j=1-nhe,nc+nhe
-          do i=1-nhe,nc+nhe
-            icell=1+(i-1)*nipm
-            jcell=1+(j-1)*nipm
-            ff=spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,k,itr,tnp0)
-            ff(2,2)=cip_cell_avr(ff) 
-            spelt(ie)%c(icell+1,jcell+1,k,itr,tnp0)=ff(2,2)
-          enddo
-        enddo
-      enddo
-    enddo
-  enddo
+!   do ie=nets,nete  
+!     do k=1, nlev
+!       do itr=1,ntrac
+!         do j=1-nhe,nc+nhe
+!           do i=1-nhe,nc+nhe
+!             icell=1+(i-1)*nipm
+!             jcell=1+(j-1)*nipm
+!             ff=spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,k,itr,tnp0)
+!             ff(2,2)=cip_cell_avr(ff) 
+!             spelt(ie)%c(icell+1,jcell+1,k,itr,tnp0)=ff(2,2)
+!           enddo
+!         enddo
+!       enddo
+!     enddo
+!   enddo
   
   call initghostbuffer(buf,1,1,nipm,nep)
   do ie=nets,nete
@@ -811,20 +961,20 @@ subroutine spelt_grid_init(elem,spelt,nets,nete,tl)
   
   do ie=nets,nete
     ! for the np grid
-    if (np .ne. nc+1) then
-      call haltmp("PARAMTER ERROR for SPELT, you are in gll grid point mode, use np = nc+1")
-    endif
-    gp=gausslobatto(np)
-    spelt(ie)%pref=gp%points
+!     if (np .ne. nc+1) then
+!       call haltmp("PARAMTER ERROR for SPELT, you are in gll grid point mode, use np = nc+1")
+!     endif
+!     gp=gausslobatto(np)
+!     spelt(ie)%pref=gp%points
     ! for the nc grid
-!     dx=2.0D0/(nc)   ! equi-distant grid on reference element in both directions!
-!     do j=1,nc+1
-!       spelt(ie)%pref(j)=-1+(j-1)*dx
-!     end do
+    dx=2.0D0/(nc)   ! equi-distant grid on reference element in both directions!
+    do j=1,nc+1
+      spelt(ie)%pref(j)=-1+(j-1)*dx
+    end do
 
     do j=1,nc
-      spelt(ie)%dab(j)=abs(elem(ie)%cartp(j+1,1)%x-elem(ie)%cartp(j,1)%x)   ! for np grid
-!       spelt(ie)%dab(j)=abs(elem(ie)%corners(1)%x-elem(ie)%corners(2)%x)/nc  ! for nc grid
+!       spelt(ie)%dab(j)=abs(elem(ie)%cartp(j+1,1)%x-elem(ie)%cartp(j,1)%x)   ! for np grid
+      spelt(ie)%dab(j)=abs(elem(ie)%corners(1)%x-elem(ie)%corners(2)%x)/nc  ! for nc grid
       do i=1,nc  
         spelt(ie)%drefx(i,j)=abs(spelt(ie)%pref(i+1)-spelt(ie)%pref(i)) 
         spelt(ie)%drefy(i,j)=abs(spelt(ie)%pref(j+1)-spelt(ie)%pref(j))
@@ -1034,6 +1184,77 @@ subroutine spelt_mcgregordss(elem,spelt,nets,nete, hybrid, deriv, tstep, orderta
 
 end subroutine spelt_mcgregordss
 !END SUBROUTINE FVM_MCGREGORDSS-------------------------------------------CE-for FVM!
+! ----------------------------------------------------------------------------------!
+!SUBROUTINE SPELT_RKDSS-----------------------------------------------CE-for FVM!
+! AUTHOR: CHRISTOPH ERATH, MARK TAYLOR, 06. December 2012                                             !
+! DESCRIPTION: ! create a runge kutta taylor serios mixture to calculate the departure grid                            !
+! CALLS: 
+! INPUT: 
+!        
+! OUTPUT: 
+!-----------------------------------------------------------------------------------!
+subroutine spelt_rkdss(elem,spelt,nets,nete, hybrid, deriv, tstep, ordertaylor)
+  use derivative_mod, only : derivative_t, ugradv_sphere
+  use edge_mod, only : edgevpack, edgevunpack
+  use bndry_mod, only : bndry_exchangev
+  
+  implicit none
+
+  type (element_t), intent(inout)                :: elem(:)
+  type (spelt_struct), intent(in)              :: spelt(:)
+
+  integer, intent(in)                         :: nets  ! starting thread element number (private)
+  integer, intent(in)                         :: nete  ! ending thread element number   (private)
+  type (hybrid_t), intent(in)                 :: hybrid   ! distributed parallel structure (shared)
+
+  type (derivative_t), intent(in)                             :: deriv      ! derivative struct
+  real (kind=real_kind), intent(in)                           :: tstep
+  integer, intent(in)                                         :: ordertaylor
+
+  integer                                                     :: ie, k, order
+  real (kind=real_kind), dimension(np,np,2)                   :: ugradvtmp
+  real (kind=real_kind)                                       :: timetaylor
+!
+! RK-SSP 2 stage 2nd order:
+!     x*(t+1) = x(t) + U(x(t),t)                          
+!     x(t+1) = x(t) +  1/2 ( U(x*(t+1),t+1) + U(x(t),t) )       
+! apply taylor series:
+!  U(x*(t+1),t+1) = U(x(t),t+1) + (x*(t+1)-x(t)) gradU(x(t),t+1)
+!
+!  (x(t+1)-x(t))/dt =  1/2( U(x(t),t+1)+U(x(t),t)) + dt 1/2 U(x(t),t) gradU(x(t),t+1)  
+!
+! suppose dt = -tstep (we go backward)
+!  (x(t-tstep)-x(t))/-tstep =  1/2( U(x(t),t-tstep)+U(x(t),t)) - tstep 1/2 U(x(t),t) gradU(x(t),t-tstep)  
+!
+!  x(t-tstep) = x(t)) -tstep * [ 1/2( U(x(t),t-tstep)+U(x(t),t)) - tstep 1/2 U(x(t),t) gradU(x(t),t-tstep) ]  
+!
+!    !------------------------------------------------------------------------------------
+    do ie=nets,nete
+       ! vn0 = U(x,t)
+       ! vstar = U(x,t+1)
+      do k=1,nlev
+!         ugradvtmp(:,:,:)=ugradv_sphere(fvm(ie)%vn0(:,:,:,k),elem(ie)%derived%vstar(:,:,:,k),deriv,elem(ie))
+        ugradvtmp(:,:,:)=ugradv_sphere(elem(ie)%derived%vstar(:,:,:,k),spelt(ie)%vn0(:,:,:,k),deriv,elem(ie))
+        
+        elem(ie)%derived%vstar(:,:,:,k) = &
+             (elem(ie)%derived%vstar(:,:,:,k) + spelt(ie)%vn0(:,:,:,k))/2   - tstep*ugradvtmp(:,:,:)/2
+
+        elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%spheremp(:,:)
+        elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%spheremp(:,:)
+      enddo 
+      call edgeVpack(edgeveloc,elem(ie)%derived%vstar,2*nlev,0,elem(ie)%desc)
+    enddo 
+    call bndry_exchangeV(hybrid,edgeveloc)
+    do ie=nets,nete
+       call edgeVunpack(edgeveloc,elem(ie)%derived%vstar,2*nlev,0,elem(ie)%desc)
+       do k=1, nlev  
+          elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%rspheremp(:,:)
+          elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%rspheremp(:,:)
+       end do
+    end do
+
+end subroutine spelt_rkdss
+!END SUBROUTINE SPELT_rkdss-------------------------------------------CE-for FVM!
 
 subroutine cell_search(elem, spelt, dsphere, icell, jcell,dref, alphabeta, face_nodep) 
 
@@ -1501,7 +1722,7 @@ end subroutine cell_search
 ! ----------------------------------------------------------------------------------!
 !SUBROUTINE FVM_DEP_FROM_GLL----------------------------------------------CE-for FVM!
 ! AUTHOR: CHRISTOPH ERATH, MARK TAYLOR 14. December 2011                            !
-! DESCRIPTION: calculates the deparute grid for spelt coming from the gll points      !
+! DESCRIPTION: calculates the deparute grid for spelt coming from the gll points    !
 !                                                                                   !
 ! CALLS: 
 ! INPUT: 
@@ -1925,6 +2146,8 @@ subroutine solidbody_all(spelt, dsphere1,dsphere2,k)
     enddo
   enddo
 end subroutine solidbody_all
+
+
 
 !-----------------------------------------------------------------------------------!
 ! INPUT:  Transformation between a rotated system with north pole (lap,thp) and     !
