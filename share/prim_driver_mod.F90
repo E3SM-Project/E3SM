@@ -982,8 +982,8 @@ contains
 #endif
 
 #ifdef _ACCEL
-  !Inside this routine, we enforce an OMP BARRIER and an OMP MASTER. It's left out of here because it's ugly
-  call cuda_mod_init(elem)
+    !Inside this routine, we enforce an OMP BARRIER and an OMP MASTER. It's left out of here because it's ugly
+    call cuda_mod_init(elem,deriv(hybrid%ithr),hvcoord)
 #endif
 
     call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete, fvm)
