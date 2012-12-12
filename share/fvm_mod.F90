@@ -32,7 +32,7 @@ module fvm_mod
   public :: cslam_run, cslam_runairdensity, cslam_runtest
   
   public :: cellghostbuf, edgeveloc, fvm_init1,fvm_init2, fvm_mcgregor, fvm_mcgregordss
-  public :: fvm_init3
+  public :: fvm_init3, fvm_rkdss
 contains
 
 ! use this subroutine for benchmark tests, couple airdensity with tracer concentration
@@ -1272,11 +1272,8 @@ end subroutine fvm_mcgregordss
 
 ! ----------------------------------------------------------------------------------!
 !SUBROUTINE FVM_RKDSS-----------------------------------------------CE-for FVM!
-! AUTHOR: CHRISTOPH ERATH, 26. May 2012                                             !
-!         Mark Taylor
-! DESCRIPTION: ! using McGregor AMS 1993 scheme: Economical Determination of        !
-!                Departure Points for Semi-Lagrangian Models                        !
-!                McGegror version with DSS every ugradv                             !
+! AUTHOR: CHRISTOPH ERATH, MARK TAYLOR, 06. December 2012                                             !
+! DESCRIPTION: ! create a runge kutta taylor serios mixture to calculate the departure grid                            !
 ! CALLS: 
 ! INPUT: 
 !        
@@ -1308,23 +1305,27 @@ subroutine fvm_rkdss(elem,fvm,nets,nete, hybrid, deriv, tstep, ordertaylor)
 !     x*(t+1) = x(t) + U(x(t),t)                          
 !     x(t+1) = x(t) +  1/2 ( U(x*(t+1),t+1) + U(x(t),t) )       
 ! apply taylor series:
-!  U(x*(t+1),t+1) = U(x(t),t+1) - (x*(t+1)-x(t)) gradU(x(t),t+1)
+!  U(x*(t+1),t+1) = U(x(t),t+1) + (x*(t+1)-x(t)) gradU(x(t),t+1)
 !
-!  (x(t+1)-x(t))/dt =  1/2( U(x(t),t+1)+U(x(t),t)) - dt 1/2 U(x(t),t) gradU(x(t),t+1)  
+!  (x(t+1)-x(t))/dt =  1/2( U(x(t),t+1)+U(x(t),t)) + dt 1/2 U(x(t),t) gradU(x(t),t+1)  
 !
-! suppose dt = -tstep
-!  (x(t-tstep)-x(t))/-tstep =  1/2( U(x(t),t-tstep)+U(x(t),t)) + tstep 1/2 U(x(t),t) gradU(x(t),t-tstep)  
+! suppose dt = -tstep (we go backward)
+!  (x(t-tstep)-x(t))/-tstep =  1/2( U(x(t),t-tstep)+U(x(t),t)) - tstep 1/2 U(x(t),t) gradU(x(t),t-tstep)  
 !
-!  x(t-tstep) = x(t)) -tstep * [ 1/2( U(x(t),t-tstep)+U(x(t),t)) + tstep 1/2 U(x(t),t) gradU(x(t),t-tstep) ]  
+!  x(t-tstep) = x(t)) -tstep * [ 1/2( U(x(t),t-tstep)+U(x(t),t)) - tstep 1/2 U(x(t),t) gradU(x(t),t-tstep) ]  
 !
 !    !------------------------------------------------------------------------------------
     do ie=nets,nete
        ! vn0 = U(x,t)
        ! vstar = U(x,t+1)
       do k=1,nlev
-        ugradvtmp(:,:,:)=ugradv_sphere(fvm(ie)%vn0(:,:,:,k),elem(ie)%derived%vstar(:,:,:,k),deriv,elem(ie))
+!         ugradvtmp(:,:,:)=ugradv_sphere(fvm(ie)%vn0(:,:,:,k),elem(ie)%derived%vstar(:,:,:,k),deriv,elem(ie))
+        ugradvtmp(:,:,:)=ugradv_sphere(elem(ie)%derived%vstar(:,:,:,k),fvm(ie)%vn0(:,:,:,k),deriv,elem(ie))
+        
         elem(ie)%derived%vstar(:,:,:,k) = &
-             (elem(ie)%derived%vstar(:,:,:,k) + fvm(ie)%vn0(:,:,:,k))/2   + tstep*ugradvtmp(:,:,:)/2
+             (elem(ie)%derived%vstar(:,:,:,k) + fvm(ie)%vn0(:,:,:,k))/2   - tstep*ugradvtmp(:,:,:)/2
+
+
 
         elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%spheremp(:,:)
         elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%spheremp(:,:)
@@ -1341,6 +1342,6 @@ subroutine fvm_rkdss(elem,fvm,nets,nete, hybrid, deriv, tstep, ordertaylor)
     end do
 
 end subroutine fvm_rkdss
-!END SUBROUTINE FVM_MCGREGORDSS-------------------------------------------CE-for FVM!
+!END SUBROUTINE FVM_rkdss-------------------------------------------CE-for FVM!
 
 end module fvm_mod

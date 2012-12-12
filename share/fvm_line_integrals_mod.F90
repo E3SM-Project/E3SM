@@ -1684,18 +1684,18 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
 !   end do
  
 ! here is the correction, uncomment it if you want to run the scheme without weight correction!  
-!   do ja=1,jall
-!    jx = weights_eul_index_all(ja,1); jy = weights_eul_index_all(ja,2);
-!    area=fvm%area_sphere(jx,jy)
-! !    
-!    weights_all(ja,1) = weights_all(ja,1)*abs(area/da_cslam(jx,jy))
-!    weights_all(ja,2) = weights_all(ja,2)*abs(area*fvm%spherecentroid(1,jx,jy)/centroid_cslam(1,jx,jy))
-!    weights_all(ja,3) = weights_all(ja,3)*abs(area*fvm%spherecentroid(2,jx,jy)/centroid_cslam(2,jx,jy))
-!    weights_all(ja,4) = weights_all(ja,4)*abs(area*fvm%spherecentroid(3,jx,jy)/centroid_cslam(3,jx,jy))  
-!    weights_all(ja,5) = weights_all(ja,5)*abs(area*fvm%spherecentroid(4,jx,jy)/centroid_cslam(4,jx,jy))
-!    weights_all(ja,6) = weights_all(ja,6)*abs(area*fvm%spherecentroid(5,jx,jy)/centroid_cslam(5,jx,jy))
-!   end do
-  
+  do ja=1,jall
+   jx = weights_eul_index_all(ja,1); jy = weights_eul_index_all(ja,2);
+   area=fvm%area_sphere(jx,jy)
+!    
+   weights_all(ja,1) = weights_all(ja,1)*abs(area/da_cslam(jx,jy))
+   weights_all(ja,2) = weights_all(ja,2)*abs(area*fvm%spherecentroid(1,jx,jy)/centroid_cslam(1,jx,jy))
+   weights_all(ja,3) = weights_all(ja,3)*abs(area*fvm%spherecentroid(2,jx,jy)/centroid_cslam(2,jx,jy))
+   weights_all(ja,4) = weights_all(ja,4)*abs(area*fvm%spherecentroid(3,jx,jy)/centroid_cslam(3,jx,jy))  
+   weights_all(ja,5) = weights_all(ja,5)*abs(area*fvm%spherecentroid(4,jx,jy)/centroid_cslam(4,jx,jy))
+   weights_all(ja,6) = weights_all(ja,6)*abs(area*fvm%spherecentroid(5,jx,jy)/centroid_cslam(5,jx,jy))
+  end do
+!   
  
 end subroutine compute_weights  
 

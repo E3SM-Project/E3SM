@@ -14,7 +14,7 @@ module prim_advance_mod
   implicit none
   private
   public :: prim_advance_exp, prim_advance_si, prim_advance_init, preq_robert3,&
-       applyCAMforcing_dynamics, applyCAMforcing, smooth_phis
+       applyCAMforcing_dynamics, applyCAMforcing, smooth_phis, overwrite_SEdensity
 
   type (EdgeBuffer_t) :: edge1
   type (EdgeBuffer_t) :: edge2
@@ -2660,6 +2660,100 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   enddo
   end subroutine smooth_phis
 
+  subroutine overwrite_SEdensity(elem, fvm, hybrid,nets,nete, np1)
+    use fvm_reconstruction_mod, only: reconstruction
+    use fvm_filter_mod, only: monotonic_gradient_cart, recons_val_cart
+    use dimensions_mod, only : np, nlev, nc,nhe
+    use control_mod, only : smooth_phis_nudt
+    use hybrid_mod, only : hybrid_t
+    use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack, edgevunpackmax, edgevunpackmin
+    use bndry_mod, only : bndry_exchangev
+    use element_mod, only : element_t
+    use derivative_mod, only : derivative_t , laplace_sphere_wk
+    use time_mod, only : TimeLevel_t
+    use fvm_control_volume_mod, only : fvm_struct
+    use spelt_mod, only : spelt_struct
+    
+
+    type (element_t) , intent(inout)        :: elem(:)
+    
+#if defined(_SPELT)
+      type(spelt_struct), intent(inout) :: fvm(:)
+#else
+      type(fvm_struct), intent(inout) :: fvm(:)
+#endif
+    type (hybrid_t), intent(in)           :: hybrid  ! distributed parallel structure (shared)
+
+    integer, intent(in)                     :: nets  ! starting thread element number (private)
+    integer, intent(in)                     :: nete  ! ending thread element number   (private)
+    integer, intent(in)                     :: np1
+    integer :: ie, k
+
+    real (kind=real_kind)             :: xp,yp, tmpval
+    integer                           :: i, j,ix, jy, starti,endi,tmpi
+
+    real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons
+    
+    if ((nc .ne. 4) .or. (np .ne. 4)) then
+      if(hybrid%masterthread) then 
+        print *,"You are in OVERWRITE SE AIR DENSITY MODE"
+        print *,"This only works for nc=4 and np=4"
+        print *,"Write a new search algorithm or pay $10000!"
+      endif
+      stop
+    endif
+    
+    do ie=nets,nete
+      call reconstruction(fvm(ie)%psc, fvm(ie),recons)
+      call monotonic_gradient_cart(fvm(ie)%psc, fvm(ie),recons, elem(ie)%desc)
+      do j=1,np
+        do i=1,np
+          xp=tan(elem(ie)%cartp(i,j)%x)
+          yp=tan(elem(ie)%cartp(i,j)%y)   
+          ix=i
+          jy=j
+          ! Search index along "x"  (bisection method)
+!           starti = 1
+!           endi = nc+1
+!           do
+!              if  ((endi-starti) <=  1)  exit
+!              tmpi = (endi + starti)/2
+!              if (xp  >  fvm%acartx(tmpi)) then
+!                 starti = tmpi
+!              else
+!                 endi = tmpi
+!              endif
+!           enddo
+!           ix = starti
+! 
+!         ! Search index along "y"
+!           starti = 1
+!           endi = nc+1
+!           do
+!              if  ((endi-starti) <=  1)  exit
+!              tmpi = (endi + starti)/2
+!              if (yp  >  fvm%acarty(tmpi)) then
+!                 starti = tmpi
+!              else
+!                 endi = tmpi
+!              endif
+!           enddo
+!           jy = starti
+
+          call recons_val_cart(fvm(ie)%psc, xp,yp,fvm(ie)%spherecentroid,recons,ix,jy,tmpval)
+          elem(ie)%state%ps_v(i,j,np1)=tmpval    
+        end do  
+      end do
+      elem(ie)%state%ps_v(:,:,np1)=elem(ie)%state%ps_v(:,:,np1)*elem(ie)%spheremp(:,:)
+     call edgeVpack(edge3p1,elem(ie)%state%ps_v(:,:,np1),1,0,elem(ie)%desc)
+  enddo
+  call bndry_exchangeV(hybrid,edge3p1)
+  do ie=nets,nete
+     call edgeVunpack(edge3p1, elem(ie)%state%ps_v(:,:,np1), 1, 0, elem(ie)%desc)
+     elem(ie)%state%ps_v(:,:,np1)=elem(ie)%state%ps_v(:,:,np1)*elem(ie)%rspheremp(:,:)
+  enddo
+    
+  end subroutine overwrite_SEdensity
 
 
 end module prim_advance_mod

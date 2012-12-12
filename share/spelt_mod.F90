@@ -323,9 +323,9 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   
 
 
-  call t_startf('SPELT scheme') 
   
   call initghostbuffer(factorR,nlev,ntrac,nhe,nc)    ! use the tracer entry
+  call t_startf('SPELT scheme') 
   
   
   dt6  = tstep/ 6.0D0
@@ -511,7 +511,6 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   call t_stopf('SPELT Unpacking')
 end subroutine spelt_runlimit
 
-
 subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 
   use derivative_mod, only : derivative_t
@@ -562,7 +561,7 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
     do k=1, nlev
 !       call solidbody_all(spelt(ie), dsphere1,dsphere2,k) 
 !       call boomerang_all(spelt(ie), dsphere1,dsphere2,k,tl%nstep)
-      
+!       call t_startf('SPELT0') 
       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)
                
@@ -588,18 +587,22 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !           sg2(i,j)=metric_termref(elem(ie),dref2(i,j))
         end do
       end do
+!       call t_stopf('SPELT0')
       ! search of both point on the trajectory done
       call t_startf('SPELT ntrac') 
       do itr=1,ntrac
+!         call t_startf('SPELT1')
         do j=1-nhe,nc+nhe
           do i=1-nhe,nc+nhe
             icell=1+(i-1)*nipm
             jcell=1+(j-1)*nipm
             ff=spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,k,itr,tl%n0)
-            minmax(i,j,:)=cell_minmax(ff)
+!            minmax(i,j,:)=cell_minmax(ff)
             call cip_coeff(spelt(ie)%drefx(i,j),spelt(ie)%drefy(i,j),ff,ff(2,2),cf(:,:,i,j))
           enddo
         enddo
+!         call t_stopf('SPELT1')
+!         call t_startf('SPELT2')
         do j=1,nep
           do i=1,nep  
             sga=spelt(ie)%sga(i,j)
@@ -626,8 +629,9 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
             endif
           end do
         end do 
-        
+!         call t_stopf('SPELT2')
         ! write(*,*) 'ELEMID', elem(ie)%GlobalId
+!         call t_startf('SPELT3')
         do jcell=1,nc
           do icell=1,nc          
               i=1+(icell-1)*nipm
@@ -644,7 +648,8 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
               spelt(ie)%c(i+1,j+1,k,itr,tl%np1) = spelt(ie)%c(i+1,j+1,k,itr,tl%n0) + &
                                         (flux(1) + flux(2) - flux(3) - flux(4) ) / (dx*dy)                    
           end do
-        end do 
+        end do
+!         call t_stopf('SPELT3')
       end do
       call t_stopf('SPELT ntrac') 
       
@@ -1862,16 +1867,16 @@ function cip_interpolate(cf,dxi,det) result(val)
   real (kind=real_kind), intent(in), dimension(nip,nip) :: cf 
   real (kind=real_kind) :: val, dxidet,d2xi,d2et, d2xid2et, d2xidet,dxid2et
 
-   d2xi = dxi*dxi          
-   d2et = det*det          
-   dxidet = dxi*det          
-   d2xidet = dxi* dxidet          
-   dxid2et = det* dxidet          
-   d2xid2et = d2et* d2xi
-
-   val = cf(1,1)  + cf(2,1) *  dxi  + cf(1,2)*  det   + cf(2,2)* dxidet  &
-                  + cf(3,1) *  d2xi + cf(1,3)*  d2et  + cf(3,2)* d2xidet &
-                  + cf(2,3)*dxid2et + cf(3,3)* d2xid2et
+     d2xi = dxi*dxi          
+     d2et = det*det          
+     dxidet = dxi*det          
+     d2xidet = dxi* dxidet          
+     dxid2et = det* dxidet          
+     d2xid2et = d2et* d2xi
+  
+     val = cf(1,1)  + cf(2,1) *  dxi  + cf(1,2)*  det   + cf(2,2)* dxidet  &
+                    + cf(3,1) *  d2xi + cf(1,3)*  d2et  + cf(3,2)* d2xidet &
+                    + cf(2,3)*dxid2et + cf(3,3)* d2xid2et
 end function cip_interpolate
 
 
@@ -1883,36 +1888,35 @@ subroutine cip_coeff(dxcell,dycell,ff,avr,cf)
   real (kind=real_kind) , intent(in) :: avr 
   real (kind=real_kind) , intent(out) :: cf(nip,nip)  
   real (kind=real_kind) , intent(in)  :: dxcell, dycell
-  real (kind=real_kind)  :: d(8) 
   integer ::  i,j
 !   write(*,*) dxcell, dycell
-  d(1) = 1.0D0/dxcell
-  d(2) = 2.0D0/(dxcell*dxcell) 
-  d(3) = 1.0D0/dycell
-  d(4) = 2.0D0/(dycell*dycell)          
-  d(5) = 2.0D0/(dxcell*dycell)          
-  d(6) = 1.0D0/(dxcell*dxcell*dycell)   
-  d(7) = 1.0D0/(dxcell*dycell*dycell)          
-  d(8) = 3.0D0/(dxcell*dxcell*dycell*dycell)
+!   d(1) = 1.0D0/dxcell
+!   d(2) = 2.0D0/(dxcell*dxcell) 
+!   d(3) = 1.0D0/dycell
+!   d(4) = 2.0D0/(dycell*dycell)          
+!   d(5) = 2.0D0/(dxcell*dycell)          
+!   d(6) = 1.0D0/(dxcell*dxcell*dycell)   
+!   d(7) = 1.0D0/(dxcell*dycell*dycell)          
+!   d(8) = 3.0D0/(dxcell*dxcell*dycell*dycell)
 
   cf(1,1) = ff(1,1)
-  cf(2,1) = d(1) * (-3.0D0*ff(1,1) + 4.0D0*ff(2,1) - ff(3,1) ) 
-  cf(3,1) = d(2) * (       ff(1,1) - 2.0D0*ff(2,1) + ff(3,1) ) 
+  cf(2,1) =  (-3.0D0*ff(1,1) + 4.0D0*ff(2,1) - ff(3,1) )/dxcell 
+  cf(3,1) = 2.0D0 * (       ff(1,1) - 2.0D0*ff(2,1) + ff(3,1) )/(dxcell*dxcell) 
 
-  cf(1,2) = d(3) * (-3.0D0*ff(1,1) + 4.0D0*ff(1,2) - ff(1,3) ) 
-  cf(1,3) = d(4) * (       ff(1,1) - 2.0D0*ff(1,2) + ff(1,3) ) 
+  cf(1,2) = 1.0D0 * (-3.0D0*ff(1,1) + 4.0D0*ff(1,2) - ff(1,3) )/dycell 
+  cf(1,3) = 2.0D0 * (       ff(1,1) - 2.0D0*ff(1,2) + ff(1,3) )/(dycell*dycell) 
 
-  cf(2,2) = d(5) * ( 4.0D0*(ff(1,1) - ff(2,3) - ff(3,2))  + ff(1,3) &
-                     + ff(3,1) - 8.0D0*(ff(2,1) + ff(1,2))  + 18.0D0*avr ) 
+  cf(2,2) = 2.0D0 * ( 4.0D0*(ff(1,1) - ff(2,3) - ff(3,2))  + ff(1,3) &
+                     + ff(3,1) - 8.0D0*(ff(2,1) + ff(1,2))  + 18.0D0*avr )/(dxcell*dycell) 
 
-  cf(3,2) = d(6) * (-5.0D0*(ff(1,1) + ff(3,1)) + 12.0D0*(ff(1,2) + ff(3,2))  - ff(1,3) &
-                     + 8.0D0*ff(2,3)  + 16.0D0*ff(2,1) - ff(3,3) - 36.0D0*avr ) 
+  cf(3,2) = 1.0D0 * (-5.0D0*(ff(1,1) + ff(3,1)) + 12.0D0*(ff(1,2) + ff(3,2))  - ff(1,3) &
+                     + 8.0D0*ff(2,3)  + 16.0D0*ff(2,1) - ff(3,3) - 36.0D0*avr )/(dxcell*dxcell*dycell) 
 
-  cf(2,3) = d(7) * (-5.0D0*(ff(1,1) + ff(1,3)) + 12.0D0*(ff(2,1)+ ff(2,3)) &
-                     + 16.0D0*ff(1,2) - ff(3,1) + 8.0D0*ff(3,2) - ff(3,3) - 36.0D0*avr ) 
+  cf(2,3) = 1.0D0 * (-5.0D0*(ff(1,1) + ff(1,3)) + 12.0D0*(ff(2,1)+ ff(2,3)) &
+                     + 16.0D0*ff(1,2) - ff(3,1) + 8.0D0*ff(3,2) - ff(3,3) - 36.0D0*avr )/(dxcell*dycell*dycell) 
 
-  cf(3,3) = d(8) * (-4.0D0*(ff(1,2) + ff(2,1) + ff(2,3) + ff(3,2))   &
-                     + ff(1,1) + ff(1,3) + ff(3,1) + ff(3,3) + 12.0D0*avr ) 
+  cf(3,3) = 3.0D0 * (-4.0D0*(ff(1,2) + ff(2,1) + ff(2,3) + ff(3,2))   &
+                     + ff(1,1) + ff(1,3) + ff(3,1) + ff(3,3) + 12.0D0*avr )/(dxcell*dxcell*dycell*dycell) 
 end  subroutine cip_coeff
 
 function cip_cell_avr(ff)  result(qint)

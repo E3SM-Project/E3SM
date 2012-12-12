@@ -1432,13 +1432,12 @@ contains
     use control_mod, only: statefreq,&
            energy_fixer, ftype, qsplit, nu_p, test_cfldep, rsplit
     use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3, applycamforcing, &
-                                 applycamforcing_dynamics, prim_advance_exp
+                                 applycamforcing_dynamics, prim_advance_exp, overwrite_SEdensity
     use prim_advection_mod, only : prim_advec_tracers_remap_rk2, prim_advec_tracers_fvm, &
          prim_advec_tracers_spelt
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use parallel_mod, only : abortmp
     use reduction_mod, only : parallelmax
-    
 
     type (element_t) , intent(inout)        :: elem(:)
     
@@ -1458,7 +1457,9 @@ contains
     real(kind=real_kind) :: st, st1, dp, dt_q
     integer :: ie, t, q,k,i,j,n, n_Q
 
-    real (kind=real_kind)                          :: maxcflx, maxcfly  
+    real (kind=real_kind)                          :: maxcflx, maxcfly 
+    
+     
     real (kind=real_kind) :: dp_np1(np,np)
     logical :: compute_diagnostics
     dt_q = dt*qsplit
@@ -1543,6 +1544,7 @@ contains
 #else      
       call Prim_Advec_Tracers_fvm(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&
            dt_q,tl,nets,nete)
+           ! values in the halo zone are only in np1 at this time
        do ie=nets,nete 
          do i=1-nhc,nc+nhc
            do j=1-nhc,nc+nhc  
@@ -1550,8 +1552,6 @@ contains
            enddo
          enddo
        enddo
-
-
 
        if(test_cfldep) then
          maxcflx=0.0D0
@@ -1570,6 +1570,9 @@ contains
              print *
            endif 
        endif   
+       !overwrite SE density by fvm(ie)%psc
+!        call overwrite_SEdensity(elem,fvm,hybrid,nets,nete,tl%np1) 
+!elem(ie)%state%ps_v(i,j,np1)
 #endif
        ! dynamics computed a predictor surface pressure, now correct with fvm result
        ! fvm has computed a new dp(:,:,k) on the fvm grid
@@ -1582,7 +1585,6 @@ contains
     endif
 
   end subroutine prim_step
-
 
 
 !=======================================================================================================! 
