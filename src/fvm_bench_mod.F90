@@ -28,7 +28,8 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   ! ---------------------------------------------------------------------------------  
   use fvm_control_volume_mod, only: fvm_struct
   ! ---------------------------------------------------------------------------------
-  use fvm_mod, only: cslam_run, cslam_runtest,cslam_runairdensity, fvm_init1,fvm_init2, fvm_init3, fvm_mcgregor,fvm_mcgregordss, cellghostbuf, edgeveloc
+  use fvm_mod, only: cslam_run, cslam_runtest,cslam_runairdensity, fvm_init1,fvm_init2 
+  use fvm_mod, only: fvm_init3, fvm_mcgregor,fvm_mcgregordss, fvm_rkdss,cellghostbuf, edgeveloc
   ! ---------------------------------------------------------------------------------
   ! ---------------------------------------------------------------------------------
   use derivative_mod, only : derivative_t, derivative_stag_t, derivinit, deriv_print
@@ -233,7 +234,8 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
 !         fvm(ie)%vn0(:,:,:,k)=get_solidbody_velocities_gll(elem(ie),time_at(tl%nstep))
       end do
     end do
-    call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, tstep, 3)
+!     call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, tstep, 3)
+    call fvm_rkdss(elem,fvm,nets,nete, hybrid, deriv, tstep, 3)
     
 !     tmpt=(time_at(tl%nstep+1)-time_at(tl%nstep))/3
 !     do ie=nets,nete
@@ -295,6 +297,10 @@ if (mod(tl%nstep,1)==0) then
       write(*,*) 'maxvalue:     ', maxc,       'minvalue:    ', minc
       write(*,*) "CFL: maxcflx=", maxcflx, "maxcfly=", maxcfly 
       print *
+      if (abs((mass-massstart)/massstart) > 1.0D-2 ) then
+        write(*,*) 'mass error to high, stop'
+        stop
+      endif
     endif
 endif
 

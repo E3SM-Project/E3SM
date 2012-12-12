@@ -150,7 +150,7 @@ program fvm_main
   write(numproc_char,*) par%nprocs
   write(numtrac_char,*) ntrac
   
-  call t_prf('HommeTimeFVM',par%comm)
+  call t_prf('HommeTimeFVMana',par%comm)
 !  call system('cp  '//'HommeTimeFVM'//' time/'//'HommeTimeFVM'//'-'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char))) 
   
   call t_finalizef()

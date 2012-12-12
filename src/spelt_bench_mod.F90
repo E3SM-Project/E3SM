@@ -184,7 +184,7 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
   call shal_movie_init(elem,hybrid)
   call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv)
 #endif
-
+! 
 !-----------------------------------------------------------------------------------! 
 ! for Quantities as mass aso 
   do ie=nets,nete
@@ -309,15 +309,15 @@ if (mod(tl%nstep,1)==0) then
 !     tmp1(ie) = MAXVAL(spelt(ie)%c(:,:,chooselev,choosetrac,tl%n0))
 !     tmp2(ie) = MINVAL(spelt(ie)%c(:,:,chooselev,choosetrac,tl%n0))   
   end do
-
+! 
   !need the buffer cellghostbuf in the time loop
   ! for mass calculation
   call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
   mass=global_shared_sum(1)
   maxc = parallelmax(tmp1,hybrid)
   minc = parallelmin(tmp2,hybrid)
-!-----------------------------------------------------------------------------------!
-   
+! !-----------------------------------------------------------------------------------!
+!    
   if  (hybrid%masterthread) then 
     write(*,*) 'time=', time_at(tl%nstep), 'timeatmax',Time_at(nmax)
     write(*,*) 'chooselev=', chooselev, 'choosetrac=', choosetrac

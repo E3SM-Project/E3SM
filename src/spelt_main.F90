@@ -146,7 +146,13 @@ program spelt_main
   ! ================================================
   call t_stopf('Total')
   if(par%masterproc) print *,"writing timing data"
+    write(numproc_char,*) par%nprocs
+    write(numtrac_char,*) ntrac
+!   call system('mkdir -p '//'time/'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char))) 
+!   call t_prf('time/'//trim(adjustl(numproc_char))//'/'//trim(adjustl(numtrac_char))//'/HommeSpeltTime',par%comm)
   call t_prf('HommeTimeSPELT', par%comm)
+!  call system('cp  '//'HommeTimeSPELT'//' timenc4/'//'HommeTimeSPELT'//'-'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char))) 
+  
   if(par%masterproc) print *,"calling t_finalizef"
   call t_finalizef()
   call haltmp("exiting program...")

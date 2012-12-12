@@ -284,6 +284,7 @@ function get_boomerang_velocities_gll(elem, time) result(vstar)
   use element_mod, only : element_t
   use fvm_control_volume_mod, only: fvm_struct
   use physical_constants, only : DD_PI, rearth
+  use time_mod, only : ndays
   
   implicit none
   type (element_t), intent(in)   :: elem
@@ -297,8 +298,8 @@ function get_boomerang_velocities_gll(elem, time) result(vstar)
   ck = 10.0D0/tt
   omega = DD_PI/tt
 
-  !tmp_time=(nstep)*5.0D0/nmax
-  tmp_time=5*time/(12*3600*24)  ! convert from dimensional time to dimensionless
+  !tmp_time=(nstep+1)*5.0D0/nmax
+  tmp_time=5.0D0*time/(ndays*3600*24.0D0)  ! convert from dimensional time to dimensionless
   
   do i=1,np
     do j=1,np
@@ -317,8 +318,8 @@ function get_boomerang_velocities_gll(elem, time) result(vstar)
       v =  ck*slon2*clat*cos(tmp_time*omega)
       ! convert from radians per dimensionless time to 
       ! meters/sec 
-      vstar(i,j,1)=u * Rearth /( 12*3600*24/5)
-      vstar(i,j,2)=v * Rearth /( 12*3600*24/5)
+      vstar(i,j,1)=u * Rearth /( ndays*3600*24.0D0/5.0D0)
+      vstar(i,j,2)=v * Rearth /( ndays*3600*24.0D0/5.0D0)
     enddo
   enddo
 
@@ -408,11 +409,11 @@ subroutine boomerang(asphere,dsphere,nstep,part)
   iorder=5
   
   nmaxaround=12*nmax/ndays          ! in 12 days around the earth
-  
+  nmaxaround=nmax
 !   tmp_time=(nstep)*5.0D0/nmaxaround
 !   tmp_dt = 5.0D0/nmaxaround/iteration
-  tmp_time=(nstep+1)*5.0D0/(nmax)
-  tmp_dt = 5.0D0/(nmax)/iteration
+  tmp_time=(nstep+1)*5.0D0/(nmaxaround)
+  tmp_dt = 5.0D0/(nmaxaround)/iteration
   dt2 = tmp_dt*tmp_dt/2.0D0
   dt3 = dt2*tmp_dt/3.0D0
   dt4 = dt3*tmp_dt/4.0D0
