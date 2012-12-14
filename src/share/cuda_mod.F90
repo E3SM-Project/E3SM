@@ -485,20 +485,17 @@ contains
     call copy_qdp_h2d( elem , n0_qdp)
   endif
 
-  do ie = nets , nete
-    divdp_h            (:,:,:,ie) = elem(ie)%derived%divdp
-    psdiss_biharmonic_h(:,:  ,ie) = elem(ie)%derived%psdiss_biharmonic
-  enddo
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  if (limiter_option == 8) then
+    do ie = nets , nete
+      divdp_h(:,:,:,ie) = elem(ie)%derived%divdp
+      if ( nu_p > 0 .and. rhs_multiplier == 2 ) psdiss_biharmonic_h(:,:,ie) = elem(ie)%derived%psdiss_biharmonic
+    enddo
 !$OMP BARRIER
 !$OMP MASTER
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ierr = cudaMemcpyAsync( divdp_d             , divdp_h             , size( divdp_h             ) , cudaMemcpyHostToDevice , streams(0) )
-  ierr = cudaMemcpyAsync( psdiss_biharmonic_d , psdiss_biharmonic_h , size( psdiss_biharmonic_h ) , cudaMemcpyHostToDevice , streams(1) )
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ierr = cudaMemcpyAsync( divdp_d , divdp_h , size( divdp_h ) , cudaMemcpyHostToDevice , streams(0) )
+    if ( nu_p > 0 .and. rhs_multiplier == 2 ) ierr = cudaMemcpyAsync( psdiss_biharmonic_d , psdiss_biharmonic_h , size( psdiss_biharmonic_h ) , cudaMemcpyHostToDevice , streams(1) )
 !$OMP END MASTER
-!$OMP BARRIER
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  endif
 
   !This is a departure from the original order, adding an extra MPI communication. It's advantageous because it simplifies
   !the Pack-Exchange-Unpack procedure for us, since we're adding complexity to overlap MPI and packing
@@ -553,16 +550,11 @@ contains
       enddo
       ! update qmin/qmax based on neighbor data for lim8
       if ( limiter_option == 8 ) call neighbor_minmax(elem,hybrid,edgeAdvQ2,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !$OMP BARRIER
 !$OMP MASTER
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ierr = cudaMemcpyAsync( qmin_d , qmin , size( qmin ) , cudaMemcpyHostToDevice , streams(2) )
       ierr = cudaMemcpyAsync( qmax_d , qmax , size( qmax ) , cudaMemcpyHostToDevice , streams(3) )
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !$OMP END MASTER
-!$OMP BARRIER
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     endif
 
     ! lets just reuse the old neighbor min/max, but update based on local data
@@ -576,16 +568,11 @@ contains
           enddo
         enddo
       enddo
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !$OMP BARRIER
 !$OMP MASTER
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ierr = cudaMemcpyAsync( qmin_d , qmin , size( qmin ) , cudaMemcpyHostToDevice , streams(2) )
       ierr = cudaMemcpyAsync( qmax_d , qmax , size( qmax ) , cudaMemcpyHostToDevice , streams(3) )
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !$OMP END MASTER
-!$OMP BARRIER
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     endif
 
     ! get niew min/max values, and also compute biharmonic mixing term
@@ -623,16 +610,11 @@ contains
         ! regular biharmonic, no need to updat emin/max
         call biharmonic_wk_scalar( elem , qtens_biharmonic(:,:,:,:,nets:nete) , deriv , edgeAdv , hybrid , nets , nete )
       endif
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !$OMP BARRIER
 !$OMP MASTER
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ierr = cudaMemcpyAsync( qmin_d , qmin , size( qmin ) , cudaMemcpyHostToDevice , streams(2) )
       ierr = cudaMemcpyAsync( qmax_d , qmax , size( qmax ) , cudaMemcpyHostToDevice , streams(3) )
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !$OMP END MASTER
-!$OMP BARRIER
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       do ie = nets , nete
         do k = 1 , nlev    !  Loop inversion (AAM)
           dp0 = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
@@ -645,15 +627,12 @@ contains
     endif
   endif  ! compute biharmonic mixing term and qmin/qmax
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  if ( (limiter_option == 8 .or. nu_p > 0) .and. rhs_multiplier == 2 ) then
 !$OMP BARRIER
 !$OMP MASTER
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ierr = cudaMemcpyAsync( qtens_biharmonic_d  , qtens_biharmonic    , size( qtens_biharmonic    ) , cudaMemcpyHostToDevice , streams(4) )
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ierr = cudaMemcpyAsync( qtens_biharmonic_d  , qtens_biharmonic    , size( qtens_biharmonic    ) , cudaMemcpyHostToDevice , streams(4) )
 !$OMP END MASTER
-!$OMP BARRIER
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  endif
 
   !   2D Advection step
   do ie = nets , nete
@@ -667,13 +646,11 @@ contains
     enddo
   enddo
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !$OMP BARRIER
 !$OMP MASTER
   ierr = cudaMemcpyAsync( dp_d    , dp_h    , size( dp_h    ) , cudaMemcpyHostToDevice , streams(5) )
   ierr = cudaMemcpyAsync( vstar_d , vstar_h , size( vstar_h ) , cudaMemcpyHostToDevice , streams(6) )
   ierr = cudaThreadSynchronize()
-
   blockdim = dim3( np      , np     , nlev )
   griddim  = dim3( qsize_d , nelemd , 1    )
   call euler_step_kernel1<<<griddim,blockdim>>>( qdp_d , spheremp_d , qmin_d , qmax_d , dp_d , vstar_d , divdp_d , hybi_d ,               &
@@ -689,13 +666,13 @@ contains
   griddim  = dim3( qsize_d , nelemd , 1 )
   call euler_hypervis_kernel_last<<<griddim,blockdim>>>( qdp_d , rspheremp_d , 1 , nelemd , np1_qdp )
   ierr = cudaThreadSynchronize()
-
 !$OMP END MASTER
 !$OMP BARRIER
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  if (rhs_multiplier < 2) then
-    call copy_qdp_d2h( elem , np1_qdp)
+  if ( limiter_option == 8 .or. nu_p > 0 ) then
+    if (rhs_multiplier < 2) then
+      call copy_qdp_d2h( elem , np1_qdp)
+    endif
   endif
 
   call t_stopf('euler_step')

@@ -15,7 +15,7 @@
 
 # titan -- specify number of nodes
 #PBS -A STF006
-#PBS -l nodes=11
+#PBS -l nodes=6
 #PBS -l walltime=0:30:00
 #PBS -N baroclinic
 #PBS -j oe
