@@ -142,7 +142,7 @@ AC_C_BIGENDIAN
 
 # CHECK FOR THE FORTRAN COMPILER
 # RLJ- specify the order, include PathScale and do not search for F77
-AC_PROG_FC([xlf95 pgf95 ifort gfortran pathf95 ftn lf95 f95 fort ifc efc g95 xlf90 pgf90 pathf90 epcf90 pghpf])
+AC_PROG_FC([nagfor xlf95 pgf95 ifort gfortran pathf95 ftn lf95 f95 fort ifc efc g95 xlf90 pgf90 pathf90 epcf90 pghpf])
 
 # CHECK FOR MPI LIBRARIES
 AC_LANG_PUSH(Fortran)
@@ -389,6 +389,24 @@ elif echo $FC | grep gfortran >/dev/null 2>&1; then
    if test -z "$OPT"; then
       OPT="-O2"
    fi
+elif echo $ac_fc_version_output | grep -i nag >/dev/null 2>&1; then
+   echo "Fortran Compiler is NAG"
+   CPRDEF="NAG"
+   if test -z "$REAL8"; then
+      REAL8="-r8"
+   fi
+   if test "$FCFLAGS" = "$DEFFCFLAGS"; then
+      FCFLAGS="-wmismatch=mpi_send,mpi_recv,mpi_bcast,mpi_allreduce,mpi_reduce,mpi_gatherv,mpi_gather,mpi_rsend,mpi_irecv,mpi_isend,mpi_scatterv,mpi_alltoallv -dusty"
+   fi
+   if test -z "$ENDIAN"; then
+      ENDIAN="-convert=BIG_IEEE"
+   fi
+   if test -z "$OPT"; then
+      OPT="-O2"
+   fi
+   if test -z "$DEBUG"; then
+      DEBUG="-g"
+   fi
 ###########################################################
 # the compiler flags below have not been verified recently
 ###########################################################
@@ -442,15 +460,6 @@ elif echo $FC | grep pathf90 >/dev/null 2>&1; then
    fi
    if test -z "$BIT64"; then
       BIT64="-m64"
-   fi
-   if test -z "$OPT"; then
-      OPT="-O2"
-   fi
-elif echo $ac_fc_version_output | grep -i nag >/dev/null 2>&1; then
-   echo "Fortran Compiler is NAG"
-   CPRDEF="NAG"
-   if test -z "$F90FLAGS"; then
-      F90FLAGS="-dusty -kind=byte"
    fi
    if test -z "$OPT"; then
       OPT="-O2"
