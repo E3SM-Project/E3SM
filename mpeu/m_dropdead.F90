@@ -92,7 +92,11 @@ contains
     write(stderr,'(5a)') 'unknown rank .',myname_,	&
       ': from ',trim(where),'()'
 
+#ifdef ENABLE_UNIX_ABORT
     call abort
+#else
+    stop
+#endif
 
   endif
 
@@ -172,7 +176,12 @@ end subroutine die_
       ', line ',trim(adjustl(lineno)),	&
       ' of file ',fnam
 
+#ifdef ENABLE_UNIX_ABORT
     call abort
+#else
+    stop
+#endif
+
   endif
 
 
