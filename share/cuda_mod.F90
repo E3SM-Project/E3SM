@@ -36,6 +36,7 @@ module cuda_mod
   public :: cuda_mod_init
   public :: euler_step_cuda 
   public :: qdp_time_avg_cuda
+  public :: advance_hypervis_scalar_cuda
   public :: copy_qdp_d2h
   public :: copy_qdp_h2d
 
@@ -680,11 +681,12 @@ end subroutine euler_step_cuda
 
 
 
-subroutine qdp_time_avg_cuda( elem , rkstage , n0_qdp , np1_qdp , nets , nete )
+subroutine qdp_time_avg_cuda( elem , rkstage , n0_qdp , np1_qdp , limiter_option , nu_p , nets , nete )
   use element_mod, only: element_t
   implicit none
-  type(element_t), intent(inout) :: elem(:)
-  integer        , intent(in   ) :: rkstage , n0_qdp , np1_qdp , nets , nete
+  type(element_t)     , intent(inout) :: elem(:)
+  real(kind=real_kind), intent(in   ) :: nu_p
+  integer             , intent(in   ) :: rkstage , n0_qdp , np1_qdp , nets , nete, limiter_option
   type(dim3) :: griddim , blockdim
   integer :: ierr, ie
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -698,8 +700,102 @@ subroutine qdp_time_avg_cuda( elem , rkstage , n0_qdp , np1_qdp , nets , nete )
 !$OMP END MASTER
 !$OMP BARRIER
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  call copy_qdp_d2h( elem , np1_qdp)
+
+  if ( limiter_option == 8 .or. nu_p > 0 ) call copy_qdp_d2h( elem , np1_qdp )
 end subroutine qdp_time_avg_cuda
+
+
+
+subroutine advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , deriv , nt , nt_qdp , nets , nete , dt2 )
+  !  hyperviscsoity operator for foward-in-time scheme
+  !  take one timestep of:  
+  !          Q(:,:,:,np) = Q(:,:,:,np) +  dt2*nu*laplacian**order ( Q )
+  !
+  !  For correct scaling, dt2 should be the same 'dt2' used in the leapfrog advace
+  use kinds          , only : real_kind
+  use dimensions_mod , only : np, nlev
+  use hybrid_mod     , only : hybrid_t
+  use hybvcoord_mod  , only : hvcoord_t
+  use element_mod    , only : element_t
+  use derivative_mod , only : derivative_t
+  use edge_mod       , only : EdgeBuffer_t, edgevpack, edgevunpack
+  use bndry_mod      , only : bndry_exchangev
+  use perf_mod       , only : t_startf, t_stopf, t_barrierf
+  use control_mod    , only : rsplit, nu_q, hypervis_order, hypervis_subcycle_q
+  implicit none
+  type (EdgeBuffer_t)  , intent(inout)         :: edgeAdv
+  type (element_t)     , intent(inout), target :: elem(:)
+  type (hvcoord_t)     , intent(in   )         :: hvcoord
+  type (hybrid_t)      , intent(in   )         :: hybrid
+  type (derivative_t)  , intent(in   )         :: deriv
+  integer              , intent(in   )         :: nt
+  integer              , intent(in   )         :: nt_qdp
+  integer              , intent(in   )         :: nets
+  integer              , intent(in   )         :: nete
+  real (kind=real_kind), intent(in   )         :: dt2
+  ! local
+  integer :: k , kptr , i , j , ie , ic , q , ierr
+  real (kind=real_kind) :: dt
+  type(dim3) :: griddim , blockdim
+  if ( nu_q           == 0 ) return
+  if ( hypervis_order /= 2 ) return
+  call t_barrierf('sync_advance_hypervis_scalar', hybrid%par%comm)
+  call t_startf('advance_hypervis_scalar_cuda')
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !  hyper viscosity  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  dt = dt2 / hypervis_subcycle_q
+  do ic = 1 , hypervis_subcycle_q
+    ! Qtens = Q/dp   (apply hyperviscsoity to dp0 * Q, not Qdp)
+    do ie = nets , nete
+      do k = 1 , nlev
+        if ( rsplit > 0 ) then  ! verticaly lagrangian code: use prognostic dp
+          dp_h(:,:,k,ie) = elem(ie)%state%dp3d(:,:,k,nt)
+        else                    ! eulerian code: derive dp from ps_v
+          dp_h(:,:,k,ie) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) ) * hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) * elem(ie)%state%ps_v(:,:,nt)
+        endif
+      enddo
+    enddo
+!$OMP BARRIER
+!$OMP MASTER
+    ierr = cudaMemcpy( dp_d , dp_h , size( dp_h ) , cudaMemcpyHostToDevice )
+    ierr = cudaThreadSynchronize()
+    !KERNEL 1
+    blockdim = dim3( np     , np , nlev )
+    griddim  = dim3( nelemd , 1  , 1    )
+    call hypervis_kernel1<<<griddim,blockdim>>>( qdp_d , qtens_d , dp_d , dinv_d , variable_hyperviscosity_d , spheremp_d , deriv_dvv_d , nets , nete , dt , nt_qdp )
+    ierr = cudaThreadSynchronize()
+
+    call pack_exchange_unpack_stage(1,hybrid,qtens_d,1)
+    ierr = cudaThreadSynchronize()
+
+    !KERNEL 2
+    blockdim = dim3( np     , np , nlev )
+    griddim  = dim3( nelemd , 1  , 1    )
+    call hypervis_kernel2<<<griddim,blockdim>>>( qdp_d , qtens_d , dp_d , dinv_d , variable_hyperviscosity_d , spheremp_d , rspheremp_d , deriv_dvv_d , hyai_d , hybi_d , hvcoord%ps0 , nu_q , nets , nete , dt , nt_qdp )
+    ierr = cudaThreadSynchronize()
+    blockdim = dim3( np, np, nlev )
+    griddim  = dim3( qsize_d, nelemd , 1 )
+    call limiter2d_zero_kernel<<<griddim,blockdim>>>(qdp_d,nets,nete,nt_qdp)
+    ierr = cudaThreadSynchronize()
+
+    call pack_exchange_unpack_stage(nt_qdp,hybrid,qdp_d,timelevels)
+    ierr = cudaThreadSynchronize()
+
+    !KERNEL 3
+    blockdim = dim3( np * np , nlev   , 1 )
+    griddim  = dim3( qsize_d , nelemd , 1 )
+    call euler_hypervis_kernel_last<<<griddim,blockdim>>>( qdp_d , rspheremp_d , nets , nete , nt_qdp )
+    ierr = cudaThreadSynchronize()
+!$OMP END MASTER
+!$OMP BARRIER
+  enddo
+
+  call copy_qdp_d2h( elem , nt_qdp )
+
+  call t_stopf('advance_hypervis_scalar_cuda')
+end subroutine advance_hypervis_scalar_cuda
 
 
 
@@ -1507,177 +1603,143 @@ end subroutine edgeVunpack_kernel
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-subroutine limiter_optim_iter_full(ptens,sphweights,minp,maxp,dpmass)
-  !THIS IS A NEW VERSION OF LIM8, POTENTIALLY FASTER BECAUSE INCORPORATES KNOWLEDGE FROM
-  !PREVIOUS ITERATIONS
-  
-  !The idea here is the following: We need to find a grid field which is closest
-  !to the initial field (in terms of weighted sum), but satisfies the min/max constraints.
-  !So, first we find values which do not satisfy constraints and bring these values
-  !to a closest constraint. This way we introduce some mass change (addmass),
-  !so, we redistribute addmass in the way that l2 error is smallest. 
-  !This redistribution might violate constraints thus, we do a few iterations. 
-  use kinds         , only : real_kind
-  use dimensions_mod, only : np, np, nlev
-  real (kind=real_kind), dimension(np*np,nlev), intent(inout)            :: ptens
-  real (kind=real_kind), dimension(np*np     ), intent(in   )            :: sphweights
-  real (kind=real_kind), dimension(      nlev), intent(inout)            :: minp
-  real (kind=real_kind), dimension(      nlev), intent(inout)            :: maxp
-  real (kind=real_kind), dimension(np*np,nlev), intent(in   ), optional  :: dpmass
-
-  real (kind=real_kind), dimension(np*np,nlev) :: weights
-  integer  k1, k, i, j, iter, i1, i2
-  integer :: whois_neg(np*np), whois_pos(np*np), neg_counter, pos_counter
-  real (kind=real_kind) :: addmass, weightssum, mass
-  real (kind=real_kind) :: x(np*np),c(np*np)
-  real (kind=real_kind) :: al_neg(np*np), al_pos(np*np), howmuch
-  real (kind=real_kind) :: tol_limiter = 1e-15
-  integer, parameter :: maxiter = 5
-
-  do k = 1 , nlev
-    weights(:,k) = sphweights(:) * dpmass(:,k)
-    ptens(:,k) = ptens(:,k) / dpmass(:,k)
+attributes(global) subroutine hypervis_kernel1( Qdp , qtens , dp , dinv , variable_hyperviscosity , spheremp , deriv_dvv , nets , nete , dt , nt )
+  implicit none
+  real(kind=real_kind), dimension(np,np,nlev,qsize_d,timelevels,nets:nete), intent(in   ) :: Qdp
+  real(kind=real_kind), dimension(np,np,nlev,qsize_d           ,nets:nete), intent(  out) :: Qtens
+  real(kind=real_kind), dimension(np,np,nlev                   ,nets:nete), intent(in   ) :: dp
+  real(kind=real_kind), dimension(np,np,4                      ,nets:nete), intent(in   ) :: dinv
+  real(kind=real_kind), dimension(np,np                                  ), intent(in   ) :: deriv_dvv
+  real(kind=real_kind), dimension(np,np                        ,nets:nete), intent(in   ) :: variable_hyperviscosity
+  real(kind=real_kind), dimension(np,np                        ,nets:nete), intent(in   ) :: spheremp
+  real(kind=real_kind), value                                             , intent(in   ) :: dt
+  integer, value                                                          , intent(in   ) :: nets , nete , nt
+  real(kind=real_kind), dimension(np,np,2,nlev), shared :: s
+  real(kind=real_kind), dimension(np,np,4  ), shared :: dinv_s
+  real(kind=real_kind), dimension(np,np), shared :: variable_hyperviscosity_s
+  real(kind=real_kind), dimension(np,np), shared :: spheremp_s
+  integer :: i, j, k, q, ie, iz
+  i  = threadidx%x
+  j  = threadidx%y
+  k  = threadidx%z
+  ie = blockidx%x
+  iz = threadidx%z
+  if (k <= 4) dinv_s(i,j,k) = dinv(i,j,k,ie)
+  if (k == 1) then
+    variable_hyperviscosity_s(i,j) = variable_hyperviscosity(i,j,ie)
+    spheremp_s(i,j) = spheremp(i,j,ie)
+  endif
+  do q = 1 , qsize_d
+    s(i,j,1,iz) = Qdp(i,j,k,q,nt,ie) / dp(i,j,k,ie)
+    call syncthreads()
+    qtens(i,j,k,q,ie) = laplace_sphere_wk(i,j,ie,iz,s,dinv_s,spheremp_s,variable_hyperviscosity_s,deriv_dvv,nets,nete)
   enddo
+end subroutine hypervis_kernel1
 
-  do k = 1 , nlev
-    c = weights(:,k)
-    x = ptens(:,k)
 
-    mass = sum(c*x)
 
-    ! relax constraints to ensure limiter has a solution:
-    ! This is only needed if runnign with the SSP CFL>1 or 
-    ! due to roundoff errors
-    if( (mass / sum(c)) < minp(k) ) then
-      minp(k) = mass / sum(c)
-    endif
-    if( (mass / sum(c)) > maxp(k) ) then
-      maxp(k) = mass / sum(c)
-    endif
-
-    addmass = 0.0d0
-    pos_counter = 0;
-    neg_counter = 0;
-    
-    ! apply constraints, compute change in mass caused by constraints 
-    do k1 = 1 , np*np
-      if ( ( x(k1) >= maxp(k) ) ) then
-        addmass = addmass + ( x(k1) - maxp(k) ) * c(k1)
-        x(k1) = maxp(k)
-        whois_pos(k1) = -1
-      else
-        pos_counter = pos_counter+1;
-        whois_pos(pos_counter) = k1;
-      endif
-      if ( ( x(k1) <= minp(k) ) ) then
-        addmass = addmass - ( minp(k) - x(k1) ) * c(k1)
-        x(k1) = minp(k)
-        whois_neg(k1) = -1
-      else
-        neg_counter = neg_counter+1;
-        whois_neg(neg_counter) = k1;
-      endif
-    enddo
-    
-    ! iterate to find field that satifies constraints and is l2-norm closest to original 
-    weightssum = 0.0d0
-    if ( addmass > 0 ) then
-      do i2 = 1 , maxIter
-        weightssum = 0.0
-        do k1 = 1 , pos_counter
-          i1 = whois_pos(k1)
-          weightssum = weightssum + c(i1)
-          al_pos(i1) = maxp(k) - x(i1)
-        enddo
-        
-        if( ( pos_counter > 0 ) .and. ( addmass > tol_limiter * abs(mass) ) ) then
-          do k1 = 1 , pos_counter
-            i1 = whois_pos(k1)
-            howmuch = addmass / weightssum
-            if ( howmuch > al_pos(i1) ) then
-              howmuch = al_pos(i1)
-              whois_pos(k1) = -1
-            endif
-            addmass = addmass - howmuch * c(i1)
-            weightssum = weightssum - c(i1)
-            x(i1) = x(i1) + howmuch
-          enddo
-          !now sort whois_pos and get a new number for pos_counter
-          !here neg_counter and whois_neg serve as temp vars
-          neg_counter = pos_counter
-          whois_neg = whois_pos
-          whois_pos = -1
-          pos_counter = 0
-          do k1 = 1 , neg_counter
-            if ( whois_neg(k1) .ne. -1 ) then
-              pos_counter = pos_counter+1
-              whois_pos(pos_counter) = whois_neg(k1)
-            endif
-          enddo
-        else
-          exit
-        endif
-      enddo
-    else
-       do i2 = 1 , maxIter
-         weightssum = 0.0
-         do k1 = 1 , neg_counter
-           i1 = whois_neg(k1)
-           weightssum = weightssum + c(i1)
-           al_neg(i1) = x(i1) - minp(k)
-         enddo
-         
-         if ( ( neg_counter > 0 ) .and. ( (-addmass) > tol_limiter * abs(mass) ) ) then
-           do k1 = 1 , neg_counter
-             i1 = whois_neg(k1)
-             howmuch = -addmass / weightssum
-             if ( howmuch > al_neg(i1) ) then
-               howmuch = al_neg(i1)
-               whois_neg(k1) = -1
-             endif
-             addmass = addmass + howmuch * c(i1)
-             weightssum = weightssum - c(i1)
-             x(i1) = x(i1) - howmuch
-           enddo
-           !now sort whois_pos and get a new number for pos_counter
-           !here pos_counter and whois_pos serve as temp vars
-           pos_counter = neg_counter
-           whois_pos = whois_neg
-           whois_neg = -1
-           neg_counter = 0
-           do k1 = 1 , pos_counter
-             if ( whois_pos(k1) .ne. -1 ) then
-               neg_counter = neg_counter+1
-               whois_neg(neg_counter) = whois_pos(k1)
-             endif
-           enddo
-         else
-           exit
-         endif
-       enddo
-    endif
-    
-    ptens(:,k) = x
-    
+attributes(global) subroutine hypervis_kernel2( Qdp , qtens , dp , dinv , variable_hyperviscosity , spheremp , rspheremp , deriv_dvv , hyai , hybi , ps0 , nu_q , nets , nete , dt , nt )
+  implicit none
+  real(kind=real_kind), dimension(np,np,nlev,qsize_d,timelevels,nets:nete), intent(inout) :: Qdp
+  real(kind=real_kind), dimension(np,np,nlev,qsize_d           ,nets:nete), intent(in   ) :: Qtens
+  real(kind=real_kind), dimension(np,np,nlev                   ,nets:nete), intent(in   ) :: dp
+  real(kind=real_kind), dimension(np,np                                  ), intent(in   ) :: deriv_dvv
+  real(kind=real_kind), dimension(      nlev+1                           ), intent(in   ) :: hyai
+  real(kind=real_kind), dimension(      nlev+1                           ), intent(in   ) :: hybi
+  real(kind=real_kind), dimension(np,np,4                      ,nets:nete), intent(in   ) :: dinv
+  real(kind=real_kind), dimension(np,np                        ,nets:nete), intent(in   ) :: variable_hyperviscosity
+  real(kind=real_kind), dimension(np,np                        ,nets:nete), intent(in   ) :: spheremp
+  real(kind=real_kind), dimension(np,np                        ,nets:nete), intent(in   ) :: rspheremp
+  real(kind=real_kind), value                                             , intent(in   ) :: dt, ps0, nu_q
+  integer, value                                                          , intent(in   ) :: nets , nete , nt
+  real(kind=real_kind), dimension(np,np,2,nlev), shared :: s
+  real(kind=real_kind), dimension(np,np,4  ), shared :: dinv_s
+  real(kind=real_kind), dimension(np,np), shared :: variable_hyperviscosity_s
+  real(kind=real_kind), dimension(np,np), shared :: spheremp_s
+  real(kind=real_kind), dimension(np,np), shared :: rspheremp_s
+  real(kind=real_kind) :: dp0
+  integer :: i, j, k, q, ie, iz
+  i  = threadidx%x
+  j  = threadidx%y
+  k  = threadidx%z
+  ie = blockidx%x
+  iz = threadidx%z
+  if (k == 1) then
+    dinv_s(i,j,:) = dinv(i,j,:,ie)
+    variable_hyperviscosity_s(i,j) = variable_hyperviscosity(i,j,ie)
+    spheremp_s(i,j) = spheremp(i,j,ie)
+    rspheremp_s(i,j) = rspheremp(i,j,ie)
+  endif
+  dp0 = dt*nu_q*( ( hyai(k+1) - hyai(k) )*ps0 + ( hybi(k+1) - hybi(k) )*ps0 )
+  do q = 1 , qsize_d
+    s(i,j,1,iz) = rspheremp_s(i,j)*qtens(i,j,k,q,ie)
+    call syncthreads()
+    Qdp(i,j,k,q,nt,ie) = Qdp(i,j,k,q,nt,ie)*spheremp_s(i,j)-dp0*laplace_sphere_wk(i,j,ie,iz,s,dinv_s,spheremp_s,variable_hyperviscosity_s,deriv_dvv,nets,nete)
   enddo
- 
-  do k = 1 , nlev
-    ptens(:,k) = ptens(:,k) * dpmass(:,k)
+end subroutine hypervis_kernel2
+
+
+
+attributes(device) function laplace_sphere_wk(i,j,ie,iz,s,dinv,spheremp,variable_hyperviscosity,deriv_dvv,nets,nete) result(lapl)
+  implicit none
+  integer,                                              intent(in) :: nets, nete, i, j, ie, iz
+  real(kind=real_kind), dimension(np,np,2,nlev)       , intent(inout) :: s
+  real(kind=real_kind), dimension(np,np,2,2          ), intent(in) :: dinv
+  real(kind=real_kind), dimension(np,np              ), intent(in) :: deriv_dvv
+  real(kind=real_kind), dimension(np,np              ), intent(in) :: variable_hyperviscosity
+  real(kind=real_kind), dimension(np,np              ), intent(in) :: spheremp
+  real(kind=real_kind)                                             :: lapl
+  integer :: l
+  real(kind=real_kind) :: dsdx00 , dsdy00, tmp1, tmp2
+  real(kind=real_kind), dimension(2) :: ds
+  ds = gradient_sphere(i,j,ie,iz,s,dinv,variable_hyperviscosity,deriv_dvv,nets,nete)
+  lapl = divergence_sphere_wk(i,j,ie,iz,ds,s,dinv,spheremp,deriv_dvv,nets,nete)
+end function laplace_sphere_wk
+
+
+
+attributes(device) function gradient_sphere(i,j,ie,iz,s,dinv,variable_hyperviscosity,deriv_dvv,nets,nete) result(ds)
+  use physical_constants, only: rrearth
+  implicit none
+  integer,                                              intent(in) :: nets, nete, i, j, ie, iz
+  real(kind=real_kind), dimension(np,np,2,nlev)       , intent(in) :: s
+  real(kind=real_kind), dimension(np,np,2,2          ), intent(in) :: dinv
+  real(kind=real_kind), dimension(np,np              ), intent(in) :: deriv_dvv
+  real(kind=real_kind), dimension(np,np              ), intent(in) :: variable_hyperviscosity
+  real(kind=real_kind), dimension(2)                               :: ds
+  integer :: l
+  real(kind=real_kind) :: dsdx00 , dsdy00, tmp1, tmp2
+  dsdx00 = 0.0d0
+  dsdy00 = 0.0d0
+  do l = 1 , np
+    dsdx00 = dsdx00 + deriv_dvv(l,i)*s(l,j,1,iz)
+    dsdy00 = dsdy00 + deriv_dvv(l,j)*s(i,l,1,iz)
   enddo
-end subroutine limiter_optim_iter_full
+  ds(1) = ( dinv(i,j,1,1)*dsdx00 + dinv(i,j,2,1)*dsdy00 ) * rrearth * variable_hyperviscosity(i,j)
+  ds(2) = ( dinv(i,j,1,2)*dsdx00 + dinv(i,j,2,2)*dsdy00 ) * rrearth * variable_hyperviscosity(i,j)
+end function gradient_sphere
 
 
+
+attributes(device) function divergence_sphere_wk(i,j,ie,iz,tmp,s,dinv,spheremp,deriv_dvv,nets,nete) result(lapl)
+  use physical_constants, only: rrearth
+  implicit none
+  integer,                                              intent(in   ) :: nets, nete, i, j, ie, iz
+  real(kind=real_kind), dimension(2),                   intent(in   ) :: tmp
+  real(kind=real_kind), dimension(np,np,2,nlev)       , intent(inout) :: s
+  real(kind=real_kind), dimension(np,np,2,2          ), intent(in   ) :: dinv
+  real(kind=real_kind), dimension(np,np              ), intent(in   ) :: deriv_dvv
+  real(kind=real_kind), dimension(np,np              ), intent(in   ) :: spheremp
+  real(kind=real_kind)                                                :: lapl
+  integer :: l
+  s(i,j,1,iz) = ( dinv(i,j,1,1)*tmp(1) + dinv(i,j,1,2)*tmp(2) )
+  s(i,j,2,iz) = ( dinv(i,j,2,1)*tmp(1) + dinv(i,j,2,2)*tmp(2) )
+  call syncthreads()
+  lapl = 0.0d0
+  do l = 1 , np
+    lapl = lapl - (spheremp(l,j)*s(l,j,1,iz)*deriv_dvv(i,l)+spheremp(i,l)*s(i,l,2,iz)*deriv_dvv(j,l)) * rrearth
+  enddo
+end function divergence_sphere_wk
 
 
 

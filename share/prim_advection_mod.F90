@@ -2229,7 +2229,7 @@ contains
     call euler_step( np1_qdp , np1_qdp , dt/2 , elem , hvcoord , hybrid , deriv , nets , nete , DSSomega       , rhs_multiplier )
 
     !to finish the 2D advection step, we need to average the t and t+2 results to get a second order estimate for t+1.  
-    call qdp_time_avg( elem , rkstage , n0_qdp , np1_qdp , nets , nete )
+    call qdp_time_avg( elem , rkstage , n0_qdp , np1_qdp , limiter_option , nu_p , nets , nete )
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !  Dissipation
@@ -2246,16 +2246,17 @@ contains
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
 
-  subroutine qdp_time_avg( elem , rkstage , n0_qdp , np1_qdp , nets , nete )
+  subroutine qdp_time_avg( elem , rkstage , n0_qdp , np1_qdp , limiter_option , nu_p , nets , nete )
 #ifdef _ACCEL
     use cuda_mod, only: qdp_time_avg_cuda
 #endif
     implicit none
-    type(element_t), intent(inout) :: elem(:)
-    integer        , intent(in   ) :: rkstage , n0_qdp , np1_qdp , nets , nete
+    type(element_t)     , intent(inout) :: elem(:)
+    integer             , intent(in   ) :: rkstage , n0_qdp , np1_qdp , nets , nete , limiter_option
+    real(kind=real_kind), intent(in   ) :: nu_p
     integer :: ie
 #ifdef _ACCEL
-    call qdp_time_avg_cuda( elem , rkstage , n0_qdp , np1_qdp , nets , nete )
+    call qdp_time_avg_cuda( elem , rkstage , n0_qdp , np1_qdp , limiter_option , nu_p , nets , nete )
     return
 #endif
     do ie=nets,nete
@@ -3093,6 +3094,9 @@ contains
   !          Q(:,:,:,np) = Q(:,:,:,np) +  dt2*nu*laplacian**order ( Q )
   !
   !  For correct scaling, dt2 should be the same 'dt2' used in the leapfrog advace
+#ifdef _ACCEL
+  use cuda_mod       , only : advance_hypervis_scalar_cuda
+#endif
   use kinds          , only : real_kind
   use dimensions_mod , only : np, nlev
   use hybrid_mod     , only : hybrid_t
@@ -3130,6 +3134,10 @@ contains
   integer :: density_scaling = 0
   if ( nu_q           == 0 ) return
   if ( hypervis_order /= 2 ) return
+#ifdef _ACCEL
+  call advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , deriv , nt , nt_qdp , nets , nete , dt2 )
+  return
+#endif
   call t_barrierf('sync_advance_hypervis_scalar', hybrid%par%comm)
   call t_startf('advance_hypervis_scalar')
   
