@@ -162,6 +162,86 @@ end subroutine
 
 
 #ifdef _PRIM
+subroutine biharmonic_wk_dp3d(elem,dptens,ptens,vtens,deriv,edge3,hybrid,nt,nets,nete,nu_ratio)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! compute weak biharmonic operator
+!    input:  h,v (stored in elem()%, in lat-lon coordinates
+!    output: ptens,vtens  overwritten with weak biharmonic of h,v (output in lat-lon coordinates)
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+type (hybrid_t)      , intent(in) :: hybrid
+type (element_t)     , intent(inout), target :: elem(:)
+real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)  :: vtens
+real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: ptens,dptens
+type (EdgeBuffer_t)  , intent(inout) :: edge3
+type (derivative_t)  , intent(in) :: deriv
+integer :: nt,nets,nete
+real (kind=real_kind) ::  nu_ratio
+
+! local
+integer :: k,kptr,i,j,ie,ic
+real (kind=real_kind), dimension(:,:), pointer :: rspheremv, viscosity
+real (kind=real_kind), dimension(np,np) :: tmp
+real (kind=real_kind), dimension(np,np,2) :: v
+
+   do ie=nets,nete
+      viscosity    => elem(ie)%variable_hyperviscosity
+
+#if (defined ELEMENT_OPENMP)
+!$omp parallel do private(k)
+#endif
+      do k=1,nlev
+         tmp=elem(ie)%state%T(:,:,k,nt) 
+         ptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),viscosity)
+         tmp=elem(ie)%state%dp3d(:,:,k,nt) 
+         dptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),viscosity)
+         vtens(:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),viscosity,nu_ratio)
+      enddo
+      kptr=0
+      call edgeVpack(edge3, ptens(1,1,1,ie),nlev,kptr,elem(ie)%desc)
+      kptr=nlev
+      call edgeVpack(edge3, vtens(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
+      kptr=3*nlev
+      call edgeVpack(edge3, dptens(1,1,1,ie),nlev,kptr,elem(ie)%desc)
+
+   enddo
+   
+   call bndry_exchangeV(hybrid,edge3)
+   
+   do ie=nets,nete
+      rspheremv     => elem(ie)%rspheremp(:,:)
+      viscosity     => elem(ie)%variable_hyperviscosity
+      
+      kptr=0
+      call edgeVunpack(edge3, ptens(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+      kptr=nlev
+      call edgeVunpack(edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
+      kptr=3*nlev
+      call edgeVunpack(edge3, dptens(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+      
+      ! apply inverse mass matrix, then apply laplace again
+#if (defined ELEMENT_OPENMP)
+!$omp parallel do private(k,  v)
+#endif
+      do k=1,nlev
+         tmp(:,:)=rspheremv(i,j)*ptens(:,:,k,ie)
+         ptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),viscosity)
+         tmp(:,:)=rspheremv(i,j)*dptens(:,:,k,ie)
+         dptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),viscosity)
+
+         v(:,:,1)=rspheremv(:,:)*vtens(:,:,1,k,ie)
+         v(:,:,2)=rspheremv(:,:)*vtens(:,:,2,k,ie)
+         vtens(:,:,:,k,ie)=vlaplace_sphere_wk(v(:,:,:),deriv,elem(ie),viscosity,nu_ratio)
+
+      enddo
+   enddo
+#ifdef DEBUGOMP
+#if (! defined ELEMENT_OPENMP)
+!$OMP BARRIER
+#endif
+#endif
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+end subroutine
 
 
 subroutine biharmonic_wk_scalar(elem,qtens,deriv,edgeq,hybrid,nets,nete)
