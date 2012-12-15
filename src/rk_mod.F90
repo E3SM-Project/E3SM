@@ -3,7 +3,6 @@
 #endif
 
 
-!#include "timer.h"
 
 module rk_mod
 

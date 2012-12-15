@@ -47,11 +47,12 @@ module interp_movie_mod
 #undef V_IS_LATLON
 #if defined(_PRIM) || defined(_PRIMDG)
 #define V_IS_LATLON
-  integer, parameter :: varcnt = 42
+  integer, parameter :: varcnt = 43
   integer, parameter :: maxdims =  5
   character*(*), parameter :: varnames(varcnt)=(/'ps       ', &
                                                  'geos     ', &
                                                  'zeta     ', &
+                                                 'dp3d     ', &
                                                  'div      ', &
                                                  'T        ', &
                                                  'Th       ', &
@@ -92,6 +93,7 @@ module interp_movie_mod
                                                  'hybi     ', &
                                                  'time     '/)
   integer, parameter :: vartype(varcnt)=(/PIO_double,PIO_double,PIO_double,PIO_double,&
+                                          PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,&
@@ -108,6 +110,7 @@ module interp_movie_mod
                                           PIO_double,PIO_double,&
                                           PIO_double/)
   logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,.false.,&
+                                              .false.,&   
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
@@ -125,6 +128,7 @@ module interp_movie_mod
   integer, parameter :: vardims(maxdims,varcnt) =  reshape( (/ 1,2,5,0,0,  &
        1,2,0,0,0,  &   ! geos
        1,2,3,5,0,  &   ! zeta
+       1,2,3,5,0,  &   ! dp3d
        1,2,3,5,0,  &   ! div
        1,2,3,5,0,  &   ! T
        1,2,3,5,0,  &   ! Th

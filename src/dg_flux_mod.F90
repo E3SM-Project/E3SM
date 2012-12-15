@@ -4,7 +4,6 @@
 
 module dg_flux_mod
 !=======================================================================================!
-#include "timer.h"
  use kinds,           only : real_kind
  use dimensions_mod,  only : np, nlev
  use derivative_mod,  only : derivative_t

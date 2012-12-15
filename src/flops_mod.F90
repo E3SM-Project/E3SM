@@ -3,7 +3,6 @@
 #endif
 
 
-#include "timer.h"
 module flops_mod
   ! ---------------------
   use kinds, only : real_kind, iulog
