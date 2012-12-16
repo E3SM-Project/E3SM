@@ -560,10 +560,10 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   do ie=nets,nete 
     do k=1, nlev
 !       call solidbody_all(spelt(ie), dsphere1,dsphere2,k) 
-!       call boomerang_all(spelt(ie), dsphere1,dsphere2,k,tl%nstep)
+      call boomerang_all(spelt(ie), dsphere1,dsphere2,k,tl%nstep)
 !       call t_startf('SPELT0') 
-      call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
-      call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)
+!       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
+!       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)
                
       !search has not to be done for all tracers!
       do j=1,nep
@@ -689,6 +689,12 @@ subroutine boomerang_all(spelt, dsphere1,dsphere2,k,nstep)
   real (kind=real_kind)       :: dplm,dpth,trm1,trm2,sslm,cwt,swt
   real (kind=real_kind)       :: dt2,dt3,dt4,dtt,udc,uexact, vexact, u,v
   
+  real (kind=real_kind)       :: Ainv(2,2)
+  
+  type (cartesian2D_t)        :: alphabeta
+  type (cartesian2D_t)        :: dcart
+  integer                     :: number, face_nodep
+  
   integer                     :: nmaxaround
   
   iteration=10   ! has to be an even number here
@@ -794,12 +800,20 @@ subroutine boomerang_all(spelt, dsphere1,dsphere2,k,nstep)
           dsphere1(i,j)%lon=tmp_lm
           dsphere1(i,j)%lat=tmp_th
           dsphere1(i,j)%r=spelt%asphere(i,j)%r
+!           call cube_facepoint_ne(dsphere1,ne,dcart, alphabeta, number, face_nodep)
+          
         endif
         if(itr==1) then
           u=uexact /( 12*3600*24/5)
           v=vexact /( 12*3600*24/5)
-          spelt%contrau(i,j,k)=spelt%Ainv(1,1,i,j)*u+spelt%Ainv(2,1,i,j)*v      
-          spelt%contrav(i,j,k)=spelt%Ainv(1,2,i,j)*u+spelt%Ainv(2,2,i,j)*v
+!           spelt%contrau(i,j,k)=spelt%Ainv(1,1,i,j)*u+spelt%Ainv(2,1,i,j)*v      
+!           spelt%contrav(i,j,k)=spelt%Ainv(1,2,i,j)*u+spelt%Ainv(2,2,i,j)*v
+! alphabeta=sphere2cubedsphere(spelt(ie)%asphere(iel,jel), elem(ie)%FaceNum)
+
+          call cube_facepoint_ne(spelt%asphere(i,j),ne,dcart, alphabeta, number, face_nodep)
+          call get_Ainv(face_nodep, spelt%asphere(i,j), alphabeta,Ainv)
+ !          spelt%contrau(i,j,k)=Ainv(1,1)*u+Ainv(2,1)*v      
+ !           spelt%contrav(i,j,k)=Ainv(1,2)*u+Ainv(2,2)*v
         endif
       end do
       dsphere2(i,j)%lon=tmp_lm
@@ -815,7 +829,46 @@ subroutine boomerang_all(spelt, dsphere1,dsphere2,k,nstep)
   enddo
 end subroutine boomerang_all
 
+subroutine get_Ainv(FaceNum, sphere, alphabeta,Ainv)
+  use physical_constants, only : DD_PI
+  use coordinate_systems_mod, only : spherical_polar_t
+  
+  integer              , intent(in)   :: FaceNum
+  type (spherical_polar_t),intent(in) :: sphere
+  type (cartesian2D_t), intent(in)        :: alphabeta
+  
+  real (kind=real_kind), intent(out)  :: Ainv(2,2)
 
+  real (kind=real_kind)  :: lon, lat, alpha, beta, tmp
+  
+  lon=sphere%lon
+  lat=sphere%lat
+  alpha=alphabeta%x
+  beta=alphabeta%y
+
+    if (FaceNum <= 4) then
+      lon=lon-(FaceNum-1)*DD_PI/2
+      tmp=1.0D0/(cos(lat)*cos(lon))
+      Ainv(1,1)=tmp*cos(alpha)*cos(alpha)/cos(lon)
+      Ainv(2,1)=0.0D0
+      Ainv(1,2)=tmp*cos(beta)*cos(beta)*tan(lat)*tan(lon)
+      Ainv(2,2)=tmp*cos(beta)*cos(beta)/cos(lat)
+    endif
+    if (FaceNum == 5) then
+      tmp=1.0D0/(sin(lat)*sin(lat))
+      Ainv(1,1)=-tmp*cos(alpha)*cos(alpha)*sin(lat)*cos(lon)
+      Ainv(2,1)=tmp*cos(alpha)*cos(alpha)*sin(lon)
+      Ainv(1,2)=tmp*cos(beta)*cos(beta)*sin(lat)*sin(lon)
+      Ainv(2,2)=tmp*cos(beta)*cos(beta)*cos(lon)
+    endif
+    if (FaceNum == 6) then
+      tmp=1.0D0/(sin(lat)*sin(lat))
+      Ainv(1,1)=tmp*cos(alpha)*cos(alpha)*sin(lat)*cos(lon)
+      Ainv(2,1)=-tmp*cos(alpha)*cos(alpha)*sin(lon)
+      Ainv(1,2)=tmp*cos(beta)*cos(beta)*sin(lat)*sin(lon)
+      Ainv(2,2)=tmp*cos(beta)*cos(beta)*cos(lon)
+    endif
+end subroutine get_Ainv
 
 ! initialize global buffers shared by all threads
 subroutine spelt_init1(par)
@@ -1002,28 +1055,29 @@ subroutine spelt_grid_init(elem,spelt,nets,nete,tl)
             beta=alphabeta%y
             ! Caculation transformation matrix lat/lon to alpha beta for spelt grid
             ! earth radius is assumed to be 1.0D0
-            if (elem(ie)%FaceNum <= 4) then
-              lon=lon-(elem(ie)%FaceNum-1)*DD_PI/2
-              tmp=1.0D0/(cos(lat)*cos(lon))
-              spelt(ie)%Ainv(1,1,iel,jel)=tmp*cos(alpha)*cos(alpha)/cos(lon)
-              spelt(ie)%Ainv(2,1,iel,jel)=0.0D0
-              spelt(ie)%Ainv(1,2,iel,jel)=tmp*cos(beta)*cos(beta)*tan(lat)*tan(lon)
-              spelt(ie)%Ainv(2,2,iel,jel)=tmp*cos(beta)*cos(beta)/cos(lat)
-            endif
-            if (elem(ie)%FaceNum == 5) then
-              tmp=1.0D0/(sin(lat)*sin(lat))
-              spelt(ie)%Ainv(1,1,iel,jel)=-tmp*cos(alpha)*cos(alpha)*sin(lat)*cos(lon)
-              spelt(ie)%Ainv(2,1,iel,jel)=tmp*cos(alpha)*cos(alpha)*sin(lon)
-              spelt(ie)%Ainv(1,2,iel,jel)=tmp*cos(beta)*cos(beta)*sin(lat)*sin(lon)
-              spelt(ie)%Ainv(2,2,iel,jel)=tmp*cos(beta)*cos(beta)*cos(lon)
-            endif
-            if (elem(ie)%FaceNum == 6) then
-              tmp=1.0D0/(sin(lat)*sin(lat))
-              spelt(ie)%Ainv(1,1,iel,jel)=tmp*cos(alpha)*cos(alpha)*sin(lat)*cos(lon)
-              spelt(ie)%Ainv(2,1,iel,jel)=-tmp*cos(alpha)*cos(alpha)*sin(lon)
-              spelt(ie)%Ainv(1,2,iel,jel)=tmp*cos(beta)*cos(beta)*sin(lat)*sin(lon)
-              spelt(ie)%Ainv(2,2,iel,jel)=tmp*cos(beta)*cos(beta)*cos(lon)
-            endif
+            call get_Ainv(elem(ie)%FaceNum, spelt(ie)%asphere(i,j), alphabeta,spelt(ie)%Ainv(:,:,iel,jel))
+!             if (elem(ie)%FaceNum <= 4) then
+!               lon=lon-(elem(ie)%FaceNum-1)*DD_PI/2
+!               tmp=1.0D0/(cos(lat)*cos(lon))
+!               spelt(ie)%Ainv(1,1,iel,jel)=tmp*cos(alpha)*cos(alpha)/cos(lon)
+!               spelt(ie)%Ainv(2,1,iel,jel)=0.0D0
+!               spelt(ie)%Ainv(1,2,iel,jel)=tmp*cos(beta)*cos(beta)*tan(lat)*tan(lon)
+!               spelt(ie)%Ainv(2,2,iel,jel)=tmp*cos(beta)*cos(beta)/cos(lat)
+!             endif
+!             if (elem(ie)%FaceNum == 5) then
+!               tmp=1.0D0/(sin(lat)*sin(lat))
+!               spelt(ie)%Ainv(1,1,iel,jel)=-tmp*cos(alpha)*cos(alpha)*sin(lat)*cos(lon)
+!               spelt(ie)%Ainv(2,1,iel,jel)=tmp*cos(alpha)*cos(alpha)*sin(lon)
+!               spelt(ie)%Ainv(1,2,iel,jel)=tmp*cos(beta)*cos(beta)*sin(lat)*sin(lon)
+!               spelt(ie)%Ainv(2,2,iel,jel)=tmp*cos(beta)*cos(beta)*cos(lon)
+!             endif
+!             if (elem(ie)%FaceNum == 6) then
+!               tmp=1.0D0/(sin(lat)*sin(lat))
+!               spelt(ie)%Ainv(1,1,iel,jel)=tmp*cos(alpha)*cos(alpha)*sin(lat)*cos(lon)
+!               spelt(ie)%Ainv(2,1,iel,jel)=-tmp*cos(alpha)*cos(alpha)*sin(lon)
+!               spelt(ie)%Ainv(1,2,iel,jel)=tmp*cos(beta)*cos(beta)*sin(lat)*sin(lon)
+!               spelt(ie)%Ainv(2,2,iel,jel)=tmp*cos(beta)*cos(beta)*cos(lon)
+!             endif
         
           end do    
         end do
