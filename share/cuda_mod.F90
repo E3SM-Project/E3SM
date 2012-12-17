@@ -1670,6 +1670,7 @@ attributes(global) subroutine hypervis_kernel2( Qdp , qtens , dp , dinv , variab
     spheremp_s(i,j) = spheremp(i,j,ie)
     rspheremp_s(i,j) = rspheremp(i,j,ie)
   endif
+  call syncthreads()
   dp0 = dt*nu_q*( ( hyai(k+1) - hyai(k) )*ps0 + ( hybi(k+1) - hybi(k) )*ps0 )
   do q = 1 , qsize_d
     s(i,j,1,iz) = rspheremp_s(i,j)*qtens(i,j,k,q,ie)
