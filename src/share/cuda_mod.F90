@@ -80,6 +80,7 @@ module cuda_mod
   real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: recvbuf_d
 
   !PINNED Host arrays
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:,:,:) :: qdp_h
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:,:) :: vstar_h
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:,:) :: qtens_h
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:)   :: dp_h
@@ -209,6 +210,7 @@ contains
     allocate( recv_internal_indices_d  (nelemd                              ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( recv_external_indices_d  (nelemd                              ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
 
+    allocate( qdp_h                    (np,np,nlev,qsize_d,timelevels,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( qmin                     (nlev,qsize_d                 ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( qmax                     (nlev,qsize_d                 ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( vstar_h                  (np,np,nlev,2                 ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
@@ -473,7 +475,7 @@ contains
   real(kind=real_kind), dimension(np,np,2,nlev                ) :: Vstar
   real(kind=real_kind), dimension(np,np  ,nlev                ) :: dp,dp_star
   real(kind=real_kind), pointer, dimension(:,:,:)               :: DSSvar
-  real(kind=real_kind) :: dp0
+  real(kind=real_kind) :: dp0,qmintmp,qmaxtmp
   integer :: ie,q,i,j,k
   integer :: rhs_viss = 0
 
@@ -528,27 +530,60 @@ contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   rhs_viss = 0
   if ( limiter_option == 8 .or. nu_p > 0 ) then
-    do ie = nets , nete
+  do ie = 1 , nelemd
+    dp_h(:,:,:,ie) = elem(ie)%derived%dp(:,:,:)
+    divdp_h(:,:,:,ie) = elem(ie)%derived%divdp_proj(:,:,:) 
+    Qdp_h(:,:,:,:,n0_qdp,ie) = elem(ie)%state%Qdp(:,:,:,:,n0_qdp)
+  enddo
+!$OMP BARRIER
+!$OMP MASTER
+!$acc data copyin(dp_h,divdp_h,qdp_h) copyout(qtens_biharmonic) present_or_create(dp)
+!$acc kernels
+    !$acc loop private(k,q,ie)
+    do ie = 1 , nelemd
       ! add hyperviscosity to RHS.  apply to Q at timelevel n0, Qdp(n0)/dp
       do k = 1 , nlev    !  Loop index added with implicit inversion (AAM)
-        dp(:,:,k) = elem(ie)%derived%dp(:,:,k) - rhs_multiplier*dt*elem(ie)%derived%divdp_proj(:,:,k) 
+        dp_h(:,:,k,ie) = dp_h(:,:,k,ie) - rhs_multiplier*dt*divdp_h(:,:,k,ie)
         do q = 1 , qsize
-          Qtens_biharmonic(:,:,k,q,ie) = elem(ie)%state%Qdp(:,:,k,q,n0_qdp)/dp(:,:,k)
+          Qtens_biharmonic(:,:,k,q,ie) = Qdp_h(:,:,k,q,n0_qdp,ie)/dp_h(:,:,k,ie)
         enddo
       enddo
     enddo
+!$acc end kernels
+!$acc end data
+!$OMP END MASTER
+!$OMP BARRIER
 
     ! compute element qmin/qmax
     if ( rhs_multiplier == 0 ) then
-      do ie = nets , nete
-        do k = 1 , nlev    
-          do q = 1 , qsize
-            qmin(k,q,ie)=minval(Qtens_biharmonic(:,:,k,q,ie))
-            qmax(k,q,ie)=maxval(Qtens_biharmonic(:,:,k,q,ie))
-            qmin(k,q,ie)=max(qmin(k,q,ie),0d0)
+!$OMP BARRIER
+  if (hybrid%ithr == 0 ) then
+    !$acc data copyin(Qtens_biharmonic) copyout(qmin,qmax)
+    !$acc parallel loop gang vector_length(512)
+    do ie = 1 , nelemd
+      do q = 1 , qsize
+        !We had "worker" put here, but it doesn't work woth PGI
+        !$acc loop private(qmintmp,qmaxtmp) 
+        do k = 1 , nlev  
+          qmintmp = 1d9
+          qmaxtmp = -1d9
+          !$acc loop reduction(min:qmintmp) reduction(max:qmaxtmp) collapse(2) vector
+          do j = 1, np
+            do i = 1, np
+              qmintmp=min(Qtens_biharmonic(i,j,k,q,ie),qmintmp)
+              qmaxtmp=max(Qtens_biharmonic(i,j,k,q,ie),qmaxtmp)
+            enddo
           enddo
+          qmin(k,q,ie) = max(qmintmp,0d0)
+          qmax(k,q,ie) = qmaxtmp
         enddo
       enddo
+    enddo
+    !$acc end parallel loop
+    !$acc wait
+    !$acc end data
+  endif
+!$OMP BARRIER
       ! update qmin/qmax based on neighbor data for lim8
       if ( limiter_option == 8 ) call neighbor_minmax(elem,hybrid,edgeAdvQ2,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
 !$OMP BARRIER

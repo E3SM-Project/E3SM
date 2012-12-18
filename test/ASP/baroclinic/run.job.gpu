@@ -39,6 +39,8 @@
 module add cudatoolkit
 setenv OMP_NUM_THREADS 16
 set executable = preqx.gpu
+setenv COMPUTE_PROFILE 1
+setenv COMPUTE_PROFILE_LOG 'cuda_profile_%p.log'
 
 # directores
 #set HOMME = ~/codes/homme1_2_2      
@@ -86,7 +88,7 @@ set smooth = 0
 set tadv = 1 ; set RK2 = 1    
 set qsplit = 4
 set mean_flux=1
-#set limiter = 8
+set limiter = 8
 
 
 
@@ -100,7 +102,7 @@ if ( $ne == 8 ) then
    set tstep = 360        # dynamics timestep
    set nu = 2e16
    set nu_q = 2e16
-#  set nu_p = $nu_q
+   set nu_p = $nu_q
    set resolution = low
 
 endif
