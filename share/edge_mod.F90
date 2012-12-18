@@ -3782,6 +3782,26 @@ end subroutine ghostVunpack
   end subroutine ghostVunpack3d
 
 
+#ifndef HAVE_F2008_CONTIGUOUS
+! subroutine to allow sharing edge buffers
+! this has to be outside a module to allow us to (F77 style) access the same chunk 
+! of memory with a different shape
+!
+! some compilers dont allow the 'target' attribute to be used in a F77 subroutine
+! such as cray.  if that is the case, try compiling with -DHAVE_F2008_CONTIGUOUS
+subroutine set_edge_buffers(edge,nlyr,nbuf,newbuf,newreceive)
+use kinds, only          : real_kind,int_kind
+! input
+type (EdgeBuffer_t) :: edge
+integer :: nlyr,nbuf
+real(kind=real_kind) , target :: newbuf(nlyr,nbuf), newreceive(nlyr,nbuf)
+edge%buf => newbuf
+edge%receive => newreceive
+end subroutine set_edge_buffers
+#endif
+
+
+
 End module edge_mod
 
 
@@ -3794,25 +3814,3 @@ End module edge_mod
 
 
 
-#ifndef HAVE_F2008_CONTIGUOUS
-!
-! subroutine to allow sharing edge buffers
-! this has to be outside a module to allow us to (F77 style) access the same chunk 
-! of memory with a different shape
-!
-! some compilers dont allow the 'target' attribute to be used in a F77 subroutine
-! such as cray.  if that is the case, try compiling with -DHAVE_F2008_CONTIGUOUS
-!
-subroutine set_edge_buffers(edge,nlyr,nbuf,newbuf,newreceive)
-use kinds, only          : real_kind,int_kind
-use edge_mod, only       : EdgeBuffer_t ! _EXTERNAL
-! input
-type (EdgeBuffer_t) :: edge
-integer :: nlyr,nbuf
-real(kind=real_kind) , target :: newbuf(nlyr,nbuf), newreceive(nlyr,nbuf)
-
-edge%buf => newbuf
-edge%receive => newreceive
-end subroutine set_edge_buffers
-
-#endif
