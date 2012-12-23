@@ -2,6 +2,60 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
 
+;***********************************************************************;
+; function  || T || on 2D horizontal array
+;***********************************************************************;
+function norml2(varz[*][*]:double,gw[*]:double)
+local i,output
+begin
+  s2 =  dimsizes(varz) 
+  gs =  dimsizes(gw)
+
+  if ( s2(0) .ne. gs(0) ) then
+     print ("norml2: error: first dimension does not match Gauss weight dimension: " + s2(0) + " " + gs(0) )
+  end if
+  if ( 2*s2(0) .ne. s2(1) ) then
+     print ("norml2: error: second dimsion is not 2x first dimension") 
+  end if
+  
+  varl = ( gw # (varz^2) )/sum(gw)
+  output = sum(varl)/s2(1)
+  output = sqrt(output)
+  return(output)
+end
+
+
+;***********************************************************************;
+; detect type of lat/lon grid
+;
+; gauss_grid =-1    routine failed 
+; gauss_grid = 1    Gauss grid (use shaeg routines)
+; gauss_grid = 2    Equal angle grid with poles  (use shaec routines)
+; gauss_grid = 3    Equal angle grid without poles  (must interpolate first)
+;
+;***********************************************************************;
+function get_gridtype(lat)
+local d1,d2
+begin
+  gauss_grid = -1
+  if (lat(0) .lt. -89.99999 ) then
+    print ("detected equal angle grid with poles")
+    gauss_grid = 2    ; use shaec routines
+  else
+    d1=lat(1)-lat(0)
+    d2=lat(2)-lat(1)
+    ;print(d1-d2)
+    if (abs(d1-d2) .lt. 1e-8 ) then
+      print ("detected equal angle grid without poles")
+      gauss_grid = 3    ; need to interpolate using fo2fsh
+    else
+      print("detected Gauss grid")
+      gauss_grid = 1  
+    end if
+  end if
+  return(gauss_grid)
+end
+
 
 
 begin
@@ -146,7 +200,45 @@ begin
     res@cnLevelSpacingF = .05
     res@tiMainString        = "Q3"
     contour = gsn_csm_contour_map(wks,var(0,:,:),res)     ; Draw a contour plot.  ;
+    
+    var(0,:,:)=PS(n,:,:)/100
+    print ("PS min/max = "+min(var(0,:,:))+", "+max(var(0,:,:)) )
+    res@cnMinLevelValF = 940.
+    res@cnMaxLevelValF = 1020.
+    res@cnLevelSpacingF = 10.0
+    res@tiMainString        = "PS"
+    contour = gsn_csm_contour_map(wks,var(0,:,:),res)     ; Draw a contour plot.  ;
+
+    var = 1e5*vinth2p(f->zeta(n,:,:,:),hyam,hybm,pnew,ps,interp,P0mb,1,extrap)
+    print ("zeta*1e5 min/max = "+min(var(0,:,:))+", "+max(var(0,:,:)) )
+    res@cnMinLevelValF = -5.
+    res@cnMaxLevelValF = 15.
+    res@cnLevelSpacingF = 1.
+    res@tiMainString        = "zeta*1e5"
+    contour = gsn_csm_contour_map(wks,var(0,:,:),res)     ; Draw a contour plot.  ;
+
 
 end do 
+
+;
+;  now compute l2 error against T340 reference solution 
+;
+  fref    = addfile("./T340ref.nc","r")       ; Open netCDF files.	
+
+  if (get_gridtype(f->lat) .ne. 1 ) then
+    print("Error: reference solution must be on a Gauss grid") 
+    return
+  end if
+
+  ; interpolate output to 512x1024
+  nlatref=dimsizes(fref->lat)
+  nlonref=dimsizes(fref->lon)
+  print("Interpolating solution to "+nlatref+" x "+nlonref)
+  do n=0,lasttime,lasttime
+     PSn = g2gsh_Wrap(PS(n,:,:),(/nlatref,nlonref/),nlat-1)
+     error = PSn - fref->PS(n,:,:)
+     error = error/100 ; ERROR computed in mb
+     print("time="+fref->time(n)+" PS l2 error vs. T340 reference: "+norml2(error,fref->gw)+"mb")
+   end do
 end
 

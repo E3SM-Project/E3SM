@@ -1,4 +1,4 @@
-Mark Taylor, 2010-9-23
+Mark Taylor, 2010-09-23
 Mike Levy, 2011-02-01
 
 We need to create a set of "official" regression tests.
@@ -53,23 +53,10 @@ primitive equations:
 BFB changes.  
 
    To check BFB changes, it should be sufficient to compare the stdout
-   of the trunk with the new code on these tests.  the stdout contains 
+   of the trunk with the new code on all tests.  the stdout contains 
    many diagnostics, like energy and enstrophy dissipation rates, which 
    are very sensitive and any non-BFB changes will show up in these numbers.
    
-   swtc1.sh
-   swtc5.sh
-   swtc6.sh
-   swtc1-dg.sh
-   swtc2-dg.sh
-   swtc5-dg.sh
-   baro1a.sh
-   baro1b.sh
-   baro2a.sh
-   baro2b.sh
-   baro2c.sh
-   baro-dg.sh
-
 
 =======================================================================
 Roundoff level changes:  To evaluate roundoff level changes, we should
@@ -118,11 +105,18 @@ baro1[ab].sh run both tests, verify enstrophy norm has not changed significantly
              visually identical. 
 
 
-baro2[ab].sh run both tests.  compute l2 error in PS against EUL result
-             with NCL script provided TODO()
-             plot tracers with Q.ncl, compare with reference plots.  
-             Plots should be visually identical
+baro2a.sh    compute l2 error in PS against T340 EUL result
+             l2 PS error at day 9:  1.13mb
+             plot PS, zeta, compare with reference plots.  
+
+baro2[bd].sh run both tests.  compute l2 error in PS against EUL result
+             scritp will plot PS, zeta, tracers at day 9.  
+             Compare with reference plots (should be visually identical)
              baro2b.sh:  verifty q=1 tracer is preserved to 12 digits
+                         l2 PS error at day 9:  1.13mb
+             baro2d.sh:  verifty q=1 tracer is preserved to 12 digits
+                         l2 PS error at day 9:  1.25mb 
+  check tracer mass conservation:
   (Q-Q0)/Q0   0.740187328509209E-14   Q1
   (Q-Q0)/Q0   0.146454099118228E-13   Q2
   (Q-Q0)/Q0   0.470825202983687E-14   Q3
@@ -149,6 +143,7 @@ Verify that:
   Q diss  = O(e-14)
   dE/dt   = .8e-8   
   dQ^2/dt = -.42e-3
+
 
 
 baro-dg.sh   This test is still very noisy, so these numbers should be
@@ -278,6 +273,18 @@ SHALLOW WATER TESTS -- DETAILS
                 conservation.  IE dissipation should be very small.
                 KE dissipation should be matched by heating term, resulting
                 in very small total energy dissipation.
+
+   baro2d.sh   Test case from Jablonowski and Williamson 2006
+               Same as baro2b.sh, but configred to match CAM-SE
+               subcycled tracers and hyperviscosity, nu_p=nu, nu_div=3*nu
+			   Output using PIO_INTERP
+			   NE=15, NP=4, PLEV=26, dt=180
+			   Run the configuration in this script, visually
+			   compare plots produced in q.pdf (either run
+			   in branch AND trunk or compare to plots in
+			   baro2d-ref.pdf in ref_sol/)
+                           
+
 
    baro-dg.sh  Test case from Jablonowski and Williamson 2006
 			   Discontinous Galerkin core
