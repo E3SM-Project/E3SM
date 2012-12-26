@@ -9,9 +9,9 @@ module element_mod
   use coordinate_systems_mod, only : spherical_polar_t, cartesian2D_t, cartesian3D_t, distance
   !--------------------------
 #ifdef _FVM
-  use dimensions_mod, only : np, npsq, nlev, nlevp, qsize_d, nc, nhc, ntrac_d
+  use dimensions_mod, only : np, npsq, nlev, nlevp, qsize_d, max_neigh_edges, nc, nhc, ntrac_d
 #else
-  use dimensions_mod, only : np, npsq, nlev, nlevp, qsize_d
+  use dimensions_mod, only : np, npsq, nlev, nlevp, qsize_d, max_neigh_edges
 #endif
   !--------------------------
   use edge_mod, only : edgedescriptor_t, rotation_t
@@ -379,7 +379,7 @@ module element_mod
   public :: element_var_coordinates
   public :: element_var_coordinates3D
   public :: GetColumnIdP,GetColumnIdV
-
+  public :: allocate_element_desc
 contains
 
   ! =======================================
@@ -510,5 +510,22 @@ contains
     end do
 
   end function element_var_coordinates3d
+
+
+  subroutine allocate_element_desc(elem)
+    type (element_t), intent(inout)   :: elem(:)
+    integer                           :: num, j
+
+    num      = SIZE(elem)
+    
+    do j=1,num
+       allocate(elem(j)%desc%putmapP(max_neigh_edges))
+       allocate(elem(j)%desc%getmapP(max_neigh_edges))
+       allocate(elem(j)%desc%putmapP_ghost(max_neigh_edges))
+       allocate(elem(j)%desc%getmapP_ghost(max_neigh_edges))
+       allocate(elem(j)%desc%reverse(max_neigh_edges))
+    end do
+  end subroutine allocate_element_desc
+
 
 end module element_mod

@@ -27,7 +27,7 @@ contains
     ! --------------------------------
     use quadrature_mod, only :  test_gauss, test_gausslobatto, quadrature_t, gausslobatto
     ! --------------------------------
-    use element_mod, only : element_t
+    use element_mod, only : element_t, allocate_element_desc
     ! --------------------------------
     use mass_matrix_mod, only : mass_matrix
     ! --------------------------------
@@ -51,7 +51,7 @@ contains
     use metagraph_mod, only : metavertex_t, metaedge_t, LocalElemCount, &
          initmetagraph
     ! --------------------------------
-    use gridgraph_mod, only : gridvertex_t, gridedge_t, PrintGridEdge, PrintGridVertex
+    use gridgraph_mod, only : gridvertex_t, gridedge_t, PrintGridEdge, PrintGridVertex, allocate_gridvertex_nbrs
     ! --------------------------------
     use schedule_mod, only : schedule, genEdgeSched
     ! --------------------------------
@@ -107,7 +107,7 @@ contains
     type (MetaEdge_t),   target,allocatable :: MetaEdge(:)
 
     integer :: ierr
-    integer :: iptr,i,ie
+    integer :: iptr,i,ie,j
     integer :: nelem_edge,nedge
     integer :: nete,nets,ithr,nstep
     integer :: pflag,htype
@@ -185,8 +185,13 @@ contains
             if(par%masterproc) print *,"number of procs=", par%nprocs
             call abortmp('There is not enough paralellism in the job, that is, there is less than one elements per task.')
         end if
+
        allocate(GridVertex(nelem))
        allocate(GridEdge(nelem_edge))
+       
+       do j =1,nelem
+          call allocate_gridvertex_nbrs(GridVertex(j))
+       end do
 
        if (MeshUseMeshFile) then
           if (par%masterproc) then
@@ -277,6 +282,7 @@ contains
 #endif
 
     allocate(elem(nelemd))
+    call allocate_element_desc(elem)
 
 #ifdef _FVM
     allocate(fvm(nelemd))

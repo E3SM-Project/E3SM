@@ -21,10 +21,10 @@ module GridGraph_mod
   type, public :: GridVertex_t
       sequence
 
-      integer                   :: nbrs(max_neigh_edges)               ! The numbers of the neighbor elements
-      integer                   :: nbrs_face(max_neigh_edges)          ! The cube face number of the neighbor element (nbrs array)
-      integer                   :: nbrs_wgt(max_neigh_edges)               ! The weights for edges defined by nbrs array
-      integer                   :: nbrs_wgt_ghost(max_neigh_edges)         ! The weights for edges defined by nbrs array
+      integer, pointer          :: nbrs(:)                     ! The numbers of the neighbor elements
+      integer, pointer          :: nbrs_face(:)                ! The cube face number of the neighbor element (nbrs array)
+      integer, pointer          :: nbrs_wgt(:)                 ! The weights for edges defined by nbrs array
+      integer, pointer          :: nbrs_wgt_ghost(:)           ! The weights for edges defined by nbrs array
       integer                   :: nbrs_ptr(num_neighbors + 1) !index into the nbrs array for each neighbor direction
 
       integer                   :: face_number           ! which face of the cube this vertex is on
@@ -58,6 +58,8 @@ module GridGraph_mod
   public :: set_GridVertex_number
   public :: PrintGridVertex
  
+  public :: allocate_gridvertex_nbrs
+  public :: deallocate_gridvertex_nbrs
   public :: initgridedge
   public :: gridedge_search
   public :: gridedge_type
@@ -77,6 +79,39 @@ module GridGraph_mod
 
 contains
 
+!======================================================================
+
+  subroutine allocate_gridvertex_nbrs(vertex, dim)
+
+    type (GridVertex_t), intent(inout)   :: vertex
+    integer, optional, intent(in)        :: dim
+    integer                              :: num
+
+    if (present(dim)) then
+       num = dim
+    else
+       num = max_neigh_edges
+    end if
+
+    allocate(vertex%nbrs(num))
+    allocate(vertex%nbrs_face(num))
+    allocate(vertex%nbrs_wgt(num))
+    allocate(vertex%nbrs_wgt_ghost(num))
+ 
+
+  end subroutine allocate_gridvertex_nbrs
+!======================================================================
+
+  subroutine deallocate_gridvertex_nbrs(vertex)
+
+    type (GridVertex_t), intent(inout)   :: vertex
+
+    deallocate(vertex%nbrs)
+    deallocate(vertex%nbrs_face)
+    deallocate(vertex%nbrs_wgt)
+    deallocate(vertex%nbrs_wgt_ghost)
+ 
+  end subroutine deallocate_gridvertex_nbrs
 
 !======================================================================
 

@@ -19,7 +19,7 @@ contains
     ! --------------------------------
     use quadrature_mod, only :  test_gauss, test_gausslobatto, quadrature_t, gausslobatto
     ! --------------------------------
-    use element_mod, only : element_t
+    use element_mod, only : element_t, allocate_element_desc
     ! --------------------------------
     use mass_matrix_mod, only : mass_matrix
     ! --------------------------------
@@ -36,7 +36,7 @@ contains
     use metagraph_mod, only : metavertex_t, metaedge_t, LocalElemCount, &
          initmetagraph
     ! --------------------------------
-    use gridgraph_mod, only : gridvertex_t, gridedge_t
+    use gridgraph_mod, only : gridvertex_t, gridedge_t, allocate_gridvertex_nbrs
     ! --------------------------------
     use schedule_mod, only : schedule, genEdgeSched
     ! --------------------------------
@@ -79,7 +79,7 @@ contains
     type (MetaEdge_t),   target,allocatable :: MetaEdge(:)
 
     integer :: ierr
-    integer :: iptr,ii,ie
+    integer :: iptr,ii,ie,j
     integer :: nelem_edge,nedge
     integer :: nete,nets,ithr,nstep
     integer :: pflag,htype
@@ -144,6 +144,10 @@ contains
       end if
      allocate(GridVertex(nelem))
      allocate(GridEdge(nelem_edge))
+
+     do j =1,nelem
+        call allocate_gridvertex_nbrs(GridVertex(j))
+     end do
 
      call CubeTopology(GridEdge,GridVertex)
      if(par%masterproc) write(6,*)"...done."
@@ -223,6 +227,9 @@ contains
 #endif
 
     allocate(elem(nelemd))
+    call allocate_element_desc(elem)
+
+
     ! ====================================================
     !  Generate the communication schedule
     ! ====================================================
