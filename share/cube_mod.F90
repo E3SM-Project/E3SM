@@ -1360,7 +1360,7 @@ contains
   subroutine CubeTopology(GridEdge, GridVertex)
     use params_mod, only : RECURSIVE, SFCURVE
     use control_mod, only: partmethod
-    use gridgraph_mod, only : GridEdge_t, GridVertex_t, initgridedge, PrintGridEdge 
+    use gridgraph_mod, only : GridEdge_t, GridVertex_t, initgridedge, PrintGridEdge, allocate_gridvertex_nbrs, deallocate_gridvertex_nbrs 
     use dimensions_mod, only : np, ne
     use spacecurve_mod, only :  IsFactorable, genspacecurve
     use control_mod, only : north, south, east, west, neast, seast, swest, nwest
@@ -1385,6 +1385,14 @@ contains
     if (0==ne) call abortmp('Error in CubeTopology: ne is zero')
 
     allocate(GridElem(ne,ne,nfaces),stat=ierr)
+    do k = 1, nfaces
+       do j = 1, ne
+          do i = 1, ne
+             call allocate_gridvertex_nbrs(GridElem(i,j,k))
+          end do
+       end do
+    end do
+
     if(ierr/=0) then
        call abortmp('error in allocation of GridElem structure')
     end if
@@ -2038,6 +2046,13 @@ contains
     end do
 
     DEALLOCATE(Mesh)
+     do k = 1, nfaces
+       do j = 1, ne
+          do i = 1, ne
+             call deallocate_gridvertex_nbrs(GridElem(i,j,k))
+          end do
+       end do
+    end do
     DEALLOCATE(GridElem)
     DEALLOCATE(nbrs_used)
 

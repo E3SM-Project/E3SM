@@ -27,11 +27,11 @@ module edge_mod
      sequence
      integer(kind=int_kind)  :: use_rotation
      integer(kind=int_kind)  :: padding
-     integer(kind=int_kind)  :: putmapP(max_neigh_edges)
-     integer(kind=int_kind)  :: getmapP(max_neigh_edges)
-     integer(kind=int_kind)  :: putmapP_ghost(max_neigh_edges)
-     integer(kind=int_kind)  :: getmapP_ghost(max_neigh_edges)
-     logical(kind=log_kind)  :: reverse(max_neigh_edges)
+     integer(kind=int_kind), pointer  :: putmapP(:)
+     integer(kind=int_kind), pointer  :: getmapP(:)
+     integer(kind=int_kind), pointer  :: putmapP_ghost(:)
+     integer(kind=int_kind), pointer  :: getmapP_ghost(:)
+     logical(kind=log_kind), pointer  :: reverse(:)
      type (rotation_t), dimension(:), pointer :: rot => null() ! Identifies list of edges
      !  that must be rotated, and how
   end type EdgeDescriptor_t
