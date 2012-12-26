@@ -53,11 +53,9 @@ module mesh_mod
   ! Private methods
   ! ===============================
 
-
-  private :: find_side_neighbor_information
+  private :: create_index_table
   private :: find_side_neighbors
   private :: find_corner_neighbors
-  private :: find_nodal_neighbors
   private :: get_node_coordinates
   private :: get_2D_sub_coordinate_indexes
   private :: mesh_connectivity
@@ -369,73 +367,8 @@ contains
        sgny = -1
     endif
   end subroutine get_2D_sub_coordinate_indexes
-
-!======================================================================
-!  function find_side_neighbor_information
-!
-!   return the element number and direction of the side neighbor (n,s,e,w)
-!   that shares side specified in nodes
-!======================================================================
-  function find_side_neighbor_information(me, nodes, nel, element_nodes, direction) result(neighbor)
-    use parallel_mod, only : abortmp
-    integer, intent(in)       :: me !my element
-    integer, intent(in)       :: nodes(2) !nodes defining one of the sides
-    integer, intent(in)       :: nel !number of elements
-    integer, intent(out)      :: direction
-    integer, intent(in)       :: element_nodes(nel, 4) 
-    integer                   :: i,j
-    integer                   :: neighbor
-    integer                   :: side_nodes(2)
-    neighbor = 0
-    do i=1,nel !loop through ALL elements
-       if (i /= me) then
-          do j=1,4 !loop through each elements four sides
-             side_nodes(1) = element_nodes(i,j)
-             side_nodes(2) = element_nodes(i,mod(j,4)+1)
-             if ( (side_nodes(1) == nodes(2) .and. side_nodes(2) == nodes(1)) .or. &
-                  (side_nodes(1) == nodes(1) .and. side_nodes(2) == nodes(2)) ) then
-                neighbor = i
-                direction = j
-                return  !found a match - we can return
-             end if
-          end do
-       end if
-    end do
-    if (neighbor == 0) call abortmp('find_side_neighbor_information: Neighbor not found! Every side should have a neighbor.') 
-  end function find_side_neighbor_information
   
-!======================================================================
-! function find_nodal_neighbors
-!======================================================================
- 
-  function find_nodal_neighbors(node, element_nodes, elements) result(multiplicity)
-    use parallel_mod, only : abortmp
-    use dimensions_mod, only : max_elements_attached_to_node
-    implicit none
-    ! parameters 
-    integer, intent(in)    :: node
-    integer, intent(in)    :: element_nodes(p_number_elements, 4)
-    integer, intent(out)   :: elements      (2*max_elements_attached_to_node)
-    ! return value
-    integer                :: multiplicity
-    ! local variables
-    integer                :: i,j
 
-    multiplicity = 0
-    do i=1,p_number_elements  !loop through all elements
-       do j=1,4  !loop through each node
-          if ( element_nodes(i,j) == node ) then
-             multiplicity = multiplicity + 1
-             elements(multiplicity) = i !keep track of matches
-          end if
-       end do
-    end do
-    if (multiplicity < 3 .or. max_elements_attached_to_node < multiplicity) then
-      call abortmp('find_nodal_neighbors: Number of elements attached to node less than 3 or greater than maximum.')
-      !at least 3 elements attached to each node - no more than 7 for mesh (in dimensions_mod)
-    endif
-    
-  end function find_nodal_neighbors
 
 !======================================================================
 ! subroutine mesh_connectivity(connect)
@@ -464,59 +397,130 @@ contains
     end if
 
   end subroutine mesh_connectivity 
+!======================================================================
+! subroutine create_index_table()
+!
+! this is needed to detremine side and corner neighbors
+!======================================================================
+
+  subroutine create_index_table(index_table, element_nodes)
+
+    use dimensions_mod, only : max_elements_attached_to_node
+    use parallel_mod, only : abortmp
+
+    integer, allocatable, intent(inout)  :: index_table(:,:) 
+    integer             ,  intent(in)    :: element_nodes(p_number_elements, 4)
+    integer                              :: cnt, cnt_index, node
+    integer                              :: k, ll 
+
+    !Create an index table so that we can find neighbors on O(n)
+    ! so for each node, we want to know which elements it is part of
+    allocate(index_table(p_number_nodes, max_elements_attached_to_node + 1))
+   
+    !the last column in the index table is a count of the number of elements
+    index_table = 0
+
+    cnt_index =  max_elements_attached_to_node + 1
+     
+    do k=1,p_number_elements
+        do ll=1,4 
+           node = element_nodes(k, ll) !the node
+           cnt = index_table(node, cnt_index)  !how many elements for that node already in table
+           cnt = cnt + 1 !increment since we are adding an element
+           if (cnt >  max_elements_attached_to_node) then
+              call abortmp('Found a node in too many elements.')
+           endif
+           index_table(node, cnt_index) = cnt  
+           index_table(node, cnt) = k !put the element in the indextable
+        enddo
+    enddo
+
+  end subroutine create_index_table
 
 !======================================================================
 ! subroutine find_side_neighbors()
 !
 ! find the element neighbors to the n,s,e,w and put them in GridVertex_t
-!  (only 1 neighbor to the n,s,e,w
+!  (only 1 neighbor to the n,s,e,w)
 !======================================================================
-  subroutine find_side_neighbors (GridVertex, normal_to_homme_ordering, element_nodes, edge_wgt)
+  subroutine find_side_neighbors (GridVertex, normal_to_homme_ordering, element_nodes, edge_wgt, index_table)
     use coordinate_systems_mod, only : cartesian3D_t
     use gridgraph_mod, only   : GridVertex_t
     use parallel_mod, only : abortmp
+    use dimensions_mod, only : max_elements_attached_to_node
+
     implicit none
     integer             ,  intent(in)    :: normal_to_homme_ordering(8)
     integer             ,  intent(in)    :: element_nodes(p_number_elements, 4)
     integer             ,  intent(in)    :: edge_wgt
+    integer             ,  intent(in)     :: index_table(:,:) 
     type (GridVertex_t) ,  intent(inout) :: GridVertex(:)
-    
-    integer                              :: side_nodes(2)
-    integer                              :: neighbor, direction, init_size
-    integer                              :: j,k,ll
-    integer                              :: loc
 
+    integer                              :: i_node(2), my_node(2) 
+    integer                              :: neighbor, direction, init_size
+    integer                              :: j,k,ll,i, m
+    integer                              :: i_elem, jump, end_i
+    integer                              :: loc, node, cnt_index, cnt, a_count(2)
+    logical                              :: found
     if (0 == p_number_blocks)  call abortmp('find_side_neighbors called before MeshOpen')
 
-    
-    do k=1,p_number_elements  ! for each element
-
+   
+    !the last column in the index table is a count of the number of elements
+    cnt_index =  max_elements_attached_to_node + 1
+     
+    !use index table to find neighbors
+    do k=1,p_number_elements  ! for each element k
        !set the side weights
        GridVertex(k)%nbrs_wgt(1:4) = edge_wgt
-
        do ll=1,4 !loop through the four sides
 
-          j = normal_to_homme_ordering(ll)
-          loc = GridVertex(k)%nbrs_ptr(j)
+          jump = normal_to_homme_ordering(ll)
+          loc = GridVertex(k)%nbrs_ptr(jump)
 
-          if (GridVertex(k)%nbrs(loc) == 0) then  !if not set yet, then
+          if (GridVertex(k)%nbrs(loc) == 0) then  !if side is not set yet, then
+             !look for side element
+             found = .false.
+             neighbor = 0
 
-             side_nodes(1) = element_nodes(k, ll)
-             side_nodes(2) = element_nodes(k, mod(ll,4)+1)
-             neighbor = find_side_neighbor_information(k, side_nodes,     &
-                  p_number_elements, &
-                  element_nodes,     &
-                  direction)
+             my_node(1) = element_nodes(k, ll)
+             a_count(1) = index_table(my_node(1), cnt_index)
+             my_node(2) = element_nodes(k, mod(ll,4)+1)
+             a_count(2) = index_table(my_node(2), cnt_index)
+
+             !loop through the elements that are in the index table for each node
+             !and find the element number and direction of the side neighbor
+             do m = 1,2
+                if (found) exit
+                end_i = a_count(m)
+                do i = 1, end_i
+                   if (found) exit
+                   i_elem = index_table(my_node(m),i)
+                   if (i_elem /= k) then !k is the element we are setting sides for
+                      do j=1,4 !loop through each of i_elem's four sides
+                         i_node(1) = element_nodes(i_elem, j)
+                         i_node(2) = element_nodes(i_elem, mod(j,4)+1)
+                         if ( (i_node(1) == my_node(2) .and. i_node(2) == my_node(1)) .or. &
+                              (i_node(1) == my_node(1) .and. i_node(2) == my_node(2)) ) then
+                            neighbor = i_elem
+                            direction = j
+                            found = .true.
+                            !found a match
+                            exit
+                         end if
+                      end do ! j loop
+                   end if
+                enddo ! i loop
+             enddo !m loop
+
+             if (neighbor == 0) call abortmp('find_side_neighbor: Neighbor not found! Every side should have a neighbor.') 
 
              GridVertex(k)%nbrs(loc) = neighbor         
-             
-             j = normal_to_homme_ordering(direction)
-             loc = GridVertex(neighbor)%nbrs_ptr(j)
+             jump = normal_to_homme_ordering(direction)
+             loc = GridVertex(neighbor)%nbrs_ptr(jump)
              GridVertex(neighbor)%nbrs(loc)= k         
-
           endif
-       enddo
-    enddo
+       enddo !  ll loop => 4 sides
+    enddo ! k loop: each element
     
     do k=1,p_number_elements
        do ll=1,4
@@ -525,6 +529,7 @@ contains
           end if
        end do
     end do
+
   end subroutine find_side_neighbors
 
 !======================================================================
@@ -770,23 +775,29 @@ contains
 ! subroutine find_corner_neighbors
 !======================================================================
 
-  subroutine find_corner_neighbors  (GridVertex, normal_to_homme_ordering, element_nodes, corner_wgt)
+  subroutine find_corner_neighbors  (GridVertex, normal_to_homme_ordering, element_nodes, corner_wgt, index_table)
     use parallel_mod,           only : abortmp
     use gridgraph_mod,          only : GridVertex_t
-    use dimensions_mod,         only : max_elements_attached_to_node
+    use dimensions_mod,         only : max_elements_attached_to_node, max_corner_elem
     implicit none
     
     type (GridVertex_t), intent(inout) :: GridVertex(:)
-    integer            , intent(in)  :: normal_to_homme_ordering(8)
-    integer            , intent(in)  :: element_nodes(p_number_elements, 4)
-    integer            , intent(in) :: corner_wgt
+    integer            , intent(in)    :: normal_to_homme_ordering(8)
+    integer            , intent(in)    :: element_nodes(p_number_elements, 4)
+    integer            , intent(in)    :: corner_wgt
+    integer            , intent(in)    :: index_table(:,:) 
 
     integer                          :: node_elements (2*max_elements_attached_to_node)
     integer                          :: elem_neighbor (4*max_elements_attached_to_node)
     integer                          :: nbr_cnt(4)
-    integer                          :: multiplicity, elem_nbr_start, start
-    integer                          :: i, j, k, ll, loc, cnt, jj
-    
+    integer                          :: elem_nbr_start, start
+    integer                          :: i, j, k, ll, jj
+    integer                          :: node, loc, cnt, cnt_index
+
+
+    !the last column in the index table is a count of the number of elements
+    cnt_index =  max_elements_attached_to_node + 1
+
     do i=1, p_number_elements  !loop through all elements
        node_elements(:) = 0
        elem_neighbor(:) = 0
@@ -794,14 +805,21 @@ contains
        nbr_cnt(:) = 0
 
        do j=1,4  !check each of the 4 nodes at the element corners
-          multiplicity = find_nodal_neighbors(element_nodes(i,j), element_nodes, node_elements)
-          !returns all of the element neighbors to that node (in node_elements)
+          node = element_nodes(i,j)
+          cnt = index_table(node, cnt_index)
+          if (cnt < 3 .or. max_elements_attached_to_node < cnt) then
+             call abortmp('find_corner_neighbors: Number of elements attached to node less than 3 or greater than maximum.')
+          endif
+
+          node_elements(1:cnt) = index_table(node, 1:cnt)
+
+          !now node_elements contains the element neighbors to that node - so grab the 
+          ! corner neighbors - these are the ones that are not already side neighbors (or myself)
           k = 0
-          do ll=1,multiplicity !node_elements that are not already side neighbors (or myself)
-                              !are corner neighbors
-             if (                         i /= node_elements(ll) .and. &
-                  GridVertex(i)%nbrs(1) /= node_elements(ll) .and. &
-                  GridVertex(i)%nbrs(2) /= node_elements(ll) .and. &
+          do ll=1,cnt 
+             if ( i /= node_elements(ll) .and. & !not me
+                  GridVertex(i)%nbrs(1) /= node_elements(ll) .and. & !not side 1
+                  GridVertex(i)%nbrs(2) /= node_elements(ll) .and. & ! etc ... 
                   GridVertex(i)%nbrs(3) /= node_elements(ll) .and. &
                   GridVertex(i)%nbrs(4) /= node_elements(ll)) then   
                 k = k + 1
@@ -809,19 +827,19 @@ contains
              end if
           end do ! end of ll loop for multiplicity
 
-          !keep track of where we are starting in elem_neighbor for each j
+          !keep track of where we are starting in elem_neighbor for each corner j
           elem_nbr_start = elem_nbr_start + k
           nbr_cnt(j) = k !how many neighbors in this corner
        end do ! end of j loop through 4 nodes
 
 
        !now that we have done the 4 corners we can populate nbrs and nbrs_ptr 
-       ! (in cons. order)
+       ! with the corners in the proper oder in neighbors
        !also we can add the corner weight
 
        do j=5,8 !loop through 4 corners
           elem_nbr_start = 1
-          !easiest to do these in ascending order - find loc
+          !easiest to do the corner in ascending order - find loc
           do jj = 5,8
              ll = normal_to_homme_ordering(jj)
              if (j == ll) then
@@ -841,9 +859,16 @@ contains
              GridVertex(i)%nbrs_face(start : start + cnt - 1) = &
                   GridVertex(elem_neighbor(elem_nbr_start : elem_nbr_start + cnt -1))%face_number
              GridVertex(i)%nbrs_wgt(start : start + cnt-1)  = corner_wgt
+
           end if
 
-       end do
+          ! TO DO: within each corner neighbor, lets list the corners in clockwise order
+          if (max_corner_elem > 1) then
+
+          endif
+
+
+       end do !j loop through each corner
        
     end do ! end of i loop through elements
   end subroutine find_corner_neighbors
@@ -1002,7 +1027,7 @@ contains
     integer                          :: EdgeWgtP,CornerWgt
     integer                          :: normal_to_homme_ordering(8)
     integer                          :: node_numbers(4)
-    integer                          :: max_size
+    integer, allocatable             :: index_table(:,:) 
 
     normal_to_homme_ordering(1) = south
     normal_to_homme_ordering(2) =  east
@@ -1026,15 +1051,6 @@ contains
 
     call mesh_connectivity (element_nodes)
 
-
-    !INITIALIZE the Grid Vertex for each element
-    !max number of neighbors:
-    !set init_size  (4 side neighbors + 4 corners (-3 is for 2 sides and element itself)
-    max_size = 4 + 4*(max_elements_attached_to_node -3)    
-
-    !TODO: can either reduce storage at the end if have alloced too much
-    ! or can alloc less and then increase if needed
-
     do i=1, p_number_elements  
        GridVertex(i)%number           = i
        GridVertex(i)%face_number      = 0
@@ -1056,10 +1072,11 @@ contains
 
     end do
 
+    !create index table to find neighbors
+    call create_index_table(index_table, element_nodes)
 
     ! side neighbors 
-    call find_side_neighbors  (GridVertex, normal_to_homme_ordering, element_nodes, EdgeWgtP)
-
+    call find_side_neighbors(GridVertex, normal_to_homme_ordering, element_nodes, EdgeWgtP, index_table)
    
     ! set vertex faces
     do i=1, p_number_elements
@@ -1077,14 +1094,16 @@ contains
        do j=1,4 !look at each side
           k = normal_to_homme_ordering(j)
           loc =  GridVertex(i)%nbrs_ptr(k)
-          
           ll = GridVertex(i)%nbrs(loc)
           GridVertex(i)%nbrs_face(loc) = GridVertex(ll)%face_number
        end do
     end do
 
     ! find corner neighbor and faces (weights added also)
-    call find_corner_neighbors  (GridVertex, normal_to_homme_ordering, element_nodes, CornerWgt)
+    call find_corner_neighbors  (GridVertex, normal_to_homme_ordering, element_nodes, CornerWgt, index_table)
+
+    !done with the index table
+    deallocate(index_table)
 
   
     call initgridedge(GridEdge,GridVertex) 
