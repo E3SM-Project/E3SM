@@ -27,7 +27,7 @@ module prim_driver_mod
   use fvm_control_volume_mod, only : fvm_struct
   use spelt_mod, only : spelt_struct, spelt_init1,spelt_init2, spelt_init3
   
-  use element_mod, only : element_t, timelevels
+  use element_mod, only : element_t, timelevels,  allocate_element_desc
   use time_mod, only           : TimeLevel_Qdp
 
   implicit none
@@ -81,7 +81,7 @@ contains
     ! --------------------------------
     use metagraph_mod, only : metavertex_t, metaedge_t, localelemcount, initmetagraph
     ! --------------------------------
-    use gridgraph_mod, only : gridvertex_t, gridedge_t
+    use gridgraph_mod, only : gridvertex_t, gridedge_t, allocate_gridvertex_nbrs, deallocate_gridvertex_nbrs
     ! --------------------------------
     use schedule_mod, only : schedule, genEdgeSched,  PrintSchedule
     ! --------------------------------
@@ -140,7 +140,7 @@ contains
     integer :: nstep
     integer :: nlyr
     integer :: iMv
-    integer :: err, ierr, l
+    integer :: err, ierr, l, j
 
     real(kind=real_kind), allocatable :: aratio(:,:)
     real(kind=real_kind) :: area(1),xtmp
@@ -237,6 +237,10 @@ contains
        allocate(GridVertex(nelem))
        allocate(GridEdge(nelem_edge))
 
+       do j =1,nelem
+          call allocate_gridvertex_nbrs(GridVertex(j))
+       end do
+
        if (MeshUseMeshFile) then
            if (par%masterproc) then
                write(iulog,*) "Set up grid vertex from mesh..."
@@ -297,6 +301,8 @@ contains
 
     if (nelemd>0) then
        allocate(elem(nelemd))
+       call allocate_element_desc(elem)
+
 #ifndef CAM
        call ManagerInit()
 #endif
@@ -474,6 +480,9 @@ contains
 
 #ifndef TESTGRID
     deallocate(GridEdge)
+    do j =1,nelem
+       call deallocate_gridvertex_nbrs(GridVertex(j))
+    end do
     deallocate(GridVertex)
     deallocate(MetaVertex)
     deallocate(TailPartition)
