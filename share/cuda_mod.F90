@@ -794,11 +794,12 @@ subroutine advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , der
     ! Qtens = Q/dp   (apply hyperviscsoity to dp0 * Q, not Qdp)
     do ie = nets , nete
       do k = 1 , nlev
-        if ( rsplit > 0 ) then  ! verticaly lagrangian code: use prognostic dp
-          dp_h(:,:,k,ie) = elem(ie)%state%dp3d(:,:,k,nt)
-        else                    ! eulerian code: derive dp from ps_v
-          dp_h(:,:,k,ie) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) ) * hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) * elem(ie)%state%ps_v(:,:,nt)
-        endif
+        dp_h(:,:,k,ie) = elem(ie)%derived%dp(:,:,k) - dt2*elem(ie)%derived%divdp_proj(:,:,k)
+        !if ( rsplit > 0 ) then  ! verticaly lagrangian code: use prognostic dp
+        !  dp_h(:,:,k,ie) = elem(ie)%state%dp3d(:,:,k,nt)
+        !else                    ! eulerian code: derive dp from ps_v
+        !  dp_h(:,:,k,ie) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) ) * hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) * elem(ie)%state%ps_v(:,:,nt)
+        !endif
       enddo
     enddo
 !$OMP BARRIER
