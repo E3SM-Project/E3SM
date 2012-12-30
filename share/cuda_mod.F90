@@ -57,7 +57,8 @@ module cuda_mod
   real (kind=real_kind),device,allocatable,dimension(:,:)         :: deriv_dvv_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: variable_hyperviscosity_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: metdet_d
-  real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: psdiss_biharmonic_d
+!  real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: psdiss_biharmonic_d
+  real (kind=real_kind),device,allocatable,dimension(:,:,:,:)     :: dpdiss_biharmonic_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: rmetdet_d
   real (kind=real_kind),device,allocatable,dimension(:,:)         :: edgebuf_d
   real (kind=real_kind),device,allocatable,dimension(:)           :: hyai_d
@@ -92,7 +93,8 @@ module cuda_mod
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:,:) :: qtens_biharmonic
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:) :: qmin
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:) :: qmax
-  real(kind=real_kind),pinned,allocatable,dimension(:,:,:) :: psdiss_biharmonic_h
+!  real(kind=real_kind),pinned,allocatable,dimension(:,:,:) :: psdiss_biharmonic_h
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:) :: dpdiss_biharmonic_h
 
   !Normal Host arrays
   integer,allocatable,dimension(:)   :: send_nelem
@@ -191,7 +193,7 @@ contains
     allocate( variable_hyperviscosity_d(np,np                        ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( metdet_d                 (np,np                        ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( rmetdet_d                (np,np                        ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( psdiss_biharmonic_d      (np,np                        ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( dpdiss_biharmonic_d      (np,np,nlev                   ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( vstar_d                  (np,np,nlev,2                 ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( divdp_d                  (np,np,nlev                   ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( dp_d                     (np,np,nlev                   ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
@@ -219,7 +221,7 @@ contains
     allocate( dp_h                     (np,np,nlev                   ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( divdp_h                  (np,np,nlev                   ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( dp_star_h                (np,np,nlev,qsize_d           ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( psdiss_biharmonic_h      (np,np                        ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( dpdiss_biharmonic_h      (np,np,nlev                   ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( dp_np1_h                 (np,np,nlev                   ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( sendbuf_h                (nlev*qsize_d,mx_send_len,nSendCycles) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( recvbuf_h                (nlev*qsize_d,mx_recv_len,nRecvCycles) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
@@ -491,12 +493,12 @@ contains
   if (limiter_option == 8) then
     do ie = nets , nete
       divdp_h(:,:,:,ie) = elem(ie)%derived%divdp
-      if ( nu_p > 0 .and. rhs_multiplier == 2 ) psdiss_biharmonic_h(:,:,ie) = elem(ie)%derived%psdiss_biharmonic
+      if ( nu_p > 0 .and. rhs_multiplier == 2 ) dpdiss_biharmonic_h(:,:,,:,ie) = elem(ie)%derived%dpdiss_biharmonic
     enddo
 !$OMP BARRIER
 !$OMP MASTER
     ierr = cudaMemcpyAsync( divdp_d , divdp_h , size( divdp_h ) , cudaMemcpyHostToDevice , streams(0) )
-    if ( nu_p > 0 .and. rhs_multiplier == 2 ) ierr = cudaMemcpyAsync( psdiss_biharmonic_d , psdiss_biharmonic_h , size( psdiss_biharmonic_h ) , cudaMemcpyHostToDevice , streams(1) )
+    if ( nu_p > 0 .and. rhs_multiplier == 2 ) ierr = cudaMemcpyAsync( dpdiss_biharmonic_d , dpdiss_biharmonic_h , size( dpdiss_biharmonic_h ) , cudaMemcpyHostToDevice , streams(1) )
 !$OMP END MASTER
   endif
 
@@ -640,7 +642,8 @@ contains
         do ie = nets , nete
           do k = 1 , nlev    
             dp0 = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
-            dpdiss(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%derived%psdiss_ave(:,:)
+            !dpdiss(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%derived%psdiss_ave(:,:)
+            dpdiss(:,:) = elem(ie)%derived%dpdiss_ave(:,:,k)
             do q = 1 , qsize
               ! NOTE: divide by dp0 since we multiply by dp0 below
               Qtens_biharmonic(:,:,k,q,ie)=Qtens_biharmonic(:,:,k,q,ie)*dpdiss(:,:)/dp0
@@ -699,7 +702,7 @@ contains
   blockdim = dim3( np      , np     , nlev )
   griddim  = dim3( qsize_d , nelemd , 1    )
   call euler_step_kernel1<<<griddim,blockdim>>>( qdp_d , spheremp_d , qmin_d , qmax_d , dp_d , vstar_d , divdp_d , hybi_d ,               &
-                                                 psdiss_biharmonic_d , qtens_biharmonic_d , metdet_d , rmetdet_d , dinv_d , deriv_dvv_d , &
+                                                 dpdiss_biharmonic_d , qtens_biharmonic_d , metdet_d , rmetdet_d , dinv_d , deriv_dvv_d , &
                                                  n0_qdp , np1_qdp , rhs_viss , dt , nu_p , nu_q , limiter_option , 1 , nelemd )
   if ( limiter_option == 4 ) then
     blockdim = dim3( np      , np     , nlev )
@@ -860,7 +863,7 @@ end subroutine qdp_time_avg_kernel
 
 
 attributes(global) subroutine euler_step_kernel1( Qdp , spheremp , qmin , qmax , dp , vstar , divdp , hybi ,                   &
-                                                  psdiss_biharmonic , qtens_biharmonic , metdet , rmetdet , dinv , deriv_dvv , &
+                                                  dpdiss_biharmonic , qtens_biharmonic , metdet , rmetdet , dinv , deriv_dvv , &
                                                   n0_qdp , np1_qdp , rhs_viss , dt , nu_p , nu_q , limiter_option , nets , nete )
   implicit none
   real(kind=real_kind), dimension(np,np,nlev,qsize_d,timelevels,nets:nete), intent(inout) :: Qdp
@@ -871,7 +874,7 @@ attributes(global) subroutine euler_step_kernel1( Qdp , spheremp , qmin , qmax ,
   real(kind=real_kind), dimension(np,np,nlev,2                 ,nets:nete), intent(in   ) :: vstar
   real(kind=real_kind), dimension(np,np,nlev                   ,nets:nete), intent(in   ) :: divdp
   real(kind=real_kind), dimension(      nlev+1                           ), intent(in   ) :: hybi
-  real(kind=real_kind), dimension(np,np                        ,nets:nete), intent(in   ) :: psdiss_biharmonic
+  real(kind=real_kind), dimension(np,np,nlev                   ,nets:nete), intent(in   ) :: dpdiss_biharmonic
   real(kind=real_kind), dimension(np,np,nlev,qsize_d           ,nets:nete), intent(in   ) :: qtens_biharmonic
   real(kind=real_kind), dimension(np,np                        ,nets:nete), intent(in   ) :: metdet
   real(kind=real_kind), dimension(np,np                        ,nets:nete), intent(in   ) :: rmetdet
@@ -926,7 +929,8 @@ attributes(global) subroutine euler_step_kernel1( Qdp , spheremp , qmin , qmax ,
   if ( limiter_option == 8 ) then
     dp_star_s(ij,k) = dp(i,j,k,ie) - dt * divdp(i,j,k,ie)
     if ( nu_p > 0 .and. rhs_viss /= 0 ) then   ! add contribution from UN-DSS'ed PS dissipation
-      dp_star_s(ij,k) = dp_star_s(ij,k) - rhs_viss * dt * nu_q * ( hybi_s(k+1) - hybi_s(k) ) * psdiss_biharmonic(i,j,ie) / spheremp_s(ij)
+      !dp_star_s(ij,k) = dp_star_s(ij,k) - rhs_viss * dt * nu_q * ( hybi_s(k+1) - hybi_s(k) ) * psdiss_biharmonic(i,j,ie) / spheremp_s(ij)
+       dp_star_s(ij,k) = dp_star_s(ij,k) - rhs_viss * dt * nu_q * dpdiss_biharmonic(i,j,k,ie) / spheremp_s(ij)
     endif
     call limiter_optim_iter_full_dev( i , j , k , qtens_s(:,:) , spheremp_s(:) , qmin_s(:) , qmax_s(:) , dp_star_s(:,:) )
   endif
