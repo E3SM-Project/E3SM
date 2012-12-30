@@ -224,7 +224,7 @@ real (kind=real_kind), dimension(np,np,2) :: v
 !$omp parallel do private(k,  v)
 #endif
       do k=1,nlev
-         tmp(:,:)=rspheremv(i,j)*ptens(:,:,k,ie)
+         tmp(:,:)=rspheremv(:,:)*ptens(:,:,k,ie)
          ptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),viscosity)
          tmp(:,:)=rspheremv(i,j)*dptens(:,:,k,ie)
          dptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),viscosity)
