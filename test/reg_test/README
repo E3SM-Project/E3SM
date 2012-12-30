@@ -260,6 +260,7 @@ SHALLOW WATER TESTS -- DETAILS
                Spectral Element core
                (with 4 tracers, per ASP)
                Runge-Kutta timestepping with subcycling + hyper-viscosity
+                           sign preserving limiter 
 			   Output using PIO_INTERP
 			   NE=15, NP=4, PLEV=26, dt=180
 			   Run the configuration in this script, visually
@@ -277,6 +278,7 @@ SHALLOW WATER TESTS -- DETAILS
    baro2d.sh   Test case from Jablonowski and Williamson 2006
                Same as baro2b.sh, but configred to match CAM-SE
                subcycled tracers and hyperviscosity, nu_p=nu, nu_div=3*nu
+                           monotone limiter            
 			   Output using PIO_INTERP
 			   NE=15, NP=4, PLEV=26, dt=180
 			   Run the configuration in this script, visually
