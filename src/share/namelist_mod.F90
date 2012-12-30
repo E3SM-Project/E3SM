@@ -950,10 +950,6 @@ module namelist_mod
 
 
     ftype = se_ftype    
-    ! compute_mean_flux no longer setable in the namelist:
-    compute_mean_flux=1  ! all forward-in-time options use mean flux
-    if (tstep_type==0) compute_mean_flux=0  ! LF does not use mean flux
-
 
 #ifdef _PRIM
     rk_stage_user=3  ! 3d PRIM code only supports 3 stage RK tracer advection
@@ -966,10 +962,13 @@ module namelist_mod
         if (qsplit>1) then
           call abortmp('tracer/dynamics subcycling requires tstep_type=1(RK timestepping)')
         endif
+        if (rsplit>0) then
+          call abortmp('vertically lagrangian code requires tstep_type=1(RK timestepping)')
+        endif
     endif
     if (tstep_type == 1) then
        if (energy_fixer == 1 .or. energy_fixer==2) then
-          call abortmp("ERROR: Rk tiemsteping requires non-staggered-in-time energy fixer")
+          call abortmp("ERROR: Rk timesteping requires non-staggered-in-time energy fixer")
        endif
     endif
 
