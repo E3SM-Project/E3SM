@@ -5,22 +5,17 @@
 
 #if 0
 SUBROUTINES:
-   prim_advec_tracers()
-      Full Euler + hypervis
-      oscillatory, non-conservative QNEG column fixer
    prim_advec_tracers_remap_rk2()
       SEM 2D RK2 + monotone remap + hyper viscosity
       SEM 2D RK2 can use sign-preserving or monotone reconstruction
 
 Notes on Lagrange+REMAP advection
-dynamics looks like (i.e. for qsplit=3)
+dynamics will compute mean fluxes, so that (i.e. for qsplit=3)
 
-    dp(t+1)-dp(t)   = -dt div(Udp1) - dt d(eta_dot_dpdn1)  + dt D(dpdiss1)
-    dp(t+2)-dp(t+1) = -dt div(Udp2) - dt d(eta_dot_dpdn2)  + dt D(dpdiss2)
-    dp(t+3)-dp(t+2) = -dt div(Udp3) - dt d(eta_dot_dpdn3)  + dt D(dpdiss3)
-    ---------------
-    dp(t+3)-dp(t)        = -3dt div(Udp_sum/3) - 3dt d(eta_dot_dpdn_sum/3)  + 3dt D(dpdiss_sum/3)
-    dpstart(t+3) - dp(t) = -3dt div(Udp_sum/3)  + 3dt D(dpdiss_sum/3)
+    dp(t+3)-dp(t) = -3dt div(Udp_sum/3) - 3dt d(eta_dot_dpdn_sum/3)  + 3dt D(dpdiss_sum/3)
+
+Where the floating lagrangian component:
+    dp_star(t+3) = dp(t)  -3dt div(Udp_sum/3)  + 3dt D(dpdiss_sum/3)
 OR:
     dp_star(t+3) = dp(t+1) + 3dt d( eta_dot_dpdn_ave(t) ) 
 
@@ -30,7 +25,7 @@ For consistency, if Q=1
   dp1  = dp(t)- dtq div[ U1 dp(t)]     
   dp2  = dp1  - dtq div[ U2 dp1  ]  + 2*dtq D( dpdiss_ave )   
   dp*  = (dp(t) + dp2 )/2
-       =  dp(t) - dtq  div[ U1 dp(t) + U2 dp1 ]   + dtq D( dpdiss_ave )
+       =  dp(t) - dtq  div[ U1 dp(t) + U2 dp1 ]/2   + dtq D( dpdiss_ave )
 
 so we require:
   U1 = Udp_ave / dp(t)
@@ -144,7 +139,7 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
                             zero = 0,one = 1,tiny = 1e-12,qmax = 1d50
   integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, & 
                             lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
-  
+  logical :: abort=.false.
   call t_startf('remap1')
 
 #if (defined ELEMENT_OPENMP)
@@ -177,7 +172,7 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
         write(6,*) 'PLEVMODEL=',z2c(nlev+1)
         write(6,*) 'PLEV     =',z1c(nlev+1)
         write(6,*) 'DIFF     =',z2c(nlev+1)-z1c(nlev+1)
-        ! call ABORT
+        abort=.true.
       endif
       
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -371,6 +366,7 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
       do k=1,nlev
         if (zgam(k+1)>1d0) then
           WRITE(*,*) 'r not in [0:1]', zgam(k+1)
+          abort=.true.
         endif
         zv2 = zv(zkr(k+1))+(za0(zkr(k+1))*zgam(k+1)+(za1(zkr(k+1))/2)*(zgam(k+1)**2)+ &
              (za2(zkr(k+1))/3)*(zgam(k+1)**3))*zhdp(zkr(k+1))
@@ -380,6 +376,7 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
     enddo
   enddo
   enddo ! q loop 
+  if (abort) call abortmp('Bad levels in remap1.  usually CFL violatioin')
   call t_stopf('remap1')
 end subroutine remap1
 
@@ -406,7 +403,7 @@ subroutine remap1_nofilter(Qdp,nx,qsize,dp1,dp2)
                             zero = 0,one = 1,tiny = 1e-12,qmax = 1d50
   integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, & 
                             lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
-  
+  logical :: abort=.false.  
   call t_startf('remap1_nofilter')
 
 #if (defined ELEMENT_OPENMP)
@@ -439,7 +436,7 @@ subroutine remap1_nofilter(Qdp,nx,qsize,dp1,dp2)
         write(6,*) 'PLEVMODEL=',z2c(nlev+1)
         write(6,*) 'PLEV     =',z1c(nlev+1)
         write(6,*) 'DIFF     =',z2c(nlev+1)-z1c(nlev+1)
-        ! call ABORT
+        abort=.true.
       endif
       
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -514,6 +511,7 @@ subroutine remap1_nofilter(Qdp,nx,qsize,dp1,dp2)
       do k=1,nlev
         if (zgam(k+1)>1d0) then
           WRITE(*,*) 'r not in [0:1]', zgam(k+1)
+          abort=.true.
         endif
         zv2 = zv(zkr(k+1))+(za0(zkr(k+1))*zgam(k+1)+(za1(zkr(k+1))/2)*(zgam(k+1)**2)+ &
              (za2(zkr(k+1))/3)*(zgam(k+1)**3))*zhdp(zkr(k+1))
@@ -523,6 +521,7 @@ subroutine remap1_nofilter(Qdp,nx,qsize,dp1,dp2)
     enddo
   enddo
   enddo ! q loop 
+  if (abort) call abortmp('Bad levels in remap1_nofilter.  usually CFL violatioin')
   call t_stopf('remap1_nofilter')
 end subroutine remap1_nofilter
 
@@ -1267,7 +1266,6 @@ contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   rhs_viss = 0
   if ( limiter_option == 8 .or. nu_p > 0 ) then
-    ! for limiter=0,4 or 8 we will apply dissipation in the RHS,
     ! when running lim8, we also need to limit the biharmonic, so that term needs
     ! to be included in each euler step.  three possible algorithms here:
     ! 1) most expensive:
@@ -1361,8 +1359,12 @@ contains
           do k = 1 , nlev    
             dp0 = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                   ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
+#if 0
             dpdiss(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%derived%psdiss_ave(:,:)
+#else
+            dpdiss(:,:) = elem(ie)%derived%dpdiss_ave(:,:,k)
+#endif
             do q = 1 , qsize
               ! NOTE: divide by dp0 since we multiply by dp0 below
               Qtens_biharmonic(:,:,k,q,ie)=Qtens_biharmonic(:,:,k,q,ie)*dpdiss(:,:)/dp0
@@ -1439,7 +1441,8 @@ contains
           dp_star(:,:,k) = dp(:,:,k) - dt * elem(ie)%derived%divdp(:,:,k)  
           if ( nu_p > 0 .and. rhs_viss /= 0 ) then
             ! add contribution from UN-DSS'ed PS dissipation
-            dpdiss(:,:) = ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) * elem(ie)%derived%psdiss_biharmonic(:,:)
+!            dpdiss(:,:) = ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) * elem(ie)%derived%psdiss_biharmonic(:,:)
+            dpdiss(:,:) = elem(ie)%derived%dpdiss_biharmonic(:,:,k)
             dp_star(:,:,k) = dp_star(:,:,k) - rhs_viss * dt * nu_q * dpdiss(:,:) / elem(ie)%spheremp(:,:)
           endif
         enddo
@@ -1449,8 +1452,8 @@ contains
       endif
 
       ! apply mass matrix, overwrite np1 with solution:
-      ! dont do this earlier, since we allow np1 to be the same as n0
-      ! and we dont want to overwrite n0 until we are done using it
+      ! dont do this earlier, since we allow np1_qdp == n0_qdp 
+      ! and we dont want to overwrite n0_qdp until we are done using it
       do k = 1 , nlev
         elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%spheremp(:,:) * Qtens(:,:,k) 
       enddo
@@ -2087,6 +2090,8 @@ contains
 !$omp parallel do private(k,q)
 #endif
       do k = 1 , nlev
+         ! DEBUGDP  this code should be changed to use derived%dp + dt*divdp_proj
+         ! it must break q=1 ? 
         if ( rsplit > 0 ) then
           ! verticaly lagrangian code: use prognostic dp
           dp(:,:,k) = elem(ie)%state%dp3d(:,:,k,nt)
@@ -2230,11 +2235,14 @@ contains
      else
         !  REMAP u,v,T from levels in dp3d() to REF levels
         !
+        ! update final ps_v 
+        elem(ie)%state%ps_v(:,:,np1) = hvcoord%hyai(1)*hvcoord%ps0 + &
+             sum(elem(ie)%state%dp3d(:,:,:,np1),3)
         do k=1,nlev
            dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
            dp_star(:,:,k) = elem(ie)%state%dp3d(:,:,k,np1)
         enddo
-        
+
         ! remap the dynamics:  
 #undef REMAP_TE
 #ifdef REMAP_TE
@@ -2247,11 +2255,13 @@ contains
 #endif
         ttmp(:,:,:,1)=ttmp(:,:,:,1)*dp_star
         call remap1(ttmp,np,1,dp_star,dp)
+!        call remap1_nofilter(ttmp,np,1,dp_star,dp)
         elem(ie)%state%t(:,:,:,np1)=ttmp(:,:,:,1)/dp
         
         ttmp(:,:,:,1)=elem(ie)%state%v(:,:,1,:,np1)*dp_star
         ttmp(:,:,:,2)=elem(ie)%state%v(:,:,2,:,np1)*dp_star
-        call remap1_nofilter(ttmp,np,2,dp_star,dp) 
+        call remap1(ttmp,np,2,dp_star,dp) 
+!        call remap1_nofilter(ttmp,np,2,dp_star,dp) 
         elem(ie)%state%v(:,:,1,:,np1)=ttmp(:,:,:,1)/dp
         elem(ie)%state%v(:,:,2,:,np1)=ttmp(:,:,:,2)/dp
 #ifdef REMAP_TE
@@ -2263,10 +2273,7 @@ contains
 #endif
      endif
 
-     
-     ! remap the tracers from lagrangian levels to REF levels
-     ! REF levels are computed from ps_v
-     ! Lagrangian levels are computed from REF levels and vertical mass flux
+     ! remap the tracers from lagrangian levels (dp_star)  to REF levels dp
      if (qsize>0) then
         if (vert_remap_q_alg == 0) then
            call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,qsize,dp_star,dp)
@@ -2276,6 +2283,7 @@ contains
            call abortmp('specification for vert_remap_q_alg must be 0, 1, or 2.')
         endif
      endif
+
      
      if (ntrac>0) then
 #if defined(_SPELT)
@@ -2339,6 +2347,7 @@ contains
 !         call remap_velocityC(np1,dt,elem,fvm,hvcoord,ie)
 #endif
      endif
+
   enddo
   
   
