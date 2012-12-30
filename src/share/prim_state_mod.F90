@@ -116,27 +116,19 @@ contains
          fvmin_local(nets:nete),fvmax_local(nets:nete),fvsum_local(nets:nete), &
          ftmin_local(nets:nete),ftmax_local(nets:nete),ftsum_local(nets:nete), &
          fqmin_local(nets:nete),fqmax_local(nets:nete),fqsum_local(nets:nete), &
-         omegamin_local(nets:nete),omegamax_local(nets:nete),omegasum_local(nets:nete)
+         omegamin_local(nets:nete),omegamax_local(nets:nete),omegasum_local(nets:nete),&
+         dpmin_local(nets:nete), dpmax_local(nets:nete), dpsum_local(nets:nete)
 
 
-    real (kind=real_kind) :: umin_p, &
-         vmin_p, &
-         tmin_p, &
-         qvmin_p(qsize_d), cmin(ntrac_d),&
-         psmin_p
+    real (kind=real_kind) :: umin_p, vmin_p, tmin_p, qvmin_p(qsize_d), cmin(ntrac_d),&
+         psmin_p, dpmin_p
 
 
-    real (kind=real_kind) :: umax_p, &
-         vmax_p, &
-         tmax_p, &
-         qvmax_p(qsize_d), cmax(ntrac_d),&
-         psmax_p
+    real (kind=real_kind) :: umax_p, vmax_p, tmax_p, qvmax_p(qsize_d), cmax(ntrac_d),&
+         psmax_p, dpmax_p
 
-    real (kind=real_kind) :: usum_p, &
-         vsum_p, &
-         tsum_p, &
-         qvsum_p(qsize_d), csum(ntrac_d),&
-         pssum_p
+    real (kind=real_kind) :: usum_p, vsum_p, tsum_p, qvsum_p(qsize_d), csum(ntrac_d),&
+         pssum_p, dpsum_p
 
     real (kind=real_kind) :: fusum_p, fvsum_p, ftsum_p, fqsum_p
     real (kind=real_kind) :: fumin_p, fvmin_p, ftmin_p, fqmin_p
@@ -260,6 +252,8 @@ contains
        Fvmin_local(ie)    = MINVAL(elem(ie)%derived%FM(:,:,2,:,pnm1))
 
        tmin_local(ie)    = MINVAL(elem(ie)%state%T(:,:,:,n0))
+       if (rsplit>0) &
+            dpmin_local(ie)    = MINVAL(elem(ie)%state%dp3d(:,:,:,n0))
 
 
        Ftmin_local(ie)    = MINVAL(elem(ie)%derived%FT(:,:,:,pnm1))
@@ -276,6 +270,8 @@ contains
        Fvsum_local(ie)    = SUM(elem(ie)%derived%FM(:,:,2,:,pnm1))
 
        tsum_local(ie)    = SUM(elem(ie)%state%t(:,:,:,n0))
+       if (rsplit>0) &
+            dpsum_local(ie)    = SUM(elem(ie)%state%dp3d(:,:,:,n0))
 
        Ftsum_local(ie)    = SUM(elem(ie)%derived%FT(:,:,:,pnm1))
        FQsum_local(ie) = SUM(elem(ie)%derived%FQ(:,:,:,1,pnm1))
@@ -293,6 +289,7 @@ contains
        global_shared_buf(ie,7) = FTsum_local(ie)
        global_shared_buf(ie,8) = FQsum_local(ie)
        global_shared_buf(ie,9) = Omegasum_local(ie)
+       global_shared_buf(ie,10) = dpsum_local(ie)
     end do
 
     !JMD This is a Thread Safe Reduction 
@@ -304,6 +301,11 @@ contains
 
     tmin_p = ParallelMin(tmin_local,hybrid)
     tmax_p = ParallelMax(tmax_local,hybrid)
+    
+    if (rsplit>0)then
+       dpmin_p = ParallelMin(tmin_local,hybrid)
+       dpmax_p = ParallelMax(tmax_local,hybrid)
+    endif
 
     psmin_p = ParallelMin(psmin_local,hybrid)
     psmax_p = ParallelMax(psmax_local,hybrid)
@@ -333,6 +335,7 @@ contains
     FTsum_p = global_shared_sum(7)
     FQsum_p = global_shared_sum(8)
     Omegasum_p = global_shared_sum(9)
+    dpsum_p = global_shared_sum(10)
 
     scale=1/g                                  ! assume code is using Pa
     if (hvcoord%ps0 <  2000 ) scale=100*scale  ! code is using mb
@@ -377,6 +380,8 @@ contains
        write(iulog,100) "v     = ",vmin_p,vmax_p,vsum_p
        write(iulog,100) "omega = ",omegamin_p,omegamax_p,omegasum_p
        write(iulog,100) "t     = ",tmin_p,tmax_p,tsum_p
+       if (rsplit>0) &
+       write(iulog,100) "dp    = ",dpmin_p,dpmax_p,dpsum_p
 
        if (tstep_type==1) then  !no longer support tracer advection with tstep_type = 0
           do q=1,qsize

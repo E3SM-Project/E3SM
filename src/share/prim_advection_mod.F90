@@ -2042,7 +2042,6 @@ contains
   use edge_mod       , only : EdgeBuffer_t, edgevpack, edgevunpack
   use bndry_mod      , only : bndry_exchangev
   use perf_mod       , only : t_startf, t_stopf                          ! _EXTERNAL
-  use control_mod    , only : rsplit
   implicit none
   type (EdgeBuffer_t)  , intent(inout)         :: edgeAdv
   type (element_t)     , intent(inout), target :: elem(:)
@@ -2090,16 +2089,8 @@ contains
 !$omp parallel do private(k,q)
 #endif
       do k = 1 , nlev
-         ! DEBUGDP  this code should be changed to use derived%dp + dt*divdp_proj
-         ! it must break q=1 ? 
-        if ( rsplit > 0 ) then
-          ! verticaly lagrangian code: use prognostic dp
-          dp(:,:,k) = elem(ie)%state%dp3d(:,:,k,nt)
-        else
-          ! eulerian code: derive dp from ps_v
-          dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) ) * hvcoord%ps0 + &
-                      ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) * elem(ie)%state%ps_v(:,:,nt)
-        endif
+         ! apply dissipation to Q, not Qdp, for tracer/mass consistency
+        dp(:,:,k) = elem(ie)%derived%dp(:,:,k) - dt2*elem(ie)%derived%divdp_proj(:,:,k)
         do q = 1 , qsize
           Qtens(:,:,k,q,ie) = elem(ie)%state%Qdp(:,:,k,q,nt_qdp) / dp(:,:,k)
         enddo
