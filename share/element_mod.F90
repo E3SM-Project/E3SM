@@ -60,8 +60,10 @@ module element_mod
                                                 ! if compute_mean_flux=1:  time average of U*dp
                                                 !    compute_mean_flux=0:  U at tracer time t
      real (kind=real_kind) :: vstar(np,np,2,nlev) ! velocity on Lagrangian surfaces
-     real (kind=real_kind) :: psdiss_biharmonic(np,np)  ! mean ps dissipation tendency, if nu_p>0
-     real (kind=real_kind) :: psdiss_ave(np,np)         ! mean ps used to compute psdiss_tens
+!     real (kind=real_kind) :: psdiss_biharmonic(np,np)  ! mean ps dissipation tendency, if nu_p>0
+!     real (kind=real_kind) :: psdiss_ave(np,np)         ! mean ps used to compute psdiss_tens
+     real (kind=real_kind) :: dpdiss_biharmonic(np,np,nlev)  ! mean dp dissipation tendency, if nu_p>0
+     real (kind=real_kind) :: dpdiss_ave(np,np,nlev)         ! mean dp used to compute psdiss_tens
 
 ! diagnostic variables computed during explicit timestep
      real (kind=real_kind) :: phi(np,np,nlev)     ! geopotential                      

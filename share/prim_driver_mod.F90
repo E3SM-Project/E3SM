@@ -851,7 +851,6 @@ contains
     end if  ! runtype
 
 #endif
-
     ! For new runs, and branch runs, convert state variable to (Qdp)
     ! because initial conditon reads in Q, not Qdp
     ! restart runs will read dpQ from restart file
@@ -1052,7 +1051,7 @@ contains
     use hybvcoord_mod, only : hvcoord_t
     use time_mod, only : TimeLevel_t, time_at, timelevel_update, smooth
     use control_mod, only: statefreq, integration, &
-           TRACERADV_TOTAL_DIVERGENCE,TRACERADV_UGRADQ, ftype, tstep_type, nu_p, qsplit
+           TRACERADV_TOTAL_DIVERGENCE,TRACERADV_UGRADQ, ftype, tstep_type, qsplit
     use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use parallel_mod, only : abortmp
@@ -1148,18 +1147,17 @@ contains
        call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
             flt , hybrid,             &
             dt, tl, nets, nete, compute_diagnostics)
+
+       ! keep lnps up to date (we should get rid of this requirement)
+       do ie=nets,nete
+          elem(ie)%state%lnps(:,:,tl%np1)= LOG(elem(ie)%state%ps_v(:,:,tl%np1))
+       enddo
+       
     else if (integration == "semi_imp") then
        call prim_advance_si(elem, nets, nete, cg(hybrid%ithr), blkjac, red, &
             refstate, hvcoord, deriv(hybrid%ithr), flt, hybrid, tl, dt)
        tot_iter=tot_iter+cg(hybrid%ithr)%iter
     end if
-
-
-    ! ===============
-    ! Tracer Advection  Needs U,V at timelevel n0 and eta_dot_dpdn at timellevel n0
-    ! and maybe timelevel np1 which was computed in dynamics step above.  
-    ! ===============
-    !!!!!! NOTE: no longer suppoting advecting tracersw/leapfrog code
 
 
     ! =================================
@@ -1188,8 +1186,11 @@ contains
 
 
     ! =================================
-    ! timestep is complete.  Now apply robert filter to all prognostic variables
+    ! timestep is complete.  
     ! =================================
+
+
+    !Now apply robert filter to all prognostic variables
     if (smooth/=0) &
        call preq_robert3(tl%nm1,tl%n0,tl%np1,elem,hvcoord,nets,nete)
     ! measure the effects of Robert filter
@@ -1204,7 +1205,7 @@ contains
     ! =================================
     call TimeLevel_update(tl,advance_name)
 
-    ! ============================================================
+  ! ============================================================
     ! Print some diagnostic information 
     ! ============================================================
 
@@ -1240,8 +1241,8 @@ contains
     use hybvcoord_mod, only : hvcoord_t
     use time_mod, only : TimeLevel_t, time_at, timelevel_update, nsplit
     use control_mod, only: statefreq,&
-           energy_fixer, ftype, qsplit, rsplit, nu_p, test_cfldep
-    use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3, applycamforcing, &
+           energy_fixer, ftype, qsplit, rsplit, test_cfldep
+    use prim_advance_mod, only : prim_advance_exp, prim_advance_si, applycamforcing, &
                                  applycamforcing_dynamics, prim_advance_exp
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use parallel_mod, only : abortmp
@@ -1318,15 +1319,18 @@ contains
     ! qmass and variance, using Q(n0),Qdp(n0)
     if (compute_diagnostics) call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
 
-    if (rsplit>0) then
-    ! vertically lagrangian code: initialize prognostic variable dp3d for floating levels
-    do ie=nets,nete
-      do k=1,nlev
-         elem(ie)%state%dp3d(:,:,k,tl%n0)=&
-              ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-              ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
 
-      enddo
+    ! initialize dp3d from ps
+    if (rsplit>0) then
+    do ie=nets,nete
+       do k=1,nlev
+          elem(ie)%state%dp3d(:,:,k,tl%n0)=&
+               ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
+       enddo
+       ! DEBUGDP step: ps_v should not be used for rsplit>0 code during prim_step
+       ! vertical_remap.  so to this for debugging:
+       elem(ie)%state%ps_v(:,:,tl%n0)=-9e9
     enddo
     endif
 
@@ -1343,7 +1347,7 @@ contains
     !
     !  apply vertical remap
     !  always for tracers  
-    !  also for dynamics if rsplit>0
+    !  if rsplit>0:  also remap dynamics and compute reference level ps_v
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !compute timelevels for tracers (no longer the same as dynamics)
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp) 
@@ -1440,8 +1444,7 @@ contains
     use time_mod, only : TimeLevel_t, time_at, timelevel_update, nsplit
     use control_mod, only: statefreq,&
            energy_fixer, ftype, qsplit, nu_p, test_cfldep, rsplit
-    use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3, applycamforcing, &
-                                 applycamforcing_dynamics, prim_advance_exp, overwrite_SEdensity
+    use prim_advance_mod, only : prim_advance_exp, overwrite_SEdensity
     use prim_advection_mod, only : prim_advec_tracers_remap_rk2, prim_advec_tracers_fvm, &
          prim_advec_tracers_spelt
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
@@ -1482,8 +1485,8 @@ contains
       elem(ie)%derived%vn0=0              ! mean horizontal mass flux
       elem(ie)%derived%omega_p=0          
       if (nu_p>0) then
-         elem(ie)%derived%psdiss_ave=0
-         elem(ie)%derived%psdiss_biharmonic=0
+         elem(ie)%derived%dpdiss_ave=0
+         elem(ie)%derived%dpdiss_biharmonic=0
       endif
       if (ntrac>0) then
         ! save velocity at time t for fvm
@@ -1493,17 +1496,16 @@ contains
 !$omp parallel do private(k, j, i)
 #endif
       ! save dp at time t for use in tracers
-      do k=1,nlev
-         if (rsplit==0) then
-            ! dp at time t is on REF levels
+      if (rsplit==0) then
+         do k=1,nlev
             elem(ie)%derived%dp(:,:,k)=&
                  ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                  ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
-         else
-            ! dp at time t:  use floating lagrangian levels:
-            elem(ie)%derived%dp(:,:,k)=elem(ie)%state%dp3d(:,:,k,tl%n0)
-         endif
-      enddo
+         enddo
+      else
+         ! dp at time t:  use floating lagrangian levels:
+         elem(ie)%derived%dp(:,:,:)=elem(ie)%state%dp3d(:,:,:,tl%n0)
+      endif
     enddo
 
     ! ===============
