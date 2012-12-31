@@ -1574,7 +1574,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   
   ! local
   real (kind=real_kind) :: eta_ave_w  ! weighting for mean flux terms
-  real (kind=real_kind) :: nu_scale, dpdn,dpdn0, nu_scale_top,nu_ratio
+  real (kind=real_kind) :: dpdn,dpdn0, nu_scale_top,nu_ratio
   integer :: k,kptr,i,j,ie,ic,nt
   real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)      :: vtens   
   real (kind=real_kind), dimension(np,np,nlev,nets:nete)        :: ptens
@@ -1717,7 +1717,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                     else
                        utens_tmp=-nu*vtens(i,j,1,k,ie)
                        vtens_tmp=-nu*vtens(i,j,2,k,ie)
-                       ptens_tmp=-nu_scale*nu_s*ptens(i,j,k,ie)
+                       ptens_tmp=-nu_s*ptens(i,j,k,ie)
                     endif
                     ptens(i,j,k,ie) = ptens_tmp  
                     vtens(i,j,1,k,ie)=utens_tmp

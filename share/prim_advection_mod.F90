@@ -530,13 +530,19 @@ end subroutine remap1_nofilter
 
 !This uses the exact same model and reference grids and data as remap_Q, but it interpolates
 !using PPM instead of splines.
-subroutine remap_Q_ppm(np1,np1_qdp,dt,elem,hvcoord,ie)
+subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
+  ! remap 1 field
+  ! input:  Qdp   field to be remapped (NOTE: MASS, not MIXING RATIO)
+  !         dp1   layer thickness (source)
+  !         dp2   layer thickness (target)
+  !
+  ! output: remaped Qdp, conserving mass
+  !
   use control_mod, only        : prescribed_wind, vert_remap_q_alg
   implicit none
-  real (kind=real_kind), intent(in   )         :: dt
-  type (element_t)     , intent(inout), target :: elem(:)
-  type (hvcoord_t)     , intent(in   )         :: hvcoord
-  integer              , intent(in   )         :: ie,np1,np1_qdp
+  integer,intent(in) :: nx,qsize
+  real (kind=real_kind), intent(inout) :: Qdp(nx,nx,nlev,qsize)
+  real (kind=real_kind), intent(in) :: dp1(nx,nx,nlev),dp2(nx,nx,nlev)
   ! Local Variables
   integer, parameter :: gs = 2                              !Number of cells to place in the ghost region
   real(kind=real_kind), dimension(       nlev+2 ) :: pio    !Pressure at interfaces for old grid
@@ -552,10 +558,20 @@ subroutine remap_Q_ppm(np1,np1_qdp,dt,elem,hvcoord,ie)
   integer :: i, j, k, q, kk, kid(nlev)
 
   call t_startf('remap_Q_ppm')
-  do j = 1 , np
-    do i = 1 , np
-      !Form old and new grids for remapping. It counts from the top of the atmosphere to the bottom. Starting with no mass at the top.
-      call remap_calc_grids( hvcoord , elem(ie)%state%ps_v(i,j,np1) , dt , elem(ie)%derived%eta_dot_dpdn(i,j,:) , pio(1:nlev+1) , pin(1:nlev+1) , dpo(1:nlev) , dpn(1:nlev) )
+  do j = 1 , nx
+    do i = 1 , nx
+      
+      pin(1)=0
+      pio(1)=0
+      do k=1,nlev
+         dpn(k)=dp2(i,j,k)
+         dpo(k)=dp1(i,j,k)
+         pin(k+1)=pin(k)+dpn(k)
+         pio(k+1)=pio(k)+dpo(k)
+      enddo
+
+
+
       pio(nlev+2) = pio(nlev+1) + 1.  !This is here to allow an entire block of k threads to run in the remapping phase.
                                       !It makes sure there's an old interface value below the domain that is larger.
       pin(nlev+1) = pio(nlev+1)       !The total mass in a column does not change. Therefore, the pressure of that mass cannot either.
@@ -594,7 +610,7 @@ subroutine remap_Q_ppm(np1,np1_qdp,dt,elem,hvcoord,ie)
         !to ensure tracer consistency for an initially uniform field. I copied it from the old remap routine.
         masso(1) = 0.
         do k = 1 , nlev
-          ao(k) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
+          ao(k) = Qdp(i,j,k,q)
           masso(k+1) = masso(k) + ao(k) !Accumulate the old mass. This will simplify the remapping
           ao(k) = ao(k) / dpo(k)        !Divide out the old grid spacing because we want the tracer mixing ratio, not mass.
         enddo
@@ -612,7 +628,7 @@ subroutine remap_Q_ppm(np1,np1_qdp,dt,elem,hvcoord,ie)
         do k = 1 , nlev
           kk = kid(k)
           massn2 = masso(kk) + integrate_parabola( coefs(:,kk) , z1(k) , z2(k) ) * dpo(kk)
-          elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = massn2 - massn1
+          Qdp(i,j,k,q) = massn2 - massn1
           massn1 = massn2
         enddo
       enddo
@@ -2235,7 +2251,7 @@ contains
         enddo
 
         ! remap the dynamics:  
-#undef REMAP_TE
+#define REMAP_TE
 #ifdef REMAP_TE
         ! remap u,v and cp*T + .5 u^2 
         ttmp(:,:,:,1)=(elem(ie)%state%v(:,:,1,:,np1)**2 + &
@@ -2246,13 +2262,12 @@ contains
 #endif
         ttmp(:,:,:,1)=ttmp(:,:,:,1)*dp_star
         call remap1(ttmp,np,1,dp_star,dp)
-!        call remap1_nofilter(ttmp,np,1,dp_star,dp)
         elem(ie)%state%t(:,:,:,np1)=ttmp(:,:,:,1)/dp
         
         ttmp(:,:,:,1)=elem(ie)%state%v(:,:,1,:,np1)*dp_star
         ttmp(:,:,:,2)=elem(ie)%state%v(:,:,2,:,np1)*dp_star
-        call remap1(ttmp,np,2,dp_star,dp) 
-!        call remap1_nofilter(ttmp,np,2,dp_star,dp) 
+!        call remap1(ttmp,np,2,dp_star,dp) 
+        call remap1_nofilter(ttmp,np,2,dp_star,dp) 
         elem(ie)%state%v(:,:,1,:,np1)=ttmp(:,:,:,1)/dp
         elem(ie)%state%v(:,:,2,:,np1)=ttmp(:,:,:,2)/dp
 #ifdef REMAP_TE
@@ -2269,7 +2284,7 @@ contains
         if (vert_remap_q_alg == 0) then
            call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,qsize,dp_star,dp)
         elseif (vert_remap_q_alg == 1 .or. vert_remap_q_alg == 2) then
-           call remap_Q_ppm(np1,np1_qdp, dt,elem,hvcoord,ie)
+           call remap_Q_ppm(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,qsize,dp_star,dp)
         else
            call abortmp('specification for vert_remap_q_alg must be 0, 1, or 2.')
         endif
