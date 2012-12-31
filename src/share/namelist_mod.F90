@@ -1097,6 +1097,7 @@ module namelist_mod
        endif
        write(iulog,*)"readnl: tracer_advection_formulation  = ",tracer_advection_formulation
        write(iulog,*)"readnl: tstep_type    = ",tstep_type
+       write(iulog,*)"readnl: vert_remap_q_alg  = ",vert_remap_q_alg
 #ifdef CAM
        write(iulog,*)"readnl: se_nsplit         = ", NSPLIT
        write(iulog,*)"readnl: se_ftype          = ",ftype
