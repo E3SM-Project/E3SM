@@ -27,7 +27,7 @@ limiter_option = 4
 energy_fixer = -1
 hypervis_order = 2
 u_perturb      = 1
-vert_remap_q_alg = 2
+vert_remap_q_alg = 0
 /
 &solver_nl
 precon_method = "identity"
@@ -66,7 +66,7 @@ profile_single_file		= .true.
  output_frequency=1,1
  output_start_time=0,0
  output_end_time=30000,30000
- output_varnames1='ps','zeta','DIFFT'
+ output_varnames1='ps','zeta','dp3d'
 ! output_varnames1='ps','zeta','T','u','v','omega','geos','geo'
  output_varnames2='Q','Q2','Q3','Q4','Q5'
  io_stride=8

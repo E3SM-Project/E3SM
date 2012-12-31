@@ -4,69 +4,82 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
 
 
 
+;***********************************************************************;
+; function  || T || on 2D horizontal array
+;***********************************************************************;
+function norml2(varz[*][*]:double,gw[*]:double)
+local i,output
+begin
+  s2 =  dimsizes(varz) 
+  gs =  dimsizes(gw)
+
+  if ( s2(0) .ne. gs(0) ) then
+     print ("norml2: error: first dimension does not match Gauss weight dimension: " + s2(0) + " " + gs(0) )
+  end if
+  if ( 2*s2(0) .ne. s2(1) ) then
+     print ("norml2: error: second dimsion is not 2x first dimension") 
+  end if
+  
+  varl = ( gw # (varz^2) )/sum(gw)
+  output = sum(varl)/s2(1)
+  output = sqrt(output)
+  return(output)
+end
+
 
 ;***********************************************************************;
-; function  compute NE, NPTS from pwd
+; detect type of lat/lon grid
+;
+; gauss_grid =-1    routine failed 
+; gauss_grid = 1    Gauss grid (use shaeg routines)
+; gauss_grid = 2    Equal angle grid with poles  (use shaec routines)
+; gauss_grid = 3    Equal angle grid without poles  (must interpolate first)
+;
 ;***********************************************************************;
-function get_resolution()
+function get_gridtype(lat)
+local d1,d2
 begin
-  wdir =  systemfunc("pwd")
-  print( "wdir = "+wdir)
-  wname=stringtochar(wdir)
-  ne=0
-  npts=8
-  ; find jw-ne
-  do i=0,dimsizes(wname)-7
-     if ( wname(i:i+4 ) .eq. "jw-ne" ) then  
-         ;print ("i="+i+" char="+wname(i:i+4))
-         istart=i+5
-         ; find value of NE
-         do j=istart+1,dimsizes(wname)-2
-            if ( wname(j:j).eq."-" .or. wname(j:j).eq."t") then 
-               ;print ("found a -"+wname(j:j) + "  string: "+wname(istart:j-1))
-               ne=stringtointeger(chartostring(wname(istart:j-1)))
-            
-               ; find value of npts
-               if ( wname(j:j).eq."-" ) then
-                  do k=j+1,dimsizes(wname)-2
-                     if ( wname(k:k).eq."t") then 
-                        ;print ("found a t: "+wname(j:k) )
-                        npts=stringtointeger(chartostring(wname(j+1:k-1)))
-                        break
-                     end if            
-                  end do
-               end if
-            end if
-            if (ne .ne. 0) then
-               break
-            end if
-         end do
-     end if 
-     if (ne .ne. 0) then
-        break
-     end if
-  end do
-  if (ne .eq. 0) then
-     deg=0
-  else 
-     deg=360.0 / (4*ne*(npts-1))
-  end if 
-  sdeg=sprintf("%7.2f", deg)
-  print("Guessing resolution from filename: NE="+ne+" NPTS="+npts+" degree="+sdeg)
-  return(sdeg)
+  gauss_grid = -1
+  if (lat(0) .lt. -89.99999 ) then
+    print ("detected equal angle grid with poles")
+    gauss_grid = 2    ; use shaec routines
+  else
+    d1=lat(1)-lat(0)
+    d2=lat(2)-lat(1)
+    ;print(d1-d2)
+    if (abs(d1-d2) .lt. 1e-8 ) then
+      print ("detected equal angle grid without poles")
+      gauss_grid = 3    ; need to interpolate using fo2fsh
+    else
+      print("detected Gauss grid")
+      gauss_grid = 1  
+    end if
+  end if
+  return(gauss_grid)
 end
+
 
 ;***********************************************************************;
 ; NCL script to plot PS
 ;***********************************************************************;
 begin
 
-fnames =  systemfunc("ls movies/asp_baroclinic1.nc")
+fnames =  systemfunc("ls movies/asp_baroclinic1.nc; "+\
+"ls rsplit*/movies/asp_baroclinic1.nc; " +\
+"ls jwasp-ne30*/movies/asp_baroclinic1.nc; ")
  f      = addfiles(fnames,"r")       ; Open netCDF files.	
-
 print("fnames = "+fnames)
 plotsol=1
-plotref=0
+plotref=1
+
+;
+;  now compute l2 error against T340 reference solution 
+;
+  fref    = addfile("~/codes/homme/test/reg_test/ref_sol/T340ref.nc","r")       ; Open netCDF files.	
+  if (ismissing(fref)) then
+    plotref=0
+  end if
+
 
   output_format = "pdf"
 ;  output_format = "X11"
@@ -75,12 +88,10 @@ plotref=0
 
 if (isatt(f[0],"ne")) then
    NE=f[0]@ne
-   NPTS = f[0]@nv
+   NPTS = f[0]@np
    deg=360.0 / (4*NE*(NPTS-1))
    hdeg=sprintf("%4.2f", deg)
    print("NE="+NE+" NPTS="+NPTS+" degree="+hdeg)
-else
-   hdeg = get_resolution()
 end if 
 
   psname = "ps"
@@ -116,16 +127,12 @@ lon = f[0]->lon
 
   fcnt = dimsizes(fnames)
   print ("number of input files = " + fcnt )
-  vcnt=new((/fcnt,5/),"integer")
-  do i=0,fcnt-1
-    print ("i=" + i + " f[i]=" + getfiledimsizes(f[i]) )
-    vcnt(i,:) = getfiledimsizes(f[i])
-  end do	   	 
+
   
-  ntimes = vcnt(0,4)
-  nlev = vcnt(0,2)
-  nlat = vcnt(0,1)
-  nlon = vcnt(0,0)
+  ntimes = dimsizes(f[0]->time)
+  nlev = dimsizes(f[0]->lev)
+  nlat = dimsizes(f[0]->lat)
+  nlon = dimsizes(f[0]->lon)
 
 
 
@@ -224,10 +231,10 @@ do kf = 0,fcnt-1
      print("Contour complete: "+res@tiMainString)
    end if
 
-  if (plotref .eq. 1) then
+  if (plotref .eq. 999) then
     ; now plot the CAM contour plot:
     res@tiMainString        = "CAM T340"
-    var2= fref[0]->PS(n,:,:)
+    var2= fref->PS(n,:,:)
     copyatt( var2, fref[0]->PS(n,:,:) )
     if ( "Pa" .eq. var2@units) then
        var2=var2/100
@@ -238,6 +245,28 @@ do kf = 0,fcnt-1
     print("Contour complete: "+res@tiMainString)
   end if
 
+  if (plotref.eq.1) then
+    ; compute l2 errors vs. ref solution
+    if (get_gridtype(f[kf]->lat) .ne. 1 ) then
+      print("Error: output must be on a Gauss grid") 
+    else
+      nref = ind( fref->time .eq. f[kf]->time(n) )
+      if (ismissing(nref) ) then
+        print("time="+f[kf]->time(n)+" not found in reference solution") 
+      else
+                                ; interpolate output to 512x1024
+        nlatref=dimsizes(fref->lat)
+        nlonref=dimsizes(fref->lon)
+        print("Interpolating solution to "+nlatref+" x "+nlonref)
+        PSn = g2gsh_Wrap(f[kf]->ps(n,:,:),(/nlatref,nlonref/),nlat-1)
+        error = PSn - fref->PS(nref,:,:)
+        error = error/100 ; ERROR computed in mb
+        print("fname="+fnames(kf))
+        print("time="+fref->time(nref)+" PS l2 error vs. T340 reference: "+norml2(error,fref->gw)+" mb")
+      end if
+    end if
+  end if
+  
 
 end do  ; loop over file names
 end do  ; loop over time level
