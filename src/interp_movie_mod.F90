@@ -355,6 +355,7 @@ contains
     call nf_variable_attributes(ncdf, 'geo', 'Geopotential','m^2/s^2')
     call nf_variable_attributes(ncdf, 'geos', 'Surface geopotential','m^2/s^2')
     call nf_variable_attributes(ncdf, 'T', 'Temperature','degrees kelvin')
+    call nf_variable_attributes(ncdf, 'dp3d', 'delta p','Pa')
     call nf_variable_attributes(ncdf, 'Q', 'concentration','kg/kg')
     call nf_variable_attributes(ncdf, 'Q2', 'concentration','kg/kg')
     call nf_variable_attributes(ncdf, 'Q3', 'concentration','kg/kg')
@@ -827,6 +828,20 @@ contains
                    st=st+interpdata(ie)%n_interp
                 enddo
                 call nf_put_var(ncdf(ios),datall,start3d, count3d, name='T')
+                deallocate(datall)
+             end if
+
+             if(nf_selectedvar('dp3d', output_varnames)) then
+                if (hybrid%par%masterproc) print *,'writing dp3d...'
+                allocate(datall(ncnt,nlev))
+                st=1
+                do ie=nets,nete
+                   en=st+interpdata(ie)%n_interp-1
+                   call interpolate_scalar(interpdata(ie), elem(ie)%state%dp3d(:,:,:,n0), &
+                        np, nlev, datall(st:en,:))
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='dp3d')
                 deallocate(datall)
              end if
 

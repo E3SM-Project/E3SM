@@ -303,8 +303,8 @@ contains
     tmax_p = ParallelMax(tmax_local,hybrid)
     
     if (rsplit>0)then
-       dpmin_p = ParallelMin(tmin_local,hybrid)
-       dpmax_p = ParallelMax(tmax_local,hybrid)
+       dpmin_p = ParallelMin(dpmin_local,hybrid)
+       dpmax_p = ParallelMax(dpmax_local,hybrid)
     endif
 
     psmin_p = ParallelMin(psmin_local,hybrid)
@@ -325,7 +325,7 @@ contains
     Omegamin_p = ParallelMin(Omegamin_local,hybrid)
     Omegamax_p = ParallelMax(Omegamax_local,hybrid)
 
-    call wrap_repro_sum(nvars=9, comm=hybrid%par%comm)
+    call wrap_repro_sum(nvars=10, comm=hybrid%par%comm)
     usum_p = global_shared_sum(1)
     vsum_p = global_shared_sum(2)
     tsum_p = global_shared_sum(3)

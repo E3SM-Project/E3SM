@@ -1690,9 +1690,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               elem(ie)%derived%dpdiss_biharmonic(:,:,:)=elem(ie)%derived%dpdiss_biharmonic(:,:,:)+&
                    eta_ave_w*dptens(:,:,:,ie)/hypervis_subcycle
            endif
-           nu_scale=1
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,i,j,lap_p,lap_v,nu_scale_top,dpdn,dpdn0,nu_scale,utens_tmp,vtens_tmp,ptens_tmp)
+!$omp parallel do private(k,i,j,lap_p,lap_v,nu_scale_top,dpdn,dpdn0,utens_tmp,vtens_tmp,ptens_tmp)
 #endif
            do k=1,nlev
               ! advace in time.  
@@ -1710,23 +1709,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               
               do j=1,np
                  do i=1,np
-                    if (nu_p==0) then
-                       ! normalize so as to conserve IE  
-                       ! scale by 1/rho (normalized to be O(1))
-                       ! dp/dn = O(ps0)*O(delta_eta) = O(ps0)/O(nlev)
-                       !dpdn = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                       !     ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,nt)  
-                       dpdn0 = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                            ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
-                       nu_scale = dpdn0/elem(ie)%state%dp3d(i,j,k,nt)  
-                       !nu_scale = dpdn0/dpdn
-                    endif
-
                     ! biharmonic terms need a negative sign:
                     if (nu_top>0 .and. k<=3) then
                        utens_tmp=(-nu*vtens(i,j,1,k,ie) + nu_scale_top*nu_top*lap_v(i,j,1))
                        vtens_tmp=(-nu*vtens(i,j,2,k,ie) + nu_scale_top*nu_top*lap_v(i,j,2))
-                       ptens_tmp=nu_scale*(-nu_s*ptens(i,j,k,ie) + nu_scale_top*nu_top*lap_p(i,j) )
+                       ptens_tmp=(-nu_s*ptens(i,j,k,ie) + nu_scale_top*nu_top*lap_p(i,j) )
                     else
                        utens_tmp=-nu*vtens(i,j,1,k,ie)
                        vtens_tmp=-nu*vtens(i,j,2,k,ie)
