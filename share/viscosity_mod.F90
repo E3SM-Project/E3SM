@@ -179,7 +179,7 @@ integer :: nt,nets,nete
 real (kind=real_kind) ::  nu_ratio
 
 ! local
-integer :: k,kptr,i,j,ie,ic
+integer :: k,kptr,ie
 real (kind=real_kind), dimension(:,:), pointer :: rspheremv, viscosity
 real (kind=real_kind), dimension(np,np) :: tmp
 real (kind=real_kind), dimension(np,np,2) :: v
@@ -226,7 +226,7 @@ real (kind=real_kind), dimension(np,np,2) :: v
       do k=1,nlev
          tmp(:,:)=rspheremv(:,:)*ptens(:,:,k,ie)
          ptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),viscosity)
-         tmp(:,:)=rspheremv(i,j)*dptens(:,:,k,ie)
+         tmp(:,:)=rspheremv(:,:)*dptens(:,:,k,ie)
          dptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),viscosity)
 
          v(:,:,1)=rspheremv(:,:)*vtens(:,:,1,k,ie)
