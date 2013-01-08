@@ -52,7 +52,7 @@ module spelt_mod
     !should be replace once the mapping comes from the reference element
     real (kind=real_kind)    :: Dinv(2,2,np,np)     ! Map vector field on the sphere to covariant v on cube
     real (kind=real_kind)    :: Ainv(2,2,nep,nep)
-    
+    integer                  :: Facenumber
   end type spelt_struct
   
   public :: cellghostbuf, edgeveloc, spelt_init1,spelt_init2, spelt_init3, spelt_mcgregordss,spelt_rkdss, spelt_grid_init
@@ -321,13 +321,9 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   type (ghostbuffertr_t)                      :: factorR
   integer                                     :: face_nodep
   
-
-
-  
   call initghostbuffer(factorR,nlev,ntrac,nhe,nc)    ! use the tracer entry
   call t_startf('SPELT scheme') 
-  
-  
+    
   dt6  = tstep/ 6.0D0
   do ie=nets,nete 
     do k=1, nlev
@@ -611,22 +607,34 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
             tmp=cip_interpolate(cf(:,:,icell1(i,j),jcell1(i,j)),dref1(i,j)%x,dref1(i,j)%y) 
 !             tmp=qmsl_cell_filter(icell1(i,j),jcell1(i,j),minmax,tmp)
             slval(2)=(sga/sg1(i,j))*tmp
+!             slval(2)=tmp
 
             tmp=cip_interpolate(cf(:,:,icell2(i,j),jcell2(i,j)),dref2(i,j)%x,dref2(i,j)%y) 
             
 !             tmp=qmsl_cell_filter(icell2(i,j),jcell2(i,j),minmax,tmp)
             slval(3)=(sga/sg2(i,j))*tmp
+!             slval(3)=tmp
  
             spelt(ie)%c(i,j,k,itr,tl%np1)=(sga/sg2(i,j))*tmp
 
-           if (mod(i,2)==1) then                   ! works only for nip=3!!!
-              fluxval(i,j,1) =  dt6 * spelt(ie)%contrau(i,j,k)* (slval(1) + & 
-                     4.0D0 * slval(2) + slval(3) )     
-            endif
-            if (mod(j,2)==1) then            ! works only for nip=3!!!
-              fluxval(i,j,2) =  dt6 * spelt(ie)%contrav(i,j,k)* (slval(1) + & 
-                       4.0D0 * slval(2) + slval(3) )                      
-            endif
+!            if (mod(i,2)==1) then                   ! works only for nip=3!!!
+!               fluxval(i,j,1) =  dt6 * spelt(ie)%contrau(i,j,k)* (slval(1) + & 
+!                      4.0D0 * slval(2) + slval(3) )     
+!             endif
+!             if (mod(j,2)==1) then            ! works only for nip=3!!!
+!               fluxval(i,j,2) =  dt6 * spelt(ie)%contrav(i,j,k)* (slval(1) + & 
+!                        4.0D0 * slval(2) + slval(3) )                      
+!             endif
+            
+            if (mod(i,2)==1) then                   ! works only for nip=3!!!
+               fluxval(i,j,1) =  dt6 * (spelt(ie)%contrau(i,j,k)* slval(1) + & 
+                      4.0D0 * spelt(ie)%contrau1(i,j)*slval(2) + spelt(ie)%contrau2(i,j)*slval(3) )  
+                         
+             endif
+             if (mod(j,2)==1) then            ! works only for nip=3!!!
+               fluxval(i,j,2) =  dt6 * (spelt(ie)%contrav(i,j,k)* slval(1) + & 
+                        4.0D0 * spelt(ie)%contrav1(i,j)*slval(2) + spelt(ie)%contrav2(i,j)*slval(3) )                                
+             endif
           end do
         end do 
 !         call t_stopf('SPELT2')
@@ -675,6 +683,7 @@ subroutine boomerang_all(spelt, dsphere1,dsphere2,k,nstep)
   use time_mod, only : tstep, nmax, ndays,Time_at
   use physical_constants, only : DD_PI, rearth
   use coordinate_systems_mod, only : spherical_polar_t
+  use coordinate_systems_mod, only : sphere2cubedsphere
 
   implicit none
   type (spelt_struct), intent(inout)          :: spelt
@@ -689,7 +698,7 @@ subroutine boomerang_all(spelt, dsphere1,dsphere2,k,nstep)
   real (kind=real_kind)       :: dplm,dpth,trm1,trm2,sslm,cwt,swt
   real (kind=real_kind)       :: dt2,dt3,dt4,dtt,udc,uexact, vexact, u,v
   
-  real (kind=real_kind)       :: Ainv(2,2)
+  real (kind=real_kind)       :: Ainv(2,2), time
   
   type (cartesian2D_t)        :: alphabeta
   type (cartesian2D_t)        :: dcart
@@ -735,7 +744,7 @@ subroutine boomerang_all(spelt, dsphere1,dsphere2,k,nstep)
         clon  = cos(lon-tmp_time*2*DD_PI/tt)!solid-body rotation added
         clon2 = cos(2*(lon-tmp_time*2*DD_PI/tt))!solid-body rotation added
         sslm  = (sin(0.5*(lon-tmp_time*2*DD_PI/tt)))**2
-
+        
         uexact =  ck*slon*slon*sin(2*lat)*cos(tmp_time*omega) + clat*2*DD_PI/(tt)
         vexact =  ck*slon2*clat*cos(tmp_time*omega)
         udc    =  2*ck*slon*slon*slat*cos(tmp_time*omega) + 2*DD_PI/tt
@@ -800,34 +809,106 @@ subroutine boomerang_all(spelt, dsphere1,dsphere2,k,nstep)
           dsphere1(i,j)%lon=tmp_lm
           dsphere1(i,j)%lat=tmp_th
           dsphere1(i,j)%r=spelt%asphere(i,j)%r
+          u=uexact /( 12.0D0*3600.0D0*24.0D0/5.0D0)
+          v=vexact /( 12.0D0*3600.0D0*24.0D0/5.0D0)
+          time=((2*nstep+1)*5.0D0/nmax)/2.0D0
+          call get_boomerang_velocities(spelt%asphere(i,j), u,v, time)
 !           call cube_facepoint_ne(dsphere1,ne,dcart, alphabeta, number, face_nodep)
-          
+!           call cube_facepoint_ne(dsphere1(i,j),ne,dcart, alphabeta, number, face_nodep)
+!           call get_Ainv(spelt%Facenumber, dsphere1(i,j), alphabeta,Ainv)
+!           spelt%contrau1(i,j)=Ainv(1,1)*u+Ainv(2,1)*v      
+!           spelt%contrav1(i,j)=Ainv(1,2)*u+Ainv(2,2)*v
+          spelt%contrau1(i,j)=spelt%Ainv(1,1,i,j)*u+spelt%Ainv(2,1,i,j)*v      
+          spelt%contrav1(i,j)=spelt%Ainv(1,2,i,j)*u+spelt%Ainv(2,2,i,j)*v
         endif
         if(itr==1) then
-          u=uexact /( 12*3600*24/5)
-          v=vexact /( 12*3600*24/5)
-!           spelt%contrau(i,j,k)=spelt%Ainv(1,1,i,j)*u+spelt%Ainv(2,1,i,j)*v      
-!           spelt%contrav(i,j,k)=spelt%Ainv(1,2,i,j)*u+spelt%Ainv(2,2,i,j)*v
-! alphabeta=sphere2cubedsphere(spelt(ie)%asphere(iel,jel), elem(ie)%FaceNum)
-
-          call cube_facepoint_ne(spelt%asphere(i,j),ne,dcart, alphabeta, number, face_nodep)
-          call get_Ainv(face_nodep, spelt%asphere(i,j), alphabeta,Ainv)
- !          spelt%contrau(i,j,k)=Ainv(1,1)*u+Ainv(2,1)*v      
- !           spelt%contrav(i,j,k)=Ainv(1,2)*u+Ainv(2,2)*v
+          u=uexact /( 12.0D0*3600.0D0*24.0D0/5.0D0)
+          v=vexact /( 12.0D0*3600.0D0*24.0D0/5.0D0)
+          spelt%contrau(i,j,k)=spelt%Ainv(1,1,i,j)*u+spelt%Ainv(2,1,i,j)*v      
+          spelt%contrav(i,j,k)=spelt%Ainv(1,2,i,j)*u+spelt%Ainv(2,2,i,j)*v
+!           alphabeta=sphere2cubedsphere(spelt%asphere(i,j), spelt%Facenumber)
+!           face_nodep=spelt%Facenumber
+!           call cube_facepoint_ne(spelt%asphere(i,j),ne,dcart, alphabeta, number, face_nodep)
+!           if(face_nodep .ne. spelt%Facenumber) then
+! !              write(*,*) 'face', face_nodep, spelt%Facenumber
+!              alphabeta=sphere2cubedsphere(spelt%asphere(i,j), face_nodep)
+!              write(*,*) 'alpha1',metric_term(alphabeta)
+!              alphabeta=sphere2cubedsphere(spelt%asphere(i,j), spelt%Facenumber)
+!              write(*,*) 'alpha2',metric_term(alphabeta)
+!              
+!              call get_Ainv(spelt%Facenumber, spelt%asphere(i,j), alphabeta,Ainv)
+! !              write(*,*) 'vor', spelt%contrau(i,j,k),spelt%contrav(i,j,k)
+! !              spelt%contrau(i,j,k)=Ainv(1,1)*u+Ainv(2,1)*v      
+! !              spelt%contrav(i,j,k)=Ainv(1,2)*u+Ainv(2,2)*v
+! !              write(*,*) 'nach', spelt%contrau(i,j,k),spelt%contrav(i,j,k)
+! !              
+!           endif
+!           call get_Ainv(face_nodep, spelt%asphere(i,j), alphabeta,Ainv)
+!           spelt%contrau(i,j,k)=Ainv(1,1)*u+Ainv(2,1)*v      
+!           spelt%contrav(i,j,k)=Ainv(1,2)*u+Ainv(2,2)*v
         endif
       end do
       dsphere2(i,j)%lon=tmp_lm
       dsphere2(i,j)%lat=tmp_th
       dsphere2(i,j)%r=spelt%asphere(i,j)%r
 
-!       u = u0*(cos(alpha)*cos(lat)+sin(alpha)*cos(lon)*sin(lat))
-!       v = -u0*sin(alpha)*sin(lon)
-!       ! transform to contravariant (alpha/beta velocities)
-!       spelt%contrau(i,j,k)=spelt%Ainv(1,1,i,j)*u+spelt%Ainv(2,1,i,j)*v      
-!       spelt%contrav(i,j,k)=spelt%Ainv(1,2,i,j)*u+spelt%Ainv(2,2,i,j)*v
+      u=uexact /( 12.0D0*3600.0D0*24.0D0/5.0D0)
+      v=vexact /( 12.0D0*3600.0D0*24.0D0/5.0D0)
+!       call cube_facepoint_ne(dsphere2(i,j),ne,dcart, alphabeta, number, face_nodep)
+!       call get_Ainv(spelt%Facenumber, dsphere2(i,j), alphabeta,Ainv)
+!       spelt%contrau2(i,j)=Ainv(1,1)*u+Ainv(2,1)*v      
+!       spelt%contrav2(i,j)=Ainv(1,2)*u+Ainv(2,2)*v
+!       time=((nstep)*5.0D0/nmax)
+      call get_boomerang_velocities(spelt%asphere(i,j), u,v, ((nstep)*5.0D0/nmax))
+
+      spelt%contrau2(i,j)=spelt%Ainv(1,1,i,j)*u+spelt%Ainv(2,1,i,j)*v      
+      spelt%contrav2(i,j)=spelt%Ainv(1,2,i,j)*u+spelt%Ainv(2,2,i,j)*v
     enddo
   enddo
 end subroutine boomerang_all
+
+
+subroutine get_boomerang_velocities(sphere, u,v, time)
+  use coordinate_systems_mod, only : cart2cubedspherexy, spherical_to_cart
+  use element_mod, only : element_t
+  use fvm_control_volume_mod, only: fvm_struct
+  use physical_constants, only : DD_PI, rearth
+  use time_mod, only : ndays
+  
+  implicit none
+  type (spherical_polar_t), intent(in)   :: sphere
+  real (kind=real_kind),intent(in)             :: time  ! time of the arrival grid
+  real (kind=real_kind),intent(out)             :: u,v
+  
+  integer                              :: i,j
+  real (kind=real_kind)       :: slat, clat, slon, clon, &
+                                 slon2,clon2, tt, ck, omega, lon, lat, tmp_time
+  tt = 5.0D0  !total time
+  ck = 10.0D0/tt
+  omega = DD_PI/tt
+
+  !tmp_time=(nstep+1)*5.0D0/nmax
+!   tmp_time=5.0D0*time/(ndays*3600*24.0D0)  ! convert from dimensional time to dimensionless
+  tmp_time=time
+      lon = sphere%lon
+      lat = sphere%lat
+
+      slat  = sin(lat)
+      clat  = cos(lat)
+
+      slon  = sin(lon-tmp_time*2*DD_PI/tt)!solid-body rotation added
+      slon2 = sin(2*(lon-tmp_time*2*DD_PI/tt))!solid-body rotation added
+      clon  = cos(lon-tmp_time*2*DD_PI/tt)!solid-body rotation added
+      clon2 = cos(2*(lon-tmp_time*2*DD_PI/tt))!solid-body rotation added
+
+      u =  ck*slon*slon*sin(2*lat)*cos(tmp_time*omega) + clat*2*DD_PI/(tt)
+      v =  ck*slon2*clat*cos(tmp_time*omega)
+      ! convert from radians per dimensionless time to 
+      ! meters/sec 
+      u=u  /( ndays*3600*24.0D0/5.0D0)
+      v=v  /( ndays*3600*24.0D0/5.0D0)
+
+end subroutine get_boomerang_velocities
 
 subroutine get_Ainv(FaceNum, sphere, alphabeta,Ainv)
   use physical_constants, only : DD_PI
@@ -1018,6 +1099,7 @@ subroutine spelt_grid_init(elem,spelt,nets,nete,tl)
 
   
   do ie=nets,nete
+    spelt(ie)%Facenumber=elem(ie)%FaceNum
     ! for the np grid
 !     if (np .ne. nc+1) then
 !       call haltmp("PARAMTER ERROR for SPELT, you are in gll grid point mode, use np = nc+1")
@@ -1055,7 +1137,7 @@ subroutine spelt_grid_init(elem,spelt,nets,nete,tl)
             beta=alphabeta%y
             ! Caculation transformation matrix lat/lon to alpha beta for spelt grid
             ! earth radius is assumed to be 1.0D0
-            call get_Ainv(elem(ie)%FaceNum, spelt(ie)%asphere(i,j), alphabeta,spelt(ie)%Ainv(:,:,iel,jel))
+            call get_Ainv(elem(ie)%FaceNum, spelt(ie)%asphere(iel,jel), alphabeta,spelt(ie)%Ainv(:,:,iel,jel))
 !             if (elem(ie)%FaceNum <= 4) then
 !               lon=lon-(elem(ie)%FaceNum-1)*DD_PI/2
 !               tmp=1.0D0/(cos(lat)*cos(lon))

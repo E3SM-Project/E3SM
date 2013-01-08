@@ -232,37 +232,37 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
   
 DO WHILE(tl%nstep< nmax) !nmax)
 ! ! start mcgregordss
-  do ie=nets,nete
-    do k=1,nlev
-      elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
-      spelt(ie)%vn0(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),time_at(tl%nstep))
-!       elem(ie)%derived%vstar(:,:,:,k)=get_solidbody_velocities_gll(elem(ie), time_at(tl%nstep+1))
-!       spelt(ie)%vn0(:,:,:,k)=get_solidbody_velocities_gll(elem(ie),time_at(tl%nstep))
-      vstar=elem(ie)%derived%vstar(:,:,:,k)/rearth
-      do j=1,np
-        do i=1,np
-          v1 = spelt(ie)%Dinv(1,1,i,j)*vstar(i,j,1) + spelt(ie)%Dinv(1,2,i,j)*vstar(i,j,2)
-          v2 = spelt(ie)%Dinv(2,1,i,j)*vstar(i,j,1) + spelt(ie)%Dinv(2,2,i,j)*vstar(i,j,2)
-          vstar(i,j,1)=v1
-          vstar(i,j,2)=v2
-        enddo
-      enddo
-    spelt(ie)%contrau(:,:,k)=interpolate_gll2spelt_points(vstar(:,:,1),deriv)
-    spelt(ie)%contrav(:,:,k)=interpolate_gll2spelt_points(vstar(:,:,2),deriv)
-!       u=interpolate_gll2spelt_points(vstar(:,:,1),deriv)
-!       v=interpolate_gll2spelt_points(vstar(:,:,2),deriv)
-!       do j=1,nep
-!         do i=1,nep
-!           spelt%contrau(i,j,k)=spelt%Ainv(1,1,i,j)*u(i,j)+spelt%Ainv(2,1,i,j)*v(i,j)      
-!           spelt%contrav(i,j,k)=spelt%Ainv(1,2,i,j)*u(i,j)+spelt%Ainv(2,2,i,j)*v(i,j)
-!         end do
-!       end do
-      
-    end do
-  end do
+!   do ie=nets,nete
+!     do k=1,nlev
+!       elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
+!       spelt(ie)%vn0(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),time_at(tl%nstep))
+! !       elem(ie)%derived%vstar(:,:,:,k)=get_solidbody_velocities_gll(elem(ie), time_at(tl%nstep+1))
+! !       spelt(ie)%vn0(:,:,:,k)=get_solidbody_velocities_gll(elem(ie),time_at(tl%nstep))
+!       vstar=elem(ie)%derived%vstar(:,:,:,k)/rearth
+!       do j=1,np
+!         do i=1,np
+!           v1 = spelt(ie)%Dinv(1,1,i,j)*vstar(i,j,1) + spelt(ie)%Dinv(1,2,i,j)*vstar(i,j,2)
+!           v2 = spelt(ie)%Dinv(2,1,i,j)*vstar(i,j,1) + spelt(ie)%Dinv(2,2,i,j)*vstar(i,j,2)
+!           vstar(i,j,1)=v1
+!           vstar(i,j,2)=v2
+!         enddo
+!       enddo
+!     spelt(ie)%contrau(:,:,k)=interpolate_gll2spelt_points(vstar(:,:,1),deriv)
+!     spelt(ie)%contrav(:,:,k)=interpolate_gll2spelt_points(vstar(:,:,2),deriv)
+! !       u=interpolate_gll2spelt_points(vstar(:,:,1),deriv)
+! !       v=interpolate_gll2spelt_points(vstar(:,:,2),deriv)
+! !       do j=1,nep
+! !         do i=1,nep
+! !           spelt%contrau(i,j,k)=spelt%Ainv(1,1,i,j)*u(i,j)+spelt%Ainv(2,1,i,j)*v(i,j)      
+! !           spelt%contrav(i,j,k)=spelt%Ainv(1,2,i,j)*u(i,j)+spelt%Ainv(2,2,i,j)*v(i,j)
+! !         end do
+! !       end do
+!       
+!     end do
+!   end do
   
 !   call spelt_mcgregordss(elem,spelt,nets,nete, hybrid, deriv, tstep, 3)
-  call spelt_rkdss(elem,spelt,nets,nete, hybrid, deriv, tstep, 3)
+!   call spelt_rkdss(elem,spelt,nets,nete, hybrid, deriv, tstep, 3)
 ! ! end mcgregordss
 !   call spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 
