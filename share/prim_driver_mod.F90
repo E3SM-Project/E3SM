@@ -1071,7 +1071,6 @@ contains
     character(len=*), intent(in) :: advance_name
     real(kind=real_kind) :: st, st1, dp
     integer :: ie, t, q,k,i,j
-    integer:: np1_qdp, no_qdp
 
 
     logical :: compute_diagnostics
