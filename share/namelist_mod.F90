@@ -399,6 +399,7 @@ module namelist_mod
     se_topology = 'none'
     se_phys_tscale=0
     se_nsplit = 1
+    qsize = qsize_d
 #else
     ndays         = 0
     nmax          = 12
