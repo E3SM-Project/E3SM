@@ -55,7 +55,12 @@ MESSAGE(STATUS "-- num tracers (NTRAC) set to... ${NUM_TRACERS}")
 IF(HOMME_FIND_BLASLAPACK)
   FIND_PACKAGE(BLAS REQUIRED)
   FIND_PACKAGE(LAPACK REQUIRED)
+ELSE()
+  # Build the blas and lapack provided with homme
+  ADD_SUBDIRECTORY(libs/blas)
+  ADD_SUBDIRECTORY(libs/lapack)
 ENDIF()
+
 FIND_PACKAGE(Netcdf REQUIRED)
 FIND_PACKAGE(Pnetcdf REQUIRED)
 

@@ -90,6 +90,13 @@ ADD_LIBRARY(homme_sweqx ${SRCS_F90})
 TARGET_LINK_LIBRARIES(homme_sweqx pio timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 
 ADD_EXECUTABLE(sweqx ${SRC_BASE}/main.F90)
+
 TARGET_LINK_LIBRARIES(sweqx homme_sweqx)
+
+IF (NOT HOMME_FIND_BLASLAPACK)
+  TARGET_LINK_LIBRARIES(sweqx lapack blas)
+  ADD_DEPENDENCIES(sweqx blas lapack)
+ENDIF()
+
 INSTALL(TARGETS sweqx
         RUNTIME DESTINATION bin)

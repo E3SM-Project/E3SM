@@ -1,6 +1,6 @@
 # Relevant Directories within the HOMME repository
 # holding source files needed for building the library
-# and executable sweqx.
+# and executable preqx.
 
 INCLUDE_DIRECTORIES ( ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS} )
 LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS} )
@@ -114,6 +114,15 @@ ADD_LIBRARY(homme_preqx ${SRCS_PREQX})
 TARGET_LINK_LIBRARIES(homme_preqx pio timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 
 ADD_EXECUTABLE(preqx ${SRC_DIR}/prim_main.F90)
+
+ADD_DEPENDENCIES(preqx blas lapack)
 TARGET_LINK_LIBRARIES(preqx homme_preqx)
+
+IF (NOT HOMME_FIND_BLASLAPACK)
+  TARGET_LINK_LIBRARIES(preqx lapack blas)
+  ADD_DEPENDENCIES(preqx blas lapack)
+ENDIF()
+
+
 INSTALL(TARGETS preqx
         RUNTIME DESTINATION bin)
