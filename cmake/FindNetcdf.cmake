@@ -1,6 +1,6 @@
 find_path(Netcdf_INCLUDE_DIR 
           netcdf.h
-          PATHS ENV Netcdf_DIR
+          PATHS ${Homme_Netcdf_DIR}
           PATH_SUFFIXES include
           NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
@@ -42,7 +42,6 @@ else()
   MESSAGE(STATUS "Found ZLIB: ${ZLIB_LIBRARY}")
 endif()
 
-message(status "Netcdf_INCLUDE_DIR=${Netcdf_INCLUDE_DIR}")
 if (${Netcdf_INCLUDE_DIR} STREQUAL "Netcdf_INCLUDE_DIR-NOTFOUND")
   set(Netcdf_FOUND OFF)
 else()
@@ -63,5 +62,5 @@ endif()
 IF(Netcdf_FIND_REQUIRED AND NOT Netcdf_FOUND)
   MESSAGE(FATAL_ERROR "Did not find required library Netcdf")
 ELSEIF(Netcdf_FIND_REQUIRED AND NOT HDF5_FOUND)
-  MESSAGE(FATAL_ERROR "Found Netcdf; did not find HDF5.")
+  MESSAGE(STATUS "Found Netcdf; did not find HDF5.")
 ENDIF()
