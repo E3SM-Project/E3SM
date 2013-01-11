@@ -270,8 +270,13 @@ contains
        Fvsum_local(ie)    = SUM(elem(ie)%derived%FM(:,:,2,:,pnm1))
 
        tsum_local(ie)    = SUM(elem(ie)%state%t(:,:,:,n0))
-       if (rsplit>0) &
-            dpsum_local(ie)    = SUM(elem(ie)%state%dp3d(:,:,:,n0))
+       if (rsplit>0) then
+          dpsum_local(ie)    = SUM(elem(ie)%state%dp3d(:,:,:,n0))
+       else
+          ! Make sure to initialize this to prevent possible
+          ! floating point exceptions.
+          dpsum_local(ie)    = 0.0D0
+       end if
 
        Ftsum_local(ie)    = SUM(elem(ie)%derived%FT(:,:,:,pnm1))
        FQsum_local(ie) = SUM(elem(ie)%derived%FQ(:,:,:,1,pnm1))
@@ -669,7 +674,7 @@ contains
           write(iulog,100) "(E-E0)/E0    ",(TOTE(4)-TOTE0)/TOTE0
           if (tstep_type==1) then  !no longer support tracer advection with tstep_type = 0
              do q=1,qsize
-                if(Qmass0(q)>0.0) then
+                if(Qmass0(q)>0.0D0) then
                    write(iulog,'(a,E23.15,a,i1)') "(Q-Q0)/Q0 ",(Qmass(q,2)-Qmass0(q))/Qmass0(q),"   Q",q
                 end if
              enddo
