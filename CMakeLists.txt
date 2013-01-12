@@ -52,6 +52,9 @@ MESSAGE(STATUS "-- num cells (NC) set to... ${NUM_CELLS}")
 MESSAGE(STATUS "-- num points (PLEV) set to... ${NUM_PLEV}")
 MESSAGE(STATUS "-- num tracers (NTRAC) set to... ${NUM_TRACERS}")
 
+# Add the cmake/CMakeLists.txt file
+ADD_SUBDIRECTORY(cmake)
+
 IF(HOMME_FIND_BLASLAPACK)
   FIND_PACKAGE(BLAS REQUIRED)
   FIND_PACKAGE(LAPACK REQUIRED)
