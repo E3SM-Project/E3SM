@@ -1,4 +1,4 @@
-PROJECT(HOMME C CXX Fortran)
+PROJECT(HOMME C Fortran)
 INCLUDE(FortranCInterface)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
@@ -53,7 +53,19 @@ MESSAGE(STATUS "-- num points (PLEV) set to... ${NUM_PLEV}")
 MESSAGE(STATUS "-- num tracers (NTRAC) set to... ${NUM_TRACERS}")
 
 # Add the cmake/CMakeLists.txt file
-ADD_SUBDIRECTORY(cmake)
+set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+include(GetHostInfo) # defines a macro:
+include(ReadPaths) # defines a macro:
+#ADD_SUBDIRECTORY(cmake)
+
+MESSAGE(STATUS "Homme hostname = ${Homme_Hostname}")
+MESSAGE(STATUS "Homme OS = ${Homme_OS}")
+MESSAGE(STATUS "C Compiler= ${CMAKE_C_COMPILER_ID}")
+MESSAGE(STATUS "CXX Compiler= ${CMAKE_CXX_COMPILER_ID}")
+MESSAGE(STATUS "Fortran Compiler= ${CMAKE_Fortran_COMPILER_ID}")
+MESSAGE(STATUS "CMAKE_SYSTEM= ${CMAKE_SYSTEM}")
+MESSAGE(STATUS "CMAKE_SYSTEM_NAME= ${CMAKE_SYSTEM_NAME}")
 
 IF(HOMME_FIND_BLASLAPACK)
   FIND_PACKAGE(BLAS REQUIRED)

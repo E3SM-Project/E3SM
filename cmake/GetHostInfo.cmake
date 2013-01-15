@@ -10,7 +10,7 @@ EXECUTE_PROCESS(COMMAND uname -n
 )
 
 IF (Homme_result EQUAL 0 AND Homme_error STREQUAL "")
-  SET(Homme_Hostname ${Homme_output})
+  SET(Homme_Raw_Hostname ${Homme_output})
 ELSE ()
   MESSAGE(FATAL_ERROR "Hostname could not be determined")
 ENDIF()
@@ -29,14 +29,10 @@ ELSE ()
   MESSAGE(FATAL_ERROR "OS type could not be determined")
 ENDIF()
 
-MESSAGE(STATUS "Homme hostname = ${Homme_Hostname}")
-MESSAGE(STATUS "Homme OS = ${Homme_OS}")
-
 # Now parse the host name to see if it matches yslogin*
-IF (${Homme_Hostname} STREQUAL "yslogin3")
-  MESSAGE(STATUS "Hostname is yslogin3")
-ENDIF()
-
-IF (${Homme_Hostname} MATCHES "yslogin.")
-  MESSAGE(STATUS "Hostname is yslogin")
+# MATCHES Does REGEX where "." is a wildcard
+IF (${Homme_Raw_Hostname} MATCHES "yslogin.")
+  SET(Homme_Hostname "Yellowstone")
+ELSEIF (${Homme_Raw_Hostname} STREQUAL "jaguar")
+  SET(Homme_Hostname "Jaguar")
 ENDIF()
