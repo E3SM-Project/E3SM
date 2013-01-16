@@ -86,7 +86,7 @@ set smooth = 0
 set tadv = 1 ; set RK2 = 1    
 set qsplit = 4
 set mean_flux=1
-set limiter = 8
+#set limiter = 8
 
 
 
@@ -100,7 +100,7 @@ if ( $ne == 8 ) then
    set tstep = 360        # dynamics timestep
    set nu = 2e16
    set nu_q = 2e16
-   set nu_p = $nu_q
+#   set nu_p = $nu_q
    set resolution = low
 
 endif
@@ -245,8 +245,6 @@ else if ( titan == $machine ) then
 @ NCPU = $PBS_NUM_NODES * $NPER
    set mpirun = "aprun -n $NCPU -N $NPER -d $OMP_NUM_THREADS"
    # cant reference home directory
-   set vcoord = /tmp/work/$USER/preqx/vcoord
-   rsync -a $HOMME/test/vcoord/* $vcoord
 else
    set make = "make -j4"
    set mpirun = "mpirun -np $NCPU"
