@@ -19,6 +19,7 @@ private
   type, public :: derivative_t
      sequence
      real (kind=real_kind) :: Dvv(np,np)
+     real (kind=real_kind) :: Dvv_diag(np,np)
      real (kind=real_kind) :: Dvv_twt(np,np)
      real (kind=real_kind) :: Mvv_twt(np,np)  ! diagonal matrix of GLL weights
      real (kind=real_kind) :: vvtemp(np,np)
@@ -87,6 +88,7 @@ private
   public  :: gradient_sphere_wk
   public  :: ugradv_sphere
   public  :: vorticity_sphere
+  public  :: vorticity_sphere_diag
   public  :: divergence_sphere
   public  :: curl_sphere
   public  :: divergence_sphere_wk
@@ -122,6 +124,7 @@ contains
     real (kind=longdouble_kind) :: v2p(np,np)
     real (kind=longdouble_kind) :: p2v(np,np)
     real (kind=longdouble_kind) :: dvv(np,np)
+    real (kind=longdouble_kind) :: dvv_diag(np,np)
     real (kind=longdouble_kind) :: v2v(np,np)
     real (kind=longdouble_kind) :: xnorm
     integer i,j
@@ -150,6 +153,21 @@ contains
     endif
     call dvvinit(dvv,gp)
     deriv%Dvv(:,:)   = dvv(:,:)
+
+    do i=1,np
+       do j=1,np
+          if (i.eq.j) then
+             deriv%dvv_diag(i,j)   = dvv(i,j)
+          else
+             deriv%dvv_diag(i,j) = 0.0D0
+          endif 
+        end do
+     end do
+
+
+
+
+
 
 
     v2v = 0.0D0
@@ -2140,6 +2158,74 @@ endif
     end do
 
   end function vorticity_sphere
+
+
+
+
+
+
+
+  function vorticity_sphere_diag(v,deriv,elem) result(vort)
+  !
+  !   input:  v = velocity in lat-lon coordinates
+  !   ouput:  diagonal component of spherical vorticity of v
+  !
+
+      type (derivative_t)              :: deriv
+      type (element_t)                 :: elem
+      real(kind=real_kind), intent(in) :: v(np,np,2)
+
+      real(kind=real_kind) :: vort(np,np)
+
+      integer i
+      integer j
+      integer l
+
+      real(kind=real_kind) ::  dvdx00
+      real(kind=real_kind) ::  dudy00
+      real(kind=real_kind) ::  vco(np,np,2)
+      real(kind=real_kind) :: vtemp(np,np)
+      real(kind=real_kind) :: rdx
+      real(kind=real_kind) :: rdy
+
+      rdx=2.0D0/(elem%dx*rrearth) ! strong derivative inverse x length
+      rdy=2.0D0/(elem%dy*rrearth) ! strong derivative inverse y length
+
+      ! convert to covariant form
+                                                                    
+      do j=1,np
+         do i=1,np
+            vco(i,j,1)=(elem%D(1,1,i,j)*v(i,j,1) + elem%D(2,1,i,j)*v(i,j,2))
+            vco(i,j,2)=(elem%D(1,2,i,j)*v(i,j,1) + elem%D(2,2,i,j)*v(i,j,2))
+
+
+         enddo
+      enddo
+
+                                                                                                               
+      do j=1,np
+         do l=1,np
+          
+            dudy00=0.0d0
+            dvdx00=0.0d0
+
+            do i=1,np
+               dvdx00 = dvdx00 + deriv%Dvv_diag(i,l)*vco(i,j ,2)
+               dudy00 = dudy00 + deriv%Dvv_diag(i,l)*vco(j ,i,1)
+            enddo 
+     
+            vort(l ,j) = dvdx00 
+            vtemp(j ,l) = dudy00
+         enddo
+      enddo
+
+      do j=1,np
+         do i=1,np 
+            vort(i,j)=elem%rmetdet(i,j)*(rdx*vort(i,j)-rdy*vtemp(i,j))
+         end do 
+      end do 
+     
+  end function vorticity_sphere_diag
 
 
 

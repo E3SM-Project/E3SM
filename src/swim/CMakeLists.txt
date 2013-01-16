@@ -94,6 +94,7 @@ SET(SRCS_F90
 )
 
 SET(SRCS_SWIM     ${SRC_TRIL}/donoxloca.cpp
+                  ${SRC_TRIL}/block_precon_interface.cpp
                   ${SRC_TRIL}/noxlocainterface.cpp
                   ${SRC_TRIL}/precon_interface.cpp
                   ${SRC_BASE}/derived_type_mod.F90

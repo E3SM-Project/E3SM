@@ -26,6 +26,8 @@ module derived_type_mod
 
     integer                 :: n
     type (element_t)      ,allocatable ,dimension(:) :: base
+    type (EdgeBuffer_t)     :: edge1
+    type (EdgeBuffer_t)     :: edge2
     type (EdgeBuffer_t)     :: edge3
     type (hybrid_t)         :: hybrid
     type (derivative_t)     :: deriv
@@ -59,7 +61,9 @@ module derived_type_mod
   end type precon_type
 
  contains
-  subroutine initialize(object, lenx, elem, pmean, edge3, &
+
+
+  subroutine initialize(object, lenx, elem, pmean, edge1,edge2,edge3, &
          hybrid, deriv, dt, tl, nets, nete)
 
    use dimensions_mod, only : nelemd
@@ -77,6 +81,8 @@ module derived_type_mod
     integer                ,intent(in)  :: lenx
     type (element_t)       ,intent(in)  :: elem(nets:nete)
     real (kind=real_kind)  ,intent(in)  :: pmean
+    type (EdgeBuffer_t)    ,intent(in)  :: edge1
+    type (EdgeBuffer_t)    ,intent(in)  :: edge2
     type (EdgeBuffer_t)    ,intent(in)  :: edge3
     type (hybrid_t)        ,intent(in)  :: hybrid
     type (derivative_t)    ,intent(in)  :: deriv
@@ -92,6 +98,8 @@ module derived_type_mod
     object%base(ie)= elem(ie)
      end do
     object%pmean = pmean
+    object%edge1 = edge1
+    object%edge2 = edge2
     object%edge3 = edge3
     object%hybrid = hybrid
     object%deriv = deriv
