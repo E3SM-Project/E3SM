@@ -370,24 +370,24 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
             slval(3)=(sga/sg2(i,j))*tmp
             spelt(ie)%c(i,j,k,itr,tl%np1)=slval(3)
 
-!            if (mod(i,2)==1) then                   ! works only for nip=3!!!
-!               fluxval(i,j,1) =  dt6 * spelt(ie)%contrau(i,j,k)* (slval(1) + & 
-!                      4.0D0 * slval(2) + slval(3) )
-!             endif
-!             if (mod(j,2)==1) then            ! works only for nip=3!!!
-!               fluxval(i,j,2) =  dt6 * spelt(ie)%contrav(i,j,k)* (slval(1) + & 
-!                      4.0D0 * slval(2) + slval(3) )    
-!             endif  
-            if (mod(i,2)==1) then                   ! works only for nip=3!!!                                                
-               fluxval(i,j,1) =  dt6 * (spelt(ie)%contrau(i,j,k)* slval(1) + &                                               
-                      4.0D0 * spelt(ie)%contrau1(i,j)*slval(2) + spelt(ie)%contrau2(i,j)*slval(3) )                          
-                                                                                                                             
-             endif                                                                                                           
-             if (mod(j,2)==1) then            ! works only for nip=3!!!                                                      
-               fluxval(i,j,2) =  dt6 * (spelt(ie)%contrav(i,j,k)* slval(1) + &                                               
-                        4.0D0 * spelt(ie)%contrav1(i,j)*slval(2) + spelt(ie)%contrav2(i,j)*slval(3) )                       \
-                                                                                                                             
-             endif  
+           if (mod(i,2)==1) then                   ! works only for nip=3!!!
+              fluxval(i,j,1) =  dt6 * spelt(ie)%contrau(i,j,k)* (slval(1) + & 
+                     4.0D0 * slval(2) + slval(3) )
+            endif
+            if (mod(j,2)==1) then            ! works only for nip=3!!!
+              fluxval(i,j,2) =  dt6 * spelt(ie)%contrav(i,j,k)* (slval(1) + & 
+                     4.0D0 * slval(2) + slval(3) )    
+            endif  
+!             if (mod(i,2)==1) then                   ! works only for nip=3!!!                                                
+!                fluxval(i,j,1) =  dt6 * (spelt(ie)%contrau(i,j,k)* slval(1) + &                                               
+!                       4.0D0 * spelt(ie)%contrau1(i,j)*slval(2) + spelt(ie)%contrau2(i,j)*slval(3) )                          
+!                                                                                                                              
+!              endif                                                                                                           
+!              if (mod(j,2)==1) then            ! works only for nip=3!!!                                                      
+!                fluxval(i,j,2) =  dt6 * (spelt(ie)%contrav(i,j,k)* slval(1) + &                                               
+!                         4.0D0 * spelt(ie)%contrav1(i,j)*slval(2) + spelt(ie)%contrav2(i,j)*slval(3) )                       \
+!                                                                                                                              
+!              endif  
           end do
         end do 
         !calculate low order flux
@@ -567,13 +567,15 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !   dt6 =  tstep / 3.0D0   ! test GLL weights (points are the same)
   do ie=nets,nete 
     do k=1, nlev
-!       call solidbody_all(spelt(ie), dsphere1,dsphere2,k) 
+      call solidbody_all(spelt(ie), dsphere1,dsphere2,k) 
       call boomerang_all(spelt(ie), dsphere1,dsphere2,k,tl%nstep)
 !       call t_startf('SPELT0') 
 !       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
 !       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)
                
       !search has not to be done for all tracers!
+      call t_startf('SPELT search') 
+      
       do j=1,nep
         do i=1,nep
 !           call solidbody(spelt(ie)%asphere(i,j), dsphere1(i,j), 0.5D0) 
@@ -595,6 +597,8 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !           sg2(i,j)=metric_termref(elem(ie),dref2(i,j))
         end do
       end do
+      call t_stopf('SPELT search') 
+      
 !       call t_stopf('SPELT0')
       ! search of both point on the trajectory done
       call t_startf('SPELT ntrac') 
@@ -676,7 +680,6 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
     end do
     call ghostVpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tl%np1, timelevels,elem(ie)%desc)
   end do
-  call t_stopf('SPELT scheme') 
 !-----------------------------------------------------------------------------------! 
   call t_startf('SPELT Communication') 
   call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep)
@@ -687,6 +690,8 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
     call ghostVunpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tl%np1, timelevels,elem(ie)%desc)
   end do
   call t_stopf('SPELT Unpacking')
+  call t_stopf('SPELT scheme') 
+  
 end subroutine spelt_run
 
 
