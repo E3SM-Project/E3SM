@@ -29,11 +29,132 @@ module fvm_mod
   type (EdgeBuffer_t)                         :: edgeveloc
   
 !   public :: cslam_run, cslam_runair, cslam_runairdensity
-  public :: cslam_run, cslam_runairdensity, cslam_runtest
+  public :: cslam_run, cslam_runairdensity, cslam_runflux, cslam_runtest
   
   public :: cellghostbuf, edgeveloc, fvm_init1,fvm_init2, fvm_mcgregor, fvm_mcgregordss
   public :: fvm_init3, fvm_rkdss
 contains
+
+
+! use this subroutine for benchmark tests, couple airdensity with tracer concentration
+subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
+  ! ---------------------------------------------------------------------------------
+  use fvm_line_integrals_mod, only: compute_weights          !DEBUGGING
+  use fvm_line_integrals_flux_mod, only: compute_weights_flux
+  ! ---------------------------------------------------------------------------------  
+  use fvm_filter_mod, only: monotonic_gradient_cart
+  ! ---------------------------------------------------------------------------------
+  use fvm_reconstruction_mod, only: reconstruction
+  ! ---------------------------------------------------------------------------------
+  use derivative_mod, only : derivative_t
+  ! ---------------------------------------------------------------------------------
+  use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
+  ! -----------------------------------------------
+   use edge_mod, only :  ghostBuffertr_t,ghostVpack2d_level, ghostVunpack2d_level,initghostbuffer,freeghostbuffertr
+
+   
+  implicit none
+  type (element_t), intent(inout)             :: elem(:)
+  type (fvm_struct), intent(inout)            :: fvm(:)
+  type (hybrid_t), intent(in)                 :: hybrid   ! distributed parallel structure (shared)
+  integer, intent(in)                         :: nets  ! starting thread element number (private)
+  integer, intent(in)                         :: nete  ! ending thread element number   (private)
+  real (kind=real_kind)                       :: tstep
+  
+  integer                                     :: i,j,k,ie,itr, jx, jy, jdx, jdy, h
+  type (TimeLevel_t)                          :: tl              ! time level struct
+  type (derivative_t)                         :: deriv           ! derivative struct
+  
+  real (kind=real_kind)   , dimension(10*(nc+2*nhe)*(nc+2*nhe),6)  :: xflux_weights_all,yflux_weights_all
+  integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: xflux_weights_eul_index_all,yflux_weights_eul_index_all
+  integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: xflux_weights_lgr_index_all,yflux_weights_lgr_index_all
+  integer (kind=int_kind)                                          :: xflux_jall, yflux_jall
+    
+  real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons
+  real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)        :: tracer0 
+  real (kind=real_kind), dimension(1:nc,1:nc)                        :: tracer1
+  type (ghostBuffertr_t)                      :: buflatlon
+
+
+!!!!! FOR DEBUGGING
+  real (kind=real_kind)   , dimension(10*(nc+2*nhe)*(nc+2*nhe),6)  :: weights_all
+  integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: weights_eul_index_all
+  integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: weights_lgr_index_all
+  integer (kind=int_kind)                                          :: jall
+!!!!! FOR DEBUGGING
+
+  call initghostbuffer(buflatlon,nlev,2,2,nc+1)    ! use the tracer entry 2 for lat lon
+   
+   do ie=nets, nete
+     do k=1,nlev
+       call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
+     end do
+   end do
+
+
+   do ie=nets,nete
+     call ghostVpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lat,1,2, nc+1,nlev,elem(ie)%desc) !kptr = 1 for lat
+     call ghostVpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lon,2,2, nc+1,nlev,elem(ie)%desc) !kptr =2 for lon
+   end do
+ !-----------------------------------------------------------------------------------! 
+   call ghost_exchangeV(hybrid,buflatlon,2,nc+1)
+ !-----------------------------------------------------------------------------------!  
+   do ie=nets,nete
+     call ghostVunpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lat,1,2, nc+1,nlev,elem(ie)%desc)
+     call ghostVunpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lon,2,2, nc+1,nlev,elem(ie)%desc)
+     fvm(ie)%dsphere(:,:,:)%r=1.0D0  !!! RADIUS IS ASSUMED TO BE 1.0DO !!!!
+   end do
+ 
+  do ie=nets, nete
+    do k=1,nlev
+!       call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
+      !-Departure fvm Meshes, initialization done             
+      !DEBUGGING                                                  
+      call compute_weights(fvm(ie),6,weights_all,weights_eul_index_all, &
+             weights_lgr_index_all,k,jall) 
+      !loop through all tracers
+!       call t_startf('CSLAM ntrac') 
+      call compute_weights_flux(fvm(ie),6,xflux_weights_all,yflux_weights_all, &
+                                     xflux_weights_eul_index_all,yflux_weights_eul_index_all, &
+                                     xflux_weights_lgr_index_all,yflux_weights_lgr_index_all,k,xflux_jall,yflux_jall)
+             
+             
+      do itr=1,ntrac
+        tracer0=fvm(ie)%c(:,:,k,itr,tl%n0)
+        call reconstruction(tracer0, fvm(ie),recons)
+       call monotonic_gradient_cart(tracer0, fvm(ie),recons, elem(ie)%desc)
+        tracer1=0.0D0   
+        call cslam_remap(tracer0,tracer1,weights_all, recons, &
+                   fvm(ie)%spherecentroid, weights_eul_index_all, weights_lgr_index_all, jall)
+        ! finish scheme
+        do j=1,nc
+          do i=1,nc
+            fvm(ie)%c(i,j,k,itr,tl%np1)=tracer1(i,j)/fvm(ie)%area_sphere(i,j)
+          end do
+        end do
+      enddo  !End Tracer
+!       call t_stopf('CSLAM ntrac') 
+      
+    end do  !End Level
+    !note write tl%np1 in buffer
+    call ghostVpack(cellghostbuf, fvm(ie)%c,nhc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
+  end do
+
+  call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc)
+  
+!-----------------------------------------------------------------------------------!
+!-----------------------------------------------------------------------------------!
+  do ie=nets,nete
+     call ghostVunpack(cellghostbuf, fvm(ie)%c, nhc, nc,nlev,ntrac, 0, tl%np1, timelevels,elem(ie)%desc)
+  enddo
+!-----------------------------------------------------------------------------------!
+
+!!!! flux version  
+  
+  
+end subroutine cslam_runflux
+
+
 
 ! use this subroutine for benchmark tests, couple airdensity with tracer concentration
 subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
@@ -69,7 +190,6 @@ subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   integer (kind=int_kind)                                          :: jall
     
   real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons
-  real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: reconsalt
   
   real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)        :: tracer0 
   

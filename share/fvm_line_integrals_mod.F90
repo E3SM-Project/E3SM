@@ -250,7 +250,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
 
       if(swap1) then  !flip orientation
-        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+        call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
            fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
            tmp,ngpc,gsweights,gspts,&
            weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -297,7 +297,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
         call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
 
         if(swap1) then  !flip orientation
-          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+          call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
              fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
              tmp,ngpc,gsweights,gspts,&
              weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -307,7 +307,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
             weights_eul_index_cell(i,2)=inttmp
           end do
         else  
-          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+          call compute_weights_cell(xcell,ycell,jx_min1,jy_min1,nreconstruction,&
              fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
              tmp,ngpc,gsweights,gspts,&
              weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -356,7 +356,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
     do jy=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
       if(swap1) then !flip orientation
-        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+        call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
            fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
            tmp,ngpc,gsweights,gspts,&
            weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -401,7 +401,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
        endif 
          call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
           if(swap1) then !flip orientation
-            call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+            call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
                fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
                tmp,ngpc,gsweights,gspts,&
                weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -411,7 +411,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
               weights_eul_index_cell(i,2)=inttmp
             end do
           else
-            call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+            call compute_weights_cell(xcell,ycell,jx_min1,jy_min1,nreconstruction,&
                fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
                tmp,ngpc,gsweights,gspts,&
                weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -460,7 +460,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
     do jx=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
       if(swap1) then !flip orientation
-        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+        call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
            fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
            tmp,ngpc,gsweights,gspts,&
            weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -517,7 +517,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
        endif 
         call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
         if(swap1) then !flip orientation
-          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+          call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
              fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
              tmp,ngpc,gsweights,gspts,&
              weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -527,7 +527,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
             weights_eul_index_cell(i,2)=inttmp
           end do
         else
-          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+          call compute_weights_cell(xcell,ycell,jx_min1,jy_min1,nreconstruction,&
              fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
              tmp,ngpc,gsweights,gspts,&
              weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)  
@@ -588,7 +588,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
     do jx=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
       if(swap1) then !flip orientation
-        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+        call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
            fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
            tmp,ngpc,gsweights,gspts,&
            weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -646,7 +646,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
        endif 
         call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
         if(swap1) then !flip orientation
-          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+          call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
              fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
              tmp,ngpc,gsweights,gspts,&
              weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -656,7 +656,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
             weights_eul_index_cell(i,2)=inttmp
           end do
         else
-          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+          call compute_weights_cell(xcell,ycell,jx_min1,jy_min1,nreconstruction,&
              fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
              tmp,ngpc,gsweights,gspts,&
              weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)  
@@ -720,7 +720,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
     do jx=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
       if(swap1) then !flip orientation
-        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+        call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
            fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
            tmp,ngpc,gsweights,gspts,&
            weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -763,7 +763,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
     end do
 
     jallactual=jall
-  
+ !for Eulerian correction   
     do jy=-1,1      
       do jx=-1,nc+2
        if (((jy<1) .and. (jx<1)) .or. ((jy==1) .and. (jx>0) .and. (jx<nc+1))) then 
@@ -771,7 +771,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
        endif 
         call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
         if(swap1) then !flip orientation
-          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+          call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
              fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
              tmp,ngpc,gsweights,gspts,&
              weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -781,7 +781,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
             weights_eul_index_cell(i,2)=inttmp
           end do
         else
-          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+          call compute_weights_cell(xcell,ycell,jx_min1, jy_min1,nreconstruction,&
              fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
              tmp,ngpc,gsweights,gspts,&
              weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -839,7 +839,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
     do jy=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
       if(swap2) then !flip orientation
-        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+        call compute_weights_cell(xcell,ycell,jy_min2,jx_min2,nreconstruction,&
            fvm%acarty2,fvm%acartx2,jy_min2, jy_max2, jx_min2, jx_max2, &
            tmp,ngpc,gsweights,gspts,&
            weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -876,6 +876,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
     end do
     
     jallactual=jall
+    !for Eulerian correction   
     
     do jx=-1,1      
       do jy=-1,nc+2
@@ -884,7 +885,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
        endif
         call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
         if(swap2) then !flip orientation
-          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+          call compute_weights_cell(xcell,ycell,jy_min2,jx_min2,nreconstruction,&
              fvm%acarty2,fvm%acartx2,jy_min2, jy_max2, jx_min2, jx_max2, &
              tmp,ngpc,gsweights,gspts,&
              weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -894,7 +895,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
             weights_eul_index_cell(i,2)=inttmp
           end do
         else
-          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+          call compute_weights_cell(xcell,ycell,jx_min2, jy_min2,nreconstruction,&
              fvm%acartx2,fvm%acarty2,jx_min2, jx_max2, jy_min2, jy_max2, &
              tmp,ngpc,gsweights,gspts,&
              weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -947,7 +948,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
     do jx=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
       if(swap1) then !flip orientation
-        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+        call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
            fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
            tmp,ngpc,gsweights,gspts,&
            weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -1003,7 +1004,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
         endif
         call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
         if(swap1) then !flip orientation
-          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+          call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
              fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
              tmp,ngpc,gsweights,gspts,&
              weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -1013,7 +1014,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
             weights_eul_index_cell(i,2)=inttmp
           end do
         else
-          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+          call compute_weights_cell(xcell,ycell,jx_min1, jy_min1,nreconstruction,&
              fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
              tmp,ngpc,gsweights,gspts,&
              weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -1075,7 +1076,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
     do jy=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
       if(swap2) then !flip orientation
-        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+        call compute_weights_cell(xcell,ycell,jy_min2,jx_min2,nreconstruction,&
            fvm%acarty2,fvm%acartx2,jy_min2, jy_max2, jx_min2, jx_max2, &
            tmp,ngpc,gsweights,gspts,&
            weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -1120,7 +1121,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
         endif        
         call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
         if(swap2) then !flip orientation
-          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+          call compute_weights_cell(xcell,ycell,jy_min2,jx_min2,nreconstruction,&
              fvm%acarty2,fvm%acartx2,jy_min2, jy_max2, jx_min2, jx_max2, &
              tmp,ngpc,gsweights,gspts,&
              weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -1130,7 +1131,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
             weights_eul_index_cell(i,2)=inttmp
           end do
         else
-          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+          call compute_weights_cell(xcell,ycell,jx_min2, jy_min2,nreconstruction,&
              fvm%acartx2,fvm%acarty2,jx_min2, jx_max2, jy_min2, jy_max2, &
              tmp,ngpc,gsweights,gspts,&
              weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -1183,7 +1184,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
     do jx=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
       if(swap1) then !flip orientation
-        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+        call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
            fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
            tmp,ngpc,gsweights,gspts,&
            weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -1233,7 +1234,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
 
 
     jallactual=jall
-
+    !Eulerian correction
     do jy=nc,nc+2      
       do jx=-1,nc+2
         if (((jy>nc) .and. (jx>nc)) .or. ((jy==nc) .and. (jx>0) .and. (jx<nc+1))) then 
@@ -1241,7 +1242,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
         endif
         call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
         if(swap1) then !flip orientation
-          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+          call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
              fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
              tmp,ngpc,gsweights,gspts,&
              weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -1251,7 +1252,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
             weights_eul_index_cell(i,2)=inttmp
           end do
         else
-          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+          call compute_weights_cell(xcell,ycell,jx_min1, jy_min1,nreconstruction,&
              fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
              tmp,ngpc,gsweights,gspts,&
              weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -1316,7 +1317,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
     do jy=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
       if(swap2) then !flip orientation
-        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+        call compute_weights_cell(xcell,ycell,jy_min2,jx_min2,nreconstruction,&
            fvm%acarty2,fvm%acartx2,jy_min2, jy_max2, jx_min2, jx_max2, &
            tmp,ngpc,gsweights,gspts,&
            weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -1354,7 +1355,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
     end do
     
     jallactual=jall
-    
+    !Eulerain correction
     do jx=nc, nc+2
       do jy=-1,nc+2
         if (((jx>nc) .and. (jy>nc)) .or. ((jx==nc) .and. (jy>0) .and. (jy<nc+1))) then 
@@ -1362,7 +1363,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
         endif
         call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
         if(swap2) then !flip orientation
-          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+          call compute_weights_cell(xcell,ycell,jy_min2,jx_min2,nreconstruction,&
              fvm%acarty2,fvm%acartx2,jy_min2, jy_max2, jx_min2, jx_max2, &
              tmp,ngpc,gsweights,gspts,&
              weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -1372,7 +1373,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
             weights_eul_index_cell(i,2)=inttmp
           end do
         else
-          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+          call compute_weights_cell(xcell,ycell,jx_min2, jy_min2,nreconstruction,&
              fvm%acartx2,fvm%acarty2,jx_min2, jx_max2, jy_min2, jy_max2, &
              tmp,ngpc,gsweights,gspts,&
              weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -1426,7 +1427,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
     do jx=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
       if(swap1) then !flip orientation
-        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+        call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
            fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
            tmp,ngpc,gsweights,gspts,&
            weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -1475,7 +1476,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
     end do
   
     jallactual=jall
-
+    !Eulerian correction
     do jy=nc,nc+2
       do jx=-1,nc+2
         if (((jy>nc) .and. (jx<1)) .or. ((jy==nc) .and. (jx>0) .and. (jx<nc+1))) then 
@@ -1483,7 +1484,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
         endif
         call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
         if(swap1) then !flip orientation
-          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+          call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
              fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
              tmp,ngpc,gsweights,gspts,&
              weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -1493,7 +1494,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
             weights_eul_index_cell(i,2)=inttmp
           end do
         else
-          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+          call compute_weights_cell(xcell,ycell,jx_min1, jy_min1,nreconstruction,&
              fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
              tmp,ngpc,gsweights,gspts,&
              weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -1553,7 +1554,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
     do jy=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
       if(swap2) then !flip orientation
-        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+        call compute_weights_cell(xcell,ycell,jy_min2,jx_min2,nreconstruction,&
            fvm%acarty2,fvm%acartx2,jy_min2, jy_max2, jx_min2, jx_max2, &
            tmp,ngpc,gsweights,gspts,&
            weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -1590,6 +1591,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
     end do
     
     jallactual=jall
+    !Eulerian correction
     do jx=-1,1
       do jy=-1,nc+2
         if (((jx<1) .and. (jy>nc)) .or. ((jx==1) .and. (jy>0) .and. (jy<nc+1))) then 
@@ -1597,7 +1599,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
         endif
         call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
         if(swap2) then !flip orientation
-          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+          call compute_weights_cell(xcell,ycell,jy_min2,jx_min2,nreconstruction,&
              fvm%acarty2,fvm%acartx2,jy_min2, jy_max2, jx_min2, jx_max2, &
              tmp,ngpc,gsweights,gspts,&
              weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -1607,7 +1609,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
             weights_eul_index_cell(i,2)=inttmp
           end do
         else
-          call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+          call compute_weights_cell(xcell,ycell,jx_min2, jy_min2,nreconstruction,&
              fvm%acartx2,fvm%acarty2,jx_min2, jx_max2, jy_min2, jy_max2, &
              tmp,ngpc,gsweights,gspts,&
              weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -2860,14 +2862,25 @@ end subroutine getdep_cellboundariesxyvec
 !    real (kind=real_kind), intent(in)    :: eps
     
     logical                 :: lcontinue
-    integer :: iter
-    real (kind=real_kind) :: xsgn,dist,dist_new,tmp
+    integer :: iter, xsgn
+    real (kind=real_kind) :: dist,dist_new,tmp
     
     lcontinue = .TRUE.
     iter = 0 
     dist = bignum
     xsgn     = INT(SIGN(1.0D00,x-gno(j_eul)))
+    
+!         write(*,*) 'j_eul', j_eul
+!         write(*,*) 'x', x
+!         write(*,*) 'gno', gno(-nhe), gno(nc+2+nhe)
+!         write(*,*) 'gno-1', gno(-nhe+1), gno(nc+2+nhe-1)
+!         write(*,*) 'gno', gno
+    
     DO WHILE (lcontinue)
+!       if ((j_eul<-nhe) .or. (j_eul>nc+2+nhe)) then
+!         write(*,*) 'somthing is wrong', j_eul, -nhe,nc+2+nhe, iter
+!         stop
+!       endif
       iter     = iter+1 
       tmp      = x-gno(j_eul)
       dist_new = ABS(tmp)

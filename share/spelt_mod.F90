@@ -327,8 +327,10 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   dt6  = tstep/ 6.0D0
   do ie=nets,nete 
     do k=1, nlev
-      call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
-      call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)         
+!       call solidbody_all(spelt(ie), dsphere1,dsphere2,k)                                                                   
+      call boomerang_all(spelt(ie), dsphere1,dsphere2,k,tl%nstep)
+!       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
+!       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)         
       !search has not to be done for all tracers!
       do j=1,nep
         do i=1,nep
@@ -340,7 +342,6 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
           call cell_search(elem(ie),spelt(ie), dsphere2(i,j), icell2(i,j), jcell2(i,j),dref2(i,j),alphabeta, face_nodep)
           sg2(i,j)=metric_term(alphabeta)
 !           sg2(i,j)=metric_termref(elem(ie),dref2(i,j))
-          
         end do
       end do
       ! search of both point on the trajectory done
@@ -369,14 +370,24 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
             slval(3)=(sga/sg2(i,j))*tmp
             spelt(ie)%c(i,j,k,itr,tl%np1)=slval(3)
 
-           if (mod(i,2)==1) then                   ! works only for nip=3!!!
-              fluxval(i,j,1) =  dt6 * spelt(ie)%contrau(i,j,k)* (slval(1) + & 
-                     4.0D0 * slval(2) + slval(3) )
-            endif
-            if (mod(j,2)==1) then            ! works only for nip=3!!!
-              fluxval(i,j,2) =  dt6 * spelt(ie)%contrav(i,j,k)* (slval(1) + & 
-                     4.0D0 * slval(2) + slval(3) )    
-            endif    
+!            if (mod(i,2)==1) then                   ! works only for nip=3!!!
+!               fluxval(i,j,1) =  dt6 * spelt(ie)%contrau(i,j,k)* (slval(1) + & 
+!                      4.0D0 * slval(2) + slval(3) )
+!             endif
+!             if (mod(j,2)==1) then            ! works only for nip=3!!!
+!               fluxval(i,j,2) =  dt6 * spelt(ie)%contrav(i,j,k)* (slval(1) + & 
+!                      4.0D0 * slval(2) + slval(3) )    
+!             endif  
+            if (mod(i,2)==1) then                   ! works only for nip=3!!!                                                
+               fluxval(i,j,1) =  dt6 * (spelt(ie)%contrau(i,j,k)* slval(1) + &                                               
+                      4.0D0 * spelt(ie)%contrau1(i,j)*slval(2) + spelt(ie)%contrau2(i,j)*slval(3) )                          
+                                                                                                                             
+             endif                                                                                                           
+             if (mod(j,2)==1) then            ! works only for nip=3!!!                                                      
+               fluxval(i,j,2) =  dt6 * (spelt(ie)%contrav(i,j,k)* slval(1) + &                                               
+                        4.0D0 * spelt(ie)%contrav1(i,j)*slval(2) + spelt(ie)%contrav2(i,j)*slval(3) )                       \
+                                                                                                                             
+             endif  
           end do
         end do 
         !calculate low order flux
@@ -553,6 +564,7 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   call t_startf('SPELT scheme') 
   
   dt6  = tstep/ 6.0D0
+!   dt6 =  tstep / 3.0D0   ! test GLL weights (points are the same)
   do ie=nets,nete 
     do k=1, nlev
 !       call solidbody_all(spelt(ie), dsphere1,dsphere2,k) 
@@ -593,7 +605,7 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
             icell=1+(i-1)*nipm
             jcell=1+(j-1)*nipm
             ff=spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,k,itr,tl%n0)
-!            minmax(i,j,:)=cell_minmax(ff)
+            minmax(i,j,:)=cell_minmax(ff)
             call cip_coeff(spelt(ie)%drefx(i,j),spelt(ie)%drefy(i,j),ff,ff(2,2),cf(:,:,i,j))
           enddo
         enddo
@@ -605,13 +617,12 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
             slval(1)=spelt(ie)%c(i,j,k,itr,tl%n0)
  
             tmp=cip_interpolate(cf(:,:,icell1(i,j),jcell1(i,j)),dref1(i,j)%x,dref1(i,j)%y) 
-!             tmp=qmsl_cell_filter(icell1(i,j),jcell1(i,j),minmax,tmp)
+            tmp=qmsl_cell_filter(icell1(i,j),jcell1(i,j),minmax,tmp)
             slval(2)=(sga/sg1(i,j))*tmp
 !             slval(2)=tmp
 
             tmp=cip_interpolate(cf(:,:,icell2(i,j),jcell2(i,j)),dref2(i,j)%x,dref2(i,j)%y) 
-            
-!             tmp=qmsl_cell_filter(icell2(i,j),jcell2(i,j),minmax,tmp)
+            tmp=qmsl_cell_filter(icell2(i,j),jcell2(i,j),minmax,tmp)
             slval(3)=(sga/sg2(i,j))*tmp
 !             slval(3)=tmp
  
@@ -653,6 +664,7 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
               flux(2) = dx * (fluxval(i,j,2) + 4.0D0 * fluxval(i+1,j,2) + fluxval(i+2,j,2))/6.0D0  ! south
               flux(3) = dy * (fluxval(i+2,j,1) + 4.0D0 * fluxval(i+2,j+1,1) + fluxval(i+2,j+2,1))/6.0D0 ! east
               flux(4) = dx * (fluxval(i+2,j+2,2) + 4.0D0 * fluxval(i+1,j+2,2) + fluxval(i,j+2,2))/6.0D0 ! north
+              
               spelt(ie)%c(i+1,j+1,k,itr,tl%np1) = spelt(ie)%c(i+1,j+1,k,itr,tl%n0) + &
                                         (flux(1) + flux(2) - flux(3) - flux(4) ) / (dx*dy)                    
           end do
