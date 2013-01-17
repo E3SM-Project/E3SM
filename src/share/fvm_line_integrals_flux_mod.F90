@@ -24,7 +24,7 @@ module fvm_line_integrals_flux_mod
   
   logical :: ldbg=.FALSE.
   
-  public :: compute_weights
+  public :: compute_weights_flux
 contains
 ! ----------------------------------------------------------------------------------!
 !SUBROUTINE COMPUTE_WEIGHTS-----------------------------------------------CE-for FVM!
@@ -43,8 +43,9 @@ contains
 !                                 departure cell                                    !
 !         jall...number of intersections of an element                              !
 !-----------------------------------------------------------------------------------!
-subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all, &
-                                           weights_lgr_index_all,klev,jall)  
+subroutine compute_weights_flux(fvm,nreconstruction,xflux_weights_all,yflux_weights_all, &
+                               xflux_weights_eul_index_all,yflux_weights_eul_index_all, &
+                               xflux_weights_lgr_index_all,yflux_weights_lgr_index_all,klev,xflux_jall,yflux_jall)  
   use fvm_control_volume_mod, only:  fvm_struct                                         
   use coordinate_systems_mod,  only :  cartesian2D_t, spherical_polar_t, &
                                        cart2cubedspherexy, spherical_to_cart
@@ -56,13 +57,20 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
   integer (kind=int_kind), intent(in)                            :: nreconstruction
   ! arrays for collecting cell data
   real (kind=real_kind),dimension(10*(nc+2*nhe)*(nc+2*nhe),nreconstruction), &
-                                                intent(out) :: weights_all
+                                                intent(out) :: xflux_weights_all,yflux_weights_all
   integer (kind=int_kind), dimension(10*(nc+2*nhe)*(nc+2*nhe),2), &
-                                                intent(out) :: weights_eul_index_all
+                                                intent(out) :: xflux_weights_eul_index_all,yflux_weights_eul_index_all
   integer (kind=int_kind), dimension(10*(nc+2*nhe)*(nc+2*nhe),2), &
-                                                intent(out) :: weights_lgr_index_all
+                                                intent(out) :: xflux_weights_lgr_index_all,yflux_weights_lgr_index_all
   integer (kind=int_kind), intent(in)                       :: klev                                              
-  integer (kind=int_kind), intent(out)                      :: jall
+  integer (kind=int_kind), intent(out)                      :: xflux_jall,yflux_jall
+
+!!!!! FOR DEBUGGING
+  real (kind=real_kind)   , dimension(10*(nc+2*nhe)*(nc+2*nhe),6)  :: weights_all
+  integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: weights_eul_index_all
+  integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: weights_lgr_index_all
+  integer (kind=int_kind)                                          :: jall
+!!!!! FOR DEBUGGING
 
   ! local workspace
   ! max number of line segments is:
@@ -80,6 +88,11 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
   type (cartesian2D_t)                        :: dcart(nc+1,nc+1)       ! Cartesian coordinates 
   
   real (kind=real_kind), dimension(0:5)       :: xcell,ycell
+  real (kind=real_kind), dimension(0:5)       :: xcell2,ycell2
+  logical                                     :: twofluxareas=.FALSE.
+  integer (kind=int_kind)                     :: fluxsign1, fluxsign2 
+  
+  
   integer (kind=int_kind)                     :: inttmp
   real (kind=real_kind)                       :: tmp
   logical                                     :: swap
@@ -108,7 +121,9 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
   jmax_segments_cell = nhe*50
   call gauss_points(ngpc,gsweights,gspts)
   tmp =0.0D0
-  jall = 1
+  jall = 1           !!!!!DEBUGGING
+  xflux_jall=1
+  yflux_jall=1
   ! 
   ! calculate xy Cartesian on the cube of departure points on the corresponding face  
   do jy=1,nc+1
@@ -119,20 +134,48 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
   end do
   
   do jy=1, nc
-    do jx=1, nc
-      call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
+    do jx=0, nc
+      !call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)    
+      ! xflux: 
+      xcell(1)=fvm%acartx(jx+1); ycell(1)=fvm%acarty(jy)
+      xcell(3)=fvm%acartx(jx+1); ycell(3)=fvm%acarty(jy+1)
+      xcell(2)=dcart(jx+1,jy+1)%x; ycell(2)=dcart(jx+1,jy+1)%y
+      xcell(0)=dcart(jx+1,jy)%x; ycell(0)=dcart(jx+1,jy)%y
+      
+!       call makefluxarea()
+      
       call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
            fvm%acartx,fvm%acarty,jx_min, jx_max, jy_min, jy_max, &
            tmp,ngpc,gsweights,gspts,&
            weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell) 
+           
       if (jcollect_cell>0) then
-        weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
-        weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+        xflux_weights_all(xflux_jall:xflux_jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+        xflux_weights_eul_index_all(xflux_jall:xflux_jall+jcollect_cell-1,:) = &
                                       weights_eul_index_cell(1:jcollect_cell,:)
-        weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
-        weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
-        jall = jall+jcollect_cell          
+        xflux_weights_lgr_index_all(xflux_jall:xflux_jall+jcollect_cell-1,1) = jx
+        xflux_weights_lgr_index_all(xflux_jall:xflux_jall+jcollect_cell-1,2) = jy
+        xflux_jall = xflux_jall+jcollect_cell          
       endif
+      
+      if (twofluxareas) then
+        call compute_weights_cell(xcell2,ycell2,jx,jy,nreconstruction,&
+             fvm%acartx,fvm%acarty,jx_min, jx_max, jy_min, jy_max, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell) 
+           
+        if (jcollect_cell>0) then
+          xflux_weights_all(xflux_jall:xflux_jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+          xflux_weights_eul_index_all(xflux_jall:xflux_jall+jcollect_cell-1,:) = &
+                                        weights_eul_index_cell(1:jcollect_cell,:)
+          xflux_weights_lgr_index_all(xflux_jall:xflux_jall+jcollect_cell-1,1) = jx
+          xflux_weights_lgr_index_all(xflux_jall:xflux_jall+jcollect_cell-1,2) = jy
+          xflux_jall = xflux_jall+jcollect_cell          
+        endif
+      endif
+      
+      
+      
     end do
   end do
 
@@ -791,7 +834,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
     end do
   endif
   jall=jall-1
-end subroutine compute_weights  
+end subroutine compute_weights_flux  
 
 
 !END SUBROUTINE COMPUTE_WEIGHTS-------------------------------------------CE-for FVM!
