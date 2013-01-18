@@ -408,11 +408,14 @@ subroutine cslam_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   do ie=nets, nete
     do k=1,nlev
 !       call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
-      !-Departure fvm Meshes, initialization done                                                               
+      !-Departure fvm Meshes, initialization done     
+      call t_startf('CSLAM weights') 
       call compute_weights(fvm(ie),6,weights_all,weights_eul_index_all, &
              weights_lgr_index_all,k,jall) 
+      call t_stopf('CSLAM weights') 
+             
       !loop through all tracers
-!       call t_startf('CSLAM ntrac') 
+      call t_startf('CSLAM ntrac') 
       
       do itr=1,ntrac
         tracer0=fvm(ie)%c(:,:,k,itr,tl%n0)
@@ -428,13 +431,12 @@ subroutine cslam_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
           end do
         end do
       enddo  !End Tracer
-!       call t_stopf('CSLAM ntrac') 
+      call t_stopf('CSLAM ntrac') 
       
     end do  !End Level
     !note write tl%np1 in buffer
     call ghostVpack(cellghostbuf, fvm(ie)%c,nhc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
   end do
- call t_stopf('CSLAM scheme') 
 
   call t_startf('FVM Communication')
   call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc)
@@ -448,6 +450,7 @@ subroutine cslam_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
 !-----------------------------------------------------------------------------------!
   call t_stopf('FVM Unpack')
 !   call t_stopf('ALL CSLAM')
+ call t_stopf('CSLAM scheme') 
 
 end subroutine cslam_run
 
@@ -979,14 +982,14 @@ subroutine fvm_mesh_dep(elem, deriv, fvm, dt, tl, klev)
   
 
 ! for the benchmark test, use more accurate departure point creation
-#if 1 
+#if 0 
 !CE: define new mesh for fvm fvm on an equal angular grid
 ! go from alpha,beta -> cartesian xy on cube -> lat lon on the sphere
 ! #ifdef _FVM
   do j=1,nc+1
      do i=1,nc+1               
-!         call solidbody(fvm%asphere(i,j), fvm%dsphere(i,j,klev))
-        call boomerang(fvm%asphere(i,j), fvm%dsphere(i,j,klev),tl%nstep)
+        call solidbody(fvm%asphere(i,j), fvm%dsphere(i,j,klev))
+!         call boomerang(fvm%asphere(i,j), fvm%dsphere(i,j,klev),tl%nstep)
      end do
   end do
 ! #endif
@@ -996,9 +999,9 @@ subroutine fvm_mesh_dep(elem, deriv, fvm, dt, tl, klev)
   call fvm_dep_from_gll(elem, deriv, fvm%asphere,fvm%dsphere,dt,tl,klev)
 #endif
 
-    if (test_cfldep) then
-      call check_departurecell(fvm,klev) 
-    endif 
+!    if (test_cfldep) then
+!      call check_departurecell(fvm,klev) 
+!    endif 
   
 end subroutine fvm_mesh_dep
 
