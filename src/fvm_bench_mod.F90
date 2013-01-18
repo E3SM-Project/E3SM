@@ -28,7 +28,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   ! ---------------------------------------------------------------------------------  
   use fvm_control_volume_mod, only: fvm_struct
   ! ---------------------------------------------------------------------------------
-  use fvm_mod, only: cslam_run, cslam_runtest,cslam_runairdensity, fvm_init1,fvm_init2 
+  use fvm_mod, only: cslam_run, cslam_runtest,cslam_runairdensity, cslam_runflux, fvm_init1,fvm_init2 
   use fvm_mod, only: fvm_init3, fvm_mcgregor,fvm_mcgregordss, fvm_rkdss,cellghostbuf, edgeveloc
   ! ---------------------------------------------------------------------------------
   ! ---------------------------------------------------------------------------------
