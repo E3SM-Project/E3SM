@@ -152,12 +152,7 @@ subroutine analytical_function(value,sphere,klev,itr)
 !   else
 !     value = 0.0D0
 !   endif
-  
-! another field from Chen et al.
-!    alpha=DD_PI/4.0D0
-!    lon1=atan2(cos(sphere%lat)*sin(sphere%lon),)
-  
-  
+   
 
 ! infinity smooth initial condition----------------------------------------------------------------!
 

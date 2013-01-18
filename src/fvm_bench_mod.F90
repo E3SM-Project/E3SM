@@ -58,11 +58,11 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   use perf_mod, only : t_startf, t_stopf, t_barrierf ! _EXTERNAL
   ! -----------------------------------------------
   
-! #ifdef PIO_INTERP
-!      use interp_movie_mod, only : interp_movie_init, interp_movie_output, interp_movie_finish
-! #else
-!      use shal_movie_mod, only : shal_movie_init, shal_movie_output, shal_movie_finish
-! #endif
+#ifdef PIO_INTERP
+     use interp_movie_mod, only : interp_movie_init, interp_movie_output, interp_movie_finish
+#else
+     use shal_movie_mod, only : shal_movie_init, shal_movie_output, shal_movie_finish
+#endif
   
   implicit none
   type (element_t), intent(inout)                :: elem(:)
@@ -177,13 +177,13 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
 !-----------------------------------------------------------------------------------!  
 !Initialize Output via geopotential (should be changed, separate output for fvm
 !write first time step to IO 
-! #ifdef PIO_INTERP
-!   call interp_movie_init(elem,hybrid,nets,nete,tl=tl)    
-!   call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete,fvm)
-! #else
-!     call shal_movie_init(elem,hybrid,fvm)
-!     call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv,fvm)
-! #endif 
+#ifdef PIO_INTERP
+  call interp_movie_init(elem,hybrid,nets,nete,tl=tl)    
+  call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete,fvm)
+#else
+    call shal_movie_init(elem,hybrid,fvm)
+    call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv,fvm)
+#endif 
 ! !-----------------------------------------------------------------------------------!
 !
 !-----------------------------------------------------------------------------------!
@@ -250,6 +250,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
     
     
 ! ! end mcgregordss   
+!     call cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
     call cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
 !     call cslam_runtest(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
 !     call cslam_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
@@ -306,11 +307,11 @@ endif
 
 !-----------------------------------------------------------------------------------!  
 
-! #ifdef PIO_INTERP
-!     call interp_movie_output(elem, tl, hybrid, 0D0, deriv, nets, nete,fvm)
-! #else     
-!     call shal_movie_output(elem, tl, hybrid, 0D0, nets, nete,deriv,fvm)
-! #endif
+#ifdef PIO_INTERP
+    call interp_movie_output(elem, tl, hybrid, 0D0, deriv, nets, nete,fvm)
+#else     
+    call shal_movie_output(elem, tl, hybrid, 0D0, nets, nete,deriv,fvm)
+#endif
 !-----------------------------------------------------------------------------------!  
   END DO
 !------------END TIME LOOP-------------END TIME LOOP--------------END TIME LOOP-----!
@@ -320,11 +321,11 @@ endif
 
   call freeghostbuffertr(cellghostbuf)
   call freeedgebuffer(edgeveloc)
-! #ifdef PIO_INTERP
-!     call interp_movie_finish
-! #else
-!     call shal_movie_finish
-! #endif
+#ifdef PIO_INTERP
+    call interp_movie_finish
+#else
+    call shal_movie_finish
+#endif
 !-----------------------------------------------------------------------------------!  
 ! Error analysis/ complicated, but for a first try o.k.
     do ie=nets,nete

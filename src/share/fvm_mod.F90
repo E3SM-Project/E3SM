@@ -269,22 +269,12 @@ subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
     do k=1,nlev
       !-Departure fvm Meshes, initialization done                                                               
       call compute_weights(fvm(ie),6,weights_all,weights_eul_index_all, &
-             weights_lgr_index_all,k,jall)    
-      
-!       if (elem(ie)%GlobalId==1) then
-!         write(*,*) 'jall', jall
-!       endif  
+             weights_lgr_index_all,k,jall)     
          
       ! THE FIRST TRACER IS AIRDENSITY
       tracer_air0=fvm(ie)%c(:,:,k,1,tl%n0)       
       call reconstruction(tracer_air0, fvm(ie),recons_air)
-
       call monotonic_gradient_cart(tracer_air0, fvm(ie),recons_air, elem(ie)%desc)
-!       recons_air(1,:,:)=0.0D0
-!       recons_air(2,:,:)=0.0D0
-!       recons_air(3,:,:)=0.0D0
-!       recons_air(4,:,:)=0.0D0
-!       recons_air(5,:,:)=0.0D0
       
       tracer_air1=0.0D0   
 
@@ -301,13 +291,7 @@ subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
       do itr=2,ntrac
         tracer0=fvm(ie)%c(:,:,k,itr,tl%n0)
         call reconstruction(tracer0, fvm(ie),recons)
-!         reconsalt=recons
         call monotonic_gradient_cart(tracer0, fvm(ie),recons, elem(ie)%desc)
-!         recons(1,:,:)=0.0D0
-!         recons(2,:,:)=0.0D0
-!         recons(3,:,:)=0.0D0
-!         recons(4,:,:)=0.0D0
-!         recons(5,:,:)=0.0D0
         
         tracer1=0.0D0   
         
@@ -988,8 +972,8 @@ subroutine fvm_mesh_dep(elem, deriv, fvm, dt, tl, klev)
 ! #ifdef _FVM
   do j=1,nc+1
      do i=1,nc+1               
-        call solidbody(fvm%asphere(i,j), fvm%dsphere(i,j,klev))
-!         call boomerang(fvm%asphere(i,j), fvm%dsphere(i,j,klev),tl%nstep)
+!         call solidbody(fvm%asphere(i,j), fvm%dsphere(i,j,klev))
+        call boomerang(fvm%asphere(i,j), fvm%dsphere(i,j,klev),tl%nstep)
      end do
   end do
 ! #endif
@@ -999,9 +983,9 @@ subroutine fvm_mesh_dep(elem, deriv, fvm, dt, tl, klev)
   call fvm_dep_from_gll(elem, deriv, fvm%asphere,fvm%dsphere,dt,tl,klev)
 #endif
 
-!    if (test_cfldep) then
-!      call check_departurecell(fvm,klev) 
-!    endif 
+   if (test_cfldep) then
+     call check_departurecell(fvm,klev) 
+   endif 
   
 end subroutine fvm_mesh_dep
 
