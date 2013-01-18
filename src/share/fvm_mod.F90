@@ -40,7 +40,7 @@ contains
 subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   ! ---------------------------------------------------------------------------------
   use fvm_line_integrals_mod, only: compute_weights          !DEBUGGING
-  use fvm_line_integrals_flux_mod, only: compute_weights_flux
+  use fvm_line_integrals_flux_mod, only: compute_weights_xflux, compute_weights_yflux
   ! ---------------------------------------------------------------------------------  
   use fvm_filter_mod, only: monotonic_gradient_cart
   ! ---------------------------------------------------------------------------------
@@ -73,6 +73,8 @@ subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons
   real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)        :: tracer0 
   real (kind=real_kind), dimension(1:nc,1:nc)                        :: tracer1
+  real (kind=real_kind), dimension(1:nc,1:nc)                        :: xflux, yflux
+  
   type (ghostBuffertr_t)                      :: buflatlon
 
 
@@ -81,6 +83,8 @@ subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: weights_eul_index_all
   integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: weights_lgr_index_all
   integer (kind=int_kind)                                          :: jall
+  real (kind=real_kind)                       :: sum
+  
 !!!!! FOR DEBUGGING
 
   call initghostbuffer(buflatlon,nlev,2,2,nc+1)    ! use the tracer entry 2 for lat lon
@@ -88,6 +92,7 @@ subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
    do ie=nets, nete
      do k=1,nlev
        call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
+!         fvm(ie)%dsphere(1:nc+1,1:nc+1,k)=fvm(ie)%asphere
      end do
    end do
 
@@ -104,7 +109,8 @@ subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
      call ghostVunpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lon,2,2, nc+1,nlev,elem(ie)%desc)
      fvm(ie)%dsphere(:,:,:)%r=1.0D0  !!! RADIUS IS ASSUMED TO BE 1.0DO !!!!
    end do
- 
+   
+  sum=0.0D0
   do ie=nets, nete
     do k=1,nlev
 !       call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
@@ -114,31 +120,67 @@ subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
              weights_lgr_index_all,k,jall) 
       !loop through all tracers
 !       call t_startf('CSLAM ntrac') 
-      call compute_weights_flux(fvm(ie),6,xflux_weights_all,yflux_weights_all, &
-                                     xflux_weights_eul_index_all,yflux_weights_eul_index_all, &
-                                     xflux_weights_lgr_index_all,yflux_weights_lgr_index_all,k,xflux_jall,yflux_jall)
+      if (elem(ie)%GlobalId==2) then
+        call compute_weights_xflux(fvm(ie),6,xflux_weights_all,xflux_weights_eul_index_all, &
+               xflux_weights_lgr_index_all,k,xflux_jall,.TRUE.)
+       call compute_weights_yflux(fvm(ie),6,yflux_weights_all,yflux_weights_eul_index_all, &
+              yflux_weights_lgr_index_all,k,yflux_jall,.TRUE.)
+      else
+        call compute_weights_xflux(fvm(ie),6,xflux_weights_all,xflux_weights_eul_index_all, &
+               xflux_weights_lgr_index_all,k,xflux_jall,.FALSE.)
+        call compute_weights_yflux(fvm(ie),6,yflux_weights_all,yflux_weights_eul_index_all, &
+               yflux_weights_lgr_index_all,k,yflux_jall,.FALSE.)   
+      endif       
+             
+      tracer0=1.0D0
+      recons=0.0D0      
+      xflux=0.0D0
+      yflux=0.0D0
+      call cslam_remap(tracer0,xflux,xflux_weights_all, recons, &
+                 fvm(ie)%spherecentroid, xflux_weights_eul_index_all, xflux_weights_lgr_index_all, xflux_jall)       
+      call cslam_remap(tracer0,yflux,yflux_weights_all, recons, &
+                 fvm(ie)%spherecentroid, yflux_weights_eul_index_all, yflux_weights_lgr_index_all, yflux_jall)           
+                 ! finish scheme
+       do j=1,nc
+         do i=1,nc
+           fvm(ie)%c(i,j,k,1,tl%np1)=xflux(i+1,j)-xflux(i,j)+yflux(i,j+1)-yflux(i,j)+fvm(ie)%area_sphere(i,j)
+         end do
+       end do       
              
              
-      do itr=1,ntrac
+             
+      do itr=2,ntrac
         tracer0=fvm(ie)%c(:,:,k,itr,tl%n0)
+        tracer0=1.0D0
         call reconstruction(tracer0, fvm(ie),recons)
        call monotonic_gradient_cart(tracer0, fvm(ie),recons, elem(ie)%desc)
         tracer1=0.0D0   
+        tracer0=1.0D0
+        recons=0.0D0
         call cslam_remap(tracer0,tracer1,weights_all, recons, &
                    fvm(ie)%spherecentroid, weights_eul_index_all, weights_lgr_index_all, jall)
         ! finish scheme
         do j=1,nc
           do i=1,nc
-            fvm(ie)%c(i,j,k,itr,tl%np1)=tracer1(i,j)/fvm(ie)%area_sphere(i,j)
+!             fvm(ie)%c(i,j,k,itr,tl%np1)=tracer1(i,j)/fvm(ie)%area_sphere(i,j)
+            fvm(ie)%c(i,j,k,itr,tl%np1)=tracer1(i,j)
           end do
         end do
       enddo  !End Tracer
 !       call t_stopf('CSLAM ntrac') 
-      
+!        write(*,*) 'FACENO', fvm(ie)%faceno
+       do j=1,nc
+         do i=1,nc
+           
+!            write(*,*) i,j,fvm(ie)%c(i,j,k,2,tl%np1)-fvm(ie)%c(i,j,k,1,tl%np1),fvm(ie)%c(i,j,k,2,tl%np1),fvm(ie)%c(i,j,k,1,tl%np1)
+           sum=sum+fvm(ie)%c(i,j,k,2,tl%np1)
+         end do
+       end do 
     end do  !End Level
     !note write tl%np1 in buffer
     call ghostVpack(cellghostbuf, fvm(ie)%c,nhc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
   end do
+!   write(*,*) 'area Lag', sum
 
   call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc)
   
@@ -149,9 +191,7 @@ subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   enddo
 !-----------------------------------------------------------------------------------!
 
-!!!! flux version  
-  
-  
+!!!! flux version      
 end subroutine cslam_runflux
 
 
@@ -939,7 +979,7 @@ subroutine fvm_mesh_dep(elem, deriv, fvm, dt, tl, klev)
   
 
 ! for the benchmark test, use more accurate departure point creation
-#if 0 
+#if 1 
 !CE: define new mesh for fvm fvm on an equal angular grid
 ! go from alpha,beta -> cartesian xy on cube -> lat lon on the sphere
 ! #ifdef _FVM
