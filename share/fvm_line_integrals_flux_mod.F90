@@ -23,8 +23,9 @@ module fvm_line_integrals_flux_mod
   real (kind=real_kind),parameter           :: fuzzy_width = 10.0*tiny
   
   logical :: ldbg=.FALSE.
+  logical :: debugon=.FALSE.
   
-  public :: compute_weights_flux
+  public :: compute_weights_xflux, compute_weights_yflux
 contains
 ! ----------------------------------------------------------------------------------!
 !SUBROUTINE COMPUTE_WEIGHTS-----------------------------------------------CE-for FVM!
@@ -43,9 +44,8 @@ contains
 !                                 departure cell                                    !
 !         jall...number of intersections of an element                              !
 !-----------------------------------------------------------------------------------!
-subroutine compute_weights_flux(fvm,nreconstruction,xflux_weights_all,yflux_weights_all, &
-                               xflux_weights_eul_index_all,yflux_weights_eul_index_all, &
-                               xflux_weights_lgr_index_all,yflux_weights_lgr_index_all,klev,xflux_jall,yflux_jall)  
+subroutine compute_weights_xflux(fvm,nreconstruction,weights_all,weights_eul_index_all, &
+                                           weights_lgr_index_all,klev,jall, debug)  
   use fvm_control_volume_mod, only:  fvm_struct                                         
   use coordinate_systems_mod,  only :  cartesian2D_t, spherical_polar_t, &
                                        cart2cubedspherexy, spherical_to_cart
@@ -57,21 +57,14 @@ subroutine compute_weights_flux(fvm,nreconstruction,xflux_weights_all,yflux_weig
   integer (kind=int_kind), intent(in)                            :: nreconstruction
   ! arrays for collecting cell data
   real (kind=real_kind),dimension(10*(nc+2*nhe)*(nc+2*nhe),nreconstruction), &
-                                                intent(out) :: xflux_weights_all,yflux_weights_all
+                                                intent(out) :: weights_all
   integer (kind=int_kind), dimension(10*(nc+2*nhe)*(nc+2*nhe),2), &
-                                                intent(out) :: xflux_weights_eul_index_all,yflux_weights_eul_index_all
+                                                intent(out) :: weights_eul_index_all
   integer (kind=int_kind), dimension(10*(nc+2*nhe)*(nc+2*nhe),2), &
-                                                intent(out) :: xflux_weights_lgr_index_all,yflux_weights_lgr_index_all
-  integer (kind=int_kind), intent(in)                       :: klev                                              
-  integer (kind=int_kind), intent(out)                      :: xflux_jall,yflux_jall
-
-!!!!! FOR DEBUGGING
-  real (kind=real_kind)   , dimension(10*(nc+2*nhe)*(nc+2*nhe),6)  :: weights_all
-  integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: weights_eul_index_all
-  integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: weights_lgr_index_all
-  integer (kind=int_kind)                                          :: jall
-!!!!! FOR DEBUGGING
-
+                                                intent(out) :: weights_lgr_index_all
+  integer (kind=int_kind), intent(in)                       :: klev
+  integer (kind=int_kind), intent(out)                      :: jall
+  logical, intent(in)                                     :: debug
   ! local workspace
   ! max number of line segments is:
   ! (number of longitudes)*(max average number of crossings per line segment = 3)*ncube*2
@@ -89,7 +82,7 @@ subroutine compute_weights_flux(fvm,nreconstruction,xflux_weights_all,yflux_weig
   
   real (kind=real_kind), dimension(0:5)       :: xcell,ycell
   real (kind=real_kind), dimension(0:5)       :: xcell2,ycell2
-  logical                                     :: twofluxareas=.FALSE.
+  logical                                     :: twofluxareas=.FALSE., zeroflux=.FALSE.
   integer (kind=int_kind)                     :: fluxsign1, fluxsign2 
   
   
@@ -121,10 +114,9 @@ subroutine compute_weights_flux(fvm,nreconstruction,xflux_weights_all,yflux_weig
   jmax_segments_cell = nhe*50
   call gauss_points(ngpc,gsweights,gspts)
   tmp =0.0D0
-  jall = 1           !!!!!DEBUGGING
-  xflux_jall=1
-  yflux_jall=1
+  jall=1
   ! 
+  ! FYI: THESE is CACULATED twice in (xlfux and yflux)
   ! calculate xy Cartesian on the cube of departure points on the corresponding face  
   do jy=1,nc+1
      do jx=1,nc+1               
@@ -142,39 +134,57 @@ subroutine compute_weights_flux(fvm,nreconstruction,xflux_weights_all,yflux_weig
       xcell(2)=dcart(jx+1,jy+1)%x; ycell(2)=dcart(jx+1,jy+1)%y
       xcell(0)=dcart(jx+1,jy)%x; ycell(0)=dcart(jx+1,jy)%y
       
-!       call makefluxarea()
+     
       
-      call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
-           fvm%acartx,fvm%acarty,jx_min, jx_max, jy_min, jy_max, &
-           tmp,ngpc,gsweights,gspts,&
-           weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell) 
-           
-      if (jcollect_cell>0) then
-        xflux_weights_all(xflux_jall:xflux_jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
-        xflux_weights_eul_index_all(xflux_jall:xflux_jall+jcollect_cell-1,:) = &
-                                      weights_eul_index_cell(1:jcollect_cell,:)
-        xflux_weights_lgr_index_all(xflux_jall:xflux_jall+jcollect_cell-1,1) = jx
-        xflux_weights_lgr_index_all(xflux_jall:xflux_jall+jcollect_cell-1,2) = jy
-        xflux_jall = xflux_jall+jcollect_cell          
+      if ((debug) .and. (jx==2) .and. (jy==2)) then
+        write(*,*) 'eul', fvm%acartx(jx), fvm%acarty(jy) 
+        write(*,*) 'eul', fvm%acartx(jx), fvm%acarty(jy+1)
+        write(*,*) 'eul', fvm%acartx(jx+1), fvm%acarty(jy+1)
+        write(*,*) 'eul', fvm%acartx(jx+1), fvm%acarty(jy)
+        write(*,*)
+        write(*,*) 'dep', dcart(jx,jy)%x, dcart(jx,jy)%y
+        write(*,*) 'dep', dcart(jx,jy+1)%x, dcart(jx,jy+1)%y
+        write(*,*) 'dep', dcart(jx+1,jy+1)%x, dcart(jx+1,jy+1)%y
+        write(*,*) 'dep', dcart(jx+1,jy)%x, dcart(jx+1,jy)%y
+         debugon=.False.
+      else
+         debugon=.FALSE.
       endif
       
-      if (twofluxareas) then
-        call compute_weights_cell(xcell2,ycell2,jx,jy,nreconstruction,&
+      call makefluxarea(xcell,ycell,xcell2,ycell2,.FALSE.,twofluxareas,zeroflux,fluxsign1, fluxsign2)
+      
+      if (.not. zeroflux) then
+        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
              fvm%acartx,fvm%acarty,jx_min, jx_max, jy_min, jy_max, &
              tmp,ngpc,gsweights,gspts,&
              weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell) 
            
         if (jcollect_cell>0) then
-          xflux_weights_all(xflux_jall:xflux_jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
-          xflux_weights_eul_index_all(xflux_jall:xflux_jall+jcollect_cell-1,:) = &
+          weights_all(jall:jall+jcollect_cell-1,:) = fluxsign1*weights_cell(1:jcollect_cell,:)
+          weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
                                         weights_eul_index_cell(1:jcollect_cell,:)
-          xflux_weights_lgr_index_all(xflux_jall:xflux_jall+jcollect_cell-1,1) = jx
-          xflux_weights_lgr_index_all(xflux_jall:xflux_jall+jcollect_cell-1,2) = jy
-          xflux_jall = xflux_jall+jcollect_cell          
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+          jall = jall+jcollect_cell          
         endif
-      endif
-      
-      
+        
+        ! only if the flow gives us hourglass flux area
+        if (twofluxareas) then
+          call compute_weights_cell(xcell2,ycell2,jx,jy,nreconstruction,&
+               fvm%acartx,fvm%acarty,jx_min, jx_max, jy_min, jy_max, &
+               tmp,ngpc,gsweights,gspts,&
+               weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell) 
+           
+          if (jcollect_cell>0) then
+            weights_all(jall:jall+jcollect_cell-1,:) = fluxsign2*weights_cell(1:jcollect_cell,:)
+            weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                          weights_eul_index_cell(1:jcollect_cell,:)
+            weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+            weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+            jall = jall+jcollect_cell          
+          endif
+        endif
+      end if  ! end zeroflux
       
     end do
   end do
@@ -194,7 +204,7 @@ subroutine compute_weights_flux(fvm,nreconstruction,xflux_weights_all,yflux_weig
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
           
       if(swap1) then  !flip orientation
-        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+        call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
            fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
            tmp,ngpc,gsweights,gspts,&
            weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -243,7 +253,7 @@ subroutine compute_weights_flux(fvm,nreconstruction,xflux_weights_all,yflux_weig
     do jy=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
       if(swap1) then !flip orientation
-        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+        call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
            fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
            tmp,ngpc,gsweights,gspts,&
            weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -292,7 +302,7 @@ subroutine compute_weights_flux(fvm,nreconstruction,xflux_weights_all,yflux_weig
     do jx=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
       if(swap1) then !flip orientation
-        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+        call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
            fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
            tmp,ngpc,gsweights,gspts,&
            weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -354,7 +364,7 @@ subroutine compute_weights_flux(fvm,nreconstruction,xflux_weights_all,yflux_weig
     do jx=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
       if(swap1) then !flip orientation
-        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+        call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
            fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
            tmp,ngpc,gsweights,gspts,&
            weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -416,7 +426,7 @@ subroutine compute_weights_flux(fvm,nreconstruction,xflux_weights_all,yflux_weig
     do jx=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
       if(swap1) then !flip orientation
-        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+        call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
            fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
            tmp,ngpc,gsweights,gspts,&
            weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -469,7 +479,7 @@ subroutine compute_weights_flux(fvm,nreconstruction,xflux_weights_all,yflux_weig
     do jy=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
       if(swap2) then !flip orientation
-        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+        call compute_weights_cell(xcell,ycell,jy_min2,jx_min2,nreconstruction,&
            fvm%acarty2,fvm%acartx2,jy_min2, jy_max2, jx_min2, jx_max2, &
            tmp,ngpc,gsweights,gspts,&
            weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -519,7 +529,7 @@ subroutine compute_weights_flux(fvm,nreconstruction,xflux_weights_all,yflux_weig
     do jx=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
       if(swap1) then !flip orientation
-        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+        call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
            fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
            tmp,ngpc,gsweights,gspts,&
            weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -578,7 +588,7 @@ subroutine compute_weights_flux(fvm,nreconstruction,xflux_weights_all,yflux_weig
     do jy=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
       if(swap2) then !flip orientation
-        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+        call compute_weights_cell(xcell,ycell,jy_min2,jx_min2,nreconstruction,&
            fvm%acarty2,fvm%acartx2,jy_min2, jy_max2, jx_min2, jx_max2, &
            tmp,ngpc,gsweights,gspts,&
            weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -628,7 +638,7 @@ subroutine compute_weights_flux(fvm,nreconstruction,xflux_weights_all,yflux_weig
     do jx=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
       if(swap1) then !flip orientation
-        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+        call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
            fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
            tmp,ngpc,gsweights,gspts,&
            weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -687,7 +697,7 @@ subroutine compute_weights_flux(fvm,nreconstruction,xflux_weights_all,yflux_weig
     do jy=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
       if(swap2) then !flip orientation
-        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+        call compute_weights_cell(xcell,ycell,jy_min2,jx_min2,nreconstruction,&
            fvm%acarty2,fvm%acartx2,jy_min2, jy_max2, jx_min2, jx_max2, &
            tmp,ngpc,gsweights,gspts,&
            weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -738,7 +748,7 @@ subroutine compute_weights_flux(fvm,nreconstruction,xflux_weights_all,yflux_weig
     do jx=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
       if(swap1) then !flip orientation
-        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+        call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
            fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
            tmp,ngpc,gsweights,gspts,&
            weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -797,7 +807,7 @@ subroutine compute_weights_flux(fvm,nreconstruction,xflux_weights_all,yflux_weig
     do jy=1,nc
       call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
       if(swap2) then !flip orientation
-        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+        call compute_weights_cell(xcell,ycell,jy_min2,jx_min2,nreconstruction,&
            fvm%acarty2,fvm%acartx2,jy_min2, jy_max2, jx_min2, jx_max2, &
            tmp,ngpc,gsweights,gspts,&
            weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -834,7 +844,1424 @@ subroutine compute_weights_flux(fvm,nreconstruction,xflux_weights_all,yflux_weig
     end do
   endif
   jall=jall-1
-end subroutine compute_weights_flux  
+end subroutine compute_weights_xflux  
+
+
+
+!!!!!!!!!!!!!!! all for make flux area BEGIN
+
+ subroutine makefluxarea(xdep,ydep,xdep2,ydep2,l_yflux,twofluxareas,zeroflux,fluxsign1, fluxsign2)
+   IMPLICIT NONE
+   !
+   ! orientation: South to North / West to East
+   !
+   !
+   ! NOTE: xdep input only uses index (0:3) - xdep is used as a placeholder
+   !       xdep output is the full departure area (0:5)
+   !       similarly for ydep, xdep2, ydep2
+   !
+   !
+   ! for xflux (l_yflux=.false.): flux-edge points are xydep(1) and xydep(3) where
+   !                              xy(1) is the lower one
+   !                              departure point for xydep(1) is xydep(0)
+   !                              departure point for xydep(3) is xydep(2)
+   !
+   !     3
+   !     |  
+   !  2* |
+   !     |
+   !     |
+   !     |
+   ! 0*  1
+   !
+   !
+   ! for yflux (l_yflux=.true.): flux-edge points are xydep(1) and xydep(3) where
+   !                             xy(1) is the right-most one
+   !                             departure point for xydep(1) is xydep(0)
+   !                             departure point for xydep(3) is xydep(2)
+   !
+   !     3--------1
+   ! 
+   !             0*
+   !     2*
+   !
+   real (kind=real_kind), dimension(0:5), intent(INOUT) :: xdep,ydep,xdep2,ydep2
+   !
+   ! l_yflux = .true.  for face with constant beta
+   ! l_yflux = .false. for face with constant alpha
+   !  
+   logical, intent(in)  :: l_yflux
+   !
+   ! The upstream flux region is two triangles or non-convex quadrilateral
+   ! 
+   logical, intent(out)    :: twofluxareas,zeroflux  
+   !
+   ! +1 in-flow and -1 for out-flow
+   !
+   integer (kind=int_kind), intent(out) :: fluxsign1, fluxsign2 
+   real (kind=real_kind)   :: xorigo,yorigo
+   !
+   ! flux-areas are defined as "departure cells"
+   !
+   real (kind=real_kind), dimension(0:3) :: x,y,xtmp,ytmp
+   real (kind=real_kind) :: a,b,y_intersect !to define line and compute crossing
+   real (kind=real_kind) :: area !just for DBG
+   integer (kind=int_kind) :: i
+   !
+   real (kind=real_kind), dimension(0:5) :: xdep_tmp,ydep_tmp,xdep2_tmp,ydep2_tmp
+
+   twofluxareas = .false.
+   zeroflux = .false.
+
+   if (l_yflux) then
+      xorigo = xdep(1); yorigo = ydep(1)
+      call translate_then_rotate(xdep(0:3),ydep(0:3),x,y,0,3,xorigo,yorigo)
+   else
+      x=xdep(0:3)
+      y=ydep(0:3)
+   end if
+
+
+   if (abs(x(0)-x(1))<tiny.and.abs(x(2)-x(3))<tiny) then
+      !
+      ! zero flux area
+      !
+      zeroflux = .true.
+      xdep  = bignum;ydep  = bignum
+      xdep2 = bignum;ydep2 = bignum
+      return
+   end if
+
+
+   if (abs(x(0)-x(1))<tiny) then
+      if (x(2)<x(3)) then
+         !WRITE(*,*) "epsilon case 1A"
+         !
+         ! epsilon cases
+         !
+         !                 3
+         !           2*    |
+         !                 |
+         !                 |
+         !                 |
+         !                 |
+         !                0/1
+         !       
+         fluxsign1 = -1
+         !
+         ! define flux-area
+         !
+         xdep_tmp(1) = x(0); ydep_tmp(1) = y(0)
+         xdep_tmp(2) = x(2); ydep_tmp(2) = y(2)
+         xdep_tmp(3) = x(3); ydep_tmp(3) = y(3)
+         xdep_tmp(4) = x(3); ydep_tmp(4) = y(3)
+      else
+         !WRITE(*,*) "epsilon case 1B"
+         !
+         ! epsilon cases
+         !
+         !                 3   *2
+         !                 |
+         !                 |
+         !                 |
+         !                 |
+         !                 |
+         !                0/1
+         !       
+         fluxsign1 = 1
+         !
+         ! define flux-area
+         !
+         xdep_tmp(1) = x(0); ydep_tmp(1) = y(0)
+         xdep_tmp(2) = x(3); ydep_tmp(2) = y(3)
+         xdep_tmp(3) = x(2); ydep_tmp(3) = y(2)
+         xdep_tmp(4) = x(2); ydep_tmp(4) = y(2)
+      end if
+   else if (abs(x(2)-x(3))<tiny) then
+      if (x(0)<x(1)) then
+         !WRITE(*,*) "epsilon case 2A"
+         !
+         ! epsilon cases
+         !
+         !                2/3
+         !                 |
+         !                 |
+         !                 |
+         !                 |
+         !                 |
+         !            0*   1
+         !       
+         fluxsign1 = -1
+         !
+         ! define flux-area
+         !
+         xdep_tmp(1) = x(0); ydep_tmp(1) = y(0)
+         xdep_tmp(2) = x(2); ydep_tmp(2) = y(2)
+         xdep_tmp(3) = x(1); ydep_tmp(3) = y(1)
+         xdep_tmp(4) = x(1); ydep_tmp(4) = y(1)
+      else
+         !WRITE(*,*) "epsilon case 2B"
+         !
+         ! epsilon cases
+         !
+         !                2/3
+         !                 |
+         !                 |
+         !                 |
+         !                 |
+         !                 |
+         !                 1     *0
+         !       
+         fluxsign1 = 1
+         !
+         ! define flux-area
+         !
+         xdep_tmp(1) = x(1); ydep_tmp(1) = y(1)
+         xdep_tmp(2) = x(2); ydep_tmp(2) = y(2)
+         xdep_tmp(3) = x(0); ydep_tmp(3) = y(0)
+         xdep_tmp(4) = x(0); ydep_tmp(4) = y(0)
+      end if
+   else
+      !
+      ! CASE ALPHA 1
+      !
+      !                 3
+      !           2*    |
+      !                 |
+      !                 |
+      !                 |
+      !                 |
+      !                 1
+      !        0*
+      !
+      if ((x(0) < x(1)) .and. (x(2) < x(1))) then
+         fluxsign1 = -1
+         !
+         ! define flux-area
+         !
+         xdep_tmp(1) = x(0); ydep_tmp(1) = y(0)
+         xdep_tmp(2) = x(2); ydep_tmp(2) = y(2)
+         xdep_tmp(3) = x(3); ydep_tmp(3) = y(3)
+         xdep_tmp(4) = x(1); ydep_tmp(4) = y(1)
+         !
+         !WRITE(*,*) "CASE 1: simple quadrilateral flux; fluxsign1 ",fluxsign1
+      else if ((x(0) > x(1)) .and. (x(2) > x(1))) then
+         !
+         ! CASE ALPHA 2
+         !
+         !     3
+         !     |    2*
+         !     |
+         !     |
+         !     |
+         !     |      0*
+         !     1
+         !               
+         fluxsign1 =  1       
+         !
+         ! define flux-area
+         !
+         xdep_tmp(1) = x(1); ydep_tmp(1) = y(1)
+         xdep_tmp(2) = x(3); ydep_tmp(2) = y(3)
+         xdep_tmp(3) = x(2); ydep_tmp(3) = y(2)
+         xdep_tmp(4) = x(0); ydep_tmp(4) = y(0)
+         !WRITE(*,*) "CASE 2: simple quadrilateral flux; fluxsign1 ",fluxsign1
+      else if ((x(0) < x(1)) .and. (x(2) > x(1))) then
+         !
+         ! CASE ALPHA 3
+         !
+         ! "hour glass" flux area or non-convex quadrilateral with x(0) to the left and x(2) to the right
+         !
+         ! compute crossing
+         !
+         a = (y(2)-y(0))/(x(2)-x(0)) !slope
+         b = y(0)-a*x(0) 
+         y_intersect = a*x(1)+b                    
+         if (abs(y_intersect-y(1))<tiny) y_intersect = y(1)
+         if (abs(y_intersect-y(3))<tiny) y_intersect = y(3)
+         !
+         !
+         ! CASE ALPHA 3A
+         !
+         !     3
+         !     |    
+         !     |    2*
+         !     |    /  
+         !     |   /
+         !     |  /    
+         !     1 /
+         !      /
+         !     /
+         !    /
+         !  0*
+         !
+         if (y_intersect < y(1)) then
+            twofluxareas = .true.
+            !
+            ! break into two triangles since quadrilateral is non-convex
+            ! (topo search in CAM supports non-convex shapes but not the current search in HOMME)
+            !
+            fluxsign1 = 1
+            !
+            ! define flux-area 1
+            !
+            xdep_tmp(1) = x(0); ydep_tmp(1) = y(0)
+            xdep_tmp(2) = x(1); ydep_tmp(2) = y(1)
+            xdep_tmp(3) = x(2); ydep_tmp(3) = y(2)
+            xdep_tmp(4) = x(2); ydep_tmp(4) = y(2)
+            !
+            ! second triangle
+            !
+            fluxsign2 = 1
+            !
+            ! define flux-area 2
+            !
+            xdep2_tmp(1) = x(1); ydep2_tmp(1) = y(1)
+            xdep2_tmp(2) = x(3); ydep2_tmp(2) = y(3)
+            xdep2_tmp(3) = x(2); ydep2_tmp(3) = y(2)
+            xdep2_tmp(4) = x(2); ydep2_tmp(4) = y(2)
+            
+            !WRITE(*,*) "CASE 3A: fluxsign1s ",fluxsign1,fluxsign2
+         else if (y_intersect > y(3)) then
+            !
+            ! CASE ALPHA 3C
+            !
+            !      2*
+            !      /
+            !     /
+            !    / 
+            !   /
+            !  /  3
+            ! 0*  |    
+            !     |
+            !     |
+            !     |
+            !     |
+            !     1
+            !                  
+            !
+            ! break into two triangles since quadrilateral is non-convex
+            !
+            twofluxareas = .true.
+            fluxsign1 = -1
+            !
+            ! define flux-area 1
+            !
+            xdep_tmp(1) = x(1); ydep_tmp(1) = y(1)
+            xdep_tmp(2) = x(0); ydep_tmp(2) = y(0)
+            xdep_tmp(3) = x(3); ydep_tmp(3) = y(3)
+            xdep_tmp(4) = x(3); ydep_tmp(4) = y(3)
+            !
+            ! second triangle
+            !
+            fluxsign2 = -1
+            !
+            ! define flux-area 2
+            !
+            xdep2_tmp(1) = x(0); ydep2_tmp(1) = y(0)
+            xdep2_tmp(2) = x(2); ydep2_tmp(2) = y(2)
+            xdep2_tmp(3) = x(3); ydep2_tmp(3) = y(3)
+            xdep2_tmp(4) = x(3); ydep2_tmp(4) = y(3)
+            
+            !WRITE(*,*) "CASE 3C: fluxsign1s ",fluxsign1,fluxsign2
+         else
+            !
+            ! CASE ALPHA 3B
+            !
+            !
+            !     3
+            !     |    *2
+            !     |   /
+            !     |  /
+            !     | /
+            !     |/
+            !     |
+            !    /|             
+            !   / 1    
+            ! 0*
+            !
+            !
+            ! break into two triangles since quadrilateral is non-convex
+            !
+            twofluxareas = .true.
+            fluxsign1 = -1
+            !
+            ! define flux-area 1
+            !
+            xdep_tmp(1) = x(0); ydep_tmp(1) = y(0)
+            xdep_tmp(2) = x(1); ydep_tmp(2) = y_intersect
+            xdep_tmp(3) = x(1); ydep_tmp(3) = y(1)
+            xdep_tmp(4) = x(1); ydep_tmp(4) = y(1)
+            !
+            ! second triangle
+            !
+            fluxsign2 = 1
+            !
+            ! define flux-area 2
+            !
+            xdep2_tmp(1) = x(1); ydep2_tmp(1) = y_intersect
+            xdep2_tmp(2) = x(3); ydep2_tmp(2) = y(3)
+            xdep2_tmp(3) = x(2); ydep2_tmp(3) = y(2)
+            xdep2_tmp(4) = x(2); ydep2_tmp(4) = y(2)
+            
+            !WRITE(*,*) "CASE 3B: fluxsign1s ",fluxsign1,fluxsign2
+         end if
+      else 
+         !
+         ! entering here means that ((x(0) >= x(1)) .and. (x(2) <= x(1))) then
+         !
+         !
+         ! CASE ALPHA 4
+         !
+         ! "hour glass" flux area or non-convex quadrilateral with x(0) 
+         ! to the right and x(2) to the left
+         !
+         !
+         ! compute crossing
+         !
+         a = (y(0)-y(2))/(x(0)-x(2)) !slope
+         b = y(0)-a*x(0) 
+         y_intersect = a*x(1)+b                    
+         if (abs(y_intersect-y(1))<tiny) y_intersect = y(1)
+         if (abs(y_intersect-y(3))<tiny) y_intersect = y(3)         
+         !
+         !WRITE(*,*) "y_intersect",y_intersect
+         !
+         if (Y_intersect < y(1)) then
+            !
+            !
+            ! CASE ALPHA 4A
+            !             
+            !
+            !     3
+            !     |    
+            !     |
+            !2*   |
+            ! \   |
+            !  \  |
+            !   \ 1 
+            !     \
+            !      \
+            !      0*
+            !
+            !
+            ! break into two triangles since quadrilateral is non-convex
+            !
+            twofluxareas = .true.
+            fluxsign1 = -1
+            !
+            ! define flux-area 1
+            !
+            xdep_tmp(1) = x(0); ydep_tmp(1) = y(0)
+            xdep_tmp(2) = x(2); ydep_tmp(2) = y(2)
+            xdep_tmp(3) = x(1); ydep_tmp(3) = y(1)
+            xdep_tmp(4) = x(1); ydep_tmp(4) = y(1)
+            !
+            ! second triangle
+            !
+            fluxsign2 = -1
+            !
+            ! define flux-area 2
+            !
+            xdep2_tmp(1) = x(2); ydep2_tmp(1) = y(2)
+            xdep2_tmp(2) = x(3); ydep2_tmp(2) = y(3)
+            xdep2_tmp(3) = x(1); ydep2_tmp(3) = y(1)
+            xdep2_tmp(4) = x(1); ydep2_tmp(4) = y(1)
+            
+            !WRITE(*,*) "CASE 4A: fluxsign1s ",fluxsign1,fluxsign2
+         else if (y_intersect > y(3)) then
+            !
+            ! CASE ALPHA 4C
+            !
+            !
+            !  2*
+            !    \
+            !     \
+            !      \
+            !     3  
+            !     |    *0
+            !     |
+            !     |
+            !     1
+            !      
+            ! break into two triangles since quadrilateral is non-convex
+            !
+            twofluxareas = .true.
+            fluxsign1 = 1
+            !
+            ! define flux-area 1
+            !
+            xdep_tmp(1) = x(1); ydep_tmp(1) = y(1)
+            xdep_tmp(2) = x(3); ydep_tmp(2) = y(3)
+            xdep_tmp(3) = x(0); ydep_tmp(3) = y(0)
+            xdep_tmp(4) = x(0); ydep_tmp(4) = y(0)
+            !
+            ! second triangle
+            !
+            fluxsign2 = 1
+            !
+            ! define flux-area 2
+            !
+            xdep2_tmp(1) = x(3); ydep2_tmp(1) = y(3)
+            xdep2_tmp(2) = x(2); ydep2_tmp(2) = y(2)
+            xdep2_tmp(3) = x(0); ydep2_tmp(3) = y(0)
+            xdep2_tmp(4) = x(0); ydep2_tmp(4) = y(0)
+            !
+            !WRITE(*,*) "CASE 4C: fluxsign1s ",fluxsign1,fluxsign2
+         else
+            !
+            ! CASE ALPHA 4B
+            !
+            !     3
+            ! *2  |
+            !   \ |
+            !    \|
+            !     |
+            !     |\
+            !     | \
+            !     |  *0           
+            !     1    
+            ! 
+            !
+            !
+            ! break into two triangles since quadrilateral is non-convex
+            !
+            twofluxareas = .true.
+            fluxsign1 = 1
+            !
+            ! define flux-area 1
+            !
+            xdep_tmp(1) = x(1); ydep_tmp(1) = y(1)
+            xdep_tmp(2) = x(1); ydep_tmp(2) = y_intersect
+            xdep_tmp(3) = x(0); ydep_tmp(3) = y(0)
+            xdep_tmp(4) = x(0); ydep_tmp(4) = y(0)
+            !
+            ! second triangle
+            !
+            fluxsign2 = -1
+            !
+            ! define flux-area 2
+            !
+            xdep2_tmp(1) = x(1); ydep2_tmp(1) = y_intersect
+            xdep2_tmp(2) = x(2); ydep2_tmp(2) = y(2)
+            xdep2_tmp(3) = x(3); ydep2_tmp(3) = y(3)
+            xdep2_tmp(4) = x(3); ydep2_tmp(4) = y(3)
+            !
+            !WRITE(*,*) "CASE 4B: fluxsign1s ",fluxsign1,fluxsign2
+         end if
+      end if
+   end if
+   !
+   !************************************************************************
+   !
+   ! DONE DEFINING "DEPARTURE AREAS"
+   !
+   ! compute fluxes
+   !
+   !************************************************************************
+   !
+
+   if (l_yflux) then
+      call rotate_then_translate(xdep_tmp(1:4),ydep_tmp(1:4),xdep(1:4),ydep(1:4),&
+           1,4,xorigo,yorigo)
+      !          
+      !          xdep_tmp(1:4) = xdep(1:4); ydep_tmp(1:4) = ydep(1:4)
+      !          !
+      !          ! make sure xdep is lower left corner
+      !          !  
+      !          
+      !          xdep(1) = xdep_tmp(2); ydep(1) = ydep_tmp(2); 
+      !          xdep(2) = xdep_tmp(3); ydep(2) = ydep_tmp(3); 
+      !          xdep(3) = xdep_tmp(4); ydep(3) = ydep_tmp(4); 
+      !          xdep(4) = xdep_tmp(1); ydep(4) = ydep_tmp(1); 
+   else
+      xdep(1:4) = xdep_tmp(1:4); ydep(1:4) = ydep_tmp(1:4);
+   end if
+   xdep(5) = xdep(1); ydep(5) = ydep(1)
+   xdep(0) = xdep(4); ydep(0) = ydep(4)      
+
+   if (twofluxareas) then
+      if (l_yflux) then
+         call rotate_then_translate(xdep2_tmp(1:4),ydep2_tmp(1:4),&
+              xdep2(1:4),ydep2(1:4),1,4,xorigo,yorigo)
+      else
+         xdep2(1:4) = xdep2_tmp(1:4); ydep2(1:4) = ydep2_tmp(1:4);
+      end if
+      
+
+      xdep2(5) = xdep2(1); ydep2(5) = ydep2(1)
+      xdep2(0) = xdep2(4); ydep2(0) = ydep2(4)      
+   else
+      xdep2 = bignum;ydep2 = bignum;
+   end if
+ end subroutine makefluxarea
+
+
+subroutine translate_then_rotate(x_in,y_in,x,y,imin,imax,xorigo,yorigo)
+  !
+  ! translates x_in and y_in to (x_in(3),y_in(3)) and rotates data -90 degrees about xorigo,yorigo
+  !
+  IMPLICIT NONE
+  integer (kind=int_kind)                    , intent(in)  :: imin,imax
+  real (kind=real_kind), dimension(imin:imax), intent(in)  :: x_in,y_in
+  real (kind=real_kind)                                    :: xorigo, yorigo
+  real (kind=real_kind), dimension(imin:imax), intent(out) :: x,y
+  !
+  !
+  !
+  real (kind=real_kind), dimension(imin:imax) :: xtmp,ytmp
+  integer (kind=int_kind) :: i
+  !
+  !
+  ! move origo to xorigo,yorigo
+  !
+  do i=imin,imax
+     xtmp(i) = x_in(i)-xorigo
+     ytmp(i) = y_in(i)-yorigo
+  end do
+  !
+  ! rotate +90 degrees
+  !
+  x =  ytmp
+  y = -xtmp
+end subroutine translate_then_rotate
+
+subroutine rotate_then_translate(x_in,y_in,x,y,imin,imax,xorigo,yorigo)
+  !
+  ! reverse of translate_then_rotate subroutine
+  !
+  IMPLICIT NONE
+  integer (kind=int_kind)                    , intent(in)  :: imin,imax
+  real (kind=real_kind), dimension(imin:imax), intent(in)  :: x_in,y_in
+  real (kind=real_kind)                                    :: xorigo, yorigo
+  real (kind=real_kind), dimension(imin:imax), intent(out) :: x,y
+  !
+  !
+  !
+  real (kind=real_kind), dimension(imin:imax) :: xtmp,ytmp
+  integer (kind=int_kind) :: i
+  !
+  !
+  ! rotate -90 degrees
+  !
+  xtmp =  -y_in
+  ytmp =   x_in
+  !
+  ! move origo
+  !
+  do i=imin,imax
+     x(i) = xtmp(i)+xorigo
+     y(i) = ytmp(i)+yorigo
+  end do
+end subroutine rotate_then_translate
+
+!!!!!!!!!!!!!!! all for make flux area END
+
+!!!! Y flux calculation
+subroutine compute_weights_yflux(fvm,nreconstruction,weights_all,weights_eul_index_all, &
+                                           weights_lgr_index_all,klev,jall,debug)  
+  use fvm_control_volume_mod, only:  fvm_struct                                         
+  use coordinate_systems_mod,  only :  cartesian2D_t, spherical_polar_t, &
+                                       cart2cubedspherexy, spherical_to_cart
+  use physical_constants, only : DD_PI
+  use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+
+  implicit none
+  type (fvm_struct), intent(inout)                                :: fvm
+  integer (kind=int_kind), intent(in)                            :: nreconstruction
+  ! arrays for collecting cell data
+  real (kind=real_kind),dimension(10*(nc+2*nhe)*(nc+2*nhe),nreconstruction), &
+                                                intent(out) :: weights_all
+  integer (kind=int_kind), dimension(10*(nc+2*nhe)*(nc+2*nhe),2), &
+                                                intent(out) :: weights_eul_index_all
+  integer (kind=int_kind), dimension(10*(nc+2*nhe)*(nc+2*nhe),2), &
+                                                intent(out) :: weights_lgr_index_all
+  integer (kind=int_kind), intent(in)                       :: klev
+  integer (kind=int_kind), intent(out)                      :: jall
+  logical, intent(in)                                     :: debug
+
+  ! local workspace
+  ! max number of line segments is:
+  ! (number of longitudes)*(max average number of crossings per line segment = 3)*ncube*2
+  !
+
+  integer (kind=int_kind)                     :: jx,jy
+  integer                                     :: jx_min, jx_max, jy_min, jy_max
+  integer                                     :: jx_min1, jx_max1, jy_min1, jy_max1
+  integer                                     :: jx_min2, jx_max2, jy_min2, jy_max2
+  logical                                     :: swap1, swap2
+  
+  integer (kind=int_kind)                     :: i, jtmp
+  
+  type (cartesian2D_t)                        :: dcart(nc+1,nc+1)       ! Cartesian coordinates 
+  
+  real (kind=real_kind), dimension(0:5)       :: xcell,ycell
+  real (kind=real_kind), dimension(0:5)       :: xcell2,ycell2
+  logical                                     :: twofluxareas=.FALSE., zeroflux=.FALSE.
+  integer (kind=int_kind)                     :: fluxsign1, fluxsign2 
+  
+  
+  integer (kind=int_kind)                     :: inttmp
+  real (kind=real_kind)                       :: tmp
+  logical                                     :: swap
+  ! for Gaussian quadrature
+  real (kind=real_kind), dimension(ngpc)      :: gsweights, gspts
+  ! weight-variables for individual cells
+  integer (kind=int_kind) :: jmax_segments_cell
+  real (kind=real_kind)   , dimension(nhe*50,nreconstruction)   :: weights_cell
+  integer (kind=int_kind),  dimension(nhe*50,2)                 :: weights_eul_index_cell
+  integer (kind=int_kind)                                       :: jcollect_cell
+
+!   debugon=debug
+  
+  jx_min=fvm%jx_min; jx_max=fvm%jx_max; 
+  jy_min=fvm%jy_min; jy_max=fvm%jy_max;
+  if (fvm%cubeboundary > 0) then
+    jx_min1=fvm%jx_min1; jx_max1=fvm%jx_max1; 
+    jy_min1=fvm%jy_min1; jy_max1=fvm%jy_max1;
+    swap1=fvm%swap1
+    if (fvm%cubeboundary > 4) then
+      jx_min2=fvm%jx_min2; jx_max2=fvm%jx_max2;
+      jy_min2=fvm%jy_min2; jy_max2=fvm%jy_max2;
+      swap2=fvm%swap2
+    endif
+  endif
+
+  jmax_segments_cell = nhe*50
+  call gauss_points(ngpc,gsweights,gspts)
+  tmp =0.0D0
+  jall=1
+  ! 
+  ! FYI: THESE is CACULATED twice in (xlfux and yflux)
+  ! calculate xy Cartesian on the cube of departure points on the corresponding face  
+  do jy=1,nc+1
+     do jx=1,nc+1               
+        call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+             fvm%faceno,dcart(jx,jy))              
+     end do
+  end do
+  
+  do jy=0, nc
+    do jx=1, nc
+      !call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)    
+      ! xflux: 
+      xcell(1)=fvm%acartx(jx+1); ycell(1)=fvm%acarty(jy+1)
+      xcell(3)=fvm%acartx(jx); ycell(3)=fvm%acarty(jy+1)
+      xcell(2)=dcart(jx,jy+1)%x; ycell(2)=dcart(jx,jy+1)%y
+      xcell(0)=dcart(jx+1,jy+1)%x; ycell(0)=dcart(jx+1,jy+1)%y
+      
+      if ((debug) .and. (jx==2) .and. (jy==2)) then
+        write(*,*) 'eul', fvm%acartx(jx), fvm%acarty(jy) 
+        write(*,*) 'eul', fvm%acartx(jx), fvm%acarty(jy+1)
+        write(*,*) 'eul', fvm%acartx(jx+1), fvm%acarty(jy+1)
+        write(*,*) 'eul', fvm%acartx(jx+1), fvm%acarty(jy)
+        write(*,*)
+        write(*,*) 'dep', dcart(jx,jy)%x, dcart(jx,jy)%y
+        write(*,*) 'dep', dcart(jx,jy+1)%x, dcart(jx,jy+1)%y
+        write(*,*) 'dep', dcart(jx+1,jy+1)%x, dcart(jx+1,jy+1)%y
+        write(*,*) 'dep', dcart(jx+1,jy)%x, dcart(jx+1,jy)%y
+         debugon=.TRUE.
+      else
+         debugon=.FALSE.
+      endif
+      
+      
+      call makefluxarea(xcell,ycell,xcell2,ycell2,.TRUE.,twofluxareas,zeroflux,fluxsign1, fluxsign2)
+      
+      if (.not. zeroflux) then
+        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acartx,fvm%acarty,jx_min, jx_max, jy_min, jy_max, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell) 
+           
+        if (jcollect_cell>0) then
+          weights_all(jall:jall+jcollect_cell-1,:) = fluxsign1*weights_cell(1:jcollect_cell,:)
+          weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                        weights_eul_index_cell(1:jcollect_cell,:)
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+          weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+          jall = jall+jcollect_cell          
+        endif
+        
+        ! only if the flow gives us hourglass flux area
+        if (twofluxareas) then
+          call compute_weights_cell(xcell2,ycell2,jx,jy,nreconstruction,&
+               fvm%acartx,fvm%acarty,jx_min, jx_max, jy_min, jy_max, &
+               tmp,ngpc,gsweights,gspts,&
+               weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell) 
+           
+          if (jcollect_cell>0) then
+            weights_all(jall:jall+jcollect_cell-1,:) = fluxsign2*weights_cell(1:jcollect_cell,:)
+            weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                          weights_eul_index_cell(1:jcollect_cell,:)
+            weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+            weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+            jall = jall+jcollect_cell          
+          endif
+        endif
+      end if  ! end zeroflux
+      
+    end do
+  end do
+
+  !WEST SIDE
+  if (fvm%cubeboundary == west) then
+    jx=1
+    ! calculate xy Cartesian on the cube of departure points on the corresponding face  
+    do jy=1,nc+1
+      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+           fvm%nbrsface(west),dcart(jx,jy))  
+      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx+1,jy,klev)),&
+           fvm%nbrsface(west),dcart(jx+1,jy))                 
+    end do
+    do jy=1,nc
+!       call getdep_cellboundaries(xcell,ycell,jx,jy,fvm%nbrsface(west),fvm%dsphere) 
+      call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
+          
+      if(swap1) then  !flip orientation
+        call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
+           fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
+           tmp,ngpc,gsweights,gspts,&
+           weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+        do i=1,jcollect_cell
+          inttmp=weights_eul_index_cell(i,1)
+          weights_eul_index_cell(i,1)=weights_eul_index_cell(i,2)
+          weights_eul_index_cell(i,2)=inttmp
+        end do
+      else  
+        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+           fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
+           tmp,ngpc,gsweights,gspts,&
+           weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+      end if
+      !I have to correct the number
+      if (fvm%faceno==5) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,1)=weights_eul_index_cell(i,1)+nhe-1
+        end do
+      end if
+      if (fvm%faceno==6) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,2)=jy_max1-jy_min1-weights_eul_index_cell(i,2)-nhe-nhe+1
+          end do
+        end if
+      if (jcollect_cell>0) then
+        weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+        weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                         weights_eul_index_cell(1:jcollect_cell,:)
+        weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+        weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+        jall = jall+jcollect_cell          
+      endif
+    end do
+  endif
+  !EAST SIDE
+  if (fvm%cubeboundary == east) then
+    jx=nc
+    ! calculate xy Cartesian on the cube of departure points on the corresponding face  
+    do jy=1,nc+1
+      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+           fvm%nbrsface(east),dcart(jx,jy))  
+      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx+1,jy,klev)),&
+           fvm%nbrsface(east),dcart(jx+1,jy))                 
+    end do
+    do jy=1,nc
+      call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
+      if(swap1) then !flip orientation
+        call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
+           fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
+           tmp,ngpc,gsweights,gspts,&
+           weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+        do i=1,jcollect_cell
+          inttmp=weights_eul_index_cell(i,1)
+          weights_eul_index_cell(i,1)=weights_eul_index_cell(i,2)
+          weights_eul_index_cell(i,2)=inttmp
+        end do
+      else
+        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+           fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
+           tmp,ngpc,gsweights,gspts,&
+           weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+      end if
+      !I have to correct the number
+      if (fvm%faceno==5) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,2)=jy_max1-jy_min1-weights_eul_index_cell(i,2)-nhe-nhe+1
+        end do
+      end if
+      if (fvm%faceno==6) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,1)=weights_eul_index_cell(i,1)-nhe+1
+        end do
+      end if
+      if (jcollect_cell>0) then
+        weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+        weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                         weights_eul_index_cell(1:jcollect_cell,:)
+        weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+        weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+        jall = jall+jcollect_cell          
+      endif
+    end do
+  endif  
+  !NORTH SIDE 
+  if (fvm%cubeboundary == north) then
+    jy=nc
+    ! calculate xy Cartesian on the cube of departure points on the corresponding face  
+    do jx=1,nc+1
+      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+           fvm%nbrsface(north),dcart(jx,jy))  
+      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy+1,klev)),&
+           fvm%nbrsface(north),dcart(jx,jy+1))                 
+    end do
+    do jx=1,nc
+      call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
+      if(swap1) then !flip orientation
+        call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
+           fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
+           tmp,ngpc,gsweights,gspts,&
+           weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+        do i=1,jcollect_cell
+          inttmp=weights_eul_index_cell(i,1)
+          weights_eul_index_cell(i,1)=weights_eul_index_cell(i,2)
+          weights_eul_index_cell(i,2)=inttmp
+        end do
+      else
+        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+           fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
+           tmp,ngpc,gsweights,gspts,&
+           weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)  
+      end if
+      !I have to correct the number
+      if (fvm%faceno==2) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)-nhe+1
+        end do
+      end if
+      if (fvm%faceno==3) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-(weights_eul_index_cell(i,1))-nhe-nhe+1
+          weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)-nhe+1
+        end do
+      end if
+      if (fvm%faceno==4) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-weights_eul_index_cell(i,1)-nhe-nhe+1
+        end do
+      end if
+      if (fvm%faceno==6) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-weights_eul_index_cell(i,1)-nhe-nhe+1
+          weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)-nhe+1
+        end do
+      end if
+      if (jcollect_cell>0) then
+        weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+        weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                         weights_eul_index_cell(1:jcollect_cell,:)
+        weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+        weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+        jall = jall+jcollect_cell          
+      endif
+    end do
+  end if
+
+  !SOUTH SIDE
+  if (fvm%cubeboundary == south) then
+    jy=1
+    ! calculate xy Cartesian on the cube of departure points on the corresponding face  
+    do jx=1,nc+1
+      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+           fvm%nbrsface(south),dcart(jx,jy))  
+      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy+1,klev)),&
+           fvm%nbrsface(south),dcart(jx,jy+1))                 
+    end do
+    do jx=1,nc
+      call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
+      if(swap1) then !flip orientation
+        call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
+           fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
+           tmp,ngpc,gsweights,gspts,&
+           weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+        do i=1,jcollect_cell
+          inttmp=weights_eul_index_cell(i,1)
+          weights_eul_index_cell(i,1)=weights_eul_index_cell(i,2)
+          weights_eul_index_cell(i,2)=inttmp
+        end do
+      else
+        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+           fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
+           tmp,ngpc,gsweights,gspts,&
+           weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)  
+      end if
+      !I have to correct the number   
+      if  (fvm%faceno==2) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-(weights_eul_index_cell(i,1)+nhe)-nhe+1
+        end do
+      end if
+      if  (fvm%faceno==3) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-(weights_eul_index_cell(i,1)+nhe)-nhe+1
+          weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)+nhe-1
+        end do
+      end if
+      if  (fvm%faceno==4) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)+nhe-1
+        end do
+      end if
+      if  (fvm%faceno==5) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-(weights_eul_index_cell(i,1)+nhe)-nhe+1
+          weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)+nhe-1
+        end do
+      end if
+      if (jcollect_cell>0) then
+        weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+        weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                         weights_eul_index_cell(1:jcollect_cell,:)
+        weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+        weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+        jall = jall+jcollect_cell          
+      endif
+    end do
+  end if
+
+  !SOUTHWEST Corner
+  if (fvm%cubeboundary == swest) then
+    jy=1
+    ! calculate xy Cartesian on the cube of departure points on the corresponding face  
+    do jx=1,nc+1
+      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+           fvm%nbrsface(south),dcart(jx,jy))  
+      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy+1,klev)),&
+           fvm%nbrsface(south),dcart(jx,jy+1))                 
+    end do
+    do jx=1,nc
+      call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
+      if(swap1) then !flip orientation
+        call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
+           fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
+           tmp,ngpc,gsweights,gspts,&
+           weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+        do i=1,jcollect_cell
+          inttmp=weights_eul_index_cell(i,1)
+          weights_eul_index_cell(i,1)=weights_eul_index_cell(i,2)
+          weights_eul_index_cell(i,2)=inttmp
+        end do
+      else
+        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+           fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
+           tmp,ngpc,gsweights,gspts,&
+           weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+      end if
+      !I have to correct the number
+      if ((fvm%faceno==3) .OR. (fvm%faceno==5)) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-weights_eul_index_cell(i,1)+1
+          weights_eul_index_cell(i,2)=(weights_eul_index_cell(i,2)+nhe-1)
+        end do
+      end if
+      if (fvm%faceno==2) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-weights_eul_index_cell(i,1)+1
+        end do
+      end if
+      if (fvm%faceno==4) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)+nhe-1
+        end do
+      end if
+      if (jcollect_cell>0) then
+        weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+        weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                         weights_eul_index_cell(1:jcollect_cell,:)
+        weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+        weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+        jall = jall+jcollect_cell          
+      endif
+    end do
+
+    jx=1
+    ! calculate xy Cartesian on the cube of departure points on the corresponding face  
+    do jy=1,nc+1
+      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+           fvm%nbrsface(west),dcart(jx,jy))  
+      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx+1,jy,klev)),&
+           fvm%nbrsface(west),dcart(jx+1,jy))                 
+    end do
+    do jy=1,nc
+      call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
+      if(swap2) then !flip orientation
+        call compute_weights_cell(xcell,ycell,jy_min2,jx_min2,nreconstruction,&
+           fvm%acarty2,fvm%acartx2,jy_min2, jy_max2, jx_min2, jx_max2, &
+           tmp,ngpc,gsweights,gspts,&
+           weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+        do i=1,jcollect_cell
+          inttmp=weights_eul_index_cell(i,1)
+          weights_eul_index_cell(i,1)=weights_eul_index_cell(i,2)
+          weights_eul_index_cell(i,2)=inttmp
+        end do
+      else
+        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+           fvm%acartx2,fvm%acarty2,jx_min2, jx_max2, jy_min2, jy_max2, &
+           tmp,ngpc,gsweights,gspts,&
+           weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+      end if
+      !I have to correct the number
+      if (fvm%faceno==5) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,1)=weights_eul_index_cell(i,1)+nhe-1
+        end do
+      end if
+      if (fvm%faceno==6) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,2)=(jy_max2-jy_min2)-weights_eul_index_cell(i,2)+1
+        end do
+      end if
+      if (jcollect_cell>0) then
+        weights_all(jall:jall+jcollect_cell-1,:) = weights_cell (1:jcollect_cell,:)
+        weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                          weights_eul_index_cell(1:jcollect_cell,:)
+        weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+        weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+        jall = jall+jcollect_cell          
+      endif
+    end do
+  endif
+
+  ! SOUTHEAST Corner
+  if (fvm%cubeboundary == seast) then
+    jy=1
+    ! calculate xy Cartesian on the cube of departure points on the corresponding face  
+    do jx=1,nc+1
+      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+           fvm%nbrsface(south),dcart(jx,jy))  
+      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy+1,klev)),&
+           fvm%nbrsface(south),dcart(jx,jy+1))                 
+    end do
+    do jx=1,nc
+      call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
+      if(swap1) then !flip orientation
+        call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
+           fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
+           tmp,ngpc,gsweights,gspts,&
+           weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+        do i=1,jcollect_cell
+          inttmp=weights_eul_index_cell(i,1)
+          weights_eul_index_cell(i,1)=weights_eul_index_cell(i,2)
+          weights_eul_index_cell(i,2)=inttmp
+        end do
+      else
+        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+           fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
+           tmp,ngpc,gsweights,gspts,&
+           weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+      end if
+      !I have to correct the number   
+      if  (fvm%faceno==2) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-(weights_eul_index_cell(i,1)+nhe)-nhe+1
+        end do
+      end if
+      if  (fvm%faceno==3) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-(weights_eul_index_cell(i,1)+nhe)-nhe+1
+          weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)+nhe-1
+        end do
+      end if
+      if  (fvm%faceno==4) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)+nhe-1
+        end do
+      end if
+      if  (fvm%faceno==5) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-(weights_eul_index_cell(i,1)+nhe)-nhe+1
+          weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)+nhe-1
+        end do
+      end if
+      if (jcollect_cell>0) then
+        weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+        weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                         weights_eul_index_cell(1:jcollect_cell,:)
+        weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+        weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+        jall = jall+jcollect_cell          
+      endif
+    end do
+
+    jx=nc
+    ! calculate xy Cartesian on the cube of departure points on the corresponding face  
+    do jy=1,nc+1
+      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+           fvm%nbrsface(east),dcart(jx,jy))  
+      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx+1,jy,klev)),&
+           fvm%nbrsface(east),dcart(jx+1,jy))                 
+    end do
+    do jy=1,nc
+      call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
+      if(swap2) then !flip orientation
+        call compute_weights_cell(xcell,ycell,jy_min2,jx_min2,nreconstruction,&
+           fvm%acarty2,fvm%acartx2,jy_min2, jy_max2, jx_min2, jx_max2, &
+           tmp,ngpc,gsweights,gspts,&
+           weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+        do i=1,jcollect_cell
+          inttmp=weights_eul_index_cell(i,1)
+          weights_eul_index_cell(i,1)=weights_eul_index_cell(i,2)
+          weights_eul_index_cell(i,2)=inttmp
+        end do
+      else
+        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+           fvm%acartx2,fvm%acarty2,jx_min2, jx_max2, jy_min2, jy_max2, &
+           tmp,ngpc,gsweights,gspts,&
+           weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+      end if
+      !I have to correct the number
+      if (fvm%faceno==5) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,2)=(jy_max2-jy_min2)-weights_eul_index_cell(i,2)+1
+        end do
+      end if
+      if (fvm%faceno==6) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,1)=weights_eul_index_cell(i,1)-nhe+1
+        end do
+      end if
+      if (jcollect_cell>0) then
+        weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+        weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                         weights_eul_index_cell(1:jcollect_cell,:)
+        weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+        weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+        jall = jall+jcollect_cell          
+      endif
+    end do
+  endif
+  
+  !NORTHEAST Corner
+  if (fvm%cubeboundary == neast) then
+    jy=nc
+    ! calculate xy Cartesian on the cube of departure points on the corresponding face  
+    do jx=1,nc+1
+      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+           fvm%nbrsface(north),dcart(jx,jy))  
+      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy+1,klev)),&
+           fvm%nbrsface(north),dcart(jx,jy+1))                 
+    end do
+    do jx=1,nc
+      call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
+      if(swap1) then !flip orientation
+        call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
+           fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
+           tmp,ngpc,gsweights,gspts,&
+           weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+        do i=1,jcollect_cell
+          inttmp=weights_eul_index_cell(i,1)
+          weights_eul_index_cell(i,1)=weights_eul_index_cell(i,2)
+          weights_eul_index_cell(i,2)=inttmp
+        end do
+      else
+        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+           fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
+           tmp,ngpc,gsweights,gspts,&
+           weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+      end if
+      !I have to correct the number
+      if (fvm%faceno==2) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,2)=(weights_eul_index_cell(i,2))-nhe+1
+        end do
+      end if
+      if (fvm%faceno==3) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-weights_eul_index_cell(i,1)-nhe-nhe+1
+          weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)-nhe+1
+        end do
+      end if
+      if (fvm%faceno==6) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-weights_eul_index_cell(i,1)-nhe-nhe+1
+          weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)-nhe+1
+        end do
+      end if
+      if (fvm%faceno==4) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-weights_eul_index_cell(i,1)-nhe-nhe+1
+        end do
+      end if
+      if (jcollect_cell>0) then
+        weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+        weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                         weights_eul_index_cell(1:jcollect_cell,:)
+        weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+        weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+        jall = jall+jcollect_cell          
+      endif
+    end do
+    
+    jx=nc
+    ! calculate xy Cartesian on the cube of departure points on the corresponding face  
+    do jy=1,nc+1
+      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+           fvm%nbrsface(east),dcart(jx,jy))  
+      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx+1,jy,klev)),&
+           fvm%nbrsface(east),dcart(jx+1,jy))                 
+    end do
+    do jy=1,nc
+      call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
+      if(swap2) then !flip orientation
+        call compute_weights_cell(xcell,ycell,jy_min2,jx_min2,nreconstruction,&
+           fvm%acarty2,fvm%acartx2,jy_min2, jy_max2, jx_min2, jx_max2, &
+           tmp,ngpc,gsweights,gspts,&
+           weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+        do i=1,jcollect_cell
+          inttmp=weights_eul_index_cell(i,1)
+          weights_eul_index_cell(i,1)=weights_eul_index_cell(i,2)
+          weights_eul_index_cell(i,2)=inttmp
+        end do
+      else
+        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+           fvm%acartx2,fvm%acarty2,jx_min2, jx_max2, jy_min2, jy_max2, &
+           tmp,ngpc,gsweights,gspts,&
+           weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+      end if
+      !I have to correct the number
+      if (fvm%faceno==5) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,2)=jy_max2-jy_min2-weights_eul_index_cell(i,2)-nhe-nhe+1
+        end do
+      end if
+      if (fvm%faceno==6) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,1)=weights_eul_index_cell(i,1)-nhe+1
+        end do
+      end if
+    
+      if (jcollect_cell>0) then
+        weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+        weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                         weights_eul_index_cell(1:jcollect_cell,:)
+        weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+        weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+        jall = jall+jcollect_cell          
+      endif
+    end do
+  endif
+
+  !NORTH WEST CORNER 
+  if (fvm%cubeboundary == nwest) then
+    jy=nc
+    ! calculate xy Cartesian on the cube of departure points on the corresponding face  
+    do jx=1,nc+1
+      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+           fvm%nbrsface(north),dcart(jx,jy))  
+      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy+1,klev)),&
+           fvm%nbrsface(north),dcart(jx,jy+1))                 
+    end do
+    do jx=1,nc
+      call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
+      if(swap1) then !flip orientation
+        call compute_weights_cell(xcell,ycell,jy_min1,jx_min1,nreconstruction,&
+           fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
+           tmp,ngpc,gsweights,gspts,&
+           weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+        do i=1,jcollect_cell
+          inttmp=weights_eul_index_cell(i,1)
+          weights_eul_index_cell(i,1)=weights_eul_index_cell(i,2)
+          weights_eul_index_cell(i,2)=inttmp
+        end do
+      else
+        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+           fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
+           tmp,ngpc,gsweights,gspts,&
+           weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+      end if
+      !I have to correct the number
+      if (fvm%faceno==2) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)-nhe+1
+        end do
+      end if
+      if (fvm%faceno==3) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-(weights_eul_index_cell(i,1))+1
+          weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)-nhe+1
+        end do
+      end if
+      if (fvm%faceno==4) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-weights_eul_index_cell(i,1)+1
+        end do
+      end if
+      if (fvm%faceno==6) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,1)=(jx_max1-jx_min1)-weights_eul_index_cell(i,1)+1
+          weights_eul_index_cell(i,2)=weights_eul_index_cell(i,2)-nhe+1
+        end do
+      end if
+      if (jcollect_cell>0) then
+        weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+        weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                         weights_eul_index_cell(1:jcollect_cell,:)
+        weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+        weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+        jall = jall+jcollect_cell          
+      endif
+    end do
+  
+    jx=1
+    ! calculate xy Cartesian on the cube of departure points on the corresponding face  
+    do jy=1,nc+1
+      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+           fvm%nbrsface(west),dcart(jx,jy))  
+      call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx+1,jy,klev)),&
+           fvm%nbrsface(west),dcart(jx+1,jy))                 
+    end do
+    do jy=1,nc
+      call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
+      if(swap2) then !flip orientation
+        call compute_weights_cell(xcell,ycell,jy_min2,jx_min2,nreconstruction,&
+           fvm%acarty2,fvm%acartx2,jy_min2, jy_max2, jx_min2, jx_max2, &
+           tmp,ngpc,gsweights,gspts,&
+           weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+        do i=1,jcollect_cell
+          inttmp=weights_eul_index_cell(i,1)
+          weights_eul_index_cell(i,1)=weights_eul_index_cell(i,2)
+          weights_eul_index_cell(i,2)=inttmp
+        end do
+      else
+        call compute_weights_cell(xcell,ycell,jx,jy,nreconstruction,&
+           fvm%acartx2,fvm%acarty2,jx_min2, jx_max2, jy_min2, jy_max2, &
+           tmp,ngpc,gsweights,gspts,&
+           weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+      end if
+      !I have to correct the number
+      if (fvm%faceno==5) then
+        do i=1,jcollect_cell
+          weights_eul_index_cell(i,1)=weights_eul_index_cell(i,1)+nhe-1
+        end do
+      end if
+      if (fvm%faceno==6) then
+          do i=1,jcollect_cell
+            weights_eul_index_cell(i,2)=jy_max2-jy_min2-weights_eul_index_cell(i,2)-nhe-nhe+1
+          end do
+        end if
+      if (jcollect_cell>0) then
+        weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+        weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                                         weights_eul_index_cell(1:jcollect_cell,:)
+        weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+        weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+        jall = jall+jcollect_cell          
+      endif
+    end do
+  endif
+  jall=jall-1
+end subroutine compute_weights_yflux  
+
+
 
 
 !END SUBROUTINE COMPUTE_WEIGHTS-------------------------------------------CE-for FVM!
@@ -1592,7 +3019,13 @@ end subroutine getdep_cellboundariesxyvec
             weights_eul_index(jsegment,2) = jy_eul_tmp
             call get_weights_gauss(weights(jsegment,1:nreconstruction),&
                  xseg,yseg,nreconstruction,ngauss,gauss_weights,abscissae)
-
+            
+            if (debugon) then
+              write(*,*) 'seg', xseg(1),yseg(1)
+              write(*,*) 'seg', xseg(2),yseg(2)
+              write(*,*)
+            endif
+            
          !    jdbg=jdbg+1
          ! 
          !             wdbg(jx,jy,side_count,jdbg,1:nreconstruction) = weights(jsegment,:)
@@ -1997,8 +3430,8 @@ end subroutine getdep_cellboundariesxyvec
 !    real (kind=real_kind), intent(in)    :: eps
     
     logical                 :: lcontinue
-    integer :: iter
-    real (kind=real_kind) :: xsgn,dist,dist_new,tmp
+    integer :: iter, xsgn
+    real (kind=real_kind) :: dist,dist_new,tmp
     
     lcontinue = .TRUE.
     iter = 0 
