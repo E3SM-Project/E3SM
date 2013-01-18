@@ -35,7 +35,7 @@ contains
 !> @param[inout] start int(3) current MPI task global start
 !> @param[inout] count int(3) current MPI task global count
 subroutine adjust_bounds(global_dims, start, count, rank)
-	real (r4), dimension(:), intent(in) :: global_dims
+	integer (i4), dimension(:), intent(in) :: global_dims
 	integer(i4), intent(in) :: rank
 	integer (kind=PIO_OFFSET), dimension(:), intent(inout) :: start, count
 
@@ -77,7 +77,7 @@ end subroutine
 !> @param[out] start int(3) iostart for the current MPI task
 !> @param[out] count int(3) iocount for the current MPI task
 !> @param[in] bsize int(3) VDC block size
-subroutine auto_get_start_count(rank, nioprocs, block_dims, start, count, bsize)
+subroutine auto_get_start_count(rank, nioprocs, block_dims, start, count, bsize, data_dims)
   use pio_kinds
   integer (kind=PIO_OFFSET), intent(out):: start(3), count(3)
   integer(i4), dimension(:), intent(in) :: bsize
@@ -88,6 +88,7 @@ subroutine auto_get_start_count(rank, nioprocs, block_dims, start, count, bsize)
   !locals
   real (r4)             :: proc_count
   integer (i4)             :: lpp, spp0, spp1, counter, slab_counter, calc_procs, nslabs, nlinesPslab
+  integer(i4), dimension(:), intent(in) :: data_dims
   logical		:: found
 
   found = .FALSE.
@@ -97,7 +98,7 @@ subroutine auto_get_start_count(rank, nioprocs, block_dims, start, count, bsize)
   if (nioprocs .EQ. 1) then
 	nioprocs = 1
 	start = (/0, 0, 0/)
-	count = block_dims * bsize
+	count = INT(block_dims * bsize)
   else
 	do slab_counter=1, nslabs
 	  do counter=1, nlinesPslab 
@@ -106,11 +107,9 @@ subroutine auto_get_start_count(rank, nioprocs, block_dims, start, count, bsize)
 		if (nioprocs >= proc_count) then
 			if (proc_count .gt. calc_procs) then
 				calc_procs = proc_count ! return the actual # of io procs used
-				count = (/ INT(block_dims(1) * bsize(1)), counter * bsize(2), slab_counter *bsize(3) /)
-				start = (/ 0, mod(rank, INT(CEILING(nlinesPslab / REAL(counter)))) * counter * bsize(2), &
-         INT(rank / CEILING(nlinesPslab / REAL(counter))) * slab_counter * bsize(3)/) + 1
-				call adjust_bounds(block_dims * bsize, start, count, rank)
-
+				count = (/ data_dims(1), counter * bsize(2), slab_counter *bsize(3) /)
+				start = (/ 0, mod(rank, INT(CEILING(nlinesPslab / REAL(counter)))) * counter * bsize(2), INT(rank / CEILING(nlinesPslab / REAL(counter))) * slab_counter * bsize(3)/) + 1
+				call adjust_bounds(data_dims, start, count, rank)
 				if(proc_count .eq. nioprocs) then !using max #of procs, suitable solution found (for now)
 					found = .TRUE.
 					exit				
@@ -151,15 +150,11 @@ subroutine init_vdc2(rank, data_dims, vdc_bsize, iostart, iocount, ioprocs)
   real(r4) :: vdc_blocks(3)   
   integer (i4)	:: ierr
 
-#ifdef DEBUG
-  if(rank .eq. 0) then
-	print *, 'Calling get start count...block_dims: ', data_dims/real(vdc_bsize), ' bsize: ' , vdc_bsize, &
-      ' ioprocs: ', ioprocs, ' dims: ', data_dims, ' rank: ',rank
-  endif
-#endif
+print *, 'Calling get start count...block_dims: ', data_dims/real(vdc_bsize), ' bsize: ' , vdc_bsize, ' ioprocs: ', ioprocs, ' dims: ', data_dims, ' rank: ',rank
+
   vdc_blocks = data_dims/real(vdc_bsize)
   
-  call auto_get_start_count (rank, ioprocs, vdc_blocks, iostart, iocount, vdc_bsize)
+  call auto_get_start_count (rank, ioprocs, vdc_blocks, iostart, iocount, vdc_bsize, data_dims)
   
 #ifdef DEBUG 
 		print *, 'Retrieved VDF start count', iostart, '-', iocount, 'rank: ' , rank

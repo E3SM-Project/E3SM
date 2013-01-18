@@ -2258,9 +2258,9 @@ contains
        restart=0
        if(iosystem%io_rank==0) then
           restart = 1
-          call createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , F_C_String_dup(fname) )
+          call createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , F_C_String_dup(trim(fname)) )
        else if(iosystem%io_rank>0) then
-          call createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , F_C_String_dup(fname) )
+          call createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , F_C_String_dup(trim(fname)))
        endif
 #endif
     end select
