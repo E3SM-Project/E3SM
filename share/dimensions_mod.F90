@@ -24,7 +24,7 @@ module dimensions_mod
   integer         :: qsize = 0
 
   ! fvm dimensions:
-  integer, parameter, public :: ngpc=4    !number of Gausspoints for the fvm integral approximation  
+  integer, parameter, public :: ngpc=2    !number of Gausspoints for the fvm integral approximation  
   ! nhe ... halo/depth of the extended element (CFL number), now only nhe=1 is tested !
   !         this number sets where we have to calculate the reconstruction in the halo!
   integer, parameter, public :: nhe=1     !number/depth of the extended element (CFL number)

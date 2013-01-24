@@ -85,7 +85,6 @@ module edge_mod
      real (kind=real_kind), dimension(:,:,:,:,:), pointer :: buf
      real (kind=real_kind), dimension(:,:,:,:,:), pointer :: receive
      integer :: nlyr ! Number of layers
-     integer :: ntrac ! Number of tracers
      integer :: nbuf ! size of the horizontal dimension of the buffers.
   end type GhostBuffertr_t
   
@@ -1349,7 +1348,6 @@ contains
 !$OMP MASTER
 #endif
     ghost%nbuf=0
-    ghost%ntrac=0
     ghost%nlyr=0
     deallocate(ghost%buf)
     deallocate(ghost%receive)
@@ -1749,7 +1747,6 @@ contains
 !$OMP MASTER
 #endif
     ghost%nlyr=nlyr
-    ghost%ntrac=ntrac
     ghost%nbuf=nbuf
     allocate(ghost%buf(npoints,nhc,nlyr,ntrac,nbuf))
     ghost%buf=0

@@ -258,7 +258,7 @@ subroutine spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   call t_stopf('SPELT scheme') 
 !-----------------------------------------------------------------------------------! 
   call t_startf('SPELT Communication') 
-  call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep)
+  call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep,ntrac)
   call t_stopf('SPELT Communication')
 !-----------------------------------------------------------------------------------!  
   call t_startf('SPELT Unpacking')  
@@ -461,7 +461,7 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
     call ghostVpack(factorR, R(ie,:,:,:,:,:),nhe,nc,nlev,ntrac,0,1,timelevels,elem(ie)%desc)
   end do
        ! Anti diffusive flux are computed for each cell, done!
-  call ghost_exchangeV(hybrid,factorR,nhe,nc)
+  call ghost_exchangeV(hybrid,factorR,nhe,nc,ntrac)
 
   do ie=nets,nete
     call ghostVunpack(factorR, R(ie,:,:,:,:,:), nhe, nc,nlev,ntrac,0, 1,timelevels,elem(ie)%desc)
@@ -510,7 +510,7 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   call t_stopf('SPELT scheme')
 !-----------------------------------------------------------------------------------! 
   call t_startf('SPELT Communication') 
-  call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep)
+  call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep,ntrac)
   call t_stopf('SPELT Communication')
 !-----------------------------------------------------------------------------------!  
   call t_startf('SPELT Unpacking')  
@@ -632,16 +632,15 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !               fluxval(i,j,2) =  dt6 * spelt(ie)%contrav(i,j,k)* (slval(1) + & 
 !                      4.0D0 * slval(2) + slval(3) )    
 !             endif  
-            if (mod(i,2)==1) then                   ! works only for nip=3!!!                                                
-               fluxval(i,j,1) =  dt6 * (spelt(ie)%contrau(i,j,k)* slval(1) + &                                               
-                      4.0D0 * spelt(ie)%contrau1(i,j)*slval(2) + spelt(ie)%contrau2(i,j)*slval(3) )                          
-                                                                                                                             
-             endif                                                                                                           
-             if (mod(j,2)==1) then            ! works only for nip=3!!!                                                      
-               fluxval(i,j,2) =  dt6 * (spelt(ie)%contrav(i,j,k)* slval(1) + &                                               
-                        4.0D0 * spelt(ie)%contrav1(i,j)*slval(2) + spelt(ie)%contrav2(i,j)*slval(3) )                       \
-                                                                                                                             
-             endif  
+            if (mod(i,2)==1) then                   ! works only for nip=3!!!
+               fluxval(i,j,1) =  dt6 * (spelt(ie)%contrau(i,j,k)* slval(1) + & 
+                      4.0D0 * spelt(ie)%contrau1(i,j)*slval(2) + spelt(ie)%contrau2(i,j)*slval(3) )  
+             
+             endif
+             if (mod(j,2)==1) then            ! works only for nip=3!!!
+               fluxval(i,j,2) =  dt6 * (spelt(ie)%contrav(i,j,k)* slval(1) + & 
+                        4.0D0 * spelt(ie)%contrav1(i,j)*slval(2) + spelt(ie)%contrav2(i,j)*slval(3) )                                
+             endif 
           end do
         end do 
 
@@ -677,7 +676,7 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
     call ghostVpack(factorR, R(ie,:,:,:,:,:),nhe,nc,nlev,ntrac,0,1,timelevels,elem(ie)%desc)
   end do
        ! Anti diffusive flux are computed for each cell, done!
-  call ghost_exchangeV(hybrid,factorR,nhe,nc)
+  call ghost_exchangeV(hybrid,factorR,nhe,nc,ntrac)
 
   do ie=nets,nete
     call ghostVunpack(factorR, R(ie,:,:,:,:,:), nhe, nc,nlev,ntrac,0, 1,timelevels,elem(ie)%desc)
@@ -723,10 +722,9 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
     end do   !nlev
     call ghostVpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tl%np1, timelevels,elem(ie)%desc)
   end do
-  call t_stopf('SPELT scheme')
 !-----------------------------------------------------------------------------------! 
   call t_startf('SPELT Communication') 
-  call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep)
+  call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep,ntrac)
   call t_stopf('SPELT Communication')
 !-----------------------------------------------------------------------------------!  
   call t_startf('SPELT Unpacking')  
@@ -734,6 +732,8 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
     call ghostVunpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tl%np1, timelevels,elem(ie)%desc)
   end do
   call t_stopf('SPELT Unpacking')
+  call t_stopf('SPELT scheme')
+  
 end subroutine spelt_runpos
 
 
@@ -787,7 +787,7 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !   dt6 =  tstep / 3.0D0   ! test GLL weights (points are the same)
   do ie=nets,nete 
     do k=1, nlev
-      call solidbody_all(spelt(ie), dsphere1,dsphere2,k) 
+!       call solidbody_all(spelt(ie), dsphere1,dsphere2,k) 
       call boomerang_all(spelt(ie), dsphere1,dsphere2,k,tl%nstep)
 !       call t_startf('SPELT0') 
 !       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
@@ -902,7 +902,7 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   end do
 !-----------------------------------------------------------------------------------! 
   call t_startf('SPELT Communication') 
-  call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep)
+  call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep,ntrac)
   call t_stopf('SPELT Communication')
 !-----------------------------------------------------------------------------------!  
   call t_startf('SPELT Unpacking')  
@@ -1265,7 +1265,7 @@ subroutine spelt_init3(elem,spelt,hybrid,nets,nete,tnp0)
     call ghostVpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tnp0, timelevels,elem(ie)%desc)
   end do
   !-----------------------------------------------------------------------------------!  
-  call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep)
+  call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep,ntrac)
   !-----------------------------------------------------------------------------------!    
   do ie=nets,nete
     call ghostVunpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tnp0, timelevels,elem(ie)%desc)
@@ -1293,7 +1293,7 @@ subroutine spelt_init3(elem,spelt,hybrid,nets,nete,tnp0)
     call ghostVpack2d_single(buf,spelt(ie)%sga,nipm, nep,elem(ie)%desc)
   end do
 !-----------------------------------------------------------------------------------! 
-  call ghost_exchangeV(hybrid,buf,nipm,nep)
+  call ghost_exchangeV(hybrid,buf,nipm,nep,ntrac)
 !-----------------------------------------------------------------------------------!  
   do ie=nets,nete
     call ghostVunpack2d_single(buf,spelt(ie)%sga,nipm, nep,elem(ie)%desc)
