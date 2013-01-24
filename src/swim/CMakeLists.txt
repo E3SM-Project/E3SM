@@ -56,6 +56,7 @@ SET(SRCS_F90
                ${SRC_SHARE}/fvm_control_volume_mod.F90
                ${SRC_SHARE}/fvm_filter_mod.F90
                ${SRC_SHARE}/fvm_line_integrals_mod.F90
+               ${SRC_SHARE}/fvm_line_integrals_flux_mod.F90
                ${SRC_SHARE}/fvm_mod.F90
                ${SRC_SHARE}/fvm_reconstruction_mod.F90
                ${SRC_SHARE}/global_norms_mod.F90
