@@ -1355,7 +1355,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
     end do
     
     jallactual=jall
-    !Eulerain correction
+    !Eulerian correction
     do jx=nc, nc+2
       do jy=-1,nc+2
         if (((jx>nc) .and. (jy>nc)) .or. ((jx==nc) .and. (jy>0) .and. (jy<nc+1))) then 
@@ -2877,10 +2877,10 @@ end subroutine getdep_cellboundariesxyvec
 !         write(*,*) 'gno', gno
     
     DO WHILE (lcontinue)
-!       if ((j_eul<-nhe) .or. (j_eul>nc+2+nhe)) then
-!         write(*,*) 'somthing is wrong', j_eul, -nhe,nc+2+nhe, iter
-!         stop
-!       endif
+      if ((j_eul<-nhe) .or. (j_eul>nc+2+nhe)) then
+        write(*,*) 'somthing is wrong', j_eul, -nhe,nc+2+nhe, iter
+        stop
+      endif
       iter     = iter+1 
       tmp      = x-gno(j_eul)
       dist_new = ABS(tmp)

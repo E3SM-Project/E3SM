@@ -170,7 +170,7 @@ subroutine spelt_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   end do
 !-----------------------------------------------------------------------------------! 
   call t_startf('FVM Communication') 
-  call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep)
+  call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep,ntrac)
   call t_stopf('FVM Communication')
 !-----------------------------------------------------------------------------------!  
   call t_startf('FVM Unpacking')  

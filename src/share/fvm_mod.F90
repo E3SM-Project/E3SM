@@ -102,7 +102,7 @@ subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
      call ghostVpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lon,2,2, nc+1,nlev,elem(ie)%desc) !kptr =2 for lon
    end do
  !-----------------------------------------------------------------------------------! 
-   call ghost_exchangeV(hybrid,buflatlon,2,nc+1)
+   call ghost_exchangeV(hybrid,buflatlon,2,nc+1,ntrac)
  !-----------------------------------------------------------------------------------!  
    do ie=nets,nete
      call ghostVunpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lat,1,2, nc+1,nlev,elem(ie)%desc)
@@ -182,7 +182,7 @@ subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   end do
 !   write(*,*) 'area Lag', sum
 
-  call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc)
+  call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac)
   
 !-----------------------------------------------------------------------------------!
 !-----------------------------------------------------------------------------------!
@@ -255,7 +255,7 @@ subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
     call ghostVpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lon,2,2, nc+1,nlev,elem(ie)%desc) !kptr =2 for lon
   end do
 !-----------------------------------------------------------------------------------! 
-  call ghost_exchangeV(hybrid,buflatlon,2,nc+1)
+  call ghost_exchangeV(hybrid,buflatlon,2,nc+1,ntrac)
 !-----------------------------------------------------------------------------------!  
   do ie=nets,nete
     call ghostVunpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lat,1,2, nc+1,nlev,elem(ie)%desc)
@@ -315,7 +315,7 @@ subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   end do
   call t_stopf('CSLAM scheme')
   call t_startf('FVM Communication')
-  call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc)
+  call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac)
   call t_stopf('FVM Communication')
   !-----------------------------------------------------------------------------------!
   call t_startf('FVM Unpack')
@@ -380,7 +380,7 @@ subroutine cslam_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
      call ghostVpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lon,2,2, nc+1,nlev,elem(ie)%desc) !kptr =2 for lon
    end do
  !-----------------------------------------------------------------------------------! 
-   call ghost_exchangeV(hybrid,buflatlon,2,nc+1)
+   call ghost_exchangeV(hybrid,buflatlon,2,nc+1,ntrac)
  !-----------------------------------------------------------------------------------!  
    do ie=nets,nete
      call ghostVunpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lat,1,2, nc+1,nlev,elem(ie)%desc)
@@ -423,7 +423,7 @@ subroutine cslam_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   end do
 
   call t_startf('FVM Communication')
-  call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc)
+  call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac)
   call t_stopf('FVM Communication')
   
 !-----------------------------------------------------------------------------------!
@@ -498,7 +498,7 @@ subroutine cslam_runtest(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
     call ghostVpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lon,2,2, nc+1,nlev,elem(ie)%desc) !kptr =2 for lon
   end do
 !-----------------------------------------------------------------------------------! 
-  call ghost_exchangeV(hybrid,buflatlon,2,nc+1)
+  call ghost_exchangeV(hybrid,buflatlon,2,nc+1,ntrac)
 !-----------------------------------------------------------------------------------!  
   do ie=nets,nete
     call ghostVunpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lat,1,2, nc+1,nlev,elem(ie)%desc)
@@ -522,7 +522,7 @@ subroutine cslam_runtest(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
     call ghostVpack(cellghost, recons(ie,5,:,:,:,:,:),nhe,nc,nlev,ntrac,4,1,timelevels,elem(ie)%desc)
   end do
 !   recons=recons_alt
-  call ghost_exchangeV(hybrid,cellghost,nhe,nc)
+  call ghost_exchangeV(hybrid,cellghost,nhe,nc,ntrac)
   do ie=nets,nete
      call ghostVunpack(cellghost, recons(ie,1,:,:,:,:,:), nhe, nc,nlev,ntrac, 0, 1, timelevels,elem(ie)%desc)
      call ghostVunpack(cellghost, recons(ie,2,:,:,:,:,:), nhe, nc,nlev,ntrac, 1, 1, timelevels,elem(ie)%desc)
@@ -581,7 +581,7 @@ subroutine cslam_runtest(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   end do
   call t_stopf('CSLAM scheme com rec')
   call t_startf('FVM Communication')
-  call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc)
+  call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac)
   call t_stopf('FVM Communication')
   !-----------------------------------------------------------------------------------!
   call t_startf('FVM Unpack')
@@ -677,7 +677,7 @@ end subroutine cslam_runtest
 !     call ghostVpack(cellghostbuf, fvm(ie)%c,nhc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
 !   end do
 !   call t_startf('FVM Communication')
-!   call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc)
+!   call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac)
 !   call t_stopf('FVM Communication')
 !   !-----------------------------------------------------------------------------------!
 !   do ie=nets,nete
@@ -921,7 +921,7 @@ subroutine fvm_init3(elem,fvm,hybrid,nets,nete,tnp0)
     call ghostVpack(cellghostbuf, fvm(ie)%c,nhc,nc,nlev,ntrac,0,tnp0,timelevels,elem(ie)%desc)
   end do
   !exchange values for the initial data
-  call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc)
+  call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac)
   !-----------------------------------------------------------------------------------!
   do ie=nets,nete
     call ghostVunpack(cellghostbuf, fvm(ie)%c, nhc, nc,nlev,ntrac, 0, tnp0, timelevels,elem(ie)%desc)

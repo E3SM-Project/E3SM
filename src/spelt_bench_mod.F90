@@ -27,7 +27,7 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
   use element_mod, only : element_t, timelevels
   use hybrid_mod, only : hybrid_t
   use spelt_mod, only: cellghostbuf, edgeveloc, spelt_struct
-  use spelt_mod, only: spelt_mcgregordss, spelt_rkdss,spelt_run, spelt_runlimit, spelt_runair, spelt_init3
+  use spelt_mod, only: spelt_mcgregordss, spelt_rkdss,spelt_run, spelt_runlimit, spelt_runpos, spelt_runair, spelt_init3
   use spelt_mod, only: cip_coeff, cip_interpolate, metric_term,  cell_search, qmsl_cell_filter, cell_minmax, cip_cell_avr
   ! ---------------------------------------------------------------------------------
   use bndry_mod, only: ghost_exchangeV
@@ -265,8 +265,8 @@ DO WHILE(tl%nstep< nmax) !nmax)
 !   call spelt_rkdss(elem,spelt,nets,nete, hybrid, deriv, tstep, 3)
 ! ! end mcgregordss
 !   call spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
-
-  call spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
+  call spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
+!   call spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !   call spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 
   call TimeLevel_update(tl,"forward") 
