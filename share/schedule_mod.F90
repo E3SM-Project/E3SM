@@ -68,6 +68,7 @@ contains
     use element_mod, only : element_t
     use metagraph_mod, only : metavertex_t
     use dimensions_mod, only : nelem
+    use gridgraph_mod, only : gridvertex_t, gridedge_t, assignment ( = )
 #ifdef _MPI
     use parallel_mod, only : nComPoints, iam, mpi_status_size, rrequest, srequest, &
 	status, npackpoints

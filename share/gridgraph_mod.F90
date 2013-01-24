@@ -71,6 +71,8 @@ module GridGraph_mod
   public :: CreateSubGridGraph
   public :: FreeGraph
 
+  public :: assignment ( = ) 
+
   interface assignment ( = )
       module procedure copy_gridedge
       module procedure copy_edgeindex
@@ -126,9 +128,10 @@ contains
     type (GridEdge_t), intent(out) :: edge2
     type (GridEdge_t), intent(in)  :: edge1
 
-
     edge2%tail_face = edge1%tail_face
     edge2%head_face = edge1%head_face
+    edge2%tail_dir = edge1%tail_dir
+    edge2%head_dir = edge1%head_dir
     edge2%reverse   = edge1%reverse
 
     if (associated(edge1%tail)) then
@@ -152,6 +155,21 @@ contains
     integer                            :: i,j,n
    
      n = SIZE(vertex1%nbrs)
+
+     if (associated(vertex2%nbrs)) then
+        nullify(vertex2%nbrs)
+     end if
+     if (associated(vertex2%nbrs_face)) then
+        nullify(vertex2%nbrs_face)
+     end if
+     if (associated(vertex2%nbrs_wgt)) then
+        nullify(vertex2%nbrs_wgt)
+     end if
+     if (associated(vertex2%nbrs_wgt_ghost)) then
+        nullify(vertex2%nbrs_wgt_ghost)
+     end if
+
+     call allocate_gridvertex_nbrs(vertex2)
 
      do i=1,n
         vertex2%nbrs(i) = vertex1%nbrs(i)

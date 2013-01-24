@@ -484,6 +484,10 @@ contains
        call deallocate_gridvertex_nbrs(GridVertex(j))
     end do
     deallocate(GridVertex)
+
+    do j = 1,SIZE(MetaVertex)
+       call deallocate_gridvertex_nbrs(MetaVertex(1)%members(j))
+    end do
     deallocate(MetaVertex)
     deallocate(TailPartition)
     deallocate(HeadPartition)
