@@ -42,9 +42,14 @@ private
      real (kind=real_kind) :: vtempt(np,np,2)
   end type derivative_stag_t
 
+  real (kind=real_kind), allocatable :: integration_matrix(:,:)
+  private :: allocate_subcell_integration_matrix
+
 ! ======================================
 ! Public Interfaces
 ! ======================================
+
+  public :: subcell_integration
 
   public :: derivinit
   public :: deriv_print
@@ -280,10 +285,10 @@ contains
     deallocate(gll%points)
     deallocate(gll%weights)
 
-    deallocate(gs%points)
-    deallocate(gs%weights)
+	deallocate(gs%points)
+	deallocate(gs%weights)
 
-  end subroutine dmatinit
+end subroutine dmatinit
 
 ! =======================================
 ! dpvinit:
@@ -293,40 +298,40 @@ contains
 ! for strong gradients
 ! =======================================
 
-  subroutine dpvinit(dmat)
+subroutine dpvinit(dmat)
 
-    real (kind=longdouble_kind) :: dmat(np,np)
+real (kind=longdouble_kind) :: dmat(np,np)
 
-    ! Local variables
+! Local variables
 
-    type (quadrature_t) :: gll
-    type (quadrature_t) :: gs
+type (quadrature_t) :: gll
+type (quadrature_t) :: gs
 
-    integer i,j
-    real(kind=longdouble_kind)  dis,c0,c1
+integer i,j
+real(kind=longdouble_kind)  dis,c0,c1
 
-    real(kind=longdouble_kind)  :: legv(0:np,np)
-    real(kind=longdouble_kind)  :: dlegv(0:np,np)
+real(kind=longdouble_kind)  :: legv(0:np,np)
+real(kind=longdouble_kind)  :: dlegv(0:np,np)
 
-    real(kind=longdouble_kind)  :: leg(0:np)
-    real(kind=longdouble_kind)  :: dleg(0:np)
+real(kind=longdouble_kind)  :: leg(0:np)
+real(kind=longdouble_kind)  :: dleg(0:np)
 
-    c0 = 0.0_longdouble_kind
-    c1 = 1.0_longdouble_kind
+c0 = 0.0_longdouble_kind
+c1 = 1.0_longdouble_kind
 
-    gll= gausslobatto(np)
-    gs = gauss(np)
+gll= gausslobatto(np)
+gs = gauss(np)
 
-    ! =============================================================
-    ! Compute Legendre polynomials on Gauss-Lobatto grid (velocity)
-    ! =============================================================
+! =============================================================
+! Compute Legendre polynomials on Gauss-Lobatto grid (velocity)
+! =============================================================
 
-    do i=1,np
-       call jacobi(np,gll%points(i),c0,c0,legv(0:np,i),dlegv(0:np,i))
-    end do
+do i=1,np
+call jacobi(np,gll%points(i),c0,c0,legv(0:np,i),dlegv(0:np,i))
+end do
 
-    ! ================================================================
-    !  Derivatives of velocity cardinal functions on pressure grid
+! ================================================================
+!  Derivatives of velocity cardinal functions on pressure grid
     !  d(i,j) = D(j,i) = D' (D-transpose) since D(i,j) = dh_j(x_i)/dx
     ! ================================================================
 
@@ -2645,6 +2650,160 @@ endif
     enddo
 #endif
   end function
+
+  ! Given a field defined on the unit element, [-1,1]x[-1,1]
+  ! sample values, sampled_val, and integration weights, metdet,
+  ! at a number, np, of Gauss-Lobatto-Legendre points. Divide
+  ! the square up into intervals by intervals sub-squares so that
+  ! there are now intervals**2 sub-cells.  Integrate the 
+  ! function defined by sampled_val and metdet over each of these
+  ! sub-cells and return the integrated values as an 
+  ! intervals by intervals matrix.
+  !
+  ! Efficiency is obtained by computing and caching the appropriate
+  ! integration matrix the first time the function is called.
+  function subcell_integration(sampled_val, metdet, np, intervals) result(values)
+
+    implicit none
+
+    integer              , intent(in)  :: np
+    integer              , intent(in)  :: intervals
+    real (kind=real_kind), intent(in)  :: sampled_val(np,np)
+    real (kind=real_kind), intent(in)  :: metdet     (np,np)
+    real (kind=real_kind)              :: values(intervals,intervals)
+
+    real (kind=real_kind)              :: V          (np,np)
+    integer i,j
+
+    V  = sampled_val * metdet
+
+
+    if (.not.ALLOCATED(integration_matrix)      .or. &
+        SIZE(integration_matrix,1).ne.intervals .or. &
+        SIZE(integration_matrix,2).ne.np) then
+      call allocate_subcell_integration_matrix(np,intervals)
+    end if
+
+    ! Multiply the sampled values by the weighted jacobians.  
+    ! Symmetry allows us to write this as J^t V J
+    ! where J is a vector.  
+
+    values = MATMUL(integration_matrix, &
+             MATMUL(V,TRANSPOSE(integration_matrix)))
+
+  end function subcell_integration
+
+
+  ! Helper subroutine that will fill in a matrix needed to 
+  ! integrate a function defined on the GLL points of a unit
+  ! square on sub-cells.  So np is the number of integration
+  ! GLL points defined on the unit square (actually [-1,1]x[-1,1])
+  ! and intervals is the number to cut it up into, say a 3 by 3
+  ! set of uniform sub-cells.  This function will fill the 
+  ! subcell_integration matrix with the correct coefficients
+  ! to integrate over each subcell.  
+  subroutine allocate_subcell_integration_matrix(np, intervals)
+    !-----------------
+    !-----------------
+    use quadrature_mod, only : gausslobatto, quadrature_t
+    
+    implicit none
+
+    integer              , intent(in)  :: np
+    integer              , intent(in)  :: intervals
+    real (kind=real_kind)              :: values(intervals,intervals)
+
+
+    real(kind=real_kind), parameter :: zero = 0.0D0, one=1.0D0, two=2.0D0
+
+
+    real (kind=real_kind) :: sub_gll        (intervals,np)
+
+    real (kind=real_kind) :: Lagrange_interp(intervals,np,np)
+    type (quadrature_t)   :: gll 
+
+    real (kind=real_kind) :: legrange_div(np)
+    real (kind=real_kind) :: a,b,x,y, x_j, x_i 
+    real (kind=real_kind) :: r(1) 
+    integer i,j,n,m
+
+    if (ALLOCATED(integration_matrix)) deallocate(integration_matrix)
+    allocate(integration_matrix(intervals,np))
+
+    gll = gausslobatto(np)
+ 
+    ! The GLL (Gauss-Lobatto-Legendre) points are from [-1,1], 
+    ! we have a bunch of sub-intervals defined by intervals that 
+    ! go from [a,b] so we need to linearly map [-1,1] -> [a,b] 
+    ! all the  GLL points by  y = (a/2)(1-x) + (b/2)(1+x)
+    do i=1,intervals
+      a = -one + (i-one)*two/intervals   
+      b = -one +  i     *two/intervals  
+      sub_gll(i,:) = (a+b)/two + gll%points(:)/intervals
+    end do
+
+    ! Now to interpolate from the values at the input GLL
+    ! points to the sub-GLL points.  Do this by Lagrange
+    ! interpolation.  The jth Lagrange interpolating polynomial
+    ! for points x_i is 
+    !              \prod_{i\ne j} (x-x_i)/(x_j-x_i)
+    ! These are then multiplied by the sampled values y_i 
+    ! and summed. 
+    
+    ! Save some time by pre-computing the denominitor. I think 
+    ! this is OK since all the points are of order 1 so should
+    ! be well behaved.
+    do n = 1,np
+      x_j = gll%points(n)
+      x   = one 
+      do m = 1,np 
+        if (m.ne.n) then
+          x_i = gll%points(m)
+          x = x * (x_j-x_i)
+        endif
+      end do
+      legrange_div(n)= x
+    end do 
+    do i=1,intervals
+      do n=1,np
+        x = sub_gll(i,n)
+        do j = 1,np
+          y = one
+          do m = 1,np
+            if (m.ne.j) then
+              x_i = gll%points(m)
+              y = y * (x-x_i)
+            end if
+          end do
+          Lagrange_interp(i,n,j) = y/legrange_div(j)
+        end do
+      end do
+    end do
+
+    ! Integration is the GLL weights times Jacobians times
+    ! the interpolated values:
+    !                   w^t I Y I^t w 
+    ! where  
+    ! w is GLL weights and Jacobians, 
+    ! I is the Lagrange_interp matrix, and
+    ! Y is the coefficient matrix, sampled_val.
+    ! This can be written  J Y J^t where
+    !                       J = w^t I
+    ! J is integration_matrix
+    do i=1,intervals
+      integration_matrix(i,:) = MATMUL(gll%weights(:),Lagrange_interp(i,:,:))
+    end do
+
+    ! There is still the Jacobian to consider.  We are 
+    ! integrating over [a,b] x [c,d] where 
+    !        |b-a| = |d-c| = 2/Intervals
+    ! Multiply the weights appropriately given that 
+    ! they are defined for a 2x2 square
+    integration_matrix = integration_matrix/intervals
+
+  end subroutine allocate_subcell_integration_matrix
+
+
 
 end module derivative_mod
 

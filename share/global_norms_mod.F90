@@ -616,10 +616,12 @@ contains
           endif
        endif
        if(nu_top>0) then
-          write(iulog,'(a,f10.2,a)') 'TOP3 viscosity CFL: dt < S*',1.0d0/(4*nu_top*((rrearth*max_max_eig)**2)*lambda_vis),'s'
+          write(iulog,'(a,f10.2,a)') 'TOP3 viscosity CFL: dt < S*', &
+                                  1.0d0/(4*nu_top*((rrearth*max_max_eig)**2)*lambda_vis),'s'
        end if
       if (hypervis_power /= 0) then 
-         write(iulog,'(a,3e11.4)') 'Hyperviscosity (dynamics): ave,min,max = ',nu*(/avg_hypervis**2,min_hypervis**2,max_hypervis**2/)
+        write(iulog,'(a,3e11.4)')'Hyperviscosity (dynamics): ave,min,max = ', &
+                                  nu*(/avg_hypervis**2,min_hypervis**2,max_hypervis**2/)
 !         print*, 'fine_ne = ', fine_ne
 !         print*, 'Using max_unif_dx = ', max_unif_dx
       end if
