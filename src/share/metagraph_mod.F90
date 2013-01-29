@@ -6,7 +6,8 @@
 
 module metagraph_mod
   use kinds, only : int_kind, iulog
-  use gridgraph_mod, only : gridvertex_t, gridedge_t, assignment ( = )
+  use gridgraph_mod, only : gridvertex_t, gridedge_t, &
+       allocate_gridvertex_nbrs, assignment ( = )
   use pio_types ! _EXTERNAL
 
   implicit none 
@@ -296,7 +297,6 @@ contains
     if(Debug) write(iulog,*)'initMetagraph: point #2'
 
 
-
     !  Give some identity to the Meta_vertex
     MetaVertex%number   = ThisProcessorNumber
     if(Debug) write(iulog,*)'initMetagraph: point #3'
@@ -317,6 +317,10 @@ contains
     !  Allocate space for the members of the MetaVertices
     if(Debug) write(iulog,*)'initMetagraph: point #4.1 i,MetaVertex%nmembers',i,MetaVertex%nmembers
     allocate(MetaVertex%members(MetaVertex%nmembers))
+
+    do j=1, MetaVertex%nmembers
+       call allocate_gridvertex_nbrs(MetaVertex%members(j))
+    end do
 
     if(Debug) write(iulog,*)'initMetagraph: point #5'
 

@@ -262,6 +262,9 @@ contains
     implicit none
     integer(kind=long_kind), intent(in)  :: idexo
     integer(kind=long_kind)              :: block_ids(p_number_blocks)
+
+    block_ids = 0
+
   end function get_block_ids
 
 
