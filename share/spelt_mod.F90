@@ -1287,13 +1287,13 @@ subroutine spelt_init3(elem,spelt,hybrid,nets,nete,tnp0)
 !       enddo
 !     enddo
 !   enddo
-  
+
   call initghostbuffer(buf,1,1,nipm,nep)
   do ie=nets,nete
     call ghostVpack2d_single(buf,spelt(ie)%sga,nipm, nep,elem(ie)%desc)
   end do
 !-----------------------------------------------------------------------------------! 
-  call ghost_exchangeV(hybrid,buf,nipm,nep,ntrac)
+  call ghost_exchangeV(hybrid,buf,nipm,nep,1)
 !-----------------------------------------------------------------------------------!  
   do ie=nets,nete
     call ghostVunpack2d_single(buf,spelt(ie)%sga,nipm, nep,elem(ie)%desc)
