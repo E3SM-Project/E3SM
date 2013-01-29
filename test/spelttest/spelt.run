@@ -1,11 +1,14 @@
 #!/bin/bash
-#PBS -N MpiJob              
-#PBS -q regular                 
-#PBS -l mppwidth=48         
-#PBS -l mppnppn=12              
-#PBS -l walltime=1:00:00      
-#PBS -e spelt.err             
-#PBS -o spelt.out                     
-#PBS -V                        
-cd $PBS_O_WORKDIR               
-aprun -n 48 ./spelt < input.nl
+#
+# LSF batch script to run an MPI application
+#
+#BSUB -P P03010039                   # project number P93300642
+#BSUB -J spelt                      # job name
+#BSUB -o spelt.out               # output filename
+#BSUB -e spelt.err               # error filename
+#BSUB -W 1:00                       # wall clock time (in minutes)
+#BSUB -n 256                       # number of tasks
+#BSUB -q small                   # queue
+
+#run the executable
+mpirun.lsf  ./spelt < input.nl

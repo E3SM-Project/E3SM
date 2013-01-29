@@ -1,5 +1,5 @@
 !===================================================================================!
-! TEST INPUT for CWFV                                                              !
+! TEST INPUT for SPELT                                                              !
 ! Christoph Erath                                                                   !
 ! 	1 day = 1 * 24 * 3600 = 86400 sec		                                            !
 ! 	nmax  = ndays * 86400 / tstep 			                                            !
@@ -9,13 +9,13 @@
 NThreads      = 1
 partmethod    = 4
 test_case     = "spelt_boomerang"
-ne            = 5 !4 ! number of elements is ne*ne on each face, number must be >=2, o
+ne            = 20 !52 !52 !4 ! number of elements is ne*ne on each face, number must be >=2, o
                   !ne element per face is not allowed
-test_cfldep   = .TRUE.
+test_cfldep   = .FALSE.
 ndays	        = 12
-ntrac         = 1
+ntrac         = 4
 !nmax = 2
-tstep         = 2400   ! use factor 2 of 600 to reach the end time
+tstep         = 600 !300 !600   ! use factor 2 of 600 to reach the end time
 /
 &analysis_nl
 !=======================================================!
@@ -37,9 +37,9 @@ tstep         = 2400   ! use factor 2 of 600 to reach the end time
 !=======================================================!    
 output_start_time = 0
 output_end_time   = 100000
-output_frequency  = 6
-output_timeunits  = 2
-output_varnames1  = 'geop','C'
+output_frequency  = 2
+output_timeunits  = 1
+output_varnames1  = 'geop','C', 'C2', 'C3'
 interp_nlat       = 256
 interp_nlon       = 512
 output_type='netcdf'
@@ -49,7 +49,7 @@ output_type='netcdf'
 ! this will be used by homme only if namelist file is 'input.nl'
 &prof_inparm
 profile_single_file = .true.
-profile_outpe_num = 5000
+profile_outpe_num = 0
 /
 
 

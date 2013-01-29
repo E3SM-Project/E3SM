@@ -3,136 +3,180 @@
 <plist version="1.0">
 <dict>
 	<key>currentDocument</key>
-	<string>spelt.run</string>
+	<string>../../src/share/spelt_mod.F90</string>
 	<key>documents</key>
 	<array>
 		<dict>
 			<key>filename</key>
 			<string>Makefile.Darwin</string>
 			<key>lastUsed</key>
-			<date>2012-08-25T02:09:46Z</date>
+			<date>2013-01-27T23:24:04Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
 			<string>Makefile.Linux</string>
 			<key>lastUsed</key>
-			<date>2012-08-25T02:14:45Z</date>
+			<date>2013-01-28T03:10:36Z</date>
+		</dict>
+		<dict>
+			<key>filename</key>
+			<string>../../src/share/dimensions_mod.F90</string>
+			<key>lastUsed</key>
+			<date>2013-01-28T15:25:11Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
 			<string>spelt.run</string>
 			<key>lastUsed</key>
-			<date>2012-08-28T01:08:25Z</date>
-			<key>selected</key>
-			<true/>
+			<date>2013-01-28T15:25:08Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
-			<string>/Users/erath/cslam-homme/test/spelttest/spelt.nl</string>
+			<string>spelt.nl</string>
 			<key>lastUsed</key>
-			<date>2012-08-25T02:13:22Z</date>
-			<key>saveAsAbsolutePath</key>
-			<true/>
+			<date>2013-01-28T15:28:54Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
 			<string>../../src/spelt_main.F90</string>
+			<key>lastUsed</key>
+			<date>2013-01-28T00:18:35Z</date>
+		</dict>
+		<dict>
+			<key>filename</key>
+			<string>../../src/fvm_bsp_mod.F90</string>
+			<key>lastUsed</key>
+			<date>2013-01-27T23:55:44Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
 			<string>../../src/spelt_bench_mod.F90</string>
 			<key>lastUsed</key>
-			<date>2012-08-25T02:08:51Z</date>
+			<date>2013-01-28T15:28:44Z</date>
+		</dict>
+		<dict>
+			<key>filename</key>
+			<string>../../../../lynx/hommelynx/src/fvm_init_mod.F90</string>
 		</dict>
 		<dict>
 			<key>filename</key>
 			<string>../../src/share/spelt_mod.F90</string>
 			<key>lastUsed</key>
-			<date>2012-08-25T02:04:03Z</date>
+			<date>2013-01-29T17:25:45Z</date>
+			<key>selected</key>
+			<true/>
 		</dict>
 	</array>
 	<key>fileHierarchyDrawerWidth</key>
 	<integer>229</integer>
 	<key>metaData</key>
 	<dict>
+		<key>../../src/fvm_bsp_mod.F90</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>0</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>148</integer>
+		</dict>
+		<key>../../src/share/dimensions_mod.F90</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>41</integer>
+				<key>line</key>
+				<integer>15</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
 		<key>../../src/share/spelt_mod.F90</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>47</integer>
+				<integer>0</integer>
 				<key>line</key>
-				<integer>224</integer>
+				<integer>583</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>205</integer>
+			<integer>715</integer>
 		</dict>
 		<key>../../src/spelt_bench_mod.F90</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>30</integer>
+				<integer>23</integer>
 				<key>line</key>
-				<integer>78</integer>
+				<integer>268</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>58</integer>
+			<integer>293</integer>
 		</dict>
-		<key>/Users/erath/cslam-homme/test/spelttest/spelt.nl</key>
+		<key>../../src/spelt_main.F90</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>18</integer>
+				<integer>37</integer>
 				<key>line</key>
-				<integer>17</integer>
+				<integer>147</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>0</integer>
-		</dict>
-		<key>Makefile.Darwin</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>0</integer>
-				<key>line</key>
-				<integer>0</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
+			<integer>128</integer>
 		</dict>
 		<key>Makefile.Linux</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>23</integer>
+				<integer>13</integer>
 				<key>line</key>
-				<integer>39</integer>
+				<integer>48</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>25</integer>
+			<integer>0</integer>
+		</dict>
+		<key>spelt.nl</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>17</integer>
+				<key>line</key>
+				<integer>15</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
 		</dict>
 		<key>spelt.run</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>27</integer>
+				<integer>12</integer>
 				<key>line</key>
-				<integer>10</integer>
+				<integer>9</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
@@ -143,15 +187,17 @@
 	<key>openDocuments</key>
 	<array>
 		<string>Makefile.Linux</string>
-		<string>/Users/erath/cslam-homme/test/spelttest/spelt.nl</string>
+		<string>spelt.run</string>
+		<string>spelt.nl</string>
+		<string>../../src/share/dimensions_mod.F90</string>
 		<string>../../src/spelt_bench_mod.F90</string>
 		<string>../../src/share/spelt_mod.F90</string>
-		<string>spelt.run</string>
-		<string>Makefile.Darwin</string>
+		<string>../../src/fvm_bsp_mod.F90</string>
+		<string>../../src/spelt_main.F90</string>
 	</array>
 	<key>showFileHierarchyDrawer</key>
 	<true/>
 	<key>windowFrame</key>
-	<string>{{61, 63}, {1106, 815}}</string>
+	<string>{{821, 115}, {1087, 1063}}</string>
 </dict>
 </plist>
