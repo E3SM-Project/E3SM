@@ -537,7 +537,7 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   ! -----------------------------------------------  
   use bndry_mod, only : ghost_exchangevfull
   use edge_mod, only : ghostbuffertr_t, ghostvpack, ghostvunpack, initghostbuffer,&
-       freeghostbuffer
+       freeghostbuffer, freeghostbuffertr
        
   implicit none
   type (element_t), intent(inout)             :: elem(:)
@@ -676,7 +676,9 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
     call ghostVpack(factorR, R(ie,:,:,:,:,:),nhe,nc,nlev,ntrac,0,1,timelevels,elem(ie)%desc)
   end do
        ! Anti diffusive flux are computed for each cell, done!
+  call t_startf('SPELT Communication1')      
   call ghost_exchangeV(hybrid,factorR,nhe,nc,ntrac)
+  call t_stopf('SPELT Communication1') 
 
   do ie=nets,nete
     call ghostVunpack(factorR, R(ie,:,:,:,:,:), nhe, nc,nlev,ntrac,0, 1,timelevels,elem(ie)%desc)
@@ -723,17 +725,17 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
     call ghostVpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tl%np1, timelevels,elem(ie)%desc)
   end do
 !-----------------------------------------------------------------------------------! 
-  call t_startf('SPELT Communication') 
+  call t_startf('SPELT Communication2') 
   call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep,ntrac)
-  call t_stopf('SPELT Communication')
+  call t_stopf('SPELT Communication2')
 !-----------------------------------------------------------------------------------!  
-  call t_startf('SPELT Unpacking')  
+  call t_startf('SPELT Unpacking2')  
   do ie=nets,nete
     call ghostVunpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tl%np1, timelevels,elem(ie)%desc)
   end do
-  call t_stopf('SPELT Unpacking')
+  call t_stopf('SPELT Unpacking2')
   call t_stopf('SPELT scheme')
-  
+  call freeghostbuffertr(factorR)
 end subroutine spelt_runpos
 
 
