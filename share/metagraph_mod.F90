@@ -14,7 +14,6 @@ module metagraph_mod
   private 
 
   type, public :: MetaEdge_t
-     sequence
      type (GridEdge_t),pointer     :: members(:)
      integer          ,pointer     :: edgeptrP(:)
      integer          ,pointer     :: edgeptrP_ghost(:)
@@ -29,7 +28,6 @@ module metagraph_mod
   end type MetaEdge_t
 
   type, public :: MetaVertex_t             ! one for each processor
-     sequence
      integer                       :: number     ! USELESS just the local processor number
      integer                       :: nmembers   ! number of elements on this processor 
      type (GridVertex_t),pointer   :: members(:) ! array of elements on this processor

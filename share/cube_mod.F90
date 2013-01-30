@@ -27,7 +27,6 @@ module cube_mod
   real(kind=real_kind), public, parameter :: cube_yend   =  0.25D0*DD_PI
 
   type, public :: face_t
-     sequence
      type (spherical_polar_t) :: sphere0       ! tangent point of face on sphere
      type (spherical_polar_t) :: sw            ! sw corner of face on sphere
      type (spherical_polar_t) :: se            ! se corner of face on sphere
@@ -41,7 +40,6 @@ module cube_mod
   end type face_t
 
   type, public :: cube_face_coord_t
-     sequence
      real(real_kind) :: x             ! x coordinate
      real(real_kind) :: y             ! y coordinate
      type (face_t), pointer :: face     ! face

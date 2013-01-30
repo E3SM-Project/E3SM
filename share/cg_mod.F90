@@ -17,7 +17,6 @@ module cg_mod
        CG_PR_BIT_FOR_BIT = 3
   !CG-JMD
   type, public :: cg_state_t
-     sequence 
      real(kind=real_kind) x(npsq,nlev)
      real(kind=real_kind) p(npsq,nlev)
      real(kind=real_kind) v(npsq,nlev)
@@ -27,7 +26,6 @@ module cg_mod
   end type cg_state_t
 
   type, public :: cg_t
-     sequence
 
      integer len                                               ! length of domain
      integer ninst                                             ! number of instances

@@ -8,21 +8,18 @@ module reduction_mod
   private
 
   type, public :: ReductionBuffer_int_1d_t
-     sequence
      integer, dimension(:), pointer :: buf
      integer :: len=0
      integer :: ctr
   end type ReductionBuffer_int_1d_t
 
   type, public :: ReductionBuffer_r_1d_t
-     sequence
      real (kind=real_kind), dimension(:), pointer :: buf
      integer :: len=0
      integer :: ctr
   end type ReductionBuffer_r_1d_t
 
   type, public :: ReductionBuffer_ordered_1d_t
-     sequence
      real (kind=real_kind), dimension(:,:),pointer :: buf
      integer :: len=0
      integer :: ctr

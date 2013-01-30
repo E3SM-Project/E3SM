@@ -14,7 +14,6 @@ implicit none
 private
 
   type, public :: hybrid_t
-     sequence
      type (parallel_t) :: par
      integer           :: ithr
      integer           :: NThreads

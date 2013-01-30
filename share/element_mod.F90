@@ -25,9 +25,8 @@ module element_mod
 #ifdef _PRIM
 
   type, public :: elem_state_t
-     sequence
 !
-!    note: variables (and sequence) must match that in prim_restart_mod.F90
+!    note: variables must match that in prim_restart_mod.F90
 !
 ! prognostic variables
 !
@@ -52,7 +51,6 @@ module element_mod
 
 
   type, public :: derived_state_t
-     sequence
 
 
 !    storage needed when subcycling tracers/dynamics 
@@ -105,7 +103,6 @@ module element_mod
   end type derived_state_t
 
   type, public :: elem_accum_t
-     sequence
 !     real (kind=real_kind) :: u(np,np,nlev)       ! zonal velocity on sphere
 !     real (kind=real_kind) :: T(np,np,nlev)       ! temperature
 !     real (kind=real_kind) :: Q(np,np,nlev) ! tracers
@@ -185,7 +182,6 @@ module element_mod
 #elif defined _PRIMDG
   ! definition of elem_state_t for DG Primitive Equations version of model
   type, public :: elem_state_t
-     sequence
      real (kind=real_kind) :: p(np,np,nlev,timelevels)
      real (kind=real_kind) :: phis(np,np)                  ! surface geopotential
      real (kind=real_kind) :: gradps(np,np,2)              ! gradient of surface geopotential
@@ -220,14 +216,12 @@ module element_mod
   ! this type is just a place holder at the moment.  In the future some of the fields in elem_state_t
   ! should be moved into derived_state_t to mirror the _PRIM verion
   type, public :: derived_state_t
-     sequence
      real (kind=real_kind) :: dummmy
      real (kind=real_kind) :: vstar(np,np,2,nlev) ! velocity on Lagrangian surfaces
   end type derived_state_t
 
 
   type, public :: elem_accum_t
-    sequence
     real (kind=real_kind) :: u(np,np,nlev)       ! zonal velocity on sphere
     real (kind=real_kind) :: T(np,np,nlev)       ! temperature
     real (kind=real_kind) :: ke(np,np,nlev)      ! kinetic energy
@@ -240,7 +234,6 @@ module element_mod
   ! SHALLOW WATER STRUCT
   !
   type, public :: elem_state_t
-     sequence
      real (kind=real_kind) :: p(np,np,nlev,timelevels)
      real (kind=real_kind) :: ps(np,np)           ! surface geopotential
      real (kind=real_kind) :: gradps(np,np,2)     ! gradient of surface geopotential     
@@ -260,7 +253,6 @@ module element_mod
   end type elem_state_t
 
   type, public :: derived_state_t
-     sequence
      !=======================================================================================================!
      ! all shallow water diagnostic variables should be moved here.
      ! %state is for prognostic variables
@@ -275,7 +267,6 @@ module element_mod
 ! endif  _PRIM, elif  _PRIMDR, else shallow water.
 
   type, public :: index_t
-     sequence
      integer(kind=int_kind) :: ia(npsq),ja(npsq)
      integer(kind=int_kind) :: is,ie
      integer(kind=int_kind) :: NumUniquePts
@@ -283,8 +274,6 @@ module element_mod
   end type index_t
 
   type, public :: element_t
-     sequence
-
      integer(kind=int_kind) :: LocalId
      integer(kind=int_kind) :: GlobalId
 
