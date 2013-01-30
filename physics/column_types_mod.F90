@@ -12,7 +12,6 @@ module column_types_mod
 
 
   type, public :: ColumnDataEmanuel_t
-     sequence
      ! in
      real (kind=real_kind)             :: T(nlev)
      real (kind=real_kind)             :: Q(nlev)
@@ -51,7 +50,6 @@ module column_types_mod
   end type AquaplanetForcing_t
 
   type, public :: DataMulticloud_t
-     sequence
      ! Need to be computed from t=0 sounding
      real (kind=real_kind)         :: Qt0,Qt1,Qt2
      real (kind=real_kind)         :: phi(nlev,2),psi(nlev,2)
@@ -64,7 +62,6 @@ module column_types_mod
      real (kind=real_kind)         :: Q0c,Q0R2,Tau_evap_Inv,m0     
   end type DataMulticloud_t
   type, public :: ColumnModelMulticloud_t
-     sequence
      type (DataMulticloud_t)        :: D
      !real (kind=real_kind)         :: Qt0,Qt1,Qt2
      !real (kind=real_kind)         :: phi(nlev,2),psi(nlev,2)

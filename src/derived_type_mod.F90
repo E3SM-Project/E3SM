@@ -22,7 +22,6 @@ module derived_type_mod
    real (kind=real_kind) :: initialized_for_dt   = 0
 
   type ,public :: derived_type
-     sequence
 
     integer                 :: n
     type (element_t)      ,allocatable ,dimension(:) :: base
@@ -40,7 +39,6 @@ module derived_type_mod
   end type derived_type
 
   type ,public :: precon_type
-     sequence
 
     integer                 :: n
     type (element_t)      ,allocatable ,dimension(:) :: base

@@ -29,7 +29,6 @@ module fvm_control_volume_mod
   private
   
   type, public :: fvm_struct
-    sequence
     ! fvm tracer mixing ratio: (kg/kg)
     real (kind=real_kind) :: c(1-nhc:nc+nhc,1-nhc:nc+nhc,nlev,ntrac_d,timelevels) 
     real (kind=real_kind) :: psc(1-nhc:nc+nhc,1-nhc:nc+nhc)

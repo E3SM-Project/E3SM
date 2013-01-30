@@ -25,7 +25,6 @@ module spelt_mod
   type (EdgeBuffer_t)                         :: edgeveloc
     
   type, public :: spelt_struct
-    sequence
     ! spelt tracer mixing ratio: (kg/kg)
     real (kind=real_kind)    :: c(1-nipm:nep+nipm,1-nipm:nep+nipm,nlev,ntrac_d,timelevels) 
     real (kind=real_kind)    :: psc(1-nipm:nep+nipm,1-nipm:nep+nipm)

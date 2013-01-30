@@ -10,7 +10,6 @@ module schedule_mod
   implicit none 
   private 
   type, public :: Cycle_t
-     sequence
      integer                    :: tag
      integer                    :: dest
      integer                    :: source
@@ -23,7 +22,6 @@ module schedule_mod
   end type Cycle_t
 
   type, public :: Schedule_t 
-     sequence
      integer                     ::  ncycles
      integer                     ::  nelemd
      integer                     :: placeholder  ! total integer count should be even
@@ -38,7 +36,6 @@ module schedule_mod
   end type Schedule_t
 
   type, public :: GraphStats_t
-     sequence
      integer(kind=int_kind) :: offnode
      integer(kind=int_kind) :: onnode
      integer(kind=int_kind) :: LB

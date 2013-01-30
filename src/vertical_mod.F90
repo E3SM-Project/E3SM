@@ -12,7 +12,6 @@ implicit none
 private
 
   type, public :: vcoord_t
-     sequence
      real (kind=real_kind) :: A(nlev+1)         ! hybrid pressure coordinate coefficients on interfaces
      real (kind=real_kind) :: B(nlev+1)         ! hybrid sigma coordinate (dp/deta) coefficient
      real (kind=real_kind) :: Amid(nlev)        ! hybrid pressure coordinate coefficients on mid levels

@@ -19,7 +19,6 @@ module GridGraph_mod
 
 
   type, public :: GridVertex_t
-      sequence
 
       integer, pointer          :: nbrs(:)                     ! The numbers of the neighbor elements
       integer, pointer          :: nbrs_face(:)                ! The cube face number of the neighbor element (nbrs array)
@@ -34,13 +33,11 @@ module GridGraph_mod
   end type GridVertex_t
 
   type, public :: EdgeIndex_t
-      sequence
       integer, pointer            :: ixP(:)
       integer, pointer            :: iyP(:)
   end type EdgeIndex_t
 
   type, public :: GridEdge_t
-      sequence
       integer                      :: head_face  ! needed if head vertex has shape (i.e. square)
       integer                      :: tail_face  ! needed if tail vertex has shape (i.e. square)
       integer                      :: head_dir   !which of 8 neighbor directions is the head

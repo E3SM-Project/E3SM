@@ -16,7 +16,6 @@ module edge_mod
   private
 
   type, public :: rotation_t
-     sequence
      integer  :: nbr                                        ! nbr direction: north south east west
      integer  :: reverse                                    ! 0 = do not reverse order
      ! 1 = reverse order
@@ -24,7 +23,6 @@ module edge_mod
   end type rotation_t
 
   type, public :: EdgeDescriptor_t
-     sequence
      integer(kind=int_kind)  :: use_rotation
      integer(kind=int_kind)  :: padding
      integer(kind=int_kind), pointer  :: putmapP(:)
@@ -38,7 +36,6 @@ module edge_mod
 
 
   type, public :: EdgeBuffer_t
-     sequence
 #ifdef HAVE_F2008_CONTIGUOUS
      real (kind=real_kind), dimension(:,:), pointer, contiguous :: buf
      real (kind=real_kind), dimension(:,:), pointer, contiguous :: receive
@@ -51,7 +48,6 @@ module edge_mod
   end type EdgeBuffer_t
 
   type, public :: LongEdgeBuffer_t
-     sequence
      integer :: nlyr
      integer :: nbuf
      integer (kind=int_kind), dimension(:,:), pointer :: buf
@@ -73,7 +69,6 @@ module edge_mod
 
 
   type, public :: GhostBuffer_t
-     sequence
      real (kind=real_kind), dimension(:,:,:,:), pointer :: buf
      real (kind=real_kind), dimension(:,:,:,:), pointer :: receive
      integer :: nlyr ! Number of layers
@@ -81,7 +76,6 @@ module edge_mod
   end type GhostBuffer_t
   
   type, public :: GhostBuffertr_t
-     sequence
      real (kind=real_kind), dimension(:,:,:,:,:), pointer :: buf
      real (kind=real_kind), dimension(:,:,:,:,:), pointer :: receive
      integer :: nlyr ! Number of layers
@@ -89,7 +83,6 @@ module edge_mod
   end type GhostBuffertr_t
   
   type, public :: GhostBuffer3d_t
-     sequence
      real (kind=real_kind), dimension(:,:,:,:), pointer :: buf
      real (kind=real_kind), dimension(:,:,:,:), pointer :: receive
      integer :: nlyr ! Number of layers

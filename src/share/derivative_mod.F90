@@ -17,7 +17,6 @@ implicit none
 private
 
   type, public :: derivative_t
-     sequence
      real (kind=real_kind) :: Dvv(np,np)
      real (kind=real_kind) :: Dvv_diag(np,np)
      real (kind=real_kind) :: Dvv_twt(np,np)
@@ -31,7 +30,6 @@ private
   end type derivative_t
 
   type, public :: derivative_stag_t
-     sequence
      real (kind=real_kind) :: D(np,np)
      real (kind=real_kind) :: M(np,np)
      real (kind=real_kind) :: Dpv(np,np)

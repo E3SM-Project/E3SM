@@ -43,7 +43,6 @@ public
        real(kind=real_kind),public, allocatable  :: combuffer(:)
 
        type, public :: parallel_t
-          sequence
           integer :: rank                       ! local rank
           integer :: root                       ! local root
           integer :: nprocs                     ! number of processes in group

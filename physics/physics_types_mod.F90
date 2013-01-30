@@ -13,17 +13,14 @@ module physics_types_mod
   integer(kind=int_kind), parameter, public :: PhysStateComponents=1
 
   type, public :: physics_state_t
-    sequence
     real  (kind=real_kind) :: CBMF(np,np)
   end type physics_state_t
 
   type, public :: physics_accum_t
-    sequence
     real  (kind=real_kind) :: Precip(np,np)
   end type physics_accum_t
 
   type, public :: physics_surfc_t
-    sequence
     real  (kind=real_kind) :: Wd(np,np)
     real  (kind=real_kind) :: Tprime(np,np)
     real  (kind=real_kind) :: Qprime(np,np)

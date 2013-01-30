@@ -16,7 +16,6 @@ module solver_mod
   !  character(len=8), private, parameter :: blkjac_storage = "LUfactor"
 
   type, public :: blkjac_t
-     sequence
      real (kind=real_kind), dimension(npsq,npsq,nlev) :: E
      integer(kind=int_kind),     dimension(npsq,nlev) :: ipvt
   end type blkjac_t
