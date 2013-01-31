@@ -26,7 +26,7 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
   use dimensions_mod, only: ne, np, nlev, ntrac, nc, nhe, nip, nipm, nep
   use element_mod, only : element_t, timelevels
   use hybrid_mod, only : hybrid_t
-  use spelt_mod, only: cellghostbuf, edgeveloc, spelt_struct
+  use spelt_mod, only: cellghostbuf, factorR, edgeveloc, spelt_struct
   use spelt_mod, only: spelt_mcgregordss, spelt_rkdss,spelt_run, spelt_runlimit, spelt_runpos, spelt_runair, spelt_init3
   use spelt_mod, only: cip_coeff, cip_interpolate, metric_term,  cell_search, qmsl_cell_filter, cell_minmax, cip_cell_avr
   ! ---------------------------------------------------------------------------------
@@ -230,7 +230,7 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
   call t_barrierf('spelt time loop', hybrid%par%comm)
   call t_startf('spelt')
   
-DO WHILE(tl%nstep< nmax) !nmax)
+DO WHILE(tl%nstep<nmax) !nmax)
 ! ! start mcgregordss
 !   do ie=nets,nete
 !     do k=1,nlev
@@ -382,6 +382,7 @@ ENDDO  ! END TIME LOOP
   call t_stopf('spelt')
 
   call freeghostbuffertr(cellghostbuf)
+  call freeghostbuffertr(factorR)
   call freeedgebuffer(edgeveloc)
 #ifdef PIO_INTERP
     call interp_movie_finish

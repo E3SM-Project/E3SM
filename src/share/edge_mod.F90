@@ -99,6 +99,8 @@ module edge_mod
   public :: ghostVunpackfull
   public :: ghostVpack
   public :: ghostVunpack
+  public :: ghostVpackR
+  public :: ghostVunpackR
   public :: ghostVpack2d
   public :: ghostVunpack2d
   public :: ghostVpack2d_single
@@ -1949,6 +1951,200 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,tn0,timelevels,desc)
   end do
 end subroutine GhostVpack
 
+
+! =========================================
+! Christoph Erath
+!> Packs the halo zone from v
+! =========================================
+! NOTE: I have to give timelevels as argument, because element_mod is not compiled first
+! and the array call has to be done in this way because of performance reasons!!!
+subroutine ghostVpackR(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
+  use dimensions_mod, only : max_corner_elem, ntrac_d
+  use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+
+  type (Ghostbuffertr_t)                      :: edge
+  integer,              intent(in)   :: vlyr
+  integer,              intent(in)   :: ntrac
+  integer,              intent(in)   :: npoints,nhc,kptr
+  
+  real (kind=real_kind),intent(in)   :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc,vlyr,ntrac_d)
+  type (EdgeDescriptor_t),intent(in) :: desc
+
+  ! Local variables
+  integer :: i,j,k,ir,l,itr
+
+  integer :: is,ie,in,iw
+
+  if(.not. threadsafe) then
+#if (! defined ELEMENT_OPENMP)
+!$OMP BARRIER
+#endif
+     threadsafe=.true.
+  end if
+  ! Example convenction for buffer to the north:
+  !  buf(:,,:,i,e) 
+  !   each "edge" is a row of data (i=1,np) in the element 
+  !     north most row of data goes into e=1
+  !     next row of data goes into e=2
+  !     .... 
+  !     south most row of data goes into e=np
+  !   We need to pack this way to preserve the orientation
+  !   so the data can be unpacked correctly
+
+  ! note: we think of buf as dimensioned buf(k,is,i,e)
+  ! but this array is flatted to:   buf(k,is+(i-1)+(e-1)*np)
+  !
+  is = desc%putmapP_ghost(south) 
+  ie = desc%putmapP_ghost(east)  
+  in = desc%putmapP_ghost(north) 
+  iw = desc%putmapP_ghost(west)  
+
+!    print *,nc,is,ie,in,iw
+  do itr=1,ntrac
+    do k=1,vlyr
+      do i=1,npoints
+        do j=1,nhc
+          edge%buf(i,j,kptr+k,itr,is)   = v(i  ,j ,k,itr)
+          edge%buf(i,j,kptr+k,itr,ie)   = v(npoints-j+1 ,i ,k,itr)
+          edge%buf(i,j,kptr+k,itr,in)   = v(i  ,npoints-j+1,k,itr)
+          edge%buf(i,j,kptr+k,itr,iw)   = v(j  ,i ,k,itr)
+        enddo
+      end do
+    end do
+  end do
+
+  !  This is really kludgy way to setup the index reversals
+  !  But since it is so a rare event not real need to spend time optimizing
+  !  Check if the edge orientation of the recieving element is different
+  !  if it is, swap the order of data in the edge
+  if(desc%reverse(south)) then
+!      is = desc%putmapP_ghost(south)
+    do itr=1,ntrac
+     do k=1,vlyr
+       do i=1,npoints
+         do j=1,nhc
+           ir = npoints-i+1
+           edge%buf(ir,j,kptr+k,itr,is)=v(i,j,k,itr)
+         enddo
+       enddo
+     enddo
+   enddo
+  endif
+
+  if(desc%reverse(east)) then
+!      ie = desc%putmapP_ghost(east)
+   do itr=1,ntrac
+     do k=1,vlyr
+       do i=1,npoints
+         do j=1,nhc
+           ir = npoints-i+1
+           edge%buf(ir,j,kptr+k,itr,ie)=v(npoints-j+1,i,k,itr)
+          enddo
+        enddo
+      enddo
+    end do
+  endif
+
+  if(desc%reverse(north)) then
+!      in = desc%putmapP_ghost(north)
+    do itr=1,ntrac
+      do k=1,vlyr
+        do i=1,npoints
+          do j=1,nhc
+            ir = npoints-i+1
+            edge%buf(ir,j,kptr+k,itr,in)=v(i,npoints-j+1,k,itr)
+          enddo
+        enddo
+      enddo
+    enddo
+  endif
+
+  if(desc%reverse(west)) then
+!      iw = desc%putmapP_ghost(west)
+   do itr=1,ntrac
+     do k=1,vlyr
+       do i=1,npoints
+         do j=1,nhc
+            ir = npoints-i+1
+            edge%buf(ir,j,kptr+k,itr,iw)=v(j,i,k,itr)
+          enddo
+        enddo
+      enddo
+    enddo
+  endif
+
+
+
+  ! corners.  this is difficult because we dont know the orientaton
+  ! of the corners, and this which (i,j) dimension maps to which dimension
+! SWEST
+  do l=swest,swest+max_corner_elem-1
+     if (l.ne.swest) call abortmp('ERROR2: swest ghost cell update requires ne>0 cubed-sphere mesh')
+     if (desc%putmapP_ghost(l) /= -1) then
+       do itr=1,ntrac
+         do k=1,vlyr
+           ! edge%buf(1,1,kptr+k,desc%putmapP_ghost(l))=v(1,1 ,k)
+          do i=1,nhc
+            do j=1,nhc
+              edge%buf(i,j,kptr+k,itr,desc%putmapP_ghost(l))=v(i  ,j ,k,itr)
+            enddo
+          end do
+        end do
+      enddo
+     end if
+  end do
+  
+! SEAST
+  do l=swest+max_corner_elem,swest+2*max_corner_elem-1
+     if (l.ne.seast) call abortmp('ERROR2: seast ghost cell update requires ne>0 cubed-sphere mesh')
+     if (desc%putmapP_ghost(l) /= -1) then
+       do itr=1,ntrac
+         do k=1,vlyr
+           ! edge%buf(1,1,kptr+k,desc%putmapP_ghost(l))=v(nc ,1 ,k)
+          do i=1,nhc
+            do j=1,nhc
+              edge%buf(i,j,kptr+k,itr,desc%putmapP_ghost(l))=v(npoints-i+1 ,j ,k,itr)
+            enddo
+          end do
+        end do
+      enddo
+     end if
+  end do
+  
+! NEAST
+  do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
+     if (l.ne.neast) call abortmp('ERROR2: neast ghost cell update requires ne>0 cubed-sphere mesh')
+     if (desc%putmapP_ghost(l) /= -1) then
+       do itr=1,ntrac
+        do k=1,vlyr
+           !edge%buf(1,1,kptr+k,desc%putmapP_ghost(l))=v(nc ,nc,k)
+           do i=1,nhc
+              do j=1,nhc
+                 edge%buf(i,j,kptr+k,itr,desc%putmapP_ghost(l))=v(npoints-i+1,npoints-j+1,k,itr)
+              enddo
+            enddo
+          end do
+        enddo
+      end if
+  end do
+  
+! NWEST
+  do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
+     if (l.ne.nwest) call abortmp('ERROR2: nwest ghost cell update requires ne>0 cubed-sphere mesh')
+     if (desc%putmapP_ghost(l) /= -1) then
+      do itr=1,ntrac
+        do k=1,vlyr
+           !edge%buf(1,1,kptr+k,desc%putmapP_ghost(l))=v(1  ,nc,k)
+          do i=1,nhc
+            do j=1,nhc
+              edge%buf(i,j,kptr+k,itr,desc%putmapP_ghost(l))=v(i  ,npoints-j+1,k,itr)
+            enddo
+          end do
+        end do
+       enddo
+     end if
+  end do
+end subroutine GhostVpackR
 ! ========================================
 ! Christoph Erath
 !
@@ -2169,7 +2365,224 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,tn0,timelevels,desc)
 end subroutine ghostVunpack
 
 
+! ========================================
+! Christoph Erath
+!
+! Unpack the halo zone into v
+! ========================================
+! NOTE: I have to give timelevels as argument, because element_mod is not compiled first
+! and the array call has to be done in this way because of performance reasons!!!
+subroutine ghostVunpackR(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
+  use dimensions_mod, only : max_corner_elem, ntrac_d
+  use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+  type (Ghostbuffertr_t),         intent(in)  :: edge
 
+  integer,               intent(in)  :: vlyr
+  integer,              intent(in)   :: ntrac
+  integer,               intent(in)  :: kptr,nhc,npoints
+  
+  real (kind=real_kind), intent(inout) :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc,vlyr,ntrac_d)
+  
+  type (EdgeDescriptor_t)            :: desc
+
+  ! Local
+  logical, parameter :: UseUnroll = .TRUE.
+  integer :: i,j,k,l,itr
+  integer :: is,ie,in,iw,ic
+  logical :: reverse
+  
+  real (kind=real_kind)                       :: NaN=-1.0
+  NaN=sqrt(NaN)
+
+  threadsafe=.false.
+
+  is=desc%getmapP_ghost(south) 
+  ie=desc%getmapP_ghost(east)  
+  in=desc%getmapP_ghost(north) 
+  iw=desc%getmapP_ghost(west)  
+
+  ! example for north buffer
+  ! first row ('edge') goes in v(:,np+1,k)
+  ! 2nd   row ('edge') goes in v(:,np+2,k)
+  ! etc...
+  do itr=1,ntrac
+    do k=1,vlyr
+      do i=1,npoints
+       do j=1,nhc
+          v(i  ,1-j  ,k,itr)      = edge%buf(i,j,kptr+k,itr,is  )
+          v(npoints+j ,i  ,k,itr) = edge%buf(i,j,kptr+k,itr,ie  )
+          v(i  ,npoints+j ,k,itr) = edge%buf(i,j,kptr+k,itr,in  )
+          v(1-j  ,i  ,k,itr)      = edge%buf(i,j,kptr+k,itr,iw  )
+       end do
+      end do
+    end do
+  enddo
+
+! SWEST
+  do l=swest,swest+max_corner_elem-1
+     ic = desc%getmapP_ghost(l)
+     if(ic /= -1) then 
+        reverse=desc%reverse(l)
+        if (reverse) then
+          do itr=1,ntrac
+           do k=1,vlyr
+              !v(0  ,0 ,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
+              do j=1,nhc
+                 do i=1,nhc
+                    v(1-j,1-i,k,itr)=edge%buf(i,j,kptr+k,itr,ic)
+                 enddo
+              enddo
+             enddo
+           enddo
+        else
+          do itr=1,ntrac
+           do k=1,vlyr
+              !v(0  ,0 ,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
+              do j=1,nhc
+                 do i=1,nhc
+                    v(1-j,1-i,k,itr)=edge%buf(j,i,kptr+k,itr,ic)
+                 enddo
+              enddo
+             enddo
+           enddo
+        endif
+     else
+       do itr=1,ntrac
+         do k=1,vlyr
+           do j=1,nhc
+             do i=1,nhc
+               v(1-i,1-j,k,itr)=NaN
+             enddo
+           enddo
+         enddo
+       end do    
+     endif
+  end do
+  
+! SEAST
+  do l=swest+max_corner_elem,swest+2*max_corner_elem-1
+     ic = desc%getmapP_ghost(l)
+     if(ic /= -1) then 
+        reverse=desc%reverse(l)
+        if (reverse) then
+          do itr=1,ntrac
+           do k=1,vlyr
+              !v(nc+1 ,0 ,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
+              do j=1,nhc
+                 do i=1,nhc
+                    v(npoints+i,1-j,k,itr)=edge%buf(j,i,kptr+k,itr,ic)
+                 enddo
+              enddo
+            enddo
+           enddo
+        else
+          do itr=1,ntrac
+           do k=1,vlyr
+              !v(nc+1 ,0 ,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
+              do j=1,nhc
+                 do i=1,nhc
+                    v(npoints+i ,1-j ,k,itr)=edge%buf(i,j,kptr+k,itr,ic)
+                 enddo
+              enddo
+            enddo
+           enddo
+        endif
+      else
+        do itr=1,ntrac
+         do k=1,vlyr
+          do j=1,nhc
+            do i=1,nhc
+              v(npoints+i,1-j,k,itr)=NaN
+            enddo
+          enddo
+         enddo
+        end do  
+     endif
+  end do
+
+! NEAST
+  do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
+     ic = desc%getmapP_ghost(l)
+     if(ic /= -1) then 
+        reverse=desc%reverse(l)
+        if (reverse) then
+          do itr=1,ntrac
+           do k=1,vlyr
+              !v(nc+1 ,nc+1,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
+              do j=1,nhc
+                 do i=1,nhc
+                    v(npoints+i ,npoints+j,k,itr)=edge%buf(j,i,kptr+k,itr,ic)
+                 enddo
+              enddo
+            enddo
+           enddo
+        else
+          do itr=1,ntrac
+           do k=1,vlyr
+              !v(nc+1 ,nc+1,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
+              do j=1,nhc
+                 do i=1,nhc
+                    v(npoints+i ,npoints+j,k,itr)=edge%buf(i,j,kptr+k,itr,ic)
+                 enddo
+              enddo
+            enddo
+           enddo
+        endif
+      else
+        do itr=1,ntrac
+         do k=1,vlyr        
+          do j=1,nhc
+            do i=1,nhc
+              v(npoints+i,npoints+j,k,itr)=NaN
+            enddo
+          enddo
+         enddo
+        end do    
+     endif
+  end do
+
+! NWEST
+  do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
+     ic = desc%getmapP_ghost(l)
+     if(ic /= -1) then 
+        reverse=desc%reverse(l)
+        if (reverse) then
+          do itr=1,ntrac
+           do k=1,vlyr
+              !v(0  ,nc+1,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
+              do j=1,nhc
+                 do i=1,nhc
+                    v(1-i ,npoints+j,k,itr)=edge%buf(j,i,kptr+k,itr,ic)
+                 enddo
+              enddo
+            enddo
+           enddo
+        else
+          do itr=1,ntrac
+           do k=1,vlyr
+              !v(0  ,nc+1,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
+              do j=1,nhc
+                 do i=1,nhc
+                    v(1-i ,npoints+j,k,itr)=edge%buf(i,j,kptr+k,itr,ic)
+                 enddo
+              enddo
+            enddo
+           enddo
+        endif
+      else
+        do itr=1,ntrac
+         do k=1,vlyr
+          do j=1,nhc
+            do i=1,nhc
+              v(1-i,npoints+j,k,itr)=NaN
+            enddo
+          enddo
+         enddo
+        end do    
+     endif
+  end do
+
+end subroutine ghostVunpackR
 
 
 
