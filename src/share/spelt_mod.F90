@@ -184,31 +184,31 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
              if (mod(j,2)==1) then            ! works only for nip=3!!!
                fluxval(i,j,2) =  dt6 * (spelt(ie)%contrav(i,j,k)* slval(1) + & 
                         4.0D0 * spelt(ie)%contrav1(i,j)*slval(2) + spelt(ie)%contrav2(i,j)*slval(3) )                                
-             endif 
+             endif
           end do
         end do 
 
 !!!! only needed for filter              
-        do j=1,nc
-          jcell=2+(j-1)*nipm
-          jy=1+(j-1)*nipm
-          do i=1,nc
-            dx=spelt(ie)%dab(i)   
-            dy=spelt(ie)%dab(j)
-            icell=2+(i-1)*nipm
+        do jcell=1,nc
+          j=2+(jcell-1)*nipm
+          jy=1+(jcell-1)*nipm
+          do icell=1,nc
+            dx=spelt(ie)%dab(icell)   
+            dy=spelt(ie)%dab(jcell)
+            i=2+(icell-1)*nipm
+            jx=1+(icell-1)*nipm
 
             !high order flux
-            jx=1+(i-1)*nipm
-            spelt(ie)%fluxhigh(i,j,k,itr,1) = dx * (fluxval(jx,jy,1) + 4.0D0 * fluxval(jx,jy+1,1) + fluxval(jx,jy+2,1)) / 6.0D0  ! west
-            spelt(ie)%fluxhigh(i,j,k,itr,2) = dy * (fluxval(jx,jy,2) + 4.0D0 * fluxval(jx+1,jy,2) + fluxval(jx+2,jy,2)) / 6.0D0  ! south
-            spelt(ie)%fluxhigh(i,j,k,itr,3) = dx * (fluxval(jx+2,jy,1) + 4.0D0 * fluxval(jx+2,jy+1,1) + fluxval(jx+2,jy+2,1)) / 6.0D0 ! east
-            spelt(ie)%fluxhigh(i,j,k,itr,4) = dy * (fluxval(jx+2,jy+2,2) + 4.0D0 * fluxval(jx+1,jy+2,2) + fluxval(jx,jy+2,2)) / 6.0D0 ! north
+            spelt(ie)%fluxhigh(icell,jcell,k,itr,1) = dy * (fluxval(jx,jy,1) + 4.0D0 * fluxval(jx,jy+1,1) + fluxval(jx,jy+2,1)) / 6.0D0  ! west
+            spelt(ie)%fluxhigh(icell,jcell,k,itr,2) = dx * (fluxval(jx,jy,2) + 4.0D0 * fluxval(jx+1,jy,2) + fluxval(jx+2,jy,2)) / 6.0D0  ! south
+            spelt(ie)%fluxhigh(icell,jcell,k,itr,3) = dy * (fluxval(jx+2,jy,1) + 4.0D0 * fluxval(jx+2,jy+1,1) + fluxval(jx+2,jy+2,1)) / 6.0D0 ! east
+            spelt(ie)%fluxhigh(icell,jcell,k,itr,4) = dx * (fluxval(jx+2,jy+2,2) + 4.0D0 * fluxval(jx+1,jy+2,2) + fluxval(jx,jy+2,2)) / 6.0D0 ! north
             
-            tmp=-min(0.0D0,spelt(ie)%fluxhigh(i,j,k,itr,1))-min(0.0D0,spelt(ie)%fluxhigh(i,j,k,itr,2)) + &
-                               max(0.0D0,spelt(ie)%fluxhigh(i,j,k,itr,3))+max(0.0D0,spelt(ie)%fluxhigh(i,j,k,itr,4))
-!             
-            if (tmp>0.0D0) then
-              spelt(ie)%R(i,j,k,itr)=min(1.0D0,spelt(ie)%c(icell,jcell,k,itr,tl%n0)*dx*dy/tmp)  
+            tmp=-min(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,1))-min(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,2)) + &
+                               max(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,3))+max(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,4))
+            spelt(ie)%R(icell,jcell,k,itr)=0.0D0  
+            if (tmp>1.0D-14) then
+              spelt(ie)%R(icell,jcell,k,itr)=min(1.0D0,spelt(ie)%c(i,j,k,itr,tl%n0)*dx*dy/tmp)  
             endif
                    
           end do
