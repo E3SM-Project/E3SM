@@ -53,6 +53,7 @@ module spelt_mod
     real (kind=real_kind)    :: Dinv(2,2,np,np)     ! Map vector field on the sphere to covariant v on cube
     real (kind=real_kind)    :: Ainv(2,2,nep,nep)
     
+    !these should be outside the structure, only needed for positivity preserving
     real (kind=real_kind)    :: R(1-nhe:nc+nhe,1-nhe:nc+nhe,nlev,ntrac_d)
     real (kind=real_kind)    :: fluxhigh(nc,nc,nlev,ntrac_d,4)
     
@@ -112,7 +113,7 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   integer                                     :: icell, jcell, jx, jy
   real (kind=real_kind)                       :: dxoy, dxyi, dt6, sg, sga
   type (cartesian2D_t)                        :: alphabeta
-  real (kind=real_kind)                       :: dx, dy, tmp, tmpR(3,3)
+  real (kind=real_kind)                       :: dx, dy, tmp !, tmpR(3,3)
   
   real (kind=real_kind)                       :: c_min, c_max, cmo(4)
   
@@ -233,38 +234,38 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
               icell=2+(i-1)*nipm
               jcell=2+(j-1)*nipm   
               cmo=1.0D0 
-              tmpR=spelt(ie)%R(i-1:i+1,j-1:j+1,k,itr)
+!               tmpR=spelt(ie)%R(i-1:i+1,j-1:j+1,k,itr)
                 !west
                 if(spelt(ie)%fluxhigh(i,j,k,itr,1)>=0.0D0) then
-!                   cmo(1)=spelt(ie)%R(i-1,j,k,itr)  
-                  cmo(1)=tmpR(1,2)
+                  cmo(1)=spelt(ie)%R(i-1,j,k,itr)  
+!                   cmo(1)=tmpR(1,2)
                 else
-!                   cmo(1)=spelt(ie)%R(i,j,k,itr)
-                  cmo(1)=tmpR(2,2)  
+                  cmo(1)=spelt(ie)%R(i,j,k,itr)
+!                   cmo(1)=tmpR(2,2)  
                 endif 
                 !south                         
                 if(spelt(ie)%fluxhigh(i,j,k,itr,2)>=0.0D0) then
-!                   cmo(2)=spelt(ie)%R(i,j-1,k,itr)
-                   cmo(2)=tmpR(2,1)  
+                  cmo(2)=spelt(ie)%R(i,j-1,k,itr)
+!                    cmo(2)=tmpR(2,1)  
                 else
-!                   cmo(2)=spelt(ie)%R(i,j,k,itr)
-                   cmo(2)=tmpR(2,2)  
+                  cmo(2)=spelt(ie)%R(i,j,k,itr)
+!                    cmo(2)=tmpR(2,2)  
                 endif  
                 !east  
                 if(spelt(ie)%fluxhigh(i,j,k,itr,3)>=0.0D0) then
-!                   cmo(3)=spelt(ie)%R(i,j,k,itr)  
-                  cmo(3)=tmpR(2,2)
+                  cmo(3)=spelt(ie)%R(i,j,k,itr)  
+!                   cmo(3)=tmpR(2,2)
                 else
-!                   cmo(3)=spelt(ie)%R(i+1,j,k,itr)
-                  cmo(3)=tmpR(3,2)  
+                  cmo(3)=spelt(ie)%R(i+1,j,k,itr)
+!                   cmo(3)=tmpR(3,2)  
                 endif 
                 !north      
                 if(spelt(ie)%fluxhigh(i,j,k,itr,4)>=0.0D0) then
-!                   cmo(4)=spelt(ie)%R(i,j,k,itr)  
-                  cmo(4)=tmpR(2,2)
+                  cmo(4)=spelt(ie)%R(i,j,k,itr)  
+!                   cmo(4)=tmpR(2,2)
                 else
-!                   cmo(4)=spelt(ie)%R(i,j+1,k,itr) 
-                  cmo(4)=tmpR(2,3) 
+                  cmo(4)=spelt(ie)%R(i,j+1,k,itr) 
+!                   cmo(4)=tmpR(2,3) 
                 endif   
                 spelt(ie)%c(icell,jcell,k,itr,tl%np1) = spelt(ie)%c(icell,jcell,k,itr,tl%n0) - &
                      (-cmo(1)*spelt(ie)%fluxhigh(i,j,k,itr,1) - cmo(2)*spelt(ie)%fluxhigh(i,j,k,itr,2) &
@@ -825,7 +826,6 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !           sg2(i,j)=metric_termref(elem(ie),dref2(i,j))
         end do
       end do
-      call t_stopf('SPELT search') 
       
       ! search of both point on the trajectory done
       do itr=1,ntrac
