@@ -810,6 +810,9 @@ program testpio
                    iostat = PIO_def_dim(File_r4,'charlen',strlen,charlen)
                    iostat = PIO_def_var(File_r4,'filename',pio_char,(/charlen/),varfn_r4)
                 end if
+		 iostat = PIO_def_dim(File_r4,'charlen',strlen,charlen)
+		 iostat = PIO_def_var(File_r4,'filename',pio_char,(/charlen/),varfn_r4)
+
                  do ivar = 1, nvars
                     write(varname,'(a,i5.5,a)') 'field',ivar
                     iostat = PIO_def_var(File_r4,varname,PIO_real,(/dimid_x,dimid_y,dimid_z/),vard_r4(ivar))

@@ -20,8 +20,8 @@ sub host{
 	$host = "frost";
     }elsif($host =~ /^be\d+en/){
 	$host = "bluefire";
-    }elsif($host =~ /^ja/ or $host =~ /^yo/){
-	$host = "jaguar";
+    }elsif($host =~ /^titan/){
+	$host = "titan";
     }elsif($host =~ /^ath/ ){
 	$host = "athena";
     }elsif($host =~ /^kra/){
@@ -77,8 +77,8 @@ sub projectInfo{
        }
        $projectInfo = "#BSUB -R \"span[ptile=16]\"\n#BSUB -P $project\n";
        $projectInfo .= "#BSUB -R \"select[scratch_ok > 0]\"\n" if ($host=="yellowstone");
-   }elsif($host =~ "jaguar"){
-     $project = `/sw/xt5/bin/showproj -s jaguar | tail -1`;
+   }elsif($host =~ "titan"){
+     $project = `/sw/xt5/bin/showproj -s $host | tail -1`;
      $projectInfo ="#PBS -A $project\n";
    }elsif($host =~ "athena" or $host =~ "kraken"){
 #    $project = `showproj -s athena | tail -1`;
@@ -113,9 +113,12 @@ sub preambleResource{
   }elsif($host =~ "athena"  or $host =~ /janus/){
      my $pecnt = $corespernode*ceil($pecount/$corespernode);
      $preambleResource = "#PBS -l size=$pecnt\n"; 
-  }elsif($host =~ "jaguar" or $host =~ "kraken"){
+  }elsif($host =~ "kraken"){
      my $pecnt = $corespernode*ceil($pecount/$corespernode);
      $preambleResource = "#PBS -l size=$pecnt\n"; 
+  }elsif($host =~ "titan"){
+     my $nodecnt = ceil($pecount/$corespernode);
+     $preambleResource = "#PBS -l nodes=$nodecnt\n"; 
   }elsif($host =~ "columbia" or $host =~ "pleiades"){
      $preambleResource = "#PBS -l ncpus=$pecount\n"; 
   }
@@ -160,7 +163,7 @@ sub loadmodules{
     my $modpath = {
 		   erebus => "/usr/share/Modules/",
 		   yellowstone => "/usr/share/Modules/",
-		   jaguar  => "/opt/modules/default/",
+		   titan  => "/opt/modules/default/",
 		   athena => "/opt/modules/default/",
 		   kraken => "/opt/modules/default/",
 		   hopper => "/opt/modules/default/",
@@ -203,15 +206,20 @@ sub loadmodules{
     
 #HOST SPECIFIC START
     if($host =~ "titan"){
-#	require "/opt/modules/default/init/perl";
+	require "/opt/modules/default/init/perl";
 #	module(" purge");
 #        module(" load xt-mpt/4.0.0");
-	module(" load PrgEnv-pgi Base-opts");
-	module(" load xtpe-istanbul");
-	module(" load torque moab");
-	module(" switch pgi pgi/9.0.4");
-	module(" load netcdf/3.6.2");      
-	module(" load p-netcdf/1.1.1");
+#	module(" load PrgEnv-pgi");
+#	module(" load xtpe-interlagos");
+        module("switch cray-mpich2    cray-mpich2/5.5.5");
+        module(" switch xt-libsci xt-libsci/11.1.01");
+        module(" swap xt-asyncpe xt-asyncpe/5.16");
+        module("load szip/2.1");
+#        module("load hdf5-parallel/1.8.8");
+	module(" switch pgi pgi/12.5.0");
+	module(" load netcdf-hdf5parallel/4.2.0");      
+	module(" load parallel-netcdf/1.3.1");
+#	module(" load para");
 #	module(" swap xt-asyncpe xt-asyncpe/1.0c");
 #	module(" load xt-binutils-quadcore/2.0.1");
         
