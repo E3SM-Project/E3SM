@@ -1,7 +1,7 @@
 &io_nml
   casename    = 'bn03:bin:none:stride=1:g_root'
-  nx_global   = 360
-  ny_global   = 240
+ nx_global = 498
+ ny_global = 272
   iofmt       = 'bin'
   rearr       = 'none'
   nprocsIO    = -1
@@ -18,8 +18,8 @@
   nblksppe = 1
   grdorder = 'xyz'
   grddecomp = 'setblk'
-  gdx = 360
-  gdy = 240
+  gdx = 498
+  gdy = 272
   gdz = 1
   blkorder = 'xyz'
   blkdecomp1 = 'xy'

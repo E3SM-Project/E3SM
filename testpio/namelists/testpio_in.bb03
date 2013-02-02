@@ -1,7 +1,7 @@
 &io_nml
   casename    = 'bb03:bin:box:stride=1:g_root'
-  nx_global   = 360
-  ny_global   = 240
+ nx_global = 2047
+ ny_global = 2642
   iofmt       = 'bin'
   rearr       = 'box'
   nprocsIO    = -1

@@ -1,7 +1,7 @@
 &io_nml
   casename    = 'b13:bin:box:stride=32'
-  nx_global   = 576
-  ny_global   = 384
+ nx_global = 4274
+ ny_global = 3689
   nz_global   = 30
   iofmt       = 'bin'
   rearr       = 'box'

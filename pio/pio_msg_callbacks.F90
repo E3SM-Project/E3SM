@@ -145,7 +145,7 @@ subroutine open_file_handler(iosystem)
 #ifdef NO_MPIMOD
   include 'mpif.h' !_EXTERNAL
 #endif
-  type(iosystem_desc_t), target :: iosystem
+  type(iosystem_desc_t) :: iosystem
 
   integer :: ierr
   integer :: iotype, amode

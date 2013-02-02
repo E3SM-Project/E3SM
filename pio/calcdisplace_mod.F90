@@ -52,9 +52,10 @@ CONTAINS
 
 
 
-  subroutine calcdisplace_box(gsize,start,count,ndim,displace)
+  subroutine calcdisplace_box(gsize,lenblock,start,count,ndim,displace)
 
     integer(i4),intent(in) :: gsize(:)   ! global size of output domain
+    integer(i4),intent(in) :: lenblock
     integer(kind=PIO_offset),intent(in) :: start(:), count(:)
     integer(i4), intent(in) :: ndim
     integer(i4),intent(inout) :: displace(:)  ! mpi displacments
@@ -63,12 +64,12 @@ CONTAINS
 
     integer(i4):: ndisp
     integer(i4) :: gstride(ndim)
-    integer i,j
-    integer iosize
+    integer(i4) :: i,j
+    integer(i4) ::  iosize
     integer(i4) :: myloc(ndim)
     integer(i4) :: ub(ndim)
-    integer idim
-    logical done
+    integer :: idim
+    logical :: done
     integer(i4) ::  gindex
 
     gstride(1)=gsize(1)
@@ -83,12 +84,11 @@ CONTAINS
 
     ndisp=size(displace)
 
-
     if (iosize<1 .or. ndisp<1) return
 
-    if (ndisp/=iosize) then
-       print *,__PIO_FILE__,__LINE__,ndisp
-       call piodie(__PIO_FILE__,__LINE__,'ndisp /= iosize=',iosize)
+    if (mod(iosize,ndisp) /= 0) then
+       print *,__PIO_FILE__,__LINE__,ndisp,mod(iosize,ndisp)
+       call piodie(__PIO_FILE__,__LINE__,'mod(iosize,ndisp)/=0 iosize=',iosize)
     endif
 
     do i=1,ndim
@@ -103,31 +103,35 @@ CONTAINS
 
     displace(1)=1
     myloc=start
+    fdim=0
+    bsize = 1
+    do while(bsize<lenblock)
+       fdim=fdim+1
+       bsize=bsize*gsize(fdim)
+    enddo
+    
 
-    do i=1,iosize
+
+    do i=1,ndisp
        ! go from myloc() to 1-based global index
        gindex=myloc(1)
        do j=2,ndim
           gindex=gindex+(myloc(j)-1)*gstride(j-1)
        end do
 
-       ! rml
-       ! following original but is that right???
-       ! seems like the 'if' is erroneous
-
        gindex=gindex-1
 
-       gindex=gindex/count(1)    ! gindex/lenblock
+       gindex=gindex/lenblock
 
        displace(i)=gindex
 
        ! increment myloc to next position
 
 
-       idim=2                    ! dimension to increment
+       idim=fdim+1                    ! dimension to increment
        done=.false.
 
-       if (i<iosize) then
+       if (i<ndisp) then
           do while (.not. done)
              if (myloc(idim)<ub(idim)) then
                 myloc(idim)=myloc(idim)+1
@@ -142,7 +146,7 @@ CONTAINS
 
     end do
 
-    do i=2,ndim
+    do i=fdim+1,ndim
        if (myloc(i) /= ub(i)) then
           print *,'myloc=',myloc
           print *,'ub=',ub

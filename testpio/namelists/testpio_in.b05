@@ -1,7 +1,7 @@
 &io_nml
   casename    = 'b05:bin:box:stride=4:agg=1'
-  nx_global   = 3600
-  ny_global   = 2400
+ nx_global = 2881
+ ny_global = 1467
   iofmt       = 'bin'
   rearr       = 'box'
   nprocsIO    = -1

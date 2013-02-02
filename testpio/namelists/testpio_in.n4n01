@@ -1,7 +1,7 @@
 &io_nml
   casename    = 'nc4n01:nc4p:none:nprocIO=1:g_root'
-  nx_global   = 360
-  ny_global   = 240
+ nx_global = 1454
+ ny_global = 695
   iofmt       = 'nc4p'
   rearr       = 'none'
   nprocsIO    = 1

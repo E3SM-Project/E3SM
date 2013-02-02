@@ -1,7 +1,7 @@
 &io_nml
   casename    = 'nc4b06:nc4p:box:stride=4:3d:nblksppe=4:g_xy:go_yxz:b_xy'
-  nx_global   = 360
-  ny_global   = 240
+ nx_global = 2332
+ ny_global = 1233
   nz_global   = 60
   iofmt       = 'nc4p'
   rearr       = 'box'

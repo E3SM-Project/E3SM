@@ -1,7 +1,7 @@
 &io_nml
   casename    = 'pn02:pnc:none:stride=1:g_xy'
-  nx_global   = 360
-  ny_global   = 240
+ nx_global = 5201
+ ny_global = 4896
   iofmt       = 'pnc'
   rearr       = 'none'
   nprocsIO    = -1

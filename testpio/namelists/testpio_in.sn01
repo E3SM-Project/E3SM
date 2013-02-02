@@ -1,7 +1,7 @@
 &io_nml
   casename    = 'sn01:snc:none:nprocsIO=1:g_root'
-  nx_global   = 360
-  ny_global   = 240
+ nx_global = 2866
+ ny_global = 587
   iofmt       = 'snc'
   rearr       = 'none'
   nprocsIO    = 1

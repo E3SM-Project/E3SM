@@ -1,7 +1,7 @@
 &io_nml
   casename    = 'sb01:snc:box:nprocsIO=1:g_root'
-  nx_global   = 360
-  ny_global   = 240
+ nx_global = 2827
+ ny_global = 931
   iofmt       = 'snc'
   rearr       = 'box'
   nprocsIO    = 1

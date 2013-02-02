@@ -4,9 +4,9 @@
 #ifdef BGL
 #define BGx
 #endif
-#ifdef TIMING
-#define MEMCHK
-#endif
+!#ifdef TIMING
+!#define MEMCHK
+!#endif
 !>
 !! @file testpio.F90
 !! An example of how PIO can be used
@@ -19,6 +19,7 @@ program testpio
   !! Use PIO methods and data structures
   !<
   use pio             ! _EXTERNAL
+
   use utils_mod
 #ifdef TIMING
   use perf_mod        ! _EXTERNAL
@@ -646,7 +647,7 @@ program testpio
               
               if(TestR4 .or. TestCombo) then
                  if(iotype == PIO_IOTYPE_vdc2) then
-                    call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,IOdesc_r4,startpio,countpio,num_ts=10)
+                    call PIO_initDecomp(PIOSYS,  gDims3D,compDOF,IOdesc_r4,10)
                  else
                     call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,IOdesc_r4,startpio,countpio)
                  end if
@@ -661,7 +662,7 @@ program testpio
               if(TestR4 .or. TestCombo) then
                  if(iotype == PIO_IOTYPE_vdc2) then
                     if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.2a'
-                    call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,IOdesc_r4,num_ts=10)
+                    call PIO_initDecomp(PIOSYS,  gDims3D,compDOF,IOdesc_r4,10)
                  else
                     if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.2b'
                     call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,IOdesc_r4)

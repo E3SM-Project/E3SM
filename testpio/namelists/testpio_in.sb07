@@ -1,7 +1,7 @@
 &io_nml
   casename    = 'sb07:snc:box:stride=4:3d:nblksppe=16:g_xy:go_yxz:b_xyz:bo_yzx'
-  nx_global   = 360
-  ny_global   = 240
+ nx_global = 3469
+ ny_global = 2232
   nz_global   = 10
   iofmt       = 'snc'
   rearr       = 'box'

@@ -13,7 +13,6 @@ module pio_types
 #ifdef NO_MPIMOD
     include 'mpif.h'                             ! _EXTERNAL
 #endif
-    save
     !-------------------------------------------
     !  data structure to describe decomposition
     !-------------------------------------------
@@ -294,7 +293,8 @@ module pio_types
    integer, public, parameter :: PIO_MAX_NAME = nf_max_name
    integer, public, parameter :: PIO_MAX_VAR_DIMS = nf_max_var_dims
    integer, public, parameter :: PIO_64BIT_OFFSET = nf_64bit_offset
-   integer, public, parameter :: PIO_num_OST =  16
+   integer, public, parameter :: PIO_64BIT_DATA = nf_64bit_data
+
 #else
 #ifdef _NETCDF
    integer, public, parameter :: PIO_global = nf90_global
@@ -312,7 +312,6 @@ module pio_types
    integer, public, parameter :: PIO_MAX_NAME = nf90_max_name
    integer, public, parameter :: PIO_MAX_VAR_DIMS = nf90_max_var_dims
    integer, public, parameter :: PIO_64BIT_OFFSET = nf90_64bit_offset
-   integer, public, parameter :: PIO_num_OST =  16
 #else
    integer, public, parameter :: PIO_global = 0
    integer, public, parameter :: PIO_double = 6
@@ -327,8 +326,8 @@ module pio_types
    integer, public, parameter :: PIO_WRITE = 20
    integer, public, parameter :: PIO_NOWRITE = 21
    integer, public, parameter :: PIO_64BIT_OFFSET = 0
+#endif
+#endif
    integer, public, parameter :: PIO_num_OST =  16
-#endif
-#endif
 
 end module pio_types

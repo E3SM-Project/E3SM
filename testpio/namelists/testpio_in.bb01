@@ -1,7 +1,7 @@
 &io_nml
   casename    = 'bb01:bin:box:nprocsIO=1:g_root'
-  nx_global   = 360
-  ny_global   = 240
+ nx_global = 4552
+ ny_global = 2850
   iofmt       = 'bin'
   rearr       = 'box'
   nprocsIO    = 1

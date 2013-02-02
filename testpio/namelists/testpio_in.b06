@@ -1,7 +1,7 @@
 &io_nml
   casename    = 'b06:pnc:box:stride=4:agg=1'
-  nx_global   = 3600
-  ny_global   = 2400
+ nx_global = 4285
+ ny_global = 732
   iofmt       = 'pnc'
   rearr       = 'box'
   nprocsIO    = -1

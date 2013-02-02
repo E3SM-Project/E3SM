@@ -70,10 +70,10 @@ sub projectInfo{
         $projectInfo = "#BSUB -R \"span[ptile=64]\"\n#BSUB -P $project\n";
       }
    }elsif($host =~ "erebus" or $host =~ "yellowstone"){
-       if(defined $ENV{USE_PROJECT}){
-	   $project=$ENV{USE_PROJECT};
+       if(defined $ENV{ACCOUNT}){
+	   $project=$ENV{ACCOUNT};
        }else{
-	   $project="SCSG0002";
+	   $project="P93300606";
        }
        $projectInfo = "#BSUB -R \"span[ptile=16]\"\n#BSUB -P $project\n";
        $projectInfo .= "#BSUB -R \"select[scratch_ok > 0]\"\n" if ($host=="yellowstone");
@@ -157,7 +157,7 @@ sub loadmodules{
     my ($mod,$host) = @_;
 
 #HOST SPECIFIC START
-    my $modpath = {bluefire => "/contrib/Modules/3.2.6/",
+    my $modpath = {
 		   erebus => "/usr/share/Modules/",
 		   yellowstone => "/usr/share/Modules/",
 		   jaguar  => "/opt/modules/default/",
@@ -202,11 +202,7 @@ sub loadmodules{
 
     
 #HOST SPECIFIC START
-    if($host =~ "bluefire"){
-	module("load netcdf/4.1.3_mpi");
-#	module("load xlf12");
-#        module("list");
-    }elsif($host =~ "jaguar"){
+    if($host =~ "titan"){
 #	require "/opt/modules/default/init/perl";
 #	module(" purge");
 #        module(" load xt-mpt/4.0.0");
@@ -287,11 +283,24 @@ sub loadmodules{
         module("load ncarenv/0.0");
 	module("load ncarbinlibs/0.0");
 	module("list");
-    }elsif($host eq "yellowstone"){
+    }elsif($host eq "yellowstone_pgi"){
 	require "/glade/apps/opt/lmod/lmod/init/perl";    
-        module("load intel/12.1.5");
+        module("rm netcdf");
+        module("rm intel");
+        module("load pgi/12.5");
 	module("load ncarcompilers/1.0");
         module("unload netcdf");
+        module("load netcdf-mpi/4.2");
+        module("load pnetcdf/1.3.0");
+        module("load ncarenv/1.0");
+	module("load ncarbinlibs/0.0");
+	module("list");
+    }elsif($host eq "yellowstone"){
+	require "/glade/apps/opt/lmod/lmod/init/perl";    
+#        module("purge");
+        module("load intel/13.0.1");
+	module("load ncarcompilers/1.0");
+#        module("unload netcdf");
         module("load netcdf/4.2");
         module("load pnetcdf/1.3.0");
         module("load ncarenv/1.0");

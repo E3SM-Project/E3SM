@@ -1,7 +1,7 @@
 &io_nml
   casename    = 'bb08:bin:box:stride=4:nblksppe=4:g_xy:go_yxz:b_cont1d:bo_yzx'
-  nx_global   = 360
-  ny_global   = 240
+ nx_global = 1889
+ ny_global = 2668
   nz_global   = 1
   iofmt       = 'bin'
   rearr       = 'box'

@@ -157,9 +157,12 @@ module piolib_mod
 !! @defgroup PIO_initdecomp PIO_initdecomp
 !! @brief PIO_initdecomp is an overload interface the models decomposition to pio.
 !<
+
+
   interface PIO_initdecomp
      module procedure PIO_initdecomp_dof_i4  ! previous name: initdecomop_1dof_nf_box
      module procedure PIO_initdecomp_dof_i8  ! previous name: initdecomop_1dof_nf_box
+     module procedure PIO_initdecomp_dof_i8_vdc 
      module procedure initdecomp_1dof_nf_i4
      module procedure initdecomp_1dof_nf_i8
      module procedure initdecomp_1dof_bin_i4
@@ -804,7 +807,8 @@ contains
     ! total global size
     !---------------------
     glength= product(int(dims,kind=PIO_OFFSET))
-    if(glength > int(huge(i),kind=pio_offset)) then
+    if(glength > huge(ndisp)) then
+       print *,__FILE__,__LINE__,dims,glength
        call piodie( __PIO_FILE__,__LINE__, &
             'requested array size too large for this interface ')       
     endif
@@ -954,7 +958,7 @@ contains
   end subroutine PIO_initdecomp_dof_i4
 
 
-  subroutine PIO_initdecomp_dof_i8(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount, num_ts, bsize)
+  subroutine PIO_initdecomp_dof_i8(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount)
     use calcdisplace_mod, only : calcdisplace_box
     use calcdecomp, only : calcstartandcount
     type (iosystem_desc_t), intent(inout) :: iosystem
@@ -968,8 +972,7 @@ contains
     integer(i4) :: ndims
     integer (i4)                       :: lenblocks
     integer(i4)                       ::  piotype
-    !vdf optionals
-    integer(i4), intent(in), optional:: num_ts, bsize(3)
+
     integer(i4), pointer :: displace(:)  ! the displacements for the mpi data structure (read)
 
     integer(i4) :: prev
@@ -1077,31 +1080,8 @@ contains
           call piodie( __PIO_FILE__,__LINE__, &
                'both optional parameters start and count must be provided')
        end if
-       if(present(num_ts)) then   ! vdc compression requires the num_ts argument
-#ifdef _COMPRESSION
-          if(.not. present(bsize)) then
-             vdc_bsize = (/64, 64, 64/) !default bsize of 64^3 if none is given
-          else
-             vdc_bsize = bsize
-          endif
-          vdc_ts = num_ts
-          
-          iosystem%num_aiotasks = iosystem%num_iotasks
-
-          call init_vdc2(iosystem%io_rank, dims, vdc_bsize, vdc_iostart, vdc_iocount, iosystem%num_aiotasks)
-          
-          if(debug) then
-             print *, 'rank: ', iosystem%comp_rank, ' pio_init iostart: ' , vdc_iostart, ' iocount: ', vdc_iocount
-          endif
-          
-          vdc_dims = dims	
-          iodesc%start = vdc_iostart
-          iodesc%count = vdc_iocount
-#endif	
-       else
-          call calcstartandcount(basepiotype, ndims, dims, iosystem%num_iotasks, iosystem%io_rank,&
-               iodesc%start, iodesc%count,iosystem%num_aiotasks)
-       endif
+       call calcstartandcount(basepiotype, ndims, dims, iosystem%num_iotasks, iosystem%io_rank,&
+            iodesc%start, iodesc%count,iosystem%num_aiotasks)
 
        iosize=1
        do i=1,ndims
@@ -1110,12 +1090,14 @@ contains
        call mpi_allreduce(iosize, iodesc%maxiobuflen, 1, mpi_integer, mpi_max, iosystem%io_comm, ierr)
        call checkmpireturn('mpi_allreduce in initdecomp',ierr)
 
-       if(debug) print *,'IAM: ',iosystem%comp_rank,' after getiostartandcount: count is: ',iodesc%count
-
-       if(debug) print *,'IAM: ',iosystem%comp_rank,' after getiostartandcount, num_aiotasks is: ', iosystem%num_aiotasks
-
-       lenblocks=iodesc%count(1)
-
+       lenblocks=1
+       do i=1,ndims
+          if(iodesc%count(i) == dims(i)) then
+             lenblocks=lenblocks*iodesc%count(i)
+          else
+             exit
+          endif
+       enddo
 
        if(lenblocks>0) then
           ndisp=iosize/lenblocks
@@ -1123,14 +1105,18 @@ contains
           ndisp=0
        end if
        call alloc_check(displace,int(ndisp))
-       
+
+       if(debug) print *,'IAM: ',iosystem%comp_rank,' after getiostartandcount: count is: ',iodesc%count,&
+            ' lenblocks =',lenblocks,' ndisp=',ndisp
+
+       if(debug) print *,'IAM: ',iosystem%comp_rank,' after getiostartandcount, num_aiotasks is: ', iosystem%num_aiotasks       
        !--------------------------------------------
        ! calculate mpi data structure displacements 
        !--------------------------------------------
       
        if(debug) print *,'PIO_initdecomp: calcdisplace', &
             ndisp,iosize,lenblocks, iodesc%start, iodesc%count
-       call calcdisplace_box(dims,iodesc%start,iodesc%count,ndims,displace)
+       call calcdisplace_box(dims,lenblocks,iodesc%start,iodesc%count,ndims,displace)
           
        n_iotasks = iosystem%num_iotasks
        length = iosize                      ! rml
@@ -1181,7 +1167,8 @@ contains
        call genindexedblock(lenblocks,piotype,iodesc%write%elemtype,iodesc%write%filetype,displace)
        
        if(debug) print *,__PIO_FILE__,__LINE__,iodesc%write%n_elemtype, &
-        iodesc%write%n_words,iodesc%write%elemtype,iodesc%write%filetype
+        iodesc%write%n_words,iodesc%write%elemtype,iodesc%write%filetype, lenblocks
+
     else
        iodesc%write%n_elemtype=0
        iodesc%write%n_words=0
@@ -1199,12 +1186,6 @@ contains
 
     call dupiodesc2(iodesc%write,iodesc%read)
     
-!    if(debug) then
-!       print*, __PIO_FILE__,__LINE__,iodesc%read%filetype,iodesc%read%elemtype,&
-!            iodesc%read%n_elemtype,iodesc%read%n_words   
-!       print *, __PIO_FILE__,__LINE__,iodesc%write%filetype,iodesc%write%elemtype,&
-!            iodesc%write%n_elemtype,iodesc%write%n_words
-!    end if
 
     if (iosystem%ioproc) then
        call dealloc_check(displace)
@@ -1222,6 +1203,180 @@ contains
 #endif
 
   end subroutine PIO_initdecomp_dof_i8
+
+  subroutine PIO_initdecomp_dof_i8_vdc(iosystem,dims,compdof, iodesc, num_ts, bsize)
+    use calcdisplace_mod, only : calcdisplace_box
+    use calcdecomp, only : calcstartandcount
+    type (iosystem_desc_t), intent(inout) :: iosystem
+    integer(i4), intent(in)           :: dims(:)
+    integer (kind=pio_offset), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
+
+    type (io_desc_t), intent(inout)     :: iodesc
+    !vdc args
+    integer(i4), intent(in) :: num_ts
+    integer(i4), intent(in), optional:: bsize(3)
+
+
+    integer(i4) :: length,n_iotasks
+    integer(i4) :: ndims
+    integer (i4)                       :: lenblocks
+    integer(i4)                       ::  piotype
+    integer(i4), pointer :: displace(:)  ! the displacements for the mpi data structure (read)
+
+    integer(i4) :: prev
+    integer(kind=PIO_OFFSET) :: glength    ! global length in words
+    integer(i4) :: ii,i,dis,ierr
+    integer(i4),pointer, dimension(:) :: blocklen,disp
+    logical(log_kind) ::  userearranger
+    logical, parameter :: check = .true.
+    integer(kind=pio_offset) :: ndisp
+    integer(i4) :: iosize               ! rml
+    integer(i4) :: msg
+    logical :: is_async=.false.
+#ifdef MEMCHK
+    integer :: msize, rss, mshare, mtext, mstack
+#endif
+
+    integer ierror
+
+    nullify(iodesc%start)
+    nullify(iodesc%count)
+
+
+#ifdef TIMING
+    call t_startf("PIO_initdecomp_dof")
+#endif
+    if(iosystem%async_interface .and. .not. iosystem%ioproc) then
+       msg = PIO_MSG_INITDECOMP_DOF
+       is_async=.true.
+       if(DebugAsync) print*,__PIO_FILE__,__LINE__, iosystem%ioranks
+       if(iosystem%comp_rank==0) then
+          call mpi_send(msg, 1, mpi_integer, iosystem%ioroot, 1, iosystem%union_comm, ierr)
+       end if
+       if(DebugAsync) print*,__PIO_FILE__,__LINE__, ierr, iosystem%ioroot, iosystem%comp_rank
+
+!       call mpi_bcast(basepiotype, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+!       if(DebugAsync) print*,__PIO_FILE__,__LINE__
+
+       call mpi_bcast(size(dims), 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+       call mpi_bcast(dims, size(dims), mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+
+       if(DebugAsync) print*,__PIO_FILE__,__LINE__
+       call mpi_bcast(iodesc%async_id, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)  
+       if(DebugAsync) print*,__PIO_FILE__,__LINE__, iodesc%async_id
+    endif
+
+    if(minval(dims)<=0) then
+       print *,__PIO_FILE__,__LINE__,dims
+       call piodie(__PIO_FILE__,__LINE__,'bad value in dims argument')
+    end if
+
+    if (iosystem%comp_rank == 0 .and. debug) &
+         print *,iosystem%comp_rank,': invoking PIO_initdecomp_dof'
+
+    if(DebugAsync) print*,__PIO_FILE__,__LINE__
+    piotype=MPI_REAL4
+
+    !-------------------------------------------
+    ! for testing purposes set the iomap
+    ! (decompmap_t) to something basic for
+    ! testing.
+    !-------------------------------------------
+#ifdef MEMCHK	
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
+    if(rss>lastrss) then
+       lastrss=rss
+       print *,__PIO_FILE__,__LINE__,'mem=',rss
+    end if
+#endif
+
+    userearranger = iosystem%userearranger
+    !---------------------
+    ! number of dimensions
+    !---------------------
+    ndims = size(dims)
+    !---------------------
+    ! total global size
+    !---------------------
+    glength= product(int(dims,kind=PIO_OFFSET))
+    if(glength > huge(int(i,kind=pio_offset))) then !not sure if this works, glength is pio_offset, if its > pio_offset range then 
+       call piodie( __PIO_FILE__,__LINE__, & !it will simply wrap around rather than be > max_int(pio_offset)
+            'requested array size too large for this interface ') !might be better to use a temp 8 byte int to store results
+                                                                  !of dims product and compare to the maxint(pio_offset)       
+    endif
+
+       
+
+    ! remember iocount() is only defined on io procs
+    call alloc_check(iodesc%start,ndims)
+    call alloc_check(iodesc%count,ndims)
+    iodesc%basetype=piotype
+       
+    iodesc%compsize=size(compdof)
+       
+    iodesc%start=0
+    iodesc%count=0
+
+    if (iosystem%ioproc) then
+#ifdef _COMPRESSION
+       if(.not. present(bsize)) then
+          vdc_bsize = (/64, 64, 64/) !default bsize of 64^3 if none is given
+       else
+          vdc_bsize = bsize
+       endif
+       vdc_ts = num_ts
+       
+       iosystem%num_aiotasks = iosystem%num_iotasks
+
+       call init_vdc2(iosystem%io_rank, dims, vdc_bsize, vdc_iostart, vdc_iocount, iosystem%num_aiotasks)
+          
+       if(debug) then
+          print *, 'rank: ', iosystem%comp_rank, ' pio_init iostart: ' , vdc_iostart, ' iocount: ', vdc_iocount
+       endif
+          
+       vdc_dims = dims	
+       iodesc%start = vdc_iostart
+       iodesc%count = vdc_iocount
+#endif	
+
+       iosize=1
+       do i=1,ndims
+          iosize=iosize*iodesc%count(i)
+       end do
+       call mpi_allreduce(iosize, iodesc%maxiobuflen, 1, mpi_integer, mpi_max, iosystem%io_comm, ierr)
+       call checkmpireturn('mpi_allreduce in initdecomp',ierr)
+
+
+       iodesc%iomap%start  = iosystem%io_rank*iosize
+       iodesc%iomap%length = iosize
+       iodesc%glen = glength
+    endif
+    if(DebugAsync) print*,__PIO_FILE__,__LINE__
+
+    if(userearranger) then 
+       if(DebugAsync) print*,__PIO_FILE__,__LINE__
+       call rearrange_create( iosystem,compdof,dims,ndims,iodesc)
+    endif
+
+    iodesc%write%n_elemtype=0
+    iodesc%write%n_words=0
+    iodesc%write%elemtype = mpi_datatype_null
+    iodesc%write%filetype = mpi_datatype_null
+
+    call dupiodesc2(iodesc%write,iodesc%read)
+    
+#ifdef MEMCHK	
+    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
+    if(rss>lastrss) then
+       lastrss=rss
+       print *,__PIO_FILE__,__LINE__,'mem=',rss
+    end if
+#endif
+#ifdef TIMING
+    call t_stopf("PIO_initdecomp_dof")
+#endif
+
+  end subroutine PIO_initdecomp_dof_i8_vdc
 
 
 
@@ -1315,12 +1470,19 @@ contains
        if(check) call checkmpireturn('genindexedblock: after call to type_create_indexed_block: ',ierr)
        call mpi_type_commit(filetype,ierr)
        if(check) call checkmpireturn('genindexedblock: after call to type_commit: ',ierr)
-       call mpi_type_get_envelope(elemtype, nints, nadds, ndtypes, comb, ierr)
+       if(debug) then
+          call mpi_type_get_envelope(filetype, nints, nadds, ndtypes, comb, ierr)
+          print *,__FILE__,__LINE__,nints,nadds,ndtypes,comb,ierr
+       endif
+
     end if
     ! _MPISERIAL
 #endif
 
   end subroutine genindexedblock
+
+
+
 !> 
 !! @public
 !! @ingroup PIO_init
