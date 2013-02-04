@@ -540,7 +540,7 @@ contains
 !rowind, colind are from 1 to 2 cause they correspond to 2D tensor in lat/lon
 
 !IF DSSED V NEEDED
-#if 1
+#if 0
     call initEdgeBuffer(edgebuf,1)
     do rowind=1,2
       do colind=1,2
@@ -551,7 +551,7 @@ contains
 	call bndry_exchangeV(hybrid,edgebuf)
 	do ie=nets,nete
 	  call edgeVunpack(edgebuf,zeta(1,1,ie),1,0,elem(ie)%desc)
-	  elem(ie)%tensorVisc(rowind,colind,:,:) = zeta(:,:,ie)*elem(ie)%rspheremp(:,:)
+          elem(ie)%tensorVisc(rowind,colind,:,:) = zeta(:,:,ie)*elem(ie)%rspheremp(:,:)
 	end do
       enddo !rowind
     enddo !colind
@@ -559,7 +559,7 @@ contains
 #endif
 
 !IF BILINEAR MAP OF V NEEDED
-#if 1
+#if 0
     do rowind=1,2
       do colind=1,2
     ! replace hypervis w/ bilinear based on continuous corner values
