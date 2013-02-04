@@ -1,6 +1,45 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_6_0
+Originator(s): Jim
+Date: 02-04-2013
+One-line Summary: fix bug in genindexedblock to allow larger arrays, separate vdc init routine
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+	M   piolib_mod.F90
+	M   calcdisplace_mod.F90
+	M   pio_types.F90 
+
+	
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:   mpas decomp issue when two leading non-decomposed dimensions.
+
+Describe any changes made to scripts/build system:
+                    Updated tests to reflect 
+Describe any substantial timing or memory changes:
+
+Code reviewed by: self
+
+Summary of pre-tag testing:
+
+Regression tests:   test complete on yellowstone 81 tests PASS, 0 tests FAIL
+	                     test complete on titan  80 tests PASS, 0 tests FAIL
+                             test complete on yellowstone_pgi 80 tests PASS, 0 tests FAIL
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_5_7
 Originator(s): Jim
 Date: 11-04-2012
