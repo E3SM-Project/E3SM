@@ -234,14 +234,14 @@ foreach \$suite (qw(@testsuites)){
 	unlink("../pio/Makefile.conf");
 	my \$saveprocs;
 	# allows for mpi build in configure
-        if("$host" eq "erebus" or "$host" eq "yellowstone"){
+        if("$host" eq "erebus" or "$host" =~ /^yellowstone/){
 	  \$saveprocs=\$ENV{MP_PROCS};
           \$ENV{MP_PROCS} = 1;
           system("hostname > $tstdir/hostfile");
           \$ENV{MP_HOSTFILE}="$tstdir/hostfile";
         }
 	system("perl ./testpio_build.pl --conopts=\\"\$confopts\\" --host=$host");
-        if("$host" eq "erebus" or "$host" eq "yellowstone"){
+        if("$host" eq "erebus" or "$host" =~ /^yellowstone/){
           \$ENV{MP_PROCS}=\$saveprocs;
           delete \$ENV{MP_HOSTFILE};
         } 

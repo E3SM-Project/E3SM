@@ -1079,10 +1079,10 @@ contains
        else if(present(iostart) .or. present(iocount)) then
           call piodie( __PIO_FILE__,__LINE__, &
                'both optional parameters start and count must be provided')
-       end if
-       call calcstartandcount(basepiotype, ndims, dims, iosystem%num_iotasks, iosystem%io_rank,&
-            iodesc%start, iodesc%count,iosystem%num_aiotasks)
-
+       else	       
+          call calcstartandcount(basepiotype, ndims, dims, iosystem%num_iotasks, iosystem%io_rank,&
+               iodesc%start, iodesc%count,iosystem%num_aiotasks)
+       endif
        iosize=1
        do i=1,ndims
           iosize=iosize*iodesc%count(i)
@@ -1098,6 +1098,7 @@ contains
              exit
           endif
        enddo
+       if(lenblocks==1) lenblocks=iodesc%count(1)
 
        if(lenblocks>0) then
           ndisp=iosize/lenblocks
@@ -1207,6 +1208,7 @@ contains
   subroutine PIO_initdecomp_dof_i8_vdc(iosystem,dims,compdof, iodesc, num_ts, bsize)
     use calcdisplace_mod, only : calcdisplace_box
     use calcdecomp, only : calcstartandcount
+    use pio_types, only : pio_real
     type (iosystem_desc_t), intent(inout) :: iosystem
     integer(i4), intent(in)           :: dims(:)
     integer (kind=pio_offset), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition

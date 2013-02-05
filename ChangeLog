@@ -1,6 +1,46 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_6_1
+Originator(s): Jim
+Date: 02-05-2013
+One-line Summary: bug fix in reading 1d arrays
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+M   pio/piolib_mod.F90 lenblocks was incorrectly set to 1 for 1D arrays
+M   testpio/Utils.pm updates for yellowstone_pgi
+M  testpio/testpio_run.pl match yellowstone_pgi to host yellowstone
+	  
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: Jim
+
+Summary of pre-tag testing:
+
+  Regression tests:   test complete on yellowstone 81 tests PASS, 0 tests FAIL
+	                     test complete on titan  80 tests PASS, 0 tests FAIL
+                             test complete on yellowstone_pgi 80 tests PASS, 0 tests FAIL
+                             Also ran cesm1_2_alpha02a prealpha tests
+
+===============================================================
+
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_6_0
 Originator(s): Jim
 Date: 02-04-2013

@@ -162,7 +162,8 @@ sub loadmodules{
 #HOST SPECIFIC START
     my $modpath = {
 		   erebus => "/usr/share/Modules/",
-		   yellowstone => "/usr/share/Modules/",
+		   yellowstone => "/glade/apps/opt/modulefiles",
+		   yellowstone_pgi => "/glade/apps/opt/modulefiles",
 		   titan  => "/opt/modules/default/",
 		   athena => "/opt/modules/default/",
 		   kraken => "/opt/modules/default/",
@@ -173,40 +174,14 @@ sub loadmodules{
                    carver => "/usr/common/nsg/opt/Modules/default/",
                    columbia => "/usr/share/modules/"};
 #HOST SPECIFIC END
-
+    
     return unless(defined $modpath->{$host});
-
-    $ENV{MODULESHOME} = $modpath->{$host};
-
-    if($modpath->{$host} =~ /([^\/]*)\/?$/){
-	$ENV{MODULE_VERSION}=$1;
-    }
-    if (! defined $ENV{MODULEPATH} ) {
-	open(F,"$modpath->{$host}/init/.modulespath") || die "could not open $modpath->{$host}/init/.modulespath";
-	my @file = <F>;
-	close(F);
-	my $modulepath;
-	foreach(@file){
-	    if(/^([\/\w+]+)\s*/){
-		if(defined $modulepath){
-		    $modulepath = "$modulepath:$1";
-		}else{
-		    $modulepath = $1;
-		}
-	    }
-	}
-	$ENV{MODULEPATH} = $modulepath;
-	}
-
-    if (! defined $ENV{"LOADEDMODULES"} ) {
-	$ENV{"LOADEDMODULES"} = "";
-    }
-
 
     
 #HOST SPECIFIC START
     if($host =~ "titan"){
 	require "/opt/modules/default/init/perl";
+	module_check($modpath,$host);
 #	module(" purge");
 #        module(" load xt-mpt/4.0.0");
 #	module(" load PrgEnv-pgi");
@@ -226,6 +201,7 @@ sub loadmodules{
         module("list");
     }elsif($host =~ "athena"){
 #	require "/opt/modules/default/init/perl";
+	module_check($modpath,$host);
 	module(" purge");
 	module(" load PrgEnv-pgi Base-opts");
 	module(" load xtpe-quadcore");
@@ -238,10 +214,12 @@ sub loadmodules{
 	module(" swap xt-binutils-quadcore xt-binutils-quadcore/2.0.1");
     }elsif($host =~ "kraken"){
 	require "/opt/modules/default/init/perl";
+	module_check($modpath,$host);
 	module(" load netcdf/3.6.3");      
 	module(" load p-netcdf/1.2.0");
     }elsif($host =~ "hopper"){
 	require "/opt/modules/default/init/perl";
+	module_check($modpath,$host);
 	module(" load netcdf-hdf5parallel/4.2.0");      
 	module(" load parallel-netcdf/1.2.0");
         module("list");
@@ -252,6 +230,7 @@ sub loadmodules{
 !        module(" load pd-pnetcdf.1.1.1");
     }elsif($host =~ "lynx_intel"){
 	require "/opt/modules/default/init/perl";
+	module_check($modpath,$host);
 	module(" rm PrgEnv-pgi ");
 	module(" load PrgEnv-intel");
 	module(" switch intel intel/12.1.0");
@@ -260,6 +239,7 @@ sub loadmodules{
 	module(" list");
     }elsif($host =~ "hopper_gnu"){
 	require "/opt/modules/default/init/perl";
+	module_check($modpath,$host);
 	module(" rm PrgEnv-pgi ");
 	module(" load PrgEnv-gnu");
 	module(" switch gcc gcc/4.7.1");
@@ -268,6 +248,7 @@ sub loadmodules{
 	module(" list");
     }elsif($host =~ "lynx"){
 	require "/opt/modules/default/init/perl";
+	module_check($modpath,$host);
 #	module(" load netcdf");
 	module(" switch pgi pgi/11.10.0");
         module(" load PGI/netcdf4/4.1.3_seq");
@@ -275,6 +256,7 @@ sub loadmodules{
         module("list");
     }elsif($host eq "carver"){
 	require "/usr/common/nsg/opt/Modules/default/init/perl";
+	module_check($modpath,$host);
         module("load intel ");
 	module("load openmpi-intel/1.6");
 	module("load netcdf-intel/4.1.1");
@@ -282,6 +264,7 @@ sub loadmodules{
         module("list");
     }elsif($host eq "erebus"){
 	require "/glade/apps/opt/lmod/lmod/init/perl";    
+	module_check($modpath,$host);
         module("load intel/12.1.4");
 	module("load ncarcompilers/1.0");
         module("rm netcdf");
@@ -292,19 +275,22 @@ sub loadmodules{
 	module("load ncarbinlibs/0.0");
 	module("list");
     }elsif($host eq "yellowstone_pgi"){
+	print "Loading modules for $host\n";
 	require "/glade/apps/opt/lmod/lmod/init/perl";    
+	module_check($modpath,"yellowstone");
         module("rm netcdf");
         module("rm intel");
         module("load pgi/12.5");
 	module("load ncarcompilers/1.0");
         module("unload netcdf");
-        module("load netcdf-mpi/4.2");
+        module("load netcdf/4.2");
         module("load pnetcdf/1.3.0");
         module("load ncarenv/1.0");
 	module("load ncarbinlibs/0.0");
 	module("list");
     }elsif($host eq "yellowstone"){
 	require "/glade/apps/opt/lmod/lmod/init/perl";    
+	module_check($modpath,$host);
 #        module("purge");
         module("load intel/13.0.1");
 	module("load ncarcompilers/1.0");
@@ -330,7 +316,35 @@ sub module {
     }
 }
 
+sub module_check{
+    my($modpath,$host) = @_;
 
+    $ENV{MODULESHOME} = $modpath->{$host};
+
+    if($modpath->{$host} =~ /([^\/]*)\/?$/){
+	$ENV{MODULE_VERSION}=$1;
+    }
+    if (! defined $ENV{MODULEPATH} ) {
+	open(F,"$modpath->{$host}/init/.modulespath") || die "could not open $modpath->{$host}/init/.modulespath";
+	my @file = <F>;
+	close(F);
+	my $modulepath;
+	foreach(@file){
+	    if(/^([\/\w+]+)\s*/){
+		if(defined $modulepath){
+		    $modulepath = "$modulepath:$1";
+		}else{
+		    $modulepath = $1;
+		}
+	    }
+	}
+	$ENV{MODULEPATH} = $modulepath;
+    }
+    if (! defined $ENV{"LOADEDMODULES"} ) {
+	$ENV{"LOADEDMODULES"} = "";
+    }
+    print "module path = $ENV{MODULEPATH}\n";
+}
 
 
 1;

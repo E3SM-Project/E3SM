@@ -56,10 +56,6 @@ my $conopts = "@conopts $attributes{conopts}" if(defined($attributes{conopts}));
 
 chdir('../pio');
 
-print "------------------------------------------------------------------\n";
-print `env`;
-print "------------------------------------------------------------------\n\n";
-
 my $syscmd = "./configure $conopts @env ";
 
 print "Building for $host using $syscmd\n";
