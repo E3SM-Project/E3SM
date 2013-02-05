@@ -531,9 +531,6 @@ subroutine galewsky_init_state(elem,nets,nete,pmean,deriv)
     pmean = gh0_gal
 
     gs=gauss(ngs_gal)
-    deallocate(gs%points)
-    deallocate(gs%weights)
-
 
     do ie=nets,nete
        elem(ie)%fcor= galewsky_coriolis(elem(ie)%spherep)
@@ -543,6 +540,9 @@ subroutine galewsky_init_state(elem,nets,nete,pmean,deriv)
           elem(ie)%state%hs(:,:,k)= 0.0D0
        end do
     end do
+
+    deallocate(gs%points)
+    deallocate(gs%weights)
 
   end subroutine galewsky_init_state
 !=======================================================================================================!
@@ -728,13 +728,14 @@ subroutine galewsky_init_state(elem,nets,nete,pmean,deriv)
     pmean = gh0_gal
 
     gs=gauss(ngs_gal)
-    deallocate(gs%points)
-    deallocate(gs%weights)
 
     elem(ie)%fcor = galewsky_coriolis(elem(ie)%spherep)
     elem(ie)%state%v(:,:,:,k,n0) = galewsky_velocity(elem(ie)%spherep(:,:),elem(ie)%Dinv)
     elem(ie)%state%ht(:,:,k) =  galewsky_phi(elem(ie)%spherep(:,:),gs)/g
     elem(ie)%state%hs(:,:,k) = 0.0D0
+
+    deallocate(gs%points)
+    deallocate(gs%weights)
 
   end subroutine galewsky_init
 !=======================================================================================================!
