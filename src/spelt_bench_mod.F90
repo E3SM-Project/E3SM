@@ -26,8 +26,8 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
   use dimensions_mod, only: ne, np, nlev, ntrac, nc, nhe, nip, nipm, nep
   use element_mod, only : element_t, timelevels
   use hybrid_mod, only : hybrid_t
-  use spelt_mod, only: cellghostbuf, edgeveloc, spelt_struct
-  use spelt_mod, only: spelt_mcgregordss, spelt_rkdss,spelt_run, spelt_runlimit, spelt_runair, spelt_init3
+  use spelt_mod, only: cellghostbuf, factorR, edgeveloc, spelt_struct
+  use spelt_mod, only: spelt_mcgregordss, spelt_rkdss,spelt_run, spelt_runlimit, spelt_runpos, spelt_runair, spelt_init3
   use spelt_mod, only: cip_coeff, cip_interpolate, metric_term,  cell_search, qmsl_cell_filter, cell_minmax, cip_cell_avr
   ! ---------------------------------------------------------------------------------
   use bndry_mod, only: ghost_exchangeV
@@ -230,7 +230,7 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
   call t_barrierf('spelt time loop', hybrid%par%comm)
   call t_startf('spelt')
   
-DO WHILE(tl%nstep< nmax) !nmax)
+DO WHILE(tl%nstep<nmax) !nmax)
 ! ! start mcgregordss
 !   do ie=nets,nete
 !     do k=1,nlev
@@ -265,8 +265,8 @@ DO WHILE(tl%nstep< nmax) !nmax)
 !   call spelt_rkdss(elem,spelt,nets,nete, hybrid, deriv, tstep, 3)
 ! ! end mcgregordss
 !   call spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
-
-  call spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
+  call spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
+!   call spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !   call spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 
   call TimeLevel_update(tl,"forward") 
@@ -332,7 +332,7 @@ if (mod(tl%nstep,1)==0) then
   endif 
 endif
 !-----------------------------------------------------------------------------------!   
-  !!!! OUTPUT FOR TESTREASONS because I use gll points
+  !!! OUTPUT FOR TESTREASONS because I use gll points
   do ie=nets,nete
     do j=1-nhe,nc+nhe
       do i=1-nhe,nc+nhe
@@ -382,6 +382,7 @@ ENDDO  ! END TIME LOOP
   call t_stopf('spelt')
 
   call freeghostbuffertr(cellghostbuf)
+  call freeghostbuffertr(factorR)
   call freeedgebuffer(edgeveloc)
 #ifdef PIO_INTERP
     call interp_movie_finish
@@ -419,7 +420,49 @@ ENDDO  ! END TIME LOOP
 
   lmax = parallelmax(tmp1,hybrid)/parallelmax(tmp2,hybrid)
 
-
+  do ie=nets,nete
+    spelt(ie)%elem_mass=0.0D0
+    tmp1(ie)=-1.0D0-20
+    tmp2(ie)=1.0D20
+    do j=1,nc
+      do i=1,nc
+        dx=spelt(ie)%dab(i)   
+        dy=spelt(ie)%dab(j)
+        area=dx*dy
+        icell= 2+(i-1)*nipm
+        jcell=2+(j-1)*nipm
+        sga=spelt(ie)%sga(icell,jcell)
+        if (choosetrac==1) then   ! mass of air, code is not optimal
+!           spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
+!                          dx*dy*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
+         spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
+                        area*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
+        else
+          spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
+                         area*spelt(ie)%c(icell,jcell,chooselev,2,tl%n0)*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga
+        endif
+ !           spelt(ie)%cstart(i,j)=spelt(ie)%c(i,j,chooselev,choosetrac,tl%n0)
+        tmp=area/spelt(ie)%area_sphere(i,j)
+        
+        tmp1(ie)=max(tmp1(ie),spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga)
+        tmp2(ie)=min(tmp2(ie),spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga)
+      enddo
+    enddo
+    ! for the mass value
+    global_shared_buf(ie,1)=0.0D0
+    global_shared_buf(ie,1)=spelt(ie)%elem_mass
+    ! for the max value on the sphere
+    
+!     tmp1(ie) = MAXVAL(spelt(ie)%c(:,:,chooselev,choosetrac,tl%n0))
+!     tmp2(ie) = MINVAL(spelt(ie)%c(:,:,chooselev,choosetrac,tl%n0))   
+  end do
+! 
+  !need the buffer cellghostbuf in the time loop
+  ! for mass calculation
+  call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
+  mass=global_shared_sum(1)
+  maxc = parallelmax(tmp1,hybrid)
+  minc = parallelmin(tmp2,hybrid)
 !SUMMARY
   if(hybrid%masterthread) then 
     print *

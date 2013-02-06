@@ -10,7 +10,6 @@ module schedule_mod
   implicit none 
   private 
   type, public :: Cycle_t
-     sequence
      integer                    :: tag
      integer                    :: dest
      integer                    :: source
@@ -23,7 +22,6 @@ module schedule_mod
   end type Cycle_t
 
   type, public :: Schedule_t 
-     sequence
      integer                     ::  ncycles
      integer                     ::  nelemd
      integer                     :: placeholder  ! total integer count should be even
@@ -38,7 +36,6 @@ module schedule_mod
   end type Schedule_t
 
   type, public :: GraphStats_t
-     sequence
      integer(kind=int_kind) :: offnode
      integer(kind=int_kind) :: onnode
      integer(kind=int_kind) :: LB
@@ -68,6 +65,7 @@ contains
     use element_mod, only : element_t
     use metagraph_mod, only : metavertex_t
     use dimensions_mod, only : nelem
+    use gridgraph_mod, only : gridvertex_t, gridedge_t, assignment ( = )
 #ifdef _MPI
     use parallel_mod, only : nComPoints, iam, mpi_status_size, rrequest, srequest, &
 	status, npackpoints

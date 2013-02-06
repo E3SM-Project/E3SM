@@ -476,7 +476,7 @@ contains
   !             element of ghost cell information, including corner
   !             elements.  Requres cubed-sphere grid
   ! =========================================
- subroutine ghost_exchangeV(hybrid,buffer,nhc,npoints)
+ subroutine ghost_exchangeV(hybrid,buffer,nhc,npoints,ntrac)
 !
 !   2011:  derived from bndry_exchange, but copies an entire
 !             element of ghost cell information, including corner
@@ -497,13 +497,13 @@ contains
 
     type (hybrid_t)                   :: hybrid
     type (GhostBuffertr_t)               :: buffer
-    integer :: nhc,npoints
+    integer :: nhc,npoints,ntrac
 
     type (Schedule_t),pointer                     :: pSchedule
     type (Cycle_t),pointer                        :: pCycle
     integer                                       :: dest,length,tag
     integer                                       :: icycle,ierr
-    integer                                       :: iptr,source,nlyr,ntrac
+    integer                                       :: iptr,source,nlyr
     integer                                       :: nSendCycles,nRecvCycles
     integer                                       :: errorcode,errorlen
     character*(80) errorstring
@@ -525,7 +525,6 @@ contains
        pSchedule => Schedule(1)
 #endif
        nlyr = buffer%nlyr
-       ntrac = buffer%ntrac
               
        nSendCycles = pSchedule%nSendCycles
        nRecvCycles = pSchedule%nRecvCycles

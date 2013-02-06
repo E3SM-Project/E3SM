@@ -63,9 +63,6 @@ module common_io_mod
   integer, parameter, public :: beginstate=1, dimsstate=2,varsstate=3,readystate=4 
 
   type nf_variable
-#ifdef SEQUENCE
-     sequence
-#endif
      character(len=varname_len) :: varname
      integer :: ivarID
      integer :: ndims
@@ -76,9 +73,6 @@ module common_io_mod
   end type nf_variable
 
   type nf_dim
-#ifdef SEQUENCE
-     sequence
-#endif
      character(len=varname_len) :: dimname
      integer :: dimID
      integer :: dsize
@@ -90,9 +84,6 @@ module common_io_mod
 
   public :: nf_decomp
   type nf_decomp
-#ifdef SEQUENCE
-     sequence
-#endif
      type(IO_desc_t) :: Iodesc
      ! This is an identifier that should be unique to the combination of dims that describe this decomposition
      integer :: dimsid     
@@ -100,9 +91,6 @@ module common_io_mod
 
   type nf_handle
      !     private
-#ifdef SEQUENCE
-     sequence
-#endif
      type(File_desc_t) :: FileID
      type(nf_variable), pointer :: varlist(:)
      type(nf_dim), pointer :: dimlist(:)

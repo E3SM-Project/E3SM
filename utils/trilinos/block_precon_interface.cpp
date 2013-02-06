@@ -1,7 +1,7 @@
 // ----------   Includes   ----------
 #include <iostream>
 #include "Epetra_CrsMatrix.h"
-#include "precon_interface.hpp"
+#include "block_precon_interface.hpp"
 #include "Epetra_Map.h"
 #include "Epetra_Operator.h"
 #include "EpetraExt_RowMatrixOut.h"
@@ -20,7 +20,7 @@
 
 //-----------------------------------------------------------------------------
 //
-Precon_Interface::Precon_Interface(int nelems,Teuchos::RCP<Epetra_Map> gmap,const Epetra_Comm& comm_, void* precdata_, void (*precFunction_)(double *,int,double*,void *)):
+Block_Precon_Interface::Block_Precon_Interface(int nelems,Teuchos::RCP<Epetra_Map> gmap,const Epetra_Comm& comm_, void* precdata_, void (*precFunction_)(double *,int,double*,void *)):
 	N(nelems),
 	globalMap(gmap),
  	comm(comm_),
@@ -32,7 +32,7 @@ Precon_Interface::Precon_Interface(int nelems,Teuchos::RCP<Epetra_Map> gmap,cons
 //if(printproc)cout<<"mypid_precon="<<comm.MyPID()<<endl;
 }
 
-Precon_Interface::Precon_Interface(int nelems,Teuchos::RCP<Epetra_Map> gmap,const Epetra_Comm& comm_, void* precdata_, 
+Block_Precon_Interface::Block_Precon_Interface(int nelems,Teuchos::RCP<Epetra_Map> gmap,const Epetra_Comm& comm_, void* precdata_, 
 void (*precFunctionblock11_)(double *,int,double*,void *),
 void (*precFunctionblock12_)(double *,int,double*,void *),
 void (*precFunctionblock21_)(double *,int,double*,void *),
@@ -52,8 +52,9 @@ void (*precFunctionblock22_)(double *,int,double*,void *)):
 }
 
 
-Precon_Interface::~Precon_Interface() { }
+Block_Precon_Interface::~Block_Precon_Interface() { }
 
+/*
 int Precon_Interface::Apply(const Epetra_MultiVector &X,Epetra_MultiVector &Y)const
 {
 	//	int n=X.MyLength();
@@ -89,8 +90,8 @@ int Precon_Interface::Apply(const Epetra_MultiVector &X,Epetra_MultiVector &Y)co
 
 	return 0;
 }
-/*
-int Precon_Interface::Apply(const Epetra_MultiVector &X,Epetra_MultiVector &Y)const
+*/
+int Block_Precon_Interface::Apply(const Epetra_MultiVector &X,Epetra_MultiVector &Y)const
 {
         //      int n=X.MyLength();
 
@@ -124,12 +125,29 @@ P22.PutScalar(0.0);
 Epetra_Vector Yt(*Y(0));
 Yt.PutScalar(0.0);
 
+
+// Epetra_Vector Ix1(*X(0));
+ //        for (int i=2*(N+1)/3;i<N; i++) {Ix1[i]=0.0;}
+
+
+
+
+
+    //for (int i=0; i<N; i++) Yt[i] = P11[i]+P21[i]+P22[i];
+   // for (int i=0; i<N; i++) Yt[i] = P11[i]+P12[i]+P21[i];// Saddle point
     for (int i=0; i<N; i++) Yt[i] = P11[i]+P12[i]+P21[i]+P22[i];
+    //for (int i=0; i<N; i++) Yt[i] = P11[i]+P22[i]; //Block Diagonal Precon
+  // for (int i=0; i<N; i++) Yt[i] = P11[i]+P12[i]+P22[i]; //DU
+   // for (int i=0; i<N; i++) Yt[i] = P11[i]+P21[i]+P22[i]; //LD
+    //for (int i=0; i<N; i++) Yt[i] = Ix1[i]+P22[i];
 Y=Yt;
 
+
+/* ... or Apply Identity preonditioner */
+//Y=X;
         return 0;
 }
-*/
+
 
 
 

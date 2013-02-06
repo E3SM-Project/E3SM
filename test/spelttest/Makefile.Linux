@@ -5,7 +5,7 @@ NP        = 4
 NC        = 4 
 #for preqx set it to 26
 PLEV      = 1
-QUEUE        =  qsub
+QUEUE        =  bsub
 #QUEUE       = cqsub -q debug or cqsub -q JumboFridays
 # EXECUTE   = preqx
 # EXECUTE   = fvm
@@ -45,6 +45,8 @@ run:
 	@echo " ************* RUN $(EXECUTE) with the command $(QUEUE): -n $(NPROC) ./$(EXECUTE) **********"
 	@echo " ********************************--->"
 	@echo
+	#rm spelt.out
+	#rm spelt.err
 	cp $(INPUT) input.nl 
 	@echo "*** COPY $(EXECUTE) TO $(ADIR)"
 	cp ../../build/$(EXECUTE)/$(EXECUTE) .
@@ -77,6 +79,6 @@ clear: tclean clean dclean
 
 comp:
 	@echo "**** Running everything for HOMME-$(EXECUTE) on $(HNAME): Operating system $(ARCH) ******"
-	cd ../../build/$(EXECUTE)/  && aclocal && autoconf && automake && ./configure NC=$(NC) NP=$(NP) PLEV=$(PLEV) --enable-blas --enable-lapack --enable-spelt --with-pnetcdf=$(PNETCDF_PATH) --with-netcdf=$(NETCDF_PATH) && make clean-depends && make depends  
+	cd ../../build/$(EXECUTE)/  && aclocal && autoconf && automake && ./configure NC=$(NC) NP=$(NP) PLEV=$(PLEV) --enable-blas --enable-lapack --with-pnetcdf=$(PNETCDF_PATH) --with-netcdf=$(NETCDF_PATH) && make clean-depends && make depends #&& echo "#define _NAMELIST_FROM_FILE 1" >>config.h   
 	make cleansource
 	make  

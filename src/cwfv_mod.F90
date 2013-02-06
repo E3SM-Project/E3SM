@@ -26,7 +26,6 @@ module cwfv_mod
   type (EdgeBuffer_t)                         :: edgeveloc
     
   type, public :: cwfv_struct
-    sequence
     ! fvm tracer mixing ratio: (kg/kg)
     real (kind=real_kind)    :: c(1-nipm:nep+nipm,1-nipm:nep+nipm,nlev,ntrac_d,timelevels) 
 !-----------------------------------------------------------------------------------!   
@@ -170,7 +169,7 @@ subroutine spelt_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   end do
 !-----------------------------------------------------------------------------------! 
   call t_startf('FVM Communication') 
-  call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep)
+  call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep,ntrac)
   call t_stopf('FVM Communication')
 !-----------------------------------------------------------------------------------!  
   call t_startf('FVM Unpacking')  

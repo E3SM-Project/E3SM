@@ -19,7 +19,6 @@ module GridGraph_mod
 
 
   type, public :: GridVertex_t
-      sequence
 
       integer, pointer          :: nbrs(:)                     ! The numbers of the neighbor elements
       integer, pointer          :: nbrs_face(:)                ! The cube face number of the neighbor element (nbrs array)
@@ -34,13 +33,11 @@ module GridGraph_mod
   end type GridVertex_t
 
   type, public :: EdgeIndex_t
-      sequence
       integer, pointer            :: ixP(:)
       integer, pointer            :: iyP(:)
   end type EdgeIndex_t
 
   type, public :: GridEdge_t
-      sequence
       integer                      :: head_face  ! needed if head vertex has shape (i.e. square)
       integer                      :: tail_face  ! needed if tail vertex has shape (i.e. square)
       integer                      :: head_dir   !which of 8 neighbor directions is the head
@@ -70,6 +67,8 @@ module GridGraph_mod
 
   public :: CreateSubGridGraph
   public :: FreeGraph
+
+  public :: assignment ( = ) 
 
   interface assignment ( = )
       module procedure copy_gridedge
@@ -126,9 +125,10 @@ contains
     type (GridEdge_t), intent(out) :: edge2
     type (GridEdge_t), intent(in)  :: edge1
 
-
     edge2%tail_face = edge1%tail_face
     edge2%head_face = edge1%head_face
+    edge2%tail_dir = edge1%tail_dir
+    edge2%head_dir = edge1%head_dir
     edge2%reverse   = edge1%reverse
 
     if (associated(edge1%tail)) then
@@ -152,6 +152,21 @@ contains
     integer                            :: i,j,n
    
      n = SIZE(vertex1%nbrs)
+
+     if (associated(vertex2%nbrs)) then
+        nullify(vertex2%nbrs)
+     end if
+     if (associated(vertex2%nbrs_face)) then
+        nullify(vertex2%nbrs_face)
+     end if
+     if (associated(vertex2%nbrs_wgt)) then
+        nullify(vertex2%nbrs_wgt)
+     end if
+     if (associated(vertex2%nbrs_wgt_ghost)) then
+        nullify(vertex2%nbrs_wgt_ghost)
+     end if
+
+     call allocate_gridvertex_nbrs(vertex2)
 
      do i=1,n
         vertex2%nbrs(i) = vertex1%nbrs(i)

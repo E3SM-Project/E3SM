@@ -132,7 +132,7 @@ subroutine cwfv_run_bench(elem,fvm,hybrid,nets,nete,tl)
     call ghostVpack2d(cellghostbuf,fvm(ie)%c,nipm, nep,nlev,ntrac,0, tl%n0, timelevels,elem(ie)%desc)
   end do
 !-----------------------------------------------------------------------------------!  
-  call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep)
+  call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep,ntrac)
 !-----------------------------------------------------------------------------------!    
   do ie=nets,nete
     call ghostVunpack2d(cellghostbuf,fvm(ie)%c,nipm, nep,nlev,ntrac,0, tl%n0, timelevels,elem(ie)%desc)

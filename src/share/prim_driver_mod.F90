@@ -98,10 +98,6 @@ contains
     ! --------------------------------
     use metis_mod, only : genmetispart
     ! --------------------------------
-#ifdef TESTGRID
-    use checksum_mod, only : testchecksum
-#endif
-    ! --------------------------------
     use spacecurve_mod, only : genspacepart
     ! --------------------------------
     use dof_mod, only : global_dof, CreateUniqueIndex, SetElemOffset
@@ -271,6 +267,7 @@ contains
     allocate(MetaVertex(1))
     allocate(Schedule(1))
 
+
     nelem_edge=SIZE(GridEdge)
 
     allocate(TailPartition(nelem_edge))
@@ -411,13 +408,7 @@ contains
 
     if(par%masterproc) write(iulog,*) 're-running mass_matrix'
     call mass_matrix(par,elem)
-    ! =================================================================
-    ! Run the checksum to verify communication schedule
-    ! =================================================================
-#ifdef TESTGRID 
-    if(par%masterproc)     write(iulog,*) 'running testchecksum ',iam,nelem,nelemd
-    call testchecksum(par,GridEdge)
-#endif
+
 
     ! =================================================================
     ! Determine the global degree of freedome for each gridpoint
@@ -478,19 +469,18 @@ contains
 #endif
     !DBG  write(iulog,*) 'prim_init: after call to initRestartFile'
 
-#ifndef TESTGRID
     deallocate(GridEdge)
     do j =1,nelem
        call deallocate_gridvertex_nbrs(GridVertex(j))
     end do
     deallocate(GridVertex)
+
+    do j = 1, MetaVertex(1)%nmembers
+       call deallocate_gridvertex_nbrs(MetaVertex(1)%members(j))
+    end do
     deallocate(MetaVertex)
     deallocate(TailPartition)
     deallocate(HeadPartition)
-#else
-    ! here we need to call a function in gridgraph_mod.F to deallocate
-    ! all of GridVertex's EdgeIndex pointers
-#endif
 
 
     ! =====================================

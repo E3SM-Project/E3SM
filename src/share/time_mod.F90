@@ -22,12 +22,12 @@ module time_mod
   integer, parameter :: ptimelevels = 3                           ! number of time levels in the dycore
 
   type, public :: TimeLevel_t
-     sequence
      integer nm1      ! relative time level n-1
      integer n0       ! relative time level n
      integer np1      ! relative time level n+1
      integer nstep    ! time level since simulation start
      integer nstep0   ! timelevel of first complete leapfrog timestep
+     integer t_stepper ! choice of time discretization scheme - eventually in namelist
   end type TimeLevel_t
 
   ! Methods

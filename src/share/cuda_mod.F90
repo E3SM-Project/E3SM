@@ -120,6 +120,7 @@ module cuda_mod
   integer            :: nbuf
   integer            :: nmsg_rcvd
   integer            :: nmsg_sent
+  integer, device :: max_neigh_edges_d, max_corner_elem_d
 
   type(cudaEvent) :: timer1, timer2
 
@@ -152,6 +153,9 @@ contains
     logical,allocatable,dimension(:,:) :: recv_elem_mask
     logical,allocatable,dimension(:)   :: elem_computed
     integer :: total_work
+
+    max_neigh_edges_d = max_neigh_edges
+    max_corner_elem_d = max_corner_elem
 
 #if (defined ELEMENT_OPENMP)
     write(*,*) 'ERROR: Do not use ELEMENT_OPENMP and CUDA FORTRAN'
@@ -493,7 +497,7 @@ contains
   if (limiter_option == 8) then
     do ie = nets , nete
       divdp_h(:,:,:,ie) = elem(ie)%derived%divdp
-      if ( nu_p > 0 .and. rhs_multiplier == 2 ) dpdiss_biharmonic_h(:,:,,:,ie) = elem(ie)%derived%dpdiss_biharmonic
+      if ( nu_p > 0 .and. rhs_multiplier == 2 ) dpdiss_biharmonic_h(:,:,:,ie) = elem(ie)%derived%dpdiss_biharmonic
     enddo
 !$OMP BARRIER
 !$OMP MASTER
@@ -1377,13 +1381,13 @@ attributes(global) subroutine edgeVpack_kernel_stage(edgebuf,v,putmapP,reverse,n
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
   implicit none
   real (kind=real_kind), intent(  out) :: edgebuf(nlev*qsize_d,nbuf)
-  integer              , intent(in   ) :: putmapP(max_neigh_edges,nets:nete)
-  logical              , intent(in   ) :: reverse(max_neigh_edges,nets:nete)
+  integer              , intent(in   ) :: putmapP(max_neigh_edges_d,nets:nete)
+  logical              , intent(in   ) :: reverse(max_neigh_edges_d,nets:nete)
   real (kind=real_kind), intent(in   ) :: v(np*np,nlev,qsize_d,tl_in,nets:nete)
   integer              , intent(in   ) :: send_indices(nets:nete,nSendCycles)
   integer, value       , intent(in   ) :: kptr,nets,nete,nt,nbuf,nSendCycles,icycle,tl_in
   integer :: i,j,k,q,l,offset,ij,ijk,ti,tj,tk,x,y,ir,  reverse_south, reverse_north, reverse_west, reverse_east, el
-  integer, shared :: ic(max_corner_elem,4), direction(4), reverse_direction(4)
+  integer, shared :: ic(max_corner_elem_d,4), direction(4), reverse_direction(4)
   real (kind=real_kind), shared :: vshrd(nlev+PAD,np,np)
   i  = threadidx%x
   j  = threadidx%y
@@ -1407,7 +1411,7 @@ attributes(global) subroutine edgeVpack_kernel_stage(edgebuf,v,putmapP,reverse,n
     reverse_direction(west_px)  = reverse(west,el)
     reverse_direction(east_px)  = reverse(east,el)
   endif
-  if( ijk < max_corner_elem ) then
+  if( ijk < max_corner_elem_d ) then
     ic(ijk+1,1) = putmapP(swest+ijk,el)+1
     ic(ijk+1,2) = putmapP(seast+ijk,el)+1
     ic(ijk+1,3) = putmapP(nwest+ijk,el)+1
@@ -1432,7 +1436,7 @@ attributes(global) subroutine edgeVpack_kernel_stage(edgebuf,v,putmapP,reverse,n
     else                           ; edgebuf(offset,direction(tj)+ti) = vshrd(tk,4,ti); endif
   endif
   if( tj==1 ) then
-    do l=1, max_corner_elem       
+    do l=1, max_corner_elem_d       
       x = mod(ti-1,2)*(np-1) + 1  ! we need to convert ti index from {1,2,3,4} to {(1,1),(4,1),(1,4),(4,4)}
       y = ((ti-1)/2)*(np-1) + 1   !   so, ti->(x,y)
       if( ic(l,ti) /= 0 ) edgebuf( offset, ic(l,ti) ) = vshrd(tk,x,y)
@@ -1446,12 +1450,12 @@ attributes(global) subroutine edgeVunpack_kernel_stage(edgebuf,v,getmapP,nbuf,kp
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
   implicit none
   real (kind=real_kind), intent(in   ) :: edgebuf(nlev*qsize_d,nbuf)
-  integer              , intent(in   ) :: getmapP(max_neigh_edges,nets:nete)
+  integer              , intent(in   ) :: getmapP(max_neigh_edges_d,nets:nete)
   real (kind=real_kind), intent(inout) :: v(np*np,nlev,qsize_d,tl_in,nets:nete)
   integer              , intent(in   ) :: recv_indices(nets:nete)
   integer, value       , intent(in   ) :: kptr,nets,nete,nt,nbuf,tl_in
   integer :: i,j,k,l,q,el,offset,ij,ti,tj,tk,ijk,x,y,tij
-  integer, shared :: direction(4),is,ie,in,iw, ic(max_corner_elem,4)
+  integer, shared :: direction(4),is,ie,in,iw, ic(max_corner_elem_d,4)
   real (kind=real_kind), shared :: vshrd(nlev+PAD,np,np)
   real (kind=real_kind) :: v_before_update, neighbor_value
   
@@ -1473,7 +1477,7 @@ attributes(global) subroutine edgeVunpack_kernel_stage(edgebuf,v,getmapP,nbuf,kp
     direction(south_px) = getmapP(south,el)
     direction(north_px) = getmapP(north,el)
   endif
-  if( ijk < max_corner_elem) then
+  if( ijk < max_corner_elem_d) then
     ic(ijk+1,1) = getmapP(swest+ijk,el)+1
     ic(ijk+1,2) = getmapP(seast+ijk,el)+1
     ic(ijk+1,3) = getmapP(nwest+ijk,el)+1
@@ -1501,7 +1505,7 @@ attributes(global) subroutine edgeVunpack_kernel_stage(edgebuf,v,getmapP,nbuf,kp
   
   ! update the "corner" columns
   if( tj==1 ) then
-    do l=1, max_corner_elem       
+    do l=1, max_corner_elem_d       
       x = mod(ti-1,2)*(np-1) + 1  ! we need to convert ti index from {1,2,3,4} to {(1,1),(4,1),(1,4),(4,4)}
       y = ((ti-1)/2)*(np-1) + 1   !   so, ti->(x,y)
       if( ic(l,ti) /= 0 ) vshrd(tk,x,y) = vshrd(tk,x,y) + edgebuf( offset, ic(l,ti) )
@@ -1518,12 +1522,12 @@ attributes(global) subroutine edgeVpack_kernel(edgebuf,v,putmapP,reverse,nbuf,kp
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
   implicit none
   real (kind=real_kind), intent(  out) :: edgebuf(nlev*qsize_d,nbuf)
-  integer              , intent(in   ) :: putmapP(max_neigh_edges,nets:nete)
-  logical              , intent(in   ) :: reverse(max_neigh_edges,nets:nete)
+  integer              , intent(in   ) :: putmapP(max_neigh_edges_d,nets:nete)
+  logical              , intent(in   ) :: reverse(max_neigh_edges_d,nets:nete)
   real (kind=real_kind), intent(in   ) :: v(np*np,nlev,qsize_d,tl_in,nets:nete)
   integer, value       , intent(in   ) :: kptr,nets,nete,nt,nbuf,tl_in
   integer :: i,j,k,q,l,offset,ij,ijk,ti,tj,tk,x,y,ir,  reverse_south, reverse_north, reverse_west, reverse_east, el
-  integer, shared :: ic(max_corner_elem,4), direction(4), reverse_direction(4)
+  integer, shared :: ic(max_corner_elem_d,4), direction(4), reverse_direction(4)
   real (kind=real_kind), shared :: vshrd(nlev+PAD,np,np)
   i  = threadidx%x
   j  = threadidx%y
@@ -1547,7 +1551,7 @@ attributes(global) subroutine edgeVpack_kernel(edgebuf,v,putmapP,reverse,nbuf,kp
     reverse_direction(west_px)  = reverse(west,el)
     reverse_direction(east_px)  = reverse(east,el)
   endif
-  if( ijk < max_corner_elem ) then
+  if( ijk < max_corner_elem_d ) then
     ic(ijk+1,1) = putmapP(swest+ijk,el)+1
     ic(ijk+1,2) = putmapP(seast+ijk,el)+1
     ic(ijk+1,3) = putmapP(nwest+ijk,el)+1
@@ -1572,7 +1576,7 @@ attributes(global) subroutine edgeVpack_kernel(edgebuf,v,putmapP,reverse,nbuf,kp
     else                           ; edgebuf(offset,direction(tj)+ti) = vshrd(tk,4,ti); endif
   endif
   if( tj==1 ) then
-    do l=1, max_corner_elem       
+    do l=1, max_corner_elem_d       
       x = mod(ti-1,2)*(np-1) + 1  ! we need to convert ti index from {1,2,3,4} to {(1,1),(4,1),(1,4),(4,4)}
       y = ((ti-1)/2)*(np-1) + 1   !   so, ti->(x,y)
       if( ic(l,ti) /= 0 ) edgebuf( offset, ic(l,ti) ) = vshrd(tk,x,y)
@@ -1585,11 +1589,11 @@ end subroutine edgeVpack_kernel
 attributes(global) subroutine edgeVunpack_kernel(edgebuf,v,getmapP,nbuf,kptr,nets,nete,nt,tl_in)
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
   real (kind=real_kind), intent(in   ) :: edgebuf(nlev*qsize_d,nbuf)
-  integer              , intent(in   ) :: getmapP(max_neigh_edges,nets:nete)
+  integer              , intent(in   ) :: getmapP(max_neigh_edges_d,nets:nete)
   real (kind=real_kind), intent(inout) :: v(np*np,nlev,qsize_d,tl_in,nets:nete)
   integer, value       , intent(in   ) :: kptr,nets,nete,nt,nbuf,tl_in
   integer :: i,j,k,l,q,el,offset,ij,ti,tj,tk,ijk,x,y,tij
-  integer, shared :: direction(4),is,ie,in,iw, ic(max_corner_elem,4)
+  integer, shared :: direction(4),is,ie,in,iw, ic(max_corner_elem_d,4)
   real (kind=real_kind), shared :: vshrd(nlev+PAD,np,np)
   real (kind=real_kind) :: v_before_update, neighbor_value
   
@@ -1611,7 +1615,7 @@ attributes(global) subroutine edgeVunpack_kernel(edgebuf,v,getmapP,nbuf,kptr,net
     direction(south_px) = getmapP(south,el)
     direction(north_px) = getmapP(north,el)
   endif
-  if( ijk < max_corner_elem) then
+  if( ijk < max_corner_elem_d) then
     ic(ijk+1,1) = getmapP(swest+ijk,el)+1
     ic(ijk+1,2) = getmapP(seast+ijk,el)+1
     ic(ijk+1,3) = getmapP(nwest+ijk,el)+1
@@ -1639,7 +1643,7 @@ attributes(global) subroutine edgeVunpack_kernel(edgebuf,v,getmapP,nbuf,kptr,net
   
   ! update the "corner" columns
   if( tj==1 ) then
-    do l=1, max_corner_elem       
+    do l=1, max_corner_elem_d       
       x = mod(ti-1,2)*(np-1) + 1  ! we need to convert ti index from {1,2,3,4} to {(1,1),(4,1),(1,4),(4,4)}
       y = ((ti-1)/2)*(np-1) + 1   !   so, ti->(x,y)
       if( ic(l,ti) /= 0 ) vshrd(tk,x,y) = vshrd(tk,x,y) + edgebuf( offset, ic(l,ti) )

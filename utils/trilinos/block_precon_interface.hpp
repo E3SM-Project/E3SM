@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
-#ifndef precon_interface_H
-#define precon_interface_H
+#ifndef block_precon_interface_H
+#define block_precon_interface_H
 
 // Interface to the NLS_PetraGroup to provide for 
 // residual and matrix fill routines.
@@ -28,15 +28,15 @@
 
 
 
-class  Precon_Interface : 
+class  Block_Precon_Interface : 
 	public Epetra_Operator
 {
 	public:
-		Precon_Interface(int nelems,Teuchos::RCP<Epetra_Map> gmap,const Epetra_Comm& comm_,
+		Block_Precon_Interface(int nelems,Teuchos::RCP<Epetra_Map> gmap,const Epetra_Comm& comm_,
 				void* prec_data_,
 				void (*precFunction_)(double *,int,double*,void *));
 
-		Precon_Interface(int nelems,Teuchos::RCP<Epetra_Map> gmap,const Epetra_Comm& comm_,
+		Block_Precon_Interface(int nelems,Teuchos::RCP<Epetra_Map> gmap,const Epetra_Comm& comm_,
 				void* prec_data_,
 				void (*precFunctionblock11_)(double *,int,double*,void *),
 				void (*precFunctionblock12_)(double *,int,double*,void *),
@@ -46,7 +46,7 @@ class  Precon_Interface :
 	//	Precon_Interface(const Epetra_Comm& comm_,int nelems,Teuchos::RCP<Epetra_Map> gmap);
 
 
-		~Precon_Interface();
+		~Block_Precon_Interface();
 
 		// 10 Methods for inheritance from Epetra_Operator
 		// Only ApplyInverse is non-trivial -- first 9 satisfied here in header

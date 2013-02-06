@@ -11,13 +11,11 @@ implicit none
 private 
 
 	type,  public :: perf_t
-	   sequence
 	   real(kind=real_kind)   :: onnode
 	   real(kind=real_kind)   :: offnode
         end type perf_t 
 
 	type, public :: commtime_t
-	   sequence
 	   real(kind=real_kind)  :: latency
 	   real(kind=real_kind)  :: bandwidth
 	end type commtime_t	

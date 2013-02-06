@@ -262,6 +262,9 @@ contains
     implicit none
     integer(kind=long_kind), intent(in)  :: idexo
     integer(kind=long_kind)              :: block_ids(p_number_blocks)
+
+    block_ids = 0
+
   end function get_block_ids
 
 
@@ -779,6 +782,7 @@ contains
     use parallel_mod,           only : abortmp
     use gridgraph_mod,          only : GridVertex_t
     use dimensions_mod,         only : max_elements_attached_to_node, max_corner_elem
+    use control_mod, only: north, south, east, west, neast,seast, nwest,swest
     implicit none
     
     type (GridVertex_t), intent(inout) :: GridVertex(:)
@@ -791,9 +795,12 @@ contains
     integer                          :: elem_neighbor (4*max_elements_attached_to_node)
     integer                          :: nbr_cnt(4)
     integer                          :: elem_nbr_start, start
-    integer                          :: i, j, k, ll, jj
+    integer                          :: i, j, k, ll, jj, kk
     integer                          :: node, loc, cnt, cnt_index
-
+    integer                          :: corner_array(max_corner_elem), orig_pos(max_corner_elem)
+    integer                          :: face_array(max_corner_elem), a_corner_elems(max_corner_elem)
+    integer                          :: corner_sides(2)
+    integer                          :: side_elem, corner_elem, tmp_s 
 
     !the last column in the index table is a count of the number of elements
     cnt_index =  max_elements_attached_to_node + 1
@@ -833,9 +840,9 @@ contains
        end do ! end of j loop through 4 nodes
 
 
-       !now that we have done the 4 corners we can populate nbrs and nbrs_ptr 
-       ! with the corners in the proper oder in neighbors
-       !also we can add the corner weight
+       ! now that we have done the 4 corners we can populate nbrs and nbrs_ptr 
+       ! with the corners in the proper order (clockwise) in neighbors
+       ! also we can add the corner weight
 
        do j=5,8 !loop through 4 corners
           elem_nbr_start = 1
@@ -862,11 +869,139 @@ contains
 
           end if
 
-          ! TO DO: within each corner neighbor, lets list the corners in clockwise order
-          if (max_corner_elem > 1) then
+          ! within each corner neighbor, lets list the corners in clockwise order
+          if (cnt > 1) then !cnt is the number of neighbors in this corner j
+                            !there can be at most max_corner element of these
+             
+             a_corner_elems = 0
+             a_corner_elems = elem_neighbor(elem_nbr_start : elem_nbr_start + cnt -1)
+             !corner-sides(2) is clockwise of corner_side(1)
+             corner_array= 0
+             orig_pos = 0
+             select case (j)
+             case(neast)
+                corner_sides(1) = north
+                corner_sides(2) = east
+             case(seast)
+                corner_sides(1) = east
+                corner_sides(2) = south
+             case(swest)
+                corner_sides(1) = south
+                corner_sides(2) = west
+             case(nwest)
+                corner_sides(1) = west
+                corner_sides(2) = north
+             end select
+             
+             !so the first element to list touches  corner_sides(1) element
+             side_elem = GridVertex(i)%nbrs(corner_sides(1))
+             
+             !loop though the corner elements and see if any have a side neighbor 
+             !that = side_elem
+             do k = 1,cnt !number of corner elements
+                corner_elem = a_corner_elems(k)
+                do kk = 1,4 !number of sides to check
+                   loc = GridVertex(corner_elem)%nbrs_ptr(kk)
+                   tmp_s = GridVertex(corner_elem)%nbrs(loc)
+                   if (tmp_s == side_elem) then
+                      corner_array(1) = corner_elem
+                      orig_pos(1) = k
+                      exit
+                   endif
+                enddo
+                if  (corner_array(1)> 0) exit
+             enddo
+             if (corner_array(1)==0) then
+                print *, i, cnt
+                call abortmp('find_corner_neighbors (1) : mistake finding corner neighbor order')
+             endif
 
-          endif
+             !if cnt == 2, we are done (we know the order of neighbors)
+             if (cnt ==2) then
+                if (corner_array(1) ==  a_corner_elems(1)) then
+                   corner_array(2) =  a_corner_elems(2)
+                   orig_pos(2) = 2
+                else
+                   corner_array(2) =  a_corner_elems(1)
+                   orig_pos(2) = 1
+                end if
+             else !cnt = 3 or 4
+                !find which corner element borders corner_sides(2)
+                side_elem = GridVertex(i)%nbrs(corner_sides(2))
+                do k = 1,cnt
+                   corner_elem = a_corner_elems(k)
+                   do kk = 1,4
+                      loc = GridVertex(corner_elem)%nbrs_ptr(kk)
+                      tmp_s = GridVertex(corner_elem)%nbrs(loc)
+                      if (tmp_s == side_elem) then
+                         corner_array(4) = corner_elem
+                         orig_pos(4) = k
+                         exit
+                      endif
+                   enddo
+                   if  (corner_array(4)> 0) exit
+                enddo
+                if (corner_array(4)==0 .or. corner_array(4) == corner_array(1)) then
+                   print *, i, cnt
+                   call abortmp('find_corner_neighbors (2) : mistake finding corner neighbor order')
+                endif
+                
+                !now if cnt = 3 then we are done
+                if (cnt ==3) then
+                   corner_array(3) = corner_array(4)
+                   orig_pos(3) = orig_pos(4) 
+                   
+                   do k = 1,cnt !find the "middle" element
+                      if (k /= orig_pos(1) .and. k /= orig_pos(3)) then
+                         orig_pos(2) = k
+                         corner_array(2) = a_corner_elems(k)
+                         exit
+                      endif
+                   enddo
+                else  !cnt = 4 
+                   !which of the two unassigned elements borders the element in
+                   !corner_array(1) => put in corner_array(2)
+                   side_elem = corner_array(1)
+                   
+                   do k = 1,cnt
+                      corner_elem = a_corner_elems(k)
+                      if (corner_elem == corner_array(4) .or. corner_elem == corner_array(1)) then
+                         cycle
+                      else
+                         do kk = 1,4 !check each side
+                            loc = GridVertex(corner_elem)%nbrs_ptr(kk)
+                            tmp_s = GridVertex(corner_elem)%nbrs(loc)
+                            if (tmp_s == side_elem) then
+                               corner_array(2) = corner_elem
+                               orig_pos(2) = k
+                               exit
+                            endif
+                         enddo
+                      endif
+                      if  (corner_array(2)> 0) exit
+                   enddo
+                   !now put the remaining one in pos 3
+                   do k = 1,cnt
+                      corner_elem = a_corner_elems(k)
+                      if (corner_elem /= corner_array(4) .and. corner_elem /= &
+                           corner_array(2) .and. corner_elem /= corner_array(1)) then
+                         corner_array(3) = corner_elem
+                         orig_pos(3) = k
+                         exit
+                      endif
+                   enddo
+                endif ! end of cnt=4
+             endif! end of not cnt=2
 
+             !now re-set the elements in this corner
+             GridVertex(i)%nbrs(start : start + cnt-1) = corner_array(1:cnt)
+             !nbrs_wgt are the same - nothing to do
+             !fix neighbors face
+             do k = 1,cnt
+                face_array(k) = GridVertex(i)%nbrs_face(start + orig_pos(k) - 1)
+             end do
+             GridVertex(i)%nbrs_face(start : start + cnt - 1) = face_array(1:cnt)
+          endif !end of cnt > 1 loop for corners
 
        end do !j loop through each corner
        

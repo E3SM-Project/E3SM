@@ -650,7 +650,7 @@ If (nstep > 0 .and. filter_freq > 0 .and. MODULO(nstep,filter_freq) == 0) then
         elem(ie)%state%uv(:,:,1,k) = (uv_rk0(:,:,1,k,ie) + elem(ie)%state%uv(:,:,1,k) + dt* (sw_rhs(:,:,2)  &
                                                                                       + dif_uv(:,:,1,k,ie)))*0.5D0
         elem(ie)%state%uv(:,:,2,k) = (uv_rk0(:,:,2,k,ie) + elem(ie)%state%uv(:,:,2,k) + dt* (sw_rhs(:,:,3)  & 
-                                                                                      + dif_uv(:,:,1,k,ie)))*0.5D0
+                                                                                      + dif_uv(:,:,2,k,ie)))*0.5D0
 
         elem(ie)%state%ht(:,:,k) = phi2height(psi_rk0(:,:,k,ie),elem(ie)%metdet(:,:))
 

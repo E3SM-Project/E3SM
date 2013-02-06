@@ -22,7 +22,7 @@ contains
     !-----------------
     use shallow_water_mod, only : tc1_init_state, tc2_init_state, tc5_init_state, tc6_init_state, tc5_invariants, &
          tc8_init_state, vortex_init_state, vortex_errors, sj1_init_state, tc6_errors, &
-         tc1_errors, tc2_errors, tc5_errors, sweq_invariants, swirl_init_state, swirl_errors, sj1_errors
+         tc1_errors, tc2_errors, tc5_errors, sweq_invariants, swirl_init_state, swirl_errors, sj1_errors, tc1_velocity
 !is swirl ever run with this routine???? its a pure advection test
 
     !-----------------
@@ -126,9 +126,24 @@ contains
     type(derived_type) ,target         :: state_object
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
-    type(precon_type) ,target          :: pre_object
-    type(precon_type) ,pointer         :: pptr=>NULL()
+
+    type(derived_type) ,target          :: pre_object
+    type(derived_type) ,pointer         :: pptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_pre
+
+    type(derived_type) ,target          :: jac_object
+    type(derived_type) ,pointer        :: jptr=>NULL()
+    type(c_ptr)                        :: c_ptr_to_jac
+
+    type (element_t)  :: pc_elem(size(elem))
+    type (element_t)  :: jac_elem(size(elem))
+
+
+    real (kind=real_kind), dimension(np,np)  :: utemp1,utemp2
+
+
+
+
 #endif
 
     integer :: simday
@@ -403,7 +418,6 @@ contains
           !DBG print *,'homme: right after ReadRestart pmean is: ',pmean
 
           call printstate(elem,pmean,g_sw_output,tl%n0,hybrid,nets,nete,-1)
-
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
        else 
           if (hybrid%masterthread) then
@@ -591,21 +605,41 @@ contains
     end if
 
     if (integration == "full_imp") then
+    tl%t_stepper=22 ! CN
+    !tl%t_stepper=0 ! BE
       if (hybrid%masterthread) print *,'initializing Trilinos solver info'
 
 #ifdef TRILINOS
       lenx=np*np*nlev*nvar*(nete-nets+1)
       allocate(xstate(lenx))
       xstate(:) = 0
-       call initialize(state_object, lenx, elem, pmean, edge3, &
+       call initialize(state_object, lenx, elem, pmean,edge1,edge2, edge3, &
         hybrid, deriv, dt, tl, nets, nete)
-       call init_precon(pre_object, lenx, elem, blkjac, edge1, edge2, edge3, &
-        red, deriv, cg, lambdasq, dt, pmean, tl, nets, nete)
+       !call init_precon(pre_object, lenx, elem, blkjac, edge1, edge2, edge3, &
+       ! red, deriv, cg, lambdasq, dt, pmean, tl, nets, nete)
 
-        fptr => state_object
-        c_ptr_to_object =  c_loc(fptr)
-        pptr => pre_object
-        c_ptr_to_pre =  c_loc(pptr)
+    
+       pc_elem=elem
+       jac_elem=elem
+
+
+       call initialize(pre_object, lenx, pc_elem, pmean, edge1,edge2,edge3, &
+        hybrid, deriv, dt, tl, nets, nete)
+
+       call initialize(jac_object, lenx, jac_elem, pmean, edge1,edge2,edge3, &
+        hybrid, deriv, dt, tl, nets, nete)
+
+
+       fptr => state_object
+       c_ptr_to_object =  c_loc(fptr)
+       pptr => pre_object
+       c_ptr_to_pre =  c_loc(pptr)
+       jptr => jac_object
+       c_ptr_to_jac =  c_loc(jptr)
+
+
+
+
 
         call noxinit(size(xstate), xstate, 1, c_ptr_to_object, c_ptr_to_pre)
 #endif
@@ -659,8 +693,89 @@ contains
        else if (integration == "full_imp") then
             dt=tstep
 #ifdef TRILINOS
+
+    nm1   = tl%nm1
+    n0    = tl%n0
+    np1   = tl%np1
+
+
+        do ie=nets,nete
+         do k=1,nlev
+          do i=1,np
+           do j=1,np
+           utemp1(i,j)= elem(ie)%D(1,1,i,j)*elem(ie)%state%v(i,j,1,k,np1) + elem(ie)%D(1,2,i,j)*elem(ie)%state%v(i,j,2,k,np1)
+           utemp2(i,j)= elem(ie)%D(2,1,i,j)*elem(ie)%state%v(i,j,1,k,np1) + elem(ie)%D(2,2,i,j)*elem(ie)%state%v(i,j,2,k,np1)
+           elem(ie)%state%v(i,j,1,k,np1)=utemp1(i,j)
+           elem(ie)%state%v(i,j,2,k,np1)=utemp2(i,j)
+
+           utemp1(i,j)= elem(ie)%D(1,1,i,j)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%D(1,2,i,j)*elem(ie)%state%v(i,j,2,k,n0)
+           utemp2(i,j)= elem(ie)%D(2,1,i,j)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%D(2,2,i,j)*elem(ie)%state%v(i,j,2,k,n0) 
+           elem(ie)%state%v(i,j,1,k,n0)=utemp1(i,j)
+           elem(ie)%state%v(i,j,2,k,n0)=utemp2(i,j)
+
+           utemp1(i,j)= elem(ie)%D(1,1,i,j)*elem(ie)%state%v(i,j,1,k,nm1) + elem(ie)%D(1,2,i,j)*elem(ie)%state%v(i,j,2,k,nm1)
+           utemp2(i,j)= elem(ie)%D(2,1,i,j)*elem(ie)%state%v(i,j,1,k,nm1) + elem(ie)%D(2,2,i,j)*elem(ie)%state%v(i,j,2,k,nm1)
+
+           elem(ie)%state%v(i,j,1,k,nm1)=utemp1(i,j)
+           elem(ie)%state%v(i,j,2,k,nm1)=utemp2(i,j)
+! need  to  convert  xstate  to  latlon
+
+           end do !nv
+          end do !nv 
+         end do !nlev 
+        end do !ie 
+
+
+
+
             call advance_imp_nonstag(elem, edge1, edge2, edge3, red, deriv,  &
                cg, hybrid, blkjac, lambdasq, dt, pmean, tl, nets, nete, xstate)
+
+            ! TODO update with vortex and swirl possibly using set_prescribed_velocity
+
+        do ie=nets,nete
+
+         if (topology == "cube" .and. test_case=="swtc1") then
+             do k=1,nlev
+                elem(ie)%state%v(:,:,:,k,np1)=tc1_velocity(elem(ie)%spherep,elem(ie)%Dinv)
+                elem(ie)%state%v(:,:,:,k,n0)=elem(ie)%state%v(:,:,:,k,np1)
+                elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,nm1)
+             end do 
+         else
+         do k=1,nlev
+          do i=1,np
+           do j=1,np
+           utemp1(i,j)= elem(ie)%Dinv(1,1,i,j)*elem(ie)%state%v(i,j,1,k,np1) + elem(ie)%Dinv(1,2,i,j)*elem(ie)%state%v(i,j,2,k,np1)
+           utemp2(i,j)= elem(ie)%Dinv(2,1,i,j)*elem(ie)%state%v(i,j,1,k,np1) + elem(ie)%Dinv(2,2,i,j)*elem(ie)%state%v(i,j,2,k,np1)
+
+           elem(ie)%state%v(i,j,1,k,np1)=utemp1(i,j)
+           elem(ie)%state%v(i,j,2,k,np1)=utemp2(i,j)
+
+           utemp1(i,j)= elem(ie)%Dinv(1,1,i,j)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%Dinv(1,2,i,j)*elem(ie)%state%v(i,j,2,k,n0)
+           utemp2(i,j)= elem(ie)%Dinv(2,1,i,j)*elem(ie)%state%v(i,j,1,k,n0) + elem(ie)%Dinv(2,2,i,j)*elem(ie)%state%v(i,j,2,k,n0)
+
+           elem(ie)%state%v(i,j,1,k,n0)=utemp1(i,j)
+           elem(ie)%state%v(i,j,2,k,n0)=utemp2(i,j)
+
+           utemp1(i,j)= elem(ie)%Dinv(1,1,i,j)*elem(ie)%state%v(i,j,1,k,nm1) + elem(ie)%Dinv(1,2,i,j)*elem(ie)%state%v(i,j,2,k,nm1)
+           utemp2(i,j)= elem(ie)%Dinv(2,1,i,j)*elem(ie)%state%v(i,j,1,k,nm1) + elem(ie)%Dinv(2,2,i,j)*elem(ie)%state%v(i,j,2,k,nm1)
+
+           elem(ie)%state%v(i,j,1,k,nm1)=utemp1(i,j)
+           elem(ie)%state%v(i,j,2,k,nm1)=utemp2(i,j)
+! need ! to ! convert ! xstate ! to ! contravariant 
+           end do !np 
+          end do !np 
+         end do !nlev 
+        end if
+        end do !ie
+
+
+
+
+
+
+
+
 #else
 !           Check /utils/trilinos/README for more details
             call abortmp('Need to include -DTRILINOS at compile time to execute FI solver')

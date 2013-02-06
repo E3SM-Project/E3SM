@@ -61,7 +61,6 @@ module restart_io_mod
 !
 
    type, public :: RestartHeader_t
-      sequence
       integer(kind=int_kind)    :: size          !   1
       integer(kind=int_kind)    :: version       !   2
       integer(kind=int_kind)    :: ne            !   3
@@ -94,7 +93,6 @@ module restart_io_mod
    ! and adding the puffer struct back in below (change PRIMXXX back to PRIM)
    !
    type, public :: RestartBuffer_t
-      sequence
       type (elem_state_t)        :: buffer
 #ifdef _PRIMXXX
       type (physics_state_t)     :: puffer
@@ -103,7 +101,6 @@ module restart_io_mod
 
 
    type, public :: StateDesc_t
-      sequence
       integer(kind=int_kind)         :: numComponents
       integer(kind=int_kind)         :: ptr
       integer(kind=MPI_OFFSET_KIND),pointer :: disp(:)
@@ -115,7 +112,6 @@ module restart_io_mod
    end type 
 
    type, public :: File_elem_t
-      sequence
       integer(kind=int_kind)    :: fh
       integer(kind=int_kind)    :: ElemState   ! MPI datastructure single element state
       integer(kind=int_kind)    :: State       ! MPI datastructure all elemnts on a process
@@ -124,7 +120,6 @@ module restart_io_mod
       type (parallel_t)         :: par
    end type 
    type, public :: File_face_t
-     sequence
      integer(kind=int_kind)     :: fh
      integer(kind=int_kind)     :: face      ! MPI datastructure for a cube face
      integer(kind=int_kind)     :: buffer    ! MPI datastructure for a collection of faces

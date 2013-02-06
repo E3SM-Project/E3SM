@@ -50,6 +50,7 @@ SET(SRCS_PREQX ${SRC_SHARE_DIR}/kinds.F90
 					     ${SRC_SHARE_DIR}/fvm_mod.F90
 					     ${SRC_SHARE_DIR}/fvm_control_volume_mod.F90
 					     ${SRC_SHARE_DIR}/fvm_line_integrals_mod.F90 
+					     ${SRC_SHARE_DIR}/fvm_line_integrals_flux_mod.F90 
 					     ${SRC_SHARE_DIR}/fvm_analytic_mod.F90 
 					     ${SRC_SHARE_DIR}/fvm_filter_mod.F90 
 					     ${SRC_SHARE_DIR}/fvm_reconstruction_mod.F90 
