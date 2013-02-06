@@ -1,4 +1,4 @@
-PROJECT(HOMME C Fortran)
+PROJECT(HOMME C CXX Fortran)
 INCLUDE(FortranCInterface)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
@@ -56,8 +56,9 @@ MESSAGE(STATUS "-- num tracers (NTRAC) set to... ${NUM_TRACERS}")
 # Add the cmake/CMakeLists.txt file
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-include(GetHostInfo) # defines a macro:
-include(ReadPaths) # defines a macro:
+# Set up some directories to facilitate finding netcdf and pnetcdf
+include(SetHostPaths)
+
 #ADD_SUBDIRECTORY(cmake)
 
 MESSAGE(STATUS "Homme hostname = ${Homme_Hostname}")

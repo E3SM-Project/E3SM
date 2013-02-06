@@ -1,6 +1,7 @@
 find_path(Pnetcdf_INCLUDE_DIR 
           pnetcdf.h
           PATHS ${Homme_PNETCDF_DIR}
+          HINTS ${Homme_Hint_Paths}
           PATH_SUFFIXES include
           NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 

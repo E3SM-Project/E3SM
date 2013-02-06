@@ -1,4 +1,5 @@
 
+macro(readRegisteredPaths)
 
 FILE(STRINGS ${PROJECT_SOURCE_DIR}/systemPaths/${Homme_Hostname}.${CMAKE_Fortran_COMPILER_ID}
      Homme_Raw_Paths
@@ -23,5 +24,15 @@ FOREACH(LINE ${Homme_Raw_Paths})
 
 endforeach()
 
-MESSAGE(STATUS "Homme_NETCDF_DIR = ${Homme_NETCDF_DIR}")
-MESSAGE(STATUS "Homme_PNETCDF_DIR = ${Homme_PNETCDF_DIR}")
+endmacro(readRegisteredPaths)
+
+
+macro(determineHintPaths)
+  IF (Homme_OS STREQUAL "Darwin")
+    SET(Homme_Hint_Paths
+      /Users/${Homme_Username}/software/*
+      /scratch/${Homme_Username}/*
+      /opt/local/share/*)
+  ENDIF()
+endmacro(determineHintPaths)
+

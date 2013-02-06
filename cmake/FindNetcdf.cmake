@@ -2,6 +2,7 @@ MESSAGE(STATUS "Homme_NETCDF_DIR = ${Homme_NETCDF_DIR}")
 find_path(Netcdf_INCLUDE_DIR 
           netcdf.h
           PATHS ${Homme_NETCDF_DIR}
+          HINTS ${Homme_Hint_Paths}
           PATH_SUFFIXES include
           NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
