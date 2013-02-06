@@ -540,7 +540,7 @@ contains
 !rowind, colind are from 1 to 2 cause they correspond to 2D tensor in lat/lon
 
 !IF DSSED V NEEDED
-#if 1
+#if 0
     call initEdgeBuffer(edgebuf,1)
     do rowind=1,2
       do colind=1,2
@@ -551,7 +551,7 @@ contains
 	call bndry_exchangeV(hybrid,edgebuf)
 	do ie=nets,nete
 	  call edgeVunpack(edgebuf,zeta(1,1,ie),1,0,elem(ie)%desc)
-	  elem(ie)%tensorVisc(rowind,colind,:,:) = zeta(:,:,ie)*elem(ie)%rspheremp(:,:)
+          elem(ie)%tensorVisc(rowind,colind,:,:) = zeta(:,:,ie)*elem(ie)%rspheremp(:,:)
 	end do
       enddo !rowind
     enddo !colind
@@ -559,7 +559,7 @@ contains
 #endif
 
 !IF BILINEAR MAP OF V NEEDED
-#if 1
+#if 0
     do rowind=1,2
       do colind=1,2
     ! replace hypervis w/ bilinear based on continuous corner values
@@ -616,10 +616,12 @@ contains
           endif
        endif
        if(nu_top>0) then
-          write(iulog,'(a,f10.2,a)') 'TOP3 viscosity CFL: dt < S*',1.0d0/(4*nu_top*((rrearth*max_max_eig)**2)*lambda_vis),'s'
+          write(iulog,'(a,f10.2,a)') 'TOP3 viscosity CFL: dt < S*', &
+                                  1.0d0/(4*nu_top*((rrearth*max_max_eig)**2)*lambda_vis),'s'
        end if
       if (hypervis_power /= 0) then 
-         write(iulog,'(a,3e11.4)') 'Hyperviscosity (dynamics): ave,min,max = ',nu*(/avg_hypervis**2,min_hypervis**2,max_hypervis**2/)
+        write(iulog,'(a,3e11.4)')'Hyperviscosity (dynamics): ave,min,max = ', &
+                                  nu*(/avg_hypervis**2,min_hypervis**2,max_hypervis**2/)
 !         print*, 'fine_ne = ', fine_ne
 !         print*, 'Using max_unif_dx = ', max_unif_dx
       end if

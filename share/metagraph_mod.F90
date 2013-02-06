@@ -6,14 +6,14 @@
 
 module metagraph_mod
   use kinds, only : int_kind, iulog
-  use gridgraph_mod, only : gridvertex_t, gridedge_t
+  use gridgraph_mod, only : gridvertex_t, gridedge_t, &
+       allocate_gridvertex_nbrs, assignment ( = )
   use pio_types ! _EXTERNAL
 
   implicit none 
   private 
 
   type, public :: MetaEdge_t
-     sequence
      type (GridEdge_t),pointer     :: members(:)
      integer          ,pointer     :: edgeptrP(:)
      integer          ,pointer     :: edgeptrP_ghost(:)
@@ -28,7 +28,6 @@ module metagraph_mod
   end type MetaEdge_t
 
   type, public :: MetaVertex_t             ! one for each processor
-     sequence
      integer                       :: number     ! USELESS just the local processor number
      integer                       :: nmembers   ! number of elements on this processor 
      type (GridVertex_t),pointer   :: members(:) ! array of elements on this processor
@@ -296,7 +295,6 @@ contains
     if(Debug) write(iulog,*)'initMetagraph: point #2'
 
 
-
     !  Give some identity to the Meta_vertex
     MetaVertex%number   = ThisProcessorNumber
     if(Debug) write(iulog,*)'initMetagraph: point #3'
@@ -317,6 +315,10 @@ contains
     !  Allocate space for the members of the MetaVertices
     if(Debug) write(iulog,*)'initMetagraph: point #4.1 i,MetaVertex%nmembers',i,MetaVertex%nmembers
     allocate(MetaVertex%members(MetaVertex%nmembers))
+
+    do j=1, MetaVertex%nmembers
+       call allocate_gridvertex_nbrs(MetaVertex%members(j))
+    end do
 
     if(Debug) write(iulog,*)'initMetagraph: point #5'
 

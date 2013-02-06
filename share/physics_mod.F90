@@ -23,7 +23,6 @@ module physics_mod
 #ifndef CAM
   ! Each element contains this kind of physics
   type, public :: elem_physics_t
-     sequence
      !required by multicloud       
      real (kind=real_kind) :: mask(np,np)  
      real (kind=real_kind) :: invmask(np,np)  

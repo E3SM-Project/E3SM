@@ -1216,8 +1216,9 @@ end subroutine
 !
 !
   use dimensions_mod, only : np, np, nlev
-  use element_mod, only : element_t
-  use derivative_mod, only : derivative_t , divergence_sphere, divergence_sphere_wk, element_boundary_integral, gradient_sphere, gradient_sphere_wk
+  use element_mod, only    : element_t
+  use derivative_mod, only  : derivative_t, divergence_sphere, divergence_sphere_wk, &
+                             element_boundary_integral, gradient_sphere, gradient_sphere_wk
   use physical_constants, only : rrearth
 
   implicit none

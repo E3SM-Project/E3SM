@@ -11,7 +11,6 @@ module filter_mod
 
   real (kind=real_kind), parameter :: one=1.0D0, zero=0.0D0
   type, public :: filter_t
-     sequence
      real (kind=real_kind) :: FmatP(np,np)    ! Filter matrix
      character(len=8)      :: type    ! filter name: bv,fm, etc...
   end type filter_t

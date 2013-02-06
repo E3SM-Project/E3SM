@@ -23,7 +23,6 @@ module interpolate_mod
   character(len=10), public :: vector_uvars(MAX_VECVARS), vector_vvars(MAX_VECVARS)
 
   type, public :: interpolate_t
-     sequence
      real (kind=real_kind), dimension(:,:), pointer :: Imat  ! P_k(xj)*wj/gamma(k)
      real (kind=real_kind), dimension(:)  , pointer :: rk    ! 1/k
      real (kind=real_kind), dimension(:)  , pointer :: vtemp ! temp results

@@ -8,13 +8,11 @@ module domain_mod
   private
 
   type, public :: domain1D_t
-     sequence
      integer :: start                     ! domain start index
      integer :: end                       ! domain end index
   end type domain1D_t
 
   type, public :: domain2D_t
-     sequence
      type (domain1D_t) :: x
      type (domain1D_t) :: y
   end type domain2D_t
