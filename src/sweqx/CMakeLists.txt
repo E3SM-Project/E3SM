@@ -101,3 +101,47 @@ ENDIF()
 
 INSTALL(TARGETS sweqx
         RUNTIME DESTINATION bin)
+
+# Macro to create the individual tests
+macro(createSweqxTest execName macroNP macroPLEV macroUSE_PIO
+                               macroWITH_ENERGY)
+
+  ADD_EXECUTABLE(${execName} ${SRCS_F90} ${SRC_BASE}/main.F90)
+
+  SET_TARGET_PROPERTIES(${execName}
+                        PROPERTIES COMPILE_DEFINITIONS "NP=${macroNP}")
+  SET_TARGET_PROPERTIES(${execName}
+                        PROPERTIES COMPILE_DEFINITIONS "PLEV=${macroPLEV}")
+  IF (macroUSE_PIO)
+    SET_TARGET_PROPERTIES(${execName}
+                          PROPERTIES COMPILE_DEFINITIONS "PIO=1")
+  ELSE ()
+    SET_TARGET_PROPERTIES(${execName}
+                          PROPERTIES COMPILE_DEFINITIONS "PIO_INTERP=1")
+  ENDIF ()
+  IF (macroWITH_ENERGY)
+    SET_TARGET_PROPERTIES(${execName}
+                          PROPERTIES COMPILE_DEFINITIONS "ENERGY_DIAGNOSTICS=1")
+  ENDIF ()
+
+  # Macro
+  TARGET_LINK_LIBRARIES(${execName} pio timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+
+  IF (NOT HOMME_FIND_BLASLAPACK)
+    TARGET_LINK_LIBRARIES(${execName} lapack blas)
+    ADD_DEPENDENCIES(${execName} blas lapack)
+  ENDIF()
+
+  INSTALL(TARGETS ${execName}
+          RUNTIME DESTINATION tests)
+
+endmacro(createSweqxTest)
+
+# There are only three separate executables that need to be compiled
+#   separately
+createSweqxTest(swtcA 8 4 FALSE FALSE)
+createSweqxTest(swtcB 4 1 FALSE FALSE)
+createSweqxTest(swtcC 8 1 FALSE FALSE)
+
+
+

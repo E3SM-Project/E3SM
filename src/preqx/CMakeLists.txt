@@ -124,6 +124,48 @@ IF (NOT HOMME_FIND_BLASLAPACK)
   ADD_DEPENDENCIES(preqx blas lapack)
 ENDIF()
 
-
 INSTALL(TARGETS preqx
         RUNTIME DESTINATION bin)
+
+# Macro to create the individual tests
+macro(createPreqxTest execName macroNP macroPLEV macroUSE_PIO
+                               macroWITH_ENERGY)
+
+  # baro1a
+  ADD_EXECUTABLE(${execName} ${SRCS_PREQX} ${SRC_DIR}/prim_main.F90)
+  # NP=8, PLEV=20, USE_PIO=0, WITH_ENERGY=24
+  SET_TARGET_PROPERTIES(${execName}
+                        PROPERTIES COMPILE_DEFINITIONS "NP=${macroNP}")
+  SET_TARGET_PROPERTIES(${execName}
+                        PROPERTIES COMPILE_DEFINITIONS "PLEV=${macroPLEV}")
+  IF (macroUSE_PIO)
+    SET_TARGET_PROPERTIES(${execName}
+                          PROPERTIES COMPILE_DEFINITIONS "PIO=1")
+  ELSE ()
+    SET_TARGET_PROPERTIES(${execName}
+                          PROPERTIES COMPILE_DEFINITIONS "PIO_INTERP=1")
+  ENDIF ()
+  IF (macroWITH_ENERGY)
+    SET_TARGET_PROPERTIES(${execName}
+                          PROPERTIES COMPILE_DEFINITIONS "ENERGY_DIAGNOSTICS=1")
+  ENDIF ()
+
+  # Macro
+  TARGET_LINK_LIBRARIES(${execName} pio timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+
+  IF (NOT HOMME_FIND_BLASLAPACK)
+    TARGET_LINK_LIBRARIES(${execName} lapack blas)
+    ADD_DEPENDENCIES(${execName} blas lapack)
+  ENDIF()
+
+  INSTALL(TARGETS ${execName}
+          RUNTIME DESTINATION tests)
+
+endmacro(createPreqxTest)
+
+# There are only three separate executables that need to be compiled
+#   separately
+createPreqxTest(baroA 8 20 FALSE TRUE)
+createPreqxTest(baroB 8 20 TRUE FALSE)
+createPreqxTest(baroC 4 26 FALSE TRUE)
+
