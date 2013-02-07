@@ -935,7 +935,6 @@ contains
 !! @param iocount   The count for the block-cyclic io decomposition
 !<
   subroutine PIO_initdecomp_dof_i4(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount, num_ts, bsize)
-    use calcdisplace_mod, only : calcdisplace_box
     type (iosystem_desc_t), intent(inout) :: iosystem
     integer(i4), intent(in)           :: basepiotype
     integer(i4), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
@@ -991,9 +990,7 @@ contains
 
     integer ierror
 
-    nullify(iodesc%start)
-    nullify(iodesc%count)
-
+    nullify(displace)
 
 #ifdef TIMING
     call t_startf("PIO_initdecomp_dof")
@@ -1188,7 +1185,7 @@ contains
     call dupiodesc2(iodesc%write,iodesc%read)
     
 
-    if (iosystem%ioproc) then
+    if (associated(displace)) then
        call dealloc_check(displace)
     endif
 
@@ -1429,7 +1426,7 @@ contains
 
     numblocks = size(displace)
 
-    !tcx - allow empty iodofs
+    !tcx - allow empty displace array
     if (numblocks > 0) then
        prev = displace(1)
        do i=2,numblocks
@@ -1464,19 +1461,23 @@ contains
        elemtype = lbasetype
        filetype = lbasetype
     else
+       elemtype = mpi_datatype_null
+       filetype = mpi_datatype_null
+       
        call mpi_type_contiguous(lenblocks,lbasetype,elemtype,ierr)
        if(check) call checkmpireturn('genindexedblock: after call to type_contiguous: ',ierr)
        call mpi_type_commit(elemtype,ierr)
        if(check) call checkmpireturn('genindexedblock: after call to type_commit: ',ierr)
-       call mpi_type_create_indexed_block(numblocks,1,displace,elemtype,filetype,ierr)
-       if(check) call checkmpireturn('genindexedblock: after call to type_create_indexed_block: ',ierr)
-       call mpi_type_commit(filetype,ierr)
-       if(check) call checkmpireturn('genindexedblock: after call to type_commit: ',ierr)
-       if(debug) then
-          call mpi_type_get_envelope(filetype, nints, nadds, ndtypes, comb, ierr)
-          print *,__FILE__,__LINE__,nints,nadds,ndtypes,comb,ierr
+       if(numblocks>0) then
+         call mpi_type_create_indexed_block(numblocks,1,displace,elemtype,filetype,ierr)
+         if(check) call checkmpireturn('genindexedblock: after call to type_create_indexed_block: ',ierr)
+         call mpi_type_commit(filetype,ierr)
+         if(check) call checkmpireturn('genindexedblock: after call to type_commit: ',ierr)
+         if(debug) then
+            call mpi_type_get_envelope(filetype, nints, nadds, ndtypes, comb, ierr)
+            print *,__FILE__,__LINE__,nints,nadds,ndtypes,comb,ierr
+         endif
        endif
-
     end if
     ! _MPISERIAL
 #endif

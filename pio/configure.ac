@@ -172,7 +172,7 @@ AC_LANG_PUSH(Fortran)
 AC_FC_SRCEXT(F90)
 
 AC_FC_FREEFORM()
-AC_FC_LINE_LENGTH([unlimited])
+AC_FC_LINE_LENGTH()
 
 # When using a cache file it appears that sometimes ac_ext does not get set
 if test -z "$ac_ext"; then
@@ -184,9 +184,9 @@ AC_FC_PP_DEFINE()
 
 # CHECK HOW TO GET THE COMPILER VERSION.
 
-AX_FC_VERSION()
+#AX_FC_VERSION()
 
-fc_version="$ac_fc_version_output"
+#fc_version="$ac_fc_version_output"
 
 
 
@@ -509,7 +509,7 @@ if test "$USE_COMPRESSION" = "yes"
 
         AC_PROG_CXX
 	AC_LANG_PUSH(C)
-	AM_WITH_EXPAT
+	AM_WITH_EXPAT()
 	if test "$with_expat" != "no"
         then
           LDLIBS=" $LDLIBS -L$with_expat/lib -lexpat"

@@ -248,8 +248,12 @@ foreach \$suite (qw(@testsuites)){
     }
     my \$test;
 
-    if($twopass && \$thispass==1 && -e "testpio") {
-	rename("testpio","testpio.\$suite");
+    if($twopass && \$thispass==1 ) {
+	if(-e "testpio"){
+	    rename("testpio","testpio.\$suite");
+	}else{
+	    die "Build of testpio.\$suite failed";
+	}
     }elsif(($twopass && \$thispass==2 && -e "testpio.\$suite")  or  (-e "../pio/Makefile.conf" && -e "testpio")){
 	foreach \$test (\@testlist){
 	    if(\$host eq "intrepid" && (\$test =~ /^a/)) {

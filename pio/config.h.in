@@ -3,26 +3,11 @@
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
 
-/* Define to 1 if you have the <expat.h> header file. */
-#undef HAVE_EXPAT_H
-
-/* Define if you have the HDF5 library. */
-#undef HAVE_HDF5
-
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
-
-/* Define if you have the MPI library. */
-#undef HAVE_MPI
-
-/* Define if you have the NETCDF library. */
-#undef HAVE_NETCDF
-
-/* Define if the netCDF library is compiled with netCDF 4 API. */
-#undef HAVE_NETCDF4
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
@@ -56,9 +41,6 @@
 
 /* Define to the one symbol short name of this package. */
 #undef PACKAGE_TARNAME
-
-/* Define to the home page for this package. */
-#undef PACKAGE_URL
 
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION

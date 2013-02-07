@@ -3,7 +3,7 @@ MODULE calcdisplace_mod
 
   use pio_kinds, only: i4, PIO_OFFSET, i8
   use pio_support, only : piodie
-
+  implicit none
   private
   public :: GCDblocksize,gcd
   public :: calcdisplace, calcdisplace_box
@@ -53,12 +53,12 @@ CONTAINS
 
 
   subroutine calcdisplace_box(gsize,lenblock,start,count,ndim,displace)
-
+    use alloc_mod, only : alloc_check,dealloc_check
     integer(i4),intent(in) :: gsize(:)   ! global size of output domain
     integer(i4),intent(in) :: lenblock
     integer(kind=PIO_offset),intent(in) :: start(:), count(:)
     integer(i4), intent(in) :: ndim
-    integer(i4),intent(inout) :: displace(:)  ! mpi displacments
+    integer(i4),pointer, intent(inout) :: displace(:)  ! mpi displacments
 
     !!
 
@@ -70,7 +70,7 @@ CONTAINS
     integer(i4) :: ub(ndim)
     integer :: idim
     logical :: done
-    integer(i4) ::  gindex
+    integer(i4) ::  gindex, fdim, bsize
 
     gstride(1)=gsize(1)
     do i=2,ndim
@@ -159,7 +159,12 @@ CONTAINS
 
     do i=1,ndisp-1	
        if(displace(i) > displace(i+1)) then
-          call piodie(__PIO_FILE__,__LINE__,'displace is not increasing')
+!          This is an error but only if you are writing a binary file, so we are going to
+!          silently fail by deallocating the displace array
+          call dealloc_check(displace)
+          call alloc_check(displace,0)
+          exit
+!          call piodie(__PIO_FILE__,__LINE__,'displace is not increasing')
        endif
     enddo
 

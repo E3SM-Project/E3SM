@@ -1,6 +1,56 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_6_2
+Originator(s): jim
+Date: 02-07-2013
+One-line Summary: support for large data (bug fix), autoconf update
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+M              703   testpio/testpio_run.pl   - When using --twopass option do not
+	                    submit job unless build completes successfully
+M              700   testpio/gdecomp_mod.F90  - fix a dependancy issue
+M              700   pio/calcdisplace_mod.F90  - fail silently on overflow of displace
+	                          array, this data is not used for pnetcdf so by failing silently 
+	                          here we defer the failure of mpiio i/o until the read or write call
+M              700   pio/configure.ac  -  change line length max to 132 to support nag 
+	                          fortran compiler
+M              703   pio/piolib_mod.F90 - if displace array overflows in calcdisplace_mod
+	                          set filetype to mpi_datatype_null
+M              700   pio/configure
+M              700   pio/aclocal.m4
+M              700   pio/config.h.in
+                                                   these autoconf generated files are in the repo 
+	                                           for convience
+
+	
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by:  Jim
+
+Summary of pre-tag testing:
+
+  Regression tests:    
+
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_6_1
 Originator(s): Jim
 Date: 02-05-2013
