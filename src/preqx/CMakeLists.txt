@@ -127,9 +127,12 @@ ENDIF()
 INSTALL(TARGETS preqx
         RUNTIME DESTINATION bin)
 
+# String representation of pound since it is a cmake comment char.
+STRING(ASCII 35 POUND)
+
 # Macro to create the individual tests
-macro(createPreqxTest execName macroNP macroPLEV macroUSE_PIO
-                               macroWITH_ENERGY)
+macro(createPreqxTestExec execName macroNP macroPLEV macroUSE_PIO
+                                   macroWITH_ENERGY)
 
   # Backup the cmake variables
   SET(tempNP ${NUM_POINTS})
@@ -187,12 +190,152 @@ macro(createPreqxTest execName macroNP macroPLEV macroUSE_PIO
   SET(PIO ${tempUSE_PIO})
   SET(ENERGY_DIAGNOSTICS ${tempWITH_ENERGY})
 
-endmacro(createPreqxTest)
+endmacro(createPreqxTestExec)
 
 # There are only three separate executables that need to be compiled
 #   separately
-#                     NP  PLEV  USE_PIO  WITH_ENERGY
-createPreqxTest(baroA  8    20    FALSE        TRUE)
-createPreqxTest(baroB  8    20     TRUE       FALSE)
-createPreqxTest(baroC  4    26    FALSE        TRUE)
+#                         NP  PLEV  USE_PIO  WITH_ENERGY
+createPreqxTestExec(baroA  8    20    FALSE        TRUE)
+createPreqxTestExec(baroB  8    20     TRUE       FALSE)
+createPreqxTestExec(baroC  4    26    FALSE        TRUE)
+
+macro(getValue thisLine thisVar)
+
+  # Turn the line into a list
+  STRING(REPLACE "=" ";" LINE_LIST ${thisLine})
+
+  # Get the 0th and 1th items of the list
+  #LIST(GET LINE_LIST 0 thisKey)
+  LIST(GET LINE_LIST 1 thisVal)
+
+  # Remove whitespace  and set to the variable defined by thisVar
+  STRING(STRIP ${thisVal} ${thisVar})
+
+endmacro(getValue)
+
+macro(parseTestFile fileName testName execName namelistFiles vcoordFiles
+                    nclFiles refsolnFiles)
+
+  # Reset the variables
+  SET(${testName})
+  SET(${execName})
+  SET(${namelistFiles})
+  SET(${vcoordFiles})
+  SET(${nclFiles})
+  SET(${refsolnFiles})
+
+  # Need to do something with this
+  SET(namelist_dir namelists/little_endian)
+  SET(HOMME_ROOT ${HOMME_SOURCE_DIR})
+
+  FILE(STRINGS ${fileName}
+       Homme_Raw_Paths
+       LIMIT_COUNT 100)
+
+  # Split each 
+  FOREACH(LINE ${Homme_Raw_Paths})
+
+    #MESSAGE(STATUS "LINE=${LINE}")
+    #LIST(LENGTH "${LINE}" LINE_SIZE)
+    #MESSAGE(STATUS "LINE_SIZE=${LINE_SIZE}")
+    #STRING(REPLACE "\;" "" LINE ${LINE})
+    #MESSAGE(STATUS "LINE=${LINE}")
+    # Concatenate lines ending with \
+    #STRING(ASCII 92 BACK_SLASH)
+    #STRING(ASCII 36 DOLLAR_SIGN)
+    # Ignore comment lines
+      #IF (${LINE} MATCHES "${BACK_SLASH}$") 
+      #STRING(STRIP ".*\\ " MATCH_VAL)
+      #STRING(STRIP ".*${BACK_SLASH}${BACK_SLASH}${DOLLAR_SIGN}" MATCH_VAL)
+      #IF (${LINE} MATCHES ${MATCH_VAL})
+      #  MESSAGE(STATUS "MATCH LINE=${LINE}")
+      #  SET(CAT_PREV_LINES ${CAT_PREV_LINES} ${LINE})
+
+      #IF (NOT) 
+      #ELSE ()
+      #  SET (FULL_LINE "${LINE} ${CAT_PREV_LINES}")
+      #  MESSAGE(STATUS "FULL_LINE: ${FULL_LINE}")
+      #  SET (CAT_PREV_LINES)
+      
+    IF (NOT ${LINE} MATCHES "^${POUND}")
+      STRING(REPLACE "\;" "" REP_LINE ${LINE})
+        IF (${REP_LINE} MATCHES "^test_name")
+          getValue(${REP_LINE} ${testName})
+          SET(test_name ${${testName}})
+        ENDIF ()
+        IF (${REP_LINE} MATCHES "^exec_name")
+          getValue(${REP_LINE} ${execName})
+        ENDIF ()
+        IF (${REP_LINE} MATCHES "^namelist_files")
+          getValue(${REP_LINE} ${namelistFiles})
+        ENDIF ()
+        IF (${REP_LINE} MATCHES "^vcoord_files")
+          getValue(${REP_LINE} ${vcoordFiles})
+          MESSAGE(STATUS "vcoordFiles1=${${vcoordFiles}}")
+          FILE(GLOB vcoordFiles2 ${${vcoordFiles}})
+          MESSAGE(STATUS "vcoordFiles2=${vcoordFiles2}")
+        ENDIF ()
+        IF (${REP_LINE} MATCHES "^ncl_files")
+          getValue(${REP_LINE} ${nclFiles})
+        ENDIF ()
+        IF (${REP_LINE} MATCHES "^refsoln_files")
+          getValue(${REP_LINE} ${refsolnFiles})
+        ENDIF ()
+      #ENDIF()
+    ENDIF()
+  ENDFOREACH()
+
+endmacro(parseTestFile)
+
+# Macro to create the individual tests
+macro(createPreqxTest testName)
+  parseTestFile(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/${testName}.in
+                TEST_NAME EXEC_NAME NAMELIST_FILES VCOORD_FILES NCL_FILES
+                REFSOLN_FILES)
+
+  MESSAGE(STATUS "Adding test: ${TEST_NAME}, using exec ${EXEC_NAME}")
+
+
+  # Set up the directory
+  SET(THIS_TEST_DIR ${CMAKE_BINARY_DIR}/tests/${TEST_NAME})
+
+  IF (NOT "${NAMELIST_FILES}" STREQUAL "")
+    MESSAGE(STATUS "  namelist_files=${NAMELIST_FILES}")
+    FILE(COPY ${NAMELIST_FILES} DESTINATION ${THIS_TEST_DIR})
+  ENDIF ()
+  IF (NOT "${VCOORD_FILES}" STREQUAL "")
+    MESSAGE(STATUS "  vcoord_files=${VCOORD_FILES}")
+    #FILE(COPY ${VCOORD_FILES} DESTINATION ${THIS_TEST_DIR})
+  ENDIF ()
+  IF (NOT "${NCL_FILES}" STREQUAL "")
+    MESSAGE(STATUS "  ncl_files=${NCL_FILES}")
+    FILE(COPY ${NCL_FILES} DESTINATION ${THIS_TEST_DIR})
+  ENDIF ()
+  IF (${REFSOLN_FILES})
+    MESSAGE(STATUS "  refsoln_files=${REFSOLN_FILES}")
+    FILE(COPY ${REFSOLN_FILES} DESTINATION ${THIS_TEST_DIR})
+  ENDIF ()
+
+  # Copy the files needed for this test to the test dir
+
+  SET(THIS_TEST_SCRIPT ${THIS_TEST_DIR}/${TEST_NAME}.sh)
+
+  FILE(WRITE ${THIS_TEST_SCRIPT} "${POUND}!/bin/bash")
+  FILE(WRITE ${THIS_TEST_SCRIPT} "mpiexec -n 24 ${CMAKE_CURRENT_BINARY_DIR}/${EXEC_NAME} someother stuff")
+  ADD_TEST(${THIS_TEST_SCRIPT} ${EXEC_NAME})
+
+  #file(STRINGS ${HOMME_SOURCE_DIR}/test/reg_test/run_tests/${testName}.in
+  #     TEST_INPUT 
+  #     LIMIT_COUNT 100)
+  #MESSAGE(STATUS "TEST: ${testName}, TEST_INPUT: ${TEST_INPUT}")
+endmacro(createPreqxTest)
+
+createPreqxTest(baro1a)
+createPreqxTest(baro1b)
+createPreqxTest(baro2a)
+createPreqxTest(baro2b)
+createPreqxTest(baro2c)
+createPreqxTest(baro2d)
+
+
 

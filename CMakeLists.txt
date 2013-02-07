@@ -8,6 +8,9 @@ SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
 FortranCInterface_HEADER(cmake_fortran_c_interface.h
                          MACRO_NAMESPACE  "FCI_")
+
+ENABLE_TESTING()
+
 # need to tell the source to use this capability
 ADD_DEFINITIONS(-DINCLUDE_CMAKE_FCI)
 
@@ -54,10 +57,10 @@ MESSAGE(STATUS "-- num points (PLEV) set to... ${NUM_PLEV}")
 MESSAGE(STATUS "-- num tracers (NTRAC) set to... ${NUM_TRACERS}")
 
 # Add the cmake/CMakeLists.txt file
-set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+SET (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # Set up some directories to facilitate finding netcdf and pnetcdf
-include(SetHostPaths)
+INCLUDE(SetHostPaths)
 
 #ADD_SUBDIRECTORY(cmake)
 
