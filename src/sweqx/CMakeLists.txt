@@ -132,6 +132,11 @@ macro(createSweqxTest execName macroNP macroPLEV macroUSE_PIO
 
   ADD_EXECUTABLE(${execName} ${SRCS_F90} ${SRC_BASE}/main.F90)
 
+  # Move the module files out of the way so the parallel build 
+  # doesn't have a race condition
+  SET_TARGET_PROPERTIES(${execName} PROPERTIES
+     Fortran_MODULE_DIRECTORY ${execName}_modules)
+
   # Some more thought needs to go into these entries
   #IF (macroUSE_PIO)
   #ELSE ()

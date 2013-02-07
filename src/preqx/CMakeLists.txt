@@ -166,8 +166,12 @@ macro(createPreqxTest execName macroNP macroPLEV macroUSE_PIO
   #IF (macroWITH_ENERGY)
   #ENDIF ()
 
-  # Macro
   TARGET_LINK_LIBRARIES(${execName} pio timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+
+  # Move the module files out of the way so the parallel build 
+  # doesn't have a race condition
+  SET_TARGET_PROPERTIES(${execName} PROPERTIES
+     Fortran_MODULE_DIRECTORY ${execName}_modules)
 
   IF (NOT HOMME_FIND_BLASLAPACK)
     TARGET_LINK_LIBRARIES(${execName} lapack blas)
