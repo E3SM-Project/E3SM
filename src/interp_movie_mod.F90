@@ -486,7 +486,7 @@ contains
     use aquaplanet_io_mod, only : aq_movie_output
     use physics_io_mod, only : physics_movie_output
 #else
-    use derivative_mod, only : derivative_t, vorticity
+    use derivative_mod, only : derivative_t, vorticity, laplace_sphere_wk
     use physical_constants, only : omega, g, rrearth, dd_pi
 #endif
     use hybrid_mod, only : hybrid_t
@@ -1077,8 +1077,46 @@ contains
                 deallocate(datall,var3d)
              end if
 #endif
+#if 0
+             ! DEBUG code to output laplace_sphere_wk:
+             if(nf_selectedvar('hypervis', output_varnames)) then
+                if (hybrid%par%masterproc) print *,'writing hypervis...'
+                allocate(datall(ncnt,nlev), var3d(np,np,nlev,nets:nete))
+
+                do ie=nets,nete
+                   do k=1,nlev
+                      var3d(:,:,k,ie)=laplace_sphere_wk(elem(ie)%state%p(:,:,k,n0),&
+                           deriv,elem(ie),NULL())
+                      ! laplace_sphere_wk returns weak form with mass matrix
+                      ! already applied.  remove mass matrix, since make_C0
+                      ! routine below will also multiply by mass matrix before DSS
+                      var3d(:,:,k,ie)=var3d(:,:,k,ie)/elem(ie)%spheremp(:,:)
+
+                      ! viscosity coefficient
+                      ! (normally we apply this operator twice, but here only 
+                      ! once, so use sqrt(nu)
+                      var3d(:,:,k,ie)=var3d(:,:,k,ie)*sqrt(nu)
+                   enddo
+                enddo
+                call make_C0(var3d,elem,hybrid,nets,nete)
+
+                st=1
+                do ie=nets,nete
+                   en=st+interpdata(ie)%n_interp-1
+                   do k=1,nlev
+                      call interpolate_scalar(interpdata(ie), var3d(:,:,k,ie), &
+                           np, datall(st:en,k))
+                   end do
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='hypervis')
+                deallocate(datall,var3d)
+             end if
+#else
+             ! End hyperviscosity
              ! MNL: output hyperviscosity
              if(nf_selectedvar('hypervis', output_varnames)) then
+                if (hybrid%par%masterproc) print *,'writing hypervis...'
                 allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))
                 st=1
                 do ie=nets,nete
@@ -1095,6 +1133,7 @@ contains
                 deallocate(datall,var3d)
              end if
              ! End hyperviscosity
+#endif
 
              ! MNL: output hypervis length scale 
              if(nf_selectedvar('max_dx', output_varnames)) then
