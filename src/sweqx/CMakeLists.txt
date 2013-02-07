@@ -106,25 +106,40 @@ INSTALL(TARGETS sweqx
 macro(createSweqxTest execName macroNP macroPLEV macroUSE_PIO
                                macroWITH_ENERGY)
 
+  # Backup the cmake variables
+  SET(tempNP ${NUM_POINTS})
+  SET(tempPLEV ${NUM_PLEV})
+  SET(tempUSE_PIO ${PIO})
+  SET(tempWITH_ENERGY ${ENERGY_DIAGNOSTICS})
+
+  # Set the variable to the macro variables
+  SET(NUM_POINTS ${macroNP})
+  SET(NUM_PLEV ${macroPLEV})
+  SET(PIO ${macroUSE_PIO})
+  SET(ENERGY_DIAGNOSTICS ${macroWITH_ENERGY})
+
+  # This is needed to compile the test executables with the correct options
+  CONFIGURE_FILE(config.h.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/${execName}_config/config.h)
+
+  # Reset the include_directories
+  SET_DIRECTORY_PROPERTIES(PROPERTY INCLUDE_DIRECTORIES "")
+
+  INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}/${execName}_config
+                      ${PIO_INCLUDE_DIRS}
+                      ${TIMING_INCLUDE_DIRS}
+                      ${SRC_SHARE_DIR}
+                      )
+
   ADD_EXECUTABLE(${execName} ${SRCS_F90} ${SRC_BASE}/main.F90)
 
-  SET_TARGET_PROPERTIES(${execName}
-                        PROPERTIES COMPILE_DEFINITIONS "NP=${macroNP}")
-  SET_TARGET_PROPERTIES(${execName}
-                        PROPERTIES COMPILE_DEFINITIONS "PLEV=${macroPLEV}")
-  IF (macroUSE_PIO)
-    SET_TARGET_PROPERTIES(${execName}
-                          PROPERTIES COMPILE_DEFINITIONS "PIO=1")
-  ELSE ()
-    SET_TARGET_PROPERTIES(${execName}
-                          PROPERTIES COMPILE_DEFINITIONS "PIO_INTERP=1")
-  ENDIF ()
-  IF (macroWITH_ENERGY)
-    SET_TARGET_PROPERTIES(${execName}
-                          PROPERTIES COMPILE_DEFINITIONS "ENERGY_DIAGNOSTICS=1")
-  ENDIF ()
+  # Some more thought needs to go into these entries
+  #IF (macroUSE_PIO)
+  #ELSE ()
+  #ENDIF ()
 
-  # Macro
+  #IF (macroWITH_ENERGY)
+  #ENDIF ()
+
   TARGET_LINK_LIBRARIES(${execName} pio timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 
   IF (NOT HOMME_FIND_BLASLAPACK)
@@ -135,13 +150,20 @@ macro(createSweqxTest execName macroNP macroPLEV macroUSE_PIO
   INSTALL(TARGETS ${execName}
           RUNTIME DESTINATION tests)
 
+  # Restore the original the cmake variables
+  SET(NUM_POINTS ${tempNP})
+  SET(NUM_PLEV ${tempPLEV})
+  SET(PIO ${tempUSE_PIO})
+  SET(ENERGY_DIAGNOSTICS ${tempWITH_ENERGY})
+
 endmacro(createSweqxTest)
 
 # There are only three separate executables that need to be compiled
 #   separately
-createSweqxTest(swtcA 8 4 FALSE FALSE)
-createSweqxTest(swtcB 4 1 FALSE FALSE)
-createSweqxTest(swtcC 8 1 FALSE FALSE)
+#                     NP  PLEV  USE_PIO  WITH_ENERGY
+createSweqxTest(swtcA  8     4    FALSE       FALSE)
+createSweqxTest(swtcB  4     1    FALSE       FALSE)
+createSweqxTest(swtcC  8     1    FALSE       FALSE)
 
 
 

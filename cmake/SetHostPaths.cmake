@@ -59,7 +59,7 @@ ENDIF()
 
 IF (Homme_Registered_Host)
   MESSAGE(STATUS "Registered Host, reading paths from systemPaths")
-  readRegistredPaths()
+  readRegisteredPaths()
 
   MESSAGE(STATUS "Homme_NETCDF_DIR = ${Homme_NETCDF_DIR}")
   MESSAGE(STATUS "Homme_PNETCDF_DIR = ${Homme_PNETCDF_DIR}")
