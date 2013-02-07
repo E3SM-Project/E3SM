@@ -210,6 +210,7 @@ macro(getValue thisLine thisVar)
 
   # Remove whitespace  and set to the variable defined by thisVar
   STRING(STRIP ${thisVal} ${thisVar})
+  STRING(REPLACE " " ";" ${thisVar} ${${thisVar}})
 
 endmacro(getValue)
 
@@ -235,53 +236,31 @@ macro(parseTestFile fileName testName execName namelistFiles vcoordFiles
   # Split each 
   FOREACH(LINE ${Homme_Raw_Paths})
 
-    #MESSAGE(STATUS "LINE=${LINE}")
-    #LIST(LENGTH "${LINE}" LINE_SIZE)
-    #MESSAGE(STATUS "LINE_SIZE=${LINE_SIZE}")
-    #STRING(REPLACE "\;" "" LINE ${LINE})
-    #MESSAGE(STATUS "LINE=${LINE}")
-    # Concatenate lines ending with \
-    #STRING(ASCII 92 BACK_SLASH)
-    #STRING(ASCII 36 DOLLAR_SIGN)
-    # Ignore comment lines
-      #IF (${LINE} MATCHES "${BACK_SLASH}$") 
-      #STRING(STRIP ".*\\ " MATCH_VAL)
-      #STRING(STRIP ".*${BACK_SLASH}${BACK_SLASH}${DOLLAR_SIGN}" MATCH_VAL)
-      #IF (${LINE} MATCHES ${MATCH_VAL})
-      #  MESSAGE(STATUS "MATCH LINE=${LINE}")
-      #  SET(CAT_PREV_LINES ${CAT_PREV_LINES} ${LINE})
+    # Needed to propely concatenate text across multiple lines
+    STRING(REPLACE "\"" "" LINE ${LINE})
 
-      #IF (NOT) 
-      #ELSE ()
-      #  SET (FULL_LINE "${LINE} ${CAT_PREV_LINES}")
-      #  MESSAGE(STATUS "FULL_LINE: ${FULL_LINE}")
-      #  SET (CAT_PREV_LINES)
-      
     IF (NOT ${LINE} MATCHES "^${POUND}")
       STRING(REPLACE "\;" "" REP_LINE ${LINE})
-        IF (${REP_LINE} MATCHES "^test_name")
-          getValue(${REP_LINE} ${testName})
-          SET(test_name ${${testName}})
-        ENDIF ()
-        IF (${REP_LINE} MATCHES "^exec_name")
-          getValue(${REP_LINE} ${execName})
-        ENDIF ()
-        IF (${REP_LINE} MATCHES "^namelist_files")
-          getValue(${REP_LINE} ${namelistFiles})
-        ENDIF ()
-        IF (${REP_LINE} MATCHES "^vcoord_files")
-          getValue(${REP_LINE} ${vcoordFiles})
-          MESSAGE(STATUS "vcoordFiles1=${${vcoordFiles}}")
-          FILE(GLOB vcoordFiles2 ${${vcoordFiles}})
-          MESSAGE(STATUS "vcoordFiles2=${vcoordFiles2}")
-        ENDIF ()
-        IF (${REP_LINE} MATCHES "^ncl_files")
-          getValue(${REP_LINE} ${nclFiles})
-        ENDIF ()
-        IF (${REP_LINE} MATCHES "^refsoln_files")
-          getValue(${REP_LINE} ${refsolnFiles})
-        ENDIF ()
-      #ENDIF()
+      IF (${REP_LINE} MATCHES "^test_name")
+        getValue(${REP_LINE} ${testName})
+        SET(test_name ${${testName}})
+      ENDIF ()
+      IF (${REP_LINE} MATCHES "^exec_name")
+        getValue(${REP_LINE} ${execName})
+      ENDIF ()
+      IF (${REP_LINE} MATCHES "^namelist_files")
+        getValue(${REP_LINE} ${namelistFiles})
+      ENDIF ()
+      IF (${REP_LINE} MATCHES "^vcoord_files")
+        getValue(${REP_LINE} ${vcoordFiles})
+        FILE(GLOB ${vcoordFiles} ${${vcoordFiles}})
+      ENDIF ()
+      IF (${REP_LINE} MATCHES "^ncl_files")
+        getValue(${REP_LINE} ${nclFiles})
+      ENDIF ()
+      IF (${REP_LINE} MATCHES "^refsoln_files")
+        getValue(${REP_LINE} ${refsolnFiles})
+      ENDIF ()
     ENDIF()
   ENDFOREACH()
 
@@ -289,45 +268,64 @@ endmacro(parseTestFile)
 
 # Macro to create the individual tests
 macro(createPreqxTest testName)
+
   parseTestFile(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/${testName}.in
                 TEST_NAME EXEC_NAME NAMELIST_FILES VCOORD_FILES NCL_FILES
                 REFSOLN_FILES)
 
   MESSAGE(STATUS "Adding test: ${TEST_NAME}, using exec ${EXEC_NAME}")
 
-
   # Set up the directory
   SET(THIS_TEST_DIR ${CMAKE_BINARY_DIR}/tests/${TEST_NAME})
 
+  # Copy all of the files into the binary dir
+  SET(THIS_TEST_SCRIPT ${THIS_TEST_DIR}/${TEST_NAME}.sh)
   IF (NOT "${NAMELIST_FILES}" STREQUAL "")
-    MESSAGE(STATUS "  namelist_files=${NAMELIST_FILES}")
-    FILE(COPY ${NAMELIST_FILES} DESTINATION ${THIS_TEST_DIR})
+    #MESSAGE(STATUS "  namelist_files=${NAMELIST_FILES}")
+    FOREACH (singleFile ${NAMELIST_FILES}) 
+      FILE(COPY ${singleFile} DESTINATION ${THIS_TEST_DIR})
+    ENDFOREACH () 
   ENDIF ()
   IF (NOT "${VCOORD_FILES}" STREQUAL "")
-    MESSAGE(STATUS "  vcoord_files=${VCOORD_FILES}")
-    #FILE(COPY ${VCOORD_FILES} DESTINATION ${THIS_TEST_DIR})
+    #MESSAGE(STATUS "  vcoord_files=${VCOORD_FILES}")
+    FOREACH (singleFile ${VCOORD_FILES}) 
+      FILE(COPY ${singleFile} DESTINATION ${THIS_TEST_DIR}/vcoord)
+    ENDFOREACH () 
   ENDIF ()
   IF (NOT "${NCL_FILES}" STREQUAL "")
-    MESSAGE(STATUS "  ncl_files=${NCL_FILES}")
-    FILE(COPY ${NCL_FILES} DESTINATION ${THIS_TEST_DIR})
+    #MESSAGE(STATUS "  ncl_files=${NCL_FILES}")
+    FOREACH (singleFile ${NCL_FILES}) 
+      FILE(COPY ${singleFile} DESTINATION ${THIS_TEST_DIR})
+    ENDFOREACH () 
   ENDIF ()
   IF (${REFSOLN_FILES})
-    MESSAGE(STATUS "  refsoln_files=${REFSOLN_FILES}")
-    FILE(COPY ${REFSOLN_FILES} DESTINATION ${THIS_TEST_DIR})
+    #MESSAGE(STATUS "  refsoln_files=${REFSOLN_FILES}")
+    FOREACH (singleFile ${REFSOLN_FILES}) 
+      FILE(COPY ${singleFile} DESTINATION ${THIS_TEST_DIR})
+    ENDFOREACH () 
   ENDIF ()
 
-  # Copy the files needed for this test to the test dir
-
+  # Create a run script
   SET(THIS_TEST_SCRIPT ${THIS_TEST_DIR}/${TEST_NAME}.sh)
 
-  FILE(WRITE ${THIS_TEST_SCRIPT} "${POUND}!/bin/bash")
-  FILE(WRITE ${THIS_TEST_SCRIPT} "mpiexec -n 24 ${CMAKE_CURRENT_BINARY_DIR}/${EXEC_NAME} someother stuff")
-  ADD_TEST(${THIS_TEST_SCRIPT} ${EXEC_NAME})
+  FILE(WRITE ${THIS_TEST_SCRIPT} "${POUND}!/bin/bash\n")
+  FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
+  FILE(APPEND ${THIS_TEST_SCRIPT} "cd ${THIS_TEST_DIR}\n")
+  FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
+  FOREACH (singleFile ${NAMELIST_FILES}) 
+    FILE(APPEND ${THIS_TEST_SCRIPT} "mpiexec -n 4 ${CMAKE_CURRENT_BINARY_DIR}/${EXEC_NAME} < ${singleFile}\n")
+    FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
+  ENDFOREACH ()
 
-  #file(STRINGS ${HOMME_SOURCE_DIR}/test/reg_test/run_tests/${testName}.in
-  #     TEST_INPUT 
-  #     LIMIT_COUNT 100)
-  #MESSAGE(STATUS "TEST: ${testName}, TEST_INPUT: ${TEST_INPUT}")
+  EXECUTE_PROCESS(COMMAND chmod u+x ${THIS_TEST_SCRIPT}
+    RESULT_VARIABLE Homme_result
+    OUTPUT_VARIABLE Homme_output
+    ERROR_VARIABLE Homme_error
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+
+  ADD_TEST(${testName} ${THIS_TEST_SCRIPT})
+
 endmacro(createPreqxTest)
 
 createPreqxTest(baro1a)
@@ -336,6 +334,3 @@ createPreqxTest(baro2a)
 createPreqxTest(baro2b)
 createPreqxTest(baro2c)
 createPreqxTest(baro2d)
-
-
-
