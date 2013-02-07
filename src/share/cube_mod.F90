@@ -253,6 +253,7 @@ contains
     real (kind=real_kind) :: x2        ! 2nd cube face coordinate
     real (kind=real_kind) :: tmpD(2,2)
     real (kind=real_kind) :: M(2,2),E(2,2),eig(2),DE(2,2),DEL(2,2),V(2,2), nu1, nu2, lamStar1, lamStar2
+    integer :: imaxM(2)
     real (kind=real_kind) :: l1, l2, sc     ! eigen values of met
 
     real (kind=real_kind) :: roundoff_err = 1e-11 !!! OG: this is a temporal fix
@@ -336,16 +337,37 @@ contains
           eig(2) = (M(1,1) + M(2,2) - sqrt(4.0d0*M(1,2)*M(2,1) + &
               (M(1,1) - M(2,2))**2))/2.0d0
 
-!!! this alg of getting E requires a fix
-	  if(abs(M(2,1))>roundoff_err)then
-	      E(1,1)=eig(1)-M(2,2); E(2,1)=M(2,1);
-	      E(1,2)=eig(2)-M(2,2); E(2,2)=M(2,1);
-	  elseif(abs(M(1,2))>roundoff_err)then
-	      E(1,1)=M(1,2); E(2,1)=eig(1)-M(1,1);
-	      E(1,2)=M(1,2); E(2,2)=eig(2)-M(1,1);
-	  else
-	      E(1,1)=1.0d0; E(1,2)=0.0d0; E(2,1)=0.0d0; E(2,2)=1.0d0;
-	  endif
+          ! use DE to store M - Lambda, to compute eigenvectors
+          DE=M
+          DE(1,1)=DE(1,1)-eig(1)
+          DE(2,2)=DE(2,2)-eig(1)
+
+          imaxM = maxloc(abs(DE))
+          if (maxval(abs(DE))==0) then
+             E(1,1)=1; E(2,1)=0;
+          elseif ( imaxM(1)==1 .and. imaxM(2)==1 ) then
+!             M11  *  a  = 0    M11*a + M21 = 0      a = -M21/M11
+!             M21     1
+             E(2,1)=1; E(1,1) = -DE(2,1)/DE(1,1)
+          else   if ( imaxM(1)==1 .and. imaxM(2)==2 ) then
+!             M12  *  a  = 0    
+!             M22     1
+             E(2,1)=1; E(1,1) = -DE(2,2)/DE(1,2)
+          else   if ( imaxM(1)==2 .and. imaxM(2)==1 ) then
+!             M11  *  1  = 0    
+!             M21     a
+             E(1,1)=1; E(2,1) = -DE(1,1)/DE(2,1)
+          else   if ( imaxM(1)==2 .and. imaxM(2)==2 ) then
+!             M12  *  1  = 0    
+!             M22     a
+             E(1,1)=1; E(2,1) = -DE(1,2)/DE(2,2)
+          else
+             call abortmp('Impossible error in cube_mod.F90::metric_atomic()')
+          endif
+
+          ! the other eigenvector is orthgonal:
+          E(1,2)=-E(2,1)
+          E(2,2)= E(1,1)
 
 !normalize columns
 	  E(:,1)=E(:,1)/sqrt(sum(E(:,1)*E(:,1))); 
@@ -358,18 +380,19 @@ contains
           DE(2,1)=sum(elem%D(2,:,i,j)*E(:,1))
           DE(2,2)=sum(elem%D(2,:,i,j)*E(:,2))
 
+#if 0
 ! verify that M = E LAMBDA E^t   and E E^t = I
 ! or:  M E = E LAMBDA
-!           print *,'E^t E should be I'
-!           write(*,'(2e20.10)') sum(E(:,1)*E(:,1)),sum(E(:,1)*E(:,2))
-!           write(*,'(2e20.10)') sum(E(:,2)*E(:,1)),sum(E(:,2)*E(:,2))
-!           print *,'E E^t should be I'
-!           write(*,'(2e20.10)') sum(E(1,:)*E(1,:)),sum(E(1,:)*E(2,:))
-!           write(*,'(2e20.10)') sum(E(2,:)*E(1,:)),sum(E(2,:)*E(2,:))
-!           print *,'M E - E LAMBDA (should be zero)'
-!           write(*,'(2e20.10)') sum(M(1,:)*E(:,1))-eig(1)*E(1,1),sum(M(1,:)*E(:,2))-eig(2)*E(1,2)
-!           write(*,'(2e20.10)') sum(M(2,:)*E(:,1))-eig(1)*E(2,1),sum(M(2,:)*E(:,2))-eig(2)*E(2,2)
-
+           print *,'E^t E should be I'
+           write(*,'(2e20.10)') sum(E(:,1)*E(:,1)),sum(E(:,1)*E(:,2))
+           write(*,'(2e20.10)') sum(E(:,2)*E(:,1)),sum(E(:,2)*E(:,2))
+           print *,'E E^t should be I'
+           write(*,'(2e20.10)') sum(E(1,:)*E(1,:)),sum(E(1,:)*E(2,:))
+           write(*,'(2e20.10)') sum(E(2,:)*E(1,:)),sum(E(2,:)*E(2,:))
+           print *,'M E - E LAMBDA (should be zero)'
+           write(*,'(2e20.10)') sum(M(1,:)*E(:,1))-eig(1)*E(1,1),sum(M(1,:)*E(:,2))-eig(2)*E(1,2)
+           write(*,'(2e20.10)') sum(M(2,:)*E(:,1))-eig(1)*E(2,1),sum(M(2,:)*E(:,2))-eig(2)*E(2,2)
+#endif
 
 ! introduce Lambda = diag( nu1*eig1, nu2*eig2 )
 ! viscosity tensor = DE * Lambda^* * Lambda * (DE)^t     
@@ -402,6 +425,9 @@ contains
           ! for elements distorted  
 	  lamStar1=(1 / eig(1) ) * min( 3d0,eig(1)/eig(2))
 	  lamStar2=(1 / eig(2) )
+
+          !lamStar2 = 1/1500d0
+          !lamStar1 = lamStar2    
 
 	  lamStar1=(rearth**2)*lamStar1
 	  lamStar2=(rearth**2)*lamStar2

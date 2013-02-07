@@ -496,7 +496,7 @@ contains
                               compute_div_c0,compute_div_c0_2d
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     ! ---------------------    
-    type (element_t)    :: elem(:)
+    type (element_t),target    :: elem(:)
     
 #if defined(_SPELT)
     type (spelt_struct), optional   :: fvm(:)
@@ -535,6 +535,8 @@ contains
 
     real (kind=real_kind) :: vco(np,np,2),ke(np,np,nlev)
     real (kind=real_kind) :: v1,v2
+    real (kind=real_kind),pointer,dimension(:,:) :: viscosity
+
 
     call t_startf('interp_movie_output')
 
@@ -1085,8 +1087,9 @@ contains
 
                 do ie=nets,nete
                    do k=1,nlev
+                      viscosity => elem(ie)%variable_hyperviscosity
                       var3d(:,:,k,ie)=laplace_sphere_wk(elem(ie)%state%p(:,:,k,n0),&
-                           deriv,elem(ie),NULL())
+                           deriv,elem(ie),viscosity)
                       ! laplace_sphere_wk returns weak form with mass matrix
                       ! already applied.  remove mass matrix, since make_C0
                       ! routine below will also multiply by mass matrix before DSS
@@ -1099,7 +1102,7 @@ contains
                    enddo
                 enddo
                 call make_C0(var3d,elem,hybrid,nets,nete)
-
+                print *,'min/max hypervis: ',minval(var3d),maxval(var3d)
                 st=1
                 do ie=nets,nete
                    en=st+interpdata(ie)%n_interp-1
