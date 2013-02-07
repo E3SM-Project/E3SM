@@ -385,6 +385,29 @@ contains
 	  lamStar1=1/(eig(1)**(hypervis_power/4.0d0))*(rearth**(hypervis_power/2.0d0))
 	  lamStar2=1/(eig(2)**(hypervis_power/4.0d0))*(rearth**(hypervis_power/2.0d0))
 
+#if 0
+          ! eig(1) >= eig(2)
+          ! lamStar1 <= lamStar2
+          ! on cubed-sphere grid: dx_short/dx_long <= sqrt(3)
+          ! nu in long direction:   use desired value based on dx_long
+          ! nu in short direction:  we would like to use nu=nu_short
+          !     but this creates discontinious tensor on cubed-sphere grid.
+          !     So for short direction, use long direction value, unless
+          !     distortion is larger than sqrt(3).  then use 3*short direction
+          ! Justification:  on cubed-sphere grid we get a constant tensor
+          !      viscosity within each element, smoothly varying with resolution
+          ! In highly distorted elements, we use 3x larger coefficient in short
+          ! direction, erring on the side of caution by using too much dissipation 
+  
+          ! for elements distorted  
+	  lamStar1=(1 / eig(1) ) * min( 3d0,eig(1)/eig(2))
+	  lamStar2=(1 / eig(2) )
+
+	  lamStar1=(rearth**2)*lamStar1
+	  lamStar2=(rearth**2)*lamStar2
+#endif
+
+
 !matrix (DE) * Lam^* * Lam  
           DEL(1:2,1) = lamStar1*eig(1)*DE(1:2,1)
           DEL(1:2,2) = lamStar2*eig(2)*DE(1:2,2)
