@@ -14,7 +14,7 @@ NCPU=24
 namelist_files=\
   ${HOMME_ROOT}/test/reg_test/${namelist_dir}/${test_name}-run1.nl \
   ${HOMME_ROOT}/test/reg_test/${namelist_dir}/${test_name}-run2.nl
-vcoord_files=$HOMME_ROOT/test/vcoord/*26*
+vcoord_files=${HOMME_ROOT}/test/vcoord/*26*
 
 OMP_SUB_TESTS=true
 OMP_NUM_THREADS=4   # max number of threads. actual number specified in namelist as 4
