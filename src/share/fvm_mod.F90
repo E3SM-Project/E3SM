@@ -239,6 +239,7 @@ subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   
   type (ghostBuffertr_t)                      :: buflatlon
   
+  call initghostbuffer(buflatlon,nlev,2,2,nc+1)    ! use the tracer entry 2 for lat lon
   
   call t_startf('CSLAM scheme') 
   
@@ -248,7 +249,6 @@ subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
     end do
   end do
   
-  call initghostbuffer(buflatlon,nlev,2,2,nc+1)    ! use the tracer entry 2 for lat lon
   
   do ie=nets,nete
     call ghostVpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lat,1,2, nc+1,nlev,elem(ie)%desc) !kptr = 1 for lat
@@ -263,7 +263,6 @@ subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
     fvm(ie)%dsphere(:,:,:)%r=1.0D0  !!! RADIUS IS ASSUMED TO BE 1.0DO !!!!
     
   end do
-  call freeghostbuffertr(buflatlon)
   
   do ie=nets, nete
     do k=1,nlev
@@ -323,6 +322,8 @@ subroutine cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
      call ghostVunpack(cellghostbuf, fvm(ie)%c, nhc, nc,nlev,ntrac, 0, tl%np1, timelevels,elem(ie)%desc)
   enddo
   call t_stopf('FVM Unpack')
+  call freeghostbuffertr(buflatlon)
+  
 end subroutine cslam_runairdensity
 
 subroutine cslam_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
@@ -388,7 +389,6 @@ subroutine cslam_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
      fvm(ie)%dsphere(:,:,:)%r=1.0D0  !!! RADIUS IS ASSUMED TO BE 1.0DO !!!!
 
    end do
- 
   do ie=nets, nete
     do k=1,nlev
 !       call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
@@ -431,6 +431,7 @@ subroutine cslam_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   call t_stopf('FVM Unpack')
 !   call t_stopf('ALL CSLAM')
  call t_stopf('CSLAM scheme') 
+ call freeghostbuffertr(buflatlon)
 
 end subroutine cslam_run
 

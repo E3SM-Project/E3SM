@@ -2965,7 +2965,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
       endif
       stop
     endif
-    
+#if defined(_FVM)    
     do ie=nets,nete
       call reconstruction(fvm(ie)%psc, fvm(ie),recons)
       call monotonic_gradient_cart(fvm(ie)%psc, fvm(ie),recons, elem(ie)%desc)
@@ -3015,7 +3015,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      call edgeVunpack(edge3p1, elem(ie)%state%ps_v(:,:,np1), 1, 0, elem(ie)%desc)
      elem(ie)%state%ps_v(:,:,np1)=elem(ie)%state%ps_v(:,:,np1)*elem(ie)%rspheremp(:,:)
   enddo
-    
+#endif    
   end subroutine overwrite_SEdensity
 
 

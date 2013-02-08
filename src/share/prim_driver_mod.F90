@@ -888,10 +888,10 @@ contains
      	      enddo
      	    enddo
           !write air density in tracer 1 of FVM
-          fvm(ie)%c(1:nep,1:nep,k,2,tl%n0)=interpolate_gll2spelt_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
+          fvm(ie)%c(1:nep,1:nep,k,1,tl%n0)=interpolate_gll2spelt_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
           do i=1,nep
             do j=1,nep
-              fvm(ie)%c(i,j,k,2,tl%n0)=fvm(ie)%sga(i,j)*fvm(ie)%c(i,j,k,2,tl%n0)
+              fvm(ie)%c(i,j,k,1,tl%n0)=fvm(ie)%sga(i,j)*fvm(ie)%c(i,j,k,1,tl%n0)
 !            fvm(ie)%c(i,j,k,1,tl%n0)=fvm(ie)%sga(i,j)
             end do
           end do
@@ -901,7 +901,7 @@ contains
       do ie=nets,nete 
    	    do i=1-nipm,nep+nipm
    	      do j=1-nipm,nep+nipm  
-   	        fvm(ie)%psc(i,j) = fvm(ie)%sga(i,j)*(sum(fvm(ie)%c(i,j,:,2,tl%n0)/fvm(ie)%sga(i,j)) +  hvcoord%hyai(1)*hvcoord%ps0)
+   	        fvm(ie)%psc(i,j) = fvm(ie)%sga(i,j)*(sum(fvm(ie)%c(i,j,:,1,tl%n0)/fvm(ie)%sga(i,j)) +  hvcoord%hyai(1)*hvcoord%ps0)
    	      enddo
    	    enddo
       enddo
@@ -1537,7 +1537,7 @@ contains
        do ie=nets,nete 
     	    do i=1-nipm,nep+nipm
     	      do j=1-nipm,nep+nipm  
-    	        fvm(ie)%psc(i,j) = fvm(ie)%sga(i,j)*(sum(fvm(ie)%c(i,j,:,2,tl%np1)/fvm(ie)%sga(i,j)) +  hvcoord%hyai(1)*hvcoord%ps0)
+    	        fvm(ie)%psc(i,j) = fvm(ie)%sga(i,j)*(sum(fvm(ie)%c(i,j,:,1,tl%np1)/fvm(ie)%sga(i,j)) +  hvcoord%hyai(1)*hvcoord%ps0)
     	      enddo
     	    enddo
        enddo
