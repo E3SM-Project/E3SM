@@ -260,12 +260,12 @@
   run = "aprun"
   submit = "qsub"
   netcdf4 = "true"
-  conopts = "  --enable-filesystem-hints=lustre"
+  conopts = " --enable-filesystem-hints=lustre"
   corespernode="16"
   preamble="
 #PBS -N testpio_suite
 #PBS -q batch
-#PBS -l walltime=00:50:00
+#PBS -l walltime=02:00:00
 #PBS -j oe
 #PBS -V
 #PBS -l gres=widow3"

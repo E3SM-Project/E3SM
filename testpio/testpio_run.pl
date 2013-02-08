@@ -203,9 +203,16 @@ if(\"$attributes{conopts}\" =~ /with-piovdc/){
     push(\@{\$testlist->{vdc}},\@vdctests);
 }
 
-
-
 my \@netcdf4tests = ("n4n01","n4n02","n4n03","n4b01","n4b02","n4b03","n4b04","n4b05","n4b06","n4b07","n4b08");
+
+if(\"$attributes{netcdf4}\" == "true" ){
+    \$confopts->{all} .= " --enable-netcdf4";
+    \$confopts->{snet} .= " --enable-netcdf4";
+    push(\@{\$testlist->{all}},\@netcdf4tests);
+    push(\@{\$testlist->{snet}},\@netcdf4tests);
+}
+
+
 
 
 #my \$pecnt = $corespernode*ceil($pecount/$corespernode);
@@ -221,12 +228,6 @@ my \$run     = "$attributes{run}";
 foreach \$suite (qw(@testsuites)){
     my \$confopts = \$confopts->{\$suite};
     my \@testlist = \@{\$testlist->{\$suite}};
-    if(\$confopts =~ /netcdf4/){
-	push(\@testlist,\@netcdf4tests);
-    }
-
-
-
 
 
     chdir ("$tstdir");
