@@ -16,5 +16,5 @@ exec_name=swtcA
 
 NCPU=16
 
-nameListFiles=$HOMME_ROOT/test/reg_test/namelists/${test_name}.nl
+namelist_files=${HOMME_ROOT}/test/reg_test/namelists/${test_name}.nl
 

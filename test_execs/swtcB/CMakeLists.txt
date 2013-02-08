@@ -1,8 +1,8 @@
 # Set the include directories
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
-                    ${PREQX_INCLUDE_DIRS})
+                    ${SWEQX_INCLUDE_DIRS})
 
 # There are only three separate executables that need to be compiled
 #   separately
 #                                     NP  PLEV  USE_PIO  WITH_ENERGY
-createTestExec(baroB preqx SRCS_PREQX  8    20     TRUE       FALSE)
+createTestExec(swtcB sweqx SWEQX_SRCS  8    20    FALSE        TRUE)

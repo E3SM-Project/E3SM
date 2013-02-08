@@ -6,15 +6,17 @@ SET(SRC_BASE    ${CMAKE_CURRENT_SOURCE_DIR}/..)
 SET(SRC_SHARE   ${SRC_BASE}/share)
 SET(SRC_UTILS   ${SRC_BASE}/../utils/csm_share)
 
+# Make INCLUDE_DIRS global so the tests can access it
+SET (SWDGX_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
+                        ${TIMING_INCLUDE_DIRS} CACHE INTERNAL "include directories for swdgx")
+
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
-                    ${PIO_INCLUDE_DIRS}
-                    ${TIMING_INCLUDE_DIRS}
-                    ${CMAKE_CURRENT_SOURCE_DIR})
+                    ${SWDGX_INCLUDE_DIRS})
 
 CONFIGURE_FILE(config.h.cmake.in config.h)
 ADD_DEFINITIONS(-DHAVE_CONFIG_H)
 
-SET(SRCS_SWDGX
+SET(SWDGX_SRCS
     ${SRC_BASE}/jrio.c
     ${SRC_SHARE}/kinds.F90
     ${SRC_SHARE}/dimensions_mod.F90
@@ -82,10 +84,16 @@ SET(SRCS_SWDGX
     ${SRC_SHARE}/mesh_mod.F90
 )
 
-ADD_LIBRARY(homme_swdgx ${SRCS_SWDGX})
+ADD_LIBRARY(homme_swdgx ${SWDGX_SRCS})
 TARGET_LINK_LIBRARIES(homme_swdgx pio timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 
+SET_TARGET_PROPERTIES(homme_swdgx PROPERTIES 
+           Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/swdgx_modules")
+
 ADD_EXECUTABLE(swdgx ${SRC_BASE}/dg_main.F90)
+
+SET_TARGET_PROPERTIES(swdgx PROPERTIES 
+           Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/swdgx_modules")
 
 TARGET_LINK_LIBRARIES(swdgx homme_swdgx)
 
@@ -97,69 +105,5 @@ ENDIF()
 INSTALL(TARGETS swdgx
         RUNTIME DESTINATION bin)
 
-# Macro to create the individual tests
-macro(createSwdgxTest execName macroNP macroPLEV macroUSE_PIO
-                               macroWITH_ENERGY)
-
-  # Backup the cmake variables
-  SET(tempNP ${NUM_POINTS})
-  SET(tempPLEV ${NUM_PLEV})
-  SET(tempUSE_PIO ${PIO})
-  SET(tempWITH_ENERGY ${ENERGY_DIAGNOSTICS})
-
-  # Set the variable to the macro variables
-  SET(NUM_POINTS ${macroNP})
-  SET(NUM_PLEV ${macroPLEV})
-  SET(PIO ${macroUSE_PIO})
-  SET(ENERGY_DIAGNOSTICS ${macroWITH_ENERGY})
-
-  # This is needed to compile the test executables with the correct options
-  CONFIGURE_FILE(config.h.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/${execName}_config/config.h)
-
-  # Reset the include_directories
-  SET_DIRECTORY_PROPERTIES(PROPERTY INCLUDE_DIRECTORIES "")
-
-  INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}/${execName}_config
-                      ${PIO_INCLUDE_DIRS}
-                      ${TIMING_INCLUDE_DIRS}
-                      ${SRC_SHARE_DIR}
-                      )
-
-  ADD_EXECUTABLE(${execName} ${SRCS_SWDGX} ${SRC_BASE}/dg_main.F90)
-
-  # Move the module files out of the way so the parallel build 
-  # doesn't have a race condition
-  SET_TARGET_PROPERTIES(${execName} PROPERTIES
-     Fortran_MODULE_DIRECTORY ${execName}_modules)
-
-  # Some more thought needs to go into these entries
-  #IF (macroUSE_PIO)
-  #ELSE ()
-  #ENDIF ()
-
-  #IF (macroWITH_ENERGY)
-  #ENDIF ()
-
-  TARGET_LINK_LIBRARIES(${execName} pio timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
-
-  IF (NOT HOMME_FIND_BLASLAPACK)
-    TARGET_LINK_LIBRARIES(${execName} lapack blas)
-    ADD_DEPENDENCIES(${execName} blas lapack)
-  ENDIF()
-
-  INSTALL(TARGETS ${execName}
-          RUNTIME DESTINATION tests)
-
-  # Restore the original the cmake variables
-  SET(NUM_POINTS ${tempNP})
-  SET(NUM_PLEV ${tempPLEV})
-  SET(PIO ${tempUSE_PIO})
-  SET(ENERGY_DIAGNOSTICS ${tempWITH_ENERGY})
-
-endmacro(createSwdgxTest)
-
-# There are only three separate executables that need to be compiled
-#   separately
-#                        NP  PLEV  USE_PIO  WITH_ENERGY
-createSwdgxTest(swtc-dgA  6     1    FALSE        FALSE)
+SET(SWDGX_SRCS ${SWDGX_SRCS} ${SRC_BASE}/dg_main.F90 CACHE INTERNAL "Sources for swdgx")
 

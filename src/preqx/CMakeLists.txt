@@ -11,10 +11,10 @@ SET(SRC_SHARE_DIR   ${HOMME_SOURCE_DIR}/src/share)
 SET(PHYSICS_DIR     ${HOMME_SOURCE_DIR}/physics)
 SET(UTILS_TIMING_DIR ${HOMME_SOURCE_DIR}/utils/timing)
 
+# Make INCLUDE_DIRS global so the tests can access it
 SET (PREQX_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
                         ${TIMING_INCLUDE_DIRS}
                         ${SRC_SHARE_DIR} CACHE INTERNAL "include directories for preqx")
-#SET(GLOB_PREQX_INCLUDE_DIRS "${PREQX_INCLUDE_DIRS}" CACHE INTERNAL "List of Values")
 
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
                     ${PREQX_INCLUDE_DIRS})
@@ -22,7 +22,8 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
 CONFIGURE_FILE(config.h.cmake.in config.h)
 ADD_DEFINITIONS(-DHAVE_CONFIG_H)
 
-SET(SRCS_PREQX ${SRC_SHARE_DIR}/kinds.F90
+# Make SRCS global so the tests can access it
+SET(PREQX_SRCS ${SRC_SHARE_DIR}/kinds.F90
 					     ${SRC_SHARE_DIR}/dimensions_mod.F90
 					     ${SRC_SHARE_DIR}/control_mod.F90
 					     ${SRC_SHARE_DIR}/physical_constants.F90
@@ -115,10 +116,17 @@ SET(SRCS_PREQX ${SRC_SHARE_DIR}/kinds.F90
 )
 
 
-ADD_LIBRARY(homme_preqx ${SRCS_PREQX})
+ADD_LIBRARY(homme_preqx ${PREQX_SRCS})
 TARGET_LINK_LIBRARIES(homme_preqx pio timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 
+SET_TARGET_PROPERTIES(homme_preqx PROPERTIES 
+           Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/preqx_modules")
+
 ADD_EXECUTABLE(preqx ${SRC_DIR}/prim_main.F90)
+
+# Move the .mod files out of the way
+SET_TARGET_PROPERTIES(preqx PROPERTIES 
+           Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/preqx_modules")
 
 ADD_DEPENDENCIES(preqx blas lapack)
 TARGET_LINK_LIBRARIES(preqx homme_preqx)
@@ -131,6 +139,6 @@ ENDIF()
 INSTALL(TARGETS preqx
         RUNTIME DESTINATION bin)
 
-SET(SRCS_PREQX ${SRCS_PREQX} ${SRC_DIR}/prim_main.F90 CACHE INTERNAL "Sources for preqx")
+SET(PREQX_SRCS ${PREQX_SRCS} ${SRC_DIR}/prim_main.F90 CACHE INTERNAL "Sources for preqx")
 
 

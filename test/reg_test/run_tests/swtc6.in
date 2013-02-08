@@ -14,5 +14,5 @@ exec_name=swtcC
 
 NCPU=16
 
-nameListFiles=$HOMME_ROOT/test/reg_test/namelists/swtc6-short.nl
+namelist_files=${HOMME_ROOT}/test/reg_test/namelists/swtc6-short.nl
 

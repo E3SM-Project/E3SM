@@ -12,6 +12,6 @@ test_type=swdgx
 # The specifically compiled executable that this test uses
 exec_name=swtc-dgA
 
-nameListFiles=$HOMME_ROOT/test/reg_test/namelists/${test_name}.nl
-nclFiles=$HOMME_ROOT/test/reg_test/ncl/swtc5ref.ncl
+namelist_files=${HOMME_ROOT}/test/reg_test/namelists/${test_name}.nl
+ncl_files=${HOMME_ROOT}/test/reg_test/ncl/swtc5ref.ncl
 
