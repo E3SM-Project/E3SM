@@ -346,20 +346,12 @@ contains
           if (maxval(abs(DE))==0) then
              E(1,1)=1; E(2,1)=0;
           elseif ( imaxM(1)==1 .and. imaxM(2)==1 ) then
-!             M11  *  a  = 0    M11*a + M21 = 0      a = -M21/M11
-!             M21     1
              E(2,1)=1; E(1,1) = -DE(2,1)/DE(1,1)
           else   if ( imaxM(1)==1 .and. imaxM(2)==2 ) then
-!             M12  *  a  = 0    
-!             M22     1
              E(2,1)=1; E(1,1) = -DE(2,2)/DE(1,2)
           else   if ( imaxM(1)==2 .and. imaxM(2)==1 ) then
-!             M11  *  1  = 0    
-!             M21     a
              E(1,1)=1; E(2,1) = -DE(1,1)/DE(2,1)
           else   if ( imaxM(1)==2 .and. imaxM(2)==2 ) then
-!             M12  *  1  = 0    
-!             M22     a
              E(1,1)=1; E(2,1) = -DE(1,2)/DE(2,2)
           else
              call abortmp('Impossible error in cube_mod.F90::metric_atomic()')
@@ -410,25 +402,30 @@ contains
 
 #if 0
           ! eig(1) >= eig(2)
-          ! lamStar1 <= lamStar2
-          ! on cubed-sphere grid: dx_short/dx_long <= sqrt(3)
-          ! nu in long direction:   use desired value based on dx_long
-          ! nu in short direction:  we would like to use nu=nu_short
-          !     but this creates discontinious tensor on cubed-sphere grid.
-          !     So for short direction, use long direction value, unless
-          !     distortion is larger than sqrt(3).  then use 3*short direction
-          ! Justification:  on cubed-sphere grid we get a constant tensor
-          !      viscosity within each element, smoothly varying with resolution
-          ! In highly distorted elements, we use 3x larger coefficient in short
-          ! direction, erring on the side of caution by using too much dissipation 
-  
-          ! for elements distorted  
-	  lamStar1=(1 / eig(1) ) * min( 3d0,eig(1)/eig(2))
-	  lamStar2=(1 / eig(2) )
+          ! theoretical:  nu1 = 1/eig(1)
+          !               nu2 = 1/eig(2)
+          ! but this creates a tensor V that is discontinuous at element
+          ! boundaries - which yelds poor results
+          ! nu1=nu2=nu reproduces our constant coefficient viscosity
+          !            which is excellent
+          ! on cubed sphere grid, eig(1)/eig(2) <= 3  (3 at cube corners)
+          ! THUS:
+          ! for eig(1)/eig(2) <= 3     nu1 = nu2 = geometric mean
+          ! for eig(1)/eig(2) >= 3     nu1 = (1/eig(1))  (1/sqrt(3))
+          !                            nu2 = (1/eig(2)) sqrt(3)
+          ! which means use the theoretical values, but reduces the coefficient in
+          ! the long direction by 58% and increase the coefficient in the small direction
+          ! by 58%
+          sc = max( 1d0, (eig(1)/eig(2))/ 3.0 )
+	  lamStar1= (1/sqrt(eig(1)*eig(2)) ) / sqrt(sc)
+	  lamStar2= (1/sqrt(eig(1)*eig(2)) ) * sqrt(sc)
 
-          !lamStar2 = 1/1500d0
-          !lamStar1 = lamStar2    
-
+          ! above gives a laplace oefficient that scales like dx^2
+          ! Sometimes we want dx^1.61 or dx^1.5 which gives hyperviscosity scaling
+          ! like dx^3.22 or dx^3
+          !lamStar1 = lamStar1 ** (tensor_laplace_scaling/2)
+          !lamStar1 = lamStar1 ** (tensor_laplace_scaling/2)
+             
 	  lamStar1=(rearth**2)*lamStar1
 	  lamStar2=(rearth**2)*lamStar2
 #endif
