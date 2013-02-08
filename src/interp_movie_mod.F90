@@ -220,10 +220,6 @@ module interp_movie_mod
   type(nf_handle), save :: ncdf(max_output_streams)
 
 
-!!!OG
-!  real(kind=real_kind), public ::  Hinterp(np,np)
-
-
 contains
   subroutine interp_movie_init(elem,hybrid,nets,nete,hvcoord,tl)
     use time_mod, only : timelevel_t
@@ -237,20 +233,6 @@ contains
     use aquaplanet_io_mod, only : aq_movie_init
     use physics_io_mod, only : physics_movie_init
 #endif
-
-!OG
-!to construct matrix which interpolates nodal coefs to modal
-!!! BAD BAD BAD
-!in dependencies, interp_movie_mod does not have quadrature_mod
-!so would be better to pass Hinterp from interpolate_mod
-!such a mess
-!DO NOT DELETE THOUGH
-!     use interpolate_mod, only :  interpolate_t, interpolate_create
-!     use quadrature_mod, only : quadrature_t, gausslobatto
-!     type (interpolate_t)  ::  interp2          ! interpolation structure
-!     type (quadrature_t)   :: gp2
-!end og
-
 
     type (TimeLevel_t), intent(in)         :: tl     ! time level struct
     type(element_t) :: elem(:)
@@ -444,24 +426,15 @@ contains
     deallocate(lat,lon,gw)
     deallocate(lev,ilev)
     call syncmp(par)
-
-
-!OG, Hinterp matrix needed for obtaining modal coefficients in filters in advance_mod
-!well it might not be important after all to keep it but in case we go back to some 
-!of our ideas
-!modal coefs are obtained then via 
-!      modal_coefs=matmul(transpose(Hinterp),matmul(elem%field(:,:),Hinterp))
-!DO NOT DELETE
-!     gp2 = gausslobatto(np)
-!     call interpolate_create(gp2,interp2)
-!     Hinterp=interp2%Imat
-!end of go
-
   end subroutine interp_movie_init
+
+
 
   subroutine interp_movie_finish
     call nf_close_all(ncdf)
   end subroutine interp_movie_finish
+
+
 
 #if defined(_PRIM) 
   subroutine interp_movie_output(elem, tl, hvcoord, hybrid, nets,nete,fvm)
@@ -568,23 +541,12 @@ contains
 
                 do ie=nets,nete
                    en=st+interpdata(ie)%n_interp-1
-#ifdef _PRIM
-#ifdef SPHEREW
-                   call interpolate_scalar(interpdata(ie),elem(ie)%state%ps_v(:,:,n0), &
-                        np, datall(st:en,1))
-#else
-                   call interpolate_scalar(interpdata(ie),elem(ie)%state%lnps(:,:,n0), &
-                        np, datall(st:en,1))
-                   datall(st:en,1)=exp(datall(st:en,1))
-#endif
-#else
 #ifdef _PRIMDG
                    call interpolate_scalar(interpdata(ie),elem(ie)%state%pr3d(:,:,nlev+1), &
                         np, datall(st:en,1))
 #else
                    call interpolate_scalar(interpdata(ie),elem(ie)%state%ps, &
                         np, datall(st:en,1))
-#endif
 #endif
                    st=st+interpdata(ie)%n_interp
                 enddo
@@ -599,23 +561,6 @@ contains
              endif
 
 
-#ifdef _PRIM
-             if(nf_selectedvar('geos', output_varnames)) then
-                if (nf_get_frame(ncdf(ios))==1) then
-                st=1
-                allocate (datall(ncnt,1))
-                
-                do ie=nets,nete
-                   en=st+interpdata(ie)%n_interp-1
-                   call interpolate_scalar(interpdata(ie),elem(ie)%state%phis(:,:), &
-                        np, datall(st:en,1))
-                   st=st+interpdata(ie)%n_interp
-                enddo
-                call nf_put_var(ncdf(ios),datall(:,1),start2d,count2d,name='geos')
-                deallocate(datall)
-                endif
-             endif
-#endif
              if(nf_selectedvar('zeta', output_varnames)) then
                 if (hybrid%par%masterproc) print *,'writing zeta...'
                 allocate(datall(ncnt,nlev))
@@ -804,6 +749,8 @@ contains
                   if (hybrid%par%masterproc) print *,'writing for SPELT: ',vname
                   allocate(datall(ncnt,nlev))
                   st=1
+
+
                   do ie=nets,nete
                      en=st+interpdata(ie)%n_interp-1
                      do k=1,nlev                       
@@ -818,7 +765,176 @@ contains
             enddo
 #endif
 
+
+
+             if(nf_selectedvar('geop', output_varnames)) then
+                allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))
+                st=1
+                do ie=nets,nete
+                   en=st+interpdata(ie)%n_interp-1
+                   do k=1,nlev
+#ifdef _PRIM
+                      var3d(:,:,k,1) = 0  ! need to compute PHI from hydrostatic relation
+#elif defined _SWDG
+                      var3d(:,:,k,1) = elem(ie)%state%ht(:,:,k)
+#elif defined _PRIMDG
+                      var3d(:,:,k,1) = (elem(ie)%state%p(:,:,k,n0) + elem(ie)%state%phis(:,:) + phimean)/g 
+#else
+                      if(test_case.eq.'vortex') then
+                         var3d(:,:,k,1) = elem(ie)%state%p(:,:,k,n0)
+                      elseif(test_case.eq.'swirl') then
+                         var3d(:,:,k,1) = elem(ie)%state%p(:,:,k,n0)
+                      else
+                         var3d(:,:,k,1) = (elem(ie)%state%p(:,:,k,n0) + elem(ie)%state%ps(:,:) + phimean)/g
+                      end if
+                      if (kmass.ne.-1) then
+                         ! p(:,:,kmass) = is the density, 
+                         ! other levels are tracers.  Output concentration:
+                         if(k.ne.kmass) &
+                              var3d(:,:,k,1)=var3d(:,:,k,1)/elem(ie)%state%p(:,:,kmass,n0)
+                      endif
+
+#endif
+                      call interpolate_scalar(interpdata(ie), var3d(:,:,k,1), &
+                           np, datall(st:en,k))
+                   end do
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='geop')
+                deallocate(datall,var3d)
+             end if
+
+
+
+#if 1
+             ! DEBUG code to output laplace_sphere_wk of surface pressure:
+             if(nf_selectedvar('hypervis', output_varnames)) then
+                if (hybrid%par%masterproc) print *,'writing hypervis...'
+                allocate(datall(ncnt,nlev), var3d(np,np,nlev,nets:nete))
+
+                do ie=nets,nete
+                   do k=1,nlev
+                      viscosity => elem(ie)%variable_hyperviscosity
+                      var3d(:,:,k,ie) = 0
+#ifdef _PRIM
+                      var3d(:,:,k,ie) = elem(ie)%state%ps_v(:,:,n0)
+#elif defined _SWDG
+                      var3d(:,:,k,ie) = 0  ! set this to surface pressure
+#elif defined _PRIMDG
+                      var3d(:,:,k,ie) = 0  ! set this to surface pressure
+#else
+                      var3d(:,:,k,ie) = elem(ie)%state%p(:,:,k,n0)
+#endif
+                      var3d(:,:,k,ie)=laplace_sphere_wk(var3d(:,:,k,ie),&
+                           deriv,elem(ie),viscosity)
+                      ! laplace_sphere_wk returns weak form with mass matrix
+                      ! already applied.  remove mass matrix, since make_C0
+                      ! routine below will also multiply by mass matrix before DSS
+                      var3d(:,:,k,ie)=var3d(:,:,k,ie)/elem(ie)%spheremp(:,:)
+
+                      ! viscosity coefficient
+                      ! (normally we apply this operator twice, but here only 
+                      ! once, so use sqrt(nu)
+                      var3d(:,:,k,ie)=var3d(:,:,k,ie)*sqrt(nu)
+                   enddo
+                enddo
+                call make_C0(var3d,elem,hybrid,nets,nete)
+                print *,'min/max hypervis: ',minval(var3d),maxval(var3d)
+                st=1
+                do ie=nets,nete
+                   en=st+interpdata(ie)%n_interp-1
+                   do k=1,nlev
+                      call interpolate_scalar(interpdata(ie), var3d(:,:,k,ie), &
+                           np, datall(st:en,k))
+                   end do
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='hypervis')
+                deallocate(datall,var3d)
+             end if
+#else
+             ! End hyperviscosity
+             ! MNL: output hyperviscosity
+             if(nf_selectedvar('hypervis', output_varnames)) then
+                if (hybrid%par%masterproc) print *,'writing hypervis...'
+                allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))
+                st=1
+                do ie=nets,nete
+                   en=st+interpdata(ie)%n_interp-1
+                   do k=1,nlev
+                       var3d(:,:,k,1) = nu*elem(ie)%variable_hyperviscosity(:,:)**2
+
+                      call interpolate_scalar(interpdata(ie), var3d(:,:,k,1), &
+                           np, datall(st:en,k))
+                   end do
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='hypervis')
+                deallocate(datall,var3d)
+             end if
+             ! End hyperviscosity
+#endif
+
+             ! MNL: output hypervis length scale 
+             if(nf_selectedvar('max_dx', output_varnames)) then
+                if (hybrid%par%masterproc) print *,'writing max_dx...'
+                allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))
+                st=1
+                do ie=nets,nete
+                   en=st+interpdata(ie)%n_interp-1
+                   do k=1,nlev
+                       var3d(:,:,k,1) = elem(ie)%dx_long
+
+                      call interpolate_scalar(interpdata(ie), var3d(:,:,k,1), &
+                           np, datall(st:en,k))
+                   end do
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='max_dx')
+                deallocate(datall,var3d)
+             end if
+
+             ! MNL: output CFL length scale 
+             if(nf_selectedvar('min_dx', output_varnames)) then
+                if (hybrid%par%masterproc) print *,'writing min_dx...'
+                allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))
+                st=1
+                do ie=nets,nete
+                   en=st+interpdata(ie)%n_interp-1
+                   do k=1,nlev
+                       var3d(:,:,k,1) = elem(ie)%dx_short 
+
+                      call interpolate_scalar(interpdata(ie), var3d(:,:,k,1), &
+                           np, datall(st:en,k))
+                   end do
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='min_dx')
+                deallocate(datall,var3d)
+             end if
+             ! End dx outputs
+
+
 #if defined(_PRIM) 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!            large block of _PRIM only I/O
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+             if(nf_selectedvar('geos', output_varnames)) then
+                if (nf_get_frame(ncdf(ios))==1) then
+                st=1
+                allocate (datall(ncnt,1))
+                
+                do ie=nets,nete
+                   en=st+interpdata(ie)%n_interp-1
+                   call interpolate_scalar(interpdata(ie),elem(ie)%state%phis(:,:), &
+                        np, datall(st:en,1))
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall(:,1),start2d,count2d,name='geos')
+                deallocate(datall)
+                endif
+             endif
+
              if(nf_selectedvar('T', output_varnames)) then
                 if (hybrid%par%masterproc) print *,'writing T...'
                 allocate(datall(ncnt,nlev))
@@ -1034,146 +1150,20 @@ contains
              end if
 #endif
 
-
-#ifdef PIO_INTERP
              if(test_case.eq.'aquaplanet') then
                 call aq_movie_output(ncdf(ios), elem, interpdata, output_varnames, ncnt, nlev)
              end if
              if(columnpackage.ne.'none') then
                 call physics_movie_output(ncdf(ios),elem, interpdata, output_varnames, ncnt)
              end if
-#endif
-#else
-             if(nf_selectedvar('geop', output_varnames)) then
-                allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))
-                st=1
-                do ie=nets,nete
-                   en=st+interpdata(ie)%n_interp-1
-                   do k=1,nlev
-#ifdef _SWDG
-                      var3d(:,:,k,1) = elem(ie)%state%ht(:,:,k)
-#elif defined _PRIMDG
-                      var3d(:,:,k,1) = (elem(ie)%state%p(:,:,k,n0) + elem(ie)%state%phis(:,:) + phimean)/g 
-#else
-                      if(test_case.eq.'vortex') then
-                         var3d(:,:,k,1) = elem(ie)%state%p(:,:,k,n0)
-                      elseif(test_case.eq.'swirl') then
-                         var3d(:,:,k,1) = elem(ie)%state%p(:,:,k,n0)
-                      else
-                         var3d(:,:,k,1) = (elem(ie)%state%p(:,:,k,n0) + elem(ie)%state%ps(:,:) + phimean)/g
-                      end if
-                      if (kmass.ne.-1) then
-                         ! p(:,:,kmass) = is the density, 
-                         ! other levels are tracers.  Output concentration:
-                         if(k.ne.kmass) &
-                              var3d(:,:,k,1)=var3d(:,:,k,1)/elem(ie)%state%p(:,:,kmass,n0)
-                      endif
-
-#endif
-                      call interpolate_scalar(interpdata(ie), var3d(:,:,k,1), &
-                           np, datall(st:en,k))
-                   end do
-                   st=st+interpdata(ie)%n_interp
-                enddo
-                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='geop')
-                deallocate(datall,var3d)
-             end if
-#endif
-#if 0
-             ! DEBUG code to output laplace_sphere_wk:
-             if(nf_selectedvar('hypervis', output_varnames)) then
-                if (hybrid%par%masterproc) print *,'writing hypervis...'
-                allocate(datall(ncnt,nlev), var3d(np,np,nlev,nets:nete))
-
-                do ie=nets,nete
-                   do k=1,nlev
-                      viscosity => elem(ie)%variable_hyperviscosity
-                      var3d(:,:,k,ie)=laplace_sphere_wk(elem(ie)%state%p(:,:,k,n0),&
-                           deriv,elem(ie),viscosity)
-                      ! laplace_sphere_wk returns weak form with mass matrix
-                      ! already applied.  remove mass matrix, since make_C0
-                      ! routine below will also multiply by mass matrix before DSS
-                      var3d(:,:,k,ie)=var3d(:,:,k,ie)/elem(ie)%spheremp(:,:)
-
-                      ! viscosity coefficient
-                      ! (normally we apply this operator twice, but here only 
-                      ! once, so use sqrt(nu)
-                      var3d(:,:,k,ie)=var3d(:,:,k,ie)*sqrt(nu)
-                   enddo
-                enddo
-                call make_C0(var3d,elem,hybrid,nets,nete)
-                print *,'min/max hypervis: ',minval(var3d),maxval(var3d)
-                st=1
-                do ie=nets,nete
-                   en=st+interpdata(ie)%n_interp-1
-                   do k=1,nlev
-                      call interpolate_scalar(interpdata(ie), var3d(:,:,k,ie), &
-                           np, datall(st:en,k))
-                   end do
-                   st=st+interpdata(ie)%n_interp
-                enddo
-                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='hypervis')
-                deallocate(datall,var3d)
-             end if
-#else
-             ! End hyperviscosity
-             ! MNL: output hyperviscosity
-             if(nf_selectedvar('hypervis', output_varnames)) then
-                if (hybrid%par%masterproc) print *,'writing hypervis...'
-                allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))
-                st=1
-                do ie=nets,nete
-                   en=st+interpdata(ie)%n_interp-1
-                   do k=1,nlev
-                       var3d(:,:,k,1) = nu*elem(ie)%variable_hyperviscosity(:,:)**2
-
-                      call interpolate_scalar(interpdata(ie), var3d(:,:,k,1), &
-                           np, datall(st:en,k))
-                   end do
-                   st=st+interpdata(ie)%n_interp
-                enddo
-                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='hypervis')
-                deallocate(datall,var3d)
-             end if
-             ! End hyperviscosity
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!            end _PRIM only I/O
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #endif
 
-             ! MNL: output hypervis length scale 
-             if(nf_selectedvar('max_dx', output_varnames)) then
-                allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))
-                st=1
-                do ie=nets,nete
-                   en=st+interpdata(ie)%n_interp-1
-                   do k=1,nlev
-                       var3d(:,:,k,1) = elem(ie)%dx_long
 
-                      call interpolate_scalar(interpdata(ie), var3d(:,:,k,1), &
-                           np, datall(st:en,k))
-                   end do
-                   st=st+interpdata(ie)%n_interp
-                enddo
-                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='max_dx')
-                deallocate(datall,var3d)
-             end if
 
-             ! MNL: output CFL length scale 
-             if(nf_selectedvar('min_dx', output_varnames)) then
-                allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))
-                st=1
-                do ie=nets,nete
-                   en=st+interpdata(ie)%n_interp-1
-                   do k=1,nlev
-                       var3d(:,:,k,1) = elem(ie)%dx_short 
 
-                      call interpolate_scalar(interpdata(ie), var3d(:,:,k,1), &
-                           np, datall(st:en,k))
-                   end do
-                   st=st+interpdata(ie)%n_interp
-                enddo
-                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='min_dx')
-                deallocate(datall,var3d)
-             end if
-             ! End dx outputs
              if(piofs%io_rank==0) then
                 count2d(3:3)=1
              else
