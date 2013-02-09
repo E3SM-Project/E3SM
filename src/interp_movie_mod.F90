@@ -436,32 +436,23 @@ contains
 
 
 
-#if defined(_PRIM) 
-  subroutine interp_movie_output(elem, tl, hvcoord, hybrid, nets,nete,fvm)
-#elif defined(_PRIMDG) 
-  subroutine interp_movie_output(elem, tl, hvcoord, hybrid, phimean, deriv, nets,nete,fvm)
-#else
-  subroutine interp_movie_output(elem, tl, hybrid, phimean, deriv, nets,nete, fvm)
-#endif
+  subroutine interp_movie_output(elem, tl, hybrid, phimean, nets,nete, fvm, hvcoord)
+
     use kinds, only : int_kind, real_kind
     use element_mod, only : element_t
     use time_mod, only : Timelevel_t, tstep, ndays, time_at, secpday, nendstep,nmax
     use parallel_mod, only : parallel_t, abortmp
 #if defined(_PRIM) 
     use hybvcoord_mod, only :  hvcoord_t 
-    use physical_constants, only : g, kappa, p0, rrearth
     use aquaplanet_io_mod, only : aq_movie_output
     use physics_io_mod, only : physics_movie_output
 #elif defined _PRIMDG
     use hybvcoord_mod, only :  hvcoord_t
-    use physical_constants, only : g, kappa, p0, rrearth
-    use derivative_mod, only : derivative_t, vorticity
     use aquaplanet_io_mod, only : aq_movie_output
     use physics_io_mod, only : physics_movie_output
-#else
-    use derivative_mod, only : derivative_t, vorticity, laplace_sphere_wk
-    use physical_constants, only : omega, g, rrearth, dd_pi
 #endif
+    use physical_constants, only : omega, g, rrearth, dd_pi, kappa, p0
+    use derivative_mod, only : derivinit, derivative_t, vorticity, laplace_sphere_wk
     use hybrid_mod, only : hybrid_t
     use pio, only : pio_setdebuglevel, pio_syncfile ! _EXTERNAL
 
@@ -474,7 +465,7 @@ contains
 #if defined(_SPELT)
     type (spelt_struct), optional   :: fvm(:)
 #else
-     type (fvm_struct), optional   :: fvm(:)    
+    type (fvm_struct), optional   :: fvm(:)    
 #endif
     
     type (TimeLevel_t)  :: tl
@@ -483,12 +474,11 @@ contains
     type (hvcoord_t)    :: hvcoord
 #elif defined(_PRIMDG)
     type (hvcoord_t)    :: hvcoord
-    real (kind=real_kind), intent(in) :: phimean
-    type (derivative_t),intent(in)  :: deriv
 #else
-    real (kind=real_kind), intent(in) :: phimean
-    type (derivative_t),intent(in)  :: deriv
+    integer,optional    :: hvcoord
 #endif
+    real (kind=real_kind), intent(in) :: phimean
+
     type (hybrid_t)      , intent(in) :: hybrid
     integer              :: nets,nete
 
@@ -510,10 +500,15 @@ contains
     real (kind=real_kind) :: v1,v2
     real (kind=real_kind),pointer,dimension(:,:) :: viscosity
 
+    type (derivative_t)  :: deriv
+
 
     call t_startf('interp_movie_output')
+    if (hybrid%NThreads /= 1) &
+         call abortmp('Error: interp_movie_output can only be called outside threaded region')
 
     n0 = tl%n0
+    call derivinit(deriv)
 
 !    if (0==piofs%io_rank) write(*,'(a,i4,a,i1)') &
 !         "lat/lon interp movie output: ios=",ios," interpolation type=",&
@@ -541,7 +536,10 @@ contains
 
                 do ie=nets,nete
                    en=st+interpdata(ie)%n_interp-1
-#ifdef _PRIMDG
+#ifdef _PRIM
+                   call interpolate_scalar(interpdata(ie),elem(ie)%state%ps_v(:,:,nlev+1), &
+                        np, datall(st:en,1))
+#elif defined _PRIMDG
                    call interpolate_scalar(interpdata(ie),elem(ie)%state%pr3d(:,:,nlev+1), &
                         np, datall(st:en,1))
 #elif _PRIM

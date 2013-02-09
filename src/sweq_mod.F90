@@ -201,7 +201,7 @@ contains
        call test_global_integral(elem,hybrid,nets,nete)
 
        dtnu = 2.0d0*tstep*max(nu,nu_s)/hypervis_subcycle
-       call print_cfl(elem,hybrid,nets,nete,dtnu,tstep,tstep)
+       call print_cfl(elem,hybrid,nets,nete,dtnu)
 
        if (MeshUseMeshFile .EQV. .FALSE.) then
           ! MNL: there are abort calls in edge_mod::ghostVpackfull that
@@ -1123,7 +1123,7 @@ contains
     if (topology == "cube") then
        call test_global_integral(elem,hybrid,nets,nete,mindx)
        dtnu = (tstep/rk_stage_user)*max(nu,nu_s)/hypervis_subcycle
-       call print_cfl(elem,hybrid,nets,nete,dtnu,tstep,tstep)
+       call print_cfl(elem,hybrid,nets,nete,dtnu)
     end if
 
     ! Find time-step to gravity wave speed
