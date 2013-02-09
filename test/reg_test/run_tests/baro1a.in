@@ -16,7 +16,7 @@ test_type=preqx
 exec_name=baroA
 
 # Number of CPUs to use 
-NCPU=24
+NUM_CPUS=24
 
 # The following paths are best specified frome HOMME_ROOT (the svn checkout directory)
 namelist_files=${HOMME_ROOT}/test/reg_test/${namelist_dir}/${test_name}.nl

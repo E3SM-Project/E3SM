@@ -1,4 +1,11 @@
 
+# Set up a file to hold a list of all of the  tests
+SET (HOMME_TEST_LIST ${CMAKE_BINARY_DIR}/tests/test_list.sh)
+FILE (WRITE ${HOMME_TEST_LIST} "${POUND}!/bin/bash\n")
+FILE (APPEND ${HOMME_TEST_LIST} "${POUND} A list of all of the HOMME tests\n")
+FILE (APPEND ${HOMME_TEST_LIST} "\n")
+SET (NUM_TEST_FILES 0)
+
 IF(BUILD_HOMME_PREQX)
   ADD_SUBDIRECTORY(baroA)
   ADD_SUBDIRECTORY(baroB)
@@ -27,3 +34,5 @@ IF(BUILD_HOMME_SWDGX)
   createTest(swtc5-dg)
 ENDIF()
 
+FILE (APPEND ${HOMME_TEST_LIST} "\n")
+FILE (APPEND ${HOMME_TEST_LIST} "num_test_files=${NUM_TEST_FILES}\n")

@@ -12,7 +12,7 @@ test_type=swdgx
 # The specifically compiled executable that this test uses
 exec_name=swtc-dgA
 
-NCPU=16
+NUM_CPUS=16
 
 namelist_files=${HOMME_ROOT}/test/reg_test/namelists/${test_name}.nl
 

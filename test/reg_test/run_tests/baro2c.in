@@ -9,7 +9,7 @@ test_type=preqx
 # The specifically compiled executable that this test uses
 exec_name=baroC
 
-NCPU=24
+NUM_CPUS=24
 
 namelist_files=\
   ${HOMME_ROOT}/test/reg_test/${namelist_dir}/${test_name}-run1.nl \
@@ -17,6 +17,6 @@ namelist_files=\
 vcoord_files=${HOMME_ROOT}/test/vcoord/*26*
 
 OMP_SUB_TESTS=true
-OMP_NUM_THREADS=4   # max number of threads. actual number specified in namelist as 4
+OMP_NUM_THREADS=4
 omp_namelist_files=${HOMME_ROOT}/test/reg_test/${namelist_dir}/${test_name}-run2-omp.nl
 
