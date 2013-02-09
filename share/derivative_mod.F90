@@ -2191,8 +2191,10 @@ endif
       real(kind=real_kind) :: rdx
       real(kind=real_kind) :: rdy
 
-      rdx=2.0D0/(elem%dx*rrearth) ! strong derivative inverse x length
-      rdy=2.0D0/(elem%dy*rrearth) ! strong derivative inverse y length
+! dx,dy are no longer initialized - this routine must be updated 
+! see vorticity_sphere above
+!      rdx=2.0D0/(elem%dx*rrearth) ! strong derivative inverse x length
+!      rdy=2.0D0/(elem%dy*rrearth) ! strong derivative inverse y length
 
       ! convert to covariant form
                                                                     
