@@ -535,7 +535,7 @@ contains
                 do ie=nets,nete
                    en=st+interpdata(ie)%n_interp-1
 #ifdef _PRIM
-                   call interpolate_scalar(interpdata(ie),elem(ie)%state%ps_v(:,:,nlev+1), &
+                   call interpolate_scalar(interpdata(ie),elem(ie)%state%ps_v(:,:,n0), &
                         np, datall(st:en,1))
 #elif defined _PRIMDG
                    call interpolate_scalar(interpdata(ie),elem(ie)%state%pr3d(:,:,nlev+1), &
@@ -1146,12 +1146,20 @@ contains
              end if
 #endif
 
+             ! note: HOMME now compiles both interp_movie_mod.F90 and native grid output modules 
+             ! (prim_movie_mod.F90 or shal_movie_mod.F90) into a single executable.
+             ! the intent is to make PIO_INTERP a run time variable and remove the #ifdef
+             !
+             ! However, these two routines are still conditionally compiled for either PIO or PIO_INTERP
+             ! and hence must be protected by an #ifdef:
+#ifdef PIO_INTERP
              if(test_case.eq.'aquaplanet') then
                 call aq_movie_output(ncdf(ios), elem, interpdata, output_varnames, ncnt, nlev)
              end if
              if(columnpackage.ne.'none') then
                 call physics_movie_output(ncdf(ios),elem, interpdata, output_varnames, ncnt)
              end if
+#endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !            end _PRIM only I/O
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

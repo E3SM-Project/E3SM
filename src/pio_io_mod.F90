@@ -3,7 +3,6 @@
 #endif
 
 module pio_io_mod
-#if defined PIO || defined PIO_INTERP
   use kinds, only : int_kind, real_kind
   use pio ! _EXTERNAL
   use pio_types ! _EXTERNAL
@@ -781,5 +780,4 @@ contains
     end if
     ncFileID=fileid%fh
   end subroutine nf_open_file
-#endif
 end module pio_io_mod
