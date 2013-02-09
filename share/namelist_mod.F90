@@ -386,9 +386,10 @@ module namelist_mod
     multilevel    = 1
     uselapi       = .TRUE.
 #ifdef CAM
-    ! forward-in-time, subcycled dynamics
+    ! set all CAM defaults 
+    ! CAM requires forward-in-time, subcycled dynamics
     ! RK2 3 stage tracers, sign-preserving conservative
-    tstep_type = 1         ! foward-in-time RK methods
+    tstep_type = 1            ! foward-in-time RK methods
     se_smooth=0;              ! RK methods dont use robert filter
     qsplit=4; rk_stage_user=3
     se_limiter_option=4
