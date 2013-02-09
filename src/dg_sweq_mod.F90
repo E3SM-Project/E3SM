@@ -314,7 +314,7 @@ if (statefreq>0) then
           ! ============================================== 
 #ifdef PIO_INTERP
           call interp_movie_init(elem,hybrid,nets,nete,tl=tl)
-          call interp_movie_output(elem,tl, hybrid, pmean, deriv, nets, nete)
+          call interp_movie_output(elem,tl, hybrid, pmean, nets, nete)
 #else
 	  call dg_movie_init(elem,hybrid)
           call dg_movie_output(elem,tl,hybrid,pmean)
@@ -444,7 +444,7 @@ endif
        ! ============================================================
 if (statefreq>0) then
 #ifdef PIO_INTERP
-       call interp_movie_output(elem, tl, hybrid, pmean, deriv, nets, nete)
+       call interp_movie_output(elem, tl, hybrid, pmean, nets, nete)
 #else
        call dg_movie_output(elem,tl, hybrid, pmean)
 #endif

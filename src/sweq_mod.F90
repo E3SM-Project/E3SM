@@ -475,7 +475,7 @@ contains
 
 #ifdef PIO_INTERP
 	  call interp_movie_init(elem,hybrid,nets,nete,tl=tl)
-          call interp_movie_output(elem,tl, hybrid, pmean, deriv, nets, nete,fvm)     
+          call interp_movie_output(elem,tl, hybrid, pmean, nets, nete,fvm)     
 #else
   if (fvm_check) then
 	   call shal_movie_init(elem,hybrid,fvm)
@@ -817,17 +817,9 @@ contains
        ! Shallow Water Test Case output files
        ! ============================================================
 #ifdef PIO_INTERP
-! #ifdef _FVM   
-          call interp_movie_output(elem,tl, hybrid, pmean, deriv, nets, nete,fvm)
-! #else
-!           call interp_movie_output(elem,tl, hybrid, pmean, deriv, nets, nete)          
-! #endif
+        call interp_movie_output(elem,tl, hybrid, pmean, nets, nete,fvm)
 #else     
-! #ifdef _FVM
-          call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv,fvm)
-! #else
-!           call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
-! #endif
+        call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv,fvm)
 #endif
        ! ==================================================
        ! Shallow Water Test Cases:
@@ -1289,7 +1281,7 @@ contains
           ! ============================================== 
 #ifdef PIO_INTERP
 	  call interp_movie_init(elem,hybrid,nets,nete,tl=tl)
-          call interp_movie_output(elem,tl, hybrid, pmean, deriv, nets, nete)
+          call interp_movie_output(elem,tl, hybrid, pmean, nets, nete)
 #else
 	  call shal_movie_init(elem,hybrid)
           call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
@@ -1385,7 +1377,7 @@ contains
        ! Shallow Water Test Case output files
        ! ============================================================
 #ifdef PIO_INTERP
-       call interp_movie_output(elem, tl, hybrid, pmean, deriv, nets, nete)
+       call interp_movie_output(elem, tl, hybrid, pmean, nets, nete)
 #else       
           call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
 #endif

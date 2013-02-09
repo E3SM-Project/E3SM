@@ -179,7 +179,7 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
 !-----------------------------------------------------------------------------------! 
 #ifdef PIO_INTERP
   call interp_movie_init(elem,hybrid,nets,nete,tl=tl)    
-  call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete,spelt)
+  call interp_movie_output(elem,tl, hybrid, 0D0, nets, nete,spelt)
 #else
   call shal_movie_init(elem,hybrid)
   call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv)
@@ -421,7 +421,7 @@ endif
 !   end do
 
 #ifdef PIO_INTERP
-  call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete,spelt)
+  call interp_movie_output(elem,tl, hybrid, 0D0, nets, nete,spelt)
 #else
   call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv)
 #endif  
