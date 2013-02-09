@@ -148,8 +148,9 @@ contains
     endif
 
   end subroutine physics_movie_output
-#endif
-#ifdef PIO
+
+#else
+
   subroutine physics_movie_output(ncdf, elem, output_varnames, nxyp)
     use dimensions_mod, only : nelemd, nelemdmax, nlev
     use dof_mod, only : Uniquepoints
@@ -227,7 +228,8 @@ contains
   end subroutine physics_movie_output
 #endif
 
-#if defined(NETCDF) || defined(PNETCDF)
+#ifdef XXXXXX
+! obsolete. HOMME only supports PIO or PIO_INTERP   defined(NETCDF) || defined(PNETCDF)
   subroutine physics_movie_output(ncdf, elem, output_varnames, nxyp)
     use dimensions_mod, only : nelemd, nelemdmax, nlev
     use dof_mod, only : Uniquepoints

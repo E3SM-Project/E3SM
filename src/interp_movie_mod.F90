@@ -448,8 +448,6 @@ contains
     use physics_io_mod, only : physics_movie_output
 #elif defined _PRIMDG
     use hybvcoord_mod, only :  hvcoord_t
-    use aquaplanet_io_mod, only : aq_movie_output
-    use physics_io_mod, only : physics_movie_output
 #endif
     use physical_constants, only : omega, g, rrearth, dd_pi, kappa, p0
     use derivative_mod, only : derivinit, derivative_t, vorticity, laplace_sphere_wk
