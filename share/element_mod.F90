@@ -277,9 +277,6 @@ module element_mod
      integer(kind=int_kind) :: LocalId
      integer(kind=int_kind) :: GlobalId
 
-     real (kind=real_kind) :: dx
-     real (kind=real_kind) :: dy
-
      !=====================================
      !Add the link list hooks
      !=====================================
