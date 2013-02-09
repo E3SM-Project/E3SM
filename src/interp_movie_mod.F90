@@ -542,9 +542,6 @@ contains
 #elif defined _PRIMDG
                    call interpolate_scalar(interpdata(ie),elem(ie)%state%pr3d(:,:,nlev+1), &
                         np, datall(st:en,1))
-#elif _PRIM
-                   call interpolate_scalar(interpdata(ie),elem(ie)%state%ps_v(:,:,n0), &
-                        np, datall(st:en,1))
 #else
                    call interpolate_scalar(interpdata(ie),elem(ie)%state%ps, &
                         np, datall(st:en,1))
