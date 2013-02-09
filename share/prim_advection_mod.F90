@@ -2169,7 +2169,7 @@ contains
 #else
   use fvm_control_volume_mod, only : fvm_struct
 #endif    
-  
+  call t_startf('vertical_remap')
   
 #if defined(_SPELT)
   type(spelt_struct), intent(inout) :: fvm(:)
@@ -2335,13 +2335,8 @@ contains
      endif
 
   enddo
-  
-  
+  call t_stopf('vertical_remap')  
   end subroutine vertical_remap
-  
-  
-
-
 
 
 
