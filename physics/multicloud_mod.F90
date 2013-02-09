@@ -373,7 +373,7 @@ contains
     integer,intent(in)                :: nets,nete
 
     real(kind=real_kind) :: dt2, qtens, tebtens
-    real(kind=real_kind) :: rdx, rdy
+!    real(kind=real_kind) :: rdx, rdy
     real(kind=real_kind) :: v1, v2, vcon1, vcon2
     real(kind=real_kind) :: ubar1,ubar2,q,Hd,Hd0,D0,D00,D,Pbig,deltem,deltem0,tem,tem0,teb
     real(kind=real_kind) :: lws,lws0,Qc,Qc0,ig, Qcongest,Qcongest0,Pbig0
@@ -448,8 +448,8 @@ contains
 
     do ie=nets,nete
 
-       rdx=2.0_real_kind/(elem(ie)%dx*rearth) ! strong derivative inverse x length
-       rdy=2.0_real_kind/(elem(ie)%dy*rearth) ! strong derivative inverse y length
+!       rdx=2.0_real_kind/(elem(ie)%dx*rearth) ! strong derivative inverse x length
+!       rdy=2.0_real_kind/(elem(ie)%dy*rearth) ! strong derivative inverse y length
 
        !
        ! Project the velocity onto the 2 barotropic modes selected and do an average Ubar
@@ -864,7 +864,7 @@ contains
     real(kind=real_kind) :: divteb_tmp(np,np)
 
     real(kind=real_kind) :: v1,v2
-    real(kind=real_kind) :: rdx,rdy
+!    real(kind=real_kind) :: rdx,rdy
 
     real (kind=real_kind), dimension(np,np)      :: rmetdetv
 
@@ -880,8 +880,8 @@ contains
 
     do ie=nets,nete
 
-       rdx=2.0_real_kind/(elem(ie)%dx*rearth) ! strong derivative inverse x length
-       rdy=2.0_real_kind/(elem(ie)%dy*rearth) ! strong derivative inverse y length
+!       rdx=2.0_real_kind/(elem(ie)%dx*rearth) ! strong derivative inverse x length
+!       rdy=2.0_real_kind/(elem(ie)%dy*rearth) ! strong derivative inverse y length
 
        mv       => elem_physics(ie)%mp
        metinv   => elem(ie)%metinv
@@ -913,8 +913,8 @@ contains
     call bndry_exchangeV(hybrid,edgeS2)
 
     do ie=nets,nete
-       rdx=2.0_real_kind/(elem(ie)%dx*rearth) ! strong derivative inverse x length
-       rdy=2.0_real_kind/(elem(ie)%dy*rearth) ! strong derivative inverse y length
+!       rdx=2.0_real_kind/(elem(ie)%dx*rearth) ! strong derivative inverse x length
+!       rdy=2.0_real_kind/(elem(ie)%dy*rearth) ! strong derivative inverse y length
 
        mv       => elem_physics(ie)%mp
        rmp      => elem_physics(ie)%rmp
