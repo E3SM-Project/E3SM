@@ -36,3 +36,21 @@ ENDIF()
 
 FILE (APPEND ${HOMME_TEST_LIST} "\n")
 FILE (APPEND ${HOMME_TEST_LIST} "num_test_files=${NUM_TEST_FILES}\n")
+
+SET(Homme_Build_DIR ${CMAKE_BINARY_DIR})
+SET(Homme_Results_DIR ${CMAKE_SOURCE_DIR}/test/reg_test/results)
+
+# Host specific
+IF (Homme_Hostname STREQUAL "Yellowstone") 
+
+  # Modify the results directory to point to the yellowstone results
+  # TODO: deal with different compilers
+  SET(Homme_Results_DIR ${CMAKE_SOURCE_DIR}/test/reg_test/results/yellowstone)
+  
+  CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/createRunScripts.sh 
+                 ${CMAKE_BINARY_DIR}/tests/createRunScripts.sh @ONLY)
+  CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/submit_lsf.sh
+                 ${CMAKE_BINARY_DIR}/tests/submit_lsf.sh @ONLY)
+  CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/testing-utils.sh
+                 ${CMAKE_BINARY_DIR}/tests/testing-utils.sh COPYONLY)
+ENDIF ()

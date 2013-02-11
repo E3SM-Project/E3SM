@@ -172,6 +172,10 @@ diffStdOut() {
     # The following is not very clean
     NEW_RESULT=${DIR_NAME}/${THIS_TEST}.stdout.${SUBMIT_JOB_ID[$i]}
     SAVED_RESULT=${RESULT_DIR}/${THIS_TEST}/${THIS_TEST}.stdout
+    # TODO: Ensure that teh files exist
+
+
+
     stripAppendage $NEW_RESULT
     echo "diff $NEW_RESULT $SAVED_RESULT" >> $diffFile
     # append the output to 
