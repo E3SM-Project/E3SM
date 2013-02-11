@@ -44,7 +44,8 @@ Code reviewed by:  Jim
 
 Summary of pre-tag testing:
 
-  Regression tests:    
+  Regression tests: Tested on challenger, titan, yellowstone with xlf,
+  pgi, and intel compilers   
 
 
 ===============================================================
