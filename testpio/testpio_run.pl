@@ -284,9 +284,23 @@ foreach \$suite (qw(@testsuites)){
 		copy("$tstdir/testpio","testpio");  
 	    }
 	    chmod 0755,"testpio";
-#	    symlink("$tstdir/namelists/testpio_in.\$test","testpio_in");
 
 	    copy("$tstdir/namelists/testpio_in.\$test","testpio_in");
+	    if("$host" eq "intrepid"){
+		open(F,"$tstdir/namelists/testpio_in.\$test");
+		my \@nl = <F>;
+		close(F);
+		open(F,">testpio_in");
+		foreach(\@nl){
+		    if(/nprocsIO/){
+			print F " nprocsIO = 0\n";
+			next;
+		    }
+		    print F \$_;
+		}
+		close(F);
+	    }
+
 
 	    mkdir "none" unless(-d "none");
             my \$exename = "./testpio";

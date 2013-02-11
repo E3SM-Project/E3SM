@@ -572,8 +572,7 @@ Modified Files:
   pio/pio_types.F90
 
 test complete on lynx 80 tests PASS, 0 tests FAIL
-===============================================================
-*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 
 Tag name: pio1_4_3
 Originator(s): Jim, John Dennis

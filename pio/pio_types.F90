@@ -81,7 +81,7 @@ module pio_types
 
 
     integer, parameter :: MAX_IO_SYSTEMS=6
-    type(iosystem_list_t) :: iosystems(MAX_IO_SYSTEMS)
+    type(iosystem_list_t), save :: iosystems(MAX_IO_SYSTEMS)
 
 
     type, public :: io_data_list

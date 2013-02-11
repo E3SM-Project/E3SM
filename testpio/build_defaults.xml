@@ -154,11 +154,8 @@
 
 
 <intrepid
-  ENV_XLF_USR_CONFIG="/soft/apps/ibmcmp-jan2010/xlf/bg/11.1/etc/xlf.cfg"
-  ENV_XLC_USR_CONFIG="/soft/apps/ibmcmp-jan2010/vacpp/bg/9.0/etc/vac.cfg"
-  ENV_IBMCMP_INCLUDE="/soft/apps/ibmcmp-jan2010/vac/bg/9.0/include:/soft/apps/ibmcmp-jan2010/vacpp/bg/9.0/include:/soft/apps/ibmcmp-jan2010/xlf/bg/11.1/include:/soft/apps/ibmcmp-jan2010/xlmass/bg/4.4/include:/soft/apps/ibmcmp-jan2010/xlsmp/bg/1.7/include"
-  ENV_XNLSPATH="/usr/X11R6/lib/X11/nls"
-  ADDENV_PATH="/soft/apps/darshan/bin/:/soft/apps/ibmcmp-jan2010/xlf/bg/11.1/bin/:/soft/apps/ibmcmp-jan2010/vac/bg/9.0/bin/"
+  ENV_IBMCMP_INCLUDE="/soft/apps/ibmcmp-jan2013/vac/bg/9.0/include:/soft/apps/ibmcmp-jan2010/vacpp/bg/9.0/include:/soft/apps/ibmcmp-jan2010/xlf/bg/11.1/include:/soft/apps/ibmcmp-jan2010/xlmass/bg/4.4/include:/soft/apps/ibmcmp-jan2010/xlsmp/bg/1.7/include"
+  ADDENV_PATH="/soft/apps/darshan/bin/:/soft/apps/ibmcmp-jan2013/xlf/bg/11.1/bin/:/soft/apps/ibmcmp-jan2010/vac/bg/9.0/bin/"
   NETCDF_PATH="/soft/apps/current/netcdf-4.1.3-disable_netcdf_4" 
   PNETCDF_PATH="/home/robl/soft/pnetcdf-1.3.0pre1-xl" 
   MPIFC = "/software/common/apps/misc-scripts/tmpixlf90"
@@ -171,9 +168,9 @@
   conopts = "  --enable-mpiio --enable-timing --build=powerpc-bgp-linux --host=powerpc64-suse-linux --disable-netcdf4"
   workdir = "/intrepid-fs0/users/${USER}/scratch/testpio"
   run = "cobalt-mpirun -mode vn -nofree --stdout "
-  submit ="qsub -ACCESDev --mode script -t 01:00:00 -q prod-devel -n 128 "
+  submit ="qsub -AClimEndStation --mode script -t 01:00:00 -q prod-devel -n 128 "
   corespernode="4"
-  pecount="64"
+  pecount="128"
  />
 
 
