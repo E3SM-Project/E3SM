@@ -3,6 +3,9 @@
 # CMake sets this variable
 HOMME_DIR=@Homme_Build_DIR@
 
+# The "type" of submission (lsf, pbs, standard mpi etc.) for creating the executable scripts 
+HOMME_Submission_Type=@Homme_Submission_Type@
+
 # The directory that stores all of the tests
 HOMME_TESTING_DIR=${HOMME_DIR}/tests
 
@@ -13,6 +16,6 @@ source ${HOMME_TESTING_DIR}/test_list.sh
 source ${HOMME_TESTING_DIR}/testing-utils.sh
 
 # The location of all of the lsf scripts generated here
-lsfListFile=${HOMME_TESTING_DIR}/lsf-list.sh
+lsfListFile=${HOMME_TESTING_DIR}/submission-list.sh
 
-createLSFScripts
+createScripts

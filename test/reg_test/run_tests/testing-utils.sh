@@ -22,7 +22,7 @@ stripAppendage() {
   sed -i -e '/^ exiting/,/^ number of MPI/{/^ exiting/!{/^ number of MPI/!d}}' -e '/^process/d' $1
 }
 
-yellowstoneLSFFile() {
+createLSFHeader() {
 
   RUN_SCRIPT=$1
 
@@ -79,6 +79,20 @@ yellowstoneLSFFile() {
 
 }
 
+
+createStdHeader() {
+
+  RUN_SCRIPT=$1
+
+  echo "#!/bin/bash " >> $RUN_SCRIPT
+
+  echo "" >> $RUN_SCRIPT
+
+  echo "cd $outputDir" >> $RUN_SCRIPT
+
+  echo "" >> $RUN_SCRIPT
+
+}
 
 yellowstoneExec() {
   RUN_SCRIPT=$1
@@ -209,7 +223,51 @@ submitTestsToLSF() {
   done
 }
 
-createLSFScripts() {
+runTestsStd() {
+
+  echo "Submitting ${num_submissions} jobs"
+
+  SUBMIT_TEST=()
+  SUBMIT_JOB_ID=()
+  SUBMIT_TEST=()
+
+  # Loop through all of the tests
+  for subNum in $(seq 1 ${num_submissions})
+  do
+
+    subFile=subFile${subNum}
+    subFile=${!subFile}
+    #echo "subFile=${subFile}"
+    subJobName=`basename ${subFile} .sh`
+    #echo "subJobName=$subJobName"
+
+    # setup file for stdout and stderr redirection
+    THIS_STDOUT=${subJobName}.out
+    THIS_STDERR=${subJobName}.err
+
+    # Run the command
+    # For some reason bsub must not be part of a string
+    echo -n "Running test ${subJobName} ... "
+    ${subFile} > $THIS_STDOUT 2> $THIS_STDERR
+    RUN_PID=$!
+    RUN_STAT=$?
+    # Do some error checking
+    if [ $RUN_STAT == 0 ]; then
+      # the command was succesful
+      echo "test ${subJobName} was run successfully"
+      SUBMIT_TEST+=( "${subJobName}" )
+      SUBMIT_JOB_ID+=( "$RUN_PID" )
+    else 
+      echo "failed with message:"
+      cat $THIS_STDERR
+      exit -1
+    fi
+    rm $THIS_STDOUT
+    rm $THIS_STDERR
+  done
+}
+
+createScripts() {
   touch $lsfListFile
   echo "num_submissions=$num_test_files" > $lsfListFile
 
@@ -231,15 +289,17 @@ createLSFScripts() {
 
     outputDir=`dirname ${!testFile}`
 
-    # Set up some yellowstone stuff
-    yellowstoneLSFFile $thisRunScript
+    # Set up header
+    #yellowstoneLSFFile $thisRunScript
+    submissionHeader $thisRunScript
 
     for testNum in $(seq 1 $num_tests)
     do
       testExec=test${testNum}
       echo "# Pure MPI test ${testNum}" >> $thisRunScript
       #echo "mpiexec -n $num_cpus ${!testExec} > $testName.out 2> $testName.err" >> $thisRunScript
-      yellowstoneExec $thisRunScript "${!testExec}"
+      #yellowstoneExec $thisRunScript "${!testExec}"
+      execLine $thisRunScript "${!testExec}" $num_cpus
       echo "" >> $thisRunScript # new line
     done
 
@@ -251,7 +311,8 @@ createLSFScripts() {
          testExec=omp_test${testNum}
          echo "# Hybrid test ${testNum}" >> $thisRunScript
          #echo "mpiexec -n $omp_num_mpi ${!testExec} > $testName.out 2> $testName.err" >> $thisRunScript
-         yellowstoneExec $thisRunScript "${!testExec}"
+         #yellowstoneExec $thisRunScript "${!testExec}"
+         execLine $thisRunScript "${!testExec}" $omp_num_mpi
          echo "" >> $thisRunScript # new line
       done
     fi
@@ -264,4 +325,28 @@ createLSFScripts() {
 
   done
 
+}
+
+
+submissionHeader() {
+  RUN_SCRIPT=$1
+
+  if [ "$HOMME_Submission_Type" = lsf ]; then
+    createLSFHeader $RUN_SCRIPT
+  else
+    createStdHeader $RUN_SCRIPT
+  fi
+
+}
+
+execLine() {
+  RUN_SCRIPT=$1
+  EXEC=$2
+  NUM_CPUS=$3
+
+  if [ "$HOMME_Submission_Type" = lsf ]; then
+    echo "mpirun.lsf $EXEC" >> $RUN_SCRIPT
+  else
+    echo "mpiexec -n $NUM_CPUS $EXEC" >> $RUN_SCRIPT
+  fi
 }

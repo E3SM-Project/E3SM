@@ -45,12 +45,14 @@ IF (Homme_Hostname STREQUAL "Yellowstone")
 
   # Modify the results directory to point to the yellowstone results
   # TODO: deal with different compilers
-  SET(Homme_Results_DIR ${CMAKE_SOURCE_DIR}/test/reg_test/results/yellowstone)
+  SET(Homme_Results_DIR ${Homme_Results_DIR}/yellowstone)
+
+  SET(Homme_Submission_Type lsf)
   
   CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/createRunScripts.sh 
                  ${CMAKE_BINARY_DIR}/tests/createRunScripts.sh @ONLY)
-  CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/submit_lsf.sh
-                 ${CMAKE_BINARY_DIR}/tests/submit_lsf.sh @ONLY)
+  CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/submit_tests.sh
+                 ${CMAKE_BINARY_DIR}/tests/submit_tests.sh @ONLY)
   CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/testing-utils.sh
                  ${CMAKE_BINARY_DIR}/tests/testing-utils.sh COPYONLY)
 ENDIF ()
