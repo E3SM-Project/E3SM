@@ -248,11 +248,17 @@ runTestsStd() {
     # Run the command
     # For some reason bsub must not be part of a string
     echo -n "Running test ${subJobName} ... "
-    ${subFile} > $THIS_STDOUT 2> $THIS_STDERR
+    #echo "${subFile} > $THIS_STDOUT 2> $THIS_STDERR"
+    chmod u+x ${subFile}
+    ${subFile} > $THIS_STDOUT 2> $THIS_STDERR &
     RUN_PID=$!
+    echo "PID=$RUN_PID"
+    wait $RUN_PID
     RUN_STAT=$?
+    # Technically the PID is incorrect but it really doesn't matter
+    RUN_PID=$!
     # Do some error checking
-    if [ $RUN_STAT == 0 ]; then
+    if [ $RUN_STAT = 0 ]; then
       # the command was succesful
       echo "test ${subJobName} was run successfully"
       SUBMIT_TEST+=( "${subJobName}" )
