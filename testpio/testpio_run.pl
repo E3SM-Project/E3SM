@@ -205,7 +205,7 @@ if(\"$attributes{conopts}\" =~ /with-piovdc/){
 
 my \@netcdf4tests = ("n4n01","n4n02","n4n03","n4b01","n4b02","n4b03","n4b04","n4b05","n4b06","n4b07","n4b08");
 
-if(\"$attributes{netcdf4}\" == "true" ){
+if(\"x$attributes{netcdf4}\" eq "xtrue" ){
     \$confopts->{all} .= " --enable-netcdf4";
     \$confopts->{snet} .= " --enable-netcdf4";
     push(\@{\$testlist->{all}},\@netcdf4tests);

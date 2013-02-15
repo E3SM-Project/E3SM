@@ -121,7 +121,7 @@ subroutine check_3D_r4(my_comm, fname,wr_array,rd_array)
     call MPI_Allreduce(lsum,gsum,1,MPI_REAL,MPI_SUM,MY_COMM,ierr)
     call CheckMPIReturn('Call to MPI_Allreduce()',ierr,__FILE__,__LINE__)
 
-    if(abs(gsum) .gt. 1.e-40) then
+    if(abs(gsum) .gt. tiny(gsum)) then
        call MPI_COMM_rank(MY_COMM,rank,ierr)
        call CheckMPIReturn('Call to MPI_COMM_RANK()',ierr,__FILE__,__LINE__)
        if(lsum .ne. 0) print *,'IAM: ', rank, 'File: ',TRIM(fname),' Error detected for correctness test(3D,R4): ',lsum,' # bad: ',cbad
@@ -192,7 +192,7 @@ subroutine check_1D_r4(my_comm,fname,wr_array,rd_array,len,iostat)
     
     call MPI_Allreduce(lsum,gsum,1,MPI_REAL,MPI_SUM,MY_COMM,ierr)
     call CheckMPIReturn('Call to MPI_Allreduce()',ierr,__FILE__,__LINE__)
-    if(abs(gsum) > 1.0e-40) then
+    if(abs(gsum) > tiny(gsum)) then
        call MPI_COMM_rank(MY_COMM,rank,ierr)
        call CheckMPIReturn('Call to MPI_COMM_RANK()',ierr,__FILE__,__LINE__)
        if(lsum .ne. 0.0) print *,'IAM: ', rank, 'File: ',TRIM(fname),' Error detected for correctness test(1D,R4): ',lsum,' # bad: ',cbad

@@ -32,8 +32,9 @@
 #BSUB -W 3:00
 "
  />  
-
+<!---  PNETCDF_PATH="/glade/u/home/jedwards/pnetcdf/svn1163/intel/" --->
 <yellowstone
+
   PNETCDF_PATH="${PNETCDF}"
   NETCDF_PATH="${NETCDF}"
   ENV_MP_LABELIO="yes"

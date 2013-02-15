@@ -883,6 +883,11 @@ contains
 
        call genindexedblock(lenblocks,piotype,iodesc%write%elemtype,iodesc%write%filetype,int(displace))
 
+       
+!       call gensubarray(dims,piotype,iodesc,iodesc%write)
+
+
+
        if(debug) print *,'initdecomp: at the end of subroutine',iodesc%write%n_elemtype,iodesc%write%n_words
     endif
 #ifdef MEMCHK	
@@ -983,6 +988,7 @@ contains
     integer(kind=pio_offset) :: ndisp
     integer(i4) :: iosize               ! rml
     integer(i4) :: msg
+    integer(i4), allocatable :: lstart(:),lcount(:)
     logical :: is_async=.false.
 #ifdef MEMCHK
     integer :: msize, rss, mshare, mtext, mstack
@@ -1160,9 +1166,7 @@ contains
        !-----------------------------------------------
        ! setup the data structure for the io operation 
        !-----------------------------------------------
-       iodesc%write%n_elemtype = ndisp
-       iodesc%write%n_words    = iodesc%write%n_elemtype*lenblocks
-       call genindexedblock(lenblocks,piotype,iodesc%write%elemtype,iodesc%write%filetype,displace)
+       call gensubarray(dims,piotype,iodesc,iodesc%write)
        
        if(debug) print *,__PIO_FILE__,__LINE__,iodesc%write%n_elemtype, &
         iodesc%write%n_words,iodesc%write%elemtype,iodesc%write%filetype, lenblocks
@@ -1463,7 +1467,7 @@ contains
     else
        elemtype = mpi_datatype_null
        filetype = mpi_datatype_null
-       
+
        call mpi_type_contiguous(lenblocks,lbasetype,elemtype,ierr)
        if(check) call checkmpireturn('genindexedblock: after call to type_contiguous: ',ierr)
        call mpi_type_commit(elemtype,ierr)
@@ -1478,11 +1482,63 @@ contains
             print *,__FILE__,__LINE__,nints,nadds,ndtypes,comb,ierr
          endif
        endif
+
     end if
     ! _MPISERIAL
 #endif
 
   end subroutine genindexedblock
+
+  subroutine gensubarray(gdims,mpidatatype, iodesc, iodesc2)
+    use pio_types, only : io_desc2_t, io_desc_t
+    implicit none
+
+    integer, intent(in) :: gdims(:)
+    integer, intent(in) :: mpidatatype
+    type(IO_desc_t), intent(in) :: iodesc
+    type(IO_desc2_t), intent(inout) :: iodesc2
+    
+    integer :: ndims, ierr
+    integer, allocatable :: lstart(:), lcount(:)
+
+    ndims = size(gdims)
+
+    if(sum(iodesc%count)>0) then
+       allocate(lstart(ndims),lcount(ndims))
+       lstart = 0
+       lcount = int(iodesc%count)
+       iodesc2%n_elemtype = 1
+       iodesc2%n_words = product(lcount)
+       call mpi_type_contiguous(iodesc2%n_words,mpidatatype,iodesc2%elemtype,ierr)
+       call checkmpireturn('mpi_type_create_subarray in initdecomp',ierr)
+       call mpi_type_commit(iodesc2%elemtype,ierr)
+       call checkmpireturn('mpi_type_commit in initdecomp',ierr)
+
+#ifdef USEMPIIO
+! the filetype subarray is only used for binary file io, since we don't know in initdecomp what
+! kind of file we are writing we need to create it anyway (as long as we are building with mpi-io support)
+       lstart = int(iodesc%start)-1
+
+       call mpi_type_create_subarray(ndims, gdims, lcount, lstart, &
+            mpi_order_fortran,mpidatatype, iodesc2%filetype, ierr)
+       call checkmpireturn('mpi_type_create_subarray in initdecomp',ierr)
+       call mpi_type_commit(iodesc2%filetype,ierr)
+       call checkmpireturn('mpi_type_commit in initdecomp',ierr)
+       deallocate(lstart,lcount)    
+
+#else
+       iodesc2%filetype=mpi_datatype_null
+#endif
+    else
+       iodesc2%elemtype=mpidatatype
+       iodesc2%filetype=mpidatatype          
+       iodesc2%n_elemtype = 0
+       iodesc2%n_words = 0
+    endif
+
+
+
+  end subroutine gensubarray
 
 
 
@@ -2408,7 +2464,7 @@ contains
     end if
     select case(iotype)
     case(pio_iotype_pbinary, pio_iotype_direct_pbinary)
-       if(present(amode_in)) then
+       if(present(amode_in) .and. iosystem%io_rank==0) then
           print *, 'warning, the mode argument is currently ignored for binary file operations'
        end if
        ierr = create_mpiio(file,myfname)

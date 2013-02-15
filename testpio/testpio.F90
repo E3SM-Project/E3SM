@@ -511,7 +511,6 @@ program testpio
      TestCombo = .false.     
   end if
 
-
   if(TestR8 .or. TestCombo) then 
      call alloc_check(test_r8wr,lLength,'testpio:test_r8wr')
   endif
@@ -825,6 +824,8 @@ program testpio
                  ! for the single record integer file 
                  !-----------------------------------
                  call WriteHeader(File_i4,nx_global,ny_global,nz_global,dimid_x,dimid_y,dimid_z)
+                 iostat = PIO_def_var(File_i4,'fdof',PIO_int,(/dimid_x,dimid_y,dimid_z/),vard_i4dof)                
+                 call check_pioerr(iostat,__FILE__,__LINE__,' i4dof defvar')
                  
                  iostat = PIO_def_var(File_i4,'field',PIO_int,(/dimid_x,dimid_y,dimid_z/),vard_i4)
                  call check_pioerr(iostat,__FILE__,__LINE__,' i4 defvar')
@@ -836,8 +837,8 @@ program testpio
                  call check_pioerr(iostat,__FILE__,__LINE__,' i4k defvar')
                  iostat = PIO_def_var(File_i4,'my_task',PIO_int,(/dimid_x,dimid_y,dimid_z/),vard_i4m)
                  call check_pioerr(iostat,__FILE__,__LINE__,' i4m defvar')
-                 iostat = PIO_def_var(File_i4,'fdof',PIO_int,(/dimid_x,dimid_y,dimid_z/),vard_i4dof)
-                 call check_pioerr(iostat,__FILE__,__LINE__,' i4dof defvar')
+
+
                  iostat = PIO_enddef(File_i4)
                  call check_pioerr(iostat,__FILE__,__LINE__,' i4 enddef')
               endif
@@ -951,6 +952,10 @@ program testpio
               dt_write_i4 = 0.
               call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
               call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
+
+              call PIO_write_darray(File_i4,vard_i4dof,iodesc_i4,test_i4dof,iostat)
+              call check_pioerr(iostat,__FILE__,__LINE__,' i4dof write_darray')
+
               st = MPI_Wtime()
 #ifdef TIMING
               call t_startf('testpio_write')
@@ -961,17 +966,19 @@ program testpio
 #endif
               et = MPI_Wtime()
               dt_write_i4 = dt_write_i4 + et - st
-              call check_pioerr(iostat,__FILE__,__LINE__,' i4 write_darray')
+
+
               call PIO_write_darray(File_i4,vard_i4i,iodesc_i4,test_i4i,iostat)
               call check_pioerr(iostat,__FILE__,__LINE__,' i4i write_darray')
+
               call PIO_write_darray(File_i4,vard_i4j,iodesc_i4,test_i4j,iostat)
               call check_pioerr(iostat,__FILE__,__LINE__,' i4j write_darray')
+
               call PIO_write_darray(File_i4,vard_i4k,iodesc_i4,test_i4k,iostat)
               call check_pioerr(iostat,__FILE__,__LINE__,' i4k write_darray')
+
               call PIO_write_darray(File_i4,vard_i4m,iodesc_i4,test_i4m,iostat)
               call check_pioerr(iostat,__FILE__,__LINE__,' i4m write_darray')
-              call PIO_write_darray(File_i4,vard_i4dof,iodesc_i4,test_i4dof,iostat)
-              call check_pioerr(iostat,__FILE__,__LINE__,' i4dof write_darray')
               call PIO_CloseFile(File_i4) 
            endif
 

@@ -58,7 +58,7 @@ CONTAINS
     integer(i4),intent(in) :: lenblock
     integer(kind=PIO_offset),intent(in) :: start(:), count(:)
     integer(i4), intent(in) :: ndim
-    integer(i4),pointer, intent(inout) :: displace(:)  ! mpi displacments
+    integer(i4),pointer :: displace(:)  ! mpi displacments
 
     !!
 
