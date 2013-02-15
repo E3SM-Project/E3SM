@@ -1,7 +1,7 @@
 
 
 find_path(Netcdf_INCLUDE_DIR 
-          netcdf.h
+          NAMES netcdf.h
           HINTS ${Homme_Hint_Paths}
           PATHS ${NETCDF_DIR} ${Homme_NETCDF_DIR}
           PATH_SUFFIXES include
@@ -15,38 +15,69 @@ find_library(NetcdfF_LIBRARY
              NAMES libnetcdff.a netcdff
              HINTS ${Netcdf_INCLUDE_DIR}/../lib)
 
+find_path(Netcdf_NC_CONFIG_BIN
+          NAMES nc-config
+          HINTS ${Netcdf_INCLUDE_DIR}/../bin)
+
 # Includes only need to be Netcdf (for now)
 set(Netcdf_INCLUDE_DIRS ${Netcdf_INCLUDE_DIR})
 
 # Store libraries in Netcdf_LIBRARIES
 set(Netcdf_LIBRARIES ${NetcdfF_LIBRARY} ${Netcdf_LIBRARY})
 
-#######################################################################
-# Now check to see if Netcdf can be linked to without explicit linking to HDF5.
-# This check creates a small example program and tries to link the symbol ncopen.
-# If this program successfully compiles then NETCDF_SELF_CONTAINED will be true
-# and either:
-#   1) Netcdf has been built without any dependencies (HDF5)
-#   2) All Netcdf dependencies are included in CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES 
-# In either case we don't need to explicitly link against HDF5 or any other dependencies.
-# If NETCDF_SELF_CONTAINED is false, then we need to explicitly link to Netcdf
-#   dependencies (HDF5).
-#######################################################################
-INCLUDE(CheckLibraryExists)
-CHECK_LIBRARY_EXISTS(${Netcdf_LIBRARY} ncopen "" NETCDF_SELF_CONTAINED)
-#######################################################################
+IF (NOT ${Netcdf_NC_CONFIG_BIN} STREQUAL Netcdf_NC_CONFIG_BIN-NOTFOUND)
 
-IF ("${NETCDF_SELF_CONTAINED}")
-  MESSAGE(STATUS "This Netcdf library doesn't require explicit linking to HDF5")
-  SET(NETCDF_REQUIRE_HDF5 FALSE)
+  # Probe nc-config to determine dependencies of Netcdf
+  MESSAGE(STATUS "nc-config found at ${Netcdf_NC_CONFIG_BIN}")
+
+  # use nc-confg --has-nc4 to determine if Netcdf depends upon HDF5
+  EXECUTE_PROCESS(COMMAND ${Netcdf_NC_CONFIG_BIN}/nc-config --has-nc4
+    RESULT_VARIABLE Homme_result
+    OUTPUT_VARIABLE Homme_output
+    ERROR_VARIABLE Homme_error
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  IF (${Homme_error})
+    MESSAGE(FATAL_ERROR "${Netcdf_NC_CONFIG_BIN}/nc-config --has-nc4 produced an error")
+  ELSE ()
+    IF (${Homme_output} STREQUAL yes)
+      SET (NETCDF_REQUIRE_HDF5 TRUE)
+      MESSAGE(STATUS "nc-config: Netcdf depends upon HDF5")
+    ELSE ()
+      SET (NETCDF_REQUIRE_HDF5 FALSE)
+      MESSAGE(STATUS "nc-config: Netcdf does not depend upon HDF5")
+    ENDIF ()
+  ENDIF ()
+
+  # use nc-confg --has-dap to determine if Netcdf depends upon CURL
+  EXECUTE_PROCESS(COMMAND ${Netcdf_NC_CONFIG_BIN}/nc-config --has-dap
+    RESULT_VARIABLE Homme_result
+    OUTPUT_VARIABLE Homme_output
+    ERROR_VARIABLE Homme_error
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  IF (${Homme_error})
+    MESSAGE(FATAL_ERROR "${Netcdf_NC_CONFIG_BIN}/nc-config --has-dap produced an error")
+  ELSE ()
+    IF (${Homme_output} STREQUAL yes)
+      SET (NETCDF_REQUIRE_CURL TRUE)
+      MESSAGE(STATUS "nc-config: Netcdf depends upon CURL")
+    ELSE ()
+      SET (NETCDF_REQUIRE_HDF5 FALSE)
+      MESSAGE(STATUS "nc-config: Netcdf does not depend upon CURL")
+    ENDIF ()
+  ENDIF ()
+
 ELSE ()
-  MESSAGE(STATUS "This Netcdf library requires explicit linking to HDF5")
-  SET(NETCDF_REQUIRE_HDF5 TRUE)
+  SET (NETCDF_REQUIRE_HDF5 TRUE)
+  SET (NETCDF_REQUIRE_CURL TRUE)
+  MESSAGE(STATUS "nc-config not found assuming hdf5 and curl dependencies")
 ENDIF ()
 
-IF (${NETCDF_REQUIRE_HDF5}) 
-
+IF (${NETCDF_REQUIRE_CURL}) 
+  
   # For some reasone CURL uses CURL_ROOT rather than CURL_DIR
+  #   - change the variable for consistency
   SET(CURL_ROOT ${CURL_DIR})
   find_package(CURL)
 
@@ -56,6 +87,9 @@ IF (${NETCDF_REQUIRE_HDF5})
   ELSE ()
     MESSAGE(FATAL_ERROR "CURL Not found")
   ENDIF ()
+ENDIF ()
+
+IF (${NETCDF_REQUIRE_HDF5}) 
 
   find_path(HDF5_INCLUDE_DIR
             hdf5.h
@@ -95,6 +129,7 @@ IF (${NETCDF_REQUIRE_HDF5})
 
   IF (${HDF5_REQUIRE_ZLIB})
 
+    MESSAGE(STATUS "This HDF5 library requires ZLIB")
     find_package(ZLIB REQUIRED)
 
     IF (${ZLIB_FOUND})
