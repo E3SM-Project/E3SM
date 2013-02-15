@@ -46,6 +46,17 @@ ENDIF ()
 
 IF (${NETCDF_REQUIRE_HDF5}) 
 
+  # For some reasone CURL uses CURL_ROOT rather than CURL_DIR
+  SET(CURL_ROOT ${CURL_DIR})
+  find_package(CURL)
+
+  IF (${CURL_FOUND})
+    MESSAGE(STATUS "Found CURL: ${CURL_LIBRARY}")
+    set(Netcdf_LIBRARIES ${Netcdf_LIBRARIES} ${CURL_LIBRARY})
+  ELSE ()
+    MESSAGE(FATAL_ERROR "CURL Not found")
+  ENDIF ()
+
   find_path(HDF5_INCLUDE_DIR
             hdf5.h
             HINTS ${Homme_Hint_Paths}
@@ -84,27 +95,17 @@ IF (${NETCDF_REQUIRE_HDF5})
 
   IF (${HDF5_REQUIRE_ZLIB})
 
-    MESSAGE(STATUS "This HDF5 library requires ZLIB")
+    find_package(ZLIB REQUIRED)
 
-    find_library(ZLIB_LIBRARY
-                 NAMES libz.a z
-                 HINTS ${Homme_Hint_Paths}
-                 PATHS ${ZLIB_DIR} ${Homme_ZLIB_DIR}
-                 PATH_SUFFIXES lib lib64
-                 NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
-    if(${ZLIB_LIBRARY} STREQUAL "ZLIB_LIBRARY-NOTFOUND")
-      set(ZLIB_FOUND OFF)
-      MESSAGE(FATAL_ERROR "ZLIB Not found")
-    else()
-      set(ZLIB_FOUND ON)
+    IF (${ZLIB_FOUND})
       MESSAGE(STATUS "Found ZLIB: ${ZLIB_LIBRARY}")
       set(Netcdf_LIBRARIES ${Netcdf_LIBRARIES} ${ZLIB_LIBRARY})
-    endif()
-
+    ELSE ()
+      MESSAGE(FATAL_ERROR "ZLIB Not found")
+    ENDIF ()
   ENDIF ()
 
   IF (${HDF5_REQUIRE_SZ})
-
     MESSAGE(STATUS "This HDF5 library requires SZIP")
 
     find_library(SZIP_LIBRARY
@@ -113,15 +114,15 @@ IF (${NETCDF_REQUIRE_HDF5})
                  PATHS ${SZIP_DIR} ${Homme_SZIP_DIR}
                  PATH_SUFFIXES lib lib64
                  NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
-    if(${SZIP_LIBRARY} STREQUAL "SZIP_LIBRARY-NOTFOUND")
-      set(ZLIB_FOUND OFF)
-      MESSAGE(FATAL_ERROR "SZIP Not found")
-    else()
-      set(ZLIB_FOUND ON)
-      MESSAGE(STATUS "Found SZIP: ${SZIP_LIBRARY}")
-      set(Netcdf_LIBRARIES ${Netcdf_LIBRARIES} ${SZIP_LIBRARY})
-    endif()
 
+    IF(${SZIP_LIBRARY} STREQUAL "SZIP_LIBRARY-NOTFOUND")
+      SET(ZLIB_FOUND OFF)
+      MESSAGE(FATAL_ERROR "SZIP Not found")
+    ELSE()
+      SET(ZLIB_FOUND ON)
+      MESSAGE(STATUS "Found SZIP: ${SZIP_LIBRARY}")
+      SET(Netcdf_LIBRARIES ${Netcdf_LIBRARIES} ${SZIP_LIBRARY})
+    ENDIF()
   ENDIF ()
 
 ENDIF()
