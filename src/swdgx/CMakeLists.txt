@@ -85,17 +85,21 @@ SET(SWDGX_SRCS
 )
 
 ADD_LIBRARY(homme_swdgx ${SWDGX_SRCS})
-TARGET_LINK_LIBRARIES(homme_swdgx pio timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+
+ADD_DEPENDENCIES(homme_swdgx pio timing)
 
 SET_TARGET_PROPERTIES(homme_swdgx PROPERTIES 
            Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/swdgx_modules")
 
 ADD_EXECUTABLE(swdgx ${SRC_BASE}/dg_main.F90)
 
+ADD_DEPENDENCIES(swdgx homme_swdgx pio timing)
+
+TARGET_LINK_LIBRARIES(swdgx homme_swdgx pio timing ${Netcdf_LIBRARIES}
+                      ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+
 SET_TARGET_PROPERTIES(swdgx PROPERTIES 
            Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/swdgx_modules")
-
-TARGET_LINK_LIBRARIES(swdgx homme_swdgx)
 
 IF (NOT HOMME_FIND_BLASLAPACK)
   TARGET_LINK_LIBRARIES(swdgx lapack blas)

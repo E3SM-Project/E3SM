@@ -1,2 +1,5 @@
 NETCDF=/glade/apps/opt/netcdf/4.2/intel/default
 PNETCDF=/glade/apps/opt/pnetcdf/1.3.0/intel/12.1.5
+HDF5=/glade/apps/opt/hdf5/1.8.9/intel/default
+SZIP=/glade/apps/opt/szlib/2.1/intel/12.1.4/
+ZLIB=/glade/apps/opt/zlib/1.2.7/intel/12.1.4/

@@ -91,22 +91,25 @@ SET(SWEQX_SRCS
 )
 
 ADD_LIBRARY(homme_sweqx ${SWEQX_SRCS})
-TARGET_LINK_LIBRARIES(homme_sweqx pio timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+ADD_DEPENDENCIES(homme_sweqx pio timing)
 
 SET_TARGET_PROPERTIES(homme_sweqx PROPERTIES 
            Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/sweqx_modules")
 
 ADD_EXECUTABLE(sweqx ${SRC_BASE}/main.F90)
 
-SET_TARGET_PROPERTIES(sweqx PROPERTIES 
-           Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/sweqx_modules")
+ADD_DEPENDENCIES(sweqx homme_sweqx pio timing)
 
-TARGET_LINK_LIBRARIES(sweqx homme_sweqx)
+TARGET_LINK_LIBRARIES(sweqx homme_sweqx pio timing ${Netcdf_LIBRARIES}
+                      ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
 
 IF (NOT HOMME_FIND_BLASLAPACK)
-  TARGET_LINK_LIBRARIES(sweqx lapack blas)
   ADD_DEPENDENCIES(sweqx blas lapack)
+  TARGET_LINK_LIBRARIES(sweqx lapack blas)
 ENDIF()
+
+SET_TARGET_PROPERTIES(sweqx PROPERTIES 
+           Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/sweqx_modules")
 
 INSTALL(TARGETS sweqx
         RUNTIME DESTINATION bin)
