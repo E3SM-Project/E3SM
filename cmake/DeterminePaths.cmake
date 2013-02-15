@@ -3,7 +3,7 @@ macro(readRegisteredPaths)
 
   FILE(STRINGS ${PROJECT_SOURCE_DIR}/systemPaths/${Homme_Hostname}.${CMAKE_Fortran_COMPILER_ID}
        Homme_Raw_Paths
-       LIMIT_COUNT 4)
+       LIMIT_COUNT 40)
 
   # Split each 
   FOREACH(LINE ${Homme_Raw_Paths})

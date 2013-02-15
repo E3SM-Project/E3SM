@@ -1,4 +1,6 @@
 PROJECT(HOMME C CXX Fortran)
+
+ENABLE_LANGUAGE(Fortran) 
 INCLUDE(FortranCInterface)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
@@ -9,6 +11,7 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
 FortranCInterface_HEADER(cmake_fortran_c_interface.h
                          MACRO_NAMESPACE  "FCI_")
 
+#MESSAGE(STATUS "CMAKE_IMP_LIBS=${CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES}")
 ENABLE_TESTING()
 
 # need to tell the source to use this capability
