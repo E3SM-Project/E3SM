@@ -2,7 +2,6 @@
 
 find_path(Netcdf_INCLUDE_DIR 
           NAMES netcdf.h
-          HINTS ${Homme_Hint_Paths}
           PATHS ${NETCDF_DIR} ${Homme_NETCDF_DIR}
           PATH_SUFFIXES include
           NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
@@ -63,7 +62,7 @@ IF (NOT ${Netcdf_NC_CONFIG_BIN} STREQUAL Netcdf_NC_CONFIG_BIN-NOTFOUND)
       SET (NETCDF_REQUIRE_CURL TRUE)
       MESSAGE(STATUS "nc-config: Netcdf depends upon CURL")
     ELSE ()
-      SET (NETCDF_REQUIRE_HDF5 FALSE)
+      SET (NETCDF_REQUIRE_CURL FALSE)
       MESSAGE(STATUS "nc-config: Netcdf does not depend upon CURL")
     ENDIF ()
   ENDIF ()
@@ -93,21 +92,18 @@ IF (${NETCDF_REQUIRE_HDF5})
 
   find_path(HDF5_INCLUDE_DIR
             hdf5.h
-            HINTS ${Homme_Hint_Paths}
             PATHS ${HDF5_DIR} ${Homme_HDF5_DIR}
             PATH_SUFFIXES include
             NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
   find_library(HDF5_LIBRARY
                NAMES libhdf5.a hdf5
-               HINTS ${Homme_Hint_Paths}
                PATHS ${HDF5_DIR} ${Homme_HDF5_DIR}
                PATH_SUFFIXES lib lib64
                NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
   find_library(HDF5hl_LIBRARY
                NAMES libhdf5_hl.a hdf5_hl
-               HINTS ${Homme_Hint_Paths}
                PATHS ${HDF5_DIR} ${Homme_HDF5_DIR}
                PATH_SUFFIXES lib lib64
                NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
@@ -115,7 +111,7 @@ IF (${NETCDF_REQUIRE_HDF5})
 
   if(${HDF5_LIBRARY} STREQUAL "HDF5_LIBRARY-NOTFOUND" OR ${HDF5hl_LIBRARY} STREQUAL "HDF5hl_LIBRARY-NOTFOUND")
     set(HDF5_FOUND OFF)
-    MESSAGE(FATAL_ERROR "HDF5 not found")
+    MESSAGE(FATAL_ERROR "HDF5 not found, set HDF5_DIR to appropriate installation")
   else()
     set(HDF5_FOUND ON)
     MESSAGE(STATUS "Found HDF5: ${HDF5hl_LIBRARY} ${HDF5_LIBRARY}")
@@ -136,7 +132,7 @@ IF (${NETCDF_REQUIRE_HDF5})
       MESSAGE(STATUS "Found ZLIB: ${ZLIB_LIBRARY}")
       set(Netcdf_LIBRARIES ${Netcdf_LIBRARIES} ${ZLIB_LIBRARY})
     ELSE ()
-      MESSAGE(FATAL_ERROR "ZLIB Not found")
+      MESSAGE(FATAL_ERROR "ZLIB Not found, set ZLIB_DIR to appropriate installation")
     ENDIF ()
   ENDIF ()
 
@@ -145,16 +141,15 @@ IF (${NETCDF_REQUIRE_HDF5})
 
     find_library(SZIP_LIBRARY
                  NAMES libsz.a sz
-                 HINTS ${Homme_Hint_Paths}
                  PATHS ${SZIP_DIR} ${Homme_SZIP_DIR}
                  PATH_SUFFIXES lib lib64
                  NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
     IF(${SZIP_LIBRARY} STREQUAL "SZIP_LIBRARY-NOTFOUND")
-      SET(ZLIB_FOUND OFF)
-      MESSAGE(FATAL_ERROR "SZIP Not found")
+      SET(SZIP_FOUND OFF)
+      MESSAGE(FATAL_ERROR "SZIP Not found, set SZIP_DIR to appropriate installation")
     ELSE()
-      SET(ZLIB_FOUND ON)
+      SET(SZIP_FOUND ON)
       MESSAGE(STATUS "Found SZIP: ${SZIP_LIBRARY}")
       SET(Netcdf_LIBRARIES ${Netcdf_LIBRARIES} ${SZIP_LIBRARY})
     ENDIF()
