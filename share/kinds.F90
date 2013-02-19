@@ -37,7 +37,11 @@ private
   long_kind    = 8,                       &
   log_kind     = 4,                       &
   real_kind    = 8,                       &
-  longdouble_kind    = 16,                      &
+#ifdef __PGI
+  longdouble_kind    = 8,                 & ! PGI doesn't support quad precision
+#else
+  longdouble_kind    = 16,                &
+#endif
   iulog        = 6                          ! stderr file handle
 #endif
 
