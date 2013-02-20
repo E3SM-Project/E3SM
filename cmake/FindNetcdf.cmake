@@ -126,8 +126,22 @@ IF (${NETCDF_REQUIRE_HDF5})
   IF (${HDF5_REQUIRE_ZLIB})
 
     MESSAGE(STATUS "This HDF5 library requires ZLIB")
-    find_package(ZLIB REQUIRED)
+    # Find package always finds the shared object
+    #find_package(ZLIB REQUIRED)
+    find_library(ZLIB_LIBRARY
+                 NAMES libz.a z
+                 PATHS ${ZLIB_DIR} ${Homme_ZLIB_DIR}
+                 PATH_SUFFIXES lib lib64)
+                 #NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
+    IF(${ZLIB_LIBRARY} STREQUAL "ZLIB_LIBRARY-NOTFOUND")
+      SET(ZLIB_FOUND OFF)
+      MESSAGE(FATAL_ERROR "ZLIB Not found")
+    ELSE()
+      SET(ZLIB_FOUND ON)
+    ENDIF ()
+    MESSAGE(STATUS "Found ZLIB_LIBRARY: ${ZLIB_LIBRARY}")
+    MESSAGE(STATUS "ZLIB_LIBRARIES: ${ZLIB_LIBRARIES}")
     IF (${ZLIB_FOUND})
       MESSAGE(STATUS "Found ZLIB: ${ZLIB_LIBRARY}")
       set(Netcdf_LIBRARIES ${Netcdf_LIBRARIES} ${ZLIB_LIBRARY})

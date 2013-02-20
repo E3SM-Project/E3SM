@@ -132,7 +132,11 @@ SET_TARGET_PROPERTIES(preqx PROPERTIES
 
 ADD_DEPENDENCIES(preqx homme_preqx pio timing)
 
-TARGET_LINK_LIBRARIES(preqx homme_preqx pio timing ${Netcdf_LIBRARIES}
+#TARGET_LINK_LIBRARIES(preqx homme_preqx pio timing ${Netcdf_LIBRARIES}
+#                      ${Pnetcdf_LIBRARIES}
+#                      ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+
+TARGET_LINK_LIBRARIES(preqx homme_preqx pio timing
                       ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
 
 IF (NOT HOMME_FIND_BLASLAPACK)
