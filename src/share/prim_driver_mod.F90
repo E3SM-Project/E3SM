@@ -529,7 +529,7 @@ contains
     use control_mod, only : runtype, integration, filter_mu, filter_mu_advection, test_case, &
          debug_level, vfile_int, filter_freq, filter_freq_advection, &
          transfer_type, vform, vfile_mid, filter_type, kcut_fm, wght_fm, p_bv, &
-         s_bv, topology,columnpackage, moisture, precon_method, qsplit, rk_stage_user,&
+         s_bv, topology,columnpackage, moisture, precon_method, rsplit, qsplit, rk_stage_user,&
          TRACERADV_TOTAL_DIVERGENCE, TRACERADV_UGRADQ, sub_case, &
          use_cpstar, energy_fixer, limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
          hypervis_subcycle_q
