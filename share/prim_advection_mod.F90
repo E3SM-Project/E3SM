@@ -79,6 +79,7 @@ module vertremap_mod
   use spelt_mod, only              : spelt_struct 
   use perf_mod, only               : t_startf, t_stopf  ! _EXTERNAL
   use parallel_mod, only           : abortmp
+  use control_mod, only : vert_remap_q_alg
 
   public remap1                  ! remap any field, splines, monotone
   public remap1_nofilter         ! remap any field, splines, no filter
@@ -141,6 +142,11 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
                             lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
   logical :: abort=.false.
   call t_startf('remap1')
+
+  if (vert_remap_q_alg == 1 .or. vert_remap_q_alg == 2) then
+     call remap_Q_ppm(qdp,nx,qsize,dp1,dp2)
+     return
+  endif
 
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(qsize,i,j,z1c,z2c,zv,k,dp_np1,dp_star,Qcol,zkr,ilev) &
@@ -2162,7 +2168,7 @@ contains
   use kinds, only : real_kind
   use hybvcoord_mod, only : hvcoord_t
   use vertremap_mod, only : remap1, remap1_nofilter, remap_q_ppm ! _EXTERNAL (actually INTERNAL)
-  use control_mod, only :  vert_remap_q_alg, rsplit
+  use control_mod, only :  rsplit
   use parallel_mod, only : abortmp
 #if defined(_SPELT)
   use spelt_mod, only: spelt_struct
@@ -2260,13 +2266,7 @@ contains
 
      ! remap the tracers from lagrangian levels (dp_star)  to REF levels dp
      if (qsize>0) then
-        if (vert_remap_q_alg == 0) then
-           call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,qsize,dp_star,dp)
-        elseif (vert_remap_q_alg == 1 .or. vert_remap_q_alg == 2) then
-           call remap_Q_ppm(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,qsize,dp_star,dp)
-        else
-           call abortmp('specification for vert_remap_q_alg must be 0, 1, or 2.')
-        endif
+        call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,qsize,dp_star,dp)
      endif
 
      
