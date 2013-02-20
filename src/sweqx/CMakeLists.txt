@@ -100,7 +100,7 @@ ADD_EXECUTABLE(sweqx ${SRC_BASE}/main.F90)
 
 ADD_DEPENDENCIES(sweqx homme_sweqx pio timing)
 
-TARGET_LINK_LIBRARIES(sweqx homme_sweqx pio timing ${Netcdf_LIBRARIES}
+TARGET_LINK_LIBRARIES(sweqx homme_sweqx pio timing
                       ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
 
 IF (NOT HOMME_FIND_BLASLAPACK)

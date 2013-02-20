@@ -10,7 +10,8 @@ find_path(Pnetcdf_INCLUDE_DIR
 
 find_library(Pnetcdf_LIBRARY 
              NAMES libpnetcdf.a pnetcdf
-             HINTS ${Pnetcdf_INCLUDE_DIR}/../lib)
+             HINTS ${Pnetcdf_INCLUDE_DIR}/../lib
+             NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
 if (${Pnetcdf_INCLUDE_DIR} STREQUAL "Pnetcdf_INCLUDE_DIR-NOTFOUND")
   set(Pnetcdf_FOUND OFF)

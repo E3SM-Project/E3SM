@@ -95,7 +95,7 @@ ADD_EXECUTABLE(swdgx ${SRC_BASE}/dg_main.F90)
 
 ADD_DEPENDENCIES(swdgx homme_swdgx pio timing)
 
-TARGET_LINK_LIBRARIES(swdgx homme_swdgx pio timing ${Netcdf_LIBRARIES}
+TARGET_LINK_LIBRARIES(swdgx homme_swdgx pio timing
                       ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
 
 SET_TARGET_PROPERTIES(swdgx PROPERTIES 

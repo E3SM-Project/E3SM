@@ -8,15 +8,18 @@ find_path(Netcdf_INCLUDE_DIR
 
 find_library(Netcdf_LIBRARY 
              NAMES libnetcdf.a netcdf
-             HINTS ${Netcdf_INCLUDE_DIR}/../lib)
+             HINTS ${Netcdf_INCLUDE_DIR}/../lib
+             NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
 find_library(NetcdfF_LIBRARY 
              NAMES libnetcdff.a netcdff
-             HINTS ${Netcdf_INCLUDE_DIR}/../lib)
+             HINTS ${Netcdf_INCLUDE_DIR}/../lib
+             NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
 find_path(Netcdf_NC_CONFIG_BIN
           NAMES nc-config
-          HINTS ${Netcdf_INCLUDE_DIR}/../bin)
+          HINTS ${Netcdf_INCLUDE_DIR}/../bin
+          NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
 # Includes only need to be Netcdf (for now)
 set(Netcdf_INCLUDE_DIRS ${Netcdf_INCLUDE_DIR})
@@ -131,8 +134,8 @@ IF (${NETCDF_REQUIRE_HDF5})
     find_library(ZLIB_LIBRARY
                  NAMES libz.a z
                  PATHS ${ZLIB_DIR} ${Homme_ZLIB_DIR}
-                 PATH_SUFFIXES lib lib64)
-                 #NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
+                 PATH_SUFFIXES lib lib64
+                 NO_SYSTEM_ENVIRONMENT_PATH)
 
     IF(${ZLIB_LIBRARY} STREQUAL "ZLIB_LIBRARY-NOTFOUND")
       SET(ZLIB_FOUND OFF)
@@ -157,7 +160,7 @@ IF (${NETCDF_REQUIRE_HDF5})
                  NAMES libsz.a sz
                  PATHS ${SZIP_DIR} ${Homme_SZIP_DIR}
                  PATH_SUFFIXES lib lib64
-                 NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
+                 NO_SYSTEM_ENVIRONMENT_PATH)
 
     IF(${SZIP_LIBRARY} STREQUAL "SZIP_LIBRARY-NOTFOUND")
       SET(SZIP_FOUND OFF)
