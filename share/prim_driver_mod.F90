@@ -975,7 +975,7 @@ contains
        if (phys_tscale/=0) then
           write(iulog,'(a,2f9.2)') "CAM physics timescale:       ",phys_tscale
        endif
-       write(iulog,'(a,2f9.2)') "CAM dtime (dt_phys):         ",tstep*nsplit*qsplit
+       write(iulog,'(a,2f9.2)') "CAM dtime (dt_phys):         ",tstep*nsplit*qsplit*max(rsplit,1)
        write(iulog,*) "initial state from CAM:"
        write(iulog,*) "nstep=",tl%nstep," time=",Time_at(tl%nstep)/(24*3600)," [day]"
 #endif
