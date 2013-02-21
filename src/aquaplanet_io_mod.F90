@@ -178,8 +178,9 @@ contains
     end if
 
   end subroutine aq_movie_output
-#endif
-#ifdef PIO
+
+#else
+
   subroutine aq_movie_output(ncdf, elem, output_varnames, nc, nlev)
     use aquaplanet, only : udrag, vdrag, qsflx, tsflx, usf, vsf, tsf, qsf
     use dimensions_mod, only : nelemd, nelemdmax
@@ -278,8 +279,8 @@ contains
   end subroutine aq_movie_output
 #endif
 
-
-#if defined(NETCDF) 
+! obsolete.  HOMME now only supports PIO/native grid or PIO_INTERP
+#if defined(NETCDFXXX) 
   subroutine aq_movie_output(ncdf, elem, output_varnames, nc, nlev)
     use aquaplanet, only : udrag, vdrag, qsflx, tsflx, usf, vsf, tsf, qsf
     use dimensions_mod, only : nelemd, nelemdmax

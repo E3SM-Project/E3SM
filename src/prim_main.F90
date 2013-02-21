@@ -212,7 +212,7 @@ program prim_main
   ! output initial state for NEW runs (not restarts or branch runs)
   if (runtype == 0 ) then
 #ifdef PIO_INTERP
-     call interp_movie_output(elem, tl, hvcoord, hybrid, 1, nelemd,fvm)
+     call interp_movie_output(elem, tl, hybrid, 0d0, 1, nelemd,fvm=fvm, hvcoord=hvcoord)
 #else
      call prim_movie_output(elem, tl, hvcoord, hybrid, 1,nelemd, fvm)
 #endif
@@ -255,7 +255,7 @@ program prim_main
      ithr=omp_get_thread_num()
      hybrid = hybrid_create(par,ithr,1)
 #ifdef PIO_INTERP
-     call interp_movie_output(elem, tl,hvcoord, hybrid, 1,nelemd,fvm)
+     call interp_movie_output(elem, tl, hybrid, 0d0, 1, nelemd,fvm=fvm, hvcoord=hvcoord)
 #else
      call prim_movie_output(elem, tl, hvcoord, hybrid, 1,nelemd, fvm)
 #endif

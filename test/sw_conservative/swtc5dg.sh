@@ -61,12 +61,12 @@ set LFTfreq = 0
 set NE = 30
 set ndays = 2 # official test case length 15 days
 set nu = 1.5e15   
-set nu_s = $nu
+set nu_s = -1
 set NPDG = 0
 
 # turn on hybrid CG/DG  
 set NPDG = 3  # 0 = disabled
-set nu_s = 0  # dont use viscsosity with DG code
+set nu_s = 0  # dont use viscsosity on h with DG code
 set nu = 10e15   
 
 

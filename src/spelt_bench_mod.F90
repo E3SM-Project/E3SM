@@ -88,7 +88,7 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
   integer                                     :: face_nodep
   integer  choosetrac, chooselev   !for test reason the output
  !-----------------------------------------------------------------------------------!  
- choosetrac=1
+ choosetrac=2
  chooselev=1
  
   if(hybrid%masterthread) then 
@@ -127,11 +127,11 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
         do j=1,nep
           do i=1,nep  
         ! define test example
-!             if ((itr==1) .or. (itr==2)) then
-!               spelt(ie)%c(i,j,k,itr,tl%n0)=1.0D0    !density of the air
-!             else
+            if ((itr==1)) then
+              spelt(ie)%c(i,j,k,itr,tl%n0)=1.0D0    !density of the air
+            else
               call analytical_function(spelt(ie)%c(i,j,k,itr,tl%n0),spelt(ie)%asphere(i,j),k,itr)
-!             endif
+            endif
             sga=spelt(ie)%sga(i,j)
             spelt(ie)%c(i,j,k,itr,tl%n0)=sga*spelt(ie)%c(i,j,k,itr,tl%n0) 
             if ((mod(i,2)==0) .and.(mod(j,2)==0) .and. (itr==choosetrac)) then
@@ -179,7 +179,7 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
 !-----------------------------------------------------------------------------------! 
 #ifdef PIO_INTERP
   call interp_movie_init(elem,hybrid,nets,nete,tl=tl)    
-  call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete,spelt)
+  call interp_movie_output(elem,tl, hybrid, 0D0, nets, nete,spelt)
 #else
   call shal_movie_init(elem,hybrid)
   call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv)
@@ -195,16 +195,17 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
      do i=1,nc
        dx=spelt(ie)%dab(i)   
        dy=spelt(ie)%dab(j)
-       area=dx*dy
+!        area=dx*dy
+       area=spelt(ie)%area_sphere(i,j)
        icell=2+(i-1)*nipm
        jcell=2+(j-1)*nipm
        sga=spelt(ie)%sga(icell,jcell)
        if (choosetrac==1) then   ! mass of air, code is not optimal
          spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
-                        area*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)   ! that is the real mass, we have cell average
-       else
+                        area*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga   ! that is the real mass, we have cell average
+       elseif(choosetrac==2) then
          spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
-                       area*spelt(ie)%c(icell,jcell,chooselev,2,tl%n0)*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga
+                       area*(spelt(ie)%c(icell,jcell,chooselev,1,tl%n0)/sga)*(spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga)
        endif
 !          spelt(ie)%cstart(i,j)=spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
       tmp1(ie)=max(tmp1(ie),spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga)
@@ -232,23 +233,78 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
   
 DO WHILE(tl%nstep<nmax) !nmax)
 ! ! start mcgregordss
-!   do ie=nets,nete
-!     do k=1,nlev
-!       elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
-!       spelt(ie)%vn0(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),time_at(tl%nstep))
-! !       elem(ie)%derived%vstar(:,:,:,k)=get_solidbody_velocities_gll(elem(ie), time_at(tl%nstep+1))
-! !       spelt(ie)%vn0(:,:,:,k)=get_solidbody_velocities_gll(elem(ie),time_at(tl%nstep))
+  do ie=nets,nete
+    do k=1,nlev
+      !simulate gll velocities, I get the velocities on the gll from the Spectral Element simulation
+      elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
+      spelt(ie)%vn0(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),time_at(tl%nstep))
+      spelt(ie)%vn12(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),(time_at(tl%nstep)+time_at(tl%nstep+1))/2.0D0)
+!       elem(ie)%derived%vstar(:,:,:,k)=get_solidbody_velocities_gll(elem(ie), time_at(tl%nstep+1))
+!       spelt(ie)%vn0(:,:,:,k)=get_solidbody_velocities_gll(elem(ie),time_at(tl%nstep))
+!       spelt(ie)%vn1(:,:,:,k)=get_solidbody_velocities_gll(elem(ie),(time_at(tl%nstep)+time_at(tl%nstep+1))/2)
+
+
 !       vstar=elem(ie)%derived%vstar(:,:,:,k)/rearth
-!       do j=1,np
-!         do i=1,np
-!           v1 = spelt(ie)%Dinv(1,1,i,j)*vstar(i,j,1) + spelt(ie)%Dinv(1,2,i,j)*vstar(i,j,2)
-!           v2 = spelt(ie)%Dinv(2,1,i,j)*vstar(i,j,1) + spelt(ie)%Dinv(2,2,i,j)*vstar(i,j,2)
-!           vstar(i,j,1)=v1
-!           vstar(i,j,2)=v2
-!         enddo
-!       enddo
-!     spelt(ie)%contrau(:,:,k)=interpolate_gll2spelt_points(vstar(:,:,1),deriv)
-!     spelt(ie)%contrav(:,:,k)=interpolate_gll2spelt_points(vstar(:,:,2),deriv)
+! !       do j=1,np
+! !         do i=1,np
+! !           v1 = spelt(ie)%Dinv(1,1,i,j)*vstar(i,j,1) + spelt(ie)%Dinv(1,2,i,j)*vstar(i,j,2)
+! !           v2 = spelt(ie)%Dinv(2,1,i,j)*vstar(i,j,1) + spelt(ie)%Dinv(2,2,i,j)*vstar(i,j,2)
+! !           vstar(i,j,1)=v1
+! !           vstar(i,j,2)=v2
+! !         enddo
+! !       enddo
+! !     spelt(ie)%contrau(:,:,k)=interpolate_gll2spelt_points(vstar(:,:,1),deriv)
+! !     spelt(ie)%contrav(:,:,k)=interpolate_gll2spelt_points(vstar(:,:,2),deriv)
+! 
+!     u=interpolate_gll2spelt_points(vstar(:,:,1),deriv)
+!     v=interpolate_gll2spelt_points(vstar(:,:,2),deriv)
+!     do j=1,nep
+!       do i=1,nep
+!         spelt%contrau(i,j,k)=spelt%Ainv(1,1,i,j)*u(i,j)+spelt%Ainv(2,1,i,j)*v(i,j)      
+!         spelt%contrav(i,j,k)=spelt%Ainv(1,2,i,j)*u(i,j)+spelt%Ainv(2,2,i,j)*v(i,j)
+!       end do
+!     end do
+!     
+!     vstar=spelt(ie)%vn12(:,:,:,k)/rearth
+! !     do j=1,np
+! !       do i=1,np
+! !         v1 = spelt(ie)%Dinv(1,1,i,j)*vstar(i,j,1) + spelt(ie)%Dinv(1,2,i,j)*vstar(i,j,2)
+! !         v2 = spelt(ie)%Dinv(2,1,i,j)*vstar(i,j,1) + spelt(ie)%Dinv(2,2,i,j)*vstar(i,j,2)
+! !         vstar(i,j,1)=v1
+! !         vstar(i,j,2)=v2
+! !       enddo
+! !     enddo
+! !     spelt(ie)%contrau1=interpolate_gll2spelt_points(vstar(:,:,1),deriv)
+! !     spelt(ie)%contrav1=interpolate_gll2spelt_points(vstar(:,:,2),deriv)
+!     u=interpolate_gll2spelt_points(vstar(:,:,1),deriv)
+!     v=interpolate_gll2spelt_points(vstar(:,:,2),deriv)
+!     do j=1,nep
+!       do i=1,nep
+!         spelt%contrau1(i,j)=spelt%Ainv(1,1,i,j)*u(i,j)+spelt%Ainv(2,1,i,j)*v(i,j)      
+!         spelt%contrav1(i,j)=spelt%Ainv(1,2,i,j)*u(i,j)+spelt%Ainv(2,2,i,j)*v(i,j)
+!       end do
+!     end do    
+!     
+!       vstar=spelt(ie)%vn0(:,:,:,k)/rearth
+! !     do j=1,np
+! !       do i=1,np
+! !         v1 = spelt(ie)%Dinv(1,1,i,j)*vstar(i,j,1) + spelt(ie)%Dinv(1,2,i,j)*vstar(i,j,2)
+! !         v2 = spelt(ie)%Dinv(2,1,i,j)*vstar(i,j,1) + spelt(ie)%Dinv(2,2,i,j)*vstar(i,j,2)
+! !         vstar(i,j,1)=v1
+! !         vstar(i,j,2)=v2
+! !       enddo
+! !     enddo
+! !   spelt(ie)%contrau2=interpolate_gll2spelt_points(vstar(:,:,1),deriv)
+! !   spelt(ie)%contrav2=interpolate_gll2spelt_points(vstar(:,:,2),deriv)
+!     u=interpolate_gll2spelt_points(vstar(:,:,1),deriv)
+!     v=interpolate_gll2spelt_points(vstar(:,:,2),deriv)
+!     do j=1,nep
+!       do i=1,nep
+!         spelt%contrau2(i,j)=spelt%Ainv(1,1,i,j)*u(i,j)+spelt%Ainv(2,1,i,j)*v(i,j)      
+!         spelt%contrav2(i,j)=spelt%Ainv(1,2,i,j)*u(i,j)+spelt%Ainv(2,2,i,j)*v(i,j)
+!       end do
+!     end do    
+!     
 ! !       u=interpolate_gll2spelt_points(vstar(:,:,1),deriv)
 ! !       v=interpolate_gll2spelt_points(vstar(:,:,2),deriv)
 ! !       do j=1,nep
@@ -257,17 +313,16 @@ DO WHILE(tl%nstep<nmax) !nmax)
 ! !           spelt%contrav(i,j,k)=spelt%Ainv(1,2,i,j)*u(i,j)+spelt%Ainv(2,2,i,j)*v(i,j)
 ! !         end do
 ! !       end do
-!       
-!     end do
-!   end do
+    end do
+  end do
   
 !   call spelt_mcgregordss(elem,spelt,nets,nete, hybrid, deriv, tstep, 3)
-!   call spelt_rkdss(elem,spelt,nets,nete, hybrid, deriv, tstep, 3)
+  call spelt_rkdss(elem,spelt,nets,nete, hybrid, deriv, tstep, 3)
 ! ! end mcgregordss
 !   call spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
-  call spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
+!   call spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !   call spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
-!   call spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
+  call spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 
   call TimeLevel_update(tl,"forward") 
 !-----------------------------------------------------------------------------------! 
@@ -281,7 +336,8 @@ if (mod(tl%nstep,1)==0) then
       do i=1,nc
         dx=spelt(ie)%dab(i)   
         dy=spelt(ie)%dab(j)
-        area=dx*dy
+!         area=dx*dy
+        area=spelt(ie)%area_sphere(i,j)
         icell= 2+(i-1)*nipm
         jcell=2+(j-1)*nipm
         sga=spelt(ie)%sga(icell,jcell)
@@ -289,10 +345,10 @@ if (mod(tl%nstep,1)==0) then
 !           spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
 !                          dx*dy*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
          spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
-                        area*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
-        else
+                        area*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga
+        elseif (choosetrac==2) then
           spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
-                         area*spelt(ie)%c(icell,jcell,chooselev,2,tl%n0)*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga
+                         area*(spelt(ie)%c(icell,jcell,chooselev,1,tl%n0)/sga)*(spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga)
         endif
  !           spelt(ie)%cstart(i,j)=spelt(ie)%c(i,j,chooselev,choosetrac,tl%n0)
         tmp=area/spelt(ie)%area_sphere(i,j)
@@ -365,7 +421,7 @@ endif
 !   end do
 
 #ifdef PIO_INTERP
-  call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete,spelt)
+  call interp_movie_output(elem,tl, hybrid, 0D0, nets, nete,spelt)
 #else
   call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv)
 #endif  
@@ -399,16 +455,20 @@ ENDDO  ! END TIME LOOP
       do i=1,nc
         dx=spelt(ie)%dab(i)   
         dy=spelt(ie)%dab(j)
-        area=dx*dy
+!         area=dx*dy
+        area=spelt(ie)%area_sphere(i,j)
+        icell= 2+(i-1)*nipm
+        jcell=2+(j-1)*nipm
+        sga=spelt(ie)%sga(icell,jcell)
 !         area=spelt(ie)%area_sphere(i,j)*(area/spelt(ie)%area_sphere(i,j))*((area/spelt(ie)%area_sphere(i,j)))
-        global_shared_buf(ie,1)=global_shared_buf(ie,1)+area*abs(spelt(ie)%c(i*nipm,j*nipm,chooselev,choosetrac,tl%n0)-spelt(ie)%cstart(i,j))
-        global_shared_buf(ie,2)=global_shared_buf(ie,2)+area*abs(spelt(ie)%cstart(i,j))
+        global_shared_buf(ie,1)=global_shared_buf(ie,1)+area*abs(spelt(ie)%c(i*nipm,j*nipm,chooselev,choosetrac,tl%n0)-spelt(ie)%cstart(i,j))/sga
+        global_shared_buf(ie,2)=global_shared_buf(ie,2)+area*abs(spelt(ie)%cstart(i,j))/sga
 
         global_shared_buf(ie,3)=global_shared_buf(ie,3)+area*(spelt(ie)%c(i*nipm,j*nipm,chooselev,choosetrac,tl%n0)-spelt(ie)%cstart(i,j))* &
-                                          (spelt(ie)%c(i*nipm,j*nipm,chooselev,choosetrac,tl%n0)-spelt(ie)%cstart(i,j))
-        global_shared_buf(ie,4)=global_shared_buf(ie,4)+area*(spelt(ie)%cstart(i,j))*(spelt(ie)%cstart(i,j))
-        tmp=max(tmp,abs(spelt(ie)%c(i*nipm,j*nipm,chooselev,choosetrac,tl%n0)-spelt(ie)%cstart(i,j)))
-        tmpref=max(tmpref,abs(spelt(ie)%cstart(i,j)))
+                                          (spelt(ie)%c(i*nipm,j*nipm,chooselev,choosetrac,tl%n0)-spelt(ie)%cstart(i,j))/(sga*sga)
+        global_shared_buf(ie,4)=global_shared_buf(ie,4)+area*(spelt(ie)%cstart(i,j))*(spelt(ie)%cstart(i,j))/(sga*sga)
+        tmp=max(tmp,abs(spelt(ie)%c(i*nipm,j*nipm,chooselev,choosetrac,tl%n0)-spelt(ie)%cstart(i,j))/sga)
+        tmpref=max(tmpref,abs(spelt(ie)%cstart(i,j))/sga)
       end do
     end do
     tmp1(ie)=tmp
@@ -428,7 +488,8 @@ ENDDO  ! END TIME LOOP
       do i=1,nc
         dx=spelt(ie)%dab(i)   
         dy=spelt(ie)%dab(j)
-        area=dx*dy
+!         area=dx*dy
+        area=spelt(ie)%area_sphere(i,j)
         icell= 2+(i-1)*nipm
         jcell=2+(j-1)*nipm
         sga=spelt(ie)%sga(icell,jcell)
@@ -436,10 +497,10 @@ ENDDO  ! END TIME LOOP
 !           spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
 !                          dx*dy*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
          spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
-                        area*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
-        else
+                        area*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga
+        elseif (choosetrac==2) then
           spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
-                         area*spelt(ie)%c(icell,jcell,chooselev,2,tl%n0)*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga
+                         area*(spelt(ie)%c(icell,jcell,chooselev,1,tl%n0)/sga)*(spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga)
         endif
  !           spelt(ie)%cstart(i,j)=spelt(ie)%c(i,j,chooselev,choosetrac,tl%n0)
         tmp=area/spelt(ie)%area_sphere(i,j)

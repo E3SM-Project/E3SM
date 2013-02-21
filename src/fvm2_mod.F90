@@ -133,7 +133,7 @@ end do
 !write first time step to IO 
 #ifdef PIO_INTERP
 	  call interp_movie_init(elem,hybrid,nets,nete,tl=tl)    
-    call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete)
+    call interp_movie_output(elem,tl, hybrid, 0D0, nets, nete)
 #else
 	  call shal_movie_init(elem,hybrid)
     call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv)
@@ -154,7 +154,7 @@ maxcstart=0
   
 !-----------------------------------------------------------------------------------!  
 #ifdef PIO_INTERP
-       call interp_movie_output(elem, tl, hybrid, 0D0, deriv, nets, nete)
+       call interp_movie_output(elem, tl, hybrid, 0D0, nets, nete)
 #else     
        call shal_movie_output(elem, tl, hybrid, 0D0, nets, nete,deriv)
 #endif
@@ -224,7 +224,7 @@ do while(tl%nstep<0)
 !   endif
 !-----------------------------------------------------------------------------------!  
 #ifdef PIO_INTERP
-       call interp_movie_output(elem, tl, hybrid, 0D0, deriv, nets, nete)
+       call interp_movie_output(elem, tl, hybrid, 0D0, nets, nete)
 #else     
        call shal_movie_output(elem, tl, hybrid, 0D0, nets, nete,deriv)
 #endif

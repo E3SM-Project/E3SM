@@ -50,7 +50,7 @@ mkdir movies
 set smooth=0
 set rk_stage=0
 set nu = 0
-set nu_s = 0
+set nu_s = -1  # defaults to nu
 set LFTfreq = 0
 set hypervis_subcycle =  1
 

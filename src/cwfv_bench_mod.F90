@@ -173,7 +173,7 @@ subroutine cwfv_run_bench(elem,fvm,hybrid,nets,nete,tl)
 !-----------------------------------------------------------------------------------! 
 #ifdef PIO_INTERP
   call interp_movie_init(elem,hybrid,nets,nete,tl=tl)    
-  call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete)
+  call interp_movie_output(elem,tl, hybrid, 0D0, nets, nete)
 #else
   call shal_movie_init(elem,hybrid)
   call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv)
@@ -318,7 +318,7 @@ DO WHILE(tl%nstep<nmax)
   end do 
 
 #ifdef PIO_INTERP
-  call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete)
+  call interp_movie_output(elem,tl, hybrid, 0D0, nets, nete)
 #else
   call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv)
 #endif  

@@ -79,6 +79,7 @@ module vertremap_mod
   use spelt_mod, only              : spelt_struct 
   use perf_mod, only               : t_startf, t_stopf  ! _EXTERNAL
   use parallel_mod, only           : abortmp
+  use control_mod, only : vert_remap_q_alg
 
   public remap1                  ! remap any field, splines, monotone
   public remap1_nofilter         ! remap any field, splines, no filter
@@ -141,6 +142,11 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
                             lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
   logical :: abort=.false.
   call t_startf('remap1')
+
+  if (vert_remap_q_alg == 1 .or. vert_remap_q_alg == 2) then
+     call remap_Q_ppm(qdp,nx,qsize,dp1,dp2)
+     return
+  endif
 
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(qsize,i,j,z1c,z2c,zv,k,dp_np1,dp_star,Qcol,zkr,ilev) &
@@ -882,7 +888,7 @@ contains
   subroutine Prim_Advec_Tracers_spelt(elem, spelt, deriv,hvcoord,hybrid,&
         dt,tl,nets,nete)
     use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
-    use spelt_mod, only : spelt_run, spelt_runair, edgeveloc, spelt_mcgregordss
+    use spelt_mod, only : spelt_run, spelt_runair, edgeveloc, spelt_mcgregordss, spelt_rkdss
     use derivative_mod, only : interpolate_gll2spelt_points
     use vertremap_mod, only: remap1_nofilter ! _EXTERNAL (actually INTERNAL)
     
@@ -901,10 +907,6 @@ contains
     real (kind=real_kind), dimension(np,np,nlev)    :: dp
    
     integer :: np1,ie,k, i, j
-    
-    real (kind=real_kind)  :: vstar(np,np,2)
-    real (kind=real_kind)  :: vhat(np,np,2)
-    real (kind=real_kind)  :: v1, v2
     
 
     call t_barrierf('sync_prim_advec_tracers_spelt', hybrid%par%comm)
@@ -930,7 +932,7 @@ contains
              elem(ie)%derived%eta_dot_dpdn(:,:,k)=elem(ie)%derived%eta_dot_dpdn(:,:,k)*elem(ie)%rspheremp(:,:)
           enddo
           ! SET VERTICAL VELOCITY TO ZERO FOR DEBUGGING
-          !        elem(ie)%derived%eta_dot_dpdn(:,:,:)=0
+          elem(ie)%derived%eta_dot_dpdn(:,:,:)=0
           
           ! elem%state%u(np1)  = velocity at time t+1 on reference levels
           ! elem%derived%vstar = velocity at t+1 on floating levels (computed below) using eta_dot_dpdn
@@ -942,6 +944,8 @@ contains
           enddo
           elem(ie)%derived%vstar=elem(ie)%state%v(:,:,:,:,np1)
           call remap1_nofilter(elem(ie)%derived%vstar,np,1,dp,dp_star)
+          !take the average on level, should be improved later, because we know the SE velocity at t+1/2
+          spelt(ie)%vn12=(spelt(ie)%vn0+elem(ie)%derived%vstar)/2.0D0
        end do
     else
        ! for rsplit>0:  dynamics is also vertically lagrangian, so we do not need to
@@ -955,28 +959,11 @@ contains
     ! 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !------------------------------------------------------------------------------------      
-    ! ! start mcgregordss
-    do ie=nets,nete
-      do k=1,nlev
-        vstar=elem(ie)%derived%vstar(:,:,:,k)/rearth
-        do j=1,np
-          do i=1,np
-  !           v1 = elem(ie)%Dinv(1,1,i,j)*vstar(i,j,1) + elem(ie)%Dinv(1,2,i,j)*vstar(i,j,2)
-  !           v2 = elem(ie)%Dinv(2,1,i,j)*vstar(i,j,1) + elem(ie)%Dinv(2,2,i,j)*vstar(i,j,2)
-            v1 = spelt(ie)%Dinv(1,1,i,j)*vstar(i,j,1) + spelt(ie)%Dinv(1,2,i,j)*vstar(i,j,2)
-            v2 = spelt(ie)%Dinv(2,1,i,j)*vstar(i,j,1) + spelt(ie)%Dinv(2,2,i,j)*vstar(i,j,2)
-            vstar(i,j,1)=v1
-            vstar(i,j,2)=v2
-          enddo
-        enddo
-        spelt(ie)%contrau(:,:,k)=interpolate_gll2spelt_points(vstar(:,:,1),deriv)
-        spelt(ie)%contrav(:,:,k)=interpolate_gll2spelt_points(vstar(:,:,2),deriv)
-      end do
-    end do
     
-    call t_startf('spelt_mcgregor')
-    call spelt_mcgregordss(elem,spelt,nets,nete, hybrid, deriv, dt, 3)
-    call t_stopf('spelt_mcgregor')
+    call t_startf('spelt_depalg')
+!     call spelt_mcgregordss(elem,spelt,nets,nete, hybrid, deriv, dt, 3)
+    call spelt_rkdss(elem,spelt,nets,nete, hybrid, deriv, dt, 3)
+    call t_stopf('spelt_depalg')
     
     ! ! end mcgregordss
     ! spelt departure calcluation should use vstar.
@@ -1075,13 +1062,10 @@ contains
     call t_stopf('fvm_depalg')
 
 !------------------------------------------------------------------------------------    
-    
-    
 
     ! fvm departure calcluation should use vstar.
     ! from c(n0) compute c(np1): 
     call cslam_runairdensity(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
-
 
     call t_stopf('prim_advec_tracers_fvm')
   end subroutine Prim_Advec_Tracers_fvm
@@ -2184,14 +2168,13 @@ contains
   use kinds, only : real_kind
   use hybvcoord_mod, only : hvcoord_t
   use vertremap_mod, only : remap1, remap1_nofilter, remap_q_ppm ! _EXTERNAL (actually INTERNAL)
-  use control_mod, only :  vert_remap_q_alg, rsplit
+  use control_mod, only :  rsplit
   use parallel_mod, only : abortmp
 #if defined(_SPELT)
-  use spelt_mod, only spelt_struct
+  use spelt_mod, only: spelt_struct
 #else
   use fvm_control_volume_mod, only : fvm_struct
 #endif    
-  
   
 #if defined(_SPELT)
   type(spelt_struct), intent(inout) :: fvm(:)
@@ -2206,11 +2189,13 @@ contains
   !    type (hybrid_t), intent(in)       :: hybrid  ! distributed parallel structure (shared)
   type (element_t), intent(inout)   :: elem(:)
   type (hvcoord_t)                  :: hvcoord
-  real (kind=real_kind)             :: dt
+  real (kind=real_kind)             :: dt,sga
   
   integer :: ie,i,j,k,np1,nets,nete,np1_qdp
   real (kind=real_kind), dimension(np,np,nlev)  :: dp,dp_star
   real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
+
+  call t_startf('vertical_remap')
   
   ! reference levels:  
   !   dp(k) = (hyai(k+1)-hyai(k))*ps0 + (hybi(k+1)-hybi(k))*ps_v(i,j)
@@ -2281,13 +2266,7 @@ contains
 
      ! remap the tracers from lagrangian levels (dp_star)  to REF levels dp
      if (qsize>0) then
-        if (vert_remap_q_alg == 0) then
-           call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,qsize,dp_star,dp)
-        elseif (vert_remap_q_alg == 1 .or. vert_remap_q_alg == 2) then
-           call remap_Q_ppm(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,qsize,dp_star,dp)
-        else
-           call abortmp('specification for vert_remap_q_alg must be 0, 1, or 2.')
-        endif
+        call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,qsize,dp_star,dp)
      endif
 
      
@@ -2295,24 +2274,26 @@ contains
 #if defined(_SPELT)
         do i=1,nep   
           do j=1,nep
+            sga=fvm(ie)%sga(i,j)
             ! 1. compute surface pressure, 'ps_c', from SPELT air density
-            psc(i,j)=sum(fvm(ie)%c(i,j,:,2,np1)/spelt(ie)%sga(i,j)) +  hvcoord%hyai(1)*hvcoord%ps0 
+            psc(i,j)=sum(fvm(ie)%c(i,j,:,1,np1))/sga +  hvcoord%hyai(1)*hvcoord%ps0 
             ! 2. compute dp_np1 using CSLAM air density and eta coordinate formula
             ! get the dp now on the eta coordinates (reference level)
             do k=1,nlev
               dpc(i,j,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
                               (hvcoord%hybi(k+1) - hvcoord%hybi(k))*psc(i,j)
-              cdp(i,j,k,1:(ntrac-1))=fvm(ie)%c(i,j,k,3:ntrac,np1)*fvm(ie)%c(i,j,k,2,np1)                
+              cdp(i,j,k,1:(ntrac-1))=fvm(ie)%c(i,j,k,2:ntrac,np1)*fvm(ie)%c(i,j,k,1,np1)/(sga*sga) 
+              dpc_star(i,j,k)=fvm(ie)%c(i,j,k,1,np1)/sga
             end do
           end do
         end do
-        dpc_star=fvm(ie)%c(1:nc,1:nc,:,2,np1)
-        call remap1(cdp,nc,ntrac-1,dpc_star,dpc)
+        call remap1(cdp,nep,ntrac-1,dpc_star,dpc)
         do i=1,nep   
           do j=1,nep 
+            sga=fvm(ie)%sga(i,j)
             do k=1,nlev
-              fvm(ie)%c(i,j,k,2,np1)=dpc(i,j,k)
-              fvm(ie)%c(i,j,k,3:ntrac,np1)=cdp(i,j,k,1:(ntrac-1))/dpc(i,j,k)
+              fvm(ie)%c(i,j,k,1,np1)=dpc(i,j,k)*sga
+              fvm(ie)%c(i,j,k,2:ntrac,np1)=sga*cdp(i,j,k,1:(ntrac-1))/dpc(i,j,k)
             end do
           end do
         end do 
@@ -2355,13 +2336,8 @@ contains
      endif
 
   enddo
-  
-  
+  call t_stopf('vertical_remap')  
   end subroutine vertical_remap
-  
-  
-
-
 
 
 

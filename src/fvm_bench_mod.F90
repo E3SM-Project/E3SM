@@ -179,7 +179,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
 !write first time step to IO 
 #ifdef PIO_INTERP
   call interp_movie_init(elem,hybrid,nets,nete,tl=tl)    
-  call interp_movie_output(elem,tl, hybrid, 0D0, deriv, nets, nete,fvm)
+  call interp_movie_output(elem,tl, hybrid, 0D0, nets, nete,fvm)
 #else
     call shal_movie_init(elem,hybrid,fvm)
     call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv,fvm)
@@ -308,7 +308,7 @@ endif
 !-----------------------------------------------------------------------------------!  
 
 #ifdef PIO_INTERP
-    call interp_movie_output(elem, tl, hybrid, 0D0, deriv, nets, nete,fvm)
+    call interp_movie_output(elem, tl, hybrid, 0D0, nets, nete,fvm)
 #else     
     call shal_movie_output(elem, tl, hybrid, 0D0, nets, nete,deriv,fvm)
 #endif

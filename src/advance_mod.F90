@@ -117,12 +117,11 @@ contains
        if (mod(nstep,LFTfreq).ne.0) steptype=0
     endif
 
-    ! in call cases, use LF during during bootstrap (nstep=0) phase
+    ! in all cases, use LF during during bootstrap (nstep=0) phase
     ! For RK methods we should remove bootstrap procedure
     if (nstep==0) steptype=0
 
-
-    if (steptype==0) then
+    if (steptype==0) then   
 
        ! Leapfrog timestep: u(np1) = u(nm1) + dt2*DSS [ RHS(u(n0)) ]
        call compute_and_apply_rhs(np1,nm1,n0,dt2,real_time,edge3,elem,pmean,hybrid,deriv,vtens,ptens,nets,nete)
@@ -130,11 +129,10 @@ contains
        ! ====================================================
        ! apply viscosity  
        ! ====================================================
-
        call advance_hypervis(edge3,elem,hybrid,deriv,vtens,ptens,np1,nets,nete,dt2)
 
     else if (steptype==1)  then
-
+       if (smooth/=0) stop 'ERROR: smooth>0 only allowed for leapfrog'
        ! leapfrog+trapazoidal
        ! 2x as expensive as LF, but 2nd order, no Robert filter needed, 
        ! dt sqrt(2) larger than LF
@@ -160,7 +158,7 @@ contains
        call advance_hypervis(edge3,elem,hybrid,deriv,vtens,ptens,np1,nets,nete,dt)
 
     else if (steptype==2) then
-       if (smooth/=0) stop 'ERROR: smooth>0 not allowed'
+       if (smooth/=0) stop 'ERROR: smooth>0 only allowed for leapfrog'
        ! RK2 (which is forward euler at dt/2 followed by LF with dt)
        ! Foward Euler  u(n0) -> u(np1) at t+.5
        call compute_and_apply_rhs(np1,n0,n0,dt/2,real_time,edge3,elem,pmean,hybrid,deriv,vtens,ptens,nets,nete)
@@ -1561,17 +1559,10 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     if (hypervis_order == 2) then
        do ic=1,hypervis_subcycle
-
           call biharmonic_wk(elem,ptens,vtens,deriv,edge3,hybrid,nt,nets,nete,nu_div/nu)
 
-
-
           do ie=nets,nete
-
              spheremp     => elem(ie)%spheremp
-
-!!!! this pointer is not in use?
-             viscosity => elem(ie)%variable_hyperviscosity
              do k=1,nlev
                 ! advace in time.  
                 ! note: DSS commutes with time stepping, so we can time advance and then DSS.

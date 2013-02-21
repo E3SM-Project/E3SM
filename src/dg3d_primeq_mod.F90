@@ -278,7 +278,7 @@ endif
           call printstate_dg(elem,pmean,g,tl%n0,hybrid,nets,nete)  
        endif
 if (statefreq>0) then
-          call interp_movie_output(elem, tl, my_hvcoord, hybrid, pmean, deriv, nets, nete)
+          call interp_movie_output(elem, tl, hybrid, pmean, nets, nete, hvcoord=my_hvcoord )
           !call jw_bcl_errors(elem, 7, tl, hybrid, nets, nete)
 	  !call jw_bcl_zonal(elem, tl, hybrid)    
 
@@ -365,7 +365,7 @@ if (statefreq>0) then
           !call jw_bcl_errors(elem, 7, tl, hybrid, nets, nete) 	  
 	  !call jw_bcl_zonal(elem, tl, hybrid)         
        end if        
-       call interp_movie_output(elem, tl, my_hvcoord, hybrid, pmean, deriv, nets, nete)
+       call interp_movie_output(elem, tl, hybrid, pmean, nets, nete, hvcoord=my_hvcoord )
 else
        if (MODULO(tl%nstep,nmax)==0 .or. tl%nstep==1) then 
           if(hybrid%par%masterproc .AND. ithr == 0) then
