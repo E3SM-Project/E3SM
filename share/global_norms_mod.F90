@@ -271,8 +271,13 @@ contains
   !
   ! ================================
 
-  subroutine print_cfl(elem,hybrid,nets,nete,dtnu,dt_advection,dt_dyn)
-
+  subroutine print_cfl(elem,hybrid,nets,nete,dtnu)
+!
+!   estimate various CFL limits
+!   also, for variable resolution viscosity coefficient, make sure
+!   worse viscosity CFL (given by dtnu) is not violated by reducing 
+!   viscosity coefficient in regions where CFL is violated
+!
     use kinds,       only : real_kind
     use hybrid_mod,  only : hybrid_t
     use element_mod, only : element_t
@@ -291,8 +296,7 @@ contains
     type(element_t)      , intent(inout) :: elem(:)
     integer              , intent(in) :: nets,nete
     type (hybrid_t)      , intent(in) :: hybrid
-    real (kind=real_kind), intent(in) :: dtnu
-    real (kind=real_kind), intent(in) :: dt_advection,dt_dyn
+    real (kind=real_kind), intent(in) :: dtnu  
 
     ! Element statisics
     real (kind=real_kind) :: min_max_dx, max_max_dx, avg_max_dx
@@ -301,11 +305,10 @@ contains
     real (kind=real_kind) :: min_max_eig, max_max_eig, avg_max_eig
     real (kind=real_kind) :: min_min_eig, max_min_eig, avg_min_eig
     real (kind=real_kind) :: min_hypervis, max_hypervis, avg_hypervis, stable_hv
-    real (kind=real_kind) :: max_hvcourant
+    real (kind=real_kind) :: max_eig_hypervis
     real (kind=real_kind) :: x, y, noreast, nw, se, sw
     real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
     real (kind=real_kind) :: lambda_max, lambda_vis, min_gw
-    real (kind=real_kind) :: dt,dt_eul
     integer :: ie,corner, i, j, rowind, colind
     type (quadrature_t)    :: gp
 
@@ -433,8 +436,7 @@ contains
 !            
 !
 
-        dt = tstep
-        max_hvcourant = 0
+        max_eig_hypervis = 0
 
         do ie=nets,nete
            ! variable viscosity based on map from ulatlon -> ucontra
@@ -476,7 +478,7 @@ contains
                 elem(ie)%variable_hyperviscosity = stable_hv
                 elem(ie)%hv_courant = dtnu*(stable_hv**2) * (lambda_vis)**2 * (rrearth*elem(ie)%max_eig)**4               
             end if
-            max_hvcourant = max(max_hvcourant, elem(ie)%hv_courant)
+            max_eig_hypervis = max(max_eig_hypervis, elem(ie)%hv_courant/dtnu)
 
             min_hypervis = min(min_hypervis, elem(ie)%variable_hyperviscosity(1,1))
             max_hypervis = max(max_hypervis, elem(ie)%variable_hyperviscosity(1,1))
@@ -488,7 +490,7 @@ contains
         call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
         avg_hypervis = global_shared_sum(1)/dble(nelem)
 
-        max_hvcourant = ParallelMax(max_hvcourant, hybrid)
+        max_eig_hypervis = ParallelMax(max_eig_hypervis, hybrid)
 
         ! apply DSS (aka assembly procedure) to variable_hyperviscosity (makes continuous)
         call initEdgeBuffer(edgebuf,1)
@@ -522,7 +524,7 @@ contains
             end do
         end do
     else
-        max_hvcourant = dtnu * (lambda_vis)**2 * (rrearth*max_max_eig)**4
+        max_eig_hypervis = (lambda_vis)**2 * (rrearth*max_max_eig)**4
     end if
 
 
@@ -594,25 +596,20 @@ contains
        write(iulog,'(a,f10.2)') 'CFL estimates in terms of S=time step stability region'
        write(iulog,'(a,f10.2)') '(i.e. advection w/leapfrog: S=1, viscosity w/forward Euler: S=2)'
        if (rk_stage_user>0) then
-          dt_eul = (dt_advection/(rk_stage_user-1)) ! stepsize of internal euler step in RKSSP method
-          !write(iulog,'(a,f10.2)') 'SSP Forward Euler (120m/s) Courant number=', (120.0d0*max_max_eig*rrearth*dt_eul)/min_gw
-          write(iulog,'(a,f10.2,a)') 'SSP preservation (120m/s) dt < S *', min_gw/(120.0d0*max_max_eig*rrearth),'s'
+          write(iulog,'(a,f10.2,a)') 'SSP preservation (120m/s) RKSSP euler step dt  < S *', min_gw/(120.0d0*max_max_eig*rrearth),'s'
        endif
-       !write(iulog,'(a,f10.2)') 'advective (120m/s) Courant number=', 120.0d0*max_max_eig*lambda_max*rrearth*dt_advection
-       !write(iulog,'(a,f10.2)') 'gravity wave (342m/s) Courant number=', 342.0d0*max_max_eig*lambda_max*rrearth*dt_advection
-       write(iulog,'(a,f10.2,a)') 'Stability: advective (120m/s)   dt < S *', 1/(120.0d0*max_max_eig*lambda_max*rrearth),'s'
-       write(iulog,'(a,f10.2,a)') 'Stability: gravity wave(342m/s) dt < S *', 1/(342.0d0*max_max_eig*lambda_max*rrearth),'s'
+       write(iulog,'(a,f10.2,a)') 'Stability: advective (120m/s)   dt_tracer < S *', 1/(120.0d0*max_max_eig*lambda_max*rrearth),'s'
+       write(iulog,'(a,f10.2,a)') 'Stability: gravity wave(342m/s) RK dyn stage dt  < S *', 1/(342.0d0*max_max_eig*lambda_max*rrearth),'s'
        if (nu>0) then
           if (hypervis_order==1) then
-              !write(iulog,'(a,f10.2)') 'max viscosity courant number: ',dtnu*((rrearth*max_max_eig)**2)*lambda_vis
               write(iulog,'(a,f10.2,a)') 'Stability: viscosity dt < S *',1/(((rrearth*max_max_eig)**2)*lambda_vis),'s'
           endif
           if (hypervis_order==2) then
-             !write(iulog,'(a,f12.6)') "max hyper viscosity courant number: ", max_hvcourant
-             dt = dtnu/(nu*max_hvcourant)
-             write(iulog,'(a,f10.2,a)') "Stability: nu_vor hyperviscosity dt < S *", (dt/max_hvcourant),'s'
-             dt = dtnu/(nu_div*max_hvcourant)
-             write(iulog,'(a,f10.2,a)') "Stability: nu_div hyperviscosity dt < S *", (dt/max_hvcourant),'s'
+             ! counrant number = dtnu*max_eig_hypervis  < S
+             !  dt < S  1/nu*max_eig
+             write(iulog,'(a,f10.2,a)') "Stability: nu_q   hyperviscosity dt < S *", 1/(nu*max_eig_hypervis),'s'
+             write(iulog,'(a,f10.2,a)') "Stability: nu_vor hyperviscosity dt < S *", 1/(nu*max_eig_hypervis),'s'
+             write(iulog,'(a,f10.2,a)') "Stability: nu_div hyperviscosity dt < S *", 1/(nu_div*max_eig_hypervis),'s'
           endif
        endif
        if(nu_top>0) then

@@ -529,7 +529,7 @@ contains
     use control_mod, only : runtype, integration, filter_mu, filter_mu_advection, test_case, &
          debug_level, vfile_int, filter_freq, filter_freq_advection, &
          transfer_type, vform, vfile_mid, filter_type, kcut_fm, wght_fm, p_bv, &
-         s_bv, topology,columnpackage, moisture, precon_method, qsplit, rk_stage_user,&
+         s_bv, topology,columnpackage, moisture, precon_method, rsplit, qsplit, rk_stage_user,&
          TRACERADV_TOTAL_DIVERGENCE, TRACERADV_UGRADQ, sub_case, &
          use_cpstar, energy_fixer, limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
          hypervis_subcycle_q
@@ -601,12 +601,12 @@ contains
     end if
 
 
-    ! compute most restrictive dt*nu: 
+    ! compute most restrictive dt*nu for use by variable res viscosity: 
     if (tstep_type.eq.0) then
-       ! LF case, dynamics & tracers both use leapfrog with same timestep
-       ! because of LF, timestep seen by viscosity is 2*tstep
-       !dtnu = 2.0d0*tstep*max(nu/hypervis_subcycle,nu_q/hypervis_subcycle_q)
-       dtnu = 2.0d0*tstep*max(nu,nu_div,nu_q)
+       ! LF case: no tracers, timestep seen by viscosity is 2*tstep
+       dt_tracers = 0  
+       dt_dyn = 2*tstep
+       dtnu = 2.0d0*tstep*max(nu,nu_div)
     endif
     if (tstep_type.eq.1) then
        ! compute timestep seen by viscosity operator:
@@ -621,7 +621,7 @@ contains
        dtnu=max(dt_dyn*max(nu,nu_div), dt_tracers*nu_q)
     endif
     ! timesteps to use for advective stability:  tstep*qsplit and tstep
-    call print_cfl(elem,hybrid,nets,nete,dtnu,tstep*qsplit,tstep)
+    call print_cfl(elem,hybrid,nets,nete,dtnu)
 
 
 
@@ -888,10 +888,10 @@ contains
      	      enddo
      	    enddo
           !write air density in tracer 1 of FVM
-          fvm(ie)%c(1:nep,1:nep,k,2,tl%n0)=interpolate_gll2spelt_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
+          fvm(ie)%c(1:nep,1:nep,k,1,tl%n0)=interpolate_gll2spelt_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
           do i=1,nep
             do j=1,nep
-              fvm(ie)%c(i,j,k,2,tl%n0)=fvm(ie)%sga(i,j)*fvm(ie)%c(i,j,k,2,tl%n0)
+              fvm(ie)%c(i,j,k,1,tl%n0)=fvm(ie)%sga(i,j)*fvm(ie)%c(i,j,k,1,tl%n0)
 !            fvm(ie)%c(i,j,k,1,tl%n0)=fvm(ie)%sga(i,j)
             end do
           end do
@@ -901,7 +901,7 @@ contains
       do ie=nets,nete 
    	    do i=1-nipm,nep+nipm
    	      do j=1-nipm,nep+nipm  
-   	        fvm(ie)%psc(i,j) = fvm(ie)%sga(i,j)*(sum(fvm(ie)%c(i,j,:,2,tl%n0)/fvm(ie)%sga(i,j)) +  hvcoord%hyai(1)*hvcoord%ps0)
+   	        fvm(ie)%psc(i,j) = fvm(ie)%sga(i,j)*(sum(fvm(ie)%c(i,j,:,1,tl%n0)/fvm(ie)%sga(i,j)) +  hvcoord%hyai(1)*hvcoord%ps0)
    	      enddo
    	    enddo
       enddo
@@ -962,22 +962,25 @@ contains
        enddo
     endif
 
-#ifdef CAM
     if (hybrid%masterthread) then 
        ! CAM has set tstep based on dtime before calling prim_init2(), 
        ! so only now does HOMME learn the timstep.  print them out:
+       write(iulog,'(a,2f9.2)') "dt_tracer, per RK stage: ",tstep*qsplit,(tstep*qsplit)/(rk_stage_user-1)
+       write(iulog,'(a,2f9.2)') "dt_dyn, per RK stage:    ",tstep*qsplit,tstep
+       write(iulog,'(a,2f9.2)') "dt_dyn_viscosity:        ",dt_dyn
+       write(iulog,'(a,2f9.2)') "dt_tracer_viscosity:     ",tstep*qsplit
+
+ 
+#ifdef CAM
        if (phys_tscale/=0) then
           write(iulog,'(a,2f9.2)') "CAM physics timescale:       ",phys_tscale
        endif
-       write(iulog,'(a,2f9.2)') "CAM dtime (dt_phys):         ",tstep*nsplit*qsplit
-       write(iulog,'(a,2f9.2)') "CAM dt_tracer, per RK stage: ",tstep*qsplit,(tstep*qsplit)/(rk_stage_user-1)
-       write(iulog,'(a,2f9.2)') "CAM dt_dyn, per RK stage:    ",tstep*qsplit,tstep
- 
-
+       write(iulog,'(a,2f9.2)') "CAM dtime (dt_phys):         ",tstep*nsplit*qsplit*max(rsplit,1)
        write(iulog,*) "initial state from CAM:"
        write(iulog,*) "nstep=",tl%nstep," time=",Time_at(tl%nstep)/(24*3600)," [day]"
-    end if
 #endif
+    end if
+
 
 #ifdef _ACCEL
     !Inside this routine, we enforce an OMP BARRIER and an OMP MASTER. It's left out of here because it's ugly
@@ -1537,7 +1540,7 @@ contains
        do ie=nets,nete 
     	    do i=1-nipm,nep+nipm
     	      do j=1-nipm,nep+nipm  
-    	        fvm(ie)%psc(i,j) = fvm(ie)%sga(i,j)*(sum(fvm(ie)%c(i,j,:,2,tl%np1)/fvm(ie)%sga(i,j)) +  hvcoord%hyai(1)*hvcoord%ps0)
+    	        fvm(ie)%psc(i,j) = fvm(ie)%sga(i,j)*(sum(fvm(ie)%c(i,j,:,1,tl%np1)/fvm(ie)%sga(i,j)) +  hvcoord%hyai(1)*hvcoord%ps0)
     	      enddo
     	    enddo
        enddo

@@ -949,7 +949,31 @@ end subroutine
 
 
   subroutine test_ibyp(elem, hybrid,  nets,   nete)
-
+!
+! Note: vector test functions should be co-variant since u is contra-variant
+!  PHIvec = PHIcov  (test function)
+!  PHIcon = DtD PHIcov
+!
+! weak grad:
+!  < PHIcov du/dt > = < PHIcon grad(p) >    (output of grad is covariant)
+!  < PHIcov du/dt > = -< div(PHIcon) p >    (input of div is contra)
+!  verify:
+!    gradient_sphere_wk(p) = - <div(PHIcon) p >
+!    gradient_sphere_wk(p) + MASS*grad(p) = b.c. (b.c. are covariant)
+!
+! weak div:
+!   < PHI div(u) > = -< grad(PHI) dot u >     u=contra, output of grad is covariant
+! verify:
+!   divergence_sphere_wk(u) = -<grad(PHI) dot u>
+!   divergence_sphere_wk(u) + MASS*div(u) = b.c.  (b.c. are scalars)
+!
+! weak curl:
+!  < PHIcov du/dt > = < PHIcov curl( a ) >    (output of curl is contra)
+!  < PHIcov du/dt > = < vor(PHIcov) a >       (input to vor is covariant)
+! verify:
+!    curl_sphere_wk(a) = < vor(PHIcov) a >
+!    curl_sphere_wk(a) - MASS*curl(a) = b.c. (b.c. are contra)
+!
     ! ---------------------
     use kinds, only : real_kind
     ! ---------------------
