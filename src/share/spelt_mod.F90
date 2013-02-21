@@ -1263,7 +1263,7 @@ subroutine spelt_init3(elem,spelt,hybrid,nets,nete,tnp0)
     call ghostVpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tnp0, timelevels,elem(ie)%desc)
   end do
   !-----------------------------------------------------------------------------------!  
-  call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep,ntrac)
+  call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep,1)
   !-----------------------------------------------------------------------------------!    
   do ie=nets,nete
     call ghostVunpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tnp0, timelevels,elem(ie)%desc)
