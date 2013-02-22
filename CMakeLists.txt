@@ -97,6 +97,12 @@ ELSEIF (CMAKE_COMPILER_ID STREQUAL PathScale)
   SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -extend-source")
 ENDIF ()
 
+# Intel specific flags
+IF (${CMAKE_Fortran_COMPILER_ID} STREQUAL Intel)
+  SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -assume byterecl")
+  SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fp-model precise")
+ENDIF ()
+
 IF(HOMME_FIND_BLASLAPACK)
   FIND_PACKAGE(BLAS REQUIRED)
   FIND_PACKAGE(LAPACK REQUIRED)
