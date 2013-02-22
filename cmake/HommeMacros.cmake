@@ -15,7 +15,15 @@ macro(createTestExec execName execType execSources macroNP macroPLEV macroUSE_PI
   # Set the variable to the macro variables
   SET(NUM_POINTS ${macroNP})
   SET(NUM_PLEV ${macroPLEV})
-  SET(PIO ${macroUSE_PIO})
+
+  IF (${macroUSE_PIO})
+    SET(PIO TRUE)
+    SET(PIO_INTERP)
+  ELSE ()
+    SET(PIO)
+    SET(PIO_INTERP TRUE)
+  ENDIF ()
+
   SET(ENERGY_DIAGNOSTICS ${macroWITH_ENERGY})
 
   # This is needed to compile the test executables with the correct options
@@ -27,10 +35,6 @@ macro(createTestExec execName execType execSources macroNP macroPLEV macroUSE_PI
   ADD_EXECUTABLE(${execName} ${${execSources}})
 
   # More thought needs to go into these options
-  #IF (macroUSE_PIO)
-  #ELSE ()
-  #ENDIF ()
-
   #IF (macroWITH_ENERGY)
   #ENDIF ()
 

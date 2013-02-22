@@ -116,37 +116,26 @@ SET(PREQX_SRCS ${SRC_SHARE_DIR}/kinds.F90
 )
 
 
-ADD_LIBRARY(homme_preqx ${PREQX_SRCS})
-ADD_DEPENDENCIES(homme_preqx pio timing)
-
-#TARGET_LINK_LIBRARIES(homme_preqx pio timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
-
-SET_TARGET_PROPERTIES(homme_preqx PROPERTIES 
-           Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/preqx_modules")
-
-ADD_EXECUTABLE(preqx ${SRC_DIR}/prim_main.F90)
-
-# Move the .mod files out of the way
-SET_TARGET_PROPERTIES(preqx PROPERTIES 
-           Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/preqx_modules")
-
-ADD_DEPENDENCIES(preqx homme_preqx pio timing)
-
-#TARGET_LINK_LIBRARIES(preqx homme_preqx pio timing ${Netcdf_LIBRARIES}
-#                      ${Pnetcdf_LIBRARIES}
-#                      ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
-
-TARGET_LINK_LIBRARIES(preqx homme_preqx pio timing
-                      ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
-
-IF (NOT HOMME_FIND_BLASLAPACK)
-  ADD_DEPENDENCIES(preqx blas lapack)
-  TARGET_LINK_LIBRARIES(preqx lapack blas)
-ENDIF()
-
-INSTALL(TARGETS preqx
-        RUNTIME DESTINATION bin)
-
 SET(PREQX_SRCS ${PREQX_SRCS} ${SRC_DIR}/prim_main.F90 CACHE INTERNAL "Sources for preqx")
 
+# Set up defaults
+IF (NOT PREQX_NP)
+  SET (PREQX_NP 8) 
+ENDIF ()
+IF (NOT PREQX_PLEV)
+  SET (PREQX_PLEV 20) 
+ENDIF ()
+IF (NOT PREQX_USE_PIO)
+  SET (PREQX_USE_PIO FALSE) 
+ENDIF ()
+IF (NOT PREQX_USE_ENERGY)
+  SET (PREQX_USE_ENERGY FALSE) 
+ENDIF ()
+
+# The following macro handles the compilation with the appropriate variables
+############################################################################
+# createTestExec(exec_name exec_type SRCS NP PLEV USE_PIO USE_ENERGY)
+############################################################################
+createTestExec(preqx preqx PREQX_SRCS ${PREQX_NP} ${PREQX_PLEV} ${PREQX_USE_PIO}
+                                      ${PREQX_USE_ENERGY})
 

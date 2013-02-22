@@ -84,30 +84,26 @@ SET(SWDGX_SRCS
     ${SRC_SHARE}/mesh_mod.F90
 )
 
-ADD_LIBRARY(homme_swdgx ${SWDGX_SRCS})
-
-ADD_DEPENDENCIES(homme_swdgx pio timing)
-
-SET_TARGET_PROPERTIES(homme_swdgx PROPERTIES 
-           Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/swdgx_modules")
-
-ADD_EXECUTABLE(swdgx ${SRC_BASE}/dg_main.F90)
-
-ADD_DEPENDENCIES(swdgx homme_swdgx pio timing)
-
-TARGET_LINK_LIBRARIES(swdgx homme_swdgx pio timing
-                      ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
-
-SET_TARGET_PROPERTIES(swdgx PROPERTIES 
-           Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/swdgx_modules")
-
-IF (NOT HOMME_FIND_BLASLAPACK)
-  TARGET_LINK_LIBRARIES(swdgx lapack blas)
-  ADD_DEPENDENCIES(swdgx blas lapack)
-ENDIF()
-
-INSTALL(TARGETS swdgx
-        RUNTIME DESTINATION bin)
-
 SET(SWDGX_SRCS ${SWDGX_SRCS} ${SRC_BASE}/dg_main.F90 CACHE INTERNAL "Sources for swdgx")
+
+# Set up defaults
+IF (NOT SWDGX_NP)
+  SET (SWDGX_NP 6)
+ENDIF ()
+IF (NOT SWDGX_PLEV)
+  SET (SWDGX_PLEV 1) 
+ENDIF ()
+IF (NOT SWDGX_USE_PIO)
+  SET (SWDGX_USE_PIO FALSE) 
+ENDIF ()
+IF (NOT SWDGX_USE_ENERGY)
+  SET (SWDGX_USE_ENERGY FALSE) 
+ENDIF ()
+
+# The following macro handles the compilation with the appropriate variables
+############################################################################
+# createTestExec(exec_name exec_type SRCS NP PLEV USE_PIO USE_ENERGY)
+############################################################################
+createTestExec(swdgx swdgx SWDGX_SRCS ${SWDGX_NP} ${SWDGX_PLEV} ${SWDGX_USE_PIO}
+                                      ${SWDGX_USE_ENERGY})
 

@@ -90,29 +90,26 @@ SET(SWEQX_SRCS
 
 )
 
-ADD_LIBRARY(homme_sweqx ${SWEQX_SRCS})
-ADD_DEPENDENCIES(homme_sweqx pio timing)
-
-SET_TARGET_PROPERTIES(homme_sweqx PROPERTIES 
-           Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/sweqx_modules")
-
-ADD_EXECUTABLE(sweqx ${SRC_BASE}/main.F90)
-
-ADD_DEPENDENCIES(sweqx homme_sweqx pio timing)
-
-TARGET_LINK_LIBRARIES(sweqx homme_sweqx pio timing
-                      ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
-
-IF (NOT HOMME_FIND_BLASLAPACK)
-  ADD_DEPENDENCIES(sweqx blas lapack)
-  TARGET_LINK_LIBRARIES(sweqx lapack blas)
-ENDIF()
-
-SET_TARGET_PROPERTIES(sweqx PROPERTIES 
-           Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/sweqx_modules")
-
-INSTALL(TARGETS sweqx
-        RUNTIME DESTINATION bin)
-
 SET(SWEQX_SRCS ${SWEQX_SRCS} ${SRC_BASE}/main.F90 CACHE INTERNAL "Sources for sweqx")
+
+# Set up defaults
+IF (NOT SWEQX_NP)
+  SET (SWEQX_NP 8) 
+ENDIF ()
+IF (NOT SWEQX_PLEV)
+  SET (SWEQX_PLEV 4) 
+ENDIF ()
+IF (NOT SWEQX_USE_PIO)
+  SET (SWEQX_USE_PIO FALSE) 
+ENDIF ()
+IF (NOT SWEQX_USE_ENERGY)
+  SET (SWEQX_USE_ENERGY FALSE) 
+ENDIF ()
+
+# The following macro handles the compilation with the appropriate variables
+############################################################################
+# createTestExec(exec_name exec_type SRCS NP PLEV USE_PIO USE_ENERGY)
+############################################################################
+createTestExec(sweqx sweqx SWEQX_SRCS ${SWEQX_NP} ${SWEQX_PLEV} ${SWEQX_USE_PIO}
+                                      ${SWEQX_USE_ENERGY})
 
