@@ -91,7 +91,7 @@ IF (NOT SWDGX_NP)
   SET (SWDGX_NP 6)
 ENDIF ()
 IF (NOT SWDGX_PLEV)
-  SET (SWDGX_PLEV 1) 
+  SET (SWDGX_PLEV 1)
 ENDIF ()
 IF (NOT SWDGX_USE_PIO)
   SET (SWDGX_USE_PIO FALSE) 
@@ -99,6 +99,12 @@ ENDIF ()
 IF (NOT SWDGX_USE_ENERGY)
   SET (SWDGX_USE_ENERGY FALSE) 
 ENDIF ()
+
+MESSAGE(STATUS "Building swdgx with:")
+MESSAGE(STATUS "  NP = ${SWDGX_NP}")
+MESSAGE(STATUS "  PLEV = ${SWDGX_PLEV}")
+MESSAGE(STATUS "  PIO = ${SWDGX_USE_PIO}")
+MESSAGE(STATUS "  ENERGY = ${SWDGX_USE_ENERGY}")
 
 # The following macro handles the compilation with the appropriate variables
 ############################################################################

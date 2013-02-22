@@ -274,4 +274,17 @@ macro(createTest testName)
 
 endmacro(createTest)
 
+macro(testQuadPrec HOMME_QUAD_PREC)
+  TRY_RUN(RUN_RESULT_VAR COMPILE_RESULT_VAR
+          ${CMAKE_BINARY_DIR}/compiler_test/ ${CMAKE_SOURCE_DIR}/cmake/quadTest.f90
+          COMPILE_OUTPUT_VARIABLE comp 
+          )
 
+  IF (${COMPILE_RESULT_VAR} AND ${RUN_RESULT_VAR} STREQUAL 0)
+    SET (${HOMME_QUAD_PREC} TRUE)
+    MESSAGE(STATUS "Quadruple-precision supported enabling")
+  ELSE ()
+    SET (HOMME_QUAD_PREC FALSE)
+    MESSAGE(STATUS "Quadruple-precision not supported")
+  ENDIF ()
+endmacro(testQuadPrec)

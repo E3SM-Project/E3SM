@@ -132,6 +132,12 @@ IF (NOT PREQX_USE_ENERGY)
   SET (PREQX_USE_ENERGY FALSE) 
 ENDIF ()
 
+MESSAGE(STATUS "Building preqx with:")
+MESSAGE(STATUS "  NP = ${PREQX_NP}")
+MESSAGE(STATUS "  PLEV = ${PREQX_PLEV}")
+MESSAGE(STATUS "  PIO = ${PREQX_USE_PIO}")
+MESSAGE(STATUS "  ENERGY = ${PREQX_USE_ENERGY}")
+
 # The following macro handles the compilation with the appropriate variables
 ############################################################################
 # createTestExec(exec_name exec_type SRCS NP PLEV USE_PIO USE_ENERGY)

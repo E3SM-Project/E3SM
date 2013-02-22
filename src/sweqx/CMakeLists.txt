@@ -106,6 +106,12 @@ IF (NOT SWEQX_USE_ENERGY)
   SET (SWEQX_USE_ENERGY FALSE) 
 ENDIF ()
 
+MESSAGE(STATUS "Building sweqx with:")
+MESSAGE(STATUS "  NP = ${SWEQX_NP}")
+MESSAGE(STATUS "  PLEV = ${SWEQX_PLEV}")
+MESSAGE(STATUS "  PIO = ${SWEQX_USE_PIO}")
+MESSAGE(STATUS "  ENERGY = ${SWEQX_USE_ENERGY}")
+
 # The following macro handles the compilation with the appropriate variables
 ############################################################################
 # createTestExec(exec_name exec_type SRCS NP PLEV USE_PIO USE_ENERGY)
