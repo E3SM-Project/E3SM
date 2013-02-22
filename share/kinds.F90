@@ -23,26 +23,18 @@ private
   longdouble_kind    = 8
   public :: shr_kind_cl, iulog
 
-#elif defined(_Linux) || defined (_Darwin)
+#else 
   integer (kind=4), public, parameter::  &
   int_kind     = 4,                      &
   long_kind    = 8,                      &
   log_kind     = 4,                      &
   real_kind    = 8,                      &
-  longdouble_kind    = 8,                      &
-  iulog        = 6                          ! stderr file handle
-#else
-  integer (kind=4), public, parameter ::  &
-  int_kind     = 4,                       &
-  long_kind    = 8,                       &
-  log_kind     = 4,                       &
-  real_kind    = 8,                       &
-#ifdef __PGI
-  longdouble_kind    = 8,                 & ! PGI doesn't support quad precision
-#else
-  longdouble_kind    = 16,                &
+  iulog        = 6,                      & ! stderr file handle
+#if HOMME_QUAD_PREC
+  longdouble_kind    = 16
+#else 
+  longdouble_kind    = 8
 #endif
-  iulog        = 6                          ! stderr file handle
 #endif
 
 end module kinds
