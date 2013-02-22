@@ -50,7 +50,7 @@
 #define TRILINOS 1
 
 /* Quadruple-precision
-#cmakedefine01 HOMME_QUAD_PREC
+#cmakedefine01 HOMME_NO_QUAD_PREC
 
 #cmakedefine _Linux
 #cmakedefine _Darwin

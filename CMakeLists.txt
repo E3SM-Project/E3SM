@@ -16,13 +16,16 @@ INCLUDE(SetHostPaths)
 INCLUDE(HommeMacros)
 
 # Default don't use quad precision
-OPTION(HOMME_USE_QUAD_PREC "" FALSE)
+OPTION(HOMME_QUAD_PREC "" TRUE)
+SET(HOMME_NO_QUAD_PREC FALSE)
 
-IF (${HOMME_USE_QUAD_PREC}) 
+IF (${HOMME_QUAD_PREC}) 
   testQuadPrec(HOMME_QUAD_SUPPORTED)
   IF (NOT ${HOMME_QUAD_SUPPORTED})
-    MESSAGE(FATAL_ERROR "Quadruple-precision requested but unavailable on this
-    sytem")
+    SET(HOMME_QUAD_PREC FALSE)
+    SET(HOMME_NO_QUAD_PREC TRUE)
+    MESSAGE(STATUS "Quadruple-precision requested but unavailable on this
+                    system with this compiler")
   ENDIF()
 ENDIF ()
 
