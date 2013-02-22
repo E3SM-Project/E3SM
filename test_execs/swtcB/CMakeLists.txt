@@ -4,5 +4,5 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
 
 # There are only three separate executables that need to be compiled
 #   separately
-#                                     NP  PLEV  USE_PIO  WITH_ENERGY
-createTestExec(swtcB sweqx SWEQX_SRCS  4    20    FALSE        FALSE)
+#                                     NP  NC PLEV NTRAC USE_PIO WITH_ENERGY
+createTestExec(swtcB sweqx SWEQX_SRCS  4   4   20     1   FALSE      FALSE)

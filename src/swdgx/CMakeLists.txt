@@ -99,17 +99,25 @@ ENDIF ()
 IF (NOT SWDGX_USE_ENERGY)
   SET (SWDGX_USE_ENERGY FALSE) 
 ENDIF ()
+IF (NOT SWDGX_NC)
+  SET (SWDGX_NC 4)
+ENDIF ()
+IF (NOT SWDGX_NTRAC)
+  SET (SWDGX_NTRAC 1)
+ENDIF ()
 
 MESSAGE(STATUS "Building swdgx with:")
 MESSAGE(STATUS "  NP = ${SWDGX_NP}")
+MESSAGE(STATUS "  NC = ${SWDGX_NC}")
 MESSAGE(STATUS "  PLEV = ${SWDGX_PLEV}")
+MESSAGE(STATUS "  NTRAC = ${SWDGX_NTRAC}")
 MESSAGE(STATUS "  PIO = ${SWDGX_USE_PIO}")
 MESSAGE(STATUS "  ENERGY = ${SWDGX_USE_ENERGY}")
 
 # The following macro handles the compilation with the appropriate variables
 ############################################################################
-# createTestExec(exec_name exec_type SRCS NP PLEV USE_PIO USE_ENERGY)
+# createTestExec(exec_name exec_type SRCS NP NC PLEV NTRAC USE_PIO USE_ENERGY)
 ############################################################################
-createTestExec(swdgx swdgx SWDGX_SRCS ${SWDGX_NP} ${SWDGX_PLEV} ${SWDGX_USE_PIO}
-                                      ${SWDGX_USE_ENERGY})
+createTestExec(swdgx swdgx SWDGX_SRCS ${SWDGX_NP} ${SWDGX_NC} ${SWDGX_PLEV}
+               ${SWDGX_NTRAC} ${SWDGX_USE_PIO} ${SWDGX_USE_ENERGY})
 

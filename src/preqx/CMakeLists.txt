@@ -131,10 +131,18 @@ ENDIF ()
 IF (NOT PREQX_USE_ENERGY)
   SET (PREQX_USE_ENERGY FALSE) 
 ENDIF ()
+IF (NOT PREQX_NC)
+  SET (PREQX_NC 4)
+ENDIF ()
+IF (NOT PREQX_NTRAC)
+  SET (PREQX_NTRAC 1)
+ENDIF ()
 
 MESSAGE(STATUS "Building preqx with:")
 MESSAGE(STATUS "  NP = ${PREQX_NP}")
+MESSAGE(STATUS "  NC = ${PREQX_NC}")
 MESSAGE(STATUS "  PLEV = ${PREQX_PLEV}")
+MESSAGE(STATUS "  NTRAC = ${PREQX_NTRAC}")
 MESSAGE(STATUS "  PIO = ${PREQX_USE_PIO}")
 MESSAGE(STATUS "  ENERGY = ${PREQX_USE_ENERGY}")
 
@@ -142,6 +150,6 @@ MESSAGE(STATUS "  ENERGY = ${PREQX_USE_ENERGY}")
 ############################################################################
 # createTestExec(exec_name exec_type SRCS NP PLEV USE_PIO USE_ENERGY)
 ############################################################################
-createTestExec(preqx preqx PREQX_SRCS ${PREQX_NP} ${PREQX_PLEV} ${PREQX_USE_PIO}
-                                      ${PREQX_USE_ENERGY})
+createTestExec(preqx preqx PREQX_SRCS ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} 
+               ${PREQX_NTRAC} ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY})
 

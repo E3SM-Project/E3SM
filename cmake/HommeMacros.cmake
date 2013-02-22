@@ -3,18 +3,22 @@
 STRING(ASCII 35 POUND)
 
 # Macro to create the individual tests
-macro(createTestExec execName execType execSources macroNP macroPLEV macroUSE_PIO
-                     macroWITH_ENERGY)
+macro(createTestExec execName execType execSources macroNP macroNC 
+                     macroPLEV macroNTRAC macroUSE_PIO macroWITH_ENERGY)
 
   # Backup the cmake variables
   SET(tempNP ${NUM_POINTS})
+  SET(tempNC ${NUM_CELLS})
   SET(tempPLEV ${NUM_PLEV})
+  SET(tempNTRAC ${NUM_TRACERS})
   SET(tempUSE_PIO ${PIO})
   SET(tempWITH_ENERGY ${ENERGY_DIAGNOSTICS})
 
   # Set the variable to the macro variables
   SET(NUM_POINTS ${macroNP})
+  SET(NUM_CELLS ${macroNC})
   SET(NUM_PLEV ${macroPLEV})
+  SET(NUM_TRACERS ${macroNTRAC})
 
   IF (${macroUSE_PIO})
     SET(PIO TRUE)
@@ -54,7 +58,9 @@ macro(createTestExec execName execType execSources macroNP macroPLEV macroUSE_PI
 
   # Restore the original the cmake variables
   SET(NUM_POINTS ${tempNP})
+  SET(NUM_CELLS ${tempNC})
   SET(NUM_PLEV ${tempPLEV})
+  SET(NUM_TRACERS ${tempNTRAC})
   SET(PIO ${tempUSE_PIO})
   SET(ENERGY_DIAGNOSTICS ${tempWITH_ENERGY})
 
