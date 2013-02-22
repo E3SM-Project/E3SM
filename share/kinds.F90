@@ -30,10 +30,10 @@ private
   log_kind     = 4,                      &
   real_kind    = 8,                      &
   iulog        = 6,                      & ! stderr file handle
-#if HOMME_QUAD_PREC
-  longdouble_kind    = 16
-#else 
+#if HOMME_NO_QUAD_PREC
   longdouble_kind    = 8
+#else 
+  longdouble_kind    = 16
 #endif
 #endif
 
