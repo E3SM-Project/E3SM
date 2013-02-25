@@ -49,6 +49,6 @@
 
 #define TRILINOS 1
 
-/* Quadruple-precision
+/* Quadruple-precision */
 #cmakedefine01 HOMME_QUAD_PREC
 
