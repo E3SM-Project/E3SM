@@ -17,13 +17,11 @@ INCLUDE(HommeMacros)
 
 # Default don't use quad precision
 OPTION(HOMME_QUAD_PREC "" TRUE)
-SET(HOMME_NO_QUAD_PREC FALSE)
 
 IF (${HOMME_QUAD_PREC}) 
   testQuadPrec(HOMME_QUAD_SUPPORTED)
   IF (NOT ${HOMME_QUAD_SUPPORTED})
     SET(HOMME_QUAD_PREC FALSE)
-    SET(HOMME_NO_QUAD_PREC TRUE)
     MESSAGE(STATUS "Quadruple-precision requested but unavailable on this
                     system with this compiler")
   ENDIF()
@@ -68,14 +66,6 @@ IF (${SWIM_ONLY})
   SET(BUILD_HOMME_SWDGX "" OFF)
   SET(BUILD_HOMME_SWIM  "" ON)
 ENDIF ()
-
-IF ("${HOMME_ARCH}" STREQUAL "Linux")
-  SET(_Linux ON)
-  MESSAGE(STATUS "Configuring for Linux")
-ELSEIF("${HOMME_ARCH}" STREQUAL "Darwin")
-  #SET(_Darwin ON)
-  #MESSAGE(STATUS "Configuring for Darwin")
-ENDIF()
 
 # to allow ifdefs to be included
 if(REFSOLN)
