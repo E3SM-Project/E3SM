@@ -571,8 +571,8 @@ contains
     real (kind=real_kind) :: dt              ! "timestep dependent" timestep
 !   variables used to calculate CFL
     real (kind=real_kind) :: dtnu            ! timestep*viscosity parameter
-    real (kind=real_kind) :: dt_dyn          ! viscosity timestep used in dynamics
-    real (kind=real_kind) :: dt_tracers      ! viscosity timestep used in tracers
+    real (kind=real_kind) :: dt_dyn_vis      ! viscosity timestep used in dynamics
+    real (kind=real_kind) :: dt_tracer_vis      ! viscosity timestep used in tracers
 
     real (kind=real_kind) :: dp        
 
@@ -604,21 +604,25 @@ contains
     ! compute most restrictive dt*nu for use by variable res viscosity: 
     if (tstep_type.eq.0) then
        ! LF case: no tracers, timestep seen by viscosity is 2*tstep
-       dt_tracers = 0  
-       dt_dyn = 2*tstep
+       dt_tracer_vis = 0  
+       dt_dyn_vis = 2*tstep
        dtnu = 2.0d0*tstep*max(nu,nu_div)
     endif
     if (tstep_type.eq.1) then
        ! compute timestep seen by viscosity operator:
        if (qsplit==1) then
-          dt_dyn = tstep   ! dynamics uses pure RK2 method
+          dt_dyn_vis = tstep   ! dynamics uses pure RK2 method
        else
-          dt_dyn = 2*tstep  ! dynamics uses RK2 + (qsplit-1) LF.  LF viscosity uses 2dt. 
+          dt_dyn_vis = 2*tstep  ! dynamics uses RK2 + (qsplit-1) LF.  LF viscosity uses 2dt. 
        endif
-       dt_tracers=tstep*qsplit
+       dt_tracer_vis=tstep*qsplit
 
-       ! compute most restrictive condition:
-       dtnu=max(dt_dyn*max(nu,nu_div), dt_tracers*nu_q)
+       ! compute most restrictive condition: 
+       ! note: dtnu ignores subcycling 
+       dtnu=max(dt_dyn_vis*max(nu,nu_div), dt_tracer_vis*nu_q)
+       ! compute actual viscosity timesteps with subcycling
+       dt_tracer_vis = dt_tracer_vis/hypervis_subcycle_q
+       dt_dyn_vis = dt_dyn_vis/hypervis_subcycle
     endif
     ! timesteps to use for advective stability:  tstep*qsplit and tstep
     call print_cfl(elem,hybrid,nets,nete,dtnu)
@@ -965,10 +969,11 @@ contains
     if (hybrid%masterthread) then 
        ! CAM has set tstep based on dtime before calling prim_init2(), 
        ! so only now does HOMME learn the timstep.  print them out:
+       write(iulog,'(a,2f9.2)') "dt_remap: (0=disabled)   ",tstep*qsplit*rsplit
        write(iulog,'(a,2f9.2)') "dt_tracer, per RK stage: ",tstep*qsplit,(tstep*qsplit)/(rk_stage_user-1)
        write(iulog,'(a,2f9.2)') "dt_dyn, per RK stage:    ",tstep*qsplit,tstep
-       write(iulog,'(a,2f9.2)') "dt_dyn_viscosity:        ",dt_dyn
-       write(iulog,'(a,2f9.2)') "dt_tracer_viscosity:     ",tstep*qsplit
+       write(iulog,'(a,2f9.2)') "dt_dyn (viscosity):      ",dt_dyn_vis
+       write(iulog,'(a,2f9.2)') "dt_tracer (viscosity):   ",dt_tracer_vis
 
  
 #ifdef CAM
