@@ -6,6 +6,48 @@ FILE (APPEND ${HOMME_TEST_LIST} "${POUND} A list of all of the HOMME tests\n")
 FILE (APPEND ${HOMME_TEST_LIST} "\n")
 SET (NUM_TEST_FILES 0)
 
+SET(Homme_Build_DIR ${CMAKE_BINARY_DIR})
+SET(Homme_Results_DIR ${CMAKE_SOURCE_DIR}/test/reg_test/results)
+
+# Host specific
+IF (Homme_Hostname STREQUAL "Yellowstone") 
+
+  # Modify the results directory to point to the yellowstone results
+  # TODO: deal with different compilers
+  SET(Homme_Results_DIR ${Homme_Results_DIR}/yellowstone)
+
+  SET(Homme_Submission_Type lsf)
+
+ELSEIF (Homme_OS STREQUAL "Darwin") 
+
+  SET(Homme_Results_DIR ${Homme_Results_DIR}/darwin)
+
+  SET(Homme_Submission_Type std)
+
+ENDIF ()
+
+# Because of the queuing system on machines like Yellowstone the testing can be a little awkward
+# The following scripts prepare submission scripts and allow submission to
+# queues on machines that have queues.
+CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/createRunScripts.sh 
+               ${CMAKE_BINARY_DIR}/tests/createRunScripts.sh @ONLY)
+CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/submit_tests.sh
+               ${CMAKE_BINARY_DIR}/tests/submit_tests.sh @ONLY)
+CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/diff_output.sh
+               ${CMAKE_BINARY_DIR}/tests/diff_output.sh @ONLY)
+CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/testing-utils.sh
+               ${CMAKE_BINARY_DIR}/tests/testing-utils.sh COPYONLY)
+
+# First create the submission-list.sh
+ADD_CUSTOM_COMMAND(
+  OUTPUT ${CMAKE_BINARY_DIR}/tests/submission-list.sh
+  COMMAND ${CMAKE_BINARY_DIR}/tests/createRunScripts.sh
+)
+
+# The first CMake test is running
+ADD_TEST(submitAndRunTests ${CMAKE_BINARY_DIR}/tests/submit_tests.sh)
+
+
 IF(${BUILD_HOMME_PREQX})
   ADD_SUBDIRECTORY(baroA)
   ADD_SUBDIRECTORY(baroB)
@@ -37,53 +79,8 @@ ENDIF()
 FILE (APPEND ${HOMME_TEST_LIST} "\n")
 FILE (APPEND ${HOMME_TEST_LIST} "num_test_files=${NUM_TEST_FILES}\n")
 
-SET(Homme_Build_DIR ${CMAKE_BINARY_DIR})
-SET(Homme_Results_DIR ${CMAKE_SOURCE_DIR}/test/reg_test/results)
-
-# Host specific
-IF (Homme_Hostname STREQUAL "Yellowstone") 
-
-  # Modify the results directory to point to the yellowstone results
-  # TODO: deal with different compilers
-  SET(Homme_Results_DIR ${Homme_Results_DIR}/yellowstone)
-
-  SET(Homme_Submission_Type lsf)
-
-ELSEIF (Homme_OS STREQUAL "Darwin") 
-
-  SET(Homme_Results_DIR ${Homme_Results_DIR}/darwin)
-
-  SET(Homme_Submission_Type std)
-
-ENDIF ()
-
-# Because of the queuing system on machines like Yellowstone the testing can be a little awkward
-
-# The following scripts prepare submission scripts and allow submission to
-# queues on machines that have queues.
-CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/createRunScripts.sh 
-               ${CMAKE_BINARY_DIR}/tests/createRunScripts.sh @ONLY)
-CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/submit_tests.sh
-               ${CMAKE_BINARY_DIR}/tests/submit_tests.sh @ONLY)
-CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/testing-utils.sh
-               ${CMAKE_BINARY_DIR}/tests/testing-utils.sh COPYONLY)
-
 # The first test will be to create the list of executables and run them
 #   possible=y through a queuing system
-
-# First create the submission-list.sh
-ADD_CUSTOM_COMMAND(
-  OUTPUT ${CMAKE_BINARY_DIR}/tests/submission-list.sh
-  COMMAND ${CMAKE_BINARY_DIR}/tests/createRunScripts.sh
-)
-
-
-# Run the submit_test.sh script to submit the tests to the queue
-#ADD_CUSTOM_TARGET(submitTests 
-#                  COMMAND ${CMAKE_BINARY_DIR}/tests/submit_tests.sh
-#                  DEPENDS ${CMAKE_BINARY_DIR}/tests/submission-list.sh)
-
-ADD_TEST(submittingTests ${CMAKE_BINARY_DIR}/tests/submit_tests.sh)
 
 # The rest of the cmake tests diff the output of the submitted tests
 

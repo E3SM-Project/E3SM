@@ -18,3 +18,4 @@ NUM_CPUS=16
 
 namelist_files=${HOMME_ROOT}/test/reg_test/namelists/${test_name}.nl
 
+nc_output_files=swtc11.nc

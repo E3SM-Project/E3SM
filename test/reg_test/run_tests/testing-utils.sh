@@ -130,13 +130,12 @@ queueWait() {
       jobStat=`bjobs -a $jobID | tail -n 1 | awk '{print $3}'`
 
       # Print the status of the job
-      #   keep the newline character because of CMake's stdout management
-      echo "...$jobStat..."
+      echo -n "...$jobStat..."
 
       # if the job is registered in the queue and the status is PEND or RUN then wait
       if [ -n "$jobStat" -a "$jobStat" == "PEND" -o "$jobStat" == "RUN" ]; then
         # Job still in queue or running
-        sleep 60 # sleep for 60s
+        sleep 20 # sleep for 20s
       else # if jobStat=DONE, EXIT or it is finished and no longer registered in the queue
         jobFinished=true
         echo "FINISHED..."
@@ -360,37 +359,67 @@ execLine() {
 
 diffCprnc() {
 
-  echo "diffing the netcdf files"
+  echo "Diffing the netcdf files using cprnc"
 
-  if [ ! -f "${cprnc_binary}" ] ; then
+  if [ ! -f "${CPRNC_BINARY}" ] ; then
     echo "netcdf differencing tool cprnc not found"
     exit -1
   fi
 
-  # then diff with the stored results (yellowstone only)
-  for subnum in $(seq 1 ${num_submissions})
+  # source the test.sh file to get the name of the nc_output_files
+  source ${HOMME_TESTING_DIR}/${TEST_NAME}/${TEST_NAME}.sh
+
+  # nc_output_files is defined in the .sh file
+  FILES="${nc_output_files}"
+
+  if [ -z "{$FILES}" ] ; then
+    echo "Test ${TEST_NAME} doesn't have Netcdf output files"
+  fi
+
+  # for files in movies
+  for file in $FILES 
   do
+    echo "file = ${file}"
+    baseFilename=`basename $file`
 
-    subfile=subfile${subnum}
-    subfile=${!subfile}
+    # new result
+    newFile=${HOMME_TESTING_DIR}/${TEST_NAME}/movies/$file
+    if [ ! -f "${newFile}" ] ; then
+      echo "ERROR: The result file ${newFile} does not exist exiting" 
+      exit -1
+    fi
 
-    subname=`basename ${subfile} .sh`
+    # result in the repo
+    repoFile=${HOMME_NC_RESULTS_DIR}/${TEST_NAME}/${baseFilename}
+    if [ ! -f "${newFile}" ] ; then
+      echo "ERROR: The repo file ${repoFile} does not exist exiting" 
+      exit -1
+    fi
 
-    testname=`echo $subname | sed 's/-run//'`
+    cmd="${CPRNC_BINARY} ${newFile} ${repoFile}"
 
-    # get the list of .nc files in movies
-    files=${homme_testing_dir}/${testname}/movies/*.nc
+    diffStdout=${TEST_NAME}.${baseFilename}.out
+    diffStderr=${TEST_NAME}.${baseFilename}.err
 
-    # for files in movies
-    for file in $files 
-    do
-      basefilename=`basename $file`
-      cmd="${cprnc_binary} $file ${homme_results_dir}/${testname}/${basefilename}"
-      echo "cmd = $cmd"
-      $cmd > ${testname}.${basefilename}.out 2> ${testname}.${basefilename}.err
+    echo "Running cprnc:"
+    echo "  $cmd"
+    $cmd > $diffStdout 2> $diffStderr
 
-      # Parse the output file to determine if they were identical
-      
-    done
+    # Parse the output file to determine if they were identical
+    DIFF_RESULT=`grep -e 'diff_test' $diffStdout | awk '{ print $8 }'`
+
+    if [ "${DIFF_RESULT}" == IDENTICAL ] ; then
+      echo "The files are identical: DIFF_RESULT=${DIFF_RESULT}"
+      # Delete the output file to remove clutter
+      rm $diffStdout
+      rm $diffStderr
+    else
+      echo "The files are different: DIFF_RESULT=${DIFF_RESULT}"
+      echo "  The diff output is available in $diffStdout"
+      exit -1
+    fi
+
+    
   done
 }
+

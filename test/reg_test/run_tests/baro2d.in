@@ -21,3 +21,5 @@ NUM_CPUS=24
 namelist_files=${HOMME_ROOT}/test/reg_test/${namelist_dir}/${test_name}.nl
 vcoord_files=${HOMME_ROOT}/test/vcoord/*26*
 refsoln_files=${HOMME_ROOT}/test/reg_test/ref_sol/T340ref.nc
+
+nc_output_files=asp_baroclinic1.nc asp_baroclinic2.nc

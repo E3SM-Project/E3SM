@@ -23,3 +23,4 @@ namelist_files=${HOMME_ROOT}/test/reg_test/${namelist_dir}/${test_name}.nl
 vcoord_files=${HOMME_ROOT}/test/vcoord/*20*
 ncl_files=${HOMME_ROOT}/test/reg_test/ncl/${test_name}.ncl
 
+nc_output_files=baroclinic1.nc

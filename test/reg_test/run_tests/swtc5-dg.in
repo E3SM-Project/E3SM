@@ -15,3 +15,5 @@ exec_name=swtc-dgA
 namelist_files=${HOMME_ROOT}/test/reg_test/namelists/${test_name}.nl
 ncl_files=${HOMME_ROOT}/test/reg_test/ncl/swtc5ref.ncl
 
+nc_output_files=swtc51.nc
+

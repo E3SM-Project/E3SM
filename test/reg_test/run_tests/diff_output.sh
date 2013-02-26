@@ -4,7 +4,7 @@
 HOMME_DIR=@Homme_Build_DIR@
 HOMME_TEST_RESULTS=@Homme_Results_DIR@
 
-HOMME_NCRESULTS_DIR=@Homme_NCResults_DIR@
+HOMME_NC_RESULTS_DIR=/glade/scratch/jamroz/homme-results/yellowstone.intel
 
 # The location of the tests directory
 HOMME_TESTING_DIR=${HOMME_DIR}/tests
@@ -21,21 +21,8 @@ source ${HOMME_DIR}/tests/submission-list.sh
 # The testing utilities
 source ${HOMME_DIR}/tests/testing-utils.sh
 
-if [ "$HOMME_Submission_Type" = lsf ]; then
-  # Submit the tests to the queue
-  submitTestsToLSF
+# Get the argument
+TEST_NAME=$1
+echo "TEST_NAME=${TEST_NAME}"
 
-  # Print a summary of the submissions
-  printSubmissionSummary
-
-  # Wait for the jobs to run through the queue
-  queueWait
-
-  # Diff the output files with those saved in the repo
-else
-  runTestsStd
-fi
-
-#diffStdOut
-
-#diffCprnc
+diffCprnc

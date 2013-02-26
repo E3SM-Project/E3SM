@@ -27,3 +27,4 @@ OMP_SUB_TESTS=true
 OMP_NUM_THREADS=4
 omp_namelist_files=${HOMME_ROOT}/test/reg_test/${namelist_dir}/${test_name}-omp.nl
 
+nc_output_files=asp_baroclinic1.nc asp_baroclinic2.nc

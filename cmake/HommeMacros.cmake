@@ -82,7 +82,7 @@ macro(getValue thisLine thisVar)
 endmacro(getValue)
 
 macro(parseTestFile fileName testName execName namelistFiles vcoordFiles
-                    nclFiles refsolnFiles numCpus ompNamelistFiles ompNumThreads)
+                    nclFiles refsolnFiles ncOutputFiles numCpus ompNamelistFiles ompNumThreads)
 
   # Reset the variables
   SET(${testName})
@@ -91,6 +91,7 @@ macro(parseTestFile fileName testName execName namelistFiles vcoordFiles
   SET(${vcoordFiles})
   SET(${nclFiles})
   SET(${refsolnFiles})
+  SET(${ncOutputFiles})
 
   # Need to do something with this
   SET(namelist_dir namelists/little_endian)
@@ -131,6 +132,9 @@ macro(parseTestFile fileName testName execName namelistFiles vcoordFiles
         getValue(${REP_LINE} ${refsolnFiles})
         FILE(GLOB ${refsolnFiles} ${${refsolnFiles}})
       ENDIF ()
+      IF (${REP_LINE} MATCHES "^nc_output_files")
+        getValue(${REP_LINE} ${ncOutputFiles})
+      ENDIF ()
       IF (${REP_LINE} MATCHES "^NUM_CPUS")
         getValue(${REP_LINE} ${numCpus})
       ENDIF ()
@@ -156,7 +160,7 @@ macro(createTest testName)
 
   parseTestFile(${THIS_TEST_INPUT}
                 TEST_NAME EXEC_NAME NAMELIST_FILES VCOORD_FILES NCL_FILES
-                REFSOLN_FILES NUM_CPUS OMP_NAMELIST_FILES OMP_NUM_THREADS)
+                REFSOLN_FILES NC_OUTPUT_FILES NUM_CPUS OMP_NAMELIST_FILES OMP_NUM_THREADS)
 
   # Copy the file
   #FILE(COPY ${THIS_TEST_INPUT} DESTINATION ${CMAKE_BINARY_DIR}/tests/${TEST_NAME}/)
@@ -185,6 +189,12 @@ macro(createTest testName)
     IF (NOT "${REFSOLN_FILES}" STREQUAL "")
       MESSAGE(STATUS "  refsoln_files=")
       FOREACH (singleFile ${REFSOLN_FILES}) 
+        MESSAGE(STATUS "    ${singleFile}")
+      ENDFOREACH () 
+    ENDIF ()
+    IF (NOT "${NC_OUTPUT_FILES}" STREQUAL "")
+      MESSAGE(STATUS "  nc_output_files=")
+      FOREACH (singleFile ${NC_OUTPUT_FILES}) 
         MESSAGE(STATUS "    ${singleFile}")
       ENDFOREACH () 
     ENDIF ()
@@ -276,7 +286,18 @@ macro(createTest testName)
   MATH(EXPR NUM_TEST_FILES "${NUM_TEST_FILES} + 1")
   FILE (APPEND ${HOMME_TEST_LIST} "test_file${NUM_TEST_FILES}=${THIS_TEST_SCRIPT}\n")
 
-  #ADD_TEST(${testName} ${THIS_TEST_SCRIPT})
+  FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
+
+  # Deal with the Netcdf output files
+  FILE(APPEND ${THIS_TEST_SCRIPT} "nc_output_files=\"")
+  FOREACH (singleFile ${NC_OUTPUT_FILES}) 
+    FILE(APPEND ${THIS_TEST_SCRIPT} "${singleFile} ")
+  ENDFOREACH ()
+  FILE(APPEND ${THIS_TEST_SCRIPT} "\"\n")
+
+  ADD_TEST(NAME "diff-${testName}" 
+           COMMAND ${CMAKE_BINARY_DIR}/tests/diff_output.sh ${TEST_NAME}
+           DEPENDS submitAndRunTests)
 
 endmacro(createTest)
 
