@@ -79,15 +79,11 @@ ADD_CUSTOM_COMMAND(
 
 
 # Run the submit_test.sh script to submit the tests to the queue
-ADD_CUSTOM_TARGET(submitTests 
-                  COMMAND ${CMAKE_BINARY_DIR}/tests/submit_tests.sh
-                  DEPENDS ${CMAKE_BINARY_DIR}/tests/submission-list.sh)
+#ADD_CUSTOM_TARGET(submitTests 
+#                  COMMAND ${CMAKE_BINARY_DIR}/tests/submit_tests.sh
+#                  DEPENDS ${CMAKE_BINARY_DIR}/tests/submission-list.sh)
 
-#SET(CTEST_CUSTOM_PRE_TEST ${CMAKE_BINARY_DIR}/tests/submit_tests.sh)
-SET(CTEST_CUSTOM_PRE_TEST "echo preTest")
-
-
-ADD_TEST(dummy ${CMAKE_SOURCE_DIR}/test_execs/dummy.sh)
+ADD_TEST(submittingTests ${CMAKE_BINARY_DIR}/tests/submit_tests.sh)
 
 # The rest of the cmake tests diff the output of the submitted tests
 

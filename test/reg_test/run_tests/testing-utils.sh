@@ -130,7 +130,8 @@ queueWait() {
       jobStat=`bjobs -a $jobID | tail -n 1 | awk '{print $3}'`
 
       # Print the status of the job
-      echo -n "$jobStat..."
+      #   keep the newline character because of CMake's stdout management
+      echo "...$jobStat..."
 
       # if the job is registered in the queue and the status is PEND or RUN then wait
       if [ -n "$jobStat" -a "$jobStat" == "PEND" -o "$jobStat" == "RUN" ]; then
@@ -357,7 +358,7 @@ execLine() {
   fi
 }
 
-diffcprnc() {
+diffCprnc() {
 
   echo "diffing the netcdf files"
 
