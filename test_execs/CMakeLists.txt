@@ -57,10 +57,69 @@ ELSEIF (Homme_OS STREQUAL "Darwin")
 
 ENDIF ()
 
+# Because of the queuing system on machines like Yellowstone the testing can be a little awkward
+
+# The following scripts prepare submission scripts and allow submission to
+# queues on machines that have queues.
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/createRunScripts.sh 
                ${CMAKE_BINARY_DIR}/tests/createRunScripts.sh @ONLY)
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/submit_tests.sh
                ${CMAKE_BINARY_DIR}/tests/submit_tests.sh @ONLY)
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/testing-utils.sh
                ${CMAKE_BINARY_DIR}/tests/testing-utils.sh COPYONLY)
+
+# The first test will be to create the list of executables and run them
+#   possible=y through a queuing system
+
+# First create the submission-list.sh
+ADD_CUSTOM_COMMAND(
+  OUTPUT ${CMAKE_BINARY_DIR}/tests/submission-list.sh
+  COMMAND ${CMAKE_BINARY_DIR}/tests/createRunScripts.sh
+)
+
+
+# Run the submit_test.sh script to submit the tests to the queue
+ADD_CUSTOM_TARGET(submitTests 
+                  COMMAND ${CMAKE_BINARY_DIR}/tests/submit_tests.sh
+                  DEPENDS ${CMAKE_BINARY_DIR}/tests/submission-list.sh)
+
+#SET(CTEST_CUSTOM_PRE_TEST ${CMAKE_BINARY_DIR}/tests/submit_tests.sh)
+SET(CTEST_CUSTOM_PRE_TEST "echo preTest")
+
+
+ADD_TEST(dummy ${CMAKE_SOURCE_DIR}/test_execs/dummy.sh)
+
+# The rest of the cmake tests diff the output of the submitted tests
+
+macro(cprncDiff testName pass tol)
+  # For each file take the output and compare it to the 
+
+  # First run ncdiff 
+  EXECUTE_PROCESS(
+    COMMAND ${CPRNC_BINARY} ${CMAKE_BINARY_DIR}/tests/${testName}/movies/${ncFileName}
+                            ${Homme_Results_DIR}/testName/${ncFileName}
+    RESULT_VARIABLE CPRNC_RESULT
+    OUTPUT_VARIABLE CPRNC_OUTPUT
+    ERROR_VARIABLE CPRNC_ERROR
+  )
+
+  # Parse the output
+
+  # Determine if it is bit for bit
+
+  IF (${BIT_FOR_BIT})
+    SET(pass TRUE) 
+  ELSE()
+    # If not bit for bit then...
+  
+  ENDIF ()
+
+
+endmacro() 
+
+#
+
+#
+
+#
 

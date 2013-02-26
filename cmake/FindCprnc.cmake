@@ -1,0 +1,13 @@
+find_file(CPRNC_BINARY
+          NAMES cprnc
+          PATHS ${CPRNC_DIR} ${Homme_CPRNC_DIR}
+          NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
+
+IF(${CPRNC_BINARY} STREQUAL "CPRNC_BINARY-NOTFOUND")
+  SET (CPRNC_FOUND FALSE) 
+  MESSAGE(FATAL_ERROR "Did not find cprnc required for testing")
+ELSE ()
+  SET (CPRNC_FOUND TRUE) 
+  MESSAGE(STATUS "Found cprnc at ${CPRNC_BINARY}")
+ENDIF ()
+

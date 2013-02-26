@@ -356,3 +356,40 @@ execLine() {
     echo "mpiexec -n $NUM_CPUS $EXEC" >> $RUN_SCRIPT
   fi
 }
+
+diffcprnc() {
+
+  echo "diffing the netcdf files"
+
+  if [ ! -f "${cprnc_binary}" ] ; then
+    echo "netcdf differencing tool cprnc not found"
+    exit -1
+  fi
+
+  # then diff with the stored results (yellowstone only)
+  for subnum in $(seq 1 ${num_submissions})
+  do
+
+    subfile=subfile${subnum}
+    subfile=${!subfile}
+
+    subname=`basename ${subfile} .sh`
+
+    testname=`echo $subname | sed 's/-run//'`
+
+    # get the list of .nc files in movies
+    files=${homme_testing_dir}/${testname}/movies/*.nc
+
+    # for files in movies
+    for file in $files 
+    do
+      basefilename=`basename $file`
+      cmd="${cprnc_binary} $file ${homme_results_dir}/${testname}/${basefilename}"
+      echo "cmd = $cmd"
+      $cmd > ${testname}.${basefilename}.out 2> ${testname}.${basefilename}.err
+
+      # Parse the output file to determine if they were identical
+      
+    done
+  done
+}

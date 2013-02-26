@@ -276,7 +276,7 @@ macro(createTest testName)
   MATH(EXPR NUM_TEST_FILES "${NUM_TEST_FILES} + 1")
   FILE (APPEND ${HOMME_TEST_LIST} "test_file${NUM_TEST_FILES}=${THIS_TEST_SCRIPT}\n")
 
-  ADD_TEST(${testName} ${THIS_TEST_SCRIPT})
+  #ADD_TEST(${testName} ${THIS_TEST_SCRIPT})
 
 endmacro(createTest)
 

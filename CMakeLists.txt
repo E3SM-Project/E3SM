@@ -4,7 +4,9 @@ ENABLE_LANGUAGE(Fortran)
 INCLUDE(FortranCInterface)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
-SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+# Add the cmake/CMakeLists.txt file
+SET (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 
 # need to get the cmake_fortran_c_interface.h header
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
@@ -28,6 +30,17 @@ IF (${HOMME_QUAD_PREC})
 ENDIF ()
 
 #MESSAGE(STATUS "CMAKE_IMP_LIBS=${CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES}")
+
+# CPRNC for diffing Netcdf files
+OPTION(USE_CPRNC "Whether to use cprnc for testing" FALSE)
+
+IF (${USE_CPRNC})
+  find_package(Cprnc REQUIRED)
+ELSE ()
+  MESSAGE(STATUS "Not using CPRNC - testing will be incomplete")
+ENDIF ()
+
+INCLUDE(CTest)
 ENABLE_TESTING()
 
 # need to tell the source to use this capability
@@ -72,9 +85,6 @@ if(REFSOLN)
   MESSAGE(STATUS "Including option to read or write reference soln data...")
   ADD_DEFINITIONS(-D_REFSOLN)
 endif()
-
-# Add the cmake/CMakeLists.txt file
-SET (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 #ADD_SUBDIRECTORY(cmake)
 

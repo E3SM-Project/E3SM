@@ -10,11 +10,14 @@ HOMME_TESTING_DIR=${HOMME_DIR}/tests
 # The "type" of submission (lsf, pbs, standard mpi etc.) for creating the executable scripts 
 HOMME_Submission_Type=@Homme_Submission_Type@
 
+# The cprnc Netcdf comparison tool
+CPRNC_BINARY=@CPRNC_BINARY@
+
 # The lists of tests to run
-source submission-list.sh
+source ${HOMME_DIR}/tests/submission-list.sh
 
 # The testing utilities
-source testing-utils.sh
+source ${HOMME_DIR}/tests/testing-utils.sh
 
 if [ "$HOMME_Submission_Type" = lsf ]; then
   # Submit the tests to the queue
@@ -32,3 +35,5 @@ else
 fi
 
 diffStdOut
+
+diffCprnc
