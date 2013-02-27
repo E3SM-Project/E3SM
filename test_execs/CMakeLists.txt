@@ -41,6 +41,9 @@ CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/testing-utils.sh
 # The first CMake test is running
 ADD_TEST(submitAndRunTests ${CMAKE_BINARY_DIR}/tests/submit_tests.sh)
 
+# Set the time limit to submit and run the tests at three hours
+SET_TESTS_PROPERTIES(submitAndRunTests PROPERTIES TIMEOUT 10800)
+
 IF(${BUILD_HOMME_PREQX})
   ADD_SUBDIRECTORY(baroA)
   ADD_SUBDIRECTORY(baroB)

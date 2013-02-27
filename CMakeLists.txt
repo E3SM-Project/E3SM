@@ -120,7 +120,10 @@ ENDIF ()
 # Intel specific flags
 IF (${CMAKE_Fortran_COMPILER_ID} STREQUAL Intel)
   SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -assume byterecl")
-  SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fp-model precise")
+  SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fp-model precise -ftz")
+  SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -g -O3")
+  SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -traceback")
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O2")
 ENDIF ()
 
 IF(HOMME_FIND_BLASLAPACK)
