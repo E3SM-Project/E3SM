@@ -34,16 +34,15 @@
  />  
 <!---  PNETCDF_PATH="/glade/u/home/jedwards/pnetcdf/svn1163/intel/" --->
 <yellowstone
-
   PNETCDF_PATH="${PNETCDF}"
   NETCDF_PATH="${NETCDF}"
   ENV_MP_LABELIO="yes"
   ENV_MP_MPILIB="mpich2"
-  CXX="icpc"
-  CC="icc"
-  FC="ifort"
-  MPIFC="mpiifort"
-  MPICC="mpiicc"
+  CXX="mpiicpc"
+  CC="mpicc"
+  FC="mpif90"
+  MPIFC="mpif90"
+  MPICC="mpicc"
   MPICXX="mpiicpc"
   FFLAGS = " -ip -no-prec-div -free -g -traceback"
   CFLAGS = "  -g -traceback"
@@ -53,6 +52,7 @@
   run = "mpirun.lsf"
   corespernode="32"
   conopts="--enable-filesystem-hints=gpfs --with-piovdc=/glade/p/work/jedwards/libpiovdc/1.0/intel"
+  netcdf4="true"
   preamble = '
 #BSUB -q small
 #BSUB -N
