@@ -16,7 +16,7 @@
   CFLAGS = " -O -g -traceback"
   CPPDEFS= "-DFORTRANUNDERSCORE "
   workdir="/ampstmp/${USER}/testpio"
-  submit="bsub < "
+  submit="bsub &lt; "
   run = "mpirun.lsf"
   corespernode="12"
   conopts="--enable-filesystem-hints=gpfs "
@@ -32,7 +32,9 @@
 #BSUB -W 3:00
 "
  />  
-<!---  PNETCDF_PATH="/glade/u/home/jedwards/pnetcdf/svn1163/intel/" --->
+
+<!--  PNETCDF_PATH="/glade/u/home/jedwards/pnetcdf/svn1163/intel/" -->
+
 <yellowstone
   PNETCDF_PATH="${PNETCDF}"
   NETCDF_PATH="${NETCDF}"
@@ -48,7 +50,7 @@
   CFLAGS = "  -g -traceback"
   CPPDEFS= "-DFORTRANUNDERSCORE  "
   workdir="/glade/scratch/${USER}/testpio"
-  submit="bsub < "
+  submit="bsub &lt; "
   run = "mpirun.lsf"
   corespernode="32"
   conopts="--enable-filesystem-hints=gpfs --with-piovdc=/glade/p/work/jedwards/libpiovdc/1.0/intel"
@@ -80,7 +82,7 @@
   CFLAGS = " "
   CPPDEFS= "-DFORTRANUNDERSCORE  "
   workdir="/glade/scratch/${USER}/testpio_pgi"
-  submit="bsub < "
+  submit="bsub &lt; "
   run = "mpirun.lsf"
   corespernode="16"
   conopts="--enable-filesystem-hints=gpfs "
@@ -242,10 +244,6 @@
   testsuites = "snet "
 />  
 
-
-
-
-
 <titan
   MPIFC = "ftn "
   MPICC = "cc "
@@ -380,7 +378,6 @@
   MPICC  = "cc "
   FC    = "ftn"
   CC     = "cc"
-  LDLIBS = " "
   CPPDEFS = " -DFORTRANUNDERSCORE"
   NETCDF_PATH = "${NETCDF}"
   LDLIBS="`$NETCDF/bin/nc-config --flibs` -lssl -lcrypto -ldl -lz -L/contrib/libidn/1.19/gnu/lib -lidn -L/opt/cray/pmi/1.0-1.0000.8160.39.1.ss/lib64 -lpmi"

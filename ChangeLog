@@ -1,6 +1,54 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_6_3
+Originator(s): Jim
+Date: 02-28-2013
+One-line Summary: Remove indep mode calls from pnetcdf interface
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+	 testpio/testpio.F90  - reordered write of integer test file, useful for debugging
+	 testpio/testpio_run.pl - fix netcdf4 test match
+	 testpio/build_defaults.xml - update yellowstone interface to work with netcdf4 tests
+	                                           a minor change to make the file xml compliant
+	 testpio/check_mod.F90 - update test to avoid underflow warning
+	 testpio/Utils.pm - update modules loaded for yellowstone
+	                            a minor change to support xml compliance in build_defaults.xml
+	 pio/configure.ac  - fix sizeof test issue
+	 pio/configure
+	 pio/calcdisplace_mod.F90 - remove intent from pointer argument
+	 pio/pionfput_mod.F90.in  - rework interface to pnetcdf to avoid indep_mode
+	 pio/pionfput_mod.F90
+	 pio/piolib_mod.F90 - add gensubarray routine to create subarray mpitype 
+	 pio/piovdc.F90 - reindent file
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+Code reviewed by: Jim
+
+Summary of pre-tag testing:
+
+  Regression tests:  test complete on yellowstone 103 tests PASS, 0 tests FAIL
+                    test complete on titan 102 tests PASS, 0 tests FAIL
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_6_2
 Originator(s): jim
 Date: 02-07-2013
