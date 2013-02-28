@@ -8,6 +8,7 @@ HOMME_NCRESULTS_DIR=@Homme_NCResults_DIR@
 
 # The location of the tests directory
 HOMME_TESTING_DIR=${HOMME_DIR}/tests
+cd $HOMME_TESTING_DIR
 
 # The "type" of submission (lsf, pbs, standard mpi etc.) for creating the executable scripts 
 HOMME_Submission_Type=@Homme_Submission_Type@
@@ -36,6 +37,6 @@ else
   runTestsStd
 fi
 
-#diffStdOut
+# parse the stdout to grab only the relevant info
+parseStdout
 
-#diffCprnc

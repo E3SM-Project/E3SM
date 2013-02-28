@@ -146,37 +146,37 @@ queueWait() {
 
 }
 
-diffStdOut() {
-
-  # Should be a unique file
-  diffFile="diff.${SUBMIT_JOB_ID[0]}"
-  echo "Concatenating all diff output into $diffFile"
-
-  # Then diff with the stored results (yellowstone only)
-  for i in $(seq 0 $(( ${#SUBMIT_TEST[@]} - 1)))
-  do
-    THIS_TEST=${SUBMIT_TEST[$i]}
-
-    # Need to remove "-run" from the test name
-    #   This is an ugly hack but otherwise this takes a lot of reformatting
-    THIS_TEST=`echo $THIS_TEST | sed 's/-run//'`
-
-    # The following is not very clean
-    NEW_RESULT=${HOMME_TESTING_DIR}/${THIS_TEST}.stdout.${SUBMIT_JOB_ID[$i]}
-    SAVED_RESULT=${HOMME_TEST_RESULTS}/${THIS_TEST}/${THIS_TEST}.stdout
-
-    # TODO: make sure these files exist
-    if [ -f $NEW_RESULT ]; then
-      stripAppendage $NEW_RESULT
-      echo "diff $NEW_RESULT $SAVED_RESULT" >> $diffFile
-      # append the output to 
-      diff $NEW_RESULT $SAVED_RESULT >> $diffFile
-    else
-      echo "Result $NEW_RESULT does not exist. Perhaps job ${SUBMIT_JOB_ID[$i]} crashed or was killed"
-    fi
-
-  done
-}
+#diffStdOut() {
+#
+#  # Should be a unique file
+#  diffFile="diff.${SUBMIT_JOB_ID[0]}"
+#  echo "Concatenating all diff output into $diffFile"
+#
+#  # Then diff with the stored results (yellowstone only)
+#  for i in $(seq 0 $(( ${#SUBMIT_TEST[@]} - 1)))
+#  do
+#    THIS_TEST=${SUBMIT_TEST[$i]}
+#
+#    # Need to remove "-run" from the test name
+#    #   This is an ugly hack but otherwise this takes a lot of reformatting
+#    THIS_TEST=`echo $THIS_TEST | sed 's/-run//'`
+#
+#    # The following is not very clean
+#    NEW_RESULT=${HOMME_TESTING_DIR}/${THIS_TEST}.stdout.${SUBMIT_JOB_ID[$i]}
+#    SAVED_RESULT=${HOMME_TEST_RESULTS}/${THIS_TEST}/${THIS_TEST}.stdout
+#
+#    # TODO: make sure these files exist
+#    if [ -f $NEW_RESULT ]; then
+#      stripAppendage $NEW_RESULT
+#      echo "diff $NEW_RESULT $SAVED_RESULT" >> $diffFile
+#      # append the output to 
+#      diff $NEW_RESULT $SAVED_RESULT >> $diffFile
+#    else
+#      echo "Result $NEW_RESULT does not exist. Perhaps job ${SUBMIT_JOB_ID[$i]} crashed or was killed"
+#    fi
+#
+#  done
+#}
 
 submitTestsToLSF() {
 
@@ -423,3 +423,64 @@ diffCprnc() {
   done
 }
 
+diffStdout() {
+
+  PARSE_RESULT=${HOMME_TESTING_DIR}/${TEST_NAME}.stdout
+  SAVED_RESULT=${HOMME_TEST_RESULTS}/${TEST_NAME}/${TEST_NAME}.stdout
+
+  cmd="${PYTHON_EXECUTABLE} diffTol.py --maxTol=1.e-12 ${PARSE_RESULT} ${SAVED_RESULT}"
+
+  echo $cmd
+
+  diffOutput=$( $cmd )
+  diffCode=$?
+
+  if [ "$diffCode" == 0 ] ; then
+    # parse output to get status
+    fileDifference=`echo $diffOutput | awk  '{print $3}'`
+
+    if [ "${fileDifference}" == identical ]; then
+      echo "${diffOutput}"
+      exit 0
+    elif [ "${fileDifference}" == similar ]; then 
+      echo "${diffOutput}"
+      exit 0
+    elif [ "${fileDifference}" == different ]; then
+      echo "${diffOutput}"
+      exit -1
+    else
+      echo "File comparison failed to yield expected result (identical,simlar,different)"
+      echo "diffTol Output: ${diffOutput}"
+      exit -1
+    fi
+
+  else
+    echo "$cmd failed with error code $diffCode"
+    echo "diffTol Output: ${diffOutput}"
+    exit -1
+  fi
+
+}
+
+parseStdout() {
+
+  # Then diff with the stored results (yellowstone only)
+  for i in $(seq 0 $(( ${#SUBMIT_TEST[@]} - 1)))
+  do
+    THIS_TEST=${SUBMIT_TEST[$i]}
+
+    # Need to remove "-run" from the test name
+    #   This is an ugly hack but otherwise this takes a lot of reformatting
+    THIS_TEST=`echo $THIS_TEST | sed 's/-run//'`
+
+    # The following is not very clean
+    NEW_RESULT=${HOMME_TESTING_DIR}/${THIS_TEST}.stdout.${SUBMIT_JOB_ID[$i]}
+    PARSE_RESULT=${HOMME_TESTING_DIR}/${THIS_TEST}.stdout
+
+    if [ "$HOMME_Submission_Type" = lsf ]; then
+      stripAppendage $NEW_RESULT
+    fi
+    grep -e '=' ${NEW_RESULT} | grep -iv bsub | grep -ive 't_init' > ${PARSE_RESULT}
+
+  done
+}

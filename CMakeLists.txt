@@ -4,6 +4,11 @@ ENABLE_LANGUAGE(Fortran)
 INCLUDE(FortranCInterface)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+
+# For testing
+INCLUDE(CTest)
+ENABLE_TESTING()
+
 # Add the cmake/CMakeLists.txt file
 SET (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -42,8 +47,8 @@ ELSE ()
     "Not using CPRNC to diff the Netcdf files, only diffing stdout")
 ENDIF ()
 
-INCLUDE(CTest)
-ENABLE_TESTING()
+# Use python for 
+find_package(PythonInterp REQUIRED)
 
 # need to tell the source to use this capability
 ADD_DEFINITIONS(-DINCLUDE_CMAKE_FCI)
