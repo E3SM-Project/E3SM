@@ -12,6 +12,9 @@ HOMME_TESTING_DIR=${HOMME_DIR}/tests
 # The "type" of submission (lsf, pbs, standard mpi etc.) for creating the executable scripts 
 HOMME_Submission_Type=@Homme_Submission_Type@
 
+# 
+USE_CPRNC=@TEST_USING_CPRNC@
+
 # The cprnc Netcdf comparison tool
 CPRNC_BINARY=@CPRNC_BINARY@
 
@@ -25,4 +28,12 @@ source ${HOMME_DIR}/tests/testing-utils.sh
 TEST_NAME=$1
 echo "TEST_NAME=${TEST_NAME}"
 
-diffCprnc
+echo "Diffing the stdout of the run:"
+diffStdout
+
+if [ "${USE_CPRNC}" == true ] ; then
+  echo "Diffing the Netcdf output files"
+  diffCprnc
+else
+  echo "Not diffing the Netcdf output"
+fi

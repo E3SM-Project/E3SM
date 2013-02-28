@@ -39,6 +39,8 @@ CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/testing-utils.sh
                ${CMAKE_BINARY_DIR}/tests/testing-utils.sh COPYONLY)
 
 # The first CMake test is running
+#   this is a little awkward because submit_tests.sh uses 
+#   submissions-list.sh which hasn't been created yet.
 ADD_TEST(submitAndRunTests ${CMAKE_BINARY_DIR}/tests/submit_tests.sh)
 
 # Set the time limit to submit and run the tests at three hours

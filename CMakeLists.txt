@@ -32,12 +32,14 @@ ENDIF ()
 #MESSAGE(STATUS "CMAKE_IMP_LIBS=${CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES}")
 
 # CPRNC for diffing Netcdf files
-OPTION(USE_CPRNC "Whether to use cprnc for testing" FALSE)
+OPTION(TEST_USING_CPRNC "Whether to use cprnc for testing" FALSE)
 
-IF (${USE_CPRNC})
+IF (${TEST_USING_CPRNC})
   find_package(Cprnc REQUIRED)
+  MESSAGE(STATUS "Using CPRNC to diff the Netcdf files")
 ELSE ()
-  MESSAGE(STATUS "Not using CPRNC - testing will be incomplete")
+  MESSAGE(STATUS 
+    "Not using CPRNC to diff the Netcdf files, only diffing stdout")
 ENDIF ()
 
 INCLUDE(CTest)
