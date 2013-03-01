@@ -4,7 +4,8 @@
 HOMME_DIR=@Homme_Build_DIR@
 HOMME_TEST_RESULTS=@Homme_Results_DIR@
 
-HOMME_NC_RESULTS_DIR=/glade/scratch/jamroz/homme-results/yellowstone.intel
+# The location of the Netcdf reference files (if they exist)
+HOMME_NC_RESULTS_DIR=@NETCDF_RESULTS_DIR@
 
 # The location of the tests directory
 HOMME_TESTING_DIR=${HOMME_DIR}/tests
@@ -30,14 +31,16 @@ source ${HOMME_DIR}/tests/testing-utils.sh
 
 # Get the argument
 TEST_NAME=$1
-echo "TEST_NAME=${TEST_NAME}"
+echo "Test name = ${TEST_NAME}"
 
 echo "Diffing the stdout of the run:"
 diffStdout
 
-if [ "${USE_CPRNC}" == true ] ; then
+if [ "${USE_CPRNC}" == ON -o "${USE_CPRNC}" == TRUE ] ; then
   echo "Diffing the Netcdf output files"
   diffCprnc
 else
   echo "Not diffing the Netcdf output"
 fi
+
+exit 0

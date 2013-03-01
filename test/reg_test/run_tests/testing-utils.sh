@@ -359,10 +359,8 @@ execLine() {
 
 diffCprnc() {
 
-  echo "Diffing the netcdf files using cprnc"
-
   if [ ! -f "${CPRNC_BINARY}" ] ; then
-    echo "netcdf differencing tool cprnc not found"
+    echo "Netcdf differencing tool cprnc not found"
     exit -1
   fi
 
@@ -441,10 +439,8 @@ diffStdout() {
 
     if [ "${fileDifference}" == identical ]; then
       echo "${diffOutput}"
-      exit 0
     elif [ "${fileDifference}" == similar ]; then 
       echo "${diffOutput}"
-      exit 0
     elif [ "${fileDifference}" == different ]; then
       echo "${diffOutput}"
       exit -1
