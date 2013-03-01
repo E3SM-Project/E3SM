@@ -282,6 +282,14 @@ macro(createTest testName)
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
 
+  # Need to create the restart directory for restart files
+  EXECUTE_PROCESS(COMMAND mkdir -p ${THIS_TEST_DIR}/restart
+    RESULT_VARIABLE Homme_result
+    OUTPUT_VARIABLE Homme_output
+    ERROR_VARIABLE Homme_error
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+
   # Add this test to the list of tests
   MATH(EXPR NUM_TEST_FILES "${NUM_TEST_FILES} + 1")
   FILE (APPEND ${HOMME_TEST_LIST} "test_file${NUM_TEST_FILES}=${THIS_TEST_SCRIPT}\n")

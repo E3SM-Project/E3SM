@@ -91,13 +91,18 @@ if __name__=="__main__":
       file2EOF = True
       continue
 
+    # 
+    if (file1EOF and not file2EOF) or (not file1EOF and file2EOF):
+      print "Files are different"
+      sys.exit(2) 
+
     # Now loop through both of the lines
     strings1 = line1.split()
     strings2 = line2.split()
     
     if len(strings1) != len(strings2):
       print "Files are different"
-      sys.exit(2) 
+      sys.exit(3) 
     else:
       # loop over the items in the range
       for index in range(len(strings1)):
@@ -107,13 +112,15 @@ if __name__=="__main__":
           tolerance.checkTol(float(strings1[index]),float(strings2[index]))
         else:    
           print "Files are different"
-          sys.exit(3) 
+          sys.exit(4) 
   
   # Test to determine the level of similarity
   if tolerance.tol == 0.0:
     print "Files are identical"
+    sys.exit(0) 
   elif tolerance.tol < maxTol:
     print "Files are similar with differences", tolerance.tol, "less than", maxTol
+    sys.exit(0) 
   else:
     print "Files are different at tolerance", maxTol
-  sys.exit(0) 
+    sys.exit(-1) 
