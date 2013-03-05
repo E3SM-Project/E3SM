@@ -571,8 +571,8 @@ contains
     real (kind=real_kind) :: dt              ! "timestep dependent" timestep
 !   variables used to calculate CFL
     real (kind=real_kind) :: dtnu            ! timestep*viscosity parameter
-    real (kind=real_kind) :: dt_dyn          ! viscosity timestep used in dynamics
-    real (kind=real_kind) :: dt_tracers      ! viscosity timestep used in tracers
+    real (kind=real_kind) :: dt_dyn_vis      ! viscosity timestep used in dynamics
+    real (kind=real_kind) :: dt_tracer_vis      ! viscosity timestep used in tracers
 
     real (kind=real_kind) :: dp        
 
@@ -604,21 +604,25 @@ contains
     ! compute most restrictive dt*nu for use by variable res viscosity: 
     if (tstep_type.eq.0) then
        ! LF case: no tracers, timestep seen by viscosity is 2*tstep
-       dt_tracers = 0  
-       dt_dyn = 2*tstep
+       dt_tracer_vis = 0  
+       dt_dyn_vis = 2*tstep
        dtnu = 2.0d0*tstep*max(nu,nu_div)
     endif
     if (tstep_type.eq.1) then
        ! compute timestep seen by viscosity operator:
        if (qsplit==1) then
-          dt_dyn = tstep   ! dynamics uses pure RK2 method
+          dt_dyn_vis = tstep   ! dynamics uses pure RK2 method
        else
-          dt_dyn = 2*tstep  ! dynamics uses RK2 + (qsplit-1) LF.  LF viscosity uses 2dt. 
+          dt_dyn_vis = 2*tstep  ! dynamics uses RK2 + (qsplit-1) LF.  LF viscosity uses 2dt. 
        endif
-       dt_tracers=tstep*qsplit
+       dt_tracer_vis=tstep*qsplit
 
-       ! compute most restrictive condition:
-       dtnu=max(dt_dyn*max(nu,nu_div), dt_tracers*nu_q)
+       ! compute most restrictive condition: 
+       ! note: dtnu ignores subcycling 
+       dtnu=max(dt_dyn_vis*max(nu,nu_div), dt_tracer_vis*nu_q)
+       ! compute actual viscosity timesteps with subcycling
+       dt_tracer_vis = dt_tracer_vis/hypervis_subcycle_q
+       dt_dyn_vis = dt_dyn_vis/hypervis_subcycle
     endif
     ! timesteps to use for advective stability:  tstep*qsplit and tstep
     call print_cfl(elem,hybrid,nets,nete,dtnu)
@@ -965,10 +969,11 @@ contains
     if (hybrid%masterthread) then 
        ! CAM has set tstep based on dtime before calling prim_init2(), 
        ! so only now does HOMME learn the timstep.  print them out:
+       write(iulog,'(a,2f9.2)') "dt_remap: (0=disabled)   ",tstep*qsplit*rsplit
        write(iulog,'(a,2f9.2)') "dt_tracer, per RK stage: ",tstep*qsplit,(tstep*qsplit)/(rk_stage_user-1)
        write(iulog,'(a,2f9.2)') "dt_dyn, per RK stage:    ",tstep*qsplit,tstep
-       write(iulog,'(a,2f9.2)') "dt_dyn_viscosity:        ",dt_dyn
-       write(iulog,'(a,2f9.2)') "dt_tracer_viscosity:     ",tstep*qsplit
+       write(iulog,'(a,2f9.2)') "dt_dyn (viscosity):      ",dt_dyn_vis
+       write(iulog,'(a,2f9.2)') "dt_tracer (viscosity):   ",dt_tracer_vis
 
  
 #ifdef CAM
@@ -1614,14 +1619,14 @@ contains
     use parallel_mod, only: global_shared_buf, global_shared_sum
     use kinds, only : real_kind
     use hybvcoord_mod, only : hvcoord_t
-    use physical_constants, only : Cp, cpwater_vapor,g,dd_pi
-    use physics_mod, only : Virtual_Specific_Heat
+    use physical_constants, only : Cp 
     use time_mod, only : timelevel_t, TimeLevel_Qdp
-    use control_mod, only : moisture, traceradv_total_divergence,energy_fixer, use_cpstar, qsplit
+    use control_mod, only : energy_fixer, use_cpstar
     use hybvcoord_mod, only : hvcoord_t
     use global_norms_mod, only: wrap_repro_sum
+    use parallel_mod, only : abortmp
     type (hybrid_t), intent(in)           :: hybrid  ! distributed parallel structure (shared)
-    integer :: t1,t2,t3,n,nets,nete,t_beta, t_beta_qdp, t1_qdp, t2_qdp
+    integer :: t2,n,nets,nete
     type (element_t)     , intent(inout), target :: elem(:)
     type (hvcoord_t)                  :: hvcoord
     type (TimeLevel_t), intent(inout)       :: tl
@@ -1630,42 +1635,16 @@ contains
     real (kind=real_kind), dimension(np,np,nlev)  :: dp   ! delta pressure
     real (kind=real_kind), dimension(np,np,nlev)  :: sumlk
     real (kind=real_kind), dimension(np,np)  :: suml
-    real (kind=real_kind) :: cp_star,qval
 
-    real (kind=real_kind) :: psum(nets:nete,3),psum_g(3),beta,scale
-    logical :: use_cp_star
+    real (kind=real_kind) :: psum(nets:nete,3),psum_g(3),beta
 
-! energy_fixer
-!     1          cp_star(t1)*dp(t1)*T(t2)         (staggered)
-!     2          cp*dp(t1)*T(t2)                  (staggered)
-!     3          cp_star(t2)*dp(t2)*T(t2)
-!     4          cp*dp(t2)*T(t2)
-!
-    t1=tl%n0     ! timelevel for cp_star dp 
+
     t2=tl%np1    ! timelevel for T
-    call TimeLevel_Qdp( tl, qsplit, t1_qdp, t2_qdp) 
-    
-    use_cp_star = (use_cpstar.eq.1)  ! by default, use global value
-    ! but override to false for certain fixers:
-    if (energy_fixer==2) use_cp_star = .false.   
-    if (energy_fixer==4) use_cp_star = .false.
-    
-    t_beta = t1
-    t_beta_qdp = t1_qdp
-    scale = 2.0
-    if (energy_fixer==3 .or. energy_fixer==4) then
-       t_beta=t2
-       t_beta_qdp = t2_qdp
-       scale = 1.0
+
+    if (use_cpstar /= 0 ) then
+       call abortmp('Energy fixer requires use_cpstar=0')
     endif
-    ! with staggered-in-time formula:
-    !    compute <dp cp_star> at t1   
-    !    E(Tnew) =(< dp(t1) cp_star(t1) (T(t2)+beta) > + < dp(t2) cp_star(t2) T(t1) >)/2 
-    !    E(Tnew)-E(t2) = < dp(t1) cp_star(t1) beta >/2
-    ! with everyting at t2: 
-    !    compute <dp cp_star> at t2   
-    !    E(Tnew)-E(t2) = < dp(t2) cp_star(t2) beta >
-    !
+
 
     psum = 0
     do ie=nets,nete
@@ -1675,23 +1654,16 @@ contains
 #endif
        do k=1,nlev
           dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,t_beta)
+               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,t2)
        enddo
        suml=0
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k, j, i, qval, cp_star)
+!$omp parallel do private(k, j, i)
 #endif
        do k=1,nlev
           do i=1,np
           do j=1,np
-             if(use_cp_star)  then
-                qval = elem(ie)%state%Qdp(i,j,k,1,t_beta_qdp)/dp(i,j,k)
-                cp_star= Virtual_Specific_Heat(qval)
-                sumlk(i,j,k) = cp_star*dp(i,j,k) 
-             else
                 sumlk(i,j,k) = cp*dp(i,j,k) 
-             endif
-
           enddo
           enddo
        enddo
@@ -1705,17 +1677,10 @@ contains
        enddo
        psum(ie,3) = psum(ie,3) + SUM(suml(:,:)*elem(ie)%spheremp(:,:))
        do n=1,2
-          if (use_cp_star ) then
-             psum(ie,n) = psum(ie,n) + SUM(  elem(ie)%spheremp(:,:)*&
-                                    (elem(ie)%accum%PEner(:,:,n) + &
-                                    elem(ie)%accum%IEner(:,:,n) + &
-                                    elem(ie)%accum%KEner(:,:,n) ) )
-          else
              psum(ie,n) = psum(ie,n) + SUM(  elem(ie)%spheremp(:,:)*&
                                     (elem(ie)%accum%PEner(:,:,n) + &
               (elem(ie)%accum%IEner(:,:,n)-elem(ie)%accum%IEner_wet(:,:,n)) + &
                                     elem(ie)%accum%KEner(:,:,n) ) )
-          endif
        enddo
     enddo
     do ie=nets,nete
@@ -1727,7 +1692,7 @@ contains
     do n=1,3
        psum_g(n) = global_shared_sum(n)
     enddo
-    beta = scale*( psum_g(1)-psum_g(2) )/psum_g(3)
+    beta = ( psum_g(1)-psum_g(2) )/psum_g(3)
     do ie=nets,nete
        elem(ie)%state%T(:,:,:,t2) =  elem(ie)%state%T(:,:,:,t2) + beta
     enddo
