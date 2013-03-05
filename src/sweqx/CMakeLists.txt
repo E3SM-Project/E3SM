@@ -6,15 +6,18 @@ SET(SRC_BASE    ${CMAKE_CURRENT_SOURCE_DIR}/..)
 SET(SRC_SHARE   ${SRC_BASE}/share)
 SET(SRC_UTILS   ${SRC_BASE}/../utils/csm_share)
 
+
+# Make INCLUDE_DIRS global so the tests can access it
+SET (SWEQX_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
+                        ${TIMING_INCLUDE_DIRS} CACHE INTERNAL "include directories for sweqx")
+
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
-                    ${PIO_INCLUDE_DIRS}
-                    ${TIMING_INCLUDE_DIRS}
-                    ${CMAKE_CURRENT_SOURCE_DIR})
+                    ${SWEQX_INCLUDE_DIRS})
 
 CONFIGURE_FILE(config.h.cmake.in config.h)
 ADD_DEFINITIONS(-DHAVE_CONFIG_H)
 
-SET(SRCS_F90
+SET(SWEQX_SRCS
                ${SRC_BASE}/advance_mod.F90
                ${SRC_BASE}/checksum_mod.F90
                ${SRC_BASE}/common_io_mod.F90
@@ -87,10 +90,41 @@ SET(SRCS_F90
 
 )
 
-ADD_LIBRARY(homme_sweqx ${SRCS_F90})
-TARGET_LINK_LIBRARIES(homme_sweqx pio timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+SET(SWEQX_SRCS ${SWEQX_SRCS} ${SRC_BASE}/main.F90 CACHE INTERNAL "Sources for sweqx")
 
-ADD_EXECUTABLE(sweqx ${SRC_BASE}/main.F90)
-TARGET_LINK_LIBRARIES(sweqx homme_sweqx)
-INSTALL(TARGETS sweqx
-        RUNTIME DESTINATION bin)
+# Set up defaults
+IF (NOT SWEQX_NP)
+  SET (SWEQX_NP 8) 
+ENDIF ()
+IF (NOT SWEQX_PLEV)
+  SET (SWEQX_PLEV 4) 
+ENDIF ()
+IF (NOT SWEQX_USE_PIO)
+  SET (SWEQX_USE_PIO FALSE) 
+ENDIF ()
+IF (NOT SWEQX_USE_ENERGY)
+  SET (SWEQX_USE_ENERGY FALSE) 
+ENDIF ()
+IF (NOT SWEQX_NC)
+  SET (SWEQX_NC 4)
+ENDIF ()
+IF (NOT SWEQX_NTRAC)
+  SET (SWEQX_NTRAC 1)
+ENDIF ()
+
+
+MESSAGE(STATUS "Building sweqx with:")
+MESSAGE(STATUS "  NP = ${SWEQX_NP}")
+MESSAGE(STATUS "  NC = ${SWEQX_NC}")
+MESSAGE(STATUS "  PLEV = ${SWEQX_PLEV}")
+MESSAGE(STATUS "  NTRAC = ${SWEQX_NTRAC}")
+MESSAGE(STATUS "  PIO = ${SWEQX_USE_PIO}")
+MESSAGE(STATUS "  ENERGY = ${SWEQX_USE_ENERGY}")
+
+# The following macro handles the compilation with the appropriate variables
+############################################################################
+# createTestExec(exec_name exec_type SRCS NP PLEV USE_PIO USE_ENERGY)
+############################################################################
+createTestExec(sweqx sweqx SWEQX_SRCS ${SWEQX_NP} ${SWEQX_NC} ${SWEQX_PLEV} 
+               ${SWEQX_NTRAC} ${SWEQX_USE_PIO} ${SWEQX_USE_ENERGY})
+

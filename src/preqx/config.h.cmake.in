@@ -9,7 +9,7 @@
 #undef MESH
 
 /* PIO with interpolation */
-#define PIO_INTERP 1
+#cmakedefine PIO_INTERP
 
 /* Number of cells NC*NC in each element (Default value NC=4) */
 #define NC @NUM_CELLS@
@@ -24,7 +24,7 @@
 #define PLEV @NUM_PLEV@
 
 /* Basic PIO */
-#undef PIO
+#cmakedefine PIO
 
 /* TIMING */
 #define TIMING 1
@@ -41,11 +41,10 @@
 /* _NO_OMP_THREADS */
 #define _NO_OMP_THREADS 1
 
-
-
 #define MOVIE _PIO
 
 #define TRILINOS 1
 
-#cmakedefine _Linux
-#cmakedefine _Darwin
+/* Quadruple-precision */
+#cmakedefine01 HOMME_QUAD_PREC
+

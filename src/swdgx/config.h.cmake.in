@@ -1,3 +1,6 @@
+/* SWDG Options */
+#define _SWDG 1
+
 /* Energy Diagnostics */
 #undef ENERGY_DIAGNOSTICS
 
@@ -49,4 +52,5 @@
 
 /* Quadruple-precision */
 #cmakedefine01 HOMME_QUAD_PREC
+
 

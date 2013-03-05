@@ -1,6 +1,6 @@
 # Relevant Directories within the HOMME repository
 # holding source files needed for building the library
-# and executable sweqx.
+# and executable preqx.
 
 INCLUDE_DIRECTORIES ( ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS} )
 LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS} )
@@ -11,15 +11,19 @@ SET(SRC_SHARE_DIR   ${HOMME_SOURCE_DIR}/src/share)
 SET(PHYSICS_DIR     ${HOMME_SOURCE_DIR}/physics)
 SET(UTILS_TIMING_DIR ${HOMME_SOURCE_DIR}/utils/timing)
 
+# Make INCLUDE_DIRS global so the tests can access it
+SET (PREQX_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
+                        ${TIMING_INCLUDE_DIRS}
+                        ${SRC_SHARE_DIR} CACHE INTERNAL "include directories for preqx")
+
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
-                    ${PIO_INCLUDE_DIRS}
-                    ${TIMING_INCLUDE_DIRS}
-                    ${SRC_SHARE_DIR})
+                    ${PREQX_INCLUDE_DIRS})
 
 CONFIGURE_FILE(config.h.cmake.in config.h)
 ADD_DEFINITIONS(-DHAVE_CONFIG_H)
 
-SET(SRCS_PREQX ${SRC_SHARE_DIR}/kinds.F90
+# Make SRCS global so the tests can access it
+SET(PREQX_SRCS ${SRC_SHARE_DIR}/kinds.F90
 					     ${SRC_SHARE_DIR}/dimensions_mod.F90
 					     ${SRC_SHARE_DIR}/control_mod.F90
 					     ${SRC_SHARE_DIR}/physical_constants.F90
@@ -111,10 +115,41 @@ SET(SRCS_PREQX ${SRC_SHARE_DIR}/kinds.F90
 					     ${SRC_SHARE_DIR}/Manager.F90
 )
 
-ADD_LIBRARY(homme_preqx ${SRCS_PREQX})
-TARGET_LINK_LIBRARIES(homme_preqx pio timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 
-ADD_EXECUTABLE(preqx ${SRC_DIR}/prim_main.F90)
-TARGET_LINK_LIBRARIES(preqx homme_preqx)
-INSTALL(TARGETS preqx
-        RUNTIME DESTINATION bin)
+SET(PREQX_SRCS ${PREQX_SRCS} ${SRC_DIR}/prim_main.F90 CACHE INTERNAL "Sources for preqx")
+
+# Set up defaults
+IF (NOT PREQX_NP)
+  SET (PREQX_NP 8) 
+ENDIF ()
+IF (NOT PREQX_PLEV)
+  SET (PREQX_PLEV 20) 
+ENDIF ()
+IF (NOT PREQX_USE_PIO)
+  SET (PREQX_USE_PIO FALSE) 
+ENDIF ()
+IF (NOT PREQX_USE_ENERGY)
+  SET (PREQX_USE_ENERGY FALSE) 
+ENDIF ()
+IF (NOT PREQX_NC)
+  SET (PREQX_NC 4)
+ENDIF ()
+IF (NOT PREQX_NTRAC)
+  SET (PREQX_NTRAC 1)
+ENDIF ()
+
+MESSAGE(STATUS "Building preqx with:")
+MESSAGE(STATUS "  NP = ${PREQX_NP}")
+MESSAGE(STATUS "  NC = ${PREQX_NC}")
+MESSAGE(STATUS "  PLEV = ${PREQX_PLEV}")
+MESSAGE(STATUS "  NTRAC = ${PREQX_NTRAC}")
+MESSAGE(STATUS "  PIO = ${PREQX_USE_PIO}")
+MESSAGE(STATUS "  ENERGY = ${PREQX_USE_ENERGY}")
+
+# The following macro handles the compilation with the appropriate variables
+############################################################################
+# createTestExec(exec_name exec_type SRCS NP PLEV USE_PIO USE_ENERGY)
+############################################################################
+createTestExec(preqx preqx PREQX_SRCS ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} 
+               ${PREQX_NTRAC} ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY})
+

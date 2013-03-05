@@ -17,6 +17,42 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}
                     ${CMAKE_CURRENT_SOURCE_DIR}/share)
 
+# Set up swim specifc defaults 
+IF (NOT SWIM_NP)
+  SET (SWIM_NP 4 CACHE STRING "Default number of points (NP) in the element (default value is 4)")
+ENDIF ()
+IF (NOT SWIM_NC)
+  SET (SWIM_NC 4 CACHE STRING "Default number of cells (NC*NC) in each element (default value is 4)")
+ENDIF ()
+IF (NOT SWIM_PLEV)
+  SET (SWIM_PLEV 1 CACHE STRING "Default number of levels (PLEV) in each element (default value is 1)")
+ENDIF ()
+IF (NOT SWIM_NTRAC)
+  SET (SWIM_NTRAC 1 CACHE STRING "Default number of tracers (NTRAC) (default value is 1)")
+ENDIF ()
+
+MESSAGE(STATUS "Building swim with:")
+MESSAGE(STATUS "  NP = ${SWIM_NP}")
+MESSAGE(STATUS "  NC = ${SWIM_NC}")
+MESSAGE(STATUS "  PLEV = ${SWIM_PLEV}")
+MESSAGE(STATUS "  NTRAC = ${SWIM_NTRAC}")
+
+# For the configuration
+SET(NUM_POINTS ${SWIM_NP})
+SET(NUM_CELLS ${SWIM_NC})
+SET(NUM_PLEV ${SWIM_PLEV})
+SET(NUM_TRACERS ${SWIM_NTRAC})
+
+IF (${macroUSE_PIO})
+  SET(PIO TRUE)
+  SET(PIO_INTERP)
+ELSE ()
+  SET(PIO)
+  SET(PIO_INTERP TRUE)
+ENDIF ()
+
+SET(ENERGY_DIAGNOSTICS ${macroWITH_ENERGY})
+
 CONFIGURE_FILE(config.h.cmake.in config.h)
 ADD_DEFINITIONS(-DHAVE_CONFIG_H)
 
@@ -102,6 +138,9 @@ SET(SRCS_SWIM     ${SRC_TRIL}/donoxloca.cpp
                   ${SRC_BASE}/implicit_mod.F90
                   ${SRC_BASE}/precon_mod.F90
 )
+
+
+
 
 ADD_LIBRARY(homme_swim ${SRCS_F90} ${SRCS_SWIM})
 TARGET_LINK_LIBRARIES(homme_swim pio timing  ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
