@@ -24,7 +24,7 @@ rk_stage_user     = 0
 LFTfreq           = 1
 smooth            = 0
 nu                = 1.5e15
-nu_s              = 0
+nu_s              = 1.5e15
 hypervis_order    = 2
 hypervis_subcycle = 1
 /

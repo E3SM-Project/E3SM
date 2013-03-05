@@ -762,23 +762,17 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete,tQ
        t1=tl%n0
        t2=tl%np1
        call TimeLevel_Qdp(tl, qsplit, t1_qdp, t2_qdp) !get np1 into t2_qdp
-
-
     endif
 
-    tstagger = .false.
+
 
 ! energy_fixer
 !     <0         disabled, but compute energy non-staggered in time
-!     0          disabled, but compute energy staggered in time 
-!     1          cp_star(t1)*dp(t1)*T(t2)
-!     2          cp*dp(t1)*T(t2)
-!     3          cp_star(t2)*dp(t2)*T(t2)
-!     4          cp*dp(t2)*T(t2)
+!     0          disabled, but compute energy staggered in time (for use with leapfrog code)
+!    >0          Enabled.  energy fixer requires dry formulation (use_cpstar=0) and non-staggered in time
 !
+    tstagger = .false.
     if (energy_fixer==0) tstagger = .true.
-    if (energy_fixer==1) tstagger = .true.
-    if (energy_fixer==2) tstagger = .true.
 
 
     !   IE   Cp*dpdn*T  + (Cpv-Cp) Qdpdn*T
