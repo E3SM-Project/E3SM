@@ -41,8 +41,8 @@
   ENV_MP_LABELIO="yes"
   ENV_MP_MPILIB="mpich2"
   CXX="mpiicpc"
-  CC="mpicc"
-  FC="mpif90"
+  CC="mpcc"
+  FC="mpfort"
   MPIFC="mpif90"
   MPICC="mpicc"
   MPICXX="mpiicpc"
@@ -58,7 +58,7 @@
   preamble = '
 #BSUB -q small
 #BSUB -N
-#BSUB -x
+##BSUB -x
 #BSUB -a poe
 #BSUB -o testpio.%J.stdout
 #BSUB -e testpio.%J.stderr

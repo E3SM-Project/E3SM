@@ -1146,7 +1146,8 @@ contains
          'initdecomp: userearranger: ',userearranger, glength
 
     if(userearranger) then 
-       if(DebugAsync) print*,__PIO_FILE__,__LINE__
+       call MPI_BCAST(iosystem%num_aiotasks,1,mpi_integer,iosystem%iomaster,&
+            iosystem%my_comm,ierr)
        call rearrange_create( iosystem,compdof,dims,ndims,iodesc)
     endif
 
@@ -1357,7 +1358,8 @@ contains
     if(DebugAsync) print*,__PIO_FILE__,__LINE__
 
     if(userearranger) then 
-       if(DebugAsync) print*,__PIO_FILE__,__LINE__
+       call MPI_BCAST(iosystem%num_aiotasks,1,mpi_integer,iosystem%iomaster,&
+            iosystem%my_comm,ierr)
        call rearrange_create( iosystem,compdof,dims,ndims,iodesc)
     endif
 

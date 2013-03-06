@@ -783,37 +783,46 @@ end subroutine box_rearrange_io2comp_{TYPE}
     integer(kind=pio_offset),intent(in) :: lb(ndim,nioproc)
     integer(kind=pio_offset),intent(in) :: ub(ndim,nioproc)
     integer(kind=pio_offset),intent(in) :: lstride(ndim,nioproc)
-    integer,intent(out) :: io_proc
+    integer,intent(inout) :: io_proc
     integer(kind=pio_offset),intent(out) :: io_index
 
     character(len=*), parameter :: subName=modName//'::find_ioproc'
-    integer i,j
-    logical found
+    integer :: i,j, decompstep(ndim)
+    logical :: found
     integer(kind=pio_offset) :: lcoord(ndim)
     integer(kind=pio_offset)::  lindex
 
     found = .false.
-    io_proc  = -1
     io_index = -1
+    i = max(1,min(io_proc,nioproc))
+    decompstep=1
+    do j=1,ndim
+       if(minval(ub(j,:))<maxval(ub(j,:))) then
+          do i=2,nioproc
+             if(ub(j,i)>ub(j,1)) then
+                decompstep(j)=i-1
+                exit
+             endif
+          enddo
+       endif
+    enddo
 
-    loop_ioproc: do i=1,nioproc
-
+    loop_ioproc: do while(.not. found)
        do j=1,ndim
-          if ( gcoord(j) < lb(j,i) .or. &
-               gcoord(j) >= ub(j,i) ) then
+          if ( gcoord(j) < lb(j,i) ) then
+             i = i-decompstep(j)
+!             print *,__LINE__,i,gcoord(:),lb(:,i),ub(:,i)
+             cycle loop_ioproc
+          else  if(gcoord(j) >= ub(j,i) ) then
+             i = i+decompstep(j)
+!             print *,__LINE__,i,gcoord(:),lb(:,i),ub(:,i)
              cycle loop_ioproc
           endif
        end do
 
        ! gcoord matches this box
-       if (found) then
-          call piodie(__PIO_FILE__,__LINE__, 'multiple matches')
-       endif
-
        found = .true.
        io_proc = i           ! 1-based here
-       exit loop_ioproc
-
     end do loop_ioproc
 
     find_ioproc = found
@@ -872,6 +881,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     integer ioproc
     integer (kind=pio_offset) :: ioindex
 
+    ioproc = 0
     ! compute 0-based start array
 
     do i=1,nioproc
@@ -1056,7 +1066,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     ! compute io dest and indices
 
     call compute_dest(compdof, start, count, gsize, ndim,              &
-         Iosystem%num_iotasks, ioDesc%dest_ioproc, ioDesc%dest_ioindex )
+         Iosystem%num_aiotasks, ioDesc%dest_ioproc, ioDesc%dest_ioindex )
 
 #ifdef _MPISERIAL
 ! Version for use with mpi-serial. 
@@ -1746,7 +1756,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 !!!!!!!
     ! compute io dest and indices
 
-    call compute_dest( compdof,start,kount,gsize,ndim,Iosystem%num_iotasks, &
+    call compute_dest( compdof,start,kount,gsize,ndim,Iosystem%num_aiotasks, &
          ioDesc%dest_ioproc,ioDesc%dest_ioindex)
 
 
