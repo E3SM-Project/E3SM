@@ -1504,7 +1504,12 @@ contains
     integer, allocatable :: lstart(:), lcount(:)
 
     ndims = size(gdims)
-#ifndef _MPISERIAL
+#ifdef _MPISERIAL
+       iodesc2%elemtype=mpidatatype
+       iodesc2%filetype=mpidatatype          
+       iodesc2%n_elemtype = 0
+       iodesc2%n_words = 0
+#else
     if(sum(iodesc%count)>0) then
        allocate(lstart(ndims),lcount(ndims))
        lstart = 0
@@ -1526,19 +1531,19 @@ contains
        call checkmpireturn('mpi_type_create_subarray in initdecomp',ierr)
        call mpi_type_commit(iodesc2%filetype,ierr)
        call checkmpireturn('mpi_type_commit in initdecomp',ierr)
-       deallocate(lstart,lcount)    
+       deallocate(lstart,lcount)     
 
 #else
        iodesc2%filetype=mpi_datatype_null
 #endif
     else
-#else
        iodesc2%elemtype=mpidatatype
        iodesc2%filetype=mpidatatype          
        iodesc2%n_elemtype = 0
        iodesc2%n_words = 0
-#endif
     endif
+#endif
+    
 
 
 
