@@ -1,6 +1,43 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_6_5 
+Originator(s): Jim
+Date: 03-07-2013
+One-line Summary: minor change to work with mpi-serial
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+    piolib_mod.F90 : add ifdef around MPI datatype calls (not supported by mpi-serial lib)
+	
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+
+
+Code reviewed by: Jim
+
+Summary of pre-tag testing:
+
+  Regression tests:
+
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_6_4
 Originator(s): Jim
 Date: 03-06-2013

@@ -1504,7 +1504,7 @@ contains
     integer, allocatable :: lstart(:), lcount(:)
 
     ndims = size(gdims)
-
+#ifndef _MPISERIAL
     if(sum(iodesc%count)>0) then
        allocate(lstart(ndims),lcount(ndims))
        lstart = 0
@@ -1532,10 +1532,12 @@ contains
        iodesc2%filetype=mpi_datatype_null
 #endif
     else
+#else
        iodesc2%elemtype=mpidatatype
        iodesc2%filetype=mpidatatype          
        iodesc2%n_elemtype = 0
        iodesc2%n_words = 0
+#endif
     endif
 
 
