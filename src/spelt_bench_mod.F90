@@ -88,7 +88,7 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
   integer                                     :: face_nodep
   integer  choosetrac, chooselev   !for test reason the output
  !-----------------------------------------------------------------------------------!  
- choosetrac=2
+ choosetrac=1
  chooselev=1
  
   if(hybrid%masterthread) then 
@@ -106,17 +106,17 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
   
   gp=gausslobatto(np)
 ! ! for the np grid
-!   do i=1,nc
-!     tmp=abs(gp%points(i+1)-gp%points(i))/nipm
-!     refnep(1+(i-1)*nipm)=gp%points(i)
-!     refnep(2+(i-1)*nipm)=gp%points(i)+tmp
-!   end do
-!   refnep(nep)=gp%points(np)
-!  for the nc grid  
-  tmp=nep-1
-  do i=1,nep
-    refnep(i)= 2*(i-1)/tmp - 1
+  do i=1,nc
+    tmp=abs(gp%points(i+1)-gp%points(i))/nipm
+    refnep(1+(i-1)*nipm)=gp%points(i)
+    refnep(2+(i-1)*nipm)=gp%points(i)+tmp
   end do
+  refnep(nep)=gp%points(np)
+!  for the nc grid  
+!   tmp=nep-1
+!   do i=1,nep
+!     refnep(i)= 2*(i-1)/tmp - 1
+!   end do
   
   call v2pinit(deriv%Sfvm,gp%points,refnep,np,nep)
   
@@ -127,7 +127,7 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
         do j=1,nep
           do i=1,nep  
         ! define test example
-            if ((itr==1)) then
+            if ((itr==0)) then
               spelt(ie)%c(i,j,k,itr,tl%n0)=1.0D0    !density of the air
             else
               call analytical_function(spelt(ie)%c(i,j,k,itr,tl%n0),spelt(ie)%asphere(i,j),k,itr)
@@ -321,8 +321,8 @@ DO WHILE(tl%nstep<nmax) !nmax)
 ! ! end mcgregordss
 !   call spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !   call spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
-!   call spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
-  call spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
+  call spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
+!   call spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 
   call TimeLevel_update(tl,"forward") 
 !-----------------------------------------------------------------------------------! 

@@ -110,18 +110,18 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   real (kind=real_kind)                       :: tmp
   type (spherical_polar_t)                    :: tmpsphere
   
-  call t_startf('SPELT scheme') 
+!   call t_startf('SPELT scheme') 
   
   dt6  = tstep/ 6.0D0
   do ie=nets,nete 
     do k=1, nlev
 !       call solidbody_all(spelt(ie), dsphere1,dsphere2,contrauv,k) 
       !For Benchmark test
-!       call boomerang_all(spelt(ie), dsphere1,dsphere2,contrauv,k,tl%nstep)
+      call boomerang_all(spelt(ie), dsphere1,dsphere2,contrauv,k,tl%nstep)
       !For SE velocities
-      call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
-      call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)
-      call get_contravelocities(elem(ie),spelt(ie),contrauv, k,deriv)         
+!       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
+!       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)
+!       call get_contravelocities(elem(ie),spelt(ie),contrauv, k,deriv)         
       !search has not to be done for all tracers!
       
       do j=1,nep
@@ -203,16 +203,16 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
     call ghostVpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tl%np1, timelevels,elem(ie)%desc)
   end do
 !-----------------------------------------------------------------------------------! 
-  call t_startf('SPELT Communication') 
+!   call t_startf('SPELT Communication') 
   call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep,ntrac)
-  call t_stopf('SPELT Communication')
+!   call t_stopf('SPELT Communication')
 !-----------------------------------------------------------------------------------!  
-  call t_startf('SPELT Unpacking')  
+!   call t_startf('SPELT Unpacking')  
   do ie=nets,nete
     call ghostVunpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tl%np1, timelevels,elem(ie)%desc)
   end do
-  call t_stopf('SPELT Unpacking')
-  call t_stopf('SPELT scheme') 
+!   call t_stopf('SPELT Unpacking')
+!   call t_stopf('SPELT scheme') 
   
 end subroutine spelt_run
 
@@ -270,7 +270,7 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   
   integer                                     :: face_nodep
   
-  call t_startf('SPELT scheme') 
+!   call t_startf('SPELT scheme') 
     
   dt6  = tstep/ 6.0D0
   do ie=nets,nete 
@@ -369,9 +369,9 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
     call ghostVpackR(factorR, spelt(ie)%R,nhe,nc,nlev,ntrac,0,elem(ie)%desc)
   end do
        ! Anti diffusive flux are computed for each cell, done!
-  call t_startf('SPELT Communication1')      
+!   call t_startf('SPELT Communication1')      
   call ghost_exchangeV(hybrid,factorR,nhe,nc,ntrac)
-  call t_stopf('SPELT Communication1') 
+!   call t_stopf('SPELT Communication1') 
 
   do ie=nets,nete
     call ghostVunpackR(factorR, spelt(ie)%R, nhe, nc,nlev,ntrac,0,elem(ie)%desc)
@@ -422,16 +422,16 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
     call ghostVpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tl%np1, timelevels,elem(ie)%desc)
   end do
 !-----------------------------------------------------------------------------------! 
-  call t_startf('SPELT Communication2') 
+!   call t_startf('SPELT Communication2') 
   call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep,ntrac)
-  call t_stopf('SPELT Communication2')
+!   call t_stopf('SPELT Communication2')
 !-----------------------------------------------------------------------------------!  
-  call t_startf('SPELT Unpacking2')  
+!   call t_startf('SPELT Unpacking2')  
   do ie=nets,nete
     call ghostVunpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tl%np1, timelevels,elem(ie)%desc)
   end do
-  call t_stopf('SPELT Unpacking2')
-  call t_stopf('SPELT scheme')
+!   call t_stopf('SPELT Unpacking2')
+!   call t_stopf('SPELT scheme')
 end subroutine spelt_runpos
 
 
@@ -1420,20 +1420,20 @@ subroutine spelt_grid_init(elem,spelt,nets,nete,tl)
   do ie=nets,nete
     spelt(ie)%Facenumber=elem(ie)%FaceNum
     ! for the np grid
-!     if (np .ne. nc+1) then
-!       call haltmp("PARAMTER ERROR for SPELT, you are in gll grid point mode, use np = nc+1")
-!     endif
-!     gp=gausslobatto(np)
-!     spelt(ie)%pref=gp%points
+    if (np .ne. nc+1) then
+      call haltmp("PARAMTER ERROR for SPELT, you are in gll grid point mode, use np = nc+1")
+    endif
+    gp=gausslobatto(np)
+    spelt(ie)%pref=gp%points
     ! for the nc grid
-    dx=2.0D0/(nc)   ! equi-distant grid on reference element in both directions!
-    do j=1,nc+1
-      spelt(ie)%pref(j)=-1+(j-1)*dx
-    end do
+!     dx=2.0D0/(nc)   ! equi-distant grid on reference element in both directions!
+!     do j=1,nc+1
+!       spelt(ie)%pref(j)=-1+(j-1)*dx
+!     end do
 
     do j=1,nc
-!       spelt(ie)%dab(j)=abs(elem(ie)%cartp(j+1,1)%x-elem(ie)%cartp(j,1)%x)   ! for np grid
-      spelt(ie)%dab(j)=abs(elem(ie)%corners(1)%x-elem(ie)%corners(2)%x)/nc  ! for nc grid
+      spelt(ie)%dab(j)=abs(elem(ie)%cartp(j+1,1)%x-elem(ie)%cartp(j,1)%x)   ! for np grid
+!       spelt(ie)%dab(j)=abs(elem(ie)%corners(1)%x-elem(ie)%corners(2)%x)/nc  ! for nc grid
       do i=1,nc  
         spelt(ie)%drefx(i,j)=abs(spelt(ie)%pref(i+1)-spelt(ie)%pref(i)) 
         spelt(ie)%drefy(i,j)=abs(spelt(ie)%pref(j+1)-spelt(ie)%pref(j))
