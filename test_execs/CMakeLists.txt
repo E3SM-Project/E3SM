@@ -35,6 +35,7 @@ CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/submit_tests.sh
                ${CMAKE_BINARY_DIR}/tests/submit_tests.sh @ONLY)
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/diff_output.sh
                ${CMAKE_BINARY_DIR}/tests/diff_output.sh @ONLY)
+
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/testing-utils.sh
                ${CMAKE_BINARY_DIR}/tests/testing-utils.sh COPYONLY)
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/diffTol.py
@@ -43,7 +44,7 @@ CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/diffTol.py
 # The first CMake test is running
 #   this is a little awkward because submit_tests.sh uses 
 #   submissions-list.sh which hasn't been created yet.
-ADD_TEST(submitAndRunTests ${CMAKE_BINARY_DIR}/tests/submit_tests.sh)
+ADD_TEST(submitAndRunTests ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "all")
 
 # Set the time limit to submit and run the tests at three hours
 SET_TESTS_PROPERTIES(submitAndRunTests PROPERTIES TIMEOUT 10800)
@@ -76,16 +77,14 @@ IF(${BUILD_HOMME_SWDGX})
   createTest(swtc5-dg)
 ENDIF()
 
-# SNow create the submission-list.sh
+# End the file with the total number of test files
 FILE (APPEND ${HOMME_TEST_LIST} "\n")
 FILE (APPEND ${HOMME_TEST_LIST} "num_test_files=${NUM_TEST_FILES}\n")
 
 # Now create the submission-list.sh
 EXECUTE_PROCESS(
-  COMMAND ${CMAKE_BINARY_DIR}/tests/createRunScripts.sh
+  COMMAND ${CMAKE_BINARY_DIR}/tests/createRunScripts.sh "all"
   RESULT_VARIABLE CREATE_RUNS_RESULT
   OUTPUT_VARIABLE CREATE_RUNS_OUTPUT
-  ERROR_VARIABLE CREATE_RUNS_ERROR
-)
-
+  ERROR_VARIABLE CREATE_RUNS_ERROR)
 

@@ -105,8 +105,11 @@ printSubmissionSummary() {
 
   # Output a summary of the test name along with the bsub job id for easy reference
   echo "" # newline
-  echo "############################################################################"
-  echo "Summary of submissions"
+
+  if [ "${SUBMIT_ALL_AT_ONCE}" == true ] ; then
+    echo "############################################################################"
+    echo "Summary of submissions"
+  fi
   echo "############################################################################"
   for i in $(seq 0 $(( ${#SUBMIT_TEST[@]} - 1)))
   do
@@ -180,7 +183,9 @@ queueWait() {
 
 submitTestsToLSF() {
 
-  echo "Submitting ${num_submissions} jobs to queue"
+  if [ "${SUBMIT_ALL_AT_ONCE}" == true ] ; then
+    echo "Submitting ${num_submissions} jobs to queue"
+  fi
 
   SUBMIT_TEST=()
   SUBMIT_JOB_ID=()
@@ -192,9 +197,7 @@ submitTestsToLSF() {
 
     subFile=subFile${subNum}
     subFile=${!subFile}
-    #echo "subFile=${subFile}"
     subJobName=`basename ${subFile} .sh`
-    #echo "subJobName=$subJobName"
 
     # setup file for stdout and stderr redirection
     THIS_STDOUT=${subJobName}.out
@@ -273,7 +276,7 @@ runTestsStd() {
   done
 }
 
-createScripts() {
+createAllRunScripts() {
   touch $lsfListFile
   echo "num_submissions=$num_test_files" > $lsfListFile
 
@@ -333,6 +336,53 @@ createScripts() {
 
 }
 
+createRunScript() {
+
+  source ${THIS_TEST_FILE}
+
+  testName=`basename ${THIS_TEST_FILE} .sh`
+
+  echo "Test $testName has $num_tests pure MPI tests"
+  if [ -n "$omp_num_tests" ]; then
+    echo "  and $omp_num_tests Hybrid MPI + OpenMP tests"
+  fi
+
+
+
+  # Create the run script
+  thisRunScript=`dirname ${THIS_TEST_FILE}`/$testName-run.sh
+
+  outputDir=`dirname ${THIS_TEST_FILE}`
+
+  # Set up header
+  submissionHeader $thisRunScript
+
+  for testNum in $(seq 1 $num_tests)
+  do
+    testExec=test${testNum}
+    echo "# Pure MPI test ${testNum}" >> $thisRunScript
+    execLine $thisRunScript "${!testExec}" $num_cpus
+    echo "" >> $thisRunScript # new line
+  done
+
+  if [ -n "$omp_num_tests" -a "${RUN_OPENMP}" == true ]; then
+    echo "export OMP_NUM_THREADS=$omp_number_threads" >> $thisRunScript
+    echo "" >> $thisRunScript # new line
+    for testNum in $(seq 1 $omp_num_tests)
+    do
+       testExec=omp_test${testNum}
+       echo "# Hybrid test ${testNum}" >> $thisRunScript
+       execLine $thisRunScript "${!testExec}" $omp_num_mpi
+       echo "" >> $thisRunScript # new line
+    done
+  fi
+
+  # Reset the variables (in case they are not redefined in the next iteration)
+  #unset omp_num_tests
+  #unset num_tests
+
+}
+
 
 submissionHeader() {
   RUN_SCRIPT=$1
@@ -370,7 +420,7 @@ diffCprnc() {
   # nc_output_files is defined in the .sh file
   FILES="${nc_output_files}"
 
-  if [ -z "{$FILES}" ] ; then
+  if [ -z "${FILES}" ] ; then
     echo "Test ${TEST_NAME} doesn't have Netcdf output files"
   fi
 

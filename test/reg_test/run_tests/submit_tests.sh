@@ -16,8 +16,26 @@ HOMME_Submission_Type=@Homme_Submission_Type@
 # The cprnc Netcdf comparison tool
 CPRNC_BINARY=@CPRNC_BINARY@
 
-# The lists of tests to run
-source ${HOMME_DIR}/tests/submission-list.sh
+if [ "$1" == all ] ; then
+  SUBMIT_ALL_AT_ONCE=true
+else
+  SUBMIT_ALL_AT_ONCE=false
+fi
+
+if [ "${SUBMIT_ALL_AT_ONCE}" == true ] ; then
+
+  # The lists of tests to run
+  source ${HOMME_DIR}/tests/submission-list.sh
+
+else
+
+  num_submissions=1
+  subFile1=$1
+  testName=$2
+
+  # To Do: make sure the above file exists
+
+fi
 
 # The testing utilities
 source ${HOMME_DIR}/tests/testing-utils.sh
@@ -39,4 +57,16 @@ fi
 
 # parse the stdout to grab only the relevant info
 parseStdout
+
+if [ "${SUBMIT_ALL_AT_ONCE}" == true ] ; then
+
+  # Do nothing for now
+  # Pass
+  :
+
+else
+
+  ${HOMME_TESTING_DIR}/diff_output.sh ${testName}
+
+fi
 

@@ -303,9 +303,38 @@ macro(createTest testName)
   ENDFOREACH ()
   FILE(APPEND ${THIS_TEST_SCRIPT} "\"\n")
 
-  ADD_TEST(NAME "diff-${testName}" 
-           COMMAND ${CMAKE_BINARY_DIR}/tests/diff_output.sh ${TEST_NAME}
-           DEPENDS submitAndRunTests)
+  SET(THIS_TEST "${testName}-diff")
+
+  ADD_TEST(NAME ${THIS_TEST}
+           COMMAND ${CMAKE_BINARY_DIR}/tests/diff_output.sh ${TEST_NAME})
+
+  SET_TESTS_PROPERTIES(${THIS_TEST} PROPERTIES DEPENDS submitAndRunTests)
+
+  SET (ALL_REG_TESTS ${ALL_REG_TESTS} ${THIS_TEST})
+
+
+  # First run the createRunScript to generate the ${THIS_TEST_SCRIPT}
+  EXECUTE_PROCESS(
+    COMMAND ${CMAKE_BINARY_DIR}/tests/createRunScripts.sh ${THIS_TEST_SCRIPT}
+    RESULT_VARIABLE CREATE_RUNS_RESULT
+    OUTPUT_VARIABLE CREATE_RUNS_OUTPUT
+    ERROR_VARIABLE CREATE_RUNS_ERROR
+  )
+  
+  # Now for the individual tests
+  SET(THIS_TEST_RUN_SCRIPT "${THIS_TEST_DIR}/${TEST_NAME}-run.sh")
+
+  #SET(THIS_TEST_INDIV "${testName}-indiv")
+  SET(THIS_TEST_INDIV "test-${testName}")
+
+  ADD_CUSTOM_TARGET(${THIS_TEST_INDIV}
+           COMMAND ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "${THIS_TEST_RUN_SCRIPT}" "${TEST_NAME}")
+
+  # Now make the Individual targets
+  #ADD_CUSTOM_COMMAND(TARGET ${THIS_TEST_INDIV}
+  #                   COMMENT "Running the HOMME regression test: ${THIS_TEST}"
+  #                   POST_BUILD COMMAND ${CMAKE_CTEST_COMMAND} ARGS --output-on-failure -R ${THIS_TEST_INDIV} 
+  #                   WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
 endmacro(createTest)
 

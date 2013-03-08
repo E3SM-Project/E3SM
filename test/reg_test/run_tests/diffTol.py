@@ -85,11 +85,9 @@ if __name__=="__main__":
 
     if not line1:
       file1EOF = True
-      continue
 
     if not line2:
       file2EOF = True
-      continue
 
     # 
     if (file1EOF and not file2EOF) or (not file1EOF and file2EOF):

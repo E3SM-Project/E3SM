@@ -23,9 +23,6 @@ CPRNC_BINARY=@CPRNC_BINARY@
 # The cprnc Netcdf comparison tool
 PYTHON_EXECUTABLE=@PYTHON_EXECUTABLE@
 
-# The lists of tests to run
-source ${HOMME_DIR}/tests/submission-list.sh
-
 # The testing utilities
 source ${HOMME_DIR}/tests/testing-utils.sh
 

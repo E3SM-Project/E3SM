@@ -5,8 +5,14 @@ INCLUDE(FortranCInterface)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
+# CTest For Nightly Builds
+OPTION(HOMME_USE_CTEST FALSE)
+
+IF (${HOMME_USE_CTEST})
+  INCLUDE(CTest)
+ENDIF ()
+
 # For testing
-INCLUDE(CTest)
 ENABLE_TESTING()
 
 # Add the cmake/CMakeLists.txt file

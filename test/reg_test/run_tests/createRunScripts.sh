@@ -18,7 +18,21 @@ source ${HOMME_TESTING_DIR}/test_list.sh
 # Functions used to generate the run scripts 
 source ${HOMME_TESTING_DIR}/testing-utils.sh
 
-# The location of all of the lsf scripts generated here
-lsfListFile=${HOMME_TESTING_DIR}/submission-list.sh
+if [ "$1" == all ] ; then
 
-createScripts
+  SUBMIT_ALL_AT_ONCE=true
+
+  # The location of all of the lsf scripts generated here
+  lsfListFile=${HOMME_TESTING_DIR}/submission-list.sh
+
+  createAllRunScripts
+
+else
+
+  SUBMIT_ALL_AT_ONCE=false
+
+  THIS_TEST_FILE=$1
+
+  createRunScript
+
+fi
