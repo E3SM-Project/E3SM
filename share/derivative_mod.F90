@@ -1517,7 +1517,9 @@ endif
     real(kind=longdouble_kind) :: gll_edges(np+1),phys_edges(nphys+1)
     type(quadrature_t) :: gll_pts
     ! setup (most be done on masterthread only) since all data is static
+#if (! defined ELEMENT_OPENMP)
 !OMP MASTER
+#endif
     if (nphys_init/=nphys) then
        nphys_init=nphys
        ! find number of intersections
@@ -1619,8 +1621,10 @@ endif
     call abortmp(__FILE__)
 #endif
     endif
+#if (! defined ELEMENT_OPENMP)
     !OMP ENDMASTER
     !OMP BARRIER
+#endif
 
 
     pout=0

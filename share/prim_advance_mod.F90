@@ -1751,7 +1751,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            
            ! apply inverse mass matrix, accumulate tendencies
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,i,j,v1,v2,heating)
+!$omp parallel do private(k)
 #endif
            do k=1,nlev
               vtens(:,:,1,k,ie)=dt*vtens(:,:,1,k,ie)*elem(ie)%rspheremp(:,:)
@@ -1766,6 +1766,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            ! E1-E0:   dpdn (u dot utens) + dpdn .5 utens dot utens   - dpdn X
            !      X = (u dot utens) + .5 utens dot utens
            !  alt:  (u+utens) dot utens
+#if (defined ELEMENT_OPENMP)
+!$omp parallel do private(k,i,j,v1,v2,heating)
+#endif
            do k=1,nlev
               do j=1,np
                  do i=1,np
