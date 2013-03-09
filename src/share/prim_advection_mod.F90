@@ -97,7 +97,8 @@ subroutine remap_calc_grids( hvcoord , ps , dt , eta_dot_dpdn , p_lag , p_ref , 
   type(hvcoord_t)      , intent(in   ) :: hvcoord               !Derived type to hold vertical sigma grid parameters
   real(kind=real_kind) , intent(in   ) :: ps                    !Surface pressure for this column
   real(kind=real_kind) , intent(in   ) :: dt                    !Time step
-  real(kind=real_kind) , intent(in   ) :: eta_dot_dpdn(nlev+1)  !Looks like a vertical pressure flux to compute deformed grid spacing
+  real(kind=real_kind) , intent(in   ) :: eta_dot_dpdn(nlev+1)  !Looks like a vertical pressure flux
+                                                                !to compute deformed grid spacing
   real(kind=real_kind) , intent(  out) :: p_lag(nlev+1)         !Pressures at interfaces of the Lagrangian deformed grid
   real(kind=real_kind) , intent(  out) :: p_ref(nlev+1)         !Pressures at interfaces of the reference grid
   real(kind=real_kind) , intent(  out) :: dp_lag(nlev)          !Pressure differences on Lagrangian deformed grid
@@ -106,8 +107,10 @@ subroutine remap_calc_grids( hvcoord , ps , dt , eta_dot_dpdn , p_lag , p_ref , 
   p_ref(1) = 0  !Both grids have a model top pressure of zero
   p_lag(1) = 0  !Both grids have a model top pressure of zero
   do k = 1 , nlev
-    dp_ref(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) ) * hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) * ps  !Reference pressure difference
-    dp_lag(k) = dp_ref(k) + dt * ( eta_dot_dpdn(k+1) - eta_dot_dpdn(k) )  !Lagrangian pressure difference (flux in - flux out over the time step)
+    dp_ref(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) ) * hvcoord%ps0 + &
+         ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) * ps  !Reference pressure difference
+    ! Lagrangian pressure difference (flux in - flux out over the time step)
+    dp_lag(k) = dp_ref(k) + dt * ( eta_dot_dpdn(k+1) - eta_dot_dpdn(k) )
     p_ref(k+1) = p_ref(k) + dp_ref(k) !Pressure at interfaces accumulated using difference over each cell
     p_lag(k+1) = p_lag(k) + dp_lag(k) !Pressure at interfaces accumulated using difference over each cell
   enddo
@@ -580,17 +583,21 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
 
       pio(nlev+2) = pio(nlev+1) + 1.  !This is here to allow an entire block of k threads to run in the remapping phase.
                                       !It makes sure there's an old interface value below the domain that is larger.
-      pin(nlev+1) = pio(nlev+1)       !The total mass in a column does not change. Therefore, the pressure of that mass cannot either.
+      pin(nlev+1) = pio(nlev+1)       !The total mass in a column does not change.
+                                      !Therefore, the pressure of that mass cannot either.
       !Fill in the ghost regions with mirrored values. if vert_remap_q_alg is defined, this is of no consequence.
       do k = 1 , gs
         dpo(1   -k) = dpo(       k)
         dpo(nlev+k) = dpo(nlev+1-k)
       enddo
 
-      !Compute remapping intervals once for all tracers. Find the old grid cell index in which the k-th new cell interface resides. Then integrate
-      !from the bottom of that old cell to the new interface location. In practice, the grid never deforms past one cell, so the search can be
-      !simplified by this. Also, the interval of integration is usually of magnitude close to zero or close to dpo because of minimial deformation.
-      !Numerous tests confirmed that the bottom and top of the grids match to machine precision, so I set them equal to each other.
+      !Compute remapping intervals once for all tracers. Find the old grid cell index in which the
+      !k-th new cell interface resides. Then integrate from the bottom of that old cell to the new
+      !interface location. In practice, the grid never deforms past one cell, so the search can be
+      !simplified by this. Also, the interval of integration is usually of magnitude close to zero
+      !or close to dpo because of minimial deformation.
+      !Numerous tests confirmed that the bottom and top of the grids match to machine precision, so
+      !I set them equal to each other.
       do k = 1 , nlev
         kk = k  !Keep from an order n^2 search operation by assuming the old cell index is close.
         !Find the index of the old grid cell in which this new cell's bottom interface resides.
@@ -598,22 +605,26 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
           kk = kk + 1
         enddo
         kk = kk - 1                   !kk is now the cell index we're integrating over.
-        if (kk == nlev+1) kk = nlev   !This is to keep the indices in bounds. Top bounds match anyway, so doesn't matter what coefficients are used
+        if (kk == nlev+1) kk = nlev   !This is to keep the indices in bounds.
+                                      !Top bounds match anyway, so doesn't matter what coefficients are used
         kid(k) = kk                   !Save for reuse
         z1(k) = -0.5D0                !This remapping assumes we're starting from the left interface of an old grid cell
                                       !In fact, we're usually integrating very little or almost all of the cell in question
-        z2(k) = ( pin(k+1) - ( pio(kk) + pio(kk+1) ) * 0.5 ) / dpo(kk)  !PPM interpolants are normalized to an independent coordinate domain [-0.5,0.5].
+        z2(k) = ( pin(k+1) - ( pio(kk) + pio(kk+1) ) * 0.5 ) / dpo(kk)  !PPM interpolants are normalized to an independent
+                                                                        !coordinate domain [-0.5,0.5].
       enddo
 
-      !This turned out a big optimization, remembering that only parts of the PPM algorithm depends on the data, namely the limiting. So anything that
-      !depends only on the grid is pre-computed outside the tracer loop.
+      !This turned out a big optimization, remembering that only parts of the PPM algorithm depends on the data, namely the
+      !limiting. So anything that depends only on the grid is pre-computed outside the tracer loop.
       ppmdx(:,:) = compute_ppm_grids( dpo )
 
-      !From here, we loop over tracers for only those portions which depend on tracer data, which includes PPM limiting and mass accumulation
+      !From here, we loop over tracers for only those portions which depend on tracer data, which includes PPM limiting and
+      !mass accumulation
       do q = 1 , qsize
-        !Accumulate the old mass up to old grid cell interface locations to simplify integration during remapping. Also, divide out the
-        !grid spacing so we're working with actual tracer values and can conserve mass. The option for ifndef ZEROHORZ I believe is there
-        !to ensure tracer consistency for an initially uniform field. I copied it from the old remap routine.
+        !Accumulate the old mass up to old grid cell interface locations to simplify integration
+        !during remapping. Also, divide out the grid spacing so we're working with actual tracer
+        !values and can conserve mass. The option for ifndef ZEROHORZ I believe is there to ensure
+        !tracer consistency for an initially uniform field. I copied it from the old remap routine.
         masso(1) = 0.
         do k = 1 , nlev
           ao(k) = Qdp(i,j,k,q)
@@ -627,9 +638,10 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
         enddo
         !Compute monotonic and conservative PPM reconstruction over every cell
         coefs(:,:) = compute_ppm( ao , ppmdx )
-        !Compute tracer values on the new grid by integrating from the old cell bottom to the new cell interface to form a new grid mass accumulation
-        !Taking the difference between accumulation at successive interfaces gives the mass inside each cell. Since Qdp is supposed to hold the full mass
-        !this needs no normalization.
+        !Compute tracer values on the new grid by integrating from the old cell bottom to the new
+        !cell interface to form a new grid mass accumulation. Taking the difference between
+        !accumulation at successive interfaces gives the mass inside each cell. Since Qdp is
+        !supposed to hold the full mass this needs no normalization.
         massn1 = 0.
         do k = 1 , nlev
           kk = kid(k)
@@ -703,7 +715,8 @@ function compute_ppm( a , dx )    result(coefs)
   real(kind=real_kind) :: ai (0:nlev  )                     !fourth-order accurate, then limited interface values
   real(kind=real_kind) :: dma(0:nlev+1)                     !An expression from Collela's '84 publication
   real(kind=real_kind) :: da                                !Ditto
-  real(kind=real_kind) :: dx1, dx2, dx3, dx4, dx5, dx6, dx7, dx8, dx9, dx10 !Holds expressions based on the grid which are cumbersome
+  ! Hold expressions based on the grid (which are cumbersome).
+  real(kind=real_kind) :: dx1, dx2, dx3, dx4, dx5, dx6, dx7, dx8, dx9, dx10
   real(kind=real_kind) :: al, ar                            !Left and right interface values for cell-local limiting
   integer :: j
   integer :: indB, indE
@@ -731,10 +744,12 @@ function compute_ppm( a , dx )    result(coefs)
     indE = nlev
   endif
   do j = indB , indE
-    ai(j) = a(j) + dx(4,j) * ( a(j+1) - a(j) ) + dx(5,j) * ( dx(6,j) * ( dx(7,j) - dx(8,j) ) * ( a(j+1) - a(j) ) - dx(9,j) * dma(j+1) + dx(10,j) * dma(j) )
+    ai(j) = a(j) + dx(4,j) * ( a(j+1) - a(j) ) + dx(5,j) * ( dx(6,j) * ( dx(7,j) - dx(8,j) ) &
+         * ( a(j+1) - a(j) ) - dx(9,j) * dma(j+1) + dx(10,j) * dma(j) )
   enddo
 
-  ! Stage 3: Compute limited PPM interpolant over each cell in the physical domain (dimension nlev) using ai on either side and ao within the cell.
+  ! Stage 3: Compute limited PPM interpolant over each cell in the physical domain
+  ! (dimension nlev) using ai on either side and ao within the cell.
   if (vert_remap_q_alg == 2) then
     indB = 3
     indE = nlev-2
@@ -757,8 +772,9 @@ function compute_ppm( a , dx )    result(coefs)
     coefs(2,j) = -6. * a(j) + 3. * ( al + ar )
   enddo
 
-  !If we're not using a mirrored boundary condition, then make the two cells bordering the top and bottom material boundaries piecewise constant.
-  !Zeroing out the first and second moments, and setting the zeroth moment to the cell mean is sufficient to maintain conservation.
+  !If we're not using a mirrored boundary condition, then make the two cells bordering the top and bottom
+  !material boundaries piecewise constant. Zeroing out the first and second moments, and setting the zeroth
+  !moment to the cell mean is sufficient to maintain conservation.
   if (vert_remap_q_alg == 2) then
     coefs(0,1:2) = a(1:2)
     coefs(1:2,1:2) = 0.
@@ -770,7 +786,8 @@ end function compute_ppm
 !=======================================================================================================! 
 
 
-!Simple function computes the definite integral of a parabola in normalized coordinates, xi=(x-x0)/dx, given two bounds. Make sure this gets inlined during compilation.
+!Simple function computes the definite integral of a parabola in normalized coordinates, xi=(x-x0)/dx,
+!given two bounds. Make sure this gets inlined during compilation.
 function integrate_parabola( a , x1 , x2 )    result(mass)
   implicit none
   real(kind=real_kind), intent(in) :: a(0:2)  !Coefficients of the parabola
@@ -938,7 +955,8 @@ contains
           ! elem%derived%vstar = velocity at t+1 on floating levels (computed below) using eta_dot_dpdn
 !           call remap_UV_ref2lagrange(np1,dt,elem,hvcoord,ie)
           do k=1,nlev
-             dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+             dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                  ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
              dp_star(:,:,k) = dp(:,:,k) + dt*(elem(ie)%derived%eta_dot_dpdn(:,:,k+1) -&
                   elem(ie)%derived%eta_dot_dpdn(:,:,k)) 
           enddo
@@ -1036,7 +1054,8 @@ contains
           ! elem%derived%vstar = velocity at t+1 on floating levels (computed below)
 !           call remap_UV_ref2lagrange(np1,dt,elem,hvcoord,ie)
           do k=1,nlev
-             dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+             dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                  ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
              dp_star(:,:,k) = dp(:,:,k) + dt*(elem(ie)%derived%eta_dot_dpdn(:,:,k+1) -&
                   elem(ie)%derived%eta_dot_dpdn(:,:,k)) 
           enddo
@@ -2220,7 +2239,8 @@ contains
      if (rsplit==0) then
         ! compute dp_star from eta_dot_dpdn():
         do k=1,nlev
-           dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+           dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
            dp_star(:,:,k) = dp(:,:,k) + dt*(elem(ie)%derived%eta_dot_dpdn(:,:,k+1) -&
                 elem(ie)%derived%eta_dot_dpdn(:,:,k)) 
         enddo
@@ -2231,7 +2251,8 @@ contains
         elem(ie)%state%ps_v(:,:,np1) = hvcoord%hyai(1)*hvcoord%ps0 + &
              sum(elem(ie)%state%dp3d(:,:,:,np1),3)
         do k=1,nlev
-           dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+           dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
            dp_star(:,:,k) = elem(ie)%state%dp3d(:,:,k,np1)
         enddo
 

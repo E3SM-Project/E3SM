@@ -220,11 +220,14 @@ contains
 
              global_shared_buf(ie,1:3) = 0.d0
              do i=1,cg%len
-                cg%state(ie)%p(i,k)    = cg%state(ie)%z(i,k)                    ! p_1 = z_1
-                cg%state(ie)%v(i,k)    = cg%state(ie)%s(i,k)                    ! p_1 = z_1
-                global_shared_buf(ie,1)     = global_shared_buf(ie,1)     + cg%wts(i,ie)*cg%state(ie)%z(i,k)*cg%state(ie)%r(i,k) ! <z_1,r_1>
-                global_shared_buf(ie,2)     = global_shared_buf(ie,2)     + cg%wts(i,ie)*cg%state(ie)%p(i,k)*cg%state(ie)%v(i,k) ! <p_1,v_1>
-                global_shared_buf(ie,3)  = global_shared_buf(ie,3)  + cg%wts(i,ie)*cg%state(ie)%r(i,k)*cg%state(ie)%r(i,k) ! <b  ,b  >
+                cg%state(ie)%p(i,k)     = cg%state(ie)%z(i,k) ! p_1 = z_1
+                cg%state(ie)%v(i,k)     = cg%state(ie)%s(i,k) ! p_1 = z_1
+                global_shared_buf(ie,1) = global_shared_buf(ie,1) + &
+                     cg%wts(i,ie)*cg%state(ie)%z(i,k)*cg%state(ie)%r(i,k) ! <z_1,r_1>
+                global_shared_buf(ie,2) = global_shared_buf(ie,2) + &
+                     cg%wts(i,ie)*cg%state(ie)%p(i,k)*cg%state(ie)%v(i,k) ! <p_1,v_1>
+                global_shared_buf(ie,3) = global_shared_buf(ie,3) + &
+                     cg%wts(i,ie)*cg%state(ie)%r(i,k)*cg%state(ie)%r(i,k) ! <b  ,b  >
              end do
           end do
           call wrap_repro_sum(nvars=3, comm=cg%hybrid%par%comm)
@@ -295,9 +298,12 @@ contains
              do ie=1,cg%nblks
                 global_shared_buf(ie,1:3) = 0.d0
                 do i=1,cg%len
-                   global_shared_buf(ie,1)=global_shared_buf(ie,1) + cg%wts(i,ie)*cg%state(ie)%z(i,k)*cg%state(ie)%r(i,k)     ! gamma_k = <z_k,r_k>
-                   global_shared_buf(ie,2)=global_shared_buf(ie,2) + cg%wts(i,ie)*cg%state(ie)%z(i,k)*cg%state(ie)%s(i,k)     ! delta_k = <z_k,s_k>
-                   global_shared_buf(ie,3)=global_shared_buf(ie,3)  + cg%wts(i,ie)*cg%state(ie)%r(i,k)*cg%state(ie)%r(i,k)
+                   global_shared_buf(ie,1)=global_shared_buf(ie,1) + &
+                        cg%wts(i,ie)*cg%state(ie)%z(i,k)*cg%state(ie)%r(i,k)     ! gamma_k = <z_k,r_k>
+                   global_shared_buf(ie,2)=global_shared_buf(ie,2) + &
+                        cg%wts(i,ie)*cg%state(ie)%z(i,k)*cg%state(ie)%s(i,k)     ! delta_k = <z_k,s_k>
+                   global_shared_buf(ie,3)=global_shared_buf(ie,3) + &
+                        cg%wts(i,ie)*cg%state(ie)%r(i,k)*cg%state(ie)%r(i,k)
                 end do
              end do
              call wrap_repro_sum(nvars=3, comm=cg%hybrid%par%comm)

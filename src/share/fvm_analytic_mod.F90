@@ -218,7 +218,7 @@ end subroutine moment_onsphereswap
 !                                                                                   !
 ! CALLS: none                                                                       !
 ! INPUT: x    ... x coordinate of the evaluation point (Cartesian on the cube)      !
-!        y    ... y coordinate of the evaluation point (Cartesian on the cube)      !                                                     !
+!        y    ... y coordinate of the evaluation point (Cartesian on the cube)      !
 ! OUTPUT: I_00, I_01, I_20, I_02, I11                                               !
 !-----------------------------------------------------------------------------------!
 function I_00(x,y)
