@@ -1327,7 +1327,8 @@ end subroutine
         do i=1,np
            if ( abs(lhs(i,j)-rhs(i,j)) .gt. 1d-20) then
               write(*,'(a)') 'ERROR: grad/grad_wk (1) integration by parts failure!'
-              write(*,'(a,2i3,a,4e13.5)') 'for test function (i,j)=',i,j,' lhs,rhs=',lhs(i,j),rhs(i,j),lhs(i,j)-rhs(i,j),lhs(i,j)/rhs(i,j)
+              write(*,'(a,2i3,a,4e13.5)') 'for test function (i,j)=',i,j,&
+                   ' lhs,rhs=',lhs(i,j),rhs(i,j),lhs(i,j)-rhs(i,j),lhs(i,j)/rhs(i,j)
            endif
         enddo
      enddo

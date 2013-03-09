@@ -596,10 +596,12 @@ contains
        write(iulog,'(a,f10.2)') 'CFL estimates in terms of S=time step stability region'
        write(iulog,'(a,f10.2)') '(i.e. advection w/leapfrog: S=1, viscosity w/forward Euler: S=2)'
        if (rk_stage_user>0) then
-          write(iulog,'(a,f10.2,a)') 'SSP preservation (120m/s) RKSSP euler step dt  < S *', min_gw/(120.0d0*max_max_eig*rrearth),'s'
+          write(iulog,'(a,f10.2,a)') 'SSP preservation (120m/s) RKSSP euler step dt  < S *', &
+               min_gw/(120.0d0*max_max_eig*rrearth),'s'
        endif
        write(iulog,'(a,f10.2,a)') 'Stability: advective (120m/s)   dt_tracer < S *', 1/(120.0d0*max_max_eig*lambda_max*rrearth),'s'
-       write(iulog,'(a,f10.2,a)') 'Stability: gravity wave(342m/s) RK dyn stage dt  < S *', 1/(342.0d0*max_max_eig*lambda_max*rrearth),'s'
+       write(iulog,'(a,f10.2,a)') 'Stability: gravity wave(342m/s) RK dyn stage dt  < S *', &
+            1/(342.0d0*max_max_eig*lambda_max*rrearth),'s'
        if (nu>0) then
           if (hypervis_order==1) then
               write(iulog,'(a,f10.2,a)') 'Stability: viscosity dt < S *',1/(((rrearth*max_max_eig)**2)*lambda_vis),'s'

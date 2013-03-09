@@ -313,7 +313,8 @@ contains
 
     if (minval(node_multiplicity) < 3 .or. max_elements_attached_to_node < maxval(node_multiplicity)) then
       print *, 'minval(node_multiplicity)', minval(node_multiplicity)
-      print *, 'maxval(node_multiplicity)', maxval(node_multiplicity),' and max_elements_attached_to_node ',max_elements_attached_to_node
+      print *, 'maxval(node_multiplicity)', maxval(node_multiplicity),&
+           ' and max_elements_attached_to_node ',&max_elements_attached_to_node
       call abortmp('get_node_multiplicity: Number of elements attached to node less than 3 or greater than maximum.')
     endif
 
@@ -551,10 +552,12 @@ contains
     real                             :: x(3), y(3), r(3), d, min_diameter
     
     if (SIZE(element_nodes,dim=1) /= p_number_elements) then
-       call abortmp('smallest_diameter_element:Element count check failed in exodus_mesh. Connectivity array length not equal to number of elements.')
+       call abortmp('smallest_diameter_element:Element count check failed in &
+            &exodus_mesh. Connectivity array length not equal to number of elements.')
     end if
     if ( p_number_elements_per_face /= p_number_elements) then
-       call abortmp('smallest_diameter_element: Element count check failed in exodus_mesh. Element array length not equal to sum of face.')
+       call abortmp('smallest_diameter_element: Element count check failed in &
+            &exodus_mesh. Element array length not equal to sum of face.')
     end if
     
     min_diameter = 9999999.
@@ -643,10 +646,12 @@ contains
     
     if (0 == p_number_blocks)  call abortmp('cube_face_element_centroids called before MeshOpen')
     if (SIZE(element_nodes,dim=1) /= p_number_elements) then
-       call abortmp('cube_face_element_centroids:Element count check failed in exodus_mesh. Connectivity array length not equal to number of elements.')
+       call abortmp('cube_face_element_centroids:Element count check failed in &
+            &exodus_mesh. Connectivity array length not equal to number of elements.')
     end if
     if ( p_number_elements_per_face /= p_number_elements ) then
-       call abortmp('cube_face_element_centroids: Element count check failed in exodus_mesh. Element array length not equal to sum of face.')
+       call abortmp('cube_face_element_centroids: Element count check failed in &
+            &exodus_mesh. Element array length not equal to sum of face.')
     end if
     
     do i=1, p_number_elements  
@@ -682,10 +687,12 @@ contains
     integer                            :: sfc_index, face, nelem
     
     if (SIZE(GridVertex) /= p_number_elements) then
-       call abortmp('initialize_space_filling_curve:Element count check failed in exodus_mesh. Vertex array length not equal to number of elements.')
+       call abortmp('initialize_space_filling_curve:Element count check failed &
+            &in exodus_mesh. Vertex array length not equal to number of elements.')
     end if
     if (SIZE(element_nodes,dim=1) /= p_number_elements) then
-       call abortmp('initialize_space_filling_curve:Element count check failed in exodus_mesh. Connectivity array length not equal to number of elements.')
+       call abortmp('initialize_space_filling_curve:Element count check failed &
+            &in exodus_mesh. Connectivity array length not equal to number of elements.')
     end if
     
     face_numbers(:) = GridVertex(:)%face_number
@@ -1174,10 +1181,12 @@ contains
     normal_to_homme_ordering(8) = nwest
 
     if (SIZE(GridVertex) /= p_number_elements) then
-       call abortmp('MeshCubeTopology: Element count check failed in exodus_mesh. Vertex array length not equal to number of elements.')
+       call abortmp('MeshCubeTopology: Element count check failed in exodus_mesh. &
+            &Vertex array length not equal to number of elements.')
     end if
     if (p_number_elements_per_face /= p_number_elements) then
-       call abortmp('MeshCubeTopology: Element count check failed in exodus_mesh. Element array length not equal to sum of face.')
+       call abortmp('MeshCubeTopology: Element count check failed in exodus_mesh. &
+            &Element array length not equal to sum of face.')
     end if
 
     EdgeWgtP = np
