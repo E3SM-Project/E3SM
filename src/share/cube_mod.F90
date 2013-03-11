@@ -9,7 +9,9 @@
 
 module cube_mod
   use kinds, only : real_kind, long_kind, longdouble_kind
-  use coordinate_systems_mod, only : spherical_polar_t, cartesian3D_t
+  use coordinate_systems_mod, only : spherical_polar_t, cartesian3D_t, cartesian2d_t, &
+       projectpoint, cubedsphere2cart, spherical_to_cart, sphere_tri_area,dist_threshold
+
   use physical_constants, only : dd_pi, rearth
 
   use control_mod, only : hypervis_power
@@ -25,6 +27,7 @@ module cube_mod
   real(kind=real_kind), public, parameter :: cube_xend   =  0.25D0*DD_PI
   real(kind=real_kind), public, parameter :: cube_ystart = -0.25D0*DD_PI
   real(kind=real_kind), public, parameter :: cube_yend   =  0.25D0*DD_PI
+
 
   type, public :: face_t
      type (spherical_polar_t) :: sphere0       ! tangent point of face on sphere
@@ -74,6 +77,21 @@ module cube_mod
   public  :: CubeElemCount
   public  :: CubeSetupEdgeIndex
   public  :: rotation_init_atomic
+
+  ! public interface to REFERECE element map
+  public :: ref2sphere  
+#if HOMME_QUAD_PREC
+  interface ref2sphere
+     module procedure ref2sphere_double
+     module procedure ref2sphere_longdouble
+  end interface
+#else
+  interface ref2sphere
+     module procedure ref2sphere_double
+     ! module procedure ref2sphere_longdouble ! both routines are identical in this case
+  end interface
+#endif
+
 
   ! ===============================
   ! Private methods
@@ -125,7 +143,6 @@ contains
 
   subroutine coordinates_atomic(elem,gll_points)
     use element_mod, only : element_t, element_var_coordinates
-    use coordinate_systems_mod, only : cartesian2d_t,ref2sphere,cubedsphere2cart, spherical_to_cart, sphere_tri_area
     use dimensions_mod, only : np
     use parallel_mod, only : abortmp
     type (element_t) :: elem
@@ -175,7 +192,6 @@ contains
 
   subroutine elem_jacobians(coords, unif2quadmap, nx)
 
-    use coordinate_systems_mod, only : cartesian2d_t
 !    use quadrature_mod, only : quadrature_t
 
     integer, intent(in) :: nx
@@ -631,7 +647,6 @@ contains
   ! maps quads on the sphere directly to the reference element
   ! ========================================================
   subroutine Dmap(D, elem, a,b)
-    use coordinate_systems_mod, only : dist_threshold
     use element_mod, only : element_t
     type (element_t) :: elem
     real (kind=real_kind), intent(out)  :: D(2,2)
@@ -687,7 +702,6 @@ contains
   ! ========================================================
 
   subroutine vmap(D, x1, x2, face_no) 
-    use coordinate_systems_mod, only : dist_threshold
     real (kind=real_kind), intent(inout)  :: D(2,2)
     real (kind=real_kind), intent(in)     :: x1
     real (kind=real_kind), intent(in)     :: x2
@@ -2408,6 +2422,81 @@ contains
     dxp   = theta*rearth
 
   end subroutine GetLatticeSpacing
+
+
+
+
+!
+! map a point in the referece element to the sphere
+!
+  function ref2sphere_double(a,b, corners, face_no) result(sphere)         
+    implicit none
+    real(kind=real_kind)    :: a,b
+    integer,intent(in)            :: face_no
+    type (spherical_polar_t)      :: sphere
+    type (cartesian2d_t)          :: corners(4)
+    ! local
+    real(kind=real_kind)               :: pi,pj,qi,qj
+    type (cartesian2d_t)                 :: cart   
+
+    ! map (a,b) to the [-pi/2,pi/2] equi angular cube face:  x1,x2
+    ! a = gp%points(i)
+    ! b = gp%points(j)
+    pi = (1-a)/2
+    pj = (1-b)/2
+    qi = (1+a)/2
+    qj = (1+b)/2
+    cart%x = pi*pj*corners(1)%x &
+         + qi*pj*corners(2)%x &
+         + qi*qj*corners(3)%x &
+         + pi*qj*corners(4)%x 
+    cart%y = pi*pj*corners(1)%y &
+         + qi*pj*corners(2)%y &
+         + qi*qj*corners(3)%y &
+         + pi*qj*corners(4)%y 
+    ! map from [pi/2,pi/2] equ angular cube face to sphere:   
+    sphere=projectpoint(cart,face_no)
+
+  end function ref2sphere_double
+
+
+
+
+!
+! map a point in the referece element to the sphere
+!
+  function ref2sphere_longdouble(a,b, corners, face_no) result(sphere)         
+    implicit none
+    real(kind=longdouble_kind)    :: a,b
+    integer,intent(in)            :: face_no
+    type (spherical_polar_t)      :: sphere
+    type (cartesian2d_t)          :: corners(4)
+    ! local
+    real(kind=real_kind)               :: pi,pj,qi,qj
+    type (cartesian2d_t)                 :: cart   
+
+    ! map (a,b) to the [-pi/2,pi/2] equi angular cube face:  x1,x2
+    ! a = gp%points(i)
+    ! b = gp%points(j)
+    pi = (1-a)/2
+    pj = (1-b)/2
+    qi = (1+a)/2
+    qj = (1+b)/2
+    cart%x = pi*pj*corners(1)%x &
+         + qi*pj*corners(2)%x &
+         + qi*qj*corners(3)%x &
+         + pi*qj*corners(4)%x 
+    cart%y = pi*pj*corners(1)%y &
+         + qi*pj*corners(2)%y &
+         + qi*qj*corners(3)%y &
+         + pi*qj*corners(4)%y 
+    ! map from [pi/2,pi/2] equ angular cube face to sphere:   
+    sphere=projectpoint(cart,face_no)
+
+  end function ref2sphere_longdouble
+
+
+
 
 end module cube_mod
 

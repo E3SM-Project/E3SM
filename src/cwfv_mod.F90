@@ -60,7 +60,7 @@ subroutine spelt_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   ! ---------------------------------------------------------------------------------
   use bndry_mod, only: ghost_exchangeV
   ! ---------------------------------------------------------------------------------
-  use coordinate_systems_mod, only : spherical_to_cart, cart2cubedspherexy, ref2sphere, sphere2cubedsphere
+  use coordinate_systems_mod, only : spherical_to_cart, cart2cubedspherexy, sphere2cubedsphere
   ! ------EXTERNAL----------------
   use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   ! -----------------------------------------------  
@@ -210,8 +210,8 @@ end subroutine fvm_init2
 
 
 subroutine fvm_grid_init(elem,fvm,nets,nete,tl)
-  use coordinate_systems_mod, only : ref2sphere, sphere2cubedsphere
-  use cube_mod, only : vmap
+  use coordinate_systems_mod, only : sphere2cubedsphere
+  use cube_mod, only : vmap, ref2sphere
   implicit none
   type (element_t),intent(inout)            :: elem(:)                 
   type (cwfv_struct),intent(inout)          :: fvm(:)
