@@ -72,7 +72,7 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   ! ---------------------------------------------------------------------------------
   use bndry_mod, only: ghost_exchangeV
   ! ---------------------------------------------------------------------------------
-  use coordinate_systems_mod, only : spherical_to_cart, cart2cubedspherexy, ref2sphere, sphere2cubedsphere
+  use coordinate_systems_mod, only : spherical_to_cart, cart2cubedspherexy, sphere2cubedsphere
   ! ------EXTERNAL----------------
   use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   ! -----------------------------------------------  
@@ -226,7 +226,7 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   ! ---------------------------------------------------------------------------------
   use bndry_mod, only: ghost_exchangeV
   ! ---------------------------------------------------------------------------------
-  use coordinate_systems_mod, only : spherical_to_cart, cart2cubedspherexy, ref2sphere, sphere2cubedsphere
+  use coordinate_systems_mod, only : spherical_to_cart, cart2cubedspherexy, sphere2cubedsphere
   ! ------EXTERNAL----------------
   use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   ! -----------------------------------------------  
@@ -443,7 +443,7 @@ subroutine spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   ! ---------------------------------------------------------------------------------
   use bndry_mod, only: ghost_exchangeV
   ! ---------------------------------------------------------------------------------
-  use coordinate_systems_mod, only : spherical_to_cart, cart2cubedspherexy, ref2sphere, sphere2cubedsphere
+  use coordinate_systems_mod, only : spherical_to_cart, cart2cubedspherexy, sphere2cubedsphere
   ! ------EXTERNAL----------------
   use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   ! -----------------------------------------------  
@@ -699,7 +699,7 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   ! ---------------------------------------------------------------------------------
   use bndry_mod, only: ghost_exchangeV
   ! ---------------------------------------------------------------------------------
-  use coordinate_systems_mod, only : spherical_to_cart, cart2cubedspherexy, ref2sphere, sphere2cubedsphere
+  use coordinate_systems_mod, only : spherical_to_cart, cart2cubedspherexy, sphere2cubedsphere
   ! ------EXTERNAL----------------
   use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   ! -----------------------------------------------  
@@ -1384,8 +1384,8 @@ subroutine spelt_init3(elem,spelt,hybrid,nets,nete,tnp0)
 end subroutine spelt_init3
 
 subroutine spelt_grid_init(elem,spelt,nets,nete,tl)
-  use coordinate_systems_mod, only : ref2sphere, sphere2cubedsphere
-  use cube_mod, only : vmap
+  use coordinate_systems_mod, only : sphere2cubedsphere
+  use cube_mod, only : vmap, ref2sphere
   use kinds, only : longdouble_kind
   use physical_constants, only : DD_PI
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest

@@ -7,11 +7,11 @@ module interpolate_mod
   use element_mod, only : element_t
   use dimensions_mod, only : np, ne, nelemd, nc, nhe, nhc
   use quadrature_mod, only : quadrature_t, legendre, quad_norm
-  use coordinate_systems_mod, only : spherical_polar_t, cartesian2d_t, cartesian3D_t, sphere2cubedsphere, spherical_to_cart, cubedsphere2cart, distance, ref2sphere_double
+  use coordinate_systems_mod, only : spherical_polar_t, cartesian2d_t, cartesian3D_t, sphere2cubedsphere, spherical_to_cart, cubedsphere2cart, distance
   use physical_constants,     only : DD_PI
   use quadrature_mod,         only : quadrature_t, gauss, gausslobatto
   use parallel_mod,           only : abortmp, syncmp, parallel_t, MPIreal_t, MPI_MAX, MPIinteger_t, MPI_SUM, MPI_MIN
-  use cube_mod,               only : convert_gbl_index, dmap
+  use cube_mod,               only : convert_gbl_index, dmap, ref2sphere
   use mesh_mod,               only : MeshUseMeshFile
 
 
@@ -723,7 +723,7 @@ end subroutine interpol_spelt_latlon
     b=0
     i=0
     do
-       sphere1 = ref2sphere_double(a,b,elem%corners,elem%vertex%face_number)
+       sphere1 = ref2sphere(a,b,elem%corners,elem%vertex%face_number)
        resa = sphere1%lon - sphere%lon
        if (resa>dd_pi) resa=resa-2*dd_pi
        if (resa<-dd_pi) resa=resa+2*dd_pi
@@ -1284,7 +1284,7 @@ end subroutine interpol_spelt_latlon
           if (ii /= -1) then
              ! compute error: map 'cart' back to sphere and compare with original
              ! interpolation point:
-             sphere2_xyz = spherical_to_cart( ref2sphere_double(cart%x,cart%y,elem(ii)%corners,elem(ii)%vertex%face_number) )
+             sphere2_xyz = spherical_to_cart( ref2sphere(cart%x,cart%y,elem(ii)%corners,elem(ii)%vertex%face_number) )
              sphere_xyz = spherical_to_cart(sphere)
              err=max(err,distance(sphere2_xyz,sphere_xyz))
           endif
