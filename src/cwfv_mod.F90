@@ -870,16 +870,16 @@ function metric_termref(elem,ref) result(sg)
   type (cartesian2D_t), intent(in)      :: ref
   real (kind=real_kind)                 :: sg                
 
-  real (kind=real_kind)  :: Jp(2,2)
+!  real (kind=real_kind)  :: Jp(2,2)
   real (kind=real_kind)  :: D(2,2)
 
 
   ! input (a,b) shold be a point in the reference element [-1,1]
   ! compute Jp(a,b)
-  Jp(1,1) = elem%u2qmap(2,1) + elem%u2qmap(4,1)*ref%y
-  Jp(1,2) = elem%u2qmap(3,1) + elem%u2qmap(4,1)*ref%x
-  Jp(2,1) = elem%u2qmap(2,2) + elem%u2qmap(4,2)*ref%y
-  Jp(2,2) = elem%u2qmap(3,2) + elem%u2qmap(4,2)*ref%x
+!  Jp(1,1) = elem%u2qmap(2,1) + elem%u2qmap(4,1)*ref%y
+!  Jp(1,2) = elem%u2qmap(3,1) + elem%u2qmap(4,1)*ref%x
+!  Jp(2,1) = elem%u2qmap(2,2) + elem%u2qmap(4,2)*ref%y
+!  Jp(2,2) = elem%u2qmap(3,2) + elem%u2qmap(4,2)*ref%x
   
   call Dmap(D, elem, ref%x,ref%y)
   
