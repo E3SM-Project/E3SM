@@ -231,7 +231,7 @@ subroutine fvm_grid_init(elem,fvm,nets,nete,tl)
       do i=1,nep  
         xref=-1+(i-1)*dx
         !define the arrival grid in spherical coordinates
-        fvm(ie)%asphere(i,j)=ref2sphere(xref,yref,elem(ie)%corners,elem(ie)%FaceNum)             
+        fvm(ie)%asphere(i,j)=ref2sphere(xref,yref,elem(ie))
         alphabeta=sphere2cubedsphere(fvm(ie)%asphere(i,j), elem(ie)%FaceNum)
         fvm(ie)%sga(i,j)=metric_term(alphabeta)
         
