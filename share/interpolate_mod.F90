@@ -7,18 +7,21 @@ module interpolate_mod
   use element_mod, only : element_t
   use dimensions_mod, only : np, ne, nelemd, nc, nhe, nhc
   use quadrature_mod, only : quadrature_t, legendre, quad_norm
-  use coordinate_systems_mod, only : spherical_polar_t, cartesian2d_t, cartesian3D_t, sphere2cubedsphere, spherical_to_cart, cubedsphere2cart, distance
+  use coordinate_systems_mod, only : spherical_polar_t, cartesian2d_t, cartesian3D_t, sphere2cubedsphere, spherical_to_cart, cubedsphere2cart, &
+       distance, change_coordinates
   use physical_constants,     only : DD_PI
   use quadrature_mod,         only : quadrature_t, gauss, gausslobatto
   use parallel_mod,           only : abortmp, syncmp, parallel_t, MPIreal_t, MPI_MAX, MPIinteger_t, MPI_SUM, MPI_MIN
   use cube_mod,               only : convert_gbl_index, dmap, ref2sphere
   use mesh_mod,               only : MeshUseMeshFile
-
+  use control_mod,            only : cubed_sphere_map
 
   implicit none
   private
   integer, parameter, public :: MAX_VECVARS=25
   real(kind=real_kind), parameter, private :: tol = 1e-10
+
+  logical   :: debug=.false.
 
   character(len=10), public :: vector_uvars(MAX_VECVARS), vector_vvars(MAX_VECVARS)
 
@@ -58,10 +61,6 @@ module interpolate_mod
   public :: var_is_vector_uvar, var_is_vector_vvar
   public :: cube_facepoint_ne
   public :: cube_facepoint_unstructured
-
-
-  private ::  parametric_coordinates
-  private ::  find_parametric_by_roots
 
   public :: interpolate_2d
   public :: interpolate_create
@@ -587,111 +586,8 @@ subroutine interpol_spelt_latlon(interpdata,f, spelt,corners, flatlon)
 end subroutine interpol_spelt_latlon
 
 
-!
-! fast iterative search for bilinear elements on gnomonic cube face
-! (replaced by more general version parametric_coordinates2)
-!
-  function parametric_coordinates(sphere, corners, face_no) result (par_coor)
-    implicit none
-    type (cartesian2D_t), intent(in) :: corners(4)
-    type (spherical_polar_t), intent(in) :: sphere
-    integer               :: face_no
-    type (cartesian2D_t)             :: par_coor
 
-    real (kind=real_kind) :: isInElemConverged
-    real (kind=real_kind) :: x(4), y(4)
-    real (kind=real_kind) ::   xp,   yp
-    real (kind=real_kind) :: j(4), f(2) , shapefct(4)
-    real (kind=real_kind) :: xinew, etanew
-    real (kind=real_kind) :: xicur, etacur
-    real (kind=real_kind) :: jdet
-    real (kind=real_kind) :: xidiff(2)
-    type (cartesian2D_t)  :: cube
-    integer               :: i
-    integer               :: MAX_NR_ITER
-
-    isInElemConverged = 1.0e-16
-    MAX_NR_ITER = 10     ! bilinear so should converge in 1 step
-
-    cube = sphere2cubedsphere(sphere, face_no)
-    ! Translate element so that (x,y) coordinates of the first node are (0,0)
-
-    x(1) = 0
-    x(2) = corners(2)%x - corners(1)%x
-    x(3) = corners(3)%x - corners(1)%x
-    x(4) = corners(4)%x - corners(1)%x
-    y(1) = 0
-    y(2) = corners(2)%y - corners(1)%y
-    y(3) = corners(3)%y - corners(1)%y
-    y(4) = corners(4)%y - corners(1)%y
-
-    ! (xp,yp) is the point at which we're searching for (xi,eta)
-    ! (must translate this also)
-
-    xp = cube%x - corners(1)%x
-    yp = cube%y - corners(1)%y
-
-    ! Newton-Raphson iteration for (xi,eta)
-
-    xinew  = 0.5     ! initial guess
-    etanew = 0.5
-    xicur  = 0.5
-    etacur = 0.5
-
-    xidiff(1) = 1.0
-    xidiff(2) = 1.0
-    i = 1
-
-    do
-      xicur = xinew
-      etacur = etanew
-
-      j(1)=  0.25*(1.00-etacur)*x(2)   &
-            +0.25*(1.00+etacur)*x(3)   &
-            -0.25*(1.00+etacur)*x(4)
-
-      j(2)= -0.25*(1.00+xicur)*x(2)   &
-            +0.25*(1.00+xicur)*x(3)   &
-            +0.25*(1.00-xicur)*x(4)
-
-      j(3)=  0.25*(1.00-etacur)*y(2)   &
-            +0.25*(1.00+etacur)*y(3)   &
-            -0.25*(1.00+etacur)*y(4)
-
-      j(4)= -0.25*(1.00+xicur)*y(2)   &
-            +0.25*(1.00+xicur)*y(3)   &
-            +0.25*(1.00-xicur)*y(4)
-
-      jdet = j(1)*j(4) - j(2)*j(3)
-
-      shapefct(1)=0.25*(1.00-etacur)*(1.00-xicur)
-      shapefct(2)=0.25*(1.00-etacur)*(1.00+xicur)
-      shapefct(3)=0.25*(1.00+etacur)*(1.00+xicur)
-      shapefct(4)=0.25*(1.00+etacur)*(1.00-xicur)
-
-      f(1) = (shapefct(2)*x(2)+shapefct(3)*x(3)+shapefct(4)*x(4)) - xp
-      f(2) = (shapefct(2)*y(2)+shapefct(3)*y(3)+shapefct(4)*y(4)) - yp
-
-      xinew  = xicur  - ( f(1)*j(4) - f(2)*j(2))/jdet
-      etanew = etacur - (-f(1)*j(3) + f(2)*j(1))/jdet
-
-      xidiff(1) = xinew  - xicur
-      xidiff(2) = etanew - etacur
-      i = i + 1
-      if (dot_product(xidiff,xidiff) < isInElemConverged .or. MAX_NR_ITER < i) exit
-    end do
-    par_coor%x = huge(par_coor%x)
-    par_coor%y = huge(par_coor%y)
-
-    if (i <= MAX_NR_ITER) then
-      par_coor%x = xinew
-      par_coor%y = etanew
-    end if
-
-  end function parametric_coordinates
-
-
-  function parametric_coordinates2(sphere, elem) result (ref)
+  function parametric_coordinates(sphere, elem) result (ref)
     implicit none
     type (spherical_polar_t), intent(in) :: sphere
     type (element_t), intent(in) :: elem
@@ -746,117 +642,10 @@ end subroutine interpol_spelt_latlon
     end do
     ref%x=a
     ref%y=b
-  end function parametric_coordinates2
+  end function parametric_coordinates
 
 
 
-
-!
-! analytic inverse of bilinear map from reference element to arbrirary quad
-! on a cube face  
-! 
-  function find_parametric_by_roots(cart, elem, cube) result(found)
-    implicit none
-    type (cartesian2D_t), intent(in)     :: cube
-    type (element_t)    , intent(in)     :: elem
-    type (cartesian2D_t), intent(out)    :: cart
-    logical                              :: found
-
-    real (kind=real_kind)                :: xp,yp
-
-    ! Store the two roots of inverse map
-    real (kind=real_kind) :: root1(2), root2(2)
-    real (kind=real_kind) :: aa, bb, cc, dd, ee, ff, gg, hh, tmp1, tmp2, det, det2
-
-    found   = .false.
-    xp      = cube%x
-    yp      = cube%y
-
-    ! For each element, find the two values in reference element that map to
-    ! the interpolation point. If either of these points is in [-1,1]^2, we are
-    ! in the right element. Otherwise, go on to the next one.
-    aa = elem%u2qmap(1,1) - xp
-    bb = elem%u2qmap(2,1)
-    cc = elem%u2qmap(3,1)
-    dd = elem%u2qmap(4,1)
-    ee = elem%u2qmap(1,2) - yp
-    ff = elem%u2qmap(2,2)
-    gg = elem%u2qmap(3,2)
-    hh = elem%u2qmap(4,2)
-    ! Need to divide by (dd*ff-bb*hh) and (dd*gg-cc*hh), so check for when either
-    ! value is zero:
-    if ((abs(dd).lt.tol).and.(abs(hh).lt.tol)) then
-      ! dd=hh=0 => dd*ff - bb*hh = 0 AND dd*gg - cc*hh = 0
-      root1(1) = (cc*ee-aa*gg)/(bb*gg-cc*ff)
-      root1(2) = (bb*ee-aa*ff)/(cc*ff-bb*gg)
-      root2 = root1
-    else if ((abs(ff).lt.tol).and.(abs(hh).lt.tol)) then
-      ! ff=hh=0 => dd*ff - bb*hh = 0
-      root1(1) = (cc*ee-aa*gg)/(bb*gg-dd*ee)
-      root1(2) = -ee/gg
-      root2 = root1
-    else if ((abs(dd).lt.tol).and.(abs(bb).lt.tol)) then
-      ! dd=bb=0 => dd*ff - bb*hh = 0
-      root1(1) = (cc*ee-aa*gg)/(aa*hh-cc*ff)
-      root1(2) = -aa/cc
-      root2 = root1
-    else if ((abs(ff).lt.tol).and.(abs(bb).lt.tol)) then
-      ! ff=bb=0 => dd*ff - bb*hh = 0
-      root1(1) = (cc*ee-aa*gg)/(aa*hh-dd*ee)
-      root1(2) = (dd*ee-aa*hh)/(cc*hh-dd*gg)
-      root2 = root1
-    else if ((abs(gg).lt.tol).and.(abs(hh).lt.tol)) then
-      root1(1) = -ee/ff
-      root1(2) = (bb*ee-aa*ff)/(cc*ff-dd*ee)
-      root2 = root1
-    else if ((abs(dd).lt.tol).and.(abs(cc).lt.tol)) then
-      root1(1) = -aa/bb
-      root1(2) = (bb*ee-aa*ff)/(aa*hh-bb*gg)
-      root2 = root1
-    else if ((abs(gg).lt.tol).and.(abs(cc).lt.tol)) then
-      root1(1) = (bb*ee-aa*ff)/(aa*hh-dd*ee)
-      root1(2) = (aa*hh-dd*ee)/(bb*hh-dd*ff)
-      root2 = root1
-    else if ((abs(dd*ff-bb*hh).lt.tol*tol).or.(abs(dd*gg-cc*hh).lt.tol*tol)) then
-      print*, ' This should not be zero!'
-      print*, "bb = ", bb
-      print*, "cc = ", cc
-      print*, "dd = ", dd
-      print*, "ff = ", ff
-      print*, "gg = ", gg
-      print*, "hh = ", hh
-      print*, "dd*ff-bb*hh = ", dd*ff-bb*hh
-      print*, "dd*gg-cc*hh = ", dd*gg-cc*hh
-    else
-      tmp1 = dd*ee + cc*ff - bb*gg - aa*hh
-      tmp2 = dd*ee - cc*ff + bb*gg - aa*hh
-      det2  = tmp2*tmp2-4.0d0*(bb*ee-aa*ff)*(dd*gg-cc*hh)
-      if (det2.lt.0.0d0) then
-        ! no real roots
-        root1 = (/9999.0d0, 9999.0d0/)
-        root2 = root1
-      else
-        det = sqrt(det2)
-        root1(1) = (-tmp1 + det) / (2.0d0*( dd*ff - bb*hh))
-        root1(2) = ( tmp2 + det) / (2.0d0*(-dd*gg + cc*hh))
-        root2(1) = (-tmp1 - det) / (2.0d0*( dd*ff - bb*hh))
-        root2(2) = ( tmp2 - det) / (2.0d0*(-dd*gg + cc*hh))
-      end if
-    end if
-
-    if ((root1(1)+1.0d0.ge.-tol).and.(root1(1)-1.0d0.le.tol).and. &
-      (root1(2)+1.0d0.ge.-tol).and.(root1(2)-1.0d0.le.tol)) then
-      found = .TRUE.
-      cart%x = root1(1)
-      cart%y = root1(2)
-    else if ((root2(1)+1.0d0.ge.-tol).and.(root2(1)-1.0d0.le.tol).and. &
-      (root2(2)+1.0d0.ge.-tol).and.(root2(2)-1.0d0.le.tol)) then
-      found = .TRUE.
-      cart%x = root2(1)
-      cart%y = root2(2)
-    end if
-
-  end function find_parametric_by_roots
 
 !
 ! find element containing given point, useing HOMME's standard
@@ -869,16 +658,15 @@ end subroutine interpol_spelt_latlon
     type (cartesian3D_t),     intent(in)    :: sphere_xyz
     type (element_t)        , intent(in)     :: elem
     logical                              :: inside, inside2
-    logical                              :: debug=.false.
     integer               :: i,j
     type (cartesian2D_t) :: corners(4),sphere_xy,cart
     type (cartesian3D_t) :: corners_xyz(4),center,a,b,cross(4)
     real (kind=real_kind) :: yp(4), y, elem_diam,dotprod
-    real (kind=real_kind) :: xp(4), x
+    real (kind=real_kind) :: xp(4), x, xc,yc
     real (kind=real_kind) :: tol_inside
     real (kind=real_kind) :: d1,d2
 
-
+    type (spherical_polar_t)    :: sphere_tmp
 
     inside = .false.
 
@@ -893,7 +681,6 @@ end subroutine interpol_spelt_latlon
     center%z = sum(corners_xyz(1:4)%z)/4
     if ( distance(center,sphere_xyz) > 1.0*elem_diam ) return
 
-
     tol_inside = 1e-10*elem_diam**2
     ! the point is close to the element, so project both to cubed sphere
     ! and perform contour integral
@@ -905,7 +692,26 @@ end subroutine interpol_spelt_latlon
       yp(i) = elem%corners(i)%y
     end do
 
+
     if (debug) then
+       print *,'point: ',x,y,elem%FaceNum
+       print *,'element:'
+       write(*,'(a,4e16.8,a)') 'x=[',xp(1:4),']'
+       write(*,'(a,4e16.8,a)') 'y=[',yp(1:4),']'
+
+       ! first check if centroid is in this element (sanity check)
+       sphere_tmp=change_coordinates(center)
+       sphere_xy=sphere2cubedsphere(sphere_tmp,elem%FaceNum)
+       xc=sphere_xy%x
+       yc=sphere_xy%y
+       print *,'cross product with centroid: all numbers should be negative'
+       j = 4
+       do i=1,4
+          print *,i,(xc-xp(j))*(yp(i)-yp(j))  - (yc-yp(j))*(xp(i)-xp(j))
+          j = i  ! within this loopk j = i-1
+       end do
+
+       print *,'cross product with search point'
        j = 4
        do i=1,4
           print *,i,(x-xp(j))*(yp(i)-yp(j))  - (y-yp(j))*(xp(i)-xp(j))
@@ -919,7 +725,7 @@ end subroutine interpol_spelt_latlon
       ! a = x-xp(j), y-yp(j)
       ! b = xp(i)-xp(j), yp(i)-yp(j)
       ! compute a cross b:
-      if (  (x-xp(j))*(yp(i)-yp(j))  - (y-yp(j))*(xp(i)-xp(j)) > tol_inside ) then
+      if ( -( (x-xp(j))*(yp(i)-yp(j))  - (y-yp(j))*(xp(i)-xp(j))) > tol_inside ) then
          return
       endif
       j = i  ! within this loopk j = i-1
@@ -940,7 +746,6 @@ end subroutine interpol_spelt_latlon
     type (cartesian3D_t),     intent(in)    :: sphere_xyz
     type (element_t)        , intent(in)     :: elem
     logical                              :: inside, inside2
-    logical                              :: debug
     integer               :: i,j
     type (cartesian2D_t) :: corners(4),sphere_xy,cart
     type (cartesian3D_t) :: corners_xyz(4),center,a,b,cross(4)
@@ -1066,16 +871,20 @@ end subroutine interpol_spelt_latlon
     sphere_xyz=spherical_to_cart(sphere)
 
     number=-1
+    print *,'WARNING: using GC map'
     do ii = 1,nelemd
-       found = point_inside_equiangular(elem(ii), sphere, sphere_xyz)
+       ! for equiangular gnomonic map:
+       ! unstructed grid element edges are NOT great circles
+       if (cubed_sphere_map==0) then
+          found = point_inside_equiangular(elem(ii), sphere, sphere_xyz)
+       else 
+          ! assume element edges are great circle arcs:
+          found = point_inside_gc(elem(ii), sphere, sphere_xyz)
+       endif
+
        if (found) then
           number = ii
-!          cube = sphere2cubedsphere(sphere, elem(ii)%FaceNum)
-!          found = find_parametric_by_roots(cart, elem(ii), cube)
-!          if (.not. found) then
-!             cart = parametric_coordinates(sphere, elem(ii)%corners, elem(ii)%FaceNum)
-             cart = parametric_coordinates2(sphere, elem(ii))
-!          endif
+          cart = parametric_coordinates(sphere, elem(ii))
           exit
        end if
     end do
@@ -1251,6 +1060,8 @@ end subroutine interpol_spelt_latlon
           sphere%lat=lat(j)
           sphere%lon=lon(i)
 
+          !debug=.false.
+          !if (j==18 .and. i==95) debug=.true.
           number = -1
           if (MeshUseMeshFile) then
              call cube_facepoint_unstructured(sphere, cart, number, elem)

@@ -246,6 +246,8 @@ contains
        write(iulog,'(a,2f8.4)') 'Max eigenvalue of Dinv (min, max): ', min_max_eig, max_max_eig
        write(iulog,'(a,3f8.2)') 'dx for CFL (smallest scale per elem): ave,min,max = ', avg_min_dx, min_min_dx, max_min_dx
        write(iulog,'(a,3f8.2)') 'dx for hypervis (largest scale per elem): ave,min,max = ', avg_max_dx, min_max_dx, max_max_dx
+       write(iulog,'(a,3f8.2)') "dx based on sqrt element area: ave,min,max = ", &
+                sqrt(avg_area)/(np-1),sqrt(min_area)/(np-1),sqrt(max_area)/(np-1)
     end if
 
     deallocate(h)
@@ -542,7 +544,7 @@ contains
 !rowind, colind are from 1 to 2 cause they correspond to 2D tensor in lat/lon
 
 !IF DSSED V NEEDED
-#if 0
+#if 1
     call initEdgeBuffer(edgebuf,1)
     do rowind=1,2
       do colind=1,2
@@ -561,7 +563,7 @@ contains
 #endif
 
 !IF BILINEAR MAP OF V NEEDED
-#if 0
+#if 1
     do rowind=1,2
       do colind=1,2
     ! replace hypervis w/ bilinear based on continuous corner values
