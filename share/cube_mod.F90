@@ -190,27 +190,27 @@ contains
   ! along with its inverse and determinant
   ! ==========================================
 
-  subroutine elem_jacobians(coords, unif2quadmap)
+  subroutine elem_jacobians(coords, unif2quadmap, nx)
 
 !    use quadrature_mod, only : quadrature_t
-    use dimensions_mod, only : np
 
-    type (cartesian2D_t),  dimension(np,np), intent(in) :: coords
+    integer, intent(in) :: nx
+    type (cartesian2D_t),  dimension(nx,nx), intent(in) :: coords
     ! unif2quadmap is the bilinear map from [-1,1]^2 -> arbitrary quadrilateral
     real (kind=real_kind), dimension(4,2), intent(out) :: unif2quadmap
 !    type (quadrature_t), intent(in) :: gauss
-!    real (kind=real_kind), dimension(2,2,np,np), intent(out) :: J, Jinv
-!    real (kind=real_kind), dimension(np,np), intent(out) :: Jdet
+!    real (kind=real_kind), dimension(2,2,nx,nx), intent(out) :: J, Jinv
+!    real (kind=real_kind), dimension(nx,nx), intent(out) :: Jdet
     integer :: ii,jj
 
-    unif2quadmap(1,1)=(coords(1,1)%x+coords(np,1)%x+coords(np,np)%x+coords(1,np)%x)/4.0d0
-    unif2quadmap(1,2)=(coords(1,1)%y+coords(np,1)%y+coords(np,np)%y+coords(1,np)%y)/4.0d0
-    unif2quadmap(2,1)=(-coords(1,1)%x+coords(np,1)%x+coords(np,np)%x-coords(1,np)%x)/4.0d0
-    unif2quadmap(2,2)=(-coords(1,1)%y+coords(np,1)%y+coords(np,np)%y-coords(1,np)%y)/4.0d0
-    unif2quadmap(3,1)=(-coords(1,1)%x-coords(np,1)%x+coords(np,np)%x+coords(1,np)%x)/4.0d0
-    unif2quadmap(3,2)=(-coords(1,1)%y-coords(np,1)%y+coords(np,np)%y+coords(1,np)%y)/4.0d0
-    unif2quadmap(4,1)=(coords(1,1)%x-coords(np,1)%x+coords(np,np)%x-coords(1,np)%x)/4.0d0
-    unif2quadmap(4,2)=(coords(1,1)%y-coords(np,1)%y+coords(np,np)%y-coords(1,np)%y)/4.0d0
+    unif2quadmap(1,1)=(coords(1,1)%x+coords(nx,1)%x+coords(nx,nx)%x+coords(1,nx)%x)/4.0d0
+    unif2quadmap(1,2)=(coords(1,1)%y+coords(nx,1)%y+coords(nx,nx)%y+coords(1,nx)%y)/4.0d0
+    unif2quadmap(2,1)=(-coords(1,1)%x+coords(nx,1)%x+coords(nx,nx)%x-coords(1,nx)%x)/4.0d0
+    unif2quadmap(2,2)=(-coords(1,1)%y+coords(nx,1)%y+coords(nx,nx)%y-coords(1,nx)%y)/4.0d0
+    unif2quadmap(3,1)=(-coords(1,1)%x-coords(nx,1)%x+coords(nx,nx)%x+coords(1,nx)%x)/4.0d0
+    unif2quadmap(3,2)=(-coords(1,1)%y-coords(nx,1)%y+coords(nx,nx)%y+coords(1,nx)%y)/4.0d0
+    unif2quadmap(4,1)=(coords(1,1)%x-coords(nx,1)%x+coords(nx,nx)%x-coords(1,nx)%x)/4.0d0
+    unif2quadmap(4,2)=(coords(1,1)%y-coords(nx,1)%y+coords(nx,nx)%y-coords(1,nx)%y)/4.0d0
 
   end subroutine elem_jacobians
 
@@ -284,6 +284,8 @@ contains
     ! inverse
     ! ==============================================
 
+    ! MNL: Calculate Jacobians.  these must be computed before Dmap is used below
+    call elem_jacobians(elem%cartp, elem%u2qmap, np)
 
     elem%max_eig = 0.0d0
     elem%min_eig = 1d99
@@ -423,16 +425,13 @@ contains
           ! nu1=nu2=nu reproduces our constant coefficient viscosity
           !            which is excellent
           ! on cubed sphere grid, eig(1)/eig(2) <= 3  (3 at cube corners)
-          ! (kite grid: max ratio: 4.7)
           ! THUS:
           ! for eig(1)/eig(2) <= 3     nu1 = nu2 = geometric mean
           ! for eig(1)/eig(2) >= 3     nu1 = (1/eig(1))  (1/sqrt(3))
           !                            nu2 = (1/eig(2)) sqrt(3)
-          !
           ! which means use the theoretical values, but reduces the coefficient in
           ! the long direction by 58% and increase the coefficient in the small direction
           ! by 58%
-          !print *,i,j,eig(1)/eig(2)  
           sc = max( 1d0, (eig(1)/eig(2))/ 3.0 )
 	  lamStar1= (1/sqrt(eig(1)*eig(2)) ) / sqrt(sc)
 	  lamStar2= (1/sqrt(eig(1)*eig(2)) ) * sqrt(sc)
@@ -490,7 +489,10 @@ contains
     !
     ! =================================================
 
-    ! everything else is derived from D
+    ! mt: better might be to compute all these quantities directly from D
+    ! for consistency?
+    !
+    ! MNL: done
     elem%D = elem%D * sqrt(alpha) 
     elem%Dinv = elem%Dinv / sqrt(alpha) 
     elem%metdet = elem%metdet * alpha
@@ -651,17 +653,13 @@ contains
     real (kind=real_kind), intent(in)     :: a,b
     ! local
     real (kind=real_kind)  :: tmpD(2,2), Jp(2,2),x1,x2,pi,pj,qi,qj
-    real (kind=real_kind)  :: u2qmap(4,2) ! bilinear map from ref element to quad in cubedsphere coordinates
-
-    ! MNL: Calculate Jacobians.  these must be computed before Dmap is used below
-    call elem_jacobians(elem%cartp, u2qmap)
 
     ! input (a,b) shold be a point in the reference element [-1,1]
     ! compute Jp(a,b)
-    Jp(1,1) = u2qmap(2,1) + u2qmap(4,1)*b
-    Jp(1,2) = u2qmap(3,1) + u2qmap(4,1)*a
-    Jp(2,1) = u2qmap(2,2) + u2qmap(4,2)*b
-    Jp(2,2) = u2qmap(3,2) + u2qmap(4,2)*a
+    Jp(1,1) = elem%u2qmap(2,1) + elem%u2qmap(4,1)*b
+    Jp(1,2) = elem%u2qmap(3,1) + elem%u2qmap(4,1)*a
+    Jp(2,1) = elem%u2qmap(2,2) + elem%u2qmap(4,2)*b
+    Jp(2,2) = elem%u2qmap(3,2) + elem%u2qmap(4,2)*a
 
     ! map (a,b) to the [-pi/2,pi/2] equi angular cube face:  x1,x2
     ! a = gp%points(i)
