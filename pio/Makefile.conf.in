@@ -55,7 +55,7 @@ AR		= @AR@
 ARFLAGS         = @ARFLAGS@
 RM		= @RM@
 AWK             = @AWK@
-
+INSTALL = install -c
 
 # Sizes (in C)
 

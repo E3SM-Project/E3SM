@@ -34,3 +34,10 @@ That should be the minimal set of flags required to build pio, a complete set of
 One additional flag of interest is --enable-filesystem-hints which can
 be set to gpfs or lustre.  You should only use this flag if you are sure that the
 file system you are using is either gpfs or lustre respectively.   
+
+After configure completes use gmake to complete the build.   
+
+gmake install will move the compiled library and module files to the directory specified
+by $PREFIX which can be set by using the --prefix argument to configure.   Note that
+although the user application only needs to 'use pio'  at least some compilers require that
+all of the module files be located in the install directory.   

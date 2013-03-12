@@ -67,12 +67,13 @@ TEMPLATES_FC = pionfatt_mod.F90.in \
 
 TEMPSRCFC = $(TEMPLATES_FC:.in=)
 SRCS_FC += $(TEMPSRCFC)
+MOD_SRCS := $(filter-out C_interface_mod.F90 pio_msg_callbacks.F90 pio_msg_getput_callbacks.F90, $(SRCS_FC))
 
 OBJS=  $(SRCS_C:.c=.o) \
        $(SRCS_FC:.F90=.o)
 
 
-MODFILES := $(SRCS_FC:.F90=$(MODSUF))
+MODFILES := $(MOD_SRCS:.F90=$(MODSUF))
 
 # File foo.DEPSUF will contain make dependency for foo.F90
 DEPENDS := $(SRCS_FC:.F90=$(DEPSUF))
@@ -132,6 +133,12 @@ clean:
 
 predistclean: clean
 	$(RM) $(TEMPSRCFC)
+
+install: $(LIB)  
+	$(INSTALL) -d -m 755 $(INSTALL_LIB)
+	$(INSTALL) -d -m 755 $(INSTALL_INC)
+	$(INSTALL) -m 644 $(LIB) $(INSTALL_LIB)/$(LIB)
+	$(INSTALL) -m 644 $(MODFILES) $(INSTALL_INC)
 
 
 startandcount: calcdecomp.F90
