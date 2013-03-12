@@ -14,7 +14,7 @@ module cube_mod
 
   use physical_constants, only : dd_pi, rearth
 
-  use control_mod, only : hypervis_power
+  use control_mod, only : hypervis_power,cubed_sphere_map
 
   implicit none
   private
@@ -190,27 +190,22 @@ contains
   ! along with its inverse and determinant
   ! ==========================================
 
-  subroutine elem_jacobians(coords, unif2quadmap, nx)
+  subroutine elem_jacobians(coords, unif2quadmap)
 
-!    use quadrature_mod, only : quadrature_t
-
-    integer, intent(in) :: nx
-    type (cartesian2D_t),  dimension(nx,nx), intent(in) :: coords
+    use dimensions_mod, only : np
+    type (cartesian2D_t),  dimension(np,np), intent(in) :: coords
     ! unif2quadmap is the bilinear map from [-1,1]^2 -> arbitrary quadrilateral
     real (kind=real_kind), dimension(4,2), intent(out) :: unif2quadmap
-!    type (quadrature_t), intent(in) :: gauss
-!    real (kind=real_kind), dimension(2,2,nx,nx), intent(out) :: J, Jinv
-!    real (kind=real_kind), dimension(nx,nx), intent(out) :: Jdet
     integer :: ii,jj
 
-    unif2quadmap(1,1)=(coords(1,1)%x+coords(nx,1)%x+coords(nx,nx)%x+coords(1,nx)%x)/4.0d0
-    unif2quadmap(1,2)=(coords(1,1)%y+coords(nx,1)%y+coords(nx,nx)%y+coords(1,nx)%y)/4.0d0
-    unif2quadmap(2,1)=(-coords(1,1)%x+coords(nx,1)%x+coords(nx,nx)%x-coords(1,nx)%x)/4.0d0
-    unif2quadmap(2,2)=(-coords(1,1)%y+coords(nx,1)%y+coords(nx,nx)%y-coords(1,nx)%y)/4.0d0
-    unif2quadmap(3,1)=(-coords(1,1)%x-coords(nx,1)%x+coords(nx,nx)%x+coords(1,nx)%x)/4.0d0
-    unif2quadmap(3,2)=(-coords(1,1)%y-coords(nx,1)%y+coords(nx,nx)%y+coords(1,nx)%y)/4.0d0
-    unif2quadmap(4,1)=(coords(1,1)%x-coords(nx,1)%x+coords(nx,nx)%x-coords(1,nx)%x)/4.0d0
-    unif2quadmap(4,2)=(coords(1,1)%y-coords(nx,1)%y+coords(nx,nx)%y-coords(1,nx)%y)/4.0d0
+    unif2quadmap(1,1)=(coords(1,1)%x+coords(np,1)%x+coords(np,np)%x+coords(1,np)%x)/4.0d0
+    unif2quadmap(1,2)=(coords(1,1)%y+coords(np,1)%y+coords(np,np)%y+coords(1,np)%y)/4.0d0
+    unif2quadmap(2,1)=(-coords(1,1)%x+coords(np,1)%x+coords(np,np)%x-coords(1,np)%x)/4.0d0
+    unif2quadmap(2,2)=(-coords(1,1)%y+coords(np,1)%y+coords(np,np)%y-coords(1,np)%y)/4.0d0
+    unif2quadmap(3,1)=(-coords(1,1)%x-coords(np,1)%x+coords(np,np)%x+coords(1,np)%x)/4.0d0
+    unif2quadmap(3,2)=(-coords(1,1)%y-coords(np,1)%y+coords(np,np)%y+coords(1,np)%y)/4.0d0
+    unif2quadmap(4,1)=(coords(1,1)%x-coords(np,1)%x+coords(np,np)%x-coords(1,np)%x)/4.0d0
+    unif2quadmap(4,2)=(coords(1,1)%y-coords(np,1)%y+coords(np,np)%y-coords(1,np)%y)/4.0d0
 
   end subroutine elem_jacobians
 
@@ -256,7 +251,7 @@ contains
     real(kind=real_kind) :: alpha
     real (kind=longdouble_kind)      :: gll_points(np)
     ! Local variables
-    integer ii,face_no
+    integer ii
     integer i,j,nn
     integer iptr
 
@@ -274,8 +269,6 @@ contains
 
     real (kind=real_kind) :: roundoff_err = 1e-11 !!! OG: this is a temporal fix
     
-    face_no = elem%vertex%face_number
-
     ! ==============================================
     ! Initialize differential mapping operator
     ! to and from vector fields on the sphere to 
@@ -284,8 +277,10 @@ contains
     ! inverse
     ! ==============================================
 
-    ! MNL: Calculate Jacobians.  these must be computed before Dmap is used below
-    call elem_jacobians(elem%cartp, elem%u2qmap, np)
+    ! MNL: Calculate Jacobians of bilinear map from cubed-sphere to ref element
+    if (cubed_sphere_map==0) then
+       call elem_jacobians(elem%cartp, elem%u2qmap)
+    endif
 
     elem%max_eig = 0.0d0
     elem%min_eig = 1d99
