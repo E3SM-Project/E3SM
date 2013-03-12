@@ -619,7 +619,7 @@ end subroutine interpol_spelt_latlon
     b=0
     i=0
     do
-       sphere1 = ref2sphere(a,b,elem%corners,elem%vertex%face_number)
+       sphere1 = ref2sphere(a,b,elem)
        resa = sphere1%lon - sphere%lon
        if (resa>dd_pi) resa=resa-2*dd_pi
        if (resa<-dd_pi) resa=resa+2*dd_pi
@@ -1095,7 +1095,7 @@ end subroutine interpol_spelt_latlon
           if (ii /= -1) then
              ! compute error: map 'cart' back to sphere and compare with original
              ! interpolation point:
-             sphere2_xyz = spherical_to_cart( ref2sphere(cart%x,cart%y,elem(ii)%corners,elem(ii)%vertex%face_number) )
+             sphere2_xyz = spherical_to_cart( ref2sphere(cart%x,cart%y,elem(ii)))
              sphere_xyz = spherical_to_cart(sphere)
              err=max(err,distance(sphere2_xyz,sphere_xyz))
           endif
