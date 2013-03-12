@@ -314,7 +314,7 @@ contains
     if (minval(node_multiplicity) < 3 .or. max_elements_attached_to_node < maxval(node_multiplicity)) then
       print *, 'minval(node_multiplicity)', minval(node_multiplicity)
       print *, 'maxval(node_multiplicity)', maxval(node_multiplicity),&
-           ' and max_elements_attached_to_node ',&max_elements_attached_to_node
+           ' and max_elements_attached_to_node ',max_elements_attached_to_node
       call abortmp('get_node_multiplicity: Number of elements attached to node less than 3 or greater than maximum.')
     endif
 
