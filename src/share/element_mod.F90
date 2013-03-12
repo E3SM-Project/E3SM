@@ -289,7 +289,7 @@ module element_mod
      ! equ-angular gnomonic projection coordinates
      type (cartesian2D_t)     :: cartp(np,np)  ! gnomonic coordinates of GLL points 
      type (cartesian2D_t)     :: corners(4)    ! gnomonic coordinates of element corners
-     real (kind=real_kind)    :: u2qmap(4,2)   ! bilinear map from ref element to quad in cubedsphere coordinates
+!     real (kind=real_kind)    :: u2qmap(4,2)   ! bilinear map from ref element to quad in cubedsphere coordinates
      ! 3D cartesian coordinates
      type (cartesian3D_t)     :: corners3D(4)  
 
@@ -301,7 +301,7 @@ module element_mod
      real (kind=real_kind)    :: dx_long        ! long length scale
 
      real (kind=real_kind)    :: variable_hyperviscosity(np,np)  ! hyperviscosity based on above
-     real (kind=real_kind)    :: courant !  advective courant number
+!     real (kind=real_kind)    :: courant !  advective courant number
      real (kind=real_kind)    :: hv_courant ! hyperviscosity courant number
 
 
