@@ -463,7 +463,11 @@ diffCprnc() {
       rm $diffStderr
     else
       echo "The files are different: DIFF_RESULT=${DIFF_RESULT}"
-      echo "  The diff output is available in $diffStdout"
+      #echo "  The diff output is available in $diffStdout"
+      echo "############################################################################"
+      echo "CPRNC returned the following RMS differences"
+      grep RMS ${diffStdout}
+      echo "############################################################################"
       exit -1
     fi
 
@@ -485,7 +489,7 @@ diffStdout() {
 
   if [ "$diffCode" == 0 ] ; then
     # parse output to get status
-    fileDifference=`echo $diffOutput | awk  '{print $3}'`
+    fileDifference=`head -n 1 $diffOutput | awk  '{print $3}'`
 
     if [ "${fileDifference}" == identical ]; then
       echo "${diffOutput}"
@@ -493,6 +497,9 @@ diffStdout() {
       echo "${diffOutput}"
     elif [ "${fileDifference}" == different ]; then
       echo "${diffOutput}"
+      echo "diff of output: "
+      diffCmd="diff ${PARSE_RESULT} ${SAVED_RESULT}"
+      $diffCmd
       exit -1
     else
       echo "File comparison failed to yield expected result (identical,simlar,different)"
@@ -503,6 +510,16 @@ diffStdout() {
   else
     echo "$cmd failed with error code $diffCode"
     echo "diffTol Output: ${diffOutput}"
+    echo "############################################################################"
+    diffOutputFile=`dirname ${PARSE_RESULT}`/`basename ${PARSE_RESULT}`.diff
+    diffCmd="diff ${PARSE_RESULT} ${SAVED_RESULT}"
+    $diffCmd > $diffOutputFile
+    echo "The full diff of the two files is available in"
+    echo "${diffOutputFile}"
+    echo "here are the first 50 lines"
+    #echo `head -n 50 $diffOutputFile`
+    head -n 50 $diffOutputFile
+    echo "############################################################################"
     exit -1
   fi
 

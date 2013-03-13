@@ -46,6 +46,10 @@ CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/diffTol.py
 #   submissions-list.sh which hasn't been created yet.
 ADD_TEST(submitAndRunTests ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "all")
 
+ADD_CUSTOM_TARGET(check 
+                  COMMAND ${CMAKE_CTEST_COMMAND} "--output-on-failure")
+
+ADD_DEPENDENCIES(check submitAndRunTests)
 # Set the time limit to submit and run the tests at three hours
 SET_TESTS_PROPERTIES(submitAndRunTests PROPERTIES TIMEOUT 10800)
 
