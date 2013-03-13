@@ -489,7 +489,7 @@ diffStdout() {
 
   if [ "$diffCode" == 0 ] ; then
     # parse output to get status
-    fileDifference=`head -n 1 $diffOutput | awk  '{print $3}'`
+    fileDifference=`echo $diffOutput | awk  '{print $3}'`
 
     if [ "${fileDifference}" == identical ]; then
       echo "${diffOutput}"
