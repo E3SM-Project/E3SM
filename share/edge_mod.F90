@@ -132,6 +132,21 @@ contains
     type (EdgeBuffer_t),intent(out), target :: edge
     real(kind=real_kind), optional, pointer :: buf_ptr(:), receive_ptr(:)
 
+    ! Notes about the buf_ptr/receive_ptr options:
+    !
+    ! You can pass in 1D pointers to this function. If they are not
+    ! associated, they will be allocated and used as buffer space. If they
+    ! are associated, their targets will be used as buffer space.
+    !
+    ! The pointers must not be thread-private.
+    !
+    ! If an EdgeBuffer_t object is initialized from pre-existing storage
+    ! (i.e. buf_ptr is provided and not null), it must *not* be freed,
+    ! and must not be used if the underlying storage has been deallocated.
+    !
+    ! All these restrictions also applied to the old newbuf and newreceive
+    ! options.
+
     ! Workaround for NAG bug.
     ! NAG 5.3.1 dies if you use pointer bounds remapping to set
     ! a pointer that is also a component. So remap to temporary,

@@ -880,12 +880,18 @@ contains
     use dimensions_mod, only : nlev, qsize, nelemd
 
     ! Shared buffer pointers.
+    ! Using "=> null()" in a subroutine is usually bad, because it makes
+    ! the variable have an implicit "save", and therefore shared between
+    ! threads. But in this case we want shared pointers.
     real(kind=real_kind), pointer :: buf_ptr(:) => null()
     real(kind=real_kind), pointer :: receive_ptr(:) => null()
 
     ! this might be called with qsize=0
     ! allocate largest one first
+    ! Currently this is never freed. If it was, only this first one should
+    ! be freed, as only it knows the true size of the buffer.
     call initEdgeBuffer(edgeAdvQ3,max(nlev,qsize*nlev*3), buf_ptr, receive_ptr)  ! Qtens,Qmin, Qmax
+
     ! remaining edge buffers can share %buf and %receive with edgeAdvQ3
     ! (This is done through the optional 1D pointer arguments.)
     call initEdgeBuffer(edgeAdv1,nlev,buf_ptr,receive_ptr)
@@ -893,8 +899,9 @@ contains
     call initEdgeBuffer(edgeAdv_p1,qsize*nlev + nlev,buf_ptr,receive_ptr) 
     call initEdgeBuffer(edgeAdvQ2,qsize*nlev*2,buf_ptr,receive_ptr)  ! Qtens,Qmin, Qmax
 
-
-
+    ! Don't actually want these saved, if this is ever called twice.
+    nullify(buf_ptr)
+    nullify(receive_ptr)
 
     ! this static array is shared by all threads, so dimension for all threads (nelemd), not nets:nete:
     allocate (qmin(nlev,qsize,nelemd))
