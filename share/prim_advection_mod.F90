@@ -879,14 +879,18 @@ contains
   subroutine Prim_Advec_Init()
     use dimensions_mod, only : nlev, qsize, nelemd
 
+    ! Shared buffer pointers.
+    real(kind=real_kind), pointer :: buf_ptr(:), receive_ptr(:)
+
     ! this might be called with qsize=0
     ! allocate largest one first
-    call initEdgeBuffer(edgeAdvQ3,max(nlev,qsize*nlev*3))  ! Qtens,Qmin, Qmax
-    ! remaining edge buffers can share %buf and %receive with edgeAdvQ3:
-    call initEdgeBuffer(edgeAdv1,nlev,edgeAdvQ3%buf,edgeAdvQ3%receive)
-    call initEdgeBuffer(edgeAdv,qsize*nlev,edgeAdvQ3%buf,edgeAdvQ3%receive)
-    call initEdgeBuffer(edgeAdv_p1,qsize*nlev + nlev,edgeAdvQ3%buf,edgeAdvQ3%receive) 
-    call initEdgeBuffer(edgeAdvQ2,qsize*nlev*2,edgeAdvQ3%buf,edgeAdvQ3%receive)  ! Qtens,Qmin, Qmax
+    call initEdgeBuffer(edgeAdvQ3,max(nlev,qsize*nlev*3), buf_ptr, receive_ptr)  ! Qtens,Qmin, Qmax
+    ! remaining edge buffers can share %buf and %receive with edgeAdvQ3
+    ! (This is done through the optional 1D pointer arguments.)
+    call initEdgeBuffer(edgeAdv1,nlev,buf_ptr,receive_ptr)
+    call initEdgeBuffer(edgeAdv,qsize*nlev,buf_ptr,receive_ptr)
+    call initEdgeBuffer(edgeAdv_p1,qsize*nlev + nlev,buf_ptr,receive_ptr) 
+    call initEdgeBuffer(edgeAdvQ2,qsize*nlev*2,buf_ptr,receive_ptr)  ! Qtens,Qmin, Qmax
 
 
 

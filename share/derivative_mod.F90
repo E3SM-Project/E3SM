@@ -358,10 +358,10 @@ end do
 ! Compute interpolation matrix from gll(1:n1) -> gs(1:n2)
 ! =======================================
   subroutine v2pinit(v2p,gll,gs,n1,n2)
+    integer :: n1,n2
     real(kind=real_kind)  ::  v2p(n1,n2)
     real(kind=real_kind)  ::  v2p_new(n1,n2)
     real(kind=longdouble_kind)  ::  gll(n1),gs(n2)
-    integer :: n1,n2
     ! Local variables
 
     integer i,j,k,m,l
@@ -1498,8 +1498,8 @@ endif
 !  1st order, monotone, conservative
 !  ================================================
   function remap_phys2gll(pin,nphys) result(pout)
-    real(kind=real_kind), intent(in) :: pin(nphys*nphys)
     integer :: nphys
+    real(kind=real_kind), intent(in) :: pin(nphys*nphys)
     real(kind=real_kind) :: pout(np,np)
     
     ! Local

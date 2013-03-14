@@ -2802,6 +2802,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use time_mod, only : TimeLevel_t
   implicit none
   
+  integer :: nets,nete
   real (kind=real_kind), dimension(np,np,nets:nete), intent(inout)   :: phis
   type (hybrid_t)      , intent(in) :: hybrid
   type (element_t)     , intent(inout), target :: elem(:)
@@ -2809,7 +2810,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind), intent(in)   :: minf
   integer,               intent(in) :: numcycle
   
-  integer :: nets,nete
   ! local 
   real (kind=real_kind), dimension(np,np,nets:nete) :: pstens	
   real (kind=real_kind), dimension(nets:nete) :: pmin,pmax

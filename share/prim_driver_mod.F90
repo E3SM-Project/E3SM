@@ -1712,12 +1712,12 @@ contains
     use prim_advance_mod, only : smooth_phis
     implicit none
     
+    integer , intent(in) :: nets,nete
     real (kind=real_kind), intent(inout)   :: phis(np,np,nets:nete)
     real (kind=real_kind), intent(inout)   :: sghdyn(np,np,nets:nete)
     real (kind=real_kind), intent(inout)   :: sgh30dyn(np,np,nets:nete)
     type (hybrid_t)      , intent(in) :: hybrid
     type (element_t)     , intent(inout), target :: elem(:)
-    integer , intent(in) :: nets,nete
     ! local
     integer :: ie
     real (kind=real_kind) :: minf 
