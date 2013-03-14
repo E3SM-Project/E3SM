@@ -31,17 +31,11 @@ module control_mod
                                                                ! ftype = 0  HOMME ApplyColumn() type forcing process split
                                                                ! ftype = -1   ignore forcing  (used for testing energy balance)
   integer, public  :: use_cpstar=0                             ! use cp or cp* in T equation                               
-  integer, public  :: energy_fixer = 0    ! options appropriate for leapfrog:
-                                          !   0:  no fixer, compute energy staggered in time
-                                          !   1:  Energy with cp_star, staggered (for debug only)
-                                          !   2:  Energy with cp, staggered
-                                          ! options appropreate for forward-in-time
-                                          ! -1,-2:  no fixer, compute energy non-staggered in time
-                                          !   3:  Energy with cp_star, non-staggered (for debug only)
-                                          !   4:  Energy with cp, non-staggered
+  integer, public  :: energy_fixer = 0    !  -1: No fixer, use non-staggered formula
+                                          !   0: No Fixer, use staggered in time formula
+                                          !       (only for leapfrog)
+                                          !   1 or 4:  Enable fixer, non-staggered formula
 
-
-                                          ! 1 = CAM style fixer  Tnew = T + beta
                                               
   integer, public :: qsplit = 1           ! ratio of dynamics tsteps to tracer tsteps
   integer, public :: rsplit = 0           ! for vertically lagrangian dynamics, apply remap
@@ -62,6 +56,12 @@ module control_mod
 !                      2  PPM vertical remap without mirroring at the boundaries
 !                         (no bc's enforced, first-order at two cells bordering top and bottom boundaries)
   integer, public :: vert_remap_q_alg = 0
+
+
+ integer, public :: cubed_sphere_map = 0   !  0 = equi-angle Gnomonic
+                                           !  1 = equi-spaced Gnomonic (not yet coded)
+                                           !  2 = element-local projection  
+                                           !  3 = parametric (not yet coded)
 
 !tolerance to define smth small, was introduced for lim 8 in 2d and 3d
   real (kind=real_kind), public, parameter :: tol_limiter=1e-13
