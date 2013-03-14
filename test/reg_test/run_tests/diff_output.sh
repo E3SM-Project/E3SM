@@ -33,11 +33,20 @@ echo "Test name = ${TEST_NAME}"
 echo "Diffing the stdout of the run:"
 diffStdout
 
+echo "############################################################################"
+echo "  The diff of the stdout has passed"
+echo "############################################################################"
+
 if [ "${USE_CPRNC}" == ON -o "${USE_CPRNC}" == TRUE ] ; then
   echo "Diffing the Netcdf output files"
   diffCprnc
+  echo "############################################################################"
+  echo "  The diff using CPRNC has passed"
+  echo "############################################################################"
+
 else
   echo "Not diffing the Netcdf output"
+  echo "############################################################################"
 fi
 
 exit 0

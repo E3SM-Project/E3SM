@@ -38,7 +38,7 @@ macro(createTestExec execName execType execSources macroNP macroNC
 
   ADD_EXECUTABLE(${execName} ${${execSources}})
 
-  # More thought needs to go into these options
+  # More thought needs to go into this option
   #IF (macroWITH_ENERGY)
   #ENDIF ()
 
@@ -330,6 +330,9 @@ macro(createTest testName)
   ADD_CUSTOM_TARGET(${THIS_TEST_INDIV}
            COMMAND ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "${THIS_TEST_RUN_SCRIPT}" "${TEST_NAME}")
 
+  ADD_DEPENDENCIES(${THIS_TEST_INDIV} ${EXEC_NAME})
+
+  ADD_DEPENDENCIES(check ${EXEC_NAME})
   # Now make the Individual targets
   #ADD_CUSTOM_COMMAND(TARGET ${THIS_TEST_INDIV}
   #                   COMMENT "Running the HOMME regression test: ${THIS_TEST}"

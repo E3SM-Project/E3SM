@@ -61,10 +61,6 @@ IF (Homme_Registered_Host)
   MESSAGE(STATUS "Registered Host, reading paths from systemPaths")
   readRegisteredPaths()
 
-  MESSAGE(STATUS "Homme_NETCDF_DIR = ${Homme_NETCDF_DIR}")
-  MESSAGE(STATUS "Homme_PNETCDF_DIR = ${Homme_PNETCDF_DIR}")
-  MESSAGE(STATUS "Homme_Hints = ${Homme_PNETCDF_DIR}")
-
 ELSE ()
   MESSAGE(STATUS "Host not registered setting hints ")
   determineHintPaths()
