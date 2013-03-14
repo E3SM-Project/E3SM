@@ -9,10 +9,13 @@
 
 module cube_mod
   use kinds, only : real_kind, long_kind, longdouble_kind
-  use coordinate_systems_mod, only : spherical_polar_t, cartesian3D_t
-  use physical_constants, only : dd_pi, rearth
+  use coordinate_systems_mod, only : spherical_polar_t, cartesian3D_t, cartesian2d_t, &
+       projectpoint, cubedsphere2cart, spherical_to_cart, sphere_tri_area,dist_threshold, &
+       change_coordinates
 
-  use control_mod, only : hypervis_power
+  use physical_constants, only : dd_pi, rearth
+  use control_mod, only : hypervis_power, cubed_sphere_map
+  use parallel_mod, only : abortmp
 
   implicit none
   private
@@ -25,6 +28,7 @@ module cube_mod
   real(kind=real_kind), public, parameter :: cube_xend   =  0.25D0*DD_PI
   real(kind=real_kind), public, parameter :: cube_ystart = -0.25D0*DD_PI
   real(kind=real_kind), public, parameter :: cube_yend   =  0.25D0*DD_PI
+
 
   type, public :: face_t
      type (spherical_polar_t) :: sphere0       ! tangent point of face on sphere
@@ -74,16 +78,28 @@ module cube_mod
   public  :: CubeElemCount
   public  :: CubeSetupEdgeIndex
   public  :: rotation_init_atomic
+  public  :: ref2sphere
+
+  ! public interface to REFERECE element map
+#if HOMME_QUAD_PREC
+  interface ref2sphere
+     module procedure ref2sphere_double
+     module procedure ref2sphere_longdouble
+  end interface
+#else
+  ! both routines have identical arguments in this case, cant use interface
+  interface ref2sphere
+     module procedure ref2sphere_double
+  end interface
+#endif
+
 
   ! ===============================
   ! Private methods
   ! ===============================
-
-
   private :: coordinates_atomic
   private :: metric_atomic
-  private :: coreolis_init, coreolis_init_atomic
-  private :: GetLatticeSpacing
+  private :: coreolis_init_atomic
 
 contains
 
@@ -125,9 +141,7 @@ contains
 
   subroutine coordinates_atomic(elem,gll_points)
     use element_mod, only : element_t, element_var_coordinates
-    use coordinate_systems_mod, only : cartesian2d_t,ref2sphere,cubedsphere2cart, spherical_to_cart, sphere_tri_area
     use dimensions_mod, only : np
-    use parallel_mod, only : abortmp
     type (element_t) :: elem
     real (kind=longdouble_kind)      :: gll_points(np)
 
@@ -142,7 +156,7 @@ contains
     face_no = elem%vertex%face_number
     do i=1,np
     do j=1,np
-       elem%spherep(i,j)=ref2sphere(gll_points(i),gll_points(j),elem%corners,face_no)
+       elem%spherep(i,j)=ref2sphere(gll_points(i),gll_points(j),elem)
     enddo
     enddo
 
@@ -173,28 +187,22 @@ contains
   ! along with its inverse and determinant
   ! ==========================================
 
-  subroutine elem_jacobians(coords, unif2quadmap, nx)
+  subroutine elem_jacobians(coords, unif2quadmap)
 
-    use coordinate_systems_mod, only : cartesian2d_t
-!    use quadrature_mod, only : quadrature_t
-
-    integer, intent(in) :: nx
-    type (cartesian2D_t),  dimension(nx,nx), intent(in) :: coords
+    use dimensions_mod, only : np
+    type (cartesian2D_t),  dimension(np,np), intent(in) :: coords
     ! unif2quadmap is the bilinear map from [-1,1]^2 -> arbitrary quadrilateral
     real (kind=real_kind), dimension(4,2), intent(out) :: unif2quadmap
-!    type (quadrature_t), intent(in) :: gauss
-!    real (kind=real_kind), dimension(2,2,nx,nx), intent(out) :: J, Jinv
-!    real (kind=real_kind), dimension(nx,nx), intent(out) :: Jdet
     integer :: ii,jj
 
-    unif2quadmap(1,1)=(coords(1,1)%x+coords(nx,1)%x+coords(nx,nx)%x+coords(1,nx)%x)/4.0d0
-    unif2quadmap(1,2)=(coords(1,1)%y+coords(nx,1)%y+coords(nx,nx)%y+coords(1,nx)%y)/4.0d0
-    unif2quadmap(2,1)=(-coords(1,1)%x+coords(nx,1)%x+coords(nx,nx)%x-coords(1,nx)%x)/4.0d0
-    unif2quadmap(2,2)=(-coords(1,1)%y+coords(nx,1)%y+coords(nx,nx)%y-coords(1,nx)%y)/4.0d0
-    unif2quadmap(3,1)=(-coords(1,1)%x-coords(nx,1)%x+coords(nx,nx)%x+coords(1,nx)%x)/4.0d0
-    unif2quadmap(3,2)=(-coords(1,1)%y-coords(nx,1)%y+coords(nx,nx)%y+coords(1,nx)%y)/4.0d0
-    unif2quadmap(4,1)=(coords(1,1)%x-coords(nx,1)%x+coords(nx,nx)%x-coords(1,nx)%x)/4.0d0
-    unif2quadmap(4,2)=(coords(1,1)%y-coords(nx,1)%y+coords(nx,nx)%y-coords(1,nx)%y)/4.0d0
+    unif2quadmap(1,1)=(coords(1,1)%x+coords(np,1)%x+coords(np,np)%x+coords(1,np)%x)/4.0d0
+    unif2quadmap(1,2)=(coords(1,1)%y+coords(np,1)%y+coords(np,np)%y+coords(1,np)%y)/4.0d0
+    unif2quadmap(2,1)=(-coords(1,1)%x+coords(np,1)%x+coords(np,np)%x-coords(1,np)%x)/4.0d0
+    unif2quadmap(2,2)=(-coords(1,1)%y+coords(np,1)%y+coords(np,np)%y-coords(1,np)%y)/4.0d0
+    unif2quadmap(3,1)=(-coords(1,1)%x-coords(np,1)%x+coords(np,np)%x+coords(1,np)%x)/4.0d0
+    unif2quadmap(3,2)=(-coords(1,1)%y-coords(np,1)%y+coords(np,np)%y+coords(1,np)%y)/4.0d0
+    unif2quadmap(4,1)=(coords(1,1)%x-coords(np,1)%x+coords(np,np)%x-coords(1,np)%x)/4.0d0
+    unif2quadmap(4,2)=(coords(1,1)%y-coords(np,1)%y+coords(np,np)%y-coords(1,np)%y)/4.0d0
 
   end subroutine elem_jacobians
 
@@ -234,13 +242,12 @@ contains
     use element_mod, only : element_t
     use dimensions_mod, only : np
     use physical_constants, only : rrearth
-    use parallel_mod, only : abortmp
 
     type (element_t) :: elem
     real(kind=real_kind) :: alpha
     real (kind=longdouble_kind)      :: gll_points(np)
     ! Local variables
-    integer ii,face_no
+    integer ii
     integer i,j,nn
     integer iptr
 
@@ -258,8 +265,6 @@ contains
 
     real (kind=real_kind) :: roundoff_err = 1e-11 !!! OG: this is a temporal fix
     
-    face_no = elem%vertex%face_number
-
     ! ==============================================
     ! Initialize differential mapping operator
     ! to and from vector fields on the sphere to 
@@ -268,8 +273,10 @@ contains
     ! inverse
     ! ==============================================
 
-    ! MNL: Calculate Jacobians.  these must be computed before Dmap is used below
-    call elem_jacobians(elem%cartp, elem%u2qmap, np)
+    ! MNL: Calculate Jacobians of bilinear map from cubed-sphere to ref element
+    if (cubed_sphere_map==0) then
+       call elem_jacobians(elem%cartp, elem%u2qmap)
+    endif
 
     elem%max_eig = 0.0d0
     elem%min_eig = 1d99
@@ -498,7 +505,6 @@ contains
   subroutine solver_weights_atomic(elem)
     use element_mod, only : element_t
     use dimensions_mod, only : np
-    use parallel_mod, only : abortmp
 
     type (element_t) :: elem
     real (kind=real_kind) :: x 
@@ -626,12 +632,33 @@ contains
   ! Initialize mapping that tranforms contravariant 
   ! vector fields on the reference element onto vector fields on
   ! the sphere. 
-  ! For Gnomonic, followed by bilinear, this code uses the old vmap()
-  ! for unstructured grids, this code uses the parametric map that
-  ! maps quads on the sphere directly to the reference element
   ! ========================================================
   subroutine Dmap(D, elem, a,b)
-    use coordinate_systems_mod, only : dist_threshold
+    use element_mod, only : element_t
+    type (element_t) :: elem
+    real (kind=real_kind), intent(out)  :: D(2,2)
+    real (kind=real_kind), intent(in)     :: a,b
+    if (cubed_sphere_map==0) then
+       call dmap_equiangular(D,elem,a,b)
+    else if (cubed_sphere_map==1) then
+       call abortmp('equi-distance gnomonic map not yet implemented')
+    else if (cubed_sphere_map==2) then
+       call dmap_elementlocal(D,elem,a,b)
+    else
+       call abortmp('bad value of cubed_sphere_map')
+    endif
+  end subroutine Dmap
+
+
+
+  ! ========================================================
+  ! Dmap:
+  !
+  ! Equiangular Gnomonic Projection
+  ! Composition of equiangular Gnomonic projection to cubed-sphere face,
+  ! followd by bilinear map to reference element
+  ! ========================================================
+  subroutine dmap_equiangular(D, elem, a,b)
     use element_mod, only : element_t
     type (element_t) :: elem
     real (kind=real_kind), intent(out)  :: D(2,2)
@@ -669,7 +696,7 @@ contains
     D(1,2) = tmpD(1,1)*Jp(1,2) + tmpD(1,2)*Jp(2,2)
     D(2,1) = tmpD(2,1)*Jp(1,1) + tmpD(2,2)*Jp(2,1)
     D(2,2) = tmpD(2,1)*Jp(1,2) + tmpD(2,2)*Jp(2,2)
-  end subroutine Dmap
+  end subroutine dmap_equiangular
 
 
 
@@ -687,7 +714,6 @@ contains
   ! ========================================================
 
   subroutine vmap(D, x1, x2, face_no) 
-    use coordinate_systems_mod, only : dist_threshold
     real (kind=real_kind), intent(inout)  :: D(2,2)
     real (kind=real_kind), intent(in)     :: x1
     real (kind=real_kind), intent(in)     :: x2
@@ -774,29 +800,95 @@ contains
 
   end subroutine vmap
 
-  ! ========================================
-  ! coreolis_init:
-  !
-  ! Initialize coreolis term ...
-  !
-  ! ========================================
 
-  subroutine coreolis_init(elem)
+
+
+  ! ========================================================
+  ! Dmap:
+  !
+  ! Initialize mapping that tranforms contravariant 
+  ! vector fields on the reference element onto vector fields on
+  ! the sphere. 
+  ! For Gnomonic, followed by bilinear, this code uses the old vmap()
+  ! for unstructured grids, this code uses the parametric map that
+  ! maps quads on the sphere directly to the reference element
+  ! ========================================================
+  subroutine dmap_elementlocal(D, elem, a,b)
     use element_mod, only : element_t
-    use dimensions_mod, only : np
-    use physical_constants, only : omega
-    type (element_t) :: elem(:)
 
-    ! Local variables
+    type (element_t) :: elem
+    real (kind=real_kind), intent(out)    :: D(2,2)
+    real (kind=real_kind), intent(in)     :: a,b
 
-    integer                  :: i,j
-    integer                  :: ii
+    type (spherical_polar_t)      :: sphere
 
-    do ii=1,SIZE(elem)
-       call coreolis_init_atomic(elem(ii))
-    end do
+    type (cartesian3d_t)               ::  corners(4)   
+    real(kind=real_kind)               ::  c(3,4), q(4), xx(3), r, lam, th, dd(4,2)
+    real(kind=real_kind)               ::  sinlam, sinth, coslam, costh
+    real(kind=real_kind)               ::  D1(2,3), D2(3,3), D3(3,2), D4(3,2)
+    integer :: i,j
 
-  end subroutine coreolis_init
+    sphere = ref2sphere(a,b,elem)
+    corners = elem%corners3D
+
+    c(1,1)=corners(1)%x;  c(2,1)=corners(1)%y;  c(3,1)=corners(1)%z; 
+    c(1,2)=corners(2)%x;  c(2,2)=corners(2)%y;  c(3,2)=corners(2)%z; 
+    c(1,3)=corners(3)%x;  c(2,3)=corners(3)%y;  c(3,3)=corners(3)%z; 
+    c(1,4)=corners(4)%x;  c(2,4)=corners(4)%y;  c(3,4)=corners(4)%z; 
+
+    q(1)=(1-a)*(1-b); q(2)=(1+a)*(1-b); q(3)=(1+a)*(1+b); q(4)=(1-a)*(1+b);
+    q=q/4.0d0;
+
+    do i=1,3
+      xx(i)=sum(c(i,:)*q(:))
+    enddo
+
+    r=sqrt(xx(1)**2+xx(2)**2+xx(3)**2)
+
+    lam=sphere%lon; th=sphere%lat;
+    sinlam=sin(lam); sinth=sin(th);
+    coslam=cos(lam); costh=cos(th);
+
+    D1(1,1)=-sinlam; D1(1,2)=coslam; D1(1,3)=0.0d0; 
+    D1(2,1)=0.0d0;  D1(2,2)=0.0d0;    D1(2,3)=1.0d0;
+
+    D2(1,1)=(sinlam**2)*(costh**2)+sinth**2; D2(1,2)=-sinlam*coslam*(costh**2); D2(1,3)=-coslam*sinth*costh;
+    D2(2,1)=-sinlam*coslam*(costh**2); D2(2,2)=(coslam**2)*(costh**2)+sinth**2; D2(2,3)=-sinlam*sinth*costh;
+    D2(3,1)=-coslam*sinth;           D2(3,2)=-sinlam*sinth;               D2(3,3)=costh;
+
+    dd(1,1)=-1+b; dd(1,2)=-1+a;
+    dd(2,1)=1-b; dd(2,2)=-1-a;
+    dd(3,1)=1+b; dd(3,2)=1+a;
+    dd(4,1)=-1-b; dd(4,2)=1-a;
+
+    dd=dd/4.0d0
+
+    do i=1,3
+      do j=1,2
+	D3(i,j)=sum(c(i,:)*dd(:,j))
+      enddo
+    enddo
+
+    do i=1,3
+      do j=1,2
+	D4(i,j)=sum(D2(i,:)*D3(:,j))
+      enddo
+    enddo   
+
+    do i=1,2
+      do j=1,2
+	D(i,j)=sum(D1(i,:)*D4(:,j))
+      enddo
+    enddo
+
+    D=D/r
+  end subroutine dmap_elementlocal
+
+
+
+
+
+
 
   ! ========================================
   ! coreolis_init_atomic:
@@ -846,7 +938,6 @@ contains
     use element_mod, only : element_t
     use dimensions_mod, only : np
     use control_mod, only : north, south, east, west, neast, seast, swest, nwest
-    use parallel_mod, only : abortmp
 
     type (element_t) :: elem
     character(len=*) rot_type
@@ -1250,7 +1341,6 @@ contains
   subroutine set_corner_coordinates(elem)
     use element_mod,    only : element_t 
     use dimensions_mod, only : ne
-    use parallel_mod, only : abortmp 
  
     type (element_t) :: elem 
 
@@ -1304,7 +1394,6 @@ contains
     use dimensions_mod, only : ne
     use element_mod,    only : element_t
     use control_mod,    only : north, south, east, west, neast, seast, swest, nwest
-    use parallel_mod,   only : abortmp
     use gridgraph_mod,  only : GridVertex_t
     implicit none
     type (element_t), intent(inout)    :: elements(:)
@@ -1388,7 +1477,6 @@ contains
 
   subroutine convert_gbl_index(number,ie,je,face_no)
     use dimensions_mod, only : ne
-    use parallel_mod, only : abortmp
     integer, intent(in)  :: number
     integer, intent(out) :: ie,je,face_no
 
@@ -1409,7 +1497,6 @@ contains
     use dimensions_mod, only : np, ne
     use spacecurve_mod, only :  IsFactorable, genspacecurve
     use control_mod, only : north, south, east, west, neast, seast, swest, nwest
-    use parallel_mod, only : abortmp
     !-----------------------
     implicit none
 
@@ -2147,7 +2234,7 @@ contains
 
   function cube_assemble(gbl,fld,elem,par,nelemd,nelem,ielem) result(ierr)
     use element_mod, only : element_t
-    use parallel_mod, only : abortmp
+
 #ifdef _MPI
     use parallel_mod, only : parallel_t, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_STATUS_SIZE, MPI_REAL8,MPI_TAG
 #else
@@ -2298,7 +2385,6 @@ contains
 
   function CubeEdgeCount()  result(nedge)
     use dimensions_mod, only     : ne
-    use parallel_mod, only       : abortmp
     implicit none
     integer                     :: nedge
 
@@ -2317,7 +2403,6 @@ contains
   function CubeElemCount()  result(nelem)
 
     use dimensions_mod, only     : ne
-    use parallel_mod, only       : abortmp
 
     implicit none
     integer                     :: nelem
@@ -2366,49 +2451,200 @@ contains
 
   end subroutine CubeSetupEdgeIndex
 
-  subroutine GetLatticeSpacing(spherev,dxv,spherep,dxp)
-    use physical_constants, only : rearth
-    use dimensions_mod, only : np
+! 
+!  HOMME mapping from sphere (or other manifold) to reference element
+!  one should be able to add any mapping here.  For each new map, 
+!  an associated dmap() routine (which computes the map derivative matrix) 
+!  must also be written
+!  Note that for conservation, the parameterization of element edges must be
+!  identical for adjacent elements.  (this is violated with HOMME's default
+!  equi-angular cubed-sphere mapping for non-cubed sphere grids, hence the 
+!  need for a new map)
+!
+  function ref2sphere_double(a,b, elem) result(sphere)         
+    use element_mod, only : element_t
+    type (element_t)      :: elem
+    real(kind=real_kind)    :: a,b
+    type (spherical_polar_t)      :: sphere
 
-    type (spherical_polar_t), intent(in) :: spherev(np,np)
-    real (kind=real_kind)                :: dxv
-    type (spherical_polar_t), intent(in) :: spherep(np,np)
-    real (kind=real_kind)                :: dxp
+    if (cubed_sphere_map==0) then
+       sphere = ref2sphere_equiangular_double(a,b,elem%corners,elem%facenum)
+    elseif (cubed_sphere_map==1) then
+!       sphere = ref2sphere_gnomonic_double(a,b,corners,face_no)
+    elseif (cubed_sphere_map==2) then
+       sphere = ref2sphere_elementlocal_double(a,b,elem)
+    else
+       call abortmp('ref2sphere_double(): bad value of cubed_sphere_map')
+    endif
+  end function
 
-    real (kind=real_kind) xcorner,ycorner,zcorner
-    real (kind=real_kind) x,y,z
-    real (kind=real_kind) chord
-    real (kind=real_kind) theta
+  function ref2sphere_longdouble(a,b, elem) result(sphere)         
+    use element_mod, only : element_t
+    type (element_t)      :: elem
+    real(kind=longdouble_kind)    :: a,b
+    type (spherical_polar_t)      :: sphere
 
-    xcorner=COS(spherev(1,1)%lat)*COS(spherev(1,1)%lon)
-    ycorner=COS(spherev(1,1)%lat)*SIN(spherev(1,1)%lon)
-    zcorner=SIN(spherev(1,1)%lat)
+    if (cubed_sphere_map==0) then
+       sphere = ref2sphere_equiangular_longdouble(a,b,elem%corners,elem%facenum)
+    elseif (cubed_sphere_map==1) then
+!       sphere = ref2sphere_gnomonic_longdouble(a,b,corners,face_no)
+    elseif (cubed_sphere_map==2) then
+       sphere = ref2sphere_elementlocal_longdouble(a,b,elem)
+    else
+       call abortmp('ref2sphere_double(): bad value of cubed_sphere_map')
+    endif
+  end function
 
-    x=COS(spherev(2,1)%lat)*COS(spherev(2,1)%lon)
-    y=COS(spherev(2,1)%lat)*SIN(spherev(2,1)%lon)
-    z=SIN(spherev(2,1)%lat)
 
-    chord = SQRT( (xcorner-x)**2 + &
-         (ycorner-y)**2 + &
-         (zcorner-z)**2 )
 
-    theta = 2.0D0*ASIN(0.50D0*chord)
+!
+! map a point in the referece element to the sphere
+!
+  function ref2sphere_equiangular_double(a,b, corners, face_no) result(sphere)         
+    implicit none
+    real(kind=real_kind)    :: a,b
+    integer,intent(in)            :: face_no
+    type (spherical_polar_t)      :: sphere
+    type (cartesian2d_t)          :: corners(4)
+    ! local
+    real(kind=real_kind)               :: pi,pj,qi,qj
+    type (cartesian2d_t)                 :: cart   
 
-    dxv   = theta*rearth
+    ! map (a,b) to the [-pi/2,pi/2] equi angular cube face:  x1,x2
+    ! a = gp%points(i)
+    ! b = gp%points(j)
+    pi = (1-a)/2
+    pj = (1-b)/2
+    qi = (1+a)/2
+    qj = (1+b)/2
+    cart%x = pi*pj*corners(1)%x &
+         + qi*pj*corners(2)%x &
+         + qi*qj*corners(3)%x &
+         + pi*qj*corners(4)%x 
+    cart%y = pi*pj*corners(1)%y &
+         + qi*pj*corners(2)%y &
+         + qi*qj*corners(3)%y &
+         + pi*qj*corners(4)%y 
+    ! map from [pi/2,pi/2] equ angular cube face to sphere:   
+    sphere=projectpoint(cart,face_no)
 
-    x=COS(spherep(1,1)%lat)*COS(spherep(1,1)%lon)
-    y=COS(spherep(1,1)%lat)*SIN(spherep(1,1)%lon)
-    z=SIN(spherep(1,1)%lat)
+  end function ref2sphere_equiangular_double
 
-    chord = SQRT( (xcorner-x)**2 + &
-         (ycorner-y)**2 + &
-         (zcorner-z)**2 )
 
-    theta = 2.0D0*ASIN(0.50D0*chord)
 
-    dxp   = theta*rearth
 
-  end subroutine GetLatticeSpacing
+!
+! map a point in the referece element to the sphere
+!
+  function ref2sphere_equiangular_longdouble(a,b, corners, face_no) result(sphere)         
+    implicit none
+    real(kind=longdouble_kind)    :: a,b
+    integer,intent(in)            :: face_no
+    type (spherical_polar_t)      :: sphere
+    type (cartesian2d_t)          :: corners(4)
+    ! local
+    real(kind=real_kind)               :: pi,pj,qi,qj
+    type (cartesian2d_t)                 :: cart   
+
+    ! map (a,b) to the [-pi/2,pi/2] equi angular cube face:  x1,x2
+    ! a = gp%points(i)
+    ! b = gp%points(j)
+    pi = (1-a)/2
+    pj = (1-b)/2
+    qi = (1+a)/2
+    qj = (1+b)/2
+    cart%x = pi*pj*corners(1)%x &
+         + qi*pj*corners(2)%x &
+         + qi*qj*corners(3)%x &
+         + pi*qj*corners(4)%x 
+    cart%y = pi*pj*corners(1)%y &
+         + qi*pj*corners(2)%y &
+         + qi*qj*corners(3)%y &
+         + pi*qj*corners(4)%y 
+    ! map from [pi/2,pi/2] equ angular cube face to sphere:   
+    sphere=projectpoint(cart,face_no)
+
+  end function ref2sphere_equiangular_longdouble
+
+
+
+!-----------------------------------------------------------------------------------------
+! ELEMENT LOCAL MAP (DOES NOT USE CUBE FACES)
+! unlike gnomonic equiangular map, this map will map all straight lines to
+! great circle arcs
+!
+! map a point in the referece element to the quad on the sphere by a
+! general map, without using faces the map works this way: first, fix
+! a coordinate (say, X). Map 4 corners of the ref element (corners are
+! (-1,-1),(-1,1),(1,1), and (1,-1)) into 4 X-components of the quad in
+! physical space via a bilinear map. Do so for Y and Z components as
+! well. It produces a map: Ref element (\xi, \eta) ---> A quad in XYZ
+! (ess, a piece of a twisted plane) with vertices of our target quad.  though
+! the quad lies in a plane and not on the sphere manifold, its
+! vertices belong to the sphere (by initial conditions). The last step
+! is to utilize a map (X,Y,X) --> (X,Y,Z)/SQRT(X**2+Y**2+Z**2) to
+! project the quad to the unit sphere.
+! -----------------------------------------------------------------------------------------
+  function ref2sphere_elementlocal_double(a,b, elem) result(sphere)
+    use element_mod, only : element_t
+    implicit none
+    real(kind=real_kind)    :: a,b
+    type (element_t) :: elem
+    type (spherical_polar_t)      :: sphere
+    real(kind=real_kind)               ::  q(4) ! local
+
+    q(1)=(1-a)*(1-b); q(2)=(1+a)*(1-b); q(3)=(1+a)*(1+b); q(4)=(1-a)*(1+b);
+    q=q/4.0d0;
+    sphere=ref2sphere_elementlocal_q(q,elem%corners3D)
+  end function 
+  function ref2sphere_elementlocal_longdouble(a,b, elem) result(sphere)
+    use element_mod, only : element_t
+    implicit none
+    real(kind=longdouble_kind)    :: a,b
+    type (element_t) :: elem
+    type (spherical_polar_t)      :: sphere
+    real(kind=real_kind)               ::  q(4) ! local
+
+    q(1)=(1-a)*(1-b); q(2)=(1+a)*(1-b); q(3)=(1+a)*(1+b); q(4)=(1-a)*(1+b);
+    q=q/4.0d0;
+    sphere=ref2sphere_elementlocal_q(q,elem%corners3D)
+  end function 
+
+  function ref2sphere_elementlocal_q(q, corners) result(sphere)
+    implicit none
+    real(kind=real_kind)          :: q(4)
+    type (spherical_polar_t)      :: sphere
+    type (cartesian3d_t)          :: corners(4)
+    ! local
+    type (cartesian3d_t)                 :: cart   
+    real(kind=real_kind)               ::  c(3,4),  xx(3), r
+    integer :: i
+
+!3D corners fo the quad
+    c(1,1)=corners(1)%x;  c(2,1)=corners(1)%y;  c(3,1)=corners(1)%z; 
+    c(1,2)=corners(2)%x;  c(2,2)=corners(2)%y;  c(3,2)=corners(2)%z; 
+    c(1,3)=corners(3)%x;  c(2,3)=corners(3)%y;  c(3,3)=corners(3)%z; 
+    c(1,4)=corners(4)%x;  c(2,4)=corners(4)%y;  c(3,4)=corners(4)%z; 
+
+    q=q/4.0d0;
+
+!physical point on a plane (sliced), not yet on the sphere
+    do i=1,3
+      xx(i)=sum(c(i,:)*q(:))
+    enddo
+
+!distance from the plane point to the origin
+    r=sqrt(xx(1)**2+xx(2)**2+xx(3)**2)
+
+!projecting the plane point to the sphere
+    cart%x=xx(1)/r; cart%y=xx(2)/r; cart%z=xx(3)/r;
+
+!XYZ coords of the point to lon/lat
+    sphere=change_coordinates(cart)
+
+  end function 
+
+
 
 end module cube_mod
 

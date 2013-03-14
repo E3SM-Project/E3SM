@@ -55,12 +55,6 @@ module coordinate_systems_mod
      module procedure aray_to_spherical
   end interface
 
-! we cant make this an interfaced because of real_kind=longdouble_kind,
-! these subroutine are the same
-!  interface ref2sphere
-!     module procedure ref2sphere_quad
-!     module procedure ref2sphere_double
-!  end interface
 
   ! ==========================================
   ! Public Interfaces
@@ -70,11 +64,9 @@ module coordinate_systems_mod
   public :: surfareaxy
   public :: distance
   public :: change_coordinates
-  public :: ref2sphere  
-  public :: ref2sphere_double  
   public :: cart2cubedsphere
   public :: spherical_to_cart   !CE
-  ! note: cant make these next two an interface since they only differ by return arg
+  public :: projectpoint        ! should be called cubedsphere2spherical
   public :: cubedsphere2cart
   public :: sphere2cubedsphere
   public :: cube_face_number_from_cart
@@ -505,95 +497,6 @@ contains
   end function cart2spherical
 
 
-
-
-
-#if 0
-! Note: Output spherical longitude is [-pi,pi]
-  subroutine project(sphere,cart,face_no)         
-    implicit none
-    type (cartesian2d_t), intent(in)     :: cart(:,:)   ! assumed to be cartesian coordinates of cube
-    integer,              intent(in)     :: face_no
-    type (spherical_polar_t) ,intent(out):: sphere(:,:)
-    integer npts,i,j
-
-    npts=SIZE(cart,1)
-    do j=1,npts
-       do i=1,npts
-          sphere(i,j) = unit_face_based_cube_to_unit_sphere(cart(i,j), face_no)
-       end do
-    end do
-  end subroutine project
-#endif
-
-!
-! map a point in the referece element to the sphere
-!
-  function ref2sphere_double(a,b, corners, face_no) result(sphere)         
-    implicit none
-    real(kind=real_kind)    :: a,b
-    integer,intent(in)            :: face_no
-    type (spherical_polar_t)      :: sphere
-    type (cartesian2d_t)          :: corners(4)
-    ! local
-    real(kind=real_kind)               :: pi,pj,qi,qj
-    type (cartesian2d_t)                 :: cart   
-
-    ! map (a,b) to the [-pi/2,pi/2] equi angular cube face:  x1,x2
-    ! a = gp%points(i)
-    ! b = gp%points(j)
-    pi = (1-a)/2
-    pj = (1-b)/2
-    qi = (1+a)/2
-    qj = (1+b)/2
-    cart%x = pi*pj*corners(1)%x &
-         + qi*pj*corners(2)%x &
-         + qi*qj*corners(3)%x &
-         + pi*qj*corners(4)%x 
-    cart%y = pi*pj*corners(1)%y &
-         + qi*pj*corners(2)%y &
-         + qi*qj*corners(3)%y &
-         + pi*qj*corners(4)%y 
-    ! map from [pi/2,pi/2] equ angular cube face to sphere:   
-    sphere=projectpoint(cart,face_no)
-
-  end function ref2sphere_double
-
-
-
-
-!
-! map a point in the referece element to the sphere
-!
-  function ref2sphere(a,b, corners, face_no) result(sphere)         
-    implicit none
-    real(kind=longdouble_kind)    :: a,b
-    integer,intent(in)            :: face_no
-    type (spherical_polar_t)      :: sphere
-    type (cartesian2d_t)          :: corners(4)
-    ! local
-    real(kind=real_kind)               :: pi,pj,qi,qj
-    type (cartesian2d_t)                 :: cart   
-
-    ! map (a,b) to the [-pi/2,pi/2] equi angular cube face:  x1,x2
-    ! a = gp%points(i)
-    ! b = gp%points(j)
-    pi = (1-a)/2
-    pj = (1-b)/2
-    qi = (1+a)/2
-    qj = (1+b)/2
-    cart%x = pi*pj*corners(1)%x &
-         + qi*pj*corners(2)%x &
-         + qi*qj*corners(3)%x &
-         + pi*qj*corners(4)%x 
-    cart%y = pi*pj*corners(1)%y &
-         + qi*pj*corners(2)%y &
-         + qi*qj*corners(3)%y &
-         + pi*qj*corners(4)%y 
-    ! map from [pi/2,pi/2] equ angular cube face to sphere:   
-    sphere=projectpoint(cart,face_no)
-
-  end function ref2sphere
 
 
 
