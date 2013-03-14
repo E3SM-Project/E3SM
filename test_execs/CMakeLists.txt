@@ -12,6 +12,19 @@ SET(Homme_Results_DIR ${CMAKE_SOURCE_DIR}/test/reg_test/results)
 # Host specific
 IF (Homme_Hostname STREQUAL "Yellowstone") 
 
+  # Set the Project ID to run the tests through the queue
+  IF (HOMME_PROJID)
+    MESSAGE(STATUS "Using HOMME Project ID (HOMME_PROJID) ${HOMME_PROJID}")
+  ELSE ()
+    # Check environment variables
+    IF (DEFINED ENV{HOMME_PROJID})
+      SET(HOMME_PROJID $ENV{HOMME_PROJID})
+      MESSAGE(STATUS "Using HOMME Project ID (HOMME_PROJID) ${HOMME_PROJID} from environment")
+    ELSE ()
+      MESSAGE(FATAL_ERROR "No HOMME Project ID found. Please set HOMME_PROJID")
+    ENDIF ()
+  ENDIF ()
+
   # Modify the results directory to point to the yellowstone results
   # TODO: deal with different compilers
   SET(Homme_Results_DIR ${Homme_Results_DIR}/yellowstone)
