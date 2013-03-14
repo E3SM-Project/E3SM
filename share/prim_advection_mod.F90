@@ -880,7 +880,8 @@ contains
     use dimensions_mod, only : nlev, qsize, nelemd
 
     ! Shared buffer pointers.
-    real(kind=real_kind), pointer :: buf_ptr(:), receive_ptr(:)
+    real(kind=real_kind), pointer :: buf_ptr(:) => null()
+    real(kind=real_kind), pointer :: receive_ptr(:) => null()
 
     ! this might be called with qsize=0
     ! allocate largest one first

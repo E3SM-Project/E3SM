@@ -20,10 +20,10 @@ module GridGraph_mod
 
   type, public :: GridVertex_t
 
-      integer, pointer          :: nbrs(:)                     ! The numbers of the neighbor elements
-      integer, pointer          :: nbrs_face(:)                ! The cube face number of the neighbor element (nbrs array)
-      integer, pointer          :: nbrs_wgt(:)                 ! The weights for edges defined by nbrs array
-      integer, pointer          :: nbrs_wgt_ghost(:)           ! The weights for edges defined by nbrs array
+      integer, pointer          :: nbrs(:) => null()           ! The numbers of the neighbor elements
+      integer, pointer          :: nbrs_face(:) => null()      ! The cube face number of the neighbor element (nbrs array)
+      integer, pointer          :: nbrs_wgt(:) => null()       ! The weights for edges defined by nbrs array
+      integer, pointer          :: nbrs_wgt_ghost(:) => null() ! The weights for edges defined by nbrs array
       integer                   :: nbrs_ptr(num_neighbors + 1) !index into the nbrs array for each neighbor direction
 
       integer                   :: face_number           ! which face of the cube this vertex is on
@@ -33,8 +33,8 @@ module GridGraph_mod
   end type GridVertex_t
 
   type, public :: EdgeIndex_t
-      integer, pointer            :: ixP(:)
-      integer, pointer            :: iyP(:)
+      integer, pointer            :: ixP(:) => null()
+      integer, pointer            :: iyP(:) => null()
   end type EdgeIndex_t
 
   type, public :: GridEdge_t
@@ -42,8 +42,8 @@ module GridGraph_mod
       integer                      :: tail_face  ! needed if tail vertex has shape (i.e. square)
       integer                      :: head_dir   !which of 8 neighbor directions is the head
       integer                      :: tail_dir   !which of 8 neighbor directions is the tail
-      type (GridVertex_t),pointer  :: head       ! edge head vertex
-      type (GridVertex_t),pointer  :: tail       ! edge tail vertex
+      type (GridVertex_t),pointer  :: head => null()  ! edge head vertex
+      type (GridVertex_t),pointer  :: tail => null()  ! edge tail vertex
       logical                      :: reverse
 
   end type GridEdge_t

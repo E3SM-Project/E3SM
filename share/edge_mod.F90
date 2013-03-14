@@ -23,25 +23,25 @@ module edge_mod
      integer  :: nbr                                        ! nbr direction: north south east west
      integer  :: reverse                                    ! 0 = do not reverse order
      ! 1 = reverse order
-     real (kind=real_kind), dimension(:,:,:), pointer :: R  ! rotation matrix
+     real (kind=real_kind), dimension(:,:,:), pointer :: R => null()  ! rotation matrix
   end type rotation_t
 
   type, public :: EdgeDescriptor_t
      integer(kind=int_kind)  :: use_rotation
      integer(kind=int_kind)  :: padding
-     integer(kind=int_kind), pointer  :: putmapP(:)
-     integer(kind=int_kind), pointer  :: getmapP(:)
-     integer(kind=int_kind), pointer  :: putmapP_ghost(:)
-     integer(kind=int_kind), pointer  :: getmapP_ghost(:)
-     logical(kind=log_kind), pointer  :: reverse(:)
+     integer(kind=int_kind), pointer  :: putmapP(:) => null()
+     integer(kind=int_kind), pointer  :: getmapP(:) => null()
+     integer(kind=int_kind), pointer  :: putmapP_ghost(:) => null()
+     integer(kind=int_kind), pointer  :: getmapP_ghost(:) => null()
+     logical(kind=log_kind), pointer  :: reverse(:) => null()
      type (rotation_t), dimension(:), pointer :: rot => null() ! Identifies list of edges
      !  that must be rotated, and how
   end type EdgeDescriptor_t
 
 
   type, public :: EdgeBuffer_t
-     real (kind=real_kind), dimension(:,:), pointer :: buf
-     real (kind=real_kind), dimension(:,:), pointer :: receive
+     real (kind=real_kind), dimension(:,:), pointer :: buf => null()
+     real (kind=real_kind), dimension(:,:), pointer :: receive => null()
      integer :: nlyr ! Number of layers
      integer :: nbuf ! size of the horizontal dimension of the buffers.
   end type EdgeBuffer_t
@@ -49,8 +49,8 @@ module edge_mod
   type, public :: LongEdgeBuffer_t
      integer :: nlyr
      integer :: nbuf
-     integer (kind=int_kind), dimension(:,:), pointer :: buf
-     integer (kind=int_kind), dimension(:,:), pointer :: receive
+     integer (kind=int_kind), dimension(:,:), pointer :: buf => null()
+     integer (kind=int_kind), dimension(:,:), pointer :: receive => null()
   end type LongEdgeBuffer_t
 
   public :: initEdgeBuffer, initLongEdgeBuffer
@@ -68,22 +68,22 @@ module edge_mod
 
 
   type, public :: GhostBuffer_t
-     real (kind=real_kind), dimension(:,:,:,:), pointer :: buf
-     real (kind=real_kind), dimension(:,:,:,:), pointer :: receive
+     real (kind=real_kind), dimension(:,:,:,:), pointer :: buf => null()
+     real (kind=real_kind), dimension(:,:,:,:), pointer :: receive => null()
      integer :: nlyr ! Number of layers
      integer :: nbuf ! size of the horizontal dimension of the buffers.
   end type GhostBuffer_t
   
   type, public :: GhostBuffertr_t
-     real (kind=real_kind), dimension(:,:,:,:,:), pointer :: buf
-     real (kind=real_kind), dimension(:,:,:,:,:), pointer :: receive
+     real (kind=real_kind), dimension(:,:,:,:,:), pointer :: buf => null()
+     real (kind=real_kind), dimension(:,:,:,:,:), pointer :: receive => null()
      integer :: nlyr ! Number of layers
      integer :: nbuf ! size of the horizontal dimension of the buffers.
   end type GhostBuffertr_t
   
   type, public :: GhostBuffer3d_t
-     real (kind=real_kind), dimension(:,:,:,:), pointer :: buf
-     real (kind=real_kind), dimension(:,:,:,:), pointer :: receive
+     real (kind=real_kind), dimension(:,:,:,:), pointer :: buf => null()
+     real (kind=real_kind), dimension(:,:,:,:), pointer :: receive => null()
      integer :: nlyr ! Number of layers
      integer :: nhc  ! Number of layers of ghost cells
      integer :: np   ! Number of points in a cell
