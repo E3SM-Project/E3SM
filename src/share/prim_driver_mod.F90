@@ -305,7 +305,13 @@ contains
 #endif
     endif
 
-    if (ntrac>0) allocate(fvm(nelemd))
+    if (ntrac>0) then
+       allocate(fvm(nelemd))
+    else
+       ! Even if fvm not needed, still desirable to allocate it as empty
+       ! so it can be passed as a (size zero) array rather than pointer.
+       allocate(fvm(0))
+    end if
 
     ! ====================================================
     !  Generate the communication schedule

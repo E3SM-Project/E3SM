@@ -1500,8 +1500,10 @@ contains
     !-----------------------
     implicit none
 
+    ! Since GridVertex fields must be allocated before calling this, it
+    ! must be intent(inout).
     type (GridEdge_t),   intent(out),target     :: GridEdge(:)
-    type (GridVertex_t), intent(out),target     :: GridVertex(:)
+    type (GridVertex_t), intent(inout),target     :: GridVertex(:)
 
 
     integer,allocatable       :: Mesh(:,:)
