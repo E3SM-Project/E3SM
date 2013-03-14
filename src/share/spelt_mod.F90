@@ -1345,8 +1345,8 @@ subroutine spelt_init3(elem,spelt,hybrid,nets,nete,tnp0)
                                                                             
   integer,intent(in)                        :: nets,nete,tnp0    
      
-  real (kind=real_kind)                     :: ff(nip,nip)                                                                          
-  integer                                   :: ie, k, itr, i, j, icell, jcell                 
+  real (kind=real_kind)                     :: ff(nip,nip)
+  integer                                   :: ie, k, itr, i, j, icell, jcell
   
   type (ghostBuffertr_t)                      :: buf
   

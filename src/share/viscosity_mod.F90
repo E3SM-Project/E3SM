@@ -60,11 +60,11 @@ subroutine biharmonic_wk(elem,ptens,vtens,deriv,edge3,hybrid,nt,nets,nete,nu_rat
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(inout), target :: elem(:)
+integer :: nt,nets,nete
 real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)  :: vtens
 real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: ptens
 type (EdgeBuffer_t)  , intent(inout) :: edge3
 type (derivative_t)  , intent(in) :: deriv
-integer :: nt,nets,nete
 real (kind=real_kind) ::  nu_ratio
 #ifdef _PRIM
 real (kind=real_kind), dimension(np,np,nets:nete) :: pstens
@@ -171,11 +171,11 @@ subroutine biharmonic_wk_dp3d(elem,dptens,ptens,vtens,deriv,edge3,hybrid,nt,nets
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(inout), target :: elem(:)
+integer :: nt,nets,nete
 real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)  :: vtens
 real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: ptens,dptens
 type (EdgeBuffer_t)  , intent(inout) :: edge3
 type (derivative_t)  , intent(in) :: deriv
-integer :: nt,nets,nete
 real (kind=real_kind) ::  nu_ratio
 
 ! local
@@ -253,10 +253,10 @@ subroutine biharmonic_wk_scalar(elem,qtens,deriv,edgeq,hybrid,nets,nete)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(inout), target :: elem(:)
+integer :: nets,nete
 real (kind=real_kind), dimension(np,np,nlev,qsize,nets:nete) :: qtens
 type (EdgeBuffer_t)  , intent(inout) :: edgeq
 type (derivative_t)  , intent(in) :: deriv
-integer :: nets,nete
 
 ! local
 integer :: k,kptr,i,j,ie,ic,q
@@ -313,11 +313,11 @@ subroutine biharmonic_wk_scalar_minmax(elem,qtens,deriv,edgeq,hybrid,nets,nete,e
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(inout), target :: elem(:)
+integer :: nets,nete
 real (kind=real_kind), dimension(np,np,nlev,qsize,nets:nete) :: qtens
 type (EdgeBuffer_t)  , intent(inout) :: edgeq
 type (derivative_t)  , intent(in) :: deriv
 real (kind=real_kind), intent(out), dimension(nlev,qsize,nets:nete) :: emin,emax
-integer :: nets,nete
 
 ! local
 integer :: k,kptr,i,j,ie,ic,q
@@ -397,8 +397,8 @@ subroutine make_C0_2d(zeta,elem,hybrid,nets,nete)
 
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(in), target :: elem(:)
-real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
 integer :: nets,nete
+real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
 
 ! local
 integer :: k,i,j,ie,ic,kptr
@@ -429,8 +429,8 @@ subroutine make_C0(zeta,elem,hybrid,nets,nete)
 
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(in), target :: elem(:)
-real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
 integer :: nets,nete
+real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
 
 ! local
 integer :: k,i,j,ie,ic,kptr
@@ -472,8 +472,8 @@ end subroutine
 subroutine make_C0_vector(v,elem,hybrid,nets,nete)
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(in), target :: elem(:)
-real (kind=real_kind), dimension(np,np,2,nlev,nets:nete) :: v
 integer :: nets,nete
+real (kind=real_kind), dimension(np,np,2,nlev,nets:nete) :: v
 
 ! local
 integer :: k,i,j,ie,ic,kptr
@@ -530,8 +530,8 @@ subroutine compute_zeta_C0_2d_sphere(zeta,elem,hybrid,nets,nete,nt,k)
 
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(in), target :: elem(:)
-real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
 integer :: nt,nets,nete,k
+real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
 
 ! local
 integer :: i,j,ie,ic
@@ -560,10 +560,10 @@ subroutine compute_zeta_C0_2d_contra(zeta,elem,hybrid,nets,nete,nt)
 
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(in), target :: elem(:)
+integer :: nt,nets,nete
 real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
 real (kind=real_kind), dimension(np,np,2) :: ulatlon
 real (kind=real_kind), dimension(np,np) :: v1,v2
-integer :: nt,nets,nete
 
 ! local
 integer :: k,ie
@@ -599,8 +599,8 @@ subroutine compute_div_C0_2d_sphere(zeta,elem,hybrid,nets,nete,nt,k)
 
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(in), target :: elem(:)
-real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
 integer :: nt,nets,nete,k
+real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
 
 ! local
 integer :: i,j,ie,ic
@@ -629,10 +629,10 @@ subroutine compute_div_C0_2d_contra(zeta,elem,hybrid,nets,nete,nt)
 
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(in), target :: elem(:)
+integer :: nt,nets,nete
 real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
 real (kind=real_kind), dimension(np,np,2) :: ulatlon
 real (kind=real_kind), dimension(np,np) :: v1,v2
-integer :: nt,nets,nete
 
 ! local
 integer :: k,ie
@@ -667,8 +667,8 @@ subroutine compute_zeta_C0(zeta,elem,hybrid,nets,nete,nt)
 
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(in), target :: elem(:)
-real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
 integer :: nt,nets,nete
+real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
 
 ! local
 integer :: k,i,j,ie,ic
@@ -703,8 +703,8 @@ subroutine compute_div_C0(zeta,elem,hybrid,nets,nete,nt)
 
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(in), target :: elem(:)
-real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
 integer :: nt,nets,nete
+real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
 
 ! local
 integer :: k,i,j,ie,ic

@@ -2496,11 +2496,11 @@ end subroutine getdep_cellboundariesxyvec
   !
   subroutine collect(weights,weights_eul_index,nreconstruction,jcollect,jsegment,jmax_segments)
     implicit none
+    integer (kind=int_kind),                                  INTENT(IN   ) :: jsegment,jmax_segments
     integer (kind=int_kind)                                 , intent(in)    :: nreconstruction
     real (kind=real_kind)   , dimension(jmax_segments,nreconstruction), intent(inout) :: weights
     integer (kind=int_kind), dimension(jmax_segments,2     ), intent(inout) :: weights_eul_index
     integer (kind=int_kind),                                  INTENT(OUT  ) :: jcollect
-    integer (kind=int_kind),                                  INTENT(IN   ) :: jsegment,jmax_segments
     !
     ! local workspace
     !
@@ -2563,14 +2563,14 @@ end subroutine getdep_cellboundariesxyvec
     
     implicit none
     !
-    ! for Gaussian quadrature
-    !
-    real (kind=real_kind), dimension(ngauss), intent(in) :: gauss_weights, abscissae
-    !
     ! variables for registering crossings with Eulerian latitudes and longitudes
     !
     integer (kind=int_kind),         intent(in):: jcross_lat, jmax_segments,nreconstruction,ngauss
     integer (kind=int_kind),         intent(inout):: jsegment
+    !
+    ! for Gaussian quadrature
+    !
+    real (kind=real_kind), dimension(ngauss), intent(in) :: gauss_weights, abscissae
     !
     ! max. crossings per side is 2*nhe
     !
@@ -2678,6 +2678,8 @@ end subroutine getdep_cellboundariesxyvec
        ngauss,gauss_weights,abscissae,&!)!phl add jx_min etc.
        jcross_lat,r_cross_lat,cross_lat_eul_index)
     implicit none
+    integer (kind=int_kind),            intent(in)    :: nreconstruction,jx,jy,jmax_segments,ngauss
+    integer (kind=int_kind), intent(in)               :: nvertex
     !
     ! for Gaussian quadrature
     !
@@ -2685,12 +2687,10 @@ end subroutine getdep_cellboundariesxyvec
     real (kind=real_kind), dimension(1:nvertex)        , intent(in)    :: x_in,y_in
 
     integer (kind=int_kind), intent(in)               :: jx_min, jy_min, jx_max, jy_max
-    integer (kind=int_kind), intent(in)               :: nvertex
     real (kind=real_kind), dimension(-nhe:nc+2+nhe), intent(in) :: xgno
     real (kind=real_kind), dimension(-nhe:nc+2+nhe), intent(in) :: ygno
     integer (kind=int_kind),            intent(inout) :: jsegment
 !    integer (kind=int_kind),dimension(0:2),intent(in)    :: jx_eul_in, jy_eul_in
-    integer (kind=int_kind),            intent(in)    :: nreconstruction,jx,jy,jmax_segments,ngauss
     real (kind=real_kind)   ,  &
          dimension(jmax_segments,nreconstruction), intent(out) :: weights
     integer (kind=int_kind),  &
@@ -3471,8 +3471,8 @@ end subroutine getdep_cellboundariesxyvec
 !********************************************************************************
 subroutine gauss_points(n,weights,points)
   implicit none
-  real (kind=real_kind), dimension(n), intent(out) :: weights, points
   integer (kind=int_kind)           , intent(in ) :: n
+  real (kind=real_kind), dimension(n), intent(out) :: weights, points
   
   select case (n)
 !    CASE(1)
