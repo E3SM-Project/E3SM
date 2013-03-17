@@ -2251,8 +2251,8 @@ contains
         
         ttmp(:,:,:,1)=elem(ie)%state%v(:,:,1,:,np1)*dp_star
         ttmp(:,:,:,2)=elem(ie)%state%v(:,:,2,:,np1)*dp_star
-!        call remap1(ttmp,np,2,dp_star,dp) 
-        call remap1_nofilter(ttmp,np,2,dp_star,dp) 
+        call remap1(ttmp,np,2,dp_star,dp) 
+!        call remap1_nofilter(ttmp,np,2,dp_star,dp) 
         elem(ie)%state%v(:,:,1,:,np1)=ttmp(:,:,:,1)/dp
         elem(ie)%state%v(:,:,2,:,np1)=ttmp(:,:,:,2)/dp
 #ifdef REMAP_TE
