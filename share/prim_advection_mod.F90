@@ -2236,7 +2236,7 @@ contains
         enddo
 
         ! remap the dynamics:  
-#define REMAP_TE
+#undef REMAP_TE
 #ifdef REMAP_TE
         ! remap u,v and cp*T + .5 u^2 
         ttmp(:,:,:,1)=(elem(ie)%state%v(:,:,1,:,np1)**2 + &
