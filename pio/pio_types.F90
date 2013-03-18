@@ -83,7 +83,11 @@ module pio_types
     integer, parameter :: MAX_IO_SYSTEMS=6
     type(iosystem_list_t), save :: iosystems(MAX_IO_SYSTEMS)
 
-
+!> 
+!! @private
+!! @struct io_data_list
+!! @brief Linked list of buffers for pnetcdf non-blocking interface
+!>
     type, public :: io_data_list
        integer :: request
        real(r4), pointer :: data_real(:) => null()
@@ -133,7 +137,7 @@ module pio_types
 
 !>
 !! @public 
-!! @struct io_desc_t io_desc_t
+!! @struct io_desc_t
 !! @brief  An io descriptor handle that is generated in @ref PIO_initdecomp 
 !! (see pio_types)
 !<

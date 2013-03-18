@@ -41,7 +41,6 @@ SRCS_FC =  pio.F90 \
 	    pio_mpi_utils.F90 \
             pio_nf_utils.F90 \
 	    pio_utils.F90 \
-            pio_quicksort.F90 \
             pio_msg_mod.F90 \
 	    calcdisplace_mod.F90 \
 	    pio_msg_callbacks.F90 \

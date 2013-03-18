@@ -1,4 +1,8 @@
 #define __PIO_FILE__ "nf_mod.F90"
+!>
+!! \defgroup nf_mod
+!! @brief netcdf interface routines
+!<
 module nf_mod
 
 #ifdef TIMING

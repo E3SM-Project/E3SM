@@ -1,4 +1,8 @@
 #define __PIO_FILE__ "pionfget_mod.F90"
+!>
+!! @private pionfget_mod 
+!! @brief Reads netcdf metadata from a file in non-decomposed fashion
+!<
 module pionfget_mod
 #ifdef TIMING
   use perf_mod, only : t_startf, t_stopf      ! _EXTERNAL
