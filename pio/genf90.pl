@@ -75,6 +75,7 @@ foreach(@ARGV){
     my $typemodifier;
     my $itypeflag;
     my $typeblock;
+    my $cppunit;
     foreach $line (@parsetext){
 # skip parser comments
 	next if($line =~ /\s*!pl/);
@@ -126,11 +127,12 @@ foreach(@ARGV){
 
 	if($contains==1){
 	    # first parse into functions or subroutines
-            if(! defined($unit[$unitcnt])){
+            if($cppunit || !(defined($unit[$unitcnt]))){
 		# Make cpp lines between routines units
 		if($line =~ /^\s*\#/){
 		    push(@{$unit[$unitcnt]},$line);
 		    $unitcnt++;
+		    $cppunit=1;
 		    next;
 		}
 	    }
@@ -140,12 +142,19 @@ foreach(@ARGV){
 	    if($line =~ /\s*end function/i or $line =~ /\s*end subroutine/i){
 		$unitcnt++;
 	    }
+	    $cppunit = 0 unless($line =~ /^\s*\#/ || $line =~/^\s*$/ || $line=~/^\s*!/);
 
 	}
     }
     my $i;
+
+
     for($i=0;$i<$unitcnt;$i++){
 	my $func = join('',@{$unit[$i]});
+
+#    print "unitcnt = $i  $func\n" ;
+
+
 	push(@output, buildout($func));
     }
     push(@output,@{$unit[$#unit]}) if($unitcnt==$#unit);
