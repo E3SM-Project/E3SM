@@ -332,7 +332,12 @@ macro(createTest testName)
 
   ADD_DEPENDENCIES(${THIS_TEST_INDIV} ${EXEC_NAME})
 
+  # Check target 
   ADD_DEPENDENCIES(check ${EXEC_NAME})
+
+  # Baseline target
+  ADD_DEPENDENCIES(baseline ${EXEC_NAME})
+
   # Now make the Individual targets
   #ADD_CUSTOM_COMMAND(TARGET ${THIS_TEST_INDIV}
   #                   COMMENT "Running the HOMME regression test: ${THIS_TEST}"

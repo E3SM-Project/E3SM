@@ -24,6 +24,10 @@ find_path(Netcdf_NC_CONFIG_BIN
 # Includes only need to be Netcdf (for now)
 set(Netcdf_INCLUDE_DIRS ${Netcdf_INCLUDE_DIR})
 
+# CPRNC needs the following
+get_filename_component(CPRNC_NETCDF_DIR ${Netcdf_INCLUDE_DIRS}/.. ABSOLUTE)
+MESSAGE(STATUS "CPRNC_NETCDF_DIR=${CPRNC_NETCDF_DIR}")
+
 # Store libraries in Netcdf_LIBRARIES
 set(Netcdf_LIBRARIES ${NetcdfF_LIBRARY} ${Netcdf_LIBRARY})
 
@@ -86,6 +90,9 @@ IF (${NETCDF_REQUIRE_CURL})
   IF (${CURL_FOUND})
     MESSAGE(STATUS "Found CURL: ${CURL_LIBRARY}")
     set(Netcdf_LIBRARIES ${Netcdf_LIBRARIES} ${CURL_LIBRARY})
+    get_filename_component(CPRNC_CURL_DIR ${CURL_LIBRARY} PATH)
+    get_filename_component(CPRNC_CURL_DIR ${CURL_LIBRARY}/.. ABSOLUTE)
+    MESSAGE(STATUS "CPRNC_CURL_DIR=${CPRNC_CURL_DIR}")
   ELSE ()
     MESSAGE(FATAL_ERROR "CURL Not found")
   ENDIF ()
@@ -119,6 +126,8 @@ IF (${NETCDF_REQUIRE_HDF5})
     set(HDF5_FOUND ON)
     MESSAGE(STATUS "Found HDF5: ${HDF5hl_LIBRARY} ${HDF5_LIBRARY}")
     set(Netcdf_LIBRARIES ${Netcdf_LIBRARIES} ${HDF5hl_LIBRARY} ${HDF5_LIBRARY})
+    get_filename_component(CPRNC_HDF5_DIR ${HDF5_INCLUDE_DIR}/.. ABSOLUTE)
+    MESSAGE(STATUS "CPRNC_HDF5_DIR=${CPRNC_HDF5_DIR}")
   endif()
 
   # Check to see which dependencies (ZLIB, SZIP) hdf5 has
@@ -142,7 +151,11 @@ IF (${NETCDF_REQUIRE_HDF5})
       MESSAGE(FATAL_ERROR "ZLIB Not found")
     ELSE()
       SET(ZLIB_FOUND ON)
+      get_filename_component(CPRNC_ZLIB_DIR ${ZLIB_LIBRARY} PATH)
+      get_filename_component(CPRNC_ZLIB_DIR ${CPRNC_ZLIB_DIR}/.. ABSOLUTE)
+      MESSAGE(STATUS "CPRNC_ZLIB_DIR=${CPRNC_ZLIB_DIR}")
     ENDIF ()
+
     MESSAGE(STATUS "Found ZLIB_LIBRARY: ${ZLIB_LIBRARY}")
     MESSAGE(STATUS "ZLIB_LIBRARIES: ${ZLIB_LIBRARIES}")
     IF (${ZLIB_FOUND})
@@ -169,6 +182,9 @@ IF (${NETCDF_REQUIRE_HDF5})
       SET(SZIP_FOUND ON)
       MESSAGE(STATUS "Found SZIP: ${SZIP_LIBRARY}")
       SET(Netcdf_LIBRARIES ${Netcdf_LIBRARIES} ${SZIP_LIBRARY})
+      get_filename_component(CPRNC_SZIP_DIR ${SZIP_LIBRARY} PATH)
+      get_filename_component(CPRNC_SZIP_DIR ${CPRNC_SZIP_DIR}/.. ABSOLUTE)
+      MESSAGE(STATUS "CPRNC_SZIP_DIR=${CPRNC_SZIP_DIR}")
     ENDIF()
   ENDIF ()
 

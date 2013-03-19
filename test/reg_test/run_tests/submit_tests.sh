@@ -8,6 +8,9 @@ HOMME_NCRESULTS_DIR=@Homme_NCResults_DIR@
 
 # The location of the tests directory
 HOMME_TESTING_DIR=${HOMME_DIR}/tests
+
+HOMME_BASELINE_DIR=${HOMME_DIR}/tests/baseline
+
 cd $HOMME_TESTING_DIR
 
 # The "type" of submission (lsf, pbs, standard mpi etc.) for creating the executable scripts 
@@ -16,7 +19,14 @@ HOMME_Submission_Type=@Homme_Submission_Type@
 # The cprnc Netcdf comparison tool
 CPRNC_BINARY=@CPRNC_BINARY@
 
-if [ "$1" == all ] ; then
+if [ "$1" == baseline ] ; then
+  echo "Creating baseline"
+  CREATE_BASELINE=true
+else
+  CREATE_BASELINE=false
+fi
+
+if [ "$1" == all -o ${CREATE_BASELINE} == true ] ; then
   SUBMIT_ALL_AT_ONCE=true
 else
   SUBMIT_ALL_AT_ONCE=false
@@ -50,7 +60,6 @@ if [ "$HOMME_Submission_Type" = lsf ]; then
   # Wait for the jobs to run through the queue
   queueWait
 
-  # Diff the output files with those saved in the repo
 else
   runTestsStd
 fi
@@ -62,7 +71,9 @@ if [ "${SUBMIT_ALL_AT_ONCE}" == true ] ; then
 
   # Do nothing for now
   # Pass
-  :
+  if [ ${CREATE_BASELINE} == true ] ; then
+    echo "Finish baseline..."
+  fi
 
 else
 

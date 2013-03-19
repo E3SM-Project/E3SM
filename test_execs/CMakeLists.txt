@@ -9,6 +9,9 @@ SET (NUM_TEST_FILES 0)
 SET(Homme_Build_DIR ${CMAKE_BINARY_DIR})
 SET(Homme_Results_DIR ${CMAKE_SOURCE_DIR}/test/reg_test/results)
 
+# Want this to be resettable
+SET(Homme_Baseline_DIR ${CMAKE_BINARY_DIR}/tests/baseline)
+
 # Host specific
 IF (Homme_Hostname STREQUAL "Yellowstone") 
 
@@ -58,6 +61,7 @@ CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/diffTol.py
 #   this is a little awkward because submit_tests.sh uses 
 #   submissions-list.sh which hasn't been created yet.
 ADD_TEST(submitAndRunTests ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "all")
+ADD_TEST(submitAndRunTests ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "all")
 
 ADD_CUSTOM_TARGET(check 
                   COMMAND ${CMAKE_CTEST_COMMAND} "--output-on-failure")
@@ -65,6 +69,10 @@ ADD_CUSTOM_TARGET(check
 ADD_DEPENDENCIES(check submitAndRunTests)
 # Set the time limit to submit and run the tests at three hours
 SET_TESTS_PROPERTIES(submitAndRunTests PROPERTIES TIMEOUT 10800)
+
+ADD_CUSTOM_TARGET(baseline
+         COMMAND ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "baseline")
+
 
 IF(${BUILD_HOMME_PREQX})
   ADD_SUBDIRECTORY(baroA)
