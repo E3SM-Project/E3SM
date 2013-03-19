@@ -1,7 +1,9 @@
 #define __PIO_FILE__ "pionfget_mod.F90"
 !>
-!! @private pionfget_mod 
-!! @brief Reads netcdf metadata from a file in non-decomposed fashion
+!! @file 
+!! $Revision$
+!! $LastChangedDate$
+!! @brief Read Routines for non-decomposed NetCDF data.
 !<
 module pionfget_mod
 #ifdef TIMING

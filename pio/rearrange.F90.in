@@ -1,13 +1,11 @@
 #define __PIO_FILE__ "rearrange.F90"
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-!  Module rearrange
-!
-!  Provide a generic entry to the data rearrangement
-!
-!
-!  20070919  Initial version  - R. Loy
-!
+!>
+!! @file 
+!! $Revision$
+!! $LastChangedDate$
+!! @brief Generic interface to the rearrange layer
+!<
+
 module rearrange
 
   use pio_kinds

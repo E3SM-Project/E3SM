@@ -52,8 +52,8 @@ PROJECT_LOGO           =
 # If a relative path is entered, it will be relative to the location 
 # where doxygen was started. If left blank the current directory will be used.
 
-OUTPUT_DIRECTORY       = /cesmweb/html/models/pio_new
-#OUTPUT_DIRECTORY = ./doc
+#OUTPUT_DIRECTORY       = /cesmweb/html/models/pio_new
+OUTPUT_DIRECTORY = ./doc/html
 
 # If the CREATE_SUBDIRS tag is set to YES, then doxygen will create 
 # 4096 sub-directories (in 2 levels) under the output directory of each output 
@@ -247,7 +247,7 @@ OPTIMIZE_OUTPUT_VHDL   = NO
 # that for custom extensions you also need to set FILE_PATTERNS otherwise the 
 # files are not read by doxygen.
 
-EXTENSION_MAPPING      = 
+EXTENSION_MAPPING      = in=Fortran
 
 
 # If you use STL classes (i.e. std::string, std::vector, etc.) but do not want 
@@ -645,7 +645,8 @@ FILE_PATTERNS          = *.c \
                          *.h \
                          *.inc \
                          *.dox \
-                         *.f90 \
+			 *.F90 \
+                         *.F90.in \
                          *.txt
 
 # The RECURSIVE tag can be used to turn specify whether or not subdirectories 
@@ -709,7 +710,7 @@ EXAMPLE_RECURSIVE      = NO
 # directories that contain image that are included in the documentation (see 
 # the \image command).
 
-IMAGE_PATH             = 
+IMAGE_PATH             = doc/images
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should 
 # invoke to filter for each input file. Doxygen will invoke the filter program 

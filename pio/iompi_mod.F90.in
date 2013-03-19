@@ -1,4 +1,10 @@
 #define __PIO_FILE__ "iompi_mod.F90"
+!>
+!! @file 
+!! $Revision$
+!! $LastChangedDate$
+!! @brief The MPI-IO direct binary interface to PIO
+!<
 module iompi_mod
     use pio_kinds, only : i4,r4,r8,log_kind,pio_offset
     use pio_types, only : io_desc_t,file_desc_t,var_desc_t, &

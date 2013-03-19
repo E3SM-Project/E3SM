@@ -37,7 +37,7 @@ module pio_types
     !------------------------------------
 !>
 !! @public
-!! @struct iosystem_desc_t 
+!! @defgroup iosystem_desc_t 
 !! @brief A defined PIO system descriptor created by @ref PIO_init (see pio_types)
 !<
     type, public :: IOSystem_desc_t
@@ -105,9 +105,9 @@ module pio_types
 
      
 !> 
-!! @public
-!! @struct file_desc_t 
-!! @brief File descriptor returned by \ref PIO_openfile or \ref PIO_createfile (see pio_types)
+!! @defgroup file_desc_t
+!! File descriptor returned by \ref PIO_openfile or \ref PIO_createfile (see pio_types)
+!! 
 !>
     type, public :: File_desc_t
        type(iosystem_desc_t), pointer :: iosystem => null()
@@ -192,7 +192,7 @@ module pio_types
 
 !>
 !! @public
-!! @struct var_desc_t 
+!! @defgroup var_desc_t 
 !! @brief A variable descriptor returned from @ref PIO_def_var (see pio_types) 
 !<
     type, public :: Var_desc_t

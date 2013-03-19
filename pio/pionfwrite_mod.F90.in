@@ -1,3 +1,9 @@
+!>
+!! @file 
+!! $Revision$
+!! $LastChangedDate$
+!! @brief Decomposed Write interface to NetCDF
+!<
 module pionfwrite_mod
   use pio_kinds, only : r4, r8, i4, pio_offset
   implicit none

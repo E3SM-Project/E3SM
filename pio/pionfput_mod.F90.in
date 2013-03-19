@@ -1,8 +1,11 @@
 #define __PIO_FILE__ "pionfput_mod.F90"
+!>
+!! @file 
+!! $Revision$
+!! $LastChangedDate$
+!! @brief Write Routines for non-decomposed NetCDF data.
+!<
 module pionfput_mod
-  !pl  This file is input to the perl program genf90.pl which generates  
-  !pl  f90 code for various datatypes and dimensions.
-  !pl  Supported parser keywords are {TYPE}, {DIMS}, {VTYPE}, {DIMSTR} and {MPITYPE} 
 #ifdef TIMING
   use perf_mod, only : t_startf, t_stopf      ! _EXTERNAL
 #endif

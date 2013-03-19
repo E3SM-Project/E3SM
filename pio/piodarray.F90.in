@@ -1,6 +1,6 @@
 #define __PIO_FILE__ 'piodarray'
 !>
-!! @file piodarray.F90
+!! @file 
 !! $Revision$
 !! $LastChangedDate$
 !! @brief Read and write Routines for decomposed data.
@@ -109,9 +109,9 @@ contains
 !! @ingroup PIO_write_darray
 !! @brief Writes a 1D array of type {TYPE}. 
 !! @details
-!! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc var_desc_t
-!! @param ioDesc  @copydoc io_desc_t
+!! @param File    \ref file_desc_t
+!! @param varDesc \ref var_desc_t
+!! @param ioDesc  \ref io_desc_t
 !! @param array  : The data to be written
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
@@ -203,9 +203,9 @@ contains
 !! @ingroup PIO_write_darray
 !! @brief Writes a {DIMS}D array of type {TYPE}. 
 !! @details
-!! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc var_desc_t
-!! @param ioDesc  @copydoc io_desc_t
+!! @param File @ref file_desc_t
+!! @param varDesc @ref var_desc_t
+!! @param ioDesc  @ref io_desc_t
 !! @param array  : The data to be written
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
@@ -247,9 +247,9 @@ contains
 !! @ingroup PIO_read_darray
 !! @brief
 !! @details
-!! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc var_desc_t
-!! @param ioDesc @copydoc io_desc_t
+!! @param File @ref file_desc_t
+!! @param varDesc @ref var_desc_t
+!! @param ioDesc @ref io_desc_t
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
@@ -323,9 +323,9 @@ contains
 !! @ingroup PIO_read_darray
 !! @brief Reads a {DIMS}D array of type {TYPE}. 
 !! @details
-!! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc var_desc_t
-!! @param ioDesc @copydoc io_desc_t
+!! @param File @ref file_desc_t
+!! @param varDesc @ref var_desc_t
+!! @param ioDesc @ref io_desc_t
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
@@ -359,9 +359,9 @@ contains
 !! @private
 !! @brief Write a 1D array of type {TYPE} defined by varDesc using the decomposition described in iodesc to the netcdf or pnetcdf file File. 
 !! @details
-!! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc var_desc_t
-!! @param ioDesc @copydoc io_desc_t
+!! @param File @ref file_desc_t
+!! @param varDesc @ref var_desc_t
+!! @param ioDesc @ref io_desc_t
 !! @param array  : The data to be written
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
@@ -599,9 +599,9 @@ contains
 !! @private
 !! @brief Write a 1D array of type {TYPE}.
 !! @details
-!! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc var_desc_t
-!! @param ioDesc @copydoc io_desc_t
+!! @param File @ref file_desc_t
+!! @param varDesc @ref var_desc_t
+!! @param ioDesc @ref io_desc_t
 !! @param array  : The data to be written
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
@@ -785,9 +785,9 @@ contains
 !! @brief Read a 1D array of type {TYPE} defined by varDesc using the decomposition
 !! described in ioDesc to the netcdf or pnetcdf file File. 
 !! @details
-!! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc var_desc_t
-!! @param ioDesc @copydoc io_desc_t
+!! @param File @ref file_desc_t
+!! @param varDesc @ref var_desc_t
+!! @param ioDesc @ref io_desc_t
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
@@ -975,9 +975,9 @@ contains
 !! @brief  Read an array of type {TYPE} defined by varDesc using the decomposition 
 !!  described in ioDesc to the netcdf or pnetcdf file File. 
 !! @details
-!! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc var_desc_t
-!! @param ioDesc @copydoc io_desc_t
+!! @param File @ref file_desc_t
+!! @param varDesc @ref var_desc_t
+!! @param ioDesc @ref io_desc_t
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
