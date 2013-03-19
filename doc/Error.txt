@@ -19,11 +19,12 @@
 By default PIO handles errors internally by printing a string
 describing the error and then calling mpi_abort.  Application
 developers can change this behaivior with a call to
-\ref PIO_seterrorhandling. @copydoc PIO_error_method 
-\ref error_methods
+\ref PIO_seterrorhandling
+
 For example if a developer wanted
 to see if an input netcdf file contained the variable 'U' they might do the following
 
 \verbinclude errorhandle
 
+\ref PIO_error_method
 */

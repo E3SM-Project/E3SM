@@ -247,7 +247,7 @@ module pio_types
 !> 
 !! @public
 !! @defgroup PIO_error_method error_methods 
-!! @brief  The three types of error handling methods are: 
+!! @brief The three types of error handling methods are: 
 !! @details
 !!  - PIO_INTERNAL_ERROR  : abort on error from any task
 !!  - PIO_BCAST_ERROR     : broadcast an error from io_rank 0 to all tasks in comm
