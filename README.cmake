@@ -1,3 +1,9 @@
+03/2013 BFJ
+
+Please see the HOMME wiki for information on how to build HOMME using the CMake build system.
+
+https://wiki.ucar.edu/display/homme/The+HOMME+CMake+build+and+testing+system
+
 03/2013 CGB and KJE and JER
 
 HOMME now has a CMake build option for sweqx, swim, and preqx.
@@ -17,7 +23,7 @@ It is in the BETA test mode, alert Chris Baker or Kate Evans or Jennifer Ribbeck
 5. make -j4
 6. make install (where you told it to go)
 
-most build failures are do to residual build info. In the build directory:
+most build failures are due to residual build info. In the build directory:
 rm -rf CMakeCache.txt CMakeFiles src utils cmake_install.cmake Makefile bin install_manifest.txt *.h
 to get a fresh build starting point.
 
