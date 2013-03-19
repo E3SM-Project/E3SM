@@ -2,22 +2,23 @@
 !>
 !!
 !! @file box_rearrange.F90
-!! @version $Revision$
-!! @date $LastChangedDate$
+!! $Revision$
+!! $LastChangedDate$
 !! @brief
 !!  Perform data rearrangement with each io processor
 !!  owning a rectangular box in the output domain
 !! @details
 !!  REVISION HISTORY:
-!!  20070726  Initial version  - R. Loy
-!!  20070807  Improved way MPI is called - R. Loy
-!!  20070825  fix hardcoded dim and unintentionally templated int - R. Loy
-!!  20071111  cache rearranger setup (1st and 2nd communications)
-!!  20090512  added flow-control logic option to comp2io and io2comp
+!!  <list>
+!!  <item>20070726  Initial version  - R. Loy
+!!  <item>20070807  Improved way MPI is called - R. Loy
+!!  <item>20070825  fix hardcoded dim and unintentionally templated int - R. Loy
+!!  <item>20071111  cache rearranger setup (1st and 2nd communications)
+!!  <item>20090512  added flow-control logic option to comp2io and io2comp
 !!            (imported flow-controlled alltoall logic ("swapm") from
 !!            Community Atmosphere Model) - P. Worley
-!!  20100207  added flow-control logic option to box_rearrange_create 
-!!            - P. Worley
+!!  <item>20100207  added flow-control logic option to box_rearrange_create - P. Worley
+!!  </list>          
 !<
 
 !#define MEMCHK
@@ -62,10 +63,10 @@
 #endif
 #endif
 
-!
-! arbitrary mpi message tags used for the rearrange
-!
-
+!> 
+!! \def TAG
+!! Arbitrary mpi message tags used for the rearrange
+!<
 #define TAG0  100
 #define TAG1  101
 #define TAG2  102

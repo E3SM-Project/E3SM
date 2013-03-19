@@ -208,7 +208,7 @@ contains
      ! write the record control word
      !-------------------------------
 
-     reclen=glen*sizeof(iobuf(1))
+     reclen=glen*c_sizeof(iobuf(1))
 
      if(iotype == iotype_direct_pbinary) then
 	File%offset = INT(varDesc%rec-1,kind=PIO_OFFSET)*reclen
@@ -281,7 +281,7 @@ contains
      ! write the record control word
      !-------------------------------
 
-     reclen=glen*sizeof(iobuf(1))
+     reclen=glen*c_sizeof(iobuf(1))
 
      if(iotype == iotype_direct_pbinary) then
 	File%offset = INT(varDesc%rec-1,kind=PIO_OFFSET)*reclen
@@ -354,7 +354,7 @@ contains
      ! write the record control word
      !-------------------------------
 
-     reclen=glen*sizeof(iobuf(1))
+     reclen=glen*c_sizeof(iobuf(1))
 
      if(iotype == iotype_direct_pbinary) then
 	File%offset = INT(varDesc%rec-1,kind=PIO_OFFSET)*reclen
@@ -421,7 +421,7 @@ contains
     call t_startf("pio_read_mpiio_text")
 #endif
 #ifdef USEMPIIO
-     reclen=glen*sizeof(iobuf(1))
+     reclen=glen*c_sizeof(iobuf(1))
 
      if(Debug) print *, subName,':: IAM: ',File%iosystem%io_rank,' read_real8_mpiio: SIZE(IOBUF),n_RelemTYPE: ', &
                 SIZE(IOBUF),iodesc%Read%n_elemTYPE
@@ -489,7 +489,7 @@ contains
     call t_startf("pio_read_mpiio_real")
 #endif
 #ifdef USEMPIIO
-     reclen=glen*sizeof(iobuf(1))
+     reclen=glen*c_sizeof(iobuf(1))
 
      if(Debug) print *, subName,':: IAM: ',File%iosystem%io_rank,' read_real8_mpiio: SIZE(IOBUF),n_RelemTYPE: ', &
                 SIZE(IOBUF),iodesc%Read%n_elemTYPE
@@ -557,7 +557,7 @@ contains
     call t_startf("pio_read_mpiio_double")
 #endif
 #ifdef USEMPIIO
-     reclen=glen*sizeof(iobuf(1))
+     reclen=glen*c_sizeof(iobuf(1))
 
      if(Debug) print *, subName,':: IAM: ',File%iosystem%io_rank,' read_real8_mpiio: SIZE(IOBUF),n_RelemTYPE: ', &
                 SIZE(IOBUF),iodesc%Read%n_elemTYPE
@@ -625,7 +625,7 @@ contains
     call t_startf("pio_read_mpiio_int")
 #endif
 #ifdef USEMPIIO
-     reclen=glen*sizeof(iobuf(1))
+     reclen=glen*c_sizeof(iobuf(1))
 
      if(Debug) print *, subName,':: IAM: ',File%iosystem%io_rank,' read_real8_mpiio: SIZE(IOBUF),n_RelemTYPE: ', &
                 SIZE(IOBUF),iodesc%Read%n_elemTYPE

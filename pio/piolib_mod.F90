@@ -6,7 +6,13 @@
 #ifdef BGL
 #define BGx
 #endif
-
+!>
+!! @file piolib_mod.F90
+!! @brief Initialization Routines for PIO
+!! 
+!! $Revision$
+!! $LastChangedDate$
+!<
 module piolib_mod
   !--------------
   use pio_kinds

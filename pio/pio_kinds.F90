@@ -1,5 +1,10 @@
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-
+!>
+!! @file pio_kinds.F90
+!! @brief basic data types 
+!!
+!! $Revision$
+!! $LastChangedDate$
+!<
  module pio_kinds
 
 !BOP

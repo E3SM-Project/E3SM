@@ -1,5 +1,10 @@
 #define __PIO_FILE__ 'piodarray'
-
+!>
+!! @file piodarray.F90
+!! $Revision$
+!! $LastChangedDate$
+!! @brief Read and write Routines for decomposed data.
+!<
 module piodarray
   use pio_types, only : file_desc_t, io_desc_t, var_desc_t, pio_noerr, iosystem_desc_t, &
 	pio_iotype_pbinary, pio_iotype_binary, pio_iotype_direct_pbinary, &
@@ -76,8 +81,8 @@ module piodarray
        type(c_ptr), intent(in), value :: name
      end subroutine ReadVDC2Var
   end interface
-
 #endif
+
   character(len=*), parameter, private  :: modName='piodarray'
   integer :: total_buffsize=0
   integer :: pio_buffer_size_limit= 100000000   ! 100MB default
@@ -97,9 +102,6 @@ contains
     pio_buffer_size_limit=limit
 
   end subroutine pio_set_buffer_size_limit
-
-
-
 
 ! TYPE real,int,double
 !> 
@@ -1144,13 +1146,6 @@ contains
     integer, intent(in) :: request
     integer :: cnt, mpierr, maxbuffsize, this_buffsize
     type(io_data_list), pointer :: ptr
-#ifdef MEMCHK	
-    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
-    if(rss>lastrss) then
-       lastrss=rss
-       print *,__PIO_FILE__,__LINE__,'mem=',rss
-    end if
-#endif
 
     if(.not. associated(File%data_list_top)) then
        allocate(file%data_list_top)
@@ -1168,7 +1163,7 @@ contains
     ptr%request = request
     File%request_cnt=File%request_cnt+1
     ptr%data_{TYPE} => IOBUF
-    this_buffsize = size(iobuf)*sizeof(iobuf(1))
+    this_buffsize = size(iobuf)*c_sizeof(iobuf(1))
     file%buffsize=file%buffsize+this_buffsize
     total_buffsize = total_buffsize+this_buffsize
     
@@ -1179,13 +1174,6 @@ contains
     endif
 
     if(debug) print *,__FILE__,__LINE__,'buffsize = ',file%buffsize,file%request_cnt
-#ifdef MEMCHK	
-    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
-    if(rss>lastrss) then
-       lastrss=rss
-       print *,__PIO_FILE__,__LINE__,'mem=',rss
-    end if
-#endif
 
   end subroutine add_data_to_buffer_{TYPE}
 

@@ -6,22 +6,23 @@
 !>
 !!
 !! @file box_rearrange.F90
-!! @version $Revision$
-!! @date $LastChangedDate$
+!! $Revision: 725 $
+!! $LastChangedDate: 2013-03-18 13:45:20 -0600 (Mon, 18 Mar 2013) $
 !! @brief
 !!  Perform data rearrangement with each io processor
 !!  owning a rectangular box in the output domain
 !! @details
 !!  REVISION HISTORY:
-!!  20070726  Initial version  - R. Loy
-!!  20070807  Improved way MPI is called - R. Loy
-!!  20070825  fix hardcoded dim and unintentionally templated int - R. Loy
-!!  20071111  cache rearranger setup (1st and 2nd communications)
-!!  20090512  added flow-control logic option to comp2io and io2comp
+!!  <list>
+!!  <item>20070726  Initial version  - R. Loy
+!!  <item>20070807  Improved way MPI is called - R. Loy
+!!  <item>20070825  fix hardcoded dim and unintentionally templated int - R. Loy
+!!  <item>20071111  cache rearranger setup (1st and 2nd communications)
+!!  <item>20090512  added flow-control logic option to comp2io and io2comp
 !!            (imported flow-controlled alltoall logic ("swapm") from
 !!            Community Atmosphere Model) - P. Worley
-!!  20100207  added flow-control logic option to box_rearrange_create 
-!!            - P. Worley
+!!  <item>20100207  added flow-control logic option to box_rearrange_create - P. Worley
+!!  </list>          
 !<
 
 !#define MEMCHK
@@ -66,10 +67,10 @@
 #endif
 #endif
 
-!
-! arbitrary mpi message tags used for the rearrange
-!
-
+!> 
+!! \def TAG
+!! Arbitrary mpi message tags used for the rearrange
+!<
 #define TAG0  100
 #define TAG1  101
 #define TAG2  102
@@ -102,7 +103,7 @@ module box_rearrange
        box_rearrange_comp2io, &
        box_rearrange_io2comp
 
-# 101 "box_rearrange.F90.in"
+# 102 "box_rearrange.F90.in"
   interface box_rearrange_comp2io
      ! TYPE int,real,double
      module procedure box_rearrange_comp2io_int
@@ -112,7 +113,7 @@ module box_rearrange
      module procedure box_rearrange_comp2io_double
   end interface
 
-# 106 "box_rearrange.F90.in"
+# 107 "box_rearrange.F90.in"
   interface box_rearrange_io2comp
      ! TYPE int,real,double
      module procedure box_rearrange_io2comp_int
@@ -129,7 +130,7 @@ integer :: msize, rss, mshare, mtext, mstack, lastrss=0
 #endif
 
 
-# 118 "box_rearrange.F90.in"
+# 119 "box_rearrange.F90.in"
 contains
 !>
 !! @public box_rearrange_comp2io
@@ -138,7 +139,7 @@ contains
 !!
 !<
 ! TYPE real,double,int
-# 126 "box_rearrange.F90.in"
+# 127 "box_rearrange.F90.in"
 subroutine box_rearrange_comp2io_real (IOsystem, ioDesc, s1, src, niodof, &
                                          dest, comm_option, fc_options)
 
@@ -410,7 +411,7 @@ end subroutine box_rearrange_comp2io_real
 !!
 !<
 ! TYPE real,double,int
-# 126 "box_rearrange.F90.in"
+# 127 "box_rearrange.F90.in"
 subroutine box_rearrange_comp2io_double (IOsystem, ioDesc, s1, src, niodof, &
                                          dest, comm_option, fc_options)
 
@@ -682,7 +683,7 @@ end subroutine box_rearrange_comp2io_double
 !!
 !<
 ! TYPE real,double,int
-# 126 "box_rearrange.F90.in"
+# 127 "box_rearrange.F90.in"
 subroutine box_rearrange_comp2io_int (IOsystem, ioDesc, s1, src, niodof, &
                                          dest, comm_option, fc_options)
 
@@ -949,7 +950,7 @@ subroutine box_rearrange_comp2io_int (IOsystem, ioDesc, s1, src, niodof, &
 end subroutine box_rearrange_comp2io_int
 
 ! TYPE real,double,int
-# 392 "box_rearrange.F90.in"
+# 393 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -1208,7 +1209,7 @@ subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
 end subroutine box_rearrange_io2comp_real
 
 ! TYPE real,double,int
-# 392 "box_rearrange.F90.in"
+# 393 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -1467,7 +1468,7 @@ subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
 end subroutine box_rearrange_io2comp_double
 
 ! TYPE real,double,int
-# 392 "box_rearrange.F90.in"
+# 393 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -1732,7 +1733,7 @@ end subroutine box_rearrange_io2comp_int
   !   find the rank in union_comm of the ith io processor
   !
 
-# 656 "box_rearrange.F90.in"
+# 657 "box_rearrange.F90.in"
   integer function find_io_comprank( Iosystem, ioprocindex )
     implicit none
 
@@ -1749,7 +1750,7 @@ end subroutine box_rearrange_io2comp_int
   !   find global xyz coordinates given a global index
   !
 
-# 672 "box_rearrange.F90.in"
+# 673 "box_rearrange.F90.in"
   subroutine gindex_to_coord( gindex, gstride, ndim, gcoord )
     implicit none
     integer(kind=pio_offset),intent(in) :: gindex           ! 0-based global index
@@ -1786,7 +1787,7 @@ end subroutine box_rearrange_io2comp_int
   !   and 1-based index for that ioproc's iobuf          '
   !
 
-# 708 "box_rearrange.F90.in"
+# 709 "box_rearrange.F90.in"
   logical function find_ioproc( gcoord, lb, ub, lstride, ndim, nioproc, &
        io_proc, io_index )
     implicit none
@@ -1868,7 +1869,7 @@ end subroutine box_rearrange_io2comp_int
   !
   !
 
-# 789 "box_rearrange.F90.in"
+# 790 "box_rearrange.F90.in"
   subroutine compute_dest(compdof, start, kount, gsize, ndim, nioproc, &
                           dest_ioproc, dest_ioindex                    )
     implicit none
@@ -1979,7 +1980,7 @@ end subroutine box_rearrange_io2comp_int
 !! this space should be freed in box_rearrange_free
 !!
 !<
-# 899 "box_rearrange.F90.in"
+# 900 "box_rearrange.F90.in"
   subroutine box_rearrange_create(Iosystem, compdof, gsize, ndim, &
                                   nioproc, ioDesc)
 
@@ -2133,7 +2134,7 @@ end subroutine box_rearrange_io2comp_int
 !! @brief Define comp <-> IO communications patterns
 !!
 !<
-# 1052 "box_rearrange.F90.in"
+# 1053 "box_rearrange.F90.in"
   subroutine compute_counts(Iosystem, ioDesc, niodof)
     
     use calcdisplace_mod, only : calcdisplace,GCDblocksize,gcd
@@ -2657,7 +2658,7 @@ end subroutine box_rearrange_io2comp_int
 !!
 !<
 
-# 1575 "box_rearrange.F90.in"
+# 1576 "box_rearrange.F90.in"
   subroutine box_rearrange_free(Iosystem,ioDesc)
     implicit none
 
