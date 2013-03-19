@@ -547,3 +547,50 @@ parseStdout() {
 
   done
 }
+
+moveBaseline() {
+
+  source ${HOMME_TESTING_DIR}/test_list.sh
+
+  for subNum in $(seq 1 ${num_test_files})
+  do
+
+    subFile=test_file${subNum}
+    subFile=${!subFile}
+
+    subDirName=`dirname ${subFile}`
+    subBaseName=`basename ${subDirName}`
+
+    baselineDir=${HOMME_BASELINE_DIR}/$subBaseName
+
+    # source the test.sh file to get the name of the nc_output_files
+    source ${subFile}
+
+    # nc_output_files is defined in the .sh file
+    FILES="${nc_output_files}"
+
+    if [ -z "${FILES}" ] ; then
+      echo "Test ${subBaseName} doesn't have Netcdf output files"
+    fi
+
+    # for files in movies
+    for file in $FILES 
+    do
+      #echo "file = ${file}"
+      baseFilename=`basename $file`
+
+      # new result
+      newFile=${subDirName}/movies/$file
+
+      if [ ! -f "${newFile}" ] ; then
+        echo "ERROR: The result file ${newFile} does not exist exiting" 
+        exit -1
+      fi
+
+      cmd="mv $newFile $baselineDir/movies"
+      echo "$cmd"
+      #mv $newFile $baselineName
+      
+    done
+  done
+}

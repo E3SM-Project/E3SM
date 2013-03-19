@@ -19,8 +19,10 @@ HOMME_Submission_Type=@Homme_Submission_Type@
 # The cprnc Netcdf comparison tool
 CPRNC_BINARY=@CPRNC_BINARY@
 
+# The testing utilities
+source ${HOMME_DIR}/tests/testing-utils.sh
+
 if [ "$1" == baseline ] ; then
-  echo "Creating baseline"
   CREATE_BASELINE=true
 else
   CREATE_BASELINE=false
@@ -47,9 +49,6 @@ else
 
 fi
 
-# The testing utilities
-source ${HOMME_DIR}/tests/testing-utils.sh
-
 if [ "$HOMME_Submission_Type" = lsf ]; then
   # Submit the tests to the queue
   submitTestsToLSF
@@ -70,9 +69,11 @@ parseStdout
 if [ "${SUBMIT_ALL_AT_ONCE}" == true ] ; then
 
   # Do nothing for now
-  # Pass
+
+  # If baseline then move the netcdf output files to the baseline dir
   if [ ${CREATE_BASELINE} == true ] ; then
-    echo "Finish baseline..."
+    echo "Creating baseline..."
+    moveBaseline
   fi
 
 else
