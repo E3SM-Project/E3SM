@@ -6,8 +6,8 @@
 #define __PIO_FILE__ 'piodarray'
 !>
 !! @file piodarray.F90
-!! $Revision$
-!! $LastChangedDate$
+!! $Revision: 727 $
+!! $LastChangedDate: 2013-03-19 07:49:13 -0600 (Tue, 19 Mar 2013) $
 !! @brief Read and write Routines for decomposed data.
 !<
 module piodarray

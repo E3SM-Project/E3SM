@@ -32,6 +32,7 @@ Although PIO has a binary output capability the focus of development has been on
 use the NetCDF file format.   
 
  - \ref intro
+ - \ref install
  - \ref decomp
  - \ref error
  - \ref examp

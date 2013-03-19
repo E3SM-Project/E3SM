@@ -7,7 +7,7 @@
 #define BGx
 #endif
 !>
-!! @file piolib_mod.F90
+!! @file 
 !! @brief Initialization Routines for PIO
 !! 
 !! $Revision$

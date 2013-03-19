@@ -699,7 +699,6 @@ FILE_PATTERNS          = *.c \
                          *.inc \
                          *.dox \
                          *.f90 \
-                         *.F90 \
                          *.txt
 
 # The RECURSIVE tag can be used to turn specify whether or not subdirectories 
@@ -714,10 +713,8 @@ RECURSIVE              = YES
 # Note that relative paths are relative to the directory from which doxygen is 
 # run.
 
-EXCLUDE                = pio/pio_support.F90 \
-                         pio/piodarray.F90 \
-                         pio/pionfput_mod.F90
-# pio/box_rearrange.F90 \
+EXCLUDE                = 
+
 # The EXCLUDE_SYMLINKS tag can be used to select whether or not files or 
 # directories that are symbolic links (a Unix file system feature) are excluded 
 # from the input.
@@ -1251,7 +1248,7 @@ SERVER_BASED_SEARCH    = NO
 # If the GENERATE_LATEX tag is set to YES (the default) Doxygen will 
 # generate Latex output.
 
-GENERATE_LATEX         = YES
+GENERATE_LATEX         = NO
 
 # The LATEX_OUTPUT tag is used to specify where the LaTeX docs will be put. 
 # If a relative path is entered the value of OUTPUT_DIRECTORY will be 

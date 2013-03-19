@@ -1,7 +1,7 @@
 #define __PIO_FILE__ "nf_mod.F90"
 !>
-!! @file nf_mod.F90
-!! @brief netcdf interface routines
+!! @file
+!! @brief NetCDF interface routines
 !!
 !! $Revision$
 !! $LastChangedDate$

@@ -6,8 +6,8 @@
 !>
 !!
 !! @file box_rearrange.F90
-!! $Revision: 725 $
-!! $LastChangedDate: 2013-03-18 13:45:20 -0600 (Mon, 18 Mar 2013) $
+!! $Revision: 727 $
+!! $LastChangedDate: 2013-03-19 07:49:13 -0600 (Tue, 19 Mar 2013) $
 !! @brief
 !!  Perform data rearrangement with each io processor
 !!  owning a rectangular box in the output domain

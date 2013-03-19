@@ -41,3 +41,4 @@ gmake install will move the compiled library and module files to the directory s
 by $PREFIX which can be set by using the --prefix argument to configure.   Note that
 although the user application only needs to 'use pio'  at least some compilers require that
 all of the module files be located in the install directory.   
+*/

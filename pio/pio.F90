@@ -1,3 +1,11 @@
+!>
+!! @file 
+!! @brief User interface Module for PIO, this is the only file a user program should 'use'
+!! 
+!! $Revision$
+!! $LastChangedDate$
+!<
+
 module pio
 ! Package all exposed variables and functions under one roof
 
