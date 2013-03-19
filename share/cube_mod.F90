@@ -150,19 +150,19 @@ contains
     type (cartesian3d_t) :: quad(4)
     integer face_no,i,j
 
-    ! =========================================
-    ! compute coordinates of each GLL point
-    ! =========================================
     face_no = elem%vertex%face_number
+    ! compute the corners in Cartesian coordinates
+    do i=1,4
+       elem%corners3D(i)=cubedsphere2cart(elem%corners(i),face_no)
+    enddo
+
+    ! =========================================
+    ! compute lat/lon coordinates of each GLL point
+    ! =========================================
     do i=1,np
     do j=1,np
        elem%spherep(i,j)=ref2sphere(gll_points(i),gll_points(j),elem)
     enddo
-    enddo
-
-    ! compute the corners in Cartesian coordinates
-    do i=1,4
-       elem%corners3D(i)=cubedsphere2cart(elem%corners(i),face_no)
     enddo
 
     ! also compute the [-pi/2,pi/2] cubed sphere coordinates:
@@ -170,9 +170,9 @@ contains
 
     ! Matrix describing vector conversion to cartesian
     ! Zonal direction
-    elem%vec_sphere2cart(:,:,1,1) =                            -SIN(elem%spherep(:,:)%lon)
-    elem%vec_sphere2cart(:,:,2,1) =                             COS(elem%spherep(:,:)%lon)
-    elem%vec_sphere2cart(:,:,3,1) =                             0.0_real_kind
+    elem%vec_sphere2cart(:,:,1,1) = -SIN(elem%spherep(:,:)%lon)
+    elem%vec_sphere2cart(:,:,2,1) =  COS(elem%spherep(:,:)%lon)
+    elem%vec_sphere2cart(:,:,3,1) =  0.0_real_kind
     ! Meridional direction
     elem%vec_sphere2cart(:,:,1,2) = -SIN(elem%spherep(:,:)%lat)*COS(elem%spherep(:,:)%lon)
     elem%vec_sphere2cart(:,:,2,2) = -SIN(elem%spherep(:,:)%lat)*SIN(elem%spherep(:,:)%lon)
