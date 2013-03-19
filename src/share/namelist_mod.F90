@@ -33,6 +33,7 @@ module namelist_mod
        integration,   &       ! integration method
        tracer_advection_formulation, &   ! conservation or non-conservation formulaton
        tstep_type, &
+       cubed_sphere_map, &
        compute_mean_flux, &
        qsplit, &
        rsplit, &
@@ -244,6 +245,7 @@ module namelist_mod
                      tstep_type, &
                      npdg, &
                      compute_mean_flux, &
+                     cubed_sphere_map, &
                      qsplit, &
                      rsplit, &
                      physics, &             ! The type of physics, 0=none, 1=multicloud or 2= emanuel.
@@ -828,6 +830,7 @@ module namelist_mod
     call MPI_bcast(tstep_type,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(npdg,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(compute_mean_flux,1,MPIinteger_t ,par%root,par%comm,ierr)
+    call MPI_bcast(cubed_sphere_map,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(qsplit,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(rsplit,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(physics,1,MPIinteger_t ,par%root,par%comm,ierr)
@@ -943,11 +946,10 @@ module namelist_mod
     if (par%masterproc) write (iulog,*) "Mesh File:", mesh_file
     if (ne.eq.0) then
        if (par%masterproc) write (iulog,*) "Opening Mesh File:", mesh_file
-       
       call set_mesh_dimensions() 
       call MeshOpen(mesh_file, par) 
-      
     end if
+    if (par%masterproc) write (iulog,*) "Reference element projection: cubed_sphere_map=",cubed_sphere_map
 
 
 

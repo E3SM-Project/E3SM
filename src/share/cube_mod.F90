@@ -2625,8 +2625,6 @@ contains
     c(1,3)=corners(3)%x;  c(2,3)=corners(3)%y;  c(3,3)=corners(3)%z; 
     c(1,4)=corners(4)%x;  c(2,4)=corners(4)%y;  c(3,4)=corners(4)%z; 
 
-    q=q/4.0d0;
-
 !physical point on a plane (sliced), not yet on the sphere
     do i=1,3
       xx(i)=sum(c(i,:)*q(:))
