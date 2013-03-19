@@ -22,9 +22,9 @@ developers can change this behaivior with a call to
 \ref PIO_seterrorhandling
 
 For example if a developer wanted
-to see if an input netcdf file contained the variable 'U' they might do the following
+to see if an input netcdf file contained the variable 'U' they might do the following:
 
 \verbinclude errorhandle
 
-\ref PIO_error_method
+\copydoc PIO_error_method
 */
