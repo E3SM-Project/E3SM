@@ -9,11 +9,28 @@ SET (NUM_TEST_FILES 0)
 SET(Homme_Build_DIR ${CMAKE_BINARY_DIR})
 SET(Homme_Results_DIR ${CMAKE_SOURCE_DIR}/test/reg_test/results)
 
+
+
 # Host specific
 IF (Homme_Hostname STREQUAL "Yellowstone") 
 
   # Set the Project ID to run the tests through the queue
-  IF (HOMME_PROJID)
+  # Modify the results directory to point to the yellowstone results
+  # TODO: deal with different compilers
+  SET(Homme_Results_DIR ${Homme_Results_DIR}/yellowstone)
+
+  #SET(Homme_Submission_Type lsf)
+
+ELSEIF (Homme_OS STREQUAL "Darwin") 
+
+  SET(Homme_Results_DIR ${Homme_Results_DIR}/darwin)
+
+  #SET(Homme_Submission_Type none)
+
+ENDIF ()
+
+IF (NOT ${Homme_Submission_Type} STREQUAL none)
+  IF (DEFINED HOMME_PROJID)
     MESSAGE(STATUS "Using HOMME Project ID (HOMME_PROJID) ${HOMME_PROJID}")
   ELSE ()
     # Check environment variables
@@ -24,20 +41,8 @@ IF (Homme_Hostname STREQUAL "Yellowstone")
       MESSAGE(FATAL_ERROR "No HOMME Project ID found. Please set HOMME_PROJID")
     ENDIF ()
   ENDIF ()
-
-  # Modify the results directory to point to the yellowstone results
-  # TODO: deal with different compilers
-  SET(Homme_Results_DIR ${Homme_Results_DIR}/yellowstone)
-
-  SET(Homme_Submission_Type lsf)
-
-ELSEIF (Homme_OS STREQUAL "Darwin") 
-
-  SET(Homme_Results_DIR ${Homme_Results_DIR}/darwin)
-
-  SET(Homme_Submission_Type std)
-
 ENDIF ()
+
 
 # Because of the queuing system on machines like Yellowstone the testing can be a little awkward
 # The following scripts prepare submission scripts and allow submission to

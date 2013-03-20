@@ -35,7 +35,6 @@ createLSFHeader() {
 
   echo "#BSUB -a poe" >> $RUN_SCRIPT
 
-  # To do: move this check up and properly handle the error status
   if [ -n "$HOMME_PROJID" ]; then
     echo "#BSUB -P $HOMME_PROJID" >> $RUN_SCRIPT
   else
@@ -70,6 +69,38 @@ createLSFHeader() {
   # Set the ncpus and ranks per MPI
   echo "#BSUB -n $num_cpus" >> $RUN_SCRIPT
   echo '#BSUB -R "span[ptile='$num_cpus']" ' >> $RUN_SCRIPT
+
+  echo "" >> $RUN_SCRIPT
+
+  echo "cd $outputDir" >> $RUN_SCRIPT
+
+  echo "" >> $RUN_SCRIPT
+
+}
+
+createPBSHeader() {
+
+  RUN_SCRIPT=$1
+
+  #delete the file if it exists
+  rm -f $RUN_SCRIPT
+
+  # Set up some yellowstone boiler plate
+  echo "#!/bin/bash -l" >> $RUN_SCRIPT
+  echo ""  >> $RUN_SCRIPT # newlines
+  
+  if [ -n "$HOMME_PROJID" ]; then
+    echo "#PBS -A $HOMME_PROJID" >> $RUN_SCRIPT
+  else
+    echo "PROJECT CHARGE ID (HOMME_PROJID) not set"
+    exit -1
+  fi 
+
+  echo "#PBS -N $testName" >> $RUN_SCRIPT
+
+  echo "#PBS -l nodes=1" >> $RUN_SCRIPT
+  echo "#PBS -l walltime=0:20:00" >> $RUN_SCRIPT
+  echo "#PBS -l gres=widow1" >> $RUN_SCRIPT
 
   echo "" >> $RUN_SCRIPT
 
@@ -389,6 +420,10 @@ submissionHeader() {
 
   if [ "$HOMME_Submission_Type" = lsf ]; then
     createLSFHeader $RUN_SCRIPT
+  elif [ "$HOMME_Submission_Type" = pbs ]; then
+    echo "creating PBS header"
+    createPBSHeader $RUN_SCRIPT
+    echo "finishd creating PBS header"
   else
     createStdHeader $RUN_SCRIPT
   fi
@@ -402,6 +437,8 @@ execLine() {
 
   if [ "$HOMME_Submission_Type" = lsf ]; then
     echo "mpirun.lsf $EXEC" >> $RUN_SCRIPT
+  elif [ "$HOMME_Submission_Type" = pbs ]; then
+    echo "aprun -n 16 $EXEC" >> $RUN_SCRIPT
   else
     echo "mpiexec -n $NUM_CPUS $EXEC" >> $RUN_SCRIPT
   fi
