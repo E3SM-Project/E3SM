@@ -17,7 +17,7 @@ FDEPENDS=$(SRCDIR)/fdepends.awk
 DEPSUF = .d
 MODSUF = .mod
 CPPSUF = .f90
-
+GENF90 := ../bin
 
 ifeq (,$(PIOARCH))
   PIOARCH=conf
@@ -123,7 +123,7 @@ SRCS_CPP=
 
 
 $(TEMPSRCFC): $(TEMPLATE_FC)
-	$(PERL) $(SRCDIR)/genf90.pl $< > $*.F90
+	$(PERL) $(GENF90)/genf90.pl $< > $*.F90
 
 
 
