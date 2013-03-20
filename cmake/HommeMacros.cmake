@@ -235,10 +235,12 @@ macro(createTest testName)
 
   FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
   IF (NOT ${NUM_CPUS} STREQUAL "")
-    IF (NOT ${HOMME_QUEUING} AND ${NUM_CPUS} GREATER ${MAX_NUM_PROCS}) 
-      #MESSAGE(STATUS "For ${TEST_NAME} the requested number of CPU processes is larger than the number available")
-      #MESSAGE(STATUS "  Changing NUM_CPU from ${NUM_CPUS} to ${MAX_NUM_PROCS}")
-      SET(NUM_CPUS ${MAX_NUM_PROCS})
+    IF (NOT ${HOMME_QUEUING})
+      IF (${NUM_CPUS} GREATER ${MAX_NUM_PROCS}) 
+        #MESSAGE(STATUS "For ${TEST_NAME} the requested number of CPU processes is larger than the number available")
+        #MESSAGE(STATUS "  Changing NUM_CPU from ${NUM_CPUS} to ${MAX_NUM_PROCS}")
+        SET(NUM_CPUS ${MAX_NUM_PROCS})
+      ENDIF ()
     ENDIF ()
     FILE(APPEND ${THIS_TEST_SCRIPT} "num_cpus=${NUM_CPUS}\n") # new line
   ELSE ()
