@@ -53,17 +53,21 @@ CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/testing-utils.sh
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/diffTol.py
                ${CMAKE_BINARY_DIR}/tests/diffTol.py COPYONLY)
 
-# The first CMake test is running
-#   this is a little awkward because submit_tests.sh uses 
-#   submissions-list.sh which hasn't been created yet.
-ADD_TEST(submitAndRunTests ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "all")
-
 ADD_CUSTOM_TARGET(check 
                   COMMAND ${CMAKE_CTEST_COMMAND} "--output-on-failure")
 
-ADD_DEPENDENCIES(check submitAndRunTests)
-# Set the time limit to submit and run the tests at three hours
-SET_TESTS_PROPERTIES(submitAndRunTests PROPERTIES TIMEOUT 10800)
+
+IF (${HOMME_QUEUING})
+  # The first CMake test is running
+  #   this is a little awkward because submit_tests.sh uses 
+  #   submissions-list.sh which hasn't been created yet.
+  ADD_TEST(submitAndRunTests ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "all")
+
+  ADD_DEPENDENCIES(check submitAndRunTests)
+  # Set the time limit to submit and run the tests at three hours
+  SET_TESTS_PROPERTIES(submitAndRunTests PROPERTIES TIMEOUT 10800)
+
+ENDIF ()
 
 IF(${BUILD_HOMME_PREQX})
   ADD_SUBDIRECTORY(baroA)

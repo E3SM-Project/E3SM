@@ -37,7 +37,6 @@ else
 
 fi
 
-
 if [ "$HOMME_Submission_Type" = lsf -o "$HOMME_Submission_Type" = pbs ]; then
   HOMME_QUEUE_JOBS=true
 else

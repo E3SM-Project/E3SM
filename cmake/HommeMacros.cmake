@@ -72,7 +72,7 @@ macro(getValue thisLine thisVar)
   STRING(REPLACE "=" ";" LINE_LIST ${thisLine})
 
   # Get the 0th and 1th items of the list
-  #LIST(GET LINE_LIST 0 thisKey)
+  #LIST(GET LINE_LIST 0 thisKey) # Don't actually care about the key
   LIST(GET LINE_LIST 1 thisVal)
 
   # Remove whitespace  and set to the variable defined by thisVar
@@ -235,6 +235,11 @@ macro(createTest testName)
 
   FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
   IF (NOT ${NUM_CPUS} STREQUAL "")
+    IF (NOT ${HOMME_QUEUING} AND ${NUM_CPUS} GREATER ${MAX_NUM_PROCS}) 
+      #MESSAGE(STATUS "For ${TEST_NAME} the requested number of CPU processes is larger than the number available")
+      #MESSAGE(STATUS "  Changing NUM_CPU from ${NUM_CPUS} to ${MAX_NUM_PROCS}")
+      SET(NUM_CPUS ${MAX_NUM_PROCS})
+    ENDIF ()
     FILE(APPEND ${THIS_TEST_SCRIPT} "num_cpus=${NUM_CPUS}\n") # new line
   ELSE ()
     MESSAGE(FATAL_ERROR "In test ${testName} NUM_CPUS not defined. Quitting")
@@ -303,28 +308,33 @@ macro(createTest testName)
   ENDFOREACH ()
   FILE(APPEND ${THIS_TEST_SCRIPT} "\"\n")
 
-  SET(THIS_TEST "${testName}-diff")
-
-  ADD_TEST(NAME ${THIS_TEST}
-           COMMAND ${CMAKE_BINARY_DIR}/tests/diff_output.sh ${TEST_NAME})
-
-  SET_TESTS_PROPERTIES(${THIS_TEST} PROPERTIES DEPENDS submitAndRunTests)
-
-  SET (ALL_REG_TESTS ${ALL_REG_TESTS} ${THIS_TEST})
-
-
-  # First run the createRunScript to generate the ${THIS_TEST_SCRIPT}
-  EXECUTE_PROCESS(
-    COMMAND ${CMAKE_BINARY_DIR}/tests/createRunScripts.sh ${THIS_TEST_SCRIPT}
-    RESULT_VARIABLE CREATE_RUNS_RESULT
-    OUTPUT_VARIABLE CREATE_RUNS_OUTPUT
-    ERROR_VARIABLE CREATE_RUNS_ERROR
-  )
-  
-  # Now for the individual tests
   SET(THIS_TEST_RUN_SCRIPT "${THIS_TEST_DIR}/${TEST_NAME}-run.sh")
 
-  #SET(THIS_TEST_INDIV "${testName}-indiv")
+  IF (${HOMME_QUEUING})
+
+    SET(THIS_TEST "${testName}-diff")
+
+    # When run through the queue the runs are submitted and ran in 
+    #   submitAndRunTests, and diffed in the subsequent tests
+    ADD_TEST(NAME ${THIS_TEST}
+             COMMAND ${CMAKE_BINARY_DIR}/tests/diff_output.sh ${TEST_NAME})
+
+    SET_TESTS_PROPERTIES(${THIS_TEST} PROPERTIES DEPENDS submitAndRunTests)
+
+
+  ELSE ()
+
+    SET(THIS_TEST "${testName}")
+
+    # When not run through a queue each run is ran and then diffed. This is handled by 
+    #  the submit_tests.sh script 
+    ADD_TEST(NAME ${THIS_TEST} 
+             COMMAND ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "${THIS_TEST_RUN_SCRIPT}" "${TEST_NAME}"
+             DEPENDS ${EXEC_NAME})
+
+  ENDIF ()
+
+  # Individual target to rerun and diff the tests
   SET(THIS_TEST_INDIV "test-${testName}")
 
   ADD_CUSTOM_TARGET(${THIS_TEST_INDIV}
@@ -333,11 +343,6 @@ macro(createTest testName)
   ADD_DEPENDENCIES(${THIS_TEST_INDIV} ${EXEC_NAME})
 
   ADD_DEPENDENCIES(check ${EXEC_NAME})
-  # Now make the Individual targets
-  #ADD_CUSTOM_COMMAND(TARGET ${THIS_TEST_INDIV}
-  #                   COMMENT "Running the HOMME regression test: ${THIS_TEST}"
-  #                   POST_BUILD COMMAND ${CMAKE_CTEST_COMMAND} ARGS --output-on-failure -R ${THIS_TEST_INDIV} 
-  #                   WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
 endmacro(createTest)
 

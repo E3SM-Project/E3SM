@@ -341,13 +341,18 @@ runTestsStd() {
     echo -n "Running test ${subJobName} ... "
     #echo "${subFile} > $THIS_STDOUT 2> $THIS_STDERR"
     chmod u+x ${subFile}
-    ${subFile} > $THIS_STDOUT 2> $THIS_STDERR &
-    RUN_PID=$!
+    # Don't want this to run in the background
+    #cmd='${subFile} > $THIS_STDOUT 2> $THIS_STDERR &'
+    cmd="${subFile} > $THIS_STDOUT 2> $THIS_STDERR"
+    echo "$cmd"
+    $cmd
+    RUN_PID=$?
     echo "PID=$RUN_PID"
-    wait $RUN_PID
-    RUN_STAT=$?
+    RUN_STAT=${RUN_PID}
+    #wait $RUN_PID
+    #RUN_STAT=$?
     # Technically the PID is incorrect but it really doesn't matter
-    RUN_PID=$!
+    #RUN_PID=$!
     # Do some error checking
     if [ $RUN_STAT = 0 ]; then
       # the command was succesful
@@ -383,6 +388,7 @@ createAllRunScripts() {
 
     # Create the run script
     thisRunScript=`dirname ${!testFile}`/$testName-run.sh
+    rm -f ${thisRunScript}
 
     outputDir=`dirname ${!testFile}`
 
@@ -416,6 +422,9 @@ createAllRunScripts() {
 
     echo "subFile$testFileNum=$thisRunScript" >>  $lsfListFile
 
+    # Make the script executable
+    chmod u+x ${thisRunScript}
+
     # Reset the variables (in case they are not redefined in the next iteration)
     unset omp_num_tests
     unset num_tests
@@ -435,10 +444,9 @@ createRunScript() {
     echo "  and $omp_num_tests Hybrid MPI + OpenMP tests"
   fi
 
-
-
   # Create the run script
   thisRunScript=`dirname ${THIS_TEST_FILE}`/$testName-run.sh
+  rm -f ${thisRunScript}
 
   outputDir=`dirname ${THIS_TEST_FILE}`
 
@@ -464,6 +472,9 @@ createRunScript() {
        echo "" >> $thisRunScript # new line
     done
   fi
+
+  # make it executable
+  chmod u+x ${thisRunScript}
 
   # Reset the variables (in case they are not redefined in the next iteration)
   #unset omp_num_tests
