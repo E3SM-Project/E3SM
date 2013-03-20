@@ -37,12 +37,19 @@ else
 
 fi
 
+
+if [ "$HOMME_Submission_Type" = lsf -o "$HOMME_Submission_Type" = pbs ]; then
+  HOMME_QUEUE_JOBS=true
+else
+  HOMME_QUEUE_JOBS=false
+fi
+
 # The testing utilities
 source ${HOMME_DIR}/tests/testing-utils.sh
 
-if [ "$HOMME_Submission_Type" = lsf ]; then
+if [ "$HOMME_QUEUE_JOBS" = true ]; then
   # Submit the tests to the queue
-  submitTestsToLSF
+  submitTestsToQueue
 
   # Print a summary of the submissions
   printSubmissionSummary

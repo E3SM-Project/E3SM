@@ -150,6 +150,36 @@ printSubmissionSummary() {
 
 }
 
+examineJobStat() {
+  # submit the job to the queue
+  if [ "$HOMME_Submission_Type" = lsf ]; then
+    jobStat=`bjobs -a $jobID | tail -n 1 | awk '{print $3}'`
+    if [ -n "$jobStat" ] ; then
+      if [ "$jobStat" == "PEND" ] ; then
+        jobStat="pending" 
+      elif [ "$jobStat" == "RUN" ]; then
+        jobStat="running" 
+      fi
+    else
+      jobStat="completed" 
+    fi
+  elif [ "$HOMME_Submission_Type" = pbs ]; then
+    jobStat=`qstat $jobID | tail -n 1 | awk '{print $5}'`
+    if [ -n "$jobStat" ] ; then
+      if [ "$jobStat" == "Q" ] ; then
+        jobStat="pending" 
+      elif [ "$jobStat" == "R" ]; then
+        jobStat="running" 
+      fi
+    else
+      jobStat="completed" 
+    fi
+  else
+    echo "Error: queue type not recognized"
+    exit -1
+  fi
+}
+
 queueWait() {
 
   for i in $(seq 0 $(( ${#SUBMIT_TEST[@]} - 1)))
@@ -161,18 +191,19 @@ queueWait() {
     while ! $jobFinished;
     do
       # Test if the job exists
-      jobStat=`bjobs -a $jobID | tail -n 1 | awk '{print $3}'`
-
-      # Print the status of the job
-      echo -n "...$jobStat..."
+      examineJobStat
+      #jobStat=`bjobs -a $jobID | tail -n 1 | awk '{print $3}'`
 
       # if the job is registered in the queue and the status is PEND or RUN then wait
-      if [ -n "$jobStat" -a "$jobStat" == "PEND" -o "$jobStat" == "RUN" ]; then
+      if [ "$jobStat" == "pending" -o "$jobStat" == "running" ]; then
+        # Print the status of the job
+        echo -n "$jobStat..."
+
         # Job still in queue or running
         sleep 20 # sleep for 20s
       else # if jobStat=DONE, EXIT or it is finished and no longer registered in the queue
         jobFinished=true
-        echo "FINISHED..."
+        echo "finished."
       fi
     done
   done
@@ -212,7 +243,31 @@ queueWait() {
 #  done
 #}
 
-submitTestsToLSF() {
+submitToQueue() {
+  # submit the job to the queue
+  if [ "$HOMME_Submission_Type" = lsf ]; then
+    bsub < ${subFile} > $THIS_STDOUT 2> $THIS_STDERR
+  elif [ "$HOMME_Submission_Type" = pbs ]; then
+    qsub ${subFile} > $THIS_STDOUT 2> $THIS_STDERR
+  else
+    echo "Error: queue type not recognized"
+    exit -1
+  fi
+}
+
+getJobID() {
+  # submit the job to the queue
+  if [ "$HOMME_Submission_Type" = lsf ]; then
+    SUB_ID=`cat $THIS_STDOUT | awk '{print $2}' | sed  's/<//' | sed -e 's/>//'`
+  elif [ "$HOMME_Submission_Type" = pbs ]; then
+    SUB_ID=`cat $THIS_STDOUT | awk '{print $1}' | sed  's/<//' | sed -e 's/>//'`
+  else
+    echo "Error: queue type not recognized"
+    exit -1
+  fi
+}
+
+submitTestsToQueue() {
 
   if [ "${SUBMIT_ALL_AT_ONCE}" == true ] ; then
     echo "Submitting ${num_submissions} jobs to queue"
@@ -235,18 +290,19 @@ submitTestsToLSF() {
     THIS_STDERR=${subJobName}.err
 
     # Run the command
-    # For some reason bsub must not be part of a string
     echo -n "Submitting test ${subJobName} to the queue... "
-    bsub < ${subFile} > $THIS_STDOUT 2> $THIS_STDERR
-    BSUB_STAT=$?
+    submitToQueue ${subFile} $THIS_STDOUT $THIS_STDERR
+
+    SUB_STAT=$?
 
     # Do some error checking
-    if [ $BSUB_STAT == 0 ]; then
-      # the command was succesful
-      BSUB_ID=`cat $THIS_STDOUT | awk '{print $2}' | sed  's/<//' | sed -e 's/>//'`
-      echo "successful job id = $BSUB_ID"
+    if [ $SUB_STAT == 0 ]; then # the command was succesful
+      # Get the queue job ID
+      getJobID 
+
+      echo "successful job id = $SUB_ID"
       SUBMIT_TEST+=( "${subJobName}" )
-      SUBMIT_JOB_ID+=( "$BSUB_ID" )
+      SUBMIT_JOB_ID+=( "$SUB_ID" )
     else 
       echo "failed with message:"
       cat $THIS_STDERR

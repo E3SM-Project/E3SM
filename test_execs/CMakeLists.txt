@@ -14,18 +14,12 @@ SET(Homme_Results_DIR ${CMAKE_SOURCE_DIR}/test/reg_test/results)
 # Host specific
 IF (Homme_Hostname STREQUAL "Yellowstone") 
 
-  # Set the Project ID to run the tests through the queue
   # Modify the results directory to point to the yellowstone results
-  # TODO: deal with different compilers
   SET(Homme_Results_DIR ${Homme_Results_DIR}/yellowstone)
-
-  #SET(Homme_Submission_Type lsf)
 
 ELSEIF (Homme_OS STREQUAL "Darwin") 
 
   SET(Homme_Results_DIR ${Homme_Results_DIR}/darwin)
-
-  #SET(Homme_Submission_Type none)
 
 ENDIF ()
 
