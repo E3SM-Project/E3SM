@@ -99,8 +99,9 @@ createPBSHeader() {
   echo "#PBS -N $testName" >> $RUN_SCRIPT
 
   echo "#PBS -l nodes=1" >> $RUN_SCRIPT
-  echo "#PBS -l walltime=0:20:00" >> $RUN_SCRIPT
-  echo "#PBS -l gres=widow1" >> $RUN_SCRIPT
+  echo "#PBS -l walltime=0:40:00" >> $RUN_SCRIPT
+  # Not sure how to make the following portable
+  #echo "#PBS -l gres=widow1" >> $RUN_SCRIPT
 
   echo "" >> $RUN_SCRIPT
 
@@ -153,7 +154,7 @@ printSubmissionSummary() {
 examineJobStat() {
   # submit the job to the queue
   if [ "$HOMME_Submission_Type" = lsf ]; then
-    jobStat=`bjobs -a $jobID | tail -n 1 | awk '{print $3}'`
+    jobStat=`bjobs -a $jobID 2>&1 | tail -n 1 | awk '{print $3}'`
     if [ -n "$jobStat" ] ; then
       if [ "$jobStat" == "PEND" ] ; then
         jobStat="pending" 
@@ -164,7 +165,7 @@ examineJobStat() {
       jobStat="completed" 
     fi
   elif [ "$HOMME_Submission_Type" = pbs ]; then
-    jobStat=`qstat $jobID | tail -n 1 | awk '{print $5}'`
+    jobStat=`qstat $jobID 2>&1 | tail -n 1 | awk '{print $5}'`
     if [ -n "$jobStat" ] ; then
       if [ "$jobStat" == "Q" ] ; then
         jobStat="pending" 
@@ -260,7 +261,7 @@ getJobID() {
   if [ "$HOMME_Submission_Type" = lsf ]; then
     SUB_ID=`cat $THIS_STDOUT | awk '{print $2}' | sed  's/<//' | sed -e 's/>//'`
   elif [ "$HOMME_Submission_Type" = pbs ]; then
-    SUB_ID=`cat $THIS_STDOUT | awk '{print $1}' | sed  's/<//' | sed -e 's/>//'`
+    SUB_ID=`cat $THIS_STDOUT | awk '{print $1}'`
   else
     echo "Error: queue type not recognized"
     exit -1
