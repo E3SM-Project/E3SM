@@ -239,10 +239,14 @@ macro(createTest testName)
       IF (${NUM_CPUS} GREATER ${MAX_NUM_PROCS}) 
         #MESSAGE(STATUS "For ${TEST_NAME} the requested number of CPU processes is larger than the number available")
         #MESSAGE(STATUS "  Changing NUM_CPU from ${NUM_CPUS} to ${MAX_NUM_PROCS}")
-        SET(NUM_CPUS ${MAX_NUM_PROCS})
+        #SET(NUM_CPUS ${MAX_NUM_PROCS})
+        FILE(APPEND ${THIS_TEST_SCRIPT} "num_cpus=${MAX_NUM_PROCS}\n") # new line
+      ELSE ()
+        FILE(APPEND ${THIS_TEST_SCRIPT} "num_cpus=${NUM_CPUS}\n") # new line
       ENDIF ()
+    ELSE ()
+      FILE(APPEND ${THIS_TEST_SCRIPT} "num_cpus=${NUM_CPUS}\n") # new line
     ENDIF ()
-    FILE(APPEND ${THIS_TEST_SCRIPT} "num_cpus=${NUM_CPUS}\n") # new line
   ELSE ()
     MESSAGE(FATAL_ERROR "In test ${testName} NUM_CPUS not defined. Quitting")
   ENDIF ()
@@ -259,26 +263,30 @@ macro(createTest testName)
 
   # openMP runs
   IF (NOT "${OMP_NAMELIST_FILES}" STREQUAL "")
-    FILE(APPEND ${THIS_TEST_SCRIPT} "${POUND}===============================\n")
-    FILE(APPEND ${THIS_TEST_SCRIPT} "${POUND} OpenMP Tests\n")
-    FILE(APPEND ${THIS_TEST_SCRIPT} "${POUND}===============================\n")
-    FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
-    MATH(EXPR OMP_MOD "${NUM_CPUS} % ${OMP_NUM_THREADS}")
-    IF (NOT ${OMP_MOD} EQUAL 0)
-      MESSAGE(FATAL_ERROR "In test ${testName} NUM_CPUS not divisible by OMP_NUM_THREADS. Quitting.")
-    ENDIF ()
-    MATH(EXPR OMP_NUM_MPI "${NUM_CPUS} / ${OMP_NUM_THREADS}")
-    FILE(APPEND ${THIS_TEST_SCRIPT} "omp_num_mpi=${OMP_NUM_MPI}\n") # new line
-    FILE(APPEND ${THIS_TEST_SCRIPT} "omp_number_threads=${OMP_NUM_THREADS}\n") # new line
-    FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
-    SET (TEST_INDEX 1)
-    FOREACH (singleFile ${OMP_NAMELIST_FILES}) 
-      FILE(APPEND ${THIS_TEST_SCRIPT} "omp_test${TEST_INDEX}=\"${CMAKE_CURRENT_BINARY_DIR}/${EXEC_NAME}/${EXEC_NAME} < ${singleFile}\"\n")
+    IF (${HOMME_ENABLE_OPENMP})
+      FILE(APPEND ${THIS_TEST_SCRIPT} "${POUND}===============================\n")
+      FILE(APPEND ${THIS_TEST_SCRIPT} "${POUND} OpenMP Tests\n")
+      FILE(APPEND ${THIS_TEST_SCRIPT} "${POUND}===============================\n")
       FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
-      MATH(EXPR TEST_INDEX "${TEST_INDEX} + 1")
-    ENDFOREACH () 
-    MATH(EXPR TEST_INDEX "${TEST_INDEX} - 1")
-    FILE(APPEND ${THIS_TEST_SCRIPT} "omp_num_tests=${TEST_INDEX}\n") # new line
+      MATH(EXPR OMP_MOD "${NUM_CPUS} % ${OMP_NUM_THREADS}")
+      IF (NOT ${OMP_MOD} EQUAL 0)
+        MESSAGE(FATAL_ERROR "In test ${testName} NUM_CPUS not divisible by OMP_NUM_THREADS. Quitting.")
+      ENDIF ()
+      MATH(EXPR OMP_NUM_MPI "${NUM_CPUS} / ${OMP_NUM_THREADS}")
+      FILE(APPEND ${THIS_TEST_SCRIPT} "omp_num_mpi=${OMP_NUM_MPI}\n") # new line
+      FILE(APPEND ${THIS_TEST_SCRIPT} "omp_number_threads=${OMP_NUM_THREADS}\n") # new line
+      FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
+      SET (TEST_INDEX 1)
+      FOREACH (singleFile ${OMP_NAMELIST_FILES}) 
+        FILE(APPEND ${THIS_TEST_SCRIPT} "omp_test${TEST_INDEX}=\"${CMAKE_CURRENT_BINARY_DIR}/${EXEC_NAME}/${EXEC_NAME} < ${singleFile}\"\n")
+        FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
+        MATH(EXPR TEST_INDEX "${TEST_INDEX} + 1")
+      ENDFOREACH () 
+      MATH(EXPR TEST_INDEX "${TEST_INDEX} - 1")
+      FILE(APPEND ${THIS_TEST_SCRIPT} "omp_num_tests=${TEST_INDEX}\n") # new line
+    ELSE ()
+      MESSAGE(STATUS "  Not including OpenMP tests")
+    ENDIF()
   ENDIF ()
 
   # Need to create the movie directory for output

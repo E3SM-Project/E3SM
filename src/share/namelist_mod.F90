@@ -19,7 +19,7 @@ module namelist_mod
        multilevel,    &    
        numnodes,      & 
        sub_case,      &
-       tasknum,	      &       ! used dg model in AIX machine
+       tasknum,       &       ! used dg model in AIX machine
        remapfreq,     &       ! number of steps per remapping call
        remap_type,    &       ! selected remapping option
        statefreq,     &       ! number of steps per printstate call
@@ -154,7 +154,7 @@ module namelist_mod
 #endif
   use interpolate_mod, only : set_interp_parameter, get_interp_parameter
 !=======================================================================================================!                                 
-!	Adding for SW DG										!
+!    Adding for SW DG                                                                                   !
 !=======================================================================================================!
 #ifdef _SWDG  
   ! ------------------------
@@ -162,10 +162,10 @@ module namelist_mod
   ! ------------------------
   use dg_tests_mod, only : alpha_dg, alphatype    
   ! ------------------------  
-  use dg_sweq_mod, only: stage_rk	  
+  use dg_sweq_mod, only: stage_rk  
   ! ------------------------
   use physical_constants, only: dd_pi  
-  ! ------------------------	
+  ! ------------------------
 #endif
 
 !=======================================================================================================!
@@ -233,8 +233,8 @@ module namelist_mod
                      useframes,     &
                      numnodes,      &
                      ne,            &       ! element resolution factor
-		             tasknum,	    &
-		             remapfreq,     &       ! number of steps per remapping call
+                     tasknum,       &
+                     remapfreq,     &       ! number of steps per remapping call
                      remap_type,    &       ! selected remapping option
                      statefreq,     &       ! number of steps per printstate call
                      accumfreq,     &       ! frequency in steps of accumulation
@@ -261,7 +261,7 @@ module namelist_mod
                      nu_q,          &
                      nu_div,          &
                      nu_p,          &
-	                 nu_top,        &
+                     nu_top,        &
                      psurf_vis,    &  
                      hypervis_order,    &  
                      hypervis_power,    &  
@@ -271,7 +271,7 @@ module namelist_mod
                      smooth_phis_numcycle, &
                      smooth_sgh_numcycle, &
                      smooth_phis_nudt, &
-	                 initial_total_mass, &
+                     initial_total_mass, &
                      u_perturb,     &
                      rotate_grid,   &
                      mesh_file,     &               ! Name of mesh file
@@ -344,11 +344,11 @@ module namelist_mod
          output_frequency,    &
          output_dir,          &
          output_type,         &
-	io_stride,            &
-	num_io_procs,         &
-        infilenames,          &
-        vector_uvars,         & 
-        vector_vvars,         & 
+         io_stride,           &
+         num_io_procs,        &
+         infilenames,         &
+         vector_uvars,        & 
+         vector_vvars,        & 
          output_varnames1,    &
          output_varnames2,    &
          output_varnames3,    &
@@ -356,26 +356,26 @@ module namelist_mod
          output_varnames5
 #endif
     namelist /analysis_nl/    &
-	interp_nlat,                 &
-        interp_nlon,                 &
-        interp_gridtype,             &
+        interp_nlat,          &
+        interp_nlon,          &
+        interp_gridtype,      &
         interp_type,          &
         interpolate_analysis
 
 !=======================================================================================================!                                 
-!	Adding for SW DG										!
+!   Adding for SW DG                                                                                    !
 !=======================================================================================================!
 #ifdef _SWDG
-    namelist /dg_nl/ 	      &
-    		riemanntype,  &
-    		alphatype,    &
-		alpha_dg,     &
-		stage_rk
+    namelist /dg_nl/  &
+        riemanntype,  &
+        alphatype,    &
+        alpha_dg,     &
+        stage_rk
 !=======================================================================================================!
     riemanntype= 0  
     alphatype= 0
     alpha_dg = 0.0D0    
-    stage_rk = 3	
+    stage_rk = 3
 #endif
 !=======================================================================================================!
     ! ==========================
@@ -577,46 +577,50 @@ module namelist_mod
            test_case(1:13)=="jw_baroclinic" .or. &
            test_case(1:4)=="asp_" .or. &
            test_case(1:10)=="aquaplanet") then
-          write(iulog,*)"reading vertical namelist..."
+         write(iulog,*) "reading vertical namelist..."
 #if defined(OSF1) || defined(_BGL) || defined(_NAMELIST_FROM_FILE)
-          read(unit=7,nml=vert_nl)
+         read(unit=7,nml=vert_nl)
 #else
-          read(*,nml=vert_nl)
+         read(*,nml=vert_nl)
 #endif
-	write(iulog,*) '  vform =',vform
-	write(iulog,*) '  vfile_mid=',vfile_mid
-        write(iulog,*) '  vfile_int=',vfile_int
+         ! Reformat these strings
+         vform = trim(adjustl(vform))
+         vfile_mid = trim(adjustl(vfile_mid))
+         vfile_int = trim(adjustl(vfile_int))
 
+         write(iulog,*) '  vform =',vform
+         write(iulog,*) '  vfile_mid=',vfile_mid
+         write(iulog,*) '  vfile_int=',vfile_int
 
-        write(iulog,*)"reading aquaplanet namelist..."
-	if(test_case(1:10)=="aquaplanet") then
-          cool_ampl     =  -1.5D0
-          cool_min      =  12.0D0
-          cool_max      =  15.0D0
-          qv_flag       =  0
-          qv_pert_flag  =  1
-          qv_pert_ampl  =  0.1D0
-          qv_pert_zmin  =  2.0D3
-          qv_pert_zmax  = 18.0D3
-          isrf_forc     =  1
-          h_dis         =  0.5D3
-          Cdrag         =  1.0D-3
-          wstar         =  1.0D0
-          tsurf         =  300.D0
-          qsurf         =  20.D-3
-          u0            =  0.D0
-          zabsampl      =  0.333D0
-          zabsmid       = 63.0D3
-          zabsmin       =  0.0D3
-          noisef        =  0
+         write(iulog,*)"reading aquaplanet namelist..."
+         if(test_case(1:10)=="aquaplanet") then
+            cool_ampl     =  -1.5D0
+            cool_min      =  12.0D0
+            cool_max      =  15.0D0
+            qv_flag       =  0
+            qv_pert_flag  =  1
+            qv_pert_ampl  =  0.1D0
+            qv_pert_zmin  =  2.0D3
+            qv_pert_zmax  = 18.0D3
+            isrf_forc     =  1
+            h_dis         =  0.5D3
+            Cdrag         =  1.0D-3
+            wstar         =  1.0D0
+            tsurf         =  300.D0
+            qsurf         =  20.D-3
+            u0            =  0.D0
+            zabsampl      =  0.333D0
+            zabsmid       = 63.0D3
+            zabsmin       =  0.0D3
+            noisef        =  0
  
 #if defined(OSF1) || defined(_BGL) || defined(_NAMELIST_FROM_FILE)
-          read(unit=7,nml=aquaplanet_nl)
+           read(unit=7,nml=aquaplanet_nl)
 #else
-          read(*,nml=aquaplanet_nl)
+           read(*,nml=aquaplanet_nl)
 #endif
         
-	end if
+         end if
 
        end if
 #endif
@@ -629,7 +633,7 @@ module namelist_mod
 #endif
        interp_nlat =  0
        interp_nlon = 0
-       interp_gridtype = 2	
+       interp_gridtype = 2
        interp_type = 0
        vector_uvars(:)=''
        vector_vvars(:)=''
@@ -694,14 +698,14 @@ module namelist_mod
       end if
 
       if(output_varnames1(1).eq.'     ') then
-         if( runtype>=0) 	then
+         if( runtype>=0) then
             call setvarnames(output_varnames1)
          else ! interpolation mode
             output_varnames1='all'
          end if
       end if
        do i=1,max_output_streams
-	if(output_frequency(i)>0 .and. output_end_time(i)==0) output_end_time(i)=-1
+          if(output_frequency(i)>0 .and. output_end_time(i)==0) output_end_time(i)=-1
           if(output_timeunits(i).eq.1) then  ! per_day
              output_frequency(i) = output_frequency(i)*(secpday/tstep)
              output_start_time(i)= output_start_time(i)*(secpday/tstep)
@@ -718,7 +722,7 @@ module namelist_mod
 
 
 !=======================================================================================================!                                 
-!	Adding for SW DG										!
+!     Adding for SW DG                                                                                  !
 !=======================================================================================================!
 #ifdef _SWDG
       write(iulog,*)"reading dg namelist..."
@@ -738,7 +742,7 @@ module namelist_mod
     endif 
 #endif      
 !=======================================================================================================!
-	
+
 #if defined(OSF1) || defined(_BGL) || defined(_NAMELIST_FROM_FILE)
        close(unit=7)
 #endif
@@ -751,7 +755,6 @@ module namelist_mod
     if(se_topology .ne. 'none') topology = se_topology
 #endif
 
-    	
     call MPI_barrier(par%comm,ierr)
 
     npart  = par%nprocs 
@@ -785,7 +788,7 @@ module namelist_mod
 #ifdef CAM
     smooth = se_smooth
     phys_tscale = se_phys_tscale
-    limiter_option  = se_limiter_option	
+    limiter_option  = se_limiter_option
     nsplit = se_nsplit
 #else
     call MPI_bcast(tstep     ,1,MPIreal_t   ,par%root,par%comm,ierr) 
@@ -995,7 +998,7 @@ module namelist_mod
 
 
 !=======================================================================================================!                                 
-!	Adding for SW DG										!
+!   Adding for SW DG                                                                                    !
 !=======================================================================================================!
 #ifndef CAM
 #ifdef _SWDG    
@@ -1037,9 +1040,9 @@ module namelist_mod
     endif
 
     ! some default diffusion coefficiets
-    if(nu_s<0) nu_s=nu	
-    if(nu_q<0) nu_q=nu	
-    if(nu_div<0) nu_div=nu	
+    if(nu_s<0) nu_s=nu
+    if(nu_q<0) nu_q=nu
+    if(nu_div<0) nu_div=nu
 
     if (multilevel <= 0) then  
       nmpi_per_node = 1
@@ -1208,8 +1211,8 @@ module namelist_mod
        write(iulog,*)"  analysis: num_io_procs = ",num_io_procs
 
        do i=1,max_output_streams
-          if(output_frequency(i) .gt. 0) then	
-             write(iulog,*)"  analysis stream     :",i	
+          if(output_frequency(i) .gt. 0) then
+             write(iulog,*)"  analysis stream     :",i
              write(iulog,*)"  analysis : start_time", output_start_time(i)
              write(iulog,*)"  analysis : end_time  ", output_end_time(i)
              write(iulog,*)"  analysis : frequency ", output_frequency(i)
@@ -1236,7 +1239,7 @@ module namelist_mod
           write(iulog,*)" analysis interpolation type = ",interp_type
        end if
 !=======================================================================================================!                                 
-!	Adding for SW DG										!
+!      Adding for SW DG                                                                                 !
 !=======================================================================================================!
 #ifdef _SWDG
        write(iulog,*)'dg: riemanntype=',riemanntype
