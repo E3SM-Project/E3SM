@@ -4,7 +4,8 @@
 !! $Revision$
 !! $LastChangedDate$
 !! @brief Internal allocation routines for PIO
-!<module alloc_mod
+!<
+module alloc_mod
 
   use pio_kinds
   use pio_types
