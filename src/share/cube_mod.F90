@@ -262,6 +262,7 @@ contains
     real (kind=real_kind) :: M(2,2),E(2,2),eig(2),DE(2,2),DEL(2,2),V(2,2), nu1, nu2, lamStar1, lamStar2
     integer :: imaxM(2)
     real (kind=real_kind) :: l1, l2, sc     ! eigen values of met
+    real (kind=real_kind) :: max_ratio
 
     real (kind=real_kind) :: roundoff_err = 1e-11 !!! OG: this is a temporal fix
     
@@ -280,6 +281,7 @@ contains
 
     elem%max_eig = 0.0d0
     elem%min_eig = 1d99
+    elem%max_eig_ratio = 0d0
     do j=1,np
        do i=1,np
           x1=gll_points(i)
@@ -334,15 +336,17 @@ contains
           elem%metinv(2,1,i,j) = -elem%met(2,1,i,j)/(detD*detD)
           elem%metinv(2,2,i,j) =  elem%met(1,1,i,j)/(detD*detD)
 
-!!!MATRICES FOR HV TENSOR
-! compute eigenvectors of metinv
-
+          ! matricies for tensor hyper-viscosity
+          ! compute eigenvectors of metinv (probably same as computed above)
           M = elem%metinv(:,:,i,j)
 
           eig(1) = (M(1,1) + M(2,2) + sqrt(4.0d0*M(1,2)*M(2,1) + &
               (M(1,1) - M(2,2))**2))/2.0d0
           eig(2) = (M(1,1) + M(2,2) - sqrt(4.0d0*M(1,2)*M(2,1) + &
               (M(1,1) - M(2,2))**2))/2.0d0
+          
+          max_ratio=sqrt( max(abs(eig(1)/eig(2)),abs(eig(2)/eig(1))) )
+          elem%max_eig_ratio = max(max_ratio,elem%max_eig_ratio)
 
           ! use DE to store M - Lambda, to compute eigenvectors
           DE=M
