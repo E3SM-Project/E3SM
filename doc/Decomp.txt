@@ -63,15 +63,25 @@ optional parameters \em iostart and \em iocount. The following bit of code for P
 
 \section decomp_dof Degree of freedom interface
 
-The interface described in Section \ref decomp_bc, while simple and used by both pNetCDF (http://trac.mcs.anl.gov/projects/parallel-netcdf) and NetCDF-4 (http://www.unidata.ucar.edu/software/netcdf/) is 
-frequencly insufficient for applications with non-trivial decompositions. While it is possible to use use multiple calls to construct a file with a non-trivial decomposition 
-the performance penalty is frequently significant.   PIO therefore 
-provides a more general interface to \ref PIO_initdecomp based on the degree of freedom concept. Each word within the distributed array must be given a unique 
-value that corresponds to its order placement in the file on disk.  So the first word in the file on disk has a dof of 1, the second 2, etc.  This allows a fully 
-general specification of the decomposition.  We illustrate its use Figure 2.  Note that in Figure 2, PE 0 and PE 1 do not contain contiguous pieces of the distributed array. 
-The desired order on disk must be specified using the the compDOF argument to \ref PIO_initdecomp.  In 
-this case PE 0 contains the 2nd, 4th, and 5th element of the array, PE 1 contains the 1st and 3rd, and 
-PE 2 contains the 6th, 7th, and 8th elements of the array.  The integer compDOF arrays for each MPI task 
+The interface described in Section \ref decomp_bc, while simple and
+used by both pNetCDF
+(http://trac.mcs.anl.gov/projects/parallel-netcdf) and NetCDF-4
+(http://www.unidata.ucar.edu/software/netcdf/) can be insufficient for
+applications with non-trivial decompositions. While it is possible to
+use multiple calls to construct a file with a non-trivial
+decomposition the performance penalty may be significant.  PIO
+therefore provides a more general interface to \ref PIO_initdecomp
+based on the degree of freedom concept. Each word within the
+distributed array must be given a unique value that corresponds to its
+order placement in the file on disk.  So the first word in the file on
+disk has a dof of 1, the second 2, etc.  This allows a fully general
+specification of the decomposition.  We illustrate its use Figure 2.
+Note that in Figure 2, PE 0 and PE 1 do not contain contiguous pieces
+of the distributed array.  The desired order on disk must be specified
+using the the compDOF argument to \ref PIO_initdecomp.  In this case
+PE 0 contains the 2nd, 4th, and 5th element of the array, PE 1
+contains the 1st and 3rd, and PE 2 contains the 6th, 7th, and 8th
+elements of the array.  The integer compDOF arrays for each MPI task
 is illustrated at the bottom of Figure 2.
 
 \image html dof.png "Figure 2: Setting up the comDOF arrays for a single 1D array distributed accross 3 MPI tasks."
