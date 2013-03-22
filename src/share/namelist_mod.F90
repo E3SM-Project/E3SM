@@ -946,9 +946,9 @@ module namelist_mod
       write (*,*) "Specify one or the other, but not both."
       call abortmp("Do not specify ne if using a mesh file input.")
     end if 
-    if (par%masterproc) write (iulog,*) "Mesh File:", mesh_file
+    if (par%masterproc) write (iulog,*) "Mesh File:", trim(mesh_file)
     if (ne.eq.0) then
-       if (par%masterproc) write (iulog,*) "Opening Mesh File:", mesh_file
+       if (par%masterproc) write (iulog,*) "Opening Mesh File:", trim(mesh_file)
       call set_mesh_dimensions() 
       call MeshOpen(mesh_file, par) 
     end if
