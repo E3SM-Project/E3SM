@@ -56,9 +56,10 @@ module control_mod
   integer, public :: vert_remap_q_alg = 0
 
 
- integer, public :: cubed_sphere_map = 0   !  0 = equi-angle Gnomonic
+ integer, public :: cubed_sphere_map = -1  ! -1 = chosen at run time
+                                           !  0 = equi-angle Gnomonic (default)
                                            !  1 = equi-spaced Gnomonic (not yet coded)
-                                           !  2 = element-local projection  
+                                           !  2 = element-local projection  (for var-res)
                                            !  3 = parametric (not yet coded)
 
 !tolerance to define smth small, was introduced for lim 8 in 2d and 3d
