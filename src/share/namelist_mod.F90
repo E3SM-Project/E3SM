@@ -55,6 +55,7 @@ module namelist_mod
        nu_p,          &
        nu_top,        &
        which_vlaplace, & ! which vector laplace to use, cartesian or vector_identities
+       use_tensorhv,   & ! use tensor HV instead of scalar coefficient
        psurf_vis,    &  
        hypervis_order,    &  
        hypervis_power,    &  
@@ -268,6 +269,7 @@ module namelist_mod
                      hypervis_subcycle, &
                      hypervis_subcycle_q, &
                      which_vlaplace, & 
+                     use_tensorhv, & 
                      smooth_phis_numcycle, &
                      smooth_sgh_numcycle, &
                      smooth_phis_nudt, &
@@ -807,8 +809,8 @@ module namelist_mod
 
     call MPI_bcast(fine_ne    ,1,MPIinteger_t,par%root,par%comm,ierr) 
     call MPI_bcast(max_hypervis_courant,1,MPIreal_t   ,par%root,par%comm,ierr)
- 
     call MPI_bcast(which_vlaplace    ,1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(use_tensorhv      ,1,MPIinteger_t,par%root,par%comm,ierr)
 
     call MPI_bcast(nu         ,1,MPIreal_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(nu_s         ,1,MPIreal_t   ,par%root,par%comm,ierr) 
@@ -954,6 +956,12 @@ module namelist_mod
     end if
     if (par%masterproc) write (iulog,*) "Reference element projection: cubed_sphere_map=",cubed_sphere_map
 
+    ! sanity check:
+    if (use_tensorhv==1) then
+       if (which_vlaplace/=2) then
+          call abortmp('Tensor HV option requires which_vlaplace=2 for now')
+       endif
+    endif
 
 
     ftype = se_ftype    
@@ -1149,6 +1157,8 @@ module namelist_mod
           hypervis_subcycle, hypervis_subcycle_q
        endif
        write(iulog,*)"psurf_vis: ",psurf_vis
+       write(iulog,*)"which_vlaplace (0=new, 1=orig, 2=cartesian): ",which_vlaplace
+       write(iulog,*)"use_tensorhv (0=off, 1=on): ",use_tensorhv
        write(iulog,*)"Equivalent ne in fine region = ", fine_ne
        write(iulog,'(a,2e9.2)')"viscosity:  nu (vor/div) = ",nu,nu_div
        write(iulog,'(a,2e9.2)')"viscosity:  nu_s      = ",nu_s
