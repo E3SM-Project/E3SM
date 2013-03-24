@@ -154,8 +154,8 @@ module control_mod
 !
 !
 
-  integer, public :: which_vlaplace=1    ! 0= new spherical laplace
-                                         ! 1= orig spherical laplace
+  integer, public :: which_vlaplace=0    ! 0= new spherical laplace
+                                         ! 1= orig (buggy) spherical laplace
 					 ! 2= vector laplace based on transform to cartesian
 
   integer, public :: use_tensorhv=0      ! use tensor hyperviscosity
