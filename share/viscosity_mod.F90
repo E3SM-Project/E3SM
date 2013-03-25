@@ -1232,17 +1232,87 @@ end subroutine
 
   subroutine check_edge_flux(elem,deriv,nets,nete)
 !
-!  check two identities:
-!  1. div and weak div are adjoints:
-!     integral[  p div(u) ] + integral[ grad(p) dot u ] = boundary_integral[ u p]
-!  1. grad and weak grad are adjoints:
-!     integral[  p div(u) ] + integral[ grad(p) dot u ] = boundary_integral[ u p]
+!  check local element vector dentities:
+!*****
+!  1. div and weak div are adjoints: (for all scalar test functions)
+!     integral[  p div(u) ] + integral[ grad(p) dot u ] = boundary_integral[ p u dot n]
+!       PHI div(u) spheremp - div_wk(u)(i,j) = boundary_integral[ u PHI]
+!       where PHI = the delta function at (i,j)
 !
+!*****
+!  2. grad and weak grad are adjoints: 
+!     weak gradient is defined with CONTRA vector test functions
+!     i.e. it returns vector:   [  integral[ p div(PHIcontra_1) ]       
+!                               [  integral[ p div(PHIcontra_2) ]       
+!     
+!   integral[  p div(u) ] + integral[ grad(p) dot u ] = boundary_integral[ p u dot n]
+! take u = PHIcontra_1 = (1,0) vector delta funciton at (i,j):
+!  -grad_wk(p)_1(i,j) + spheremp PHIcontra_1 dot grad(p) = boundary_integral[ PHIcontra_1 p]
+! and then take u = PHIcontra_2 = (0,1) vector delta function at (i,j):
+!  -grad_wk(p)_2(i,j) + spheremp PHIcontra_2 dot grad(p) = boundary_integral[ PHIcontra_2 p]
+!
+! which is an equation for each covariant component:
+! -grad_wk(p)_cov1 + spheremp grad(p)_cov1 = boundary_integral[ PHIcontra_1 p dot n]
+! -grad_wk(p)_cov2 + spheremp grad(p)_cov2 = boundary_integral[ PHIcontra_2 p dot n]
+!
+! HOMME-SE works in latlon, so convert cov->lat/lon:
+!
+! -grad_wk(p) + spheremp grad(p) = D^-t * B 
+!
+! with
+!    B1 = boundary_integral[ PHIcontra_1 p] 
+!    B2 = boundary_integral[ PHIcontra_2 p]
+!
+!*****
+! 3.  weak grid with COVARIANT test functions! 
+!   integral[  p div(u) ] + integral[ grad(p) dot u ] = boundary_integral[ p u dot n]
+! take u = PHIcov_1 = (1,0) vector delta funciton at (i,j):
+!  -grad_wk(p)_1(i,j) + spheremp PHIcov_1 dot grad(p) = boundary_integral[ PHIcov_1 p]
+! and then take u = PHIcov_2 = (0,1) vector delta function at (i,j):
+!  -grad_wk(p)_2(i,j) + spheremp PHIcov_2 dot grad(p) = boundary_integral[ PHIcov_2 p]
+!
+! which is an equation for each CONTRA component:
+! -grad_wk(p)_contra1 + spheremp grad(p)_contra1 = B1
+! -grad_wk(p)_contra2 + spheremp grad(p)_contra2 = B2
+!
+! HOMME-SE works in latlon, so convert contra ->lat/lon:
+!
+! -grad_wk(p) + spheremp grad(p) = D * B 
+!
+! with
+!    B1 = boundary_integral[ PHIcov_1 p] 
+!    B2 = boundary_integral[ PHIcov_2 p]
+!
+!*****
+! 4.  weak curl with COVARIANT test functions! 
+!  integral[ u dot curl(v)] - integral[v dot curl(u)] = boundary_integral[ v cross u dot n]
+!  curl(p) = curl(p*khat) = horizontal vector
+!  vor(U) =  s*khat       = (which we treat as a scalar)
+!   integral[ p * vor(u)  ] - integral[ u dot curl(p) ] = boundary_integral[ u cross p*khat  dot n]
+!
+! take u = PHIcov_1 = (1,0) vector delta funciton at (i,j):
+!   curl_wk(p)_1(i,j) - spheremp PHIcov_1 dot curl(p) = boundary_integral[ perp(PHIcov_1) p]
+! and then take u = PHIcov_2 = (0,1) vector delta function at (i,j):
+!   curl_wk(p)_2(i,j) - spheremp PHIcov_2 dot curl(p) = boundary_integral[ perp(PHIcov_2) p]
+!
+! which is an equation for each CONTRA component:
+! curl_wk(p)_contra1 - spheremp curl(p)_contra1 = B1
+! curl_wk(p)_contra2 - spheremp curl(p)_contra2 = B2
+!
+! HOMME-SE works in latlon, so convert contra ->lat/lon:
+!
+! curl_wk(p) + spheremp curl(p) = D * B 
+!
+! with
+!    B1 = boundary_integral[ PHIcov_1 p] 
+!    B2 = boundary_integral[ PHIcov_2 p]
 !
   use dimensions_mod, only : np, np, nlev
   use element_mod, only    : element_t
   use derivative_mod, only  : derivative_t, divergence_sphere, divergence_sphere_wk, &
-                             element_boundary_integral, gradient_sphere, gradient_sphere_wk
+                             element_boundary_integral, gradient_sphere, &
+                             gradient_sphere_wk_testcontra,gradient_sphere_wk_testcov, &
+                             curl_sphere, curl_sphere_wk_testcov
   use physical_constants, only : rrearth
 
   implicit none
@@ -1256,13 +1326,14 @@ end subroutine
   real (kind=real_kind), dimension(np,np) :: rhs2,lhs2
   integer :: i,j,ie
 
-
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   print *,'integration by parts identity: check div/weak div:'
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! test integration by parts identity for each Cardinal function PHI:
   ! div(u)*spheremp - div_wk(u) = boundary integral phi u dot n
   do ie=nets,nete
      call random_number(ucontra)
-  ! contra->latlon
+     ! contra->latlon
      ulatlon(:,:,1)=(elem(ie)%D(1,1,:,:)*ucontra(:,:,1) + elem(ie)%D(1,2,:,:)*ucontra(:,:,2))
      ulatlon(:,:,2)=(elem(ie)%D(2,1,:,:)*ucontra(:,:,1) + elem(ie)%D(2,2,:,:)*ucontra(:,:,2))
      phidivu = elem(ie)%spheremp(:,:)*divergence_sphere(ulatlon,deriv,elem(ie))
@@ -1282,7 +1353,9 @@ end subroutine
      enddo
   enddo
 
-  print *,'integration by parts identity: check grad/weak grad:'
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  print *,'check grad/weak grad (gradient_sphere_wk_testcontra)'
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! PHIVEC = contra cardinal function 
   !          check each contra component seperately
 
@@ -1293,9 +1366,9 @@ end subroutine
      gradp = gradient_sphere(p,deriv,elem(ie)%Dinv)
      gradp(:,:,1)=gradp(:,:,1)*elem(ie)%spheremp(:,:)  
      gradp(:,:,2)=gradp(:,:,2)*elem(ie)%spheremp(:,:)
-     gradp_wk = gradient_sphere_wk(p,deriv,elem(ie))
+     gradp_wk = gradient_sphere_wk_testcontra(p,deriv,elem(ie))
      
-     ucontra(:,:,1)=p
+     ucontra(:,:,1)=p  ! PHIvec_1 * p
      ucontra(:,:,2)=0
      ! contra->latlon
      ulatlon(:,:,1)=(elem(ie)%D(1,1,:,:)*ucontra(:,:,1) + elem(ie)%D(1,2,:,:)*ucontra(:,:,2))
@@ -1304,7 +1377,7 @@ end subroutine
      rhs = element_boundary_integral(ulatlon,deriv,elem(ie))
      lhs = gradp(:,:,1)-gradp_wk(:,:,1)
 
-     ucontra(:,:,1)=0
+     ucontra(:,:,1)=0  ! PHIvec_2 * p
      ucontra(:,:,2)=p
      ! contra->latlon
      ulatlon(:,:,1)=(elem(ie)%D(1,1,:,:)*ucontra(:,:,1) + elem(ie)%D(1,2,:,:)*ucontra(:,:,2))
@@ -1313,10 +1386,8 @@ end subroutine
      lhs2 = gradp(:,:,2)-gradp_wk(:,:,2)  
 
 
-     ! gradient_sphere() and gradient_sphere_wk() compute covariant vectors
-     ! and then convert to latlon.  Thus to get the identity to work, the
-     ! same transformation has to be applied to the vector of boundary integrals:
-     ! tread (rhs,rhs2) as covariant vector and convert to latlon:
+     ! boundary integral gives covariant components. (see above) convert to latlon:
+     ! cov -> latlon
      gradp(:,:,1)=rhs
      gradp(:,:,2)=rhs2
      rhs(:,:)=elem(ie)%Dinv(1,1,:,:)*gradp(:,:,1) + elem(ie)%Dinv(2,1,:,:)*gradp(:,:,2)
@@ -1326,9 +1397,9 @@ end subroutine
      do j=1,np
         do i=1,np
            if ( abs(lhs(i,j)-rhs(i,j)) .gt. 1d-20) then
-              write(*,'(a)') 'ERROR: grad/grad_wk (1) integration by parts failure!'
-              write(*,'(a,2i3,a,4e13.5)') 'for test function (i,j)=',i,j,&
-                   ' lhs,rhs=',lhs(i,j),rhs(i,j),lhs(i,j)-rhs(i,j),lhs(i,j)/rhs(i,j)
+              write(*,'(a)') 'ERROR: grad/grad_wk CONTRA (1) integration by parts failure!'
+              write(*,'(a,2i3,a,4e12.4)') '(i,j)=',i,j,' lhs,rhs=',lhs(i,j),rhs(i,j),&
+                   lhs(i,j)-rhs(i,j),lhs(i,j)/rhs(i,j)
            endif
         enddo
      enddo
@@ -1337,18 +1408,127 @@ end subroutine
      do j=1,np
         do i=1,np
            if ( abs(lhs2(i,j)-rhs2(i,j)) .gt. 1d-20) then
-              write(*,'(a)') 'ERROR: grad/grad_wk (2) integration by parts failure!'
-              write(*,'(a,2i3,a,3e12.5)') 'for test function (i,j)=',i,j,' lhs,rhs=',lhs(i,j),rhs(i,j),lhs(i,j)-rhs(i,j)
+              write(*,'(a)') 'ERROR: grad/grad_wk CONTRA (2) integration by parts failure!'
+              write(*,'(a,2i2,a,3e12.4)') '(i,j)=',i,j,' lhs,rhs=',lhs2(i,j),rhs2(i,j),lhs2(i,j)-rhs2(i,j)
+           endif
+        enddo
+     enddo
+  enddo
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  print *,'check grad/weak grad (gradient_sphere_wk_testcov)'
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  do ie=nets,nete
+     call random_number(p)
+
+     
+     ! grad(p)  (lat/lon vector)
+     gradp = gradient_sphere(p,deriv,elem(ie)%Dinv)
+     gradp(:,:,1)=gradp(:,:,1)*elem(ie)%spheremp(:,:)  
+     gradp(:,:,2)=gradp(:,:,2)*elem(ie)%spheremp(:,:)
+     gradp_wk = gradient_sphere_wk_testcov(p,deriv,elem(ie))
+     lhs = gradp(:,:,1)-gradp_wk(:,:,1)
+     lhs2 = gradp(:,:,2)-gradp_wk(:,:,2)  
+     
+     ucov(:,:,1)=p  ! PHIvec_1 * p
+     ucov(:,:,2)=0
+     ! cov->latlon
+     ulatlon(:,:,1)=(elem(ie)%Dinv(1,1,:,:)*ucov(:,:,1) + elem(ie)%Dinv(2,1,:,:)*ucov(:,:,2))
+     ulatlon(:,:,2)=(elem(ie)%Dinv(1,2,:,:)*ucov(:,:,1) + elem(ie)%Dinv(2,2,:,:)*ucov(:,:,2))
+     rhs = element_boundary_integral(ulatlon,deriv,elem(ie))
+
+     ucov(:,:,1)=0  ! PHIvec_2 * p
+     ucov(:,:,2)=p
+     ! cov->latlon
+     ulatlon(:,:,1)=(elem(ie)%Dinv(1,1,:,:)*ucov(:,:,1) + elem(ie)%Dinv(2,1,:,:)*ucov(:,:,2))
+     ulatlon(:,:,2)=(elem(ie)%Dinv(1,2,:,:)*ucov(:,:,1) + elem(ie)%Dinv(2,2,:,:)*ucov(:,:,2))
+     rhs2 = element_boundary_integral(ulatlon,deriv,elem(ie))
+
+
+     ! boundary integral gives contra components. (see above) convert to latlon:
+     ! contra -> latlon
+     gradp(:,:,1)=rhs
+     gradp(:,:,2)=rhs2
+     rhs(:,:) =elem(ie)%D(1,1,:,:)*gradp(:,:,1) + elem(ie)%D(1,2,:,:)*gradp(:,:,2)
+     rhs2(:,:)=elem(ie)%D(2,1,:,:)*gradp(:,:,1) + elem(ie)%D(2,2,:,:)*gradp(:,:,2)
+
+
+     do j=1,np
+        do i=1,np
+           if ( abs(lhs(i,j)-rhs(i,j)) .gt. 1d-20) then
+              write(*,'(a)') 'ERROR: grad/grad_wk COV (1) integration by parts failure!'
+              write(*,'(a,2i2,a,4e12.4)') '(i,j)=',i,j,' lhs,rhs=',lhs(i,j),rhs(i,j),lhs(i,j)-rhs(i,j),lhs(i,j)/rhs(i,j)
            endif
         enddo
      enddo
 
+     do j=1,np
+        do i=1,np
+           if ( abs(lhs2(i,j)-rhs2(i,j)) .gt. 1d-20) then
+              write(*,'(a)') 'ERROR: grad/grad_wk COV (2) integration by parts failure!'
+              write(*,'(a,2i2,a,3e12.4)') '(i,j)=',i,j,' lhs,rhs=',lhs2(i,j),rhs2(i,j),lhs2(i,j)-rhs2(i,j)
+           endif
+        enddo
+     enddo
   enddo
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  print *,'check curl/weak curl (curl_sphere_wk_testcov)'
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  do ie=nets,nete
+     call random_number(p)
+     
+     ! grad(p)  (lat/lon vector)
+     gradp = curl_sphere(p,deriv,elem(ie))
+     gradp(:,:,1)=gradp(:,:,1)*elem(ie)%spheremp(:,:)  
+     gradp(:,:,2)=gradp(:,:,2)*elem(ie)%spheremp(:,:)
+     gradp_wk = curl_sphere_wk_testcov(p,deriv,elem(ie))
+     lhs =  gradp_wk(:,:,1)-gradp(:,:,1)
+     lhs2 = gradp_wk(:,:,2)-gradp(:,:,2)
+     
+     ucov(:,:,1)=p  ! PHIvec_1 * p
+     ucov(:,:,2)=0
+     ! cov->latlon, and then u cross khat:
+     ulatlon(:,:,2)=-(elem(ie)%Dinv(1,1,:,:)*ucov(:,:,1) + elem(ie)%Dinv(2,1,:,:)*ucov(:,:,2))
+     ulatlon(:,:,1)= (elem(ie)%Dinv(1,2,:,:)*ucov(:,:,1) + elem(ie)%Dinv(2,2,:,:)*ucov(:,:,2))
+     rhs = element_boundary_integral(ulatlon,deriv,elem(ie))
+
+     ucov(:,:,1)=0  ! PHIvec_2 * p
+     ucov(:,:,2)=p
+     ! cov->latlon, and u cross khat:
+     ulatlon(:,:,2)=-(elem(ie)%Dinv(1,1,:,:)*ucov(:,:,1) + elem(ie)%Dinv(2,1,:,:)*ucov(:,:,2))
+     ulatlon(:,:,1)= (elem(ie)%Dinv(1,2,:,:)*ucov(:,:,1) + elem(ie)%Dinv(2,2,:,:)*ucov(:,:,2))
+     rhs2 = element_boundary_integral(ulatlon,deriv,elem(ie))
+
+
+     ! boundary integral gives contra components. (see above) convert to latlon:
+     ! contra -> latlon
+     gradp(:,:,1)=rhs
+     gradp(:,:,2)=rhs2
+     rhs(:,:) =elem(ie)%D(1,1,:,:)*gradp(:,:,1) + elem(ie)%D(1,2,:,:)*gradp(:,:,2)
+     rhs2(:,:)=elem(ie)%D(2,1,:,:)*gradp(:,:,1) + elem(ie)%D(2,2,:,:)*gradp(:,:,2)
+
+
+     do j=1,np
+        do i=1,np
+           if ( abs(lhs(i,j)-rhs(i,j)) .gt. 1d-20) then
+              write(*,'(a)') 'ERROR: curl/curl_wk COV (1) integration by parts failure!'
+              write(*,'(a,2i2,a,4e12.4)') '(i,j)=',i,j,' lhs,rhs=',lhs(i,j),rhs(i,j),lhs(i,j)-rhs(i,j),lhs(i,j)/rhs(i,j)
+           endif
+        enddo
+     enddo
+     stop
+
+     do j=1,np
+        do i=1,np
+           if ( abs(lhs2(i,j)-rhs2(i,j)) .gt. 1d-20) then
+              write(*,'(a)') 'ERROR: curl/curl_wk COV (2) integration by parts failure!'
+              write(*,'(a,2i2,a,3e12.4)') '(i,j)=',i,j,' lhs,rhs=',lhs2(i,j),rhs2(i,j),lhs2(i,j)-rhs2(i,j)
+           endif
+        enddo
+     enddo
+  enddo
+
   print *,'done. integration by parts identity check:'
-  stop
   end subroutine
-
-
-
-
 end module

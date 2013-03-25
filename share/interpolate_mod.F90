@@ -7,8 +7,9 @@ module interpolate_mod
   use element_mod, only : element_t
   use dimensions_mod, only : np, ne, nelemd, nc, nhe, nhc
   use quadrature_mod, only : quadrature_t, legendre, quad_norm
-  use coordinate_systems_mod, only : spherical_polar_t, cartesian2d_t, cartesian3D_t, &
-       sphere2cubedsphere, spherical_to_cart, cubedsphere2cart, distance, change_coordinates
+  use coordinate_systems_mod, only : spherical_polar_t, cartesian2d_t, &
+       cartesian3D_t, sphere2cubedsphere, spherical_to_cart, &
+       cubedsphere2cart, distance, change_coordinates, projectpoint
   use physical_constants,     only : DD_PI
   use quadrature_mod,         only : quadrature_t, gauss, gausslobatto
   use parallel_mod,           only : abortmp, syncmp, parallel_t, MPIreal_t, MPI_MAX, MPIinteger_t, MPI_SUM, MPI_MIN
@@ -19,7 +20,6 @@ module interpolate_mod
   implicit none
   private
   integer, parameter, public :: MAX_VECVARS=25
-  real(kind=real_kind), parameter, private :: tol = 1e-10
 
   logical   :: debug=.false.
 
@@ -517,7 +517,7 @@ subroutine interpol_spelt_latlon(interpdata,f, spelt,corners, flatlon)
     do i=1,nc
       icell=1+(i-1)*nipm
       jcell=1+(j-1)*nipm
-      ff=f(icell:icell+nipm,jcell:jcell+nipm)
+      ff=f(icell:icell+nipm,jcell:jcell+nipm)*spelt%sga(icell:icell+nipm,jcell:jcell+nipm)
       minmax(i,j,:)=cell_minmax(ff)
       call cip_coeff(spelt%drefx(i,j),spelt%drefy(i,j),ff,ff(2,2),cf(:,:,i,j))
     enddo
@@ -740,18 +740,19 @@ end subroutine interpol_spelt_latlon
 ! this will work with any map where straight lines are mapped to great circle arcs.
 ! (thus it will fail on unstructured grids using the equi-angular gnomonic map)
 !
-  function point_inside_gc(elem, sphere, sphere_xyz) result(inside)
+  function point_inside_gc(elem, sphere_xyz) result(inside)
     implicit none
-    type (spherical_polar_t), intent(in)     :: sphere
     type (cartesian3D_t),     intent(in)    :: sphere_xyz
     type (element_t)        , intent(in)     :: elem
     logical                              :: inside, inside2
-    integer               :: i,j
+    integer               :: i,j,ii
     type (cartesian2D_t) :: corners(4),sphere_xy,cart
     type (cartesian3D_t) :: corners_xyz(4),center,a,b,cross(4)
     real (kind=real_kind) :: yp(4), y, elem_diam,dotprod
     real (kind=real_kind) :: xp(4), x
-    real (kind=real_kind) :: d1,d2
+    real (kind=real_kind) :: d1,d2, tol_inside = 1e-12
+
+    type (spherical_polar_t)   :: sphere  ! debug
 
     inside = .false.
 
@@ -765,17 +766,76 @@ end subroutine interpol_spelt_latlon
     center%z = sum(corners_xyz(1:4)%z)/4
     if ( distance(center,sphere_xyz) > 1.0*elem_diam ) return
 
+
+#if 0
+    ! sanity check: see if center is inside element
+    !       2 1
+    !       3 4      (1) x (4) = outward normal
+    !                 dot product with centroid should be negative (inside)
     j = 4
     do i=1,4
       ! outward normal to plane containing j->i edge:  corner(i) x corner(j)
-      ! sphere dot (corner(i) x corner(j) ) = negative if outside
+      ! sphere dot (corner(i) x corner(j) ) = negative if on left (inside for counterclockwise)
+      !                                       positive if on right 
+      !
+       cross(i)%x =  corners_xyz(i)%y*corners_xyz(j)%z - corners_xyz(i)%z*corners_xyz(j)%y
+       cross(i)%y =-(corners_xyz(i)%x*corners_xyz(j)%z - corners_xyz(i)%z*corners_xyz(j)%x)
+       cross(i)%z =  corners_xyz(i)%x*corners_xyz(j)%y - corners_xyz(i)%y*corners_xyz(j)%x
+       dotprod = cross(i)%x*center%x + cross(i)%y*center%y +&
+               cross(i)%z*center%z
+       j = i  ! within this loopk j = i-1
+       if (dotprod>0) then
+          print *,'i,dotprod=',i,dotprod
+          print *,'error: center is outside element. face=',elem%facenum
+          print *,'corner (cubedsphere)'
+          do ii=1,4
+             print *,elem%corners(ii)%x,elem%corners(ii)%y
+          enddo
+          sphere=change_coordinates(center)
+          print *,'center lon,lat: ',sphere%lon,sphere%lat
+          do ii=1,4
+             sphere=projectpoint(elem%corners(ii),elem%facenum)
+             print *,sphere%lon,sphere%lat
+          enddo
+          print *,'test point'
+          cart%x = -3.1459/4
+          cart%y = 0
+          sphere=projectpoint(cart,5)
+        !  print *,'0,0 ->lon,lat: ',sphere%lon,sphere%lat
+          cart%x = -3.1459/4 + .1
+          cart%y = 0
+          sphere=projectpoint(cart,5)
+        !  print *,'+1,0 ->lon,lat: ',sphere%lon,sphere%lat
+          cart%x = -3.1459/4 + .1
+          cart%y  =0 + .1
+          sphere=projectpoint(cart,5)
+        !  print *,'+1,+1 ->lon,lat: ',sphere%lon,sphere%lat
+          cart%x = -3.1459/4 
+          cart%y  = 0 + .1
+          sphere=projectpoint(cart,5)
+        !  print *,'+1,+1 ->lon,lat: ',sphere%lon,sphere%lat
+
+       endif
+    end do
+#endif
+
+    j = 4
+    do i=1,4
+      ! outward normal to plane containing j->i edge:  corner(i) x corner(j)
+      ! sphere dot (corner(i) x corner(j) ) = negative if inside
        cross(i)%x =  corners_xyz(i)%y*corners_xyz(j)%z - corners_xyz(i)%z*corners_xyz(j)%y
        cross(i)%y =-(corners_xyz(i)%x*corners_xyz(j)%z - corners_xyz(i)%z*corners_xyz(j)%x)
        cross(i)%z =  corners_xyz(i)%x*corners_xyz(j)%y - corners_xyz(i)%y*corners_xyz(j)%x
        dotprod = cross(i)%x*sphere_xyz%x + cross(i)%y*sphere_xyz%y +&
                cross(i)%z*sphere_xyz%z
        j = i  ! within this loopk j = i-1
-       if (dotprod<0) return
+
+       !if (dotprod>0 .and. dotprod/elem_diam < 1e-5) print *,dotprod/elem_diam
+
+       ! dot product is proportional to elem_diam. positive means outside,
+       ! but allow machine precision tolorence: 
+       if (dotprod > tol_inside*elem_diam) return 
+       !if (dotprod > 0) return 
     end do
     inside=.true.
     return
@@ -879,7 +939,7 @@ end subroutine interpol_spelt_latlon
           found = point_inside_equiangular(elem(ii), sphere, sphere_xyz)
        else 
           ! assume element edges are great circle arcs:
-          found = point_inside_gc(elem(ii), sphere, sphere_xyz)
+          found = point_inside_gc(elem(ii), sphere_xyz)
        endif
 
        if (found) then
@@ -1063,7 +1123,7 @@ end subroutine interpol_spelt_latlon
           !debug=.false.
           !if (j==18 .and. i==95) debug=.true.
           number = -1
-          if (MeshUseMeshFile) then
+          if ( (cubed_sphere_map /= 0) .or. MeshUseMeshFile) then
              call cube_facepoint_unstructured(sphere, cart, number, elem)
              if (number /= -1) then
                 ! If points are outside element but within tolerance, move to boundary

@@ -150,19 +150,19 @@ contains
     type (cartesian3d_t) :: quad(4)
     integer face_no,i,j
 
-    ! =========================================
-    ! compute coordinates of each GLL point
-    ! =========================================
     face_no = elem%vertex%face_number
+    ! compute the corners in Cartesian coordinates
+    do i=1,4
+       elem%corners3D(i)=cubedsphere2cart(elem%corners(i),face_no)
+    enddo
+
+    ! =========================================
+    ! compute lat/lon coordinates of each GLL point
+    ! =========================================
     do i=1,np
     do j=1,np
        elem%spherep(i,j)=ref2sphere(gll_points(i),gll_points(j),elem)
     enddo
-    enddo
-
-    ! compute the corners in Cartesian coordinates
-    do i=1,4
-       elem%corners3D(i)=cubedsphere2cart(elem%corners(i),face_no)
     enddo
 
     ! also compute the [-pi/2,pi/2] cubed sphere coordinates:
@@ -170,9 +170,9 @@ contains
 
     ! Matrix describing vector conversion to cartesian
     ! Zonal direction
-    elem%vec_sphere2cart(:,:,1,1) =                            -SIN(elem%spherep(:,:)%lon)
-    elem%vec_sphere2cart(:,:,2,1) =                             COS(elem%spherep(:,:)%lon)
-    elem%vec_sphere2cart(:,:,3,1) =                             0.0_real_kind
+    elem%vec_sphere2cart(:,:,1,1) = -SIN(elem%spherep(:,:)%lon)
+    elem%vec_sphere2cart(:,:,2,1) =  COS(elem%spherep(:,:)%lon)
+    elem%vec_sphere2cart(:,:,3,1) =  0.0_real_kind
     ! Meridional direction
     elem%vec_sphere2cart(:,:,1,2) = -SIN(elem%spherep(:,:)%lat)*COS(elem%spherep(:,:)%lon)
     elem%vec_sphere2cart(:,:,2,2) = -SIN(elem%spherep(:,:)%lat)*SIN(elem%spherep(:,:)%lon)
@@ -262,6 +262,7 @@ contains
     real (kind=real_kind) :: M(2,2),E(2,2),eig(2),DE(2,2),DEL(2,2),V(2,2), nu1, nu2, lamStar1, lamStar2
     integer :: imaxM(2)
     real (kind=real_kind) :: l1, l2, sc     ! eigen values of met
+    real (kind=real_kind) :: max_ratio
 
     real (kind=real_kind) :: roundoff_err = 1e-11 !!! OG: this is a temporal fix
     
@@ -280,6 +281,7 @@ contains
 
     elem%max_eig = 0.0d0
     elem%min_eig = 1d99
+    elem%max_eig_ratio = 0d0
     do j=1,np
        do i=1,np
           x1=gll_points(i)
@@ -334,15 +336,17 @@ contains
           elem%metinv(2,1,i,j) = -elem%met(2,1,i,j)/(detD*detD)
           elem%metinv(2,2,i,j) =  elem%met(1,1,i,j)/(detD*detD)
 
-!!!MATRICES FOR HV TENSOR
-! compute eigenvectors of metinv
-
+          ! matricies for tensor hyper-viscosity
+          ! compute eigenvectors of metinv (probably same as computed above)
           M = elem%metinv(:,:,i,j)
 
           eig(1) = (M(1,1) + M(2,2) + sqrt(4.0d0*M(1,2)*M(2,1) + &
               (M(1,1) - M(2,2))**2))/2.0d0
           eig(2) = (M(1,1) + M(2,2) - sqrt(4.0d0*M(1,2)*M(2,1) + &
               (M(1,1) - M(2,2))**2))/2.0d0
+          
+          max_ratio=sqrt( max(abs(eig(1)/eig(2)),abs(eig(2)/eig(1))) )
+          elem%max_eig_ratio = max(max_ratio,elem%max_eig_ratio)
 
           ! use DE to store M - Lambda, to compute eigenvectors
           DE=M
@@ -2627,8 +2631,6 @@ contains
     c(1,2)=corners(2)%x;  c(2,2)=corners(2)%y;  c(3,2)=corners(2)%z; 
     c(1,3)=corners(3)%x;  c(2,3)=corners(3)%y;  c(3,3)=corners(3)%z; 
     c(1,4)=corners(4)%x;  c(2,4)=corners(4)%y;  c(3,4)=corners(4)%z; 
-
-    q=q/4.0d0;
 
 !physical point on a plane (sliced), not yet on the sphere
     do i=1,3
