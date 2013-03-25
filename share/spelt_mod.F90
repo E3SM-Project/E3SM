@@ -139,7 +139,7 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
           do i=1-nhe,nc+nhe
             icell=1+(i-1)*nipm
             jcell=1+(j-1)*nipm
-            ff=spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,k,itr,tl%n0)
+            ff=spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,k,itr,tl%n0)*spelt(ie)%sga(icell:icell+nipm,jcell:jcell+nipm)
             minmax(i,j,:)=cell_minmax(ff)
             call cip_coeff(spelt(ie)%drefx(i,j),spelt(ie)%drefy(i,j),ff,ff(2,2),cf(:,:,i,j))
           enddo
@@ -147,7 +147,7 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
         do j=1,nep
           do i=1,nep  
             sga=spelt(ie)%sga(i,j)
-            slval(1)=spelt(ie)%c(i,j,k,itr,tl%n0)
+            slval(1)=spelt(ie)%c(i,j,k,itr,tl%n0)*sga
  
             tmp=cip_interpolate(cf(:,:,icell1(i,j),jcell1(i,j)),dref1(i,j)%x,dref1(i,j)%y) 
             tmp=qmsl_cell_filter(icell1(i,j),jcell1(i,j),minmax,tmp)
@@ -157,7 +157,7 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
             tmp=qmsl_cell_filter(icell2(i,j),jcell2(i,j),minmax,tmp)
             slval(3)=(sga/sg2(i,j))*tmp
  
-            spelt(ie)%c(i,j,k,itr,tl%np1)=(sga/sg2(i,j))*tmp
+            spelt(ie)%c(i,j,k,itr,tl%np1)=(1.0D0/sg2(i,j))*tmp
 
 !            if (mod(i,2)==1) then                   ! works only for nip=3!!!
 !               fluxval(i,j,1) =  dt6 * contrauv(i,j,1,1)* (slval(1) + & 
@@ -184,7 +184,6 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
               i=1+(icell-1)*nipm
               j=1+(jcell-1)*nipm
               
-              sga=spelt(ie)%sga(i+1,j+1)   
               dx=spelt(ie)%dab(icell)   
               dy=spelt(ie)%dab(jcell)
               
@@ -193,9 +192,8 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
               flux(3) = dy * (fluxval(i+2,j,1) + 4.0D0 * fluxval(i+2,j+1,1) + fluxval(i+2,j+2,1))/6.0D0 ! east
               flux(4) = dx * (fluxval(i+2,j+2,2) + 4.0D0 * fluxval(i+1,j+2,2) + fluxval(i,j+2,2))/6.0D0 ! north
               
-              spelt(ie)%c(i+1,j+1,k,itr,tl%np1) = spelt(ie)%c(i+1,j+1,k,itr,tl%n0)/sga + &
+              spelt(ie)%c(i+1,j+1,k,itr,tl%np1) = spelt(ie)%c(i+1,j+1,k,itr,tl%n0) + &
                                         (flux(1) + flux(2) - flux(3) - flux(4) ) / (spelt(ie)%area_sphere(icell,jcell))
-              spelt(ie)%c(i+1,j+1,k,itr,tl%np1)=spelt(ie)%c(i+1,j+1,k,itr,tl%np1)*sga                                              
           end do
         end do
       end do      
@@ -298,7 +296,7 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
           do i=1-nhe,nc+nhe
             icell=1+(i-1)*nipm
             jcell=1+(j-1)*nipm
-            ff=spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,k,itr,tl%n0)
+            ff=spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,k,itr,tl%n0)*spelt(ie)%sga(icell:icell+nipm,jcell:jcell+nipm)
             minmax(i,j,:)=cell_minmax(ff)
             call cip_coeff(spelt(ie)%drefx(i,j),spelt(ie)%drefy(i,j),ff,ff(2,2),cf(:,:,i,j))
           enddo
@@ -307,7 +305,7 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
         do j=1,nep
           do i=1,nep  
             sga=spelt(ie)%sga(i,j)
-            slval(1)=spelt(ie)%c(i,j,k,itr,tl%n0)
+            slval(1)=spelt(ie)%c(i,j,k,itr,tl%n0)*sga
  
             tmp=cip_interpolate(cf(:,:,icell1(i,j),jcell1(i,j)),dref1(i,j)%x,dref1(i,j)%y) 
             tmp=qmsl_cell_filter(icell1(i,j),jcell1(i,j),minmax,tmp)
@@ -316,7 +314,7 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
             tmp=cip_interpolate(cf(:,:,icell2(i,j),jcell2(i,j)),dref2(i,j)%x,dref2(i,j)%y) 
             tmp=qmsl_cell_filter(icell2(i,j),jcell2(i,j),minmax,tmp)
             slval(3)=(sga/sg2(i,j))*tmp
-            spelt(ie)%c(i,j,k,itr,tl%np1)=slval(3)
+            spelt(ie)%c(i,j,k,itr,tl%np1)=(1.0D0/sg2(i,j))*tmp
 
 !            if (mod(i,2)==1) then                   ! works only for nip=3!!!
 !               fluxval(i,j,1) =  dt6 * spelt(ie)%contrau(i,j,k)* (slval(1) + & 
@@ -348,7 +346,6 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
             i=2+(icell-1)*nipm
             jx=1+(icell-1)*nipm
             
-            sga=spelt(ie)%sga(i,j)
             !high order flux
             spelt(ie)%fluxhigh(icell,jcell,k,itr,1) = dy * (fluxval(jx,jy,1) + 4.0D0 * fluxval(jx,jy+1,1) + fluxval(jx,jy+2,1)) / 6.0D0  ! west
             spelt(ie)%fluxhigh(icell,jcell,k,itr,2) = dx * (fluxval(jx,jy,2) + 4.0D0 * fluxval(jx+1,jy,2) + fluxval(jx+2,jy,2)) / 6.0D0  ! south
@@ -359,7 +356,7 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
                                max(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,3))+max(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,4))
             spelt(ie)%R(icell,jcell,k,itr)=0.0D0  
             if (tmp>1.0D-14) then
-              spelt(ie)%R(icell,jcell,k,itr)=min(1.0D0,(spelt(ie)%c(i,j,k,itr,tl%n0)/sga)*spelt(ie)%area_sphere(icell,jcell)/tmp)  
+              spelt(ie)%R(icell,jcell,k,itr)=min(1.0D0,spelt(ie)%c(i,j,k,itr,tl%n0)*spelt(ie)%area_sphere(icell,jcell)/tmp)  
             endif
                    
           end do
@@ -379,13 +376,10 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
       do itr=1,ntrac
         !!!! only needed for filter     
         do j=1,nc !nep,2
-          do i=1,nc !nep,2    
-              dx=spelt(ie)%dab(i)   
-              dy=spelt(ie)%dab(j)        
+          do i=1,nc !nep,2         
               icell=2+(i-1)*nipm
               jcell=2+(j-1)*nipm   
               
-              sga=spelt(ie)%sga(icell,jcell)
               cmo=1.0D0 
                 !west
                 if(spelt(ie)%fluxhigh(i,j,k,itr,1)>0.0D0) then
@@ -411,10 +405,9 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
                 else
                   cmo(4)=spelt(ie)%R(i,j+1,k,itr) 
                 endif   
-                spelt(ie)%c(icell,jcell,k,itr,tl%np1) = spelt(ie)%c(icell,jcell,k,itr,tl%n0)/sga - &
+                spelt(ie)%c(icell,jcell,k,itr,tl%np1) = spelt(ie)%c(icell,jcell,k,itr,tl%n0) - &
                      (-cmo(1)*spelt(ie)%fluxhigh(i,j,k,itr,1) - cmo(2)*spelt(ie)%fluxhigh(i,j,k,itr,2) &
                       + cmo(3)*spelt(ie)%fluxhigh(i,j,k,itr,3) + cmo(4)*spelt(ie)%fluxhigh(i,j,k,itr,4) ) /(spelt(ie)%area_sphere(i,j)) 
-                spelt(ie)%c(icell,jcell,k,itr,tl%np1)=spelt(ie)%c(icell,jcell,k,itr,tl%np1)*sga          
           end do
         end do                
       end do !ntrac

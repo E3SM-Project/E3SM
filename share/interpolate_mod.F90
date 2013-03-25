@@ -516,7 +516,7 @@ subroutine interpol_spelt_latlon(interpdata,f, spelt,corners, flatlon)
     do i=1,nc
       icell=1+(i-1)*nipm
       jcell=1+(j-1)*nipm
-      ff=f(icell:icell+nipm,jcell:jcell+nipm)
+      ff=f(icell:icell+nipm,jcell:jcell+nipm)*spelt%sga(icell:icell+nipm,jcell:jcell+nipm)
       minmax(i,j,:)=cell_minmax(ff)
       call cip_coeff(spelt%drefx(i,j),spelt%drefy(i,j),ff,ff(2,2),cf(:,:,i,j))
     enddo
