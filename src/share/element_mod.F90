@@ -298,6 +298,7 @@ module element_mod
      real (kind=real_kind)    :: area               ! Area of element
      real (kind=real_kind)    :: max_eig        ! max singular value of metinv
      real (kind=real_kind)    :: min_eig        ! min singular value of metinv
+     real (kind=real_kind)    :: max_eig_ratio  ! max ratio of singular values
      real (kind=real_kind)    :: dx_short       ! short length scale
      real (kind=real_kind)    :: dx_long        ! long length scale
 

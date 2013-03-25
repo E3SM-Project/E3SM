@@ -18,9 +18,12 @@ source ${HOMME_TESTING_DIR}/test_list.sh
 # Functions used to generate the run scripts 
 source ${HOMME_TESTING_DIR}/testing-utils.sh
 
-if [ "$1" == all ] ; then
+#THIS_TEST_FILE=$1
 
-  SUBMIT_ALL_AT_ONCE=true
+#createRunScript
+
+
+if [ "$1" == all ] ; then
 
   # The location of all of the lsf scripts generated here
   lsfListFile=${HOMME_TESTING_DIR}/submission-list.sh
@@ -28,8 +31,6 @@ if [ "$1" == all ] ; then
   createAllRunScripts
 
 else
-
-  SUBMIT_ALL_AT_ONCE=false
 
   THIS_TEST_FILE=$1
 

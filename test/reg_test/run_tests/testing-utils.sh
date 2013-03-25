@@ -35,7 +35,6 @@ createLSFHeader() {
 
   echo "#BSUB -a poe" >> $RUN_SCRIPT
 
-  # To do: move this check up and properly handle the error status
   if [ -n "$HOMME_PROJID" ]; then
     echo "#BSUB -P $HOMME_PROJID" >> $RUN_SCRIPT
   else
@@ -70,6 +69,39 @@ createLSFHeader() {
   # Set the ncpus and ranks per MPI
   echo "#BSUB -n $num_cpus" >> $RUN_SCRIPT
   echo '#BSUB -R "span[ptile='$num_cpus']" ' >> $RUN_SCRIPT
+
+  echo "" >> $RUN_SCRIPT
+
+  echo "cd $outputDir" >> $RUN_SCRIPT
+
+  echo "" >> $RUN_SCRIPT
+
+}
+
+createPBSHeader() {
+
+  RUN_SCRIPT=$1
+
+  #delete the file if it exists
+  rm -f $RUN_SCRIPT
+
+  # Set up some yellowstone boiler plate
+  echo "#!/bin/bash -l" >> $RUN_SCRIPT
+  echo ""  >> $RUN_SCRIPT # newlines
+  
+  if [ -n "$HOMME_PROJID" ]; then
+    echo "#PBS -A $HOMME_PROJID" >> $RUN_SCRIPT
+  else
+    echo "PROJECT CHARGE ID (HOMME_PROJID) not set"
+    exit -1
+  fi 
+
+  echo "#PBS -N $testName" >> $RUN_SCRIPT
+
+  echo "#PBS -l nodes=1" >> $RUN_SCRIPT
+  echo "#PBS -l walltime=0:40:00" >> $RUN_SCRIPT
+  # Not sure how to make the following portable
+  #echo "#PBS -l gres=widow1" >> $RUN_SCRIPT
 
   echo "" >> $RUN_SCRIPT
 
@@ -119,6 +151,36 @@ printSubmissionSummary() {
 
 }
 
+examineJobStat() {
+  # submit the job to the queue
+  if [ "$HOMME_Submission_Type" = lsf ]; then
+    jobStat=`bjobs -a $jobID 2>&1 | tail -n 1 | awk '{print $3}'`
+    if [ -n "$jobStat" ] ; then
+      if [ "$jobStat" == "PEND" ] ; then
+        jobStat="pending" 
+      elif [ "$jobStat" == "RUN" ]; then
+        jobStat="running" 
+      fi
+    else
+      jobStat="completed" 
+    fi
+  elif [ "$HOMME_Submission_Type" = pbs ]; then
+    jobStat=`qstat $jobID 2>&1 | tail -n 1 | awk '{print $5}'`
+    if [ -n "$jobStat" ] ; then
+      if [ "$jobStat" == "Q" ] ; then
+        jobStat="pending" 
+      elif [ "$jobStat" == "R" ]; then
+        jobStat="running" 
+      fi
+    else
+      jobStat="completed" 
+    fi
+  else
+    echo "Error: queue type not recognized"
+    exit -1
+  fi
+}
+
 queueWait() {
 
   for i in $(seq 0 $(( ${#SUBMIT_TEST[@]} - 1)))
@@ -130,18 +192,19 @@ queueWait() {
     while ! $jobFinished;
     do
       # Test if the job exists
-      jobStat=`bjobs -a $jobID | tail -n 1 | awk '{print $3}'`
-
-      # Print the status of the job
-      echo -n "...$jobStat..."
+      examineJobStat
+      #jobStat=`bjobs -a $jobID | tail -n 1 | awk '{print $3}'`
 
       # if the job is registered in the queue and the status is PEND or RUN then wait
-      if [ -n "$jobStat" -a "$jobStat" == "PEND" -o "$jobStat" == "RUN" ]; then
+      if [ "$jobStat" == "pending" -o "$jobStat" == "running" ]; then
+        # Print the status of the job
+        echo -n "$jobStat..."
+
         # Job still in queue or running
         sleep 20 # sleep for 20s
       else # if jobStat=DONE, EXIT or it is finished and no longer registered in the queue
         jobFinished=true
-        echo "FINISHED..."
+        echo "finished."
       fi
     done
   done
@@ -181,7 +244,31 @@ queueWait() {
 #  done
 #}
 
-submitTestsToLSF() {
+submitToQueue() {
+  # submit the job to the queue
+  if [ "$HOMME_Submission_Type" = lsf ]; then
+    bsub < ${subFile} > $THIS_STDOUT 2> $THIS_STDERR
+  elif [ "$HOMME_Submission_Type" = pbs ]; then
+    qsub ${subFile} > $THIS_STDOUT 2> $THIS_STDERR
+  else
+    echo "Error: queue type not recognized"
+    exit -1
+  fi
+}
+
+getJobID() {
+  # submit the job to the queue
+  if [ "$HOMME_Submission_Type" = lsf ]; then
+    SUB_ID=`cat $THIS_STDOUT | awk '{print $2}' | sed  's/<//' | sed -e 's/>//'`
+  elif [ "$HOMME_Submission_Type" = pbs ]; then
+    SUB_ID=`cat $THIS_STDOUT | awk '{print $1}'`
+  else
+    echo "Error: queue type not recognized"
+    exit -1
+  fi
+}
+
+submitTestsToQueue() {
 
   if [ "${SUBMIT_ALL_AT_ONCE}" == true ] ; then
     echo "Submitting ${num_submissions} jobs to queue"
@@ -204,18 +291,19 @@ submitTestsToLSF() {
     THIS_STDERR=${subJobName}.err
 
     # Run the command
-    # For some reason bsub must not be part of a string
     echo -n "Submitting test ${subJobName} to the queue... "
-    bsub < ${subFile} > $THIS_STDOUT 2> $THIS_STDERR
-    BSUB_STAT=$?
+    submitToQueue ${subFile} $THIS_STDOUT $THIS_STDERR
+
+    SUB_STAT=$?
 
     # Do some error checking
-    if [ $BSUB_STAT == 0 ]; then
-      # the command was succesful
-      BSUB_ID=`cat $THIS_STDOUT | awk '{print $2}' | sed  's/<//' | sed -e 's/>//'`
-      echo "successful job id = $BSUB_ID"
+    if [ $SUB_STAT == 0 ]; then # the command was succesful
+      # Get the queue job ID
+      getJobID 
+
+      echo "successful job id = $SUB_ID"
       SUBMIT_TEST+=( "${subJobName}" )
-      SUBMIT_JOB_ID+=( "$BSUB_ID" )
+      SUBMIT_JOB_ID+=( "$SUB_ID" )
     else 
       echo "failed with message:"
       cat $THIS_STDERR
@@ -253,13 +341,18 @@ runTestsStd() {
     echo -n "Running test ${subJobName} ... "
     #echo "${subFile} > $THIS_STDOUT 2> $THIS_STDERR"
     chmod u+x ${subFile}
-    ${subFile} > $THIS_STDOUT 2> $THIS_STDERR &
-    RUN_PID=$!
+    # Don't want this to run in the background
+    #cmd='${subFile} > $THIS_STDOUT 2> $THIS_STDERR &'
+    cmd="${subFile} > $THIS_STDOUT 2> $THIS_STDERR"
+    echo "$cmd"
+    $cmd
+    RUN_PID=$?
     echo "PID=$RUN_PID"
-    wait $RUN_PID
-    RUN_STAT=$?
+    RUN_STAT=${RUN_PID}
+    #wait $RUN_PID
+    #RUN_STAT=$?
     # Technically the PID is incorrect but it really doesn't matter
-    RUN_PID=$!
+    #RUN_PID=$!
     # Do some error checking
     if [ $RUN_STAT = 0 ]; then
       # the command was succesful
@@ -295,6 +388,7 @@ createAllRunScripts() {
 
     # Create the run script
     thisRunScript=`dirname ${!testFile}`/$testName-run.sh
+    rm -f ${thisRunScript}
 
     outputDir=`dirname ${!testFile}`
 
@@ -328,6 +422,9 @@ createAllRunScripts() {
 
     echo "subFile$testFileNum=$thisRunScript" >>  $lsfListFile
 
+    # Make the script executable
+    chmod u+x ${thisRunScript}
+
     # Reset the variables (in case they are not redefined in the next iteration)
     unset omp_num_tests
     unset num_tests
@@ -347,10 +444,9 @@ createRunScript() {
     echo "  and $omp_num_tests Hybrid MPI + OpenMP tests"
   fi
 
-
-
   # Create the run script
   thisRunScript=`dirname ${THIS_TEST_FILE}`/$testName-run.sh
+  rm -f ${thisRunScript}
 
   outputDir=`dirname ${THIS_TEST_FILE}`
 
@@ -377,6 +473,9 @@ createRunScript() {
     done
   fi
 
+  # make it executable
+  chmod u+x ${thisRunScript}
+
   # Reset the variables (in case they are not redefined in the next iteration)
   #unset omp_num_tests
   #unset num_tests
@@ -389,6 +488,10 @@ submissionHeader() {
 
   if [ "$HOMME_Submission_Type" = lsf ]; then
     createLSFHeader $RUN_SCRIPT
+  elif [ "$HOMME_Submission_Type" = pbs ]; then
+    echo "creating PBS header"
+    createPBSHeader $RUN_SCRIPT
+    echo "finishd creating PBS header"
   else
     createStdHeader $RUN_SCRIPT
   fi
@@ -402,6 +505,8 @@ execLine() {
 
   if [ "$HOMME_Submission_Type" = lsf ]; then
     echo "mpirun.lsf $EXEC" >> $RUN_SCRIPT
+  elif [ "$HOMME_Submission_Type" = pbs ]; then
+    echo "aprun -n 16 $EXEC" >> $RUN_SCRIPT
   else
     echo "mpiexec -n $NUM_CPUS $EXEC" >> $RUN_SCRIPT
   fi

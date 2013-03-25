@@ -11,7 +11,7 @@ module derivative_mod
   ! needed for spherical differential operators:
   use physical_constants, only : rrearth 
   use element_mod, only : element_t
-  use control_mod, only : which_vlaplace 
+  use control_mod, only : which_vlaplace, use_tensorhv
 
 implicit none
 private
@@ -87,13 +87,20 @@ private
 ! these routines compute spherical differential operators as opposed to
 ! the gnomonic coordinate operators above.  Vectors (input or output)
 ! are always expressed in lat-lon coordinates
+!
+! note that weak derivatives (integrated by parts form) can be defined using
+! contra or co-variant test functions, so 
+!
   public  :: gradient_sphere
-  public  :: gradient_sphere_wk
+  public  :: gradient_sphere_wk_testcov
+  public  :: gradient_sphere_wk_testcontra   ! only used for debugging
   public  :: ugradv_sphere
   public  :: vorticity_sphere
   public  :: vorticity_sphere_diag
   public  :: divergence_sphere
   public  :: curl_sphere
+  public  :: curl_sphere_wk_testcov
+!  public  :: curl_sphere_wk_testcontra  ! not coded
   public  :: divergence_sphere_wk
   public  :: laplace_sphere_wk
   public  :: vlaplace_sphere_wk
@@ -1688,26 +1695,152 @@ endif
 
 
 
-  function gradient_sphere_wk(s,deriv,elem) result(ds)
+  function curl_sphere_wk_testcov(s,deriv,elem) result(ds)
 !
+!   integrated-by-parts gradient, w.r.t. COVARIANT test functions
+!   input s:  scalar  (assumed to be s*khat)
+!   output  ds: weak curl, lat/lon coordinates
+!   
+! starting with: 
+!   PHIcov1 = (PHI,0)  covariant vector 
+!   PHIcov2 = (0,PHI)  covariant vector 
+!
+!   ds1 = integral[ PHIcov1 dot curl(s*khat) ] 
+!   ds2 = integral[ PHIcov2 dot curl(s*khat) ] 
+! integrate by parts: 
+!   ds1 = integral[ vor(PHIcov1) * s ]       
+!   ds2 = integral[ vor(PHIcov1) * s ]
+!
+!     PHIcov1 = (PHI^mn,0)   
+!     PHIcov2 = (0,PHI^mn)
+!  vorticity() acts on covariant vectors:
+!   ds1 = sum wij g  s_ij 1/g (  (PHIcov1_2)_x  - (PHIcov1_1)_y ) 
+!       = -sum wij s_ij  d/dy (PHI^mn )
+! for d/dy component, only sum over i=m
+!       = -sum  w_mj s_mj   d( PHI^n)(j)
+!           j
+!
+!   ds2 = sum wij g  s_ij 1/g (  (PHIcov2_2)_x  - (PHIcov2_1)_y ) 
+!       = +sum wij s_ij  d/dx (PHI^mn )
+! for d/dx component, only sum over j=n
+!       = +sum  w_in s_in  d( PHI^m)(i)
+!           i
+!
+    type (derivative_t)              :: deriv
+    type (element_t)                 :: elem
+    real(kind=real_kind), intent(in) :: s(np,np)
+
+    real(kind=real_kind) :: ds(np,np,2)
+
+    integer i,j,l,m,n
+    real(kind=real_kind) ::  dscontra(np,np,2)
+
+    dscontra=0
+    do n=1,np
+       do m=1,np
+          do j=1,np
+             ! phi(n)_y  sum over second index, 1st index fixed at m
+             dscontra(m,n,1)=dscontra(m,n,1)-(elem%mp(m,j)*s(m,j)*deriv%Dvv(n,j) )*rrearth
+             ! phi(m)_x  sum over first index, second index fixed at n
+             dscontra(m,n,2)=dscontra(m,n,2)+(elem%mp(j,n)*s(j,n)*deriv%Dvv(m,j) )*rrearth
+          enddo
+       enddo
+    enddo
+
+    ! convert contra -> latlon 
+    do j=1,np
+       do i=1,np
+          ds(i,j,1)=(elem%D(1,1,i,j)*dscontra(i,j,1) + elem%D(1,2,i,j)*dscontra(i,j,2))
+          ds(i,j,2)=(elem%D(2,1,i,j)*dscontra(i,j,1) + elem%D(2,2,i,j)*dscontra(i,j,2))
+       enddo
+    enddo
+    end function curl_sphere_wk_testcov
+
+
+  function gradient_sphere_wk_testcov(s,deriv,elem) result(ds)
+!
+!   integrated-by-parts gradient, w.r.t. COVARIANT test functions
+!   input s:  scalar
+!   output  ds: weak gradient, lat/lon coordinates
+!   ds = - integral[ div(PHIcov) s ]
+!
+!     PHIcov1 = (PHI^mn,0)   
+!     PHIcov2 = (0,PHI^mn)
+!   div() acts on contra components, so convert test function to contra: 
+!     PHIcontra1 =  metinv PHIcov1  = (a^mn,b^mn)*PHI^mn   
+!                                     a = metinv(1,1)  b=metinv(2,1)
+!
+!   ds1 = sum wij g  s_ij 1/g ( g a PHI^mn)_x  + ( g b PHI^mn)_y ) 
+!       = sum  wij s_ij  ag(m,n)  d/dx( PHI^mn ) + bg(m,n) d/dy( PHI^mn)
+!          i,j 
+! for d/dx component, only sum over j=n
+!       = sum  w_in s_in  ag(m,n)  d( PHI^m)(i)
+!          i
+! for d/dy component, only sum over i=m
+!       = sum  w_mj s_mj  bg(m,n)  d( PHI^n)(j)
+!          j
+!  
+!
+! This formula is identical to gradient_sphere_wk_testcontra, except that
+!    g(m,n) is replaced by a(m,n)*g(m,n)   
+!  and we have two terms for each componet of ds 
+!
+!
+    type (derivative_t)              :: deriv
+    type (element_t)                 :: elem
+    real(kind=real_kind), intent(in) :: s(np,np)
+
+    real(kind=real_kind) :: ds(np,np,2)
+
+    integer i,j,l,m,n
+    real(kind=real_kind) ::  dscontra(np,np,2)
+
+
+    dscontra=0
+    do n=1,np
+       do m=1,np
+          do j=1,np
+             dscontra(m,n,1)=dscontra(m,n,1)-(&
+                  (elem%mp(j,n)*elem%metinv(1,1,m,n)*elem%metdet(m,n)*s(j,n)*deriv%Dvv(m,j) ) +&
+                  (elem%mp(m,j)*elem%metinv(2,1,m,n)*elem%metdet(m,n)*s(m,j)*deriv%Dvv(n,j) ) &
+                  ) *rrearth
+
+             dscontra(m,n,2)=dscontra(m,n,2)-(&
+                  (elem%mp(j,n)*elem%metinv(1,2,m,n)*elem%metdet(m,n)*s(j,n)*deriv%Dvv(m,j) ) +&
+                  (elem%mp(m,j)*elem%metinv(2,2,m,n)*elem%metdet(m,n)*s(m,j)*deriv%Dvv(n,j) ) &
+                  ) *rrearth
+          enddo
+       enddo
+    enddo
+    ! convert contra -> latlon 
+    do j=1,np
+       do i=1,np
+          ds(i,j,1)=(elem%D(1,1,i,j)*dscontra(i,j,1) + elem%D(1,2,i,j)*dscontra(i,j,2))
+          ds(i,j,2)=(elem%D(2,1,i,j)*dscontra(i,j,1) + elem%D(2,2,i,j)*dscontra(i,j,2))
+       enddo
+    enddo
+
+    end function gradient_sphere_wk_testcov
+
+
+  function gradient_sphere_wk_testcontra(s,deriv,elem) result(ds)
+!
+!   integrated-by-parts gradient, w.r.t. CONTRA test functions
 !   input s:  scalar
 !   output  ds: weak gradient, lat/lon coordinates
 !
-!   integral[ phivec dot grad(s) ] 
-!        = phivec  dot  gradient_sphere(p) * spheremp(i,j) 
-!   if phivec_contra(:,:,1)=phi (cardinal function)
-!   if phivec_contra(:,:,2)=0
-!        = gradp_covariant(:,:,1) * spheremp(i,j)
-!   if phivec_contra(:,:,1)=0
-!   if phivec_contra(:,:,2)=phi (cardinal function)
-!        = gradp_covariant(:,:,2) * spheremp(i,j)
+!   integral[ div(phivec) s ] = sum  spheremp()* divergence_sphere(phivec) *s
+!   ds1 = above formual with phivec=(PHI,0) in CONTRA coordinates
+!   ds2 = above formual with phivec=(0,PHI) in CONTRA coordinates
+!   
+! PHI = (phi,0)
+!   s1 =  sum w_ij s_ij g_ij 1/g_ij ( g_ij PHI^mn )x  
+!      =  sum w_ij s_ij g_mn dx(PHI^mn)_ij 
+!         ij
+! because x derivative is zero for j<>n, only have to sum over j=n
+!   s1(m,n)  =  sum w_i,n g_mn dx(PHI^m)_i,n s_i,n
+!                i
 !
-!   weak form is thus defined over all contra cardinal functions:   
-!      integral[ div(phivec) s ] = sum  spheremp()* phi_x() * s
-!                                  sum  spheremp()* phi_y() * s
-!      
-!
-
     type (derivative_t)              :: deriv
     type (element_t)              :: elem
     real(kind=real_kind), intent(in) :: s(np,np)
@@ -1737,7 +1870,7 @@ endif
     enddo
 
 #if 0
-    ! slow form:
+    ! slow form, for debugging
     do m=1,np
        do n=1,np
           vcontra=0
@@ -1783,11 +1916,11 @@ endif
 
     dscov=ds
 #endif
-    ! convert covariant to latlon 
+    ! convert covariant -> latlon 
     ds(:,:,1)=elem%Dinv(1,1,:,:)*dscov(:,:,1) + elem%Dinv(2,1,:,:)*dscov(:,:,2)
     ds(:,:,2)=elem%Dinv(1,2,:,:)*dscov(:,:,1) + elem%Dinv(2,2,:,:)*dscov(:,:,2)
 
-    end function gradient_sphere_wk
+    end function gradient_sphere_wk_testcontra
 
 
 
@@ -1836,7 +1969,7 @@ endif
   function curl_sphere(s,deriv,elem) result(ds)
 !
 !   input s:  scalar  (assumed to be  s khat)
-!   output  curl(s khat) in lat-lon coordinates
+!   output  curl(s khat) vector in lat-lon coordinates
 ! 
 !   This subroutine can be used to compute divergence free velocity fields,
 !   since div(ds)=0
@@ -2287,19 +2420,6 @@ endif
   end function divergence_sphere
 
 
-!three types of viscosity are supported right now:
-! (1) const hv, i.e., the operator nu * (\div \grad)^hypervis_order
-! (2) variable-within-element (or just variable) hv, the operator nu * (viscosity \div \grad )^hypervis_order
-! (3) tensor hv,  nu * ( \div * tensor * \grad )^hypervis_order
-
-! the switch between (2) and (3) is here, in preproc directive #TENSORHV
-! the switch between (1) and (2,3) is in namelist variable:
-! hypervis_power =0 for const hv (1),  <>0 for variable hv (2) and tensor hv (3)
-! if using (2), it is required to set also fine_ne, max_hypervis_courant
-
-#undef TENSORHV
-!#define TENSORHV
-
 
   function laplace_sphere_wk(s,deriv,elem,viscosity) result(laplace)
 !
@@ -2320,28 +2440,25 @@ endif
 
     grads=gradient_sphere(s,deriv,elem%Dinv)
  
-#ifndef TENSORHV
-! const or variable viscosity, (1) or (2)
     if (ASSOCIATED(viscosity)) then
-        grads(:,:,1) = grads(:,:,1)*viscosity(:,:)
-        grads(:,:,2) = grads(:,:,2)*viscosity(:,:)
-    end if
-#else
-! tensor hv, (3)
-    if (ASSOCIATED(viscosity)) then
-      oldgrads=grads
-      do j=1,np
-	do i=1,np
-	  grads(i,j,1) = sum(oldgrads(i,j,:)*elem%tensorVisc(1,:,i,j))
-	  grads(i,j,2) = sum(oldgrads(i,j,:)*elem%tensorVisc(2,:,i,j))
-	end do
-      end do
+       if (use_tensorhv==0 ) then
+          ! const or variable viscosity, (1) or (2)
+          grads(:,:,1) = grads(:,:,1)*viscosity(:,:)
+          grads(:,:,2) = grads(:,:,2)*viscosity(:,:)
+       else
+          ! tensor hv, (3)
+          oldgrads=grads
+          do j=1,np
+             do i=1,np
+                grads(i,j,1) = sum(oldgrads(i,j,:)*elem%tensorVisc(1,:,i,j))
+                grads(i,j,2) = sum(oldgrads(i,j,:)*elem%tensorVisc(2,:,i,j))
+             end do
+          end do
+       endif
     endif
-#endif
 
     ! note: divergnece_sphere and divergence_sphere_wk are identical *after* bndry_exchange
     ! if input is C_0.  Here input is not C_0, so we should use divergence_sphere_wk().  
-
     laplace=divergence_sphere_wk(grads,deriv,elem)
 
   end function laplace_sphere_wk
@@ -2361,8 +2478,10 @@ endif
 
     if (which_vlaplace .eq. 2) then
       laplace=cartesian_laplace_sphere_wk(v,deriv,elem,viscosity,nu_ratio)
+    else if (which_vlaplace .eq. 1) then
+      laplace=laplace_sphere_wk_orig(v,deriv,elem,viscosity,nu_ratio)
     else
-      laplace=vector_identities_laplace_sphere_wk(v,deriv,elem,viscosity,nu_ratio)
+      laplace=laplace_sphere_wk_new(v,deriv,elem,viscosity,nu_ratio)
     endif
 
   end function vlaplace_sphere_wk
@@ -2406,17 +2525,19 @@ endif
 
 
 
-  function vector_identities_laplace_sphere_wk(v,deriv,elem,viscosity,nu_ratio) result(laplace)
+  function laplace_sphere_wk_orig(v,deriv,elem,viscosity,nu_ratio) result(laplace)
 !
 !   input:  v = vector in lat-lon coordinates
 !   ouput:  weak laplacian of v, in lat-lon coordinates
 !   note: integrals must be performed in contra variant coordinates,
 !         convert to lat-lon after computing integral
 !
-!   laplace(v) =  grad(div) -  curl(vor) 
-!   weak form   < PHI , grad(div) > - < PHI, curl(vor*khat) >    
-!   by parts:   -< div(PHI) div >   - < vor curl(PHI) >      
-!             
+!   du/dt = laplace(u) = grad(div) - curl(vor)
+!   < PHI du/dt > = < PHI laplace(u) >     PHI = covariant, u = contravariant
+!
+!   weak form   < PHI , grad(div) > - < PHI, curl(vor*khat) >    PHI=covaraint
+!   by parts:  -< div(PHI) div >    - < vor curl(PHI) >      
+!            =        grad_wk(div)  - curl_wk(vor)               
 !
 ! used vector identity: div(F cross G)=G dot curl F - F dot curl G
 !                  OR:    < G, curl F> = < F, curl G >
@@ -2549,7 +2670,55 @@ endif
 #endif
        enddo
     enddo
-  end function vector_identities_laplace_sphere_wk
+  end function laplace_sphere_wk_orig
+
+
+
+  function laplace_sphere_wk_new(v,deriv,elem,viscosity,nu_ratio) result(laplace)
+!
+!   input:  v = vector in lat-lon coordinates
+!   ouput:  weak laplacian of v, in lat-lon coordinates
+!
+!   du/dt = laplace(u) = grad(div) - curl(vor)
+!   < PHI du/dt > = < PHI laplace(u) >        PHI = covariant, u = contravariant
+!                 = < PHI grad(div) >  - < PHI curl(vor) >
+!                 = grad_wk(div) - curl_wk(vor)               
+!
+    real(kind=real_kind), intent(in) :: v(np,np,2) 
+    real(kind=real_kind), pointer, dimension(:,:) :: viscosity
+    type (derivative_t)              :: deriv
+    type (element_t)                 :: elem
+    real(kind=real_kind) :: laplace(np,np,2)
+    real(kind=real_kind), optional :: nu_ratio
+    ! Local
+
+    integer i,j,l,m,n
+    real(kind=real_kind) :: vor(np,np),div(np,np)
+    real(kind=real_kind) :: v1,v2,div1,div2,vor1,vor2,phi_x,phi_y
+
+    div=divergence_sphere(v,deriv,elem)
+    vor=vorticity_sphere(v,deriv,elem)
+
+    if (ASSOCIATED(viscosity)) then
+       div = div*viscosity
+       vor = vor*viscosity
+    end if
+    if (present(nu_ratio)) div = nu_ratio*div
+
+    laplace = gradient_sphere_wk_testcov(div,deriv,elem) - &
+         curl_sphere_wk_testcov(vor,deriv,elem)
+
+    do n=1,np
+       do m=1,np
+          ! add in correction so we dont damp rigid rotation
+#define UNDAMPRR
+#ifdef UNDAMPRR
+          laplace(m,n,1)=laplace(m,n,1) + 2*elem%spheremp(m,n)*v(m,n,1)*(rrearth**2)
+          laplace(m,n,2)=laplace(m,n,2) + 2*elem%spheremp(m,n)*v(m,n,2)*(rrearth**2)
+#endif
+       enddo
+    enddo
+  end function laplace_sphere_wk_new
 
 
 
