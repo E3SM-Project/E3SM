@@ -1420,20 +1420,20 @@ subroutine spelt_grid_init(elem,spelt,nets,nete,tl)
   do ie=nets,nete
     spelt(ie)%Facenumber=elem(ie)%FaceNum
     ! for the np grid
-    if (np .ne. nc+1) then
-      call haltmp("PARAMTER ERROR for SPELT, you are in gll grid point mode, use np = nc+1")
-    endif
-    gp=gausslobatto(np)
-    spelt(ie)%pref=gp%points
+!     if (np .ne. nc+1) then
+!       call haltmp("PARAMTER ERROR for SPELT, you are in gll grid point mode, use np = nc+1")
+!     endif
+!     gp=gausslobatto(np)
+!     spelt(ie)%pref=gp%points
     ! for the nc grid
-!     dx=2.0D0/(nc)   ! equi-distant grid on reference element in both directions!
-!     do j=1,nc+1
-!       spelt(ie)%pref(j)=-1+(j-1)*dx
-!     end do
+    dx=2.0D0/(nc)   ! equi-distant grid on reference element in both directions!
+    do j=1,nc+1
+      spelt(ie)%pref(j)=-1+(j-1)*dx
+    end do
 
     do j=1,nc
-      spelt(ie)%dab(j)=abs(elem(ie)%cartp(j+1,1)%x-elem(ie)%cartp(j,1)%x)   ! for np grid
-!       spelt(ie)%dab(j)=abs(elem(ie)%corners(1)%x-elem(ie)%corners(2)%x)/nc  ! for nc grid
+!       spelt(ie)%dab(j)=abs(elem(ie)%cartp(j+1,1)%x-elem(ie)%cartp(j,1)%x)   ! for np grid
+      spelt(ie)%dab(j)=abs(elem(ie)%corners(1)%x-elem(ie)%corners(2)%x)/nc  ! for nc grid
       do i=1,nc  
         spelt(ie)%drefx(i,j)=abs(spelt(ie)%pref(i+1)-spelt(ie)%pref(i)) 
         spelt(ie)%drefy(i,j)=abs(spelt(ie)%pref(j+1)-spelt(ie)%pref(j))

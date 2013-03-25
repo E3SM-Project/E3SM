@@ -106,17 +106,17 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
   
   gp=gausslobatto(np)
 ! ! for the np grid
-  do i=1,nc
-    tmp=abs(gp%points(i+1)-gp%points(i))/nipm
-    refnep(1+(i-1)*nipm)=gp%points(i)
-    refnep(2+(i-1)*nipm)=gp%points(i)+tmp
-  end do
-  refnep(nep)=gp%points(np)
-!  for the nc grid  
-!   tmp=nep-1
-!   do i=1,nep
-!     refnep(i)= 2*(i-1)/tmp - 1
+!   do i=1,nc
+!     tmp=abs(gp%points(i+1)-gp%points(i))/nipm
+!     refnep(1+(i-1)*nipm)=gp%points(i)
+!     refnep(2+(i-1)*nipm)=gp%points(i)+tmp
 !   end do
+!   refnep(nep)=gp%points(np)
+!  for the nc grid  
+  tmp=nep-1
+  do i=1,nep
+    refnep(i)= 2*(i-1)/tmp - 1
+  end do
   
   call v2pinit(deriv%Sfvm,gp%points,refnep,np,nep)
   
@@ -236,9 +236,9 @@ DO WHILE(tl%nstep<nmax) !nmax)
   do ie=nets,nete
     do k=1,nlev
       !simulate gll velocities, I get the velocities on the gll from the Spectral Element simulation
-      elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
-      spelt(ie)%vn0(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),time_at(tl%nstep))
-      spelt(ie)%vn12(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),(time_at(tl%nstep)+time_at(tl%nstep+1))/2.0D0)
+!       elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
+!       spelt(ie)%vn0(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),time_at(tl%nstep))
+!       spelt(ie)%vn12(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),(time_at(tl%nstep)+time_at(tl%nstep+1))/2.0D0)
 !       elem(ie)%derived%vstar(:,:,:,k)=get_solidbody_velocities_gll(elem(ie), time_at(tl%nstep+1))
 !       spelt(ie)%vn0(:,:,:,k)=get_solidbody_velocities_gll(elem(ie),time_at(tl%nstep))
 !       spelt(ie)%vn1(:,:,:,k)=get_solidbody_velocities_gll(elem(ie),(time_at(tl%nstep)+time_at(tl%nstep+1))/2)
@@ -317,11 +317,11 @@ DO WHILE(tl%nstep<nmax) !nmax)
   end do
   
 !   call spelt_mcgregordss(elem,spelt,nets,nete, hybrid, deriv, tstep, 3)
-  call spelt_rkdss(elem,spelt,nets,nete, hybrid, deriv, tstep, 3)
+!   call spelt_rkdss(elem,spelt,nets,nete, hybrid, deriv, tstep, 3)
 ! ! end mcgregordss
 !   call spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
-!   call spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
-  call spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
+  call spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
+!   call spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !   call spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 
   call TimeLevel_update(tl,"forward") 
