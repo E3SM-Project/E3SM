@@ -132,8 +132,6 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
             else
               call analytical_function(spelt(ie)%c(i,j,k,itr,tl%n0),spelt(ie)%asphere(i,j),k,itr)
             endif
-            sga=spelt(ie)%sga(i,j)
-            spelt(ie)%c(i,j,k,itr,tl%n0)=sga*spelt(ie)%c(i,j,k,itr,tl%n0) 
             if ((mod(i,2)==0) .and.(mod(j,2)==0) .and. (itr==choosetrac)) then
                spelt(ie)%cstart(i/2,j/2)=spelt(ie)%c(i,j,chooselev,choosetrac,tl%n0)
             endif 
@@ -154,7 +152,7 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
           do i=1-nhe,nc+nhe
             icell=1+(i-1)*nipm
             jcell=1+(j-1)*nipm
-            ff=spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,k,itr,tl%n0)
+            ff=spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,k,itr,tl%n0)*spelt(ie)%sga(icell:icell+nipm,jcell:jcell+nipm)
             ! FOR TEST OUTPUT on gll only needed
             minmax(i,j,:)=cell_minmax(ff)
             call cip_coeff(spelt(ie)%drefx(i,j),spelt(ie)%drefy(i,j),ff,ff(2,2),cf(:,:,i,j))
@@ -193,23 +191,19 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
    tmp2(ie)=1.0D20
    do j=1,nc
      do i=1,nc
-       dx=spelt(ie)%dab(i)   
-       dy=spelt(ie)%dab(j)
-!        area=dx*dy
        area=spelt(ie)%area_sphere(i,j)
        icell=2+(i-1)*nipm
        jcell=2+(j-1)*nipm
-       sga=spelt(ie)%sga(icell,jcell)
        if (choosetrac==1) then   ! mass of air, code is not optimal
          spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
-                        area*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga   ! that is the real mass, we have cell average
+                        area*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)  ! that is the real mass, we have cell average
        elseif(choosetrac==2) then
          spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
-                       area*(spelt(ie)%c(icell,jcell,chooselev,1,tl%n0)/sga)*(spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga)
+                       area*spelt(ie)%c(icell,jcell,chooselev,1,tl%n0)*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
        endif
 !          spelt(ie)%cstart(i,j)=spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
-      tmp1(ie)=max(tmp1(ie),spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga)
-      tmp2(ie)=min(tmp2(ie),spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga)
+      tmp1(ie)=max(tmp1(ie),spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0))
+      tmp2(ie)=min(tmp2(ie),spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0))
      enddo
    enddo
    ! for the mass value
@@ -334,27 +328,20 @@ if (mod(tl%nstep,1)==0) then
     tmp2(ie)=1.0D20
     do j=1,nc
       do i=1,nc
-        dx=spelt(ie)%dab(i)   
-        dy=spelt(ie)%dab(j)
-!         area=dx*dy
         area=spelt(ie)%area_sphere(i,j)
         icell= 2+(i-1)*nipm
         jcell=2+(j-1)*nipm
         sga=spelt(ie)%sga(icell,jcell)
         if (choosetrac==1) then   ! mass of air, code is not optimal
-!           spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
-!                          dx*dy*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
          spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
-                        area*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga
+                        area*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
         elseif (choosetrac==2) then
           spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
-                         area*(spelt(ie)%c(icell,jcell,chooselev,1,tl%n0)/sga)*(spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga)
+                         area*spelt(ie)%c(icell,jcell,chooselev,1,tl%n0)*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
         endif
- !           spelt(ie)%cstart(i,j)=spelt(ie)%c(i,j,chooselev,choosetrac,tl%n0)
-        tmp=area/spelt(ie)%area_sphere(i,j)
         
-        tmp1(ie)=max(tmp1(ie),spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga)
-        tmp2(ie)=min(tmp2(ie),spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga)
+        tmp1(ie)=max(tmp1(ie),spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0))
+        tmp2(ie)=min(tmp2(ie),spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0))
       enddo
     enddo
     ! for the mass value
@@ -394,7 +381,7 @@ endif
       do i=1-nhe,nc+nhe
         icell=1+(i-1)*nipm
         jcell=1+(j-1)*nipm
-        ff=spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,chooselev,choosetrac,tl%n0)
+        ff=spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,chooselev,choosetrac,tl%n0)*spelt(ie)%sga(icell:icell+nipm,jcell:jcell+nipm)
         minmax(i,j,:)=cell_minmax(ff)
         call cip_coeff(spelt(ie)%drefx(i,j),spelt(ie)%drefy(i,j),ff,ff(2,2),cf(:,:,i,j))
       enddo
@@ -411,27 +398,13 @@ endif
     enddo 
     elem(ie)%state%ps(:,:)=0.0D0
   end do  
-  
-!   do ie=nets,nete
-!     do j=1-nipm,nep+nipm 
-!       do i=1-nipm,nep+nipm
-!         spelt(ie)%c(i,j,chooselev,choosetrac,tl%n0)=spelt(ie)%c(i,j,chooselev,choosetrac,tl%n0)/spelt(ie)%sga(i,j)
-!       end do
-!     end do
-!   end do
 
 #ifdef PIO_INTERP
   call interp_movie_output(elem,tl, hybrid, 0D0, nets, nete,spelt)
 #else
   call shal_movie_output(elem,tl, hybrid, 0D0, nets, nete,deriv)
 #endif  
-! do ie=nets,nete
-!   do j=1-nipm,nep+nipm 
-!     do i=1-nipm,nep+nipm
-!       spelt(ie)%c(i,j,chooselev,choosetrac,tl%n0)=spelt(ie)%c(i,j,chooselev,choosetrac,tl%n0)*spelt(ie)%sga(i,j)
-!     end do
-!   end do
-! end do
+
 !-----------------------------------------------------------------------------------!
       
 ENDDO  ! END TIME LOOP
@@ -453,22 +426,17 @@ ENDDO  ! END TIME LOOP
     global_shared_buf(ie,:)=0.0D0
     do j=1,nc
       do i=1,nc
-        dx=spelt(ie)%dab(i)   
-        dy=spelt(ie)%dab(j)
-!         area=dx*dy
         area=spelt(ie)%area_sphere(i,j)
         icell= 2+(i-1)*nipm
         jcell=2+(j-1)*nipm
-        sga=spelt(ie)%sga(icell,jcell)
-!         area=spelt(ie)%area_sphere(i,j)*(area/spelt(ie)%area_sphere(i,j))*((area/spelt(ie)%area_sphere(i,j)))
-        global_shared_buf(ie,1)=global_shared_buf(ie,1)+area*abs(spelt(ie)%c(i*nipm,j*nipm,chooselev,choosetrac,tl%n0)-spelt(ie)%cstart(i,j))/sga
-        global_shared_buf(ie,2)=global_shared_buf(ie,2)+area*abs(spelt(ie)%cstart(i,j))/sga
+        global_shared_buf(ie,1)=global_shared_buf(ie,1)+area*abs(spelt(ie)%c(i*nipm,j*nipm,chooselev,choosetrac,tl%n0)-spelt(ie)%cstart(i,j))
+        global_shared_buf(ie,2)=global_shared_buf(ie,2)+area*abs(spelt(ie)%cstart(i,j))
 
         global_shared_buf(ie,3)=global_shared_buf(ie,3)+area*(spelt(ie)%c(i*nipm,j*nipm,chooselev,choosetrac,tl%n0)-spelt(ie)%cstart(i,j))* &
-                                          (spelt(ie)%c(i*nipm,j*nipm,chooselev,choosetrac,tl%n0)-spelt(ie)%cstart(i,j))/(sga*sga)
-        global_shared_buf(ie,4)=global_shared_buf(ie,4)+area*(spelt(ie)%cstart(i,j))*(spelt(ie)%cstart(i,j))/(sga*sga)
-        tmp=max(tmp,abs(spelt(ie)%c(i*nipm,j*nipm,chooselev,choosetrac,tl%n0)-spelt(ie)%cstart(i,j))/sga)
-        tmpref=max(tmpref,abs(spelt(ie)%cstart(i,j))/sga)
+                                          (spelt(ie)%c(i*nipm,j*nipm,chooselev,choosetrac,tl%n0)-spelt(ie)%cstart(i,j))
+        global_shared_buf(ie,4)=global_shared_buf(ie,4)+area*(spelt(ie)%cstart(i,j))*(spelt(ie)%cstart(i,j))
+        tmp=max(tmp,abs(spelt(ie)%c(i*nipm,j*nipm,chooselev,choosetrac,tl%n0)-spelt(ie)%cstart(i,j)))
+        tmpref=max(tmpref,abs(spelt(ie)%cstart(i,j)))
       end do
     end do
     tmp1(ie)=tmp
@@ -486,36 +454,23 @@ ENDDO  ! END TIME LOOP
     tmp2(ie)=1.0D20
     do j=1,nc
       do i=1,nc
-        dx=spelt(ie)%dab(i)   
-        dy=spelt(ie)%dab(j)
-!         area=dx*dy
         area=spelt(ie)%area_sphere(i,j)
         icell= 2+(i-1)*nipm
         jcell=2+(j-1)*nipm
-        sga=spelt(ie)%sga(icell,jcell)
         if (choosetrac==1) then   ! mass of air, code is not optimal
-!           spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
-!                          dx*dy*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
          spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
-                        area*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga
+                        area*spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)
         elseif (choosetrac==2) then
           spelt(ie)%elem_mass=spelt(ie)%elem_mass + &
-                         area*(spelt(ie)%c(icell,jcell,chooselev,1,tl%n0)/sga)*(spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga)
-        endif
- !           spelt(ie)%cstart(i,j)=spelt(ie)%c(i,j,chooselev,choosetrac,tl%n0)
-        tmp=area/spelt(ie)%area_sphere(i,j)
-        
-        tmp1(ie)=max(tmp1(ie),spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga)
-        tmp2(ie)=min(tmp2(ie),spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0)/sga)
+                         area*(spelt(ie)%c(icell,jcell,chooselev,1,tl%n0))*(spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0))
+        endif        
+        tmp1(ie)=max(tmp1(ie),spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0))
+        tmp2(ie)=min(tmp2(ie),spelt(ie)%c(icell,jcell,chooselev,choosetrac,tl%n0))
       enddo
     enddo
     ! for the mass value
     global_shared_buf(ie,1)=0.0D0
-    global_shared_buf(ie,1)=spelt(ie)%elem_mass
-    ! for the max value on the sphere
-    
-!     tmp1(ie) = MAXVAL(spelt(ie)%c(:,:,chooselev,choosetrac,tl%n0))
-!     tmp2(ie) = MINVAL(spelt(ie)%c(:,:,chooselev,choosetrac,tl%n0))   
+    global_shared_buf(ie,1)=spelt(ie)%elem_mass      
   end do
 ! 
   !need the buffer cellghostbuf in the time loop
