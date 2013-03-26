@@ -35,8 +35,8 @@ createLSFHeader() {
 
   echo "#BSUB -a poe" >> $RUN_SCRIPT
 
-  if [ -n "$HOMME_PROJID" ]; then
-    echo "#BSUB -P $HOMME_PROJID" >> $RUN_SCRIPT
+  if [ -n "$HOMME_ACCOUNT" ]; then
+    echo "#BSUB -P $HOMME_ACCOUNT" >> $RUN_SCRIPT
   else
     echo "PROJECT CHARGE ID (HOMME_PROJID) not set"
     exit -1
@@ -89,8 +89,8 @@ createPBSHeader() {
   echo "#!/bin/bash -l" >> $RUN_SCRIPT
   echo ""  >> $RUN_SCRIPT # newlines
   
-  if [ -n "$HOMME_PROJID" ]; then
-    echo "#PBS -A $HOMME_PROJID" >> $RUN_SCRIPT
+  if [ -n "$HOMME_ACCOUNT" ]; then
+    echo "#PBS -A $HOMME_ACCOUNT" >> $RUN_SCRIPT
   else
     echo "PROJECT CHARGE ID (HOMME_PROJID) not set"
     exit -1
