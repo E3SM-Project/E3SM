@@ -986,11 +986,6 @@ module namelist_mod
           call abortmp('vertically lagrangian code requires tstep_type=1(RK timestepping)')
         endif
     endif
-    if (tstep_type == 1) then
-       if (energy_fixer == 1 .or. energy_fixer==2) then
-          call abortmp("ERROR: Rk timesteping requires non-staggered-in-time energy fixer")
-       endif
-    endif
 
 
     ! CHECK phys timescale, requires se_ftype=0 (pure tendencies for forcing)
