@@ -305,7 +305,13 @@ contains
 #endif
     endif
 
-    if (ntrac>0) allocate(fvm(nelemd))
+    if (ntrac>0) then
+       allocate(fvm(nelemd))
+    else
+       ! Even if fvm not needed, still desirable to allocate it as empty
+       ! so it can be passed as a (size zero) array rather than pointer.
+       allocate(fvm(0))
+    end if
 
     ! ====================================================
     !  Generate the communication schedule
@@ -1712,12 +1718,12 @@ contains
     use prim_advance_mod, only : smooth_phis
     implicit none
     
+    integer , intent(in) :: nets,nete
     real (kind=real_kind), intent(inout)   :: phis(np,np,nets:nete)
     real (kind=real_kind), intent(inout)   :: sghdyn(np,np,nets:nete)
     real (kind=real_kind), intent(inout)   :: sgh30dyn(np,np,nets:nete)
     type (hybrid_t)      , intent(in) :: hybrid
     type (element_t)     , intent(inout), target :: elem(:)
-    integer , intent(in) :: nets,nete
     ! local
     integer :: ie
     real (kind=real_kind) :: minf 

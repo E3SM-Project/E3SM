@@ -7,8 +7,9 @@ module interpolate_mod
   use element_mod, only : element_t
   use dimensions_mod, only : np, ne, nelemd, nc, nhe, nhc
   use quadrature_mod, only : quadrature_t, legendre, quad_norm
-  use coordinate_systems_mod, only : spherical_polar_t, cartesian2d_t, cartesian3D_t, sphere2cubedsphere, spherical_to_cart, cubedsphere2cart, &
-       distance, change_coordinates, projectpoint
+  use coordinate_systems_mod, only : spherical_polar_t, cartesian2d_t, &
+       cartesian3D_t, sphere2cubedsphere, spherical_to_cart, &
+       cubedsphere2cart, distance, change_coordinates, projectpoint
   use physical_constants,     only : DD_PI
   use quadrature_mod,         only : quadrature_t, gauss, gausslobatto
   use parallel_mod,           only : abortmp, syncmp, parallel_t, MPIreal_t, MPI_MAX, MPIinteger_t, MPI_SUM, MPI_MIN
@@ -930,6 +931,7 @@ end subroutine interpol_spelt_latlon
     sphere_xyz=spherical_to_cart(sphere)
 
     number=-1
+    print *,'WARNING: using GC map'
     do ii = 1,nelemd
        ! for equiangular gnomonic map:
        ! unstructed grid element edges are NOT great circles

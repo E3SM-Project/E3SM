@@ -347,10 +347,14 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
             jx=1+(icell-1)*nipm
             
             !high order flux
-            spelt(ie)%fluxhigh(icell,jcell,k,itr,1) = dy * (fluxval(jx,jy,1) + 4.0D0 * fluxval(jx,jy+1,1) + fluxval(jx,jy+2,1)) / 6.0D0  ! west
-            spelt(ie)%fluxhigh(icell,jcell,k,itr,2) = dx * (fluxval(jx,jy,2) + 4.0D0 * fluxval(jx+1,jy,2) + fluxval(jx+2,jy,2)) / 6.0D0  ! south
-            spelt(ie)%fluxhigh(icell,jcell,k,itr,3) = dy * (fluxval(jx+2,jy,1) + 4.0D0 * fluxval(jx+2,jy+1,1) + fluxval(jx+2,jy+2,1)) / 6.0D0 ! east
-            spelt(ie)%fluxhigh(icell,jcell,k,itr,4) = dx * (fluxval(jx+2,jy+2,2) + 4.0D0 * fluxval(jx+1,jy+2,2) + fluxval(jx,jy+2,2)) / 6.0D0 ! north
+            spelt(ie)%fluxhigh(icell,jcell,k,itr,1) = &
+                 dy * (fluxval(jx,jy,1) + 4.0D0 * fluxval(jx,jy+1,1) + fluxval(jx,jy+2,1)) / 6.0D0  ! west
+            spelt(ie)%fluxhigh(icell,jcell,k,itr,2) = &
+                 dx * (fluxval(jx,jy,2) + 4.0D0 * fluxval(jx+1,jy,2) + fluxval(jx+2,jy,2)) / 6.0D0  ! south
+            spelt(ie)%fluxhigh(icell,jcell,k,itr,3) = &
+                 dy * (fluxval(jx+2,jy,1) + 4.0D0 * fluxval(jx+2,jy+1,1) + fluxval(jx+2,jy+2,1)) / 6.0D0 ! east
+            spelt(ie)%fluxhigh(icell,jcell,k,itr,4) = &
+                 dx * (fluxval(jx+2,jy+2,2) + 4.0D0 * fluxval(jx+1,jy+2,2) + fluxval(jx,jy+2,2)) / 6.0D0 ! north
             
             tmp=-min(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,1))-min(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,2)) + &
                                max(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,3))+max(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,4))
@@ -407,7 +411,8 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
                 endif   
                 spelt(ie)%c(icell,jcell,k,itr,tl%np1) = spelt(ie)%c(icell,jcell,k,itr,tl%n0) - &
                      (-cmo(1)*spelt(ie)%fluxhigh(i,j,k,itr,1) - cmo(2)*spelt(ie)%fluxhigh(i,j,k,itr,2) &
-                      + cmo(3)*spelt(ie)%fluxhigh(i,j,k,itr,3) + cmo(4)*spelt(ie)%fluxhigh(i,j,k,itr,4) ) /(spelt(ie)%area_sphere(i,j)) 
+                      + cmo(3)*spelt(ie)%fluxhigh(i,j,k,itr,3) + cmo(4)*spelt(ie)%fluxhigh(i,j,k,itr,4) ) &
+                      /(spelt(ie)%area_sphere(i,j)) 
           end do
         end do                
       end do !ntrac
@@ -663,7 +668,7 @@ subroutine spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
               
               spelt(ie)%c(i+1,j+1,k,itr,tl%np1) = (spelt(ie)%c(i+1,j+1,k,itr,tl%n0)/sga)*(spelt(ie)%c(i+1,j+1,k,1,tl%n0)/sga) + &
                                         (flux(1) + flux(2) - flux(3) - flux(4) ) / (spelt(ie)%area_sphere(icell,jcell))
-              spelt(ie)%c(i+1,j+1,k,itr,tl%np1)=spelt(ie)%c(i+1,j+1,k,itr,tl%np1)*sga/(spelt(ie)%c(i+1,j+1,k,1,tl%np1)/sga)                                              
+              spelt(ie)%c(i+1,j+1,k,itr,tl%np1)=spelt(ie)%c(i+1,j+1,k,itr,tl%np1)*sga/(spelt(ie)%c(i+1,j+1,k,1,tl%np1)/sga)
           end do
         end do
       end do
@@ -843,10 +848,14 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !             spelt(ie)%c(icell,jcell,k,itr,tl%np1)=c_low(i,j) 
 !             !high order flux
 !             jx=1+(i-1)*nipm
-!             fluxhigh(ie,i,j,k,itr,1) = dx * (fluxval(jx,jy,1) + 4.0D0 * fluxval(jx,jy+1,1) + fluxval(jx,jy+2,1)) / 6.0D0  ! west
-!             fluxhigh(ie,i,j,k,itr,2) = dy * (fluxval(jx,jy,2) + 4.0D0 * fluxval(jx+1,jy,2) + fluxval(jx+2,jy,2)) / 6.0D0  ! south
-!             fluxhigh(ie,i,j,k,itr,3) = dx * (fluxval(jx+2,jy,1) + 4.0D0 * fluxval(jx+2,jy+1,1) + fluxval(jx+2,jy+2,1)) / 6.0D0 ! east
-!             fluxhigh(ie,i,j,k,itr,4) = dy * (fluxval(jx+2,jy+2,2) + 4.0D0 * fluxval(jx+1,jy+2,2) + fluxval(jx,jy+2,2)) / 6.0D0 ! north
+!             fluxhigh(ie,i,j,k,itr,1) = &
+!                  dx * (fluxval(jx,jy,1) + 4.0D0 * fluxval(jx,jy+1,1) + fluxval(jx,jy+2,1)) / 6.0D0  ! west
+!             fluxhigh(ie,i,j,k,itr,2) = &
+!                  dy * (fluxval(jx,jy,2) + 4.0D0 * fluxval(jx+1,jy,2) + fluxval(jx+2,jy,2)) / 6.0D0  ! south
+!             fluxhigh(ie,i,j,k,itr,3) = &
+!                  dx * (fluxval(jx+2,jy,1) + 4.0D0 * fluxval(jx+2,jy+1,1) + fluxval(jx+2,jy+2,1)) / 6.0D0 ! east
+!             fluxhigh(ie,i,j,k,itr,4) = &
+!                  dy * (fluxval(jx+2,jy+2,2) + 4.0D0 * fluxval(jx+1,jy+2,2) + fluxval(jx,jy+2,2)) / 6.0D0 ! north
 !             
 !             R(ie,i,j,k,itr,1)=-min(0.0D0,fluxhigh(ie,i,j,k,itr,1))-min(0.0D0,fluxhigh(ie,i,j,k,itr,2)) + &
 !                                max(0.0D0,fluxhigh(ie,i,j,k,itr,3))+max(0.0D0,fluxhigh(ie,i,j,k,itr,4))
@@ -912,8 +921,9 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !                 else
 !                   cmo(4)=R(ie,i,j+1,k,itr,1)  
 !                 endif   
-! !                 spelt(ie)%c(icell,jcell,k,itr,tl%np1) = spelt(ie)%c(icell,jcell,k,itr,tl%n0) - &
-! !                      (-cmo(1)*fluxhigh(ie,i,j,k,itr,1) - cmo(2)*fluxhigh(ie,i,j,k,itr,2) + cmo(3)*fluxhigh(ie,i,j,k,itr,3) + cmo(4)*fluxhigh(ie,i,j,k,itr,4) ) /(dx*dy)     
+!                 spelt(ie)%c(icell,jcell,k,itr,tl%np1) = spelt(ie)%c(icell,jcell,k,itr,tl%n0) - &
+!                      (-cmo(1)*fluxhigh(ie,i,j,k,itr,1) - cmo(2)*fluxhigh(ie,i,j,k,itr,2) + &
+!                      cmo(3)*fluxhigh(ie,i,j,k,itr,3) + cmo(4)*fluxhigh(ie,i,j,k,itr,4) ) /(dx*dy)
 !           end do
 !         end do                
 !       end do !ntrac
@@ -1328,8 +1338,8 @@ subroutine spelt_init3(elem,spelt,hybrid,nets,nete,tnp0)
                                                                             
   integer,intent(in)                        :: nets,nete,tnp0    
      
-  real (kind=real_kind)                     :: ff(nip,nip)                                                                          
-  integer                                   :: ie, k, itr, i, j, icell, jcell                 
+  real (kind=real_kind)                     :: ff(nip,nip)
+  integer                                   :: ie, k, itr, i, j, icell, jcell
   
   type (ghostBuffertr_t)                      :: buf
   
