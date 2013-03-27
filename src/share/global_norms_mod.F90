@@ -123,6 +123,7 @@ contains
     real (kind=real_kind) :: min_max_eig, max_max_eig, avg_max_eig
     real (kind=real_kind) :: min_min_eig, max_min_eig, avg_min_eig
     real (kind=real_kind) :: min_len
+    real (kind=real_kind) :: max_ratio
     integer :: ie,corner, i, j
 
     !   MNL: use these variables for calculating largest length scale of element with
@@ -142,6 +143,8 @@ contains
     min_area=1d99
     max_area=0
     avg_area=0_real_kind
+
+    max_ratio = 0
 
     min_max_eig=1d99
     max_max_eig=0
@@ -167,6 +170,8 @@ contains
 
        min_max_eig = min(min_max_eig,elem(ie)%max_eig)
        max_max_eig = max(max_max_eig,elem(ie)%max_eig)
+
+       max_ratio   = max(max_ratio,elem(ie)%max_eig_ratio)
 
        min_min_eig = min(min_min_eig,elem(ie)%min_eig)
        max_min_eig = max(max_min_eig,elem(ie)%min_eig)
@@ -202,6 +207,8 @@ contains
 
     min_max_eig=ParallelMin(min_max_eig,hybrid)
     max_max_eig=ParallelMax(max_max_eig,hybrid)
+
+    max_ratio=ParallelMax(max_ratio,hybrid)
 
     min_min_eig=ParallelMin(min_min_eig,hybrid)
     max_min_eig=ParallelMax(max_min_eig,hybrid)
@@ -244,6 +251,7 @@ contains
        end if
        write(iulog,'(a,2f8.4)') 'Min eigenvalue of Dinv (min, max): ', min_min_eig, max_min_eig
        write(iulog,'(a,2f8.4)') 'Max eigenvalue of Dinv (min, max): ', min_max_eig, max_max_eig
+       write(iulog,'(a,1f8.2)') 'Max eigenvalue ratio (element distortion): ', max_ratio
        write(iulog,'(a,3f8.2)') 'dx for CFL (smallest scale per elem): ave,min,max = ', avg_min_dx, min_min_dx, max_min_dx
        write(iulog,'(a,3f8.2)') 'dx for hypervis (largest scale per elem): ave,min,max = ', avg_max_dx, min_max_dx, max_max_dx
        write(iulog,'(a,3f8.2)') "dx based on sqrt element area: ave,min,max = ", &

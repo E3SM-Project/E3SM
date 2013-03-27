@@ -49,6 +49,9 @@ ENDIF()
 IF (${Homme_Raw_Hostname} MATCHES "yslogin.")
   SET(Homme_Hostname "Yellowstone")
   SET(Homme_Registered_Host TRUE)
+ELSEIF (${Homme_Raw_Hostname} MATCHES "titan-ext." OR ${Homme_Raw_Hostname} MATCHES "titan-login.")
+  SET(Homme_Hostname "Titan")
+  SET(Homme_Registered_Host FALSE)
 ELSEIF (${Homme_Raw_Hostname} STREQUAL "jaguar")
   SET(Homme_Hostname "Jaguar")
   SET(Homme_Registered_Host TRUE)
@@ -66,3 +69,34 @@ ELSE ()
   determineHintPaths()
   MESSAGE(STATUS "Homme_Hint_Paths=${Homme_Hint_Paths}")
 ENDIF ()
+
+# Registered Host specific information
+
+IF (${Homme_Hostname} STREQUAL Yellowstone) 
+  SET(Homme_Submission_Type lsf)
+ELSEIF (${Homme_Hostname} STREQUAL "Titan")
+  SET(Homme_Submission_Type pbs)
+ELSE ()
+  IF (NOT DEFINED Homme_Submission_Type) 
+    SET(Homme_Submission_Type none)
+  ENDIF ()
+ENDIF () 
+
+IF (NOT ${Homme_Submission_Type} STREQUAL lsf AND
+    NOT ${Homme_Submission_Type} STREQUAL pbs AND
+    NOT ${Homme_Submission_Type} STREQUAL none)
+  #MESSAGE(FATAL_ERROR "Homme_Submission_Type must be one of lsf,pbs,none") 
+  MESSAGE(STATUS "Homme_Submission_Type must be one of lsf,pbs,none") 
+ENDIF ()  
+
+IF (${Homme_Submission_Type} STREQUAL none) 
+  include(ProcessorCount)
+  ProcessorCount(MAX_NUM_PROCS)
+  MESSAGE(STATUS "Warning: No queuing system. Maximum number of processes is ${MAX_NUM_PROCS}")
+  SET(HOMME_QUEUING FALSE)
+ELSE ()
+  SET(HOMME_QUEUING TRUE)
+ENDIF ()
+
+MESSAGE(STATUS "Homme submission type = ${Homme_Submission_Type}")
+
