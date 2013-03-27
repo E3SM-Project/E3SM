@@ -313,8 +313,8 @@ DO WHILE(tl%nstep<nmax) !nmax)
 !   call spelt_mcgregordss(elem,spelt,nets,nete, hybrid, deriv, tstep, 3)
 !   call spelt_rkdss(elem,spelt,nets,nete, hybrid, deriv, tstep, 3)
 ! ! end mcgregordss
-!   call spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
-  call spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
+  call spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
+!   call spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !   call spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !   call spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 

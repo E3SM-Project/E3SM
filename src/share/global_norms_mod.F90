@@ -22,7 +22,7 @@ module global_norms_mod
   public :: wrap_repro_sum
 
   private :: global_maximum
-  type (EdgeBuffer_t), private :: edgebuf
+  type (EdgeBuffer_t), private,save :: edgebuf
 
 contains
 

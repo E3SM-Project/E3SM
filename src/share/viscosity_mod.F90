@@ -43,7 +43,7 @@ interface compute_div_C0_2d
 end interface
 
 
-type (EdgeBuffer_t)          :: edge1
+type (EdgeBuffer_t),save          :: edge1
 
 contains
 

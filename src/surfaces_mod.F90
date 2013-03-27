@@ -70,8 +70,8 @@ module surfaces_mod
 #define USE_PENTAGONS
 
   type (ctrlvol_t),    public, allocatable, target  :: cvlist(:)
-  type (EdgeBuffer_t), private  :: edge1
-  type (Ghostbuffer3d_t)                :: ghost_buf
+  type (EdgeBuffer_t), private,save  :: edge1
+  type (Ghostbuffer3d_t),save                :: ghost_buf
 
 
   ! User interface
