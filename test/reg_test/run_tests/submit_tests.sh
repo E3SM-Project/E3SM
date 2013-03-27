@@ -67,7 +67,7 @@ if [ "$HOMME_QUEUE_JOBS" = true ]; then
 
   # Wait for the jobs to run through the queue
   queueWait
-  
+   
 else
   runTestsStd
 fi

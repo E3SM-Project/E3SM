@@ -43,15 +43,16 @@ ENDIF ()
 #MESSAGE(STATUS "CMAKE_IMP_LIBS=${CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES}")
 
 # CPRNC for diffing Netcdf files
-OPTION(TEST_USING_CPRNC "Whether to use cprnc for testing" FALSE)
+#OPTION(TEST_USING_CPRNC "Whether to use cprnc for testing" FALSE)
+OPTION(TEST_USING_CPRNC "Whether to use cprnc for testing" TRUE)
 
-IF (${TEST_USING_CPRNC})
-  find_package(Cprnc REQUIRED)
-  MESSAGE(STATUS "Using CPRNC to diff the Netcdf files")
-ELSE ()
-  MESSAGE(STATUS 
-    "Not using CPRNC to diff the Netcdf files, only diffing stdout")
-ENDIF ()
+#IF (${TEST_USING_CPRNC})
+#  find_package(Cprnc REQUIRED)
+#  MESSAGE(STATUS "Using CPRNC to diff the Netcdf files")
+#ELSE ()
+#  MESSAGE(STATUS 
+#    "Not using CPRNC to diff the Netcdf files, only diffing stdout")
+#ENDIF ()
 
 # Use python for 
 find_package(PythonInterp REQUIRED)
@@ -103,12 +104,12 @@ endif()
 
 MESSAGE(STATUS "Homme hostname = ${Homme_Hostname}")
 MESSAGE(STATUS "Homme OS = ${Homme_OS}")
-MESSAGE(STATUS "C Compiler= ${CMAKE_C_COMPILER_ID}")
-MESSAGE(STATUS "CXX Compiler= ${CMAKE_CXX_COMPILER_ID}")
-MESSAGE(STATUS "Fortran Compiler= ${CMAKE_Fortran_COMPILER_ID}")
-MESSAGE(STATUS "CMAKE_SYSTEM= ${CMAKE_SYSTEM}")
-MESSAGE(STATUS "CMAKE_SYSTEM_NAME= ${CMAKE_SYSTEM_NAME}")
-MESSAGE(STATUS "HOMME_FIND_BLASLAPACK=${HOMME_FIND_BLASLAPACK}")
+MESSAGE(STATUS "C Compiler = ${CMAKE_C_COMPILER_ID}")
+MESSAGE(STATUS "CXX Compiler = ${CMAKE_CXX_COMPILER_ID}")
+MESSAGE(STATUS "Fortran Compiler = ${CMAKE_Fortran_COMPILER_ID}")
+MESSAGE(STATUS "CMAKE_SYSTEM = ${CMAKE_SYSTEM}")
+MESSAGE(STATUS "CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME}")
+MESSAGE(STATUS "HOMME_FIND_BLASLAPACK = ${HOMME_FIND_BLASLAPACK}")
 
 OPTION(HOMME_ENABLE_OPENMP FALSE)
 

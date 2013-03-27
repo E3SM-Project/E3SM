@@ -519,7 +519,7 @@ diffCprnc() {
     exit -1
   fi
 
-  # source the test.sh file to get the name of the nc_output_files
+  # source the test.sh file to get the names of the nc_output_files
   source ${HOMME_TESTING_DIR}/${TEST_NAME}/${TEST_NAME}.sh
 
   # nc_output_files is defined in the .sh file
@@ -543,7 +543,9 @@ diffCprnc() {
     fi
 
     # result in the repo
-    repoFile=${HOMME_NC_RESULTS_DIR}/${TEST_NAME}/${baseFilename}
+    #repoFile=${HOMME_NC_RESULTS_DIR}/${TEST_NAME}/${baseFilename}
+    repoFile=${HOMME_BASELINE_DIR}/${TEST_NAME}/movies/${baseFilename}
+
     if [ ! -f "${newFile}" ] ; then
       echo "ERROR: The repo file ${repoFile} does not exist exiting" 
       exit -1
@@ -693,13 +695,15 @@ moveBaseline() {
         echo "ERROR: The result file ${newFile} does not exist exiting" 
         exit -1
       fi
+
+      # Make the directory to store the netcdf files
       cmd="mkdir -p $baselineDir/movies"
-      echo $cmd
+      #echo $cmd
       $cmd
+      # Move the netcdf files
       cmd="mv $newFile $baselineDir/movies/$newFileBasename"
-      echo "$cmd"
+      #echo "$cmd"
       $cmd
-      #mv $newFile $baselineName
       
     done
   done
