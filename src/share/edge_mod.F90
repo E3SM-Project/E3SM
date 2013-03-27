@@ -2,9 +2,12 @@
 #include "config.h"
 #endif
 
-! Try this for a while. If all compilers support this feature, the
-! alternative should be removed before this hits the trunk.
+! Compatibility with older gfortran.
+! When we don't need to support those, can remove this and always use the
+! bounds remapping method.
+#ifndef __GFORTRAN__
 #define HAVE_F2003_PTR_BND_REMAP
+#endif
 
 module edge_mod
   use kinds, only : int_kind, log_kind, real_kind
@@ -18,6 +21,7 @@ module edge_mod
 
   implicit none
   private
+  save
 
   type, public :: rotation_t
      integer  :: nbr                                        ! nbr direction: north south east west
