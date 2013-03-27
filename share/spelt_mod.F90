@@ -21,9 +21,9 @@ module spelt_mod
 
   implicit none
   private
-  type (ghostBuffertr_t)                      :: cellghostbuf
-  type (ghostbuffertr_t)                      :: factorR
-  type (EdgeBuffer_t)                         :: edgeveloc
+  type (ghostBuffertr_t),save                      :: cellghostbuf
+  type (ghostbuffertr_t),save                       :: factorR
+  type (EdgeBuffer_t),save                          :: edgeveloc
     
   type, public :: spelt_struct
     ! spelt tracer mixing ratio: (kg/kg)
@@ -49,8 +49,9 @@ module spelt_mod
     real (kind=real_kind)    :: Dinv(2,2,np,np)     ! Map vector field on the sphere to covariant v on cube
     real (kind=real_kind)    :: Ainv(2,2,nep,nep)
     
-    !these should be outside the structure, only needed for positivity preserving
-    real (kind=real_kind)    :: R(1-nhe:nc+nhe,1-nhe:nc+nhe,nlev,ntrac_d)
+    !these should be outside the structure, only needed for positivity preserving and/or filtering
+    real (kind=real_kind)    :: Rp(1-nhe:nc+nhe,1-nhe:nc+nhe,nlev,ntrac_d)
+    real (kind=real_kind)    :: Rm(1-nhe:nc+nhe,1-nhe:nc+nhe,nlev,ntrac_d)
     real (kind=real_kind)    :: fluxhigh(nc,nc,nlev,ntrac_d,4)
     
     integer                  :: Facenumber
@@ -228,9 +229,7 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   ! ------EXTERNAL----------------
   use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   ! -----------------------------------------------  
-  use bndry_mod, only : ghost_exchangevfull
-  use edge_mod, only : ghostbuffertr_t, ghostvpackR, ghostvunpackR, initghostbuffer,&
-       freeghostbuffer, freeghostbuffertr
+  use edge_mod, only : ghostbuffertr_t, ghostvpackR, ghostvunpackR
        
   implicit none
   type (element_t), intent(inout)             :: elem(:)
@@ -272,7 +271,6 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
     
   dt6  = tstep/ 6.0D0
   do ie=nets,nete 
-    spelt(ie)%R=0.0D0
     do k=1, nlev
       !FOR BENCHMARK TESTS
       !       call solidbody_all(spelt(ie), dsphere1,dsphere2,contrauv,k) 
@@ -358,16 +356,16 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
             
             tmp=-min(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,1))-min(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,2)) + &
                                max(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,3))+max(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,4))
-            spelt(ie)%R(icell,jcell,k,itr)=0.0D0  
+            spelt(ie)%Rp(icell,jcell,k,itr)=0.0D0  
             if (tmp>1.0D-14) then
-              spelt(ie)%R(icell,jcell,k,itr)=min(1.0D0,spelt(ie)%c(i,j,k,itr,tl%n0)*spelt(ie)%area_sphere(icell,jcell)/tmp)  
+              spelt(ie)%Rp(icell,jcell,k,itr)=min(1.0D0,spelt(ie)%c(i,j,k,itr,tl%n0)*spelt(ie)%area_sphere(icell,jcell)/tmp)  
             endif
                    
           end do
         end do
       end do !ntrac
     end do   !nlev
-    call ghostVpackR(factorR, spelt(ie)%R,nhe,nc,nlev,ntrac,0,elem(ie)%desc)
+    call ghostVpackR(factorR, spelt(ie)%Rp,nhe,nc,nlev,ntrac,0,elem(ie)%desc)
   end do
        ! Anti diffusive flux are computed for each cell, done!
 !   call t_startf('SPELT Communication1')      
@@ -375,7 +373,7 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !   call t_stopf('SPELT Communication1') 
 
   do ie=nets,nete
-    call ghostVunpackR(factorR, spelt(ie)%R, nhe, nc,nlev,ntrac,0,elem(ie)%desc)
+    call ghostVunpackR(factorR, spelt(ie)%Rp, nhe, nc,nlev,ntrac,0,elem(ie)%desc)
     do k=1, nlev
       do itr=1,ntrac
         !!!! only needed for filter     
@@ -387,27 +385,27 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
               cmo=1.0D0 
                 !west
                 if(spelt(ie)%fluxhigh(i,j,k,itr,1)>0.0D0) then
-                  cmo(1)=spelt(ie)%R(i-1,j,k,itr)  
+                  cmo(1)=spelt(ie)%Rp(i-1,j,k,itr)  
                 else
-                  cmo(1)=spelt(ie)%R(i,j,k,itr)
+                  cmo(1)=spelt(ie)%Rp(i,j,k,itr)
                 endif 
                 !south                         
                 if(spelt(ie)%fluxhigh(i,j,k,itr,2)>0.0D0) then
-                  cmo(2)=spelt(ie)%R(i,j-1,k,itr)
+                  cmo(2)=spelt(ie)%Rp(i,j-1,k,itr)
                 else
-                  cmo(2)=spelt(ie)%R(i,j,k,itr)
+                  cmo(2)=spelt(ie)%Rp(i,j,k,itr)
                 endif  
                 !east  
                 if(spelt(ie)%fluxhigh(i,j,k,itr,3)>=0.0D0) then
-                  cmo(3)=spelt(ie)%R(i,j,k,itr)  
+                  cmo(3)=spelt(ie)%Rp(i,j,k,itr)  
                 else
-                  cmo(3)=spelt(ie)%R(i+1,j,k,itr)
+                  cmo(3)=spelt(ie)%Rp(i+1,j,k,itr)
                 endif 
                 !north      
                 if(spelt(ie)%fluxhigh(i,j,k,itr,4)>=0.0D0) then
-                  cmo(4)=spelt(ie)%R(i,j,k,itr)  
+                  cmo(4)=spelt(ie)%Rp(i,j,k,itr)  
                 else
-                  cmo(4)=spelt(ie)%R(i,j+1,k,itr) 
+                  cmo(4)=spelt(ie)%Rp(i,j+1,k,itr) 
                 endif   
                 spelt(ie)%c(icell,jcell,k,itr,tl%np1) = spelt(ie)%c(icell,jcell,k,itr,tl%n0) - &
                      (-cmo(1)*spelt(ie)%fluxhigh(i,j,k,itr,1) - cmo(2)*spelt(ie)%fluxhigh(i,j,k,itr,2) &
@@ -431,6 +429,268 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !   call t_stopf('SPELT Unpacking2')
 !   call t_stopf('SPELT scheme')
 end subroutine spelt_runpos
+
+
+
+subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
+! 
+  use derivative_mod, only : derivative_t
+  ! ---------------------------------------------------------------------------------
+  use edge_mod, only :  ghostVpack2d, ghostVunpack2d
+  ! ---------------------------------------------------------------------------------
+  use bndry_mod, only: ghost_exchangeV
+  ! ---------------------------------------------------------------------------------
+  use coordinate_systems_mod, only : spherical_to_cart, cart2cubedspherexy, sphere2cubedsphere
+  ! ------EXTERNAL----------------
+  use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
+  ! -----------------------------------------------  
+  use edge_mod, only : ghostbuffertr_t, ghostvpackR, ghostvunpackR
+       
+  implicit none
+  type (element_t), intent(inout)             :: elem(:)
+  type (spelt_struct), intent(inout)          :: spelt(:)
+  type (hybrid_t), intent(in)                 :: hybrid   ! distributed parallel structure (shared)
+  type (derivative_t), intent(in)             :: deriv           ! derivative struct
+  real (kind=real_kind), intent(in)           :: tstep
+  type (TimeLevel_t), intent(in)              :: tl              ! time level struct
+  integer, intent(in)                         :: nets  ! starting thread element number (private)
+  integer, intent(in)                         :: nete  ! ending thread element number   (private)
+ 
+  integer                                     :: i,j,k,ie,itr
+        
+  real (kind=real_kind)                       :: ff(nip,nip), c_low(1:nc,1:nc), cmo(4)
+  real (kind=real_kind)                       :: cf(nip,nip,1-nhe:nc+nhe,1-nhe:nc+nhe)
+  type (spherical_polar_t)                    :: dsphere1(1:nep,1:nep), dsphere2(1:nep,1:nep)
+  real (kind=real_kind)                       :: contrauv(1:nep,1:nep,2,3)
+    
+  real (kind=real_kind)                       :: slval(3), fluxval(nep,nep,2), flux(4)
+  real (kind=real_kind)                       :: fluxlowx(nc+1,nc), fluxlowy(nc,nc+1)
+  
+  type (cartesian2D_t)                        :: dref1(1:nep,1:nep), dref2(1:nep,1:nep)
+  real (kind=real_kind)                       :: sg1(1:nep,1:nep),sg2(1:nep,1:nep)  
+  real (kind=real_kind)                       :: minmax(1-nhe:nc+nhe,1-nhe:nc+nhe,2)
+  integer                                     :: icell1(1:nep,1:nep), jcell1(1:nep,1:nep)     
+  integer                                     :: icell2(1:nep,1:nep), jcell2(1:nep,1:nep)
+  
+  integer                                     :: icell, jcell, jx, jy
+  real (kind=real_kind)                       :: dxoy, dxyi, dt6, sg, sga
+  type (cartesian2D_t)                        :: alphabeta
+  real (kind=real_kind)                       :: dx, dy, tmp,tmpR, tmpQ, minphi, maxphi
+  
+  integer                                     :: face_nodep
+  
+    dt6  = tstep/ 6.0D0
+    do ie=nets,nete 
+      do k=1, nlev
+        !FOR BENCHMARK TESTS
+        !       call solidbody_all(spelt(ie), dsphere1,dsphere2,contrauv,k) 
+        call boomerang_all(spelt(ie), dsphere1,dsphere2,contrauv,k,tl%nstep)
+        !FOR USING THE SE VELOCITIES    
+  !       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
+  !       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)
+  !       call get_contravelocities(elem(ie),spelt(ie),contrauv, k,deriv)    
+        !search has not to be done for all tracers!
+        do j=1,nep
+          do i=1,nep
+            call cell_search(elem(ie),spelt(ie), dsphere1(i,j),icell1(i,j), jcell1(i,j),dref1(i,j),alphabeta,face_nodep)
+            sg1(i,j)=metric_term(alphabeta)
+            call cell_search(elem(ie),spelt(ie), dsphere2(i,j), icell2(i,j), jcell2(i,j),dref2(i,j),alphabeta, face_nodep)
+            sg2(i,j)=metric_term(alphabeta)
+          end do
+        end do
+        ! search of both point on the trajectory done
+        do itr=1,ntrac
+          do j=1-nhe,nc+nhe
+            do i=1-nhe,nc+nhe
+              icell=1+(i-1)*nipm
+              jcell=1+(j-1)*nipm
+              ff=spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,k,itr,tl%n0)*spelt(ie)%sga(icell:icell+nipm,jcell:jcell+nipm)
+              minmax(i,j,:)=cell_minmax(ff)
+              call cip_coeff(spelt(ie)%drefx(i,j),spelt(ie)%drefy(i,j),ff,ff(2,2),cf(:,:,i,j))
+            enddo
+          enddo
+          !reconstruction coefficients caculated done
+          do j=1,nep
+            do i=1,nep  
+              sga=spelt(ie)%sga(i,j)
+              slval(1)=spelt(ie)%c(i,j,k,itr,tl%n0)*sga
+
+              tmp=cip_interpolate(cf(:,:,icell1(i,j),jcell1(i,j)),dref1(i,j)%x,dref1(i,j)%y) 
+              tmp=qmsl_cell_filter(icell1(i,j),jcell1(i,j),minmax,tmp)
+              slval(2)=(sga/sg1(i,j))*tmp
+
+              tmp=cip_interpolate(cf(:,:,icell2(i,j),jcell2(i,j)),dref2(i,j)%x,dref2(i,j)%y) 
+              tmp=qmsl_cell_filter(icell2(i,j),jcell2(i,j),minmax,tmp)
+              slval(3)=(sga/sg2(i,j))*tmp
+              spelt(ie)%c(i,j,k,itr,tl%np1)=(1.0D0/sg2(i,j))*tmp
+
+              if (mod(i,2)==1) then                   ! works only for nip=3!!!
+                 fluxval(i,j,1) =  dt6 * (contrauv(i,j,1,1)* slval(1) + & 
+                        4.0D0 * contrauv(i,j,1,2)*slval(2) + contrauv(i,j,1,3)*slval(3) )  
+
+               endif
+               if (mod(j,2)==1) then            ! works only for nip=3!!!
+                 fluxval(i,j,2) =  dt6 * (contrauv(i,j,2,1)* slval(1) + & 
+                          4.0D0 * contrauv(i,j,2,2)*slval(2) + contrauv(i,j,2,3)*slval(3) )                                
+               endif
+            end do
+          end do
+
+        !calculate low order flux
+        do j=1,nc+1
+          do i=1,nc
+            dx=spelt(ie)%dab(i)   
+            dy=dx
+            icell=2+(i-1)*nipm
+            jcell=1+(j-1)*nipm
+            
+            if (contrauv(jcell,icell,1,1)>0.0D0) then
+              fluxlowx(j,i)=dy*tstep*contrauv(jcell,icell,1,1)* &
+                            spelt(ie)%c(jcell-1,icell,k,itr,tl%n0)*spelt(ie)%sga(jcell,icell)
+            else
+              fluxlowx(j,i)=dy*tstep*contrauv(jcell,icell,1,1)* &
+                            spelt(ie)%c(jcell+1,icell,k,itr,tl%n0)*spelt(ie)%sga(jcell,icell)
+            endif
+            if (contrauv(icell,jcell,2,1)>0.0D0) then
+              fluxlowy(i,j)=dx*tstep*contrauv(icell,jcell,2,1)* &
+                            spelt(ie)%c(icell,jcell-1,k,itr,tl%n0)*spelt(ie)%sga(icell,jcell)
+            else
+              fluxlowy(i,j)=dx*tstep*contrauv(icell,jcell,2,1)* &
+                            spelt(ie)%c(icell,jcell+1,k,itr,tl%n0)*spelt(ie)%sga(icell,jcell)
+            endif  
+                     
+          end do
+        end do
+!!!! only needed for filter              
+        do j=1,nc
+          jcell=2+(j-1)*nipm
+          jy=1+(j-1)*nipm
+          do i=1,nc
+            dx=spelt(ie)%dab(i)   
+            dy=spelt(ie)%dab(j)
+            icell=2+(i-1)*nipm
+
+            ! for low order solution
+            c_low(i,j) = spelt(ie)%c(icell,jcell,k,itr,tl%n0) - &
+                                      (-fluxlowx(i,j) - fluxlowy(i,j) + fluxlowx(i+1,j) + fluxlowy(i,j+1) ) / spelt(ie)%area_sphere(i,j)                      
+!             spelt(ie)%c(icell,jcell,k,itr,tl%np1)=c_low(i,j) 
+            !anti diffusive flux:high order flux - low order flux
+            jx=1+(i-1)*nipm
+            spelt(ie)%fluxhigh(icell,jcell,k,itr,1) = dy * (fluxval(jx,jy,1) + 4.0D0 * fluxval(jx,jy+1,1) + &
+                                                            fluxval(jx,jy+2,1)) / 6.0D0 - fluxlowx(i,j)  ! west
+            spelt(ie)%fluxhigh(icell,jcell,k,itr,2) = dx * (fluxval(jx,jy,2) + 4.0D0 * fluxval(jx+1,jy,2) + &
+                                                            fluxval(jx+2,jy,2)) / 6.0D0 - fluxlowy(i,j)! south
+            spelt(ie)%fluxhigh(icell,jcell,k,itr,3) = dy * (fluxval(jx+2,jy,1) + 4.0D0 * fluxval(jx+2,jy+1,1) + &
+                                                            fluxval(jx+2,jy+2,1)) / 6.0D0 - fluxlowx(i+1,j)! east
+            spelt(ie)%fluxhigh(icell,jcell,k,itr,4) = dx * (fluxval(jx+2,jy+2,2) + 4.0D0 * fluxval(jx+1,jy+2,2) + &
+                                                            fluxval(jx,jy+2,2)) / 6.0D0 - fluxlowy(i,j+1)! north
+            
+            ! not a good programming style
+            !minimum of the patch
+            minphi=min(spelt(ie)%c(icell-nipm,jcell,k,itr,tl%n0),spelt(ie)%c(icell,jcell,k,itr,tl%n0))
+            minphi=min(minphi,spelt(ie)%c(icell,jcell-nipm,k,itr,tl%n0))
+            minphi=min(minphi,spelt(ie)%c(icell+nipm,jcell,k,itr,tl%n0))
+            minphi=min(minphi,spelt(ie)%c(icell,jcell+nipm,k,itr,tl%n0))
+            !maximum of the patch
+            maxphi=min(spelt(ie)%c(icell-nipm,jcell,k,itr,tl%n0),spelt(ie)%c(icell,jcell,k,itr,tl%n0))
+            maxphi=min(maxphi,spelt(ie)%c(icell,jcell-nipm,k,itr,tl%n0))
+            maxphi=min(maxphi,spelt(ie)%c(icell+nipm,jcell,k,itr,tl%n0))
+            maxphi=min(maxphi,spelt(ie)%c(icell,jcell+nipm,k,itr,tl%n0))
+            
+            tmpR=max(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,1))-min(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,3)) + &
+                               max(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,2))-min(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,4))
+            tmpQ=(maxphi-c_low(i,j))*spelt(ie)%area_sphere(icell,jcell)   
+                           
+            spelt(ie)%Rp(icell,jcell,k,itr)=0.0D0  
+            if (tmpR>0.0D0) then
+              spelt(ie)%Rp(icell,jcell,k,itr)=min(1.0D0,tmpQ/tmpR)  
+            endif
+            
+            tmpR=max(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,3))-min(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,1)) + &
+                               max(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,4))-min(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,2))
+            tmpQ=(c_low(i,j)-minphi)*spelt(ie)%area_sphere(icell,jcell)   
+                           
+            spelt(ie)%Rm(icell,jcell,k,itr)=0.0D0  
+            if (tmpR>0.0D0) then
+              spelt(ie)%Rm(icell,jcell,k,itr)=min(1.0D0,tmpQ/tmpR)  
+            endif
+          end do
+        end do
+        do j=1,nc
+          jcell=2+(j-1)*nipm
+          jy=1+(j-1)*nipm
+          do i=1,nc
+            dx=spelt(ie)%dab(i)   
+            dy=spelt(ie)%dab(j)
+            icell=2+(i-1)*nipm
+            !write low order monotone solution in structure
+            spelt(ie)%c(icell,jcell,k,itr,tl%n0)=c_low(i,j)
+          end do
+        end do
+      end do !ntrac
+    end do   !nlev
+    
+    ! not optimal calling the pack routine two times!
+    call ghostVpackR(factorR, spelt(ie)%Rp,nhe,nc,nlev,ntrac,0,elem(ie)%desc)
+    call ghostVpackR(factorR, spelt(ie)%Rm,nhe,nc,nlev,ntrac,nlev,elem(ie)%desc)
+  end do
+       ! Anti diffusive flux are computed for each cell, done!
+  call ghost_exchangeV(hybrid,factorR,nhe,nc,ntrac)
+
+  do ie=nets,nete
+    call ghostVunpackR(factorR, spelt(ie)%Rp, nhe, nc,nlev,ntrac,0,elem(ie)%desc)
+    call ghostVunpackR(factorR, spelt(ie)%Rm, nhe, nc,nlev,ntrac,nlev,elem(ie)%desc)
+    do k=1, nlev
+      do itr=1,ntrac
+        !!!! only needed for filter     
+        do j=1,nc !nep,2
+          do i=1,nc !nep,2         
+              icell=2+(i-1)*nipm
+              jcell=2+(j-1)*nipm   
+              
+              cmo=1.0D0 
+              !in fluxhigh is the anti diffusive flux
+                !west
+                if(spelt(ie)%fluxhigh(i,j,k,itr,1)>0.0D0) then
+                  cmo(1)=min(spelt(ie)%Rp(i,j,k,itr),spelt(ie)%Rm(i-1,j,k,itr))  
+                else
+                  cmo(1)=min(spelt(ie)%Rp(i-1,j,k,itr),spelt(ie)%Rm(i,j,k,itr))
+                endif 
+                !south                         
+                if(spelt(ie)%fluxhigh(i,j,k,itr,2)>0.0D0) then
+                  cmo(2)=min(spelt(ie)%Rp(i,j,k,itr),spelt(ie)%Rm(i,j-1,k,itr))
+                else
+                  cmo(2)=min(spelt(ie)%Rp(i,j-1,k,itr),spelt(ie)%Rm(i,j,k,itr))
+                endif  
+                !east  
+                if(spelt(ie)%fluxhigh(i,j,k,itr,3)>=0.0D0) then
+                  cmo(3)=min(spelt(ie)%Rp(i+1,j,k,itr),spelt(ie)%Rm(i,j,k,itr))  
+                else
+                  cmo(3)=min(spelt(ie)%Rp(i,j,k,itr),spelt(ie)%Rm(i+1,j,k,itr))
+                endif 
+                !north      
+                if(spelt(ie)%fluxhigh(i,j,k,itr,4)>=0.0D0) then
+                  cmo(4)=min(spelt(ie)%Rp(i,j+1,k,itr),spelt(ie)%Rm(i,j,k,itr))  
+                else
+                  cmo(4)=min(spelt(ie)%Rp(i,j,k,itr),spelt(ie)%Rm(i,j+1,k,itr)) 
+                endif   
+                spelt(ie)%c(icell,jcell,k,itr,tl%np1) = spelt(ie)%c(icell,jcell,k,itr,tl%n0) - &
+                     (-cmo(1)*spelt(ie)%fluxhigh(i,j,k,itr,1) - cmo(2)*spelt(ie)%fluxhigh(i,j,k,itr,2) &
+                      + cmo(3)*spelt(ie)%fluxhigh(i,j,k,itr,3) + cmo(4)*spelt(ie)%fluxhigh(i,j,k,itr,4) ) /(spelt(ie)%area_sphere(i,j)) 
+          end do
+        end do              
+      end do !ntrac
+    end do   !nlev
+    call ghostVpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tl%np1, timelevels,elem(ie)%desc)
+  end do
+!-----------------------------------------------------------------------------------! 
+  call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep,ntrac)
+!-----------------------------------------------------------------------------------!  
+  do ie=nets,nete
+    call ghostVunpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tl%np1, timelevels,elem(ie)%desc)
+  end do
+end subroutine spelt_runlimit
+
 
 
 subroutine spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
@@ -667,7 +927,7 @@ subroutine spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
               flux(4) = dx * (fluxval(i+2,j+2,2) + 4.0D0 * fluxval(i+1,j+2,2) + fluxval(i,j+2,2))/6.0D0 ! north
               
               spelt(ie)%c(i+1,j+1,k,itr,tl%np1) = (spelt(ie)%c(i+1,j+1,k,itr,tl%n0)/sga)*(spelt(ie)%c(i+1,j+1,k,1,tl%n0)/sga) + &
-                                        (flux(1) + flux(2) - flux(3) - flux(4) ) / (spelt(ie)%area_sphere(icell,jcell))
+                                        (flux(1) + flux(2) - flux(3) - flux(4) ) / spelt(ie)%area_sphere(icell,jcell)
               spelt(ie)%c(i+1,j+1,k,itr,tl%np1)=spelt(ie)%c(i+1,j+1,k,itr,tl%np1)*sga/(spelt(ie)%c(i+1,j+1,k,1,tl%np1)/sga)
           end do
         end do
@@ -687,262 +947,6 @@ subroutine spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   call t_stopf('SPELT Unpacking')
   call t_stopf('SPELT scheme') 
 end subroutine spelt_runair
-
-
-subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
-! 
-  use derivative_mod, only : derivative_t
-  ! ---------------------------------------------------------------------------------
-  use edge_mod, only :  ghostVpack2d, ghostVunpack2d
-  ! ---------------------------------------------------------------------------------
-  use bndry_mod, only: ghost_exchangeV
-  ! ---------------------------------------------------------------------------------
-  use coordinate_systems_mod, only : spherical_to_cart, cart2cubedspherexy, sphere2cubedsphere
-  ! ------EXTERNAL----------------
-  use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
-  ! -----------------------------------------------  
-  use bndry_mod, only : ghost_exchangevfull
-  use edge_mod, only : ghostbuffertr_t, ghostvpack, ghostvunpack, initghostbuffer,&
-       freeghostbuffer
-       
-  implicit none
-  type (element_t), intent(inout)             :: elem(:)
-  type (spelt_struct), intent(inout)          :: spelt(:)
-  type (hybrid_t), intent(in)                 :: hybrid   ! distributed parallel structure (shared)
-  type (derivative_t), intent(in)             :: deriv           ! derivative struct
-  real (kind=real_kind), intent(in)           :: tstep
-  type (TimeLevel_t), intent(in)              :: tl              ! time level struct
-  integer, intent(in)                         :: nets  ! starting thread element number (private)
-  integer, intent(in)                         :: nete  ! ending thread element number   (private)
- 
-!   integer                                     :: i,j,k,ie,itr
-!         
-!   real (kind=real_kind)                       :: ff(nip,nip), c_low(1:nc,1:nc)
-!   real (kind=real_kind)                       :: cf(nip,nip,1-nhe:nc+nhe,1-nhe:nc+nhe)
-!   type (spherical_polar_t)                    :: dsphere1(1:nep,1:nep), dsphere2(1:nep,1:nep)
-!     
-!   real (kind=real_kind)                       :: slval(3), fluxval(nep,nep,2), flux(4)
-!   real (kind=real_kind)                       :: fluxlowx(nc+1,nc), fluxlowy(nc,nc+1)
-!   real (kind=real_kind)                       :: fluxhigh(nets:nete,nc,nc,nlev,ntrac,4)
-!   
-!   type (cartesian2D_t)                        :: dref1(1:nep,1:nep), dref2(1:nep,1:nep)
-!   real (kind=real_kind)                       :: sg1(1:nep,1:nep),sg2(1:nep,1:nep)  
-!   real (kind=real_kind)                       :: minmax(1-nhe:nc+nhe,1-nhe:nc+nhe,2)
-!   integer                                     :: icell1(1:nep,1:nep), jcell1(1:nep,1:nep)     
-!   integer                                     :: icell2(1:nep,1:nep), jcell2(1:nep,1:nep)
-!   
-!   integer                                     :: icell, jcell, jx, jy
-!   real (kind=real_kind)                       :: dxoy, dxyi, dt6, sg, sga
-!   type (cartesian2D_t)                        :: alphabeta
-!   real (kind=real_kind)                       :: dx, dy, tmp
-!   
-!   real (kind=real_kind)                       :: R(nets:nete,1-nhe:nc+nhe,1-nhe:nc+nhe,nlev,ntrac,1), c_min, c_max, cmo(4)
-! 
-!   integer                                     :: face_nodep
-!   
-!   call t_startf('SPELT scheme') 
-!     
-!   dt6  = tstep/ 6.0D0
-!   do ie=nets,nete 
-!     do k=1, nlev
-!       call solidbody_all(spelt(ie), dsphere1,dsphere2,k)                                                                   
-! !       call boomerang_all(spelt(ie), dsphere1,dsphere2,k,tl%nstep)
-! !       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
-! !       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)         
-!       !search has not to be done for all tracers!
-!       do j=1,nep
-!         do i=1,nep
-! !           call solidbody(spelt(ie)%asphere(i,j), dsphere, 0.5D0) 
-!           call cell_search(elem(ie),spelt(ie), dsphere1(i,j),icell1(i,j), jcell1(i,j),dref1(i,j),alphabeta,face_nodep)
-!           sg1(i,j)=metric_term(alphabeta)
-! !           sg1(i,j)=metric_termref(elem(ie),dref1(i,j))
-! !           call solidbody(spelt(ie)%asphere(i,j), dsphere, 1.0D0)  
-!           call cell_search(elem(ie),spelt(ie), dsphere2(i,j), icell2(i,j), jcell2(i,j),dref2(i,j),alphabeta, face_nodep)
-!           sg2(i,j)=metric_term(alphabeta)
-! !           sg2(i,j)=metric_termref(elem(ie),dref2(i,j))
-!         end do
-!       end do
-!       ! search of both point on the trajectory done
-!       do itr=1,ntrac
-!         do j=1-nhe,nc+nhe
-!           do i=1-nhe,nc+nhe
-!             icell=1+(i-1)*nipm
-!             jcell=1+(j-1)*nipm
-!             ff=spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,k,itr,tl%n0)
-!             minmax(i,j,:)=cell_minmax(ff)
-!             call cip_coeff(spelt(ie)%drefx(i,j),spelt(ie)%drefy(i,j),ff,ff(2,2),cf(:,:,i,j))
-!           enddo
-!         enddo
-!         !reconstruction coefficients caculated done
-!         do j=1,nep
-!           do i=1,nep  
-!             sga=spelt(ie)%sga(i,j)
-!             slval(1)=spelt(ie)%c(i,j,k,itr,tl%n0)
-!  
-!             tmp=cip_interpolate(cf(:,:,icell1(i,j),jcell1(i,j)),dref1(i,j)%x,dref1(i,j)%y) 
-!             tmp=qmsl_cell_filter(icell1(i,j),jcell1(i,j),minmax,tmp)
-!             slval(2)=(sga/sg1(i,j))*tmp
-! 
-!             tmp=cip_interpolate(cf(:,:,icell2(i,j),jcell2(i,j)),dref2(i,j)%x,dref2(i,j)%y) 
-!             tmp=qmsl_cell_filter(icell2(i,j),jcell2(i,j),minmax,tmp)
-!             slval(3)=(sga/sg2(i,j))*tmp
-!             spelt(ie)%c(i,j,k,itr,tl%np1)=slval(3)
-! 
-!            if (mod(i,2)==1) then                   ! works only for nip=3!!!
-!               fluxval(i,j,1) =  dt6 * spelt(ie)%contrau(i,j,k)* (slval(1) + & 
-!                      4.0D0 * slval(2) + slval(3) )
-!             endif
-!             if (mod(j,2)==1) then            ! works only for nip=3!!!
-!               fluxval(i,j,2) =  dt6 * spelt(ie)%contrav(i,j,k)* (slval(1) + & 
-!                      4.0D0 * slval(2) + slval(3) )    
-!             endif  
-! !             if (mod(i,2)==1) then                   ! works only for nip=3!!!                                                
-! !                fluxval(i,j,1) =  dt6 * (spelt(ie)%contrau(i,j,k)* slval(1) + &                                               
-! !                       4.0D0 * spelt(ie)%contrau1(i,j)*slval(2) + spelt(ie)%contrau2(i,j)*slval(3) )                          
-! !                                                                                                                              
-! !              endif                                                                                                           
-! !              if (mod(j,2)==1) then            ! works only for nip=3!!!                                                      
-! !                fluxval(i,j,2) =  dt6 * (spelt(ie)%contrav(i,j,k)* slval(1) + &                                               
-! !                         4.0D0 * spelt(ie)%contrav1(i,j)*slval(2) + spelt(ie)%contrav2(i,j)*slval(3) )                       \
-! !                                                                                                                              
-! !              endif  
-!           end do
-!         end do 
-!         !calculate low order flux
-!         dxoy=abs(elem(ie)%corners(1)%x-elem(ie)%corners(2)%x)/nc
-!         
-!         do j=1,nc+1
-!           do i=1,nc
-!             icell=2+(i-1)*nipm
-!             jcell=1+(j-1)*nipm
-!             
-!             if (spelt(ie)%contrau(jcell,icell,k)>0.0D0) then
-!               fluxlowx(j,i)=dxoy*tstep*spelt(ie)%contrau(jcell,icell,k)* &
-!                             spelt(ie)%c(jcell-1,icell,k,itr,tl%n0)!*spelt(ie)%sga(jcell,icell)/spelt(ie)%sga(jcell-1,icell)
-!             else
-!               fluxlowx(j,i)=dxoy*tstep*spelt(ie)%contrau(jcell,icell,k)* &
-!                             spelt(ie)%c(jcell+1,icell,k,itr,tl%n0)!*spelt(ie)%sga(jcell,icell)/spelt(ie)%sga(jcell+1,icell)
-!             endif
-!             if (spelt(ie)%contrav(icell,jcell,k)>0.0D0) then
-!               fluxlowy(i,j)=dxoy*tstep*spelt(ie)%contrav(icell,jcell,k)* &
-!                             spelt(ie)%c(icell,jcell-1,k,itr,tl%n0)!*spelt(ie)%sga(icell,jcell)/spelt(ie)%sga(icell,jcell-1)
-!             else
-!               fluxlowy(i,j)=dxoy*tstep*spelt(ie)%contrav(icell,jcell,k)* &
-!                             spelt(ie)%c(icell,jcell+1,k,itr,tl%n0)!*spelt(ie)%sga(icell,jcell)/spelt(ie)%sga(icell,jcell+1)
-!             endif    
-!             
-!           end do
-!         end do
-! !!!! only needed for filter              
-!         do j=1,nc
-!           jcell=2+(j-1)*nipm
-!           jy=1+(j-1)*nipm
-!           do i=1,nc
-!             dx=spelt(ie)%dab(i)   
-!             dy=spelt(ie)%dab(j)
-!             icell=2+(i-1)*nipm
-!         ! for low order flux
-!             c_low(i,j) = spelt(ie)%c(icell,jcell,k,itr,tl%n0) + &
-!                                   (fluxlowx(i,j) + fluxlowy(i,j) - fluxlowx(i+1,j) - fluxlowy(i,j+1) ) / (dx*dy)
-!                                   
-!             spelt(ie)%c(icell,jcell,k,itr,tl%np1)=c_low(i,j) 
-!             !high order flux
-!             jx=1+(i-1)*nipm
-!             fluxhigh(ie,i,j,k,itr,1) = &
-!                  dx * (fluxval(jx,jy,1) + 4.0D0 * fluxval(jx,jy+1,1) + fluxval(jx,jy+2,1)) / 6.0D0  ! west
-!             fluxhigh(ie,i,j,k,itr,2) = &
-!                  dy * (fluxval(jx,jy,2) + 4.0D0 * fluxval(jx+1,jy,2) + fluxval(jx+2,jy,2)) / 6.0D0  ! south
-!             fluxhigh(ie,i,j,k,itr,3) = &
-!                  dx * (fluxval(jx+2,jy,1) + 4.0D0 * fluxval(jx+2,jy+1,1) + fluxval(jx+2,jy+2,1)) / 6.0D0 ! east
-!             fluxhigh(ie,i,j,k,itr,4) = &
-!                  dy * (fluxval(jx+2,jy+2,2) + 4.0D0 * fluxval(jx+1,jy+2,2) + fluxval(jx,jy+2,2)) / 6.0D0 ! north
-!             
-!             R(ie,i,j,k,itr,1)=-min(0.0D0,fluxhigh(ie,i,j,k,itr,1))-min(0.0D0,fluxhigh(ie,i,j,k,itr,2)) + &
-!                                max(0.0D0,fluxhigh(ie,i,j,k,itr,3))+max(0.0D0,fluxhigh(ie,i,j,k,itr,4))
-! !             
-!             if (R(ie,i,j,k,itr,1)>0.0D0) then
-!               R(ie,i,j,k,itr,1)=min(1.0D0,spelt(ie)%c(icell,jcell,k,itr,tl%n0)*dx*dy/R(ie,i,j,k,itr,1))
-!             else
-!               R(ie,i,j,k,itr,1)=0.0D0  
-!             endif
-!             
-!             !overwrite low order flux by antidiffusive flux
-! !             fluxlowx(i,j)=flux(1)-fluxlowx(i,j) 
-! !             fluxlowy(i,j)=flux(2)-fluxlowx(i,j)         
-!           end do
-!         end do
-! !         do i=1,nc
-! !           !high order flux
-! !           jx=1+(i-1)*nipm
-! !           jy=nep
-! !           flux(2) = dxoy * (fluxval(jx,jy,2) + 4.0D0 * fluxval(jx+1,jy,2) + fluxval(jx+2,jy,2))  
-! !           fluxlowy(i,nc+1)=flux(2)-fluxlowy(i,nc+1)      
-! !         end do
-!       end do !ntrac
-!     end do   !nlev
-!     call ghostVpack(factorR, R(ie,:,:,:,:,:),nhe,nc,nlev,ntrac,0,1,1,elem(ie)%desc)
-!   end do
-!        ! Anti diffusive flux are computed for each cell, done!
-!   call ghost_exchangeV(hybrid,factorR,nhe,nc,ntrac)
-! 
-!   do ie=nets,nete
-!     call ghostVunpack(factorR, R(ie,:,:,:,:,:), nhe, nc,nlev,ntrac,0, 1,1,elem(ie)%desc)
-!     do k=1, nlev
-!       do itr=1,ntrac
-!         !!!! only needed for filter     
-!         do j=1,nc !nep,2
-!           do i=1,nc !nep,2    
-!               dx=spelt(ie)%dab(i)   
-!               dy=spelt(ie)%dab(j)        
-!               icell=2+(i-1)*nipm
-!               jcell=2+(j-1)*nipm   
-!               cmo=1.0D0 
-!                 !west
-!                 if(fluxhigh(ie,i,j,k,itr,1)>=0.0D0) then
-!                   cmo(1)=R(ie,i-1,j,k,itr,1)  
-!                 else
-!                   cmo(1)=R(ie,i,j,k,itr,1)  
-!                 endif 
-!                 !south                         
-!                 if(fluxhigh(ie,i,j,k,itr,2)>=0.0D0) then
-!                   cmo(2)=R(ie,i,j-1,k,itr,1)  
-!                 else
-!                   cmo(2)=R(ie,i,j,k,itr,1)  
-!                 endif  
-!                 !east  
-!                 if(fluxhigh(ie,i,j,k,itr,3)>=0.0D0) then
-!                   cmo(3)=R(ie,i,j,k,itr,1)  
-!                 else
-!                   cmo(3)=R(ie,i+1,j,k,itr,1)  
-!                 endif 
-!                 !north      
-!                 if(fluxhigh(ie,i,j,k,itr,4)>=0.0D0) then
-!                   cmo(4)=R(ie,i,j,k,itr,1)  
-!                 else
-!                   cmo(4)=R(ie,i,j+1,k,itr,1)  
-!                 endif   
-!                 spelt(ie)%c(icell,jcell,k,itr,tl%np1) = spelt(ie)%c(icell,jcell,k,itr,tl%n0) - &
-!                      (-cmo(1)*fluxhigh(ie,i,j,k,itr,1) - cmo(2)*fluxhigh(ie,i,j,k,itr,2) + &
-!                      cmo(3)*fluxhigh(ie,i,j,k,itr,3) + cmo(4)*fluxhigh(ie,i,j,k,itr,4) ) /(dx*dy)
-!           end do
-!         end do                
-!       end do !ntrac
-!     end do   !nlev
-!     call ghostVpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tl%np1, timelevels,elem(ie)%desc)
-!   end do
-!   call t_stopf('SPELT scheme')
-! !-----------------------------------------------------------------------------------! 
-!   call t_startf('SPELT Communication') 
-!   call ghost_exchangeV(hybrid,cellghostbuf,nipm,nep,ntrac)
-!   call t_stopf('SPELT Communication')
-! !-----------------------------------------------------------------------------------!  
-!   call t_startf('SPELT Unpacking')  
-!   do ie=nets,nete
-!     call ghostVunpack2d(cellghostbuf,spelt(ie)%c,nipm, nep,nlev,ntrac,0, tl%np1, timelevels,elem(ie)%desc)
-!   end do
-!   call t_stopf('SPELT Unpacking')
-end subroutine spelt_runlimit
-
 
 
 subroutine get_contravelocities(elem, spelt, contrauv,k,deriv)
@@ -1301,7 +1305,7 @@ subroutine spelt_init1(par)
   endif
 
   call initghostbuffer(cellghostbuf,nlev,ntrac,nipm,nep) !+1 for the air_density, which comes from SE
-  call initghostbuffer(factorR,nlev,ntrac,nhe,nc)    ! use the tracer entry
+  call initghostbuffer(factorR,2*nlev,ntrac,nhe,nc)    ! use the tracer entry, have R plus and R minus factor (for positivity on only one)
   call initEdgebuffer(edgeveloc,2*nlev)
 end subroutine spelt_init1
 

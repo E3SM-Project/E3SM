@@ -25,8 +25,8 @@ module fvm_mod
 
   implicit none
   private
-  type (ghostBuffertr_t)                      :: cellghostbuf
-  type (EdgeBuffer_t)                         :: edgeveloc
+  type (ghostBuffertr_t),save                      :: cellghostbuf
+  type (EdgeBuffer_t),save                         :: edgeveloc
   
 !   public :: cslam_run, cslam_runair, cslam_runairdensity
   public :: cslam_run, cslam_runairdensity, cslam_runflux
