@@ -56,9 +56,10 @@ module control_mod
   integer, public :: vert_remap_q_alg = 0
 
 
- integer, public :: cubed_sphere_map = 0   !  0 = equi-angle Gnomonic
+ integer, public :: cubed_sphere_map = -1  ! -1 = chosen at run time
+                                           !  0 = equi-angle Gnomonic (default)
                                            !  1 = equi-spaced Gnomonic (not yet coded)
-                                           !  2 = element-local projection  
+                                           !  2 = element-local projection  (for var-res)
                                            !  3 = parametric (not yet coded)
 
 !tolerance to define smth small, was introduced for lim 8 in 2d and 3d
@@ -134,10 +135,32 @@ module control_mod
 
   real (kind=real_kind), public :: hypervis_power=0     ! if not 0, use variable hyperviscosity based on element area          
 
-  integer, public :: which_vlaplace=1    ! 1= vector laplace based on vector identities
+
+!three types of viscosity are supported right now:
+! (1) const hv, i.e., the operator nu * (\div \grad)^hypervis_order
+! (2) variable-within-element (or just variable) hv, the operator nu * (viscosity \div \grad )^hypervis_order
+! (3) tensor hv,  nu * ( \div * tensor * \grad )^hypervis_order
+!
+! (1) default:  which_vlaplace=0,1 or 2, use_tensorhv = 0
+!               hypervis_power=0
+! (2) Mike's original version for var-res grids.  
+!            scalar coefficient within each element
+!            which_vlaplace=0,1 or 2, use_tensorhv = 0
+!            set hypervis_power>0 and set fine_ne, max_hypervis_courant
+! (3) tensor HV var-res grids 
+!            tensor within each element:
+!            which_vlaplace=2    use_tensorhv = 1
+!
+!
+!
+
+  integer, public :: which_vlaplace=0    ! 0= new spherical laplace
+                                         ! 1= orig (buggy) spherical laplace
 					 ! 2= vector laplace based on transform to cartesian
-					 ! tensor HV would only work with (2) (impossible to overcome right now), 
-					 ! const or variable hv would work with (1) or (2)  
+
+  integer, public :: use_tensorhv=0      ! use tensor hyperviscosity
+                                         ! if turned on, requires which_vlaplace=2
+
 
 
   ! hyperviscosity parameters used for smoothing topography
