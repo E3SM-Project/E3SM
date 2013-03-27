@@ -1401,8 +1401,10 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            ! comptue mean flux
            if (nu_p>0) then
 #if 0
-              elem(ie)%derived%psdiss_ave(:,:)=elem(ie)%derived%psdiss_ave(:,:)+eta_ave_w*elem(ie)%state%ps_v(:,:,nt)/hypervis_subcycle
-              elem(ie)%derived%psdiss_biharmonic(:,:)=elem(ie)%derived%psdiss_biharmonic(:,:)+eta_ave_w*pstens(:,:,ie)/hypervis_subcycle
+              elem(ie)%derived%psdiss_ave(:,:)=&
+                   elem(ie)%derived%psdiss_ave(:,:)+eta_ave_w*elem(ie)%state%ps_v(:,:,nt)/hypervis_subcycle
+              elem(ie)%derived%psdiss_biharmonic(:,:)=&
+                   elem(ie)%derived%psdiss_biharmonic(:,:)+eta_ave_w*pstens(:,:,ie)/hypervis_subcycle
 #else
               do k=1,nlev
                  dptemp1(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
@@ -1410,7 +1412,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                  elem(ie)%derived%dpdiss_ave(:,:,k)=elem(ie)%derived%dpdiss_ave(:,:,k)+eta_ave_w*dptemp1(:,:)/hypervis_subcycle
                  
                  dptemp2(:,:) = (hvcoord%hybi(k+1)-hvcoord%hybi(k))*pstens(:,:,ie)
-                 elem(ie)%derived%dpdiss_biharmonic(:,:,k)=elem(ie)%derived%dpdiss_biharmonic(:,:,k)+eta_ave_w*dptemp2(:,:)/hypervis_subcycle              
+                 elem(ie)%derived%dpdiss_biharmonic(:,:,k)=&
+                      elem(ie)%derived%dpdiss_biharmonic(:,:,k)+eta_ave_w*dptemp2(:,:)/hypervis_subcycle
               enddo
 #endif
            endif
@@ -2802,6 +2805,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use time_mod, only : TimeLevel_t
   implicit none
   
+  integer :: nets,nete
   real (kind=real_kind), dimension(np,np,nets:nete), intent(inout)   :: phis
   type (hybrid_t)      , intent(in) :: hybrid
   type (element_t)     , intent(inout), target :: elem(:)
@@ -2809,7 +2813,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind), intent(in)   :: minf
   integer,               intent(in) :: numcycle
   
-  integer :: nets,nete
   ! local 
   real (kind=real_kind), dimension(np,np,nets:nete) :: pstens	
   real (kind=real_kind), dimension(nets:nete) :: pmin,pmax

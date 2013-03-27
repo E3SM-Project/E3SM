@@ -253,6 +253,12 @@ contains
 
   function bvsigma(p,x) result(sigma)
 
+#ifdef CAM
+    ! CAM code is required to use this function, to handle differences in
+    ! Fortran 2008 support and compiler extensions.
+    use shr_spfn_mod, only: erfc => shr_spfn_erfc
+#endif
+
     real (kind=real_kind), intent(in) :: p
     real (kind=real_kind), intent(in) :: x
     real (kind=real_kind)             :: sigma
@@ -265,10 +271,11 @@ contains
 #if 0
     real (kind=real_kind) :: tmp
 #endif
-#ifdef CAM
-    real*8  :: erfc
-#else
-    real*8  :: derfc   ! why cant non-CAM use the generic name?
+
+    ! For some old (pre-F2008) compilers, this is safer than "erfc", which
+    ! is sometimes only single precision (not generic).
+#ifndef CAM
+    real*8  :: derfc
 #endif
     call t_startf('bvsigma')
 

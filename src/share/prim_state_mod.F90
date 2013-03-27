@@ -361,7 +361,8 @@ contains
     !
     !   ptop =  hvcoord%hyai(1)*hvcoord%ps0)  + hvcoord%hybi(1)*ps(i,j)
     !   but we assume hybi(1) is zero at top of atmosphere (pure pressure coordinates)
-    !    Mass = (Mass2-(hvcoord%hyai(1)*hvcoord%ps0) )*scale  ! this correction is a constant, ~20 kg/m^2 (effects 4th digit of Mass)
+    !    Mass = (Mass2-(hvcoord%hyai(1)*hvcoord%ps0) )*scale  ! this correction is a constant,
+    !                                                         ! ~20 kg/m^2 (effects 4th digit of Mass)
     !   BUT: CAM EUL defines mass as integral( ps ), so to be consistent, ignore ptop contribution; 
     Mass = Mass2*scale
     Mass_np1 = Mass_np1*scale

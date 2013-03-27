@@ -159,7 +159,8 @@ contains
 !                                 blkjac(ie)%ipvt(:,k)) 
                    else if (blkjac_storage == "inverse") then
 #ifdef _DGEMV
-                      call dgemv(Trans,npsq,npsq,one,blkjac(ie)%E(:,:,k),npsq,cg%state(ieptr)%r(:,k),inc,zero,cg%state(ieptr)%z(:,k),inc)
+                      call dgemv(Trans,npsq,npsq,one,blkjac(ie)%E(:,:,k),npsq,&
+                           cg%state(ieptr)%r(:,k),inc,zero,cg%state(ieptr)%z(:,k),inc)
 #else
                       call matvec(cg%state(ieptr)%r(:,k),cg%state(ieptr)%z(:,k),blkjac(ie)%E(:,:,k),npsq)
 #endif
