@@ -500,13 +500,13 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
         end do
         ! search of both point on the trajectory done
         do itr=1,ntrac
-          do j=1-nhe,nc+nhe
-            do i=1-nhe,nc+nhe
-              icell=1+(i-1)*nipm
-              jcell=1+(j-1)*nipm
-              ff=spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,k,itr,tl%n0)*spelt(ie)%sga(icell:icell+nipm,jcell:jcell+nipm)
-              minmax(i,j,:)=cell_minmax(ff)
-              call cip_coeff(spelt(ie)%drefx(i,j),spelt(ie)%drefy(i,j),ff,ff(2,2),cf(:,:,i,j))
+          do jcell=1-nhe,nc+nhe
+            do icell=1-nhe,nc+nhe
+              i=1+(icell-1)*nipm
+              j=1+(jcell-1)*nipm
+              ff=spelt(ie)%c(i:i+nipm,j:j+nipm,k,itr,tl%n0)*spelt(ie)%sga(i:i+nipm,j:j+nipm)
+              minmax(icell,jcell,:)=cell_minmax(ff)
+              call cip_coeff(spelt(ie)%drefx(icell,jcell),spelt(ie)%drefy(icell,jcell),ff,ff(2,2),cf(:,:,icell,jcell))
             enddo
           enddo
           !reconstruction coefficients caculated done
@@ -562,44 +562,45 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
           end do
         end do
 !!!! only needed for filter              
-        do j=1,nc
-          jcell=2+(j-1)*nipm
-          jy=1+(j-1)*nipm
-          do i=1,nc
-            dx=spelt(ie)%dab(i)   
-            dy=spelt(ie)%dab(j)
-            icell=2+(i-1)*nipm
+        do jcell=1,nc
+          j=2+(jcell-1)*nipm
+          jy=1+(jcell-1)*nipm
+          do icell=1,nc
+            dx=spelt(ie)%dab(icell)   
+            dy=spelt(ie)%dab(jcell)
+            i=2+(icell-1)*nipm
+            jx=1+(icell-1)*nipm
 
             ! for low order solution
-            c_low(i,j) = spelt(ie)%c(icell,jcell,k,itr,tl%n0) - &
-                                      (-fluxlowx(i,j) - fluxlowy(i,j) + fluxlowx(i+1,j) + fluxlowy(i,j+1) ) / spelt(ie)%area_sphere(i,j)                      
+            c_low(icell,jcell) = spelt(ie)%c(i,j,k,itr,tl%n0) - &
+                                      (-fluxlowx(icell,jcell) - fluxlowy(icell,jcell) + &
+                                        fluxlowx(icell+1,jcell) + fluxlowy(icell,jcell+1) ) / spelt(ie)%area_sphere(icell,jcell)                      
 !             spelt(ie)%c(icell,jcell,k,itr,tl%np1)=c_low(i,j) 
             !anti diffusive flux:high order flux - low order flux
-            jx=1+(i-1)*nipm
             spelt(ie)%fluxhigh(icell,jcell,k,itr,1) = dy * (fluxval(jx,jy,1) + 4.0D0 * fluxval(jx,jy+1,1) + &
-                                                            fluxval(jx,jy+2,1)) / 6.0D0 - fluxlowx(i,j)  ! west
+                                                            fluxval(jx,jy+2,1)) / 6.0D0 - fluxlowx(icell,jcell)  ! west
             spelt(ie)%fluxhigh(icell,jcell,k,itr,2) = dx * (fluxval(jx,jy,2) + 4.0D0 * fluxval(jx+1,jy,2) + &
-                                                            fluxval(jx+2,jy,2)) / 6.0D0 - fluxlowy(i,j)! south
+                                                            fluxval(jx+2,jy,2)) / 6.0D0 - fluxlowy(icell,jcell)! south
             spelt(ie)%fluxhigh(icell,jcell,k,itr,3) = dy * (fluxval(jx+2,jy,1) + 4.0D0 * fluxval(jx+2,jy+1,1) + &
-                                                            fluxval(jx+2,jy+2,1)) / 6.0D0 - fluxlowx(i+1,j)! east
+                                                            fluxval(jx+2,jy+2,1)) / 6.0D0 - fluxlowx(icell+1,jcell)! east
             spelt(ie)%fluxhigh(icell,jcell,k,itr,4) = dx * (fluxval(jx+2,jy+2,2) + 4.0D0 * fluxval(jx+1,jy+2,2) + &
-                                                            fluxval(jx,jy+2,2)) / 6.0D0 - fluxlowy(i,j+1)! north
+                                                            fluxval(jx,jy+2,2)) / 6.0D0 - fluxlowy(icell,jcell+1)! north
             
             ! not a good programming style
             !minimum of the patch
-            minphi=min(spelt(ie)%c(icell-nipm,jcell,k,itr,tl%n0),spelt(ie)%c(icell,jcell,k,itr,tl%n0))
-            minphi=min(minphi,spelt(ie)%c(icell,jcell-nipm,k,itr,tl%n0))
-            minphi=min(minphi,spelt(ie)%c(icell+nipm,jcell,k,itr,tl%n0))
-            minphi=min(minphi,spelt(ie)%c(icell,jcell+nipm,k,itr,tl%n0))
+            minphi=min(spelt(ie)%c(i-nipm,j,k,itr,tl%n0),spelt(ie)%c(i,j,k,itr,tl%n0))
+            minphi=min(minphi,spelt(ie)%c(i,j-nipm,k,itr,tl%n0))
+            minphi=min(minphi,spelt(ie)%c(i+nipm,j,k,itr,tl%n0))
+            minphi=min(minphi,spelt(ie)%c(i,j+nipm,k,itr,tl%n0))
             !maximum of the patch
-            maxphi=min(spelt(ie)%c(icell-nipm,jcell,k,itr,tl%n0),spelt(ie)%c(icell,jcell,k,itr,tl%n0))
-            maxphi=min(maxphi,spelt(ie)%c(icell,jcell-nipm,k,itr,tl%n0))
-            maxphi=min(maxphi,spelt(ie)%c(icell+nipm,jcell,k,itr,tl%n0))
-            maxphi=min(maxphi,spelt(ie)%c(icell,jcell+nipm,k,itr,tl%n0))
+            maxphi=max(spelt(ie)%c(i-nipm,j,k,itr,tl%n0),spelt(ie)%c(i,j,k,itr,tl%n0))
+            maxphi=max(maxphi,spelt(ie)%c(i,j-nipm,k,itr,tl%n0))
+            maxphi=max(maxphi,spelt(ie)%c(i+nipm,j,k,itr,tl%n0))
+            maxphi=max(maxphi,spelt(ie)%c(i,j+nipm,k,itr,tl%n0))
             
             tmpR=max(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,1))-min(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,3)) + &
                                max(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,2))-min(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,4))
-            tmpQ=(maxphi-c_low(i,j))*spelt(ie)%area_sphere(icell,jcell)   
+            tmpQ=(maxphi-c_low(icell,jcell))*spelt(ie)%area_sphere(icell,jcell)   
                            
             spelt(ie)%Rp(icell,jcell,k,itr)=0.0D0  
             if (tmpR>0.0D0) then
@@ -608,7 +609,7 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
             
             tmpR=max(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,3))-min(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,1)) + &
                                max(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,4))-min(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,2))
-            tmpQ=(c_low(i,j)-minphi)*spelt(ie)%area_sphere(icell,jcell)   
+            tmpQ=(c_low(icell,jcell)-minphi)*spelt(ie)%area_sphere(icell,jcell)   
                            
             spelt(ie)%Rm(icell,jcell,k,itr)=0.0D0  
             if (tmpR>0.0D0) then
@@ -616,15 +617,12 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
             endif
           end do
         end do
-        do j=1,nc
-          jcell=2+(j-1)*nipm
-          jy=1+(j-1)*nipm
-          do i=1,nc
-            dx=spelt(ie)%dab(i)   
-            dy=spelt(ie)%dab(j)
-            icell=2+(i-1)*nipm
+        do jcell=1,nc
+          j=2+(jcell-1)*nipm
+          do icell=1,nc
+            i=2+(icell-1)*nipm
             !write low order monotone solution in structure
-            spelt(ie)%c(icell,jcell,k,itr,tl%n0)=c_low(i,j)
+            spelt(ie)%c(i,j,k,itr,tl%n0)=c_low(icell,jcell)
           end do
         end do
       end do !ntrac
@@ -643,40 +641,45 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
     do k=1, nlev
       do itr=1,ntrac
         !!!! only needed for filter     
-        do j=1,nc !nep,2
-          do i=1,nc !nep,2         
-              icell=2+(i-1)*nipm
-              jcell=2+(j-1)*nipm   
+        do jcell=1,nc !nep,2
+          do icell=1,nc !nep,2         
+              i=2+(icell-1)*nipm
+              j=2+(jcell-1)*nipm   
               
               cmo=1.0D0 
               !in fluxhigh is the anti diffusive flux
                 !west
-                if(spelt(ie)%fluxhigh(i,j,k,itr,1)>0.0D0) then
-                  cmo(1)=min(spelt(ie)%Rp(i,j,k,itr),spelt(ie)%Rm(i-1,j,k,itr))  
+                if(spelt(ie)%fluxhigh(icell,jcell,k,itr,1)>0.0D0) then
+                  cmo(1)=min(spelt(ie)%Rp(icell,jcell,k,itr),spelt(ie)%Rm(icell-1,jcell,k,itr))  
                 else
-                  cmo(1)=min(spelt(ie)%Rp(i-1,j,k,itr),spelt(ie)%Rm(i,j,k,itr))
+                  cmo(1)=min(spelt(ie)%Rp(icell-1,jcell,k,itr),spelt(ie)%Rm(icell,jcell,k,itr))
                 endif 
                 !south                         
-                if(spelt(ie)%fluxhigh(i,j,k,itr,2)>0.0D0) then
-                  cmo(2)=min(spelt(ie)%Rp(i,j,k,itr),spelt(ie)%Rm(i,j-1,k,itr))
+                if(spelt(ie)%fluxhigh(icell,jcell,k,itr,2)>0.0D0) then
+                  cmo(2)=min(spelt(ie)%Rp(icell,jcell,k,itr),spelt(ie)%Rm(icell,jcell-1,k,itr))
                 else
-                  cmo(2)=min(spelt(ie)%Rp(i,j-1,k,itr),spelt(ie)%Rm(i,j,k,itr))
+                  cmo(2)=min(spelt(ie)%Rp(icell,jcell-1,k,itr),spelt(ie)%Rm(icell,jcell,k,itr))
                 endif  
                 !east  
-                if(spelt(ie)%fluxhigh(i,j,k,itr,3)>=0.0D0) then
-                  cmo(3)=min(spelt(ie)%Rp(i+1,j,k,itr),spelt(ie)%Rm(i,j,k,itr))  
+                if(spelt(ie)%fluxhigh(icell,jcell,k,itr,3)>=0.0D0) then
+                  cmo(3)=min(spelt(ie)%Rp(icell+1,jcell,k,itr),spelt(ie)%Rm(icell,jcell,k,itr))  
                 else
-                  cmo(3)=min(spelt(ie)%Rp(i,j,k,itr),spelt(ie)%Rm(i+1,j,k,itr))
+                  cmo(3)=min(spelt(ie)%Rp(icell,jcell,k,itr),spelt(ie)%Rm(icell+1,jcell,k,itr))
                 endif 
                 !north      
-                if(spelt(ie)%fluxhigh(i,j,k,itr,4)>=0.0D0) then
-                  cmo(4)=min(spelt(ie)%Rp(i,j+1,k,itr),spelt(ie)%Rm(i,j,k,itr))  
+                if(spelt(ie)%fluxhigh(icell,jcell,k,itr,4)>=0.0D0) then
+                  cmo(4)=min(spelt(ie)%Rp(icell,jcell+1,k,itr),spelt(ie)%Rm(icell,jcell,k,itr))  
                 else
-                  cmo(4)=min(spelt(ie)%Rp(i,j,k,itr),spelt(ie)%Rm(i,j+1,k,itr)) 
+                  cmo(4)=min(spelt(ie)%Rp(icell,jcell,k,itr),spelt(ie)%Rm(icell,jcell+1,k,itr)) 
                 endif   
-                spelt(ie)%c(icell,jcell,k,itr,tl%np1) = spelt(ie)%c(icell,jcell,k,itr,tl%n0) - &
-                     (-cmo(1)*spelt(ie)%fluxhigh(i,j,k,itr,1) - cmo(2)*spelt(ie)%fluxhigh(i,j,k,itr,2) &
-                      + cmo(3)*spelt(ie)%fluxhigh(i,j,k,itr,3) + cmo(4)*spelt(ie)%fluxhigh(i,j,k,itr,4) ) /(spelt(ie)%area_sphere(i,j)) 
+!                 cmo(1)=1.0D0
+!                 cmo(2)=1.0D0
+!                 cmo(3)=1.0D0
+!                 cmo(4)=1.0D0
+                spelt(ie)%c(i,j,k,itr,tl%np1) = spelt(ie)%c(i,j,k,itr,tl%n0) - &
+                     (-cmo(1)*spelt(ie)%fluxhigh(icell,jcell,k,itr,1) - cmo(2)*spelt(ie)%fluxhigh(icell,jcell,k,itr,2) &
+                      + cmo(3)*spelt(ie)%fluxhigh(icell,jcell,k,itr,3) + cmo(4)*spelt(ie)%fluxhigh(icell,jcell,k,itr,4) ) &
+                       /(spelt(ie)%area_sphere(icell,jcell)) 
           end do
         end do              
       end do !ntrac
