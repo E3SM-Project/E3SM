@@ -10,7 +10,14 @@ SET(Homme_Build_DIR ${CMAKE_BINARY_DIR})
 SET(Homme_Results_DIR ${CMAKE_SOURCE_DIR}/test/reg_test/results)
 
 # Want this to be resetable...
-SET(Homme_Baseline_DIR ${CMAKE_BINARY_DIR}/tests/baseline)
+IF (DEFINED HOMME_BASELINE_DIR)
+  # Need to check that the files are there...
+  SET(Homme_Baseline_DIR ${HOMME_BASELINE_DIR}/tests/baseline)
+ELSE ()
+  SET(Homme_Baseline_DIR ${CMAKE_BINARY_DIR}/tests/baseline)
+ENDIF ()
+
+MESSAGE(STATUS "Setting HOMME_BASELINE_DIR as ${Homme_Baseline_DIR}")
 
 # Host specific
 IF (Homme_Hostname STREQUAL "Yellowstone") 
@@ -48,6 +55,8 @@ CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/submit_tests.sh
                ${CMAKE_BINARY_DIR}/tests/submit_tests.sh @ONLY)
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/diff_output.sh
                ${CMAKE_BINARY_DIR}/tests/diff_output.sh @ONLY)
+CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/cmake_variables.sh
+               ${CMAKE_BINARY_DIR}/tests/cmake_variables.sh @ONLY)
 
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/testing-utils.sh
                ${CMAKE_BINARY_DIR}/tests/testing-utils.sh COPYONLY)

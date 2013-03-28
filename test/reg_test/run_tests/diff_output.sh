@@ -1,17 +1,12 @@
 #!/bin/bash
 
-# These variables are set by CMake
+# Get the build dir from cmake
 HOMME_DIR=@Homme_Build_DIR@
-HOMME_TEST_RESULTS=@Homme_Results_DIR@
 
-# The location of the Netcdf reference files (if they exist)
-HOMME_NC_RESULTS_DIR=@NETCDF_RESULTS_DIR@
+# Source the following file to get the rest of the cmake variables
+source ${HOMME_DIR}/tests/cmake_variables.sh
 
-# The location of the baseline results
-HOMME_BASELINE_DIR=${HOMME_DIR}/tests/baseline
-
-# The location of the tests directory
-HOMME_TESTING_DIR=${HOMME_DIR}/tests
+# Enter the testing dir
 cd $HOMME_TESTING_DIR
 
 # The "type" of submission (lsf, pbs, standard mpi etc.) for creating the executable scripts 
