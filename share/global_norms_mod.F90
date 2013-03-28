@@ -7,6 +7,7 @@ module global_norms_mod
   use edge_mod, only : EdgeBuffer_t
   implicit none
   private
+  save
 
   public :: l1_snorm
   public :: l2_snorm
@@ -22,7 +23,7 @@ module global_norms_mod
   public :: wrap_repro_sum
 
   private :: global_maximum
-  type (EdgeBuffer_t), private,save :: edgebuf
+  type (EdgeBuffer_t), private :: edgebuf
 
 contains
 
