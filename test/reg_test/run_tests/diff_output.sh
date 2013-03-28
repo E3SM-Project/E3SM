@@ -10,7 +10,7 @@ source ${HOMME_DIR}/tests/cmake_variables.sh
 cd $HOMME_TESTING_DIR
 
 # The "type" of submission (lsf, pbs, standard mpi etc.) for creating the executable scripts 
-HOMME_Submission_Type=@Homme_Submission_Type@
+HOMME_Submission_Type=@HOMME_SUBMISSION_TYPE@
 
 # Whether to use cprnc to diff the Netcdf files
 USE_CPRNC=@TEST_USING_CPRNC@

@@ -31,7 +31,30 @@ ELSEIF (Homme_OS STREQUAL "Darwin")
 
 ENDIF ()
 
-IF (NOT ${Homme_Submission_Type} STREQUAL none)
+# Determine if there is a submission system
+# lsf uses bsub
+FIND_PROGRAM(BSUB_PATH bsub) # Note this searches the environment
+IF (BSUB_PATH)
+  MESSAGE(STATUS "Using LSF queuing")
+  SET(HOMME_SUBMISSION_TYPE lsf)
+ELSE ()
+  FIND_PROGRAM(QSUB_PATH qsub) # Note this searches the environment
+  IF (QSUB_PATH)
+    MESSAGE(STATUS "Using PBS queuing")
+    SET(HOMME_SUBMISSION_TYPE pbs)
+  ELSE ()
+    MESSAGE(STATUS "No queuing system found")
+    SET(HOMME_SUBMISSION_TYPE none)
+  ENDIF ()
+ENDIF ()
+
+# Queuing specific info
+IF (${HOMME_SUBMISSION_TYPE} STREQUAL none) 
+  INCLUDE(ProcessorCount)
+  ProcessorCount(MAX_NUM_PROCS)
+  MESSAGE(STATUS "Warning: No queuing system. Maximum number of processes is ${MAX_NUM_PROCS}")
+  SET(HOMME_QUEUING FALSE)
+ELSE ()
   IF (DEFINED HOMME_PROJID)
     MESSAGE(STATUS "Using HOMME Project ID (HOMME_PROJID) ${HOMME_PROJID}")
   ELSE ()
@@ -40,11 +63,13 @@ IF (NOT ${Homme_Submission_Type} STREQUAL none)
       SET(HOMME_PROJID $ENV{HOMME_PROJID})
       MESSAGE(STATUS "Using HOMME Project ID (HOMME_PROJID) ${HOMME_PROJID} from environment")
     ELSE ()
-      MESSAGE(FATAL_ERROR "No HOMME Project ID found. Please set HOMME_PROJID")
+      MESSAGE(FATAL_ERROR "No HOMME Project ID found. Please set HOMME_PROJID
+                           using -DHOMME_PROJID=XXXX0000 or in the environment")
     ENDIF ()
   ENDIF ()
+  # We have queuing
+  SET(HOMME_QUEUING TRUE)
 ENDIF ()
-
 
 # Because of the queuing system on machines like Yellowstone the testing can be a little awkward
 # The following scripts prepare submission scripts and allow submission to

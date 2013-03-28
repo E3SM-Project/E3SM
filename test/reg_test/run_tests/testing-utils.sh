@@ -96,6 +96,10 @@ createPBSHeader() {
     exit -1
   fi 
 
+  # Set the output and error filenames
+  echo "#PBS -o $testName.stdout.\${PBS_JOBID}" >> $RUN_SCRIPT
+  echo "#PBS -e $testName.stderr.\${PBS_JOBID}" >> $RUN_SCRIPT
+
   echo "#PBS -N $testName" >> $RUN_SCRIPT
 
   echo "#PBS -l nodes=1" >> $RUN_SCRIPT
@@ -526,7 +530,12 @@ diffCprnc() {
   FILES="${nc_output_files}"
 
   if [ -z "${FILES}" ] ; then
-    echo "Test ${TEST_NAME} doesn't have Netcdf output files"
+    
+    if [ ${CREATE_BASELINE} = true ] ; then
+      : # pass
+    else
+      echo "Test ${TEST_NAME} doesn't have Netcdf output files"
+    fi
   fi
 
   # for files in movies

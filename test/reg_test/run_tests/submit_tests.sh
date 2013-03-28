@@ -1,47 +1,38 @@
 #!/bin/bash
 
-# These variables are set by CMake
+# Get the build dir from cmake
 HOMME_DIR=@Homme_Build_DIR@
-HOMME_TEST_RESULTS=@Homme_Results_DIR@
 
-HOMME_NCRESULTS_DIR=@Homme_NCResults_DIR@
-
-# The location of the tests directory
-HOMME_TESTING_DIR=${HOMME_DIR}/tests
-
-# The location of the baseline results
-HOMME_BASELINE_DIR=@Homme_Baseline_DIR@
-
-cd $HOMME_TESTING_DIR
-
-# The "type" of submission (lsf, pbs, standard mpi etc.) for creating the executable scripts 
-HOMME_Submission_Type=@Homme_Submission_Type@
-
-# The cprnc Netcdf comparison tool
-CPRNC_BINARY=@CPRNC_BINARY@
+# Source the following file to get the rest of the cmake variables
+source ${HOMME_DIR}/tests/cmake_variables.sh
 
 # The testing utilities
 source ${HOMME_DIR}/tests/testing-utils.sh
 
+cd $HOMME_TESTING_DIR
+
+# Determine if we are creating the baseline
 if [ "$1" == baseline ] ; then
   CREATE_BASELINE=true
 else
   CREATE_BASELINE=false
 fi
 
+# Determine if we are submitting all of the jobs at once
 if [ "$1" == all -o ${CREATE_BASELINE} == true ] ; then
   SUBMIT_ALL_AT_ONCE=true
 else
   SUBMIT_ALL_AT_ONCE=false
 fi
 
+# Either read the list of tests or set the arguments
 if [ "${SUBMIT_ALL_AT_ONCE}" == true ] ; then
-
-  # The lists of tests to run
+  # If we are submitting all at once read the prepared list of tests
   source ${HOMME_DIR}/tests/submission-list.sh
 
 else
 
+  # Only running one test
   num_submissions=1
   subFile1=$1
   testName=$2
@@ -50,16 +41,7 @@ else
 
 fi
 
-if [ "$HOMME_Submission_Type" = lsf -o "$HOMME_Submission_Type" = pbs ]; then
-  HOMME_QUEUE_JOBS=true
-else
-  HOMME_QUEUE_JOBS=false
-fi
-
-# The testing utilities
-source ${HOMME_DIR}/tests/testing-utils.sh
-
-if [ "$HOMME_QUEUE_JOBS" = true ]; then
+if [ "${HOMME_QUEUING}" = TRUE -o "${HOMME_QUEUING}" = ON ]; then
   # Submit the tests to the queue
   submitTestsToQueue
 

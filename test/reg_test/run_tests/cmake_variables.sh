@@ -8,8 +8,14 @@ HOMME_BASELINE_DIR=@Homme_Baseline_DIR@
 # The location of the tests directory
 HOMME_TESTING_DIR=${HOMME_DIR}/tests
 
-# The "type" of submission (lsf, pbs, standard mpi etc.) for creating the executable scripts 
-HOMME_Submission_Type=@Homme_Submission_Type@
+# Are we using queuing
+HOMME_QUEUING=@HOMME_QUEUING@
+
+# The "type" of submission (lsf, pbs, none mpi etc.) for creating the executable scripts 
+HOMME_Submission_Type=@HOMME_SUBMISSION_TYPE@
+
+# Account ID for charging
+HOMME_ACCOUNT=@HOMME_PROJID@
 
 # Whether to use cprnc to diff the Netcdf files
 USE_CPRNC=@TEST_USING_CPRNC@
