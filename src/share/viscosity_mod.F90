@@ -21,6 +21,8 @@ use edge_mod, only : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack, edgevunpa
 use bndry_mod, only : bndry_exchangev
 
 implicit none
+save
+
 public :: biharmonic_wk
 #ifdef _PRIM
 public :: biharmonic_wk_scalar
@@ -43,7 +45,7 @@ interface compute_div_C0_2d
 end interface
 
 
-type (EdgeBuffer_t),save          :: edge1
+type (EdgeBuffer_t)          :: edge1
 
 contains
 

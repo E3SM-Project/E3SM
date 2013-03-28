@@ -7,12 +7,13 @@ module checksum_mod
   implicit none
 
   private
+  save
 
   ! test_ghost is called from within a openMP parrallel region,
   ! and these buffers have to be thread-shared
-  type (ghostBuffer_t),save   :: ghostbuf,ghostbuf_cv
-  type (ghostBuffer3d_t),save :: ghostbuf3d
-  type (edgeBuffer_t),save    :: edge1
+  type (ghostBuffer_t)   :: ghostbuf,ghostbuf_cv
+  type (ghostBuffer3d_t) :: ghostbuf3d
+  type (edgeBuffer_t)    :: edge1
 
   public  :: testchecksum, test_ghost
   private :: genchecksum

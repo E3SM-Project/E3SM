@@ -21,9 +21,10 @@ module spelt_mod
 
   implicit none
   private
-  type (ghostBuffertr_t),save                      :: cellghostbuf
-  type (ghostbuffertr_t),save                       :: factorR
-  type (EdgeBuffer_t),save                          :: edgeveloc
+  save
+  type (ghostBuffertr_t)                      :: cellghostbuf
+  type (ghostbuffertr_t)                      :: factorR
+  type (EdgeBuffer_t)                         :: edgeveloc
     
   type, public :: spelt_struct
     ! spelt tracer mixing ratio: (kg/kg)

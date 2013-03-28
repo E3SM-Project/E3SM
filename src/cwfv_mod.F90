@@ -22,6 +22,8 @@ module cwfv_mod
 
   implicit none
   private
+  save
+
   type (ghostBuffertr_t)                      :: cellghostbuf
   type (EdgeBuffer_t)                         :: edgeveloc
     

@@ -858,7 +858,8 @@ module prim_advection_mod
 
   implicit none
   
-  private  
+  private
+  save
 
   public :: Prim_Advec_Init, Prim_Advec_Tracers_remap_rk2
   public :: prim_advec_tracers_fvm, prim_advec_tracers_spelt

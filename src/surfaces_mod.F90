@@ -28,8 +28,8 @@ module surfaces_mod
 #endif
 
   implicit none
-
   private
+  save
 
   !If this cade will be used with refined meshes, need to set to 14 (note: ok to use
   !14 for regular meshes - just wastes memory) - asking christoph about if this code
@@ -70,8 +70,8 @@ module surfaces_mod
 #define USE_PENTAGONS
 
   type (ctrlvol_t),    public, allocatable, target  :: cvlist(:)
-  type (EdgeBuffer_t), private,save  :: edge1
-  type (Ghostbuffer3d_t),save                :: ghost_buf
+  type (EdgeBuffer_t), private  :: edge1
+  type (Ghostbuffer3d_t)        :: ghost_buf
 
 
   ! User interface
