@@ -2,13 +2,6 @@
 #include "config.h"
 #endif
 
-! Compatibility with older gfortran.
-! When we don't need to support those, can remove this and always use the
-! bounds remapping method.
-#ifndef __GFORTRAN__
-#define HAVE_F2003_PTR_BND_REMAP
-#endif
-
 module edge_mod
   use kinds, only : int_kind, log_kind, real_kind
   use dimensions_mod, only : max_neigh_edges
@@ -182,7 +175,7 @@ contains
        edge%buf => tmp_ptr
 #else
        ! call F77 routine which will reshape array.
-       call remap_2D_ptr(edge%buf,nlyr,nbuf,buf_ptr)
+       call remap_2D_ptr_buf(edge,nlyr,nbuf,buf_ptr)
 #endif
     else
        allocate(edge%buf    (nlyr,nbuf))
@@ -201,7 +194,7 @@ contains
        edge%receive => tmp_ptr
 #else
        ! call F77 routine which will reshape array.
-       call remap_2D_ptr(edge%receive,nlyr,nbuf,receive_ptr)
+       call remap_2D_ptr_receive(edge,nlyr,nbuf,receive_ptr)
 #endif
     else
        allocate(edge%receive(nlyr,nbuf))
@@ -4252,15 +4245,28 @@ End module edge_mod
 ! some compilers dont allow the 'target' attribute to be used in a F77 subroutine
 ! such as cray.  if that is the case, try compiling with -DHAVE_F2003_PTR_BND_REMAP
 !
-subroutine remap_2D_ptr(real_ptr,nlyr,nbuf,src_array)
+subroutine remap_2D_ptr_buf(edge,nlyr,nbuf,src_array)
+use edge_mod, only       : EdgeBuffer_t ! _EXTERNAL                                                   
 use kinds, only          : real_kind
-! input
-real(kind=real_kind) , pointer :: real_ptr(:,:)
+! input                                                                                               
+type (EdgeBuffer_t) :: edge
 integer :: nlyr,nbuf
 real(kind=real_kind) , target :: src_array(nlyr,nbuf)
 
-real_ptr => src_array
+edge%buf  => src_array
 
-end subroutine remap_2D_ptr
+end subroutine remap_2D_ptr_buf
+
+subroutine remap_2D_ptr_receive(edge,nlyr,nbuf,src_array)
+use edge_mod, only       : EdgeBuffer_t ! _EXTERNAL                                                   
+use kinds, only          : real_kind
+! input                                                                                               
+type (EdgeBuffer_t) :: edge
+integer :: nlyr,nbuf
+real(kind=real_kind) , target :: src_array(nlyr,nbuf)
+
+edge%receive  => src_array
+
+end subroutine remap_2D_ptr_receive
 
 #endif
