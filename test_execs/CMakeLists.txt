@@ -71,6 +71,9 @@ ELSE ()
   SET(HOMME_QUEUING TRUE)
 ENDIF ()
 
+# Set up the CPRNC build
+INCLUDE(SetUpCprnc)
+
 # Because of the queuing system on machines like Yellowstone the testing can be a little awkward
 # The following scripts prepare submission scripts and allow submission to
 # queues on machines that have queues.
