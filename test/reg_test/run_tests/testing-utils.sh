@@ -530,12 +530,7 @@ diffCprnc() {
   FILES="${nc_output_files}"
 
   if [ -z "${FILES}" ] ; then
-    
-    if [ ${CREATE_BASELINE} = true ] ; then
-      : # pass
-    else
       echo "Test ${TEST_NAME} doesn't have Netcdf output files"
-    fi
   fi
 
   # for files in movies
@@ -687,7 +682,8 @@ moveBaseline() {
     FILES="${nc_output_files}"
 
     if [ -z "${FILES}" ] ; then
-      echo "Test ${subBaseName} doesn't have Netcdf output files"
+      : # pass for now
+      #echo "Test ${subBaseName} doesn't have Netcdf output files"
     fi
 
     # for files in movies
