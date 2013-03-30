@@ -1456,7 +1456,6 @@ contains
     real (kind=real_kind) :: v1,v2,dt
     real (kind=real_kind) :: pmin(nlev,nets:nete),pmax(nlev,nets:nete)
     real (kind=real_kind) :: notreliable
-    real (kind=real_kind), dimension(:,:),   pointer :: viscosity => NULL()
 
     if (hypervis_order == 0 ) return;
     if (nu_s == 0 .and. nu == 0 ) return;
@@ -1508,8 +1507,8 @@ contains
                    enddo
                 enddo
 
-                lap_p=laplace_sphere_wk(ptot,deriv,elem(ie),viscosity)
-                lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),viscosity)
+                lap_p=laplace_sphere_wk(ptot,deriv,elem(ie),var_coef=.false.)
+                lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
 
                 ! advace in time.  (note: DSS commutes with time stepping, so we
                 ! can time advance and then DSS.  this has the advantage of

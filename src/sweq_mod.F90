@@ -296,7 +296,7 @@ contains
        iptr=1
        do j=1,np
           do i=1,np
-             solver_wts(iptr,ie-nets+1) = elem(ie)%solver_wts(i,j)
+             solver_wts(iptr,ie-nets+1) = elem(ie)%mp(i,j)*elem(ie)%rmp(i,j)
              iptr=iptr+1
           end do
        end do
@@ -427,6 +427,7 @@ contains
           if (test_case(1:5) == "swtc1") then
              if (hybrid%masterthread) print *,"initializing swtc1..."
              call tc1_init_state(elem,nets,nete,pmean)
+             call tc1_errors(elem, 7, tl, pmean, hybrid, nets, nete)
           else if (test_case(1:5) == "swtc2") then
              if (hybrid%masterthread) print *,"initializing swtc2..."
              call tc2_init_state(elem,nets,nete,pmean)
@@ -477,36 +478,29 @@ contains
 	  call interp_movie_init(elem,hybrid,nets,nete,tl=tl)
           call interp_movie_output(elem,tl, hybrid, pmean, nets, nete,fvm)     
 #else
-  if (fvm_check) then
-	   call shal_movie_init(elem,hybrid,fvm)
-           call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv,fvm)
-  else
-            call shal_movie_init(elem,hybrid)
-            call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
-  endif
+          if (fvm_check) then
+             call shal_movie_init(elem,hybrid,fvm)
+             call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv,fvm)
+          else
+             call shal_movie_init(elem,hybrid)
+             call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
+          endif
 #endif
           call printstate(elem,pmean,g_sw_output,tl%n0,hybrid,nets,nete,-1)
-
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
-
           if(Debug) print *,'homme: point #6'
 
-! OG put it here. Otherwise, with tc1 and integration=explicit there are no
-! error files (not created)
-          if (test_case(1:5) == "swtc1") then
-             call tc1_errors(elem, 7, tl, pmean, hybrid, nets, nete)
-          endif
-! end of insert
+
           ! ===========================================================
           ! In the case of semi implicit integration (as solver or precon),
           ! initialize solver
           ! ===========================================================
 
           if (integration == "semi_imp") then
-             allocate(blkjac(nets:nete))
              call cg_create(cg, npsq, nlev, nete-nets+1, hybrid, debug_level, solver_wts)
              if (precon_method == "block_jacobi") then
                 !JMD call blkjac_init(deriv,lambdasq,nets,nete,E(1,1,1,nets),blkjac)
+                allocate(blkjac(nets:nete))
                 call blkjac_init(elem,deriv,lambdasq,nets,nete,blkjac)
              end if
           else if (integration == "full_imp") then

@@ -126,7 +126,7 @@ contains
 
     call coreolis_init_atomic(elem)
     elem%desc%use_rotation= 0
-    call solver_weights_atomic(elem)
+!    call solver_weights_atomic(elem)
 
 
   end subroutine cube_init_atomic
@@ -505,7 +505,7 @@ contains
   ! cg solver.
   !
   ! =======================================
-
+#if 0
   subroutine solver_weights_atomic(elem)
     use element_mod, only : element_t
     use dimensions_mod, only : np
@@ -548,6 +548,7 @@ contains
     end do
 
   end subroutine solver_weights_atomic
+#endif
 
 #if 1
   ! ========================================
@@ -664,18 +665,38 @@ contains
   ! ========================================================
   subroutine dmap_equiangular(D, elem, a,b)
     use element_mod, only : element_t
+    use dimensions_mod, only : np
     type (element_t) :: elem
     real (kind=real_kind), intent(out)  :: D(2,2)
     real (kind=real_kind), intent(in)     :: a,b
     ! local
     real (kind=real_kind)  :: tmpD(2,2), Jp(2,2),x1,x2,pi,pj,qi,qj
+    real (kind=real_kind), dimension(4,2) :: unif2quadmap
 
+#if 0
+    ! we shoud get rid of elem%u2qmap() and routine cube_mod.F90::elem_jacobian()
+    ! and replace with this code below:
+    ! but this produces roundoff level changes
+    !unif2quadmap(1,1)=(elem%cartp(1,1)%x+elem%cartp(np,1)%x+elem%cartp(np,np)%x+elem%cartp(1,np)%x)/4.0d0
+    !unif2quadmap(1,2)=(elem%cartp(1,1)%y+elem%cartp(np,1)%y+elem%cartp(np,np)%y+elem%cartp(1,np)%y)/4.0d0
+    unif2quadmap(2,1)=(-elem%cartp(1,1)%x+elem%cartp(np,1)%x+elem%cartp(np,np)%x-elem%cartp(1,np)%x)/4.0d0
+    unif2quadmap(2,2)=(-elem%cartp(1,1)%y+elem%cartp(np,1)%y+elem%cartp(np,np)%y-elem%cartp(1,np)%y)/4.0d0
+    unif2quadmap(3,1)=(-elem%cartp(1,1)%x-elem%cartp(np,1)%x+elem%cartp(np,np)%x+elem%cartp(1,np)%x)/4.0d0
+    unif2quadmap(3,2)=(-elem%cartp(1,1)%y-elem%cartp(np,1)%y+elem%cartp(np,np)%y+elem%cartp(1,np)%y)/4.0d0
+    unif2quadmap(4,1)=(elem%cartp(1,1)%x-elem%cartp(np,1)%x+elem%cartp(np,np)%x-elem%cartp(1,np)%x)/4.0d0
+    unif2quadmap(4,2)=(elem%cartp(1,1)%y-elem%cartp(np,1)%y+elem%cartp(np,np)%y-elem%cartp(1,np)%y)/4.0d0
+    Jp(1,1) = unif2quadmap(2,1) + unif2quadmap(4,1)*b
+    Jp(1,2) = unif2quadmap(3,1) + unif2quadmap(4,1)*a
+    Jp(2,1) = unif2quadmap(2,2) + unif2quadmap(4,2)*b
+    Jp(2,2) = unif2quadmap(3,2) + unif2quadmap(4,2)*a
+#else
     ! input (a,b) shold be a point in the reference element [-1,1]
     ! compute Jp(a,b)
     Jp(1,1) = elem%u2qmap(2,1) + elem%u2qmap(4,1)*b
     Jp(1,2) = elem%u2qmap(3,1) + elem%u2qmap(4,1)*a
     Jp(2,1) = elem%u2qmap(2,2) + elem%u2qmap(4,2)*b
     Jp(2,2) = elem%u2qmap(3,2) + elem%u2qmap(4,2)*a
+#endif
 
     ! map (a,b) to the [-pi/2,pi/2] equi angular cube face:  x1,x2
     ! a = gp%points(i)

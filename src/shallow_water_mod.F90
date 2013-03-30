@@ -292,7 +292,6 @@ contains
     real (kind=real_kind),save :: time_last,Imass_last(nlev),Ikenergy_last,Ipenergy_last,Ipenst_last,Ipv_last,Idiv_last
     real (kind=real_kind) :: time,Imass(nlev),Ikenergy,Ipenergy,Ipenst,Ienergy,Ipv,Idiv,rms_div,rms_vor,rms_f
     real (kind=real_kind), dimension(:,:,:), pointer :: v
-    real (kind=real_kind), dimension(:,:),   pointer :: viscosity => NULL()
 
     integer               :: k,n0,k1
 
@@ -337,8 +336,8 @@ contains
           do ie=nets,nete
              v  => elem(ie)%state%v(:,:,:,k,n0)
              E(:,:)=elem(ie)%state%p(:,:,k,n0) + elem(ie)%state%ps(:,:)
-             diss_p(:,:,k,ie)=laplace_sphere_wk(E,deriv,elem(ie),viscosity)
-             diss_v(:,:,:,k,ie)=vlaplace_sphere_wk(v,deriv,elem(ie),viscosity)
+             diss_p(:,:,k,ie)=laplace_sphere_wk(E,deriv,elem(ie),var_coef=.false.)
+             diss_v(:,:,:,k,ie)=vlaplace_sphere_wk(v,deriv,elem(ie),var_coef=.false.)
           enddo
        endif
        ! convert lat-lon -> contra variant
