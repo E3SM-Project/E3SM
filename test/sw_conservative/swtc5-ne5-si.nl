@@ -27,8 +27,8 @@ hypervis_order = 0
 hypervis_subcycle = 1
 /
 &solver_nl
-precon_method = "block_jacobi"
-!precon_method = "identity"
+!precon_method = "block_jacobi"
+precon_method = "identity"
 maxits        = 10000
 tol           = 1.e-12
 debug_level   = 0
