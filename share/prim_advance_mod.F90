@@ -420,7 +420,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
              kptr=1
              do j=1,np
                 do i=1,np
-                   solver_wts(kptr,ie-nets+1) = elem(ie)%solver_wts(i,j)
+
+                   ! so this code is BFB  with old code.  should change to simpler formula below
+                   solver_wts(kptr,ie-nets+1) = 1d0/nint(1d0/(elem(ie)%mp(i,j)*elem(ie)%rmp(i,j)))
+                   !solver_wts(kptr,ie-nets+1) = elem(ie)%mp(i,j)*elem(ie)%rmp(i,j)
+
                    kptr=kptr+1
                 end do
              end do
@@ -1297,7 +1301,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind), dimension(np,np,nets:nete) :: pstens	
   real (kind=real_kind), dimension(np,np,nlev) :: p
   real (kind=real_kind), dimension(np,np) :: dptemp1,dptemp2
-  real(kind=real_kind), pointer, dimension(:,:) :: ournull
   
   
 ! NOTE: PGI compiler bug: when using spheremp, rspheremp and ps as pointers to elem(ie)% members,
@@ -1310,8 +1313,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind), dimension(np,np,2) :: lap_v
   real (kind=real_kind) :: v1,v2,dt,heating,utens_tmp,vtens_tmp,ptens_tmp
 
-
-  ournull => NULL()
 
   if (nu_s == 0 .and. nu == 0 .and. nu_p==0 ) return;
   call t_barrierf('sync_advance_hypervis', hybrid%par%comm)
@@ -1331,8 +1332,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 !$omp parallel do private(k,lap_p,lap_v,deriv,i,j)
 #endif
            do k=1,nlev
-              lap_p=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),ournull)
-              lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),ournull)
+              lap_p=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+              lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
               ! advace in time.  (note: DSS commutes with time stepping, so we
               ! can time advance and then DSS.  this has the advantage of
               ! not letting any discontinuties accumulate in p,v via roundoff
@@ -1429,8 +1430,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               
               ! add regular diffusion in top 3 layers:
               if (nu_top>0 .and. k<=3) then
-                 lap_p=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),ournull)
-                 lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),ournull)
+                 lap_p=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+                 lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
               endif
               nu_scale_top = 1
               if (k==1) nu_scale_top=4
@@ -1585,7 +1586,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind), dimension(np,np,nlev,nets:nete)        :: dptens
   real (kind=real_kind), dimension(np,np,nlev) :: p
   real (kind=real_kind), dimension(np,np) :: dptemp1,dptemp2
-  real(kind=real_kind), pointer, dimension(:,:) :: ournull
   
   
 ! NOTE: PGI compiler bug: when using spheremp, rspheremp and ps as pointers to elem(ie)% members,
@@ -1598,8 +1598,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind), dimension(np,np,2) :: lap_v
   real (kind=real_kind) :: v1,v2,dt,heating,utens_tmp,vtens_tmp,ttens_tmp,dptens_tmp
 
-
-  ournull => NULL()
 
   if (nu_s == 0 .and. nu == 0 .and. nu_p==0 ) return;
   call t_barrierf('sync_advance_hypervis', hybrid%par%comm)
@@ -1619,8 +1617,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 !$omp parallel do private(k,lap_p,lap_v,deriv,i,j)
 #endif
            do k=1,nlev
-              lap_t=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),ournull)
-              lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),ournull)
+              lap_t=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+              lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
               ! advace in time.  (note: DSS commutes with time stepping, so we
               ! can time advance and then DSS.  this has the advantage of
               ! not letting any discontinuties accumulate in p,v via roundoff
@@ -1704,9 +1702,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               
               ! add regular diffusion in top 3 layers:
               if (nu_top>0 .and. k<=3) then
-                 lap_t=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),ournull)
-                 lap_dp=laplace_sphere_wk(elem(ie)%state%dp3d(:,:,k,nt),deriv,elem(ie),ournull)
-                 lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),ournull)
+                 lap_t=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+                 lap_dp=laplace_sphere_wk(elem(ie)%state%dp3d(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+                 lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
               endif
               nu_scale_top = 1
               if (k==1) nu_scale_top=4
@@ -1849,7 +1847,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind), dimension(np,np,nets:nete) :: pstens	
   real (kind=real_kind), dimension(np,np,nlev) :: p
   real (kind=real_kind), dimension(np,np) :: dXdp
-  real(kind=real_kind), pointer, dimension(:,:) :: ournull
   
   
 ! NOTE: PGI compiler bug: when using spheremp, rspheremp and ps as pointers to elem(ie)% members,
@@ -1862,8 +1859,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind), dimension(np,np,2) :: lap_v
   real (kind=real_kind) :: v1,v2,dt,heating,utens_tmp,vtens_tmp,ptens_tmp
 
-
-  ournull => NULL()
 
   if (nu_s == 0 .and. nu == 0 .and. nu_p==0 ) return;
   call t_barrierf('sync_advance_hypervis_lf', hybrid%par%comm)
@@ -1889,8 +1884,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 !$omp parallel do private(k,lap_p,lap_v,deriv,i,j)
 #endif
            do k=1,nlev
-              lap_p=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),ournull)
-              lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),ournull)
+              lap_p=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+              lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
               ! advace in time.  (note: DSS commutes with time stepping, so we
               ! can time advance and then DSS.  this has the advantage of
               ! not letting any discontinuties accumulate in p,v via roundoff
@@ -1961,8 +1956,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               
               ! add regular diffusion in top 3 layers:
               if (nu_top>0 .and. k<=3) then
-                 lap_p=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),ournull)
-                 lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),ournull)
+                 lap_p=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+                 lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
               endif
               nu_scale_top = 1
               if (k==1) nu_scale_top=4
@@ -2818,7 +2813,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind), dimension(np,np,nets:nete) :: pstens	
   real (kind=real_kind), dimension(nets:nete) :: pmin,pmax
   real (kind=real_kind) :: mx,mn
-  real (kind=real_kind), dimension(:,:), pointer :: viscosity
   integer :: nt,ie,ic,i,j,order,order_max, iuse
 
 
@@ -2855,8 +2849,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
      do order=1,order_max-1
         do ie=nets,nete
-           viscosity=>elem(ie)%variable_hyperviscosity
-           pstens(:,:,ie)=laplace_sphere_wk(pstens(:,:,ie),deriv,elem(ie),viscosity)
+           pstens(:,:,ie)=laplace_sphere_wk(pstens(:,:,ie),deriv,elem(ie),var_coef=.true.)
            call edgeVpack(edge3p1,pstens(:,:,ie),1,0,elem(ie)%desc)
         enddo
         call bndry_exchangeV(hybrid,edge3p1)
@@ -2871,8 +2864,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 #endif
      enddo
      do ie=nets,nete
-        viscosity=>elem(ie)%variable_hyperviscosity
-        pstens(:,:,ie)=laplace_sphere_wk(pstens(:,:,ie),deriv,elem(ie),viscosity)
+        pstens(:,:,ie)=laplace_sphere_wk(pstens(:,:,ie),deriv,elem(ie),var_coef=.true.)
      enddo
      if (mod(order_max,2)==0) pstens=-pstens
 

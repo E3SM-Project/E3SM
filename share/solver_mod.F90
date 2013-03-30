@@ -856,4 +856,167 @@ contains
 #endif
   end subroutine blkjac_init
 
+
+
+
+
+
+  ! ================================================
+  ! solver_test:
+  !
+  ! solve laplace equation
+  !    L(x) = laplace_sphere_wk(x)
+  ! solve:
+  !     L(x) =  < PHI, rhs >         <   > = spheremp weighted inner-product
+  ! OR:
+  !     M^-1  L(x) = rhs           with M = the SE mass matrix
+  !                          
+  ! This should be solved in the SE <,> inner product, where L is symmetric
+  !  < L(x),y > = < L(y),x >
+  !  so we set cg%wgt = spheremp
+  !  
+  ! ================================================
+  subroutine solver_test(elem,red,hybrid,deriv,nets,nete)
+    use dimensions_mod, only : nlev, np,npsq
+    use element_mod, only : element_t
+    use reduction_mod, only : reductionbuffer_ordered_1d_t
+    use cg_mod, only : cg_t, congrad, cg_create
+    use edge_mod, only : edgebuffer_t, edgevpack, edgevunpack!, edgerotate
+    use derivative_mod, only : derivative_t, laplace_sphere_wk
+    use control_mod, only : maxits, while_iter, tol, precon_method
+    use physical_constants, only : rrearth, dd_pi, rearth, omega
+    use bndry_mod, only : bndry_exchangeV
+    use linear_algebra_mod, only : matvec
+    use parallel_mod, only : haltmp
+    use hybrid_mod, only : hybrid_t
+
+    integer, intent(in)  :: nets,nete
+    type(element_t), intent(in), target :: elem(:)
+    type (ReductionBuffer_ordered_1d_t)  :: red         ! CG reduction buffer   (shared memory)
+    type (derivative_t)               :: deriv          ! non staggered derivative struct     (private)
+    type (hybrid_t)             :: hybrid
+
+    ! ===========
+    ! Local
+    ! ===========
+    type (EdgeBuffer_t)               :: edge1          ! Laplacian divergence edge buffer (shared memory)
+    type (cg_t)                       :: cg             ! conjugate gradient    (private)
+    real (kind=real_kind) :: LHS(np,np,nlev,nets:nete)
+    real (kind=real_kind) :: solver_wts(npsq,nete-nets+1)
+    real (kind=real_kind) :: rhs
+    integer :: ie
+    integer :: i,j,k
+    integer :: kptr
+    integer :: iptr
+    integer :: ieptr
+    real (kind=real_kind) :: u0,alpha,csalpha,snalpha,snlat,cslat,cslon,coef
+
+
+    ! init edge1
+    do ie=nets,nete
+       ieptr=1
+       do j=1,np
+          do i=1,np
+             solver_wts(ieptr,ie-nets+1) = elem(ie)%spheremp(i,j)
+             ieptr=ieptr+1
+          end do
+       end do
+    end do
+    call cg_create(cg, npsq, nlev, nete-nets+1, hybrid, 0, solver_wts)
+
+    ! simple zonal h from swtc2 
+    alpha = 0 ! rotation angle
+    csalpha = COS(alpha)
+    snalpha = SIN(alpha)
+    u0     = 2.0D0*DD_PI*rearth/(12.0*86400.0) ! adv. wind velocity
+    coef = rearth*omega*u0 + (u0**2)/2.0D0
+
+
+    ! initialize residual.  (take initial guess = 0)    RHS - M^-1 L(0)
+    do ie=nets,nete
+       ieptr=ie-nets+1
+#if (defined ELEMENT_OPENMP)
+!$omp parallel do private(k,i,j,iptr)
+#endif
+       do k=1,nlev
+          iptr=1
+          do j=1,np
+             do i=1,np
+                snlat = SIN(elem(ie)%spherep(i,j)%lat)
+                cslat = COS(elem(ie)%spherep(i,j)%lat)
+                cslon = COS(elem(ie)%spherep(i,j)%lon)
+                RHS = -coef*( -cslon*cslat*snalpha + snlat*csalpha )**2
+                cg%state(ieptr)%r(iptr,k) = RHS
+                iptr=iptr+1
+             end do
+          end do
+       end do
+    end do
+
+    !cg%debug_level=1
+    do while (congrad(cg,red,maxits,tol))
+       do ie=nets,nete
+          ieptr=ie-nets+1
+          do k=1,nlev
+             if (.not.cg%converged(k)) then
+
+                ! apply preconditioner to last residual 
+                iptr=1
+                do j=1,np
+                   do i=1,np
+                      cg%state(ieptr)%z(iptr,k) = cg%state(ieptr)%r(iptr,k)
+                      iptr=iptr+1
+                   end do
+                end do
+
+                ! compute LHS. Helmholz:  z - lambda*lap(z) 
+                ! but in this case it is just lap(z)
+                LHS(:,:,k,ie)=laplace_sphere_wk(reshape(cg%state(ieptr)%z(:,k),(/np,np/)),&
+                     deriv,elem(ie),var_coef=.false.)
+             endif
+          end do
+          kptr=0
+          call edgeVpack(edge1, LHS(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+       end do
+       call bndry_exchangeV(cg%hybrid,edge1)
+       do ie=nets,nete
+          ! unpack LHS
+          kptr=0
+          call edgeVunpack(edge1, LHS(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+
+          ieptr=ie-nets+1
+          do k=1,nlev
+             if (.not.cg%converged(k)) then
+                iptr=1
+                do j=1,np
+                   do i=1,np
+                      cg%state(ieptr)%s(iptr,k) = LHS(i,j,k,ie)
+                      iptr=iptr+1
+                   end do
+                end do
+             end if
+          enddo
+       enddo
+          
+    end do  ! CG solver while loop
+    print *,'solver test CG iter = ',cg%iter
+    ! ===============================
+    ! Converged! unpack solution 
+    ! ===============================
+    do ie=nets,nete
+       ieptr=ie-nets+1
+       do k=1,nlev
+          iptr=1
+          do j=1,np
+             do i=1,np
+!                x(i,j,k,ie)=cg%state(ieptr)%x(iptr,k)
+                iptr=iptr+1
+             end do
+          end do
+       end do
+    end do
+  end subroutine solver_test
+
+
+
 end module solver_mod

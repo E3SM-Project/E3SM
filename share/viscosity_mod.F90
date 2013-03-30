@@ -74,18 +74,16 @@ real (kind=real_kind), dimension(np,np,nets:nete) :: pstens
 
 ! local
 integer :: k,kptr,i,j,ie,ic
-real (kind=real_kind), dimension(:,:), pointer :: rspheremv, viscosity
+real (kind=real_kind), dimension(:,:), pointer :: rspheremv
 real (kind=real_kind), dimension(np,np) :: lap_ps
 real (kind=real_kind), dimension(np,np,nlev) :: T
 real (kind=real_kind), dimension(np,np,2) :: v
 
    do ie=nets,nete
       
-      viscosity    => elem(ie)%variable_hyperviscosity
-
 #ifdef _PRIM
       ! should filter lnps + PHI_s/RT?
-      pstens(:,:,ie)=laplace_sphere_wk(elem(ie)%state%ps_v(:,:,nt),deriv,elem(ie),viscosity)
+      pstens(:,:,ie)=laplace_sphere_wk(elem(ie)%state%ps_v(:,:,nt),deriv,elem(ie),var_coef=.true.)
 #endif
       
 #if (defined ELEMENT_OPENMP)
@@ -104,8 +102,9 @@ real (kind=real_kind), dimension(np,np,2) :: v
 #endif
             enddo
          enddo
-         ptens(:,:,k,ie)=laplace_sphere_wk(T(:,:,k),deriv,elem(ie),viscosity)
-         vtens(:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),viscosity,nu_ratio)
+         ptens(:,:,k,ie)=laplace_sphere_wk(T(:,:,k),deriv,elem(ie),var_coef=.true.)
+         vtens(:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,&
+              elem(ie),var_coef=.true.,nu_ratio=nu_ratio)
       enddo
       kptr=0
       call edgeVpack(edge3, ptens(1,1,1,ie),nlev,kptr,elem(ie)%desc)
@@ -122,7 +121,6 @@ real (kind=real_kind), dimension(np,np,2) :: v
    
    do ie=nets,nete
       rspheremv     => elem(ie)%rspheremp(:,:)
-      viscosity     => elem(ie)%variable_hyperviscosity
       
       kptr=0
       call edgeVunpack(edge3, ptens(1,1,1,ie), nlev, kptr, elem(ie)%desc)
@@ -141,8 +139,9 @@ real (kind=real_kind), dimension(np,np,2) :: v
                v(i,j,2)=rspheremv(i,j)*vtens(i,j,2,k,ie)
             enddo
          enddo
-         ptens(:,:,k,ie)=laplace_sphere_wk(T(:,:,k),deriv,elem(ie),viscosity)
-         vtens(:,:,:,k,ie)=vlaplace_sphere_wk(v(:,:,:),deriv,elem(ie),viscosity,nu_ratio)
+         ptens(:,:,k,ie)=laplace_sphere_wk(T(:,:,k),deriv,elem(ie),var_coef=.true.)
+         vtens(:,:,:,k,ie)=vlaplace_sphere_wk(v(:,:,:),deriv,elem(ie),var_coef=.true.,&
+              nu_ratio=nu_ratio)
       enddo
          
 #ifdef _PRIM
@@ -150,7 +149,7 @@ real (kind=real_kind), dimension(np,np,2) :: v
       call edgeVunpack(edge3, pstens(1,1,ie), 1, kptr, elem(ie)%desc)
       ! apply inverse mass matrix, then apply laplace again
       lap_ps(:,:)=rspheremv(:,:)*pstens(:,:,ie)
-      pstens(:,:,ie)=laplace_sphere_wk(lap_ps,deriv,elem(ie),viscosity)
+      pstens(:,:,ie)=laplace_sphere_wk(lap_ps,deriv,elem(ie),var_coef=.true.)
 #endif
 
    enddo
@@ -182,22 +181,22 @@ real (kind=real_kind) ::  nu_ratio
 
 ! local
 integer :: k,kptr,ie
-real (kind=real_kind), dimension(:,:), pointer :: rspheremv, viscosity
+real (kind=real_kind), dimension(:,:), pointer :: rspheremv
 real (kind=real_kind), dimension(np,np) :: tmp
 real (kind=real_kind), dimension(np,np,2) :: v
 
    do ie=nets,nete
-      viscosity    => elem(ie)%variable_hyperviscosity
 
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k)
 #endif
       do k=1,nlev
          tmp=elem(ie)%state%T(:,:,k,nt) 
-         ptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),viscosity)
+         ptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
          tmp=elem(ie)%state%dp3d(:,:,k,nt) 
-         dptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),viscosity)
-         vtens(:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),viscosity,nu_ratio)
+         dptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
+         vtens(:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),&
+              var_coef=.true.,nu_ratio=nu_ratio)
       enddo
       kptr=0
       call edgeVpack(edge3, ptens(1,1,1,ie),nlev,kptr,elem(ie)%desc)
@@ -212,7 +211,6 @@ real (kind=real_kind), dimension(np,np,2) :: v
    
    do ie=nets,nete
       rspheremv     => elem(ie)%rspheremp(:,:)
-      viscosity     => elem(ie)%variable_hyperviscosity
       
       kptr=0
       call edgeVunpack(edge3, ptens(1,1,1,ie), nlev, kptr, elem(ie)%desc)
@@ -227,13 +225,14 @@ real (kind=real_kind), dimension(np,np,2) :: v
 #endif
       do k=1,nlev
          tmp(:,:)=rspheremv(:,:)*ptens(:,:,k,ie)
-         ptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),viscosity)
+         ptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
          tmp(:,:)=rspheremv(:,:)*dptens(:,:,k,ie)
-         dptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),viscosity)
+         dptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
 
          v(:,:,1)=rspheremv(:,:)*vtens(:,:,1,k,ie)
          v(:,:,2)=rspheremv(:,:)*vtens(:,:,2,k,ie)
-         vtens(:,:,:,k,ie)=vlaplace_sphere_wk(v(:,:,:),deriv,elem(ie),viscosity,nu_ratio)
+         vtens(:,:,:,k,ie)=vlaplace_sphere_wk(v(:,:,:),deriv,elem(ie),&
+              var_coef=.true.,nu_ratio=nu_ratio)
 
       enddo
    enddo
@@ -263,10 +262,8 @@ type (derivative_t)  , intent(in) :: deriv
 ! local
 integer :: k,kptr,i,j,ie,ic,q
 real (kind=real_kind), dimension(np,np) :: lap_p
-real (kind=real_kind), dimension(:,:), pointer :: viscosity
 
    do ie=nets,nete
-      viscosity    => elem(ie)%variable_hyperviscosity
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k, q, lap_p)
 #endif
@@ -274,7 +271,7 @@ real (kind=real_kind), dimension(:,:), pointer :: viscosity
          do k=1,nlev    !  Potential loop inversion (AAM)
             lap_p(:,:)=qtens(:,:,k,q,ie)
 ! Original use of qtens on left and right hand sides caused OpenMP errors (AAM)
-           qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),viscosity)
+           qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.true.)
          enddo
       enddo
       call edgeVpack(edgeq, qtens(:,:,:,:,ie),qsize*nlev,0,elem(ie)%desc)
@@ -292,7 +289,7 @@ real (kind=real_kind), dimension(:,:), pointer :: viscosity
       do q=1,qsize      
       do k=1,nlev    !  Potential loop inversion (AAM)
          lap_p(:,:)=elem(ie)%rspheremp(:,:)*qtens(:,:,k,q,ie)
-         qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),viscosity)
+         qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.true.)
       enddo
       enddo
    enddo
@@ -326,11 +323,9 @@ integer :: k,kptr,i,j,ie,ic,q
 real (kind=real_kind), dimension(np,np) :: lap_p
 real (kind=real_kind) :: Qmin(np,np,nlev,qsize)
 real (kind=real_kind) :: Qmax(np,np,nlev,qsize)
-real (kind=real_kind), dimension(:,:), pointer :: viscosity 
 
 
    do ie=nets,nete
-      viscosity    => elem(ie)%variable_hyperviscosity
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k, q, lap_p)
 #endif
@@ -340,7 +335,7 @@ real (kind=real_kind), dimension(:,:), pointer :: viscosity
          Qmax(:,:,k,q)=emax(k,q,ie)  ! edgeVpack routine below
          lap_p(:,:) = qtens(:,:,k,q,ie)
 ! Original use of qtens on left and right hand sides caused OpenMP errors (AAM)
-         qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),viscosity)
+         qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.true.)
       enddo
       enddo
       call edgeVpack(edgeq, qtens(:,:,:,:,ie),qsize*nlev,0,elem(ie)%desc)
@@ -369,7 +364,7 @@ real (kind=real_kind), dimension(:,:), pointer :: viscosity
       do q=1,qsize      
       do k=1,nlev    !  Potential loop inversion (AAM)
          lap_p(:,:)=elem(ie)%rspheremp(:,:)*qtens(:,:,k,q,ie)
-         qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),viscosity)
+         qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.true.)
          ! note: only need to consider the corners, since the data we packed was
          ! constant within each element
          emin(k,q,ie)=min(qmin(1,1,k,q),qmin(1,np,k,q),qmin(np,1,k,q),qmin(np,np,k,q))

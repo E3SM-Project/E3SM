@@ -304,7 +304,7 @@ module element_mod
 
      real (kind=real_kind)    :: variable_hyperviscosity(np,np)  ! hyperviscosity based on above
      real (kind=real_kind)    :: hv_courant ! hyperviscosity courant number
-
+     real (kind=real_kind)    :: tensorVisc(2,2,np,np)    !og, matrix V for tensor viscosity
 
      ! Edge connectivity information
      integer(kind=int_kind) :: node_numbers(4)
@@ -327,8 +327,6 @@ module element_mod
      real (kind=real_kind)    :: D(2,2,np,np)        ! Map covariant field on cube to vector field on the sphere
      real (kind=real_kind)    :: Dinv(2,2,np,np)     ! Map vector field on the sphere to covariant v on cube
 
-!og, matrix V for tensor viscosity
-     real (kind=real_kind)    :: tensorVisc(2,2,np,np)   
 
      ! Convert vector fields from spherical to rectangular components
      ! The transpose of this operation is its pseudoinverse.
@@ -350,7 +348,9 @@ module element_mod
      real (kind=real_kind)    :: fcor(np,np)        ! coreolis term
 
      ! Solver weights (used only for non-staggered grid
-     real (kind=real_kind)    :: solver_wts(np,np)
+!     real (kind=real_kind)    :: solver_wts(np,np)  ! REMOVE. 
+                                   ! non-conservative operatores: use spheremp*rspheremp
+                                   ! conservative operators: use spheremp
 
      type (index_t) :: idxP
      type (index_t),pointer :: idxV
