@@ -148,6 +148,7 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
 
   if (vert_remap_q_alg == 1 .or. vert_remap_q_alg == 2) then
      call remap_Q_ppm(qdp,nx,qsize,dp1,dp2)
+     call t_stopf('remap1')
      return
   endif
 
