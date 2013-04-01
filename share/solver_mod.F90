@@ -869,7 +869,8 @@ contains
   !    L is self-adjoint:  < L(x),y> = < x,L(y) >
   !
   ! solve for x:
-  !     <PHI,x> + a*L(x) =  < PHI, rhs >         
+  !     <PHI,x> + a*L(x) =  < PHI, rhs >        
+  !     contant a ~ 10 dx^2 (typical scaling in semi-implicit solve)
   !
   ! 2D solve - but applied to every level  k=1,nlev
   !
