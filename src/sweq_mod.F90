@@ -46,7 +46,7 @@ contains
     !-----------------
     use filter_mod, only : filter_t, taylor_filter_create, fm_filter_create, fm_transfer, bv_transfer
     !-----------------
-    use solver_mod, only : blkjac_t, blkjac_init
+    use solver_mod, only : blkjac_t, blkjac_init, solver_test
     !-----------------
     use cg_mod, only : cg_t, cg_create
     !-----------------
@@ -301,6 +301,20 @@ contains
           end do
        end do
     end do
+
+!   some test code
+#if 0
+    print *,'running CG solver test'
+    call solver_test(elem,edge1,red,hybrid,deriv,nets,nete)
+    stop
+    print *,'running global integration-by-parts checks'
+    call test_ibyp(elem,hybrid,nets,nete)
+    print *,'running element divergence/edge flux checks'
+    call check_edge_flux(elem,deriv,nets,nete)
+    stop
+#endif
+
+
 
     ! =================================
     ! Slow start leapfrog...

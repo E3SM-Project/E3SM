@@ -23,6 +23,7 @@ module solver_mod
 
   public  :: pcg_solver
   public  :: blkjac_init
+  public  :: solver_test
 
   interface pcg_solver
      module procedure pcg_solver_stag
@@ -860,23 +861,34 @@ contains
 
 
 
-
   ! ================================================
   ! solver_test:
   !
-  ! solve laplace equation
-  !    L(x) = laplace_sphere_wk(x)
-  ! solve:
-  !     L(x) =  < PHI, rhs >         <   > = spheremp weighted inner-product
-  ! OR:
-  !     M^-1  L(x) = rhs           with M = the SE mass matrix
-  !                          
-  ! This should be solved in the SE <,> inner product, where L is symmetric
-  !  < L(x),y > = < L(y),x >
-  !  so we set cg%wgt = spheremp
-  !  
+  !    L(x) = laplace_sphere_wk(x) = -< grad(PHI) dot grad(x) >
+  !    <   > = spheremp weighted inner-product
+  !    L is self-adjoint:  < L(x),y> = < x,L(y) >
+  !
+  ! solve for x:
+  !     <PHI,x> + a*L(x) =  < PHI, rhs >         
+  !
+  ! 2D solve - but applied to every level  k=1,nlev
+  !
+  ! In matrix notation, following the convention in M.T. and A.L.'s 
+  ! "implicit.pdf" notes:
+  !     D QQ^t (M + a*L ) x = rhs
+  ! with:
+  !   M    = multiply by spheremp 
+  !   QQ^t = pack, exchange, unpack
+  !   D    = multiply by rspheremp  D = Q V^-1 Q^-L   
+  !          where V = the SEM diagonal mass matrix acting on vectors with no
+  !          duplicate degrees of freedom.  V does not appear in HOMME.
+  !   L is self adjoint w.r.t. M:    L(x) M y = x M L(y)
+  !
+  ! Note: if we solve laplace equation instead of Helmholz, we need to
+  ! ensure < rhs,1>=0
+  !
   ! ================================================
-  subroutine solver_test(elem,red,hybrid,deriv,nets,nete)
+  subroutine solver_test(elem,edge1,red,hybrid,deriv,nets,nete)
     use dimensions_mod, only : nlev, np,npsq
     use element_mod, only : element_t
     use reduction_mod, only : reductionbuffer_ordered_1d_t
@@ -889,119 +901,159 @@ contains
     use linear_algebra_mod, only : matvec
     use parallel_mod, only : haltmp
     use hybrid_mod, only : hybrid_t
+    use global_norms_mod, only : linf_snorm, l2_snorm
 
     integer, intent(in)  :: nets,nete
     type(element_t), intent(in), target :: elem(:)
     type (ReductionBuffer_ordered_1d_t)  :: red         ! CG reduction buffer   (shared memory)
     type (derivative_t)               :: deriv          ! non staggered derivative struct     (private)
     type (hybrid_t)             :: hybrid
+    type (EdgeBuffer_t)               :: edge1          ! Laplacian divergence edge buffer (shared memory)
+
 
     ! ===========
     ! Local
     ! ===========
-    type (EdgeBuffer_t)               :: edge1          ! Laplacian divergence edge buffer (shared memory)
     type (cg_t)                       :: cg             ! conjugate gradient    (private)
     real (kind=real_kind) :: LHS(np,np,nlev,nets:nete)
+    real (kind=real_kind) :: RHS(np,np,nlev,nets:nete)
+    real (kind=real_kind) :: sol(np,np,nlev,nets:nete)   ! exact solution
     real (kind=real_kind) :: solver_wts(npsq,nete-nets+1)
-    real (kind=real_kind) :: rhs
+    real (kind=real_kind) :: x(np,np)
+    real (kind=real_kind) :: alambda = 10*250e3**2      ! low res test, dx=250km grid spacing
+
     integer :: ie
     integer :: i,j,k
     integer :: kptr
     integer :: iptr
     integer :: ieptr
-    real (kind=real_kind) :: u0,alpha,csalpha,snalpha,snlat,cslat,cslon,coef
+    real (kind=real_kind) :: snlat,cslat,cslon,snlon,xc,yc,zc, res, res_sol
 
-
-    ! init edge1
     do ie=nets,nete
-       ieptr=1
+       iptr=1
        do j=1,np
           do i=1,np
-             solver_wts(ieptr,ie-nets+1) = elem(ie)%spheremp(i,j)
-             ieptr=ieptr+1
+             solver_wts(iptr,ie-nets+1) = elem(ie)%spheremp(i,j)
+             iptr=iptr+1
           end do
        end do
     end do
     call cg_create(cg, npsq, nlev, nete-nets+1, hybrid, 0, solver_wts)
 
-    ! simple zonal h from swtc2 
-    alpha = 0 ! rotation angle
-    csalpha = COS(alpha)
-    snalpha = SIN(alpha)
-    u0     = 2.0D0*DD_PI*rearth/(12.0*86400.0) ! adv. wind velocity
-    coef = rearth*omega*u0 + (u0**2)/2.0D0
-
-
-    ! initialize residual.  (take initial guess = 0)    RHS - M^-1 L(0)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! make up an exact solution
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     do ie=nets,nete
        ieptr=ie-nets+1
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,i,j,iptr)
-#endif
        do k=1,nlev
           iptr=1
           do j=1,np
              do i=1,np
                 snlat = SIN(elem(ie)%spherep(i,j)%lat)
                 cslat = COS(elem(ie)%spherep(i,j)%lat)
+                snlon = SIN(elem(ie)%spherep(i,j)%lon)
                 cslon = COS(elem(ie)%spherep(i,j)%lon)
-                RHS = -coef*( -cslon*cslat*snalpha + snlat*csalpha )**2
-                cg%state(ieptr)%r(iptr,k) = RHS
-                iptr=iptr+1
+  
+                xc = cslat*cslon
+                yc = cslat*snlon
+                zc = snlat
+
+                ! take a couple of low-freq spherical harmonics for the solution
+                sol(i,j,k,ie) = 1*xc + 2*yc + 3*zc + 4*xc*yc + 5*xc*zc + 6*yc*zc + &
+                     7*(xc*yc*zc) 
+
              end do
           end do
        end do
     end do
 
-    !cg%debug_level=1
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! compute the RHS from our exact solution
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    do ie=nets,nete
+       do k=1,nlev
+          RHS(:,:,k,ie)=elem(ie)%spheremp(:,:)*sol(:,:,k,ie) + &
+               alambda*laplace_sphere_wk(sol(:,:,k,ie),deriv,elem(ie),var_coef=.false.)
+          call edgeVpack(edge1, RHS(1,1,1,ie), nlev, 0, elem(ie)%desc)
+       end do
+    end do
+    call bndry_exchangeV(cg%hybrid,edge1)
+    do ie=nets,nete
+       ieptr=ie-nets+1
+
+       ! unpack RHS
+       call edgeVunpack(edge1, RHS(1,1,1,ie), nlev, 0, elem(ie)%desc)
+       do k=1,nlev
+          RHS(:,:,k,ie)=RHS(:,:,k,ie)*elem(ie)%rspheremp(:,:)
+
+          iptr=1
+          do j=1,np
+             do i=1,np
+                cg%state(ieptr)%r(iptr,k) = rhs(i,j,k,ie)
+                iptr=iptr+1
+             enddo
+          enddo
+       enddo
+    enddo
+
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! Solver Loop
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    cg%debug_level=1
+    maxits = 5000
+    tol=1e-13
     do while (congrad(cg,red,maxits,tol))
        do ie=nets,nete
           ieptr=ie-nets+1
           do k=1,nlev
-             if (.not.cg%converged(k)) then
-
-                ! apply preconditioner to last residual 
-                iptr=1
-                do j=1,np
-                   do i=1,np
-                      cg%state(ieptr)%z(iptr,k) = cg%state(ieptr)%r(iptr,k)
-                      iptr=iptr+1
-                   end do
-                end do
-
-                ! compute LHS. Helmholz:  z - lambda*lap(z) 
-                ! but in this case it is just lap(z)
-                LHS(:,:,k,ie)=laplace_sphere_wk(reshape(cg%state(ieptr)%z(:,k),(/np,np/)),&
-                     deriv,elem(ie),var_coef=.false.)
-             endif
+             ! apply preconditioner here:
+             cg%state(ieptr)%z(:,k) = cg%state(ieptr)%r(:,k)
+             
+             !reshape(cg%state(ieptr)%z(:,k),(/np,np/))
+             iptr=1
+             do j=1,np
+                do i=1,np
+                   x(i,j) = cg%state(ieptr)%z(iptr,k)
+                   iptr=iptr+1
+                enddo
+             enddo
+             
+             ! solve x + laplace(x)
+             ! weak laplace operator already includes mass
+             ! so only multiply x by mass;
+             LHS(:,:,k,ie)=elem(ie)%spheremp(:,:)*x(:,:) + &
+                  alambda*laplace_sphere_wk(x,deriv,elem(ie),var_coef=.false.)
+             
           end do
-          kptr=0
-          call edgeVpack(edge1, LHS(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+          call edgeVpack(edge1, LHS(1,1,1,ie), nlev, 0, elem(ie)%desc)
        end do
        call bndry_exchangeV(cg%hybrid,edge1)
        do ie=nets,nete
           ! unpack LHS
-          kptr=0
-          call edgeVunpack(edge1, LHS(1,1,1,ie), nlev, kptr, elem(ie)%desc)
+          call edgeVunpack(edge1, LHS(1,1,1,ie), nlev, 0, elem(ie)%desc)
+          do k=1,nlev
+             LHS(:,:,k,ie)=LHS(:,:,k,ie)*elem(ie)%rspheremp(:,:)
+          enddo
 
           ieptr=ie-nets+1
           do k=1,nlev
-             if (.not.cg%converged(k)) then
-                iptr=1
-                do j=1,np
-                   do i=1,np
-                      cg%state(ieptr)%s(iptr,k) = LHS(i,j,k,ie)
-                      iptr=iptr+1
-                   end do
+             iptr=1
+             do j=1,np
+                do i=1,np
+                   cg%state(ieptr)%s(iptr,k) = LHS(i,j,k,ie)
+                   iptr=iptr+1
                 end do
-             end if
+             end do
           enddo
        enddo
-          
+       
     end do  ! CG solver while loop
     print *,'solver test CG iter = ',cg%iter
+
+
     ! ===============================
-    ! Converged! unpack solution 
+    ! Converged! compute actual error (not residual computed in solver)
     ! ===============================
     do ie=nets,nete
        ieptr=ie-nets+1
@@ -1009,12 +1061,16 @@ contains
           iptr=1
           do j=1,np
              do i=1,np
-!                x(i,j,k,ie)=cg%state(ieptr)%x(iptr,k)
+                LHS(i,j,k,ie) = cg%state(ieptr)%x(iptr,k)
                 iptr=iptr+1
-             end do
-          end do
-       end do
-    end do
+             enddo
+          enddo
+       enddo
+    enddo
+    res = l2_snorm(elem,LHS,sol,hybrid,np,nets,nete) 
+    if (hybrid%masterthread) print *,'normalized l2 error= ',res
+    res = linf_snorm(LHS,sol,hybrid,np,nets,nete) 
+    if (hybrid%masterthread) print *,'normalized linf error= ',res
   end subroutine solver_test
 
 

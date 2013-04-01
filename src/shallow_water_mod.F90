@@ -295,10 +295,6 @@ contains
 
     integer               :: k,n0,k1
 
-!    print *,'calling test_ibyp'
-!    call test_ibyp(elem,hybrid,nets,nete)
-!    call check_edge_flux(elem,deriv,nets,nete)
-!    stop
 
     n0 = tl%n0
     k=1
