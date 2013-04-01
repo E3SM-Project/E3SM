@@ -21,18 +21,18 @@ level software backend.  It currently supports netcdf
 (http://www.unidata.com), pnetcdf
 (http://trac.mcs.anl.gov/projects/parallel-netcdf) and MPI-IO.
 
-PIO calls are collective, an MPI communicator is set in a call to
+PIO calls are collective. A MPI communicator is set in a call to
 \ref PIO_init and all tasks associated with that communicator must
 participate in all subsequent calls to PIO.  An application can make
 multiple calls to PIO in order to support multiple MPI communicators.
 
 
-To use PIO your program should begin by calling the
+To use PIO, your program should begin by calling the
 \ref PIO_init function providing the MPI communicator and the
 rank within that communicator of the calling task.  You should also
 provide the number of iotasks to be used, the stride or number of
 tasks between iotasks, and the number of mpi aggregators to be used.
-You may optionally also choose the base IO task, this task will be
+You may optionally also choose the base IO task. This task will be
 used for output of any non-decomposed data.  This call initializes an
 IO system type structure that will be used in subsequent file and
 decomposition functions.
@@ -45,11 +45,12 @@ pio_iotype_netcdf4p; along with the file name and optionally the
 netcdf mode.
 
 To read or write decomposed data you must first describe the mapping
-between the organization of data in the file and that in the
+between the organization of data in the file and that same data in the
 application space.  This is done in a call to
-\ref PIO_initdecomp. In the simplest call to this function a
+\ref PIO_initdecomp. In the simplest call to this function, a
 one dimensional integer array is passed from each task, the values in
-the array represent the 0 based offset from the beginning of the array
+the array represent the (ASB - shouldn't this be 1-based??) 0 based 
+offset from the beginning of the array
 on file.   
 
 */

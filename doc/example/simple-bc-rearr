@@ -12,6 +12,6 @@
  compstart(1) = 3
  compcount(1) = 3
  iostart(1) = 1
- iccount(1) = 4
+ iocount(1) = 4
  call PIO_initdecomp(iosystem,PIO_double,dims,compstart,compcount,iodesc,iostart=iostart,iocount=iocount)
 

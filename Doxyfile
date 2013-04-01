@@ -871,6 +871,7 @@ HTML_FOOTER            =
 # tag will in the future become obsolete.
 
 HTML_STYLESHEET        = 
+HTML_EXTRA_STYLESHEET   = customdoxygen.css
 
 # The HTML_EXTRA_FILES tag can be used to specify one or more extra images or 
 # other source files which should be copied to the HTML output directory. Note 

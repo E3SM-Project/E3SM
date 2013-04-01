@@ -497,3 +497,10 @@ address {
 	font-style: normal;
 	color: #333;
 }
+
+blockquote {
+    background-color: #DDDDDD;
+    border-left: 2px solid #9CAFD4;
+    margin: 0 24px 0 4px;
+    padding: 0 12px 0 16px;
+}

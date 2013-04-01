@@ -16,14 +16,17 @@
  */ /*! \page install Installing PIO
 
 <ol>
-<li>Download the code (ASB list the dir structure)</li>
+<li>Download the code from the following Google code subversion location:
+
+> http://parallelio.googlecode.com/svn/trunk/
+</li>
 
 <li>Configure - PIO uses the gnu autoconf tools, for historical reasons the configure
 script is in the pio subdirectory.  A complete set of configure arguments, options and flags is available by running:
 
 > configure --help.   
 
-Before running configure, you will need to know the location of some supporting libraries. (ASB - what takes precedence if all are set?? or does it matter? is it where you make the call in the library that determines which type or IO to use?)
+Before running configure, you will need to know the location of some supporting libraries. 
 
 - Set the NETCDF_PATH environment variable to the netcdf install directory or --disable-netcdf to
 disable serial NetCDF support.
@@ -33,7 +36,7 @@ disable serial NetCDF support.
 - Set the PNETCDF_PATH environment variable to the pnetcdf install directory, This will enable support
 for parallel-netcdf
 
-- Set the CC, FC, MPICC, and MPIFC environment variables to the serial and parallel c and fortran 90 compiler names.
+- Set the CC, FC, MPICC, and MPIFC environment variables to the serial and parallel C and Fortran 90 compiler names.
 
 This should be the minimal set of flags required to build pio.
 
@@ -52,5 +55,6 @@ all of the module files be located in the install directory. If that is the case
 
 will move the compiled library and module files to the directory specified
 by $PREFIX which can be set by using the --prefix argument to configure.   </li>
+</ol>
 
 */

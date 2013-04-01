@@ -12,6 +12,6 @@
  dims(1) = 8
  compdof = (/2,4,5/)
  iostart(1) = 1
- iccount(1) = 4
+ iocount(1) = 4
  call PIO_initdecomp(iosystem,PIO_double,dims,compdof,iodesc,iostart=iostart,iocount=iocount)
 
