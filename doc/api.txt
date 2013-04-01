@@ -25,9 +25,9 @@
     - \ref PIO_setdebuglevel
     - \ref PIO_seterrorhandling
     - \ref PIO_get_local_array_size
-    - \ref PIO_setnumagg
     - \ref PIO_dupiodesc
     - \ref PIO_getnumiotasks
+    - \ref PIO_set_blocksize
   \section netcdf NetCDF format specific routines 
      Also see: http://www.unidata.ucar.edu/software/netcdf/docs/
      \subsection putget Reading/Writing netcdf metadata  
