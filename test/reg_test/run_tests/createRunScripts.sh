@@ -15,7 +15,14 @@ source ${HOMME_TESTING_DIR}/test_list.sh
 # Functions used to generate the run scripts 
 source ${HOMME_TESTING_DIR}/testing-utils.sh
 
-if [ "$1" == all ] ; then
+# Determine if we are creating the baseline
+if [ "$1" == baseline ] ; then
+  CREATE_BASELINE=true
+else
+  CREATE_BASELINE=false
+fi
+
+if [ "$1" == all -o "${CREATE_BASELINE}" == true ] ; then
 
   # The location of all of the lsf scripts generated here
   lsfListFile=${HOMME_TESTING_DIR}/submission-list.sh

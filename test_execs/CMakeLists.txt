@@ -154,7 +154,18 @@ EXECUTE_PROCESS(
   ERROR_VARIABLE CREATE_RUNS_ERROR)
 
 IF (NOT ${CREATE_RUNS_RESULT} EQUAL 0) 
-  MESSAGE(FATAL_ERROR "The script createRunScripts.sh has failed with error
+  MESSAGE(FATAL_ERROR "The script \"createRunScripts.sh all\" has failed with error
+                        ${CREATE_RUNS_RESULT}")
+ENDIF ()
+
+EXECUTE_PROCESS(
+  COMMAND ${CMAKE_BINARY_DIR}/tests/createRunScripts.sh "baseline"
+  RESULT_VARIABLE CREATE_RUNS_RESULT
+  OUTPUT_VARIABLE CREATE_RUNS_OUTPUT
+  ERROR_VARIABLE CREATE_RUNS_ERROR)
+
+IF (NOT ${CREATE_RUNS_RESULT} EQUAL 0) 
+  MESSAGE(FATAL_ERROR "The script \"createRunScripts.sh baseline\" has failed with error
                         ${CREATE_RUNS_RESULT}")
 ENDIF ()
 

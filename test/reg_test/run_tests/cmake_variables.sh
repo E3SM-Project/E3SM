@@ -5,6 +5,9 @@ HOMME_TEST_RESULTS=@Homme_Results_DIR@
 # The location of the baseline results
 HOMME_BASELINE_DIR=@Homme_Baseline_DIR@
 
+# The location of the baseline results
+HOMME_DEFAULT_BASELINE_DIR=${HOMME_DIR}/tests/baseline
+
 # The location of the tests directory
 HOMME_TESTING_DIR=${HOMME_DIR}/tests
 
